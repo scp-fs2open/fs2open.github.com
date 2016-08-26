@@ -38,6 +38,7 @@
 #include "ship/shiphit.h"
 #include "weapon/beam.h"
 #include "weapon/weapon.h"
+#include "globalincs/globals.h"
 
 // ------------------------------------------------------------------------------------------------
 // BEAM WEAPON DEFINES/VARS
@@ -1174,7 +1175,7 @@ void beam_render(beam *b, float u_offset)
 	vm_vec_normalize_quick(&fvec);		
 
 	// turn off backface culling
-	int cull = gr_set_cull(0);
+	//int cull = gr_set_cull(0);
 
 	length = vm_vec_dist(&b->last_start, &b->last_shot);					// beam tileing -Bobboau
 
@@ -1246,15 +1247,13 @@ void beam_render(beam *b, float u_offset)
 			framenum = bm_get_anim_frame(bwsi->texture.first_frame, b->beam_section_frame[s_idx], bwsi->texture.total_time, true);
 		}
 
-		gr_set_bitmap(bwsi->texture.first_frame + framenum, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.9999f);
-
-		// added TMAP_FLAG_TILED flag for beam texture tileing -Bobboau			
-		// added TMAP_FLAG_RGB and TMAP_FLAG_GOURAUD so the beam would apear to fade along it's length-Bobboau
-		g3_draw_poly( 4, verts, TMAP_FLAG_TEXTURED | TMAP_FLAG_RGB | TMAP_FLAG_GOURAUD | TMAP_FLAG_TILED | TMAP_FLAG_CORRECT | TMAP_HTL_3D_UNLIT | TMAP_FLAG_EMISSIVE ); 
+		material material_params;
+		material_set_unlit_emissive(&material_params, bwsi->texture.first_frame + framenum, 0.9999f, 2.0f);
+		g3_render_primitives_colored_textured(&material_params, h1, 4, PRIM_TYPE_TRIFAN, false);
 	}		
 	
 	// turn backface culling back on
-	gr_set_cull(cull);
+	//gr_set_cull(cull);
 }
 
 // generate particles for the muzzle glow
@@ -1368,7 +1367,6 @@ void beam_render_muzzle_glow(beam *b)
 	weapon_info *wip = &Weapon_info[b->weapon_info_index];
 	beam_weapon_info *bwi = &wip->b_info;
 	float rad, pct, rand_val;
-	int tmap_flags = TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT | TMAP_FLAG_EMISSIVE;
 	pt.flags = 0;    // avoid potential read of uninit var
 
 	// if we don't have a glow bitmap
@@ -1417,8 +1415,6 @@ void beam_render_muzzle_glow(beam *b)
 		vm_vec_copy_scale(&sub2, &fvec, bwi->glow_length);
 		vm_vec_add(&end, &start, &sub2);
 
-		int cull = gr_set_cull(0);
-
 		beam_calc_facing_pts(&top1, &bottom1, &fvec, &start, rad, 1.0f);
 		beam_calc_facing_pts(&top2, &bottom2, &fvec, &end, rad, 1.0f);
 
@@ -1459,47 +1455,57 @@ void beam_render_muzzle_glow(beam *b)
 
 		int framenum = 0;
 
-		if (bwi->beam_glow.num_frames > 1) {
+		if ( bwi->beam_glow.num_frames > 1 ) {
 			b->beam_glow_frame += flFrametime;
 
 			framenum = bm_get_anim_frame(bwi->beam_glow.first_frame, b->beam_glow_frame, bwi->beam_glow.total_time, true);
 		}
 
-		gr_set_bitmap(bwi->beam_glow.first_frame + framenum, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, alpha * pct);
+		//gr_set_bitmap(bwi->beam_glow.first_frame + framenum, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, alpha * pct);
 
 		// draw a poly
-		g3_draw_poly(4, verts, TMAP_FLAG_TEXTURED | TMAP_FLAG_CORRECT | TMAP_HTL_3D_UNLIT);
+		//g3_draw_poly(4, verts, TMAP_FLAG_TEXTURED | TMAP_FLAG_CORRECT | TMAP_HTL_3D_UNLIT);
 
-		gr_set_cull(cull);
+		material material_info;
+		material_set_unlit_emissive(&material_info, bwi->beam_glow.first_frame + framenum, alpha * pct, 2.0f);
+		g3_render_primitives_textured(&material_info, h1, 4, PRIM_TYPE_TRIFAN, false);
 
 	} else {
 
 		// draw the bitmap
 		g3_transfer_vertex(&pt, &b->last_start);
 
-
 		int framenum = 0;
 
-		if (bwi->beam_glow.num_frames > 1) {
+		if ( bwi->beam_glow.num_frames > 1 ) {
 			b->beam_glow_frame += flFrametime;
 
 			framenum = bm_get_anim_frame(bwi->beam_glow.first_frame, b->beam_glow_frame, bwi->beam_glow.total_time, true);
 		}
 
-		gr_set_bitmap(bwi->beam_glow.first_frame + framenum, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, alpha * pct);
+		//gr_set_bitmap(bwi->beam_glow.first_frame + framenum, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, alpha * pct);
 
 		// draw 1 bitmap
-		g3_draw_bitmap(&pt, 0, rad, tmap_flags);
+		//g3_draw_bitmap(&pt, 0, rad, tmap_flags);
+		material mat_params;
+		material_set_unlit_emissive(&mat_params, bwi->beam_glow.first_frame + framenum, alpha * pct, 2.0f);
+		g3_render_rect_screen_aligned(&mat_params, &pt, 0, rad, 0.0f);
 
 		// maybe draw more
-		if (pct > 0.3f)
-			g3_draw_bitmap(&pt, 0, rad * 0.75f, tmap_flags, rad * 0.25f);
+		if ( pct > 0.3f ) {
+			//g3_draw_bitmap(&pt, 0, rad * 0.75f, tmap_flags, rad * 0.25f);
+			g3_render_rect_screen_aligned(&mat_params, &pt, 0, rad * 0.75f, rad * 0.25f);
+		}
 
-		if (pct > 0.5f)
-			g3_draw_bitmap(&pt, 0, rad * 0.45f, tmap_flags, rad * 0.55f);
+		if ( pct > 0.5f ) {
+			//g3_draw_bitmap(&pt, 0, rad * 0.45f, tmap_flags, rad * 0.55f);
+			g3_render_rect_screen_aligned(&mat_params, &pt, 0, rad * 0.45f, rad * 0.55f);
+		}
 
-		if (pct > 0.7f)
-			g3_draw_bitmap(&pt, 0, rad * 0.25f, tmap_flags, rad * 0.75f);
+		if ( pct > 0.7f ) {
+			//g3_draw_bitmap(&pt, 0, rad * 0.25f, tmap_flags, rad * 0.75f);
+			g3_render_rect_screen_aligned(&mat_params, &pt, 0, rad * 0.25f, rad * 0.75f);
+		}
 	}
 }
 

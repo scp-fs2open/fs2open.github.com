@@ -1,3 +1,6 @@
+in vec3 beamVec;
+in vec3 lightPosition;
+out vec4 fragOut0;
 uniform sampler2D ColorBuffer;
 uniform sampler2D NormalBuffer;
 uniform sampler2D PositionBuffer;
@@ -6,9 +9,7 @@ uniform float specFactor;
 uniform float invScreenWidth;
 uniform float invScreenHeight;
 uniform int lightType;
-varying vec3 lightPosition;
 uniform float lightRadius;
-varying vec3 beamVec;
 uniform vec3 diffuseLightColor;
 uniform vec3 specLightColor;
 uniform float coneAngle;
@@ -39,7 +40,7 @@ vec4 SpecularLegacy(vec4 specColor, vec3 normal, vec3 halfVec, float specPower)
 void main()
 {
 	vec2 screenPos = gl_FragCoord.xy * vec2(invScreenWidth, invScreenHeight);
-	vec3 position = texture2D(PositionBuffer, screenPos).xyz;
+	vec3 position = texture(PositionBuffer, screenPos).xyz;
 
 	if(abs(dot(position, position)) < 0.1)
 		discard;
@@ -63,9 +64,9 @@ void main()
 	}
 	if(dist > lightRadius && lightType != 1)
 		discard;
-	vec3 color = texture2D(ColorBuffer, screenPos).rgb;
-	vec4 normal = texture2D(NormalBuffer, screenPos);
-	vec4 specColor = texture2D(SpecBuffer, screenPos);
+	vec3 color = texture(ColorBuffer, screenPos).rgb;
+	vec4 normal = texture(NormalBuffer, screenPos);
+	vec4 specColor = texture(SpecBuffer, screenPos);
 	float gloss = specColor.a;
 	vec3 eyeDir = normalize(-position);
 
@@ -86,8 +87,7 @@ void main()
 	vec3 halfVec = normalize(lightDir + eyeDir);
 	float NdotHV = clamp(dot(normal.xyz, halfVec), 0.0, 1.0);
 	float NdotL = clamp(dot(normal.xyz, lightDir), 0.0, 1.0);
-	gl_FragData[0].rgb = color * (diffuseLightColor * NdotL * attenuation);
-	gl_FragData[0].rgb += SpecularBlinnPhong(specLightColor, lightDir, normal.xyz, halfVec, exp2(10.0 * gloss + 1.0), NdotL).rgb * specColor.rgb * attenuation;
-	gl_FragData[0].a = 1.0;
-	gl_FragData[0] = max(gl_FragData[0], vec4(0.0));
+	vec4 fragmentColor = vec4(color * (diffuseLightColor * NdotL * attenuation), 1.0);
+	fragmentColor.rgb += SpecularBlinnPhong(specLightColor, lightDir, normal.xyz, halfVec, exp2(10.0 * gloss + 1.0), NdotL).rgb * specColor.rgb * attenuation;
+	fragOut0 = max(fragmentColor, vec4(0.0));
 }

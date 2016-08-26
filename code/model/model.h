@@ -667,7 +667,7 @@ public:
 		n_thrusters(0), gun_banks(NULL), missile_banks(NULL), docking_bays(NULL), thrusters(NULL), ship_bay(NULL),
 		shield_collision_tree(NULL), sldc_size(0), n_paths(0), paths(NULL), mass(0), num_xc(0), xc(NULL), num_split_plane(0),
 		num_ins(0), used_this_mission(0), n_glow_point_banks(0), glow_point_banks(NULL), gun_submodel_rotation(0),
-		vertex_buffer_id(-1)
+		vertex_buffer_id(-1), vert_source()
 	{
 		filename[0] = 0;
 		mins = maxs = autocenter = center_of_mass = vmd_zero_vector;
@@ -776,6 +776,8 @@ public:
 
 	int vertex_buffer_id;			// HTL vertex buffer id
 
+	indexed_vertex_source vert_source;
+	
 	vertex_buffer detail_buffers[MAX_MODEL_DETAIL_LEVELS];
 };
 
@@ -1314,6 +1316,9 @@ void model_draw_paths_htl( int model_num, uint flags );
 void model_draw_bay_paths(int model_num);
 
 void model_draw_bay_paths_htl(int model_num);
+
+bool model_interp_config_buffer(indexed_vertex_source *vert_src, vertex_buffer *vb, bool update_ibuffer_only);
+bool model_interp_pack_buffer(indexed_vertex_source *vert_src, vertex_buffer *vb);
 
 void glowpoint_init();
 SCP_vector<glow_point_bank_override>::iterator get_glowpoint_bank_override_by_name(const char* name);

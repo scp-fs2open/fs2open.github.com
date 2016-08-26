@@ -50,6 +50,7 @@ extern void vm_set_identity(matrix *m);
 //Global constants
 
 extern vec3d vmd_zero_vector;
+extern vec3d vmd_scale_identity_vector;
 extern vec3d vmd_x_vector;
 extern vec3d vmd_y_vector;
 extern vec3d vmd_z_vector;
@@ -58,6 +59,7 @@ extern matrix vmd_identity_matrix;
 //Here's a handy constant
 
 #define ZERO_VECTOR { { { 0.0f, 0.0f, 0.0f } } }
+#define SCALE_IDENTITY_VECTOR { { { 1.0f, 1.0f, 1.0f } } }
 //#define IDENTITY_MATRIX {1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f}
 // first set of inside braces is for union, second set is for inside union, then for a2d[3][3] (some compiler warning messages just suck)
 //#define IDENTITY_MATRIX { { { {1.0f, 0.0f, 0.0f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f, 1.0f} } } }
@@ -431,6 +433,19 @@ void vm_vec_dist_squared_to_line(const vec3d *p, const vec3d *l0, const vec3d *l
 void vm_vec_boxscale(vec2d *vec, float scale);
 
 bool vm_inverse_matrix4(const matrix4 *m, matrix4 *invOut);
+
+void vm_matrix4_set_identity(matrix4 *out);
+
+void vm_matrix4_set_transform(matrix4 *out, matrix *m, vec3d *v);
+
+void vm_matrix4_get_orientation(matrix *out, matrix4 *m);
+
+void vm_vec_transform(vec4 *dest, vec4 *src, matrix4 *m);
+void vm_vec_transform(vec3d *dest, vec3d *src, matrix4 *m, bool pos = true);
+
+void vm_matrix4_x_matrix4(matrix4 *dest, const matrix4 *src0, const matrix4 *src1);
+
+float vm_vec4_dot4(float x, float y, float z, float w, const vec4 *v);
 
 #endif
 

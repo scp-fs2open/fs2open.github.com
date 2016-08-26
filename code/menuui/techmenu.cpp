@@ -26,6 +26,7 @@
 #include "parse/parselo.h"
 #include "playerman/player.h"
 #include "render/3d.h"
+#include "render/batching.h"
 #include "ship/ship.h"
 #include "sound/fsspeech.h"
 #include "ui/ui.h"
@@ -586,7 +587,7 @@ void techroom_ships_render(float frametime)
 
 	Glowpoint_use_depth_buffer = true;
 
-	batch_render_all();
+	batching_render_all();
 
 	gr_end_view_matrix();
 	gr_end_proj_matrix();

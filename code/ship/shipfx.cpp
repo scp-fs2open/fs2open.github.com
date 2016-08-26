@@ -35,6 +35,7 @@
 #include "particle/particle.h"
 #include "playerman/player.h"
 #include "render/3d.h"			// needed for View_position, which is used when playing a 3D sound
+#include "render/batching.h"
 #include "ship/ship.h"
 #include "ship/shipfx.h"
 #include "ship/shiphit.h"
@@ -4004,7 +4005,8 @@ int WE_BSG::warpShipRender()
 			vm_vec_scale_add(&end, &pos, &objp->orient.vec.fvec, z_offset_max);
 
 			//Render the warpout effect
-			batch_add_beam(anim + anim_frame, TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB | TMAP_FLAG_TEXTURED | TMAP_FLAG_CORRECT | TMAP_HTL_3D_UNLIT | TMAP_FLAG_EMISSIVE, &start, &end, tube_radius*2.0f, 1.0f);
+			//batch_add_beam(anim + anim_frame, TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB | TMAP_FLAG_TEXTURED | TMAP_FLAG_CORRECT | TMAP_HTL_3D_UNLIT, &start, &end, tube_radius*2.0f, 1.0f);
+			batching_add_beam(anim + anim_frame, &start, &end, tube_radius * 2.0f, 1.0f);
 		}
 	}
 
@@ -4020,7 +4022,7 @@ int WE_BSG::warpShipRender()
             
 			g3_transfer_vertex(&p, &pos);
 
-			batch_add_bitmap(shockwave + shockwave_frame, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT | TMAP_FLAG_SOFT_QUAD | TMAP_FLAG_EMISSIVE, &p, 0, shockwave_radius, 1.0f);
+			batching_add_volume_bitmap(shockwave + shockwave_frame, &p, 0, shockwave_radius, 1.0f);
 		}
 	}
 
@@ -4296,9 +4298,7 @@ int WE_Homeworld::warpShipRender()
 		frame = fl2i( (int)(((float)(timestamp() - (float)total_time_start)/1000.0f) * (float)anim_fps) % anim_nframes);
 
 	//Set the correct frame
-// 	gr_set_bitmap(anim + frame, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.0f);	
-// 	g3_draw_polygon(&pos, &objp->orient, width, height, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT);
-	batch_add_polygon(anim + frame, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT | TMAP_FLAG_EMISSIVE, &pos, &objp->orient, width, height);
+	batching_add_polygon(anim + frame, &pos, &objp->orient, width, height);
 
 	return 1;
 }

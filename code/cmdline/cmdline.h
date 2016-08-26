@@ -80,6 +80,7 @@ extern bool Cmdline_fb_thrusters;
 extern bool Cmdline_no_batching;
 extern int Cmdline_shadow_quality;
 extern int Cmdline_no_deferred_lighting;
+extern int Cmdline_no_emissive;
 
 // Game Speed related
 extern int Cmdline_cache_bitmaps;
@@ -124,10 +125,8 @@ extern bool Cmdline_portable_mode;
 extern int Cmdline_load_all_weapons;
 extern int Cmdline_nomovies;	// WMC Toggles movie playing support
 extern int Cmdline_no_set_gamma;
-extern int Cmdline_novbo;
 extern int Cmdline_no_fbo;
 extern int Cmdline_no_pbo;
-extern int Cmdline_noglsl;
 extern int Cmdline_mipmap;
 extern int Cmdline_ati_color_swap;
 extern int Cmdline_no_3d_sound;

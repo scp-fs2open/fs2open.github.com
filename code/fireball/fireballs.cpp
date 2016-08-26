@@ -19,6 +19,7 @@
 #include "object/object.h"
 #include "parse/parselo.h"
 #include "render/3d.h"
+#include "render/batching.h"
 #include "ship/ship.h"
 
 #include <stdlib.h>
@@ -982,25 +983,13 @@ void fireball_render(object* obj, draw_list *scene)
 	switch ( fb->fireball_render_type )	{
 
 		case FIREBALL_MEDIUM_EXPLOSION: {
-			batch_add_bitmap (
-				Fireballs[num].current_bitmap, 
-				TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT | TMAP_FLAG_SOFT_QUAD | TMAP_FLAG_EMISSIVE, 
-				&p, 
-				fb->orient, 
-				obj->radius
-				);
+			batching_add_volume_bitmap(Fireballs[num].current_bitmap, &p, fb->orient, obj->radius);
 		}
 		break;
 
 		case FIREBALL_LARGE_EXPLOSION: {
 			// Make the big explosions rotate with the viewer.
-			batch_add_bitmap_rotated ( 
-				Fireballs[num].current_bitmap, 
-				TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT | TMAP_FLAG_SOFT_QUAD | TMAP_FLAG_EMISSIVE, 
-				&p, 
-				(i2fl(fb->orient)*PI)/180.0f,
-				obj->radius
-				);
+			batching_add_volume_bitmap_rotated(Fireballs[num].current_bitmap, &p, (i2fl(fb->orient)*PI) / 180.0f, obj->radius);
 		}
 		break;
 

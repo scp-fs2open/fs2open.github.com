@@ -12,11 +12,14 @@
 #ifndef _GRAPHICS_H
 #define _GRAPHICS_H
 
+#include "graphics/grinternal.h"
 #include <osapi/osapi.h>
 #include "bmpman/bmpman.h"
 #include "cfile/cfile.h"
 #include "globalincs/pstypes.h"
 #include "graphics/tmapper.h"
+#include "cfile/cfile.h"
+#include "math/vecmat.h"
 #include "io/cursor.h"
 
 extern const float Default_min_draw_distance;
@@ -29,7 +32,123 @@ extern int Gr_inited;
 extern int gr_zbuffering, gr_zbuffering_mode;
 extern int gr_global_zbuffering;
 
+class material;
+class model_material;
+class particle_material;
+class distortion_material;
+
+struct transform
+{
+	matrix basis;
+	vec3d origin;
+	vec3d scale;
+
+	transform() : basis(vmd_identity_matrix), origin(vmd_zero_vector), scale(vmd_scale_identity_vector) {}
+	transform(matrix *m, vec3d *v) : basis(*m), origin(*v) {}
+
+	matrix4 get_matrix4()
+	{
+		matrix4 new_mat;
+		vm_matrix4_set_identity(&new_mat);
+
+		new_mat.a1d[0] = basis.vec.rvec.xyz.x;   new_mat.a1d[4] = basis.vec.uvec.xyz.x;   new_mat.a1d[8] = basis.vec.fvec.xyz.x;
+		new_mat.a1d[1] = basis.vec.rvec.xyz.y;   new_mat.a1d[5] = basis.vec.uvec.xyz.y;   new_mat.a1d[9] = basis.vec.fvec.xyz.y;
+		new_mat.a1d[2] = basis.vec.rvec.xyz.z;   new_mat.a1d[6] = basis.vec.uvec.xyz.z;   new_mat.a1d[10] = basis.vec.fvec.xyz.z;
+		new_mat.a1d[12] = origin.xyz.x;
+		new_mat.a1d[13] = origin.xyz.y;
+		new_mat.a1d[14] = origin.xyz.z;
+
+		return new_mat;
+	}
+};
+
+
+class transform_stack {
+	
+	matrix4 Current_transform;
+	SCP_vector<matrix4> Stack;
+public:
+	transform_stack()
+	{
+		vm_matrix4_set_identity(&Current_transform);
+
+		Stack.clear();
+		Stack.push_back(Current_transform);
+	}
+
+	matrix4 &get_transform()
+	{
+		return Current_transform;
+	}
+
+	void clear()
+	{
+		vm_matrix4_set_identity(&Current_transform);
+
+		Stack.clear();
+		Stack.push_back(Current_transform);
+	}
+
+	void push_and_replace(matrix4 new_transform)
+	{
+		Current_transform = new_transform;
+		Stack.push_back(Current_transform);
+	}
+
+	void push(const vec3d *pos, const matrix *orient, const vec3d *scale = NULL)
+	{
+		vec3d new_scale = SCALE_IDENTITY_VECTOR;
+		matrix new_orient = IDENTITY_MATRIX;
+		vec3d new_pos = ZERO_VECTOR;
+
+		matrix4 current_transform_copy = Current_transform;
+		matrix4 new_transform;
+
+		if ( pos != NULL ) {
+			new_pos = *pos;
+		}
+
+		if ( orient != NULL ) {
+			new_orient = *orient;
+		}
+
+		if ( scale != NULL ) {
+			new_scale = *scale;
+		}
+
+		vm_vec_scale(&new_orient.vec.rvec, new_scale.xyz.x);
+		vm_vec_scale(&new_orient.vec.uvec, new_scale.xyz.y);
+		vm_vec_scale(&new_orient.vec.fvec, new_scale.xyz.z);
+
+		vm_matrix4_set_transform(&new_transform, &new_orient, &new_pos);
+
+		vm_matrix4_x_matrix4(&Current_transform, &current_transform_copy, &new_transform);
+		Stack.push_back(Current_transform);
+	}
+	
+	void pop()
+	{
+		if ( Stack.size() > 1 ) {
+			Stack.pop_back();
+		}
+
+		Current_transform = Stack.back();
+	}
+};
+
+enum primitive_type {
+	PRIM_TYPE_POINTS,
+	PRIM_TYPE_LINES,
+	PRIM_TYPE_LINESTRIP,
+	PRIM_TYPE_TRIS,
+	PRIM_TYPE_TRISTRIP,
+	PRIM_TYPE_TRIFAN,
+	PRIM_TYPE_QUADS,
+	PRIM_TYPE_QUADSTRIP
+};
+
 enum shader_type {
+	SDR_TYPE_NONE = -1,
 	SDR_TYPE_MODEL,
 	SDR_TYPE_EFFECT_PARTICLE,
 	SDR_TYPE_EFFECT_DISTORTION,
@@ -70,17 +189,107 @@ enum shader_type {
 #define SDR_FLAG_MODEL_CLIP			(1<<17)
 #define SDR_FLAG_MODEL_HDR			(1<<18)
 #define SDR_FLAG_MODEL_AMBIENT_MAP	(1<<19)
+#define SDR_FLAG_MODEL_NORMAL_ALPHA	(1<<20)
+#define SDR_FLAG_MODEL_NORMAL_EXTRUDE (1<<21)
 
 #define SDR_FLAG_PARTICLE_POINT_GEN			(1<<0)
 
 #define SDR_FLAG_BLUR_HORIZONTAL			(1<<0)
 #define SDR_FLAG_BLUR_VERTICAL				(1<<1)
 
+struct vertex_format_data
+{
+	enum vertex_format {
+		POSITION4,
+		POSITION3,
+		POSITION2,
+		SCREEN_POS,
+		COLOR3,
+		COLOR4,
+		TEX_COORD,
+		NORMAL,
+		TANGENT,
+		MODEL_ID,
+		RADIUS,
+		UVEC
+	};
+
+	vertex_format format_type;
+	size_t stride;
+	void *data_src;
+	int offset;
+
+	vertex_format_data(vertex_format i_format_type, size_t i_stride, void *i_data_src) : 
+	format_type(i_format_type), stride(i_stride), data_src(i_data_src), offset(-1) {}
+
+	vertex_format_data(vertex_format i_format_type, size_t i_stride, int i_offset) : 
+	format_type(i_format_type), stride(i_stride), data_src(NULL), offset(i_offset) {}
+
+	static inline uint mask(vertex_format v_format) { return 1 << v_format; }
+};
+
+class vertex_layout
+{
+	SCP_vector<vertex_format_data> Vertex_components;
+
+	uint Vertex_mask;
+public:
+	vertex_layout(): Vertex_mask(0) {}
+
+	vertex_layout(void* init_ptr): Vertex_mask(0) {}
+
+	size_t get_num_vertex_components() { return Vertex_components.size(); }
+
+	vertex_format_data* get_vertex_component(size_t index) { return &Vertex_components[index]; }
+	
+	bool resident_vertex_format(vertex_format_data::vertex_format format_type)
+	{ 
+		return ( Vertex_mask & vertex_format_data::mask(format_type) ) ? true : false; 
+	} 
+
+	void add_vertex_component(vertex_format_data::vertex_format format_type, void* src)
+	{
+		add_vertex_component(format_type, 0, src);
+	}
+
+	void add_vertex_component(vertex_format_data::vertex_format format_type, size_t stride, void* src) 
+	{
+		if ( resident_vertex_format(format_type) ) {
+			// we already have a vertex component of this format type
+			return;
+		}
+
+		Vertex_mask |= (1 << format_type);
+		Vertex_components.push_back(vertex_format_data(format_type, stride, src));
+	}
+
+	void add_vertex_component(vertex_format_data::vertex_format format_type, size_t stride, int offset) 
+	{
+		if ( resident_vertex_format(format_type) ) {
+			// we already have a vertex component of this format type
+			return;
+		}
+
+		Vertex_mask |= (1 << format_type);
+		Vertex_components.push_back(vertex_format_data(format_type, stride, offset));
+	}
+};
+
+typedef enum gr_capability {
+	CAPABILITY_ENVIRONMENT_MAP,
+	CAPABILITY_NORMAL_MAP,
+	CAPABILITY_HEIGHT_MAP,
+	CAPABILITY_SOFT_PARTICLES,
+	CAPABILITY_DISTORTION,
+	CAPABILITY_POST_PROCESSING,
+	CAPABILITY_DEFERRED_LIGHTING,
+	CAPABILITY_SHADOWS,
+	CAPABILITY_BATCHED_SUBMODELS,
+	CAPABILITY_POINT_PARTICLES
+} gr_capability;
+
 // stencil buffering stuff
 extern int gr_stencil_mode;
-
-// alpha test
-extern int gr_alpha_test;
 
 /**
  * This is a structure used by the shader to keep track
@@ -315,13 +524,16 @@ public:
 
 	size_t stride;
 	size_t vertex_offset;
+	size_t vertex_num_offset;
 
 	poly_list *model_list;
 
 	SCP_vector<buffer_data> tex_buf;
 
+	vertex_layout layout;
+
 	vertex_buffer() :
-		flags(0), stride(0), vertex_offset(0), model_list(NULL)
+		flags(0), stride(0), vertex_offset(0), vertex_num_offset(0), model_list(NULL)
 	{
 	}
 
@@ -349,8 +561,26 @@ public:
 	}
 };
 
+struct indexed_vertex_source {
+	float *Vertex_list;	// interleaved array
+	ubyte *Index_list;
+
+	int Vbuffer_handle;
+	int Ibuffer_handle;
+
+	uint Vertex_list_size;
+	uint Index_list_size;
+
+	indexed_vertex_source() :
+		Vertex_list(NULL), Index_list(NULL),
+		Vbuffer_handle(-1), Ibuffer_handle(-1), Vertex_list_size(0), Index_list_size(0)
+	{
+	}
+};
+
 struct light;
 
+#define FIND_SCALED_NUM(x, x0, x1, y0, y1) ( ((((x) - (x0)) * ((y1) - (y0))) / ((x1) - (x0))) + (y0) )
 
 #define GR_ALPHABLEND_NONE			0		// no blending
 #define GR_ALPHABLEND_FILTER		1		// 50/50 mix of foreground, background, using intensity as alpha
@@ -548,18 +778,20 @@ typedef struct screen {
 
 	void (*gf_set_texture_addressing)(int);
 
+	int (*gf_create_vertex_buffer)(bool static_buffer);
+	int (*gf_create_index_buffer)(bool static_buffer);
+	void (*gf_delete_buffer)(int handle);
 	int (*gf_create_buffer)();
 	bool (*gf_pack_buffer)(const int buffer_id, vertex_buffer *vb);
 	bool (*gf_config_buffer)(const int buffer_id, vertex_buffer *vb, bool update_ibuffer_only);
 	void (*gf_destroy_buffer)(int);
 	void (*gf_set_buffer)(int);
-	void (*gf_render_buffer)(int, const vertex_buffer*, size_t, int);
+	void (*gf_render_buffer)(int, vertex_buffer*, size_t, int);
 
-	void (*gf_update_buffer_object)(int handle, size_t size, void* data);
+	void (*gf_update_buffer_data)(int handle, size_t size, void* data);
 	void (*gf_update_transform_buffer)(void* data, size_t size);
 	void (*gf_set_transform_buffer_offset)(size_t offset);
 
-	int (*gf_create_stream_buffer)();
 	void (*gf_render_stream_buffer)(int buffer_handle, size_t offset, size_t n_verts, int flags);
 	
 	//the projection matrix; fov, aspect ratio, near, far
@@ -618,6 +850,7 @@ typedef struct screen {
 
 	void (*gf_line_htl)(const vec3d *start, const vec3d *end);
 	void (*gf_sphere_htl)(float rad);
+	void (*gf_sphere)(material *material_def, float rad);
 
 	int (*gf_maybe_create_shader)(shader_type type, unsigned int flags);
 
@@ -630,8 +863,19 @@ typedef struct screen {
 	void (*gf_update_texture)(int bitmap_handle, int bpp, const ubyte* data, int width, int height);
 	void (*gf_get_bitmap_from_texture)(void* data_out, int bitmap_num);
 
-	void (*gf_shadow_map_start)(const matrix4 *shadow_view_matrix, const matrix *light_matrix);
+	void (*gf_shadow_map_start)(matrix4 *shadow_view_matrix, const matrix *light_matrix);
 	void (*gf_shadow_map_end)();
+
+	// new drawing functions
+	void (*gf_render_model)(model_material* material_info, indexed_vertex_source *vert_source, vertex_buffer* bufferp, int texi);
+	void (*gf_render_primitives)(material* material_info, primitive_type prim_type, vertex_layout* layout, int offset, int n_verts, int buffer_handle);
+	void (*gf_render_primitives_immediate)(material* material_info, primitive_type prim_type, vertex_layout* layout, int n_verts, void* data, int size);
+	void (*gf_render_primitives_particle)(particle_material* material_info, primitive_type prim_type, vertex_layout* layout, int offset, int n_verts, int buffer_handle);
+	void (*gf_render_primitives_distortion)(distortion_material* material_info, primitive_type prim_type, vertex_layout* layout, int offset, int n_verts, int buffer_handle);
+	void (*gf_render_primitives_2d)(material* material_info, primitive_type prim_type, vertex_layout* layout, int offset, int n_verts, int buffer_handle);
+	void (*gf_render_primitives_2d_immediate)(material* material_info, primitive_type prim_type, vertex_layout* layout, int n_verts, void* data, int size);
+
+	bool (*gf_is_capable)(gr_capability capability);
 } screen;
 
 // handy macro
@@ -865,20 +1109,30 @@ __inline int gr_bm_set_render_target(int n, int face = -1)
 
 #define gr_set_texture_addressing					 GR_CALL(*gr_screen.gf_set_texture_addressing)            
 
+__inline int gr_create_vertex_buffer(bool static_buffer = false)
+{
+	return (*gr_screen.gf_create_vertex_buffer)(static_buffer);
+}
+
+__inline int gr_create_index_buffer(bool static_buffer = false)
+{
+	return (*gr_screen.gf_create_index_buffer)(static_buffer);
+}
+
+#define gr_delete_buffer				GR_CALL(*gr_screen.gf_delete_buffer)
 #define gr_create_buffer				GR_CALL(*gr_screen.gf_create_buffer)
 #define gr_pack_buffer					GR_CALL(*gr_screen.gf_pack_buffer)
 #define gr_config_buffer				GR_CALL(*gr_screen.gf_config_buffer)
 #define gr_destroy_buffer				 GR_CALL(*gr_screen.gf_destroy_buffer)
-__inline void gr_render_buffer(int start, const vertex_buffer *bufferp, size_t texi, int flags = TMAP_FLAG_TEXTURED)
+__inline void gr_render_buffer(int start, vertex_buffer *bufferp, size_t texi, int flags = TMAP_FLAG_TEXTURED)
 {
 	(*gr_screen.gf_render_buffer)(start, bufferp, texi, flags);
 }
 
-#define gr_update_buffer_object			GR_CALL(*gr_screen.gf_update_buffer_object)
+#define gr_update_buffer_data			GR_CALL(*gr_screen.gf_update_buffer_data)
 #define gr_update_transform_buffer		GR_CALL(*gr_screen.gf_update_transform_buffer)
 #define gr_set_transform_buffer_offset	GR_CALL(*gr_screen.gf_set_transform_buffer_offset)
 
-#define gr_create_stream_buffer			GR_CALL(*gr_screen.gf_create_stream_buffer)
 #define gr_render_stream_buffer			GR_CALL(*gr_screen.gf_render_stream_buffer)
 #define gr_render_stream_buffer_start	GR_CALL(*gr_screen.gf_render_stream_buffer_start)
 #define gr_render_stream_buffer_end		GR_CALL(*gr_screen.gf_render_stream_buffer_end)
@@ -934,6 +1188,7 @@ __inline void gr_render_buffer(int start, const vertex_buffer *bufferp, size_t t
 
 #define gr_line_htl						GR_CALL(*gr_screen.gf_line_htl)
 #define gr_sphere_htl					GR_CALL(*gr_screen.gf_sphere_htl)
+#define gr_sphere						GR_CALL(*gr_screen.gf_sphere)
 
 #define gr_maybe_create_shader			GR_CALL(*gr_screen.gf_maybe_create_shader)
 #define gr_set_animated_effect			GR_CALL(*gr_screen.gf_set_animated_effect)
@@ -947,6 +1202,46 @@ __inline void gr_render_buffer(int start, const vertex_buffer *bufferp, size_t t
 
 #define gr_shadow_map_start				GR_CALL(*gr_screen.gf_shadow_map_start)
 #define gr_shadow_map_end				GR_CALL(*gr_screen.gf_shadow_map_end)
+
+__inline void gr_render_primitives(material* material_info, primitive_type prim_type, vertex_layout* layout, int offset, int n_verts, int buffer_handle = -1)
+{
+	(*gr_screen.gf_render_primitives)(material_info, prim_type, layout, offset, n_verts, buffer_handle);
+}
+
+__inline void gr_render_primitives_immediate(material* material_info, primitive_type prim_type, vertex_layout* layout, int n_verts, void* data, int size)
+{
+	(*gr_screen.gf_render_primitives_immediate)(material_info, prim_type, layout, n_verts, data, size);
+}
+
+__inline void gr_render_primitives_particle(particle_material* material_info, primitive_type prim_type, vertex_layout* layout, int offset, int n_verts, int buffer_handle = -1)
+{
+	(*gr_screen.gf_render_primitives_particle)(material_info, prim_type, layout, offset, n_verts, buffer_handle);
+}
+
+__inline void gr_render_primitives_distortion(distortion_material* material_info, primitive_type prim_type, vertex_layout* layout, int offset, int n_verts, int buffer_handle = -1)
+{
+	(*gr_screen.gf_render_primitives_distortion)(material_info, prim_type, layout, offset, n_verts, buffer_handle);
+}
+
+__inline void gr_render_primitives_2d(material* material_info, primitive_type prim_type, vertex_layout* layout, int offset, int n_verts, int buffer_handle = -1)
+{
+	(*gr_screen.gf_render_primitives_2d)(material_info, prim_type, layout, offset, n_verts, buffer_handle);
+}
+
+__inline void gr_render_primitives_2d_immediate(material* material_info, primitive_type prim_type, vertex_layout* layout, int n_verts, void* data, int size)
+{
+	(*gr_screen.gf_render_primitives_2d_immediate)(material_info, prim_type, layout, n_verts, data, size);
+}
+
+__inline void gr_render_model(model_material* material_info, indexed_vertex_source *vert_source, vertex_buffer* bufferp, int texi)
+{
+	(*gr_screen.gf_render_model)(material_info, vert_source, bufferp, texi);
+}
+
+__inline bool gr_is_capable(gr_capability capability)
+{
+	return (*gr_screen.gf_is_capable)(capability);
+}
 
 // color functions
 void gr_get_color( int *r, int *g, int  b );
@@ -1005,61 +1300,6 @@ void gr_pline_special(SCP_vector<vec3d> *pts, int thickness,int resize_mode=GR_R
 #define VB_FLAG_LARGE_INDEX	(1<<10)
 #define VB_FLAG_MODEL_ID	(1<<11)
 #define VB_FLAG_TRANS		(1<<12)
-
-struct vertex_format_data
-{
-	enum vertex_format {
-		POSITION4,
-		POSITION3,
-		POSITION2,
-		SCREEN_POS,
-		COLOR3,
-		COLOR4,
-		TEX_COORD,
-		NORMAL,
-		TANGENT,
-		MODEL_ID,
-		RADIUS,
-		FVEC,
-		UVEC,
-		INTENSITY
-	};
-
-	vertex_format format_type;
-	size_t stride;
-	void *data_src;
-
-	vertex_format_data(vertex_format i_format_type, size_t i_stride, void *i_data_src) :
-	format_type(i_format_type), stride(i_stride), data_src(i_data_src) {}
-};
-
-class vertex_layout
-{
-	SCP_vector<vertex_format_data> Vertex_components;
-
-	uint Vertex_mask;
-public:
-	vertex_layout(): Vertex_mask(0) {}
-
-	size_t get_num_vertex_components() { return Vertex_components.size(); }
-
-	vertex_format_data* get_vertex_component(size_t index) { return &Vertex_components[index]; }
-
-	bool resident_vertex_format(vertex_format_data::vertex_format format_type) { return Vertex_mask & (1 << format_type) ? true : false; } 
-
-	void add_vertex_component(vertex_format_data::vertex_format format_type, size_t stride, void* src) 
-	{
-		if ( resident_vertex_format(format_type) ) {
-			// we already have a vertex component of this format type
-			return;
-		}
-
-		Vertex_mask |= (1 << format_type);
-		Vertex_components.push_back(vertex_format_data(format_type, stride, src));
-	}
-};
-
-
 
 /**
 * @brief Prints the current time

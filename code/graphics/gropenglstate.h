@@ -14,10 +14,13 @@
 #include "globalincs/pstypes.h"
 #include "graphics/gropengl.h"
 #include "graphics/gropengltexture.h"
+#include "graphics/gropenglshader.h"
+#include "graphics/material.h"
 
 #include <glad/glad.h>
 
 #define MAX_UNIFORM_BUFFERS 6
+#define MAX_UNIFORM_LOCATIONS 256
 
 struct opengl_texture_unit {
 	GLboolean active;	// unit is active
@@ -97,33 +100,22 @@ class opengl_texture_state
 
 inline void opengl_texture_state::SetRGBScale(GLfloat scale)
 {
-	Assert( ((scale == 1.0f) || (scale == 2.0f) || (scale == 4.0f)) );
-	glTexEnvf(GL_TEXTURE_ENV, GL_RGB_SCALE, scale);
+
 }
 
 inline void opengl_texture_state::SetAlphaScale(GLfloat scale)
 {
-	Assert( ((scale == 1.0f) || (scale == 2.0f) || (scale == 4.0f)) );
-	glTexEnvf(GL_TEXTURE_ENV, GL_ALPHA_SCALE, scale);
+
 }
 
 inline void opengl_texture_state::SetEnvMode(GLenum mode)
 {
-	if (mode != units[active_texture_unit].env_mode) {
-		glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, mode);
-		units[active_texture_unit].env_mode = mode;
-	}
+
 }
 
 inline void opengl_texture_state::SetEnvCombineMode(GLenum cmode, GLenum cfunc)
 {
-	SetEnvMode(GL_COMBINE);
 
-	if (cmode == GL_COMBINE_RGB) {
-		glTexEnvi(GL_TEXTURE_ENV, GL_COMBINE_RGB, cfunc);
-	} else if (cmode == GL_COMBINE_ALPHA) {
-		glTexEnvi(GL_TEXTURE_ENV, GL_COMBINE_ALPHA, cfunc);
-	}
 }
 
 inline void opengl_texture_state::SetWrapS(GLenum mode)
@@ -143,22 +135,18 @@ inline void opengl_texture_state::SetWrapR(GLenum mode)
 
 inline void opengl_texture_state::SetTexgenModeS(GLenum mode)
 {
-	glTexGeni(GL_S, GL_TEXTURE_GEN_MODE, mode);
 }
 
 inline void opengl_texture_state::SetTexgenModeT(GLenum mode)
 {
-	glTexGeni(GL_T, GL_TEXTURE_GEN_MODE, mode);
 }
 
 inline void opengl_texture_state::SetTexgenModeR(GLenum mode)
 {
-	glTexGeni(GL_R, GL_TEXTURE_GEN_MODE, mode);
 }
 
 inline void opengl_texture_state::SetTexgenModeQ(GLenum mode)
 {
-	glTexGeni(GL_Q, GL_TEXTURE_GEN_MODE, mode);
 }
 
 inline GLenum opengl_texture_state::GetTarget()
@@ -245,6 +233,8 @@ class opengl_array_state
 		GLuint uniform_buffer;
 
 		GLuint uniform_buffer_index_bindings[MAX_UNIFORM_BUFFERS];
+
+		GLuint vertex_array_object;
 	public:
 		opengl_array_state(): active_client_texture_unit(0), client_texture_units(NULL) {
 			for ( int i = 0; i < MAX_UNIFORM_BUFFERS; ++i ) {
@@ -275,6 +265,7 @@ class opengl_array_state
 		void EnableVertexAttrib(GLuint index);
 		void DisableVertexAttrib(GLuint index);
 		void VertexAttribPointer(GLuint index, GLint size, GLenum type, GLboolean normalized, GLsizei stride, GLvoid *pointer);
+		void ResetVertexAttribs();
 
 		void BindPointersBegin();
 		void BindPointersEnd();
@@ -324,6 +315,7 @@ public:
 	opengl_uniform_state();
 
 	void setUniformi(const SCP_string &name, const int value);
+	void setUniform1iv(const SCP_string &name, const int count, const int *val);
 	void setUniformf(const SCP_string &name, const float value);
 	void setUniform2f(const SCP_string &name, const float x, const float y);
 	void setUniform2f(const SCP_string &name, const vec2d &val);
@@ -331,10 +323,49 @@ public:
 	void setUniform3f(const SCP_string &name, const vec3d &value);
 	void setUniform4f(const SCP_string &name, const float x, const float y, const float z, const float w);
 	void setUniform4f(const SCP_string &name, const vec4 &val);
+	void setUniform1fv(const SCP_string &name, const int count, const float *val);
+	void setUniform3fv(const SCP_string &name, const int count, const vec3d *val);
+	void setUniform4fv(const SCP_string &name, const int count, const vec4 *val);
 	void setUniformMatrix4fv(const SCP_string &name, const int count, const matrix4 *value);
 	void setUniformMatrix4f(const SCP_string &name, const matrix4 &val);
 
 	void reset();
+};
+
+class opengl_light_state
+{
+	int Light_num;
+	bool Enabled;
+	
+	GLfloat Position[4];
+	bool InvalidPosition;
+
+	GLfloat Ambient[4];
+	GLfloat Diffuse[4];
+	GLfloat Specular[4];
+
+	GLfloat ConstantAttenuation;
+	GLfloat LinearAttenuation;
+	GLfloat QuadraticAttenuation;
+
+	GLfloat SpotExponent;
+	GLfloat SpotCutoff;
+
+public:
+	opengl_light_state(int light_num);
+
+	void Enable();
+	void Disable();
+	void Invalidate();
+	void SetPosition(GLfloat *val);
+	void SetAmbient(GLfloat *val);
+	void SetDiffuse(GLfloat *val);
+	void SetSpecular(GLfloat *val);
+	void SetConstantAttenuation(GLfloat val);
+	void SetLinearAttenuation(GLfloat val);
+	void SetQuadraticAttenuation(GLfloat val);
+	void SetSpotExponent(GLfloat val);
+	void SetSpotCutoff(GLfloat val);
 };
 
 class opengl_state
@@ -374,6 +405,8 @@ class opengl_state
 		GLfloat polygon_offset_Factor;
 		GLfloat polygon_offset_Unit;
 
+		GLfloat line_width_Value;
+
 		gr_alpha_blend Current_alpha_blend_mode;
 		gr_zbuffer_type Current_zbuffer_type;
         gr_stencil_type Current_stencil_type;
@@ -393,6 +426,7 @@ class opengl_state
         void SetStencilType(gr_stencil_type st);
 		void SetPolygonOffset(GLfloat factor, GLfloat units);
 		void SetPolygonMode(GLenum face, GLenum mode);
+		void SetLineWidth(GLfloat width);
 
 		// the GLboolean functions will return the current state if no argument
 		// and the previous state if an argument is passed
@@ -484,13 +518,12 @@ inline GLenum opengl_state::DepthFunc(GLenum new_val)
 
 inline void opengl_state::AlphaFunc(GLenum f_val, GLclampf r_val)
 {
-	glAlphaFunc(f_val, r_val);
 }
 
 inline void opengl_state::Color(GLubyte red, GLubyte green, GLubyte blue, GLubyte alpha)
 {
 	if ( color_invalid || (red != red_Status) || (green != green_Status) || (blue != blue_Status) || (alpha != alpha_Status) ) {
-		glColor4ub(red, green, blue, alpha);
+
 		red_Status = red;
 		green_Status = green;
 		blue_Status = blue;

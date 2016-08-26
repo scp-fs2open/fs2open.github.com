@@ -177,14 +177,23 @@ void shadows_debug_show_frustum(matrix* orient, vec3d *pos, float fov, float asp
 	vm_vec_add2(&far_bottom_left, pos);
 
 	gr_set_color(0, 255, 255);
-	g3_draw_htl_line(&near_bottom_left, &near_bottom_right);
-	g3_draw_htl_line(&near_bottom_right, &near_top_right);
-	g3_draw_htl_line(&near_bottom_right, &near_top_left);
-	g3_draw_htl_line(&near_top_right, &near_top_left);
-	g3_draw_htl_line(&far_top_left, &far_top_right);
-	g3_draw_htl_line(&far_top_right, &far_bottom_right);
-	g3_draw_htl_line(&far_bottom_right, &far_bottom_left);
-	g3_draw_htl_line(&far_bottom_left, &far_top_left);
+// 	g3_draw_htl_line(&near_bottom_left, &near_bottom_right);
+// 	g3_draw_htl_line(&near_bottom_right, &near_top_right);
+// 	g3_draw_htl_line(&near_bottom_right, &near_top_left);
+// 	g3_draw_htl_line(&near_top_right, &near_top_left);
+// 	g3_draw_htl_line(&far_top_left, &far_top_right);
+// 	g3_draw_htl_line(&far_top_right, &far_bottom_right);
+// 	g3_draw_htl_line(&far_bottom_right, &far_bottom_left);
+// 	g3_draw_htl_line(&far_bottom_left, &far_top_left);
+
+	g3_render_line_3d(true, &near_bottom_left, &near_bottom_right);
+ 	g3_render_line_3d(true, &near_bottom_right, &near_top_right);
+ 	g3_render_line_3d(true, &near_bottom_right, &near_top_left);
+ 	g3_render_line_3d(true, &near_top_right, &near_top_left);
+ 	g3_render_line_3d(true, &far_top_left, &far_top_right);
+ 	g3_render_line_3d(true, &far_top_right, &far_bottom_right);
+ 	g3_render_line_3d(true, &far_bottom_right, &far_bottom_left);
+ 	g3_render_line_3d(true, &far_bottom_left, &far_top_left);
 }
 
 void shadows_construct_light_frustum(light_frustum_info *shadow_data, matrix *light_matrix, matrix *orient, vec3d *pos, float fov, float aspect, float z_near, float z_far)
@@ -467,7 +476,7 @@ void shadows_render_all(float fov, matrix *eye_orient, vec3d *eye_pos)
 	}
 
 	scene.init_render();
-	scene.render_all(GR_ZBUFF_FULL);
+	scene.render_all(ZBUFFER_TYPE_FULL);
 
 	shadows_end_render();
 

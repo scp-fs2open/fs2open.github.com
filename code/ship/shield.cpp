@@ -15,12 +15,12 @@
 //		3		Shrink-wrapped texture.  Lasts half-time.
 //		4		Shrink-wrapped texture.  Lasts full-time.
 
+#include "render/3d.h"
+#include "model/model.h"
 #include "freespace.h"
 #include "mission/missionparse.h"
-#include "model/model.h"
 #include "network/multi.h"
 #include "object/objectshield.h"
-#include "render/3d.h"
 #include "ship/ship.h"
 #include "species_defs/species_defs.h"
 
@@ -251,7 +251,7 @@ void free_global_tri_records(int shnum)
 	}
 }
 
-void render_low_detail_shield_bitmap(gshield_tri *trip, matrix *orient, vec3d *pos, ubyte r, ubyte g, ubyte b)
+void shield_render_low_detail_bitmap(int texture, float alpha, gshield_tri *trip, matrix *orient, vec3d *pos, ubyte r, ubyte g, ubyte b)
 {
 	int		j;
 	vec3d	pnt;
@@ -285,26 +285,41 @@ void render_low_detail_shield_bitmap(gshield_tri *trip, matrix *orient, vec3d *p
 
 	vec3d	norm;
 	vm_vec_perp(&norm, &trip->verts[0].pos, &trip->verts[1].pos, &trip->verts[2].pos);
-	vertex	*vertlist[4];
+	//vertex	*vertlist[4];
+	vertex	vertlist[4];
 	if ( vm_vec_dot(&norm, &trip->verts[1].pos ) < 0.0 )	{
-		vertlist[0] = &verts[3]; 
-		vertlist[1] = &verts[2];
-		vertlist[2] = &verts[1]; 
-		vertlist[3] = &verts[0]; 
-		g3_draw_poly( 4, vertlist, TMAP_FLAG_TEXTURED | TMAP_FLAG_RGB | TMAP_FLAG_GOURAUD | TMAP_HTL_3D_UNLIT);
+		vertlist[0] = verts[3]; 
+		vertlist[1] = verts[2];
+		vertlist[2] = verts[1]; 
+		vertlist[3] = verts[0];
+		//vertlist[0] = &verts[3]; 
+		//vertlist[1] = &verts[2];
+		//vertlist[2] = &verts[1]; 
+		//vertlist[3] = &verts[0]; 
+		//g3_draw_poly( 4, vertlist, TMAP_FLAG_TEXTURED | TMAP_FLAG_RGB | TMAP_FLAG_GOURAUD | TMAP_HTL_3D_UNLIT);
 	} else {
-		vertlist[0] = &verts[0]; 
-		vertlist[1] = &verts[1];
-		vertlist[2] = &verts[2]; 
-		vertlist[3] = &verts[3]; 
-		g3_draw_poly( 4, vertlist, TMAP_FLAG_TEXTURED | TMAP_FLAG_RGB | TMAP_FLAG_GOURAUD | TMAP_HTL_3D_UNLIT);
+		vertlist[0] = verts[0]; 
+		vertlist[1] = verts[1];
+		vertlist[2] = verts[2]; 
+		vertlist[3] = verts[3]; 
+		//vertlist[0] = &verts[0]; 
+		//vertlist[1] = &verts[1];
+		//vertlist[2] = &verts[2]; 
+		//vertlist[3] = &verts[3]; 
+		//g3_draw_poly( 4, vertlist, TMAP_FLAG_TEXTURED | TMAP_FLAG_RGB | TMAP_FLAG_GOURAUD | TMAP_HTL_3D_UNLIT);
 	}
+
+	material material_params;
+	material_set_unlit_emissive(&material_params, texture, alpha, 2.0f);
+	g3_render_primitives_colored_textured(&material_params, vertlist, 4, PRIM_TYPE_TRIFAN, false);
 }
 
 /**
  * Render one triangle of a shield hit effect on one ship.
  * Each frame, the triangle needs to be rotated into global coords.
  *
+ * @param texture	handle to desired bitmap to render with
+ * @param alpha		alpha value for color blending
  * @param trip		pointer to triangle in global array
  * @param orient	orientation of object shield is associated with
  * @param pos		center point of object
@@ -312,12 +327,11 @@ void render_low_detail_shield_bitmap(gshield_tri *trip, matrix *orient, vec3d *p
  * @param g			Green colour
  * @param b			Blue colour
  */
-void render_shield_triangle(gshield_tri *trip, matrix *orient, vec3d *pos, ubyte r, ubyte g, ubyte b)
+void shield_render_triangle(int texture, float alpha, gshield_tri *trip, matrix *orient, vec3d *pos, ubyte r, ubyte g, ubyte b)
 {
 	int		j;
 	vec3d	pnt;
-	vertex	*verts[3];
-	vertex	points[3];
+	vertex	verts[3];
     
     memset(&verts, 0, sizeof(verts));
 
@@ -332,39 +346,41 @@ void render_shield_triangle(gshield_tri *trip, matrix *orient, vec3d *pos, ubyte
 		// Pnt is now the x,y,z world coordinates of this vert.
 		// For this example, I am just drawing a sphere at that point.
 
-	 	g3_transfer_vertex(&points[j],&pnt);
+	 	g3_transfer_vertex(&verts[j],&pnt);
 			
-		points[j].texture_position.u = trip->verts[j].u;
-		points[j].texture_position.v = trip->verts[j].v;
+		verts[j].texture_position.u = trip->verts[j].u;
+		verts[j].texture_position.v = trip->verts[j].v;
 		Assert((trip->verts[j].u >= 0.0f) && (trip->verts[j].u <= UV_MAX));
 		Assert((trip->verts[j].v >= 0.0f) && (trip->verts[j].v <= UV_MAX));
-		verts[j] = &points[j];
 	}
 
-	verts[0]->r = r;
-	verts[0]->g = g;
-	verts[0]->b = b;
-	verts[1]->r = r;
-	verts[1]->g = g;
-	verts[1]->b = b;
-	verts[2]->r = r;
-	verts[2]->g = g;
-	verts[2]->b = b;
+	verts[0].r = r;
+	verts[0].g = g;
+	verts[0].b = b;
+	verts[1].r = r;
+	verts[1].g = g;
+	verts[1].b = b;
+	verts[2].r = r;
+	verts[2].g = g;
+	verts[2].b = b;
 
 	vec3d	norm;
 	Poly_count++;
-	vm_vec_perp(&norm,&verts[0]->world,&verts[1]->world,&verts[2]->world);
+	vm_vec_perp(&norm, &verts[0].world, &verts[1].world, &verts[2].world);
 
-	int flags = TMAP_FLAG_TEXTURED | TMAP_FLAG_RGB | TMAP_FLAG_GOURAUD | TMAP_HTL_3D_UNLIT | TMAP_FLAG_EMISSIVE;
+	material material_params;
+	material_set_unlit(&material_params, texture, alpha, true, true);
+	material_params.set_color_scale(2.0f);
 
-	if ( vm_vec_dot(&norm,&verts[1]->world ) >= 0.0 )	{
-		vertex	*vertlist[3];
+	if ( vm_vec_dot(&norm, &verts[1].world) >= 0.0 ) {
+		vertex	vertlist[3];
 		vertlist[0] = verts[2]; 
 		vertlist[1] = verts[1]; 
-		vertlist[2] = verts[0]; 
-		g3_draw_poly( 3, vertlist, flags);
+		vertlist[2] = verts[0];
+
+		g3_render_primitives_colored_textured(&material_params, vertlist, 3, PRIM_TYPE_TRIFAN, false);
 	} else {
-		g3_draw_poly( 3, verts, flags);
+		g3_render_primitives_colored_textured(&material_params, verts, 3, PRIM_TYPE_TRIFAN, false);
 	}
 }
 
@@ -450,16 +466,18 @@ void render_shield(int shield_num)
 			alpha *= 0.85f;
 		}
 
-		gr_set_bitmap(bitmap_id, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, alpha );
+		//gr_set_bitmap(bitmap_id, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, alpha );
 
 		if ( (Detail.shield_effects == 1) || (Detail.shield_effects == 2) ) {
 			if ( bitmap_id != - 1 ) {
-				render_low_detail_shield_bitmap(&Global_tris[Shield_hits[shield_num].tri_list[0]], orient, centerp, Shield_hits[shield_num].rgb[0], Shield_hits[shield_num].rgb[1], Shield_hits[shield_num].rgb[2]);
+				//render_low_detail_shield_bitmap(&Global_tris[Shield_hits[shield_num].tri_list[0]], orient, centerp, Shield_hits[shield_num].rgb[0], Shield_hits[shield_num].rgb[1], Shield_hits[shield_num].rgb[2]);
+				shield_render_low_detail_bitmap(bitmap_id, alpha, &Global_tris[Shield_hits[shield_num].tri_list[0]], orient, centerp, Shield_hits[shield_num].rgb[0], Shield_hits[shield_num].rgb[1], Shield_hits[shield_num].rgb[2]);
 			}
 		} else {
 			if ( bitmap_id != - 1 ) {
 				for (i=0; i<Shield_hits[shield_num].num_tris; i++) {
-					render_shield_triangle(&Global_tris[Shield_hits[shield_num].tri_list[i]], orient, centerp, Shield_hits[shield_num].rgb[0], Shield_hits[shield_num].rgb[1], Shield_hits[shield_num].rgb[2]);
+					shield_render_triangle(bitmap_id, alpha, &Global_tris[Shield_hits[shield_num].tri_list[i]], orient, centerp, Shield_hits[shield_num].rgb[0], Shield_hits[shield_num].rgb[1], Shield_hits[shield_num].rgb[2]);
+					//render_shield_triangle(&Global_tris[Shield_hits[shield_num].tri_list[i]], orient, centerp, Shield_hits[shield_num].rgb[0], Shield_hits[shield_num].rgb[1], Shield_hits[shield_num].rgb[2]);
 				}
 			}
 		}
@@ -932,10 +950,12 @@ void ship_draw_shield( object *objp)
 				// point.
 				g3_rotate_vertex(&tmp, &pnt);
 
-				if (j)
+				if (j) {
 					g3_draw_line(&prev_pnt, &tmp);
-				else
+				} else {
 					pnt0 = tmp;
+				}
+
 				prev_pnt = tmp;
 			}
 

@@ -1,7 +1,14 @@
+in vec4 vertPosition;
+in vec4 vertTexCoord;
+in vec4 vertColor;
+out vec4 fragTexCoord;
+out vec4 fragColor;
+uniform mat4 modelViewMatrix;
+uniform mat4 projMatrix;
+uniform vec4 color;
 void main()
 {
-	gl_TexCoord[0] = gl_MultiTexCoord0;
-	gl_Position = gl_ProjectionMatrix * gl_ModelViewMatrix * gl_Vertex;
-	gl_FrontColor = gl_Color;
-	gl_FrontSecondaryColor = vec4(0.0, 0.0, 0.0, 1.0);
+	fragTexCoord = vertTexCoord;
+	fragColor = vertColor * color;
+	gl_Position = projMatrix * modelViewMatrix * vertPosition;
 }

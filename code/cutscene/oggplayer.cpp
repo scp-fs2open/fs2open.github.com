@@ -20,6 +20,7 @@
 #include "graphics/gropenglshader.h"
 #include "graphics/gropenglstate.h"
 #include "graphics/gropengltexture.h"
+#include "graphics/gropengltnl.h"
 #include "io/key.h"
 #include "io/timer.h"
 #include "osapi/osapi.h"
@@ -50,6 +51,7 @@ static GLint gl_screenXW = 0;
 static GLfloat gl_screenU = 0;
 static GLfloat gl_screenV = 0;
 static GLfloat glVertices[4][4] = {{0}};
+static int buffer_handle = -1;
 
 static int timer_started = 0;
 static longlong base_time = -1;
@@ -335,9 +337,10 @@ static void OGG_video_init(theora_info *tinfo)
 	g_screenWidth = tinfo->frame_width;
 	g_screenHeight = tinfo->frame_height;
 
-
 	if (gr_screen.mode == GR_OPENGL) {
 		opengl_set_texture_target(GL_TEXTURE_2D);
+
+		buffer_handle = gr_create_vertex_buffer(true);
 
 		if(!is_minimum_GLSL_version())
 			use_shaders = false;
@@ -405,7 +408,7 @@ static void OGG_video_init(theora_info *tinfo)
 			glTexParameteri(GL_texture_target, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
 			// NOTE: using NULL instead of pixelbuf crashes some drivers, but then so does pixelbuf
-			glTexImage2D(GL_state.Texture.GetTarget(), 0, GL_LUMINANCE8, 2048, 2048, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, NULL);
+			glTexImage2D(GL_state.Texture.GetTarget(), 0, GL_RED, 2048, 2048, 0, GL_RED, GL_UNSIGNED_BYTE, NULL);
 
 			GL_state.Texture.SetActiveUnit(1);
 			GL_state.Texture.SetTarget(GL_texture_target);
@@ -416,7 +419,7 @@ static void OGG_video_init(theora_info *tinfo)
 			glTexParameteri(GL_texture_target, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
 			// NOTE: using NULL instead of pixelbuf crashes some drivers, but then so does pixelbuf
-			glTexImage2D(GL_state.Texture.GetTarget(), 0, GL_LUMINANCE8, 1024, 1024, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, NULL);
+			glTexImage2D(GL_state.Texture.GetTarget(), 0, GL_RED, 1024, 1024, 0, GL_RED, GL_UNSIGNED_BYTE, NULL);
 
 			GL_state.Texture.SetActiveUnit(2);
 			GL_state.Texture.SetTarget(GL_texture_target);
@@ -427,7 +430,7 @@ static void OGG_video_init(theora_info *tinfo)
 			glTexParameteri(GL_texture_target, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
 			// NOTE: using NULL instead of pixelbuf crashes some drivers, but then so does pixelbuf
-			glTexImage2D(GL_state.Texture.GetTarget(), 0, GL_LUMINANCE8, 1024, 1024, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, NULL);
+			glTexImage2D(GL_state.Texture.GetTarget(), 0, GL_RED, 1024, 1024, 0, GL_RED, GL_UNSIGNED_BYTE, NULL);
 		}
 		float screen_ratio = (float)gr_screen.center_w / (float)gr_screen.center_h;
 		float movie_ratio = (float)g_screenWidth / (float)g_screenHeight;
@@ -439,16 +442,20 @@ static void OGG_video_init(theora_info *tinfo)
 
 		// don't bother setting anything if we aren't going to need it
 		if (!Cmdline_noscalevid && (scale_by != 1.0f)) {
-			glMatrixMode(GL_MODELVIEW);
-			glPushMatrix();
-			glLoadIdentity();
+			vec3d scale;
+			
+			scale.xyz.x = scale_by;
+			scale.xyz.y = scale_by;
+			scale.xyz.z = -1.0f;
 
-			glScalef( scale_by, scale_by, -1.0f );
+			gr_push_scale_matrix(&scale);
 			scale_video = 1;
 		}
 
 		// set our color so that we can make sure that it's correct
-		GL_state.Color(255, 255, 255, 255);
+		if ( !is_minimum_GLSL_version() ) {
+			GL_state.Color(255, 255, 255, 255);
+		}
 	}
 
 	if(!use_shaders) {
@@ -487,6 +494,9 @@ static void OGG_video_init(theora_info *tinfo)
 			GL_state.Uniform.setUniformi("ytex", 0);
 			GL_state.Uniform.setUniformi("utex", 1);
 			GL_state.Uniform.setUniformi("vtex", 2);
+
+			GL_state.Uniform.setUniformMatrix4f("projMatrix", GL_projection_matrix);
+			GL_state.Uniform.setUniformMatrix4f("modelViewMatrix", GL_model_view_matrix);
 		}
 
 		glVertices[0][0] = (GLfloat)g_screenX;
@@ -509,13 +519,14 @@ static void OGG_video_init(theora_info *tinfo)
 		glVertices[3][2] = gl_screenU;
 		glVertices[3][3] = gl_screenV;
 
-		GL_state.Array.BindArrayBuffer(0);
-
 		vertex_layout vert_def;
 
-		vert_def.add_vertex_component(vertex_format_data::POSITION2, sizeof(glVertices[0]), glVertices);
-		vert_def.add_vertex_component(vertex_format_data::TEX_COORD, sizeof(glVertices[0]), &(glVertices[0][2]));
+		vert_def.add_vertex_component(vertex_format_data::POSITION2, sizeof(glVertices[0]), 0);
+		vert_def.add_vertex_component(vertex_format_data::TEX_COORD, sizeof(glVertices[0]), sizeof(GLfloat) * 2);
 
+		gr_update_buffer_data(buffer_handle, sizeof(glVertices[0]) * 4, glVertices);
+
+		opengl_bind_buffer_object(buffer_handle);
 		opengl_bind_vertex_layout(vert_def);
 	}
 	if(!use_shaders && tinfo->frame_height > 450) {
@@ -532,9 +543,11 @@ static void OGG_video_close()
 
 	if (gr_screen.mode == GR_OPENGL) {
 		if (scale_video) {
-			glMatrixMode(GL_MODELVIEW);
-			glPopMatrix();
+			gr_pop_scale_matrix();
 		}
+
+		gr_delete_buffer(buffer_handle);
+		buffer_handle = -1;
 
 		GL_state.Texture.Disable();
 		if(use_shaders) {
@@ -654,11 +667,11 @@ static void OGG_video_draw(theora_state *tstate)
 		glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 		if(use_shaders) {
 			GL_state.Texture.SetActiveUnit(0);
-			glTexSubImage2D(GL_state.Texture.GetTarget(), 0, 0, 0, yuv.y_stride, yuv.y_height, GL_LUMINANCE, GL_UNSIGNED_BYTE, yuv.y);
+			glTexSubImage2D(GL_state.Texture.GetTarget(), 0, 0, 0, yuv.y_stride, yuv.y_height, GL_RED, GL_UNSIGNED_BYTE, yuv.y);
 			GL_state.Texture.SetActiveUnit(1);
-			glTexSubImage2D(GL_state.Texture.GetTarget(), 0, 0, 0, yuv.uv_stride, yuv.uv_height, GL_LUMINANCE, GL_UNSIGNED_BYTE, yuv.u);
+			glTexSubImage2D(GL_state.Texture.GetTarget(), 0, 0, 0, yuv.uv_stride, yuv.uv_height, GL_RED, GL_UNSIGNED_BYTE, yuv.u);
 			GL_state.Texture.SetActiveUnit(2);
-			glTexSubImage2D(GL_state.Texture.GetTarget(), 0, 0, 0, yuv.uv_stride, yuv.uv_height, GL_LUMINANCE, GL_UNSIGNED_BYTE, yuv.v);
+			glTexSubImage2D(GL_state.Texture.GetTarget(), 0, 0, 0, yuv.uv_stride, yuv.uv_height, GL_RED, GL_UNSIGNED_BYTE, yuv.v);
 		} else {
 			glTexSubImage2D(GL_state.Texture.GetTarget(), 0, 0, 0, g_screenWidth, g_screenHeight, GL_BGR, GL_UNSIGNED_BYTE, pixelbuf);
 		}

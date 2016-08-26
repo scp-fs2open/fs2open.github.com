@@ -1,43 +1,53 @@
-#ifdef APPLE
- #extension GL_ARB_draw_instanced : enable
-#else
- #ifdef __GLSL_CG_DATA_TYPES
-  #extension GL_EXT_draw_instanced : enable
- #else
-  #extension GL_ARB_draw_instanced : enable
- #endif
+in vec4 vertPosition;
+in vec4 vertTexCoord;
+in vec3 vertNormal;
+in vec4 vertTangent;
+in float vertModelID;
+uniform mat4 modelViewMatrix;
+uniform mat4 modelMatrix;
+uniform mat4 viewMatrix;
+uniform mat4 projMatrix;
+uniform mat4 textureMatrix;
+uniform vec4 color;
+#ifdef FLAG_NORMAL_EXTRUDE
+uniform float extrudeWidth;
 #endif
 #ifdef FLAG_ENV_MAP
 uniform mat4 envMatrix;
-varying vec3 envReflect;
+out vec3 fragEnvReflect;
 #endif
 #ifdef FLAG_NORMAL_MAP
-varying mat3 tbnMatrix;
+out mat3 fragTangentMatrix;
 #endif
 #ifdef FLAG_FOG
-varying float fogDist;
+uniform float fogStart;
+uniform float fogScale;
+out float fragFogDist;
 #endif
 #ifdef FLAG_TRANSFORM
-#extension GL_ARB_texture_buffer_object : enable
-attribute float model_id;
 uniform samplerBuffer transform_tex;
 uniform int buffer_matrix_offset;
 #ifdef FLAG_SHADOW_MAP
-varying float not_visible_g;
+out float geoNotVisible;
 #else
-varying float not_visible;
+out float fragNotVisible;
 #endif
 #endif
 #ifdef FLAG_SHADOW_MAP
-varying float Instance;
+out float geoInstance;
 uniform mat4 shadow_proj_matrix[4];
+out vec3 geoNormal;
+out vec4 geoTexCoord;
+#else
+out vec4 fragPosition;
+out vec3 fragNormal;
+out vec4 fragTexCoord;
 #endif
 #ifdef FLAG_SHADOWS
 uniform mat4 shadow_mv_matrix;
 uniform mat4 shadow_proj_matrix[4];
-uniform mat4 model_matrix;
-varying vec4 shadow_vec[4];
-varying vec4 pos_shadow;
+out vec4 fragShadowUV[4];
+out vec4 fragShadowPos;
 #endif
 #ifdef FLAG_THRUSTER
 uniform float thruster_scale;
@@ -46,16 +56,12 @@ uniform float thruster_scale;
 uniform int use_clip_plane;
 uniform vec3 clip_normal;
 uniform vec3 clip_position;
-//uniform vec4 clip_plane;
-uniform mat4 world_matrix;
 #ifdef FLAG_SHADOW_MAP
-varying float clip_distance_g;
+out float geoClipDistance;
 #else
-varying float clip_distance;
+out float fragClipDistance;
 #endif
 #endif
-varying vec4 position;
-varying vec3 lNormal;
 #ifdef FLAG_TRANSFORM
 #define TEXELS_PER_MATRIX 4
 void getModelTransform(inout mat4 transform, inout float invisible, int id, int matrix_offset)
@@ -82,68 +88,79 @@ vec4 transformToShadowMap(int i, vec4 pos)
 #endif
 void main()
 {
+	vec4 position;
+	vec3 normal;
+	vec4 texCoord;
 	mat4 orient = mat4(1.0);
 	mat4 scale = mat4(1.0);
  #ifdef FLAG_TRANSFORM
-	float invisible;	getModelTransform(orient, invisible, int(model_id), buffer_matrix_offset);
+	float invisible;
+	getModelTransform(orient, invisible, int(vertModelID), buffer_matrix_offset);
   #ifdef FLAG_SHADOW_MAP
-	not_visible_g = invisible;
+	geoNotVisible = invisible;
   #else
-	not_visible = invisible;
+	fragNotVisible = invisible;
   #endif
  #endif
-	gl_TexCoord[0] = gl_TextureMatrix[0] * gl_MultiTexCoord0;
-	vec4 vertex = gl_Vertex;
+	texCoord = textureMatrix * vertTexCoord;
+	vec4 vertex = vertPosition;
  #ifdef FLAG_THRUSTER
 	if(vertex.z < -1.5) {
 		vertex.z *= thruster_scale;
 	}
  #endif
-	position = gl_ModelViewMatrix * orient * vertex;
+ // Transform the normal into eye space and normalize the result.
+	normal = normalize(mat3(modelViewMatrix) * mat3(orient) * vertNormal);
+	position = modelViewMatrix * orient * vertex;
  #ifdef FLAG_SHADOW_MAP
 	gl_Position = position;
   #ifdef APPLE
-	 Instance = float(gl_InstanceIDARB);
+	 geoInstance = float(gl_InstanceIDARB);
   #else
-	 Instance = float(gl_InstanceID);
+	 geoInstance = float(gl_InstanceID);
   #endif
  #else
-	gl_Position = gl_ProjectionMatrix * position;
+	gl_Position = projMatrix * position;
  #endif
-	gl_FrontColor = gl_Color;
-	gl_FrontSecondaryColor = vec4(0.0, 0.0, 0.0, 1.0);
- // Transform the normal into eye space and normalize the result.
-	vec3 normal = normalize(gl_NormalMatrix * mat3(orient) * gl_Normal);
-	lNormal = normal;
+ #ifdef FLAG_NORMAL_EXTRUDE
+	gl_Position.xy += (mat3(projMatrix) * normal.xyz).xy * gl_Position.z * extrudeWidth;
+ #endif
  #ifdef FLAG_SHADOWS
-		pos_shadow = shadow_mv_matrix * model_matrix * orient * gl_Vertex;
-		shadow_vec[0] = transformToShadowMap(0, pos_shadow);
-		shadow_vec[1] = transformToShadowMap(1, pos_shadow);
-		shadow_vec[2] = transformToShadowMap(2, pos_shadow);
-		shadow_vec[3] = transformToShadowMap(3, pos_shadow);
+	fragShadowPos = shadow_mv_matrix * modelMatrix * orient * vertPosition;
+	fragShadowUV[0] = transformToShadowMap(0, fragShadowPos);
+	fragShadowUV[1] = transformToShadowMap(1, fragShadowPos);
+	fragShadowUV[2] = transformToShadowMap(2, fragShadowPos);
+	fragShadowUV[3] = transformToShadowMap(3, fragShadowPos);
  #endif
  #ifdef FLAG_NORMAL_MAP
  // Setup stuff for normal maps
-	vec3 t = normalize(gl_NormalMatrix * mat3(orient) * gl_MultiTexCoord1.xyz);
-	vec3 b = cross(normal, t) * gl_MultiTexCoord1.w;
-	tbnMatrix = mat3(t, b, normal);
+	vec3 t = normalize(mat3(modelViewMatrix) * mat3(orient) * vertTangent.xyz);
+	vec3 b = cross(normal, t) * vertTangent.w;
+	fragTangentMatrix = mat3(t, b, normal);
  #endif
  #ifdef FLAG_ENV_MAP
  // Environment mapping reflection vector.
-	envReflect = reflect(normalize(position.xyz), normal);
-	envReflect = vec3(envMatrix * vec4(envReflect, 0.0));
+	fragEnvReflect = reflect(normalize(position.xyz), normal);
+	fragEnvReflect = vec3(envMatrix * vec4(fragEnvReflect, 0.0));
  #endif
  #ifdef FLAG_FOG
-	fogDist = clamp((gl_Position.z - gl_Fog.start) * 0.75 * gl_Fog.scale, 0.0, 1.0);
+	fragFogDist = clamp((gl_Position.z - fogStart) * 0.75 * fogScale, 0.0, 1.0);
  #endif
  #ifdef FLAG_CLIP
    float clip_dist = 0.0;
-	if(use_clip_plane == 1) clip_dist = dot(normalize((world_matrix*orient*vertex).xyz - clip_position), clip_normal);
+	if(use_clip_plane == 1) clip_dist = dot(normalize((modelMatrix * orient * vertex).xyz - clip_position), clip_normal);
   #ifdef FLAG_SHADOW_MAP
-   clip_distance_g = clip_dist;
+   geoClipDistance = clip_dist;
   #else
-   clip_distance = clip_dist;
+   fragClipDistance = clip_dist;
   #endif
  #endif
-	gl_ClipVertex = (gl_ModelViewMatrix * orient * vertex);
+ #ifndef FLAG_SHADOW_MAP
+	fragPosition = position;
+	fragNormal = normal;
+	fragTexCoord = texCoord;
+ #else
+	geoNormal = normal;
+	geoTexCoord = texCoord;
+ #endif
 }
