@@ -160,7 +160,8 @@ int parse_string_flag_list(Flagset& dest, flag_def_list_new<T> defs [], size_t n
         for (size_t j = 0; j < n_defs; j++)
         {
             if (!stricmp(slp[i], defs[j].name)) {
-				if (defs[j].in_use && defs[j].def != T::NUM_VALUES) {
+				if (defs[j].in_use) {
+					Assertion(defs[j].def != T::NUM_VALUES, "Error in definition for flag_def_list, flag '%s' has been given an invalid value but is still marked as in use.\n", defs[j].name);
 					dest.set(defs[j].def);
 				}
 
