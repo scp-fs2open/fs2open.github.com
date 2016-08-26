@@ -8,7 +8,35 @@ MESSAGE(STATUS "Doing configuration specific to visual studio...")
 set_property(GLOBAL PROPERTY DEBUG_CONFIGURATIONS Debug)
 
 option(MSVC_USE_RUNTIME_DLL "Use the dynamically linked version of the runtime" OFF)
+option(MSVC_RELEASE_DEBUGGING "Set options that allow to debug release builds" OFF)
+
 MARK_AS_ADVANCED(FORCE MSVC_USE_RUNTIME_DLL)
+MARK_AS_ADVANCED(FORCE MSVC_RELEASE_DEBUGGING)
+
+# These are the warnings we disable
+set(WARNING_FLAGS
+	/wd4100 # unreferenced formal parameters
+	/wd4127 # constant conditional (assert)
+	/wd4201 # nonstandard extension used: nameless struct/union (happens a lot in Windows include headers)
+	/wd4290 # C++ exception specification ignored except to indicate a function is not __declspec(nothrow)
+	/wd4390 # empty control statement (triggered by nprintf and mprintf's inside of one-line if's, etc)
+	/wd4410 # illegal size for operand... ie... 	fxch st(1)
+	/wd4511 # copy constructor could not be generated (happens a lot in Windows include headers)
+	/wd4512 # assignment operator could not be generated (happens a lot in Windows include headers)
+	/wd4514 # unreferenced inline function removed
+	/wd4611 # _setjmp warning.  Since we use setjmp alot, and we don't really use constructors or destructors, this warning doesn't really apply to us.
+	/wd4663 # C++ language change (template specification)
+	/wd4710 # is inline function not expanded (who cares?)
+	/wd4711 # tells us an inline function was expanded (who cares?)
+	/wd4786 # is identifier truncated to 255 characters (happens all the time in Microsoft #includes) -- Goober5000"
+	/wd4996 # deprecated strcpy, strcat, sprintf, etc. (from MSVC 2005) - taylor
+	/wd4311 # Disables warnings about casting pointer types to ints. The funny thing is these warnings can't be resolved, just disabled... - m!m
+	/wd4302 # Same as above - m!m
+	/wd4366 # The result of the unary '&' operator may be unaligned - m!m
+	$<$<CONFIG:Release>:/wd4101> # In release mode there are unreferenced variables because debug needs them
+)
+
+target_compile_options(compiler INTERFACE ${WARNING_FLAGS})
 
 # Base
 set(CMAKE_C_FLAGS "/MP /GS- /analyze- /Zc:wchar_t /errorReport:prompt /WX- /Zc:forScope /Gd /EHsc /nologo")
@@ -25,11 +53,15 @@ set(CMAKE_STATIC_LINKER_FLAGS_RELEASE "/LTCG")
 
 globally_enable_extra_compiler_warnings()
 
-CHECK_CXX_COMPILER_FLAG("/Zo" MSVC_COMPILER_SUPPORTS_ARCH_ZO)
+if (MSVC_RELEASE_DEBUGGING)
+	CHECK_CXX_COMPILER_FLAG("/Zo" MSVC_COMPILER_SUPPORTS_ARCH_ZO)
 
-if (MSVC_COMPILER_SUPPORTS_ARCH_ZO)
-	set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} /Zo")
-	set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /Zo")
+	if (MSVC_COMPILER_SUPPORTS_ARCH_ZO)
+		set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} /Zo")
+		set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /Zo")
+	endif()
+	
+	set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} /DEBUG")
 endif()
 
 IF(MSVC_USE_RUNTIME_DLL)
@@ -103,3 +135,8 @@ endif()
 
 target_compile_definitions(compiler INTERFACE _CRT_SECURE_NO_DEPRECATE
 	_CRT_SECURE_NO_WARNINGS _SECURE_SCL=0 NOMINMAX)
+	
+if (FSO_FATAL_WARNINGS)
+	# Make warnings fatal if the right variable is set
+	target_compile_options(compiler INTERFACE "/WX")
+endif()

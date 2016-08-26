@@ -13,6 +13,7 @@
 #include "cfile/cfile.h"
 #include "globalincs/globals.h"
 #include "globalincs/pstypes.h"
+#include "globalincs/flagset.h"
 #include "def_files/def_files.h"
 
 #include <exception>
@@ -142,6 +143,61 @@ extern void stuff_ubyte(ubyte *i);
 extern int stuff_string_list(SCP_vector<SCP_string>& slp);
 extern int stuff_string_list(char slp[][NAME_LENGTH], int max_strings);
 extern int parse_string_flag_list(int *dest, flag_def_list defs[], int defs_size);
+
+
+// A templated version of parse_string_flag_list, to go along with the templated flag_def_list_new.
+// If the "is_special" flag is set, or a string was not found in the def list, it will be added to the unparsed_or_special_strings Vector
+// so that you can process it properly later 
+template<class T, class Flagset>
+int parse_string_flag_list(Flagset& dest, flag_def_list_new<T> defs [], size_t n_defs, SCP_vector<SCP_string>* unparsed_or_special_strings)
+{
+    char(*slp)[NAME_LENGTH] = (char(*)[32])new char[n_defs*NAME_LENGTH];
+    int num_strings = stuff_string_list(slp, (int)n_defs);
+
+    for (auto i = 0; i < num_strings; i++)
+    {
+        bool string_parsed = false;
+        for (size_t j = 0; j < n_defs; j++)
+        {
+            if (!stricmp(slp[i], defs[j].name)) {
+				if (defs[j].in_use) {
+					Assertion(defs[j].def != T::NUM_VALUES, "Error in definition for flag_def_list, flag '%s' has been given an invalid value but is still marked as in use.\n", defs[j].name);
+					dest.set(defs[j].def);
+				}
+
+                if (!defs[j].is_special)
+                    string_parsed = true;
+            }
+        }
+        if (!string_parsed && unparsed_or_special_strings != NULL) {
+            SCP_string s = SCP_string(slp[i]);
+            unparsed_or_special_strings->push_back(s);
+        }
+    }
+
+    delete[] slp;	//>_>
+                    //nobody saw that right
+
+    return num_strings;
+}
+
+extern long atol2();
+extern int my_errno;
+template<class T>
+void stuff_flagset(T *dest) {
+    dest->from_long(atol2());
+
+    if (my_errno)
+        skip_token();
+    else
+        Mp += strspn(Mp, "+-0123456789");
+
+    if (*Mp == ',')
+        Mp++;
+
+    diag_printf("Stuffed flagset: %i\n", dest->to_long());
+}
+
 extern int stuff_int_list(int *ilp, int max_ints, int lookup_type = RAW_INTEGER_TYPE);
 extern size_t stuff_float_list(float* flp, size_t max_floats);
 extern int stuff_vec3d_list(vec3d *vlp, int max_vecs);
@@ -149,9 +205,9 @@ extern int stuff_vec3d_list(SCP_vector<vec3d> &vec_list);
 extern int stuff_bool_list(bool *blp, int max_bools);
 extern void stuff_vec3d(vec3d *vp);
 extern void stuff_matrix(matrix *mp);
-extern int string_lookup(char *str1, char *strlist[], int max, char *description = NULL, int say_errors = 0);
-extern void find_and_stuff(char *id, int *addr, int f_type, char *strlist[], int max, char *description);
-extern void find_and_stuff_optional(char *id, int *addr, int f_type, char *strlist[], int max, char *description);
+extern int string_lookup(const char *str1, char *strlist[], size_t max, const char *description = NULL, int say_errors = 0);
+extern void find_and_stuff(const char *id, int *addr, int f_type, char *strlist[], size_t max, const char *description);
+extern void find_and_stuff_optional(const char *id, int *addr, int f_type, char *strlist[], size_t max, const char *description);
 extern int match_and_stuff(int f_type, char *strlist[], int max, char *description);
 extern void find_and_stuff_or_add(char *id, int *addr, int f_type, char *strlist[], int *total,
 	int max, char *description);
@@ -161,6 +217,15 @@ extern void stuff_parenthesized_vec3d(vec3d *vp);
 extern void stuff_boolean(int *i, bool a_to_eol=true);
 extern void stuff_boolean(bool *b, bool a_to_eol=true);
 extern void stuff_boolean_flag(int *i, int flag, bool a_to_eol=true);
+
+template<class Flags, class Flagset>
+void stuff_boolean_flag(Flagset& destination, Flags flag, bool a_to_eol = true)
+{
+    bool temp;
+    stuff_boolean(&temp, a_to_eol);
+    destination.set(flag, temp);
+}
+
 extern int check_for_string(const char *pstr);
 extern int check_for_string_raw(const char *pstr);
 extern int check_for_eof();
@@ -199,12 +264,12 @@ extern int required_string_either_fred(char *str1, char *str2);
 extern int optional_string_fred(char *pstr, char *end = NULL, char *end2 = NULL);
 
 // Goober5000 - returns position of replacement or -1 for exceeded length (SCP_string variants return the result)
-extern int replace_one(char *str, char *oldstr, char *newstr, unsigned int max_len, int range = 0);
+extern ptrdiff_t replace_one(char *str, const char *oldstr, const char *newstr, size_t max_len, ptrdiff_t range = 0);
 extern SCP_string& replace_one(SCP_string& context, const SCP_string& from, const SCP_string& to);
 extern SCP_string& replace_one(SCP_string& context, const char* from, const char* to);
 
 // Goober5000 - returns number of replacements or -1 for exceeded length (SCP_string variants return the result)
-extern int replace_all(char *str, char *oldstr, char *newstr, unsigned int max_len, int range = 0);
+extern ptrdiff_t replace_all(char *str, const char *oldstr, const char *newstr, size_t max_len, ptrdiff_t range = 0);
 extern SCP_string& replace_all(SCP_string& context, const SCP_string& from, const SCP_string& to);
 extern SCP_string& replace_all(SCP_string& context, const char* from, const char* to);
 

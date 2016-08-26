@@ -81,6 +81,8 @@ ENDIF(WIN32)
 
 OPTION(FSO_BUILD_TOOLS "Build tools related to FSO" OFF)
 
+OPTION(FSO_BUILD_TESTS "Build unit tests" OFF)
+
 OPTION(FSO_DEVELOPMENT_MODE "Generate binaries in development mode, only use if you know what you're doing!" OFF)
 
 OPTION(FSO_BUILD_WXFRED2 "Build wxFRED2 binary" OFF)
@@ -106,7 +108,13 @@ SET(FSO_RUN_ARGUMENTS "" CACHE STRING "Additional arguments passed to a generate
 
 option(FSO_INSTALL_DEBUG_FILES "Install some debug files (currently only PDB files on windows)" OFF)
 
-OPTION(COTIRE_ENABLE "Enable cotire, this speeds up builds but may cause issues while developing (default = OFF)" OFF)
+set(DEFAULT_VAL OFF)
+if(MSVC)
+	# MSVC has been tested
+	set(DEFAULT_VAL ON)
+endif()
+
+OPTION(COTIRE_ENABLE "Enable cotire, this speeds up builds but may cause issues while developing (default = OFF)" ${DEFAULT_VAL})
 
 MARK_AS_ADVANCED(FORCE FSO_CMAKE_DEBUG)
 MARK_AS_ADVANCED(FORCE FSO_BUILD_INCLUDED_LIBS)
@@ -153,6 +161,10 @@ ENDIF(FSO_BUILD_FRED2)
 IF(FSO_BUILD_WXFRED2)
 	ADD_SUBDIRECTORY(wxfred2)
 ENDIF(FSO_BUILD_WXFRED2)
+
+if(FSO_BUILD_TESTS)
+	add_subdirectory(test)
+endif()
 
 if ("${CMAKE_VERSION}" VERSION_GREATER "3.5")
 	# Default to using Freespace2 as startup project if CMake supports it.

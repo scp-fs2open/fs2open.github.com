@@ -1,5 +1,8 @@
 FreeSpace2 *S*ource *C*ode *P*roject
 ==
+[![Build Status](https://travis-ci.org/scp-fs2open/fs2open.github.com.svg?branch=master)](https://travis-ci.org/scp-fs2open/fs2open.github.com)
+[![Coverity](https://img.shields.io/coverity/scan/870.svg)](https://scan.coverity.com/projects/870)
+
 Building
 --
 For building you will need [CMake](http://www.cmake.org/cmake/resources/software.html). Version 3.4 is required. Once you have installed CMake you should create a build directory where the project/make files should be created, **do not create them inside the source tree!**<br>

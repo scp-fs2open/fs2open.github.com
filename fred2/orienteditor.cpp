@@ -184,7 +184,7 @@ void orient_editor::OnOK()
 
 	ptr = GET_FIRST(&obj_used_list);
 	while (ptr != END_OF_LIST(&obj_used_list)) {
-		if (ptr->flags & OF_MARKED) {
+		if (ptr->flags[Object::Object_Flags::Marked]) {
 			vm_vec_add2(&ptr->pos, &delta);
 			update_object(ptr);
 		}
@@ -194,7 +194,7 @@ void orient_editor::OnOK()
 
 	ptr = GET_FIRST(&obj_used_list);
 	while (ptr != END_OF_LIST(&obj_used_list)) {
-		if (ptr->flags & OF_MARKED)
+		if (ptr->flags[Object::Object_Flags::Marked])
 			object_moved(ptr);
 
 		ptr = GET_NEXT(ptr);
@@ -237,7 +237,7 @@ void orient_editor::update_object(object *ptr)
 float orient_editor::convert(CString &str)
 {
 	char buf[256];
-	int i, j, len;
+	size_t i, j, len;
 
 	string_copy(buf, str, 255);
 	len = strlen(buf);

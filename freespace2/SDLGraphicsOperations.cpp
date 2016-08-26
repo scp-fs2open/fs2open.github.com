@@ -3,51 +3,134 @@
 
 #include "SDLGraphicsOperations.h"
 
-#include "cmdline/cmdline.h"
+namespace {
+void setOGLProperties(const os::ViewPortProperties& props) {
+	SDL_GL_ResetAttributes();
 
-#include <stdlib.h>
+	SDL_GL_SetAttribute(SDL_GL_RED_SIZE, props.pixel_format.red_size);
+	SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, props.pixel_format.green_size);
+	SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, props.pixel_format.blue_size);
+	SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, props.pixel_format.depth_size);
+	SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, props.pixel_format.stencil_size);
+	SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+	SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, (props.pixel_format.multi_samples == 0) ? 0 : 1);
+	SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, props.pixel_format.multi_samples);
 
-class SDLOpenGLContext : public os::OpenGLContext
-{
+	mprintf(("  Requested SDL Pixel values = R: %d, G: %d, B: %d, depth: %d, stencil: %d, double-buffer: %d, FSAA: %d\n",
+		props.pixel_format.red_size, props.pixel_format.green_size, props.pixel_format.blue_size,
+		props.pixel_format.depth_size, props.pixel_format.stencil_size, 1, props.pixel_format.multi_samples));
+
+	SDL_GL_SetAttribute(SDL_GL_ACCELERATED_VISUAL, 1);
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, props.gl_attributes.major_version);
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, props.gl_attributes.minor_version);
+
+	int profile;
+	switch (props.gl_attributes.profile) {
+		case os::OpenGLProfile::Core:
+			profile = SDL_GL_CONTEXT_PROFILE_CORE;
+			break;
+		case os::OpenGLProfile::Compatibility:
+			profile = SDL_GL_CONTEXT_PROFILE_COMPATIBILITY;
+			break;
+		default:
+			Assertion(false, "Unhandled profile value!");
+			return;
+	}
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, profile);
+
+	int flags = 0;
+	if (props.gl_attributes.flags[os::OpenGLContextFlags::Debug]) {
+		flags |= SDL_GL_CONTEXT_DEBUG_FLAG;
+	}
+	if (props.gl_attributes.flags[os::OpenGLContextFlags::ForwardCompatible]) {
+		flags |= SDL_GL_CONTEXT_FORWARD_COMPATIBLE_FLAG;
+	}
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, flags);
+}
+}
+
+class SDLOpenGLContext: public os::OpenGLContext {
 	SDL_GLContext _glCtx;
-public:
-	explicit SDLOpenGLContext(SDL_GLContext sdl_gl_context)
-		: _glCtx(sdl_gl_context)
-	{
+ public:
+	SDLOpenGLContext(SDL_GLContext sdl_gl_context) : _glCtx(sdl_gl_context) {
 	}
 
-	~SDLOpenGLContext() override
-	{
+	~SDLOpenGLContext() override {
 		SDL_GL_DeleteContext(_glCtx);
 	}
 
-	os::OpenGLLoadProc getLoaderFunction() override
-	{
+	os::OpenGLLoadProc getLoaderFunction() override {
 		return SDL_GL_GetProcAddress;
 	}
 
-	void makeCurrent()
-	{
-		SDL_GL_MakeCurrent(os_get_window(), _glCtx);
+	void makeCurrent(SDL_Window* window) {
+		SDL_GL_MakeCurrent(window, _glCtx);
 	}
 
-	void swapBuffers() override
-	{
-		SDL_GL_SwapWindow(os_get_window());
-	}
-
-	void setSwapInterval(int status) override
-	{
+	void setSwapInterval(int status) override {
 		SDL_GL_SetSwapInterval(status);
 	}
 };
+class SDLWindowViewPort: public os::Viewport {
+	SDL_Window* _window;
+	os::ViewPortProperties _props;
+ public:
+	SDLWindowViewPort(SDL_Window* window, const os::ViewPortProperties& props) : _window(window), _props(props) {
+		Assertion(window != nullptr, "Invalid window specified");
+	}
+	~SDLWindowViewPort() override {
+		SDL_DestroyWindow(_window);
+		_window = nullptr;
+	}
 
-SDLGraphicsOperations::~SDLGraphicsOperations() {
-}
+	const os::ViewPortProperties& getProps() const {
+		return _props;
+	}
+	virtual SDL_Window* toSDLWindow() override {
+		return _window;
+	}
+	virtual std::pair<uint32_t, uint32_t> getSize() override {
+		int width, height;
+		SDL_GetWindowSize(_window, &width, &height);
 
-std::unique_ptr<os::OpenGLContext> SDLGraphicsOperations::createOpenGLContext(const os::OpenGLContextAttributes& attrs,
-															 uint32_t width,
-															 uint32_t height) {
+		return std::make_pair(width, height);
+	}
+	void swapBuffers() override {
+		SDL_GL_SwapWindow(_window);
+	}
+	virtual void setState(os::ViewportState state) override {
+		switch (state) {
+			case os::ViewportState::Windowed:
+				SDL_SetWindowFullscreen(_window, 0);
+				SDL_SetWindowBordered(_window, SDL_FALSE);
+				break;
+			case os::ViewportState::Borderless:
+				SDL_SetWindowFullscreen(_window, 0);
+				SDL_SetWindowBordered(_window, SDL_TRUE);
+				break;
+			case os::ViewportState::Fullscreen:
+				SDL_SetWindowFullscreen(_window, SDL_WINDOW_FULLSCREEN);
+				break;
+			default:
+				Assertion(false, "Invalid window state!");
+				break;
+		}
+	}
+	virtual void minimize() override {
+		// lets not minimize if we are in windowed mode
+		if (!(SDL_GetWindowFlags(_window) & SDL_WINDOW_FULLSCREEN)) {
+			return;
+		}
+
+		SDL_MinimizeWindow(_window);
+	}
+
+	virtual void restore() override {
+		SDL_RestoreWindow(_window);
+	}
+};
+
+SDLGraphicsOperations::SDLGraphicsOperations() {
 	mprintf(("  Initializing SDL video...\n"));
 
 #ifdef SCP_UNIX
@@ -57,41 +140,62 @@ std::unique_ptr<os::OpenGLContext> SDLGraphicsOperations::createOpenGLContext(co
 
 	if (SDL_InitSubSystem(SDL_INIT_VIDEO) < 0) {
 		Error(LOCATION, "Couldn't init SDL video: %s", SDL_GetError());
-		return nullptr;
+		return;
 	}
-
-	SDL_GL_SetAttribute(SDL_GL_RED_SIZE, attrs.red_size);
-	SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, attrs.green_size);
-	SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, attrs.blue_size);
-	SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, attrs.depth_size);
-	SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, attrs.stencil_size);
-	SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
-	SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, (attrs.multi_samples == 0) ? 0 : 1);
-	SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, attrs.multi_samples);
-
-	mprintf(("  Requested SDL Video values = R: %d, G: %d, B: %d, depth: %d, stencil: %d, double-buffer: %d, FSAA: %d\n",
-		attrs.red_size, attrs.green_size, attrs.blue_size, attrs.depth_size, attrs.stencil_size, 1, attrs.multi_samples));
-
-	uint32_t windowflags = SDL_WINDOW_OPENGL;
-	if (Cmdline_fullscreen_window) {
+}
+SDLGraphicsOperations::~SDLGraphicsOperations() {
+	SDL_QuitSubSystem(SDL_INIT_VIDEO);
+}
+std::unique_ptr<os::Viewport> SDLGraphicsOperations::createViewport(const os::ViewPortProperties& props) {
+	uint32_t windowflags = SDL_WINDOW_SHOWN;
+	if (props.enable_opengl) {
+		windowflags |= SDL_WINDOW_OPENGL;
+		setOGLProperties(props);
+	}
+	if (props.flags[os::ViewPortFlags::Borderless]) {
 		windowflags |= SDL_WINDOW_BORDERLESS;
 	}
+	if (props.flags[os::ViewPortFlags::Fullscreen]) {
+		windowflags |= SDL_WINDOW_FULLSCREEN;
+	}
 
-	uint display = os_config_read_uint("Video", "Display", 0);
-	SDL_Window* window =
-		SDL_CreateWindow(Osreg_title, SDL_WINDOWPOS_CENTERED_DISPLAY(display), SDL_WINDOWPOS_CENTERED_DISPLAY(display),
-						 width, height, windowflags);
+	SDL_Window* window = SDL_CreateWindow(props.title.c_str(),
+										  SDL_WINDOWPOS_CENTERED_DISPLAY(props.display),
+										  SDL_WINDOWPOS_CENTERED_DISPLAY(props.display),
+										  props.width,
+										  props.height,
+										  windowflags);
 	if (window == nullptr) {
-		Error(LOCATION, "Could not create window: %s\n", SDL_GetError());
+		mprintf(("Failed to create SDL Window: %s\n", SDL_GetError()));
 		return nullptr;
 	}
 
-	os_set_window(window);
+	return std::unique_ptr<os::Viewport>(new SDLWindowViewPort(window, props));
+}
+void SDLGraphicsOperations::makeOpenGLContextCurrent(os::Viewport* view, os::OpenGLContext* ctx) {
+	if (view == nullptr && ctx == nullptr) {
+		SDL_GL_MakeCurrent(nullptr, nullptr);
+		return;
+	}
 
-	auto ctx = SDL_GL_CreateContext(os_get_window());
+	Assertion(view != nullptr, "Both viewport of context must be valid at this point!");
+	Assertion(ctx != nullptr, "Both viewport of context must be valid at this point!");
+
+	auto sdlCtx = reinterpret_cast<SDLOpenGLContext*>(ctx);
+	sdlCtx->makeCurrent(view->toSDLWindow());
+}
+std::unique_ptr<os::OpenGLContext> SDLGraphicsOperations::createOpenGLContext(os::Viewport* viewport,
+																			  const os::OpenGLContextAttributes& gl_attrs) {
+	auto sdlViewport = reinterpret_cast<SDLWindowViewPort*>(viewport);
+
+	auto props = sdlViewport->getProps();
+	props.gl_attributes = gl_attrs;
+	setOGLProperties(props);
+
+	auto ctx = SDL_GL_CreateContext(viewport->toSDLWindow());
 
 	if (ctx == nullptr) {
-		Error(LOCATION, "Could not create OpenGL Context: %s\n", SDL_GetError());
+		mprintf(("Could not create OpenGL Context: %s\n", SDL_GetError()));
 		return nullptr;
 	}
 
@@ -109,15 +213,4 @@ std::unique_ptr<os::OpenGLContext> SDLGraphicsOperations::createOpenGLContext(co
 
 
 	return std::unique_ptr<os::OpenGLContext>(new SDLOpenGLContext(ctx));
-}
-
-void SDLGraphicsOperations::makeOpenGLContextCurrent(os::OpenGLContext* ctx)
-{
-	if (ctx == nullptr)
-	{
-		SDL_GL_MakeCurrent(os_get_window(), nullptr);
-	} else
-	{
-		reinterpret_cast<SDLOpenGLContext*>(ctx)->makeCurrent();
-	}
 }

@@ -7,7 +7,7 @@ target_include_directories(glad PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/glad/include
 set_target_properties(glad PROPERTIES FOLDER "3rdparty")
 if (MSVC)
 	# Suppress some warnings
-	target_compile_options(glad PRIVATE "/wd4090" "/wd4055" "/wd4054")
+	target_compile_options(glad PRIVATE "/w")
 endif()
 
 

@@ -36,6 +36,7 @@
 #include "render/3dinternal.h"
 #include "ship/ship.h"
 #include "weapon/weapon.h"
+#include <algorithm>
 
 flag_def_list model_render_flags[] =
 {
@@ -359,7 +360,7 @@ void model_instance_free_all()
 	// free any outstanding model instances
 	for ( i = 0; i < Polygon_model_instances.size(); ++i ) {
 		if ( Polygon_model_instances[i] ) {
-			model_delete_instance(i);
+			model_delete_instance((int)i);
 		}
 	}
 
@@ -497,6 +498,7 @@ int prop_string(char *props, char **p, const char *option0, const char *option1,
 	return prop_string(props, p, 3, option0, option1, option2);
 }
 
+const Model::Subsystem_Flags carry_flags[] = { Model::Subsystem_Flags::Crewpoint, Model::Subsystem_Flags::Rotates, Model::Subsystem_Flags::Triggered, Model::Subsystem_Flags::Artillery, Model::Subsystem_Flags::Stepped_rotate };
 // funciton to copy model data from one subsystem set to another subsystem set.  This function
 // is called when two ships use the same model data, but since the model only gets read in one time,
 // the subsystem data is only present in one location.  The ship code will call this routine to fix
@@ -511,8 +513,11 @@ void model_copy_subsystems( int n_subsystems, model_subsystem *d_sp, model_subsy
 		for ( j = 0; j < n_subsystems; j++ ) {
 			dest = &d_sp[j];
 			if ( !subsystem_stricmp( source->subobj_name, dest->subobj_name) ) {
-				dest->flags |= (source->flags & MSS_MODEL_FLAG_MASK);
-				dest->flags2 |= (source->flags2 & MSS_MODEL_FLAG2_MASK);
+				for (auto const &flag : carry_flags) {
+					if (source->flags[flag])
+						dest->flags.set(flag);
+				}
+
 				dest->subobj_num = source->subobj_num;
 				dest->model_num = source->model_num;
 				dest->pnt = source->pnt;
@@ -521,7 +526,7 @@ void model_copy_subsystems( int n_subsystems, model_subsystem *d_sp, model_subsy
 				dest->turn_rate = source->turn_rate;
 				dest->turret_gun_sobj = source->turret_gun_sobj;
 
-				strcpy_s( dest->name, source->name );
+                strcpy_s(dest->name, source->name);
 
 				if ( dest->type == SUBSYSTEM_TURRET ) {
 					int nfp;
@@ -534,7 +539,7 @@ void model_copy_subsystems( int n_subsystems, model_subsystem *d_sp, model_subsy
 					for (nfp = 0; nfp < dest->turret_num_firing_points; nfp++ )
 						dest->turret_firing_point[nfp] = source->turret_firing_point[nfp];
 
-					if ( dest->flags & MSS_FLAG_CREWPOINT )
+					if ( dest->flags[Model::Subsystem_Flags::Crewpoint] )
 						strcpy_s(dest->crewspot, source->crewspot);
 				}
 				break;
@@ -557,7 +562,7 @@ static void set_subsystem_info(int model_num, model_subsystem *subsystemp, char 
 	if ( (p = strstr(props, "$name")) != NULL)
 		get_user_prop_value(p+5, subsystemp->name);
 	else
-		strcpy_s( subsystemp->name, dname );
+		strcpy_s(subsystemp->name, dname);
 
 	strcpy_s(lcdname, dname);
 	strlwr(lcdname);
@@ -580,7 +585,7 @@ static void set_subsystem_info(int model_num, model_subsystem *subsystemp, char 
 		subsystemp->turret_num_firing_points = 0;
 
 		if ( (p = strstr(props, "$crewspot")) != NULL) {
-			subsystemp->flags |= MSS_FLAG_CREWPOINT;
+            subsystemp->flags.set(Model::Subsystem_Flags::Crewpoint);
 			get_user_prop_value(p+9, subsystemp->crewspot);
 		}
 
@@ -604,8 +609,8 @@ static void set_subsystem_info(int model_num, model_subsystem *subsystemp, char 
 	}
 
 	if ( (strstr(props, "$triggered")) != NULL ) {
-		subsystemp->flags |= MSS_FLAG_ROTATES;
-		subsystemp->flags |= MSS_FLAG_TRIGGERED;
+        subsystemp->flags.set(Model::Subsystem_Flags::Rotates);
+        subsystemp->flags.set(Model::Subsystem_Flags::Triggered);
 	}
 
 	// Dumb-Rotating subsystem
@@ -617,7 +622,7 @@ static void set_subsystem_info(int model_num, model_subsystem *subsystemp, char 
 	}
 	// Rotating subsystem
 	else if ((idx = prop_string(props, &p, "$rotate_time", "$rotate_rate", "$rotate")) >= 0) {
-		subsystemp->flags |= MSS_FLAG_ROTATES;
+        subsystemp->flags.set(Model::Subsystem_Flags::Rotates);
 
 		// get value for (a) complete rotation (b) step (c) activation
 		get_user_prop_value(p, buf);	// note: p points to the value since we used prop_string
@@ -638,7 +643,7 @@ static void set_subsystem_info(int model_num, model_subsystem *subsystemp, char 
 
 		// CASE OF WEAPON ROTATION (primary only)
 		if ( (p = strstr(props, "$pbank")) != NULL)	{
-			subsystemp->flags |= MSS_FLAG_ARTILLERY;
+            subsystemp->flags.set(Model::Subsystem_Flags::Artillery);
 
 			// get which pbank should trigger rotation
 			get_user_prop_value(p+6, buf);
@@ -652,7 +657,7 @@ static void set_subsystem_info(int model_num, model_subsystem *subsystemp, char 
 		if ( (strstr(props, "$stepped")) != NULL) {
 
 			subsystemp->stepped_rotation = new stepped_rotation;
-			subsystemp->flags |= MSS_FLAG_STEPPED_ROTATE;
+            subsystemp->flags.set(Model::Subsystem_Flags::Stepped_rotate);
 
 			// get number of steps
 			if ( (p = strstr(props, "$steps")) != NULL) {
@@ -877,7 +882,7 @@ void create_vertex_buffer(polymodel *pm)
 	bool use_batched_rendering = true;
 
 	if ( GLSL_version >= 130 && !Cmdline_no_batching ) {
-		uint stride = 0;
+		size_t stride = 0;
 
 		// figure out if the vertex stride of this entire model matches. if not, turn off batched rendering for this model
 		for ( i = 0; i < pm->n_models; ++i ) {
@@ -1815,7 +1820,7 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 						if ( (p = strstr(props, "$name"))!= NULL ) {
 							get_user_prop_value(p+5, bay->name);
 
-							int length = strlen(bay->name);
+							auto length = strlen(bay->name);
 							if ((length > 0) && is_white_space(bay->name[length-1])) {
 								nprintf(("Model", "model '%s' has trailing whitespace on bay name '%s'; this will be trimmed\n", pm->filename, bay->name));
 								drop_trailing_white_space(bay->name);
@@ -1922,11 +1927,11 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 	
 					cfread_string_len(props, MAX_PROP_LEN, fp);
 					// look for $glow_texture=xxx
-					int length = strlen(props);
+					auto length = strlen(props);
 
 					if (length > 0)
 					{
-						int base_length = strlen("$glow_texture=");
+						auto base_length = strlen("$glow_texture=");
 						Assert(strstr( (const char *)&props, "$glow_texture=") != NULL);
 						Assert(length > base_length);
 						char *glow_texture_name = props + base_length;
@@ -2009,9 +2014,9 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 						} else {
 							cfread_string_len( props, MAX_PROP_LEN, fp );
 							// look for $engine_subsystem=xxx
-							int length = strlen(props);
+							auto length = strlen(props);
 							if (length > 0) {
-								int base_length = strlen("$engine_subsystem=");
+								auto base_length = strlen("$engine_subsystem=");
 								Assert( strstr( (const char *)&props, "$engine_subsystem=") != NULL );
 								Assert( length > base_length );
 								char *engine_subsys_name = props + base_length;
@@ -2740,7 +2745,8 @@ int model_load(char *filename, int n_subsystems, model_subsystem *subsystems, in
 	//==============================
 	// Find all the lower detail versions of the hires model
 	for (i=0; i<pm->n_models; i++ )	{
-		int j, l1;
+		int j;
+		size_t l1;
 		bsp_info * sm1 = &pm->submodel[i];
 
 		// set all arc types to be default 		
@@ -2770,7 +2776,6 @@ int model_load(char *filename, int n_subsystems, model_subsystem *subsystems, in
 		}
 
 		for (j=0; j<pm->n_models; j++ )	{
-			int k;
 			bsp_info * sm2 = &pm->submodel[j];
 
 			if ( i==j ) continue;
@@ -2781,11 +2786,11 @@ int model_load(char *filename, int n_subsystems, model_subsystem *subsystems, in
 			}
 
 			// if sm2 is a detail of sm1 and sm1 is a high detail, then add it to sm1's list
-			if ((int)strlen(sm2->name)!=l1) continue; 
+			if (strlen(sm2->name)!=l1) continue; 
 	
 			int ndiff = 0;
-			int first_diff = 0;
-			for ( k=0; k<l1; k++)	{
+			size_t first_diff = 0;
+			for ( size_t k=0; k<l1; k++)	{
 				// If a backward compatibility LOD name is declared use it
 				if (sm1->lod_name[0] != '\0') {
 					if (sm1->lod_name[k] != sm2->name[k] )	{
@@ -2903,7 +2908,7 @@ int model_create_instance(bool is_ship, int model_num)
 	// if not found, create a slot
 	if ( open_slot < 0 ) {
 		Polygon_model_instances.push_back( pmi );
-		open_slot = Polygon_model_instances.size() - 1;
+		open_slot = (int)(Polygon_model_instances.size() - 1);
 	} else {
 		Polygon_model_instances[open_slot] = pmi;
 	}
@@ -3045,7 +3050,7 @@ void model_set_bay_path_nums(polymodel *pm)
 
 	/*
 	// currently only capital ships have fighter bays
-	if ( !(sip->flags & (SIF_BIG_SHIP | SIF_HUGE_SHIP)) ) {
+	if ( !(sip->is_big_or_huge()) ) {
 		return;
 	}
 	*/
@@ -3505,7 +3510,7 @@ void model_get_rotating_submodel_axis(vec3d *model_axis, vec3d *world_axis, int 
 // Does stepped rotation of a submodel
 void submodel_stepped_rotate(model_subsystem *psub, submodel_instance_info *sii)
 {
-	Assert(psub->flags & MSS_FLAG_STEPPED_ROTATE);
+	Assert(psub->flags[Model::Subsystem_Flags::Stepped_rotate]);
 
 	if ( psub->subobj_num < 0 ) return;
 
@@ -3927,7 +3932,7 @@ void model_make_turret_matrix(int model_num, model_subsystem * turret )
 	// this because I am creating these 3 vectors by making them 90 degrees
 	// apart, so this should be close enough.  I think this will start 
 	// causing weird errors when we view from turrets. -John
-	turret->flags |= MSS_FLAG_TURRET_MATRIX;
+    turret->flags.set(Model::Subsystem_Flags::Turret_matrix);
 }
 
 // Tries to move joints so that the turret points to the point dst.
@@ -3956,10 +3961,10 @@ int model_rotate_gun(int model_num, model_subsystem *turret, matrix *orient, ang
 	}
 
 	// Build the correct turret matrix if there isn't already one
-	if ( !(turret->flags & MSS_FLAG_TURRET_MATRIX) )
+	if ( !(turret->flags[Model::Subsystem_Flags::Turret_matrix]) )
 		model_make_turret_matrix(model_num, turret );
 
-	Assert( turret->flags & MSS_FLAG_TURRET_MATRIX);
+	Assert( turret->flags[Model::Subsystem_Flags::Turret_matrix]);
 //	Assert( gun->movement_axis == MOVEMENT_AXIS_X );				// Gun must be able to change pitch
 //	Assert( base->movement_axis == MOVEMENT_AXIS_Z );	// Parent must be able to change heading
 
@@ -3975,7 +3980,7 @@ int model_rotate_gun(int model_num, model_subsystem *turret, matrix *orient, ang
 	vm_vec_unrotate( &tempv, &base->offset, orient);
 	vm_vec_add( &world_to_turret_translate, pos, &tempv );
 
-	if (turret->flags & MSS_FLAG_TURRET_ALT_MATH)
+	if (turret->flags[Model::Subsystem_Flags::Turret_alt_math])
 		world_to_turret_matrix = ss->world_to_turret_matrix;
 	else
 		vm_matrix_x_matrix( &world_to_turret_matrix, orient, &turret->turret_matrix );
@@ -4009,7 +4014,7 @@ int model_rotate_gun(int model_num, model_subsystem *turret, matrix *orient, ang
 		}
 	}
 
-	if (turret->flags & MSS_FLAG_TURRET_ALT_MATH)
+	if (turret->flags[Model::Subsystem_Flags::Turret_alt_math])
 		limited_base_rotation = true;
 
 	//	mprintf(( "Z = %.1f, atan= %.1f\n", of_dst.xyz.z, desired_angles.p ));
@@ -4056,7 +4061,7 @@ int model_rotate_gun(int model_num, model_subsystem *turret, matrix *orient, ang
 //	base_angles->h -= step_size*(key_down_timef(KEY_1)-key_down_timef(KEY_2) );
 //	gun_angles->p += step_size*(key_down_timef(KEY_3)-key_down_timef(KEY_4) );
 
-	if (turret->flags & MSS_FLAG_FIRE_ON_TARGET)
+	if (turret->flags[Model::Subsystem_Flags::Fire_on_target])
 	{
 		base_delta = vm_delta_from_interp_angle( base_angles->h, desired_angles.h );
 		gun_delta = vm_delta_from_interp_angle( gun_angles->p, desired_angles.p );
@@ -4755,10 +4760,16 @@ void model_set_instance_info(submodel_instance_info *sii, float turn_rate, float
 }
 
 // Sets the submodel instance data in a submodel (for all detail levels)
-void model_set_instance(int model_num, int sub_model_num, submodel_instance_info *sii, int flags)
+void model_set_instance(int model_num, int sub_model_num, submodel_instance_info *sii, flagset<Ship::Subsystem_Flags>* flags)
 {
 	int i;
 	polymodel * pm;
+
+    flagset<Ship::Subsystem_Flags> instance_flags;
+
+    if (flags != NULL)
+        instance_flags = *flags;
+
 
 	pm = model_get(model_num);
 
@@ -4769,14 +4780,14 @@ void model_set_instance(int model_num, int sub_model_num, submodel_instance_info
 	if ( sub_model_num >= pm->n_models ) return;
 	bsp_info *sm = &pm->submodel[sub_model_num];
 
-	if (flags & SSF_NO_DISAPPEAR) {
+	if (instance_flags[Ship::Subsystem_Flags::No_disappear]) {
 		sm->blown_off = 0;
 	} else {
 		// Set the "blown out" flags
 		sm->blown_off = sii->blown_off;
 	}
 
-	if ( (sm->blown_off) && (!(flags & SSF_NO_REPLACE)) )	{
+	if ( (sm->blown_off) && (!(instance_flags[Ship::Subsystem_Flags::No_replace])) )	{
 		if ( sm->my_replacement > -1 )	{
 			pm->submodel[sm->my_replacement].blown_off = 0;
 			pm->submodel[sm->my_replacement].angs = sii->angs;
@@ -4794,7 +4805,7 @@ void model_set_instance(int model_num, int sub_model_num, submodel_instance_info
 
 	// For all the detail levels of this submodel, set them also.
 	for (i=0; i<sm->num_details; i++ )	{
-		model_set_instance(model_num, sm->details[i], sii, flags );
+		model_set_instance(model_num, sm->details[i], sii, &instance_flags);
 	}
 }
 
@@ -4825,7 +4836,7 @@ void model_set_instance_techroom(int model_num, int sub_model_num, float angle_1
 	sm->angs.h = angle_2;
 }
 
-void model_update_instance(int model_instance_num, int sub_model_num, submodel_instance_info *sii, int flags)
+void model_update_instance(int model_instance_num, int sub_model_num, submodel_instance_info *sii, flagset<Ship::Subsystem_Flags>& flags)
 {
 	int i;
 	polymodel *pm;
@@ -4845,13 +4856,13 @@ void model_update_instance(int model_instance_num, int sub_model_num, submodel_i
 	bsp_info *sm = &pm->submodel[sub_model_num];
 	
 	// Set the "blown out" flags
-	if ( flags & SSF_NO_DISAPPEAR ) {
+	if ( flags[Ship::Subsystem_Flags::No_disappear] ) {
 		smi->blown_off = false;
 	} else {
 		smi->blown_off = sii->blown_off ? true : false;
 	}
 
-	if ( smi->blown_off && !(flags & SSF_NO_REPLACE) )	{
+	if ( smi->blown_off && !(flags[Ship::Subsystem_Flags::No_replace]) )	{
 		if ( sm->my_replacement > -1 )	{
 			pmi->submodel[sm->my_replacement].blown_off = false;
 			pmi->submodel[sm->my_replacement].angs = sii->angs;
@@ -4893,7 +4904,8 @@ void model_do_intrinsic_rotations_sub(intrinsic_rotation *ir)
 
 		// Now actually rotate the submodel instance
 		// (Since this is an intrinsic rotation, we have no associated subsystem, so pass 0 for subsystem flags.)
-		model_update_instance(ir->model_instance_num, submodel_it->submodel_num, &submodel_it->submodel_info_1, 0);
+        flagset<Ship::Subsystem_Flags> empty;
+		model_update_instance(ir->model_instance_num, submodel_it->submodel_num, &submodel_it->submodel_info_1, empty);
 	}
 }
 
@@ -5215,7 +5227,7 @@ int model_create_bsp_collision_tree()
 	tree.used = true;
 	Bsp_collision_tree_list.push_back(tree);
 
-	return Bsp_collision_tree_list.size() - 1;
+	return (int)(Bsp_collision_tree_list.size() - 1);
 }
 
 bsp_collision_tree *model_get_bsp_collision_tree(int tree_index)
@@ -5813,4 +5825,81 @@ void glowpoint_init()
 	glowpoint_bank_overrides.clear();
 	parse_glowpoint_table("glowpoints.tbl");
 	parse_modular_table(NOX("*-gpo.tbm"), parse_glowpoint_table);
+}
+
+void model_subsystem::reset()
+{
+    flags.reset();
+    memset(name, 0, sizeof(name));
+    memset(subobj_name, 0, sizeof(alt_dmg_sub_name));
+    memset(alt_sub_name, 0, sizeof(alt_sub_name));
+    memset(alt_dmg_sub_name, 0, sizeof(alt_dmg_sub_name));
+    subobj_num = 0;
+    model_num = 0;
+    type = 0;
+    pnt.xyz.x = pnt.xyz.y = pnt.xyz.z = 0.0f;
+    radius = 0;
+
+    max_subsys_strength = 0;
+    armor_type_idx = 0;
+
+    memset(crewspot, 0, sizeof(crewspot));
+    turret_norm.xyz.x = turret_norm.xyz.y = turret_norm.xyz.z = 0.0f;
+    
+    for (auto it = std::begin(turret_matrix.a1d); it != std::end(turret_matrix.a1d); ++it)
+        *it = 0.0f;
+
+    turret_fov = 0;
+    turret_max_fov = 0;
+    turret_y_fov = 0;
+    turret_num_firing_points = 0;
+    for (auto it = std::begin(turret_firing_point); it != std::end(turret_firing_point); ++it)
+        it->xyz.x = it->xyz.y = it->xyz.z = 0.0f;
+    turret_gun_sobj = 0;
+    turret_turning_rate = 0;
+    turret_base_rotation_snd = 0;
+    turret_base_rotation_snd_mult = 0;
+    turret_gun_rotation_snd = 0;
+    turret_gun_rotation_snd_mult = 0;
+
+    alive_snd = 0;
+    dead_snd = 0;
+    rotation_snd = 0;
+
+    engine_wash_pointer = NULL;
+    turn_rate = 0; 
+    weapon_rotation_pbank = 0;
+    stepped_rotation = NULL;
+
+    awacs_intensity = 0.0f;
+    awacs_radius = 0.0f;
+
+    for (auto it = std::begin(primary_banks); it != std::end(primary_banks); ++it)
+        *it = 0;
+    for (auto it = std::begin(primary_bank_capacity); it != std::end(primary_bank_capacity); ++it)
+        *it = 0;
+    for (auto it = std::begin(secondary_banks); it != std::end(secondary_banks); ++it)
+        *it = 0;
+    for (auto it = std::begin(secondary_bank_capacity); it != std::end(secondary_bank_capacity); ++it)
+        *it = 0;
+
+    path_num = 0;
+
+    n_triggers = 0;
+    triggers = NULL;
+
+    turret_reset_delay = 0;
+
+    for (auto it = std::begin(target_priority); it != std::end(target_priority); ++it)
+        *it = 0;
+
+    num_target_priorities = 0;
+
+    optimum_range = 0;
+    favor_current_facing = 0;
+
+    turret_rof_scaler = 0;
+
+    turret_max_bomb_ownage = 0;
+    turret_max_target_ownage = 0;
 }

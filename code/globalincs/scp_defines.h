@@ -4,6 +4,6 @@
 #pragma once
 
 #include "scp_compiler_detection.h"
-
+#include "platformChecks.h"
 
 #endif // SCP_DEFINES_H

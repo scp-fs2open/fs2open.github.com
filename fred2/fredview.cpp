@@ -69,14 +69,6 @@ static char THIS_FILE[] = __FILE__;
 
 subsys_to_render Render_subsys;
 
-// the next variable is used for executable stamping -- please leave it alone!!!
-#define FRED_EXPIRE_TIME	(7 * 1000)
-char stamp[STAMP_STRING_LENGTH] = { STAMP_STRING };
-int expire_game;
-
-#define EXPIRE_BAD_CHECKSUM			1
-#define EXPIRE_BAD_TIME					2
-
 #define SHIP_TYPES			8000
 #define REDUCER				100.0f
 #define DUP_DRAG_OF_WING	2
@@ -132,25 +124,85 @@ void view_universe(int just_marked = 0);
 void select_objects();
 void drag_rotate_save_backup();
 
+class MFCViewport : public os::Viewport
+{
+	HWND _windowHandle = nullptr;
+	HDC _device_context = nullptr;
+public:
+	explicit MFCViewport(HWND hwnd, HDC dc) : _windowHandle(hwnd), _device_context(dc)
+	{
+		Assertion(hwnd != nullptr, "Invalid window handle!");
+		Assertion(dc != nullptr, "Invalid device context handle!");
+	}
+
+	~MFCViewport() override
+	{
+		ReleaseDC(_windowHandle, _device_context);
+
+		_windowHandle = nullptr;
+		_device_context = nullptr;
+	}
+
+	SDL_Window* toSDLWindow() override
+	{
+		return nullptr;
+	}
+
+	std::pair<uint32_t, uint32_t> getSize() override
+	{
+		RECT size;
+		if (!GetWindowRect(_windowHandle, &size))
+		{
+			return std::make_pair(0, 0);
+		}
+
+		return std::make_pair(size.right - size.left, size.bottom - size.top);
+	}
+
+	void swapBuffers() override
+	{
+		SwapBuffers(_device_context);
+	}
+
+	void setState(os::ViewportState state) override
+	{
+		// Not implemented
+	}
+
+	void minimize() override
+	{
+		// Not implemented
+	}
+
+	void restore() override
+	{
+		// Not implemented
+	}
+
+	HDC getHDC()
+	{
+		return _device_context;
+	}
+};
+
 class MFCOpenGLContext : public os::OpenGLContext
 {
 	// HACK: Since OpenGL apparently likes global state we also have to make this global...
 	static void* _oglDllHandle;
 	static size_t _oglDllReferenceCount;
 
-	HWND _windowHandle = nullptr;
-	HDC _device_context = nullptr;
 	HGLRC _render_context = nullptr;
 
 	BOOL(WINAPI * wglSwapIntervalEXT)(int interval) = nullptr;
 public:
-
-	MFCOpenGLContext(HWND hwnd, HDC hdc, HGLRC hglrc)
-		: _windowHandle(hwnd),
-		  _device_context(hdc),
-		  _render_context(hglrc)
+	explicit MFCOpenGLContext(HGLRC hglrc)
+		: _render_context(hglrc)
 	{
-		_oglDllHandle = SDL_LoadObject("OPENGL32.DLL");
+		if (_oglDllHandle == nullptr)
+		{
+			_oglDllHandle = SDL_LoadObject("OPENGL32.DLL");
+		}
+		++_oglDllReferenceCount;
 	}
 
 	~MFCOpenGLContext() override
@@ -159,7 +211,12 @@ public:
 			mprintf(("Failed to delete render context!"));
 		}
 
-		ReleaseDC(_windowHandle, _device_context);
+		--_oglDllReferenceCount;
+		if (_oglDllReferenceCount == 0)
+		{
+			SDL_UnloadObject(_oglDllHandle);
+			_oglDllHandle = nullptr;
+		}
 	}
 
 	static void* wglLoader(const char* name)
@@ -177,26 +234,18 @@ public:
 	{
 		return wglLoader;
 	}
-
-	void makeCurrent()
-	{
-		if (!wglMakeCurrent(_device_context, _render_context))
-		{
-			mprintf(("Failed to make OpenGL context current!\n"));
-		}
-	}
-
-	void swapBuffers() override
-	{
-		SwapBuffers(_device_context);
-	}
-
+	
 	void setSwapInterval(int status) override
 	{
 		if (wglSwapIntervalEXT != nullptr)
 		{
 			wglSwapIntervalEXT(status);
 		}
+	}
+
+	HGLRC getHandle()
+	{
+		return _render_context;
 	}
 };
 
@@ -212,7 +261,7 @@ public:
 	~MFCGraphicsOperations() override
 	{}
 
-	std::unique_ptr<os::OpenGLContext> createOpenGLContext(const os::OpenGLContextAttributes& attrs, uint32_t, uint32_t) override
+	std::unique_ptr<os::Viewport> createViewport(const os::ViewPortProperties& props) override
 	{
 		int PixelFormat;
 		PIXELFORMATDESCRIPTOR pfd_test;
@@ -225,29 +274,34 @@ public:
 
 		GL_pfd.nSize = sizeof(PIXELFORMATDESCRIPTOR);
 		GL_pfd.nVersion = 1;
-		GL_pfd.dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER;
+		GL_pfd.dwFlags = PFD_DRAW_TO_WINDOW | PFD_DOUBLEBUFFER;
+		if (props.enable_opengl)
+		{
+			GL_pfd.dwFlags |= PFD_SUPPORT_OPENGL;
+		}
+
 		GL_pfd.iPixelType = PFD_TYPE_RGBA;
-		GL_pfd.cColorBits = attrs.red_size + attrs.green_size + attrs.blue_size + attrs.alpha_size;
-		GL_pfd.cRedBits = attrs.red_size;
-		GL_pfd.cGreenBits = attrs.green_size;
-		GL_pfd.cBlueBits = attrs.blue_size;
-		GL_pfd.cAlphaBits = attrs.alpha_size;
-		GL_pfd.cDepthBits = attrs.depth_size;
-		GL_pfd.cStencilBits = attrs.stencil_size;
+		GL_pfd.cColorBits = (BYTE)(props.pixel_format.red_size + props.pixel_format.green_size + props.pixel_format.blue_size + props.pixel_format.alpha_size);
+		GL_pfd.cRedBits = (BYTE)(props.pixel_format.red_size);
+		GL_pfd.cGreenBits = (BYTE)(props.pixel_format.green_size);
+		GL_pfd.cBlueBits = (BYTE)(props.pixel_format.blue_size);
+		GL_pfd.cAlphaBits = (BYTE)(props.pixel_format.alpha_size);
+		GL_pfd.cDepthBits = (BYTE)(props.pixel_format.depth_size);
+		GL_pfd.cStencilBits = (BYTE)(props.pixel_format.stencil_size);
 
 		Assert(_windowHandle != NULL);
 
 		auto device_context = GetDC(_windowHandle);
 
 		if (!device_context) {
-			Error(LOCATION, "Unable to get device context for OpenGL W32!");
+			mprintf(("Unable to get device context for OpenGL W32!\n"));
 			return nullptr;
 		}
 
 		PixelFormat = ChoosePixelFormat(device_context, &GL_pfd);
 
 		if (!PixelFormat) {
-			Error(LOCATION, "Unable to choose pixel format for OpenGL W32!");
+			mprintf(("Unable to choose pixel format for OpenGL W32!\n"));
 			ReleaseDC(_windowHandle, device_context);
 			return nullptr;
 		}
@@ -256,63 +310,68 @@ public:
 		}
 
 		if (!SetPixelFormat(device_context, PixelFormat, &GL_pfd)) {
-			Error(LOCATION, "Unable to set pixel format for OpenGL W32!");
-			ReleaseDC(_windowHandle, device_context);
-			return nullptr;
-		}
-
-		auto render_context = wglCreateContext(device_context);
-		if (!render_context) {
-			Error(LOCATION, "Unable to create rendering context for OpenGL W32!");
-			ReleaseDC(_windowHandle, device_context);
-			return nullptr;
-		}
-
-		if (!wglMakeCurrent(device_context, render_context)) {
-			Error(LOCATION, "Unable to make current thread for OpenGL W32!");
-			
-			if (!wglDeleteContext(render_context)) {
-				mprintf(("Failed to delete render context!"));
-			}
-
+			mprintf(("Unable to set pixel format for OpenGL W32!\n"));
 			ReleaseDC(_windowHandle, device_context);
 			return nullptr;
 		}
 
 		mprintf(("  Requested SDL Video values = R: %d, G: %d, B: %d, depth: %d, stencil: %d\n",
-			attrs.red_size, attrs.green_size, attrs.blue_size, attrs.depth_size, attrs.stencil_size));
+			props.pixel_format.red_size, props.pixel_format.green_size, props.pixel_format.blue_size,
+			props.pixel_format.depth_size, props.pixel_format.stencil_size));
 
-		// now report back as to what we ended up getting
+		return std::unique_ptr<os::Viewport>(new MFCViewport(_windowHandle, device_context));
+	}
 
-		DescribePixelFormat(device_context, PixelFormat, sizeof(PIXELFORMATDESCRIPTOR), &GL_pfd);
+	std::unique_ptr<os::OpenGLContext> createOpenGLContext(os::Viewport* port, const os::OpenGLContextAttributes& ctx) override
+	{
+		if (ctx.profile != os::OpenGLProfile::Compatibility) {
+			mprintf(("ERROR: FRED code can only create compatibility profiles!\n"));
+			return nullptr;
+		}
 
-		int r = GL_pfd.cRedBits;
-		int g = GL_pfd.cGreenBits;
-		int b = GL_pfd.cBlueBits;
-		int depth = GL_pfd.cDepthBits;
-		int stencil = GL_pfd.cStencilBits;
-		int db = ((GL_pfd.dwFlags & PFD_DOUBLEBUFFER) > 0);
+		auto mfcView = reinterpret_cast<MFCViewport*>(port);
 
-		mprintf(("  Actual WGL Video values    = R: %d, G: %d, B: %d, depth: %d, stencil: %d\n", r, g, b, depth, stencil, db));
-		
+		auto render_context = wglCreateContext(mfcView->getHDC());
+		if (!render_context) {
+			mprintf(("Unable to create rendering context for OpenGL W32!\n"));
+			return nullptr;
+		}
+
+		if (!wglMakeCurrent(mfcView->getHDC(), render_context)) {
+			mprintf(("Unable to make current thread for OpenGL W32!\n"));
+			
+			if (!wglDeleteContext(render_context)) {
+				mprintf(("Failed to delete render context!"));
+			}
+
+			return nullptr;
+		}
+
 		// Load the OpenGL DLL so we can use it to look up function pointers
 		// The name is from the SDL sources so it should be the right one
 		
-		return std::unique_ptr<os::OpenGLContext>(new MFCOpenGLContext(_windowHandle, device_context, render_context));
+		return std::unique_ptr<os::OpenGLContext>(new MFCOpenGLContext(render_context));
 	}
 
-	void makeOpenGLContextCurrent(os::OpenGLContext* ctx) override
+	void makeOpenGLContextCurrent(os::Viewport* view, os::OpenGLContext* ctx) override
 	{
-		if (ctx == nullptr)
-		{
+		if (view == nullptr && ctx == nullptr) {
 			if (!wglMakeCurrent(nullptr, nullptr))
 			{
 				mprintf(("Failed to make OpenGL context current!\n"));
 			}
+			return;
 		}
-		else
+
+		Assertion(view != nullptr, "Both viewport of context must be valid at this point!");
+		Assertion(ctx != nullptr, "Both viewport of context must be valid at this point!");
+
+		auto mfcCtx = reinterpret_cast<MFCOpenGLContext*>(ctx);
+		auto mfcView = reinterpret_cast<MFCViewport*>(view);
+
+		if (!wglMakeCurrent(mfcView->getHDC(), mfcCtx->getHandle()))
 		{
-			reinterpret_cast<MFCOpenGLContext*>(ctx)->makeCurrent();
+			mprintf(("Failed to make OpenGL context current!\n"));
 		}
 	}
 };
@@ -585,16 +644,6 @@ CFREDView::~CFREDView()
 	delete m_pGDlg;
 }
 
-void CALLBACK expire_game_proc( HWND wnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
-{
-	KillTimer(wnd, 1);
-	if ( expire_game == EXPIRE_BAD_CHECKSUM )
-		MessageBox (wnd, "Fred can no longer run due to internal overlay error", NULL, MB_OK | MB_ICONERROR |MB_TASKMODAL|MB_SETFOREGROUND);
-	else
-		MessageBox (wnd, "Error: cannot enter DOS mode for 80x40 color text mode display.", NULL, MB_OK | MB_ICONERROR|MB_TASKMODAL|MB_SETFOREGROUND);
-	exit(1);
-}
-
 BOOL CFREDView::PreCreateWindow(CREATESTRUCT& cs)
 {
 	BOOL casperl;
@@ -741,7 +790,7 @@ int drag_objects()
 		objp = GET_FIRST(&obj_used_list);
 		while (objp != END_OF_LIST(&obj_used_list))	{
 			Assert(objp->type != OBJ_NONE);
-			if (objp->flags & OF_MARKED) {
+			if (objp->flags[Object::Object_Flags::Marked]) {
 				if ((objp->type == OBJ_SHIP) || (objp->type == OBJ_START)) {
 					z = Ships[objp->instance].wingnum;
 					if (!flag)
@@ -771,7 +820,7 @@ int drag_objects()
 			objp = GET_FIRST(&obj_used_list);
 			while (objp != END_OF_LIST(&obj_used_list))	{
 				ptr = GET_NEXT(objp);
-				if (objp->flags & OF_TEMP_MARKED)
+				if (objp->flags [Object::Object_Flags::Temp_marked])
 					delete_object(objp);
 
 				objp = ptr;
@@ -785,8 +834,8 @@ int drag_objects()
 
 		objp = GET_FIRST(&obj_used_list);
 		while (objp != END_OF_LIST(&obj_used_list))	{
-			if (objp->flags & OF_TEMP_MARKED) {
-				objp->flags &= ~OF_TEMP_MARKED;
+			if (objp->flags [Object::Object_Flags::Temp_marked]) {
+                objp->flags.remove(Object::Object_Flags::Temp_marked);
 				mark_object(OBJ_INDEX(objp));
 			}
 
@@ -860,7 +909,7 @@ int drag_objects()
 		objp = GET_FIRST(&obj_used_list);
 		while (objp != END_OF_LIST(&obj_used_list))	{
 			Assert(objp->type != OBJ_NONE);
-			if (objp->flags & OF_MARKED) {
+			if (objp->flags[Object::Object_Flags::Marked]) {
 				vm_vec_add(&objp->pos, &objp->pos, &movement_vector);
 				if (objp->type == OBJ_WAYPOINT) {
 					waypoint *wpt = find_waypoint_with_instance(objp->instance);
@@ -874,7 +923,7 @@ int drag_objects()
 
 		objp = GET_FIRST(&obj_used_list);
 		while (objp != END_OF_LIST(&obj_used_list)) {
-			if (objp->flags & OF_MARKED)
+			if (objp->flags[Object::Object_Flags::Marked])
 				object_moved(objp);
 
 			objp = GET_NEXT(objp);
@@ -900,7 +949,7 @@ void drag_rotate_save_backup()
 	objp = GET_FIRST(&obj_used_list);
 	while (objp != END_OF_LIST(&obj_used_list))			{
 		Assert(objp->type != OBJ_NONE);
-		if (objp->flags & OF_MARKED)	{
+		if (objp->flags[Object::Object_Flags::Marked])	{
 			rotation_backup[OBJ_INDEX(objp)].pos = objp->pos;
 			rotation_backup[OBJ_INDEX(objp)].orient = objp->orient;
 		}
@@ -971,7 +1020,7 @@ int drag_rotate_objects()
 	objp = GET_FIRST(&obj_used_list);
 	while (objp != END_OF_LIST(&obj_used_list))			{
 		Assert(objp->type != OBJ_NONE);
-		if ((objp->flags & OF_MARKED) && (cur_object_index != OBJ_INDEX(objp) )) {
+		if ((objp->flags[Object::Object_Flags::Marked]) && (cur_object_index != OBJ_INDEX(objp) )) {
 			if (Group_rotate) {
 				matrix rot_trans;
 				vec3d tmpv1, tmpv2;
@@ -1013,7 +1062,7 @@ int drag_rotate_objects()
 
 	objp = GET_FIRST(&obj_used_list);
 	while (objp != END_OF_LIST(&obj_used_list)) {
-		if (objp->flags & OF_MARKED)
+		if (objp->flags[Object::Object_Flags::Marked])
 			object_moved(objp);
 
 		objp = GET_NEXT(objp);
@@ -1051,7 +1100,7 @@ void cancel_drag()
 				objp = GET_FIRST(&obj_used_list);
 				while (objp != END_OF_LIST(&obj_used_list))	{
 					Assert(objp->type != OBJ_NONE);
-					if (objp->flags & OF_MARKED)
+					if (objp->flags[Object::Object_Flags::Marked])
 						vm_vec_add(&objp->pos, &objp->pos, &movement_vector);
 
 					objp = GET_NEXT(objp);
@@ -1064,7 +1113,7 @@ void cancel_drag()
 			objp = GET_FIRST(&obj_used_list);
 			while (objp != END_OF_LIST(&obj_used_list))	{
 				Assert(objp->type != OBJ_NONE);
-				if (objp->flags & OF_MARKED) {
+				if (objp->flags[Object::Object_Flags::Marked]) {
 					int obj_index = OBJ_INDEX(objp);
 
 					if(!IS_VEC_NULL(&rotation_backup[obj_index].orient.vec.rvec) && 
@@ -1137,12 +1186,12 @@ void CFREDView::OnLButtonDown(UINT nFlags, CPoint point)
 			Cur_bitmap = on_object;
 			Bg_bitmap_dialog -> update_data();
 
-		} else if ((nFlags & MK_SHIFT) || (on_object == -1) || !(Objects[on_object].flags & OF_MARKED)) {
+		} else if ((nFlags & MK_SHIFT) || (on_object == -1) || !(Objects[on_object].flags[Object::Object_Flags::Marked])) {
 			if (!(nFlags & MK_SHIFT))
 				unmark_all();
 
 			if (on_object != -1) {
-				if (Objects[on_object].flags & OF_MARKED)
+				if (Objects[on_object].flags[Object::Object_Flags::Marked])
 					unmark_object(on_object);
 				else
 					mark_object(on_object);
@@ -1272,7 +1321,7 @@ void CFREDView::OnLButtonUp(UINT nFlags, CPoint point)
 			if (MessageBox(msg, "Query", MB_YESNO) == IDYES) {
 				objp = GET_FIRST(&obj_used_list);
 				while (objp != END_OF_LIST(&obj_used_list))	{
-					if (objp->flags & OF_MARKED) {
+					if (objp->flags[Object::Object_Flags::Marked]) {
 						if (Wings[Duped_wing].wave_count >= MAX_SHIPS_PER_WING) {
 							MessageBox("Max ships per wing limit reached");
 							break;
@@ -1472,7 +1521,7 @@ void select_objects()
 	ptr = GET_FIRST(&obj_used_list);
 	while (ptr != END_OF_LIST(&obj_used_list)) {
 		valid = 1;
-		if (ptr->flags & OF_HIDDEN)
+		if (ptr->flags[Object::Object_Flags::Hidden])
 			valid = 0;
 
 		Assert(ptr->type != OBJ_NONE);
@@ -1504,7 +1553,7 @@ void select_objects()
 				y = (int) v.screen.xyw.y;
 
 				if (x >= marking_box.x1 && x <= marking_box.x2 && y >= marking_box.y1 && y <= marking_box.y2) {
-					if (ptr->flags & OF_MARKED)
+					if (ptr->flags[Object::Object_Flags::Marked])
 						unmark_object(OBJ_INDEX(ptr));
 					else
 						mark_object(OBJ_INDEX(ptr));
@@ -1520,7 +1569,7 @@ void select_objects()
 	if (icon_mode) {
 		ptr = GET_FIRST(&obj_used_list);
 		while (ptr != END_OF_LIST(&obj_used_list)) {
-			if ((ptr->flags & OF_MARKED) && (ptr->type != OBJ_POINT))
+			if ((ptr->flags[Object::Object_Flags::Marked]) && (ptr->type != OBJ_POINT))
 				unmark_object(OBJ_INDEX(ptr));
 
 			ptr = GET_NEXT(ptr);
@@ -2253,14 +2302,14 @@ void CFREDView::OnSelectList()
 // position camera to view all objects on the screen at once.  Doesn't change orientation.
 void view_universe(int just_marked)
 {
-	int i, max = 0, flags[MAX_OBJECTS];
+	int i, max = 0, obj_flags[MAX_OBJECTS];
 	float dist, largest = 20.0f;
 	vec3d center, p1, p2;		// center of all the objects collectively
 	vertex v;
 	object *ptr;
 
 	for (i=0; i<MAX_OBJECTS; i++)
-		flags[i] = 0;
+		obj_flags[i] = 0;
 
 	if (just_marked)
 		ptr = &Objects[cur_object_index];
@@ -2273,7 +2322,7 @@ void view_universe(int just_marked)
 
 	ptr = GET_FIRST(&obj_used_list);
 	while (ptr != END_OF_LIST(&obj_used_list)) {
-		if (!just_marked || (ptr->flags & OF_MARKED)) {
+		if (!just_marked || (ptr->flags[Object::Object_Flags::Marked])) {
 			center = ptr->pos;
 			if (center.xyz.x < p1.xyz.x)
 				p1.xyz.x = center.xyz.x;
@@ -2295,12 +2344,12 @@ void view_universe(int just_marked)
 	vm_vec_avg(&center, &p1, &p2);
 	ptr = GET_FIRST(&obj_used_list);
 	while (ptr != END_OF_LIST(&obj_used_list)) {
-		if (!just_marked || (ptr->flags & OF_MARKED)) {
+		if (!just_marked || (ptr->flags[Object::Object_Flags::Marked])) {
 			dist = vm_vec_dist_squared(&center, &ptr->pos);
 			if (dist > largest)
 				largest = dist;
 
-			flags[OBJ_INDEX(ptr)] = 1;  // flag object as needing on-screen check
+			obj_flags[OBJ_INDEX(ptr)] = 1;  // flag object as needing on-screen check
 			if (OBJ_INDEX(ptr) > max)
 				max = OBJ_INDEX(ptr);
 		}
@@ -2314,7 +2363,7 @@ void view_universe(int just_marked)
 
 	ptr = GET_FIRST(&obj_used_list);
 	while (ptr != END_OF_LIST(&obj_used_list)) {
-		if (!just_marked || (ptr->flags & OF_MARKED)) {
+		if (!just_marked || (ptr->flags[Object::Object_Flags::Marked])) {
 			g3_rotate_vertex(&v, &ptr->pos);
 			Assert(!(v.codes & CC_BEHIND));
 			if (g3_project_vertex(&v) & PF_OVERFLOW)
@@ -2386,8 +2435,8 @@ void CFREDView::OnFormWing()
 	object *ptr = GET_FIRST(&obj_used_list);
 	bool found = false;
 	while (ptr != END_OF_LIST(&obj_used_list)) {
-		if (( (ptr->type == OBJ_SHIP) || (ptr->type == OBJ_START) ) && (ptr->flags & OF_MARKED)) {
-			if(Ships[ptr->instance].flags & SF_REINFORCEMENT) {
+		if (( (ptr->type == OBJ_SHIP) || (ptr->type == OBJ_START) ) && (ptr->flags[Object::Object_Flags::Marked])) {
+			if(Ships[ptr->instance].flags[Ship::Ship_Flags::Reinforcement]) {
 				found = true;
 				break;
 			}
@@ -2401,7 +2450,7 @@ void CFREDView::OnFormWing()
 		if(ok == IDOK) {
 			ptr = GET_FIRST(&obj_used_list);
 			while (ptr != END_OF_LIST(&obj_used_list)) {
-				if (( (ptr->type == OBJ_SHIP) || (ptr->type == OBJ_START) ) && (ptr->flags & OF_MARKED)) {
+				if (( (ptr->type == OBJ_SHIP) || (ptr->type == OBJ_START) ) && (ptr->flags[Object::Object_Flags::Marked])) {
 					set_reinforcement(Ships[ptr->instance].ship_name, 0);
 				}
 
@@ -2424,11 +2473,11 @@ void CFREDView::OnUpdateFormWing(CCmdUI* pCmdUI)
 	if (query_valid_object()) {
 		ptr = GET_FIRST(&obj_used_list);
 		while (ptr != END_OF_LIST(&obj_used_list)) {
-			if (ptr->flags & OF_MARKED) {
+			if (ptr->flags[Object::Object_Flags::Marked]) {
 				if (ptr->type == OBJ_SHIP)
 				{
 					int ship_type = ship_query_general_type(ptr->instance);
-					if(ship_type > -1 && (Ship_types[ship_type].ai_bools & STI_AI_CAN_FORM_WING))
+					if(ship_type > -1 && (Ship_types[ship_type].flags[Ship::Type_Info_Flags::AI_can_form_wing]))
 					{
 						count++;
 					}
@@ -2467,7 +2516,7 @@ int query_single_wing_marked()
 //		if (Ships[Objects[obj].instance].wingnum != cur_wing)
 //			return 0;
 		Assert(Ships[Objects[obj].instance].wingnum == cur_wing);
-		if (!(Objects[obj].flags & OF_MARKED))  // ensure all ships in wing.are marked
+		if (!(Objects[obj].flags[Object::Object_Flags::Marked]))  // ensure all ships in wing.are marked
 			return 0;
 	}
 
@@ -2648,7 +2697,7 @@ int CFREDView::global_error_check()
 
 			if (ptr->type == OBJ_START) {
 				t++;
-				if (!(Ship_info[z].flags & SIF_PLAYER_SHIP)) {
+				if (!(Ship_info[z].flags[Ship::Info_Flags::Player_ship])) {
 					ptr->type = OBJ_SHIP;
 					Player_starts--;
 					t--;
@@ -2729,13 +2778,13 @@ int CFREDView::global_error_check()
 				}
 			}
 
-			if ( (Ships[i].flags & SF_KILL_BEFORE_MISSION) && (Ships[i].hotkey >= 0) ){
+			if ( (Ships[i].flags[Ship::Ship_Flags::Kill_before_mission]) && (Ships[i].hotkey >= 0) ){
 				if (error("Ship flagged as \"destroy before mission start\" has a hotkey assignment")){
 					return 1;
 				}
 			}
 
-			if ( (Ships[i].flags & SF_KILL_BEFORE_MISSION) && (ptr->type == OBJ_START) ){
+			if ( (Ships[i].flags[Ship::Ship_Flags::Kill_before_mission]) && (ptr->type == OBJ_START) ){
 				if (error("Player start flagged as \"destroy before mission start\"")){
 					return 1;
 				}
@@ -2955,7 +3004,7 @@ int CFREDView::global_error_check()
 					}
 
 					int ship_type = ship_query_general_type(ship);
-					if(ship_type < 0 || !(Ship_types[ship_type].ai_bools & STI_AI_CAN_FORM_WING))
+					if(ship_type < 0 || !(Ship_types[ship_type].flags[Ship::Type_Info_Flags::AI_can_form_wing]))
 					{
 							if (error("Ship \"%s\" is an illegal type to be in a wing", Ships[ship].ship_name)){
 								return 1;
@@ -3178,7 +3227,7 @@ int CFREDView::global_error_check()
 		starting_wing = (ship_starting_wing_lookup(Wings[i].name) != -1);
 
 		// first, be sure this isn't a reinforcement wing.
-		if ( starting_wing && (Wings[i].flags & WF_REINFORCEMENT) ) {
+		if ( starting_wing && (Wings[i].flags[Ship::Wing_Flags::Reinforcement]) ) {
 			if ( error("Starting Wing %s marked as reinforcement.  This wing\nshould either be renamed, or unmarked as reinforcement.", Wings[i].name) ){
 // Goober5000				return 1;
 			}
@@ -4140,8 +4189,8 @@ void CFREDView::OnHideObjects()
 
 	ptr = GET_FIRST(&obj_used_list);
 	while (ptr != END_OF_LIST(&obj_used_list)) {
-		if (ptr->flags & OF_MARKED) {
-			ptr->flags |= OF_HIDDEN;
+		if (ptr->flags[Object::Object_Flags::Marked]) {
+            ptr->flags.set(Object::Object_Flags::Hidden);
 			unmark_object(OBJ_INDEX(ptr));
 		}
 
@@ -4155,7 +4204,7 @@ void CFREDView::OnShowHiddenObjects()
 
 	ptr = GET_FIRST(&obj_used_list);
 	while (ptr != END_OF_LIST(&obj_used_list)) {
-		ptr->flags &= ~OF_HIDDEN;
+		ptr->flags.remove(Object::Object_Flags::Hidden);
 		ptr = GET_NEXT(ptr);
 	}
 
@@ -4293,7 +4342,7 @@ void CFREDView::OnSetGroup(UINT nID)
 
 	objp = GET_FIRST(&obj_used_list);
 	while (objp != END_OF_LIST(&obj_used_list)) {
-		if (objp->flags & OF_MARKED) {
+		if (objp->flags[Object::Object_Flags::Marked]) {
 			if (objp->type == OBJ_SHIP) {
 				Ships[objp->instance].group |= n;
 
@@ -4309,54 +4358,6 @@ void CFREDView::OnSetGroup(UINT nID)
 			"These illegal objects you marked were not placed in the group");
 
 	Update_window = 1;
-}
-
-void CFREDView::OnInitialUpdate() 
-{
-	char *ptr, text[512];
-
-	CView::OnInitialUpdate();
-	
-	// check the time/checksum strings.
-	expire_game = 0;
-	ptr = &stamp[0];
-	if ( memcmp(ptr, DEFAULT_CHECKSUM_STRING, strlen(DEFAULT_CHECKSUM_STRING)) ) {
-		int stamped_checksum, checksum;
-
-		// the checksum is not the default checksum.  Calculate the checksum of the string
-		// and compare it.
-		memcpy(&stamped_checksum, ptr, sizeof(stamped_checksum) );
-		ptr = &stamp[0];
-		ptr += 8;			// get us to the actual string to calculate the checksum
-		CALCULATE_STAMP_CHECKSUM();
-
-		if ( checksum != stamped_checksum ){
-			expire_game = EXPIRE_BAD_CHECKSUM;
-		}
-
-		// now check the time
-		ptr = &stamp[0];
-		ptr += 4;
-		if ( memcmp( ptr, DEFAULT_TIME_STRING, strlen(DEFAULT_TIME_STRING)) ) {
-			int expire_time, current_time;
-
-			// not the default time -- check against the current time
-			memcpy( &expire_time, ptr, sizeof(expire_time) );
-			time( (time_t*)&current_time );
-			if ( current_time > expire_time )
-				expire_game = EXPIRE_BAD_TIME;
-		}
-
-		// since the default checksum has changed -- put up a message which shows who the program
-		// is stamped for
-		ptr = &stamp[0];
-		ptr += 8;
-		sprintf(text, "This version of Fred has been compiled for %s", ptr);
-		MessageBox(text, NULL, MB_OK);
-
-		if ( expire_game )
-			SetTimer(1, FRED_EXPIRE_TIME, expire_game_proc);
-	}
 }
 
 void CFREDView::OnEditorsAdjustGrid() 
@@ -4427,7 +4428,7 @@ void CFREDView::OnNextObj()
 		ptr = GET_FIRST(&obj_used_list);
 
 	if (Marked > 1) {  // cycle through marked list
-		while (!(ptr->flags & OF_MARKED))
+		while (!(ptr->flags[Object::Object_Flags::Marked]))
 		{
 			ptr = GET_NEXT(ptr);
 			if (ptr == END_OF_LIST(&obj_used_list))
@@ -4491,7 +4492,7 @@ void CFREDView::OnPrevObj()
 		i = n - 1;
 
 	if (Marked > 1) {  // cycle through marked list
-		while (!(Objects[i].flags & OF_MARKED))
+		while (!(Objects[i].flags[Object::Object_Flags::Marked]))
 		{
 			i--;
 			if (i < 0)

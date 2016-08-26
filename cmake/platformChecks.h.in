@@ -5,5 +5,8 @@
 
 #cmakedefine HAVE_EXECINFO_H
 #cmakedefine HAVE_CXXAPI_H
+#cmakedefine HAVE_GLU_H
+
+#cmakedefine01 IS_64BIT
 
 #endif // __PLATFORM_CHECKS_H__

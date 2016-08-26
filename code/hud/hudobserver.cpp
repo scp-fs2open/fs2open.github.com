@@ -26,14 +26,13 @@ ai_info Hud_obs_ai;
 void hud_observer_init(ship *shipp, ai_info *aip)
 {
 	// setup the pseduo ship and ai
-	memcpy(&Hud_obs_ai, aip, sizeof(ai_info));
+	Hud_obs_ai = *aip;
 	// (we used to do a memcpy here, but that doesn't work any longer, so let's just assign the values we need)
 	Hud_obs_ship.clear();
 	strcpy_s(Hud_obs_ship.ship_name, shipp->ship_name);
 	Hud_obs_ship.team = shipp->team;
 	Hud_obs_ship.ai_index = shipp->ai_index;
 	Hud_obs_ship.flags = shipp->flags;
-	Hud_obs_ship.flags2 = shipp->flags2;
 	Hud_obs_ship.ship_info_index = shipp->ship_info_index;
 	Hud_obs_ship.objnum = shipp->objnum;
 	Hud_obs_ship.wingnum = shipp->wingnum;
@@ -42,7 +41,7 @@ void hud_observer_init(ship *shipp, ai_info *aip)
 	memcpy(&Hud_obs_ship.np_updates, shipp->np_updates, MAX_PLAYERS * sizeof(np_update));
 	Hud_obs_ship.ship_max_hull_strength = shipp->ship_max_hull_strength;
 	Hud_obs_ship.ship_max_shield_strength = shipp->ship_max_shield_strength;
-	memcpy(&Hud_obs_ship.weapons, &shipp->weapons, sizeof(ship_weapon));
+	Hud_obs_ship.weapons = shipp->weapons;
 
 	HUD_config.is_observer = 1;
 	HUD_config.show_flags = HUD_observer_default_flags;

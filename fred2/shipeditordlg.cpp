@@ -242,7 +242,7 @@ END_MESSAGE_MAP()
 
 BOOL CShipEditorDlg::Create()
 {
-	int i, index;
+	int i;
 	BOOL r;
 	CComboBox *ptr;
 
@@ -281,15 +281,13 @@ BOOL CShipEditorDlg::Create()
 	// deal with the persona dialog
 	ptr = (CComboBox *)GetDlgItem(IDC_SHIP_PERSONA);
 	ptr->ResetContent();
-	index = ptr->AddString("<None>");
+	auto index = ptr->AddString("<None>");
 	if ( index >= 0 ){
 		ptr->SetItemData(index, NO_PERSONA_INDEX);
 	}	
 
 	for ( i = 0; i < Num_personas; i++ ) {
 		if ( Personas[i].flags & PERSONA_FLAG_WINGMAN ) {
-			int index;
-
 			// don't bother putting any vasudan personas on the list -- done automatically by code
 //			if ( Personas[i].flags & PERSONA_FLAG_VASUDAN ){
 //				continue;
@@ -383,7 +381,7 @@ int CShipEditorDlg::tristate_set(int val, int cur_state)
 //
 void CShipEditorDlg::initialize_data(int full_update)
 {
-	int i, type, ship_count, player_count, total_count, wing = -1, pvalid_count;
+	int type, ship_count, player_count, total_count, wing = -1, pvalid_count;
 	int a_cue, d_cue, cue_init = 0, cargo = 0, base_ship, base_player, pship = -1;
 	int no_arrival_warp = 0, no_departure_warp = 0, escort_count, ship_orders, current_orders;
 	int pship_count;  // a total count of the player ships not marked
@@ -417,7 +415,7 @@ void CShipEditorDlg::initialize_data(int full_update)
 	enable = p_enable = 1;
 	objp = GET_FIRST(&obj_used_list);
 	while (objp != END_OF_LIST(&obj_used_list)) {
-		if ((objp->type == OBJ_SHIP) && (Ships[objp->instance].flags & SF_ESCORT)){
+		if ((objp->type == OBJ_SHIP) && (Ships[objp->instance].flags[Ship::Ship_Flags::Escort])){
 			escort_count++;  // get a total count of escort ships
 		}
 
@@ -425,13 +423,13 @@ void CShipEditorDlg::initialize_data(int full_update)
 			pship_count++;  // count all player starts in mission
 		}
 
-		if (objp->flags & OF_MARKED) {
+		if (objp->flags[Object::Object_Flags::Marked]) {
 			type = objp->type;
 			if ((type == OBJ_START) && !mission_type){  // in multiplayer missions, starts act like ships
 				type = OBJ_SHIP;
 			}
 
-			i = -1;
+			auto i = -1;
 			if (type == OBJ_START) {
 				player_count++;
 				// if player_count is 1, base_player will be the one and only player
@@ -444,7 +442,7 @@ void CShipEditorDlg::initialize_data(int full_update)
 			}
 
 			if (i >= 0){
-				if (Ship_info[Ships[i].ship_info_index].flags & SIF_PLAYER_SHIP){
+				if (Ship_info[Ships[i].ship_info_index].flags[Ship::Info_Flags::Player_ship]){
 					pvalid_count++;
 				}
 			}
@@ -476,7 +474,7 @@ void CShipEditorDlg::initialize_data(int full_update)
 	if (ship_count) {
 		box = (CComboBox *) GetDlgItem(IDC_SHIP_CARGO1);
 		box->ResetContent();
-		for (i=0; i<Num_cargo; i++){
+		for (auto i=0; i<Num_cargo; i++){
 			box->AddString(Cargo_names[i]);
 		}
 		
@@ -492,9 +490,9 @@ void CShipEditorDlg::initialize_data(int full_update)
 		objp = GET_FIRST(&obj_used_list);
 		while (objp != END_OF_LIST(&obj_used_list)) {
 			if ((objp->type == OBJ_START) || (objp->type == OBJ_SHIP)) {
-				if (objp->flags & OF_MARKED) {
+				if (objp->flags[Object::Object_Flags::Marked]) {
 					// do processing for both ships and players
-					i = get_ship_from_obj(objp);
+					auto i = get_ship_from_obj(objp);
 					if (base_player >= 0) {
 						m_ship_class = Ships[i].ship_info_index;
 						m_team = Ships[i].team;
@@ -518,7 +516,7 @@ void CShipEditorDlg::initialize_data(int full_update)
 						ship_orders = -1;
 					}
 
-					if (Ships[i].flags & SF_ESCORT){
+					if (Ships[i].flags[Ship::Ship_Flags::Escort]){
 						escort_count--;  // remove marked escorts from count
 					}
 
@@ -600,8 +598,8 @@ void CShipEditorDlg::initialize_data(int full_update)
 							}
 
 							// set routine local varaiables for ship/object flags
-							no_arrival_warp = (Ships[i].flags & SF_NO_ARRIVAL_WARP) ? 1 : 0;
-							no_departure_warp = (Ships[i].flags & SF_NO_DEPARTURE_WARP) ? 1 : 0;
+							no_arrival_warp = (Ships[i].flags[Ship::Ship_Flags::No_arrival_warp]) ? 1 : 0;
+							no_departure_warp = (Ships[i].flags[Ship::Ship_Flags::No_departure_warp]) ? 1 : 0;
 
 							base_ship = -1;
 							if (!multi_edit)
@@ -631,8 +629,8 @@ void CShipEditorDlg::initialize_data(int full_update)
 								GetDlgItem(IDC_WING) -> SetWindowText("");
 							}
 
-							no_arrival_warp = tristate_set(Ships[i].flags & SF_NO_ARRIVAL_WARP, no_arrival_warp);
-							no_departure_warp = tristate_set(Ships[i].flags & SF_NO_DEPARTURE_WARP, no_departure_warp);
+							no_arrival_warp = tristate_set(Ships[i].flags[Ship::Ship_Flags::No_arrival_warp], no_arrival_warp);
+							no_departure_warp = tristate_set(Ships[i].flags[Ship::Ship_Flags::No_departure_warp], no_departure_warp);
 						}
 					}
 				}
@@ -662,7 +660,7 @@ void CShipEditorDlg::initialize_data(int full_update)
 		m_no_departure_warp.SetCheck(no_departure_warp);
 
 		if (!multi_edit) {
-			i = m_arrival_tree.select_sexp_node;
+			auto i = m_arrival_tree.select_sexp_node;
 			if (i != -1) {
 				w = GetDlgItem(IDC_ARRIVAL_TREE);
 				m_arrival_tree.hilite_item(i);
@@ -693,8 +691,8 @@ void CShipEditorDlg::initialize_data(int full_update)
 			m_player_ship.SetCheck(TRUE);
 			objp = GET_FIRST(&obj_used_list);
 			while (objp != END_OF_LIST(&obj_used_list)) {
-				if ((objp->type == OBJ_START) && (objp->flags & OF_MARKED)) {
-					i = objp->instance;
+				if ((objp->type == OBJ_START) && (objp->flags[Object::Object_Flags::Marked])) {
+					auto i = objp->instance;
 					if (base_player >= 0) {
 						m_ship_class = Ships[i].ship_info_index;
 						m_team = Ships[i].team;
@@ -805,13 +803,13 @@ void CShipEditorDlg::initialize_data(int full_update)
 		}
 
 		box->ResetContent();
-		for (i=0; i<MAX_TVT_TEAMS; i++)
+		for (auto i=0; i<MAX_TVT_TEAMS; i++)
 			box->AddString(Iff_info[i].iff_name);
 	} else {
 		box = (CComboBox *) GetDlgItem(IDC_SHIP_TEAM);
 		box->EnableWindow(enable);
 		box->ResetContent();
-		for (i=0; i<Num_iffs; i++){
+		for (auto i=0; i<Num_iffs; i++){
 			box->AddString(Iff_info[i].iff_name);
 		}
 	}	
@@ -914,7 +912,7 @@ void CShipEditorDlg::initialize_data(int full_update)
 	GetDlgItem(IDC_AI_CLASS)->EnableWindow(enable);
 	GetDlgItem(IDC_SHIP_CARGO1)->EnableWindow(enable);
 	GetDlgItem(IDC_HOTKEY)->EnableWindow(enable);
-	if ((m_ship_class >= 0) && !(Ship_info[m_ship_class].flags & SIF_CARGO) && !(Ship_info[m_ship_class].flags & SIF_NO_SHIP_TYPE))
+    if ((m_ship_class >= 0) && !(Ship_info[m_ship_class].flags[Ship::Info_Flags::Cargo]) && !(Ship_info[m_ship_class].flags[Ship::Info_Flags::No_ship_type]))
 		GetDlgItem(IDC_GOALS)->EnableWindow(enable);
 	else if (multi_edit)
 		GetDlgItem(IDC_GOALS)->EnableWindow(enable);
@@ -1029,7 +1027,7 @@ int CShipEditorDlg::update_data(int redraw)
 	if (multi_edit) {  // editing multiple ships (ships and/or players)
 		ptr = GET_FIRST(&obj_used_list);
 		while (ptr != END_OF_LIST(&obj_used_list)) {
-			if (((ptr->type == OBJ_START) || (ptr->type == OBJ_SHIP)) && (ptr->flags & OF_MARKED))
+			if (((ptr->type == OBJ_START) || (ptr->type == OBJ_SHIP)) && (ptr->flags[Object::Object_Flags::Marked]))
 				update_ship(get_ship_from_obj(ptr));
 
 			ptr = GET_NEXT(ptr);
@@ -1306,7 +1304,7 @@ int CShipEditorDlg::update_ship(int ship)
 		// m_persona holds the index into the list.  Get the item data associated with this index and then
 		// assign to the ship taking care that we check for the NO_PERSONA_INDEX id
 		box = (CComboBox *)GetDlgItem(IDC_SHIP_PERSONA);
-		persona = box->GetItemData(m_persona);
+		persona = (int)box->GetItemData(m_persona);
 		if ( persona == NO_PERSONA_INDEX )
 			persona = -1;
 
@@ -1332,7 +1330,7 @@ int CShipEditorDlg::update_ship(int ship)
 		m_arrival_delay.save(&Ships[ship].arrival_delay);
 		m_departure_delay.save(&Ships[ship].departure_delay);
 		if (m_arrival_target >= 0) {
-			z = ((CComboBox *) GetDlgItem(IDC_ARRIVAL_TARGET))->GetItemData(m_arrival_target);
+			z = (int)((CComboBox *) GetDlgItem(IDC_ARRIVAL_TARGET))->GetItemData(m_arrival_target);
 			MODIFY(Ships[ship].arrival_anchor, z);
 
 			// if the arrival is not hyperspace or docking bay -- force arrival distance to be
@@ -1355,7 +1353,7 @@ int CShipEditorDlg::update_ship(int ship)
 			}
 		}
 		if (m_departure_target >= 0) {
-			z = ((CComboBox *) GetDlgItem(IDC_DEPARTURE_TARGET))->GetItemData(m_departure_target);
+			z = (int)((CComboBox *) GetDlgItem(IDC_DEPARTURE_TARGET))->GetItemData(m_departure_target);
 			MODIFY(Ships[ship].departure_anchor, z );
 		}
 	}
@@ -1365,33 +1363,33 @@ int CShipEditorDlg::update_ship(int ship)
 
 	switch( m_no_arrival_warp.GetCheck() ) {
 		case 0:
-			if (Ships[ship].flags & SF_NO_ARRIVAL_WARP)
+			if (Ships[ship].flags[Ship::Ship_Flags::No_arrival_warp])
 				set_modified();
 
-			Ships[ship].flags &= ~SF_NO_ARRIVAL_WARP;
+            Ships[ship].flags.remove(Ship::Ship_Flags::No_arrival_warp);
 			break;
 
 		case 1:
-			if (!(Ships[ship].flags & SF_NO_ARRIVAL_WARP))
+			if (!(Ships[ship].flags[Ship::Ship_Flags::No_arrival_warp]))
 				set_modified();
 
-			Ships[ship].flags |= SF_NO_ARRIVAL_WARP;
+            Ships[ship].flags.set(Ship::Ship_Flags::No_arrival_warp);
 			break;
 	}
 
 	switch( m_no_departure_warp.GetCheck() ) {
 		case 0:
-			if (Ships[ship].flags & SF_NO_DEPARTURE_WARP)
+			if (Ships[ship].flags[Ship::Ship_Flags::No_departure_warp])
 				set_modified();
 
-			Ships[ship].flags &= ~SF_NO_DEPARTURE_WARP;
+            Ships[ship].flags.remove(Ship::Ship_Flags::No_departure_warp);
 			break;
 
 		case 1:
-			if (!(Ships[ship].flags & SF_NO_DEPARTURE_WARP))
+			if (!(Ships[ship].flags[Ship::Ship_Flags::No_departure_warp]))
 				set_modified();
 
-			Ships[ship].flags |= SF_NO_DEPARTURE_WARP;
+            Ships[ship].flags.set(Ship::Ship_Flags::No_departure_warp);
 			break;
 	}
 
@@ -1559,7 +1557,7 @@ void CShipEditorDlg::OnSelchangeShipClass()
 	UpdateData(TRUE);
 	ptr = GET_FIRST(&obj_used_list);
 	while (ptr != END_OF_LIST(&obj_used_list)) {
-		if (((ptr->type == OBJ_SHIP) || (ptr->type == OBJ_START)) && (ptr->flags & OF_MARKED))
+		if (((ptr->type == OBJ_SHIP) || (ptr->type == OBJ_START)) && (ptr->flags[Object::Object_Flags::Marked]))
 			if (Ships[ptr->instance].ship_info_index != m_ship_class) {
 				change_ship_type(ptr->instance, m_ship_class);
 				set_modified();
@@ -1592,7 +1590,7 @@ void CShipEditorDlg::OnWeapons()
 	if (multi_edit) {
 		objp = GET_FIRST(&obj_used_list);
 		while (objp != END_OF_LIST(&obj_used_list)) {
-			if (objp->flags & OF_MARKED)
+			if (objp->flags[Object::Object_Flags::Marked])
 				if ((objp->type == OBJ_SHIP) || (objp->type == OBJ_START)) {
 					i = objp->instance;
 					if (ship) {
@@ -1638,7 +1636,7 @@ void CShipEditorDlg::OnShipReset()
 
 	objp = GET_FIRST(&obj_used_list);
 	while (objp != END_OF_LIST(&obj_used_list)) {
-		if (((objp->type == OBJ_SHIP) || ((objp->type == OBJ_START) && !mission_type)) && (objp->flags & OF_MARKED)) {
+		if (((objp->type == OBJ_SHIP) || ((objp->type == OBJ_START) && !mission_type)) && (objp->flags[Object::Object_Flags::Marked])) {
 			ship = objp->instance;
 
 			// reset ship goals
@@ -2283,17 +2281,17 @@ void CShipEditorDlg::OnSetAsPlayerShip()
 	{
 		if ((objp->type == OBJ_SHIP) || (objp->type == OBJ_START))
 		{
-			if (objp->flags & OF_MARKED)	// there should only be one selected ship
+			if (objp->flags[Object::Object_Flags::Marked])	// there should only be one selected ship
 			{
 				// set as player ship
 				objp->type = OBJ_START;
-				objp->flags |= OF_PLAYER_SHIP;
+				objp->flags.set(Object::Object_Flags::Player_ship);
 			}
 			else
 			{
 				// set as regular ship
 				objp->type = OBJ_SHIP;
-				objp->flags &= ~OF_PLAYER_SHIP;
+				objp->flags.remove(Object::Object_Flags::Player_ship);
 			}
 		}
 		objp = GET_NEXT(objp);
@@ -2330,7 +2328,7 @@ void CShipEditorDlg::OnRestrictArrival()
 	if (box->GetCount() == 0)
 		return;
 
-	arrive_from_ship = box->GetItemData(m_arrival_target);
+	arrive_from_ship = (int)box->GetItemData(m_arrival_target);
 
 	if (!ship_has_dock_bay(arrive_from_ship))
 	{
@@ -2374,7 +2372,7 @@ void CShipEditorDlg::OnRestrictDeparture()
 	if (box->GetCount() == 0)
 		return;
 
-	depart_to_ship = box->GetItemData(m_departure_target);
+	depart_to_ship = (int)box->GetItemData(m_departure_target);
 
 	if (!ship_has_dock_bay(depart_to_ship))
 	{

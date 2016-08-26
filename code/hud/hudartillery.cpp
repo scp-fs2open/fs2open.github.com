@@ -308,7 +308,7 @@ void ssm_create(object *target, vec3d *start, size_t ssm_index, ssm_firing_info 
 
 		ssm_info *si = &Ssm_info[ssm_index];
 		weapon_info *wip = &Weapon_info[si->weapon_info_index];
-		if (wip->wi_flags & WIF_BEAM) {
+		if (wip->wi_flags[Weapon::Info_Flags::Beam]) {
 			ssm.sinfo.duration = ((si->warp_time - ((wip->b_info.beam_warmup / 1000.0f) + wip->b_info.beam_life + (wip->b_info.beam_warmdown / 1000.0f))) / 2.0f) / si->warp_time;
 		} else {
 			ssm.sinfo.duration = 0.5f;
@@ -371,7 +371,7 @@ void ssm_process()
 					if ((1.0f - fireball_lifeleft_percent(&Objects[moveup->fireballs[idx]])) >= moveup->sinfo.duration) {
 						weapon_info *wip = &Weapon_info[si->weapon_info_index];
 						// are we a beam? -MageKing17
-						if (wip->wi_flags & WIF_BEAM) {
+						if (wip->wi_flags[Weapon::Info_Flags::Beam]) {
 							beam_fire_info fire_info;
 							memset(&fire_info, 0, sizeof(beam_fire_info));
 

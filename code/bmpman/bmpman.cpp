@@ -1099,7 +1099,7 @@ int bm_is_valid(int handle) {
 //			c_type		= output for an updated BM_TYPE_*
 //			mm_lvl		= number of mipmap levels for the image
 //			size		= size of the data contained in the image
-static int bm_load_info(BM_TYPE type, int n, const char *filename, CFILE *img_cfp, int *w, int *h, int *bpp, BM_TYPE *c_type, int *mm_lvl, int *size)
+static int bm_load_info(BM_TYPE type, int n, const char *filename, CFILE *img_cfp, int *w, int *h, int *bpp, BM_TYPE *c_type, int *mm_lvl, size_t *size)
 {
 	int dds_ct;
 
@@ -1194,7 +1194,8 @@ int bm_load(const char *real_filename) {
 	int i, free_slot = -1;
 	int w, h, bpp = 8;
 	int rc = 0;
-	int bm_size = 0, mm_lvl = 0;
+	size_t bm_size = 0;
+	int mm_lvl = 0;
 	char filename[MAX_FILENAME_LEN];
 	BM_TYPE type = BM_TYPE_NONE;
 	BM_TYPE c_type = BM_TYPE_NONE;
@@ -1503,7 +1504,8 @@ int bm_load_animation(const char *real_filename, int *nframes, int *fps, int *ke
 	float anim_total_time = 0.0f;
 	int anim_width = 0, anim_height = 0;
 	BM_TYPE type = BM_TYPE_NONE, eff_type = BM_TYPE_NONE, c_type = BM_TYPE_NONE;
-	int bpp = 0, mm_lvl = 0, img_size = 0;
+	int bpp = 0, mm_lvl = 0;
+	size_t img_size = 0;
 	char clean_name[MAX_FILENAME_LEN];
 
 	if (!bm_inited)

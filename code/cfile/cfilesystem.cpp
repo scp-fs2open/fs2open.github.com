@@ -43,7 +43,7 @@
 #define CF_ROOTTYPE_PACK 1
 
 // for a defined and specifically set location to get/send pilot/campaign files
-char *Pilot_file_path = NULL;
+SCP_string Pilot_file_path;
 
 //  Created by:
 //    specifying hard drive tree
@@ -428,7 +428,7 @@ void cf_build_root_list(const char *cdrom_dir)
 		root->roottype = CF_ROOTTYPE_PATH;
 
 		// If it wasn't set before, set the pilot path
-		if (Pilot_file_path == NULL)
+		if (Pilot_file_path.empty())
 			Pilot_file_path = root->path;
 
 		// Next, check any VP files under the current directory.
@@ -455,7 +455,7 @@ void cf_build_root_list(const char *cdrom_dir)
 		root->roottype = CF_ROOTTYPE_PATH;
 
 		// set the default player location to here
-		if (Pilot_file_path == NULL)
+		if (Pilot_file_path.empty())
 			Pilot_file_path = root->path;
 
 		// Next, check any VP files under the current directory.
@@ -485,7 +485,7 @@ void cf_build_root_list(const char *cdrom_dir)
 	root->roottype = CF_ROOTTYPE_PATH;
 
 	// If the path wasn't set before use the working directory
-	if ( Pilot_file_path == NULL )
+	if ( Pilot_file_path.empty() )
 		Pilot_file_path = root->path;
 
    //======================================================
@@ -2032,7 +2032,7 @@ int cf_create_default_path_string(char *path, uint path_max, int pathtype, const
 
 		// force a specific directory to search for player files
 		if ( (pathtype == CF_TYPE_PLAYERS) || (pathtype == CF_TYPE_SINGLE_PLAYERS) || (pathtype == CF_TYPE_MULTI_PLAYERS) ) {
-			strncpy(path, Pilot_file_path, path_max);
+			strncpy(path, Pilot_file_path.c_str(), path_max);
 		} else {
 			strncpy(path, root->path, path_max);
 		}

@@ -90,7 +90,7 @@ public:
 
 	void render_buffer(int buffer_handle, int flags);
 
-	bool need_to_render() { return vertices.size() > 0; }
+	size_t need_to_render() { return vertices.size(); }
 };
 
 
@@ -119,6 +119,6 @@ int geometry_batch_add_bitmap(int texture, int tmap_flags, vertex *pnt, int orie
 void batch_load_buffer_geometry_shader_map_bitmaps(particle_pnt* buffer, int *n_verts);
 void batch_render_geometry_shader_map_bitmaps();
 void geometry_batch_render(int stream_buffer);
-int geometry_batch_get_size();
+size_t geometry_batch_get_size();
 
 #endif

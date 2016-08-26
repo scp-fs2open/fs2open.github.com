@@ -149,13 +149,13 @@ void campaign_tree_view::OnDraw(CDC* pDC)
   
 		strcpy_s(str, Campaign.missions[i].name);
 		str[strlen(str) - 4] = 0;  // strip extension from filename
-		GetTextExtentPoint32(pDC->m_hDC, str, strlen(str), &size);
+		GetTextExtentPoint32(pDC->m_hDC, str, (int)strlen(str), &size);
 		if (size.cx > CELL_TEXT_WIDTH) {
 			strcpy(str + strlen(str) - 1, "...");
-			GetTextExtentPoint32(pDC->m_hDC, str, strlen(str), &size);
+			GetTextExtentPoint32(pDC->m_hDC, str, (int)strlen(str), &size);
 			while (size.cx > CELL_TEXT_WIDTH) {
 				strcpy(str + strlen(str) - 4, "...");
-				GetTextExtentPoint32(pDC->m_hDC, str, strlen(str), &size);
+				GetTextExtentPoint32(pDC->m_hDC, str, (int)strlen(str), &size);
 			}
 		}
 
@@ -168,7 +168,7 @@ void campaign_tree_view::OnDraw(CDC* pDC)
 			pDC->Draw3dRect(x - Bx / 2, y - By / 2, Bx, By, RGB(255, 255, 255), RGB(0, 0, 0));
 		}
 
-		pDC->TextOut(x, y - By / 2 + 2, str, strlen(str));
+		pDC->TextOut(x, y - By / 2 + 2, str, (int)strlen(str));
 	}
 
 	for (i=0; i<Total_links; i++) {

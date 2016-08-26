@@ -2172,7 +2172,7 @@ void send_netgame_descript_packet(net_addr *addr, int code)
 
 	if(code == 1){
 		// add as much of the description as we dare
-		desc_len = strlen(The_mission.mission_desc);
+		desc_len = (int)strlen(The_mission.mission_desc);
 		if(desc_len > MAX_PACKET_SIZE - 10){
 			desc_len = MAX_PACKET_SIZE - 10;
 			ADD_INT(desc_len);
@@ -2476,7 +2476,7 @@ void send_ship_kill_packet( object *objp, object *other_objp, float percent_kill
 	Assert ( Net_player->flags & NETINFO_FLAG_AM_MASTER );
 
 	// special deaths
-	vaporized = ( (Ships[objp->instance].flags & SF_VAPORIZE) > 0 );
+	vaporized = Ships[objp->instance].flags[Ship::Ship_Flags::Vaporize];
 
 	extra_death_info = 0; 
 	if ( vaporized ) {
@@ -2519,7 +2519,7 @@ void send_ship_kill_packet( object *objp, object *other_objp, float percent_kill
 
 	// if the ship who died is a player, then send some extra info, like who killed him, etc.
 	was_player = 0;
-	if ( objp->flags & OF_PLAYER_SHIP ) {
+	if ( objp->flags[Object::Object_Flags::Player_ship] ) {
 		int pnum;
 		char temp;
 		short temp2;
@@ -2599,7 +2599,7 @@ void process_ship_kill_packet( ubyte *data, header *hinfo )
 
 	// maybe set vaporized
 	if (extra_death_info & EXTRA_DEATH_VAPORIZED) {
-		Ships[sobjp->instance].flags |= SF_VAPORIZE;
+		Ships[sobjp->instance].flags.set(Ship::Ship_Flags::Vaporize);
 	}
 
 	// maybe set wash_killed
@@ -2638,7 +2638,7 @@ void process_ship_kill_packet( ubyte *data, header *hinfo )
 	if ( !(Net_player->flags & NETINFO_FLAG_INGAME_JOIN) ) {
 		ship_hit_kill( sobjp, oobjp, percent_killed, sd );
 	} else {
-		sobjp->flags |= OF_SHOULD_BE_DEAD;
+        sobjp->flags.set(Object::Object_Flags::Should_be_dead);
 		ship_cleanup(sobjp->instance, SHIP_DESTROYED);
 		obj_delete( OBJ_INDEX(sobjp) );
 	}
@@ -2949,7 +2949,7 @@ void send_secondary_fired_packet( ship *shipp, ushort starting_sig, int starting
 	// get the object for this ship.  If it is an AI object, send all the info to all player.  Otherwise,
 	// we might send the info to the other player different than the one who fired
 	objp = &Objects[shipp->objnum];
-	if ( !(objp->flags & OF_PLAYER_SHIP) ) {
+	if ( !(objp->flags[Object::Object_Flags::Player_ship]) ) {
 		if ( num_fired == 0 ) {
 			return;
 		}
@@ -2973,7 +2973,7 @@ void send_secondary_fired_packet( ship *shipp, ushort starting_sig, int starting
 		sinfo |= SFPF_ALLOW_SWARM;
 	}
 
-	if ( shipp->flags & SF_SECONDARY_DUAL_FIRE ){
+	if ( shipp->flags[Ship::Ship_Flags::Secondary_dual_fire] ){
 		sinfo |= SFPF_DUAL_FIRE;
 	}
 
@@ -2997,7 +2997,7 @@ void send_secondary_fired_packet( ship *shipp, ushort starting_sig, int starting
 		}
 
 		if ( Objects[aip->target_objnum].type == OBJ_WEAPON ) {
-			Assert(Weapon_info[Weapons[Objects[aip->target_objnum].instance].weapon_info_index].wi_flags & WIF_BOMB);
+			Assert(Weapon_info[Weapons[Objects[aip->target_objnum].instance].weapon_info_index].wi_flags[Weapon::Info_Flags::Bomb]);
 		}
 
 	}
@@ -3006,7 +3006,7 @@ void send_secondary_fired_packet( ship *shipp, ushort starting_sig, int starting
 	ADD_DATA( t_subsys );
 
 	// just send this packet to everyone, then bail if an AI ship fired.
-	if ( !(objp->flags & OF_PLAYER_SHIP) ) {		
+	if ( !(objp->flags[Object::Object_Flags::Player_ship]) ) {		
 		multi_io_send_to_all(data, packet_size);
 		return;
 	}
@@ -3102,11 +3102,7 @@ void process_secondary_fired_packet(ubyte* data, header* hinfo, int from_player)
 	}
 
 	// set the dual fire properties of the ship
-	if ( sinfo & SFPF_DUAL_FIRE ){
-		shipp->flags |= SF_SECONDARY_DUAL_FIRE;
-	} else {
-		shipp->flags &= ~SF_SECONDARY_DUAL_FIRE;
-	}
+    shipp->flags.set(Ship::Ship_Flags::Secondary_dual_fire, (sinfo & SFPF_DUAL_FIRE) != 0);
 
 	// determine whether current target is locked
 	Assert( shipp->ai_index != -1 );
@@ -4076,8 +4072,8 @@ void process_netplayer_slot_packet(ubyte *data, header *hinfo)
 				}
 				multi_assign_player_ship( player_num, objp, ship_class );
 				Net_players[player_num].p_info.ship_index = ship_index;
-				objp->flags &= ~(OF_COULD_BE_PLAYER);
-				objp->flags |= OF_PLAYER_SHIP;
+                objp->flags.remove(Object::Object_Flags::Could_be_player);
+                objp->flags.set(Object::Object_Flags::Player_ship);
 			}
 		}
 		GET_DATA(stop);
@@ -4148,18 +4144,10 @@ void process_ship_weapon_change( ubyte *data, header *hinfo )
 	shipp = &Ships[objp->instance];
 	if ( what == MULTI_PRIMARY_CHANGED ) {
 		shipp->weapons.current_primary_bank = new_bank;
-		if ( link_status ){
-			shipp->flags |= SF_PRIMARY_LINKED;
-		} else {
-			shipp->flags &= ~SF_PRIMARY_LINKED;
-		}
+		shipp->flags.set(Ship::Ship_Flags::Primary_linked, link_status != 0);
 	} else {
 		shipp->weapons.current_secondary_bank = new_bank;
-		if ( link_status ){
-			shipp->flags |= SF_SECONDARY_DUAL_FIRE;
-		} else {
-			shipp->flags &= ~SF_SECONDARY_DUAL_FIRE;
-		}
+		shipp->flags.set(Ship::Ship_Flags::Secondary_dual_fire, link_status != 0);
 	}
 }
 	
@@ -4956,7 +4944,7 @@ void send_ai_info_update_packet( object *objp, char what, object * other_objp )
 	aip = &Ai_info[Ships[objp->instance].ai_index];
 
 	// do an out here
-	if ( Ships[objp->instance].flags & (SF_DEPARTING | SF_DYING) )
+	if ( Ships[objp->instance].is_dying_or_departing())
 		return;
 
 	switch( what ) {
@@ -5526,8 +5514,8 @@ void send_firing_info_packet()
 	Assert( !(Net_player->flags & NETINFO_FLAG_AM_MASTER) );
 
 	BUILD_HEADER(FIRING_INFO);
-	plinked = (ubyte)((Player_ship->flags & SF_PRIMARY_LINKED)?1:0);
-	sdual = (ubyte)((Player_ship->flags & SF_SECONDARY_DUAL_FIRE)?1:0);
+	plinked = (ubyte)((Player_ship->flags[Ship::Ship_Flags::Primary_linked])?1:0);
+	sdual = (ubyte)((Player_ship->flags[Ship::Ship_Flags::Secondary_dual_fire])?1:0);
 	ADD_DATA( plinked );
 	ADD_DATA( sdual );
 	
@@ -5556,15 +5544,9 @@ void process_firing_info_packet( ubyte *data, header *hinfo )
 
 	// get the ship pointer for this player and set the flags accordingly.
 	shipp = &(Ships[Objects[Net_players[player_num].m_player->objnum].instance]);
-	if ( plinked )
-		shipp->flags |= SF_PRIMARY_LINKED;
-	else
-		shipp->flags &= ~SF_PRIMARY_LINKED;
+	shipp->flags.set(Ship::Ship_Flags::Primary_linked, plinked != 0);
+	shipp->flags.set(Ship::Ship_Flags::Secondary_dual_fire, sdual != 0);
 
-	if ( sdual )
-		shipp->flags |= SF_SECONDARY_DUAL_FIRE;
-	else
-		shipp->flags &= ~SF_SECONDARY_DUAL_FIRE;
 }
 
 // packet to deal with changing status of mission goals.  used to be sent every so often from server
@@ -5812,7 +5794,7 @@ void send_post_sync_data_packet(net_player *p, int std_request)
 		shipp = &Ships[Objects[so->objnum].instance];
 
 		// don't process non player wing ships
-		if ( !(shipp->flags & SF_FROM_PLAYER_WING ) )
+		if ( !(shipp->flags[Ship::Ship_Flags::From_player_wing] ) )
 			continue;
 
 		ship_count++;
@@ -5827,7 +5809,7 @@ void send_post_sync_data_packet(net_player *p, int std_request)
 		shipp = &Ships[Objects[so->objnum].instance];
 
 		// don't process non player wing ships
-		if ( !(shipp->flags & SF_FROM_PLAYER_WING ) )
+		if ( !(shipp->flags[Ship::Ship_Flags::From_player_wing] ) )
 			continue;		
 		
 		// add the net signature of the object for look up
@@ -5847,7 +5829,7 @@ void send_post_sync_data_packet(net_player *p, int std_request)
 		shipp = &Ships[Objects[so->objnum].instance];
 
 		// don't process non player wing ships
-		if ( !(shipp->flags & SF_FROM_PLAYER_WING ) )
+		if ( !(shipp->flags[Ship::Ship_Flags::From_player_wing] ) )
 			continue;			
 
 		// if this is a ship owned by a player, we should mark down his weapons bank/link settings now if we're the server
@@ -5907,20 +5889,20 @@ void send_post_sync_data_packet(net_player *p, int std_request)
 		
 		// send primary and secondary weapon link status
 		val = 0x0;
-		if(shipp->flags & SF_PRIMARY_LINKED){
+		if(shipp->flags[Ship::Ship_Flags::Primary_linked]){
 			if(pl != NULL){
 				pl->s_info.cur_link_status |= (1<<0);
 			}
 			val |= (1<<0);
 		}				
-		if(shipp->flags & SF_SECONDARY_DUAL_FIRE){
+		if(shipp->flags[Ship::Ship_Flags::Secondary_dual_fire]){
 			if(pl != NULL){
 				pl->s_info.cur_link_status |= (1<<1);
 			}
 			val |= (1<<1);
 		}		
 		// if this is a player ship add (1<<2)
-		if(Objects[shipp->objnum].flags & OF_PLAYER_SHIP){
+		if(Objects[shipp->objnum].flags[Object::Object_Flags::Player_ship]){
 			val |= (1<<2);
 		}
 		ADD_DATA(val);
@@ -6009,7 +5991,7 @@ void process_post_sync_data_packet(ubyte *data, header *hinfo)
 			Multi_ts_deleted_objnums[idx] = OBJ_INDEX(objp);
 
 			// delete the ship
-			ship_add_exited_ship(&Ships[objp->instance], SEF_PLAYER_DELETED);
+			ship_add_exited_ship(&Ships[objp->instance], Ship::Exit_Flags::Player_deleted);
 			obj_delete(Multi_ts_deleted_objnums[idx]);			
 			ship_wing_cleanup(objp->instance,&Wings[Ships[objp->instance].wingnum]);
 		} else {
@@ -6109,17 +6091,17 @@ void process_post_sync_data_packet(ubyte *data, header *hinfo)
 		GET_DATA(val);
 
 		if(val & (1<<0)){
-			shipp->flags |= SF_PRIMARY_LINKED;				
+			shipp->flags.set(Ship::Ship_Flags::Primary_linked);				
 		}				
 		if(val & (1<<1)){		
-			shipp->flags |= SF_SECONDARY_DUAL_FIRE;			
+			shipp->flags.set(Ship::Ship_Flags::Secondary_dual_fire);			
 		}
-		Objects[shipp->objnum].flags &= ~(OF_PLAYER_SHIP);
-		Objects[shipp->objnum].flags &= ~(OF_COULD_BE_PLAYER);
+        Objects[shipp->objnum].flags.remove(Object::Object_Flags::Player_ship);
+        Objects[shipp->objnum].flags.remove(Object::Object_Flags::Could_be_player);
 		if(val & (1<<2)){
-			Objects[shipp->objnum].flags |= OF_PLAYER_SHIP;
+            Objects[shipp->objnum].flags.set(Object::Object_Flags::Player_ship);
 		} else {
-			obj_set_flags( &Objects[shipp->objnum], Objects[shipp->objnum].flags | OF_COULD_BE_PLAYER );
+			obj_set_flags( &Objects[shipp->objnum], Objects[shipp->objnum].flags + Object::Object_Flags::Could_be_player);
 		}
 
 		// get ship ets
@@ -7170,7 +7152,7 @@ void process_client_update_packet(ubyte *data, header *hinfo)
 					// add the value just generated (it was zero'ed above) into the array of generic system types
 					subsys_type = subsysp->system_info->type;					// this is the generic type of subsystem
 					Assert ( subsys_type < SUBSYSTEM_MAX );
-					if (!(subsysp->flags & SSF_NO_AGGREGATE)) {
+					if (!(subsysp->flags[Ship::Subsystem_Flags::No_aggregate])) {
 						shipp->subsys_info[subsys_type].aggregate_current_hits += fl_val;
 					}
 					n_subsystems++;
@@ -7321,7 +7303,7 @@ void send_homing_weapon_info( int weapon_num )
 	wp = &Weapons[weapon_num];
 
 	// be sure that this weapon object is a homing object.
-	if ( !(Weapon_info[wp->weapon_info_index].wi_flags & WIF_HOMING) )
+	if ( !(Weapon_info[wp->weapon_info_index].is_homing()) )
 		return;
 
 	// default the subsystem
@@ -7387,11 +7369,11 @@ void process_homing_weapon_info( ubyte *data, header *hinfo )
 	}
 
 	if ( homing_object->type == OBJ_WEAPON ) {
-		int flags = Weapon_info[Weapons[homing_object->instance].weapon_info_index].wi_flags;
+		auto flags = Weapon_info[Weapons[homing_object->instance].weapon_info_index].wi_flags;
 
 	//	Assert( (flags & WIF_BOMB) || (flags & WIF_CMEASURE) );
 
-		if ( !((flags & WIF_BOMB) || (flags & WIF_CMEASURE)) ) {
+		if ( !((flags[Weapon::Info_Flags::Bomb, Weapon::Info_Flags::Cmeasure])) ) {
 			nprintf(("Network", "Homing object is invalid for homing update\n"));
 			return;
 		}
@@ -7480,147 +7462,6 @@ void process_reinforcement_avail( ubyte *data, header *hinfo )
 	}
 }
 
-void send_change_iff_packet(ushort net_signature, int new_team)
-{
-	ubyte data[MAX_PACKET_SIZE];
-	int packet_size = 0;
-
-	if(Net_player == NULL){
-		return;
-	}
-	if(!(Net_player->flags & NETINFO_FLAG_AM_MASTER)){
-		return;
-	}
-
-	// build the packet and add the data
-	BUILD_HEADER(CHANGE_IFF);
-	ADD_USHORT(net_signature);
-	ADD_INT(new_team);
-
-	// send to all players	
-	multi_io_send_to_all_reliable(data, packet_size);
-}
-
-void process_change_iff_packet( ubyte *data, header *hinfo)
-{
-	int offset = HEADER_LENGTH;
-	ushort net_signature;
-	int new_team;	
-	object *objp;
-
-	// get the data
-	GET_USHORT(net_signature);
-	GET_INT(new_team);
-	PACKET_SET_SIZE();
-
-	// lookup the object
-	objp = multi_get_network_object(net_signature);
-	if((objp != NULL) && (objp->type == OBJ_SHIP) && (objp->instance >=0)){
-		Ships[objp->instance].team = new_team;
-	}	
-}
-
-void send_change_iff_color_packet(ushort net_signature, int observer_team, int observed_team, int alternate_iff_color)
-{
-	ubyte data[MAX_PACKET_SIZE];
-	int packet_size = 0;
-
-	if(Net_player == NULL){
-		return;
-	}
-	if(!(Net_player->flags & NETINFO_FLAG_AM_MASTER)){
-		return;
-	}
-
-	// build the packet and add the data
-	BUILD_HEADER(CHANGE_IFF_COLOR);
-	ADD_USHORT(net_signature);
-	ADD_INT(observer_team);
-	ADD_INT(observed_team);
-	ADD_INT(alternate_iff_color);
-
-	// send to all players	
-	multi_io_send_to_all_reliable(data, packet_size);
-}
-
-void process_change_iff_color_packet( ubyte *data, header *hinfo)
-{
-	int offset = HEADER_LENGTH;
-	ushort net_signature;
-	int observer_team, observed_team, alternate_iff_color;	
-	object *objp;
-
-	// get the data
-	GET_USHORT(net_signature);
-	GET_INT(observer_team);
-	GET_INT(observed_team);
-	GET_INT(alternate_iff_color);
-	PACKET_SET_SIZE();
-
-	// lookup the object
-	objp = multi_get_network_object(net_signature);
-	if((objp != NULL) && (objp->type == OBJ_SHIP) && (objp->instance >=0))
-	{
-		Ships[objp->instance].ship_iff_color[observer_team][observed_team] = alternate_iff_color;
-	}	
-}
-
-void send_change_ai_class_packet(ushort net_signature, char *subsystem, int new_ai_class)
-{
-	ubyte data[MAX_PACKET_SIZE];
-	int packet_size = 0;
-
-	if(Net_player == NULL){
-		return;
-	}
-	if(!(Net_player->flags & NETINFO_FLAG_AM_MASTER)){
-		return;
-	}
-
-	// build the packet and add the data
-	BUILD_HEADER(CHANGE_AI_CLASS);
-	ADD_USHORT(net_signature);
-	if (subsystem)
-		ADD_STRING(subsystem);
-	else
-		ADD_STRING(NO_SUBSYS_STRING);
-	ADD_INT(new_ai_class);
-
-	// send to all players	
-	multi_io_send_to_all_reliable(data, packet_size);
-}
-
-void process_change_ai_class_packet(ubyte *data, header *hinfo)
-{
-	int offset = HEADER_LENGTH;
-	ushort net_signature;
-	int new_ai_class;
-	char subsys_buf[255];
-	object *objp;
-
-	// get the data
-	GET_USHORT(net_signature);
-	GET_STRING(subsys_buf);
-	GET_INT(new_ai_class);
-	PACKET_SET_SIZE();
-
-	// lookup the object
-	objp = multi_get_network_object(net_signature);
-	if((objp != NULL) && (objp->type == OBJ_SHIP) && (objp->instance >=0))
-	{
-		// no subsystem?
-		if (!strcmp(subsys_buf, NO_SUBSYS_STRING))
-		{
-			ship_set_new_ai_class(objp->instance, new_ai_class);
-		}
-		// subsystem
-		else
-		{
-			ship_subsystem_set_new_ai_class(objp->instance, subsys_buf, new_ai_class);
-		}
-	}	
-}
-
 void send_NEW_primary_fired_packet(ship *shipp, int banks_fired)
 {
 	int packet_size, objnum;
@@ -7651,7 +7492,7 @@ void send_NEW_primary_fired_packet(ship *shipp, int banks_fired)
 	// ubanks_fired |= (current_bank << CURRENT_BANK_BIT);
 
 	// append the SF_PRIMARY_LINKED flag on the top nibble of the banks_fired
-	// if ( shipp->flags & SF_PRIMARY_LINKED ){
+	// if ( shipp->flags[Ship::Ship_Flags::Primary_linked] ){
 		// ubanks_fired |= (1<<7);
 	// }	
 
@@ -7734,7 +7575,7 @@ void process_NEW_primary_fired_packet(ubyte *data, header *hinfo)
 	// if ( !linked ){
 // 		shipp->flags &= ~SF_PRIMARY_LINKED;
 	// } else {
-		// shipp->flags |= SF_PRIMARY_LINKED;
+		// shipp->flags.set(Ship::Ship_Flags::Primary_linked);
 	// }
 
 	// if we're in client firing mode, ignore ones for myself	
@@ -7745,15 +7586,15 @@ void process_NEW_primary_fired_packet(ubyte *data, header *hinfo)
 	ship_fire_primary( objp, 0, 1 );
 
 	// Karajorma - It's still a hack but at least this way it only affects AI ships
-	if (!(objp->flags & OF_PLAYER_SHIP))
+	if (!(objp->flags[Object::Object_Flags::Player_ship]))
 	{
 		// Juke - this is the hackiest hack, but hopefully it will fix stream weapon 
 		// notifications generated by AI ships.
-		uint flags = shipp->flags & SF_TRIGGER_DOWN;
+		bool flags = shipp->flags[Ship::Ship_Flags::Trigger_down];
 
-		shipp->flags |= SF_TRIGGER_DOWN;
+		shipp->flags.set(Ship::Ship_Flags::Trigger_down);
 		ship_fire_primary( objp, 1, 1 );
-		shipp->flags &= flags | ~SF_TRIGGER_DOWN;
+		shipp->flags.set(Ship::Ship_Flags::Trigger_down, flags);
 	}
 }
 
@@ -7965,7 +7806,7 @@ void process_beam_fired_packet(ubyte *data, header *hinfo)
 	ship *shipp = &Ships[fire_info.shooter->instance];
 
 	// this check is a little convoluted but should cover all bases until we decide to just break the protocol
-	if ( Ship_info[shipp->ship_info_index].flags & (SIF_FIGHTER | SIF_BOMBER) ) {
+	if ( Ship_info[shipp->ship_info_index].is_fighter_bomber() ) {
 		// make sure the beam is a primary weapon and not attached to a turret or something
 		for (i = 0; i < shipp->weapons.num_primary_banks; i++) {
 			if ( shipp->weapons.primary_bank_weapons[i] == fire_info.beam_info_index ) {
@@ -8092,87 +7933,6 @@ void process_event_update_packet(ubyte *data, header *hinfo)
 	else if((store_flags & MEF_DIRECTIVE_SPECIAL) && !(Mission_events[u_event].flags & MEF_DIRECTIVE_SPECIAL)){
 		mission_event_unset_directive_special(u_event);
 	}	
-}
-
-void send_weapon_or_ammo_changed_packet (int ship_index, int bank_type, int bank_number, int ammo_left, int rearm_limit, int new_weapon_index)
-{
-	ubyte data[MAX_PACKET_SIZE];
-	int packet_size = 0;
-
-	if(Net_player == NULL){
-		return;
-	}
-	if(!(Net_player->flags & NETINFO_FLAG_AM_MASTER)){
-		return;
-	}
-
-	// build the packet and add the data
-	BUILD_HEADER(WEAPON_OR_AMMO_CHANGED);
-	ADD_INT(ship_index);
-	ADD_INT(bank_type);
-	ADD_INT(bank_number);
-	ADD_INT(ammo_left);
-	ADD_INT(rearm_limit);
-	ADD_INT(new_weapon_index);
-
-	//Send it to the player whose weapons have changes
-	multi_io_send_to_all_reliable(data, packet_size);
-}
-
-void process_weapon_or_ammo_changed_packet(ubyte *data, header *hinfo)
-{
-	int offset = HEADER_LENGTH;
-	int ship_index, bank_type, bank_number, ammo_left, rearm_limit, new_weapon_index;
-	ship *shipp;
-
-	// get the data
-	GET_INT(ship_index);
-	GET_INT(bank_type);
-	GET_INT(bank_number);
-	GET_INT(ammo_left);
-	GET_INT(rearm_limit);
-	GET_INT(new_weapon_index);
-	PACKET_SET_SIZE();
-
-	// Now set the ships values up. 
-	
-	//Primary weapons
-	if (bank_type == 0) 
-	{
-		// don't swap weapons
-		if (new_weapon_index < 0)
-		{
-			set_primary_ammo(ship_index, bank_number, ammo_left, rearm_limit);
-		}
-		else 
-		{
-			Assert (new_weapon_index < MAX_WEAPON_TYPES);
-			shipp = &Ships[ship_index];
-			shipp->weapons.primary_bank_weapons[bank_number] = new_weapon_index;
-			set_primary_ammo(Player_obj->instance, bank_number, ammo_left, rearm_limit);
-		}
-	}
-	// Secondary weapons
-	else if (bank_type == 1)
-	{
-		// don't swap weapons
-		if (new_weapon_index < 0)
-		{
-			set_secondary_ammo(ship_index, bank_number, ammo_left, rearm_limit);
-		}
-		else 
-		{
-			Assert (new_weapon_index < MAX_WEAPON_TYPES);
-			shipp = &Ships[ship_index];
-			shipp->weapons.secondary_bank_weapons[bank_number] = new_weapon_index;
-			set_secondary_ammo(Player_obj->instance, bank_number, ammo_left, rearm_limit);
-		}
-	}
-	else
-	{
-		nprintf(("network", "weapon_or_ammo_changed_packet recived for tertiary or other unsupported type\n"));
-		return;
-	}
 }
 
 // Karajorma - Sends a packet to all clients telling them that a SEXP variable has changed its value
@@ -8363,7 +8123,7 @@ void process_flak_fired_packet(ubyte *data, header *hinfo)
 		wid = ssp->weapons.secondary_bank_weapons[0];
 	}
 
-	if((wid < 0) || !(Weapon_info[wid].wi_flags & WIF_FLAK)){
+	if((wid < 0) || !(Weapon_info[wid].wi_flags[Weapon::Info_Flags::Flak])){
 		return;
 	}
 

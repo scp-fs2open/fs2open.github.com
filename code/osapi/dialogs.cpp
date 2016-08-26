@@ -126,6 +126,10 @@ namespace os
 				mprintf(("ASSERTION: \"%s\" at %s:%d\n", text, filename, linenum));
 			}
 
+			if (running_unittests) {
+				throw AssertException(msgStream.str());
+			}
+
 			msgStream << "\n";
 			msgStream << dump_stacktrace();
 
@@ -212,6 +216,10 @@ namespace os
 				return;
 			}
 
+			if (running_unittests) {
+				throw LuaErrorException(msgStream.str());
+			}
+
 			set_clipboard_text(msgStream.str().c_str());
 
 			// truncate text
@@ -238,7 +246,7 @@ namespace os
 			boxData.flags = SDL_MESSAGEBOX_ERROR;
 			boxData.message = boxText.c_str();
 			boxData.title = "Error!";
-			boxData.window = os_get_window();
+			boxData.window = os::getSDLMainWindow();
 
 			gr_activate(0);
 
@@ -292,6 +300,10 @@ namespace os
 				return;
 			}
 
+			if (running_unittests) {
+				throw AssertException(text);
+			}
+
 			SCP_stringstream messageStream;
 			messageStream << text << "\n";
 			messageStream << dump_stacktrace();
@@ -318,7 +330,7 @@ namespace os
 			boxData.flags = SDL_MESSAGEBOX_ERROR;
 			boxData.message = text;
 			boxData.title = "Error!";
-			boxData.window = os_get_window();
+			boxData.window = os::getSDLMainWindow();
 
 			gr_activate(0);
 
@@ -366,6 +378,10 @@ namespace os
 				return;
 			}
 
+			if (running_unittests) {
+				throw AssertException(printfString);
+			}
+
 			SCP_stringstream boxMsgStream;
 			boxMsgStream << "Warning: " << formatMessage << "\n";
 			boxMsgStream << "File: " << filename << "\n";
@@ -395,7 +411,7 @@ namespace os
 			boxData.flags = SDL_MESSAGEBOX_WARNING;
 			boxData.message = boxMessage.c_str();
 			boxData.title = "Warning!";
-			boxData.window = os_get_window();
+			boxData.window = os::getSDLMainWindow();
 
 			gr_activate(0);
 
@@ -454,6 +470,10 @@ namespace os
 
 		void Message(MessageType type, const char* message, const char* title)
 		{
+			if (running_unittests) {
+				throw WarningException(message);
+			}
+
 			int flags = 1;
 
 			switch (type) 
@@ -479,7 +499,7 @@ namespace os
 					break;
 			}
 
-			SDL_ShowSimpleMessageBox(flags, title, message, os_get_window());
+			SDL_ShowSimpleMessageBox(flags, title, message, os::getSDLMainWindow());
 		}
 	}
 }

@@ -25,11 +25,11 @@ extern vec3d Object_position;
 
 extern team_color* Current_team_color;
 
-inline int in_box(vec3d *min, vec3d *max, vec3d *pos, vec3d *view_pos)
+inline int in_box(vec3d *min, vec3d *max, vec3d *pos, vec3d *view_position)
 {
 	vec3d point;
 
-	vm_vec_sub(&point, view_pos, pos);
+	vm_vec_sub(&point, view_position, pos);
 
 	if ( (point.xyz.x >= min->xyz.x) && (point.xyz.x <= max->xyz.x)
 		&& (point.xyz.y >= min->xyz.y) && (point.xyz.y <= max->xyz.y)
@@ -41,9 +41,9 @@ inline int in_box(vec3d *min, vec3d *max, vec3d *pos, vec3d *view_pos)
 	return -1;
 }
 
-inline int in_sphere(vec3d *pos, float radius, vec3d *view_pos)
+inline int in_sphere(vec3d *pos, float radius, vec3d *view_position)
 {
-	if ( vm_vec_dist(view_pos, pos) <= radius )
+	if ( vm_vec_dist(view_position, pos) <= radius )
 		return 1;
 	else
 		return -1;
@@ -233,7 +233,7 @@ struct queued_buffer_draw
 {
 	int render_state_handle;
 	int texture_maps[TM_NUM_TYPES];
-	int transform_buffer_offset;
+	size_t transform_buffer_offset;
 
 	color clr;
 	int blend_filter;
@@ -244,7 +244,7 @@ struct queued_buffer_draw
 	vec3d scale;
 
 	vertex_buffer *buffer;
-	int texi;
+	size_t texi;
 	int flags;
 	int sdr_flags;
 
@@ -263,6 +263,8 @@ struct queued_buffer_draw
 		texture_maps[TM_SPECULAR_TYPE]		= -1;
 		texture_maps[TM_SPEC_GLOSS_TYPE]	= -1;
 		texture_maps[TM_AMBIENT_TYPE]		= -1;
+
+		thrust_scale = 0.0f;
 	}
 };
 
@@ -279,9 +281,9 @@ class model_batch_buffer
 {
 	SCP_vector<matrix4> Submodel_matrices;
 	void* Mem_alloc;
-	uint Mem_alloc_size;
+	size_t Mem_alloc_size;
 
-	int Current_offset;
+	size_t Current_offset;
 
 	void allocate_memory();
 public:
@@ -289,7 +291,7 @@ public:
 
 	void reset();
 
-	int get_buffer_offset();
+	size_t get_buffer_offset();
 	void set_num_models(int n_models);
 	void set_model_transform(matrix4 &transform, int model_id);
 
@@ -362,7 +364,7 @@ public:
 	void add_submodel_to_batch(int model_num);
 	void start_model_batch(int n_models);
 
-	void add_buffer_draw(vertex_buffer *buffer, int texi, uint tmap_flags, model_render_params *interp);
+	void add_buffer_draw(vertex_buffer *buffer, size_t texi, uint tmap_flags, model_render_params *interp);
 	
 	vec3d get_view_position();
 	void clear_transforms();

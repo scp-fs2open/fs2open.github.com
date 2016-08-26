@@ -466,7 +466,7 @@ void campaign_editor::OnSelchangedSexpTree(NMHDR* pNMHDR, LRESULT* pResult)
 	}
 
 	// get identifier of parent
-	node = m_tree.GetItemData(h);
+	node = (int)m_tree.GetItemData(h);
 	for (i=0; i<Total_links; i++){
 		if ((Links[i].from == Cur_campaign_mission) && (Links[i].node == node)){
 			break;

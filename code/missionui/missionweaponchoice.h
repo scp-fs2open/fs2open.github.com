@@ -14,7 +14,7 @@
 
 class p_object;
 struct wss_unit;
-struct ship_weapon;
+class ship_weapon;
 
 // mask regions for icons in the scrollable lists
 #define ICON_PRIMARY_0				28

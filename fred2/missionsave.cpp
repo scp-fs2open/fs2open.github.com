@@ -53,9 +53,9 @@
 
 int CFred_mission_save::autosave_mission_file(char *pathname) {
 	char backup_name[256], name2[256];
-	int i, len;
+	int i;
 
-	len = strlen(pathname);
+	auto len = strlen(pathname);
 	strcpy_s(backup_name, pathname);
 	strcpy_s(name2, pathname);
 	sprintf(backup_name + len, ".%.3d", BACKUP_DEPTH);
@@ -648,7 +648,7 @@ void CFred_mission_save::save_ai_goals(ai_goal *goalp, int ship) {
 }
 
 int CFred_mission_save::save_asteroid_fields() {
-	int i, idx;
+	int i;
 
 	fred_parse_flag = 0;
 	required_string_fred("#Asteroid Fields");
@@ -692,7 +692,7 @@ int CFred_mission_save::save_asteroid_fields() {
 			}
 		} else {
 			// asteroid subtypes stored in field_debris_type as -1 or 1
-			for (idx = 0; idx < 3; idx++) {
+			for (auto idx = 0; idx < 3; idx++) {
 				if (Asteroid_field.field_debris_type[idx] != -1) {
 					if (optional_string_fred("+Field Debris Type:")) {
 						parse_comments();
@@ -759,7 +759,7 @@ int CFred_mission_save::save_bitmaps() {
 	fout(" %d", The_mission.ambient_light_level);
 
 	// neb2 stuff
-	if (The_mission.flags & MISSION_FLAG_FULLNEB) {
+	if (The_mission.flags[Mission::Mission_Flags::Fullneb]) {
 		required_string_fred("+Neb2:");
 		parse_comments();
 		fout(" %s\n", Neb2_texture_name);
@@ -1265,7 +1265,7 @@ int CFred_mission_save::save_campaign_file(char *pathname) {
 			if (mission_loop && num_mission_special > 1) {
 				char buffer[1024];
 				sprintf(buffer, "Multiple branching loop error from mission %s\nEdit campaign for *at most* 1 loop from each mission.", Campaign.missions[m].name);
-				MessageBox((HWND) os_get_window(), buffer, "Error", MB_OK);
+				Message(os::dialogs::MESSAGEBOX_ERROR, buffer);
 			}
 		}
 
@@ -1569,7 +1569,7 @@ int CFred_mission_save::save_common_object_data(object *objp, ship *shipp) {
 		}
 
 		if (ptr->system_info->type == SUBSYSTEM_TURRET)
-			save_turret_info(ptr, shipp - Ships);
+			save_turret_info(ptr, SHIP_INDEX(shipp));
 
 		ptr = GET_NEXT(ptr);
 
@@ -2317,7 +2317,7 @@ int CFred_mission_save::save_mission_info() {
 	fout(" %d", The_mission.flags);
 
 	// maybe write out Nebula intensity
-	if (The_mission.flags & MISSION_FLAG_FULLNEB) {
+	if (The_mission.flags[Mission::Mission_Flags::Fullneb]) {
 		Assert(Neb2_awacs > 0.0f);
 		fout("\n+NebAwacs: %f\n", Neb2_awacs);
 
@@ -2373,7 +2373,7 @@ int CFred_mission_save::save_mission_info() {
 		else
 			fout("\n+Red Alert:");
 
-		fout(" %d", (The_mission.flags & MISSION_FLAG_RED_ALERT) ? 1 : 0);
+		fout(" %d", (The_mission.flags[Mission::Mission_Flags::Fullneb]) ? 1 : 0);
 	}
 
 	if (Format_fs2_open == FSO_FORMAT_RETAIL) //-V581
@@ -2383,7 +2383,7 @@ int CFred_mission_save::save_mission_info() {
 		else
 			fout("\n+Scramble:");
 
-		fout(" %d", (The_mission.flags & MISSION_FLAG_SCRAMBLE) ? 1 : 0);
+		fout(" %d", (The_mission.flags[Mission::Mission_Flags::Scramble]) ? 1 : 0);
 	}
 
 	if (optional_string_fred("+Disallow Support:")) {
@@ -2551,7 +2551,7 @@ int CFred_mission_save::save_mission_info() {
 	}
 
 	// Goober5000's AI profile stuff
-	int profile_index = (The_mission.ai_profile - Ai_profiles);
+	int profile_index = AI_PROFILES_INDEX(The_mission.ai_profile);
 	Assert(profile_index >= 0 && profile_index < MAX_AI_PROFILES);
 
 	fso_comment_push(";;FSO 3.6.9;;");
@@ -2759,7 +2759,7 @@ int CFred_mission_save::save_music() {
 
 int CFred_mission_save::save_objects() {
 	SCP_string sexp_out;
-	int i, j, z;
+	int i, z;
 	ai_info *aip;
 	object *objp;
 	ship *shipp;
@@ -2774,7 +2774,7 @@ int CFred_mission_save::save_objects() {
 			continue;
 		}
 
-		j = Objects[Ships[i].objnum].type;
+		auto j = Objects[Ships[i].objnum].type;
 		if ((j != OBJ_SHIP) && (j != OBJ_START)) {
 			continue;
 		}
@@ -2907,7 +2907,7 @@ int CFred_mission_save::save_objects() {
 		// Goober5000
 		if (Format_fs2_open != FSO_FORMAT_RETAIL) {
 			if ((shipp->arrival_location == ARRIVE_FROM_DOCK_BAY) && (shipp->arrival_path_mask > 0)) {
-				int j, anchor_shipnum;
+				int anchor_shipnum;
 				polymodel *pm;
 
 				anchor_shipnum = shipp->arrival_anchor;
@@ -2916,9 +2916,9 @@ int CFred_mission_save::save_objects() {
 				fout("\n+Arrival Paths: ( ");
 
 				pm = model_get(Ship_info[Ships[anchor_shipnum].ship_info_index].model_num);
-				for (j = 0; j < pm->ship_bay->num_paths; j++) {
-					if (shipp->arrival_path_mask & (1 << j)) {
-						fout("\"%s\" ", pm->paths[pm->ship_bay->path_indexes[j]].name);
+				for (auto n = 0; n < pm->ship_bay->num_paths; n++) {
+					if (shipp->arrival_path_mask & (1 << n)) {
+						fout("\"%s\" ", pm->paths[pm->ship_bay->path_indexes[n]].name);
 					}
 				}
 
@@ -2957,7 +2957,7 @@ int CFred_mission_save::save_objects() {
 		// Goober5000
 		if (Format_fs2_open != FSO_FORMAT_RETAIL) {
 			if ((shipp->departure_location == DEPART_AT_DOCK_BAY) && (shipp->departure_path_mask > 0)) {
-				int j, anchor_shipnum;
+				int anchor_shipnum;
 				polymodel *pm;
 
 				anchor_shipnum = shipp->departure_anchor;
@@ -2966,9 +2966,9 @@ int CFred_mission_save::save_objects() {
 				fout("\n+Departure Paths: ( ");
 
 				pm = model_get(Ship_info[Ships[anchor_shipnum].ship_info_index].model_num);
-				for (j = 0; j < pm->ship_bay->num_paths; j++) {
-					if (shipp->departure_path_mask & (1 << j)) {
-						fout("\"%s\" ", pm->paths[pm->ship_bay->path_indexes[j]].name);
+				for (auto n = 0; n < pm->ship_bay->num_paths; n++) {
+					if (shipp->departure_path_mask & (1 << n)) {
+						fout("\"%s\" ", pm->paths[pm->ship_bay->path_indexes[n]].name);
 					}
 				}
 
@@ -3000,60 +3000,60 @@ int CFred_mission_save::save_objects() {
 		} else
 			fout("\n+Flags: (");
 
-		if (shipp->flags & SF_CARGO_REVEALED)
+		if (shipp->flags[Ship::Ship_Flags::Cargo_revealed])
 			fout(" \"cargo-known\"");
-		if (shipp->flags & SF_IGNORE_COUNT)
+		if (shipp->flags[Ship::Ship_Flags::Ignore_count])
 			fout(" \"ignore-count\"");
-		if (objp->flags & OF_PROTECTED)
+		if (objp->flags[Object::Object_Flags::Protected])
 			fout(" \"protect-ship\"");
-		if (shipp->flags & SF_REINFORCEMENT)
+		if (shipp->flags[Ship::Ship_Flags::Reinforcement])
 			fout(" \"reinforcement\"");
-		if (objp->flags & OF_NO_SHIELDS)
+		if (objp->flags[Object::Object_Flags::No_shields])
 			fout(" \"no-shields\"");
-		if (shipp->flags & SF_ESCORT)
+		if (shipp->flags[Ship::Ship_Flags::Escort])
 			fout(" \"escort\"");
 		if (objp->type == OBJ_START)
 			fout(" \"player-start\"");
-		if (shipp->flags & SF_NO_ARRIVAL_MUSIC)
+		if (shipp->flags[Ship::Ship_Flags::No_arrival_music])
 			fout(" \"no-arrival-music\"");
-		if (shipp->flags & SF_NO_ARRIVAL_WARP)
+		if (shipp->flags[Ship::Ship_Flags::No_arrival_warp])
 			fout(" \"no-arrival-warp\"");
-		if (shipp->flags & SF_NO_DEPARTURE_WARP)
+		if (shipp->flags[Ship::Ship_Flags::No_departure_warp])
 			fout(" \"no-departure-warp\"");
-		if (Objects[shipp->objnum].flags & OF_INVULNERABLE)
+		if (Objects[shipp->objnum].flags[Object::Object_Flags::Invulnerable])
 			fout(" \"invulnerable\"");
-		if (shipp->flags & SF_HIDDEN_FROM_SENSORS)
+		if (shipp->flags[Ship::Ship_Flags::Hidden_from_sensors])
 			fout(" \"hidden-from-sensors\"");
-		if (shipp->flags & SF_SCANNABLE)
+		if (shipp->flags[Ship::Ship_Flags::Scannable])
 			fout(" \"scannable\"");
-		if (Ai_info[shipp->ai_index].ai_flags & AIF_KAMIKAZE)
+		if (Ai_info[shipp->ai_index].ai_flags[AI::AI_Flags::Kamikaze])
 			fout(" \"kamikaze\"");
-		if (Ai_info[shipp->ai_index].ai_flags & AIF_NO_DYNAMIC)
+		if (Ai_info[shipp->ai_index].ai_flags[AI::AI_Flags::No_dynamic])
 			fout(" \"no-dynamic\"");
-		if (shipp->flags & SF_RED_ALERT_STORE_STATUS)
+		if (shipp->flags[Ship::Ship_Flags::Red_alert_store_status])
 			fout(" \"red-alert-carry\"");
-		if (objp->flags & OF_BEAM_PROTECTED)
+		if (objp->flags[Object::Object_Flags::Beam_protected])
 			fout(" \"beam-protect-ship\"");
-		if (objp->flags & OF_FLAK_PROTECTED)
+		if (objp->flags[Object::Object_Flags::Flak_protected])
 			fout(" \"flak-protect-ship\"");
-		if (objp->flags & OF_LASER_PROTECTED)
+		if (objp->flags[Object::Object_Flags::Laser_protected])
 			fout(" \"laser-protect-ship\"");
-		if (objp->flags & OF_MISSILE_PROTECTED)
+		if (objp->flags[Object::Object_Flags::Missile_protected])
 			fout(" \"missile-protect-ship\"");
 		if (shipp->ship_guardian_threshold != 0)
 			fout(" \"guardian\"");
-		if (objp->flags & OF_SPECIAL_WARPIN)
+		if (objp->flags[Object::Object_Flags::Special_warpin])
 			fout(" \"special-warp\"");
-		if (shipp->flags & SF_VAPORIZE)
+		if (shipp->flags[Ship::Ship_Flags::Vaporize])
 			fout(" \"vaporize\"");
-		if (shipp->flags2 & SF2_STEALTH)
+		if (shipp->flags[Ship::Ship_Flags::Stealth])
 			fout(" \"stealth\"");
-		if (shipp->flags2 & SF2_FRIENDLY_STEALTH_INVIS)
+		if (shipp->flags[Ship::Ship_Flags::Friendly_stealth_invis])
 			fout(" \"friendly-stealth-invisible\"");
-		if (shipp->flags2 & SF2_DONT_COLLIDE_INVIS)
+		if (shipp->flags[Ship::Ship_Flags::Dont_collide_invis])
 			fout(" \"don't-collide-invisible\"");
 		//for compatibility reasons ship locked or weapons locked are saved as both locked in retail mode
-		if ((Format_fs2_open == FSO_FORMAT_RETAIL) && ((shipp->flags2 & SF2_SHIP_LOCKED) || (shipp->flags2 & SF2_WEAPONS_LOCKED)))
+		if ((Format_fs2_open == FSO_FORMAT_RETAIL) && ((shipp->flags[Ship::Ship_Flags::Ship_locked]) || (shipp->flags[Ship::Ship_Flags::Weapons_locked])))
 			fout(" \"locked\"");
 		fout(" )");
 
@@ -3065,55 +3065,55 @@ int CFred_mission_save::save_objects() {
 			} else
 				fout("\n+Flags2: (");
 
-			if (shipp->flags2 & SF2_PRIMITIVE_SENSORS)
+			if (shipp->flags[Ship::Ship_Flags::Primitive_sensors])
 				fout(" \"primitive-sensors\"");
-			if (shipp->flags2 & SF2_NO_SUBSPACE_DRIVE)
+			if (shipp->flags[Ship::Ship_Flags::No_subspace_drive])
 				fout(" \"no-subspace-drive\"");
-			if (shipp->flags2 & SF2_NAVPOINT_CARRY)
+			if (shipp->flags[Ship::Ship_Flags::Navpoint_carry])
 				fout(" \"nav-carry-status\"");
-			if (shipp->flags2 & SF2_AFFECTED_BY_GRAVITY)
+			if (shipp->flags[Ship::Ship_Flags::Affected_by_gravity])
 				fout(" \"affected-by-gravity\"");
-			if (shipp->flags2 & SF2_TOGGLE_SUBSYSTEM_SCANNING)
+			if (shipp->flags[Ship::Ship_Flags::Toggle_subsystem_scanning])
 				fout(" \"toggle-subsystem-scanning\"");
-			if (objp->flags & OF_TARGETABLE_AS_BOMB)
+			if (objp->flags[Object::Object_Flags::Targetable_as_bomb])
 				fout(" \"targetable-as-bomb\"");
-			if (shipp->flags2 & SF2_NO_BUILTIN_MESSAGES)
+			if (shipp->flags[Ship::Ship_Flags::No_builtin_messages])
 				fout(" \"no-builtin-messages\"");
-			if (shipp->flags2 & SF2_PRIMARIES_LOCKED)
+			if (shipp->flags[Ship::Ship_Flags::Primaries_locked])
 				fout(" \"primaries-locked\"");
-			if (shipp->flags2 & SF2_SECONDARIES_LOCKED)
+			if (shipp->flags[Ship::Ship_Flags::Secondaries_locked])
 				fout(" \"secondaries-locked\"");
-			if (shipp->flags2 & SF2_NO_DEATH_SCREAM)
+			if (shipp->flags[Ship::Ship_Flags::No_death_scream])
 				fout(" \"no-death-scream\"");
-			if (shipp->flags2 & SF2_ALWAYS_DEATH_SCREAM)
+			if (shipp->flags[Ship::Ship_Flags::Always_death_scream])
 				fout(" \"always-death-scream\"");
-			if (shipp->flags2 & SF2_NAVPOINT_NEEDSLINK)
+			if (shipp->flags[Ship::Ship_Flags::Navpoint_needslink])
 				fout(" \"nav-needslink\"");
-			if (shipp->flags2 & SF2_HIDE_SHIP_NAME)
+			if (shipp->flags[Ship::Ship_Flags::Hide_ship_name])
 				fout(" \"hide-ship-name\"");
-			if (shipp->flags2 & SF2_SET_CLASS_DYNAMICALLY)
+			if (shipp->flags[Ship::Ship_Flags::Set_class_dynamically])
 				fout(" \"set-class-dynamically\"");
-			if (shipp->flags2 & SF2_LOCK_ALL_TURRETS_INITIALLY)
+			if (shipp->flags[Ship::Ship_Flags::Lock_all_turrets_initially])
 				fout(" \"lock-all-turrets\"");
-			if (shipp->flags2 & SF2_AFTERBURNER_LOCKED)
+			if (shipp->flags[Ship::Ship_Flags::Afterburner_locked])
 				fout(" \"afterburners-locked\"");
-			if (shipp->flags2 & SF2_FORCE_SHIELDS_ON)
+			if (shipp->flags[Ship::Ship_Flags::Force_shields_on])
 				fout(" \"force-shields-on\"");
-			if (objp->flags & OF_IMMOBILE)
+			if (objp->flags[Object::Object_Flags::Immobile])
 				fout(" \"immobile\"");
-			if (shipp->flags2 & SF2_NO_ETS)
+			if (shipp->flags[Ship::Ship_Flags::No_ets])
 				fout(" \"no-ets\"");
-			if (shipp->flags2 & SF2_CLOAKED)
+			if (shipp->flags[Ship::Ship_Flags::Cloaked])
 				fout(" \"cloaked\"");
-			if (shipp->flags2 & SF2_SHIP_LOCKED)
+			if (shipp->flags[Ship::Ship_Flags::Ship_locked])
 				fout(" \"ship-locked\"");
-			if (shipp->flags2 & SF2_WEAPONS_LOCKED)
+			if (shipp->flags[Ship::Ship_Flags::Weapons_locked])
 				fout(" \"weapons-locked\"");
-			if (shipp->flags2 & SF2_SCRAMBLE_MESSAGES)
+			if (shipp->flags[Ship::Ship_Flags::Scramble_messages])
 				fout(" \"scramble-messages\"");
-			if (!(objp->flags & OF_COLLIDES))
+			if (!(objp->flags[Object::Object_Flags::Collides]))
 				fout(" \"no-collide\"");
-			if (shipp->flags2 & SF2_NO_DISABLED_SELF_DESTRUCT)
+			if (shipp->flags[Ship::Ship_Flags::No_disabled_self_destruct])
 				fout(" \"no-disabled-self-destruct\"");
 			fout(" )");
 		}
@@ -3121,7 +3121,7 @@ int CFred_mission_save::save_objects() {
 
 		fout("\n+Respawn priority: %d", shipp->respawn_priority);	// HA!  Newline added by Goober5000
 
-		if (shipp->flags & SF_ESCORT) {
+		if (shipp->flags[Ship::Ship_Flags::Escort]) {
 			if (optional_string_fred("+Escort priority:", "$Name:")) {
 				parse_comments();
 			} else {
@@ -3253,7 +3253,7 @@ int CFred_mission_save::save_objects() {
 		}
 		// -----------------------------------------------------------
 
-		if (Ai_info[shipp->ai_index].ai_flags & AIF_KAMIKAZE) {
+		if (Ai_info[shipp->ai_index].ai_flags[AI::AI_Flags::Kamikaze]) {
 			if (optional_string_fred("+Kamikaze Damage:", "$Name:")) {
 				parse_comments();
 			} else {
@@ -3293,7 +3293,7 @@ int CFred_mission_save::save_objects() {
 			// save one-on-one groups as if they were retail
 			if (dock_check_docked_one_on_one(&Objects[shipp->objnum])) {
 				// retail format only saved information for non-leaders
-				if (!(shipp->flags & SF_DOCK_LEADER)) {
+				if (!(shipp->flags[Ship::Ship_Flags::Dock_leader])) {
 					save_single_dock_instance(&Ships[i], Objects[shipp->objnum].dock_list);
 				}
 			}
@@ -3308,7 +3308,7 @@ int CFred_mission_save::save_objects() {
 
 		// check the ship flag about killing off the ship before a missino starts.  Write out the appropriate
 		// variable if necessary
-		if (shipp->flags & SF_KILL_BEFORE_MISSION) {
+		if (shipp->flags[Ship::Ship_Flags::Kill_before_mission]) {
 			if (optional_string_fred("+Destroy At:", "$Name:"))
 				parse_comments();
 			else
@@ -3653,7 +3653,7 @@ int CFred_mission_save::save_reinforcements() {
 		type = TYPE_ATTACK_PROTECT;
 		for (j = 0; j < MAX_SHIPS; j++)
 			if ((Ships[j].objnum != -1) && !stricmp(Ships[j].ship_name, Reinforcements[i].name)) {
-				if (Ship_info[Ships[j].ship_info_index].flags & SIF_SUPPORT)
+				if (Ship_info[Ships[j].ship_info_index].flags[Ship::Info_Flags::Support])
 					type = TYPE_REPAIR_REARM;
 				break;
 			}
@@ -4064,7 +4064,7 @@ int CFred_mission_save::save_wings() {
 		// Goober5000
 		if (Format_fs2_open != FSO_FORMAT_RETAIL) {
 			if ((Wings[i].arrival_location == ARRIVE_FROM_DOCK_BAY) && (Wings[i].arrival_path_mask > 0)) {
-				int j, anchor_shipnum;
+				int anchor_shipnum;
 				polymodel *pm;
 
 				anchor_shipnum = Wings[i].arrival_anchor;
@@ -4073,9 +4073,9 @@ int CFred_mission_save::save_wings() {
 				fout("\n+Arrival Paths: ( ");
 
 				pm = model_get(Ship_info[Ships[anchor_shipnum].ship_info_index].model_num);
-				for (j = 0; j < pm->ship_bay->num_paths; j++) {
-					if (Wings[i].arrival_path_mask & (1 << j)) {
-						fout("\"%s\" ", pm->paths[pm->ship_bay->path_indexes[j]].name);
+				for (auto n = 0; n < pm->ship_bay->num_paths; n++) {
+					if (Wings[i].arrival_path_mask & (1 << n)) {
+						fout("\"%s\" ", pm->paths[pm->ship_bay->path_indexes[n]].name);
 					}
 				}
 
@@ -4114,7 +4114,7 @@ int CFred_mission_save::save_wings() {
 		// Goober5000
 		if (Format_fs2_open != FSO_FORMAT_RETAIL) {
 			if ((Wings[i].departure_location == DEPART_AT_DOCK_BAY) && (Wings[i].departure_path_mask > 0)) {
-				int j, anchor_shipnum;
+				int anchor_shipnum;
 				polymodel *pm;
 
 				anchor_shipnum = Wings[i].departure_anchor;
@@ -4123,9 +4123,9 @@ int CFred_mission_save::save_wings() {
 				fout("\n+Departure Paths: ( ");
 
 				pm = model_get(Ship_info[Ships[anchor_shipnum].ship_info_index].model_num);
-				for (j = 0; j < pm->ship_bay->num_paths; j++) {
-					if (Wings[i].departure_path_mask & (1 << j)) {
-						fout("\"%s\" ", pm->paths[pm->ship_bay->path_indexes[j]].name);
+				for (auto n = 0; n < pm->ship_bay->num_paths; n++) {
+					if (Wings[i].departure_path_mask & (1 << n)) {
+						fout("\"%s\" ", pm->paths[pm->ship_bay->path_indexes[n]].name);
 					}
 				}
 
@@ -4178,19 +4178,19 @@ int CFred_mission_save::save_wings() {
 		} else
 			fout("\n+Flags: (");
 
-		if (Wings[i].flags & WF_IGNORE_COUNT)
+		if (Wings[i].flags[Ship::Wing_Flags::Ignore_count])
 			fout(" \"ignore-count\"");
-		if (Wings[i].flags & WF_REINFORCEMENT)
+		if (Wings[i].flags[Ship::Wing_Flags::Reinforcement])
 			fout(" \"reinforcement\"");
-		if (Wings[i].flags & WF_NO_ARRIVAL_MUSIC)
+		if (Wings[i].flags[Ship::Wing_Flags::No_arrival_music])
 			fout(" \"no-arrival-music\"");
-		if (Wings[i].flags & WF_NO_ARRIVAL_MESSAGE)
+		if (Wings[i].flags[Ship::Wing_Flags::No_arrival_message])
 			fout(" \"no-arrival-message\"");
-		if (Wings[i].flags & WF_NO_ARRIVAL_WARP)
+		if (Wings[i].flags[Ship::Wing_Flags::No_arrival_warp])
 			fout(" \"no-arrival-warp\"");
-		if (Wings[i].flags & WF_NO_DEPARTURE_WARP)
+		if (Wings[i].flags[Ship::Wing_Flags::No_departure_warp])
 			fout(" \"no-departure-warp\"");
-		if (Wings[i].flags & WF_NO_DYNAMIC)
+		if (Wings[i].flags[Ship::Wing_Flags::No_dynamic])
 			fout(" \"no-dynamic\"");
 
 		fout(" )");

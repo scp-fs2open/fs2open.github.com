@@ -6,7 +6,6 @@
 #include "cmdline/cmdline.h"
 #include "cutscene/movie.h"
 #include "debris/debris.h"
-#include "external_dll/trackirpublic.h"
 #include "freespace.h"
 #include "gamesequence/gamesequence.h"
 #include "globalincs/linklist.h"
@@ -14,6 +13,7 @@
 #include "graphics/font.h"
 #include "graphics/generic.h"
 #include "graphics/gropenglpostprocessing.h"
+#include "headtracking/headtracking.h"
 #include "hud/hudbrackets.h"
 #include "hud/hudconfig.h"
 #include "hud/hudescort.h"
@@ -1341,7 +1341,7 @@ ADE_FUNC(write, l_File, "string or number, ...",
 		if(type == LUA_TSTRING)
 		{
 			char *s = (char*)lua_tostring(L, l_pos);
-			if(cfwrite(s, (int)sizeof(char), strlen(s), cfp))
+			if(cfwrite(s, (int)sizeof(char), (int)strlen(s), cfp))
 				num_successful++;
 		}
 		else if(type == LUA_TNUMBER)
@@ -1349,7 +1349,7 @@ ADE_FUNC(write, l_File, "string or number, ...",
 			double d = lua_tonumber(L, l_pos);
 			char buf[32]= {0};
 			sprintf(buf, LUA_NUMBER_FMT, d);
-			if(cfwrite(buf, (int)sizeof(char), strlen(buf), cfp))
+			if(cfwrite(buf, (int)sizeof(char), (int)strlen(buf), cfp))
 				num_successful++;
 		}
 
@@ -1391,7 +1391,7 @@ ADE_FUNC(__tostring, l_Font, NULL, "Name of font", "string", "Font filename, or 
 	if(!ade_get_args(L, "o", l_Font.GetPtr(&fh)))
 		return ade_set_error(L, "s", "");
 
-	if (!fh->isValid())
+	if (fh != nullptr && !fh->isValid())
 		return ade_set_error(L, "s", "");
 
 	return ade_set_args(L, "s", fh->Get()->getName().c_str());
@@ -1404,7 +1404,7 @@ ADE_VIRTVAR(Filename, l_Font, "string", "Name of font (including extension)<br><
 	if(!ade_get_args(L, "o|s", l_Font.GetPtr(&fh), &newname))
 		return ade_set_error(L, "s", "");
 
-	if (!fh->isValid())
+	if (fh != nullptr && !fh->isValid())
 		return ade_set_error(L, "s", "");
 
 	if(ADE_SETTING_VAR)
@@ -1422,7 +1422,7 @@ ADE_VIRTVAR(Name, l_Font, "string", "Name of font (including extension)", "strin
 	if(!ade_get_args(L, "o|s", l_Font.GetPtr(&fh), &newname))
 		return ade_set_error(L, "s", "");
 
-	if (!fh->isValid())
+	if (fh != nullptr && !fh->isValid())
 		return ade_set_error(L, "s", "");
 
 	if(ADE_SETTING_VAR)
@@ -1440,7 +1440,7 @@ ADE_VIRTVAR(Height, l_Font, "number", "Height of font (in pixels)", "number", "F
 	if(!ade_get_args(L, "o|i", l_Font.GetPtr(&fh), &newheight))
 		return ade_set_error(L, "i", 0);
 	
-	if (!fh->isValid())
+	if (fh != nullptr && !fh->isValid())
 		return ade_set_error(L, "i", 0);
 
 	if(ADE_SETTING_VAR && newheight > 0)
@@ -1458,7 +1458,7 @@ ADE_VIRTVAR(TopOffset, l_Font, "number", "The offset this font has from the base
 	if(!ade_get_args(L, "o|f", l_Font.GetPtr(&fh), &newOffset))
 		return ade_set_error(L, "f", 0.0f);
 	
-	if (!fh->isValid())
+	if (fh != nullptr && !fh->isValid())
 		return ade_set_error(L, "f", 0.0f);
 
 	if(ADE_SETTING_VAR && newOffset > 0)
@@ -1476,7 +1476,7 @@ ADE_VIRTVAR(BottomOffset, l_Font, "number", "The space (in pixels) this font ski
 	if(!ade_get_args(L, "o|f", l_Font.GetPtr(&fh), &newOffset))
 		return ade_set_error(L, "f", 0.0f);
 	
-	if (!fh->isValid())
+	if (fh != nullptr && !fh->isValid())
 		return ade_set_error(L, "f", 0.0f);
 
 	if(ADE_SETTING_VAR && newOffset > 0)
@@ -1489,11 +1489,11 @@ ADE_VIRTVAR(BottomOffset, l_Font, "number", "The space (in pixels) this font ski
 
 ADE_FUNC(isValid, l_Font, NULL, "True if valid, false or nil if not", "boolean", "Detects whether handle is valid")
 {
-	font_h *fh;
+	font_h *fh = nullptr;
 	if(!ade_get_args(L, "o", l_Font.GetPtr(&fh)))
 		return ADE_RETURN_NIL;
 
-	return ade_set_args(L, "b", fh->isValid());
+	return ade_set_args(L, "b", fh != nullptr && fh->isValid());
 }
 
 //**********HANDLE: gameevent
@@ -4659,18 +4659,11 @@ ADE_VIRTVAR(Bomb, l_Weaponclass, "boolean", "Is weapon class flagged as bomb", "
 
 	if(ADE_SETTING_VAR)
 	{
-		if(newVal)
-		{
-			info->wi_flags |= WIF_BOMB;
-		}
-		else
-		{
-			info->wi_flags &= ~WIF_BOMB;
-		}
+        info->wi_flags.set(Weapon::Info_Flags::Bomb, newVal);
 	}
 		
 
-	if (info->wi_flags & WIF_BOMB)
+	if (info->wi_flags[Weapon::Info_Flags::Bomb])
 		return ADE_RETURN_TRUE;
 	else
 		return ADE_RETURN_FALSE;
@@ -4796,7 +4789,7 @@ ADE_FUNC(isBeam, l_Weaponclass, NULL, "Return true if the weapon is a beam", "bo
 	if(idx < 0 || idx >= Num_weapon_types)
 		return ADE_RETURN_FALSE;
 
-	if (Weapon_info[idx].wi_flags & WIF_BEAM || Weapon_info[idx].subtype == WP_BEAM)
+	if (Weapon_info[idx].wi_flags[Weapon::Info_Flags::Beam] || Weapon_info[idx].subtype == WP_BEAM)
 		return ADE_RETURN_TRUE;
 	else
 		return ADE_RETURN_FALSE;
@@ -6411,9 +6404,9 @@ ADE_FUNC(isInTechroom, l_Shipclass, NULL, "Gets whether or not the ship class is
 		return ade_set_error(L, "b", false);
 
 	bool b = false;
-	if(Player != NULL && (Player->flags & PLAYER_FLAGS_IS_MULTI) && (Ship_info[idx].flags & SIF_IN_TECH_DATABASE_M)) {
+	if(Player != NULL && (Player->flags & PLAYER_FLAGS_IS_MULTI) && (Ship_info[idx].flags[Ship::Info_Flags::In_tech_database_m])) {
 		b = true;
-	} else if(Ship_info[idx].flags & SIF_IN_TECH_DATABASE) {
+	} else if(Ship_info[idx].flags[Ship::Info_Flags::In_tech_database]) {
 		b = true;
 	}
 
@@ -6485,7 +6478,7 @@ ADE_FUNC(renderTechModel, l_Shipclass, "X1, Y1, X2, Y2, [Rotation %=0, Pitch %=0
 
 	uint render_flags = MR_AUTOCENTER | MR_NO_FOGGING;
 
-	if(sip->flags2 & SIF2_NO_LIGHTING)
+	if(sip->flags[Ship::Info_Flags::No_lighting])
 		render_flags |= MR_NO_LIGHTING;
 
 	render_info.set_flags(render_flags);
@@ -6558,7 +6551,7 @@ ADE_FUNC(renderTechModel2, l_Shipclass, "X1, Y1, X2, Y2, [orientation Orientatio
 
 	uint render_flags = MR_AUTOCENTER | MR_NO_FOGGING;
 
-	if(sip->flags2 & SIF2_NO_LIGHTING)
+	if(sip->flags[Ship::Info_Flags::No_lighting])
 		render_flags |= MR_NO_LIGHTING;
 
 	render_info.set_flags(render_flags);
@@ -7173,13 +7166,10 @@ ADE_VIRTVAR(Linked, l_WeaponBankType, "boolean", "Whether bank is in linked or u
 	{
 		case SWH_PRIMARY:
 			if(ADE_SETTING_VAR && numargs > 1) {
-				if(newlink)
-					Ships[bh->objp->instance].flags |= SF_PRIMARY_LINKED;
-				else
-					Ships[bh->objp->instance].flags &= ~SF_PRIMARY_LINKED;
+				Ships[bh->objp->instance].flags.set(Ship::Ship_Flags::Primary_linked, newlink);
 			}
 
-			return ade_set_args(L, "b", (Ships[bh->objp->instance].flags & SF_PRIMARY_LINKED) > 0);
+			return ade_set_args(L, "b", (Ships[bh->objp->instance].flags[Ship::Ship_Flags::Primary_linked]));
 
 		case SWH_SECONDARY:
 		case SWH_TERTIARY:
@@ -7205,13 +7195,10 @@ ADE_VIRTVAR(DualFire, l_WeaponBankType, "boolean", "Whether bank is in dual fire
 	{
 		case SWH_SECONDARY:
 			if(ADE_SETTING_VAR && numargs > 1) {
-				if(newfire)
-					Ships[bh->objp->instance].flags |= SF_SECONDARY_DUAL_FIRE;
-				else
-					Ships[bh->objp->instance].flags &= ~SF_SECONDARY_DUAL_FIRE;
+                Ships[bh->objp->instance].flags.set(Ship::Ship_Flags::Secondary_dual_fire, newfire);
 			}
 
-			return ade_set_args(L, "b", (Ships[bh->objp->instance].flags & SF_SECONDARY_DUAL_FIRE) > 0);
+			return ade_set_args(L, "b", (Ships[bh->objp->instance].flags[Ship::Ship_Flags::Secondary_dual_fire]));
 
 		case SWH_PRIMARY:
 		case SWH_TERTIARY:
@@ -7589,17 +7576,10 @@ ADE_VIRTVAR(TurretResets, l_Subsystem, "boolean", "Specifies wether this turrets
 
 	if(ADE_SETTING_VAR)
 	{
-		if(newVal)
-		{
-			sso->ss->system_info->flags |= MSS_FLAG_TURRET_RESET_IDLE;
-		}
-		else
-		{
-			sso->ss->system_info->flags &= ~MSS_FLAG_TURRET_RESET_IDLE;
-		}
+        sso->ss->system_info->flags.set(Model::Subsystem_Flags::Turret_reset_idle, newVal);
 	}
 
-	if (sso->ss->system_info->flags & MSS_FLAG_TURRET_RESET_IDLE)
+	if (sso->ss->system_info->flags[Model::Subsystem_Flags::Turret_reset_idle])
 		return ADE_RETURN_TRUE;
 	else
 		return ADE_RETURN_FALSE;
@@ -7615,12 +7595,12 @@ ADE_VIRTVAR(TurretResetDelay, l_Subsystem, "number", "The time (in milliseconds)
 	if (!sso->IsValid())
 		return ade_set_error(L, "i", -1);
 
-	if (!(sso->ss->system_info->flags & MSS_FLAG_TURRET_RESET_IDLE))
+	if (!(sso->ss->system_info->flags[Model::Subsystem_Flags::Turret_reset_idle]))
 		return ade_set_error(L, "i", -1);
 
 	if(ADE_SETTING_VAR)
 	{
-		if ((sso->ss->system_info->flags & MSS_FLAG_TURRET_RESET_IDLE))
+		if ((sso->ss->system_info->flags[Model::Subsystem_Flags::Turret_reset_idle]))
 			sso->ss->system_info->turret_reset_delay = newVal;
 	}
 
@@ -7657,13 +7637,10 @@ ADE_VIRTVAR(Targetable, l_Subsystem, "boolean", "Targetability of this subsystem
 
 	if(ADE_SETTING_VAR)
 	{
-		if (!newVal)
-			sso->ss->flags &= ~SSF_UNTARGETABLE;
-		else
-			sso->ss->flags |= SSF_UNTARGETABLE;
+        sso->ss->flags.set(Ship::Subsystem_Flags::Untargetable, newVal);
 	}
 
-	return ade_set_args(L, "b", !(sso->ss->flags & SSF_UNTARGETABLE));
+	return ade_set_args(L, "b", !(sso->ss->flags[Ship::Subsystem_Flags::Untargetable]));
 }
 
 ADE_VIRTVAR(Radius, l_Subsystem, "number", "The radius of this subsystem", "number", "The radius or 0 on error")
@@ -7695,14 +7672,10 @@ ADE_VIRTVAR(TurretLocked, l_Subsystem, "boolean", "Whether the turret is locked.
 
 	if(ADE_SETTING_VAR)
 	{
-		if (newVal) {
-			sso->ss->weapons.flags |= SW_FLAG_TURRET_LOCK;
-		} else {
-			sso->ss->weapons.flags &= (~SW_FLAG_TURRET_LOCK);
-		}
+		sso->ss->weapons.flags.set(Ship::Weapon_Flags::Turret_Lock, newVal);
 	}
 
-	return ade_set_args(L, "b", (sso->ss->weapons.flags & SW_FLAG_TURRET_LOCK));
+	return ade_set_args(L, "b", (sso->ss->weapons.flags[Ship::Weapon_Flags::Turret_Lock]));
 }
 
 ADE_VIRTVAR(NextFireTimestamp, l_Subsystem, "number", "The next time the turret may attempt to fire", "number", "Mission time (seconds) or -1 on error")
@@ -7748,9 +7721,10 @@ ADE_FUNC(hasFired, l_Subsystem, NULL, "Determine if a subsystem has fired", "boo
 	if(!sso->IsValid())
 		return ADE_RETURN_NIL;
 
-	if(sso->ss->flags & SSF_HAS_FIRED){
-		sso->ss->flags &= ~SSF_HAS_FIRED;
-		return ADE_RETURN_TRUE;}
+	if(sso->ss->flags[Ship::Subsystem_Flags::Has_fired]){
+        sso->ss->flags.remove(Ship::Subsystem_Flags::Has_fired);
+        return ADE_RETURN_TRUE;
+    }
 	else
 		return ADE_RETURN_FALSE;
 }
@@ -9565,12 +9539,12 @@ ADE_VIRTVAR(PrimaryTriggerDown, l_Ship, "boolean", "Determines if primary trigge
 	if(ADE_SETTING_VAR)
     {
 		if(trig)
-			shipp->flags |= SF_TRIGGER_DOWN;
+			shipp->flags.set(Ship::Ship_Flags::Trigger_down);
 		else
-			shipp->flags &= ~SF_TRIGGER_DOWN;
+			shipp->flags.remove(Ship::Ship_Flags::Trigger_down);
     }
 
-	if (shipp->flags & SF_TRIGGER_DOWN)
+	if (shipp->flags[Ship::Ship_Flags::Trigger_down])
 		return ADE_RETURN_TRUE;
 	else
 		return ADE_RETURN_FALSE;
@@ -9818,13 +9792,10 @@ ADE_VIRTVAR(FlagAffectedByGravity, l_Ship, "boolean", "Checks for the \"affected
 
 	if(ADE_SETTING_VAR)
     {
-		if(set)
-			shipp->flags2 |= SF2_AFFECTED_BY_GRAVITY;
-		else
-			shipp->flags2 &= ~SF2_AFFECTED_BY_GRAVITY;
+		shipp->flags.set(Ship::Ship_Flags::Affected_by_gravity, set);
     }
 
-	if (shipp->flags2 & SF2_AFFECTED_BY_GRAVITY)
+	if (shipp->flags[Ship::Ship_Flags::Affected_by_gravity])
 		return ADE_RETURN_TRUE;
 	else
 		return ADE_RETURN_FALSE;
@@ -9846,19 +9817,18 @@ ADE_VIRTVAR(Disabled, l_Ship, "boolean", "The disabled state of this ship", "boo
 
 	if(ADE_SETTING_VAR)
 	{
+		shipp->flags.set(Ship::Ship_Flags::Disabled, set);
 		if(set)
 		{
 			mission_log_add_entry(LOG_SHIP_DISABLED, shipp->ship_name, NULL );
-			shipp->flags |= SF_DISABLED;
 		}
 		else
 		{
-			shipp->flags &= ~SF_DISABLED;
 			ship_reset_disabled_physics( &Objects[shipp->objnum], shipp->ship_info_index );
 		}
 	}
 
-	if (shipp->flags & SF_DISABLED)
+	if (shipp->flags[Ship::Ship_Flags::Disabled])
 		return ADE_RETURN_TRUE;
 	else
 		return ADE_RETURN_FALSE;
@@ -9879,17 +9849,10 @@ ADE_VIRTVAR(Stealthed, l_Ship, "boolean", "Stealth status of this ship", "boolea
 
 	if(ADE_SETTING_VAR)
 	{
-		if(stealthed)
-		{
-			shipp->flags2 &= ~SF2_STEALTH;
-		}
-		else
-		{
-			shipp->flags2 |= SF2_STEALTH;
-		}
+        shipp->flags.set(Ship::Ship_Flags::Stealth, stealthed);
 	}
 
-	if (shipp->flags2 & SF2_STEALTH)
+	if (shipp->flags[Ship::Ship_Flags::Stealth])
 		return ADE_RETURN_TRUE;
 	else
 		return ADE_RETURN_FALSE;
@@ -9910,17 +9873,10 @@ ADE_VIRTVAR(HiddenFromSensors, l_Ship, "boolean", "Hidden from sensors status of
 
 	if(ADE_SETTING_VAR)
 	{
-		if(hidden)
-		{
-			shipp->flags &= ~SF_HIDDEN_FROM_SENSORS;
-		}
-		else
-		{
-			shipp->flags |= SF_HIDDEN_FROM_SENSORS;
-		}
+        shipp->flags.set(Ship::Ship_Flags::Hidden_from_sensors, hidden);
 	}
 
-	if (shipp->flags & SF_HIDDEN_FROM_SENSORS)
+	if (shipp->flags[Ship::Ship_Flags::Hidden_from_sensors])
 		return ADE_RETURN_TRUE;
 	else
 		return ADE_RETURN_FALSE;
@@ -10082,7 +10038,7 @@ ADE_FUNC(hasShipExploded, l_Ship, NULL, "Checks if the ship explosion event has 
 
 	ship *shipp = &Ships[shiph->objp->instance];
 
-	if (shipp->flags & SF_DYING) {
+	if (shipp->flags[Ship::Ship_Flags::Dying]) {
 		if (shipp->final_death_time == 0) {
 			return ade_set_args(L, "i", 2);
 		}		
@@ -10558,7 +10514,7 @@ ADE_FUNC(canWarp, l_Ship, NULL, "Checks whether ship has a working subspace driv
 		return ADE_RETURN_NIL;
 
 	ship *shipp = &Ships[objh->objp->instance];
-	if(shipp->flags & SF2_NO_SUBSPACE_DRIVE){
+	if(shipp->flags[Ship::Ship_Flags::No_subspace_drive]){
 		return ADE_RETURN_FALSE;
 	}
 
@@ -10576,7 +10532,7 @@ ADE_FUNC(isWarpingIn, l_Ship, NULL, "Checks if ship is warping in", "boolean", "
 		return ADE_RETURN_NIL;
 
 	ship *shipp = &Ships[objh->objp->instance];
-	if(shipp->flags & SF_ARRIVING_STAGE_1){
+	if(shipp->flags[Ship::Ship_Flags::Arriving_stage_1]){
 		return ADE_RETURN_TRUE;
 	}
 
@@ -10783,13 +10739,10 @@ ADE_VIRTVAR(DestroyedByWeapon, l_Weapon, "boolean", "Whether weapon was destroye
 	weapon *wp = &Weapons[oh->objp->instance];
 
 	if(ADE_SETTING_VAR && numargs > 1) {
-		if(b)
-			wp->weapon_flags |= WF_DESTROYED_BY_WEAPON;
-		else
-			wp->weapon_flags &= ~WF_DESTROYED_BY_WEAPON;
+		wp->weapon_flags.set(Weapon::Weapon_Flags::Destroyed_by_weapon, b);
 	}
 
-	return ade_set_args(L, "b", (wp->weapon_flags & WF_DESTROYED_BY_WEAPON) > 0);
+	return ade_set_args(L, "b", wp->weapon_flags[Weapon::Weapon_Flags::Destroyed_by_weapon]);
 }
 
 ADE_VIRTVAR(LifeLeft, l_Weapon, "number", "Weapon life left (in seconds)", "number", "Life left (seconds) or 0 if weapon handle is invalid")
@@ -13116,61 +13069,61 @@ ADE_FUNC(getJoyDeadzone, l_Mouse, NULL, "Gets joystick deadzone setting", "numbe
 //trackir funcs
 ADE_FUNC(updateTrackIR, l_Mouse, NULL, "Updates Tracking Data. Call before using get functions", "boolean", "Checks if trackir is available and updates variables, returns true if successful, otherwise false")
 {
-	if( !gTirDll_TrackIR.Enabled( ) )
+	if( !headtracking::isEnabled() )
 		return ADE_RETURN_FALSE;
 
-	if (gTirDll_TrackIR.Query( ) == 0)
+	if (!headtracking::query())
 		return ADE_RETURN_FALSE;
 
-	return ade_set_args(L, "b", true);
+	return ADE_RETURN_TRUE;
 }
 
 ADE_FUNC(getTrackIRPitch, l_Mouse, NULL, "Gets pitch axis from last update", "number", "Pitch value -1 to 1, or 0 on failure")
 {
-	if( !gTirDll_TrackIR.Enabled( ) )
+	if (!headtracking::isEnabled())
 		return ade_set_error(L, "f", 0.0f);
 
-	return ade_set_args( L, "f", gTirDll_TrackIR.GetPitch( ) );
+	return ade_set_args( L, "f", headtracking::getStatus()->pitch);
 }
 
 ADE_FUNC(getTrackIRYaw, l_Mouse, NULL, "Gets yaw axis from last update", "number", "Yaw value -1 to 1, or 0 on failure")
 {
-	if( !gTirDll_TrackIR.Enabled( ) )
+	if (!headtracking::isEnabled())
 		return ade_set_error(L, "f", 0.0f);
 
-	return ade_set_args(L, "f", gTirDll_TrackIR.GetYaw());
+	return ade_set_args(L, "f", headtracking::getStatus()->yaw);
 }
 
 ADE_FUNC(getTrackIRRoll, l_Mouse, NULL, "Gets roll axis from last update", "number", "Roll value -1 to 1, or 0 on failure")
 {
-	if( !gTirDll_TrackIR.Enabled( ) )
+	if (!headtracking::isEnabled())
 		return ade_set_error(L, "f", 0.0f);
 
-	return ade_set_args(L, "f", gTirDll_TrackIR.GetRoll());
+	return ade_set_args(L, "f", headtracking::getStatus()->roll);
 }
 
 ADE_FUNC(getTrackIRX, l_Mouse, NULL, "Gets x position from last update", "number", "X value -1 to 1, or 0 on failure")
 {
-	if( !gTirDll_TrackIR.Enabled( ) )
+	if (!headtracking::isEnabled())
 		return ade_set_error(L, "f", 0.0f);
 
-	return ade_set_args(L, "f", gTirDll_TrackIR.GetX());
+	return ade_set_args(L, "f", headtracking::getStatus()->x);
 }
 
 ADE_FUNC(getTrackIRY, l_Mouse, NULL, "Gets y position from last update", "number", "Y value -1 to 1, or 0 on failure")
 {
-	if( !gTirDll_TrackIR.Enabled( ) )
+	if (!headtracking::isEnabled())
 		return ade_set_error(L, "f", 0.0f);
 
-	return ade_set_args(L, "f", gTirDll_TrackIR.GetY());
+	return ade_set_args(L, "f", headtracking::getStatus()->y);
 }
 
 ADE_FUNC(getTrackIRZ, l_Mouse, NULL, "Gets z position from last update", "number", "Z value -1 to 1, or 0 on failure")
 {
-	if( !gTirDll_TrackIR.Enabled( ) )
+	if (!headtracking::isEnabled() )
 		return ade_set_error(L, "f", 0.0f);
 
-	return ade_set_args(L, "f", gTirDll_TrackIR.GetZ());
+	return ade_set_args(L, "f", headtracking::getStatus()->z);
 }
 
 //**********LIBRARY: HUD library
@@ -14669,7 +14622,7 @@ ADE_FUNC(hasViewmode, l_Graphics, "enumeration", "Specifies if the current viemo
 		break;
 
 	case LE_VM_EXTERNAL_CAMERA_LOCKED:
-		bit = VM_EXTERNAL_CAMERA_LOCKED;
+		bit = VM_CAMERA_LOCKED;
 		break;
 
 	case LE_VM_FREECAMERA:
@@ -16538,7 +16491,7 @@ int ade_get_args(lua_State *L, const char *fmt, ...)
 	int total_args = lua_gettop(L) - Ade_get_args_skip;
 
 	if(strchr(fmt, '|') != NULL) {
-		needed_args = strchr(fmt, '|') - fmt;
+		needed_args = (int)(strchr(fmt, '|') - fmt);
 	}
 
 	char funcname[128] = "\0";

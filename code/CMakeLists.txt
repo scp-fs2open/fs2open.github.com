@@ -38,9 +38,10 @@ IF (FSO_USE_SPEECH)
 	target_link_libraries(code PUBLIC speech)
 ENDIF(FSO_USE_SPEECH)
 
+TARGET_LINK_LIBRARIES(code PUBLIC jansson)
+
 # Headers for standalone "gui" on UNIX
 IF(UNIX)
-	TARGET_LINK_LIBRARIES(code PUBLIC jansson)
 	TARGET_LINK_LIBRARIES(code PUBLIC ${MONGOOSE_LIBS})
 ENDIF(UNIX)
 

@@ -367,7 +367,7 @@ void HudGaugeEscort::renderIcon(int x, int y, int index)
 	*/
 
 	// draw a 'D' if a ship is disabled
-	if ( (sp->flags & SF_DISABLED) || (ship_subsys_disrupted(sp, SUBSYSTEM_ENGINE)) ) {		
+	if ( (sp->flags[Ship::Ship_Flags::Disabled]) || (ship_subsys_disrupted(sp, SUBSYSTEM_ENGINE)) ) {		
 		renderString( x + ship_status_offsets[0], y + ship_status_offsets[1], EG_NULL, XSTR( "D", 284));				
 	}
 
@@ -488,7 +488,7 @@ void hud_escort_clear_all(bool clear_flags)
 	Num_escort_ships = 0;
 	for ( i = 0; i < Max_escort_ships; i++ ) {
 		if(clear_flags && (Escort_ships[i].objnum >= 0) && (Objects[Escort_ships[i].objnum].type == OBJ_SHIP) && (Objects[Escort_ships[i].objnum].instance >= 0)){
-			Ships[Objects[Escort_ships[i].objnum].instance].flags &= ~SF_ESCORT;
+			Ships[Objects[Escort_ships[i].objnum].instance].flags.remove(Ship::Ship_Flags::Escort);
 		}
 		Escort_ships[i].obj_signature = -99;
 		Escort_ships[i].np_id = -1;
@@ -599,22 +599,22 @@ void hud_create_complete_escort_list(escort_info *escorts, int *num_escorts)
 			}		
 			
 			// only process ships that might be on the list
-			if ( !(Ships[objp->instance].flags & SF_ESCORT) ){
+			if ( !(Ships[objp->instance].flags[Ship::Ship_Flags::Escort]) ){
 				continue;
 			}
 
 			// only process ships that can be seen by sensors
-			if ( (Ships[objp->instance].flags & SF_HIDDEN_FROM_SENSORS) ){
+			if ( (Ships[objp->instance].flags[Ship::Ship_Flags::Hidden_from_sensors]) ){
 				continue;
 			}
 
 			// don't process most stealth ships
-			if ( (Ships[objp->instance].flags2 & SF2_STEALTH) )
+			if ( (Ships[objp->instance].flags[Ship::Ship_Flags::Stealth]) )
 			{
 				if ( Ships[objp->instance].team == Player_ship->team )
 				{
 					// friendly stealths are only not seen when explicitly specified
-					if ( Ships[objp->instance].flags2 & SF2_FRIENDLY_STEALTH_INVIS )
+					if ( Ships[objp->instance].flags[Ship::Ship_Flags::Friendly_stealth_invis] )
 					{
 						continue;
 					}
@@ -627,7 +627,7 @@ void hud_create_complete_escort_list(escort_info *escorts, int *num_escorts)
 			}
 
 			// don't process objects that should be dead
-			if ( objp->flags & OF_SHOULD_BE_DEAD ) {
+			if ( objp->flags[Object::Object_Flags::Should_be_dead] ) {
 				continue;
 			}
 
@@ -761,7 +761,7 @@ void hud_remove_ship_from_escort_index(int dead_index, int objnum)
 
 	// remove him from escort list
 	if((objnum >= 0) && (Objects[objnum].type == OBJ_SHIP) && (Objects[objnum].instance >= 0)){
-		Ships[Objects[objnum].instance].flags &= ~SF_ESCORT;
+        Ships[Objects[objnum].instance].flags.remove(Ship::Ship_Flags::Escort);
 	}
 
 	count = 0;
@@ -816,15 +816,15 @@ void hud_escort_cull_list()
 			int objnum = Escort_ships[i].objnum;
 			Assert( objnum >=0 && objnum < MAX_OBJECTS );
 
-			if ( Objects[objnum].flags & OF_SHOULD_BE_DEAD ) {
+			if ( Objects[objnum].flags[Object::Object_Flags::Should_be_dead] ) {
 				hud_setup_escort_list(0);
 				break;
 			} else if ( Objects[objnum].type == OBJ_SHIP ) {
 				int shipnum = Objects[objnum].instance;
 				Assert( shipnum >= 0 && shipnum < MAX_SHIPS );
 
-				if ( (Ships[shipnum].flags & SF_HIDDEN_FROM_SENSORS)
-					|| ((Ships[shipnum].flags2 & SF2_STEALTH) && ((Ships[shipnum].team != Player_ship->team) || (Ships[shipnum].flags2 & SF2_FRIENDLY_STEALTH_INVIS)))
+				if ( (Ships[shipnum].flags[Ship::Ship_Flags::Hidden_from_sensors])
+					|| ((Ships[shipnum].flags[Ship::Ship_Flags::Stealth]) && ((Ships[shipnum].team != Player_ship->team) || (Ships[shipnum].flags[Ship::Ship_Flags::Friendly_stealth_invis])))
 				) {
 					hud_setup_escort_list(0);
 					break;
@@ -881,7 +881,7 @@ void hud_add_ship_to_escort(int objnum, int supress_feedback)
 		complete_escorts[num_complete_escorts].escort_show_bright = false;
 
 		// add him to escort list
-		Ships[Objects[objnum].instance].flags |= SF_ESCORT;
+        Ships[Objects[objnum].instance].flags.set(Ship::Ship_Flags::Escort);
 
 		num_complete_escorts++;
 	}

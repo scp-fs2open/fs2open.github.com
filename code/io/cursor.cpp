@@ -11,6 +11,7 @@
 #include "popup/popupdead.h"
 
 #include <utility>
+#include <globalincs/systemvars.h>
 
 namespace
 {
@@ -52,24 +53,33 @@ namespace
 
 		return cursorHandle;
 	}
+
+	void setRelativeMouseMode(bool grab) {
+		if (Cmdline_nograb) {
+			// Never grab the mouse if this is enabled
+			SDL_SetRelativeMouseMode(SDL_FALSE);
+		} else {
+			SDL_SetRelativeMouseMode(grab ? SDL_TRUE : SDL_FALSE);
+		}
+	}
 	
 	void changeMouseStatus(bool show, bool grab)
 	{
 		if (show)
 		{
 			// If shown don't grab the mouse
-			SDL_SetRelativeMouseMode(SDL_FALSE);
+			setRelativeMouseMode(false);
 			SDL_ShowCursor(1);
 		}
 		else
 		{
 			if (grab)
 			{
-				SDL_SetRelativeMouseMode(SDL_TRUE);
+				setRelativeMouseMode(true);
 			}
 			else
 			{
-				SDL_SetRelativeMouseMode(SDL_FALSE);
+				setRelativeMouseMode(false);
 			}
 
 			SDL_ShowCursor(0);
@@ -171,6 +181,8 @@ namespace io
 
 		Cursor* CursorManager::loadCursor(const char* fileName, bool animated)
 		{
+			Assertion(!Is_standalone, "Cursors can't be loaded in standalone mode!");
+
 			int handle;
 
 			if (animated)

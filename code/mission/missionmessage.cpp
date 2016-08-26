@@ -439,7 +439,7 @@ void message_parse(bool importing_from_fsm)
 		stuff_string(buf, F_NAME); 
 		for (SCP_vector<SCP_string>::iterator iter = Builtin_moods.begin(); iter != Builtin_moods.end(); ++iter) {
 			if (iter->compare(buf) == 0) {
-				msg.mood = iter - Builtin_moods.begin();
+				msg.mood = (int)std::distance(Builtin_moods.begin(), iter);
 				found = true;
 				break;
 			}
@@ -462,7 +462,7 @@ void message_parse(bool importing_from_fsm)
 		for (SCP_vector<SCP_string>::iterator parsed_moods = buff.begin(); parsed_moods != buff.end(); ++parsed_moods) {
 			for (SCP_vector<SCP_string>::iterator iter = Builtin_moods.begin(); iter != Builtin_moods.end(); ++iter) {
 				if (!stricmp(iter->c_str(), parsed_moods->c_str())) {
-					msg.excluded_moods.push_back(iter - Builtin_moods.begin());
+					msg.excluded_moods.push_back((int)std::distance(Builtin_moods.begin(), iter));
 					found = true;
 					break;
 				}
@@ -1336,7 +1336,7 @@ void message_queue_process()
 
 			// see if the ship sending this message is dying.  If do, kill wave and anim
 			if ( Playing_messages[i].shipnum != -1 ) {
-				if ( (Ships[Playing_messages[i].shipnum].flags & SF_DYING) && (Playing_messages[i].builtin_type != MESSAGE_WINGMAN_SCREAM) ) {
+				if ( (Ships[Playing_messages[i].shipnum].flags[Ship::Ship_Flags::Dying]) && (Playing_messages[i].builtin_type != MESSAGE_WINGMAN_SCREAM) ) {
 					int shipnum;
 
 					shipnum = Playing_messages[i].shipnum;
@@ -1347,7 +1347,7 @@ void message_queue_process()
 					// MWA 3/24/98 -- save shipnum before killing message
 					// 
 					Assert( shipnum >= 0 );
-					if ( !(Ships[shipnum].flags & SF_SHIP_HAS_SCREAMED) && !(Ships[shipnum].flags2 & SF2_NO_DEATH_SCREAM) ) {
+					if ( !(Ships[shipnum].flags[Ship::Ship_Flags::Ship_has_screamed]) && !(Ships[shipnum].flags[Ship::Ship_Flags::No_death_scream]) ) {
 						ship_scream( &Ships[shipnum] );
 					}
 					continue;							// this should keep us in the while() loop with same value of i.														
@@ -1532,7 +1532,7 @@ void message_queue_process()
 	else
 		message_translate_tokens(buf, q->special_message);
 
-	Message_expire = timestamp(42 * strlen(buf));
+	Message_expire = timestamp(static_cast<int>(42 * strlen(buf)));
 	// AL: added 07/14/97.. only play avi/sound if in gameplay
 	if ( gameseq_get_state() != GS_STATE_GAME_PLAY )
 		goto all_done;
@@ -1547,7 +1547,7 @@ void message_queue_process()
 		if (Message_shipnum < 0) {
 			goto all_done;
 		}
-		if (!((Ship_info[Ships[Message_shipnum].ship_info_index].flags & SIF_SMALL_SHIP) || (Ships[Message_shipnum].flags2 & SF2_ALWAYS_DEATH_SCREAM)) ) {
+		if (!(Ship_info[Ships[Message_shipnum].ship_info_index].is_small_ship() || (Ships[Message_shipnum].flags[Ship::Ship_Flags::Always_death_scream])) ) {
 			goto all_done;
 		}
 	}
@@ -1578,7 +1578,7 @@ void message_queue_process()
 		ship *shipp = &Ships[Message_shipnum];
 		if ( shipp->callsign_index >= 0 ) {
 			hud_stuff_ship_callsign( who_from, shipp );
-		} else if ( ((Iff_info[shipp->team].flags & IFFF_WING_NAME_HIDDEN) && (shipp->wingnum != -1)) || (shipp->flags2 & SF2_HIDE_SHIP_NAME) ) {
+		} else if ( ((Iff_info[shipp->team].flags & IFFF_WING_NAME_HIDDEN) && (shipp->wingnum != -1)) || (shipp->flags[Ship::Ship_Flags::Hide_ship_name]) ) {
 			hud_stuff_ship_class( who_from, shipp );
 		} else {
 			end_string_at_first_hash_symbol(who_from);
@@ -1716,7 +1716,8 @@ void message_queue_message( int message_num, int priority, int timing, char *who
 // type personas.  ship is the ship we should assign a persona to
 int message_get_persona( ship *shipp )
 {
-	int i = 0, ship_type, count;
+	int i = 0, count;
+    ship_info* sip;
 	int *slist = new int[Num_personas];
 	memset( slist, 0, sizeof(int) * Num_personas );
 
@@ -1729,15 +1730,15 @@ int message_get_persona( ship *shipp )
 		}
 
 		// get the type of ship (i.e. support, fighter/bomber, etc)
-		ship_type = Ship_info[shipp->ship_info_index].flags;
+		sip = &Ship_info[shipp->ship_info_index];
 
 		int persona_needed;
 		count = 0;
 
-		if ( ship_type & (SIF_FIGHTER|SIF_BOMBER) )
+		if ( sip->is_fighter_bomber() )
 		{
 			persona_needed = PERSONA_FLAG_WINGMAN;
-		} else if ( ship_type & SIF_SUPPORT ) 
+		} else if ( sip->flags[Ship::Info_Flags::Support] ) 
 		{
 			persona_needed = PERSONA_FLAG_SUPPORT;
 		}
@@ -1937,11 +1938,11 @@ void message_send_builtin_to_player( int type, ship *shipp, int priority, int ti
 
 
 	// if we aren't showing builtin msgs, bail
-	if (The_mission.flags & MISSION_FLAG_NO_BUILTIN_MSGS)
+	if (The_mission.flags[Mission::Mission_Flags::No_builtin_msgs])
 		return;
 
 	// Karajorma - If we aren't showing builtin msgs from command and this is not a ship, bail
-	if ( (shipp == NULL) && (The_mission.flags & MISSION_FLAG_NO_BUILTIN_COMMAND) ) 
+	if ( (shipp == NULL) && (The_mission.flags[Mission::Mission_Flags::No_builtin_command]) ) 
 		return;
 
 	// builtin type isn't supported by this version of the table
@@ -1966,7 +1967,7 @@ void message_send_builtin_to_player( int type, ship *shipp, int priority, int ti
 	// see if there is a persona assigned to this ship.  If not, then try to assign one!!!
 	if ( shipp ) {
 		// Karajorma - the game should assert if a silenced ship gets this far
-		Assert( !(shipp->flags2 & SF2_NO_BUILTIN_MESSAGES) );
+		Assert( !(shipp->flags[Ship::Ship_Flags::No_builtin_messages]) );
 
 		if ( shipp->persona_index == -1 )
 			shipp->persona_index = message_get_persona( shipp );
@@ -1977,7 +1978,7 @@ void message_send_builtin_to_player( int type, ship *shipp, int priority, int ti
 			nprintf(("messaging", "Couldn't find persona for %s\n", shipp->ship_name ));	
 
 		// be sure that this ship can actually send a message!!! (i.e. not-not-flyable -- get it!)
-		Assert( !(Ship_info[shipp->ship_info_index].flags & SIF_NOT_FLYABLE) );		// get allender or alan
+		Assert( Ship_info[shipp->ship_info_index].is_flyable() );		// get allender or alan
 	} else {
 		persona_index = The_mission.command_persona;				// use the terran command persona
 	}
@@ -2218,21 +2219,21 @@ void message_maybe_distort()
 //
 void message_maybe_distort_text(char *text, int shipnum)
 {
-	int i, j, len, run, curr_offset, voice_duration, next_distort;
+	int voice_duration;
 
 	if ( comm_between_player_and_ship(shipnum) == COMM_OK ) { 
 		return;
 	}
 
-	len = strlen(text);
+	auto len = strlen(text);
 	if ( Message_wave_duration == 0 ) {
-		next_distort = 5+myrand()%5;
-		for ( i = 0; i < len; i++ ) {
+		size_t next_distort = 5+myrand()%5;
+		for ( size_t i = 0; i < len; i++ ) {
 			if ( i == next_distort ) {
-				run = 3+myrand()%5;
+				size_t run = 3+myrand()%5;
 				if ( i+run > len )
 					run = len-i;
-				for ( j = 0; j < run; j++) {
+				for ( size_t j = 0; j < run; j++) {
 					text[i++] = '-';
 					if ( i >= len )
 						break;
@@ -2248,10 +2249,11 @@ void message_maybe_distort_text(char *text, int shipnum)
 	// distort text
 	Distort_num = myrand()%MAX_DISTORT_PATTERNS;
 	Distort_next = 0;
-	curr_offset = 0;
+	size_t curr_offset = 0;
 	while (voice_duration > 0) {
-		run = fl2i(Distort_patterns[Distort_num][Distort_next] * len);
+		size_t run = fl2i(Distort_patterns[Distort_num][Distort_next] * len);
 		if (Distort_next & 1) {
+			size_t i;
 			for ( i = curr_offset; i < MIN(len, curr_offset+run); i++ ) {
 				if ( text[i] != ' ' ) 
 					text[i] = '-';

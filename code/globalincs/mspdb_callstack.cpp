@@ -78,14 +78,14 @@ BOOL SCP_mspdbcs_ResolveSymbol( HANDLE hProcess, UINT_PTR dwAddress, SCP_mspdbcs
 		memset( &sym.sym, 0, sizeof( sym.sym ) );
 		sym.sym.SizeOfStruct = sizeof( IMAGEHLP_SYMBOL64 );
 
-#ifdef _WIN64
+#if IS_64BIT
 		sym.sym.Address = dwAddress;
 #else
 		sym.sym.Address = (DWORD)dwAddress;
 #endif
 		sym.sym.MaxNameLength = SCP_MSPDBCS_MAX_SYMBOL_LENGTH;
 		
-#ifdef _WIN64
+#if IS_64BIT
 		if ( SymGetSymFromAddr64( hProcess, dwAddress, &(siSymbol.dwOffset), &sym.sym ) )
 #else
 		if ( SymGetSymFromAddr64( hProcess, (DWORD)dwAddress, &(siSymbol.dwOffset), &sym.sym ) )
@@ -135,7 +135,7 @@ DWORD64 __stdcall SCP_mspdbcs_GetModuleBase( HANDLE hProcess, DWORD64 returnAddr
 	moduleInfo.SizeOfStruct = sizeof( IMAGEHLP_MODULE );
 	
 	/* The ATL headers do it this way */
-#ifdef _WIN64
+#if IS_64BIT
 	if ( SymGetModuleInfo( hProcess, returnAddress, &moduleInfo ) )
 #else
 	if ( SymGetModuleInfo( hProcess, (ULONG)returnAddress, &moduleInfo ) )
@@ -154,7 +154,7 @@ DWORD64 __stdcall SCP_mspdbcs_GetModuleBase( HANDLE hProcess, DWORD64 returnAddr
 			char szFile[ _MAX_PATH ] = {0}; /* Initialise the file path */
 			cch = GetModuleFileNameA( (HINSTANCE)memoryBasicInfo.AllocationBase, szFile, MAX_PATH );
 			SymLoadModule( hProcess, NULL, ((cch)?szFile:NULL),
-#ifdef _WIN64
+#if IS_64BIT
 						   NULL, (DWORD_PTR)memoryBasicInfo.AllocationBase, 0 );
 #else
 						   NULL, (DWORD)(DWORD_PTR)memoryBasicInfo.AllocationBase, 0 );

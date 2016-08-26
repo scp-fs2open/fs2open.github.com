@@ -136,6 +136,7 @@ extern char* Cmdline_keyboard_layout;
 extern bool Cmdline_gl_finish;
 extern bool Cmdline_no_geo_sdr_effects;
 extern bool Cmdline_set_cpu_affinity;
+extern bool Cmdline_nograb;
 #ifdef WIN32
 extern bool Cmdline_alternate_registry_path;
 #endif
@@ -158,5 +159,6 @@ extern bool Cmdline_profile_write_file;
 extern bool Cmdline_no_unfocus_pause;
 extern bool Cmdline_benchmark_mode;
 extern bool Cmdline_noninteractive;
+extern bool Cmdline_json_pilot;
 
 #endif

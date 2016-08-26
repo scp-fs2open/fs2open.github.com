@@ -848,10 +848,10 @@ void wl_render_overhead_view(float frametime)
 			{
 				float rev_rate;
 				rev_rate = REVOLUTION_RATE;
-				if (sip->flags & SIF_BIG_SHIP) {
+				if (sip->is_big_ship()) {
 					rev_rate *= 1.7f;
 				}
-				if (sip->flags & SIF_HUGE_SHIP) {
+				if (sip->is_huge_ship()) {
 					rev_rate *= 3.0f;
 				}
 
@@ -1119,16 +1119,6 @@ void wl_set_disabled_weapons(int ship_class)
 		//	Determine whether weapon #i is allowed on this ship class in the current type of mission.
 		//	As of 9/6/99, the only difference is dogfight missions have a different list of legal weapons.
 		Wl_icons[i].can_use = eval_weapon_flag_for_game_type(sip->allowed_weapons[i]);
-
-		// Goober5000: ballistic primaries
-		if (Weapon_info[i].wi_flags2 & WIF2_BALLISTIC)
-		{
-			// not allowed if this ship is not ballistic
-			if (!(sip->flags & SIF_BALLISTIC_PRIMARIES))
-			{
-				Wl_icons[i].can_use = 0;
-			}
-		}
 	}
 }
 
@@ -1502,7 +1492,7 @@ int wl_calc_ballistic_fit(int wi_index, int capacity)
 
 	Assert(Weapon_info[wi_index].subtype == WP_LASER);
 
-	Assert(Weapon_info[wi_index].wi_flags2 & WIF2_BALLISTIC);
+	Assert(Weapon_info[wi_index].wi_flags[Weapon::Info_Flags::Ballistic]);
 
 	return fl2i( capacity / Weapon_info[wi_index].cargo_size + 0.5f );
 }
@@ -2293,7 +2283,7 @@ void wl_render_weapon_desc(float frametime)
 		
 		// draw weapon title (above weapon anim)
 		for (i=0; i<2; i++) {
-			curr_len = strlen(Weapon_desc_lines[i]);
+			curr_len = (int)strlen(Weapon_desc_lines[i]);
 
 			if (bright_char_index < curr_len) {
 				// save bright char and plunk in some nulls to shorten string
@@ -2321,7 +2311,7 @@ void wl_render_weapon_desc(float frametime)
 
 		// draw weapon desc (below weapon anim)
 		for (i=2; i<WEAPON_DESC_MAX_LINES; i++) {
-			curr_len = strlen(Weapon_desc_lines[i]);
+			curr_len = (int)strlen(Weapon_desc_lines[i]);
 
 			if (bright_char_index < curr_len) {
 				// save bright char and plunk in some nulls to shorten string
@@ -2377,7 +2367,7 @@ void wl_weapon_desc_start_wipe()
 {
 	int currchar_src = 0, currline_dest = 2, currchar_dest = 0, i;
 	int w, h;
-	int title_len = strlen(Weapon_info[Selected_wl_class].title);
+	int title_len = (int)strlen(Weapon_info[Selected_wl_class].title);
 
 	// init wipe vars
 	Weapon_desc_wipe_time_elapsed = 0.0f;
@@ -2899,7 +2889,7 @@ void wl_render_icon_count(int num, int x, int y)
 	Assert(number_to_draw >= 0);
 
 	sprintf(buf, "%d", number_to_draw);
-	gr_get_string_size(&num_w, &num_h, buf, strlen(buf));
+	gr_get_string_size(&num_w, &num_h, buf, (int)strlen(buf));
 
 	// render
 	gr_set_color_fast(&Color_white);
@@ -3280,7 +3270,7 @@ void wl_update_parse_object_weapons(p_object *pobjp, wss_unit *slot)
 			ss->primary_banks[j] = slot->wep[i];
 
 			// ballistic primaries - Goober5000
-			if (Weapon_info[slot->wep[i]].wi_flags2 & WIF2_BALLISTIC)
+			if (Weapon_info[slot->wep[i]].wi_flags[Weapon::Info_Flags::Ballistic])
 			{
 				// Important: the primary_ammo[] value is a percentage of max capacity!
 				// which means that it's always 100%, since ballistic primaries are completely
@@ -3403,7 +3393,7 @@ void wl_bash_ship_weapons(ship_weapon *swp, wss_unit *slot)
 			swp->primary_bank_weapons[j] = slot->wep[i];
 
 			// ballistic primaries - Goober5000
-			if (Weapon_info[swp->primary_bank_weapons[j]].wi_flags2 & WIF2_BALLISTIC) {
+			if (Weapon_info[swp->primary_bank_weapons[j]].wi_flags[Weapon::Info_Flags::Ballistic]) {
 				// this is a bit tricky: we must recalculate ammo for full capacity
 				// since wep_count for primaries does not store the ammo; ballistic
 				// primaries always come with a full magazine
@@ -4043,8 +4033,7 @@ void wl_apply_current_loadout_to_all_ships_in_current_wing()
 			}
 
 			// make sure this ship can accept this weapon
-			if (!eval_weapon_flag_for_game_type(sip->allowed_weapons[weapon_type_to_add])
-				|| ((wip->wi_flags2 & WIF2_BALLISTIC) && !(sip->flags & SIF_BALLISTIC_PRIMARIES)))
+			if (!eval_weapon_flag_for_game_type(sip->allowed_weapons[weapon_type_to_add]))
 			{
 				SCP_string temp;
 				sprintf(temp, XSTR("%s is unable to carry %s weaponry", 1629), ship_name, wep_display_name);

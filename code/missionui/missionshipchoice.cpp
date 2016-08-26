@@ -1451,10 +1451,10 @@ void ship_select_do(float frametime)
 		{
 			ship_info *sip = &Ship_info[Selected_ss_class];
 			float rev_rate = REVOLUTION_RATE;
-			if (sip->flags & SIF_BIG_SHIP) {
+			if (sip->is_big_ship()) {
 				rev_rate *= 1.7f;
 			}
-			if (sip->flags & SIF_HUGE_SHIP) {
+			if (sip->is_huge_ship()) {
 				rev_rate *= 3.0f;
 			}
 
@@ -1906,7 +1906,7 @@ void commit_pressed()
 	mission_hotkey_validate();
 
 	// Goober5000 - no sound when skipping briefing
-	if (!(The_mission.flags & MISSION_FLAG_NO_BRIEFING))
+	if (!(The_mission.flags[Mission::Mission_Flags::No_briefing]))
 		gamesnd_play_iface(SND_COMMIT_PRESSED);
 
 	// save the player loadout
@@ -2418,7 +2418,7 @@ int create_wings()
 						shipnum = wp->ship_index[j];
 						Assert( shipnum >= 0 && shipnum < MAX_SHIPS );
 						cleanup_ship_index[j] = shipnum;
-						ship_add_exited_ship( &Ships[shipnum], SEF_PLAYER_DELETED );
+						ship_add_exited_ship( &Ships[shipnum], Ship::Exit_Flags::Player_deleted );
 						obj_delete(Ships[shipnum].objnum);
 						hud_set_wingman_status_none( Ships[shipnum].wing_status_wing_index, Ships[shipnum].wing_status_wing_pos);
 					}
@@ -2487,7 +2487,7 @@ int create_default_player_ship(int use_last_flown)
 	else {
 		for (auto it = Ship_info.cbegin(); it != Ship_info.cend(); ++it) {
 			if ( !stricmp(it->name, default_player_ship) ) {
-				player_ship_class = std::distance(Ship_info.cbegin(), it);
+				player_ship_class = (int)std::distance(Ship_info.cbegin(), it);
 				Players[Player_num].last_ship_flown_si_index = player_ship_class;
 				break;
 			}
@@ -3029,10 +3029,10 @@ void ss_init_units()
 			// going to be able to modify that ship.
 			if ( ss_slot->sa_index == -1 ) {
 				int objnum;
-				if ( Ships[wp->ship_index[j]].flags2 & SF2_SHIP_LOCKED ) {
+				if ( Ships[wp->ship_index[j]].flags[Ship::Ship_Flags::Ship_locked] ) {
 					ss_slot->status |= WING_SLOT_SHIPS_DISABLED;
 				} 
-				if ( Ships[wp->ship_index[j]].flags2 & SF2_WEAPONS_LOCKED ) {
+				if ( Ships[wp->ship_index[j]].flags[Ship::Ship_Flags::Weapons_locked] ) {
 					ss_slot->status |= WING_SLOT_WEAPONS_DISABLED;
 				}  
 
@@ -3042,7 +3042,7 @@ void ss_init_units()
 				}
 
 				objnum = Ships[wp->ship_index[j]].objnum;
-				if ( Objects[objnum].flags & OF_PLAYER_SHIP ) {
+				if ( Objects[objnum].flags[Object::Object_Flags::Player_ship] ) {
 					if ( ss_slot->status & WING_SLOT_LOCKED ) {
 						// Int3();	// Get Alan
 						
@@ -3055,10 +3055,10 @@ void ss_init_units()
 					}
 				}
 			} else {
-				if ( Parse_objects[ss_slot->sa_index].flags2 & P2_SF2_SHIP_LOCKED ) {
+                if (Parse_objects[ss_slot->sa_index].flags[Mission::Parse_Object_Flags::SF_Ship_locked]) {
 					ss_slot->status |= WING_SLOT_SHIPS_DISABLED;
 				} 
-				if ( Parse_objects[ss_slot->sa_index].flags2 & P2_SF2_WEAPONS_LOCKED ) {
+				if ( Parse_objects[ss_slot->sa_index].flags[Mission::Parse_Object_Flags::SF_Weapons_locked] ) {
 					ss_slot->status |= WING_SLOT_WEAPONS_DISABLED;
 				} 
 				
@@ -3066,7 +3066,7 @@ void ss_init_units()
 				if (!(ss_slot->status & WING_SLOT_DISABLED)) {
 					ss_slot->status = WING_SLOT_FILLED;
 				}
-				if ( Parse_objects[ss_slot->sa_index].flags & P_OF_PLAYER_START ) {
+				if ( Parse_objects[ss_slot->sa_index].flags[Mission::Parse_Object_Flags::OF_Player_start] ) {
 					if ( ss_slot->status & WING_SLOT_LOCKED ) {
 						// Int3();	// Get Alan
 

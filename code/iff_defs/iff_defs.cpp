@@ -387,53 +387,18 @@ void iff_init()
 				}
 			}
 
-			// get default ship flags
-			iff->default_parse_flags = 0;
-			if (optional_string("$Default Ship Flags:"))
-			{
-				i = 0;
-				j = 0;
-				char flag_strings[MAX_PARSE_OBJECT_FLAGS][NAME_LENGTH];
-				int num_strings = stuff_string_list(flag_strings, MAX_PARSE_OBJECT_FLAGS);
-				for (i = 0; i < num_strings; i++)
-				{
-					for (j = 0; j < MAX_PARSE_OBJECT_FLAGS; j++)
-					{
-						if (!stricmp(flag_strings[i], Parse_object_flags[j]))
-						{
-							iff->default_parse_flags |= (1 << j);
-							break;
-						}
-					}
-				}
+            // get default ship flags
+            iff->default_parse_flags.reset();
+            if (optional_string("$Default Ship Flags:"))
+            {
+                parse_string_flag_list(iff->default_parse_flags, Parse_object_flags, num_parse_object_flags, NULL);
+            }
 
-				if (j == MAX_PARSE_OBJECT_FLAGS)
-					Warning(LOCATION, "Bogus string in iff default ship flags: %s\n", flag_strings[i]);
-			}
-
-			// again
-			iff->default_parse_flags2 = 0;
-			if (optional_string("$Default Ship Flags2:"))
-			{
-				i = 0;
-				j = 0;
-				char flag_strings[MAX_PARSE_OBJECT_FLAGS_2][NAME_LENGTH];
-				int num_strings = stuff_string_list(flag_strings, MAX_PARSE_OBJECT_FLAGS_2);
-				for (i = 0; i < num_strings; i++)
-				{
-					for (j = 0; j < MAX_PARSE_OBJECT_FLAGS_2; j++)
-					{
-						if (!stricmp(flag_strings[i], Parse_object_flags_2[j]))
-						{
-							iff->default_parse_flags2 |= (1 << j);
-							break;
-						}
-					}
-				}
-
-				if (j == MAX_PARSE_OBJECT_FLAGS_2)
-					Warning(LOCATION, "Bogus string in iff default ship flags2: %s\n", flag_strings[i]);
-			}
+            // again, for compatibility reasons
+            if (optional_string("$Default Ship Flags2:"))
+            {
+                parse_string_flag_list(iff->default_parse_flags, Parse_object_flags, num_parse_object_flags, NULL);
+            }
 
 			// this is cleared between each level but let's just set it here for thoroughness
 			iff->ai_rearm_timestamp = timestamp(-1);

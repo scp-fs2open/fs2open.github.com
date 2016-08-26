@@ -29,8 +29,6 @@ matrix vmd_identity_matrix = IDENTITY_MATRIX;
 
 #define	UNINITIALIZED_VALUE	-12345678.9f
 
-static void rotate_z ( matrix *m, float theta ) __UNUSED;
-
 bool vm_vec_equal(const vec4 &self, const vec4 &other)
 {
 	return fl_equal(self.a1d[0], other.a1d[0]) && fl_equal(self.a1d[1], other.a1d[1]) && fl_equal(self.a1d[2], other.a1d[2]) && fl_equal(self.a1d[3], other.a1d[3]);
@@ -1575,32 +1573,6 @@ void vm_quaternion_rotate(matrix *M, float theta, const vec3d *u)
 	M->vec.fvec.xyz.y = 2.0f*b*c - 2.0f*s*a;
 	M->vec.fvec.xyz.z = 1.0f - 2.0f*a*a - 2.0f*b*b;
 }
-
-// --------------------------------------------------------------------------------------
-// function finds the rotation matrix about the z axis for a given rotation angle (in radians)
-// this is an optimized version vm_quaternion_rotate
-//
-//		inputs:	m			=>		point to resultant rotation matrix
-//				angle		=>		rotation angle about z axis (in radians)
-//
-#pragma warning(push)
-#pragma warning(disable: 4505) // Unused local function
-static void rotate_z ( matrix *m, float theta )
-{
-	m->vec.rvec.xyz.x = cosf (theta);
-	m->vec.rvec.xyz.y = sinf (theta);
-	m->vec.rvec.xyz.z = 0.0f;
-
-	m->vec.uvec.xyz.x = -m->vec.rvec.xyz.y;
-	m->vec.uvec.xyz.y =  m->vec.rvec.xyz.x;
-	m->vec.uvec.xyz.z = 0.0f;
-
-	m->vec.fvec.xyz.x = 0.0f;
-	m->vec.fvec.xyz.y = 0.0f;
-	m->vec.fvec.xyz.z = 1.0f;
-}
-#pragma warning(pop)
-
 
 // --------------------------------------------------------------------------------------
 

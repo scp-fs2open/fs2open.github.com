@@ -201,34 +201,9 @@ int _chdir(const char *path)
 // make specified directory
 int _mkdir(const char *path)
 {
-	int status = 1;		// if we don't ever call mkdir() to update this then assume we are in error
-	char *c, tmp_path[MAX_PATH];
-
-	memset(tmp_path, 0, MAX_PATH);
-	strncpy(tmp_path, path, MAX_PATH-1);
-
-	c = &tmp_path[1];
-
-	while (c++) {
-		c = strchr(c, '/');
-
-		if (c) {
-			*c = '\0';
-
-			status = mkdir(tmp_path, 0755);
-
-#ifndef NDEBUG
-			int m_error = errno;
-
-			if (status && (m_error != EEXIST) ) {
-				Warning(__FILE__, __LINE__, "Cannot mkdir %s: %s", tmp_path, strerror(m_error));
-			}
-#endif
-			*c = '/';
-		}
-	}
-
-	return status;
+	// Windows _mkdir does not take file permissions as a parameter.
+	// umask already deals with that, so 0777 should be fine.
+	return mkdir(path, 0777);
 }
 
 void _splitpath (char *path, char *drive, char *dir, char *fname, char *ext)

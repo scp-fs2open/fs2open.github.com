@@ -127,7 +127,14 @@ namespace graphics
 			}
 
 			virtual void textMetrics(float* ascender, float* descender, float* lineh) SCP_OVERRIDE
-			{}
+			{
+				if (ascender)
+					*ascender = 3.f;
+				if (descender)
+					*descender = 0.5f;
+				if (lineh)
+					*lineh = 4.f;
+			}
 
 			virtual void textAlign(TextAlign align) SCP_OVERRIDE
 			{}

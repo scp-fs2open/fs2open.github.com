@@ -16,6 +16,8 @@
 #include "globalincs/pstypes.h"
 #include "graphics/2d.h"
 #include "object/object.h"
+#include "ship/ship_flags.h"
+#include "model/model_flags.h"
 
 class object;
 class model_render_params;
@@ -103,54 +105,6 @@ typedef struct polymodel_instance {
 #define MAX_MODEL_SUBSYSTEMS		200				// used in ships.cpp (only place?) for local stack variable DTP; bumped to 200
 													// when reading in ships.tbl
 
-#define MSS_FLAG_ROTATES			(1 << 0)		// This means the object rotates automatically with "turn_rate"
-#define MSS_FLAG_STEPPED_ROTATE		(1 << 1)		// This means that the rotation occurs in steps
-#define MSS_FLAG_AI_ROTATE			(1 << 2)		// This means that the rotation is controlled by ai
-#define MSS_FLAG_CREWPOINT			(1 << 3)		// If set, this is a crew point.
-#define MSS_FLAG_TURRET_MATRIX		(1 << 4)		// If set, this has it's turret matrix created correctly.
-#define MSS_FLAG_AWACS				(1 << 5)		// If set, this subsystem has AWACS capability
-#define MSS_FLAG_ARTILLERY			(1 << 6)		// if this rotates when weapons are fired - Goober5000
-#define MSS_FLAG_TRIGGERED			(1 << 7)		// rotates when triggered by something
-#define MSS_FLAG_UNTARGETABLE		(1 << 8)		// Goober5000
-#define MSS_FLAG_CARRY_NO_DAMAGE	(1 << 9)		// WMC
-#define MSS_FLAG_USE_MULTIPLE_GUNS	(1 << 10)		// WMC
-#define MSS_FLAG_FIRE_ON_NORMAL		(1 << 11)		// forces a turret to fire down its normal vecs
-#define MSS_FLAG_TURRET_HULL_CHECK	(1 << 12)		// makes the turret check to see if it's going to shoot through it's own hull before fireing - Bobboau
-#define MSS_FLAG_TURRET_FIXED_FP	(1 << 13)		// forces turret (when defined with multiple weapons) to prevent the firepoints from alternating
-#define MSS_FLAG_TURRET_SALVO		(1 << 14)		// forces turret to fire salvos (all guns simultaneously) - independent targeting
-#define MSS_FLAG_FIRE_ON_TARGET		(1 << 15)		// prevents turret from firing unless it is pointing at the firingpoints are pointing at the target
-#define MSS_FLAG_NO_SS_TARGETING	(1 << 16)		// toggles the subsystem targeting for the turret
-#define MSS_FLAG_TURRET_RESET_IDLE	(1 << 17)		// makes turret reset to their initial position if the target is out of field of view
-#define MSS_FLAG_TURRET_ALT_MATH	(1 << 18)		// tells the game to use additional calculations should turret have a defined y fov
-#define MSS_FLAG_CARRY_SHOCKWAVE	(1 << 19)		// subsystem - even with 'carry no damage' flag - will carry shockwave damage to the hull
-#define MSS_FLAG_ALLOW_LANDING		(1 << 20)		// This subsystem can be landed on
-#define MSS_FLAG_FOV_EDGE_CHECK		(1 << 21)		// Tells the game to use better FOV edge checking with this turret
-#define MSS_FLAG_FOV_REQUIRED		(1 << 22)		// Tells game not to allow this turret to attempt targeting objects out of FOV
-#define MSS_FLAG_NO_REPLACE			(1 << 23)		// set the subsys not to draw replacement ('destroyed') model
-#define MSS_FLAG_NO_LIVE_DEBRIS		(1 << 24)		// sets the subsys not to release live debris
-#define MSS_FLAG_IGNORE_IF_DEAD		(1 << 25)		// tells homing missiles to ignore the subsys if its dead and home on to hull instead of earlier subsys pos
-#define MSS_FLAG_ALLOW_VANISHING	(1 << 26)		// allows subsystem to vanish (prevents explosions & sounds effects from being played)
-#define MSS_FLAG_DAMAGE_AS_HULL		(1 << 27)		// applies armor damage to subsystem instead of subsystem damage - FUBAR
-#define MSS_FLAG_TURRET_LOCKED      (1 << 28)       // Turret starts locked by default - Sushi
-#define MSS_FLAG_NO_AGGREGATE		(1 << 29)		// Don't include with aggregate subsystem types - Goober5000
-#define MSS_FLAG_TURRET_ANIM_WAIT   (1 << 30)		// Turret won't fire until animation is complete - Sushi
-
-#define MSS_FLAG2_PLAYER_TURRET_SOUND			 (1 << 0)
-#define MSS_FLAG2_TURRET_ONLY_TARGET_IF_CAN_FIRE (1 << 1)	// Turrets only target things they're allowed to shoot at (e.g. if check-hull fails, won't keep targeting)
-#define MSS_FLAG2_NO_DISAPPEAR					 (1 << 2)	// Submodel won't disappear when subsystem destroyed
-#define MSS_FLAG2_COLLIDE_SUBMODEL				 (1 << 3)	// subsystem takes damage only from hits which impact the associated submodel
-#define MSS_FLAG2_DESTROYED_ROTATION			 (1 << 4)   // allows subobjects to continue to rotate even if they have been destroyed
-#define MSS_FLAG2_TURRET_USE_AMMO				 (1 << 5)	// enables ammo consumption for turrets (DahBlount)
-#define MSS_FLAG2_AUTOREPAIR_IF_DISABLED		 (1 << 6)	// Allows the subsystem to repair itself even if disabled (MageKing17)
-#define MSS_FLAG2_NO_AUTOREPAIR_IF_DISABLED		 (1 << 7)	// Inversion of the previous; disallows this particular subsystem if the ship-wide flag is set (MageKing17)
-#define MSS_FLAG2_SHARE_FIRE_DIRECTION			 (1 << 8)	// (DahBlount) Whenever the turret fires, make all firing points fire in the same direction.
-
-#define NUM_SUBSYSTEM_FLAGS			33
-
-// all subsys flags set in model file, used to copy only these flags for different table entries using the same model
-#define MSS_MODEL_FLAG_MASK				(MSS_FLAG_CREWPOINT | MSS_FLAG_ROTATES | MSS_FLAG_TRIGGERED | MSS_FLAG_ARTILLERY | MSS_FLAG_STEPPED_ROTATE)
-#define MSS_MODEL_FLAG2_MASK			0
-
 // definition of stepped rotation struct
 typedef struct stepped_rotation {
 	int num_steps;				// number of steps in complete revolution
@@ -164,14 +118,13 @@ typedef struct stepped_rotation {
 struct queued_animation;
 
 // definition for model subsystems.
-typedef struct model_subsystem {					/* contains rotation rate info */
-
-	uint	flags;								// See MSS_FLAG_* defines above
-	uint	flags2;
-	char	name[MAX_NAME_LEN];					// name of the subsystem.  Probably displayed on HUD
-	char	subobj_name[MAX_NAME_LEN];			// Temporary (hopefully) parameter used to match stuff in ships.tbl
-	char	alt_sub_name[NAME_LENGTH];			// Karajorma - Name that overrides name of original
-	char	alt_dmg_sub_name[NAME_LENGTH];		// Name for the damage popup subsystems, allows for translation
+class model_subsystem {					/* contains rotation rate info */
+public:
+	flagset<Model::Subsystem_Flags>	flags;	    // See model_flags.h
+    char	name[MAX_NAME_LEN];					// name of the subsystem.  Probably displayed on HUD
+    char	subobj_name[MAX_NAME_LEN];			// Temporary (hopefully) parameter used to match stuff in ships.tbl
+    char	alt_sub_name[NAME_LENGTH];			// Karajorma - Name that overrides name of original
+    char	alt_dmg_sub_name[NAME_LENGTH];		// Name for the damage popup subsystems, allows for translation
 	int		subobj_num;							// subobject number (from bspgen) -- used to match subobjects of subsystems to these entries; index to polymodel->submodel
 	int		model_num;							// Which model this is attached to (i.e. the polymodel[] index); same as polymodel->id
 	int		type;								// type. see SUBSYSTEM_* types above.  A generic type thing
@@ -182,7 +135,7 @@ typedef struct model_subsystem {					/* contains rotation rate info */
 
 	//	The following items are specific to turrets and will probably be moved to
 	//	a separate struct so they don't take up space for all subsystem types.
-	char	crewspot[MAX_NAME_LEN];				// unique identifying name for this turret -- used to assign AI class and multiplayer people
+    char	crewspot[MAX_NAME_LEN];	    		// unique identifying name for this turret -- used to assign AI class and multiplayer people
 	vec3d	turret_norm;						//	direction this turret faces
 	matrix	turret_matrix;						// turret_norm converted to a matrix.
 	float	turret_fov;							//	dot of turret_norm:vec_to_enemy > this means can see
@@ -238,7 +191,13 @@ typedef struct model_subsystem {					/* contains rotation rate info */
 	//Per-turret ownage settings - SUSHI
 	int turret_max_bomb_ownage; 
 	int turret_max_target_ownage; 
-} model_subsystem;
+
+    void reset();
+
+    model_subsystem() {
+        reset();
+    }
+};
 
 typedef struct model_special {
 	struct	model_special *next, *prev;		// for using as a linked list
@@ -1014,10 +973,10 @@ void model_set_instance_info(submodel_instance_info *sii, float turn_rate, float
 extern void model_clear_instance_info(submodel_instance_info * sii);
 
 // Sets the submodel instance data in a submodel
-extern void model_set_instance(int model_num, int sub_model_num, submodel_instance_info *sii, int flags = 0);
+extern void model_set_instance(int model_num, int sub_model_num, submodel_instance_info *sii, flagset<Ship::Subsystem_Flags>* flags = NULL);
 extern void model_set_instance_techroom(int model_num, int sub_model_num, float angle_1, float angle_2);
 
-void model_update_instance(int model_instance_num, int sub_model_num, submodel_instance_info *sii, int flags);
+void model_update_instance(int model_instance_num, int sub_model_num, submodel_instance_info *sii, flagset<Ship::Subsystem_Flags>& flags);
 
 // Adds an electrical arcing effect to a submodel
 void model_add_arc(int model_num, int sub_model_num, vec3d *v1, vec3d *v2, int arc_type);

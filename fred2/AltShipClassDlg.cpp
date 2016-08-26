@@ -199,7 +199,7 @@ BOOL AltShipClassDlg::OnInitDialog()
 	objp = GET_FIRST(&obj_used_list);
 	while (objp != END_OF_LIST(&obj_used_list)) {
 		if ((objp->type == OBJ_START) || (objp->type == OBJ_SHIP)) {
-			if (objp->flags & OF_MARKED) {
+			if (objp->flags[Object::Object_Flags::Marked]) {
 				m_selected_ships[num_selected_ships++] = objp->instance;
 			}
 		}
@@ -207,7 +207,7 @@ BOOL AltShipClassDlg::OnInitDialog()
 	}
 
 	Assert (num_selected_ships > 0);
-	Assert (Objects[cur_object_index].flags & OF_MARKED);
+	Assert (Objects[cur_object_index].flags[Object::Object_Flags::Marked]);
 
 	if (num_selected_ships > 1) 
 	{
@@ -238,15 +238,15 @@ BOOL AltShipClassDlg::OnInitDialog()
 		m_set_from_ship_class.AddString("Set From Variable");
 	}
 	count = 0; 
-	for (auto it = Ship_info.cbegin(); it != Ship_info.cend(); ++it)
-	{
-		if (player_ships_only && !(it->flags & SIF_PLAYER_SHIP)) {
-			continue;
-		}
+    for (auto it = Ship_info.cbegin(); it != Ship_info.cend(); ++it)
+    {
+        if (player_ships_only && !(it->flags[Ship::Info_Flags::Player_ship])) {
+            continue;
+        }
 
-		ship_class_indices[count++] = std::distance(Ship_info.cbegin(), it);
-		m_set_from_ship_class.AddString(it->name);
-	}
+        ship_class_indices[count++] = (int)std::distance(Ship_info.cbegin(), it);
+        m_set_from_ship_class.AddString(it->name);
+    }
 	m_set_from_ship_class.SetCurSel(num_string_variables?1:0); // Set to the first ship class
 
 	// Set up the actual list of alt classes

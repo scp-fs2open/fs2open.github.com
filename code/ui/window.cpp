@@ -131,9 +131,6 @@ void UI_WINDOW::set_foreground_bmap(char *fname)
 	if (foreground_bmap_id < 0) {
 		Error(LOCATION,"Could not load in %s!",fname);
 	}
-#ifndef HARDWARE_ONLY
-	palette_use_bm_palette(foreground_bmap_id);
-#endif
 }
 
 

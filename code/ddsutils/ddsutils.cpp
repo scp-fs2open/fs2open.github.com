@@ -27,7 +27,7 @@ static inline int is_power_of_two(int w, int h)
 }
 
 
-int dds_read_header(const char *filename, CFILE *img_cfp, int *width, int *height, int *bpp, int *compression_type, int *levels, int *size, ubyte *palette)
+int dds_read_header(const char *filename, CFILE *img_cfp, int *width, int *height, int *bpp, int *compression_type, int *levels, size_t *size, ubyte *palette)
 {
 	DDSURFACEDESC2 dds_header;
 	int code = 0;
@@ -37,7 +37,8 @@ int dds_read_header(const char *filename, CFILE *img_cfp, int *width, int *heigh
 	int ct = DDS_UNCOMPRESSED;
 	int bits = 0;
 	int i, is_cubemap = 0;
-	int d_width = 0, d_height = 0, d_depth = 0, d_size = 0;
+	uint32_t d_width = 0, d_height = 0, d_depth = 0;
+	size_t d_size = 0;
 
 
 	if (img_cfp == NULL) {
@@ -276,7 +277,8 @@ int dds_read_bitmap(const char *filename, ubyte *data, ubyte *bpp, int cf_type)
 {
 	int retval;
 	int w,h,ct,lvl;
-	int size = 0, bits = 0;
+	size_t size = 0;
+	int bits = 0;
 	CFILE *cfp;
 	char real_name[MAX_FILENAME_LEN];
 
@@ -308,7 +310,7 @@ int dds_read_bitmap(const char *filename, ubyte *data, ubyte *bpp, int cf_type)
 	cfseek(cfp, DDS_OFFSET, CF_SEEK_SET);
 
 	// read in the data
-	cfread(data, 1, size, cfp);
+	cfread(data, 1, (int)size, cfp);
 
 	if (bpp)
 		*bpp = (ubyte)bits;

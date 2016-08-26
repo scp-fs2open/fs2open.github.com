@@ -77,7 +77,6 @@ public:
 	public:
 	virtual BOOL PreCreateWindow(CREATESTRUCT& cs);
 	virtual BOOL OnCmdMsg(UINT nID, int nCode, void* pExtra, AFX_CMDHANDLERINFO* pHandlerInfo);
-	virtual void OnInitialUpdate();
 	virtual BOOL DestroyWindow();
 	protected:
 	virtual BOOL OnPreparePrinting(CPrintInfo* pInfo);

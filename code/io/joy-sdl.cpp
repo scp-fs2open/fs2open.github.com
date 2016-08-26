@@ -1,22 +1,71 @@
 #include "io/joy.h"
+#include "io/joy_ff.h"
 #include "io/timer.h"
 #include "osapi/osapi.h"
 
+#include <algorithm>
+#include <bitset>
 #include <memory>
 #include <utility>
-#include <algorithm>
 
 using namespace io::joystick;
 using namespace os::events;
 
-namespace
-{
+namespace {
 typedef std::unique_ptr<Joystick> JoystickPtr;
 
 SCP_vector<JoystickPtr> joysticks;
 Joystick *currentJoystick = nullptr;
 
 bool initialized = false;
+
+/**
+ * @brief Compatibility conversion from HatPosition to array index
+ */
+inline
+int hatEnumToIdx(HatPosition in) {
+	return static_cast<int>(in - JOY_NUM_BUTTONS);
+}
+
+/**
+* @brief Compatibility conversion from Button index to HatPosition
+*/
+inline
+HatPosition hatBtnToEnum(int in) {
+	Assertion(in >= JOY_NUM_BUTTONS, "Invalid button value passed to hatBtnToEnum: %i", in);
+
+	in -= JOY_NUM_BUTTONS;
+
+	switch (in) {
+	case 0:
+		return HAT_DOWN;
+
+	case 1:
+		return HAT_UP;
+
+	case 2:
+		return HAT_LEFT;
+
+	case 3:
+		return HAT_RIGHT;
+
+	case 4:
+		return HAT_LEFTDOWN;
+
+	case 5:
+		return HAT_LEFTUP;
+
+	case 6:
+		return HAT_RIGHTDOWN;
+
+	case 7:
+		return HAT_RIGHTUP;
+
+	default:
+		// Invalid index
+		return HAT_CENTERED;
+	}
+};
 
 SCP_string getJoystickGUID(SDL_Joystick *stick)
 {
@@ -32,19 +81,46 @@ SCP_string getJoystickGUID(SDL_Joystick *stick)
 	joystickGUID.resize(GUID_STR_SIZE - 1);
 
 	// Make sure the GUID is upper case
-	transform(begin(joystickGUID), end(joystickGUID), begin(joystickGUID), toupper);
+	std::transform(begin(joystickGUID), end(joystickGUID), begin(joystickGUID), toupper);
 
 	return joystickGUID;
 }
 
-SCP_string getCurrentJoystickGUID()
-{
-	SCP_string guidStr(os_config_read_string(nullptr, "CurrentJoystickGUID", ""));
+bool isCurrentJoystick(Joystick* testStick) {
+	auto currentGUID = os_config_read_string(nullptr, "CurrentJoystickGUID", nullptr);
+	auto currentId = (int)os_config_read_uint(nullptr, "CurrentJoystick", 0);
 
-	// Make sure we get upper case strings
-	transform(begin(guidStr), end(guidStr), begin(guidStr), toupper);
+	if ((currentGUID == nullptr) || !strcmp(currentGUID, "")) {
+		// Only use the id
+		return currentId == testStick->getDeviceId();
+	}
 
-	return guidStr;
+	SCP_string guidStr(currentGUID);
+	std::transform(begin(guidStr), end(guidStr), begin(guidStr), toupper);
+
+	if (testStick->getGUID() != guidStr) {
+		return false; // GUID doesn't match
+	}
+
+	// Build a list of all joysticks with the right guid
+	size_t num_sticks = 0;
+	for (auto& stick : joysticks) {
+		if (stick->getGUID() == guidStr) {
+			++num_sticks;
+		}
+	}
+
+	if (num_sticks == 0) {
+		// Not the right GUID
+		return false;
+	}
+	if (num_sticks == 1) {
+		// Only one option -> this is the right stick
+		return true;
+	}
+
+	// Multiple sticks -> check if the device id is the same
+	return testStick->getDeviceId() == currentId;
 }
 
 void enumerateJoysticks(SCP_vector<JoystickPtr>& outVec)
@@ -53,9 +129,12 @@ void enumerateJoysticks(SCP_vector<JoystickPtr>& outVec)
 	outVec.clear();
 	outVec.reserve(static_cast<size_t>(num));
 
+	mprintf(("Printing joystick info:\n"));
+
 	for (auto i = 0; i < num; ++i)
 	{
-		auto ptr = JoystickPtr(new Joystick(SDL_JoystickOpen(i)));
+		auto ptr = JoystickPtr(new Joystick(i));
+		ptr->printInfo();
 
 		outVec.push_back(std::move(ptr));
 	}
@@ -188,11 +267,11 @@ bool device_event_handler(const SDL_Event &evt)
 			}
 
 			// Add the new device to our list
-			auto added = JoystickPtr(new Joystick(device));
+			auto added = JoystickPtr(new Joystick(joyDeviceEvent.which));
 
 			for (auto iter = joysticks.begin(); iter != joysticks.end(); ++iter)
 			{
-				if ((*iter)->getGUID() == added->getGUID())
+				if ((*iter)->getID() == added->getID())
 				{
 					// Already have this stick
 					*(*iter) = std::move(*added);
@@ -201,6 +280,9 @@ bool device_event_handler(const SDL_Event &evt)
 			}
 
 			addedStick = added.get();
+			// This is a new stick so we can output it's information
+			mprintf(("A new joystick has been connected:\n"));
+			addedStick->printInfo();
 
 			joysticks.push_back(std::move(added));
 		}
@@ -211,9 +293,7 @@ bool device_event_handler(const SDL_Event &evt)
 			return true;
 		}
 
-		auto guid = addedStick->getGUID();
-
-		if (guid == getCurrentJoystickGUID())
+		if (isCurrentJoystick(addedStick))
 		{
 			// found our wanted stick!
 			setCurrentJoystick(addedStick);
@@ -236,10 +316,12 @@ namespace io
 {
 namespace joystick
 {
-	Joystick::Joystick(SDL_Joystick *joystick) :
-			_joystick(joystick)
+	Joystick::Joystick(int device_id) :
+		_device_id(device_id)
 	{
-		Assertion(joystick != nullptr, "Invalid joystick pointer passed!");
+		_joystick = SDL_JoystickOpen(device_id);
+
+		Assertion(_joystick != nullptr, "Failed to open a joystick, get a coder!");
 
 		fillValues();
 	}
@@ -261,6 +343,7 @@ namespace joystick
 
 	Joystick &Joystick::operator=(Joystick &&other)
 	{
+		std::swap(_device_id, other._device_id);
 		std::swap(_joystick, other._joystick);
 
 		fillValues();
@@ -284,16 +367,16 @@ namespace joystick
 	{
 		Assertion(index >= 0 && index < numButtons(), "Invalid index %d!", index);
 
-		return _buttonDownTimestamp[index] >= 0;
+		return _button[index].DownTimestamp >= 0;
 	}
 
 	float Joystick::getButtonDownTime(int index) const
 	{
 		Assertion(index >= 0 && index < numButtons(), "Invalid index %d!", index);
 
-		if (_buttonDownTimestamp[index] >= 0)
+		if (_button[index].DownTimestamp >= 0)
 		{
-			auto diff = timer_get_milliseconds() - _buttonDownTimestamp[index];
+			auto diff = timer_get_milliseconds() - _button[index].DownTimestamp;
 
 			return static_cast<float>(diff) / 1000.f;
 		}
@@ -305,11 +388,11 @@ namespace joystick
 	{
 		Assertion(index >= 0 && index < numButtons(), "Invalid index %d!", index);
 
-		auto val = _buttonDownCount[index];
+		auto val = _button[index].DownCount;
 
 		if (reset)
 		{
-			_buttonDownCount[index] = 0;
+			_button[index].DownCount = 0;
 		}
 
 		return val;
@@ -326,7 +409,63 @@ namespace joystick
 	{
 		Assertion(index >= 0 && index < numHats(), "Invalid index %d!", index);
 
-		return _hatValues[index];
+		return _hat[index].Value;
+	}
+
+	int Joystick::getHatDownCount(int index, HatPosition pos, bool ext, bool reset) {
+		Assertion(index >= 0 && index < numHats(), "Invalid index %d!", index);
+
+		int val;
+
+		if (pos == HAT_CENTERED) {
+			return 0;
+		}
+
+		if (ext) {
+			// Use 8-position
+			val = _hat[index].DownCount8[pos];
+
+			if (reset) {
+				_hat[index].DownCount8[pos] = 0;
+			}
+		} else {
+			// Use 4-position
+			val = _hat[index].DownCount4[pos];
+
+			if (reset) {
+				_hat[index].DownCount4[pos] = 0;
+			}
+		}
+
+		return val;
+	}
+
+	float Joystick::getHatDownTime(int index, HatPosition pos, bool ext) const
+	{
+		Assertion(index >= 0 && index < numHats(), "Invalid index %d!", index);
+
+		if (pos == HAT_CENTERED) {
+			return 0.0f;
+		}
+
+		int val;
+
+		if (ext) {
+			// Use 8-position
+			val = _hat[index].DownTimestamp8[pos];
+
+		} else {
+			// Use 4-position
+			val = _hat[index].DownTimestamp4[pos];
+		}
+
+		if (val < 0) {
+			return 0.0f;
+		}
+
+		auto diff = timer_get_milliseconds() - val;
+
+		return static_cast<float>(diff) / 1000.f;
 	}
 
 	int Joystick::numAxes() const
@@ -341,12 +480,12 @@ namespace joystick
 
 	int Joystick::numButtons() const
 	{
-		return static_cast<int>(_buttonDownTimestamp.size());
+		return static_cast<int>(_button.size());
 	}
 
 	int Joystick::numHats() const
 	{
-		return static_cast<int>(_hatValues.size());
+		return static_cast<int>(_hat.size());
 	}
 
 	SCP_string Joystick::getGUID() const
@@ -392,26 +531,55 @@ namespace joystick
 
 		// Initialize buttons
 		auto buttonNum = SDL_JoystickNumButtons(_joystick);
-		_buttonDownTimestamp.resize(static_cast<size_t>(buttonNum));
-		_buttonDownCount.resize(static_cast<size_t>(buttonNum));
+		_button.resize(static_cast<size_t>(buttonNum));
 		for (auto i = 0; i < buttonNum; ++i)
 		{
 			if (SDL_JoystickGetButton(_joystick, i) == 1)
 			{
-				_buttonDownTimestamp[i] = timer_get_milliseconds();
+				_button[i].DownTimestamp = timer_get_milliseconds();
 			}
 			else
 			{
-				_buttonDownTimestamp[i] = -1;
+				_button[i].DownTimestamp = -1;
 			}
 		}
 
 		// Initialize hats
 		auto hatNum = SDL_JoystickNumHats(_joystick);
-		_hatValues.resize(static_cast<size_t>(hatNum));
+		_hat.resize(static_cast<size_t>(hatNum));
 		for (auto i = 0; i < hatNum; ++i)
 		{
-			_hatValues[i] = convertSDLHat(SDL_JoystickGetHat(_joystick, i));
+			std::bitset<4> hatset = SDL_JoystickGetHat(_joystick, i);
+			auto hatval = convertSDLHat(SDL_JoystickGetHat(_joystick, i));
+			_hat[i].Value = hatval;
+
+			// Reset timestampts
+			for (auto j = 0; j < 4; ++j) {
+				_hat[i].DownTimestamp4[j] = -1;
+			}
+			for (auto j = 0; j < 8; ++j) {
+				_hat[i].DownTimestamp8[j] = -1;
+			}
+
+			if (_hat[i].Value != HAT_CENTERED)
+			{
+				// Set the 4-pos timestamp(s)
+				if ((hatset[HAT_DOWN])) {
+					_hat[i].DownTimestamp4[HAT_DOWN] = timer_get_milliseconds();
+				}
+				if ((hatset[HAT_UP])) {
+					_hat[i].DownTimestamp4[HAT_UP] = timer_get_milliseconds();
+				}
+				if ((hatset[HAT_LEFT])) {
+					_hat[i].DownTimestamp4[HAT_LEFT] = timer_get_milliseconds();
+				}
+				if ((hatset[HAT_RIGHT])) {
+					_hat[i].DownTimestamp4[HAT_RIGHT] = timer_get_milliseconds();
+				}
+
+				// Set the 8-pos timestamp
+				_hat[i].DownTimestamp8[hatval] = timer_get_milliseconds();
+			}
 		}
 	}
 
@@ -459,11 +627,11 @@ namespace joystick
 
 		auto down = evt.state == SDL_PRESSED;
 
-		_buttonDownTimestamp[button] = down ? timer_get_milliseconds() : -1;
+		_button[button].DownTimestamp = down ? timer_get_milliseconds() : -1;
 
 		if (down)
 		{
-			++_buttonDownCount[button];
+			++_button[button].DownCount;
 		}
 	}
 
@@ -473,7 +641,47 @@ namespace joystick
 
 		Assertion(hat < numHats(), "SDL event contained invalid hat index!");
 
-		_hatValues[hat] = convertSDLHat(evt.value);
+		std::bitset<4> hatset = evt.value;
+		auto hatpos = convertSDLHat(evt.value);
+
+		// Set current values
+		_hat[hat].Value = hatpos;
+
+		// Reset inactive hat positions
+		for (auto i = 0; i < 4; ++i) {
+			if (!hatset[i]) {
+				_hat[hat].DownTimestamp4[i] = -1;
+			}
+		}
+		for (auto i = 0; i < 8; ++i) {
+			if (i != hatpos) {
+				_hat[hat].DownTimestamp8[i] = -1;
+			}
+		}
+
+		if (hatpos != HAT_CENTERED) {
+			// Set the 4-pos timestamps and down counts if the timestamp is not set
+			if ((hatset[HAT_DOWN]) && (_hat[hat].DownTimestamp4[HAT_DOWN] == -1)) {
+				_hat[hat].DownTimestamp4[HAT_DOWN] = timer_get_milliseconds();
+				++_hat[hat].DownCount4[HAT_DOWN];
+			}
+			if ((hatset[HAT_UP]) && (_hat[hat].DownTimestamp4[HAT_UP] == -1)) {
+				_hat[hat].DownTimestamp4[HAT_UP] = timer_get_milliseconds();
+				++_hat[hat].DownCount4[HAT_UP];
+			}
+			if ((hatset[HAT_LEFT]) && (_hat[hat].DownTimestamp4[HAT_LEFT] == -1)) {
+				_hat[hat].DownTimestamp4[HAT_LEFT] = timer_get_milliseconds();
+				++_hat[hat].DownCount4[HAT_LEFT];
+			}
+			if ((hatset[HAT_RIGHT]) && (_hat[hat].DownTimestamp4[HAT_RIGHT] == -1)) {
+				_hat[hat].DownTimestamp4[HAT_RIGHT] = timer_get_milliseconds();
+				++_hat[hat].DownCount4[HAT_RIGHT];
+			}
+
+			// Set the 8-pos timestamp and down count
+			_hat[hat].DownTimestamp8[hatpos] = timer_get_milliseconds();
+			++_hat[hat].DownCount8[hatpos];
+		}
 	}
 
 	void Joystick::handleBallEvent(const SDL_JoyBallEvent &evt)
@@ -487,6 +695,16 @@ namespace joystick
 		newVal.y = evt.yrel;
 
 		_ballValues[ball] = newVal;
+	}
+
+	void Joystick::printInfo() {
+		mprintf(("  Joystick name: %s\n", getName().c_str()));
+		mprintf(("  Joystick GUID: %s\n", getGUID().c_str()));
+		mprintf(("  Joystick ID: %d\n", getID()));
+		mprintf(("  Joystick device ID: %d\n", _device_id));
+	}
+	int Joystick::getDeviceId() const {
+		return _device_id;
 	}
 
 	bool init()
@@ -534,42 +752,22 @@ namespace joystick
 		addEventListener(SDL_JOYDEVICEADDED, DEFAULT_LISTENER_WEIGHT, device_event_handler);
 		addEventListener(SDL_JOYDEVICEREMOVED, DEFAULT_LISTENER_WEIGHT, device_event_handler);
 
-		auto configGUID = getCurrentJoystickGUID();
-
-		// If there is a GUID in the settings then that joystick should be used
-		if (!configGUID.empty())
-		{
-			for (auto iter = joysticks.begin(); iter != joysticks.end(); ++iter)
-			{
-				if ((*iter)->getGUID() == configGUID)
-				{
-					setCurrentJoystick((*iter).get());
-					break;
-				}
-			}
-
-			if (currentJoystick == nullptr)
-			{
-				mprintf(("  Couldn't find requested joystick GUID %s!\n", configGUID.c_str()));
+		// Search for the correct stick
+		for (auto& stick : joysticks) {
+			if (isCurrentJoystick(stick.get())) {
+				// Joystick found
+				setCurrentJoystick(stick.get());
+				break;
 			}
 		}
-		else
-		{
-			// Old joystick configuration, this will likely not match the list of joysticks
-			// in the launcher but it's better than nothing...
-			auto joystickID = os_config_read_uint(NULL, "CurrentJoystick", 0);
 
-			if (joystickID >= static_cast<uint>(joysticks.size()))
-			{
-				mprintf(("Found invalid joystick index %u!", joystickID));
-			}
-			else
-			{
-				setCurrentJoystick(getJoystick(joystickID));
-			}
+		if (currentJoystick == nullptr) {
+			mprintf(("  No joystick is being used.\n"));
 		}
 
 		initialized = true;
+
+		joy_ff_init();
 
 		return true;
 	}
@@ -593,6 +791,8 @@ namespace joystick
 
 	void shutdown()
 	{
+		joy_ff_shutdown();
+
 		initialized = false;
 		currentJoystick = nullptr;
 		// Automatically frees joystick resources
@@ -647,7 +847,18 @@ float joy_down_time(int btn)
 		return 0.0f;
 	}
 
-	if (btn >= current->numButtons()) return 0.f;
+	if (btn >= JOY_TOTAL_BUTTONS || (btn >= current->numButtons() && btn < JOY_NUM_BUTTONS))
+	{
+		// Not a valid button
+		return 0.f;
+
+	}
+	else if (btn >= JOY_NUM_BUTTONS)
+	{
+		// Is hat
+		return current->getHatDownTime(0, hatBtnToEnum(btn), false);
+
+	} // Else, Is a button
 
 	return current->getButtonDownTime(btn);
 }
@@ -663,7 +874,18 @@ int joy_down_count(int btn, int reset_count)
 		return 0;
 	}
 
-	if (btn >= current->numButtons()) return 0;
+	if (btn >= JOY_TOTAL_BUTTONS || (btn >= current->numButtons() && btn < JOY_NUM_BUTTONS))
+	{
+		// Not a valid button
+		return 0;
+
+	}
+	else if (btn >= JOY_NUM_BUTTONS)
+	{
+		// Is hat
+		return current->getHatDownCount(0, hatBtnToEnum(btn), false, reset_count != 0);
+
+	} // Else, is a button
 
 	return current->getButtonDownCount(btn, reset_count != 0);
 }
@@ -679,7 +901,18 @@ int joy_down(int btn)
 		return 0;
 	}
 
-	if (btn >= current->numButtons()) return 0;
+	if (btn >= JOY_TOTAL_BUTTONS || (btn >= current->numButtons() && btn < JOY_NUM_BUTTONS))
+	{
+		// Not a valid button
+		return 0;
+
+	}
+	else if (btn >= JOY_NUM_BUTTONS)
+	{
+		// Is hat
+		return current->getHatDownTime(0, hatBtnToEnum(btn), false) > 0;
+	} // Else, is a button
+
 
 	return current->isButtonDown(btn) ? 1 : 0;
 }

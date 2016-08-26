@@ -103,7 +103,7 @@ void CFREDDoc::AssertValid() const {
 
 int CFREDDoc::autoload() {
 	char name[256], backup_name[256];
-	int i, r, len;
+	int i, r;
 	FILE *fp;
 
 	cf_create_default_path_string(name, sizeof(name) - 1, CF_TYPE_MISSIONS);
@@ -128,7 +128,7 @@ int CFREDDoc::autoload() {
 	Update_window = 1;
 
 	// Delete Backup.001
-	len = strlen(backup_name);
+	auto len = strlen(backup_name);
 	strcat_s(backup_name, ".001");
 	cf_delete(backup_name, CF_TYPE_MISSIONS);
 
@@ -260,7 +260,7 @@ int CFREDDoc::load_mission(char *pathname, int flags) {
 	obj_merge_created_list();
 	objp = GET_FIRST(&obj_used_list);
 	while (objp != END_OF_LIST(&obj_used_list)) {
-		if (objp->flags & OF_PLAYER_SHIP) {
+		if (objp->flags[Object::Object_Flags::Player_ship]) {
 			Assert(objp->type == OBJ_SHIP);
 			objp->type = OBJ_START;
 			//			Player_starts++;
@@ -333,7 +333,7 @@ int CFREDDoc::load_mission(char *pathname, int flags) {
 	// RT, don't need this anymore
 #if 0
 
-	if (The_mission.flags & MISSION_FLAG_SUBSPACE) {
+	if (The_mission.flags[Mission::Mission_Flags::Subspace]) {
 		strcpy_s(name, NOX("gamepalette-subspace"));
 	} else {
 		strcpy_s(name, "gamepalette1-01");
@@ -587,7 +587,6 @@ BOOL CFREDDoc::OnNewDocument() {
 
 BOOL CFREDDoc::OnOpenDocument(LPCTSTR pathname) {
 	char name[1024];
-	int i, len;
 
 	if (pathname)
 		strcpy_s(mission_pathname, pathname);
@@ -595,13 +594,13 @@ BOOL CFREDDoc::OnOpenDocument(LPCTSTR pathname) {
 	if (Briefing_dialog)
 		Briefing_dialog->icon_select(-1);  // clean things up first
 
-	len = strlen(mission_pathname);
+	auto len = strlen(mission_pathname);
 	strcpy_s(name, mission_pathname);
 	if (name[len - 4] == '.')
 		len -= 4;
 
 	name[len] = 0;  // drop extension
-	i = len;
+	auto i = len;
 	while (i--)
 		if ((name[i] == '\\') || (name[i] == ':'))
 			break;
@@ -626,11 +625,10 @@ BOOL CFREDDoc::OnOpenDocument(LPCTSTR pathname) {
 BOOL CFREDDoc::OnSaveDocument(LPCTSTR pathname) {
 	CFred_mission_save save;
 	char name[1024];
-	int len;
 	DWORD attrib;
 	FILE *fp;
 
-	len = strlen(pathname);
+	auto len = strlen(pathname);
 	strcpy_s(name, pathname);
 	if (name[len - 4] == '.')
 		len -= 4;

@@ -231,9 +231,6 @@ void multi_pxo_strip_space(char *string1,char *string2);
 // fire up the given URL
 void multi_pxo_url(char *url);
 
-// load/set the palette
-void multi_pxo_load_palette();
-
 // unload the palette
 void multi_pxo_unload_palette();
 
@@ -1099,9 +1096,6 @@ void multi_pxo_init(int use_last_channel)
 	Multi_pxo_window.create(0, 0, gr_screen.max_w_unscaled, gr_screen.max_h_unscaled, 0);
 	Multi_pxo_window.set_mask_bmap(Multi_pxo_mask_fname[gr_screen.res]);
 
-	// multiplayer screen common palettes
-	multi_pxo_load_palette();	
-
 	// create the interface buttons
 	for(idx=0;idx<MULTI_PXO_NUM_BUTTONS;idx++){
 		// create the object
@@ -1583,15 +1577,6 @@ void multi_pxo_url(char *url)
 				break;
 		}					
 	}
-#endif
-}
-
-// load/set the palette
-void multi_pxo_load_palette()
-{
-	// use the palette
-#ifndef HARDWARE_ONLY
-	palette_use_bm_palette(Multi_pxo_palette);
 #endif
 }
 
@@ -3478,7 +3463,7 @@ void multi_pxo_chat_process()
 		}
 	} else if((Multi_pxo_chat_input.pressed() && (msg[0] != '\0')) || (strlen(msg) >= MAX_CHAT_LINE_LEN)) { 
 		// tack on the null terminator in the boundary case
-		int x = strlen(msg);
+		size_t x = strlen(msg);
 		if(x >= MAX_CHAT_LINE_LEN){
 			msg[MAX_CHAT_LINE_LEN-1] = '\0';
 		}		
@@ -3647,8 +3632,8 @@ void multi_pxo_motd_init()
  */
 void multi_pxo_motd_add_text(const char *text)
 {
-	int cur_len = strlen(Pxo_motd);
-	int new_len;
+	size_t cur_len = strlen(Pxo_motd);
+	size_t new_len;
 
 	// sanity
 	if(text == NULL){
@@ -4757,9 +4742,6 @@ void multi_pxo_run_medals()
 
 	// close the medals screen down
 	medal_main_close();
-	
-	// reset the palette
-	multi_pxo_load_palette();
 }
 
 

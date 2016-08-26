@@ -21,7 +21,7 @@
 static char THIS_FILE[] = __FILE__;
 #endif
 
-#define INVALID_MESSAGE ((MMessage*)0xFFFFFFFF)
+#define INVALID_MESSAGE ((MMessage*)SIZE_T_MAX)
 
 // to keep track of data
 char Voice_abbrev_briefing[NAME_LENGTH];
@@ -389,7 +389,7 @@ void VoiceActingManager::OnGenerateFileNames()
 
 	// notify user that we are done and how many filenames were changed
 	char message[128] = { '\0' };
-	snprintf(message, sizeof(message)-1, "File name generation complete. Modified %u messages.", modified_filenames);
+	snprintf(message, sizeof(message)-1, "File name generation complete. Modified " SIZE_T_ARG " messages.", modified_filenames);
 	MessageBox(message, "Woohoo!");
 }
 
@@ -566,7 +566,7 @@ void VoiceActingManager::get_valid_sender(char *sender, size_t sender_size, MMes
 			hud_stuff_ship_callsign(sender, shipp);
 		}
 		// account for hidden ship names
-		else if ( ((Iff_info[shipp->team].flags & IFFF_WING_NAME_HIDDEN) && (shipp->wingnum != -1)) || (shipp->flags2 & SF2_HIDE_SHIP_NAME) )
+		else if ( ((Iff_info[shipp->team].flags & IFFF_WING_NAME_HIDDEN) && (shipp->wingnum != -1)) || (shipp->flags[Ship::Ship_Flags::Hide_ship_name]) )
 		{
 			hud_stuff_ship_class(sender, shipp);
 		}

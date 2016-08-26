@@ -21,7 +21,7 @@
 float shield_get_strength(object *objp)
 {
 	// no shield system, no strength!
-	if (objp->flags & OF_NO_SHIELDS)
+	if (objp->flags[Object::Object_Flags::No_shields])
 		return 0.0f;
 
 	int	i;
@@ -55,7 +55,7 @@ void shield_add_strength(object *objp, float delta)
 	if (shield_str >= shield_recharge_limit)
 		return;
 
-	if (!(Ai_info[Ships[objp->instance].ai_index].ai_profile_flags & AIPF_SMART_SHIELD_MANAGEMENT)
+	if (!(Ai_info[Ships[objp->instance].ai_index].ai_profile_flags[AI::Profile_Flags::Smart_shield_management])
 		|| delta <= 0.0f) //SUSHI: We don't want smart shield management for negative delta
 	{
 		// set the limit for the shield recharge
@@ -135,7 +135,7 @@ float scale_quad(float generator_fraction, float quad_strength)
 float shield_get_quad(object *objp, int quadrant_num)
 {
 	// no shield system, no strength!
-	if (objp->flags & OF_NO_SHIELDS)
+	if (objp->flags[Object::Object_Flags::No_shields])
 		return 0.0f;
 
 	// check array bounds

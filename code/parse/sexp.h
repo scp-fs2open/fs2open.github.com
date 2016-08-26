@@ -1251,12 +1251,12 @@ bool sexp_replace_container_with_values(char *text, int max_len);
 bool sexp_replace_container_with_values(SCP_string &text);
 
 // Karajorma
-void set_primary_ammo (int ship_index, int requested_bank, int requested_ammo, int rearm_limit=-1, bool update=true);
-void set_secondary_ammo (int ship_index, int requested_bank, int requested_ammo, int rearm_limit=-1, bool update=true);
+void set_primary_ammo (int ship_index, int requested_bank, int requested_ammo, int rearm_limit=-1);
+void set_secondary_ammo (int ship_index, int requested_bank, int requested_ammo, int rearm_limit=-1);
 
 // DahBlount - Similar to Karajorma's functions, but for turrets
-void set_turret_primary_ammo(ship_subsys *turret, int requested_bank, int requested_ammo, bool update = true);
-void set_turret_secondary_ammo(ship_subsys *turret, int requested_bank, int requested_ammo, bool update = true);
+void set_turret_primary_ammo(ship_subsys *turret, int requested_bank, int requested_ammo);
+void set_turret_secondary_ammo(ship_subsys *turret, int requested_bank, int requested_ammo);
 
 // menu and category stuff
 extern int get_sexp_id(char *sexp_name);

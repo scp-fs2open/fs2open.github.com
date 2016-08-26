@@ -62,7 +62,7 @@ public:
 
 SCP_unordered_map<uint, collider_pair> Collision_cached_pairs;
 
-struct checkobject;
+class checkobject;
 extern checkobject CheckObjects[MAX_OBJECTS];
 
 extern int Cmdline_old_collision_sys;
@@ -183,10 +183,10 @@ void obj_add_pair( object *A, object *B, int check_time, int add_to_end )
 
 	if ( A==B ) return;		// Don't check collisions with yourself
 
-	if ( !(A->flags&OF_COLLIDES) ) return;		// This object doesn't collide with anything
-	if ( !(B->flags&OF_COLLIDES) ) return;		// This object doesn't collide with anything
+	if ( !(A->flags[Object::Object_Flags::Collides]) ) return;		// This object doesn't collide with anything
+	if ( !(B->flags[Object::Object_Flags::Collides]) ) return;		// This object doesn't collide with anything
 
-	if ((A->flags & OF_IMMOBILE) && (B->flags & OF_IMMOBILE)) return;	// Two immobile objects will never collide with each other
+	if ((A->flags[Object::Object_Flags::Immobile]) && (B->flags[Object::Object_Flags::Immobile])) return;	// Two immobile objects will never collide with each other
 	
 	// Make sure you're not checking a parent with it's kid or vicy-versy
 //	if ( A->parent_sig == B->signature && !(A->type == OBJ_SHIP && B->type == OBJ_DEBRIS) ) return;
@@ -223,26 +223,26 @@ void obj_add_pair( object *A, object *B, int check_time, int add_to_end )
 		break;
 	case COLLISION_OF(OBJ_ASTEROID, OBJ_WEAPON):
 		// Only check collision's with player weapons
-//		if ( Objects[B->parent].flags & OF_PLAYER_SHIP ) {
+//		if ( Objects[B->parent].flags[Object::Object_Flags::Player_ship] ) {
 			check_collision = collide_asteroid_weapon;
 //		}
 		break;
 	case COLLISION_OF(OBJ_WEAPON, OBJ_ASTEROID):
 		swapped = 1;
 		// Only check collision's with player weapons
-//		if ( Objects[A->parent].flags & OF_PLAYER_SHIP ) {
+//		if ( Objects[A->parent].flags[Object::Object_Flags::Player_ship] ) {
 			check_collision = collide_asteroid_weapon;
 //		}
 		break;
 	case COLLISION_OF(OBJ_ASTEROID, OBJ_SHIP):
 		// Only check collisions with player ships
-//		if ( B->flags & OF_PLAYER_SHIP )	{
+//		if ( B->flags[Object::Object_Flags::Player_ship] )	{
 			check_collision = collide_asteroid_ship;
 //		}
 		break;
 	case COLLISION_OF(OBJ_SHIP, OBJ_ASTEROID):
 		// Only check collisions with player ships
-//		if ( A->flags & OF_PLAYER_SHIP )	{
+//		if ( A->flags[Object::Object_Flags::Player_ship] )	{
 			check_collision = collide_asteroid_ship;
 //		}
 		swapped = 1;
@@ -296,11 +296,11 @@ void obj_add_pair( object *A, object *B, int check_time, int add_to_end )
 
 		if (awip->subtype != WP_LASER || bwip->subtype != WP_LASER) {
 			if (awip->subtype == WP_LASER) {
-				if ( bwip->wi_flags & WIF_BOMB ) {
+				if ( bwip->wi_flags[Weapon::Info_Flags::Bomb] ) {
 					check_collision = collide_weapon_weapon;
 				}
 			} else if (bwip->subtype == WP_LASER) {
-				if ( awip->wi_flags & WIF_BOMB ) {
+				if ( awip->wi_flags[Weapon::Info_Flags::Bomb] ) {
 					check_collision = collide_weapon_weapon;
 					swapped=1;			
 				}
@@ -357,7 +357,7 @@ void obj_add_pair( object *A, object *B, int check_time, int add_to_end )
 	// only check debris:weapon collisions for player
 	if (check_collision == collide_debris_weapon) {
 		// weapon is B
-		if ( !(Weapon_info[Weapons[B->instance].weapon_info_index].wi_flags & WIF_TURNS) ) {
+		if ( !(Weapon_info[Weapons[B->instance].weapon_info_index].wi_flags[Weapon::Info_Flags::Turns]) ) {
 		// check for dumbfire weapon
 			// check if debris is behind laser
 			float vdot;
@@ -389,7 +389,7 @@ void obj_add_pair( object *A, object *B, int check_time, int add_to_end )
 			}
 
 			// for nonplayer ships, only create collision pair if close enough
-			if ( (B->parent >= 0) && !((Objects[B->parent].signature == B->parent_sig) && (Objects[B->parent].flags & OF_PLAYER_SHIP)) && (vm_vec_dist(&B->pos, &A->pos) < (4.0f*A->radius + 200.0f)) )
+			if ( (B->parent >= 0) && !((Objects[B->parent].signature == B->parent_sig) && (Objects[B->parent].flags[Object::Object_Flags::Player_ship])) && (vm_vec_dist(&B->pos, &A->pos) < (4.0f*A->radius + 200.0f)) )
 				return;
 		}
 	}
@@ -399,9 +399,9 @@ void obj_add_pair( object *A, object *B, int check_time, int add_to_end )
 		// weapon is B
 		if ( (B->parent >= 0)
 			&& (Objects[B->parent].signature == B->parent_sig)
-			&& !(Objects[B->parent].flags & OF_PLAYER_SHIP)
+			&& !(Objects[B->parent].flags[Object::Object_Flags::Player_ship])
 			&& (Ships[Objects[B->parent].instance].team == Ships[A->instance].team) 
-			&& (Ship_info[Ships[A->instance].ship_info_index].flags & SIF_SMALL_SHIP) 
+			&& (Ship_info[Ships[A->instance].ship_info_index].is_small_ship()) 
 			&& (Weapon_info[Weapons[B->instance].weapon_info_index].subtype == WP_LASER) ) {
 			pairs_not_created++;
 			return;
@@ -436,8 +436,8 @@ void obj_add_pair( object *A, object *B, int check_time, int add_to_end )
 		obj_pair *old_pairs_ptr = Obj_pairs;
 
 		// determine where we need to update the "previous" ptrs to
-		int prev_free_mark = (pair_free_list.next - old_pairs_ptr);
-		int prev_used_mark = (pair_used_list.next - old_pairs_ptr);
+		int prev_free_mark = (int)(pair_free_list.next - old_pairs_ptr);
+		int prev_used_mark = (int)(pair_used_list.next - old_pairs_ptr);
 
 		Obj_pairs = (obj_pair*) vm_realloc( Obj_pairs, sizeof(obj_pair) * (Num_pairs_allocated + PAIRS_BUMP) );
 
@@ -460,7 +460,7 @@ void obj_add_pair( object *A, object *B, int check_time, int add_to_end )
 					if (Obj_pairs[i].next != NULL) {
 						// the "next" ptr will end up going backwards for used pairs so we have
 						// to allow for that with this craziness...
-						int next_mark = (Obj_pairs[i].next - old_pairs_ptr);
+						int next_mark = (int)(Obj_pairs[i].next - old_pairs_ptr);
 						Obj_pairs[i].next = &Obj_pairs[next_mark];
 					}
 
@@ -738,7 +738,7 @@ int weapon_will_never_hit( object *obj_weapon, object *other, obj_pair * current
 	
 
 	// Do some checks for weapons that don't turn
-	if ( !(wip->wi_flags & WIF_TURNS) )	{
+	if ( !(wip->wi_flags[Weapon::Info_Flags::Turns]) )	{
 
 		// This first check is to see if a weapon is behind an object, and they
 		// are heading in opposite directions.   If so, we don't need to ever check	
@@ -810,7 +810,7 @@ int weapon_will_never_hit( object *obj_weapon, object *other, obj_pair * current
 		// compare (weeapon) ray with expanding sphere (ship) to find earliest possible collision time
 		// look for two time solutions to Xw = Xs, where Xw = Xw0 + Vwt*t  Xs = Xs + Vs*(t+dt), where Vs*dt = radius of ship 
 		// Since direction of Vs is unknown, solve for (Vs*t) and find norm of both sides
-		if ( !(wip->wi_flags & WIF_TURNS) ) {
+		if ( !(wip->wi_flags[Weapon::Info_Flags::Turns]) ) {
 			vec3d delta_x, laser_vel;
 			float a,b,c, delta_x_dot_vl, delta_t;
 			float root1, root2, root, earliest_time;
@@ -978,14 +978,14 @@ int collide_predict_large_ship(object *objp, float distance)
 
 	for ( objp2 = GET_FIRST(&obj_used_list); objp2 != END_OF_LIST(&obj_used_list); objp2 = GET_NEXT(objp2) ) {
 		if ((objp != objp2) && (objp2->type == OBJ_SHIP)) {
-			if (Ship_info[Ships[objp2->instance].ship_info_index].flags & (SIF_BIG_SHIP | SIF_HUGE_SHIP)) {
+			if (Ship_info[Ships[objp2->instance].ship_info_index].is_big_or_huge()) {
 				if (dock_check_find_docked_object(objp, objp2))
 					continue;
 
 				if (cpls_aux(&goal_pos, objp2, objp))
 					return 1;
 			}
-		} else if (!(sip->flags & (SIF_BIG_SHIP | SIF_HUGE_SHIP)) && (objp2->type == OBJ_ASTEROID)) {
+		} else if (!(sip->is_big_or_huge()) && (objp2->type == OBJ_ASTEROID)) {
 			if (vm_vec_dist_quick(&objp2->pos, &objp->pos) < (distance + objp2->radius)*2.5f) {
 				vec3d	pos, delvec;
 				int		count;
@@ -1167,24 +1167,24 @@ void obj_add_collider(int obj_index)
 #ifdef OBJECT_CHECK 
 	CheckObjects[obj_index].type = objp->type;
 	CheckObjects[obj_index].signature = objp->signature;
-	CheckObjects[obj_index].flags = objp->flags & ~(OF_NOT_IN_COLL);
+    CheckObjects[obj_index].flags = objp->flags - Object::Object_Flags::Not_in_coll;
 	CheckObjects[obj_index].parent_sig = objp->parent_sig;
 	CheckObjects[obj_index].parent_type = objp->parent_type;
 #endif
 
-	if(!(objp->flags & OF_NOT_IN_COLL)){
+	if(!(objp->flags[Object::Object_Flags::Not_in_coll])){
 		return;
 	}
 
 	Collision_sort_list.push_back(obj_index);
 
-	objp->flags &= ~OF_NOT_IN_COLL;	
+	objp->flags.remove(Object::Object_Flags::Not_in_coll);
 }
 
 void obj_remove_collider(int obj_index)
 {
 #ifdef OBJECT_CHECK 
-	CheckObjects[obj_index].flags |= OF_NOT_IN_COLL;
+    CheckObjects[obj_index].flags.set(Object::Object_Flags::Not_in_coll);
 #endif	
 
 	size_t i;
@@ -1197,7 +1197,7 @@ void obj_remove_collider(int obj_index)
 		}
 	}
 
-	Objects[obj_index].flags |= OF_NOT_IN_COLL;	
+	Objects[obj_index].flags.set(Object::Object_Flags::Not_in_coll);
 }
 
 void obj_reset_colliders()
@@ -1227,15 +1227,15 @@ void obj_sort_and_collide()
 	SCP_vector<int> sort_list_z;
 
 	sort_list_y.clear();
-	obj_quicksort_colliders(&Collision_sort_list, 0, Collision_sort_list.size() - 1, 0);
+	obj_quicksort_colliders(&Collision_sort_list, 0, (int)(Collision_sort_list.size() - 1), 0);
 	obj_find_overlap_colliders(&sort_list_y, &Collision_sort_list, 0, false);
 
 	sort_list_z.clear();
-	obj_quicksort_colliders(&sort_list_y, 0, sort_list_y.size() - 1, 1);
+	obj_quicksort_colliders(&sort_list_y, 0, (int)(sort_list_y.size() - 1), 1);
 	obj_find_overlap_colliders(&sort_list_z, &sort_list_y, 1, false);
 
 	sort_list_y.clear();
-	obj_quicksort_colliders(&sort_list_z, 0, sort_list_z.size() - 1, 2);
+	obj_quicksort_colliders(&sort_list_z, 0, (int)(sort_list_z.size() - 1), 2);
 	obj_find_overlap_colliders(&sort_list_y, &sort_list_z, 2, true);
 }
 
@@ -1385,10 +1385,10 @@ void obj_collide_pair(object *A, object *B)
 
 	if ( A==B ) return;		// Don't check collisions with yourself
 
-	if ( !(A->flags&OF_COLLIDES) ) return;		// This object doesn't collide with anything
-	if ( !(B->flags&OF_COLLIDES) ) return;		// This object doesn't collide with anything
+	if ( !(A->flags[Object::Object_Flags::Collides]) ) return;		// This object doesn't collide with anything
+	if ( !(B->flags[Object::Object_Flags::Collides]) ) return;		// This object doesn't collide with anything
 	
-	if ((A->flags & OF_IMMOBILE) && (B->flags & OF_IMMOBILE)) return;	// Two immobile objects will never collide with each other
+	if ((A->flags[Object::Object_Flags::Immobile]) && (B->flags[Object::Object_Flags::Immobile])) return;	// Two immobile objects will never collide with each other
 
 	// Make sure you're not checking a parent with it's kid or vicy-versy
 //	if ( A->parent_sig == B->signature && !(A->type == OBJ_SHIP && B->type == OBJ_DEBRIS) ) return;
@@ -1425,26 +1425,26 @@ void obj_collide_pair(object *A, object *B)
 		break;
 	case COLLISION_OF(OBJ_ASTEROID, OBJ_WEAPON):
 		// Only check collision's with player weapons
-//		if ( Objects[B->parent].flags & OF_PLAYER_SHIP ) {
+//		if ( Objects[B->parent].flags[Object::Object_Flags::Player_ship] ) {
 			check_collision = collide_asteroid_weapon;
 //		}
 		break;
 	case COLLISION_OF(OBJ_WEAPON, OBJ_ASTEROID):
 		swapped = 1;
 		// Only check collision's with player weapons
-//		if ( Objects[A->parent].flags & OF_PLAYER_SHIP ) {
+//		if ( Objects[A->parent].flags[Object::Object_Flags::Player_ship] ) {
 			check_collision = collide_asteroid_weapon;
 //		}
 		break;
 	case COLLISION_OF(OBJ_ASTEROID, OBJ_SHIP):
 		// Only check collisions with player ships
-//		if ( B->flags & OF_PLAYER_SHIP )	{
+//		if ( B->flags[Object::Object_Flags::Player_ship] )	{
 			check_collision = collide_asteroid_ship;
 //		}
 		break;
 	case COLLISION_OF(OBJ_SHIP, OBJ_ASTEROID):
 		// Only check collisions with player ships
-//		if ( A->flags & OF_PLAYER_SHIP )	{
+//		if ( A->flags[Object::Object_Flags::Player_ship] )	{
 			check_collision = collide_asteroid_ship;
 //		}
 		swapped = 1;
@@ -1587,7 +1587,7 @@ void obj_collide_pair(object *A, object *B)
 		// only check debris:weapon collisions for player
 		if (check_collision == collide_debris_weapon) {
 			// weapon is B
-			if ( !(Weapon_info[Weapons[B->instance].weapon_info_index].wi_flags & WIF_TURNS) ) {
+			if ( !(Weapon_info[Weapons[B->instance].weapon_info_index].wi_flags[Weapon::Info_Flags::Turns]) ) {
 				// check for dumbfire weapon
 				// check if debris is behind laser
 				float vdot;
@@ -1621,7 +1621,7 @@ void obj_collide_pair(object *A, object *B)
 				}
 
 				// for nonplayer ships, only create collision pair if close enough
-				if ( (B->parent >= 0) && !((Objects[B->parent].signature == B->parent_sig) && (Objects[B->parent].flags & OF_PLAYER_SHIP)) && (vm_vec_dist(&B->pos, &A->pos) < (4.0f*A->radius + 200.0f)) ) {
+				if ( (B->parent >= 0) && !((Objects[B->parent].signature == B->parent_sig) && (Objects[B->parent].flags[Object::Object_Flags::Player_ship])) && (vm_vec_dist(&B->pos, &A->pos) < (4.0f*A->radius + 200.0f)) ) {
 					collision_info->next_check_time = -1;
 					return;
 				}
@@ -1633,9 +1633,9 @@ void obj_collide_pair(object *A, object *B)
 			// weapon is B
 			if ( (B->parent >= 0)
 				&& (Objects[B->parent].signature == B->parent_sig)
-				&& !(Objects[B->parent].flags & OF_PLAYER_SHIP)
+				&& !(Objects[B->parent].flags[Object::Object_Flags::Player_ship])
 				&& (Ships[Objects[B->parent].instance].team == Ships[A->instance].team) 
-				&& (Ship_info[Ships[A->instance].ship_info_index].flags & SIF_SMALL_SHIP) 
+				&& (Ship_info[Ships[A->instance].ship_info_index].is_small_ship()) 
 				&& (Weapon_info[Weapons[B->instance].weapon_info_index].subtype == WP_LASER) ) {
 				collision_info->next_check_time = -1;
 				return;

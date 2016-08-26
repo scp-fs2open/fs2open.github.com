@@ -641,7 +641,7 @@ void labviewer_add_model_thrusters(model_render_params *render_info, ship_info *
 
 	//	Add noise to thruster geometry.
 	if ( Lab_mode == LAB_MODE_SHIP ) {
-		if (!(sip->flags2 & SIF2_NO_THRUSTER_GEO_NOISE)) {
+		if (!(sip->flags[Ship::Info_Flags::No_thruster_geo_noise])) {
 			mst.length.xyz.z *= (1.0f + frand()/5.0f - 0.1f);
 			mst.length.xyz.y *= (1.0f + frand()/5.0f - 0.1f);
 			mst.length.xyz.x *= (1.0f + frand()/5.0f - 0.1f);
@@ -706,9 +706,9 @@ void labviewer_render_model(float frametime)
 	rev_rate = REVOLUTION_RATE;
 
 	if (sip != NULL) {
-		if (sip->flags & SIF_BIG_SHIP) {
+		if (sip->is_big_ship()) {
 			rev_rate *= 1.7f;
-		} else if (sip->flags & SIF_HUGE_SHIP) {
+		} else if (sip->is_huge_ship()) {
 			rev_rate *= 3.0f;
 		}
 
@@ -887,14 +887,14 @@ void labviewer_render_model(float frametime)
 		// rotate submodels if wanted
 		if ( (sip != NULL) && (Lab_viewer_flags & LAB_FLAG_SUBMODEL_ROTATE) ) {
 			for (i = 0; i < sip->n_subsystems; i++) {
-				if ( !(Lab_ship_model_subsys[i].flags & MSS_FLAG_ROTATES) ) {
+				if ( !(Lab_ship_model_subsys[i].flags[Model::Subsystem_Flags::Rotates]) ) {
 					continue;
 				}
 				
 				model_set_instance(Lab_model_num, Lab_ship_model_subsys[i].subobj_num, &Lab_ship_subsys[i].submodel_info_1 );
 
 				// if we got this far, we can rotate - so choose which method to use
-				if (Lab_ship_model_subsys[i].flags & MSS_FLAG_STEPPED_ROTATE) {
+				if (Lab_ship_model_subsys[i].flags[Model::Subsystem_Flags::Stepped_rotate]) {
 					submodel_stepped_rotate(&Lab_ship_model_subsys[i], &Lab_ship_subsys[i].submodel_info_1);
 				} else {
 					submodel_rotate(&Lab_ship_model_subsys[i], &Lab_ship_subsys[i].submodel_info_1 );
@@ -943,7 +943,7 @@ void labviewer_render_model(float frametime)
 						continue;
 					if (Lab_weaponmodel_num[l] >= 0) {
 						bank = &(model_get(Lab_model_num))->missile_banks[j];
-						if (Weapon_info[sip->secondary_bank_weapons[j]].wi_flags2 & WIF2_EXTERNAL_WEAPON_LNCH) {
+						if (Weapon_info[sip->secondary_bank_weapons[j]].wi_flags[Weapon::Info_Flags::External_weapon_lnch]) {
 							for(k = 0; k < bank->num_slots; k++) {
 								render_info.set_flags(render_flags);
 								model_render_immediate(&render_info, Lab_weaponmodel_num[l], &vmd_identity_matrix, &bank->pnt[k]);
@@ -1013,7 +1013,7 @@ void labviewer_render_model(float frametime)
 					continue;
 				if (Lab_weaponmodel_num[l] >= 0) {
 					bank = &(model_get(Lab_model_num))->missile_banks[j];
-					if (Weapon_info[sip->secondary_bank_weapons[j]].wi_flags2 & WIF2_EXTERNAL_WEAPON_LNCH) {
+					if (Weapon_info[sip->secondary_bank_weapons[j]].wi_flags[Weapon::Info_Flags::External_weapon_lnch]) {
 						for(k = 0; k < bank->num_slots; k++) {
 							render_info.set_flags(render_flags);
 							model_render_immediate(&render_info, Lab_weaponmodel_num[l], &vmd_identity_matrix, &bank->pnt[k]);
@@ -1391,8 +1391,6 @@ void labviewer_flags_add(int *X, int *Y, char *flag_name, int flag, bool flags2 
 
 void labviewer_populate_flags_window()
 {
-	int y;
-
 	if (Lab_mode == LAB_MODE_NONE) {
 		return;
 	}
@@ -1403,71 +1401,19 @@ void labviewer_populate_flags_window()
 
 	// clear out anything that already exists
 	labviewer_flags_clear();
-
-	y = 0;
-
-	// ship flags ...
-	if (Lab_mode == LAB_MODE_SHIP) {
-		labviewer_flags_add(NULL, &y, "SUPPORT", SIF_SUPPORT);
-		labviewer_flags_add(NULL, &y, "CARGO", SIF_CARGO);
-		labviewer_flags_add(NULL, &y, "FIGHTER", SIF_FIGHTER);
-		labviewer_flags_add(NULL, &y, "BOMBER", SIF_BOMBER);
-		labviewer_flags_add(NULL, &y, "CRUISER", SIF_CRUISER);
-		labviewer_flags_add(NULL, &y, "CORVETTE", SIF_CORVETTE);
-		labviewer_flags_add(NULL, &y, "FREIGHTER", SIF_FREIGHTER);
-		labviewer_flags_add(NULL, &y, "CAPITAL", SIF_CAPITAL);
-		labviewer_flags_add(NULL, &y, "TRANSPORT", SIF_TRANSPORT);
-		labviewer_flags_add(NULL, &y, "NAVBUOY", SIF_NAVBUOY);
-		labviewer_flags_add(NULL, &y, "SENTRYGUN", SIF_SENTRYGUN);
-		labviewer_flags_add(NULL, &y, "ESCAPEPOD", SIF_ESCAPEPOD);
-		labviewer_flags_add(NULL, &y, "GAS MINER", SIF_GAS_MINER);
-		labviewer_flags_add(NULL, &y, "AWACS", SIF_AWACS);
-		labviewer_flags_add(NULL, &y, "STEALTH", SIF_STEALTH);
-		labviewer_flags_add(NULL, &y, "SUPERCAP", SIF_SUPERCAP);
-		labviewer_flags_add(NULL, &y, "KNOSSOS DEVICE", SIF_KNOSSOS_DEVICE);
-		labviewer_flags_add(NULL, &y, "DRYDOCK", SIF_DRYDOCK);
-		labviewer_flags_add(NULL, &y, "SHIP COPY", SIF_SHIP_COPY);
-		labviewer_flags_add(NULL, &y, "BIG DAMAGE", SIF_BIG_DAMAGE);
-		labviewer_flags_add(NULL, &y, "HAS AWACS", SIF_HAS_AWACS);
-		labviewer_flags_add(NULL, &y, "NO COLLIDE INVISIBLE", SIF_SHIP_CLASS_DONT_COLLIDE_INVIS);
-		labviewer_flags_add(NULL, &y, "DO COLLISION CHECK", SIF_NO_COLLIDE);
-		labviewer_flags_add(NULL, &y, "PLAYER SHIP", SIF_PLAYER_SHIP);
-		labviewer_flags_add(NULL, &y, "DEFAULT PLAYER SHIP", SIF_DEFAULT_PLAYER_SHIP);
-		labviewer_flags_add(NULL, &y, "BALLISTIC PRIMARIES", SIF_BALLISTIC_PRIMARIES);
-		labviewer_flags_add(NULL, &y, "FLASH", SIF2_FLASH, true);
-		labviewer_flags_add(NULL, &y, "SURFACE SHIELDS", SIF2_SURFACE_SHIELDS, true);
-		labviewer_flags_add(NULL, &y, "SHOW SHIP MODEL", SIF2_SHOW_SHIP_MODEL, true);
-		labviewer_flags_add(NULL, &y, "IN TECH DATABASE", SIF_IN_TECH_DATABASE);
-		labviewer_flags_add(NULL, &y, "IN TECH DATABASE MULTI", SIF_IN_TECH_DATABASE_M);
-	}
-	// weapon flags ...
-	else if (Lab_mode == LAB_MODE_WEAPON) {
-		labviewer_flags_add(NULL, &y, "HEAT SEEKING", WIF_HOMING_HEAT);
-		labviewer_flags_add(NULL, &y, "ASPECT SEEKING", WIF_HOMING_ASPECT);
-		labviewer_flags_add(NULL, &y, "ELECTRONICS", WIF_ELECTRONICS);
-		labviewer_flags_add(NULL, &y, "PUNCTURE", WIF_PUNCTURE);
-		labviewer_flags_add(NULL, &y, "SUPERCAP", WIF_SUPERCAP);
-		labviewer_flags_add(NULL, &y, "COUNTERMEASURE", WIF_CMEASURE);
-		labviewer_flags_add(NULL, &y, "BIG ONLY", WIF_BIG_ONLY);
-		labviewer_flags_add(NULL, &y, "HUGE", WIF_HUGE);
-		labviewer_flags_add(NULL, &y, "PLAYER ALLOWED", WIF_PLAYER_ALLOWED);
-		labviewer_flags_add(NULL, &y, "PARTICLE SPEW", WIF_PARTICLE_SPEW);
-		labviewer_flags_add(NULL, &y, "EMP", WIF_EMP);
-		labviewer_flags_add(NULL, &y, "ENERGY SUCK", WIF_ENERGY_SUCK);
-		labviewer_flags_add(NULL, &y, "SHUDDER", WIF_SHUDDER);
-		labviewer_flags_add(NULL, &y, "BALLISTIC", WIF2_BALLISTIC, true);
-		labviewer_flags_add(NULL, &y, "PIERCE SHIELDS", WIF2_PIERCE_SHIELDS, true);
-		labviewer_flags_add(NULL, &y, "CYCLE", WIF2_CYCLE, true);
-		labviewer_flags_add(NULL, &y, "NO LIGHTING", WIF2_MR_NO_LIGHTING, true);
-		labviewer_flags_add(NULL, &y, "TRANSPARENT", WIF2_TRANSPARENT, true);
-		labviewer_flags_add(NULL, &y, "IN TECH DATABASE", WIF_IN_TECH_DATABASE);
-	}
+    
+    // ship flags ...
+    if (Lab_mode == LAB_MODE_SHIP) {
+        //Needs reimplementation
+    }
+    // weapon flags ...
+    else if (Lab_mode == LAB_MODE_WEAPON) {
+        //Needs reimplementation
+    }
 }
 
 void labviewer_update_flags_window()
 {
-	size_t i;
-
 	if ( (Lab_selected_index < 0) || (Lab_mode == LAB_MODE_NONE) ) {
 		return;
 	}
@@ -1478,27 +1424,12 @@ void labviewer_update_flags_window()
 	}
 
 
-	if (Lab_mode == LAB_MODE_SHIP) {
-		ship_info *sip = &Ship_info[Lab_selected_index];
-
-		for (i = 0; i < Lab_flags.size(); i++) {
-			if (Lab_flags[i].second) {
-				Lab_flags[i].cb->SetFlag(&sip->flags2, Lab_flags[i].flag);
-			} else {
-				Lab_flags[i].cb->SetFlag(&sip->flags, Lab_flags[i].flag);
-			}
-		}
-	} else if (Lab_mode == LAB_MODE_WEAPON) {
-		weapon_info *wip = &Weapon_info[Lab_selected_index];
-
-		for (i = 0; i < Lab_flags.size(); i++) {
-			if (Lab_flags[i].second) {
-				Lab_flags[i].cb->SetFlag(&wip->wi_flags2, Lab_flags[i].flag);
-			} else {
-				Lab_flags[i].cb->SetFlag(&wip->wi_flags, Lab_flags[i].flag);
-			}
-		}
-	}
+    if (Lab_mode == LAB_MODE_SHIP) {
+        //Needs reimplementation
+    }
+    else if (Lab_mode == LAB_MODE_WEAPON) {
+        //Needs reimplementation
+    }
 }
 
 void labviewer_close_flags_window(GUIObject *caller)
@@ -2339,7 +2270,7 @@ void labviewer_change_weapon(Tree *caller)
 	int weap_index = (int)(caller->GetSelectedItem()->GetData());
 	Assert( weap_index >= 0 );
 
-	if ( !(Weapon_info[weap_index].wi_flags & WIF_BEAM) ) {
+	if ( !(Weapon_info[weap_index].wi_flags[Weapon::Info_Flags::Beam]) ) {
 		switch (Weapon_info[weap_index].render_type) {
 			case WRT_POF:
 				labviewer_change_bitmap();
@@ -2421,7 +2352,7 @@ void labviewer_make_weap_window(Button* caller)
 			continue;
 		}
 		
-		if (Weapon_info[i].wi_flags & WIF_BEAM) {
+		if (Weapon_info[i].wi_flags[Weapon::Info_Flags::Beam]) {
 			stip = type_nodes[WP_BEAM];
 		} else {
 			stip = type_nodes[Weapon_info[i].subtype];

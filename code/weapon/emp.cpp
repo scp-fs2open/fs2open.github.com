@@ -130,7 +130,7 @@ void emp_apply(vec3d *pos, float inner_radius, float outer_radius, float emp_int
 		
 		// if we have a bomb weapon
 		wip_target = &Weapon_info[Weapons[target->instance].weapon_info_index];
-		if((wip_target->weapon_hitpoints > 0) && !(wip_target->wi_flags2 & WIF2_NO_EMP_KILL)) {
+		if((wip_target->weapon_hitpoints > 0) && !(wip_target->wi_flags[Weapon::Info_Flags::No_emp_kill])) {
 			// get the distance between the detonation and the target object
 			vm_vec_sub(&dist, &target->pos, pos);
 			dist_mag = vm_vec_mag(&dist);
@@ -138,7 +138,7 @@ void emp_apply(vec3d *pos, float inner_radius, float outer_radius, float emp_int
 			// if the bomb was within 1/4 of the outer radius, castrate it
 			if(dist_mag <= (outer_radius * 0.25f)){
 				// memset(&target->phys_info, 0, sizeof(physics_info));
-				Weapons[target->instance].weapon_flags |= WF_DEAD_IN_WATER;
+                Weapons[target->instance].weapon_flags.set(Weapon::Weapon_Flags::Dead_in_water);
 				mprintf(("EMP killing weapon\n"));
 			}
 		}	
@@ -166,7 +166,7 @@ void emp_apply(vec3d *pos, float inner_radius, float outer_radius, float emp_int
 		}
 
 		// if the ship is a cruiser or cap ship, only apply the EMP effect to turrets
-		if(Ship_info[Ships[target->instance].ship_info_index].flags & (SIF_BIG_SHIP | SIF_HUGE_SHIP)) {
+		if(Ship_info[Ships[target->instance].ship_info_index].is_big_or_huge()) {
 			float capship_emp_time = use_emp_time_for_capship_turrets ? emp_time : MAX_TURRET_DISRUPT_TIME;
 			
 			moveup = &Ships[target->instance].subsys_list;
@@ -336,7 +336,7 @@ void emp_process_ship(ship *shipp)
 	}
 
 	// if this is a player ship, don't do anything wacky
-	if(objp->flags & OF_PLAYER_SHIP){
+	if(objp->flags[Object::Object_Flags::Player_ship]){
 		return;
 	}
 
@@ -345,11 +345,11 @@ void emp_process_ship(ship *shipp)
 	aip = &Ai_info[shipp->ai_index];	
 	aip->aspect_locked_time = 0.0f;				// hasn't gotten aspect lock at all
 	aip->current_target_is_locked = 0;			// isn't locked on his current target
-	aip->ai_flags &= ~AIF_SEEK_LOCK;
+	aip->ai_flags.remove(AI::AI_Flags::Seek_lock);
 	aip->nearest_locked_object = -1;				// nothing near me, so I won't launch countermeasures
 
 	// if he's not a fighter or bomber, bail now
-	if(!(Ship_info[shipp->ship_info_index].flags & (SIF_FIGHTER | SIF_BOMBER))){
+	if(!(Ship_info[shipp->ship_info_index].is_fighter_bomber())){
 		return;
 	}
 
@@ -363,7 +363,7 @@ void emp_process_ship(ship *shipp)
 		int ship_lookup = ship_get_random_team_ship(iff_get_attackee_mask(shipp->team));
 
 		// if we got a valid ship object to target
-		if((ship_lookup >= 0) && (Ships[ship_lookup].objnum >= 0) && !(Objects[Ships[ship_lookup].objnum].flags & OF_PROTECTED)){
+		if((ship_lookup >= 0) && (Ships[ship_lookup].objnum >= 0) && !(Objects[Ships[ship_lookup].objnum].flags[Object::Object_Flags::Protected])){
 			// attack the object
 			ai_attack_object(objp, &Objects[Ships[ship_lookup].objnum], NULL);
 		}

@@ -135,7 +135,7 @@ void ship_select::OnSelchangeWingDisplayFilter()
 
 BOOL ship_select::OnInitDialog() 
 {
-	int i, flags;
+    int i;
 	object *ptr;
 
 	CDialog::OnInitDialog();
@@ -143,13 +143,7 @@ BOOL ship_select::OnInitDialog()
 	ptr = GET_FIRST(&obj_used_list);
 	while (ptr != END_OF_LIST(&obj_used_list))
 	{
-		flags = ptr->flags & ~OF_TEMP_MARKED;
-		if (flags & OF_MARKED)
-			flags |= OF_TEMP_MARKED;
-		else
-			flags &= ~OF_TEMP_MARKED;
-
-		ptr->flags = flags;
+		ptr->flags.set(Object::Object_Flags::Temp_marked, ptr->flags[Object::Object_Flags::Marked]);
 		ptr = GET_NEXT(ptr);
 	}
 
@@ -217,7 +211,7 @@ void ship_select::create_list()
 			{
 				m_ship_list.AddString(Ships[ptr->instance].ship_name);
 				obj_index[list_size++] = ptr;
-				if (ptr->flags & OF_TEMP_MARKED)
+				if (ptr->flags[Object::Object_Flags::Temp_marked])
 					m_ship_list.SetSel(list_size - 1);
 			}
 
@@ -235,7 +229,7 @@ void ship_select::create_list()
 				{
 					m_ship_list.AddString(Ships[ptr->instance].ship_name);
 					obj_index[list_size++] = ptr;
-					if (ptr->flags & OF_TEMP_MARKED)
+					if (ptr->flags[Object::Object_Flags::Temp_marked])
 						m_ship_list.SetSel(list_size - 1);
 				}
 			}
@@ -257,7 +251,7 @@ void ship_select::create_list()
 				sprintf(text, "%s:%d", wp_list->get_name(), waypoint_num + 1);
 				m_ship_list.AddString(text);
 				obj_index[list_size++] = ptr;
-				if (ptr->flags & OF_TEMP_MARKED)
+				if (ptr->flags[Object::Object_Flags::Temp_marked])
 					m_ship_list.SetSel(list_size - 1);
 			}
 
@@ -276,7 +270,7 @@ void ship_select::OnOK()
 	ptr = GET_FIRST(&obj_used_list);
 	while (ptr != END_OF_LIST(&obj_used_list))
 	{
-		if (ptr->flags & OF_TEMP_MARKED)
+		if (ptr->flags[Object::Object_Flags::Temp_marked])
 			mark_object(OBJ_INDEX(ptr));
 
 		ptr = GET_NEXT(ptr);
@@ -308,17 +302,14 @@ void ship_select::update_status(bool first_time)
 
 	ptr = GET_FIRST(&obj_used_list);
 	while (ptr != END_OF_LIST(&obj_used_list)) {
-		ptr->flags &= ~OF_TEMP_MARKED;
+        ptr->flags.remove(Object::Object_Flags::Temp_marked);
 		ptr = GET_NEXT(ptr);
 	}
 
 	for (i=0; i<list_size; i++)
 	{
 		z = m_ship_list.GetSel(i);
-		if (z < 1)
-			obj_index[i]->flags &= ~OF_TEMP_MARKED;
-		else
-			obj_index[i]->flags |= OF_TEMP_MARKED;
+    	obj_index[i]->flags.set(Object::Object_Flags::Temp_marked, z >= 1);
 	}
 	if(!first_time)
 		OnSelchangeShipList();
@@ -361,7 +352,7 @@ void ship_select::OnClear()
 	ptr = GET_FIRST(&obj_used_list);
 	while (ptr != END_OF_LIST(&obj_used_list))
 	{
-		ptr->flags &= ~OF_TEMP_MARKED;
+		ptr->flags.remove(Object::Object_Flags::Temp_marked);
 		ptr = GET_NEXT(ptr);
 	}
 
@@ -380,7 +371,7 @@ void ship_select::OnAll()
 
 	for (i=0; i<list_size; i++)
 	{
-		obj_index[i]->flags |= OF_TEMP_MARKED;
+		obj_index[i]->flags.set(Object::Object_Flags::Temp_marked);
 		m_ship_list.SetSel(i);
 	}
 
@@ -399,11 +390,11 @@ void ship_select::OnInvert()
 		z = m_ship_list.GetSel(i);
 		if (z > 0)
 		{
-			obj_index[i]->flags &= ~OF_TEMP_MARKED;
+			obj_index[i]->flags.remove(Object::Object_Flags::Temp_marked);
 			m_ship_list.SetSel(i, FALSE);
 
 		} else {
-			obj_index[i]->flags |= OF_TEMP_MARKED;
+			obj_index[i]->flags.set(Object::Object_Flags::Temp_marked);
 			m_ship_list.SetSel(i);
 		}
 	}

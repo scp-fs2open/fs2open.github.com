@@ -193,7 +193,7 @@ void CMissionGoalsDlg::OnSelchangedGoalsTree(NMHDR* pNMHDR, LRESULT* pResult)
 	while ((h2 = m_goals_tree.GetParentItem(h)) != 0)
 		h = h2;
 
-	z = m_goals_tree.GetItemData(h);
+	z = (int)m_goals_tree.GetItemData(h);
 	for (i=0; i<m_num_goals; i++)
 		if (m_goals[i].formula == z)
 			break;

@@ -9,18 +9,11 @@ ADD_LIBRARY(mongoose STATIC ${MONGOOSE_SOURCES})
 	
 INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR})
 
-TARGET_LINK_LIBRARIES(mongoose ${CMAKE_THREAD_LIBS_INIT})
+TARGET_LINK_LIBRARIES(mongoose PUBLIC ${CMAKE_THREAD_LIBS_INIT})
 
-IF(UNIX)
-	# Also add dynamic linking libs
-	CMAKE_SEARCH_LIBS(HAVE_DLSYM LIB_DLSYM dlsym dl)
-
-	IF(NOT HAVE_DLSYM)
-		MESSAGE(FATAL_ERROR "Failed to find library providing dlsym!")
-	ENDIF(NOT HAVE_DLSYM)
-
-	TARGET_LINK_LIBRARIES(mongoose ${LIB_DLSYM})
-ENDIF(UNIX)
+if (UNIX)
+	target_link_libraries(mongoose PUBLIC ${CMAKE_DL_LIBS})
+endif()
 
 set_target_properties(mongoose
 	PROPERTIES

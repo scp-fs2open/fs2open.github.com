@@ -343,7 +343,7 @@ bool ConditionedHook::ConditionsValid(int action, object *objp, int more_data)
 								if (!(primary || secondary))
 									return false;
 
-								if ((shipp->flags & SF_PRIMARY_LINKED) && primary && (Weapon_info[shipp->weapons.primary_bank_weapons[shipp->weapons.current_primary_bank]].wi_flags3 & WIF3_NOLINK))
+								if ((shipp->flags[Ship::Ship_Flags::Primary_linked]) && primary && (Weapon_info[shipp->weapons.primary_bank_weapons[shipp->weapons.current_primary_bank]].wi_flags[Weapon::Info_Flags::Nolink]))
 									return false;
 								
 								break;
@@ -353,7 +353,7 @@ bool ConditionedHook::ConditionsValid(int action, object *objp, int more_data)
 								secondary = stricmp(Weapon_info[shipp->weapons.secondary_bank_weapons[shipp->weapons.current_secondary_bank]].name, scp->data.name) == 0;
 								prev_secondary = stricmp(Weapon_info[shipp->weapons.secondary_bank_weapons[shipp->weapons.previous_secondary_bank]].name, scp->data.name) == 0;
 
-								if ((shipp->flags & SF_PRIMARY_LINKED) && prev_primary && (Weapon_info[shipp->weapons.primary_bank_weapons[shipp->weapons.previous_primary_bank]].wi_flags3 & WIF3_NOLINK))
+								if ((shipp->flags[Ship::Ship_Flags::Primary_linked]) && prev_primary && (Weapon_info[shipp->weapons.primary_bank_weapons[shipp->weapons.previous_primary_bank]].wi_flags[Weapon::Info_Flags::Nolink]))
 									return true;
 
 								if ( !prev_secondary && ! secondary && !prev_primary && !primary )
@@ -408,7 +408,7 @@ bool ConditionedHook::ConditionsValid(int action, object *objp, int more_data)
 									secondary = stricmp(Weapon_info[shipp->weapons.secondary_bank_weapons[shipp->weapons.current_secondary_bank]].name, scp->data.name) == 0;
 								}
 
-								if ((shipp->flags & SF_PRIMARY_LINKED) && primary && (Weapon_info[shipp->weapons.primary_bank_weapons[shipp->weapons.current_primary_bank]].wi_flags3 & WIF3_NOLINK))
+								if ((shipp->flags[Ship::Ship_Flags::Primary_linked]) && primary && (Weapon_info[shipp->weapons.primary_bank_weapons[shipp->weapons.current_primary_bank]].wi_flags[Weapon::Info_Flags::Nolink]))
 								 	return false;
 
 								return more_data == 1 ? primary : secondary;
@@ -680,12 +680,20 @@ void script_state::SetHookVar(char *name, char format, void *data)
 			}
 			else
 			{
-				if(format == 's')
-					ade_set_args(LuaState, fmt, data);
-				else if (format == 'i')
-					ade_set_args(LuaState, fmt, *(int*)data);
-				else
-					ade_set_args(LuaState, fmt, *(ade_odata*)data);
+				switch (format) {
+					case 's':
+						ade_set_args(LuaState, fmt, data);
+						break;
+					case 'i':
+						ade_set_args(LuaState, fmt, *(int*)data);
+						break;
+					case 'b':
+						ade_set_args(LuaState, fmt, *(bool*)data);
+						break;
+					default:
+						ade_set_args(LuaState, fmt, *(ade_odata*)data);
+						break;
+				}
 			}
 			//--------------------
 			//WMC - This was a separate function
@@ -1260,12 +1268,12 @@ void script_state::ParseChunkSub(int *out_lang, int *out_index, char* debug_str)
 		strcpy_s(buf, "return ");
 
 		//Stuff it
-		stuff_string(buf+strlen(buf), F_RAW, sizeof(buf) - strlen(buf));
+		stuff_string(buf+strlen(buf), F_RAW, (int)(sizeof(buf) - strlen(buf)));
 
 		//Add ending
 		strcat_s(buf, "\n");
 
-		int len = strlen(buf);
+		auto len = strlen(buf);
 
 		//Load it into a buffer & parse it
 		if(!luaL_loadbuffer(GetLuaSession(), buf, len, debug_str))

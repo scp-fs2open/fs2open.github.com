@@ -44,7 +44,7 @@ void ets_init_ship(object* obj)
 	sp = &Ships[obj->instance];
 	
 	sp->weapon_energy = Ship_info[sp->ship_info_index].max_weapon_reserve;
-	if ((sp->flags2 & SF2_NO_ETS) == 0) {
+	if ((sp->flags[Ship::Ship_Flags::No_ets]) == 0) {
 		sp->next_manage_ets = timestamp(AI_MODIFY_ETS_INTERVAL);
 	} else {
 		sp->next_manage_ets = -1;
@@ -73,7 +73,7 @@ void update_ets(object* objp, float fl_frametime)
 	float max_g=sinfo_p->max_weapon_reserve,
 		  max_s=ship_p->ship_max_shield_strength;
 
-	if ( ship_p->flags & SF_DYING ){
+	if ( ship_p->flags[Ship::Ship_Flags::Dying] ){
 		return;
 	}
 
@@ -85,7 +85,7 @@ void update_ets(object* objp, float fl_frametime)
 
 	// update weapon energy
 	max_new_weapon_energy = fl_frametime * sinfo_p->max_weapon_regen_per_second * max_g;
-	if ( objp->flags & OF_PLAYER_SHIP ) {
+	if ( objp->flags[Object::Object_Flags::Player_ship] ) {
 		ship_p->weapon_energy += Energy_levels[ship_p->weapon_recharge_index] * max_new_weapon_energy * The_mission.ai_profile->weapon_energy_scale[Game_skill_level];
 	} else {
 		ship_p->weapon_energy += Energy_levels[ship_p->weapon_recharge_index] * max_new_weapon_energy;
@@ -97,7 +97,7 @@ void update_ets(object* objp, float fl_frametime)
 
 	float shield_delta;
 	max_new_shield_energy = fl_frametime * sinfo_p->max_shield_regen_per_second * max_s;
-	if ( objp->flags & OF_PLAYER_SHIP ) {
+	if ( objp->flags[Object::Object_Flags::Player_ship] ) {
 		shield_delta = Energy_levels[ship_p->shield_recharge_index] * max_new_shield_energy * The_mission.ai_profile->shield_energy_scale[Game_skill_level];
 	} else {
 		shield_delta = Energy_levels[ship_p->shield_recharge_index] * max_new_shield_energy;
@@ -132,7 +132,7 @@ void update_ets(object* objp, float fl_frametime)
 	}
 
 	if ( timestamp_elapsed(ship_p->next_manage_ets) ) {
-		if ( !(objp->flags & OF_PLAYER_SHIP) ) {
+		if ( !(objp->flags[Object::Object_Flags::Player_ship]) ) {
 			ai_manage_ets(objp);
 			ship_p->next_manage_ets = timestamp(AI_MODIFY_ETS_INTERVAL);
 		}
@@ -205,7 +205,7 @@ void ai_manage_ets(object* obj)
 	if ( ship_info_p->power_output == 0 )
 		return;
 
-	if (ship_p->flags & SF_DYING)
+	if (ship_p->flags[Ship::Ship_Flags::Dying])
 		return;
 
 	// check if any of the three systems are not being used.  If so, don't allow energy management.
@@ -221,13 +221,13 @@ void ai_manage_ets(object* obj)
 		decrease_recharge_rate(obj, WEAPONS);
 	}
 
-	if (!(obj->flags & OF_NO_SHIELDS) && (shield_left_percent == 1.0f)) {
+	if (!(obj->flags[Object::Object_Flags::No_shields]) && (shield_left_percent == 1.0f)) {
 		decrease_recharge_rate(obj, SHIELDS);
 	}
 
 	// minimum check
 
-	if (!(obj->flags & OF_NO_SHIELDS) && (shield_left_percent < SHIELDS_MIN_LEVEL_PERCENT)) {
+	if (!(obj->flags[Object::Object_Flags::No_shields]) && (shield_left_percent < SHIELDS_MIN_LEVEL_PERCENT)) {
 		if ( weapon_left_percent > WEAPONS_MIN_LEVEL_PERCENT )
 			increase_recharge_rate(obj, SHIELDS);
 	}
@@ -241,7 +241,7 @@ void ai_manage_ets(object* obj)
 	}
 
 	// emergency check
-	if (!(obj->flags & OF_NO_SHIELDS)) {
+	if (!(obj->flags[Object::Object_Flags::No_shields])) {
 		if ( shield_left_percent < SHIELDS_EMERG_LEVEL_PERCENT ) {
 			if (ship_p->target_shields_delta == 0.0f)
 				transfer_energy_to_shields(obj);
@@ -286,7 +286,7 @@ void set_default_recharge_rates(object* obj)
 	if (ship_has_energy_weapons(ship_p))
 		ship_properties |= HAS_WEAPONS;
 	
-	if (!(obj->flags & OF_NO_SHIELDS))
+	if (!(obj->flags[Object::Object_Flags::No_shields]))
 		ship_properties |= HAS_SHIELDS;
 
 	if (ship_has_engine_power(ship_p))
@@ -352,7 +352,7 @@ void increase_recharge_rate(object* obj, SYSTEM_TYPE ship_system)
 	int	count=0;
 	ship	*ship_p = &Ships[obj->instance];
 
-	if (ship_p->flags2 & SF2_NO_ETS)
+	if (ship_p->flags[Ship::Ship_Flags::No_ets])
 		return;
 
 	switch ( ship_system ) {
@@ -362,7 +362,7 @@ void increase_recharge_rate(object* obj, SYSTEM_TYPE ship_system)
 
 			gain_index = &ship_p->weapon_recharge_index;
 
-			if ( obj->flags & OF_NO_SHIELDS )
+			if ( obj->flags[Object::Object_Flags::No_shields] )
 				lose_index1 = NULL;
 			else
 				lose_index1 = &ship_p->shield_recharge_index;
@@ -375,7 +375,7 @@ void increase_recharge_rate(object* obj, SYSTEM_TYPE ship_system)
 			break;
 
 		case SHIELDS:
-			if ( obj->flags & OF_NO_SHIELDS )
+			if ( obj->flags[Object::Object_Flags::No_shields] )
 				return;
 
 			gain_index = &ship_p->shield_recharge_index;
@@ -403,7 +403,7 @@ void increase_recharge_rate(object* obj, SYSTEM_TYPE ship_system)
 			else
 				lose_index1 = &ship_p->weapon_recharge_index;
 
-			if ( obj->flags & OF_NO_SHIELDS )
+			if ( obj->flags[Object::Object_Flags::No_shields] )
 				lose_index2 = NULL;
 			else
 				lose_index2 = &ship_p->shield_recharge_index;
@@ -476,7 +476,7 @@ void decrease_recharge_rate(object* obj, SYSTEM_TYPE ship_system)
 	int	count;
 	ship	*ship_p = &Ships[obj->instance];
 
-	if (ship_p->flags2 & SF2_NO_ETS)
+	if (ship_p->flags[Ship::Ship_Flags::No_ets])
 		return;
 
 	switch ( ship_system ) {
@@ -486,7 +486,7 @@ void decrease_recharge_rate(object* obj, SYSTEM_TYPE ship_system)
 
 			lose_index = &ship_p->weapon_recharge_index;
 
-			if ( obj->flags & OF_NO_SHIELDS )
+			if ( obj->flags[Object::Object_Flags::No_shields] )
 				gain_index1 = NULL;
 			else
 				gain_index1 = &ship_p->shield_recharge_index;
@@ -499,7 +499,7 @@ void decrease_recharge_rate(object* obj, SYSTEM_TYPE ship_system)
 			break;
 
 		case SHIELDS:
-			if ( obj->flags & OF_NO_SHIELDS )
+			if ( obj->flags[Object::Object_Flags::No_shields] )
 				return;
 
 			lose_index = &ship_p->shield_recharge_index;
@@ -527,7 +527,7 @@ void decrease_recharge_rate(object* obj, SYSTEM_TYPE ship_system)
 			else
 				gain_index1 = &ship_p->weapon_recharge_index;
 
-			if ( obj->flags & OF_NO_SHIELDS )
+			if ( obj->flags[Object::Object_Flags::No_shields] )
 				gain_index2 = NULL;
 			else
 				gain_index2 = &ship_p->shield_recharge_index;
@@ -615,10 +615,10 @@ void transfer_energy_to_shields(object* obj)
 {
 	ship*			ship_p = &Ships[obj->instance];
 
-	if (ship_p->flags & SF_DYING)
+	if (ship_p->flags[Ship::Ship_Flags::Dying])
 		return;
 
-	if ( !ship_has_energy_weapons(ship_p) || obj->flags & OF_NO_SHIELDS )
+	if ( !ship_has_energy_weapons(ship_p) || obj->flags[Object::Object_Flags::No_shields] )
 	{
 		return;
 	}
@@ -634,10 +634,10 @@ void transfer_energy_to_weapons(object* obj)
 	ship*			ship_p = &Ships[obj->instance];
 	ship_info*	sinfo_p = &Ship_info[ship_p->ship_info_index];
 
-	if (ship_p->flags & SF_DYING)
+	if (ship_p->flags[Ship::Ship_Flags::Dying])
 		return;
 
-	if ( !ship_has_energy_weapons(ship_p) || obj->flags & OF_NO_SHIELDS )
+	if ( !ship_has_energy_weapons(ship_p) || obj->flags[Object::Object_Flags::No_shields] )
 	{
 		return;
 	}
@@ -729,7 +729,7 @@ bool validate_ship_ets_indxes(const int &ship_idx, int (&ets_indexes)[num_retail
 	}
 	ship *ship_p = &Ships[ship_idx];
 
-	if (ship_p->flags2 & SF2_NO_ETS)
+	if (ship_p->flags[Ship::Ship_Flags::No_ets])
 		return false;
 
 	// handle ships that are missing parts of the ETS
@@ -738,7 +738,7 @@ bool validate_ship_ets_indxes(const int &ship_idx, int (&ets_indexes)[num_retail
 		ship_properties |= HAS_WEAPONS;
 	}
 
-	if (!(Objects[ship_p->objnum].flags & OF_NO_SHIELDS)) {
+	if (!(Objects[ship_p->objnum].flags[Object::Object_Flags::No_shields])) {
 		ship_properties |= HAS_SHIELDS;
 	}
 
@@ -919,7 +919,7 @@ void HudGaugeEtsRetail::render(float frametime)
 	// if at least two gauges are not shown, don't show any
 	i = 0;
 	if (!ship_has_energy_weapons(ship_p)) i++;
-	if (Player_obj->flags & OF_NO_SHIELDS) i++;
+	if (Player_obj->flags[Object::Object_Flags::No_shields]) i++;
 	if (!ship_has_engine_power(ship_p)) i++;
 	if (i >= 2) return;
 
@@ -933,7 +933,7 @@ void HudGaugeEtsRetail::render(float frametime)
 		position[0] = Gauge_positions[initial_position++];
 		renderPrintf(position[0] + Letter_offsets[0], position[1] + Letter_offsets[1], NOX("%c"), Letter);
 	}
-	if (!(Player_obj->flags & OF_NO_SHIELDS)) {
+	if (!(Player_obj->flags[Object::Object_Flags::No_shields])) {
 		Letter = Letters[1];
 		position[0] = Gauge_positions[initial_position++];
 		renderPrintf(position[0] + Letter_offsets[0], position[1] + Letter_offsets[1], NOX("%c"), Letter);
@@ -951,7 +951,7 @@ void HudGaugeEtsRetail::render(float frametime)
 		position[0] = Gauge_positions[initial_position++];
 		blitGauge(ship_p->weapon_recharge_index);
 	}
-	if (!(Player_obj->flags & OF_NO_SHIELDS)) {
+	if (!(Player_obj->flags[Object::Object_Flags::No_shields])) {
 		Letter = Letters[1];
 		position[0] = Gauge_positions[initial_position++];
 		blitGauge(ship_p->shield_recharge_index);
@@ -1002,7 +1002,7 @@ void HudGaugeEtsWeapons::render(float frametime)
 	// if at least two gauges are not shown, don't show any
 	i = 0;
 	if (!ship_has_energy_weapons(ship_p)) i++;
-	if (Player_obj->flags & OF_NO_SHIELDS) i++;
+	if (Player_obj->flags[Object::Object_Flags::No_shields]) i++;
 	if (!ship_has_engine_power(ship_p)) i++;
 	if (i >= 2) return;
 
@@ -1039,12 +1039,12 @@ void HudGaugeEtsShields::render(float frametime)
 	// if at least two gauges are not shown, don't show any
 	i = 0;
 	if (!ship_has_energy_weapons(ship_p)) i++;
-	if (Player_obj->flags & OF_NO_SHIELDS) i++;
+	if (Player_obj->flags[Object::Object_Flags::No_shields]) i++;
 	if (!ship_has_engine_power(ship_p)) i++;
 	if (i >= 2) return;
 
 	// no shields, no shields gauge
-	if (Player_obj->flags & OF_NO_SHIELDS) {
+	if (Player_obj->flags[Object::Object_Flags::No_shields]) {
 		return;
 	}
 
@@ -1075,7 +1075,7 @@ void HudGaugeEtsEngines::render(float frametime)
 	// if at least two gauges are not shown, don't show any
 	i = 0;
 	if (!ship_has_energy_weapons(ship_p)) i++;
-	if (Player_obj->flags & OF_NO_SHIELDS) i++;
+	if (Player_obj->flags[Object::Object_Flags::No_shields]) i++;
 	if (!ship_has_engine_power(ship_p)) i++;
 	if (i >= 2) return;
 

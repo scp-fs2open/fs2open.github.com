@@ -788,7 +788,7 @@ void pilotfile_convert::csg_export_missions()
 
 		// goals
 		size_t count = csg->missions[idx].goals.size();
-		cfwrite_int(count, cfp);
+		cfwrite_int((int)count, cfp);
 
 		for (size_t j = 0; j < count; j++) {
 			cfwrite_string_len(csg->missions[idx].goals[j].name, cfp);
@@ -797,7 +797,7 @@ void pilotfile_convert::csg_export_missions()
 
 		// events
 		count = csg->missions[idx].events.size();
-		cfwrite_int(count, cfp);
+		cfwrite_int((int)count, cfp);
 
 		for (size_t j = 0; j < count; j++) {
 			cfwrite_string_len(csg->missions[idx].events[j].name, cfp);
@@ -806,7 +806,7 @@ void pilotfile_convert::csg_export_missions()
 
 		// variables
 		count = csg->missions[idx].variables.size();
-		cfwrite_int(count, cfp);
+		cfwrite_int((int)count, cfp);
 
 		for (size_t j = 0; j < count; j++) {
 			cfwrite_int(csg->missions[idx].variables[j].type, cfp);

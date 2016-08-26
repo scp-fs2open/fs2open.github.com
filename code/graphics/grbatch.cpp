@@ -1102,7 +1102,7 @@ void geometry_batch_render(int stream_buffer)
 		return;
 	}
 
-	int n_to_render = geometry_batch_get_size();
+	size_t n_to_render = geometry_batch_get_size();
 	size_t n_verts = 0;
 
 	if ( Batch_geometry_buffer_size < (n_to_render * sizeof(particle_pnt)) ) {
@@ -1297,9 +1297,9 @@ int batch_get_size()
 	return n_to_render * 3;
 }
 
-int geometry_batch_get_size()
+size_t geometry_batch_get_size()
 {
-	int n_to_render = 0;
+	size_t n_to_render = 0;
 	SCP_map<int, g_sdr_batch_item>::iterator bi;
 
 	for (bi = geometry_shader_map.begin(); bi != geometry_shader_map.end(); ++bi) {

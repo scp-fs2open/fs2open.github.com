@@ -106,8 +106,6 @@ void parse_stringstbl_quick(const char *filename);
 // initialize localization, if no language is passed - use the language specified in the registry
 void lcl_init(int lang_init)
 {
-	atexit(lcl_xstr_close);
-
 	char lang_string[128];
 	const char *ret;
 	int lang, idx, i;
@@ -170,6 +168,10 @@ void lcl_init(int lang_init)
 
 	// set the language (this function takes care of setting up file pointers)
 	lcl_set_language(lang);
+}
+
+void lcl_close() {
+	lcl_xstr_close();
 }
 
 // determine what language we're running in, see LCL_* defines above

@@ -458,7 +458,7 @@ uint CFtpGet::SendFTPCommand(char *command)
 
 	FlushControlChannel();
 	// Send the FTP command
-	if (SOCKET_ERROR ==(send(m_ControlSock,command,strlen(command), 0)))
+	if (SOCKET_ERROR ==(send(m_ControlSock,command,static_cast<int>(strlen(command)), 0)))
 		{
 		  // Return 999 to indicate an error has occurred
 			return(999);
@@ -533,7 +533,7 @@ uint CFtpGet::ReadDataChannel()
    {
 		if(m_Aborting)
 			return 0;
-		nBytesRecv = recv(m_DataSock, (LPSTR)&sDataBuffer,sizeof(sDataBuffer), 0);
+		nBytesRecv = (int)recv(m_DataSock, sDataBuffer, sizeof(sDataBuffer), 0);
     					
 		m_iBytesIn += nBytesRecv;
 		if (nBytesRecv > 0 )

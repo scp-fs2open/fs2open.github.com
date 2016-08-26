@@ -13,31 +13,24 @@
 #define _PSTYPES_H
 
 
+
+#include "windows_stub/config.h"
+#include "globalincs/scp_defines.h"
+#include "globalincs/toolchain.h"
+
+#include "SDL.h"
+
 #include <stdio.h>	// For NULL, etc
 #include <stdlib.h>
 #include <memory.h>
 #include <string.h>
 #include <algorithm>
-#include "globalincs/toolchain.h"
-
-#if defined( __x86_64__ ) || defined( _WIN64 )
-#define IAM_64BIT 1
-#endif
-
-
-#include "windows_stub/config.h"
-
-#include "globalincs/scp_defines.h"
-
-#include "SDL.h"
+#include <cstdint>
 
 // value to represent an uninitialized state in any int or uint
 #define UNINITIALIZED 0x7f8e6d9c
 
 #define MAX_PLAYERS	12
-
-#define USE_INLINE_ASM 1		// Define this to use inline assembly
-#define STRUCT_CMP(a, b) memcmp((void *)&a, (void *)&b, sizeof(a))
 
 #ifdef LOCAL
 #undef LOCAL
@@ -53,27 +46,19 @@
 #define DIR_SEPARATOR_STR  "/"
 #endif
 
-#ifdef IAM_64BIT
-typedef __int32 _fs_time_t;  // time_t here is 64-bit and we need 32-bit
-typedef __int32 fix;
+typedef std::int32_t _fs_time_t;  // time_t here is 64-bit and we need 32-bit
+typedef std::int32_t fix;
+
 // PTR compatible sizes
-typedef __int64 ptr_s;
-typedef unsigned __int64 ptr_u;
-#else
-typedef long fix;
-typedef	long _fs_time_t;
-typedef int ptr_s;
-typedef unsigned int ptr_u;
-#endif // 64-bit
+typedef ptrdiff_t ptr_s;
+typedef size_t ptr_u;
 
-typedef __int64 longlong;
-typedef unsigned __int64 ulonglong;
-typedef unsigned char ubyte;
-typedef unsigned short ushort;
-typedef unsigned int uint;
+typedef std::int64_t longlong;
+typedef std::uint64_t ulonglong;
+typedef std::uint8_t ubyte;
+typedef std::uint16_t ushort;
+typedef std::uint32_t uint;
 typedef unsigned long ulong;
-
-#define HARDWARE_ONLY
 
 //Stucture to store clipping codes in a word
 typedef struct ccodes {
@@ -222,6 +207,14 @@ typedef struct flag_def_list {
 	ubyte var;
 } def_list;
 
+template<class T>
+struct flag_def_list_new {
+    const char* name;			// The parseable representation of this flag
+    T def;				// The flag definition for this flag
+    bool in_use;		// Whether or not this flag is currently in use or obsolete
+    bool is_special;	// Whether this flag requires special processing. See parse_string_flag_list<T, T> for details
+};
+
 // weapon count list (mainly for pilot files)
 typedef struct wep_t {
 	int index;
@@ -316,7 +309,9 @@ const float RAND_MAX_1f	= (1.0f / RAND_MAX);
 
 
 extern int Fred_running;  // Is Fred running, or FreeSpace?
+extern bool running_unittests;
 
+const size_t INVALID_SIZE = static_cast<size_t>(-1);
 
 //======================================================================================
 //======================================================================================
@@ -341,11 +336,13 @@ extern int Fred_running;  // Is Fred running, or FreeSpace?
 #undef USE_INLINE_ASM
 
 #define INTEL_INT(x)	SDL_Swap32(x)
+#define INTEL_LONG(x)   SDL_Swap64(x)
 #define INTEL_SHORT(x)	SDL_Swap16(x)
 #define INTEL_FLOAT(x)	SDL_SwapFloat((*x))
 
 #else // Little Endian -
 #define INTEL_INT(x)	x
+#define INTEL_LONG(x)   x
 #define INTEL_SHORT(x)	x
 #define INTEL_FLOAT(x)	(*x)
 #endif // BYTE_ORDER
@@ -369,7 +366,9 @@ typedef struct lod_checker {
 //  - has >0 length
 //  - is not "none"
 //  - is not "<none>"
-#define VALID_FNAME(x) ( strlen((x)) && stricmp((x), "none") && stricmp((x), "<none>") )
+inline bool VALID_FNAME(const char* x) {
+	return strlen((x)) && stricmp((x), "none") && stricmp((x), "<none>");
+}
 
 
 // Callback Loading function.
@@ -440,34 +439,6 @@ template <class T> void CAP( T& v, T mn, T mx )
 
 // faster version of CAP()
 #define CLAMP(x, min, max) do { if ( (x) < (min) ) (x) = (min); else if ((x) > (max)) (x) = (max); } while(0)
-
-// ========================================================
-// stamp checksum stuff
-// ========================================================
-
-// here is the define for the stamp for this set of code
-#define STAMP_STRING "\001\001\001\001\002\002\002\002Read the Foundation Novels from Asimov.  I liked them."
-#define STAMP_STRING_LENGTH			80
-#define DEFAULT_CHECKSUM_STRING		"\001\001\001\001"
-#define DEFAULT_TIME_STRING			"\002\002\002\002"
-
-// macro to calculate the checksum for the stamp.  Put here so that we can use different methods
-// for different applications.  Requires the local variable 'checksum' to be defined!!!
-#define CALCULATE_STAMP_CHECKSUM() do {	\
-		int i, found;	\
-							\
-		checksum = 0;	\
-		for ( i = 0; i < (int)strlen(ptr); i++ ) {	\
-			found = 0;	\
-			checksum += ptr[i];	\
-			if ( checksum & 0x01 )	\
-				found = 1;	\
-			checksum = checksum >> 1;	\
-			if (found)	\
-				checksum |= 0x80000000;	\
-		}	\
-		checksum |= 0x80000000;	\
-	} while (0) ;
 
 //=========================================================
 // Memory management functions

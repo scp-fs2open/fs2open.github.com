@@ -107,7 +107,7 @@ int mission_campaign_get_info(const char *filename, char *name, int *type, int *
 	Assert( type != NULL );
 
 	strncpy(fname, filename, MAX_FILENAME_LEN - 1);
-	int fname_len = strlen(fname);
+	auto fname_len = strlen(fname);
 	if ((fname_len < 4) || stricmp(fname + fname_len - 4, FS_CAMPAIGN_FILE_EXT)){
 		strcat_s(fname, FS_CAMPAIGN_FILE_EXT);
 		fname_len += 4;
@@ -369,41 +369,41 @@ void mission_campaign_build_list(bool desc, bool sort, bool multiplayer)
  */
 void mission_campaign_get_sw_info()
 {
-	int i, count, ship_list[MAX_SHIP_CLASSES], weapon_list[MAX_WEAPON_TYPES];
+    int i, count, ship_list[MAX_SHIP_CLASSES], weapon_list[MAX_WEAPON_TYPES];
 
-	// set allowable ships to the SIF_PLAYER_SHIPs
-	memset( Campaign.ships_allowed, 0, sizeof(Campaign.ships_allowed) );
-	for (auto it = Ship_info.cbegin(); it != Ship_info.cend(); ++it ) {
-		if ( it->flags & SIF_PLAYER_SHIP )
-			Campaign.ships_allowed[std::distance(Ship_info.cbegin(), it)] = 1;
-	}
+    // set allowable ships to the SIF_PLAYER_SHIPs
+    memset(Campaign.ships_allowed, 0, sizeof(Campaign.ships_allowed));
+    for (auto it = Ship_info.cbegin(); it != Ship_info.cend(); ++it) {
+        if (it->flags[Ship::Info_Flags::Player_ship])
+            Campaign.ships_allowed[std::distance(Ship_info.cbegin(), it)] = 1;
+    }
 
-	for (i = 0; i < MAX_WEAPON_TYPES; i++ )
-		Campaign.weapons_allowed[i] = 1;
+    for (i = 0; i < MAX_WEAPON_TYPES; i++)
+        Campaign.weapons_allowed[i] = 1;
 
-	if ( optional_string("+Starting Ships:") ) {
-		for (i = 0; i < static_cast<int>(Ship_info.size()); i++ )
-			Campaign.ships_allowed[i] = 0;
+    if (optional_string("+Starting Ships:")) {
+        for (i = 0; i < static_cast<int>(Ship_info.size()); i++)
+            Campaign.ships_allowed[i] = 0;
 
-		count = stuff_int_list(ship_list, MAX_SHIP_CLASSES, SHIP_INFO_TYPE);
+        count = stuff_int_list(ship_list, MAX_SHIP_CLASSES, SHIP_INFO_TYPE);
 
-		// now set the array elements stating which ships we are allowed
-		for (i = 0; i < count; i++ ) {
-			if ( Ship_info[ship_list[i]].flags & SIF_PLAYER_SHIP )
-				Campaign.ships_allowed[ship_list[i]] = 1;
-		}
-	}
+        // now set the array elements stating which ships we are allowed
+        for (i = 0; i < count; i++) {
+            if (Ship_info[ship_list[i]].flags[Ship::Info_Flags::Player_ship])
+                Campaign.ships_allowed[ship_list[i]] = 1;
+        }
+    }
 
-	if ( optional_string("+Starting Weapons:") ) {
-		for (i = 0; i < MAX_WEAPON_TYPES; i++ )
-			Campaign.weapons_allowed[i] = 0;
+    if (optional_string("+Starting Weapons:")) {
+        for (i = 0; i < MAX_WEAPON_TYPES; i++)
+            Campaign.weapons_allowed[i] = 0;
 
-		count = stuff_int_list(weapon_list, MAX_WEAPON_TYPES, WEAPON_POOL_TYPE);
+        count = stuff_int_list(weapon_list, MAX_WEAPON_TYPES, WEAPON_POOL_TYPE);
 
-		// now set the array elements stating which ships we are allowed
-		for (i = 0; i < count; i++ )
-			Campaign.weapons_allowed[weapon_list[i]] = 1;
-	}
+        // now set the array elements stating which ships we are allowed
+        for (i = 0; i < count; i++)
+            Campaign.weapons_allowed[weapon_list[i]] = 1;
+    }
 }
 
 /**
@@ -416,7 +416,7 @@ void mission_campaign_get_sw_info()
  */
 int mission_campaign_load( char *filename, player *pl, int load_savefile, bool reset_stats )
 {
-	int len, i;
+	int i;
 	char name[NAME_LENGTH], type[NAME_LENGTH], temp[NAME_LENGTH];
 
 	if (campaign_is_ignored(filename)) {
@@ -455,7 +455,7 @@ int mission_campaign_load( char *filename, player *pl, int load_savefile, bool r
 		reset_parse();
 
 		// copy filename to campaign structure minus the extension
-		len = strlen(filename) - 4;
+		auto len = strlen(filename) - 4;
 		Assert(len < MAX_FILENAME_LEN);
 		strncpy(Campaign.filename, filename, len);
 		Campaign.filename[len] = 0;
@@ -1833,7 +1833,7 @@ void mission_campaign_skip_to_next(int start_game)
 			// closes out mission stuff, sets up next one
 			mission_campaign_mission_over();
 
-			if ( Campaign.next_mission == -1 || (The_mission.flags & MISSION_FLAG_END_TO_MAINHALL) ) {
+			if ( Campaign.next_mission == -1 || (The_mission.flags[Mission::Mission_Flags::End_to_mainhall]) ) {
 				// go to main hall, either the campaign is over or the FREDer requested it.
 				gameseq_post_event(GS_EVENT_MAIN_MENU);
 			} else {

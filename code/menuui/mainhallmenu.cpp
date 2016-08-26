@@ -795,7 +795,7 @@ void main_hall_do(float frametime)
 		case SNAZZY_OVER:
 			for (it = Main_hall->regions.begin(); Main_hall->regions.end() != it; ++it) {
 				if (it->mask == code) {
-					main_hall_handle_mouse_location((int)std::distance(it, Main_hall->regions.begin()));
+					main_hall_handle_mouse_location((int)std::distance(Main_hall->regions.begin(), it));
 					break;
 				}
 			}
@@ -932,7 +932,7 @@ void main_hall_do(float frametime)
 
 			// if the escape key wasn't pressed handle any mouse position related events
 			if (code != ESC_PRESSED) {
-				main_hall_handle_mouse_location((region_action == -1 ? -1 : (int)std::distance(it, Main_hall->regions.begin())));
+				main_hall_handle_mouse_location((region_action == -1 ? -1 : (int)std::distance(Main_hall->regions.begin(), it)));
 			}
 			break;
 

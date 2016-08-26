@@ -670,7 +670,7 @@ void model_collide_parse_bsp_tmappoly(bsp_collision_leaf *leaf, SCP_vector<model
 
 	leaf->tmap_num = (ubyte)tmap_num;
 	leaf->num_verts = (ubyte)nv;
-	leaf->vert_start = vert_buffer->size();
+	leaf->vert_start = (int)vert_buffer->size();
 
 	vec3d *plane_pnt = vp(p+20);
 	float face_rad = fl(p+32);
@@ -706,7 +706,7 @@ void model_collide_parse_bsp_flatpoly(bsp_collision_leaf *leaf, SCP_vector<model
 
 	leaf->tmap_num = 255;
 	leaf->num_verts = (ubyte)nv;
-	leaf->vert_start = vert_buffer->size();
+	leaf->vert_start = (int)vert_buffer->size();
 
 	vec3d *plane_pnt = vp(p+20);
 	float face_rad = fl(p+32);
@@ -803,7 +803,7 @@ void model_collide_parse_bsp(bsp_collision_tree *tree, void *model_ptr, int vers
 
 				if ( next_chunk_type != OP_EOF ) {
 					node_buffer.push_back(new_node);
-					node_buffer[i].front = (node_buffer.size() - 1);
+					node_buffer[i].front = (int)(node_buffer.size() - 1);
 					bsp_datap[node_buffer[i].front] = p+w(p+36);
 				}
 			}
@@ -813,7 +813,7 @@ void model_collide_parse_bsp(bsp_collision_tree *tree, void *model_ptr, int vers
 				
 				if ( next_chunk_type != OP_EOF ) {
 					node_buffer.push_back(new_node);
-					node_buffer[i].back = (node_buffer.size() - 1);
+					node_buffer[i].back = (int)(node_buffer.size() - 1);
 					bsp_datap[node_buffer[i].back] = p+w(p+40);
 				}
 			}
@@ -843,7 +843,7 @@ void model_collide_parse_bsp(bsp_collision_tree *tree, void *model_ptr, int vers
 			if ( next_chunk_type != OP_EOF && (next_chunk_type == OP_TMAPPOLY || next_chunk_type == OP_FLATPOLY ) ) {
 				new_leaf.next = -1;
 
-				node_buffer[i].leaf = leaf_buffer.size();	// get index of where our poly list starts in the leaf buffer
+				node_buffer[i].leaf = (int)leaf_buffer.size();	// get index of where our poly list starts in the leaf buffer
 
 				while ( next_chunk_type != OP_EOF ) {
 					if ( next_chunk_type == OP_TMAPPOLY ) {
@@ -852,13 +852,13 @@ void model_collide_parse_bsp(bsp_collision_tree *tree, void *model_ptr, int vers
 
 						leaf_buffer.push_back(new_leaf);
 
-						leaf_buffer.back().next = leaf_buffer.size();
+						leaf_buffer.back().next = (int)leaf_buffer.size();
 					} else if ( next_chunk_type == OP_FLATPOLY ) {
 						model_collide_parse_bsp_flatpoly(&new_leaf, &vert_buffer, next_p);
 
 						leaf_buffer.push_back(new_leaf);
 
-						leaf_buffer.back().next = leaf_buffer.size();
+						leaf_buffer.back().next = (int)leaf_buffer.size();
 					} else {
 						Int3();
 					}
@@ -890,13 +890,13 @@ void model_collide_parse_bsp(bsp_collision_tree *tree, void *model_ptr, int vers
 	tree->n_verts = n_verts;
 
 	// copy node info. this might be a good time to organize the nodes into a cache efficient tree layout.
-	tree->n_nodes = node_buffer.size();
+	tree->n_nodes = (int)node_buffer.size();
 	tree->node_list = (bsp_collision_node*)vm_malloc(sizeof(bsp_collision_node) * node_buffer.size());
 	memcpy(tree->node_list, &node_buffer[0], sizeof(bsp_collision_node) * node_buffer.size());
 	node_buffer.clear();
 
 	// copy leaves.
-	tree->n_leaves = leaf_buffer.size();
+	tree->n_leaves = (int)leaf_buffer.size();
 	tree->leaf_list = (bsp_collision_leaf*)vm_malloc(sizeof(bsp_collision_leaf) * leaf_buffer.size());
 	memcpy(tree->leaf_list, &leaf_buffer[0], sizeof(bsp_collision_leaf) * leaf_buffer.size());
 	leaf_buffer.clear();
@@ -939,7 +939,7 @@ bool mc_shield_check_common(shield_tri	*tri)
 		// also finds the uv's where the ray hit.
 		if ( fvi_point_face(&hitpoint, 3, points, &tri->norm, NULL,NULL,NULL ) )	{
 			Mc->hit_dist = dist;
-			Mc->shield_hit_tri = tri - Mc_pm->shield.tris;
+			Mc->shield_hit_tri = (int)(tri - Mc_pm->shield.tris);
 			Mc->hit_point = hitpoint;
 			Mc->hit_normal = tri->norm;
 			Mc->hit_submodel = -1;
@@ -957,7 +957,7 @@ bool mc_shield_check_common(shield_tri	*tri)
 			// same behavior whether face or edge
 			// normal, edge_hit, hit_point all updated thru sphereline_face
 			sphere_check_closest_shield_dist = Mc->hit_dist;
-			Mc->shield_hit_tri = tri - Mc_pm->shield.tris;
+			Mc->shield_hit_tri = (int)(tri - Mc_pm->shield.tris);
 			Mc->hit_submodel = -1;
 			Mc->num_hits++;
 			return true;		// We hit, so we're done

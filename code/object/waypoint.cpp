@@ -139,7 +139,9 @@ void waypoint_create_game_object(waypoint *wpt, int list_index, int wpt_index)
 	Assert(wpt != NULL);
 	Assert(list_index >= 0);
 	Assert(wpt_index >= 0);
-	wpt->objnum = obj_create(OBJ_WAYPOINT, -1, calc_waypoint_instance(list_index, wpt_index), NULL, wpt->get_pos(), 0.0f, OF_RENDERS);
+    flagset<Object::Object_Flags> default_flags;
+    default_flags.set(Object::Object_Flags::Renders);
+	wpt->objnum = obj_create(OBJ_WAYPOINT, -1, calc_waypoint_instance(list_index, wpt_index), NULL, wpt->get_pos(), 0.0f, default_flags);
 }
 
 // done immediately after mission load; originally found in aicode.cpp
@@ -183,7 +185,7 @@ waypoint *find_matching_waypoint(const char *name)
 
 	for (ii = Waypoint_lists.begin(); ii != Waypoint_lists.end(); ++ii)
 	{
-		uint len = strlen(ii->get_name());
+		auto len = strlen(ii->get_name());
 
 		// the first half (before the :) matches
 		if (!strnicmp(ii->get_name(), name, len))
@@ -410,7 +412,7 @@ int waypoint_add(vec3d *pos, int waypoint_instance)
 	{
 		// get a name for it
 		char buf[NAME_LENGTH];
-		waypoint_find_unique_name(buf, Waypoint_lists.size() + 1);
+		waypoint_find_unique_name(buf, (int)(Waypoint_lists.size() + 1));
 
 		// add new list with that name
 		waypoint_list new_list(buf);
@@ -418,8 +420,8 @@ int waypoint_add(vec3d *pos, int waypoint_instance)
 		wp_list = &Waypoint_lists.back();
 
 		// set up references
-		wp_list_index = Waypoint_lists.size() - 1;
-		wp_index = wp_list->get_waypoints().size();
+		wp_list_index = (int)(Waypoint_lists.size() - 1);
+		wp_index = (int) wp_list->get_waypoints().size();
 	}
 	// create the waypoint on the same list as, and immediately after, waypoint_instance
 	else

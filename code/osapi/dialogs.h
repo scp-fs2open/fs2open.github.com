@@ -5,12 +5,35 @@
 
 #include "globalincs/pstypes.h"
 
+#include <stdexcept>
+
 struct lua_State;
 
 namespace os
 {
 	namespace dialogs
 	{
+		class DialogException : public std::runtime_error {
+		 public:
+			explicit DialogException(const std::string& msg) : std::runtime_error(msg) {}
+		};
+		class AssertException : public DialogException {
+		 public:
+			explicit AssertException(const std::string& msg) : DialogException(msg) {}
+		};
+		class LuaErrorException : public DialogException {
+		 public:
+			explicit LuaErrorException(const std::string& msg) : DialogException(msg) {}
+		};
+		class ErrorException : public DialogException {
+		 public:
+			explicit ErrorException(const std::string& msg) : DialogException(msg) {}
+		};
+		class WarningException : public DialogException {
+		 public:
+			explicit WarningException(const std::string& msg) : DialogException(msg) {}
+		};
+
 		// These map onto the SDL ShowSimpleMessageBox flags
 		enum MessageType
 		{

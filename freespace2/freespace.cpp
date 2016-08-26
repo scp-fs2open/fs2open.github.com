@@ -14,6 +14,7 @@
  #include <direct.h>
  #include <io.h>
  #include <windows.h>
+ #include <Psapi.h>
 #ifndef _MINGW
  #include <crtdbg.h>
 #endif // !_MINGW
@@ -34,7 +35,6 @@
 #include "debris/debris.h"
 #include "debugconsole/console.h"
 #include "exceptionhandler/exceptionhandler.h"
-#include "external_dll/trackirpublic.h" // header file for the TrackIR routines (Swifty)
 #include "fireball/fireballs.h"
 #include "freespace.h"
 #include "freespaceresource.h"
@@ -50,6 +50,7 @@
 #include "globalincs/version.h"
 #include "graphics/font.h"
 #include "graphics/shadows.h"
+#include "headtracking/headtracking.h"
 #include "hud/hud.h"
 #include "hud/hudconfig.h"
 #include "hud/hudescort.h"
@@ -163,6 +164,8 @@
 #include "weapon/weapon.h"
 
 #include "SDLGraphicsOperations.h"
+
+#include <inttypes.h>
 
 #include <stdexcept>
 #include <SDL.h>
@@ -305,6 +308,7 @@ int Show_net_stats;
 int Pre_player_entry;
 
 int	Fred_running = 0;
+bool running_unittests = false;
 
 // required for hudtarget... kinda dumb, but meh
 char Fred_alt_names[MAX_SHIPS][NAME_LENGTH+1];
@@ -507,7 +511,7 @@ char Game_CDROM_dir[MAX_PATH_LEN];
 int init_cdrom();
 
 // How much RAM is on this machine. Set in WinMain
-uint FreeSpace_total_ram = 0;
+uint64_t FreeSpace_total_ram = 0;
 
 // game flash stuff
 float Game_flash_red = 0.0f;
@@ -569,7 +573,7 @@ void game_framerate_check_init()
 	Gf_critical_time = 0.0f;
 		
 	// nebula missions
-	if(The_mission.flags & MISSION_FLAG_FULLNEB){
+	if(The_mission.flags[Mission::Mission_Flags::Fullneb]){
 		Gf_critical = 15.0f;			
 	} else {
 		Gf_critical = 25.0f;
@@ -1215,10 +1219,10 @@ void game_loading_callback(int count)
 				short_name++;
 
 			sprintf(mem_buffer,"%s:\t" SIZE_T_ARG " K", short_name, size);
-			gr_string( 20, 220 + (i*line_height), mem_buffer, GR_RESIZE_MENU);
+			gr_string( 20, 220 + (int)(i*line_height), mem_buffer, GR_RESIZE_MENU);
 		}
 		sprintf(mem_buffer,"Total RAM:\t" SIZE_T_ARG " K", memory::get_used_memory() / 1024);
-		gr_string( 20, 230 + (i*line_height), mem_buffer, GR_RESIZE_MENU);
+		gr_string( 20, 230 + (int)(i*line_height), mem_buffer, GR_RESIZE_MENU);
 	}
 #endif	// !NDEBUG
 
@@ -1783,7 +1787,7 @@ void game_init()
 
 	memset(whee, 0, sizeof(whee));
 
-	GetCurrentDirectory(MAX_PATH_LEN-1, whee);
+	_getcwd(whee, MAX_PATH_LEN-1);
 
 	strcat_s(whee, DIR_SEPARATOR_STR);
 	strcat_s(whee, EXE_FNAME);
@@ -1883,7 +1887,7 @@ void game_init()
 		SDL_VERSION(&info.version); // initialize info structure with SDL version info
 
 		bool voiceRectOn = false;
-		if(SDL_GetWindowWMInfo(os_get_window(), &info)) { // the call returns true on success
+		if(SDL_GetWindowWMInfo(os::getSDLMainWindow(), &info)) { // the call returns true on success
 			// success
 			voiceRectOn = VOICEREC_init(info.info.win.window, WM_RECOEVENT, GRAMMARID1, IDR_CMD_CFG);
 		} else {
@@ -2096,11 +2100,6 @@ MONITOR(NumVerts)
 MONITOR(BmpUsed)
 MONITOR(BmpNew)
 
-
-uint Mem_starttime_phys;
-uint Mem_starttime_pagefile;
-uint Mem_starttime_virtual;
-
 void game_get_framerate()
 {	
 	if (frame_int == -1) {
@@ -2195,38 +2194,36 @@ void game_show_framerate()
 		sx = gr_screen.center_offset_x + 20;
 		sy = gr_screen.center_offset_y + 100 + (line_height * 2);
 
-		char mem_buffer[50];
+		SCP_string mem_buffer;
 
-		MEMORYSTATUS mem_stats;
-		GlobalMemoryStatus(&mem_stats);
+		PROCESS_MEMORY_COUNTERS_EX process_stats;
+		process_stats.cb = sizeof(process_stats);
 
-		// on win2k+, it should be == -1 if >4gig (indicates wrap around)
-		if ( ((int)Mem_starttime_phys == -1) || ((int)mem_stats.dwAvailPhys == -1) )
-			sprintf(mem_buffer, "Using Physical: *** (>4G)");
-		else
-			sprintf(mem_buffer,"Using Physical: %d Meg",(Mem_starttime_phys - mem_stats.dwAvailPhys)/1024/1024);
+		if (GetProcessMemoryInfo(GetCurrentProcess(), reinterpret_cast<PPROCESS_MEMORY_COUNTERS>(&process_stats), sizeof(process_stats))) {
+			sprintf(mem_buffer, "Private Usage: " SIZE_T_ARG " Meg", process_stats.PrivateUsage / 1024 / 1024);
+			gr_string(sx, sy, mem_buffer.c_str(), GR_RESIZE_NONE);
+			sy += line_height;
 
-		gr_string( sx, sy, mem_buffer, GR_RESIZE_NONE);
-		sy += line_height;
-		sprintf(mem_buffer,"Using Pagefile: %d Meg",(Mem_starttime_pagefile - mem_stats.dwAvailPageFile)/1024/1024);
-		gr_string( sx, sy, mem_buffer, GR_RESIZE_NONE);
-		sy += line_height;
-		sprintf(mem_buffer,"Using Virtual:  %d Meg",(Mem_starttime_virtual - mem_stats.dwAvailVirtual)/1024/1024);
-		gr_string( sx, sy, mem_buffer, GR_RESIZE_NONE);
-		sy += line_height * 2;
+			sprintf(mem_buffer, "Working set size: " SIZE_T_ARG " Meg", process_stats.WorkingSetSize / 1024 / 1024);
+			gr_string(sx, sy, mem_buffer.c_str(), GR_RESIZE_NONE);
+			sy += line_height;
+			sy += line_height;
+		}
 
-		if ( ((int)mem_stats.dwAvailPhys == -1) || ((int)mem_stats.dwTotalPhys == -1) )
-			sprintf(mem_buffer, "Physical Free: *** / *** (>4G)");
-		else
-			sprintf(mem_buffer,"Physical Free: %d / %d Meg",mem_stats.dwAvailPhys/1024/1024, mem_stats.dwTotalPhys/1024/1024);
+		MEMORYSTATUSEX mem_stats;
+		mem_stats.dwLength = sizeof(mem_stats);
+		if (GlobalMemoryStatusEx(&mem_stats)) {
+			sprintf(mem_buffer, "Physical Free: %" PRIu64 " / %" PRIu64 " Meg", mem_stats.ullAvailPhys / 1024 / 1024, mem_stats.ullTotalPhys / 1024 / 1024);
+			gr_string(sx, sy, mem_buffer.c_str(), GR_RESIZE_NONE);
+			sy += line_height;
 
-		gr_string( sx, sy, mem_buffer, GR_RESIZE_NONE);
-		sy += line_height;
-		sprintf(mem_buffer,"Pagefile Free: %d / %d Meg",mem_stats.dwAvailPageFile/1024/1024, mem_stats.dwTotalPageFile/1024/1024);
-		gr_string( sx, sy, mem_buffer, GR_RESIZE_NONE);
-		sy += line_height;
-		sprintf(mem_buffer,"Virtual Free:  %d / %d Meg",mem_stats.dwAvailVirtual/1024/1024, mem_stats.dwTotalVirtual/1024/1024);
-		gr_string( sx, sy, mem_buffer, GR_RESIZE_NONE);
+			sprintf(mem_buffer, "Pagefile Free: %" PRIu64 " / %" PRIu64 " Meg", mem_stats.ullAvailPageFile / 1024 / 1024, mem_stats.ullTotalPageFile / 1024 / 1024);
+			gr_string(sx, sy, mem_buffer.c_str(), GR_RESIZE_NONE);
+			sy += line_height;
+
+			sprintf(mem_buffer, "Virtual Free:  %" PRIu64 " / %" PRIu64 " Meg", mem_stats.ullAvailVirtual / 1024 / 1024, mem_stats.ullTotalVirtual / 1024 / 1024);
+			gr_string(sx, sy, mem_buffer.c_str(), GR_RESIZE_NONE);
+		}
 	}
 #endif
 
@@ -2347,10 +2344,10 @@ void game_show_framerate()
 				short_name++;
 
 			sprintf(mem_buffer,"%s:\t" SIZE_T_ARG " K", short_name, size);
-			gr_string( 20, 220 + (i*line_height), mem_buffer, GR_RESIZE_MENU);
+			gr_string( 20, 220 + (int)(i*line_height), mem_buffer, GR_RESIZE_MENU);
 		}
 		sprintf(mem_buffer,"Total RAM:\t" SIZE_T_ARG " K", memory::get_used_memory() / 1024);
-		gr_string( 20, 230 + (i*line_height), mem_buffer, GR_RESIZE_MENU);
+		gr_string( 20, 230 + (int)(i*line_height), mem_buffer, GR_RESIZE_MENU);
 	}
 
 	MONITOR_INC(NumPolys, modelstats_num_polys);
@@ -2821,7 +2818,7 @@ void game_tst_mark(object *objp, ship *shipp)
 	}
 
 	tst_pos = objp->pos;
-	if(sip->flags & (SIF_BIG_SHIP | SIF_HUGE_SHIP)){
+	if(sip->is_big_or_huge()){
 		tst_big = 1;
 	}
 	tst = 3;
@@ -2841,14 +2838,14 @@ void player_repair_frame(float frametime)
 			if(MULTI_CONNECTED(Net_players[idx]) && (Net_player != NULL) && (Net_player->player_id != Net_players[idx].player_id) && (Net_players[idx].m_player != NULL) && (Net_players[idx].m_player->objnum >= 0) && (Net_players[idx].m_player->objnum < MAX_OBJECTS)){
 
 				// don't rearm/repair if the player is dead or dying/departing
-				if ( !NETPLAYER_IS_DEAD(np) && !(Ships[Objects[np->m_player->objnum].instance].flags & (SF_DYING|SF_DEPARTING)) ) {
+				if ( !NETPLAYER_IS_DEAD(np) && !(Ships[Objects[np->m_player->objnum].instance].is_dying_or_departing()) ) {
 					ai_do_repair_frame(&Objects[Net_players[idx].m_player->objnum],&Ai_info[Ships[Objects[Net_players[idx].m_player->objnum].instance].ai_index],frametime);
 				}
 			}
 		}
 	}	
 
-	if ( (Player_obj != NULL) && (Player_obj->type == OBJ_SHIP) && !(Game_mode & GM_STANDALONE_SERVER) && (Player_ship != NULL) && !(Player_ship->flags & SF_DYING) ) {
+	if ( (Player_obj != NULL) && (Player_obj->type == OBJ_SHIP) && !(Game_mode & GM_STANDALONE_SERVER) && (Player_ship != NULL) && !(Player_ship->flags[Ship::Ship_Flags::Dying]) ) {
 		ai_do_repair_frame(Player_obj, &Ai_info[Ships[Player_obj->instance].ai_index], frametime);
 	}
 }
@@ -3001,7 +2998,7 @@ void say_view_target()
 			char view_target_name[128] = "";
 			switch(Objects[Player_ai->target_objnum].type) {
 			case OBJ_SHIP:
-				if (Ships[Objects[Player_ai->target_objnum].instance].flags2 & SF2_HIDE_SHIP_NAME) {
+				if (Ships[Objects[Player_ai->target_objnum].instance].flags[Ship::Ship_Flags::Hide_ship_name]) {
 					strcpy_s(view_target_name, "targeted ship");
 				} else {
 					strcpy_s(view_target_name, Ships[Objects[Player_ai->target_objnum].instance].ship_name);
@@ -3311,7 +3308,7 @@ void game_environment_map_gen()
 		gr_screen.envmap_render_target = -1;
 	}
 
-	if ( Dynamic_environment || (The_mission.flags & MISSION_FLAG_SUBSPACE) ) {
+	if ( Dynamic_environment || (The_mission.flags[Mission::Mission_Flags::Subspace]) ) {
 		Dynamic_environment = true;
 		gen_flags &= ~BMP_FLAG_RENDER_TARGET_STATIC;
 		gen_flags |= BMP_FLAG_RENDER_TARGET_DYNAMIC;
@@ -3368,7 +3365,7 @@ camid game_render_frame_setup()
 
 	//First, make sure we take into account 2D Missions.
 	//These replace the normal player in-cockpit view with a topdown view.
-	if(The_mission.flags & MISSION_FLAG_2D_MISSION)
+	if(The_mission.flags[Mission::Mission_Flags::Mission_2d])
 	{
 		if(!Viewer_mode)
 		{
@@ -3776,7 +3773,7 @@ void game_render_frame( camid cid )
 	//This is so we can change the minimum clipping distance without messing everything up.
 	if ( Viewer_obj
 		&& (Viewer_obj->type == OBJ_SHIP)
-		&& (Ship_info[Ships[Viewer_obj->instance].ship_info_index].flags2 & SIF2_SHOW_SHIP_MODEL)
+		&& (Ship_info[Ships[Viewer_obj->instance].ship_info_index].flags[Ship::Info_Flags::Show_ship_model])
 		&& (!Viewer_mode || (Viewer_mode & VM_PADLOCK_ANY) || (Viewer_mode & VM_OTHER_SHIP) || (Viewer_mode & VM_TRACK)) )
 	{
 		gr_post_process_save_zbuffer();
@@ -3917,7 +3914,7 @@ void game_simulation_frame()
 			sip = &Ship_info[shipp->ship_info_index];
 
 			// only blow up small ships			
-			if((sip->flags & SIF_SMALL_SHIP) && (multi_find_player_by_object(&Objects[moveup->objnum]) < 0) && (shipp->team == Iff_traitor) ){							
+			if((sip->is_small_ship()) && (multi_find_player_by_object(&Objects[moveup->objnum]) < 0) && (shipp->team == Iff_traitor) ){							
 				// function to simply explode a ship where it is currently at
 				ship_self_destruct( &Objects[moveup->objnum] );					
 			}
@@ -4092,7 +4089,7 @@ void game_maybe_do_dead_popup(float frametime)
 
 			// this should only happen during a red alert mission
 			case 3:				
-				if (The_mission.flags & MISSION_FLAG_RED_ALERT)
+				if (The_mission.flags[Mission::Mission_Flags::Red_alert])
 				{
 					// choose the previous mission
 					mission_campaign_previous_mission();
@@ -4780,7 +4777,7 @@ void game_do_frame()
 	game_set_frametime(GS_STATE_GAME_PLAY);
 	game_update_missiontime();
 
-//	if (Player_ship->flags & SF_DYING)
+//	if (Player_ship->flags[Ship::Ship_Flags::Dying])
 //		flFrametime /= 15.0;
 
 	if (Game_mode & GM_STANDALONE_SERVER) {
@@ -5363,7 +5360,7 @@ void game_process_event( int current_state, int event )
 				shipfx_warpout_start( Player_obj );
 				Player->control_mode = PCM_WARPOUT_STAGE2;
 
-				if (!(The_mission.ai_profile->flags2 & AIPF2_NO_WARP_CAMERA)) {
+				if (!(The_mission.ai_profile->flags[AI::Profile_Flags::No_warp_camera])) {
 					Player->saved_viewer_mode = Viewer_mode;
 					Viewer_mode |= VM_WARP_CHASE;
 					Warp_camera = warp_camera(Player_obj);
@@ -6182,7 +6179,7 @@ void mouse_force_pos(int x, int y);
 			}
 
 			Game_subspace_effect = 0;
-			if (The_mission.flags & MISSION_FLAG_SUBSPACE) {
+			if (The_mission.flags[Mission::Mission_Flags::Subspace]) {
 				Game_subspace_effect = 1;
 				if( !(Game_mode & GM_STANDALONE_SERVER) ){	
 					game_start_subspace_ambient_sound();
@@ -6730,7 +6727,7 @@ void game_do_state(int state)
 
 #ifdef _WIN32
 // return 0 if there is enough RAM to run FreeSpace, otherwise return -1
-int game_do_ram_check(uint ram_in_bytes)
+int game_do_ram_check(uint64_t ram_in_bytes)
 {
 	if ( ram_in_bytes < 30*1024*1024 )	{
 		int allowed_to_run = 1;
@@ -6941,20 +6938,16 @@ int game_main(int argc, char *argv[])
 
 #ifdef _WIN32
 	// Find out how much RAM is on this machine
-	MEMORYSTATUS ms;
-	ms.dwLength = sizeof(MEMORYSTATUS);
-	GlobalMemoryStatus(&ms);
-	FreeSpace_total_ram = ms.dwTotalPhys;
-
-	Mem_starttime_phys      = ms.dwAvailPhys;
-	Mem_starttime_pagefile  = ms.dwAvailPageFile;
-	Mem_starttime_virtual   = ms.dwAvailVirtual;
+	MEMORYSTATUSEX ms;
+	ms.dwLength = sizeof(ms);
+	GlobalMemoryStatusEx(&ms);
+	FreeSpace_total_ram = ms.ullTotalPhys;
 
 	if ( game_do_ram_check(FreeSpace_total_ram) == -1 ) {
 		return 1;
 	}
 
-	if ( ms.dwTotalVirtual < 1024 )	{
+	if ( ms.ullTotalVirtual < 1024 ) {
 		os::dialogs::Message( os::dialogs::MESSAGEBOX_ERROR, XSTR( "FreeSpace requires virtual memory to run.\r\n", 196), XSTR( "No Virtual Memory", 197) );
 		return 1;
 	}
@@ -6982,12 +6975,12 @@ int game_main(int argc, char *argv[])
 	init_cdrom();
 
 	game_init();
-	// calling the function that will init all the function pointers for TrackIR stuff (Swifty)
-	int trackIrInitResult = gTirDll_TrackIR.Init(os_get_window());
-	if ( trackIrInitResult != SCP_INITRESULT_SUCCESS )
+
+	if (!headtracking::init())
 	{
-		mprintf( ("TrackIR Init Failed - %d\n", trackIrInitResult) );
+		mprintf(("Headtracking is not enabled...\n"));
 	}
+
 	game_stop_time();
 
 	if (Cmdline_spew_mission_crcs) {
@@ -7091,7 +7084,8 @@ void game_launch_launcher_on_exit()
 //
 void game_shutdown(void)
 {
-	gTirDll_TrackIR.Close( );
+	headtracking::shutdown();
+
 	profile_deinit();
 
 	fsspeech_deinit();
@@ -7170,12 +7164,16 @@ void game_shutdown(void)
 	sdlGraphicsOperations.reset();
 	os_cleanup();
 
+	cfile_close();
+
 	// although the comment in cmdline.cpp said this isn't needed,
 	// Valgrind disagrees (quite possibly incorrectly), but this is just cleaner
 	if (Cmdline_mod != NULL) {
 		delete[] Cmdline_mod;
 		Cmdline_mod = NULL;
 	}
+
+	lcl_xstr_close();
 
 #if 0  // don't have an updater for fs2_open
 	// HACKITY HACK HACK
@@ -7438,7 +7436,7 @@ void Time_model( int modelnum )
 
 	polymodel *pm = model_get( modelnum );
 
-	int l = strlen(pm->filename);
+	size_t l = strlen(pm->filename);
 	while( (l>0) )	{
 		if ( (l == '/') || (l=='\\') || (l==':'))	{
 			l++;
@@ -7802,7 +7800,6 @@ int find_freespace_cd(char *volume_name)
 	int cdrom_drive=-1;
 	int volume_match = 0;
 	_finddata_t find;
-	int find_handle;
 
 	GetCurrentDirectory(MAX_PATH-1, oldpath);
 
@@ -7828,7 +7825,7 @@ int find_freespace_cd(char *volume_name)
 				// look for setup.exe
 				strcpy_s(full_check, path);
 				strcat_s(full_check, "setup.exe");				
-				find_handle = _findfirst(full_check, &find);
+				auto find_handle = _findfirst(full_check, &find);
 				if(find_handle != -1){
 					volume1_present = 1;				
 					_findclose(find_handle);				
@@ -8588,11 +8585,6 @@ int actual_main(int argc, char *argv[])
 	}
 
 	::CoInitialize(NULL);
-
-#ifdef _DEBUG
-	void memblockinfo_output_memleak();
-	atexit(memblockinfo_output_memleak);
-#endif
 
 	SCP_mspdbcs_Initialise();
 #else

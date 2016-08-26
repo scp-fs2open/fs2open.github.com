@@ -132,7 +132,7 @@ int ship_ship_check_collision(collision_info_struct *ship_ship_hit_info, vec3d *
 	}
 
 	// Make ships that are warping in not get collision detection done
-	if ( heavy_shipp->flags & SF_ARRIVING_STAGE_1 ) { 
+	if ( heavy_shipp->flags[Ship::Ship_Flags::Arriving_stage_1] ) { 
 		return 0;
 	}
 
@@ -150,7 +150,7 @@ int ship_ship_check_collision(collision_info_struct *ship_ship_hit_info, vec3d *
 	//	Also, this is the only clean way I could figure to get ships to not do damage to each other for one frame
 	//	when they are docked and departing.  Due to sequencing, they would not show up as docked, yet they
 	//	would still come through here, so they would harm each other, if on opposing teams. -- MK, 2/2/98
-	if ((heavy_obj->flags & OF_SHOULD_BE_DEAD) || (light_obj->flags & OF_SHOULD_BE_DEAD)) {
+	if ((heavy_obj->flags[Object::Object_Flags::Should_be_dead]) || (light_obj->flags[Object::Object_Flags::Should_be_dead])) {
 		return 0;
 	}
 
@@ -167,7 +167,7 @@ int ship_ship_check_collision(collision_info_struct *ship_ship_hit_info, vec3d *
 	//	Apparently we're doing same team collisions.
 	//	But, if both are offscreen, ignore the collision
 	if (heavy_shipp->team == light_shipp->team) {
-		if ( (!(heavy_obj->flags & OF_WAS_RENDERED) && !(light_obj->flags & OF_WAS_RENDERED)) ) {
+		if ( (!(heavy_obj->flags[Object::Object_Flags::Was_rendered]) && !(light_obj->flags[Object::Object_Flags::Was_rendered])) ) {
 			return 0;
 		}
 	}
@@ -221,8 +221,8 @@ int ship_ship_check_collision(collision_info_struct *ship_ship_hit_info, vec3d *
 	mc.flags = (MC_CHECK_MODEL | MC_CHECK_SPHERELINE);			// flags
 
 	//	Only check invisible face polygons for ship:ship of different teams.
-	if ( !(heavy_shipp->flags2 & SF2_DONT_COLLIDE_INVIS) ) {
-		if ((heavy_obj->flags & OF_PLAYER_SHIP) || (light_obj->flags & OF_PLAYER_SHIP) || (heavy_shipp->team != light_shipp->team) ) {
+	if ( !(heavy_shipp->flags[Ship::Ship_Flags::Dont_collide_invis]) ) {
+		if ((heavy_obj->flags[Object::Object_Flags::Player_ship]) || (light_obj->flags[Object::Object_Flags::Player_ship]) || (heavy_shipp->team != light_shipp->team) ) {
 			mc.flags |= MC_CHECK_INVISIBLE_FACES;
 		}
 	}
@@ -360,7 +360,7 @@ int ship_ship_check_collision(collision_info_struct *ship_ship_hit_info, vec3d *
 		} else if (light_obj == Player_obj) {
 			collide_obj = heavy_obj;
 		}
-		if ((collide_obj != NULL) && (Ship_info[Ships[collide_obj->instance].ship_info_index].flags & (SIF_FIGHTER | SIF_BOMBER))) {
+		if ((collide_obj != NULL) && (Ship_info[Ships[collide_obj->instance].ship_info_index].is_fighter_bomber())) {
 			char	*submode_string = "";
 			ai_info	*aip;
 
@@ -376,10 +376,10 @@ int ship_ship_check_collision(collision_info_struct *ship_ship_hit_info, vec3d *
 
 		// Update ai to deal with collisions
 		if (heavy_obj-Objects == Ai_info[light_shipp->ai_index].target_objnum) {
-			Ai_info[light_shipp->ai_index].ai_flags |= AIF_TARGET_COLLISION;
+			Ai_info[light_shipp->ai_index].ai_flags.set(AI::AI_Flags::Target_collision);
 		}
 		if (light_obj-Objects == Ai_info[heavy_shipp->ai_index].target_objnum) {
-			Ai_info[heavy_shipp->ai_index].ai_flags |= AIF_TARGET_COLLISION;
+			Ai_info[heavy_shipp->ai_index].ai_flags.set(AI::AI_Flags::Target_collision);
 		}
 
 		// SET PHYSICS PARAMETERS
@@ -407,8 +407,8 @@ int ship_ship_check_collision(collision_info_struct *ship_ship_hit_info, vec3d *
 		if (heavy_shipp->team == light_shipp->team) {
 			//	If a couple of small ships, just move them apart.
 
-			if ((heavy_sip->flags & SIF_SMALL_SHIP) && (light_sip->flags & SIF_SMALL_SHIP)) {
-				if ((heavy_obj->flags & OF_PLAYER_SHIP) || (light_obj->flags & OF_PLAYER_SHIP)) {
+			if ((heavy_sip->is_small_ship()) && (light_sip->is_small_ship())) {
+				if ((heavy_obj->flags[Object::Object_Flags::Player_ship]) || (light_obj->flags[Object::Object_Flags::Player_ship])) {
 					vec3d h_to_l_vec;
 					vec3d rel_vel_h;
 					vec3d perp_rel_vel;
@@ -463,7 +463,7 @@ int check_special_cruiser_asteroid_collision(object *heavy, object *lighter, flo
 
 	if (heavy->type == OBJ_ASTEROID) {
 		Assert(lighter->type == OBJ_SHIP);
-		if (Ship_info[Ships[lighter->instance].ship_info_index].flags & (SIF_BIG_SHIP | SIF_HUGE_SHIP)) {
+		if (Ship_info[Ships[lighter->instance].ship_info_index].is_big_or_huge()) {
 
 			asteroid_type = Asteroids[heavy->instance].asteroid_type;
 			if (asteroid_type == 0) {
@@ -481,7 +481,7 @@ int check_special_cruiser_asteroid_collision(object *heavy, object *lighter, flo
 		}
 	} else if (lighter->type == OBJ_ASTEROID) {
 		Assert(heavy->type == OBJ_SHIP);
-		if (Ship_info[Ships[heavy->instance].ship_info_index].flags & SIF_BIG_SHIP) {
+		if (Ship_info[Ships[heavy->instance].ship_info_index].is_big_or_huge()) {
 
 			asteroid_type = Asteroids[lighter->instance].asteroid_type;
 			if (asteroid_type == 0) {
@@ -505,11 +505,11 @@ int check_special_cruiser_asteroid_collision(object *heavy, object *lighter, flo
  * Find the subobject corresponding to the submodel hit
  */
 bool check_subsystem_landing_allowed(ship_info *heavy_sip, collision_info_struct *ship_ship_hit_info) {
-	if (!(heavy_sip->flags2 & SIF2_ALLOW_LANDINGS))
+	if (!(heavy_sip->flags[Ship::Info_Flags::Allow_landings]))
 		return false;
 
 	for (int i = 0; i < heavy_sip->n_subsystems; i++) {
-		if (heavy_sip->subsystems[i].flags & MSS_FLAG_ALLOW_LANDING &&
+		if (heavy_sip->subsystems[i].flags[Model::Subsystem_Flags::Allow_landing] &&
 			heavy_sip->subsystems[i].subobj_num == ship_ship_hit_info->submodel_num) 
 		{
 			return true;
@@ -914,12 +914,12 @@ int maybe_collide_planet (object *obj1, object *obj2)
 	sip1 = &Ship_info[Ships[obj1->instance].ship_info_index];
 	sip2 = &Ship_info[Ships[obj2->instance].ship_info_index];
 
-	if (sip1->flags & SIF_PLAYER_SHIP) {
+	if (sip1->flags[Ship::Info_Flags::Player_ship]) {
 		if (is_planet(obj2)) {
 			mcp_1(obj1, obj2);
 			return 1;
 		}
-	} else if (sip2->flags & SIF_PLAYER_SHIP) {
+	} else if (sip2->flags[Ship::Info_Flags::Player_ship]) {
 		if (is_planet(obj1)) {
 			mcp_1(obj2, obj1);
 			return 1;
@@ -1007,13 +1007,13 @@ void do_kamikaze_crash(object *obj1, object *obj2)
 	aip2 = &Ai_info[ship2->ai_index];
 
 	if (ship1->team != ship2->team) {
-		if (aip1->ai_flags & AIF_KAMIKAZE) {
-			if (Ship_info[ship2->ship_info_index].flags & (SIF_BIG_SHIP | SIF_HUGE_SHIP)) {
+		if (aip1->ai_flags[AI::AI_Flags::Kamikaze]) {
+			if (Ship_info[ship2->ship_info_index].is_big_or_huge()) {
 				obj1->hull_strength = KAMIKAZE_HULL_ON_DEATH;
 				shield_set_strength(obj1, 0.0f);
 			}
-		} if (aip2->ai_flags & AIF_KAMIKAZE) {
-			if (Ship_info[ship1->ship_info_index].flags & (SIF_BIG_SHIP | SIF_HUGE_SHIP)) {
+		} if (aip2->ai_flags[AI::AI_Flags::Kamikaze]) {
+            if (Ship_info[ship1->ship_info_index].is_big_or_huge()) {
 				obj2->hull_strength = KAMIKAZE_HULL_ON_DEATH;
 				shield_set_strength(obj2, 0.0f);
 			}
@@ -1029,8 +1029,8 @@ void maybe_push_little_ship_from_fast_big_ship(object *big_obj, object *small_ob
 	// Move player out of the way of a BIG|HUGE ship warping in or out
 	int big_class = Ship_info[Ships[big_obj->instance].ship_info_index].class_type;
 	int small_class = Ship_info[Ships[small_obj->instance].ship_info_index].class_type;
-	if (big_class > -1 && Ship_types[big_class].ship_bools & STI_SHIP_WARP_PUSHES) {
-		if (small_class > -1 && Ship_types[small_class].ship_bools & STI_SHIP_WARP_PUSHABLE) {
+	if (big_class > -1 && Ship_types[big_class].flags[Ship::Type_Info_Flags::Warp_pushes]) {
+		if (small_class > -1 && Ship_types[small_class].flags[Ship::Type_Info_Flags::Warp_pushable]) {
 			float big_speed = vm_vec_mag_quick(&big_obj->phys_info.vel);
 			if (big_speed > 3*big_obj->phys_info.max_vel.xyz.z) {
 				// push player away in direction perp to forward of big ship
@@ -1215,7 +1215,7 @@ int collide_ship_ship( obj_pair * pair )
 				//Only do damage if not a landing
 				if (!ship_ship_hit_info.is_landing) {
 					//	Scale damage based on skill level for player.
-					if ((LightOne->flags & OF_PLAYER_SHIP) || (HeavyOne->flags & OF_PLAYER_SHIP)) {
+					if ((LightOne->flags[Object::Object_Flags::Player_ship]) || (HeavyOne->flags[Object::Object_Flags::Player_ship])) {
 						damage *= (float) (Game_skill_level*Game_skill_level+1)/(NUM_SKILL_LEVELS+1);
 					} else if (Ships[LightOne->instance].team == Ships[HeavyOne->instance].team) {
 						//	Decrease damage if non-player ships and not large.
@@ -1228,7 +1228,7 @@ int collide_ship_ship( obj_pair * pair )
 					float dam2 = (100.0f * damage/LightOne->phys_info.mass);
 
 					int	quadrant_num = get_ship_quadrant_from_global(&world_hit_pos, ship_ship_hit_info.heavy);
-					if ((ship_ship_hit_info.heavy->flags & OF_NO_SHIELDS) || !ship_is_shield_up(ship_ship_hit_info.heavy, quadrant_num) ) {
+					if ((ship_ship_hit_info.heavy->flags[Object::Object_Flags::No_shields]) || !ship_is_shield_up(ship_ship_hit_info.heavy, quadrant_num) ) {
 						quadrant_num = -1;
 					}
 
@@ -1258,18 +1258,16 @@ int collide_ship_ship( obj_pair * pair )
 			Script_system.RemHookVars(4, "Ship", "ShipB", "Self", "Object");
 			return 0;
 		}					
-	} else {
-		// estimate earliest time at which pair can hit
+    }
+    else {
+        // estimate earliest time at which pair can hit
 
-		// cap ships warping in/out can exceed ship's expected velocity
-		// if ship is warping in, in stage 1, its velocity is 0, so make ship try to collide next frame
-		int sif_a_flags, sif_b_flags;
-		sif_a_flags = Ship_info[Ships[A->instance].ship_info_index].flags;
-		sif_b_flags = Ship_info[Ships[B->instance].ship_info_index].flags;
+        // cap ships warping in/out can exceed ship's expected velocity
+        // if ship is warping in, in stage 1, its velocity is 0, so make ship try to collide next frame
 
-		// if ship is huge and warping in or out
-		if ( ((Ships[A->instance].flags & SF_ARRIVING_STAGE_1) && (sif_a_flags & (SIF_HUGE_SHIP)))
-			|| ((Ships[B->instance].flags & SF_ARRIVING_STAGE_1) && (sif_b_flags & (SIF_HUGE_SHIP))) ) {
+        // if ship is huge and warping in or out
+        if (((Ships[A->instance].flags[Ship::Ship_Flags::Arriving_stage_1]) && (Ship_info[Ships[A->instance].ship_info_index].is_huge_ship()))
+			|| ((Ships[B->instance].flags[Ship::Ship_Flags::Arriving_stage_1]) && (Ship_info[Ships[B->instance].ship_info_index].is_huge_ship())) ) {
 			pair->next_check_time = timestamp(0);	// check next time
 			return 0;
 		}

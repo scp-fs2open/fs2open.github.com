@@ -283,28 +283,29 @@ void player_start_editor::reset_controls()
 	// create a checklistbox for each "player" ship type	
 	m_ship_list.ResetContent();
 	ct = 0;
-	for (auto it = Ship_info.cbegin(); it != Ship_info.cend(); ++it) {
-		if (it->flags & SIF_PLAYER_SHIP) {
-			i = std::distance(Ship_info.cbegin(), it);
-			m_ship_list.AddString(it->name);
-			
-			// if the ship currently has pool entries or was set by a variable, check it
-			if((static_ship_pool[selected_team][i] > 0) || (static_ship_variable_pool[selected_team][i] != -1)) {
-				m_ship_list.SetCheck(ct, TRUE);
-			} else {
-				m_ship_list.SetCheck(ct, FALSE);
-			}
+    for (auto it = Ship_info.cbegin(); it != Ship_info.cend(); ++it) {
+        if (it->flags[Ship::Info_Flags::Player_ship]) {
+            i = (int)std::distance(Ship_info.cbegin(), it);
+            m_ship_list.AddString(it->name);
 
-			// next
-			ct++;
-		}
-	}
+            // if the ship currently has pool entries or was set by a variable, check it
+            if ((static_ship_pool[selected_team][i] > 0) || (static_ship_variable_pool[selected_team][i] != -1)) {
+                m_ship_list.SetCheck(ct, TRUE);
+            }
+            else {
+                m_ship_list.SetCheck(ct, FALSE);
+            }
+
+            // next
+            ct++;
+        }
+    }
 
 	// create a checklistbox for each weapon ship type	
 	m_weapon_list.ResetContent();
 	ct = 0;
 	for (i=0; i<Num_weapon_types; i++) {
-		if (Weapon_info[i].wi_flags & WIF_PLAYER_ALLOWED) {
+		if (Weapon_info[i].wi_flags[Weapon::Info_Flags::Player_allowed]) {
 			m_weapon_list.AddString(Weapon_info[i].name);
 			
 			// if the ship currently has pool entries or was set by a variable, check it

@@ -2022,7 +2022,7 @@ int Text::DoMouseDown(float frametime)
 	if (Style & T_EDITTABLE) {
 		OwnerSystem->SetActiveObject(this);
 		//For now, always set the cursor pos to the end
-		CursorPos = Content.size();
+		CursorPos = static_cast<int>(Content.size());
 		return OF_TRUE;
 	} else {
 		return OF_FALSE;

@@ -60,9 +60,10 @@ class player;
 // version 46 - 8/30/99
 // version 47 - 11/11/2003 (FS2OpenPXO, FS2 Open Changes - FS2Open 3.6)
 // revert  46 - 9/7/2006 (the 47 bump wasn't needed, reverting to retail version for compatibility reasons)
+// version 48 - 8/15/2016 Multiple changes to the packet format for multi sexps
 // STANDALONE_ONLY
 
-#define MULTI_FS_SERVER_VERSION							147
+#define MULTI_FS_SERVER_VERSION							148
 
 #define MULTI_FS_SERVER_COMPATIBLE_VERSION			MULTI_FS_SERVER_VERSION
 
@@ -261,18 +262,11 @@ extern int Om_tracker_flag;
 #define COUNTDOWN						0xE9		// countdown timer for starting a game (pretty benign)
 #define DEBRIEF_INFO					0xEA		// end of mission debriefing information
 #define EMP_EFFECT					0xEB		// EMP effect (mission disk only)
-#define CHANGE_IFF					0xEC		// change iff (1.04+ only)
+#define CARGO_HIDDEN				0xEC		// cargo is hidden
+#define SUBSYS_CARGO_HIDDEN			0xED		// Capital ship cargo subsystem is hidden for both ships and subsystems
 
-#define CARGO_HIDDEN				0xED		// cargo is hidden
-#define SUBSYS_CARGO_HIDDEN			0xEE		// Capital ship cargo subsystem is hidden
-
-#define CHANGE_AI_CLASS				0xEF		// change ai class
-#define NO_SUBSYS_STRING			"NO-SUBSYS"	// see change_ai_class - because same routine is used
-												// for both ships and subsystems
 #define VARIABLE_UPDATE				0xF0		// Karajorma - a variable update packet from server to all clients
-#define WEAPON_OR_AMMO_CHANGED		0xF1		// Karajorma - The weapon or ammo of a fighter/bomber has been changed
-#define SEXP						0xF2		// Karajorma - a general packet which can be used to update clients with changes caused by SEXPs
-#define CHANGE_IFF_COLOR			0xF3		// Wanderer - change iff color
+#define SEXP						0xF1		// Karajorma - a general packet which can be used to update clients with changes caused by SEXPs
 
 #define MAX_TYPE_ID					0xFF		// better not try to send > 255 in a single byte buddy
 

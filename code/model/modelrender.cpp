@@ -76,6 +76,8 @@ model_render_params::model_render_params():
 	if ( !Model_polys )	{
 		Model_flags |= MR_NO_POLYS;
 	}
+
+	gr_init_color(&Color, 0, 0, 0);
 }
 
 uint model_render_params::get_model_flags()
@@ -312,14 +314,14 @@ void model_batch_buffer::add_matrix(matrix4 &mat)
 	Submodel_matrices.push_back(mat);
 }
 
-int model_batch_buffer::get_buffer_offset()
+size_t model_batch_buffer::get_buffer_offset()
 {
 	return Current_offset;
 }
 
 void model_batch_buffer::allocate_memory()
 {
-	uint size = Submodel_matrices.size() * sizeof(matrix4);
+	auto size = Submodel_matrices.size() * sizeof(matrix4);
 
 	if ( Mem_alloc == NULL || Mem_alloc_size < size ) {
 		if ( Mem_alloc != NULL ) {
@@ -465,7 +467,7 @@ void draw_list::set_clip_plane(const vec3d &position, const vec3d &normal)
 
 	Clip_planes.push_back(clip_normal);
 
-	Current_render_state.clip_plane_handle = Clip_planes.size() - 1;
+	Current_render_state.clip_plane_handle = (int)(Clip_planes.size() - 1);
 }
 
 void draw_list::set_clip_plane()
@@ -478,7 +480,7 @@ void draw_list::set_thrust_scale(float scale)
 	Current_render_state.thrust_scale = scale;
 }
 
-void draw_list::add_buffer_draw(vertex_buffer *buffer, int texi, uint tmap_flags, model_render_params *interp)
+void draw_list::add_buffer_draw(vertex_buffer *buffer, size_t texi, uint tmap_flags, model_render_params *interp)
 {
 	// need to do a check to see if the top render state matches the current.
 	//if ( dirty_render_state ) {
@@ -489,7 +491,7 @@ void draw_list::add_buffer_draw(vertex_buffer *buffer, int texi, uint tmap_flags
 
 	queued_buffer_draw draw_data;
 
-	draw_data.render_state_handle = Render_states.size() - 1;
+	draw_data.render_state_handle = (int)(Render_states.size() - 1);
 	draw_data.buffer = buffer;
 	draw_data.texi = texi;
 	draw_data.flags = tmap_flags;
@@ -510,7 +512,7 @@ void draw_list::add_buffer_draw(vertex_buffer *buffer, int texi, uint tmap_flags
 	} else {
 		draw_data.transformation = Current_transform;
 		draw_data.scale = Current_scale;
-		draw_data.transform_buffer_offset = -1;
+		draw_data.transform_buffer_offset = INVALID_SIZE;
 	}
 	
 	draw_data.texture_maps[TM_BASE_TYPE] = Current_textures[TM_BASE_TYPE];
@@ -527,7 +529,7 @@ void draw_list::add_buffer_draw(vertex_buffer *buffer, int texi, uint tmap_flags
 
 	Render_elements.push_back(draw_data);
 
-	Render_keys.push_back(Render_elements.size() - 1);
+	Render_keys.push_back((int)(Render_elements.size() - 1));
 }
 
 uint draw_list::determine_shader_flags(render_state *state, queued_buffer_draw *draw_info, vertex_buffer *buffer, int tmap_flags)
@@ -550,7 +552,7 @@ uint draw_list::determine_shader_flags(render_state *state, queued_buffer_draw *
 		texture, 
 		Rendering_to_shadow_map, 
 		use_thrust_scale,
-		tmap_flags & TMAP_FLAG_BATCH_TRANSFORMS && draw_info->transform_buffer_offset >= 0 && buffer->flags & VB_FLAG_MODEL_ID,
+		tmap_flags & TMAP_FLAG_BATCH_TRANSFORMS && draw_info->transform_buffer_offset != INVALID_SIZE && buffer->flags & VB_FLAG_MODEL_ID,
 		state->using_team_color,
 		tmap_flags, 
 		(draw_info->texture_maps[TM_SPEC_GLOSS_TYPE] > 0) ? draw_info->texture_maps[TM_SPEC_GLOSS_TYPE] : draw_info->texture_maps[TM_SPECULAR_TYPE],
@@ -1138,7 +1140,7 @@ float model_render_determine_depth(int obj_num, int model_num, matrix* orient, v
 		}
 
 		// nebula ?
-		if (The_mission.flags & MISSION_FLAG_FULLNEB) {
+		if (The_mission.flags[Mission::Mission_Flags::Fullneb]) {
 			depth *= neb2_get_lod_scale(obj_num);
 		}
 
@@ -1743,7 +1745,7 @@ void submodel_render_queue(model_render_params *render_info, draw_list *scene, i
 	uint tmap_flags = TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB;
 
 	// if we're in nebula mode
-	if( ( The_mission.flags & MISSION_FLAG_FULLNEB ) && ( Neb2_render_mode != NEB2_RENDER_NONE ) ) {
+	if( ( The_mission.flags[Mission::Mission_Flags::Fullneb] ) && ( Neb2_render_mode != NEB2_RENDER_NONE ) ) {
 		tmap_flags |= TMAP_FLAG_PIXEL_FOG;
 	}
 
@@ -1876,7 +1878,7 @@ void model_render_glowpoint(int point_num, vec3d *pos, matrix *orient, glow_poin
 	vm_vec_unrotate(&world_norm, &loc_norm, orient);
 
 	if ( shipp != NULL ) {
-		if ( (shipp->flags & (SF_ARRIVING) ) && (shipp->warpin_effect) && Ship_info[shipp->ship_info_index].warpin_type != WT_HYPERSPACE) {
+		if ( (shipp->is_arriving() ) && (shipp->warpin_effect) && Ship_info[shipp->ship_info_index].warpin_type != WT_HYPERSPACE) {
 			vec3d warp_pnt, tmp;
 			matrix warp_orient;
 
@@ -1889,7 +1891,7 @@ void model_render_glowpoint(int point_num, vec3d *pos, matrix *orient, glow_poin
 			}
 		}
 
-		if ( (shipp->flags & (SF_DEPART_WARP) ) && (shipp->warpout_effect) && Ship_info[shipp->ship_info_index].warpout_type != WT_HYPERSPACE) {
+		if ( (shipp->flags[Ship::Ship_Flags::Depart_warp] ) && (shipp->warpout_effect) && Ship_info[shipp->ship_info_index].warpout_type != WT_HYPERSPACE) {
 			vec3d warp_pnt, tmp;
 			matrix warp_orient;
 
@@ -1930,7 +1932,7 @@ void model_render_glowpoint(int point_num, vec3d *pos, matrix *orient, glow_poin
 
 
 				// fade them in the nebula as well
-				if ( The_mission.flags & MISSION_FLAG_FULLNEB ) {
+				if ( The_mission.flags[Mission::Mission_Flags::Fullneb] ) {
 					//vec3d npnt;
 					//vm_vec_add(&npnt, &loc_offset, pos);
 
@@ -2076,7 +2078,7 @@ void model_render_glowpoint(int point_num, vec3d *pos, matrix *orient, glow_poin
 			vm_vec_sub(&tempv,&View_position,&loc_offset);
 			vm_vec_normalize(&tempv);
 
-			if ( The_mission.flags & MISSION_FLAG_FULLNEB ) {
+			if ( The_mission.flags[Mission::Mission_Flags::Fullneb] ) {
 				batch_add_quad(bank->glow_neb_bitmap, TMAP_FLAG_TILED | TMAP_FLAG_TEXTURED | TMAP_FLAG_CORRECT | TMAP_HTL_3D_UNLIT | TMAP_FLAG_EMISSIVE, verts);
 			} else {
 				batch_add_quad(bank->glow_bitmap, TMAP_FLAG_TILED | TMAP_FLAG_TEXTURED | TMAP_FLAG_CORRECT | TMAP_HTL_3D_UNLIT | TMAP_FLAG_EMISSIVE, verts);
@@ -2324,7 +2326,7 @@ void model_queue_render_thrusters(model_render_params *interp, polymodel *pm, in
 
 			if (shipp) {
 				// if ship is warping out, check position of the engine glow to the warp plane
-				if ( (shipp->flags & (SF_ARRIVING) ) && (shipp->warpin_effect) && Ship_info[shipp->ship_info_index].warpin_type != WT_HYPERSPACE) {
+				if ( (shipp->is_arriving() ) && (shipp->warpin_effect) && Ship_info[shipp->ship_info_index].warpin_type != WT_HYPERSPACE) {
 					vec3d warp_pnt, tmp;
 					matrix warp_orient;
 
@@ -2337,7 +2339,7 @@ void model_queue_render_thrusters(model_render_params *interp, polymodel *pm, in
 					}
 				}
 
-				if ( (shipp->flags & (SF_DEPART_WARP) ) && (shipp->warpout_effect) && Ship_info[shipp->ship_info_index].warpout_type != WT_HYPERSPACE) {
+				if ( (shipp->flags[Ship::Ship_Flags::Depart_warp] ) && (shipp->warpout_effect) && Ship_info[shipp->ship_info_index].warpout_type != WT_HYPERSPACE) {
 					vec3d warp_pnt, tmp;
 					matrix warp_orient;
 
@@ -2393,7 +2395,7 @@ void model_queue_render_thrusters(model_render_params *interp, polymodel *pm, in
 			float fog_int = 1.0f;
 
 			// fade them in the nebula as well
-			if (The_mission.flags & MISSION_FLAG_FULLNEB) {
+			if (The_mission.flags[Mission::Mission_Flags::Fullneb]) {
 				vm_vec_unrotate(&npnt, &gpt->pnt, orient);
 				vm_vec_add2(&npnt, pos);
 
@@ -2463,7 +2465,7 @@ void model_queue_render_thrusters(model_render_params *interp, polymodel *pm, in
 
 					vm_vec_scale_add(&norm2, &pnt, &fvec, wVal * 2 * thruster_info.glow_length_factor);
 
-					if (The_mission.flags & MISSION_FLAG_FULLNEB) {
+					if (The_mission.flags[Mission::Mission_Flags::Fullneb]) {
 						vm_vec_add(&npnt, &pnt, pos);
 						d *= fog_int;
 					}
@@ -2784,7 +2786,7 @@ void model_render_queue(model_render_params *interp, draw_list *scene, int model
 	uint tmap_flags = TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB;
 
 	// if we're in nebula mode, fog everything except for the warp holes and other non-fogged models
-	if((The_mission.flags & MISSION_FLAG_FULLNEB) && (Neb2_render_mode != NEB2_RENDER_NONE) && !(model_flags & MR_NO_FOGGING)){
+	if((The_mission.flags[Mission::Mission_Flags::Fullneb]) && (Neb2_render_mode != NEB2_RENDER_NONE) && !(model_flags & MR_NO_FOGGING)){
 		tmap_flags |= TMAP_FLAG_PIXEL_FOG;
 	}
 	

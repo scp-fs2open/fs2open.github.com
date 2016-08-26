@@ -32,6 +32,8 @@ namespace
 	namespace fo = font;
 	using namespace font;
 
+	bool font_initialized = false;
+
 	bool parse_type(FontType &type, SCP_string &fileName)
 	{
 		int num = optional_string_either("$TrueType:", "$Font:");
@@ -189,6 +191,9 @@ namespace
 		}
 
 		nvgFont->setName(fontStr);
+
+		// Make sure that the height is not invalid
+		nvgFont->checkHeight();
 	}
 
 	void parse_vfnt_font(const SCP_string& fontFilename)
@@ -284,6 +289,8 @@ namespace
 
 			font->setBottomOffset(temp);
 		}
+		// Make sure that the height is not invalid
+		font->checkHeight();
 	}
 
 	void font_parse_setup(const char *fileName)
@@ -365,16 +372,29 @@ namespace font
 {
 	void init()
 	{
+		if (font_initialized) {
+			// Already initialized
+			return;
+		}
+
 		FontManager::init();
 
 		parse_fonts_tbl();
 
 		set_font(0);
+
+		font_initialized = true;
 	}
 
 	void close()
 	{
+		if (!font_initialized) {
+			return;
+		}
+
 		FontManager::close();
+
+		font_initialized = false;
 	}
 
 	int force_fit_string(char *str, int max_str, int max_width)
@@ -508,16 +528,16 @@ namespace font
 
 				letter2 = c2 - fnt->first_ascii;
 
-				if ((letter2 >= 0) && (letter2 < fnt->num_chars))
+				if ((letter2 >= 0) && (letter2 < fnt->num_chars) && (i < fnt->num_kern_pairs))
 				{
 					font_kernpair *k = &fnt->kern_data[i];
-					while ((k->c1 == (char)letter) && (k->c2 < (char)letter2) && (i < fnt->num_kern_pairs))
+					while ((i < fnt->num_kern_pairs) && (k->c1 == (char)letter) && (k->c2 < (char)letter2))
 					{
 						i++;
 						k++;
 					}
 
-					if (k->c2 == (char)letter2)
+					if ((i < fnt->num_kern_pairs) && (k->c2 == (char)letter2))
 					{
 						*spacing += k->offset;
 					}
@@ -587,7 +607,7 @@ void gr_string_win(int x, int y, char *s)
 
 char grx_printf_text[2048];
 
-void _cdecl gr_printf(int x, int y, const char * format, ...)
+void gr_printf(int x, int y, const char * format, ...)
 {
 	va_list args;
 
@@ -601,7 +621,7 @@ void _cdecl gr_printf(int x, int y, const char * format, ...)
 	gr_string(x, y, grx_printf_text);
 }
 
-void _cdecl gr_printf_menu(int x, int y, const char * format, ...)
+void gr_printf_menu(int x, int y, const char * format, ...)
 {
 	va_list args;
 
@@ -615,7 +635,7 @@ void _cdecl gr_printf_menu(int x, int y, const char * format, ...)
 	gr_string(x, y, grx_printf_text, GR_RESIZE_MENU);
 }
 
-void _cdecl gr_printf_menu_zoomed(int x, int y, const char * format, ...)
+void gr_printf_menu_zoomed(int x, int y, const char * format, ...)
 {
 	va_list args;
 
@@ -629,7 +649,7 @@ void _cdecl gr_printf_menu_zoomed(int x, int y, const char * format, ...)
 	gr_string(x, y, grx_printf_text, GR_RESIZE_MENU_ZOOMED);
 }
 
-void _cdecl gr_printf_no_resize(int x, int y, const char * format, ...)
+void gr_printf_no_resize(int x, int y, const char * format, ...)
 {
 	va_list args;
 

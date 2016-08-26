@@ -584,10 +584,10 @@ void ai_goal_fixup_dockpoints(ai_info *aip, ai_goal *aigp)
 
 	// look for docking points of the appriopriate type.  Use cargo docks for cargo ships.
 	/*
-	if (Ship_info[Ships[shipnum].ship_info_index].flags & SIF_CARGO) {
+	if (Ship_info[Ships[shipnum].ship_info_index].flags[Ship::Info_Flags::Cargo]) {
 		docker_index = ai_goal_find_dockpoint(aip->shipnum, DOCK_TYPE_CARGO);
 		dockee_index = ai_goal_find_dockpoint(shipnum, DOCK_TYPE_CARGO);
-	} else if (Ship_info[Ships[aip->shipnum].ship_info_index].flags & SIF_SUPPORT) {
+	} else if (Ship_info[Ships[aip->shipnum].ship_info_index].flags[Ship::Info_Flags::Support]) {
 		docker_index = ai_goal_find_dockpoint(aip->shipnum, DOCK_TYPE_REARM);
 		dockee_index = ai_goal_find_dockpoint(shipnum, DOCK_TYPE_REARM);
 	}
@@ -1387,7 +1387,7 @@ int ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 		ship *shipp = &Ships[objp->instance];
 
 		// always valid if has subspace drive
-		if (!(shipp->flags2 & SF2_NO_SUBSPACE_DRIVE))
+		if (!(shipp->flags[Ship::Ship_Flags::No_subspace_drive]))
 			return AI_GOAL_ACHIEVABLE;
 
 		// if no subspace drive, only valid if our mothership is present
@@ -1573,7 +1573,7 @@ int ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 
 		wing *wingp = &Wings[sindex];
 
-		if ( wingp->flags & WF_WING_GONE )
+		if ( wingp->flags[Ship::Wing_Flags::Gone] )
 			return AI_GOAL_NOT_ACHIEVABLE;
 		else if ( wingp->total_arrived_count == 0 )
 			return AI_GOAL_NOT_KNOWN;
@@ -1661,7 +1661,7 @@ int ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 		}
 
 		// if ship is disabled, don't know if it can dock or not
-		if ( Ships[objp->instance].flags & SF_DISABLED )
+		if ( Ships[objp->instance].flags[Ship::Ship_Flags::Disabled] )
 			return AI_GOAL_NOT_KNOWN;
 
 		// we must also determine if we're prevented from docking for any reason
@@ -1802,20 +1802,20 @@ int ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 			}
 
 			// if desitnation currently being repaired, then goal is stil active
-			if ( Ai_info[Ships[sindex].ai_index].ai_flags & AIF_BEING_REPAIRED )
+			if ( Ai_info[Ships[sindex].ai_index].ai_flags[AI::AI_Flags::Being_repaired] )
 				return AI_GOAL_ACHIEVABLE;
 
 			// if the destination ship is dying or departing (but not completed yet), the mark goal as
 			// not achievable.
-			if ( Ships[sindex].flags & (SF_DYING | SF_DEPARTING) )
+			if ( Ships[sindex].is_dying_or_departing())
 				return AI_GOAL_NOT_ACHIEVABLE;
 
 			// if the destination object is no longer awaiting repair, then remove the item
-			if ( !(Ai_info[Ships[sindex].ai_index].ai_flags & AIF_AWAITING_REPAIR) )
+			if ( !(Ai_info[Ships[sindex].ai_index].ai_flags[AI::AI_Flags::Awaiting_repair]) )
 				return AI_GOAL_NOT_ACHIEVABLE;
 
 			// not repairing anything means that he can do this goal!!!
-			if ( !(aip->ai_flags  & AIF_REPAIRING) )
+			if ( !(aip->ai_flags[AI::AI_Flags::Repairing]) )
 				return AI_GOAL_ACHIEVABLE;
 
 			// test code!!!
@@ -2038,11 +2038,11 @@ void ai_process_mission_orders( int objnum, ai_info *aip )
 	// if this object was flying in formation off of another object, remove the flag that tells him
 	// to do this.  The form-on-my-wing command is removed from the goal list as soon as it is called, so
 	// we are safe removing this bit here.
-	aip->ai_flags &= ~AIF_FORMATION_OBJECT;
+	aip->ai_flags.remove(AI::AI_Flags::Formation_object);
 
 	// Goober5000 - we may want to use AI for the player
 	// AL 3-7-98: If this is a player ship, and the goal is not a formation goal, then do a quick out
-	if ( !(Player_use_ai) && (objp->flags & OF_PLAYER_SHIP) && (current_goal->ai_mode != AI_GOAL_FORM_ON_WING) )
+	if ( !(Player_use_ai) && (objp->flags[Object::Object_Flags::Player_ship]) && (current_goal->ai_mode != AI_GOAL_FORM_ON_WING) )
 	{
 		return;
 	}	
@@ -2198,12 +2198,12 @@ void ai_process_mission_orders( int objnum, ai_info *aip )
 		if (current_goal->ai_mode != AI_GOAL_DESTROY_SUBSYSTEM) {
 			if (aip->target_objnum != -1) {
 				//	Only protect if _not_ a capital ship.  We don't want the Lucifer accidentally getting protected.
-				if (Ship_types[Ship_info[Ships[shipnum].ship_info_index].class_type].ai_bools & STI_AI_PROTECTED_ON_CRIPPLE)
-					Objects[aip->target_objnum].flags |= OF_PROTECTED;
+				if (Ship_types[Ship_info[Ships[shipnum].ship_info_index].class_type].flags[Ship::Type_Info_Flags::AI_protected_on_cripple])
+					Objects[aip->target_objnum].flags.set(Object::Object_Flags::Protected);
 			}
 		} else	//	Just in case this ship had been protected, unprotect it.
 			if (aip->target_objnum != -1)
-				Objects[aip->target_objnum].flags &= ~OF_PROTECTED;
+				Objects[aip->target_objnum].flags.remove(Object::Object_Flags::Protected);
 
 		break;
 	}

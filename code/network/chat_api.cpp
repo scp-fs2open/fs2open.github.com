@@ -215,7 +215,7 @@ int ConnectToChatServer(char *serveraddr, char *nickname, char *trackerid)
 			FD_ZERO(&write_fds);
 			FD_SET(Chatsock, &write_fds);    
 			//Writable -- that means it's connected
-			if (select(Chatsock+1, NULL, &write_fds, NULL, &timeout) > 0)
+			if (select(static_cast<int>(Chatsock+1), NULL, &write_fds, NULL, &timeout) > 0)
 			{
 				// make sure that we don't have any connect() errors (since it's non-blocking)
 				int err_val = 0;
@@ -244,7 +244,7 @@ int ConnectToChatServer(char *serveraddr, char *nickname, char *trackerid)
 			FD_ZERO(&error_fds);
 			FD_SET(Chatsock,&error_fds);    
 			//error -- that means it's not going to connect
-			if ( select(Chatsock+1, NULL, NULL, &error_fds, &timeout) )
+			if ( select(static_cast<int>(Chatsock + 1), NULL, NULL, &error_fds, &timeout) )
 			{
 				return -1;
 			}
@@ -320,7 +320,7 @@ const char * SendChatString(const char *line,int raw)
 		{
 			strncpy(szTarget, GetWordNum(1, line+1), sizeof(szTarget)-1);
 			snprintf(szCmd, SSIZE(szCmd), NOX("PRIVMSG %s :%s\n\r"), szTarget, line+strlen(NOX("/msg "))+strlen(szTarget)+1);
-			send(Chatsock,szCmd,strlen(szCmd),0);
+			send(Chatsock,szCmd,(int)strlen(szCmd),0);
 			szCmd[strlen(szCmd)-2] = '\0';
 			return ParseIRCMessage(szCmd,MSG_LOCAL);
 
@@ -328,7 +328,7 @@ const char * SendChatString(const char *line,int raw)
 		if(stricmp(szCmd,NOX("me"))==0)
 		{
 			snprintf(szCmd, SSIZE(szCmd), NOX("PRIVMSG %s :\001ACTION %s\001\n\r"), szChat_channel,line+strlen(NOX("/me ")));
-			send(Chatsock,szCmd,strlen(szCmd),0);
+			send(Chatsock,szCmd,(int)strlen(szCmd),0);
 			szCmd[strlen(szCmd)-2] = '\0';
 			return ParseIRCMessage(szCmd,MSG_LOCAL);
 
@@ -337,19 +337,19 @@ const char * SendChatString(const char *line,int raw)
 		{
 			//Special command to send raw irc commands
 			snprintf(szCmd, SSIZE(szCmd), "%s\n\r", line+strlen(NOX("/xyz ")));
-			send(Chatsock,szCmd,strlen(szCmd),0);
+			send(Chatsock,szCmd,(int)strlen(szCmd),0);
 			return NULL;
 		}
 		if(stricmp(szCmd,NOX("list"))==0)
 		{
 			snprintf(szCmd, SSIZE(szCmd), "%s\n\r", line+1);
-			send(Chatsock,szCmd,strlen(szCmd),0);
+			send(Chatsock,szCmd,(int)strlen(szCmd),0);
 			return NULL;
 		}
 		if(raw)
 		{
 			snprintf(szCmd, SSIZE(szCmd), "%s\n\r", line+1);
-			send(Chatsock,szCmd,strlen(szCmd),0);
+			send(Chatsock,szCmd,(int)strlen(szCmd),0);
 			return NULL;
 		}
 		return XSTR("Unrecognized command",634);
@@ -360,7 +360,7 @@ const char * SendChatString(const char *line,int raw)
 		if(szChat_channel[0])
 		{
 			snprintf(szCmd, SSIZE(szCmd), NOX("PRIVMSG %s :%s\n\r"), szChat_channel, line);
-			send(Chatsock,szCmd,strlen(szCmd),0);			
+			send(Chatsock,szCmd,(int)strlen(szCmd),0);
 			if(strlen(szCmd) >= 2){
 				szCmd[strlen(szCmd)-2] = '\0';
 				return ParseIRCMessage(szCmd,MSG_LOCAL);

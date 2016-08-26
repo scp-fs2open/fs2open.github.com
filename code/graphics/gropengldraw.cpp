@@ -197,34 +197,34 @@ void opengl_bind_vertex_component(vertex_format_data &vert_component)
 		case opengl_vertex_bind::POSITION:
 		{
 			GL_state.Array.EnableClientVertex();
-			GL_state.Array.VertexPointer(bind_info.size, bind_info.data_type, vert_component.stride, vert_component.data_src);
+			GL_state.Array.VertexPointer(bind_info.size, bind_info.data_type, (GLsizei)vert_component.stride, vert_component.data_src);
 			break;
 		}
 		case opengl_vertex_bind::TEXCOORD0:
 		{
 			GL_state.Array.SetActiveClientUnit(0);
 			GL_state.Array.EnableClientTexture();
-			GL_state.Array.TexPointer(bind_info.size, bind_info.data_type, vert_component.stride, vert_component.data_src);
+			GL_state.Array.TexPointer(bind_info.size, bind_info.data_type, (GLsizei)vert_component.stride, vert_component.data_src);
 			break;
 		}
 		case opengl_vertex_bind::TEXCOORD1:
 		{
 			GL_state.Array.SetActiveClientUnit(1);
 			GL_state.Array.EnableClientTexture();
-			GL_state.Array.TexPointer(bind_info.size, bind_info.data_type, vert_component.stride, vert_component.data_src);
+			GL_state.Array.TexPointer(bind_info.size, bind_info.data_type, (GLsizei)vert_component.stride, vert_component.data_src);
 			break;
 		}
 		case opengl_vertex_bind::COLOR:
 		{
 			GL_state.Array.EnableClientColor();
-			GL_state.Array.ColorPointer(bind_info.size, bind_info.data_type, vert_component.stride, vert_component.data_src);
+			GL_state.Array.ColorPointer(bind_info.size, bind_info.data_type, (GLsizei)vert_component.stride, vert_component.data_src);
 			GL_state.InvalidateColor();
 			break;
 		}
 		case opengl_vertex_bind::NORMAL:
 		{
 			GL_state.Array.EnableClientNormal();
-			GL_state.Array.NormalPointer(bind_info.data_type, vert_component.stride, vert_component.data_src);
+			GL_state.Array.NormalPointer(bind_info.data_type, (GLsizei)vert_component.stride, vert_component.data_src);
 			break;
 		}
 		case opengl_vertex_bind::ATTRIB:
@@ -234,7 +234,7 @@ void opengl_bind_vertex_component(vertex_format_data &vert_component)
 
 			if ( index >= 0 ) {
 				GL_state.Array.EnableVertexAttrib(index);
-				GL_state.Array.VertexAttribPointer(index, bind_info.size, bind_info.data_type, bind_info.normalized, vert_component.stride, vert_component.data_src);
+				GL_state.Array.VertexAttribPointer(index, bind_info.size, bind_info.data_type, bind_info.normalized, (GLsizei)vert_component.stride, vert_component.data_src);
 			}
 
 			break;
@@ -2594,7 +2594,7 @@ void opengl_setup_scene_textures()
 	}
 
 	//Setup thruster distortion framebuffer
-    if (Cmdline_fb_thrusters) 
+    if (Cmdline_fb_thrusters || Cmdline_fb_explosions) 
     {
         glGenFramebuffersEXT(1, &Distortion_framebuffer);
         glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, Distortion_framebuffer);

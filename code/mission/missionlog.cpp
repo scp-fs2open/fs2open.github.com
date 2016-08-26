@@ -123,7 +123,7 @@ void mission_log_cull_obsolete_entries()
 
 // function to mark entries as obsolete.  Passed is the type of entry that is getting added
 // to the log.  Some entries might get marked obsolete as a result of this type
-void mission_log_obsolete_entries(int type, char *pname)
+void mission_log_obsolete_entries(int type, const char *pname)
 {
 	int i;
 	log_entry *entry = NULL;
@@ -181,7 +181,7 @@ void mission_log_obsolete_entries(int type, char *pname)
 // following function adds an entry into the mission log.
 // pass a type and a string which indicates the object
 // that this event is for.  Don't add entries with this function for multiplayer
-void mission_log_add_entry(int type, char *pname, char *sname, int info_index)
+void mission_log_add_entry(int type, const char *pname, const char *sname, int info_index)
 {
 	int last_entry_save;
 	log_entry *entry;	
@@ -294,7 +294,7 @@ void mission_log_add_entry(int type, char *pname, char *sname, int info_index)
  			} else {
 				nprintf(("missionlog", "No secondary name for ship destroyed log entry!\n"));
 			}
-		} else if ( (type == LOG_SHIP_SUBSYS_DESTROYED) && (Ship_info[Ships[index].ship_info_index].flags & SIF_SMALL_SHIP) ) {
+		} else if ( (type == LOG_SHIP_SUBSYS_DESTROYED) && (Ship_info[Ships[index].ship_info_index].is_small_ship()) ) {
 			// make subsystem destroyed entries for small ships hidden
 			entry->flags |= MLF_HIDDEN;
 		} else if ( (type == LOG_SHIP_ARRIVED) && (Ships[index].wingnum != -1 ) ) {
@@ -390,7 +390,7 @@ void mission_log_add_entry(int type, char *pname, char *sname, int info_index)
 // function, used in multiplayer only, which adds an entry sent by the host of the game, into
 // the mission log.  The index of the log entry is passed as one of the parameters in addition to
 // the normal parameters used for adding an entry to the log
-void mission_log_add_entry_multi( int type, char *pname, char *sname, int index, fix timestamp, int flags )
+void mission_log_add_entry_multi( int type, const char *pname, const char *sname, int index, fix timestamp, int flags )
 {
 	log_entry *entry;
 
@@ -427,7 +427,7 @@ void mission_log_add_entry_multi( int type, char *pname, char *sname, int index,
 
 // function to determine is the given event has taken place count number of times.
 
-int mission_log_get_time_indexed( int type, char *pname, char *sname, int count, fix *time)
+int mission_log_get_time_indexed( int type, const char *pname, const char *sname, int count, fix *time)
 {
 	int i, found;
 	log_entry *entry;
@@ -495,14 +495,14 @@ int mission_log_get_time_indexed( int type, char *pname, char *sname, int count,
 // this function determines if the given type of event on the specified
 // object has taken place yet.  If not, it returns 0.  If it has, the
 // timestamp that the event happened is returned in the time parameter
-int mission_log_get_time( int type, char *pname, char *sname, fix *time )
+int mission_log_get_time( int type, const char *pname, const char *sname, fix *time )
 {
 	return mission_log_get_time_indexed( type, pname, sname, 1, time );
 }
 
 // determines the number of times the given type of event takes place
 
-int mission_log_get_count( int type, char *pname, char *sname )
+int mission_log_get_count( int type, const char *pname, const char *sname )
 {
 	int i;
 	log_entry *entry;

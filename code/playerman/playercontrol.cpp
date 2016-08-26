@@ -10,8 +10,8 @@
 
 #include "autopilot/autopilot.h"
 #include "camera/camera.h"
+#include "controlconfig/controlsconfig.h"
 #include "debugconsole/console.h"
-#include "external_dll/trackirpublic.h"
 #include "freespace.h"
 #include "gamesequence/gamesequence.h"
 #include "gamesnd/gamesnd.h"
@@ -24,6 +24,7 @@
 #include "io/joy_ff.h"
 #include "io/mouse.h"
 #include "io/timer.h"
+#include "headtracking/headtracking.h"
 #include "mission/missiongoals.h"
 #include "mission/missionmessage.h"
 #include "network/multi_obj.h"
@@ -58,7 +59,6 @@ int		lua_game_control = 0;
 physics_info Descent_physics;			// used when we want to control the player like the descent ship
 
 angles chase_slew_angles;
-int view_centering = 0;
 
 int toggle_glide = 0;
 int press_glide = 0;
@@ -79,10 +79,13 @@ static int Player_all_alone_msg_inited=0;	// flag used for initializing a player
  * @param[in]  frame_time The frame time when this was called
  */
 void playercontrol_read_stick(int *axis, float frame_time);
-void player_set_padlock_state();
 
 /**
  * @brief Slew angles chase towards a value like they're on a spring.
+ *
+ * @param[in,out] ap The current view angles. Is modified towards target angles.
+ * @param[in]     bp The target view angles
+ *
  * @details When furthest away, move fastest. Minimum speed set so that doesn't take too long. When gets close, clamps to the value.
  */
 void chase_angles_to_value(angles *ap, angles *bp, int scale)
@@ -101,88 +104,156 @@ void chase_angles_to_value(angles *ap, angles *bp, int scale)
 	delta.p = ap->p - bp->p;
 	delta.h = ap->h - bp->h;
 
-	ap->p = ap->p - delta.p * (1.0f - sk);
-	ap->h = ap->h - delta.h * (1.0f - sk);
-
 	//	If we're very close, put ourselves at goal.
 	if ((fl_abs(delta.p) < 0.005f) && (fl_abs(delta.h) < 0.005f)) {
 		ap->p = bp->p;
 		ap->h = bp->h;
+	} else {
+		// Else, apply the changes
+		ap->p -= (delta.p * (1.0f - sk));
+		ap->h -= (delta.h * (1.0f - sk));
 	}
+}
+
+/**
+ * @brief Resets the given angles to 0.0f without delay
+ *
+ * @param[in,out] Angles to reset
+ */
+void reset_angles(angles *ap) {
+	ap->p = 0.0f;
+	ap->h = 0.0f;
+	ap->b = 0.0f;
 }
 
 angles	Viewer_slew_angles_delta;
 angles	Viewer_external_angles_delta;
 
+/**
+ * @brief Modifies the camera veiw angles according to its current view mode: External, External Locked,
+ *   TrackIR, Freelook (Unlocked), Normal (Locked), and Centering
+ *
+ * @param[in,out]   ma      The camera veiw angles to modify (magnitude is saturated to be within max_p and max_h).
+ * @param[out]  da      The delta angles applied to ma (magnitude is saturated to 1 radian).
+ * @param[in]   max_p   The maximum pitch magnitude ma may have (radians).
+ * @param[in]   max_h   The maximum heading magnitude ma may have (radians).
+ * @param[in]   frame_time  The frame time at which this function is called.
+ */
 void view_modify(angles *ma, angles *da, float max_p, float max_h, float frame_time)
 {
-	int axis[NUM_JOY_AXIS_ACTIONS];
+	// Digital inputs
 	float	t = 0;
 	float   u = 0;
-	vec3d trans = ZERO_VECTOR;
 
-	if ( Viewer_mode & VM_EXTERNAL) {
-		if (! (Viewer_mode & VM_EXTERNAL_CAMERA_LOCKED) ) {
-			t = t + (check_control_timef(YAW_LEFT) - check_control_timef(YAW_RIGHT));
-			u = u + (check_control_timef(PITCH_BACK) - check_control_timef(PITCH_FORWARD));
-		} else {
+	// Analog inputs
+	int axis[NUM_JOY_AXIS_ACTIONS];
+	float h = 0.0f;
+	float p = 0.0f;
+
+	if (Viewer_mode & VM_CENTERING) {
+		// Center view then bail
+		ma->p = 0.0f;
+		ma->h = 0.0f;
+		ma->b = 0.0f;
+		return;
+
+	} else if (Viewer_mode & VM_CAMERA_LOCKED) {
+		if (Viewer_mode & VM_EXTERNAL) {
+			// External camera is locked in place, nothing to do here
 			return;
 		}
-	} else if ( gTirDll_TrackIR.Enabled( ) ) {
-		gTirDll_TrackIR.Query();
-		ma->h = -PI2*(gTirDll_TrackIR.GetYaw());
-		ma->p = PI2*(gTirDll_TrackIR.GetPitch());
 
-		trans.xyz.x = -0.4f*gTirDll_TrackIR.GetX();
-		trans.xyz.y = 0.4f*gTirDll_TrackIR.GetY();
-		trans.xyz.z = -gTirDll_TrackIR.GetZ();
+		if (Viewer_mode & VM_PADLOCK_ANY) {
+			// Do Padlock view then bail
+			if (Viewer_mode & VM_PADLOCK_UP) {
+				ma->h = 0.0f;
+				ma->p = -max_p;
 
-		if(trans.xyz.z < 0)
-			trans.xyz.z = 0.0f;
+			} else if (Viewer_mode & VM_PADLOCK_REAR) {
+				ma->h = -PI;
+				ma->p = 0.0f;
 
-		vm_vec_unrotate(&leaning_position,&trans,&Eye_matrix);
+			} else if (Viewer_mode & VM_PADLOCK_RIGHT) {
+				ma->h = max_h;
+				ma->p = 0.0f;
+
+			} else if (Viewer_mode & VM_PADLOCK_LEFT) {
+				ma->h = -max_h;
+				ma->p = 0.0f;
+			} // Else, don't do any ajustments. player_set_padlock_state will reset the states
+
+			return;
+
+		} else if (headtracking::isEnabled()) {
+			// Do TrackIR
+			vec3d trans = ZERO_VECTOR;
+
+			headtracking::query();
+
+			headtracking::HeadTrackingStatus* status = headtracking::getStatus();
+
+			ma->h = -PI2*(status->yaw);
+			ma->p = PI2*(status->pitch);
+
+			trans.xyz.x = -0.4f*status->x;
+			trans.xyz.y = 0.4f*status->y;
+			trans.xyz.z = -status->z;
+
+			if (trans.xyz.z < 0) {
+				trans.xyz.z = 0.0f;
+			}
+
+			vm_vec_unrotate(&leaning_position,&trans,&Eye_matrix);
+
+		} else {
+			// Do slew
+			/* These have been commented out until the controls are added into Controls_config[]
+			t = (check_control_timef(SLEW_LEFT) - check_control_timef(SLEW_RIGHT));
+			u = (check_control_timef(SLEW_UP) - check_control_timef(SLEW_DOWN);
+			*/
+		}	// Else, don't do any slewing
+
 	} else {
-		// View slewing commands commented out until we can safely add more commands in the pilot code.
+		// Camera is unlocked - Pitch and Yaw axes control X and Y slew axes
+		t = (check_control_timef(YAW_LEFT) - check_control_timef(YAW_RIGHT));
+		u = (check_control_timef(PITCH_BACK) - check_control_timef(PITCH_FORWARD));
+
+		playercontrol_read_stick(axis, frame_time);
+
+		h = -f2fl(axis[JOY_HEADING_AXIS]);
+		p = -f2fl(axis[JOY_PITCH_AXIS]);
 	}
 
-	if (t != 0.0f)
-		da->h += t;
-	else
-		da->h = 0.0f;
-
-	if (u != 0.0f)
-		da->p += u;
-	else
-		da->p = 0.0f;
-			
+	// Combine Analog and Digital slew commands
+	da->h = 0.0f;
+	da->p = 0.0f;
 	da->b = 0.0f;
 
-	playercontrol_read_stick(axis, frame_time);
+	if (t != 0.0f) {
+		da->h += t;
+	}
+	if (h != 0.0f) {
+		da->h += h;
+	}
 
-	if (( Viewer_mode & VM_EXTERNAL ) && !(Viewer_mode & VM_EXTERNAL_CAMERA_LOCKED)) {
-		// check the heading on the x and y axes
-		da->h -= f2fl( axis[0] );
-		da->p -= f2fl( axis[1] );
+	if (u != 0.0f) {
+		da->p += u;
 	} 
+	if (p != 0.0f) {
+		da->p += p;
+	}
 
-	if (da->h > 1.0f)
-		da->h = 1.0f;
-	else if (da->h < -1.0f)
-		da->h = -1.0f;
+	// Clamp deltas to be within 1 radian
+	CLAMP(da->h, -1.0f, 1.0f);
+	CLAMP(da->p, -1.0f, 1.0f);
 
-	if (da->p > 1.0f)
-		da->p = 1.0f;
-	else if (da->p < -1.0f)
-		da->p = -1.0f;
-
-	if ( (Game_time_compression >= F1_0) && !(Viewer_mode & VM_EXTERNAL) )
-	{
+	// Apply view modifications to camera
+	if ((Game_time_compression >= F1_0) && !(Viewer_mode & VM_EXTERNAL)) {
 		ma->p += 2*da->p * flFrametime;
 		ma->b += 2*da->b * flFrametime;
 		ma->h += 2*da->h * flFrametime;
-	}
-	else
-	{
+
+	} else {
 		//If time compression is less than normal, still move camera at same speed
 		//This gives a cool matrix effect
 		ma->p += da->p * flRealframetime;
@@ -190,15 +261,9 @@ void view_modify(angles *ma, angles *da, float max_p, float max_h, float frame_t
 		ma->h += da->h * flRealframetime;
 	}
 
-	if (ma->p > max_p)
-		ma->p = max_p;
-	else if (ma->p < -max_p)
-		ma->p = -max_p;
-
-	if (ma->h > max_h)
-		ma->h = max_h;
-	else if (ma->h < -max_h)
-		ma->h = -max_h;
+	// Clamp resulting angles to their maximums
+	CLAMP(ma->p, -max_p, max_p);
+	CLAMP(ma->h, -max_h, max_h);
 }
 
 void do_view_track_target(float frame_time)
@@ -265,28 +330,108 @@ void do_view_track_target(float frame_time)
 		chase_slew_angles.h = -PI2/3;
 }
 
-
 /**
- * When PAD0 is pressed, keypad controls viewer direction slewing.
+ * @brief When VIEW_SLEW is pressed, pitch and heading axes controls viewer direction slewing.
+ *
+ * @param[in] frame_time The frame time at which this function is called
+ *
+ * @details Prevents the player's "head" from swiveling unrealistacally far with a max_p of Pi/2 and a max_h of2/3 Pi.
+ *
+ * @note Some mods may prefer to set their own limits, so, maybe make this as a table option in the future
  */
 void do_view_slew(float frame_time)
 {
 	view_modify(&chase_slew_angles, &Viewer_slew_angles_delta, PI_2, PI2/3, frame_time);
+
+	// Check Track target
+	if (Viewer_mode & VM_TRACK) {
+		// Player's vision will track current target.
+		do_view_track_target(frame_time);
+		Viewer_mode |= VM_CAMERA_LOCKED;
+		return;
+	}
+
+	// Check Padlock controls
+	if (check_control(PADLOCK_UP)) {
+		Viewer_mode |= (VM_PADLOCK_UP | VM_CAMERA_LOCKED);
+		Viewer_mode &= ~(VM_CENTERING);
+		return;
+
+	} else if (check_control(PADLOCK_DOWN)) {
+		Viewer_mode |= (VM_PADLOCK_REAR | VM_CAMERA_LOCKED);
+		Viewer_mode &= ~(VM_CENTERING);
+		return;
+
+	} else if (check_control(PADLOCK_RIGHT)) {
+		Viewer_mode |= (VM_PADLOCK_RIGHT | VM_CAMERA_LOCKED);
+		Viewer_mode &= ~(VM_CENTERING);
+		return;
+
+	} else if (check_control(PADLOCK_LEFT)) {
+		Viewer_mode |= (VM_PADLOCK_LEFT | VM_CAMERA_LOCKED);
+		Viewer_mode &= ~(VM_CENTERING);
+		return;
+
+	} else if (Viewer_mode & VM_PADLOCK_ANY) {
+		// clear padlock views and center the view once 
+		// the player lets go of a padlock control
+		Viewer_mode &= ~(VM_PADLOCK_ANY);
+		Viewer_mode |= (VM_CENTERING | VM_CAMERA_LOCKED);
+	}
+
+	if (Viewer_mode & VM_CENTERING) {
+		// If we're centering the view, check to see if we're actually centered and bypass any view modifications
+		// until the view has finally been centered.
+		if ((Viewer_slew_angles.h == 0.0f) && (Viewer_slew_angles.p == 0.0f)) {
+			// View has been centered, allow the player to freelook again.
+			Viewer_mode &= ~VM_CENTERING;
+		}
+		Viewer_mode |= VM_CAMERA_LOCKED;
+	}
+
+	if (!(Viewer_mode & VM_PADLOCK_ANY)) {
+		if (headtracking::isEnabled()) {
+			// Can't do slewing if TrackIR is enabled
+			Viewer_mode |= VM_CAMERA_LOCKED;
+			return;
+		}
+		
+		if (check_control_timef(VIEW_SLEW)) {
+			// Enable freelook mode
+			Viewer_mode &= ~VM_CAMERA_LOCKED;
+
+		} else if (check_control_timef(VIEW_CENTER) || !(Viewer_mode & VM_CAMERA_LOCKED)) {
+			// Start centering the view if:
+			//  VIEW_CENTER was pressed, or
+			//  The player let go of VIEW_SLEW
+			Viewer_mode |= (VM_CENTERING | VM_CAMERA_LOCKED);
+		}
+	}
 }
 
 void do_view_chase(float frame_time)
 {
 	float t;
 
-	//	Process centering key.
+	if (Viewer_mode & VM_TRACK) {
+		// Snap back to zero and disable target tracking
+		reset_angles(&Viewer_slew_angles);
+		reset_angles(&chase_slew_angles);
+		Viewer_mode &= ~VM_TRACK;
+	}
+
+	// Process centering key.
 	if (check_control_timef(VIEW_CENTER)) {
 		Viewer_chase_info.distance = 0.0f;
 	}
 	
+	// Process distance +/- keys
 	t = check_control_timef(VIEW_DIST_INCREASE) - check_control_timef(VIEW_DIST_DECREASE);
 	Viewer_chase_info.distance += t*4;
 	if (Viewer_chase_info.distance < 0.0f)
 		Viewer_chase_info.distance = 0.0f;
+
+	Viewer_mode |= VM_CAMERA_LOCKED;
 }
 
 float camera_zoom_scale = 1.0f;
@@ -306,6 +451,13 @@ DCF(camera_speed, "Sets the camera zoom scale")
 void do_view_external(float frame_time)
 {
 	float	t;
+
+	if (Viewer_mode & VM_TRACK) {
+		// Snap back to zero and disable target tracking
+		reset_angles(&Viewer_slew_angles);
+		reset_angles(&chase_slew_angles);
+		Viewer_mode &= ~VM_TRACK;
+	}
 
 	view_modify(&Viewer_external_info.angles, &Viewer_external_angles_delta, PI2, PI2, frame_time);
 
@@ -361,6 +513,14 @@ void player_control_reset_ci( control_info *ci )
 	ci->forward_cruise_percent = oldspeed;
 }
 
+/**
+ * @brief Reads the joystick Pitch, Bank, and Heading axes.
+ *
+ * @param[out] axis       The axis array to store the scaled joystick position. (Must have a size of NUM_JOY_AXIS_ACTIONS)
+ * @param[in]  frame_time The frame time at which this function is called.
+ *
+ * @details This is its own function because we only want to read it at a certain rate, since it takes time.
+ */
 void playercontrol_read_stick(int *axis, float frame_time)
 {
 	int i;
@@ -420,55 +580,35 @@ void playercontrol_read_stick(int *axis, float frame_time)
 void read_keyboard_controls( control_info * ci, float frame_time, physics_info *pi )
 {
 	float kh=0.0f, scaled, newspeed, delta, oldspeed;
-	int axis[NUM_JOY_AXIS_ACTIONS], slew_active=1;
+	int axis[NUM_JOY_AXIS_ACTIONS];
 	static int afterburner_last = 0;
 	static float analog_throttle_last = 9e9f;
 	static int override_analog_throttle = 0; 
 	static float savedspeed = ci->forward_cruise_percent;	//Backslash
-	int ok_to_read_ci_pitch_yaw=1;
 	int centering_speed = 7; // the scale speed in which the camera will smoothly center when the player presses Center View
 
 	oldspeed = ci->forward_cruise_percent;
 	player_control_reset_ci( ci );
 
+	// Camera & View controls
 	if ( Viewer_mode & VM_EXTERNAL ) {
 		control_used(VIEW_EXTERNAL);
-		if ( !(Viewer_mode & VM_EXTERNAL_CAMERA_LOCKED) ) {
-			ok_to_read_ci_pitch_yaw=0;
-		}
 
 		do_view_external(frame_time);
 		do_thrust_keys(ci);
-		slew_active=0;
+
 	} else if ( Viewer_mode & VM_CHASE ) {
 		do_view_chase(frame_time);
-		slew_active=0;
-	} else { // We're in the cockpit. 
-		if (view_centering) { 
-			// If we're centering the view, check to see if we're actually centered and bypass any view modifications
-			// until the view has finally been centered.
-			if ((Viewer_slew_angles.h == 0.0f) && (Viewer_slew_angles.p == 0.0f)) {
-				view_centering = 0; // if the view has been centered, allow the player to freelook again.
-			}
-			slew_active = 0;
-		} else if ( Viewer_mode & VM_TRACK ) { // Player's vision will track current target.
-			do_view_track_target(frame_time);
-		} else {
-			// The Center View command check is here because 
-			// we don't want the player centering the view in target padlock mode
-			if (check_control_timef(VIEW_CENTER) && !view_centering) { 
-				view_centering = 1; 
-				slew_active = 0;
-			}
-			do_view_slew(frame_time);
 
-			// Orthogonal padlock views moved here in order to get the springy chase effect when transitioning.
-			player_set_padlock_state();
-
-		}
+	} else {
+		// We're in the cockpit. 
+		do_view_slew(frame_time);
 	}
-	
-	if ( ok_to_read_ci_pitch_yaw ) {
+
+	chase_angles_to_value(&Viewer_slew_angles, &chase_slew_angles, centering_speed);
+
+	// Ship controls
+	if (Viewer_mode & VM_CAMERA_LOCKED) {
 		// From keyboard...
 		do_thrust_keys(ci);
 		if ( check_control(BANK_WHEN_PRESSED) ) {
@@ -507,14 +647,6 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 
 		ci->pitch += kh;
 	}
-
-	if ( !slew_active ) {
-		// If we're not in a view that slews (ie, not a cockpit view), make the viewer slew angles spring to the center.
-		chase_slew_angles.h = 0.0f;
-		chase_slew_angles.p = 0.0f;
-	}
-
-	chase_angles_to_value(&Viewer_slew_angles, &chase_slew_angles, centering_speed);
 
 	if (!(Game_mode & GM_DEAD)) {
 		if ( button_info_query(&Player->bi, ONE_THIRD_THROTTLE) ) {
@@ -648,21 +780,27 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 			axis[0] = axis[1] = axis[2] = axis[3] = axis[4] = 0;
 		}
 
-		if (Axis_map_to[JOY_HEADING_AXIS] >= 0) {
-			// check the heading on the x axis
-			if ( check_control(BANK_WHEN_PRESSED) ) {
-				delta = f2fl( axis[JOY_HEADING_AXIS] );
-				if ( (delta > 0.05f) || (delta < -0.05f) ) {
-					ci->bank -= delta;
+		if (Viewer_mode & VM_CAMERA_LOCKED) {
+			// Player has control of the ship
+			if (Axis_map_to[JOY_HEADING_AXIS] >= 0) {
+				// check the heading on the x axis
+				if ( check_control(BANK_WHEN_PRESSED) ) {
+					delta = f2fl( axis[JOY_HEADING_AXIS] );
+					if ( (delta > 0.05f) || (delta < -0.05f) ) {
+						ci->bank -= delta;
+					}
+				} else {
+					ci->heading += f2fl( axis[JOY_HEADING_AXIS] );
 				}
-			} else {
-				ci->heading += f2fl( axis[JOY_HEADING_AXIS] );
 			}
-		}
-
-		// check the pitch on the y axis
-		if (Axis_map_to[JOY_PITCH_AXIS] >= 0) {
-			ci->pitch -= f2fl( axis[JOY_PITCH_AXIS] );
+			// check the pitch on the y axis
+			if (Axis_map_to[JOY_PITCH_AXIS] >= 0) {
+				ci->pitch -= f2fl( axis[JOY_PITCH_AXIS] );
+			}
+		} else {
+			// Player has control of the camera
+			ci->pitch = 0.0f;
+			ci->heading = 0.0f;
 		}
 
 		if (Axis_map_to[JOY_BANK_AXIS] >= 0) {
@@ -687,10 +825,7 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 		if (Axis_map_to[JOY_REL_THROTTLE_AXIS] >= 0)
 			ci->forward_cruise_percent += f2fl(axis[JOY_REL_THROTTLE_AXIS]) * 100.0f * frame_time;
 
-		if ( ci->forward_cruise_percent > 100.0f )
-			ci->forward_cruise_percent = 100.0f;
-		if ( ci->forward_cruise_percent < 0.0f )
-			ci->forward_cruise_percent = 0.0f;
+		CLAMP(ci->forward_cruise_percent, 0, 100);
 
 		// set up the firing stuff.  Read into control info ala Descent so that weapons will be
 		// created during the object simulation phase, and not immediately as was happening before.
@@ -729,7 +864,7 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 		if (check_control(AFTERBURNER) && !Player_use_ai) {
 			if (!afterburner_last) {
 				Assert(Player_ship);
-				if ( !(Ship_info[Player_ship->ship_info_index].flags & SIF_AFTERBURNER) ) {
+				if ( !(Ship_info[Player_ship->ship_info_index].flags[Ship::Info_Flags::Afterburner]) ) {
 					gamesnd_play_error_beep();
 				} else {
 					ci->afterburner_start = 1;
@@ -766,7 +901,7 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 		}
 
 		// if the player is warping out, cancel gliding
-		if (Player_ship->flags & SF_DEPART_WARP) {
+		if (Player_ship->flags[Ship::Ship_Flags::Depart_warp]) {
 			toggle_glide = 0;
 			press_glide = 0;
 		}
@@ -819,7 +954,7 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 	}
 
 	if ( (Viewer_mode & VM_EXTERNAL) ) {
-		if ( !(Viewer_mode & VM_EXTERNAL_CAMERA_LOCKED) ) {
+		if (!(Viewer_mode & VM_CAMERA_LOCKED)) {
 			ci->heading=0.0f;
 			ci->pitch=0.0f;
 			ci->bank=0.0f;
@@ -898,7 +1033,7 @@ void read_player_controls(object *objp, float frametime)
 				target_warpout_speed = ship_get_warpout_speed(objp);
 
 				// check if warp ability has been disabled
-				if (!(Warpout_forced) && Ships[objp->instance].flags & ( SF_WARP_BROKEN|SF_WARP_NEVER ) ) {
+				if (!(Warpout_forced) && (Ships[objp->instance].flags[Ship::Ship_Flags::Warp_broken] || Ships[objp->instance].flags[Ship::Ship_Flags::Warp_never]) ) {
 					HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Cannot warp out at this time.", 81));
 					snd_play(&Snds[SND_PLAYER_WARP_FAIL]);
 					gameseq_post_event( GS_EVENT_PLAYER_WARPOUT_STOP );
@@ -952,7 +1087,7 @@ void read_player_controls(object *objp, float frametime)
 	if(Player_obj->type == OBJ_SHIP && !Player_use_ai){	
 		// only read player control info if player ship is not dead
 		// or if Player_use_ai is disabed
-		if ( !(Ships[Player_obj->instance].flags & SF_DYING) ) {
+		if ( !(Ships[Player_obj->instance].flags[Ship::Ship_Flags::Dying]) ) {
 			vec3d wash_rot;
 			if ((Ships[objp->instance].wash_intensity > 0) && !((Player->control_mode == PCM_WARPOUT_STAGE1) || (Player->control_mode == PCM_WARPOUT_STAGE2) || (Player->control_mode == PCM_WARPOUT_STAGE3)) ) {
 				float intensity = 0.3f * MIN(Ships[objp->instance].wash_intensity, 1.0f);
@@ -1104,7 +1239,7 @@ void player_init_all_alone_msg()
 
 		if ( Ships[objp->instance].team == Player_ship->team ) {
 			int ship_type = Ship_info[Ships[objp->instance].ship_info_index].class_type;
-			if ( ship_type != -1 && (Ship_types[ship_type].message_bools & STI_MSG_COUNTS_FOR_ALONE) ) {
+			if ( ship_type != -1 && (Ship_types[ship_type].flags[Ship::Type_Info_Flags::Counts_for_alone]) ) {
 				return;
 			}
 		}
@@ -1147,12 +1282,12 @@ void player_save_target_and_weapon_link_prefs()
 
 	// if we're in multiplayer mode don't do this because we will desync ourselves with the server
 	if(!(Game_mode & GM_MULTIPLAYER)){
-		if ( Player_ship->flags & SF_PRIMARY_LINKED ) {
+		if ( Player_ship->flags[Ship::Ship_Flags::Primary_linked] ) {
 			Player->save_flags |= PLAYER_FLAGS_LINK_PRIMARY;
 		} else {
 			Player->flags &= ~PLAYER_FLAGS_LINK_PRIMARY;
 		}
-		if ( Player_ship->flags & SF_SECONDARY_DUAL_FIRE ) {
+		if ( Player_ship->flags[Ship::Ship_Flags::Secondary_dual_fire] ) {
 			Player->save_flags |= PLAYER_FLAGS_LINK_SECONDARY;
 		} else {
 			Player->flags &= ~PLAYER_FLAGS_LINK_SECONDARY;
@@ -1174,14 +1309,14 @@ void player_restore_target_and_weapon_link_prefs()
 		Player->flags |= Player->save_flags;
 	}
 
-	if ( Player->flags & PLAYER_FLAGS_LINK_PRIMARY && !(player_sip->flags2 & SIF2_NO_PRIMARY_LINKING) ) {
+	if ( Player->flags & PLAYER_FLAGS_LINK_PRIMARY && !(player_sip->flags[Ship::Info_Flags::No_primary_linking]) ) {
 		if ( Player_ship->weapons.num_primary_banks > 1 ) {
-			Player_ship->flags |= SF_PRIMARY_LINKED;
+			Player_ship->flags.set(Ship::Ship_Flags::Primary_linked);
 		}
 	}
 
 	if ( Player->flags & PLAYER_FLAGS_LINK_SECONDARY && (pm->n_missiles > 0 && pm->missile_banks[0].num_slots > 1) ) {
-		Player_ship->flags |= SF_SECONDARY_DUAL_FIRE;
+		Player_ship->flags.set(Ship::Ship_Flags::Secondary_dual_fire);
 	}
 }
 
@@ -1419,8 +1554,8 @@ int player_inspect_cargo(float frametime, char *outstr)
 	cargo_sip = &Ship_info[cargo_sp->ship_info_index];
 
 	// Goober5000 - possibly swap cargo scan behavior
-	scan_subsys = (cargo_sip->flags & SIF_HUGE_SHIP);
-	if (cargo_sp->flags2 & SF2_TOGGLE_SUBSYSTEM_SCANNING)
+    scan_subsys = cargo_sip->is_huge_ship();
+    if (cargo_sp->flags[Ship::Ship_Flags::Toggle_subsystem_scanning])
 		scan_subsys = !scan_subsys;
 	if (scan_subsys)
 		return player_inspect_cap_subsys_cargo(frametime, outstr);
@@ -1433,17 +1568,17 @@ int player_inspect_cargo(float frametime, char *outstr)
 
 	// scannable cargo behaves differently.  Scannable cargo is either "scanned" or "not scanned".  This flag
 	// can be set on any ship.  Any ship with this set won't have "normal" cargo behavior
-	if ( !(cargo_sp->flags & SF_SCANNABLE) ) {
-		if ( !(cargo_sip->flags & (SIF_CARGO|SIF_TRANSPORT)) ) {
+	if ( !(cargo_sp->flags[Ship::Ship_Flags::Scannable]) ) {
+        if (!(cargo_sip->flags[Ship::Info_Flags::Cargo] || cargo_sip->flags[Ship::Info_Flags::Transport])) {
 			return 0;
 		}
 	}
 
 	// if cargo is already revealed
-	if ( cargo_sp->flags & SF_CARGO_REVEALED ) {
-		if ( !(cargo_sp->flags & SF_SCANNABLE) ) {
+	if ( cargo_sp->flags[Ship::Ship_Flags::Cargo_revealed] ) {
+		if ( !(cargo_sp->flags[Ship::Ship_Flags::Scannable]) ) {
 			char *cargo_name = Cargo_names[cargo_sp->cargo1 & CARGO_INDEX_MASK];
-			Assert( cargo_sip->flags & (SIF_CARGO|SIF_TRANSPORT) );
+            Assert(cargo_sip->flags[Ship::Info_Flags::Cargo] || cargo_sip->flags[Ship::Info_Flags::Transport]);
 
 			if ( cargo_name[0] == '#' ) {
 				sprintf(outstr, XSTR("passengers: %s", 83), cargo_name+1 );
@@ -1468,7 +1603,7 @@ int player_inspect_cargo(float frametime, char *outstr)
 		vm_vec_normalized_dir(&vec_to_cargo, &cargo_objp->pos, &Player_obj->pos);
 		dot = vm_vec_dot(&vec_to_cargo, &Player_obj->orient.vec.fvec);
 		if ( dot < CARGO_MIN_DOT_TO_REVEAL ) {
-			if ( !(cargo_sp->flags & SF_SCANNABLE) )
+			if ( !(cargo_sp->flags[Ship::Ship_Flags::Scannable]) )
 				strcpy(outstr,XSTR( "cargo: <unknown>", 86));
 			else
 				strcpy(outstr,XSTR( "not scanned", 87));
@@ -1482,7 +1617,7 @@ int player_inspect_cargo(float frametime, char *outstr)
 			Player->cargo_inspect_time += fl2i(frametime*1000+0.5f);
 		}
 
-		if ( !(cargo_sp->flags & SF_SCANNABLE) )
+		if ( !(cargo_sp->flags[Ship::Ship_Flags::Scannable]) )
 			strcpy(outstr,XSTR( "cargo: inspecting", 88));
 		else
 			strcpy(outstr,XSTR( "scanning", 89));
@@ -1493,7 +1628,7 @@ int player_inspect_cargo(float frametime, char *outstr)
 			Player->cargo_inspect_time = 0;
 		}
 	} else {
-		if ( !(cargo_sp->flags & SF_SCANNABLE) )
+		if ( !(cargo_sp->flags[Ship::Ship_Flags::Scannable]) )
 			strcpy(outstr,XSTR( "cargo: <unknown>", 86));
 		else
 			strcpy(outstr,XSTR( "not scanned", 87));
@@ -1532,14 +1667,9 @@ int player_inspect_cap_subsys_cargo(float frametime, char *outstr)
 		return 0;
 	}
 
-	// don't scan cargo on turrets, radar, etc.  only the majors: fighterbay, sensor, engines, weapons, nav, comm
-	if (!valid_cap_subsys_cargo_list(subsys->system_info->subobj_name)) {
-		return 0;
-	}
-
 	// if cargo is already revealed
-	if (subsys->flags & SSF_CARGO_REVEALED) {
-		if ( !(cargo_sp->flags & SF_SCANNABLE) ) {
+	if (subsys->flags[Ship::Subsystem_Flags::Cargo_revealed]) {
+		if ( !(cargo_sp->flags[Ship::Ship_Flags::Scannable]) ) {
 			char *cargo_name = Cargo_names[subsys->subsys_cargo_name & CARGO_INDEX_MASK];
 
 			if ( cargo_name[0] == '#' ) {
@@ -1568,7 +1698,7 @@ int player_inspect_cap_subsys_cargo(float frametime, char *outstr)
 	subsys_rad = subsys->system_info->radius;
 
 	// Goober5000
-	if (cargo_sip->flags & SIF_HUGE_SHIP) {
+    if (cargo_sip->is_huge_ship()) {
 		scan_dist = MAX(CAP_CARGO_REVEAL_MIN_DIST, (subsys_rad + CAPITAL_CARGO_RADIUS_DELTA));
 	} else {
 		scan_dist = MAX(CARGO_REVEAL_MIN_DIST, (subsys_rad + CARGO_RADIUS_DELTA));
@@ -1583,7 +1713,7 @@ int player_inspect_cap_subsys_cargo(float frametime, char *outstr)
 		subsys_in_view = hud_targetbox_subsystem_in_view(cargo_objp, &x, &y);
 
 		if ( (dot < CARGO_MIN_DOT_TO_REVEAL) || (!subsys_in_view) ) {
-			if ( !(cargo_sp->flags & SF_SCANNABLE) )
+			if ( !(cargo_sp->flags[Ship::Ship_Flags::Scannable]) )
 				strcpy(outstr,XSTR( "cargo: <unknown>", 86));
 			else
 				strcpy(outstr,XSTR( "not scanned", 87));
@@ -1597,7 +1727,7 @@ int player_inspect_cap_subsys_cargo(float frametime, char *outstr)
 			Player->cargo_inspect_time += fl2i(frametime*1000+0.5f);
 		}
 
-		if ( !(cargo_sp->flags & SF_SCANNABLE) )
+		if ( !(cargo_sp->flags[Ship::Ship_Flags::Scannable]) )
 			strcpy(outstr,XSTR( "cargo: inspecting", 88));
 		else
 			strcpy(outstr,XSTR( "scanning", 89));
@@ -1608,7 +1738,7 @@ int player_inspect_cap_subsys_cargo(float frametime, char *outstr)
 			Player->cargo_inspect_time = 0;
 		}
 	} else {
-		if ( !(cargo_sp->flags & SF_SCANNABLE) )
+		if ( !(cargo_sp->flags[Ship::Ship_Flags::Scannable]) )
 			strcpy(outstr,XSTR( "cargo: <unknown>", 86));
 		else
 			strcpy(outstr,XSTR( "not scanned", 87));
@@ -1845,7 +1975,7 @@ void player_maybe_play_all_alone_msg()
 
 		if ( Ships[objp->instance].team == Player_ship->team ) {
 			int ship_type = Ship_info[Ships[objp->instance].ship_info_index].class_type;
-			if ( ship_type != -1 && (Ship_types[ship_type].message_bools & STI_MSG_COUNTS_FOR_ALONE) ) {
+			if ( ship_type != -1 && (Ship_types[ship_type].flags[Ship::Type_Info_Flags::Counts_for_alone]) ) {
 				return;
 			}
 		}
@@ -1857,45 +1987,6 @@ void player_maybe_play_all_alone_msg()
 	}
 	Player->flags |= PLAYER_FLAGS_NO_CHECK_ALL_ALONE_MSG;
 } 
-
-
-void player_set_padlock_state()
-{
-	if ( check_control(PADLOCK_UP) ) {
-		chase_slew_angles.h = 0.0f;
-		chase_slew_angles.p = -PI_2;
-		Viewer_mode |= VM_PADLOCK_UP;
-		return;
-	}
-	if ( check_control(PADLOCK_DOWN) ) {
-		chase_slew_angles.h = -PI;
-		chase_slew_angles.p = 0.0f;
-		Viewer_mode |= VM_PADLOCK_REAR;
-		return;
-	}
-
-	if ( check_control(PADLOCK_RIGHT) ) {
-		chase_slew_angles.h = PI_2;
-		chase_slew_angles.p = 0.0f;
-		Viewer_mode |= VM_PADLOCK_RIGHT;
-		return;
-	}
-
-	if ( check_control(PADLOCK_LEFT) ) {
-		chase_slew_angles.h = -PI_2;
-		chase_slew_angles.p = 0.0f;
-		Viewer_mode |= VM_PADLOCK_LEFT;
-		return;
-	}
-
-	if ( Viewer_mode & VM_PADLOCK_ANY ) {
-		// clear padlock views and center the view once 
-		// the player lets go of an orthogonal padlock command
-		Viewer_mode &= ~(VM_PADLOCK_ANY);
-		chase_slew_angles.h = 0.0f;
-		chase_slew_angles.p = 0.0f;
-	}
-}
 
 void player_get_padlock_orient(matrix *eye_orient)
 {

@@ -11,6 +11,7 @@
 
 
 #include <limits.h>		// this is need even when not building debug!!
+#include <type_traits>
 
 #include "anim/animplay.h"
 #include "cmdline/cmdline.h"
@@ -429,10 +430,6 @@ void common_set_interface_palette(char *filename)
 		Error(LOCATION, "Could not load in \"%s\"!", filename);
 	}
 	*/
-
-#ifndef HARDWARE_ONLY
-	palette_use_bm_palette(InterfacePaletteBitmap);
-#endif
 }
 
 // release the interface palette .pcx file, and restore the game palette
@@ -1247,7 +1244,7 @@ void wss_direct_restore_loadout()
 
 					if ( slot->ship_class == -1 ) {
 						cleanup_ship_index[j] = wp->ship_index[j];
-						ship_add_exited_ship( shipp, SEF_PLAYER_DELETED );
+						ship_add_exited_ship( shipp, Ship::Exit_Flags::Player_deleted );
 						obj_delete(shipp->objnum);
 						hud_set_wingman_status_none( shipp->wing_status_wing_index, shipp->wing_status_wing_pos);
 						continue;
@@ -1527,7 +1524,7 @@ int restore_wss_data(ubyte *block)
 	return offset;
 }
 
-void draw_model_icon(int model_id, int flags, float closeup_zoom, int x, int y, int w, int h, const ship_info *sip, int resize_mode, const vec3d *closeup_pos)
+void draw_model_icon(int model_id, int flags, float closeup_zoom, int x, int y, int w, int h, ship_info *sip, int resize_mode, const vec3d *closeup_pos)
 {
 	matrix	object_orient	= IDENTITY_MATRIX;
 	angles rot_angles = {0.0f,0.0f,0.0f};
@@ -1543,11 +1540,11 @@ void draw_model_icon(int model_id, int flags, float closeup_zoom, int x, int y, 
 		// If non-zero model_icon_angles exists, always use that
 		rot_angles = sip->model_icon_angles;
 	}
-	else if(sip->flags & SIF_SMALL_SHIP)
+	else if(sip->is_small_ship())
 	{
 		rot_angles.p = -(PI_2);
 	}
-	else if((sip->max_speed <= 0.0f) && !(sip->flags & SIF_CARGO))
+	else if((sip->max_speed <= 0.0f) && !(sip->flags[Ship::Info_Flags::Cargo]))
 	{
 		//Probably an installation or Knossos
 		rot_angles.h = PI;
