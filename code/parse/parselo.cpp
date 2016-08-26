@@ -2264,23 +2264,19 @@ float atof2()
 
 }
 
-int atoi2()
+static bool atoi2(int *out)
 {
-	char	ch;
-
-	my_errno = 0;
-
 	ignore_white_space();
-
-	ch = *Mp;
+	char ch = *Mp;
 
 	if ((ch != '-') && (ch != '+') && ((ch < '0') || (ch > '9'))) {
 		error_display(1, "Expecting int, found [%.32s].\n", next_tokens());
-		my_errno = 1;
-		return 0;
-	} else
-		return atoi(Mp);
+		*out = 0;
+		return false;
+	}
 
+	*out = atoi(Mp);
+	return true;
 }
 
 long atol2()
@@ -2349,9 +2345,9 @@ int stuff_float_optional(float *f, bool raw)
 //	Advances past integer characters.
 void stuff_int(int *i)
 {
-	*i = atoi2();
+	bool success = atoi2(i);
 
-	if (my_errno)
+	if (!success)
 		skip_token();
 	else
 		Mp += strspn(Mp, "+-0123456789");
@@ -2622,13 +2618,12 @@ int stuff_bool_list(bool *blp, int max_bools)
 //	Advances past integer characters.
 void stuff_ubyte(ubyte *i)
 {
-	int	temp;
-
-	temp = atoi2();
+	int temp;
+	bool success = atoi2(&temp);
 
 	*i = (ubyte)temp;
 
-	if (my_errno)
+	if (!success)
 		skip_token();
 	else
 		Mp += strspn(Mp, "+-0123456789");
