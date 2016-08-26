@@ -2422,8 +2422,8 @@ bool model_interp_pack_buffer(indexed_vertex_source *vert_src, vertex_buffer *vb
 	// generate the index array
 	for ( j = 0; j < vb->tex_buf.size(); j++ ) {
 		buffer_data* tex_buf = &vb->tex_buf[j];
-		n_verts = tex_buf->n_verts;
-		uint offset = tex_buf->index_offset;
+		n_verts = (int)tex_buf->n_verts;
+		auto offset = tex_buf->index_offset;
 		const uint *index = tex_buf->get_index();
 
 		// bump to our spot in the buffer
@@ -2534,23 +2534,23 @@ bool model_interp_config_buffer(indexed_vertex_source *vert_src, vertex_buffer *
 	// position
 	vb->stride += (3 * sizeof(float));
 
-	model_interp_set_buffer_layout(&vb->layout, vb->stride, vb->flags);
+	model_interp_set_buffer_layout(&vb->layout, (uint) vb->stride, vb->flags);
 
 	// offsets for this chunk
 	if ( !update_ibuffer_only ) {
 		vb->vertex_offset = vert_src->Vertex_list_size;
 		vb->vertex_num_offset = vb->vertex_offset / vb->stride;
-		vert_src->Vertex_list_size += vb->stride * vb->model_list->n_verts;
+		vert_src->Vertex_list_size += (uint)(vb->stride * vb->model_list->n_verts);
 	}
 
 	for ( size_t idx = 0; idx < vb->tex_buf.size(); idx++ ) {
 		buffer_data *bd = &vb->tex_buf[idx];
 
 		bd->index_offset = vert_src->Index_list_size;
-		vert_src->Index_list_size += bd->n_verts * ((bd->flags & VB_FLAG_LARGE_INDEX) ? sizeof(uint) : sizeof(ushort));
+		vert_src->Index_list_size += (uint)(bd->n_verts * ((bd->flags & VB_FLAG_LARGE_INDEX) ? sizeof(uint) : sizeof(ushort)));
 
 		// even out index buffer so we are always word aligned
-		vert_src->Index_list_size += vert_src->Index_list_size % sizeof(uint);
+		vert_src->Index_list_size += (uint)(vert_src->Index_list_size % sizeof(uint));
 	}
 
 	return true;
