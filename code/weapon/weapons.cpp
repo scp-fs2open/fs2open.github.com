@@ -125,7 +125,7 @@ flag_def_list_new<Weapon::Info_Flags> Weapon_Info_Flags[] = {
     { "shudder",						Weapon::Info_Flags::Shudder,							true, false },
     { "electronics",					Weapon::Info_Flags::Electronics,						true, false },
     { "lockarm",						Weapon::Info_Flags::Lockarm,							true, false },
-    { "beam",							Weapon::Info_Flags::Beam,								true, false },
+    { "beam",							Weapon::Info_Flags::Beam,								true, true }, //special case
     { "stream",							Weapon::Info_Flags::Stream,								true, false },
     { "supercap",						Weapon::Info_Flags::Supercap,							true, false },
     { "countermeasure",					Weapon::Info_Flags::Cmeasure,							true, false },
@@ -618,6 +618,9 @@ void parse_wi_flags(weapon_info *weaponp, flagset<Weapon::Info_Flags> wi_flags)
                     Warning(LOCATION, "Illegal to have more than %d spawn types for one weapon.\nIgnoring weapon %s", MAX_SPAWN_TYPES_PER_WEAPON, weaponp->name);
                 }
             }
+            else if (!stricmp(NOX("beam"), flag_text.c_str())) {
+                weaponp->wi_flags.set(Weapon::Info_Flags::Pierce_shields);
+            }
             else if (!stricmp(NOX("no pierce shields"), flag_text.c_str())) {
                 set_nopierce = true;
             }
@@ -641,12 +644,7 @@ void parse_wi_flags(weapon_info *weaponp, flagset<Weapon::Info_Flags> wi_flags)
         }
 
         //Do cleanup and sanity checks
-
-		//Beams pierce shields by default
-		if (weaponp->wi_flags[Weapon::Info_Flags::Beam])
-			weaponp->wi_flags.set(Weapon::Info_Flags::Pierce_shields);
         
-		//...except when they don't
 		if (set_nopierce)
             weaponp->wi_flags.remove(Weapon::Info_Flags::Pierce_shields);
 
