@@ -131,7 +131,6 @@ flag_def_list_new<Weapon::Info_Flags> Weapon_Info_Flags[] = {
     { "countermeasure",					Weapon::Info_Flags::Cmeasure,							true, false },
     { "ballistic",						Weapon::Info_Flags::Ballistic,							true, false },
     { "pierce shields",					Weapon::Info_Flags::Pierce_shields,						true, false },
-    { "no pierce shields",				Weapon::Info_Flags::NUM_VALUES,							true, true }, //special case
     { "local ssm",						Weapon::Info_Flags::Local_ssm,							true, false },
     { "tagged only",					Weapon::Info_Flags::Tagged_only,						true, false },
     { "beam no whack",					Weapon::Info_Flags::NUM_VALUES,							false, true }, //special case
