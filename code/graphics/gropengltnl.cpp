@@ -863,11 +863,6 @@ void opengl_render_model_program(model_material* material_info, indexed_vertex_s
 	GL_state.Texture.SetShaderMode(GL_FALSE);
 }
 
-void opengl_render_model_fixed(model_material* material_info, indexed_vertex_source *vert_source, vertex_buffer *bufferp, buffer_data *datap)
-{
-
-}
-
 void gr_opengl_render_model(model_material* material_info, indexed_vertex_source *vert_source, vertex_buffer* bufferp, size_t texi)
 {
 	Assert(GL_htl_projection_matrix_set);
@@ -892,8 +887,6 @@ void gr_opengl_render_model(model_material* material_info, indexed_vertex_source
 
 unsigned int GL_last_shader_flags = 0;
 int GL_last_shader_index = -1;
-
-static void opengl_render_pipeline_fixed(int start, vertex_buffer *bufferp, buffer_data *datap, int flags);
 
 extern bool Scene_framebuffer_in_frame;
 extern GLuint Framebuffer_fallback_texture_id;
@@ -943,11 +936,6 @@ static void opengl_render_pipeline_program(int start, vertex_buffer *bufferp, bu
 	} else {
 		sdr_index = gr_opengl_maybe_create_shader(SDR_TYPE_MODEL, shader_flags);
 
-		if (sdr_index < 0) {
-			opengl_render_pipeline_fixed(start, bufferp, datap, flags);
-			return;
-		}
-
 		GL_last_shader_index = sdr_index;
 		GL_last_shader_flags = shader_flags;
 	}
@@ -956,7 +944,6 @@ static void opengl_render_pipeline_program(int start, vertex_buffer *bufferp, bu
 
 	opengl_shader_set_current( sdr_index );
 
-	opengl_default_light_settings( !GL_center_alpha, (GL_light_factor > 0.25f) );
 	gr_opengl_set_center_alpha(GL_center_alpha);
 
 	opengl_setup_render_states(r, g, b, a, tmap_type, flags);
@@ -1047,11 +1034,6 @@ static void opengl_render_pipeline_program(int start, vertex_buffer *bufferp, bu
 	}
 */
 	GL_state.Texture.SetShaderMode(GL_FALSE);
-}
-
-static void opengl_render_pipeline_fixed(int start, vertex_buffer *bufferp, buffer_data *datap, int flags)
-{
-	
 }
 
 // start is the first part of the buffer to render, n_prim is the number of primitives, index_list is an index buffer, if index_list == NULL render non-indexed
@@ -1216,11 +1198,6 @@ void opengl_create_view_matrix(matrix4 *out, const vec3d *pos, const matrix *ori
 	vm_matrix4_set_transform(out, &inv_orient, &inv_pos);
 }
 
-void opengl_start_instance_matrix_fixed_pipeline(const vec3d *offset, const matrix *rotation)
-{
-
-}
-
 void gr_opengl_start_instance_matrix(const vec3d *offset, const matrix *rotation)
 {
 	Assert( GL_htl_projection_matrix_set );
@@ -1261,11 +1238,6 @@ void gr_opengl_start_instance_angles(const vec3d *pos, const angles *rotation)
 	gr_opengl_start_instance_matrix(pos, &m);
 }
 
-void opengl_end_instance_matrix_fixed_pipeline()
-{
-
-}
-
 void gr_opengl_end_instance_matrix()
 {
 	Assert(GL_htl_projection_matrix_set);
@@ -1277,12 +1249,6 @@ void gr_opengl_end_instance_matrix()
 	vm_matrix4_x_matrix4(&GL_model_view_matrix, &GL_view_matrix, &model_matrix);
 
 	GL_modelview_matrix_depth--;
-}
-
-
-void opengl_set_projection_matrix_fixed_pipeline(float fov, float aspect, float z_near, float z_far)
-{
-
 }
 
 // the projection matrix; fov, aspect ratio, near, far
@@ -1314,11 +1280,6 @@ void gr_opengl_set_projection_matrix(float fov, float aspect, float z_near, floa
 	GL_htl_projection_matrix_set = 1;
 }
 
-void opengl_end_projection_matrix_fixed_pipeline()
-{
-
-}
-
 void gr_opengl_end_projection_matrix()
 {
 	GL_CHECK_FOR_ERRORS("start of end_projection_matrix()");
@@ -1337,11 +1298,6 @@ void gr_opengl_end_projection_matrix()
 	GL_CHECK_FOR_ERRORS("end of end_projection_matrix()");
 
 	GL_htl_projection_matrix_set = 0;
-}
-
-void opengl_set_view_matrix_fixed_pipeline(const vec3d *pos, const matrix *orient)
-{
-
 }
 
 void gr_opengl_set_view_matrix(const vec3d *pos, const matrix *orient)
@@ -1384,11 +1340,6 @@ void gr_opengl_set_view_matrix(const vec3d *pos, const matrix *orient)
 	GL_htl_view_matrix_set = 1;
 }
 
-void opengl_end_view_matrix_fixed_pipeline()
-{
-
-}
-
 void gr_opengl_end_view_matrix()
 {
 	Assert(GL_modelview_matrix_depth == 2);
@@ -1400,11 +1351,6 @@ void gr_opengl_end_view_matrix()
 	GL_modelview_matrix_depth = 1;
 	GL_htl_view_matrix_set = 0;
 	GL_env_texture_matrix_set = false;
-}
-
-void opengl_set_2d_matrix_fixed_pipeline()
-{
-
 }
 
 // set a view and projection matrix for a 2D element
@@ -1445,11 +1391,6 @@ void gr_opengl_set_2d_matrix(/*int x, int y, int w, int h*/)
 	GL_htl_2d_matrix_depth++;
 }
 
-void opengl_end_2d_matrix_fixed_pipeline()
-{
-
-}
-
 // ends a previously set 2d view and projection matrix
 void gr_opengl_end_2d_matrix()
 {
@@ -1476,11 +1417,6 @@ void gr_opengl_end_2d_matrix()
 
 static bool GL_scale_matrix_set = false;
 
-void opengl_push_scale_matrix_fixed_pipeline(const vec3d *scale_factor)
-{
-
-}
-
 void gr_opengl_push_scale_matrix(const vec3d *scale_factor)
 {
 	if ( (scale_factor->xyz.x == 1) && (scale_factor->xyz.y == 1) && (scale_factor->xyz.z == 1) )
@@ -1494,11 +1430,6 @@ void gr_opengl_push_scale_matrix(const vec3d *scale_factor)
 
 	matrix4 model_matrix = GL_model_matrix_stack.get_transform();
 	vm_matrix4_x_matrix4(&GL_model_view_matrix, &GL_view_matrix, &model_matrix);
-}
-
-void opengl_pop_scale_matrix_fixed_pipeline()
-{
-
 }
 
 void gr_opengl_pop_scale_matrix()
