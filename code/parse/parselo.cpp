@@ -2246,22 +2246,19 @@ void debug_show_mission_text()
 		printf("%c", ch);
 }
 
-float atof2()
+static bool atof2(float *out)
 {
-	char	ch;
-
-	my_errno = 0;
 	ignore_white_space();
-
-	ch = *Mp;
+	char ch = *Mp;
 
 	if ((ch != '.') && (ch != '-') && (ch != '+') && ((ch < '0') || (ch > '9'))) {
 		error_display(1, "Expecting float, found [%.32s].\n", next_tokens());
-		my_errno = 1;
-		return 0.0f;
-	} else
-		return (float)atof(Mp);
+		*out = 0.0f;
+		return false;
+	}
 
+	*out = (float) atof(Mp);
+	return true;
 }
 
 static bool atoi2(int *out)
@@ -2302,9 +2299,9 @@ long atol2()
 //	Advances past float characters.
 void stuff_float(float *f)
 {
-	*f = atof2();
+	bool success = atof2(f);
 
-	if (my_errno)
+	if (!success)
 		skip_token();
 	else
 		Mp += strspn(Mp, "+-0123456789.");
