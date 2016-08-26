@@ -937,7 +937,7 @@ void briefing_editor_dlg::update_positions()
 void briefing_editor_dlg::OnMakeIcon() 
 {
 	char *name;
-	int z, len, team, ship, waypoint, count = -1;
+	int z, team, ship, waypoint, count = -1;
 	int cargo = 0, cargo_count = 0, freighter_count = 0;
 	object *ptr;
 	vec3d min, max, pos;
@@ -1035,7 +1035,7 @@ void briefing_editor_dlg::OnMakeIcon()
 	else
 		return;
 
-	len = strlen(name);
+	auto len = strlen(name);
 	if (len >= MAX_LABEL_LEN - 1)
 		len = MAX_LABEL_LEN - 1;
 
@@ -1098,7 +1098,7 @@ void briefing_editor_dlg::OnMakeIcon()
         {
             if (it->flags[Ship::Info_Flags::Navbuoy])
             {
-                biconp->ship_class = std::distance(Ship_info.cbegin(), it);
+                iconp->ship_class = (int)std::distance(Ship_info.cbegin(), it);
                 break;
             }
         }
@@ -1112,7 +1112,7 @@ void briefing_editor_dlg::OnMakeIcon()
         {
             if (it->flags[Ship::Info_Flags::Navbuoy])
             {
-                biconp->ship_class = std::distance(Ship_info.cbegin(), it);
+                iconp->ship_class = (int)std::distance(Ship_info.cbegin(), it);
                 break;
             }
         }

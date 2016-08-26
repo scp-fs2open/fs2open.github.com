@@ -21,7 +21,7 @@
 static char THIS_FILE[] = __FILE__;
 #endif
 
-#define INVALID_MESSAGE ((MMessage*)0xFFFFFFFF)
+#define INVALID_MESSAGE ((MMessage*)SIZE_T_MAX)
 
 // to keep track of data
 char Voice_abbrev_briefing[NAME_LENGTH];
@@ -389,7 +389,7 @@ void VoiceActingManager::OnGenerateFileNames()
 
 	// notify user that we are done and how many filenames were changed
 	char message[128] = { '\0' };
-	snprintf(message, sizeof(message)-1, "File name generation complete. Modified %u messages.", modified_filenames);
+	snprintf(message, sizeof(message)-1, "File name generation complete. Modified " SIZE_T_ARG " messages.", modified_filenames);
 	MessageBox(message, "Woohoo!");
 }
 

@@ -1304,7 +1304,7 @@ int CShipEditorDlg::update_ship(int ship)
 		// m_persona holds the index into the list.  Get the item data associated with this index and then
 		// assign to the ship taking care that we check for the NO_PERSONA_INDEX id
 		box = (CComboBox *)GetDlgItem(IDC_SHIP_PERSONA);
-		persona = box->GetItemData(m_persona);
+		persona = (int)box->GetItemData(m_persona);
 		if ( persona == NO_PERSONA_INDEX )
 			persona = -1;
 
@@ -1330,7 +1330,7 @@ int CShipEditorDlg::update_ship(int ship)
 		m_arrival_delay.save(&Ships[ship].arrival_delay);
 		m_departure_delay.save(&Ships[ship].departure_delay);
 		if (m_arrival_target >= 0) {
-			z = ((CComboBox *) GetDlgItem(IDC_ARRIVAL_TARGET))->GetItemData(m_arrival_target);
+			z = (int)((CComboBox *) GetDlgItem(IDC_ARRIVAL_TARGET))->GetItemData(m_arrival_target);
 			MODIFY(Ships[ship].arrival_anchor, z);
 
 			// if the arrival is not hyperspace or docking bay -- force arrival distance to be
@@ -1353,7 +1353,7 @@ int CShipEditorDlg::update_ship(int ship)
 			}
 		}
 		if (m_departure_target >= 0) {
-			z = ((CComboBox *) GetDlgItem(IDC_DEPARTURE_TARGET))->GetItemData(m_departure_target);
+			z = (int)((CComboBox *) GetDlgItem(IDC_DEPARTURE_TARGET))->GetItemData(m_departure_target);
 			MODIFY(Ships[ship].departure_anchor, z );
 		}
 	}
@@ -2328,7 +2328,7 @@ void CShipEditorDlg::OnRestrictArrival()
 	if (box->GetCount() == 0)
 		return;
 
-	arrive_from_ship = box->GetItemData(m_arrival_target);
+	arrive_from_ship = (int)box->GetItemData(m_arrival_target);
 
 	if (!ship_has_dock_bay(arrive_from_ship))
 	{
@@ -2372,7 +2372,7 @@ void CShipEditorDlg::OnRestrictDeparture()
 	if (box->GetCount() == 0)
 		return;
 
-	depart_to_ship = box->GetItemData(m_departure_target);
+	depart_to_ship = (int)box->GetItemData(m_departure_target);
 
 	if (!ship_has_dock_bay(depart_to_ship))
 	{
