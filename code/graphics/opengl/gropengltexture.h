@@ -12,7 +12,7 @@
 #define _GROPENGLTEXTURE_H
 
 #include "globalincs/pstypes.h"
-#include "graphics/gropengl.h"
+#include "gropengl.h"
 
 #include <glad/glad.h>
 

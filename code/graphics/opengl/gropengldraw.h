@@ -12,8 +12,8 @@
 #define GR_OPENGLDRAW_H
 
 #include "graphics/2d.h"
-#include "graphics/gropenglstate.h"
-#include "graphics/gropenglshader.h"
+#include "gropenglstate.h"
+#include "gropenglshader.h"
 #include "graphics/shadows.h"
 #include <glad/glad.h>
 

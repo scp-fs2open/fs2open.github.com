@@ -20,9 +20,9 @@
 #include "globalincs/pstypes.h"
 #include <globalincs/systemvars.h>
 #include "graphics/2d.h"
-#include "graphics/gropengllight.h"
-#include "graphics/gropenglstate.h"
-#include "graphics/gropengltnl.h"
+#include "gropengllight.h"
+#include "gropenglstate.h"
+#include "gropengltnl.h"
 #include "lighting/lighting.h"
 #include "render/3d.h"
 

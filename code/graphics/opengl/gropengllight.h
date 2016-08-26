@@ -13,7 +13,7 @@
 #ifndef _GROPENGLLIGHT_H
 #define _GROPENGLLIGHT_H
 
-#include "graphics/gropengl.h"
+#include "gropengl.h"
 #include "lighting/lighting.h"
 #include <glad/glad.h>
 

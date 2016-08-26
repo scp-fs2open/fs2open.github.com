@@ -10,7 +10,7 @@
 #ifndef _MODELRENDER_H
 #define _MODELRENDER_H
 
-#include "graphics/gropengltnl.h"
+#include "graphics/opengl/gropengltnl.h"
 #include "graphics/material.h"
 #include "lighting/lighting.h"
 #include "math/vecmat.h"

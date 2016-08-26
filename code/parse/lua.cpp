@@ -12,7 +12,7 @@
 #include "graphics/2d.h"
 #include "graphics/font.h"
 #include "graphics/generic.h"
-#include "graphics/gropenglpostprocessing.h"
+#include "graphics/opengl/gropenglpostprocessing.h"
 #include "headtracking/headtracking.h"
 #include "hud/hudbrackets.h"
 #include "hud/hudconfig.h"

@@ -12,9 +12,9 @@
 #define _GROPENGLSTATE_H
 
 #include "globalincs/pstypes.h"
-#include "graphics/gropengl.h"
-#include "graphics/gropengltexture.h"
-#include "graphics/gropenglshader.h"
+#include "gropengl.h"
+#include "gropengltexture.h"
+#include "gropenglshader.h"
 #include "graphics/material.h"
 
 #include <glad/glad.h>
@@ -184,61 +184,6 @@ class opengl_array_state
 		void BindUniformBufferBindingIndex(GLuint id, GLuint index);
 };
 
-struct uniform_bind
-{
-	SCP_string name;
-
-	enum data_type {
-		INT,
-		FLOAT,
-		VEC2,
-		VEC3,
-		VEC4,
-		MATRIX4
-	};
-
-	uniform_bind::data_type type;
-	size_t index;
-
-	int count;
-	int tranpose;
-};
-
-class opengl_uniform_state
-{
-	SCP_vector<uniform_bind> uniforms;
-
-	SCP_vector<int> uniform_data_ints;
-	SCP_vector<float> uniform_data_floats;
-	SCP_vector<vec2d> uniform_data_vec2d;
-	SCP_vector<vec3d> uniform_data_vec3d;
-	SCP_vector<vec4> uniform_data_vec4;
-	SCP_vector<matrix4> uniform_data_matrix4;
-
-	SCP_map<SCP_string, size_t> uniform_lookup;
-
-	size_t findUniform(const SCP_string &name);
-public:
-	opengl_uniform_state();
-
-	void setUniformi(const SCP_string &name, const int value);
-	void setUniform1iv(const SCP_string &name, const int count, const int *val);
-	void setUniformf(const SCP_string &name, const float value);
-	void setUniform2f(const SCP_string &name, const float x, const float y);
-	void setUniform2f(const SCP_string &name, const vec2d &val);
-	void setUniform3f(const SCP_string &name, const float x, const float y, const float z);
-	void setUniform3f(const SCP_string &name, const vec3d &value);
-	void setUniform4f(const SCP_string &name, const float x, const float y, const float z, const float w);
-	void setUniform4f(const SCP_string &name, const vec4 &val);
-	void setUniform1fv(const SCP_string &name, const int count, const float *val);
-	void setUniform3fv(const SCP_string &name, const int count, const vec3d *val);
-	void setUniform4fv(const SCP_string &name, const int count, const vec4 *val);
-	void setUniformMatrix4fv(const SCP_string &name, const int count, const matrix4 *value);
-	void setUniformMatrix4f(const SCP_string &name, const matrix4 &val);
-
-	void reset();
-};
-
 class opengl_light_state
 {
 	int Light_num;
@@ -307,6 +252,8 @@ class opengl_state
 
 		gr_alpha_blend Current_alpha_blend_mode;
         gr_stencil_type Current_stencil_type;
+
+		GLuint current_program;
 	public:
 		opengl_state() {}
 		~opengl_state() {}
@@ -315,7 +262,6 @@ class opengl_state
 
 		opengl_texture_state Texture;
 		opengl_array_state Array;
-		opengl_uniform_state Uniform;
 
 		void SetAlphaBlendMode(gr_alpha_blend ab);
 		void SetZbufferType(gr_zbuffer_type zt);
@@ -345,6 +291,9 @@ class opengl_state
 		inline GLenum BlendFuncDest();
 		inline GLenum DepthFunc(GLenum new_val = GL_INVALID_ENUM);
 		inline void InvalidateColor();
+
+		void UseProgram(GLuint program);
+		bool IsCurrentProgram(GLuint program);
 };
 
 inline GLenum opengl_state::FrontFaceValue(GLenum new_val)

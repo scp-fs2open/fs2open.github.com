@@ -12,13 +12,13 @@
 #include "def_files/def_files.h"
 #include "graphics/2d.h"
 #include "graphics/grinternal.h"
-#include "graphics/gropengldraw.h"
-#include "graphics/gropengllight.h"
-#include "graphics/gropenglpostprocessing.h"
-#include "graphics/gropenglshader.h"
-#include "graphics/gropenglstate.h"
-#include "graphics/gropengltexture.h"
-#include "graphics/gropengltnl.h"
+#include "graphics/opengl/gropengldraw.h"
+#include "graphics/opengl/gropengllight.h"
+#include "graphics/opengl/gropenglpostprocessing.h"
+#include "graphics/opengl/gropenglshader.h"
+#include "graphics/opengl/gropenglstate.h"
+#include "graphics/opengl/gropengltexture.h"
+#include "graphics/opengl/gropengltnl.h"
 #include "lighting/lighting.h"
 #include "math/vecmat.h"
 #include "mod_table/mod_table.h"
@@ -26,23 +26,21 @@
 
 SCP_vector<opengl_shader_t> GL_shader;
 
-static char *GLshader_info_log = NULL;
-static const int GLshader_info_log_size = 8192;
 GLuint Framebuffer_fallback_texture_id = 0;
 
 geometry_sdr_params *Current_geo_sdr_params = NULL;
 
 opengl_vert_attrib GL_vertex_attrib_info[] =
-{
-	{ opengl_vert_attrib::POSITION,		"vertPosition",		{ 0.0f, 0.0f, 0.0f, 1.0f } },
-	{ opengl_vert_attrib::COLOR,		"vertColor",		{ 1.0f, 1.0f, 1.0f, 1.0f } },
-	{ opengl_vert_attrib::TEXCOORD,		"vertTexCoord",		{ 1.0f, 1.0f, 1.0f, 1.0f } },
-	{ opengl_vert_attrib::NORMAL,		"vertNormal",		{ 0.0f, 0.0f, 1.0f, 0.0f } },
-	{ opengl_vert_attrib::TANGENT,		"vertTangent",		{ 1.0f, 0.0f, 0.0f, 0.0f } },
-	{ opengl_vert_attrib::MODEL_ID,		"vertModelID",		{ 0.0f, 0.0f, 0.0f, 0.0f } },
-	{ opengl_vert_attrib::RADIUS,		"vertRadius",		{ 1.0f, 0.0f, 0.0f, 0.0f } },
-	{ opengl_vert_attrib::UVEC,			"vertUvec",			{ 0.0f, 1.0f, 0.0f, 0.0f } }
-};
+	{
+		{ opengl_vert_attrib::POSITION,		"vertPosition",		{ 0.0f, 0.0f, 0.0f, 1.0f } },
+		{ opengl_vert_attrib::COLOR,		"vertColor",		{ 1.0f, 1.0f, 1.0f, 1.0f } },
+		{ opengl_vert_attrib::TEXCOORD,		"vertTexCoord",		{ 1.0f, 1.0f, 1.0f, 1.0f } },
+		{ opengl_vert_attrib::NORMAL,		"vertNormal",		{ 0.0f, 0.0f, 1.0f, 0.0f } },
+		{ opengl_vert_attrib::TANGENT,		"vertTangent",		{ 1.0f, 0.0f, 0.0f, 0.0f } },
+		{ opengl_vert_attrib::MODEL_ID,		"vertModelID",		{ 0.0f, 0.0f, 0.0f, 0.0f } },
+		{ opengl_vert_attrib::RADIUS,		"vertRadius",		{ 1.0f, 0.0f, 0.0f, 0.0f } },
+		{ opengl_vert_attrib::UVEC,			"vertUvec",			{ 0.0f, 1.0f, 0.0f, 0.0f } }
+	};
 
 /**
  * Static lookup reference for shader uniforms
@@ -191,7 +189,7 @@ static opengl_shader_variant_t GL_shader_variants[] = {
 	{ SDR_TYPE_MODEL, false, SDR_FLAG_MODEL_AMBIENT_MAP, "FLAG_AMBIENT_MAP",
 		{ "sAmbientmap" }, {  },
 		"Ambient Occlusion Map" },
-	
+
 	{ SDR_TYPE_MODEL, false, SDR_FLAG_MODEL_NORMAL_ALPHA, "FLAG_NORMAL_ALPHA",
 		{ "normalAlphaMinMax" }, { },
 		"Normal Alpha" },
@@ -217,49 +215,22 @@ static const int GL_num_shader_variants = sizeof(GL_shader_variants) / sizeof(op
 
 opengl_shader_t *Current_shader = NULL;
 
-// Forward declarations
-GLuint opengl_shader_create(const SCP_vector<SCP_string>& vs, const SCP_vector<SCP_string>& fs, const SCP_vector<SCP_string>& gs);
-void opengl_shader_check_info_log(GLuint shader_object);
-
 /**
- * Set the currently active shader 
- * @param shader_obj	Pointer to an opengl_shader_t object. This function calls glUseProgramARB with parameter 0 if shader_obj is NULL or if function is called without parameters, causing OpenGL to revert to fixed-function processing 
+ * Set the currently active shader
+ * @param shader_obj	Pointer to an opengl_shader_t object. This function calls glUseProgramARB with parameter 0 if shader_obj is NULL or if function is called without parameters, causing OpenGL to revert to fixed-function processing
  */
 void opengl_shader_set_current(opengl_shader_t *shader_obj)
 {
-	if (shader_obj != NULL) {
-		if(!Current_shader || (Current_shader->program_id != shader_obj->program_id)) {
-			GL_state.Array.ResetVertexAttribs();
-			GL_state.Uniform.reset();
-			Current_shader = shader_obj;
-			glUseProgram(Current_shader->program_id);
-			GL_state.Uniform.reset();
-#ifndef NDEBUG
-			if ( opengl_check_for_errors("shader_set_current()") ) {
-				glValidateProgram(Current_shader->program_id);
-
-				GLint obj_status = 0;
-				glGetProgramiv(Current_shader->program_id, GL_VALIDATE_STATUS, &obj_status);
-
-				if ( !obj_status ) {
-					opengl_program_check_info_log(Current_shader->program_id);
-	
-					mprintf(("VALIDATE INFO-LOG:\n"));
-
-					if (strlen(GLshader_info_log) > 5) {
-						mprintf(("%s\n", GLshader_info_log));
-					} else {
-						mprintf(("<EMPTY>\n"));
-					}
-				}
-			}
-#endif
-		}
-	} else {
+	if (Current_shader != shader_obj) {
 		GL_state.Array.ResetVertexAttribs();
-		GL_state.Uniform.reset();
-		Current_shader = NULL;
-		glUseProgram(0);
+
+		if(shader_obj) {
+			shader_obj->program->use();
+		} else {
+			GL_state.UseProgram(0);
+		}
+
+		Current_shader = shader_obj;
 	}
 }
 
@@ -298,18 +269,11 @@ void opengl_delete_shader(int sdr_handle)
 	Assert(sdr_handle >= 0);
 	Assert(sdr_handle < (int)GL_shader.size());
 
-	if (GL_shader[sdr_handle].program_id) {
-		glDeleteProgram(GL_shader[sdr_handle].program_id);
-		GL_shader[sdr_handle].program_id = 0;
-	}
+	GL_shader[sdr_handle].program.reset();
 
 	GL_shader[sdr_handle].flags = 0;
 	GL_shader[sdr_handle].flags2 = 0;
 	GL_shader[sdr_handle].shader = NUM_SHADER_TYPES;
-
-	GL_shader[sdr_handle].uniforms.clear();
-	GL_shader[sdr_handle].attributes.clear();
-	GL_shader[sdr_handle].uniform_blocks.clear();
 }
 
 /**
@@ -317,32 +281,14 @@ void opengl_delete_shader(int sdr_handle)
  */
 void opengl_shader_shutdown()
 {
-	size_t i;
-
-	for (i = 0; i < GL_shader.size(); i++) {
-		if (GL_shader[i].program_id) {
-			glDeleteProgram(GL_shader[i].program_id);
-			GL_shader[i].program_id = 0;
-		}
-
-		GL_shader[i].uniforms.clear();
-		GL_shader[i].attributes.clear();
-		GL_shader[i].uniform_blocks.clear();
-	}
-
 	GL_shader.clear();
-
-	if (GLshader_info_log != NULL) {
-		vm_free(GLshader_info_log);
-		GLshader_info_log = NULL;
-	}
 }
 
 static SCP_string opengl_shader_get_header(shader_type type_id, int flags, shader_stage stage) {
 	SCP_stringstream sflags;
 
 	sflags << "#version " << GLSL_version << " core\n";
-	
+
 	if (type_id == SDR_TYPE_POST_PROCESS_MAIN || type_id == SDR_TYPE_POST_PROCESS_LIGHTSHAFTS || type_id == SDR_TYPE_POST_PROCESS_FXAA) {
 		// ignore looking for variants. main post process, lightshafts, and FXAA shaders need special headers to be hacked in
 		opengl_post_shader_header(sflags, type_id, flags);
@@ -440,44 +386,59 @@ int opengl_compile_shader(shader_type sdr, uint flags)
 		}
 	}
 
-	auto vertex_content = opengl_get_shader_content(sdr_info->type_id, sdr_info->vert, flags, SDR_STAGE_VERTEX);
-	auto fragment_content = opengl_get_shader_content(sdr_info->type_id, sdr_info->frag, flags, SDR_STAGE_FRAGMENT);
-	SCP_vector<SCP_string> geom_content;
+	std::unique_ptr<opengl::ShaderProgram> program(new opengl::ShaderProgram());
 
-	if ( use_geo_sdr ) {
-		// read geometry shader
-		geom_content = opengl_get_shader_content(sdr_info->type_id, sdr_info->geo, flags, SDR_STAGE_GEOMETRY);
+	try {
+		program->addShaderCode(opengl::STAGE_VERTEX,
+							   opengl_get_shader_content(sdr_info->type_id, sdr_info->vert, flags, SDR_STAGE_VERTEX));
+		program->addShaderCode(opengl::STAGE_FRAGMENT,
+							   opengl_get_shader_content(sdr_info->type_id, sdr_info->frag, flags, SDR_STAGE_FRAGMENT));
+		SCP_vector<SCP_string> geom_content;
 
-		Current_geo_sdr_params = &sdr_info->geo_sdr_info;
-	}
+		if (use_geo_sdr) {
+			// read geometry shader
+			program->addShaderCode(opengl::STAGE_GEOMETRY,
+								   opengl_get_shader_content(sdr_info->type_id,
+															 sdr_info->geo,
+															 flags,
+															 SDR_STAGE_GEOMETRY));
 
-	new_shader.program_id = opengl_shader_create(vertex_content, fragment_content, geom_content);
+			Current_geo_sdr_params = &sdr_info->geo_sdr_info;
+		}
 
-	if (!new_shader.program_id) {
-		return -1;
+		for (int i = 0; i < opengl_vert_attrib::NUM_ATTRIBS; ++i) {
+			// assign vert attribute binding locations before we link the shader
+			glBindAttribLocation(program->getShaderHandle(), i, GL_vertex_attrib_info[i].name.c_str());
+		}
+
+		program->linkProgram();
+	} catch (const std::exception&) {
+		// Since all shaders are required a compilation failure is a fatal error
+		Error(LOCATION, "A shader failed to compile! Check the debug log for more information.");
 	}
 
 	new_shader.shader = sdr_info->type_id;
 	new_shader.flags = flags;
+	new_shader.program = std::move(program);
 
 	opengl_shader_set_current(&new_shader);
 
 	// bind fragment data locations
 	if ( GL_version >= 32 && GLSL_version >= 150 ) {
-		glBindFragDataLocation(new_shader.program_id, 0, "fragOut0");
-		glBindFragDataLocation(new_shader.program_id, 1, "fragOut1");
-		glBindFragDataLocation(new_shader.program_id, 2, "fragOut2");
-		glBindFragDataLocation(new_shader.program_id, 3, "fragOut3");
-		glBindFragDataLocation(new_shader.program_id, 4, "fragOut4");
+		glBindFragDataLocation(new_shader.program->getShaderHandle(), 0, "fragOut0");
+		glBindFragDataLocation(new_shader.program->getShaderHandle(), 1, "fragOut1");
+		glBindFragDataLocation(new_shader.program->getShaderHandle(), 2, "fragOut2");
+		glBindFragDataLocation(new_shader.program->getShaderHandle(), 3, "fragOut3");
+		glBindFragDataLocation(new_shader.program->getShaderHandle(), 4, "fragOut4");
 	}
 
 	// initialize uniforms and attributes
-	for ( auto& unif : sdr_info->uniforms ) {
-		opengl_shader_init_uniform( unif );
+	for (auto& unif : sdr_info->uniforms) {
+		new_shader.program->Uniforms.initUniform(unif);
 	}
 
-	for ( auto& attr : sdr_info->attributes ) {
-		opengl_shader_init_attribute(&GL_vertex_attrib_info[attr]);
+	for (auto& attr : sdr_info->attributes) {
+		new_shader.program->initAttribute(GL_vertex_attrib_info[attr].name, GL_vertex_attrib_info[attr].default_value);
 	}
 
 	// if this shader is POST_PROCESS_MAIN, hack in the user-defined flags
@@ -493,11 +454,12 @@ int opengl_compile_shader(shader_type sdr, uint flags)
 
 		if ( sdr_info->type_id == variant.type_id && variant.flag & flags ) {
 			for (auto& unif : variant.uniforms) {
-				opengl_shader_init_uniform(unif);
+				new_shader.program->Uniforms.initUniform(unif);
 			}
 
-			for (auto& attrs : variant.attributes) {
-				opengl_shader_init_attribute(&GL_vertex_attrib_info[attrs]);
+			for (auto& attr : variant.attributes) {
+				auto& attr_info = GL_vertex_attrib_info[attr];
+				new_shader.program->initAttribute(attr_info.name, attr_info.default_value);
 			}
 
 			mprintf(("	%s\n", variant.description));
@@ -518,11 +480,11 @@ int opengl_compile_shader(shader_type sdr, uint flags)
 
 	// then insert it at an empty slot or at the end
 	if ( empty_idx >= 0 ) {
-		GL_shader[empty_idx] = new_shader;
+		GL_shader[empty_idx] = std::move(new_shader);
 		sdr_index = empty_idx;
 	} else {
 		sdr_index = (int)GL_shader.size();
-		GL_shader.push_back(new_shader);
+		GL_shader.push_back(std::move(new_shader));
 	}
 
 	return sdr_index;
@@ -548,7 +510,7 @@ void opengl_shader_init()
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, 1, 1, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, &pixels);
 
 	GL_shader.clear();
-	
+
 	// Reserve 32 shader slots. This should cover most use cases in real life.
 	GL_shader.reserve(32);
 
@@ -569,248 +531,6 @@ void opengl_shader_init()
 }
 
 /**
- * Retrieve the compilation log for a given shader object, and store it in the GLshader_info_log global variable
- *
- * @param shader_object		OpenGL handle of a shader object
- */
-void opengl_shader_check_info_log(GLuint shader_object)
-{
-	if (GLshader_info_log == NULL) {
-		GLshader_info_log = (char *) vm_malloc(GLshader_info_log_size);
-	}
-
-	memset(GLshader_info_log, 0, GLshader_info_log_size);
-
-	glGetShaderInfoLog(shader_object, GLshader_info_log_size-1, 0, GLshader_info_log);
-}
-
-/**
-* Retrieve the compilation log for a given shader object, and store it in the GLshader_info_log global variable
-*
-* @param program_object		OpenGL handle of a shader object
-*/
-void opengl_program_check_info_log(GLuint program_object)
-{
-	if (GLshader_info_log == NULL) {
-		GLshader_info_log = (char *)vm_malloc(GLshader_info_log_size);
-	}
-
-	memset(GLshader_info_log, 0, GLshader_info_log_size);
-
-	glGetProgramInfoLog(program_object, GLshader_info_log_size - 1, 0, GLshader_info_log);
-}
-
-/**
- * Pass a GLSL shader source to OpenGL and compile it into a usable shader object.
- * Prints compilation errors (if any) to the log.
- * Note that this will only compile shaders into objects, linking them into executables happens later
- *
- * @param shader_source		GLSL sourcecode for the shader
- * @param shader_type		OpenGL ID for the type of shader being used, like GL_FRAGMENT_SHADER_ARB, GL_VERTEX_SHADER_ARB
- * @return 					OpenGL handle for the compiled shader object
- */
-GLuint opengl_shader_compile_object(const SCP_vector<SCP_string>& shader_source, GLenum shader_type)
-{
-	GLuint shader_object = 0;
-	GLint status = 0;
-
-	SCP_vector<const GLcharARB*> sources;
-	sources.reserve(shader_source.size());
-	for (auto it = shader_source.begin(); it != shader_source.end(); ++it) {
-		sources.push_back(it->c_str());
-	}
-
-	shader_object = glCreateShader(shader_type);
-
-	glShaderSource(shader_object, static_cast<GLsizei>(sources.size()), &sources[0], NULL);
-	glCompileShader(shader_object);
-
-	// check if the compile was successful
-	glGetShaderiv(shader_object, GL_COMPILE_STATUS, &status);
-
-	opengl_shader_check_info_log(shader_object);
-
-	// we failed, bail out now...
-	if (status == 0) {
-		// basic error check
-		mprintf(("%s shader failed to compile:\n%s\n", (shader_type == GL_VERTEX_SHADER) ? "Vertex" : ((shader_type == GL_GEOMETRY_SHADER) ? "Geometry" : "Fragment"), GLshader_info_log));
-
-		// this really shouldn't exist, but just in case
-		if (shader_object) {
-			glDeleteProgram(shader_object);
-		}
-
-		return 0;
-	}
-
-	// we succeeded, maybe output warnings too
-	if (strlen(GLshader_info_log) > 5) {
-		nprintf(("SHADER-DEBUG", "%s shader compiled with warnings:\n%s\n", (shader_type == GL_VERTEX_SHADER) ? "Vertex" : ((shader_type == GL_GEOMETRY_SHADER) ? "Geometry" : "Fragment"), GLshader_info_log));
-	}
-
-	return shader_object;
-}
-
-/**
- * Link vertex shader, fragment shader and geometry shader objects into a
- * usable shader executable.
- *
- * Prints linker errors (if any) to the log.
- * 
- * @param vertex_object		Compiled vertex shader object
- * @param fragment_object	Compiled fragment shader object
- * @param geometry_object	Compiled geometry shader object
- * @return			Shader executable
- */
-GLuint opengl_shader_link_object(GLuint vertex_object, GLuint fragment_object, GLuint geometry_object)
-{
-	GLuint shader_object = 0;
-	GLint status = 0;
-
-	shader_object = glCreateProgram();
-
-	if (vertex_object) {
-		glAttachShader(shader_object, vertex_object);
-	}
-
-	if (fragment_object) {
-		glAttachShader(shader_object, fragment_object);
-	}
-
-	if (geometry_object) {
-		glAttachShader(shader_object, geometry_object);
-	}
-
-	for ( int i = 0; i < opengl_vert_attrib::NUM_ATTRIBS; ++i ) {
-		// assign vert attribute binding locations before we link the shader
-		glBindAttribLocation(shader_object, i, GL_vertex_attrib_info[i].name.c_str());
-	}
-
-	glLinkProgram(shader_object);
-
-	// check if the link was successful
-	glGetProgramiv(shader_object, GL_LINK_STATUS, &status);
-
-	opengl_program_check_info_log(shader_object);
-
-	// we failed, bail out now...
-	if (status == 0) {
-		mprintf(("Shader failed to link:\n%s\n", GLshader_info_log));
-
-		if (shader_object) {
-			glDeleteProgram(shader_object);
-		}
-
-		return 0;
-	}
-
-	// we succeeded, maybe output warnings too
-	if (strlen(GLshader_info_log) > 5) {
-		nprintf(("SHADER-DEBUG", "Shader linked with warnings:\n%s\n", GLshader_info_log));
-	}
-
-	return shader_object;
-}
-
-/**
- * Creates an executable shader.
- *
- * @param vs	Vertex shader source code
- * @param fs	Fragment shader source code
- * @param gs	Geometry shader source code
- * @return 	Internal ID of compiled and linked shader generated by OpenGL
- */
-GLuint opengl_shader_create(const SCP_vector<SCP_string>& vs, const SCP_vector<SCP_string>& fs, const SCP_vector<SCP_string>& gs)
-{
-	GLuint vs_o = 0;
-	GLuint fs_o = 0;
-	GLuint gs_o = 0;
-	GLuint program = 0;
-
-	if (!vs.empty()) {
-		vs_o = opengl_shader_compile_object( vs, GL_VERTEX_SHADER );
-
-		if ( !vs_o ) {
-			mprintf(("ERROR! Unable to create vertex shader!\n"));
-			goto Done;
-		}
-	}
-
-	if (!fs.empty()) {
-		fs_o = opengl_shader_compile_object( fs, GL_FRAGMENT_SHADER );
-
-		if ( !fs_o ) {
-			mprintf(("ERROR! Unable to create fragment shader!\n"));
-			goto Done;
-		}
-	}
-
-	if (!gs.empty()) {
-		gs_o = opengl_shader_compile_object( gs, GL_GEOMETRY_SHADER );
-
-		if ( !gs_o ) {
-			mprintf(("ERROR! Unable to create fragment shader!\n"));
-			goto Done;
-		}
-	}
-
-	program = opengl_shader_link_object(vs_o, fs_o, gs_o);
-
-	if ( !program ) {
-		mprintf(("ERROR! Unable to create shader program!\n"));
-	}
-
-Done:
-	if (vs_o) {
-		glDeleteShader(vs_o);
-	}
-
-	if (fs_o) {
-		glDeleteShader(fs_o);
-	}
-
-	if (gs_o) {
-		glDeleteShader(gs_o);
-	}
-
-	return program;
-}
-
-/**
- * Initialize a shader attribute. Requires that the Current_shader global variable is valid.
- *
- * @param attribute_text	Name of the attribute to be initialized
- */
-void opengl_shader_init_attribute(const opengl_vert_attrib *attrib_info)
-{
-	opengl_shader_uniform_t new_attribute;
-
-	if ( (Current_shader == NULL) || attrib_info->name.empty() ) {
-		Int3();
-		return;
-	}
-
-	new_attribute.text_id = attrib_info->name;
-	new_attribute.location = glGetAttribLocation(Current_shader->program_id, attrib_info->name.c_str());
-
-	if ( new_attribute.location < 0 ) {
-		nprintf(("SHADER-DEBUG", "WARNING: Unable to get shader attribute location for \"%s\"!\n", attrib_info->name.c_str()));
-		return;
-	}
-
-	// assign default value to vertex attribute
-	glVertexAttrib4f(
-		new_attribute.location,
-		attrib_info->default_value.xyzw.x,
-		attrib_info->default_value.xyzw.y,
-		attrib_info->default_value.xyzw.z,
-		attrib_info->default_value.xyzw.w
-	);
-
-	Current_shader->attributes.push_back(new_attribute);
-}
-
-/**
  * Get the internal OpenGL location for a given attribute. Requires that the Current_shader global variable is valid
  *
  * @param attribute_text	Name of the attribute
@@ -818,122 +538,10 @@ void opengl_shader_init_attribute(const opengl_vert_attrib *attrib_info)
  */
 GLint opengl_shader_get_attribute(const char *attribute_text)
 {
-	if ( (Current_shader == NULL) || (attribute_text == NULL) ) {
-		Int3();
-		return -1;
-	}
+	Assertion(Current_shader != nullptr, "Current shader may not be null!");
+	Assertion(attribute_text != nullptr, "Attribute name must be valid!");
 
-	SCP_vector<opengl_shader_uniform_t>::iterator attribute;
-
-	for (attribute = Current_shader->attributes.begin(); attribute != Current_shader->attributes.end(); ++attribute) {
-		if ( !attribute->text_id.compare(attribute_text) ) {
-			return attribute->location;
-		}
-	}
-
-	return -1;
-}
-
-/**
- * Initialize a shader uniform. Requires that the Current_shader global variable is valid.
- *
- * @param uniform_text		Name of the uniform to be initialized
- */
-void opengl_shader_init_uniform(const char *uniform_text)
-{
-	opengl_shader_uniform_t new_uniform;
-
-	if ( (Current_shader == NULL) || (uniform_text == NULL) ) {
-		Int3();
-		return;
-	}
-
-	new_uniform.text_id = uniform_text;
-	new_uniform.location = glGetUniformLocation(Current_shader->program_id, uniform_text);
-
-	if (new_uniform.location < 0) {
-		nprintf(("SHADER-DEBUG", "WARNING: Unable to get shader uniform location for \"%s\"!\n", uniform_text));
-		return;
-	}
-
-	Current_shader->uniforms.push_back( new_uniform );
-}
-
-/**
- * Get the internal OpenGL location for a given uniform. Requires that the Current_shader global variable is valid
- *
- * @param uniform_text	Name of the uniform
- * @return				Internal OpenGL location for the uniform
- */
-GLint opengl_shader_get_uniform(const char *uniform_text)
-{
-	if ( (Current_shader == NULL) || (uniform_text == NULL) ) {
-		Int3();
-		return -1;
-	}
-
-	SCP_vector<opengl_shader_uniform_t>::iterator uniform;
-	SCP_vector<opengl_shader_uniform_t>::iterator uniforms_end = Current_shader->uniforms.end();
-	
-	for (uniform = Current_shader->uniforms.begin(); uniform != uniforms_end; ++uniform) {
-		if ( !uniform->text_id.compare(uniform_text) ) {
-			return uniform->location;
-		}
-	}
-
-	return -1;
-}
-
-/**
- * Initialize a shader uniform. Requires that the Current_shader global variable is valid.
- *
- * @param uniform_text		Name of the uniform to be initialized
- */
-void opengl_shader_init_uniform_block(const char *uniform_text)
-{
-	opengl_shader_uniform_t new_uniform_block;
-
-	if ( (Current_shader == NULL) || (uniform_text == NULL) ) {
-		Int3();
-		return;
-	}
-
-	new_uniform_block.text_id = uniform_text;
-#ifdef __APPLE__
-	new_uniform_block.location = glGetUniformBlockIndex((long)Current_shader->program_id, uniform_text);
-#else
-	new_uniform_block.location = glGetUniformBlockIndex(Current_shader->program_id, uniform_text);
-#endif
-	if (new_uniform_block.location < 0) {
-		nprintf(("SHADER-DEBUG", "WARNING: Unable to get shader uniform block location for \"%s\"!\n", uniform_text));
-		return;
-	}
-
-	Current_shader->uniform_blocks.push_back( new_uniform_block );
-}
-
-/**
- * Get the internal OpenGL location for a given uniform. Requires that the Current_shader global variable is valid
- *
- * @param uniform_text	Name of the uniform
- * @return				Internal OpenGL location for the uniform
- */
-GLint opengl_shader_get_uniform_block(const char *uniform_text)
-{
-	if ( (Current_shader == NULL) || (uniform_text == NULL) ) {
-		Int3();
-		return -1;
-	}
-
-	SCP_vector<opengl_shader_uniform_t>::iterator uniform_block;
-	
-	for (uniform_block = Current_shader->uniform_blocks.begin(); uniform_block != Current_shader->uniform_blocks.end(); ++uniform_block) {
-		if ( !uniform_block->text_id.compare(uniform_text) ) {
-			return uniform_block->location;
-		}
-	}
-
-	return -1;
+	return Current_shader->program->getAttributeLocation(attribute_text);
 }
 
 /**
@@ -944,17 +552,17 @@ void opengl_shader_compile_deferred_light_shader()
 	bool in_error = false;
 
 	int sdr_handle = gr_opengl_maybe_create_shader(SDR_TYPE_DEFERRED_LIGHTING, 0);
-	
+
 	if ( sdr_handle >= 0 ) {
 		opengl_shader_set_current(sdr_handle);
 
-		GL_state.Uniform.setUniformi("ColorBuffer", 0);
-		GL_state.Uniform.setUniformi("NormalBuffer", 1);
-		GL_state.Uniform.setUniformi("PositionBuffer", 2);
-		GL_state.Uniform.setUniformi("SpecBuffer", 3);
-		GL_state.Uniform.setUniformf("invScreenWidth", 1.0f / gr_screen.max_w);
-		GL_state.Uniform.setUniformf("invScreenHeight", 1.0f / gr_screen.max_h);
-		GL_state.Uniform.setUniformf("specFactor", Cmdline_ogl_spec);
+		Current_shader->program->Uniforms.setUniformi("ColorBuffer", 0);
+		Current_shader->program->Uniforms.setUniformi("NormalBuffer", 1);
+		Current_shader->program->Uniforms.setUniformi("PositionBuffer", 2);
+		Current_shader->program->Uniforms.setUniformi("SpecBuffer", 3);
+		Current_shader->program->Uniforms.setUniformf("invScreenWidth", 1.0f / gr_screen.max_w);
+		Current_shader->program->Uniforms.setUniformf("invScreenHeight", 1.0f / gr_screen.max_h);
+		Current_shader->program->Uniforms.setUniformf("specFactor", Cmdline_ogl_spec);
 	} else {
 		opengl_shader_set_current();
 		mprintf(("Failed to compile deferred lighting shader!\n"));
@@ -984,10 +592,10 @@ void opengl_shader_compile_passthrough_shader()
 		opengl_shader_set_current(sdr_handle);
 
 		//Hardcoded Uniforms
-		GL_state.Uniform.setUniformi("baseMap", 0);
-		GL_state.Uniform.setUniformi("noTexturing", 0);
-		GL_state.Uniform.setUniformi("alphaTexture", 0);
-		GL_state.Uniform.setUniformi("srgb", 0);
+		Current_shader->program->Uniforms.setUniformi("baseMap", 0);
+		Current_shader->program->Uniforms.setUniformi("noTexturing", 0);
+		Current_shader->program->Uniforms.setUniformi("alphaTexture", 0);
+		Current_shader->program->Uniforms.setUniformi("srgb", 0);
 	} else {
 		opengl_shader_set_current();
 		mprintf(("Failed to compile passthrough shader!\n"));
@@ -1006,33 +614,33 @@ void opengl_shader_set_passthrough(bool textured, bool alpha, color *clr, float 
 	opengl_shader_set_current(gr_opengl_maybe_create_shader(SDR_TYPE_PASSTHROUGH_RENDER, 0));
 
 	if ( textured ) {
-		GL_state.Uniform.setUniformi("noTexturing", 0);
+		Current_shader->program->Uniforms.setUniformi("noTexturing", 0);
 	} else {
-		GL_state.Uniform.setUniformi("noTexturing", 1);
+		Current_shader->program->Uniforms.setUniformi("noTexturing", 1);
 	}
 
 	if ( alpha ) {
-		GL_state.Uniform.setUniformi("alphaTexture", 1);
+		Current_shader->program->Uniforms.setUniformi("alphaTexture", 1);
 	} else {
-		GL_state.Uniform.setUniformi("alphaTexture", 0);
+		Current_shader->program->Uniforms.setUniformi("alphaTexture", 0);
 	}
 
- 	if ( High_dynamic_range ) {
- 		GL_state.Uniform.setUniformi("srgb", 1);
-		GL_state.Uniform.setUniformf("intensity", color_scale);
- 	} else {
- 		GL_state.Uniform.setUniformi("srgb", 0);
-		GL_state.Uniform.setUniformf("intensity", 1.0f);
- 	}
+	if ( High_dynamic_range ) {
+		Current_shader->program->Uniforms.setUniformi("srgb", 1);
+		Current_shader->program->Uniforms.setUniformf("intensity", color_scale);
+	} else {
+		Current_shader->program->Uniforms.setUniformi("srgb", 0);
+		Current_shader->program->Uniforms.setUniformf("intensity", 1.0f);
+	}
 
-	GL_state.Uniform.setUniformf("alphaThreshold", GL_alpha_threshold);
+	Current_shader->program->Uniforms.setUniformf("alphaThreshold", GL_alpha_threshold);
 
 	if ( clr != NULL ) {
-		GL_state.Uniform.setUniform4f("color", i2fl(clr->red) / 255.0f, i2fl(clr->green) / 255.0f, i2fl(clr->blue) / 255.0f, i2fl(clr->alpha) / 255.0f);
+		Current_shader->program->Uniforms.setUniform4f("color", i2fl(clr->red) / 255.0f, i2fl(clr->green) / 255.0f, i2fl(clr->blue) / 255.0f, i2fl(clr->alpha) / 255.0f);
 	} else {
-		GL_state.Uniform.setUniform4f("color", 1.0f, 1.0f, 1.0f, 1.0f);
+		Current_shader->program->Uniforms.setUniform4f("color", 1.0f, 1.0f, 1.0f, 1.0f);
 	}
 
-	GL_state.Uniform.setUniformMatrix4f("modelViewMatrix", GL_model_view_matrix);
-	GL_state.Uniform.setUniformMatrix4f("projMatrix", GL_projection_matrix);
+	Current_shader->program->Uniforms.setUniformMatrix4f("modelViewMatrix", GL_model_view_matrix);
+	Current_shader->program->Uniforms.setUniformMatrix4f("projMatrix", GL_projection_matrix);
 }

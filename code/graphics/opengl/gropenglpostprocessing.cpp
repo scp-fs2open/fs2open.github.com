@@ -2,11 +2,11 @@
 #include "cmdline/cmdline.h"
 #include "freespace.h"
 #include "def_files/def_files.h"
-#include "graphics/gropengl.h"
-#include "graphics/gropengldraw.h"
-#include "graphics/gropenglpostprocessing.h"
-#include "graphics/gropenglshader.h"
-#include "graphics/gropenglstate.h"
+#include "gropengl.h"
+#include "gropengldraw.h"
+#include "gropenglpostprocessing.h"
+#include "gropenglshader.h"
+#include "gropenglstate.h"
 #include "io/timer.h"
 #include "lighting/lighting.h"
 #include "mod_table/mod_table.h"
@@ -79,8 +79,8 @@ void opengl_post_pass_tonemap()
 {
 	opengl_shader_set_current( gr_opengl_maybe_create_shader(SDR_TYPE_POST_PROCESS_TONEMAPPING, 0) );
 
-	GL_state.Uniform.setUniformi("tex", 0);
-	GL_state.Uniform.setUniformf("exposure", 4.0f);
+	Current_shader->program->Uniforms.setUniformi("tex", 0);
+	Current_shader->program->Uniforms.setUniformf("exposure", 4.0f);
 
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, Scene_ldr_texture, 0);
 
@@ -112,7 +112,7 @@ void opengl_post_pass_bloom()
 
 	opengl_shader_set_current( gr_opengl_maybe_create_shader(SDR_TYPE_POST_PROCESS_BRIGHTPASS, 0) );
 
-	GL_state.Uniform.setUniformi("tex", 0);
+	Current_shader->program->Uniforms.setUniformi("tex", 0);
 
 	GL_state.Texture.SetActiveUnit(0);
 	GL_state.Texture.SetTarget(GL_TEXTURE_2D);
@@ -141,7 +141,7 @@ void opengl_post_pass_bloom()
 				opengl_shader_set_current(gr_opengl_maybe_create_shader(SDR_TYPE_POST_PROCESS_BLUR, SDR_FLAG_BLUR_VERTICAL));
 			}
 
-			GL_state.Uniform.setUniformi("tex", 0);
+			Current_shader->program->Uniforms.setUniformi("tex", 0);
 
 			GL_state.Texture.SetActiveUnit(0);
 			GL_state.Texture.SetTarget(GL_TEXTURE_2D);
@@ -151,9 +151,9 @@ void opengl_post_pass_bloom()
 				int bloom_width = width >> mipmap;
 				int bloom_height = height >> mipmap;
 
-				GL_state.Uniform.setUniformf("texSize", (pass) ? 1.0f / i2fl(bloom_width) : 1.0f / i2fl(bloom_height));
-				GL_state.Uniform.setUniformi("level", mipmap);
-				GL_state.Uniform.setUniformf("tapSize", 1.0f);
+				Current_shader->program->Uniforms.setUniformf("texSize", (pass) ? 1.0f / i2fl(bloom_width) : 1.0f / i2fl(bloom_height));
+				Current_shader->program->Uniforms.setUniformi("level", mipmap);
+				Current_shader->program->Uniforms.setUniformf("tapSize", 1.0f);
 
 				glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, dest_tex, mipmap);
 
@@ -170,9 +170,9 @@ void opengl_post_pass_bloom()
 
 	opengl_shader_set_current(gr_opengl_maybe_create_shader(SDR_TYPE_POST_PROCESS_BLOOM_COMP, 0));
 
-	GL_state.Uniform.setUniformi("tex", 0);
-	GL_state.Uniform.setUniformi("levels", MAX_MIP_BLUR_LEVELS);
-	GL_state.Uniform.setUniformf("bloom_intensity", Cmdline_bloom_intensity / 100.0f);
+	Current_shader->program->Uniforms.setUniformi("tex", 0);
+	Current_shader->program->Uniforms.setUniformi("levels", MAX_MIP_BLUR_LEVELS);
+	Current_shader->program->Uniforms.setUniformf("bloom_intensity", Cmdline_bloom_intensity / 100.0f);
 
 	GL_state.Texture.SetActiveUnit(0);
 	GL_state.Texture.SetTarget(GL_TEXTURE_2D);
@@ -244,7 +244,7 @@ void opengl_post_pass_fxaa() {
 	opengl_shader_set_current( gr_opengl_maybe_create_shader(SDR_TYPE_POST_PROCESS_FXAA_PREPASS, 0) );
 
 	// basic/default uniforms
-	GL_state.Uniform.setUniformi( "tex", 0 );
+	Current_shader->program->Uniforms.setUniformi( "tex", 0 );
 
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, Scene_luminance_texture, 0);
 
@@ -260,9 +260,9 @@ void opengl_post_pass_fxaa() {
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, Scene_ldr_texture, 0);
 
 	// basic/default uniforms
-	GL_state.Uniform.setUniformi( "tex0", 0 );
-	GL_state.Uniform.setUniformf( "rt_w", static_cast<float>(Post_texture_width));
-	GL_state.Uniform.setUniformf( "rt_h", static_cast<float>(Post_texture_height));
+	Current_shader->program->Uniforms.setUniformi( "tex0", 0 );
+	Current_shader->program->Uniforms.setUniformf( "rt_w", static_cast<float>(Post_texture_width));
+	Current_shader->program->Uniforms.setUniformf( "rt_h", static_cast<float>(Post_texture_height));
 
 	GL_state.Texture.SetActiveUnit(0);
 	GL_state.Texture.SetTarget(GL_TEXTURE_2D);
@@ -306,14 +306,14 @@ void opengl_post_lightshafts()
 
 				x = asinf(vm_vec_dot(&light_dir, &Eye_matrix.vec.rvec)) / PI*1.5f + 0.5f; //cant get the coordinates right but this works for the limited glare fov
 				y = asinf(vm_vec_dot(&light_dir, &Eye_matrix.vec.uvec)) / PI*1.5f*gr_screen.clip_aspect + 0.5f;
-				GL_state.Uniform.setUniform2f("sun_pos", x, y);
-				GL_state.Uniform.setUniformi("scene", 0);
-				GL_state.Uniform.setUniformi("cockpit", 1);
-				GL_state.Uniform.setUniformf("density", ls_density);
-				GL_state.Uniform.setUniformf("falloff", ls_falloff);
-				GL_state.Uniform.setUniformf("weight", ls_weight);
-				GL_state.Uniform.setUniformf("intensity", Sun_spot * ls_intensity);
-				GL_state.Uniform.setUniformf("cp_intensity", Sun_spot * ls_cpintensity);
+				Current_shader->program->Uniforms.setUniform2f("sun_pos", x, y);
+				Current_shader->program->Uniforms.setUniformi("scene", 0);
+				Current_shader->program->Uniforms.setUniformi("cockpit", 1);
+				Current_shader->program->Uniforms.setUniformf("density", ls_density);
+				Current_shader->program->Uniforms.setUniformf("falloff", ls_falloff);
+				Current_shader->program->Uniforms.setUniformf("weight", ls_weight);
+				Current_shader->program->Uniforms.setUniformf("intensity", Sun_spot * ls_intensity);
+				Current_shader->program->Uniforms.setUniformf("cp_intensity", Sun_spot * ls_cpintensity);
 
 				GL_state.Texture.SetActiveUnit(0);
 				GL_state.Texture.SetTarget(GL_TEXTURE_2D);
@@ -389,16 +389,16 @@ void gr_opengl_post_process_end()
 	opengl_shader_set_current(post_sdr_handle);
 
 	// basic/default uniforms
-	GL_state.Uniform.setUniformi( "tex", 0 );
-	GL_state.Uniform.setUniformi( "depth_tex", 1);
-	GL_state.Uniform.setUniformf( "timer", static_cast<float>(timer_get_milliseconds() % 100 + 1) );
+	Current_shader->program->Uniforms.setUniformi( "tex", 0 );
+	Current_shader->program->Uniforms.setUniformi( "depth_tex", 1);
+	Current_shader->program->Uniforms.setUniformf( "timer", static_cast<float>(timer_get_milliseconds() % 100 + 1) );
 
 	for (size_t idx = 0; idx < Post_effects.size(); idx++) {
 		if ( GL_shader[post_sdr_handle].flags & (1<<idx) ) {
 			const char *name = Post_effects[idx].uniform_name.c_str();
 			float value = Post_effects[idx].intensity;
 
-			GL_state.Uniform.setUniformf( name, value);
+			Current_shader->program->Uniforms.setUniformf( name, value);
 		}
 	}
 
@@ -493,7 +493,7 @@ void opengl_post_init_uniforms(int flags)
 {
 	for (int idx = 0; idx < (int)Post_effects.size(); idx++) {
 		if (flags & (1 << idx)) {
-			opengl_shader_init_uniform(Post_effects[idx].uniform_name.c_str());
+			Current_shader->program->Uniforms.initUniform(Post_effects[idx].uniform_name.c_str());
 		}
 	}
 }
