@@ -157,7 +157,7 @@ private:
  *
  * @note z64: I get this feeling that this is a useful function.
  */
-void add_pending_message(HWND hwnd, int id, int wparam, int lparam, int skip_count);
+void add_pending_message(HWND hwnd, int id, WPARAM wparam, LPARAM lparam, int skip_count);
 
 /**
  * @brief Initializes the message vector

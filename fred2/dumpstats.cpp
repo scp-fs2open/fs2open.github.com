@@ -381,7 +381,7 @@ void DumpStats::get_object_stats(CString &buffer)
 	buffer += temp;
 
 	// Waypoints
-	int total_waypoints = 0;
+	size_t total_waypoints = 0;
 	buffer += "\r\nWAYPOINTS\r\n";
 
 	SCP_list<waypoint_list>::iterator ii;
@@ -392,7 +392,7 @@ void DumpStats::get_object_stats(CString &buffer)
 	}
 
 	if (total_waypoints > 0) {
-		temp.Format("\ttotal_waypoints: %d\r\n", total_waypoints);
+		temp.Format("\ttotal_waypoints: " SIZE_T_ARG "\r\n", total_waypoints);
 		buffer += temp;
 	}
 
@@ -406,7 +406,7 @@ void DumpStats::get_object_stats(CString &buffer)
 	}
 
 	if (Jump_nodes.size() > 0) {
-		temp.Format("\ttotal_jumpnodes: %d\r\n", Jump_nodes.size());
+		temp.Format("\ttotal_jumpnodes: " SIZE_T_ARG "\r\n", Jump_nodes.size());
 		buffer += temp;
 	}
 

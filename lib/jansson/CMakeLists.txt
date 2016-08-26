@@ -92,15 +92,6 @@ IF(FSO_BUILD_INCLUDED_LIBS OR NOT JANSSON_FOUND)
     include (CheckTypeSize)
     INCLUDE(CheckSymbolExists)
 
-    if (MSVC)
-       # Turn off Microsofts "security" warnings.
-       add_definitions( "/W3 /D_CRT_SECURE_NO_WARNINGS /wd4005 /wd4996 /nologo" )
-    endif()
-
-    if (NOT WIN32 AND (CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX))
-       add_definitions("-fPIC")
-    endif()
-
     check_include_files (endian.h HAVE_ENDIAN_H)
     check_include_files (fcntl.h HAVE_FCNTL_H)
     check_include_files (sched.h HAVE_SCHED_H)
@@ -273,16 +264,6 @@ IF(FSO_BUILD_INCLUDED_LIBS OR NOT JANSSON_FOUND)
        set (JSON_INLINE)
     endif()
 
-    # Find our snprintf
-    CHECK_SYMBOL_EXISTS(snprintf stdio.h HAVE_SNPRINTF)
-    CHECK_SYMBOL_EXISTS(_snprintf stdio.h HAVE__SNPRINTF)
-
-    if (HAVE_SNPRINTF)
-       set(JSON_SNPRINTF snprintf)
-    elseif (HAVE__SNPRINTF)
-       set(JSON_SNPRINTF _snprintf)
-    endif ()
-
     check_c_source_compiles ("int main() { unsigned long val; __sync_bool_compare_and_swap(&val, 0, 1); return 0; } " HAVE_SYNC_BUILTINS)
     check_c_source_compiles ("int main() { char l; unsigned long v; __atomic_test_and_set(&l, __ATOMIC_RELAXED); __atomic_store_n(&v, 1, __ATOMIC_RELEASE); __atomic_load_n(&v, __ATOMIC_ACQUIRE); return 0; }" HAVE_ATOMIC_BUILTINS)
 
@@ -325,6 +306,11 @@ IF(FSO_BUILD_INCLUDED_LIBS OR NOT JANSSON_FOUND)
       ${JANSSON_SRC}
       ${JANSSON_HDR_PRIVATE}
       ${JANSSON_HDR_PUBLIC})
+
+    if (MSVC)
+        # Disable warnings if building from source
+        target_compile_options(jansson PRIVATE "/W0")
+    endif()
 
     set_target_properties(jansson PROPERTIES FOLDER "3rdparty")
 

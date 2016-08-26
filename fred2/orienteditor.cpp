@@ -237,7 +237,7 @@ void orient_editor::update_object(object *ptr)
 float orient_editor::convert(CString &str)
 {
 	char buf[256];
-	int i, j, len;
+	size_t i, j, len;
 
 	string_copy(buf, str, 255);
 	len = strlen(buf);

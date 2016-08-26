@@ -963,7 +963,7 @@ void event_editor::OnSelchangedEventTree(NMHDR* pNMHDR, LRESULT* pResult)
 		h = h2;
 	}
 
-	z = m_event_tree.GetItemData(h);
+	z = (int)m_event_tree.GetItemData(h);
 	for (i=0; i<m_num_events; i++){
 		if (m_events[i].formula == z){
 			break;

@@ -2811,7 +2811,7 @@ void HudGaugeSupport::render(float frametime)
 	}
 
 	show_time = 0;
-	if (Player_ai->ai_flags & AIF_BEING_REPAIRED) {
+	if (Player_ai->ai_flags[AI::AI_Flags::Being_repaired]) {
 		Assert(Player_ship->ship_max_hull_strength > 0);
 		
 		if (!Cmdline_rearm_timer)
@@ -2854,7 +2854,7 @@ void HudGaugeSupport::render(float frametime)
 		}
 		renderStringAlignCenter(position[0], position[1] + text_val_offset_y, w, outstr);
 	}
-	else if (Player_ai->ai_flags & AIF_REPAIR_OBSTRUCTED) {
+	else if (Player_ai->ai_flags[AI::AI_Flags::Repair_obstructed]) {
 		strcpy_s(outstr, XSTR( "obstructed", 229));
 		renderStringAlignCenter(position[0], position[1] + text_val_offset_y, w, outstr);
 	} else {

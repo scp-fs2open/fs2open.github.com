@@ -390,7 +390,7 @@ BOOL initial_status::OnInitDialog()
 				++i;
 
 				for (SCP_vector<SCP_string>::iterator tni = Team_Names.begin(); tni != Team_Names.end(); ++tni) {
-					int z = m_team_color_setting.AddString(tni->c_str());
+					z = m_team_color_setting.AddString(tni->c_str());
 					if (!stricmp(tni->c_str(), shipp->team_name.c_str())) {
 						m_team_color_setting.SetCurSel(i);
 					}
@@ -637,7 +637,7 @@ void initial_status::change_docker_point(bool store_selection)
 	// get new selection
 	sel = lstDockerPoints->GetCurSel();
 	if (sel != LB_ERR)
-		cur_docker_point = lstDockerPoints->GetItemData(sel);
+		cur_docker_point = (int)lstDockerPoints->GetItemData(sel);
 	else
 		cur_docker_point = -1;
 
@@ -687,7 +687,7 @@ void initial_status::change_dockee(bool store_selection)
 	// get new selection
 	sel = cboDockees->GetCurSel();
 	if (sel != CB_ERR)
-		cur_dockee = cboDockees->GetItemData(sel);
+		cur_dockee = (int)cboDockees->GetItemData(sel);
 	else
 		cur_dockee = -1;
 
@@ -749,7 +749,7 @@ void initial_status::change_dockee_point(bool store_selection)
 	// get new value
 	sel = cboDockeePoints->GetCurSel();
 	if (sel != CB_ERR)
-		cur_dockee_point = cboDockeePoints->GetItemData(sel);
+		cur_dockee_point = (int)cboDockeePoints->GetItemData(sel);
 	else
 		cur_dockee_point = -1;
 

@@ -281,13 +281,13 @@ public:
 		}
 
 		GL_pfd.iPixelType = PFD_TYPE_RGBA;
-		GL_pfd.cColorBits = props.pixel_format.red_size + props.pixel_format.green_size + props.pixel_format.blue_size + props.pixel_format.alpha_size;
-		GL_pfd.cRedBits = props.pixel_format.red_size;
-		GL_pfd.cGreenBits = props.pixel_format.green_size;
-		GL_pfd.cBlueBits = props.pixel_format.blue_size;
-		GL_pfd.cAlphaBits = props.pixel_format.alpha_size;
-		GL_pfd.cDepthBits = props.pixel_format.depth_size;
-		GL_pfd.cStencilBits = props.pixel_format.stencil_size;
+		GL_pfd.cColorBits = (BYTE)(props.pixel_format.red_size + props.pixel_format.green_size + props.pixel_format.blue_size + props.pixel_format.alpha_size);
+		GL_pfd.cRedBits = (BYTE)(props.pixel_format.red_size);
+		GL_pfd.cGreenBits = (BYTE)(props.pixel_format.green_size);
+		GL_pfd.cBlueBits = (BYTE)(props.pixel_format.blue_size);
+		GL_pfd.cAlphaBits = (BYTE)(props.pixel_format.alpha_size);
+		GL_pfd.cDepthBits = (BYTE)(props.pixel_format.depth_size);
+		GL_pfd.cStencilBits = (BYTE)(props.pixel_format.stencil_size);
 
 		Assert(_windowHandle != NULL);
 
@@ -2302,14 +2302,14 @@ void CFREDView::OnSelectList()
 // position camera to view all objects on the screen at once.  Doesn't change orientation.
 void view_universe(int just_marked)
 {
-	int i, max = 0, flags[MAX_OBJECTS];
+	int i, max = 0, obj_flags[MAX_OBJECTS];
 	float dist, largest = 20.0f;
 	vec3d center, p1, p2;		// center of all the objects collectively
 	vertex v;
 	object *ptr;
 
 	for (i=0; i<MAX_OBJECTS; i++)
-		flags[i] = 0;
+		obj_flags[i] = 0;
 
 	if (just_marked)
 		ptr = &Objects[cur_object_index];
@@ -2349,7 +2349,7 @@ void view_universe(int just_marked)
 			if (dist > largest)
 				largest = dist;
 
-			flags[OBJ_INDEX(ptr)] = 1;  // flag object as needing on-screen check
+			obj_flags[OBJ_INDEX(ptr)] = 1;  // flag object as needing on-screen check
 			if (OBJ_INDEX(ptr) > max)
 				max = OBJ_INDEX(ptr);
 		}

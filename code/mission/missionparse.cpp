@@ -2025,12 +2025,12 @@ int parse_create_object_sub(p_object *p_objp)
 	// whether this flag is set or not
 	if (p_objp->flags[Mission::Parse_Object_Flags::AIF_Kamikaze])
 	{
-		Ai_info[shipp->ai_index].ai_flags |= AIF_KAMIKAZE;
+		Ai_info[shipp->ai_index].ai_flags.set(AI::AI_Flags::Kamikaze);
 		Ai_info[shipp->ai_index].kamikaze_damage = p_objp->kamikaze_damage;
 	}
 
-    if (p_objp->flags[Mission::Parse_Object_Flags::AIF_No_dynamic])
-		Ai_info[shipp->ai_index].ai_flags |= AIF_NO_DYNAMIC;
+	if (p_objp->flags[Mission::Parse_Object_Flags::AIF_No_dynamic])
+		Ai_info[shipp->ai_index].ai_flags.set(AI::AI_Flags::No_dynamic);
 
 	if (p_objp->flags[Mission::Parse_Object_Flags::SF_Red_alert_store_status])
 	{
@@ -2475,7 +2475,7 @@ void parse_bring_in_docked_wing(p_object *p_objp, int wingnum, int shipnum)
 	aip->wing = wingnum;
 
 	if (wingp->flags[Ship::Wing_Flags::No_dynamic])
-		aip->ai_flags |= AIF_NO_DYNAMIC;
+		aip->ai_flags.set(AI::AI_Flags::No_dynamic);
 
 	// copy any goals from the wing to the newly created ship
 	for (index = 0; index < MAX_AI_GOALS; index++)
@@ -3465,6 +3465,10 @@ void mission_parse_maybe_create_parse_object(p_object *pobjp)
 				shipfx_blow_up_model(objp, Ship_info[Ships[objp->instance].ship_info_index].model_num, 0, 0, &objp->pos);
 				objp->flags.set(Object::Object_Flags::Should_be_dead);
 
+				// Make sure that the ship is marked as destroyed so the AI doesn't freak out later
+				auto sip = &Ships[objp->instance];
+				ship_add_exited_ship(sip, Ship::Exit_Flags::Destroyed);
+
 				// once the ship is exploded, find the debris pieces belonging to this object, mark them
 				// as not to expire, and move them forward in time N seconds
 				for (i = 0; i < MAX_DEBRIS_PIECES; i++)
@@ -4131,7 +4135,7 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, int force, int spec
 		Ai_info[Ships[Objects[objnum].instance].ai_index].wing = wingnum;
 
 		if (wingp->flags[Ship::Wing_Flags::No_dynamic])
-			aip->ai_flags |= AIF_NO_DYNAMIC;
+			aip->ai_flags.set(AI::AI_Flags::No_dynamic);
 
 		// update housekeeping variables
 		// NOTE:  for the initial wing setup we use actual position to get around

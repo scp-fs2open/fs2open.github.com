@@ -285,7 +285,7 @@ void player_start_editor::reset_controls()
 	ct = 0;
     for (auto it = Ship_info.cbegin(); it != Ship_info.cend(); ++it) {
         if (it->flags[Ship::Info_Flags::Player_ship]) {
-            i = std::distance(Ship_info.cbegin(), it);
+            i = (int)std::distance(Ship_info.cbegin(), it);
             m_ship_list.AddString(it->name);
 
             // if the ship currently has pool entries or was set by a variable, check it

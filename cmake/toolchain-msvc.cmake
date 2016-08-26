@@ -135,3 +135,8 @@ endif()
 
 target_compile_definitions(compiler INTERFACE _CRT_SECURE_NO_DEPRECATE
 	_CRT_SECURE_NO_WARNINGS _SECURE_SCL=0 NOMINMAX)
+	
+if (FSO_FATAL_WARNINGS)
+	# Make warnings fatal if the right variable is set
+	target_compile_options(compiler INTERFACE "/WX")
+endif()

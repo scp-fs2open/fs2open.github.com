@@ -167,6 +167,7 @@ extern int Num_ai_profiles;
 extern int Default_ai_profile;
 extern ai_profile_t Ai_profiles[MAX_AI_PROFILES];
 
+#define AI_PROFILES_INDEX(ai_p) ((int)((ai_p) - Ai_profiles))
 
 void ai_profiles_init();
 

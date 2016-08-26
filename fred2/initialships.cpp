@@ -55,7 +55,6 @@ END_MESSAGE_MAP()
 
 BOOL InitialShips::OnInitDialog() 
 {
-    int i;
 	CDialog::OnInitDialog();
 
 	m_list_count = 0;
@@ -64,7 +63,7 @@ BOOL InitialShips::OnInitDialog()
 	if ( m_initial_items == INITIAL_SHIPS ) {
         for (auto it = Ship_info.cbegin(); it != Ship_info.cend(); ++it) {
             if (it->flags[Ship::Info_Flags::Player_ship]) {
-                i = std::distance(Ship_info.cbegin(), it);
+                auto i = std::distance(Ship_info.cbegin(), it);
                 m_initial_list.AddString(it->name);
                 if (Campaign.ships_allowed[i]) {
                     m_initial_list.SetCheck(m_list_count, 1);
@@ -90,7 +89,7 @@ BOOL InitialShips::OnInitDialog()
 		memset( allowed_weapons, 0, sizeof(allowed_weapons) );
         for (auto it = Ship_info.cbegin(); it != Ship_info.cend(); ++it) {
             if (it->flags[Ship::Info_Flags::Player_ship]) {
-                for (i = 0; i < MAX_WEAPON_TYPES; i++) {
+                for (auto i = 0; i < MAX_WEAPON_TYPES; i++) {
                     if (it->allowed_weapons[i])
                         allowed_weapons[i] = 1;
                 }
@@ -138,7 +137,7 @@ BOOL InitialShips::OnInitDialog()
 
 void InitialShips::OnOK() 
 {
-	int i, index;
+	int i;
 
 	// zero out whichever array we are setting
 	if ( m_initial_items == INITIAL_SHIPS ) {
@@ -154,7 +153,7 @@ void InitialShips::OnOK()
 		if ( m_initial_list.GetCheck(i) ) {
 			// this item is checked.  Get the index into either the ship info array or the weapons
 			// array
-			index = m_initial_list.GetItemData(i);
+			auto index = m_initial_list.GetItemData(i);
 			if ( m_initial_items == INITIAL_SHIPS ) {
 				Campaign.ships_allowed[index] = 1;
 			} else if ( m_initial_items == INITIAL_WEAPONS ) {

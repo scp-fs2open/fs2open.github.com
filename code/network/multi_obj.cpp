@@ -283,7 +283,7 @@ int multi_oo_pack_client_data(ubyte *data)
 	if ( Player_ai->current_target_is_locked ){
 		out_flags |= OOC_TARGET_LOCKED;
 	}
-	if ( Player_ai->ai_flags & AIF_SEEK_LOCK ){	
+	if ( Player_ai->ai_flags[AI::AI_Flags::Seek_lock] ){	
 		out_flags |= OOC_TARGET_SEEK_LOCK;
 	}
 	if ( Player->locking_on_center ){
@@ -345,11 +345,12 @@ int multi_oo_pack_client_data(ubyte *data)
 }
 
 // pack the appropriate info into the data
-#define PACK_PERCENT(v) { ubyte upercent; if(v < 0.0f){v = 0.0f;} upercent = (v * 255.0f) <= 255.0f ? (ubyte)(v * 255.0f) : (ubyte)255; memcpy(data + packet_size + header_bytes, &upercent, sizeof(ubyte)); packet_size++; }
+#define PACK_PERCENT(v) { std::uint8_t upercent; if(v < 0.0f){v = 0.0f;} upercent = (v * 255.0f) <= 255.0f ? (std::uint8_t)(v * 255.0f) : (std::uint8_t)255; memcpy(data + packet_size + header_bytes, &upercent, sizeof(std::uint8_t)); packet_size++; }
 #define PACK_BYTE(v) { memcpy( data + packet_size + header_bytes, &v, 1 ); packet_size += 1; }
-#define PACK_USHORT(v) { short swap = INTEL_SHORT(v); memcpy( data + packet_size + header_bytes, &swap, sizeof(short) ); packet_size += sizeof(short); }
-#define PACK_SHORT(v) { ushort swap = INTEL_SHORT(v); memcpy( data + packet_size + header_bytes, &swap, sizeof(ushort) ); packet_size += sizeof(ushort); }
-#define PACK_INT(v) { int swap = INTEL_INT(v); memcpy( data + packet_size + header_bytes, &swap, sizeof(int) ); packet_size += sizeof(int); }
+#define PACK_SHORT(v) { std::int16_t swap = INTEL_SHORT(v); memcpy( data + packet_size + header_bytes, &swap, sizeof(std::int16_t) ); packet_size += sizeof(std::int16_t); }
+#define PACK_USHORT(v) { std::uint16_t swap = INTEL_SHORT(v); memcpy( data + packet_size + header_bytes, &swap, sizeof(std::uint16_t) ); packet_size += sizeof(std::uint16_t); }
+#define PACK_INT(v) { std::int32_t swap = INTEL_INT(v); memcpy( data + packet_size + header_bytes, &swap, sizeof(std::int32_t) ); packet_size += sizeof(std::int32_t); }
+#define PACK_ULONG(v) { std::uint64_t swap = INTEL_LONG(v); memcpy( data + packet_size + header_bytes, &swap, sizeof(std::uint64_t) ); packet_size += sizeof(std::uint64_t); }
 int multi_oo_pack_data(net_player *pl, object *objp, ubyte oo_flags, ubyte *data_out)
 {	
 	ubyte data[255];
@@ -524,7 +525,7 @@ int multi_oo_pack_data(net_player *pl, object *objp, ubyte oo_flags, ubyte *data
 		// flag
 		support_extra = 1;		
 		PACK_BYTE( support_extra );
-		PACK_INT( Ai_info[shipp->ai_index].ai_flags );
+		PACK_ULONG( Ai_info[shipp->ai_index].ai_flags.to_long() );
 		PACK_INT( Ai_info[shipp->ai_index].mode );
 		PACK_INT( Ai_info[shipp->ai_index].submode );
 
@@ -638,11 +639,7 @@ int multi_oo_unpack_client_data(net_player *pl, ubyte *data)
 		// other locking information
 		if((shipp != NULL) && (shipp->ai_index != -1)){			
 			Ai_info[shipp->ai_index].current_target_is_locked = ( in_flags & OOC_TARGET_LOCKED) ? 1 : 0;
-			if	( in_flags & OOC_TARGET_SEEK_LOCK ) {
-				Ai_info[shipp->ai_index].ai_flags |= AIF_SEEK_LOCK;
-			} else {
-				Ai_info[shipp->ai_index].ai_flags &= ~AIF_SEEK_LOCK;
-			}
+			Ai_info[shipp->ai_index].ai_flags.set(AI::AI_Flags::Seek_lock, (in_flags & OOC_TARGET_SEEK_LOCK) != 0);
 		}
 
 		// afterburner status
@@ -941,17 +938,18 @@ int multi_oo_unpack_data(net_player *pl, ubyte *data)
 	GET_DATA(support_extra);
 	if(support_extra){
 		ushort dock_sig;
-		int ai_flags, ai_mode, ai_submode;
+		int ai_mode, ai_submode;
+		std::int64_t ai_flags;
 
 		// flag		
-		GET_INT(ai_flags);
+		GET_ULONG(ai_flags);
 		GET_INT(ai_mode);
 		GET_INT(ai_submode);
 		GET_USHORT(dock_sig);		
 
 		// valid ship?							
 		if((shipp != NULL) && (shipp->ai_index >= 0) && (shipp->ai_index < MAX_AI_INFO)){
-			Ai_info[shipp->ai_index].ai_flags = ai_flags;
+			Ai_info[shipp->ai_index].ai_flags.from_long(ai_flags);
 			Ai_info[shipp->ai_index].mode = ai_mode;
 			Ai_info[shipp->ai_index].submode = ai_submode;
 

@@ -18,8 +18,6 @@
 #define	UNINITIALIZED_VALUE	-1234567.8f
 #define WARN_DIST	1.0
 
-static void accurate_square_root( float A, float B, float C, float discriminant, float *root1, float *root2 ) __UNUSED;
-
 static float matrix_determinant_from_vectors(const vec3d *v1, const vec3d *v2, const vec3d *v3)
 {
 	float ans;
@@ -1077,23 +1075,6 @@ void fvi_closest_line_line(const vec3d *x0, const vec3d *vx, const vec3d *y0, co
 	*x_time = vm_vec_dot(&delta_l_cross_vy, &vx_cross_vy) / denominator; 
 	*y_time = vm_vec_dot(&delta_l_cross_vx, &vx_cross_vy) / denominator; 
 }
-
-// --------------------------------------------------------------------------------------------------------------------
-#pragma warning(push)
-#pragma warning(disable: 4505) // Unused local function
-static void accurate_square_root( float A, float B, float C, float discriminant, float *root1, float *root2 )
-{
-	float root = fl_sqrt(discriminant);
-
-	if (B > 0) {
-		*root1 = 2.0f*C / (-B - root);
-		*root2 = (-B - root) / (2.0f*A);
-	} else {	// B < 0
-		*root1 = (-B + root) / (2.0f*A);
-		*root2 = 2.0f*C / (-B + root);
-	}
-}
-#pragma warning(pop)
 
 /**
  * Project point on bounding box

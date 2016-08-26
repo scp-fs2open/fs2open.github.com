@@ -421,7 +421,7 @@ void CModifyVariableDlg::validate_data(CString &temp_data, int set_focus)
 	char message_text[256];
 
 	// check length > 0
-	int length  = strlen(temp_data);
+	auto length  = strlen(temp_data);
 	if (length == 0) {
 		strcpy_s(message_text, "Invalid  Default Value");
 		message = true;
@@ -441,10 +441,10 @@ void CModifyVariableDlg::validate_data(CString &temp_data, int set_focus)
 	}
 
 	// check for invalid characters
-	int rval = strcspn(temp_data, "@()");
+	auto rval = strcspn(temp_data, "@()");
 	if (rval != length) {
 		message = true;
-		sprintf(message_text, "Invalid char '%c' in Default Value", temp_data[rval]);
+		sprintf(message_text, "Invalid char '%c' in Default Value", temp_data[(int)rval]);
 	}
 
 	// display message
@@ -480,17 +480,17 @@ void CModifyVariableDlg::validate_var_name(int set_focus)
 	char message_text[256];
 
 	// check length > 0
-	int length  = strlen(temp_name);
+	auto length  = strlen(temp_name);
 	if (length == 0) {
 		strcpy_s(message_text, "Invalid Variable Name");
 		message = true;
 	} else {
 
 		// check for invalid characters
-		int rval = strcspn(temp_name, "@()");
+		auto rval = strcspn(temp_name, "@()");
 		if (rval != length) {
 			message = true;
-			sprintf(message_text, "Invalid char '%c' in Variable Name", temp_name[rval]);
+			sprintf(message_text, "Invalid char '%c' in Variable Name", temp_name[(int)rval]);
 		} else {
 			int index = get_index_sexp_variable_name(temp_name);
 

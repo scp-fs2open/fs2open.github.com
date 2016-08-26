@@ -361,7 +361,7 @@ void asteroid_editor::update_init()
 				// loop over combo boxes, store the item data of the cur selection, -1 in no cur selection
 				int cur_sel = ((CComboBox*)GetDlgItem(Dlg_id[idx]))->GetCurSel();
 				if (cur_sel != CB_ERR) {
-					cur_choice = ((CComboBox*)GetDlgItem(Dlg_id[idx]))->GetItemData(cur_sel);
+					cur_choice = (int)((CComboBox*)GetDlgItem(Dlg_id[idx]))->GetItemData(cur_sel);
 				} else {
 					cur_choice = -1;
 				}
@@ -472,7 +472,7 @@ void asteroid_editor::update_init()
 		if (a_field[cur_field].field_debris_type[idx] != -1) {
 			box_count = ((CComboBox*)GetDlgItem(Dlg_id[idx]))->GetCount();
 			for (box_index=0; box_index<box_count; box_index++) {
-				cur_box_data = ((CComboBox*)GetDlgItem(Dlg_id[idx]))->GetItemData(box_index);
+				cur_box_data = (int)((CComboBox*)GetDlgItem(Dlg_id[idx]))->GetItemData(box_index);
 				if (cur_box_data == a_field[cur_field].field_debris_type[idx]) {
 					// set cur sel
 					((CComboBox*)GetDlgItem(Dlg_id[idx]))->SetCurSel(box_index);

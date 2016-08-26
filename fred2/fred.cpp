@@ -95,10 +95,10 @@ protected:
 typedef struct
 {
 	int frame_to_process;
-	int hwnd;
+	HWND hwnd;
 	int id;
-	int wparam;
-	int lparam;
+	WPARAM wparam;
+	LPARAM lparam;
 } pending_message;
 
 pending_message Pending_messages[MAX_PENDING_MESSAGES];
@@ -534,12 +534,12 @@ void CFREDApp::write_window(char *name, window_data *wndd) {
 	WriteProfileInt(name, "Visible", wndd->visible);
 }
 
-void add_pending_message(HWND hwnd, int id, int wparam, int lparam, int skip_count) {
+void add_pending_message(HWND hwnd, int id, WPARAM wparam, LPARAM lparam, int skip_count) {
 	// Add a message to be processed to a buffer.
 	// Wait skip_count frames before processing.
 	for (int i = 0; i < MAX_PENDING_MESSAGES; i++) {
 		if (Pending_messages[i].frame_to_process == -1) {
-			Pending_messages[i].hwnd = (int) hwnd;
+			Pending_messages[i].hwnd = hwnd;
 			Pending_messages[i].id = id;
 			Pending_messages[i].wparam = wparam;
 			Pending_messages[i].lparam = lparam;
@@ -562,7 +562,7 @@ void process_pending_messages(void) {
 		if (Pending_messages[i].frame_to_process != -1)
 			if (Pending_messages[i].frame_to_process <= FrameCount) {
 				pending_message	*pmp = &Pending_messages[i];
-				PostMessage((HWND) pmp->hwnd, pmp->id, pmp->wparam, pmp->lparam);
+				PostMessage(pmp->hwnd, pmp->id, pmp->wparam, pmp->lparam);
 				Pending_messages[i].frame_to_process = -1;
 			}
 }
