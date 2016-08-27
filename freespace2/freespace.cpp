@@ -4581,8 +4581,7 @@ void game_stop_time()
 		#endif
 
 		// Stop the timer_tick stuff...
-		// Normally, you should never access 'timestamp_ticker', consider this a low-level routine
-		saved_timestamp_ticker = timestamp_ticker;
+		saved_timestamp_ticker = timestamp();
 	}
 	timer_paused++;
 
@@ -4615,7 +4614,7 @@ void game_start_time()
 		// Restore the timer_tick stuff...
 		// Normally, you should never access 'timestamp_ticker', consider this a low-level routine
 		Assert( saved_timestamp_ticker > -1 );		// Called out of order, get JAS
-		timestamp_ticker = saved_timestamp_ticker;
+		timestamp_set_value(saved_timestamp_ticker);
 		saved_timestamp_ticker = -1;
 	}
 
@@ -4751,9 +4750,8 @@ void game_set_frametime(int state)
 	Last_frame_timestamp = timestamp();
 
 	flFrametime = f2fl(Frametime);
-	
-	auto frametime_ms = f2i(fixmul(Frametime, F1_0 * TIMESTAMP_FREQUENCY));
-	timestamp_inc(frametime_ms);
+
+	timestamp_inc(Frametime);
 
 	// wrap overall frametime if needed
 	if ( FrametimeOverall > (INT_MAX - F1_0) )
