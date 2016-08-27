@@ -59,9 +59,6 @@
 
 #include "osapi/osapi.h"
 
-#include "gl/gl.h"
-#include "gl/glu.h"
-
 #ifdef _DEBUG
 #undef THIS_FILE
 static char THIS_FILE[] = __FILE__;

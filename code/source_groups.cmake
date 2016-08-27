@@ -343,11 +343,6 @@ set (file_root_graphics_openglgr_opengl_headers
 	graphics/opengl/ShaderProgram.h
 )
 
-# Graphics -> OpenGLGr -> GL files
-set (file_root_graphics_openglgr_gl
-	graphics/gl/glu.h
-)
-
 # Graphics -> Paths
 set (file_root_graphics_paths
 	graphics/paths/NVGRenderer.cpp
@@ -1073,7 +1068,6 @@ source_group("Graphics"                           FILES ${file_root_graphics})
 source_group("Graphics\\OpenGLGr"                 FILES ${file_root_graphics_openglgr})
 source_group("Graphics\\OpenGLGr\\OpenGL CPPs"    FILES ${file_root_graphics_openglgr_opengl_cpps})
 source_group("Graphics\\OpenGLGr\\OpenGL Headers" FILES ${file_root_graphics_openglgr_opengl_headers})
-source_group("Graphics\\OpenGLGr\\GL"             FILES ${file_root_graphics_openglgr_gl})
 source_group("Graphics\\Paths"                    FILES ${file_root_graphics_paths})
 source_group("Graphics\\Paths\\nanovg"            FILES ${file_root_graphics_paths_nanovg})
 source_group("Graphics\\SoftwareGr"               FILES ${file_root_graphics_softwaregr})
@@ -1157,7 +1151,6 @@ set (file_root
 	${file_root_graphics_openglgr}
 	${file_root_graphics_openglgr_opengl_cpps}
 	${file_root_graphics_openglgr_opengl_headers}
-	${file_root_graphics_openglgr_gl}
 	${file_root_graphics_paths}
 	${file_root_graphics_paths_nanovg}
 	${file_root_graphics_softwaregr}

@@ -32,12 +32,6 @@
 #include "render/3d.h"
 #include "popup/popup.h"
 
-#ifdef HAVE_GLU_H
-#include <glu.h>
-#else
-#include "gl/glu.h"
-#endif
-
 #if defined(_WIN32)
 #include <windows.h>
 #include <windowsx.h>
@@ -877,35 +871,20 @@ void gr_opengl_set_line_width(float width)
 	GL_line_width = width;
 }
 
-// Returns the human readable error string if there is an error or NULL if not
-const char *opengl_error_string()
-{
-	GLenum error = GL_NO_ERROR;
-
-	error = glGetError();
-
-	if ( error != GL_NO_ERROR ) {
-		return (const char *)gluErrorString(error);
-	}
-
-	return NULL;
-}
-
 int opengl_check_for_errors(char *err_at)
 {
 #ifdef NDEBUG
 	return 0;
 #endif
-	const char *error_str = NULL;
 	int num_errors = 0;
 
-	error_str = opengl_error_string();
+	auto err = glGetError();
 
-	if (error_str) {
+	if (err != GL_NO_ERROR) {
 		if (err_at != NULL) {
-			nprintf(("OpenGL", "OpenGL Error from %s: %s\n", err_at, error_str));
+			nprintf(("OpenGL", "OpenGL Error from %s: %#x\n", err_at, err));
 		} else {
-			nprintf(("OpenGL", "OpenGL Error: %s\n", error_str));
+			nprintf(("OpenGL", "OpenGL Error:  %#x\n", err));
 		}
 
 		num_errors++;
