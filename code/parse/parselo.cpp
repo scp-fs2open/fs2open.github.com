@@ -72,18 +72,16 @@ int is_parenthesis(char ch)
 	return ((ch == '(') || (ch == ')'));
 }
 
-//	Advance global Mp (mission pointer) past all current white space.
-//	Leaves Mp pointing at first non white space character.
-void ignore_white_space()
+void ignore_white_space(char*& str)
 {
-	while ((*Mp != EOF_CHAR) && is_white_space(*Mp))
-		Mp++;
+	while ((*str != EOF_CHAR) && is_white_space(*str))
+		str++;
 }
 
-void ignore_gray_space()
+void ignore_gray_space(char *& str)
 {
-	while ((*Mp != EOF_CHAR) && is_gray_space(*Mp))
-		Mp++;
+	while ((*str != EOF_CHAR) && is_gray_space(*str))
+		str++;
 }
 
 //	Truncate *str, eliminating all trailing white space.
@@ -174,13 +172,12 @@ void drop_white_space(SCP_string &str)
 	drop_leading_white_space(str);
 }
 
-//	Advances Mp past current token.
-void skip_token()
+void skip_token(char*& str)
 {
-	ignore_white_space();
+	ignore_white_space(str);
 
-	while ((*Mp != EOF_CHAR) && !is_white_space(*Mp))
-		Mp++;
+	while ((*str != EOF_CHAR) && !is_white_space(*str))
+		str++;
 }
 
 //	Display a diagnostic message if Verbose is set.
@@ -290,10 +287,14 @@ void error_display(int error_level, const char *format, ...)
 		Error(LOCATION, "%s(line %i):\n%s: %s", Current_filename, get_line_num(), type, error_text.c_str());
 }
 
-//	Advance Mp to the next eoln character.
-void advance_to_eoln(char *more_terminators)
+void advance_to_eoln(char*& str)
 {
-	char	terminators[128];
+	advance_to_terminator(str, NULL);
+}
+
+void advance_to_terminator(char*& str, char *more_terminators)
+{
+	char terminators[128];
 
 	Assert((more_terminators == NULL) || (strlen(more_terminators) < 125));
 
@@ -302,119 +303,86 @@ void advance_to_eoln(char *more_terminators)
 	terminators[2] = 0;
 	if (more_terminators != NULL)
 		strcat_s(terminators, more_terminators);
-	else
-		terminators[2] = 0;
 
-	while (strchr(terminators, *Mp) == NULL)
-		Mp++;
+	while (strchr(terminators, *str) == NULL)
+		str++;
 }
 
-// Advance Mp to the next white space (ignoring white space inside of " marks)
-void advance_to_next_white()
+// Advance str to the next white space (ignoring white space inside of " marks)
+static void advance_to_next_white(char*& str)
 {
-	int in_quotes = 0;
+	bool in_quotes = false;
 
-	while ((*Mp != EOLN) && (*Mp != EOF_CHAR)) {
-		if (*Mp == '\"')
+	while ((*str != EOLN) && (*str != EOF_CHAR)) {
+		if (*str == '\"')
 			in_quotes = !in_quotes;
 
-		if (!in_quotes && is_white_space(*Mp))
+		if (!in_quotes && is_white_space(*str))
 			break;
 
-		if (!in_quotes && is_parenthesis(*Mp))
+		if (!in_quotes && is_parenthesis(*str))
 			break;
 
-		Mp++;
+		str++;
 	}
 }
 
-// Search for specified string, skipping everything up to that point.  Returns 1 if found,
-// 0 if string wasn't found (and hit end of file), or -1 if not found, but end of checking
-// block was reached.
-int skip_to_string(char *pstr, char *end)
+static int skip_to_string_helper(char*& str, char *to1, char *to2, char *end)
 {
-	ignore_white_space();
-	auto len = strlen(pstr);
-	size_t len2 = 0;
+	ignore_white_space(str);
+	size_t len1 = strlen(to1);
+	size_t len2 = strlen(to2);
+	Assert(len1 > 0);
 
-	if (end)
-		len2 = strlen(end);
+	size_t end_len = 0;
+	if(end)
+		end_len = strlen(end);
 
-	while ((*Mp != EOF_CHAR) && strnicmp(pstr, Mp, len)) {
-		if (end && *Mp == '#')
+	while ( (*str != EOF_CHAR) && strnicmp(to1, str, len1) && ((len2 == 0) || strnicmp(to2, str, len2)) ) {
+		if (end && *str == '#')
 			return 0;
 
-		if (end && !strnicmp(end, Mp, len2))
+		if (end && !strnicmp(end, str, end_len))
 			return -1;
 
-		advance_to_eoln(NULL);
-		ignore_white_space();
+		advance_to_eoln(str);
+		ignore_white_space(str);
 	}
 
-	if (!Mp || (*Mp == EOF_CHAR))
-		return 0;
-
-	Mp += strlen(pstr);
-	return 1;
-}
-
-// Goober5000
-// Advance to start of pstr.  Return 0 is successful, otherwise return !0
-int skip_to_start_of_string(char *pstr, char *end)
-{
-	ignore_white_space();
-	auto len = strlen(pstr);
-	size_t endlen;
-	if(end)
-		endlen = strlen(end);
-	else
-		endlen = 0;
-
-	while ( (*Mp != EOF_CHAR) && strnicmp(pstr, Mp, len) ) {
-		if (end && *Mp == '#')
-			return 0;
-
-		if (end && !strnicmp(end, Mp, endlen))
-			return 0;
-
-		advance_to_eoln(NULL);
-		ignore_white_space();
-	}
-
-	if (!Mp || (*Mp == EOF_CHAR))
+	if ((*str == '\0') || (*str == EOF_CHAR))
 		return 0;
 
 	return 1;
 }
 
-// Advance to start of either pstr1 or pstr2.  Return 0 is successful, otherwise return !0
-int skip_to_start_of_string_either(char *pstr1, char *pstr2, char *end)
+int skip_to_string(char*& str, char *to, char *end)
 {
-	size_t len1, len2, endlen;
+	int rc = skip_to_string_helper(str, to, "", end);
 
-	ignore_white_space();
-	len1 = strlen(pstr1);
-	len2 = strlen(pstr2);
-	if(end)
-		endlen = strlen(end);
-	else
-		endlen = 0;
+	if (rc == 1)
+		str += strlen(to);
 
-	while ( (*Mp != EOF_CHAR) && strnicmp(pstr1, Mp, len1) && strnicmp(pstr2, Mp, len2) ) {
-		if (end && *Mp == '#')
-			return 0;
+	return rc;
+}
 
-		if (end && !strnicmp(end, Mp, endlen))
-			return 0;
+int skip_to_start_of_string(char*& str, char *to, char *end)
+{
+	int rc = skip_to_string_helper(str, to, "", end);
 
-		advance_to_eoln(NULL);
-		ignore_white_space();
-	}
+	if (rc == -1)
+		rc = 0;
 
-	if (!Mp || (*Mp == EOF_CHAR))
-		return 0;
+	return rc;
+}
 
-	return 1;
+int skip_to_start_of_string_either(char*& str, char *to1, char *to2, char *end)
+{
+	int rc = skip_to_string_helper(str, to1, to2, end);
+
+	if (rc == -1)
+		rc = 0;
+
+	return rc;
 }
 
 // Find a required string.
@@ -427,12 +395,12 @@ int required_string(const char *pstr)
 {
 	int	count = 0;
 
-	ignore_white_space();
+	ignore_white_space(Mp);
 
 	while (strnicmp(pstr, Mp, strlen(pstr)) && (count < RS_MAX_TRIES)) {
 		error_display(1, "Missing required token: [%s]. Found [%.32s] instead.\n", pstr, next_tokens());
-		advance_to_eoln(NULL);
-		ignore_white_space();
+		advance_to_eoln(Mp);
+		ignore_white_space(Mp);
 		count++;
 	}
 
@@ -449,7 +417,7 @@ int required_string(const char *pstr)
 
 int check_for_eof()
 {
-	ignore_white_space();
+	ignore_white_space(Mp);
 
 	if (*Mp == EOF_CHAR)
 		return 1;
@@ -462,7 +430,7 @@ Returns 1 if it finds a newline character precded by any amount of grayspace.
 */
 int check_for_eoln()
 {
-	ignore_gray_space();
+	ignore_gray_space(Mp);
 
 	if(*Mp == EOLN)
 		return 1;
@@ -474,7 +442,7 @@ int check_for_eoln()
 // It doesn't advance Mp except to skip past white space.
 int check_for_string(const char *pstr)
 {
-	ignore_white_space();
+	ignore_white_space(Mp);
 
 	if (!strnicmp(pstr, Mp, strlen(pstr)))
 		return 1;
@@ -496,7 +464,7 @@ int check_for_string_raw(const char *pstr)
 //	If found, point past string, else don't update pointer.
 int optional_string(const char *pstr)
 {
-	ignore_white_space();
+	ignore_white_space(Mp);
 
 	if (!strnicmp(pstr, Mp, strlen(pstr))) {
 		Mp += strlen(pstr);
@@ -508,7 +476,7 @@ int optional_string(const char *pstr)
 
 int optional_string_either(char *str1, char *str2)
 {
-	ignore_white_space();
+	ignore_white_space(Mp);
 
 	if ( !strnicmp(str1, Mp, strlen(str1)) ) {
 		Mp += strlen(str1);
@@ -529,7 +497,7 @@ int optional_string_one_of(int arg_count, ...)
 	char *pstr;
 	va_list vl;
 
-	ignore_white_space();
+	ignore_white_space(Mp);
 
 	va_start(vl, arg_count);
 	for (idx = 0; idx < arg_count; idx++)
@@ -556,15 +524,15 @@ int required_string_fred(char *pstr, char *end)
 	if (fred_parse_flag)
 		return 0;
 
-	ignore_white_space();
+	ignore_white_space(Mp);
 	while (*Mp != EOF_CHAR && strnicmp(pstr, Mp, strlen(pstr))) {
 		if ((*Mp == '#') || (end && !strnicmp(end, Mp, strlen(end)))) {
 			Mp = NULL;
 			break;
 		}
 
-		advance_to_eoln(NULL);
-		ignore_white_space();
+		advance_to_eoln(Mp);
+		ignore_white_space(Mp);
 	}
 
 	if (!Mp || (*Mp == EOF_CHAR)) {
@@ -593,7 +561,7 @@ int optional_string_fred(char *pstr, char *end, char *end2)
 	if (fred_parse_flag)
 		return 0;
 
-	ignore_white_space();
+	ignore_white_space(Mp);
 	while ((*Mp != EOF_CHAR) && strnicmp(pstr, Mp, strlen(pstr))) {
 		if ((*Mp == '#') || (end && !strnicmp(end, Mp, strlen(end))) ||
 			(end2 && !strnicmp(end2, Mp, strlen(end2)))) {
@@ -601,8 +569,8 @@ int optional_string_fred(char *pstr, char *end, char *end2)
 			break;
 		}
 
-		advance_to_eoln(NULL);
-		ignore_white_space();
+		advance_to_eoln(Mp);
+		ignore_white_space(Mp);
 	}
 
 	if (!Mp || (*Mp == EOF_CHAR)) {
@@ -630,7 +598,7 @@ int optional_string_fred(char *pstr, char *end, char *end2)
  */
 int required_string_either(char *str1, char *str2)
 {
-	ignore_white_space();
+	ignore_white_space(Mp);
 
 	for (int count = 0; count < RS_MAX_TRIES; ++count) {
 		if (strnicmp(str1, Mp, strlen(str1)) == 0) {
@@ -645,8 +613,8 @@ int required_string_either(char *str1, char *str2)
 
 		error_display(1, "Required token = [%s] or [%s], found [%.32s].\n", str1, str2, next_tokens());
 
-		advance_to_eoln(NULL);
-		ignore_white_space();
+		advance_to_eoln(Mp);
+		ignore_white_space(Mp);
 	}
 
 	nprintf(("Error", "Error: Unable to find either required token [%s] or [%s]\n", str1, str2));
@@ -671,7 +639,7 @@ int required_string_one_of(int arg_count, ...)
 	SCP_string message = "";
 	va_list vl;
 
-	ignore_white_space();
+	ignore_white_space(Mp);
 
 	while (count < RS_MAX_TRIES) {
 		va_start(vl, arg_count);
@@ -704,8 +672,8 @@ int required_string_one_of(int arg_count, ...)
 		}
 
 		error_display(1, "%s, found [%.32s]\n", message.c_str(), next_tokens());
-		advance_to_eoln(NULL);
-		ignore_white_space();
+		advance_to_eoln(Mp);
+		ignore_white_space(Mp);
 		count++;
 	}
 
@@ -714,7 +682,7 @@ int required_string_one_of(int arg_count, ...)
 
 int required_string_either_fred(char *str1, char *str2)
 {
-	ignore_white_space();
+	ignore_white_space(Mp);
 
 	while (*Mp != EOF_CHAR) {
 		if (!strnicmp(str1, Mp, strlen(str1))) {
@@ -728,8 +696,8 @@ int required_string_either_fred(char *str1, char *str2)
 			return fred_parse_flag = 1;
 		}
 
-		advance_to_eoln(NULL);
-		ignore_white_space();
+		advance_to_eoln(Mp);
+		ignore_white_space(Mp);
 	}
 
 	if (*Mp == EOF_CHAR)
@@ -928,17 +896,17 @@ void stuff_string_white(char *outstr, int len)
 	if(!len)
 		len = NAME_LENGTH-1;
 
-	ignore_white_space();
+	ignore_white_space(Mp);
 	copy_to_next_white(outstr, Mp, len);
-	advance_to_next_white();
+	advance_to_next_white(Mp);
 }
 
 // ditto for SCP_string
 void stuff_string_white(SCP_string &outstr)
 {
-	ignore_white_space();
+	ignore_white_space(Mp);
 	copy_to_next_white(outstr, Mp);
-	advance_to_next_white();
+	advance_to_next_white(Mp);
 }
 
 // Goober5000
@@ -947,7 +915,7 @@ void stuff_string_until(char *outstr, char *endstr, int len)
 	if(!len)
 		len = NAME_LENGTH-1;
 
-	ignore_gray_space();
+	ignore_gray_space(Mp);
 	copy_text_until(outstr, Mp, endstr, len);
 	Mp += strlen(outstr);
 	drop_trailing_white_space(outstr);
@@ -956,7 +924,7 @@ void stuff_string_until(char *outstr, char *endstr, int len)
 // Goober5000
 void stuff_string_until(SCP_string &outstr, char *endstr)
 {
-	ignore_gray_space();
+	ignore_gray_space(Mp);
 	copy_text_until(outstr, Mp, endstr);
 	Mp += outstr.length();
 	drop_trailing_white_space(outstr);
@@ -980,7 +948,7 @@ char* alloc_block(char* startstr, char* endstr, int extra_chars)
 
 	//Skip the opening thing and any extra stuff
 	required_string(startstr);
-	ignore_white_space();
+	ignore_white_space(Mp);
 
 	//Allocate it
 	char* pos = Mp;
@@ -1042,7 +1010,7 @@ int get_string_or_variable (char *str)
 {
 	int result = -1;
 
-	ignore_white_space();
+	ignore_white_space(Mp);
 
 	// Variable
 	if (*Mp == '@')
@@ -1077,7 +1045,7 @@ int get_string_or_variable (SCP_string &str)
 {
 	int result = -1;
 
-	ignore_white_space();
+	ignore_white_space(Mp);
 
 	// Variable
 	if (*Mp == '@')
@@ -1160,14 +1128,14 @@ void stuff_string(char *outstr, int type, int len, char *terminators)
 		case F_FILESPEC:
 		case F_PATHNAME:
 		case F_MESSAGE:
-			ignore_gray_space();
+			ignore_gray_space(Mp);
 			copy_to_eoln(read_str, terminators, Mp, read_len);
 			drop_trailing_white_space(read_str);
-			advance_to_eoln(terminators);
+			advance_to_terminator(Mp, terminators);
 			break;
 
 		case F_NOTES:
-			ignore_white_space();
+			ignore_white_space(Mp);
 			copy_text_until(read_str, Mp, "$End Notes:", read_len);
 			Mp += strlen(read_str);
 			required_string("$End Notes:");
@@ -1177,14 +1145,14 @@ void stuff_string(char *outstr, int type, int len, char *terminators)
 		// can be deleted once all missions are using new briefing format
 
 		case F_MULTITEXTOLD:
-			ignore_white_space();
+			ignore_white_space(Mp);
 			copy_text_until(read_str, Mp, "$End Briefing Text:", read_len);
 			Mp += strlen(read_str);
 			required_string("$End Briefing Text:");
 			break;
 
 		case F_MULTITEXT:
-			ignore_white_space();
+			ignore_white_space(Mp);
 			copy_text_until(read_str, Mp, "$end_multi_text", read_len);
 			Mp += strlen(read_str);
 			drop_trailing_white_space(read_str);
@@ -1242,14 +1210,14 @@ void stuff_string(SCP_string &outstr, int type, char *terminators)
 		case F_FILESPEC:
 		case F_PATHNAME:
 		case F_MESSAGE:
-			ignore_gray_space();
+			ignore_gray_space(Mp);
 			copy_to_eoln(read_str, terminators, Mp);
 			drop_trailing_white_space(read_str);
-			advance_to_eoln(terminators);
+			advance_to_terminator(Mp, terminators);
 			break;
 
 		case F_NOTES:
-			ignore_white_space();
+			ignore_white_space(Mp);
 			copy_text_until(read_str, Mp, "$End Notes:");
 			Mp += read_str.length();
 			required_string("$End Notes:");
@@ -1259,14 +1227,14 @@ void stuff_string(SCP_string &outstr, int type, char *terminators)
 		// can be deleted once all missions are using new briefing format
 
 		case F_MULTITEXTOLD:
-			ignore_white_space();
+			ignore_white_space(Mp);
 			copy_text_until(read_str, Mp, "$End Briefing Text:");
 			Mp += read_str.length();
 			required_string("$End Briefing Text:");
 			break;
 
 		case F_MULTITEXT:
-			ignore_white_space();
+			ignore_white_space(Mp);
 			copy_text_until(read_str, Mp, "$end_multi_text");
 			Mp += read_str.length();
 			drop_trailing_white_space(read_str);
@@ -1316,7 +1284,7 @@ void stuff_string_line(char *outstr, int len)
 	// read in a line
 	copy_to_eoln(read_str, "\n", Mp, read_len);
 	drop_trailing_white_space(read_str);
-	advance_to_eoln("");
+	advance_to_eoln(Mp);
 	Mp++;
 
 	// now we want to do any final localization
@@ -1339,7 +1307,7 @@ void stuff_string_line(SCP_string &outstr)
 	// read in a line
 	copy_to_eoln(read_str, "\n", Mp);
 	drop_trailing_white_space(read_str);
-	advance_to_eoln("");
+	advance_to_eoln(Mp);
 	Mp++;
 
 	// now we want to do any final localization
@@ -2251,7 +2219,7 @@ float atof2()
 	char	ch;
 
 	my_errno = 0;
-	ignore_white_space();
+	ignore_white_space(Mp);
 
 	ch = *Mp;
 
@@ -2270,7 +2238,7 @@ int atoi2()
 
 	my_errno = 0;
 
-	ignore_white_space();
+	ignore_white_space(Mp);
 
 	ch = *Mp;
 
@@ -2289,7 +2257,7 @@ long atol2()
 
     my_errno = 0;
 
-    ignore_white_space();
+    ignore_white_space(Mp);
 
     ch = *Mp;
 
@@ -2309,7 +2277,7 @@ void stuff_float(float *f)
 	*f = atof2();
 
 	if (my_errno)
-		skip_token();
+		skip_token(Mp);
 	else
 		Mp += strspn(Mp, "+-0123456789.");
 
@@ -2324,7 +2292,7 @@ int stuff_float_optional(float *f, bool raw)
 	bool comma = false;
 
 	if (!raw)
-		ignore_white_space();
+		ignore_white_space(Mp);
 
 	auto skip_len = strspn(Mp, "+-0123456789.");
 	if(*(Mp+skip_len) == ',') {
@@ -2352,7 +2320,7 @@ void stuff_int(int *i)
 	*i = atoi2();
 
 	if (my_errno)
-		skip_token();
+		skip_token(Mp);
 	else
 		Mp += strspn(Mp, "+-0123456789");
 
@@ -2367,7 +2335,7 @@ int stuff_int_optional(int *i, bool raw)
 	bool comma = false;
 
 	if (!raw)
-		ignore_white_space();
+		ignore_white_space(Mp);
 
 	auto skip_len = strspn(Mp, "+-0123456789");
 	if(*(Mp+skip_len) == ',') {
@@ -2522,7 +2490,7 @@ void stuff_boolean(bool *b, bool a_to_eol)
 	char token[32];
 	stuff_string_white(token, sizeof(token)/sizeof(char));
 	if(a_to_eol)
-		advance_to_eoln(NULL);
+		advance_to_eoln(Mp);
 
 	if( isdigit(token[0]))
 	{
@@ -2570,7 +2538,7 @@ int stuff_bool_list(bool *blp, int max_bools)
 	int count = 0;
 	bool trash_buf = false;
 
-	ignore_white_space();
+	ignore_white_space(Mp);
 
 	if (*Mp != '(') {
         error_display(1, "Reading boolean list.  Found [%c].  Expecting '('.\n", *Mp);
@@ -2579,20 +2547,20 @@ int stuff_bool_list(bool *blp, int max_bools)
 
 	Mp++;
 
-	ignore_white_space();
+	ignore_white_space(Mp);
 
 	while(*Mp != ')')
 	{
 		if(count < max_bools)
 		{
 			stuff_boolean(&blp[count++], false);
-			ignore_white_space();
+			ignore_white_space(Mp);
 
 			//Since Bobb has set a precedent, allow commas for bool lists -WMC
 			if(*Mp == ',')
 			{
 				Mp++;
-				ignore_white_space();
+				ignore_white_space(Mp);
 			}
 		}
 		else
@@ -2608,7 +2576,7 @@ int stuff_bool_list(bool *blp, int max_bools)
 		while(*Mp != ')')
 		{
 			stuff_boolean(&trash_buf, false);
-			ignore_white_space();
+			ignore_white_space(Mp);
 		}
 	}
 
@@ -2629,7 +2597,7 @@ void stuff_ubyte(ubyte *i)
 	*i = (ubyte)temp;
 
 	if (my_errno)
-		skip_token();
+		skip_token(Mp);
 	else
 		Mp += strspn(Mp, "+-0123456789");
 
@@ -2668,7 +2636,7 @@ int stuff_string_list(SCP_vector<SCP_string>& slp)
 	//_asm int 3;
 	slp.clear();
 
-	ignore_white_space();
+	ignore_white_space(Mp);
 
 	if ( *Mp != '(' ) {
         error_display(1, "Reading string list.  Found [%c].  Expecting '('.\n", *Mp);
@@ -2677,7 +2645,7 @@ int stuff_string_list(SCP_vector<SCP_string>& slp)
 
 	Mp++;
 
-	ignore_white_space();
+	ignore_white_space(Mp);
 
 	SCP_string buf;
 
@@ -2690,7 +2658,7 @@ int stuff_string_list(SCP_vector<SCP_string>& slp)
 		buf = "";
 		get_string( buf );
 		slp.push_back( buf );
-		ignore_white_space();
+		ignore_white_space(Mp);
 	}
 
 	Mp++;
@@ -2702,7 +2670,7 @@ int stuff_string_list(SCP_vector<SCP_string>& slp)
 int stuff_string_list(char slp[][NAME_LENGTH], int max_strings)
 {
 	int count = 0;
-	ignore_white_space();
+	ignore_white_space(Mp);
 
 	if ( *Mp != '(' ) {
         error_display(1, "Reading string list.  Found [%c].  Expecting '('.\n", *Mp);
@@ -2711,7 +2679,7 @@ int stuff_string_list(char slp[][NAME_LENGTH], int max_strings)
 
 	Mp++;
 
-	ignore_white_space();
+	ignore_white_space(Mp);
 
 	while (*Mp != ')') {
 		Assert ( count < max_strings );
@@ -2726,7 +2694,7 @@ int stuff_string_list(char slp[][NAME_LENGTH], int max_strings)
 			char trash[NAME_LENGTH];
 			get_string( trash );
 		}
-		ignore_white_space();
+		ignore_white_space(Mp);
 	}
 
 	Mp++;
@@ -2759,7 +2727,7 @@ const char* get_lookup_type_name(int lookup_type)
 int stuff_int_list(int *ilp, int max_ints, int lookup_type)
 {
 	int	count = 0, ok_flag = 1, dummy;
-	ignore_white_space();
+	ignore_white_space(Mp);
 
 	if (*Mp != '(') {
         error_display(1, "Reading integer list.  Found [%c].  Expecting '('.\n", *Mp);
@@ -2767,7 +2735,7 @@ int stuff_int_list(int *ilp, int max_ints, int lookup_type)
 	}
 
 	Mp++;
-	ignore_white_space();
+	ignore_white_space(Mp);
 
 	while (*Mp != ')') {
 		Assertion(count < max_ints, "Too many entries in integer list. Expected %d, found %d.\nList type was %s", max_ints, count+1, get_lookup_type_name(lookup_type));
@@ -2834,7 +2802,7 @@ int stuff_int_list(int *ilp, int max_ints, int lookup_type)
 				stuff_int(&dummy);
 		}
 
-		ignore_white_space();
+		ignore_white_space(Mp);
 	}
 
 	Mp++;
@@ -2848,9 +2816,9 @@ void clean_loadout_list_entry()
 	int dummy;
 
 	// clean out the broken entry
-	ignore_white_space();
+	ignore_white_space(Mp);
 	stuff_int_or_variable(dummy);
-	ignore_white_space();
+	ignore_white_space(Mp);
 }
 
 // Karajorma - Stuffs an int list by parsing a list of ship or weapon choices.
@@ -2861,7 +2829,7 @@ int stuff_loadout_list (int *ilp, int max_ints, int lookup_type)
 	int index, sexp_variable_index, variable_found;
 	char str[128];
 
-	ignore_white_space();
+	ignore_white_space(Mp);
 
 	if (*Mp != '(') {
         error_display(1, "Reading loadout list.  Found [%c].  Expecting '('.\n", *Mp);
@@ -2869,7 +2837,7 @@ int stuff_loadout_list (int *ilp, int max_ints, int lookup_type)
 	}
 
 	Mp++;
-	ignore_white_space();
+	ignore_white_space(Mp);
 
 	while (*Mp != ')') {
 		if (count >= max_ints) {
@@ -2939,7 +2907,7 @@ int stuff_loadout_list (int *ilp, int max_ints, int lookup_type)
 			ilp[count++] = index;
 		}
 
-		ignore_white_space();
+		ignore_white_space(Mp);
 
 		// Campaign lists need go no further
 		if (lookup_type == CAMPAIGN_LOADOUT_SHIP_LIST || lookup_type == CAMPAIGN_LOADOUT_WEAPON_LIST) {
@@ -2954,7 +2922,7 @@ int stuff_loadout_list (int *ilp, int max_ints, int lookup_type)
 		// Now read in the number of this type available. The number must be positive
 		count = stuff_int_or_variable(ilp, count, true);
 
-		ignore_white_space();
+		ignore_white_space(Mp);
 	}
 
 	Mp++;
@@ -2965,7 +2933,7 @@ int stuff_loadout_list (int *ilp, int max_ints, int lookup_type)
 size_t stuff_float_list(float* flp, size_t max_floats)
 {
 	size_t count = 0;
-	ignore_white_space();
+	ignore_white_space(Mp);
 
 	if (*Mp != '(') {
         error_display(1, "Reading float list.  Found [%c].  Expecting '('.\n", *Mp);
@@ -2973,7 +2941,7 @@ size_t stuff_float_list(float* flp, size_t max_floats)
 	}
 
 	Mp++;
-	ignore_white_space();
+	ignore_white_space(Mp);
 	while(*Mp != ')')
 	{
 		Assert(count < max_floats);
@@ -2983,7 +2951,7 @@ size_t stuff_float_list(float* flp, size_t max_floats)
 			float dummy;
 			stuff_float(&dummy);
 		}
-		ignore_white_space();
+		ignore_white_space(Mp);
 	}
 
 	Mp++;
@@ -2998,7 +2966,7 @@ size_t stuff_float_list(float* flp, size_t max_floats)
 //	in the array is set.
 void mark_int_list(int *ilp, int max_ints, int lookup_type)
 {
-	ignore_white_space();
+	ignore_white_space(Mp);
 
 	if (*Mp != '(') {
         error_display(1, "Marking integer list.  Found [%c].  Expecting '('.\n", *Mp);
@@ -3006,7 +2974,7 @@ void mark_int_list(int *ilp, int max_ints, int lookup_type)
 	}
 
 	Mp++;
-	ignore_white_space();
+	ignore_white_space(Mp);
 
 	while (*Mp != ')') {
 		if (*Mp == '"') {
@@ -3047,7 +3015,7 @@ void mark_int_list(int *ilp, int max_ints, int lookup_type)
 			}
 		}
 
-		ignore_white_space();
+		ignore_white_space(Mp);
 	}
 
 	Mp++;
@@ -3065,7 +3033,7 @@ void stuff_vec3d(vec3d *vp)
 
 void stuff_parenthesized_vec3d(vec3d *vp)
 {
-	ignore_white_space();
+	ignore_white_space(Mp);
 
 	if (*Mp != '(') {
         error_display(1, "Reading parenthesized vec3d.  Found [%c].  Expecting '('.\n", *Mp);
@@ -3073,7 +3041,7 @@ void stuff_parenthesized_vec3d(vec3d *vp)
 	} else {
 		Mp++;
 		stuff_vec3d(vp);
-		ignore_white_space();
+		ignore_white_space(Mp);
 		if (*Mp != ')') {
             error_display(1, "Reading parenthesized vec3d.  Found [%c].  Expecting ')'.\n", *Mp);
             throw parse::ParseException("Syntax error");
@@ -3092,7 +3060,7 @@ int stuff_vec3d_list(vec3d *vlp, int max_vecs)
 {
 	int	count = 0;
 
-	ignore_white_space();
+	ignore_white_space(Mp);
 
 	if (*Mp != '(') {
         error_display(1, "Reading vec3d list.  Found [%c].  Expecting '('.\n", *Mp);
@@ -3101,7 +3069,7 @@ int stuff_vec3d_list(vec3d *vlp, int max_vecs)
 
 	Mp++;
 
-	ignore_white_space();
+	ignore_white_space(Mp);
 
 	while (*Mp != ')') {
 		Assert(count < max_vecs);
@@ -3112,7 +3080,7 @@ int stuff_vec3d_list(vec3d *vlp, int max_vecs)
 			stuff_parenthesized_vec3d(&temp);
 		}
 
-		ignore_white_space();
+		ignore_white_space(Mp);
 	}
 
 	Mp++;
@@ -3123,7 +3091,7 @@ int stuff_vec3d_list(vec3d *vlp, int max_vecs)
 // ditto the above, but a vector of vec3ds...
 int stuff_vec3d_list(SCP_vector<vec3d> &vec_list)
 {
-	ignore_white_space();
+	ignore_white_space(Mp);
 
 	if (*Mp != '(') {
         error_display(1, "Reading vec3d list.  Found [%c].  Expecting '('.\n", *Mp);
@@ -3132,14 +3100,14 @@ int stuff_vec3d_list(SCP_vector<vec3d> &vec_list)
 
 	Mp++;
 
-	ignore_white_space();
+	ignore_white_space(Mp);
 
 	while (*Mp != ')') {
 		vec3d temp;
 		stuff_parenthesized_vec3d(&temp);
 		vec_list.push_back(temp);
 
-		ignore_white_space();
+		ignore_white_space(Mp);
 	}
 
 	Mp++;

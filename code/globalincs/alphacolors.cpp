@@ -367,7 +367,7 @@ void parse_everything_else(const char *filename)
 
 		if (optional_string("#Start Colors")) {
 			// Skip this section; we already parsed it in every file.
-			skip_to_string("#End", NULL);
+			skip_to_string(Mp, "#End");
 		}
 
 		//Team coloring

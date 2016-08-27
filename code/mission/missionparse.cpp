@@ -434,7 +434,7 @@ void parse_mission_info(mission *pm, bool basic = false)
 	char game_string[NAME_LENGTH];
 
 	// Goober5000
-	skip_to_start_of_string("#Mission Info");
+	skip_to_start_of_string(Mp, "#Mission Info");
 
 	required_string("#Mission Info");
 	
@@ -467,7 +467,7 @@ void parse_mission_info(mission *pm, bool basic = false)
 	if ( optional_string("+Game Type:")) {
 		// HACK HACK HACK -- stuff_string was changed to *not* ignore carriage returns.  Since the
 		// old style missions may have carriage returns, deal with it here.
-		ignore_white_space();
+		ignore_white_space(Mp);
 		stuff_string(game_string, F_NAME, NAME_LENGTH);
 		for ( int i = 0; i < OLD_MAX_GAME_TYPES; i++ ) {
 			if ( !stricmp(game_string, Old_game_types[i]) ) {
@@ -3075,7 +3075,7 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 
 			if (*Mp == '.') {
 				period_detected = true;
-				advance_to_eoln(NULL);
+				advance_to_eoln(Mp);
 			}
 		}
 
@@ -3084,7 +3084,7 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 
 			if (*Mp == '.') {
 				period_detected = true;
-				advance_to_eoln(NULL);
+				advance_to_eoln(Mp);
 			}
 		}
 
@@ -3093,7 +3093,7 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 
 			if (*Mp == '.') {
 				period_detected = true;
-				advance_to_eoln(NULL);
+				advance_to_eoln(Mp);
 			}
 		}
 
@@ -3102,7 +3102,7 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 
 			if (*Mp == '.') {
 				period_detected = true;
-				advance_to_eoln(NULL);
+				advance_to_eoln(Mp);
 			}
 		}
 
@@ -3112,7 +3112,7 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 
 			if (*Mp == '.') {
 				period_detected = true;
-				advance_to_eoln(NULL);
+				advance_to_eoln(Mp);
 			}
 		}
 
@@ -5333,7 +5333,7 @@ void parse_bitmaps(mission *pm)
 	}
 
 	// bypass spurious stuff from e.g. FS1 missions
-	skip_to_start_of_string("#");
+	skip_to_start_of_string(Mp, "#");
 }
 
 void parse_asteroid_fields(mission *pm)
@@ -6355,13 +6355,13 @@ int mission_parse_is_multi(const char *filename, char *mission_name)
 			read_file_text(filename, CF_TYPE_MISSIONS);
 			reset_parse();
 
-			if (skip_to_string("$Name:") != 1) {
+			if (skip_to_string(Mp, "$Name:") != 1) {
 				nprintf(("Network", "Unable to process %s because we couldn't find $Name:", filename));
 				break;
 			}
 			stuff_string(mission_name, F_NAME, NAME_LENGTH);
 
-			if (skip_to_string("+Game Type Flags:") != 1) {
+			if (skip_to_string(Mp, "+Game Type Flags:") != 1) {
 				nprintf(("Network", "Unable to process %s because we couldn't find +Game Type Flags:\n", filename));
 				break;
 			}

@@ -311,7 +311,7 @@ void iff_init()
 			if (Num_iffs >= MAX_IFFS)
 			{
 				Warning(LOCATION, "Too many iffs in iffs_defs.tbl!  Max is %d.\n", MAX_IFFS);
-				skip_to_start_of_string("#End", NULL);
+				skip_to_start_of_string(Mp, "#End");
 				break;
 			}
 

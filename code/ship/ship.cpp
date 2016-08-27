@@ -701,7 +701,7 @@ void parse_engine_wash(bool replace)
 		//Don't create engine wash if it has +nocreate and is in a modular table.
 		if(!create_if_not_found && replace)
 		{
-			if ( !skip_to_start_of_string_either("$Name:", "#End")) {
+			if ( !skip_to_start_of_string_either(Mp, "$Name:", "#End")) {
 				Int3();
 			}
 			return;
@@ -1847,7 +1847,7 @@ int parse_ship(const char *filename, bool replace)
 		if(!replace)
 		{
 			Warning(LOCATION, "Error:  Ship name %s already exists in %s.  All ship class names must be unique.", sip->name, filename);
-			if ( !skip_to_start_of_string_either("$Name:", "#End")) {
+			if ( !skip_to_start_of_string_either(Mp, "$Name:", "#End")) {
 				Int3();
 			}
 			return -1;
@@ -1858,7 +1858,7 @@ int parse_ship(const char *filename, bool replace)
 		//Don't create ship if it has +nocreate and is in a modular table.
 		if(!create_if_not_found && replace)
 		{
-			if ( !skip_to_start_of_string_either("$Name:", "#End")) {
+			if ( !skip_to_start_of_string_either(Mp, "$Name:", "#End")) {
 				Int3();
 			}
 
@@ -1928,7 +1928,7 @@ int parse_ship_template()
 	if( template_id != -1 ) {
 		sip = &Ship_templates[template_id];
 		Warning(LOCATION, "WARNING: Ship template %s already exists. All ship template names must be unique.", sip->name);
-		if ( !skip_to_start_of_string_either("$Template:", "#End")) {
+		if ( !skip_to_start_of_string_either(Mp, "$Template:", "#End")) {
 			error_display(1, "Missing [#End] or [$Template] after duplicate entry for %s", sip->name);
 		}
 		return -1;

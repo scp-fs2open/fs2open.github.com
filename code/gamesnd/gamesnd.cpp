@@ -597,7 +597,7 @@ void parse_gamesnd_old(game_snd* gs)
 	if (!stricmp(gs->filename, NOX("empty")))
 	{
 		gs->filename[0] = 0;
-		advance_to_eoln(NULL);
+		advance_to_eoln(Mp);
 		return;
 	}
 	Mp++;
@@ -629,10 +629,10 @@ void parse_gamesnd_old(game_snd* gs)
 		{
 			int temp_min, temp_max;
 
-			ignore_gray_space();
+			ignore_gray_space(Mp);
 			if (stuff_int_optional(&temp_min, true) == 2)
 			{
-				ignore_gray_space();
+				ignore_gray_space(Mp);
 				if (stuff_int_optional(&temp_max, true) == 2)
 				{
 					mprintf(("Dutifully converting retail sound %s, '%s' to a 3D sound...\n", gs->name.c_str(), gs->filename));
@@ -647,13 +647,13 @@ void parse_gamesnd_old(game_snd* gs)
 	}
 
 	// check for extra values per Mantis #2408
-	ignore_gray_space();
+	ignore_gray_space(Mp);
 	if (stuff_int_optional(&temp, true) == 2)
 	{
 		Warning(LOCATION, "Unexpected extra value %d found for sound '%s' (filename '%s')!  Check the format of the sounds.tbl (or .tbm) entry.", temp, gs->name.c_str(), gs->filename);
 	}
 
-	advance_to_eoln(NULL);
+	advance_to_eoln(Mp);
 }
 
 EnhancedSoundPriority convert_to_enhanced_priority(const char * priority_str)

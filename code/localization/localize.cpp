@@ -250,7 +250,7 @@ void parse_stringstbl_common(const char *filename, const bool external)
 		strcat_s(language_tag, Lcl_languages[Lcl_current_lang].lang_name);
 	}
 
-	if ( skip_to_string(language_tag) != 1 ) {
+	if ( skip_to_string(Mp, language_tag) != 1 ) {
 		mprintf(("Current language not found in %s\n", filename));
 		return;
 	}
@@ -261,7 +261,7 @@ void parse_stringstbl_common(const char *filename, const bool external)
 
 		stuff_int(&index);
 		if (external) {
-			ignore_white_space();
+			ignore_white_space(Mp);
 			get_string(buf, sizeof(buf));
 			drop_trailing_white_space(buf);
 		} else {

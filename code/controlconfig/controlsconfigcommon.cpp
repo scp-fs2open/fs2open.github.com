@@ -911,8 +911,8 @@ void control_config_common_load_overrides()
 					szTempBuffer[0] = '\0';
 				} else if ((i + 1) == cCntrlAryLength) {
 					error_display(1, "Bind Name not found: %s\n", szTempBuffer);
-					advance_to_eoln(NULL);
-					ignore_white_space();
+					advance_to_eoln(Mp);
+					ignore_white_space(Mp);
 					return;
 				}
 			}

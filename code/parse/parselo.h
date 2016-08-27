@@ -74,7 +74,12 @@ extern int get_index_of_first_hash_symbol(SCP_string &src);
 
 // white space
 extern int is_white_space(char ch);
-extern void ignore_white_space();
+
+/**
+ * Advances str to the first non-white space character.
+ * Stops at EOF_CHAR.
+ */
+extern void ignore_white_space(char*& str);
 extern void drop_trailing_white_space(char *str);
 extern void drop_leading_white_space(char *str);
 extern char *drop_white_space(char *str);
@@ -86,7 +91,12 @@ extern void drop_white_space(SCP_string &str);
 
 // gray space
 extern int is_gray_space(char ch);
-extern void ignore_gray_space();
+
+/**
+ * Advances str to the first non-gray space character.
+ * Stops at EOF_CHAR.
+ */
+extern void ignore_gray_space(char *& str);
 
 // error
 extern int get_line_num();
@@ -95,11 +105,51 @@ extern void diag_printf(char *format, ...);
 extern void error_display(int error_level, const char *format, ...);
 
 // skip
-extern int skip_to_string(char *pstr, char *end = NULL);
-extern int skip_to_start_of_string(char *pstr, char *end = NULL);
-extern int skip_to_start_of_string_either(char *pstr1, char *pstr2, char *end = NULL);
-extern void advance_to_eoln(char *terminators);
-extern void skip_token();
+/**
+ * Search for string `to` in `str`, skipping everything up to that point.
+ * Advance `str` past `to` if found.
+ *
+ * `to` and `end` are only recongnized if they are at the beginning of a
+ * line, excluding white space.
+ *
+ * If a line begins with `#` but does not match `to`, it is treated as the
+ * end of the file.
+ *
+ * @return 1 if found, 0 if `to` wasn't found (and hit end of file),
+ * or -1 if not found, but end of checking block was reached.
+ *
+ * @param str String to search in
+ * @param to String to skip to
+ * @param end String that ends the checking block
+ */
+extern int skip_to_string(char*& str, char *to, char *end = NULL);
+
+/**
+ * Like `skip_to_string` except does not advance `str` past `to` and
+ * returns 0 instead of -1 when `end` is found.
+ */
+extern int skip_to_start_of_string(char*& str, char *to, char *end = NULL);
+
+/**
+ * Like `skip_to_start_of_string` except accepts both `to1` and `to2`.
+ */
+extern int skip_to_start_of_string_either(char*& str, char *to1, char *to2, char *end = NULL);
+
+/**
+ * Advance str to the next EOLN or EOF_CHAR.
+ */
+extern void advance_to_eoln(char*& str);
+
+/**
+ * Advance str to the next character in terminators or EOLN or EOF_CHAR.
+ * terminators may be NULL.
+ */
+extern void advance_to_terminator(char*& str, char *terminators);
+
+/**
+ * Advances str past the current token.
+ */
+extern void skip_token(char*& str);
 
 // optional
 extern int optional_string(const char *pstr);
@@ -188,7 +238,7 @@ void stuff_flagset(T *dest) {
     dest->from_long(atol2());
 
     if (my_errno)
-        skip_token();
+        skip_token(Mp);
     else
         Mp += strspn(Mp, "+-0123456789");
 

@@ -61,8 +61,8 @@ void cutscene_init()
 
 		// parse in all the cutscenes
 		Cutscenes.clear();
-		skip_to_string("#Cutscenes");
-		ignore_white_space();
+		skip_to_string(Mp, "#Cutscenes");
+		ignore_white_space(Mp);
 
 		bool isFirstCutscene = true;
 

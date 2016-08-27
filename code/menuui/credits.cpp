@@ -343,7 +343,7 @@ void credits_parse_table(const char* filename)
 				Warning(LOCATION, "Unknown credits position mode \"%s\".", mode);
 		}
 
-		ignore_white_space();
+		ignore_white_space(Mp);
 
 		SCP_string credits_text;
 		SCP_string line;
