@@ -371,20 +371,9 @@ float vm_vec_mag_quick(const vec3d *v)
 {
 	float a,b,c,bc, t;
 
-	if ( v->xyz.x < 0.0 )
-		a = -v->xyz.x;
-	else
-		a = v->xyz.x;
-
-	if ( v->xyz.y < 0.0 )
-		b = -v->xyz.y;
-	else
-		b = v->xyz.y;
-
-	if ( v->xyz.z < 0.0 )
-		c = -v->xyz.z;
-	else
-		c = v->xyz.z;
+	a = fl_abs(v->xyz.x);
+	b = fl_abs(v->xyz.y);
+	c = fl_abs(v->xyz.z);
 
 	if (a < b) {
 		t = a;
