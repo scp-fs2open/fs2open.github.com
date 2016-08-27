@@ -53,18 +53,12 @@
 
 
 // Standard data types
-typedef int BOOL;
-typedef unsigned short WORD;
-typedef unsigned int UINT;
-#if IS_64BIT
-// force 32-bit version of DWORD
-typedef unsigned int DWORD;
-typedef unsigned int FOURCC;
-typedef unsigned int *PDWORD, *LPDWORD;
-#else
-typedef unsigned long FOURCC;
-typedef unsigned long DWORD, *PDWORD, *LPDWORD;
-#endif
+typedef std::int32_t BOOL;
+typedef std::uint16_t WORD;
+typedef std::uint32_t UINT;
+typedef std::uint32_t DWORD;
+typedef std::uint32_t FOURCC;
+typedef std::uint32_t *PDWORD, *LPDWORD;
 
 typedef struct _LARGE_INTEGER {
 	std::int64_t QuadPart;
