@@ -18,15 +18,6 @@
 #include <string>
 #include <glad/glad.h>
 
-#define MAX_SHADER_UNIFORMS		20
-
-#define SDR_ATTRIB_RADIUS		0
-#define SDR_ATTRIB_SUBMODEL		1
-
-#define MAX_SDR_ATTRIBUTES		8
-
-#define MAX_SDR_UNIFORM_BLOCKS	5
-
 enum shader_stage {
 	SDR_STAGE_VERTEX,
 	SDR_STAGE_FRAGMENT,
@@ -63,18 +54,15 @@ struct geometry_sdr_params
 struct opengl_shader_type_t {
 	shader_type type_id;
 
-	char *vert;
-	char *frag;
-	char *geo;
+	const char *vert;
+	const char *frag;
+	const char *geo;
 
 	geometry_sdr_params geo_sdr_info;
 
-	int num_uniforms;
-	char* uniforms[MAX_SHADER_UNIFORMS];
+	SCP_vector<const char*> uniforms;
 
-	int num_attributes;
-	//char* attributes[MAX_SDR_ATTRIBUTES];
-	opengl_vert_attrib::attrib_id attributes[MAX_SDR_ATTRIBUTES];
+	SCP_vector<opengl_vert_attrib::attrib_id> attributes;
 
 	const char* description;
 };
@@ -87,28 +75,23 @@ struct opengl_shader_variant_t {
 	int flag;
 	SCP_string flag_text;
 
-	int num_uniforms;
-	char* uniforms[MAX_SHADER_UNIFORMS];
+	SCP_vector<const char*> uniforms;
 
-	int num_attributes;
-	//char* attributes[MAX_SDR_ATTRIBUTES];
-	opengl_vert_attrib::attrib_id attributes[MAX_SDR_ATTRIBUTES];
+	SCP_vector<opengl_vert_attrib::attrib_id> attributes;
 
 	const char* description;
 };
 
 struct opengl_shader_file_t {
-	char *vert;
-	char *frag;
-	char *geo;
+	const char *vert;
+	const char *frag;
+	const char *geo;
 
 	int flags;
 
-	int num_uniforms;
-	char* uniforms[MAX_SHADER_UNIFORMS];
+	SCP_vector<const char*> uniforms;
 
-	int num_attributes;
-	char* attributes[MAX_SDR_ATTRIBUTES];
+	SCP_vector<const char*> attributes;
 
 	const char* description;
 };
@@ -116,14 +99,11 @@ struct opengl_shader_file_t {
 struct opengl_shader_uniform_reference_t {
 	unsigned int flag;
 
-	int num_uniforms;
-	char* uniforms[MAX_SHADER_UNIFORMS];
+	SCP_vector<const char*> uniforms;
 
-	int num_attributes;
-	char* attributes[MAX_SDR_ATTRIBUTES];
+	SCP_vector<const char*> attributes;
 
-	int num_uniform_blocks;
-	char* uniform_blocks[MAX_SDR_UNIFORM_BLOCKS];
+	SCP_vector<const char*> uniform_blocks;
 
 	const char* name;
 };
