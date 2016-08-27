@@ -547,7 +547,7 @@ int opengl_create_texture_sub(int bitmap_handle, int bitmap_type, int bmap_w, in
 				}
 			}
 
-			GLenum aa_format = is_minimum_GLSL_version() ? GL_RED : GL_ALPHA;
+			GLenum aa_format = GL_RED;
 
 			if ( !reload ) {
 				glTexImage2D (t->texture_target, 0, aa_format, tex_w, tex_h, 0, aa_format, GL_UNSIGNED_BYTE, texmem);
@@ -1378,7 +1378,7 @@ void gr_opengl_update_texture(int bitmap_handle, int bpp, const ubyte* data, int
 	}
 	if (byte_mult == 1) {
 		texFormat = GL_UNSIGNED_BYTE;
-		glFormat = is_minimum_GLSL_version() ? GL_RED : GL_ALPHA;
+		glFormat = GL_RED;
 		texmem = (ubyte *) vm_malloc (width*height*byte_mult);
 		ubyte* texmemp = texmem;
 

@@ -695,11 +695,6 @@ int mve_video_init(ubyte *data)
 
 		// NOTE: using NULL instead of pixelbuf crashes some drivers, but then so does pixelbuf
 		glTexImage2D(GL_state.Texture.GetTarget(), 0, GL_RGB5_A1, g_screenWidth, g_screenHeight, 0, GL_BGRA, GL_UNSIGNED_SHORT_1_5_5_5_REV, NULL);
-
-		// set our color so that we can make sure that it's correct
-		if ( !is_minimum_GLSL_version() ) {
-			GL_state.Color(255, 255, 255, 255);
-		}
 	}
 
 	memset(g_palette, 0, 768);

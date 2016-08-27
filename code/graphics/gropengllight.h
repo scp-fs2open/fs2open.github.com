@@ -75,6 +75,5 @@ void gr_opengl_set_light_factor(float factor);
 void opengl_change_active_lights(int pos, int d_offset = 0);
 void opengl_light_init();
 void opengl_light_shutdown();
-void opengl_default_light_settings(int amb = 1, int emi = 1, int spec = 1);
 
 #endif //_GROPENGLLIGHT_H

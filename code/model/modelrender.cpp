@@ -965,13 +965,8 @@ void model_render_buffers(draw_list* scene, model_material *rendering_material, 
 		scale.xyz.x = 1.0f;
 		scale.xyz.y = 1.0f;
 
-		if ( is_minimum_GLSL_version() ) {
-			scale.xyz.z = 1.0f;
-			rendering_material->set_thrust_scale(interp->get_thruster_info().length.xyz.z);
-		} else {
-			scale.xyz.z = interp->get_thruster_info().length.xyz.z;
-			rendering_material->set_thrust_scale();
-		}
+		scale.xyz.z = 1.0f;
+		rendering_material->set_thrust_scale(interp->get_thruster_info().length.xyz.z);
 	} else {
 		scale = interp->get_warp_scale();
 		rendering_material->set_thrust_scale();

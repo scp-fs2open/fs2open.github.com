@@ -464,10 +464,6 @@ void gr_opengl_fog_set(int fog_mode, int r, int g, int b, float fog_near, float 
 
 		return;
 	}
-
-	if ( is_minimum_GLSL_version() && Current_shader != NULL && Current_shader->shader == SDR_TYPE_MODEL ) {
-		return;
-	}
 }
 
 int gr_opengl_set_cull(int cull)
@@ -588,18 +584,7 @@ int gr_opengl_alpha_mask_set(int mode, float alpha)
 		GL_alpha_threshold = 0.0f;
 	}
 
-	if ( is_minimum_GLSL_version() ) { // alpha masking is deprecated
-		return mode;
-	}
-
-	if ( mode ) {
-		GL_state.AlphaTest(GL_TRUE);
-		GL_state.AlphaFunc(GL_GREATER, alpha);
-	} else {
-		GL_state.AlphaTest(GL_FALSE);
-		GL_state.AlphaFunc(GL_ALWAYS, 1.0f);
-	}
-
+	// alpha masking is deprecated
 	return mode;
 }
 
@@ -947,18 +932,8 @@ void opengl_set_vsync(int status)
 	GL_CHECK_FOR_ERRORS("end of set_vsync()");
 }
 
-void opengl_setup_viewport_fixed_pipeline()
-{
-
-}
-
 void opengl_setup_viewport()
 {
-	if ( !is_minimum_GLSL_version() ) {
-		opengl_setup_viewport_fixed_pipeline();
-		return;
-	}
-
 	glViewport(0, 0, gr_screen.max_w, gr_screen.max_h);
 
 	GL_last_projection_matrix = GL_projection_matrix;
@@ -1463,17 +1438,8 @@ static void init_extensions() {
 	GLSL_version = ver;
 
 	// we require a minimum GLSL version
-	if (!is_minimum_GLSL_version()) {
+	if (GLSL_version < MIN_REQUIRED_GLSL_VERSION) {
 		Error(LOCATION,  "Current GL Shading Langauge Version of %d is less than the required version of %d. Switch video modes or update your drivers.", GLSL_version, MIN_REQUIRED_GLSL_VERSION);
-	}
-
-	// can't have this stuff without GLSL support
-	if ( !is_minimum_GLSL_version() ) {
-		Cmdline_normal = 0;
-		Cmdline_height = 0;
-		Cmdline_postprocess = 0;
-		Cmdline_shadow_quality = 0;
-		Cmdline_no_deferred_lighting = 1;
 	}
 
 	if ( GLSL_version < 120 ) {
@@ -1482,23 +1448,21 @@ static void init_extensions() {
 		Cmdline_no_batching = true;
 	}
 
-	if (is_minimum_GLSL_version()) {
-		GLint max_texture_units;
-		glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, &max_texture_units);
+	GLint max_texture_units;
+	glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, &max_texture_units);
 
-		// we need enough texture slots for this stuff to work
+	// we need enough texture slots for this stuff to work
 
-		if (max_texture_units < 6) {
-			mprintf(( "Not enough texture units for height map support. We need at least 6, we found %d.\n", max_texture_units ));
-			Cmdline_height = 0;
-		} else if (max_texture_units < 5) {
-			mprintf(( "Not enough texture units for height and normal map support. We need at least 5, we found %d.\n", max_texture_units ));
-			Cmdline_normal = 0;
-			Cmdline_height = 0;
-		} else if (max_texture_units < 4) {
-			mprintf(( "Not enough texture units found for GLSL support. We need at least 4, we found %d.\n", max_texture_units ));
-			GLSL_version = 0;
-		}
+	if (max_texture_units < 6) {
+		mprintf(( "Not enough texture units for height map support. We need at least 6, we found %d.\n", max_texture_units ));
+		Cmdline_height = 0;
+	} else if (max_texture_units < 5) {
+		mprintf(( "Not enough texture units for height and normal map support. We need at least 5, we found %d.\n", max_texture_units ));
+		Cmdline_normal = 0;
+		Cmdline_height = 0;
+	} else if (max_texture_units < 4) {
+		mprintf(( "Not enough texture units found for GLSL support. We need at least 4, we found %d.\n", max_texture_units ));
+		GLSL_version = 0;
 	}
 }
 
@@ -1660,9 +1624,7 @@ bool gr_opengl_init(os::GraphicsOperations* graphicsOps)
 	mprintf(( "  Post-processing enabled: %s\n", (Cmdline_postprocess) ? "YES" : "NO"));
 	mprintf(( "  Using %s texture filter.\n", (GL_mipmap_filter) ? NOX("trilinear") : NOX("bilinear") ));
 
-	if (is_minimum_GLSL_version()) {
-		mprintf(( "  OpenGL Shader Version: %s\n", glGetString(GL_SHADING_LANGUAGE_VERSION) ));
-	}
+	mprintf(( "  OpenGL Shader Version: %s\n", glGetString(GL_SHADING_LANGUAGE_VERSION) ));
 	
 	// This stops fred crashing if no textures are set
 	gr_screen.current_bitmap = -1;
@@ -1677,10 +1639,6 @@ bool gr_opengl_init(os::GraphicsOperations* graphicsOps)
 
 bool gr_opengl_is_capable(gr_capability capability)
 {
-	if ( !is_minimum_GLSL_version() ) {
-		return false;
-	}
-
 	if ( GL_version < 20 ) {
 		return false;
 	}
@@ -1793,16 +1751,4 @@ DCF(ogl_anisotropy, "toggles anisotropic filtering")
 		GL_anisotropy = (GLfloat)value;
 		//	opengl_set_anisotropy( (float)Dc_arg_float );
 	}
-}
-
-/**
- * Helper function to enquire whether minimum GLSL version present.
- *
- * Compares global variable set by glGetString(GL_SHADING_LANGUAGE_VERSION)
- * against compile time MIN_REQUIRED_GLSL_VERSION.
- *
- * @return true if GLSL support present is above the minimum version.
- */
-bool is_minimum_GLSL_version() {
-	return GLSL_version >= MIN_REQUIRED_GLSL_VERSION ? true : false;
 }

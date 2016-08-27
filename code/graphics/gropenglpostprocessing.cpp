@@ -1023,7 +1023,7 @@ void opengl_post_process_init()
 		return;
 	}
 
-	if ( !is_minimum_GLSL_version() || Cmdline_no_fbo ) {
+	if ( Cmdline_no_fbo ) {
 		Cmdline_postprocess = 0;
 		return;
 	}

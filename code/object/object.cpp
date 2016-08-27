@@ -1212,7 +1212,7 @@ void obj_move_all_post(object *objp, float frametime)
 						b = i2fl(c.blue)/255.0f;
 
 						//light_add_point( &objp->pos, 10.0f, 20.0f, 1.0f, r, g, b, objp->parent );
-						light_add_point( &objp->pos, 10.0f, is_minimum_GLSL_version()?100.0f:20.0f, 1.0f, r, g, b, objp->parent );
+						light_add_point( &objp->pos, 10.0f, 100.0f, 1.0f, r, g, b, objp->parent );
 					} else {
 						light_add_point( &objp->pos, 10.0f, 20.0f, 1.0f, 1.0f, 1.0f, 1.0f, objp->parent );
 					} 

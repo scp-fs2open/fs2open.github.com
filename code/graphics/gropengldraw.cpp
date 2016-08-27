@@ -191,7 +191,7 @@ void opengl_bind_vertex_component(vertex_format_data &vert_component, uint base_
 		data_src = (GLubyte*)vert_component.data_src + byte_offset;
 	}
 
-	if ( is_minimum_GLSL_version() && Current_shader != NULL ) {
+	if ( Current_shader != NULL ) {
 		// grabbing a vertex attribute is dependent on what current shader has been set. i hope no one calls opengl_bind_vertex_layout before opengl_set_current_shader
 		GLint index = opengl_shader_get_attribute(attrib_info.name.c_str());
 
@@ -2259,7 +2259,7 @@ void opengl_setup_scene_textures()
 {
 	Scene_texture_initialized = 0;
 
-	if ( !is_minimum_GLSL_version() || Cmdline_no_fbo ) {
+	if ( Cmdline_no_fbo ) {
 		Cmdline_postprocess = 0;
 		Cmdline_softparticles = 0;
 		Cmdline_fb_explosions = 0;
@@ -2682,10 +2682,6 @@ void gr_opengl_scene_texture_end()
 
 		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
-
-		if ( !is_minimum_GLSL_version() ) {
-			GL_state.Color(255, 255, 255, 255);
-		}
 
 		opengl_shader_set_passthrough(true, false);
 

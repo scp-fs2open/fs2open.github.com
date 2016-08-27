@@ -1075,7 +1075,7 @@ void beam_move_all_post()
 		}		
 
 		// add tube light for the beam
-		if(is_minimum_GLSL_version() && moveup->objp != NULL)
+		if(moveup->objp != NULL)
 			beam_add_light(moveup, OBJ_INDEX(moveup->objp), 1, NULL);
 
 		// stop shooting?
@@ -1686,20 +1686,7 @@ void beam_add_light_large(beam *bm, object *objp, vec3d *pt0, vec3d *pt1)
 	float fg = (float)wip->laser_color_1.green / 255.0f;
 	float fb = (float)wip->laser_color_1.blue / 255.0f;
 
-	if ( is_minimum_GLSL_version() )
-		light_add_tube(pt0, pt1, 1.0f, light_rad, 1.0f * noise, fr, fg, fb, OBJ_INDEX(objp)); 
-	else {
-		vec3d near_pt, a;
-		float dist,max_dist;
-		vm_vec_sub(&a, pt1, pt0);
-		vm_vec_normalize_quick(&a);
-		vm_vec_dist_squared_to_line(&objp->pos, pt0, pt1, &near_pt, &dist); // Calculate nearest point for fallback fake tube pointlight
-		max_dist = light_rad + objp->radius;
-		max_dist *= max_dist;
-		if ( dist > max_dist)
-			return; // Too far away
-		light_add_tube(pt0, &near_pt, 1.0f, light_rad, 1.0f * noise, fr, fg, fb, OBJ_INDEX(objp));
-	}
+	light_add_tube(pt0, pt1, 1.0f, light_rad, 1.0f * noise, fr, fg, fb, OBJ_INDEX(objp));
 }
 
 // mark an object as being lit
@@ -1772,15 +1759,6 @@ void beam_apply_lighting()
 		// from a collision
 		case 2:
 			// Valathil: Dont render impact lights for shaders, handled by tube lighting
-			if ( is_minimum_GLSL_version() ) {
-				break;
-			}
-			// a few meters from the collision point			
-			vm_vec_sub(&dir, &l->bm->last_start, &l->c_point);
-			vm_vec_normalize_quick(&dir);
-			vm_vec_scale_add(&pt, &l->c_point, &dir, bwi->beam_muzzle_radius * 5.0f);
-
-			beam_add_light_small(l->bm, &Objects[l->objnum], &pt);
 			break;
 		}
 	}	
@@ -2565,10 +2543,6 @@ int beam_collide_ship(obj_pair *pair)
 			beam_add_collision(b, ship_objp, &mc_hull_exit, quadrant_num, 1);
 	}
 
-	// add this guy to the lighting list
-	if(!is_minimum_GLSL_version())
-		beam_add_light(b, OBJ_INDEX(ship_objp), 1, NULL);
-
 	// reset timestamp to timeout immediately
 	pair->next_check_time = timestamp(0);
 		
@@ -2661,10 +2635,6 @@ int beam_collide_asteroid(obj_pair *pair)
 
 
 	}
-
-	// add this guy to the lighting list
-	if(!is_minimum_GLSL_version())
-		beam_add_light(b, OBJ_INDEX(pair->b), 1, NULL);
 
 	// reset timestamp to timeout immediately
 	pair->next_check_time = timestamp(0);
@@ -2846,10 +2816,6 @@ int beam_collide_debris(obj_pair *pair)
 		Script_system.RemHookVars(4, "Beam", "Debris", "Self","Object");
 
 	}
-
-	// add this guy to the lighting list
-	if(!is_minimum_GLSL_version())
-		beam_add_light(b, OBJ_INDEX(pair->b), 1, NULL);
 
 	// reset timestamp to timeout immediately
 	pair->next_check_time = timestamp(0);
@@ -3051,10 +3017,6 @@ void beam_handle_collisions(beam *b)
 		//Don't draw effects if we're in the cockpit of the hit ship
 		if (Viewer_obj == &Objects[target])
 			draw_effects = 0;
-
-		// add lighting
-		if(!is_minimum_GLSL_version())
-			beam_add_light(b, target, 2, &b->f_collisions[idx].cinfo.hit_point_world);
 
 		// add to the recent collision list
 		r_coll[r_coll_count].c_objnum = target;
