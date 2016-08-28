@@ -37,7 +37,6 @@ char		Current_filename[MAX_PATH_LEN];
 char		Current_filename_save[MAX_PATH_LEN];
 char		Current_filename_sub[MAX_PATH_LEN];	//Last attempted file to load, don't know if ex or not.
 char		Error_str[ERROR_LENGTH];
-int		my_errno;
 int		Warning_count, Error_count;
 int		Warning_count_save = 0, Error_count_save = 0;
 int		fred_parse_flag = 0;
@@ -2246,69 +2245,58 @@ void debug_show_mission_text()
 		printf("%c", ch);
 }
 
-float atof2()
+static bool atof2(float *out)
 {
-	char	ch;
-
-	my_errno = 0;
 	ignore_white_space();
-
-	ch = *Mp;
+	char ch = *Mp;
 
 	if ((ch != '.') && (ch != '-') && (ch != '+') && ((ch < '0') || (ch > '9'))) {
 		error_display(1, "Expecting float, found [%.32s].\n", next_tokens());
-		my_errno = 1;
-		return 0.0f;
-	} else
-		return (float)atof(Mp);
+		*out = 0.0f;
+		return false;
+	}
 
+	*out = (float) atof(Mp);
+	return true;
 }
 
-int atoi2()
+static bool atoi2(int *out)
 {
-	char	ch;
-
-	my_errno = 0;
-
 	ignore_white_space();
-
-	ch = *Mp;
+	char ch = *Mp;
 
 	if ((ch != '-') && (ch != '+') && ((ch < '0') || (ch > '9'))) {
 		error_display(1, "Expecting int, found [%.32s].\n", next_tokens());
-		my_errno = 1;
-		return 0;
-	} else
-		return atoi(Mp);
+		*out = 0;
+		return false;
+	}
 
+	*out = atoi(Mp);
+	return true;
 }
 
-long atol2()
+bool atol2(long *out)
 {
-    char	ch;
-
-    my_errno = 0;
-
     ignore_white_space();
-
-    ch = *Mp;
+    char ch = *Mp;
 
     if ((ch != '-') && (ch != '+') && ((ch < '0') || (ch > '9'))) {
         error_display(1, "Expecting long, found [%.32s].\n", next_tokens());
-        my_errno = 1;
-        return 0;
+        *out = 0;
+        return false;
     }
-    else
-        return atol(Mp);
+
+    *out = atol(Mp);
+    return true;
 }
 
 //	Stuff a floating point value pointed at by Mp.
 //	Advances past float characters.
 void stuff_float(float *f)
 {
-	*f = atof2();
+	bool success = atof2(f);
 
-	if (my_errno)
+	if (!success)
 		skip_token();
 	else
 		Mp += strspn(Mp, "+-0123456789.");
@@ -2349,9 +2337,9 @@ int stuff_float_optional(float *f, bool raw)
 //	Advances past integer characters.
 void stuff_int(int *i)
 {
-	*i = atoi2();
+	bool success = atoi2(i);
 
-	if (my_errno)
+	if (!success)
 		skip_token();
 	else
 		Mp += strspn(Mp, "+-0123456789");
@@ -2622,13 +2610,12 @@ int stuff_bool_list(bool *blp, int max_bools)
 //	Advances past integer characters.
 void stuff_ubyte(ubyte *i)
 {
-	int	temp;
-
-	temp = atoi2();
+	int temp;
+	bool success = atoi2(&temp);
 
 	*i = (ubyte)temp;
 
-	if (my_errno)
+	if (!success)
 		skip_token();
 	else
 		Mp += strspn(Mp, "+-0123456789");
