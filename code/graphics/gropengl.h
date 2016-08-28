@@ -22,6 +22,8 @@ bool gr_opengl_init(os::GraphicsOperations* graphicsOps);
 void gr_opengl_cleanup(os::GraphicsOperations* graphicsOps, bool closing, int minimize=1);
 int opengl_check_for_errors(char *err_at = NULL);
 bool gr_opengl_is_capable(gr_capability capability);
+void gr_opengl_push_debug_group(const char* name);
+void gr_opengl_pop_debug_group();
 uint opengl_data_type_size(GLenum data_type);
 
 #ifndef NDEBUG

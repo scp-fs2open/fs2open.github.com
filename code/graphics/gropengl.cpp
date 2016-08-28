@@ -1301,6 +1301,9 @@ void opengl_setup_function_pointers()
 
 	gr_screen.gf_is_capable = gr_opengl_is_capable;
 
+	gr_screen.gf_push_debug_group = gr_opengl_push_debug_group;
+	gr_screen.gf_pop_debug_group = gr_opengl_pop_debug_group;
+
 	// NOTE: All function pointers here should have a Cmdline_nohtl check at the top
 	//       if they shouldn't be run in non-HTL mode, Don't keep separate entries.
 	// *****************************************************************************
@@ -1309,6 +1312,11 @@ void opengl_setup_function_pointers()
 #ifndef NDEBUG
 static void APIENTRY debug_callback(GLenum source, GLenum type, GLuint id, GLenum severity,
 						   GLsizei length, const GLchar *message, const void *userParam) {
+	if (source == GL_DEBUG_SOURCE_APPLICATION_ARB) {
+		// Ignore application messages
+		return;
+	}
+
 	const char* sourceStr;
 	const char* typeStr;
 	const char* severityStr;
@@ -1666,6 +1674,17 @@ bool gr_opengl_is_capable(gr_capability capability)
 	}
 
 	return false;
+}
+
+void gr_opengl_push_debug_group(const char* name) {
+	if (GLAD_GL_KHR_debug) {
+		glPushDebugGroupKHR(GL_DEBUG_SOURCE_APPLICATION_KHR, 0, -1, name);
+	}
+}
+void gr_opengl_pop_debug_group() {
+	if (GLAD_GL_KHR_debug) {
+		glPopDebugGroupKHR();
+	}
 }
 
 uint opengl_data_type_size(GLenum data_type)
