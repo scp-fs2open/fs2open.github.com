@@ -545,6 +545,11 @@ void gr_stub_shadow_map_end()
 {
 }
 
+void gr_stub_render_shield_impact(shield_material *material_info, primitive_type prim_type, vertex_layout *layout, int buffer_handle, int n_verts)
+{
+
+}
+
 void gr_stub_render_model(model_material* material_info, indexed_vertex_source *vert_source, vertex_buffer* bufferp, size_t texi)
 {
 
@@ -768,6 +773,8 @@ bool gr_stub_init()
 
 	gr_screen.gf_shadow_map_start	= gr_stub_shadow_map_start;
 	gr_screen.gf_shadow_map_end		= gr_stub_shadow_map_end;
+
+	gr_screen.gf_render_shield_impact = gr_stub_render_shield_impact;
 
 	gr_screen.gf_maybe_create_shader = gr_stub_maybe_create_shader;
 

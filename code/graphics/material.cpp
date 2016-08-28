@@ -134,7 +134,7 @@ Cull_mode(true),
 Fill_mode(GR_FILL_MODE_SOLID),
 Clr_scale(1.0f)
 {
-	gr_init_alphacolor(&Clr, 255, 255, 255, 255);
+	Clr = { 1.0f, 1.0f, 1.0f, 1.0f };
 	
 	Texture_maps[TM_BASE_TYPE]		= -1;
 	Texture_maps[TM_GLOW_TYPE]		= -1;
@@ -153,6 +153,8 @@ Clr_scale(1.0f)
 	Fog_params.enabled = false;
 
 	Clip_params.enabled = false;
+
+
 };
 
 void material::set_shader_type(shader_type init_sdr_type)
@@ -334,24 +336,29 @@ int material::get_depth_bias()
 
 void material::set_color(float red, float green, float blue, float alpha)
 {
-	set_color(fl2i(red * 255.0f), fl2i(green * 255.0f), fl2i(blue * 255.0f), fl2i(alpha * 255.0f));
+	Clr = { red, green, blue, alpha };
 }
 
 void material::set_color(int r, int g, int b, int a)
 {
-	gr_init_alphacolor(&Clr, r, g, b, a);
+	CLAMP(r, 0, 255);
+	CLAMP(b, 0, 255);
+	CLAMP(g, 0, 255);
+	CLAMP(a, 0, 255);
+
+	Clr = { i2fl(r) / 255.0f, i2fl(g) / 255.0f, i2fl(b) / 255.0f, i2fl(a) / 255.0f };
 }
 
 void material::set_color(color &clr_in)
 {
 	if ( clr_in.is_alphacolor ) {
-		Clr = clr_in;
+		Clr = { i2fl(clr_in.red) / 255.0f, i2fl(clr_in.green) / 255.0f, i2fl(clr_in.blue) / 255.0f, 1.0f };
 	} else {
-		gr_init_alphacolor(&Clr, clr_in.red, clr_in.green, clr_in.blue, 255);
+		Clr = { i2fl(clr_in.red) / 255.0f, i2fl(clr_in.green) / 255.0f, i2fl(clr_in.blue) / 255.0f, i2fl(clr_in.green) / 255.0f };
 	}
 }
 
-color& material::get_color()
+const vec4& material::get_color()
 {
 	return Clr;
 }
@@ -692,16 +699,6 @@ material()
 	set_shader_type(SDR_TYPE_EFFECT_DISTORTION);
 }
 
-void distortion_material::set_thruster_rendering(bool enabled)
-{
-	Thruster_render = enabled;
-}
-
-bool distortion_material::get_thruster_rendering()
-{
-	return Thruster_render;
-}
-
 int distortion_material::get_shader_handle()
 {
 	int handle = material::get_shader_handle();
@@ -713,4 +710,64 @@ int distortion_material::get_shader_handle()
 	set_shader_handle(gr_maybe_create_shader(SDR_TYPE_EFFECT_DISTORTION, 0));
 
 	return material::get_shader_handle();
+}
+
+
+void distortion_material::set_thruster_rendering(bool enabled)
+{
+	Thruster_render = enabled;
+}
+
+bool distortion_material::get_thruster_rendering()
+{
+	return Thruster_render;
+}
+
+shield_material::shield_material() :
+	material()
+{
+	set_shader_type(SDR_TYPE_SHIELD_DECAL);
+
+	vm_set_identity(&Impact_orient);
+	Impact_pos = { 0.0f, 0.0f, 0.0f };
+	Impact_radius = 1.0f;
+}
+
+int shield_material::get_shader_handle()
+{
+	int handle = material::get_shader_handle();
+
+	if ( handle >= 0 ) {
+		return handle;
+	}
+
+	set_shader_handle(gr_maybe_create_shader(SDR_TYPE_SHIELD_DECAL, 0));
+
+	return material::get_shader_handle();
+}
+
+void shield_material::set_impact_transform(matrix &orient, vec3d &pos)
+{
+	Impact_orient = orient;
+	Impact_pos = pos;
+}
+
+void shield_material::set_impact_radius(float radius)
+{
+	Impact_radius = radius;
+}
+
+const matrix& shield_material::get_impact_orient()
+{
+	return Impact_orient;
+}
+
+const vec3d& shield_material::get_impact_pos()
+{
+	return Impact_pos;
+}
+
+float shield_material::get_impact_radius()
+{
+	return Impact_radius;
 }

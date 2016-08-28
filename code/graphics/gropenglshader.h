@@ -169,7 +169,8 @@ void opengl_shader_compile_deferred_light_shader();
 void opengl_shader_compile_deferred_light_clear_shader();
 
 void opengl_shader_compile_passthrough_shader();
-void opengl_shader_set_passthrough(bool textured = true, bool alpha = false, color* clr = NULL, float color_scale = 1.0f);
+void opengl_shader_set_passthrough(bool textured = true, bool alpha = false, vec4* clr = NULL, float color_scale = 1.0f);
+void opengl_shader_set_passthrough(bool textured, bool alpha, color *clr);
 
 #define ANIMATED_SHADER_LOADOUTSELECT_FS1	0
 #define ANIMATED_SHADER_LOADOUTSELECT_FS2	1

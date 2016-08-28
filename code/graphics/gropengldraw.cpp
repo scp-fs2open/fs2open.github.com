@@ -2940,6 +2940,38 @@ void gr_opengl_deferred_lighting_finish()
 	gr_clear_states();
 }
 
+void gr_opengl_render_shield_impact(shield_material *material_info, primitive_type prim_type, vertex_layout *layout, int buffer_handle, int n_verts)
+{
+	matrix4 impact_transform;
+	matrix4 impact_projection;
+	vec3d min;
+	vec3d max;
+	
+	opengl_tnl_set_material(material_info, true);
+
+	float radius = material_info->get_impact_radius();
+	min.xyz.x = min.xyz.y = min.xyz.z = -radius;
+	max.xyz.x = max.xyz.y = max.xyz.z = radius;
+
+	vm_matrix4_set_orthographic(&impact_projection, &max, &min);
+
+	matrix impact_orient = material_info->get_impact_orient();
+	vec3d impact_pos = material_info->get_impact_pos();
+
+	vm_matrix4_set_inverse_transform(&impact_transform, &impact_orient, &impact_pos);
+
+	GL_state.Uniform.setUniform3f("hitNormal", impact_orient.vec.fvec);
+	GL_state.Uniform.setUniformMatrix4f("shieldProjMatrix", impact_projection);
+	GL_state.Uniform.setUniformMatrix4f("shieldModelViewMatrix", impact_transform);
+	GL_state.Uniform.setUniformi("shieldMap", 0);
+	GL_state.Uniform.setUniformi("srgb", High_dynamic_range ? 1 : 0);
+	GL_state.Uniform.setUniform4f("color", material_info->get_color());
+	GL_state.Uniform.setUniformMatrix4f("modelViewMatrix", GL_model_view_matrix);
+	GL_state.Uniform.setUniformMatrix4f("projMatrix", GL_projection_matrix);
+	
+	opengl_render_primitives(prim_type, layout, n_verts, buffer_handle, 0, 0);
+}
+
 void gr_opengl_update_distortion()
 {
 	GLboolean depth = GL_state.DepthTest(GL_FALSE);
