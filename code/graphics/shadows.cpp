@@ -487,8 +487,6 @@ void shadows_render_all(float fov, matrix *eye_orient, vec3d *eye_pos)
 	gr_clear_states();
 	gr_set_buffer(-1);
 
-	GL_state.Texture.DisableAll();
-
 	gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
 	gr_set_view_matrix(&Eye_position, &Eye_matrix);
 }

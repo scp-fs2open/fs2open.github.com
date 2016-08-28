@@ -34,19 +34,14 @@ void opengl_texture_state::init(GLuint n_units)
 	num_texture_units = n_units;
 
 	for (unsigned int unit = 0; unit < num_texture_units; unit++) {
-		units[unit].active = GL_FALSE;
 		units[unit].enabled = GL_FALSE;
-		units[unit].used = GL_FALSE;
 
 		default_values(unit);
 
 		glActiveTexture(GL_TEXTURE0 + unit);
-
-		units[unit].rgb_scale = 1.0f;
-		units[unit].alpha_scale = 1.0f;
 	}
 
-	DisableAll();
+	SetActiveUnit();
 }
 
 void opengl_texture_state::default_values(GLint unit, GLenum target)
@@ -63,74 +58,9 @@ void opengl_texture_state::default_values(GLint unit, GLenum target)
 	}
 }
 
-GLboolean opengl_texture_state::TexgenS(GLint state)
-{
-	GLboolean save_state = units[active_texture_unit].texgen_S;
-
-	if ( !((state == -1) || (state == units[active_texture_unit].texgen_S)) ) {
-		if (state) {
-			Assert( state == GL_TRUE );
-			units[active_texture_unit].texgen_S = GL_TRUE;
-		} else {
-			units[active_texture_unit].texgen_S = GL_FALSE;
-		}
-	}
-
-	return save_state;
-}
-
-GLboolean opengl_texture_state::TexgenT(GLint state)
-{
-	GLboolean save_state = units[active_texture_unit].texgen_T;
-
-	if ( !((state == -1) || (state == units[active_texture_unit].texgen_T)) ) {
-		if (state) {
-			Assert( state == GL_TRUE );
-			units[active_texture_unit].texgen_T = GL_TRUE;
-		} else {
-			units[active_texture_unit].texgen_T = GL_FALSE;
-		}
-	}
-
-	return save_state;
-}
-
-GLboolean opengl_texture_state::TexgenR(GLint state)
-{
-	GLboolean save_state = units[active_texture_unit].texgen_R;
-
-	if ( !((state == -1) || (state == units[active_texture_unit].texgen_R)) ) {
-		if (state) {
-			Assert( state == GL_TRUE );
-			units[active_texture_unit].texgen_R = GL_TRUE;
-		} else {
-			units[active_texture_unit].texgen_R = GL_FALSE;
-		}
-	}
-
-	return save_state;
-}
-
-GLboolean opengl_texture_state::TexgenQ(GLint state)
-{
-	GLboolean save_state = units[active_texture_unit].texgen_Q;
-
-	if ( !((state == -1) || (state == units[active_texture_unit].texgen_Q)) ) {
-		if (state) {
-			Assert( state == GL_TRUE );
-			units[active_texture_unit].texgen_Q = GL_TRUE;
-		} else {
-			units[active_texture_unit].texgen_Q = GL_FALSE;
-		}
-	}
-
-	return save_state;
-}
-
 void opengl_texture_state::SetTarget(GLenum tex_target)
 {
 	if (units[active_texture_unit].texture_target != tex_target) {
-		Disable();
 
 		if (units[active_texture_unit].texture_id) {
 			glBindTexture(units[active_texture_unit].texture_target, 0);
@@ -157,9 +87,7 @@ void opengl_texture_state::SetActiveUnit(GLuint id)
 
 void opengl_texture_state::Enable(GLuint tex_id)
 {
-	units[active_texture_unit].used = GL_TRUE;
-
-	if ( units[active_texture_unit].active && (units[active_texture_unit].texture_id == tex_id) ) {
+	if ( units[active_texture_unit].texture_id == tex_id ) {
 		return;
 	}
 
@@ -167,49 +95,6 @@ void opengl_texture_state::Enable(GLuint tex_id)
 		glBindTexture(units[active_texture_unit].texture_target, tex_id);
 		units[active_texture_unit].texture_id = tex_id;
 	}
-
-	units[active_texture_unit].active = GL_TRUE;
-}
-
-void opengl_texture_state::Disable()
-{
-	if ( !units[active_texture_unit].active ) {
-		return;
-	}
-
-	units[active_texture_unit].active = GL_FALSE;
-	units[active_texture_unit].used = GL_FALSE;
-}
-
-void opengl_texture_state::ResetUsed()
-{
-	for (unsigned int i = 0; i < num_texture_units; i++) {
-		units[i].used = GL_FALSE;
-	}
-}
-
-void opengl_texture_state::DisableUnused()
-{
-	for (unsigned int i = 0; i < num_texture_units; i++) {
-		if (!units[i].used) {
-			SetActiveUnit(i);
-			Disable();
-		}
-	}
-}
-
-void opengl_texture_state::DisableAll()
-{
-	for (unsigned int i = 0; i < num_texture_units; i++) {
-		if (units[i].active) {
-			SetActiveUnit(i);
-			Disable();
-		}
-	}
-
-	SetActiveUnit();
-
-	Current_texture_source = TEXTURE_SOURCE_NONE;
 }
 
 void opengl_texture_state::Delete(GLuint tex_id)
@@ -224,7 +109,6 @@ void opengl_texture_state::Delete(GLuint tex_id)
 	for (unsigned int i = 0; i < num_texture_units; i++) {
 		if (units[i].texture_id == tex_id) {
 			SetActiveUnit(i);
-			Disable();
 
 			glBindTexture(units[i].texture_target, 0);
 			units[i].texture_id = 0;
@@ -240,53 +124,12 @@ void opengl_texture_state::Delete(GLuint tex_id)
 	SetActiveUnit(atu_save);
 }
 
-GLfloat opengl_texture_state::AnisoFilter(GLfloat aniso)
-{
-#if 0
-	GLfloat rval = units[active_texture_unit].aniso_filter;
-
-	if ( (aniso > 0.0f) /*&& (aniso != rval)*/ ) {
-		if ( Is_Extension_Enabled(OGL_EXT_TEXTURE_FILTER_ANISOTROPIC) ) {
-			units[active_texture_unit].aniso_filter = aniso;
-			CLAMP(units[active_texture_unit].aniso_filter, 1.0f, GL_max_anisotropy);
-	
-			glTexParameterf(units[active_texture_unit].texture_target, GL_TEXTURE_MAX_ANISOTROPY_EXT, units[active_texture_unit].aniso_filter);
-		}
-
-		if ( Is_Extension_Enabled(OGL_EXT_TEXTURE_LOD_BIAS) ) {
-			if (units[active_texture_unit].aniso_filter > 1.0f) {
-				glTexEnvf(GL_TEXTURE_FILTER_CONTROL, GL_TEXTURE_LOD_BIAS, 0.0f);
-			} else {
-				glTexEnvf(GL_TEXTURE_FILTER_CONTROL, GL_TEXTURE_LOD_BIAS, -0.75f);
-			}
-		}
-	}
-
-	return rval;
-#endif
-
-	return GL_anisotropy;
-}
-
-opengl_state::~opengl_state()
-{
-	if (light_Status != NULL) {
-		vm_free(light_Status);
-	}
-}
-
 void opengl_state::init()
 {
 	int i;
-
 	
-	fog_Status = GL_FALSE;
-
 	glDisable(GL_BLEND);
 	blend_Status = GL_FALSE;
-
-
-	alphatest_Status = GL_FALSE;
 
 	glDisable(GL_DEPTH_TEST);
 	depthtest_Status = GL_FALSE;
@@ -317,17 +160,8 @@ void opengl_state::init()
 		}
 	}
 
-	Assert( GL_max_lights > 0 );
-	light_Status = (GLboolean*) vm_malloc(GL_max_lights * sizeof(GLboolean));
-
-	for (i = 0; i < GL_max_lights; i++) {
-		light_Status[i] = GL_FALSE;
-	}
-
 	glDepthMask(GL_FALSE);
 	depthmask_Status = GL_FALSE;
-
-	lighting_Status = GL_FALSE;
 
 	glFrontFace(GL_CCW);
 	frontface_Value = GL_CCW;
@@ -345,45 +179,6 @@ void opengl_state::init()
 	glGetFloatv(GL_LINE_WIDTH, &line_width_Value);
 
 	Current_alpha_blend_mode = ALPHA_BLEND_NONE;
-	Current_zbuffer_type = ZBUFFER_TYPE_READ;
-
-	red_Status = 255;
-	blue_Status = 255;
-	green_Status = 255;
-	alpha_Status = 255;
-	color_invalid = true;
-}
-
-GLboolean opengl_state::Lighting(GLint state)
-{
-	GLboolean save_state = lighting_Status;
-
-	if ( !((state == -1) || (state == lighting_Status)) ) {
-		if (state) {
-			Assert( state == GL_TRUE );
-			lighting_Status = GL_TRUE;
-		} else {
-			lighting_Status = GL_FALSE;
-		}
-	}
-
-	return save_state;
-}
-
-GLboolean opengl_state::Fog(GLint state)
-{
-	GLboolean save_state = fog_Status;
-
-	if ( !((state == -1) || (state == fog_Status)) ) {
-		if (state) {
-			Assert( state == GL_TRUE );
-			fog_Status = GL_TRUE;
-		} else {
-			fog_Status = GL_FALSE;
-		}
-	}
-
-	return save_state;
 }
 
 GLboolean opengl_state::Blend(GLint state)
@@ -401,22 +196,6 @@ GLboolean opengl_state::Blend(GLint state)
 		}
 
 		Current_alpha_blend_mode = (gr_alpha_blend)(-1);
-	}
-
-	return save_state;
-}
-
-GLboolean opengl_state::AlphaTest(GLint state)
-{
-	GLboolean save_state = alphatest_Status;
-
-	if ( !((state == -1) || (state == alphatest_Status)) ) {
-		if (state) {
-			Assert( state == GL_TRUE );
-			alphatest_Status = GL_TRUE;
-		} else {
-			alphatest_Status = GL_FALSE;
-		}
 	}
 
 	return save_state;
@@ -532,40 +311,6 @@ GLboolean opengl_state::PolygonOffsetFill(GLint state)
 	return save_state;
 }
 
-GLboolean opengl_state::Normalize(GLint state)
-{
-	GLboolean save_state = normalize_Status;
-
-	if ( !((state == -1) || (state == normalize_Status)) ) {
-		if (state) {
-			Assert( state == GL_TRUE );
-			normalize_Status = GL_TRUE;
-		} else {
-			normalize_Status = GL_FALSE;
-		}
-	}
-
-	return save_state;
-}
-
-GLboolean opengl_state::Light(GLint num, GLint state)
-{
-	Assert( (light_Status != NULL) && (num >= 0) && (num < GL_max_lights) );
-
-	GLboolean save_state = light_Status[num];
-
-	if ( !((state == -1) || (state == light_Status[num])) ) {
-		if (state) {
-			Assert( state == GL_TRUE );
-			light_Status[num] = GL_TRUE;
-		} else {
-			light_Status[num] = GL_FALSE;
-		}
-	}
-
-	return save_state;
-}
-
 GLboolean opengl_state::ClipPlane(GLint num, GLint state)
 {
 	Assert( (num >= 0) || (num < (int)(sizeof(clipplane_Status) / sizeof(GLboolean))) );
@@ -617,8 +362,6 @@ GLboolean opengl_state::DepthMask(GLint state)
 			glDepthMask(GL_FALSE);
 			depthmask_Status = GL_FALSE;
 		}
-
-		Current_zbuffer_type = (gr_zbuffer_type)(-1);
 	}
 
 	return save_state;
@@ -640,11 +383,6 @@ GLboolean opengl_state::ColorMask(GLint state)
     }
 
     return save_state;
-}
-
-void opengl_state::SetTextureSource(gr_texture_source ts)
-{
-
 }
 
 void opengl_state::SetAlphaBlendMode(gr_alpha_blend ab)
@@ -689,10 +427,6 @@ void opengl_state::SetAlphaBlendMode(gr_alpha_blend ab)
 
 void opengl_state::SetZbufferType(gr_zbuffer_type zt)
 {
-	if (zt == Current_zbuffer_type) {
-		return;
-	}
-
 	switch (zt) {
 		case ZBUFFER_TYPE_NONE:
 			GL_state.DepthFunc(GL_ALWAYS);
@@ -719,8 +453,6 @@ void opengl_state::SetZbufferType(gr_zbuffer_type zt)
 	}
 
 	GL_state.DepthTest( (zt == ZBUFFER_TYPE_NONE) ? GL_FALSE : GL_TRUE );
-
-	Current_zbuffer_type = zt;
 }
 
 void opengl_state::SetStencilType(gr_stencil_type st)
@@ -1912,8 +1644,6 @@ void gr_opengl_clear_states()
 		glBindVertexArray(GL_vao);
 	}
 
-	GL_state.Texture.DisableAll();
-
 	gr_zbias(0);
 	gr_zbuffer_set(ZBUFFER_TYPE_READ);
 	gr_set_cull(0);
@@ -1926,7 +1656,6 @@ void gr_opengl_clear_states()
 
 void opengl_setup_render_states(int &r, int &g, int &b, int &alpha, int &tmap_type, int flags, int is_scaler)
 {
-	gr_texture_source texture_source = (gr_texture_source)(-1);
 	gr_alpha_blend alpha_blend = (gr_alpha_blend)(-1);
 	gr_zbuffer_type zbuffer_type = (gr_zbuffer_type)(-1);
 	
@@ -1995,15 +1724,9 @@ void opengl_setup_render_states(int &r, int &g, int &b, int &alpha, int &tmap_ty
 		// use nonfiltered textures for interface graphics
 		if (flags & TMAP_FLAG_INTERFACE) {
 			tmap_type = TCACHE_TYPE_INTERFACE;
-			texture_source = TEXTURE_SOURCE_NO_FILTERING;
-		} else {
-			texture_source = TEXTURE_SOURCE_DECAL;
 		}
-	} else {
-		texture_source = TEXTURE_SOURCE_NONE;
 	}
 
-	GL_state.SetTextureSource(texture_source);
 	GL_state.SetAlphaBlendMode(alpha_blend);
 	GL_state.SetZbufferType(zbuffer_type);
 }

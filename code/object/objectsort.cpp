@@ -443,6 +443,4 @@ void obj_render_queue_all()
 
 	gr_reset_lighting();
 	gr_set_lighting(false, false);
-
-	GL_state.Texture.DisableAll();
 }

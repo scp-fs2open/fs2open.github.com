@@ -456,10 +456,6 @@ void gr_opengl_fog_set(int fog_mode, int r, int g, int b, float fog_near, float 
 	Assert((b >= 0) && (b < 256));
 
 	if (fog_mode == GR_FOGMODE_NONE) {
-		if ( GL_state.Fog() ) {
-			GL_state.Fog(GL_FALSE);
-		}
-
 		gr_screen.current_fog_mode = fog_mode;
 
 		return;
@@ -537,7 +533,6 @@ void gr_opengl_zbuffer_clear(int mode)
 		gr_zbuffering_mode = GR_ZBUFF_FULL;
 		gr_global_zbuffering = 1;
 
-		GL_state.SetTextureSource(TEXTURE_SOURCE_NONE);
 		GL_state.SetAlphaBlendMode(ALPHA_BLEND_NONE);
 		GL_state.SetZbufferType(ZBUFFER_TYPE_FULL);
 
@@ -680,7 +675,6 @@ void gr_opengl_get_region(int front, int w, int h, ubyte *data)
 		glReadBuffer(GL_BACK);
 //	}
 
-	GL_state.SetTextureSource(TEXTURE_SOURCE_NO_FILTERING);
 	GL_state.SetAlphaBlendMode(ALPHA_BLEND_NONE);
 	GL_state.SetZbufferType(ZBUFFER_TYPE_NONE);
 

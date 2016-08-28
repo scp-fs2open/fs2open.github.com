@@ -914,7 +914,7 @@ static void opengl_render_pipeline_program(int start, vertex_buffer *bufferp, bu
 	// setup shader flags for the things that we want/need
 	shader_flags = gr_determine_model_shader_flags(
 		lighting_is_enabled, 
-		GL_state.Fog() ? true : false, 
+		false, 
 		textured ? true : false, 
 		Rendering_to_shadow_map,
 		GL_thrust_scale > 0.0f,
@@ -947,7 +947,6 @@ static void opengl_render_pipeline_program(int start, vertex_buffer *bufferp, bu
 	gr_opengl_set_center_alpha(GL_center_alpha);
 
 	opengl_setup_render_states(r, g, b, a, tmap_type, flags);
-	GL_state.Color( (ubyte)r, (ubyte)g, (ubyte)b, (ubyte)a );
 
 	GL_state.Texture.SetShaderMode(GL_TRUE);
 
@@ -1135,9 +1134,6 @@ void gr_opengl_render_stream_buffer(int buffer_handle, size_t offset, size_t n_v
 
 	if ( (flags & TMAP_FLAG_RGB) && (flags & TMAP_FLAG_GOURAUD) && color_offset >= 0 ) {
 		vert_def.add_vertex_component(vertex_format_data::COLOR4, stride, ptr + color_offset);
-	} else {
-		// use what opengl_setup_render_states() gives us since this works much better for nebula and transparency
-		GL_state.Color( (ubyte)r, (ubyte)g, (ubyte)b, (ubyte)alpha );
 	}
 
 	if ( pos_offset >= 0 ) {
@@ -1613,7 +1609,6 @@ void opengl_tnl_set_material(material* material_info, bool set_base_map)
 		opengl_shader_set_passthrough(base_map >= 0, material_info->get_texture_type() == TCACHE_TYPE_AABITMAP, &clr, material_info->get_color_scale());
 	}
 
-	GL_state.SetTextureSource(material_info->get_texture_source());
 	GL_state.SetAlphaBlendMode(material_info->get_blend_mode());
 	GL_state.SetZbufferType(material_info->get_depth_mode());
 
