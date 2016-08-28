@@ -1955,7 +1955,6 @@ void g3_draw_htl_sphere(color *clr, const vec3d* position, float radius)
 
 	material material_def;
 
-	material_def.set_texture_source(TEXTURE_SOURCE_NONE);
 	material_def.set_blend_mode(ALPHA_BLEND_NONE);
 	material_def.set_depth_mode(ZBUFFER_TYPE_FULL);
 	material_def.set_color(*clr);
@@ -2798,7 +2797,6 @@ void g3_render_line_3d(color *clr, bool depth_testing, const vec3d *start, const
 {
 	material mat;
 
-	mat.set_texture_source(TEXTURE_SOURCE_NONE);
 	mat.set_depth_mode((depth_testing) ? ZBUFFER_TYPE_READ : ZBUFFER_TYPE_NONE);
 	mat.set_color(*clr);
 	mat.set_cull_mode(false);
@@ -2835,7 +2833,6 @@ void g3_render_sphere(color *clr, vec3d* position, float radius)
 
 	material material_def;
 
-	material_def.set_texture_source(TEXTURE_SOURCE_NONE);
 	material_def.set_blend_mode(ALPHA_BLEND_NONE);
 	material_def.set_depth_mode(ZBUFFER_TYPE_FULL);
 	material_def.set_color(*clr);
@@ -2916,7 +2913,6 @@ void g3_render_colored_rect(color *clr, int x, int y, int w, int h, int resize_m
 	material_params.set_depth_mode(ZBUFFER_TYPE_NONE);
 	material_params.set_blend_mode(ALPHA_BLEND_ALPHA_BLEND_ALPHA);
 	material_params.set_cull_mode(false);
-	material_params.set_texture_source(TEXTURE_SOURCE_NONE);
 
 	// draw the polys
 	g3_render_primitives_colored(&material_params, v, 4, PRIM_TYPE_TRIFAN, true);

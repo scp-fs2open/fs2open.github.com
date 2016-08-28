@@ -361,9 +361,7 @@ static void OGG_video_init(theora_info *tinfo)
 		opengl_shader_set_current(sdr_handle);
 
 		gr_set_lighting(false, false);
-		GL_state.Texture.DisableAll();
 
-		GL_state.SetTextureSource(TEXTURE_SOURCE_DECAL);
 		GL_state.SetAlphaBlendMode(ALPHA_BLEND_NONE);
 		GL_state.SetZbufferType(ZBUFFER_TYPE_NONE);
 
@@ -494,8 +492,6 @@ static void OGG_video_close()
 
 		gr_delete_buffer(buffer_handle);
 		buffer_handle = -1;
-
-		GL_state.Texture.Disable();
 
 		GL_state.Texture.Delete(ytex);
 		GL_state.Texture.Delete(utex);

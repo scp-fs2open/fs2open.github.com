@@ -49,7 +49,6 @@ namespace
 
 		GL_state.Texture.SetActiveUnit(0);
 		GL_state.Texture.SetTarget(0);
-		GL_state.Texture.DisableAll();
 
 		if ( GL_version >= 30 ) {
 			glBindVertexArray(GL_vao);

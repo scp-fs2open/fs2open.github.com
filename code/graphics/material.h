@@ -37,7 +37,6 @@ private:
 
 	int Texture_maps[TM_NUM_TYPES];
 	texture_type Tex_type;
-	gr_texture_source Tex_source;
 
 	clip_plane Clip_params;
 	int Texture_addressing;
@@ -65,10 +64,7 @@ public:
 
 	void set_texture_type(texture_type t_type);
 	int get_texture_type();
-
-	void set_texture_source(gr_texture_source source);
-	gr_texture_source get_texture_source();
-
+	
 	bool is_clipped();
 	void set_clip_plane(const vec3d &normal, const vec3d &position);
 	void set_clip_plane();

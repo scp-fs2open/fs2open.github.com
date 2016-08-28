@@ -354,11 +354,7 @@ void gr_opengl_reset_lighting()
 {
 	int i;
 
-//	memset( opengl_lights, 0, sizeof(opengl_light) * MAX_LIGHTS );
-
 	for (i = 0; i < GL_max_lights; i++) {
-		GL_state.Light(i, GL_FALSE);
-
 		opengl_lights[i].occupied = false;
 	}
 

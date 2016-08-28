@@ -234,7 +234,6 @@ void opengl_aabitmap_ex_internal(int x, int y, int w, int h, int sx, int sy, int
 
 	GL_CHECK_FOR_ERRORS("start of aabitmap_ex_internal()");
 
-	GL_state.SetTextureSource(TEXTURE_SOURCE_NO_FILTERING);
 	GL_state.SetAlphaBlendMode(ALPHA_BLEND_ALPHA_BLEND_ALPHA);
 	GL_state.SetZbufferType(ZBUFFER_TYPE_NONE);
 
@@ -270,8 +269,6 @@ void opengl_aabitmap_ex_internal(int x, int y, int w, int h, int sx, int sy, int
 		gr_resize_screen_posf(&x1, &y1, NULL, NULL, resize_mode);
 		gr_resize_screen_posf(&x2, &y2, NULL, NULL, resize_mode);
 	}
-
-	GL_state.Color(gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue, gr_screen.current_color.alpha);
 
 	if (mirror) {
 		float temp = u0;
@@ -493,7 +490,6 @@ void gr_opengl_string_old(float sx, float sy, const char* s, const char* end, fo
 
  	gr_set_bitmap(fontData->bitmap_id);
  
- 	GL_state.SetTextureSource(TEXTURE_SOURCE_NO_FILTERING);
  	GL_state.SetAlphaBlendMode(ALPHA_BLEND_ALPHA_BLEND_ALPHA);
  	GL_state.SetZbufferType(ZBUFFER_TYPE_NONE);
  
@@ -509,15 +505,7 @@ void gr_opengl_string_old(float sx, float sy, const char* s, const char* end, fo
 
 	bw = i2fl(ibw);
 	bh = i2fl(ibh);
-
-	// set color!
-	if (gr_screen.current_color.is_alphacolor) {
-		GL_state.Color(gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue, gr_screen.current_color.alpha);
-	}
-	else {
-		GL_state.Color(gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue);
-	}
-
+	
 	//	if ( (gr_screen.custom_size && resize) || (gr_screen.rendering_to_texture != -1) ) {
 	if (resize_mode != GR_RESIZE_NONE && (gr_screen.custom_size || (gr_screen.rendering_to_texture != -1))) {
 		do_resize = true;
@@ -862,16 +850,13 @@ void gr_opengl_line(int x1, int y1, int x2, int y2, int resize_mode)
 void gr_opengl_line_htl(const vec3d *start, const vec3d *end)
 {
 	gr_zbuffer_type zbuffer_state = (gr_zbuffering) ? ZBUFFER_TYPE_FULL : ZBUFFER_TYPE_NONE;
-	GL_state.SetTextureSource(TEXTURE_SOURCE_NONE);
 	GL_state.SetZbufferType(zbuffer_state);
 
 
     if (gr_screen.current_color.is_alphacolor) {
         GL_state.SetAlphaBlendMode(ALPHA_BLEND_ALPHA_BLEND_ALPHA);
-		GL_state.Color( gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue, gr_screen.current_color.alpha );
 	} else {
         GL_state.SetAlphaBlendMode(ALPHA_BLEND_NONE);
-		GL_state.Color( gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue );
     }
 
 	GLfloat line[6] = {
@@ -1061,8 +1046,6 @@ void opengl_draw_primitive(int nv, vertex **verts, uint flags, float u_scale, fl
 		} else if (flags & TMAP_FLAG_RGB) {
 			isRGB = true;
 		}
-	} else {
-		GL_state.Color( (ubyte)r, (ubyte)g, (ubyte)b, alpha );
 	}
 
 	if (flags & TMAP_FLAG_TRISTRIP) {
@@ -1240,8 +1223,6 @@ void opengl_tmapper_internal(int nv, vertex **verts, uint flags, int is_scaler =
 
 	opengl_draw_primitive(nv, verts, flags, u_scale, v_scale, r, g, b, alpha);
 
-	GL_state.Texture.DisableAll();
-
 	gr_opengl_end_2d_matrix();
 
 	GL_CHECK_FOR_ERRORS("end of tmapper_internal()");
@@ -1279,11 +1260,6 @@ void opengl_tmapper_internal3d(int nv, vertex **verts, uint flags)
 
 	if ( (flags & TMAP_FLAG_RGB) && (flags & TMAP_FLAG_GOURAUD) ) {
 		isRGB = true;
-	}
-
-	// use what opengl_setup_render_states() gives us since this works much better for nebula and transparency
-	if ( !isRGB ) {
-		GL_state.Color( (ubyte)r, (ubyte)g, (ubyte)b, (ubyte)alpha );
 	}
 
 	SCP_vector<ubyte> colour;
@@ -1384,13 +1360,8 @@ void opengl_render_internal(int nverts, vertex *verts, uint flags)
 		if (flags & TMAP_FLAG_ALPHA) {
 			vert_def.add_vertex_component(vertex_format_data::COLOR4, sizeof(vertex), &verts[0].r);
 		} else {
-			GL_state.Color( (ubyte)r, (ubyte)g, (ubyte)b, (ubyte)alpha );
 			vert_def.add_vertex_component(vertex_format_data::COLOR3, sizeof(vertex), &verts[0].r);
 		}
-	}
-	// use what opengl_setup_render_states() gives us since this works much better for nebula and transparency
-	else {
-		GL_state.Color( (ubyte)r, (ubyte)g, (ubyte)b, (ubyte)alpha );
 	}
 		
 	vert_def.add_vertex_component(vertex_format_data::POSITION2, sizeof(vertex), &verts[0].screen.xyw.x);
@@ -1404,8 +1375,6 @@ void opengl_render_internal(int nverts, vertex *verts, uint flags)
 	glDrawArrays(gl_mode, 0, nverts);
 
 	gr_opengl_end_2d_matrix();
-
-	GL_state.Texture.DisableAll();
 
 
 	GL_CHECK_FOR_ERRORS("end of render()");
@@ -1436,7 +1405,6 @@ void opengl_render_internal3d(int nverts, vertex *verts, uint flags)
 	}
 
 	GLboolean cull_face = GL_state.CullFace(GL_FALSE);
-	GLboolean lighting = GL_state.Lighting(GL_FALSE);
 
 	if (flags & TMAP_FLAG_TRILIST) {
 		gl_mode = GL_TRIANGLES;
@@ -1448,10 +1416,6 @@ void opengl_render_internal3d(int nverts, vertex *verts, uint flags)
 
 	if ( (flags & TMAP_FLAG_RGB) && (flags & TMAP_FLAG_GOURAUD) ) {
 		vert_def.add_vertex_component(vertex_format_data::COLOR4, sizeof(vertex), &verts[0].r);
-	}
-	// use what opengl_setup_render_states() gives us since this works much better for nebula and transparency
-	else {
-		GL_state.Color( (ubyte)r, (ubyte)g, (ubyte)b, (ubyte)alpha );
 	}
 
 	float color_scale = 1.0f;
@@ -1467,7 +1431,6 @@ void opengl_render_internal3d(int nverts, vertex *verts, uint flags)
 	glDrawArrays(gl_mode, 0, nverts);
 
 	GL_state.CullFace(cull_face);
-	GL_state.Lighting(lighting);
 
 	GL_CHECK_FOR_ERRORS("end of render3d()");
 }
@@ -1508,7 +1471,6 @@ void gr_opengl_render_effect(int nverts, vertex *verts, float *radius_list, uint
 	}
 
 	GLboolean cull_face = GL_state.CullFace(GL_FALSE);
-	GLboolean lighting = GL_state.Lighting(GL_FALSE);
 
 	if (flags & TMAP_FLAG_TRILIST) {
 		gl_mode = GL_TRIANGLES;
@@ -1519,10 +1481,6 @@ void gr_opengl_render_effect(int nverts, vertex *verts, float *radius_list, uint
 	if ( (flags & TMAP_FLAG_RGB) && (flags & TMAP_FLAG_GOURAUD) ) {
 		vert_def.add_vertex_component(vertex_format_data::COLOR4, sizeof(vertex), &verts[0].r);
 	}
-	// use what opengl_setup_render_states() gives us since this works much better for nebula and transparency
-	else {
-		GL_state.Color( (ubyte)r, (ubyte)g, (ubyte)b, (ubyte)alpha );
-	}
 
 	vert_def.add_vertex_component(vertex_format_data::POSITION3, sizeof(vertex), &verts[0].world.xyz.x);
 
@@ -1532,10 +1490,7 @@ void gr_opengl_render_effect(int nverts, vertex *verts, float *radius_list, uint
 
 	opengl_shader_set_current();
 
-	GL_state.Texture.DisableAll();
-
 	GL_state.CullFace(cull_face);
-	GL_state.Lighting(lighting);
 	gr_zbuffer_set(zbuff);
 
 	GL_CHECK_FOR_ERRORS("end of render3d()");
@@ -1715,14 +1670,10 @@ void gr_opengl_shade(int x, int y, int w, int h, int resize_mode)
 	CLAMP(x2, x1+1, gr_screen.max_w);
 	CLAMP(y2, y1+1, gr_screen.max_h);
 
-	GL_state.SetTextureSource(TEXTURE_SOURCE_NONE);
 	GL_state.SetAlphaBlendMode(ALPHA_BLEND_ALPHA_BLEND_ALPHA);
 	GL_state.SetZbufferType(ZBUFFER_TYPE_NONE);
 
 	gr_opengl_set_2d_matrix();
-
-	GL_state.Color( (GLubyte)gr_screen.current_shader.r, (GLubyte)gr_screen.current_shader.g,
-				(GLubyte)gr_screen.current_shader.b, (GLubyte)gr_screen.current_shader.c );
 
 	color clr;
 	gr_init_alphacolor(&clr, gr_screen.current_shader.r, gr_screen.current_shader.g, gr_screen.current_shader.b, gr_screen.current_shader.c);
@@ -1743,7 +1694,6 @@ void gr_opengl_flash(int r, int g, int b)
 	CLAMP(g, 0, 255);
 	CLAMP(b, 0, 255);
 
-	GL_state.SetTextureSource(TEXTURE_SOURCE_NONE);
 	GL_state.SetAlphaBlendMode(ALPHA_BLEND_ALPHA_ADDITIVE);
 	GL_state.SetZbufferType(ZBUFFER_TYPE_NONE);
 
@@ -1751,8 +1701,6 @@ void gr_opengl_flash(int r, int g, int b)
 	int y1 = (gr_screen.clip_top + gr_screen.offset_y);
 	int x2 = (gr_screen.clip_right + gr_screen.offset_x) + 1;
 	int y2 = (gr_screen.clip_bottom + gr_screen.offset_y) + 1;
-
-	GL_state.Color( (GLubyte)r, (GLubyte)g, (GLubyte)b, 255 );
 
 	color clr;
 	gr_init_alphacolor(&clr, (GLubyte)r, (GLubyte)g, (GLubyte)b, 255);
@@ -1772,7 +1720,6 @@ void gr_opengl_flash_alpha(int r, int g, int b, int a)
 	CLAMP(b, 0, 255);
 	CLAMP(a, 0, 255);
 
-	GL_state.SetTextureSource(TEXTURE_SOURCE_NONE);
 	GL_state.SetAlphaBlendMode(ALPHA_BLEND_ALPHA_BLEND_ALPHA);
 	GL_state.SetZbufferType(ZBUFFER_TYPE_NONE);
 
@@ -1780,8 +1727,6 @@ void gr_opengl_flash_alpha(int r, int g, int b, int a)
 	int y1 = (gr_screen.clip_top + gr_screen.offset_y);
 	int x2 = (gr_screen.clip_right + gr_screen.offset_x) + 1;
 	int y2 = (gr_screen.clip_bottom + gr_screen.offset_y) + 1;
-
-	GL_state.Color( (GLubyte)r, (GLubyte)g, (GLubyte)b, (GLubyte)a );
 
 	color clr;
 	gr_init_alphacolor(&clr, (GLubyte)r, (GLubyte)g, (GLubyte)b, (GLubyte)a);
@@ -1801,7 +1746,6 @@ void opengl_bitmap_ex_internal(int x, int y, int w, int h, int sx, int sy, int r
 	float x1, x2, y1, y2;
 	int bw, bh, do_resize;
 
-	GL_state.SetTextureSource(TEXTURE_SOURCE_NO_FILTERING);
 	GL_state.SetAlphaBlendMode(ALPHA_BLEND_ALPHA_BLEND_ALPHA);
 	GL_state.SetZbufferType(ZBUFFER_TYPE_NONE);
 
@@ -1832,8 +1776,6 @@ void opengl_bitmap_ex_internal(int x, int y, int w, int h, int sx, int sy, int r
 		gr_resize_screen_posf(&x1, &y1, NULL, NULL, resize_mode);
 		gr_resize_screen_posf(&x2, &y2, NULL, NULL, resize_mode);
 	}
-
-	GL_state.Color(255, 255, 255, (GLubyte)(gr_screen.current_alpha * 255));
 
 	color clr;
 	gr_init_alphacolor(&clr, 255, 255, 255, fl2i(gr_screen.current_alpha * 255.0f));
@@ -2455,8 +2397,6 @@ void opengl_setup_scene_textures()
 		glDeleteFramebuffers(1, &Scene_framebuffer);
 		Scene_framebuffer = 0;
 
-		GL_state.Texture.Disable();
-
 		glDeleteTextures(1, &Scene_color_texture);
 		Scene_color_texture = 0;
 
@@ -2524,8 +2464,6 @@ void opengl_setup_scene_textures()
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		glDeleteFramebuffers(1, &Distortion_framebuffer);
 		Distortion_framebuffer = 0;
-
-		GL_state.Texture.Disable();
 
 		glDeleteTextures(2, Distortion_texture);
 		Distortion_texture[0] = 0;
@@ -2670,7 +2608,6 @@ void gr_opengl_scene_texture_end()
 	} else {
 		GLboolean depth = GL_state.DepthTest(GL_FALSE);
 		GLboolean depth_mask = GL_state.DepthMask(GL_FALSE);
-		GLboolean lighting = GL_state.Lighting(GL_FALSE);
 		GLboolean blend = GL_state.Blend(GL_FALSE);
 		GLboolean cull = GL_state.CullFace(GL_FALSE);
 
@@ -2696,13 +2633,9 @@ void gr_opengl_scene_texture_end()
 			opengl_draw_textured_quad(0.0f, 0.0f, 0.0f, Scene_texture_v_scale, (float)gr_screen.max_w, (float)gr_screen.max_h, Scene_texture_u_scale, 0.0f);
 		}
 
-		GL_state.Texture.SetActiveUnit(0);
-		GL_state.Texture.Disable();
-
 		// reset state
 		GL_state.DepthTest(depth);
 		GL_state.DepthMask(depth_mask);
-		GL_state.Lighting(lighting);
 		GL_state.Blend(blend);
 		GL_state.CullFace(cull);
 	}
@@ -2731,7 +2664,6 @@ void opengl_clear_deferred_buffers()
 {
 	GLboolean depth = GL_state.DepthTest(GL_FALSE);
 	GLboolean depth_mask = GL_state.DepthMask(GL_FALSE);
-	GLboolean lighting = GL_state.Lighting(GL_FALSE);
 	GLboolean blend = GL_state.Blend(GL_FALSE);
 	GLboolean cull = GL_state.CullFace(GL_FALSE);
 
@@ -2747,7 +2679,6 @@ void opengl_clear_deferred_buffers()
 
 	GL_state.DepthTest(depth);
 	GL_state.DepthMask(depth_mask);
-	GL_state.Lighting(lighting);
 	GL_state.Blend(blend);
 	GL_state.CullFace(cull);
 }
@@ -2902,7 +2833,6 @@ void gr_opengl_deferred_lighting_finish()
 
 	GLboolean depth = GL_state.DepthTest(GL_FALSE);
 	GLboolean depth_mask = GL_state.DepthMask(GL_FALSE);
-	GLboolean lighting = GL_state.Lighting(GL_FALSE);
 	GLboolean blend = GL_state.Blend(GL_FALSE);
 	GLboolean cull = GL_state.CullFace(GL_FALSE);
 	
@@ -2925,12 +2855,9 @@ void gr_opengl_deferred_lighting_finish()
 	gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
 	gr_set_view_matrix(&Eye_position, &Eye_matrix);
 
-	GL_state.Texture.DisableAll();
-
 	// reset state
 	GL_state.DepthTest(depth);
 	GL_state.DepthMask(depth_mask);
-	GL_state.Lighting(lighting);
 	GL_state.Blend(blend);
 	GL_state.CullFace(cull);
 
@@ -2944,7 +2871,6 @@ void gr_opengl_update_distortion()
 {
 	GLboolean depth = GL_state.DepthTest(GL_FALSE);
 	GLboolean depth_mask = GL_state.DepthMask(GL_FALSE);
-	GLboolean lighting = GL_state.Lighting(GL_FALSE);
 	GLboolean blend = GL_state.Blend(GL_FALSE);
 	GLboolean cull = GL_state.CullFace(GL_FALSE);
 
@@ -2993,8 +2919,6 @@ void gr_opengl_update_distortion()
 
 	opengl_render_primitives_immediate(PRIM_TYPE_TRISTRIP, &vert_def, 4, vertices, sizeof(vertex) * 4);
 
-	GL_state.Texture.Disable();
-
 	opengl_shader_set_passthrough(false, false);
 
 	vertex distortion_verts[33];
@@ -3026,7 +2950,6 @@ void gr_opengl_update_distortion()
 
 	GL_state.DepthTest(depth);
 	GL_state.DepthMask(depth_mask);
-	GL_state.Lighting(lighting);
 	GL_state.Blend(blend);
 	GL_state.CullFace(cull);
 }

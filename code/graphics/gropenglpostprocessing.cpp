@@ -124,8 +124,6 @@ bool opengl_post_pass_bloom()
 
 	opengl_draw_textured_quad(-1.0f, -1.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f, 1.0f);
 
-	GL_state.Texture.Disable();
-
 	// ------ end bright pass ------
 
 	// ------ begin blur pass ------
@@ -135,8 +133,6 @@ bool opengl_post_pass_bloom()
 	GL_state.Texture.Enable(Bloom_textures[0]);
 
 	glGenerateMipmap(GL_TEXTURE_2D);
-
-	GL_state.Texture.Disable();
 
 	for ( int iteration = 0; iteration < 2; iteration++) {
 		for (int pass = 0; pass < 2; pass++) {
@@ -171,8 +167,6 @@ bool opengl_post_pass_bloom()
 			}
 		}
 	}
-
-	GL_state.Texture.Disable();
 
 	// composite blur to the color texture
 
@@ -266,8 +260,6 @@ void opengl_post_pass_fxaa() {
 
 	opengl_draw_textured_quad(-1.0f, -1.0f, 0.0f, 0.0f, 1.0f, 1.0f, Scene_texture_u_scale, Scene_texture_u_scale);
 
-	GL_state.Texture.Disable();
-
 	// set and configure post shader ..
 	opengl_shader_set_current( gr_opengl_maybe_create_shader(SDR_TYPE_POST_PROCESS_FXAA, 0) );
 
@@ -283,8 +275,6 @@ void opengl_post_pass_fxaa() {
 	GL_state.Texture.Enable(Scene_luminance_texture);
 
 	opengl_draw_textured_quad(-1.0f, -1.0f, 0.0f, 0.0f, 1.0f, 1.0f, Scene_texture_u_scale, Scene_texture_u_scale);
-
-	GL_state.Texture.Disable();
 
 	opengl_shader_set_current();
 }
@@ -362,7 +352,6 @@ void gr_opengl_post_process_end()
 	// state switch just the once (for bloom pass and final render-to-screen)
 	GLboolean depth = GL_state.DepthTest(GL_FALSE);
 	GLboolean depth_mask = GL_state.DepthMask(GL_FALSE);
-	GLboolean lighting = GL_state.Lighting(GL_FALSE);
 	GLboolean blend = GL_state.Blend(GL_FALSE);
 	GLboolean cull = GL_state.CullFace(GL_FALSE);
 
@@ -505,19 +494,12 @@ void gr_opengl_post_process_end()
 
 	opengl_draw_textured_quad(0.0f, -0.0f, 0.0f, 0.0f, 1.0f, 1.0f, Scene_texture_u_scale, Scene_texture_u_scale);
 	*/
-	GL_state.Texture.SetActiveUnit(2);
-	GL_state.Texture.Disable();
-	GL_state.Texture.SetActiveUnit(1);
-	GL_state.Texture.Disable();
-	GL_state.Texture.SetActiveUnit(0);
-	GL_state.Texture.Disable();
 
 	GL_state.Texture.SetShaderMode(GL_FALSE);
 
 	// reset state
 	GL_state.DepthTest(depth);
 	GL_state.DepthMask(depth_mask);
-	GL_state.Lighting(lighting);
 	GL_state.Blend(blend);
 	GL_state.CullFace(cull);
 
@@ -972,8 +954,6 @@ static bool opengl_post_init_framebuffer()
 	}
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-	GL_state.Texture.Disable();
 
 	rval = true;
 	

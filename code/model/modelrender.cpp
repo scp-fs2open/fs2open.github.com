@@ -2559,8 +2559,6 @@ void model_render_immediate(model_render_params *render_info, int model_num, mat
 	gr_reset_lighting();
 	gr_set_lighting(false, false);
 
-	GL_state.Texture.DisableAll();
-
 	if ( render_info->get_debug_flags() ) {
 		model_render_debug(model_num, orient, pos, render_info->get_model_flags(), render_info->get_debug_flags(), render_info->get_object_number(), render_info->get_detail_level_lock());
 	}
