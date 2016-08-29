@@ -43,7 +43,7 @@ void timer_init()
 
 		atexit(timer_close);
 
-		high_res_begin = timer_get_high_res_microseconds();
+		high_res_begin = timer_get_microseconds();
 	}
 }
 
@@ -54,7 +54,7 @@ fix timer_get_fixed_seconds()
 		return 0;
 	}
 
-	auto time = timer_get_high_res_microseconds() - high_res_begin;
+	auto time = timer_get_microseconds() - high_res_begin;
 	time *= 65536;
 
 	return (fix)(time / MICROSECONDS_PER_SECOND);
@@ -77,7 +77,7 @@ int timer_get_seconds()
 		return 0;
 	}
 
-	return (int) (timer_get_high_res_microseconds() / MICROSECONDS_PER_SECOND);
+	return (int) (timer_get_microseconds() / MICROSECONDS_PER_SECOND);
 }
 
 int timer_get_milliseconds()
@@ -87,20 +87,10 @@ int timer_get_milliseconds()
 		return 0;
 	}
 
-	return (int) (timer_get_high_res_microseconds() / 1000);
+	return (int) (timer_get_microseconds() / 1000);
 }
 
-int timer_get_microseconds()
-{
-	if (!Timer_inited) {
-		Int3();					// Make sure you call timer_init before anything that uses timer functions!
-		return 0;
-	}
-
-	return (int) timer_get_high_res_microseconds();
-}
-
-std::uint64_t timer_get_high_res_microseconds()
+std::uint64_t timer_get_microseconds()
 {
 	if ( !Timer_inited ) {
 		Int3();
