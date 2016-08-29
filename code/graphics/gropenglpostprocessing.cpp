@@ -91,7 +91,7 @@ void opengl_post_pass_tonemap()
 	opengl_draw_textured_quad(-1.0f, -1.0f, 0.0f, 0.0f, 1.0f, 1.0f, Scene_texture_u_scale, Scene_texture_u_scale);
 }
 
-bool opengl_post_pass_bloom()
+void opengl_post_pass_bloom()
 {
 	// we need the scissor test disabled
 	GLboolean scissor_test = GL_state.ScissorTest(GL_FALSE);
@@ -190,8 +190,6 @@ bool opengl_post_pass_bloom()
 
 	// reset viewport, scissor test and exit
 	GL_state.ScissorTest(scissor_test);
-
-	return true;
 }
 
 void gr_opengl_post_process_begin()
@@ -354,7 +352,7 @@ void gr_opengl_post_process_end()
 	GL_state.Texture.SetShaderMode(GL_TRUE);
 	
 	// do bloom, hopefully ;)
-	bool bloomed = opengl_post_pass_bloom();
+	opengl_post_pass_bloom();
 
 	// do tone mapping
 	opengl_post_pass_tonemap();
