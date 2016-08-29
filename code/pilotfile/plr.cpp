@@ -139,6 +139,8 @@ void pilotfile::plr_read_hud()
 
 	HUD_config.rp_flags = cfread_int(cfp);
 	HUD_config.rp_dist = cfread_int(cfp);
+	if (HUD_config.rp_dist < 0 || HUD_config.rp_dist >= RR_MAX_RANGES)
+		Error(LOCATION, "Player file has invalid radar range %d\n", HUD_config.rp_dist);
 
 	// basic colors
 	HUD_config.main_color = cfread_int(cfp);
@@ -846,6 +848,11 @@ bool pilotfile::load_player(const char *callsign, player *_p)
 
 		size_t start_pos = cftell(cfp);
 
+		if (section_size == 0) {
+			mprintf(("PLR => 0 size section with id %d starting at %zu\n", section_id, start_pos));
+			return false;
+		}
+
 		// safety, to help protect against long reads
 		cf_set_max_read_len(cfp, section_size);
 
@@ -1068,6 +1075,11 @@ bool pilotfile::verify(const char *fname, int *rank, char *valid_language)
 		uint section_size = cfread_uint(cfp);
 
 		size_t start_pos = cftell(cfp);
+
+		if (section_size == 0) {
+			mprintf(("PLR => 0 size section with id %d starting at %zu\n", section_id, start_pos));
+			return false;
+		}
 
 		// safety, to help protect against long reads
 		cf_set_max_read_len(cfp, section_size);

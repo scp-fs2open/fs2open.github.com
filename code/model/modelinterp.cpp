@@ -2356,7 +2356,7 @@ void interp_configure_vertex_buffers(polymodel *pm, int mn)
 
 	int time_elapsed = timer_get_milliseconds() - milliseconds;
 
-	mprintf(("BSP Parse took %d milliseconds.", time_elapsed));
+	nprintf(("Model", "BSP Parse took %d milliseconds.\n", time_elapsed));
 
 	if (total_verts < 1) {
 		return;
