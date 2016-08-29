@@ -85,20 +85,12 @@ extern matrix	Object_matrix;			// Where the opject is pointing in World coordina
 
 extern float Proj_fov;					// Projection matrix fov (for HT&L)
 
-/**
- * Draw a horizon
- */
-void g3_draw_horizon(int sky_color,int ground_color);
 
 /**
  * Draws a line representing the horizon
  */
 void g3_draw_horizon_line();
 
-/**
- * Get vectors that are edge of horizon
- */
-int g3_compute_sky_polygon(float *points_2d,vec3d *vecs);
 
 /**
  * Instance at specified point with specified orientation
@@ -116,34 +108,11 @@ void g3_start_instance_angles(const vec3d *pos, const angles *orient);
 void g3_done_instance(bool set_api = false);
 
 /**
- * Get current field of view.  Fills in angle for x & y
- */
-void g3_get_FOV(float *fov_x,float *fov_y);
-
-/**
- * Get zoom.  
- *
- * For a given window size, return the zoom which will achieve
- * the given FOV along the given axis.
- */
-float g3_get_zoom(char axis,float fov,int window_width,int window_height);
-
-/**
- * Returns the normalized, unscaled view vectors
- */
-void g3_get_view_vectors(vec3d *forward,vec3d *up,vec3d *right);
-
-/**
  * Returns true if a plane is facing the viewer. 
  *
  * Takes the unrotated surface normal of the plane, and a point on it.  The normal need not be normalized
  */
 int g3_check_normal_facing(const vec3d *v, const vec3d *norm);
-
-/**
- * Returns codes_and & codes_or of a list of points numbers
- */
-ccodes g3_check_codes(int nv, vertex **pointlist);
 
 /**
  * Rotates a point. returns codes.  does not check if already rotated
@@ -205,45 +174,8 @@ void g3_point_to_vec_delayed(vec3d *v,int sx,int sy);
  */
 ubyte g3_code_vertex(vertex *point);
 
-vec3d *g3_rotate_delta_x(vec3d *dest,float dx);
-vec3d *g3_rotate_delta_y(vec3d *dest,float dy);
-vec3d *g3_rotate_delta_z(vec3d *dest,float dz);
 vec3d *g3_rotate_delta_vec(vec3d *dest,vec3d *src);
-ubyte g3_add_delta_vec(vertex *dest,vertex *src,vec3d *deltav);
 
-/**
- * Draw a polygon.
- *
- * Set TMAP_FLAG_TEXTURED in the tmap_flags to texture map it with current texture.
- * @return Returns 1 if off screen, 0 if drawn
- */
-int g3_draw_poly(int nv, vertex **pointlist,uint tmap_flags);
-
-int g3_draw_polygon(const vec3d *pos, const matrix *ori, float width, float height, int tmap_flags = TMAP_FLAG_TEXTURED);
-int g3_draw_polygon(const vec3d *pos, const vec3d *norm, float width, float height, int tmap_flags = TMAP_FLAG_TEXTURED);
-
-/**
- * Draw a polygon.  
- *
- * Same as g3_draw_poly, but it bashes sw to a constant value
- * for all vertexes.  Needs to be done after clipping to get them all.
- *
- * Set TMAP_FLAG_TEXTURED in the tmap_flags to texture map it with current texture.
- * @return Returns 1 if off screen, 0 if drawn
- */
-int g3_draw_poly_constant_sw(int nv, vertex **pointlist, uint tmap_flags, float constant_sw);
-
-/**
- * Like g3_draw_poly(), but checks to see if facing.  
- * 
- * If surface normal is NULL, this routine must compute it, which will be slow.  
- * It is better to pre-compute the normal, and pass it to this function.  
- * When the normal is passed, this function works like g3_check_normal_facing() plus g3_draw_poly().
- *
- * Set TMAP_FLAG_TEXTURED in the tmap_flags to texture map it with current texture.
- * @return Returns -1 if not facing, 1 if off screen, 0 if drawn
- */
-int g3_draw_poly_if_facing(int nv, vertex **pointlist, uint tmap_flags, const vec3d *norm, const vec3d *pnt);
 
 /**
  * Draws a line.
@@ -253,24 +185,6 @@ int g3_draw_poly_if_facing(int nv, vertex **pointlist, uint tmap_flags, const ve
  */
 int g3_draw_line(vertex *p0, vertex *p1);
 
-/**
- * Draws a polygon always facing the viewer.
- * Compute the corners of a rod.  fills in vertbuf.
- * Verts has any needs uv's or l's or can be NULL if none needed.
- */
-int g3_draw_rod(const vec3d *p0, float width1, const vec3d *p1, float width2, vertex *verts, uint tmap_flags);
-
-/**
- * Draws a bitmap with the specified 3d width & height
- *
- * Set TMAP_FLAG_TEXTURED in the tmap_flags to texture map it with current texture.
- * @return Returns 1 if off screen, 0 if drawn
- *
- * If bitmap is not square, rad will be the 3d size of the smallest dimension.
- * orient flips the bitmap in some way.  Pass 0 for normal or else pass a 
- * random nuber between 0 and 7, inclusive.
- */
-int g3_draw_bitmap(vertex *pos, int orient, float radius, uint tmap_flags, float depth = 0.0f);
 
 /**
  * Get bitmap dims onscreen as if g3_draw_bitmap() had been called
@@ -289,25 +203,6 @@ int g3_draw_sphere(vertex *pnt, float rad);
  */
 int g3_draw_sphere_ez(const vec3d *pnt, float rad);
 
-/**
- * Draw a laser shaped 3d looking thing.
- *
- * If max_len is > 1.0, then this caps the length to be no longer than max_len pixels
- */
-float g3_draw_laser(const vec3d *headp, float head_width, const vec3d *tailp, float tail_width, uint tmap_flags = TMAP_FLAG_TEXTURED, float max_len = 0.0f );
-
-/**
- * Draw a laser shaped 3d looking thing using vertex coloring (useful for things like colored laser glows)
- *
- * If max_len is > 1.0, then this caps the length to be no longer than max_len pixels
- */
-float g3_draw_laser_rgb(const vec3d *headp, float head_width, const vec3d *tailp, float tail_width, int r, int g, int b, uint tmap_flags = TMAP_FLAG_TEXTURED | TMAP_FLAG_RGB, float max_len = 0.0f );
-
-
-/**
- * Draw a 2D shield icon w/ 6 points
- */
-void g3_draw_2d_shield_icon(const coord2d coords[6], const int r, const int g, const int b, const int a);
 
 /**
  * Enables clipping with an arbritary plane.   

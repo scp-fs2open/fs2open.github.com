@@ -281,9 +281,7 @@ void model_unload(int modelnum, int force)
 
 		delete[] pm->submodel;
 	}
-
-	gr_destroy_buffer(pm->vertex_buffer_id);
-
+	
 	if ( pm->xc ) {
 		vm_free(pm->xc);
 	}
@@ -882,13 +880,6 @@ void create_vertex_buffer(polymodel *pm)
 	}
 
 	int i;
-
-	// initialize empty buffer
-	pm->vertex_buffer_id = gr_create_buffer();
-
-	if (pm->vertex_buffer_id < 0) {
-		Error(LOCATION, "Could not generate vertex buffer for '%s'!", pm->filename);
-	}
 
 	// determine the size and configuration of each buffer segment
 	for (i = 0; i < pm->n_models; i++) {

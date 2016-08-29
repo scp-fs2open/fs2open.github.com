@@ -34,8 +34,6 @@ opengl_light_uniform_data opengl_light_uniforms;
 
 bool lighting_is_enabled = true;
 int Num_active_gl_lights = 0;
-int GL_center_alpha = 0;
-float GL_light_factor = 1.0f;
 
 extern float static_point_factor;
 extern float static_light_factor;
@@ -43,8 +41,7 @@ extern float static_tube_factor;
 extern double specular_exponent_value;
 extern float Cmdline_ogl_spec;
 
-
-GLint GL_max_lights = 0;
+const GLint GL_max_lights = 8;
 
 // OGL defaults
 const float GL_light_color[4] = { 0.8f, 0.8f, 0.8f, 1.0f };
@@ -224,31 +221,6 @@ void opengl_pre_render_init_lights()
 	std::sort(opengl_lights, opengl_lights + Num_active_gl_lights, opengl_sort_active_lights);
 }
 
-static GLdouble eyex, eyey, eyez;
-static GLdouble vmatrix[16];
-
-static vec3d last_view_pos;
-static matrix last_view_orient;
-
-static bool use_last_view = false;
-
-void opengl_change_active_lights(int pos, int d_offset)
-{
-}
-
-int gr_opengl_make_light(light *fs_light, int idx, int priority)
-{
-	return idx;
-}
-
-void gr_opengl_modify_light(light *fs_light, int idx, int priority)
-{
-}
-
-void gr_opengl_destroy_light(int idx)
-{
-}
-
 void gr_opengl_set_light(light *fs_light)
 {
 	if (Num_active_gl_lights >= MAX_LIGHTS)
@@ -260,19 +232,6 @@ void gr_opengl_set_light(light *fs_light)
 	// init the light
 	FSLight2GLLight(fs_light, &opengl_lights[Num_active_gl_lights]);
 	opengl_lights[Num_active_gl_lights++].occupied = true;
-}
-
-// this sets up a light to be pointinf from the eye to the object, 
-// the point being to make the object ether center or edge alphaed with THL
-// this effect is used mostly on shockwave models
-// -1 == edge
-// 1 == center
-// 0 == none
-// should be called after lighting has been set up, 
-// currently not designed for use with lit models
-void gr_opengl_center_alpha(int type)
-{
-	GL_center_alpha = type;
 }
 
 void gr_opengl_set_center_alpha(int type)
@@ -340,14 +299,6 @@ void gr_opengl_set_center_alpha(int type)
 
 	memcpy( &opengl_lights[Num_active_gl_lights], &glight, sizeof(opengl_light) );
 	opengl_lights[Num_active_gl_lights++].occupied = true;
-
-	// reset center alpha
-	GL_center_alpha = 0;
-}
-
-void gr_opengl_set_light_factor(float factor)
-{
-	GL_light_factor = factor;
 }
 
 void gr_opengl_reset_lighting()
@@ -359,7 +310,6 @@ void gr_opengl_reset_lighting()
 	}
 
 	Num_active_gl_lights = 0;
-	GL_center_alpha = 0;
 }
 
 void opengl_calculate_ambient_factor()
@@ -420,8 +370,6 @@ void opengl_light_init()
 {
 	opengl_calculate_ambient_factor();
 
-	GL_max_lights = 8;
-	
 	// allocate memory for enabled lights
 	if ( opengl_lights == NULL )
 		opengl_lights = (opengl_light *) vm_malloc(MAX_LIGHTS * sizeof(opengl_light), memory::quiet_alloc);

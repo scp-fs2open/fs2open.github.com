@@ -685,21 +685,7 @@ typedef struct screen {
 	void (*gf_aaline)(vertex *v1, vertex *v2);
 
 	void (*gf_pixel)( int x, int y, int resize_mode );
-
-	// Scales current bitmap between va and vb with clipping
-	void (*gf_scaler)(vertex *va, vertex *vb, bool bw_bitmap );
-
-	// Scales current bitmap between va and vb with clipping, draws an aabitmap
-	void (*gf_aascaler)(vertex *va, vertex *vb );
-
-	// Texture maps the current bitmap.  See TMAP_FLAG_?? defines for flag values
-	void (*gf_tmapper)(int nv, vertex *verts[], uint flags );
-
-	// Texture maps the current bitmap.  See TMAP_FLAG_?? defines for flag values
-	void (*gf_render)(int nv, vertex *verts, uint flags);
-
-	void (*gf_render_effect)(int nv, vertex *verts, float *radius_list, uint flags);
-
+	
 	// dumps the current screen to a file
 	void (*gf_print_screen)(const char * filename);
 
@@ -781,12 +767,6 @@ typedef struct screen {
 	int (*gf_create_vertex_buffer)(bool static_buffer);
 	int (*gf_create_index_buffer)(bool static_buffer);
 	void (*gf_delete_buffer)(int handle);
-	int (*gf_create_buffer)();
-	bool (*gf_pack_buffer)(const int buffer_id, vertex_buffer *vb);
-	bool (*gf_config_buffer)(const int buffer_id, vertex_buffer *vb, bool update_ibuffer_only);
-	void (*gf_destroy_buffer)(int);
-	void (*gf_set_buffer)(int);
-	void (*gf_render_buffer)(int, vertex_buffer*, size_t, int);
 
 	void (*gf_update_buffer_data)(int handle, size_t size, void* data);
 	void (*gf_update_transform_buffer)(void* data, size_t size);
@@ -808,9 +788,6 @@ typedef struct screen {
 	void (*gf_start_angles_instance_matrix)(const vec3d*, const angles*);
 	void (*gf_end_instance_matrix)();
 
-	int	 (*gf_make_light)(light*, int, int );
-	void (*gf_modify_light)(light*, int, int );
-	void (*gf_destroy_light)(int);
 	void (*gf_set_light)(light*);
 	void (*gf_reset_lighting)();
 	void (*gf_set_ambient_light)(int,int,int);
@@ -832,9 +809,6 @@ typedef struct screen {
 	void (*gf_copy_effect_texture)();
 
 	void (*gf_lighting)(bool,bool);
-	void (*gf_set_light_factor)(float);
-	void (*gf_center_alpha)(int);
-	void (*gf_set_thrust_scale)(float);
 
 	void (*gf_start_clip_plane)();
 	void (*gf_end_clip_plane)();
@@ -843,9 +817,7 @@ typedef struct screen {
 
 	void (*gf_set_fill_mode)(int);
 	void (*gf_set_texture_panning)(float u, float v, bool enable);
-
-	void (*gf_draw_line_list)(const colored_vector *lines, int num);
-
+	
 	void (*gf_set_line_width)(float width);
 
 	void (*gf_line_htl)(const vec3d *start, const vec3d *end);
@@ -853,13 +825,9 @@ typedef struct screen {
 	void (*gf_sphere)(material *material_def, float rad);
 
 	int (*gf_maybe_create_shader)(shader_type type, unsigned int flags);
-
-	void (*gf_set_animated_effect)(int effect, float timer);
-
+	
 	void (*gf_clear_states)();
-
-	void (*gf_set_team_color)(const team_color *colors);
-
+	
 	void (*gf_update_texture)(int bitmap_handle, int bpp, const ubyte* data, int width, int height);
 	void (*gf_get_bitmap_from_texture)(void* data_out, int bitmap_num);
 
@@ -1041,11 +1009,6 @@ __inline void gr_pixel(int x, int y, int resize_mode = GR_RESIZE_FULL)
 {
 	(*gr_screen.gf_pixel)(x, y, resize_mode);
 }
-#define gr_scaler				GR_CALL(gr_screen.gf_scaler)
-#define gr_aascaler			GR_CALL(gr_screen.gf_aascaler)
-#define gr_tmapper			GR_CALL(gr_screen.gf_tmapper)
-#define gr_render			GR_CALL(gr_screen.gf_render)
-#define gr_render_effect	GR_CALL(gr_screen.gf_render_effect)
 
 __inline void gr_gradient(int x1, int y1, int x2, int y2, int resize_mode = GR_RESIZE_FULL)
 {
@@ -1123,24 +1086,9 @@ __inline int gr_create_index_buffer(bool static_buffer = false)
 }
 
 #define gr_delete_buffer				GR_CALL(*gr_screen.gf_delete_buffer)
-#define gr_create_buffer				GR_CALL(*gr_screen.gf_create_buffer)
-#define gr_pack_buffer					GR_CALL(*gr_screen.gf_pack_buffer)
-#define gr_config_buffer				GR_CALL(*gr_screen.gf_config_buffer)
-#define gr_destroy_buffer				 GR_CALL(*gr_screen.gf_destroy_buffer)
-__inline void gr_render_buffer(int start, vertex_buffer *bufferp, size_t texi, int flags = TMAP_FLAG_TEXTURED)
-{
-	(*gr_screen.gf_render_buffer)(start, bufferp, texi, flags);
-}
-
 #define gr_update_buffer_data			GR_CALL(*gr_screen.gf_update_buffer_data)
 #define gr_update_transform_buffer		GR_CALL(*gr_screen.gf_update_transform_buffer)
 #define gr_set_transform_buffer_offset	GR_CALL(*gr_screen.gf_set_transform_buffer_offset)
-
-#define gr_render_stream_buffer			GR_CALL(*gr_screen.gf_render_stream_buffer)
-#define gr_render_stream_buffer_start	GR_CALL(*gr_screen.gf_render_stream_buffer_start)
-#define gr_render_stream_buffer_end		GR_CALL(*gr_screen.gf_render_stream_buffer_end)
-
-#define gr_set_buffer					GR_CALL(*gr_screen.gf_set_buffer)      
 
 #define gr_set_proj_matrix					GR_CALL(*gr_screen.gf_set_proj_matrix)            
 #define gr_end_proj_matrix					GR_CALL(*gr_screen.gf_end_proj_matrix)            
@@ -1152,9 +1100,6 @@ __inline void gr_render_buffer(int start, vertex_buffer *bufferp, size_t texi, i
 #define gr_start_angles_instance_matrix		GR_CALL(*gr_screen.gf_start_angles_instance_matrix)            
 #define gr_end_instance_matrix				GR_CALL(*gr_screen.gf_end_instance_matrix)            
 
-#define	gr_make_light					GR_CALL(*gr_screen.gf_make_light)
-#define	gr_modify_light					GR_CALL(*gr_screen.gf_modify_light)
-#define	gr_destroy_light				GR_CALL(*gr_screen.gf_destroy_light)
 #define	gr_set_light					GR_CALL(*gr_screen.gf_set_light)
 #define gr_reset_lighting				GR_CALL(*gr_screen.gf_reset_lighting)
 #define gr_set_ambient_light			GR_CALL(*gr_screen.gf_set_ambient_light)
@@ -1174,9 +1119,6 @@ __inline void gr_render_buffer(int start, vertex_buffer *bufferp, size_t texi, i
 #define gr_deferred_lighting_finish		GR_CALL(*gr_screen.gf_deferred_lighting_finish)
 
 #define	gr_set_lighting					GR_CALL(*gr_screen.gf_lighting)
-#define gr_set_light_factor				GR_CALL(*gr_screen.gf_set_light_factor)
-#define	gr_center_alpha					GR_CALL(*gr_screen.gf_center_alpha)
-#define gr_set_thrust_scale				GR_CALL(*gr_screen.gf_set_thrust_scale)
 
 #define	gr_start_clip					GR_CALL(*gr_screen.gf_start_clip_plane)
 #define	gr_end_clip						GR_CALL(*gr_screen.gf_end_clip_plane)
@@ -1184,8 +1126,6 @@ __inline void gr_render_buffer(int start, vertex_buffer *bufferp, size_t texi, i
 #define	gr_zbias						GR_CALL(*gr_screen.gf_zbias)
 #define	gr_set_fill_mode				GR_CALL(*gr_screen.gf_set_fill_mode)
 #define	gr_set_texture_panning			GR_CALL(*gr_screen.gf_set_texture_panning)
-
-#define gr_draw_line_list				GR_CALL(*gr_screen.gf_draw_line_list)
 
 #define gr_set_line_width				GR_CALL(*gr_screen.gf_set_line_width)
 
@@ -1197,8 +1137,6 @@ __inline void gr_render_buffer(int start, vertex_buffer *bufferp, size_t texi, i
 #define gr_set_animated_effect			GR_CALL(*gr_screen.gf_set_animated_effect)
 
 #define gr_clear_states					GR_CALL(*gr_screen.gf_clear_states)
-
-#define gr_set_team_color				GR_CALL(*gr_screen.gf_set_team_color)
 
 #define gr_update_texture				GR_CALL(*gr_screen.gf_update_texture)
 #define gr_get_bitmap_from_texture		GR_CALL(*gr_screen.gf_get_bitmap_from_texture)
