@@ -241,6 +241,7 @@ void g3_draw_htl_line(const vec3d *start, const vec3d *end);
 void g3_draw_htl_sphere(color *clr, const vec3d *position, float radius);
 void g3_draw_htl_sphere(const vec3d* position, float radius);
 
+void g3_render_primitives(material* mat, vertex* verts, int n_verts, primitive_type prim_type, bool orthographic = false);
 void g3_render_primitives_textured(material* mat, vertex* verts, int n_verts, primitive_type prim_type, bool orthographic = false);
 void g3_render_primitives_colored(material* mat, vertex* verts, int n_verts, primitive_type prim_type, bool orthographic = false);
 void g3_render_primitives_colored_textured(material* mat, vertex* verts, int n_verts, primitive_type prim_type, bool orthographic = false);
