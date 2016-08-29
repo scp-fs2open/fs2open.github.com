@@ -739,7 +739,7 @@ void draw_list::render_outline(outline_draw &outline_info)
 	material_instance.set_blend_mode(ALPHA_BLEND_ALPHA_BLEND_ALPHA);
 	material_instance.set_color(outline_info.clr);
 
-	g3_render_primitives_colored(&material_instance, outline_info.vert_array, outline_info.n_verts, PRIM_TYPE_LINES, false);
+	g3_render_primitives(&material_instance, outline_info.vert_array, outline_info.n_verts, PRIM_TYPE_LINES, false);
 
 	g3_done_instance(true);
 }
