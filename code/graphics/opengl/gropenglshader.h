@@ -70,6 +70,7 @@ struct opengl_shader_variant_t {
 	shader_type type_id;
 
 	bool use_geometry_sdr;
+	bool use_define;
 
 	int flag;
 	SCP_string flag_text;
@@ -115,32 +116,15 @@ typedef struct opengl_shader_uniform_t {
 } opengl_shader_uniform_t;
 
 typedef struct opengl_shader_t {
-	std::unique_ptr<opengl::ShaderProgram> program;
+	opengl::ShaderProgram* program;
 
 	shader_type shader;
 	unsigned int flags;
 	int flags2;
 
-	opengl_shader_t() : shader(SDR_TYPE_NONE), flags(0), flags2(0)
+	opengl_shader_t() : program(nullptr), shader(SDR_TYPE_NONE), flags(0), flags2(0)
 	{
 	}
-
-	opengl_shader_t(opengl_shader_t&& other) {
-		*this = std::move(other);
-	}
-	opengl_shader_t& operator=(opengl_shader_t&& other) {
-		// VS2013 doesn't support implicit move constructors so we need to explicitly declare it
-		shader = other.shader;
-		flags = other.flags;
-		flags2 = other.flags2;
-
-		program = std::move(other.program);
-
-		return *this;
-	}
-
-	opengl_shader_t(const opengl_shader_t&) = delete;
-	opengl_shader_t& operator=(const opengl_shader_t&) = delete;
 } opengl_shader_t;
 
 extern SCP_vector<opengl_shader_t> GL_shader;
