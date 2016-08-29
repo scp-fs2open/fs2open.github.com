@@ -238,6 +238,7 @@ Flag exe_params[] =
 	{ "-benchmark_mode",	"Puts the game into benchmark mode",		true,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-benchmark_mode", },
 	{ "-noninteractive",	"Disables interactive dialogs",				true,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-noninteractive", },
 	{ "-json_pilot",		"Dump pilot files in JSON format",			true,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-json_pilot", },
+	{ "-json_profiling",	"Generate JSON profiling output",			true,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-json_profiling", },
 };
 
 // forward declaration
@@ -483,6 +484,7 @@ cmdline_parm no_unfocused_pause_arg("-no_unfocused_pause", NULL, AT_NONE); //Cmd
 cmdline_parm benchmark_mode_arg("-benchmark_mode", NULL, AT_NONE); //Cmdline_benchmark_mode
 cmdline_parm noninteractive_arg("-noninteractive", NULL, AT_NONE); //Cmdline_noninteractive
 cmdline_parm json_pilot("-json_pilot", NULL, AT_NONE); //Cmdline_json_pilot
+cmdline_parm json_profiling("-json_profiling", NULL, AT_NONE); //Cmdline_json_profiling
 
 
 char *Cmdline_start_mission = NULL;
@@ -510,6 +512,7 @@ bool Cmdline_no_unfocus_pause = false;
 bool Cmdline_benchmark_mode = false;
 bool Cmdline_noninteractive = false;
 bool Cmdline_json_pilot = false;
+bool Cmdline_json_profiling = false;
 
 // Other
 cmdline_parm get_flags_arg("-get_flags", "Output the launcher flags file", AT_NONE);
@@ -1851,6 +1854,11 @@ bool SetCmdlineParams()
 	if (json_pilot.found())
 	{
 		Cmdline_json_pilot = true;
+	}
+
+	if (json_profiling.found())
+	{
+		Cmdline_json_profiling = true;
 	}
 
 	//Deprecated flags - CommanderDJ
