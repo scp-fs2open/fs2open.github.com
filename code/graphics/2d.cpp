@@ -25,8 +25,8 @@
 #include "graphics/font.h"
 #include "graphics/grbatch.h"
 #include "graphics/grinternal.h"
-#include "graphics/gropengl.h" // Includes for different rendering systems
-#include "graphics/gropengldraw.h"
+#include "graphics/opengl/gropengl.h"
+#include "graphics/opengl/gropengldraw.h"
 #include "graphics/grstub.h"
 #include "graphics/paths/PathRenderer.h"
 #include "io/keycontrol.h" // m!m

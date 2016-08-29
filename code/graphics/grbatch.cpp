@@ -11,8 +11,8 @@
 #include "globalincs/pstypes.h"
 #include "graphics/2d.h"
 #include "graphics/grbatch.h"
-#include "graphics/gropengldraw.h"
-#include "graphics/gropenglstate.h"
+#include "graphics/opengl/gropengldraw.h"
+#include "graphics/opengl/gropenglstate.h"
 #include "render/3d.h"
 
 geometry_batcher::~geometry_batcher()

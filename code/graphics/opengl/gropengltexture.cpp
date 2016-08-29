@@ -16,8 +16,8 @@
 #include "ddsutils/ddsutils.h"
 #include "globalincs/systemvars.h"
 #include "graphics/grinternal.h"
-#include "graphics/gropenglstate.h"
-#include "graphics/gropengltexture.h"
+#include "gropenglstate.h"
+#include "gropengltexture.h"
 #include "math/vecmat.h"
 #include "osapi/osregistry.h"
 

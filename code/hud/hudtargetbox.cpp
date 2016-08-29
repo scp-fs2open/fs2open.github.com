@@ -14,7 +14,7 @@
 #include "debris/debris.h"
 #include "freespace.h"
 #include "gamesnd/gamesnd.h"
-#include "graphics/gropenglshader.h"
+#include "graphics/opengl/gropenglshader.h"
 #include "hud/hudbrackets.h"
 #include "hud/hudtargetbox.h"
 #include "iff_defs/iff_defs.h"
