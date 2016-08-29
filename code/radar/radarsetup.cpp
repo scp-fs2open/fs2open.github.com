@@ -484,7 +484,7 @@ void HudGaugeRadar::drawRange()
 		break;
 
 	default:
-		Int3();	// can't happen (get Alan if it does)
+		Error(LOCATION, "Unknown radar range: %d!\n", HUD_config.rp_dist);
 		break;
 	}
 }
