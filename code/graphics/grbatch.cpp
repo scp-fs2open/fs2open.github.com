@@ -526,16 +526,7 @@ float geometry_batcher::draw_laser(vec3d *p0, float width1, vec3d *p1, float wid
 
 void geometry_batcher::render(int flags, float radius)
 {
-	if (n_to_render) {
-		if ( Use_Shaders_for_effect_rendering && (flags & TMAP_FLAG_SOFT_QUAD || flags & TMAP_FLAG_DISTORTION || flags & TMAP_FLAG_DISTORTION_THRUSTER) && use_radius ) {
-			gr_render_effect(n_to_render * 3, vert, radius_list, flags | TMAP_FLAG_TRILIST);
-		} else {
-			gr_render(n_to_render * 3, vert, flags | TMAP_FLAG_TRILIST);
-		}
 
-		use_radius = true;
-		n_to_render = 0;
-	}
 }
 
 void geometry_batcher::load_buffer(effect_vertex* buffer, int *n_verts)
@@ -566,43 +557,12 @@ void geometry_batcher::load_buffer(effect_vertex* buffer, int *n_verts)
 
 void geometry_batcher::render_buffer(int buffer_handle, int flags)
 {
-	if ( buffer_offset < 0 ) {
-		return;
-	}
 
-	if ( !n_to_render ) {
-		return;
-	}
-
-	if ( buffer_handle < 0 ) {
-		return;
-	}
-	
-	gr_render_stream_buffer(buffer_handle, buffer_offset, n_to_render * 3, flags | TMAP_FLAG_TRILIST);
-	
-	use_radius = true;
-	n_to_render = 0;
-	buffer_offset = -1;
 }
 
 void geometry_shader_batcher::render_buffer(int buffer_handle, int flags)
 {
-	if ( buffer_offset < 0 ) {
-		return;
-	}
 
-	if ( !vertices.size() ) {
-		return;
-	}
-
-	if ( buffer_handle < 0 ) {
-		return;
-	}
-
-	gr_render_stream_buffer(buffer_handle, buffer_offset, vertices.size(), flags | TMAP_FLAG_POINTLIST);
-
-	vertices.clear();
-	buffer_offset = -1;
 }
 
 void geometry_shader_batcher::load_buffer(particle_pnt* buffer, size_t *n_verts)

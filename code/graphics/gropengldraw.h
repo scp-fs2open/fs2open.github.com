@@ -36,14 +36,10 @@ void gr_opengl_circle(int xc, int yc, int d, int resize_mode);
 void gr_opengl_unfilled_circle(int xc, int yc, int d, int resize_mode);
 void gr_opengl_arc(int xc, int yc, float r, float angle_start, float angle_end, bool fill, int resize_mode);
 void gr_opengl_curve(int xc, int yc, int r, int direction, int resize_mode);
-void gr_opengl_scaler(vertex *va, vertex *vb, bool bw_bitmap );
 void gr_opengl_cross_fade(int bmap1, int bmap2, int x1, int y1, int x2, int y2, float pct, int resize_mode);
 void gr_opengl_shade(int x, int y, int w, int h, int resize_mode);
 void gr_opengl_flash(int r, int g, int b);
 void gr_opengl_flash_alpha(int r, int g, int b, int a);
-void gr_opengl_tmapper(int nverts, vertex **verts, uint flags);
-void gr_opengl_render(int nverts, vertex *verts, uint flags);
-void gr_opengl_render_effect(int nverts, vertex *verts, float *radius_list, uint flags);
 void gr_opengl_bitmap_ex(int x, int y, int w, int h, int sx, int sy, int resize_mode);
 void gr_opengl_update_distortion();
 

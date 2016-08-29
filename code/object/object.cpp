@@ -1559,7 +1559,6 @@ void obj_render(object *obj)
 	gr_set_fill_mode(GR_FILL_MODE_SOLID);
 
 	gr_clear_states();
-	gr_set_buffer(-1);
 
 	gr_reset_lighting();
 	gr_set_lighting(false, false);

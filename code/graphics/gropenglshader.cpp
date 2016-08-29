@@ -30,9 +30,6 @@ static char *GLshader_info_log = NULL;
 static const int GLshader_info_log_size = 8192;
 GLuint Framebuffer_fallback_texture_id = 0;
 
-static int GL_anim_effect_num = 0;
-static float GL_anim_timer = 0.0f;
-
 geometry_sdr_params *Current_geo_sdr_params = NULL;
 
 opengl_vert_attrib GL_vertex_attrib_info[] =
@@ -937,36 +934,6 @@ GLint opengl_shader_get_uniform_block(const char *uniform_text)
 	}
 
 	return -1;
-}
-
-/**
- * Sets the currently active animated effect.
- *
- * @param effect	Effect ID, needs to be implemented and checked for in the shader
- * @param timer		Timer value to be passed to the shader
- */
-void gr_opengl_shader_set_animated_effect(int effect, float timer)
-{
-	GL_anim_effect_num = effect;
-	GL_anim_timer = timer;
-}
-
-/**
- * Returns the currently active animated effect ID.
- *
- * @return		Currently active effect ID
- */
-int opengl_shader_get_animated_effect()
-{
-	return GL_anim_effect_num;
-}
-
-/**
- * Get the timer for animated effects.
- */
-float opengl_shader_get_animated_timer()
-{
-	return GL_anim_timer;
 }
 
 /**

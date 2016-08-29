@@ -24,8 +24,6 @@ extern bool Rendering_to_shadow_map;
 extern matrix Object_matrix;
 extern vec3d Object_position;
 
-extern team_color* Current_team_color;
-
 inline int in_box(vec3d *min, vec3d *max, vec3d *pos, vec3d *view_position)
 {
 	vec3d point;

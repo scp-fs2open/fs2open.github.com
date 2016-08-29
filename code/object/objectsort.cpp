@@ -238,8 +238,6 @@ void obj_render_all(void (*render_function)(object *objp), bool *draw_viewer_las
 
 	gr_zbuffer_set( GR_ZBUFF_FULL );	
 
-	Interp_no_flush = 1;
-
 	bool full_neb = ((The_mission.flags[Mission::Mission_Flags::Fullneb]) && (Neb2_render_mode != NEB2_RENDER_NONE) && !Fred_running);
 	bool c_viewer = (!Viewer_mode || (Viewer_mode & VM_PADLOCK_ANY) || (Viewer_mode & VM_OTHER_SHIP) || (Viewer_mode & VM_TRACK));
 
@@ -291,11 +289,9 @@ void obj_render_all(void (*render_function)(object *objp), bool *draw_viewer_las
 		}
 	}
 	gr_deferred_lighting_end();
-	Interp_no_flush = 0;
 
 	// we're done rendering models so flush render states
 	gr_clear_states();
-	gr_set_buffer(-1);
 
 	// render everything else that isn't a model
 	for (os = Sorted_objects.begin(); os != Sorted_objects.end(); ++os) {
@@ -393,7 +389,6 @@ void obj_render_queue_all()
 	gr_set_cull(0);
 
 	gr_clear_states();
-	gr_set_buffer(-1);
 	gr_set_fill_mode(GR_FILL_MODE_SOLID);
 
  	gr_deferred_lighting_end();
@@ -419,7 +414,6 @@ void obj_render_queue_all()
 	gr_set_fill_mode(GR_FILL_MODE_SOLID);
 
 	gr_clear_states();
-	gr_set_buffer(-1);
 
 	gr_reset_lighting();
 	gr_set_lighting(false, false);
@@ -441,7 +435,6 @@ void obj_render_queue_all()
 	gr_set_fill_mode(GR_FILL_MODE_SOLID);
 
 	gr_clear_states();
-	gr_set_buffer(-1);
 
 	gr_reset_lighting();
 	gr_set_lighting(false, false);

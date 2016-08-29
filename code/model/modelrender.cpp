@@ -504,8 +504,6 @@ void draw_list::render_buffer(queued_buffer_draw &render_elements)
 	gr_set_transform_buffer_offset(render_elements.transform_buffer_offset);
 
 	if ( render_elements.render_material.is_lit() ) {
-		gr_set_light_factor(render_elements.render_material.get_light_factor());
-
 		Scene_light_handler.setLights(&render_elements.lights);
 	} else {
 		gr_set_lighting(false, false);
@@ -653,7 +651,6 @@ void draw_list::render_arc(arc_effect &arc)
 	g3_start_instance_matrix(&arc.transformation.origin, &arc.transformation.basis);	
 
 	model_render_arc(&arc.v1, &arc.v2, &arc.primary, &arc.secondary, arc.width);
-	//interp_render_arc(&arc.v1, &arc.v2, &arc.primary, &arc.secondary, arc.width);
 
 	g3_done_instance(true);
 }
@@ -946,10 +943,6 @@ int model_render_determine_detail(float depth, int obj_num, int model_num, matri
 
 void model_render_buffers(draw_list* scene, model_material *rendering_material, model_render_params* interp, vertex_buffer *buffer, polymodel *pm, int mn, int detail_level, uint tmap_flags)
 {
-	if ( pm->vertex_buffer_id < 0 ) {
-		return;
-	}
-
 	bsp_info *model = NULL;
 	const uint model_flags = interp->get_model_flags();
 	const int obj_num = interp->get_object_number();
@@ -1501,7 +1494,6 @@ void submodel_render_immediate(model_render_params *render_info, int model_num, 
 	gr_set_fill_mode(GR_FILL_MODE_SOLID);
 
 	gr_clear_states();
-	gr_set_buffer(-1);
 
 	gr_reset_lighting();
 	gr_set_lighting(false, false);
@@ -2554,7 +2546,6 @@ void model_render_immediate(model_render_params *render_info, int model_num, mat
 	gr_set_fill_mode(GR_FILL_MODE_SOLID);
 
 	gr_clear_states();
-	gr_set_buffer(-1);
 
 	gr_reset_lighting();
 	gr_set_lighting(false, false);
