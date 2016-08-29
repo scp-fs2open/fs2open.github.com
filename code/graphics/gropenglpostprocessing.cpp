@@ -93,10 +93,6 @@ void opengl_post_pass_tonemap()
 
 bool opengl_post_pass_bloom()
 {
-	if (Cmdline_bloom_intensity <= 0) {
-		return false;
-	}
-
 	// we need the scissor test disabled
 	GLboolean scissor_test = GL_state.ScissorTest(GL_FALSE);
 
@@ -396,7 +392,7 @@ void gr_opengl_post_process_end()
 
 	// basic/default uniforms
 	GL_state.Uniform.setUniformi( "tex", 0 );
-	GL_state.Uniform.setUniformi( "depth_tex", 2);
+	GL_state.Uniform.setUniformi( "depth_tex", 1);
 	GL_state.Uniform.setUniformf( "timer", static_cast<float>(timer_get_milliseconds() % 100 + 1) );
 
 	for (size_t idx = 0; idx < Post_effects.size(); idx++) {
@@ -408,28 +404,6 @@ void gr_opengl_post_process_end()
 		}
 	}
 
-	// bloom uniforms, but only if we did the bloom
-	if (bloomed) {
-		float intensity = MIN((float)Cmdline_bloom_intensity, 200.0f) * 0.01f;
-
-		if (Neb2_render_mode != NEB2_RENDER_NONE) {
-			// we need less intensity for full neb missions, so cut it by 30%
-			intensity /= 3.0f;
-		}
-
-		//GL_state.Uniform.setUniformf( "bloom_intensity", intensity );
-		GL_state.Uniform.setUniformf( "bloom_intensity", 0.0f );
-		GL_state.Uniform.setUniformi( "levels" , MAX_MIP_BLUR_LEVELS );
-		GL_state.Uniform.setUniformi( "bloomed", 1 );
-
-		GL_state.Texture.SetActiveUnit(1);
-		GL_state.Texture.SetTarget(GL_TEXTURE_2D);
-		//GL_state.Texture.Enable(Post_bloom_texture_id[2]);
-		GL_state.Texture.Enable(Bloom_textures[0]);
-	}
-	else
-		GL_state.Uniform.setUniformf( "bloom_intensity", 0.0f );
-
 	// now render it to the screen ...
 	glBindFramebuffer(GL_FRAMEBUFFER,0);
 	GL_state.Texture.SetActiveUnit(0);
@@ -437,7 +411,7 @@ void gr_opengl_post_process_end()
 	//GL_state.Texture.Enable(Scene_color_texture);
 	GL_state.Texture.Enable(Scene_ldr_texture);
 
-	GL_state.Texture.SetActiveUnit(2);
+	GL_state.Texture.SetActiveUnit(1);
 	GL_state.Texture.SetTarget(GL_TEXTURE_2D);
 	GL_state.Texture.Enable(Scene_depth_texture);
 
@@ -845,10 +819,6 @@ bool opengl_post_init_shaders()
 
 void opengl_setup_bloom_textures()
 {
-	if (Cmdline_bloom_intensity <= 0) {
-		return;
-	}
-
 	// two more framebuffers, one each for the two different sized bloom textures
 	glGenFramebuffers(1, &Bloom_framebuffer);
 

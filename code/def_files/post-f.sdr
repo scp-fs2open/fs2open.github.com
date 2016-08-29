@@ -2,9 +2,6 @@ in vec4 fragTexCoord;
 out vec4 fragOut0;
 uniform sampler2D tex;
 uniform float timer;
-uniform sampler2D bloomed;
-uniform float bloom_intensity;
-uniform int levels;
 #ifdef FLAG_DISTORT_NOISE
 uniform float noise_amount;
 #endif
@@ -45,18 +42,6 @@ void main()
  // Global constant
 	vec4 color_in = texture(tex, fragTexCoord.xy + distort);
 	vec4 color_out;
- // Bloom
-	if (bloom_intensity > 0.0) {
-		vec3 bloom = vec3(0.0, 0.0, 0.0);
-		float factor = 0.0;
-		for (int mipmap = 0; mipmap < levels; ++mipmap) {
-			float scale = 1.0/exp2(float(mipmap));
-			factor += scale;
-			bloom += textureLod(bloomed, fragTexCoord.xy + distort, float(mipmap)).rgb * scale;
-		}
-		bloom /= factor;
-		color_in.rgb += bloom;
-	}
  #ifdef FLAG_SATURATION
  // Saturation
 	vec4 color_grayscale = color_in;
