@@ -42,10 +42,13 @@ uniform bool alpha_spec;
 varying vec3 envReflect;
 in vec3 fragEnvReflect;
 #endif
-#ifdef FLAG_NORMAL_MAP
+
+uniform bool FLAG_NORMAL_MAP;
 uniform sampler2D sNormalmap;
+#ifndef HAS_GEOMETRY_SHADER
 in mat3 fragTangentMatrix;
 #endif
+
 #ifdef FLAG_AMBIENT_MAP
 uniform sampler2D sAmbientmap;
 #endif
@@ -314,18 +317,20 @@ void main()
 #endif
 	vec3 unitNormal = normalize(fragNormal);
 	vec3 normal = unitNormal;
-#ifdef FLAG_NORMAL_MAP
-   // Normal map - convert from DXT5nm
-   vec2 normalSample;
-   normal.rg = normalSample = (texture(sNormalmap, texCoord).ag * 2.0) - 1.0;
-   normal.b = sqrt(1.0 - dot(normal.rg, normal.rg));
-   normal = fragTangentMatrix * normal;
-   float norm = length(normal);
-   // prevent breaking of normal maps
-   if (norm > 0.0)
-      normal /= norm;
-   else
-      normal = unitNormal;
+#ifndef HAS_GEOMETRY_SHADER
+    vec2 normalSample;
+    if (FLAG_NORMAL_MAP) {
+        // Normal map - convert from DXT5nm
+        normal.rg = normalSample = (texture(sNormalmap, texCoord).ag * 2.0) - 1.0;
+        normal.b = sqrt(1.0 - dot(normal.rg, normal.rg));
+        normal = fragTangentMatrix * normal;
+        float norm = length(normal);
+        // prevent breaking of normal maps
+        if (norm > 0.0)
+            normal /= norm;
+        else
+            normal = unitNormal;
+    }
 #endif
 	normData = vec4(normal, 1.0);
 
@@ -387,10 +392,14 @@ void main()
 #endif
 #ifdef FLAG_ENV_MAP
    vec3 envReflectNM = fragEnvReflect;
- #ifdef FLAG_NORMAL_MAP
-   envReflectNM += vec3(normalSample, 0.0);
-	envReflectNM = normalize(envReflectNM);
- #endif
+
+#ifndef HAS_GEOMETRY_SHADER
+    if (FLAG_NORMAL_MAP) {
+        envReflectNM += vec3(normalSample, 0.0);
+        envReflectNM = normalize(envReflectNM);
+    }
+#endif
+
 	float mip = (envGloss) ? (1.0 - glossData) * 7.0 : 0.0;
    vec4 envColour = textureLod(sEnvmap, envReflectNM, mip);
  #ifdef FLAG_HDR

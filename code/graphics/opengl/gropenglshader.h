@@ -118,6 +118,8 @@ typedef struct opengl_shader_uniform_t {
 typedef struct opengl_shader_t {
 	opengl::ShaderProgram* program;
 
+	SCP_vector<std::pair<SCP_string, bool>> variant_uniforms;
+
 	shader_type shader;
 	unsigned int flags;
 	int flags2;

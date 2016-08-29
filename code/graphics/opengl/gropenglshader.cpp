@@ -163,7 +163,7 @@ static opengl_shader_variant_t GL_shader_variants[] = {
 		{ "sSpecmap", "overrideSpec", "specClr", "gammaSpec", "alphaGloss" }, {  },
 		"Specular Mapping" },
 	
-	{ SDR_TYPE_MODEL, false, true, SDR_FLAG_MODEL_NORMAL_MAP, "FLAG_NORMAL_MAP",
+	{ SDR_TYPE_MODEL, false, false, SDR_FLAG_MODEL_NORMAL_MAP, "FLAG_NORMAL_MAP",
 		{ "sNormalmap" }, {  },
 		"Normal Mapping" },
 	
@@ -240,8 +240,6 @@ static opengl_shader_variant_t GL_shader_variants[] = {
 		"Vertical blur pass" }
 };
 
-static const int GL_num_shader_variants = sizeof(GL_shader_variants) / sizeof(opengl_shader_variant_t);
-
 opengl_shader_t *Current_shader = NULL;
 
 static int get_compile_flags(shader_type type, int flags) {
@@ -273,6 +271,15 @@ static int add_shader_slot() {
 	}
 }
 
+static void init_uniform_variants(opengl_shader_t* sdr) {
+	sdr->variant_uniforms.clear();
+	for (auto& variant : GL_shader_variants) {
+		if (sdr->shader == variant.type_id && !variant.use_define) {
+			sdr->variant_uniforms.push_back(std::make_pair(variant.flag_text, sdr->flags & variant.flag));
+		}
+	}
+}
+
 /**
  * Set the currently active shader
  * @param shader_obj	Pointer to an opengl_shader_t object. This function calls glUseProgramARB with parameter 0 if shader_obj is NULL or if function is called without parameters, causing OpenGL to revert to fixed-function processing
@@ -284,6 +291,10 @@ void opengl_shader_set_current(opengl_shader_t *shader_obj)
 
 		if(shader_obj) {
 			shader_obj->program->use();
+
+			for (auto& unif : shader_obj->variant_uniforms) {
+				shader_obj->program->Uniforms.setUniformi(unif.first, unif.second ? 1 : 0);
+			}
 		} else {
 			GL_state.UseProgram(0);
 		}
@@ -328,6 +339,9 @@ int gr_opengl_maybe_create_shader(shader_type shader_t, unsigned int flags)
 			new_sdr.shader = shader_t;
 			new_sdr.flags = flags;
 			new_sdr.program = compiled.program.get();
+
+			init_uniform_variants(&new_sdr);
+			return new_sdr_idx;
 		}
 	}
 
@@ -358,24 +372,28 @@ void opengl_shader_shutdown()
 	Compiled_shaders.clear();
 }
 
-static SCP_string opengl_shader_get_header(shader_type type_id, int flags, shader_stage stage) {
+static SCP_string opengl_shader_get_header(shader_type type_id, int flags, bool with_geometry) {
 	SCP_stringstream sflags;
 
 	sflags << "#version " << GLSL_version << " core\n";
+	if (with_geometry) {
+		sflags << "#define HAS_GEOMETRY_SHADER\n";
+	}
 
 	if (type_id == SDR_TYPE_POST_PROCESS_MAIN || type_id == SDR_TYPE_POST_PROCESS_LIGHTSHAFTS || type_id == SDR_TYPE_POST_PROCESS_FXAA) {
 		// ignore looking for variants. main post process, lightshafts, and FXAA shaders need special headers to be hacked in
 		opengl_post_shader_header(sflags, type_id, flags);
 	}
 	else {
-		for (int i = 0; i < GL_num_shader_variants; ++i) {
-			opengl_shader_variant_t &variant = GL_shader_variants[i];
-
+		for (auto& variant : GL_shader_variants) {
 			if (type_id == variant.type_id && flags & variant.flag && variant.use_define) {
 				sflags << "#define " << variant.flag_text << "\n";
 			}
 		}
 	}
+
+	// Reset line so that the error messages use the correct file lines
+	sflags << "#line 1\n";
 
 	return sflags.str();
 }
@@ -415,9 +433,9 @@ static SCP_string opengl_load_shader(const char *filename)
 	return content;
 }
 
-static SCP_vector<SCP_string> opengl_get_shader_content(shader_type type_id, const char* filename, int flags, shader_stage stage) {
+static SCP_vector<SCP_string> opengl_get_shader_content(shader_type type_id, const char* filename, int flags, bool with_geometry) {
 	SCP_vector<SCP_string> parts;
-	parts.push_back(opengl_shader_get_header(type_id, flags, stage));
+	parts.push_back(opengl_shader_get_header(type_id, flags, with_geometry));
 
 	parts.push_back(opengl_load_shader(filename));
 
@@ -448,10 +466,8 @@ int opengl_compile_shader(shader_type sdr, uint flags)
 
 	// do we even have a geometry shader?
 	if ( sdr_info->geo != NULL ) {
-		for (int i = 0; i < GL_num_shader_variants; ++i) {
-			opengl_shader_variant_t *variant = &GL_shader_variants[i];
-
-			if (variant->type_id == sdr && flags & variant->flag && variant->use_geometry_sdr) {
+		for (auto& variant : GL_shader_variants) {
+			if (variant.type_id == sdr && flags & variant.flag && variant.use_geometry_sdr) {
 				use_geo_sdr = true;
 				break;
 			}
@@ -462,9 +478,9 @@ int opengl_compile_shader(shader_type sdr, uint flags)
 
 	try {
 		program->addShaderCode(opengl::STAGE_VERTEX,
-							   opengl_get_shader_content(sdr_info->type_id, sdr_info->vert, flags, SDR_STAGE_VERTEX));
+							   opengl_get_shader_content(sdr_info->type_id, sdr_info->vert, flags, use_geo_sdr));
 		program->addShaderCode(opengl::STAGE_FRAGMENT,
-							   opengl_get_shader_content(sdr_info->type_id, sdr_info->frag, flags, SDR_STAGE_FRAGMENT));
+							   opengl_get_shader_content(sdr_info->type_id, sdr_info->frag, flags, use_geo_sdr));
 
 		if (use_geo_sdr) {
 			// read geometry shader
@@ -472,7 +488,7 @@ int opengl_compile_shader(shader_type sdr, uint flags)
 								   opengl_get_shader_content(sdr_info->type_id,
 															 sdr_info->geo,
 															 flags,
-															 SDR_STAGE_GEOMETRY));
+															 use_geo_sdr));
 		}
 
 		for (int i = 0; i < opengl_vert_attrib::NUM_ATTRIBS; ++i) {
@@ -497,7 +513,9 @@ int opengl_compile_shader(shader_type sdr, uint flags)
 	new_shader.flags = flags;
 	new_shader.program = compiled_shader.program.get();
 
-	opengl_shader_set_current(&new_shader);
+	init_uniform_variants(&new_shader);
+
+	new_shader.program->use();
 
 	// bind fragment data locations
 	if ( GL_version >= 32 && GLSL_version >= 150 ) {
@@ -526,14 +544,16 @@ int opengl_compile_shader(shader_type sdr, uint flags)
 
 	// initialize all uniforms and attributes that are specific to this variant
 	for (auto& variant : GL_shader_variants) {
-		if ( sdr_info->type_id == variant.type_id && variant.flag & flags ) {
-			for (auto& unif : variant.uniforms) {
-				new_shader.program->Uniforms.initUniform(unif);
-			}
+		if ( sdr_info->type_id == variant.type_id ) {
+			if (variant.flag & flags) {
+				for (auto& unif : variant.uniforms) {
+					new_shader.program->Uniforms.initUniform(unif);
+				}
 
-			for (auto& attr : variant.attributes) {
-				auto& attr_info = GL_vertex_attrib_info[attr];
-				new_shader.program->initAttribute(attr_info.name, attr_info.default_value);
+				for (auto& attr : variant.attributes) {
+					auto& attr_info = GL_vertex_attrib_info[attr];
+					new_shader.program->initAttribute(attr_info.name, attr_info.default_value);
+				}
 			}
 
 			if (!variant.use_define) {

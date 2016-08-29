@@ -16,9 +16,13 @@ uniform float extrudeWidth;
 uniform mat4 envMatrix;
 out vec3 fragEnvReflect;
 #endif
-#ifdef FLAG_NORMAL_MAP
+
+uniform bool FLAG_NORMAL_MAP;
+
+#ifndef HAS_GEOMETRY_SHADER
 out mat3 fragTangentMatrix;
 #endif
+
 #ifdef FLAG_FOG
 uniform float fogStart;
 uniform float fogScale;
@@ -64,7 +68,7 @@ out float fragClipDistance;
 #endif
 #ifdef FLAG_TRANSFORM
 #define TEXELS_PER_MATRIX 4
-void getModelTransform(inout mat4 transform, inout float invisible, int id, int matrix_offset)
+void getModelTransform(inout mat4 transform, out float invisible, int id, int matrix_offset)
 {
 	transform[0] = texelFetch(transform_tex, (matrix_offset + id) * TEXELS_PER_MATRIX);
 	transform[1] = texelFetch(transform_tex, (matrix_offset + id) * TEXELS_PER_MATRIX + 1);
@@ -132,12 +136,16 @@ void main()
 	fragShadowUV[2] = transformToShadowMap(2, fragShadowPos);
 	fragShadowUV[3] = transformToShadowMap(3, fragShadowPos);
  #endif
- #ifdef FLAG_NORMAL_MAP
- // Setup stuff for normal maps
-	vec3 t = normalize(mat3(modelViewMatrix) * mat3(orient) * vertTangent.xyz);
-	vec3 b = cross(normal, t) * vertTangent.w;
-	fragTangentMatrix = mat3(t, b, normal);
- #endif
+
+#ifndef HAS_GEOMETRY_SHADER
+    // Setup stuff for normal maps
+    if (FLAG_NORMAL_MAP) {
+        vec3 t = normalize(mat3(modelViewMatrix) * mat3(orient) * vertTangent.xyz);
+        vec3 b = cross(normal, t) * vertTangent.w;
+        fragTangentMatrix = mat3(t, b, normal);
+    }
+#endif
+
  #ifdef FLAG_ENV_MAP
  // Environment mapping reflection vector.
 	fragEnvReflect = reflect(normalize(position.xyz), normal);
