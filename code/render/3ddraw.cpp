@@ -353,8 +353,6 @@ void g3_draw_htl_sphere(color *clr, const vec3d* position, float radius)
 {
 	g3_start_instance_matrix(position, &vmd_identity_matrix, true);
 
-	gr_sphere_htl(radius);
-
 	material material_def;
 
 	material_def.set_blend_mode(ALPHA_BLEND_NONE);
