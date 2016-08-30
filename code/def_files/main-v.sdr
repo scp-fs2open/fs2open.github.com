@@ -9,9 +9,10 @@ uniform mat4 viewMatrix;
 uniform mat4 projMatrix;
 uniform mat4 textureMatrix;
 uniform vec4 color;
-#ifdef FLAG_NORMAL_EXTRUDE
+
+uniform bool FLAG_NORMAL_EXTRUDE;
 uniform float extrudeWidth;
-#endif
+
 #ifdef FLAG_ENV_MAP
 uniform mat4 envMatrix;
 out vec3 fragEnvReflect;
@@ -126,9 +127,11 @@ void main()
  #else
 	gl_Position = projMatrix * position;
  #endif
- #ifdef FLAG_NORMAL_EXTRUDE
-	gl_Position.xy += (mat3(projMatrix) * normal.xyz).xy * gl_Position.z * extrudeWidth;
- #endif
+
+    if (FLAG_NORMAL_EXTRUDE) {
+	    gl_Position.xy += (mat3(projMatrix) * normal.xyz).xy * gl_Position.z * extrudeWidth;
+    }
+
  #ifdef FLAG_SHADOWS
 	fragShadowPos = shadow_mv_matrix * modelMatrix * orient * vertPosition;
 	fragShadowUV[0] = transformToShadowMap(0, fragShadowPos);

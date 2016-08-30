@@ -223,7 +223,7 @@ static opengl_shader_variant_t GL_shader_variants[] = {
 		{ "normalAlphaMinMax" }, { },
 		"Normal Alpha" },
 
-	{ SDR_TYPE_MODEL, false, true, SDR_FLAG_MODEL_NORMAL_EXTRUDE, "FLAG_NORMAL_EXTRUDE",
+	{ SDR_TYPE_MODEL, false, false, SDR_FLAG_MODEL_NORMAL_EXTRUDE, "FLAG_NORMAL_EXTRUDE",
 		{ "extrudeWidth" }, { },
 		"Normal Extrusion" },
 
