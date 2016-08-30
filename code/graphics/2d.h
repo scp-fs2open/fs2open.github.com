@@ -820,8 +820,6 @@ typedef struct screen {
 	
 	void (*gf_set_line_width)(float width);
 
-	void (*gf_line_htl)(const vec3d *start, const vec3d *end);
-	void (*gf_sphere_htl)(float rad);
 	void (*gf_sphere)(material *material_def, float rad);
 
 	int (*gf_maybe_create_shader)(shader_type type, unsigned int flags);
@@ -1129,8 +1127,6 @@ __inline int gr_create_index_buffer(bool static_buffer = false)
 
 #define gr_set_line_width				GR_CALL(*gr_screen.gf_set_line_width)
 
-#define gr_line_htl						GR_CALL(*gr_screen.gf_line_htl)
-#define gr_sphere_htl					GR_CALL(*gr_screen.gf_sphere_htl)
 #define gr_sphere						GR_CALL(*gr_screen.gf_sphere)
 
 #define gr_maybe_create_shader			GR_CALL(*gr_screen.gf_maybe_create_shader)

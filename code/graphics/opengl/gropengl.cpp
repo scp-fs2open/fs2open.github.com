@@ -1249,7 +1249,6 @@ void opengl_setup_function_pointers()
 	
 	gr_screen.gf_set_line_width		= gr_opengl_set_line_width;
 
-	gr_screen.gf_line_htl			= gr_opengl_line_htl;
 	gr_screen.gf_sphere				= gr_opengl_sphere;
 	
 	gr_screen.gf_maybe_create_shader = gr_opengl_maybe_create_shader;
