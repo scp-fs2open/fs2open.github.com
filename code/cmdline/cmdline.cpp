@@ -924,11 +924,27 @@ bool has_cmdline_only_flag(int argc, char *argv[])
 	return false;
 }
 
+// remove old parms - needed for tests
+static void reset_cmdline_parms()
+{
+	for (cmdline_parm *parmp = GET_FIRST(&Parm_list); parmp != END_OF_LIST(&Parm_list); parmp = GET_NEXT(parmp)) {
+		if (parmp->args != NULL) {
+			delete[] parmp->args;
+			parmp->args = NULL;
+		}
+		parmp->name_found = 0;
+	}
+}
+
 // Call once to initialize the command line system
 //
 // cmdline - command line string passed to the application
 void os_init_cmdline(int argc, char *argv[])
 {
+	// Tests call this multiple times, so reset the params here.
+	// Otherwise e.g. the modlist just grows and grows...
+	reset_cmdline_parms();
+
 	FILE *fp;
 	
 	if (!has_cmdline_only_flag(argc, argv)) {
