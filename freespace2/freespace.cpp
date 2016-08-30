@@ -4520,6 +4520,7 @@ void game_frame(bool paused)
 
 	profile_end("Main Frame");
 	profile_dump_output();
+	profile_dump_json_output();
 
 	DEBUG_GET_TIME( total_time2 )
 

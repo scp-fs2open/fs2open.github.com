@@ -639,7 +639,7 @@ void draw_list::render_all(gr_zbuffer_type depth_mode)
 		int render_index = Render_keys[i];
 
 		if ( depth_mode == ZBUFFER_TYPE_DEFAULT || Render_elements[render_index].render_material.get_depth_mode() == depth_mode ) {
-			render_buffer(Render_elements[render_index]);
+			PROFILE("Render buffer", render_buffer(Render_elements[render_index]));
 		}
 	}
 
