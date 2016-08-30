@@ -151,8 +151,8 @@ static opengl_shader_variant_t GL_shader_variants[] = {
 		{ "fogStart", "fogScale", "fogColor" }, {  },
 		"Fog Effect" },
 
-	{ SDR_TYPE_MODEL, false, true, SDR_FLAG_MODEL_DIFFUSE_MAP, "FLAG_DIFFUSE_MAP", 
-		{ "sBasemap", "desaturate", "blend_alpha", "overrideDiffuse", "diffuseClr" }, {  },
+	{ SDR_TYPE_MODEL, false, false, SDR_FLAG_MODEL_DIFFUSE_MAP, "FLAG_DIFFUSE_MAP",
+		{ "sBasemap", "desaturate", "desaturate_clr", "blend_alpha", "overrideDiffuse", "diffuseClr" }, {  },
 		"Diffuse Mapping" },
 	
 	{ SDR_TYPE_MODEL, false, true, SDR_FLAG_MODEL_GLOW_MAP, "FLAG_GLOW_MAP",

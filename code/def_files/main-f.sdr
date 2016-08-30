@@ -16,13 +16,14 @@ uniform vec3 ambientFactor;
 uniform vec3 diffuseFactor;
 uniform vec3 emissionFactor;
 #endif
-#ifdef FLAG_DIFFUSE_MAP
+
+uniform bool FLAG_DIFFUSE_MAP;
 uniform sampler2D sBasemap;
 uniform int desaturate;
 uniform int blend_alpha;
 uniform bool overrideDiffuse;
 uniform vec3 diffuseClr;
-#endif
+
 #ifdef FLAG_GLOW_MAP
 uniform sampler2D sGlowmap;
 uniform bool overrideGlow;
@@ -338,24 +339,24 @@ void main()
    vec2 distort = vec2(cos(fragPosition.x*fragPosition.w*0.005+anim_timer*20.0)*sin(fragPosition.y*fragPosition.w*0.005),sin(fragPosition.x*fragPosition.w*0.005+anim_timer*20.0)*cos(fragPosition.y*fragPosition.w*0.005))*0.03;
 #endif
 
-#ifdef FLAG_DIFFUSE_MAP
-	vec2 diffuseTexCoord = texCoord;
- #ifdef FLAG_ANIMATED
-   if (effect_num == 2) {
-      diffuseTexCoord = texCoord + distort*(1.0-anim_timer);
-   }
- #endif
-	baseColor = texture(sBasemap, diffuseTexCoord);
-	if ( blend_alpha == 0 && baseColor.a < 0.95 ) discard; // if alpha blending is not on, discard transparent pixels
-	// premultiply alpha if blend_alpha is 1. assume that our blend function is srcColor + (1-Alpha)*destColor.
-	// if blend_alpha is 2, assume blend func is additive and don't modify color
-	if(blend_alpha == 1) baseColor.rgb = baseColor.rgb * baseColor.a;
-	if(overrideDiffuse) baseColor.rgb = diffuseClr;
- #ifdef FLAG_HDR
-	baseColor.rgb = pow(baseColor.rgb, vec3(SRGB_GAMMA));
- #endif
-	baseColor.rgb *= aoFactors.y;
-#endif
+    if (FLAG_DIFFUSE_MAP) {
+        vec2 diffuseTexCoord = texCoord;
+     #ifdef FLAG_ANIMATED
+       if (effect_num == 2) {
+          diffuseTexCoord = texCoord + distort*(1.0-anim_timer);
+       }
+     #endif
+        baseColor = texture(sBasemap, diffuseTexCoord);
+        if ( blend_alpha == 0 && baseColor.a < 0.95 ) discard; // if alpha blending is not on, discard transparent pixels
+        // premultiply alpha if blend_alpha is 1. assume that our blend function is srcColor + (1-Alpha)*destColor.
+        // if blend_alpha is 2, assume blend func is additive and don't modify color
+        if(blend_alpha == 1) baseColor.rgb = baseColor.rgb * baseColor.a;
+        if(overrideDiffuse) baseColor.rgb = diffuseClr;
+     #ifdef FLAG_HDR
+        baseColor.rgb = pow(baseColor.rgb, vec3(SRGB_GAMMA));
+     #endif
+        baseColor.rgb *= aoFactors.y;
+    }
 
    specData = vec4(baseColor.rgb * SPEC_FACTOR_NO_SPEC_MAP, glossData);
 #ifdef FLAG_SPEC_MAP
@@ -428,18 +429,18 @@ void main()
  #ifdef FLAG_HDR
 	finalFogColor = pow(finalFogColor, vec3(SRGB_GAMMA));
  #endif
- #ifdef FLAG_DIFFUSE_MAP
-	if(blend_alpha == 1) finalFogColor *= baseColor.a;
- #endif
-   baseColor.rgb = mix(baseColor.rgb, finalFogColor, fragFogDist);
-	specData.rgb *= fragFogDist;
-#endif
+    if (FLAG_DIFFUSE_MAP && blend_alpha == 1) {
+        finalFogColor *= baseColor.a;
+    }
 
-#ifdef FLAG_DIFFUSE_MAP
-	if(desaturate == 1) {
+    baseColor.rgb = mix(baseColor.rgb, finalFogColor, fragFogDist);
+    specData.rgb *= fragFogDist;
+ #endif
+ 
+ 	if(FLAG_DIFFUSE_MAP && desaturate == 1) {
 		baseColor.rgb = color.rgb * dot(vec3(1.0), baseColor.rgb) * 0.3333333;
 	}
-#endif
+
 #ifdef FLAG_ANIMATED
    if (effect_num == 0) {
       float shinefactor = 1.0/(1.0 + pow(abs((fract(abs(texCoord.x))-anim_timer) * 1000.0), 2.0)) * 1000.0;
