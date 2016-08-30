@@ -847,38 +847,6 @@ void gr_opengl_line(int x1, int y1, int x2, int y2, int resize_mode)
     gr_opengl_line(i2fl(x1), i2fl(y1), i2fl(x2), i2fl(y2), resize_mode);
 }
 
-void gr_opengl_line_htl(const vec3d *start, const vec3d *end)
-{
-	gr_zbuffer_type zbuffer_state = (gr_zbuffering) ? ZBUFFER_TYPE_FULL : ZBUFFER_TYPE_NONE;
-	GL_state.SetZbufferType(zbuffer_state);
-
-
-    if (gr_screen.current_color.is_alphacolor) {
-        GL_state.SetAlphaBlendMode(ALPHA_BLEND_ALPHA_BLEND_ALPHA);
-	} else {
-        GL_state.SetAlphaBlendMode(ALPHA_BLEND_NONE);
-    }
-
-	GLfloat line[6] = {
-		start->xyz.x,	start->xyz.y,	start->xyz.z,
-		end->xyz.x,		end->xyz.y,		end->xyz.z
-	};
-
-	GL_state.Array.BindArrayBuffer(0);
-	opengl_shader_set_current();
-
-	vertex_layout vert_def;
-
-	vert_def.add_vertex_component(vertex_format_data::POSITION3, 0, line);
-
-	opengl_bind_vertex_layout(vert_def);
-	opengl_shader_set_passthrough(false);
-
-	glDrawArrays(GL_LINES, 0, 2);
-
-	GL_CHECK_FOR_ERRORS("end of opengl_line_htl()");
-}
-
 void gr_opengl_aaline(vertex *v1, vertex *v2)
 {
 	float x1 = v1->screen.xyw.x;

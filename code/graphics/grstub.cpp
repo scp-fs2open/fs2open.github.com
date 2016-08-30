@@ -390,14 +390,6 @@ void gr_stub_set_line_width(float width)
 {
 }
 
-void gr_stub_draw_htl_line(const vec3d *start, const vec3d *end)
-{
-}
-
-void gr_stub_draw_htl_sphere(float rad)
-{
-}
-
 void gr_stub_draw_sphere(material *material_def, float rad)
 {
 }
@@ -657,8 +649,6 @@ bool gr_stub_init()
 	
 	gr_screen.gf_set_line_width		= gr_stub_set_line_width;
 
-	gr_screen.gf_line_htl			= gr_stub_draw_htl_line;
-	gr_screen.gf_sphere_htl			= gr_stub_draw_htl_sphere;
 	gr_screen.gf_sphere				= gr_stub_draw_sphere;
 
 	gr_screen.gf_shadow_map_start	= gr_stub_shadow_map_start;
