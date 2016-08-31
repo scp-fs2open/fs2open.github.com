@@ -158,7 +158,7 @@ void profile_begin(const char* name)
 		data.tid = get_tid();
 
 		data.enter = true;
-		data.time = timer_get_high_res_microseconds();
+		data.time = timer_get_microseconds();
 
 		json_profile_data.push_back(data);
 	}
@@ -225,7 +225,7 @@ void profile_end(const char* name)
 		data.tid = get_tid();
 
 		data.enter = false;
-		data.time = timer_get_high_res_microseconds();
+		data.time = timer_get_microseconds();
 
 		json_profile_data.push_back(data);
 	}
