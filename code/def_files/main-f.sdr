@@ -57,13 +57,14 @@ uniform sampler2D sAmbientmap;
 uniform vec4 fogColor;
 in float fragFogDist;
 #endif
-#ifdef FLAG_ANIMATED
+
+uniform bool FLAG_ANIMATED;
 uniform sampler2D sFramebuffer;
 uniform int effect_num;
 uniform float anim_timer;
 uniform float vpwidth;
 uniform float vpheight;
-#endif
+
 #ifdef FLAG_TRANSFORM
 in float fragNotVisible;
 #endif
@@ -335,17 +336,18 @@ void main()
 #endif
 	normData = vec4(normal, 1.0);
 
-#ifdef FLAG_ANIMATED
-   vec2 distort = vec2(cos(fragPosition.x*fragPosition.w*0.005+anim_timer*20.0)*sin(fragPosition.y*fragPosition.w*0.005),sin(fragPosition.x*fragPosition.w*0.005+anim_timer*20.0)*cos(fragPosition.y*fragPosition.w*0.005))*0.03;
-#endif
+	vec2 distort = vec2(0.0);
+ 	if (FLAG_ANIMATED) {
+		distort = vec2(cos(fragPosition.x*fragPosition.w*0.005+anim_timer*20.0)*sin(fragPosition.y*fragPosition.w*0.005),sin(fragPosition.x*fragPosition.w*0.005+anim_timer*20.0)*cos(fragPosition.y*fragPosition.w*0.005))*0.03;
+	}
 
     if (FLAG_DIFFUSE_MAP) {
         vec2 diffuseTexCoord = texCoord;
-     #ifdef FLAG_ANIMATED
-       if (effect_num == 2) {
-          diffuseTexCoord = texCoord + distort*(1.0-anim_timer);
-       }
-     #endif
+		
+		if (FLAG_ANIMATED && effect_num == 2) {
+			diffuseTexCoord = texCoord + distort*(1.0-anim_timer);
+		}
+	   
         baseColor = texture(sBasemap, diffuseTexCoord);
         if ( blend_alpha == 0 && baseColor.a < 0.95 ) discard; // if alpha blending is not on, discard transparent pixels
         // premultiply alpha if blend_alpha is 1. assume that our blend function is srcColor + (1-Alpha)*destColor.
@@ -447,33 +449,34 @@ void main()
 		baseColor.rgb = color.rgb * dot(vec3(1.0), baseColor.rgb) * 0.3333333;
 	}
 
-#ifdef FLAG_ANIMATED
-   if (effect_num == 0) {
-      float shinefactor = 1.0/(1.0 + pow(abs((fract(abs(texCoord.x))-anim_timer) * 1000.0), 2.0)) * 1000.0;
-      baseColor.rgb = baseColor.rgb + vec3(shinefactor);
-      baseColor.a = baseColor.a * clamp(shinefactor * (fract(abs(texCoord.x))-anim_timer) * -10000.0,0.0,1.0);
-   }
-   if (effect_num == 1) {
-      float shinefactor = 1.0/(1.0 + pow(abs(fragPosition.y-anim_timer), 2.0));
-      baseColor.rgb = baseColor.rgb + vec3(shinefactor);
- #ifdef FLAG_LIGHT
-      baseColor.a = baseColor.a;
- #else
-      // ATI Wireframe fix *grumble*
-      baseColor.a = clamp((fragPosition.y-anim_timer) * 10000.0,0.0,1.0);
- #endif
-   }
-   if (effect_num == 2) {
-      vec2 screenPos = gl_FragCoord.xy * vec2(vpwidth,vpheight);
-      baseColor.a = baseColor.a;
-      float cloak_interp = (sin(fragPosition.x*fragPosition.w*0.005+anim_timer*20.0)*sin(fragPosition.y*fragPosition.w*0.005)*0.5)-0.5;
- #ifdef FLAG_LIGHT
-      baseColor.rgb = mix(texture(sFramebuffer, screenPos + distort*anim_timer + anim_timer*0.1*normal.xy).rgb,baseColor.rgb,clamp(cloak_interp+anim_timer*2.0,0.0,1.0));
- #else
-      baseColor.rgb = mix(texture(sFramebuffer, screenPos + distort*anim_timer + anim_timer*0.1*fragNormal.xy).rgb,baseColor.rgb,clamp(cloak_interp+anim_timer*2.0,0.0,1.0));
- #endif
-   }
+	if (FLAG_ANIMATED) {
+		if (effect_num == 0) {
+			float shinefactor = 1.0/(1.0 + pow(abs((fract(abs(texCoord.x))-anim_timer) * 1000.0), 2.0)) * 1000.0;
+			baseColor.rgb = baseColor.rgb + vec3(shinefactor);
+			baseColor.a = baseColor.a * clamp(shinefactor * (fract(abs(texCoord.x))-anim_timer) * -10000.0,0.0,1.0);
+		}
+		if (effect_num == 1) {
+			float shinefactor = 1.0/(1.0 + pow(abs(fragPosition.y-anim_timer), 2.0));
+			baseColor.rgb = baseColor.rgb + vec3(shinefactor);
+#ifdef FLAG_LIGHT
+			baseColor.a = baseColor.a;
+#else
+			// ATI Wireframe fix *grumble*
+			baseColor.a = clamp((fragPosition.y-anim_timer) * 10000.0,0.0,1.0);
 #endif
+		}
+		if (effect_num == 2) {
+			vec2 screenPos = gl_FragCoord.xy * vec2(vpwidth,vpheight);
+			baseColor.a = baseColor.a;
+			float cloak_interp = (sin(fragPosition.x*fragPosition.w*0.005+anim_timer*20.0)*sin(fragPosition.y*fragPosition.w*0.005)*0.5)-0.5;
+#ifdef FLAG_LIGHT
+			baseColor.rgb = mix(texture(sFramebuffer, screenPos + distort*anim_timer + anim_timer*0.1*normal.xy).rgb,baseColor.rgb,clamp(cloak_interp+anim_timer*2.0,0.0,1.0));
+#else
+			baseColor.rgb = mix(texture(sFramebuffer, screenPos + distort*anim_timer + anim_timer*0.1*fragNormal.xy).rgb,baseColor.rgb,clamp(cloak_interp+anim_timer*2.0,0.0,1.0));
+#endif
+		}
+	}
+	
 #ifdef FLAG_NORMAL_ALPHA
 	float normViewOffset = dot(vec3(0.0, 0.0, 1.0), normal);
 	baseColor.a = smoothstep(min(normalAlphaMinMax.x, normalAlphaMinMax.y), max(normalAlphaMinMax.x, normalAlphaMinMax.y), clamp(normalAlphaMinMax.x > normalAlphaMinMax.y ? normViewOffset : 1.0 - normViewOffset, 0.0, 1.0));

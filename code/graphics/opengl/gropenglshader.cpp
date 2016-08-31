@@ -175,7 +175,7 @@ static opengl_shader_variant_t GL_shader_variants[] = {
 		{ "sEnvmap", "envGloss", "envMatrix" }, {  },
 		"Environment Mapping" },
 	
-	{ SDR_TYPE_MODEL, false, true, SDR_FLAG_MODEL_ANIMATED, "FLAG_ANIMATED",
+	{ SDR_TYPE_MODEL, false, false, SDR_FLAG_MODEL_ANIMATED, "FLAG_ANIMATED",
 		{ "sFramebuffer", "effect_num", "anim_timer", "vpwidth", "vpheight" }, {  },
 		"Animated Effects" },
 	
