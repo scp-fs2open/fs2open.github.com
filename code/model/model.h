@@ -522,12 +522,18 @@ typedef struct shield_vertex {
 
 // the high level shield structure.  A ship without any shield has nverts and ntris set to 0.
 // The vertex list and the tris list are used by the shield_tri structure
-typedef struct shield_info {
+struct shield_info {
 	int				nverts;
 	int				ntris;
 	shield_vertex	*verts;
 	shield_tri		*tris;
-} shield_info;
+
+	int buffer_id;
+	int buffer_n_verts;
+	vertex_layout layout;
+
+	shield_info() : nverts(0), ntris(0), verts(NULL), tris(NULL), buffer_id(-1), buffer_n_verts(0), layout() {	}
+};
 
 #define BSP_LIGHT_TYPE_WEAPON 1
 #define BSP_LIGHT_TYPE_THRUSTER 2
@@ -667,7 +673,7 @@ public:
 		n_thrusters(0), gun_banks(NULL), missile_banks(NULL), docking_bays(NULL), thrusters(NULL), ship_bay(NULL),
 		shield_collision_tree(NULL), sldc_size(0), n_paths(0), paths(NULL), mass(0), num_xc(0), xc(NULL), num_split_plane(0),
 		num_ins(0), used_this_mission(0), n_glow_point_banks(0), glow_point_banks(NULL), gun_submodel_rotation(0),
-		vert_source()
+		vert_source(), shield()
 	{
 		filename[0] = 0;
 		mins = maxs = autocenter = center_of_mass = vmd_zero_vector;
@@ -678,7 +684,6 @@ public:
 		memset(&debris_objects, 0, MAX_DEBRIS_OBJECTS * sizeof(int));
 		memset(&bounding_box, 0, 8 * sizeof(vec3d));
 		memset(&view_positions, 0, MAX_EYES * sizeof(eye));
-		memset(&shield, 0, sizeof(shield_info));
 		memset(&octants, 0, 8 * sizeof(model_octant));
 		memset(&split_plane, 0, MAX_SPLIT_PLANE * sizeof(float));
 		memset(&ins, 0, MAX_MODEL_INSIGNIAS * sizeof(insignia));

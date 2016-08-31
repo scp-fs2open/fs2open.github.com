@@ -2651,6 +2651,56 @@ void interp_create_transparency_index_buffer(polymodel *pm, int mn)
 	}
 }
 
+void model_interp_process_shield_mesh(polymodel * pm)
+{
+	SCP_vector<vec3d> buffer;
+
+	if ( pm->shield.nverts <= 0 ) {
+		return;
+	}
+
+	int n_verts = 0;
+	
+	for ( int i = 0; i < pm->shield.ntris; i++ ) {
+		shield_tri *tri = &pm->shield.tris[i];
+
+		vec3d a = pm->shield.verts[tri->verts[0]].pos;
+		vec3d b = pm->shield.verts[tri->verts[1]].pos;
+		vec3d c = pm->shield.verts[tri->verts[2]].pos;
+
+		// recalculate triangle normals to solve some issues regarding triangle collision
+		vec3d b_a;
+		vec3d c_a;
+
+		vm_vec_sub(&b_a, &b, &a);
+		vm_vec_sub(&c_a, &c, &a);
+		vm_vec_cross(&tri->norm, &b_a, &c_a);
+		vm_vec_normalize_safe(&tri->norm);
+
+		buffer.push_back(a);
+		buffer.push_back(tri->norm);
+
+		buffer.push_back(b);
+		buffer.push_back(tri->norm);
+
+		buffer.push_back(c);
+		buffer.push_back(tri->norm);
+
+		n_verts += 3;
+	}
+	
+	if ( buffer.size() > 0 ) {
+		pm->shield.buffer_id = gr_create_vertex_buffer(true);
+		pm->shield.buffer_n_verts = n_verts;
+		gr_update_buffer_data(pm->shield.buffer_id, buffer.size() * sizeof(vec3d), &buffer[0]);
+
+		pm->shield.layout.add_vertex_component(vertex_format_data::POSITION3, sizeof(vec3d) * 2, 0);
+		pm->shield.layout.add_vertex_component(vertex_format_data::NORMAL, sizeof(vec3d) * 2, sizeof(vec3d));
+	} else {
+		pm->shield.buffer_id = -1;
+	}
+}
+
 // returns 1 if the thruster should be drawn
 //         0 if it shouldn't
 int model_should_render_engine_glow(int objnum, int bank_obj)

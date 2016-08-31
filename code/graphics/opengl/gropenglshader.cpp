@@ -104,7 +104,11 @@ static opengl_shader_type_t GL_shader_types[] = {
 
 	{ SDR_TYPE_PASSTHROUGH_RENDER, "passthrough-v.sdr", "passthrough-f.sdr", 0,
 		{ "modelViewMatrix", "projMatrix", "baseMap", "noTexturing", "alphaTexture", "srgb", "intensity", "color", "alphaThreshold" },
-		{ opengl_vert_attrib::POSITION, opengl_vert_attrib::TEXCOORD, opengl_vert_attrib::COLOR }, "Passthrough" }
+		{ opengl_vert_attrib::POSITION, opengl_vert_attrib::TEXCOORD, opengl_vert_attrib::COLOR }, "Passthrough" },
+
+	{ SDR_TYPE_SHIELD_DECAL, "shield-impact-v.sdr",	"shield-impact-f.sdr", 0,
+		{ "modelViewMatrix", "projMatrix", "shieldMap", "shieldModelViewMatrix", "shieldProjMatrix", "hitNormal", "srgb", "color" }, 
+		{ opengl_vert_attrib::POSITION, opengl_vert_attrib::NORMAL }, "Shield Decals" }
 };
 
 /**
@@ -515,6 +519,8 @@ void opengl_shader_init()
 	gr_opengl_maybe_create_shader(SDR_TYPE_EFFECT_PARTICLE, SDR_FLAG_PARTICLE_POINT_GEN);
 	gr_opengl_maybe_create_shader(SDR_TYPE_EFFECT_DISTORTION, 0);
 
+	gr_opengl_maybe_create_shader(SDR_TYPE_SHIELD_DECAL, 0);
+
 	// compile deferred lighting shaders
 	opengl_shader_compile_deferred_light_shader();
 
@@ -605,7 +611,7 @@ void opengl_shader_compile_passthrough_shader()
 	opengl_shader_set_current();
 }
 
-void opengl_shader_set_passthrough(bool textured, bool alpha, color *clr, float color_scale)
+void opengl_shader_set_passthrough(bool textured, bool alpha, vec4 *clr, float color_scale)
 {
 	opengl_shader_set_current(gr_opengl_maybe_create_shader(SDR_TYPE_PASSTHROUGH_RENDER, 0));
 
@@ -632,11 +638,18 @@ void opengl_shader_set_passthrough(bool textured, bool alpha, color *clr, float 
 	Current_shader->program->Uniforms.setUniformf("alphaThreshold", GL_alpha_threshold);
 
 	if ( clr != NULL ) {
-		Current_shader->program->Uniforms.setUniform4f("color", i2fl(clr->red) / 255.0f, i2fl(clr->green) / 255.0f, i2fl(clr->blue) / 255.0f, i2fl(clr->alpha) / 255.0f);
+		Current_shader->program->Uniforms.setUniform4f("color", *clr);
 	} else {
 		Current_shader->program->Uniforms.setUniform4f("color", 1.0f, 1.0f, 1.0f, 1.0f);
 	}
 
 	Current_shader->program->Uniforms.setUniformMatrix4f("modelViewMatrix", GL_model_view_matrix);
 	Current_shader->program->Uniforms.setUniformMatrix4f("projMatrix", GL_projection_matrix);
+}
+
+void opengl_shader_set_passthrough(bool textured, bool alpha, color *clr)
+{
+	vec4 normalized_clr = { i2fl(clr->red) / 255.0f, i2fl(clr->green) / 255.0f, i2fl(clr->blue) / 255.0f, clr->is_alphacolor ? i2fl(clr->alpha) / 255.0f : 1.0f };
+
+	opengl_shader_set_passthrough(textured, alpha, &normalized_clr, 1.0f);
 }

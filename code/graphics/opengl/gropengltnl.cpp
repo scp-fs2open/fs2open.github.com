@@ -869,7 +869,7 @@ void opengl_tnl_set_material(material* material_info, bool set_base_map)
 {
 	int shader_handle = material_info->get_shader_handle();
 	int base_map = material_info->get_texture_map(TM_BASE_TYPE);
-	color clr = material_info->get_color();
+	vec4 clr = material_info->get_color();
 
 	if ( shader_handle >= 0 ) {
 		opengl_shader_set_current(shader_handle);
@@ -936,8 +936,8 @@ void opengl_tnl_set_model_material(model_material *material_info)
 	Current_shader->program->Uniforms.setUniformMatrix4f("projMatrix", GL_projection_matrix);
 	Current_shader->program->Uniforms.setUniformMatrix4f("textureMatrix", GL_texture_matrix);
 
-	color clr = material_info->get_color();
-	Current_shader->program->Uniforms.setUniform4f("color", clr.red / 255.0f, clr.green / 255.0f, clr.blue / 255.0f, clr.alpha / 255.0f);
+	vec4 clr = material_info->get_color();
+	Current_shader->program->Uniforms.setUniform4f("color", clr);
 
 	if ( Current_shader->flags & SDR_FLAG_MODEL_ANIMATED ) {
 		Current_shader->program->Uniforms.setUniformf("anim_timer", material_info->get_animated_effect_time());

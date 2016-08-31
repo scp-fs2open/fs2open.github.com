@@ -173,6 +173,8 @@ SET(file_root_def_files_files
 	def_files/tonemapping-f.sdr
 	def_files/video-f.sdr
 	def_files/video-v.sdr
+	def_files/shield-impact-v.sdr
+	def_files/shield-impact-f.sdr
 )
 
 # ExceptionHandler files

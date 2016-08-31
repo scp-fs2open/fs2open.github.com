@@ -36,6 +36,7 @@ class material;
 class model_material;
 class particle_material;
 class distortion_material;
+class shield_material;
 
 struct transform
 {
@@ -164,7 +165,7 @@ enum shader_type {
 	SDR_TYPE_DEFERRED_CLEAR,
 	SDR_TYPE_VIDEO_PROCESS,
 	SDR_TYPE_PASSTHROUGH_RENDER,
-
+	SDR_TYPE_SHIELD_DECAL,
 	NUM_SHADER_TYPES
 };
 
@@ -834,6 +835,7 @@ typedef struct screen {
 
 	// new drawing functions
 	void (*gf_render_model)(model_material* material_info, indexed_vertex_source *vert_source, vertex_buffer* bufferp, size_t texi);
+	void (*gf_render_shield_impact)(shield_material *material_info, primitive_type prim_type, vertex_layout *layout, int buffer_handle, int n_verts);
 	void (*gf_render_primitives)(material* material_info, primitive_type prim_type, vertex_layout* layout, int offset, int n_verts, int buffer_handle);
 	void (*gf_render_primitives_immediate)(material* material_info, primitive_type prim_type, vertex_layout* layout, int n_verts, void* data, int size);
 	void (*gf_render_primitives_particle)(particle_material* material_info, primitive_type prim_type, vertex_layout* layout, int offset, int n_verts, int buffer_handle);
@@ -1139,6 +1141,7 @@ __inline int gr_create_index_buffer(bool static_buffer = false)
 
 #define gr_shadow_map_start				GR_CALL(*gr_screen.gf_shadow_map_start)
 #define gr_shadow_map_end				GR_CALL(*gr_screen.gf_shadow_map_end)
+#define gr_render_shield_impact			GR_CALL(*gr_screen.gf_render_shield_impact)
 
 __inline void gr_render_primitives(material* material_info, primitive_type prim_type, vertex_layout* layout, int offset, int n_verts, int buffer_handle = -1)
 {
