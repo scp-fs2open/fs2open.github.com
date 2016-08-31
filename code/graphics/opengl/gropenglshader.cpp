@@ -113,7 +113,7 @@ static opengl_shader_type_t GL_shader_types[] = {
 		{ opengl_vert_attrib::POSITION, opengl_vert_attrib::NORMAL }, "Shield Decals" }
 };
 
-/**, 
+/**
  * Static lookup reference for shader variant uniforms
  * When adding a new shader variant for a shader, list all associated uniforms and attributes here
  */
