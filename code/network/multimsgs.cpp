@@ -4901,7 +4901,7 @@ void process_repair_info_packet(ubyte *data, header *hinfo)
 			ai_info *aip = &Ai_info[Ships[repair_objp->instance].ai_index];
 			Assert(aip->active_goal >= 0);
 			ai_goal *aigp = &aip->goals[aip->active_goal];
-			Assert(aigp->flags & AIGF_DOCK_INDEXES_VALID);
+			Assert(aigp->flags[AI::Goal_Flags::Dockee_index_valid, AI::Goal_Flags::Docker_index_valid]);
 
 			int docker_index = aigp->docker.index;
 			int dockee_index = aigp->dockee.index;
@@ -5018,8 +5018,8 @@ void send_ai_info_update_packet( object *objp, char what, object * other_objp )
 		ADD_USHORT( other_signature );
 
 		// for docking, add the dock and dockee index
-		if ( aigp->ai_mode & (AI_GOAL_DOCK|AI_GOAL_REARM_REPAIR) ) {
-			Assert(aigp->flags & AIGF_DOCK_INDEXES_VALID);
+		if (aigp->ai_mode & (AI_GOAL_DOCK | AI_GOAL_REARM_REPAIR)) {
+			Assert(aigp->flags[AI::Goal_Flags::Dockee_index_valid] || aigp->flags[AI::Goal_Flags::Docker_index_valid]);
 			Assert( (aigp->docker.index >= 0) && (aigp->docker.index < UCHAR_MAX) );
 			Assert( (aigp->dockee.index >= 0) && (aigp->dockee.index < UCHAR_MAX) );
 			docker_index = (ubyte) aigp->docker.index;
@@ -5111,7 +5111,8 @@ void process_ai_info_update_packet( ubyte *data, header *hinfo)
 		if ( mode & (AI_GOAL_DOCK|AI_GOAL_REARM_REPAIR) ) {
 			aigp->docker.index = docker_index;
 			aigp->dockee.index = dockee_index;
-			aigp->flags |= AIGF_DOCK_INDEXES_VALID;
+			aigp->flags.set(AI::Goal_Flags::Dockee_index_valid);
+			aigp->flags.set(AI::Goal_Flags::Docker_index_valid);
 		}
 
 		// get a shipname if we can.

@@ -3799,7 +3799,7 @@ float ai_path_0()
 		int path_num;
 		Assert(aip->active_goal >= 0);
 		ai_goal *aigp = &aip->goals[aip->active_goal];
-		Assert(aigp->flags & AIGF_DOCK_INDEXES_VALID);
+		Assert(aigp->flags[AI::Goal_Flags::Dockee_index_valid] || aigp->flags[AI::Goal_Flags::Docker_index_valid]);
 
 		path_num = ai_return_path_num_from_dockbay(&Objects[aip->goal_objnum], aigp->dockee.index);
 		ai_find_path(Pl_objp, aip->goal_objnum, path_num, 0);
@@ -3942,7 +3942,7 @@ float ai_path_1()
 		int path_num;
 		Assert(aip->active_goal >= 0);
 		ai_goal *aigp = &aip->goals[aip->active_goal];
-		Assert(aigp->flags & AIGF_DOCK_INDEXES_VALID);
+		Assert(aigp->flags[AI::Goal_Flags::Dockee_index_valid] || aigp->flags[AI::Goal_Flags::Docker_index_valid]);
 
 		path_num = ai_return_path_num_from_dockbay(&Objects[aip->goal_objnum], aigp->dockee.index);
 		ai_find_path(Pl_objp, aip->goal_objnum, path_num, 0);
@@ -10358,7 +10358,7 @@ void ai_get_dock_goal_indexes(object *objp, ai_info *aip, ai_goal *aigp, object 
 		{
 			// get them from the active goal
 			Assert(aigp != NULL);
-			Assert(aigp->flags & AIGF_DOCK_INDEXES_VALID);
+			Assert(aigp->flags[AI::Goal_Flags::Dockee_index_valid] || aigp->flags[AI::Goal_Flags::Docker_index_valid]);
 			docker_index = aigp->docker.index;
 			dockee_index = aigp->dockee.index;
 			Assert(docker_index >= 0);
@@ -10937,10 +10937,10 @@ void ai_dock()
 			break;		
 
 		// play the depart sound, but only once, since this mode is called multiple times per frame
-		if ( !(aigp->flags & AIGF_DEPART_SOUND_PLAYED))
+		if ( !(aigp->flags[AI::Goal_Flags::Depart_sound_played]))
 		{
 			snd_play_3d( &Snds[SND_DOCK_DEPART], &Pl_objp->pos, &View_position );
-			aigp->flags |= AIGF_DEPART_SOUND_PLAYED;
+			aigp->flags.set(AI::Goal_Flags::Depart_sound_played);
 		}
 
 		dist = dock_orient_and_approach(Pl_objp, docker_index, goal_objp, dockee_index, DOA_UNDOCK_1, &rdinfo);
@@ -13856,7 +13856,7 @@ int ai_need_new_target(object *pl_objp, int target_objnum)
 			// Goober5000 - targeting the same team is allowed if pl_objp is going bonkers
 			ai_info *pl_aip = &Ai_info[Ships[pl_objp->instance].ai_index];
 			if (pl_aip->active_goal != AI_GOAL_NONE && pl_aip->active_goal != AI_ACTIVE_GOAL_DYNAMIC) {
-				if (pl_aip->goals[pl_aip->active_goal].flags & AIGF_TARGET_OWN_TEAM) {
+				if (pl_aip->goals[pl_aip->active_goal].flags[AI::Goal_Flags::Target_own_team]) {
 					return 0;
 				}
 			}

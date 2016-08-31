@@ -66,19 +66,6 @@ extern ai_flag_name Ai_flag_names[];
 #define AIG_TYPE_PLAYER_WING		4		// from player direct to wing
 #define AIG_TYPE_DYNAMIC			5		// created on the fly
 
-// flags for AI_GOALS
-#define AIGF_DOCKER_INDEX_VALID		(1<<0)	// when set, index field for docker is valid
-#define AIGF_DOCKEE_INDEX_VALID		(1<<1)	// when set, index field for dockee is valid
-#define AIGF_GOAL_ON_HOLD			(1<<2)	// when set, this goal cannot currently be satisfied, although it could be in the future
-#define AIGF_SUBSYS_NEEDS_FIXUP		(1<<3)	// when set, the subsystem index (for a destroy subsystem goal) is invalid and must be gotten from the subsys name stored in docker.name field!!
-#define AIGF_GOAL_OVERRIDE			(1<<4)	// paired with AIG_TYPE_DYNAMIC to mean this goal overrides any other goal
-#define AIGF_PURGE					(1<<5)	// purge this goal next time we process
-#define AIGF_GOALS_PURGED			(1<<6)	// this goal has already caused other goals to get purged
-#define AIGF_DEPART_SOUND_PLAYED	(1<<7)	// Goober5000 - replacement for AL's hack ;)
-#define AIGF_TARGET_OWN_TEAM		(1<<8)	// Goober5000 - removes standard precautions against AI ships taking traitorous actions
-
-#define AIGF_DOCK_INDEXES_VALID		(AIGF_DOCKER_INDEX_VALID|AIGF_DOCKEE_INDEX_VALID)
-
 //	Flags to ai_turn_towards_vector().
 #define	AITTV_FAST					(1<<0)	//	Turn fast, not slowed down based on skill level.
 #define AITTV_VIA_SEXP				(1<<1)	//	Goober5000 - via sexp
@@ -102,7 +89,7 @@ typedef struct ai_goal {
 	int	ai_mode;				// one of the AIM_* modes for this goal
 	int	ai_submode;			// maybe need a submode
 	int	type;					// one of the AIG_TYPE_* values above
-	int	flags;				// one of the AIGF_* values above
+	flagset<AI::Goal_Flags>	flags;				// one of the AIGF_* values above
 	fix	time;					// time at which this goal was issued.
 	int	priority;			// how important is this goal -- number 0 - 100
 
