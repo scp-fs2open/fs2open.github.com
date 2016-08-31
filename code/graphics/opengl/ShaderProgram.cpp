@@ -226,20 +226,6 @@ opengl::ShaderUniforms::ShaderUniforms(ShaderProgram* shaderProgram) : _program(
 	Assertion(shaderProgram != nullptr, "Shader program may not be null!");
 }
 
-void opengl::ShaderUniforms::initUniform(const SCP_string& name)
-{
-	auto location = glGetUniformLocation(_program->getShaderHandle(), name.c_str());
-
-	if (location == -1)
-	{
-		// This can happen if the uniform has been optimized out by the driver
-		mprintf(("WARNING: Failed to find uniform '%s'.\n", name.c_str()));
-		return;
-	}
-
-	_uniform_locations.insert(std::make_pair(name, location));
-}
-
 size_t opengl::ShaderUniforms::findUniform(const SCP_string& name)
 {
 	auto iter = _uniform_lookup.find(name);
@@ -812,9 +798,11 @@ GLint opengl::ShaderUniforms::findUniformLocation(const SCP_string& name) {
 	auto iter = _uniform_locations.find(name);
 
 	if (iter == _uniform_locations.end()) {
-		return -1;
+		// Lazily get uniform location
+		auto location = glGetUniformLocation(_program->getShaderHandle(), name.c_str());
+
+		iter = _uniform_locations.insert(std::make_pair(name, location)).first;
 	}
-	else {
-		return iter->second;
-	}
+
+	return iter->second;
 }

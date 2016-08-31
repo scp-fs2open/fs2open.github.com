@@ -275,7 +275,8 @@ static void init_uniform_variants(opengl_shader_t* sdr) {
 	sdr->variant_uniforms.clear();
 	for (auto& variant : GL_shader_variants) {
 		if (sdr->shader == variant.type_id && !variant.use_define) {
-			sdr->variant_uniforms.push_back(std::make_pair(variant.flag_text, sdr->flags & variant.flag));
+			auto value = (sdr->flags & variant.flag) != 0;
+			sdr->variant_uniforms.push_back(std::make_pair(variant.flag_text, value));
 		}
 	}
 }
@@ -526,18 +527,9 @@ int opengl_compile_shader(shader_type sdr, uint flags)
 		glBindFragDataLocation(new_shader.program->getShaderHandle(), 4, "fragOut4");
 	}
 
-	// initialize uniforms and attributes
-	for (auto& unif : sdr_info->uniforms) {
-		new_shader.program->Uniforms.initUniform(unif);
-	}
-
+	// initialize attributes
 	for (auto& attr : sdr_info->attributes) {
 		new_shader.program->initAttribute(GL_vertex_attrib_info[attr].name, GL_vertex_attrib_info[attr].default_value);
-	}
-
-	// if this shader is POST_PROCESS_MAIN, hack in the user-defined flags
-	if ( sdr_info->type_id == SDR_TYPE_POST_PROCESS_MAIN ) {
-		opengl_post_init_uniforms(flags);
 	}
 
 	mprintf(("Shader Variant Features:\n"));
@@ -546,19 +538,10 @@ int opengl_compile_shader(shader_type sdr, uint flags)
 	for (auto& variant : GL_shader_variants) {
 		if ( sdr_info->type_id == variant.type_id ) {
 			if (variant.flag & flags) {
-				for (auto& unif : variant.uniforms) {
-					new_shader.program->Uniforms.initUniform(unif);
-				}
-
 				for (auto& attr : variant.attributes) {
 					auto& attr_info = GL_vertex_attrib_info[attr];
 					new_shader.program->initAttribute(attr_info.name, attr_info.default_value);
 				}
-			}
-
-			if (!variant.use_define) {
-				// This variant uses a uniform for keeping track of the enabled state
-				new_shader.program->Uniforms.initUniform(variant.flag_text);
 			}
 
 			mprintf(("	%s\n", variant.description));
