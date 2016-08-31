@@ -45,7 +45,7 @@ private:
 	gr_alpha_blend Blend_mode;
 	bool Cull_mode;
 	int Fill_mode;
-	color Clr;
+	vec4 Clr;
 	float Clr_scale;
 	int Depth_bias;
 
@@ -96,7 +96,7 @@ public:
 	void set_color(float red, float green, float blue, float alpha);
 	void set_color(int r, int g, int b, int a);
 	void set_color(color &clr_in);
-	color& get_color();
+	const vec4& get_color();
 
 	void set_color_scale(float scale);
 	float get_color_scale();
@@ -202,6 +202,24 @@ public:
 
 	void set_thruster_rendering(bool enabled);
 	bool get_thruster_rendering();
+
+	virtual int get_shader_handle();
+};
+
+class shield_material : public material
+{
+	matrix Impact_orient;
+	vec3d Impact_pos;
+	float Impact_radius;
+public:
+	shield_material();
+
+	void set_impact_transform(matrix &orient, vec3d &pos);
+	void set_impact_radius(float radius);
+
+	const matrix& get_impact_orient();
+	const vec3d& get_impact_pos();
+	float get_impact_radius();
 
 	virtual int get_shader_handle();
 };

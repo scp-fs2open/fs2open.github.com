@@ -1255,6 +1255,8 @@ void opengl_setup_function_pointers()
 	gr_screen.gf_shadow_map_start	= gr_opengl_shadow_map_start;
 	gr_screen.gf_shadow_map_end		= gr_opengl_shadow_map_end;
 
+	gr_screen.gf_render_shield_impact = gr_opengl_render_shield_impact;
+
 	gr_screen.gf_update_texture = gr_opengl_update_texture;
 	gr_screen.gf_get_bitmap_from_texture = gr_opengl_get_bitmap_from_texture;
 
