@@ -119,8 +119,7 @@ void material_set_distortion(distortion_material *mat_info, int texture, bool th
 }
 
 material::material():
-Sdr_handle(-1), 
-Sdr_type(SDR_TYPE_NONE),
+Sdr_type(SDR_TYPE_PASSTHROUGH_RENDER),
 Tex_type(TEX_TYPE_NORMAL),
 Texture_addressing(TMAP_ADDRESS_WRAP),
 Depth_bias(0),
@@ -158,14 +157,14 @@ void material::set_shader_type(shader_type init_sdr_type)
 	Sdr_type = init_sdr_type;
 }
 
-void material::set_shader_handle(int handle)
+uint material::get_shader_flags()
 {
-	Sdr_handle = handle;
+	return 0;
 }
 
 int material::get_shader_handle()
 {
-	return Sdr_handle;
+	return gr_maybe_create_shader(Sdr_type, get_shader_flags());
 }
 
 void material::set_texture_map(int tex_type, int texture_num)
@@ -631,19 +630,6 @@ uint model_material::get_shader_flags()
 	return Shader_flags;
 }
 
-int model_material::get_shader_handle()
-{
-	int handle = material::get_shader_handle();
-
-	if ( handle >= 0 ) {
-		return handle;
-	}
-
-	set_shader_handle(gr_maybe_create_shader(SDR_TYPE_MODEL, get_shader_flags()));
-
-	return material::get_shader_handle();
-}
-
 particle_material::particle_material(): 
 material()  
 {
@@ -660,23 +646,15 @@ bool particle_material::get_point_sprite_mode()
 	return Point_sprite;
 }
 
-int particle_material::get_shader_handle()
+uint particle_material::get_shader_flags()
 {
-	int handle = material::get_shader_handle();
-
-	if ( handle >= 0 ) {
-		return handle;
-	}
-
 	uint flags = 0;
 
 	if ( Point_sprite ) {
 		flags |= SDR_FLAG_PARTICLE_POINT_GEN;
 	}
 
-	set_shader_handle(gr_maybe_create_shader(SDR_TYPE_EFFECT_PARTICLE, flags));
-
-	return material::get_shader_handle();
+	return flags;
 }
 
 distortion_material::distortion_material(): 
@@ -684,20 +662,6 @@ material()
 {
 	set_shader_type(SDR_TYPE_EFFECT_DISTORTION);
 }
-
-int distortion_material::get_shader_handle()
-{
-	int handle = material::get_shader_handle();
-
-	if ( handle >= 0 ) {
-		return handle;
-	}
-
-	set_shader_handle(gr_maybe_create_shader(SDR_TYPE_EFFECT_DISTORTION, 0));
-
-	return material::get_shader_handle();
-}
-
 
 void distortion_material::set_thruster_rendering(bool enabled)
 {
@@ -717,19 +681,6 @@ shield_material::shield_material() :
 	vm_set_identity(&Impact_orient);
 	Impact_pos = { 0.0f, 0.0f, 0.0f };
 	Impact_radius = 1.0f;
-}
-
-int shield_material::get_shader_handle()
-{
-	int handle = material::get_shader_handle();
-
-	if ( handle >= 0 ) {
-		return handle;
-	}
-
-	set_shader_handle(gr_maybe_create_shader(SDR_TYPE_SHIELD_DECAL, 0));
-
-	return material::get_shader_handle();
 }
 
 void shield_material::set_impact_transform(matrix &orient, vec3d &pos)

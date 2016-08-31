@@ -33,7 +33,6 @@ public:
 
 private:
 	shader_type Sdr_type;
-	int Sdr_handle;
 
 	int Texture_maps[TM_NUM_TYPES];
 	texture_type Tex_type;
@@ -51,12 +50,11 @@ private:
 
 protected:
 	void set_shader_type(shader_type init_sdr_type = SDR_TYPE_NONE);
-
 public:
 	material();
 
-	void set_shader_handle(int handle);
-	virtual int get_shader_handle();
+	int get_shader_handle();
+	virtual uint get_shader_flags();
 
 	void set_texture_map(int tex_type, int texture_num);
 	int get_texture_map(int tex_type);
@@ -178,8 +176,7 @@ public:
 	void set_batching(bool enabled);
 	bool is_batched();
 
-	uint get_shader_flags();
-	virtual int get_shader_handle();
+	virtual uint get_shader_flags();
 };
 
 class particle_material : public material
@@ -191,7 +188,7 @@ public:
 	void set_point_sprite_mode(bool enabled);
 	bool get_point_sprite_mode();
 
-	virtual int get_shader_handle();
+	virtual uint get_shader_flags();
 };
 
 class distortion_material: public material
@@ -202,8 +199,6 @@ public:
 
 	void set_thruster_rendering(bool enabled);
 	bool get_thruster_rendering();
-
-	virtual int get_shader_handle();
 };
 
 class shield_material : public material
@@ -220,8 +215,6 @@ public:
 	const matrix& get_impact_orient();
 	const vec3d& get_impact_pos();
 	float get_impact_radius();
-
-	virtual int get_shader_handle();
 };
 
 gr_alpha_blend material_determine_blend_mode(int base_bitmap, bool is_transparent);
