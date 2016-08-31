@@ -167,7 +167,7 @@ static opengl_shader_variant_t GL_shader_variants[] = {
 		{ "sNormalmap" }, {  },
 		"Normal Mapping" },
 	
-	{ SDR_TYPE_MODEL, false, true, SDR_FLAG_MODEL_HEIGHT_MAP, "FLAG_HEIGHT_MAP",
+	{ SDR_TYPE_MODEL, false, false, SDR_FLAG_MODEL_HEIGHT_MAP, "FLAG_HEIGHT_MAP",
 		{ "sHeightmap" }, {  },
 		"Parallax Mapping" },
 	
