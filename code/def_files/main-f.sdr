@@ -24,11 +24,11 @@ uniform int blend_alpha;
 uniform bool overrideDiffuse;
 uniform vec3 diffuseClr;
 
-#ifdef FLAG_GLOW_MAP
+uniform bool FLAG_GLOW_MAP;
 uniform sampler2D sGlowmap;
 uniform bool overrideGlow;
 uniform vec3 glowClr;
-#endif
+
 #ifdef FLAG_SPEC_MAP
 uniform sampler2D sSpecmap;
 uniform bool overrideSpec;
@@ -409,20 +409,21 @@ void main()
 	envColour.rgb *= (envGloss) ? 1.0 : specColour.a;
 	baseColor.rgb += envColour.rgb * FresnelLazarovEnv(specColour.rgb, eyeDir, normal, glossData);
 #endif
-#ifdef FLAG_GLOW_MAP
-	vec3 glowColor = texture2D(sGlowmap, texCoord).rgb;
-	if(overrideGlow) glowColor = glowClr;
- #ifdef FLAG_HDR
-	glowColor = pow(glowColor, vec3(SRGB_GAMMA)) * 3.0f;
- #endif
- #ifdef FLAG_MISC_MAP
-  #ifdef FLAG_TEAMCOLOR
-	float glowColorLuminance = dot(glowColor, vec3(0.299, 0.587, 0.114));
-	glowColor = team_glow_enabled ? mix((base * teamMask.b) + (stripe * teamMask.a), glowColor, clamp(glowColorLuminance - teamMask.b - teamMask.a, 0.0, 1.0)) : glowColor;
-  #endif
- #endif
-   baseColor.rgb += glowColor * GLOW_MAP_INTENSITY;
+
+    if (FLAG_GLOW_MAP) {
+        vec3 glowColor = texture2D(sGlowmap, texCoord).rgb;
+        if(overrideGlow) glowColor = glowClr;
+#ifdef FLAG_HDR
+        glowColor = pow(glowColor, vec3(SRGB_GAMMA)) * 3.0f;
 #endif
+#ifdef FLAG_MISC_MAP
+ #ifdef FLAG_TEAMCOLOR
+        float glowColorLuminance = dot(glowColor, vec3(0.299, 0.587, 0.114));
+        glowColor = team_glow_enabled ? mix((base * teamMask.b) + (stripe * teamMask.a), glowColor, clamp(glowColorLuminance - teamMask.b - teamMask.a, 0.0, 1.0)) : glowColor;
+ #endif
+#endif
+        baseColor.rgb += glowColor * GLOW_MAP_INTENSITY;
+    }
 
 #ifdef FLAG_FOG
 	vec3 finalFogColor = fogColor.rgb;

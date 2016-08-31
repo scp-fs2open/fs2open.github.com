@@ -155,7 +155,7 @@ static opengl_shader_variant_t GL_shader_variants[] = {
 		{ "sBasemap", "desaturate", "desaturate_clr", "blend_alpha", "overrideDiffuse", "diffuseClr" }, {  },
 		"Diffuse Mapping" },
 	
-	{ SDR_TYPE_MODEL, false, true, SDR_FLAG_MODEL_GLOW_MAP, "FLAG_GLOW_MAP",
+	{ SDR_TYPE_MODEL, false, false, SDR_FLAG_MODEL_GLOW_MAP, "FLAG_GLOW_MAP",
 		{ "sGlowmap", "overrideGlow", "glowClr" }, {  },
 		"Glow Mapping" },
 	
