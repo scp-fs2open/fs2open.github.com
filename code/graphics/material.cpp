@@ -576,25 +576,25 @@ uint model_material::get_shader_flags()
 		Shader_flags |= SDR_FLAG_MODEL_GLOW_MAP;
 	}
 
+	if ( (get_texture_map(TM_SPECULAR_TYPE) > 0) && !Specmap_override ) {
+		Shader_flags |= SDR_FLAG_MODEL_SPEC_MAP;
+
+		if ( (ENVMAP > 0) && !Envmap_override ) {
+			Shader_flags |= SDR_FLAG_MODEL_ENV_MAP;
+		}
+	}
+
+	if ( (get_texture_map(TM_NORMAL_TYPE) > 0) && !Normalmap_override ) {
+		Shader_flags |= SDR_FLAG_MODEL_NORMAL_MAP;
+	}
+
+	if ( (get_texture_map(TM_HEIGHT_TYPE) > 0) && !Heightmap_override ) {
+		Shader_flags |= SDR_FLAG_MODEL_HEIGHT_MAP;
+	}
+
 	if ( lighting ) {
 		Shader_flags |= SDR_FLAG_MODEL_LIGHT;
-
-		if ( ( get_texture_map(TM_SPECULAR_TYPE) > 0) && !Specmap_override ) {
-			Shader_flags |= SDR_FLAG_MODEL_SPEC_MAP;
-
-			if ( (ENVMAP > 0) && !Envmap_override ) {
-				Shader_flags |= SDR_FLAG_MODEL_ENV_MAP;
-			}
-		}
-
-		if ( (get_texture_map(TM_NORMAL_TYPE) > 0) && !Normalmap_override ) {
-			Shader_flags |= SDR_FLAG_MODEL_NORMAL_MAP;
-		}
-
-		if ( (get_texture_map(TM_HEIGHT_TYPE) > 0) && !Heightmap_override ) {
-			Shader_flags |= SDR_FLAG_MODEL_HEIGHT_MAP;
-		}
-
+		
 		if ( Cmdline_shadow_quality && !Shadow_casting && !Shadow_override ) {
 			Shader_flags |= SDR_FLAG_MODEL_SHADOWS;
 		}
