@@ -520,7 +520,6 @@ void HudGaugeTargetBox::renderTargetSetup(vec3d *camera_eye, matrix *camera_orie
 	gr_set_view_matrix(&Eye_position, &Eye_matrix);
 }
 
-extern bool Interp_desaturate;
 void HudGaugeTargetBox::renderTargetShip(object *target_objp)
 {
 	vec3d		obj_pos = ZERO_VECTOR;
@@ -636,7 +635,6 @@ void HudGaugeTargetBox::renderTargetShip(object *target_objp)
 			model_render_immediate( &render_info, target_sip->model_num, &target_objp->orient, &obj_pos);
 		}
 
-		Interp_desaturate = false;
 		Glowpoint_override = false;
 
 		if ( Monitor_mask >= 0 ) {

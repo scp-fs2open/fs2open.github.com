@@ -19,7 +19,6 @@ uniform vec3 emissionFactor;
 #ifdef FLAG_DIFFUSE_MAP
 uniform sampler2D sBasemap;
 uniform int desaturate;
-uniform vec3 desaturate_clr;
 uniform int blend_alpha;
 uniform bool overrideDiffuse;
 uniform vec3 diffuseClr;
@@ -434,7 +433,7 @@ void main()
 
 #ifdef FLAG_DIFFUSE_MAP
 	if(desaturate == 1) {
-		baseColor.rgb = desaturate_clr * dot(vec3(1.0), baseColor.rgb) * 0.3333333;
+		baseColor.rgb = color.rgb * dot(vec3(1.0), baseColor.rgb) * 0.3333333;
 	}
 #endif
 #ifdef FLAG_ANIMATED

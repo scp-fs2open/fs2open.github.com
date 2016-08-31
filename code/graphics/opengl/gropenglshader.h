@@ -59,8 +59,6 @@ struct opengl_shader_type_t {
 	const char *frag;
 	const char *geo;
 
-	geometry_sdr_params geo_sdr_info;
-
 	SCP_vector<const char*> uniforms;
 
 	SCP_vector<opengl_vert_attrib::attrib_id> attributes;
@@ -148,8 +146,6 @@ typedef struct opengl_shader_t {
 extern SCP_vector<opengl_shader_t> GL_shader;
 
 extern opengl_shader_t *Current_shader;
-
-extern geometry_sdr_params *Current_geo_sdr_params;
 
 int gr_opengl_maybe_create_shader(shader_type shader_t, unsigned int flags);
 void opengl_delete_shader(int sdr_handle);

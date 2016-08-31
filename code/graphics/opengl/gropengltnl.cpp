@@ -1000,8 +1000,6 @@ void opengl_tnl_set_model_material(model_material *material_info)
 		Current_shader->program->Uniforms.setUniformi("sBasemap", render_pass);
 
 		if ( material_info->is_desaturated() ) {
-			Current_shader->program->Uniforms.setUniform3f("desaturate_clr", clr.a1d[0], clr.a1d[1], clr.a1d[2]);
-
 			Current_shader->program->Uniforms.setUniformi("desaturate", 1);
 		} else {
 			Current_shader->program->Uniforms.setUniformi("desaturate", 0);

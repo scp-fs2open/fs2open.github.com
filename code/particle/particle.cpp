@@ -40,9 +40,6 @@ namespace
 
 	static int Particles_enabled = 1;
 
-	int Particle_buffer_object = -1;
-	int Geometry_shader_buffer_object = -1;
-
 	float get_current_alpha(vec3d* pos)
 	{
 		float dist;
@@ -98,15 +95,6 @@ namespace particle
 		if (Anim_bitmap_id_smoke2 == -1)
 		{
 			Anim_bitmap_id_smoke2 = bm_load_animation("particlesmoke02", &Anim_num_frames_smoke2, nullptr, NULL, 0);
-		}
-
-		// grab a vertex buffer object
-		if ( Particle_buffer_object < 0 ) {
-			Particle_buffer_object = gr_create_vertex_buffer();
-		}
-
-		if ( Geometry_shader_buffer_object < 0 && !Cmdline_no_geo_sdr_effects ) {
-			Geometry_shader_buffer_object = gr_create_vertex_buffer();
 		}
 	}
 

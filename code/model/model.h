@@ -1294,13 +1294,7 @@ void model_do_intrinsic_rotations(int model_instance_num = -1);
 
 int model_should_render_engine_glow(int objnum, int bank_obj);
 
-void model_interp_set_clip_plane(vec3d* pos = NULL, vec3d* normal = NULL);
-
-void model_interp_set_animated_effect_and_timer(int effect_num = 0, float effect_timer = 0.0f);
-
 bool model_get_team_color(team_color *clr, const SCP_string &team, const SCP_string &secondaryteam, fix timestamp, int fadetime);
-
-void model_interp_set_team_color(const SCP_string &team, const SCP_string &secondaryteam, fix timestamp, int fadetime);
 
 void moldel_calc_facing_pts( vec3d *top, vec3d *bot, vec3d *fvec, vec3d *pos, float w, float z_add, vec3d *Eyeposition );
 
