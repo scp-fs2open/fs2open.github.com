@@ -67,6 +67,23 @@ class ShaderUniforms {
 	void setUniformMatrix4f(const SCP_string &name, const matrix4 &val);
 };
 
+class SamplerManager {
+	ShaderProgram* _program;
+
+	SCP_vector<SCP_string> _samplers;
+	SCP_unordered_map<SCP_string, int> _samplerTexUnits;
+ public:
+	explicit SamplerManager(ShaderProgram* program);
+
+	void initSampler(const SCP_string& name);
+
+	void reset();
+
+	void bindSampler(const SCP_string& name, int texture_unit);
+
+	void flush();
+};
+
 enum ShaderStage {
 	STAGE_VERTEX,
 	STAGE_GEOMETRY,
@@ -86,6 +103,8 @@ class ShaderProgram {
 	~ShaderProgram();
 
 	ShaderUniforms Uniforms;
+
+	SamplerManager Samplers;
 
 	ShaderProgram(const ShaderProgram&) SCP_DELETED_FUNCTION;
 	ShaderProgram& operator=(const ShaderProgram&) SCP_DELETED_FUNCTION;

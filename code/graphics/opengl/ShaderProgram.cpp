@@ -143,7 +143,7 @@ GLenum get_gl_shader_stage(opengl::ShaderStage stage) {
 }
 }
 
-opengl::ShaderProgram::ShaderProgram() : _program_id(0), Uniforms(this) {
+opengl::ShaderProgram::ShaderProgram() : _program_id(0), Uniforms(this), Samplers(this) {
 	_program_id = glCreateProgram();
 }
 opengl::ShaderProgram::~ShaderProgram() {
@@ -156,13 +156,14 @@ opengl::ShaderProgram::~ShaderProgram() {
 	}
 }
 
-opengl::ShaderProgram::ShaderProgram(ShaderProgram&& other): _program_id(0), Uniforms(this) {
+opengl::ShaderProgram::ShaderProgram(ShaderProgram&& other): _program_id(0), Uniforms(this), Samplers(this) {
 	*this = std::move(other);
 }
 
 opengl::ShaderProgram& opengl::ShaderProgram::operator=(ShaderProgram&& other) {
 	std::swap(_program_id, other._program_id);
 	std::swap(Uniforms, other.Uniforms);
+	std::swap(Samplers, other.Samplers);
 
 	return *this;
 }
@@ -805,4 +806,36 @@ GLint opengl::ShaderUniforms::findUniformLocation(const SCP_string& name) {
 	}
 
 	return iter->second;
+}
+
+opengl::SamplerManager::SamplerManager(opengl::ShaderProgram* program) : _program(program) {
+}
+
+void opengl::SamplerManager::initSampler(const SCP_string& name) {
+	_samplers.push_back(name);
+}
+void opengl::SamplerManager::reset() {
+	_samplerTexUnits.clear();
+}
+void opengl::SamplerManager::bindSampler(const SCP_string& name, int texture_unit) {
+	Assertion(texture_unit != 0, "Texture unit 0 is reserved for the unbound texture!");
+
+	_samplerTexUnits.insert(std::make_pair(name, texture_unit));
+}
+void opengl::SamplerManager::flush() {
+	if (_samplerTexUnits.size() != _samplers.size()) {
+		// Not all samplers have been bound, we need a texture unit that contains texture 0
+		GL_state.Texture.SetActiveUnit(0);
+		GL_state.Texture.Enable(0);
+	}
+
+	for (auto& sampler : _samplers) {
+		auto iter = _samplerTexUnits.find(sampler);
+		auto unit = 0;
+		if (iter != _samplerTexUnits.end()) {
+			unit = iter->second;
+		}
+
+		_program->Uniforms.setUniformi(sampler, unit);
+	}
 }

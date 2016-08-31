@@ -59,7 +59,7 @@ struct opengl_shader_type_t {
 	const char *frag;
 	const char *geo;
 
-	SCP_vector<const char*> uniforms;
+	SCP_vector<const char*> samplers;
 
 	SCP_vector<opengl_vert_attrib::attrib_id> attributes;
 
@@ -75,45 +75,12 @@ struct opengl_shader_variant_t {
 	int flag;
 	SCP_string flag_text;
 
-	SCP_vector<const char*> uniforms;
+	SCP_vector<const char*> samplers;
 
 	SCP_vector<opengl_vert_attrib::attrib_id> attributes;
 
 	const char* description;
 };
-
-struct opengl_shader_file_t {
-	const char *vert;
-	const char *frag;
-	const char *geo;
-
-	int flags;
-
-	SCP_vector<const char*> uniforms;
-
-	SCP_vector<const char*> attributes;
-
-	const char* description;
-};
-
-struct opengl_shader_uniform_reference_t {
-	unsigned int flag;
-
-	SCP_vector<const char*> uniforms;
-
-	SCP_vector<const char*> attributes;
-
-	SCP_vector<const char*> uniform_blocks;
-
-	const char* name;
-};
-
-typedef struct opengl_shader_uniform_t {
-	SCP_string text_id;
-	GLint location;
-
-	opengl_shader_uniform_t() : location(-1) {}
-} opengl_shader_uniform_t;
 
 typedef struct opengl_shader_t {
 	opengl::ShaderProgram* program;
