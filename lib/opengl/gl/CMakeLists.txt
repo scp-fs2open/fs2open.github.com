@@ -11,7 +11,5 @@ if (MSVC)
 endif()
 
 
-add_library(gl_12 INTERFACE)
-target_link_libraries(gl_12 INTERFACE glad)
-
-target_link_libraries(gl_12 INTERFACE OpenGL)
+add_library(OpenGL INTERFACE)
+target_link_libraries(OpenGL INTERFACE glad)
