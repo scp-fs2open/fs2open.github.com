@@ -2230,14 +2230,14 @@ void gr_opengl_render_shield_impact(shield_material *material_info, primitive_ty
 
 	vm_matrix4_set_inverse_transform(&impact_transform, &impact_orient, &impact_pos);
 
-	GL_state.Uniform.setUniform3f("hitNormal", impact_orient.vec.fvec);
-	GL_state.Uniform.setUniformMatrix4f("shieldProjMatrix", impact_projection);
-	GL_state.Uniform.setUniformMatrix4f("shieldModelViewMatrix", impact_transform);
-	GL_state.Uniform.setUniformi("shieldMap", 0);
-	GL_state.Uniform.setUniformi("srgb", High_dynamic_range ? 1 : 0);
-	GL_state.Uniform.setUniform4f("color", material_info->get_color());
-	GL_state.Uniform.setUniformMatrix4f("modelViewMatrix", GL_model_view_matrix);
-	GL_state.Uniform.setUniformMatrix4f("projMatrix", GL_projection_matrix);
+	Current_shader->program->Uniforms.setUniform3f("hitNormal", impact_orient.vec.fvec);
+	Current_shader->program->Uniforms.setUniformMatrix4f("shieldProjMatrix", impact_projection);
+	Current_shader->program->Uniforms.setUniformMatrix4f("shieldModelViewMatrix", impact_transform);
+	Current_shader->program->Uniforms.setUniformi("shieldMap", 0);
+	Current_shader->program->Uniforms.setUniformi("srgb", High_dynamic_range ? 1 : 0);
+	Current_shader->program->Uniforms.setUniform4f("color", material_info->get_color());
+	Current_shader->program->Uniforms.setUniformMatrix4f("modelViewMatrix", GL_model_view_matrix);
+	Current_shader->program->Uniforms.setUniformMatrix4f("projMatrix", GL_projection_matrix);
 	
 	opengl_render_primitives(prim_type, layout, n_verts, buffer_handle, 0, 0);
 }
