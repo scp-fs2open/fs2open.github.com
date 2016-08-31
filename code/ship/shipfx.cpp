@@ -3791,9 +3791,6 @@ WE_BSG::WE_BSG(object *n_objp, int n_direction)
 	}
 	stage_time_start = stage_time_end = total_time_start = total_time_end = timestamp();
 
-	//*****Graphics
-	batcher.allocate(1);
-
 	//*****Sound
 	snd_range_factor = 1.0f;
 	snd_start = snd_end = -1;

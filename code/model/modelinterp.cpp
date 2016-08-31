@@ -147,13 +147,10 @@ static ubyte *Interp_light_applied = NULL;
 static int Interp_num_norms = 0;
 static ubyte *Interp_lights;
 
-static float Interp_fog_level = 0.0f;
-
 // Stuff to control rendering parameters
 static color Interp_outline_color;
 static int Interp_detail_level_locked = -1;
 static uint Interp_flags = 0;
-bool Interp_desaturate = false;
 
 // If non-zero, then the subobject gets scaled by Interp_thrust_scale.
 int Interp_thrust_scale_subobj = 0;
@@ -199,23 +196,8 @@ static int Interp_forced_bitmap = -1;
 // for rendering with the MR_ALL_XPARENT FLAG SET
 static float Interp_xparent_alpha = 1.0f;
 
-float Interp_light = 0.0f;
-
 // our current level of detail (LOD)
 int Interp_detail_level = 0;
-
-// clip planes
-bool Interp_clip_plane;
-vec3d Interp_clip_pos;
-vec3d Interp_clip_normal;
-
-// team colors
-team_color Interp_team_color;
-bool Interp_team_color_set = false;
-
-// animated shader effects
-int Interp_animated_effect = 0;
-float Interp_animated_timer = 0.0f;
 
 // forward references
 int model_should_render_engine_glow(int objnum, int bank_obj);
@@ -363,13 +345,6 @@ void interp_clear_instance()
 	}
 
 	Interp_box_scale = 1.0f;
-
-	Interp_team_color_set = false;
-
-	Interp_clip_plane = false;
-
-	Interp_animated_effect = 0;
-	Interp_animated_timer = 0.0f;
 
 	Interp_detail_level_locked = -1;
 
@@ -1681,11 +1656,6 @@ float get_world_closest_box_point_with_delta(vec3d *closest_box_point, object *b
 	return dist;
 }
 
-void model_set_fog_level(float l)
-{
-	Interp_fog_level = l;
-}
-
 /**
  * Given a newly loaded model, page in all textures
  */
@@ -2817,32 +2787,6 @@ bool model_get_team_color( team_color *clr, const SCP_string &team, const SCP_st
 		} else
 			return false;
 	}
-}
-
-// temporary until we can unify the global Interp_* variables into the interp_data struct
-void model_interp_set_team_color(const SCP_string &team, const SCP_string &secondaryteam, fix timestamp, int fadetime)
-{
-	Interp_team_color_set = model_get_team_color(&Interp_team_color, team, secondaryteam, timestamp, fadetime);
-}
-
-// temporary until we can unify the global Interp_* variables into the interp_data struct
-void model_interp_set_clip_plane(vec3d* pos, vec3d* normal)
-{
-	if ( pos == NULL || normal == NULL ) {
-		Interp_clip_plane = false;
-		return;
-	}
-
-	Interp_clip_normal = *normal;
-	Interp_clip_pos = *pos;
-	Interp_clip_plane = true;
-}
-
-// temporary until we can unify the global Interp_* variables into the interp_data struct
-void model_interp_set_animated_effect_and_timer(int effect_num, float effect_timer)
-{
-	Interp_animated_effect = effect_num;
-	Interp_animated_timer = effect_timer;
 }
 
 //********************-----CLASS: texture_info-----********************//

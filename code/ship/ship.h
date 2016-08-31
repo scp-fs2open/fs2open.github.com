@@ -823,15 +823,6 @@ typedef struct ship_type_info {
 
 extern SCP_vector<ship_type_info> Ship_types;
 
-struct man_thruster_renderer {
-	int bmap_id;
-	geometry_batcher man_batcher;
-
-	man_thruster_renderer(int id){bmap_id = id;}
-};
-
-extern SCP_vector<man_thruster_renderer> Man_thrusters;
-
 class man_thruster {
     public:
 	flagset<Ship::Thruster_Flags> use_flags;

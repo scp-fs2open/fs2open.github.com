@@ -167,7 +167,6 @@ inline bool obj_render_is_model(object *obj)
 }
 
 // Sorts all the objects by Z and renders them
-extern int Interp_no_flush;
 void obj_render_all(void (*render_function)(object *objp), bool *draw_viewer_last )
 {
 	object *objp;
@@ -323,17 +322,11 @@ void obj_render_all(void (*render_function)(object *objp), bool *draw_viewer_las
 	}
 
 	Sorted_objects.clear();
-
-	//WMC - draw maneuvering thrusters
-	extern void batch_render_man_thrusters();
-	batch_render_man_thrusters();
-
+	
 	// if we're fullneb, switch off the fog effet
 	if((The_mission.flags[Mission::Mission_Flags::Fullneb]) && (Neb2_render_mode != NEB2_RENDER_NONE)){
 		gr_fog_set(GR_FOGMODE_NONE, 0, 0, 0);
 	}
-
-	batch_render_all();
 }
 
 void obj_render_queue_all()
@@ -417,11 +410,7 @@ void obj_render_queue_all()
 
 	gr_reset_lighting();
 	gr_set_lighting(false, false);
-
-	//WMC - draw maneuvering thrusters
- 	//extern void batch_render_man_thrusters();
- 	//batch_render_man_thrusters();
-
+	
 	// if we're fullneb, switch off the fog effet
 	if((The_mission.flags[Mission::Mission_Flags::Fullneb]) && (Neb2_render_mode != NEB2_RENDER_NONE)){
 		gr_fog_set(GR_FOGMODE_NONE, 0, 0, 0);

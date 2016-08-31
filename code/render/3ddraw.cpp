@@ -651,9 +651,6 @@ void g3_render_rect_scaler(material *mat_params, vertex *va, vertex *vb)
 	v[0].world.xyz.z = va->world.xyz.z;
 	v[0].texture_position.u = clipped_u0;
 	v[0].texture_position.v = clipped_v0;
-	v[0].spec_r = 0;
-	v[0].spec_g = 0;
-	v[0].spec_b = 0;
 
 	v[1].screen.xyw.x = clipped_x1;
 	v[1].screen.xyw.y = clipped_y0;
@@ -661,9 +658,6 @@ void g3_render_rect_scaler(material *mat_params, vertex *va, vertex *vb)
 	v[1].world.xyz.z = va->world.xyz.z;
 	v[1].texture_position.u = clipped_u1;
 	v[1].texture_position.v = clipped_v0;
-	v[1].spec_r = 0;
-	v[1].spec_g = 0;
-	v[1].spec_b = 0;
 
 	v[2].screen.xyw.x = clipped_x1;
 	v[2].screen.xyw.y = clipped_y1;
@@ -671,9 +665,6 @@ void g3_render_rect_scaler(material *mat_params, vertex *va, vertex *vb)
 	v[2].world.xyz.z = va->world.xyz.z;
 	v[2].texture_position.u = clipped_u1;
 	v[2].texture_position.v = clipped_v1;
-	v[2].spec_r = 0;
-	v[2].spec_g = 0;
-	v[2].spec_b = 0;
 
 	v[3].screen.xyw.x = clipped_x0;
 	v[3].screen.xyw.y = clipped_y1;
@@ -681,9 +672,6 @@ void g3_render_rect_scaler(material *mat_params, vertex *va, vertex *vb)
 	v[3].world.xyz.z = va->world.xyz.z;
 	v[3].texture_position.u = clipped_u0;
 	v[3].texture_position.v = clipped_v1;
-	v[3].spec_r = 0;
-	v[3].spec_g = 0;
-	v[3].spec_b = 0;
 
 	g3_render_primitives_textured(mat_params, v, 4, PRIM_TYPE_TRIFAN, true);
 }
@@ -1524,18 +1512,6 @@ void flash_ball::initialize(ubyte *bsp_data, float min_ray_width, float max_ray_
 //rad		how wide the ball should be
 //intinsity	how visable it should be
 //life		how far along from start to end should it be
-void flash_ball::render(float rad, float intinsity, float life){
-	flash_ball::batcher.allocate(n_rays);
-	for(int i = 0; i<n_rays; i++){
-		vec3d end;
-		vm_vec_interp_constant(&end, &ray[i].start.world, &ray[i].end.world, life);
-		vm_vec_scale(&end, rad);
-		vm_vec_add2(&end, &center);
-		flash_ball::batcher.draw_beam(&center, &end, ray[i].width*rad, intinsity);
-	}
-	flash_ball::batcher.render(TMAP_FLAG_TEXTURED | TMAP_FLAG_XPARENT | TMAP_HTL_3D_UNLIT | TMAP_FLAG_RGB | TMAP_FLAG_GOURAUD | TMAP_FLAG_CORRECT);
-}
-
 void flash_ball::render(int texture, float rad, float intinsity, float life){
 	for(int i = 0; i < n_rays; i++){
 		vec3d end;
@@ -1546,5 +1522,3 @@ void flash_ball::render(int texture, float rad, float intinsity, float life){
 		batching_add_beam(texture, &center, &end, ray[i].width*rad, intinsity);
 	}
 }
-
-geometry_batcher flash_ball::batcher;

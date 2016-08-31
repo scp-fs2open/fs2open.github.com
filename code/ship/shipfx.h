@@ -252,7 +252,6 @@ private:
 	int shockwave_fps;
 	int shockwave_total_time;
 
-	geometry_batcher batcher;
 	vec3d	autocenter;
 	float	z_offset_max;
 	float	z_offset_min;
