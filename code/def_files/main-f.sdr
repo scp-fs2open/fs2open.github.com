@@ -29,13 +29,13 @@ uniform sampler2D sGlowmap;
 uniform bool overrideGlow;
 uniform vec3 glowClr;
 
-#ifdef FLAG_SPEC_MAP
+uniform bool FLAG_SPEC_MAP;
 uniform sampler2D sSpecmap;
 uniform bool overrideSpec;
 uniform vec3 specClr;
 uniform bool alphaGloss;
 uniform bool gammaSpec;
-#endif
+
 #ifdef FLAG_ENV_MAP
 uniform samplerCube sEnvmap;
 uniform bool envGloss;
@@ -359,17 +359,22 @@ void main()
     }
 
    specData = vec4(baseColor.rgb * SPEC_FACTOR_NO_SPEC_MAP, glossData);
-#ifdef FLAG_SPEC_MAP
-   vec4 specColour = texture2D(sSpecmap, texCoord);
-	if(alphaGloss) glossData = specColour.a;
-	if(overrideSpec) specColour.rgb = specClr;
- #ifdef FLAG_HDR
-	if(gammaSpec) specColour.rgb = pow(specColour.rgb, vec3(SRGB_GAMMA));
- #endif
-	specColour.rgb *= aoFactors.y;
-	specColour.rgb = max(specColour.rgb, vec3(0.04)); // hardcoded minimum specular value. read John Hable's blog post titled 'Everything Is Shiny'. 
-   specData = vec4(specColour.rgb, glossData);
+   vec4 specColour;
+	if (FLAG_SPEC_MAP) {
+		specColour = texture2D(sSpecmap, texCoord);
+		if(alphaGloss)
+			glossData = specColour.a;
+		if(overrideSpec)
+			specColour.rgb = specClr;
+#ifdef FLAG_HDR
+		if(gammaSpec)
+			specColour.rgb = pow(specColour.rgb, vec3(SRGB_GAMMA));
 #endif
+		specColour.rgb *= aoFactors.y;
+		specColour.rgb = max(specColour.rgb, vec3(0.04)); // hardcoded minimum specular value. read John Hable's blog post titled 'Everything Is Shiny'. 
+		specData = vec4(specColour.rgb, glossData);
+   }
+   
 #ifdef FLAG_MISC_MAP
  #ifdef FLAG_TEAMCOLOR
 	vec4 teamMask = vec4(0.0, 0.0, 0.0, 0.0);
@@ -387,9 +392,9 @@ void main()
 #ifdef FLAG_LIGHT
 	baseColor.rgb = CalculateLighting(normal, baseColor.rgb, specData.rgb, glossData, shadow, aoFactors.x);
 #else
- #ifdef FLAG_SPEC_MAP
-	baseColor.rgb += pow(1.0 - dot(eyeDir, normal), 5.0 * clamp(glossData, 0.01, 1.0)) * specColour.rgb;
- #endif
+	if (FLAG_SPEC_MAP) {
+		baseColor.rgb += pow(1.0 - dot(eyeDir, normal), 5.0 * clamp(glossData, 0.01, 1.0)) * specColour.rgb;
+	}
 #endif
 #ifdef FLAG_ENV_MAP
    vec3 envReflectNM = fragEnvReflect;

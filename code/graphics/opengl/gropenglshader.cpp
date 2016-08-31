@@ -159,7 +159,7 @@ static opengl_shader_variant_t GL_shader_variants[] = {
 		{ "sGlowmap", "overrideGlow", "glowClr" }, {  },
 		"Glow Mapping" },
 	
-	{ SDR_TYPE_MODEL, false, true, SDR_FLAG_MODEL_SPEC_MAP, "FLAG_SPEC_MAP",
+	{ SDR_TYPE_MODEL, false, false, SDR_FLAG_MODEL_SPEC_MAP, "FLAG_SPEC_MAP",
 		{ "sSpecmap", "overrideSpec", "specClr", "gammaSpec", "alphaGloss" }, {  },
 		"Specular Mapping" },
 	
