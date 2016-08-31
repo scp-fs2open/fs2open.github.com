@@ -201,7 +201,6 @@ void nebula_render()
 	nebula_material.set_depth_mode(ZBUFFER_TYPE_NONE);
 	nebula_material.set_blend_mode(ALPHA_BLEND_ALPHA_BLEND_ALPHA);
 	nebula_material.set_cull_mode(false);
-	nebula_material.set_texture_source(TEXTURE_SOURCE_NONE);
 
 	for ( i = 0 ; i < num_tris; i++ ) {
 		vertex verts[3];

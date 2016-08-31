@@ -23,6 +23,7 @@
 #include "cfile/cfilesystem.h"
 #include "globalincs/globals.h"
 #include "parse/parselo.h"
+#include "windows_stub/config.h"
 
 struct outwnd_filter_struct {
 	char name[NAME_LENGTH];
@@ -240,6 +241,9 @@ void outwnd_init()
 		} else {
 			FreeSpace_logfilename = "fs2_open.log";
 		}
+
+		// create data file path if it does not exist
+		_mkdir(os_get_config_path(Pathtypes[CF_TYPE_DATA].path).c_str());
 
 		memset( pathname, 0, sizeof(pathname) );
 		snprintf( pathname, MAX_PATH_LEN, "%s/%s", Pathtypes[CF_TYPE_DATA].path, FreeSpace_logfilename);

@@ -2888,7 +2888,6 @@ void hud_tri(float x1,float y1,float x2,float y2,float x3,float y3)
 
 	material_def.set_blend_mode(ALPHA_BLEND_NONE);
 	material_def.set_depth_mode(ZBUFFER_TYPE_NONE);
-	material_def.set_texture_source(TEXTURE_SOURCE_NONE);
 	material_def.set_cull_mode(false);
 
 	g3_render_primitives_colored(&material_def, verts, 3, PRIM_TYPE_TRIFAN, true);

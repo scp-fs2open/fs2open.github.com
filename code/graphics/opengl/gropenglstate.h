@@ -12,9 +12,9 @@
 #define _GROPENGLSTATE_H
 
 #include "globalincs/pstypes.h"
-#include "graphics/gropengl.h"
-#include "graphics/gropengltexture.h"
-#include "graphics/gropenglshader.h"
+#include "gropengl.h"
+#include "gropengltexture.h"
+#include "gropenglshader.h"
 #include "graphics/material.h"
 
 #include <glad/glad.h>
@@ -23,30 +23,10 @@
 #define MAX_UNIFORM_LOCATIONS 256
 
 struct opengl_texture_unit {
-	GLboolean active;	// unit is active
 	GLboolean enabled;	// has texture target enabled
 
 	GLenum texture_target;
 	GLuint texture_id;
-
-	GLboolean texgen_S;
-	GLboolean texgen_T;
-	GLboolean texgen_R;
-	GLboolean texgen_Q;
-
-	GLenum texgen_mode_S;
-	GLenum texgen_mode_T;
-	GLenum texgen_mode_R;
-	GLenum texgen_mode_Q;
-
-	GLenum env_mode;
-	GLenum env_combine_rgb;
-	GLenum env_combine_alpha;
-
-	GLfloat rgb_scale;
-	GLfloat alpha_scale;
-
-	GLboolean used;
 };
 
 class opengl_texture_state
@@ -62,92 +42,19 @@ class opengl_texture_state
 
 
 	public:
-		opengl_texture_state(): active_texture_unit(0), shader_mode(GL_FALSE), units(NULL), Current_texture_source(TEXTURE_SOURCE_NONE) {}
+		opengl_texture_state(): active_texture_unit(0), shader_mode(GL_FALSE), units(NULL) {}
 		~opengl_texture_state();
-
-		gr_texture_source Current_texture_source;
-
+		
 		void init(GLuint n_units);
 
-		GLboolean TexgenS(GLint state = -1);
-		GLboolean TexgenT(GLint state = -1);
-		GLboolean TexgenR(GLint state = -1);
-		GLboolean TexgenQ(GLint state = -1);
 		void SetTarget(GLenum tex_target);
 		void SetActiveUnit(GLuint id = 0);
 		void Enable(GLuint tex_id = 0);
-		void Disable();
-		void DisableUnused();
-		void DisableAll();
-		void ResetUsed();
 		void Delete(GLuint tex_id);
-		GLfloat AnisoFilter(GLfloat aniso = 0.0f);
 		
-		inline void SetRGBScale(GLfloat scale);
-		inline void SetAlphaScale(GLfloat scale);
-		inline void SetEnvMode(GLenum mode);
-		inline void SetEnvCombineMode(GLenum cmode, GLenum cfunc);
-		inline void SetWrapS(GLenum mode);
-		inline void SetWrapT(GLenum mode);
-		inline void SetWrapR(GLenum mode);
-		inline void SetTexgenModeS(GLenum mode);
-		inline void SetTexgenModeT(GLenum mode);
-		inline void SetTexgenModeR(GLenum mode);
-		inline void SetTexgenModeQ(GLenum mode);
 		inline GLenum GetTarget();
 		inline void SetShaderMode(GLboolean mode);
 };
-
-inline void opengl_texture_state::SetRGBScale(GLfloat scale)
-{
-
-}
-
-inline void opengl_texture_state::SetAlphaScale(GLfloat scale)
-{
-
-}
-
-inline void opengl_texture_state::SetEnvMode(GLenum mode)
-{
-
-}
-
-inline void opengl_texture_state::SetEnvCombineMode(GLenum cmode, GLenum cfunc)
-{
-
-}
-
-inline void opengl_texture_state::SetWrapS(GLenum mode)
-{
-//	glTexParameteri(units[active_texture_unit].texture_target, GL_TEXTURE_WRAP_S, mode);
-}
-
-inline void opengl_texture_state::SetWrapT(GLenum mode)
-{
-//	glTexParameteri(units[active_texture_unit].texture_target, GL_TEXTURE_WRAP_T, mode);
-}
-
-inline void opengl_texture_state::SetWrapR(GLenum mode)
-{
-//	glTexParameteri(units[active_texture_unit].texture_target, GL_TEXTURE_WRAP_R, mode);
-}
-
-inline void opengl_texture_state::SetTexgenModeS(GLenum mode)
-{
-}
-
-inline void opengl_texture_state::SetTexgenModeT(GLenum mode)
-{
-}
-
-inline void opengl_texture_state::SetTexgenModeR(GLenum mode)
-{
-}
-
-inline void opengl_texture_state::SetTexgenModeQ(GLenum mode)
-{
-}
 
 inline GLenum opengl_texture_state::GetTarget()
 {
@@ -277,61 +184,6 @@ class opengl_array_state
 		void BindUniformBufferBindingIndex(GLuint id, GLuint index);
 };
 
-struct uniform_bind
-{
-	SCP_string name;
-
-	enum data_type {
-		INT,
-		FLOAT,
-		VEC2,
-		VEC3,
-		VEC4,
-		MATRIX4
-	};
-
-	uniform_bind::data_type type;
-	size_t index;
-
-	int count;
-	int tranpose;
-};
-
-class opengl_uniform_state
-{
-	SCP_vector<uniform_bind> uniforms;
-
-	SCP_vector<int> uniform_data_ints;
-	SCP_vector<float> uniform_data_floats;
-	SCP_vector<vec2d> uniform_data_vec2d;
-	SCP_vector<vec3d> uniform_data_vec3d;
-	SCP_vector<vec4> uniform_data_vec4;
-	SCP_vector<matrix4> uniform_data_matrix4;
-
-	SCP_map<SCP_string, size_t> uniform_lookup;
-
-	size_t findUniform(const SCP_string &name);
-public:
-	opengl_uniform_state();
-
-	void setUniformi(const SCP_string &name, const int value);
-	void setUniform1iv(const SCP_string &name, const int count, const int *val);
-	void setUniformf(const SCP_string &name, const float value);
-	void setUniform2f(const SCP_string &name, const float x, const float y);
-	void setUniform2f(const SCP_string &name, const vec2d &val);
-	void setUniform3f(const SCP_string &name, const float x, const float y, const float z);
-	void setUniform3f(const SCP_string &name, const vec3d &value);
-	void setUniform4f(const SCP_string &name, const float x, const float y, const float z, const float w);
-	void setUniform4f(const SCP_string &name, const vec4 &val);
-	void setUniform1fv(const SCP_string &name, const int count, const float *val);
-	void setUniform3fv(const SCP_string &name, const int count, const vec3d *val);
-	void setUniform4fv(const SCP_string &name, const int count, const vec4 *val);
-	void setUniformMatrix4fv(const SCP_string &name, const int count, const matrix4 *value);
-	void setUniformMatrix4f(const SCP_string &name, const matrix4 &val);
-
-	void reset();
-};
-
 class opengl_light_state
 {
 	int Light_num;
@@ -373,9 +225,7 @@ class opengl_state
 	friend class opengl_texture_state;
 
 	private:
-		GLboolean fog_Status;
 		GLboolean blend_Status;
-		GLboolean alphatest_Status;
 		GLboolean depthtest_Status;
 		GLboolean scissortest_Status;
         GLboolean stenciltest_Status;
@@ -384,15 +234,8 @@ class opengl_state
 		GLboolean normalize_Status;
 		GLboolean clipplane_Status[6];
 		GLboolean clipdistance_Status[6];
-		GLboolean *light_Status;
 		GLboolean depthmask_Status;
-		GLboolean lighting_Status;
         GLboolean colormask_Status;
-		GLubyte red_Status;
-		GLubyte blue_Status;
-		GLubyte green_Status;
-		GLubyte alpha_Status;
-		bool color_invalid;
 
 		GLenum frontface_Value;
 		GLenum cullface_Value;
@@ -408,19 +251,18 @@ class opengl_state
 		GLfloat line_width_Value;
 
 		gr_alpha_blend Current_alpha_blend_mode;
-		gr_zbuffer_type Current_zbuffer_type;
         gr_stencil_type Current_stencil_type;
+
+		GLuint current_program;
 	public:
-		opengl_state() : light_Status(NULL) {}
-		~opengl_state();
+		opengl_state() {}
+		~opengl_state() {}
 
 		void init();
 
 		opengl_texture_state Texture;
 		opengl_array_state Array;
-		opengl_uniform_state Uniform;
 
-		void SetTextureSource(gr_texture_source ts);
 		void SetAlphaBlendMode(gr_alpha_blend ab);
 		void SetZbufferType(gr_zbuffer_type zt);
         void SetStencilType(gr_stencil_type st);
@@ -430,8 +272,6 @@ class opengl_state
 
 		// the GLboolean functions will return the current state if no argument
 		// and the previous state if an argument is passed
-		GLboolean Lighting(GLint state = -1);
-		GLboolean Fog(GLint state = -1);
 		GLboolean Blend(GLint state = -1);
 		GLboolean AlphaTest(GLint state = -1);
 		GLboolean DepthTest(GLint state = -1);
@@ -439,8 +279,6 @@ class opengl_state
         GLboolean StencilTest(GLint state = -1);
 		GLboolean CullFace(GLint state = -1);
 		GLboolean PolygonOffsetFill(GLint state = -1);
-		GLboolean Normalize(GLint state = -1);
-		GLboolean Light(GLint num, GLint state = -1);
 		GLboolean ClipPlane(GLint num, GLint state = -1);
 		GLboolean ClipDistance(GLint num, GLint state = -1);
 		GLboolean DepthMask(GLint state = -1);
@@ -452,9 +290,10 @@ class opengl_state
 		inline GLenum BlendFuncSource();
 		inline GLenum BlendFuncDest();
 		inline GLenum DepthFunc(GLenum new_val = GL_INVALID_ENUM);
-		inline void AlphaFunc(GLenum f_val, GLclampf r_val);
-		inline void Color(GLubyte red, GLubyte green, GLubyte blue, GLubyte alpha = 255);
 		inline void InvalidateColor();
+
+		void UseProgram(GLuint program);
+		bool IsCurrentProgram(GLuint program);
 };
 
 inline GLenum opengl_state::FrontFaceValue(GLenum new_val)
@@ -508,33 +347,10 @@ inline GLenum opengl_state::DepthFunc(GLenum new_val)
 		if (new_val != GL_INVALID_ENUM) {
 			glDepthFunc(new_val);
 			depthfunc_Value = new_val;
-
-			Current_zbuffer_type = (gr_zbuffer_type)(-1);
 		}
 	}
 
 	return depthfunc_Value;
-}
-
-inline void opengl_state::AlphaFunc(GLenum f_val, GLclampf r_val)
-{
-}
-
-inline void opengl_state::Color(GLubyte red, GLubyte green, GLubyte blue, GLubyte alpha)
-{
-	if ( color_invalid || (red != red_Status) || (green != green_Status) || (blue != blue_Status) || (alpha != alpha_Status) ) {
-
-		red_Status = red;
-		green_Status = green;
-		blue_Status = blue;
-		alpha_Status = alpha;
-		color_invalid = false;
-	}
-}
-
-inline void opengl_state::InvalidateColor()
-{
-	color_invalid = true;
 }
 
 extern opengl_state GL_state;

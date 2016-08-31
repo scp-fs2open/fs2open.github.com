@@ -324,11 +324,6 @@ public:
 
 	std::unique_ptr<os::OpenGLContext> createOpenGLContext(os::Viewport* port, const os::OpenGLContextAttributes& ctx) override
 	{
-		if (ctx.profile != os::OpenGLProfile::Compatibility) {
-			mprintf(("ERROR: FRED code can only create compatibility profiles!\n"));
-			return nullptr;
-		}
-
 		auto mfcView = reinterpret_cast<MFCViewport*>(port);
 
 		auto render_context = wglCreateContext(mfcView->getHDC());

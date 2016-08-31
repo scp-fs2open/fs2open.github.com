@@ -713,6 +713,10 @@ void techroom_anim_render(float frametime)
 	// render common stuff
 	tech_common_render();
 
+	// exit now if there are no entries to show
+	if (Current_list_size == 0 || Cur_entry < 0)
+		return;
+
 	// render the animation
 	if(Current_list[Cur_entry].animation.num_frames > 0)
 	{

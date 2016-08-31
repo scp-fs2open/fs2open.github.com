@@ -11,8 +11,51 @@
 #include "globalincs/pstypes.h"
 #include "globalincs/systemvars.h"
 #include "io/timer.h"
+#include "parse/parselo.h"
 
+#if SCP_COMPILER_IS_MSVC
+#include <direct.h>
+#endif
+#include <inttypes.h>
 #include <fstream>
+#include <future>
+#include <mutex>
+
+#include <jansson.h>
+
+// A function for getting the id of the current thread
+#ifdef WIN32
+#define WIN32_LEAN_AND_MEAN
+#include <Windows.h>
+static int64_t get_tid() {
+	return (int64_t) GetCurrentThreadId();
+}
+#elif __LINUX__
+#include <sys/syscall.h>
+static int64_t get_tid() {
+	return (int64_t) syscall(SYS_gettid);
+}
+#else
+#include <pthread.h>
+
+static int64_t get_tid() {
+	// This is not a reliable way of getting the tid but it's better than nothing
+	return (int64_t) pthread_self();
+}
+#endif
+
+// A function for getting the id of the current process
+#ifdef WIN32
+static int64_t get_pid() {
+	return (int64_t)GetCurrentProcessId();
+}
+#else
+#include <unistd.h>
+
+static int64_t get_pid() {
+	return (int64_t)getpid();
+}
+#endif
 
 //======================CODE TO PROFILE PERFORMANCE=====================
 
@@ -42,6 +85,22 @@ std::uint64_t end_profile_time = 0;
 SCP_string profile_output;
 std::ofstream profiling_file;
 
+struct json_data
+{
+	SCP_string name;
+	
+	int64_t pid;
+	int64_t tid;
+	
+	uint64_t time;
+
+	bool enter;
+};
+
+static SCP_vector<json_data> json_profile_data;
+static uint64_t json_frame_num = 0;
+static std::mutex json_mutex;
+
 /**
  * @brief Called once at engine initialization to set the timer
  */
@@ -58,6 +117,10 @@ void profile_init()
 			mprintf(("Failed to open profiling output file 'profiling.csv'!"));
 		}
 	}
+
+	if (Cmdline_json_profiling) {
+		_mkdir("tracing");
+	}
 }
 
 void profile_deinit()
@@ -70,6 +133,10 @@ void profile_deinit()
 			profiling_file.close();
 		}
 	}
+	if (Cmdline_json_profiling)
+	{
+		profile_dump_json_output();
+	}
 }
 
 /**
@@ -79,6 +146,23 @@ void profile_deinit()
  */
 void profile_begin(const char* name)
 {
+	if (Cmdline_json_profiling)
+	{
+		std::lock_guard<std::mutex> guard(json_mutex);
+
+		json_data data;
+
+		data.name = name;
+		
+		data.pid = get_pid();
+		data.tid = get_tid();
+
+		data.enter = true;
+		data.time = timer_get_high_res_microseconds();
+
+		json_profile_data.push_back(data);
+	}
+
 	if (Cmdline_frame_profile)
 	{
 		int parent = -1;
@@ -129,6 +213,23 @@ void profile_begin(const char* name)
  */
 void profile_end(const char* name)
 {
+	if (Cmdline_json_profiling)
+	{
+		std::lock_guard<std::mutex> guard(json_mutex);
+
+		json_data data;
+
+		data.name = name;
+
+		data.pid = get_pid();
+		data.tid = get_tid();
+
+		data.enter = false;
+		data.time = timer_get_high_res_microseconds();
+
+		json_profile_data.push_back(data);
+	}
+
 	if (Cmdline_frame_profile) {
 		int num_parents = 0;
 		int child_of = -1;
@@ -251,6 +352,46 @@ void profile_dump_output()
 
 		samples.clear();
 		start_profile_time = timer_get_high_res_microseconds();
+	}
+}
+
+static void write_json_data(const SCP_vector<json_data>& data, uint64_t frame_num)
+{
+	SCP_string file_path;
+	sprintf(file_path, "tracing/frame_%" PRIu64 ".json", frame_num);
+
+	std::ofstream out(file_path, std::ios::out | std::ios::binary);
+	out << "[\n";
+
+	auto end = data.end();
+	for (auto iter = data.begin(); iter != end; ++iter)
+	{
+		// {"tid": 4692, "ts": 13716257504, "pid": 4028, "name": "Main Frame", "ph": "B"}
+		out << "{\"tid\": " << iter->tid << ",\"ts\":" << iter->time << ",\"pid\":" << iter->pid
+			<< ",\"name\":\"" << iter->name << "\",\"ph\":\"" << (iter->enter ? "B" : "E") << "\"}";
+
+		if (iter +  1 != end)
+		{
+			out << ",";
+		}
+		out << "\n";
+	}
+	out << "]\n";
+}
+
+/**
+ * @brief Writes JSON tracing data to a file if the commandlinfe option is enabled
+ */
+void profile_dump_json_output() {
+	if (Cmdline_json_profiling) {
+		std::lock_guard<std::mutex> guard(json_mutex);
+
+		// FIXME: This could be improved by using only a single thread and a synchronized bounded
+		// queue. Boost has an implementation of that.
+		std::thread writer_thread(std::bind(write_json_data, SCP_vector<json_data>(json_profile_data), ++json_frame_num));
+		writer_thread.detach();
+
+		json_profile_data.clear();
 	}
 }
 

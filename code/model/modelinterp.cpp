@@ -19,7 +19,7 @@
 #include "globalincs/alphacolors.h"
 #include "globalincs/linklist.h"
 #include "graphics/2d.h"
-#include "graphics/gropengllight.h"
+#include "graphics/opengl/gropengllight.h"
 #include "io/key.h"
 #include "io/timer.h"
 #include "math/fvi.h"
@@ -201,9 +201,6 @@ static float Interp_xparent_alpha = 1.0f;
 
 float Interp_light = 0.0f;
 
-int Interp_multitex_cloakmap = -1;
-int Interp_cloakmap_alpha = 255;
-
 // our current level of detail (LOD)
 int Interp_detail_level = 0;
 
@@ -219,8 +216,6 @@ bool Interp_team_color_set = false;
 // animated shader effects
 int Interp_animated_effect = 0;
 float Interp_animated_timer = 0.0f;
-
-int Interp_no_flush = 0;
 
 // forward references
 int model_should_render_engine_glow(int objnum, int bank_obj);
@@ -614,101 +609,6 @@ void model_interp_defpoints(ubyte * p, polymodel *pm, bsp_info *sm)
 	Interp_num_norms = next_norm;
 }
 
-matrix *Interp_orient;
-vec3d *Interp_pos;
-
-
-// Flat Poly
-// +0      int         id
-// +4      int         size 
-// +8      vec3d      normal
-// +20     vec3d      center
-// +32     float       radius
-// +36     int         nverts
-// +40     byte        red
-// +41     byte        green
-// +42     byte        blue
-// +43     byte        pad
-// +44     nverts*short*short  vertlist, smoothlist
-void model_interp_flatpoly(ubyte * p,polymodel * pm)
-{
-	int nv = w(p+36);
-
-	if ( nv < 0 )
-		return;
-
-	#ifndef NDEBUG
-	modelstats_num_polys++;
-	#endif
-
-	if ( !g3_check_normal_facing(vp(p+20), vp(p+8)) )
-		return;
-	
-
-	int i;
-	short * verts = (short *)(p+44);
-
-	int max_n_verts = 0;
-	int max_n_norms = 0;
-
-	// slow?  yes.  safe?  yes.
-	for (i = 0; i < nv; i++) {
-		max_n_verts = MAX(verts[i*2+0] + 1, max_n_verts);
-		max_n_norms = MAX(verts[i*2+1] + 1, max_n_norms);
-	}
-
-	model_allocate_interp_data(max_n_verts, max_n_norms, nv);
-
-	for (i = 0; i < nv; i++) {
-		Interp_list[i] = &Interp_points[verts[i*2]];
-
-		if ( Interp_flags & MR_NO_LIGHTING )	{
-				Interp_list[i]->r = 191;
-				Interp_list[i]->g = 191;
-				Interp_list[i]->b = 191;
-		} else {
-			int vertnum = verts[i*2+0];
-			int norm = verts[i*2+1];
-	
-			if ( Interp_flags & MR_NO_SMOOTHING )	{
-				light_apply_rgb( &Interp_list[i]->r, &Interp_list[i]->g, &Interp_list[i]->b, Interp_verts[vertnum], vp(p+8), Interp_light );
-			} else {
-				// if we're not using saved lighting
-				if ( !Interp_use_saved_lighting && !Interp_light_applied[norm] )	{
-					light_apply_rgb( &Interp_lighting->lights[norm].r, &Interp_lighting->lights[norm].g, &Interp_lighting->lights[norm].b, Interp_verts[vertnum], vp(p+8), Interp_light );
-					Interp_light_applied[norm] = 1;
-				}
-
-				Interp_list[i]->r = Interp_lighting->lights[norm].r;
-				Interp_list[i]->g = Interp_lighting->lights[norm].g;
-				Interp_list[i]->b = Interp_lighting->lights[norm].b;
-			}
-		}
-	}
-
-	// HACK!!! FIX ME!!! I'M SLOW!!!!
-	if ( !(Interp_flags & MR_SHOW_OUTLINE_PRESET) )	{
-		gr_set_color( *(p+40), *(p+41), *(p+42) );
-	}
-
-	if ( !(Interp_flags & MR_NO_POLYS))	{
-		g3_draw_poly( nv, Interp_list, TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB );	
-	}
-
-	if (Interp_flags & (MR_SHOW_OUTLINE|MR_SHOW_OUTLINE_PRESET))	{
-		int j;
-
-		if ( Interp_flags & MR_SHOW_OUTLINE )	{
-			gr_set_color_fast( &Interp_outline_color );
-		}
-
-		for (i = 0; i < nv; i++) {
-			j = (i + 1) % nv;
-			g3_draw_line(Interp_list[i], Interp_list[j]);
-		}
-	}
-}
-
 void model_interp_edge_alpha( ubyte *param_r, ubyte *param_g, ubyte *param_b, vec3d *pnt, vec3d *norm, float alpha, bool invert = false)
 {
 	vec3d r;
@@ -1018,8 +918,6 @@ static const int MAX_ARC_SEGMENT_POINTS = 50;
 int Num_arc_segment_points = 0;
 vec3d Arc_segment_points[MAX_ARC_SEGMENT_POINTS];
 
-extern int g3_draw_rod(int num_points, const vec3d *vecs, float width, uint tmap_flags);
-
 void interp_render_arc_segment( vec3d *v1, vec3d *v2, int depth )
 {
 	float d = vm_vec_dist_quick( v1, v2 );
@@ -1045,103 +943,8 @@ void interp_render_arc_segment( vec3d *v1, vec3d *v2, int depth )
 	}
 }
 
-void interp_render_arc(vec3d *v1, vec3d *v2, color *primary, color *secondary, float arc_width)
-{
-	Num_arc_segment_points = 0;
-
-	// need need to add the first point
-	memcpy( &Arc_segment_points[Num_arc_segment_points++], v1, sizeof(vec3d) );
-
-	// this should fill in all of the middle, and the last, points
-	interp_render_arc_segment(v1, v2, 0);
-
-	int tmap_flags = (TMAP_FLAG_RGB | TMAP_FLAG_GOURAUD | TMAP_HTL_3D_UNLIT | TMAP_FLAG_TRISTRIP | TMAP_FLAG_EMISSIVE);
-
-	int mode = gr_zbuffer_set(GR_ZBUFF_READ);
-
-	// use primary color for fist pass
-	Assert( primary );
-	gr_set_color_fast(primary);
-
-	g3_draw_rod(Num_arc_segment_points, Arc_segment_points, arc_width, tmap_flags);
-
-	if (secondary) {
-		// now render again with a secondary center color
-		gr_set_color_fast(secondary);
-
-		g3_draw_rod(Num_arc_segment_points, Arc_segment_points, arc_width * 0.33f, tmap_flags);
-	}
-
-	gr_zbuffer_set(mode);
-}
-
 int Interp_lightning = 1;
 DCF_BOOL( Arcs, Interp_lightning )
-
-const int AR = 64;
-const int AG = 64;
-const int AB = 5;
-const int AR2 = 128;
-const int AG2 = 128;
-const int AB2 = 10;
-
-void interp_render_lightning( polymodel *pm, bsp_info * sm )
-{
-	int i;
-	float width = 0.9f;
-	color primary, secondary;
-
-	Assert( sm->num_arcs > 0 );
-
-	if (Interp_flags & MR_SHOW_OUTLINE_PRESET) {
-		return;
-	}
-
-	if ( !Interp_lightning ) {
-		return;
-	}
-
-	// try and scale the size a bit so that it looks equally well on smaller vessels
-	if (pm->rad < 500.0f) {
-		width *= (pm->rad * 0.01f);
-
-		if (width < 0.2f)
-			width = 0.2f;
-	}
-
-	for (i=0; i<sm->num_arcs; i++ )	{
-		// pick a color based upon arc type
-		switch(sm->arc_type[i]){
-		// "normal", FreeSpace 1 style arcs
-		case MARC_TYPE_NORMAL:
-			if ( (rand()>>4) & 1 )	{
-				gr_init_color(&primary, 64, 64, 255);
-			} else {
-				gr_init_color(&primary, 128, 128, 255);
-			}
-
-			gr_init_color(&secondary, 200, 200, 255);
-			break;
-
-		// "EMP" style arcs
-		case MARC_TYPE_EMP:
-			if ( (rand()>>4) & 1 )	{
-				gr_init_color(&primary, AR, AG, AB);
-			} else {
-				gr_init_color(&primary, AR2, AG2, AB2);
-			}
-
-			gr_init_color(&secondary, 255, 255, 10);
-			break;
-
-		default:
-			Int3();
-		}
-
-		// render the actual arc segment
-		interp_render_arc( &sm->arc_pts[i][0], &sm->arc_pts[i][1], &primary, &secondary, width );
-	}
-}
 
 // Returns one of the following
 #define IBOX_ALL_OFF 0
@@ -1226,65 +1029,6 @@ void model_render_shields( polymodel * pm, uint flags )
 			}
 
 			g3_draw_line(&pnt0, &prev_pnt);
-		}
-	}
-}
-
-void model_render_insignias(polymodel *pm, int detail_level, int bitmap_num)
-{
-	// if the model has no insignias, or we don't have a texture, then bail
-	if ( (pm->num_ins <= 0) || (bitmap_num < 0) )
-		return;
-
-	int idx, s_idx;
-	vertex vecs[3];
-	vertex *vlist[3] = { &vecs[0], &vecs[1], &vecs[2] };
-	vec3d t1, t2, t3;
-	int i1, i2, i3;
-	int tmap_flags = TMAP_FLAG_TEXTURED | TMAP_FLAG_CORRECT | TMAP_HTL_3D_UNLIT;
-
-	// set the proper texture	
-	gr_set_bitmap(bitmap_num, GR_ALPHABLEND_NONE, GR_BITBLT_MODE_NORMAL, 0.65f);
-
-	// otherwise render them	
-	for(idx=0; idx<pm->num_ins; idx++){	
-		// skip insignias not on our detail level
-		if(pm->ins[idx].detail_level != detail_level){
-			continue;
-		}
-
-		for(s_idx=0; s_idx<pm->ins[idx].num_faces; s_idx++){
-			// get vertex indices
-			i1 = pm->ins[idx].faces[s_idx][0];
-			i2 = pm->ins[idx].faces[s_idx][1];
-			i3 = pm->ins[idx].faces[s_idx][2];
-
-			// transform vecs and setup vertices
-			vm_vec_add(&t1, &pm->ins[idx].vecs[i1], &pm->ins[idx].offset);
-			vm_vec_add(&t2, &pm->ins[idx].vecs[i2], &pm->ins[idx].offset);
-			vm_vec_add(&t3, &pm->ins[idx].vecs[i3], &pm->ins[idx].offset);
-
-			g3_transfer_vertex(&vecs[0], &t1);
-			g3_transfer_vertex(&vecs[1], &t2);
-			g3_transfer_vertex(&vecs[2], &t3);
-
-			// setup texture coords
-			vecs[0].texture_position.u = pm->ins[idx].u[s_idx][0];
-			vecs[0].texture_position.v = pm->ins[idx].v[s_idx][0];
-
-			vecs[1].texture_position.u = pm->ins[idx].u[s_idx][1];
-			vecs[1].texture_position.v = pm->ins[idx].v[s_idx][1];
-
-			vecs[2].texture_position.u = pm->ins[idx].u[s_idx][2];
-			vecs[2].texture_position.v = pm->ins[idx].v[s_idx][2];
-
-			light_apply_rgb( &vecs[0].r, &vecs[0].g, &vecs[0].b, &pm->ins[idx].vecs[i1], &pm->ins[idx].norm[i1], 1.5f );
-			light_apply_rgb( &vecs[1].r, &vecs[1].g, &vecs[1].b, &pm->ins[idx].vecs[i2], &pm->ins[idx].norm[i2], 1.5f );
-			light_apply_rgb( &vecs[2].r, &vecs[2].g, &vecs[2].b, &pm->ins[idx].vecs[i3], &pm->ins[idx].norm[i3], 1.5f );
-			tmap_flags |= (TMAP_FLAG_RGB | TMAP_FLAG_GOURAUD);
-
-			// draw the polygon
-			g3_draw_poly(3, vlist, tmap_flags);
 		}
 	}
 }
@@ -2445,7 +2189,6 @@ bool model_interp_pack_buffer(indexed_vertex_source *vert_src, vertex_buffer *vb
 
 void interp_pack_vertex_buffers(polymodel *pm, int mn)
 {
-	Assert( pm->vertex_buffer_id >= 0 );
 	Assert( (mn >= 0) && (mn < pm->n_models) );
 
 	bsp_info *model = &pm->submodel[mn];
@@ -2613,7 +2356,7 @@ void interp_configure_vertex_buffers(polymodel *pm, int mn)
 
 	int time_elapsed = timer_get_milliseconds() - milliseconds;
 
-	mprintf(("BSP Parse took %d milliseconds.", time_elapsed));
+	nprintf(("Model", "BSP Parse took %d milliseconds.\n", time_elapsed));
 
 	if (total_verts < 1) {
 		return;

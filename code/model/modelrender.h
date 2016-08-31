@@ -10,7 +10,7 @@
 #ifndef _MODELRENDER_H
 #define _MODELRENDER_H
 
-#include "graphics/gropengltnl.h"
+#include "graphics/opengl/gropengltnl.h"
 #include "graphics/material.h"
 #include "lighting/lighting.h"
 #include "math/vecmat.h"
@@ -23,8 +23,6 @@ extern bool Rendering_to_shadow_map;
 
 extern matrix Object_matrix;
 extern vec3d Object_position;
-
-extern team_color* Current_team_color;
 
 inline int in_box(vec3d *min, vec3d *max, vec3d *pos, vec3d *view_position)
 {

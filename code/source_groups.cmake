@@ -317,28 +317,30 @@ set (file_root_graphics_openglgr
 
 # Graphics -> OpenGLGr -> OpenGL CPPs files
 set (file_root_graphics_openglgr_opengl_cpps
-	graphics/gropengl.cpp
-	graphics/gropenglbmpman.cpp
-	graphics/gropengldraw.cpp
-	graphics/gropengllight.cpp
-	graphics/gropenglpostprocessing.cpp
-	graphics/gropenglshader.cpp
-	graphics/gropenglstate.cpp
-	graphics/gropengltexture.cpp
-	graphics/gropengltnl.cpp
+	graphics/opengl/gropengl.cpp
+	graphics/opengl/gropenglbmpman.cpp
+	graphics/opengl/gropengldraw.cpp
+	graphics/opengl/gropengllight.cpp
+	graphics/opengl/gropenglpostprocessing.cpp
+	graphics/opengl/gropenglshader.cpp
+	graphics/opengl/gropenglstate.cpp
+	graphics/opengl/gropengltexture.cpp
+	graphics/opengl/gropengltnl.cpp
+	graphics/opengl/ShaderProgram.cpp
 )
 
 # Graphics -> OpenGLGr -> OpenGL Headers files
 set (file_root_graphics_openglgr_opengl_headers
-	graphics/gropengl.h
-	graphics/gropenglbmpman.h
-	graphics/gropengldraw.h
-	graphics/gropengllight.h
-	graphics/gropenglpostprocessing.h
-	graphics/gropenglshader.h
-	graphics/gropenglstate.h
-	graphics/gropengltexture.h
-	graphics/gropengltnl.h
+	graphics/opengl/gropengl.h
+	graphics/opengl/gropenglbmpman.h
+	graphics/opengl/gropengldraw.h
+	graphics/opengl/gropengllight.h
+	graphics/opengl/gropenglpostprocessing.h
+	graphics/opengl/gropenglshader.h
+	graphics/opengl/gropenglstate.h
+	graphics/opengl/gropengltexture.h
+	graphics/opengl/gropengltnl.h
+	graphics/opengl/ShaderProgram.h
 )
 
 # Graphics -> OpenGLGr -> GL files

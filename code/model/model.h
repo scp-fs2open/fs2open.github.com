@@ -673,7 +673,7 @@ public:
 		n_thrusters(0), gun_banks(NULL), missile_banks(NULL), docking_bays(NULL), thrusters(NULL), ship_bay(NULL),
 		shield_collision_tree(NULL), sldc_size(0), n_paths(0), paths(NULL), mass(0), num_xc(0), xc(NULL), num_split_plane(0),
 		num_ins(0), used_this_mission(0), n_glow_point_banks(0), glow_point_banks(NULL), gun_submodel_rotation(0),
-		vertex_buffer_id(-1), vert_source(), shield()
+		vert_source(), shield()
 	{
 		filename[0] = 0;
 		mins = maxs = autocenter = center_of_mass = vmd_zero_vector;
@@ -778,9 +778,7 @@ public:
 	glow_point_bank *glow_point_banks;			// array of glow objects -Bobboau
 
 	float gun_submodel_rotation;
-
-	int vertex_buffer_id;			// HTL vertex buffer id
-
+	
 	indexed_vertex_source vert_source;
 	
 	vertex_buffer detail_buffers[MAX_MODEL_DETAIL_LEVELS];
@@ -1305,8 +1303,6 @@ bool model_get_team_color(team_color *clr, const SCP_string &team, const SCP_str
 void model_interp_set_team_color(const SCP_string &team, const SCP_string &secondaryteam, fix timestamp, int fadetime);
 
 void moldel_calc_facing_pts( vec3d *top, vec3d *bot, vec3d *fvec, vec3d *pos, float w, float z_add, vec3d *Eyeposition );
-
-void interp_render_arc(vec3d *v1, vec3d *v2, color *primary, color *secondary, float arc_width);
 
 void model_render_insignias(polymodel *pm, int detail_level, int bitmap_num);
 

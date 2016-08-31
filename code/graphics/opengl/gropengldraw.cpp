@@ -14,14 +14,14 @@
 #include "globalincs/pstypes.h"
 #include "globalincs/systemvars.h"
 #include "graphics/grinternal.h"
-#include "graphics/gropengl.h"
-#include "graphics/gropenglbmpman.h"
-#include "graphics/gropengldraw.h"
-#include "graphics/gropengllight.h"
-#include "graphics/gropenglpostprocessing.h"
-#include "graphics/gropenglshader.h"
-#include "graphics/gropengltexture.h"
-#include "graphics/gropengltnl.h"
+#include "gropengl.h"
+#include "gropenglbmpman.h"
+#include "gropengldraw.h"
+#include "gropengllight.h"
+#include "gropenglpostprocessing.h"
+#include "gropenglshader.h"
+#include "gropengltexture.h"
+#include "gropengltnl.h"
 #include "graphics/paths/PathRenderer.h"
 #include "graphics/software/font_internal.h"
 #include "graphics/software/FSFont.h"
@@ -234,7 +234,6 @@ void opengl_aabitmap_ex_internal(int x, int y, int w, int h, int sx, int sy, int
 
 	GL_CHECK_FOR_ERRORS("start of aabitmap_ex_internal()");
 
-	GL_state.SetTextureSource(TEXTURE_SOURCE_NO_FILTERING);
 	GL_state.SetAlphaBlendMode(ALPHA_BLEND_ALPHA_BLEND_ALPHA);
 	GL_state.SetZbufferType(ZBUFFER_TYPE_NONE);
 
@@ -270,8 +269,6 @@ void opengl_aabitmap_ex_internal(int x, int y, int w, int h, int sx, int sy, int
 		gr_resize_screen_posf(&x1, &y1, NULL, NULL, resize_mode);
 		gr_resize_screen_posf(&x2, &y2, NULL, NULL, resize_mode);
 	}
-
-	GL_state.Color(gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue, gr_screen.current_color.alpha);
 
 	if (mirror) {
 		float temp = u0;
@@ -493,7 +490,6 @@ void gr_opengl_string_old(float sx, float sy, const char* s, const char* end, fo
 
  	gr_set_bitmap(fontData->bitmap_id);
  
- 	GL_state.SetTextureSource(TEXTURE_SOURCE_NO_FILTERING);
  	GL_state.SetAlphaBlendMode(ALPHA_BLEND_ALPHA_BLEND_ALPHA);
  	GL_state.SetZbufferType(ZBUFFER_TYPE_NONE);
  
@@ -509,15 +505,7 @@ void gr_opengl_string_old(float sx, float sy, const char* s, const char* end, fo
 
 	bw = i2fl(ibw);
 	bh = i2fl(ibh);
-
-	// set color!
-	if (gr_screen.current_color.is_alphacolor) {
-		GL_state.Color(gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue, gr_screen.current_color.alpha);
-	}
-	else {
-		GL_state.Color(gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue);
-	}
-
+	
 	//	if ( (gr_screen.custom_size && resize) || (gr_screen.rendering_to_texture != -1) ) {
 	if (resize_mode != GR_RESIZE_NONE && (gr_screen.custom_size || (gr_screen.rendering_to_texture != -1))) {
 		do_resize = true;
@@ -859,41 +847,6 @@ void gr_opengl_line(int x1, int y1, int x2, int y2, int resize_mode)
     gr_opengl_line(i2fl(x1), i2fl(y1), i2fl(x2), i2fl(y2), resize_mode);
 }
 
-void gr_opengl_line_htl(const vec3d *start, const vec3d *end)
-{
-	gr_zbuffer_type zbuffer_state = (gr_zbuffering) ? ZBUFFER_TYPE_FULL : ZBUFFER_TYPE_NONE;
-	GL_state.SetTextureSource(TEXTURE_SOURCE_NONE);
-	GL_state.SetZbufferType(zbuffer_state);
-
-
-    if (gr_screen.current_color.is_alphacolor) {
-        GL_state.SetAlphaBlendMode(ALPHA_BLEND_ALPHA_BLEND_ALPHA);
-		GL_state.Color( gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue, gr_screen.current_color.alpha );
-	} else {
-        GL_state.SetAlphaBlendMode(ALPHA_BLEND_NONE);
-		GL_state.Color( gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue );
-    }
-
-	GLfloat line[6] = {
-		start->xyz.x,	start->xyz.y,	start->xyz.z,
-		end->xyz.x,		end->xyz.y,		end->xyz.z
-	};
-
-	GL_state.Array.BindArrayBuffer(0);
-	opengl_shader_set_current();
-
-	vertex_layout vert_def;
-
-	vert_def.add_vertex_component(vertex_format_data::POSITION3, 0, line);
-
-	opengl_bind_vertex_layout(vert_def);
-	opengl_shader_set_passthrough(false);
-
-	glDrawArrays(GL_LINES, 0, 2);
-
-	GL_CHECK_FOR_ERRORS("end of opengl_line_htl()");
-}
-
 void gr_opengl_aaline(vertex *v1, vertex *v2)
 {
 	float x1 = v1->screen.xyw.x;
@@ -1035,658 +988,6 @@ void gr_opengl_curve(int xc, int yc, int r, int direction, int resize_mode)
     endDrawing(path);
 }
 
-struct v6 { GLfloat x,y,z,w,u,v; };
-struct c4 { GLubyte r,g,b,a; };
-
-void opengl_draw_primitive(int nv, vertex **verts, uint flags, float u_scale, float v_scale, int r, int g, int b, int a, int override_primary = 0)
-{
-	GLenum gl_mode = GL_TRIANGLE_FAN;
-	float sx, sy, sz, sw;
-	int i,j;
-	vertex *va;
-	bool isNebula = false;
-	bool isRamp = false;
-	bool isRGB = false;
-	ubyte alpha = (ubyte)a;
-	struct v6 *vertPos = (struct v6*) vm_malloc(sizeof(struct v6) * nv);
-	struct c4 *vertCol = (struct c4*) vm_malloc(sizeof(struct c4) * nv);
-
-	GL_CHECK_FOR_ERRORS("start of draw_primitive()");
-
-	if (flags & TMAP_FLAG_NEBULA) {
-		isNebula = true;
-	} else if (flags & TMAP_FLAG_GOURAUD) {
-		if (flags & TMAP_FLAG_RAMP) {
-			isRamp = true;
-		} else if (flags & TMAP_FLAG_RGB) {
-			isRGB = true;
-		}
-	} else {
-		GL_state.Color( (ubyte)r, (ubyte)g, (ubyte)b, alpha );
-	}
-
-	if (flags & TMAP_FLAG_TRISTRIP) {
-		gl_mode = GL_TRIANGLE_STRIP;
-	} else if (flags & TMAP_FLAG_TRILIST) {
-		gl_mode = GL_TRIANGLES;
-	} else if (flags & TMAP_FLAG_QUADSTRIP) {
-		gl_mode = GL_TRIANGLE_STRIP;
-		Assert((nv % 2) == 0);
-	}
-
-	for (i = (nv - 1), j = 0; i >= 0; i--, j++) {
-		va = verts[i];
-
-		sw = 1.0f;
-
-		if ( gr_zbuffering || (flags & TMAP_FLAG_NEBULA) ) {
-			sz = (1.0f - 1.0f / (1.0f + va->world.xyz.z / 32768.0f));
-
-		//	if ( sz > 0.98f ) {
-		//		sz = 0.98f;
-		//	}
-		} else {
-			sz = 0.99f;
-		}
-
-		sx = va->screen.xyw.x + (float)gr_screen.offset_x;
-		sy = va->screen.xyw.y + (float)gr_screen.offset_y;
-
-		if (flags & TMAP_FLAG_CORRECT) {
-			sx /= va->screen.xyw.w;
-			sy /= va->screen.xyw.w;
-			sz /= va->screen.xyw.w;
-			sw /= va->screen.xyw.w;
-		}
-
-		if (flags & TMAP_FLAG_ALPHA) {
-			alpha = va->a;
-		}
-
-		if (override_primary) {
-			vertCol[j].r = va->spec_r;
-			vertCol[j].g = va->spec_g;
-			vertCol[j].b = va->spec_b;
-			vertCol[j].a = 255;
-		} else {
-			if (isNebula) {
-				int pal = (va->b * (NEBULA_COLORS-1)) / 255;
-				vertCol[j].r = gr_palette[pal*3+0];
-				vertCol[j].g = gr_palette[pal*3+1];
-				vertCol[j].b = gr_palette[pal*3+2];
-				vertCol[j].a = alpha;
-			} else if (isRamp) {
-				vertCol[j].r = va->b;
-				vertCol[j].g = va->b;
-				vertCol[j].b = va->b;
-				vertCol[j].a = alpha;
-			} else if (isRGB) {
-				vertCol[j].r = va->r;
-				vertCol[j].g = va->g;
-				vertCol[j].b = va->b;
-				vertCol[j].a = alpha;
-			}
-		}
-
-		if (flags & TMAP_FLAG_TEXTURED) {
-			vertPos[j].u = va->texture_position.u * u_scale;
-			vertPos[j].v = va->texture_position.v * v_scale;
-		}
-
-		vertPos[j].x = sx;
-		vertPos[j].y = sy;
-		vertPos[j].z = -sz;
-		vertPos[j].w = sw;
-	}
-
-	GL_state.Array.BindArrayBuffer(0);
-
-	vertex_layout vert_def;
-
-	vert_def.add_vertex_component(vertex_format_data::POSITION4, sizeof(struct v6), &vertPos[0].x);
-
-	bool textured = false;
-
-	if(flags & TMAP_FLAG_TEXTURED) {
-		vert_def.add_vertex_component(vertex_format_data::TEX_COORD, sizeof(struct v6), &vertPos[0].u);
-		//vert_def.add_vertex_component(vertex_format_data::TEX_COORD1, sizeof(struct v6), &vertPos[0].u);
-
-		textured = true;
-	}
-
-	if(flags & (TMAP_FLAG_NEBULA | TMAP_FLAG_GOURAUD)) {
-		vert_def.add_vertex_component(vertex_format_data::COLOR4, 0, &vertCol[0].r);
-	}
-
-	float color_scale = 1.0f;
-
-	if ( High_dynamic_range && flags & TMAP_FLAG_EMISSIVE ) {
-		color_scale = 2.0f;
-	}
-
-	opengl_shader_set_passthrough(textured, false, NULL, color_scale);
-	opengl_bind_vertex_layout(vert_def);
-
-	glDrawArrays(gl_mode, 0, nv);
-
-	GL_CHECK_FOR_ERRORS("start of draw_primitive()");
-
-	vm_free(vertPos);
-	vm_free(vertCol);
-}
-
-void opengl_tmapper_internal(int nv, vertex **verts, uint flags, int is_scaler = 0)
-{
-	int i, stage = 0;
-	float u_scale = 1.0f, v_scale = 1.0f;
-	int alpha,tmap_type, r, g, b;
-
-	GL_CHECK_FOR_ERRORS("start of tmapper_internal()");
-
-	opengl_setup_render_states(r, g, b, alpha, tmap_type, flags, is_scaler);
-
-	if (flags & TMAP_FLAG_TEXTURED) {
-		if ( !gr_opengl_tcache_set(gr_screen.current_bitmap, tmap_type, &u_scale, &v_scale, stage) ) {
-			return;
-		}
-
-		stage++; // bump!
-
-		// glowmap
-		if ( Cmdline_glow && (GLOWMAP > -1) ) {
-			if ( !gr_opengl_tcache_set(GLOWMAP, tmap_type, &u_scale, &v_scale, stage) ) {
-				return;
-			}
-
-			opengl_set_additive_tex_env();
-
-			stage++; // bump
-		}
-	}
-
-
-	if ( (flags & TMAP_FLAG_PIXEL_FOG) && (Neb2_render_mode == NEB2_RENDER_POF) ) {
-		int nr, ng, nb;
-		int ra, ga, ba;
-		ra = ga = ba = 0;
-
-		for (i = (nv - 1); i >= 0; i--) {
-			vertex *va = verts[i];
-			float sx, sy;
-
-			if (gr_screen.offset_x || gr_screen.offset_y) {
-				sx = ((va->screen.xyw.x * 16.0f) + ((float)gr_screen.offset_x * 16.0f)) / 16.0f;
-				sy = ((va->screen.xyw.y * 16.0f) + ((float)gr_screen.offset_y * 16.0f)) / 16.0f;
-			} else {
-				sx = va->screen.xyw.x;
-				sy = va->screen.xyw.y;
-			}
-
-			neb2_get_pixel( (int)sx, (int)sy, &nr, &ng, &nb );
-
-			ra += nr;
-			ga += ng;
-			ba += nb;
-		}
-
-		ra /= nv;
-		ga /= nv;
-		ba /= nv;
-
-		gr_fog_set(GR_FOGMODE_FOG, ra, ga, ba);
-	}
-
-	gr_opengl_set_2d_matrix();
-
-	opengl_draw_primitive(nv, verts, flags, u_scale, v_scale, r, g, b, alpha);
-
-	GL_state.Texture.DisableAll();
-
-	gr_opengl_end_2d_matrix();
-
-	GL_CHECK_FOR_ERRORS("end of tmapper_internal()");
-}
-
-// ok we're making some assumptions for now.  mainly it must not be multitextured, lit or fogged.
-void opengl_tmapper_internal3d(int nv, vertex **verts, uint flags)
-{
-	int alpha, tmap_type, r, g, b;
-	float u_scale = 1.0f, v_scale = 1.0f;
-	GLenum gl_mode = GL_TRIANGLE_FAN;
-	bool isRGB = false;
-
-	GL_CHECK_FOR_ERRORS("start of tmapper_internal3d()");
-
-	opengl_setup_render_states(r, g, b, alpha, tmap_type, flags);
-
-	bool textured = false;
-
-	if (flags & TMAP_FLAG_TEXTURED) {
-		if ( !gr_opengl_tcache_set(gr_screen.current_bitmap, tmap_type, &u_scale, &v_scale) ) {
-			return;
-		}
-
-		textured = true;
-	}
-
-	GLboolean cull_face = GL_state.CullFace(GL_FALSE);
-
-	if (flags & TMAP_FLAG_TRILIST) {
-		gl_mode = GL_TRIANGLES;
-	} else if (flags & TMAP_FLAG_TRISTRIP) {
-		gl_mode = GL_TRIANGLE_STRIP;
-	} 
-
-	if ( (flags & TMAP_FLAG_RGB) && (flags & TMAP_FLAG_GOURAUD) ) {
-		isRGB = true;
-	}
-
-	// use what opengl_setup_render_states() gives us since this works much better for nebula and transparency
-	if ( !isRGB ) {
-		GL_state.Color( (ubyte)r, (ubyte)g, (ubyte)b, (ubyte)alpha );
-	}
-
-	SCP_vector<ubyte> colour;
-	SCP_vector<float> vertvec;
-	SCP_vector<float> uvcoords;
-
-	if (isRGB)
-		colour.reserve(nv * 4);
-
-	vertvec.reserve(nv * 3);
-	uvcoords.reserve(nv * 2);
-
-	for (int i = 0; i < nv; i++) {
-		vertex *va = verts[i];
-
-		if (isRGB) {
-			colour.push_back(va->r);
-			colour.push_back(va->g);
-			colour.push_back(va->b);
-			colour.push_back((ubyte) alpha);
-		}
-
-		uvcoords.push_back(va->texture_position.u);
-		uvcoords.push_back(va->texture_position.v);
-
-		vertvec.push_back(va->world.xyz.x);
-		vertvec.push_back(va->world.xyz.y);
-		vertvec.push_back(va->world.xyz.z);
-	}
-
-	float color_scale = 1.0f;
-	if ( High_dynamic_range && flags & TMAP_FLAG_EMISSIVE ) {
-		color_scale = 2.0f;
-	}
-
-	GL_state.Array.BindArrayBuffer(0);
-
-	vertex_layout vert_def;
-
-	if (isRGB) {
-		vert_def.add_vertex_component(vertex_format_data::COLOR4, 0, &colour.front());
-	}
-
-	vert_def.add_vertex_component(vertex_format_data::POSITION3, 0, &vertvec.front());
-	vert_def.add_vertex_component(vertex_format_data::TEX_COORD, 0, &uvcoords.front());
-
-	opengl_bind_vertex_layout(vert_def);
-	opengl_shader_set_passthrough(textured, false, NULL, color_scale);
-
-	glDrawArrays(gl_mode, 0, nv);
-
-	GL_state.CullFace(cull_face);
-
-	GL_CHECK_FOR_ERRORS("end of tmapper_internal3d()");
-}
-
-void gr_opengl_tmapper(int nverts, vertex **verts, uint flags)
-{
-	if ( flags & TMAP_HTL_3D_UNLIT) {
-		opengl_tmapper_internal3d(nverts, verts, flags);
-	} else {
-		opengl_tmapper_internal(nverts, verts, flags);
-	}
-}
-
-void opengl_render_internal(int nverts, vertex *verts, uint flags)
-{
-	int alpha, tmap_type, r, g, b;
-	float u_scale = 1.0f, v_scale = 1.0f;
-	GLenum gl_mode = GL_TRIANGLE_FAN;
-
-	GL_CHECK_FOR_ERRORS("start of render()");
-
-	opengl_setup_render_states(r, g, b, alpha, tmap_type, flags);
-
-	if (flags & TMAP_FLAG_TRILIST) {
-		gl_mode = GL_TRIANGLES;
-	} else if (flags & TMAP_FLAG_TRISTRIP) {
-		gl_mode = GL_TRIANGLE_STRIP;
-	} 
-
-	GL_state.Array.BindArrayBuffer(0);
-
-	vertex_layout vert_def;
-	bool textured = false;
-
-	if (flags & TMAP_FLAG_TEXTURED) {
-		if ( !gr_opengl_tcache_set(gr_screen.current_bitmap, tmap_type, &u_scale, &v_scale) ) {
-			return;
-		}
-
-		textured = true;
-
-		vert_def.add_vertex_component(vertex_format_data::TEX_COORD, sizeof(vertex), &verts[0].texture_position.u);
-	}
-
-	if ( (flags & TMAP_FLAG_RGB) && (flags & TMAP_FLAG_GOURAUD) ) {
-		if (flags & TMAP_FLAG_ALPHA) {
-			vert_def.add_vertex_component(vertex_format_data::COLOR4, sizeof(vertex), &verts[0].r);
-		} else {
-			GL_state.Color( (ubyte)r, (ubyte)g, (ubyte)b, (ubyte)alpha );
-			vert_def.add_vertex_component(vertex_format_data::COLOR3, sizeof(vertex), &verts[0].r);
-		}
-	}
-	// use what opengl_setup_render_states() gives us since this works much better for nebula and transparency
-	else {
-		GL_state.Color( (ubyte)r, (ubyte)g, (ubyte)b, (ubyte)alpha );
-	}
-		
-	vert_def.add_vertex_component(vertex_format_data::POSITION2, sizeof(vertex), &verts[0].screen.xyw.x);
-
-	opengl_bind_vertex_layout(vert_def);
-
-	gr_opengl_set_2d_matrix();
-
-	opengl_shader_set_passthrough(textured);
-
-	glDrawArrays(gl_mode, 0, nverts);
-
-	gr_opengl_end_2d_matrix();
-
-	GL_state.Texture.DisableAll();
-
-
-	GL_CHECK_FOR_ERRORS("end of render()");
-}
-
-void opengl_render_internal3d(int nverts, vertex *verts, uint flags)
-{
-	int alpha, tmap_type, r, g, b;
-	float u_scale = 1.0f, v_scale = 1.0f;
-	GLenum gl_mode = GL_TRIANGLE_FAN;
-
-	GL_CHECK_FOR_ERRORS("start of render3d()");
-
-	opengl_setup_render_states(r, g, b, alpha, tmap_type, flags);
-
-	GL_state.Array.BindArrayBuffer(0);
-
-	vertex_layout vert_def;
-	bool textured = false;
-
-	if (flags & TMAP_FLAG_TEXTURED) {
-		if ( !gr_opengl_tcache_set(gr_screen.current_bitmap, tmap_type, &u_scale, &v_scale) ) {
-			return;
-		}
-
-		textured = true;
-		vert_def.add_vertex_component(vertex_format_data::TEX_COORD, sizeof(vertex), &verts[0].texture_position.u);
-	}
-
-	GLboolean cull_face = GL_state.CullFace(GL_FALSE);
-	GLboolean lighting = GL_state.Lighting(GL_FALSE);
-
-	if (flags & TMAP_FLAG_TRILIST) {
-		gl_mode = GL_TRIANGLES;
-	} else if (flags & TMAP_FLAG_TRISTRIP) {
-		gl_mode = GL_TRIANGLE_STRIP;
-	} else if (flags & TMAP_FLAG_LINES) {
-		gl_mode = GL_LINES;
-	}
-
-	if ( (flags & TMAP_FLAG_RGB) && (flags & TMAP_FLAG_GOURAUD) ) {
-		vert_def.add_vertex_component(vertex_format_data::COLOR4, sizeof(vertex), &verts[0].r);
-	}
-	// use what opengl_setup_render_states() gives us since this works much better for nebula and transparency
-	else {
-		GL_state.Color( (ubyte)r, (ubyte)g, (ubyte)b, (ubyte)alpha );
-	}
-
-	float color_scale = 1.0f;
-	if ( High_dynamic_range && flags & TMAP_FLAG_EMISSIVE ) {
-		color_scale = 2.0f;
-	}
-
-	vert_def.add_vertex_component(vertex_format_data::POSITION3, sizeof(vertex), &verts[0].world.xyz.x);
-
-	opengl_bind_vertex_layout(vert_def);
-	opengl_shader_set_passthrough(textured, false, NULL, color_scale);
-
-	glDrawArrays(gl_mode, 0, nverts);
-
-	GL_state.CullFace(cull_face);
-	GL_state.Lighting(lighting);
-
-	GL_CHECK_FOR_ERRORS("end of render3d()");
-}
-
-//Used by the effects batcher to determine whether to use shaders or not
-bool Use_Shaders_for_effect_rendering = true;
-
-void gr_opengl_render_effect(int nverts, vertex *verts, float *radius_list, uint flags)
-{
-	int alpha, tmap_type, r, g, b;
-	float u_scale = 1.0f, v_scale = 1.0f;
-	GLenum gl_mode = GL_TRIANGLE_FAN;
-	int zbuff = ZBUFFER_TYPE_DEFAULT;
-	GL_CHECK_FOR_ERRORS("start of render3d()");
-
-	Assert(Scene_depth_texture != 0);
-
-	opengl_setup_render_states(r, g, b, alpha, tmap_type, flags);
-
-	GL_state.Array.BindArrayBuffer(0);
-
-	vertex_layout vert_def;
-
-	if ( flags & TMAP_FLAG_TEXTURED ) {
-		if ( flags & TMAP_FLAG_SOFT_QUAD ) {
-			vert_def.add_vertex_component(vertex_format_data::RADIUS, 0, radius_list);
-		} else {
-			opengl_shader_set_passthrough(true);
-		}
-
-		if ( !gr_opengl_tcache_set(gr_screen.current_bitmap, tmap_type, &u_scale, &v_scale) ) {
-			return;
-		}
-
-		vert_def.add_vertex_component(vertex_format_data::TEX_COORD, sizeof(vertex), &verts[0].texture_position.u);
-	} else {
-		opengl_shader_set_passthrough(false);
-	}
-
-	GLboolean cull_face = GL_state.CullFace(GL_FALSE);
-	GLboolean lighting = GL_state.Lighting(GL_FALSE);
-
-	if (flags & TMAP_FLAG_TRILIST) {
-		gl_mode = GL_TRIANGLES;
-	} else if (flags & TMAP_FLAG_TRISTRIP) {
-		gl_mode = GL_TRIANGLE_STRIP;
-	} 
-
-	if ( (flags & TMAP_FLAG_RGB) && (flags & TMAP_FLAG_GOURAUD) ) {
-		vert_def.add_vertex_component(vertex_format_data::COLOR4, sizeof(vertex), &verts[0].r);
-	}
-	// use what opengl_setup_render_states() gives us since this works much better for nebula and transparency
-	else {
-		GL_state.Color( (ubyte)r, (ubyte)g, (ubyte)b, (ubyte)alpha );
-	}
-
-	vert_def.add_vertex_component(vertex_format_data::POSITION3, sizeof(vertex), &verts[0].world.xyz.x);
-
-	opengl_bind_vertex_layout(vert_def);
-
-	glDrawArrays(gl_mode, 0, nverts);
-
-	opengl_shader_set_current();
-
-	GL_state.Texture.DisableAll();
-
-	GL_state.CullFace(cull_face);
-	GL_state.Lighting(lighting);
-	gr_zbuffer_set(zbuff);
-
-	GL_CHECK_FOR_ERRORS("end of render3d()");
-}
-
-void gr_opengl_render(int nverts, vertex *verts, uint flags)
-{
-	if ( flags & TMAP_HTL_3D_UNLIT) {
-		opengl_render_internal3d(nverts, verts, flags);
-	} else {
-		opengl_render_internal(nverts, verts, flags);
-	}
-}
-
-void gr_opengl_scaler(vertex *va, vertex *vb, bool bw_bitmap = false)
-{
-	float x0, y0, x1, y1;
-	float u0, v0, u1, v1;
-	float clipped_x0, clipped_y0, clipped_x1, clipped_y1;
-	float clipped_u0, clipped_v0, clipped_u1, clipped_v1;
-	float xmin, xmax, ymin, ymax;
-	int dx0, dy0, dx1, dy1;
-
-	x0 = va->screen.xyw.x;
-	y0 = va->screen.xyw.y;
-	x1 = vb->screen.xyw.x;
-	y1 = vb->screen.xyw.y;
-
-	xmin = i2fl(gr_screen.clip_left);
-	ymin = i2fl(gr_screen.clip_top);
-	xmax = i2fl(gr_screen.clip_right);
-	ymax = i2fl(gr_screen.clip_bottom);
-
-	u0 = va->texture_position.u; v0 = va->texture_position.v;
-	u1 = vb->texture_position.u; v1 = vb->texture_position.v;
-
-	// Check for obviously offscreen bitmaps...
-	if ( (y1 <= y0) || (x1 <= x0) ) {
-		return;
-	}
-
-	if ( (x1 < xmin ) || (x0 > xmax) ) {
-		return;
-	}
-
-	if ( (y1 < ymin ) || (y0 > ymax) ) {
-		return;
-	}
-
-	clipped_u0 = u0;
-	clipped_v0 = v0;
-	clipped_u1 = u1;
-	clipped_v1 = v1;
-
-	clipped_x0 = x0;
-	clipped_y0 = y0;
-	clipped_x1 = x1;
-	clipped_y1 = y1;
-
-	// Clip the left, moving u0 right as necessary
-	if (x0 < xmin) {
-		clipped_u0 = FIND_SCALED_NUM(xmin, x0, x1, u0, u1);
-		clipped_x0 = xmin;
-	}
-
-	// Clip the right, moving u1 left as necessary
-	if (x1 > xmax) {
-		clipped_u1 = FIND_SCALED_NUM(xmax, x0, x1, u0, u1);
-		clipped_x1 = xmax;
-	}
-
-	// Clip the top, moving v0 down as necessary
-	if (y0 < ymin) {
-		clipped_v0 = FIND_SCALED_NUM(ymin, y0, y1, v0, v1);
-		clipped_y0 = ymin;
-	}
-
-	// Clip the bottom, moving v1 up as necessary
-	if (y1 > ymax) {
-		clipped_v1 = FIND_SCALED_NUM(ymax, y0, y1, v0, v1);
-		clipped_y1 = ymax;
-	}
-
-	dx0 = fl2i(clipped_x0);
-	dx1 = fl2i(clipped_x1);
-	dy0 = fl2i(clipped_y0);
-	dy1 = fl2i(clipped_y1);
-
-	if ( (dx1 <= dx0) || (dy1 <= dy0) ) {
-		return;
-	}
-
-
-	vertex v[4];
-	vertex *vl[4];
-
-	vl[0] = &v[0];
-	v[0].screen.xyw.x = clipped_x0;
-	v[0].screen.xyw.y = clipped_y0;
-	v[0].screen.xyw.w = va->screen.xyw.w;
-	v[0].world.xyz.z = va->world.xyz.z;
-	v[0].texture_position.u = clipped_u0;
-	v[0].texture_position.v = clipped_v0;
-	v[0].spec_r = 0;
-	v[0].spec_g = 0;
-	v[0].spec_b = 0;
-
-	vl[1] = &v[1];
-	v[1].screen.xyw.x = clipped_x1;
-	v[1].screen.xyw.y = clipped_y0;
-	v[1].screen.xyw.w = va->screen.xyw.w;
-	v[1].world.xyz.z = va->world.xyz.z;
-	v[1].texture_position.u = clipped_u1;
-	v[1].texture_position.v = clipped_v0;
-	v[1].spec_r = 0;
-	v[1].spec_g = 0;
-	v[1].spec_b = 0;
-
-	vl[2] = &v[2];
-	v[2].screen.xyw.x = clipped_x1;
-	v[2].screen.xyw.y = clipped_y1;
-	v[2].screen.xyw.w = va->screen.xyw.w;
-	v[2].world.xyz.z = va->world.xyz.z;
-	v[2].texture_position.u = clipped_u1;
-	v[2].texture_position.v = clipped_v1;
-	v[2].spec_r = 0;
-	v[2].spec_g = 0;
-	v[2].spec_b = 0;
-
-	vl[3] = &v[3];
-	v[3].screen.xyw.x = clipped_x0;
-	v[3].screen.xyw.y = clipped_y1;
-	v[3].screen.xyw.w = va->screen.xyw.w;
-	v[3].world.xyz.z = va->world.xyz.z;
-	v[3].texture_position.u = clipped_u0;
-	v[3].texture_position.v = clipped_v1;
-	v[3].spec_r = 0;
-	v[3].spec_g = 0;
-	v[3].spec_b = 0;
-
-	if (!bw_bitmap)
-	{
-		opengl_tmapper_internal( 4, vl, TMAP_FLAG_TEXTURED, 1 );
-	}
-	else
-	{
-		opengl_tmapper_internal( 4, vl,( TMAP_FLAG_TEXTURED | TMAP_FLAG_BW_TEXTURE ), 1 );
-	}
-}
-
-
 // cross fade
 void gr_opengl_cross_fade(int bmap1, int bmap2, int x1, int y1, int x2, int y2, float pct, int resize_mode)
 {
@@ -1715,14 +1016,10 @@ void gr_opengl_shade(int x, int y, int w, int h, int resize_mode)
 	CLAMP(x2, x1+1, gr_screen.max_w);
 	CLAMP(y2, y1+1, gr_screen.max_h);
 
-	GL_state.SetTextureSource(TEXTURE_SOURCE_NONE);
 	GL_state.SetAlphaBlendMode(ALPHA_BLEND_ALPHA_BLEND_ALPHA);
 	GL_state.SetZbufferType(ZBUFFER_TYPE_NONE);
 
 	gr_opengl_set_2d_matrix();
-
-	GL_state.Color( (GLubyte)gr_screen.current_shader.r, (GLubyte)gr_screen.current_shader.g,
-				(GLubyte)gr_screen.current_shader.b, (GLubyte)gr_screen.current_shader.c );
 
 	color clr;
 	gr_init_alphacolor(&clr, gr_screen.current_shader.r, gr_screen.current_shader.g, gr_screen.current_shader.b, gr_screen.current_shader.c);
@@ -1743,7 +1040,6 @@ void gr_opengl_flash(int r, int g, int b)
 	CLAMP(g, 0, 255);
 	CLAMP(b, 0, 255);
 
-	GL_state.SetTextureSource(TEXTURE_SOURCE_NONE);
 	GL_state.SetAlphaBlendMode(ALPHA_BLEND_ALPHA_ADDITIVE);
 	GL_state.SetZbufferType(ZBUFFER_TYPE_NONE);
 
@@ -1751,8 +1047,6 @@ void gr_opengl_flash(int r, int g, int b)
 	int y1 = (gr_screen.clip_top + gr_screen.offset_y);
 	int x2 = (gr_screen.clip_right + gr_screen.offset_x) + 1;
 	int y2 = (gr_screen.clip_bottom + gr_screen.offset_y) + 1;
-
-	GL_state.Color( (GLubyte)r, (GLubyte)g, (GLubyte)b, 255 );
 
 	color clr;
 	gr_init_alphacolor(&clr, (GLubyte)r, (GLubyte)g, (GLubyte)b, 255);
@@ -1772,7 +1066,6 @@ void gr_opengl_flash_alpha(int r, int g, int b, int a)
 	CLAMP(b, 0, 255);
 	CLAMP(a, 0, 255);
 
-	GL_state.SetTextureSource(TEXTURE_SOURCE_NONE);
 	GL_state.SetAlphaBlendMode(ALPHA_BLEND_ALPHA_BLEND_ALPHA);
 	GL_state.SetZbufferType(ZBUFFER_TYPE_NONE);
 
@@ -1780,8 +1073,6 @@ void gr_opengl_flash_alpha(int r, int g, int b, int a)
 	int y1 = (gr_screen.clip_top + gr_screen.offset_y);
 	int x2 = (gr_screen.clip_right + gr_screen.offset_x) + 1;
 	int y2 = (gr_screen.clip_bottom + gr_screen.offset_y) + 1;
-
-	GL_state.Color( (GLubyte)r, (GLubyte)g, (GLubyte)b, (GLubyte)a );
 
 	color clr;
 	gr_init_alphacolor(&clr, (GLubyte)r, (GLubyte)g, (GLubyte)b, (GLubyte)a);
@@ -1801,7 +1092,6 @@ void opengl_bitmap_ex_internal(int x, int y, int w, int h, int sx, int sy, int r
 	float x1, x2, y1, y2;
 	int bw, bh, do_resize;
 
-	GL_state.SetTextureSource(TEXTURE_SOURCE_NO_FILTERING);
 	GL_state.SetAlphaBlendMode(ALPHA_BLEND_ALPHA_BLEND_ALPHA);
 	GL_state.SetZbufferType(ZBUFFER_TYPE_NONE);
 
@@ -1832,8 +1122,6 @@ void opengl_bitmap_ex_internal(int x, int y, int w, int h, int sx, int sy, int r
 		gr_resize_screen_posf(&x1, &y1, NULL, NULL, resize_mode);
 		gr_resize_screen_posf(&x2, &y2, NULL, NULL, resize_mode);
 	}
-
-	GL_state.Color(255, 255, 255, (GLubyte)(gr_screen.current_alpha * 255));
 
 	color clr;
 	gr_init_alphacolor(&clr, 255, 255, 255, fl2i(gr_screen.current_alpha * 255.0f));
@@ -2112,9 +1400,9 @@ void gr_opengl_draw_deferred_light_sphere(vec3d *position, float rad, bool clear
 {
 	g3_start_instance_matrix(position, &vmd_identity_matrix, true);
 	
-	GL_state.Uniform.setUniform3f("scale", rad, rad, rad);
-	GL_state.Uniform.setUniformMatrix4f("modelViewMatrix", GL_model_view_matrix);
-	GL_state.Uniform.setUniformMatrix4f("projMatrix", GL_projection_matrix);
+	Current_shader->program->Uniforms.setUniform3f("scale", rad, rad, rad);
+	Current_shader->program->Uniforms.setUniformMatrix4f("modelViewMatrix", GL_model_view_matrix);
+	Current_shader->program->Uniforms.setUniformMatrix4f("projMatrix", GL_projection_matrix);
 
 	opengl_draw_sphere();
 
@@ -2233,9 +1521,9 @@ void gr_opengl_draw_deferred_light_cylinder(vec3d *position,matrix *orient, floa
 {
 	g3_start_instance_matrix(position, orient, true);
 
-	GL_state.Uniform.setUniform3f("scale", rad, rad, length);
-	GL_state.Uniform.setUniformMatrix4f("modelViewMatrix", GL_model_view_matrix);
-	GL_state.Uniform.setUniformMatrix4f("projMatrix", GL_projection_matrix);
+	Current_shader->program->Uniforms.setUniform3f("scale", rad, rad, length);
+	Current_shader->program->Uniforms.setUniformMatrix4f("modelViewMatrix", GL_model_view_matrix);
+	Current_shader->program->Uniforms.setUniformMatrix4f("projMatrix", GL_projection_matrix);
 
 	GL_state.Array.BindArrayBuffer(deferred_light_cylinder_vbo);
 	GL_state.Array.BindElementBuffer(deferred_light_cylinder_ibo);
@@ -2251,9 +1539,6 @@ void gr_opengl_draw_deferred_light_cylinder(vec3d *position,matrix *orient, floa
 	g3_done_instance(true);
 }
 
-void gr_opengl_draw_line_list(const colored_vector *lines, int num)
-{
-}
 extern int opengl_check_framebuffer();
 void opengl_setup_scene_textures()
 {
@@ -2455,8 +1740,6 @@ void opengl_setup_scene_textures()
 		glDeleteFramebuffers(1, &Scene_framebuffer);
 		Scene_framebuffer = 0;
 
-		GL_state.Texture.Disable();
-
 		glDeleteTextures(1, &Scene_color_texture);
 		Scene_color_texture = 0;
 
@@ -2524,8 +1807,6 @@ void opengl_setup_scene_textures()
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		glDeleteFramebuffers(1, &Distortion_framebuffer);
 		Distortion_framebuffer = 0;
-
-		GL_state.Texture.Disable();
 
 		glDeleteTextures(2, Distortion_texture);
 		Distortion_texture[0] = 0;
@@ -2670,7 +1951,6 @@ void gr_opengl_scene_texture_end()
 	} else {
 		GLboolean depth = GL_state.DepthTest(GL_FALSE);
 		GLboolean depth_mask = GL_state.DepthMask(GL_FALSE);
-		GLboolean lighting = GL_state.Lighting(GL_FALSE);
 		GLboolean blend = GL_state.Blend(GL_FALSE);
 		GLboolean cull = GL_state.CullFace(GL_FALSE);
 
@@ -2696,13 +1976,9 @@ void gr_opengl_scene_texture_end()
 			opengl_draw_textured_quad(0.0f, 0.0f, 0.0f, Scene_texture_v_scale, (float)gr_screen.max_w, (float)gr_screen.max_h, Scene_texture_u_scale, 0.0f);
 		}
 
-		GL_state.Texture.SetActiveUnit(0);
-		GL_state.Texture.Disable();
-
 		// reset state
 		GL_state.DepthTest(depth);
 		GL_state.DepthMask(depth_mask);
-		GL_state.Lighting(lighting);
 		GL_state.Blend(blend);
 		GL_state.CullFace(cull);
 	}
@@ -2731,7 +2007,6 @@ void opengl_clear_deferred_buffers()
 {
 	GLboolean depth = GL_state.DepthTest(GL_FALSE);
 	GLboolean depth_mask = GL_state.DepthMask(GL_FALSE);
-	GLboolean lighting = GL_state.Lighting(GL_FALSE);
 	GLboolean blend = GL_state.Blend(GL_FALSE);
 	GLboolean cull = GL_state.CullFace(GL_FALSE);
 
@@ -2747,7 +2022,6 @@ void opengl_clear_deferred_buffers()
 
 	GL_state.DepthTest(depth);
 	GL_state.DepthMask(depth_mask);
-	GL_state.Lighting(lighting);
 	GL_state.Blend(blend);
 	GL_state.CullFace(cull);
 }
@@ -2832,19 +2106,19 @@ void gr_opengl_deferred_lighting_finish()
 	for(int i = 0; i < Num_lights; ++i)
 	{
 		light *l = &lights_copy[i];
-		GL_state.Uniform.setUniformi( "lightType", 0 );
+		Current_shader->program->Uniforms.setUniformi( "lightType", 0 );
 		switch(l->type)
 		{
 			case LT_CONE:
-				GL_state.Uniform.setUniformi( "lightType", 2 );
-				GL_state.Uniform.setUniformi( "dualCone", l->dual_cone );
-				GL_state.Uniform.setUniformf( "coneAngle", l->cone_angle );
-				GL_state.Uniform.setUniformf( "coneInnerAngle", l->cone_inner_angle );
-				GL_state.Uniform.setUniform3f( "coneDir", l->vec2.xyz.x, l->vec2.xyz.y, l->vec2.xyz.z); 
+				Current_shader->program->Uniforms.setUniformi( "lightType", 2 );
+				Current_shader->program->Uniforms.setUniformi( "dualCone", l->dual_cone );
+				Current_shader->program->Uniforms.setUniformf( "coneAngle", l->cone_angle );
+				Current_shader->program->Uniforms.setUniformf( "coneInnerAngle", l->cone_inner_angle );
+				Current_shader->program->Uniforms.setUniform3f( "coneDir", l->vec2.xyz.x, l->vec2.xyz.y, l->vec2.xyz.z);
 			case LT_POINT:
-				GL_state.Uniform.setUniform3f( "diffuseLightColor", l->r * l->intensity * static_point_factor, l->g * l->intensity * static_point_factor, l->b * l->intensity * static_point_factor );
-				GL_state.Uniform.setUniform3f( "specLightColor", l->spec_r * l->intensity * static_point_factor, l->spec_g * l->intensity * static_point_factor, l->spec_b * l->intensity * static_point_factor );
-				GL_state.Uniform.setUniformf( "lightRadius", MAX(l->rada, l->radb) * 1.25f );
+				Current_shader->program->Uniforms.setUniform3f( "diffuseLightColor", l->r * l->intensity * static_point_factor, l->g * l->intensity * static_point_factor, l->b * l->intensity * static_point_factor );
+				Current_shader->program->Uniforms.setUniform3f( "specLightColor", l->spec_r * l->intensity * static_point_factor, l->spec_g * l->intensity * static_point_factor, l->spec_b * l->intensity * static_point_factor );
+				Current_shader->program->Uniforms.setUniformf( "lightRadius", MAX(l->rada, l->radb) * 1.25f );
 
 				/*float dist;
 				vec3d a;
@@ -2855,10 +2129,10 @@ void gr_opengl_deferred_lighting_finish()
 				gr_opengl_draw_deferred_light_sphere(&l->vec, MAX(l->rada, l->radb) * 1.28f);
 				break;
 			case LT_TUBE:
-				GL_state.Uniform.setUniform3f( "diffuseLightColor", l->r * l->intensity * static_tube_factor, l->g * l->intensity * static_tube_factor, l->b * l->intensity * static_tube_factor );
-				GL_state.Uniform.setUniform3f( "specLightColor", l->spec_r * l->intensity * static_tube_factor, l->spec_g * l->intensity * static_tube_factor, l->spec_b * l->intensity * static_tube_factor );
-				GL_state.Uniform.setUniformf( "lightRadius", l->radb * 1.5f );
-				GL_state.Uniform.setUniformi( "lightType", 1 );
+				Current_shader->program->Uniforms.setUniform3f( "diffuseLightColor", l->r * l->intensity * static_tube_factor, l->g * l->intensity * static_tube_factor, l->b * l->intensity * static_tube_factor );
+				Current_shader->program->Uniforms.setUniform3f( "specLightColor", l->spec_r * l->intensity * static_tube_factor, l->spec_g * l->intensity * static_tube_factor, l->spec_b * l->intensity * static_tube_factor );
+				Current_shader->program->Uniforms.setUniformf( "lightRadius", l->radb * 1.5f );
+				Current_shader->program->Uniforms.setUniformi( "lightType", 1 );
 			
 				vec3d a, b;
 				matrix orient;
@@ -2881,7 +2155,7 @@ void gr_opengl_deferred_lighting_finish()
 
 				glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
 				gr_opengl_draw_deferred_light_cylinder(&l->vec2, &orient, l->radb * 1.53f, length);
-				GL_state.Uniform.setUniformi( "lightType", 0 );
+				Current_shader->program->Uniforms.setUniformi( "lightType", 0 );
 				gr_opengl_draw_deferred_light_sphere(&l->vec, l->radb * 1.53f, false);
 				gr_opengl_draw_deferred_light_sphere(&l->vec2, l->radb * 1.53f, false);
 				glStencilOp(GL_ZERO, GL_ZERO, GL_ZERO);
@@ -2902,7 +2176,6 @@ void gr_opengl_deferred_lighting_finish()
 
 	GLboolean depth = GL_state.DepthTest(GL_FALSE);
 	GLboolean depth_mask = GL_state.DepthMask(GL_FALSE);
-	GLboolean lighting = GL_state.Lighting(GL_FALSE);
 	GLboolean blend = GL_state.Blend(GL_FALSE);
 	GLboolean cull = GL_state.CullFace(GL_FALSE);
 	
@@ -2925,12 +2198,9 @@ void gr_opengl_deferred_lighting_finish()
 	gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
 	gr_set_view_matrix(&Eye_position, &Eye_matrix);
 
-	GL_state.Texture.DisableAll();
-
 	// reset state
 	GL_state.DepthTest(depth);
 	GL_state.DepthMask(depth_mask);
-	GL_state.Lighting(lighting);
 	GL_state.Blend(blend);
 	GL_state.CullFace(cull);
 
@@ -2976,7 +2246,6 @@ void gr_opengl_update_distortion()
 {
 	GLboolean depth = GL_state.DepthTest(GL_FALSE);
 	GLboolean depth_mask = GL_state.DepthMask(GL_FALSE);
-	GLboolean lighting = GL_state.Lighting(GL_FALSE);
 	GLboolean blend = GL_state.Blend(GL_FALSE);
 	GLboolean cull = GL_state.CullFace(GL_FALSE);
 
@@ -3025,8 +2294,6 @@ void gr_opengl_update_distortion()
 
 	opengl_render_primitives_immediate(PRIM_TYPE_TRISTRIP, &vert_def, 4, vertices, sizeof(vertex) * 4);
 
-	GL_state.Texture.Disable();
-
 	opengl_shader_set_passthrough(false, false);
 
 	vertex distortion_verts[33];
@@ -3058,7 +2325,6 @@ void gr_opengl_update_distortion()
 
 	GL_state.DepthTest(depth);
 	GL_state.DepthMask(depth_mask);
-	GL_state.Lighting(lighting);
 	GL_state.Blend(blend);
 	GL_state.CullFace(cull);
 }

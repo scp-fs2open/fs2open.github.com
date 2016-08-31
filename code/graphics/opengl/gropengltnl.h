@@ -15,7 +15,7 @@
 
 
 #include "globalincs/pstypes.h"
-#include "graphics/gropengl.h"
+#include "gropengl.h"
 #include "graphics/shadows.h"
 #include "model/model.h"
 
@@ -61,13 +61,6 @@ void gr_opengl_end_clip_plane();
 
 int gr_opengl_create_vertex_buffer(bool static_buffer);
 int gr_opengl_create_index_buffer(bool static_buffer);
-int gr_opengl_create_buffer();
-bool gr_opengl_pack_buffer(const int buffer_id, vertex_buffer *vb);
-bool gr_opengl_config_buffer(const int buffer_id, vertex_buffer *vb, bool update_ibuffer_only);
-void gr_opengl_destroy_buffer(int idx);
-void gr_opengl_set_buffer(int idx);
-void gr_opengl_render_buffer(int start, vertex_buffer *bufferp, size_t texi, int flags);
-void gr_opengl_render_to_env(int FACE);
 
 void opengl_bind_buffer_object(int handle);
 void gr_opengl_update_buffer_data(int handle, size_t size, void* data);
@@ -78,11 +71,6 @@ void gr_opengl_set_transform_buffer_offset(size_t offset);
 
 uint opengl_add_to_immediate_buffer(uint size, void *data);
 void opengl_reset_immediate_buffer();
-
-void gr_opengl_render_stream_buffer(int buffer_handle, size_t offset, size_t n_verts, int flags);
-
-void gr_opengl_set_thrust_scale(float scale = -1.0f);
-void gr_opengl_set_team_color(const team_color *colors);
 
 void opengl_tnl_init();
 void opengl_tnl_shutdown();

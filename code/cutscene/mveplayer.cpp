@@ -11,12 +11,12 @@
 #include "cutscene/mvelib.h"
 #include "globalincs/pstypes.h"
 #include "graphics/2d.h"
-#include "graphics/gropengl.h"
-#include "graphics/gropengldraw.h"
-#include "graphics/gropenglstate.h"
-#include "graphics/gropenglshader.h"
-#include "graphics/gropengltexture.h"
-#include "graphics/gropengltnl.h"
+#include "graphics/opengl/gropengl.h"
+#include "graphics/opengl/gropengldraw.h"
+#include "graphics/opengl/gropenglstate.h"
+#include "graphics/opengl/gropenglshader.h"
+#include "graphics/opengl/gropengltexture.h"
+#include "graphics/opengl/gropengltnl.h"
 #include "io/key.h"
 #include "io/timer.h"
 #include "osapi/osapi.h"
@@ -678,13 +678,11 @@ int mve_video_init(ubyte *data)
 		}
 
 		gr_set_lighting(false, false);
-		GL_state.Texture.DisableAll();
 
 		GL_state.Texture.SetActiveUnit(0);
 		GL_state.Texture.SetTarget(GL_texture_target);
 		GL_state.Texture.Enable(GLtex);
 
-		GL_state.SetTextureSource(TEXTURE_SOURCE_DECAL);
 		GL_state.SetAlphaBlendMode(ALPHA_BLEND_NONE);
 		GL_state.SetZbufferType(ZBUFFER_TYPE_NONE);
 
@@ -789,7 +787,6 @@ void mve_shutdown()
 		gr_delete_buffer(buffer_handle);
 		buffer_handle = -1;
 
-		GL_state.Texture.Disable();
 		GL_state.Texture.Delete(GLtex);
 		glDeleteTextures(1, &GLtex);
 		GLtex = 0;

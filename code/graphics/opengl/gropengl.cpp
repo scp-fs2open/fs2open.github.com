@@ -11,15 +11,15 @@
 #include "globalincs/systemvars.h"
 #include "graphics/2d.h"
 #include "graphics/paths/PathRenderer.h"
-#include "graphics/gropengl.h"
-#include "graphics/gropenglbmpman.h"
-#include "graphics/gropengldraw.h"
-#include "graphics/gropengllight.h"
-#include "graphics/gropenglpostprocessing.h"
-#include "graphics/gropenglshader.h"
-#include "graphics/gropenglstate.h"
-#include "graphics/gropengltexture.h"
-#include "graphics/gropengltnl.h"
+#include "gropengl.h"
+#include "gropenglbmpman.h"
+#include "gropengldraw.h"
+#include "gropengllight.h"
+#include "gropenglpostprocessing.h"
+#include "gropenglshader.h"
+#include "gropenglstate.h"
+#include "gropengltexture.h"
+#include "gropengltnl.h"
 #include "graphics/line.h"
 #include "io/mouse.h"
 #include "io/timer.h"
@@ -456,10 +456,6 @@ void gr_opengl_fog_set(int fog_mode, int r, int g, int b, float fog_near, float 
 	Assert((b >= 0) && (b < 256));
 
 	if (fog_mode == GR_FOGMODE_NONE) {
-		if ( GL_state.Fog() ) {
-			GL_state.Fog(GL_FALSE);
-		}
-
 		gr_screen.current_fog_mode = fog_mode;
 
 		return;
@@ -537,7 +533,6 @@ void gr_opengl_zbuffer_clear(int mode)
 		gr_zbuffering_mode = GR_ZBUFF_FULL;
 		gr_global_zbuffering = 1;
 
-		GL_state.SetTextureSource(TEXTURE_SOURCE_NONE);
 		GL_state.SetAlphaBlendMode(ALPHA_BLEND_NONE);
 		GL_state.SetZbufferType(ZBUFFER_TYPE_FULL);
 
@@ -680,7 +675,6 @@ void gr_opengl_get_region(int front, int w, int h, ubyte *data)
 		glReadBuffer(GL_BACK);
 //	}
 
-	GL_state.SetTextureSource(TEXTURE_SOURCE_NO_FILTERING);
 	GL_state.SetAlphaBlendMode(ALPHA_BLEND_NONE);
 	GL_state.SetZbufferType(ZBUFFER_TYPE_NONE);
 
@@ -1151,10 +1145,6 @@ void opengl_setup_function_pointers()
 	gr_screen.gf_line				= gr_opengl_line;
 	gr_screen.gf_aaline				= gr_opengl_aaline;
 	gr_screen.gf_pixel				= gr_opengl_pixel;
-	gr_screen.gf_scaler				= gr_opengl_scaler;
-	gr_screen.gf_tmapper			= gr_opengl_tmapper;
-	gr_screen.gf_render				= gr_opengl_render;
-	gr_screen.gf_render_effect		= gr_opengl_render_effect;
 
 	gr_screen.gf_gradient			= gr_opengl_gradient;
 
@@ -1215,26 +1205,15 @@ void opengl_setup_function_pointers()
 	gr_screen.gf_create_vertex_buffer	= gr_opengl_create_vertex_buffer;
 	gr_screen.gf_create_index_buffer	= gr_opengl_create_index_buffer;
 	gr_screen.gf_delete_buffer		= gr_opengl_delete_buffer;
-	gr_screen.gf_create_buffer		= gr_opengl_create_buffer;
-	gr_screen.gf_config_buffer		= gr_opengl_config_buffer;
-	gr_screen.gf_pack_buffer		= gr_opengl_pack_buffer;
-	gr_screen.gf_destroy_buffer		= gr_opengl_destroy_buffer;
-	gr_screen.gf_render_buffer		= gr_opengl_render_buffer;
-	gr_screen.gf_set_buffer			= gr_opengl_set_buffer;
 	gr_screen.gf_update_buffer_data		= gr_opengl_update_buffer_data;
 
 	gr_screen.gf_update_transform_buffer	= gr_opengl_update_transform_buffer;
 	gr_screen.gf_set_transform_buffer_offset	= gr_opengl_set_transform_buffer_offset;
 
-	gr_screen.gf_render_stream_buffer		= gr_opengl_render_stream_buffer;
-
 	gr_screen.gf_start_instance_matrix			= gr_opengl_start_instance_matrix;
 	gr_screen.gf_end_instance_matrix			= gr_opengl_end_instance_matrix;
 	gr_screen.gf_start_angles_instance_matrix	= gr_opengl_start_instance_angles;
 
-	gr_screen.gf_make_light			= gr_opengl_make_light;
-	gr_screen.gf_modify_light		= gr_opengl_modify_light;
-	gr_screen.gf_destroy_light		= gr_opengl_destroy_light;
 	gr_screen.gf_set_light			= gr_opengl_set_light;
 	gr_screen.gf_reset_lighting		= gr_opengl_reset_lighting;
 	gr_screen.gf_set_ambient_light	= gr_opengl_set_ambient_light;
@@ -1258,7 +1237,6 @@ void opengl_setup_function_pointers()
 	gr_screen.gf_end_clip_plane		= gr_opengl_end_clip_plane;
 
 	gr_screen.gf_lighting			= gr_opengl_set_lighting;
-	gr_screen.gf_set_light_factor	= gr_opengl_set_light_factor;
 
 	gr_screen.gf_set_proj_matrix	= gr_opengl_set_projection_matrix;
 	gr_screen.gf_end_proj_matrix	= gr_opengl_end_projection_matrix;
@@ -1268,18 +1246,11 @@ void opengl_setup_function_pointers()
 
 	gr_screen.gf_push_scale_matrix	= gr_opengl_push_scale_matrix;
 	gr_screen.gf_pop_scale_matrix	= gr_opengl_pop_scale_matrix;
-	gr_screen.gf_center_alpha		= gr_opengl_center_alpha;
-	gr_screen.gf_set_thrust_scale	= gr_opengl_set_thrust_scale;
-
-	gr_screen.gf_draw_line_list		= gr_opengl_draw_line_list;
-
+	
 	gr_screen.gf_set_line_width		= gr_opengl_set_line_width;
 
-	gr_screen.gf_line_htl			= gr_opengl_line_htl;
 	gr_screen.gf_sphere				= gr_opengl_sphere;
-
-	gr_screen.gf_set_animated_effect = gr_opengl_shader_set_animated_effect;
-
+	
 	gr_screen.gf_maybe_create_shader = gr_opengl_maybe_create_shader;
 	gr_screen.gf_shadow_map_start	= gr_opengl_shadow_map_start;
 	gr_screen.gf_shadow_map_end		= gr_opengl_shadow_map_end;
@@ -1290,8 +1261,6 @@ void opengl_setup_function_pointers()
 	gr_screen.gf_get_bitmap_from_texture = gr_opengl_get_bitmap_from_texture;
 
 	gr_screen.gf_clear_states	= gr_opengl_clear_states;
-
-	gr_screen.gf_set_team_color		= gr_opengl_set_team_color;
 
 	gr_screen.gf_render_model = gr_opengl_render_model;
 	gr_screen.gf_render_primitives= gr_opengl_render_primitives;
@@ -1680,12 +1649,12 @@ bool gr_opengl_is_capable(gr_capability capability)
 
 void gr_opengl_push_debug_group(const char* name) {
 	if (GLAD_GL_KHR_debug) {
-		glPushDebugGroupKHR(GL_DEBUG_SOURCE_APPLICATION_KHR, 0, -1, name);
+		glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION_KHR, 0, -1, name);
 	}
 }
 void gr_opengl_pop_debug_group() {
 	if (GLAD_GL_KHR_debug) {
-		glPopDebugGroupKHR();
+		glPopDebugGroup();
 	}
 }
 

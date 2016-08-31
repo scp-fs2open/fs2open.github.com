@@ -15,12 +15,12 @@
 #include "def_files/def_files.h"
 #include "globalincs/pstypes.h"
 #include "graphics/2d.h"
-#include "graphics/gropengl.h"
-#include "graphics/gropengldraw.h"
-#include "graphics/gropenglshader.h"
-#include "graphics/gropenglstate.h"
-#include "graphics/gropengltexture.h"
-#include "graphics/gropengltnl.h"
+#include "graphics/opengl/gropengl.h"
+#include "graphics/opengl/gropengldraw.h"
+#include "graphics/opengl/gropenglshader.h"
+#include "graphics/opengl/gropenglstate.h"
+#include "graphics/opengl/gropengltexture.h"
+#include "graphics/opengl/gropengltnl.h"
 #include "io/key.h"
 #include "io/timer.h"
 #include "osapi/osapi.h"
@@ -361,9 +361,7 @@ static void OGG_video_init(theora_info *tinfo)
 		opengl_shader_set_current(sdr_handle);
 
 		gr_set_lighting(false, false);
-		GL_state.Texture.DisableAll();
 
-		GL_state.SetTextureSource(TEXTURE_SOURCE_DECAL);
 		GL_state.SetAlphaBlendMode(ALPHA_BLEND_NONE);
 		GL_state.SetZbufferType(ZBUFFER_TYPE_NONE);
 
@@ -441,12 +439,12 @@ static void OGG_video_init(theora_info *tinfo)
 		gl_screenU = i2fl(tinfo->frame_width-1) / i2fl(2048) ;
 		gl_screenV = i2fl(tinfo->frame_height-1) / i2fl(2048);
 		GL_state.Texture.SetShaderMode(GL_TRUE);
-		GL_state.Uniform.setUniformi("ytex", 0);
-		GL_state.Uniform.setUniformi("utex", 1);
-		GL_state.Uniform.setUniformi("vtex", 2);
+		Current_shader->program->Uniforms.setUniformi("ytex", 0);
+		Current_shader->program->Uniforms.setUniformi("utex", 1);
+		Current_shader->program->Uniforms.setUniformi("vtex", 2);
 
-		GL_state.Uniform.setUniformMatrix4f("projMatrix", GL_projection_matrix);
-		GL_state.Uniform.setUniformMatrix4f("modelViewMatrix", GL_model_view_matrix);
+		Current_shader->program->Uniforms.setUniformMatrix4f("projMatrix", GL_projection_matrix);
+		Current_shader->program->Uniforms.setUniformMatrix4f("modelViewMatrix", GL_model_view_matrix);
 
 		glVertices[0][0] = (GLfloat)g_screenX;
 		glVertices[0][1] = (GLfloat)g_screenY;
@@ -494,8 +492,6 @@ static void OGG_video_close()
 
 		gr_delete_buffer(buffer_handle);
 		buffer_handle = -1;
-
-		GL_state.Texture.Disable();
 
 		GL_state.Texture.Delete(ytex);
 		GL_state.Texture.Delete(utex);

@@ -12,8 +12,8 @@
 #define GR_OPENGLDRAW_H
 
 #include "graphics/2d.h"
-#include "graphics/gropenglstate.h"
-#include "graphics/gropenglshader.h"
+#include "gropenglstate.h"
+#include "gropenglshader.h"
 #include "graphics/shadows.h"
 #include <glad/glad.h>
 
@@ -36,14 +36,10 @@ void gr_opengl_circle(int xc, int yc, int d, int resize_mode);
 void gr_opengl_unfilled_circle(int xc, int yc, int d, int resize_mode);
 void gr_opengl_arc(int xc, int yc, float r, float angle_start, float angle_end, bool fill, int resize_mode);
 void gr_opengl_curve(int xc, int yc, int r, int direction, int resize_mode);
-void gr_opengl_scaler(vertex *va, vertex *vb, bool bw_bitmap );
 void gr_opengl_cross_fade(int bmap1, int bmap2, int x1, int y1, int x2, int y2, float pct, int resize_mode);
 void gr_opengl_shade(int x, int y, int w, int h, int resize_mode);
 void gr_opengl_flash(int r, int g, int b);
 void gr_opengl_flash_alpha(int r, int g, int b, int a);
-void gr_opengl_tmapper(int nverts, vertex **verts, uint flags);
-void gr_opengl_render(int nverts, vertex *verts, uint flags);
-void gr_opengl_render_effect(int nverts, vertex *verts, float *radius_list, uint flags);
 void gr_opengl_bitmap_ex(int x, int y, int w, int h, int sx, int sy, int resize_mode);
 void gr_opengl_update_distortion();
 
@@ -51,7 +47,6 @@ void opengl_set_spec_mapping(int tmap_type, float *u_scale, float *v_scale, int 
 void opengl_reset_spec_mapping();
 
 void opengl_draw_sphere();
-void gr_opengl_line_htl(const vec3d *start, const vec3d *end);
 void gr_opengl_sphere(material *material_def, float rad);
 void gr_opengl_deferred_light_sphere_init(int rings, int segments);
 void gr_opengl_draw_deferred_light_sphere(const vec3d *position, float rad, bool clearStencil);

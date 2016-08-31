@@ -9,10 +9,10 @@
 
 #include "graphics/paths/NVGRenderer.h"
 
-#include "graphics/gropengl.h"
-#include "graphics/gropenglstate.h"
-#include "graphics/gropengltnl.h"
-#include "graphics/gropenglshader.h"
+#include "graphics/opengl/gropengl.h"
+#include "graphics/opengl/gropenglstate.h"
+#include "graphics/opengl/gropengltnl.h"
+#include "graphics/opengl/gropenglshader.h"
 
 #include "nanovg/nanovg.h"
 // NanoVG supports OpenGL 2 and 3, we currently use OpenGL 2
@@ -49,7 +49,6 @@ namespace
 
 		GL_state.Texture.SetActiveUnit(0);
 		GL_state.Texture.SetTarget(0);
-		GL_state.Texture.DisableAll();
 
 		if ( GL_version >= 30 ) {
 			glBindVertexArray(GL_vao);
@@ -58,8 +57,6 @@ namespace
 		GL_state.Array.BindArrayBuffer(0);
 		GL_state.Array.BindUniformBuffer(0);
 		opengl_shader_set_current(nullptr);
-
-		GL_state.Uniform.reset();
 
 		// Now reset the values to what we need
 		GL_state.SetStencilType(STENCIL_TYPE_NONE);

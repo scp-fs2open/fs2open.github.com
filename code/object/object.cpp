@@ -1179,6 +1179,8 @@ void obj_move_all_post(object *objp, float frametime)
 	{
 		case OBJ_WEAPON:
 		{
+			profile_auto profile_scope("Weapon post move");
+
 			if ( !physics_paused )
 				weapon_process_post( objp, frametime );
 
@@ -1224,6 +1226,8 @@ void obj_move_all_post(object *objp, float frametime)
 
 		case OBJ_SHIP:
 		{
+			profile_auto profile_scope("Ship post move");
+
 			if ( !physics_paused || (objp==Player_obj) ) {
 				ship_process_post( objp, frametime );
 				ship_model_update_instance(objp);
@@ -1269,6 +1273,8 @@ void obj_move_all_post(object *objp, float frametime)
 
 		case OBJ_FIREBALL:
 		{
+			profile_auto profile_scope("Fireball post move");
+
 			if ( !physics_paused )
 				fireball_process_post(objp,frametime);
 
@@ -1312,6 +1318,8 @@ void obj_move_all_post(object *objp, float frametime)
 
 		case OBJ_DEBRIS:
 		{
+			profile_auto profile_scope("Debris post move");
+
 			if ( !physics_paused )
 				debris_process_post(objp, frametime);
 
@@ -1346,6 +1354,8 @@ void obj_move_all_post(object *objp, float frametime)
 
 		case OBJ_ASTEROID:
 		{
+			profile_auto profile_scope("Asteroid post move");
+
 			if ( !physics_paused )
 				asteroid_process_post(objp);
 
@@ -1559,7 +1569,6 @@ void obj_render(object *obj)
 	gr_set_fill_mode(GR_FILL_MODE_SOLID);
 
 	gr_clear_states();
-	gr_set_buffer(-1);
 
 	gr_reset_lighting();
 	gr_set_lighting(false, false);

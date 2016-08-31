@@ -41,7 +41,6 @@ void material_set_unlit(material* mat_info, int texture, float alpha, bool blend
 	mat_info->set_blend_mode(blend_mode);
 	mat_info->set_depth_mode(depth_mode);
 	mat_info->set_cull_mode(false);
-	mat_info->set_texture_source(TEXTURE_SOURCE_NO_FILTERING);
 
 	if ( blend_mode == ALPHA_BLEND_ADDITIVE ) {
 		mat_info->set_color(alpha, alpha, alpha, 1.0f);
@@ -71,7 +70,6 @@ void material_set_unlit_color(material* mat_info, int texture, color *clr, bool 
 	mat_info->set_blend_mode(blend_mode);
 	mat_info->set_depth_mode(depth_mode);
 	mat_info->set_cull_mode(false);
-	mat_info->set_texture_source(TEXTURE_SOURCE_NO_FILTERING);
 	mat_info->set_color(*clr);
 }
 
@@ -91,7 +89,6 @@ void material_set_interface(material* mat_info, int texture, bool blended, float
 	mat_info->set_blend_mode(material_determine_blend_mode(texture, blended));
 	mat_info->set_depth_mode(ZBUFFER_TYPE_NONE);
 	mat_info->set_cull_mode(false);
-	mat_info->set_texture_source(TEXTURE_SOURCE_NO_FILTERING);
 
 	mat_info->set_color(1.0f, 1.0f, 1.0f, blended ? alpha : 1.0f);
 }
@@ -124,7 +121,6 @@ void material_set_distortion(distortion_material *mat_info, int texture, bool th
 material::material():
 Sdr_handle(-1), 
 Sdr_type(SDR_TYPE_NONE),
-Tex_source(TEXTURE_SOURCE_NO_FILTERING), 
 Tex_type(TEX_TYPE_NORMAL),
 Texture_addressing(TMAP_ADDRESS_WRAP),
 Depth_bias(0),
@@ -215,16 +211,6 @@ int material::get_texture_type()
 	case TEX_TYPE_AABITMAP:
 		return TCACHE_TYPE_AABITMAP;
 	}
-}
-
-void material::set_texture_source(gr_texture_source source)
-{
-	Tex_source = source;
-}
-
-gr_texture_source material::get_texture_source()
-{
-	return Tex_source;
 }
 
 bool material::is_clipped()

@@ -26,6 +26,8 @@
 
 #if defined _WIN32
 
+#include <direct.h> // for _mkdir, ...
+
 #ifndef snprintf
 #define snprintf _snprintf
 #endif

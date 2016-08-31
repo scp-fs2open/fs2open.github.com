@@ -14,6 +14,7 @@
 #include "cmdline/cmdline.h"
 #include "debugconsole/console.h"
 #include "freespace.h"
+#include "graphics/paths/PathRenderer.h"
 #include "hud/hud.h"
 #include "hud/hudtarget.h"
 #include "io/timer.h"
@@ -1523,6 +1524,12 @@ void stars_draw_stars()
 	tmp_num_stars = (Detail.num_stars * Num_stars) / MAX_DETAIL_LEVEL;
 	CLAMP(tmp_num_stars, 0, Num_stars);
 
+	auto path = graphics::paths::PathRenderer::instance();
+
+	path->saveState();
+	path->resetState();
+
+	path->beginFrame();
 
 	for (i = 0; i < tmp_num_stars; i++) {
 		sp = &Stars[i];
@@ -1579,8 +1586,6 @@ void stars_draw_stars()
 		if ( !can_draw )
 			continue;
 
-		gr_set_color_fast( &sp->col );
-
 		vDst.x = fl2i(p1.screen.xyw.x) - fl2i(p2.screen.xyw.x);
 		vDst.y = fl2i(p1.screen.xyw.y) - fl2i(p2.screen.xyw.y);
 
@@ -1588,9 +1593,17 @@ void stars_draw_stars()
 			p1.screen.xyw.x = p2.screen.xyw.x + 1.0f;
 			p1.screen.xyw.y = p2.screen.xyw.y;
 		}
+		path->beginPath();
 
-		gr_aaline(&p1, &p2);
+		path->moveTo(p1.screen.xyw.x, p1.screen.xyw.y);
+		path->lineTo(p2.screen.xyw.x, p2.screen.xyw.y);
+
+		path->setStrokeColor(&sp->col);
+		path->stroke();
 	}
+	path->endFrame();
+	
+	path->restoreState();
 }
 
 void stars_draw_debris()

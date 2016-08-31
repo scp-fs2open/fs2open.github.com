@@ -2,11 +2,11 @@
 #include "cmdline/cmdline.h"
 #include "freespace.h"
 #include "def_files/def_files.h"
-#include "graphics/gropengl.h"
-#include "graphics/gropengldraw.h"
-#include "graphics/gropenglpostprocessing.h"
-#include "graphics/gropenglshader.h"
-#include "graphics/gropenglstate.h"
+#include "gropengl.h"
+#include "gropengldraw.h"
+#include "gropenglpostprocessing.h"
+#include "gropenglshader.h"
+#include "gropenglstate.h"
 #include "io/timer.h"
 #include "lighting/lighting.h"
 #include "mod_table/mod_table.h"
@@ -79,8 +79,8 @@ void opengl_post_pass_tonemap()
 {
 	opengl_shader_set_current( gr_opengl_maybe_create_shader(SDR_TYPE_POST_PROCESS_TONEMAPPING, 0) );
 
-	GL_state.Uniform.setUniformi("tex", 0);
-	GL_state.Uniform.setUniformf("exposure", 4.0f);
+	Current_shader->program->Uniforms.setUniformi("tex", 0);
+	Current_shader->program->Uniforms.setUniformf("exposure", 4.0f);
 
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, Scene_ldr_texture, 0);
 
@@ -91,12 +91,8 @@ void opengl_post_pass_tonemap()
 	opengl_draw_textured_quad(-1.0f, -1.0f, 0.0f, 0.0f, 1.0f, 1.0f, Scene_texture_u_scale, Scene_texture_u_scale);
 }
 
-bool opengl_post_pass_bloom()
+void opengl_post_pass_bloom()
 {
-	if (Cmdline_bloom_intensity <= 0) {
-		return false;
-	}
-
 	// we need the scissor test disabled
 	GLboolean scissor_test = GL_state.ScissorTest(GL_FALSE);
 
@@ -116,15 +112,13 @@ bool opengl_post_pass_bloom()
 
 	opengl_shader_set_current( gr_opengl_maybe_create_shader(SDR_TYPE_POST_PROCESS_BRIGHTPASS, 0) );
 
-	GL_state.Uniform.setUniformi("tex", 0);
+	Current_shader->program->Uniforms.setUniformi("tex", 0);
 
 	GL_state.Texture.SetActiveUnit(0);
 	GL_state.Texture.SetTarget(GL_TEXTURE_2D);
 	GL_state.Texture.Enable(Scene_color_texture);
 
 	opengl_draw_textured_quad(-1.0f, -1.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f, 1.0f);
-
-	GL_state.Texture.Disable();
 
 	// ------ end bright pass ------
 
@@ -135,8 +129,6 @@ bool opengl_post_pass_bloom()
 	GL_state.Texture.Enable(Bloom_textures[0]);
 
 	glGenerateMipmap(GL_TEXTURE_2D);
-
-	GL_state.Texture.Disable();
 
 	for ( int iteration = 0; iteration < 2; iteration++) {
 		for (int pass = 0; pass < 2; pass++) {
@@ -149,7 +141,7 @@ bool opengl_post_pass_bloom()
 				opengl_shader_set_current(gr_opengl_maybe_create_shader(SDR_TYPE_POST_PROCESS_BLUR, SDR_FLAG_BLUR_VERTICAL));
 			}
 
-			GL_state.Uniform.setUniformi("tex", 0);
+			Current_shader->program->Uniforms.setUniformi("tex", 0);
 
 			GL_state.Texture.SetActiveUnit(0);
 			GL_state.Texture.SetTarget(GL_TEXTURE_2D);
@@ -159,9 +151,9 @@ bool opengl_post_pass_bloom()
 				int bloom_width = width >> mipmap;
 				int bloom_height = height >> mipmap;
 
-				GL_state.Uniform.setUniformf("texSize", (pass) ? 1.0f / i2fl(bloom_width) : 1.0f / i2fl(bloom_height));
-				GL_state.Uniform.setUniformi("level", mipmap);
-				GL_state.Uniform.setUniformf("tapSize", 1.0f);
+				Current_shader->program->Uniforms.setUniformf("texSize", (pass) ? 1.0f / i2fl(bloom_width) : 1.0f / i2fl(bloom_height));
+				Current_shader->program->Uniforms.setUniformi("level", mipmap);
+				Current_shader->program->Uniforms.setUniformf("tapSize", 1.0f);
 
 				glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, dest_tex, mipmap);
 
@@ -172,17 +164,15 @@ bool opengl_post_pass_bloom()
 		}
 	}
 
-	GL_state.Texture.Disable();
-
 	// composite blur to the color texture
 
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, Scene_color_texture, 0);
 
 	opengl_shader_set_current(gr_opengl_maybe_create_shader(SDR_TYPE_POST_PROCESS_BLOOM_COMP, 0));
 
-	GL_state.Uniform.setUniformi("tex", 0);
-	GL_state.Uniform.setUniformi("levels", MAX_MIP_BLUR_LEVELS);
-	GL_state.Uniform.setUniformf("bloom_intensity", Cmdline_bloom_intensity / 100.0f);
+	Current_shader->program->Uniforms.setUniformi("tex", 0);
+	Current_shader->program->Uniforms.setUniformi("levels", MAX_MIP_BLUR_LEVELS);
+	Current_shader->program->Uniforms.setUniformf("bloom_intensity", Cmdline_bloom_intensity / 100.0f);
 
 	GL_state.Texture.SetActiveUnit(0);
 	GL_state.Texture.SetTarget(GL_TEXTURE_2D);
@@ -200,8 +190,6 @@ bool opengl_post_pass_bloom()
 
 	// reset viewport, scissor test and exit
 	GL_state.ScissorTest(scissor_test);
-
-	return true;
 }
 
 void gr_opengl_post_process_begin()
@@ -256,7 +244,7 @@ void opengl_post_pass_fxaa() {
 	opengl_shader_set_current( gr_opengl_maybe_create_shader(SDR_TYPE_POST_PROCESS_FXAA_PREPASS, 0) );
 
 	// basic/default uniforms
-	GL_state.Uniform.setUniformi( "tex", 0 );
+	Current_shader->program->Uniforms.setUniformi( "tex", 0 );
 
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, Scene_luminance_texture, 0);
 
@@ -266,25 +254,21 @@ void opengl_post_pass_fxaa() {
 
 	opengl_draw_textured_quad(-1.0f, -1.0f, 0.0f, 0.0f, 1.0f, 1.0f, Scene_texture_u_scale, Scene_texture_u_scale);
 
-	GL_state.Texture.Disable();
-
 	// set and configure post shader ..
 	opengl_shader_set_current( gr_opengl_maybe_create_shader(SDR_TYPE_POST_PROCESS_FXAA, 0) );
 
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, Scene_ldr_texture, 0);
 
 	// basic/default uniforms
-	GL_state.Uniform.setUniformi( "tex0", 0 );
-	GL_state.Uniform.setUniformf( "rt_w", static_cast<float>(Post_texture_width));
-	GL_state.Uniform.setUniformf( "rt_h", static_cast<float>(Post_texture_height));
+	Current_shader->program->Uniforms.setUniformi( "tex0", 0 );
+	Current_shader->program->Uniforms.setUniformf( "rt_w", static_cast<float>(Post_texture_width));
+	Current_shader->program->Uniforms.setUniformf( "rt_h", static_cast<float>(Post_texture_height));
 
 	GL_state.Texture.SetActiveUnit(0);
 	GL_state.Texture.SetTarget(GL_TEXTURE_2D);
 	GL_state.Texture.Enable(Scene_luminance_texture);
 
 	opengl_draw_textured_quad(-1.0f, -1.0f, 0.0f, 0.0f, 1.0f, 1.0f, Scene_texture_u_scale, Scene_texture_u_scale);
-
-	GL_state.Texture.Disable();
 
 	opengl_shader_set_current();
 }
@@ -322,14 +306,14 @@ void opengl_post_lightshafts()
 
 				x = asinf(vm_vec_dot(&light_dir, &Eye_matrix.vec.rvec)) / PI*1.5f + 0.5f; //cant get the coordinates right but this works for the limited glare fov
 				y = asinf(vm_vec_dot(&light_dir, &Eye_matrix.vec.uvec)) / PI*1.5f*gr_screen.clip_aspect + 0.5f;
-				GL_state.Uniform.setUniform2f("sun_pos", x, y);
-				GL_state.Uniform.setUniformi("scene", 0);
-				GL_state.Uniform.setUniformi("cockpit", 1);
-				GL_state.Uniform.setUniformf("density", ls_density);
-				GL_state.Uniform.setUniformf("falloff", ls_falloff);
-				GL_state.Uniform.setUniformf("weight", ls_weight);
-				GL_state.Uniform.setUniformf("intensity", Sun_spot * ls_intensity);
-				GL_state.Uniform.setUniformf("cp_intensity", Sun_spot * ls_cpintensity);
+				Current_shader->program->Uniforms.setUniform2f("sun_pos", x, y);
+				Current_shader->program->Uniforms.setUniformi("scene", 0);
+				Current_shader->program->Uniforms.setUniformi("cockpit", 1);
+				Current_shader->program->Uniforms.setUniformf("density", ls_density);
+				Current_shader->program->Uniforms.setUniformf("falloff", ls_falloff);
+				Current_shader->program->Uniforms.setUniformf("weight", ls_weight);
+				Current_shader->program->Uniforms.setUniformf("intensity", Sun_spot * ls_intensity);
+				Current_shader->program->Uniforms.setUniformf("cp_intensity", Sun_spot * ls_cpintensity);
 
 				GL_state.Texture.SetActiveUnit(0);
 				GL_state.Texture.SetTarget(GL_TEXTURE_2D);
@@ -362,14 +346,13 @@ void gr_opengl_post_process_end()
 	// state switch just the once (for bloom pass and final render-to-screen)
 	GLboolean depth = GL_state.DepthTest(GL_FALSE);
 	GLboolean depth_mask = GL_state.DepthMask(GL_FALSE);
-	GLboolean lighting = GL_state.Lighting(GL_FALSE);
 	GLboolean blend = GL_state.Blend(GL_FALSE);
 	GLboolean cull = GL_state.CullFace(GL_FALSE);
 
 	GL_state.Texture.SetShaderMode(GL_TRUE);
 	
 	// do bloom, hopefully ;)
-	bool bloomed = opengl_post_pass_bloom();
+	opengl_post_pass_bloom();
 
 	// do tone mapping
 	opengl_post_pass_tonemap();
@@ -406,40 +389,18 @@ void gr_opengl_post_process_end()
 	opengl_shader_set_current(post_sdr_handle);
 
 	// basic/default uniforms
-	GL_state.Uniform.setUniformi( "tex", 0 );
-	GL_state.Uniform.setUniformi( "depth_tex", 2);
-	GL_state.Uniform.setUniformf( "timer", static_cast<float>(timer_get_milliseconds() % 100 + 1) );
+	Current_shader->program->Uniforms.setUniformi( "tex", 0 );
+	Current_shader->program->Uniforms.setUniformi( "depth_tex", 1);
+	Current_shader->program->Uniforms.setUniformf( "timer", static_cast<float>(timer_get_milliseconds() % 100 + 1) );
 
 	for (size_t idx = 0; idx < Post_effects.size(); idx++) {
 		if ( GL_shader[post_sdr_handle].flags & (1<<idx) ) {
 			const char *name = Post_effects[idx].uniform_name.c_str();
 			float value = Post_effects[idx].intensity;
 
-			GL_state.Uniform.setUniformf( name, value);
+			Current_shader->program->Uniforms.setUniformf( name, value);
 		}
 	}
-
-	// bloom uniforms, but only if we did the bloom
-	if (bloomed) {
-		float intensity = MIN((float)Cmdline_bloom_intensity, 200.0f) * 0.01f;
-
-		if (Neb2_render_mode != NEB2_RENDER_NONE) {
-			// we need less intensity for full neb missions, so cut it by 30%
-			intensity /= 3.0f;
-		}
-
-		//GL_state.Uniform.setUniformf( "bloom_intensity", intensity );
-		GL_state.Uniform.setUniformf( "bloom_intensity", 0.0f );
-		GL_state.Uniform.setUniformi( "levels" , MAX_MIP_BLUR_LEVELS );
-		GL_state.Uniform.setUniformi( "bloomed", 1 );
-
-		GL_state.Texture.SetActiveUnit(1);
-		GL_state.Texture.SetTarget(GL_TEXTURE_2D);
-		//GL_state.Texture.Enable(Post_bloom_texture_id[2]);
-		GL_state.Texture.Enable(Bloom_textures[0]);
-	}
-	else
-		GL_state.Uniform.setUniformf( "bloom_intensity", 0.0f );
 
 	// now render it to the screen ...
 	glBindFramebuffer(GL_FRAMEBUFFER,0);
@@ -448,7 +409,7 @@ void gr_opengl_post_process_end()
 	//GL_state.Texture.Enable(Scene_color_texture);
 	GL_state.Texture.Enable(Scene_ldr_texture);
 
-	GL_state.Texture.SetActiveUnit(2);
+	GL_state.Texture.SetActiveUnit(1);
 	GL_state.Texture.SetTarget(GL_TEXTURE_2D);
 	GL_state.Texture.Enable(Scene_depth_texture);
 
@@ -505,19 +466,12 @@ void gr_opengl_post_process_end()
 
 	opengl_draw_textured_quad(0.0f, -0.0f, 0.0f, 0.0f, 1.0f, 1.0f, Scene_texture_u_scale, Scene_texture_u_scale);
 	*/
-	GL_state.Texture.SetActiveUnit(2);
-	GL_state.Texture.Disable();
-	GL_state.Texture.SetActiveUnit(1);
-	GL_state.Texture.Disable();
-	GL_state.Texture.SetActiveUnit(0);
-	GL_state.Texture.Disable();
 
 	GL_state.Texture.SetShaderMode(GL_FALSE);
 
 	// reset state
 	GL_state.DepthTest(depth);
 	GL_state.DepthMask(depth_mask);
-	GL_state.Lighting(lighting);
 	GL_state.Blend(blend);
 	GL_state.CullFace(cull);
 
@@ -539,7 +493,7 @@ void opengl_post_init_uniforms(int flags)
 {
 	for (int idx = 0; idx < (int)Post_effects.size(); idx++) {
 		if (flags & (1 << idx)) {
-			opengl_shader_init_uniform(Post_effects[idx].uniform_name.c_str());
+			Current_shader->program->Uniforms.initUniform(Post_effects[idx].uniform_name.c_str());
 		}
 	}
 }
@@ -863,10 +817,6 @@ bool opengl_post_init_shaders()
 
 void opengl_setup_bloom_textures()
 {
-	if (Cmdline_bloom_intensity <= 0) {
-		return;
-	}
-
 	// two more framebuffers, one each for the two different sized bloom textures
 	glGenFramebuffers(1, &Bloom_framebuffer);
 
@@ -972,8 +922,6 @@ static bool opengl_post_init_framebuffer()
 	}
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-	GL_state.Texture.Disable();
 
 	rval = true;
 	

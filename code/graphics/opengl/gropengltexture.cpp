@@ -16,8 +16,8 @@
 #include "ddsutils/ddsutils.h"
 #include "globalincs/systemvars.h"
 #include "graphics/grinternal.h"
-#include "graphics/gropenglstate.h"
-#include "graphics/gropengltexture.h"
+#include "gropenglstate.h"
+#include "gropengltexture.h"
 #include "math/vecmat.h"
 #include "osapi/osregistry.h"
 
@@ -1017,7 +1017,6 @@ int gr_opengl_tcache_set_internal(int bitmap_handle, int bitmap_type, float *u_s
 	// gah
 	else {
 		mprintf(("Texturing disabled for bitmap %d (%s) due to internal error.\n", bitmap_handle, bm_get_filename(bitmap_handle)));
-		GL_state.Texture.Disable();
 
 		return 0;
 	}
@@ -1073,8 +1072,6 @@ int gr_opengl_preload(int bitmap_num, int is_aabitmap)
 	}
 
 	retval = gr_opengl_tcache_set(bitmap_num, (is_aabitmap) ? TCACHE_TYPE_AABITMAP : TCACHE_TYPE_NORMAL, &u_scale, &v_scale);
-
-	GL_state.Texture.Disable();
 
 	if ( !retval ) {
 		mprintf(("Texture upload failed!\n"));
@@ -1170,7 +1167,6 @@ int opengl_compress_image( ubyte **compressed_data, ubyte *in_data, int width, i
 	}
 
 	if ( (compressed == GL_FALSE) || (compressed != intFormat) || (testing == 0) ) {
-		GL_state.Texture.Disable();
 		GL_state.Texture.Delete(tex);
 		glDeleteTextures(1, &tex);
 		return 0;
@@ -1212,8 +1208,6 @@ int opengl_compress_image( ubyte **compressed_data, ubyte *in_data, int width, i
 
 	glHint(GL_TEXTURE_COMPRESSION_HINT, GL_DONT_CARE);
 
-
-	GL_state.Texture.Disable();
 	GL_state.Texture.Delete(tex);
 	glDeleteTextures(1, &tex);
 
@@ -1347,8 +1341,6 @@ size_t opengl_export_render_target( int slot, int width, int height, int alpha, 
 			m_offset
 		);
 	}
-
-	GL_state.Texture.Disable();
 
 	GL_CHECK_FOR_ERRORS("end of export_image()");
 
@@ -1740,8 +1732,6 @@ int opengl_make_render_target( int handle, int slot, int *w, int *h, int *bpp, i
 
 		glTexParameteri(GL_texture_target, GL_TEXTURE_MAX_LEVEL, ts->mipmap_levels - 1);
 
-		GL_state.Texture.Disable();
-
 		ts->w = (ushort)*w;
 		ts->h = (ushort)*h;
 		ts->bpp = 24;
@@ -1817,8 +1807,6 @@ int opengl_make_render_target( int handle, int slot, int *w, int *h, int *bpp, i
 
 	glTexParameteri(GL_texture_target, GL_TEXTURE_MAX_LEVEL, ts->mipmap_levels - 1);
 
-	GL_state.Texture.Disable();
-
 	// render buffer
 //	glGenRenderbuffers(1, &new_fbo.renderbuffer_id);
 //	glBindRenderbuffer(GL_RENDERBUFFER, new_fbo.renderbuffer_id);
@@ -1843,7 +1831,6 @@ int opengl_make_render_target( int handle, int slot, int *w, int *h, int *bpp, i
 
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-		GL_state.Texture.Disable();
 		GL_state.Texture.Delete(ts->texture_id);
 		glDeleteTextures(1, &ts->texture_id);
 		ts->texture_id = 0;
@@ -1937,8 +1924,6 @@ void gr_opengl_bm_generate_mip_maps(int slot)
 	GL_state.Texture.Enable(ts->texture_id);
 
 	glGenerateMipmap(ts->texture_target);
-
-	GL_state.Texture.Disable();
 }
 
 //
