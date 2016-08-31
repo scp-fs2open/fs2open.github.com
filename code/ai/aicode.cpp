@@ -14169,46 +14169,46 @@ void ai_frame(int objnum)
 
 void ai_control_info_check( object *obj, ai_info *aip )
 {
-	if(aip->ai_override_flags == 0)
+	if(aip->ai_override_flags.none_set())
 		return;
 
 	if(timestamp_elapsed(aip->ai_override_timestamp)) {
-		aip->ai_override_flags = 0;
+		aip->ai_override_flags.reset();
 	} else {
-		if(aip->ai_override_flags & AIORF_FULL)
+		if(aip->ai_override_flags[AI::Maneuver_Override_Flags::Full])
 		{
 			AI_ci.pitch = aip->ai_override_ci.pitch;
 			AI_ci.heading = aip->ai_override_ci.heading;
 			AI_ci.bank = aip->ai_override_ci.bank;
 		} else {
-			if(aip->ai_override_flags & AIORF_PITCH)
+			if(aip->ai_override_flags[AI::Maneuver_Override_Flags::Pitch])
 			{
 				AI_ci.pitch = aip->ai_override_ci.pitch;
 			}
-			if(aip->ai_override_flags & AIORF_HEADING)
+			if(aip->ai_override_flags[AI::Maneuver_Override_Flags::Heading])
 			{
 				AI_ci.heading = aip->ai_override_ci.heading;
 			}
-			if(aip->ai_override_flags & AIORF_ROLL)
+			if(aip->ai_override_flags[AI::Maneuver_Override_Flags::Roll])
 			{
 				AI_ci.bank = aip->ai_override_ci.bank;
 			}
 		}
-		if(aip->ai_override_flags & AIORF_FULL_LAT)
+		if(aip->ai_override_flags[AI::Maneuver_Override_Flags::Full_lat])
 		{
 			AI_ci.vertical = aip->ai_override_ci.vertical;
 			AI_ci.sideways = aip->ai_override_ci.sideways;
 			AI_ci.forward = aip->ai_override_ci.forward;
 		} else {
-			if(aip->ai_override_flags & AIORF_UP)
+			if(aip->ai_override_flags[AI::Maneuver_Override_Flags::Up])
 			{
 				AI_ci.vertical = aip->ai_override_ci.vertical;
 			}
-			if(aip->ai_override_flags & AIORF_SIDEWAYS)
+			if(aip->ai_override_flags[AI::Maneuver_Override_Flags::Sideways])
 			{
 				AI_ci.sideways = aip->ai_override_ci.sideways;
 			}
-			if(aip->ai_override_flags & AIORF_FORWARD)
+			if(aip->ai_override_flags[AI::Maneuver_Override_Flags::Forward])
 			{
 				AI_ci.forward = aip->ai_override_ci.forward;
 			}
@@ -14440,7 +14440,7 @@ void init_ai_object(int objnum)
 
 	// set lethality to enemy team
 	aip->lethality = 0.0f;
-	aip->ai_override_flags = 0;
+	aip->ai_override_flags.reset();
 	memset(&aip->ai_override_ci,0,sizeof(control_info));
 }
 
