@@ -3799,7 +3799,7 @@ float ai_path_0()
 		int path_num;
 		Assert(aip->active_goal >= 0);
 		ai_goal *aigp = &aip->goals[aip->active_goal];
-		Assert(aigp->flags & AIGF_DOCK_INDEXES_VALID);
+		Assert(aigp->flags[AI::Goal_Flags::Dockee_index_valid] || aigp->flags[AI::Goal_Flags::Docker_index_valid]);
 
 		path_num = ai_return_path_num_from_dockbay(&Objects[aip->goal_objnum], aigp->dockee.index);
 		ai_find_path(Pl_objp, aip->goal_objnum, path_num, 0);
@@ -3942,7 +3942,7 @@ float ai_path_1()
 		int path_num;
 		Assert(aip->active_goal >= 0);
 		ai_goal *aigp = &aip->goals[aip->active_goal];
-		Assert(aigp->flags & AIGF_DOCK_INDEXES_VALID);
+		Assert(aigp->flags[AI::Goal_Flags::Dockee_index_valid] || aigp->flags[AI::Goal_Flags::Docker_index_valid]);
 
 		path_num = ai_return_path_num_from_dockbay(&Objects[aip->goal_objnum], aigp->dockee.index);
 		ai_find_path(Pl_objp, aip->goal_objnum, path_num, 0);
@@ -10358,7 +10358,7 @@ void ai_get_dock_goal_indexes(object *objp, ai_info *aip, ai_goal *aigp, object 
 		{
 			// get them from the active goal
 			Assert(aigp != NULL);
-			Assert(aigp->flags & AIGF_DOCK_INDEXES_VALID);
+			Assert(aigp->flags[AI::Goal_Flags::Dockee_index_valid] || aigp->flags[AI::Goal_Flags::Docker_index_valid]);
 			docker_index = aigp->docker.index;
 			dockee_index = aigp->dockee.index;
 			Assert(docker_index >= 0);
@@ -10937,10 +10937,10 @@ void ai_dock()
 			break;		
 
 		// play the depart sound, but only once, since this mode is called multiple times per frame
-		if ( !(aigp->flags & AIGF_DEPART_SOUND_PLAYED))
+		if ( !(aigp->flags[AI::Goal_Flags::Depart_sound_played]))
 		{
 			snd_play_3d( &Snds[SND_DOCK_DEPART], &Pl_objp->pos, &View_position );
-			aigp->flags |= AIGF_DEPART_SOUND_PLAYED;
+			aigp->flags.set(AI::Goal_Flags::Depart_sound_played);
 		}
 
 		dist = dock_orient_and_approach(Pl_objp, docker_index, goal_objp, dockee_index, DOA_UNDOCK_1, &rdinfo);
@@ -13856,7 +13856,7 @@ int ai_need_new_target(object *pl_objp, int target_objnum)
 			// Goober5000 - targeting the same team is allowed if pl_objp is going bonkers
 			ai_info *pl_aip = &Ai_info[Ships[pl_objp->instance].ai_index];
 			if (pl_aip->active_goal != AI_GOAL_NONE && pl_aip->active_goal != AI_ACTIVE_GOAL_DYNAMIC) {
-				if (pl_aip->goals[pl_aip->active_goal].flags & AIGF_TARGET_OWN_TEAM) {
+				if (pl_aip->goals[pl_aip->active_goal].flags[AI::Goal_Flags::Target_own_team]) {
 					return 0;
 				}
 			}
@@ -14169,46 +14169,46 @@ void ai_frame(int objnum)
 
 void ai_control_info_check( object *obj, ai_info *aip )
 {
-	if(aip->ai_override_flags == 0)
+	if(aip->ai_override_flags.none_set())
 		return;
 
 	if(timestamp_elapsed(aip->ai_override_timestamp)) {
-		aip->ai_override_flags = 0;
+		aip->ai_override_flags.reset();
 	} else {
-		if(aip->ai_override_flags & AIORF_FULL)
+		if(aip->ai_override_flags[AI::Maneuver_Override_Flags::Full])
 		{
 			AI_ci.pitch = aip->ai_override_ci.pitch;
 			AI_ci.heading = aip->ai_override_ci.heading;
 			AI_ci.bank = aip->ai_override_ci.bank;
 		} else {
-			if(aip->ai_override_flags & AIORF_PITCH)
+			if(aip->ai_override_flags[AI::Maneuver_Override_Flags::Pitch])
 			{
 				AI_ci.pitch = aip->ai_override_ci.pitch;
 			}
-			if(aip->ai_override_flags & AIORF_HEADING)
+			if(aip->ai_override_flags[AI::Maneuver_Override_Flags::Heading])
 			{
 				AI_ci.heading = aip->ai_override_ci.heading;
 			}
-			if(aip->ai_override_flags & AIORF_ROLL)
+			if(aip->ai_override_flags[AI::Maneuver_Override_Flags::Roll])
 			{
 				AI_ci.bank = aip->ai_override_ci.bank;
 			}
 		}
-		if(aip->ai_override_flags & AIORF_FULL_LAT)
+		if(aip->ai_override_flags[AI::Maneuver_Override_Flags::Full_lat])
 		{
 			AI_ci.vertical = aip->ai_override_ci.vertical;
 			AI_ci.sideways = aip->ai_override_ci.sideways;
 			AI_ci.forward = aip->ai_override_ci.forward;
 		} else {
-			if(aip->ai_override_flags & AIORF_UP)
+			if(aip->ai_override_flags[AI::Maneuver_Override_Flags::Up])
 			{
 				AI_ci.vertical = aip->ai_override_ci.vertical;
 			}
-			if(aip->ai_override_flags & AIORF_SIDEWAYS)
+			if(aip->ai_override_flags[AI::Maneuver_Override_Flags::Sideways])
 			{
 				AI_ci.sideways = aip->ai_override_ci.sideways;
 			}
-			if(aip->ai_override_flags & AIORF_FORWARD)
+			if(aip->ai_override_flags[AI::Maneuver_Override_Flags::Forward])
 			{
 				AI_ci.forward = aip->ai_override_ci.forward;
 			}
@@ -14440,7 +14440,7 @@ void init_ai_object(int objnum)
 
 	// set lethality to enemy team
 	aip->lethality = 0.0f;
-	aip->ai_override_flags = 0;
+	aip->ai_override_flags.reset();
 	memset(&aip->ai_override_ci,0,sizeof(control_info));
 }
 

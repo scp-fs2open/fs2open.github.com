@@ -950,7 +950,7 @@ void EndAutoPilot()
 						aigp->ai_mode = AI_GOAL_NONE;
 						aigp->signature = -1;
 						aigp->priority = -1;
-						aigp->flags = 0;
+						aigp->flags.reset();
 					}
 				}
 			}
@@ -974,7 +974,7 @@ void EndAutoPilot()
 						aigp->ai_mode = AI_GOAL_NONE;
 						aigp->signature = -1;
 						aigp->priority = -1;
-						aigp->flags = 0;
+						aigp->flags.reset();
 					}
 				}
 			}

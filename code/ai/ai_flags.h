@@ -50,7 +50,7 @@ namespace AI {
 		NUM_VALUES
 	};
 
-	FLAG_LIST(Override_Flags) {
+	FLAG_LIST(Maneuver_Override_Flags) {
 		Full,		//	Full sexp control
 		Roll,		//	Sexp forced roll maneuver
 		Pitch,		//	Sexp forced pitch change

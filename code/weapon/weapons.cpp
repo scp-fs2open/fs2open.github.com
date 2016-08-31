@@ -4941,7 +4941,7 @@ void weapon_set_tracking_info(int weapon_objnum, int parent_objnum, int target_o
 			// Goober5000 - if we're going bonkers, pretend we're not targeting our own team
 			ai_info *parent_aip = &Ai_info[Ships[parent_objp->instance].ai_index];
 			if (parent_aip->active_goal != AI_GOAL_NONE && parent_aip->active_goal != AI_ACTIVE_GOAL_DYNAMIC) {
-				if (parent_aip->goals[parent_aip->active_goal].flags & AIGF_TARGET_OWN_TEAM) {
+				if (parent_aip->goals[parent_aip->active_goal].flags[AI::Goal_Flags::Target_own_team]) {
 					targeting_same = 0;
 				}
 			}

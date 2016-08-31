@@ -9560,7 +9560,7 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 				ai_goal* goals = Ai_info[i].goals;
 				for (int j = 0; j < MAX_AI_GOALS; j++) {
 					// POSSIBLE OPTIMIZATION: goals[0] should be the active goal, so we might be able to reuse target_subsys_parent for that instead of doing ship_name_lookup()
-					if (goals[j].ai_mode == AI_GOAL_DESTROY_SUBSYSTEM && !(goals[j].flags & AIGF_SUBSYS_NEEDS_FIXUP)) {	// If the subsystem name hasn't been parsed yet, we're fine.
+					if (goals[j].ai_mode == AI_GOAL_DESTROY_SUBSYSTEM && !(goals[j].flags[AI::Goal_Flags::Subsys_needs_fixup])) {	// If the subsystem name hasn't been parsed yet, we're fine.
 						int sindex = ship_name_lookup(goals[j].target_name);
 						if (sindex > -1 && Ships[sindex].objnum == objnum) {
 							ivec3 temp = {i, j, goals[j].ai_submode};
