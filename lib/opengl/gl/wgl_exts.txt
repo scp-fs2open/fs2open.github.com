@@ -1,0 +1,5 @@
+WGL_ARB_create_context
+WGL_EXT_extensions_string
+WGL_ARB_extensions_string
+WGL_EXT_swap_control
+WGL_ARB_create_context_profile
