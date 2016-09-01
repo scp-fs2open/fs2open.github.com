@@ -34,6 +34,7 @@
 #include "weapon/weapon_flags.h"
 
 #include <string>
+#include <particle/ParticleManager.h>
 
 class object;
 class WarpEffect;
@@ -1005,6 +1006,8 @@ public:
 	particle_effect		split_particles;
 	particle_effect		knossos_end_particles;
 	particle_effect		regular_end_particles;
+
+	particle::ParticleEffectIndex death_effect;
 
 	//Debris stuff
 	float			debris_min_lifetime;

@@ -799,16 +799,17 @@ set (file_root_particle
 )
 
 set(file_root_particle_effects
-	particle/effects/SingleParticleEffect.cpp
-	particle/effects/SingleParticleEffect.h
 	particle/effects/BeamPiercingEffect.cpp
 	particle/effects/BeamPiercingEffect.h
-	particle/effects/ParticleEmitterEffect.cpp
-	particle/effects/ParticleEmitterEffect.h
 	particle/effects/CompositeEffect.cpp
 	particle/effects/CompositeEffect.h
-	particle/effects/ConeGeneratorEffect.cpp
-	particle/effects/ConeGeneratorEffect.h
+	particle/effects/ConeShape.h
+	particle/effects/GenericShapeEffect.h
+	particle/effects/ParticleEmitterEffect.cpp
+	particle/effects/ParticleEmitterEffect.h
+	particle/effects/SingleParticleEffect.cpp
+	particle/effects/SingleParticleEffect.h
+	particle/effects/SphereShape.h
 )
 
 set(file_root_particle_util
