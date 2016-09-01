@@ -871,9 +871,11 @@ void opengl_tnl_set_material(material* material_info, bool set_base_map)
 	int base_map = material_info->get_texture_map(TM_BASE_TYPE);
 	vec4 clr = material_info->get_color();
 
-	if ( shader_handle >= 0 ) {
-		opengl_shader_set_current(shader_handle);
-	} else {
+	Assert(shader_handle >= 0);
+
+	opengl_shader_set_current(shader_handle);
+
+	if ( Current_shader->shader == SDR_TYPE_PASSTHROUGH_RENDER ) {
 		opengl_shader_set_passthrough(base_map >= 0, material_info->get_texture_type() == TCACHE_TYPE_AABITMAP, &clr, material_info->get_color_scale());
 	}
 
