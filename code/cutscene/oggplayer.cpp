@@ -55,11 +55,7 @@ static int buffer_handle = -1;
 
 static int timer_started = 0;
 static longlong base_time = -1;
-#ifdef SCP_UNIX
-static struct timeval timer_expire = { 0, 0 };
-#else
 static int timer_expire;
-#endif
 
 static int audio_inited = 0;
 static int audio_buffer_tail = 0;
@@ -129,22 +125,8 @@ static double OGG_get_time()
 
 static void OGG_timer_init()
 {
-#if SCP_UNIX
-	int nsec = 0;
-
-	gettimeofday(&timer_expire, NULL);
-
-	timer_expire.tv_usec += (int)((videobuf_time - OGG_get_time()) * 1000000.0);
-
-	if (timer_expire.tv_usec > 1000000) {
-		nsec = timer_expire.tv_usec / 1000000;
-		timer_expire.tv_sec += nsec;
-		timer_expire.tv_usec -= nsec * 1000000;
-	}
-#else
-	timer_expire = timer_get_microseconds();
+	timer_expire = static_cast<int>(timer_get_microseconds());
 	timer_expire += (int)((videobuf_time - OGG_get_time()) * 1000000.0);
-#endif
 
 	timer_started = 1;
 }
@@ -154,47 +136,9 @@ static void OGG_timer_do_wait()
 	if (!timer_started)
 		OGG_timer_init();
 
-#if SCP_UNIX
-	int nsec = 0;
-	struct timespec ts, tsRem;
-	struct timeval tv;
-
-	gettimeofday(&tv, NULL);
-
-	if (tv.tv_sec > timer_expire.tv_sec)
-		goto end;
-
-	if ( (tv.tv_sec == timer_expire.tv_sec) && (tv.tv_usec >= timer_expire.tv_usec) )
-		goto end;
-
-	ts.tv_sec = timer_expire.tv_sec - tv.tv_sec;
-	ts.tv_nsec = 1000 * (timer_expire.tv_usec - tv.tv_usec);
-
-	if (ts.tv_nsec < 0) {
-		ts.tv_nsec += 1000000000UL;
-		--ts.tv_sec;
-	}
-
-	if ( (nanosleep(&ts, &tsRem) == -1) && (errno == EINTR) ) {
-		// so we got an error that was a signal interupt, try to sleep again with remainder of time
-		if ( (nanosleep(&tsRem, NULL) == -1) && (errno == EINTR) ) {
-			mprintf(("MVE: Timer error! Aborting movie playback!\n"));
-			return;
-		}
-	}
-
-end:
-    timer_expire.tv_usec += (int)((videobuf_time - OGG_get_time()) * 1000000.0);
-
-    if (timer_expire.tv_usec > 1000000) {
-        nsec = timer_expire.tv_usec / 1000000;
-        timer_expire.tv_sec += nsec;
-        timer_expire.tv_usec -= nsec * 1000000;
-    }
-#else
 	int tv, ts, ts2;
 
-	tv = timer_get_microseconds();
+	tv = static_cast<int>(timer_get_microseconds());
 
 	if (tv > timer_expire)
 		goto end;
@@ -203,11 +147,10 @@ end:
 
 	ts2 = ts/1000;
 
-	Sleep(ts2);
+	os_sleep(ts2);
 
 end:
 	timer_expire += (int)((videobuf_time - OGG_get_time()) * 1000000.0);
-#endif
 }
 
 //

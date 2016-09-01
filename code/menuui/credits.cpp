@@ -816,7 +816,7 @@ void credits_do_frame(float frametime)
 
 	Credits_frametime = temp_time - Credits_last_time;
 	Credits_last_time = temp_time;
-	timestamp_inc(Credits_frametime);
+	timestamp_inc(i2f(Credits_frametime) / TIMESTAMP_FREQUENCY);
 
 	float fl_frametime = i2fl(Credits_frametime) / 1000.f;
 	if (keyd_pressed[KEY_LSHIFT]) {

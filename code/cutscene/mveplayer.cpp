@@ -31,11 +31,7 @@ static int mve_playing;
 // timer variables
 static int micro_frame_delay = 0;
 static int timer_started = 0;
-#ifdef SCP_UNIX
-static struct timeval timer_expire = { 0, 0 };
-#else
 static int timer_expire;
-#endif
 
 // audio variables
 #define MVE_AUDIO_BUFFERS 64  // total buffers to interact with stream
@@ -113,22 +109,8 @@ int mve_timer_create(ubyte *data)
 
 static void mve_timer_start(void)
 {
-#ifdef SCP_UNIX
-	int nsec = 0;
-
-	gettimeofday(&timer_expire, NULL);
-
-	timer_expire.tv_usec += micro_frame_delay;
-
-	if (timer_expire.tv_usec > 1000000) {
-		nsec = timer_expire.tv_usec / 1000000;
-		timer_expire.tv_sec += nsec;
-		timer_expire.tv_usec -= nsec * 1000000;
-	}
-#else
-	timer_expire = timer_get_microseconds();
+	timer_expire = static_cast<int>(timer_get_microseconds());
 	timer_expire += micro_frame_delay;
-#endif
 
 	timer_started = 1;
 }
@@ -139,49 +121,9 @@ static int mve_do_timer_wait(void)
 		return 0;
 	}
 
-#ifdef SCP_UNIX
-	int nsec = 0;
-	struct timespec ts, tsRem;
-	struct timeval tv;
-
-	gettimeofday(&tv, NULL);
-
-	if (tv.tv_sec > timer_expire.tv_sec) {
-		goto end;
-	}
-
-	if ( (tv.tv_sec == timer_expire.tv_sec) && (tv.tv_usec >= timer_expire.tv_usec) ) {
-		goto end;
-	}
-
-	ts.tv_sec = timer_expire.tv_sec - tv.tv_sec;
-	ts.tv_nsec = 1000 * (timer_expire.tv_usec - tv.tv_usec);
-
-	if (ts.tv_nsec < 0) {
-		ts.tv_nsec += 1000000000UL;
-		--ts.tv_sec;
-	}
-
-	if ( (nanosleep(&ts, &tsRem) == -1) && (errno == EINTR) ) {
-		// so we got an error that was a signal interupt, try to sleep again with remainder of time
-		if ( (nanosleep(&tsRem, NULL) == -1) && (errno == EINTR) ) {
-			mprintf(("MVE: Timer error! Aborting movie playback!\n"));
-			return 1;
-		}
-	}
-
-end:
-	timer_expire.tv_usec += micro_frame_delay;
-
-	if (timer_expire.tv_usec > 1000000) {
-		nsec = timer_expire.tv_usec / 1000000;
-		timer_expire.tv_sec += nsec;
-		timer_expire.tv_usec -= nsec * 1000000;
-	}
-#else
 	int tv, ts, ts2;
 
-	tv = timer_get_microseconds();
+	tv = static_cast<int>(timer_get_microseconds());
 
 	if (tv > timer_expire) {
 		goto end;
@@ -189,23 +131,17 @@ end:
 
 	ts = timer_expire - tv;
 	ts2 = ts/1000;
-	Sleep(ts2);
+	os_sleep(ts2);
 
 end:
 	timer_expire += micro_frame_delay;
-#endif
 
 	return 0;
 }
 
 static void mve_timer_stop()
 {
-#ifdef SCP_UNIX
-	timer_expire.tv_sec = 0;
-	timer_expire.tv_usec = 0;
-#else
 	timer_expire = 0;
-#endif
 	timer_started = 0;
 }
 
