@@ -54,9 +54,10 @@ uniform mat4 shadow_proj_matrix[4];
 out vec4 fragShadowUV[4];
 out vec4 fragShadowPos;
 #endif
-#ifdef FLAG_THRUSTER
+
+uniform bool FLAG_THRUSTER;
 uniform float thruster_scale;
-#endif
+
 #ifdef FLAG_CLIP
 uniform int use_clip_plane;
 uniform vec3 clip_normal;
@@ -109,11 +110,11 @@ void main()
  #endif
 	texCoord = textureMatrix * vertTexCoord;
 	vec4 vertex = vertPosition;
- #ifdef FLAG_THRUSTER
-	if(vertex.z < -1.5) {
+	
+	if(FLAG_THRUSTER && vertex.z < -1.5) {
 		vertex.z *= thruster_scale;
 	}
- #endif
+	
  // Transform the normal into eye space and normalize the result.
 	normal = normalize(mat3(modelViewMatrix) * mat3(orient) * vertNormal);
 	position = modelViewMatrix * orient * vertex;

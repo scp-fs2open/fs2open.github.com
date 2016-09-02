@@ -198,7 +198,7 @@ static opengl_shader_variant_t GL_shader_variants[] = {
 		{ "shadow_map" }, { },
 		"Shadows" },
 	
-	{ SDR_TYPE_MODEL, false, true, SDR_FLAG_MODEL_THRUSTER, "FLAG_THRUSTER",
+	{ SDR_TYPE_MODEL, false, false, SDR_FLAG_MODEL_THRUSTER, "FLAG_THRUSTER",
 		{ }, {  },
 		"Thruster scaling" },
 	
