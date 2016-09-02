@@ -10,7 +10,7 @@ uniform float alphaThreshold;
 #define SRGB_GAMMA 2.2
 void main()
 {
-	vec4 baseColor = texture2D(baseMap, fragTexCoord.xy);
+	vec4 baseColor = texture(baseMap, fragTexCoord.xy);
 	if(alphaThreshold > baseColor.a) discard;
 	baseColor.rgb = (srgb == 1) ? pow(baseColor.rgb, vec3(SRGB_GAMMA)) : baseColor.rgb;
 	vec4 blendColor = (srgb == 1) ? vec4(pow(fragColor.rgb, vec3(SRGB_GAMMA)), fragColor.a) : fragColor;

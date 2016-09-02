@@ -10,7 +10,7 @@ void main()
 {
 	if(fragNormOffset < 0.0) discard;
 	if(fragImpactUV.x < 0.0 || fragImpactUV.x > 1.0 || fragImpactUV.y < 0.0 || fragImpactUV.y > 1.0) discard;
-	vec4 shieldColor = texture2D(shieldMap, fragImpactUV.xy);
+	vec4 shieldColor = texture(shieldMap, fragImpactUV.xy);
 	shieldColor.rgb = (srgb == 1) ? pow(shieldColor.rgb, vec3(SRGB_GAMMA)) * EMISSIVE_GAIN : shieldColor.rgb;
 	vec4 blendColor = color;
 	blendColor.rgb = (srgb == 1) ? pow(blendColor.rgb, vec3(SRGB_GAMMA)) * EMISSIVE_GAIN : blendColor.rgb;

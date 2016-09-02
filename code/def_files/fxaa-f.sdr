@@ -163,11 +163,11 @@
 	#define FxaaSat(x) saturate(x)
 #endif
 #if (FXAA_GLSL_120 == 1)
-	#define FxaaTexTop(t, p) texture2DLod(t, p, 0.0)
+	#define FxaaTexTop(t, p) textureLod(t, p, 0.0)
 	#if (FXAA_FAST_PIXEL_OFFSET == 1)
-		#define FxaaTexOff(t, p, o, r) texture2DLodOffset(t, p, 0.0, o)
+		#define FxaaTexOff(t, p, o, r) textureLodOffset(t, p, 0.0, o)
 	#else
-		#define FxaaTexOff(t, p, o, r) texture2DLod(t, p + (o * r), 0.0)
+		#define FxaaTexOff(t, p, o, r) textureLod(t, p + (o * r), 0.0)
 	#endif
 	#if (FXAA_GATHER4_ALPHA == 1)
 		#define FxaaTexAlpha4(t, p) textureGather(t, p, 3)
