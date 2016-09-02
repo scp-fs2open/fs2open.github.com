@@ -5,6 +5,7 @@
 #define _SPHERE_SHAPE_H
 #pragma once
 
+#include <math/bitarray.h>
 #include "globalincs/pstypes.h"
 #include "particle/util/RandomRange.h"
 
@@ -17,7 +18,7 @@ namespace effects {
 class SphereShape {
 	util::UniformFloatRange m_sphereRange;
  public:
-	SphereShape() : m_sphereRange(0.00001f, 0.9999999f) {}
+	SphereShape() : m_sphereRange(0.f, 1.f) {}
 
 	matrix getDisplacementMatrix() {
 		auto u = m_sphereRange.next();
@@ -26,16 +27,13 @@ class SphereShape {
 		auto theta = 2 * PI * u;
 		auto phi = acos(2 * v - 1);
 
-		angles angs;
-
-		angs.b = 0.0f;
-
-		angs.h = theta;
-		angs.p = phi;
+		vec3d vec;
+		vec.xyz.x = sin(theta)*cos(phi);
+		vec.xyz.y = sin(theta)*sin(phi);
+		vec.xyz.z = cos(theta);
 
 		matrix m;
-
-		vm_angles_2_matrix(&m, &angs);
+		vm_vector_2_matrix_norm(&m, &vec);
 
 		return m;
 	}
@@ -44,6 +42,14 @@ class SphereShape {
 	}
 
 	EffectType getType() const { return EffectType::Sphere; }
+
+	/**
+	 * @brief Specifies if the velocities of the particles should be scaled with the deviation from the direction
+	 * @return @c true
+	 */
+	static SCP_CONSTEXPR bool scale_velocity_deviation() {
+		return false;
+	}
 };
 
 }

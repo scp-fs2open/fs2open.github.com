@@ -85,12 +85,10 @@ class GenericShapeEffect : public ParticleEffect {
 	virtual bool processSource(const ParticleSource* source) override {
 		auto num = m_particleNum.next();
 
+		vec3d dir = getNewDirection(source);
+		matrix dirMatrix;
+		vm_vector_2_matrix(&dirMatrix, &dir, nullptr, nullptr);
 		for (uint i = 0; i < num; ++i) {
-			vec3d dir = getNewDirection(source);
-
-			matrix dirMatrix;
-			vm_vector_2_matrix(&dirMatrix, &dir, nullptr, nullptr);
-
 			matrix velRotation = m_shape.getDisplacementMatrix();
 
 			matrix rotatedVel;
@@ -102,10 +100,13 @@ class GenericShapeEffect : public ParticleEffect {
 			source->getOrigin()->applyToParticleInfo(info);
 
 			info.vel = rotatedVel.vec.fvec;
-			// Scale the vector with a random velocity sample and also multiply that with cos(angle between info.vel and sourceDir)
-			// That should produce good looking directions where the maximum velocity is only achieved when the particle travels directly
-			// on the normal/reflect vector
-			vm_vec_scale(&info.vel, m_velocity.next() * vm_vec_dot(&info.vel, &dir));
+			if (TShape::scale_velocity_deviation()) {
+				// Scale the vector with a random velocity sample and also multiply that with cos(angle between info.vel and sourceDir)
+				// That should produce good looking directions where the maximum velocity is only achieved when the particle travels directly
+				// on the normal/reflect vector
+				vm_vec_scale(&info.vel, vm_vec_dot(&info.vel, &dir));
+			}
+			vm_vec_scale(&info.vel, m_velocity.next());
 
 			auto part = m_particleProperties.createParticle(info);
 
