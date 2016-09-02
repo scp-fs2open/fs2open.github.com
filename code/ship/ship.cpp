@@ -7899,25 +7899,35 @@ void ship_dying_frame(object *objp, int ship_num)
 			}
 
 			if (!knossos_ship){
-				// play a random explosion
-				particle::particle_emitter	pe;
-				particle_effect		pef = sip->regular_end_particles;
+				if (sip->death_effect > 0) {
+					// Use the new particle effect
+					auto source = particle::ParticleManager::get()->createSource(sip->death_effect);
 
-				pe.num_low = pef.n_low;					// Lowest number of particles to create
-				pe.num_high = pef.n_high;				// Highest number of particles to create
-				pe.pos = objp->pos;				// Where the particles emit from
-				pe.vel = objp->phys_info.vel;	// Initial velocity of all the particles
-				pe.min_life = pef.min_life;				// How long the particles live
-				pe.max_life = pef.max_life;				// How long the particles live
-				pe.normal = objp->orient.vec.uvec;	// What normal the particle emit around
-				pe.normal_variance = pef.variance;		//	How close they stick to that normal 0=on normal, 1=180, 2=360 degree
-				pe.min_vel = pef.min_vel;				// How fast the slowest particle can move
-				pe.max_vel = pef.max_vel;				// How fast the fastest particle can move
-				pe.min_rad = pef.min_rad;				// Min radius
-				pe.max_rad = pef.max_rad;				// Max radius
+					// Use the position since the ship is going to be invalid soon
+					source.moveTo(&objp->pos);
 
-				if (pe.num_high > 0) {
-					particle::emit( &pe, particle::PARTICLE_SMOKE2, 0 );
+					source.finish();
+				} else {
+					// play a random explosion
+					particle::particle_emitter	pe;
+					particle_effect		pef = sip->regular_end_particles;
+
+					pe.num_low = pef.n_low;					// Lowest number of particles to create
+					pe.num_high = pef.n_high;				// Highest number of particles to create
+					pe.pos = objp->pos;				// Where the particles emit from
+					pe.vel = objp->phys_info.vel;	// Initial velocity of all the particles
+					pe.min_life = pef.min_life;				// How long the particles live
+					pe.max_life = pef.max_life;				// How long the particles live
+					pe.normal = objp->orient.vec.uvec;	// What normal the particle emit around
+					pe.normal_variance = pef.variance;		//	How close they stick to that normal 0=on normal, 1=180, 2=360 degree
+					pe.min_vel = pef.min_vel;				// How fast the slowest particle can move
+					pe.max_vel = pef.max_vel;				// How fast the fastest particle can move
+					pe.min_rad = pef.min_rad;				// Min radius
+					pe.max_rad = pef.max_rad;				// Max radius
+
+					if (pe.num_high > 0) {
+						particle::emit( &pe, particle::PARTICLE_SMOKE2, 0 );
+					}
 				}
 			}
 
