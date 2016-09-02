@@ -46,7 +46,7 @@ WeakParticlePtr ParticleProperties::createParticle(particle_info& info) {
 
 void ParticleProperties::pageIn() {
 	if (m_bitmap >= 0) {
-		bm_page_in_aabitmap(m_bitmap);
+		bm_page_in_aabitmap(m_bitmap, -1);
 	}
 }
 }
