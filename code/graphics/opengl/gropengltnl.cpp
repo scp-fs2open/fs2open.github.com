@@ -142,18 +142,21 @@ void opengl_bind_buffer_object(int handle)
 
 void gr_opengl_update_buffer_data(int handle, size_t size, void* data)
 {
-	Assert(handle >= 0);
-	Assert((size_t)handle < GL_buffer_objects.size());
-
 	opengl_buffer_object &buffer_obj = GL_buffer_objects[handle];
 
 	opengl_bind_buffer_object(handle);
 
-	GL_vertex_data_in -= buffer_obj.size;
-	buffer_obj.size = size;
-	GL_vertex_data_in += buffer_obj.size;
+	if (size <= buffer_obj.size && buffer_obj.usage != GL_STREAM_DRAW) {
+		// No need to allocate new storage
+		glBufferSubData(buffer_obj.type, 0, size, data);
+	}
+	else {
+		GL_vertex_data_in -= buffer_obj.size;
+		buffer_obj.size = size;
+		GL_vertex_data_in += buffer_obj.size;
 
-	glBufferData(buffer_obj.type, size, data, buffer_obj.usage);
+		glBufferData(buffer_obj.type, size, data, buffer_obj.usage);
+	}
 }
 
 void opengl_update_buffer_data_offset(int handle, uint offset, uint size, void* data)
