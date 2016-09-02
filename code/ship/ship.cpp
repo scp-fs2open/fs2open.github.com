@@ -885,6 +885,8 @@ void ship_info::clone(const ship_info& other)
 	knossos_end_particles = other.knossos_end_particles;
 	regular_end_particles = other.regular_end_particles;
 
+	death_effect = other.death_effect;
+
 	debris_min_lifetime = other.debris_min_lifetime;
 	debris_max_lifetime = other.debris_max_lifetime;
 	debris_min_speed = other.debris_min_speed;
@@ -1195,6 +1197,8 @@ void ship_info::move(ship_info&& other)
 	std::swap(split_particles, other.split_particles);
 	std::swap(knossos_end_particles, other.knossos_end_particles);
 	std::swap(regular_end_particles, other.regular_end_particles);
+
+	std::swap(death_effect, other.death_effect);
 
 	debris_min_lifetime = other.debris_min_lifetime;
 	debris_max_lifetime = other.debris_max_lifetime;
@@ -1571,6 +1575,8 @@ ship_info::ship_info()
 	regular_end_particles.max_vel = 20.0f;
 	regular_end_particles.min_vel = 0.0f;
 	regular_end_particles.variance = 2.0f;
+
+	death_effect = -1;
 
 	debris_min_lifetime = -1.0f;
 	debris_max_lifetime = -1.0f;
@@ -3097,7 +3103,11 @@ int parse_ship_values(ship_info* sip, const bool is_template, const bool first_t
 		parse_ship_particle_effect(sip, &sip->split_particles, "ship split spew");
 	}
 
-	if(optional_string("$Ship Death Particles:"))
+	if (optional_string("$Ship Death Effect:"))
+	{
+		sip->death_effect = particle::util::parseEffect(sip->name);
+	}
+	else if(optional_string("$Ship Death Particles:"))
 	{
 		parse_ship_particle_effect(sip, &sip->regular_end_particles, "normal death spew");
 	}
@@ -7888,25 +7898,37 @@ void ship_dying_frame(object *objp, int ship_num)
 				do_dying_undock_physics(objp, shipp);
 			}
 
-			// play a random explosion
-			particle::particle_emitter	pe;
-			particle_effect		pef = sip->regular_end_particles;
+			if (!knossos_ship){
+				if (sip->death_effect > 0) {
+					// Use the new particle effect
+					auto source = particle::ParticleManager::get()->createSource(sip->death_effect);
 
-			pe.num_low = pef.n_low;					// Lowest number of particles to create
-			pe.num_high = pef.n_high;				// Highest number of particles to create
-			pe.pos = objp->pos;				// Where the particles emit from
-			pe.vel = objp->phys_info.vel;	// Initial velocity of all the particles
-			pe.min_life = pef.min_life;				// How long the particles live
-			pe.max_life = pef.max_life;				// How long the particles live
-			pe.normal = objp->orient.vec.uvec;	// What normal the particle emit around
-			pe.normal_variance = pef.variance;		//	How close they stick to that normal 0=on normal, 1=180, 2=360 degree
-			pe.min_vel = pef.min_vel;				// How fast the slowest particle can move
-			pe.max_vel = pef.max_vel;				// How fast the fastest particle can move
-			pe.min_rad = pef.min_rad;				// Min radius
-			pe.max_rad = pef.max_rad;				// Max radius
+					// Use the position since the ship is going to be invalid soon
+					source.moveTo(&objp->pos);
 
-			if ((!knossos_ship) && (pe.num_high > 0)) {
-				particle::emit( &pe, particle::PARTICLE_SMOKE2, 0 );
+					source.finish();
+				} else {
+					// play a random explosion
+					particle::particle_emitter	pe;
+					particle_effect		pef = sip->regular_end_particles;
+
+					pe.num_low = pef.n_low;					// Lowest number of particles to create
+					pe.num_high = pef.n_high;				// Highest number of particles to create
+					pe.pos = objp->pos;				// Where the particles emit from
+					pe.vel = objp->phys_info.vel;	// Initial velocity of all the particles
+					pe.min_life = pef.min_life;				// How long the particles live
+					pe.max_life = pef.max_life;				// How long the particles live
+					pe.normal = objp->orient.vec.uvec;	// What normal the particle emit around
+					pe.normal_variance = pef.variance;		//	How close they stick to that normal 0=on normal, 1=180, 2=360 degree
+					pe.min_vel = pef.min_vel;				// How fast the slowest particle can move
+					pe.max_vel = pef.max_vel;				// How fast the fastest particle can move
+					pe.min_rad = pef.min_rad;				// Min radius
+					pe.max_rad = pef.max_rad;				// Max radius
+
+					if (pe.num_high > 0) {
+						particle::emit( &pe, particle::PARTICLE_SMOKE2, 0 );
+					}
+				}
 			}
 
 			// If this is a large ship with a propagating explosion, set it to blow up.
