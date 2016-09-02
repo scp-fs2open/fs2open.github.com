@@ -74,9 +74,10 @@ uniform vec3 stripe_color;
 uniform bool team_glow_enabled;
 vec2 teamMask = vec2(0.0, 0.0);
 #endif
-#ifdef FLAG_MISC_MAP
+
+uniform bool FLAG_MISC_MAP;
 uniform sampler2D sMiscmap;
-#endif
+
 #ifdef FLAG_SHADOWS
 in vec4 fragShadowUV[4];
 in vec4 fragShadowPos;
@@ -377,16 +378,22 @@ void main()
 		specData = vec4(specColour.rgb, glossData);
    }
    
-#ifdef FLAG_MISC_MAP
- #ifdef FLAG_TEAMCOLOR
-	vec4 teamMask = vec4(0.0, 0.0, 0.0, 0.0);
-	teamMask = texture(sMiscmap, texCoord);
-	vec3 base = base_color - vec3(0.5);
-	vec3 stripe = stripe_color - vec3(0.5);
-	baseColor.rgb += (base * teamMask.x) + (stripe * teamMask.y);
-	baseColor.rgb = max(baseColor.rgb, vec3(0.0));
- #endif
+#ifdef FLAG_TEAMCOLOR
+	vec4 teamMask;
+	vec3 base;
+	vec3 stripe;
 #endif
+	if (FLAG_MISC_MAP) {
+#ifdef FLAG_TEAMCOLOR
+		teamMask = vec4(0.0, 0.0, 0.0, 0.0);
+		teamMask = texture(sMiscmap, texCoord);
+		base = base_color - vec3(0.5);
+		stripe = stripe_color - vec3(0.5);
+		baseColor.rgb += (base * teamMask.x) + (stripe * teamMask.y);
+		baseColor.rgb = max(baseColor.rgb, vec3(0.0));
+#endif
+	}
+	
 	float shadow = 1.0;
 #ifdef FLAG_SHADOWS
 	shadow = getShadowValue();
@@ -423,12 +430,12 @@ void main()
 #ifdef FLAG_HDR
         glowColor = pow(glowColor, vec3(SRGB_GAMMA)) * 3.0f;
 #endif
-#ifdef FLAG_MISC_MAP
- #ifdef FLAG_TEAMCOLOR
-        float glowColorLuminance = dot(glowColor, vec3(0.299, 0.587, 0.114));
-        glowColor = team_glow_enabled ? mix((base * teamMask.b) + (stripe * teamMask.a), glowColor, clamp(glowColorLuminance - teamMask.b - teamMask.a, 0.0, 1.0)) : glowColor;
- #endif
+		if (FLAG_MISC_MAP) {
+#ifdef FLAG_TEAMCOLOR
+			float glowColorLuminance = dot(glowColor, vec3(0.299, 0.587, 0.114));
+			glowColor = team_glow_enabled ? mix((base * teamMask.b) + (stripe * teamMask.a), glowColor, clamp(glowColorLuminance - teamMask.b - teamMask.a, 0.0, 1.0)) : glowColor;
 #endif
+		}
         baseColor.rgb += glowColor * GLOW_MAP_INTENSITY;
     }
 

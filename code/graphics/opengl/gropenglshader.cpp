@@ -178,7 +178,7 @@ static opengl_shader_variant_t GL_shader_variants[] = {
 		{ "sFramebuffer" }, {  },
 		"Animated Effects" },
 	
-	{ SDR_TYPE_MODEL, false, true, SDR_FLAG_MODEL_MISC_MAP, "FLAG_MISC_MAP",
+	{ SDR_TYPE_MODEL, false, false, SDR_FLAG_MODEL_MISC_MAP, "FLAG_MISC_MAP",
 		{ "sMiscmap" }, {  },
 		"Utility mapping" },
 	
