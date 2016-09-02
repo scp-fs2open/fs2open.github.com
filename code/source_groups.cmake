@@ -268,12 +268,18 @@ ENDIF(WIN32)
 set(file_root_globalincs_memory
 	globalincs/memory/memory.h
 	globalincs/memory/memory.cpp
-	globalincs/memory/newdelete.cpp
 	globalincs/memory/debug.h
 	globalincs/memory/debug.cpp
 	globalincs/memory/release.h
 	globalincs/memory/utils.h
 )
+
+if (NOT PLATFORM_MAC)
+	set(file_root_globalincs_memory
+		${file_root_globalincs_memory}
+		globalincs/memory/newdelete.cpp
+	)
+endif()
 
 # Add conditions for compiler specialization
 if (MSVC)
