@@ -134,6 +134,8 @@ set(FRED2_SOURCES
 	wing.h
 	wing_editor.cpp
 	wing_editor.h
+	MFCGraphicsOperations.cpp
+	MFCGraphicsOperations.h
 	fred.rc
 	version.rc2
 )
@@ -175,6 +177,8 @@ target_link_libraries(FRED2 PUBLIC "${OPENGL_LIBRARY}")
 TARGET_LINK_LIBRARIES(FRED2 PUBLIC code) # This will also link all dependencies of code
 TARGET_LINK_LIBRARIES(FRED2 PUBLIC "$<$<NOT:$<CONFIG:Release>>:nafxcwd.lib>")
 TARGET_LINK_LIBRARIES(FRED2 PUBLIC "$<$<CONFIG:Release>:nafxcw.lib>")
+
+target_link_libraries(FRED2 PUBLIC glad_wgl)
 
 INSTALL(
 	TARGETS FRED2
