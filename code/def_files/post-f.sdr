@@ -26,8 +26,6 @@ uniform float cutoff;
 #ifdef FLAG_DITH
 uniform float dither;
 #endif
-uniform sampler2D blurred_tex;
-uniform sampler2D depth_tex;
 void main()
 {
  #ifdef FLAG_DISTORT_NOISE

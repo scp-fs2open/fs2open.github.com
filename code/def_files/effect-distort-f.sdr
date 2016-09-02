@@ -3,7 +3,6 @@ in vec4 fragColor;
 in float fragOffset;
 out vec4 fragOut0;
 uniform sampler2D baseMap;
-uniform sampler2D depthMap;
 uniform float window_width;
 uniform float window_height;
 uniform sampler2D distMap;

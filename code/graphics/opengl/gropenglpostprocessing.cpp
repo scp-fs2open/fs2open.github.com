@@ -489,15 +489,6 @@ void get_post_process_effect_names(SCP_vector<SCP_string> &names)
 	}
 }
 
-void opengl_post_init_uniforms(int flags)
-{
-	for (int idx = 0; idx < (int)Post_effects.size(); idx++) {
-		if (flags & (1 << idx)) {
-			Current_shader->program->Uniforms.initUniform(Post_effects[idx].uniform_name.c_str());
-		}
-	}
-}
-
 void gr_opengl_post_process_set_effect(const char *name, int value)
 {
 	if ( !Post_initialized ) {

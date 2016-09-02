@@ -918,7 +918,6 @@ void opengl_tnl_set_material(material* material_info, bool set_base_map)
 void opengl_tnl_set_model_material(model_material *material_info)
 {
 	float u_scale, v_scale;
-	int render_pass = 0;
 
 	opengl_tnl_set_material(material_info, false);
 
@@ -929,6 +928,10 @@ void opengl_tnl_set_model_material(model_material *material_info)
 	gr_opengl_set_center_alpha(material_info->get_center_alpha());
 
 	Assert( Current_shader->shader == SDR_TYPE_MODEL );
+
+	// Use the sampler tracker to make sure the bound samplers are right
+	Current_shader->program->Samplers.reset();
+	int render_pass = 1;
 
 	GL_state.Texture.SetShaderMode(GL_TRUE);
 	
@@ -999,7 +1002,7 @@ void opengl_tnl_set_model_material(model_material *material_info)
 	}
 
 	if ( Current_shader->flags & SDR_FLAG_MODEL_DIFFUSE_MAP ) {
-		Current_shader->program->Uniforms.setUniformi("sBasemap", render_pass);
+		Current_shader->program->Samplers.bindSampler("sBasemap", render_pass);
 
 		if ( material_info->is_desaturated() ) {
 			Current_shader->program->Uniforms.setUniformi("desaturate", 1);
@@ -1036,7 +1039,7 @@ void opengl_tnl_set_model_material(model_material *material_info)
 	}
 
 	if ( Current_shader->flags & SDR_FLAG_MODEL_GLOW_MAP ) {
-		Current_shader->program->Uniforms.setUniformi("sGlowmap", render_pass);
+		Current_shader->program->Samplers.bindSampler("sGlowmap", render_pass);
 
 		if ( Glowmap_color_override_set ) {
 			Current_shader->program->Uniforms.setUniformi("overrideGlow", 1);
@@ -1051,7 +1054,7 @@ void opengl_tnl_set_model_material(model_material *material_info)
 	}
 
 	if ( Current_shader->flags & SDR_FLAG_MODEL_SPEC_MAP ) {
-		Current_shader->program->Uniforms.setUniformi("sSpecmap", render_pass);
+		Current_shader->program->Samplers.bindSampler("sSpecmap", render_pass);
 
 		if ( Specmap_color_override_set ) {
 			Current_shader->program->Uniforms.setUniformi("overrideSpec", 1);
@@ -1093,7 +1096,7 @@ void opengl_tnl_set_model_material(model_material *material_info)
 			}
 
 			Current_shader->program->Uniforms.setUniformMatrix4f("envMatrix", texture_mat);
-			Current_shader->program->Uniforms.setUniformi("sEnvmap", render_pass);
+			Current_shader->program->Samplers.bindSampler("sEnvmap", render_pass);
 
 			gr_opengl_tcache_set(ENVMAP, TCACHE_TYPE_CUBEMAP, &u_scale, &v_scale, render_pass);
 
@@ -1102,7 +1105,7 @@ void opengl_tnl_set_model_material(model_material *material_info)
 	}
 
 	if ( Current_shader->flags & SDR_FLAG_MODEL_NORMAL_MAP ) {
-		Current_shader->program->Uniforms.setUniformi("sNormalmap", render_pass);
+		Current_shader->program->Samplers.bindSampler("sNormalmap", render_pass);
 
 		gr_opengl_tcache_set(material_info->get_texture_map(TM_NORMAL_TYPE), TCACHE_TYPE_NORMAL, &u_scale, &v_scale, render_pass);
 
@@ -1110,7 +1113,7 @@ void opengl_tnl_set_model_material(model_material *material_info)
 	}
 
 	if ( Current_shader->flags & SDR_FLAG_MODEL_HEIGHT_MAP ) {
-		Current_shader->program->Uniforms.setUniformi("sHeightmap", render_pass);
+		Current_shader->program->Samplers.bindSampler("sHeightmap", render_pass);
 
 		gr_opengl_tcache_set(material_info->get_texture_map(TM_HEIGHT_TYPE), TCACHE_TYPE_NORMAL, &u_scale, &v_scale, render_pass);
 
@@ -1118,7 +1121,7 @@ void opengl_tnl_set_model_material(model_material *material_info)
 	}
 
 	if ( Current_shader->flags & SDR_FLAG_MODEL_MISC_MAP ) {
-		Current_shader->program->Uniforms.setUniformi("sMiscmap", render_pass);
+		Current_shader->program->Samplers.bindSampler("sMiscmap", render_pass);
 
 		gr_opengl_tcache_set(material_info->get_texture_map(TM_MISC_TYPE), TCACHE_TYPE_NORMAL, &u_scale, &v_scale, render_pass);
 
@@ -1132,7 +1135,7 @@ void opengl_tnl_set_model_material(model_material *material_info)
 		Current_shader->program->Uniforms.setUniformf("neardist", Shadow_cascade_distances[1]);
 		Current_shader->program->Uniforms.setUniformf("middist", Shadow_cascade_distances[2]);
 		Current_shader->program->Uniforms.setUniformf("fardist", Shadow_cascade_distances[3]);
-		Current_shader->program->Uniforms.setUniformi("shadow_map", render_pass);
+		Current_shader->program->Samplers.bindSampler("shadow_map", render_pass);
 
 		GL_state.Texture.SetActiveUnit(render_pass);
 		GL_state.Texture.SetTarget(GL_TEXTURE_2D_ARRAY);
@@ -1146,7 +1149,7 @@ void opengl_tnl_set_model_material(model_material *material_info)
 	}
 
 	if ( Current_shader->flags & SDR_FLAG_MODEL_ANIMATED ) {
-		Current_shader->program->Uniforms.setUniformi("sFramebuffer", render_pass);
+		Current_shader->program->Samplers.bindSampler("sFramebuffer", render_pass);
 
 		GL_state.Texture.SetActiveUnit(render_pass);
 		GL_state.Texture.SetTarget(GL_TEXTURE_2D);
@@ -1162,7 +1165,7 @@ void opengl_tnl_set_model_material(model_material *material_info)
 	}
 
 	if ( Current_shader->flags & SDR_FLAG_MODEL_TRANSFORM ) {
-		Current_shader->program->Uniforms.setUniformi("transform_tex", render_pass);
+		Current_shader->program->Samplers.bindSampler("transform_tex", render_pass);
 		Current_shader->program->Uniforms.setUniformi("buffer_matrix_offset", (int)GL_transform_buffer_offset);
 		
 		GL_state.Texture.SetActiveUnit(render_pass);
@@ -1214,6 +1217,8 @@ void opengl_tnl_set_model_material(model_material *material_info)
 	if ( Current_shader->flags & SDR_FLAG_MODEL_NORMAL_EXTRUDE ) {
 		Current_shader->program->Uniforms.setUniformf("extrudeWidth", material_info->get_normal_extrude_width());
 	}
+
+	Current_shader->program->Samplers.flush();
 
 	if ( Deferred_lighting ) {
 		// don't blend if we're drawing to the g-buffers

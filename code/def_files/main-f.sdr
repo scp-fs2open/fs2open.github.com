@@ -16,25 +16,26 @@ uniform vec3 ambientFactor;
 uniform vec3 diffuseFactor;
 uniform vec3 emissionFactor;
 #endif
-#ifdef FLAG_DIFFUSE_MAP
+
+uniform bool FLAG_DIFFUSE_MAP;
 uniform sampler2D sBasemap;
 uniform int desaturate;
 uniform int blend_alpha;
 uniform bool overrideDiffuse;
 uniform vec3 diffuseClr;
-#endif
-#ifdef FLAG_GLOW_MAP
+
+uniform bool FLAG_GLOW_MAP;
 uniform sampler2D sGlowmap;
 uniform bool overrideGlow;
 uniform vec3 glowClr;
-#endif
-#ifdef FLAG_SPEC_MAP
+
+uniform bool FLAG_SPEC_MAP;
 uniform sampler2D sSpecmap;
 uniform bool overrideSpec;
 uniform vec3 specClr;
 uniform bool alphaGloss;
 uniform bool gammaSpec;
-#endif
+
 #ifdef FLAG_ENV_MAP
 uniform samplerCube sEnvmap;
 uniform bool envGloss;
@@ -42,36 +43,41 @@ uniform bool alpha_spec;
 varying vec3 envReflect;
 in vec3 fragEnvReflect;
 #endif
-#ifdef FLAG_NORMAL_MAP
+
+uniform bool FLAG_NORMAL_MAP;
 uniform sampler2D sNormalmap;
+#ifndef HAS_GEOMETRY_SHADER
 in mat3 fragTangentMatrix;
 #endif
-#ifdef FLAG_AMBIENT_MAP
+
+uniform bool FLAG_AMBIENT_MAP;
 uniform sampler2D sAmbientmap;
-#endif
+
 #ifdef FLAG_FOG
 uniform vec4 fogColor;
 in float fragFogDist;
 #endif
-#ifdef FLAG_ANIMATED
+
+uniform bool FLAG_ANIMATED;
 uniform sampler2D sFramebuffer;
 uniform int effect_num;
 uniform float anim_timer;
 uniform float vpwidth;
 uniform float vpheight;
-#endif
+
 #ifdef FLAG_TRANSFORM
 in float fragNotVisible;
 #endif
-#ifdef FLAG_TEAMCOLOR
+
+uniform bool FLAG_TEAMCOLOR;
 uniform vec3 base_color;
 uniform vec3 stripe_color;
 uniform bool team_glow_enabled;
 vec2 teamMask = vec2(0.0, 0.0);
-#endif
-#ifdef FLAG_MISC_MAP
+
+uniform bool FLAG_MISC_MAP;
 uniform sampler2D sMiscmap;
-#endif
+
 #ifdef FLAG_SHADOWS
 in vec4 fragShadowUV[4];
 in vec4 fragShadowPos;
@@ -87,9 +93,10 @@ uniform float fardist;
 uniform int use_clip_plane;
 in float fragClipDistance;
 #endif
-#ifdef FLAG_NORMAL_ALPHA
+
+uniform bool FLAG_NORMAL_ALPHA;
 uniform vec2 normalAlphaMinMax;
-#endif
+
 #define SPEC_INTENSITY_POINT      5.3 // Point light
 #define SPEC_INTENSITY_DIRECTIONAL   3.0 // Directional light
 #define SPECULAR_FACTOR         1.75
@@ -307,73 +314,85 @@ void main()
 	glossData = defaultGloss;
 #endif
 	vec2 aoFactors = vec2(1.0, 1.0);
-#ifdef	FLAG_AMBIENT_MAP
-	// red channel is ambient occlusion factor which only affects ambient lighting.
-	// green is cavity occlusion factor which only affects diffuse and specular lighting.
-	aoFactors = texture2D(sAmbientmap, texCoord).xy;
-#endif
+	
+	if (FLAG_AMBIENT_MAP) {
+		// red channel is ambient occlusion factor which only affects ambient lighting.
+		// green is cavity occlusion factor which only affects diffuse and specular lighting.
+		aoFactors = texture2D(sAmbientmap, texCoord).xy;
+	}
+	
 	vec3 unitNormal = normalize(fragNormal);
 	vec3 normal = unitNormal;
-#ifdef FLAG_NORMAL_MAP
-   // Normal map - convert from DXT5nm
-   vec2 normalSample;
-   normal.rg = normalSample = (texture(sNormalmap, texCoord).ag * 2.0) - 1.0;
-   normal.b = sqrt(1.0 - dot(normal.rg, normal.rg));
-   normal = fragTangentMatrix * normal;
-   float norm = length(normal);
-   // prevent breaking of normal maps
-   if (norm > 0.0)
-      normal /= norm;
-   else
-      normal = unitNormal;
+#ifndef HAS_GEOMETRY_SHADER
+    vec2 normalSample;
+    if (FLAG_NORMAL_MAP) {
+        // Normal map - convert from DXT5nm
+        normal.rg = normalSample = (texture(sNormalmap, texCoord).ag * 2.0) - 1.0;
+        normal.b = sqrt(1.0 - dot(normal.rg, normal.rg));
+        normal = fragTangentMatrix * normal;
+        float norm = length(normal);
+        // prevent breaking of normal maps
+        if (norm > 0.0)
+            normal /= norm;
+        else
+            normal = unitNormal;
+    }
 #endif
 	normData = vec4(normal, 1.0);
 
-#ifdef FLAG_ANIMATED
-   vec2 distort = vec2(cos(fragPosition.x*fragPosition.w*0.005+anim_timer*20.0)*sin(fragPosition.y*fragPosition.w*0.005),sin(fragPosition.x*fragPosition.w*0.005+anim_timer*20.0)*cos(fragPosition.y*fragPosition.w*0.005))*0.03;
-#endif
+	vec2 distort = vec2(0.0);
+ 	if (FLAG_ANIMATED) {
+		distort = vec2(cos(fragPosition.x*fragPosition.w*0.005+anim_timer*20.0)*sin(fragPosition.y*fragPosition.w*0.005),sin(fragPosition.x*fragPosition.w*0.005+anim_timer*20.0)*cos(fragPosition.y*fragPosition.w*0.005))*0.03;
+	}
 
-#ifdef FLAG_DIFFUSE_MAP
-	vec2 diffuseTexCoord = texCoord;
- #ifdef FLAG_ANIMATED
-   if (effect_num == 2) {
-      diffuseTexCoord = texCoord + distort*(1.0-anim_timer);
-   }
- #endif
-	baseColor = texture(sBasemap, diffuseTexCoord);
-	if ( blend_alpha == 0 && baseColor.a < 0.95 ) discard; // if alpha blending is not on, discard transparent pixels
-	// premultiply alpha if blend_alpha is 1. assume that our blend function is srcColor + (1-Alpha)*destColor.
-	// if blend_alpha is 2, assume blend func is additive and don't modify color
-	if(blend_alpha == 1) baseColor.rgb = baseColor.rgb * baseColor.a;
-	if(overrideDiffuse) baseColor.rgb = diffuseClr;
- #ifdef FLAG_HDR
-	baseColor.rgb = pow(baseColor.rgb, vec3(SRGB_GAMMA));
- #endif
-	baseColor.rgb *= aoFactors.y;
-#endif
+    if (FLAG_DIFFUSE_MAP) {
+        vec2 diffuseTexCoord = texCoord;
+		
+		if (FLAG_ANIMATED && effect_num == 2) {
+			diffuseTexCoord = texCoord + distort*(1.0-anim_timer);
+		}
+	   
+        baseColor = texture(sBasemap, diffuseTexCoord);
+        if ( blend_alpha == 0 && baseColor.a < 0.95 ) discard; // if alpha blending is not on, discard transparent pixels
+        // premultiply alpha if blend_alpha is 1. assume that our blend function is srcColor + (1-Alpha)*destColor.
+        // if blend_alpha is 2, assume blend func is additive and don't modify color
+        if(blend_alpha == 1) baseColor.rgb = baseColor.rgb * baseColor.a;
+        if(overrideDiffuse) baseColor.rgb = diffuseClr;
+     #ifdef FLAG_HDR
+        baseColor.rgb = pow(baseColor.rgb, vec3(SRGB_GAMMA));
+     #endif
+        baseColor.rgb *= aoFactors.y;
+    }
 
    specData = vec4(baseColor.rgb * SPEC_FACTOR_NO_SPEC_MAP, glossData);
-#ifdef FLAG_SPEC_MAP
-   vec4 specColour = texture2D(sSpecmap, texCoord);
-	if(alphaGloss) glossData = specColour.a;
-	if(overrideSpec) specColour.rgb = specClr;
- #ifdef FLAG_HDR
-	if(gammaSpec) specColour.rgb = pow(specColour.rgb, vec3(SRGB_GAMMA));
- #endif
-	specColour.rgb *= aoFactors.y;
-	specColour.rgb = max(specColour.rgb, vec3(0.04)); // hardcoded minimum specular value. read John Hable's blog post titled 'Everything Is Shiny'. 
-   specData = vec4(specColour.rgb, glossData);
+   vec4 specColour;
+	if (FLAG_SPEC_MAP) {
+		specColour = texture2D(sSpecmap, texCoord);
+		if(alphaGloss)
+			glossData = specColour.a;
+		if(overrideSpec)
+			specColour.rgb = specClr;
+#ifdef FLAG_HDR
+		if(gammaSpec)
+			specColour.rgb = pow(specColour.rgb, vec3(SRGB_GAMMA));
 #endif
-#ifdef FLAG_MISC_MAP
- #ifdef FLAG_TEAMCOLOR
-	vec4 teamMask = vec4(0.0, 0.0, 0.0, 0.0);
-	teamMask = texture(sMiscmap, texCoord);
-	vec3 base = base_color - vec3(0.5);
-	vec3 stripe = stripe_color - vec3(0.5);
-	baseColor.rgb += (base * teamMask.x) + (stripe * teamMask.y);
-	baseColor.rgb = max(baseColor.rgb, vec3(0.0));
- #endif
-#endif
+		specColour.rgb *= aoFactors.y;
+		specColour.rgb = max(specColour.rgb, vec3(0.04)); // hardcoded minimum specular value. read John Hable's blog post titled 'Everything Is Shiny'. 
+		specData = vec4(specColour.rgb, glossData);
+   }
+   
+	vec4 teamMask;
+	vec3 base;
+	vec3 stripe;
+	if (FLAG_MISC_MAP && FLAG_TEAMCOLOR) {
+		teamMask = vec4(0.0, 0.0, 0.0, 0.0);
+		teamMask = texture(sMiscmap, texCoord);
+		base = base_color - vec3(0.5);
+		stripe = stripe_color - vec3(0.5);
+		baseColor.rgb += (base * teamMask.x) + (stripe * teamMask.y);
+		baseColor.rgb = max(baseColor.rgb, vec3(0.0));
+	}
+	
 	float shadow = 1.0;
 #ifdef FLAG_SHADOWS
 	shadow = getShadowValue();
@@ -381,16 +400,20 @@ void main()
 #ifdef FLAG_LIGHT
 	baseColor.rgb = CalculateLighting(normal, baseColor.rgb, specData.rgb, glossData, shadow, aoFactors.x);
 #else
- #ifdef FLAG_SPEC_MAP
-	baseColor.rgb += pow(1.0 - dot(eyeDir, normal), 5.0 * clamp(glossData, 0.01, 1.0)) * specColour.rgb;
- #endif
+	if (FLAG_SPEC_MAP) {
+		baseColor.rgb += pow(1.0 - dot(eyeDir, normal), 5.0 * clamp(glossData, 0.01, 1.0)) * specColour.rgb;
+	}
 #endif
 #ifdef FLAG_ENV_MAP
    vec3 envReflectNM = fragEnvReflect;
- #ifdef FLAG_NORMAL_MAP
-   envReflectNM += vec3(normalSample, 0.0);
-	envReflectNM = normalize(envReflectNM);
- #endif
+
+#ifndef HAS_GEOMETRY_SHADER
+    if (FLAG_NORMAL_MAP) {
+        envReflectNM += vec3(normalSample, 0.0);
+        envReflectNM = normalize(envReflectNM);
+    }
+#endif
+
 	float mip = (envGloss) ? (1.0 - glossData) * 7.0 : 0.0;
    vec4 envColour = textureLod(sEnvmap, envReflectNM, mip);
  #ifdef FLAG_HDR
@@ -399,69 +422,70 @@ void main()
 	envColour.rgb *= (envGloss) ? 1.0 : specColour.a;
 	baseColor.rgb += envColour.rgb * FresnelLazarovEnv(specColour.rgb, eyeDir, normal, glossData);
 #endif
-#ifdef FLAG_GLOW_MAP
-	vec3 glowColor = texture2D(sGlowmap, texCoord).rgb;
-	if(overrideGlow) glowColor = glowClr;
- #ifdef FLAG_HDR
-	glowColor = pow(glowColor, vec3(SRGB_GAMMA)) * 3.0f;
- #endif
- #ifdef FLAG_MISC_MAP
-  #ifdef FLAG_TEAMCOLOR
-	float glowColorLuminance = dot(glowColor, vec3(0.299, 0.587, 0.114));
-	glowColor = team_glow_enabled ? mix((base * teamMask.b) + (stripe * teamMask.a), glowColor, clamp(glowColorLuminance - teamMask.b - teamMask.a, 0.0, 1.0)) : glowColor;
-  #endif
- #endif
-   baseColor.rgb += glowColor * GLOW_MAP_INTENSITY;
+
+    if (FLAG_GLOW_MAP) {
+        vec3 glowColor = texture2D(sGlowmap, texCoord).rgb;
+        if(overrideGlow) glowColor = glowClr;
+#ifdef FLAG_HDR
+        glowColor = pow(glowColor, vec3(SRGB_GAMMA)) * 3.0f;
 #endif
+		if (FLAG_MISC_MAP && FLAG_TEAMCOLOR) {
+			float glowColorLuminance = dot(glowColor, vec3(0.299, 0.587, 0.114));
+			glowColor = team_glow_enabled ? mix((base * teamMask.b) + (stripe * teamMask.a), glowColor, clamp(glowColorLuminance - teamMask.b - teamMask.a, 0.0, 1.0)) : glowColor;
+		}
+        baseColor.rgb += glowColor * GLOW_MAP_INTENSITY;
+    }
 
 #ifdef FLAG_FOG
 	vec3 finalFogColor = fogColor.rgb;
  #ifdef FLAG_HDR
 	finalFogColor = pow(finalFogColor, vec3(SRGB_GAMMA));
  #endif
- #ifdef FLAG_DIFFUSE_MAP
-	if(blend_alpha == 1) finalFogColor *= baseColor.a;
- #endif
-   baseColor.rgb = mix(baseColor.rgb, finalFogColor, fragFogDist);
-	specData.rgb *= fragFogDist;
-#endif
+    if (FLAG_DIFFUSE_MAP && blend_alpha == 1) {
+        finalFogColor *= baseColor.a;
+    }
 
-#ifdef FLAG_DIFFUSE_MAP
-	if(desaturate == 1) {
+    baseColor.rgb = mix(baseColor.rgb, finalFogColor, fragFogDist);
+    specData.rgb *= fragFogDist;
+ #endif
+ 
+ 	if(FLAG_DIFFUSE_MAP && desaturate == 1) {
 		baseColor.rgb = color.rgb * dot(vec3(1.0), baseColor.rgb) * 0.3333333;
 	}
+
+	if (FLAG_ANIMATED) {
+		if (effect_num == 0) {
+			float shinefactor = 1.0/(1.0 + pow(abs((fract(abs(texCoord.x))-anim_timer) * 1000.0), 2.0)) * 1000.0;
+			baseColor.rgb = baseColor.rgb + vec3(shinefactor);
+			baseColor.a = baseColor.a * clamp(shinefactor * (fract(abs(texCoord.x))-anim_timer) * -10000.0,0.0,1.0);
+		}
+		if (effect_num == 1) {
+			float shinefactor = 1.0/(1.0 + pow(abs(fragPosition.y-anim_timer), 2.0));
+			baseColor.rgb = baseColor.rgb + vec3(shinefactor);
+#ifdef FLAG_LIGHT
+			baseColor.a = baseColor.a;
+#else
+			// ATI Wireframe fix *grumble*
+			baseColor.a = clamp((fragPosition.y-anim_timer) * 10000.0,0.0,1.0);
 #endif
-#ifdef FLAG_ANIMATED
-   if (effect_num == 0) {
-      float shinefactor = 1.0/(1.0 + pow(abs((fract(abs(texCoord.x))-anim_timer) * 1000.0), 2.0)) * 1000.0;
-      baseColor.rgb = baseColor.rgb + vec3(shinefactor);
-      baseColor.a = baseColor.a * clamp(shinefactor * (fract(abs(texCoord.x))-anim_timer) * -10000.0,0.0,1.0);
-   }
-   if (effect_num == 1) {
-      float shinefactor = 1.0/(1.0 + pow(abs(fragPosition.y-anim_timer), 2.0));
-      baseColor.rgb = baseColor.rgb + vec3(shinefactor);
- #ifdef FLAG_LIGHT
-      baseColor.a = baseColor.a;
- #else
-      // ATI Wireframe fix *grumble*
-      baseColor.a = clamp((fragPosition.y-anim_timer) * 10000.0,0.0,1.0);
- #endif
-   }
-   if (effect_num == 2) {
-      vec2 screenPos = gl_FragCoord.xy * vec2(vpwidth,vpheight);
-      baseColor.a = baseColor.a;
-      float cloak_interp = (sin(fragPosition.x*fragPosition.w*0.005+anim_timer*20.0)*sin(fragPosition.y*fragPosition.w*0.005)*0.5)-0.5;
- #ifdef FLAG_LIGHT
-      baseColor.rgb = mix(texture(sFramebuffer, screenPos + distort*anim_timer + anim_timer*0.1*normal.xy).rgb,baseColor.rgb,clamp(cloak_interp+anim_timer*2.0,0.0,1.0));
- #else
-      baseColor.rgb = mix(texture(sFramebuffer, screenPos + distort*anim_timer + anim_timer*0.1*fragNormal.xy).rgb,baseColor.rgb,clamp(cloak_interp+anim_timer*2.0,0.0,1.0));
- #endif
-   }
+		}
+		if (effect_num == 2) {
+			vec2 screenPos = gl_FragCoord.xy * vec2(vpwidth,vpheight);
+			baseColor.a = baseColor.a;
+			float cloak_interp = (sin(fragPosition.x*fragPosition.w*0.005+anim_timer*20.0)*sin(fragPosition.y*fragPosition.w*0.005)*0.5)-0.5;
+#ifdef FLAG_LIGHT
+			baseColor.rgb = mix(texture(sFramebuffer, screenPos + distort*anim_timer + anim_timer*0.1*normal.xy).rgb,baseColor.rgb,clamp(cloak_interp+anim_timer*2.0,0.0,1.0));
+#else
+			baseColor.rgb = mix(texture(sFramebuffer, screenPos + distort*anim_timer + anim_timer*0.1*fragNormal.xy).rgb,baseColor.rgb,clamp(cloak_interp+anim_timer*2.0,0.0,1.0));
 #endif
-#ifdef FLAG_NORMAL_ALPHA
-	float normViewOffset = dot(vec3(0.0, 0.0, 1.0), normal);
-	baseColor.a = smoothstep(min(normalAlphaMinMax.x, normalAlphaMinMax.y), max(normalAlphaMinMax.x, normalAlphaMinMax.y), clamp(normalAlphaMinMax.x > normalAlphaMinMax.y ? normViewOffset : 1.0 - normViewOffset, 0.0, 1.0));
-#endif
+		}
+	}
+	
+ 	if (FLAG_NORMAL_ALPHA) {
+		float normViewOffset = dot(vec3(0.0, 0.0, 1.0), normal);
+		baseColor.a = smoothstep(min(normalAlphaMinMax.x, normalAlphaMinMax.y), max(normalAlphaMinMax.x, normalAlphaMinMax.y), clamp(normalAlphaMinMax.x > normalAlphaMinMax.y ? normViewOffset : 1.0 - normViewOffset, 0.0, 1.0));
+	}
+	
 #ifdef FLAG_CLIP
 	// for some odd reason if we try to discard the pixel early for plane clipping, it screws up glow maps so let's just do it down here.
 	if(use_clip_plane == 1) { if(fragClipDistance <= 0.0) { discard; } }

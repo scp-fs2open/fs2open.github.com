@@ -59,7 +59,7 @@ struct opengl_shader_type_t {
 	const char *frag;
 	const char *geo;
 
-	SCP_vector<const char*> uniforms;
+	SCP_vector<const char*> samplers;
 
 	SCP_vector<opengl_vert_attrib::attrib_id> attributes;
 
@@ -70,77 +70,30 @@ struct opengl_shader_variant_t {
 	shader_type type_id;
 
 	bool use_geometry_sdr;
+	bool use_define;
 
 	int flag;
 	SCP_string flag_text;
 
-	SCP_vector<const char*> uniforms;
+	SCP_vector<const char*> samplers;
 
 	SCP_vector<opengl_vert_attrib::attrib_id> attributes;
 
 	const char* description;
 };
 
-struct opengl_shader_file_t {
-	const char *vert;
-	const char *frag;
-	const char *geo;
-
-	int flags;
-
-	SCP_vector<const char*> uniforms;
-
-	SCP_vector<const char*> attributes;
-
-	const char* description;
-};
-
-struct opengl_shader_uniform_reference_t {
-	unsigned int flag;
-
-	SCP_vector<const char*> uniforms;
-
-	SCP_vector<const char*> attributes;
-
-	SCP_vector<const char*> uniform_blocks;
-
-	const char* name;
-};
-
-typedef struct opengl_shader_uniform_t {
-	SCP_string text_id;
-	GLint location;
-
-	opengl_shader_uniform_t() : location(-1) {}
-} opengl_shader_uniform_t;
-
 typedef struct opengl_shader_t {
-	std::unique_ptr<opengl::ShaderProgram> program;
+	opengl::ShaderProgram* program;
+
+	SCP_vector<std::pair<SCP_string, bool>> variant_uniforms;
 
 	shader_type shader;
 	unsigned int flags;
 	int flags2;
 
-	opengl_shader_t() : shader(SDR_TYPE_NONE), flags(0), flags2(0)
+	opengl_shader_t() : program(nullptr), shader(SDR_TYPE_NONE), flags(0), flags2(0)
 	{
 	}
-
-	opengl_shader_t(opengl_shader_t&& other) {
-		*this = std::move(other);
-	}
-	opengl_shader_t& operator=(opengl_shader_t&& other) {
-		// VS2013 doesn't support implicit move constructors so we need to explicitly declare it
-		shader = other.shader;
-		flags = other.flags;
-		flags2 = other.flags2;
-
-		program = std::move(other.program);
-
-		return *this;
-	}
-
-	opengl_shader_t(const opengl_shader_t&) = delete;
-	opengl_shader_t& operator=(const opengl_shader_t&) = delete;
 } opengl_shader_t;
 
 extern SCP_vector<opengl_shader_t> GL_shader;
