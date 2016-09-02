@@ -93,9 +93,10 @@ uniform float fardist;
 uniform int use_clip_plane;
 in float fragClipDistance;
 #endif
-#ifdef FLAG_NORMAL_ALPHA
+
+uniform bool FLAG_NORMAL_ALPHA;
 uniform vec2 normalAlphaMinMax;
-#endif
+
 #define SPEC_INTENSITY_POINT      5.3 // Point light
 #define SPEC_INTENSITY_DIRECTIONAL   3.0 // Directional light
 #define SPECULAR_FACTOR         1.75
@@ -480,10 +481,11 @@ void main()
 		}
 	}
 	
-#ifdef FLAG_NORMAL_ALPHA
-	float normViewOffset = dot(vec3(0.0, 0.0, 1.0), normal);
-	baseColor.a = smoothstep(min(normalAlphaMinMax.x, normalAlphaMinMax.y), max(normalAlphaMinMax.x, normalAlphaMinMax.y), clamp(normalAlphaMinMax.x > normalAlphaMinMax.y ? normViewOffset : 1.0 - normViewOffset, 0.0, 1.0));
-#endif
+ 	if (FLAG_NORMAL_ALPHA) {
+		float normViewOffset = dot(vec3(0.0, 0.0, 1.0), normal);
+		baseColor.a = smoothstep(min(normalAlphaMinMax.x, normalAlphaMinMax.y), max(normalAlphaMinMax.x, normalAlphaMinMax.y), clamp(normalAlphaMinMax.x > normalAlphaMinMax.y ? normViewOffset : 1.0 - normViewOffset, 0.0, 1.0));
+	}
+	
 #ifdef FLAG_CLIP
 	// for some odd reason if we try to discard the pixel early for plane clipping, it screws up glow maps so let's just do it down here.
 	if(use_clip_plane == 1) { if(fragClipDistance <= 0.0) { discard; } }

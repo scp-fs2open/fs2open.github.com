@@ -218,7 +218,7 @@ static opengl_shader_variant_t GL_shader_variants[] = {
 		{ "sAmbientmap" }, {  },
 		"Ambient Occlusion Map" },
 
-	{ SDR_TYPE_MODEL, false, true, SDR_FLAG_MODEL_NORMAL_ALPHA, "FLAG_NORMAL_ALPHA",
+	{ SDR_TYPE_MODEL, false, false, SDR_FLAG_MODEL_NORMAL_ALPHA, "FLAG_NORMAL_ALPHA",
 		{ }, { },
 		"Normal Alpha" },
 
