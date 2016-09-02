@@ -50,9 +50,9 @@ uniform sampler2D sNormalmap;
 in mat3 fragTangentMatrix;
 #endif
 
-#ifdef FLAG_AMBIENT_MAP
+uniform bool FLAG_AMBIENT_MAP;
 uniform sampler2D sAmbientmap;
-#endif
+
 #ifdef FLAG_FOG
 uniform vec4 fogColor;
 in float fragFogDist;
@@ -313,11 +313,13 @@ void main()
 	glossData = defaultGloss;
 #endif
 	vec2 aoFactors = vec2(1.0, 1.0);
-#ifdef	FLAG_AMBIENT_MAP
-	// red channel is ambient occlusion factor which only affects ambient lighting.
-	// green is cavity occlusion factor which only affects diffuse and specular lighting.
-	aoFactors = texture2D(sAmbientmap, texCoord).xy;
-#endif
+	
+	if (FLAG_AMBIENT_MAP) {
+		// red channel is ambient occlusion factor which only affects ambient lighting.
+		// green is cavity occlusion factor which only affects diffuse and specular lighting.
+		aoFactors = texture2D(sAmbientmap, texCoord).xy;
+	}
+	
 	vec3 unitNormal = normalize(fragNormal);
 	vec3 normal = unitNormal;
 #ifndef HAS_GEOMETRY_SHADER

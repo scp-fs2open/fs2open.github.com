@@ -214,7 +214,7 @@ static opengl_shader_variant_t GL_shader_variants[] = {
 		{ }, {  },
 		"High Dynamic Range" },
 
-	{ SDR_TYPE_MODEL, false, true, SDR_FLAG_MODEL_AMBIENT_MAP, "FLAG_AMBIENT_MAP",
+	{ SDR_TYPE_MODEL, false, false, SDR_FLAG_MODEL_AMBIENT_MAP, "FLAG_AMBIENT_MAP",
 		{ "sAmbientmap" }, {  },
 		"Ambient Occlusion Map" },
 
