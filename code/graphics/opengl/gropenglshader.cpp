@@ -182,7 +182,7 @@ static opengl_shader_variant_t GL_shader_variants[] = {
 		{ "sMiscmap" }, {  },
 		"Utility mapping" },
 	
-	{ SDR_TYPE_MODEL, false, true, SDR_FLAG_MODEL_TEAMCOLOR, "FLAG_TEAMCOLOR",
+	{ SDR_TYPE_MODEL, false, false, SDR_FLAG_MODEL_TEAMCOLOR, "FLAG_TEAMCOLOR",
 		{  }, {  },
 		"Team Colors" },
 	
