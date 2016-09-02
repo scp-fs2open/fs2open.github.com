@@ -25,6 +25,7 @@ void test::FSTestFixture::SetUp() {
 
 #ifndef NDEBUG
 	outwnd_init();
+	mprintf(("TEST: Setting up test '%s.%s'\n", currentTest->test_case_name(), currentTest->name()));
 #endif
 
 	os_init("Test", "Test");

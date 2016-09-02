@@ -1,0 +1,30 @@
+#default
+
+3000, "Foo name default"
+
+3001, "Foo desc default"
+
+3002, "Bar name default"
+
+3003, "Bar desc default"
+
+3004, "Baz name default"
+
+3005, "Baz desc default"
+
+#end
+#German
+
+3000, "Foo name German"
+
+3001, "Foo desc German"
+
+3002, "Bar name German"
+
+3003, "Bar desc German"
+
+3004, "Baz name German"
+
+3005, "Baz desc German"
+
+#end
