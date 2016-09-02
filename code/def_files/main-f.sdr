@@ -310,7 +310,7 @@ void main()
 #ifdef	FLAG_AMBIENT_MAP
 	// red channel is ambient occlusion factor which only affects ambient lighting.
 	// green is cavity occlusion factor which only affects diffuse and specular lighting.
-	aoFactors = texture2D(sAmbientmap, texCoord).xy;
+	aoFactors = texture(sAmbientmap, texCoord).xy;
 #endif
 	vec3 unitNormal = normalize(fragNormal);
 	vec3 normal = unitNormal;
@@ -354,7 +354,7 @@ void main()
 
    specData = vec4(baseColor.rgb * SPEC_FACTOR_NO_SPEC_MAP, glossData);
 #ifdef FLAG_SPEC_MAP
-   vec4 specColour = texture2D(sSpecmap, texCoord);
+   vec4 specColour = texture(sSpecmap, texCoord);
 	if(alphaGloss) glossData = specColour.a;
 	if(overrideSpec) specColour.rgb = specClr;
  #ifdef FLAG_HDR
@@ -400,7 +400,7 @@ void main()
 	baseColor.rgb += envColour.rgb * FresnelLazarovEnv(specColour.rgb, eyeDir, normal, glossData);
 #endif
 #ifdef FLAG_GLOW_MAP
-	vec3 glowColor = texture2D(sGlowmap, texCoord).rgb;
+	vec3 glowColor = texture(sGlowmap, texCoord).rgb;
 	if(overrideGlow) glowColor = glowClr;
  #ifdef FLAG_HDR
 	glowColor = pow(glowColor, vec3(SRGB_GAMMA)) * 3.0f;

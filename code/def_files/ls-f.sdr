@@ -15,14 +15,14 @@ void main()
 	step *= 1.0 / float(SAMPLE_NUM) * density;
 	float decay = 1.0;
 	vec4 sum = vec4(0.0);
-	vec4 mask = texture2D(cockpit, fragTexCoord.st);
+	vec4 mask = texture(cockpit, fragTexCoord.st);
 	if (mask.r < 1.0) {
 		fragOut0 = vec4(cp_intensity);
 		return;
 	}
 	for(int i=0; i < SAMPLE_NUM ; i++) {
 		pos.st -= step;
-		vec4 tex_sample = texture2D(scene, pos);
+		vec4 tex_sample = texture(scene, pos);
 		if (tex_sample.r == 1.0)
 			sum += decay * weight;
 		decay *= falloff;
