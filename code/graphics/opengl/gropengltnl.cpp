@@ -100,6 +100,8 @@ static const int IMMEDIATE_BUFFER_RESIZE_BLOCK_SIZE = 2048;
 
 int opengl_create_buffer_object(GLenum type, GLenum usage)
 {
+	GR_DEBUG_SCOPE("Create buffer object");
+
 	opengl_buffer_object buffer_obj;
 
 	buffer_obj.usage = usage;
@@ -115,6 +117,8 @@ int opengl_create_buffer_object(GLenum type, GLenum usage)
 
 void opengl_bind_buffer_object(int handle)
 {
+	GR_DEBUG_SCOPE("Bind buffer handle");
+
 	Assert(handle >= 0);
 	Assert((size_t)handle < GL_buffer_objects.size());
 
@@ -142,6 +146,8 @@ void opengl_bind_buffer_object(int handle)
 
 void gr_opengl_update_buffer_data(int handle, size_t size, void* data)
 {
+	GR_DEBUG_SCOPE("Update buffer data");
+
 	Assert(handle >= 0);
 	Assert((size_t)handle < GL_buffer_objects.size());
 
@@ -158,6 +164,8 @@ void gr_opengl_update_buffer_data(int handle, size_t size, void* data)
 
 void opengl_update_buffer_data_offset(int handle, uint offset, uint size, void* data)
 {
+	GR_DEBUG_SCOPE("Update buffer data with offset");
+
 	Assert(handle >= 0);
 	Assert((size_t)handle < GL_buffer_objects.size());
 
@@ -170,6 +178,8 @@ void opengl_update_buffer_data_offset(int handle, uint offset, uint size, void* 
 
 void gr_opengl_delete_buffer(int handle)
 {
+	GR_DEBUG_SCOPE("Deleting buffer");
+
 	Assert(handle >= 0);
 	Assert((size_t)handle < GL_buffer_objects.size());
 

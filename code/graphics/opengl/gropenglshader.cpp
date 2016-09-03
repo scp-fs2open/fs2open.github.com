@@ -434,6 +434,9 @@ static bool load_cached_shader_binary(opengl::ShaderProgram* program, SCP_string
 		nprintf(("ShaderCache", "Binary file does not exist.\n"));
 		return false;
 	}
+	
+	GR_DEBUG_SCOPE("Loading cached shader");
+	
 	SCP_vector<uint8_t> buffer;
 	int length = cfilelength(binary_fp);
 	buffer.resize((size_t) length);
@@ -464,6 +467,8 @@ static void cache_program_binary(GLuint program, const SCP_string& hash) {
 	if (!do_shader_caching()) {
 		return;
 	}
+	
+	GR_DEBUG_SCOPE("Saving shader binary");
 
 	GLint size;
 	glGetProgramiv(program, GL_PROGRAM_BINARY_LENGTH, &size);
@@ -520,6 +525,8 @@ static void cache_program_binary(GLuint program, const SCP_string& hash) {
  */
 int opengl_compile_shader(shader_type sdr, uint flags)
 {
+	GR_DEBUG_SCOPE("Creating new shader");
+
 	int sdr_index = -1;
 	int empty_idx;
 	opengl_shader_t new_shader;
@@ -560,6 +567,7 @@ int opengl_compile_shader(shader_type sdr, uint flags)
 	std::unique_ptr<opengl::ShaderProgram> program(new opengl::ShaderProgram());
 
 	if (!load_cached_shader_binary(program.get(), shader_hash)) {
+		GR_DEBUG_SCOPE("Compiling shader code");
 		try {
 			program->addShaderCode(opengl::STAGE_VERTEX, vert_content);
 			program->addShaderCode(opengl::STAGE_FRAGMENT, frag_content);

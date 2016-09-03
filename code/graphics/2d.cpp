@@ -1241,6 +1241,8 @@ void gr_set_shader(shader *shade)
 // new bitmap functions
 void gr_bitmap(int _x, int _y, int resize_mode)
 {
+	GR_DEBUG_SCOPE("2D Bitmap");
+
 	int _w, _h;
 	float x, y, w, h;
 	vertex verts[4];

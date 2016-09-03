@@ -305,6 +305,8 @@ int opengl_free_texture(tcache_slot_opengl *t)
 // tex_h == height of final texture
 int opengl_create_texture_sub(int bitmap_handle, int bitmap_type, int bmap_w, int bmap_h, int tex_w, int tex_h, ubyte *data, tcache_slot_opengl *t, int base_level, int resize, int reload)
 {
+	GR_DEBUG_SCOPE("Create OpenGL texture");
+
 	int ret_val = 1;
 	int byte_mult = 0;
 	GLenum texFormat = GL_UNSIGNED_SHORT_1_5_5_5_REV;
@@ -1652,6 +1654,8 @@ int opengl_set_render_target( int slot, int face, int is_static )
 
 int opengl_make_render_target( int handle, int slot, int *w, int *h, int *bpp, int *mm_lvl, int flags )
 {
+	GR_DEBUG_SCOPE("Make OpenGL render target");
+
 	Assert( !GL_rendering_to_texture );
 
 	if (slot < 0) {

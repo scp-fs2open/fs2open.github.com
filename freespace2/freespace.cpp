@@ -4441,6 +4441,8 @@ void game_frame(bool paused)
 			Script_system.RemHookVar("Self");
 
 			if(Scripting_didnt_draw_hud) {
+				GR_DEBUG_SCOPE("Render HUD");
+
 				game_render_hud(cid);
 			}
 			HUD_reset_clip();
