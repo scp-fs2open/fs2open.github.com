@@ -553,26 +553,6 @@ float vm_vec_copy_normalize_quick_mag(vec3d *dest, const vec3d *src)
 
 }
 
-//normalize a vector. returns mag of source vec. uses approx mag
-float vm_vec_normalize_quick_mag(vec3d *v)
-{
-//	return vm_vec_normalize(v);
-	float m;
-
-	m = vm_vec_mag_quick(v);
-
-	Assert(m > 0.0f);
-
-	v->xyz.x = v->xyz.x*m;
-	v->xyz.y = v->xyz.y*m;
-	v->xyz.z = v->xyz.z*m;
-
-	return m;
-
-}
-
-
-
 //return the normalized direction vector between two points
 //dest = normalized(end - start).  Returns mag of direction vector
 //NOTE: the order of the parameters matches the vector subtraction
@@ -594,18 +574,6 @@ float vm_vec_normalized_dir_quick(vec3d *dest, const vec3d *end, const vec3d *st
 	vm_vec_sub(dest,end,start);
 
 	return vm_vec_normalize_quick(dest);
-}
-
-//return the normalized direction vector between two points
-//dest = normalized(end - start).  Returns mag of direction vector
-//NOTE: the order of the parameters matches the vector subtraction
-float vm_vec_normalized_dir_quick_mag(vec3d *dest, const vec3d *end, const vec3d *start)
-{
-	float t;
-	vm_vec_sub(dest,end,start);
-
-	t = vm_vec_normalize_quick_mag(dest);
-	return t;
 }
 
 //computes surface normal from three points. result is normalized

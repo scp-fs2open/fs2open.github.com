@@ -184,13 +184,11 @@ float vm_vec_normalize_quick(vec3d *v);
 
 //normalize a vector. returns mag of source vec. uses approx mag
 float vm_vec_copy_normalize_quick_mag(vec3d *dest, const vec3d *src);
-float vm_vec_normalize_quick_mag(vec3d *v);
 
 //return the normalized direction vector between two points
 //dest = normalized(end - start).  Returns mag of direction vector
 //NOTE: the order of the parameters matches the vector subtraction
 float vm_vec_normalized_dir(vec3d *dest,const vec3d *end, const vec3d *start);
-float vm_vec_normalized_dir_quick_mag(vec3d *dest, const vec3d *end, const vec3d *start);
 // Returns mag of direction vector
 float vm_vec_normalized_dir_quick(vec3d *dest, const vec3d *end, const vec3d *start);
 
