@@ -779,7 +779,7 @@ void clear_mission()
 		Briefing_dialog->reset_editor();
 	}
 
-	extern void allocate_mission_text(int size);
+	extern void allocate_mission_text(size_t size);
 	allocate_mission_text( MISSION_TEXT_SIZE );
 
 	The_mission.cutscenes.clear(); 

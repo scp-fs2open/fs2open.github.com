@@ -50,8 +50,8 @@ const char	*token_found;
 static int Parsing_paused = 0;
 
 // text allocation stuff
-void allocate_mission_text(int size);
-static int Mission_text_size = 0;
+void allocate_mission_text(size_t size);
+static size_t Mission_text_size = 0;
 
 
 //	Return true if this character is white space, else false.
@@ -1982,7 +1982,7 @@ void read_file_text_from_default(const default_file& file, char *processed_text,
 	}
 
 	// make sure to do this before anything else
-	allocate_mission_text(static_cast<int>(file.size + 1));
+	allocate_mission_text(file.size + 1);
 
 	// if we have no raw buffer, set it as the default raw text area
 	if (raw_text == NULL)
@@ -2044,13 +2044,15 @@ void stop_parse()
 	Mission_text_size = 0;
 }
 
-void allocate_mission_text(int size)
+void allocate_mission_text(size_t size)
 {
 	Assert( size > 0 );
 
+	// Make sure that there is space for the terminating null character
+	size += 1;
+
 	if (size <= Mission_text_size)
 		return;
-
 
 	static ubyte parse_atexit = 0;
 
@@ -2107,7 +2109,7 @@ void read_raw_file_text(const char *filename, int mode, char *raw_text)
 	}
 
 	// allocate, or reallocate, memory for Mission_text and Mission_text_raw based on size we need now
-	allocate_mission_text( file_len + 1 );
+	allocate_mission_text((size_t) (file_len + 1));
 
 	// NOTE: this always has to be done *after* the allocate_mission_text() call!!
 	if (raw_text == NULL)
