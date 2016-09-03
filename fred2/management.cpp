@@ -107,6 +107,7 @@ bool Show_iff[MAX_IFFS];
 
 CCriticalSection CS_cur_object_index;
 
+// Used in the FRED drop-down menu
 ai_goal_list Ai_goal_list[] = {
 	{ "Waypoints",				AI_GOAL_WAYPOINTS,			0 },
 	{ "Waypoints once",			AI_GOAL_WAYPOINTS_ONCE,		0 },
