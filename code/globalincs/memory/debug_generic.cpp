@@ -1,29 +1,33 @@
 #ifndef NDEBUG
 
-#include <cstdlib>
-#include <stdlib.h>
-
 // Include this first!
 #include "globalincs/memory/debug.h"
 
 #include "globalincs/pstypes.h"
 
+#include <cstdlib>
+#include <stdlib.h>
+#include <stddef.h>
+#include <type_traits>
+
 namespace
 {
-	struct MemoryHeader
+	struct alignas(max_align_t) MemoryHeader
 	{
 		const char *filename;
-		int line;
 		size_t size;
+		int line;
 	};
 
-	void *getMemoryBegin(void *ptr)
+	void* getMemoryBegin(void* user_block)
 	{
-		auto headerArray = reinterpret_cast<MemoryHeader *>(ptr);
+		auto mem = reinterpret_cast<uint8_t*>(user_block);
+		return reinterpret_cast<void*>(mem - sizeof(MemoryHeader));
+	}
 
-		// The pointer should point to the beginning of the actual memory block
-		// the memory header is directly "in front" of it
-		return reinterpret_cast<void *>(headerArray - 1);
+	void* getUserMemory(void* actual_block) {
+		auto mem = reinterpret_cast<uint8_t*>(actual_block);
+		return reinterpret_cast<void*>(mem + sizeof(MemoryHeader));
 	}
 }
 
@@ -55,7 +59,7 @@ void *_vm_malloc(size_t size, const memory::quiet_alloc_t &, const char *filenam
 		header->filename = filename;
 		header->line = line;
 
-		ptr = reinterpret_cast<void *>(header + 1);
+		ptr = getUserMemory(ptr);
 	}
 
 	return ptr;
@@ -110,7 +114,7 @@ void *_vm_realloc(void *ptr, size_t size, const memory::quiet_alloc_t &, const c
 
 	memory::register_malloc(size, filename, line);
 
-	return reinterpret_cast<void *>(header + 1);
+	return getUserMemory(ret_ptr);
 }
 
 void *malloc_untracked(size_t size)
