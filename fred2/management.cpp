@@ -107,19 +107,21 @@ bool Show_iff[MAX_IFFS];
 
 CCriticalSection CS_cur_object_index;
 
-// Used in the FRED drop-down menu
+// Used in the FRED drop-down menu and in error_check_initial_orders
+// NOTE: Certain goals (Form On Wing, Rearm, Chase Weapon, Fly To Ship) aren't listed here.  This may or may not be intentional,
+// but if they are added in the future, it will be necessary to verify correct functionality in the various FRED dialog functions.
 ai_goal_list Ai_goal_list[] = {
 	{ "Waypoints",				AI_GOAL_WAYPOINTS,			0 },
 	{ "Waypoints once",			AI_GOAL_WAYPOINTS_ONCE,		0 },
-	{ "Warp",					AI_GOAL_WARP,				0 },
-	{ "Destroy subsystem",		AI_GOAL_DESTROY_SUBSYSTEM,	0 },
 	{ "Attack",					AI_GOAL_CHASE | AI_GOAL_CHASE_WING,	0 },
-	{ "Dock",					AI_GOAL_DOCK,				0 },
-	{ "Undock",					AI_GOAL_UNDOCK,				0 },
-	{ "Guard",					AI_GOAL_GUARD | AI_GOAL_GUARD_WING,	0 },
 	{ "Attack any ship",		AI_GOAL_CHASE_ANY,			0 },
+	{ "Guard",					AI_GOAL_GUARD | AI_GOAL_GUARD_WING,	0 },
 	{ "Disable ship",			AI_GOAL_DISABLE_SHIP,		0 },
 	{ "Disarm ship",			AI_GOAL_DISARM_SHIP,		0 },
+	{ "Destroy subsystem",		AI_GOAL_DESTROY_SUBSYSTEM,	0 },
+	{ "Dock",					AI_GOAL_DOCK,				0 },
+	{ "Undock",					AI_GOAL_UNDOCK,				0 },
+	{ "Warp",					AI_GOAL_WARP,				0 },
 	{ "Evade ship",				AI_GOAL_EVADE_SHIP,			0 },
 	{ "Ignore ship",			AI_GOAL_IGNORE,				0 },
 	{ "Ignore ship (new)",		AI_GOAL_IGNORE_NEW,			0 },

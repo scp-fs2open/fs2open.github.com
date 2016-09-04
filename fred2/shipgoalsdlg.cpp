@@ -21,9 +21,9 @@
 
 #define TYPE_PATH			0x1000
 #define TYPE_SHIP			0x2000
-#define TYPE_PLAYER		0x3000
+#define TYPE_PLAYER			0x3000
 #define TYPE_WING			0x4000
-#define TYPE_WAYPOINT	0x5000
+#define TYPE_WAYPOINT		0x5000
 #define TYPE_MASK			0xf000
 #define DATA_MASK			0x0fff
 
@@ -404,6 +404,12 @@ void ShipGoalsDlg::initialize(ai_goal *goals, int ship)
 	int i, item, num, inst, flag, mode;
 	object *ptr;
 
+	// note that the flag variable is a bitfield:
+	// 1 = ships
+	// 2 = wings
+	// 4 = waypoint paths
+	// 8 = individual waypoints
+
 	goalp = goals;
 	for (item=0; item<ED_MAX_GOALS; item++) {
 		flag = 1;
@@ -485,7 +491,7 @@ void ShipGoalsDlg::initialize(ai_goal *goals, int ship)
 				break;
 
 			default:
-				Assert(0);
+				Error(LOCATION, "Unhandled AI_GOAL_X #define %d in ship goals dialog box", mode);
 		}
 
 		if (flag & 0x1) {
@@ -599,6 +605,7 @@ void ShipGoalsDlg::set_item(int item, int init)
 
 	m_object_box[item] -> EnableWindow(TRUE);
 
+	// for goals that deal with waypoint paths or individual waypoints
 	switch (mode) {
 		case AI_GOAL_WAYPOINTS:
 		case AI_GOAL_WAYPOINTS_ONCE:
@@ -609,14 +616,12 @@ void ShipGoalsDlg::set_item(int item, int init)
 				if (init && (m_data[item] == (i | TYPE_PATH)))
 					m_object[item] = z;
 			}
-
 			break;
 
 		case AI_GOAL_STAY_STILL:
 			ptr = GET_FIRST(&obj_used_list);
 			while (ptr != END_OF_LIST(&obj_used_list)) {
 				if (ptr->type == OBJ_WAYPOINT) {
-					t = TYPE_SHIP;
 					z = m_object_box[item] -> AddString(object_name(OBJ_INDEX(ptr)));
 					m_object_box[item] -> SetItemData(z, OBJ_INDEX(ptr) | TYPE_WAYPOINT);
 					if (init && (m_data[item] == (OBJ_INDEX(ptr) | TYPE_WAYPOINT)))
@@ -625,10 +630,10 @@ void ShipGoalsDlg::set_item(int item, int init)
 
 				ptr = GET_NEXT(ptr);
 			}
-
 			break;
 	}
 
+	// for goals that deal with individual ships
 	switch (mode) {
 		case AI_GOAL_DESTROY_SUBSYSTEM:
 		case AI_GOAL_CHASE | AI_GOAL_CHASE_WING:
@@ -672,24 +677,25 @@ void ShipGoalsDlg::set_item(int item, int init)
 
 				ptr = GET_NEXT(ptr);
 			}
-
 			break;
 	}
 
+	// for goals that deal with wings
 	switch (mode) {
 		case AI_GOAL_CHASE | AI_GOAL_CHASE_WING:
 		case AI_GOAL_GUARD | AI_GOAL_GUARD_WING:
-			for (i=0; i<MAX_WINGS; i++)
+			for (i=0; i<MAX_WINGS; i++) {
 				if (Wings[i].wave_count && i != self_wing) {
 					z = m_object_box[item] -> AddString(Wings[i].name);
 					m_object_box[item] -> SetItemData(z, i | TYPE_WING);
 					if (init && (m_data[item] == (i | TYPE_WING)))
 						m_object[item] = z;
 				}
-
+			}
 			break;
 	}
 
+	// special cases depending on the target: subsystems and docking points
 	if (mode == AI_GOAL_DESTROY_SUBSYSTEM) {
 		m_subsys_box[item] -> EnableWindow(TRUE);
 		m_dock2_box[item] -> EnableWindow(FALSE);
@@ -897,9 +903,6 @@ void ShipGoalsDlg::update_item(int item, int multi)
 		case AI_GOAL_KEEP_SAFE_DISTANCE:
 		case AI_GOAL_PLAY_DEAD:
 		case AI_GOAL_WARP:
-			MODIFY(goalp[item].ai_mode, mode);
-			return;
-
 		case AI_GOAL_WAYPOINTS:
 		case AI_GOAL_WAYPOINTS_ONCE:
 		case AI_GOAL_DISABLE_SHIP:
@@ -1043,7 +1046,7 @@ void ShipGoalsDlg::update_item(int item, int multi)
 			return;
 
 		default:
-			Assert(0);
+			Error(LOCATION, "Unhandled TYPE_X #define %d in ship goals dialog box", m_data[item] & TYPE_MASK);
 	}
 
 	if (stricmp(save, goalp[item].target_name))

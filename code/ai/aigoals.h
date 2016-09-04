@@ -26,7 +26,7 @@ struct ai_goal;
 // Fred.  If the goal you add doesn't have a target (such as chase_any), then you don't have
 // to worry about doing this.  Also add it to list in Fred\Management.cpp, and let Hoffoss know!
 // WMC - Oh and add them to Ai_goal_names plz. TY! :)
-// Goober5000 - And Ai_goal_text, if appropriate
+// Goober5000 - As well as Ai_goal_text and Ai_goal_list, if appropriate
 #define AI_GOAL_CHASE					(1<<1)	// 0x00000002
 #define AI_GOAL_DOCK					(1<<2)	// 0x00000004	// used for undocking as well
 #define AI_GOAL_WAYPOINTS				(1<<3)	// 0x00000008
