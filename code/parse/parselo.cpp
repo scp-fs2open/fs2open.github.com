@@ -2051,8 +2051,12 @@ void allocate_mission_text(size_t size)
 	// Make sure that there is space for the terminating null character
 	size += 1;
 
-	if (size <= Mission_text_size)
+	if (size <= Mission_text_size) {
+		// Make sure that a new parsing session does not use uninitialized data.
+		memset( Mission_text, 0, sizeof(char) * Mission_text_size );
+		memset( Mission_text_raw, 0, sizeof(char) * Mission_text_size);
 		return;
+	}
 
 	static ubyte parse_atexit = 0;
 
