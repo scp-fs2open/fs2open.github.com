@@ -14987,6 +14987,16 @@ char *ship_return_orders(char *outbuf, ship *sp)
 			}
 			break;
 
+		case AI_GOAL_CHASE_SHIP_CLASS:
+			if (aigp->target_name) {
+				strcat(outbuf, XSTR("any ", -1));
+				strcat(outbuf, target_name);
+			}
+			else {
+				strcpy(outbuf, XSTR("no orders", 495));
+			}
+			break;
+
 		case AI_GOAL_CHASE:
 		case AI_GOAL_DOCK:
 		case AI_GOAL_UNDOCK:

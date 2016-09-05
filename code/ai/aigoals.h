@@ -57,6 +57,7 @@ struct ai_goal;
 #define AI_GOAL_CHASE_WEAPON			(1<<22)	// 0x00400000
 #define AI_GOAL_FLY_TO_SHIP				(1<<23) // 0x00800000
 #define AI_GOAL_IGNORE_NEW				(1<<24)	// 0x01000000
+#define AI_GOAL_CHASE_SHIP_CLASS		(1<<25)	// 0x02000000
 
 // now the masks for ship types
 

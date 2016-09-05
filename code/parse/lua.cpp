@@ -530,7 +530,7 @@ ADE_FUNC(getRvec, l_Matrix, NULL, "Returns the vector that points to the right (
 //that any new enumerations have indexes of NEXT INDEX (see below)
 //or after. Don't forget to increment NEXT INDEX after you're done.
 //=====================================
-static const int ENUM_NEXT_INDEX = 74; // <<<<<<<<<<<<<<<<<<<<<<
+static const int ENUM_NEXT_INDEX = 75; // <<<<<<<<<<<<<<<<<<<<<<
 //^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 static flag_def_list Enumerations[] = {
 	#define LE_ALPHABLEND_FILTER			14
@@ -616,6 +616,9 @@ static flag_def_list Enumerations[] = {
 
 	#define LE_ORDER_GUARD_WING				70
 	{		"ORDER_GUARD_WING",				LE_ORDER_GUARD_WING,			0},
+
+	#define LE_ORDER_ATTACK_SHIP_CLASS		74
+	{		"ORDER_ATTACK_SHIP_CLASS",		LE_ORDER_ATTACK_SHIP_CLASS,		0},
 
 	#define LE_PARTICLE_DEBUG				4
 	{		"PARTICLE_DEBUG",				LE_PARTICLE_DEBUG,				0},
@@ -8071,6 +8074,9 @@ ADE_FUNC(getType, l_Order, NULL, "Gets the type of the order.", "enumeration", "
 	case AI_GOAL_GUARD_WING:
 		eh_idx = LE_ORDER_GUARD_WING;
 		break;
+	case AI_GOAL_CHASE_SHIP_CLASS:
+		eh_idx = LE_ORDER_ATTACK_SHIP_CLASS;
+		break;
 	}
 
 	return ade_set_args(L, "o", l_Enum.Set(eh_idx));
@@ -8126,7 +8132,10 @@ ADE_VIRTVAR(Target, l_Order, "object", "Target of the order. Value may also be a
 						set_target_objnum(aip, OBJ_INDEX(newh->objp));
 					}
 				}
-					break;
+				break;
+			case AI_GOAL_CHASE_SHIP_CLASS:
+				// a ship class isn't an in-mission object
+				return ade_set_error(L, "o", l_Object.Set(object_h()));
 			case AI_GOAL_WAYPOINTS:
 			case AI_GOAL_WAYPOINTS_ONCE:
 				if (newh->objp->type == OBJ_WAYPOINT){
@@ -10125,14 +10134,15 @@ ADE_FUNC(clearOrders, l_Ship, NULL, "Clears a ship's orders list", "boolean", "T
 	return ADE_RETURN_TRUE;
 }
 
-ADE_FUNC(giveOrder, l_Ship, "enumeration Order, [object Target=nil, subsystem TargetSubsystem=nil, number Priority=1.0]", "Uses the goal code to execute orders", "boolean", "True if order was given, otherwise false or nil")
+ADE_FUNC(giveOrder, l_Ship, "enumeration Order, [object Target=nil, subsystem TargetSubsystem=nil, number Priority=1.0, shipclass TargetShipclass=nil]", "Uses the goal code to execute orders", "boolean", "True if order was given, otherwise false or nil")
 {
 	object_h *objh = NULL;
 	enum_h *eh = NULL;
 	float priority = 1.0f;
+	int sclass = -1;
 	object_h *tgh = NULL;
 	ship_subsys_h *tgsh = NULL;
-	if(!ade_get_args(L, "oo|oof", l_Object.GetPtr(&objh), l_Enum.GetPtr(&eh), l_Object.GetPtr(&tgh), l_Subsystem.GetPtr(&tgsh), &priority))
+	if(!ade_get_args(L, "oo|oofo", l_Object.GetPtr(&objh), l_Enum.GetPtr(&eh), l_Object.GetPtr(&tgh), l_Subsystem.GetPtr(&tgsh), &priority, l_Shipclass.Get(&sclass)))
 		return ADE_RETURN_NIL;
 
 	if(!objh->IsValid() || !eh->IsValid())
@@ -10364,7 +10374,16 @@ ADE_FUNC(giveOrder, l_Ship, "enumeration Order, [object Target=nil, subsystem Ta
 					ai_submode = AIS_GUARD_STATIC;
 				}
 			}
-
+			break;
+		}
+		case LE_ORDER_ATTACK_SHIP_CLASS:
+		{
+			if(sclass >= 0)
+			{
+				ai_mode = AI_GOAL_CHASE_SHIP_CLASS;
+				ai_shipname = Ship_info[sclass].name;
+				ai_submode = SM_ATTACK;
+			}
 			break;
 		}
 	}
