@@ -165,6 +165,7 @@ BOOL ShipGoalsDlg::OnInitDialog()
 {
 	int i, j, z, valid[99];
 	object *ptr;
+	Assert(Ai_goal_list_size <= _countof(valid));
 
 	// set up pointers to all the combo boxes to simplify things a lot
 	m_behavior_box[0] = (CComboBox *) GetDlgItem(IDC_BEHAVIOR1);
