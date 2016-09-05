@@ -7,12 +7,21 @@
 
 #include <cstdlib>
 #include <stdlib.h>
-#include <stddef.h>
 #include <type_traits>
+
+#ifdef HAVE_STD_MAX_ALIGN_T
+#include <cstddef>
+typedef std::max_align_t my_max_align_t;
+#elif defined(HAVE_MAX_ALIGN_T)
+#include <stddef.h>
+typedef ::max_align_t my_max_align_t;
+#else
+#error This code requires the max_align_t type!
+#endif
 
 namespace
 {
-	struct alignas(max_align_t) MemoryHeader
+	struct alignas(my_max_align_t) MemoryHeader
 	{
 		const char *filename;
 		size_t size;
