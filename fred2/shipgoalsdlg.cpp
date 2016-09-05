@@ -931,6 +931,11 @@ void ShipGoalsDlg::update_item(int item, int multi)
 		case AI_GOAL_KEEP_SAFE_DISTANCE:
 		case AI_GOAL_PLAY_DEAD:
 		case AI_GOAL_WARP:
+			// these goals do not have a target in the dialog box, so let's set the goal and return immediately
+			// so that we don't run afoul of the "doesn't have a valid target" code at the bottom of the function
+			MODIFY(goalp[item].ai_mode, mode);
+			return;
+
 		case AI_GOAL_WAYPOINTS:
 		case AI_GOAL_WAYPOINTS_ONCE:
 		case AI_GOAL_DISABLE_SHIP:
