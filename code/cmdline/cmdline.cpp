@@ -208,6 +208,7 @@ Flag exe_params[] =
 	{ "-no_geo_effects",	"Disable geometry shader for effects",		true,	0,					EASY_DEFAULT,		"Troubleshoot", "", },
 	{ "-set_cpu_affinity",	"Sets processor affinity to config value",	true,	0,					EASY_DEFAULT,		"Troubleshoot", "", },
 	{ "-nograb",			"Disables mouse grabbing",					true,	0,					EASY_DEFAULT,		"Troubleshoot", "http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-nograb", },
+	{ "-noshadercache",		"Disables the shader cache",				true,	0,					EASY_DEFAULT,		"Troubleshoot", "http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-noshadercache", },
 #ifdef WIN32
 	{ "-fix_registry",	"Use a different registry path",			true,		0,					EASY_DEFAULT,		"Troubleshoot", "", },
 #endif
@@ -439,6 +440,7 @@ cmdline_parm gl_finish ("-gl_finish", NULL, AT_NONE);
 cmdline_parm no_geo_sdr_effects("-no_geo_effects", NULL, AT_NONE);
 cmdline_parm set_cpu_affinity("-set_cpu_affinity", NULL, AT_NONE);
 cmdline_parm nograb_arg("-nograb", NULL, AT_NONE);
+cmdline_parm noshadercache_arg("-noshadercache", NULL, AT_NONE);
 #ifdef WIN32
 cmdline_parm fix_registry("-fix_registry", NULL, AT_NONE);
 #endif
@@ -456,6 +458,7 @@ bool Cmdline_gl_finish = false;
 bool Cmdline_no_geo_sdr_effects = false;
 bool Cmdline_set_cpu_affinity = false;
 bool Cmdline_nograb = false;
+bool Cmdline_noshadercache = false;
 #ifdef WIN32
 bool Cmdline_alternate_registry_path = false;
 #endif
@@ -1708,6 +1711,11 @@ bool SetCmdlineParams()
 	if (nograb_arg.found())
 	{
 		Cmdline_nograb = true;
+	}
+
+	if (noshadercache_arg.found())
+	{
+		Cmdline_noshadercache = true;
 	}
 
 	if (portable_mode.found())
