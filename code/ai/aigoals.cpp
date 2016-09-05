@@ -2245,7 +2245,7 @@ void ai_process_mission_orders( int objnum, ai_info *aip )
 
 	case AI_GOAL_CHASE_WING:
 		wingnum = wing_name_lookup( current_goal->target_name );
-		Assert( wingnum >= 0 );
+		Assertion( wingnum >= 0, "The target of AI_GOAL_CHASE_WING must refer to a valid wing!" );
 		ai_attack_wing(objp, wingnum);
 		break;
 
@@ -2255,7 +2255,9 @@ void ai_process_mission_orders( int objnum, ai_info *aip )
 
 	// chase-ship-class is chase-any but restricted to a subset of ships
 	case AI_GOAL_CHASE_SHIP_CLASS:
-		ai_attack_object( objp, NULL, NULL, current_goal->target_name );
+		shipnum = ship_info_lookup( current_goal->target_name );
+		Assertion( shipnum >= 0, "The target of AI_GOAL_CHASE_SHIP_CLASS must refer to a valid ship class!" );
+		ai_attack_object( objp, NULL, NULL, shipnum );
 		break;
 
 	case AI_GOAL_WARP: {
