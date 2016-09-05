@@ -399,7 +399,7 @@ void shadows_end_render()
 
 void shadows_render_all(float fov, matrix *eye_orient, vec3d *eye_pos)
 {
-	GR_DEBUG_SCOPE(shadow_scope, "Render shadows");
+	GR_DEBUG_SCOPE("Render shadows");
 
 	if ( Static_light.empty() ) {
 		return;

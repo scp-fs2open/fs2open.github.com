@@ -3665,7 +3665,7 @@ extern SCP_vector<object*> effect_ships;
 extern SCP_vector<object*> transparent_objects;
 void game_render_frame( camid cid )
 {
-	GR_DEBUG_SCOPE(main_scope, "Main Frame");
+	GR_DEBUG_SCOPE("Main Frame");
 	g3_start_frame(game_zbuffer);
 
 	camera *cam = cid.getCamera();
@@ -3711,7 +3711,7 @@ void game_render_frame( camid cid )
 	// Note: environment mapping gets disabled when rendering to texture; if you change
 	// this, make sure that the current render target gets restored right afterwards!
 	if ( Cmdline_env && !Env_cubemap_drawn && gr_screen.rendering_to_texture == -1 ) {
-		GR_DEBUG_SCOPE(env_scope, "Environment Mapping");
+		GR_DEBUG_SCOPE("Environment Mapping");
 
 		PROFILE("Environment Mapping", setup_environment_mapping(cid));
 
@@ -3799,7 +3799,7 @@ void game_render_frame( camid cid )
 	//Draw viewer cockpit
 	if(Viewer_obj != NULL && Viewer_mode != VM_TOPDOWN && Ship_info[Ships[Viewer_obj->instance].ship_info_index].cockpit_model_num > 0)
 	{
-		GR_DEBUG_SCOPE(cockpit_scope, "Render Cockpit");
+		GR_DEBUG_SCOPE("Render Cockpit");
 
 		gr_post_process_save_zbuffer();
 		ship_render_cockpit(Viewer_obj);
@@ -4441,6 +4441,8 @@ void game_frame(bool paused)
 			Script_system.RemHookVar("Self");
 
 			if(Scripting_didnt_draw_hud) {
+				GR_DEBUG_SCOPE("Render HUD");
+
 				game_render_hud(cid);
 			}
 			HUD_reset_clip();

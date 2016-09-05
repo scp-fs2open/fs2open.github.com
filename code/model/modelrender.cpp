@@ -499,7 +499,7 @@ void draw_list::add_buffer_draw(model_material *render_material, indexed_vertex_
 
 void draw_list::render_buffer(queued_buffer_draw &render_elements)
 {
-	GR_DEBUG_SCOPE(render_scope, "Render buffer");
+	GR_DEBUG_SCOPE("Render buffer");
 
 	gr_set_transform_buffer_offset(render_elements.transform_buffer_offset);
 
@@ -631,7 +631,7 @@ void draw_list::init_render(bool sort)
 
 void draw_list::render_all(gr_zbuffer_type depth_mode)
 {
-	GR_DEBUG_SCOPE(render_scope, "Render draw list");
+	GR_DEBUG_SCOPE("Render draw list");
 
 	Scene_light_handler.resetLightState();
 

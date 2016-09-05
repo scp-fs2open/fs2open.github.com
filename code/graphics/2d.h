@@ -1276,9 +1276,11 @@ class DebugScope {
 }
 
 #ifndef NDEBUG
-#define GR_DEBUG_SCOPE(var, name) ::graphics::DebugScope var(name)
+#define GR_TOKEN_CONCAT1(x, y) x ## y
+#define GR_TOKEN_CONCAT2(x, y) GR_TOKEN_CONCAT1(x, y)
+#define GR_DEBUG_SCOPE(name) ::graphics::DebugScope GR_TOKEN_CONCAT2(gr_scope, __LINE__)(name)
 #else
-#define GR_DEBUG_SCOPE(var, name) do {} while(0)
+#define GR_DEBUG_SCOPE(name) do {} while(0)
 #endif
 
 #endif
