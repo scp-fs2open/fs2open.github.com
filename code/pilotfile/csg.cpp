@@ -1486,13 +1486,13 @@ bool pilotfile::load_savefile(const char *campaign)
 					break;
 
 				default:
-					mprintf(("CSG => Skipping unknown section 0x%04x!\n", section_id));
+					mprintf(("CSG => Skipping unknown section 0x%04x!\n", (uint32_t)section_id));
 					break;
 			}
 		} catch (cfile::max_read_length &msg) {
 			// read to max section size, move to next section, discarding
 			// extra/unknown data
-			mprintf(("CSG => Warning: (0x%04x) %s\n", section_id, msg.what()));
+			mprintf(("CSG => Warning: (0x%04x) %s\n", (uint32_t)section_id, msg.what()));
 		} catch (const char *err) {
 			mprintf(("CSG => ERROR: %s\n", err));
 			csg_close();
@@ -1506,7 +1506,7 @@ bool pilotfile::load_savefile(const char *campaign)
 		size_t offset_pos = (start_pos + section_size) - cftell(cfp);
 
 		if (offset_pos) {
-			mprintf(("CSG => Warning: (0x%04x) Short read, information may have been lost!\n", section_id));
+			mprintf(("CSG => Warning: (0x%04x) Short read, information may have been lost!\n", (uint32_t)section_id));
 			cfseek(cfp, (int)offset_pos, CF_SEEK_CUR);
 		}
 	}
@@ -1670,7 +1670,7 @@ bool pilotfile::get_csg_rank(int *rank)
 		} catch (cfile::max_read_length &msg) {
 			// read to max section size, move to next section, discarding
 			// extra/unknown data
-			mprintf(("CSG => (0x%04x) %s\n", section_id, msg.what()));
+			mprintf(("CSG => (0x%04x) %s\n", (uint32_t)section_id, msg.what()));
 		} catch (const char *err) {
 			mprintf(("CSG => ERROR: %s\n", err));
 			csg_close();
@@ -1684,7 +1684,7 @@ bool pilotfile::get_csg_rank(int *rank)
 		offset_pos = (start_pos + section_size) - cftell(cfp);
 
 		if (offset_pos) {
-			mprintf(("CSG => Warning: (0x%04x) Short read, information may have been lost!\n", section_id));
+			mprintf(("CSG => Warning: (0x%04x) Short read, information may have been lost!\n", (uint32_t)section_id));
 			cfseek(cfp, (int)offset_pos, CF_SEEK_CUR);
 		}
 	}
