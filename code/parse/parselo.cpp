@@ -2112,12 +2112,12 @@ void read_raw_file_text(const char *filename, int mode, char *raw_text)
         throw parse::ParseException("Failed to open file");
 	}
 
-	// allocate, or reallocate, memory for Mission_text and Mission_text_raw based on size we need now
-	allocate_mission_text((size_t) (file_len + 1));
-
-	// NOTE: this always has to be done *after* the allocate_mission_text() call!!
-	if (raw_text == NULL)
+	if (raw_text == nullptr) {
+		// allocate, or reallocate, memory for Mission_text and Mission_text_raw based on size we need now
+		allocate_mission_text((size_t) (file_len + 1));
+		// NOTE: this always has to be done *after* the allocate_mission_text() call!!
 		raw_text = Mission_text_raw;
+	}
 
 	// read first 10 bytes to determine if file is encrypted
 	cfread(raw_text, MIN(file_len, 10), 1, mf);
