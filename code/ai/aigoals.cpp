@@ -59,6 +59,7 @@ int	Ai_goal_signature;
 int	Num_ai_dock_names = 0;
 char	Ai_dock_names[MAX_AI_DOCK_NAMES][NAME_LENGTH];
 
+// Used in objecttypes.tbl to define custom ship types
 ai_goal_list Ai_goal_names[] =
 {
 	{ "Attack ship",			AI_GOAL_CHASE,			0 },
@@ -96,34 +97,33 @@ int Num_ai_goals = sizeof(Ai_goal_names) / sizeof(ai_goal_list);
 const char *Ai_goal_text(int goal)
 {
 	switch(goal)	{
-	case 1:
+	case AI_GOAL_CHASE:
+	case AI_GOAL_CHASE_WING:
 		return XSTR( "attack ", 474);
-	case 2:
+	case AI_GOAL_DOCK:
 		return XSTR( "dock ", 475);
-	case 3:
+	case AI_GOAL_WAYPOINTS:
+	case AI_GOAL_WAYPOINTS_ONCE:
 		return XSTR( "waypoints", 476);
-	case 4:
-		return XSTR( "waypoints", 476);
-	case 6:
+	case AI_GOAL_DESTROY_SUBSYSTEM:
 		return XSTR( "destroy ", 477);
-	case 7:
+	case AI_GOAL_FORM_ON_WING:
 		return XSTR( "form on ", 478);
-	case 8:
+	case AI_GOAL_UNDOCK:
 		return XSTR( "undock ", 479);
-	case 9:
-		return XSTR( "attack ", 474);
-	case 10:
+	case AI_GOAL_GUARD:
+	case AI_GOAL_GUARD_WING:
 		return XSTR( "guard ", 480);
-	case 11:
+	case AI_GOAL_DISABLE_SHIP:
 		return XSTR( "disable ", 481);
-	case 12:
+	case AI_GOAL_DISARM_SHIP:
 		return XSTR( "disarm ", 482);
-	case 15:
-		return XSTR( "guard ", 480);
-	case 16:
+	case AI_GOAL_EVADE_SHIP:
 		return XSTR( "evade ", 483);
-	case 19:
+	case AI_GOAL_REARM_REPAIR:
 		return XSTR( "rearm ", 484);
+	case AI_GOAL_FLY_TO_SHIP:
+		return XSTR( "rendezvous with ", -1);
 	}
 
 	// Avoid compiler warning
@@ -937,9 +937,9 @@ void ai_add_goal_sub_sexp( int sexp, int type, ai_goal *aigp, char *actor_name )
 		break;
 
 	case OP_AI_CHASE:
+	case OP_AI_CHASE_WING:
 	case OP_AI_GUARD:
 	case OP_AI_GUARD_WING:
-	case OP_AI_CHASE_WING:
 	case OP_AI_EVADE_SHIP:
 	case OP_AI_STAY_NEAR_SHIP:
 	case OP_AI_IGNORE:
@@ -2351,15 +2351,22 @@ void ai_update_goal_references(ai_goal *goals, int type, const char *old_name, c
 						flag = 1;
 				}
 				break;
+
+			default:
+				Warning(LOCATION, "unhandled FRED reference type %d in ai_update_goal_references", type);
+				break;
 		}
 
 		if (flag)  // is this a valid goal to parse for this conversion?
-			if (!stricmp(goals[i].target_name, old_name)) {
+		{
+			if (!stricmp(goals[i].target_name, old_name))
+			{
 				if (*new_name == '<')  // target was just deleted..
 					goals[i].ai_mode = AI_GOAL_NONE;
 				else
 					goals[i].target_name = ai_get_goal_target_name(new_name, &dummy);
 			}
+		}
 	}
 }
 

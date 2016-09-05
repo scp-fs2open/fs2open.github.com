@@ -14953,7 +14953,7 @@ char *ship_return_orders(char *outbuf, ship *sp)
 	ai_info	*aip;
 	ai_goal	*aigp;
 	const char		*order_text;
-	char ship_name[NAME_LENGTH];
+	char target_name[NAME_LENGTH];
 	
 	Assert(sp->ai_index >= 0);
 	aip = &Ai_info[sp->ai_index];
@@ -14964,29 +14964,29 @@ char *ship_return_orders(char *outbuf, ship *sp)
 	if ( aigp->ai_mode < 0 ) 
 		return NULL;
 
-	order_text = Ai_goal_text(bitmask_2_bitnum(aigp->ai_mode));
+	order_text = Ai_goal_text(aigp->ai_mode);
 	if ( order_text == NULL )
 		return NULL;
 
 	strcpy(outbuf, order_text);
 
 	if ( aigp->target_name ) {
-		strcpy_s(ship_name, aigp->target_name);
-		end_string_at_first_hash_symbol(ship_name);
+		strcpy_s(target_name, aigp->target_name);
+		end_string_at_first_hash_symbol(target_name);
 	}
-	switch (aigp->ai_mode ) {
+	switch ( aigp->ai_mode ) {
 
 		case AI_GOAL_FORM_ON_WING:
 		case AI_GOAL_GUARD_WING:
 		case AI_GOAL_CHASE_WING:
 			if ( aigp->target_name ) {
-				strcat(outbuf, ship_name);
-				strcat(outbuf, XSTR( "'s Wing", 494));
+				strcat(outbuf, target_name);
+				strcat(outbuf, XSTR("'s wing", 494));
 			} else {
-				strcpy(outbuf, XSTR( "no orders", 495));
+				strcpy(outbuf, XSTR("no orders", 495));
 			}
 			break;
-	
+
 		case AI_GOAL_CHASE:
 		case AI_GOAL_DOCK:
 		case AI_GOAL_UNDOCK:
@@ -14995,8 +14995,9 @@ char *ship_return_orders(char *outbuf, ship *sp)
 		case AI_GOAL_DISARM_SHIP:
 		case AI_GOAL_EVADE_SHIP:
 		case AI_GOAL_REARM_REPAIR:
-			if ( aigp->target_name ) {
-				strcat(outbuf, ship_name);
+		case AI_GOAL_FLY_TO_SHIP:
+			if (aigp->target_name) {
+				strcat(outbuf, target_name);
 			} else {
 				strcpy(outbuf, XSTR( "no orders", 495));
 			}
@@ -15007,9 +15008,9 @@ char *ship_return_orders(char *outbuf, ship *sp)
 				char subsys_name[NAME_LENGTH];
 				strcpy_s(subsys_name, aip->targeted_subsys->system_info->subobj_name);
 				hud_targetbox_truncate_subsys_name(subsys_name);
-				sprintf(outbuf, XSTR( "atk %s %s", 496), ship_name, subsys_name);
+				sprintf(outbuf, XSTR("atk %s %s", 496), target_name, subsys_name);
 			} else {
-				strcpy(outbuf, XSTR( "no orders", 495) );
+				strcpy(outbuf, XSTR("no orders", 495));
 			}
 			break;
 		}
@@ -15018,11 +15019,6 @@ char *ship_return_orders(char *outbuf, ship *sp)
 		case AI_GOAL_WAYPOINTS_ONCE:
 			// don't do anything, all info is in order_text
 			break;
-
-		case AI_GOAL_FLY_TO_SHIP:
-			strcpy(outbuf, "Flying to ship");
-			break;
-
 
 		default:
 			return NULL;

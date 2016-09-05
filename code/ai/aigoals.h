@@ -26,6 +26,7 @@ struct ai_goal;
 // Fred.  If the goal you add doesn't have a target (such as chase_any), then you don't have
 // to worry about doing this.  Also add it to list in Fred\Management.cpp, and let Hoffoss know!
 // WMC - Oh and add them to Ai_goal_names plz. TY! :)
+// Goober5000 - As well as Ai_goal_text and Ai_goal_list, if appropriate
 #define AI_GOAL_CHASE					(1<<1)	// 0x00000002
 #define AI_GOAL_DOCK					(1<<2)	// 0x00000004	// used for undocking as well
 #define AI_GOAL_WAYPOINTS				(1<<3)	// 0x00000008
@@ -51,8 +52,9 @@ struct ai_goal;
 // resume regular goals
 #define AI_GOAL_STAY_STILL				(1<<20)	// 0x00100000
 #define AI_GOAL_PLAY_DEAD				(1<<21)	// 0x00200000
-#define AI_GOAL_CHASE_WEAPON			(1<<22)	// 0x00400000
 
+// added by SCP
+#define AI_GOAL_CHASE_WEAPON			(1<<22)	// 0x00400000
 #define AI_GOAL_FLY_TO_SHIP				(1<<23) // 0x00800000
 #define AI_GOAL_IGNORE_NEW				(1<<24)	// 0x01000000
 
