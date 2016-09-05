@@ -7418,43 +7418,43 @@ void sexp_set_ship_man(object *objp, int duration, int heading, int pitch, int b
 	ai_info	*aip = &Ai_info[shipp->ai_index];
 	
 	aip->ai_override_timestamp = timestamp(duration);
-	aip->ai_override_flags = 0;
+	aip->ai_override_flags.reset();
 	
 	if (apply_all_rotate) {
-		aip->ai_override_flags |= AIORF_FULL;
+		aip->ai_override_flags.set(AI::Maneuver_Override_Flags::Full);
 		aip->ai_override_ci.bank = bank / 100.0f;
 		aip->ai_override_ci.pitch = pitch / 100.0f;
 		aip->ai_override_ci.heading = heading / 100.0f;
 	} else {
 		if (bank != 0) {
-			aip->ai_override_flags |= AIORF_ROLL;
+			aip->ai_override_flags.set(AI::Maneuver_Override_Flags::Roll);
 			aip->ai_override_ci.bank = bank / 100.0f;
 		}
 		if (pitch != 0) {
-			aip->ai_override_flags |= AIORF_PITCH;
+			aip->ai_override_flags.set(AI::Maneuver_Override_Flags::Pitch);
 			aip->ai_override_ci.pitch = pitch / 100.0f;
 		}
 		if (heading != 0) {
-			aip->ai_override_flags |= AIORF_HEADING;
+			aip->ai_override_flags.set(AI::Maneuver_Override_Flags::Heading);
 			aip->ai_override_ci.heading = heading / 100.0f;
 		}
 	}
 	if (apply_all_lat) {
-		aip->ai_override_flags |= AIORF_FULL_LAT;
+		aip->ai_override_flags.set(AI::Maneuver_Override_Flags::Full_lat);
 		aip->ai_override_ci.vertical = up / 100.0f;
 		aip->ai_override_ci.sideways = sideways / 100.0f;
 		aip->ai_override_ci.forward = forward / 100.0f;
 	} else {
 		if (up != 0) {
-			aip->ai_override_flags |= AIORF_UP;
+			aip->ai_override_flags.set(AI::Maneuver_Override_Flags::Up);
 			aip->ai_override_ci.vertical = up / 100.0f;
 		}
 		if (sideways != 0) {
-			aip->ai_override_flags |= AIORF_SIDEWAYS;
+			aip->ai_override_flags.set(AI::Maneuver_Override_Flags::Sideways);
 			aip->ai_override_ci.sideways = sideways / 100.0f;
 		}
 		if (forward != 0) {
-			aip->ai_override_flags |= AIORF_FORWARD;
+			aip->ai_override_flags.set(AI::Maneuver_Override_Flags::Forward);
 			aip->ai_override_ci.forward = forward / 100.0f;
 		}
 	}

@@ -26,6 +26,7 @@
 #include "parse/parselo.h"
 #include "playerman/player.h"
 #include "render/3d.h"
+#include "render/batching.h"
 #include "ship/ship.h"
 #include "sound/fsspeech.h"
 #include "ui/ui.h"
@@ -245,6 +246,7 @@ static UI_SLIDER2 Tech_slider;
 // Intelligence master data structs (these get inited @ game startup from species.tbl)
 intel_data Intel_info[MAX_INTEL_ENTRIES];
 int Intel_info_size = 0;
+static bool intel_info_init_done = false;
 
 // some prototypes to make you happy
 int techroom_load_ani(anim **animpp, char *name);
@@ -586,7 +588,7 @@ void techroom_ships_render(float frametime)
 
 	Glowpoint_use_depth_buffer = true;
 
-	batch_render_all();
+	batching_render_all();
 
 	gr_end_view_matrix();
 	gr_end_proj_matrix();
@@ -711,6 +713,10 @@ void techroom_anim_render(float frametime)
 
 	// render common stuff
 	tech_common_render();
+
+	// exit now if there are no entries to show
+	if (Current_list_size == 0 || Cur_entry < 0)
+		return;
 
 	// render the animation
 	if(Current_list[Cur_entry].animation.num_frames > 0)
@@ -1043,9 +1049,8 @@ int techroom_load_ani(anim **animpp, char *name)
 void techroom_intel_init()
 {
 	int  temp;
-	static int inited = 0;
 
-	if (inited)
+	if (intel_info_init_done)
 		return;
 		
 	try
@@ -1083,13 +1088,20 @@ void techroom_intel_init()
 			Intel_info_size++;
 		}
 
-		inited = 1;
+		intel_info_init_done = true;
 	}
 	catch (const parse::ParseException& e)
 	{
 		mprintf(("TABLES: Unable to parse '%s'!  Error message = %s.\n", "species.tbl", e.what()));
 		return;
 	}
+}
+
+void techroom_intel_reset()
+{
+	Intel_info_size = 0;
+	memset(Intel_info, 0, sizeof(Intel_info));
+	intel_info_init_done = false;
 }
 
 void techroom_init()

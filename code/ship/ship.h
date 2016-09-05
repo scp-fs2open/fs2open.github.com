@@ -34,6 +34,7 @@
 #include "weapon/weapon_flags.h"
 
 #include <string>
+#include <particle/ParticleManager.h>
 
 class object;
 class WarpEffect;
@@ -823,15 +824,6 @@ typedef struct ship_type_info {
 
 extern SCP_vector<ship_type_info> Ship_types;
 
-struct man_thruster_renderer {
-	int bmap_id;
-	geometry_batcher man_batcher;
-
-	man_thruster_renderer(int id){bmap_id = id;}
-};
-
-extern SCP_vector<man_thruster_renderer> Man_thrusters;
-
 class man_thruster {
     public:
 	flagset<Ship::Thruster_Flags> use_flags;
@@ -1014,6 +1006,8 @@ public:
 	particle_effect		split_particles;
 	particle_effect		knossos_end_particles;
 	particle_effect		regular_end_particles;
+
+	particle::ParticleEffectIndex death_effect;
 
 	//Debris stuff
 	float			debris_min_lifetime;

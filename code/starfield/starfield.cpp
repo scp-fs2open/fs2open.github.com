@@ -14,6 +14,7 @@
 #include "cmdline/cmdline.h"
 #include "debugconsole/console.h"
 #include "freespace.h"
+#include "graphics/paths/PathRenderer.h"
 #include "hud/hud.h"
 #include "hud/hudtarget.h"
 #include "io/timer.h"
@@ -1087,16 +1088,36 @@ void stars_draw_sun(int show_sun)
 			local_scale = 1.0f;
 
 		// draw the sun itself, keep track of how many we drew
+		int bitmap_id = -1;
 		if (bm->fps) {
-			gr_set_bitmap(bm->bitmap_id + ((timestamp() / (int)(bm->fps)) % bm->n_frames), GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.999f);
+			//gr_set_bitmap(bm->bitmap_id + ((timestamp() / (int)(bm->fps)) % bm->n_frames), GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.999f);
+			bitmap_id = bm->bitmap_id + ((timestamp() / (int)(bm->fps)) % bm->n_frames);
 		} else {
-			gr_set_bitmap(bm->bitmap_id, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.999f);
+			//gr_set_bitmap(bm->bitmap_id, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.999f);
+			bitmap_id = bm->bitmap_id;
 		}
 
 		g3_rotate_faraway_vertex(&sun_vex, &sun_pos);
 
-		if ( !g3_draw_bitmap(&sun_vex, 0, 0.05f * Suns[idx].scale_x * local_scale, TMAP_FLAG_TEXTURED) )
-			Sun_drew++;
+		if ( sun_vex.codes & (CC_BEHIND|CC_OFF_USER) ) {
+			return;
+		}
+
+		if ( !(sun_vex.flags & PF_PROJECTED) ) {
+			g3_project_vertex(&sun_vex);
+		}
+
+		if ( sun_vex.flags & PF_OVERFLOW ) {
+			return;
+		}
+
+		material mat_params;
+		material_set_unlit(&mat_params, bitmap_id, 0.999f, true, false);
+		g3_render_rect_screen_aligned_2d(&mat_params, &sun_vex, 0, 0.05f * Suns[idx].scale_x * local_scale);
+		Sun_drew++;
+
+// 		if ( !g3_draw_bitmap(&sun_vex, 0, 0.05f * Suns[idx].scale_x * local_scale, TMAP_FLAG_TEXTURED) )
+// 			Sun_drew++;
 	}
 }
 
@@ -1136,15 +1157,17 @@ void stars_draw_lens_flare(vertex *sun_vex, int sun_n)
 		if (bm->flare_bitmaps[j].bitmap_id < 0)
 			continue;
 
-		gr_set_bitmap(bm->flare_bitmaps[j].bitmap_id, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.999f);
+		//gr_set_bitmap(bm->flare_bitmaps[j].bitmap_id, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.999f);
 
 		for (i = 0; i < bm->n_flares; i++) {
 			// draw sorted by texture, to minimize texture changes. not the most efficient way, but better than non-sorted
 			if (bm->flare_infos[i].tex_num == j) {
-//				gr_set_bitmap(bm->flare_bitmaps[bm->flare_infos[i].tex_num], GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.999f);
 				flare_vex.screen.xyw.x = sun_vex->screen.xyw.x + dx * bm->flare_infos[i].pos;
 				flare_vex.screen.xyw.y = sun_vex->screen.xyw.y + dy * bm->flare_infos[i].pos;
-				g3_draw_bitmap(&flare_vex, 0, 0.05f * bm->flare_infos[i].scale, TMAP_FLAG_TEXTURED);
+				//g3_draw_bitmap(&flare_vex, 0, 0.05f * bm->flare_infos[i].scale, TMAP_FLAG_TEXTURED);
+				material mat_params;
+				material_set_unlit(&mat_params, bm->flare_bitmaps[j].bitmap_id, 0.999f, true, false);
+				g3_render_rect_screen_aligned_2d(&mat_params, &flare_vex, 0, 0.05f * bm->flare_infos[i].scale);
 			}
 		}
 	}
@@ -1194,15 +1217,21 @@ void stars_draw_sun_glow(int sun_n)
 		local_scale = 1.0f;
 
 	// draw the sun itself, keep track of how many we drew
+	int bitmap_id = -1;
 	if (bm->glow_fps) {
-		gr_set_bitmap(bm->glow_bitmap + ((timestamp() / (int)(bm->glow_fps)) % bm->glow_n_frames), GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.5f);
+		//gr_set_bitmap(bm->glow_bitmap + ((timestamp() / (int)(bm->glow_fps)) % bm->glow_n_frames), GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.5f);
+		bitmap_id = bm->glow_bitmap + ((timestamp() / (int)(bm->glow_fps)) % bm->glow_n_frames);
 	} else {
-		gr_set_bitmap(bm->glow_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.5f);
+		//gr_set_bitmap(bm->glow_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.5f);
+		bitmap_id = bm->glow_bitmap;
 	}
 
 	g3_rotate_faraway_vertex(&sun_vex, &sun_pos);
-	int zbuff = gr_zbuffer_set(GR_ZBUFF_NONE);
-	g3_draw_bitmap(&sun_vex, 0, 0.10f * Suns[sun_n].scale_x * local_scale, TMAP_FLAG_TEXTURED);
+	//int zbuff = gr_zbuffer_set(GR_ZBUFF_NONE);
+	//g3_draw_bitmap(&sun_vex, 0, 0.10f * Suns[sun_n].scale_x * local_scale, TMAP_FLAG_TEXTURED);
+	material mat_params;
+	material_set_unlit(&mat_params, bitmap_id, 0.5f, true, false);
+	g3_render_rect_screen_aligned_2d(&mat_params, &sun_vex, 0, 0.10f * Suns[sun_n].scale_x * local_scale);
 
 	if (bm->flare) {
 		vec3d light_dir;
@@ -1214,11 +1243,9 @@ void stars_draw_sun_glow(int sun_n)
 			stars_draw_lens_flare(&sun_vex, sun_n);
 	}
 
-	gr_zbuffer_set(zbuff);
+	//gr_zbuffer_set(zbuff);
 }
 
-
-// draw bitmaps
 void stars_draw_bitmaps(int show_bitmaps)
 {
 	int idx;
@@ -1238,13 +1265,6 @@ void stars_draw_bitmaps(int show_bitmaps)
 
 	gr_start_instance_matrix(&Eye_position, &vmd_identity_matrix);
 
-	// turn off culling
-	int cull = gr_set_cull(0);
-
-	// turn off zbuffering
-	int saved_zbuffer_mode = gr_zbuffer_get();
-	gr_zbuffer_set(GR_ZBUFF_NONE);
-
 	int sb_instances = (int)Starfield_bitmap_instances.size();
 
 	for (idx = 0; idx < sb_instances; idx++) {
@@ -1260,33 +1280,33 @@ void stars_draw_bitmaps(int show_bitmaps)
 			continue;
 		}
 
-		int tmap_flags = TMAP_FLAG_TEXTURED | TMAP_FLAG_CORRECT | TMAP_FLAG_TRILIST | TMAP_HTL_3D_UNLIT;
+		int bitmap_id;
+		bool blending = false;
+		float alpha = 1.0f;
 
 		if (Starfield_bitmaps[star_index].xparent) {
 			if (Starfield_bitmaps[star_index].fps) {
-				gr_set_bitmap(Starfield_bitmaps[star_index].bitmap_id + ((timestamp() / (int)(Starfield_bitmaps[star_index].fps)) % Starfield_bitmaps[star_index].n_frames));		
+				bitmap_id = Starfield_bitmaps[star_index].bitmap_id + ((timestamp() / (int)(Starfield_bitmaps[star_index].fps)) % Starfield_bitmaps[star_index].n_frames);
 			} else {
-				gr_set_bitmap(Starfield_bitmaps[star_index].bitmap_id);
+				bitmap_id = Starfield_bitmaps[star_index].bitmap_id;
 			}
-
-			tmap_flags |= TMAP_FLAG_XPARENT;
 		} else {
 			if (Starfield_bitmaps[star_index].fps) {
-				gr_set_bitmap(Starfield_bitmaps[star_index].bitmap_id + ((timestamp() / (int)(Starfield_bitmaps[star_index].fps)) % Starfield_bitmaps[star_index].n_frames), GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.9999f);	
+				bitmap_id = Starfield_bitmaps[star_index].bitmap_id + ((timestamp() / (int)(Starfield_bitmaps[star_index].fps)) % Starfield_bitmaps[star_index].n_frames);
+				blending = true;
+				alpha = 0.9999f;
 			} else {
-				gr_set_bitmap(Starfield_bitmaps[star_index].bitmap_id, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.9999f);	
+				bitmap_id = Starfield_bitmaps[star_index].bitmap_id;	
+				blending = true;
+				alpha = 0.9999f;
 			}
 		}
 
-		gr_render(Starfield_bitmap_instances[idx].n_verts, Starfield_bitmap_instances[idx].verts, tmap_flags);
+		material material_params;
+		material_set_unlit(&material_params, bitmap_id, alpha, blending, false);
+		g3_render_primitives_textured(&material_params, Starfield_bitmap_instances[idx].verts, Starfield_bitmap_instances[idx].n_verts, PRIM_TYPE_TRIS, false);
 	}
-
-	// turn on culling
-	gr_set_cull(cull);
-
-	// restore zbuffer
-	gr_zbuffer_set(saved_zbuffer_mode);
-
+	
 	gr_end_instance_matrix();
 }
 
@@ -1464,14 +1484,19 @@ void subspace_render()
 	glow_pos.xyz.y = 0.0f;
 	glow_pos.xyz.z = 100.0f;
 
-	gr_set_bitmap(Subspace_glow_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.0f);
+	//gr_set_bitmap(Subspace_glow_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.0f);
+	material mat_params;
+	material_set_unlit(&mat_params, Subspace_glow_bitmap, 1.0f, true, false);
+
 	g3_rotate_faraway_vertex(&glow_vex, &glow_pos);
-	g3_draw_bitmap(&glow_vex, 0, 17.0f + 0.5f * Noise[framenum], TMAP_FLAG_TEXTURED);
+	//g3_draw_bitmap(&glow_vex, 0, 17.0f + 0.5f * Noise[framenum], TMAP_FLAG_TEXTURED);
+	g3_render_rect_screen_aligned_2d(&mat_params, &glow_vex, 0, 17.0f + 0.5f * Noise[framenum]);
 
 	glow_pos.xyz.z = -100.0f;
 
 	g3_rotate_faraway_vertex(&glow_vex, &glow_pos);
-	g3_draw_bitmap(&glow_vex, 0, 17.0f + 0.5f * Noise[framenum], TMAP_FLAG_TEXTURED);
+	//g3_draw_bitmap(&glow_vex, 0, 17.0f + 0.5f * Noise[framenum], TMAP_FLAG_TEXTURED);
+	g3_render_rect_screen_aligned_2d(&mat_params, &glow_vex, 0, 17.0f + 0.5f * Noise[framenum]);
 
 	Interp_subspace = 0;
 	gr_zbuffer_set(saved_gr_zbuffering);
@@ -1499,6 +1524,12 @@ void stars_draw_stars()
 	tmp_num_stars = (Detail.num_stars * Num_stars) / MAX_DETAIL_LEVEL;
 	CLAMP(tmp_num_stars, 0, Num_stars);
 
+	auto path = graphics::paths::PathRenderer::instance();
+
+	path->saveState();
+	path->resetState();
+
+	path->beginFrame();
 
 	for (i = 0; i < tmp_num_stars; i++) {
 		sp = &Stars[i];
@@ -1555,8 +1586,6 @@ void stars_draw_stars()
 		if ( !can_draw )
 			continue;
 
-		gr_set_color_fast( &sp->col );
-
 		vDst.x = fl2i(p1.screen.xyw.x) - fl2i(p2.screen.xyw.x);
 		vDst.y = fl2i(p1.screen.xyw.y) - fl2i(p2.screen.xyw.y);
 
@@ -1564,9 +1593,17 @@ void stars_draw_stars()
 			p1.screen.xyw.x = p2.screen.xyw.x + 1.0f;
 			p1.screen.xyw.y = p2.screen.xyw.y;
 		}
+		path->beginPath();
 
-		gr_aaline(&p1, &p2);
+		path->moveTo(p1.screen.xyw.x, p1.screen.xyw.y);
+		path->lineTo(p2.screen.xyw.x, p2.screen.xyw.y);
+
+		path->setStrokeColor(&sp->col);
+		path->stroke();
 	}
+	path->endFrame();
+	
+	path->restoreState();
 }
 
 void stars_draw_debris()
@@ -1623,14 +1660,19 @@ void stars_draw_debris()
 			int frame = Missiontime / (DEBRIS_ROT_MIN + (i % DEBRIS_ROT_RANGE) * DEBRIS_ROT_RANGE_SCALER);
 			frame %= Debris_vclips[d->vclip].nframes;
 
-			if ( (The_mission.flags[Mission::Mission_Flags::Fullneb]) && (Neb2_render_mode != NEB2_RENDER_NONE) ) {
-				gr_set_bitmap( Debris_vclips[d->vclip].bm + frame, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.3f);
-			} else {
-				gr_set_bitmap( Debris_vclips[d->vclip].bm + frame, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.0f);
-			}
+			float alpha;
 
+			if ( (The_mission.flags[Mission::Mission_Flags::Fullneb]) && (Neb2_render_mode != NEB2_RENDER_NONE) ) {
+				alpha = 0.3f;
+			} else {
+				alpha = 1.0f;
+			}
+			
 			vm_vec_add( &tmp, &d->last_pos, &Eye_position );
-			g3_draw_laser( &d->pos,d->size,&tmp,d->size, TMAP_FLAG_TEXTURED|TMAP_FLAG_XPARENT, 25.0f );
+			//g3_draw_laser( &d->pos,d->size,&tmp,d->size, TMAP_FLAG_TEXTURED|TMAP_FLAG_XPARENT, 25.0f );
+			material mat_params;
+			material_set_unlit(&mat_params, Debris_vclips[d->vclip].bm + frame, alpha, true, true);
+			g3_render_laser_2d(&mat_params, &d->pos, d->size, &tmp, d->size, 25.0f);
 		}
 
 		vm_vec_sub( &d->last_pos, &d->pos, &Eye_position );

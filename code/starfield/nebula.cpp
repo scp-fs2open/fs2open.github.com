@@ -14,9 +14,10 @@
 #include "math/vecmat.h"
 #include "mission/missionparse.h"
 #include "nebula/neb.h"
+#include "palman/palman.h"
+#include "graphics/material.h"
 #include "render/3d.h"
 #include "starfield/nebula.h"
-
 
 #define MAX_TRIS 200
 #define MAX_POINTS 300
@@ -162,14 +163,21 @@ void nebula_init( const char *filename, angles * pbh )
 	}
 }
 
+void nebula_get_color_from_palette(ubyte *r, ubyte *g, ubyte *b, ubyte index)
+{
+	int pal = (index * (NEBULA_INDEXED_COLORS-1)) / 255;
+	*r = gr_palette[pal*3+0];
+	*g = gr_palette[pal*3+1];
+	*b = gr_palette[pal*3+2];
+}
+
 void nebula_render()
 {
 	int i;
-	// int r, g, b;
 
 	if (Fred_running) {
-	// no nebula for you!
-	return;
+		// no nebula for you!
+		return;
 	}
 
 	if ( !Nebula_loaded ) {
@@ -188,29 +196,31 @@ void nebula_render()
 		g3_project_vertex( &nebula_verts[i] );
 	}
 
-	int saved_gr_zbuffering = gr_zbuffer_get();
+	material nebula_material;
 
-	gr_zbuffer_set(GR_ZBUFF_NONE);
+	nebula_material.set_depth_mode(ZBUFFER_TYPE_NONE);
+	nebula_material.set_blend_mode(ALPHA_BLEND_ALPHA_BLEND_ALPHA);
+	nebula_material.set_cull_mode(false);
 
-	for (i=0; i<num_tris; i++ ) {
+	for ( i = 0 ; i < num_tris; i++ ) {
+		vertex verts[3];
+		
+		verts[0] = nebula_verts[tri[i][0]];
+		verts[1] = nebula_verts[tri[i][1]];
+		verts[2] = nebula_verts[tri[i][2]];
 
-		vertex * verts[3];
+		nebula_get_color_from_palette(&verts[0].r, &verts[0].g, &verts[0].b, verts[0].b);
+		nebula_get_color_from_palette(&verts[1].r, &verts[1].g, &verts[1].b, verts[1].b);
+		nebula_get_color_from_palette(&verts[2].r, &verts[2].g, &verts[2].b, verts[2].b);
 
-		verts[0] = &nebula_verts[tri[i][0]];
-		verts[1] = &nebula_verts[tri[i][1]];
-		verts[2] = &nebula_verts[tri[i][2]];
+		verts[0].a = 255;
+		verts[1].a = 255;
+		verts[2].a = 255;
 
-		g3_draw_poly(3, verts, TMAP_FLAG_RAMP | TMAP_FLAG_GOURAUD | TMAP_FLAG_NEBULA );
-	}		
+		g3_render_primitives_colored(&nebula_material, verts, 3, PRIM_TYPE_TRIFAN, true);
+	}
 
 	g3_done_instance(false);
-
-	gr_zbuffer_set(saved_gr_zbuffering);
-
-	// always switch off fogging for good measure
-	if((The_mission.flags[Mission::Mission_Flags::Fullneb]) && (Neb2_render_mode == NEB2_RENDER_NONE)){
-		gr_fog_set(GR_FOGMODE_NONE, 0, 0, 0);
-	}
 }
 
 DCF(nebula,"Loads a different nebula")

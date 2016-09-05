@@ -10,7 +10,8 @@
 #ifndef _MODELRENDER_H
 #define _MODELRENDER_H
 
-#include "graphics/gropengltnl.h"
+#include "graphics/opengl/gropengltnl.h"
+#include "graphics/material.h"
 #include "lighting/lighting.h"
 #include "math/vecmat.h"
 #include "model/model.h"
@@ -22,8 +23,6 @@ extern bool Rendering_to_shadow_map;
 
 extern matrix Object_matrix;
 extern vec3d Object_position;
-
-extern team_color* Current_team_color;
 
 inline int in_box(vec3d *min, vec3d *max, vec3d *pos, vec3d *view_position)
 {
@@ -51,13 +50,28 @@ inline int in_sphere(vec3d *pos, float radius, vec3d *view_position)
 
 extern int model_interp_get_texture(texture_info *tinfo, fix base_frametime);
 
-struct transform
+struct transform_old
 {
 	matrix basis;
 	vec3d origin;
 
-	transform(): basis(vmd_identity_matrix), origin(vmd_zero_vector) {}
-	transform(matrix *m, vec3d *v): basis(*m), origin(*v) {}
+	transform_old(): basis(vmd_identity_matrix), origin(vmd_zero_vector) {}
+	transform_old(matrix *m, vec3d *v): basis(*m), origin(*v) {}
+
+	matrix4 get_matrix4()
+	{
+		matrix4 new_mat;
+
+		new_mat.a1d[0] = basis.vec.rvec.xyz.x;   new_mat.a1d[4] = basis.vec.uvec.xyz.x;   new_mat.a1d[8] = basis.vec.fvec.xyz.x;
+		new_mat.a1d[1] = basis.vec.rvec.xyz.y;   new_mat.a1d[5] = basis.vec.uvec.xyz.y;   new_mat.a1d[9] = basis.vec.fvec.xyz.y;
+		new_mat.a1d[2] = basis.vec.rvec.xyz.z;   new_mat.a1d[6] = basis.vec.uvec.xyz.z;   new_mat.a1d[10] = basis.vec.fvec.xyz.z;
+		new_mat.a1d[12] = origin.xyz.x;
+		new_mat.a1d[13] = origin.xyz.y;
+		new_mat.a1d[14] = origin.xyz.z;
+		new_mat.a1d[15] = 1.0f;
+
+		return new_mat;
+	}
 };
 
 class model_render_params
@@ -96,6 +110,13 @@ class model_render_params
 	float Animated_timer;
 
 	mst_info Thruster_info;
+
+	bool Normal_alpha;
+	float Normal_alpha_min;
+	float Normal_alpha_max;
+
+	bool Normal_extrude;
+	float Normal_extrude_width;
 public:
 	model_render_params();
 
@@ -116,9 +137,13 @@ public:
 	void set_clip_plane(vec3d &pos, vec3d &normal);
 	void set_animated_effect(int effect_num, float timer);
 	void set_thruster_info(mst_info &info);
+	void set_normal_alpha(float min, float max);
+	void set_normal_extrude_width(float width);
 
 	bool is_clip_plane_set();
 	bool is_team_color_set();
+	bool is_normal_alpha_set();
+	bool is_normal_extrude_set();
 
 	uint get_model_flags();
 	uint get_debug_flags();
@@ -139,12 +164,9 @@ public:
 	int get_animated_effect_num();
 	float get_animated_effect_timer();
 	const mst_info& get_thruster_info();
-};
-
-struct clip_plane_state
-{
-	vec3d normal;
-	vec3d point;
+	float get_normal_alpha_min();
+	float get_normal_alpha_max();
+	float get_normal_extrude_width();
 };
 
 struct arc_effect
@@ -165,106 +187,30 @@ struct insignia_draw_data
 	int bitmap_num;
 
 	// if there's a clip plane
-	int clip_plane;
-};
-
-struct render_state
-{
-	int clip_plane_handle;
-	int texture_addressing;
-	int fill_mode;
-	int cull_mode;
-	int center_alpha;
-	int zbias;
-	int buffer_id;
-
-	float animated_timer;
-	int animated_effect;
-
-	bool lighting;
-	light_indexing_info lights;
-	float light_factor;
-	
-	float thrust_scale;
-
-	bool using_team_color;
-	team_color tm_color;
-	color clr;
-
-	// fog state maybe shouldn't belong here. if we have fog, then it's probably occurring for all objects in scene.
-	int fog_mode;
-	int r;
-	int g;
-	int b;
-	float fog_near;
-	float fog_far;
-
-	render_state()
-	{
-		clip_plane_handle = -1;
-		texture_addressing = TMAP_ADDRESS_WRAP;
-		fill_mode = GR_FILL_MODE_SOLID;
-
-		buffer_id = -1;
-
-		lighting = false;
-
-		fog_mode = GR_FOGMODE_NONE;
-		r = 0;
-		g = 0;
-		b = 0;
-		fog_near = -1.0f;
-		fog_far = -1.0f;
-
-		lights.index_start = 0;
-		lights.num_lights = 0;
-		light_factor = 1.0f;
-
-		animated_timer = 0.0f;
-		animated_effect = 0;
-
-		thrust_scale = -1.0f;
-
-		gr_init_color(&clr, 255, 255, 255);
-	}
+	bool clip;
+	vec3d clip_normal;
+	vec3d clip_position;
 };
 
 struct queued_buffer_draw
 {
-	int render_state_handle;
-	int texture_maps[TM_NUM_TYPES];
 	size_t transform_buffer_offset;
 
-	color clr;
-	int blend_filter;
-	float alpha;
-	int depth_mode;
+	model_material render_material;
 
 	transform transformation;
 	vec3d scale;
 
+	indexed_vertex_source *vert_src;
 	vertex_buffer *buffer;
 	size_t texi;
 	int flags;
 	int sdr_flags;
 
-	float thrust_scale;
+	light_indexing_info lights;
 
 	queued_buffer_draw()
 	{
-		depth_mode = GR_ZBUFF_FULL;
-
-		texture_maps[TM_BASE_TYPE]			= -1;
-		texture_maps[TM_UNLIT_TYPE]			= -1;
-		texture_maps[TM_GLOW_TYPE]			= -1;
-		texture_maps[TM_HEIGHT_TYPE]		= -1;
-		texture_maps[TM_MISC_TYPE]			= -1;
-		texture_maps[TM_NORMAL_TYPE]		= -1;
-		texture_maps[TM_SPECULAR_TYPE]		= -1;
-		texture_maps[TM_SPEC_GLOSS_TYPE]	= -1;
-		texture_maps[TM_AMBIENT_TYPE]		= -1;
-
-		thrust_scale = 0.0f;
 	}
 };
 
@@ -306,27 +252,14 @@ class draw_list
 	vec3d Current_scale;
 	SCP_vector<transform> Transform_stack;
 
-	render_state Current_render_state;
-	bool Dirty_render_state;
-
 	scene_lights Scene_light_handler;
-	
-	int Current_textures[TM_NUM_TYPES];
-	int Current_blend_filter;
-	float Current_alpha;
-	int Current_depth_mode;
-
-	int Current_set_clip_plane;
 	light_indexing_info Current_lights_set;
 
 	void render_arc(arc_effect &arc);
 	void render_insignia(insignia_draw_data &insignia_info);
 	void render_outline(outline_draw &outline_info);
 	void render_buffer(queued_buffer_draw &render_elements);
-	uint determine_shader_flags(render_state *state, queued_buffer_draw *draw_info, vertex_buffer *buffer, int tmap_flags);
 	
-	SCP_vector<clip_plane_state> Clip_planes;
-	SCP_vector<render_state> Render_states;
 	SCP_vector<queued_buffer_draw> Render_elements;
 	SCP_vector<int> Render_keys;
 
@@ -341,30 +274,10 @@ public:
 	draw_list();
 	void init();
 
-	void reset_state();
-	void set_clip_plane(const vec3d &position, const vec3d &normal);
-	void set_clip_plane();
-	void set_thrust_scale(float scale = -1.0f);
-	void set_texture(int texture_type, int texture_handle);
-	void set_depth_mode(int depth_set);
-	void set_blend_filter(int filter, float alpha);
-	void set_texture_addressing(int addressing);
-	void set_fog(int fog_mode, int r, int g, int b, float fog_near = -1.0f, float fog_far = -1.0f);
-	void set_fill_mode(int mode);
-	void set_cull_mode(int mode);
-	void set_zbias(int bias);
-	void set_center_alpha(int center_alpha);
-	void set_lighting(bool mode);
-	void set_buffer(int buffer);
-	void set_team_color(const team_color &clr);
-	void set_team_color();
-	void set_color(const color &clr);
-	void set_animated_timer(float time);
-	void set_animated_effect(int effect);
 	void add_submodel_to_batch(int model_num);
 	void start_model_batch(int n_models);
 
-	void add_buffer_draw(vertex_buffer *buffer, size_t texi, uint tmap_flags, model_render_params *interp);
+	void add_buffer_draw(model_material *render_material, indexed_vertex_source *vert_src, vertex_buffer *buffer, size_t texi, uint tmap_flags);
 	
 	vec3d get_view_position();
 	void clear_transforms();
@@ -375,17 +288,16 @@ public:
 	void add_arc(vec3d *v1, vec3d *v2, color *primary, color *secondary, float arc_width);
 	void render_arcs();
 
-	void add_insignia(polymodel *pm, int detail_level, int bitmap_num);
+	void add_insignia(model_render_params *params, polymodel *pm, int detail_level, int bitmap_num);
 	void render_insignias();
 
 	void add_outline(vertex* vert_array, int n_verts, color *clr);
 	void render_outlines();
 
 	void set_light_filter(int objnum, vec3d *pos, float rad);
-	void set_light_factor(float factor);
 
 	void init_render(bool sort = true);
-	void render_all(int depth_mode = -1);
+	void render_all(gr_zbuffer_type depth_mode = ZBUFFER_TYPE_DEFAULT);
 	void reset();
 };
 
@@ -401,10 +313,15 @@ void model_render_immediate(model_render_params *render_info, int model_num, mat
 void model_render_queue(model_render_params *render_info, draw_list* scene, int model_num, matrix *orient, vec3d *pos);
 void submodel_render_immediate(model_render_params *render_info, int model_num, int submodel_num, matrix *orient, vec3d * pos);
 void submodel_render_queue(model_render_params *render_info, draw_list *scene, int model_num, int submodel_num, matrix *orient, vec3d * pos);
-void model_render_buffers(draw_list* scene, model_render_params* interp, vertex_buffer *buffer, polymodel *pm, int mn, int detail_level, uint tmap_flags);
+void model_render_buffers(draw_list* scene, model_material *rendering_material, model_render_params* interp, vertex_buffer *buffer, polymodel *pm, int mn, int detail_level, uint tmap_flags);
 void model_render_set_thrust(model_render_params *interp, int model_num, mst_info *mst);
 void model_render_set_clip_plane(model_render_params *interp, vec3d *pos = NULL, vec3d *normal = NULL);
 fix model_render_determine_base_frametime(int objnum, uint flags);
 bool model_render_check_detail_box(vec3d *view_pos, polymodel *pm, int submodel_num, uint flags);
+void model_render_arc(vec3d *v1, vec3d *v2, color *primary, color *secondary, float arc_width);
+void model_render_insignias(insignia_draw_data *insignia);
+
+void model_render_determine_color(color *clr, float alpha, gr_alpha_blend blend_mode, bool no_texturing, bool desaturate);
+gr_alpha_blend model_render_determine_blend_mode(int base_bitmap, bool blending);
 
 #endif

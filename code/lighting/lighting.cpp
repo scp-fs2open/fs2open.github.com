@@ -13,8 +13,8 @@
 #include "debugconsole/console.h"
 #include "globalincs/systemvars.h"
 #include "graphics/2d.h"
-#include "graphics/gropengldraw.h"
-#include "graphics/gropengllight.h"
+#include "graphics/opengl/gropengldraw.h"
+#include "graphics/opengl/gropengllight.h"
 #include "lighting/lighting.h"
 #include "math/vecmat.h"
 #include "model/modelrender.h"
@@ -375,8 +375,8 @@ void light_add_tube(const vec3d *p0, const vec3d *p1, float r1, float r2, float 
 	l->radb = r2;
 	l->rada_squared = l->rada*l->rada;
 	l->radb_squared = l->radb*l->radb;
-	l->light_ignore_objnum = is_minimum_GLSL_version() ? affected_objnum : -1;
-	l->affected_objnum = is_minimum_GLSL_version() ? -1 : affected_objnum;
+	l->light_ignore_objnum = affected_objnum;
+	l->affected_objnum = -1;
 	l->instance = Num_lights-1;
 
 	Assert( Num_light_levels <= 1 );
@@ -473,22 +473,15 @@ int light_filter_push( int objnum, const vec3d *pos, float rad )
 
 		// hmm. this could probably be more optimal
 		case LT_TUBE:
-			if(is_minimum_GLSL_version()) {
-				if(l->light_ignore_objnum != objnum){
-					vec3d nearest;
-					float dist_squared, max_dist_squared;
-					vm_vec_dist_squared_to_line(pos,&l->vec,&l->vec2,&nearest,&dist_squared);
+			if(l->light_ignore_objnum != objnum){
+				vec3d nearest;
+				float dist_squared, max_dist_squared;
+				vm_vec_dist_squared_to_line(pos,&l->vec,&l->vec2,&nearest,&dist_squared);
 
-					max_dist_squared = l->radb+rad;
-					max_dist_squared *= max_dist_squared;
-					
-					if ( dist_squared < max_dist_squared )
-						Relevent_lights[Num_relevent_lights[n2]++][n2] = l;
-				}
- 			}
-			else {
- 				// all tubes are "unique" light sources for now
-				if((l->affected_objnum >= 0) && (objnum == l->affected_objnum))
+				max_dist_squared = l->radb+rad;
+				max_dist_squared *= max_dist_squared;
+
+				if ( dist_squared < max_dist_squared )
 					Relevent_lights[Num_relevent_lights[n2]++][n2] = l;
 			}
 			break;
@@ -1158,22 +1151,15 @@ void scene_lights::setLightFilter(int objnum, const vec3d *pos, float rad)
 			}
 			break;
 			case LT_TUBE: {
-				if ( is_minimum_GLSL_version() ) {
-					if ( l.light_ignore_objnum != objnum ) {
-						vec3d nearest;
-						float dist_squared, max_dist_squared;
-						vm_vec_dist_squared_to_line(pos,&l.vec,&l.vec2,&nearest,&dist_squared);
+				if ( l.light_ignore_objnum != objnum ) {
+					vec3d nearest;
+					float dist_squared, max_dist_squared;
+					vm_vec_dist_squared_to_line(pos,&l.vec,&l.vec2,&nearest,&dist_squared);
 
-						max_dist_squared = l.radb+rad;
-						max_dist_squared *= max_dist_squared;
+					max_dist_squared = l.radb+rad;
+					max_dist_squared *= max_dist_squared;
 
-						if ( dist_squared < max_dist_squared ) {
-							FilteredLights.push_back(i);
-						}
-					}
-				} else {
-					// all tubes are "unique" light sources for now
-					if ( ( l.affected_objnum >= 0 ) && ( objnum == l.affected_objnum ) ) {
+					if ( dist_squared < max_dist_squared ) {
 						FilteredLights.push_back(i);
 					}
 				}
@@ -1237,8 +1223,6 @@ bool scene_lights::setLights(const light_indexing_info *info)
 
 	gr_reset_lighting();
 
-	gr_set_lighting(true, true);
-
 	for ( size_t i = 0; i < StaticLightIndices.size(); ++i) {
 		auto light_index = StaticLightIndices[i];
 		
@@ -1247,7 +1231,7 @@ bool scene_lights::setLights(const light_indexing_info *info)
 
 	extern bool Deferred_lighting;
 	if ( Deferred_lighting ) {
-		opengl_change_active_lights(0);
+		gr_set_lighting(true, true);
 		return false;
 	}
 
@@ -1256,7 +1240,7 @@ bool scene_lights::setLights(const light_indexing_info *info)
 
 	// check if there are any lights to actually set
 	if ( num_lights <= 0 ) {
-		opengl_change_active_lights(0);
+		gr_set_lighting(true, true);
 		return false;
 	}
 
@@ -1270,7 +1254,7 @@ bool scene_lights::setLights(const light_indexing_info *info)
 		gr_set_light(&AllLights[light_index]);
 	}
 
-	opengl_change_active_lights(0);
+	gr_set_lighting(true, true);
 
 	return true;
 }

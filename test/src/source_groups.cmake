@@ -17,7 +17,11 @@ add_file_folder(graphics "Globalincs"
 )
 
 add_file_folder(graphics "Graphics"
-    graphics/test_font.cpp
+	   graphics/test_font.cpp
+)
+
+add_file_folder(menuui "menuui"
+    menuui/test_intel_parse.cpp
 )
 
 add_file_folder(graphics "Parse"

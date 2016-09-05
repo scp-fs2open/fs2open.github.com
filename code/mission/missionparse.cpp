@@ -1938,7 +1938,7 @@ int parse_create_object_sub(p_object *p_objp)
 		aip->goals[i].ai_mode = AI_GOAL_NONE;
 		aip->goals[i].signature = -1;
 		aip->goals[i].priority = -1;
-		aip->goals[i].flags = 0;
+		aip->goals[i].flags.reset();
 	}
 
 	shipp->cargo1 = p_objp->cargo1;
@@ -4507,7 +4507,7 @@ void parse_wing(mission *pm)
 		wingp->ai_goals[i].ai_mode = AI_GOAL_NONE;
 		wingp->ai_goals[i].signature = -1;
 		wingp->ai_goals[i].priority = -1;
-		wingp->ai_goals[i].flags = 0;
+		wingp->ai_goals[i].flags.reset();
 	}
 
 	// 7/13/98 -- MWA

@@ -40,6 +40,7 @@
 #include "radar/radar.h"
 #include "radar/radarsetup.h"
 #include "render/3d.h"
+#include "render/batching.h"
 #include "ship/ship.h"
 #include "ship/shiphit.h"
 #include "stats/scoring.h"
@@ -4433,7 +4434,7 @@ void weapon_maybe_play_flyby_sound(object *weapon_objp, weapon *wp)
 		return;
 	}
 
-	if ( !(wp->weapon_flags[Weapon::Weapon_Flags::Played_flyby_sound]) && (wp->weapon_flags[Weapon::Weapon_Flags::Consider_for_flyby_sound]) ) {
+	if ( !(wp->weapon_flags[Weapon::Weapon_Flags::Played_flyby_sound]) ) {
 		float		dist, dot, radius;
 
 		if ( (Weapon_info[wp->weapon_info_index].wi_flags[Weapon::Info_Flags::Corkscrew]) ) {
@@ -4940,7 +4941,7 @@ void weapon_set_tracking_info(int weapon_objnum, int parent_objnum, int target_o
 			// Goober5000 - if we're going bonkers, pretend we're not targeting our own team
 			ai_info *parent_aip = &Ai_info[Ships[parent_objp->instance].ai_index];
 			if (parent_aip->active_goal != AI_GOAL_NONE && parent_aip->active_goal != AI_ACTIVE_GOAL_DYNAMIC) {
-				if (parent_aip->goals[parent_aip->active_goal].flags & AIGF_TARGET_OWN_TEAM) {
+				if (parent_aip->goals[parent_aip->active_goal].flags[AI::Goal_Flags::Target_own_team]) {
 					targeting_same = 0;
 				}
 			}
@@ -7123,11 +7124,8 @@ void weapon_render(object* obj, draw_list *scene)
 				vec3d headp;
 
 				vm_vec_scale_add(&headp, &obj->pos, &obj->orient.vec.fvec, wip->laser_length);
-                wp->weapon_flags.remove(Weapon::Weapon_Flags::Consider_for_flyby_sound);
 
-				if ( batch_add_laser(wip->laser_bitmap.first_frame + framenum, &headp, wip->laser_head_radius, &obj->pos, wip->laser_tail_radius, alpha, alpha, alpha) ) {
-                    wp->weapon_flags.set(Weapon::Weapon_Flags::Consider_for_flyby_sound);
-				}
+				batching_add_laser(wip->laser_bitmap.first_frame + framenum, &headp, wip->laser_head_radius, &obj->pos, wip->laser_tail_radius, alpha, alpha, alpha);
 			}			
 
 			// maybe draw laser glow bitmap
@@ -7171,7 +7169,7 @@ void weapon_render(object* obj, draw_list *scene)
 					alpha = weapon_glow_alpha;
 				}
 
-				batch_add_laser(wip->laser_glow_bitmap.first_frame + framenum, &headp2, wip->laser_head_radius * weapon_glow_scale_f, &tailp, wip->laser_tail_radius * weapon_glow_scale_r, (c.red*alpha)/255, (c.green*alpha)/255, (c.blue*alpha)/255);
+				batching_add_laser(wip->laser_glow_bitmap.first_frame + framenum, &headp2, wip->laser_head_radius * weapon_glow_scale_f, &tailp, wip->laser_tail_radius * weapon_glow_scale_r, (c.red*alpha)/255, (c.green*alpha)/255, (c.blue*alpha)/255);
 			}
 
 			break;
@@ -7232,7 +7230,6 @@ void weapon_render(object* obj, draw_list *scene)
 			render_info.set_flags(render_flags);
 
 			model_render_queue(&render_info, scene, wip->model_num, &obj->orient, &obj->pos);
-            wp->weapon_flags.set(Weapon::Weapon_Flags::Consider_for_flyby_sound);
 
 			break;
 		}

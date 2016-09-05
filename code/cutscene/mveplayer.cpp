@@ -11,12 +11,12 @@
 #include "cutscene/mvelib.h"
 #include "globalincs/pstypes.h"
 #include "graphics/2d.h"
-#include "graphics/gropengl.h"
-#include "graphics/gropengldraw.h"
-#include "graphics/gropenglstate.h"
-#include "graphics/gropenglshader.h"
-#include "graphics/gropengltexture.h"
-
+#include "graphics/opengl/gropengl.h"
+#include "graphics/opengl/gropengldraw.h"
+#include "graphics/opengl/gropenglstate.h"
+#include "graphics/opengl/gropenglshader.h"
+#include "graphics/opengl/gropengltexture.h"
+#include "graphics/opengl/gropengltnl.h"
 #include "io/key.h"
 #include "io/timer.h"
 #include "osapi/osapi.h"
@@ -31,11 +31,7 @@ static int mve_playing;
 // timer variables
 static int micro_frame_delay = 0;
 static int timer_started = 0;
-#ifdef SCP_UNIX
-static struct timeval timer_expire = { 0, 0 };
-#else
 static int timer_expire;
-#endif
 
 // audio variables
 #define MVE_AUDIO_BUFFERS 64  // total buffers to interact with stream
@@ -67,6 +63,7 @@ void *g_vBuffers = NULL;
 void *g_vBackBuf1, *g_vBackBuf2;
 ushort *pixelbuf = NULL;
 static GLuint GLtex = 0;
+static int buffer_handle = -1;
 static GLfloat gl_screenYH = 0;
 static GLfloat gl_screenXW = 0;
 static GLfloat glVertices[4][4] = {{0}};
@@ -112,22 +109,8 @@ int mve_timer_create(ubyte *data)
 
 static void mve_timer_start(void)
 {
-#ifdef SCP_UNIX
-	int nsec = 0;
-
-	gettimeofday(&timer_expire, NULL);
-
-	timer_expire.tv_usec += micro_frame_delay;
-
-	if (timer_expire.tv_usec > 1000000) {
-		nsec = timer_expire.tv_usec / 1000000;
-		timer_expire.tv_sec += nsec;
-		timer_expire.tv_usec -= nsec * 1000000;
-	}
-#else
-	timer_expire = timer_get_microseconds();
+	timer_expire = static_cast<int>(timer_get_microseconds());
 	timer_expire += micro_frame_delay;
-#endif
 
 	timer_started = 1;
 }
@@ -138,49 +121,9 @@ static int mve_do_timer_wait(void)
 		return 0;
 	}
 
-#ifdef SCP_UNIX
-	int nsec = 0;
-	struct timespec ts, tsRem;
-	struct timeval tv;
-
-	gettimeofday(&tv, NULL);
-
-	if (tv.tv_sec > timer_expire.tv_sec) {
-		goto end;
-	}
-
-	if ( (tv.tv_sec == timer_expire.tv_sec) && (tv.tv_usec >= timer_expire.tv_usec) ) {
-		goto end;
-	}
-
-	ts.tv_sec = timer_expire.tv_sec - tv.tv_sec;
-	ts.tv_nsec = 1000 * (timer_expire.tv_usec - tv.tv_usec);
-
-	if (ts.tv_nsec < 0) {
-		ts.tv_nsec += 1000000000UL;
-		--ts.tv_sec;
-	}
-
-	if ( (nanosleep(&ts, &tsRem) == -1) && (errno == EINTR) ) {
-		// so we got an error that was a signal interupt, try to sleep again with remainder of time
-		if ( (nanosleep(&tsRem, NULL) == -1) && (errno == EINTR) ) {
-			mprintf(("MVE: Timer error! Aborting movie playback!\n"));
-			return 1;
-		}
-	}
-
-end:
-	timer_expire.tv_usec += micro_frame_delay;
-
-	if (timer_expire.tv_usec > 1000000) {
-		nsec = timer_expire.tv_usec / 1000000;
-		timer_expire.tv_sec += nsec;
-		timer_expire.tv_usec -= nsec * 1000000;
-	}
-#else
 	int tv, ts, ts2;
 
-	tv = timer_get_microseconds();
+	tv = static_cast<int>(timer_get_microseconds());
 
 	if (tv > timer_expire) {
 		goto end;
@@ -188,23 +131,17 @@ end:
 
 	ts = timer_expire - tv;
 	ts2 = ts/1000;
-	Sleep(ts2);
+	os_sleep(ts2);
 
 end:
 	timer_expire += micro_frame_delay;
-#endif
 
 	return 0;
 }
 
 static void mve_timer_stop()
 {
-#ifdef SCP_UNIX
-	timer_expire.tv_sec = 0;
-	timer_expire.tv_usec = 0;
-#else
 	timer_expire = 0;
-#endif
 	timer_started = 0;
 }
 
@@ -458,13 +395,17 @@ int mve_video_createbuf(ubyte minor, ubyte *data)
 			scale_by = (float)gr_screen.center_w / (float)g_width;
 		}
 
+		buffer_handle = gr_create_vertex_buffer(true);
+
 		// don't bother setting anything if we aren't going to need it
 		if (!Cmdline_noscalevid && (scale_by != 1.0f)) {
-			glMatrixMode(GL_MODELVIEW);
-			glPushMatrix();
-			glLoadIdentity();
+			vec3d scale;
 
-			glScalef( scale_by, scale_by, 1.0f );
+			scale.xyz.x = scale_by;
+			scale.xyz.y = scale_by;
+			scale.xyz.z = 1.0f;
+
+			gr_push_scale_matrix(&scale);
 			mve_scale_video = 1;
 		}
 
@@ -507,9 +448,12 @@ int mve_video_createbuf(ubyte minor, ubyte *data)
 
 		vertex_layout vertex_def;
 
-		vertex_def.add_vertex_component(vertex_format_data::POSITION2, sizeof(glVertices[0]), glVertices);
-		vertex_def.add_vertex_component(vertex_format_data::TEX_COORD, sizeof(glVertices[0]), &(glVertices[0][2]));
+		vertex_def.add_vertex_component(vertex_format_data::POSITION2, sizeof(glVertices[0]), 0);
+		vertex_def.add_vertex_component(vertex_format_data::TEX_COORD, sizeof(glVertices[0]), sizeof(GLfloat) * 2);
 
+		gr_update_buffer_data(buffer_handle, sizeof(glVertices[0]) * 4, glVertices);
+
+		opengl_bind_buffer_object(buffer_handle);
 		opengl_bind_vertex_layout(vertex_def);
 	}
 
@@ -670,13 +614,11 @@ int mve_video_init(ubyte *data)
 		}
 
 		gr_set_lighting(false, false);
-		GL_state.Texture.DisableAll();
 
 		GL_state.Texture.SetActiveUnit(0);
 		GL_state.Texture.SetTarget(GL_texture_target);
 		GL_state.Texture.Enable(GLtex);
 
-		GL_state.SetTextureSource(TEXTURE_SOURCE_DECAL);
 		GL_state.SetAlphaBlendMode(ALPHA_BLEND_NONE);
 		GL_state.SetZbufferType(ZBUFFER_TYPE_NONE);
 
@@ -687,9 +629,6 @@ int mve_video_init(ubyte *data)
 
 		// NOTE: using NULL instead of pixelbuf crashes some drivers, but then so does pixelbuf
 		glTexImage2D(GL_state.Texture.GetTarget(), 0, GL_RGB5_A1, g_screenWidth, g_screenHeight, 0, GL_BGRA, GL_UNSIGNED_SHORT_1_5_5_5_REV, NULL);
-
-		// set our color so that we can make sure that it's correct
-		GL_state.Color(255, 255, 255, 255);
 	}
 
 	memset(g_palette, 0, 768);
@@ -778,11 +717,12 @@ void mve_shutdown()
 {
 	if (gr_screen.mode == GR_OPENGL) {
 		if (mve_scale_video) {
-			glMatrixMode(GL_MODELVIEW);
-			glPopMatrix();
+			gr_pop_scale_matrix();
 		}
 
-		GL_state.Texture.Disable();
+		gr_delete_buffer(buffer_handle);
+		buffer_handle = -1;
+
 		GL_state.Texture.Delete(GLtex);
 		glDeleteTextures(1, &GLtex);
 		GLtex = 0;

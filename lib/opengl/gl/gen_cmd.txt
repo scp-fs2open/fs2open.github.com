@@ -1,3 +1,5 @@
 #!/bin/bash
 
-glad --api "gl=2.0" --generator c --profile compatibility --no-loader --extensions extensions.txt --spec gl --out-path glad
+glad --api "gl=4.1" --generator c --profile core --no-loader --extensions extensions.txt --spec gl --out-path glad
+
+glad --spec wgl --generator c --extensions wgl_exts.txt --out-path glad_wgl --no-loader

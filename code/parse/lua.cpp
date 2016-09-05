@@ -12,7 +12,7 @@
 #include "graphics/2d.h"
 #include "graphics/font.h"
 #include "graphics/generic.h"
-#include "graphics/gropenglpostprocessing.h"
+#include "graphics/opengl/gropenglpostprocessing.h"
 #include "headtracking/headtracking.h"
 #include "hud/hudbrackets.h"
 #include "hud/hudconfig.h"
@@ -10394,7 +10394,7 @@ ADE_FUNC(doManeuver, l_Ship, "number Duration, number Heading, number Pitch, num
 	control_info *cip = &aip->ai_override_ci;
 
 	aip->ai_override_timestamp = timestamp(t);
-	aip->ai_override_flags = 0;
+	aip->ai_override_flags.reset();
 
 	if (t < 2)
 		return ADE_RETURN_FALSE;
@@ -10405,41 +10405,41 @@ ADE_FUNC(doManeuver, l_Ship, "number Duration, number Heading, number Pitch, num
 	}
 
 	if(f_rot) {
-		aip->ai_override_flags |= AIORF_FULL;
+		aip->ai_override_flags.set(AI::Maneuver_Override_Flags::Full);
 		cip->heading = arr[0];
 		cip->pitch = arr[1];
 		cip->bank = arr[2];
 	} else {
 		if (arr[0] != 0) {
 			cip->heading = arr[0];
-			aip->ai_override_flags |= AIORF_HEADING;
+			aip->ai_override_flags.set(AI::Maneuver_Override_Flags::Heading);
 		} 
 		if (arr[1] != 0) {
 			cip->pitch = arr[1];
-			aip->ai_override_flags |= AIORF_PITCH;
+			aip->ai_override_flags.set(AI::Maneuver_Override_Flags::Pitch);
 		} 
 		if (arr[2] != 0) {
 			cip->bank = arr[2];
-			aip->ai_override_flags |= AIORF_ROLL;
+			aip->ai_override_flags.set(AI::Maneuver_Override_Flags::Roll);
 		} 
 	}
 	if(f_move) {
-		aip->ai_override_flags |= AIORF_FULL_LAT;
+		aip->ai_override_flags.set(AI::Maneuver_Override_Flags::Full_lat);
 		cip->vertical = arr[3];
 		cip->sideways = arr[4];
 		cip->forward = arr[5];	
 	} else {
 		if (arr[3] != 0) {
 			cip->vertical = arr[3];
-			aip->ai_override_flags |= AIORF_UP;
+			aip->ai_override_flags.set(AI::Maneuver_Override_Flags::Up);
 		} 
 		if (arr[4] != 0) {
 			cip->sideways = arr[4];
-			aip->ai_override_flags |= AIORF_SIDEWAYS;
+			aip->ai_override_flags.set(AI::Maneuver_Override_Flags::Sideways);
 		} 
 		if (arr[5] != 0) {
 			cip->forward = arr[5];
-			aip->ai_override_flags |= AIORF_FORWARD;
+			aip->ai_override_flags.set(AI::Maneuver_Override_Flags::Forward);
 		} 
 	}
 	return ADE_RETURN_TRUE;
@@ -13781,8 +13781,11 @@ ADE_FUNC(drawPolygon, l_Graphics, "texture Texture, [vector Position={0,0,0}, or
 	if(!in_frame)
 		g3_start_frame(0);
 
-	gr_set_bitmap(tdx, lua_Opacity_type, GR_BITBLT_MODE_NORMAL, lua_Opacity);
-	g3_draw_polygon(&pos, orip, width, height, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT);
+	//gr_set_bitmap(tdx, lua_Opacity_type, GR_BITBLT_MODE_NORMAL, lua_Opacity);
+	//g3_draw_polygon(&pos, orip, width, height, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT);
+	material mat_params;
+	material_set_unlit(&mat_params, tdx, lua_Opacity, lua_Opacity_type == GR_ALPHABLEND_FILTER ? true : false, false);
+	g3_render_rect_oriented(&mat_params, &pos, orip, width, height);
 
 	if(!in_frame)
 		g3_end_frame();

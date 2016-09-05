@@ -16,7 +16,7 @@
 #include "asteroid/asteroid.h"
 #include "cmdline/cmdline.h"
 #include "debris/debris.h"
-#include "graphics/gropengldraw.h"
+#include "graphics/opengl/gropengldraw.h"
 #include "jumpnode/jumpnode.h"
 #include "mission/missionparse.h"
 #include "model/modelrender.h"
@@ -24,6 +24,7 @@
 #include "object/object.h"
 #include "parse/scripting.h"
 #include "render/3d.h"
+#include "render/batching.h"
 #include "ship/ship.h"
 #include "weapon/weapon.h"
 
@@ -166,7 +167,6 @@ inline bool obj_render_is_model(object *obj)
 }
 
 // Sorts all the objects by Z and renders them
-extern int Interp_no_flush;
 void obj_render_all(void (*render_function)(object *objp), bool *draw_viewer_last )
 {
 	object *objp;
@@ -237,8 +237,6 @@ void obj_render_all(void (*render_function)(object *objp), bool *draw_viewer_las
 
 	gr_zbuffer_set( GR_ZBUFF_FULL );	
 
-	Interp_no_flush = 1;
-
 	bool full_neb = ((The_mission.flags[Mission::Mission_Flags::Fullneb]) && (Neb2_render_mode != NEB2_RENDER_NONE) && !Fred_running);
 	bool c_viewer = (!Viewer_mode || (Viewer_mode & VM_PADLOCK_ANY) || (Viewer_mode & VM_OTHER_SHIP) || (Viewer_mode & VM_TRACK));
 
@@ -290,11 +288,9 @@ void obj_render_all(void (*render_function)(object *objp), bool *draw_viewer_las
 		}
 	}
 	gr_deferred_lighting_end();
-	Interp_no_flush = 0;
 
 	// we're done rendering models so flush render states
 	gr_clear_states();
-	gr_set_buffer(-1);
 
 	// render everything else that isn't a model
 	for (os = Sorted_objects.begin(); os != Sorted_objects.end(); ++os) {
@@ -326,21 +322,17 @@ void obj_render_all(void (*render_function)(object *objp), bool *draw_viewer_las
 	}
 
 	Sorted_objects.clear();
-
-	//WMC - draw maneuvering thrusters
-	extern void batch_render_man_thrusters();
-	batch_render_man_thrusters();
-
+	
 	// if we're fullneb, switch off the fog effet
 	if((The_mission.flags[Mission::Mission_Flags::Fullneb]) && (Neb2_render_mode != NEB2_RENDER_NONE)){
 		gr_fog_set(GR_FOGMODE_NONE, 0, 0, 0);
 	}
-
-	batch_render_all();
 }
 
 void obj_render_queue_all()
 {
+	GR_DEBUG_SCOPE(scene_scope, "Render all objects");
+
 	object *objp;
 	int i;
 	draw_list scene;
@@ -384,13 +376,12 @@ void obj_render_queue_all()
 
 	scene.init_render();
 
-	PROFILE("Submit Draws", scene.render_all(GR_ZBUFF_FULL));
+	PROFILE("Submit Draws", scene.render_all(ZBUFFER_TYPE_FULL));
 	gr_zbuffer_set(ZBUFFER_TYPE_READ);
 	gr_zbias(0);
 	gr_set_cull(0);
 
 	gr_clear_states();
-	gr_set_buffer(-1);
 	gr_set_fill_mode(GR_FILL_MODE_SOLID);
 
  	gr_deferred_lighting_end();
@@ -402,8 +393,8 @@ void obj_render_queue_all()
 	gr_set_lighting(false, false);
 
 	// now render transparent meshes
-	PROFILE("Submit Draws", scene.render_all(GR_ZBUFF_READ));
-	PROFILE("Submit Draws", scene.render_all(GR_ZBUFF_NONE));
+	PROFILE("Submit Draws", scene.render_all(ZBUFFER_TYPE_READ));
+	PROFILE("Submit Draws", scene.render_all(ZBUFFER_TYPE_NONE));
 
 	// render electricity effects and insignias
 	scene.render_outlines();
@@ -416,21 +407,16 @@ void obj_render_queue_all()
 	gr_set_fill_mode(GR_FILL_MODE_SOLID);
 
 	gr_clear_states();
-	gr_set_buffer(-1);
 
 	gr_reset_lighting();
 	gr_set_lighting(false, false);
-
-	//WMC - draw maneuvering thrusters
- 	extern void batch_render_man_thrusters();
- 	batch_render_man_thrusters();
-
+	
 	// if we're fullneb, switch off the fog effet
 	if((The_mission.flags[Mission::Mission_Flags::Fullneb]) && (Neb2_render_mode != NEB2_RENDER_NONE)){
 		gr_fog_set(GR_FOGMODE_NONE, 0, 0, 0);
 	}
 
-	PROFILE("Draw Effects", batch_render_all());
+	PROFILE("Draw Effects", batching_render_all());
 
 	gr_zbias(0);
 	gr_zbuffer_set(ZBUFFER_TYPE_READ);
@@ -438,10 +424,7 @@ void obj_render_queue_all()
 	gr_set_fill_mode(GR_FILL_MODE_SOLID);
 
 	gr_clear_states();
-	gr_set_buffer(-1);
 
 	gr_reset_lighting();
 	gr_set_lighting(false, false);
-
-	GL_state.Texture.DisableAll();
 }

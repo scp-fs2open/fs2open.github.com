@@ -51,6 +51,7 @@ void pilot::BinaryFileHandler::startSectionWrite(Section id) {
 void pilot::BinaryFileHandler::endSectionWrite() {
 	Assertion(!_sectionOffsets.empty(), "No active section!");
 	auto previous_off = _sectionOffsets.back();
+	_sectionOffsets.pop_back();
 
 	if (previous_off.id == Section::Unnamed) {
 		// ignore unnamed sections, these are only needed for JSON
@@ -59,7 +60,6 @@ void pilot::BinaryFileHandler::endSectionWrite() {
 
 
 	size_t cur = (size_t) cftell(_cfp);
-	_sectionOffsets.pop_back();
 
 	Assert(cur >= previous_off.offset);
 

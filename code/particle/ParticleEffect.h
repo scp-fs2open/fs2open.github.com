@@ -17,6 +17,7 @@ enum class EffectType: size_t {
 	Single = 0,
 	Composite,
 	Cone,
+	Sphere,
 
 	MAX,
 	Invalid

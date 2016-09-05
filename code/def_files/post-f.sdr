@@ -1,8 +1,7 @@
+in vec4 fragTexCoord;
+out vec4 fragOut0;
 uniform sampler2D tex;
 uniform float timer;
-uniform sampler2D bloomed;
-uniform float bloom_intensity;
-uniform int levels;
 #ifdef FLAG_DISTORT_NOISE
 uniform float noise_amount;
 #endif
@@ -33,7 +32,7 @@ void main()
 {
  #ifdef FLAG_DISTORT_NOISE
  // Distort noise
-	float distort_factor = timer * sin(gl_TexCoord[0].x * gl_TexCoord[0].y * 100.0 + timer);
+	float distort_factor = timer * sin(fragTexCoord.x * fragTexCoord.y * 100.0 + timer);
 	distort_factor = mod(distort_factor, 8.0) * mod(distort_factor, 4.0);
 	vec2 distort;
 	distort = vec2(mod(distort_factor, noise_amount), mod(distort_factor, noise_amount + 0.002));
@@ -41,20 +40,8 @@ void main()
 	vec2 distort = vec2(0, 0);
  #endif
  // Global constant
-	vec4 color_in = texture2D(tex, gl_TexCoord[0].xy + distort);
+	vec4 color_in = texture(tex, fragTexCoord.xy + distort);
 	vec4 color_out;
- // Bloom
-	if (bloom_intensity > 0.0) {
-		vec3 bloom = vec3(0.0, 0.0, 0.0);
-		float factor = 0.0;
-		for (int mipmap = 0; mipmap < levels; ++mipmap) {
-			float scale = 1.0/exp2(float(mipmap));
-			factor += scale;
-			bloom += texture2DLod(bloomed, gl_TexCoord[0].xy + distort, float(mipmap)).rgb * scale;
-		}
-		bloom /= factor;
-		color_in.rgb += bloom;
-	}
  #ifdef FLAG_SATURATION
  // Saturation
 	vec4 color_grayscale = color_in;
@@ -75,7 +62,7 @@ void main()
  #endif
  #ifdef FLAG_GRAIN
  // Film Grain
-	float x = gl_TexCoord[0].x * gl_TexCoord[0].y * timer * 1000.0;
+	float x = fragTexCoord.x * fragTexCoord.y * timer * 1000.0;
 	x = mod(x, 13.0) * mod(x, 123.0);
 	float dx = mod(x, 0.01);
 	vec3 result = color_out.rgb + color_out.rgb * clamp(0.1 + dx * 100.0, 0.0, 1.0);
@@ -84,8 +71,8 @@ void main()
  #ifdef FLAG_STRIPES
  // TV-Stripes (Old School)
 	vec2 sc;
-	sc.x = sin(gl_TexCoord[0].y * 2048.0);
-	sc.y = cos(gl_TexCoord[0].y * 2048.0);
+	sc.x = sin(fragTexCoord.y * 2048.0);
+	sc.y = cos(fragTexCoord.y * 2048.0);
 	vec3 stripes = color_out.rgb + color_out.rgb * vec3(sc.x, sc.y, sc.x) * 0.8;
 	color_out.rgb = mix(color_out.rgb, stripes, tv_stripes);
  #endif
@@ -113,5 +100,5 @@ void main()
 	color_out.rgb = floor(color_out.rgb * downsampling_factor + bias) / downsampling_factor;
  #endif
 	color_out.a = 1.0;
-	gl_FragColor = color_out;
+	fragOut0 = color_out;
 }

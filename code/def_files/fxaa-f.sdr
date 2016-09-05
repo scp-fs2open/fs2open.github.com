@@ -163,11 +163,11 @@
 	#define FxaaSat(x) saturate(x)
 #endif
 #if (FXAA_GLSL_120 == 1)
-	#define FxaaTexTop(t, p) texture2DLod(t, p, 0.0)
+	#define FxaaTexTop(t, p) textureLod(t, p, 0.0)
 	#if (FXAA_FAST_PIXEL_OFFSET == 1)
-		#define FxaaTexOff(t, p, o, r) texture2DLodOffset(t, p, 0.0, o)
+		#define FxaaTexOff(t, p, o, r) textureLodOffset(t, p, 0.0, o)
 	#else
-		#define FxaaTexOff(t, p, o, r) texture2DLod(t, p + (o * r), 0.0)
+		#define FxaaTexOff(t, p, o, r) textureLod(t, p + (o * r), 0.0)
 	#endif
 	#if (FXAA_GATHER4_ALPHA == 1)
 		#define FxaaTexAlpha4(t, p) textureGather(t, p, 3)
@@ -177,8 +177,8 @@
 	#endif
 #endif
 #if (FXAA_GLSL_130 == 1)
-	#define FxaaTexTop(t, p) texture2DLod(t, p, 0.0)
-	#define FxaaTexOff(t, p, o, r) texture2DLodOffset(t, p, 0.0, o)
+	#define FxaaTexTop(t, p) textureLod(t, p, 0.0)
+	#define FxaaTexOff(t, p, o, r) textureLodOffset(t, p, 0.0, o)
 	#if (FXAA_GATHER4_ALPHA == 1)
 		#define FxaaTexAlpha4(t, p) textureGather(t, p, 3)
 		#define FxaaTexOffAlpha4(t, p, o) textureGatherOffset(t, p, o, 3)
@@ -503,8 +503,9 @@ FxaaFloat4 FxaaPixelShader(
 	#endif
 }
 uniform sampler2D tex0;
-varying vec2 v_rcpFrame;
-noperspective varying vec2 v_pos;
+in vec2 v_rcpFrame;
+noperspective in vec2 v_pos;
+out vec4 fragOut0;
 void main() {
-	gl_FragColor = FxaaPixelShader(v_pos, tex0, v_rcpFrame, FXAA_QUALITY_SUBPIX, FXAA_QUALITY_EDGE_THRESHOLD, FXAA_QUALITY_EDGE_THRESHOLD_MIN);
+	fragOut0 = FxaaPixelShader(v_pos, tex0, v_rcpFrame, FXAA_QUALITY_SUBPIX, FXAA_QUALITY_EDGE_THRESHOLD, FXAA_QUALITY_EDGE_THRESHOLD_MIN);
 }

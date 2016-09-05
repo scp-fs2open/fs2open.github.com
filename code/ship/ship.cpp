@@ -26,7 +26,7 @@
 #include "globalincs/alphacolors.h"
 #include "def_files/def_files.h"
 #include "globalincs/linklist.h"
-#include "graphics/gropenglshader.h"
+#include "graphics/opengl/gropenglshader.h"
 #include "hud/hud.h"
 #include "hud/hudartillery.h"
 #include "hud/hudets.h"
@@ -69,6 +69,7 @@
 #include "radar/radar.h"
 #include "radar/radarsetup.h"
 #include "render/3d.h"
+#include "render/batching.h"
 #include "ship/afterburner.h"
 #include "ship/ship.h"
 #include "ship/shipcontrails.h"
@@ -884,6 +885,8 @@ void ship_info::clone(const ship_info& other)
 	knossos_end_particles = other.knossos_end_particles;
 	regular_end_particles = other.regular_end_particles;
 
+	death_effect = other.death_effect;
+
 	debris_min_lifetime = other.debris_min_lifetime;
 	debris_max_lifetime = other.debris_max_lifetime;
 	debris_min_speed = other.debris_min_speed;
@@ -1194,6 +1197,8 @@ void ship_info::move(ship_info&& other)
 	std::swap(split_particles, other.split_particles);
 	std::swap(knossos_end_particles, other.knossos_end_particles);
 	std::swap(regular_end_particles, other.regular_end_particles);
+
+	std::swap(death_effect, other.death_effect);
 
 	debris_min_lifetime = other.debris_min_lifetime;
 	debris_max_lifetime = other.debris_max_lifetime;
@@ -1570,6 +1575,8 @@ ship_info::ship_info()
 	regular_end_particles.max_vel = 20.0f;
 	regular_end_particles.min_vel = 0.0f;
 	regular_end_particles.variance = 2.0f;
+
+	death_effect = -1;
 
 	debris_min_lifetime = -1.0f;
 	debris_max_lifetime = -1.0f;
@@ -3096,7 +3103,11 @@ int parse_ship_values(ship_info* sip, const bool is_template, const bool first_t
 		parse_ship_particle_effect(sip, &sip->split_particles, "ship split spew");
 	}
 
-	if(optional_string("$Ship Death Particles:"))
+	if (optional_string("$Ship Death Effect:"))
+	{
+		sip->death_effect = particle::util::parseEffect(sip->name);
+	}
+	else if(optional_string("$Ship Death Particles:"))
 	{
 		parse_ship_particle_effect(sip, &sip->regular_end_particles, "normal death spew");
 	}
@@ -6829,77 +6840,7 @@ void ship_find_warping_ship_helper(object *objp, dock_function_info *infop)
 	}
 }
 
-SCP_vector<man_thruster_renderer> Man_thrusters;
-
-/**
- * Batch renders all maneuvering thrusters in the array.
- *
- * It also clears the array every 10 seconds to keep mem usage down.
- */
-void batch_render_man_thrusters()
-{
-	man_thruster_renderer *mtr;
-	size_t mant_size = Man_thrusters.size();
-
-	if (mant_size == 0)
-		return;
-
-	for(size_t i = 0; i < mant_size; i++)
-	{
-		mtr = &Man_thrusters[i];
-		gr_set_bitmap(mtr->bmap_id, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.0f);
-
-		mtr->man_batcher.render(TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB | TMAP_FLAG_TEXTURED | TMAP_FLAG_CORRECT | TMAP_HTL_3D_UNLIT);
-		mtr->bmap_id = -1;	//Mark as free
-	}
-
-	//WMC - clear maneuvering thruster render queue every 10 seconds
-	if(timestamp() - Man_thruster_reset_timestamp > 10000)
-	{
-		Man_thrusters.clear();
-		Man_thruster_reset_timestamp = timestamp();
-	}
-}
-
-/**
- * Looks for a free slot in the man_thruster batch
- * rendering array. Or, it returns a slot with the same bitmap
- * ID as the maneuvering thruster.
- *
- * You could actually batch render anything that uses a simple bitmap
- * on a single poly with this system...just plug the bitmap into bmap_frame
- * and use as a normal batcher.
- *
- * Once calling this function, use man_batcher.allocate_add() to allocate or it will crash later.
- * Then call man_batcher.draw*()
- */
-man_thruster_renderer *man_thruster_get_slot(int bmap_frame)
-{
-	man_thruster_renderer *mtr;
-	size_t mant_size = Man_thrusters.size();
-
-	for(size_t mi = 0; mi < mant_size; mi++)
-	{
-		mtr = &Man_thrusters[mi];
-		if(mtr->bmap_id == bmap_frame)
-			return mtr;
-	}
-	for(size_t mj = 0; mj < mant_size; mj++)
-	{
-		mtr = &Man_thrusters[mj];
-		if(mtr->bmap_id == -1)
-		{
-			mtr->bmap_id = bmap_frame;
-			return mtr;
-		}
-	}
-
-	Man_thrusters.push_back(man_thruster_renderer(bmap_frame));
-	return &Man_thrusters[Man_thrusters.size()-1];
-}
-
 //WMC - used for FTL and maneuvering thrusters
-geometry_batcher fx_batcher;
 extern bool Rendering_to_shadow_map;
 
 void ship_render_cockpit(object *objp)
@@ -7957,25 +7898,37 @@ void ship_dying_frame(object *objp, int ship_num)
 				do_dying_undock_physics(objp, shipp);
 			}
 
-			// play a random explosion
-			particle::particle_emitter	pe;
-			particle_effect		pef = sip->regular_end_particles;
+			if (!knossos_ship){
+				if (sip->death_effect > 0) {
+					// Use the new particle effect
+					auto source = particle::ParticleManager::get()->createSource(sip->death_effect);
 
-			pe.num_low = pef.n_low;					// Lowest number of particles to create
-			pe.num_high = pef.n_high;				// Highest number of particles to create
-			pe.pos = objp->pos;				// Where the particles emit from
-			pe.vel = objp->phys_info.vel;	// Initial velocity of all the particles
-			pe.min_life = pef.min_life;				// How long the particles live
-			pe.max_life = pef.max_life;				// How long the particles live
-			pe.normal = objp->orient.vec.uvec;	// What normal the particle emit around
-			pe.normal_variance = pef.variance;		//	How close they stick to that normal 0=on normal, 1=180, 2=360 degree
-			pe.min_vel = pef.min_vel;				// How fast the slowest particle can move
-			pe.max_vel = pef.max_vel;				// How fast the fastest particle can move
-			pe.min_rad = pef.min_rad;				// Min radius
-			pe.max_rad = pef.max_rad;				// Max radius
+					// Use the position since the ship is going to be invalid soon
+					source.moveTo(&objp->pos);
 
-			if ((!knossos_ship) && (pe.num_high > 0)) {
-				particle::emit( &pe, particle::PARTICLE_SMOKE2, 0 );
+					source.finish();
+				} else {
+					// play a random explosion
+					particle::particle_emitter	pe;
+					particle_effect		pef = sip->regular_end_particles;
+
+					pe.num_low = pef.n_low;					// Lowest number of particles to create
+					pe.num_high = pef.n_high;				// Highest number of particles to create
+					pe.pos = objp->pos;				// Where the particles emit from
+					pe.vel = objp->phys_info.vel;	// Initial velocity of all the particles
+					pe.min_life = pef.min_life;				// How long the particles live
+					pe.max_life = pef.max_life;				// How long the particles live
+					pe.normal = objp->orient.vec.uvec;	// What normal the particle emit around
+					pe.normal_variance = pef.variance;		//	How close they stick to that normal 0=on normal, 1=180, 2=360 degree
+					pe.min_vel = pef.min_vel;				// How fast the slowest particle can move
+					pe.max_vel = pef.max_vel;				// How fast the fastest particle can move
+					pe.min_rad = pef.min_rad;				// Min radius
+					pe.max_rad = pef.max_rad;				// Max radius
+
+					if (pe.num_high > 0) {
+						particle::emit( &pe, particle::PARTICLE_SMOKE2, 0 );
+					}
+				}
 			}
 
 			// If this is a large ship with a propagating explosion, set it to blow up.
@@ -9629,7 +9582,7 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 				ai_goal* goals = Ai_info[i].goals;
 				for (int j = 0; j < MAX_AI_GOALS; j++) {
 					// POSSIBLE OPTIMIZATION: goals[0] should be the active goal, so we might be able to reuse target_subsys_parent for that instead of doing ship_name_lookup()
-					if (goals[j].ai_mode == AI_GOAL_DESTROY_SUBSYSTEM && !(goals[j].flags & AIGF_SUBSYS_NEEDS_FIXUP)) {	// If the subsystem name hasn't been parsed yet, we're fine.
+					if (goals[j].ai_mode == AI_GOAL_DESTROY_SUBSYSTEM && !(goals[j].flags[AI::Goal_Flags::Subsys_needs_fixup])) {	// If the subsystem name hasn't been parsed yet, we're fine.
 						int sindex = ship_name_lookup(goals[j].target_name);
 						if (sindex > -1 && Ships[sindex].objnum == objnum) {
 							ivec3 temp = {i, j, goals[j].ai_submode};
@@ -18484,7 +18437,6 @@ void ship_render_batch_thrusters(object *obj)
 
 	physics_info *pi = &Objects[shipp->objnum].phys_info;
 	float render_amount;
-	fx_batcher.allocate(sip->num_maneuvering);	//Act as if all thrusters are going.
 
 	for ( int i = 0; i < sip->num_maneuvering; i++ ) {
 		man_thruster *mtp = &sip->maneuvering[i];
@@ -18572,16 +18524,14 @@ void ship_render_batch_thrusters(object *obj)
 				vm_vec_unrotate(&end, &tmpend, &obj->orient);
 				vm_vec_add2(&end, &obj->pos);
 
-				//Draw
-				fx_batcher.draw_beam(&start, &end, rad, 1.0f);
-
 				int bmap_frame = mtp->tex_id;
 				if(mtp->tex_nframes > 0)
 					bmap_frame += bm_get_anim_frame(mtp->tex_id, i2fl(timestamp() - shipp->thrusters_start[i]) / 1000.0f, 0.0f, true);
 
-				man_thruster_renderer *mtr = man_thruster_get_slot(bmap_frame);
-				mtr->man_batcher.add_allocate(1);
-				mtr->man_batcher.draw_beam(&start, &end, rad, 1.0f);
+				//man_thruster_renderer *mtr = man_thruster_get_slot(bmap_frame);
+				//mtr->man_batcher.add_allocate(1);
+				//mtr->man_batcher.draw_beam(&start, &end, rad, 1.0f);
+				batching_add_beam(bmap_frame, &start, &end, rad, 1.0f);
 			}
 		} else if ( shipp->thrusters_start[i] > 0 ) { 
 			// We've stopped firing a thruster
@@ -18728,7 +18678,7 @@ int ship_render_get_insignia(object* obj, ship* shipp)
 
 void ship_render_set_animated_effect(model_render_params *render_info, ship *shipp, uint *render_flags)
 {
-	if ( !shipp->shader_effect_active || !is_minimum_GLSL_version() || Rendering_to_shadow_map ) {
+	if ( !shipp->shader_effect_active || Rendering_to_shadow_map ) {
 		return;
 	}
 

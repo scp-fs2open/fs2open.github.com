@@ -141,6 +141,7 @@
 #include "radar/radar.h"
 #include "radar/radarsetup.h"
 #include "render/3d.h"
+#include "render/batching.h"
 #include "ship/afterburner.h"
 #include "ship/awacs.h"
 #include "ship/ship.h"
@@ -3664,7 +3665,7 @@ extern SCP_vector<object*> effect_ships;
 extern SCP_vector<object*> transparent_objects;
 void game_render_frame( camid cid )
 {
-
+	GR_DEBUG_SCOPE(main_scope, "Main Frame");
 	g3_start_frame(game_zbuffer);
 
 	camera *cam = cid.getCamera();
@@ -3710,6 +3711,8 @@ void game_render_frame( camid cid )
 	// Note: environment mapping gets disabled when rendering to texture; if you change
 	// this, make sure that the current render target gets restored right afterwards!
 	if ( Cmdline_env && !Env_cubemap_drawn && gr_screen.rendering_to_texture == -1 ) {
+		GR_DEBUG_SCOPE(env_scope, "Environment Mapping");
+
 		PROFILE("Environment Mapping", setup_environment_mapping(cid));
 
 		if ( !Dynamic_environment ) {
@@ -3756,6 +3759,8 @@ void game_render_frame( camid cid )
 	// render local player nebula
 	neb2_render_player();
 
+	batching_render_all(false);
+
 	gr_copy_effect_texture();
 
 	// render all ships with shader effects on them
@@ -3766,7 +3771,8 @@ void game_render_frame( camid cid )
 	}
 	effect_ships.clear();
 
-	batch_render_distortion_map_bitmaps();
+	// render distortions after the effect framebuffer is copied.
+	batching_render_all(true);
 
 	Shadow_override = true;
 	//Draw the viewer 'cause we didn't before.
@@ -3793,6 +3799,8 @@ void game_render_frame( camid cid )
 	//Draw viewer cockpit
 	if(Viewer_obj != NULL && Viewer_mode != VM_TOPDOWN && Ship_info[Ships[Viewer_obj->instance].ship_info_index].cockpit_model_num > 0)
 	{
+		GR_DEBUG_SCOPE(cockpit_scope, "Render Cockpit");
+
 		gr_post_process_save_zbuffer();
 		ship_render_cockpit(Viewer_obj);
 	}
@@ -4512,6 +4520,7 @@ void game_frame(bool paused)
 
 	profile_end("Main Frame");
 	profile_dump_output();
+	profile_dump_json_output();
 
 	DEBUG_GET_TIME( total_time2 )
 
@@ -4572,8 +4581,7 @@ void game_stop_time()
 		#endif
 
 		// Stop the timer_tick stuff...
-		// Normally, you should never access 'timestamp_ticker', consider this a low-level routine
-		saved_timestamp_ticker = timestamp_ticker;
+		saved_timestamp_ticker = timestamp();
 	}
 	timer_paused++;
 
@@ -4606,7 +4614,7 @@ void game_start_time()
 		// Restore the timer_tick stuff...
 		// Normally, you should never access 'timestamp_ticker', consider this a low-level routine
 		Assert( saved_timestamp_ticker > -1 );		// Called out of order, get JAS
-		timestamp_ticker = saved_timestamp_ticker;
+		timestamp_set_value(saved_timestamp_ticker);
 		saved_timestamp_ticker = -1;
 	}
 
@@ -4742,9 +4750,8 @@ void game_set_frametime(int state)
 	Last_frame_timestamp = timestamp();
 
 	flFrametime = f2fl(Frametime);
-	
-	auto frametime_ms = f2i(fixmul(Frametime, F1_0 * TIMESTAMP_FREQUENCY));
-	timestamp_inc(frametime_ms);
+
+	timestamp_inc(Frametime);
 
 	// wrap overall frametime if needed
 	if ( FrametimeOverall > (INT_MAX - F1_0) )
@@ -7111,6 +7118,7 @@ void game_shutdown(void)
 	}
 
 	particle::ParticleManager::shutdown();
+	batching_shutdown();
 
 	// load up common multiplayer icons
 	multi_unload_common_icons();

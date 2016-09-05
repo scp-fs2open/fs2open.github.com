@@ -358,7 +358,7 @@ int ship_weapon_check_collision(object *ship_objp, object *weapon_objp, float ti
 		// see if we hit the shield
 		if (quadrant_num >= 0) {
 			// do the hit effect
-			if (mc_shield.shield_hit_tri != -1) {
+			if ( mc_shield.shield_hit_tri != -1 && (mc_shield.hit_dist*(flFrametime + time_limit) - flFrametime) < 0.0f ) {
 				add_shield_point(OBJ_INDEX(ship_objp), mc_shield.shield_hit_tri, &mc_shield.hit_point);
 			}
 

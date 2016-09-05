@@ -522,12 +522,18 @@ typedef struct shield_vertex {
 
 // the high level shield structure.  A ship without any shield has nverts and ntris set to 0.
 // The vertex list and the tris list are used by the shield_tri structure
-typedef struct shield_info {
+struct shield_info {
 	int				nverts;
 	int				ntris;
 	shield_vertex	*verts;
 	shield_tri		*tris;
-} shield_info;
+
+	int buffer_id;
+	int buffer_n_verts;
+	vertex_layout layout;
+
+	shield_info() : nverts(0), ntris(0), verts(NULL), tris(NULL), buffer_id(-1), buffer_n_verts(0), layout() {	}
+};
 
 #define BSP_LIGHT_TYPE_WEAPON 1
 #define BSP_LIGHT_TYPE_THRUSTER 2
@@ -667,7 +673,7 @@ public:
 		n_thrusters(0), gun_banks(NULL), missile_banks(NULL), docking_bays(NULL), thrusters(NULL), ship_bay(NULL),
 		shield_collision_tree(NULL), sldc_size(0), n_paths(0), paths(NULL), mass(0), num_xc(0), xc(NULL), num_split_plane(0),
 		num_ins(0), used_this_mission(0), n_glow_point_banks(0), glow_point_banks(NULL), gun_submodel_rotation(0),
-		vertex_buffer_id(-1)
+		vert_source(), shield()
 	{
 		filename[0] = 0;
 		mins = maxs = autocenter = center_of_mass = vmd_zero_vector;
@@ -678,7 +684,6 @@ public:
 		memset(&debris_objects, 0, MAX_DEBRIS_OBJECTS * sizeof(int));
 		memset(&bounding_box, 0, 8 * sizeof(vec3d));
 		memset(&view_positions, 0, MAX_EYES * sizeof(eye));
-		memset(&shield, 0, sizeof(shield_info));
 		memset(&octants, 0, 8 * sizeof(model_octant));
 		memset(&split_plane, 0, MAX_SPLIT_PLANE * sizeof(float));
 		memset(&ins, 0, MAX_MODEL_INSIGNIAS * sizeof(insignia));
@@ -773,9 +778,9 @@ public:
 	glow_point_bank *glow_point_banks;			// array of glow objects -Bobboau
 
 	float gun_submodel_rotation;
-
-	int vertex_buffer_id;			// HTL vertex buffer id
-
+	
+	indexed_vertex_source vert_source;
+	
 	vertex_buffer detail_buffers[MAX_MODEL_DETAIL_LEVELS];
 };
 
@@ -1289,17 +1294,9 @@ void model_do_intrinsic_rotations(int model_instance_num = -1);
 
 int model_should_render_engine_glow(int objnum, int bank_obj);
 
-void model_interp_set_clip_plane(vec3d* pos = NULL, vec3d* normal = NULL);
-
-void model_interp_set_animated_effect_and_timer(int effect_num = 0, float effect_timer = 0.0f);
-
 bool model_get_team_color(team_color *clr, const SCP_string &team, const SCP_string &secondaryteam, fix timestamp, int fadetime);
 
-void model_interp_set_team_color(const SCP_string &team, const SCP_string &secondaryteam, fix timestamp, int fadetime);
-
 void moldel_calc_facing_pts( vec3d *top, vec3d *bot, vec3d *fvec, vec3d *pos, float w, float z_add, vec3d *Eyeposition );
-
-void interp_render_arc(vec3d *v1, vec3d *v2, color *primary, color *secondary, float arc_width);
 
 void model_render_insignias(polymodel *pm, int detail_level, int bitmap_num);
 
@@ -1314,6 +1311,9 @@ void model_draw_paths_htl( int model_num, uint flags );
 void model_draw_bay_paths(int model_num);
 
 void model_draw_bay_paths_htl(int model_num);
+
+bool model_interp_config_buffer(indexed_vertex_source *vert_src, vertex_buffer *vb, bool update_ibuffer_only);
+bool model_interp_pack_buffer(indexed_vertex_source *vert_src, vertex_buffer *vb);
 
 void glowpoint_init();
 SCP_vector<glow_point_bank_override>::iterator get_glowpoint_bank_override_by_name(const char* name);

@@ -1,13 +1,24 @@
-#extension GL_EXT_texture_array : enable
+#define MAX_LIGHTS 8
+#define LT_DIRECTIONAL		0
+#define LT_POINT			1
+#define LT_TUBE			2
+uniform vec4 color;
 #ifdef FLAG_LIGHT
+uniform vec4 lightPosition[MAX_LIGHTS];
+uniform vec3 lightDirection[MAX_LIGHTS];
+uniform vec3 lightDiffuseColor[MAX_LIGHTS];
+uniform vec3 lightSpecColor[MAX_LIGHTS];
+uniform int lightType[MAX_LIGHTS];
+uniform float lightAttenuation[MAX_LIGHTS];
 uniform int n_lights;
-uniform float light_factor;
 uniform float defaultGloss;
+uniform vec3 ambientFactor;
+uniform vec3 diffuseFactor;
+uniform vec3 emissionFactor;
 #endif
 #ifdef FLAG_DIFFUSE_MAP
 uniform sampler2D sBasemap;
 uniform int desaturate;
-uniform vec3 desaturate_clr;
 uniform int blend_alpha;
 uniform bool overrideDiffuse;
 uniform vec3 diffuseClr;
@@ -27,17 +38,20 @@ uniform bool gammaSpec;
 #ifdef FLAG_ENV_MAP
 uniform samplerCube sEnvmap;
 uniform bool envGloss;
+uniform bool alpha_spec;
 varying vec3 envReflect;
+in vec3 fragEnvReflect;
 #endif
 #ifdef FLAG_NORMAL_MAP
 uniform sampler2D sNormalmap;
-varying mat3 tbnMatrix;
+in mat3 fragTangentMatrix;
 #endif
 #ifdef FLAG_AMBIENT_MAP
 uniform sampler2D sAmbientmap;
 #endif
 #ifdef FLAG_FOG
-varying float fogDist;
+uniform vec4 fogColor;
+in float fragFogDist;
 #endif
 #ifdef FLAG_ANIMATED
 uniform sampler2D sFramebuffer;
@@ -47,7 +61,7 @@ uniform float vpwidth;
 uniform float vpheight;
 #endif
 #ifdef FLAG_TRANSFORM
-varying float not_visible;
+in float fragNotVisible;
 #endif
 #ifdef FLAG_TEAMCOLOR
 uniform vec3 base_color;
@@ -59,11 +73,9 @@ vec2 teamMask = vec2(0.0, 0.0);
 uniform sampler2D sMiscmap;
 #endif
 #ifdef FLAG_SHADOWS
-varying vec4 shadow_vec[4];
-varying vec4 pos_shadow;
-//uniform sampler2DArrayShadow shadow_map;
+in vec4 fragShadowUV[4];
+in vec4 fragShadowPos;
 uniform sampler2DArray shadow_map;
-//uniform sampler2D shadow_map;
 uniform float znear;
 uniform float zfar;
 uniform float veryneardist;
@@ -73,20 +85,14 @@ uniform float fardist;
 #endif
 #ifdef FLAG_CLIP
 uniform int use_clip_plane;
-varying float clip_distance;
+in float fragClipDistance;
 #endif
-varying vec4 position;
-varying vec3 lNormal;
-
-#if __VERSION__ == 120
-  #define MAX_LIGHTS 2
-#else
-  #define MAX_LIGHTS 8
+#ifdef FLAG_NORMAL_ALPHA
+uniform vec2 normalAlphaMinMax;
 #endif
 #define SPEC_INTENSITY_POINT      5.3 // Point light
 #define SPEC_INTENSITY_DIRECTIONAL   3.0 // Directional light
 #define SPECULAR_FACTOR         1.75
-#define SPECULAR_ALPHA            0.1
 #define SPEC_FACTOR_NO_SPEC_MAP   0.6
 #define ENV_ALPHA_FACTOR         0.3
 #define GLOW_MAP_INTENSITY         1.5
@@ -94,21 +100,28 @@ varying vec3 lNormal;
 #define VARIANCE_SHADOW_SCALE		1000000.0
 #define VARIANCE_SHADOW_SCALE_INV	1.0/VARIANCE_SHADOW_SCALE
 #define SRGB_GAMMA 2.2
+in vec4 fragPosition;
+in vec3 fragNormal;
+in vec4 fragTexCoord;
+out vec4 fragOut0;
+out vec4 fragOut1;
+out vec4 fragOut2;
+out vec4 fragOut3;
 
 #ifdef FLAG_SHADOWS
 vec2 sampleShadowMap(vec2 uv, vec2 offset_uv, int cascade, float shadowMapSizeInv)
 {
-	return texture2DArray(shadow_map, vec3(uv + offset_uv * shadowMapSizeInv, float(cascade))).xy;
+	return texture(shadow_map, vec3(uv + offset_uv * shadowMapSizeInv, float(cascade))).xy;
 }
 
 float computeShadowFactor(vec2 moments, float bias)
 {
 	float shadow = 1.0;
-	if((moments.x - bias) > pos_shadow.z)
+	if((moments.x - bias) > fragShadowPos.z)
 	{
 		// variance shadow mapping using Chebychev's Formula
 		float variance = moments.y * VARIANCE_SHADOW_SCALE - moments.x * moments.x;
-		float mD = moments.x - bias - pos_shadow.z;
+		float mD = moments.x - bias - fragShadowPos.z;
 		shadow = variance / (variance + mD * mD);
 		shadow = clamp(shadow, 0.0, 1.0);
 	}
@@ -117,7 +130,7 @@ float computeShadowFactor(vec2 moments, float bias)
 
 float sampleNoPCF(int cascade)
 {
-	return computeShadowFactor(sampleShadowMap(shadow_vec[cascade].xy, vec2(0.0, 0.0), cascade, 1.0/1024.0), 0.05);
+	return computeShadowFactor(sampleShadowMap(fragShadowUV[cascade].xy, vec2(0.0, 0.0), cascade, 1.0/1024.0), 0.05);
 }
 
 float samplePoissonPCF(int cascade)
@@ -145,28 +158,28 @@ float samplePoissonPCF(int cascade)
 	maxUVOffset[1] = 1.0/250.0;
 	maxUVOffset[2] = 1.0/200.0;
 	maxUVOffset[3] = 1.0/200.0;
-	vec2 sum = sampleShadowMap(shadow_vec[cascade].xy, poissonDisc[0], cascade, maxUVOffset[cascade])*(1.0/16.0);
-	sum += sampleShadowMap(shadow_vec[cascade].xy, poissonDisc[1], cascade, maxUVOffset[cascade])*(1.0/16.0);
-	sum += sampleShadowMap(shadow_vec[cascade].xy, poissonDisc[2], cascade, maxUVOffset[cascade])*(1.0/16.0);
-	sum += sampleShadowMap(shadow_vec[cascade].xy, poissonDisc[3], cascade, maxUVOffset[cascade])*(1.0/16.0);
-	sum += sampleShadowMap(shadow_vec[cascade].xy, poissonDisc[4], cascade, maxUVOffset[cascade])*(1.0/16.0);
-	sum += sampleShadowMap(shadow_vec[cascade].xy, poissonDisc[5], cascade, maxUVOffset[cascade])*(1.0/16.0);
-	sum += sampleShadowMap(shadow_vec[cascade].xy, poissonDisc[6], cascade, maxUVOffset[cascade])*(1.0/16.0);
-	sum += sampleShadowMap(shadow_vec[cascade].xy, poissonDisc[7], cascade, maxUVOffset[cascade])*(1.0/16.0);
-	sum += sampleShadowMap(shadow_vec[cascade].xy, poissonDisc[8], cascade, maxUVOffset[cascade])*(1.0/16.0);
-	sum += sampleShadowMap(shadow_vec[cascade].xy, poissonDisc[9], cascade, maxUVOffset[cascade])*(1.0/16.0);
-	sum += sampleShadowMap(shadow_vec[cascade].xy, poissonDisc[10], cascade, maxUVOffset[cascade])*(1.0/16.0);
-	sum += sampleShadowMap(shadow_vec[cascade].xy, poissonDisc[11], cascade, maxUVOffset[cascade])*(1.0/16.0);
-	sum += sampleShadowMap(shadow_vec[cascade].xy, poissonDisc[12], cascade, maxUVOffset[cascade])*(1.0/16.0);
-	sum += sampleShadowMap(shadow_vec[cascade].xy, poissonDisc[13], cascade, maxUVOffset[cascade])*(1.0/16.0);
-	sum += sampleShadowMap(shadow_vec[cascade].xy, poissonDisc[14], cascade, maxUVOffset[cascade])*(1.0/16.0);
-	sum += sampleShadowMap(shadow_vec[cascade].xy, poissonDisc[15], cascade, maxUVOffset[cascade])*(1.0/16.0);
+	vec2 sum = sampleShadowMap(fragShadowUV[cascade].xy, poissonDisc[0], cascade, maxUVOffset[cascade])*(1.0/16.0);
+	sum += sampleShadowMap(fragShadowUV[cascade].xy, poissonDisc[1], cascade, maxUVOffset[cascade])*(1.0/16.0);
+	sum += sampleShadowMap(fragShadowUV[cascade].xy, poissonDisc[2], cascade, maxUVOffset[cascade])*(1.0/16.0);
+	sum += sampleShadowMap(fragShadowUV[cascade].xy, poissonDisc[3], cascade, maxUVOffset[cascade])*(1.0/16.0);
+	sum += sampleShadowMap(fragShadowUV[cascade].xy, poissonDisc[4], cascade, maxUVOffset[cascade])*(1.0/16.0);
+	sum += sampleShadowMap(fragShadowUV[cascade].xy, poissonDisc[5], cascade, maxUVOffset[cascade])*(1.0/16.0);
+	sum += sampleShadowMap(fragShadowUV[cascade].xy, poissonDisc[6], cascade, maxUVOffset[cascade])*(1.0/16.0);
+	sum += sampleShadowMap(fragShadowUV[cascade].xy, poissonDisc[7], cascade, maxUVOffset[cascade])*(1.0/16.0);
+	sum += sampleShadowMap(fragShadowUV[cascade].xy, poissonDisc[8], cascade, maxUVOffset[cascade])*(1.0/16.0);
+	sum += sampleShadowMap(fragShadowUV[cascade].xy, poissonDisc[9], cascade, maxUVOffset[cascade])*(1.0/16.0);
+	sum += sampleShadowMap(fragShadowUV[cascade].xy, poissonDisc[10], cascade, maxUVOffset[cascade])*(1.0/16.0);
+	sum += sampleShadowMap(fragShadowUV[cascade].xy, poissonDisc[11], cascade, maxUVOffset[cascade])*(1.0/16.0);
+	sum += sampleShadowMap(fragShadowUV[cascade].xy, poissonDisc[12], cascade, maxUVOffset[cascade])*(1.0/16.0);
+	sum += sampleShadowMap(fragShadowUV[cascade].xy, poissonDisc[13], cascade, maxUVOffset[cascade])*(1.0/16.0);
+	sum += sampleShadowMap(fragShadowUV[cascade].xy, poissonDisc[14], cascade, maxUVOffset[cascade])*(1.0/16.0);
+	sum += sampleShadowMap(fragShadowUV[cascade].xy, poissonDisc[15], cascade, maxUVOffset[cascade])*(1.0/16.0);
 	return computeShadowFactor(sum, 0.1);
 }
 float getShadowValue()
 {
 	// Valathil's Shadows
-	float depth = -position.z;
+	float depth = -fragPosition.z;
 	int cascade = 4;
 	cascade -= int(step(depth, fardist));
 	cascade -= int(step(depth, middist));
@@ -185,59 +198,55 @@ float getShadowValue()
 	return mix(samplePoissonPCF(cascade), samplePoissonPCF(cascade+1), smoothstep(cascade_start_dist[cascade+1] - dist_threshold, cascade_start_dist[cascade+1], depth));
 }
 #endif
-#ifdef FLAG_LIGHT
+vec3 FresnelLazarovEnv(vec3 specColor, vec3 view, vec3 normal, float gloss)
+{
+	// Fresnel for environment lighting 
+	// Equation referenced from Dimitar Lazarov's presentation titled Physically Based Rendering in Call of Duty: Black Ops
+	return specColor + (vec3(1.0) - specColor) * pow(1.0 - clamp(dot(view, normal), 0.0, 1.0), 5.0) / (4.0 - 3.0 * gloss);
+}
 vec3 FresnelSchlick(vec3 specColor, vec3 light, vec3 halfVec)
 {
 	return specColor + (vec3(1.0) - specColor) * pow(1.0 - clamp(dot(light, halfVec), 0.0, 1.0), 5.0);
-}
-vec3 FresnelLazarovEnv(vec3 specColor, vec3 view, vec3 normal, float gloss)
-{
-	// Fresnel for environment lighting
-	// Equation referenced from Dimitar Lazarov's presentation titled Physically Based Rendering in Call of Duty: Black Ops
-	return specColor + (vec3(1.0) - specColor) * pow(1.0 - clamp(dot(view, normal), 0.0, 1.0), 5.0) / (4.0 - 3.0 * gloss);
 }
 vec3 SpecularBlinnPhong(vec3 specColor, vec3 light, vec3 normal, vec3 halfVec, float specPower, float dotNL)
 {
 	return FresnelSchlick(max(specColor, vec3(0.04)), light, halfVec) * ((specPower + 2.0) / 8.0 ) * pow(clamp(dot(normal, halfVec), 0.0, 1.0), specPower) * dotNL;
 }
-vec4 SpecularLegacy(vec4 specColor, vec3 normal, vec3 halfVec, float specPower)
-{
-	return specColor * pow(clamp(dot(normal, halfVec), 0.0, 1.0), specPower);
-}
+#ifdef FLAG_LIGHT
 void GetLightInfo(int i, out vec3 lightDir, out float attenuation, out float specIntensity)
 {
-	lightDir = normalize(gl_LightSource[i].position.xyz);
+	lightDir = normalize(lightPosition[i].xyz);
 	attenuation = 1.0;
 	specIntensity = SPEC_INTENSITY_DIRECTIONAL;
 #if __VERSION__ > 120
-	if (gl_LightSource[i].position.w == 1.0) {
+	if (lightType[i] != LT_DIRECTIONAL) {
 #else
-	if (gl_LightSource[i].position.w == 1.0 && i != 0) {
+	if (lightType[i] != LT_DIRECTIONAL && i != 0) {
 #endif
 		// Positional light source
-		float dist = distance(gl_LightSource[i].position.xyz, position.xyz);
-		lightDir = (gl_LightSource[i].position.xyz - position.xyz);
+		float dist = distance(lightPosition[i].xyz, fragPosition.xyz);
+		lightDir = (lightPosition[i].xyz - fragPosition.xyz);
 #if __VERSION__ > 120
-		if (gl_LightSource[i].spotCutoff < 91.0) {  // Tube light
-			float beamlength = length(gl_LightSource[i].spotDirection);
-			vec3 beamDir = normalize(gl_LightSource[i].spotDirection);
+		if (lightType[i] == LT_TUBE) {  // Tube light
+			float beamlength = length(lightDirection[i]);
+			vec3 beamDir = normalize(lightDirection[i]);
 			// Get nearest point on line
-			float neardist = dot(position.xyz - gl_LightSource[i].position.xyz , beamDir);
+			float neardist = dot(fragPosition.xyz - lightPosition[i].xyz, beamDir);
 			// Move back from the endpoint of the beam along the beam by the distance we calculated
-			vec3 nearest = gl_LightSource[i].position.xyz - beamDir * abs(neardist);
-			lightDir = nearest - position.xyz;
+			vec3 nearest = lightPosition[i].xyz - beamDir * abs(neardist);
+			lightDir = nearest - fragPosition.xyz;
 			dist = length(lightDir);
 		}
 #endif
 		lightDir = normalize(lightDir);
-		attenuation = 1.0 / (gl_LightSource[i].constantAttenuation + (gl_LightSource[i].linearAttenuation * dist) + (gl_LightSource[i].quadraticAttenuation * dist * dist));
+		attenuation = 1.0 / (lightAttenuation[i] * dist);
 		specIntensity = SPEC_INTENSITY_POINT;
 	}
 }
-vec3 CalculateLighting(vec3 normal, vec3 diffuseMaterial, vec3 specularMaterial, float gloss, float shadow, float ambientFactor)
+vec3 CalculateLighting(vec3 normal, vec3 diffuseMaterial, vec3 specularMaterial, float gloss, float shadow, float aoFactor)
 {
-	vec3 eyeDir = vec3(normalize(-position).xyz);
-	vec3 lightAmbient = vec3(gl_FrontMaterial.emission + (gl_LightModel.ambient * gl_FrontMaterial.ambient)) * ambientFactor;
+	vec3 eyeDir = vec3(normalize(-fragPosition).xyz);
+	vec3 lightAmbient = (emissionFactor + ambientFactor) * aoFactor;
 	vec3 lightAmbientDiffuse = vec3(0.0, 0.0, 0.0);
    vec3 lightDiffuse = vec3(0.0, 0.0, 0.0);
    vec3 lightSpecular = vec3(0.0, 0.0, 0.0);
@@ -257,9 +266,8 @@ vec3 CalculateLighting(vec3 normal, vec3 diffuseMaterial, vec3 specularMaterial,
 		vec3 halfVec = normalize(lightDir + eyeDir);
 		float NdotL = max(dot(normal, lightDir), 0.0);
 		// Ambient, Diffuse, and Specular
-		lightAmbient += (gl_FrontLightProduct[i].ambient.rgb * attenuation);
-		lightDiffuse += (gl_FrontLightProduct[i].diffuse.rgb * light_factor * NdotL * attenuation) * shadow;
-		lightSpecular += gl_FrontLightProduct[i].specular.rgb * SpecularBlinnPhong(specularMaterial, lightDir, normal, halfVec, exp2(10.0 * gloss + 1.0), NdotL) * attenuation * shadow;
+		lightDiffuse += (lightDiffuseColor[i].rgb * diffuseFactor * NdotL * attenuation) * shadow;
+		lightSpecular += lightSpecColor[i] * SpecularBlinnPhong(specularMaterial, lightDir, normal, halfVec, exp2(10.0 * gloss + 1.0), NdotL) * attenuation * shadow;
 	}
 	lightAmbientDiffuse = lightAmbient + lightDiffuse;
 	vec3 finalColor = diffuseMaterial;
@@ -271,27 +279,27 @@ vec3 CalculateLighting(vec3 normal, vec3 diffuseMaterial, vec3 specularMaterial,
 void main()
 {
 #ifdef FLAG_TRANSFORM
-	if(not_visible >= 0.9) { discard; }
+	if(fragNotVisible >= 0.9) { discard; }
 #endif
 #ifdef FLAG_SHADOW_MAP
  #ifdef FLAG_CLIP
-	if(use_clip_plane == 1) { if(clip_distance <= 0.0) { discard; } }
+	if(use_clip_plane == 1) { if(fragClipDistance <= 0.0) { discard; } }
  #endif
 	// need depth and depth squared for variance shadow maps
-	gl_FragData[0] = vec4(position.z, position.z * position.z * VARIANCE_SHADOW_SCALE_INV, 0.0, 1.0);
+	fragOut0 = vec4(fragPosition.z, fragPosition.z * fragPosition.z * VARIANCE_SHADOW_SCALE_INV, 0.0, 1.0);
 	return;
 #endif
-	vec3 eyeDir = vec3(normalize(-position).xyz);
+	vec3 eyeDir = vec3(normalize(-fragPosition).xyz);
 	vec3 lightAmbientDiffuse = vec3(0.0, 0.0, 0.0);
    vec3 lightDiffuse = vec3(0.0, 0.0, 0.0);
    vec3 lightAmbient = vec3(0.0, 0.0, 0.0);
    vec4 lightSpecular = vec4(0.0, 0.0, 0.0, 1.0);
-	vec2 texCoord = gl_TexCoord[0].xy;
-	vec4 baseColor = gl_Color;
+	vec2 texCoord = fragTexCoord.xy;
+	vec4 baseColor = color;
 #ifdef FLAG_HDR
 	baseColor.rgb = pow(baseColor.rgb, vec3(SRGB_GAMMA));
 #endif
-	vec4 posData = vec4(position.xyz,1.0);
+	vec4 posData = vec4(fragPosition.xyz,1.0);
 	vec4 normData = vec4(0.0, 0.0, 0.0, 1.0);
 	vec4 specData = vec4(0.0, 0.0, 0.0, 1.0);
 	float glossData = 0.6;
@@ -302,16 +310,16 @@ void main()
 #ifdef	FLAG_AMBIENT_MAP
 	// red channel is ambient occlusion factor which only affects ambient lighting.
 	// green is cavity occlusion factor which only affects diffuse and specular lighting.
-	aoFactors = texture2D(sAmbientmap, texCoord).xy;
+	aoFactors = texture(sAmbientmap, texCoord).xy;
 #endif
-	vec3 unitNormal = normalize(lNormal);
+	vec3 unitNormal = normalize(fragNormal);
 	vec3 normal = unitNormal;
 #ifdef FLAG_NORMAL_MAP
    // Normal map - convert from DXT5nm
    vec2 normalSample;
-   normal.rg = normalSample = (texture2D(sNormalmap, texCoord).ag * 2.0) - 1.0;
+   normal.rg = normalSample = (texture(sNormalmap, texCoord).ag * 2.0) - 1.0;
    normal.b = sqrt(1.0 - dot(normal.rg, normal.rg));
-   normal = tbnMatrix * normal;
+   normal = fragTangentMatrix * normal;
    float norm = length(normal);
    // prevent breaking of normal maps
    if (norm > 0.0)
@@ -322,7 +330,7 @@ void main()
 	normData = vec4(normal, 1.0);
 
 #ifdef FLAG_ANIMATED
-   vec2 distort = vec2(cos(position.x*position.w*0.005+anim_timer*20.0)*sin(position.y*position.w*0.005),sin(position.x*position.w*0.005+anim_timer*20.0)*cos(position.y*position.w*0.005))*0.03;
+   vec2 distort = vec2(cos(fragPosition.x*fragPosition.w*0.005+anim_timer*20.0)*sin(fragPosition.y*fragPosition.w*0.005),sin(fragPosition.x*fragPosition.w*0.005+anim_timer*20.0)*cos(fragPosition.y*fragPosition.w*0.005))*0.03;
 #endif
 
 #ifdef FLAG_DIFFUSE_MAP
@@ -332,7 +340,7 @@ void main()
       diffuseTexCoord = texCoord + distort*(1.0-anim_timer);
    }
  #endif
-	baseColor = texture2D(sBasemap, diffuseTexCoord);
+	baseColor = texture(sBasemap, diffuseTexCoord);
 	if ( blend_alpha == 0 && baseColor.a < 0.95 ) discard; // if alpha blending is not on, discard transparent pixels
 	// premultiply alpha if blend_alpha is 1. assume that our blend function is srcColor + (1-Alpha)*destColor.
 	// if blend_alpha is 2, assume blend func is additive and don't modify color
@@ -346,7 +354,7 @@ void main()
 
    specData = vec4(baseColor.rgb * SPEC_FACTOR_NO_SPEC_MAP, glossData);
 #ifdef FLAG_SPEC_MAP
-   vec4 specColour = texture2D(sSpecmap, texCoord);
+   vec4 specColour = texture(sSpecmap, texCoord);
 	if(alphaGloss) glossData = specColour.a;
 	if(overrideSpec) specColour.rgb = specClr;
  #ifdef FLAG_HDR
@@ -356,47 +364,43 @@ void main()
 	specColour.rgb = max(specColour.rgb, vec3(0.04)); // hardcoded minimum specular value. read John Hable's blog post titled 'Everything Is Shiny'. 
    specData = vec4(specColour.rgb, glossData);
 #endif
-
 #ifdef FLAG_MISC_MAP
  #ifdef FLAG_TEAMCOLOR
 	vec4 teamMask = vec4(0.0, 0.0, 0.0, 0.0);
-	teamMask = texture2D(sMiscmap, texCoord);
+	teamMask = texture(sMiscmap, texCoord);
 	vec3 base = base_color - vec3(0.5);
 	vec3 stripe = stripe_color - vec3(0.5);
 	baseColor.rgb += (base * teamMask.x) + (stripe * teamMask.y);
 	baseColor.rgb = max(baseColor.rgb, vec3(0.0));
  #endif
 #endif
-
 	float shadow = 1.0;
 #ifdef FLAG_SHADOWS
 	shadow = getShadowValue();
 #endif
-
 #ifdef FLAG_LIGHT
 	baseColor.rgb = CalculateLighting(normal, baseColor.rgb, specData.rgb, glossData, shadow, aoFactors.x);
 #else
-	baseColor.rgb *= max(gl_Color.rgb * AMBIENT_LIGHT_BOOST, gl_LightModel.ambient.rgb - 0.425);
-	baseColor.rgb += gl_SecondaryColor.rgb * specData.rgb;
+ #ifdef FLAG_SPEC_MAP
+	baseColor.rgb += pow(1.0 - dot(eyeDir, normal), 5.0 * clamp(glossData, 0.01, 1.0)) * specColour.rgb;
+ #endif
 #endif
-
 #ifdef FLAG_ENV_MAP
-	vec3 envReflectNM = normalize(envReflect);
+   vec3 envReflectNM = fragEnvReflect;
  #ifdef FLAG_NORMAL_MAP
    envReflectNM += vec3(normalSample, 0.0);
 	envReflectNM = normalize(envReflectNM);
  #endif
 	float mip = (envGloss) ? (1.0 - glossData) * 7.0 : 0.0;
-   vec4 envColour = textureCubeLod(sEnvmap, envReflectNM, mip);
+   vec4 envColour = textureLod(sEnvmap, envReflectNM, mip);
  #ifdef FLAG_HDR
 	envColour.rgb = pow(envColour.rgb, vec3(SRGB_GAMMA));
  #endif
 	envColour.rgb *= (envGloss) ? 1.0 : specColour.a;
 	baseColor.rgb += envColour.rgb * FresnelLazarovEnv(specColour.rgb, eyeDir, normal, glossData);
 #endif
-
 #ifdef FLAG_GLOW_MAP
-	vec3 glowColor = texture2D(sGlowmap, texCoord).rgb;
+	vec3 glowColor = texture(sGlowmap, texCoord).rgb;
 	if(overrideGlow) glowColor = glowClr;
  #ifdef FLAG_HDR
 	glowColor = pow(glowColor, vec3(SRGB_GAMMA)) * 3.0f;
@@ -411,20 +415,20 @@ void main()
 #endif
 
 #ifdef FLAG_FOG
-	vec3 fogColor = gl_Fog.color.rgb;
+	vec3 finalFogColor = fogColor.rgb;
  #ifdef FLAG_HDR
-	fogColor = pow(fogColor, vec3(SRGB_GAMMA));
+	finalFogColor = pow(finalFogColor, vec3(SRGB_GAMMA));
  #endif
  #ifdef FLAG_DIFFUSE_MAP
-	if(blend_alpha == 1) fogColor *= baseColor.a;
+	if(blend_alpha == 1) finalFogColor *= baseColor.a;
  #endif
-   baseColor.rgb = mix(baseColor.rgb, fogColor, fogDist);
-	specData.rgb *= fogDist;
+   baseColor.rgb = mix(baseColor.rgb, finalFogColor, fragFogDist);
+	specData.rgb *= fragFogDist;
 #endif
 
 #ifdef FLAG_DIFFUSE_MAP
 	if(desaturate == 1) {
-		baseColor.rgb = desaturate_clr * dot(vec3(1.0), baseColor.rgb) * 0.3333333;
+		baseColor.rgb = color.rgb * dot(vec3(1.0), baseColor.rgb) * 0.3333333;
 	}
 #endif
 #ifdef FLAG_ANIMATED
@@ -434,34 +438,38 @@ void main()
       baseColor.a = baseColor.a * clamp(shinefactor * (fract(abs(texCoord.x))-anim_timer) * -10000.0,0.0,1.0);
    }
    if (effect_num == 1) {
-      float shinefactor = 1.0/(1.0 + pow(abs(position.y-anim_timer), 2.0));
+      float shinefactor = 1.0/(1.0 + pow(abs(fragPosition.y-anim_timer), 2.0));
       baseColor.rgb = baseColor.rgb + vec3(shinefactor);
  #ifdef FLAG_LIGHT
       baseColor.a = baseColor.a;
  #else
       // ATI Wireframe fix *grumble*
-      baseColor.a = clamp((position.y-anim_timer) * 10000.0,0.0,1.0);
+      baseColor.a = clamp((fragPosition.y-anim_timer) * 10000.0,0.0,1.0);
  #endif
    }
    if (effect_num == 2) {
       vec2 screenPos = gl_FragCoord.xy * vec2(vpwidth,vpheight);
       baseColor.a = baseColor.a;
-      float cloak_interp = (sin(position.x*position.w*0.005+anim_timer*20.0)*sin(position.y*position.w*0.005)*0.5)-0.5;
+      float cloak_interp = (sin(fragPosition.x*fragPosition.w*0.005+anim_timer*20.0)*sin(fragPosition.y*fragPosition.w*0.005)*0.5)-0.5;
  #ifdef FLAG_LIGHT
-      baseColor.rgb = mix(texture2D(sFramebuffer, screenPos + distort*anim_timer + anim_timer*0.1*normal.xy).rgb,baseColor.rgb,clamp(cloak_interp+anim_timer*2.0,0.0,1.0));
+      baseColor.rgb = mix(texture(sFramebuffer, screenPos + distort*anim_timer + anim_timer*0.1*normal.xy).rgb,baseColor.rgb,clamp(cloak_interp+anim_timer*2.0,0.0,1.0));
  #else
-      baseColor.rgb = mix(texture2D(sFramebuffer, screenPos + distort*anim_timer + anim_timer*0.1*lNormal.xy).rgb,baseColor.rgb,clamp(cloak_interp+anim_timer*2.0,0.0,1.0));
+      baseColor.rgb = mix(texture(sFramebuffer, screenPos + distort*anim_timer + anim_timer*0.1*fragNormal.xy).rgb,baseColor.rgb,clamp(cloak_interp+anim_timer*2.0,0.0,1.0));
  #endif
    }
 #endif
+#ifdef FLAG_NORMAL_ALPHA
+	float normViewOffset = dot(vec3(0.0, 0.0, 1.0), normal);
+	baseColor.a = smoothstep(min(normalAlphaMinMax.x, normalAlphaMinMax.y), max(normalAlphaMinMax.x, normalAlphaMinMax.y), clamp(normalAlphaMinMax.x > normalAlphaMinMax.y ? normViewOffset : 1.0 - normViewOffset, 0.0, 1.0));
+#endif
 #ifdef FLAG_CLIP
 	// for some odd reason if we try to discard the pixel early for plane clipping, it screws up glow maps so let's just do it down here.
-	if(use_clip_plane == 1) { if(clip_distance <= 0.0) { discard; } }
+	if(use_clip_plane == 1) { if(fragClipDistance <= 0.0) { discard; } }
 #endif
-	gl_FragData[0] = baseColor;
+   fragOut0 = baseColor;
 #ifdef FLAG_DEFERRED
-	gl_FragData[1] = posData;
-	gl_FragData[2] = normData;
-	gl_FragData[3] = specData;
+	fragOut1 = posData;
+	fragOut2 = normData;
+	fragOut3 = specData;
 #endif
 }

@@ -173,6 +173,8 @@ SET(file_root_def_files_files
 	def_files/tonemapping-f.sdr
 	def_files/video-f.sdr
 	def_files/video-v.sdr
+	def_files/shield-impact-v.sdr
+	def_files/shield-impact-f.sdr
 )
 
 # ExceptionHandler files
@@ -305,6 +307,8 @@ set (file_root_graphics
 	graphics/tmapper.h
 	graphics/shadows.cpp
 	graphics/shadows.h
+	graphics/material.cpp
+	graphics/material.h
 )
 
 # Graphics -> OpenGLGr files
@@ -313,33 +317,30 @@ set (file_root_graphics_openglgr
 
 # Graphics -> OpenGLGr -> OpenGL CPPs files
 set (file_root_graphics_openglgr_opengl_cpps
-	graphics/gropengl.cpp
-	graphics/gropenglbmpman.cpp
-	graphics/gropengldraw.cpp
-	graphics/gropengllight.cpp
-	graphics/gropenglpostprocessing.cpp
-	graphics/gropenglshader.cpp
-	graphics/gropenglstate.cpp
-	graphics/gropengltexture.cpp
-	graphics/gropengltnl.cpp
+	graphics/opengl/gropengl.cpp
+	graphics/opengl/gropenglbmpman.cpp
+	graphics/opengl/gropengldraw.cpp
+	graphics/opengl/gropengllight.cpp
+	graphics/opengl/gropenglpostprocessing.cpp
+	graphics/opengl/gropenglshader.cpp
+	graphics/opengl/gropenglstate.cpp
+	graphics/opengl/gropengltexture.cpp
+	graphics/opengl/gropengltnl.cpp
+	graphics/opengl/ShaderProgram.cpp
 )
 
 # Graphics -> OpenGLGr -> OpenGL Headers files
 set (file_root_graphics_openglgr_opengl_headers
-	graphics/gropengl.h
-	graphics/gropenglbmpman.h
-	graphics/gropengldraw.h
-	graphics/gropengllight.h
-	graphics/gropenglpostprocessing.h
-	graphics/gropenglshader.h
-	graphics/gropenglstate.h
-	graphics/gropengltexture.h
-	graphics/gropengltnl.h
-)
-
-# Graphics -> OpenGLGr -> GL files
-set (file_root_graphics_openglgr_gl
-	graphics/gl/glu.h
+	graphics/opengl/gropengl.h
+	graphics/opengl/gropenglbmpman.h
+	graphics/opengl/gropengldraw.h
+	graphics/opengl/gropengllight.h
+	graphics/opengl/gropenglpostprocessing.h
+	graphics/opengl/gropenglshader.h
+	graphics/opengl/gropenglstate.h
+	graphics/opengl/gropengltexture.h
+	graphics/opengl/gropengltnl.h
+	graphics/opengl/ShaderProgram.h
 )
 
 # Graphics -> Paths
@@ -798,16 +799,17 @@ set (file_root_particle
 )
 
 set(file_root_particle_effects
-	particle/effects/SingleParticleEffect.cpp
-	particle/effects/SingleParticleEffect.h
 	particle/effects/BeamPiercingEffect.cpp
 	particle/effects/BeamPiercingEffect.h
-	particle/effects/ParticleEmitterEffect.cpp
-	particle/effects/ParticleEmitterEffect.h
 	particle/effects/CompositeEffect.cpp
 	particle/effects/CompositeEffect.h
-	particle/effects/ConeGeneratorEffect.cpp
-	particle/effects/ConeGeneratorEffect.h
+	particle/effects/ConeShape.h
+	particle/effects/GenericShapeEffect.h
+	particle/effects/ParticleEmitterEffect.cpp
+	particle/effects/ParticleEmitterEffect.h
+	particle/effects/SingleParticleEffect.cpp
+	particle/effects/SingleParticleEffect.h
+	particle/effects/SphereShape.h
 )
 
 set(file_root_particle_util
@@ -890,6 +892,8 @@ set (file_root_render
 	render/3dlaser.cpp
 	render/3dmath.cpp
 	render/3dsetup.cpp
+	render/batching.cpp
+	render/batching.h
 )
 
 # Ship files
@@ -1065,7 +1069,6 @@ source_group("Graphics"                           FILES ${file_root_graphics})
 source_group("Graphics\\OpenGLGr"                 FILES ${file_root_graphics_openglgr})
 source_group("Graphics\\OpenGLGr\\OpenGL CPPs"    FILES ${file_root_graphics_openglgr_opengl_cpps})
 source_group("Graphics\\OpenGLGr\\OpenGL Headers" FILES ${file_root_graphics_openglgr_opengl_headers})
-source_group("Graphics\\OpenGLGr\\GL"             FILES ${file_root_graphics_openglgr_gl})
 source_group("Graphics\\Paths"                    FILES ${file_root_graphics_paths})
 source_group("Graphics\\Paths\\nanovg"            FILES ${file_root_graphics_paths_nanovg})
 source_group("Graphics\\SoftwareGr"               FILES ${file_root_graphics_softwaregr})
@@ -1149,7 +1152,6 @@ set (file_root
 	${file_root_graphics_openglgr}
 	${file_root_graphics_openglgr_opengl_cpps}
 	${file_root_graphics_openglgr_opengl_headers}
-	${file_root_graphics_openglgr_gl}
 	${file_root_graphics_paths}
 	${file_root_graphics_paths_nanovg}
 	${file_root_graphics_softwaregr}

@@ -19,7 +19,7 @@
 #include "globalincs/alphacolors.h"
 #include "globalincs/linklist.h"
 #include "graphics/2d.h"
-#include "graphics/gropengllight.h"
+#include "graphics/opengl/gropengllight.h"
 #include "io/key.h"
 #include "io/timer.h"
 #include "math/fvi.h"
@@ -147,13 +147,10 @@ static ubyte *Interp_light_applied = NULL;
 static int Interp_num_norms = 0;
 static ubyte *Interp_lights;
 
-static float Interp_fog_level = 0.0f;
-
 // Stuff to control rendering parameters
 static color Interp_outline_color;
 static int Interp_detail_level_locked = -1;
 static uint Interp_flags = 0;
-bool Interp_desaturate = false;
 
 // If non-zero, then the subobject gets scaled by Interp_thrust_scale.
 int Interp_thrust_scale_subobj = 0;
@@ -199,28 +196,8 @@ static int Interp_forced_bitmap = -1;
 // for rendering with the MR_ALL_XPARENT FLAG SET
 static float Interp_xparent_alpha = 1.0f;
 
-float Interp_light = 0.0f;
-
-int Interp_multitex_cloakmap = -1;
-int Interp_cloakmap_alpha = 255;
-
 // our current level of detail (LOD)
 int Interp_detail_level = 0;
-
-// clip planes
-bool Interp_clip_plane;
-vec3d Interp_clip_pos;
-vec3d Interp_clip_normal;
-
-// team colors
-team_color Interp_team_color;
-bool Interp_team_color_set = false;
-
-// animated shader effects
-int Interp_animated_effect = 0;
-float Interp_animated_timer = 0.0f;
-
-int Interp_no_flush = 0;
 
 // forward references
 int model_should_render_engine_glow(int objnum, int bank_obj);
@@ -368,13 +345,6 @@ void interp_clear_instance()
 	}
 
 	Interp_box_scale = 1.0f;
-
-	Interp_team_color_set = false;
-
-	Interp_clip_plane = false;
-
-	Interp_animated_effect = 0;
-	Interp_animated_timer = 0.0f;
 
 	Interp_detail_level_locked = -1;
 
@@ -614,101 +584,6 @@ void model_interp_defpoints(ubyte * p, polymodel *pm, bsp_info *sm)
 	Interp_num_norms = next_norm;
 }
 
-matrix *Interp_orient;
-vec3d *Interp_pos;
-
-
-// Flat Poly
-// +0      int         id
-// +4      int         size 
-// +8      vec3d      normal
-// +20     vec3d      center
-// +32     float       radius
-// +36     int         nverts
-// +40     byte        red
-// +41     byte        green
-// +42     byte        blue
-// +43     byte        pad
-// +44     nverts*short*short  vertlist, smoothlist
-void model_interp_flatpoly(ubyte * p,polymodel * pm)
-{
-	int nv = w(p+36);
-
-	if ( nv < 0 )
-		return;
-
-	#ifndef NDEBUG
-	modelstats_num_polys++;
-	#endif
-
-	if ( !g3_check_normal_facing(vp(p+20), vp(p+8)) )
-		return;
-	
-
-	int i;
-	short * verts = (short *)(p+44);
-
-	int max_n_verts = 0;
-	int max_n_norms = 0;
-
-	// slow?  yes.  safe?  yes.
-	for (i = 0; i < nv; i++) {
-		max_n_verts = MAX(verts[i*2+0] + 1, max_n_verts);
-		max_n_norms = MAX(verts[i*2+1] + 1, max_n_norms);
-	}
-
-	model_allocate_interp_data(max_n_verts, max_n_norms, nv);
-
-	for (i = 0; i < nv; i++) {
-		Interp_list[i] = &Interp_points[verts[i*2]];
-
-		if ( Interp_flags & MR_NO_LIGHTING )	{
-				Interp_list[i]->r = 191;
-				Interp_list[i]->g = 191;
-				Interp_list[i]->b = 191;
-		} else {
-			int vertnum = verts[i*2+0];
-			int norm = verts[i*2+1];
-	
-			if ( Interp_flags & MR_NO_SMOOTHING )	{
-				light_apply_rgb( &Interp_list[i]->r, &Interp_list[i]->g, &Interp_list[i]->b, Interp_verts[vertnum], vp(p+8), Interp_light );
-			} else {
-				// if we're not using saved lighting
-				if ( !Interp_use_saved_lighting && !Interp_light_applied[norm] )	{
-					light_apply_rgb( &Interp_lighting->lights[norm].r, &Interp_lighting->lights[norm].g, &Interp_lighting->lights[norm].b, Interp_verts[vertnum], vp(p+8), Interp_light );
-					Interp_light_applied[norm] = 1;
-				}
-
-				Interp_list[i]->r = Interp_lighting->lights[norm].r;
-				Interp_list[i]->g = Interp_lighting->lights[norm].g;
-				Interp_list[i]->b = Interp_lighting->lights[norm].b;
-			}
-		}
-	}
-
-	// HACK!!! FIX ME!!! I'M SLOW!!!!
-	if ( !(Interp_flags & MR_SHOW_OUTLINE_PRESET) )	{
-		gr_set_color( *(p+40), *(p+41), *(p+42) );
-	}
-
-	if ( !(Interp_flags & MR_NO_POLYS))	{
-		g3_draw_poly( nv, Interp_list, TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB );	
-	}
-
-	if (Interp_flags & (MR_SHOW_OUTLINE|MR_SHOW_OUTLINE_PRESET))	{
-		int j;
-
-		if ( Interp_flags & MR_SHOW_OUTLINE )	{
-			gr_set_color_fast( &Interp_outline_color );
-		}
-
-		for (i = 0; i < nv; i++) {
-			j = (i + 1) % nv;
-			g3_draw_line(Interp_list[i], Interp_list[j]);
-		}
-	}
-}
-
 void model_interp_edge_alpha( ubyte *param_r, ubyte *param_g, ubyte *param_b, vec3d *pnt, vec3d *norm, float alpha, bool invert = false)
 {
 	vec3d r;
@@ -901,11 +776,12 @@ void model_draw_paths_htl( int model_num, uint flags )
 				gr_set_color( 255, 0, 0 );
 			}
 
-			g3_draw_htl_sphere(&pnt, 0.5f);
+			g3_render_sphere(&pnt, 0.5f);
 			
 			if (j)
 			{
-				g3_draw_htl_line(&prev_pnt, &pnt);
+				//g3_draw_htl_line(&prev_pnt, &pnt);
+				g3_render_line_3d(true, &prev_pnt, &pnt);
 			}
 
 			prev_pnt = pnt;
@@ -937,8 +813,9 @@ void model_draw_bay_paths_htl(int model_num)
 			vm_vec_scale_add(&v2, &v1, &pm->docking_bays[idx].norm[s_idx], 10.0f);
 
 			// draw the point and normal
-			g3_draw_htl_sphere(&v1, 2.0);
-			g3_draw_htl_line(&v1, &v2);
+			g3_render_sphere(&v1, 2.0);
+			//g3_draw_htl_line(&v1, &v2);
+			g3_render_line_3d(true, &v1, &v2);
 		}
 	}
 
@@ -952,7 +829,8 @@ void model_draw_bay_paths_htl(int model_num)
 				v1 = pm->paths[idx].verts[s_idx].pos;
 				v2 = pm->paths[idx].verts[s_idx+1].pos;
 
-				g3_draw_htl_line(&v1, &v2);
+				//g3_draw_htl_line(&v1, &v2);
+				g3_render_line_3d(true, &v1, &v2);
 			}
 		}
 	}	
@@ -1015,8 +893,6 @@ static const int MAX_ARC_SEGMENT_POINTS = 50;
 int Num_arc_segment_points = 0;
 vec3d Arc_segment_points[MAX_ARC_SEGMENT_POINTS];
 
-extern int g3_draw_rod(int num_points, const vec3d *vecs, float width, uint tmap_flags);
-
 void interp_render_arc_segment( vec3d *v1, vec3d *v2, int depth )
 {
 	float d = vm_vec_dist_quick( v1, v2 );
@@ -1042,103 +918,8 @@ void interp_render_arc_segment( vec3d *v1, vec3d *v2, int depth )
 	}
 }
 
-void interp_render_arc(vec3d *v1, vec3d *v2, color *primary, color *secondary, float arc_width)
-{
-	Num_arc_segment_points = 0;
-
-	// need need to add the first point
-	memcpy( &Arc_segment_points[Num_arc_segment_points++], v1, sizeof(vec3d) );
-
-	// this should fill in all of the middle, and the last, points
-	interp_render_arc_segment(v1, v2, 0);
-
-	int tmap_flags = (TMAP_FLAG_RGB | TMAP_FLAG_GOURAUD | TMAP_HTL_3D_UNLIT | TMAP_FLAG_TRISTRIP | TMAP_FLAG_EMISSIVE);
-
-	int mode = gr_zbuffer_set(GR_ZBUFF_READ);
-
-	// use primary color for fist pass
-	Assert( primary );
-	gr_set_color_fast(primary);
-
-	g3_draw_rod(Num_arc_segment_points, Arc_segment_points, arc_width, tmap_flags);
-
-	if (secondary) {
-		// now render again with a secondary center color
-		gr_set_color_fast(secondary);
-
-		g3_draw_rod(Num_arc_segment_points, Arc_segment_points, arc_width * 0.33f, tmap_flags);
-	}
-
-	gr_zbuffer_set(mode);
-}
-
 int Interp_lightning = 1;
 DCF_BOOL( Arcs, Interp_lightning )
-
-const int AR = 64;
-const int AG = 64;
-const int AB = 5;
-const int AR2 = 128;
-const int AG2 = 128;
-const int AB2 = 10;
-
-void interp_render_lightning( polymodel *pm, bsp_info * sm )
-{
-	int i;
-	float width = 0.9f;
-	color primary, secondary;
-
-	Assert( sm->num_arcs > 0 );
-
-	if (Interp_flags & MR_SHOW_OUTLINE_PRESET) {
-		return;
-	}
-
-	if ( !Interp_lightning ) {
-		return;
-	}
-
-	// try and scale the size a bit so that it looks equally well on smaller vessels
-	if (pm->rad < 500.0f) {
-		width *= (pm->rad * 0.01f);
-
-		if (width < 0.2f)
-			width = 0.2f;
-	}
-
-	for (i=0; i<sm->num_arcs; i++ )	{
-		// pick a color based upon arc type
-		switch(sm->arc_type[i]){
-		// "normal", FreeSpace 1 style arcs
-		case MARC_TYPE_NORMAL:
-			if ( (rand()>>4) & 1 )	{
-				gr_init_color(&primary, 64, 64, 255);
-			} else {
-				gr_init_color(&primary, 128, 128, 255);
-			}
-
-			gr_init_color(&secondary, 200, 200, 255);
-			break;
-
-		// "EMP" style arcs
-		case MARC_TYPE_EMP:
-			if ( (rand()>>4) & 1 )	{
-				gr_init_color(&primary, AR, AG, AB);
-			} else {
-				gr_init_color(&primary, AR2, AG2, AB2);
-			}
-
-			gr_init_color(&secondary, 255, 255, 10);
-			break;
-
-		default:
-			Int3();
-		}
-
-		// render the actual arc segment
-		interp_render_arc( &sm->arc_pts[i][0], &sm->arc_pts[i][1], &primary, &secondary, width );
-	}
-}
 
 // Returns one of the following
 #define IBOX_ALL_OFF 0
@@ -1223,65 +1004,6 @@ void model_render_shields( polymodel * pm, uint flags )
 			}
 
 			g3_draw_line(&pnt0, &prev_pnt);
-		}
-	}
-}
-
-void model_render_insignias(polymodel *pm, int detail_level, int bitmap_num)
-{
-	// if the model has no insignias, or we don't have a texture, then bail
-	if ( (pm->num_ins <= 0) || (bitmap_num < 0) )
-		return;
-
-	int idx, s_idx;
-	vertex vecs[3];
-	vertex *vlist[3] = { &vecs[0], &vecs[1], &vecs[2] };
-	vec3d t1, t2, t3;
-	int i1, i2, i3;
-	int tmap_flags = TMAP_FLAG_TEXTURED | TMAP_FLAG_CORRECT | TMAP_HTL_3D_UNLIT;
-
-	// set the proper texture	
-	gr_set_bitmap(bitmap_num, GR_ALPHABLEND_NONE, GR_BITBLT_MODE_NORMAL, 0.65f);
-
-	// otherwise render them	
-	for(idx=0; idx<pm->num_ins; idx++){	
-		// skip insignias not on our detail level
-		if(pm->ins[idx].detail_level != detail_level){
-			continue;
-		}
-
-		for(s_idx=0; s_idx<pm->ins[idx].num_faces; s_idx++){
-			// get vertex indices
-			i1 = pm->ins[idx].faces[s_idx][0];
-			i2 = pm->ins[idx].faces[s_idx][1];
-			i3 = pm->ins[idx].faces[s_idx][2];
-
-			// transform vecs and setup vertices
-			vm_vec_add(&t1, &pm->ins[idx].vecs[i1], &pm->ins[idx].offset);
-			vm_vec_add(&t2, &pm->ins[idx].vecs[i2], &pm->ins[idx].offset);
-			vm_vec_add(&t3, &pm->ins[idx].vecs[i3], &pm->ins[idx].offset);
-
-			g3_transfer_vertex(&vecs[0], &t1);
-			g3_transfer_vertex(&vecs[1], &t2);
-			g3_transfer_vertex(&vecs[2], &t3);
-
-			// setup texture coords
-			vecs[0].texture_position.u = pm->ins[idx].u[s_idx][0];
-			vecs[0].texture_position.v = pm->ins[idx].v[s_idx][0];
-
-			vecs[1].texture_position.u = pm->ins[idx].u[s_idx][1];
-			vecs[1].texture_position.v = pm->ins[idx].v[s_idx][1];
-
-			vecs[2].texture_position.u = pm->ins[idx].u[s_idx][2];
-			vecs[2].texture_position.v = pm->ins[idx].v[s_idx][2];
-
-			light_apply_rgb( &vecs[0].r, &vecs[0].g, &vecs[0].b, &pm->ins[idx].vecs[i1], &pm->ins[idx].norm[i1], 1.5f );
-			light_apply_rgb( &vecs[1].r, &vecs[1].g, &vecs[1].b, &pm->ins[idx].vecs[i2], &pm->ins[idx].norm[i2], 1.5f );
-			light_apply_rgb( &vecs[2].r, &vecs[2].g, &vecs[2].b, &pm->ins[idx].vecs[i3], &pm->ins[idx].norm[i3], 1.5f );
-			tmap_flags |= (TMAP_FLAG_RGB | TMAP_FLAG_GOURAUD);
-
-			// draw the polygon
-			g3_draw_poly(3, vlist, tmap_flags);
 		}
 	}
 }
@@ -1934,11 +1656,6 @@ float get_world_closest_box_point_with_delta(vec3d *closest_box_point, object *b
 	return dist;
 }
 
-void model_set_fog_level(float l)
-{
-	Interp_fog_level = l;
-}
-
 /**
  * Given a newly loaded model, page in all textures
  */
@@ -2286,9 +2003,162 @@ void find_sortnorm(int offset, ubyte *bsp_data)
 	if (postlist) find_tri_counts(offset+postlist, bsp_data);
 }
 
+void model_interp_submit_buffers(indexed_vertex_source *vert_src)
+{
+	Assert(vert_src != NULL);
+
+	if ( !(vert_src->Vertex_list_size > 0 && vert_src->Index_list_size > 0 ) ) {
+		return;
+	}
+
+	bool static_buffer = true;
+	vert_src->Vbuffer_handle = gr_create_vertex_buffer(static_buffer);
+
+	if ( vert_src->Vbuffer_handle > -1 && vert_src->Vertex_list != NULL ) {
+		gr_update_buffer_data(vert_src->Vbuffer_handle, vert_src->Vertex_list_size, vert_src->Vertex_list);
+
+		vm_free(vert_src->Vertex_list);
+		vert_src->Vertex_list = NULL;
+	}
+
+	vert_src->Ibuffer_handle = gr_create_index_buffer(static_buffer);
+
+	if ( vert_src->Ibuffer_handle > -1 && vert_src->Index_list != NULL ) {
+		gr_update_buffer_data(vert_src->Ibuffer_handle, vert_src->Index_list_size, vert_src->Index_list);
+
+		vm_free(vert_src->Index_list);
+		vert_src->Index_list = NULL;
+	}
+}
+
+bool model_interp_pack_buffer(indexed_vertex_source *vert_src, vertex_buffer *vb)
+{
+	if ( vert_src == NULL ) {
+		return false;
+	}
+	
+	// NULL means that we are done with the buffer and can create the IBO/VBO
+	// returns false here only for some minor error prevention
+	if ( vb == NULL ) {
+		model_interp_submit_buffers(vert_src);
+		return false;
+	}
+
+	int i, n_verts = 0;
+	size_t j;
+	uint arsize = 0;
+
+	if ( vert_src->Vertex_list == NULL ) {
+		vert_src->Vertex_list = (float*)vm_malloc(vert_src->Vertex_list_size);
+
+		// return invalid if we don't have the memory
+		if ( vert_src->Vertex_list == NULL ) {
+			return false;
+		}
+
+		memset(vert_src->Vertex_list, 0, vert_src->Vertex_list_size);
+	}
+
+	if ( vert_src->Index_list == NULL ) {
+		vert_src->Index_list = (ubyte*)vm_malloc(vert_src->Index_list_size);
+
+		// return invalid if we don't have the memory
+		if ( vert_src->Index_list == NULL ) {
+			return false;
+		}
+
+		memset(vert_src->Index_list, 0, vert_src->Index_list_size);
+	}
+
+	// bump to our index in the array
+	float *array = vert_src->Vertex_list + (vb->vertex_offset / sizeof(float));
+
+	// generate the vertex array
+	n_verts = vb->model_list->n_verts;
+	for ( i = 0; i < n_verts; i++ ) {
+		vertex *vl = &vb->model_list->vert[i];
+
+		// don't try to generate more data than what's available
+		Assert(((arsize * sizeof(float)) + vb->stride) <= (vert_src->Vertex_list_size - vb->vertex_offset));
+
+		// NOTE: UV->NORM->TSB->MODEL_ID->VERT, This array order *must* be preserved!!
+
+		// tex coords
+		if ( vb->flags & VB_FLAG_UV1 ) {
+			array[arsize++] = vl->texture_position.u;
+			array[arsize++] = vl->texture_position.v;
+		} else {
+			array[arsize++] = 1.0f;
+			array[arsize++] = 1.0f;
+		}
+
+		// normals
+		if ( vb->flags & VB_FLAG_NORMAL ) {
+			Assert(vb->model_list->norm != NULL);
+			vec3d *nl = &vb->model_list->norm[i];
+			array[arsize++] = nl->xyz.x;
+			array[arsize++] = nl->xyz.y;
+			array[arsize++] = nl->xyz.z;
+		} else {
+			array[arsize++] = 0.0f;
+			array[arsize++] = 0.0f;
+			array[arsize++] = 1.0f;
+		}
+
+		// tangent space data
+		if ( vb->flags & VB_FLAG_TANGENT ) {
+			Assert(vb->model_list->tsb != NULL);
+			tsb_t *tsb = &vb->model_list->tsb[i];
+			array[arsize++] = tsb->tangent.xyz.x;
+			array[arsize++] = tsb->tangent.xyz.y;
+			array[arsize++] = tsb->tangent.xyz.z;
+			array[arsize++] = tsb->scaler;
+		} else {
+			array[arsize++] = 1.0f;
+			array[arsize++] = 0.0f;
+			array[arsize++] = 0.0f;
+			array[arsize++] = 0.0f;
+		}
+
+		if ( vb->flags & VB_FLAG_MODEL_ID ) {
+			Assert(vb->model_list->submodels != NULL);
+			array[arsize++] = (float)vb->model_list->submodels[i];
+		} else {
+			array[arsize++] = 0.0f;
+		}
+
+		// verts
+		array[arsize++] = vl->world.xyz.x;
+		array[arsize++] = vl->world.xyz.y;
+		array[arsize++] = vl->world.xyz.z;
+	}
+
+	// generate the index array
+	for ( j = 0; j < vb->tex_buf.size(); j++ ) {
+		buffer_data* tex_buf = &vb->tex_buf[j];
+		n_verts = (int)tex_buf->n_verts;
+		auto offset = tex_buf->index_offset;
+		const uint *index = tex_buf->get_index();
+
+		// bump to our spot in the buffer
+		ubyte *ibuf = vert_src->Index_list + offset;
+
+		if ( vb->tex_buf[j].flags & VB_FLAG_LARGE_INDEX ) {
+			memcpy(ibuf, index, n_verts * sizeof(uint));
+		} else {
+			ushort *mybuf = (ushort*)ibuf;
+
+			for ( i = 0; i < n_verts; i++ ) {
+				mybuf[i] = (ushort)index[i];
+			}
+		}
+	}
+
+	return true;
+}
+
 void interp_pack_vertex_buffers(polymodel *pm, int mn)
 {
-	Assert( pm->vertex_buffer_id >= 0 );
 	Assert( (mn >= 0) && (mn < pm->n_models) );
 
 	bsp_info *model = &pm->submodel[mn];
@@ -2297,15 +2167,106 @@ void interp_pack_vertex_buffers(polymodel *pm, int mn)
 		return;
 	}
 
-	bool rval = gr_pack_buffer(pm->vertex_buffer_id, &model->buffer);
+	bool rval = model_interp_pack_buffer(&pm->vert_source, &model->buffer);
 
 	if ( model->trans_buffer.flags & VB_FLAG_TRANS && model->trans_buffer.tex_buf.size() > 0 ) {
-		gr_pack_buffer(pm->vertex_buffer_id, &model->trans_buffer);
+		model_interp_pack_buffer(&pm->vert_source, &model->trans_buffer);
 	}
 
 	if ( !rval ) {
 		Error( LOCATION, "Unable to pack vertex buffer for '%s'\n", pm->filename );
 	}
+}
+
+void model_interp_set_buffer_layout(vertex_layout *layout, uint stride, int flags)
+{
+	Assert(layout != NULL);
+	
+	uint offset = 0;
+
+	// NOTE: UV->NORM->TSB->MODEL_ID->VERT, This array order *must* be preserved!!
+
+	if ( flags & VB_FLAG_UV1 ) {
+		layout->add_vertex_component(vertex_format_data::TEX_COORD, stride, offset);
+	}
+
+	offset += (2 * sizeof(float));
+
+	if ( flags & VB_FLAG_NORMAL ) {
+		layout->add_vertex_component(vertex_format_data::NORMAL, stride, offset);
+	}
+
+	offset += (3 * sizeof(float));
+
+	if ( flags & VB_FLAG_TANGENT ) {
+		layout->add_vertex_component(vertex_format_data::TANGENT, stride, offset);
+	}
+
+	offset += (4 * sizeof(float));
+
+	if ( flags & VB_FLAG_MODEL_ID ) {
+		layout->add_vertex_component(vertex_format_data::MODEL_ID, stride, offset);
+	}
+
+	offset += (1 * sizeof(float));
+
+	Assert(flags & VB_FLAG_POSITION);
+	layout->add_vertex_component(vertex_format_data::POSITION3, stride, offset);
+
+	offset += (3 * sizeof(float));
+}
+
+bool model_interp_config_buffer(indexed_vertex_source *vert_src, vertex_buffer *vb, bool update_ibuffer_only)
+{
+	if ( vb == NULL ) {
+		return false;
+	}
+
+	if ( !(vb->flags & VB_FLAG_POSITION) ) {
+		Int3();
+		return false;
+	}
+
+	vb->stride = 0;
+
+	// pad out the vertex buffer even if it doesn't use certain attributes
+	// we require consistent stride across vertex buffers so we can use base vertex offsetting for performance reasons
+
+	// uv coords
+	vb->stride += (2 * sizeof(float));
+
+	// normals
+	vb->stride += (3 * sizeof(float));
+
+	// tangent space data for normal maps (shaders only)
+	vb->stride += (4 * sizeof(float));
+
+	// model ID for batched submodel rendering (shaders only)
+	vb->stride += (1 * sizeof(float));
+
+	// position
+	vb->stride += (3 * sizeof(float));
+
+	model_interp_set_buffer_layout(&vb->layout, (uint) vb->stride, vb->flags);
+
+	// offsets for this chunk
+	if ( !update_ibuffer_only ) {
+		vb->vertex_offset = vert_src->Vertex_list_size;
+		vb->vertex_num_offset = vb->vertex_offset / vb->stride;
+		vert_src->Vertex_list_size += (uint)(vb->stride * vb->model_list->n_verts);
+	}
+
+	for ( size_t idx = 0; idx < vb->tex_buf.size(); idx++ ) {
+		buffer_data *bd = &vb->tex_buf[idx];
+
+		bd->index_offset = vert_src->Index_list_size;
+		vert_src->Index_list_size += (uint)(bd->n_verts * ((bd->flags & VB_FLAG_LARGE_INDEX) ? sizeof(uint) : sizeof(ushort)));
+
+		// even out index buffer so we are always word aligned
+		vert_src->Index_list_size += (uint)(vert_src->Index_list_size % sizeof(uint));
+	}
+
+	return true;
 }
 
 void interp_configure_vertex_buffers(polymodel *pm, int mn)
@@ -2323,6 +2284,8 @@ void interp_configure_vertex_buffers(polymodel *pm, int mn)
 		tri_count[i] = 0;
 	}
 
+	int milliseconds = timer_get_milliseconds();
+
 	bsp_polygon_data *bsp_polies = new bsp_polygon_data(model->bsp_data);
 
 	for (i = 0; i < MAX_MODEL_TEXTURES; i++) {
@@ -2336,7 +2299,7 @@ void interp_configure_vertex_buffers(polymodel *pm, int mn)
 		polygon_list[i].n_verts = vert_count;
 
 		// set submodel ID
-		if ( GLSL_version >= 130 ) {
+		if ( GLSL_version >= 150 ) {
 			for ( j = 0; j < polygon_list[i].n_verts; ++j ) {
 				polygon_list[i].submodels[j] = mn;
 			}
@@ -2360,6 +2323,10 @@ void interp_configure_vertex_buffers(polymodel *pm, int mn)
 
 	// done with the bsp now that we have the vertex data
 	delete bsp_polies;
+
+	int time_elapsed = timer_get_milliseconds() - milliseconds;
+
+	nprintf(("Model", "BSP Parse took %d milliseconds.\n", time_elapsed));
 
 	if (total_verts < 1) {
 		return;
@@ -2392,7 +2359,7 @@ void interp_configure_vertex_buffers(polymodel *pm, int mn)
 			memcpy( (model_list->tsb) + model_list->n_verts, polygon_list[i].tsb, sizeof(tsb_t) * polygon_list[i].n_verts );
 		}
 
-		if ( GLSL_version >= 130 ) {
+		if ( GLSL_version >= 150 ) {
 			memcpy( (model_list->submodels) + model_list->n_verts, polygon_list[i].submodels, sizeof(int) * polygon_list[i].n_verts );
 		}
 
@@ -2412,7 +2379,7 @@ void interp_configure_vertex_buffers(polymodel *pm, int mn)
 	}
 
 	if ( model_list->submodels != NULL ) {
-		Assert( GLSL_version >= 130 );
+		Assert( GLSL_version >= 150 );
 		vertex_flags |= VB_FLAG_MODEL_ID;
 	}
 
@@ -2444,7 +2411,7 @@ void interp_configure_vertex_buffers(polymodel *pm, int mn)
 		model->buffer.tex_buf.push_back( new_buffer );
 	}
 
-	bool rval = gr_config_buffer(pm->vertex_buffer_id, &model->buffer, false);
+	bool rval = model_interp_config_buffer(&pm->vert_source, &model->buffer, false);
 
 	if ( !rval ) {
 		Error( LOCATION, "Unable to configure vertex buffer for '%s'\n", pm->filename );
@@ -2457,7 +2424,7 @@ void interp_copy_index_buffer(vertex_buffer *src, vertex_buffer *dest, size_t *i
 	size_t src_buff_size;
 	buffer_data *src_buffer;
 	buffer_data *dest_buffer;
-	auto vert_offset = src->vertex_offset / src->stride; // assuming all submodels crunched into this index buffer have the same stride
+	size_t vert_offset = src->vertex_num_offset; // assuming all submodels crunched into this index buffer have the same stride
 	//int vert_offset = 0;
 
 	for ( i = 0; i < dest->tex_buf.size(); ++i ) {
@@ -2492,6 +2459,7 @@ void interp_fill_detail_index_buffer(SCP_vector<int> &submodel_list, polymodel *
 	}
 
 	buffer->vertex_offset = 0;
+	buffer->vertex_num_offset = 0;
 	buffer->model_list = new(std::nothrow) poly_list;
 
 	int num_buffers;
@@ -2565,15 +2533,13 @@ void interp_create_detail_index_buffer(polymodel *pm, int detail_num)
 	}
 
 	interp_fill_detail_index_buffer(submodel_list, pm, &pm->detail_buffers[detail_num]);
-	//interp_fill_detail_index_buffer(submodel_list, pm, &pm->trans_buff[detail_num]);
 	
 	// check if anything was even put into this buffer
 	if ( pm->detail_buffers[detail_num].tex_buf.size() < 1 ) {
 		return;
 	} 
 
-	gr_config_buffer(pm->vertex_buffer_id, &pm->detail_buffers[detail_num], true);
-	//gr_config_buffer(pm->vertex_buffer_id, &pm->trans_buff[detail_num], true);
+	model_interp_config_buffer(&pm->vert_source, &pm->detail_buffers[detail_num], true);
 }
 
 void interp_create_transparency_index_buffer(polymodel *pm, int mn)
@@ -2586,6 +2552,7 @@ void interp_create_transparency_index_buffer(polymodel *pm, int mn)
 
 	trans_buffer->model_list = new(std::nothrow) poly_list;
 	trans_buffer->vertex_offset = pm->submodel[mn].buffer.vertex_offset;
+	trans_buffer->vertex_num_offset = pm->submodel[mn].buffer.vertex_num_offset;
 	trans_buffer->stride = pm->submodel[mn].buffer.stride;
 	trans_buffer->flags = pm->submodel[mn].buffer.flags;
 
@@ -2680,7 +2647,57 @@ void interp_create_transparency_index_buffer(polymodel *pm, int mn)
 	}
 
 	if ( trans_buffer->flags & VB_FLAG_TRANS ) {
-		gr_config_buffer(pm->vertex_buffer_id, trans_buffer, true);
+		model_interp_config_buffer(&pm->vert_source, trans_buffer, true);
+	}
+}
+
+void model_interp_process_shield_mesh(polymodel * pm)
+{
+	SCP_vector<vec3d> buffer;
+
+	if ( pm->shield.nverts <= 0 ) {
+		return;
+	}
+
+	int n_verts = 0;
+	
+	for ( int i = 0; i < pm->shield.ntris; i++ ) {
+		shield_tri *tri = &pm->shield.tris[i];
+
+		vec3d a = pm->shield.verts[tri->verts[0]].pos;
+		vec3d b = pm->shield.verts[tri->verts[1]].pos;
+		vec3d c = pm->shield.verts[tri->verts[2]].pos;
+
+		// recalculate triangle normals to solve some issues regarding triangle collision
+		vec3d b_a;
+		vec3d c_a;
+
+		vm_vec_sub(&b_a, &b, &a);
+		vm_vec_sub(&c_a, &c, &a);
+		vm_vec_cross(&tri->norm, &b_a, &c_a);
+		vm_vec_normalize_safe(&tri->norm);
+
+		buffer.push_back(a);
+		buffer.push_back(tri->norm);
+
+		buffer.push_back(b);
+		buffer.push_back(tri->norm);
+
+		buffer.push_back(c);
+		buffer.push_back(tri->norm);
+
+		n_verts += 3;
+	}
+	
+	if ( buffer.size() > 0 ) {
+		pm->shield.buffer_id = gr_create_vertex_buffer(true);
+		pm->shield.buffer_n_verts = n_verts;
+		gr_update_buffer_data(pm->shield.buffer_id, buffer.size() * sizeof(vec3d), &buffer[0]);
+
+		pm->shield.layout.add_vertex_component(vertex_format_data::POSITION3, sizeof(vec3d) * 2, 0);
+		pm->shield.layout.add_vertex_component(vertex_format_data::NORMAL, sizeof(vec3d) * 2, sizeof(vec3d));
+	} else {
+		pm->shield.buffer_id = -1;
 	}
 }
 
@@ -2820,32 +2837,6 @@ bool model_get_team_color( team_color *clr, const SCP_string &team, const SCP_st
 		} else
 			return false;
 	}
-}
-
-// temporary until we can unify the global Interp_* variables into the interp_data struct
-void model_interp_set_team_color(const SCP_string &team, const SCP_string &secondaryteam, fix timestamp, int fadetime)
-{
-	Interp_team_color_set = model_get_team_color(&Interp_team_color, team, secondaryteam, timestamp, fadetime);
-}
-
-// temporary until we can unify the global Interp_* variables into the interp_data struct
-void model_interp_set_clip_plane(vec3d* pos, vec3d* normal)
-{
-	if ( pos == NULL || normal == NULL ) {
-		Interp_clip_plane = false;
-		return;
-	}
-
-	Interp_clip_normal = *normal;
-	Interp_clip_pos = *pos;
-	Interp_clip_plane = true;
-}
-
-// temporary until we can unify the global Interp_* variables into the interp_data struct
-void model_interp_set_animated_effect_and_timer(int effect_num, float effect_timer)
-{
-	Interp_animated_effect = effect_num;
-	Interp_animated_timer = effect_timer;
 }
 
 //********************-----CLASS: texture_info-----********************//

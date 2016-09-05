@@ -1,0 +1,7 @@
+$Entry:
+$Name: XSTR("Foo name", 3000)
+$Anim: Foo anim
+$AlwaysInTechRoom: 1
+$Description:
+XSTR("Foo desc", 3001)
+$end_multi_text

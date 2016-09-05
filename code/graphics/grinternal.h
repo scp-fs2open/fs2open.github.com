@@ -13,7 +13,6 @@
 
 #include "globalincs/globals.h" // just in case pstypes.h messed up
 #include "globalincs/pstypes.h" // IAM_64BIT
-#include "graphics/2d.h"
 #include "graphics/font.h"
 
 extern ubyte Gr_original_palette[768];		// The palette 
@@ -52,13 +51,6 @@ extern int Gr_gamma_int;
 #define TCACHE_TYPE_CUBEMAP					5
 
 #define NEBULA_COLORS 20
-
-typedef enum gr_texture_source {
-	TEXTURE_SOURCE_NONE,
-	TEXTURE_SOURCE_DECAL,
-	TEXTURE_SOURCE_NO_FILTERING,
-	TEXTURE_SOURCE_MODULATE4X
-} gr_texture_source;
 
 typedef enum gr_alpha_blend {
 	ALPHA_BLEND_NONE,					// 1*SrcPixel + 0*DestPixel

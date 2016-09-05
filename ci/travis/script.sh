@@ -8,7 +8,7 @@ if [ "$TRAVIS_OS_NAME" = "linux" ]; then
     ninja all
 
     valgrind --leak-check=full --error-exitcode=1 --gen-suppressions=all \
-        --suppressions="$TRAVIS_BUILD_DIR/ci/travis/valgrind.supp" ./bin/unittests
+        --suppressions="$TRAVIS_BUILD_DIR/ci/travis/valgrind.supp" ./bin/unittests --gtest_shuffle
 elif [ "$TRAVIS_OS_NAME" = "osx" ]; then
     cmake --build . --config "$CONFIGURATION" | tee build.log | xcpretty -f `xcpretty-travis-formatter`
     XCODE_RET=${PIPESTATUS[0]}

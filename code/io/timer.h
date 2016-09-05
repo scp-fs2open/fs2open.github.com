@@ -43,8 +43,7 @@ extern fix timer_get_fixed_seconds();		// Rolls about every 9 hours...
 extern fix timer_get_fixed_secondsX();		// Assume interrupts already disabled
 extern fix timer_get_approx_seconds();		// Returns time since program started... accurate to 1/120th of a second
 extern int timer_get_milliseconds();		//
-extern int timer_get_microseconds();
-extern std::uint64_t timer_get_high_res_microseconds();
+extern std::uint64_t timer_get_microseconds();
 extern int timer_get_seconds();				// seconds since program started... not accurate, but good for long
 											//     runtimes with second-based timeouts
 
@@ -54,10 +53,6 @@ extern int timer_get_seconds();				// seconds since program started... not accur
 //               T I M E S T A M P   F U N C T I O N S
 //=================================================================
 //=================================================================
-
-// NEVER USE THIS DIRECTLY!!! IF YOU REALLY NEED IT, THEN:
-// call timestamp(0) and use TIMESTAMP_FREQUENCY to scale it.
-extern int timestamp_ticker;	
 
 // You shouldn't use the output of timestamp() directly, 
 // but if you have to, use the TIMESTAMP_FREQUENCY to 
@@ -69,7 +64,16 @@ extern int timestamp_ticker;
 extern void timestamp_reset();
 
 // Call this once every frame with the frametime.
-extern void timestamp_inc(int frametime_ms);
+extern void timestamp_inc(fix frametime);
+
+/**
+ * @brief Sets the value of the internal timestamp ticker
+ *
+ * @warning This function may only be used in special cases! Only use if you are absolutely certain that you need it.
+ *
+ * @param value The new value of the ticker
+ */
+void timestamp_set_value(int value);
 
 // To do timing, call this with the interval you
 // want to check.  Then, pass this to timestamp_elapsed
@@ -91,7 +95,9 @@ int timestamp();
 
 // gets a timestamp randomly between a and b milliseconds in
 // the future.
-#define timestamp_rand(a,b) timestamp((myrand()%((b)-(a)+1))+(a))
+inline int timestamp_rand(int a, int b) {
+	return timestamp(myrand() % (b - a + 1) + a);
+}
 
 // Example that makes a ship fire in 1/2 second
 
@@ -101,9 +107,11 @@ int timestamp();
 // if (fire && timestamp_elapsed(ship->next_fire))
 //   fire_laser();
 
-#define timestamp_elapsed( stamp ) ( (stamp!=0) ? (timestamp_ticker >= (stamp) ? 1 : 0) : 0 )
+bool timestamp_elapsed( int stamp );
 
-#define timestamp_valid(stamp) ((stamp==0) ? 0 : 1 )
+inline bool timestamp_valid(int stamp) {
+	return stamp != 0;
+}
 
 //	Returns millliseconds until timestamp will elapse.
 int timestamp_until(int stamp);
@@ -113,7 +121,7 @@ int timestamp_until(int stamp);
 int timestamp_has_time_elapsed(int stamp, int time);
 
 // safer version of timestamp
-#define timestamp_elapsed_safe(_a, _b)		( (_a != 0) ? (((timestamp_ticker >= (_a)) || (timestamp_ticker < (_a - (_b + 100)))) ? 1 : 0) : 1 )
+bool timestamp_elapsed_safe(int a, int b);
 
 
 #endif

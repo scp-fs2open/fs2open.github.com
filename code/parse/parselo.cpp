@@ -37,7 +37,6 @@ char		Current_filename[MAX_PATH_LEN];
 char		Current_filename_save[MAX_PATH_LEN];
 char		Current_filename_sub[MAX_PATH_LEN];	//Last attempted file to load, don't know if ex or not.
 char		Error_str[ERROR_LENGTH];
-int		my_errno;
 int		Warning_count, Error_count;
 int		Warning_count_save = 0, Error_count_save = 0;
 int		fred_parse_flag = 0;
@@ -51,8 +50,8 @@ const char	*token_found;
 static int Parsing_paused = 0;
 
 // text allocation stuff
-void allocate_mission_text(int size);
-static int Mission_text_size = 0;
+void allocate_mission_text(size_t size);
+static size_t Mission_text_size = 0;
 
 
 //	Return true if this character is white space, else false.
@@ -1983,7 +1982,7 @@ void read_file_text_from_default(const default_file& file, char *processed_text,
 	}
 
 	// make sure to do this before anything else
-	allocate_mission_text(static_cast<int>(file.size + 1));
+	allocate_mission_text(file.size + 1);
 
 	// if we have no raw buffer, set it as the default raw text area
 	if (raw_text == NULL)
@@ -2045,13 +2044,19 @@ void stop_parse()
 	Mission_text_size = 0;
 }
 
-void allocate_mission_text(int size)
+void allocate_mission_text(size_t size)
 {
 	Assert( size > 0 );
 
-	if (size <= Mission_text_size)
-		return;
+	// Make sure that there is space for the terminating null character
+	size += 1;
 
+	if (size <= Mission_text_size) {
+		// Make sure that a new parsing session does not use uninitialized data.
+		memset( Mission_text, 0, sizeof(char) * Mission_text_size );
+		memset( Mission_text_raw, 0, sizeof(char) * Mission_text_size);
+		return;
+	}
 
 	static ubyte parse_atexit = 0;
 
@@ -2108,7 +2113,7 @@ void read_raw_file_text(const char *filename, int mode, char *raw_text)
 	}
 
 	// allocate, or reallocate, memory for Mission_text and Mission_text_raw based on size we need now
-	allocate_mission_text( file_len + 1 );
+	allocate_mission_text((size_t) (file_len + 1));
 
 	// NOTE: this always has to be done *after* the allocate_mission_text() call!!
 	if (raw_text == NULL)
@@ -2246,69 +2251,58 @@ void debug_show_mission_text()
 		printf("%c", ch);
 }
 
-float atof2()
+static bool atof2(float *out)
 {
-	char	ch;
-
-	my_errno = 0;
 	ignore_white_space();
-
-	ch = *Mp;
+	char ch = *Mp;
 
 	if ((ch != '.') && (ch != '-') && (ch != '+') && ((ch < '0') || (ch > '9'))) {
 		error_display(1, "Expecting float, found [%.32s].\n", next_tokens());
-		my_errno = 1;
-		return 0.0f;
-	} else
-		return (float)atof(Mp);
+		*out = 0.0f;
+		return false;
+	}
 
+	*out = (float) atof(Mp);
+	return true;
 }
 
-int atoi2()
+static bool atoi2(int *out)
 {
-	char	ch;
-
-	my_errno = 0;
-
 	ignore_white_space();
-
-	ch = *Mp;
+	char ch = *Mp;
 
 	if ((ch != '-') && (ch != '+') && ((ch < '0') || (ch > '9'))) {
 		error_display(1, "Expecting int, found [%.32s].\n", next_tokens());
-		my_errno = 1;
-		return 0;
-	} else
-		return atoi(Mp);
+		*out = 0;
+		return false;
+	}
 
+	*out = atoi(Mp);
+	return true;
 }
 
-long atol2()
+bool atol2(long *out)
 {
-    char	ch;
-
-    my_errno = 0;
-
     ignore_white_space();
-
-    ch = *Mp;
+    char ch = *Mp;
 
     if ((ch != '-') && (ch != '+') && ((ch < '0') || (ch > '9'))) {
         error_display(1, "Expecting long, found [%.32s].\n", next_tokens());
-        my_errno = 1;
-        return 0;
+        *out = 0;
+        return false;
     }
-    else
-        return atol(Mp);
+
+    *out = atol(Mp);
+    return true;
 }
 
 //	Stuff a floating point value pointed at by Mp.
 //	Advances past float characters.
 void stuff_float(float *f)
 {
-	*f = atof2();
+	bool success = atof2(f);
 
-	if (my_errno)
+	if (!success)
 		skip_token();
 	else
 		Mp += strspn(Mp, "+-0123456789.");
@@ -2349,9 +2343,9 @@ int stuff_float_optional(float *f, bool raw)
 //	Advances past integer characters.
 void stuff_int(int *i)
 {
-	*i = atoi2();
+	bool success = atoi2(i);
 
-	if (my_errno)
+	if (!success)
 		skip_token();
 	else
 		Mp += strspn(Mp, "+-0123456789");
@@ -2622,13 +2616,12 @@ int stuff_bool_list(bool *blp, int max_bools)
 //	Advances past integer characters.
 void stuff_ubyte(ubyte *i)
 {
-	int	temp;
-
-	temp = atoi2();
+	int temp;
+	bool success = atoi2(&temp);
 
 	*i = (ubyte)temp;
 
-	if (my_errno)
+	if (!success)
 		skip_token();
 	else
 		Mp += strspn(Mp, "+-0123456789");

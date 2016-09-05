@@ -85,6 +85,7 @@ void interp_configure_vertex_buffers(polymodel*, int);
 void interp_pack_vertex_buffers(polymodel* pm, int mn);
 void interp_create_detail_index_buffer(polymodel *pm, int detail);
 void interp_create_transparency_index_buffer(polymodel *pm, int detail_num);
+void model_interp_process_shield_mesh(polymodel * pm);
 
 void model_set_subsys_path_nums(polymodel *pm, int n_subsystems, model_subsystem *subsystems);
 void model_set_bay_path_nums(polymodel *pm);
@@ -281,9 +282,7 @@ void model_unload(int modelnum, int force)
 
 		delete[] pm->submodel;
 	}
-
-	gr_destroy_buffer(pm->vertex_buffer_id);
-
+	
 	if ( pm->xc ) {
 		vm_free(pm->xc);
 	}
@@ -299,6 +298,35 @@ void model_unload(int modelnum, int force)
 	if ( pm->shield_collision_tree ) {
 		vm_free(pm->shield_collision_tree);
 	}
+
+	if ( pm->shield.buffer_id > -1 ) {
+		gr_delete_buffer(pm->shield.buffer_id);
+		pm->shield.buffer_id = -1;
+		pm->shield.buffer_n_verts = 0;
+	}
+
+	if ( pm->vert_source.Vbuffer_handle > -1 ) {
+		gr_delete_buffer(pm->vert_source.Vbuffer_handle);
+		pm->vert_source.Vbuffer_handle = -1;
+	}
+
+	if ( pm->vert_source.Vertex_list != NULL ) {
+		vm_free(pm->vert_source.Vertex_list);
+		pm->vert_source.Vertex_list = NULL;
+	}
+
+	if ( pm->vert_source.Ibuffer_handle > -1 ) {
+		gr_delete_buffer(pm->vert_source.Ibuffer_handle);
+		pm->vert_source.Ibuffer_handle = -1;
+	}
+
+	if ( pm->vert_source.Index_list != NULL ) {
+		vm_free(pm->vert_source.Index_list);
+		pm->vert_source.Index_list = NULL;
+	}
+
+	pm->vert_source.Vertex_list_size = 0;
+	pm->vert_source.Index_list_size = 0;
 
 	for (i = 0; i < MAX_MODEL_DETAIL_LEVELS; ++i) {
 		pm->detail_buffers[i].clear();
@@ -860,13 +888,6 @@ void create_vertex_buffer(polymodel *pm)
 
 	int i;
 
-	// initialize empty buffer
-	pm->vertex_buffer_id = gr_create_buffer();
-
-	if (pm->vertex_buffer_id < 0) {
-		Error(LOCATION, "Could not generate vertex buffer for '%s'!", pm->filename);
-	}
-
 	// determine the size and configuration of each buffer segment
 	for (i = 0; i < pm->n_models; i++) {
 		interp_configure_vertex_buffers(pm, i);
@@ -881,7 +902,7 @@ void create_vertex_buffer(polymodel *pm)
 
 	bool use_batched_rendering = true;
 
-	if ( GLSL_version >= 130 && !Cmdline_no_batching ) {
+	if ( GLSL_version >= 150 && !Cmdline_no_batching ) {
 		size_t stride = 0;
 
 		// figure out if the vertex stride of this entire model matches. if not, turn off batched rendering for this model
@@ -922,7 +943,7 @@ void create_vertex_buffer(polymodel *pm)
 				continue;
 			}
 
-			gr_pack_buffer(pm->vertex_buffer_id, &pm->detail_buffers[i]);
+			model_interp_pack_buffer(&pm->vert_source, &pm->detail_buffers[i]);
 			pm->detail_buffers[i].release();
 		}
 
@@ -930,7 +951,9 @@ void create_vertex_buffer(polymodel *pm)
 	}
 
 	// ... and then finalize buffer
-	gr_pack_buffer(pm->vertex_buffer_id, NULL);
+	model_interp_pack_buffer(&pm->vert_source, NULL);
+
+	model_interp_process_shield_mesh(pm);
 }
 
 // Goober5000
@@ -2574,19 +2597,17 @@ void model_load_texture(polymodel *pm, int i, char *file)
 	
 	gr_maybe_create_shader(SDR_TYPE_MODEL, SDR_FLAG_MODEL_SHADOW_MAP);
 
-	if(is_minimum_GLSL_version())
-		shader_flags |= SDR_FLAG_MODEL_CLIP;
+	shader_flags |= SDR_FLAG_MODEL_CLIP;
 
 	gr_maybe_create_shader(SDR_TYPE_MODEL, shader_flags | SDR_FLAG_MODEL_LIGHT | SDR_FLAG_MODEL_ANIMATED);
 	gr_maybe_create_shader(SDR_TYPE_MODEL, shader_flags | SDR_FLAG_MODEL_LIGHT | SDR_FLAG_MODEL_ANIMATED | SDR_FLAG_MODEL_FOG);
-	
-	if(is_minimum_GLSL_version())
-		shader_flags |= SDR_FLAG_MODEL_DEFERRED;
+
+	shader_flags |= SDR_FLAG_MODEL_DEFERRED;
 
 	gr_maybe_create_shader(SDR_TYPE_MODEL, shader_flags | SDR_FLAG_MODEL_LIGHT);
 	gr_maybe_create_shader(SDR_TYPE_MODEL, shader_flags | SDR_FLAG_MODEL_LIGHT | SDR_FLAG_MODEL_FOG);
 	
-	if( !Cmdline_no_batching && GLSL_version >= 130 ) {
+	if( !Cmdline_no_batching && GLSL_version >= 150 ) {
 		shader_flags &= ~SDR_FLAG_MODEL_DEFERRED;
 		shader_flags |= SDR_FLAG_MODEL_TRANSFORM;
 

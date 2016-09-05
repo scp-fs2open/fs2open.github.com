@@ -172,7 +172,6 @@ typedef struct vertex {
 	screen3d	screen;				// screen space position (sw == 1/z)
 	uv_pair		texture_position;	// texture position
 	ubyte		r, g, b, a;			// color.  Use b for darkening;
-	ubyte		spec_r, spec_g, spec_b, spec_a;	//specular highlights -Bobboau
 	ubyte		codes;				// what sides of view pyramid this point is on/off.  0 = Inside view pyramid.
 	ubyte		flags;				// Projection flags.  Indicates whether it is projected or not or if projection overflowed.
 	ubyte		pad[2];				// pad structure to be 4 byte aligned.
