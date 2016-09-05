@@ -551,7 +551,7 @@ void ShipGoalsDlg::initialize(ai_goal *goals, int ship)
 				m_data[item] = wpt->get_objnum() | TYPE_WAYPOINT;
 		}
 
-		if (flag & 0xa) {  // data is a ship class
+		if (flag & 0x10) {  // data is a ship class
 			for (i = 0; i < static_cast<int>(Ship_info.size()); i++) {
 				if (!stricmp(goalp[item].target_name, Ship_info[i].name)) {
 					m_data[item] = i | TYPE_SHIP_CLASS;
