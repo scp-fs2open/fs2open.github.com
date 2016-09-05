@@ -438,7 +438,7 @@ void ai_goal_purge_invalid_goals( ai_goal *aigp, ai_goal *goal_list, ai_info *ai
 			case AI_GOAL_IGNORE:
 			case AI_GOAL_IGNORE_NEW:
 				if ( purge_ai_mode & (AI_GOAL_DISABLE_SHIP | AI_GOAL_DISARM_SHIP | AI_GOAL_CHASE | AI_GOAL_CHASE_WING | AI_GOAL_CHASE_SHIP_CLASS | AI_GOAL_DESTROY_SUBSYSTEM) )
-					purge_goal->flags |= AIGF_PURGE;
+					purge_goal->flags.set(AI::Goal_Flags::Purge);
 				break;
 
 			// disarm/disable goals should remove attacks from certain ships types
@@ -464,7 +464,7 @@ void ai_goal_purge_invalid_goals( ai_goal *aigp, ai_goal *goal_list, ai_info *ai
 					// being disarmed/disabled
 					for ( j=0 ; j < (int)crippled_ships_type->ai_cripple_ignores.size(); j++) {
 						if (crippled_ships_type->ai_cripple_ignores[j] == ai_ship_type) {
-								purge_goal->flags.set(AI::Goal_Flags::Purge);
+							purge_goal->flags.set(AI::Goal_Flags::Purge);
 						}
 					}
 				}	
