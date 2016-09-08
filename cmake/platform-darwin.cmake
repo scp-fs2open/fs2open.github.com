@@ -9,3 +9,5 @@ if (NOT COCOA_LIBRARY)
 endif()
 
 target_link_libraries(platform INTERFACE ${COCOA_LIBRARY})
+
+set(PLATFORM_MAC TRUE)
