@@ -281,7 +281,6 @@ bool fred_init(os::GraphicsOperations* graphicsOps)
 	char palette_filename[1024];
 
 	SDL_SetMainReady();
-	memory::init();
 
 	srand( (unsigned) time(NULL) );
 	init_pending_messages();
