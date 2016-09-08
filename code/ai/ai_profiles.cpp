@@ -616,6 +616,9 @@ void ai_profile_t::reset()
         delay_bomb_arm_timer[i] = 0;
         chance_to_use_missiles_on_plr[i] = 0;
         player_autoaim_fov[i] = 0;
+    }
+
+    for (int i = 0; i <= MAX_DETAIL_LEVEL; ++i) {
         detail_distance_mult[i] = 0;
     }
 }
