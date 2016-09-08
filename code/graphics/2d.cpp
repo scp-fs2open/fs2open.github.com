@@ -1073,16 +1073,27 @@ bool gr_init(os::GraphicsOperations* graphicsOps, int d_mode, int d_width, int d
 	bm_init();
 	io::mouse::CursorManager::init();
 
-	// load the web pointer cursor bitmap
-	if (!running_unittests && Web_cursor == NULL) {
-		//if it still hasn't loaded then this usually means that the executable isn't in the same directory as the main fs2 install
-		if ( (Web_cursor = io::mouse::CursorManager::get()->loadCursor("cursorweb", true)) == NULL ) {
-			Error(LOCATION, "\nWeb cursor bitmap not found.  This is most likely due to one of three reasons:\n"
-				"    1) You're running FreeSpace Open from somewhere other than your FreeSpace 2 folder;\n"
-				"    2) You've somehow corrupted your FreeSpace 2 installation, e.g. by modifying or removing the retail VP files;\n"
-				"    3) You haven't installed FreeSpace 2 at all.  (Note that installing FreeSpace Open does NOT remove the need for a FreeSpace 2 installation.)\n"
-				"Number 1 can be fixed by simply moving the FreeSpace Open executable file to the FreeSpace 2 folder.  Numbers 2 and 3 can be fixed by installing or reinstalling FreeSpace 2.\n");
+	bool missing_installation = false;
+	if (!running_unittests && Web_cursor == nullptr) {
+		if (Is_standalone) {
+			// Cursors don't work in standalone mode, just check if the animation exists.
+			auto handle = bm_load_animation("cursorweb");
+			if (handle < 0) {
+				missing_installation = true;
+			} else {
+				bm_release(handle);
+			}
+		} else {
+			Web_cursor = io::mouse::CursorManager::get()->loadCursor("cursorweb", true);
+			missing_installation = Web_cursor == nullptr;
 		}
+	}
+	if (missing_installation) {
+		Error(LOCATION, "\nWeb cursor bitmap not found.  This is most likely due to one of three reasons:\n"
+			"    1) You're running FreeSpace Open from somewhere other than your FreeSpace 2 folder;\n"
+			"    2) You've somehow corrupted your FreeSpace 2 installation, e.g. by modifying or removing the retail VP files;\n"
+			"    3) You haven't installed FreeSpace 2 at all.  (Note that installing FreeSpace Open does NOT remove the need for a FreeSpace 2 installation.)\n"
+			"Number 1 can be fixed by simply moving the FreeSpace Open executable file to the FreeSpace 2 folder.  Numbers 2 and 3 can be fixed by installing or reinstalling FreeSpace 2.\n");
 	}
 
 	mprintf(("GRAPHICS: Initializing default colors...\n"));
