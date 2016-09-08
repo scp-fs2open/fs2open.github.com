@@ -1199,6 +1199,8 @@ void hud_target_common(int team_mask, int next_flag)
 				if( jnp->GetSCPObject() == A )
 					break;
 			}
+
+			Assertion(jnp != Jump_nodes.end(), "Failed to find jump node with object index %d; trace out and fix!\n", OBJ_INDEX(A));
 			
 			if( jnp->IsHidden() )
 				continue;
@@ -1214,12 +1216,12 @@ void hud_target_common(int team_mask, int next_flag)
 				continue;
 			}
 
-			if ( A == Player_obj || (should_be_ignored(shipp)) ){
+			if ( A == Player_obj ) {
 				continue;
 			}
 
 			// if we've reached here, it is a valid next target
-			if ( Player_ai->target_objnum != A-Objects ) {
+			if ( Player_ai->target_objnum != OBJ_INDEX(A) ) {
 				target_found = TRUE;
 				set_target_objnum( Player_ai, OBJ_INDEX(A) );
 				hud_shield_hit_reset(A);
