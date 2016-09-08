@@ -423,7 +423,7 @@ void main_hall_init(const SCP_string &main_hall_name)
 	if (Main_hall_defines.size() == 0) {
 		Error(LOCATION, "No main halls were loaded to initialize.");
 	} else if (main_hall_name == "") {
-		Warning(LOCATION, "main_hall_init() was passed a blank main hall name; loading first available main hall.");
+		// we were passed a blank main hall name, so load the first available main hall
 		main_hall_get_name(main_hall_to_load, 0);
 	} else if (main_hall_get_pointer(main_hall_name) == NULL) {
 		Warning(LOCATION, "Tried to load a main hall called '%s', but it does not exist; loading first available main hall.", main_hall_name.c_str());
