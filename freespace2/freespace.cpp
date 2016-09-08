@@ -1976,7 +1976,9 @@ void game_init()
 
 	// Load the default cursor and enable it
 	io::mouse::Cursor* cursor = io::mouse::CursorManager::get()->loadCursor("cursor", true);
-	io::mouse::CursorManager::get()->setCurrentCursor(cursor);
+	if (cursor) {
+		io::mouse::CursorManager::get()->setCurrentCursor(cursor);
+	}
 
 	if(!Cmdline_reparse_mainhall)
 	{
