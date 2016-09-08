@@ -4412,7 +4412,7 @@ int parse_ship_values(ship_info* sip, const bool is_template, const bool first_t
                     sp->flags = tmp_flags;
                 }
 
-                if (errors.size() > 0) {
+                if (!errors.empty()) {
                     for (auto const &error : errors) {
                         Warning(LOCATION, "Bogus string in subsystem flags: %s\n", error.c_str());
                     }
@@ -6926,7 +6926,7 @@ void ship_init_cockpit_displays(ship *shipp)
 	}
 
 	// check if we even have cockpit displays
-	if ( sip->displays.size() <= 0 ) {
+	if ( sip->displays.empty() ) {
 		return;
 	}
 
@@ -16300,12 +16300,12 @@ void ship_page_in()
 
 		// Page in the shockwave stuff. -C
 		shockwave_create_info_load(&sip->shockwave);
-		if(sip->explosion_bitmap_anims.size() > 0) {
+		if(!sip->explosion_bitmap_anims.empty()) {
 			int num_fireballs = (int)sip->explosion_bitmap_anims.size();
 			for(j = 0; j < num_fireballs; j++){
 				fireball_used[sip->explosion_bitmap_anims[j]] = 1;
 			}
-		} else if(sip->class_type >= 0 && Ship_types[sip->class_type].explosion_bitmap_anims.size() > 0) { 
+		} else if(sip->class_type >= 0 && !Ship_types[sip->class_type].explosion_bitmap_anims.empty()) { 
 			int num_fireballs = (int)Ship_types[sip->class_type].explosion_bitmap_anims.size();
 			for(j = 0; j < num_fireballs; j++){
 				fireball_used[Ship_types[sip->class_type].explosion_bitmap_anims[j]] = 1;

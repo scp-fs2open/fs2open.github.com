@@ -374,7 +374,7 @@ ObjectClassInfoEntry *GUIScreen::GetObjectClassInfo(GUIObject *cgp)
 		}
 
 		for (i = 0; i < len; i++) {
-			if ( cgp->Parent->InfoEntry->Subentries[i].Name.size() == 0 
+			if ( cgp->Parent->InfoEntry->Subentries[i].Name.empty()
 			&& cgp->Parent->InfoEntry->Subentries[i].Object == cgp->Type ) {
 				return &cgp->Parent->InfoEntry->Subentries[i];
 			}
@@ -388,7 +388,7 @@ ObjectClassInfoEntry *GUIScreen::GetObjectClassInfo(GUIObject *cgp)
 		}
 
 		for (i = 0; i < len; i++) {
-			if( ScreenClassInfo->Entries[i].Name.size() == 0 && 
+			if( ScreenClassInfo->Entries[i].Name.empty() && 
 				ScreenClassInfo->Entries[i].Object == cgp->Type ) {
 				return &ScreenClassInfo->Entries[i];
 			}
@@ -407,7 +407,7 @@ ObjectClassInfoEntry *GUIScreen::GetObjectClassInfo(GUIObject *cgp)
 		}
 
 		for (i = 0; i < len; i++) {
-			if( OwnerSystem->GetClassInfo()->Entries[i].Name.size() == 0 && 
+			if( OwnerSystem->GetClassInfo()->Entries[i].Name.empty() && 
 				OwnerSystem->GetClassInfo()->Entries[i].Object == cgp->Type) {
 				return &OwnerSystem->GetClassInfo()->Entries[i];
 			}
@@ -1231,7 +1231,7 @@ int Window::DoRefreshSize()
 		}
 		
 		int caption_min_size;
-		if (Caption.size() > 0) {
+		if (!Caption.empty()) {
 			gr_get_string_size(&w, &h, Caption.c_str());
 			caption_min_size = w + close_w + hide_w + 5;
 		} else {
@@ -1242,7 +1242,7 @@ int Window::DoRefreshSize()
 				Coords[2] = Coords[0] + caption_min_size + BorderSizes[0] + BorderSizes[2];
 		}
 
-		if (Caption.size() > 0) {
+		if (!Caption.empty()) {
 			if (IMG_HANDLE_IS_VALID(GetCIEImageHandle(WCI_CAPTION))) {
 				int cw, ch;
 				CaptionCoords[0] = Coords[0] + BorderSizes[0];

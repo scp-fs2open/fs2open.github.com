@@ -919,7 +919,7 @@ int control_config_do_reset()
 	bool cycling_presets = false;
 	
 	// If there are presets, then we'll cycle to the next preset and reset to that
-	if (Control_config_presets.size() >= 1) {
+	if (!Control_config_presets.empty()) {
 		cycling_presets = true;
 		
 		if (++Defaults_cycle_pos >= Control_config_presets.size())

@@ -405,7 +405,7 @@ void DumpStats::get_object_stats(CString &buffer)
 		buffer += temp;
 	}
 
-	if (Jump_nodes.size() > 0) {
+	if (!Jump_nodes.empty()) {
 		temp.Format("\ttotal_jumpnodes: " SIZE_T_ARG "\r\n", Jump_nodes.size());
 		buffer += temp;
 	}

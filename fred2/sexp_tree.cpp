@@ -2797,7 +2797,7 @@ int sexp_tree::query_default_argument_available(int op, int i)
 			return (sexp_variable_count() > 0) ? 1 : 0;
 
 		case OPF_SSM_CLASS:
-			return (Ssm_info.size() > 0) ? 1 : 0;
+			return Ssm_info.empty() ? 0 : 1;
 
 		case OPF_MISSION_MOOD:
 			return Builtin_moods.empty() ? 0 : 1;
