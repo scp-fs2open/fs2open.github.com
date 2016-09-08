@@ -345,7 +345,7 @@ void parse_ai_profiles_tbl(const char *filename)
 				}
 
 				if (optional_string("$Detail Distance Multiplier:"))
-					parse_float_list(profile->detail_distance_mult, NUM_SKILL_LEVELS);
+					parse_float_list(profile->detail_distance_mult, MAX_DETAIL_LEVEL + 1);
 
 				set_flag(profile, "$big ships can attack beam turrets on untargeted ships:", AI::Profile_Flags::Big_ships_can_attack_beam_turrets_on_untargeted_ships);
 
