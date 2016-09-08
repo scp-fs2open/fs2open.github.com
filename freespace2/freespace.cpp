@@ -1873,7 +1873,10 @@ void game_init()
 // SOUND INIT END
 /////////////////////////////
 
-	sdlGraphicsOperations.reset(new SDLGraphicsOperations());
+	if (!Is_standalone) {
+		// Standalone mode doesn't require graphics operations
+		sdlGraphicsOperations.reset(new SDLGraphicsOperations());
+	}
 	if ( gr_init(sdlGraphicsOperations.get()) == false ) {
 		os::dialogs::Message(os::dialogs::MESSAGEBOX_ERROR, "Error intializing graphics!");
 		exit(1);
