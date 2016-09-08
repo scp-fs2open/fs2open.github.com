@@ -66,7 +66,6 @@ CFILE *ss_fp = NULL;			// file pointer used to dump subsystem information
 char  model_filename[_MAX_PATH];		// temp used to store filename
 char	debug_name[_MAX_PATH];
 int ss_warning_shown = 0;		// have we shown the warning dialog concerning the subsystems?
-int Model_ram = 0;			// How much RAM the models use total
 #endif
 
 static uint Global_checksum = 0;
@@ -193,10 +192,6 @@ void model_unload(int modelnum, int force)
 	// we want to call bm_release() from here rather than just bm_unload() in order
 	// to get the slots back so we set "release" to true.
 	model_page_out_textures(pm->id, true);
-
-#ifndef NDEBUG
-	Model_ram -= pm->ram_used;
-#endif
 
 	safe_kill(pm->ship_bay);
 	
@@ -443,10 +438,6 @@ void model_init()
 		Int3();		// Model_init shouldn't be called twice!
 		return;
 	}
-
-#ifndef NDEBUG
-	Model_ram = 0;
-#endif
 
 	for (i=0;i<MAX_POLYGON_MODELS;i++) {
 		Polygon_models[i] = NULL;
@@ -2636,10 +2627,6 @@ int model_load(char *filename, int n_subsystems, model_subsystem *subsystems, in
 	if ( !model_initted )
 		model_init();
 
-#ifndef NDEBUG
-	size_t ram_before = memory::get_used_memory();
-#endif
-
 	num = -1;
 
 	for (i=0; i< MAX_POLYGON_MODELS; i++)	{
@@ -2895,13 +2882,6 @@ int model_load(char *filename, int n_subsystems, model_subsystem *subsystems, in
 			}		
 		}
 	}
-
-#ifndef NDEBUG
-	size_t ram_after = memory::get_used_memory();
-
-	pm->ram_used = static_cast<int>(ram_after - ram_before);
-	Model_ram += pm->ram_used;
-#endif
 
 	// Goober5000 - originally done in ship_create for no apparent reason
 	model_set_subsys_path_nums(pm, n_subsystems, subsystems);

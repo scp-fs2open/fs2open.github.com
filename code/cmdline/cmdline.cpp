@@ -470,7 +470,6 @@ cmdline_parm dis_weapons("-dis_weapons", NULL, AT_NONE);		// Cmdline_dis_weapons
 cmdline_parm noparseerrors_arg("-noparseerrors", NULL, AT_NONE);	// Cmdline_noparseerrors  -- turns off parsing errors -C
 cmdline_parm extra_warn_arg("-extra_warn", "Enable 'extra' warnings", AT_NONE);	// Cmdline_extra_warn
 cmdline_parm fps_arg("-fps", NULL, AT_NONE);					// Cmdline_show_fps
-cmdline_parm show_mem_usage_arg("-show_mem_usage", NULL, AT_NONE);	// Cmdline_show_mem_usage
 cmdline_parm pos_arg("-pos", NULL, AT_NONE);					// Cmdline_show_pos
 cmdline_parm stats_arg("-stats", NULL, AT_NONE);				// Cmdline_show_stats
 cmdline_parm save_render_targets_arg("-save_render_target", NULL, AT_NONE);	// Cmdline_save_render_targets
@@ -499,7 +498,6 @@ int Cmdline_noparseerrors = 0;
 int Cmdline_nowarn = 0; // turn warnings off in FRED
 #endif
 int Cmdline_extra_warn = 0;
-int Cmdline_show_mem_usage = 0;
 int Cmdline_show_pos = 0;
 int Cmdline_show_stats = 0;
 int Cmdline_save_render_targets = 0;
@@ -1657,9 +1655,6 @@ bool SetCmdlineParams()
 
 	if ( weapon_choice_3d_arg.found() )
 		Cmdline_weapon_choice_3d = 1;
-
-	if ( show_mem_usage_arg.found() )
-		Cmdline_show_mem_usage = 1;
 
 	if (ingamejoin_arg.found() )
 		Cmdline_ingamejoin = 1;

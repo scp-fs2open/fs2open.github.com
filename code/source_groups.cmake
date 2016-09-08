@@ -268,26 +268,8 @@ ENDIF(WIN32)
 set(file_root_globalincs_memory
 	globalincs/memory/memory.h
 	globalincs/memory/memory.cpp
-	globalincs/memory/newdelete.cpp
-	globalincs/memory/debug.h
-	globalincs/memory/debug.cpp
-	globalincs/memory/release.h
 	globalincs/memory/utils.h
 )
-
-# Add conditions for compiler specialization
-if (MSVC)
-set(file_root_globalincs_memory
-	${file_root_globalincs_memory}
-	globalincs/memory/debug_msvc.cpp
-)
-else()
-	# If no compiler matches, use the default version
-	set(file_root_globalincs_memory
-		${file_root_globalincs_memory}
-		globalincs/memory/debug_generic.cpp
-	)
-endif()
 
 set(file_root_globalincs_toolchain
 	globalincs/toolchain/clang.h
