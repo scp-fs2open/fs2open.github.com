@@ -5226,6 +5226,9 @@ void ship_init()
 {
 	if ( !ships_inited )
 	{
+		//Initialize Ignore_List for targeting
+		set_default_ignore_list();
+
 		//Parse main TBL first
 		if (cf_exists_full("objecttypes.tbl", CF_TYPE_TABLES))
 			parse_shiptype_tbl("objecttypes.tbl");
