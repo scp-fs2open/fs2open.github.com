@@ -14,8 +14,8 @@ if ([System.Convert]::ToBoolean($env:DeployBuild)) {
     	}
 	}
 
-    7z a "$($env:PackageName)-builds-Win32.zip" "$env:APPVEYOR_BUILD_FOLDER/../install/*"
-    Push-AppveyorArtifact "$($env:PackageName)-builds-Win32.zip"
+    7z a "$($env:PackageName)-builds-Win64.zip" "$env:APPVEYOR_BUILD_FOLDER/../install/*"
+    Push-AppveyorArtifact "$($env:PackageName)-builds-Win64.zip"
 } else {
     cmake --build . --config "$Env:CONFIGURATION" -- /verbosity:minimal
 
