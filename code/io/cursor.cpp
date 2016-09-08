@@ -38,7 +38,7 @@ namespace
 #endif
 
 		SDL_Surface* bitmapSurface = SDL_CreateRGBSurface(0, w, h, 32, rmask, gmask, bmask, amask);
-		if (SDL_LockSurface(bitmapSurface) <= 0) {
+		if (SDL_LockSurface(bitmapSurface) < 0) {
 			return nullptr;
 		}
 		bitmap* bmp = bm_lock(bitmapNum, 32, BMP_TEX_XPARENT);
