@@ -11,6 +11,7 @@
 
 #include "cmdline/cmdline.h"
 #include "globalincs/systemvars.h"
+#include "globalincs/tracepoints.h"
 #include "graphics/2d.h"
 #include "io/timer.h"
 #include "render/3d.h" 
@@ -292,7 +293,7 @@ void trail_render( trail * trailp )
 	// there should always be three verts in the last section and 2 everyware else, therefore there should always be an odd number of verts
 	if ( (nv % 2) != 1 )
 		Warning( LOCATION, "even number of verts in trail render\n" );
-
+	tracepoint(fs2open, trail_render_draw__begin);
 	profile_begin("Trail Draw");
 	//gr_set_bitmap( ti->texture.bitmap_id, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.0f );
 	//gr_render(nv, Trail_v_list, TMAP_FLAG_TEXTURED | TMAP_FLAG_ALPHA | TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB | TMAP_HTL_3D_UNLIT | TMAP_FLAG_TRISTRIP);
@@ -302,6 +303,7 @@ void trail_render( trail * trailp )
 	g3_render_primitives_colored_textured(&material_def, Trail_v_list, nv, PRIM_TYPE_TRISTRIP, false);
 
 	profile_end("Trail Draw");
+	tracepoint(fs2open, trail_render_draw__end);
 }
 
 void trail_add_segment( trail *trailp, vec3d *pos )

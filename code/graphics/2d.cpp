@@ -21,6 +21,7 @@
 #include "debugconsole/console.h"
 #include "gamesequence/gamesequence.h"	//WMC - for scripting hooks in gr_flip()
 #include "globalincs/systemvars.h"
+#include "globalincs/tracepoints.h"
 #include "graphics/2d.h"
 #include "graphics/font.h"
 #include "graphics/grbatch.h"
@@ -2124,6 +2125,7 @@ void gr_flip()
 	// m!m avoid running CHA_ONFRAME when the "Quit mission" popup is shown. See mantis 2446 for reference
 	if (!quit_mission_popup_shown)
 	{
+		tracepoint(fs2open, LUA_On_Frame__begin);
 		profile_begin("LUA On Frame");
 		//WMC - Evaluate global hook if not override.
 		Script_system.RunBytecode(Script_globalhook);
@@ -2132,6 +2134,7 @@ void gr_flip()
 		//WMC - Do scripting reset stuff
 		Script_system.EndFrame();
 		profile_end("LUA On Frame");
+		tracepoint(fs2open, LUA_On_Frame__end);
 	}
 
 	gr_screen.gf_flip();

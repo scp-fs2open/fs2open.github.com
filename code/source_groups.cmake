@@ -254,6 +254,8 @@ set (file_root_globalincs
 	globalincs/vmallocator.h
 	globalincs/scp_defines.h
 	globalincs/flagset.h
+	globalincs/tracepoints.h
+	globalincs/tracepoints.cpp
 )
 
 IF (WIN32)

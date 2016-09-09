@@ -12,6 +12,7 @@
 #include "asteroid/asteroid.h"
 #include "cmdline/cmdline.h"
 #include "gamesequence/gamesequence.h"
+#include "globalincs/tracepoints.h"
 #include "graphics/opengl/gropengldraw.h"
 #include "graphics/opengl/gropenglshader.h"
 #include "graphics/tmapper.h"
@@ -639,7 +640,9 @@ void draw_list::render_all(gr_zbuffer_type depth_mode)
 		int render_index = Render_keys[i];
 
 		if ( depth_mode == ZBUFFER_TYPE_DEFAULT || Render_elements[render_index].render_material.get_depth_mode() == depth_mode ) {
+			tracepoint(fs2open, draw_list__render_all__begin);
 			PROFILE("Render buffer", render_buffer(Render_elements[render_index]));
+			tracepoint(fs2open, draw_list__render_all__end);
 		}
 	}
 

@@ -10,6 +10,7 @@
 
 
 #include "globalincs/linklist.h"
+#include "globalincs/tracepoints.h"
 #include "io/timer.h"
 #include "object/objcollide.h"
 #include "object/object.h"
@@ -1227,16 +1228,20 @@ void obj_sort_and_collide()
 	SCP_vector<int> sort_list_z;
 
 	sort_list_y.clear();
+	tracepoint(fs2open, sort_colliders_phase_1__begin);
 	PROFILE("Sort Colliders", obj_quicksort_colliders(&Collision_sort_list, 0, (int)(Collision_sort_list.size() - 1), 0));
 	obj_find_overlap_colliders(&sort_list_y, &Collision_sort_list, 0, false);
-
+	tracepoint(fs2open, sort_colliders_phase_1__end);
+	tracepoint(fs2open, sort_colliders_phase_2__begin);
 	sort_list_z.clear();
 	PROFILE("Sort Colliders", obj_quicksort_colliders(&sort_list_y, 0, (int)(sort_list_y.size() - 1), 1));
 	obj_find_overlap_colliders(&sort_list_z, &sort_list_y, 1, false);
-
+	tracepoint(fs2open, sort_colliders_phase_2__end);
+	tracepoint(fs2open, sort_colliders_phase_3__begin);
 	sort_list_y.clear();
 	PROFILE("Sort Colliders", obj_quicksort_colliders(&sort_list_z, 0, (int)(sort_list_z.size() - 1), 2));
 	obj_find_overlap_colliders(&sort_list_y, &sort_list_z, 2, true);
+	tracepoint(fs2open, sort_colliders_phase_3__end);
 }
 
 void obj_find_overlap_colliders(SCP_vector<int> *overlap_list_out, SCP_vector<int> *list, int axis, bool collide)

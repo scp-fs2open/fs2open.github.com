@@ -47,6 +47,7 @@
 #include "gamesnd/gamesnd.h"
 #include "globalincs/alphacolors.h"
 #include "globalincs/mspdb_callstack.h"
+#include "globalincs/tracepoints.h"
 #include "globalincs/version.h"
 #include "graphics/font.h"
 #include "graphics/shadows.h"
@@ -3576,9 +3577,9 @@ void game_render_frame( camid cid )
 	// this, make sure that the current render target gets restored right afterwards!
 	if ( Cmdline_env && !Env_cubemap_drawn && gr_screen.rendering_to_texture == -1 ) {
 		GR_DEBUG_SCOPE("Environment Mapping");
-
+		tracepoint(fs2open, game_render_frame__begin);
 		PROFILE("Environment Mapping", setup_environment_mapping(cid));
-
+		tracepoint(fs2open, game_render_frame__end);
 		if ( !Dynamic_environment ) {
 			Env_cubemap_drawn = true;
 		}
@@ -3864,8 +3865,10 @@ void game_simulation_frame()
 			obj_observer_move(flFrametime);
 		}
 		
+		tracepoint(fs2open, game_simulation_frame__begin);
 		// move all the objects now
 		PROFILE("Move Objects - Master", obj_move_all(flFrametime));
+		tracepoint(fs2open, game_simulation_frame__end);
 
 		mission_eval_goals();
 	}
@@ -4199,6 +4202,7 @@ void game_frame(bool paused)
 	}
 #endif
 	// start timing frame
+	tracepoint(fs2open, game_frame__begin, paused);
 	profile_begin("Main Frame");
 
 	DEBUG_GET_TIME( total_time1 )
@@ -4258,7 +4262,9 @@ void game_frame(bool paused)
 			return;
 		}
 		
+		tracepoint(fs2open, game_simulation_frame__begin);
 		PROFILE("Simulation", game_simulation_frame()); 
+		tracepoint(fs2open, game_simulation_frame__end);
 		
 		// if not actually in a game play state, then return.  This condition could only be true in 
 		// a multiplayer game.
@@ -4369,7 +4375,9 @@ void game_frame(bool paused)
 			// If a regular popup is active, don't flip (popup code flips)
 			if( !popup_running_state() ){
 				DEBUG_GET_TIME( flip_time1 )
+				tracepoint(fs2open, page_flip__begin);
 				PROFILE("Page Flip", game_flip_page_and_time_it());
+				tracepoint(fs2open, page_flip__end);
 				DEBUG_GET_TIME( flip_time2 )
 			}
 
@@ -4384,6 +4392,7 @@ void game_frame(bool paused)
 	// process lightning (nebula only)
 	nebl_process();
 
+	tracepoint(fs2open, game_frame__end);
 	profile_end("Main Frame");
 	profile_dump_output();
 	profile_dump_json_output();

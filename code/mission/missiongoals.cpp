@@ -16,6 +16,7 @@
 #include "gamesnd/eventmusic.h"
 #include "gamesnd/gamesnd.h"
 #include "globalincs/alphacolors.h"
+#include "globalincs/tracepoints.h"
 #include "hud/hud.h"
 #include "hud/hudmessage.h"
 #include "io/key.h"
@@ -1044,8 +1045,10 @@ void mission_eval_goals()
 				continue;
 			}
 
+			tracepoint(fs2open, mission_eval_goals__begin, i);
 			// if we get here, then the timestamp on the event has popped -- we should reevaluate
 			PROFILE("Repeating events", mission_process_event(i));
+			tracepoint(fs2open, mission_eval_goals__end, i);
 		}
 	}
 	
