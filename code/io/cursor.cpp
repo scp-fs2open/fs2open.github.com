@@ -12,6 +12,7 @@
 
 #include <utility>
 #include <globalincs/systemvars.h>
+#include <graphics/2d.h>
 
 namespace
 {
@@ -207,6 +208,8 @@ namespace io
 
 		Cursor* CursorManager::loadFromBitmap(int bitmapHandle)
 		{
+			Assertion(gr_screen.mode != GR_STUB, "Cursors can not be used with the stub renderer!");
+
 			Assertion(bm_is_valid(bitmapHandle), "%d is no valid bitmap handle!", bitmapHandle);
 
 			int nframes;
