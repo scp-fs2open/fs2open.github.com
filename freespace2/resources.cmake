@@ -48,7 +48,7 @@ elseif(APPLE)
 
     # Copy everything from the Resources directory
     add_custom_command(TARGET Freespace2 POST_BUILD
-        COMMAND "${CMAKE_COMMAND}" -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/${subpath}/Resources" "$<TARGET_FILE_DIR:Freespace2>/../Resources"
+        COMMAND cp -a "${CMAKE_CURRENT_SOURCE_DIR}/${subpath}/Resources" "$<TARGET_FILE_DIR:Freespace2>/../Resources"
         COMMENT "Copying resources into bundle..."
     )
 
@@ -61,7 +61,7 @@ elseif(APPLE)
     #    INPUT "${CMAKE_CURRENT_BINARY_DIR}/fixup_bundle.cmake")
 
     add_custom_command(TARGET Freespace2 POST_BUILD
-		COMMAND "${CMAKE_COMMAND}" -E copy_directory "${FSO_MAC_FRAMEWORKS}" "$<TARGET_FILE_DIR:Freespace2>/../Frameworks"
+		COMMAND cp -a "${FSO_MAC_FRAMEWORKS}" "$<TARGET_FILE_DIR:Freespace2>/../Frameworks"
         #COMMAND "${CMAKE_COMMAND}" -P "${CMAKE_CURRENT_BINARY_DIR}/fixup_bundle-$<CONFIG>.cmake"
         COMMENT "Copying frameworks into bundle..."
     )
