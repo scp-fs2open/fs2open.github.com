@@ -5580,7 +5580,9 @@ int sexp_mission_time()
 int sexp_mission_time_msecs()
 {
 	// multiplying by 1000 can go over the limit for LONG_MAX so cast to long long int first
-	return f2i((longlong)Missiontime * 1000);
+	auto mission_time = (std::int64_t) Missiontime;
+	// This hack is necessary since fix is a 32-bit integer which would overflow if f2i would be used
+	return (int)((mission_time * 1000) / 65536);
 }
 
 /**
