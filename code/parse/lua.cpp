@@ -12987,6 +12987,9 @@ ADE_FUNC(setCursorImage, l_Mouse, "Image filename", "Sets mouse cursor image, an
 	if(!mouse_inited || !Gr_inited)
 		return ade_set_error(L, "b", false);
 
+	if (Is_standalone)
+		return ade_set_error(L, "b", false);
+
 	char *s = NULL;
 	enum_h *u = NULL; // This isn't used anymore
 

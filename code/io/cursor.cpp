@@ -12,6 +12,7 @@
 
 #include <utility>
 #include <globalincs/systemvars.h>
+#include <graphics/2d.h>
 
 namespace
 {
@@ -38,7 +39,7 @@ namespace
 #endif
 
 		SDL_Surface* bitmapSurface = SDL_CreateRGBSurface(0, w, h, 32, rmask, gmask, bmask, amask);
-		if (SDL_LockSurface(bitmapSurface) <= 0) {
+		if (SDL_LockSurface(bitmapSurface) < 0) {
 			return nullptr;
 		}
 		bitmap* bmp = bm_lock(bitmapNum, 32, BMP_TEX_XPARENT);
@@ -207,6 +208,8 @@ namespace io
 
 		Cursor* CursorManager::loadFromBitmap(int bitmapHandle)
 		{
+			Assertion(gr_screen.mode != GR_STUB, "Cursors can not be used with the stub renderer!");
+
 			Assertion(bm_is_valid(bitmapHandle), "%d is no valid bitmap handle!", bitmapHandle);
 
 			int nframes;
