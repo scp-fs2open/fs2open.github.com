@@ -737,9 +737,6 @@ typedef struct screen {
 	// color buffer writes
 	int (*gf_set_color_buffer)(int mode);
 
-	// cross fade
-	void (*gf_cross_fade)(int bmap1, int bmap2, int x1, int y1, int x2, int y2, float pct, int resize_mode);
-
 	// set a texture into cache. for sectioned bitmaps, pass in sx and sy to set that particular section of the bitmap
 	int (*gf_tcache_set)(int bitmap_id, int bitmap_type, float *u_scale, float *v_scale, int stage);	
 
@@ -1042,8 +1039,6 @@ __inline void gr_fog_set(int fog_mode, int r, int g, int b, float fog_near = -1.
 
 #define gr_set_cull			GR_CALL(gr_screen.gf_set_cull)
 #define gr_set_color_buffer	GR_CALL(gr_screen.gf_set_color_buffer)
-
-#define gr_cross_fade		GR_CALL(gr_screen.gf_cross_fade)
 
 __inline int gr_tcache_set(int bitmap_id, int bitmap_type, float *u_scale, float *v_scale, int stage = 0)
 {

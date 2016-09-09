@@ -762,7 +762,13 @@ void credits_do_frame(float frametime)
 		bx2 = Credits_image_coords[gr_screen.res][CREDITS_X_COORD] + ((Credits_image_coords[gr_screen.res][CREDITS_W_COORD] - bw2)/2);
 		by2 = Credits_image_coords[gr_screen.res][CREDITS_Y_COORD] + ((Credits_image_coords[gr_screen.res][CREDITS_H_COORD] - bh2)/2);
 
-		gr_cross_fade(bm1, bm2, bx1, by1, bx2, by2, (float)percent / 100.0f, GR_RESIZE_MENU);
+		auto alpha = (float)percent / 100.0f;
+
+		gr_set_bitmap(bm1, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.0f - alpha);
+		gr_bitmap(bx1, by1, GR_RESIZE_MENU);
+
+		gr_set_bitmap(bm2, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, alpha);
+		gr_bitmap(bx2, by2, GR_RESIZE_MENU);
 	}
 
 	Ui_window.draw();

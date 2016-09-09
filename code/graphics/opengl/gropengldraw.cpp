@@ -988,16 +988,6 @@ void gr_opengl_curve(int xc, int yc, int r, int direction, int resize_mode)
     endDrawing(path);
 }
 
-// cross fade
-void gr_opengl_cross_fade(int bmap1, int bmap2, int x1, int y1, int x2, int y2, float pct, int resize_mode)
-{
-   	gr_set_bitmap(bmap1, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.0f - pct);
-	gr_bitmap(x1, y1, resize_mode);
-
-  	gr_set_bitmap(bmap2, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, pct);
-	gr_bitmap(x2, y2, resize_mode);
-}
-
 void gr_opengl_shade(int x, int y, int w, int h, int resize_mode)
 {
 	if (resize_mode != GR_RESIZE_NONE) {

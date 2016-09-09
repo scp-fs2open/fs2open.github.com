@@ -107,10 +107,6 @@ void gr_stub_clear()
 {
 }
 
-void gr_stub_cross_fade(int bmap1, int bmap2, int x1, int y1, int x2, int y2, float pct, int resize_mode)
-{
-}
-
 void gr_stub_curve(int xc, int yc, int r, int direction, int resize_mode)
 {
 }
@@ -587,8 +583,6 @@ bool gr_stub_init()
 
 	gr_screen.gf_set_cull			= gr_stub_set_cull;
 	gr_screen.gf_set_color_buffer	= gr_stub_set_color_buffer;
-
-	gr_screen.gf_cross_fade			= gr_stub_cross_fade;
 
 	gr_screen.gf_tcache_set			= gr_stub_tcache_set;
 
