@@ -478,6 +478,8 @@ namespace font
 
 void gr_opengl_string_old(float sx, float sy, const char* s, const char* end, font::font* fontData, float top, float height, int resize_mode)
 {
+	GR_DEBUG_SCOPE("Render VFNT string");
+
 	int width, spacing, letter;
 	float x, y;
 	bool do_resize;
@@ -485,7 +487,7 @@ void gr_opengl_string_old(float sx, float sy, const char* s, const char* end, fo
 	float u0, u1, v0, v1;
 	float x1, x2, y1, y2;
 	float u_scale = 1.0f, v_scale = 1.0f;
-		
+
 	GL_CHECK_FOR_ERRORS("start of string()");
 
  	gr_set_bitmap(fontData->bitmap_id);
@@ -671,6 +673,8 @@ void gr_opengl_string_old(float sx, float sy, const char* s, const char* end, fo
 }
 
 void gr_opengl_string(float sx, float sy, const char *s, int resize_mode, int in_length) {
+	GR_DEBUG_SCOPE("Render string");
+
 	using namespace font;
 	using namespace graphics::paths;
 	namespace fo = font;
@@ -703,6 +707,8 @@ void gr_opengl_string(float sx, float sy, const char *s, int resize_mode, int in
 							 fnt->getHeight(), resize_mode);
 	}
 	else if (currentFont->getType() == NVG_FONT) {
+		GR_DEBUG_SCOPE("Render TTF string");
+
 		auto path = beginDrawing(resize_mode);
 		path->translate(sx, sy);
 
@@ -986,16 +992,6 @@ void gr_opengl_curve(int xc, int yc, int r, int direction, int resize_mode)
     path->stroke();
 
     endDrawing(path);
-}
-
-// cross fade
-void gr_opengl_cross_fade(int bmap1, int bmap2, int x1, int y1, int x2, int y2, float pct, int resize_mode)
-{
-   	gr_set_bitmap(bmap1, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.0f - pct);
-	gr_bitmap(x1, y1, resize_mode);
-
-  	gr_set_bitmap(bmap2, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, pct);
-	gr_bitmap(x2, y2, resize_mode);
 }
 
 void gr_opengl_shade(int x, int y, int w, int h, int resize_mode)
