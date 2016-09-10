@@ -665,6 +665,8 @@ void credits_close()
 
 void credits_do_frame(float frametime)
 {
+	GR_DEBUG_SCOPE("Credits do frame");
+
 	int i, k, next, percent, bm1, bm2;
 	int bx1, by1, bw1, bh1;
 	int bx2, by2, bw2, bh2;
@@ -750,6 +752,8 @@ void credits_do_frame(float frametime)
 	bm2 = Credits_bmps[next];
 
 	if((bm1 != -1) && (bm2 != -1)){
+		GR_DEBUG_SCOPE("Render credits bitmap");
+
 		Assert(percent >= 0 && percent <= 100);
 
 		// get width and height
