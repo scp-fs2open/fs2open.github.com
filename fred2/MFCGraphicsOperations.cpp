@@ -5,6 +5,11 @@ MFCViewport::MFCViewport(HWND hwnd, HDC dc): _windowHandle(hwnd), _device_contex
 {
 	Assertion(hwnd != nullptr, "Invalid window handle!");
 	Assertion(dc != nullptr, "Invalid device context handle!");
+
+	if (SDL_InitSubSystem(SDL_INIT_VIDEO) < 0) {
+		Error(LOCATION, "Couldn't init SDL video: %s", SDL_GetError());
+		return;
+	}
 }
 
 MFCViewport::~MFCViewport()
