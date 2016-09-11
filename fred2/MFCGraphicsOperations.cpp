@@ -18,6 +18,8 @@ MFCViewport::~MFCViewport()
 
 	_windowHandle = nullptr;
 	_device_context = nullptr;
+
+	SDL_QuitSubSystem(SDL_INIT_VIDEO);
 }
 
 SDL_Window* MFCViewport::toSDLWindow()
