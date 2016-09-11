@@ -1315,6 +1315,8 @@ void gr_bitmap(int _x, int _y, int resize_mode)
 
 void gr_bitmap_uv(int _x, int _y, int _w, int _h, float _u0, float _v0, float _u1, float _v1, int resize_mode)
 {
+	GR_DEBUG_SCOPE("2D Bitmap UV");
+
 	float x, y, w, h;
 	vertex verts[4];
 
@@ -1351,8 +1353,12 @@ void gr_bitmap_uv(int _x, int _y, int _w, int _h, float _u0, float _v0, float _u
 	verts[3].texture_position.v = _v1;
 
 	material material_params;
-
-	material_set_interface(&material_params, gr_screen.current_bitmap, false, 1.0f);
+	material_set_interface(
+		&material_params,
+		gr_screen.current_bitmap,
+		gr_screen.current_alphablend_mode == GR_ALPHABLEND_FILTER ? true : false,
+		gr_screen.current_alphablend_mode == GR_ALPHABLEND_FILTER ? gr_screen.current_alpha : 1.0f
+	);
 	g3_render_primitives_textured(&material_params, verts, 4, PRIM_TYPE_TRIFAN, true);
 }
 
@@ -1376,6 +1382,8 @@ void gr_bitmap_uv(int _x, int _y, int _w, int _h, float _u0, float _v0, float _u
 //takes a list of rectangles that have assosiated rectangles in a texture
 void gr_bitmap_list(bitmap_rect_list* list, int n_bm, int resize_mode)
 {
+	GR_DEBUG_SCOPE("2D Bitmap list");
+
 	// adapted from g3_draw_2d_poly_bitmap_list
 
 	for ( int i = 0; i < n_bm; i++ ) {
@@ -1456,10 +1464,14 @@ void gr_bitmap_list(bitmap_rect_list* list, int n_bm, int resize_mode)
 		V->codes = 0;
 	}
 
-	material material_params;
-
-	material_set_unlit(&material_params, gr_screen.current_bitmap, 1.0f, true, false);
-	g3_render_primitives_textured(&material_params, vert_list, 6 * n_bm, PRIM_TYPE_TRIS, true);
+	material mat_params;
+	material_set_interface(
+		&mat_params,
+		gr_screen.current_bitmap,
+		gr_screen.current_alphablend_mode == GR_ALPHABLEND_FILTER ? true : false,
+		gr_screen.current_alphablend_mode == GR_ALPHABLEND_FILTER ? gr_screen.current_alpha : 1.0f
+	);
+	g3_render_primitives_textured(&mat_params, vert_list, 6 * n_bm, PRIM_TYPE_TRIS, true);
 
 	delete[] vert_list;
 }

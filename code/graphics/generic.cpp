@@ -668,7 +668,7 @@ void generic_anim_render_variable_frame_delay(generic_anim* ga, float frametime,
 		// note: generic anims are not currently ever non-streaming in FSO
 		// I'm not even sure that the existing ani/eff code would allow non-streaming generic anims
 		generic_render_png_stream(ga);
-		gr_set_bitmap(ga->bitmap_id, GR_ALPHABLEND_NONE, GR_BITBLT_MODE_NORMAL, alpha);
+		gr_set_bitmap(ga->bitmap_id, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, alpha);
 	}
 }
 
