@@ -3712,7 +3712,7 @@ ade_obj<int> l_Texture("texture", "Texture handle");
 //WMC - int should NEVER EVER be an invalid handle. Return Nil instead. Nil FTW.
 
 static float lua_Opacity = 1.0f;
-static int lua_Opacity_type = GR_ALPHABLEND_NONE;
+static int lua_Opacity_type = GR_ALPHABLEND_FILTER;
 
 ADE_FUNC(__gc, l_Texture, NULL, "Auto-deletes texture", NULL, NULL)
 {
