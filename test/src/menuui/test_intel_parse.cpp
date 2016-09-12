@@ -255,12 +255,7 @@ TEST_F(IntelParseTest, missing_end_multi_text) {
 
 	techroom_intel_init();
 
-	// Something is doing an out of bounds read, since this varies
-	// when running the tests with --gtest_shuffle.
-	//ASSERT_EQ(Intel_info_size, 1);
-
-	// Remove this when the above issue is fixed.
-	ASSERT_GE(Intel_info_size, 1);
+	ASSERT_EQ(Intel_info_size, 1);
 
 	test_intel_data_equal(expected_foo, Intel_info[0]);
 }
