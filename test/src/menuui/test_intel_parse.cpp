@@ -284,3 +284,14 @@ TEST_F(IntelParseTest, always_techroom_values) {
 	test_intel_data_equal(expected_baz, Intel_info[2]);
 	test_intel_data_equal(expected_baz, Intel_info[3]);
 }
+
+// Data must be in the correct order.
+TEST_F(IntelParseTest, wrong_order) {
+	SCOPED_TRACE("wrong_order");
+
+	EXPECT_ANY_THROW(techroom_intel_init());
+
+	ASSERT_EQ(Intel_info_size, 1);
+
+	test_intel_data_equal(expected_foo, Intel_info[0]);
+}
