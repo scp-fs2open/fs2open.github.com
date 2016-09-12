@@ -8,11 +8,22 @@ XSTR(
 "Foo desc", 3001)
 $end_multi_text
 
-; An otherwise valid entry but missing the $end_multi_text
+; Otherwise valid but $Anim in wrong place.
 $Entry:
 $Name: XSTR("Bar name", 3002)
-$Anim: Bar anim
 $AlwaysInTechRoom: 0
+$Anim: Bar anim
 $Description:
 XSTR(
 "Bar desc", 3003)
+$end_multi_text
+
+; Another valid entry.
+$Entry:
+$Name: XSTR("Baz name",3004)
+$Anim: Baz anim
+$AlwaysInTechRoom: 1
+$Description:
+XSTR(
+"Baz desc", 3005)
+$end_multi_text
