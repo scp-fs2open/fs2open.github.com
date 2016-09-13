@@ -7,11 +7,12 @@
  *
 */ 
 
+#include "tracing/tracing.h"
 #include "cmdline/cmdline.h"
 #include "globalincs/pstypes.h"
-#include "globalincs/systemvars.h"
 #include "io/timer.h"
 #include "parse/parselo.h"
+#include "globalincs/systemvars.h"
 
 #if SCP_COMPILER_IS_MSVC
 #include <direct.h>

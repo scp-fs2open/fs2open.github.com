@@ -33,6 +33,7 @@
 #include "parse/parselo.h"
 #include "parse/sexp.h"
 #include "playerman/player.h"
+#include "tracing/tracing.h"
 #include "ui/ui.h"
 
 

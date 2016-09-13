@@ -21,6 +21,7 @@
 #include "particle/particle.h"
 #include "render/3d.h"
 #include "render/batching.h"
+#include "tracing/tracing.h"
 
 using namespace particle;
 

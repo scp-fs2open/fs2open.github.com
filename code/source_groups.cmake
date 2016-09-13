@@ -241,7 +241,6 @@ set (file_root_globalincs
 	globalincs/fsmemory.h
 	globalincs/globals.h
 	globalincs/linklist.h
-	globalincs/profiling.cpp
 	globalincs/pstypes.h
 	globalincs/safe_strings.cpp
 	globalincs/safe_strings.h
@@ -965,6 +964,12 @@ set (file_root_tgautils
 	tgautils/tgautils.h
 )
 
+# Tracing files
+set (file_root_tracing
+	tracing/tracing.h
+	tracing/tracing.cpp
+)
+
 # Ui files
 set (file_root_ui
 	ui/button.cpp
@@ -1098,6 +1103,7 @@ source_group("Species_Defs"                       FILES ${file_root_species_defs
 source_group("Starfield"                          FILES ${file_root_starfield})
 source_group("Stats"                              FILES ${file_root_stats})
 source_group("TgaUtils"                           FILES ${file_root_tgautils})
+source_group("Tracing"                            FILES ${file_root_tracing})
 source_group("Ui"                                 FILES ${file_root_ui})
 source_group("Weapon"                             FILES ${file_root_weapon})
 source_group("Windows Stubs"                      FILES ${file_root_windows_stubs})
@@ -1181,6 +1187,7 @@ set (file_root
 	${file_root_starfield}
 	${file_root_stats}
 	${file_root_tgautils}
+	${file_root_tracing}
 	${file_root_ui}
 	${file_root_weapon}
 	${file_root_windows_stubs}
