@@ -304,6 +304,7 @@ set (file_root_graphics_openglgr_opengl_cpps
 	graphics/opengl/gropengldraw.cpp
 	graphics/opengl/gropengllight.cpp
 	graphics/opengl/gropenglpostprocessing.cpp
+	graphics/opengl/gropenglquery.cpp
 	graphics/opengl/gropenglshader.cpp
 	graphics/opengl/gropenglstate.cpp
 	graphics/opengl/gropengltexture.cpp
@@ -318,6 +319,7 @@ set (file_root_graphics_openglgr_opengl_headers
 	graphics/opengl/gropengldraw.h
 	graphics/opengl/gropengllight.h
 	graphics/opengl/gropenglpostprocessing.h
+	graphics/opengl/gropenglquery.h
 	graphics/opengl/gropenglshader.h
 	graphics/opengl/gropenglstate.h
 	graphics/opengl/gropengltexture.h

@@ -85,6 +85,19 @@ std::uint64_t end_profile_time = 0;
 SCP_string profile_output;
 std::ofstream profiling_file;
 
+static SCP_vector<int> query_objects;
+static SCP_queue<int> free_query_objects;
+
+static int get_query_object() {
+	if (!free_query_objects.empty()) {
+		auto id = free_query_objects.front();
+		free_query_objects.pop();
+		return id;
+	}
+
+	auto id = g
+}
+
 struct json_data
 {
 	SCP_string name;

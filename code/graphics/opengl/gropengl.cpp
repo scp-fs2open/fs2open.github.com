@@ -16,6 +16,7 @@
 #include "gropengldraw.h"
 #include "gropengllight.h"
 #include "gropenglpostprocessing.h"
+#include "gropenglquery.h"
 #include "gropenglshader.h"
 #include "gropenglstate.h"
 #include "gropengltexture.h"
@@ -1252,6 +1253,12 @@ void opengl_setup_function_pointers()
 	gr_screen.gf_push_debug_group = gr_opengl_push_debug_group;
 	gr_screen.gf_pop_debug_group = gr_opengl_pop_debug_group;
 
+	gr_screen.gf_create_query_object = gr_opengl_create_query_object;
+	gr_screen.gf_query_value = gr_opengl_query_value;
+	gr_screen.gf_query_value_available = gr_opengl_query_value_available;
+	gr_screen.gf_get_query_value = gr_opengl_get_query_value;
+	gr_screen.gf_delete_query_object = gr_opengl_delete_query_object;
+
 	// NOTE: All function pointers here should have a Cmdline_nohtl check at the top
 	//       if they shouldn't be run in non-HTL mode, Don't keep separate entries.
 	// *****************************************************************************
@@ -1619,6 +1626,8 @@ bool gr_opengl_is_capable(gr_capability capability)
 		return (GLSL_version >= 150);
 	case CAPABILITY_POINT_PARTICLES:
 		return GL_version >= 32 && !Cmdline_no_geo_sdr_effects;
+	case CAPABILITY_TIMESTAMP_QUERY:
+		return GL_version >= 33; // Timestamp queries are available from 3.3 onwards
 	}
 
 	return false;

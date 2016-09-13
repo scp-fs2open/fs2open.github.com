@@ -286,7 +286,8 @@ typedef enum gr_capability {
 	CAPABILITY_DEFERRED_LIGHTING,
 	CAPABILITY_SHADOWS,
 	CAPABILITY_BATCHED_SUBMODELS,
-	CAPABILITY_POINT_PARTICLES
+	CAPABILITY_POINT_PARTICLES,
+	CAPABILITY_TIMESTAMP_QUERY,
 } gr_capability;
 
 // stencil buffering stuff
@@ -593,6 +594,10 @@ struct light;
 #define GR_FOGMODE_NONE				0		// set this to turn off fog
 #define GR_FOGMODE_FOG				1		// linear fog
 
+enum class QueryType {
+	Timestamp
+};
+
 typedef struct screen {
 	uint	signature;			// changes when mode or palette or width or height changes
 	int	max_w, max_h;		// Width and height
@@ -844,6 +849,12 @@ typedef struct screen {
 
 	void (*gf_push_debug_group)(const char* name);
 	void (*gf_pop_debug_group)();
+
+	int (*gf_create_query_object)();
+	void (*gf_query_value)(int obj, QueryType type);
+	bool (*gf_query_value_available)(int obj);
+	std::uint64_t (*gf_get_query_value)(int obj);
+	void (*gf_delete_query_object)(int obj);
 } screen;
 
 // handy macro
@@ -1186,6 +1197,31 @@ inline void gr_push_debug_group(const char* name)
 inline void gr_pop_debug_group()
 {
 	(*gr_screen.gf_pop_debug_group)();
+}
+
+inline int gr_create_query_object()
+{
+	return (*gr_screen.gf_create_query_object)();
+}
+
+inline void gr_query_value(int obj, QueryType type)
+{
+	(*gr_screen.gf_query_value)(obj, type);
+}
+
+inline bool gr_query_value_available(int obj)
+{
+	return (*gr_screen.gf_query_value_available)(obj);
+}
+
+inline std::uint64_t gr_get_query_value(int obj)
+{
+	return (*gr_screen.gf_get_query_value)(obj);
+}
+
+inline void gr_delete_query_object(int obj)
+{
+	(*gr_screen.gf_delete_query_object)(obj);
 }
 
 // color functions
