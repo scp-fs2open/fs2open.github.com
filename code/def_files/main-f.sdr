@@ -39,7 +39,6 @@ uniform bool gammaSpec;
 uniform samplerCube sEnvmap;
 uniform bool envGloss;
 uniform bool alpha_spec;
-varying vec3 envReflect;
 in vec3 fragEnvReflect;
 #endif
 #ifdef FLAG_NORMAL_MAP
