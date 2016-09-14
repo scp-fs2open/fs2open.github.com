@@ -20,12 +20,21 @@
 #include <limits.h>
 
 static Uint64 Timer_perf_counter_freq = 0;	// perf counter frequency - number of ticks per second
+static Uint64 Timer_base_value;
 
 static int Timer_inited = 0;
-static std::uint64_t high_res_begin = 0;
 
 
 #define MICROSECONDS_PER_SECOND 1000000
+
+#define NANOSECONDS_PER_SECOND 10000000000
+
+static uint64_t get_performance_counter()
+{
+	Assertion(Timer_inited, "This function can only be used when the timer system is initialized!");
+
+	return SDL_GetPerformanceCounter() - Timer_base_value;
+}
 
 void timer_close()
 {
@@ -38,12 +47,11 @@ void timer_init()
 {
 	if ( !Timer_inited )	{
 		Timer_perf_counter_freq = SDL_GetPerformanceFrequency();
+		Timer_base_value = SDL_GetPerformanceCounter();
 
 		Timer_inited = 1;
 
 		atexit(timer_close);
-
-		high_res_begin = timer_get_microseconds();
 	}
 }
 
@@ -54,15 +62,10 @@ fix timer_get_fixed_seconds()
 		return 0;
 	}
 
-	auto time = timer_get_microseconds() - high_res_begin;
+	auto time = timer_get_microseconds();
 	time *= 65536;
 
 	return (fix)(time / MICROSECONDS_PER_SECOND);
-}
-
-fix timer_get_fixed_secondsX()
-{
-	return timer_get_fixed_seconds();
 }
 
 fix timer_get_approx_seconds()
@@ -92,15 +95,16 @@ int timer_get_milliseconds()
 
 std::uint64_t timer_get_microseconds()
 {
-	if ( !Timer_inited ) {
-		Int3();
-		return 0;
-	}
+	auto time = get_performance_counter();
 
-	Uint64 elapsed = SDL_GetPerformanceCounter();
-	auto microseconds = elapsed * MICROSECONDS_PER_SECOND / Timer_perf_counter_freq;
+	return (time * MICROSECONDS_PER_SECOND) / Timer_perf_counter_freq;
+}
 
-	return microseconds - high_res_begin;
+std::uint64_t timer_get_nanoseconds()
+{
+	auto time = get_performance_counter();
+
+	return (time * NANOSECONDS_PER_SECOND) / Timer_perf_counter_freq;
 }
 
 // 0 means invalid,
