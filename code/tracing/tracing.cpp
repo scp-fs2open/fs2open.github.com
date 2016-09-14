@@ -124,7 +124,7 @@ struct tracing_data
 
 struct tracing_frame_data {
 	SCP_vector<tracing_data> data;
-	size_t frame_num;
+	std::uint64_t frame_num;
 };
 
 static SCP_vector<tracing_frame_data> pending_frame_data;
