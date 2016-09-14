@@ -8554,7 +8554,7 @@ void ai_chase()
 			aip->submode = AIS_CHASE_CIRCLESTRAFE;
 			aip->submode_start_time = Missiontime;
 			aip->last_attack_time = Missiontime;		
-		} else if ((dist_to_enemy < 100.0f) && (dot_to_enemy < 0.8f) && (enemy_sip->is_small_ship()) && (Missiontime - aip->submode_start_time > i2f(5) )) {
+		} else if ((dist_to_enemy < 100.0f) && (dot_to_enemy < 0.8f) && (enemy_sip != NULL) && (enemy_sip->is_small_ship()) && (Missiontime - aip->submode_start_time > i2f(5) )) {
 			aip->ai_flags.remove(AI::AI_Flags::Attack_slowly);	//	Just in case, clear here.
 
 			float get_away_chance = (aip->ai_get_away_chance == FLT_MIN)
