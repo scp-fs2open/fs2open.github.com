@@ -36,6 +36,7 @@
 #include "parse/scripting.h"
 #include "parse/parselo.h"
 #include "render/3d.h"
+#include "tracing/tracing.h"
 
 #if ( SDL_VERSION_ATLEAST(1, 2, 7) )
 #include "SDL_cpuinfo.h"

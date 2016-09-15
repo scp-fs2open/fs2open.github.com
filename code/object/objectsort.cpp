@@ -26,6 +26,7 @@
 #include "render/3d.h"
 #include "render/batching.h"
 #include "ship/ship.h"
+#include "tracing/tracing.h"
 #include "weapon/weapon.h"
 
 

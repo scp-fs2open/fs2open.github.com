@@ -25,6 +25,7 @@
 #include "math/staticrand.h"
 #include "ship/ship.h"
 #include "ship/shipfx.h"
+#include "tracing/tracing.h"
 #include "weapon/weapon.h"
 
 extern int Model_texturing;

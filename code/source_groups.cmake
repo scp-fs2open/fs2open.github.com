@@ -241,7 +241,6 @@ set (file_root_globalincs
 	globalincs/fsmemory.h
 	globalincs/globals.h
 	globalincs/linklist.h
-	globalincs/profiling.cpp
 	globalincs/pstypes.h
 	globalincs/safe_strings.cpp
 	globalincs/safe_strings.h
@@ -304,6 +303,7 @@ set (file_root_graphics_openglgr_opengl_cpps
 	graphics/opengl/gropengldraw.cpp
 	graphics/opengl/gropengllight.cpp
 	graphics/opengl/gropenglpostprocessing.cpp
+	graphics/opengl/gropenglquery.cpp
 	graphics/opengl/gropenglshader.cpp
 	graphics/opengl/gropenglstate.cpp
 	graphics/opengl/gropengltexture.cpp
@@ -318,6 +318,7 @@ set (file_root_graphics_openglgr_opengl_headers
 	graphics/opengl/gropengldraw.h
 	graphics/opengl/gropengllight.h
 	graphics/opengl/gropenglpostprocessing.h
+	graphics/opengl/gropenglquery.h
 	graphics/opengl/gropenglshader.h
 	graphics/opengl/gropenglstate.h
 	graphics/opengl/gropengltexture.h
@@ -963,6 +964,12 @@ set (file_root_tgautils
 	tgautils/tgautils.h
 )
 
+# Tracing files
+set (file_root_tracing
+	tracing/tracing.h
+	tracing/tracing.cpp
+)
+
 # Ui files
 set (file_root_ui
 	ui/button.cpp
@@ -1096,6 +1103,7 @@ source_group("Species_Defs"                       FILES ${file_root_species_defs
 source_group("Starfield"                          FILES ${file_root_starfield})
 source_group("Stats"                              FILES ${file_root_stats})
 source_group("TgaUtils"                           FILES ${file_root_tgautils})
+source_group("Tracing"                            FILES ${file_root_tracing})
 source_group("Ui"                                 FILES ${file_root_ui})
 source_group("Weapon"                             FILES ${file_root_weapon})
 source_group("Windows Stubs"                      FILES ${file_root_windows_stubs})
@@ -1179,6 +1187,7 @@ set (file_root
 	${file_root_starfield}
 	${file_root_stats}
 	${file_root_tgautils}
+	${file_root_tracing}
 	${file_root_ui}
 	${file_root_weapon}
 	${file_root_windows_stubs}

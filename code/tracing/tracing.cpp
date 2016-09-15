@@ -7,11 +7,13 @@
  *
 */ 
 
+#include "tracing/tracing.h"
 #include "cmdline/cmdline.h"
 #include "globalincs/pstypes.h"
-#include "globalincs/systemvars.h"
+#include "graphics/2d.h"
 #include "io/timer.h"
 #include "parse/parselo.h"
+#include "globalincs/systemvars.h"
 
 #if SCP_COMPILER_IS_MSVC
 #include <direct.h>
@@ -85,7 +87,27 @@ std::uint64_t end_profile_time = 0;
 SCP_string profile_output;
 std::ofstream profiling_file;
 
-struct json_data
+static SCP_vector<int> query_objects;
+// The GPU timestamp queries use an internal free list to reduce the number of graphics API calls
+static SCP_queue<int> free_query_objects;
+static bool do_gpu_queries = true;
+
+static int get_query_object() {
+	if (!free_query_objects.empty()) {
+		auto id = free_query_objects.front();
+		free_query_objects.pop();
+		return id;
+	}
+
+	auto id = gr_create_query_object();
+	query_objects.push_back(id);
+	return id;
+}
+static void free_query_object(int obj) {
+	free_query_objects.push(obj);
+}
+
+struct tracing_data
 {
 	SCP_string name;
 	
@@ -94,10 +116,111 @@ struct json_data
 	
 	uint64_t time;
 
+	int gpu_query;
+	uint64_t gpu_time;
+
 	bool enter;
 };
 
-static SCP_vector<json_data> json_profile_data;
+struct tracing_frame_data {
+	SCP_vector<tracing_data> data;
+	std::uint64_t frame_num;
+};
+
+static SCP_vector<tracing_frame_data> pending_frame_data;
+
+static void write_json_data_file(const tracing_frame_data& data, const SCP_string& file_name, bool print_gpu_times) {
+	std::ofstream out(file_name, std::ios::out | std::ios::binary);
+	out << "[";
+
+	auto first = true;
+	// Output CPU times
+	for (auto& trace : data.data)
+	{
+		if (!first) {
+			out << ",";
+		}
+		out << "\n{\"tid\": " << trace.tid << ",\"ts\":";
+
+		// Save stream state
+		auto flags = out.flags();
+		out << std::fixed;
+
+		if (print_gpu_times) {
+			out << trace.gpu_time / 1000.;
+		} else {
+			out << trace.time / 1000.;
+		}
+
+		// and now restore it
+		out.flags(flags);
+
+		out << ",\"pid\":";
+		if (print_gpu_times) {
+			out << "\"GPU\"";
+		} else {
+			out << trace.pid;
+		}
+
+		out << ",\"name\":\"" << trace.name << "\",\"ph\":\"" << (trace.enter ? "B" : "E") << "\"}";
+
+		first = false;
+	}
+	out << "]\n";
+}
+
+static void write_json_data(const tracing_frame_data& data)
+{
+	SCP_string file_path;
+
+	sprintf(file_path, "tracing/cpu_%" PRIu64 ".json", data.frame_num);
+	write_json_data_file(data, file_path, false);
+
+	sprintf(file_path, "tracing/gpu_%" PRIu64 ".json", data.frame_num);
+	write_json_data_file(data, file_path, true);
+}
+
+static void process_pending_data() {
+	while (!pending_frame_data.empty()) {
+		auto& frame_data = pending_frame_data.front();
+
+		bool finished;
+		if (!do_gpu_queries) {
+			finished = true;
+		} else {
+			// Determine if all queries have passed already
+			finished = true;
+			for (auto& trace_data : frame_data.data) {
+				if (trace_data.gpu_query == -1) {
+					// Event has been processed before
+					continue;
+				}
+
+				if (gr_query_value_available(trace_data.gpu_query)) {
+					trace_data.gpu_time = gr_get_query_value(trace_data.gpu_query);
+					free_query_object(trace_data.gpu_query);
+					trace_data.gpu_query = -1;
+				} else {
+					// If we are here then a query hasn't finished yet. Try again next time...
+					finished = false;
+					break;
+				}
+			}
+		}
+
+		if (finished) {
+			std::thread writer_thread(std::bind(write_json_data, frame_data));
+			writer_thread.detach();
+
+			pending_frame_data.erase(pending_frame_data.begin());
+		} else {
+			// GPU queries always finish in sequence so the later queries can't be finished yet
+			break;
+		}
+	}
+}
+
+static SCP_vector<tracing_data> current_frame_data;
 static uint64_t json_frame_num = 0;
 static std::mutex json_mutex;
 
@@ -136,7 +259,16 @@ void profile_deinit()
 	if (Cmdline_json_profiling)
 	{
 		profile_dump_json_output();
+		while (!pending_frame_data.empty()) {
+			process_pending_data();
+		}
 	}
+
+	for (auto obj : query_objects) {
+		gr_delete_query_object(obj);
+	}
+	query_objects.clear();
+	SCP_queue<int>().swap(free_query_objects);
 }
 
 /**
@@ -150,7 +282,7 @@ void profile_begin(const char* name)
 	{
 		std::lock_guard<std::mutex> guard(json_mutex);
 
-		json_data data;
+		tracing_data data;
 
 		data.name = name;
 		
@@ -158,9 +290,16 @@ void profile_begin(const char* name)
 		data.tid = get_tid();
 
 		data.enter = true;
-		data.time = timer_get_microseconds();
+		data.time = timer_get_nanoseconds();
 
-		json_profile_data.push_back(data);
+		if (do_gpu_queries) {
+			data.gpu_query = get_query_object();
+			gr_query_value(data.gpu_query, QueryType::Timestamp);
+		} else {
+			data.gpu_query = -1;
+		}
+
+		current_frame_data.push_back(data);
 	}
 
 	if (Cmdline_frame_profile)
@@ -217,7 +356,7 @@ void profile_end(const char* name)
 	{
 		std::lock_guard<std::mutex> guard(json_mutex);
 
-		json_data data;
+		tracing_data data;
 
 		data.name = name;
 
@@ -225,9 +364,16 @@ void profile_end(const char* name)
 		data.tid = get_tid();
 
 		data.enter = false;
-		data.time = timer_get_microseconds();
+		data.time = timer_get_nanoseconds();
 
-		json_profile_data.push_back(data);
+		if (do_gpu_queries) {
+			data.gpu_query = get_query_object();
+			gr_query_value(data.gpu_query, QueryType::Timestamp);
+		} else {
+			data.gpu_query = -1;
+		}
+
+		current_frame_data.push_back(data);
 	}
 
 	if (Cmdline_frame_profile) {
@@ -355,30 +501,6 @@ void profile_dump_output()
 	}
 }
 
-static void write_json_data(const SCP_vector<json_data>& data, uint64_t frame_num)
-{
-	SCP_string file_path;
-	sprintf(file_path, "tracing/frame_%" PRIu64 ".json", frame_num);
-
-	std::ofstream out(file_path, std::ios::out | std::ios::binary);
-	out << "[\n";
-
-	auto end = data.end();
-	for (auto iter = data.begin(); iter != end; ++iter)
-	{
-		// {"tid": 4692, "ts": 13716257504, "pid": 4028, "name": "Main Frame", "ph": "B"}
-		out << "{\"tid\": " << iter->tid << ",\"ts\":" << iter->time << ",\"pid\":" << iter->pid
-			<< ",\"name\":\"" << iter->name << "\",\"ph\":\"" << (iter->enter ? "B" : "E") << "\"}";
-
-		if (iter +  1 != end)
-		{
-			out << ",";
-		}
-		out << "\n";
-	}
-	out << "]\n";
-}
-
 /**
  * @brief Writes JSON tracing data to a file if the commandlinfe option is enabled
  */
@@ -388,10 +510,15 @@ void profile_dump_json_output() {
 
 		// FIXME: This could be improved by using only a single thread and a synchronized bounded
 		// queue. Boost has an implementation of that.
-		std::thread writer_thread(std::bind(write_json_data, SCP_vector<json_data>(json_profile_data), ++json_frame_num));
-		writer_thread.detach();
+		tracing_frame_data frame_data;
+		frame_data.data = current_frame_data;
+		frame_data.frame_num = ++json_frame_num;
 
-		json_profile_data.clear();
+		pending_frame_data.push_back(std::move(frame_data));
+
+		current_frame_data.clear();
+
+		process_pending_data();
 	}
 }
 
