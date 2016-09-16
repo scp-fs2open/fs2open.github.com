@@ -15,6 +15,7 @@
 #include "io/timer.h"
 #include "render/3d.h" 
 #include "ship/ship.h"
+#include "tracing/tracing.h"
 #include "weapon/trails.h"
 
 int Num_trails;

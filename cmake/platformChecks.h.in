@@ -5,6 +5,8 @@
 
 #cmakedefine HAVE_EXECINFO_H
 #cmakedefine HAVE_CXXAPI_H
+#cmakedefine HAVE_MAX_ALIGN_T
+#cmakedefine HAVE_STD_MAX_ALIGN_T
 
 #cmakedefine01 IS_64BIT
 

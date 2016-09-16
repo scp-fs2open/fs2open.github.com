@@ -36,6 +36,7 @@
 #include "parse/scripting.h"
 #include "parse/parselo.h"
 #include "render/3d.h"
+#include "tracing/tracing.h"
 
 #if ( SDL_VERSION_ATLEAST(1, 2, 7) )
 #include "SDL_cpuinfo.h"
@@ -1073,16 +1074,27 @@ bool gr_init(os::GraphicsOperations* graphicsOps, int d_mode, int d_width, int d
 	bm_init();
 	io::mouse::CursorManager::init();
 
-	// load the web pointer cursor bitmap
-	if (!running_unittests && Web_cursor == NULL) {
-		//if it still hasn't loaded then this usually means that the executable isn't in the same directory as the main fs2 install
-		if ( (Web_cursor = io::mouse::CursorManager::get()->loadCursor("cursorweb", true)) == NULL ) {
-			Error(LOCATION, "\nWeb cursor bitmap not found.  This is most likely due to one of three reasons:\n"
-				"    1) You're running FreeSpace Open from somewhere other than your FreeSpace 2 folder;\n"
-				"    2) You've somehow corrupted your FreeSpace 2 installation, e.g. by modifying or removing the retail VP files;\n"
-				"    3) You haven't installed FreeSpace 2 at all.  (Note that installing FreeSpace Open does NOT remove the need for a FreeSpace 2 installation.)\n"
-				"Number 1 can be fixed by simply moving the FreeSpace Open executable file to the FreeSpace 2 folder.  Numbers 2 and 3 can be fixed by installing or reinstalling FreeSpace 2.\n");
+	bool missing_installation = false;
+	if (!running_unittests && Web_cursor == nullptr) {
+		if (Is_standalone) {
+			// Cursors don't work in standalone mode, just check if the animation exists.
+			auto handle = bm_load_animation("cursorweb");
+			if (handle < 0) {
+				missing_installation = true;
+			} else {
+				bm_release(handle);
+			}
+		} else {
+			Web_cursor = io::mouse::CursorManager::get()->loadCursor("cursorweb", true);
+			missing_installation = Web_cursor == nullptr;
 		}
+	}
+	if (missing_installation) {
+		Error(LOCATION, "\nWeb cursor bitmap not found.  This is most likely due to one of three reasons:\n"
+			"    1) You're running FreeSpace Open from somewhere other than your FreeSpace 2 folder;\n"
+			"    2) You've somehow corrupted your FreeSpace 2 installation, e.g. by modifying or removing the retail VP files;\n"
+			"    3) You haven't installed FreeSpace 2 at all.  (Note that installing FreeSpace Open does NOT remove the need for a FreeSpace 2 installation.)\n"
+			"Number 1 can be fixed by simply moving the FreeSpace Open executable file to the FreeSpace 2 folder.  Numbers 2 and 3 can be fixed by installing or reinstalling FreeSpace 2.\n");
 	}
 
 	mprintf(("GRAPHICS: Initializing default colors...\n"));
@@ -1241,6 +1253,8 @@ void gr_set_shader(shader *shade)
 // new bitmap functions
 void gr_bitmap(int _x, int _y, int resize_mode)
 {
+	GR_DEBUG_SCOPE("2D Bitmap");
+
 	int _w, _h;
 	float x, y, w, h;
 	vertex verts[4];
@@ -1302,6 +1316,8 @@ void gr_bitmap(int _x, int _y, int resize_mode)
 
 void gr_bitmap_uv(int _x, int _y, int _w, int _h, float _u0, float _v0, float _u1, float _v1, int resize_mode)
 {
+	GR_DEBUG_SCOPE("2D Bitmap UV");
+
 	float x, y, w, h;
 	vertex verts[4];
 
@@ -1338,8 +1354,12 @@ void gr_bitmap_uv(int _x, int _y, int _w, int _h, float _u0, float _v0, float _u
 	verts[3].texture_position.v = _v1;
 
 	material material_params;
-
-	material_set_interface(&material_params, gr_screen.current_bitmap, false, 1.0f);
+	material_set_interface(
+		&material_params,
+		gr_screen.current_bitmap,
+		gr_screen.current_alphablend_mode == GR_ALPHABLEND_FILTER ? true : false,
+		gr_screen.current_alphablend_mode == GR_ALPHABLEND_FILTER ? gr_screen.current_alpha : 1.0f
+	);
 	g3_render_primitives_textured(&material_params, verts, 4, PRIM_TYPE_TRIFAN, true);
 }
 
@@ -1363,6 +1383,8 @@ void gr_bitmap_uv(int _x, int _y, int _w, int _h, float _u0, float _v0, float _u
 //takes a list of rectangles that have assosiated rectangles in a texture
 void gr_bitmap_list(bitmap_rect_list* list, int n_bm, int resize_mode)
 {
+	GR_DEBUG_SCOPE("2D Bitmap list");
+
 	// adapted from g3_draw_2d_poly_bitmap_list
 
 	for ( int i = 0; i < n_bm; i++ ) {
@@ -1443,10 +1465,14 @@ void gr_bitmap_list(bitmap_rect_list* list, int n_bm, int resize_mode)
 		V->codes = 0;
 	}
 
-	material material_params;
-
-	material_set_unlit(&material_params, gr_screen.current_bitmap, 1.0f, true, false);
-	g3_render_primitives_textured(&material_params, vert_list, 6 * n_bm, PRIM_TYPE_TRIS, true);
+	material mat_params;
+	material_set_interface(
+		&mat_params,
+		gr_screen.current_bitmap,
+		gr_screen.current_alphablend_mode == GR_ALPHABLEND_FILTER ? true : false,
+		gr_screen.current_alphablend_mode == GR_ALPHABLEND_FILTER ? gr_screen.current_alpha : 1.0f
+	);
+	g3_render_primitives_textured(&mat_params, vert_list, 6 * n_bm, PRIM_TYPE_TRIS, true);
 
 	delete[] vert_list;
 }

@@ -4454,11 +4454,32 @@ void load_gauge_fixed_messages(gauge_settings* settings)
 	
 	int h = gr_get_font_height();
 
+	bool center_text;
+
 	settings->use_coords = true;
-	settings->coords[0] = 0x8000; //Magic number, means "Center on X"
-	settings->coords[1] = 5 + (h * 3);
+	// set both coords to INT_MIN so that it's possible to check whether a HUD table has overridden them
+	// (this is necessary to determine the default value for center_text)
+	settings->coords[0] = INT_MIN;
+	settings->coords[1] = INT_MIN;
 
 	HudGaugeFixedMessages* hud_gauge = gauge_load_common<HudGaugeFixedMessages>(settings);
+
+	if(settings->coords[0] == INT_MIN && settings->coords[1] == INT_MIN) {
+		// coords have almost certainly not been overridden; set them to their true defaults and set center_text to true
+		settings->coords[0] = settings->base_res[0] / 2;
+		settings->coords[1] = 5 + (h * 3);
+		hud_gauge->initPosition(settings->coords[0], settings->coords[1]);
+		center_text = true;
+	} else {
+		// coords have been overridden; set center_text to false
+		center_text = false;
+	}
+
+	if(optional_string("Center Text On Gauge X-Position:")) {
+		stuff_boolean(&center_text);
+	}
+
+	hud_gauge->initCenterText(center_text);
 
 	if(settings->ship_idx->at(0) >= 0) {
 		for (SCP_vector<int>::iterator ship_index = settings->ship_idx->begin(); ship_index != settings->ship_idx->end(); ++ship_index) {

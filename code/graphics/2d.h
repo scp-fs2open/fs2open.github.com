@@ -286,7 +286,8 @@ typedef enum gr_capability {
 	CAPABILITY_DEFERRED_LIGHTING,
 	CAPABILITY_SHADOWS,
 	CAPABILITY_BATCHED_SUBMODELS,
-	CAPABILITY_POINT_PARTICLES
+	CAPABILITY_POINT_PARTICLES,
+	CAPABILITY_TIMESTAMP_QUERY,
 } gr_capability;
 
 // stencil buffering stuff
@@ -593,6 +594,10 @@ struct light;
 #define GR_FOGMODE_NONE				0		// set this to turn off fog
 #define GR_FOGMODE_FOG				1		// linear fog
 
+enum class QueryType {
+	Timestamp
+};
+
 typedef struct screen {
 	uint	signature;			// changes when mode or palette or width or height changes
 	int	max_w, max_h;		// Width and height
@@ -737,9 +742,6 @@ typedef struct screen {
 	// color buffer writes
 	int (*gf_set_color_buffer)(int mode);
 
-	// cross fade
-	void (*gf_cross_fade)(int bmap1, int bmap2, int x1, int y1, int x2, int y2, float pct, int resize_mode);
-
 	// set a texture into cache. for sectioned bitmaps, pass in sx and sy to set that particular section of the bitmap
 	int (*gf_tcache_set)(int bitmap_id, int bitmap_type, float *u_scale, float *v_scale, int stage);	
 
@@ -847,6 +849,12 @@ typedef struct screen {
 
 	void (*gf_push_debug_group)(const char* name);
 	void (*gf_pop_debug_group)();
+
+	int (*gf_create_query_object)();
+	void (*gf_query_value)(int obj, QueryType type);
+	bool (*gf_query_value_available)(int obj);
+	std::uint64_t (*gf_get_query_value)(int obj);
+	void (*gf_delete_query_object)(int obj);
 } screen;
 
 // handy macro
@@ -1043,8 +1051,6 @@ __inline void gr_fog_set(int fog_mode, int r, int g, int b, float fog_near = -1.
 #define gr_set_cull			GR_CALL(gr_screen.gf_set_cull)
 #define gr_set_color_buffer	GR_CALL(gr_screen.gf_set_color_buffer)
 
-#define gr_cross_fade		GR_CALL(gr_screen.gf_cross_fade)
-
 __inline int gr_tcache_set(int bitmap_id, int bitmap_type, float *u_scale, float *v_scale, int stage = 0)
 {
 	return (*gr_screen.gf_tcache_set)(bitmap_id, bitmap_type, u_scale, v_scale, stage);
@@ -1193,6 +1199,31 @@ inline void gr_pop_debug_group()
 	(*gr_screen.gf_pop_debug_group)();
 }
 
+inline int gr_create_query_object()
+{
+	return (*gr_screen.gf_create_query_object)();
+}
+
+inline void gr_query_value(int obj, QueryType type)
+{
+	(*gr_screen.gf_query_value)(obj, type);
+}
+
+inline bool gr_query_value_available(int obj)
+{
+	return (*gr_screen.gf_query_value_available)(obj);
+}
+
+inline std::uint64_t gr_get_query_value(int obj)
+{
+	return (*gr_screen.gf_get_query_value)(obj);
+}
+
+inline void gr_delete_query_object(int obj)
+{
+	(*gr_screen.gf_delete_query_object)(obj);
+}
+
 // color functions
 void gr_get_color( int *r, int *g, int  b );
 void gr_init_color(color *c, int r, int g, int b);
@@ -1276,9 +1307,11 @@ class DebugScope {
 }
 
 #ifndef NDEBUG
-#define GR_DEBUG_SCOPE(var, name) ::graphics::DebugScope var(name)
+#define GR_TOKEN_CONCAT1(x, y) x ## y
+#define GR_TOKEN_CONCAT2(x, y) GR_TOKEN_CONCAT1(x, y)
+#define GR_DEBUG_SCOPE(name) ::graphics::DebugScope GR_TOKEN_CONCAT2(gr_scope, __LINE__)(name)
 #else
-#define GR_DEBUG_SCOPE(var, name) do {} while(0)
+#define GR_DEBUG_SCOPE(name) do {} while(0)
 #endif
 
 #endif

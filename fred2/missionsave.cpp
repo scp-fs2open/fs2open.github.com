@@ -593,6 +593,10 @@ void CFred_mission_save::save_ai_goals(ai_goal *goalp, int ship) {
 					str = "ai-chase-wing";
 					break;
 
+				case AI_GOAL_CHASE_SHIP_CLASS:
+					str = "ai-chase-ship-class";
+					break;
+
 				case AI_GOAL_GUARD:
 					str = "ai-guard";
 					break;

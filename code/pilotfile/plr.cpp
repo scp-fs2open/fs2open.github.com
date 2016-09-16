@@ -849,7 +849,7 @@ bool pilotfile::load_player(const char *callsign, player *_p)
 		size_t start_pos = cftell(cfp);
 
 		if (section_size == 0) {
-			mprintf(("PLR => 0 size section with id %d starting at %zu\n", section_id, start_pos));
+			mprintf(("PLR => 0 size section with id %d starting at %zu\n", (uint32_t)section_id, start_pos));
 			return false;
 		}
 
@@ -906,13 +906,13 @@ bool pilotfile::load_player(const char *callsign, player *_p)
 					break;
 
 				default:
-					mprintf(("PLR => Skipping unknown section 0x%04x!\n", section_id));
+					mprintf(("PLR => Skipping unknown section 0x%04x!\n", (uint32_t)section_id));
 					break;
 			}
 		} catch (cfile::max_read_length &msg) {
 			// read to max section size, move to next section, discarding
 			// extra/unknown data
-			mprintf(("PLR => (0x%04x) %s\n", section_id, msg.what()));
+			mprintf(("PLR => (0x%04x) %s\n", (uint32_t)section_id, msg.what()));
 		} catch (const char *err) {
 			mprintf(("PLR => ERROR: %s\n", err));
 			plr_close();
@@ -1077,7 +1077,7 @@ bool pilotfile::verify(const char *fname, int *rank, char *valid_language)
 		size_t start_pos = cftell(cfp);
 
 		if (section_size == 0) {
-			mprintf(("PLR => 0 size section with id %d starting at %zu\n", section_id, start_pos));
+			mprintf(("PLR => 0 size section with id %d starting at %zu\n", (uint32_t)section_id, start_pos));
 			return false;
 		}
 
@@ -1106,7 +1106,7 @@ bool pilotfile::verify(const char *fname, int *rank, char *valid_language)
 		} catch (cfile::max_read_length &msg) {
 			// read to max section size, move to next section, discarding
 			// extra/unknown data
-			mprintf(("PLR => (0x%04x) %s\n", section_id, msg.what()));
+			mprintf(("PLR => (0x%04x) %s\n", (uint32_t)section_id, msg.what()));
 		} catch (const char *err) {
 			mprintf(("PLR => ERROR: %s\n", err));
 			plr_close();
@@ -1120,7 +1120,7 @@ bool pilotfile::verify(const char *fname, int *rank, char *valid_language)
 		size_t offset_pos = (start_pos + section_size) - cftell(cfp);
 
 		if (offset_pos) {
-			mprintf(("PLR => Warning: (0x%04x) Short read, information may have been lost!\n", section_id));
+			mprintf(("PLR => Warning: (0x%04x) Short read, information may have been lost!\n", (uint32_t)section_id));
 			cfseek(cfp, (int)offset_pos, CF_SEEK_CUR);
 		}
 	}

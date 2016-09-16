@@ -13,6 +13,7 @@
 #include "graphics/2d.h"
 #include "render/3d.h"
 #include "graphics/material.h"
+#include "tracing/tracing.h"
 
 static SCP_map<batch_info, primitive_batch> Batching_primitives;
 static SCP_map<batch_buffer_key, primitive_batch_buffer> Batching_buffers;
@@ -979,6 +980,8 @@ void batching_render_buffer(primitive_batch_buffer *buffer)
 
 void batching_render_all(bool render_distortions)
 {
+	GR_DEBUG_SCOPE("Batching render all");
+
 	batching_load_buffers(render_distortions);
 
 	SCP_map<batch_buffer_key, primitive_batch_buffer>::iterator bi;

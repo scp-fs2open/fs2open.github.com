@@ -33,6 +33,8 @@ TARGET_LINK_LIBRARIES(code PUBLIC ${SDL_LIBS})
 TARGET_LINK_LIBRARIES(code PUBLIC platform)
 TARGET_LINK_LIBRARIES(code PUBLIC compiler)
 
+target_link_libraries(code PUBLIC md5)
+
 IF (FSO_USE_SPEECH)
 	find_package(Speech REQUIRED)
 	target_link_libraries(code PUBLIC speech)

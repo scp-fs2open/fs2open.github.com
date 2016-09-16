@@ -1350,6 +1350,10 @@ HudGauge(HUD_OBJECT_FIXED_MESSAGES, HUD_MESSAGE_LINES, false, true, (VM_WARP_CHA
 {
 }
 
+void HudGaugeFixedMessages::initCenterText(bool center) {
+	center_text = center;
+}
+
 void HudGaugeFixedMessages::render(float frametime) {
 	HUD_ft	*hp;
 
@@ -1358,7 +1362,13 @@ void HudGaugeFixedMessages::render(float frametime) {
 	if (!timestamp_elapsed(hp->end_time)) {
 		gr_set_color((hp->color >> 16) & 0xff, (hp->color >> 8) & 0xff, hp->color & 0xff);
 		
-		renderString(position[0], position[1], hp->text);
+		if (center_text) {
+			int w = 0;
+			gr_get_string_size(&w, nullptr, hp->text);
+			renderString(position[0] - (w / 2), position[1], hp->text);
+		} else {
+			renderString(position[0], position[1], hp->text);
+		}
 		//renderString(0x8000, MSG_WINDOW_Y_START + MSG_WINDOW_HEIGHT + 8, hp->text);
 	}
 }

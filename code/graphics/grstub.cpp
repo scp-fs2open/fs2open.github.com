@@ -107,10 +107,6 @@ void gr_stub_clear()
 {
 }
 
-void gr_stub_cross_fade(int bmap1, int bmap2, int x1, int y1, int x2, int y2, float pct, int resize_mode)
-{
-}
-
 void gr_stub_curve(int xc, int yc, int r, int direction, int resize_mode)
 {
 }
@@ -501,6 +497,29 @@ void gr_stub_push_debug_group(const char*){
 void gr_stub_pop_debug_group(){
 }
 
+int gr_stub_create_query_object()
+{
+	return -1;
+}
+
+void gr_stub_query_value(int obj, QueryType type)
+{
+}
+
+bool gr_stub_query_value_available(int obj)
+{
+	return false;
+}
+
+std::uint64_t gr_stub_get_query_value(int obj)
+{
+	return 0;
+}
+
+void gr_stub_delete_query_object(int obj)
+{
+}
+
 bool gr_stub_init() 
 {
 	if (gr_screen.res != GR_640) {
@@ -587,8 +606,6 @@ bool gr_stub_init()
 
 	gr_screen.gf_set_cull			= gr_stub_set_cull;
 	gr_screen.gf_set_color_buffer	= gr_stub_set_color_buffer;
-
-	gr_screen.gf_cross_fade			= gr_stub_cross_fade;
 
 	gr_screen.gf_tcache_set			= gr_stub_tcache_set;
 
@@ -680,6 +697,12 @@ bool gr_stub_init()
 
 	gr_screen.gf_push_debug_group = gr_stub_push_debug_group;
 	gr_screen.gf_pop_debug_group = gr_stub_pop_debug_group;
+
+	gr_screen.gf_create_query_object = gr_stub_create_query_object;
+	gr_screen.gf_query_value = gr_stub_query_value;
+	gr_screen.gf_query_value_available = gr_stub_query_value_available;
+	gr_screen.gf_get_query_value = gr_stub_get_query_value;
+	gr_screen.gf_delete_query_object = gr_stub_delete_query_object;
 
 	return true;
 }

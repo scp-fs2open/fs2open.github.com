@@ -15,6 +15,7 @@
 #include "object/object.h"
 #include "object/objectdock.h"
 #include "ship/ship.h"
+#include "tracing/tracing.h"
 #include "weapon/beam.h"
 #include "weapon/weapon.h"
 

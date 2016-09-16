@@ -86,7 +86,7 @@ void material_set_interface(material* mat_info, int texture, bool blended, float
 	mat_info->set_texture_map(TM_BASE_TYPE, texture);
 	mat_info->set_texture_type(material::TEX_TYPE_INTERFACE);
 
-	mat_info->set_blend_mode(material_determine_blend_mode(texture, blended));
+	mat_info->set_blend_mode(ALPHA_BLEND_ALPHA_BLEND_ALPHA);
 	mat_info->set_depth_mode(ZBUFFER_TYPE_NONE);
 	mat_info->set_cull_mode(false);
 

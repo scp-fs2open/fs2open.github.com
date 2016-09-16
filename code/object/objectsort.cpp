@@ -26,6 +26,7 @@
 #include "render/3d.h"
 #include "render/batching.h"
 #include "ship/ship.h"
+#include "tracing/tracing.h"
 #include "weapon/weapon.h"
 
 
@@ -331,7 +332,7 @@ void obj_render_all(void (*render_function)(object *objp), bool *draw_viewer_las
 
 void obj_render_queue_all()
 {
-	GR_DEBUG_SCOPE(scene_scope, "Render all objects");
+	GR_DEBUG_SCOPE("Render all objects");
 
 	object *objp;
 	int i;

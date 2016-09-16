@@ -3409,6 +3409,7 @@ char *error_check_initial_orders(ai_goal *goals, int ship, int wing)
 		switch (goals[i].ai_mode) {
 			case AI_GOAL_NONE:
 			case AI_GOAL_CHASE_ANY:
+			case AI_GOAL_CHASE_SHIP_CLASS:
 			case AI_GOAL_UNDOCK:
 			case AI_GOAL_KEEP_SAFE_DISTANCE:
 			case AI_GOAL_PLAY_DEAD:

@@ -71,7 +71,7 @@ namespace graphics
 
 			virtual void ellipse(float x, float y, float rx, float ry) SCP_OVERRIDE;
 
-			virtual void arc(float cx, float cy, float r, float a0, float a1, Direction dir);
+			virtual void arc(float cx, float cy, float r, float a0, float a1, Direction dir) SCP_OVERRIDE;
 
 			virtual void closePath() SCP_OVERRIDE;
 

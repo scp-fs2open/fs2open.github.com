@@ -145,8 +145,10 @@ public:
 
 class HudGaugeFixedMessages: public HudGauge
 {
+	bool center_text;
 public:
 	HudGaugeFixedMessages();
+	void initCenterText(bool center);
 	void render(float frametime);
 	void pageIn();
 };

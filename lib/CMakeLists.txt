@@ -24,3 +24,5 @@ ADD_SUBDIRECTORY(jansson)
 IF(UNIX)
 	ADD_SUBDIRECTORY(mongoose)
 ENDIF(UNIX)
+
+add_subdirectory(md5)

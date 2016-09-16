@@ -38,6 +38,7 @@
 #include "render/3d.h"
 #include "ship/afterburner.h"
 #include "ship/ship.h"
+#include "tracing/tracing.h"
 #include "weapon/beam.h"
 #include "weapon/shockwave.h"
 #include "weapon/swarm.h"

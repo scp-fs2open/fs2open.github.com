@@ -12,6 +12,7 @@
 
 #include <utility>
 #include <globalincs/systemvars.h>
+#include <graphics/2d.h>
 
 namespace
 {
@@ -38,7 +39,9 @@ namespace
 #endif
 
 		SDL_Surface* bitmapSurface = SDL_CreateRGBSurface(0, w, h, 32, rmask, gmask, bmask, amask);
-		SDL_LockSurface(bitmapSurface);
+		if (SDL_LockSurface(bitmapSurface) < 0) {
+			return nullptr;
+		}
 		bitmap* bmp = bm_lock(bitmapNum, 32, BMP_TEX_XPARENT);
 
 		memcpy(bitmapSurface->pixels, reinterpret_cast<void*>(bmp->data), w * h * 4);
@@ -181,8 +184,6 @@ namespace io
 
 		Cursor* CursorManager::loadCursor(const char* fileName, bool animated)
 		{
-			Assertion(!Is_standalone, "Cursors can't be loaded in standalone mode!");
-
 			int handle;
 
 			if (animated)
@@ -207,6 +208,8 @@ namespace io
 
 		Cursor* CursorManager::loadFromBitmap(int bitmapHandle)
 		{
+			Assertion(gr_screen.mode != GR_STUB, "Cursors can not be used with the stub renderer!");
+
 			Assertion(bm_is_valid(bitmapHandle), "%d is no valid bitmap handle!", bitmapHandle);
 
 			int nframes;
@@ -218,7 +221,13 @@ namespace io
 
 			for (int i = 0; i < nframes; ++i)
 			{
-				cursor->addFrame(bitmapToCursor(bitmapHandle + i));
+				auto sdlCursor = bitmapToCursor(bitmapHandle + i);
+				if (sdlCursor != nullptr) {
+					cursor->addFrame(sdlCursor);
+				} else {
+					// Failed to convert bitmap
+					return nullptr;
+				}
 			}
 
 			mLoadedCursors.push_back(std::move(cursor));

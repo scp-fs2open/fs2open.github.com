@@ -157,6 +157,7 @@
 #include "starfield/supernova.h"
 #include "stats/medals.h"
 #include "stats/stats.h"
+#include "tracing/tracing.h"
 #include "weapon/beam.h"
 #include "weapon/emp.h"
 #include "weapon/flak.h"
@@ -260,10 +261,8 @@ fix FrametimeOverall = 0;
 
 #ifndef NDEBUG
 	int	Show_framerate = 1;
-	int	Show_mem = 1;
 #else 
 	int	Show_framerate = 0;
-	int	Show_mem = 0;
 #endif
 
 int	Framerate_cap = 120;
@@ -1191,42 +1190,6 @@ void game_loading_callback(int count)
 	}
 #endif
 
-#ifndef NDEBUG
-	if(Cmdline_show_mem_usage)
-	{
-		int line_height = gr_get_font_height() + 1;
-		size_t i;
-		char mem_buffer[1000];
-
-		memory::sort_memory_blocks();
-		for(i = 0; i < 30; i++)
-		{
-			const char* full_name;
-			size_t size;
-			if (!memory::get_memory_block(i, full_name, size))
-			{
-				break;
-			}
-
-			size /= 1024;
-
-			if(size == 0)
-				break;
-
-			const char *short_name = strrchr(full_name, DIR_SEPARATOR_CHAR);
-			if(short_name == NULL)
-				short_name = full_name;
-			else
-				short_name++;
-
-			sprintf(mem_buffer,"%s:\t" SIZE_T_ARG " K", short_name, size);
-			gr_string( 20, 220 + (int)(i*line_height), mem_buffer, GR_RESIZE_MENU);
-		}
-		sprintf(mem_buffer,"Total RAM:\t" SIZE_T_ARG " K", memory::get_used_memory() / 1024);
-		gr_string( 20, 230 + (int)(i*line_height), mem_buffer, GR_RESIZE_MENU);
-	}
-#endif	// !NDEBUG
-
 	os_ignore_events();
 
 	if (do_flip)
@@ -1547,37 +1510,6 @@ DCF(warp, "Tests warpin effect")
 	
 }
 
-DCF(show_mem,"Toggles showing mem usage")
-{
-	bool process = true;
-
-	if (dc_optional_string_either("help", "--help")) {
-		dc_printf( "Usage: (optional) bool Show_mem\n If true, Show_mem is set and Show_cpu is cleared.  If false, then Show_mem is cleared.  If nothing passed, then toggle.\n" );
-		process = false;
-	}
-	
-	if (dc_optional_string_either("status", "--status") || dc_optional_string_either("?", "--?")) {
-		dc_printf("Show_mem is %s\n", (Show_mem ? "TRUE" : "FALSE"));
-		dc_printf("Show_cpu is %s\n", (Show_cpu ? "TRUE" : "FALSE"));
-		process = false;
-	}
-	
-	if (!process) {
-		// Help and/or status was given, so don't process the command
-		return;
-	} // Else, process the command
-
-	if (!dc_maybe_stuff_boolean(&Show_mem)) {
-		// Nothing passed, so toggle
-		Show_mem = !Show_mem;
-	}	// Else, value was set/cleared by user
-
-	// Can't show mem and cpu at same time
-	if (Show_mem) {
-		Show_cpu = false;
-	}
-}
-
 DCF(show_cpu,"Toggles showing cpu usage")
 {
 	bool process = true;
@@ -1589,7 +1521,6 @@ DCF(show_cpu,"Toggles showing cpu usage")
 	
 	if (dc_optional_string_either("status", "--status") || dc_optional_string_either("?", "--?")) {
 		dc_printf("Show_cpu is %s\n", (Show_cpu ? "TRUE" : "FALSE"));
-		dc_printf("Show_mem is %s\n", (Show_mem ? "TRUE" : "FALSE"));
 		process = false;
 	}
 
@@ -1602,11 +1533,6 @@ DCF(show_cpu,"Toggles showing cpu usage")
 		// Nothing passed, so toggle
 		Show_cpu = !Show_cpu;
 	}	// Else, value was set/cleared by user
-
-	// Can't show mem and cpu at same time
-	if (Show_cpu) {
-		Show_mem = false;
-	}
 }
 
 #endif
@@ -1873,7 +1799,10 @@ void game_init()
 // SOUND INIT END
 /////////////////////////////
 
-	sdlGraphicsOperations.reset(new SDLGraphicsOperations());
+	if (!Is_standalone) {
+		// Standalone mode doesn't require graphics operations
+		sdlGraphicsOperations.reset(new SDLGraphicsOperations());
+	}
 	if ( gr_init(sdlGraphicsOperations.get()) == false ) {
 		os::dialogs::Message(os::dialogs::MESSAGEBOX_ERROR, "Error intializing graphics!");
 		exit(1);
@@ -2046,9 +1975,13 @@ void game_init()
 	pilot_load_pic_list();	
 	pilot_load_squad_pic_list();
 
-	// Load the default cursor and enable it
-	io::mouse::Cursor* cursor = io::mouse::CursorManager::get()->loadCursor("cursor", true);
-	io::mouse::CursorManager::get()->setCurrentCursor(cursor);
+	if (!Is_standalone) {
+		// Load the default cursor and enable it
+		io::mouse::Cursor* cursor = io::mouse::CursorManager::get()->loadCursor("cursor", true);
+		if (cursor) {
+			io::mouse::CursorManager::get()->setCurrentCursor(cursor);
+		}
+	}
 
 	if(!Cmdline_reparse_mainhall)
 	{
@@ -2275,80 +2208,12 @@ void game_show_framerate()
 			sy += line_height;
 		}
 	}
-	 	
-	if ( Show_mem  ) {
-
-		int sx,sy;
-		sx = gr_screen.center_offset_x + gr_screen.center_w - 154;
-		sy = gr_screen.center_offset_y + 15;
-
-		gr_set_color_fast(&HUD_color_debug);
-
-		{
-			gr_printf_no_resize( sx, sy, NOX("DYN: " SIZE_T_ARG " KB\n"), memory::get_used_memory()/1024 );
-			sy += line_height;
-		}	
-
-		{
-			extern int Model_ram;
-			gr_printf_no_resize( sx, sy, NOX("POF: %d KB\n"), Model_ram/1024 );
-			sy += line_height;
-		}	
-
-		gr_printf_no_resize( sx, sy, NOX("%s: %d KB\n"), (Cmdline_cache_bitmaps) ? NOX("C-BMP") : NOX("BMP"), bm_texture_ram/1024 );
-		sy += line_height;
-
-		gr_printf_no_resize( sx, sy, NOX("S-SRAM: %d KB\n"), Snd_sram/1024 );		// mem used to store game sound
-		sy += line_height;
-
-		{
-			extern int GL_textures_in;
-			extern size_t GL_vertex_data_in;
-			gr_printf_no_resize( sx, sy, NOX("VRAM: " SIZE_T_ARG " KB\n"), (GL_textures_in + GL_vertex_data_in)/1024 );
-			sy += line_height;
-		}
-	}
-
 
 	if ( Show_player_pos ) {
 		int sx, sy;
 		sx = gr_screen.center_offset_x + 320;
 		sy = gr_screen.center_offset_y + 100;
 		gr_printf_no_resize(sx, sy, NOX("Player Pos: (%d,%d,%d)"), fl2i(Player_obj->pos.xyz.x), fl2i(Player_obj->pos.xyz.y), fl2i(Player_obj->pos.xyz.z));
-	}
-
-
-	if(Cmdline_show_mem_usage)
-	{
-		size_t i;
-		char mem_buffer[1000];
-
-		memory::sort_memory_blocks();
-		for(i = 0; i < 30; i++)
-		{
-			const char* full_name;
-			size_t size;
-			if (!memory::get_memory_block(i, full_name, size))
-			{
-				break;
-			}
-
-			size /= 1024;
-
-			if(size == 0)
-				break;
-
-			const char *short_name = strrchr(full_name, DIR_SEPARATOR_CHAR);
-			if(short_name == NULL)
-				short_name = full_name;
-			else
-				short_name++;
-
-			sprintf(mem_buffer,"%s:\t" SIZE_T_ARG " K", short_name, size);
-			gr_string( 20, 220 + (int)(i*line_height), mem_buffer, GR_RESIZE_MENU);
-		}
-		sprintf(mem_buffer,"Total RAM:\t" SIZE_T_ARG " K", memory::get_used_memory() / 1024);
-		gr_string( 20, 230 + (int)(i*line_height), mem_buffer, GR_RESIZE_MENU);
 	}
 
 	MONITOR_INC(NumPolys, modelstats_num_polys);
@@ -3665,7 +3530,7 @@ extern SCP_vector<object*> effect_ships;
 extern SCP_vector<object*> transparent_objects;
 void game_render_frame( camid cid )
 {
-	GR_DEBUG_SCOPE(main_scope, "Main Frame");
+	GR_DEBUG_SCOPE("Main Frame");
 	g3_start_frame(game_zbuffer);
 
 	camera *cam = cid.getCamera();
@@ -3711,7 +3576,7 @@ void game_render_frame( camid cid )
 	// Note: environment mapping gets disabled when rendering to texture; if you change
 	// this, make sure that the current render target gets restored right afterwards!
 	if ( Cmdline_env && !Env_cubemap_drawn && gr_screen.rendering_to_texture == -1 ) {
-		GR_DEBUG_SCOPE(env_scope, "Environment Mapping");
+		GR_DEBUG_SCOPE("Environment Mapping");
 
 		PROFILE("Environment Mapping", setup_environment_mapping(cid));
 
@@ -3799,7 +3664,7 @@ void game_render_frame( camid cid )
 	//Draw viewer cockpit
 	if(Viewer_obj != NULL && Viewer_mode != VM_TOPDOWN && Ship_info[Ships[Viewer_obj->instance].ship_info_index].cockpit_model_num > 0)
 	{
-		GR_DEBUG_SCOPE(cockpit_scope, "Render Cockpit");
+		GR_DEBUG_SCOPE("Render Cockpit");
 
 		gr_post_process_save_zbuffer();
 		ship_render_cockpit(Viewer_obj);
@@ -4441,6 +4306,8 @@ void game_frame(bool paused)
 			Script_system.RemHookVar("Self");
 
 			if(Scripting_didnt_draw_hud) {
+				GR_DEBUG_SCOPE("Render HUD");
+
 				game_render_hud(cid);
 			}
 			HUD_reset_clip();
@@ -8581,8 +8448,6 @@ int actual_main(int argc, char *argv[])
 {
 	int result = -1;
 	Assert(argc > 0);
-
-	memory::init();
 
 #ifdef WIN32
 	// Don't let more than one instance of FreeSpace run.

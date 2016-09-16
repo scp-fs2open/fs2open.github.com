@@ -703,6 +703,7 @@ sexp_oper Operators[] = {
 	//AI Goals Category
 	{ "ai-chase",						OP_AI_CHASE,							2,	3,			SEXP_GOAL_OPERATOR,	},
 	{ "ai-chase-wing",					OP_AI_CHASE_WING,						2,	3,			SEXP_GOAL_OPERATOR,	},
+	{ "ai-chase-ship-class",			OP_AI_CHASE_SHIP_CLASS,					2,	3,			SEXP_GOAL_OPERATOR, },
 	{ "ai-chase-any",					OP_AI_CHASE_ANY,						1,	1,			SEXP_GOAL_OPERATOR,	},
 	{ "ai-guard",						OP_AI_GUARD,							2,	2,			SEXP_GOAL_OPERATOR,	},
 	{ "ai-guard-wing",					OP_AI_GUARD_WING,						2,	2,			SEXP_GOAL_OPERATOR,	},
@@ -755,6 +756,8 @@ sexp_oper Operators[] = {
 sexp_ai_goal_link Sexp_ai_goal_links[] = {
 	{ AI_GOAL_CHASE, OP_AI_CHASE },
 	{ AI_GOAL_CHASE_WING, OP_AI_CHASE_WING },
+	{ AI_GOAL_CHASE_SHIP_CLASS, OP_AI_CHASE_SHIP_CLASS },
+	{ AI_GOAL_CHASE_ANY, OP_AI_CHASE_ANY },
 	{ AI_GOAL_DOCK, OP_AI_DOCK },
 	{ AI_GOAL_UNDOCK, OP_AI_UNDOCK },
 	{ AI_GOAL_WARP, OP_AI_WARP_OUT },
@@ -765,7 +768,6 @@ sexp_ai_goal_link Sexp_ai_goal_links[] = {
 	{ AI_GOAL_DISABLE_SHIP, OP_AI_DISABLE_SHIP },
 	{ AI_GOAL_DISARM_SHIP, OP_AI_DISARM_SHIP },
 	{ AI_GOAL_GUARD, OP_AI_GUARD },
-	{ AI_GOAL_CHASE_ANY, OP_AI_CHASE_ANY },
 	{ AI_GOAL_GUARD_WING, OP_AI_GUARD_WING },
 	{ AI_GOAL_EVADE_SHIP, OP_AI_EVADE_SHIP },
 	{ AI_GOAL_STAY_NEAR_SHIP, OP_AI_STAY_NEAR_SHIP },
@@ -5784,7 +5786,9 @@ int sexp_mission_time()
 int sexp_mission_time_msecs()
 {
 	// multiplying by 1000 can go over the limit for LONG_MAX so cast to long long int first
-	return f2i((longlong)Missiontime * 1000);
+	auto mission_time = (std::int64_t) Missiontime;
+	// This hack is necessary since fix is a 32-bit integer which would overflow if f2i would be used
+	return (int)((mission_time * 1000) / 65536);
 }
 
 /**
@@ -26675,6 +26679,9 @@ int query_operator_return_type(int op)
 			return OPR_NULL;
 
 		case OP_AI_CHASE:
+		case OP_AI_CHASE_WING:
+		case OP_AI_CHASE_SHIP_CLASS:
+		case OP_AI_CHASE_ANY:
 		case OP_AI_DOCK:
 		case OP_AI_UNDOCK:
 		case OP_AI_WARP:						// this particular operator is obsolete
@@ -26682,12 +26689,10 @@ int query_operator_return_type(int op)
 		case OP_AI_WAYPOINTS:
 		case OP_AI_WAYPOINTS_ONCE:
 		case OP_AI_DESTROY_SUBSYS:
-		case OP_AI_CHASE_WING:
 		case OP_AI_DISABLE_SHIP:
 		case OP_AI_DISARM_SHIP:
 		case OP_AI_GUARD:
 		case OP_AI_GUARD_WING:
-		case OP_AI_CHASE_ANY:
 		case OP_AI_EVADE_SHIP:
 		case OP_AI_STAY_NEAR_SHIP:
 		case OP_AI_KEEP_SAFE_DISTANCE:
@@ -27436,9 +27441,31 @@ int query_operator_argument_type(int op, int argnum)
 			else
 				return OPF_BOOL;
 
+		case OP_AI_CHASE_WING:
+			if (argnum == 0)
+				return OPF_WING;
+			else if (argnum == 1)
+				return OPF_POSITIVE;
+			else
+				return OPF_BOOL;
+
+		case OP_AI_CHASE_SHIP_CLASS:
+			if (argnum == 0)
+				return OPF_SHIP_CLASS_NAME;
+			else if (argnum == 1)
+				return OPF_POSITIVE;
+			else
+				return OPF_BOOL;
+
 		case OP_AI_GUARD:
 			if (!argnum)
 				return OPF_SHIP_WING;
+			else
+				return OPF_POSITIVE;
+
+		case OP_AI_GUARD_WING:
+			if (!argnum)
+				return OPF_WING;
 			else
 				return OPF_POSITIVE;
 
@@ -27460,20 +27487,6 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_POSITIVE;
 			else
 				return OPF_SHIP;
-
-		case OP_AI_CHASE_WING:
-			if (argnum == 0)
-				return OPF_WING;
-			else if (argnum == 1)
-				return OPF_POSITIVE;
-			else
-				return OPF_BOOL;
-
-		case OP_AI_GUARD_WING:
-			if (!argnum)
-				return OPF_WING;
-			else
-				return OPF_POSITIVE;
 
 		case OP_AI_DESTROY_SUBSYS:
 			if (!argnum)
@@ -32293,6 +32306,28 @@ sexp_help_struct Sexp_help[] = {
 		"\t3 (optional):\tWhether to attack the target even if it is on the same team; defaults to false."
 	},
 
+	{ OP_AI_CHASE_WING, "Ai-chase wing (Ship goal)\r\n"
+		"\tCauses the specified ship to chase and attack the specified target.\r\n\r\n"
+		"Takes 2 or 3 arguments...\r\n"
+		"\t1:\tName of wing to chase.\r\n"
+		"\t2:\tGoal priority (number between 0 and 200. Player orders have a priority of 90-100).\r\n"
+		"\t3 (optional):\tWhether to attack the target even if it is on the same team; defaults to false."
+	},
+
+	{ OP_AI_CHASE_SHIP_CLASS, "Ai-chase ship class (Ship goal)\r\n"
+		"\tCauses the specified ship to chase and attack the specified target ship class.\r\n\r\n"
+		"Takes 2 or 3 arguments...\r\n"
+		"\t1:\tName of ship class to chase.\r\n"
+		"\t2:\tGoal priority (number between 0 and 200. Player orders have a priority of 90-100).\r\n"
+		"\t3 (optional):\tWhether to attack the target even if it is on the same team; defaults to false."
+	},
+
+	{ OP_AI_CHASE_ANY, "Ai-chase-any (Ship goal)\r\n"
+		"\tCauses the specified ship to chase and attack any ship on the opposite team.\r\n\r\n"
+		"Takes 1 argument...\r\n"
+		"\t1:\tGoal priority (number between 0 and 200. Player orders have a priority of 90-100)."
+	},
+
 	{ OP_AI_DOCK, "Ai-dock (Ship goal)\r\n"
 		"\tCauses one ship to dock with another ship.\r\n\r\n"
 		"Takes 4 arguments...\r\n"
@@ -32336,14 +32371,6 @@ sexp_help_struct Sexp_help[] = {
 		"\t4 (optional):\tWhether to attack the target even if it is on the same team; defaults to false."
 	},
 
-	{ OP_AI_CHASE_WING, "Ai-chase wing (Ship goal)\r\n"
-		"\tCauses the specified ship to chase and attack the specified target.\r\n\r\n"
-		"Takes 2 or 3 arguments...\r\n"
-		"\t1:\tName of wing to chase.\r\n"
-		"\t2:\tGoal priority (number between 0 and 200. Player orders have a priority of 90-100).\r\n"
-		"\t3 (optional):\tWhether to attack the target even if it is on the same team; defaults to false."
-	},
-
 	{ OP_AI_DISABLE_SHIP, "Ai-disable-ship (Ship/wing goal)\r\n"
 		"\tThis AI goal causes a ship/wing to destroy all of the engine subsystems on "
 		"the specified ship.  This goal is different than ai-destroy-subsystem since a ship "
@@ -32377,11 +32404,6 @@ sexp_help_struct Sexp_help[] = {
 		"Takes 2 arguments...\r\n"
 		"\t1:\tName of ship to guard.\r\n"
 		"\t2:\tGoal priority (number between 0 and 200. Player orders have a priority of 90-100)." },
-
-	{ OP_AI_CHASE_ANY, "Ai-chase-any (Ship goal)\r\n"
-		"\tCauses the specified ship to chase and attack any ship on the opposite team.\r\n\r\n"
-		"Takes 1 argument...\r\n"
-		"\t1:\tGoal priority (number between 0 and 200. Player orders have a priority of 90-100)." },
 
 	{ OP_AI_GUARD_WING, "Ai-guard wing (Ship goal)\r\n"
 		"\tCauses the specified ship to guard a wing of ships from other ships not on the "
