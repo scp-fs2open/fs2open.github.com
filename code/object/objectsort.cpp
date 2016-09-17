@@ -323,6 +323,9 @@ void obj_render_all(void (*render_function)(object *objp), bool *draw_viewer_las
 
 	Sorted_objects.clear();
 	
+	batching_render_all();
+	batching_render_all(true);
+
 	// if we're fullneb, switch off the fog effet
 	if((The_mission.flags[Mission::Mission_Flags::Fullneb]) && (Neb2_render_mode != NEB2_RENDER_NONE)){
 		gr_fog_set(GR_FOGMODE_NONE, 0, 0, 0);
