@@ -66,3 +66,11 @@ include(CreateLaunchers)
 create_target_launcher(Freespace2
 	WORKING_DIRECTORY ${FSO_FREESPACE_PATH}
 	ARGS ${FSO_RUN_ARGUMENTS})
+
+separate_arguments(RUN_ARGS_LIST UNIX_COMMAND "${FSO_RUN_ARGUMENTS}")
+message("${FSO_RUN_ARGUMENTS}")
+add_custom_target(launch_fso
+		COMMAND Freespace2 ${RUN_ARGS_LIST}
+		WORKING_DIRECTORY "${FSO_FREESPACE_PATH}"
+		COMMENT "Launching FreeSpace"
+		VERBATIM)
