@@ -372,7 +372,7 @@ void model_batch_buffer::allocate_memory()
 
 void model_batch_buffer::submit_buffer_data()
 {
-	if ( Submodel_matrices.size() == 0 ) {
+	if ( Submodel_matrices.empty() ) {
 		return;
 	}
 
@@ -562,7 +562,7 @@ void draw_list::push_transform(vec3d *pos, matrix *orient)
 		origin = *pos;
 	}
 
-	if ( Transform_stack.size() == 0 ) {
+	if ( Transform_stack.empty() ) {
 		Current_transform.basis = basis;
 		Current_transform.origin = origin;
 
@@ -585,11 +585,11 @@ void draw_list::push_transform(vec3d *pos, matrix *orient)
 
 void draw_list::pop_transform()
 {
-	Assert( Transform_stack.size() > 0 );
+	Assert( !Transform_stack.empty() );
 
 	Transform_stack.pop_back();
 
-	if ( Transform_stack.size() > 0 ) {
+	if ( !Transform_stack.empty() ) {
 		Current_transform = Transform_stack.back();
 	} else {
 		Current_transform = transform();

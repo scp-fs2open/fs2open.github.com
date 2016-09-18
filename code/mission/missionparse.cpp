@@ -3016,7 +3016,7 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
     {
         SCP_vector<SCP_string> unparsed;
         parse_string_flag_list(p_objp->flags, Parse_object_flags, num_parse_object_flags, &unparsed);
-        if (unparsed.size() > 0) {
+        if (!unparsed.empty()) {
             for (size_t k = 0; k < unparsed.size(); ++k) {
                 WarningEx(LOCATION, "Unknown flag in parse object flags: %s", unparsed[k].c_str());
             }
@@ -3028,7 +3028,7 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
     {
         SCP_vector<SCP_string> unparsed;
         parse_string_flag_list(p_objp->flags, Parse_object_flags, num_parse_object_flags, &unparsed);
-        if (unparsed.size() > 0) {
+        if (!unparsed.empty()) {
             for (size_t k = 0; k < unparsed.size(); ++k) {
                 WarningEx(LOCATION, "Unknown flag in parse object flags: %s", unparsed[k].c_str());
             }

@@ -670,7 +670,7 @@ void bg_bitmap_dlg::sun_data_init()
 	}		
 
 	// if we have at least one item, select it
-	if (background->suns.size() > 0)
+	if (!background->suns.empty())
 	{
 		clb->SetCurSel(0);
 		OnSunChange();
@@ -834,7 +834,7 @@ void bg_bitmap_dlg::bitmap_data_init()
 	}		
 
 	// if we have at least one item, select it
-	if (background->bitmaps.size() > 0)
+	if (!background->bitmaps.empty())
 	{
 		clb->SetCurSel(0);
 		OnBitmapChange();

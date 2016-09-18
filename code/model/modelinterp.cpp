@@ -2169,7 +2169,7 @@ void interp_pack_vertex_buffers(polymodel *pm, int mn)
 
 	bool rval = model_interp_pack_buffer(&pm->vert_source, &model->buffer);
 
-	if ( model->trans_buffer.flags & VB_FLAG_TRANS && model->trans_buffer.tex_buf.size() > 0 ) {
+	if ( model->trans_buffer.flags & VB_FLAG_TRANS && !model->trans_buffer.tex_buf.empty() ) {
 		model_interp_pack_buffer(&pm->vert_source, &model->trans_buffer);
 	}
 
@@ -2528,14 +2528,14 @@ void interp_create_detail_index_buffer(polymodel *pm, int detail_num)
 
 	model_get_submodel_tree_list(submodel_list, pm, pm->detail[detail_num]);
 
-	if ( submodel_list.size() < 1 ) {
+	if ( submodel_list.empty() ) {
 		return;
 	}
 
 	interp_fill_detail_index_buffer(submodel_list, pm, &pm->detail_buffers[detail_num]);
 	
 	// check if anything was even put into this buffer
-	if ( pm->detail_buffers[detail_num].tex_buf.size() < 1 ) {
+	if ( pm->detail_buffers[detail_num].tex_buf.empty() ) {
 		return;
 	} 
 
@@ -2689,7 +2689,7 @@ void model_interp_process_shield_mesh(polymodel * pm)
 		n_verts += 3;
 	}
 	
-	if ( buffer.size() > 0 ) {
+	if ( !buffer.empty() ) {
 		pm->shield.buffer_id = gr_create_vertex_buffer(true);
 		pm->shield.buffer_n_verts = n_verts;
 		gr_update_buffer_data(pm->shield.buffer_id, buffer.size() * sizeof(vec3d), &buffer[0]);

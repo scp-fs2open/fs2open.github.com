@@ -256,7 +256,7 @@ void HudGaugeReticle::render(float frametime)
 		fp.clear();
 		getFirepointStatus();
 		
-		if (fp.size() > 0) {
+		if (!fp.empty()) {
 			int ax, ay;
 			bm_get_info(crosshair.first_frame, &ax, &ay);
 			int centerX = position[0] + (ax / 2);

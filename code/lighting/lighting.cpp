@@ -1185,7 +1185,7 @@ light_indexing_info scene_lights::bufferLights()
 	light_info.num_lights = 0;
 
 	// make sure that there are lights to bind?
-	if ( FilteredLights.size() <= 0 ) {
+	if ( FilteredLights.empty() ) {
 		return light_info;
 	}
 

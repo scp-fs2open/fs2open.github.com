@@ -9952,7 +9952,7 @@ void sexp_hud_set_directive(int n)
 
 void sexp_hud_clear_messages()
 {
-	if(Ship_info[Player_ship->ship_info_index].hud_gauges.size() > 0) {
+	if(!Ship_info[Player_ship->ship_info_index].hud_gauges.empty()) {
 		size_t num_gauges = Ship_info[Player_ship->ship_info_index].hud_gauges.size();
 
 		for(size_t i = 0; i < num_gauges; i++) {
@@ -10087,7 +10087,7 @@ void sexp_hud_activate_gauge_type(int n) {
 	bool active = (is_sexp_true(CDR(n)) != 0);
 	
 	if (config_type != -1) { 
-		if(Ship_info[Player_ship->ship_info_index].hud_gauges.size() > 0) {
+		if(!Ship_info[Player_ship->ship_info_index].hud_gauges.empty()) {
 			size_t num_gauges = Ship_info[Player_ship->ship_info_index].hud_gauges.size();
 
 			for(size_t i = 0; i < num_gauges; i++) {
@@ -10115,7 +10115,7 @@ void sexp_hud_set_retail_gauge_active(int node) {
 		int config_type = hud_gauge_type_lookup(CTEXT(node));
 
 		if (config_type != -1) {
-			if(Ship_info[Player_ship->ship_info_index].hud_gauges.size() > 0) {
+			if(!Ship_info[Player_ship->ship_info_index].hud_gauges.empty()) {
 			size_t num_gauges = Ship_info[Player_ship->ship_info_index].hud_gauges.size();
 
 			for(size_t i = 0; i < num_gauges; i++) {

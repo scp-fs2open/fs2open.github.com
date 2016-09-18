@@ -608,7 +608,7 @@ static void mkdir_recursive(const char *path) {
     while ((pos = tmp.find_first_of(DIR_SEPARATOR_CHAR, pre)) != std::string::npos) {
         dir = tmp.substr(0, pos++);
         pre = pos;
-        if (dir.size() == 0) continue; // if leading / first time is 0 length
+        if (dir.empty()) continue; // if leading / first time is 0 length
         
         _mkdir(dir.c_str());
     }

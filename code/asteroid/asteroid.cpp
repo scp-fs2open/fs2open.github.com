@@ -1916,7 +1916,7 @@ void asteroid_parse_tbl()
 	char impact_ani_file[MAX_FILENAME_LEN];
 
 	// How did we get here without having any species defined?
-	Assertion(Species_info.size() > 0,
+	Assertion(!Species_info.empty(),
 		"Cannot parse asteroids/debris if there "
 		"are no species for them to belong to."
 		);

@@ -575,7 +575,7 @@ void parse_wi_flags(weapon_info *weaponp, flagset<Weapon::Info_Flags> wi_flags)
 
     bool set_nopierce = false;
 
-    if (unparsed_or_special.size() > 0) {
+    if (!unparsed_or_special.empty()) {
 
         for (auto flag = unparsed_or_special.begin(); flag != unparsed_or_special.end(); ++flag) {
             SCP_string flag_text = *flag;

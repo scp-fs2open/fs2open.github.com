@@ -420,7 +420,7 @@ void main_hall_init(const SCP_string &main_hall_name)
 	}
 
 	// sanity checks
-	if (Main_hall_defines.size() == 0) {
+	if (Main_hall_defines.empty()) {
 		Error(LOCATION, "No main halls were loaded to initialize.");
 	} else if (main_hall_name == "") {
 		// we were passed a blank main hall name, so load the first available main hall

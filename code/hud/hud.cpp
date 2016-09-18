@@ -3043,7 +3043,7 @@ void hud_gauge_popup_start(int gauge_index, int time)
 
 	size_t num_gauges, i;
 
-	if(Ship_info[Player_ship->ship_info_index].hud_gauges.size() > 0) {
+	if(!Ship_info[Player_ship->ship_info_index].hud_gauges.empty()) {
 		num_gauges = Ship_info[Player_ship->ship_info_index].hud_gauges.size();
 
 		for(i = 0; i < num_gauges; i++) {
@@ -3073,7 +3073,7 @@ void hud_gauge_start_flash(int gauge_index)
 	HUD_gauge_flash_duration[gauge_index] = timestamp(HUD_GAUGE_FLASH_DURATION);
 	HUD_gauge_flash_next[gauge_index] = 1;
  
-	if(Ship_info[Player_ship->ship_info_index].hud_gauges.size() > 0) {
+	if(!Ship_info[Player_ship->ship_info_index].hud_gauges.empty()) {
 		num_gauges = Ship_info[Player_ship->ship_info_index].hud_gauges.size();
 
 		for(i = 0; i < num_gauges; i++) {
@@ -3702,7 +3702,7 @@ void hud_page_in()
 	size_t j, num_gauges = 0;
 	for (auto it = Ship_info.cbegin(); it != Ship_info.cend(); ++it) {
 		if(it->hud_enabled) {
-			if(it->hud_gauges.size() > 0) {
+			if(!it->hud_gauges.empty()) {
 				num_gauges = it->hud_gauges.size();
 
 				for(j = 0; j < num_gauges; j++) {
@@ -3725,7 +3725,7 @@ HudGauge* hud_get_gauge(const char* name)
 	size_t j;
 
 	// go through all gauges and return the gauge that matches
-	if(Ship_info[Player_ship->ship_info_index].hud_gauges.size() > 0) {
+	if(!Ship_info[Player_ship->ship_info_index].hud_gauges.empty()) {
 		for(j = 0; j < Ship_info[Player_ship->ship_info_index].hud_gauges.size(); j++) {
 
 			gauge_name = Ship_info[Player_ship->ship_info_index].hud_gauges[j]->getCustomGaugeName();
