@@ -1200,6 +1200,12 @@ void opengl_tnl_set_model_material(model_material *material_info)
 
 		Current_shader->program->Uniforms.setUniform3f("stripe_color", stripe_color);
 		Current_shader->program->Uniforms.setUniform3f("base_color", base_color);
+
+		if ( bm_has_alpha_channel(material_info->get_texture_map(TM_MISC_TYPE)) ) {
+			Current_shader->program->Uniforms.setUniformi("team_glow_enabled", 1);
+		} else {
+			Current_shader->program->Uniforms.setUniformi("team_glow_enabled", 0);
+		}
 	}
 
 	if ( Current_shader->flags & SDR_FLAG_MODEL_THRUSTER ) {
