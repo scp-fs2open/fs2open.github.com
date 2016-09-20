@@ -12,6 +12,12 @@ $NightlyConfigurations = @(
 		PackageType="Win64";
 		Toolset="v140_xp";
 		SimdType="SSE2";
+	},
+	[BuildConfig]@{ 
+		Generator="Visual Studio 14 2015";
+		PackageType="Win32";
+		Toolset="v140_xp";
+		SimdType="SSE2";
 	}
 )
 $ReleaseConfigurations = @(
