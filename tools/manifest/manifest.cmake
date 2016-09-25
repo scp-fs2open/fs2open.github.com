@@ -1,0 +1,38 @@
+
+macro(write_manifest str)
+	file(APPEND ${MANIFEST_FILE} ${str})
+endmacro()
+file(WRITE ${MANIFEST_FILE} "{\n")
+file(APPEND ${MANIFEST_FILE} "	\"v\": 1,\n")
+file(APPEND ${MANIFEST_FILE} "	\"major\": ${VERSION_MAJOR},\n")
+file(APPEND ${MANIFEST_FILE} "	\"minor\": ${VERSION_MINOR},\n")
+file(APPEND ${MANIFEST_FILE} "	\"build\": ${VERSION_BUILD},\n")
+file(APPEND ${MANIFEST_FILE} "	\"revision\": ${VERSION_REVISION},\n")
+
+if(${IS_64BIT})
+	file(APPEND ${MANIFEST_FILE} "	\"isa\": \"amd64\",\n")
+else()
+	file(APPEND ${MANIFEST_FILE} "	\"isa\": \"x86\",\n")
+endif()
+file(APPEND ${MANIFEST_FILE} "	\"isa_extra\": \"${VERSION_ISA}\",\n")
+file(APPEND ${MANIFEST_FILE} "	\"extra\": \"${VERSION_EXTRA}\",\n")
+file(APPEND ${MANIFEST_FILE} "	\"config\": \"${CONFIG}\",\n")
+
+file(APPEND ${MANIFEST_FILE} "	\"files\": {\n")
+
+set(sums)
+foreach(sumfile ${MANIFEST_FILES})
+	message("SHA1 summing ${sumfile}")
+	file(SHA1 ${sumfile} SHA1sum)
+	set(sha1part "\t\t\t\"sha1\": \"${SHA1sum}\"")
+	message("SHA256 summing ${sumfile}")
+	file(SHA256 ${sumfile} SHA256sum)
+	set(sha256part "\t\t\t\"sha256\": \"${SHA256sum}\"")
+
+	list(APPEND sums "\t\t\"${sumfile}\": {\n${sha1part},\n${sha256part}\n\t\t}")
+endforeach(sumfile)
+
+string(REPLACE ";" ",\n" sums_out "${sums}")
+file(APPEND ${MANIFEST_FILE} "${sums_out}\n")
+file(APPEND ${MANIFEST_FILE} "	}\n")
+file(APPEND ${MANIFEST_FILE} "}\n")
