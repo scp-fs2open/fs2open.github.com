@@ -13,6 +13,7 @@
 #include "nebula/neb.h"
 #include "parse/parselo.h"
 #include "ship/ship.h"
+#include "tracing/tracing.h"
 
 
 extern bool PostProcessing_override;
@@ -77,6 +78,9 @@ static int Post_texture_height = 0;
 
 void opengl_post_pass_tonemap()
 {
+	GR_DEBUG_SCOPE("Tonemapping");
+	profile_auto trace_scope("Tonemapping");
+
 	opengl_shader_set_current( gr_opengl_maybe_create_shader(SDR_TYPE_POST_PROCESS_TONEMAPPING, 0) );
 
 	Current_shader->program->Uniforms.setUniformi("tex", 0);
@@ -93,33 +97,40 @@ void opengl_post_pass_tonemap()
 
 void opengl_post_pass_bloom()
 {
+	GR_DEBUG_SCOPE("Bloom");
+	profile_auto trace_scope("Bloom");
+
 	// we need the scissor test disabled
 	GLboolean scissor_test = GL_state.ScissorTest(GL_FALSE);
 
 	// ------  begin bright pass ------
+	int width, height;
+	{
+		GR_DEBUG_SCOPE("Bloom bright pass");
+		profile_auto draw_scope("Bloom bright pass");
 
-	glBindFramebuffer(GL_FRAMEBUFFER, Bloom_framebuffer);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, Bloom_textures[0], 0);
+		glBindFramebuffer(GL_FRAMEBUFFER, Bloom_framebuffer);
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, Bloom_textures[0], 0);
 
-	// width and height are 1/2 for the bright pass
-	int width = Post_texture_width >> 1;
-	int height = Post_texture_height >> 1;
+		// width and height are 1/2 for the bright pass
+		width = Post_texture_width >> 1;
+		height = Post_texture_height >> 1;
 
-	glViewport(0, 0, width, height);
+		glViewport(0, 0, width, height);
 
-	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-	glClear(GL_COLOR_BUFFER_BIT);
+		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+		glClear(GL_COLOR_BUFFER_BIT);
 
-	opengl_shader_set_current( gr_opengl_maybe_create_shader(SDR_TYPE_POST_PROCESS_BRIGHTPASS, 0) );
+		opengl_shader_set_current(gr_opengl_maybe_create_shader(SDR_TYPE_POST_PROCESS_BRIGHTPASS, 0));
 
-	Current_shader->program->Uniforms.setUniformi("tex", 0);
+		Current_shader->program->Uniforms.setUniformi("tex", 0);
 
-	GL_state.Texture.SetActiveUnit(0);
-	GL_state.Texture.SetTarget(GL_TEXTURE_2D);
-	GL_state.Texture.Enable(Scene_color_texture);
+		GL_state.Texture.SetActiveUnit(0);
+		GL_state.Texture.SetTarget(GL_TEXTURE_2D);
+		GL_state.Texture.Enable(Scene_color_texture);
 
-	opengl_draw_textured_quad(-1.0f, -1.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f, 1.0f);
-
+		opengl_draw_textured_quad(-1.0f, -1.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f, 1.0f);
+	}
 	// ------ end bright pass ------
 
 	// ------ begin blur pass ------
@@ -132,6 +143,9 @@ void opengl_post_pass_bloom()
 
 	for ( int iteration = 0; iteration < 2; iteration++) {
 		for (int pass = 0; pass < 2; pass++) {
+			GR_DEBUG_SCOPE("Bloom iteration step");
+			profile_auto draw_scope("Bloom iteration step");
+
 			GLuint source_tex = Bloom_textures[pass];
 			GLuint dest_tex = Bloom_textures[1 - pass];
 
@@ -165,26 +179,30 @@ void opengl_post_pass_bloom()
 	}
 
 	// composite blur to the color texture
+	{
+		GR_DEBUG_SCOPE("Bloom composite step");
+		profile_auto draw_scope("Bloom composite step");
 
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, Scene_color_texture, 0);
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, Scene_color_texture, 0);
 
-	opengl_shader_set_current(gr_opengl_maybe_create_shader(SDR_TYPE_POST_PROCESS_BLOOM_COMP, 0));
+		opengl_shader_set_current(gr_opengl_maybe_create_shader(SDR_TYPE_POST_PROCESS_BLOOM_COMP, 0));
 
-	Current_shader->program->Uniforms.setUniformi("tex", 0);
-	Current_shader->program->Uniforms.setUniformi("levels", MAX_MIP_BLUR_LEVELS);
-	Current_shader->program->Uniforms.setUniformf("bloom_intensity", Cmdline_bloom_intensity / 100.0f);
+		Current_shader->program->Uniforms.setUniformi("tex", 0);
+		Current_shader->program->Uniforms.setUniformi("levels", MAX_MIP_BLUR_LEVELS);
+		Current_shader->program->Uniforms.setUniformf("bloom_intensity", Cmdline_bloom_intensity / 100.0f);
 
-	GL_state.Texture.SetActiveUnit(0);
-	GL_state.Texture.SetTarget(GL_TEXTURE_2D);
-	GL_state.Texture.Enable(Bloom_textures[0]);
+		GL_state.Texture.SetActiveUnit(0);
+		GL_state.Texture.SetTarget(GL_TEXTURE_2D);
+		GL_state.Texture.Enable(Bloom_textures[0]);
 
-	GL_state.SetAlphaBlendMode( ALPHA_BLEND_ADDITIVE );
+		GL_state.SetAlphaBlendMode(ALPHA_BLEND_ADDITIVE);
 
-	glViewport(0, 0, gr_screen.max_w, gr_screen.max_h);
+		glViewport(0, 0, gr_screen.max_w, gr_screen.max_h);
 
-	opengl_draw_textured_quad(-1.0f, -1.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f, 1.0f);
+		opengl_draw_textured_quad(-1.0f, -1.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f, 1.0f);
 
-	GL_state.SetAlphaBlendMode( ALPHA_BLEND_NONE );
+		GL_state.SetAlphaBlendMode(ALPHA_BLEND_NONE);
+	}
 
 	// ------ end blur pass --------
 
@@ -230,6 +248,8 @@ void recompile_fxaa_shader() {
 }
 
 void opengl_post_pass_fxaa() {
+	GR_DEBUG_SCOPE("FXAA");
+	profile_auto trace_scope("FXAA");
 
 	//If the preset changed, recompile the shader
 	if (Fxaa_preset_last_frame != Cmdline_fxaa_preset) {
@@ -283,6 +303,9 @@ extern bool stars_sun_has_glare(int index);
 extern float Sun_spot;
 void opengl_post_lightshafts()
 {
+	GR_DEBUG_SCOPE("Lightshafts");
+	profile_auto trace_scope("Lightshafts");
+
 	opengl_shader_set_current(gr_opengl_maybe_create_shader(SDR_TYPE_POST_PROCESS_LIGHTSHAFTS, 0));
 
 	float x, y;
@@ -343,6 +366,9 @@ void opengl_post_lightshafts()
 
 void gr_opengl_post_process_end()
 {
+	GR_DEBUG_SCOPE("Draw scene texture");
+	profile_auto trace_scope("Draw scene texture");
+
 	// state switch just the once (for bloom pass and final render-to-screen)
 	GLboolean depth = GL_state.DepthTest(GL_FALSE);
 	GLboolean depth_mask = GL_state.DepthMask(GL_FALSE);
@@ -364,6 +390,9 @@ void gr_opengl_post_process_end()
 
 	// render lightshafts
 	opengl_post_lightshafts();
+
+	GR_DEBUG_SCOPE("Draw post effects");
+	profile_auto draw_scope("Draw post effects");
 
 	// now write to the on-screen buffer
 	glBindFramebuffer(GL_FRAMEBUFFER, opengl_get_rtt_framebuffer());
