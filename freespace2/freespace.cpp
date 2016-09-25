@@ -3682,7 +3682,7 @@ void game_render_frame( camid cid )
 	Shadow_override = false;
 	//================ END OF 3D RENDERING STUFF ====================
 
-	PROFILE("Post Process", gr_scene_texture_end());
+	gr_scene_texture_end();
 
 	extern int Multi_display_netinfo;
 	if(Multi_display_netinfo){
