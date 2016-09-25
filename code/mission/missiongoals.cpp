@@ -1046,7 +1046,9 @@ void mission_eval_goals()
 			}
 
 			// if we get here, then the timestamp on the event has popped -- we should reevaluate
-			PROFILE("Repeating events", mission_process_event(i));
+
+			TRACE_SCOPE(tracing::RepeatingEvents);
+			mission_process_event(i);
 		}
 	}
 	
@@ -1080,7 +1082,8 @@ void mission_eval_goals()
 			// we will evaluate repeatable events at the top of the file so we can get
 			// the exact interval that the designer asked for.
 			if ( !timestamp_valid( Mission_events[i].timestamp) ){
-				PROFILE("Nonrepeating events", mission_process_event( i ));
+				TRACE_SCOPE(tracing::NonrepeatingEvents);
+				mission_process_event( i );
 			}
 		}
 	}
