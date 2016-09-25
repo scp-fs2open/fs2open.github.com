@@ -32,7 +32,7 @@ class GenericShapeEffect : public ParticleEffect {
 	util::UniformFloatRange m_velocity;
 	util::UniformUIntRange m_particleNum;
 
-	ParticleEffectIndex m_particleTrail;
+	ParticleEffectIndex m_particleTrail = -1;
 
 	TShape m_shape;
 
