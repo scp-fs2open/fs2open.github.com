@@ -17,6 +17,7 @@ endif()
 file(APPEND ${MANIFEST_FILE} "	\"isa_extra\": \"${VERSION_ISA}\",\n")
 file(APPEND ${MANIFEST_FILE} "	\"extra\": \"${VERSION_EXTRA}\",\n")
 file(APPEND ${MANIFEST_FILE} "	\"config\": \"${CONFIG}\",\n")
+file(APPEND ${MANIFEST_FILE} "	\"platform\": \"${PLATFORM}\",\n")
 
 file(APPEND ${MANIFEST_FILE} "	\"files\": {\n")
 
