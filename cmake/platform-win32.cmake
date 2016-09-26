@@ -9,7 +9,7 @@ SET(WIN32_LIBS
 	vfw32
 	winmm
 	wsock32
-	Psapi
+	psapi
 )
 
 IF (MINGW)
