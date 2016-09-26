@@ -22,8 +22,6 @@
 #include "cutscene/cutscenes.h" // cutscene_mark_viewable()
 #include "cutscene/player.h" // cutscene_mark_viewable()
 
-#include "cutscene/mve/mvelib.h"
-
 extern int Game_mode;
 extern int Is_standalone;
 
@@ -61,21 +59,8 @@ bool play(const char* name) {
 	if (player) {
 		player->startPlayback();
 	} else {
-		// *sigh* don't bother using MVE with the new system, it's not worth the effort...
-		MVESTREAM* movie_mve = mve_open(name);
-
-		if (movie_mve) {
-			// start playing ...
-			mve_init(movie_mve);
-			mve_play(movie_mve);
-
-			// ... done playing, close the movie
-			mve_shutdown();
-			mve_close(movie_mve);
-		} else {
-			// uh-oh, movie is invalid... Abory, Retry, Fail?
-			mprintf(("MOVIE ERROR: Found invalid movie! (%s)\n", name));
-		}
+		// uh-oh, movie is invalid... Abory, Retry, Fail?
+		mprintf(("MOVIE ERROR: Found invalid movie! (%s)\n", name));
 	}
 
 	// show the mouse cursor again

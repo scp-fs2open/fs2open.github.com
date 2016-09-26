@@ -93,16 +93,6 @@ set (file_root_cutscene
 	cutscene/player.h
 )
 
-# Cutscene\MVE files
-set (file_root_cutscene_mve
-	cutscene/mve/decoder16.cpp
-	cutscene/mve/decoder8.cpp
-	cutscene/mve/mve_audio.cpp
-	cutscene/mve/mvelib.cpp
-	cutscene/mve/mvelib.h
-	cutscene/mve/mveplayer.cpp
-)
-
 # Cutscene\OGG files
 set (file_root_cutscene_ogg
 	cutscene/ogg/OggDecoder.cpp
@@ -1079,7 +1069,6 @@ source_group("Cmdline"                            FILES ${file_root_cmdline})
 source_group("CMeasure"                           FILES ${file_root_cmeasure})
 source_group("ControlConfig"                      FILES ${file_root_controlconfig})
 source_group("Cutscene"                           FILES ${file_root_cutscene})
-source_group("Cutscene\\MVE"                      FILES ${file_root_cutscene_mve})
 source_group("Cutscene\\OGG"                      FILES ${file_root_cutscene_ogg})
 source_group("Cutscene\\ffmpeg"                   FILES ${file_root_cutscene_ffmpeg})
 source_group("Cutscene\\Player"                   FILES ${file_root_cutscene_player})
@@ -1169,7 +1158,6 @@ set (file_root
 	${file_root_cmeasure}
 	${file_root_controlconfig}
 	${file_root_cutscene}
-	${file_root_cutscene_mve}
 	${file_root_cutscene_ogg}
 	${file_root_cutscene_ffmpeg}
 	${file_root_cutscene_player}

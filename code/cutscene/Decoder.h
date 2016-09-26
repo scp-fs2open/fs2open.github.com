@@ -61,7 +61,7 @@ struct AudioFrame {
 
 	int channels;
 
-	long rate;
+	int rate;
 };
 typedef FramePtr<AudioFrame> AudioFramePtr;
 

@@ -55,8 +55,10 @@ class FFMPEGStreamDecoder {
 	void pushFrame(FramePtr<frame_type>&& frame);
  public:
 	explicit FFMPEGStreamDecoder(DecoderStatus* status);
-
 	virtual ~FFMPEGStreamDecoder();
+
+	FFMPEGStreamDecoder(const FFMPEGStreamDecoder&) SCP_DELETED_FUNCTION;
+	FFMPEGStreamDecoder& operator=(const FFMPEGStreamDecoder&) SCP_DELETED_FUNCTION;
 
 	virtual void decodePacket(AVPacket* packet) = 0;
 

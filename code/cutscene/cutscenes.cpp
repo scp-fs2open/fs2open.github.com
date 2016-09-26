@@ -263,66 +263,6 @@ static int Text_line_size[MAX_TEXT_LINES];
 static const char* Text_lines[MAX_TEXT_LINES];
 
 
-int cutscenes_validate_cd(const char* mve_name, int prompt_for_cd)
-{
-	int cd_present = 0;
-	int cd_drive_num;
-	int cd_mve_is_on;
-	char volume_name[MAX_PATH_LEN];
-
-	int num_attempts = 0;
-
-	while (1)
-	{
-		int path_set_ok;
-
-		cd_mve_is_on = cutscenes_get_cd_num(mve_name);
-		if ((cd_mve_is_on != 0) && (cd_mve_is_on != 1) && (cd_mve_is_on != 2))
-		{
-			cd_present = 0;
-			break;
-		}
-
-		sprintf(volume_name, NOX("FREESPACE2_%c"), '1' + cd_mve_is_on);
-
-		cd_drive_num = find_freespace_cd(volume_name);
-		path_set_ok = set_cdrom_path(cd_drive_num);
-
-		if (path_set_ok)
-		{
-			cd_present = 1;
-			break;
-		}
-
-		if (!prompt_for_cd)
-		{
-			cd_present = 0;
-			break;
-		}
-
-		// no CD found, so prompt user
-		char popup_msg[256];
-		int popup_rval;
-
-		sprintf(popup_msg, XSTR("Movie not found\n\nInsert FreeSpace CD #%d to continue", 203), cd_mve_is_on + 1);
-
-		popup_rval = popup(PF_BODY_BIG, 2, POPUP_CANCEL, POPUP_OK, popup_msg);
-		if (popup_rval != 1)
-		{
-			cd_present = 0;
-			break;
-		}
-
-		if (num_attempts++ > 5)
-		{
-			cd_present = 0;
-			break;
-		}
-	}
-
-	return cd_present;
-}
-
 void cutscenes_screen_play()
 {
 	char name[MAX_FILENAME_LEN]; // *full_name 
@@ -336,7 +276,7 @@ void cutscenes_screen_play()
 
 	main_hall_stop_music(true);
 	main_hall_stop_ambient();
-	int rval = movie::play(name);
+	auto rval = movie::play(name);
 	main_hall_start_music();
 
 	if (!rval)

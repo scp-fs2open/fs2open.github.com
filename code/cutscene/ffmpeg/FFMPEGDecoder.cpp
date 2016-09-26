@@ -19,7 +19,8 @@ using namespace cutscene::ffmpeg;
 const char* CHECKED_EXTENSIONS[] = {
 	"webm",
 	"mp4",
-	"ogg"
+	"ogg",
+	"mve"
 };
 
 double getFrameRate(AVStream* stream, AVCodecContext* codecCtx) {
