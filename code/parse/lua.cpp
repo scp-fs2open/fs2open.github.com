@@ -7081,6 +7081,40 @@ ADE_VIRTVAR(Capacity, l_WeaponBank, "number", "The actual capacity of a weapon b
 	return ade_set_error(L, "i", -1);
 }
 
+ADE_VIRTVAR(FOFCooldown, l_WeaponBank, "number", "The FOF cooldown value. A value of 0 means the default weapon FOF is used. A value of 1 means that the max FOF will be used", "number", "The cooldown value or -1 if invalid")
+{
+	ship_bank_h *bh = NULL;
+	float newValue = -1.f;
+	if(!ade_get_args(L, "o|i", l_WeaponBank.GetPtr(&bh), &newValue))
+		return ade_set_error(L, "f", -1.f);
+
+	if(!bh->IsValid())
+		return ade_set_error(L, "f", -1.f);
+
+	if (ADE_SETTING_VAR) {
+		LuaError(L, "This function does not support setting values yet!");
+		return ade_set_error(L, "f", -1.f);
+	}
+
+	switch(bh->type)
+	{
+		case SWH_PRIMARY:
+		{
+			auto wif = &Weapon_info[bh->sw->primary_bank_weapons[bh->bank]];
+			float reset_amount = (timestamp_until(bh->sw->last_primary_fire_stamp[bh->bank]) / 1000.0f) * wif->fof_reset_rate;
+			auto val = bh->sw->primary_bank_fof_cooldown[bh->bank] + reset_amount;
+			CLAMP(val, 0.0f, 1.0f);
+			return ade_set_args(L, "f", val);
+		}
+		case SWH_SECONDARY:
+		case SWH_TERTIARY:
+			LuaError(L, "FOF cooldown is not valid for secondary or tertiary banks!");
+			return ade_set_args(L, "f", -1.f);
+	}
+
+	return ade_set_error(L, "f", -1.f);
+}
+
 ADE_FUNC(isValid, l_WeaponBank, NULL, "Detects whether handle is valid", "boolean", "true if valid, false if handle is invalid, nil if a syntax/type error occurs")
 {
 	ship_bank_h *bh;
