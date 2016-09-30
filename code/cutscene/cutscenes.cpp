@@ -112,21 +112,6 @@ void cutscene_init()
 	}
 }
 
-// function to return 0 based index of which CD a particular movie is on
-// returns -1 on failure.
-int cutscenes_get_cd_num(const char* filename)
-{
-	for (SCP_vector<cutscene_info>::iterator cut = Cutscenes.begin(); cut != Cutscenes.end(); ++cut)
-	{
-		if (!stricmp(cut->filename, filename))
-		{
-			return (cut->cd - 1);
-		}
-	}
-
-	return -1;
-}
-
 // marks a cutscene as viewable
 void cutscene_mark_viewable(const char* filename)
 {
