@@ -10,12 +10,16 @@ PACKAGE_NAME=""
 RELEASE_PATTERN="^release_(.*)$"
 NIGHTLY_PATTERN="^nightly_(.*)$"
 
-if [[ "$TRAVIS_TAG" =~ $RELEASE_PATTERN ]]; then
+# These are for testing
+NIGHTLY_TEST=false
+RELEASE_TEST=false
+
+if ([ "$RELEASE_TEST" = true ] || [[ "$TRAVIS_TAG" =~ $RELEASE_PATTERN ]]); then
     echo "This is a release tag!";
     RELEASE_BUILD=true;
 	PACKAGE_NAME="fs2_open_${BASH_REMATCH[1]}";
 fi
-if [[ "$TRAVIS_TAG" =~ $NIGHTLY_PATTERN ]]; then
+if ([ "$NIGHTLY_TEST" = true ] || [[ "$TRAVIS_TAG" =~ $NIGHTLY_PATTERN ]]); then
     echo "This is a nightly tag!";
     NIGHTLY_BUILD=true;
     VERSION_NAME="${BASH_REMATCH[1]}"
