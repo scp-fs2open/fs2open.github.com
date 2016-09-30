@@ -100,6 +100,7 @@ char *fs2_open_credit_text =
 	"liblua - Copyright (C) 1994-2008 Lua.org, PUC-Rio\n"
 	"zlib - Copyright (C) 1995-2005 Jean-loup Gailly and Mark Adler\n"
 	"FXAA - Copyright (c) 2010 NVIDIA Corporation. All rights reserved.\n"
+	"This software uses libraries from the FFmpeg project under the LGPLv2.1\n"
 	"\n"
 	"\n"
 	"\n";

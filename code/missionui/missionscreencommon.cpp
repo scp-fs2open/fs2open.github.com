@@ -392,7 +392,7 @@ void common_maybe_play_cutscene(int movie_type, bool restart_music, int music)
 			if ( strlen(The_mission.cutscenes[i].filename) ) {
 				common_music_close(); 
 				music_off = true;
-				movie_play( The_mission.cutscenes[i].filename );	//Play the movie!
+				movie::play(The_mission.cutscenes[i].filename);	//Play the movie!
 				cutscene_mark_viewable( The_mission.cutscenes[i].filename );
 			}
 		}

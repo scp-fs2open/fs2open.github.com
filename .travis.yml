@@ -19,6 +19,7 @@ addons:
             - libjansson-dev
             - libsdl2-dev
             - valgrind
+            - libboost-all-dev
     coverity_scan:
         project:
             name: "scp-fs2open/fs2open.github.com"
