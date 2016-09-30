@@ -12236,65 +12236,40 @@ int ship_select_next_primary(object *objp, int direction)
 		
 		// make sure we're okay
 		Assert((swp->current_primary_bank >= 0) && (swp->current_primary_bank < swp->num_primary_banks));
-
-		if(swp->current_primary_bank != original_bank)
-			swp->previous_primary_bank = original_bank;
-		else
-			swp->previous_primary_bank = swp->current_primary_bank;
-
-		// if this ship is ballistics-equipped, and we cycled, then we had to verify some stuff,
-		// so we should check if we actually changed banks
-		if ( (swp->current_primary_bank != original_bank) || ((shipp->flags[Ship_Flags::Primary_linked]) != original_link_flag) )
-		{
-			if ( objp == Player_obj )
-			{
-				snd_play( &Snds[ship_get_sound(objp, SND_PRIMARY_CYCLE)], 0.0f );
-			}
-			ship_primary_changed(shipp);
-			objp = &Objects[shipp->objnum];
-			object* target;
-			if (Ai_info[shipp->ai_index].target_objnum != -1)
-				target = &Objects[Ai_info[shipp->ai_index].target_objnum];
-			else
-				target = NULL;
-			if (objp == Player_obj && Player_ai->target_objnum != -1)
-				target = &Objects[Player_ai->target_objnum]; 
-			Script_system.SetHookObjects(2, "User", objp, "Target", target);
-			Script_system.RunCondition(CHA_ONWPSELECTED, 0, NULL, objp);
-			Script_system.SetHookObjects(2, "User", objp, "Target", target);
-			Script_system.RunCondition(CHA_ONWPDESELECTED, 0, NULL, objp);
-			Script_system.RemHookVars(2, "User", "Target");
-			return 1;
-		}
-
-		// could not select new weapon:
-		if ( objp == Player_obj )
-		{
-			gamesnd_play_error_beep();
-		}
-		return 0;
 	}	// end of ballistics implementation
 
-	if ( objp == Player_obj )
+	swp->previous_primary_bank = original_bank;
+
+	// check to make sure we actually changed banks (which can fail to happen if e.g. ballistic weapons ran out of ammo)
+	if ( (swp->current_primary_bank != original_bank) || ((shipp->flags[Ship_Flags::Primary_linked]) != original_link_flag) )
 	{
-		snd_play( &Snds[ship_get_sound(objp, SND_PRIMARY_CYCLE)], 0.0f );
+		if ( objp == Player_obj )
+		{
+			snd_play( &Snds[ship_get_sound(objp, SND_PRIMARY_CYCLE)], 0.0f );
+		}
+		ship_primary_changed(shipp);
+		objp = &Objects[shipp->objnum];
+		object* target;
+		if (Ai_info[shipp->ai_index].target_objnum != -1)
+			target = &Objects[Ai_info[shipp->ai_index].target_objnum];
+		else
+			target = NULL;
+		if (objp == Player_obj && Player_ai->target_objnum != -1)
+			target = &Objects[Player_ai->target_objnum]; 
+		Script_system.SetHookObjects(2, "User", objp, "Target", target);
+		Script_system.RunCondition(CHA_ONWPSELECTED, 0, NULL, objp);
+		Script_system.SetHookObjects(2, "User", objp, "Target", target);
+		Script_system.RunCondition(CHA_ONWPDESELECTED, 0, NULL, objp);
+		Script_system.RemHookVars(2, "User", "Target");
+		return 1;
 	}
 
-	ship_primary_changed(shipp);
-	object* target;
-	if (Ai_info[shipp->ai_index].target_objnum != -1)
-		target = &Objects[Ai_info[shipp->ai_index].target_objnum];
-	else
-		target = NULL;
-	if (objp == Player_obj && Player_ai->target_objnum != -1)
-		target = &Objects[Player_ai->target_objnum]; 
-	Script_system.SetHookObjects(2, "User", objp, "Target", target);
-	Script_system.RunCondition(CHA_ONWPSELECTED, 0, NULL, objp);
-	Script_system.SetHookObjects(2, "User", objp, "Target", target);
-	Script_system.RunCondition(CHA_ONWPDESELECTED, 0, NULL, objp);
-	Script_system.RemHookVars(2, "User", "Target");
-
-	return 1;
+	// could not select new weapon:
+	if ( objp == Player_obj )
+	{
+		gamesnd_play_error_beep();
+	}
+	return 0;
 }
 
 // ------------------------------------------------------------------------------
@@ -12360,10 +12335,7 @@ int ship_select_next_secondary(object *objp)
 
 		if ( swp->current_secondary_bank != original_bank )
 		{
-			if(swp->current_primary_bank != original_bank)
-				swp->previous_primary_bank = original_bank;
-			else
-				swp->previous_primary_bank = swp->current_primary_bank;
+			swp->previous_secondary_bank = original_bank;
 			if ( objp == Player_obj )
 			{
 				snd_play( &Snds[ship_get_sound(Player_obj, SND_SECONDARY_CYCLE)], 0.0f );
