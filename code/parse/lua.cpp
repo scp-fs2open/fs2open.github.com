@@ -16175,7 +16175,7 @@ ADE_FUNC(playCutscene, l_Testing, NULL, "Forces a cutscene by the specified file
 	if (!ade_get_args(L, "s", &filename))
 		return ADE_RETURN_FALSE;
 
-	movie_play(filename);
+	movie::play(filename);
 
 	return ADE_RETURN_TRUE;
 }

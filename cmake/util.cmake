@@ -68,11 +68,19 @@ ENDFUNCTION(EP_CHECK_FILE_EXISTS)
 
 MACRO(COPY_FILES_TO_TARGET _target)
 	FOREACH(file IN LISTS TARGET_COPY_FILES)
-		ADD_CUSTOM_COMMAND(
-			TARGET ${_target} POST_BUILD
-			COMMAND ${CMAKE_COMMAND} -E copy_if_different "${file}"  "$<TARGET_FILE_DIR:${_target}>"
-			COMMENT "copying '${file}'..."
-		)
+		if(UNIX)
+			ADD_CUSTOM_COMMAND(
+				TARGET ${_target} POST_BUILD
+				COMMAND cp -a "${file}"  "$<TARGET_FILE_DIR:${_target}>/${LIBRAY_DESTINATION}/"
+				COMMENT "copying '${file}'..."
+			)
+		else()
+			ADD_CUSTOM_COMMAND(
+				TARGET ${_target} POST_BUILD
+				COMMAND ${CMAKE_COMMAND} -E copy_if_different "${file}"  "$<TARGET_FILE_DIR:${_target}>/${LIBRAY_DESTINATION}/"
+				COMMENT "copying '${file}'..."
+			)
+		endif()
 	ENDFOREACH(file)
 ENDMACRO(COPY_FILES_TO_TARGET)
 
@@ -127,14 +135,14 @@ macro(configure_cotire target)
 
 		# add ignored paths for the precompiled header here
 		set_target_properties(code PROPERTIES COTIRE_PREFIX_HEADER_IGNORE_PATH
-			"${CMAKE_SOURCE_DIR};${CMAKE_BINARY_DIR}")
+			"${CMAKE_SOURCE_DIR};${CMAKE_BINARY_DIR};${FFMPEG_ROOT_DIR}")
 		cotire(${target})
 	ENDIF(COTIRE_ENABLE)
 endmacro(configure_cotire)
 
 macro(add_target_copy_files)
 	INSTALL(FILES ${ARGN}
-			DESTINATION ${BINARY_DESTINATION}
+			DESTINATION ${LIBRAY_DESTINATION}
 	)
 
 	SET(TARGET_COPY_FILES ${TARGET_COPY_FILES} ${ARGN} CACHE INTERNAL "" FORCE)

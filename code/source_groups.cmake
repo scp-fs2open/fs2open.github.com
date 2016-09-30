@@ -83,18 +83,38 @@ set (file_root_controlconfig
 
 # Cutscene files
 set (file_root_cutscene
+	cutscene/Decoder.cpp
+	cutscene/Decoder.h
 	cutscene/cutscenes.cpp
 	cutscene/cutscenes.h
-	cutscene/decoder16.cpp
-	cutscene/decoder8.cpp
 	cutscene/movie.cpp
 	cutscene/movie.h
-	cutscene/mve_audio.cpp
-	cutscene/mvelib.cpp
-	cutscene/mvelib.h
-	cutscene/mveplayer.cpp
-	cutscene/oggplayer.cpp
-	cutscene/oggplayer.h
+	cutscene/player.cpp
+	cutscene/player.h
+)
+
+# Cutscene\OGG files
+set (file_root_cutscene_ogg
+	cutscene/ogg/OggDecoder.cpp
+	cutscene/ogg/OggDecoder.h
+)
+
+# Cutscene\ffmpeg files
+set (file_root_cutscene_ffmpeg
+	cutscene/ffmpeg/AudioDecoder.cpp
+	cutscene/ffmpeg/AudioDecoder.h
+	cutscene/ffmpeg/FFMPEGDecoder.cpp
+	cutscene/ffmpeg/FFMPEGDecoder.h
+	cutscene/ffmpeg/internal.cpp
+	cutscene/ffmpeg/internal.h
+	cutscene/ffmpeg/VideoDecoder.cpp
+	cutscene/ffmpeg/VideoDecoder.h
+)
+
+set(file_root_cutscene_player
+	cutscene/player/VideoPresenter.h
+	cutscene/player/OpenGLVideoPresenter.cpp
+	cutscene/player/OpenGLVideoPresenter.h
 )
 
 # ddsutils files
@@ -482,6 +502,17 @@ set (file_root_lab
 	lab/lab.h
 	lab/wmcgui.cpp
 	lab/wmcgui.h
+)
+
+set(file_root_libs
+)
+
+set(file_root_libs_ffmpeg
+	libs/ffmpeg/FFmpeg.cpp
+	libs/ffmpeg/FFmpeg.h
+	libs/ffmpeg/FFmpegContext.cpp
+	libs/ffmpeg/FFmpegContext.h
+	libs/ffmpeg/FFmpegHeaders.h
 )
 
 # Lighting files
@@ -1038,6 +1069,9 @@ source_group("Cmdline"                            FILES ${file_root_cmdline})
 source_group("CMeasure"                           FILES ${file_root_cmeasure})
 source_group("ControlConfig"                      FILES ${file_root_controlconfig})
 source_group("Cutscene"                           FILES ${file_root_cutscene})
+source_group("Cutscene\\OGG"                      FILES ${file_root_cutscene_ogg})
+source_group("Cutscene\\ffmpeg"                   FILES ${file_root_cutscene_ffmpeg})
+source_group("Cutscene\\Player"                   FILES ${file_root_cutscene_player})
 source_group("ddsutils"                           FILES ${file_root_ddsutils})
 source_group("Debris"                             FILES ${file_root_debris})
 source_group("DebugConsole"                       FILES ${file_root_debugconsole})
@@ -1070,6 +1104,8 @@ source_group("Io"                                 FILES ${file_root_io})
 source_group("jpgutils"                           FILES ${file_root_jpgutils})
 source_group("JumpNode"                           FILES ${file_root_jumpnode})
 source_group("Lab"                                FILES ${file_root_lab})
+source_group("Libs"                               FILES ${file_root_libs})
+source_group("Libs\\FFmpeg"                       FILES ${file_root_libs_ffmpeg})
 source_group("Lighting"                           FILES ${file_root_lighting})
 source_group("Localization"                       FILES ${file_root_localization})
 source_group("Math"                               FILES ${file_root_math})
@@ -1122,6 +1158,9 @@ set (file_root
 	${file_root_cmeasure}
 	${file_root_controlconfig}
 	${file_root_cutscene}
+	${file_root_cutscene_ogg}
+	${file_root_cutscene_ffmpeg}
+	${file_root_cutscene_player}
 	${file_root_ddsutils}
 	${file_root_debris}
 	${file_root_debugconsole}
@@ -1154,6 +1193,8 @@ set (file_root
 	${file_root_jpgutils}
 	${file_root_jumpnode}
 	${file_root_lab}
+	${file_root_libs}
+	${file_root_libs_ffmpeg}
 	${file_root_lighting}
 	${file_root_localization}
 	${file_root_math}

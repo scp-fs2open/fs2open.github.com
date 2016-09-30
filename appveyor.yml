@@ -8,9 +8,13 @@ environment:
     - BuildID: 0
       CMAKE_GENERATOR: Visual Studio 12 2013
       PlatformToolset: v120_xp
+      BOOST_ROOT: C:\Libraries\boost_1_58_0
+      BOOST_LIBRARYDIR: C:\Libraries\boost_1_58_0\lib32-msvc-12.0
     - BuildID: 1
       CMAKE_GENERATOR: Visual Studio 14 2015 Win64
       PlatformToolset: v140_xp
+      BOOST_ROOT: C:\Libraries\boost_1_60_0
+      BOOST_LIBRARYDIR: C:\Libraries\boost_1_60_0\lib64-msvc-14.0
 before_build:
   - git submodule update --init --recursive
 build_script:

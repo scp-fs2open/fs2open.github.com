@@ -30,10 +30,14 @@ TARGET_LINK_LIBRARIES(code PUBLIC oggvorbis)
 
 TARGET_LINK_LIBRARIES(code PUBLIC ${SDL_LIBS})
 
+TARGET_LINK_LIBRARIES(code PUBLIC ffmpeg)
+
 TARGET_LINK_LIBRARIES(code PUBLIC platform)
 TARGET_LINK_LIBRARIES(code PUBLIC compiler)
 
 target_link_libraries(code PUBLIC md5)
+
+TARGET_LINK_LIBRARIES(code PUBLIC boost)
 
 IF (FSO_USE_SPEECH)
 	find_package(Speech REQUIRED)
