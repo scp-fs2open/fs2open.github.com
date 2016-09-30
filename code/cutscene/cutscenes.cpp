@@ -82,9 +82,12 @@ void cutscene_init()
 			cutinfo.description = vm_strdup(buf);
 
 			if (optional_string("$cd:"))
-				stuff_int(&cutinfo.cd);
-			else
-				cutinfo.cd = 0;
+			{
+				// Option isn't needed anymore. Consume the token and ignore it
+
+				int junk;
+				stuff_int(&junk);
+			}
 
 			cutinfo.viewable = false;
 
