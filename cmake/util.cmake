@@ -104,7 +104,7 @@ function(CONVERT_OLD_LIBRARIES)
 		else("${lib}" STREQUAL "debug")
 			# Expecting normal library
 			if(is_debug)
-				list(APPEND out_list "$<$<CONFIG:Debug>:${lib}>")
+				list(APPEND out_list "$<$<CONFIG:Debug>:${lib}>" "$<$<CONFIG:FastDebug>:${lib}>")
 			elseif(is_optimized)
 				list(APPEND out_list "$<$<CONFIG:Release>:${lib}>")
 			else(is_debug)
