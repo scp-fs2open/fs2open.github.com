@@ -4,8 +4,6 @@ class BuildConfig {
 	[string]$PackageType
 	[string]$Toolset
 	[string]$SimdType
-	[string]$BoostRoot
-	[string]$BoostLibDir
 }
 
 $NightlyConfigurations = @(
@@ -14,16 +12,12 @@ $NightlyConfigurations = @(
 		PackageType="Win64";
 		Toolset="v140_xp";
 		SimdType="SSE2";
-		BoostRoot="C:\Libraries\boost_1_60_0"
-		BoostLibDir="lib64-msvc-14.0";
 	},
 	[BuildConfig]@{ 
 		Generator="Visual Studio 14 2015";
 		PackageType="Win32";
 		Toolset="v140_xp";
 		SimdType="SSE2";
-		BoostRoot="C:\Libraries\boost_1_60_0"
-		BoostLibDir="lib32-msvc-14.0";
 	}
 )
 $ReleaseConfigurations = @(
@@ -32,32 +26,24 @@ $ReleaseConfigurations = @(
 		PackageType="Win32";
 		Toolset="v140_xp";
 		SimdType="SSE2";
-		BoostRoot="C:\Libraries\boost_1_60_0"
-		BoostLibDir="lib32-msvc-14.0";
 	}
 	[BuildConfig]@{
 		Generator="Visual Studio 14 2015";
 		PackageType="Win32-AVX";
 		Toolset="v140_xp";
 		SimdType="AVX";
-		BoostRoot="C:\Libraries\boost_1_60_0"
-		BoostLibDir="lib32-msvc-14.0";
 	}
 	[BuildConfig]@{
 		Generator="Visual Studio 14 2015 Win64";
 		PackageType="Win64";
 		Toolset="v140_xp";
 		SimdType="SSE2";
-		BoostRoot="C:\Libraries\boost_1_60_0"
-		BoostLibDir="lib64-msvc-14.0";
 	}
 	[BuildConfig]@{
 		Generator="Visual Studio 14 2015 Win64";
 		PackageType="Win64-AVX";
 		Toolset="v140_xp";
 		SimdType="AVX";
-		BoostRoot="C:\Libraries\boost_1_60_0"
-		BoostLibDir="lib64-msvc-14.0";
 	}
 )
 
@@ -111,7 +97,6 @@ if ($DeployBuild) {
 	
 	cmake -DCMAKE_INSTALL_PREFIX="$env:APPVEYOR_BUILD_FOLDER/../install" -DFSO_USE_SPEECH="ON" `
 		-DFSO_USE_VOICEREC="ON" -DMSVC_SIMD_INSTRUCTIONS="$($buildConfig.SimdType)" `
-		-DBOOST_ROOT="$($buildConfig.BoostRoot)" -DBOOST_LIBRARYDIR="$($buildConfig.BoostRoot)\$($buildConfig.BoostLibDir)" `
 		-G "$($buildConfig.Generator)" -T "$($buildConfig.Toolset)" ..
 
 	$Configs = @("Release", "FastDebug")
@@ -127,7 +112,7 @@ if ($DeployBuild) {
     Push-AppveyorArtifact "$($PackageName)-builds-$($buildConfig.PackageType).zip"
 } else {
 	cmake -DFSO_USE_SPEECH="ON" -DFSO_FATAL_WARNINGS="ON" -DFSO_USE_VOICEREC="ON" -DMSVC_SIMD_INSTRUCTIONS=SSE2 `
-		-DBOOST_ROOT="$Env:BOOST_ROOT" -DBOOST_LIBRARYDIR="$Env:BOOST_LIBRARYDIR" -G "$Env:CMAKE_GENERATOR" -T "$Env:PlatformToolset" ..
+	-G "$Env:CMAKE_GENERATOR" -T "$Env:PlatformToolset" ..
 
     cmake --build . --config "$Env:CONFIGURATION" -- /verbosity:minimal
 
