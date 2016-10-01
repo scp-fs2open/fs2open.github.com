@@ -27,7 +27,7 @@ BEGIN
             VALUE "FileDescription", "FreeSpace 2 Open"
             VALUE "FileVersion", FS_VERSION_FULL
             VALUE "InternalName", "FreeSpace 2 Open"
-            VALUE "LegalCopyright", "Copyright © 1998"
+            VALUE "LegalCopyright", L"Copyright \x00A9 1998"
             VALUE "OriginalFilename", "fs2.exe"
             VALUE "ProductName", "FreeSpace 2 Open"
             VALUE "ProductVersion", FS_VERSION_FULL
