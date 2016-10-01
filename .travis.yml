@@ -6,7 +6,7 @@ cache:
     - $HOME/cmake
 addons:
     apt:
-        packages: &global_deps
+        packages:
             - ninja-build
             - libopenal-dev
             - libreadline6-dev
@@ -53,47 +53,23 @@ matrix:
     include:
         # note that gcc Debug MUST be 1st for Coverity
         - os: linux
-          env: CONFIGURATION="Debug" CC=gcc-5 CXX=g++-5
-          addons:
-              apt:
-                  sources:
-                      - ubuntu-toolchain-r-test
-                  packages:
-                      - g++-5
-                      - *global_deps
+          compiler: gcc
+          env: CONFIGURATION="Debug"
         - os: linux
-          env: CONFIGURATION="Debug" CC=clang-3.6 CXX=clang++-3.6
-          addons:
-              apt:
-                  sources:
-                      - llvm-toolchain-precise
-                  packages:
-                      - clang-3.6
-                      - libc++-dev
-                      - *global_deps
+          compiler: clang
+          env: CONFIGURATION="Debug" CC=clang CXX=clang++
         - os: osx
+          compiler: clang
           env: CONFIGURATION="Debug"
 
         - os: linux
-          env: CONFIGURATION="Release" CC=gcc-5 CXX=g++-5
-          addons:
-              apt:
-                  sources:
-                      - ubuntu-toolchain-r-test
-                  packages:
-                      - g++-5
-                      - *global_deps
+          compiler: gcc
+          env: CONFIGURATION="Release"
         - os: linux
-          env: CONFIGURATION="Release" CC=clang-3.6 CXX=clang++-3.6
-          addons:
-              apt:
-                  sources:
-                      - llvm-toolchain-precise
-                  packages:
-                      - clang-3.6
-                      - libc++-dev
-                      - *global_deps
+          compiler: clang
+          env: CONFIGURATION="Release" CC=clang CXX=clang++
         - os: osx
+          compiler: clang
           env: CONFIGURATION="Release"
 before_install:
     # ugly hack; if running a coverity scan abort all except the 1st build
