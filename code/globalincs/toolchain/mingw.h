@@ -59,3 +59,5 @@
 
 #define likely(x)    __builtin_expect((long) !!(x), 1L)
 #define unlikely(x)  __builtin_expect((long) !!(x), 0L)
+
+#define __STDC_FORMAT_MACROS 1

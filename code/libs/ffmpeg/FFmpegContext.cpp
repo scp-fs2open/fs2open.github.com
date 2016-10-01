@@ -1,8 +1,6 @@
 
 #include "FFmpegContext.h"
 
-#include <boost/format.hpp>
-
 namespace {
 const size_t AVIO_BUFFER_SIZE = 8192;
 
@@ -100,9 +98,8 @@ std::unique_ptr<FFmpegContext> FFmpegContext::createContext(CFILE* mediaFile) {
 	if (probe_ret < 0) {
 		char errorStr[1024];
 		av_strerror(probe_ret, errorStr, 1024);
-		auto fmt = boost::format("Could not open movie file! Error: %s") % errorStr;
 
-		throw FFmpegException(fmt.str());
+		throw FFmpegException(SCP_string("Could not open movie file! Error: ") + errorStr);
 	}
 
 	instance->m_ctx->flags |= AVFMT_FLAG_CUSTOM_IO;
@@ -111,18 +108,16 @@ std::unique_ptr<FFmpegContext> FFmpegContext::createContext(CFILE* mediaFile) {
 	if (ret < 0) {
 		char errorStr[1024];
 		av_strerror(ret, errorStr, 1024);
-		auto fmt = boost::format("Could not open movie file! Error: %s") % errorStr;
 
-		throw FFmpegException(fmt.str());
+		throw FFmpegException(SCP_string("Could not open movie file! Error: ") + errorStr);
 	}
 
 	ret = avformat_find_stream_info(instance->m_ctx, nullptr);
 	if (ret < 0) {
 		char errorStr[1024];
 		av_strerror(ret, errorStr, 1024);
-		auto fmt = boost::format("Failed to get stream information! Error: %s") % errorStr;
 
-		throw FFmpegException(fmt.str());
+		throw FFmpegException(SCP_string("Failed to get stream information! Error: ") + errorStr);
 	}
 
 	return instance;

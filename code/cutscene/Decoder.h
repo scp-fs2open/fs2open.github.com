@@ -3,8 +3,7 @@
 #include <memory>
 
 #include "globalincs/pstypes.h"
-
-#include <boost/thread/sync_bounded_queue.hpp>
+#include "utils/boost/syncboundedqueue.h"
 
 namespace cutscene {
 struct FrameSize {
@@ -38,17 +37,11 @@ class VideoFrame {
 /**
  * @brief Pointer type for passing frame data between threads
  *
- * This needs to be a shared pointer for older boost versions since the sync_bounded_queue didn't support
- * move-only types yet.
  */
 template<typename T>
-#if BOOST_VERSION < 105700
-using FramePtr = std::shared_ptr<T>;
-#else
 using FramePtr = std::unique_ptr<T>;
-#endif
 
-typedef FramePtr<VideoFrame> VideoFramePtr;
+typedef std::unique_ptr<VideoFrame> VideoFramePtr;
 
 struct MovieProperties {
 	FrameSize size;
@@ -63,7 +56,7 @@ struct AudioFrame {
 
 	int rate;
 };
-typedef FramePtr<AudioFrame> AudioFramePtr;
+typedef std::unique_ptr<AudioFrame> AudioFramePtr;
 
 /**
  * @brief Abstract class for decoding a video or audio stream
@@ -73,8 +66,8 @@ typedef FramePtr<AudioFrame> AudioFramePtr;
  */
 class Decoder {
  private:
-	std::unique_ptr<boost::sync_bounded_queue<VideoFramePtr>> m_videoQueue;
-	std::unique_ptr<boost::sync_bounded_queue<AudioFramePtr>> m_audioQueue;
+	std::unique_ptr<sync_bounded_queue<VideoFramePtr>> m_videoQueue;
+	std::unique_ptr<sync_bounded_queue<AudioFramePtr>> m_audioQueue;
 
 	bool m_decoding;
 	size_t m_queueSize;

@@ -142,7 +142,7 @@ set (file_root_debugconsole
 SET(file_root_def_files
 	def_files/def_files.h
 )
-if(WIN32)
+if(MSVC)
 	SET(file_root_def_files
 		${file_root_def_files}
 		def_files/def_files-win32.cpp
@@ -400,10 +400,10 @@ set (file_root_headtracking
 if(WIN32)
 	set(file_root_headtracking
 		${file_root_headtracking}
-		
+
 		headtracking/freetrack.h
 		headtracking/freetrack.cpp
-		
+
 		headtracking/trackir.h
 		headtracking/trackir.cpp
 		headtracking/trackirpublic.h
@@ -1021,6 +1021,11 @@ set (file_root_ui
 	ui/window.cpp
 )
 
+# Utils files
+set (file_root_utils_boost
+	utils/boost/syncboundedqueue.h
+)
+
 # Weapon files
 set (file_root_weapon
 	weapon/beam.cpp
@@ -1141,6 +1146,7 @@ source_group("Stats"                              FILES ${file_root_stats})
 source_group("TgaUtils"                           FILES ${file_root_tgautils})
 source_group("Tracing"                            FILES ${file_root_tracing})
 source_group("Ui"                                 FILES ${file_root_ui})
+source_group("Utils\\boost"                       FILES ${file_root_utils_boost})
 source_group("Weapon"                             FILES ${file_root_weapon})
 source_group("Windows Stubs"                      FILES ${file_root_windows_stubs})
 
@@ -1230,6 +1236,7 @@ set (file_root
 	${file_root_tgautils}
 	${file_root_tracing}
 	${file_root_ui}
+	${file_root_utils_boost}
 	${file_root_weapon}
 	${file_root_windows_stubs}
 )
