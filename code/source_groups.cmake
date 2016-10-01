@@ -142,7 +142,7 @@ set (file_root_debugconsole
 SET(file_root_def_files
 	def_files/def_files.h
 )
-if(WIN32)
+if(MSVC)
 	SET(file_root_def_files
 		${file_root_def_files}
 		def_files/def_files-win32.cpp
@@ -400,10 +400,10 @@ set (file_root_headtracking
 if(WIN32)
 	set(file_root_headtracking
 		${file_root_headtracking}
-		
+
 		headtracking/freetrack.h
 		headtracking/freetrack.cpp
-		
+
 		headtracking/trackir.h
 		headtracking/trackir.cpp
 		headtracking/trackirpublic.h

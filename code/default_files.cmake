@@ -1,5 +1,5 @@
 
-IF(WIN32)
+IF(MSVC)
 	# Windows specific version using resource files
 
 	set(RES_CONTENT)

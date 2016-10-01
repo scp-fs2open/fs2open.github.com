@@ -20,53 +20,58 @@ IF(UNIX AND NOT APPLE)
 	add_library(oggvorbis INTERFACE)
 	target_link_libraries(oggvorbis INTERFACE ogg theora vorbis vorbisfile)
 ELSEIF (WIN32)
-	IF(CMAKE_SIZEOF_VOID_P EQUAL 8)
+	IF(IS_64BIT)
 		# 64-bit
 		set(ARCH "x64")
-	ELSE(CMAKE_SIZEOF_VOID_P EQUAL 8)
+	ELSE(IS_64BIT)
 		# 32-bit
 		set(ARCH "x86")
-	ENDIF(CMAKE_SIZEOF_VOID_P EQUAL 8)
+	ENDIF(IS_64BIT)
 
 	# We have precompiled libs for windows
-	add_library(ogg STATIC IMPORTED GLOBAL)
-	set_target_properties(ogg
-		PROPERTIES
-			IMPORTED_LOCATION ${CMAKE_CURRENT_LIST_DIR}/lib/${ARCH}/libogg.lib
-			INTERFACE_INCLUDE_DIRECTORIES ${CMAKE_CURRENT_LIST_DIR}/include
-	)
+	IF(MSVC)
+		add_library(ogg STATIC IMPORTED GLOBAL)
+		set_target_properties(ogg PROPERTIES IMPORTED_LOCATION ${CMAKE_CURRENT_LIST_DIR}/lib/${ARCH}/libogg.lib)
 
-	add_library(vorbis STATIC IMPORTED GLOBAL)
-	set_target_properties(vorbis
-		PROPERTIES
-			IMPORTED_LOCATION ${CMAKE_CURRENT_LIST_DIR}/lib/${ARCH}/libvorbis.lib
-			INTERFACE_INCLUDE_DIRECTORIES ${CMAKE_CURRENT_LIST_DIR}/include
-	)
+		add_library(vorbis STATIC IMPORTED GLOBAL)
+		set_target_properties(vorbis PROPERTIES IMPORTED_LOCATION ${CMAKE_CURRENT_LIST_DIR}/lib/${ARCH}/libvorbis.lib)
 
-	add_library(vorbisfile STATIC IMPORTED GLOBAL)
-	set_target_properties(vorbisfile
-		PROPERTIES
-			IMPORTED_LOCATION ${CMAKE_CURRENT_LIST_DIR}/lib/${ARCH}/libvorbisfile.lib
-			INTERFACE_INCLUDE_DIRECTORIES ${CMAKE_CURRENT_LIST_DIR}/include
-	)
+		add_library(vorbisfile STATIC IMPORTED GLOBAL)
+		set_target_properties(vorbisfile PROPERTIES IMPORTED_LOCATION ${CMAKE_CURRENT_LIST_DIR}/lib/${ARCH}/libvorbisfile.lib)
 
-	add_library(theora STATIC IMPORTED GLOBAL)
-	set_target_properties(theora
-		PROPERTIES
-			IMPORTED_LOCATION ${CMAKE_CURRENT_LIST_DIR}/lib/${ARCH}/libtheora.lib
-			INTERFACE_INCLUDE_DIRECTORIES ${CMAKE_CURRENT_LIST_DIR}/include
-	)
+		add_library(theora STATIC IMPORTED GLOBAL)
+		set_target_properties(theora PROPERTIES IMPORTED_LOCATION ${CMAKE_CURRENT_LIST_DIR}/lib/${ARCH}/libtheora.lib)
+
+		IF(IS_64BIT)
+			# 64-bit
+			add_target_copy_files("${CMAKE_CURRENT_LIST_DIR}/lib/${ARCH}/libogg.dll")
+			add_target_copy_files("${CMAKE_CURRENT_LIST_DIR}/lib/${ARCH}/libtheora.dll")
+			add_target_copy_files("${CMAKE_CURRENT_LIST_DIR}/lib/${ARCH}/libvorbis.dll")
+			add_target_copy_files("${CMAKE_CURRENT_LIST_DIR}/lib/${ARCH}/libvorbisfile.dll")
+		ENDIF(IS_64BIT)
+
+	ELSE(MSVC) #MINGW
+		add_library(ogg INTERFACE)
+		target_link_libraries(ogg INTERFACE "${CMAKE_CURRENT_LIST_DIR}/lib/${ARCH}/libogg.a")
+
+		add_library(vorbis INTERFACE)
+		target_link_libraries(vorbis INTERFACE "${CMAKE_CURRENT_LIST_DIR}/lib/${ARCH}/libvorbis.a")
+
+		add_library(vorbisfile INTERFACE)
+		target_link_libraries(vorbisfile INTERFACE "${CMAKE_CURRENT_LIST_DIR}/lib/${ARCH}/libvorbisfile.a")
+
+		add_library(theora INTERFACE)
+		target_link_libraries(theora INTERFACE "${CMAKE_CURRENT_LIST_DIR}/lib/${ARCH}/libtheora.a")
+	ENDIF(MSVC)
+
+	set_target_properties(ogg PROPERTIES INTERFACE_INCLUDE_DIRECTORIES "${CMAKE_CURRENT_LIST_DIR}/include")
+	set_target_properties(vorbis PROPERTIES INTERFACE_INCLUDE_DIRECTORIES "${CMAKE_CURRENT_LIST_DIR}/include")
+	set_target_properties(vorbisfile PROPERTIES INTERFACE_INCLUDE_DIRECTORIES "${CMAKE_CURRENT_LIST_DIR}/include")
+	set_target_properties(theora PROPERTIES INTERFACE_INCLUDE_DIRECTORIES "${CMAKE_CURRENT_LIST_DIR}/include")
 
 	add_library(oggvorbis INTERFACE)
-	target_link_libraries(oggvorbis INTERFACE ogg theora vorbis vorbisfile)
+	target_link_libraries(oggvorbis INTERFACE theora vorbis vorbisfile ogg)
 
-	IF(CMAKE_SIZEOF_VOID_P EQUAL 8)
-		# 64-bit
-		add_target_copy_files("${CMAKE_CURRENT_LIST_DIR}/lib/${ARCH}/libogg.dll")
-		add_target_copy_files("${CMAKE_CURRENT_LIST_DIR}/lib/${ARCH}/libtheora.dll")
-		add_target_copy_files("${CMAKE_CURRENT_LIST_DIR}/lib/${ARCH}/libvorbis.dll")
-		add_target_copy_files("${CMAKE_CURRENT_LIST_DIR}/lib/${ARCH}/libvorbisfile.dll")
-	ENDIF(CMAKE_SIZEOF_VOID_P EQUAL 8)
 ELSEIF(APPLE)
 	macro(find_lib varname libname)
 		find_library(${varname} ${libname} PATHS "${FSO_MAC_FRAMEWORKS}")
