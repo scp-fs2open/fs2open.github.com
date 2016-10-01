@@ -99,7 +99,7 @@ std::unique_ptr<FFmpegContext> FFmpegContext::createContext(CFILE* mediaFile) {
 		char errorStr[1024];
 		av_strerror(probe_ret, errorStr, 1024);
 
-		throw FFmpegException(std::string("Could not open movie file! Error: ") + errorStr);
+		throw FFmpegException(SCP_string("Could not open movie file! Error: ") + errorStr);
 	}
 
 	instance->m_ctx->flags |= AVFMT_FLAG_CUSTOM_IO;
@@ -109,7 +109,7 @@ std::unique_ptr<FFmpegContext> FFmpegContext::createContext(CFILE* mediaFile) {
 		char errorStr[1024];
 		av_strerror(ret, errorStr, 1024);
 
-		throw FFmpegException(std::string("Could not open movie file! Error: ") + errorStr);
+		throw FFmpegException(SCP_string("Could not open movie file! Error: ") + errorStr);
 	}
 
 	ret = avformat_find_stream_info(instance->m_ctx, nullptr);
@@ -117,7 +117,7 @@ std::unique_ptr<FFmpegContext> FFmpegContext::createContext(CFILE* mediaFile) {
 		char errorStr[1024];
 		av_strerror(ret, errorStr, 1024);
 
-		throw FFmpegException(std::string("Failed to get stream information! Error: ") + errorStr);
+		throw FFmpegException(SCP_string("Failed to get stream information! Error: ") + errorStr);
 	}
 
 	return instance;
