@@ -3,7 +3,7 @@
 #include <memory>
 
 #include "globalincs/pstypes.h"
-#include "globalincs/syncboundedqueue.h"
+#include "utils/boost/syncboundedqueue.h"
 
 namespace cutscene {
 struct FrameSize {
