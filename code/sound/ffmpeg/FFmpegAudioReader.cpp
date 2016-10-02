@@ -160,10 +160,4 @@ FFmpegAudioReader::~FFmpegAudioReader() {
 	}
 #endif
 }
-
-#if LIBAVCODEC_VERSION_INT <= AV_VERSION_INT(57, 24, 255)
-void FFmpegAudioReader::processPendingPacket() {
-
-}
-#endif
 }

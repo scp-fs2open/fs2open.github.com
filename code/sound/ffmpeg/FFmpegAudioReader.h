@@ -18,8 +18,6 @@ class FFmpegAudioReader
 
 #if LIBAVCODEC_VERSION_INT <= AV_VERSION_INT(57, 24, 255)
     AVPacket* _currentPacket = nullptr;
-
-	void processPendingPacket();
 #endif
 
 public:
