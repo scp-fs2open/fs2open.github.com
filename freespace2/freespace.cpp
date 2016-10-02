@@ -14,7 +14,7 @@
  #include <direct.h>
  #include <io.h>
  #include <windows.h>
- #include <Psapi.h>
+ #include <psapi.h>
 #ifndef _MINGW
  #include <crtdbg.h>
 #endif // !_MINGW
@@ -169,7 +169,7 @@
 
 #include "SDLGraphicsOperations.h"
 
-#include <inttypes.h>
+#include <cinttypes>
 
 #include <stdexcept>
 #include <SDL.h>

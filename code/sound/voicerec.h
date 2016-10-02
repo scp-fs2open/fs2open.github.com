@@ -4,7 +4,7 @@
 #ifdef WIN32
 
 #define WIN32_LEAN_AND_MEAN
-#include <Windows.h>
+#include <windows.h>
 
 #define GRAMMARID1      161                     // Arbitrary grammar id
 #define WM_RECOEVENT    WM_USER+190             // Arbitrary user defined message for reco callback
