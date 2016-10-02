@@ -74,14 +74,14 @@ OpenGLVideoPresenter::OpenGLVideoPresenter(const MovieProperties& props) : _scal
 	glTexImage2D(GL_state.Texture.GetTarget(), 0, GL_RED, w / 2, h / 2, 0, GL_RED,
 				 GL_UNSIGNED_BYTE, NULL);
 
-	float screen_ratio = (float) gr_screen.max_w / (float) gr_screen.max_h;
+	float screen_ratio = (float) gr_screen.center_w / (float) gr_screen.center_h;
 	float movie_ratio = (float) props.size.width / (float) props.size.height;
 
 	float scale_by;
 	if (screen_ratio > movie_ratio) {
-		scale_by = (float) gr_screen.max_h / (float) props.size.height;
+		scale_by = (float) gr_screen.center_h / (float) props.size.height;
 	} else {
-		scale_by = (float) gr_screen.max_w / (float) props.size.width;
+		scale_by = (float) gr_screen.center_w / (float) props.size.width;
 	}
 
 	// don't bother setting anything if we aren't going to need it
@@ -100,12 +100,12 @@ OpenGLVideoPresenter::OpenGLVideoPresenter(const MovieProperties& props) : _scal
 	int screenY;
 
 	if (_scaleVideo) {
-		screenX = ((fl2i(gr_screen.max_w / scale_by + 0.5f) - static_cast<int>(props.size.width)) / 2);
-		screenY = ((fl2i(gr_screen.max_h / scale_by + 0.5f) - static_cast<int>(props.size.height)) / 2);
+		screenX = fl2i(((gr_screen.center_w / 2.0f + gr_screen.center_offset_x) / scale_by) - (static_cast<int>(props.size.width) / 2.0f) + 0.5f);
+		screenY = fl2i(((gr_screen.center_h / 2.0f + gr_screen.center_offset_y) / scale_by) - (static_cast<int>(props.size.height) / 2.0f) + 0.5f);
 	} else {
 		// centers on 1024x768, fills on 640x480
-		screenX = ((gr_screen.max_w - static_cast<int>(props.size.width)) / 2);
-		screenY = ((gr_screen.max_h - static_cast<int>(props.size.height)) / 2);
+		screenX = ((gr_screen.center_w - static_cast<int>(props.size.width)) / 2) + gr_screen.center_offset_x;
+		screenY = ((gr_screen.center_h - static_cast<int>(props.size.height)) / 2) + gr_screen.center_offset_y;
 	}
 
 	// set additional values for screen width/height and UV coords
