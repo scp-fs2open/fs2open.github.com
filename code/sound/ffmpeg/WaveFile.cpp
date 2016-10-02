@@ -14,20 +14,21 @@ using namespace ffmpeg;
 AudioProperties getAudioProps(AVStream* stream) {
 	AudioProperties props;
 
+	int channels;
 #if LIBAVCODEC_VERSION_INT > AV_VERSION_INT(57, 24, 255)
-	props.channels = stream->codecpar->channels;
+	channels = stream->codecpar->channels;
 	props.channel_layout = stream->codecpar->channel_layout;
 	props.sample_rate = stream->codecpar->sample_rate;
 	props.format = (AVSampleFormat)stream->codecpar->format;
 #else
-	props.channels = stream->codec->channels;
+	channels = stream->codec->channels;
 	props.channel_layout = stream->codec->channel_layout;
 	props.sample_rate = stream->codec->sample_rate;
 	props.format = stream->codec->sample_fmt;
 #endif
 	if (props.channel_layout == 0) {
 		// Use a default channel layout value
-		props.channel_layout = (uint64_t) av_get_default_channel_layout(props.channels);
+		props.channel_layout = (uint64_t) av_get_default_channel_layout(channels);
 	}
 
 	return props;
@@ -41,7 +42,6 @@ AudioProperties getAdjustedAudioProps(const AudioProperties& baseProps) {
 	if (av_get_channel_layout_nb_channels(baseProps.channel_layout) > 2) {
 		adjusted.channel_layout = AV_CH_LAYOUT_STEREO;
 	}
-	adjusted.channels = av_get_channel_layout_nb_channels(adjusted.channel_layout);
 
 	int max_bytes_per_sample;
 	switch (Ds_sound_quality) {
@@ -135,7 +135,7 @@ bool WaveFile::Open(const char *pszFilename, bool keep_ext)
 	using namespace libs::ffmpeg;
 
 	size_t FileSize, FileOffset;
-	char fullpath[MAX_PATH];
+	char fullpath[MAX_PATH_LEN];
 	char filename[MAX_FILENAME_LEN];
 
 	// NOTE: we assume that the extension has already been stripped off if it was supposed to be!!
@@ -217,11 +217,9 @@ bool WaveFile::Open(const char *pszFilename, bool keep_ext)
 
 		m_baseAudioProps = getAudioProps(m_audioStream);
 
-		m_audioProps = getAdjustedAudioProps(m_baseAudioProps);
+		setAdjustedAudioProperties(getAdjustedAudioProps(m_baseAudioProps));
 
-		m_resampleCtx = getSWRContext(m_baseAudioProps, m_audioProps);
-
-		m_al_format = openal_get_format(av_get_bytes_per_sample(m_audioProps.format) * 8, m_audioProps.channels);
+		m_al_format = openal_get_format(av_get_bytes_per_sample(m_audioProps.format) * 8, getNumChannels());
 
 		if (m_al_format == AL_INVALID_VALUE) {
 			throw FFmpegException("Invalid audio format.");
@@ -229,7 +227,7 @@ bool WaveFile::Open(const char *pszFilename, bool keep_ext)
 
 		nprintf(("SOUND", "SOUND => %s => Using codec %s (%s)\n", filename, audio_codec->long_name, audio_codec->name));
 	} catch (const FFmpegException& e) {
-		nprintf(("SOUND", "SOUND ==> Could not open wave file %s for streaming. Reason: %s\n", filename, e.what()));
+		mprintf(("SOUND ==> Could not open wave file %s for streaming. Reason: %s\n", filename, e.what()));
 		return false;
 	}
 
@@ -237,7 +235,7 @@ bool WaveFile::Open(const char *pszFilename, bool keep_ext)
 	Cue();
 	m_frameReader.reset(new FFmpegAudioReader(m_ctx->ctx(), m_audioCodecCtx, m_audioStreamIndex));
 
-	nprintf(("SOUND", "AUDIOSTR => Successfully opened: %s\n", filename));
+	nprintf(("SOUND", "SOUND => Successfully opened: %s\n", filename));
 
 	// If we are here it means that everything went fine
 	return true;
@@ -252,8 +250,16 @@ bool WaveFile::Cue()
 	return err >= 0;
 }
 
+void WaveFile::setAdjustedAudioProperties(const AudioProperties& props) {
+	if (m_resampleCtx) {
+		swr_free(&m_resampleCtx);
+	}
+	m_audioProps = props;
+	m_resampleCtx = getSWRContext(m_baseAudioProps, m_audioProps);
+}
+
 size_t WaveFile::handleDecodedFrame(AVFrame* av_frame, uint8_t* out_buffer, size_t buffer_size) {
-	const auto sample_size = (av_get_bytes_per_sample(m_audioProps.format) * m_audioProps.channels);
+	const auto sample_size = (av_get_bytes_per_sample(m_audioProps.format) * getNumChannels());
 	int dest_num_samples = static_cast<int>(buffer_size / sample_size);
 	auto written = swr_convert(m_resampleCtx,
 							   &out_buffer,
@@ -270,7 +276,7 @@ size_t WaveFile::getBufferedData(uint8_t* buffer, size_t buffer_size) {
 	auto buffered = swr_get_out_samples(m_resampleCtx, 0);
 
 	if (buffered > 0) {
-		const auto sample_size = (av_get_bytes_per_sample(m_audioProps.format) * m_audioProps.channels);
+		const auto sample_size = (av_get_bytes_per_sample(m_audioProps.format) * getNumChannels());
 		int dest_num_samples = static_cast<int>(buffer_size / sample_size);
 		auto written = swr_convert(m_resampleCtx, &buffer, dest_num_samples, nullptr, 0);
 
@@ -321,16 +327,19 @@ int WaveFile::Read(uint8_t* pbDest, size_t cbSize)
 }
 
 int WaveFile::getSampleByteSize() const {
-	return av_get_bytes_per_sample(m_audioProps.format) * m_audioProps.channels;
+	return av_get_bytes_per_sample(m_audioProps.format) * getNumChannels();
 }
 
 int WaveFile::getSampleRate() const {
 	return m_audioProps.sample_rate;
 }
-int WaveFile::getTotalSamples() const {
-	auto duration = m_audioStream->time_base;
-	duration.num *= (int)m_audioStream->duration;
 
+double WaveFile::getDuration() const {
+	return av_q2d(av_mul_q(av_make_q(static_cast<int>(m_audioStream->duration), 1), m_audioStream->time_base));
+}
+
+int WaveFile::getTotalSamples() const {
+	auto duration = av_mul_q(av_make_q(static_cast<int>(m_audioStream->duration), 1), m_audioStream->time_base);
 	auto samples_r = av_mul_q(av_make_q(m_audioProps.sample_rate, 1), duration);
 
 	// Compute the actual sample number and round the result up
@@ -339,4 +348,7 @@ int WaveFile::getTotalSamples() const {
 	return samples;
 }
 
+int WaveFile::getNumChannels() const {
+	return av_get_channel_layout_nb_channels(m_audioProps.channel_layout);
+}
 }

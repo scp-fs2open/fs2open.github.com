@@ -13,15 +13,7 @@
 #define __DS_H__
 
 #include "globalincs/pstypes.h"
-#include "sound/ogg/ogg.h"
-#include "cfile/cfile.h"
-
-#ifdef _WIN32
-#define VC_EXTRALEAN
-#include <windows.h>
-#include <mmsystem.h>
-#endif
-
+#include "sound/ffmpeg/WaveFile.h"
 
 // Constants that DirectSound should assign, but doesn't
 #define MIN_PITCH		100
@@ -47,25 +39,19 @@ struct EnhancedSoundData;
 #define DS_3D		(1<<0)
 
 typedef struct sound_info {
-	int format;		// WAVE_FORMAT_* defines from mmreg.h
-	OggVorbis_File ogg_info;
 	uint size;
 	int sample_rate;
 	int avg_bytes_per_sec;
-	int n_block_align;
 	int bits;
 	int n_channels;
 	int duration;	// time in ms for duration of sound
-	ubyte *data;
 } sound_info;
 
 extern int ds_initialized;
 
 int ds_init();
 void ds_close();
-int ds_parse_sound(CFILE *fp, ubyte **dest, uint *dest_size, WAVEFORMATEX **header, bool ogg = false, OggVorbis_File *ovf = NULL);
-int ds_parse_sound_info(char *real_filename, sound_info *s_info);
-int ds_load_buffer(int *sid, int *final_size, void *header, sound_info *si, int flags);
+int ds_load_buffer(int *sid, int flags, ffmpeg::WaveFile* file);
 void ds_unload_buffer(int sid);
 int ds_play(int sid, int snd_id, int priority, const EnhancedSoundData * enhanced_sound_data, float volume, float pan, int looping, bool is_voice_msg = false);
 int ds_get_channel(int sig);

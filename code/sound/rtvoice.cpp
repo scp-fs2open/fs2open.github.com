@@ -15,6 +15,11 @@
 #include "sound/rtvoice.h"
 #include "sound/sound.h"
 
+#ifdef WIN32
+#define WIN32_LEAN_AN_MEAN
+#include <Windows.h>
+#endif
+
 
 typedef struct rtv_format
 {

@@ -191,8 +191,6 @@ void snd_set_pos(int snd_handle, game_snd *sg, float val,int as_pct);		// set th
 void snd_get_format(int handle, int *bits_per_sample, int *frequency);
 int snd_time_remaining(int handle);
 
-int snd_get_samples_per_measure(char *filename, float num_measures);
-
 // sound environment
 extern unsigned int SND_ENV_DEFAULT;
 
