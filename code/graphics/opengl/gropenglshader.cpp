@@ -563,7 +563,7 @@ int opengl_compile_shader(shader_type sdr, uint flags)
 		geom_content = opengl_get_shader_content(sdr_info->type_id, sdr_info->geo, flags, SDR_STAGE_GEOMETRY);
 	}
 
-	auto shader_hash = get_shader_hash(vert_content, frag_content, geom_content);
+	auto shader_hash = get_shader_hash(vert_content, geom_content, frag_content);
 	std::unique_ptr<opengl::ShaderProgram> program(new opengl::ShaderProgram());
 
 	if (!load_cached_shader_binary(program.get(), shader_hash)) {
