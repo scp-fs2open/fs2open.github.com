@@ -5261,7 +5261,6 @@ void model_remove_bsp_collision_tree(int tree_index)
 }
 
 #if BYTE_ORDER == BIG_ENDIAN
-extern void model_allocate_interp_data(int, int, int);
 
 // tigital -
 void swap_bsp_defpoints(ubyte * p)
@@ -5278,7 +5277,7 @@ void swap_bsp_defpoints(ubyte * p)
 	ubyte * normcount = p+20;
 	vec3d *src = vp(p+offset);
 
-	model_allocate_interp_data(nverts, n_norms, 0);
+	model_allocate_interp_data(nverts, n_norms);
 
 	for (n=0; n<nverts; n++ )	{
 		src->xyz.x = INTEL_FLOAT( &src->xyz.x );		//tigital
