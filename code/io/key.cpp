@@ -17,7 +17,7 @@
 #include "math/fix.h"
 #include "io/timer.h"
 #include "localization/localize.h"
-#include "parse/scripting.h"
+#include "scripting/scripting.h"
 #include "cmdline/cmdline.h"
 
 #define THREADED	// to use the proper set of macros

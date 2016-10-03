@@ -63,7 +63,7 @@
 #include "object/objectsnd.h"
 #include "object/waypoint.h"
 #include "parse/parselo.h"
-#include "parse/scripting.h"
+#include "scripting/scripting.h"
 #include "particle/particle.h"
 #include "playerman/player.h"
 #include "radar/radar.h"

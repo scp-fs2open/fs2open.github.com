@@ -16,7 +16,7 @@
 
 #include "gamesequence/gamesequence.h"
 #include "globalincs/pstypes.h"
-#include "parse/scripting.h"
+#include "scripting/scripting.h"
 
 
 

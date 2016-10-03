@@ -40,9 +40,9 @@
 #include "network/multimsgs.h"
 #include "object/objectshield.h"
 #include "object/waypoint.h"
-#include "parse/lua.h"
+#include "lua.h"
 #include "parse/parselo.h"
-#include "parse/scripting.h"
+#include "scripting.h"
 #include "particle/particle.h"
 #include "playerman/player.h"
 #include "render/3d.h"
@@ -197,7 +197,7 @@ string_conv ade_Operators[] = {
 	{"__newindex",	"="},			//var =  obj
 	{"__call",		""},			//*shrug*
 	{"__gc",		"__gc"},		//Lua's equivelant of a destructor
-	//WMC - Used with tostring() lua operator.
+	//WMC - Used with tostring() scripting operator.
 	{"__tostring",	"(string)"},	//tostring(var)
 	//WMC - This is NOT a Lua type, but for the LUA_INDEXER define
 	{"__indexer",	"[]"},			//obj[var]
@@ -11968,7 +11968,7 @@ ADE_VIRTVAR(CountermeasureCount, l_Control_Info, "number", "Number of countermea
 	return ade_set_args(L, "i", Player->lua_ci.fire_countermeasure_count);
 }
 
-ADE_FUNC(clearLuaButtonInfo, l_Control_Info, NULL, "Clears the lua button control info", NULL, NULL)
+ADE_FUNC(clearLuaButtonInfo, l_Control_Info, NULL, "Clears the scripting button control info", NULL, NULL)
 {
 	button_info_clear(&Player->lua_bi);
 
@@ -12008,7 +12008,7 @@ ADE_FUNC(accessButtonInfo, l_Control_Info, "number, number, number, number", "Ac
 	return ade_set_args(L, "iiii", bi_status[0], bi_status[1], bi_status[2], bi_status[3]);
 }
 
-ADE_FUNC(useButtonControl, l_Control_Info, "number, string", "Adds the defined button control to lua button control data, if number is -1 it tries to use the string", NULL, NULL)
+ADE_FUNC(useButtonControl, l_Control_Info, "number, string", "Adds the defined button control to scripting button control data, if number is -1 it tries to use the string", NULL, NULL)
 {
 	int index;
 	char *buf = NULL;
@@ -12072,7 +12072,7 @@ ADE_FUNC(getButtonControlNumber, l_Control_Info, "string", "Gives the number of 
 	return ade_set_error(L, "i", -1);
 }
 
-ADE_VIRTVAR(AllButtonPolling, l_Control_Info, "boolean", "Toggles the all button polling for lua", "boolean", "If the all button polling is enabled or not")
+ADE_VIRTVAR(AllButtonPolling, l_Control_Info, "boolean", "Toggles the all button polling for scripting", "boolean", "If the all button polling is enabled or not")
 {
 	bool p;
 	int idx;
@@ -14945,7 +14945,7 @@ ADE_INDEXER(l_Mission_Asteroids, "number Index", "Gets asteroid", "asteroid", "A
 		return ade_set_error( L, "o", l_Asteroid.Set( object_h() ) );
 	}
 	if( idx > -1 && idx < asteroid_count() ) {
-		idx--; //Convert from Lua to C, as lua indices start from 1, not 0
+		idx--; //Convert from Lua to C, as scripting indices start from 1, not 0
 		return ade_set_args( L, "o", l_Asteroid.Set( object_h( &Objects[Asteroids[idx].objnum] ), Objects[Asteroids[idx].objnum].signature ) );
 	}
 

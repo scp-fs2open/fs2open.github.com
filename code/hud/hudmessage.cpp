@@ -30,7 +30,7 @@
 #include "missionui/missionscreencommon.h"
 #include "network/multi.h"
 #include "parse/parselo.h"
-#include "parse/scripting.h"
+#include "scripting/scripting.h"
 #include "playerman/player.h"
 #include "ship/ship.h"
 #include "sound/audiostr.h"

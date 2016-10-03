@@ -13,7 +13,7 @@
 #include "network/multi.h"
 #include "object/objcollide.h"
 #include "object/object.h"
-#include "parse/scripting.h"
+#include "scripting/scripting.h"
 #include "ship/ship.h"
 #include "stats/scoring.h"
 #include "weapon/weapon.h"

@@ -20,7 +20,7 @@ int ade_friendly_error(lua_State *L);
 //*************************Lua hacks*************************
 //WMC - Hack to allow for quick&easy return value parsing
 extern int Ade_get_args_skip;
-//WMC - Tell ade_get_args it is parsing lua functions,
+//WMC - Tell ade_get_args it is parsing scripting functions,
 //which have no upvalues
 extern bool Ade_get_args_lfunction;
 

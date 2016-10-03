@@ -22,7 +22,7 @@
 #include "model/modelrender.h"
 #include "nebula/neb.h"
 #include "object/object.h"
-#include "parse/scripting.h"
+#include "scripting/scripting.h"
 #include "render/3d.h"
 #include "render/batching.h"
 #include "ship/ship.h"

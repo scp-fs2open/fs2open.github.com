@@ -630,7 +630,7 @@ public:
 #define TM_AMBIENT_TYPE		8		// optional ambient occlusion map with ambient occlusion and cavity occlusion factors for red and green channels.
 #define TM_NUM_TYPES		9		//WMC - Number of texture_info objects in texture_map
 									//Used by scripting - if you change this, do a search
-									//to update switch() statement in lua.cpp
+									//to update switch() statement in scripting.cpp
 // taylor
 //WMC - OOPified
 class texture_map

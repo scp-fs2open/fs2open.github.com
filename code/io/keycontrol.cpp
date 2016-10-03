@@ -1694,13 +1694,13 @@ void game_process_keys()
 	}
 	while (k);
 
-	// lua button command override goes here!!
+	// scripting button command override goes here!!
 	if (lua_game_control & LGC_B_OVERRIDE) {
 		button_info temp = Player->bi;
 		Player->bi = Player->lua_bi;
 		Player->lua_bi = temp;
 	} else if (lua_game_control & LGC_B_ADDITIVE) {
-		// add the lua commands to current commands 
+		// add the scripting commands to current commands
 		int i;
 		for (i=0; i<NUM_BUTTON_FIELDS; i++)
 			Player->bi.status[i] |= Player->lua_bi.status[i];

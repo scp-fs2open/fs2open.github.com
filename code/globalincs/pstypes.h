@@ -533,7 +533,7 @@ namespace std
 	//   globalincs/systemvars.cpp:insertion_sort()
 	//   network/chat_api.cpp:AddChatCommandToQueue()
 	//   network/multi_obj.cpp:multi_oo_sort_func()
-	//   parse/lua.cpp:ade_get_args() && ade_set_args()
+	//   parse/scripting.cpp:ade_get_args() && ade_set_args()
 	//
 	// probably should setup a static_assert on insertion_sort as well
 	template<typename U>

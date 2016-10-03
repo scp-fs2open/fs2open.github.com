@@ -2,7 +2,7 @@
 #include "osapi/dialogs.h"
 #include "osapi/osapi.h"
 #include "parse/parselo.h"
-#include "parse/lua.h"
+#include "scripting/lua.h"
 #include "cmdline/cmdline.h"
 #include "graphics/2d.h"
 

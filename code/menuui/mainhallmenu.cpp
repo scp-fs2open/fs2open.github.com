@@ -34,7 +34,7 @@
 #include "network/multiutil.h"
 #include "palman/palman.h"
 #include "parse/parselo.h"
-#include "parse/scripting.h"
+#include "scripting/scripting.h"
 #include "playerman/player.h"
 #include "popup/popup.h"
 #include "sound/audiostr.h"
