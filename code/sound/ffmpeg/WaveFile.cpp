@@ -225,6 +225,8 @@ bool WaveFile::Open(const char *pszFilename, bool keep_ext)
 		if (m_al_format == AL_INVALID_VALUE) {
 			throw FFmpegException("Invalid audio format.");
 		}
+
+		nprintf(("SOUND", "SOUND => %s => Using codec %s (%s)\n", filename, audio_codec->long_name, audio_codec->name));
 	} catch (const FFmpegException& e) {
 		nprintf(("SOUND", "SOUND ==> Could not open wave file %s for streaming. Reason: %s\n", filename, e.what()));
 		return false;
@@ -232,6 +234,7 @@ bool WaveFile::Open(const char *pszFilename, bool keep_ext)
 
 	// Cue for streaming
 	Cue();
+	m_frameReader.reset(new FFmpegAudioReader(m_ctx->ctx(), m_audioCodecCtx, m_audioStreamIndex));
 
 	nprintf(("SOUND", "AUDIOSTR => Successfully opened: %s\n", filename));
 
@@ -287,9 +290,7 @@ int WaveFile::Read(uint8_t* pbDest, size_t cbSize)
 		return static_cast<int>(buffer_pos);
 	}
 
-	FFmpegAudioReader reader(m_ctx->ctx(), m_audioCodecCtx, m_audioStreamIndex);
-
-	while (reader.readFrame(m_decodeFrame)) {
+	while (m_frameReader->readFrame(m_decodeFrame)) {
 		// Got a new frame
 		auto advance = handleDecodedFrame(m_decodeFrame, pbDest + buffer_pos, cbSize - buffer_pos);
 

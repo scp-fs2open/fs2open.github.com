@@ -46,8 +46,29 @@ bool FFmpegAudioReader::readFrame(AVFrame* decode_frame) {
 		return false;
 	}
 #else
-	// Assume that everything was handled before for this version
-	// That might not be true in all cases but supporting those rare cases for an outdated version is not worth the trouble
+	if (_currentPacket != nullptr) {
+		// Got some data left
+		int finishedFrame = 0;
+		auto bytes_read = avcodec_decode_audio4(_codec_ctx, decode_frame, &finishedFrame, _currentPacket);
+
+		if (bytes_read < 0) {
+			// Error!
+			return false;
+		}
+
+		_currentPacket->data += bytes_read;
+		_currentPacket->size -= bytes_read;
+
+		if (_currentPacket->size <= 0) {
+			// Done with this packet
+			av_packet_unref(_currentPacket);
+			av_packet_free(&_currentPacket);
+		}
+
+		if (finishedFrame) {
+			return true;
+		}
+	}
 #endif
 
 	AVPacket packet;
@@ -80,13 +101,21 @@ bool FFmpegAudioReader::readFrame(AVFrame* decode_frame) {
 			// EGAIN was returned, send new input
 #else
 			int finishedFrame = 0;
-			auto err = avcodec_decode_audio4(_codec_ctx, decode_frame, &finishedFrame, &packet);
+			auto bytes_read = avcodec_decode_audio4(_codec_ctx, decode_frame, &finishedFrame, &packet);
+
+			if (bytes_read < packet.size) {
+				// Not all data was read
+				packet.data += bytes_read;
+				packet.size -= bytes_read;
+
+				_currentPacket = av_packet_clone(&packet);
+			}
 
 			if (finishedFrame) {
 				return true;
 			}
 
-			if (err < 0) {
+			if (bytes_read < 0) {
 				// Error
 				return false;
 			}
@@ -122,5 +151,13 @@ bool FFmpegAudioReader::readFrame(AVFrame* decode_frame) {
 
 	// If we are here then read_frame reached the end or returned an error
 	return false;
+}
+FFmpegAudioReader::~FFmpegAudioReader() {
+#if LIBAVCODEC_VERSION_INT <= AV_VERSION_INT(57, 24, 255)
+    if (_currentPacket != nullptr) {
+		av_packet_unref(_currentPacket);
+		av_packet_free(&_currentPacket);
+	}
+#endif
 }
 }

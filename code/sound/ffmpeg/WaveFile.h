@@ -24,6 +24,9 @@ struct AudioProperties
 	AVSampleFormat format = AV_SAMPLE_FMT_NONE;
 };
 
+// Forward declaration
+class FFmpegAudioReader;
+
 /**
  * @brief A class responsible for reading auto data from media files
  *
@@ -46,6 +49,8 @@ class WaveFile
 	AVFrame* m_decodeFrame;
 
 	AVCodecContext* m_audioCodecCtx;
+
+	std::unique_ptr<FFmpegAudioReader> m_frameReader;
 
 	size_t getBufferedData(uint8_t* buffer, size_t buffer_size);
  public:
