@@ -204,7 +204,7 @@ namespace os
 
 			char stackText[1024];
 			stackText[0] = '\0';
-			ade_stackdump(L, stackText);
+			scripting::ade_stackdump(L, stackText);
 			msgStream << stackText;
 			msgStream << "\n";
 			msgStream << Separator;

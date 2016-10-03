@@ -163,8 +163,11 @@ private:
 
 public:
 	//***Init/Deinit
-	script_state(char *name);
-	script_state& operator=(script_state &in);
+	script_state(const char *name);
+
+	script_state(const script_state&) = delete;
+	script_state& operator=(script_state &i) = delete;
+
 	~script_state();
 
 	//***Internal scripting stuff

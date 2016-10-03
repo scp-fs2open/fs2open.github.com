@@ -61,7 +61,7 @@ struct campaign_info;
 #define PCM_WARPOUT_STAGE3		3	// through warp hole, waiting for it to disapper.
 #define PCM_SUPERNOVA			4	// supernova. lock everything to where it is.
 
-// 'scripting game control' settings
+// 'lua game control' settings
 #define LGC_NORMAL				(1<<0)	// normal controls
 #define LGC_STEERING			(1<<1)	// allow lua to fully override steering controls
 #define LGC_FULL				(1<<2)	// allow lua to fully override controls
@@ -232,7 +232,7 @@ extern void player_controls_init();				// initialize Descent style controls for 
 extern void player_match_target_speed(char *no_target_text=NULL, char *match_off_text=NULL, char *match_on_text=NULL);		// call to continually match speed with selected target
 extern void player_clear_speed_matching();
 
-extern int lua_game_control;					// defines the level of control set to scripting scripting
+extern int lua_game_control;					// defines the level of control set to lua scripting
 
 void player_set_pilot_defaults(player *p);
 

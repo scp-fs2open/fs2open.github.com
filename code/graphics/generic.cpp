@@ -711,7 +711,7 @@ void generic_anim_render(generic_anim *ga, float frametime, int x, int y, bool m
 				gr_bitmap(x, y, (menu ? GR_RESIZE_MENU : GR_RESIZE_FULL));
 			}
 			else if (ge->draw == true) {
-				// currently only for scripting streaminganim objects
+				// currently only for lua streaminganim objects
 				// and don't draw them unless requested...
 				gr_bitmap_uv(x, y, ge->width, ge->height, ge->u0, ge->v0, ge->u1, ge->v1, GR_RESIZE_NONE);
 			}
