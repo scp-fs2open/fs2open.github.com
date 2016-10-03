@@ -19,7 +19,7 @@
 #include "model/model.h"
 #include "model/modelsinc.h"
 
-extern void model_allocate_interp_data(int n_verts, int n_norms, int n_list_verts = 0);
+extern void model_allocate_interp_data(int n_verts, int n_norms);
 
 
 // returns 1 if a point is in an octant.
