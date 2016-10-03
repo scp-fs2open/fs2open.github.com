@@ -1314,6 +1314,7 @@ void model_draw_bay_paths_htl(int model_num);
 
 bool model_interp_config_buffer(indexed_vertex_source *vert_src, vertex_buffer *vb, bool update_ibuffer_only);
 bool model_interp_pack_buffer(indexed_vertex_source *vert_src, vertex_buffer *vb);
+void model_allocate_interp_data(int n_verts = 0, int n_norms = 0);
 
 void glowpoint_init();
 SCP_vector<glow_point_bank_override>::iterator get_glowpoint_bank_override_by_name(const char* name);

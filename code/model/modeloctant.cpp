@@ -19,9 +19,6 @@
 #include "model/model.h"
 #include "model/modelsinc.h"
 
-extern void model_allocate_interp_data(int n_verts, int n_norms);
-
-
 // returns 1 if a point is in an octant.
 int point_in_octant( polymodel * pm, model_octant * oct, vec3d *vert )
 {

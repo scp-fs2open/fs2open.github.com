@@ -5261,7 +5261,6 @@ void model_remove_bsp_collision_tree(int tree_index)
 }
 
 #if BYTE_ORDER == BIG_ENDIAN
-extern void model_allocate_interp_data(int n_verts = 0, int n_norms = 0);
 
 // tigital -
 void swap_bsp_defpoints(ubyte * p)

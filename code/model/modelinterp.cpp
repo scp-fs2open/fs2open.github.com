@@ -230,7 +230,7 @@ void model_deallocate_interp_data()
 extern void model_collide_allocate_point_list(int n_points);
 extern void model_collide_free_point_list();
 
-void model_allocate_interp_data(int n_verts = 0, int n_norms = 0)
+void model_allocate_interp_data(int n_verts, int n_norms)
 {
 	static ubyte dealloc = 0;
 
