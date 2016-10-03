@@ -49,8 +49,6 @@ static int channel_next_sig = 1;
 const int BUFFER_BUMP = 50;
 SCP_vector<sound_buffer> sound_buffers;
 
-extern int Snd_sram;				// mem (in bytes) used up by storing sounds in system memory
-
 static int Ds_use_eax = 0;
 
 static int Ds_eax_inited = 0;
