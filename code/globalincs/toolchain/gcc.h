@@ -64,3 +64,5 @@
 
 #define likely(x)    __builtin_expect((long) !!(x), 1L)
 #define unlikely(x)  __builtin_expect((long) !!(x), 0L)
+
+#define USED_VARIABLE __attribute__((used))

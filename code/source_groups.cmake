@@ -914,6 +914,8 @@ set(file_root_scripting
 )
 
 set(file_root_scripting_api
+	scripting/api/bit.h
+	scripting/api/bit.cpp
 	scripting/api/vecmath.h
 	scripting/api/vecmath.cpp
 )

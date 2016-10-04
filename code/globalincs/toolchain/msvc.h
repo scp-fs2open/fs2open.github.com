@@ -83,3 +83,5 @@
 
 #define likely(x)
 #define unlikely(x)
+
+#define USED_VARIABLE

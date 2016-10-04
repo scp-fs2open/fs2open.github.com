@@ -728,12 +728,14 @@ void ade_table_entry::OutputMeta(FILE *fp)
 		fputs("<br></dl></dd>\n", fp);
 }
 
-ade_lib::ade_lib(const char* in_name, ade_lib_handle* parent, const char* in_shortname, const char* in_desc) {
+ade_lib::ade_lib(const char* in_name, const ade_lib_handle* parent, const char* in_shortname, const char* in_desc) {
 	ade_table_entry ate;
 
 	ate.Name = in_name;
 	ate.ShortName = in_shortname;
 	ate.Instanced = true;
+
+	printf("%s\n", ate.Name);
 
 	//WMC - Here's a little hack.
 	//Lua did not work with __len on standard table objects.
@@ -754,7 +756,7 @@ ade_lib::ade_lib(const char* in_name, ade_lib_handle* parent, const char* in_sho
 		LibIdx = ade_manager::getInstance()->addTableEntry(ate);
 }
 
-const char *ade_lib::GetName()
+const char *ade_lib::GetName() const
 {
 	if(GetIdx() == UINT_MAX)
 		return "<Invalid>";
@@ -764,7 +766,7 @@ const char *ade_lib::GetName()
 
 ade_func::ade_func(const char* name,
 				   lua_CFunction func,
-				   ade_lib_handle& parent,
+				   const ade_lib_handle& parent,
 				   const char* args,
 				   const char* desc,
 				   const char* ret_type,
@@ -785,7 +787,7 @@ ade_func::ade_func(const char* name,
 
 ade_virtvar::ade_virtvar(const char* name,
 						 lua_CFunction func,
-						 ade_lib_handle& parent,
+						 const ade_lib_handle& parent,
 						 const char* args,
 						 const char* desc,
 						 const char* ret_type,
@@ -805,7 +807,7 @@ ade_virtvar::ade_virtvar(const char* name,
 }
 
 ade_indexer::ade_indexer(lua_CFunction func,
-						 ade_lib_handle& parent,
+						 const ade_lib_handle& parent,
 						 const char* args,
 						 const char* desc,
 						 const char* ret_type,

@@ -12,7 +12,6 @@ namespace api {
 //WMC - So matrix can use vector, I define it up here.
 ADE_OBJ(l_Vector, vec3d, "vector", "Vector object");
 
-
 void matrix_h::ValidateAngles() {
 	if (status == MatrixState::AnglesOutOfDate) {
 		vm_extract_angles_matrix(&ang, &mtx);
