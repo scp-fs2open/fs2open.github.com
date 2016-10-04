@@ -10,7 +10,24 @@ extern "C" {
 }
 
 namespace scripting {
+/**
+ *
+ * @param L
+ * @param fmt
+ * @return
+ *
+ * @ingroup ade_api
+ */
 int ade_get_args(lua_State *L, const char *fmt, ...);
+
+/**
+ *
+ * @param L
+ * @param fmt
+ * @return
+ *
+ * @ingroup ade_api
+ */
 int ade_set_args(lua_State *L, const char *fmt, ...);
 
 //*************************Lua hacks*************************
