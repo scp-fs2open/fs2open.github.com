@@ -64,6 +64,7 @@ AudioProperties getAdjustedAudioProps(const AudioProperties& baseProps) {
 	switch (bytes_per_sample) {
 		case 1:
 			adjusted.format = AV_SAMPLE_FMT_U8;
+			break;
 		case 2:
 			adjusted.format = AV_SAMPLE_FMT_S16;
 			break;
