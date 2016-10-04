@@ -41,14 +41,14 @@ class WaveFile
 	AudioProperties m_baseAudioProps;
 	AudioProperties m_audioProps;
 
-	SwrContext* m_resampleCtx;
+	SwrContext* m_resampleCtx = nullptr;
 
-	int m_audioStreamIndex;
-	AVStream* m_audioStream;
+	int m_audioStreamIndex = -1;
+	AVStream* m_audioStream = nullptr;
 
-	AVFrame* m_decodeFrame;
+	AVFrame* m_decodeFrame = nullptr;
 
-	AVCodecContext* m_audioCodecCtx;
+	AVCodecContext* m_audioCodecCtx = nullptr;
 
 	std::unique_ptr<FFmpegAudioReader> m_frameReader;
 
