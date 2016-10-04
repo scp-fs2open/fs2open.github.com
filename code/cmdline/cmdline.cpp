@@ -17,7 +17,7 @@
 #include "globalincs/version.h"
 #include "hud/hudconfig.h"
 #include "network/multi.h"
-#include "parse/scripting.h"
+#include "scripting/scripting.h"
 #include "parse/sexp.h"
 #include "globalincs/version.h"
 #include "globalincs/pstypes.h"

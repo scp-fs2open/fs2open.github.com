@@ -789,12 +789,8 @@ set (file_root_parse
 	parse/encrypt.h
 	parse/generic_log.cpp
 	parse/generic_log.h
-	parse/lua.cpp
-	parse/lua.h
 	parse/parselo.cpp
 	parse/parselo.h
-	parse/scripting.cpp
-	parse/scripting.h
 	parse/sexp.cpp
 	parse/sexp.h
 )
@@ -908,6 +904,17 @@ set (file_root_render
 	render/3dsetup.cpp
 	render/batching.cpp
 	render/batching.h
+)
+
+set(file_root_scripting
+	scripting/ade.cpp
+	scripting/ade.h
+	scripting/ade_args.cpp
+	scripting/ade_args.h
+	scripting/lua.cpp
+	scripting/lua.h
+	scripting/scripting.cpp
+	scripting/scripting.h
 )
 
 # Ship files
@@ -1145,6 +1152,7 @@ source_group("pngutils"                           FILES ${file_root_pngutils})
 source_group("Popup"                              FILES ${file_root_popup})
 source_group("Radar"                              FILES ${file_root_radar})
 source_group("Render"                             FILES ${file_root_render})
+source_group("Scripting"                          FILES ${file_root_scripting})
 source_group("Ship"                               FILES ${file_root_ship})
 source_group("Sound"                              FILES ${file_root_sound})
 source_group("Sound\\FFmpeg"                      FILES ${file_root_sound_ffmpeg})
@@ -1236,6 +1244,7 @@ set (file_root
 	${file_root_popup}
 	${file_root_radar}
 	${file_root_render}
+	${file_root_scripting}
 	${file_root_ship}
 	${file_root_sound}
 	${file_root_sound_ffmpeg}

@@ -25,7 +25,7 @@
 #include "missionui/missionscreencommon.h"
 #include "network/multi_pmsg.h"
 #include "network/multiutil.h"
-#include "parse/scripting.h"
+#include "scripting/scripting.h"
 #include "pilotfile/pilotfile.h"
 #include "popup/popup.h"
 #include "ui/ui.h"

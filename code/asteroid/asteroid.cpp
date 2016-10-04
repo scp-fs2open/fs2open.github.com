@@ -32,7 +32,7 @@
 #include "object/objcollide.h"
 #include "object/object.h"
 #include "parse/parselo.h"
-#include "parse/scripting.h"
+#include "scripting/scripting.h"
 #include "particle/particle.h"
 #include "render/3d.h"
 #include "ship/ship.h"

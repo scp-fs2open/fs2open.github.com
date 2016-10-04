@@ -16,7 +16,7 @@
 
 #include "io/mouse.h"
 #include "graphics/2d.h"
-#include "parse/scripting.h"
+#include "scripting/scripting.h"
 
 #define THREADED	// to use the proper set of macros
 #include "osapi/osapi.h"

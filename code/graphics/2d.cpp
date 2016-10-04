@@ -33,7 +33,7 @@
 #include "io/timer.h"
 #include "osapi/osapi.h"
 #include "palman/palman.h"
-#include "parse/scripting.h"
+#include "scripting/scripting.h"
 #include "parse/parselo.h"
 #include "render/3d.h"
 #include "tracing/tracing.h"

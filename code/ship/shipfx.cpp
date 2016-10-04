@@ -31,7 +31,7 @@
 #include "object/objectdock.h"
 #include "object/objectsnd.h"
 #include "parse/parselo.h"
-#include "parse/scripting.h"
+#include "scripting/scripting.h"
 #include "particle/particle.h"
 #include "playerman/player.h"
 #include "render/3d.h"			// needed for View_position, which is used when playing a 3D sound
