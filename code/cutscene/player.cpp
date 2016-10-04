@@ -21,27 +21,27 @@ using namespace cutscene::player;
 namespace cutscene {
 struct PlayerState {
 	MovieProperties props;
-	Decoder* decoder;
+	Decoder* decoder = nullptr;
 
-	bool playing;
+	bool playing = true;
 
-	bool playbackHasBegun;
+	bool playbackHasBegun = false;
 
 	// Timing state
-	std::uint64_t playback_time;
+	std::uint64_t playback_time = 0;
 
 	// Audio state
-	bool audioInited;
-	bool hasAudio;
-	ALuint audioSid;
+	bool audioInited = false;
+	bool hasAudio = false;
+	ALuint audioSid = 0;
 	SCP_vector<ALuint> audioBuffers;
 	SCP_queue<ALuint> unqueuedAudioBuffers;
 
 	// Graphics state following
-	bool videoInited;
+	bool videoInited = false;
 
 	VideoFramePtr currentFrame;
-	bool newFrameAdded;
+	bool newFrameAdded = false;
 
 	std::unique_ptr<VideoPresenter> videoPresenter;
 

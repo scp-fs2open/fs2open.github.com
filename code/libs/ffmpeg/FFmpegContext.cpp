@@ -35,7 +35,12 @@ int64_t cfileSeek(void* ptr, int64_t offset, int whence) {
 			return cfilelength(cfile);
 	}
 
-	cfseek(cfile, static_cast<int>(offset), op);
+	auto ret = cfseek(cfile, static_cast<int>(offset), op);
+
+	if (ret < 0) {
+		// Error
+		return -1;
+	}
 
 	// cfseek returns the offset in the archive file (who thought that would be a good idea?)
 	return cftell(cfile);

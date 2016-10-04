@@ -98,7 +98,7 @@ SwrContext* getSWRContext(const AudioProperties& base, const AudioProperties& ad
 
 namespace ffmpeg
 {
-WaveFile::WaveFile() : m_resampleCtx(nullptr) {
+WaveFile::WaveFile() {
 	// Init data members
 	m_audioProps = AudioProperties();
 	m_ctx.reset();

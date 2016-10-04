@@ -7,9 +7,9 @@
 
 namespace cutscene {
 struct FrameSize {
-	size_t width;
-	size_t height;
-	size_t stride;
+	size_t width = 0;
+	size_t height = 0;
+	size_t stride = 0;
 };
 
 class VideoFrame {
@@ -19,8 +19,8 @@ class VideoFrame {
  public:
 	virtual ~VideoFrame() {}
 
-	double frameTime;
-	int id;
+	double frameTime = -1.0;
+	int id = -1;
 
 	FrameSize ySize;
 	FrameSize uvSize;
@@ -46,15 +46,15 @@ typedef std::unique_ptr<VideoFrame> VideoFramePtr;
 struct MovieProperties {
 	FrameSize size;
 
-	float fps;
+	float fps = -1.0f;
 };
 
 struct AudioFrame {
 	SCP_vector<short> audioData;
 
-	int channels;
+	int channels = -1;
 
-	int rate;
+	int rate = -1;
 };
 typedef std::unique_ptr<AudioFrame> AudioFramePtr;
 
@@ -70,7 +70,7 @@ class Decoder {
 	std::unique_ptr<sync_bounded_queue<AudioFramePtr>> m_audioQueue;
 
 	bool m_decoding;
-	size_t m_queueSize;
+	size_t m_queueSize = 0;
 
 	Decoder(const Decoder&) SCP_DELETED_FUNCTION;
 
