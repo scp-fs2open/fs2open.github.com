@@ -735,8 +735,6 @@ ade_lib::ade_lib(const char* in_name, const ade_lib_handle* parent, const char* 
 	ate.ShortName = in_shortname;
 	ate.Instanced = true;
 
-	printf("%s\n", ate.Name);
-
 	//WMC - Here's a little hack.
 	//Lua did not work with __len on standard table objects.
 	//So instead, all FS2 libraries are now userdata.

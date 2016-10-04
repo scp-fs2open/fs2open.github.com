@@ -59,7 +59,7 @@
 #define BMPMAN_INTERNAL
 #include "bmpman/bm_internal.h"
 
-#include "scripting/api/bit.h"
+#include "scripting/api/bitops.h"
 #include "scripting/api/vecmath.h"
 
 using namespace scripting;

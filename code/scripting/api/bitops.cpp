@@ -1,5 +1,5 @@
 
-#include "scripting/api/bit.h"
+#include "scripting/api/bitops.h"
 
 namespace scripting {
 namespace api {
@@ -50,10 +50,7 @@ ADE_FUNC(toggleBit, l_BitOps, "number, number (bit)", "Toggles the value of the 
 	if (!((b >= 0) && (b < 32)))
 		return ade_set_error(L, "i", 0);
 
-	if(a & (1<<b))
-		c = (a & !(1<<b)); //-V564
-	else
-		c = (a | (1<<b));
+	c = a ^ (1 << b);
 
 	return ade_set_args(L, "i", c);
 }
