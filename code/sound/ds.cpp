@@ -278,14 +278,14 @@ int ds_load_buffer(int *sid, int flags, ffmpeg::WaveFile* file)
 	SCP_vector<uint8_t> audio_buffer;
 	audio_buffer.reserve(size);
 
-	SCP_vector<uint8_t> buffer(4096);
+	SCP_vector<uint8_t> buffer(file->getSampleRate() * file->getSampleByteSize());
 	int read;
 	while((read = file->Read(&buffer[0], buffer.size())) >= 0) {
 		if (read == 0) {
 			// buffer not large enough
 			buffer.resize(buffer.size() * 2);
 		} else {
-			audio_buffer.insert(audio_buffer.end(), buffer.begin(), buffer.end());
+			audio_buffer.insert(audio_buffer.end(), buffer.begin(), std::next(buffer.begin(), read));
 		}
 	}
 
