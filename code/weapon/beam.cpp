@@ -30,7 +30,7 @@
 #include "object/object.h"
 #include "object/objectshield.h"
 #include "parse/parselo.h"
-#include "parse/scripting.h"
+#include "scripting/scripting.h"
 #include "particle/particle.h"
 #include "playerman/player.h"
 #include "render/3d.h"

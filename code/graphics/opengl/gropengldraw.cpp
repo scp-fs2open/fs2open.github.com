@@ -31,6 +31,7 @@
 #include "lighting/lighting.h"
 #include "math/floating.h"
 #include "nebula/neb.h"
+#include "tracing/tracing.h"
 #include "osapi/osapi.h"
 #include "palman/palman.h"
 #include "render/3d.h"
@@ -1931,6 +1932,9 @@ void gr_opengl_scene_texture_begin()
 float time_buffer = 0.0f;
 void gr_opengl_scene_texture_end()
 {
+	GR_DEBUG_SCOPE("End scene texture");
+	profile_auto end_scope("End scene texture");
+
 	if ( !Scene_framebuffer_in_frame ) {
 		return;
 	}
@@ -1945,6 +1949,9 @@ void gr_opengl_scene_texture_end()
 	if ( Cmdline_postprocess && !PostProcessing_override ) {
 		gr_post_process_end();
 	} else {
+		GR_DEBUG_SCOPE("Draw scene texture");
+		profile_auto draw_scope("Draw scene texture");
+
 		GLboolean depth = GL_state.DepthTest(GL_FALSE);
 		GLboolean depth_mask = GL_state.DepthMask(GL_FALSE);
 		GLboolean blend = GL_state.Blend(GL_FALSE);
@@ -2240,6 +2247,9 @@ void gr_opengl_render_shield_impact(shield_material *material_info, primitive_ty
 
 void gr_opengl_update_distortion()
 {
+	GR_DEBUG_SCOPE("Update distortion");
+	profile_auto trace_scope("Update distortion");
+
 	GLboolean depth = GL_state.DepthTest(GL_FALSE);
 	GLboolean depth_mask = GL_state.DepthMask(GL_FALSE);
 	GLboolean blend = GL_state.Blend(GL_FALSE);

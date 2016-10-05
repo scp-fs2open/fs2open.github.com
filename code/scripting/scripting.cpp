@@ -11,10 +11,13 @@
 #include "io/key.h"
 #include "mission/missioncampaign.h"
 #include "parse/parselo.h"
-#include "parse/scripting.h"
+#include "scripting/scripting.h"
+#include "scripting/ade_args.h"
 #include "ship/ship.h"
 #include "weapon/beam.h"
 #include "weapon/weapon.h"
+
+using namespace scripting;
 
 //tehe. Declare the main event
 script_state Script_system("FS2_Open Scripting");
@@ -546,7 +549,7 @@ bool ConditionedHook::IsOverride(script_state *sys, int action)
 //*************************CLASS: script_state*************************
 //Most of the icky stuff is here. Lots of #ifdefs
 
-//WMC - defined in parse/lua.h
+//WMC - defined in parse/scripting.h
 int ade_set_object_with_breed(lua_State *L, int obj_idx);
 void script_state::SetHookObject(char *name, object *objp)
 {
@@ -698,7 +701,7 @@ void script_state::SetHookVar(char *name, char format, void *data)
 			//--------------------
 			//WMC - This was a separate function
 			//lua_set_arg(LuaState, format, data);
-			//WMC - switch to the lua library
+			//WMC - switch to the scripting library
 			//lua_setglobal(LuaState, name);
 			lua_rawset(LuaState, amt_ldx);
 			
@@ -972,7 +975,7 @@ void script_state::Clear()
 	LuaLibs = NULL;
 }
 
-script_state::script_state(char *name)
+script_state::script_state(const char *name)
 {
 	strncpy(StateName, name, sizeof(StateName)-1);
 
@@ -980,13 +983,6 @@ script_state::script_state(char *name)
 
 	LuaState = NULL;
 	LuaLibs = NULL;
-}
-
-script_state& script_state::operator=(script_state &in)
-{
-	Error(LOCATION, "SESSION COPY ATTEMPTED");
-
-	return *this;
 }
 
 script_state::~script_state()

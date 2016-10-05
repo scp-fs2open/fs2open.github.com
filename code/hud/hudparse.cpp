@@ -626,7 +626,7 @@ void init_hud() {
 	int config_type;
 	size_t i, num_gauges;
 
-	if(Ship_info[Player_ship->ship_info_index].hud_gauges.size() > 0) {
+	if(!Ship_info[Player_ship->ship_info_index].hud_gauges.empty()) {
 		num_gauges = Ship_info[Player_ship->ship_info_index].hud_gauges.size();
 
 		for(i = 0; i < num_gauges; i++) {
@@ -678,7 +678,7 @@ void set_current_hud()
 	hud_init_ballistic_index();
 
 	// go through all HUD gauges. Load gauge properties defined in the HUD config if gauge is not customized.
-	if(Ship_info[Player_ship->ship_info_index].hud_gauges.size() > 0) {
+	if(!Ship_info[Player_ship->ship_info_index].hud_gauges.empty()) {
 		num_gauges = Ship_info[Player_ship->ship_info_index].hud_gauges.size();
 
 		for(i = 0; i < num_gauges; i++) {

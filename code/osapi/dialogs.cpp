@@ -2,7 +2,7 @@
 #include "osapi/dialogs.h"
 #include "osapi/osapi.h"
 #include "parse/parselo.h"
-#include "parse/lua.h"
+#include "scripting/lua.h"
 #include "cmdline/cmdline.h"
 #include "graphics/2d.h"
 
@@ -204,7 +204,7 @@ namespace os
 
 			char stackText[1024];
 			stackText[0] = '\0';
-			ade_stackdump(L, stackText);
+			scripting::ade_stackdump(L, stackText);
 			msgStream << stackText;
 			msgStream << "\n";
 			msgStream << Separator;

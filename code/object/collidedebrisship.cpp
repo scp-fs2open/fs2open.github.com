@@ -15,7 +15,7 @@
 #include "io/timer.h"
 #include "object/objcollide.h"
 #include "object/object.h"
-#include "parse/scripting.h"
+#include "scripting/scripting.h"
 #include "playerman/player.h"
 #include "ship/ship.h"
 #include "ship/shiphit.h"

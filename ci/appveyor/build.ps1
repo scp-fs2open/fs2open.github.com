@@ -12,6 +12,12 @@ $NightlyConfigurations = @(
 		PackageType="Win64";
 		Toolset="v140_xp";
 		SimdType="SSE2";
+	},
+	[BuildConfig]@{ 
+		Generator="Visual Studio 14 2015";
+		PackageType="Win32";
+		Toolset="v140_xp";
+		SimdType="SSE2";
 	}
 )
 $ReleaseConfigurations = @(
@@ -90,7 +96,8 @@ if ($DeployBuild) {
 	$buildConfig = $BuildConfigurations[$buildID]
 	
 	cmake -DCMAKE_INSTALL_PREFIX="$env:APPVEYOR_BUILD_FOLDER/../install" -DFSO_USE_SPEECH="ON" `
-		-DFSO_USE_VOICEREC="ON" -DMSVC_SIMD_INSTRUCTIONS="$($buildConfig.SimdType)" -G "$($buildConfig.Generator)" -T "$($buildConfig.Toolset)" ..
+		-DFSO_USE_VOICEREC="ON" -DMSVC_SIMD_INSTRUCTIONS="$($buildConfig.SimdType)" `
+		-G "$($buildConfig.Generator)" -T "$($buildConfig.Toolset)" ..
 
 	$Configs = @("Release", "FastDebug")
 	foreach ($config in $Configs) {
@@ -105,7 +112,7 @@ if ($DeployBuild) {
     Push-AppveyorArtifact "$($PackageName)-builds-$($buildConfig.PackageType).zip"
 } else {
 	cmake -DFSO_USE_SPEECH="ON" -DFSO_FATAL_WARNINGS="ON" -DFSO_USE_VOICEREC="ON" -DMSVC_SIMD_INSTRUCTIONS=SSE2 `
-		-G "$Env:CMAKE_GENERATOR" -T "$Env:PlatformToolset" ..
+	-G "$Env:CMAKE_GENERATOR" -T "$Env:PlatformToolset" ..
 
     cmake --build . --config "$Env:CONFIGURATION" -- /verbosity:minimal
 

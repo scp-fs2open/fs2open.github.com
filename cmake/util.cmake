@@ -67,12 +67,28 @@ ENDIF(EXISTS \"${CMAKE_CURRENT_BINARY_DIR}/${TARGET}/${FILE}\")
 ENDFUNCTION(EP_CHECK_FILE_EXISTS)
 
 MACRO(COPY_FILES_TO_TARGET _target)
-	FOREACH(file IN LISTS TARGET_COPY_FILES)
+	if(UNIX)
 		ADD_CUSTOM_COMMAND(
 			TARGET ${_target} POST_BUILD
-			COMMAND ${CMAKE_COMMAND} -E copy_if_different "${file}"  "$<TARGET_FILE_DIR:${_target}>"
-			COMMENT "copying '${file}'..."
+			COMMAND mkdir -p "$<TARGET_FILE_DIR:${_target}>/${LIBRAY_DESTINATION}/"
+			COMMENT "Creating '$<TARGET_FILE_DIR:${_target}>/${LIBRAY_DESTINATION}/'..."
 		)
+	endif()
+	
+	FOREACH(file IN LISTS TARGET_COPY_FILES)
+		if(UNIX)
+			ADD_CUSTOM_COMMAND(
+				TARGET ${_target} POST_BUILD
+				COMMAND cp -a "${file}"  "$<TARGET_FILE_DIR:${_target}>/${LIBRAY_DESTINATION}/"
+				COMMENT "copying '${file}'..."
+			)
+		else()
+			ADD_CUSTOM_COMMAND(
+				TARGET ${_target} POST_BUILD
+				COMMAND ${CMAKE_COMMAND} -E copy_if_different "${file}"  "$<TARGET_FILE_DIR:${_target}>/${LIBRAY_DESTINATION}/"
+				COMMENT "copying '${file}'..."
+			)
+		endif()
 	ENDFOREACH(file)
 ENDMACRO(COPY_FILES_TO_TARGET)
 
@@ -96,7 +112,7 @@ function(CONVERT_OLD_LIBRARIES)
 		else("${lib}" STREQUAL "debug")
 			# Expecting normal library
 			if(is_debug)
-				list(APPEND out_list "$<$<CONFIG:Debug>:${lib}>")
+				list(APPEND out_list "$<$<CONFIG:Debug>:${lib}>" "$<$<CONFIG:FastDebug>:${lib}>")
 			elseif(is_optimized)
 				list(APPEND out_list "$<$<CONFIG:Release>:${lib}>")
 			else(is_debug)
@@ -127,14 +143,14 @@ macro(configure_cotire target)
 
 		# add ignored paths for the precompiled header here
 		set_target_properties(code PROPERTIES COTIRE_PREFIX_HEADER_IGNORE_PATH
-			"${CMAKE_SOURCE_DIR};${CMAKE_BINARY_DIR}")
+			"${CMAKE_SOURCE_DIR};${CMAKE_BINARY_DIR};${FFMPEG_ROOT_DIR}")
 		cotire(${target})
 	ENDIF(COTIRE_ENABLE)
 endmacro(configure_cotire)
 
 macro(add_target_copy_files)
 	INSTALL(FILES ${ARGN}
-			DESTINATION ${BINARY_DESTINATION}
+			DESTINATION ${LIBRAY_DESTINATION}
 	)
 
 	SET(TARGET_COPY_FILES ${TARGET_COPY_FILES} ${ARGN} CACHE INTERNAL "" FORCE)

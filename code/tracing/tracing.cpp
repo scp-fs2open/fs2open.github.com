@@ -18,7 +18,7 @@
 #if SCP_COMPILER_IS_MSVC
 #include <direct.h>
 #endif
-#include <inttypes.h>
+#include <cinttypes>
 #include <fstream>
 #include <future>
 #include <mutex>
@@ -28,7 +28,7 @@
 // A function for getting the id of the current thread
 #ifdef WIN32
 #define WIN32_LEAN_AND_MEAN
-#include <Windows.h>
+#include <windows.h>
 static int64_t get_tid() {
 	return (int64_t) GetCurrentThreadId();
 }

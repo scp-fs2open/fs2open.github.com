@@ -165,7 +165,7 @@ void multi_lag_close()
 }
 
 // select for multi_lag
-int multi_lag_select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *except_fds, const timeval *timeout)
+int multi_lag_select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *except_fds, timeval *timeout)
 {		
 	char t_buf[1024];
 	int t_from_len;

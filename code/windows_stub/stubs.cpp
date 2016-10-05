@@ -34,7 +34,7 @@
 #include "cmdline/cmdline.h"
 #include "debugconsole/console.h"
 #include "globalincs/pstypes.h"
-#include "parse/lua.h"
+#include "scripting/lua.h"
 
 bool env_enabled = false;
 bool cell_enabled = false;

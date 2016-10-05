@@ -1,4 +1,6 @@
 
+include(prebuilt.cmake)
+
 IF(APPLE)
 	ADD_SUBDIRECTORY(mac)
 ENDIF(APPLE)
@@ -26,3 +28,5 @@ IF(UNIX)
 ENDIF(UNIX)
 
 add_subdirectory(md5)
+
+include(FFmpeg.cmake)

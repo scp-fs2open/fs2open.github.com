@@ -1,7 +1,5 @@
 
 IF(WIN32)
-	add_library(sdl SHARED IMPORTED GLOBAL)
-
 	IF(IS_64BIT)
 		# 64-bit
 		set(ARCH "x64")
@@ -10,22 +8,28 @@ IF(WIN32)
 		set(ARCH "x86")
 	ENDIF()
 
-	set_target_properties(sdl
-		PROPERTIES
-			IMPORTED_LOCATION "${CMAKE_CURRENT_SOURCE_DIR}/lib/${ARCH}/SDL2.dll"
-			IMPORTED_IMPLIB "${CMAKE_CURRENT_SOURCE_DIR}/lib/${ARCH}/SDL2.lib"
-			INTERFACE_INCLUDE_DIRECTORIES "${CMAKE_CURRENT_SOURCE_DIR}/include"
-	)
+	add_library(sdlmain INTERFACE)
+	IF(MSVC)
+		add_library(sdl SHARED IMPORTED GLOBAL)
+		set_target_properties(sdl
+			PROPERTIES
+				IMPORTED_LOCATION "${CMAKE_CURRENT_SOURCE_DIR}/lib/${ARCH}/SDL2.dll"
+				IMPORTED_IMPLIB "${CMAKE_CURRENT_SOURCE_DIR}/lib/${ARCH}/SDL2.lib"
+		)
+		target_link_libraries(sdlmain INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/lib/${ARCH}/SDL2main.lib")
+	ELSE(MSVC) #MINGW
+		add_library(sdl INTERFACE)
+		target_link_libraries(sdl INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/lib/${ARCH}/SDL2.dll")
+		target_link_libraries(sdlmain INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/lib/${ARCH}/SDL2main.a")
+	ENDIF(MSVC)
+	set_target_properties(sdl PROPERTIES INTERFACE_INCLUDE_DIRECTORIES "${CMAKE_CURRENT_SOURCE_DIR}/include")
 
 	add_target_copy_files("${CMAKE_CURRENT_SOURCE_DIR}/lib/${ARCH}/SDL2.dll")
 	INSTALL(FILES "${CMAKE_CURRENT_SOURCE_DIR}/README-SDL.txt"
 			DESTINATION ${BINARY_DESTINATION}
 	)
-	
+
 	SET(SDL_LIBS sdl CACHE INTERNAL "")
-	
-	ADD_LIBRARY(sdlmain INTERFACE)
-	target_link_libraries(sdlmain INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/lib/${ARCH}/SDL2main.lib")
 ELSE(WIN32)
 	# CMake can't check for SDL2 so we'll just use PkgConfig
 	find_package(PkgConfig)

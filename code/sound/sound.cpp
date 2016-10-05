@@ -24,8 +24,8 @@
 #include "sound/ds.h"
 #include "sound/ds3d.h"
 #include "sound/dscap.h"
-#include "sound/ogg/ogg.h"
-#include "sound/sound.h"
+
+#include "globalincs/pstypes.h"
 
 #ifdef _WIN32
 #include <windows.h>

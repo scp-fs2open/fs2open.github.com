@@ -9,7 +9,7 @@
 #include <iterator>
 
 #define WIN32_LEAN_AND_MEAN
-#include <Windows.h>
+#include <windows.h>
 
 struct def_file
 {

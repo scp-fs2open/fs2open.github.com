@@ -28,7 +28,7 @@
 #include "network/multimsgs.h"
 #include "network/multiutil.h"
 #include "parse/parselo.h"
-#include "parse/scripting.h"
+#include "scripting/scripting.h"
 #include "parse/sexp.h"
 #include "ship/ship.h"
 #include "ship/subsysdamage.h"

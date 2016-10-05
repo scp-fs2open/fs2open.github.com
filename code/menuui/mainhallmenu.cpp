@@ -34,7 +34,7 @@
 #include "network/multiutil.h"
 #include "palman/palman.h"
 #include "parse/parselo.h"
-#include "parse/scripting.h"
+#include "scripting/scripting.h"
 #include "playerman/player.h"
 #include "popup/popup.h"
 #include "sound/audiostr.h"
@@ -420,7 +420,7 @@ void main_hall_init(const SCP_string &main_hall_name)
 	}
 
 	// sanity checks
-	if (Main_hall_defines.size() == 0) {
+	if (Main_hall_defines.empty()) {
 		Error(LOCATION, "No main halls were loaded to initialize.");
 	} else if (main_hall_name == "") {
 		// we were passed a blank main hall name, so load the first available main hall
@@ -778,11 +778,11 @@ void main_hall_do(float frametime)
 	#ifndef NDEBUG
 		case KEY_1:
 			// no soup for you!
-			movie_play("endprt2b.mve");
+			movie::play("endprt2b.mve");
 			break;
 		case KEY_2:
 			// no soup for you!
-			movie_play_two("endprt2a.mve", "endprt2b.mve");
+			movie::play_two("endprt2a.mve", "endprt2b.mve");
 			break;
 		case KEY_3:
 			main_hall_campaign_cheat();

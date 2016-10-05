@@ -1281,7 +1281,7 @@ void obj_find_overlap_colliders(SCP_vector<int> *overlap_list_out, SCP_vector<in
 			++j;
 		}
 
-		if ( overlappers.size() == 0 ) {
+		if ( overlappers.empty() ) {
 			first_not_added = true;
 		}
 

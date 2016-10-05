@@ -2619,7 +2619,7 @@ void stars_swap_backgrounds(int idx1, int idx2)
 // Goober5000
 bool stars_background_empty(int idx)
 {
-	return !(Backgrounds[idx].suns.size() > 0 || Backgrounds[idx].bitmaps.size() > 0);
+	return (Backgrounds[idx].suns.empty() && Backgrounds[idx].bitmaps.empty());
 }
 
 // Goober5000

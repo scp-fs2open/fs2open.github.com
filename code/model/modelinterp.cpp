@@ -123,9 +123,6 @@ static vertex *Interp_splode_points = NULL;
 vec3d *Interp_splode_verts = NULL;
 static int Interp_num_verts = 0;
 
-static vertex **Interp_list = NULL;
-static int  Num_interp_list_verts_allocated = 0;
-
 static float Interp_box_scale = 1.0f; // this is used to scale both detail boxes and spheres
 
 // -------------------------------------------------------------------
@@ -233,7 +230,7 @@ void model_deallocate_interp_data()
 extern void model_collide_allocate_point_list(int n_points);
 extern void model_collide_free_point_list();
 
-void model_allocate_interp_data(int n_verts = 0, int n_norms = 0, int n_list_verts = 0)
+void model_allocate_interp_data(int n_verts, int n_norms)
 {
 	static ubyte dealloc = 0;
 
@@ -243,8 +240,8 @@ void model_allocate_interp_data(int n_verts = 0, int n_norms = 0, int n_list_ver
 		dealloc = 1;
 	}
 
-	Assert( (n_verts >= 0) && (n_norms >= 0) && (n_list_verts >= 0) );
-	Assert( (n_verts || Num_interp_verts_allocated) && (n_norms || Num_interp_norms_allocated) /*&& (n_list_verts || Num_interp_list_verts_allocated)*/ );
+	Assert( (n_verts >= 0) && (n_norms >= 0) );
+	Assert( (n_verts || Num_interp_verts_allocated) && (n_norms || Num_interp_norms_allocated) );
 
 	if (n_verts > Num_interp_verts_allocated) {
 		if (Interp_verts != NULL) {
@@ -291,20 +288,6 @@ void model_allocate_interp_data(int n_verts = 0, int n_norms = 0, int n_list_ver
 
 		Num_interp_norms_allocated = n_norms;
 	}
-
-	// we should only get here if we are not in HTL mode
-	if ( n_list_verts > Num_interp_list_verts_allocated ) {
-		if (Interp_list != NULL) {
-			vm_free(Interp_list);
-			Interp_list = NULL;
-		}
-
-		Interp_list = (vertex**) vm_malloc( n_list_verts * sizeof(vertex) );
-		Verify( Interp_list != NULL );
-
-		Num_interp_list_verts_allocated = n_list_verts;
-	}
-
 
 	Interp_num_verts = n_verts;
 	Interp_num_norms = n_norms;
@@ -2169,7 +2152,7 @@ void interp_pack_vertex_buffers(polymodel *pm, int mn)
 
 	bool rval = model_interp_pack_buffer(&pm->vert_source, &model->buffer);
 
-	if ( model->trans_buffer.flags & VB_FLAG_TRANS && model->trans_buffer.tex_buf.size() > 0 ) {
+	if ( model->trans_buffer.flags & VB_FLAG_TRANS && !model->trans_buffer.tex_buf.empty() ) {
 		model_interp_pack_buffer(&pm->vert_source, &model->trans_buffer);
 	}
 
@@ -2528,14 +2511,14 @@ void interp_create_detail_index_buffer(polymodel *pm, int detail_num)
 
 	model_get_submodel_tree_list(submodel_list, pm, pm->detail[detail_num]);
 
-	if ( submodel_list.size() < 1 ) {
+	if ( submodel_list.empty() ) {
 		return;
 	}
 
 	interp_fill_detail_index_buffer(submodel_list, pm, &pm->detail_buffers[detail_num]);
 	
 	// check if anything was even put into this buffer
-	if ( pm->detail_buffers[detail_num].tex_buf.size() < 1 ) {
+	if ( pm->detail_buffers[detail_num].tex_buf.empty() ) {
 		return;
 	} 
 
@@ -2689,7 +2672,7 @@ void model_interp_process_shield_mesh(polymodel * pm)
 		n_verts += 3;
 	}
 	
-	if ( buffer.size() > 0 ) {
+	if ( !buffer.empty() ) {
 		pm->shield.buffer_id = gr_create_vertex_buffer(true);
 		pm->shield.buffer_n_verts = n_verts;
 		gr_update_buffer_data(pm->shield.buffer_id, buffer.size() * sizeof(vec3d), &buffer[0]);

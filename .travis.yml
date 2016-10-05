@@ -30,13 +30,13 @@ deploy:
     - provider: releases
       api_key:
           secure: "Wdt4Ccefo7a0ZDjEJQJgpghh7n72FtNJuKSAPUvoz4gtEX6Ct9J8yJI1t9V3jE3CTbbLJ21/Q6eZRDfT7UfNJe5DdepoJsP9DeFhKMWqQCq+AChqQWlm0KeZAffJoJreL8vXYhnRYcLT9ceZHEH6AqwN9TPV+xJziGPISAkYNZ8="
-      skip_cleanup: true 
+      skip_cleanup: true
       file_glob: true
       file: "/tmp/builds/*"
       on:
           condition: '"$RELEASE_BUILD" == true'
           tags: true
-        
+
     - provider: bintray
       user: sirknightly
       key:
