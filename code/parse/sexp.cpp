@@ -29581,7 +29581,7 @@ char* deal_with_container(int node, int container_index)
 		success = deal_with_container_sub(node, container_index, result);
 
 		if (Log_event) {
-			SCP_string log_string = log_string.assign(Sexp_containers[container_index].container_name); 
+			SCP_string log_string = Sexp_containers[container_index].container_name; 
 			log_string.append(" container returned ");
 			if (success) {
 				log_string.append(result);
