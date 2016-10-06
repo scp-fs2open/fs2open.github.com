@@ -15676,11 +15676,44 @@ void ade_output_toc(FILE *fp, ade_table_entry *ate)
 	fputs("</dd>\n", fp);
 }
 
+static bool sort_table_entries(const ade_table_entry* left, const ade_table_entry* right) {
+	const char* leftCmp = left->Name != nullptr ? left->Name : left->ShortName;
+	const char* rightCmp = right->Name != nullptr ? right->Name : left->ShortName;
+
+	if (leftCmp == nullptr) {
+		return false;
+	}
+	if (rightCmp == nullptr) {
+		return false;
+	}
+
+	SCP_string leftStr(leftCmp);
+	std::transform(std::begin(leftStr), std::end(leftStr), std::begin(leftStr), ::tolower);
+
+	SCP_string rightStr(rightCmp);
+	std::transform(std::begin(rightStr), std::end(rightStr), std::begin(rightStr), ::tolower);
+
+	return leftStr < rightStr;
+}
+
+static bool sort_doc_entries(const ade_table_entry* left, const ade_table_entry* right) {
+	if (left->Instanced == right->Instanced) {
+		// Same type -> compare as normal
+		return sort_table_entries(left, right);
+	}
+	if (left->Instanced) {
+		return true;
+	}
+	return false;
+}
+
 void script_state::OutputLuaMeta(FILE *fp)
 {
 	uint i;
 	ade_table_entry *ate;
 	fputs("<dl>\n", fp);
+
+	SCP_vector<ade_table_entry*> table_entries;
 
 	//***TOC: Libraries
 	fputs("<dt><b>Libraries</b></dt>\n", fp);
@@ -15688,9 +15721,14 @@ void script_state::OutputLuaMeta(FILE *fp)
 	{
 		ate = &ade_manager::getInstance()->getEntry(i);
 		if(ate->ParentIdx == UINT_MAX && ate->Type == 'o' && ate->Instanced) {
-			ade_output_toc(fp, ate);
+			table_entries.push_back(ate);
 		}
 	}
+	std::sort(std::begin(table_entries), std::end(table_entries), sort_table_entries);
+	for (auto entry : table_entries) {
+		ade_output_toc(fp, entry);
+	}
+	table_entries.clear();
 
 	//***TOC: Objects
 	fputs("<dt><b>Types</b></dt>\n", fp);
@@ -15698,9 +15736,14 @@ void script_state::OutputLuaMeta(FILE *fp)
 	{
 		ate = &ade_manager::getInstance()->getEntry(i);
 		if(ate->ParentIdx == UINT_MAX && ate->Type == 'o' && !ate->Instanced) {
-			ade_output_toc(fp, ate);
+			table_entries.push_back(ate);
 		}
 	}
+	std::sort(std::begin(table_entries), std::end(table_entries), sort_table_entries);
+	for (auto entry : table_entries) {
+		ade_output_toc(fp, entry);
+	}
+	table_entries.clear();
 
 	//***TOC: Enumerations
 	fputs("<dt><b><a href=\"#Enumerations\">Enumerations</a></b></dt>", fp);
@@ -15714,8 +15757,15 @@ void script_state::OutputLuaMeta(FILE *fp)
 	{
 		ate = &ade_manager::getInstance()->getEntry(i);
 		if(ate->ParentIdx == UINT_MAX)
-			ate->OutputMeta(fp);
+			table_entries.push_back(ate);
 	}
+
+	std::sort(std::begin(table_entries), std::end(table_entries), sort_doc_entries);
+	for (auto entry : table_entries) {
+		entry->OutputMeta(fp);
+	}
+	table_entries.clear();
+
 	//***Enumerations
 	fprintf(fp, "<dt id=\"Enumerations\"><h2>Enumerations</h2></dt>");
 	for(i = 0; i < Num_enumerations; i++)

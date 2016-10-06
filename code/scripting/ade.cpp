@@ -719,8 +719,9 @@ void ade_table_entry::OutputMeta(FILE *fp)
 	fputs("<dd><dl>\n", fp);
 	for(i = 0; i < Num_subentries; i++)
 	{
-		if(ParentIdx == UINT_MAX || stricmp(getTableEntry(Subentries[i]).Name, "__indexer"))
-			getTableEntry(Subentries[i]).OutputMeta(fp);
+		auto entry = &getTableEntry(Subentries[i]);
+		if(ParentIdx == UINT_MAX || stricmp(entry->Name, "__indexer"))
+			entry->OutputMeta(fp);
 	}
 	fputs("</dl></dd>\n", fp);
 
