@@ -26,9 +26,10 @@ AudioProperties getAudioProps(AVStream* stream) {
 	props.sample_rate = stream->codec->sample_rate;
 	props.format = stream->codec->sample_fmt;
 #endif
+
 	if (props.channel_layout == 0) {
 		// Use a default channel layout value
-		props.channel_layout = (uint64_t) av_get_default_channel_layout(channels);
+		props.channel_layout = av_get_default_channel_layout(channels);
 	}
 
 	return props;
@@ -81,17 +82,13 @@ AudioProperties getAdjustedAudioProps(const AudioProperties& baseProps) {
 }
 
 SwrContext* getSWRContext(const AudioProperties& base, const AudioProperties& adjusted) {
-	auto swr = swr_alloc();
+	SwrContext* swr = nullptr;
+	swr = swr_alloc_set_opts(swr, adjusted.channel_layout, adjusted.format, adjusted.sample_rate,
+		base.channel_layout, base.format, base.sample_rate, 0, nullptr);
 
-	av_opt_set_int(swr, "in_channel_layout", base.channel_layout, 0);
-	av_opt_set_int(swr, "in_sample_rate", base.sample_rate, 0);
-	av_opt_set_int(swr, "in_sample_fmt", base.format, 0);
-
-	av_opt_set_int(swr, "out_channel_layout", adjusted.channel_layout, 0);
-	av_opt_set_int(swr, "out_sample_rate", adjusted.sample_rate, 0);
-	av_opt_set_int(swr, "out_sample_fmt", adjusted.format, 0);
-
-	swr_init(swr);
+	if (swr_init(swr) < 0) {
+		return nullptr;
+	}
 
 	return swr;
 }
@@ -103,8 +100,6 @@ WaveFile::WaveFile() {
 	// Init data members
 	m_audioProps = AudioProperties();
 	m_ctx.reset();
-
-	m_al_format = AL_FORMAT_MONO8;
 
 	m_decodeFrame = av_frame_alloc();
 }
@@ -219,9 +214,7 @@ bool WaveFile::Open(const char *pszFilename, bool keep_ext)
 
 		setAdjustedAudioProperties(getAdjustedAudioProps(m_baseAudioProps));
 
-		m_al_format = openal_get_format(av_get_bytes_per_sample(m_audioProps.format) * 8, getNumChannels());
-
-		if (m_al_format == AL_INVALID_VALUE) {
+		if (getALFormat() == AL_INVALID_VALUE) {
 			throw FFmpegException("Invalid audio format.");
 		}
 
@@ -244,8 +237,12 @@ bool WaveFile::Open(const char *pszFilename, bool keep_ext)
 
 bool WaveFile::Cue()
 {
-	auto err = av_seek_frame(m_ctx->ctx(), m_audioStreamIndex, 0, 0);
-	avcodec_flush_buffers(m_audioCodecCtx);
+	auto err = av_seek_frame(m_ctx->ctx(), m_audioStreamIndex, 0, AVSEEK_FLAG_BYTE);
+
+	if (err >= 0) {
+		avcodec_flush_buffers(m_audioCodecCtx);
+		avformat_flush(m_ctx->ctx());
+	}
 
 	return err >= 0;
 }
@@ -256,15 +253,18 @@ void WaveFile::setAdjustedAudioProperties(const AudioProperties& props) {
 	}
 	m_audioProps = props;
 	m_resampleCtx = getSWRContext(m_baseAudioProps, m_audioProps);
+
+	Assertion(m_resampleCtx != nullptr, "Resample context creation failed! This should not happen!");
 }
 
 size_t WaveFile::handleDecodedFrame(AVFrame* av_frame, uint8_t* out_buffer, size_t buffer_size) {
 	const auto sample_size = (av_get_bytes_per_sample(m_audioProps.format) * getNumChannels());
+
 	int dest_num_samples = static_cast<int>(buffer_size / sample_size);
 	auto written = swr_convert(m_resampleCtx,
 							   &out_buffer,
 							   dest_num_samples,
-							   (const uint8_t**) av_frame->data,
+							   (const uint8_t**) av_frame->extended_data,
 							   av_frame->nb_samples);
 
 
@@ -300,11 +300,6 @@ int WaveFile::Read(uint8_t* pbDest, size_t cbSize)
 	while (m_frameReader->readFrame(m_decodeFrame)) {
 		// Got a new frame
 		auto advance = handleDecodedFrame(m_decodeFrame, pbDest + buffer_pos, cbSize - buffer_pos);
-
-		if (advance == 0) {
-			// No new data, return what we currently have
-			return (int) buffer_pos;
-		}
 
 		buffer_pos += advance;
 		Assertion(buffer_pos <= cbSize,
@@ -350,5 +345,8 @@ int WaveFile::getTotalSamples() const {
 
 int WaveFile::getNumChannels() const {
 	return av_get_channel_layout_nb_channels(m_audioProps.channel_layout);
+}
+ALenum WaveFile::getALFormat() const {
+	return openal_get_format(av_get_bytes_per_sample(m_audioProps.format) * 8, getNumChannels());;
 }
 }

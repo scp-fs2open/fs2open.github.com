@@ -19,7 +19,7 @@ namespace ffmpeg {
 struct AudioProperties
 {
 	int sample_rate = -1;
-	uint64_t channel_layout = 0;
+	int64_t channel_layout = -1;
 	AVSampleFormat format = AV_SAMPLE_FMT_NONE;
 };
 
@@ -97,7 +97,7 @@ class WaveFile
 	 * @brief Gets the OpenAL format of the audio.
 	 * @return The OpenAL format.
 	 */
-	ALenum getALFormat() const { return m_al_format; }
+	ALenum getALFormat() const;
 
 	/**
 	 * @brief Gets the size in bytes of one audio sample
@@ -145,8 +145,6 @@ class WaveFile
 	void setAdjustedAudioProperties(const AudioProperties& props);
 protected:
 	size_t handleDecodedFrame(AVFrame* av_frame, uint8_t* out_buffer, size_t buffer_size);
-
-	ALenum m_al_format;
 };
 
 }

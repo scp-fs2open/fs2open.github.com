@@ -280,7 +280,6 @@ int snd_load( game_snd *gs, int allow_hardware_load )
 	int				type;
 	sound_info		*si;
 	sound			*snd;
-	char			filename[MAX_FILENAME_LEN];
 	size_t			n;
 
 
@@ -320,6 +319,8 @@ int snd_load( game_snd *gs, int allow_hardware_load )
 
 	std::unique_ptr<ffmpeg::WaveFile> audio_file(new ffmpeg::WaveFile());
 
+	nprintf(("Sound", "SOUND ==> Loading '%s'\n", gs->filename));
+
 	if (!audio_file->Open(gs->filename, false)) {
 		return -1;
 	}
@@ -331,11 +332,11 @@ int snd_load( game_snd *gs, int allow_hardware_load )
 		if (audio_file->getNumChannels() > 1) {
 			// We need to resample the audio down to one channel
 			auto current = audio_file->getAudioProperties();
-			current.channel_layout = AV_CH_FRONT_CENTER;
+			current.channel_layout = AV_CH_LAYOUT_MONO;
 
 			audio_file->setAdjustedAudioProperties(current);
 
-			nprintf(("Sound", "SOUND ==> Converting 3D sound from stereo to mono\n"));
+			Warning(LOCATION, "Sound '%s' has more than one channel but is used as a 3D sound! 3D sounds may only have one channel.", gs->filename);
 		}
 	}
 
@@ -346,13 +347,11 @@ int snd_load( game_snd *gs, int allow_hardware_load )
 	si->bits					= audio_file->getSampleByteSize() / audio_file->getNumChannels() * 8;	// Read 16-bit bits per sample	
 	si->size					= audio_file->getTotalSamples() * audio_file->getSampleByteSize();
 
-
-
 	snd->uncompressed_size = si->size;
 
 	auto rc = ds_load_buffer(&snd->sid, type, audio_file.get());
 	if (rc == -1) {
-		nprintf(("Sound", "SOUND ==> Failed to load '%s'\n", filename));
+		nprintf(("Sound", "SOUND ==> Failed to load '%s'\n", gs->filename));
 		return -1;
 	}
 
@@ -367,7 +366,7 @@ int snd_load( game_snd *gs, int allow_hardware_load )
 	gs->id_sig = snd->sig;
 	gs->id = (int)n;
 
-//	nprintf(("Sound", "SOUND ==> Finished loading '%s'\n", filename));
+	nprintf(("Sound", "SOUND ==> Finished loading '%s'\n", gs->filename));
 
 	return (int)n;
 }
