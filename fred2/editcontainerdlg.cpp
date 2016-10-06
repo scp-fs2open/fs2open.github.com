@@ -569,7 +569,7 @@ void CEditContainerDlg::OnContainerRemove()
 
 void CEditContainerDlg::OnContainerUpdate()
 {
-	if (!edit_boxes_have_valid_data()) {
+	if (!data_edit_box_has_valid_data()) {
 		return;
 	}
 
