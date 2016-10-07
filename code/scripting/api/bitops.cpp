@@ -5,7 +5,7 @@ namespace scripting {
 namespace api {
 
 //**********LIBRARY: Bitwise Ops
-ADE_LIB(l_BitOps, "BitOps", "bit", "Bitwise Operations library")
+ADE_LIB(l_BitOps, "BitOps", "bit", "Bitwise Operations library");
 
 ADE_FUNC(AND, l_BitOps, "number, number", "Values for which bitwise boolean AND operation is performed", "number", "Result of the AND operation")
 {

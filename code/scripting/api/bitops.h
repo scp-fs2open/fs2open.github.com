@@ -9,7 +9,7 @@
 namespace scripting {
 namespace api {
 
-DECLARE_ADE_LIB(l_BitOps)
+DECLARE_ADE_LIB(l_BitOps);
 
 }
 }

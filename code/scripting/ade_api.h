@@ -86,7 +86,7 @@ const ::scripting::ade_obj<type>& SCP_TOKEN_CONCAT(get_, field)() { \
 	static ::scripting::ade_obj<type> obj(name, desc, nullptr);\
 	return obj;\
 } \
-const ::scripting::ade_obj<type>& field = SCP_TOKEN_CONCAT(get_, field)();
+const ::scripting::ade_obj<type>& field = SCP_TOKEN_CONCAT(get_, field)()
 
 /**
  * @brief Declare an API object but don't define it
@@ -100,7 +100,7 @@ const ::scripting::ade_obj<type>& field = SCP_TOKEN_CONCAT(get_, field)();
  */
 #define DECLARE_ADE_OBJ(field, type) \
 extern const ::scripting::ade_obj<type>& SCP_TOKEN_CONCAT(get_, field)(); \
-extern const ::scripting::ade_obj<type>& field;
+extern const ::scripting::ade_obj<type>& field
 
 /**
  * @brief Define an API library
@@ -120,7 +120,7 @@ const ::scripting::ade_lib& SCP_TOKEN_CONCAT(get_, field)() { \
 	static ::scripting::ade_lib lib(name, nullptr, short_name, desc);\
 	return lib;\
 } \
-const ::scripting::ade_lib& field = SCP_TOKEN_CONCAT(get_, field)();
+const ::scripting::ade_lib& field = SCP_TOKEN_CONCAT(get_, field)()
 
 /**
  * @brief Declare an API library but don't define it
@@ -134,7 +134,7 @@ const ::scripting::ade_lib& field = SCP_TOKEN_CONCAT(get_, field)();
 #define DECLARE_ADE_LIB(field) \
 extern const ::scripting::ade_lib& SCP_TOKEN_CONCAT(get_, field)(); \
 extern const ::scripting::ade_lib& field; \
-static const ::scripting::ade_lib* SCP_TOKEN_CONCAT(field, reference_dummy) USED_VARIABLE = &(field);
+static const ::scripting::ade_lib* SCP_TOKEN_CONCAT(field, reference_dummy) USED_VARIABLE = &(field)
 
 
 //*************************Lua return values*************************
