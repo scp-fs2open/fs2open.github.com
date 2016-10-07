@@ -19,8 +19,7 @@ namespace ffmpeg {
 struct AudioProperties
 {
 	int sample_rate = -1;
-	int channels = -1;
-	uint64_t channel_layout = 0;
+	int64_t channel_layout = -1;
 	AVSampleFormat format = AV_SAMPLE_FMT_NONE;
 };
 
@@ -98,7 +97,7 @@ class WaveFile
 	 * @brief Gets the OpenAL format of the audio.
 	 * @return The OpenAL format.
 	 */
-	ALenum GetALFormat() const { return m_al_format; }
+	ALenum getALFormat() const;
 
 	/**
 	 * @brief Gets the size in bytes of one audio sample
@@ -113,14 +112,39 @@ class WaveFile
 	int getSampleRate() const;
 
 	/**
-	 * @brief Computes the total number of samples in the file
-	 * @return The number of samples
+	 * @brief Determines length of the file in seconds
+	 * @return The length of the audio in the file in seconds
+	 */
+	double getDuration() const;
+
+	/**
+	 * @brief Get total number of samples in the file
+	 * @return The total number of samples in the file
 	 */
 	int getTotalSamples() const;
+
+	/**
+	 * @brief Gets number of channels of the audio in the file
+	 * @return The number of channels
+	 */
+	int getNumChannels() const;
+
+	/**
+	 * @brief Gets the properties of the audio in the file
+	 * @return The audio properties
+	 */
+	const AudioProperties& getAudioProperties() const { return m_audioProps; }
+
+	/**
+	 * @brief Changes the audio format the read functions return
+	 *
+	 * This will enable resampling of the audio read from the file. This can be used to reduce the number of channels the audio has if it's not supported.
+	 *
+	 * @param props The desired properties of the output
+	 */
+	void setAdjustedAudioProperties(const AudioProperties& props);
 protected:
 	size_t handleDecodedFrame(AVFrame* av_frame, uint8_t* out_buffer, size_t buffer_size);
-
-	ALenum m_al_format;
 };
 
 }

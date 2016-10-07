@@ -297,17 +297,7 @@ void event_music_init()
 
 	// look for any modular tables
 	parse_modular_table(NOX("*-mus.tbm"), event_music_parse_musictbl);
-
-	/* this doesn't work properly!!
-	for (i = 0; i < Num_soundtracks; i++) {
-		for (j = 0; j < Soundtracks[i].num_patterns; j++) {
-			int spm = snd_get_samples_per_measure(Soundtracks[i].pattern_fnames[j], Pattern_num_measures[i][j]);
-
-			if (spm > 0)
-				Pattern_samples_per_measure[i][j] = spm;
-		}
-	} */
-
+	
 	Event_music_inited = TRUE;
 	Event_music_begun = FALSE;
 }
@@ -1361,7 +1351,7 @@ void parse_menumusic()
 
 	// Goober5000 - check for existence of file
 	// taylor - check for all file types
-	// chief1983 - use type list defined in audiostr.h
+	// chief1983 - use type list defined in ffmpeg.h
 	if ( cf_exists_full_ext(Spooled_music[idx].filename, CF_TYPE_MUSIC, NUM_AUDIO_EXT, audio_ext_list) )
 		Spooled_music[idx].flags |= SMF_VALID;
 
