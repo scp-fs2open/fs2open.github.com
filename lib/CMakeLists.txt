@@ -13,8 +13,6 @@ ADD_SUBDIRECTORY(libpng)
 
 ADD_SUBDIRECTORY(lua)
 
-ADD_SUBDIRECTORY(oggvorbis)
-
 ADD_SUBDIRECTORY(openal)
 
 add_subdirectory(opengl)

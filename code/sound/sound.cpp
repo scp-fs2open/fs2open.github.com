@@ -19,7 +19,6 @@
 #include "globalincs/vmallocator.h"
 #include "osapi/osapi.h"
 #include "render/3d.h"
-#include "sound/acm.h"
 #include "sound/ffmpeg/WaveFile.h"
 #include "sound/audiostr.h"
 #include "sound/ds.h"
@@ -28,9 +27,6 @@
 
 #include "globalincs/pstypes.h"
 
-#ifdef _WIN32
-#include <windows.h>
-#endif
 #include <limits.h>
 
 const unsigned int SND_ENHANCED_MAX_LIMIT = 15; // seems like a good max limit
@@ -1086,7 +1082,7 @@ void snd_rewind(int snd_handle, game_snd *gs, float seconds)
 {			
 	float current_time,desired_time;
 	float bps;
-	DWORD current_offset,desired_offset;
+	uint32_t current_offset,desired_offset;
 	sound_info *snd;
 
 	if(!snd_is_playing(snd_handle))
@@ -1106,7 +1102,7 @@ void snd_rewind(int snd_handle, game_snd *gs, float seconds)
 		return;
 
 	desired_time = current_time - seconds;											// where we want to be
-	desired_offset = (DWORD)(desired_time * bps);								// the target
+	desired_offset = (uint32_t)(desired_time * bps);								// the target
 			
 	ds_set_position(ds_get_channel(snd_handle),desired_offset);
 }
@@ -1116,7 +1112,7 @@ void snd_ffwd(int snd_handle, game_snd *gs, float seconds)
 {
 	float current_time,desired_time;
 	float bps;
-	DWORD current_offset,desired_offset;
+	uint32_t current_offset,desired_offset;
 	sound_info *snd;
 
 	if(!snd_is_playing(snd_handle))
@@ -1136,7 +1132,7 @@ void snd_ffwd(int snd_handle, game_snd *gs, float seconds)
 		return;
 
 	desired_time = current_time + seconds;											// where we want to be
-	desired_offset = (DWORD)(desired_time * bps);								// the target
+	desired_offset = (uint32_t)(desired_time * bps);								// the target
 			
 	ds_set_position(ds_get_channel(snd_handle),desired_offset);
 }
@@ -1157,14 +1153,14 @@ void snd_set_pos(int snd_handle, game_snd *gs, float val,int as_pct)
 	// set position as an absolute from 0 to 1
 	if(as_pct){
 		Assert((val >= 0.0) && (val <= 1.0));
-		ds_set_position(ds_get_channel(snd_handle),(DWORD)((float)snd->size * val));
+		ds_set_position(ds_get_channel(snd_handle),(uint32_t)((float)snd->size * val));
 	} 
 	// set the position as an absolute # of seconds from the beginning of the sound
 	else {
 		float bps;
 		Assert(val <= (float)snd->duration/1000.0f);
 		bps = (float)snd->sample_rate * (float)snd->bits;							// data rate			
-		ds_set_position(ds_get_channel(snd_handle),(DWORD)(bps * val));
+		ds_set_position(ds_get_channel(snd_handle),(uint32_t)(bps * val));
 	}
 }
 

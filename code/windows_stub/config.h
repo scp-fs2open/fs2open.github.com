@@ -90,36 +90,6 @@ typedef struct _LARGE_INTEGER {
 #define INVALID_SOCKET ((SOCKET) -1)
 #endif
 
-// sound defines/structs
-#define WAVE_FORMAT_PCM		1
-#define WAVE_FORMAT_ADPCM		2
-#define WAVE_FORMAT_IEEE_FLOAT	3
-
-#pragma pack(1) // required to get proper values in ds_parse_wave()
-typedef struct {
-	WORD wFormatTag;
-	WORD nChannels;
-	DWORD nSamplesPerSec;
-	DWORD nAvgBytesPerSec;
-	WORD nBlockAlign;
-} WAVEFORMAT;
-
-typedef struct {
-	WAVEFORMAT wf;
-	WORD wBitsPerSample;
-} PCMWAVEFORMAT;
-
-typedef struct {
-	WORD  wFormatTag;
-	WORD  nChannels;
-	DWORD nSamplesPerSec;
-	DWORD nAvgBytesPerSec;
-	WORD  nBlockAlign;
-	WORD  wBitsPerSample;
-	WORD  cbSize;
-} WAVEFORMATEX;
-#pragma pack()
-
 // file related items
 #define _MAX_FNAME					255
 #define _MAX_PATH					255

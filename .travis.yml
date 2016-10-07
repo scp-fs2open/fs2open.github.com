@@ -9,9 +9,6 @@ addons:
         packages: &global_deps
             - ninja-build
             - libopenal-dev
-            - libogg-dev
-            - libvorbis-dev
-            - libtheora-dev
             - libreadline6-dev
             - libpng12-dev
             - libjpeg62-dev

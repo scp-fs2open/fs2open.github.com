@@ -93,12 +93,6 @@ set (file_root_cutscene
 	cutscene/player.h
 )
 
-# Cutscene\OGG files
-set (file_root_cutscene_ogg
-	cutscene/ogg/OggDecoder.cpp
-	cutscene/ogg/OggDecoder.h
-)
-
 # Cutscene\ffmpeg files
 set (file_root_cutscene_ffmpeg
 	cutscene/ffmpeg/AudioDecoder.cpp
@@ -938,9 +932,7 @@ set (file_root_ship
 
 # Sound files
 set (file_root_sound
-	sound/acm.cpp
-	sound/acm.h
-	sound/audiostr.cpp
+		sound/audiostr.cpp
 	sound/audiostr.h
 	sound/channel.h
 	sound/ds.cpp
@@ -970,12 +962,6 @@ set (file_root_sound_ffmpeg
 	sound/ffmpeg/FFmpegAudioReader.h
 	sound/ffmpeg/WaveFile.cpp
 	sound/ffmpeg/WaveFile.h
-)
-
-# Sound -> ogg files
-set (file_root_sound_ogg
-	sound/ogg/ogg.cpp
-	sound/ogg/ogg.h
 )
 
 # Species_Defs files
@@ -1089,7 +1075,6 @@ source_group("Cmdline"                            FILES ${file_root_cmdline})
 source_group("CMeasure"                           FILES ${file_root_cmeasure})
 source_group("ControlConfig"                      FILES ${file_root_controlconfig})
 source_group("Cutscene"                           FILES ${file_root_cutscene})
-source_group("Cutscene\\OGG"                      FILES ${file_root_cutscene_ogg})
 source_group("Cutscene\\ffmpeg"                   FILES ${file_root_cutscene_ffmpeg})
 source_group("Cutscene\\Player"                   FILES ${file_root_cutscene_player})
 source_group("ddsutils"                           FILES ${file_root_ddsutils})
@@ -1156,7 +1141,6 @@ source_group("Scripting"                          FILES ${file_root_scripting})
 source_group("Ship"                               FILES ${file_root_ship})
 source_group("Sound"                              FILES ${file_root_sound})
 source_group("Sound\\FFmpeg"                      FILES ${file_root_sound_ffmpeg})
-source_group("Sound\\ogg"                         FILES ${file_root_sound_ogg})
 source_group("Species_Defs"                       FILES ${file_root_species_defs})
 source_group("Starfield"                          FILES ${file_root_starfield})
 source_group("Stats"                              FILES ${file_root_stats})
@@ -1181,7 +1165,6 @@ set (file_root
 	${file_root_cmeasure}
 	${file_root_controlconfig}
 	${file_root_cutscene}
-	${file_root_cutscene_ogg}
 	${file_root_cutscene_ffmpeg}
 	${file_root_cutscene_player}
 	${file_root_ddsutils}
@@ -1248,7 +1231,6 @@ set (file_root
 	${file_root_ship}
 	${file_root_sound}
 	${file_root_sound_ffmpeg}
-	${file_root_sound_ogg}
 	${file_root_species_defs}
 	${file_root_starfield}
 	${file_root_stats}

@@ -2,7 +2,6 @@
 
 #include "cutscene/Decoder.h"
 #include "cutscene/player/VideoPresenter.h"
-#include "cutscene/ogg/OggDecoder.h"
 #include "cutscene/ffmpeg/FFMPEGDecoder.h"
 
 #include "graphics/2d.h"
@@ -69,13 +68,6 @@ Decoder* findDecoder(const SCP_string& name) {
 			return ffmpeg;
 		}
 		delete ffmpeg;
-	}
-	{
-		auto ogg = new ogg::OggDecoder();
-		if (ogg->initialize(name)) {
-			return ogg;
-		}
-		delete ogg;
 	}
 
 	return nullptr;
