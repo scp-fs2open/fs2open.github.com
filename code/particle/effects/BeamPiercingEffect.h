@@ -13,12 +13,12 @@ namespace effects {
  */
 class BeamPiercingEffect: public ParticleEffect {
  private:
-	float m_radius;
-	float m_velocity;
-	float m_backVelocity;
-	float m_variance;
+	float m_radius = -1.f;
+	float m_velocity = -1.f;
+	float m_backVelocity = -1.f;
+	float m_variance = -1.f;
 
-	int m_effectBitmap;
+	int m_effectBitmap = -1;
 
  public:
 	BeamPiercingEffect() : ParticleEffect("") {}

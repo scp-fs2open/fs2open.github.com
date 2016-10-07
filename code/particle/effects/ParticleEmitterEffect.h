@@ -13,11 +13,11 @@ namespace effects {
 class ParticleEmitterEffect: public ParticleEffect {
  private:
 	particle_emitter m_emitter;
-	int m_particleBitmap;
-	float m_range;
+	int m_particleBitmap = -1;
+	float m_range = -1;
 
  public:
-	ParticleEmitterEffect() : ParticleEffect("") {}
+	ParticleEmitterEffect();
 
 	virtual bool processSource(const ParticleSource* source) override;
 

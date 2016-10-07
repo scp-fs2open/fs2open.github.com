@@ -27,7 +27,7 @@ namespace particle
 	private:
 		SCP_vector<ParticleSource*> m_sources;
 
-		bool m_finished;
+		bool m_finished = false;
 
 	public:
 		ParticleSourceWrapper(const ParticleSourceWrapper&) SCP_DELETED_FUNCTION;

@@ -28,7 +28,7 @@ class ParticleManager {
 
 	SCP_vector<ParticleSource> m_sources; //!< The currently active sources
 
-	bool m_processingSources; //!< @c true if sources are currently being processed
+	bool m_processingSources = false; //!< @c true if sources are currently being processed
 	/**
 	 * If the sources are currently being processed, no additional sources can be added. Instead, they are added to this
 	 * vector and then added to the main vector when processing is done.
