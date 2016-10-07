@@ -35,6 +35,7 @@ add_file_folder(scripting "Scripting"
 
 add_file_folder(scripting_api "Scripting\\\\API"
     scripting/api/bitops.cpp
+    scripting/api/enums.cpp
 )
 
 add_file_folder(util "Util"

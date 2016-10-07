@@ -60,6 +60,7 @@
 #include "bmpman/bm_internal.h"
 
 #include "scripting/api/bitops.h"
+#include "scripting/api/enums.h"
 #include "scripting/api/vecmath.h"
 
 using namespace scripting;
@@ -102,242 +103,6 @@ ade_obj<int> l_Weaponclass("weaponclass", "Weapon class handle");
 //###########################################################
 //########################</IMPORTANT>#######################
 //###########################################################
-
-//**********OBJECT: constant class
-//WMC NOTE -
-//While you can have enumeration indexes in any order, make sure
-//that any new enumerations have indexes of NEXT INDEX (see below)
-//or after. Don't forget to increment NEXT INDEX after you're done.
-//=====================================
-static const int ENUM_NEXT_INDEX = 75; // <<<<<<<<<<<<<<<<<<<<<<
-//^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-static flag_def_list Enumerations[] = {
-	#define LE_ALPHABLEND_FILTER			14
-	{		"ALPHABLEND_FILTER",			LE_ALPHABLEND_FILTER,			0},
-
-	#define LE_ALPHABLEND_NONE				27
-	{		"ALPHABLEND_NONE",				LE_ALPHABLEND_NONE,				0},
-
-	#define LE_CFILE_TYPE_NORMAL			20
-	{		"CFILE_TYPE_NORMAL",			LE_CFILE_TYPE_NORMAL,			0},
-
-	#define LE_CFILE_TYPE_MEMORY_MAPPED		21
-	{		"CFILE_TYPE_MEMORY_MAPPED",		LE_CFILE_TYPE_MEMORY_MAPPED,	0},
-
-	#define LE_MOUSE_LEFT_BUTTON			1
-	{		"MOUSE_LEFT_BUTTON",			LE_MOUSE_LEFT_BUTTON,			0},
-
-	#define LE_MOUSE_RIGHT_BUTTON			2
-	{		"MOUSE_RIGHT_BUTTON",			LE_MOUSE_RIGHT_BUTTON,			0},
-
-	#define LE_MOUSE_MIDDLE_BUTTON			3
-	{		"MOUSE_MIDDLE_BUTTON",			LE_MOUSE_MIDDLE_BUTTON,			0},
-
-	#define LE_ORDER_ATTACK					28
-	{		"ORDER_ATTACK",					LE_ORDER_ATTACK,				0},
-
-	#define LE_ORDER_ATTACK_ANY				29
-	{		"ORDER_ATTACK_ANY",				LE_ORDER_ATTACK_ANY,			0},
-
-	#define LE_ORDER_DEPART					30
-	{		"ORDER_DEPART",					LE_ORDER_DEPART,				0},
-
-	#define LE_ORDER_DISABLE				31
-	{		"ORDER_DISABLE",				LE_ORDER_DISABLE,				0},
-
-	#define LE_ORDER_DISARM					32
-	{		"ORDER_DISARM",					LE_ORDER_DISARM,				0},
-
-	#define LE_ORDER_DOCK					33
-	{		"ORDER_DOCK",					LE_ORDER_DOCK,					0},
-
-	#define LE_ORDER_EVADE					34
-	{		"ORDER_EVADE",					LE_ORDER_EVADE,					0},
-
-	#define LE_ORDER_FLY_TO					35
-	{		"ORDER_FLY_TO",					LE_ORDER_FLY_TO,				0},
-
-	#define LE_ORDER_FORM_ON_WING			36
-	{		"ORDER_FORM_ON_WING",			LE_ORDER_FORM_ON_WING,			0},
-
-	#define LE_ORDER_GUARD					37
-	{		"ORDER_GUARD",					LE_ORDER_GUARD,					0},
-
-	#define LE_ORDER_IGNORE					38
-	{		"ORDER_IGNORE_SHIP",			LE_ORDER_IGNORE,				0},
-
-	#define LE_ORDER_KEEP_SAFE_DISTANCE		39
-	{		"ORDER_KEEP_SAFE_DISTANCE",		LE_ORDER_KEEP_SAFE_DISTANCE,	0},
-
-	#define LE_ORDER_PLAY_DEAD				40
-	{		"ORDER_PLAY_DEAD",				LE_ORDER_PLAY_DEAD,				0},
-
-	#define LE_ORDER_REARM					41
-	{		"ORDER_REARM",					LE_ORDER_REARM,					0},
-
-	#define LE_ORDER_STAY_NEAR				42
-	{		"ORDER_STAY_NEAR",				LE_ORDER_STAY_NEAR,				0},
-
-	#define LE_ORDER_STAY_STILL				43
-	{		"ORDER_STAY_STILL",				LE_ORDER_STAY_STILL,			0},
-
-	#define LE_ORDER_UNDOCK					44
-	{		"ORDER_UNDOCK",					LE_ORDER_UNDOCK,				0},
-
-	#define LE_ORDER_WAYPOINTS				45
-	{		"ORDER_WAYPOINTS",				LE_ORDER_WAYPOINTS,				0},
-
-	#define LE_ORDER_WAYPOINTS_ONCE			46
-	{		"ORDER_WAYPOINTS_ONCE",			LE_ORDER_WAYPOINTS_ONCE,		0},
-
-	#define LE_ORDER_ATTACK_WING			69
-	{		"ORDER_ATTACK_WING",			LE_ORDER_ATTACK_WING,			0},
-
-	#define LE_ORDER_GUARD_WING				70
-	{		"ORDER_GUARD_WING",				LE_ORDER_GUARD_WING,			0},
-
-	#define LE_ORDER_ATTACK_SHIP_CLASS		74
-	{		"ORDER_ATTACK_SHIP_CLASS",		LE_ORDER_ATTACK_SHIP_CLASS,		0},
-
-	#define LE_PARTICLE_DEBUG				4
-	{		"PARTICLE_DEBUG",				LE_PARTICLE_DEBUG,				0},
-
-	#define LE_PARTICLE_BITMAP				5
-	{		"PARTICLE_BITMAP",				LE_PARTICLE_BITMAP,				0},
-
-	#define LE_PARTICLE_FIRE				6
-	{		"PARTICLE_FIRE",				LE_PARTICLE_FIRE,				0},
-
-	#define LE_PARTICLE_SMOKE				7
-	{		"PARTICLE_SMOKE",				LE_PARTICLE_SMOKE,				0},
-
-	#define LE_PARTICLE_SMOKE2				8
-	{		"PARTICLE_SMOKE2",				LE_PARTICLE_SMOKE2,				0},
-
-	#define LE_PARTICLE_PERSISTENT_BITMAP	9
-	{		"PARTICLE_PERSISTENT_BITMAP",	LE_PARTICLE_PERSISTENT_BITMAP,	0},
-
-	#define LE_SEXPVAR_CAMPAIGN_PERSISTENT	22
-	{		"SEXPVAR_CAMPAIGN_PERSISTENT",	LE_SEXPVAR_CAMPAIGN_PERSISTENT,	0},
-
-	#define LE_SEXPVAR_NOT_PERSISTENT		23
-	{		"SEXPVAR_NOT_PERSISTENT",		LE_SEXPVAR_NOT_PERSISTENT,		0},
-
-	#define LE_SEXPVAR_PLAYER_PERSISTENT	24
-	{		"SEXPVAR_PLAYER_PERSISTENT",	LE_SEXPVAR_PLAYER_PERSISTENT,	0},
-
-	#define LE_SEXPVAR_TYPE_NUMBER			25
-	{		"SEXPVAR_TYPE_NUMBER",			LE_SEXPVAR_TYPE_NUMBER,			0},
-
-	#define LE_SEXPVAR_TYPE_STRING			26
-	{		"SEXPVAR_TYPE_STRING",			LE_SEXPVAR_TYPE_STRING,			0},
-
-	#define LE_TEXTURE_STATIC				10
-	{		"TEXTURE_STATIC",				LE_TEXTURE_STATIC,				0},
-
-	#define LE_TEXTURE_DYNAMIC				11
-	{		"TEXTURE_DYNAMIC",				LE_TEXTURE_DYNAMIC,				0},
-
-	#define LE_LOCK							12
-	{		"LOCK",							LE_LOCK,						0},
-
-	#define LE_UNLOCK						13
-	{		"UNLOCK",						LE_UNLOCK,						0},
-
-	#define	LE_NONE							15
-	{		"NONE",							LE_NONE,						0},
-
-	#define	LE_SHIELD_FRONT					16
-	{		"SHIELD_FRONT",					LE_SHIELD_FRONT,				0},
-
-	#define	LE_SHIELD_LEFT					17
-	{		"SHIELD_LEFT",					LE_SHIELD_LEFT,					0},
-
-	#define	LE_SHIELD_RIGHT					18
-	{		"SHIELD_RIGHT",					LE_SHIELD_RIGHT,				0},
-
-	#define	LE_SHIELD_BACK					19
-	{		"SHIELD_BACK",					LE_SHIELD_BACK,					0},
-
-	#define	LE_MISSION_REPEAT				47
-	{		"MISSION_REPEAT",				LE_MISSION_REPEAT,				0},
-
-	#define LE_NORMAL_CONTROLS				48
-	{		"NORMAL_CONTROLS",				LE_NORMAL_CONTROLS,				0},
-
-	#define LE_LUA_STEERING_CONTROLS		49
-	{		"LUA_STEERING_CONTROLS",		LE_LUA_STEERING_CONTROLS,		0},
-
-	#define LE_LUA_FULL_CONTROLS			50
-	{		"LUA_FULL_CONTROLS",			LE_LUA_FULL_CONTROLS,			0},
-
-	#define LE_NORMAL_BUTTON_CONTROLS		51
-	{		"NORMAL_BUTTON_CONTROLS",		LE_NORMAL_BUTTON_CONTROLS,		0},
-
-	#define LE_LUA_ADDITIVE_BUTTON_CONTROL	52
-	{		"LUA_ADDITIVE_BUTTON_CONTROL",	LE_LUA_ADDITIVE_BUTTON_CONTROL,	0},
-
-	#define LE_LUA_OVERRIDE_BUTTON_CONTROL	53
-	{		"LUA_OVERRIDE_BUTTON_CONTROL",	LE_LUA_OVERRIDE_BUTTON_CONTROL,	0},
-
-	#define LE_VM_INTERNAL					54
-	{		"VM_INTERNAL",					LE_VM_INTERNAL,					0},
-
-	#define LE_VM_EXTERNAL					55
-	{		"VM_EXTERNAL",					LE_VM_EXTERNAL,					0},
-
-	#define LE_VM_TRACK						56
-	{		"VM_TRACK",						LE_VM_TRACK,					0},
-
-	#define LE_VM_DEAD_VIEW					57
-	{		"VM_DEAD_VIEW",					LE_VM_DEAD_VIEW,				0},
-
-	#define LE_VM_CHASE						58
-	{		"VM_CHASE",						LE_VM_CHASE,					0},
-
-	#define LE_VM_OTHER_SHIP				59
-	{		"VM_OTHER_SHIP",				LE_VM_OTHER_SHIP,				0},
-
-	#define LE_VM_EXTERNAL_CAMERA_LOCKED	60
-	{		"VM_EXTERNAL_CAMERA_LOCKED",	LE_VM_EXTERNAL_CAMERA_LOCKED,	0},
-
-	#define LE_VM_WARP_CHASE				61
-	{		"VM_WARP_CHASE",				LE_VM_WARP_CHASE,				0},
-
-	#define LE_VM_PADLOCK_UP				62
-	{		"VM_PADLOCK_UP",				LE_VM_PADLOCK_UP,				0},
-
-	#define LE_VM_PADLOCK_REAR				63
-	{		"VM_PADLOCK_REAR",				LE_VM_PADLOCK_REAR,				0},
-
-	#define LE_VM_PADLOCK_LEFT				64
-	{		"VM_PADLOCK_LEFT",				LE_VM_PADLOCK_LEFT,				0},
-
-	#define LE_VM_PADLOCK_RIGHT				65
-	{		"VM_PADLOCK_RIGHT",				LE_VM_PADLOCK_RIGHT,			0},
-
-	#define LE_VM_WARPIN_ANCHOR				66
-	{		"VM_WARPIN_ANCHOR",				LE_VM_WARPIN_ANCHOR,			0},
-
-	#define LE_VM_TOPDOWN					67
-	{		"VM_TOPDOWN",					LE_VM_TOPDOWN,					0},
-
-	#define LE_VM_FREECAMERA				68
-	{		"VM_FREECAMERA",				LE_VM_FREECAMERA,				0},
-
-	#define LE_MESSAGE_PRIORITY_LOW			71
-	{		"MESSAGE_PRIORITY_LOW",			LE_MESSAGE_PRIORITY_LOW,		0},
-
-	#define LE_MESSAGE_PRIORITY_NORMAL		72
-	{		"MESSAGE_PRIORITY_NORMAL",		LE_MESSAGE_PRIORITY_NORMAL,		0},
-
-	#define LE_MESSAGE_PRIORITY_HIGH		73
-	{		"MESSAGE_PRIORITY_HIGH",		LE_MESSAGE_PRIORITY_HIGH,		0},
-};
-
-//DO NOT FORGET to increment NEXT INDEX: !!!!!!!!!!!!!
-
-static uint Num_enumerations = sizeof(Enumerations) / sizeof(flag_def_list);
 
 flag_def_list plr_commands[] = {
 	{	"TARGET_NEXT",							TARGET_NEXT,							0	},
@@ -461,62 +226,6 @@ flag_def_list plr_commands[] = {
 };
 
 int num_plr_commands = sizeof(plr_commands)/sizeof(flag_def_list);
-
-struct enum_h {
-	int index;
-	bool is_constant;
-
-	enum_h(){index=-1; is_constant=false;}
-	enum_h(int n_index){index=n_index; is_constant=false;}
-
-	bool IsValid(){return (index > -1 && index < ENUM_NEXT_INDEX);}
-};
-ade_obj<enum_h> l_Enum("enumeration", "Enumeration object");
-
-ADE_FUNC(__newindex, l_Enum, "enumeration", "Sets enumeration to specified value (if it is not a global", "enumeration", "enumeration")
-{
-	enum_h *e1=NULL, *e2=NULL;
-	if(!ade_get_args(L, "oo", l_Enum.GetPtr(&e1), l_Enum.GetPtr(&e2)))
-		return ade_set_error(L, "o", l_Enum.Set(enum_h()));
-
-	if(!e1->is_constant)
-		e1->index = e2->index;
-
-	return ade_set_args(L, "o", l_Enum.Set(*e1));
-}
-
-ADE_FUNC(__tostring, l_Enum, NULL, "Returns enumeration name", "string", "Enumeration name, or \"<INVALID>\" if invalid")
-{
-	enum_h *e = NULL;
-	if(!ade_get_args(L, "o", l_Enum.GetPtr(&e)))
-		return ade_set_args(L, "s", "<INVALID>");
-
-	if(e->index < 1 || e->index >= ENUM_NEXT_INDEX)
-		return ade_set_args(L, "s", "<INVALID>");
-
-	uint i;
-	for(i = 0; i < Num_enumerations; i++)
-	{
-		if(Enumerations[i].def == e->index)
-			return ade_set_args(L, "s", Enumerations[i].name);
-	}
-
-	return ade_set_args(L, "s", "<INVALID>");
-}
-
-ADE_FUNC(__eq, l_Enum, "enumeration", "Compares the two enumerations for equality", "boolean", "true if equal, false otherwise")
-{
-	enum_h *e1 = NULL; 
-	enum_h *e2 = NULL;
-
-	if(!ade_get_args(L, "oo", l_Enum.GetPtr(&e1), l_Enum.GetPtr(&e2)))
-		return ade_set_error(L, "o", l_Enum.Set(enum_h()));
-
-	if (e1 == NULL || e2 == NULL)
-		return ADE_RETURN_FALSE;
-
-	return ade_set_args(L, "b", e1->index == e2->index);
-}
 
 //**********HANDLE: event
 ade_obj<int> l_Event("event", "Mission event handle");
@@ -7484,7 +7193,7 @@ ADE_FUNC(getType, l_Order, NULL, "Gets the type of the order.", "enumeration", "
 		break;
 	}
 
-	return ade_set_args(L, "o", l_Enum.Set(eh_idx));
+	return ade_set_args(L, "o", l_Enum.Set(enum_h(eh_idx)));
 }
 
 ADE_VIRTVAR(Target, l_Order, "object", "Target of the order. Value may also be a deriviative of the 'object' class, such as 'ship'.", "object", "Target object or invalid object handle if order handle is invalid or order requires no target.")
@@ -12807,7 +12516,7 @@ ADE_VIRTVAR(CurrentOpacityType, l_Graphics, "enumeration", "Current alpha blendi
 			rtn = LE_ALPHABLEND_NONE;
 	}
 
-	return ade_set_args(L, "o", l_Enum.Set(rtn));
+	return ade_set_args(L, "o", l_Enum.Set(enum_h(rtn)));
 }
 
 ADE_VIRTVAR(CurrentRenderTarget, l_Graphics, "texture", "Current rendering target", "texture", "Current rendering target, or invalid texture handle if screen is render target")
