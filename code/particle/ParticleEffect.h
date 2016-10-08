@@ -13,14 +13,14 @@ class ParticleSource;
  *
  * @ingroup particleSystems
  */
-enum class EffectType: size_t {
-	Single = 0,
+enum class EffectType: int64_t {
+	Invalid = -1,
+	Single,
 	Composite,
 	Cone,
 	Sphere,
 
 	MAX,
-	Invalid
 };
 
 /**

@@ -20,7 +20,7 @@
 namespace {
 using namespace particle;
 
-const char* effectTypeNames[static_cast<size_t>(EffectType::MAX)] = {
+const char* effectTypeNames[static_cast<int64_t>(EffectType::MAX)] = {
 	"Single",
 	"Composite",
 	"Cone",
@@ -28,11 +28,11 @@ const char* effectTypeNames[static_cast<size_t>(EffectType::MAX)] = {
 };
 
 const char* getEffectTypeName(EffectType type) {
-	Assertion(static_cast<size_t>(type) >= static_cast<size_t>(EffectType::Single)
-				  && static_cast<size_t>(type) < static_cast<size_t>(EffectType::MAX),
+	Assertion(static_cast<int64_t>(type) >= static_cast<int64_t>(EffectType::Single)
+				  && static_cast<int64_t>(type) < static_cast<int64_t>(EffectType::MAX),
 			  "Invalid effect type specified!");
 
-	return effectTypeNames[static_cast<size_t>(type)];
+	return effectTypeNames[static_cast<int64_t>(type)];
 }
 
 ParticleEffectPtr constructEffect(const SCP_string& name, EffectType type) {
