@@ -936,6 +936,7 @@ public:
 	vec3d		cockpit_offset;
 	char		pof_file[MAX_FILENAME_LEN];			// POF file to load/associate with ship
 	char		pof_file_hud[MAX_FILENAME_LEN];		// POF file to load for the HUD target box
+	char		pof_file_tech[MAX_FILENAME_LEN];	// POF file to load for the techroom
 	int		num_detail_levels;				// number of detail levels for this ship
 	int		detail_distance[MAX_SHIP_DETAIL_LEVELS];					// distance to change detail levels at
 	int		collision_lod;						// check for collisions using a LOD
