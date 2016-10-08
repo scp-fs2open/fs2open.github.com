@@ -811,6 +811,7 @@ void ship_info::clone(const ship_info& other)
 	cockpit_offset = other.cockpit_offset;
 	strcpy_s(pof_file, other.pof_file);
 	strcpy_s(pof_file_hud, other.pof_file_hud);
+	strcpy_s(pof_file_tech, other.pof_file_tech);
 	num_detail_levels = other.num_detail_levels;
 	memcpy(detail_distance, other.detail_distance, sizeof(int) * MAX_SHIP_DETAIL_LEVELS);
 	collision_lod = other.collision_lod;
@@ -1125,6 +1126,7 @@ void ship_info::move(ship_info&& other)
 	std::swap(cockpit_offset, other.cockpit_offset);
 	std::swap(pof_file, other.pof_file);
 	std::swap(pof_file_hud, other.pof_file_hud);
+	std::swap(pof_file_tech, other.pof_file_tech);
 	num_detail_levels = other.num_detail_levels;
 	std::swap(detail_distance, other.detail_distance);
 	collision_lod = other.collision_lod;
@@ -1451,6 +1453,7 @@ ship_info::ship_info()
 	vm_vec_zero(&cockpit_offset);
 	pof_file[0] = '\0';
 	pof_file_hud[0] = '\0';
+	pof_file_tech[0] = '\0';
 	num_detail_levels = 1;
 	detail_distance[0] = 0;
 	collision_lod = -1;
@@ -2469,6 +2472,26 @@ int parse_ship_values(ship_info* sip, const bool is_template, const bool first_t
 			strcpy_s(sip->pof_file, temp);
 		else
 			WarningEx(LOCATION, "Ship %s\nPOF file \"%s\" invalid!", sip->name, temp);
+	}
+
+	if(optional_string( "$POF file Techroom:" ))
+	{
+		char temp[MAX_FILENAME_LEN];
+		stuff_string(temp, F_NAME, MAX_FILENAME_LEN);
+
+		// assume we're using this file name
+		bool valid = true;
+
+		// if this is a modular table, and we're replacing an existing file name, and the file doesn't exist, don't replace it
+		if (replace)
+			if (sip->pof_file_tech[0] != '\0')
+				if (!cf_exists_full(temp, CF_TYPE_MODELS))
+					valid = false;
+
+		if (valid)
+			strcpy_s(sip->pof_file_tech, temp);
+		else
+			WarningEx(LOCATION, "Ship %s\nTechroom POF file \"%s\" invalid!", sip->name, temp);
 	}
 
 	// ship class texture replacement - Goober5000
