@@ -334,8 +334,8 @@ uint CFtpGet::IssuePort()
 #else
    int iLength;								// Length of the address structure
 #endif
-   UINT nLocalPort;							// Local port for listening
-	UINT nReplyCode;							// FTP server reply code
+	uint32_t nLocalPort;							// Local port for listening
+	uint32_t nReplyCode;							// FTP server reply code
 
 
    // Get the address for the hListenSocket

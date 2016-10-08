@@ -53,19 +53,6 @@
 #define STUB_FUNCTION nprintf(( "Warning", "STUB: %s in " __FILE__ " at line %d, thread %d\n", __FUNCTION__, __LINE__, getpid() ))
 #define DEBUGME(d1) nprintf(( "Warning", "DEBUGME: %s in " __FILE__ " at line %d, msg \"%s\", thread %d\n", __FUNCTION__, __LINE__, d1, getpid() ))
 
-
-// Standard data types
-typedef std::int32_t BOOL;
-typedef std::uint16_t WORD;
-typedef std::uint32_t UINT;
-typedef std::uint32_t DWORD;
-typedef std::uint32_t FOURCC;
-typedef std::uint32_t *PDWORD, *LPDWORD;
-
-typedef struct _LARGE_INTEGER {
-	std::int64_t QuadPart;
-} LARGE_INTEGER;
-
 // networking/socket stuff
 #define SOCKET			int
 #define SOCKADDR		struct sockaddr
@@ -116,10 +103,6 @@ char *strnset( char *string, int fill, size_t count);
 #define _hypot(x, y)  hypot(x, y)
 
 int MulDiv(int number, int numerator, int denominator);
-
-struct POINT {
-	int x, y;
-};
 
 #endif  // if !defined (WINDOWS)
 
