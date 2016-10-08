@@ -13,7 +13,6 @@
 #include "cmdline/cmdline.h"
 #include "globalincs/pstypes.h"
 #include "osapi/osapi.h"
-#include "sound/acm.h"
 #include "sound/audiostr.h"
 #include "sound/channel.h"
 #include "sound/ds.h"
