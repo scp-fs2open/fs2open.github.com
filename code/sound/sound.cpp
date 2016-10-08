@@ -358,7 +358,7 @@ int snd_load( game_snd *gs, int allow_hardware_load )
 	// NOTE: "si" values can change once loaded in the buffer
 	snd->duration = fl2i(1000.0f * audio_file->getDuration());
 
-	strncpy( snd->filename, gs->filename, MAX_FILENAME_LEN );
+	strcpy_s( snd->filename, gs->filename );
 	snd->flags = SND_F_USED;
 
 	snd->sig = snd_next_sig++;
