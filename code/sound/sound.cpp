@@ -332,7 +332,27 @@ int snd_load( game_snd *gs, int allow_hardware_load )
 
 			audio_file->setAdjustedAudioProperties(current);
 
-			Warning(LOCATION, "Sound '%s' has more than one channel but is used as a 3D sound! 3D sounds may only have one channel.", gs->filename);
+#ifndef NDEBUG
+            // Retail has a few sounds that triggers this warning so we need to ignore those
+            const char* warning_ignore_list[] = {
+				"l_hit.wav",
+				"m_hit.wav",
+				"s_hit_2.wav",
+				"Pirate.wav",
+			};
+
+			bool show_warning = true;
+			for (auto& name : warning_ignore_list) {
+				if (!stricmp(name, gs->filename)) {
+					show_warning = false;
+					break;
+				}
+			}
+
+			if (show_warning) {
+				Warning(LOCATION, "Sound '%s' has more than one channel but is used as a 3D sound! 3D sounds may only have one channel.", gs->filename);
+			}
+#endif
 		}
 	}
 
