@@ -139,8 +139,6 @@ namespace os
 
 		uint32_t depth_size;
 		uint32_t stencil_size;
-
-		uint32_t multi_samples; //!< The amount of multi-sampling, use 0 for no multi-sampling
 	};
 
 	/**

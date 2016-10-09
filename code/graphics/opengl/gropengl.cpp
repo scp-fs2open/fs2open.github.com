@@ -1037,8 +1037,6 @@ int opengl_init_display_device(os::GraphicsOperations* graphicsOps)
 	attrs.pixel_format.depth_size = (bpp == 32) ? 24 : 16;
 	attrs.pixel_format.stencil_size = (bpp == 32) ? 8 : 1;
 
-	attrs.pixel_format.multi_samples = os_config_read_uint(NULL, "OGL_AntiAliasSamples", 0);
-
 	attrs.enable_opengl = true;
 
 	attrs.gl_attributes.major_version = MIN_REQUIRED_GL_VERSION / 10;
