@@ -8479,7 +8479,7 @@ int actual_main(int argc, char *argv[])
 
 #if defined(GAME_ERRORLOG_TXT) && defined(_MSC_VER)
 	__try {
-#else
+#elif !defined(DONT_CATCH_MAIN_EXCEPTIONS)
 	try {
 #endif
 		result = game_main(argc, argv);
@@ -8491,14 +8491,18 @@ int actual_main(int argc, char *argv[])
 		// get called unless you return EXCEPTION_EXECUTE_HANDLER from
 		// the __except clause.
 	}
-#else
+#elif !defined(DONT_CATCH_MAIN_EXCEPTIONS)
 	}
-	catch (std::exception &ex) {
+	catch (const std::exception &ex) {
+		Error(LOCATION, "Caught std::exception in main(): '%s'!", ex.what());
 		fprintf(stderr, "Caught std::exception in main(): '%s'!\n", ex.what());
+
 		result = EXIT_FAILURE;
 	}
 	catch (...) {
+		Error(LOCATION, "Caught exception in main()!");
 		fprintf(stderr, "Caught exception in main()!\n");
+
 		result = EXIT_FAILURE;
 	}
 #endif
