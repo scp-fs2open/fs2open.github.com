@@ -5078,15 +5078,19 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 		size_t *position = get_pointer_to_weapon_fire_pattern_index(weapon_type, parent_shipp, src_turret);
 		Assertion( position != NULL, "'%s' is trying to fire a weapon that is not selected", Ships[parent_objp->instance].ship_name );
 
+		size_t curr_pos = *position;
+		if (((Player_ship->flags[Ship::Ship_Flags::Secondary_dual_fire]) || (Player_ship->flags[Ship::Ship_Flags::Primary_linked])) && (curr_pos > 0)) {
+			curr_pos--;
+		}
 		++(*position);
 		*position = (*position) % wip->num_substitution_patterns;
 
-		if ( wip->weapon_substitution_pattern[*position] == -1 ) {
+		if ( wip->weapon_substitution_pattern[curr_pos] == -1 ) {
 			// weapon doesn't want any sub
 			return -1;
-		} else if ( wip->weapon_substitution_pattern[*position] != weapon_type ) {
+		} else if ( wip->weapon_substitution_pattern[curr_pos] != weapon_type ) {
 			// weapon wants to sub with weapon other than me
-			return weapon_create(pos, porient, wip->weapon_substitution_pattern[*position], parent_objnum, group_id, is_locked, is_spawned, fof_cooldown);
+			return weapon_create(pos, porient, wip->weapon_substitution_pattern[curr_pos], parent_objnum, group_id, is_locked, is_spawned, fof_cooldown);
 		}
 	}
 

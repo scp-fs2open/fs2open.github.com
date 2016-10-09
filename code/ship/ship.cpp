@@ -6050,6 +6050,8 @@ ship_weapon::ship_weapon()
         secondary_next_slot[i] = 0;
         secondary_bank_rearm_time[i] = timestamp(0);
 
+		secondary_bank_pattern_index[i] = 0;
+
         burst_counter[i + MAX_SHIP_PRIMARY_BANKS] = 0;
         external_model_fp_counter[i + MAX_SHIP_PRIMARY_BANKS] = 0;
     }
