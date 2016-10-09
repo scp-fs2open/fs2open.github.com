@@ -601,6 +601,10 @@ void AudioStream::Cue (void)
 		WriteWaveData (m_cbBufSize, &num_bytes_written, 0);
 
 		m_fCued = true;
+
+		// Init some of our data
+		m_total_uncompressed_bytes_read = 0;
+		m_max_uncompressed_bytes_to_read = std::numeric_limits<uint>::max();
 	}
 }
 
@@ -653,7 +657,7 @@ void AudioStream::Set_Sample_Cutoff(unsigned int sample_cutoff)
 	if ( m_pwavefile == NULL )
 		return;
 
-	m_max_uncompressed_bytes_to_read = (sample_cutoff * m_pwavefile->getSampleByteSize());
+	m_max_uncompressed_bytes_to_read = (sample_cutoff * (m_pwavefile->getSampleByteSize() / m_pwavefile->getNumChannels()));
 }
 
 uint AudioStream::Get_Samples_Committed(void)
@@ -661,7 +665,7 @@ uint AudioStream::Get_Samples_Committed(void)
 	if ( m_pwavefile == NULL )
 		return 0;
 
-	return (uint) (m_total_uncompressed_bytes_read / m_pwavefile->getSampleByteSize());
+	return (uint) (m_total_uncompressed_bytes_read / (m_pwavefile->getSampleByteSize() / m_pwavefile->getNumChannels()));
 }
 
 
