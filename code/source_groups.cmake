@@ -917,6 +917,8 @@ set(file_root_scripting_api
 	scripting/api/bitops.cpp
 	scripting/api/enums.cpp
 	scripting/api/enums.h
+	scripting/api/event.h
+	scripting/api/event.cpp
 	scripting/api/vecmath.h
 	scripting/api/vecmath.cpp
 )
