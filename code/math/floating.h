@@ -100,5 +100,12 @@ inline bool fl_equal(float a, float b)
 // rounds off a floating point number to a multiple of some number
 extern float fl_roundoff(float x, int multiple);
 
+/**
+ * @brief Determines if @a x falls between +/- @a e
+ *
+ * @param x Value to test
+ * @param e Value to test against (must be positive)
+ */
+#define IS_NEAR_ZERO(x, e) (fl_abs(x) < (float)(e))
 
 #endif
