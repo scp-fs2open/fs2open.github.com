@@ -705,14 +705,19 @@ void calculate_ship_ship_collision_physics(collision_info_struct *ship_ship_hit_
 	// include a frictional collision impulse F parallel to the collision plane
 	// F = I * sin (collision_normal, normalized v_rel_m)  [sin is ratio of v_rel_parallel_m to v_rel_m]
 	// note:  (-) sign is needed to account for the direction of the v_rel_parallel_m
-	float collision_speed_parallel;
-	float parallel_mag;
-	impulse = ship_ship_hit_info->collision_normal;
-	vm_vec_projection_onto_plane(&v_rel_parallel_m, &v_rel_m, &ship_ship_hit_info->collision_normal);
-	collision_speed_parallel = vm_vec_normalize_safe(&v_rel_parallel_m);
-	float friction = (lighter->type == OBJ_SHIP) ? light_sip->collision_physics.friction : COLLISION_FRICTION_FACTOR;
-	parallel_mag = float(-friction) * collision_speed_parallel / vm_vec_mag(&v_rel_m);
-	vm_vec_scale_add2(&impulse, &v_rel_parallel_m, parallel_mag);
+	if (IS_VEC_NULL(&v_rel_m)) {
+		// If the relative velocity is zero then the compuatation below would cause NaN errors
+		vm_vec_zero(&impulse);
+	} else {
+		float collision_speed_parallel;
+		float parallel_mag;
+		impulse = ship_ship_hit_info->collision_normal;
+		vm_vec_projection_onto_plane(&v_rel_parallel_m, &v_rel_m, &ship_ship_hit_info->collision_normal);
+		collision_speed_parallel = vm_vec_normalize_safe(&v_rel_parallel_m);
+		float friction = (lighter->type == OBJ_SHIP) ? light_sip->collision_physics.friction : COLLISION_FRICTION_FACTOR;
+		parallel_mag = float(-friction) * collision_speed_parallel / vm_vec_mag(&v_rel_m);
+		vm_vec_scale_add2(&impulse, &v_rel_parallel_m, parallel_mag);
+	}
 	
 	// calculate the effect on the velocity of the collison point per unit impulse
 	// first find the effect thru change in rotvel
