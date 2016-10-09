@@ -919,6 +919,8 @@ set(file_root_scripting_api
 	scripting/api/enums.h
 	scripting/api/event.h
 	scripting/api/event.cpp
+	scripting/api/file.h
+	scripting/api/file.cpp
 	scripting/api/vecmath.h
 	scripting/api/vecmath.cpp
 )
