@@ -6309,6 +6309,11 @@ void weapon_mark_as_used(int weapon_type)
 
 	if (weapon_type < Num_weapon_types) {
 		used_weapons[weapon_type]++;
+		if (Weapon_info[weapon_type].num_substitution_patterns > 0) {
+			for (size_t i = 0; i < Weapon_info[weapon_type].num_substitution_patterns; i++) {
+				used_weapons[Weapon_info[weapon_type].weapon_substitution_pattern[i]]++;
+			}
+		}
 	}
 }
 
