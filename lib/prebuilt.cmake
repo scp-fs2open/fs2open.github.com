@@ -1,5 +1,5 @@
 
-set(PREBUILT_VERSION_NAME "0b6ed006c234395f40008f4cdeb30a6e6571d08c")
+set(PREBUILT_VERSION_NAME "7775d50e9b162b9668160c4c0e7c8b9b4abeeb3c")
 
 set(FSO_PREBUILT_OVERRIDE "" CACHE PATH "Path to the prebuilt binaries, if empty the binaries will be downloaded.")
 set(PREBUILT_LIB_DIR "${CMAKE_CURRENT_BINARY_DIR}/prebuilt")
