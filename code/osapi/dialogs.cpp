@@ -296,7 +296,7 @@ namespace os
 			mprintf(("\n%s\n", text));
 
 			if (Cmdline_noninteractive) {
-				exit(1);
+				abort();
 				return;
 			}
 
