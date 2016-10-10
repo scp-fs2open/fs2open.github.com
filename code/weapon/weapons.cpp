@@ -3324,6 +3324,16 @@ void weapon_generate_indexes_for_substitution() {
 				int weapon_index = -1;
 				if ( stricmp("none", wip->weapon_substitution_pattern_names[j]) != 0 ) {
 					weapon_index = weapon_info_lookup(wip->weapon_substitution_pattern_names[j]);
+
+					if (Weapon_info[weapon_index].subtype != wip->subtype) {
+						// Check to make sure secondaries can't be launched by primaries and vice versa
+						Warning(LOCATION, "Weapon '%s' requests substitution with '%s' which is of a different subtype.",
+							wip->name, wip->weapon_substitution_pattern_names[j]);
+						wip->num_substitution_patterns = 0;
+						memset(wip->weapon_substitution_pattern, -1, MAX_SUBSTITUTION_PATTERNS);
+						break;
+					}
+
 					if ( weapon_index == -1 ) { // invalid sub weapon
 						Warning(LOCATION, "Weapon '%s' requests substitution with '%s' which does not seem to exist",
 							wip->name, wip->weapon_substitution_pattern_names[j]);
@@ -5079,7 +5089,9 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 		Assertion( position != NULL, "'%s' is trying to fire a weapon that is not selected", Ships[parent_objp->instance].ship_name );
 
 		size_t curr_pos = *position;
-		if (((Player_ship->flags[Ship::Ship_Flags::Secondary_dual_fire]) || (Player_ship->flags[Ship::Ship_Flags::Primary_linked])) && (curr_pos > 0)) {
+		if (((Weapon_info[weapon_type].subtype == WP_LASER && Player_ship->flags[Ship::Ship_Flags::Primary_linked]) || 
+			 (Weapon_info[weapon_type].subtype == WP_MISSILE && Player_ship->flags[Ship::Ship_Flags::Secondary_dual_fire])) && 
+			 (curr_pos > 0)) {
 			curr_pos--;
 		}
 		++(*position);
