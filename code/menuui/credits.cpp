@@ -354,7 +354,7 @@ void credits_parse_table(const char* filename)
 		int numLines = -1;
 
 		bool first_run = true;
-		while (!check_for_string_raw("#end"))
+		while (!check_for_eof_raw() && !check_for_string_raw("#end"))
 		{
 			// Read in a line of text			
 			stuff_string_line(line);

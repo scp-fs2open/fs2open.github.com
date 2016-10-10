@@ -230,6 +230,7 @@ void stuff_boolean_flag(Flagset& destination, Flags flag, bool a_to_eol = true)
 extern int check_for_string(const char *pstr);
 extern int check_for_string_raw(const char *pstr);
 extern int check_for_eof();
+extern int check_for_eof_raw();
 extern int check_for_eoln();
 
 // from aicode.cpp
