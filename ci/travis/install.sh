@@ -22,7 +22,7 @@ if [ "$TRAVIS_OS_NAME" = "linux" ]; then
         chmod a+x ./AppImageAssistant
     fi
 elif [ "$TRAVIS_OS_NAME" = "osx" ]; then
-    gem install xcpretty xcpretty-travis-formatter thefox-pastebin
+    gem install xcpretty
     
     brew update
     brew outdated cmake || brew upgrade cmake

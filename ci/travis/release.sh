@@ -20,7 +20,7 @@ elif [ "$TRAVIS_OS_NAME" = "osx" ]; then
     for config in $BUILD_CONFIGS
     do
         cmake --build . --config "$config" --target install | tee build.log \
-            | xcpretty -f `xcpretty-travis-formatter`
+            | xcpretty
         XCODE_RET=${PIPESTATUS[0]}
         if [ "$XCODE_RET" -ne "0" ]; then
             tar -cvzf build.log.tar.gz build.log
