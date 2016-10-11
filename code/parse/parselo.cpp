@@ -446,14 +446,19 @@ int required_string(const char *pstr)
 	return 1;
 }
 
-int check_for_eof()
+int check_for_eof_raw()
 {
-	ignore_white_space();
-
 	if (*Mp == EOF_CHAR)
 		return 1;
 
 	return 0;
+}
+
+int check_for_eof()
+{
+	ignore_white_space();
+
+	return check_for_eof_raw();
 }
 
 /**
