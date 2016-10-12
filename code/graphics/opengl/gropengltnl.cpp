@@ -1127,6 +1127,14 @@ void opengl_tnl_set_model_material(model_material *material_info)
 		++render_pass;
 	}
 
+	if ( Current_shader->flags & SDR_FLAG_MODEL_AMBIENT_MAP ) {
+		Current_shader->program->Uniforms.setUniformi("sAmbientmap", render_pass);
+
+		gr_opengl_tcache_set(material_info->get_texture_map(TM_AMBIENT_TYPE), TCACHE_TYPE_NORMAL, &u_scale, &v_scale, render_pass);
+
+		++render_pass;
+	}
+
 	if ( Current_shader->flags & SDR_FLAG_MODEL_MISC_MAP ) {
 		Current_shader->program->Uniforms.setUniformi("sMiscmap", render_pass);
 
