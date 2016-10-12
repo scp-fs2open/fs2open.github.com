@@ -4640,8 +4640,8 @@ ADE_FUNC(isBeam, l_Weaponclass, NULL, "Return true if the weapon is a beam", "bo
 // Checks if a weapon has been paged in (counted as used)
 ADE_FUNC(isWeaponUsed, l_Weaponclass, NULL, "Return true is the weapon is paged in, optionally paging in the weapon.", "boolean", "true if the weapon is paged in, pages in the weapon if otherwise")
 {
-	int idx;
-	if (!ade_get_args(L, "o|b", l_Weaponclass.Get(&idx)))
+	int idx = -1;
+	if (!ade_get_args(L, "o", l_Weaponclass.Get(&idx)))
 		return ADE_RETURN_NIL;
 
 	if (idx < 0 || idx >= Num_weapon_types)
@@ -4654,11 +4654,11 @@ ADE_FUNC(isWeaponUsed, l_Weaponclass, NULL, "Return true is the weapon is paged 
 	}
 }
 
-// Checks if a weapon has been paged in (counted as used)
+// Pages in a weapon
 ADE_FUNC(loadWeapon, l_Weaponclass, NULL, "Pages in a weapon. Returns True on success.", "boolean", "True if page in was successful, false otherwise.")
 {
-	int idx;
-	if (!ade_get_args(L, "o|b", l_Weaponclass.Get(&idx)))
+	int idx = -1;
+	if (!ade_get_args(L, "o", l_Weaponclass.Get(&idx)))
 		return ADE_RETURN_NIL;
 
 	if (idx < 0 || idx >= Num_weapon_types)
