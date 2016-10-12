@@ -6519,6 +6519,138 @@ void weapons_page_in_cheats()
 	}
 }
 
+/* Helper function for l_Weaponclass.isWeaponLoaded()
+ * Pages in a single weapon and its substitutes and chilren given the weapon_info index for it
+ */
+bool weapon_page_in(int weapon_type)
+{
+	Assert(used_weapons != NULL);
+
+	if (weapon_type < 0 || weapon_type >= Num_weapon_types) {
+		return false;
+	}
+
+	SCP_vector<int> page_in_weapons;
+	page_in_weapons.push_back(weapon_type);
+	
+	// Make sure substitution weapons are paged in as well
+	if (Weapon_info[weapon_type].num_substitution_patterns > 0) {
+		for (size_t i = 0; i < Weapon_info[weapon_type].num_substitution_patterns; i++) {
+			page_in_weapons.push_back(Weapon_info[weapon_type].weapon_substitution_pattern[i]);
+		}
+	}
+
+	// this grabs all spawn weapon types (Cluster Baby, etc.) which can't be
+	// assigned directly to a ship
+	// if it's got a spawn type then grab it
+	size_t size = page_in_weapons.size();
+	for (size_t x = 0; x < size; x++) {
+		if (Weapon_info[page_in_weapons.at(x)].num_spawn_weapons_defined > 0) {
+			for (int j = 0; j < Weapon_info[page_in_weapons.at(x)].num_spawn_weapons_defined; j++) {
+				page_in_weapons.push_back((int)Weapon_info[page_in_weapons.at(x)].spawn_info[j].spawn_type);
+			}
+		}
+	}
+
+	for (size_t k = 0; k < page_in_weapons.size(); k++) {
+		if (used_weapons[page_in_weapons.at(k)]) {
+			continue;		// If weapon is already paged_in, we don't need to page it in again
+		}
+
+		// Page in bitmaps for the weapon
+		weapon_load_bitmaps(page_in_weapons.at(k));
+
+		weapon_info *wip = &Weapon_info[page_in_weapons.at(k)];
+
+		wip->wi_flags.remove(Weapon::Info_Flags::Thruster);		// Assume no thrusters
+
+		switch (wip->render_type)
+		{
+		case WRT_POF:
+		{
+			wip->model_num = model_load(wip->pofbitmap_name, 0, NULL);
+
+			polymodel *pm = model_get(wip->model_num);
+
+			// If it has a model, and the model pof has thrusters, then set
+			// the flags
+			if (pm->n_thrusters > 0) {
+				wip->wi_flags.set(Weapon::Info_Flags::Thruster);
+			}
+
+			for (int j = 0; j < pm->n_textures; j++)
+				pm->maps[j].PageIn();
+
+			break;
+		}
+
+		case WRT_LASER:
+		{
+			bm_page_in_texture(wip->laser_bitmap.first_frame);
+			bm_page_in_texture(wip->laser_glow_bitmap.first_frame);
+
+			break;
+		}
+
+		default:
+			Assertion(wip->render_type != WRT_POF && wip->render_type != WRT_LASER, "Weapon %s does not have a valid rendering type. Type passed: %d\n", wip->name, wip->render_type);	// Invalid weapon rendering type.
+		}
+
+		wip->external_model_num = -1;
+
+		if (strlen(wip->external_model_name))
+			wip->external_model_num = model_load(wip->external_model_name, 0, NULL);
+
+		if (wip->external_model_num == -1)
+			wip->external_model_num = wip->model_num;
+
+
+		//Load shockwaves
+		shockwave_create_info_load(&wip->shockwave);
+		shockwave_create_info_load(&wip->dinky_shockwave);
+
+		// trail bitmaps
+		if ((wip->wi_flags[Weapon::Info_Flags::Trail]) && (wip->tr_info.texture.bitmap_id > -1))
+			bm_page_in_texture(wip->tr_info.texture.bitmap_id);
+
+		// if this is a beam weapon, page in its stuff
+		if (wip->wi_flags[Weapon::Info_Flags::Beam]) {
+			// all beam sections
+			for (int idx = 0; idx < wip->b_info.beam_num_sections; idx++)
+				bm_page_in_texture(wip->b_info.sections[idx].texture.first_frame);
+
+			// muzzle glow
+			bm_page_in_texture(wip->b_info.beam_glow.first_frame);
+
+			// particle ani
+			bm_page_in_texture(wip->b_info.beam_particle_ani.first_frame);
+		}
+
+		if (wip->wi_flags[Weapon::Info_Flags::Particle_spew]) {
+			for (size_t s = 0; s < MAX_PARTICLE_SPEWERS; s++) {	// looped, multi particle spew -nuke
+				if (wip->particle_spewers[s].particle_spew_type != PSPEW_NONE) {
+					bm_page_in_texture(wip->particle_spewers[s].particle_spew_anim.first_frame);
+				}
+			}
+		}
+
+		// muzzle flashes
+		if (wip->muzzle_flash >= 0)
+			mflash_mark_as_used(wip->muzzle_flash);
+
+		bm_page_in_texture(wip->thruster_flame.first_frame);
+		bm_page_in_texture(wip->thruster_glow.first_frame);
+
+		used_weapons[page_in_weapons.at(k)]++;	// Ensures weapon can be counted as used
+	}
+
+	return true;
+}
+
+bool weapon_used(int weapon_type) {
+	return used_weapons[weapon_type] > 0;
+}
+
 /**
  * Get the "color" of the laser at the given moment (since glowing lasers can cycle colors)
  */

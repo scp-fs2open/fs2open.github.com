@@ -537,6 +537,10 @@ void weapon_process_post( object *obj, float frame_time);
 //Call before weapons_page_in to mark a weapon as used
 void weapon_mark_as_used(int weapon_id);
 
+// Helper functions for l_Weaponclass.isWeaponUsed
+bool weapon_page_in(int weapon_type);
+bool weapon_used(int weapon_type);
+
 // Group_id:  If you should quad lasers, they should all have the same group id.  
 // This will be used to optimize lighting, since each group only needs to cast one light.
 // Call this to get a new group id, then pass it to each weapon_create call for all the
