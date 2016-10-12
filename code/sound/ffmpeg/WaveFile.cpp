@@ -16,10 +16,10 @@ AudioProperties getAudioProps(AVStream* stream) {
 
 	int channels;
 #if LIBAVCODEC_VERSION_INT > AV_VERSION_INT(57, 24, 255)
-	channels = stream->codecpar->channels;
-	props.channel_layout = stream->codecpar->channel_layout;
-	props.sample_rate = stream->codecpar->sample_rate;
-	props.format = (AVSampleFormat)stream->codecpar->format;
+    channels = stream->codecpar->channels;
+    props.channel_layout = stream->codecpar->channel_layout;
+    props.sample_rate = stream->codecpar->sample_rate;
+    props.format = (AVSampleFormat)stream->codecpar->format;
 #else
 	channels = stream->codec->channels;
 	props.channel_layout = stream->codec->channel_layout;
@@ -84,7 +84,7 @@ AudioProperties getAdjustedAudioProps(const AudioProperties& baseProps) {
 SwrContext* getSWRContext(const AudioProperties& base, const AudioProperties& adjusted) {
 	SwrContext* swr = nullptr;
 	swr = swr_alloc_set_opts(swr, adjusted.channel_layout, adjusted.format, adjusted.sample_rate,
-		base.channel_layout, base.format, base.sample_rate, 0, nullptr);
+							 base.channel_layout, base.format, base.sample_rate, 0, nullptr);
 
 	if (swr_init(swr) < 0) {
 		return nullptr;
@@ -94,8 +94,7 @@ SwrContext* getSWRContext(const AudioProperties& base, const AudioProperties& ad
 }
 }
 
-namespace ffmpeg
-{
+namespace ffmpeg {
 WaveFile::WaveFile() {
 	// Init data members
 	m_audioProps = AudioProperties();
@@ -125,16 +124,15 @@ WaveFile::~WaveFile() {
 }
 
 // Open
-bool WaveFile::Open(const char *pszFilename, bool keep_ext)
-{
+bool WaveFile::Open(const char* pszFilename, bool keep_ext) {
 	using namespace libs::ffmpeg;
 
 	size_t FileSize, FileOffset;
 	char fullpath[MAX_PATH_LEN];
 	char filename[MAX_FILENAME_LEN];
 
-	// NOTE: we assume that the extension has already been stripped off if it was supposed to be!!
-	strcpy_s( filename, pszFilename );
+	// NOTE: the extension will be removed and set to the actual extension of keep_ext is false, otherwise it's not changed
+	strcpy_s(filename, pszFilename);
 
 	try {
 		int rc = -1;
@@ -154,8 +152,8 @@ bool WaveFile::Open(const char *pszFilename, bool keep_ext)
 
 			cf_find_file_location(pszFilename, CF_TYPE_ANY, sizeof(fullpath) - 1, fullpath, &FileSize, &FileOffset);
 		}
-		// ... otherwise we just find the best match
 		else {
+			// ... otherwise we just find the best match
 			rc = cf_find_file_location_ext(filename,
 										   NUM_AUDIO_EXT,
 										   audio_ext_list,
@@ -166,17 +164,24 @@ bool WaveFile::Open(const char *pszFilename, bool keep_ext)
 										   &FileOffset);
 
 			if (rc < 0) {
-				throw FFmpegException("Unknown file extension.");
+				throw FFmpegException("File not found with any known extension.");
 			}
 
-			// set proper filename for later use (assumes that it doesn't already have an extension)
+			// cf_find_file_location_ext already handles file names with extensions so we also need to handle that here
+			auto dot = strrchr(filename, '.');
+			if (dot && (strlen(dot) > 2)) {
+				(*dot) = 0;
+			}
+
+			// set proper filename for later use
 			strcat_s(filename, audio_ext_list[rc]);
 		}
 
 		auto cfp = cfopen_special(fullpath, "rb", FileSize, FileOffset, CF_TYPE_ANY);
 
-		if (cfp == NULL)
+		if (cfp == NULL) {
 			throw FFmpegException("Failed to open file.");
+		}
 
 		m_ctx = FFmpegContext::createContext(cfp);
 		auto ctx = m_ctx->ctx();
@@ -190,15 +195,15 @@ bool WaveFile::Open(const char *pszFilename, bool keep_ext)
 
 		int err;
 #if LIBAVCODEC_VERSION_INT > AV_VERSION_INT(57, 24, 255)
-		m_audioCodecCtx = avcodec_alloc_context3(audio_codec);
+        m_audioCodecCtx = avcodec_alloc_context3(audio_codec);
 
-		// Copy codec parameters from input stream to output codec context
-		err = avcodec_parameters_to_context(m_audioCodecCtx, m_audioStream->codecpar);
-		if (err < 0) {
-			char errorStr[512];
-			av_strerror(err, errorStr, sizeof(errorStr));
-			throw FFmpegException(errorStr);
-		}
+        // Copy codec parameters from input stream to output codec context
+        err = avcodec_parameters_to_context(m_audioCodecCtx, m_audioStream->codecpar);
+        if (err < 0) {
+            char errorStr[512];
+            av_strerror(err, errorStr, sizeof(errorStr));
+            throw FFmpegException(errorStr);
+        }
 #else
 		m_audioCodecCtx = m_audioStream->codec;
 #endif
@@ -235,8 +240,7 @@ bool WaveFile::Open(const char *pszFilename, bool keep_ext)
 }
 
 
-bool WaveFile::Cue()
-{
+bool WaveFile::Cue() {
 	auto err = av_seek_frame(m_ctx->ctx(), m_audioStreamIndex, 0, AVSEEK_FLAG_BYTE);
 
 	if (err >= 0) {
@@ -280,7 +284,7 @@ size_t WaveFile::getBufferedData(uint8_t* buffer, size_t buffer_size) {
 		int dest_num_samples = static_cast<int>(buffer_size / sample_size);
 		auto written = swr_convert(m_resampleCtx, &buffer, dest_num_samples, nullptr, 0);
 
-		auto advance = (size_t)(written * sample_size);
+		auto advance = (size_t) (written * sample_size);
 		Assertion(advance <= buffer_size,
 				  "Buffer overrun!!! Decoding has written more data into the buffer than available!");
 
@@ -289,8 +293,7 @@ size_t WaveFile::getBufferedData(uint8_t* buffer, size_t buffer_size) {
 	return 0;
 }
 
-int WaveFile::Read(uint8_t* pbDest, size_t cbSize)
-{
+int WaveFile::Read(uint8_t* pbDest, size_t cbSize) {
 	size_t buffer_pos = 0;
 	buffer_pos += getBufferedData(pbDest, cbSize);
 	if (buffer_pos == cbSize) {
