@@ -16,6 +16,19 @@ namespace {
 using namespace cutscene;
 using namespace cutscene::ffmpeg;
 
+class AVPacketScope
+{
+	AVPacket* _packet;
+ public:
+	explicit AVPacketScope(AVPacket* av_packet)
+		: _packet(av_packet) {
+	}
+
+	~AVPacketScope() {
+		av_packet_unref(_packet);
+	}
+};
+
 const char* CHECKED_EXTENSIONS[] = {
 	"webm",
 	"mp4",
@@ -273,7 +286,28 @@ void FFMPEGDecoder::startDecoding() {
 
 	auto ctx = m_input->m_ctx->ctx();
 	AVPacket packet;
-	while (isDecoding() && av_read_frame(ctx, &packet) >= 0) {
+	while (isDecoding()) {
+		auto read_err = av_read_frame(ctx, &packet);
+		AVPacketScope scope(&packet);
+
+		if (avio_feof(ctx->pb) != 0) {
+			// EOF!!
+			break;
+		} else if (read_err < 0) {
+			if (read_err == AVERROR_EOF) {
+				// Finished reading -> break out of loop
+				break;
+			} else {
+				// Some kind of other error, try to continue reading
+				char errorStr[512];
+				av_strerror(read_err, errorStr, sizeof(errorStr));
+				mprintf(("FFMPEG: Failed to read frame! Error: %s\n", errorStr));
+
+				// Skip packet
+				continue;
+			}
+		}
+
 		if (packet.stream_index == m_status->videoStreamIndex) {
 			videoDecoder->decodePacket(&packet);
 
@@ -289,8 +323,6 @@ void FFMPEGDecoder::startDecoding() {
 				pushAudioData(std::move(ptr));
 			}
 		}
-
-		av_packet_unref(&packet);
 	}
 
 	if (isDecoding()) {
