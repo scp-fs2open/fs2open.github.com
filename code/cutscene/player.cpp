@@ -40,6 +40,7 @@ struct PlayerState {
 	bool videoInited = false;
 
 	VideoFramePtr currentFrame;
+	VideoFramePtr nextFrame;
 	bool newFrameAdded = false;
 
 	std::unique_ptr<VideoPresenter> videoPresenter;
@@ -121,7 +122,13 @@ void audioPlaybackInit(PlayerState* state) {
 
 void processVideoData(PlayerState* state) {
 	state->newFrameAdded = false;
-	if (!state->currentFrame) {
+
+	if (!state->decoder->isVideoFrameAvailable()) {
+		// Nothing to do here...
+		return;
+	}
+
+	if (state->currentFrame == nullptr && state->nextFrame == nullptr) {
 		// Load the initial frame
 		VideoFramePtr firstFrame;
 		auto r = state->decoder->tryPopVideoFrame(firstFrame);
@@ -129,35 +136,43 @@ void processVideoData(PlayerState* state) {
 		// This shouldn't happen...
 		Assertion(r, "Failed to pop frame!");
 
-		state->currentFrame = std::move(firstFrame);
+		// At this point the new frame is the next frame
+		state->nextFrame = std::move(firstFrame);
+	}
 
-		if (state->videoPresenter) {
-			state->videoPresenter->uploadVideoFrame(state->currentFrame);
-			state->newFrameAdded = true;
+	if (!state->nextFrame) {
+		// No next frame, try getting a new one
+
+		if (!state->decoder->tryPopVideoFrame(state->nextFrame)) {
+			// No new frame available :(
+			return;
 		}
-
-		return;
 	}
 
-	if (!state->decoder->isVideoFrameAvailable()) {
-		// Nothing to do here...
-		return;
-	}
-
-	// Make sure playbackGetTime gets called after the first popVideoFrame to make sure
-	// the decoder actually started decoding
 	auto currentTime = playbackGetTime(state);
-	VideoFramePtr videoFrame;
-	while (currentTime > state->currentFrame->frameTime && state->decoder->tryPopVideoFrame(videoFrame)) {
-		state->currentFrame = std::move(videoFrame);
-		state->newFrameAdded = true;
+	if (currentTime < state->nextFrame->frameTime) {
+		// Old frame is still valid, nothing to do here
+		return;
 	}
 
-	if (state->newFrameAdded) {
-		// Avoid multiple frame uploads
-		if (state->videoPresenter) {
-			state->videoPresenter->uploadVideoFrame(state->currentFrame);
+	while(currentTime >= state->nextFrame->frameTime) {
+		// Move the next frame to the current frame slot
+		state->currentFrame = std::move(state->nextFrame);
+
+		// Get a new frame from the decoder
+		auto success = state->decoder->tryPopVideoFrame(state->nextFrame);
+		if (!success) {
+			// Make sure the pointer is actually empty
+			state->nextFrame = nullptr;
+			// No more frames available
+			break;
 		}
+	}
+
+	// Now upload the new frame
+	if (state->videoPresenter) {
+		state->videoPresenter->uploadVideoFrame(state->currentFrame);
+		state->newFrameAdded = true;
 	}
 }
 
@@ -203,9 +218,12 @@ bool processAudioData(PlayerState* state) {
 
 	OpenAL_ErrorCheck(alGetSourcei(state->audioSid, AL_BUFFERS_QUEUED, &queued), return false);
 
-	if ((status != AL_PLAYING) && (queued > 0))
+	if ((status != AL_PLAYING) && (queued > 0)) {
 		OpenAL_ErrorPrint(alSourcePlay(state->audioSid));
+	}
 
+	// Get status again in cause we just started playback
+	OpenAL_ErrorCheck(alGetSourcei(state->audioSid, AL_SOURCE_STATE, &status), return false);
 	return status == AL_PLAYING;
 }
 
@@ -379,11 +397,10 @@ void Player::decoderThread() {
 	try {
 		m_decoder->startDecoding();
 	} catch (const std::exception& e) {
-		mprintf(("Video: An exception was thrown while decoding the video: %s", e.what()));
+		mprintf(("Video: An exception was thrown while decoding the video: %s\n", e.what()));
 	} catch (...) {
-		mprintf(("Video: An exception was thrown while decoding the video!"));
+		mprintf(("Video: An exception was thrown while decoding the video!\n"));
 	}
-	mprintf(("The decoder thread has ended..."));
 }
 
 std::unique_ptr<Player> Player::newPlayer(const SCP_string& name) {
