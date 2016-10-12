@@ -538,7 +538,7 @@ void weapon_process_post( object *obj, float frame_time);
 void weapon_mark_as_used(int weapon_id);
 
 // Helper functions for l_Weaponclass.isWeaponUsed
-void weapon_page_in(int weapon_type);
+bool weapon_page_in(int weapon_type);
 bool weapon_used(int weapon_type);
 
 // Group_id:  If you should quad lasers, they should all have the same group id.  

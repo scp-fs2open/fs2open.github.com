@@ -6522,12 +6522,12 @@ void weapons_page_in_cheats()
 /* Helper function for l_Weaponclass.isWeaponLoaded()
  * Pages in a single weapon and its substitutes and chilren given the weapon_info index for it
  */
-void weapon_page_in(int weapon_type)
+bool weapon_page_in(int weapon_type)
 {
 	Assert(used_weapons != NULL);
 
 	if (weapon_type < 0 || weapon_type >= Num_weapon_types) {
-		return;
+		return false;
 	}
 
 	SCP_vector<int> page_in_weapons;
@@ -6552,7 +6552,7 @@ void weapon_page_in(int weapon_type)
 		}
 	}
 
-	for (int k = 0; k < page_in_weapons.size(); k++) {
+	for (size_t k = 0; k < page_in_weapons.size(); k++) {
 		if (used_weapons[page_in_weapons.at(k)]) {
 			continue;		// If weapon is already paged_in, we don't need to page it in again
 		}
@@ -6643,6 +6643,8 @@ void weapon_page_in(int weapon_type)
 
 		used_weapons[page_in_weapons.at(k)]++;	// Ensures weapon can be counted as used
 	}
+
+	return true;
 }
 
 bool weapon_used(int weapon_type) {
