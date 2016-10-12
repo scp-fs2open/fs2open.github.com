@@ -97,6 +97,7 @@ AudioDecoder::~AudioDecoder() {
 void AudioDecoder::flushAudioBuffer() {
 	if (m_audioBuffer.empty()) {
 		// Nothing to do here
+		return;
 	}
 
 	AudioFramePtr audioFrame(new AudioFrame());
