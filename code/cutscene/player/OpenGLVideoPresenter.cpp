@@ -22,7 +22,7 @@ OpenGLVideoPresenter::OpenGLVideoPresenter(const MovieProperties& props) : _scal
 	auto w = static_cast<int>(props.size.width);
 	auto h = static_cast<int>(props.size.height);
 
-	int sdr_handle = gr_maybe_create_shader(SDR_TYPE_VIDEO_PROCESS, 0);
+	_sdr_handle = gr_maybe_create_shader(SDR_TYPE_VIDEO_PROCESS, 0);
 
 	glGenTextures(1, &_ytex);
 	glGenTextures(1, &_utex);
@@ -31,7 +31,7 @@ OpenGLVideoPresenter::OpenGLVideoPresenter(const MovieProperties& props) : _scal
 	if (_ytex + _utex + _vtex == 0) {
 		throw std::runtime_error("Can't create a GL texture");
 	}
-	opengl_shader_set_current(sdr_handle);
+	opengl_shader_set_current(_sdr_handle);
 
 	gr_set_lighting(false, false);
 
@@ -140,15 +140,10 @@ OpenGLVideoPresenter::OpenGLVideoPresenter(const MovieProperties& props) : _scal
 	glVertices[3][2] = 1.0f;
 	glVertices[3][3] = 1.0f;
 
-	vertex_layout vert_def;
-
-	vert_def.add_vertex_component(vertex_format_data::POSITION2, sizeof(glVertices[0]), 0);
-	vert_def.add_vertex_component(vertex_format_data::TEX_COORD, sizeof(glVertices[0]), sizeof(GLfloat) * 2);
+	_vertexLayout.add_vertex_component(vertex_format_data::POSITION2, sizeof(glVertices[0]), 0);
+	_vertexLayout.add_vertex_component(vertex_format_data::TEX_COORD, sizeof(glVertices[0]), sizeof(GLfloat) * 2);
 
 	gr_update_buffer_data(_vertexBuffer, sizeof(glVertices[0]) * 4, glVertices);
-
-	opengl_bind_buffer_object(_vertexBuffer);
-	opengl_bind_vertex_layout(vert_def);
 }
 
 OpenGLVideoPresenter::~OpenGLVideoPresenter() {
@@ -183,6 +178,7 @@ void OpenGLVideoPresenter::uploadVideoFrame(const VideoFramePtr& frame) {
 	auto height = static_cast<GLint>(frame->ySize.height);
 
 	GL_state.Texture.SetActiveUnit(0);
+	GL_state.Texture.Enable(_ytex);
 	glPixelStorei(GL_UNPACK_ROW_LENGTH, stride);
 	glTexSubImage2D(GL_state.Texture.GetTarget(), 0, 0, 0, width, height, GL_RED, GL_UNSIGNED_BYTE,
 					ptrs.y);
@@ -192,11 +188,13 @@ void OpenGLVideoPresenter::uploadVideoFrame(const VideoFramePtr& frame) {
 	height = static_cast<int>(frame->uvSize.height);
 
 	GL_state.Texture.SetActiveUnit(1);
+	GL_state.Texture.Enable(_utex);
 	glPixelStorei(GL_UNPACK_ROW_LENGTH, stride);
 	glTexSubImage2D(GL_state.Texture.GetTarget(), 0, 0, 0, width, height, GL_RED, GL_UNSIGNED_BYTE,
 					ptrs.u);
 
 	GL_state.Texture.SetActiveUnit(2);
+	GL_state.Texture.Enable(_vtex);
 	glTexSubImage2D(GL_state.Texture.GetTarget(), 0, 0, 0, width, height, GL_RED, GL_UNSIGNED_BYTE,
 					ptrs.v);
 
@@ -205,6 +203,19 @@ void OpenGLVideoPresenter::uploadVideoFrame(const VideoFramePtr& frame) {
 }
 
 void OpenGLVideoPresenter::displayFrame() {
+	opengl_shader_set_current(_sdr_handle);
+
+	opengl_bind_buffer_object(_vertexBuffer);
+	opengl_bind_vertex_layout(_vertexLayout);
+
+	// Bind textures
+	GL_state.Texture.SetActiveUnit(0);
+	GL_state.Texture.Enable(_ytex);
+	GL_state.Texture.SetActiveUnit(1);
+	GL_state.Texture.Enable(_utex);
+	GL_state.Texture.SetActiveUnit(2);
+	GL_state.Texture.Enable(_vtex);
+
 	GR_DEBUG_SCOPE("Draw video frame");
 	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 }

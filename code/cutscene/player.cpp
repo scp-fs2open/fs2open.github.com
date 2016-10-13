@@ -246,24 +246,16 @@ void displayVideo(PlayerState* state) {
 		return;
 	}
 
-	if (!state->newFrameAdded) {
-		// Don't draw anything if no frame has been added
-		return;
-	}
-
 	gr_clear();
 	if (state->videoPresenter) {
 		state->videoPresenter->displayFrame();
 	}
+
+	gr_flip();
 }
 
 void processEvents(PlayerState* state) {
 	io::mouse::CursorManager::get()->showCursor(false);
-
-	if (state->newFrameAdded) {
-		// No need to flip if there is nothing new to show
-		gr_flip();
-	}
 
 	os_poll();
 
