@@ -160,5 +160,6 @@ extern bool Cmdline_benchmark_mode;
 extern bool Cmdline_noninteractive;
 extern bool Cmdline_json_pilot;
 extern bool Cmdline_json_profiling;
+extern bool Cmdline_show_video_info;
 
 #endif
