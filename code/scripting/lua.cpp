@@ -4638,7 +4638,7 @@ ADE_FUNC(isBeam, l_Weaponclass, NULL, "Return true if the weapon is a beam", "bo
 }
 
 // Checks if a weapon has been paged in (counted as used)
-ADE_FUNC(isWeaponUsed, l_Weaponclass, NULL, "Return true is the weapon is paged in, optionally paging in the weapon.", "boolean", "true if the weapon is paged in, pages in the weapon if otherwise")
+ADE_FUNC(isWeaponUsed, l_Weaponclass, NULL, "Return true if the weapon is paged in.", "boolean", "True if the weapon is paged in, false if otherwise")
 {
 	int idx = -1;
 	if (!ade_get_args(L, "o", l_Weaponclass.Get(&idx)))
