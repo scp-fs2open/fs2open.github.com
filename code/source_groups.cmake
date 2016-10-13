@@ -903,12 +903,19 @@ set (file_root_render
 set(file_root_scripting
 	scripting/ade.cpp
 	scripting/ade.h
+	scripting/ade_api.cpp
+	scripting/ade_api.h
 	scripting/ade_args.cpp
 	scripting/ade_args.h
 	scripting/lua.cpp
 	scripting/lua.h
 	scripting/scripting.cpp
 	scripting/scripting.h
+)
+
+set(file_root_scripting_api
+	scripting/api/vecmath.h
+	scripting/api/vecmath.cpp
 )
 
 # Ship files
@@ -1138,6 +1145,7 @@ source_group("Popup"                              FILES ${file_root_popup})
 source_group("Radar"                              FILES ${file_root_radar})
 source_group("Render"                             FILES ${file_root_render})
 source_group("Scripting"                          FILES ${file_root_scripting})
+source_group("Scripting\\Api"                     FILES ${file_root_scripting_api})
 source_group("Ship"                               FILES ${file_root_ship})
 source_group("Sound"                              FILES ${file_root_sound})
 source_group("Sound\\FFmpeg"                      FILES ${file_root_sound_ffmpeg})
@@ -1228,6 +1236,7 @@ set (file_root
 	${file_root_radar}
 	${file_root_render}
 	${file_root_scripting}
+	${file_root_scripting_api}
 	${file_root_ship}
 	${file_root_sound}
 	${file_root_sound_ffmpeg}

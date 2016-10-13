@@ -3,6 +3,7 @@
 
 #include "scripting/ade.h"
 #include "ship/ship.h"
+#include "ade_api.h"
 
 #include <memory>
 
