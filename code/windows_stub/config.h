@@ -7,8 +7,11 @@
 
 #include <stdio.h>
 
+
+#include <SDL.h>
+
 #ifndef BYTE_ORDER
-#include "SDL_endian.h"
+#include <SDL_endian.h>
 #endif
 
 #ifndef BYTE_ORDER
@@ -40,9 +43,6 @@
 
 #else  // ! Win32
 
-
-#include "SDL.h"
-#include "SDL_thread.h"
 
 #include <unistd.h>
 #include <cmath>
@@ -88,15 +88,6 @@ int _chdir(const char *path);
 int _getcwd(char *buffer, unsigned int len);
 int _mkdir(const char *path);
 void _splitpath(char *path, char *drive, char *dir, char *fname, char *ext);
-
-// string related
-#define stricmp(s1, s2)			strcasecmp((s1), (s2))
-#define strnicmp(s1, s2, n)		strncasecmp((s1), (s2), (n))
-#define _strnicmp(s1, s2, n)	strncasecmp((s1), (s2), (n))
-#define _strlwr(s)				strlwr(s)
-
-void strlwr(char *s);
-char *strnset( char *string, int fill, size_t count);
 
 // other stuff
 #define _isnan(f)     std::isnan(f)

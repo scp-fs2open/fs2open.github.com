@@ -7,9 +7,6 @@
  *
 */ 
 
-
-#include "SDL.h"
-
 #include "controlconfig/controlsconfig.h" //For textify scancode
 #include "globalincs/pstypes.h"
 #include "graphics/2d.h"

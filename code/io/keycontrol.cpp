@@ -548,7 +548,7 @@ void debug_cycle_targeted_ship(int delta)
 	
 		// if it has test in the name, jump over it
 		strcpy_s(name, sip->name);
-		_strlwr(name);
+		strlwr(name);
 		if ( strstr(name,NOX("test")) != NULL )
 			continue;
 

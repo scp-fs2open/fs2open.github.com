@@ -17,8 +17,7 @@
 #include "windows_stub/config.h"
 #include "globalincs/scp_defines.h"
 #include "globalincs/toolchain.h"
-
-#include "SDL.h"
+#include "utils/strings.h"
 
 #include <stdio.h>	// For NULL, etc
 #include <stdlib.h>

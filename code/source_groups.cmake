@@ -1031,6 +1031,10 @@ set (file_root_ui
 	ui/window.cpp
 )
 
+set(file_root_utils
+	utils/strings.h
+)
+
 # Utils files
 set (file_root_utils_boost
 	utils/boost/syncboundedqueue.h
@@ -1157,6 +1161,7 @@ source_group("Stats"                              FILES ${file_root_stats})
 source_group("TgaUtils"                           FILES ${file_root_tgautils})
 source_group("Tracing"                            FILES ${file_root_tracing})
 source_group("Ui"                                 FILES ${file_root_ui})
+source_group("Utils"                              FILES ${file_root_utils})
 source_group("Utils\\boost"                       FILES ${file_root_utils_boost})
 source_group("Weapon"                             FILES ${file_root_weapon})
 source_group("Windows Stubs"                      FILES ${file_root_windows_stubs})
@@ -1248,6 +1253,7 @@ set (file_root
 	${file_root_tgautils}
 	${file_root_tracing}
 	${file_root_ui}
+	${file_root_utils}
 	${file_root_utils_boost}
 	${file_root_weapon}
 	${file_root_windows_stubs}
