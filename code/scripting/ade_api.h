@@ -26,7 +26,7 @@ const size_t INVALID_ID = (size_t) -1; // Use -1 to get highest possible unsigne
  */
 #define ADE_FUNC(name, parent, args, desc, ret_type, ret_desc)	\
 	static int parent##_##name##_f(lua_State *L);	\
-	ade_func parent##_##name(#name, parent##_##name##_f, parent, args, desc, ret_type, ret_desc);	\
+	::scripting::ade_func parent##_##name(#name, parent##_##name##_f, parent, args, desc, ret_type, ret_desc);	\
 	static int parent##_##name##_f(lua_State *L)
 
 /**
@@ -46,7 +46,7 @@ const size_t INVALID_ID = (size_t) -1; // Use -1 to get highest possible unsigne
  */
 #define ADE_VIRTVAR(name, parent, args, desc, ret_type, ret_desc)			\
 	static int parent##_##name##_f(lua_State *L);	\
-	ade_virtvar parent##_##name(#name, parent##_##name##_f, parent, args, desc, ret_type, ret_desc);	\
+	::scripting::ade_virtvar parent##_##name(#name, parent##_##name##_f, parent, args, desc, ret_type, ret_desc);	\
 	static int parent##_##name##_f(lua_State *L)
 
 /**
@@ -65,7 +65,7 @@ const size_t INVALID_ID = (size_t) -1; // Use -1 to get highest possible unsigne
  */
 #define ADE_INDEXER(parent, args, desc, ret_type, ret_desc)			\
 	static int parent##___indexer_f(lua_State *L);		\
-	ade_indexer parent##___indexer(parent##___indexer_f, parent, args, desc, ret_type, ret_desc);	\
+	::scripting::ade_indexer parent##___indexer(parent##___indexer_f, parent, args, desc, ret_type, ret_desc);	\
 	static int parent##___indexer_f(lua_State *L)
 
 /**
@@ -82,22 +82,59 @@ const size_t INVALID_ID = (size_t) -1; // Use -1 to get highest possible unsigne
  * @ingroup ade_api
  */
 #define ADE_OBJ(field, type, name, desc) \
-ade_obj<type>& SCP_TOKEN_CONCAT(get_, field)() { \
-	static ade_obj<type> obj(name, desc, nullptr);\
+const ::scripting::ade_obj<type>& SCP_TOKEN_CONCAT(get_, field)() { \
+	static ::scripting::ade_obj<type> obj(name, desc, nullptr);\
 	return obj;\
 } \
-ade_obj<type>& field = SCP_TOKEN_CONCAT(get_, field)();\
+const ::scripting::ade_obj<type>& field = SCP_TOKEN_CONCAT(get_, field)()
 
-/*+
+/**
  * @brief Declare an API object but don't define it
  *
  * You should use this in headers if the class should be able to be used by other files
  *
+ * @param field The name of the field
+ * @param type The type of the contained value
+ *
  * @ingroup ade_api
  */
 #define DECLARE_ADE_OBJ(field, type) \
-extern ade_obj<type>& SCP_TOKEN_CONCAT(get_, field)(); \
-extern ade_obj<type>& field;\
+extern const ::scripting::ade_obj<type>& SCP_TOKEN_CONCAT(get_, field)(); \
+extern const ::scripting::ade_obj<type>& field
+
+/**
+ * @brief Define an API library
+ *
+ * A library is similar to a C++ namespace or a class with static functions. It can be used to group multiple functions
+ * together that serve a similar pupose
+ *
+ * @param field The name of the field by which the class should be ac
+ * @param name The name the class should have in the documentationcessible
+ * @param short_name The short name of the library, makes writing scripts easier
+ * @param desc Documentation about what this class is
+ *
+ * @ingroup ade_api
+ */
+#define ADE_LIB(field, name, short_name, desc) \
+const ::scripting::ade_lib& SCP_TOKEN_CONCAT(get_, field)() { \
+	static ::scripting::ade_lib lib(name, nullptr, short_name, desc);\
+	return lib;\
+} \
+const ::scripting::ade_lib& field = SCP_TOKEN_CONCAT(get_, field)()
+
+/**
+ * @brief Declare an API library but don't define it
+ *
+ * You should use this in headers if the library should be able to be used by other files
+ *
+ * @param field The name of the field, must match the name in the source file
+ *
+ * @ingroup ade_api
+ */
+#define DECLARE_ADE_LIB(field) \
+extern const ::scripting::ade_lib& SCP_TOKEN_CONCAT(get_, field)(); \
+extern const ::scripting::ade_lib& field; \
+static const ::scripting::ade_lib* SCP_TOKEN_CONCAT(field, reference_dummy) USED_VARIABLE = &(field)
 
 
 //*************************Lua return values*************************

@@ -214,7 +214,7 @@ class ade_lib_handle {
  public:
 	ade_lib_handle() {}
 
-	size_t GetIdx() {
+	size_t GetIdx() const {
 		return LibIdx;
 	}
 };
@@ -243,7 +243,7 @@ class ade_obj: public ade_lib_handle {
 	}
 
 	//WMC - Use this to store object data for return, or for setting as a global
-	ade_odata Set(const StoreType& obj, ODATA_SIG_TYPE n_sig = ODATA_SIG_DEFAULT) {
+	ade_odata Set(const StoreType& obj, ODATA_SIG_TYPE n_sig = ODATA_SIG_DEFAULT) const {
 		ade_odata od;
 		od.idx = LibIdx;
 		od.sig = &n_sig;
@@ -253,7 +253,7 @@ class ade_obj: public ade_lib_handle {
 	}
 
 	//WMC - Use this to copy object data, for modification or whatever
-	ade_odata Get(StoreType* ptr, uint* n_sig = NULL) {
+	ade_odata Get(StoreType* ptr, uint* n_sig = NULL) const {
 		ade_odata od;
 		od.idx = LibIdx;
 		od.sig = n_sig;
@@ -266,7 +266,7 @@ class ade_obj: public ade_lib_handle {
 	//Use >ONLY< when:
 	//1 - You are setting the data of an object (ie 'x' component of vector)
 	//2 - To speed up read-only calcs (ie computing dot product of vectors)
-	ade_odata GetPtr(StoreType** ptr) {
+	ade_odata GetPtr(StoreType** ptr) const {
 		ade_odata od;
 		od.idx = LibIdx;
 		od.sig = NULL;
@@ -284,9 +284,9 @@ class ade_obj: public ade_lib_handle {
  */
 class ade_lib : public ade_lib_handle {
  public:
-	ade_lib(const char *in_name, ade_lib_handle *parent=NULL, const char *in_shortname=NULL, const char *in_desc=NULL);
+	ade_lib(const char *in_name, const ade_lib_handle *parent=NULL, const char *in_shortname=NULL, const char *in_desc=NULL);
 
-	const char *GetName();
+	const char *GetName() const;
 };
 
 /**
@@ -296,7 +296,7 @@ class ade_func: public ade_lib_handle {
  public:
 	ade_func(const char* name,
 			 lua_CFunction func,
-			 ade_lib_handle& parent,
+			 const ade_lib_handle& parent,
 			 const char* args = NULL,
 			 const char* desc = NULL,
 			 const char* ret_type = NULL,
@@ -310,7 +310,7 @@ class ade_virtvar: public ade_lib_handle {
  public:
 	ade_virtvar(const char* name,
 				lua_CFunction func,
-				ade_lib_handle& parent,
+				const ade_lib_handle& parent,
 				const char* args = NULL,
 				const char* desc = NULL,
 				const char* ret_type = NULL,
@@ -322,7 +322,7 @@ class ade_virtvar: public ade_lib_handle {
  */
 class ade_indexer: public ade_lib_handle {
  public:
-	ade_indexer(lua_CFunction func, ade_lib_handle& parent, const char* args = NULL, const char* desc = NULL,
+	ade_indexer(lua_CFunction func, const ade_lib_handle& parent, const char* args = NULL, const char* desc = NULL,
 				const char* ret_type = NULL, const char* ret_desc = NULL);
 };
 

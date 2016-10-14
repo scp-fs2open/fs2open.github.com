@@ -44,3 +44,10 @@
  * it's necessary to hide these changes behind a macro. Use this in place of %zd
  */
 #define PTRDIFF_T_ARG "%zd"
+
+/**
+ * @brief Attribute for forcing a static variable to be instantiated
+ *
+ * This can be used to ensure that a static variable is present even if it isn't referenced in the translation unit
+ */
+#define USED_VARIABLE

@@ -59,6 +59,7 @@
 #define BMPMAN_INTERNAL
 #include "bmpman/bm_internal.h"
 
+#include "scripting/api/bitops.h"
 #include "scripting/api/vecmath.h"
 
 using namespace scripting;
@@ -15250,89 +15251,6 @@ ADE_FUNC(isInCampaign, l_Mission, NULL, "Get whether or not the current mission 
 	return ade_set_args(L, "b", b);
 }
 
-//**********LIBRARY: Bitwise Ops
-ade_lib l_BitOps("BitOps", NULL, "bit", "Bitwise Operations library");
-
-ADE_FUNC(AND, l_BitOps, "number, number", "Values for which bitwise boolean AND operation is performed", "number", "Result of the AND operation")
-{
-	int a, b, c;
-	if(!ade_get_args(L, "ii", &a,&b))
-		return ade_set_error(L, "i", 0);
-
-	c = (a & b);
-
-	return ade_set_args(L, "i", c);
-}
-
-ADE_FUNC(OR, l_BitOps, "number, number", "Values for which bitwise boolean OR operation is performed", "number", "Result of the OR operation")
-{
-	int a, b, c;
-	if(!ade_get_args(L, "ii", &a,&b))
-		return ade_set_error(L, "i", 0);
-
-	c = (a | b);
-
-	return ade_set_args(L, "i", c);
-}
-
-ADE_FUNC(XOR, l_BitOps, "number, number", "Values for which bitwise boolean XOR operation is performed", "number", "Result of the XOR operation")
-{
-	int a, b, c;
-	if(!ade_get_args(L, "ii", &a,&b))
-		return ade_set_error(L, "i", 0);
-
-	c = (a ^ b);
-
-	return ade_set_args(L, "i", c);
-}
-
-ADE_FUNC(toggleBit, l_BitOps, "number, number (bit)", "Toggles the value of the set bit in the given number for 32 bit integer", "number", "Result of the operation")
-{
-	int a, b, c;
-	if(!ade_get_args(L, "ii", &a,&b))
-		return ade_set_error(L, "i", 0);
-
-	if (!((b >= 0) && (b < 32)))
-		return ade_set_error(L, "i", 0);
-
-	if(a & (1<<b))
-		c = (a & !(1<<b)); //-V564
-	else
-		c = (a | (1<<b));
-
-	return ade_set_args(L, "i", c);
-}
-
-ADE_FUNC(checkBit, l_BitOps, "number, number (bit)", "Checks the value of the set bit in the given number for 32 bit integer", "boolean", "Was the bit true of false")
-{
-	int a, b;
-	if(!ade_get_args(L, "ii", &a,&b))
-		return ade_set_error(L, "i", 0);
-
-	if (!((b >= 0) && (b < 32)))
-		return ade_set_error(L, "i", 0);
-
-	if(a & (1<<b))
-		return ADE_RETURN_TRUE;
-	else
-		return ADE_RETURN_FALSE;
-}
-
-ADE_FUNC(addBit, l_BitOps, "number, number (bit)", "Performs inclusive or (OR) operation on the set bit of the value", "number", "Result of the operation")
-{
-	int a, b, c;
-	if(!ade_get_args(L, "ii", &a,&b))
-		return ade_set_error(L, "i", 0);
-
-	if (!((b >= 0) && (b < 32)))
-		return ade_set_error(L, "i", 0);
-
-	c = (a | (1<<b));
-
-	return ade_set_args(L, "i", c);
-}
-
-
 //**********LIBRARY: Tables
 ade_lib l_Tables("Tables", NULL, "tb", "Tables library");
 
@@ -15717,6 +15635,8 @@ int script_state::CreateLuaState()
 	mprintf(("ADE: Assigning Lua session...\n"));
 	SetLuaSession(L);
 
+//	(void)l_BitOps.GetName();
+
 	return 1;
 }
 
@@ -15756,11 +15676,44 @@ void ade_output_toc(FILE *fp, ade_table_entry *ate)
 	fputs("</dd>\n", fp);
 }
 
+static bool sort_table_entries(const ade_table_entry* left, const ade_table_entry* right) {
+	const char* leftCmp = left->Name != nullptr ? left->Name : left->ShortName;
+	const char* rightCmp = right->Name != nullptr ? right->Name : left->ShortName;
+
+	if (leftCmp == nullptr) {
+		return false;
+	}
+	if (rightCmp == nullptr) {
+		return false;
+	}
+
+	SCP_string leftStr(leftCmp);
+	std::transform(std::begin(leftStr), std::end(leftStr), std::begin(leftStr), ::tolower);
+
+	SCP_string rightStr(rightCmp);
+	std::transform(std::begin(rightStr), std::end(rightStr), std::begin(rightStr), ::tolower);
+
+	return leftStr < rightStr;
+}
+
+static bool sort_doc_entries(const ade_table_entry* left, const ade_table_entry* right) {
+	if (left->Instanced == right->Instanced) {
+		// Same type -> compare as normal
+		return sort_table_entries(left, right);
+	}
+	if (left->Instanced) {
+		return true;
+	}
+	return false;
+}
+
 void script_state::OutputLuaMeta(FILE *fp)
 {
 	uint i;
 	ade_table_entry *ate;
 	fputs("<dl>\n", fp);
+
+	SCP_vector<ade_table_entry*> table_entries;
 
 	//***TOC: Libraries
 	fputs("<dt><b>Libraries</b></dt>\n", fp);
@@ -15768,9 +15721,14 @@ void script_state::OutputLuaMeta(FILE *fp)
 	{
 		ate = &ade_manager::getInstance()->getEntry(i);
 		if(ate->ParentIdx == UINT_MAX && ate->Type == 'o' && ate->Instanced) {
-			ade_output_toc(fp, ate);
+			table_entries.push_back(ate);
 		}
 	}
+	std::sort(std::begin(table_entries), std::end(table_entries), sort_table_entries);
+	for (auto entry : table_entries) {
+		ade_output_toc(fp, entry);
+	}
+	table_entries.clear();
 
 	//***TOC: Objects
 	fputs("<dt><b>Types</b></dt>\n", fp);
@@ -15778,9 +15736,14 @@ void script_state::OutputLuaMeta(FILE *fp)
 	{
 		ate = &ade_manager::getInstance()->getEntry(i);
 		if(ate->ParentIdx == UINT_MAX && ate->Type == 'o' && !ate->Instanced) {
-			ade_output_toc(fp, ate);
+			table_entries.push_back(ate);
 		}
 	}
+	std::sort(std::begin(table_entries), std::end(table_entries), sort_table_entries);
+	for (auto entry : table_entries) {
+		ade_output_toc(fp, entry);
+	}
+	table_entries.clear();
 
 	//***TOC: Enumerations
 	fputs("<dt><b><a href=\"#Enumerations\">Enumerations</a></b></dt>", fp);
@@ -15794,8 +15757,15 @@ void script_state::OutputLuaMeta(FILE *fp)
 	{
 		ate = &ade_manager::getInstance()->getEntry(i);
 		if(ate->ParentIdx == UINT_MAX)
-			ate->OutputMeta(fp);
+			table_entries.push_back(ate);
 	}
+
+	std::sort(std::begin(table_entries), std::end(table_entries), sort_doc_entries);
+	for (auto entry : table_entries) {
+		entry->OutputMeta(fp);
+	}
+	table_entries.clear();
+
 	//***Enumerations
 	fprintf(fp, "<dt id=\"Enumerations\"><h2>Enumerations</h2></dt>");
 	for(i = 0; i < Num_enumerations; i++)

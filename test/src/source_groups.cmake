@@ -28,6 +28,15 @@ add_file_folder(graphics "Parse"
     parse/test_parselo.cpp
 )
 
+add_file_folder(scripting "Scripting"
+    scripting/ScriptingTestFixture.h
+    scripting/ScriptingTestFixture.cpp
+)
+
+add_file_folder(scripting_api "Scripting\\\\API"
+    scripting/api/bitops.cpp
+)
+
 add_file_folder(util "Util"
     util/FSTestFixture.cpp
     util/FSTestFixture.h
