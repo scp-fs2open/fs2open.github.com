@@ -6,12 +6,16 @@
 
 #include "graphics/2d.h"
 
+#include "globalincs/alphacolors.h"
+
 #include "osapi/osapi.h"
 
 #include "sound/openal.h"
 
 #include "io/key.h"
 #include "io/timer.h"
+
+#include "parse/parselo.h"
 
 #include "cutscene/player/OpenGLVideoPresenter.h"
 
@@ -259,13 +263,45 @@ void videoPlaybackClose(PlayerState* state) {
 	state->videoInited = false;
 }
 
-void displayVideo(PlayerState* state) {
-	if (!state->currentFrame) {
-		return;
+template<typename... Args>
+float print_string(float x, float y, const char* fmt, Args... params) {
+	SCP_string text;
+	sprintf(text, fmt, params...);
+
+	gr_string(x, y, text.c_str(), GR_RESIZE_NONE);
+
+	return y + font::get_current_font()->getHeight();
+}
+
+void showVideoInfo(PlayerState* state) {
+	gr_set_color_fast(&Color_white);
+
+	float y = 200.f;
+	float x = 100.f;
+	y = print_string(x, y, "Movie FPS: %f", state->props.fps);
+	y = print_string(x, y, "Size: %dx%d", state->props.size.width, state->props.size.height);
+
+	y = gr_screen.max_h - 200.f;
+
+	size_t audio_queue_size = state->decoder->getAudioQueueSize();
+	if (state->hasAudio) {
+		ALint queued;
+		OpenAL_ErrorPrint(alGetSourcei(state->audioSid, AL_BUFFERS_QUEUED, &queued));
+		audio_queue_size += queued;
 	}
 
-	if (!state->newFrameAdded) {
-		// Don't draw anything if no frame has been added
+	y = print_string(x, y, "Audio Queue size: " SIZE_T_ARG, audio_queue_size);
+	y = print_string(x, y, "Video Queue size: " SIZE_T_ARG, state->decoder->getVideoQueueSize());
+	y += font::get_current_font()->getHeight();
+	// Estimate the size of the video buffer
+	// We use YUV420p frames so one pixel uses 1.5 bytes of storage
+	size_t single_frame_size = (size_t) (state->props.size.width * state->props.size.height * 1.5);
+	size_t total_size = single_frame_size * state->decoder->getVideoQueueSize();
+	print_string(x, y, "Video buffer size: " SIZE_T_ARG "B", total_size);
+}
+
+void displayVideo(PlayerState* state) {
+	if (!state->currentFrame) {
 		return;
 	}
 
@@ -273,15 +309,16 @@ void displayVideo(PlayerState* state) {
 	if (state->videoPresenter) {
 		state->videoPresenter->displayFrame();
 	}
+
+	if (Cmdline_show_video_info) {
+		showVideoInfo(state);
+	}
+
+	gr_flip();
 }
 
 void processEvents(PlayerState* state) {
 	io::mouse::CursorManager::get()->showCursor(false);
-
-	if (state->newFrameAdded) {
-		// No need to flip if there is nothing new to show
-		gr_flip();
-	}
 
 	os_poll();
 

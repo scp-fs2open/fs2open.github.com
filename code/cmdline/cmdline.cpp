@@ -487,6 +487,7 @@ cmdline_parm benchmark_mode_arg("-benchmark_mode", NULL, AT_NONE); //Cmdline_ben
 cmdline_parm noninteractive_arg("-noninteractive", NULL, AT_NONE); //Cmdline_noninteractive
 cmdline_parm json_pilot("-json_pilot", NULL, AT_NONE); //Cmdline_json_pilot
 cmdline_parm json_profiling("-json_profiling", NULL, AT_NONE); //Cmdline_json_profiling
+cmdline_parm show_video_info("-show_video_info", NULL, AT_NONE); //Cmdline_show_video_info
 
 
 char *Cmdline_start_mission = NULL;
@@ -514,6 +515,7 @@ bool Cmdline_benchmark_mode = false;
 bool Cmdline_noninteractive = false;
 bool Cmdline_json_pilot = false;
 bool Cmdline_json_profiling = false;
+bool Cmdline_show_video_info = false;
 
 // Other
 cmdline_parm get_flags_arg("-get_flags", "Output the launcher flags file", AT_NONE);
@@ -1878,6 +1880,11 @@ bool SetCmdlineParams()
 	if (json_profiling.found())
 	{
 		Cmdline_json_profiling = true;
+	}
+
+	if (show_video_info.found())
+	{
+		Cmdline_show_video_info = true;
 	}
 
 	//Deprecated flags - CommanderDJ

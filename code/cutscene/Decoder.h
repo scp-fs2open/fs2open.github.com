@@ -118,11 +118,15 @@ class Decoder {
 
 	bool isAudioFrameAvailable() { return !m_audioQueue->empty(); }
 
+	size_t getAudioQueueSize() { return m_audioQueue->size(); }
+
 	bool tryPopAudioData(AudioFramePtr&);
 
 	bool isVideoQueueFull() { return m_videoQueue->size() == m_queueSize; }
 
 	bool isVideoFrameAvailable() { return !m_videoQueue->empty(); }
+
+	size_t getVideoQueueSize() { return m_videoQueue->size(); }
 
 	bool tryPopVideoFrame(VideoFramePtr&);
 
