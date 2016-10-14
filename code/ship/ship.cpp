@@ -7112,6 +7112,7 @@ int ship_start_render_cockpit_display(size_t cockpit_display_num)
 	if ( !bm_set_render_target(display->target) ) {
 		return -1;
 	}
+	gr_push_debug_group("Render cockpit display");
 	
 	int cull = gr_set_cull(0);
 
@@ -7159,6 +7160,8 @@ void ship_end_render_cockpit_display(size_t cockpit_display_num)
 
 	gr_set_cull(cull);
 	bm_set_render_target(-1);
+
+	gr_pop_debug_group();
 }
 
 void ship_subsystems_delete(ship *shipp)

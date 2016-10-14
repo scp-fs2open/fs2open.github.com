@@ -52,6 +52,12 @@ namespace
         float h = 1.0f;
         bool do_resize = gr_resize_screen_posf(&x, &y, &w, &h, resize_mode);
 
+		if (GL_rendering_to_texture) {
+			// Flip the Y-axis when rendering to texture
+			path->translate(0.f, i2fl(gr_screen.max_h));
+			path->scale(1.f, -1.f);
+		}
+
         path->translate(x, y);
         path->scale(w, h);
 

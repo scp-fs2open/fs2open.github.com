@@ -2994,6 +2994,8 @@ void bm_set_low_mem(int mode) {
 }
 
 bool bm_set_render_target(int handle, int face) {
+	GR_DEBUG_SCOPE("Set render target");
+
 	int n = handle % MAX_BITMAPS;
 
 	if (n >= 0) {
