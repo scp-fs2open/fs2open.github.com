@@ -569,7 +569,7 @@ void apng_ani::prev_frame()
 	_reading = false;
 	if (current_frame > 0) {
 		frame = _frames.at(--current_frame);
-		nprintf(("apng", "apng prev_frame; (%03i/%03lu)\n", current_frame, _frames.size()));
+		nprintf(("apng", "apng prev_frame; (%03i/%03u)\n", current_frame, static_cast<uint>(_frames.size())));
 	}
 }
 
@@ -605,10 +605,10 @@ void apng_ani::next_frame()
 			_process_chunk();
 		}
 
-		nprintf(("apng", "apng next_frame; new (%03i/%03lu/%03i) (%u) (%u) %03u|%03u %03u|%03u (%02lu) (%04f)\n",
-				current_frame, _frames.size(), nframes, _dispose_op, _blend_op,
+		nprintf(("apng", "apng next_frame; new (%03i/%03u/%03i) (%u) (%u) %03u|%03u %03u|%03u (%02u) (%04f)\n",
+				current_frame, static_cast<uint>(_frames.size()), nframes, _dispose_op, _blend_op,
 				_framew, _x_offset, _frameh, _y_offset,
-				_frame_offsets.size(), frame.delay));
+				static_cast<uint>(_frame_offsets.size()), frame.delay));
 
 		if (_got_IDAT && _processing_finish()) {
 			_apng_failed("couldn't finish fdat apng frame");
@@ -627,7 +627,7 @@ void apng_ani::next_frame()
 	}
 	else {
 		if (current_frame < nframes) {
-			nprintf(("apng", "apng next_frame; used old (%03i/%03lu)\n", current_frame, _frames.size()));
+			nprintf(("apng", "apng next_frame; used old (%03i/%03u)\n", current_frame, static_cast<uint>(_frames.size())));
 			frame = _frames.at(current_frame);
 		}
 	}
