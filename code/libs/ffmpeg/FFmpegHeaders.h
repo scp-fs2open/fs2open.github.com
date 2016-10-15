@@ -26,3 +26,18 @@ extern "C" {
 #endif
 
 #pragma warning(pop)
+
+/**
+ * Extract version components from the full ::AV_VERSION_INT int as returned
+ * by functions like ::avformat_version() and ::avcodec_version()
+ * Brought in from a newer FFMpeg for compat with older library versions
+ */
+#ifndef AV_VERSION_MAJOR
+#define AV_VERSION_MAJOR(a) ((a) >> 16)
+#endif
+#ifndef AV_VERSION_MINOR
+#define AV_VERSION_MINOR(a) (((a) & 0x00FF00) >> 8)
+#endif
+#ifndef AV_VERSION_MICRO
+#define AV_VERSION_MICRO(a) ((a) & 0xFF)
+#endif

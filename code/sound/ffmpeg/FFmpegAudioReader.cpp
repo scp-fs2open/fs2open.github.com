@@ -14,6 +14,29 @@ public:
 		av_packet_unref(_packet);
 	}
 };
+#if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(57, 24, 100)
+// This version doesn't have the new packet alloc API
+
+AVPacket *av_packet_alloc()
+{
+	auto packet = (AVPacket*)av_mallocz(sizeof(AVPacket));
+	av_packet_unref(packet);
+	return packet;
+}
+
+AVPacket *av_packet_clone(AVPacket *src)
+{
+	auto ret = av_packet_alloc();
+	av_packet_ref(ret, src);
+	return ret;
+}
+
+void av_packet_free(AVPacket **pkt)
+{
+	av_packet_unref(*pkt);
+	av_freep(pkt);
+}
+#endif
 }
 
 namespace ffmpeg
@@ -61,7 +84,6 @@ bool FFmpegAudioReader::readFrame(AVFrame* decode_frame) {
 
 		if (_currentPacket->size <= 0) {
 			// Done with this packet
-			av_packet_unref(_currentPacket);
 			av_packet_free(&_currentPacket);
 		}
 
