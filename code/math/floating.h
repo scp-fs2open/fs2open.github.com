@@ -13,6 +13,7 @@
 #define _FLOATING_H
 
 #include <math.h>
+#include <cmath>
 #include <float.h>
 
 #include "globalincs/pstypes.h"
@@ -22,7 +23,9 @@ extern int rand_chance(float frametime, float chance = 1.0f);
 float frand_range(float min, float max);
 
 // determine if a floating point number is NaN (Not a Number)
-#define fl_is_nan(fl) _isnan((double)(fl))
+SCP_CONSTEXPR_FUNC bool fl_is_nan(float fl) {
+	return std::isnan(fl);
+}
 
 // Handy macros to prevent type casting all over the place
 

@@ -90,7 +90,6 @@ int _mkdir(const char *path);
 void _splitpath(char *path, char *drive, char *dir, char *fname, char *ext);
 
 // other stuff
-#define _isnan(f)     std::isnan(f)
 #define _hypot(x, y)  hypot(x, y)
 
 int MulDiv(int number, int numerator, int denominator);
