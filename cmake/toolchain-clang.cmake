@@ -73,11 +73,6 @@ set(COMPILER_FLAGS_RELEASE "-O2 -Wno-unused-variable")
 
 set(COMPILER_FLAGS_DEBUG "-O0 -g -Wshadow")
 
-if (FSO_FATAL_WARNINGS)
-	# Make warnings fatal if the right variable is set
-	set(COMPILER_FLAGS "${COMPILER_FLAGS} -Werror")
-endif()
-
 set(CMAKE_CXX_FLAGS ${COMPILER_FLAGS})
 set(CMAKE_C_FLAGS ${COMPILER_FLAGS})
 
@@ -96,3 +91,8 @@ endif()
 
 set(CMAKE_EXE_LINKER_FLAGS_RELEASE "")
 set(CMAKE_EXE_LINKER_FLAGS_DEBUG "-g -rdynamic")
+
+if (FSO_FATAL_WARNINGS)
+	# Make warnings fatal if the right variable is set
+	target_compile_options(compiler INTERFACE "-Werror")
+endif()

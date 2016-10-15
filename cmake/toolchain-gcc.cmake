@@ -72,11 +72,6 @@ set(COMPILER_FLAGS_RELEASE "-O2 -Wno-unused-variable -Wno-unused-but-set-variabl
 
 set(COMPILER_FLAGS_DEBUG "-O0 -g -Wshadow")
 
-if (FSO_FATAL_WARNINGS)
-	# Make warnings fatal if the right variable is set
-	set(COMPILER_FLAGS "${COMPILER_FLAGS} -Werror")
-endif()
-
 set(CMAKE_CXX_FLAGS ${COMPILER_FLAGS})
 set(CMAKE_C_FLAGS ${COMPILER_FLAGS})
 
@@ -105,3 +100,8 @@ ENDIF(NOT MINGW)
 IF(${CMAKE_SYSTEM_NAME} MATCHES "SunOS")
 	SET(CMAKE_EXE_LINKER_FLAGS "-Wl,-zignore")
 ENDIF(${CMAKE_SYSTEM_NAME} MATCHES "SunOS")
+
+if (FSO_FATAL_WARNINGS)
+	# Make warnings fatal if the right variable is set
+	target_compile_options(compiler INTERFACE "-Werror")
+endif()

@@ -23,7 +23,7 @@ extern int rand_chance(float frametime, float chance = 1.0f);
 float frand_range(float min, float max);
 
 // determine if a floating point number is NaN (Not a Number)
-SCP_CONSTEXPR_FUNC bool fl_is_nan(float fl) {
+inline bool fl_is_nan(float fl) {
 	return std::isnan(fl);
 }
 
