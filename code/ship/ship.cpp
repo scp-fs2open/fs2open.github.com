@@ -13709,7 +13709,7 @@ int ship_do_rearm_frame( object *objp, float frametime )
 	if ( (objp->flags[Object::Object_Flags::No_shields]) ) {
 		shields_full = 1;
 	} else {
-		if ( shield_get_strength(objp) >= shipp->ship_max_shield_strength ) 
+		if ( shield_get_strength(objp) >= shipp->ship_max_shield_strength * shipp->max_shield_recharge )
 			shields_full = 1;
 		if (sip->sup_shield_repair_rate == 0.0f)
 			shields_full = 1;
@@ -15470,7 +15470,7 @@ void ship_maybe_ask_for_help(ship *sp)
 	if (objp->flags[Object::Object_Flags::No_shields])
 		return;	// no shields on ship, no don't check shield levels
 
-	if (shield_get_strength(objp) > (ASK_HELP_SHIELD_PERCENT * sp->ship_max_shield_strength))
+	if (shield_get_strength(objp) > (ASK_HELP_SHIELD_PERCENT * sp->ship_max_shield_strength * sp->max_shield_recharge))
 		return;
 
 play_ask_help:

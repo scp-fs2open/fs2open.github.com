@@ -623,7 +623,7 @@ void transfer_energy_to_shields(object* obj)
 		return;
 	}
 
-	transfer_energy_weapon_common(obj, ship_p->weapon_energy, shield_get_strength(obj), &ship_p->target_weapon_energy_delta, &ship_p->target_shields_delta, ship_p->ship_max_shield_strength, 0.5f);
+	transfer_energy_weapon_common(obj, ship_p->weapon_energy, shield_get_strength(obj), &ship_p->target_weapon_energy_delta, &ship_p->target_shields_delta, ship_p->ship_max_shield_strength * ship_p->max_shield_recharge, 0.5f);
 }
 
 // -------------------------------------------------------------------------------------------------
