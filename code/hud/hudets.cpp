@@ -70,8 +70,7 @@ void update_ets(object* objp, float fl_frametime)
 
 	ship* ship_p = &Ships[objp->instance];
 	ship_info* sinfo_p = &Ship_info[ship_p->ship_info_index];
-	float max_g=sinfo_p->max_weapon_reserve,
-		  max_s=ship_p->ship_max_shield_strength;
+	float max_g=sinfo_p->max_weapon_reserve;
 
 	if ( ship_p->flags[Ship::Ship_Flags::Dying] ){
 		return;
@@ -96,7 +95,7 @@ void update_ets(object* objp, float fl_frametime)
 	}
 
 	float shield_delta;
-	max_new_shield_energy = fl_frametime * sinfo_p->max_shield_regen_per_second * max_s;
+	max_new_shield_energy = fl_frametime * sinfo_p->max_shield_regen_per_second * shield_get_max_strength(objp, true); // recharge rate is unaffected by $Max Shield Recharge
 	if ( objp->flags[Object::Object_Flags::Player_ship] ) {
 		shield_delta = Energy_levels[ship_p->shield_recharge_index] * max_new_shield_energy * The_mission.ai_profile->shield_energy_scale[Game_skill_level];
 	} else {
@@ -105,9 +104,11 @@ void update_ets(object* objp, float fl_frametime)
 
 	shield_add_strength(objp, shield_delta);
 
-	if ( (_ss = shield_get_strength(objp)) > ship_p->ship_max_shield_strength ){
+	// if strength now exceeds max, scale back segments proportionally
+	float max_shield = shield_get_max_strength(objp);
+	if ( (_ss = shield_get_strength(objp)) > max_shield ){
 		for (int i=0; i<objp->n_quadrants; i++){
-			objp->shield_quadrant[i] *= ship_p->ship_max_shield_strength / _ss;
+			objp->shield_quadrant[i] *= max_shield / _ss;
 		}
 	}
 
@@ -623,7 +624,7 @@ void transfer_energy_to_shields(object* obj)
 		return;
 	}
 
-	transfer_energy_weapon_common(obj, ship_p->weapon_energy, shield_get_strength(obj), &ship_p->target_weapon_energy_delta, &ship_p->target_shields_delta, ship_p->ship_max_shield_strength, 0.5f);
+	transfer_energy_weapon_common(obj, ship_p->weapon_energy, shield_get_strength(obj), &ship_p->target_weapon_energy_delta, &ship_p->target_shields_delta, shield_get_max_strength(obj), 0.5f);
 }
 
 // -------------------------------------------------------------------------------------------------

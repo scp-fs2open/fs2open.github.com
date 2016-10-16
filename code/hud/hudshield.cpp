@@ -294,7 +294,7 @@ void hud_augment_shield_quadrant(object *objp, int direction)
 
 	Assert(direction >= 0 && direction < objp->n_quadrants);
 	
-	xfer_amount = shipp->ship_max_shield_strength * SHIELD_TRANSFER_PERCENT;
+	xfer_amount = shield_get_max_strength(objp, true) * SHIELD_TRANSFER_PERCENT;  // xfer amounts are unaffected by $Max Shield Recharge
 	max_quadrant_val = get_max_shield_quad(objp);
 
 	if ( (objp->shield_quadrant[direction] + xfer_amount) > max_quadrant_val )

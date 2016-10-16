@@ -273,7 +273,7 @@ float get_max_shield_quad(object *objp)
 		return 0.0f;
 	}
 
-	return Ships[objp->instance].ship_max_shield_strength / objp->n_quadrants;
+	return Ships[objp->instance].ship_max_shield_strength / objp->n_quadrants; // max segment strength is unaffected by $Max Shield Recharge
 }
 
 // Goober5000
@@ -322,7 +322,7 @@ float get_shield_pct(object *objp)
 	if (objp->type != OBJ_SHIP)
 		return 0.0f;
 
-	float total_strength = Ships[objp->instance].ship_max_shield_strength;
+	float total_strength = shield_get_max_strength(objp);
 
 	if (total_strength == 0.0f)
 		return 0.0f;

@@ -1016,7 +1016,7 @@ int ship_is_shield_up( object *obj, int quadrant )
 		// Check all quadrants
 		float strength = shield_get_strength(obj);
 
-		if ( strength > MAX(2.0f*4.0f, 0.1f * Ships[obj->instance].ship_max_shield_strength ))	{
+		if ( strength > MAX(2.0f*4.0f, 0.1f * shield_get_max_strength(obj)) )	{
 			return 1;
 		}
 	}

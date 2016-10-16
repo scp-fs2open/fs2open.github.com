@@ -12271,8 +12271,8 @@ void ai_balance_shield(object *objp)
 	float	shield_strength_avg;
 	float	delta;
 
-	// if we are already at the max shield strength for all quads then just bail now
-	if ( Ships[objp->instance].ship_max_shield_strength == shield_get_strength(objp) )
+	// if we are already at the max shield strength then just bail now
+	if ( shield_get_strength(objp) >= shield_get_max_strength(objp) )
 		return;
 
 

@@ -50,7 +50,7 @@ void shield_add_strength(object *objp, float delta)
 		return;
 
 	float shield_str = shield_get_strength(objp);
-	float shield_recharge_limit = Ships[objp->instance].ship_max_shield_strength * Ships[objp->instance].max_shield_recharge;
+	float shield_recharge_limit = shield_get_max_strength(objp);
 
 	if (shield_str >= shield_recharge_limit)
 		return;
@@ -233,12 +233,17 @@ void shield_add_quad(object *objp, int quadrant_num, float delta)
 }
 
 // Goober5000
-float shield_get_max_strength(object *objp)
+// @Note $Max Shield Recharge is not intended to affect max strength of individual shield segments
+float shield_get_max_strength(object *objp, bool no_msr)
 {
+	Assertion(objp != nullptr, "nullptr passed to shield_get_max_strength, get a coder!");
 	if (objp->type != OBJ_SHIP && objp->type != OBJ_START)
 		return 0.0f;
 
-	return Ships[objp->instance].ship_max_shield_strength;
+	if (no_msr == true)
+		return Ships[objp->instance].ship_max_shield_strength;
+	else
+		return Ships[objp->instance].ship_max_shield_strength * Ships[objp->instance].max_shield_recharge;
 }
 
 void shield_set_max_strength(object *objp, float newmax)
@@ -252,7 +257,7 @@ void shield_set_max_strength(object *objp, float newmax)
 // Goober5000
 float shield_get_max_quad(object *objp)
 {
-	return shield_get_max_strength(objp) / objp->n_quadrants;
+	return shield_get_max_strength(objp, true) / objp->n_quadrants;
 }
 
 //	***** This is the version that works on a quadrant basis.
