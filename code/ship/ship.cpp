@@ -13422,7 +13422,7 @@ float ship_calculate_rearm_duration( object *objp )
 int ship_do_rearm_frame( object *objp, float frametime )
 {
 	int			i, banks_full, primary_banks_full, subsys_type, subsys_all_ok, last_ballistic_idx = -1;
-	float			shield_str, max_shield_str, repair_delta, repair_allocated, max_hull_repair, max_subsys_repair;
+	float			shield_str, max_shield_str = 0.0f, repair_delta, repair_allocated, max_hull_repair, max_subsys_repair;
 	ship			*shipp;
 	ship_weapon	*swp;
 	ship_info	*sip;
