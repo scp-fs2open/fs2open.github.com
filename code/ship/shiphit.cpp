@@ -35,6 +35,7 @@
 #include "network/multiutil.h"
 #include "object/object.h"
 #include "object/objectdock.h"
+#include "object/objectshield.h"
 #include "object/objectsnd.h"
 #include "parse/parselo.h"
 #include "scripting/scripting.h"
@@ -2559,7 +2560,7 @@ void ship_hit_pain(float damage, int quadrant)
     {
 		if (Shield_pain_flash_factor != 0.0f && quadrant >= 0)
 		{
-			float effect = (Shield_pain_flash_factor * Player_obj->shield_quadrant[quadrant] * Player_obj->n_quadrants) / (shipp->ship_max_shield_strength * shipp->max_shield_recharge);
+			float effect = (Shield_pain_flash_factor * Player_obj->shield_quadrant[quadrant] * Player_obj->n_quadrants) / shield_get_max_strength(Player_obj);
 
 			if (Shield_pain_flash_factor < 0.0f)
 				effect -= Shield_pain_flash_factor;
