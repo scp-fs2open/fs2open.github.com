@@ -301,7 +301,7 @@ namespace os
 			}
 
 			if (running_unittests) {
-				throw AssertException(text);
+				throw ErrorException(text);
 			}
 
 			SCP_stringstream messageStream;

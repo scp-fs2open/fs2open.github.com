@@ -14,6 +14,7 @@ add_file_folder(root ""
 
 add_file_folder(graphics "Globalincs"
     globalincs/test_flagset.cpp
+    globalincs/test_safe_strings.cpp
 )
 
 add_file_folder(graphics "Graphics"

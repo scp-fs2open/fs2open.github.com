@@ -258,7 +258,6 @@ set (file_root_globalincs
 	globalincs/pstypes.h
 	globalincs/safe_strings.cpp
 	globalincs/safe_strings.h
-	globalincs/safe_strings_test.cpp
 	globalincs/systemvars.cpp
 	globalincs/systemvars.h
 	globalincs/toolchain.h
