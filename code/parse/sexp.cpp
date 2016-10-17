@@ -18219,7 +18219,7 @@ void set_turret_secondary_ammo(ship_subsys *turret, int requested_bank, int requ
 }
 
 // Goober5000
-void sexp_set_subsys_rotation_lock_free(int node, int locked)
+void sexp_set_subsys_rotation_lock_free(int node, bool locked)
 {
 	int ship_num;		
 	ship_subsys *rotate;
@@ -18243,7 +18243,7 @@ void sexp_set_subsys_rotation_lock_free(int node, int locked)
 			continue;
 
 		// set rotate or not, depending on flag
-        rotate->flags.set(Ship::Subsystem_Flags::Rotates, locked != 0);
+        rotate->flags.set(Ship::Subsystem_Flags::Rotates, !locked);
 		if (locked)
 		{   
             if (rotate->subsys_snd_flags[Ship::Subsys_Sound_Flags::Rotate])
