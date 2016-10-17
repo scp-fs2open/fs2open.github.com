@@ -121,7 +121,15 @@ void timestamp_reset()
 // so we don't have to use UINTs to calculate rollover.
 // For debugging & testing, you could set this to 
 // something like 1 minute (6000).
-#define MAX_TIME (INT_MAX/2)
+const std::uint32_t MAX_TIME = INT_MAX / 2;
+
+static int timestamp_ms() {
+	if (timestamp_ticker <= 2) {
+		// These are special values, don't adjust them
+		return (int)timestamp_ticker;
+	}
+	return (int)(timestamp_ticker / 1000);
+}
 
 void timestamp_inc(fix frametime)
 {
@@ -131,7 +139,7 @@ void timestamp_inc(fix frametime)
 
 	timestamp_ticker += delta;
 
-	if ( timestamp_ticker > MAX_TIME )	{
+	if ( timestamp_ms() > MAX_TIME )	{
 		timestamp_ticker = 2;		// Roll!
 	}
 
@@ -139,14 +147,6 @@ void timestamp_inc(fix frametime)
 		mprintf(("Whoa!!!  timestamp_ticker < 2 -- resetting to 2!!!\n"));
 		timestamp_ticker = 2;
 	}
-}
-
-static int timestamp_ms() {
-	if (timestamp_ticker <= 2) {
-		// These are special values, don't adjust them
-		return (int)timestamp_ticker;
-	}
-	return (int)(timestamp_ticker / 1000);
 }
 
 int timestamp(int delta_ms ) {
