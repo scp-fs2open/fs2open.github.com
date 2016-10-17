@@ -11,7 +11,7 @@
 #include <sys/time.h>
 #include <unistd.h>
 
-#include "SDL.h"
+#include "windows_stub/config.h"
 
 #include "platformChecks.h"
 
@@ -35,24 +35,6 @@
 #include "debugconsole/console.h"
 #include "globalincs/pstypes.h"
 #include "scripting/lua.h"
-
-bool env_enabled = false;
-bool cell_enabled = false;
-
-char *strnset( char* string, int fill, size_t count)
-{
-	char *p = string;
-
- 	for(; *p; p++ ) {
-		if( count == 0 )
-			break;
-
- 		*p = (char)fill;
-		count--;
- 	}
-
-	return string;
-}
 
 // find the size of a file
 int filelength(int fd)
@@ -253,18 +235,6 @@ int MulDiv(int number, int numerator, int denominator)
 	result = (int) tmp;
 
 	return result;
-}
-
-// lowercase a string
-void strlwr(char *s)
-{
-	if (s == NULL)
-		return;
-
-	while (*s) {
-		*s = tolower(*s);
-		s++;
-	}
 }
 
 #endif // SCP_UNIX

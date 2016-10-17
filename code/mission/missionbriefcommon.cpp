@@ -2018,7 +2018,7 @@ grid *brief_create_grid(grid *gridp, vec3d *forward, vec3d *right, vec3d *center
 	gridp->gmatrix.vec.uvec = uvec;
 
 	gridp->planeD = -(center->xyz.x * uvec.xyz.x + center->xyz.y * uvec.xyz.y + center->xyz.z * uvec.xyz.z);
-	Assert(!_isnan(gridp->planeD));
+	Assert(!fl_is_nan(gridp->planeD));
 
 	gridp->gmatrix.vec.fvec = dfvec;
 	gridp->gmatrix.vec.rvec = drvec;

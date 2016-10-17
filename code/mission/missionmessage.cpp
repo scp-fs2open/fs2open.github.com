@@ -1181,7 +1181,7 @@ void message_play_anim( message_q *q )
 	// support ships use a wingman head.
 	// terran command uses its own set of heads.
 	if ( (!anim_info->exists) &&	// if the base animation doesn't exist, then a, b, or c needs to be appended
-		((q->message_num < Num_builtin_messages) || !(_strnicmp(HEAD_PREFIX_STRING, ani_name, strlen(HEAD_PREFIX_STRING)-1))) ) {
+		((q->message_num < Num_builtin_messages) || !(strnicmp(HEAD_PREFIX_STRING, ani_name, strlen(HEAD_PREFIX_STRING)-1))) ) {
 		int subhead_selected = FALSE;
 		persona_index = m->persona_index;
 		

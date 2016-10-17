@@ -2286,7 +2286,7 @@ void vm_find_bounding_sphere(const vec3d *pnts, int num_pnts, vec3d *center, flo
 	vm_vec_sub(&diff, &dia2, center);
 	rad_sq = vm_vec_mag_squared(&diff);
 	rad = fl_sqrt(rad_sq);
-	Assert( !_isnan(rad) );
+	Assert( !fl_is_nan(rad) );
 
 	// second pass
 	for ( i = 0; i < num_pnts; i++ ) {
@@ -2364,7 +2364,7 @@ void vm_estimate_next_orientation(const matrix *last_orient, const matrix *curre
 //	Return true if all elements of *vec are legal, that is, not a NAN.
 int is_valid_vec(const vec3d *vec)
 {
-	return !_isnan(vec->xyz.x) && !_isnan(vec->xyz.y) && !_isnan(vec->xyz.z);
+	return !std::isnan(vec->xyz.x) && !std::isnan(vec->xyz.y) && !std::isnan(vec->xyz.z);
 }
 
 //	Return true if all elements of *m are legal, that is, not a NAN.

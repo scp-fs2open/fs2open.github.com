@@ -124,7 +124,7 @@ CFtpGet::CFtpGet(char *URL, char *localfile, char *Username, char *Password)
 	//Parse the URL
 	//Get rid of any extra ftp:// stuff
 	char *pURL = URL;
-	if(_strnicmp(URL,"ftp:",4)==0)
+	if(strnicmp(URL,"ftp:",4)==0)
 	{
 		pURL +=4;
 		while(*pURL == '/')

@@ -16,7 +16,7 @@
 #include "math/floating.h"
 
 
-#define vm_is_vec_nan(v) (_isnan((v)->xyz.x) || _isnan((v)->xyz.y) || _isnan((v)->xyz.z))
+#define vm_is_vec_nan(v) (fl_is_nan((v)->xyz.x) || fl_is_nan((v)->xyz.y) || fl_is_nan((v)->xyz.z))
 
 //Macros/functions to fill in fields of structures
 

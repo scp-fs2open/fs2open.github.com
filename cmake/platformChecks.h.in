@@ -10,4 +10,13 @@
 
 #cmakedefine01 IS_64BIT
 
+#cmakedefine01 HAVE_STRCASECMP
+#cmakedefine01 HAVE_STRNCASECMP
+#cmakedefine01 HAVE__STRICMP
+#cmakedefine01 HAVE__STRNICMP
+
+#cmakedefine01 HAVE_STRLWR
+
+#cmakedefine01 HAVE_STRINGS_H
+
 #endif // __PLATFORM_CHECKS_H__
