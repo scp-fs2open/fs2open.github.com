@@ -1350,6 +1350,17 @@ void cfread_string_len(char *buf,int n, CFILE *file)
 	buf[len] = 0;
 }
 
+SCP_string cfread_string_len(CFILE *file)
+{
+	int len = cfread_int(file);
+
+	SCP_string str;
+	str.resize(len);
+
+	if (len)
+		cfread(&str[0], len, 1, file);
+}
+
 // equivalent write functions of above read functions follow
 
 int cfwrite_float(float f, CFILE *file)
