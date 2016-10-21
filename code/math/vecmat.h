@@ -21,13 +21,13 @@
 //Macros/functions to fill in fields of structures
 
 //macro to check if vector is zero
-#define IS_VEC_NULL_SQ_SAFE(v) ( ( (v)->xyz.x > -1e-16 ) && ( (v)->xyz.x < 1e-16 ) && \
-								 ( (v)->xyz.y > -1e-16 ) && ( (v)->xyz.y < 1e-16 ) && \
-								 ( (v)->xyz.z > -1e-16 ) && ( (v)->xyz.z < 1e-16 ) )
+#define IS_VEC_NULL_SQ_SAFE(v) (IS_NEAR_ZERO((v)->xyz.x, 1e-16) && \
+								IS_NEAR_ZERO((v)->xyz.y, 1e-16) && \
+								IS_NEAR_ZERO((v)->xyz.z, 1e-16))
 
-#define IS_VEC_NULL(v) ( ( (v)->xyz.x > -1e-36 ) && ( (v)->xyz.x < 1e-36 ) && \
-						 ( (v)->xyz.y > -1e-36 ) && ( (v)->xyz.y < 1e-36 ) && \
-						 ( (v)->xyz.z > -1e-36 ) && ( (v)->xyz.z < 1e-36 ) )
+#define IS_VEC_NULL(v) (IS_NEAR_ZERO((v)->xyz.x, 1e-36) && \
+						IS_NEAR_ZERO((v)->xyz.y, 1e-36) && \
+						IS_NEAR_ZERO((v)->xyz.z, 1e-36))
 
 #define IS_MAT_NULL(v) (IS_VEC_NULL(&(v)->vec.fvec) && IS_VEC_NULL(&(v)->vec.uvec) && IS_VEC_NULL(&(v)->vec.rvec))
 
@@ -184,13 +184,11 @@ float vm_vec_normalize_quick(vec3d *v);
 
 //normalize a vector. returns mag of source vec. uses approx mag
 float vm_vec_copy_normalize_quick_mag(vec3d *dest, const vec3d *src);
-float vm_vec_normalize_quick_mag(vec3d *v);
 
 //return the normalized direction vector between two points
 //dest = normalized(end - start).  Returns mag of direction vector
 //NOTE: the order of the parameters matches the vector subtraction
 float vm_vec_normalized_dir(vec3d *dest,const vec3d *end, const vec3d *start);
-float vm_vec_normalized_dir_quick_mag(vec3d *dest, const vec3d *end, const vec3d *start);
 // Returns mag of direction vector
 float vm_vec_normalized_dir_quick(vec3d *dest, const vec3d *end, const vec3d *start);
 
