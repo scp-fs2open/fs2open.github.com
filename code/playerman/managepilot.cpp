@@ -61,7 +61,7 @@ bool delete_pilot_file(const char *pilot_name)
 	_splitpath(pilot_name, NULL, NULL, basename, NULL);
 
 	strcpy_s( filename, basename );
-	strcat_s( filename, NOX(".plr") );
+	strcat_s( filename, NOX(".json") );
 
 	delreturn =
 	    cf_delete(filename, CF_TYPE_PLAYERS, CF_LOCATION_ROOT_USER | CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT);

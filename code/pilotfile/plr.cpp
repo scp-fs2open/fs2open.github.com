@@ -45,9 +45,7 @@ void read_multi_stats(pilot::FileHandler* handler, scoring_special_t* scoring) {
 	auto list_size = handler->startArrayRead("kills");
 	scoring->ship_kills.reserve(list_size);
 
-	for (size_t idx = 0; idx < list_size; idx++) {
-		handler->nextSection();
-
+	for (size_t idx = 0; idx < list_size; idx++, handler->nextArraySection()) {
 		index_list_t ilist;
 		ilist.name = handler->readString("name");
 		ilist.index = ship_info_lookup(ilist.name.c_str());
@@ -61,9 +59,7 @@ void read_multi_stats(pilot::FileHandler* handler, scoring_special_t* scoring) {
 	list_size = handler->startArrayRead("medals");
 	scoring->medals_earned.reserve(list_size);
 
-	for (size_t idx = 0; idx < list_size; idx++) {
-		handler->nextSection();
-
+	for (size_t idx = 0; idx < list_size; idx++, handler->nextArraySection()) {
 		index_list_t ilist;
 		ilist.name = handler->readString("name");
 		ilist.index = medals_info_lookup(ilist.name.c_str());
@@ -204,9 +200,7 @@ void pilotfile::plr_read_hud()
 
 	// gauge-specific colors
 	auto num_gauges = handler->startArrayRead("hud_gauges");
-	for (size_t idx = 0; idx < num_gauges; idx++) {
-		handler->nextSection();
-
+	for (size_t idx = 0; idx < num_gauges; idx++, handler->nextArraySection()) {
 		ubyte red = handler->readUByte("red");
 		ubyte green = handler->readUByte("green");
 		ubyte blue = handler->readUByte("blue");
@@ -270,9 +264,7 @@ void pilotfile::plr_read_variables()
 	auto list_size = handler->startArrayRead("variables");
 
 	p->variables.reserve(list_size);
-	for (size_t idx = 0; idx < list_size; idx++) {
-		handler->nextSection();
-
+	for (size_t idx = 0; idx < list_size; idx++, handler->nextArraySection()) {
 		sexp_variable n_var;
 		n_var.type = handler->readInt("type");
 		handler->readString("text", n_var.text, TOKEN_LENGTH);
@@ -550,14 +542,11 @@ void pilotfile::plr_write_stats_multi()
 
 void pilotfile::plr_read_controls()
 {
-	int idx;
 	short id1, id2;
 	int axi, inv;
 
 	auto list_size = handler->startArrayRead("controls", true);
-	for (idx = 0; idx < list_size; idx++) {
-		handler->nextSection();
-
+	for (size_t idx = 0; idx < list_size; idx++, handler->nextArraySection()) {
 		id1 = handler->readShort("key");
 		id2 = handler->readShort("joystick");
 		handler->readShort("mouse");	// unused, at the moment
@@ -570,9 +559,7 @@ void pilotfile::plr_read_controls()
 	handler->endArrayRead();
 
 	auto list_axis = handler->startArrayRead("axes");
-	for (idx = 0; idx < list_axis; idx++) {
-		handler->nextSection();
-
+	for (size_t idx = 0; idx < list_axis; idx++, handler->nextArraySection()) {
 		axi = handler->readInt("axis_map");
 		inv = handler->readInt("invert_axis");
 
@@ -745,7 +732,7 @@ void pilotfile::plr_close()
 	m_have_info = false;
 }
 
-bool pilotfile::load_player(const char *callsign, player *_p)
+bool pilotfile::load_player(const char* callsign, player* _p, bool force_binary)
 {
 	// if we're a standalone server in multiplayer, just fill in some bogus values
 	// since we don't have a pilot file
@@ -766,7 +753,13 @@ bool pilotfile::load_player(const char *callsign, player *_p)
 	}
 
 	filename = callsign;
-	filename += ".plr";
+	if (force_binary) {
+		// Caller want to read the binary file
+		filename += ".plr";
+	} else {
+		// The default is the JSON file
+		filename += ".json";
+	}
 
 	if ( filename.size() == 4 ) {
 		mprintf(("PLR => Invalid filename '%s'!\n", filename.c_str()));
@@ -780,10 +773,10 @@ bool pilotfile::load_player(const char *callsign, player *_p)
 		return false;
 	}
 
-	if (Cmdline_json_pilot) {
-		//handler.reset(new pilot::JSONFileHandler(fp));
-	} else {
+	if (force_binary) {
 		handler.reset(new pilot::BinaryFileHandler(fp));
+	} else {
+		handler.reset(new pilot::JSONFileHandler(fp, true));
 	}
 
 	unsigned int plr_id = handler->readUInt("signature");
@@ -802,10 +795,8 @@ bool pilotfile::load_player(const char *callsign, player *_p)
 	plr_reset_data();
 
 	// the point of all this: read in the PLR contents
-	handler->beginSectionRead();
-	while ( handler->hasMoreSections() ) {
-		auto section_id = handler->nextSection();
-
+	for (auto section_id = handler->beginSectionRead(); handler->hasMoreSections();
+	     section_id      = handler->nextSection()) {
 		try {
 			switch (section_id) {
 				case Section::Flags:
@@ -871,6 +862,7 @@ bool pilotfile::load_player(const char *callsign, player *_p)
 			return false;
 		}
 	}
+	handler->endSectionRead();
 
 	// restore the callsign into the Player structure
 	strcpy_s(p->callsign, callsign);
@@ -915,11 +907,8 @@ bool pilotfile::save_player(player *_p)
 		return false;
 	}
 
-	if (Cmdline_json_pilot) {
-		filename += ".json";
-	} else {
-		filename += ".plr";
-	}
+	// We always write the player file as JSON now
+	filename += ".json";
 
 	// open it, hopefully...
 	auto fp = cfopen(filename.c_str(), "wb", CFILE_NORMAL, CF_TYPE_PLAYERS, false,
@@ -930,17 +919,15 @@ bool pilotfile::save_player(player *_p)
 		return false;
 	}
 
-	if (Cmdline_json_pilot) {
-		//handler.reset(new pilot::JSONFileHandler(fp));
-	} else {
-		handler.reset(new pilot::BinaryFileHandler(fp));
-	}
+	handler.reset(new pilot::JSONFileHandler(fp, false));
 
 	// header and version
 	handler->writeInt("signature", PLR_FILE_ID);
 	handler->writeUByte("version", PLR_VERSION);
 
 	mprintf(("PLR => Saving '%s' with version %d...\n", filename.c_str(), (int)PLR_VERSION));
+
+	handler->beginWritingSections();
 
 	// flags and info sections go first
 	mprintf(("PLR => Saving:  Flags...\n"));
@@ -963,6 +950,8 @@ bool pilotfile::save_player(player *_p)
 	plr_write_controls();
 	mprintf(("PLR => Saving:  Settings...\n"));
 	plr_write_settings();
+
+	handler->endWritingSections();
 
 	handler->flush();
 
@@ -988,23 +977,15 @@ bool pilotfile::verify(const char *fname, int *rank, char *valid_language)
 		return false;
 	}
 
-<<<<<<< HEAD
-	cfp = cfopen(filename.c_str(), "rb", CFILE_NORMAL, CF_TYPE_PLAYERS, false,
-	             CF_LOCATION_ROOT_USER | CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT);
-=======
-	auto fp = cfopen((char*)filename.c_str(), "rb", CFILE_NORMAL, CF_TYPE_PLAYERS);
->>>>>>> Add reading code to FileHandler
+	auto fp = cfopen(filename.c_str(), "rb", CFILE_NORMAL, CF_TYPE_PLAYERS, false,
+	                 CF_LOCATION_ROOT_USER | CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT);
 
 	if ( !fp ) {
 		mprintf(("PLR => Unable to open '%s'!\n", filename.c_str()));
 		return false;
 	}
 
-	if (Cmdline_json_pilot) {
-		//handler.reset(new pilot::JSONFileHandler(fp));
-	} else {
-		handler.reset(new pilot::BinaryFileHandler(fp));
-	}
+	handler.reset(new pilot::JSONFileHandler(fp, true));
 
 	unsigned int plr_id = handler->readUInt("signature");
 
@@ -1024,10 +1005,8 @@ bool pilotfile::verify(const char *fname, int *rank, char *valid_language)
 	bool have_flags = false;
 	bool have_info = false;
 	// the point of all this: read in the PLR contents
-	handler->beginSectionRead();
-	while ( !(have_flags && have_info) && handler->hasMoreSections() ) {
-		auto section_id = handler->nextSection();
-
+	for (auto section_id = handler->beginSectionRead(); !(have_flags && have_info) && handler->hasMoreSections();
+	     section_id      = handler->nextSection()) {
 		try {
 			switch (section_id) {
 				case Section::Flags:
@@ -1061,6 +1040,7 @@ bool pilotfile::verify(const char *fname, int *rank, char *valid_language)
 			return false;
 		}
 	}
+	handler->endSectionRead();
 
 	if (valid_language) {
 		strcpy(valid_language, p->language);

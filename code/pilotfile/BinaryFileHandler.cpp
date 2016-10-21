@@ -33,6 +33,10 @@ void pilot::BinaryFileHandler::writeString(const char*, const char* str) {
 	cfwrite_string_len(str, _cfp);
 }
 
+void pilot::BinaryFileHandler::beginWritingSections() {
+	Assertion(!_writingSections, "Section writing nesting is not supported!");
+	_writingSections = true;
+}
 void pilot::BinaryFileHandler::startSectionWrite(Section id) {
 	if (id == Section::Unnamed) {
 		_sectionOffsets.push_back({id, 0});
@@ -74,6 +78,10 @@ void pilot::BinaryFileHandler::endSectionWrite() {
 		cfseek(_cfp, (int) cur, CF_SEEK_SET);
 	}
 }
+void pilot::BinaryFileHandler::endWritingSections() {
+	Assertion(_writingSections, "Section writing ended while not writing sections!");
+	_writingSections = false;
+}
 void pilot::BinaryFileHandler::startArrayWrite(const char*, size_t size, bool short_index) {
 	if (short_index) {
 		cfwrite_ushort((short)size, _cfp);
@@ -108,23 +116,20 @@ SCP_string pilot::BinaryFileHandler::readString(const char*) {
 void pilot::BinaryFileHandler::readString(const char*, char* dest, size_t max_size) {
 	cfread_string_len(dest, (int) max_size, _cfp);
 }
-void pilot::BinaryFileHandler::beginSectionRead() {
-	// Nothing to do here for the binary version
+Section pilot::BinaryFileHandler::beginSectionRead() {
+	return nextSection();
 }
 bool pilot::BinaryFileHandler::hasMoreSections() {
 	return !cfeof(_cfp);
 }
 Section pilot::BinaryFileHandler::nextSection() {
-	if (_in_array) {
-		// In an array a next section call is ignored since that is only relevant for the JSON handler
-		return Section::Unnamed;
-	}
+	Assertion(!_in_array, "nextSection() may not be called in an array!");
 
 	if (_section_start_pos != INVALID_SIZE && _section_end_pos != INVALID_SIZE) {
 		cf_set_max_read_len(_cfp, 0);
 
 		// There was a previous section
-		auto current = cftell(_cfp);
+		auto current = (size_t)cftell(_cfp);
 		if (current != _section_end_pos) {
 			mprintf(("PLR => WARNING: Advancing to the next section. " SIZE_T_ARG " bytes were skipped!\n", _section_end_pos - current));
 			cfseek(_cfp, (int)_section_end_pos, CF_SEEK_SET);
@@ -148,6 +153,10 @@ Section pilot::BinaryFileHandler::nextSection() {
 
 	return static_cast<Section>(section_id);
 }
+void pilot::BinaryFileHandler::endSectionRead() {
+	_section_start_pos = INVALID_SIZE;
+	_section_end_pos = INVALID_SIZE;
+}
 size_t pilot::BinaryFileHandler::startArrayRead(const char*, bool short_index) {
 	Assertion(!_in_array, "Array nesting is not supported!");
 
@@ -157,6 +166,10 @@ size_t pilot::BinaryFileHandler::startArrayRead(const char*, bool short_index) {
 	} else {
 		return (size_t) cfread_int(_cfp);
 	}
+}
+void pilot::BinaryFileHandler::nextArraySection() {
+	Assertion(_in_array, "nextArraySection() may only be called in an array!");
+	// Nothing to do here in the binary version
 }
 void pilot::BinaryFileHandler::endArrayRead() {
 	Assertion(_in_array, "Array ended while not reading array!");

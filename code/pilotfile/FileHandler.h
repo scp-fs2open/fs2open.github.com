@@ -54,9 +54,13 @@ class FileHandler {
 
 	virtual void writeString(const char* name, const char* str) = 0;
 
+	virtual void beginWritingSections() = 0;
+
 	virtual void startSectionWrite(Section id) = 0;
 
 	virtual void endSectionWrite() = 0;
+
+	virtual void endWritingSections() = 0;
 
 	virtual void startArrayWrite(const char* name, size_t size, bool short_length = false) = 0;
 
@@ -86,13 +90,17 @@ class FileHandler {
 		strcpy_s(dest, max_size, string.c_str());
 	}
 
-	virtual void beginSectionRead() = 0;
+	virtual Section beginSectionRead() = 0;
 
 	virtual bool hasMoreSections() = 0;
 
 	virtual Section nextSection() = 0;
 
+	virtual void endSectionRead() = 0;
+
 	virtual size_t startArrayRead(const char* name, bool short_index = false) = 0;
+
+	virtual void nextArraySection() = 0;
 
 	virtual void endArrayRead() = 0;
 };

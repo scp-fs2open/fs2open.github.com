@@ -18,6 +18,7 @@ class BinaryFileHandler: public FileHandler {
 	};
 
 	SCP_vector<SectionOffset> _sectionOffsets;
+	bool _writingSections = false;
 
 
 	size_t _section_start_pos = INVALID_SIZE;
@@ -42,9 +43,13 @@ class BinaryFileHandler: public FileHandler {
 	void writeString(const char* name, const char* str) override;
 
 
+	void beginWritingSections() override;
+
 	void startSectionWrite(Section id) override;
 
 	void endSectionWrite() override;
+
+	void endWritingSections() override;
 
 
 	void startArrayWrite(const char* name, size_t size, bool short_length) override;
@@ -68,13 +73,17 @@ class BinaryFileHandler: public FileHandler {
 
 	void readString(const char* name, char* dest, size_t max_size) override;
 
-	void beginSectionRead() override;
+	Section beginSectionRead() override;
 
 	bool hasMoreSections() override;
 
 	Section nextSection() override;
 
+	void endSectionRead() override;
+
 	size_t startArrayRead(const char* name, bool short_index) override;
+
+	void nextArraySection() override;
 
 	void endArrayRead() override;
 };

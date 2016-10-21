@@ -81,7 +81,7 @@ class pilotfile {
 		pilotfile();
 		~pilotfile();
 
-		bool load_player(const char *callsign, player *_p = NULL);
+		bool load_player(const char *callsign, player *_p = NULL, bool force_binary = false);
 		bool load_savefile(player *_p, const char *campaign);
 
 		bool save_player(player *_p = NULL);
