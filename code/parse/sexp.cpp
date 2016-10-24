@@ -858,6 +858,8 @@ sexp_variable Sexp_variables[MAX_SEXP_VARIABLES];
 sexp_variable Block_variables[MAX_SEXP_VARIABLES];			// used for compatibility with retail. 
 
 SCP_vector<sexp_container> Sexp_containers;
+bool Container_edits_off;
+
 #define NUM_CTEXT_RETURN_STRINGS				100			// Karajorma - Probably way too many now. I suspect someone will want to bump this later. Go ahead if you do, the choice was fairly arbitrary.
 char Ctext_strings[NUM_CTEXT_RETURN_STRINGS][TOKEN_LENGTH];
 int Ctext_strings_last_index = 0; 
@@ -8639,7 +8641,7 @@ int eval_when(int n, int when_op_num)
 
 		// if the mod.tbl setting is in effect we want to each evaluate all the SEXPs for 
 		// each argument	
-		if (True_loop_argument_sexps && special_argument_appears_in_sexp_tree(exp)) {	
+		if (True_loop_argument_sexps && special_argument_appears_in_sexp_tree(actions)) {	
 			if (exp != -1) {
 				eval_when_do_all_exp(actions, when_op_num);
 			}
@@ -29434,6 +29436,11 @@ int extract_sexp_variable_index(int node)
 
 	 cur_state = gameseq_get_state();
 
+	 // if container edits are specifically not allowed, then obviously we can't modify this container
+	 if (Container_edits_off) {
+		 return false;
+	 }
+
 	 // can always modify containers during the mission itself
 	 if (Game_mode & GM_IN_MISSION) {
 		 return true;
@@ -29618,11 +29625,15 @@ char* deal_with_container(int node, int container_index)
 /**
  * Wrapper around Sexp_node[xx].text for normal and variable
  */
-char *CTEXT(int n)
+char *CTEXT(int n, bool do_not_edit)
 {
 	int sexp_variable_index = -1;
 	char variable_name[TOKEN_LENGTH];
 	char *current_argument; 
+
+
+	// If this call came from somewhere that is just checking the syntax of a SEXP, we don't want the code to actually change any containers
+	Container_edits_off = do_not_edit;
 
 	Assertion(n >= 0 && n < Num_sexp_nodes, "Passed an out-of-range node index (%d) to CTEXT!", n);
 	if ( n < 0 ) {
@@ -29705,7 +29716,11 @@ char *CTEXT(int n)
 
 		n = CAR(n);
 
+		// set containers back to editable.
+		Container_edits_off = false;
+
 		return deal_with_container(n, container_index);
+
 	}
 	else
 	{
