@@ -20,6 +20,10 @@ endif()
 globally_enable_extra_compiler_warnings()
 set(COMPILER_FLAGS "${COMPILER_FLAGS} -funroll-loops -fsigned-char -Wno-unknown-pragmas")
 
+# Place each function and data in its own section so the linker can
+# perform dead code elimination
+set(COMPILER_FLAGS "${COMPILER_FLAGS} -fdata-sections -ffunction-sections")
+
 if ("${CMAKE_GENERATOR}" STREQUAL "Ninja")
 	# Force color diagnostics for Ninja generator
 	CHECK_C_COMPILER_FLAG(-fdiagnostics-color SUPPORTS_DIAGNOSTIC_COLOR)
@@ -95,6 +99,10 @@ set(CMAKE_EXE_LINKER_FLAGS_RELEASE "")
 set(CMAKE_EXE_LINKER_FLAGS_DEBUG "-g")
 IF(NOT MINGW)
 	SET(CMAKE_EXE_LINKER_FLAGS_DEBUG "${CMAKE_EXE_LINKER_FLAGS_DEBUG} -rdynamic")
+	# Allow the linker to perform dead code elimination; this is considered
+	# experimental for COFF and PE formats and thus disabled for Windows builds
+	# (https://sourceware.org/binutils/docs/ld/Options.html)
+	SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--gc-sections")
 ENDIF(NOT MINGW)
 
 IF(${CMAKE_SYSTEM_NAME} MATCHES "SunOS")
