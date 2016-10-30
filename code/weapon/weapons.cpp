@@ -3325,6 +3325,12 @@ void weapon_generate_indexes_for_substitution() {
 				if ( stricmp("none", wip->weapon_substitution_pattern_names[j]) != 0 ) {
 					weapon_index = weapon_info_lookup(wip->weapon_substitution_pattern_names[j]);
 
+					if ( weapon_index == -1 ) { // invalid sub weapon
+						Warning(LOCATION, "Weapon '%s' requests substitution with '%s' which does not seem to exist",
+							wip->name, wip->weapon_substitution_pattern_names[j]);
+						continue;
+					}
+
 					if (Weapon_info[weapon_index].subtype != wip->subtype) {
 						// Check to make sure secondaries can't be launched by primaries and vice versa
 						Warning(LOCATION, "Weapon '%s' requests substitution with '%s' which is of a different subtype.",
@@ -3332,12 +3338,6 @@ void weapon_generate_indexes_for_substitution() {
 						wip->num_substitution_patterns = 0;
 						memset(wip->weapon_substitution_pattern, -1, MAX_SUBSTITUTION_PATTERNS);
 						break;
-					}
-
-					if ( weapon_index == -1 ) { // invalid sub weapon
-						Warning(LOCATION, "Weapon '%s' requests substitution with '%s' which does not seem to exist",
-							wip->name, wip->weapon_substitution_pattern_names[j]);
-						continue;
 					}
 				}
 
