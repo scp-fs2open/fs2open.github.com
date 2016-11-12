@@ -100,6 +100,7 @@ set(FSO_INSTRUCTION_SET ${MSVC_SIMD_INSTRUCTIONS})
 
 LIST(FIND POSSIBLE_INSTUCTION_SETS "${MSVC_SIMD_INSTRUCTIONS}" SET_INDEX)
 
+set(SIMD_SET "NONE")
 if (SET_INDEX LESS 0)
 	MESSAGE(STATUS "An invalid instruction set was specified, defaulting to no special compiler options.")
 else()
@@ -113,6 +114,8 @@ else()
 			IF(COMPILER_SUPPORTS_ARCH_${_simd_set})
 				set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /arch:${_simd_set}")
 				set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /arch:${_simd_set}")
+                
+                set(SIMD_SET "${_simd_set}")
 
 				SET(FOUND TRUE)
 				BREAK()
@@ -135,6 +138,9 @@ endif()
 
 target_compile_definitions(compiler INTERFACE _CRT_SECURE_NO_DEPRECATE
 _CRT_SECURE_NO_WARNINGS _SECURE_SCL=0 NOMINMAX "$<$<CONFIG:FastDebug>:_ITERATOR_DEBUG_LEVEL=0>")
+    
+# Define preprocessor defines for used SIMD set
+target_compile_definitions(compiler INTERFACE SIMD_USE_${SIMD_SET} SIMD_SET="${SIMD_SET}")
 	
 if (FSO_FATAL_WARNINGS)
 	# Make warnings fatal if the right variable is set
