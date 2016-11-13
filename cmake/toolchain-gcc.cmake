@@ -7,6 +7,7 @@ MESSAGE(STATUS "Doing configuration specific to gcc...")
 
 option(GCC_ENABLE_LEAK_CHECK "Enable -fsanitize=leak" OFF)
 option(GCC_ENABLE_ADDRESS_SANITIZER "Enable -fsanitize=address" OFF)
+option(GCC_ENABLE_SANITIZE_UNDEFINED "Enable -fsanitize=undefined" OFF)
 
 unset(COMPILER_FLAGS)
 if(DEFINED ENV{CXXFLAGS})
@@ -41,19 +42,22 @@ if(GCC_ENABLE_ADDRESS_SANITIZER)
 	CHECK_C_COMPILER_FLAG("-fsanitize=address" SUPPORTS_SANITIZE_ADDRESS)
 
 	if (SUPPORTS_SANITIZE_ADDRESS)
-		set(COMPILER_FLAGS "${COMPILER_FLAGS} -fsanitize=address")
+		set(SANITIZE_FLAGS ${SANITIZE_FLAGS} "address")
 	endif()
-
-	set(SANITIZE_FLAGS ${SANITIZE_FLAGS} "address")
 endif()
 if (GCC_ENABLE_LEAK_CHECK)
 	check_linker_flag("-fsanitize=leak" SUPPORTS_FSANITIZE_LEAK)
 
 	if (SUPPORTS_FSANITIZE_LEAK)
-		set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=leak")
+		set(SANITIZE_FLAGS ${SANITIZE_FLAGS} "leak")
 	endif()
+endif()
+if (GCC_ENABLE_SANITIZE_UNDEFINED)
+	check_linker_flag("-fsanitize=undefined" SUPPORTS_SANITIZE_UNDEFINED)
 
-	set(SANITIZE_FLAGS ${SANITIZE_FLAGS} "leak")
+	if (SUPPORTS_SANITIZE_UNDEFINED)
+		set(SANITIZE_FLAGS ${SANITIZE_FLAGS} "undefined")
+	endif()
 endif()
 
 string(REPLACE ";" "," SANITIZE_FLAGS "${SANITIZE_FLAGS}")
