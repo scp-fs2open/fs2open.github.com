@@ -11405,7 +11405,7 @@ void sexp_repair_subsystem(int n)
 	subsystem = CTEXT(CDR(n));
 	shipnum = ship_name_lookup(shipname);
 	
-	do_submodel_repair = is_sexp_true(CDDDR(n));
+	do_submodel_repair = CDDDR(n) == -1 || is_sexp_true(CDDDR(n));
 	
 	// if no ship, then return immediately.
 	if ( shipnum == -1 ) {
@@ -11515,7 +11515,7 @@ void sexp_set_subsystem_strength(int n)
 	subsystem = CTEXT(CDR(n));
 	percentage = eval_num(CDR(CDR(n)));
 
-	do_submodel_repair = is_sexp_true(CDDDR(n));
+	do_submodel_repair = CDDDR(n) == -1 || is_sexp_true(CDDDR(n));
 
 	shipnum = ship_name_lookup(shipname);
 	
