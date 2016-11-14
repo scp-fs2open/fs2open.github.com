@@ -921,6 +921,8 @@ set(file_root_scripting_api
 	scripting/api/event.cpp
 	scripting/api/file.h
 	scripting/api/file.cpp
+	scripting/api/font.h
+	scripting/api/font.cpp
 	scripting/api/vecmath.h
 	scripting/api/vecmath.cpp
 )
