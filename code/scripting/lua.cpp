@@ -65,6 +65,7 @@
 #include "scripting/api/event.h"
 #include "scripting/api/file.h"
 #include "scripting/api/font.h"
+#include "scripting/api/gameevent.h"
 
 using namespace scripting;
 using namespace scripting::api;
@@ -229,54 +230,6 @@ flag_def_list plr_commands[] = {
 };
 
 int num_plr_commands = sizeof(plr_commands)/sizeof(flag_def_list);
-
-//**********HANDLE: gameevent
-class gameevent_h
-{
-private:
-	int edx;
-public:
-	gameevent_h(){edx=-1;}
-	gameevent_h(int n_event){edx=n_event;}
-
-	bool IsValid(){return (edx > -1 && edx < Num_gs_event_text);}
-
-	int Get(){return edx;}
-};
-
-ade_obj<gameevent_h> l_GameEvent("gameevent", "Game event");
-
-ADE_FUNC(__tostring, l_GameEvent, NULL, "Game event name", "string", "Game event name, or empty string if handle is invalid")
-{
-	gameevent_h *gh = NULL;
-	if(!ade_get_args(L, "o", l_GameEvent.GetPtr(&gh)))
-		return ade_set_error(L, "s", "");
-
-	if(!gh->IsValid())
-		return ade_set_error(L, "s", "");
-
-	return ade_set_args(L, "s", GS_event_text[gh->Get()]);
-}
-
-ADE_VIRTVAR(Name, l_GameEvent, "string", "Game event name", "string", "Game event name, or empty string if handle is invalid")
-{
-	gameevent_h *gh = NULL;
-	char *n_name = NULL;
-	if(!ade_get_args(L, "o|s", l_GameEvent.GetPtr(&gh), &n_name))
-		return ade_set_error(L, "s", "");
-
-	if(!gh->IsValid())
-		return ade_set_error(L, "s", "");
-
-	int edx = gh->Get();
-
-	if(ADE_SETTING_VAR)
-	{
-		Error(LOCATION, "Can't set game event names at this time");
-	}
-
-	return ade_set_args(L, "s", GS_event_text[edx]);
-}
 
 //**********HANDLE: gamestate
 class gamestate_h
