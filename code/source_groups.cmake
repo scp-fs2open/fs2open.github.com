@@ -1018,6 +1018,25 @@ set(file_root_scripting_api_objs
 	scripting/api/objs/wing.h
 )
 
+set(file_root_scripting_lua
+	scripting/lua/LuaArgs.cpp
+	scripting/lua/LuaArgs.h
+	scripting/lua/LuaConvert.cpp
+	scripting/lua/LuaConvert.h
+	scripting/lua/LuaException.h
+	scripting/lua/LuaFunction.cpp
+	scripting/lua/LuaFunction.h
+	scripting/lua/LuaHeaders.h
+	scripting/lua/LuaReference.cpp
+	scripting/lua/LuaReference.h
+	scripting/lua/LuaTable.cpp
+	scripting/lua/LuaTable.h
+	scripting/lua/LuaUtil.cpp
+	scripting/lua/LuaUtil.h
+	scripting/lua/LuaValue.cpp
+	scripting/lua/LuaValue.h
+)
+
 # Ship files
 set (file_root_ship
 	ship/afterburner.cpp
@@ -1262,6 +1281,7 @@ source_group("Render"                             FILES ${file_root_render})
 source_group("Scripting"                          FILES ${file_root_scripting})
 source_group("Scripting\\Api\\Libs"               FILES ${file_root_scripting_api_libs})
 source_group("Scripting\\Api\\Objs"               FILES ${file_root_scripting_api_objs})
+source_group("Scripting\\Lua"                     FILES ${file_root_scripting_lua})
 source_group("Ship"                               FILES ${file_root_ship})
 source_group("Sound"                              FILES ${file_root_sound})
 source_group("Sound\\FFmpeg"                      FILES ${file_root_sound_ffmpeg})
@@ -1355,6 +1375,7 @@ set (file_root
 	${file_root_scripting}
 	${file_root_scripting_api_libs}
 	${file_root_scripting_api_objs}
+	${file_root_scripting_lua}
 	${file_root_ship}
 	${file_root_sound}
 	${file_root_sound_ffmpeg}

@@ -412,23 +412,6 @@ template <class T> void CAP( T& v, T mn, T mx )
 
 #include "globalincs/fsmemory.h"
 
-//=========================================================
-// Scripting
-//=========================================================
-//-WMC
-typedef struct script_hook
-{
-	//Override
-	int o_language;
-	int o_index;
-	//Actual hook
-	int h_language;
-	int h_index;
-} script_hook;
-
-extern void script_hook_init(script_hook *hook);
-extern bool script_hook_valid(script_hook *hook);
-
 class camid
 {
 private:

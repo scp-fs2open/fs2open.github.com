@@ -40,6 +40,17 @@ add_file_folder(scripting_api "Scripting\\\\API"
     scripting/api/enums.cpp
 )
 
+add_file_folder(scripting_api "Scripting\\\\Lua"
+    scripting/lua/Args.cpp
+    scripting/lua/Convert.cpp
+    scripting/lua/Function.cpp
+    scripting/lua/Reference.cpp
+    scripting/lua/Table.cpp
+    scripting/lua/TestUtil.h
+    scripting/lua/Util.cpp
+    scripting/lua/Value.cpp
+)
+
 add_file_folder(util "Util"
     util/FSTestFixture.cpp
     util/FSTestFixture.h
