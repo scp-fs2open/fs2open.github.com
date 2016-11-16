@@ -32,10 +32,10 @@ UniqueLuaReference::UniqueLuaReference(lua_State* state, int reference) : _luaSt
 		throw LuaException("Reference must be greater than or equal to zero!");
 	}
 }
-UniqueLuaReference::UniqueLuaReference() : _luaState(nullptr), _reference(-1) {
+UniqueLuaReference::UniqueLuaReference() : _luaState(nullptr), _reference(LUA_NOREF) {
 }
 
-UniqueLuaReference::UniqueLuaReference(UniqueLuaReference&& other) : _luaState(nullptr), _reference(-1) {
+UniqueLuaReference::UniqueLuaReference(UniqueLuaReference&& other) : _luaState(nullptr), _reference(LUA_NOREF) {
 	*this = std::move(other);
 }
 UniqueLuaReference& UniqueLuaReference::operator=(UniqueLuaReference&& other) {
@@ -51,7 +51,7 @@ UniqueLuaReference::~UniqueLuaReference() {
 bool UniqueLuaReference::removeReference() {
 	if (this->isValid()) {
 		luaL_unref(_luaState, LUA_REGISTRYINDEX, _reference);
-		_reference = -1;
+		_reference = LUA_NOREF;
 		return true;
 	} else {
 		return false;
@@ -67,7 +67,7 @@ bool UniqueLuaReference::isValid() const {
 		return false;
 	}
 
-	if (_reference < 0) {
+	if (_reference == LUA_NOREF) {
 		return false;
 	}
 
