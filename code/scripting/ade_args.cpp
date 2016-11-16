@@ -2,6 +2,10 @@
 #include "scripting/ade_args.h"
 #include "scripting/ade.h"
 
+#include "scripting/lua/LuaTable.h"
+#include "scripting/lua/LuaFunction.h"
+#include "scripting/lua/LuaConvert.h"
+
 namespace {
 using namespace scripting;
 
@@ -93,13 +97,6 @@ int ade_get_args(lua_State *L, const char *fmt, ...)
 	total_args += Ade_get_args_skip;
 	while(*fmt && nargs <= total_args)
 	{
-		//Skip functions; I assume these are being used to return args
-		while(lua_type(L, nargs) == LUA_TFUNCTION && nargs <= total_args)
-			nargs++;
-
-		if(nargs > total_args)
-			break;
-
 		switch(*fmt++)
 		{
 			case 'b':
@@ -225,6 +222,34 @@ int ade_get_args(lua_State *L, const char *fmt, ...)
 				}
 			}
 				break;
+			case 't':
+			{
+				// Get a table
+				try {
+					*va_arg(vl, luacpp::LuaTable*) = luacpp::convert::popValue<luacpp::LuaTable>(L, nargs, false);
+				} catch (const luacpp::LuaException& e) {
+					LuaError(L, "%s: Argument %d is an invalid type '%s'; table expected.", funcname, nargs, ade_get_type_string(L, nargs));
+					if(!optional_args) {
+						va_end(vl);
+						return 0;
+					}
+				}
+				break;
+			}
+			case 'u':
+			{
+				// Get a function
+				try {
+					*va_arg(vl, luacpp::LuaFunction*) = luacpp::convert::popValue<luacpp::LuaFunction>(L, nargs, false);
+				} catch (const luacpp::LuaException& e) {
+					LuaError(L, "%s: Argument %d is an invalid type '%s'; function expected.", funcname, nargs, ade_get_type_string(L, nargs));
+					if(!optional_args) {
+						va_end(vl);
+						return 0;
+					}
+				}
+				break;
+			}
 			case '|':
 				nargs--;	//cancel out the nargs++ at the end
 				counted_args--;
@@ -319,6 +344,20 @@ int ade_set_args(lua_State *L, const char *fmt, ...)
 					ODATA_SIG_TYPE tempsig = ODATA_SIG_DEFAULT;
 					memcpy(newod + od.size, &tempsig, sizeof(ODATA_SIG_TYPE));
 				}
+				break;
+			}
+			case 't':
+			{
+				// Set a table
+				luacpp::LuaTable* table = va_arg(vl, luacpp::LuaTable*); // This must be a pointer since C++ classes can't be passed by vararg
+				table->pushValue();
+				break;
+			}
+			case 'u':
+			{
+				// Set a function
+				luacpp::LuaFunction* func = va_arg(vl, luacpp::LuaFunction*); // This must be a pointer since C++ classes can't be passed by vararg
+				func->pushValue();
 				break;
 			}
 				//WMC -  Don't forget to update lua_set_arg

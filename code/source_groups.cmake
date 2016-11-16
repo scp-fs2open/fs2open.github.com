@@ -1021,7 +1021,6 @@ set(file_root_scripting_api_objs
 set(file_root_scripting_lua
 	scripting/lua/LuaArgs.cpp
 	scripting/lua/LuaArgs.h
-	scripting/lua/LuaConvert.cpp
 	scripting/lua/LuaConvert.h
 	scripting/lua/LuaException.h
 	scripting/lua/LuaFunction.cpp

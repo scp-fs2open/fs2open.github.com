@@ -228,6 +228,35 @@ template<typename Type>
 bool operator>=(const LuaValue& lhs, const Type& rhs) {
 	return !(lhs < rhs);
 }
+
+namespace convert {
+
+template<>
+inline void pushValue<LuaValue>(lua_State* luaState, const LuaValue& value) {
+	if (luaState != value.getLuaState()) {
+		throw LuaException("Lua state mismatch!");
+	}
+
+	value.pushValue();
+}
+
+template<>
+inline LuaValue popValue<LuaValue>(lua_State* luaState, int stackposition, bool remove) {
+	if (!isValidIndex(luaState, stackposition)) {
+		throw LuaException("Specified stack position is not valid!");
+	}
+
+	LuaValue target;
+	target.setReference(UniqueLuaReference::create(luaState, stackposition));
+
+	if (remove) {
+		lua_remove(luaState, stackposition);
+	}
+
+	return target;
+}
+
+}
 }
 
 #endif

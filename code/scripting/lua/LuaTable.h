@@ -166,6 +166,30 @@ class LuaTable: public LuaValue {
      */
 	LuaTableIterator iterator();
 };
+
+namespace convert {
+
+template<>
+inline LuaTable popValue<LuaTable>(lua_State* luaState, int stackposition, bool remove) {
+	if (!isValidIndex(luaState, stackposition)) {
+		throw LuaException("Specified stack position is not valid!");
+	}
+
+	if (!lua_istable(luaState, stackposition)) {
+		throw LuaException("Specified index is no table!");
+	} else {
+		LuaTable target;
+		target.setReference(UniqueLuaReference::create(luaState, stackposition));
+
+		if (remove) {
+			lua_remove(luaState, stackposition);
+		}
+
+		return target;
+	}
+}
+
+}
 }
 
 #endif
