@@ -62,24 +62,74 @@ size_t LuaTable::getLength() {
 	return length;
 }
 
-LuaTableIterator LuaTable::iterator() {
-	this->pushValue();
+LuaTable::iterator::iterator(const LuaTable& parent) {
+	_iter.reset(new LuaTableIterator(parent));
+}
+LuaTable::iterator::iterator() : _iter(nullptr), _atEnd(true) {
+}
+bool LuaTable::iterator::operator==(const iterator& other) {
+	return _atEnd == other._atEnd;
+}
+bool LuaTable::iterator::operator!=(const LuaTable::iterator& other) {
+	return !(*this == other);
+}
+LuaTable::iterator& LuaTable::iterator::operator++() {
+	_iter->toNextElement();
 
-	return LuaTableIterator(this);
+	_atEnd = !_iter->hasElement();
+
+	return *this;
+}
+LuaTable::iterator& LuaTable::iterator::operator++(int) {
+	return ++(*this); // Post-fix operator doesn't make sense for us.
+}
+std::pair<LuaValue, LuaValue> LuaTable::iterator::operator*() {
+	return _iter->getElement();
 }
 
-LuaTableIterator::LuaTableIterator(LuaTable* parent) : _parent(parent) {
-	// Prepare the iteration
-	lua_pushnil(_parent->getLuaState());
+LuaTable::iterator LuaTable::begin() {
+	iterator iter(*this);
+
+	// This will call lua_next and automatically handle the end of the table
+	return iter;
+}
+LuaTable::iterator LuaTable::end() {
+	return iterator(); // Empty iterator
 }
 
-bool LuaTableIterator::toNext() {
-	if (lua_next(_parent->getLuaState(), -2) == 0) {
-		// Pop the table we are iterating
-		lua_pop(_parent->getLuaState(), 1);
-		return false;
-	} else {
-		return true;
+LuaTableIterator::LuaTableIterator(const LuaTable& t) : _L(t.getLuaState()) {
+	_stackTop = lua_gettop(_L);
+
+	t.pushValue();
+	lua_pushnil(_L);
+
+	toNextElement();
+}
+LuaTableIterator::~LuaTableIterator() {
+	lua_settop(_L, _stackTop);
+}
+bool LuaTableIterator::hasElement() {
+	return _hasElement;
+}
+void LuaTableIterator::toNextElement() {
+	auto ret = lua_next(_L, -2);
+
+	_hasElement = ret != 0;
+
+	if (_hasElement) {
+		LuaValue key;
+		key.setReference(UniqueLuaReference::create(_L, -2));
+
+		LuaValue value;
+		value.setReference(UniqueLuaReference::create(_L, -1));
+
+		_currentVal = std::make_pair(key, value);
+
+		// Remove value from stack
+		lua_pop(_L, 1);
 	}
+}
+std::pair<LuaValue, LuaValue> LuaTableIterator::getElement() {
+	return _currentVal;
 }
 }

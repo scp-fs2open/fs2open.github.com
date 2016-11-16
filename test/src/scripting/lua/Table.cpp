@@ -106,37 +106,39 @@ TEST_F(LuaTableTest, Iterator) {
 
 	EXPECT_TRUE(convert::popValue(L, table));
 
-	auto iter = table.iterator();
-
 	int i = 0;
-	while (iter.toNext()) {
+	for (auto keyval : table) {
 		switch (i) {
 			case 0: {
-				ASSERT_STREQ("value1", lua_tostring(L, -1));
-				lua_pop(L, 1);
+				ASSERT_TRUE(keyval.first.is(ValueType::NUMBER));
+				ASSERT_EQ(1, keyval.first.getValue<int>());
 
-				ASSERT_DOUBLE_EQ(1.0, lua_tonumber(L, -1));
+				ASSERT_TRUE(keyval.second.is(ValueType::STRING));
+				ASSERT_STREQ("value1", keyval.second.getValue<std::string>().c_str());
 				break;
 			}
 			case 1: {
-				ASSERT_STREQ("value2", lua_tostring(L, -1));
-				lua_pop(L, 1);
+				ASSERT_TRUE(keyval.first.is(ValueType::NUMBER));
+				ASSERT_EQ(2, keyval.first.getValue<int>());
 
-				ASSERT_DOUBLE_EQ(2.0, lua_tonumber(L, -1));
+				ASSERT_TRUE(keyval.second.is(ValueType::STRING));
+				ASSERT_STREQ("value2", keyval.second.getValue<std::string>().c_str());
 				break;
 			}
 			case 2: {
-				ASSERT_STREQ("value3", lua_tostring(L, -1));
-				lua_pop(L, 1);
+				ASSERT_TRUE(keyval.first.is(ValueType::NUMBER));
+				ASSERT_EQ(3, keyval.first.getValue<int>());
 
-				ASSERT_DOUBLE_EQ(3.0, lua_tonumber(L, -1));
+				ASSERT_TRUE(keyval.second.is(ValueType::STRING));
+				ASSERT_STREQ("value3", keyval.second.getValue<std::string>().c_str());
 				break;
 			}
 			case 3: {
-				ASSERT_STREQ("value4", lua_tostring(L, -1));
-				lua_pop(L, 1);
+				ASSERT_TRUE(keyval.first.is(ValueType::STRING));
+				ASSERT_STREQ("key", keyval.first.getValue<std::string>().c_str());
 
-				ASSERT_STREQ("key", lua_tostring(L, -1));
+				ASSERT_TRUE(keyval.second.is(ValueType::STRING));
+				ASSERT_STREQ("value4", keyval.second.getValue<std::string>().c_str());
 				break;
 			}
 			default:

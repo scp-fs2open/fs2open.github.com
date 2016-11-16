@@ -5,30 +5,54 @@
 #include "LuaConvert.h"
 #include "LuaValue.h"
 
+#include <iterator>
+
 namespace luacpp {
 class LuaTable;
 
 /**
-* @brief An iterator for a lua table.
-*
-* Provides a way to iterate over the contents of a lua table:
-*
-* @see luacpp::util::tableListPairs for an example on how to use this
-*/
+ * @brief Utility class for iterating over the contents of a lua table
+ *
+ * The elements are returned as key-value pairs of the table
+ *
+ * @warning Never manipulate the lua stack while using an instance of this class! It's ok to change the stack but it must
+ * be in the exact same state when you call the next method of this class.
+ */
 class LuaTableIterator {
+	lua_State* _L = nullptr;
+
+	int _stackTop = 0;
+
+	bool _hasElement = false;
+
+	std::pair<LuaValue, LuaValue> _currentVal;
  public:
 	/**
-    * @brief Moves to the next key-value pair of the table.
-    *
-    * @return @c true when a key-value pair is available, @c false otehrwise
-    */
-	bool toNext();
- private:
-	LuaTableIterator(LuaTable* _parent);
+	 * @brief Initializes the iterator with a table
+	 * @param t The table to iterate iver
+	 */
+	explicit LuaTableIterator(const LuaTable& t);
+	~LuaTableIterator();
 
-	LuaTable* _parent;
+	LuaTableIterator(const LuaTableIterator&) = delete;
+	LuaTableIterator& operator=(const LuaTableIterator&) = delete;
 
-	friend class LuaTable;
+	/**
+	 * @brief Test if there is a valid element
+	 * @return @c true if there is a value, @c false otherwise
+	 */
+	bool hasElement();
+
+	/**
+	 * @brief Advances the iterator to the next element
+	 */
+	void toNextElement();
+
+	/**
+	 * @brief Gets the key-value pair of the current element
+	 * @return The key-value pair
+	 */
+	std::pair<LuaValue, LuaValue> getElement();
 };
 
 /**
@@ -41,6 +65,30 @@ class LuaTableIterator {
 */
 class LuaTable: public LuaValue {
  public:
+	/**
+	 * @brief STL adaptor for LuaTableIterator
+	 *
+	 * This wraps a shared pointer to an iterator so that this class can be copied like the iterator interface expects
+	 */
+	class iterator: public std::iterator<std::input_iterator_tag, std::pair<LuaValue, LuaValue>> {
+	 public:
+		explicit iterator(const LuaTable& _parent);
+		iterator();
+
+		bool operator==(const iterator& other);
+		bool operator!=(const iterator& other);
+
+		iterator& operator++();
+		iterator& operator++(int);
+
+		std::pair<LuaValue, LuaValue> operator*();
+	 private:
+		std::shared_ptr<LuaTableIterator> _iter;
+		bool _atEnd = false;
+	};
+
+	typedef iterator iterator_type;
+
 	/**
     * @brief Creates a new empty table.
     */
@@ -161,10 +209,25 @@ class LuaTable: public LuaValue {
 	size_t getLength();
 
 	/**
-     * @brief Creates LuaTableITerator to iterate over the contents of the table.
-     * @return The iterator instance.
-     */
-	LuaTableIterator iterator();
+	 * @brief Returns an iterator to the begin of this table
+	 *
+	 * This can be used with STL algorithms or with the C++11 range-base-for-loop
+	 *
+	 * @warning Never manipulate the lua stack while using this iterator!
+	 *
+	 * @return The iterator to the begin of the table
+	 */
+	iterator begin();
+
+	/**
+	 * @brief Returns an iterator to the end of this table
+	 *
+	 * This can be used with STL algorithms or with the C++11 range-base-for-loop
+	 *
+	 * @return The iterator to the end of the table
+	 */
+	iterator end();
+
 };
 
 namespace convert {

@@ -32,16 +32,14 @@ void tableListPairs(LuaTable& table, Container& keyValueList) {
 	typedef typename Container::value_type::second_type value_type;
 
 	keyValueList.clear();
-
-	LuaTableIterator iter = table.iterator();
 	lua_State* L = table.getLuaState();
 
-	while (iter.toNext()) {
-		value_type value = convert::popValue<value_type>(L);
-
-		// lua_next gets confused if we use lua_tolstring here so copy the value and pop it
-		lua_pushvalue(L, -1);
+	for (auto val : table) {
+		val.first.pushValue();
 		key_type key = convert::popValue<key_type>(L);
+
+		val.second.pushValue();
+		value_type value = convert::popValue<value_type>(L);
 
 		keyValueList.push_back(std::make_pair(key, value));
 	}
