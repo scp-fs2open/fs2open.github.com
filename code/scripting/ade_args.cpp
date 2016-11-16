@@ -227,7 +227,7 @@ int ade_get_args(lua_State *L, const char *fmt, ...)
 				// Get a table
 				try {
 					*va_arg(vl, luacpp::LuaTable*) = luacpp::convert::popValue<luacpp::LuaTable>(L, nargs, false);
-				} catch (const luacpp::LuaException& e) {
+				} catch (const luacpp::LuaException&) {
 					LuaError(L, "%s: Argument %d is an invalid type '%s'; table expected.", funcname, nargs, ade_get_type_string(L, nargs));
 					if(!optional_args) {
 						va_end(vl);
@@ -241,7 +241,7 @@ int ade_get_args(lua_State *L, const char *fmt, ...)
 				// Get a function
 				try {
 					*va_arg(vl, luacpp::LuaFunction*) = luacpp::convert::popValue<luacpp::LuaFunction>(L, nargs, false);
-				} catch (const luacpp::LuaException& e) {
+				} catch (const luacpp::LuaException&) {
 					LuaError(L, "%s: Argument %d is an invalid type '%s'; function expected.", funcname, nargs, ade_get_type_string(L, nargs));
 					if(!optional_args) {
 						va_end(vl);

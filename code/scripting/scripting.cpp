@@ -877,7 +877,7 @@ int script_state::RunBytecodeSub(script_function& func, char format, void *data)
 			Ade_get_args_skip = 0;
 			Ade_get_args_lfunction = false;
 		}
-	} catch (const LuaException& e) {
+	} catch (const LuaException&) {
 		return 0;
 	}
 
@@ -1095,7 +1095,7 @@ bool script_state::EvalString(const char *string, const char *format, void *rtn,
 				Ade_get_args_skip = 0;
 				Ade_get_args_lfunction = false;
 			}
-		} catch (const LuaException& e) {
+		} catch (const LuaException&) {
 			return false;
 		}
 	} catch (const LuaException& e) {
@@ -1107,14 +1107,14 @@ bool script_state::EvalString(const char *string, const char *format, void *rtn,
 	return true;
 }
 
-void script_state::ParseChunkSub(script_function& out_func, const char* debug_str)
+void script_state::ParseChunkSub(script_function& script_func, const char* debug_str)
 {
 	using namespace luacpp;
 
 	Assert(debug_str != NULL);
 
 	//Lua
-	out_func.language = SC_LUA;
+	script_func.language = SC_LUA;
 
 	std::string source;
 	std::string function_name(debug_str);
@@ -1149,10 +1149,6 @@ void script_state::ParseChunkSub(script_function& out_func, const char* debug_st
 	else if(check_for_string("["))
 	{
 		//Lua string
-
-		//Assume Lua
-		out_func.language = SC_LUA;
-
 		//Allocate raw script
 		char* raw_lua = alloc_block("[", "]", 1);
 		//WMC - minor hack to make sure that the last line gets
@@ -1178,7 +1174,7 @@ void script_state::ParseChunkSub(script_function& out_func, const char* debug_st
 		auto function = LuaFunction::createFromCode(LuaState, source, function_name);
 		function.setErrorFunction(LuaFunction::createFromCFunction(LuaState, ade_friendly_error));
 
-		out_func.function = function;
+		script_func.function = function;
 	} catch (const LuaException& e) {
 		LuaError(GetLuaSession(), "%s", e.what());
 	}

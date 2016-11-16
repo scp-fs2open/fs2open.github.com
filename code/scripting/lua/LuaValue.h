@@ -181,11 +181,11 @@ class LuaValue {
 template<typename Type>
 bool operator==(const LuaValue& lhs, const Type& rhs) {
 	lhs.pushValue();
-	convert::pushValue(lhs._luaState, rhs);
+	convert::pushValue(lhs.getLuaState(), rhs);
 
-	bool result = lua_equal(lhs._luaState, -2, -1) != 0;
+	bool result = lua_equal(lhs.getLuaState(), -2, -1) != 0;
 
-	lua_pop(lhs._luaState, 2);
+	lua_pop(lhs.getLuaState(), 2);
 
 	return result;
 }
@@ -200,11 +200,11 @@ bool operator==(const LuaValue& lhs, const Type& rhs) {
 template<typename Type>
 bool operator<(const LuaValue& lhs, const Type& rhs) {
 	lhs.pushValue();
-	convert::pushValue(lhs._luaState, rhs);
+	convert::pushValue(lhs.getLuaState(), rhs);
 
-	bool result = lua_lessthan(lhs._luaState, -2, -1) != 0;
+	bool result = lua_lessthan(lhs.getLuaState(), -2, -1) != 0;
 
-	lua_pop(lhs._luaState, 2);
+	lua_pop(lhs.getLuaState(), 2);
 
 	return result;
 }

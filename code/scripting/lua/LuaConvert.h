@@ -7,6 +7,8 @@
 #include "LuaConvert.h"
 #include "LuaReference.h"
 
+#include <cstdlib>
+
 namespace luacpp {
 /**
  * @brief Contains functions to convert C++ values to and from lua values.
@@ -28,7 +30,7 @@ namespace convert {
 namespace {
 
 bool isValidIndex(lua_State* state, int index) {
-	if (1 <= abs(index) && abs(index) <= lua_gettop(state)) {
+	if (1 <= std::abs(index) && std::abs(index) <= lua_gettop(state)) {
 		return true;
 	} else {
 		return false;
@@ -77,7 +79,7 @@ inline void pushValue<int>(lua_State* luaState, const int& value) {
 
 template<>
 inline void pushValue<size_t>(lua_State* luaState, const size_t& value) {
-	lua_pushnumber(luaState, value);
+	lua_pushnumber(luaState, (lua_Number)value);
 }
 
 template<>
