@@ -4,10 +4,14 @@
 #include "LuaHeaders.h"
 
 namespace luacpp {
-LuaFunction LuaFunction::createFromCFunction(lua_State* L, lua_CFunction function) {
+LuaFunction LuaFunction::createFromCFunction(lua_State* L, lua_CFunction function, const LuaValueList& upvalues) {
 	LuaFunction func;
 
-	lua_pushcfunction(L, function);
+	for (auto& val : upvalues) {
+		val.pushValue();
+	}
+
+	lua_pushcclosure(L, function, (int) upvalues.size());
 
 	func.setReference(UniqueLuaReference::create(L));
 

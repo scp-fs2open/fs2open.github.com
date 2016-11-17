@@ -45,7 +45,7 @@ class LuaFunction: public LuaValue {
      * @param function The function pointer
      * @return luacpp::LuaFunction
      */
-	static LuaFunction createFromCFunction(lua_State* L, lua_CFunction function);
+	static LuaFunction createFromCFunction(lua_State* L, lua_CFunction function, const LuaValueList& upvalues = LuaValueList());
 
 	/**
      * @brief Default constructor

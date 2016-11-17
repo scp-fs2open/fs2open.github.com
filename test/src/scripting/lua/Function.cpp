@@ -27,6 +27,25 @@ int testErrorFunctionTwoRetVals(lua_State* L) {
 int testErrorFunctionNoRetVals(lua_State* L) {
 	return 0;
 }
+
+int upvalueTest(lua_State* L) {
+	auto upval = lua_upvalueindex(1);
+
+	if (!lua_isstring(L, upval)) {
+		lua_pushboolean(L, 0);
+		return 1;
+	}
+
+	auto val = lua_tostring(L, upval);
+	if (strcmp(val, "UpvalueTest")) {
+		lua_pushboolean(L, 0);
+		return 1;
+	}
+
+	// Value is valid
+	lua_pushboolean(L, 1);
+	return 1;
+}
 }
 
 class LuaFunctionTest: public LuaStateTest {
@@ -194,4 +213,18 @@ TEST_F(LuaFunctionTest, ErrorFunctionNoReturnValues) {
 	catch (const LuaException& err) {
 		ASSERT_STREQ("Invalid lua value on stack!", err.what());
 	}
+}
+
+TEST_F(LuaFunctionTest, Upvalues) {
+	ScopedLuaStackTest stackTest(L);
+
+	LuaValue upval = LuaValue::createValue(L, "UpvalueTest");
+
+	LuaFunction func = LuaFunction::createFromCFunction(L, upvalueTest, { upval });
+
+	auto ret = func();
+
+	ASSERT_EQ(1, ret.size());
+	ASSERT_TRUE(ret.front().is(ValueType::BOOLEAN));
+	ASSERT_TRUE(ret.front().getValue<bool>());
 }
