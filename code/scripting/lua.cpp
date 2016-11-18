@@ -197,6 +197,10 @@ int script_state::CreateLuaState()
 	mprintf(("ADE: Assigning Lua session...\n"));
 	SetLuaSession(L);
 
+	//***** LOAD DEFAULT SCRIPTS
+	mprintf(("ADE: Loading default scripts...\n"));
+	load_default_script(L, "cfile_require.lua");
+
 //	(void)l_BitOps.GetName();
 
 	return 1;

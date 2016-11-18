@@ -9,6 +9,7 @@
 #include <ship/ship.h>
 #include <io/timer.h>
 #include <localization/localize.h>
+#include <mod_table/mod_table.h>
 
 test::FSTestFixture::FSTestFixture(uint64_t init_flags) : testing::Test(), _initFlags(init_flags) {
 	addCommandlineArg("-parse_cmdline_only");
@@ -45,6 +46,10 @@ void test::FSTestFixture::SetUp() {
 
 		lcl_init(-1);
 		lcl_xstr_init();
+
+		if (_initFlags & INIT_MOD_TABLE) {
+			mod_table_init();		// load in all the mod dependent settings
+		}
 
 		if (_initFlags & INIT_GRAPHICS) {
 			if (!gr_init(nullptr, GR_STUB, 1024, 768)) {

@@ -1,7 +1,10 @@
 //
 //
 
+#include "def_files/def_files.h"
+#include "mod_table/mod_table.h"
 #include "scripting/ade.h"
+#include "scripting/lua/LuaFunction.h"
 #include "ship/ship.h"
 #include "ade_api.h"
 
@@ -998,6 +1001,47 @@ int ade_set_object_with_breed(lua_State *L, int obj_idx)
 		return ade_set_args(L, "o", l_Beam.Set(object_h(objp)));
 	default:
 		return ade_set_args(L, "o", l_Object.Set(object_h(objp)));
+	}
+}
+
+void load_default_script(lua_State* L, const char* name) {
+	using namespace luacpp;
+
+	SCP_string source;
+	SCP_string source_name;
+	if (Enable_external_default_scripts && cf_exists(name, CF_TYPE_SCRIPTS)) {
+		// Load from disk (or built-in file)
+		source_name = name;
+
+		auto cfp = cfopen(name, "rb", CFILE_NORMAL, CF_TYPE_SCRIPTS);
+		Assertion(cfp != nullptr, "Failed to open default file!");
+
+		auto length = cfilelength(cfp);
+
+		source.resize((size_t) length);
+		cfread(&source[0], 1, length, cfp);
+
+		cfclose(cfp);
+	} else {
+		// Load from default files
+		source_name = SCP_string("default ") + name;
+
+		auto def = defaults_get_file(name);
+
+		auto c = reinterpret_cast<const char*>(def.data);
+		source.assign(c, c + def.size);
+	}
+
+	try {
+		auto func = LuaFunction::createFromCode(L, source, source_name);
+		func.setErrorFunction(LuaFunction::createFromCFunction(L, ade_friendly_error));
+		try {
+			func();
+		} catch (const LuaException&) {
+			// The execution of the function may also throw an exception but that should have been handled by a LuaError before
+		}
+	} catch (const LuaException& e) {
+		LuaError(L, "Error while loading default script: %s", e.what());
 	}
 }
 
