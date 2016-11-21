@@ -13760,6 +13760,10 @@ ADE_FUNC(hasViewmode, l_Graphics, "enumeration", "Specifies if the current viemo
 		break;
 
 	case LE_VM_EXTERNAL_CAMERA_LOCKED:
+		return ade_set_args(L, "b", (Viewer_mode & VM_CAMERA_LOCKED) && (Viewer_mode & VM_EXTERNAL));
+		break;
+
+	case LE_VM_CAMERA_LOCKED:
 		bit = VM_CAMERA_LOCKED;
 		break;
 
@@ -13797,6 +13801,10 @@ ADE_FUNC(hasViewmode, l_Graphics, "enumeration", "Specifies if the current viemo
 
 	case LE_VM_WARPIN_ANCHOR:
 		bit = VM_WARPIN_ANCHOR;
+		break;
+
+	case LE_VM_CENTERING:
+		bit = VM_CENTERING;
 		break;
 
 	default:

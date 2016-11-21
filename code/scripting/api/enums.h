@@ -73,6 +73,7 @@ const int32_t LE_VM_DEAD_VIEW					= 57;
 const int32_t LE_VM_CHASE						= 58;
 const int32_t LE_VM_OTHER_SHIP					= 59;
 const int32_t LE_VM_EXTERNAL_CAMERA_LOCKED		= 60;
+const int32_t LE_VM_CAMERA_LOCKED				= 75;
 const int32_t LE_VM_WARP_CHASE					= 61;
 const int32_t LE_VM_PADLOCK_UP					= 62;
 const int32_t LE_VM_PADLOCK_REAR				= 63;
@@ -81,11 +82,12 @@ const int32_t LE_VM_PADLOCK_RIGHT				= 65;
 const int32_t LE_VM_WARPIN_ANCHOR				= 66;
 const int32_t LE_VM_TOPDOWN						= 67;
 const int32_t LE_VM_FREECAMERA					= 68;
+const int32_t LE_VM_CENTERING					= 76;
 const int32_t LE_MESSAGE_PRIORITY_LOW			= 71;
 const int32_t LE_MESSAGE_PRIORITY_NORMAL		= 72;
 const int32_t LE_MESSAGE_PRIORITY_HIGH			= 73;
 
-const int ENUM_NEXT_INDEX = 75; // <<<<<<<<<<<<<<<<<<<<<<
+const int ENUM_NEXT_INDEX = 77; // <<<<<<<<<<<<<<<<<<<<<<
 extern flag_def_list Enumerations[];
 extern size_t Num_enumerations;
 
