@@ -13740,7 +13740,7 @@ ADE_FUNC(hasViewmode, l_Graphics, "enumeration", "Specifies if the current viemo
 	switch(type->index)
 	{
 	case LE_VM_INTERNAL:
-		return ade_set_args(L, "b", (Viewer_mode & !VM_CAMERA_LOCKED) == 0);	// z64: Ignore camera lock state
+		return ade_set_args(L, "b", (Viewer_mode & ~(VM_CAMERA_LOCKED | VM_CENTERING)) == 0);	// z64: Ignore camera lock state and centering state
 		break;
 
 	case LE_VM_EXTERNAL:
