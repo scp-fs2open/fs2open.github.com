@@ -392,6 +392,12 @@ flag_def_list Enumerations[] = {
 	},
 
 	{
+		"VM_CAMERA_LOCKED",
+		LE_VM_CAMERA_LOCKED,
+		0
+	},
+
+	{
 		"VM_WARP_CHASE",
 		LE_VM_WARP_CHASE,
 		0
@@ -436,6 +442,12 @@ flag_def_list Enumerations[] = {
 	{
 		"VM_FREECAMERA",
 		LE_VM_FREECAMERA,
+		0
+	},
+
+	{
+		"VM_CENTERING",
+		LE_VM_CENTERING,
 		0
 	},
 
