@@ -213,7 +213,7 @@ void shield_balance(object *objp, float rate, float penalty) {
 	shield_hp_avg *= 1 - penalty;
 
 	for (int i = 0; i < objp->n_quadrants; ++i) {
-		if (abs(objp->shield_quadrant[i] - shield_hp_avg) < 0.01f) {
+		if (fabsf(objp->shield_quadrant[i] - shield_hp_avg) < 0.01f) {
 			// Very close, so clamp
 			objp->shield_quadrant[i] = shield_hp_avg;
 
