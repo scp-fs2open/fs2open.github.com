@@ -925,6 +925,8 @@ set(file_root_scripting_api
 	scripting/api/font.cpp
 	scripting/api/gameevent.h
 	scripting/api/gameevent.cpp
+	scripting/api/gamestate.h
+	scripting/api/gamestate.cpp
 	scripting/api/vecmath.h
 	scripting/api/vecmath.cpp
 )
