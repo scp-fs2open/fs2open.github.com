@@ -18,7 +18,7 @@
 #include <limits.h>
 
 // Private variables
-static double factor = 1.0 / (log(50.0) - log(1.0));	// Factor used in Goober5000's scale_quad
+static const float shield_scale_factor = static_cast<float>(1.0 / (log(50.0) - log(1.0)));	// Factor used in Goober5000's scale_quad
 
 // Private Function Declarations
 /**
@@ -42,7 +42,7 @@ float scale_quad(float generator_fraction, float quad_strength) {
 	// -----------------
 	//  ln(50) - ln(1)
 	//
-	float effective_strength = quad_strength * ((float)log(generator_fraction) * (float)factor);
+	float effective_strength = quad_strength * (static_cast<float>(log(generator_fraction)) * shield_scale_factor);
 
 	// ensure not negative, which may happen if the shield gets below 1 percent
 	// (since we're dealing with logs)
