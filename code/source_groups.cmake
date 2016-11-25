@@ -919,12 +919,18 @@ set(file_root_scripting_api
 	scripting/api/enums.h
 	scripting/api/event.h
 	scripting/api/event.cpp
+	scripting/api/eye.h
+	scripting/api/eye.cpp
 	scripting/api/file.h
 	scripting/api/file.cpp
 	scripting/api/font.h
 	scripting/api/font.cpp
 	scripting/api/gameevent.h
 	scripting/api/gameevent.cpp
+	scripting/api/gamestate.h
+	scripting/api/gamestate.cpp
+	scripting/api/hudgauge.h
+	scripting/api/hudgauge.cpp
 	scripting/api/vecmath.h
 	scripting/api/vecmath.cpp
 )

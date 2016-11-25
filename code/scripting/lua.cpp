@@ -66,6 +66,9 @@
 #include "scripting/api/file.h"
 #include "scripting/api/font.h"
 #include "scripting/api/gameevent.h"
+#include "scripting/api/gamestate.h"
+#include "scripting/api/hudgauge.h"
+#include "scripting/api/eye.h"
 
 using namespace scripting;
 using namespace scripting::api;
@@ -230,158 +233,6 @@ flag_def_list plr_commands[] = {
 };
 
 int num_plr_commands = sizeof(plr_commands)/sizeof(flag_def_list);
-
-//**********HANDLE: gamestate
-class gamestate_h
-{
-private:
-	int sdx;
-public:
-	gamestate_h(){sdx=-1;}
-	gamestate_h(int n_state){sdx=n_state;}
-
-	bool IsValid(){return (sdx > -1 && sdx < Num_gs_state_text);}
-
-	int Get(){return sdx;}
-};
-
-ade_obj<gamestate_h> l_GameState("gamestate", "Game state");
-
-ADE_FUNC(__tostring, l_GameState, NULL, "Game state name", "string", "Game state name, or empty string if handle is invalid")
-{
-	gamestate_h *gh = NULL;
-	if(!ade_get_args(L, "o", l_GameState.GetPtr(&gh)))
-		return ade_set_error(L, "s", "");
-
-	if(!gh->IsValid())
-		return ade_set_error(L, "s", "");
-
-	return ade_set_args(L, "s", GS_state_text[gh->Get()]);
-}
-
-ADE_VIRTVAR(Name, l_GameState,"string", "Game state name", "string", "Game state name, or empty string if handle is invalid")
-{
-	gamestate_h *gh = NULL;
-	char *n_name = NULL;
-	if(!ade_get_args(L, "o|s", l_GameState.GetPtr(&gh), &n_name))
-		return ade_set_error(L, "s", "");
-
-	if(!gh->IsValid())
-		return ade_set_error(L, "s", "");
-
-	int sdx = gh->Get();
-
-	if(ADE_SETTING_VAR)
-	{
-		Error(LOCATION, "Can't set game state names at this time");
-	}
-
-	return ade_set_args(L, "s", GS_state_text[sdx]);
-}
-
-//**********HANDLE: HUD Gauge
-ade_obj<HudGauge> l_HudGauge("HudGauge", "HUD Gauge handle");
-
-ADE_VIRTVAR(Name, l_HudGauge, "string", "Custom HUD Gauge name", "string", "Custom HUD Gauge name, or nil if handle is invalid")
-{
-	HudGauge* gauge;
-
-	if (!ade_get_args(L, "o", l_HudGauge.GetPtr(&gauge)))
-		return ADE_RETURN_NIL;
-
-	if (gauge->getObjectType() != HUD_OBJECT_CUSTOM)
-		return ADE_RETURN_NIL;
-
-	return ade_set_args(L, "s", gauge->getCustomGaugeName());
-}
-
-ADE_VIRTVAR(Text, l_HudGauge, "string", "Custom HUD Gauge text", "string", "Custom HUD Gauge text, or nil if handle is invalid")
-{
-	HudGauge* gauge;
-	char* text = NULL;
-
-	if (!ade_get_args(L, "o|s", l_HudGauge.GetPtr(&gauge), text))
-		return ADE_RETURN_NIL;
-
-	if (gauge->getObjectType() != HUD_OBJECT_CUSTOM)
-		return ADE_RETURN_NIL;
-
-	if (ADE_SETTING_VAR && text != NULL)
-	{
-		gauge->updateCustomGaugeText(text);
-	}
-
-	return ade_set_args(L, "s", gauge->getCustomGaugeText());
-}
-
-//**********HANDLE: Eyepoint
-struct eye_h
-{
-	int model;
-	int eye_idx;
-
-	eye_h(){model=-1;eye_idx=-1;}
-	eye_h(int n_m, int n_e){model=n_m; eye_idx=n_e;}
-	bool IsValid(){
-		polymodel *pm = NULL;
-		return (model > -1
-			&& (pm = model_get(model)) != NULL
-			&& eye_idx > -1
-			&& eye_idx < pm->n_view_positions);
-	}
-};
-ade_obj<eye_h> l_Eyepoint("eyepoint", "Eyepoint handle");
-
-ADE_VIRTVAR(Normal, l_Eyepoint, "vector", "Eyepoint normal", "vector", "Eyepoint normal, or null vector if handle is invalid")
-{
-	eye_h *eh;
-	vec3d *v;
-	if(!ade_get_args(L, "o|o", l_Eyepoint.GetPtr(&eh), l_Vector.GetPtr(&v)))
-		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
-
-	if(!eh->IsValid())
-		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
-
-	polymodel *pm = model_get(eh->model);
-
-	if(ADE_SETTING_VAR && v != NULL)
-	{
-		pm->view_positions[eh->eye_idx].norm = *v;
-	}
-
-	return ade_set_args(L, "o", l_Vector.Set(pm->view_positions[eh->eye_idx].norm));
-}
-
-ADE_VIRTVAR(Position, l_Eyepoint, "vector", "Eyepoint location (Local vector)", "vector", "Eyepoint location, or null vector if handle is invalid")
-{
-	eye_h *eh;
-	vec3d *v;
-	if(!ade_get_args(L, "o|o", l_Eyepoint.GetPtr(&eh), l_Vector.GetPtr(&v)))
-		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
-
-	if(!eh->IsValid())
-		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
-
-	polymodel *pm = model_get(eh->model);
-
-	if(ADE_SETTING_VAR && v != NULL)
-	{
-		pm->view_positions[eh->eye_idx].pnt = *v;
-	}
-
-	return ade_set_args(L, "o", l_Vector.Set(pm->view_positions[eh->eye_idx].pnt));
-}
-
-ADE_FUNC(IsValid, l_Eyepoint, NULL, "Detect whether this handle is valid", "boolean", "true if valid false otherwise")
-{
-	eye_h *eh = NULL;
-	if (!ade_get_args(L, "o", l_Eyepoint.GetPtr(&eh)))
-	{
-		return ADE_RETURN_FALSE;
-	}
-
-	return ade_set_args(L, "b", eh->IsValid());
-}
 
 //**********HANDLE: model
 class model_h
