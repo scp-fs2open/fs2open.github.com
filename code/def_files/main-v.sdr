@@ -64,7 +64,7 @@ out float fragClipDistance;
 #endif
 #ifdef FLAG_TRANSFORM
 #define TEXELS_PER_MATRIX 4
-void getModelTransform(inout mat4 transform, inout float invisible, int id, int matrix_offset)
+void getModelTransform(inout mat4 transform, out float invisible, int id, int matrix_offset)
 {
 	transform[0] = texelFetch(transform_tex, (matrix_offset + id) * TEXELS_PER_MATRIX);
 	transform[1] = texelFetch(transform_tex, (matrix_offset + id) * TEXELS_PER_MATRIX + 1);
