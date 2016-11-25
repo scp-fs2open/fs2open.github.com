@@ -731,16 +731,13 @@ void opengl_post_shader_header(SCP_stringstream &sflags, shader_type shader_t, i
 		sprintf(temp, "#define SAMPLE_NUM %d\n", ls_samplenum);
 		sflags << temp;
 	} else if ( shader_t == SDR_TYPE_POST_PROCESS_FXAA ) {
-		/* GLSL version < 120 are guarded against reaching this code
-		   path via testing is_minimum_GLSL_version().
-		   Accordingly do not test for them again here. */
-		if (GLSL_version == 120) {
-			sflags << "#define FXAA_GLSL_120 1\n";
-			sflags << "#define FXAA_GLSL_130 0\n";
-		}
-		if (GLSL_version > 120) {
-			sflags << "#define FXAA_GLSL_120 0\n";
-			sflags << "#define FXAA_GLSL_130 1\n";
+		// Since we require OpenGL 3.2 we always have support for GLSL 130
+		sflags << "#define FXAA_GLSL_120 0\n";
+		sflags << "#define FXAA_GLSL_130 1\n";
+
+		if (GLSL_version >= 400) {
+			// The gather function became part of the standard with GLSL 4.00
+			sflags << "#define FXAA_GATHER4_ALPHA 1\n";
 		}
 
 		switch (Cmdline_fxaa_preset) {
