@@ -15,6 +15,7 @@
 #include "cmdline/cmdline.h"
 #include "debugconsole/console.h"
 #include "globalincs/systemvars.h"
+#include "globalincs/tracepoints.h"
 #include "graphics/2d.h"
 #include "graphics/grbatch.h"
 #include "object/object.h"
@@ -350,7 +351,7 @@ namespace particle
 
 		if (Particles.empty())
 			return;
-
+		tracepoint(fs2open, particle_render_set_up__begin);
 		for (SCP_vector<ParticlePtr>::iterator p = Particles.begin(); p != Particles.end(); ++p)
 		{
 			ParticlePtr part = *p;
@@ -416,13 +417,15 @@ namespace particle
 				render_batch = true;
 			}
 		}
-
+		tracepoint(fs2open, particle_render_set_up__end);
+		tracepoint(fs2open, particle_render_batch_render__begin);
 		profile_begin("Batch Render");
 		if (render_batch)
 		{
 			batching_render_all();
 		}
 		profile_end("Batch Render");
+		tracepoint(fs2open, particle_render_batch_render__end);
 	}
 
 	//============================================================================

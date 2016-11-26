@@ -17,6 +17,7 @@
 #include "fireball/fireballs.h"
 #include "freespace.h"
 #include "globalincs/linklist.h"
+#include "globalincs/tracepoints.h"
 #include "iff_defs/iff_defs.h"
 #include "io/timer.h"
 #include "jumpnode/jumpnode.h"
@@ -1434,9 +1435,10 @@ void obj_move_all(float frametime)
 #ifdef OBJECT_CHECK 
 			obj_check_object( objp );
 #endif
-
+		tracepoint(fs2open, obj_move_all_pre__begin);
 		// pre-move
 		PROFILE("Pre Move", obj_move_all_pre(objp, frametime));
+		tracepoint(fs2open, obj_move_all_pre__end);
 
 		// store last pos and orient
 		objp->last_pos = cur_pos;

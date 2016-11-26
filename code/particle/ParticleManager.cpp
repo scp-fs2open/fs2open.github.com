@@ -12,6 +12,7 @@
 
 #include "bmpman/bmpman.h"
 #include "globalincs/systemvars.h"
+#include "globalincs/tracepoints.h"
 
 /**
  * @defgroup particleSystems Particle System

@@ -16,6 +16,7 @@
 #include "asteroid/asteroid.h"
 #include "cmdline/cmdline.h"
 #include "debris/debris.h"
+#include "globalincs/tracepoints.h"
 #include "graphics/opengl/gropengldraw.h"
 #include "jumpnode/jumpnode.h"
 #include "mission/missionparse.h"
@@ -372,9 +373,11 @@ void obj_render_queue_all()
 			}
 
             objp->flags.set(Object::Object_Flags::Was_rendered);
+            tracepoint(fs2open, queue_render__begin);
 			profile_begin("Queue Render");
 			obj_queue_render(objp, &scene);
 			profile_end("Queue Render");
+			tracepoint(fs2open, queue_render__end);
 		}
 	}
 
