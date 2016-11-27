@@ -790,6 +790,8 @@ void obj_player_fire_stuff( object *objp, control_info ci )
 
 void obj_move_call_physics(object *objp, float frametime)
 {
+	TRACE_SCOPE(tracing::Physics);
+
 	int has_fired = -1;	//stop fireing stuff-Bobboau
 
 	//	Do physics for objects with OF_PHYSICS flag set and with some engine strength remaining.
@@ -1112,6 +1114,8 @@ void obj_set_flags( object *obj, const flagset<Object::Object_Flags>& new_flags 
 
 void obj_move_all_pre(object *objp, float frametime)
 {
+	TRACE_SCOPE(tracing::PreMove);
+
 	switch( objp->type )	{
 	case OBJ_WEAPON:
 		if (!physics_paused){
@@ -1176,11 +1180,13 @@ extern fireball Fireballs[];
 
 void obj_move_all_post(object *objp, float frametime)
 {
+	TRACE_SCOPE(tracing::PostMove);
+
 	switch (objp->type)
 	{
 		case OBJ_WEAPON:
 		{
-			profile_auto profile_scope("Weapon post move");
+			TRACE_SCOPE(tracing::WeaponPostMove);
 
 			if ( !physics_paused )
 				weapon_process_post( objp, frametime );
@@ -1227,7 +1233,7 @@ void obj_move_all_post(object *objp, float frametime)
 
 		case OBJ_SHIP:
 		{
-			profile_auto profile_scope("Ship post move");
+			TRACE_SCOPE(tracing::ShipPostMove);
 
 			if ( !physics_paused || (objp==Player_obj) ) {
 				ship_process_post( objp, frametime );
@@ -1274,7 +1280,7 @@ void obj_move_all_post(object *objp, float frametime)
 
 		case OBJ_FIREBALL:
 		{
-			profile_auto profile_scope("Fireball post move");
+			TRACE_SCOPE(tracing::FireballPostMove);
 
 			if ( !physics_paused )
 				fireball_process_post(objp,frametime);
@@ -1319,7 +1325,7 @@ void obj_move_all_post(object *objp, float frametime)
 
 		case OBJ_DEBRIS:
 		{
-			profile_auto profile_scope("Debris post move");
+			TRACE_SCOPE(tracing::DebrisPostMove);
 
 			if ( !physics_paused )
 				debris_process_post(objp, frametime);
@@ -1355,7 +1361,7 @@ void obj_move_all_post(object *objp, float frametime)
 
 		case OBJ_ASTEROID:
 		{
-			profile_auto profile_scope("Asteroid post move");
+			TRACE_SCOPE(tracing::AsteroidPostMove);
 
 			if ( !physics_paused )
 				asteroid_process_post(objp);
@@ -1402,6 +1408,8 @@ MONITOR( NumObjects )
  */
 void obj_move_all(float frametime)
 {
+	TRACE_SCOPE(tracing::MoveObjects);
+
 	object *objp;	
 
 	// Goober5000 - HACK HACK HACK
@@ -1436,7 +1444,7 @@ void obj_move_all(float frametime)
 #endif
 
 		// pre-move
-		PROFILE("Pre Move", obj_move_all_pre(objp, frametime));
+		obj_move_all_pre(objp, frametime);
 
 		// store last pos and orient
 		objp->last_pos = cur_pos;
@@ -1449,12 +1457,12 @@ void obj_move_all(float frametime)
 				multi_oo_interp(objp);
 			} else {
 				// physics
-				PROFILE("Physics", obj_move_call_physics(objp, frametime));
+				obj_move_call_physics(objp, frametime);
 			}
 		}
 
 		// move post
-		PROFILE("Post Move", obj_move_all_post(objp, frametime));
+		obj_move_all_post(objp, frametime);
 
 		// Equipment script processing
 		if (objp->type == OBJ_SHIP) {
@@ -1526,15 +1534,14 @@ void obj_move_all(float frametime)
 	// do pre-collision stuff for beam weapons
 	beam_move_all_pre();
 
-	profile_begin("Collision Detection");
 	if ( Collisions_enabled ) {
+		TRACE_SCOPE(tracing::CollisionDetection);
 		if ( Cmdline_old_collision_sys ) {
 			obj_check_all_collisions();
 		} else {
 			obj_sort_and_collide();
 		}
 	}
-	profile_end("Collision Detection");
 
 	turret_swarm_check_validity();
 
@@ -1577,6 +1584,8 @@ void obj_render(object *obj)
 
 void obj_queue_render(object* obj, draw_list* scene)
 {
+	TRACE_SCOPE(tracing::QueueRender);
+
 	if ( obj->flags[Object::Object_Flags::Should_be_dead] ) return;
 
 	// need to figure out what to do with this hook. 

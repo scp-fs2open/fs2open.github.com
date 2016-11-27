@@ -501,6 +501,7 @@ void draw_list::add_buffer_draw(model_material *render_material, indexed_vertex_
 void draw_list::render_buffer(queued_buffer_draw &render_elements)
 {
 	GR_DEBUG_SCOPE("Render buffer");
+	TRACE_SCOPE(tracing::RenderBuffer);
 
 	gr_set_transform_buffer_offset(render_elements.transform_buffer_offset);
 
@@ -633,6 +634,7 @@ void draw_list::init_render(bool sort)
 void draw_list::render_all(gr_zbuffer_type depth_mode)
 {
 	GR_DEBUG_SCOPE("Render draw list");
+	TRACE_SCOPE(tracing::SubmitDraws);
 
 	Scene_light_handler.resetLightState();
 
@@ -640,7 +642,7 @@ void draw_list::render_all(gr_zbuffer_type depth_mode)
 		int render_index = Render_keys[i];
 
 		if ( depth_mode == ZBUFFER_TYPE_DEFAULT || Render_elements[render_index].render_material.get_depth_mode() == depth_mode ) {
-			PROFILE("Render buffer", render_buffer(Render_elements[render_index]));
+			render_buffer(Render_elements[render_index]);
 		}
 	}
 

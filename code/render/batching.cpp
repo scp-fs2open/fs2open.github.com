@@ -859,7 +859,7 @@ void batching_add_tri(int texture, vertex *verts)
 
 void batching_render_batch_item(primitive_batch_item *item, vertex_layout *layout, primitive_type prim_type, int buffer_num)
 {
-	profile_auto profile_scope("Render batch item");
+	TRACE_SCOPE(tracing::RenderBatchItem);
 
 	if ( item->batch_item_info.mat_type == batch_info::VOLUME_EMISSIVE ) { // Cmdline_softparticles
 		particle_material material_def;
@@ -914,7 +914,7 @@ void batching_allocate_and_load_buffer(primitive_batch_buffer *draw_queue)
 
 void batching_load_buffers(bool distortion)
 {
-	profile_auto profile_scope("Load batching buffers");
+	TRACE_SCOPE(tracing::LoadBatchingBuffers);
 
 	SCP_map<batch_info, primitive_batch>::iterator bi;
 	SCP_map<batch_buffer_key, primitive_batch_buffer>::iterator buffer_iter;
@@ -962,7 +962,7 @@ void batching_load_buffers(bool distortion)
 
 void batching_render_buffer(primitive_batch_buffer *buffer)
 {
-	profile_auto profile_scope("Render batching buffer");
+	TRACE_SCOPE(tracing::RenderBatchBuffer);
 
 	size_t num_batches = buffer->items.size();
 
@@ -982,6 +982,7 @@ void batching_render_buffer(primitive_batch_buffer *buffer)
 void batching_render_all(bool render_distortions)
 {
 	GR_DEBUG_SCOPE("Batching render all");
+	TRACE_SCOPE(tracing::DrawEffects);
 
 	batching_load_buffers(render_distortions);
 

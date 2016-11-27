@@ -1,65 +1,139 @@
-//
-//
-
 #ifndef _TRACING_H
 #define _TRACING_H
 #pragma once
 
 #include "globalincs/pstypes.h"
+#include "tracing/categories.h"
+#include "tracing/scopes.h"
 
-typedef struct profile_sample {
-	uint profile_instances;
-	int open_profiles;
-	//char name[256];
-	SCP_string name;
-	std::uint64_t start_time;	// in microseconds
-	std::uint64_t accumulator;
-	std::uint64_t children_sample_time;
-	uint num_parents;
-	uint num_children;
-	int parent;
-} profile_sample;
+/**
+ * @defgroup tracing The Tracing API
+ *
+ * The tracing system provides functions for gathering tracing data of engine events.
+ */
 
-typedef struct profile_sample_history {
-	bool valid;
-	//char name[256];
-	SCP_string name;
-	float avg;
-	float min;
-	float max;
-	std::uint64_t avg_micro_sec;
-	std::uint64_t min_micro_sec;
-	std::uint64_t max_micro_sec;
-} profile_sample_history;
+/** @file
+ *  @ingroup tracing
+ */
 
-extern SCP_string profile_output;
-
-void profile_init();
-void profile_deinit();
-void profile_begin(const char* name);
-void profile_begin(SCP_string &output_handle, const char* name);
-void profile_end(const char* name);
-void profile_dump_output();
-void profile_dump_json_output();
-void store_profile_in_history(SCP_string &name, float percent, uint64_t time);
-void get_profile_from_history(SCP_string &name, float* avg, float* min, float* max, uint64_t *avg_micro_sec, uint64_t *min_micro_sec, uint64_t *max_micro_sec);
-
-class profile_auto
+namespace tracing
 {
-	SCP_string name;
- public:
-	profile_auto(const char* profile_name): name(profile_name)
-	{
-		profile_begin(profile_name);
-	}
 
-	~profile_auto()
-	{
-		profile_end(name.c_str());
-	}
+/**
+ * @brief Process if used for GPU events
+ */
+const std::int64_t GPU_PID = std::numeric_limits<std::int64_t>::min();
+
+/**
+ * @brief Possible types of events
+ */
+enum class EventType {
+	Invalid,
+	Complete,
+	Begin,
+	End,
+
+	AsyncBegin,
+	AsyncStep,
+	AsyncEnd
 };
 
-// Helper macro to encapsulate a single function call in a profile_begin()/profile_end() pair.
-#define PROFILE(name, function) { profile_begin(name); function; profile_end(name); }
+/**
+ * @brief Data of a trace event
+ */
+struct trace_event {
+	const Category* category = nullptr;
+	const Scope* scope = nullptr;
+	EventType type = EventType::Invalid;
+
+	std::uint64_t timestamp = 0;
+	std::uint64_t duration = 0;
+
+	std::int64_t tid = -1;
+	std::int64_t pid = -1;
+};
+
+/**
+ * @brief Initializes the tracing subsystem
+ */
+void init();
+
+/**
+ * @brief Should be called regularly to process GPU events
+ */
+void process_events();
+
+/**
+ * @brief Deinitializes the tracing subsystem
+ */
+void shutdown();
+
+namespace complete {
+/**
+ * @brief Starts a complete event
+ * @param category The category this event belongs to
+ * @param evt The event which hold the data
+ */
+void start(const Category& category, trace_event* evt);
+
+/**
+ * @brief Ends and submits a complete event
+ *
+ * @warning Must be called from the same thread as the start function
+ *
+ * @param evt The event to submit
+ */
+void end(trace_event* evt);
+
+/**
+ * @brief Class for tracing a scope with a complete event
+ */
+class ScopedCompleteEvent {
+	trace_event _evt;
+
+ public:
+	explicit ScopedCompleteEvent(const Category& category) {
+		start(category, &_evt);
+	}
+	~ScopedCompleteEvent() {
+		end(&_evt);
+	}
+};
+}
+
+namespace async {
+/**
+ * @brief Begins an asynchronous event
+ *
+ * @note Events can be submitted from multiple threads
+ *
+ * @param category The category of the event
+ * @param async_scope The scope of the event
+ */
+void begin(const Category& category, const Scope& async_scope);
+
+/**
+ * @brief Steps an asynchronous event
+ *
+ * @note Events can be submitted from multiple threads
+ *
+ * @param category The category of the event
+ * @param async_scope The scope of the event
+ */
+void step(const Category& category, const Scope& async_scope);
+
+/**
+ * @brief Ends an asynchronous event
+ *
+ * @note Events can be submitted from multiple threads
+ *
+ * @param category The category of the event
+ * @param async_scope The scope of the event
+ */
+void end(const Category& category, const Scope& async_scope);
+}
+}
+
+#define TRACE_SCOPE(category) ::tracing::complete::ScopedCompleteEvent SCP_TOKEN_CONCAT(complete_trace_scope, __LINE__)(category)
 
 #endif //_TRACING_H

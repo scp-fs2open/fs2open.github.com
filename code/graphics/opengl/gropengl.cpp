@@ -32,6 +32,7 @@
 #include "palman/palman.h"
 #include "render/3d.h"
 #include "popup/popup.h"
+#include "tracing/tracing.h"
 
 #if defined(_WIN32)
 #include <windows.h>
@@ -155,6 +156,8 @@ void gr_opengl_flip()
 {
 	if ( !GL_initted )
 		return;
+
+	TRACE_SCOPE(tracing::PageFlip);
 
 	gr_reset_clip();
 

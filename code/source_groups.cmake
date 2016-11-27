@@ -1022,6 +1022,15 @@ set (file_root_tgautils
 
 # Tracing files
 set (file_root_tracing
+	tracing/categories.cpp
+	tracing/categories.h
+	tracing/MainFrameTimer.h
+	tracing/MainFrameTimer.cpp
+	tracing/scopes.cpp
+	tracing/scopes.h
+	tracing/ThreadedEventProcessor.h
+	tracing/TraceEventWriter.h
+	tracing/TraceEventWriter.cpp
 	tracing/tracing.h
 	tracing/tracing.cpp
 )

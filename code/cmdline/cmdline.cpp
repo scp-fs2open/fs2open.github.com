@@ -233,7 +233,6 @@ Flag exe_params[] =
 	{ "-save_render_target",	"Save render targets to file",			true,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-save_render_target", },
 	{ "-verify_vps",		"Spew VP CRCs to vp_crcs.txt",				true,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-verify_vps", },
 	{ "-reparse_mainhall",	"Reparse mainhall.tbl when loading halls",	false,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-reparse_mainhall", },
-	{ "-profile_frame_time","Profile engine subsystems",				true,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-profile_frame_timings", },
 	{ "-profile_write_file", "Write profiling information to file",		true,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-profile_write_file", },
 	{ "-no_unfocused_pause","Don't pause if the window isn't focused",	true,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-no_unfocused_pause", },
 	{ "-benchmark_mode",	"Puts the game into benchmark mode",		true,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-benchmark_mode", },
@@ -480,7 +479,6 @@ cmdline_parm center_res_arg("-center_res", "Resolution of center monitor, format
 cmdline_parm verify_vps_arg("-verify_vps", NULL, AT_NONE);	// Cmdline_verify_vps  -- spew VP crcs to vp_crcs.txt
 cmdline_parm parse_cmdline_only(PARSE_COMMAND_LINE_STRING, "Ignore any cmdline_fso.cfg files", AT_NONE);
 cmdline_parm reparse_mainhall_arg("-reparse_mainhall", NULL, AT_NONE); //Cmdline_reparse_mainhall
-cmdline_parm frame_profile_arg("-profile_frame_time", NULL, AT_NONE); //Cmdline_frame_profile
 cmdline_parm frame_profile_write_file("-profile_write_file", NULL, AT_NONE); // Cmdline_profile_write_file
 cmdline_parm no_unfocused_pause_arg("-no_unfocused_pause", NULL, AT_NONE); //Cmdline_no_unfocus_pause
 cmdline_parm benchmark_mode_arg("-benchmark_mode", NULL, AT_NONE); //Cmdline_benchmark_mode
@@ -508,7 +506,6 @@ char *Cmdline_res = 0;
 char *Cmdline_center_res = 0;
 int Cmdline_verify_vps = 0;
 int Cmdline_reparse_mainhall = 0;
-bool Cmdline_frame_profile = false;
 bool Cmdline_profile_write_file = false;
 bool Cmdline_no_unfocus_pause = false;
 bool Cmdline_benchmark_mode = false;
@@ -1846,14 +1843,8 @@ bool SetCmdlineParams()
 		Cmdline_no_deferred_lighting = 1;
 	}
 
-	if (frame_profile_arg.found() )
-	{
-		Cmdline_frame_profile = true;
-	}
-
 	if (frame_profile_write_file.found())
 	{
-		Cmdline_frame_profile = true;
 		Cmdline_profile_write_file = true;
 	}
 

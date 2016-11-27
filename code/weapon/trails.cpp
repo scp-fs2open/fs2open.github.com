@@ -294,15 +294,13 @@ void trail_render( trail * trailp )
 	if ( (nv % 2) != 1 )
 		Warning( LOCATION, "even number of verts in trail render\n" );
 
-	profile_begin("Trail Draw");
+	TRACE_SCOPE(tracing::TrailDraw);
 	//gr_set_bitmap( ti->texture.bitmap_id, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.0f );
 	//gr_render(nv, Trail_v_list, TMAP_FLAG_TEXTURED | TMAP_FLAG_ALPHA | TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB | TMAP_HTL_3D_UNLIT | TMAP_FLAG_TRISTRIP);
 
 	material material_def;
 	material_set_unlit(&material_def, ti->texture.bitmap_id, 1.0f, true, true);
 	g3_render_primitives_colored_textured(&material_def, Trail_v_list, nv, PRIM_TYPE_TRISTRIP, false);
-
-	profile_end("Trail Draw");
 }
 
 void trail_add_segment( trail *trailp, vec3d *pos )
@@ -335,6 +333,8 @@ void trail_set_segment( trail *trailp, vec3d *pos )
 
 void trail_move_all(float frametime)
 {
+	TRACE_SCOPE(tracing::TrailsMoveAll);
+
 	int num_alive_segments,n;
 	float time_delta;
 	trail *next_trail;
@@ -383,6 +383,8 @@ void trail_object_died( trail *trailp )
 
 void trail_render_all()
 {
+	TRACE_SCOPE(tracing::RenderTrails);
+
 	// No trails at slot 0
 	if ( !Detail.weapon_extras )
 		return;
