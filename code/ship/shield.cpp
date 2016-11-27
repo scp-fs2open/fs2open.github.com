@@ -679,40 +679,6 @@ void copy_shield_to_globals( int objnum, shield_info *shieldp, matrix *hit_orien
 
 
 /**
- * Return absolute amount of damage not applied.
- *
- * This is the version that works on a quadrant basis.
- */
-float apply_damage_to_shield(object *objp, int quadrant, float damage)
-{
-	ai_info	*aip;
-
-	// multiplayer clients bail here
-	if(MULTIPLAYER_CLIENT){
-		return damage;
-	}
-
-	if ( (quadrant < 0)  || (quadrant >= objp->n_quadrants) ) return damage;	
-	
-	Assert(objp->type == OBJ_SHIP);
-	aip = &Ai_info[Ships[objp->instance].ai_index];
-	aip->last_hit_quadrant = quadrant;
-
-	objp->shield_quadrant[quadrant] -= damage;
-
-	if (objp->shield_quadrant[quadrant] < 0.0f) {
-		float	remaining_damage;
-
-		remaining_damage = -objp->shield_quadrant[quadrant];
-		objp->shield_quadrant[quadrant] = 0.0f;
-		return remaining_damage;
-	} else {
-		return 0.0f;
-	}
-		
-}
-
-/**
  * This function needs to be called by big ships which have shields. It should be able to be modified to deal with
  * the large polygons we use for their shield meshes - unknownplayer
  *
@@ -1009,7 +975,7 @@ int ship_is_shield_up( object *obj, int quadrant )
 {
 	if ( (quadrant >= 0) && (quadrant < obj->n_quadrants))	{
 		// Just check one quadrant
-		if (obj->shield_quadrant[quadrant] > MAX(2.0f, 0.1f * get_max_shield_quad(obj)))	{
+		if (obj->shield_quadrant[quadrant] > MAX(2.0f, 0.1f * shield_get_max_quad(obj)))	{
 			return 1;
 		}
 	} else {

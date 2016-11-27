@@ -12238,70 +12238,12 @@ void ai_chase_circle(object *objp)
  */
 void ai_transfer_shield(object *objp, int quadrant_num)
 {
-	int	i;
-	float	transfer_amount;
-	float	transfer_delta;
-	float	max_quadrant_strength;
-
-	max_quadrant_strength = get_max_shield_quad(objp);
-
-	transfer_amount = 0.0f;
-	transfer_delta = (SHIELD_BALANCE_RATE/2) * max_quadrant_strength;
-
-	if (objp->shield_quadrant[quadrant_num] + (objp->n_quadrants-1)*transfer_delta > max_quadrant_strength)
-		transfer_delta = (max_quadrant_strength - objp->shield_quadrant[quadrant_num])/(objp->n_quadrants-1);
-
-	for (i=0; i<objp->n_quadrants; i++)
-		if (i != quadrant_num) {
-			if (objp->shield_quadrant[i] >= transfer_delta) {
-				objp->shield_quadrant[i] -= transfer_delta;
-				transfer_amount += transfer_delta;
-			} else {
-				transfer_amount += objp->shield_quadrant[i];
-				objp->shield_quadrant[i] = 0.0f;
-			}
-		}
-
-	objp->shield_quadrant[quadrant_num] += transfer_amount;
+	shield_transfer(objp, quadrant_num, (SHIELD_BALANCE_RATE / 2));
 }
 
 void ai_balance_shield(object *objp)
 {
-	int	i;
-	float	shield_strength_avg;
-	float	delta;
-
-	// if we are already at the max shield strength then just bail now
-	if ( shield_get_strength(objp) >= shield_get_max_strength(objp) )
-		return;
-
-
-	shield_strength_avg = shield_get_strength(objp)/objp->n_quadrants;
-
-	delta = SHIELD_BALANCE_RATE * shield_strength_avg;
-
-	for (i=0; i<objp->n_quadrants; i++) {
-		if (objp->shield_quadrant[i] < shield_strength_avg) {
-			// only do it the retail way if using smart shields (since that's a bigger thing) - taylor
-			if (Ai_info[Ships[objp->instance].ai_index].ai_profile_flags[AI::Profile_Flags::Smart_shield_management])
-				shield_add_strength(objp, delta);
-			else
-				objp->shield_quadrant[i] += delta/objp->n_quadrants;
-
-			if (objp->shield_quadrant[i] > shield_strength_avg)
-				objp->shield_quadrant[i] = shield_strength_avg;
-
-		} else {
-			// only do it the retail way if using smart shields (since that's a bigger thing) - taylor
-			if (Ai_info[Ships[objp->instance].ai_index].ai_profile_flags[AI::Profile_Flags::Smart_shield_management])
-				shield_add_strength(objp, -delta);
-			else
-				objp->shield_quadrant[i] -= delta/objp->n_quadrants;
-
-			if (objp->shield_quadrant[i] < shield_strength_avg)
-				objp->shield_quadrant[i] = shield_strength_avg;
-		}
-	}
+	shield_balance(objp, SHIELD_BALANCE_RATE, 0.0f);
 }
 
 //	Manage the shield for this ship.
