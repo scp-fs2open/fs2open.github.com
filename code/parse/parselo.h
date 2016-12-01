@@ -256,6 +256,10 @@ extern void read_raw_file_text(const char *filename, int mode = CF_TYPE_ANY, cha
 extern void process_raw_file_text(char *processed_text = NULL, char *raw_text = NULL);
 extern void debug_show_mission_text();
 extern void convert_sexp_to_string(SCP_string &dest, int cur_node, int mode);
+extern size_t maybe_convert_foreign_characters(char *in, char *out, bool add_null = true);
+extern void maybe_convert_foreign_characters(SCP_string &text);
+extern size_t get_converted_string_length(char *text);
+extern size_t get_converted_string_length(SCP_string &text);
 char *split_str_once(char *src, int max_pixel_w);
 int split_str(const char *src, int max_pixel_w, int *n_chars, const char **p_str, int max_lines, char ignore_char = -1);
 int split_str(const char *src, int max_pixel_w, SCP_vector<int> &n_chars, SCP_vector<const char*> &p_str, char ignore_char);

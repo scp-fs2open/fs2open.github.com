@@ -18,6 +18,7 @@
 #include "missionui/missionscreencommon.h"
 #include "missionui/redalert.h"
 #include "mod_table/mod_table.h"
+#include "parse/parselo.h"
 #include "sound/audiostr.h"
 
 
@@ -564,15 +565,22 @@ void fiction_viewer_load(int stage)
 	}
 	else
 	{
-		// allocate space
+		// allocate space for raw text
 		int file_length = cfilelength(fp);
-		Fiction_viewer_text = (char *) vm_malloc(file_length + 1);
-		Fiction_viewer_text[file_length] = '\0';
+		char *Fiction_viewer_text_raw = (char *) vm_malloc(file_length + 1);
+		Fiction_viewer_text_raw[file_length] = '\0';
 
 		// copy all the text
-		cfread(Fiction_viewer_text, file_length, 1, fp);
+		cfread(Fiction_viewer_text_raw, file_length, 1, fp);
 
-		// we're done, close it out
+		// we're done with the file, close it out
 		cfclose(fp);
+
+		// allocate space for converted text, then perform the character conversion
+		Fiction_viewer_text = (char *) vm_malloc(get_converted_string_length(Fiction_viewer_text_raw) + 1);
+		maybe_convert_foreign_characters(Fiction_viewer_text_raw, Fiction_viewer_text);
+
+		// deallocate space for raw text
+		vm_free(Fiction_viewer_text_raw);
 	}
 }
