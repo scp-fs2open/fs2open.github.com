@@ -12,6 +12,7 @@
 
 #include "bmpman/bmpman.h"
 #include "globalincs/systemvars.h"
+#include "tracing/tracing.h"
 
 /**
  * @defgroup particleSystems Particle System
@@ -171,6 +172,8 @@ void ParticleManager::doFrame(float) {
 		m_sources.clear(); // Always clear the vector to free memory
 	}
 	else {
+		TRACE_SCOPE(tracing::ProcessParticleEffects);
+
 		m_processingSources = true;
 
 		for (auto source = std::begin(m_sources); source != std::end(m_sources);) {

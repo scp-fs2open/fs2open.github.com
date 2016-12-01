@@ -1717,7 +1717,6 @@ void game_init()
 	strcat_s(whee, DIR_SEPARATOR_STR);
 	strcat_s(whee, EXE_FNAME);
 
-	profile_init();
 	//Initialize the libraries
 	s1 = timer_get_milliseconds();
 
@@ -1806,6 +1805,9 @@ void game_init()
 		exit(1);
 		return;
 	}
+
+	// This needs to happen after graphics initialization
+	tracing::init();
 
 // Karajorma - Moved here from the sound init code cause otherwise windows complains
 #ifdef FS2_VOICER
@@ -2099,19 +2101,13 @@ void game_show_framerate()
 #endif
 
 
-	if (Show_framerate || Cmdline_frame_profile)	{
+	if (Show_framerate)	{
 		gr_set_color_fast(&HUD_color_debug);
 
-		if (Cmdline_frame_profile) {
-			gr_string(gr_screen.center_offset_x + 20, gr_screen.center_offset_y + 100 + line_height, profile_output.c_str(), GR_RESIZE_NONE);
-		}
-
-		if (Show_framerate) {
-			if (frametotal != 0.0f)
-				gr_printf_no_resize( gr_screen.center_offset_x + 20, gr_screen.center_offset_y + 100, "FPS: %0.1f", Framerate );
-			else
-				gr_string( gr_screen.center_offset_x + 20, gr_screen.center_offset_y + 100, "FPS: ?", GR_RESIZE_NONE );
-		}
+		if (frametotal != 0.0f)
+			gr_printf_no_resize( gr_screen.center_offset_x + 20, gr_screen.center_offset_y + 100, "FPS: %0.1f", Framerate );
+		else
+			gr_string( gr_screen.center_offset_x + 20, gr_screen.center_offset_y + 100, "FPS: ?", GR_RESIZE_NONE );
 	}
 
 #ifndef NDEBUG
@@ -3051,6 +3047,9 @@ inline void render_environment(int i, vec3d *eye_pos, matrix *new_orient, float 
 
 void setup_environment_mapping(camid cid)
 {
+	GR_DEBUG_SCOPE("Environment Mapping");
+	TRACE_SCOPE(tracing::EnvironmentMapping);
+
 	matrix new_orient = IDENTITY_MATRIX;
 	float old_zoom = View_zoom, new_zoom = 1.0f;//0.925f;
 	int i = 0;
@@ -3531,6 +3530,8 @@ extern SCP_vector<object*> transparent_objects;
 void game_render_frame( camid cid )
 {
 	GR_DEBUG_SCOPE("Main Frame");
+	TRACE_SCOPE(tracing::RenderMainFrame);
+
 	g3_start_frame(game_zbuffer);
 
 	camera *cam = cid.getCamera();
@@ -3576,9 +3577,7 @@ void game_render_frame( camid cid )
 	// Note: environment mapping gets disabled when rendering to texture; if you change
 	// this, make sure that the current render target gets restored right afterwards!
 	if ( Cmdline_env && !Env_cubemap_drawn && gr_screen.rendering_to_texture == -1 ) {
-		GR_DEBUG_SCOPE("Environment Mapping");
-
-		PROFILE("Environment Mapping", setup_environment_mapping(cid));
+		setup_environment_mapping(cid);
 
 		if ( !Dynamic_environment ) {
 			Env_cubemap_drawn = true;
@@ -3601,13 +3600,13 @@ void game_render_frame( camid cid )
 		stars_draw(1,1,1,0,0);
 	}
 
-	PROFILE("Build Shadow Map", shadows_render_all(Proj_fov, &Eye_matrix, &Eye_position));
-	PROFILE("Render Scene", obj_render_queue_all());
+	shadows_render_all(Proj_fov, &Eye_matrix, &Eye_position);
+	obj_render_queue_all();
 
 	render_shields();
 
-	PROFILE("Trails", trail_render_all());						// render missilie trails after everything else.
-	PROFILE("Particles", particle::render_all());					// render particles after everything else.	
+	trail_render_all();						// render missilie trails after everything else.
+	particle::render_all();					// render particles after everything else.
 	
 #ifdef DYN_CLIP_DIST
 	gr_end_proj_matrix();
@@ -3743,7 +3742,10 @@ extern int Player_dead_state;
 
 //	Flip the page and time how long it took.
 void game_flip_page_and_time_it()
-{	
+{
+	tracing::async::end(tracing::MainFrame, tracing::MainFrameScope);
+	tracing::async::begin(tracing::MainFrame, tracing::MainFrameScope);
+
 	fix t1, t2,d;
 	int t;
 	t1 = timer_get_fixed_seconds();
@@ -3756,6 +3758,8 @@ void game_flip_page_and_time_it()
 
 void game_simulation_frame()
 {
+	TRACE_SCOPE(tracing::Simulation);
+
 	//Do camera stuff
 	//This is for the warpout cam
 	if ( Player->control_mode != PCM_NORMAL )
@@ -3866,7 +3870,7 @@ void game_simulation_frame()
 		}
 		
 		// move all the objects now
-		PROFILE("Move Objects - Master", obj_move_all(flFrametime));
+		obj_move_all(flFrametime);
 
 		mission_eval_goals();
 	}
@@ -3885,7 +3889,7 @@ void game_simulation_frame()
 		}
 
 		// move all objects - does interpolation now as well
-		PROFILE("Move Objects - Client", obj_move_all(flFrametime));
+		obj_move_all(flFrametime);
 
 
 	}
@@ -3908,11 +3912,11 @@ void game_simulation_frame()
 
 		if (!physics_paused)	{
 			// Move particle system
-			PROFILE("Move Particles", particle::move_all(flFrametime));
-			PROFILE("Process Particle Effects", particle::ParticleManager::get()->doFrame(flFrametime));
+			particle::move_all(flFrametime);
+			particle::ParticleManager::get()->doFrame(flFrametime);
 
 			// Move missile trails
-			PROFILE("Move Trails", trail_move_all(flFrametime));		
+			trail_move_all(flFrametime);
 
 			// Flash the gun flashes
 			shipfx_flash_do_frame(flFrametime);			
@@ -4200,7 +4204,7 @@ void game_frame(bool paused)
 	}
 #endif
 	// start timing frame
-	profile_begin("Main Frame");
+	TRACE_SCOPE(tracing::MainFrame);
 
 	DEBUG_GET_TIME( total_time1 )
 
@@ -4259,7 +4263,7 @@ void game_frame(bool paused)
 			return;
 		}
 		
-		PROFILE("Simulation", game_simulation_frame()); 
+		game_simulation_frame();
 		
 		// if not actually in a game play state, then return.  This condition could only be true in 
 		// a multiplayer game.
@@ -4289,7 +4293,7 @@ void game_frame(bool paused)
 			
 			camid cid = game_render_frame_setup();
 
-			PROFILE("Render", game_render_frame( cid ));
+			game_render_frame( cid );
 			
 			//Cutscene bars
 			clip_frame_view();
@@ -4370,7 +4374,7 @@ void game_frame(bool paused)
 			// If a regular popup is active, don't flip (popup code flips)
 			if( !popup_running_state() ){
 				DEBUG_GET_TIME( flip_time1 )
-				PROFILE("Page Flip", game_flip_page_and_time_it());
+				game_flip_page_and_time_it();
 				DEBUG_GET_TIME( flip_time2 )
 			}
 
@@ -4384,10 +4388,6 @@ void game_frame(bool paused)
 
 	// process lightning (nebula only)
 	nebl_process();
-
-	profile_end("Main Frame");
-	profile_dump_output();
-	profile_dump_json_output();
 
 	DEBUG_GET_TIME( total_time2 )
 
@@ -5488,6 +5488,8 @@ void game_leave_state( int old_state, int new_state )
 			break;
 
 		case GS_STATE_GAME_PLAY:
+			tracing::async::end(tracing::MainFrame, tracing::MainFrameScope);
+
 			if ( !(Game_mode & GM_STANDALONE_SERVER) ) {
 				player_save_target_and_weapon_link_prefs();
 				game_stop_looped_sounds();
@@ -6068,6 +6070,8 @@ void mouse_force_pos(int x, int y);
 			memset(&Multi_ship_status_bi, 0, sizeof(button_info));
 			
 			io::mouse::CursorManager::get()->showCursor(false, true);
+
+			tracing::async::begin(tracing::MainFrame, tracing::MainFrameScope);
 			break;
 
 		case GS_STATE_HUD_CONFIG:
@@ -6905,6 +6909,9 @@ int game_main(int argc, char *argv[])
 		if ( state == GS_STATE_QUIT_GAME ) {
 			break;
 		}
+
+		// Since tracing is always active this needs to happen in the main loop
+		tracing::process_events();
 	} 
 
 	game_shutdown();
@@ -6957,8 +6964,6 @@ void game_launch_launcher_on_exit()
 void game_shutdown(void)
 {
 	headtracking::shutdown();
-
-	profile_deinit();
 
 	fsspeech_deinit();
 #ifdef FS2_VOICER
@@ -7032,6 +7037,8 @@ void game_shutdown(void)
 
 	model_free_all();
 	bm_unload_all();			// unload/free bitmaps, has to be called *after* model_free_all()!
+
+	tracing::shutdown();
 
 	gr_close(sdlGraphicsOperations.get());
 	sdlGraphicsOperations.reset();

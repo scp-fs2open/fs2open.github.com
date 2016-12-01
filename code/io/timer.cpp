@@ -27,13 +27,15 @@ static int Timer_inited = 0;
 
 #define MICROSECONDS_PER_SECOND 1000000
 
-#define NANOSECONDS_PER_SECOND 10000000000
+#define NANOSECONDS_PER_SECOND 1000000000
 
 static uint64_t get_performance_counter()
 {
 	Assertion(Timer_inited, "This function can only be used when the timer system is initialized!");
 
-	return SDL_GetPerformanceCounter() - Timer_base_value;
+	auto counter = SDL_GetPerformanceCounter();
+
+	return counter - Timer_base_value;
 }
 
 void timer_close()
@@ -104,7 +106,12 @@ std::uint64_t timer_get_nanoseconds()
 {
 	auto time = get_performance_counter();
 
-	return (time * NANOSECONDS_PER_SECOND) / Timer_perf_counter_freq;
+	if (Timer_perf_counter_freq < NANOSECONDS_PER_SECOND) {
+		// This can cause overflows but I don't know a better solution...
+		return (time * NANOSECONDS_PER_SECOND) / Timer_perf_counter_freq;
+	} else {
+		return time / (Timer_perf_counter_freq / NANOSECONDS_PER_SECOND);
+	}
 }
 
 // 0 means invalid,

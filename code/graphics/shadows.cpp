@@ -18,6 +18,7 @@
 #include "model/model.h"
 #include "model/modelrender.h"
 #include "render/3d.h"
+#include "tracing/tracing.h"
 
 extern vec3d check_offsets[8];
 
@@ -400,6 +401,7 @@ void shadows_end_render()
 void shadows_render_all(float fov, matrix *eye_orient, vec3d *eye_pos)
 {
 	GR_DEBUG_SCOPE("Render shadows");
+	TRACE_SCOPE(tracing::BuildShadowMap);
 
 	if ( Static_light.empty() ) {
 		return;

@@ -79,7 +79,7 @@ static int Post_texture_height = 0;
 void opengl_post_pass_tonemap()
 {
 	GR_DEBUG_SCOPE("Tonemapping");
-	profile_auto trace_scope("Tonemapping");
+	TRACE_SCOPE(tracing::Tonemapping);
 
 	opengl_shader_set_current( gr_opengl_maybe_create_shader(SDR_TYPE_POST_PROCESS_TONEMAPPING, 0) );
 
@@ -98,7 +98,7 @@ void opengl_post_pass_tonemap()
 void opengl_post_pass_bloom()
 {
 	GR_DEBUG_SCOPE("Bloom");
-	profile_auto trace_scope("Bloom");
+	TRACE_SCOPE(tracing::Bloom);
 
 	// we need the scissor test disabled
 	GLboolean scissor_test = GL_state.ScissorTest(GL_FALSE);
@@ -107,7 +107,7 @@ void opengl_post_pass_bloom()
 	int width, height;
 	{
 		GR_DEBUG_SCOPE("Bloom bright pass");
-		profile_auto draw_scope("Bloom bright pass");
+		TRACE_SCOPE(tracing::BloomBrightPass);
 
 		glBindFramebuffer(GL_FRAMEBUFFER, Bloom_framebuffer);
 		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, Bloom_textures[0], 0);
@@ -144,7 +144,7 @@ void opengl_post_pass_bloom()
 	for ( int iteration = 0; iteration < 2; iteration++) {
 		for (int pass = 0; pass < 2; pass++) {
 			GR_DEBUG_SCOPE("Bloom iteration step");
-			profile_auto draw_scope("Bloom iteration step");
+			TRACE_SCOPE(tracing::BloomIterationStep);
 
 			GLuint source_tex = Bloom_textures[pass];
 			GLuint dest_tex = Bloom_textures[1 - pass];
@@ -181,7 +181,7 @@ void opengl_post_pass_bloom()
 	// composite blur to the color texture
 	{
 		GR_DEBUG_SCOPE("Bloom composite step");
-		profile_auto draw_scope("Bloom composite step");
+		TRACE_SCOPE(tracing::BloomCompositeStep);
 
 		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, Scene_color_texture, 0);
 
@@ -249,7 +249,7 @@ void recompile_fxaa_shader() {
 
 void opengl_post_pass_fxaa() {
 	GR_DEBUG_SCOPE("FXAA");
-	profile_auto trace_scope("FXAA");
+	TRACE_SCOPE(tracing::FXAA);
 
 	//If the preset changed, recompile the shader
 	if (Fxaa_preset_last_frame != Cmdline_fxaa_preset) {
@@ -304,7 +304,7 @@ extern float Sun_spot;
 void opengl_post_lightshafts()
 {
 	GR_DEBUG_SCOPE("Lightshafts");
-	profile_auto trace_scope("Lightshafts");
+	TRACE_SCOPE(tracing::Lightshafts);
 
 	opengl_shader_set_current(gr_opengl_maybe_create_shader(SDR_TYPE_POST_PROCESS_LIGHTSHAFTS, 0));
 
@@ -367,7 +367,7 @@ void opengl_post_lightshafts()
 void gr_opengl_post_process_end()
 {
 	GR_DEBUG_SCOPE("Draw scene texture");
-	profile_auto trace_scope("Draw scene texture");
+	TRACE_SCOPE(tracing::DrawSceneTexture);
 
 	// state switch just the once (for bloom pass and final render-to-screen)
 	GLboolean depth = GL_state.DepthTest(GL_FALSE);
@@ -392,7 +392,7 @@ void gr_opengl_post_process_end()
 	opengl_post_lightshafts();
 
 	GR_DEBUG_SCOPE("Draw post effects");
-	profile_auto draw_scope("Draw post effects");
+	TRACE_SCOPE(tracing::DrawPostEffects);
 
 	// now write to the on-screen buffer
 	glBindFramebuffer(GL_FRAMEBUFFER, opengl_get_rtt_framebuffer());
@@ -731,16 +731,13 @@ void opengl_post_shader_header(SCP_stringstream &sflags, shader_type shader_t, i
 		sprintf(temp, "#define SAMPLE_NUM %d\n", ls_samplenum);
 		sflags << temp;
 	} else if ( shader_t == SDR_TYPE_POST_PROCESS_FXAA ) {
-		/* GLSL version < 120 are guarded against reaching this code
-		   path via testing is_minimum_GLSL_version().
-		   Accordingly do not test for them again here. */
-		if (GLSL_version == 120) {
-			sflags << "#define FXAA_GLSL_120 1\n";
-			sflags << "#define FXAA_GLSL_130 0\n";
-		}
-		if (GLSL_version > 120) {
-			sflags << "#define FXAA_GLSL_120 0\n";
-			sflags << "#define FXAA_GLSL_130 1\n";
+		// Since we require OpenGL 3.2 we always have support for GLSL 130
+		sflags << "#define FXAA_GLSL_120 0\n";
+		sflags << "#define FXAA_GLSL_130 1\n";
+
+		if (GLSL_version >= 400) {
+			// The gather function became part of the standard with GLSL 4.00
+			sflags << "#define FXAA_GATHER4_ALPHA 1\n";
 		}
 
 		switch (Cmdline_fxaa_preset) {

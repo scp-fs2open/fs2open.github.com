@@ -12,6 +12,8 @@
 
 #include "sound/openal.h"
 
+#include "tracing/tracing.h"
+
 #include "io/key.h"
 #include "io/timer.h"
 
@@ -125,6 +127,8 @@ void audioPlaybackInit(PlayerState* state) {
 }
 
 void processVideoData(PlayerState* state) {
+	TRACE_SCOPE(tracing::CutsceneProcessVideoData);
+
 	state->newFrameAdded = false;
 
 	if (!state->decoder->isVideoFrameAvailable()) {
@@ -181,6 +185,8 @@ void processVideoData(PlayerState* state) {
 }
 
 bool processAudioData(PlayerState* state) {
+	TRACE_SCOPE(tracing::CutsceneProcessAudioData);
+
 	if (!state->hasAudio) {
 		if (state->decoder->hasAudio()) {
 			// Even if we don't play the sound we still need to remove it from the queue
@@ -305,6 +311,8 @@ void displayVideo(PlayerState* state) {
 		return;
 	}
 
+	TRACE_SCOPE(tracing::CutsceneDrawVideoFrame);
+
 	gr_clear();
 	if (state->videoPresenter) {
 		state->videoPresenter->displayFrame();
@@ -369,6 +377,8 @@ void Player::processDecoderData(PlayerState* state) {
 		state->playbackHasBegun = true;
 	}
 
+	TRACE_SCOPE(tracing::CutsceneProcessDecoder);
+
 	processVideoData(state);
 
 	auto audioPlaying = processAudioData(state);
@@ -401,6 +411,8 @@ void Player::startPlayback() {
 
 	auto lastDisplayTimestamp = timer_get_microseconds();
 	while (state.playing) {
+		TRACE_SCOPE(tracing::CutsceneStep);
+
 		processDecoderData(&state);
 
 		displayVideo(&state);

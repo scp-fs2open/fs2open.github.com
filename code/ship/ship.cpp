@@ -14811,7 +14811,7 @@ float ship_quadrant_shield_strength(object *hit_objp, vec3d *hitpos)
 	if ( quadrant_num < 0 )
 		quadrant_num = 0;
 
-	max_quadrant = get_max_shield_quad(hit_objp);
+	max_quadrant = shield_get_max_quad(hit_objp);
 	if ( max_quadrant <= 0 ) {
 		return 0.0f;
 	}

@@ -258,6 +258,8 @@ namespace particle
 
 	void move_all(float frametime)
 	{
+		TRACE_SCOPE(tracing::ParticlesMoveAll);
+
 		MONITOR_INC(NumParticles, Num_particles);
 
 		if (!Particles_enabled)
@@ -337,6 +339,8 @@ namespace particle
 
 	void render_all()
 	{
+		TRACE_SCOPE(tracing::ParticlesRenderAll);
+
 		ubyte flags;
 		float alpha;
 		vertex pos;
@@ -417,12 +421,10 @@ namespace particle
 			}
 		}
 
-		profile_begin("Batch Render");
 		if (render_batch)
 		{
 			batching_render_all();
 		}
-		profile_end("Batch Render");
 	}
 
 	//============================================================================

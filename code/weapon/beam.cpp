@@ -3187,10 +3187,12 @@ void beam_handle_collisions(beam *b)
 							trgt->hull_strength -= damage;
 
 							if (trgt->hull_strength < 0) {
+								Weapons[trgt->instance].weapon_flags.set(Weapon::Weapon_Flags::Destroyed_by_weapon);
 								weapon_hit(trgt, NULL, &trgt->pos);
 							}
 						} else {
 							if (!(Game_mode & GM_MULTIPLAYER) || MULTIPLAYER_MASTER) {
+								Weapons[trgt->instance].weapon_flags.set(Weapon::Weapon_Flags::Destroyed_by_weapon);
 								weapon_hit(&Objects[target], NULL, &Objects[target].pos);
 							}
 						}
@@ -3202,6 +3204,7 @@ void beam_handle_collisions(beam *b)
 					Assert(Weapon_info[Weapons[Objects[target].instance].weapon_info_index].subtype == WP_MISSILE);
 
 					if (!(Game_mode & GM_MULTIPLAYER) || MULTIPLAYER_MASTER) {
+						Weapons[Objects[target].instance].weapon_flags.set(Weapon::Weapon_Flags::Destroyed_by_weapon);
 						weapon_hit(&Objects[target], NULL, &Objects[target].pos);
 					}
 				}

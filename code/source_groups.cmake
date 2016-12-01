@@ -919,12 +919,20 @@ set(file_root_scripting_api
 	scripting/api/enums.h
 	scripting/api/event.h
 	scripting/api/event.cpp
+	scripting/api/eye.h
+	scripting/api/eye.cpp
 	scripting/api/file.h
 	scripting/api/file.cpp
 	scripting/api/font.h
 	scripting/api/font.cpp
 	scripting/api/gameevent.h
 	scripting/api/gameevent.cpp
+	scripting/api/gamestate.h
+	scripting/api/gamestate.cpp
+	scripting/api/hudgauge.h
+	scripting/api/hudgauge.cpp
+	scripting/api/model.h
+	scripting/api/model.cpp
 	scripting/api/vecmath.h
 	scripting/api/vecmath.cpp
 )
@@ -1016,6 +1024,15 @@ set (file_root_tgautils
 
 # Tracing files
 set (file_root_tracing
+	tracing/categories.cpp
+	tracing/categories.h
+	tracing/MainFrameTimer.h
+	tracing/MainFrameTimer.cpp
+	tracing/scopes.cpp
+	tracing/scopes.h
+	tracing/ThreadedEventProcessor.h
+	tracing/TraceEventWriter.h
+	tracing/TraceEventWriter.cpp
 	tracing/tracing.h
 	tracing/tracing.cpp
 )
