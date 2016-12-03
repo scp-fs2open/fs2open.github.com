@@ -78,8 +78,9 @@ typedef struct {
 #define CF_TYPE_INTEL_ANIMS			34
 #define CF_TYPE_SCRIPTS				35
 #define CF_TYPE_FICTION				36
+#define CF_TYPE_TEMP_SUBDIR_LOOKUP	37
 
-#define CF_MAX_PATH_TYPES			37			// Can be as high as you'd like //DTP; yeah but beware alot of things uses CF_MAX_PATH_TYPES
+#define CF_MAX_PATH_TYPES			38			// Can be as high as you'd like //DTP; yeah but beware alot of things uses CF_MAX_PATH_TYPES
 
 
 // TRUE if type is specified and valid
@@ -129,6 +130,10 @@ char *cf_add_ext(const char *filename, const char *ext);
 // return CF_TYPE (directory location type) of a CFILE you called cfopen() successfully on.
 int cf_get_dir_type(CFILE *cfile);
 
+/**
+ * @brief Stuffs Pathtypes with an additional path leading to a subdir of the same name as the given file (minus file extension)
+*/
+bool cf_set_temp_subdir_pathtype(const char *filename);
 
 // Opens the file.  If no path is given, use the extension to look into the
 // default path.  If mode is NULL, delete the file.  

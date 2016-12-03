@@ -36,6 +36,7 @@ union bm_extra_info {
 			// stuff for static animations
 			BM_TYPE type;                         //!< type for individual images
 			char  filename[MAX_FILENAME_LEN];   //!< filename for individual images
+			bool in_subdir;                     //!< Whether frames are in their own subdirectory
 		} eff;
 		struct {
 			bool  is_apng;      //!< Is this animation an APNG?

@@ -88,6 +88,7 @@ cf_pathtype Pathtypes[CF_MAX_PATH_TYPES]  = {
 	{ CF_TYPE_INTEL_ANIMS,			"data" DIR_SEPARATOR_STR "intelanims",										".pcx .ani .eff .tga .jpg .png .dds",	CF_TYPE_DATA	},
 	{ CF_TYPE_SCRIPTS,				"data" DIR_SEPARATOR_STR "scripts",											".lua .lc",							CF_TYPE_DATA	},
 	{ CF_TYPE_FICTION,				"data" DIR_SEPARATOR_STR "fiction",											".txt",								CF_TYPE_DATA	}, 
+	{ CF_TYPE_TEMP_SUBDIR_LOOKUP,	NULL,																		".pcx .tga .jpg .png .dds",								CF_TYPE_DATA	},
 };
 
 
@@ -134,6 +135,8 @@ void cfile_close()
 	dump_opened_files();
 
 	cf_free_secondary_filelist();
+
+	vm_free(Pathtypes[CF_TYPE_TEMP_SUBDIR_LOOKUP].path);
 
 	cfile_inited = 0;
 }
@@ -234,6 +237,9 @@ int cfile_init(const char *exe_dir, const char *cdrom_dir)
 	for (i = 0; i < MAX_CFILE_BLOCKS; i++) {
 		Cfile_block_list[i].type = CFILE_BLOCK_UNUSED;
 	}
+
+	// Init to an empty string to avoid having to test for NULL everywhere
+	Pathtypes[CF_TYPE_TEMP_SUBDIR_LOOKUP].path = vm_strdup("");
 
 	// 32 bit CRC table init
 	cf_chksum_long_init();
@@ -1118,6 +1124,43 @@ static CFILE *cf_open_mapped_fill_cfblock(const char* source, int line, FILE *fp
 int cf_get_dir_type(CFILE *cfile)
 {
 	return Cfile_block_list[cfile->id].dir_type;
+}
+
+/**
+ * Stuffs Pathtypes with an additional path leading to a subdir of the same name as the given file (minus file extension).
+ * Currently used for allowing frames of .eff animations to be found in their own subdirectories.
+ *
+ * Example: if called with "debris.eff" and that file is in data/maps, then Pathtypes[CF_TYPE_TEMP_SUBDIR_LOOKUP].path
+ * will be stuffed with data/maps/debris, allowing data/maps/debris/debris_0000.dds (etc) to be found
+ */
+bool cf_set_temp_subdir_pathtype(const char *filename) {
+	mprintf(("CFILE: Setting temporary pathtype for %s... ", filename));
+
+	// Finds the relative path of where the file exists and appends the filename
+	// (without extension) to it, giving us a relative path that can be temporarily
+	// stuffed into Pathtypes
+	for (size_t i=CF_TYPE_ROOT; i<CF_MAX_PATH_TYPES; i++) {
+		if (cf_find_file_location(filename, i, 0, NULL, NULL, NULL)) {
+			SCP_string subdir, finalpath;
+
+			subdir = SCP_string(filename);
+			subdir = subdir.substr(0, subdir.find_last_of("."));
+
+			finalpath = SCP_string(Pathtypes[i].path);
+			finalpath += DIR_SEPARATOR_STR + subdir;
+
+			vm_free(Pathtypes[CF_TYPE_TEMP_SUBDIR_LOOKUP].path);
+
+			Pathtypes[CF_TYPE_TEMP_SUBDIR_LOOKUP].path = vm_strdup(finalpath.c_str());
+
+			mprintf(("OK. Temporary pathtype is now %s\n", Pathtypes[CF_TYPE_TEMP_SUBDIR_LOOKUP].path));
+
+			return true;
+		}
+	}
+
+	mprintf(("Failed! File %s not found!\n", filename));
+	return false;
 }
 
 // cf_returndata() returns the data pointer for a memory-mapped file that is associated
