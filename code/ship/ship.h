@@ -1630,7 +1630,7 @@ bool turret_fov_test(ship_subsys *ss, vec3d *gvec, vec3d *v2e, float size_mod = 
 float get_adjusted_turret_rof(ship_subsys *ss);
 
 // forcible jettison cargo from a ship
-void object_jettison_cargo(object *objp, object *cargo_objp);
+void object_jettison_cargo(object *objp, object *cargo_objp, float jettison_speed, bool jettison_new);
 
 // get damage done by exploding ship, takes into account mods for individual ship
 float ship_get_exp_damage(object* objp);
