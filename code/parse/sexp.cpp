@@ -11987,7 +11987,7 @@ void sexp_jettison_cargo(int n, bool jettison_new)
 {
 	char *shipname;
 	int ship_index;
-	int jettison_delay_or_speed;
+	float jettison_speed;
 
 	// get some data
 	shipname = CTEXT(n);
@@ -12003,13 +12003,13 @@ void sexp_jettison_cargo(int n, bool jettison_new)
 	// in jettison-cargo, this is the jettison speed, which is optional
 	if (n >= 0)
 	{
-		jettison_delay_or_speed = eval_num(n);
+		jettison_speed = static_cast<float>(eval_num(n));
 		n = CDR(n);
 	}
 	// per sexp help, if unspecified, default to 25
 	// (see also OP_JETTISON_CARGO_NEW in sexp_tree.cpp)
 	else
-		jettison_delay_or_speed = 25;
+		jettison_speed = 25.0f;
 
 	// no arguments - jettison all docked objects
 	if (n < 0)
@@ -12018,7 +12018,7 @@ void sexp_jettison_cargo(int n, bool jettison_new)
 		// undocking things.  So just repeatedly jettison the first object.
 		while (object_is_docked(parent_objp))
 		{
-			object_jettison_cargo(parent_objp, dock_get_first_docked_object(parent_objp), static_cast<float>(jettison_delay_or_speed), jettison_new);
+			object_jettison_cargo(parent_objp, dock_get_first_docked_object(parent_objp), jettison_speed, jettison_new);
 		}
 	}
 	// arguments - jettison only those objects
@@ -12035,7 +12035,7 @@ void sexp_jettison_cargo(int n, bool jettison_new)
 			if (!dock_check_find_direct_docked_object(parent_objp, &Objects[Ships[ship_index].objnum]))
 				continue;
 
-			object_jettison_cargo(parent_objp, &Objects[Ships[ship_index].objnum], static_cast<float>(jettison_delay_or_speed), jettison_new);
+			object_jettison_cargo(parent_objp, &Objects[Ships[ship_index].objnum], jettison_speed, jettison_new);
 		}
 	}
 }
