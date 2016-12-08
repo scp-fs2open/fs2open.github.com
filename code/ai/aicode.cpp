@@ -780,39 +780,46 @@ void reset_ai_class_names()
 #define AI_CLASS_INCREMENT		10
 void parse_aitbl()
 {
-	read_file_text("ai.tbl", CF_TYPE_TABLES);
-	reset_parse();
+	try {
+		read_file_text("ai.tbl", CF_TYPE_TABLES);
+		reset_parse();
 
-	//Just in case parse_aitbl is called twice
-	free_ai_stuff();
-	
-	Num_ai_classes = 0;
-	Num_alloced_ai_classes = AI_CLASS_INCREMENT;
-	Ai_classes = (ai_class*) vm_malloc(Num_alloced_ai_classes * sizeof(ai_class));
-	Ai_class_names = (char**) vm_malloc(Num_alloced_ai_classes * sizeof(char*));
-	
-	required_string("#AI Classes");
+		//Just in case parse_aitbl is called twice
+		free_ai_stuff();
 
-	while (required_string_either("#End", "$Name:")) {
+		Num_ai_classes = 0;
+		Num_alloced_ai_classes = AI_CLASS_INCREMENT;
+		Ai_classes = (ai_class*) vm_malloc(Num_alloced_ai_classes * sizeof(ai_class));
+		Ai_class_names = (char**) vm_malloc(Num_alloced_ai_classes * sizeof(char*));
 
-		parse_ai_class();
+		required_string("#AI Classes");
 
-		Num_ai_classes++;
+		while (required_string_either("#End", "$Name:")) {
 
-		if(Num_ai_classes >= Num_alloced_ai_classes)
-		{
-			Num_alloced_ai_classes += AI_CLASS_INCREMENT;
-			Ai_classes = (ai_class*) vm_realloc(Ai_classes, Num_alloced_ai_classes * sizeof(ai_class));
+			parse_ai_class();
 
-			// Ai_class_names doesn't realloc all that well so we have to do it the hard way.
-			// Luckily, it's contents can be easily replaced so we don't have to save anything.
-			vm_free(Ai_class_names);
-			Ai_class_names = (char **) vm_malloc(Num_alloced_ai_classes * sizeof(char*));
-			reset_ai_class_names();
+			Num_ai_classes++;
+
+			if(Num_ai_classes >= Num_alloced_ai_classes)
+			{
+				Num_alloced_ai_classes += AI_CLASS_INCREMENT;
+				Ai_classes = (ai_class*) vm_realloc(Ai_classes, Num_alloced_ai_classes * sizeof(ai_class));
+
+				// Ai_class_names doesn't realloc all that well so we have to do it the hard way.
+				// Luckily, it's contents can be easily replaced so we don't have to save anything.
+				vm_free(Ai_class_names);
+				Ai_class_names = (char **) vm_malloc(Num_alloced_ai_classes * sizeof(char*));
+				reset_ai_class_names();
+			}
 		}
+
+		atexit(free_ai_stuff);
 	}
-	
-	atexit(free_ai_stuff);
+	catch (const parse::ParseException& e)
+	{
+		mprintf(("TABLES: Unable to parse 'ai.tbl'!  Error message = %s.\n", e.what()));
+		return;
+	}
 }
 
 LOCAL int ai_inited = 0;

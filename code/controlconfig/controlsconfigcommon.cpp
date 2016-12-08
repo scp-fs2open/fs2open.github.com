@@ -811,116 +811,123 @@ void control_config_common_load_overrides()
 {
 	LoadEnumsIntoMaps();
 
-	if (cf_exists_full("controlconfigdefaults.tbl", CF_TYPE_TABLES)) {
-		read_file_text("controlconfigdefaults.tbl", CF_TYPE_TABLES);
-	} else {
-		read_file_text_from_default(defaults_get_file("controlconfigdefaults.tbl"));
-	}
-
-	reset_parse();
-
-	// start parsing
-	// TODO: Split this out into more helps. Too many tabs!
-	while(optional_string("#ControlConfigOverride")) {
-		config_item *cfg_preset = new config_item[CCFG_MAX + 1];
-		std::copy(Control_config, Control_config + CCFG_MAX + 1, cfg_preset);
-		Control_config_presets.push_back(cfg_preset);
-
-		SCP_string preset_name;
-		if (optional_string("$Name:")) {
-			stuff_string_line(preset_name);
+	try {
+		if (cf_exists_full("controlconfigdefaults.tbl", CF_TYPE_TABLES)) {
+			read_file_text("controlconfigdefaults.tbl", CF_TYPE_TABLES);
 		} else {
-			preset_name = "<unnamed preset>";
+			read_file_text_from_default(defaults_get_file("controlconfigdefaults.tbl"));
 		}
-		Control_config_preset_names.push_back(preset_name);
 
-		while (required_string_either("#End","$Bind Name:")) {
-			const int iBufferLength = 64;
-			char szTempBuffer[iBufferLength];
+		reset_parse();
 
-			required_string("$Bind Name:");
-			stuff_string(szTempBuffer, F_NAME, iBufferLength);
+		// start parsing
+		// TODO: Split this out into more helps. Too many tabs!
+		while(optional_string("#ControlConfigOverride")) {
+			config_item *cfg_preset = new config_item[CCFG_MAX + 1];
+			std::copy(Control_config, Control_config + CCFG_MAX + 1, cfg_preset);
+			Control_config_presets.push_back(cfg_preset);
 
-			const size_t cCntrlAryLength = sizeof(Control_config) / sizeof(Control_config[0]);
-			for (size_t i = 0; i < cCntrlAryLength; ++i) {
-				config_item& r_ccConfig = cfg_preset[i];
+			SCP_string preset_name;
+			if (optional_string("$Name:")) {
+				stuff_string_line(preset_name);
+			} else {
+				preset_name = "<unnamed preset>";
+			}
+			Control_config_preset_names.push_back(preset_name);
 
-				if (!strcmp(szTempBuffer, r_ccConfig.text)) {
-					/**
-					* short key_default;
-					* short joy_default;
-					* char tab;
-					* bool hasXSTR;
-					* char type;
-					*/
+			while (required_string_either("#End","$Bind Name:")) {
+				const int iBufferLength = 64;
+				char szTempBuffer[iBufferLength];
 
-					int iTemp;
+				required_string("$Bind Name:");
+				stuff_string(szTempBuffer, F_NAME, iBufferLength);
 
-					if (optional_string("$Key Default:")) {
-						if (optional_string("NONE")) {
-							r_ccConfig.key_default = (short)-1;
-						} else {
-							stuff_string(szTempBuffer, F_NAME, iBufferLength);
-							r_ccConfig.key_default = (short)mKeyNameToVal[szTempBuffer];
+				const size_t cCntrlAryLength = sizeof(Control_config) / sizeof(Control_config[0]);
+				for (size_t i = 0; i < cCntrlAryLength; ++i) {
+					config_item& r_ccConfig = cfg_preset[i];
+
+					if (!strcmp(szTempBuffer, r_ccConfig.text)) {
+						/**
+                        * short key_default;
+                        * short joy_default;
+                        * char tab;
+                        * bool hasXSTR;
+                        * char type;
+                        */
+
+						int iTemp;
+
+						if (optional_string("$Key Default:")) {
+							if (optional_string("NONE")) {
+								r_ccConfig.key_default = (short)-1;
+							} else {
+								stuff_string(szTempBuffer, F_NAME, iBufferLength);
+								r_ccConfig.key_default = (short)mKeyNameToVal[szTempBuffer];
+							}
 						}
-					}
 
-					if (optional_string("$Joy Default:")) {
-						stuff_int(&iTemp);
-						r_ccConfig.joy_default = (short)iTemp;
-					}
+						if (optional_string("$Joy Default:")) {
+							stuff_int(&iTemp);
+							r_ccConfig.joy_default = (short)iTemp;
+						}
 
-					if (optional_string("$Key Mod Shift:")) {
-						stuff_int(&iTemp);
-						r_ccConfig.key_default |= (iTemp == 1) ? KEY_SHIFTED : 0;
-					}
+						if (optional_string("$Key Mod Shift:")) {
+							stuff_int(&iTemp);
+							r_ccConfig.key_default |= (iTemp == 1) ? KEY_SHIFTED : 0;
+						}
 
-					if (optional_string("$Key Mod Alt:")) {
-						stuff_int(&iTemp);
-						r_ccConfig.key_default |= (iTemp == 1) ? KEY_ALTED : 0;
-					}
+						if (optional_string("$Key Mod Alt:")) {
+							stuff_int(&iTemp);
+							r_ccConfig.key_default |= (iTemp == 1) ? KEY_ALTED : 0;
+						}
 
-					if (optional_string("$Key Mod Ctrl:")) {
-						stuff_int(&iTemp);
-						r_ccConfig.key_default |= (iTemp == 1) ? KEY_CTRLED : 0;
-					}
+						if (optional_string("$Key Mod Ctrl:")) {
+							stuff_int(&iTemp);
+							r_ccConfig.key_default |= (iTemp == 1) ? KEY_CTRLED : 0;
+						}
 
-					if (optional_string("$Category:")) {
-						stuff_string(szTempBuffer, F_NAME, iBufferLength);
-						r_ccConfig.tab = (char)mCCTabNameToVal[szTempBuffer];
-					}
+						if (optional_string("$Category:")) {
+							stuff_string(szTempBuffer, F_NAME, iBufferLength);
+							r_ccConfig.tab = (char)mCCTabNameToVal[szTempBuffer];
+						}
 
-					if (optional_string("$Has XStr:")) {
-						stuff_int(&iTemp);
-						r_ccConfig.hasXSTR = (iTemp == 1);
-					}
+						if (optional_string("$Has XStr:")) {
+							stuff_int(&iTemp);
+							r_ccConfig.hasXSTR = (iTemp == 1);
+						}
 
-					if (optional_string("$Type:")) {
-						stuff_string(szTempBuffer, F_NAME, iBufferLength);
-						r_ccConfig.type = (char)mCCTypeNameToVal[szTempBuffer];
-					}
+						if (optional_string("$Type:")) {
+							stuff_string(szTempBuffer, F_NAME, iBufferLength);
+							r_ccConfig.type = (char)mCCTypeNameToVal[szTempBuffer];
+						}
 
-					if (optional_string("+Disable")) {
-						r_ccConfig.disabled = true;
+						if (optional_string("+Disable")) {
+							r_ccConfig.disabled = true;
+						}
+						if (optional_string("$Disable:")) {
+							stuff_boolean(&r_ccConfig.disabled);
+						}
+
+						// Nerf the buffer now.
+						szTempBuffer[0] = '\0';
+					} else if ((i + 1) == cCntrlAryLength) {
+						error_display(1, "Bind Name not found: %s\n", szTempBuffer);
+						advance_to_eoln(NULL);
+						ignore_white_space();
+						return;
 					}
-					if (optional_string("$Disable:")) {
-						stuff_boolean(&r_ccConfig.disabled);
-					}
-					
-					// Nerf the buffer now.
-					szTempBuffer[0] = '\0';
-				} else if ((i + 1) == cCntrlAryLength) {
-					error_display(1, "Bind Name not found: %s\n", szTempBuffer);
-					advance_to_eoln(NULL);
-					ignore_white_space();
-					return;
 				}
 			}
-		}
 
-		required_string("#End");
+			required_string("#End");
+		}
 	}
-	
+	catch (const parse::ParseException& e)
+	{
+		mprintf(("TABLES: Unable to parse 'controlconfigdefaults.tbl'!  Error message = %s.\n", e.what()));
+		return;
+	}
+
 	// Overwrite the control config with the first preset that was found
 	if (!Control_config_presets.empty()) {
 		std::copy(Control_config_presets[0], Control_config_presets[0] + CCFG_MAX + 1, Control_config);

@@ -546,110 +546,117 @@ void parse_msgtbl()
 	Message_waves.reserve(300);
 	Message_avis.reserve(30);
 
-	read_file_text("messages.tbl", CF_TYPE_TABLES);
-	reset_parse();
-	Num_messages = 0;
-	Num_personas = 0;
+	try {
+		read_file_text("messages.tbl", CF_TYPE_TABLES);
+		reset_parse();
+		Num_messages = 0;
+		Num_personas = 0;
 
-	// Goober5000 - ugh, ugly hack to fix the FS2 retail tables
-	char *pVawacs25 = strstr(Mp, "Vawacs25.wav");
-	if (pVawacs25)
-	{
-		char *pAwacs75 = strstr(pVawacs25, "Awacs75.wav");
-		if (pAwacs75)
+		// Goober5000 - ugh, ugly hack to fix the FS2 retail tables
+		char *pVawacs25 = strstr(Mp, "Vawacs25.wav");
+		if (pVawacs25)
 		{
-			// move the 'V' from the first filename to the second, and adjust the 'A' case
-			*pVawacs25 = 'A';
-			for (i = 1; i < (pAwacs75 - pVawacs25) - 1; i++)
-				pVawacs25[i] = pVawacs25[i+1];
-			pAwacs75[-1] = 'V';
-			pAwacs75[0] = 'a';
-		}
-	}
-
-	// now we can start parsing
-	if (optional_string("#Message Frequencies")) {
-		while (!required_string_one_of(3, "$Name:", "#Personas", "#Moods" )) {
-			message_frequency_parse();
-		}
-	}	
-
-	Builtin_moods.push_back("Default");
-	if (optional_string("#Moods")) {
-		message_moods_parse();
-	}	
-
-
-	required_string("#Personas");
-	while ( required_string_either("#Messages", "$Persona:")){
-		persona_parse();
-	}
-
-	required_string("#Messages");
-	while (required_string_either("#End", "$Name:")){
-		message_parse();
-	}
-
-	required_string("#End");
-
-	// save the number of builtin message things -- make initing between missions easier
-	Num_builtin_messages = Num_messages;
-	Num_builtin_avis = Num_message_avis;
-	Num_builtin_waves = Num_message_waves;
-
-	
-	memset(Valid_builtin_message_types, 0, sizeof(int)*MAX_BUILTIN_MESSAGE_TYPES); 
-	// now cycle through the messages to determine which type of builtins we have messages for
-	for (i = 0; i < Num_builtin_messages; i++) {
-		for (j = 0; j < MAX_BUILTIN_MESSAGE_TYPES; j++) {
-			if (!(stricmp(Messages[i].name, Builtin_messages[j].name))) {
-				Valid_builtin_message_types[j] = 1; 
-				break;
-			}
-		}
-	}
-
-
-	// additional table part!
-	generic_message_filenames.clear();
-	generic_message_filenames.push_back("none");
-	generic_message_filenames.push_back("cuevoice");
-	generic_message_filenames.push_back("emptymsg");
-	generic_message_filenames.push_back("generic");
-	generic_message_filenames.push_back("msgstart");
-
-	if (optional_string("#Simulated Speech Overrides"))
-	{
-		char filename[MAX_FILENAME_LEN];
-
-		while (required_string_either("#End", "$File Name:"))
-		{
-			required_string("$File Name:");
-			stuff_string(filename, F_NAME, MAX_FILENAME_LEN);
-
-			// get extension
-			char *ptr = strchr(filename, '.');
-			if (ptr == NULL)
+			char *pAwacs75 = strstr(pVawacs25, "Awacs75.wav");
+			if (pAwacs75)
 			{
-				Warning(LOCATION, "Simulated speech override file '%s' was provided with no extension!", filename);
-				continue;
+				// move the 'V' from the first filename to the second, and adjust the 'A' case
+				*pVawacs25 = 'A';
+				for (i = 1; i < (pAwacs75 - pVawacs25) - 1; i++)
+					pVawacs25[i] = pVawacs25[i+1];
+				pAwacs75[-1] = 'V';
+				pAwacs75[0] = 'a';
 			}
+		}
 
-			// test extension
-			if (stricmp(ptr, ".ogg") && stricmp(ptr, ".wav"))
-			{
-				Warning(LOCATION, "Simulated speech override file '%s' was provided with an extension other than .wav or .ogg!", filename);
-				continue;
+		// now we can start parsing
+		if (optional_string("#Message Frequencies")) {
+			while (!required_string_one_of(3, "$Name:", "#Personas", "#Moods" )) {
+				message_frequency_parse();
 			}
+		}
 
-			// truncate extension
-			*ptr = '\0';
+		Builtin_moods.push_back("Default");
+		if (optional_string("#Moods")) {
+			message_moods_parse();
+		}
 
-			// add truncated file name
-			generic_message_filenames.push_back(filename);
+
+		required_string("#Personas");
+		while ( required_string_either("#Messages", "$Persona:")){
+			persona_parse();
+		}
+
+		required_string("#Messages");
+		while (required_string_either("#End", "$Name:")){
+			message_parse();
 		}
 
 		required_string("#End");
+
+		// save the number of builtin message things -- make initing between missions easier
+		Num_builtin_messages = Num_messages;
+		Num_builtin_avis = Num_message_avis;
+		Num_builtin_waves = Num_message_waves;
+
+
+		memset(Valid_builtin_message_types, 0, sizeof(int)*MAX_BUILTIN_MESSAGE_TYPES);
+		// now cycle through the messages to determine which type of builtins we have messages for
+		for (i = 0; i < Num_builtin_messages; i++) {
+			for (j = 0; j < MAX_BUILTIN_MESSAGE_TYPES; j++) {
+				if (!(stricmp(Messages[i].name, Builtin_messages[j].name))) {
+					Valid_builtin_message_types[j] = 1;
+					break;
+				}
+			}
+		}
+
+
+		// additional table part!
+		generic_message_filenames.clear();
+		generic_message_filenames.push_back("none");
+		generic_message_filenames.push_back("cuevoice");
+		generic_message_filenames.push_back("emptymsg");
+		generic_message_filenames.push_back("generic");
+		generic_message_filenames.push_back("msgstart");
+
+		if (optional_string("#Simulated Speech Overrides"))
+		{
+			char filename[MAX_FILENAME_LEN];
+
+			while (required_string_either("#End", "$File Name:"))
+			{
+				required_string("$File Name:");
+				stuff_string(filename, F_NAME, MAX_FILENAME_LEN);
+
+				// get extension
+				char *ptr = strchr(filename, '.');
+				if (ptr == NULL)
+				{
+					Warning(LOCATION, "Simulated speech override file '%s' was provided with no extension!", filename);
+					continue;
+				}
+
+				// test extension
+				if (stricmp(ptr, ".ogg") && stricmp(ptr, ".wav"))
+				{
+					Warning(LOCATION, "Simulated speech override file '%s' was provided with an extension other than .wav or .ogg!", filename);
+					continue;
+				}
+
+				// truncate extension
+				*ptr = '\0';
+
+				// add truncated file name
+				generic_message_filenames.push_back(filename);
+			}
+
+			required_string("#End");
+		}
+	}
+	catch (const parse::ParseException& e)
+	{
+		mprintf(("MISSIONCAMPAIGN: Unable to parse 'messages.tbl'!  Error message = %s.\n", e.what()));
+		return;
 	}
 }
 
