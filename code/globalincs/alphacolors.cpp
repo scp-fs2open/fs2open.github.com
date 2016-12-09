@@ -277,10 +277,11 @@ void alpha_colors_init()
 void parse_colors(const char *filename)
 {
 	Assertion(filename != NULL, "parse_colors() called on NULL; get a coder!\n");
-	read_file_text(filename, CF_TYPE_TABLES);
 	
 	try
 	{
+		read_file_text(filename, CF_TYPE_TABLES);
+
 		reset_parse();
 
 		// we search for the colors based on their order of definition above
@@ -353,10 +354,11 @@ void parse_colors(const char *filename)
 void parse_everything_else(const char *filename)
 {
 	Assertion(filename != NULL, "parse_everything_else() called on NULL; get a coder!\n");
-	read_file_text(filename, CF_TYPE_TABLES);
 
 	try
 	{
+		read_file_text(filename, CF_TYPE_TABLES);
+
 		reset_parse();
 
 		int rgba[4] = { 0, 0, 0, 0 };
