@@ -856,7 +856,12 @@ float joy_down_time(int btn)
 	else if (btn >= JOY_NUM_BUTTONS)
 	{
 		// Is hat
-		return current->getHatDownTime(0, hatBtnToEnum(btn), false);
+		if (current->numHats() > 0) {
+			return current->getHatDownTime(0, hatBtnToEnum(btn), false);
+		} else {
+			// Don't have any hats to query
+			return 0.0f;
+		}
 
 	} // Else, Is a button
 
@@ -883,7 +888,12 @@ int joy_down_count(int btn, int reset_count)
 	else if (btn >= JOY_NUM_BUTTONS)
 	{
 		// Is hat
-		return current->getHatDownCount(0, hatBtnToEnum(btn), false, reset_count != 0);
+		if (current->numHats() > 0) {
+			return current->getHatDownCount(0, hatBtnToEnum(btn), false, reset_count != 0);
+		} else {
+			// Don't have any hats to query
+			return 0;
+		}
 
 	} // Else, is a button
 
