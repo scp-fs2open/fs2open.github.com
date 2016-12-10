@@ -3495,7 +3495,7 @@ void mission_parse_maybe_create_parse_object(p_object *pobjp)
 			{
 				// be sure to set the variable in the ships structure for the final death time!!!
 				Ships[objp->instance].final_death_time = pobjp->destroy_before_mission_time;
-				Ships[objp->instance].flags[Ship::Ship_Flags::Kill_before_mission];
+				Ships[objp->instance].flags.set(Ship::Ship_Flags::Kill_before_mission);
 			}
 		}
 	}
