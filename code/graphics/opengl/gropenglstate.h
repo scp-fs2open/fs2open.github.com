@@ -139,42 +139,6 @@ class opengl_array_state
 		void BindUniformBufferBindingIndex(GLuint id, GLuint index);
 };
 
-class opengl_light_state
-{
-	int Light_num;
-	bool Enabled;
-	
-	GLfloat Position[4];
-	bool InvalidPosition;
-
-	GLfloat Ambient[4];
-	GLfloat Diffuse[4];
-	GLfloat Specular[4];
-
-	GLfloat ConstantAttenuation;
-	GLfloat LinearAttenuation;
-	GLfloat QuadraticAttenuation;
-
-	GLfloat SpotExponent;
-	GLfloat SpotCutoff;
-
-public:
-	opengl_light_state(int light_num);
-
-	void Enable();
-	void Disable();
-	void Invalidate();
-	void SetPosition(GLfloat *val);
-	void SetAmbient(GLfloat *val);
-	void SetDiffuse(GLfloat *val);
-	void SetSpecular(GLfloat *val);
-	void SetConstantAttenuation(GLfloat val);
-	void SetLinearAttenuation(GLfloat val);
-	void SetQuadraticAttenuation(GLfloat val);
-	void SetSpotExponent(GLfloat val);
-	void SetSpotCutoff(GLfloat val);
-};
-
 class opengl_state
 {
 	friend class opengl_texture_state;
