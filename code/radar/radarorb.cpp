@@ -536,7 +536,6 @@ void HudGaugeRadarOrb::pageIn()
 
 void HudGaugeRadarOrb::drawContactImage(vec3d *pnt, int rad, int idx, int clr_idx, float mult)
 {
-    int tmap_flags = 0;
     int h, w;
     float aspect_mp;
 
@@ -582,8 +581,6 @@ void HudGaugeRadarOrb::drawContactImage(vec3d *pnt, int rad, int idx, int clr_id
 			sizef *= 1.3f;
 		}
 	}
-
-    tmap_flags = TMAP_FLAG_TEXTURED | TMAP_FLAG_BW_TEXTURE | TMAP_HTL_3D_UNLIT;
 
 	if ( idx >= 0 ) {
 		//g3_draw_polygon(pnt, &vmd_identity_matrix, sizef/35.0f, aspect_mp*sizef/35.0f, tmap_flags);
