@@ -149,7 +149,7 @@ void ml_string(const char *string, int add_time)
 	} else{
 		strcpy_s(tmp, string);
 	}
-	strcat_s(tmp, "\n");
+	// don't need to add terminating \n since log_string() will do it
 
 	// now print it to the logfile if necessary	
 	log_string(LOGFILE_MULTI_LOG, tmp, 0);
