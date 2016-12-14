@@ -536,212 +536,10 @@ void opengl_array_state::init(GLuint n_units)
 		client_texture_units[i].used_for_draw = false;
 	}
 
-	color_array_Buffer = 0;
-	color_array_Status = GL_FALSE;
-	color_array_size = 4;
-	color_array_type = GL_FLOAT;
-	color_array_stride = 0;
-	color_array_pointer = 0;
-	color_array_reset_ptr = false;
-	color_array_used_for_draw = false;
-
-	normal_array_Buffer = 0;
-	normal_array_Status = GL_FALSE;
-	normal_array_Type = GL_FLOAT;
-	normal_array_Stride = 0;
-	normal_array_Pointer = 0;
-	normal_array_reset_ptr = false;
-	normal_array_used_for_draw = false;
-
-	vertex_array_Buffer = 0;
-	vertex_array_Status = GL_FALSE;
-	vertex_array_Size = 4;
-	vertex_array_Type = GL_FLOAT;
-	vertex_array_Stride = 0;
-	vertex_array_Pointer = 0;
-	vertex_array_reset_ptr = false;
-	vertex_array_used_for_draw = false;
-
 	array_buffer = 0;
 	element_array_buffer = 0;
 	texture_array_buffer = 0;
 	uniform_buffer = 0;
-}
-
-void opengl_array_state::SetActiveClientUnit(GLuint id)
-{
-	// this function is deprecated in OGL Core
-}
-
-void opengl_array_state::EnableClientTexture()
-{
-	client_texture_units[active_client_texture_unit].used_for_draw = true;
-
-	if ( client_texture_units[active_client_texture_unit].status == GL_TRUE ) {
-		return;
-	}
-
-
-	client_texture_units[active_client_texture_unit].status = GL_TRUE;
-}
-
-void opengl_array_state::DisableClientTexture()
-{
-	if ( client_texture_units[active_client_texture_unit].status == GL_FALSE ) {
-		return;
-	}
-
-
-	client_texture_units[active_client_texture_unit].status = GL_FALSE;
-}
-
-void opengl_array_state::TexPointer(GLint size, GLenum type, GLsizei stride, GLvoid *pointer)
-{
-	opengl_client_texture_unit *ct_unit = &client_texture_units[active_client_texture_unit];
-
-	if ( 
-		!ct_unit->reset_ptr 
-		&& ct_unit->pointer == pointer 
-		&& ct_unit->size == size 
-		&& ct_unit->type == type 
-		&& ct_unit->stride == stride 
-		&& ct_unit->buffer == array_buffer 
-	) {
-		return;
-	}
-
-
-	ct_unit->size = size;
-	ct_unit->type = type;
-	ct_unit->stride = stride;
-	ct_unit->pointer = pointer;
-	ct_unit->buffer = array_buffer;
-	ct_unit->reset_ptr = false;
-}
-
-void opengl_array_state::EnableClientColor()
-{
-	color_array_used_for_draw = true;
-
-	if ( color_array_Status == GL_TRUE ) {
-		return;
-	}
-
-
-	color_array_Status = GL_TRUE;
-}
-
-void opengl_array_state::DisableClientColor()
-{
-	if ( color_array_Status == GL_FALSE ) {
-		return;
-	}
-
-
-	color_array_Status = GL_FALSE;
-}
-
-void opengl_array_state::ColorPointer(GLint size, GLenum type, GLsizei stride, GLvoid *pointer)
-{
-	if ( 
-		!color_array_reset_ptr 
-		&& color_array_size == size 
-		&& color_array_type == type 
-		&& color_array_stride == stride 
-		&& color_array_pointer == pointer 
-		&& color_array_Buffer == array_buffer 
-	) {
-		return;
-	}
-
-
-	color_array_size = size;
-	color_array_type = type;
-	color_array_stride = stride;
-	color_array_pointer = pointer;
-	color_array_Buffer = array_buffer;
-	color_array_reset_ptr = false;
-}
-
-void opengl_array_state::EnableClientNormal()
-{
-	normal_array_used_for_draw = true;
-
-	if ( normal_array_Status == GL_TRUE ) {
-		return;
-	}
-
-
-	normal_array_Status = GL_TRUE;
-}
-
-void opengl_array_state::DisableClientNormal()
-{
-	if ( normal_array_Status == GL_FALSE ) {
-		return;
-	}
-
-	normal_array_Status = GL_FALSE;
-}
-
-void opengl_array_state::NormalPointer(GLenum type, GLsizei stride, GLvoid *pointer)
-{
-	if ( 
-		!normal_array_reset_ptr 
-		&& normal_array_Type == type 
-		&& normal_array_Stride == stride 
-		&& normal_array_Pointer == pointer 
-		&& normal_array_Buffer == array_buffer 
-	) {
-		return;
-	}
-
-	normal_array_Type = type;
-	normal_array_Stride = stride;
-	normal_array_Pointer = pointer;
-	normal_array_Buffer = array_buffer;
-	normal_array_reset_ptr = false;
-}
-
-void opengl_array_state::EnableClientVertex()
-{
-	vertex_array_used_for_draw = true;
-
-	if ( vertex_array_Status == GL_TRUE ) {
-		return;
-	}
-
-	vertex_array_Status = GL_TRUE;
-}
-
-void opengl_array_state::DisableClientVertex()
-{
-	if ( vertex_array_Status == GL_FALSE ) {
-		return;
-	}
-
-	vertex_array_Status = GL_FALSE;
-}
-
-void opengl_array_state::VertexPointer(GLint size, GLenum type, GLsizei stride, GLvoid *pointer)
-{
-	if (
-		!vertex_array_reset_ptr 
-		&& vertex_array_Size == size 
-		&& vertex_array_Type == type 
-		&& vertex_array_Stride == stride 
-		&& vertex_array_Pointer == pointer 
-		&& vertex_array_Buffer == array_buffer 
-	) {
-		return;
-	}
-
-	vertex_array_Size = size;
-	vertex_array_Type = type;
-	vertex_array_Stride = stride;
-	vertex_array_Pointer = pointer;
-	vertex_array_Buffer = array_buffer;
-	vertex_array_reset_ptr = false;
 }
 
 void opengl_array_state::EnableVertexAttrib(GLuint index)
@@ -815,11 +613,6 @@ void opengl_array_state::ResetVertexAttribs()
 
 void opengl_array_state::BindPointersBegin()
 {
-	// set all available client states to not used
-	vertex_array_used_for_draw = false;
-	color_array_used_for_draw = false;
-	normal_array_used_for_draw = false;
-
 	for (unsigned int i = 0; i < num_client_texture_units; i++) {
 		client_texture_units[i].used_for_draw = false;
 	}
@@ -833,18 +626,6 @@ void opengl_array_state::BindPointersBegin()
 
 void opengl_array_state::BindPointersEnd()
 {
-	// any client states not used, disable them
-	if ( !vertex_array_used_for_draw ) DisableClientVertex();
-	if ( !color_array_used_for_draw ) DisableClientColor();
-	if ( !normal_array_used_for_draw ) DisableClientNormal();
-
-	for (unsigned int i = 0; i < num_client_texture_units; i++) {
-		if ( !client_texture_units[i].used_for_draw ) {
-			SetActiveClientUnit(i);
-			DisableClientTexture();
-		}
-	}
-
 	SCP_map<GLuint, opengl_vertex_attrib_unit>::iterator it;
 
 	for (it = vertex_attrib_units.begin(); it != vertex_attrib_units.end(); ++it) {
@@ -861,10 +642,6 @@ void opengl_array_state::BindArrayBuffer(GLuint id)
 	glBindBuffer(GL_ARRAY_BUFFER, id);
 
 	array_buffer = id;
-
-	vertex_array_reset_ptr = true;
-	color_array_reset_ptr = true;
-	normal_array_reset_ptr = true;
 
 	for (unsigned int i = 0; i < num_client_texture_units; i++) {
 		client_texture_units[i].reset_ptr = true;
