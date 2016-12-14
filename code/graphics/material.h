@@ -102,32 +102,32 @@ public:
 
 class model_material : public material
 {
-	bool Desaturate;
+	bool Desaturate = false;
 
-	bool Shadow_casting;
-	bool Batched;
+	bool Shadow_casting = false;
+	bool Batched = false;
 
-	bool Deferred;
-	bool HDR;
-	bool lighting;
-	float Light_factor;
+	bool Deferred = false;
+	bool HDR = false;
+	bool lighting = false;
+	float Light_factor = 1.0f;
 
-	int Center_alpha;
+	int Center_alpha = 0;
 
-	int Animated_effect;
-	float Animated_timer;
+	int Animated_effect = -1;
+	float Animated_timer = 0.0f;
 
-	float Thrust_scale;
+	float Thrust_scale = -1.0f;
 
-	bool Team_color_set;
+	bool Team_color_set = false;
 	team_color Tm_color;
 
-	bool Normal_alpha;
-	float Normal_alpha_min;
-	float Normal_alpha_max;
+	bool Normal_alpha = false;
+	float Normal_alpha_min = 0.0f;
+	float Normal_alpha_max = 1.0f;
 
-	bool Normal_extrude;
-	float Normal_extrude_width;
+	bool Normal_extrude = false;
+	float Normal_extrude_width = -1.0f;
 
 public:
 	model_material();

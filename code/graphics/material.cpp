@@ -122,12 +122,12 @@ material::material():
 Sdr_type(SDR_TYPE_PASSTHROUGH_RENDER),
 Tex_type(TEX_TYPE_NORMAL),
 Texture_addressing(TMAP_ADDRESS_WRAP),
-Depth_bias(0),
 Depth_mode(ZBUFFER_TYPE_NONE),
 Blend_mode(ALPHA_BLEND_ALPHA_BLEND_ALPHA),
 Cull_mode(true),
 Fill_mode(GR_FILL_MODE_SOLID),
-Clr_scale(1.0f)
+Clr_scale(1.0f),
+Depth_bias(0)
 {
 	Clr = { 1.0f, 1.0f, 1.0f, 1.0f };
 	
@@ -358,25 +358,8 @@ float material::get_color_scale()
 	return Clr_scale;
 }
 
-model_material::model_material(): 
-material(), 
-Animated_effect(-1), 
-Animated_timer(0.0f), 
-Thrust_scale(-1.0f), 
-lighting(false), 
-Light_factor(1.0f), 
-Batched(false), 
-Team_color_set(false), 
-Center_alpha(0),
-Desaturate(false),
-Normal_alpha(false),
-Normal_alpha_min(0.0f),
-Normal_alpha_max(1.0f),
-Normal_extrude(false),
-Deferred(false),
-HDR(false)
-{ 
-	set_shader_type(SDR_TYPE_MODEL); 
+model_material::model_material() : material() {
+	set_shader_type(SDR_TYPE_MODEL);
 }
 
 void model_material::set_desaturation(bool enabled)
