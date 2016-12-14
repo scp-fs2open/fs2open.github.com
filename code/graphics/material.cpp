@@ -129,7 +129,7 @@ Fill_mode(GR_FILL_MODE_SOLID),
 Clr_scale(1.0f),
 Depth_bias(0)
 {
-	Clr = { 1.0f, 1.0f, 1.0f, 1.0f };
+	Clr = {{{ 1.0f, 1.0f, 1.0f, 1.0f }}};
 	
 	Texture_maps[TM_BASE_TYPE]		= -1;
 	Texture_maps[TM_GLOW_TYPE]		= -1;
@@ -321,7 +321,7 @@ int material::get_depth_bias()
 
 void material::set_color(float red, float green, float blue, float alpha)
 {
-	Clr = { red, green, blue, alpha };
+	Clr = {{{ red, green, blue, alpha }}};
 }
 
 void material::set_color(int r, int g, int b, int a)
@@ -331,15 +331,15 @@ void material::set_color(int r, int g, int b, int a)
 	CLAMP(g, 0, 255);
 	CLAMP(a, 0, 255);
 
-	Clr = { i2fl(r) / 255.0f, i2fl(g) / 255.0f, i2fl(b) / 255.0f, i2fl(a) / 255.0f };
+	Clr = {{{ i2fl(r) / 255.0f, i2fl(g) / 255.0f, i2fl(b) / 255.0f, i2fl(a) / 255.0f }}};
 }
 
 void material::set_color(color &clr_in)
 {
 	if ( clr_in.is_alphacolor ) {
-		Clr = { i2fl(clr_in.red) / 255.0f, i2fl(clr_in.green) / 255.0f, i2fl(clr_in.blue) / 255.0f, 1.0f };
+		Clr = {{{ i2fl(clr_in.red) / 255.0f, i2fl(clr_in.green) / 255.0f, i2fl(clr_in.blue) / 255.0f, 1.0f }}};
 	} else {
-		Clr = { i2fl(clr_in.red) / 255.0f, i2fl(clr_in.green) / 255.0f, i2fl(clr_in.blue) / 255.0f, i2fl(clr_in.green) / 255.0f };
+		Clr = {{{ i2fl(clr_in.red) / 255.0f, i2fl(clr_in.green) / 255.0f, i2fl(clr_in.blue) / 255.0f, i2fl(clr_in.green) / 255.0f }}};
 	}
 }
 
@@ -666,7 +666,7 @@ shield_material::shield_material() :
 	set_shader_type(SDR_TYPE_SHIELD_DECAL);
 
 	vm_set_identity(&Impact_orient);
-	Impact_pos = { 0.0f, 0.0f, 0.0f };
+	Impact_pos = {{{ 0.0f, 0.0f, 0.0f }}};
 	Impact_radius = 1.0f;
 }
 
