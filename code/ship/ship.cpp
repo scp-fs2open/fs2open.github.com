@@ -5471,8 +5471,9 @@ void ship_add_exited_ship( ship *sp, Ship::Exit_Flags reason )
 		entry.time_cargo_revealed = sp->time_cargo_revealed;
 	}
 
-    if (sp->time_first_tagged > 0)
-        entry.flags.set(Ship::Exit_Flags::Been_tagged);
+    if (sp->time_first_tagged > 0) {
+		entry.flags.set(Ship::Exit_Flags::Been_tagged);
+	}
 	
 	//copy across the damage_ship arrays
 	for (int i = 0; i < MAX_DAMAGE_SLOTS ; i++) {
