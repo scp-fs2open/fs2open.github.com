@@ -12014,6 +12014,21 @@ done_secondary:
 		}
 	}
 
+	if (has_fired) {
+		object *objp = &Objects[shipp->objnum];
+		object* target;
+		if (Ai_info[shipp->ai_index].target_objnum != -1)
+			target = &Objects[Ai_info[shipp->ai_index].target_objnum];
+		else
+			target = NULL;
+		if (objp == Player_obj && Player_ai->target_objnum != -1)
+			target = &Objects[Player_ai->target_objnum]; 
+		Script_system.SetHookObjects(2, "User", objp, "Target", target);
+		Script_system.RunCondition(CHA_ONWPFIRED, 0, NULL, objp);
+		Script_system.RunCondition(CHA_SECONDARYFIRE, 0, NULL, objp);
+		Script_system.RemHookVars(2, "User", "Target");
+	}
+
 	// AL 3-7-98: Move to next valid secondary bank if out of ammo
 	//
 
@@ -12043,21 +12058,6 @@ done_secondary:
 				snd_play( &Snds[ship_get_sound(Player_obj, SND_SECONDARY_CYCLE)] );		
 			}
 		}
-	}	
-
-	if (has_fired) {
-		object *objp = &Objects[shipp->objnum];
-		object* target;
-		if (Ai_info[shipp->ai_index].target_objnum != -1)
-			target = &Objects[Ai_info[shipp->ai_index].target_objnum];
-		else
-			target = NULL;
-		if (objp == Player_obj && Player_ai->target_objnum != -1)
-			target = &Objects[Player_ai->target_objnum]; 
-		Script_system.SetHookObjects(2, "User", objp, "Target", target);
-		Script_system.RunCondition(CHA_ONWPFIRED, 0, NULL, objp);
-		Script_system.RunCondition(CHA_SECONDARYFIRE, 0, NULL, objp);
-		Script_system.RemHookVars(2, "User", "Target");
 	}
 
 	return num_fired;
