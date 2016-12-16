@@ -65,6 +65,7 @@
 #include "menuui/techmenu.h"
 #include "missionui/fictionviewer.h"
 #include "mod_table/mod_table.h"
+#include "libs/ffmpeg/FFmpeg.h"
 
 #include <direct.h>
 #include "cmdline/cmdline.h"
@@ -420,6 +421,8 @@ bool fred_init(os::GraphicsOperations* graphicsOps)
 
 	// neb lightning
 	nebl_init();
+
+	libs::ffmpeg::initialize();
 
 	gr_reset_clip();
 	g3_start_frame(0);
