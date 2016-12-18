@@ -20,11 +20,13 @@ set_target_properties(mongoose
 		FOLDER "3rdparty"
 		INTERFACE_INCLUDE_DIRECTORIES ${CMAKE_CURRENT_SOURCE_DIR}
 )
-	
+
+# Disable warnings if building from source
 if (MSVC)
-	# Disable warnings if building from source
 	target_compile_options(mongoose PRIVATE "/W0")
+else()
+	target_compile_options(mongoose PRIVATE "-w")
 endif()
+target_link_libraries(mongoose PUBLIC compiler)
 
 SET(MONGOOSE_LIBS mongoose CACHE INTERNAL "mongoose library")
-

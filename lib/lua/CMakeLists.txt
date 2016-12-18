@@ -201,6 +201,7 @@ ELSE(FSO_USE_LUAJIT)
 			# Disable warnings if building from source
 			target_compile_options(lua51 PRIVATE "/W0")
 		endif()
+		target_link_libraries(lua51 PUBLIC compiler)
 
 		SET(LUA_INCLUDE_DIR ${CMAKE_CURRENT_LIST_DIR} CACHE INTERNAL "Lua 5.1 include directory")
 

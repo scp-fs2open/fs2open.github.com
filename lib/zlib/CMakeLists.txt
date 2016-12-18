@@ -43,6 +43,7 @@ IF (FSO_BUILD_INCLUDED_LIBS OR NOT ZLIB_FOUND)
 		# Disable warnings if building from source
 		target_compile_options(zlib PRIVATE "/W0")
 	endif()
+	target_link_libraries(zlib PUBLIC compiler)
 
 	IF(BUILD_SHARED_LIBS)
 		target_compile_definitions(zlib INTERFACE ZLIB_DLL)

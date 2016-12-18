@@ -57,6 +57,7 @@ IF (FSO_BUILD_INCLUDED_LIBS OR NOT JPEG_FOUND)
 	if (MSVC)
 		target_compile_options(jpeg PRIVATE "/W0")
 	endif()
+	target_link_libraries(jpeg PUBLIC compiler)
 
 	SET(JPEG_LIBS jpeg CACHE INTERNAL "JPEG library")
 ELSE(FSO_BUILD_INCLUDED_LIBS OR NOT JPEG_FOUND)
