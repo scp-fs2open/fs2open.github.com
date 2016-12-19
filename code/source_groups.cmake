@@ -933,6 +933,8 @@ set(file_root_scripting_api
 	scripting/api/hudgauge.cpp
 	scripting/api/model.h
 	scripting/api/model.cpp
+	scripting/api/physics_info.h
+	scripting/api/physics_info.cpp
 	scripting/api/vecmath.h
 	scripting/api/vecmath.cpp
 )
