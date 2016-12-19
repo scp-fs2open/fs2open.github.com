@@ -937,6 +937,8 @@ set(file_root_scripting_api
 	scripting/api/physics_info.cpp
 	scripting/api/sexpvar.h
 	scripting/api/sexpvar.cpp
+	scripting/api/shields.h
+	scripting/api/shields.cpp
 	scripting/api/vecmath.h
 	scripting/api/vecmath.cpp
 )
