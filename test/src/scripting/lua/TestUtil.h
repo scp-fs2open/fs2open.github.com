@@ -23,8 +23,8 @@ class LuaStateTest: public testing::Test {
 
 class ScopedLuaStackTest {
  private:
-	int top;
 	lua_State* L;
+	int top;
 
  public:
 	ScopedLuaStackTest(lua_State* state) : L(state), top(-1) {

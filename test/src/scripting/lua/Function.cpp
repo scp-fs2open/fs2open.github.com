@@ -109,7 +109,7 @@ TEST_F(LuaFunctionTest, Call) {
 		LuaValue arg = LuaValue::createValue(L, "testString");
 		LuaValueList returnVals = func({ arg });
 
-		ASSERT_EQ(1, returnVals.size());
+		ASSERT_EQ(1, (int)returnVals.size());
 		ASSERT_EQ(ValueType::STRING, returnVals[0].getValueType());
 		ASSERT_STREQ("string", returnVals[0].getValue<std::string>().c_str());
 	}
@@ -129,7 +129,7 @@ TEST_F(LuaFunctionTest, SetEnvironment) {
 
 		LuaValueList returnVals = func();
 
-		ASSERT_EQ(1, returnVals.size());
+		ASSERT_EQ(1, (int)returnVals.size());
 		ASSERT_EQ(ValueType::STRING, returnVals[0].getValueType());
 
 		ASSERT_STREQ("Test", returnVals[0].getValue<std::string>().c_str());
@@ -144,7 +144,7 @@ TEST_F(LuaFunctionTest, SetCFunction) {
 
 		LuaValueList retVals = func();
 
-		ASSERT_EQ(1, retVals.size());
+		ASSERT_EQ(1, (int)retVals.size());
 		ASSERT_EQ(ValueType::NUMBER, retVals[0].getValueType());
 		ASSERT_DOUBLE_EQ(42.0, retVals[0].getValue<double>());
 	}
@@ -224,7 +224,7 @@ TEST_F(LuaFunctionTest, Upvalues) {
 
 	auto ret = func();
 
-	ASSERT_EQ(1, ret.size());
+	ASSERT_EQ(1, (int)ret.size());
 	ASSERT_TRUE(ret.front().is(ValueType::BOOLEAN));
 	ASSERT_TRUE(ret.front().getValue<bool>());
 }

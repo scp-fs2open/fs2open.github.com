@@ -282,7 +282,7 @@ TEST_F(LuaConvertTest, PopSizeT) {
 		size_t target;
 		ASSERT_NO_THROW(target = popValue<size_t>(L));
 
-		ASSERT_EQ(1, target);
+		ASSERT_EQ(1, (int)target);
 	}
 	{
 		ScopedLuaStackTest stackTest(L);
@@ -292,7 +292,7 @@ TEST_F(LuaConvertTest, PopSizeT) {
 		size_t target;
 		ASSERT_NO_THROW(target = popValue<size_t>(L, -1, false));
 
-		ASSERT_EQ(1, target);
+		ASSERT_EQ(1, (int)target);
 		ASSERT_TRUE(lua_isnumber(L, -1) == 1);
 
 		lua_pop(L, 1);

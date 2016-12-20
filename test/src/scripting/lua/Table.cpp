@@ -12,7 +12,6 @@ class LuaTableTest: public LuaStateTest {
 TEST_F(LuaTableTest, AddValue) {
 	ScopedLuaStackTest stackTest(L);
 
-	auto top = lua_gettop(L);
 	LuaTable table = LuaTable::create(L);
 	table.addValue("key", "value");
 
@@ -79,7 +78,7 @@ TEST_F(LuaTableTest, GetLength) {
 
 	EXPECT_TRUE(convert::popValue(L, table));
 
-	ASSERT_EQ(3, table.getLength());
+	ASSERT_EQ(3, (int)table.getLength());
 }
 
 TEST_F(LuaTableTest, Iterator) {
