@@ -142,7 +142,7 @@ void timestamp_inc(fix frametime)
 
 	timestamp_ticker += delta;
 
-	if ( timestamp_ms() > MAX_TIME )	{
+	if ( timestamp_ms() > (int)MAX_TIME )	{
 		timestamp_ticker = 2;		// Roll!
 	}
 
@@ -157,7 +157,7 @@ int timestamp(int delta_ms ) {
 	if (delta_ms < 0 ) return 0;
 	if (delta_ms == 0 ) return 1;
 	t2 = timestamp_ms() + delta_ms;
-	if ( t2 > MAX_TIME )	{
+	if ( t2 > (int)MAX_TIME )	{
 		// wrap!!!
 		t2 = delta_ms - (MAX_TIME-timestamp_ms());
 	}

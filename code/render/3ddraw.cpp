@@ -1233,7 +1233,7 @@ void g3_render_sphere(color *clr, vec3d* position, float radius)
 {
 	g3_start_instance_matrix(position, &vmd_identity_matrix, true);
 
-	vec3d scale = { radius, radius, radius };
+	vec3d scale = {{{ radius, radius, radius }}};
 	gr_push_scale_matrix(&scale);
 
 	material material_def;

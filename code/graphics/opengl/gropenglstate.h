@@ -106,32 +106,6 @@ class opengl_array_state
 
 		opengl_client_texture_unit *client_texture_units;
 
-		GLboolean color_array_Status;
-		GLuint color_array_Buffer;
-		GLint color_array_size;
-		GLenum color_array_type;
-		GLsizei color_array_stride;
-		GLvoid *color_array_pointer;
-		bool color_array_reset_ptr;
-		bool color_array_used_for_draw;
-
-		GLboolean normal_array_Status;
-		GLuint normal_array_Buffer;
-		GLenum normal_array_Type;
-		GLsizei normal_array_Stride;
-		GLvoid *normal_array_Pointer;
-		bool normal_array_reset_ptr;
-		bool normal_array_used_for_draw;
-
-		GLboolean vertex_array_Status;
-		GLuint vertex_array_Buffer;
-		GLint vertex_array_Size;
-		GLenum vertex_array_Type;
-		GLsizei vertex_array_Stride;
-		GLvoid *vertex_array_Pointer;
-		bool vertex_array_reset_ptr;
-		bool vertex_array_used_for_draw;
-
 		SCP_map<GLuint, opengl_vertex_attrib_unit> vertex_attrib_units;
 
 		GLuint array_buffer;
@@ -140,8 +114,6 @@ class opengl_array_state
 		GLuint uniform_buffer;
 
 		GLuint uniform_buffer_index_bindings[MAX_UNIFORM_BUFFERS];
-
-		GLuint vertex_array_object;
 	public:
 		opengl_array_state(): active_client_texture_unit(0), client_texture_units(NULL) {
 			for ( int i = 0; i < MAX_UNIFORM_BUFFERS; ++i ) {
@@ -151,23 +123,6 @@ class opengl_array_state
 		~opengl_array_state();
 
 		void init(GLuint n_units);
-
-		void SetActiveClientUnit(GLuint id);
-		void EnableClientTexture();
-		void DisableClientTexture();
-		void TexPointer(GLint size, GLenum type, GLsizei stride, GLvoid *pointer);
-
-		void EnableClientColor();
-		void DisableClientColor();
-		void ColorPointer(GLint size, GLenum type, GLsizei stride, GLvoid *pointer);
-
-		void EnableClientNormal();
-		void DisableClientNormal();
-		void NormalPointer(GLenum type, GLsizei stride, GLvoid *pointer);
-
-		void EnableClientVertex();
-		void DisableClientVertex();
-		void VertexPointer(GLint size, GLenum type, GLsizei stride, GLvoid *pointer);
 
 		void EnableVertexAttrib(GLuint index);
 		void DisableVertexAttrib(GLuint index);
@@ -182,42 +137,6 @@ class opengl_array_state
 		void BindTextureBuffer(GLuint id);
 		void BindUniformBuffer(GLuint id);
 		void BindUniformBufferBindingIndex(GLuint id, GLuint index);
-};
-
-class opengl_light_state
-{
-	int Light_num;
-	bool Enabled;
-	
-	GLfloat Position[4];
-	bool InvalidPosition;
-
-	GLfloat Ambient[4];
-	GLfloat Diffuse[4];
-	GLfloat Specular[4];
-
-	GLfloat ConstantAttenuation;
-	GLfloat LinearAttenuation;
-	GLfloat QuadraticAttenuation;
-
-	GLfloat SpotExponent;
-	GLfloat SpotCutoff;
-
-public:
-	opengl_light_state(int light_num);
-
-	void Enable();
-	void Disable();
-	void Invalidate();
-	void SetPosition(GLfloat *val);
-	void SetAmbient(GLfloat *val);
-	void SetDiffuse(GLfloat *val);
-	void SetSpecular(GLfloat *val);
-	void SetConstantAttenuation(GLfloat val);
-	void SetLinearAttenuation(GLfloat val);
-	void SetQuadraticAttenuation(GLfloat val);
-	void SetSpotExponent(GLfloat val);
-	void SetSpotCutoff(GLfloat val);
 };
 
 class opengl_state

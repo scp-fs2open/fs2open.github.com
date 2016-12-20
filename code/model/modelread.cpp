@@ -4768,9 +4768,9 @@ void model_set_instance(int model_num, int sub_model_num, submodel_instance_info
 
     flagset<Ship::Subsystem_Flags> instance_flags;
 
-    if (flags != NULL)
-        instance_flags = *flags;
-
+    if (flags != NULL) {
+		instance_flags = *flags;
+	}
 
 	pm = model_get(model_num);
 

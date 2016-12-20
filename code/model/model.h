@@ -670,10 +670,10 @@ public:
 	polymodel()
 		: id(-1), version(0), flags(0), n_detail_levels(0), num_debris_objects(0), n_models(0), num_lights(0), lights(NULL),
 		n_view_positions(0), rad(0.0f), core_radius(0.0f), n_textures(0), submodel(NULL), n_guns(0), n_missiles(0), n_docks(0),
-		n_thrusters(0), gun_banks(NULL), missile_banks(NULL), docking_bays(NULL), thrusters(NULL), ship_bay(NULL),
+		n_thrusters(0), gun_banks(NULL), missile_banks(NULL), docking_bays(NULL), thrusters(NULL), ship_bay(NULL), shield(),
 		shield_collision_tree(NULL), sldc_size(0), n_paths(0), paths(NULL), mass(0), num_xc(0), xc(NULL), num_split_plane(0),
 		num_ins(0), used_this_mission(0), n_glow_point_banks(0), glow_point_banks(NULL), gun_submodel_rotation(0),
-		vert_source(), shield()
+		vert_source()
 	{
 		filename[0] = 0;
 		mins = maxs = autocenter = center_of_mass = vmd_zero_vector;

@@ -18,7 +18,10 @@ if(NOT COMPILER_FLAGS)
 	set(COMPILER_FLAGS "-march=native -pipe")
 endif()
 
-globally_enable_extra_compiler_warnings()
+# This is a slight hack since our flag setup is a bit more complicated
+_enable_extra_compiler_warnings_flags()
+set(COMPILER_FLAGS "${COMPILER_FLAGS} ${_flags}")
+
 set(COMPILER_FLAGS "${COMPILER_FLAGS} -funroll-loops -fsigned-char -Wno-unknown-pragmas")
 
 # Place each function and data in its own section so the linker can
