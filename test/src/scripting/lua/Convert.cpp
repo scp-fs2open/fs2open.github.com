@@ -209,7 +209,7 @@ TEST_F(LuaConvertTest, PopFloat) {
 
 		lua_pushnumber(L, 1.0);
 
-		float target;
+		float target = -1.f;
 		ASSERT_NO_THROW(target = popValue<float>(L));
 
 		ASSERT_FLOAT_EQ(1.0f, target);
@@ -219,7 +219,7 @@ TEST_F(LuaConvertTest, PopFloat) {
 
 		lua_pushnumber(L, 1.0);
 
-		float target;
+		float target = -1.f;
 		ASSERT_NO_THROW(target = popValue<float>(L, -1, false));
 
 		ASSERT_FLOAT_EQ(1.0f, target);
@@ -244,7 +244,7 @@ TEST_F(LuaConvertTest, PopInt) {
 
 		lua_pushnumber(L, 1.0);
 
-		int target;
+		int target = -1;
 		ASSERT_NO_THROW(target = popValue<int>(L));
 
 		ASSERT_EQ(1, target);
@@ -254,7 +254,7 @@ TEST_F(LuaConvertTest, PopInt) {
 
 		lua_pushnumber(L, 1.0);
 
-		int target;
+		int target = -1;
 		ASSERT_NO_THROW(target = popValue<int>(L, -1, false));
 
 		ASSERT_EQ(1, target);
@@ -279,7 +279,7 @@ TEST_F(LuaConvertTest, PopSizeT) {
 
 		lua_pushnumber(L, 1.0);
 
-		size_t target;
+		size_t target = SIZE_MAX;
 		ASSERT_NO_THROW(target = popValue<size_t>(L));
 
 		ASSERT_EQ(1, (int)target);
@@ -289,7 +289,7 @@ TEST_F(LuaConvertTest, PopSizeT) {
 
 		lua_pushnumber(L, 1.0);
 
-		size_t target;
+		size_t target = SIZE_MAX;
 		ASSERT_NO_THROW(target = popValue<size_t>(L, -1, false));
 
 		ASSERT_EQ(1, (int)target);
@@ -349,7 +349,7 @@ TEST_F(LuaConvertTest, PopBool) {
 
 		lua_pushboolean(L, 1);
 
-		bool target;
+		bool target = false;
 		ASSERT_NO_THROW(target = popValue<bool>(L));
 
 		ASSERT_TRUE(target);
@@ -359,7 +359,7 @@ TEST_F(LuaConvertTest, PopBool) {
 
 		lua_pushboolean(L, 1);
 
-		bool target;
+		bool target = false;
 		ASSERT_NO_THROW(target = popValue<bool>(L, -1, false));
 
 		ASSERT_TRUE(target);
@@ -384,7 +384,7 @@ TEST_F(LuaConvertTest, PopCFunction) {
 
 		lua_pushcfunction(L, &testCFunction);
 
-		lua_CFunction target;
+		lua_CFunction target = nullptr;
 		ASSERT_NO_THROW(target = popValue<lua_CFunction>(L));
 
 		ASSERT_EQ(target, &testCFunction);
@@ -394,7 +394,7 @@ TEST_F(LuaConvertTest, PopCFunction) {
 
 		lua_pushcfunction(L, &testCFunction);
 
-		lua_CFunction target;
+		lua_CFunction target = nullptr;
 		ASSERT_NO_THROW(target = popValue<lua_CFunction>(L, -1, false));
 
 		ASSERT_EQ(target, &testCFunction);
