@@ -74,6 +74,7 @@
 #include "scripting/api/sexpvar.h"
 #include "scripting/api/shields.h"
 #include "scripting/api/shiptype.h"
+#include "scripting/api/species.h"
 
 using namespace scripting;
 using namespace scripting::api;
@@ -238,42 +239,6 @@ flag_def_list plr_commands[] = {
 };
 
 int num_plr_commands = sizeof(plr_commands)/sizeof(flag_def_list);
-
-//**********HANDLE: Species
-ade_obj<int> l_Species("species", "Species handle");
-extern int Species_initted;
-
-ADE_VIRTVAR(Name, l_Species, "string", "Species name", "string", "Species name, or empty string if handle is invalid")
-{
-	if(!Species_initted)
-		return ade_set_error(L, "s", "");
-
-	char *s = NULL;
-	int idx;
-	if(!ade_get_args(L, "o|s", l_Species.Get(&idx), &s))
-		return ade_set_error(L, "s", "");
-
-	if(idx < 0 || idx >= (int)Species_info.size())
-		return ade_set_error(L, "s", "");
-
-	if(ADE_SETTING_VAR && s != NULL) {
-		strncpy(Species_info[idx].species_name, s, sizeof(Species_info[idx].species_name)-1);
-	}
-
-	return ade_set_args(L, "s", Species_info[idx].species_name);
-}
-
-ADE_FUNC(isValid, l_Species, NULL, "Detects whether handle is valid", "boolean", "true if valid, false if handle is invalid, nil if a syntax/type error occurs")
-{
-	int idx;
-	if(!ade_get_args(L, "o", l_Species.Get(&idx)))
-		return ADE_RETURN_NIL;
-
-	if(idx < 0 || idx >= (int)Species_info.size())
-		return ADE_RETURN_FALSE;
-
-	return ADE_RETURN_TRUE;
-}
 
 //**********HANDLE: Team
 ade_obj<int> l_Team("team", "Team handle");
