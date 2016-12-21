@@ -116,8 +116,6 @@ class LuaFunction: public LuaValue {
      */
 	LuaValueList operator()(const LuaValueList& arguments = LuaValueList());
  private:
-	bool _isCFunction; //!< @c true to indicate that this is a C-function, mainly used for checking the values
-
 	LuaReference _errorFunction;
 };
 

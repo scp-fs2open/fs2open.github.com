@@ -42,7 +42,7 @@ LuaFunction LuaFunction::createFromCode(lua_State* L, std::string const& code, s
 	}
 }
 
-LuaFunction::LuaFunction() : LuaValue(), _isCFunction(false), _errorFunction(nullptr) {
+LuaFunction::LuaFunction() : LuaValue(), _errorFunction(nullptr) {
 }
 
 LuaFunction::LuaFunction(const LuaFunction& other) : LuaValue(other), _errorFunction(nullptr) {
