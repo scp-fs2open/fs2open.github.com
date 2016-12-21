@@ -943,6 +943,8 @@ set(file_root_scripting_api
 	scripting/api/shiptype.cpp
 	scripting/api/species.h
 	scripting/api/species.cpp
+	scripting/api/team.h
+	scripting/api/team.cpp
 	scripting/api/vecmath.h
 	scripting/api/vecmath.cpp
 )
