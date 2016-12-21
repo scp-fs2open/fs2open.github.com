@@ -949,6 +949,8 @@ set(file_root_scripting_api
 	scripting/api/team.cpp
 	scripting/api/texture.h
 	scripting/api/texture.cpp
+	scripting/api/texturemap.h
+	scripting/api/texturemap.cpp
 	scripting/api/vecmath.h
 	scripting/api/vecmath.cpp
 )

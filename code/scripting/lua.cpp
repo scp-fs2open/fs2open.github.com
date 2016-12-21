@@ -78,6 +78,7 @@
 #include "scripting/api/team.h"
 #include "scripting/api/streaminganim.h"
 #include "scripting/api/texture.h"
+#include "scripting/api/texturemap.h"
 
 using namespace scripting;
 using namespace scripting::api;
@@ -242,141 +243,6 @@ flag_def_list plr_commands[] = {
 };
 
 int num_plr_commands = sizeof(plr_commands)/sizeof(flag_def_list);
-
-//**********HANDLE: material
-static const int THT_INDEPENDENT	= 0;
-static const int THT_OBJECT			= 1;
-static const int THT_MODEL			= 2;
-class texture_map_h
-{
-protected:
-	int type;
-	object_h obj;
-	model_h mdl;
-
-	texture_map *tmap;	//Pointer to subsystem, or NULL for the hull
-
-public:
-	texture_map_h(){
-		type = THT_INDEPENDENT;
-		tmap = NULL;
-	}
-
-	texture_map_h(object *objp, texture_map *n_tmap = NULL) {
-		type = THT_OBJECT;
-		obj = object_h(objp);
-		tmap = n_tmap;
-	}
-
-	texture_map_h(int modelnum, texture_map *n_tmap = NULL) {
-		type = THT_MODEL;
-		mdl = model_h(modelnum);
-		tmap = n_tmap;
-	}
-
-	texture_map_h(polymodel *n_model, texture_map *n_tmap = NULL) {
-		type = THT_MODEL;
-		mdl = model_h(n_model);
-		tmap = n_tmap;
-	}
-
-	texture_map *Get()
-	{
-		if(!this->IsValid())
-			return NULL;
-
-		return tmap;
-	}
-
-	int GetSize()
-	{
-		if(!this->IsValid())
-			return 0;
-
-		switch(type)
-		{
-			case THT_MODEL:
-				return mdl.Get()->n_textures;
-			case THT_OBJECT:
-				return 0;	//Can't do this right now.
-			default:
-				return 0;
-		}
-	}
-
-	bool IsValid() {
-		if(tmap == NULL)
-			return false;
-
-		switch(type)
-		{
-			case THT_INDEPENDENT:
-				return true;
-			case THT_OBJECT:
-				return obj.IsValid();
-			case THT_MODEL:
-				return mdl.IsValid();
-			default:
-				Error(LOCATION, "Bad type in texture_map_h; debug this.");
-				return false;
-		}
-	}
-};
-ade_obj<texture_map_h> l_TextureMap("material", "Texture map, including diffuse, glow, and specular textures");
-
-ADE_VIRTVAR(BaseMap, l_TextureMap, "texture", "Base texture", "texture", "Base texture, or invalid texture handle if material handle is invalid")
-{
-	texture_map_h *tmh = NULL;
-	int new_tex = -1;
-	if(!ade_get_args(L, "o|o", l_TextureMap.GetPtr(&tmh), l_Texture.Get(&new_tex)))
-		return ade_set_error(L, "o", l_Texture.Set(-1));
-
-	texture_map *tmap = tmh->Get();
-	if(tmap == NULL)
-		return ade_set_error(L, "o", l_Texture.Set(-1));
-
-	if(ADE_SETTING_VAR && new_tex > -1) {
-		tmap->textures[TM_BASE_TYPE].SetTexture(new_tex);
-	}
-
-	return ade_set_args(L, "o", l_Texture.Set(tmap->textures[TM_BASE_TYPE].GetTexture()));
-}
-
-ADE_VIRTVAR(GlowMap, l_TextureMap, "texture", "Glow texture", "texture", "Glow texture, or invalid texture handle if material handle is invalid")
-{
-	texture_map_h *tmh = NULL;
-	int new_tex = -1;
-	if(!ade_get_args(L, "o|o", l_TextureMap.GetPtr(&tmh), l_Texture.Get(&new_tex)))
-		return ade_set_error(L, "o", l_Texture.Set(-1));
-
-	texture_map *tmap = tmh->Get();
-	if(tmap == NULL)
-		return ade_set_error(L, "o", l_Texture.Set(-1));
-
-	if(ADE_SETTING_VAR && new_tex > -1) {
-		tmap->textures[TM_GLOW_TYPE].SetTexture(new_tex);
-	}
-
-	return ade_set_args(L, "o", l_Texture.Set(tmap->textures[TM_GLOW_TYPE].GetTexture()));
-}
-
-ADE_VIRTVAR(SpecularMap, l_TextureMap, "texture", "Specular texture", "texture", "Texture handle, or invalid texture handle if material handle is invalid")
-{
-	texture_map_h *tmh = NULL;
-	int new_tex = -1;
-	if(!ade_get_args(L, "o|o", l_TextureMap.GetPtr(&tmh), l_Texture.Get(&new_tex)))
-		return ade_set_error(L, "o", l_Texture.Set(-1));
-
-	texture_map *tmap = tmh->Get();
-	if(tmap == NULL)
-		return ade_set_error(L, "o", l_Texture.Set(-1));
-
-	if(ADE_SETTING_VAR && new_tex > -1) {
-		tmap->textures[TM_SPECULAR_TYPE].SetTexture(new_tex);
-	}
-
-	return ade_set_args(L, "o", l_Texture.Set(tmap->textures[TM_SPECULAR_TYPE].GetTexture()));
-}
 
 //**********HANDLE: Weaponclass
 ade_obj<int> l_Weaponclass("weaponclass", "Weapon class handle");
