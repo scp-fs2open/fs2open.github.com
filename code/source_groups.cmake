@@ -947,6 +947,8 @@ set(file_root_scripting_api
 	scripting/api/streaminganim.cpp
 	scripting/api/team.h
 	scripting/api/team.cpp
+	scripting/api/texture.h
+	scripting/api/texture.cpp
 	scripting/api/vecmath.h
 	scripting/api/vecmath.cpp
 )

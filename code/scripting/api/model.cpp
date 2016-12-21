@@ -4,9 +4,7 @@
 #include "model.h"
 #include "vecmath.h"
 #include "eye.h"
-
-// Forward definition
-DECLARE_ADE_OBJ(l_Texture, int);
+#include "texture.h"
 
 extern void model_calc_bound_box( vec3d *box, vec3d *big_mn, vec3d *big_mx);
 
