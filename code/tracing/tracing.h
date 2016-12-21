@@ -16,8 +16,7 @@
  *  @ingroup tracing
  */
 
-namespace tracing
-{
+namespace tracing {
 
 /**
  * @brief Process if used for GPU events
@@ -29,13 +28,12 @@ const std::int64_t GPU_PID = std::numeric_limits<std::int64_t>::min();
  */
 enum class EventType {
 	Invalid,
-	Complete,
-	Begin,
-	End,
 
-	AsyncBegin,
-	AsyncStep,
-	AsyncEnd
+	Complete, Begin, End,
+
+	AsyncBegin, AsyncStep, AsyncEnd,
+
+	Counter
 };
 
 /**
@@ -51,6 +49,8 @@ struct trace_event {
 
 	std::int64_t tid = -1;
 	std::int64_t pid = -1;
+
+	float value = -1.f;
 };
 
 /**
@@ -132,6 +132,18 @@ void step(const Category& category, const Scope& async_scope);
  */
 void end(const Category& category, const Scope& async_scope);
 }
+
+namespace counter {
+
+/**
+ * @brief Records the new value of a counter event
+ * @param category The event category
+ * @param value The new value of the category
+ */
+void value(const Category& category, float value);
+
+}
+
 }
 
 #define TRACE_SCOPE(category) ::tracing::complete::ScopedCompleteEvent SCP_TOKEN_CONCAT(complete_trace_scope, __LINE__)(category)

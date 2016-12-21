@@ -84,6 +84,7 @@
 #include "weapon/shockwave.h"
 #include "weapon/swarm.h"
 #include "weapon/weapon.h"
+#include "tracing/Monitor.h"
 
 using namespace Ship;
 

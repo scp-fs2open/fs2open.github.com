@@ -74,6 +74,7 @@
 #include "starfield/nebula.h"
 #include "starfield/starfield.h"
 #include "weapon/weapon.h"
+#include "tracing/Monitor.h"
 
 LOCAL struct {
 	char docker[NAME_LENGTH];

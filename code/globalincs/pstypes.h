@@ -389,38 +389,6 @@ extern int game_busy_callback( void (*callback)(int count), int delta_step = -1 
 // Call whenever loading to display cursor
 extern void game_busy(const char *filename = NULL);
 
-//=========================================================
-// Functions to monitor performance
-#ifndef NDEBUG
-
-class monitor {
-	public:
-	char	*name;
-	int	value;					// Value that gets cleared to 0 each frame.
-	int	min, max, sum, cnt;		// Min & Max of value.  Sum is used to calculate average
-	monitor(char *name);		// constructor
-};
-
-// Creates a monitor variable
-#define MONITOR(function_name)				monitor mon_##function_name(#function_name);
-
-// Increments a monitor variable
-#define MONITOR_INC(function_name,inc)		do { mon_##function_name.value+=(inc); } while(0)
-
-// Call this once per frame to update monitor file
-void monitor_update();
-
-#else
-
-#define MONITOR(function_name)
-
-#define MONITOR_INC(function_name,inc)		do { } while(0)
-
-// Call this once per frame to update monitor file
-#define monitor_update() do { } while(0)
-
-#endif
-
 #define NOX(s) s
 
 const char *XSTR(const char *str, int index);

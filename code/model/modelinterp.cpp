@@ -34,6 +34,7 @@
 #include "ship/ship.h"
 #include "ship/shipfx.h"
 #include "weapon/shockwave.h"
+#include "tracing/Monitor.h"
 
 #include <limits.h>
 

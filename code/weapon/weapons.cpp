@@ -54,6 +54,7 @@
 #include "particle/effects/SingleParticleEffect.h"
 #include "particle/effects/BeamPiercingEffect.h"
 #include "particle/effects/ParticleEmitterEffect.h"
+#include "tracing/Monitor.h"
 
 // Since SSMs are parsed after weapons, if we want to allow SSM strikes to be specified by name, we need to store those names until after SSMs are parsed.
 typedef struct delayed_ssm_data {
