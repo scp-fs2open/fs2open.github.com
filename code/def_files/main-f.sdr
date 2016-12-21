@@ -217,15 +217,11 @@ void GetLightInfo(int i, out vec3 lightDir, out float attenuation, out float spe
 	lightDir = normalize(lightPosition[i].xyz);
 	attenuation = 1.0;
 	specIntensity = SPEC_INTENSITY_DIRECTIONAL;
-#if __VERSION__ > 120
 	if (lightType[i] != LT_DIRECTIONAL) {
-#else
-	if (lightType[i] != LT_DIRECTIONAL && i != 0) {
-#endif
 		// Positional light source
 		float dist = distance(lightPosition[i].xyz, fragPosition.xyz);
 		lightDir = (lightPosition[i].xyz - fragPosition.xyz);
-#if __VERSION__ > 120
+
 		if (lightType[i] == LT_TUBE) {  // Tube light
 			float beamlength = length(lightDirection[i]);
 			vec3 beamDir = normalize(lightDirection[i]);
@@ -236,7 +232,7 @@ void GetLightInfo(int i, out vec3 lightDir, out float attenuation, out float spe
 			lightDir = nearest - fragPosition.xyz;
 			dist = length(lightDir);
 		}
-#endif
+
 		lightDir = normalize(lightDir);
 		attenuation = 1.0 / (lightAttenuation[i] * dist);
 		specIntensity = SPEC_INTENSITY_POINT;
@@ -251,12 +247,9 @@ vec3 CalculateLighting(vec3 normal, vec3 diffuseMaterial, vec3 specularMaterial,
    vec3 lightSpecular = vec3(0.0, 0.0, 0.0);
 	#pragma optionNV unroll all
 	for (int i = 0; i < MAX_LIGHTS; ++i) {
-#if __VERSION__ > 120
 		if (i > n_lights)
 			break;
-#endif
-		if(i > 0)
-			shadow = 1.0;
+
 		vec3 lightDir;
 		float attenuation;
 		float specIntensity;
