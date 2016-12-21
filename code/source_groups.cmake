@@ -953,6 +953,8 @@ set(file_root_scripting_api
 	scripting/api/texturemap.cpp
 	scripting/api/vecmath.h
 	scripting/api/vecmath.cpp
+	scripting/api/weaponclass.h
+	scripting/api/weaponclass.cpp
 )
 
 # Ship files
