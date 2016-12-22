@@ -57,6 +57,7 @@ IF (FSO_BUILD_INCLUDED_LIBS OR NOT PNG_FOUND)
 	endif()
 
 	target_link_libraries(png PUBLIC ${ZLIB_LIBS})
+	target_link_libraries(png PUBLIC compiler)
 
 	SET(PNG_LIBS png CACHE INTERNAL "PNG library")
 
