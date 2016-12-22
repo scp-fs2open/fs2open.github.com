@@ -939,8 +939,22 @@ set(file_root_scripting_api
 	scripting/api/sexpvar.cpp
 	scripting/api/shields.h
 	scripting/api/shields.cpp
+	scripting/api/shiptype.h
+	scripting/api/shiptype.cpp
+	scripting/api/species.h
+	scripting/api/species.cpp
+	scripting/api/streaminganim.h
+	scripting/api/streaminganim.cpp
+	scripting/api/team.h
+	scripting/api/team.cpp
+	scripting/api/texture.h
+	scripting/api/texture.cpp
+	scripting/api/texturemap.h
+	scripting/api/texturemap.cpp
 	scripting/api/vecmath.h
 	scripting/api/vecmath.cpp
+	scripting/api/weaponclass.h
+	scripting/api/weaponclass.cpp
 )
 
 # Ship files
