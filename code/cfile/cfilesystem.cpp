@@ -725,6 +725,12 @@ void cf_search_root_pack(int root_index)
 					strcat_s( search_path, DIR_SEPARATOR_STR );
 				}
 				strcat_s( search_path, find.filename );
+
+				// If this directory is a subdir containing for example .eff frames,
+				// then those files won't be found (below) by just checking all the
+				// standard paths, so we temporarily add this directory to Pathtypes
+				vm_free(Pathtypes[CF_TYPE_TEMP_SUBDIR_LOOKUP].path);
+				Pathtypes[CF_TYPE_TEMP_SUBDIR_LOOKUP].path = vm_strdup(search_path);
 			}
 
 			//mprintf(( "Current dir = '%s'\n", search_path ));
@@ -911,6 +917,7 @@ int cf_find_file_location( const char *filespec, int pathtype, int max_out, char
 			case CF_TYPE_MULTI_CACHE:
 			case CF_TYPE_MISSIONS:
 			case CF_TYPE_CACHE:
+			case CF_TYPE_TEMP_SUBDIR_LOOKUP:
 				cfs_slow_search = 1;
 				break;
  
