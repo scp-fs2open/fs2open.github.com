@@ -250,6 +250,10 @@ vec3 CalculateLighting(vec3 normal, vec3 diffuseMaterial, vec3 specularMaterial,
 		if (i > n_lights)
 			break;
 
+        if(i > 0) {
+            shadow = 1.0;
+        }
+
 		vec3 lightDir;
 		float attenuation;
 		float specIntensity;
