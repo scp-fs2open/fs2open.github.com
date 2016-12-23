@@ -86,11 +86,17 @@ void material_set_interface(material* mat_info, int texture, bool blended, float
 	mat_info->set_texture_map(TM_BASE_TYPE, texture);
 	mat_info->set_texture_type(material::TEX_TYPE_INTERFACE);
 
-	mat_info->set_blend_mode(ALPHA_BLEND_ALPHA_BLEND_ALPHA);
+	gr_alpha_blend blend_mode = material_determine_blend_mode(texture, blended);
+
+	mat_info->set_blend_mode(blend_mode);
 	mat_info->set_depth_mode(ZBUFFER_TYPE_NONE);
 	mat_info->set_cull_mode(false);
 
-	mat_info->set_color(1.0f, 1.0f, 1.0f, blended ? alpha : 1.0f);
+	if ( blend_mode == ALPHA_BLEND_ADDITIVE ) {
+		mat_info->set_color(alpha, alpha, alpha, 1.0f);
+	} else {
+		mat_info->set_color(1.0f, 1.0f, 1.0f, alpha);
+	}
 }
 
 void material_set_unlit_volume(particle_material* mat_info, int texture, bool point_sprites)
