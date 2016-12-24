@@ -917,6 +917,8 @@ set(file_root_scripting_api
 	scripting/api/asteroid.cpp
 	scripting/api/bitops.h
 	scripting/api/bitops.cpp
+	scripting/api/cockpit_display.h
+	scripting/api/cockpit_display.cpp
 	scripting/api/enums.cpp
 	scripting/api/enums.h
 	scripting/api/event.h
@@ -945,6 +947,8 @@ set(file_root_scripting_api
 	scripting/api/sexpvar.cpp
 	scripting/api/shields.h
 	scripting/api/shields.cpp
+	scripting/api/shipclass.h
+	scripting/api/shipclass.cpp
 	scripting/api/shiptype.h
 	scripting/api/shiptype.cpp
 	scripting/api/species.h
