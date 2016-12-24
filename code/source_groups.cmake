@@ -931,6 +931,8 @@ set(file_root_scripting_api
 	scripting/api/gamestate.cpp
 	scripting/api/hudgauge.h
 	scripting/api/hudgauge.cpp
+	scripting/api/mc_info.h
+	scripting/api/mc_info.cpp
 	scripting/api/model.h
 	scripting/api/model.cpp
 	scripting/api/physics_info.h
