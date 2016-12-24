@@ -225,7 +225,7 @@ class ade_lib_handle {
 template<class StoreType>
 class ade_obj: public ade_lib_handle {
  public:
-	ade_obj(const char* in_name, const char* in_desc, ade_lib_handle* in_deriv = NULL) {
+	ade_obj(const char* in_name, const char* in_desc, const ade_lib_handle* in_deriv = NULL) {
 		ade_table_entry ate;
 
 		//WMC - object metadata are uninstanced library types
