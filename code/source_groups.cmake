@@ -913,6 +913,8 @@ set(file_root_scripting
 )
 
 set(file_root_scripting_api
+	scripting/api/asteroid.h
+	scripting/api/asteroid.cpp
 	scripting/api/bitops.h
 	scripting/api/bitops.cpp
 	scripting/api/enums.cpp

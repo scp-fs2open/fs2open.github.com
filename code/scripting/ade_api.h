@@ -69,6 +69,16 @@ const size_t INVALID_ID = (size_t) -1; // Use -1 to get highest possible unsigne
 	static int parent##___indexer_f(lua_State *L)
 
 /**
+ * @warning Utility macro. DO NOT USE!
+ */
+#define ADE_OBJ_DERIV_IMPL(field, type, name, desc, deriv) \
+const ::scripting::ade_obj<type>& SCP_TOKEN_CONCAT(get_, field)() { \
+	static ::scripting::ade_obj<type> obj(name, desc, deriv);\
+	return obj;\
+} \
+const ::scripting::ade_obj<type>& field = SCP_TOKEN_CONCAT(get_, field)()
+
+/**
  * @brief Define an API object
  *
  * An object is similar to a C++ class. Use this if you want to return a special type from a function that should be
@@ -81,12 +91,22 @@ const size_t INVALID_ID = (size_t) -1; // Use -1 to get highest possible unsigne
  *
  * @ingroup ade_api
  */
-#define ADE_OBJ(field, type, name, desc) \
-const ::scripting::ade_obj<type>& SCP_TOKEN_CONCAT(get_, field)() { \
-	static ::scripting::ade_obj<type> obj(name, desc, nullptr);\
-	return obj;\
-} \
-const ::scripting::ade_obj<type>& field = SCP_TOKEN_CONCAT(get_, field)()
+#define ADE_OBJ(field, type, name, desc) ADE_OBJ_DERIV_IMPL(field, type, name, desc, nullptr)
+
+/**
+ * @brief Define an API object that derives from another
+ *
+ * This is the same as ADE_OBJ but this allows to derive this class from another
+ *
+ * @param field The name of the field by which the class should be accessible
+ * @param type The type of the data the class contains
+ * @param name The name the class should have in the documentation
+ * @param desc Documentation about what this class is
+ * @param deriv The class to derive from. This should be the name of the class field (e.g. l_Object)
+ *
+ * @ingroup ade_api
+ */
+#define ADE_OBJ_DERIV(field, type, name, desc, deriv) ADE_OBJ_DERIV_IMPL(field, type, name, desc, &SCP_TOKEN_CONCAT(get_, deriv)())
 
 /**
  * @brief Declare an API object but don't define it
