@@ -959,6 +959,8 @@ set(file_root_scripting_api
 	scripting/api/species.cpp
 	scripting/api/streaminganim.h
 	scripting/api/streaminganim.cpp
+	scripting/api/subsystem.h
+	scripting/api/subsystem.cpp
 	scripting/api/team.h
 	scripting/api/team.cpp
 	scripting/api/texture.h
