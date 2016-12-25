@@ -20,6 +20,7 @@
 #include "pcxutils/pcxutils.h"
 #include "render/3d.h"
 #include "graphics/material.h"
+#include "tracing/Monitor.h"
 
 static color Color_xparent;
 

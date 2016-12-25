@@ -24,6 +24,7 @@
 #include "sound/ds.h"
 #include "sound/ds3d.h"
 #include "sound/dscap.h"
+#include "tracing/Monitor.h"
 
 #include "globalincs/pstypes.h"
 

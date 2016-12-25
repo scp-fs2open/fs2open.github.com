@@ -1048,6 +1048,8 @@ set (file_root_tracing
 	tracing/categories.h
 	tracing/MainFrameTimer.h
 	tracing/MainFrameTimer.cpp
+	tracing/Monitor.h
+	tracing/Monitor.cpp
 	tracing/scopes.cpp
 	tracing/scopes.h
 	tracing/ThreadedEventProcessor.h

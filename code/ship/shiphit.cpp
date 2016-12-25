@@ -49,6 +49,7 @@
 #include "weapon/emp.h"
 #include "weapon/shockwave.h"
 #include "weapon/weapon.h"
+#include "tracing/Monitor.h"
 
 //#pragma optimize("", off)
 //#pragma auto_inline(off)

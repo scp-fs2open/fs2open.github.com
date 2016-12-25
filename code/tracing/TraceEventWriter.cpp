@@ -21,6 +21,8 @@ const char* getTypeStr(tracing::EventType type) {
 			return "n";
 		case EventType::AsyncEnd:
 			return "e";
+		case EventType::Counter:
+			return "C";
 		default: 
 			Assertion(false, "Invalid enum value!");
 			return "";
@@ -101,6 +103,16 @@ void TraceEventWriter::processEvent(const trace_event* event) {
 		case EventType::AsyncEnd:
 			// Nothing to do here...
 			break;
+		case EventType::Counter: {
+			auto flags = _out.flags();
+			_out << std::fixed;
+
+			_out << ",\"args\": {\"value\": " << event->value << "}";
+
+			// and now restore it
+			_out.flags(flags);
+			break;
+		}
 		default:
 			Assertion(false, "Unhandled enum value! This function should not have been called with this value!");
 			break;

@@ -23,6 +23,7 @@
 #include "object/objectshield.h"
 #include "ship/ship.h"
 #include "species_defs/species_defs.h"
+#include "tracing/Monitor.h"
 
 int	Show_shield_mesh = 0;
 

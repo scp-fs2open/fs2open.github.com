@@ -166,6 +166,7 @@
 #include "weapon/muzzleflash.h"
 #include "weapon/shockwave.h"
 #include "weapon/weapon.h"
+#include "tracing/Monitor.h"
 
 #include "SDLGraphicsOperations.h"
 
@@ -4669,8 +4670,6 @@ void game_do_frame()
 	last_single_step = game_single_step;
 
 	game_frame();
-
-	monitor_update();			// Update monitor variables
 }
 
 void multi_maybe_do_frame()

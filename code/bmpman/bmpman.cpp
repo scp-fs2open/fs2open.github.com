@@ -35,6 +35,7 @@
 #include "pngutils/pngutils.h"
 #include "ship/ship.h"
 #include "tgautils/tgautils.h"
+#include "tracing/Monitor.h"
 
 #include <ctype.h>
 #include <limits.h>
