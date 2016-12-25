@@ -913,8 +913,14 @@ set(file_root_scripting
 )
 
 set(file_root_scripting_api
+	scripting/api/asteroid.h
+	scripting/api/asteroid.cpp
 	scripting/api/bitops.h
 	scripting/api/bitops.cpp
+	scripting/api/cockpit_display.h
+	scripting/api/cockpit_display.cpp
+	scripting/api/debris.h
+	scripting/api/debris.cpp
 	scripting/api/enums.cpp
 	scripting/api/enums.h
 	scripting/api/event.h
@@ -931,14 +937,20 @@ set(file_root_scripting_api
 	scripting/api/gamestate.cpp
 	scripting/api/hudgauge.h
 	scripting/api/hudgauge.cpp
+	scripting/api/mc_info.h
+	scripting/api/mc_info.cpp
 	scripting/api/model.h
 	scripting/api/model.cpp
+	scripting/api/object.h
+	scripting/api/object.cpp
 	scripting/api/physics_info.h
 	scripting/api/physics_info.cpp
 	scripting/api/sexpvar.h
 	scripting/api/sexpvar.cpp
 	scripting/api/shields.h
 	scripting/api/shields.cpp
+	scripting/api/shipclass.h
+	scripting/api/shipclass.cpp
 	scripting/api/shiptype.h
 	scripting/api/shiptype.cpp
 	scripting/api/species.h
