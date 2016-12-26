@@ -939,6 +939,8 @@ set(file_root_scripting_api
 	scripting/api/hudgauge.cpp
 	scripting/api/mc_info.h
 	scripting/api/mc_info.cpp
+	scripting/api/message.h
+	scripting/api/message.cpp
 	scripting/api/model.h
 	scripting/api/model.cpp
 	scripting/api/object.h
