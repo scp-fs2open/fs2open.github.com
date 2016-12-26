@@ -960,6 +960,8 @@ set(file_root_scripting_api
 	scripting/api/shipclass.cpp
 	scripting/api/shiptype.h
 	scripting/api/shiptype.cpp
+	scripting/api/sound.h
+	scripting/api/sound.cpp
 	scripting/api/species.h
 	scripting/api/species.cpp
 	scripting/api/streaminganim.h
