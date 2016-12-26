@@ -982,6 +982,8 @@ set(file_root_scripting_api
 	scripting/api/waypoint.cpp
 	scripting/api/weaponclass.h
 	scripting/api/weaponclass.cpp
+	scripting/api/wing.h
+	scripting/api/wing.cpp
 )
 
 # Ship files
