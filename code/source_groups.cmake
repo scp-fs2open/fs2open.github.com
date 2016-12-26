@@ -949,6 +949,8 @@ set(file_root_scripting_api
 	scripting/api/sexpvar.cpp
 	scripting/api/shields.h
 	scripting/api/shields.cpp
+	scripting/api/ship_bank.h
+	scripting/api/ship_bank.cpp
 	scripting/api/shipclass.h
 	scripting/api/shipclass.cpp
 	scripting/api/shiptype.h
@@ -957,6 +959,8 @@ set(file_root_scripting_api
 	scripting/api/species.cpp
 	scripting/api/streaminganim.h
 	scripting/api/streaminganim.cpp
+	scripting/api/subsystem.h
+	scripting/api/subsystem.cpp
 	scripting/api/team.h
 	scripting/api/team.cpp
 	scripting/api/texture.h
@@ -965,6 +969,8 @@ set(file_root_scripting_api
 	scripting/api/texturemap.cpp
 	scripting/api/vecmath.h
 	scripting/api/vecmath.cpp
+	scripting/api/waypoint.h
+	scripting/api/waypoint.cpp
 	scripting/api/weaponclass.h
 	scripting/api/weaponclass.cpp
 )
