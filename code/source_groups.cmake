@@ -947,10 +947,13 @@ set(file_root_scripting_api
 	scripting/api/order.cpp
 	scripting/api/physics_info.h
 	scripting/api/physics_info.cpp
+	scripting/api/physics_info.cpp
 	scripting/api/sexpvar.h
 	scripting/api/sexpvar.cpp
 	scripting/api/shields.h
 	scripting/api/shields.cpp
+	scripting/api/ship.h
+	scripting/api/ship.cpp
 	scripting/api/ship_bank.h
 	scripting/api/ship_bank.cpp
 	scripting/api/shipclass.h
