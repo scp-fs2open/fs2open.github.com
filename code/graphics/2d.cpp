@@ -1306,7 +1306,7 @@ void gr_bitmap(int _x, int _y, int resize_mode)
 		&mat_params, 
 		gr_screen.current_bitmap, 
 		gr_screen.current_alphablend_mode == GR_ALPHABLEND_FILTER ? true : false, 
-		gr_screen.current_alphablend_mode == GR_ALPHABLEND_FILTER ? gr_screen.current_alpha : 1.0f
+		gr_screen.current_alpha
 	);
 
 	g3_render_primitives_textured(&mat_params, verts, 4, PRIM_TYPE_TRIFAN, true);
@@ -1358,7 +1358,7 @@ void gr_bitmap_uv(int _x, int _y, int _w, int _h, float _u0, float _v0, float _u
 		&material_params,
 		gr_screen.current_bitmap,
 		gr_screen.current_alphablend_mode == GR_ALPHABLEND_FILTER ? true : false,
-		gr_screen.current_alphablend_mode == GR_ALPHABLEND_FILTER ? gr_screen.current_alpha : 1.0f
+		gr_screen.current_alpha
 	);
 	g3_render_primitives_textured(&material_params, verts, 4, PRIM_TYPE_TRIFAN, true);
 }
@@ -1470,7 +1470,7 @@ void gr_bitmap_list(bitmap_rect_list* list, int n_bm, int resize_mode)
 		&mat_params,
 		gr_screen.current_bitmap,
 		gr_screen.current_alphablend_mode == GR_ALPHABLEND_FILTER ? true : false,
-		gr_screen.current_alphablend_mode == GR_ALPHABLEND_FILTER ? gr_screen.current_alpha : 1.0f
+		gr_screen.current_alpha
 	);
 	g3_render_primitives_textured(&mat_params, vert_list, 6 * n_bm, PRIM_TYPE_TRIS, true);
 
