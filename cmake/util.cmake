@@ -178,3 +178,13 @@ function (check_linker_flag _flag _out_var)
 	SET(CMAKE_REQUIRED_FLAGS "${_flag}")
 	CHECK_C_COMPILER_FLAG("" ${_out_var})
 endfunction(check_linker_flag)
+
+# Suppresses warnings for the specified target
+function(suppress_warnings _target)
+    if (MSVC)
+        target_compile_options(${_target} PRIVATE "/W0")
+	else()
+        # Assume everything else uses GCC style options
+		target_compile_options(${_target} PRIVATE "-w")
+    endif()
+endfunction(suppress_warnings)

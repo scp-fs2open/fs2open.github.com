@@ -22,11 +22,8 @@ set_target_properties(mongoose
 )
 
 # Disable warnings if building from source
-if (MSVC)
-	target_compile_options(mongoose PRIVATE "/W0")
-else()
-	target_compile_options(mongoose PRIVATE "-w")
-endif()
+suppress_warnings(mongoose)
+
 target_link_libraries(mongoose PUBLIC compiler)
 
 SET(MONGOOSE_LIBS mongoose CACHE INTERNAL "mongoose library")

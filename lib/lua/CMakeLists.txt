@@ -207,6 +207,8 @@ ELSE(FSO_USE_LUAJIT)
 		if (MSVC)
 			# Disable warnings if building from source
 			target_compile_options(lua51 PRIVATE "/W0")
+		else()
+			target_compile_options(lua51 PRIVATE "-w")
 		endif()
 		target_link_libraries(lua51 PUBLIC compiler)
 
