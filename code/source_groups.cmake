@@ -943,6 +943,8 @@ set(file_root_scripting_api
 	scripting/api/model.cpp
 	scripting/api/object.h
 	scripting/api/object.cpp
+	scripting/api/order.h
+	scripting/api/order.cpp
 	scripting/api/physics_info.h
 	scripting/api/physics_info.cpp
 	scripting/api/sexpvar.h
