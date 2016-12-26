@@ -196,7 +196,14 @@ ELSE(FSO_USE_LUAJIT)
 			PROPERTIES
 				FOLDER "3rdparty"
 		)
-	
+
+		# Set the correct defines for the current platform
+		if (PLATFORM_LINUX)
+			target_compile_definitions(lua51 PUBLIC LUA_USE_LINUX)
+		elseif(PLATFORM_MAC)
+			target_compile_definitions(lua51 PUBLIC LUA_USE_MACOSX)
+		endif()
+
 		if (MSVC)
 			# Disable warnings if building from source
 			target_compile_options(lua51 PRIVATE "/W0")
