@@ -34,6 +34,16 @@ static void png_scp_read_data(png_structp png_ptr, png_bytep data, png_size_t le
 		png_error(png_ptr, "Read Error");
 }
 
+static png_voidp png_malloc_fn(png_structp, png_size_t size)
+{
+	return vm_malloc(size);
+}
+
+static void png_free_fn(png_structp, png_voidp ptr)
+{
+	vm_free(ptr);
+}
+
 static void png_error_fn(png_structp png_ptr, png_const_charp message)
 {
 	png_read_status* status = reinterpret_cast<png_read_status*>(png_get_error_ptr(png_ptr));
@@ -100,7 +110,7 @@ int png_read_header(const char *real_filename, CFILE *img_cfp, int *w, int *h, i
 	* the compiler header file version, so that we know if the application
 	* was compiled with a compatible version of the library.  REQUIRED
 	*/
-	png_ptr = png_create_read_struct_2(PNG_LIBPNG_VER_STRING, &status, png_error_fn, png_warning_fn, NULL, NULL, NULL);
+	png_ptr = png_create_read_struct_2(PNG_LIBPNG_VER_STRING, &status, png_error_fn, png_warning_fn, &status, png_malloc_fn, png_free_fn);
 
 	if (png_ptr == NULL)
 	{
