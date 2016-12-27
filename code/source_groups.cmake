@@ -955,6 +955,7 @@ set(file_root_scripting_api
 	scripting/api/shipclass.cpp
 	scripting/api/shiptype.h
 	scripting/api/shiptype.cpp
+	scripting/api/shiptype.cpp
 	scripting/api/species.h
 	scripting/api/species.cpp
 	scripting/api/streaminganim.h
@@ -1064,6 +1065,8 @@ set (file_root_tgautils
 set (file_root_tracing
 	tracing/categories.cpp
 	tracing/categories.h
+	tracing/FrameProfiler.h
+	tracing/FrameProfiler.cpp
 	tracing/MainFrameTimer.h
 	tracing/MainFrameTimer.cpp
 	tracing/Monitor.h

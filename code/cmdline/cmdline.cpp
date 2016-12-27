@@ -239,6 +239,7 @@ Flag exe_params[] =
 	{ "-noninteractive",	"Disables interactive dialogs",				true,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-noninteractive", },
 	{ "-json_pilot",		"Dump pilot files in JSON format",			true,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-json_pilot", },
 	{ "-json_profiling",	"Generate JSON profiling output",			true,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-json_profiling", },
+	{ "-profile_frame_time","Profile engine subsystems",				true,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-profile_frame_timings", },
 };
 
 // forward declaration
@@ -486,6 +487,7 @@ cmdline_parm noninteractive_arg("-noninteractive", NULL, AT_NONE); //Cmdline_non
 cmdline_parm json_pilot("-json_pilot", NULL, AT_NONE); //Cmdline_json_pilot
 cmdline_parm json_profiling("-json_profiling", NULL, AT_NONE); //Cmdline_json_profiling
 cmdline_parm show_video_info("-show_video_info", NULL, AT_NONE); //Cmdline_show_video_info
+cmdline_parm frame_profile_arg("-profile_frame_time", NULL, AT_NONE); //Cmdline_frame_profile
 
 
 char *Cmdline_start_mission = NULL;
@@ -512,6 +514,7 @@ bool Cmdline_benchmark_mode = false;
 bool Cmdline_noninteractive = false;
 bool Cmdline_json_pilot = false;
 bool Cmdline_json_profiling = false;
+bool Cmdline_frame_profile = false;
 bool Cmdline_show_video_info = false;
 
 // Other
@@ -1871,6 +1874,11 @@ bool SetCmdlineParams()
 	if (json_profiling.found())
 	{
 		Cmdline_json_profiling = true;
+	}
+
+	if (frame_profile_arg.found() )
+	{
+		Cmdline_frame_profile = true;
 	}
 
 	if (show_video_info.found())

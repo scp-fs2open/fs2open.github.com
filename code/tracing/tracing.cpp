@@ -6,6 +6,7 @@
 
 #include "TraceEventWriter.h"
 #include "MainFrameTimer.h"
+#include "FrameProfiler.h"
 
 #include <inttypes.h>
 #include <fstream>
@@ -53,6 +54,7 @@ using namespace tracing;
 
 std::unique_ptr<ThreadedTraceEventWriter> traceEventWriter;
 std::unique_ptr<ThreadedMainFrameTimer> mainFrameTimer;
+std::unique_ptr<FrameProfiler> frameProfiler;
 
 SCP_vector<int> query_objects;
 // The GPU timestamp queries use an internal free list to reduce the number of graphics API calls
@@ -116,6 +118,10 @@ void submit_event(trace_event* evt) {
 
 	if (mainFrameTimer) {
 		mainFrameTimer->processEvent(evt);
+	}
+
+	if (frameProfiler) {
+		frameProfiler->processEvent(evt);
 	}
 }
 
@@ -213,6 +219,10 @@ void init() {
 		mainFrameTimer.reset(new ThreadedMainFrameTimer());
 		do_async_events = true;
 	}
+	if (Cmdline_frame_profile) {
+		frameProfiler.reset(new FrameProfiler());
+		do_trace_events = true;
+	}
 
 	do_gpu_queries = gr_is_capable(CAPABILITY_TIMESTAMP_QUERY);
 
@@ -231,6 +241,12 @@ void process_events() {
 		// Process pending GPU events
 		process_gpu_events();
 	}
+}
+
+SCP_string get_frame_profile_output() {
+	Assertion(frameProfiler, "Frame profiling must be enabled for this function!");
+
+	return frameProfiler->getContent();
 }
 
 void shutdown() {
