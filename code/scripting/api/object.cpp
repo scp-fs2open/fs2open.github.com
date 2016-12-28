@@ -13,8 +13,6 @@
 #include "debris/debris.h"
 #include "asteroid/asteroid.h"
 
-extern int ade_set_object_with_breed(lua_State *L, int obj_idx);
-
 namespace scripting {
 namespace api {
 

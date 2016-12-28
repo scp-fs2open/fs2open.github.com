@@ -34,7 +34,6 @@
 #include "cmdline/cmdline.h"
 #include "debugconsole/console.h"
 #include "globalincs/pstypes.h"
-#include "scripting/lua.h"
 
 // find the size of a file
 int filelength(int fd)

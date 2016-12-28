@@ -129,7 +129,6 @@
 #include "osapi/osregistry.h"
 #include "parse/encrypt.h"
 #include "parse/generic_log.h"
-#include "scripting/lua.h"
 #include "parse/parselo.h"
 #include "scripting/scripting.h"
 #include "parse/sexp.h"

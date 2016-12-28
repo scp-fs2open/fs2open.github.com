@@ -340,6 +340,20 @@ int ade_friendly_error(lua_State *L);
  * @ingroup ade_api
  */
 const char *ade_get_type_string(lua_State *L, int argnum);
+
+/**
+ * @brief Sets an object parameter with the right type
+ *
+ * This should be used everywhere where an object value is returned to make sure that the scripter has access to
+ * all API functions.
+ *
+ * @param L The lua state
+ * @param obj_idx The object number
+ * @return The return value of ade_set_args
+ *
+ * @author WMC
+ */
+int ade_set_object_with_breed(lua_State *L, int obj_idx);
 }
 
 #endif //FS2_OPEN_ADE_H

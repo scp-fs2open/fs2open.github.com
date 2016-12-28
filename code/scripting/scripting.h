@@ -3,7 +3,6 @@
 
 #include "globalincs/globals.h"
 #include "globalincs/pstypes.h"
-#include "lua.h"
 
 #include <stdio.h>
 

@@ -1,3 +1,4 @@
+
 #include "ai/ai.h"
 #include "ai/aigoals.h"
 #include "asteroid/asteroid.h"
@@ -40,7 +41,6 @@
 #include "network/multimsgs.h"
 #include "object/objectshield.h"
 #include "object/waypoint.h"
-#include "scripting/lua.h"
 #include "parse/parselo.h"
 #include "scripting/scripting.h"
 #include "particle/particle.h"
@@ -102,11 +102,10 @@
 #include "scripting/api/audio.h"
 #include "scripting/api/base.h"
 #include "scripting/api/cfile.h"
+#include "scripting/api/weapon.h"
 
 using namespace scripting;
 using namespace scripting::api;
-
-int ade_set_object_with_breed(lua_State *L, int obj_idx);
 
 //**********Handles
 /*ade_obj<int> l_Camera("camera", "Camera handle");
@@ -3296,37 +3295,6 @@ ADE_FUNC(playCutscene, l_Testing, NULL, "Forces a cutscene by the specified file
 	movie::play(filename);
 
 	return ADE_RETURN_TRUE;
-}
-
-// *************************Helper functions*********************
-//WMC - This should be used anywhere that an 'object' is set, so
-//that scripters can get access to as much relevant data to that
-//object as possible.
-//It should also be updated as new types are added to Lua.
-int ade_set_object_with_breed(lua_State *L, int obj_idx)
-{
-	if(obj_idx < 0 || obj_idx >= MAX_OBJECTS)
-		return ade_set_error(L, "o", l_Object.Set(object_h()));
-
-	object *objp = &Objects[obj_idx];
-
-	switch(objp->type)
-	{
-		case OBJ_SHIP:
-			return ade_set_args(L, "o", l_Ship.Set(object_h(objp)));
-		case OBJ_ASTEROID:
-			return ade_set_args(L, "o", l_Asteroid.Set(object_h(objp)));
-		case OBJ_DEBRIS:
-			return ade_set_args(L, "o", l_Debris.Set(object_h(objp)));
-		case OBJ_WAYPOINT:
-			return ade_set_args(L, "o", l_Waypoint.Set(object_h(objp)));
-		case OBJ_WEAPON:
-			return ade_set_args(L, "o", l_Weapon.Set(object_h(objp)));
-		case OBJ_BEAM:
-			return ade_set_args(L, "o", l_Beam.Set(object_h(objp)));
-		default:
-			return ade_set_args(L, "o", l_Object.Set(object_h(objp)));
-	}
 }
 
 //###########################################################

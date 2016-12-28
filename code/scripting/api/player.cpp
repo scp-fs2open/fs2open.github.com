@@ -5,7 +5,7 @@
 
 #include "playerman/player.h"
 #include "mission/missioncampaign.h"
-#include "scripting/lua.h"
+#include "menuui/mainhallmenu.h"
 
 namespace scripting {
 namespace api {

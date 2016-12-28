@@ -7,8 +7,8 @@
 
 #include "gamesnd/gamesnd.h"
 #include "missionui/missionbrief.h"
+#include "menuui/mainhallmenu.h"
 #include "menuui/credits.h"
-#include "scripting/lua.h"
 #include "render/3d.h"
 
 extern float Master_event_music_volume;
