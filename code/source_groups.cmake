@@ -980,6 +980,8 @@ set(file_root_scripting_api
 	scripting/api/vecmath.cpp
 	scripting/api/waypoint.h
 	scripting/api/waypoint.cpp
+	scripting/api/weapon.h
+	scripting/api/weapon.cpp
 	scripting/api/weaponclass.h
 	scripting/api/weaponclass.cpp
 	scripting/api/wing.h

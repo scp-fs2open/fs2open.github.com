@@ -14,10 +14,11 @@ extern "C" {
 #include "scripting/api/asteroid.h"
 #include "scripting/api/debris.h"
 #include "scripting/api/ship.h"
+#include "scripting/api/weapon.h"
 
 //*************************Lua globals*************************
 using scripting::api::l_Object;
-extern scripting::ade_obj<object_h> l_Weapon;
+using scripting::api::l_Weapon;
 using scripting::api::l_Ship;
 using scripting::api::l_Debris;
 using scripting::api::l_Asteroid;
