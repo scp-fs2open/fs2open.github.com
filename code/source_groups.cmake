@@ -930,6 +930,8 @@ set(file_root_scripting_api
 	scripting/api/cockpit_display.cpp
 	scripting/api/control_info.h
 	scripting/api/control_info.cpp
+	scripting/api/controls.h
+	scripting/api/controls.cpp
 	scripting/api/debris.h
 	scripting/api/debris.cpp
 	scripting/api/enums.cpp
