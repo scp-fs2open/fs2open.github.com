@@ -917,6 +917,8 @@ set(file_root_scripting_api
 	scripting/api/asteroid.cpp
 	scripting/api/audio.h
 	scripting/api/audio.cpp
+	scripting/api/base.h
+	scripting/api/base.cpp
 	scripting/api/beam.h
 	scripting/api/beam.cpp
 	scripting/api/bitops.h
