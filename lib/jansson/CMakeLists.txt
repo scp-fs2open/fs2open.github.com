@@ -306,11 +306,9 @@ IF(FSO_BUILD_INCLUDED_LIBS OR NOT JANSSON_FOUND)
       ${JANSSON_SRC}
       ${JANSSON_HDR_PRIVATE}
       ${JANSSON_HDR_PUBLIC})
-
-    if (MSVC)
-        # Disable warnings if building from source
-        target_compile_options(jansson PRIVATE "/W0")
-    endif()
+      
+    # Disable warnings if building from source
+    suppress_warnings(jansson)
 
     set_target_properties(jansson PROPERTIES FOLDER "3rdparty")
 
