@@ -918,6 +918,8 @@ set(file_root_scripting_api
 	scripting/api/beam.h
 	scripting/api/beam.cpp
 	scripting/api/bitops.h
+	scripting/api/camera.cpp
+	scripting/api/camera.h
 	scripting/api/bitops.cpp
 	scripting/api/cockpit_display.h
 	scripting/api/cockpit_display.cpp
