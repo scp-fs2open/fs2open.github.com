@@ -953,6 +953,8 @@ set(file_root_scripting_api
 	scripting/api/object.cpp
 	scripting/api/order.h
 	scripting/api/order.cpp
+	scripting/api/particle.h
+	scripting/api/particle.cpp
 	scripting/api/physics_info.h
 	scripting/api/physics_info.cpp
 	scripting/api/player.h
