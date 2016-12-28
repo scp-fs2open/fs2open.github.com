@@ -923,6 +923,8 @@ set(file_root_scripting_api
 	scripting/api/bitops.cpp
 	scripting/api/cockpit_display.h
 	scripting/api/cockpit_display.cpp
+	scripting/api/control_info.h
+	scripting/api/control_info.cpp
 	scripting/api/debris.h
 	scripting/api/debris.cpp
 	scripting/api/enums.cpp
