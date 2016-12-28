@@ -11,6 +11,35 @@ namespace {
 
 
 bool event_sorter(const trace_event& left, const trace_event& right) {
+	if (left.timestamp == right.timestamp) {
+		// Events with the same timestamp are a problem so they need to be handled separately
+		if (left.type != right.type) {
+			// If the types are different then we can sort based on that.
+			// If an end and a start event have the same time then the end event has to come first
+			// If the left event has the type End then it has to be ordered before the other event to we need to return true in that case
+			return left.type == EventType::End;
+		}
+
+		// Both events are of the same type now
+		switch (left.type) {
+		case EventType::End:
+		{
+			// For end events the event with the lower duration comes first since that means that
+			// the second event contained the first event and that means that the first event must
+			// end before the second
+
+			return left.duration < right.duration;
+		}
+		case EventType::Begin:
+		{
+			// In the case for begin it's the other way around. The event with the higher duration has to come first
+			return left.duration > right.duration;
+		}
+		default:
+			break;
+		}
+	}
+
 	return left.timestamp < right.timestamp;
 }
 
@@ -275,9 +304,9 @@ void FrameProfiler::dump_output(SCP_stringstream& out,
 		// format the data
 		char avg[64], min[64], max[64], num[64];
 
-		sprintf(avg, "%3.1f%% (%3.1fms)", avg_time, i2fl(avg_micro_seconds) * 0.001f);
-		sprintf(min, "%3.1f%% (%3.1fms)", min_time, i2fl(min_micro_seconds) * 0.001f);
-		sprintf(max, "%3.1f%% (%3.1fms)", max_time, i2fl(max_micro_seconds) * 0.001f);
+		sprintf(avg, "%3.1f%% (%3.1fms)", avg_time, i2fl(avg_micro_seconds) * 0.000001f);
+		sprintf(min, "%3.1f%% (%3.1fms)", min_time, i2fl(min_micro_seconds) * 0.000001f);
+		sprintf(max, "%3.1f%% (%3.1fms)", max_time, i2fl(max_micro_seconds) * 0.000001f);
 		sprintf(num, "%3d", samples[i].profile_instances);
 
 		SCP_string indented_name(samples[i].name);
@@ -307,15 +336,28 @@ SCP_string FrameProfiler::getContent() {
 	uint64_t start_profile_time = 0;
 	uint64_t end_profile_time = 0;
 
+	uint64_t last_timestamp = 0;
+	uint64_t time_offset = 0;
+
 	for (auto& event : _bufferedEvents) {
+		auto time = event.timestamp + time_offset;
+		
+		if (start_found && time == last_timestamp) {
+			// These two event have the same time so we need to shift all the following events back a bit
+			++time_offset;
+			++time;
+		}
+
 		if (!start_found) {
-			start_profile_time = event.timestamp;
+			start_profile_time = time;
 			start_found = true;
 		}
 		if (!end_found) {
-			end_profile_time = event.timestamp;
+			end_profile_time = time;
 			end_found = true;
 		}
+
+		event.timestamp = time;
 
 		switch (event.type) {
 			case EventType::Begin:
@@ -327,6 +369,8 @@ SCP_string FrameProfiler::getContent() {
 			default:
 				break;
 		}
+
+		last_timestamp = time;
 	}
 	_bufferedEvents.clear();
 
