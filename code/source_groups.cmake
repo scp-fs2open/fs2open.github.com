@@ -924,6 +924,8 @@ set(file_root_scripting_api
 	scripting/api/bitops.h
 	scripting/api/camera.cpp
 	scripting/api/camera.h
+	scripting/api/cfile.cpp
+	scripting/api/cfile.h
 	scripting/api/bitops.cpp
 	scripting/api/cockpit_display.h
 	scripting/api/cockpit_display.cpp
