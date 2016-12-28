@@ -948,6 +948,8 @@ set(file_root_scripting_api
 	scripting/api/gameevent.cpp
 	scripting/api/gamestate.h
 	scripting/api/gamestate.cpp
+	scripting/api/hud.h
+	scripting/api/hud.cpp
 	scripting/api/hudgauge.h
 	scripting/api/hudgauge.cpp
 	scripting/api/mc_info.h
