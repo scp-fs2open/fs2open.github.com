@@ -577,7 +577,8 @@ void fiction_viewer_load(int stage)
 		cfclose(fp);
 
 		// allocate space for converted text, then perform the character conversion
-		Fiction_viewer_text = (char *) vm_malloc(get_converted_string_length(Fiction_viewer_text_raw) + 1);
+		auto length = get_converted_string_length(Fiction_viewer_text_raw) + 1;
+		Fiction_viewer_text = (char *) vm_malloc(length);
 		maybe_convert_foreign_characters(Fiction_viewer_text_raw, Fiction_viewer_text);
 
 		// deallocate space for raw text

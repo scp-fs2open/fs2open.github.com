@@ -1669,7 +1669,7 @@ int maybe_convert_foreign_character(int ch)
 // Yarn - The capacity of out must be at least the value returned by
 // get_converted_string_length(in) (plus one if add_null is true).
 // Returns the number of characters written to out.
-size_t maybe_convert_foreign_characters(char *in, char *out, bool add_null)
+size_t maybe_convert_foreign_characters(const char *in, char *out, bool add_null)
 {
 	if (Fred_running) {
 		size_t len = strlen(in);
@@ -1682,8 +1682,8 @@ size_t maybe_convert_foreign_characters(char *in, char *out, bool add_null)
 			return len;
 		}
 	} else {
-		char *inp = in;
-		char *outp = out;
+		auto inp = in;
+		auto outp = out;
 
 		while (*inp != '\0') {
 			if (*inp == SHARP_S) {
@@ -1724,13 +1724,13 @@ void maybe_convert_foreign_characters(SCP_string &text)
 
 // Yarn - Returns what the length of the text will be after it's processed by
 // maybe_convert_foreign_characters, not including the null terminator.
-size_t get_converted_string_length(char *text)
+size_t get_converted_string_length(const char *text)
 {
 	if (Fred_running) {
 		return strlen(text);
 	} else {
 		size_t count = 0;
-		char *s = strchr(text, SHARP_S);
+		auto s = strchr(text, SHARP_S);
 		while (s != nullptr) {
 			count++;
 			s = strchr(s + 1, SHARP_S);
@@ -1741,13 +1741,13 @@ size_t get_converted_string_length(char *text)
 
 // Yarn - Returns what the length of the text will be after it's processed by
 // maybe_convert_foreign_characters.
-size_t get_converted_string_length(SCP_string &text)
+size_t get_converted_string_length(const SCP_string &text)
 {
 	if (Fred_running) {
 		return text.size();
 	} else {
 		size_t count = 0;
-		for (SCP_string::iterator ii = text.begin(); ii != text.end(); ++ii) {
+		for (auto ii = text.begin(); ii != text.end(); ++ii) {
 			if (*ii == SHARP_S) {
 				count++;
 			}
