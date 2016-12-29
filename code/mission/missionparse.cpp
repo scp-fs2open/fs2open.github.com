@@ -309,7 +309,7 @@ flag_def_list_new<Mission::Parse_Object_Flags> Parse_object_flags[] = {
     { "ship-locked",					Mission::Parse_Object_Flags::SF_Ship_locked,			true, false },
     { "weapons-locked",					Mission::Parse_Object_Flags::SF_Weapons_locked,			true, false },
     { "scramble-messages",				Mission::Parse_Object_Flags::SF_Scramble_messages,		true, false },
-    { "no-collide",						Mission::Parse_Object_Flags::OF_No_collide,				true, false },
+    { "no_collide",						Mission::Parse_Object_Flags::OF_No_collide,				true, false },
 	{ "no-disabled-self-destruct",		Mission::Parse_Object_Flags::SF_No_disabled_self_destruct, true, false }
 };
 
