@@ -8344,11 +8344,14 @@ void ship_auto_repair_frame(int shipnum, float frametime)
 	if ( !Ship_auto_repair )	// only repair subsystems if Ship_auto_repair flag is set
 		return;
 	#endif
-
+	
 	Assert( shipnum >= 0 && shipnum < MAX_SHIPS);
 	sp = &Ships[shipnum];
 	sip = &Ship_info[sp->ship_info_index];
 	objp = &Objects[sp->objnum];
+
+	if (sp->flags[Ship::Ship_Flags::Dying]) // do not repair if already dead 
+		return;
 
 	//Repair the hull...or maybe unrepair?
 	if(sip->hull_repair_rate != 0.0f)
