@@ -4397,6 +4397,10 @@ void game_frame(bool paused)
 	// process lightning (nebula only)
 	nebl_process();
 
+	if (Cmdline_frame_profile) {
+		tracing::frame_profile_process_frame();
+	}
+
 	DEBUG_GET_TIME( total_time2 )
 
 #ifndef NDEBUG

@@ -242,6 +242,11 @@ void process_events() {
 		process_gpu_events();
 	}
 }
+void frame_profile_process_frame() {
+	Assertion(frameProfiler, "Frame profiling must be enabled for this function!");
+
+	return frameProfiler->processFrame();
+}
 
 SCP_string get_frame_profile_output() {
 	Assertion(frameProfiler, "Frame profiling must be enabled for this function!");

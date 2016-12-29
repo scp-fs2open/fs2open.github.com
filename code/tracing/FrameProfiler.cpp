@@ -323,6 +323,10 @@ void FrameProfiler::dump_output(SCP_stringstream& out,
 }
 
 SCP_string FrameProfiler::getContent() {
+	return content;
+}
+void FrameProfiler::processFrame() {
+
 	std::lock_guard<std::mutex> vectorGuard(_eventsMutex);
 
 	std::sort(_bufferedEvents.begin(), _bufferedEvents.end(), event_sorter);
@@ -341,7 +345,7 @@ SCP_string FrameProfiler::getContent() {
 
 	for (auto& event : _bufferedEvents) {
 		auto time = event.timestamp + time_offset;
-		
+
 		if (start_found && time == last_timestamp) {
 			// These two event have the same time so we need to shift all the following events back a bit
 			++time_offset;
@@ -376,7 +380,7 @@ SCP_string FrameProfiler::getContent() {
 
 	dump_output(stream, start_profile_time, end_profile_time, samples);
 
-	return stream.str();
+	content = stream.str();
 }
 
 }

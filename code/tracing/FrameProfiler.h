@@ -44,6 +44,8 @@ class FrameProfiler {
 
 	SCP_vector<profile_sample_history> history;
 
+	SCP_string content;
+
 	/**
 	 * Stores profile data in in the profile history lookup. This is used internally by the profiling code and should
 	 * not be called outside of it.
@@ -78,6 +80,8 @@ class FrameProfiler {
 	~FrameProfiler();
 
 	void processEvent(const trace_event* event);
+
+	void processFrame();
 
 	SCP_string getContent();
 };

@@ -63,6 +63,8 @@ void init();
  */
 void process_events();
 
+void frame_profile_process_frame();
+
 /**
  * @brief Gets the output of the frame profiler.
  * @return The frame profiler output
