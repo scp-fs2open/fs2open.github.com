@@ -292,7 +292,7 @@ bool CJumpNode::IsSpecialModel()
 */
 void CJumpNode::Render(vec3d *pos, vec3d *view_pos)
 {
-	draw_list scene;
+	model_draw_list scene;
 
 	Render(&scene, pos, view_pos);
 
@@ -310,7 +310,7 @@ void CJumpNode::Render(vec3d *pos, vec3d *view_pos)
 * @param pos		World position
 * @param view_pos	Viewer's world position, can be NULL
 */
-void CJumpNode::Render(draw_list* scene, vec3d *pos, vec3d *view_pos)
+void CJumpNode::Render(model_draw_list* scene, vec3d *pos, vec3d *view_pos)
 {
 	Assert(pos != NULL);
 	// Assert(view_pos != NULL); - view_pos can be NULL

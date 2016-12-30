@@ -38,32 +38,6 @@ class particle_material;
 class distortion_material;
 class shield_material;
 
-struct transform
-{
-	matrix basis;
-	vec3d origin;
-	vec3d scale;
-
-	transform() : basis(vmd_identity_matrix), origin(vmd_zero_vector), scale(vmd_scale_identity_vector) {}
-	transform(matrix *m, vec3d *v) : basis(*m), origin(*v) {}
-
-	matrix4 get_matrix4()
-	{
-		matrix4 new_mat;
-		vm_matrix4_set_identity(&new_mat);
-
-		new_mat.a1d[0] = basis.vec.rvec.xyz.x;   new_mat.a1d[4] = basis.vec.uvec.xyz.x;   new_mat.a1d[8] = basis.vec.fvec.xyz.x;
-		new_mat.a1d[1] = basis.vec.rvec.xyz.y;   new_mat.a1d[5] = basis.vec.uvec.xyz.y;   new_mat.a1d[9] = basis.vec.fvec.xyz.y;
-		new_mat.a1d[2] = basis.vec.rvec.xyz.z;   new_mat.a1d[6] = basis.vec.uvec.xyz.z;   new_mat.a1d[10] = basis.vec.fvec.xyz.z;
-		new_mat.a1d[12] = origin.xyz.x;
-		new_mat.a1d[13] = origin.xyz.y;
-		new_mat.a1d[14] = origin.xyz.z;
-
-		return new_mat;
-	}
-};
-
-
 class transform_stack {
 	
 	matrix4 Current_transform;
@@ -382,24 +356,6 @@ private:
 	int find_first_vertex(int idx);
 	int find_first_vertex_fast(int idx);
 	void generate_sorted_index_list();
-};
-
-class colored_vector
-{
-public:
-	colored_vector()
-		: pad(1.0f)
-	{}
-
-	vec3d vec;
-	float pad;	//needed so I can just memcpy it in d3d
-	ubyte color[4];
-};
-
-
-struct line_list {
-	int n_line;
-	vertex *vert;
 };
 
 class buffer_data
