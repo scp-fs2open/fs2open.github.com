@@ -949,6 +949,8 @@ set(file_root_scripting_api
 	scripting/api/gamestate.cpp
 	scripting/api/graphics.h
 	scripting/api/graphics.cpp
+	scripting/api/hookvars.h
+	scripting/api/hookvars.cpp
 	scripting/api/hud.h
 	scripting/api/hud.cpp
 	scripting/api/hudgauge.h
