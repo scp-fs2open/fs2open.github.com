@@ -16,12 +16,15 @@
 #include "playerman/player.h"
 #include "cutscene/movie.h"
 
+// Om_tracker_flag should already be set in FreeSpace.cpp, needed to determine if PXO is enabled from the registry
+extern int Om_tracker_flag; // needed for FS2OpenPXO config
+
 namespace scripting {
 namespace api {
 
 //*************************Testing stuff*************************
 //This section is for stuff that's considered experimental.
-ade_lib l_Testing("Testing", NULL, "ts", "Experimental or testing stuff");
+ADE_LIB(l_Testing, "Testing", "ts", "Experimental or testing stuff");
 
 ADE_FUNC(avdTest, l_Testing, NULL, "Test the AVD Physics code", NULL, NULL)
 {
@@ -135,9 +138,6 @@ ADE_FUNC(isCurrentPlayerMulti, l_Testing, NULL, "Returns whether current player 
 
 	return ADE_RETURN_TRUE;
 }
-
-// Om_tracker_flag should already be set in FreeSpace.cpp, needed to determine if PXO is enabled from the registry
-extern int Om_tracker_flag; // needed for FS2OpenPXO config
 
 ADE_FUNC(isPXOEnabled, l_Testing, NULL, "Returns whether PXO is currently enabled in the configuration.", "boolean", "Whether PXO is enabled or not")
 {
