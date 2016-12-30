@@ -997,6 +997,8 @@ set(file_root_scripting_api
 	scripting/api/tables.cpp
 	scripting/api/team.h
 	scripting/api/team.cpp
+	scripting/api/testing.h
+	scripting/api/testing.cpp
 	scripting/api/texture.h
 	scripting/api/texture.cpp
 	scripting/api/texturemap.h
