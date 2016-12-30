@@ -1052,7 +1052,7 @@ void calc_debris_physics_properties( physics_info *pi, vec3d *mins, vec3d *maxs 
 /**
 * Renders debris
 */
-void debris_render(object * obj, draw_list *scene)
+void debris_render(object * obj, model_draw_list *scene)
 {
 	int			i, num, swapped;
 	polymodel	*pm;

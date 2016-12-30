@@ -1810,7 +1810,7 @@ static void split_ship_init( ship* shipp, split_ship* split_shipp )
 	shipfx_maybe_create_live_debris_at_ship_death( parent_ship_obj );
 }
 
-void shipfx_queue_render_ship_halves_and_debris(draw_list *scene, clip_ship* half_ship, ship *shipp)
+void shipfx_queue_render_ship_halves_and_debris(model_draw_list *scene, clip_ship* half_ship, ship *shipp)
 {
 	polymodel *pm = model_get(Ship_info[shipp->ship_info_index].model_num);
 
@@ -2281,7 +2281,7 @@ int shipfx_large_blowup_do_frame(ship *shipp, float frametime)
 	return 0;
 }
 
-void shipfx_large_blowup_queue_render(draw_list *scene, ship* shipp)
+void shipfx_large_blowup_queue_render(model_draw_list *scene, ship* shipp)
 {
 	Assert( shipp->large_ship_blowup_index > -1 );
 	Assert( shipp->large_ship_blowup_index < (int)Split_ships.size() );
@@ -3389,7 +3389,7 @@ int WarpEffect::warpShipRender()
 	return 0;
 }
 
-int WarpEffect::warpShipQueueRender(draw_list *scene)
+int WarpEffect::warpShipQueueRender(model_draw_list *scene)
 {
 	return 0;
 }

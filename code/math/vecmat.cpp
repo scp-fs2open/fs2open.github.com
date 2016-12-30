@@ -251,6 +251,14 @@ void vm_vec_scale(vec3d *dest, float s)
 	dest->xyz.z = dest->xyz.z * s;
 }
 
+//scales a 4-component vector in place.
+void vm_vec_scale(vec4 *dest, float s)
+{
+	dest->xyzw.x = dest->xyzw.x * s;
+	dest->xyzw.y = dest->xyzw.y * s;
+	dest->xyzw.z = dest->xyzw.z * s;
+	dest->xyzw.w = dest->xyzw.w * s;
+}
 
 //scales and copies a vector.
 void vm_vec_copy_scale(vec3d *dest, const vec3d *src, float s)

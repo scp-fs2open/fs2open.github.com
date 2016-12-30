@@ -2444,14 +2444,12 @@ void model_load_texture(polymodel *pm, int i, char *file)
 
 	// base maps ---------------------------------------------------------------
 	texture_info *tbase = &tmap->textures[TM_BASE_TYPE];
-	texture_info *tunlit = &tmap->textures[TM_UNLIT_TYPE];
 
 	if (strstr(tmp_name, "thruster") || strstr(tmp_name, "invisible") || strstr(tmp_name, "warpmap"))
 	{
 		// Don't load textures for thruster animations or invisible textures
 		// or warp models!-Bobboau
 		tbase->clear();
-		tunlit->clear();
 	}
 	else
 	{
@@ -2469,13 +2467,6 @@ void model_load_texture(polymodel *pm, int i, char *file)
 		if ( tbase->GetTexture() < 0 ) {
 			Warning(LOCATION, "Couldn't open texture '%s'\nreferenced by model '%s'\n", tmp_name, pm->filename);
 		}
-
-		// look for unlit map as well in case this texture needs a different diffuse response when rendered in no lighting
-		strcpy_s(tmp_name, file);
-		strcat_s(tmp_name, "-unlit");
-		strlwr(tmp_name);
-
-		tunlit->LoadTexture(tmp_name, pm->filename);
 	}
 	// -------------------------------------------------------------------------
 

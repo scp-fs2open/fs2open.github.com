@@ -1036,11 +1036,7 @@ void opengl_tnl_set_model_material(model_material *material_info)
 			break;
 		}
 
-		if ( material_info->get_texture_map(TM_UNLIT_TYPE) >= 0 ) {
-			gr_opengl_tcache_set(material_info->get_texture_map(TM_UNLIT_TYPE), TCACHE_TYPE_NORMAL, &u_scale, &v_scale, render_pass);
-		} else {
-			gr_opengl_tcache_set(material_info->get_texture_map(TM_BASE_TYPE), TCACHE_TYPE_NORMAL, &u_scale, &v_scale, render_pass);
-		}
+		gr_opengl_tcache_set(material_info->get_texture_map(TM_BASE_TYPE), TCACHE_TYPE_NORMAL, &u_scale, &v_scale, render_pass);
 		
 		++render_pass;
 	}

@@ -340,7 +340,7 @@ void obj_render_queue_all()
 
 	object *objp;
 	int i;
-	draw_list scene;
+	model_draw_list scene;
 
 	objp = Objects;
 

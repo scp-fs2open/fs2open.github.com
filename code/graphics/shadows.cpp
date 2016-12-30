@@ -422,7 +422,7 @@ void shadows_render_all(float fov, matrix *eye_orient, vec3d *eye_pos)
 	// maybe we could use a more programmatic algorithim? 
 	matrix light_matrix = shadows_start_render(eye_orient, eye_pos, fov, gr_screen.clip_aspect, 200.0f, 600.0f, 2500.0f, 8000.0f);
 
-	draw_list scene;
+	model_draw_list scene;
 	object *objp = Objects;
 
 	for ( int i = 0; i <= Highest_object_index; i++, objp++ ) {

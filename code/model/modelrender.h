@@ -50,30 +50,6 @@ inline int in_sphere(vec3d *pos, float radius, vec3d *view_position)
 
 extern int model_interp_get_texture(texture_info *tinfo, fix base_frametime);
 
-struct transform_old
-{
-	matrix basis;
-	vec3d origin;
-
-	transform_old(): basis(vmd_identity_matrix), origin(vmd_zero_vector) {}
-	transform_old(matrix *m, vec3d *v): basis(*m), origin(*v) {}
-
-	matrix4 get_matrix4()
-	{
-		matrix4 new_mat;
-
-		new_mat.a1d[0] = basis.vec.rvec.xyz.x;   new_mat.a1d[4] = basis.vec.uvec.xyz.x;   new_mat.a1d[8] = basis.vec.fvec.xyz.x;
-		new_mat.a1d[1] = basis.vec.rvec.xyz.y;   new_mat.a1d[5] = basis.vec.uvec.xyz.y;   new_mat.a1d[9] = basis.vec.fvec.xyz.y;
-		new_mat.a1d[2] = basis.vec.rvec.xyz.z;   new_mat.a1d[6] = basis.vec.uvec.xyz.z;   new_mat.a1d[10] = basis.vec.fvec.xyz.z;
-		new_mat.a1d[12] = origin.xyz.x;
-		new_mat.a1d[13] = origin.xyz.y;
-		new_mat.a1d[14] = origin.xyz.z;
-		new_mat.a1d[15] = 1.0f;
-
-		return new_mat;
-	}
-};
-
 class model_render_params
 {
 	uint Model_flags;
@@ -171,7 +147,7 @@ public:
 
 struct arc_effect
 {
-	transform transformation;
+	matrix4 transform;
 	vec3d v1;
 	vec3d v2;
 	color primary;
@@ -181,7 +157,7 @@ struct arc_effect
 
 struct insignia_draw_data
 {
-	transform transformation;
+	matrix4 transform;
 	polymodel *pm;
 	int detail_level;
 	int bitmap_num;
@@ -198,7 +174,7 @@ struct queued_buffer_draw
 
 	model_material render_material;
 
-	transform transformation;
+	matrix4 transform;
 	vec3d scale;
 
 	indexed_vertex_source *vert_src;
@@ -219,7 +195,7 @@ struct outline_draw
 	vertex* vert_array;
 	int n_verts;
 
-	transform transformation;
+	matrix4 transform;
 	color clr;
 };
 
@@ -246,11 +222,10 @@ public:
 	void add_matrix(matrix4 &mat);
 };
 
-class draw_list
+class model_draw_list
 {
-	transform Current_transform;
 	vec3d Current_scale;
-	SCP_vector<transform> Transform_stack;
+	transform_stack Transformations;
 
 	scene_lights Scene_light_handler;
 	light_indexing_info Current_lights_set;
@@ -267,11 +242,11 @@ class draw_list
 	SCP_vector<insignia_draw_data> Insignias;
 	SCP_vector<outline_draw> Outlines;
 
-	static draw_list *Target;
+	static model_draw_list *Target;
 	static bool sort_draw_pair(const int a, const int b);
 	void sort_draws();
 public:
-	draw_list();
+	model_draw_list();
 	void init();
 
 	void add_submodel_to_batch(int model_num);
@@ -280,7 +255,6 @@ public:
 	void add_buffer_draw(model_material *render_material, indexed_vertex_source *vert_src, vertex_buffer *buffer, size_t texi, uint tmap_flags);
 	
 	vec3d get_view_position();
-	void clear_transforms();
 	void push_transform(vec3d* pos, matrix* orient);
 	void pop_transform();
 	void set_scale(vec3d *scale = NULL);
@@ -301,19 +275,11 @@ public:
 	void reset();
 };
 
-class DrawListSorter
-{
-	static draw_list *Target;
-public:
-	static void sort(draw_list *target);
-	static int sortDrawPair(const void* a, const void* b);
-};
-
 void model_render_immediate(model_render_params *render_info, int model_num, matrix *orient, vec3d * pos, int render = MODEL_RENDER_ALL, bool sort = true);
-void model_render_queue(model_render_params *render_info, draw_list* scene, int model_num, matrix *orient, vec3d *pos);
+void model_render_queue(model_render_params *render_info, model_draw_list* scene, int model_num, matrix *orient, vec3d *pos);
 void submodel_render_immediate(model_render_params *render_info, int model_num, int submodel_num, matrix *orient, vec3d * pos);
-void submodel_render_queue(model_render_params *render_info, draw_list *scene, int model_num, int submodel_num, matrix *orient, vec3d * pos);
-void model_render_buffers(draw_list* scene, model_material *rendering_material, model_render_params* interp, vertex_buffer *buffer, polymodel *pm, int mn, int detail_level, uint tmap_flags);
+void submodel_render_queue(model_render_params *render_info, model_draw_list *scene, int model_num, int submodel_num, matrix *orient, vec3d * pos);
+void model_render_buffers(model_draw_list* scene, model_material *rendering_material, model_render_params* interp, vertex_buffer *buffer, polymodel *pm, int mn, int detail_level, uint tmap_flags);
 void model_render_set_thrust(model_render_params *interp, int model_num, mst_info *mst);
 void model_render_set_clip_plane(model_render_params *interp, vec3d *pos = NULL, vec3d *normal = NULL);
 fix model_render_determine_base_frametime(int objnum, uint flags);

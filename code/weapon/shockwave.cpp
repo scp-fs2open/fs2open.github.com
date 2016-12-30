@@ -362,7 +362,7 @@ void shockwave_move(object *shockwave_objp, float frametime)
 * @param objp	pointer to shockwave object
 * @param scene	the scene's draw list we're adding this to
 */
-void shockwave_render(object *objp, draw_list *scene)
+void shockwave_render(object *objp, model_draw_list *scene)
 {
 	shockwave		*sw;
 	vertex			p;
