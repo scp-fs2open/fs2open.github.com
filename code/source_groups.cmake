@@ -907,7 +907,6 @@ set(file_root_scripting
 	scripting/ade_args.cpp
 	scripting/ade_args.h
 	scripting/lua.cpp
-	scripting/lua.h
 	scripting/scripting.cpp
 	scripting/scripting.h
 )
@@ -915,10 +914,24 @@ set(file_root_scripting
 set(file_root_scripting_api
 	scripting/api/asteroid.h
 	scripting/api/asteroid.cpp
+	scripting/api/audio.h
+	scripting/api/audio.cpp
+	scripting/api/base.h
+	scripting/api/base.cpp
+	scripting/api/beam.h
+	scripting/api/beam.cpp
 	scripting/api/bitops.h
+	scripting/api/camera.cpp
+	scripting/api/camera.h
+	scripting/api/cfile.cpp
+	scripting/api/cfile.h
 	scripting/api/bitops.cpp
 	scripting/api/cockpit_display.h
 	scripting/api/cockpit_display.cpp
+	scripting/api/control_info.h
+	scripting/api/control_info.cpp
+	scripting/api/controls.h
+	scripting/api/controls.cpp
 	scripting/api/debris.h
 	scripting/api/debris.cpp
 	scripting/api/enums.cpp
@@ -935,6 +948,8 @@ set(file_root_scripting_api
 	scripting/api/gameevent.cpp
 	scripting/api/gamestate.h
 	scripting/api/gamestate.cpp
+	scripting/api/hud.h
+	scripting/api/hud.cpp
 	scripting/api/hudgauge.h
 	scripting/api/hudgauge.cpp
 	scripting/api/mc_info.h
@@ -947,9 +962,12 @@ set(file_root_scripting_api
 	scripting/api/object.cpp
 	scripting/api/order.h
 	scripting/api/order.cpp
+	scripting/api/particle.h
+	scripting/api/particle.cpp
 	scripting/api/physics_info.h
 	scripting/api/physics_info.cpp
-	scripting/api/physics_info.cpp
+	scripting/api/player.h
+	scripting/api/player.cpp
 	scripting/api/sexpvar.h
 	scripting/api/sexpvar.cpp
 	scripting/api/shields.h
@@ -980,6 +998,8 @@ set(file_root_scripting_api
 	scripting/api/vecmath.cpp
 	scripting/api/waypoint.h
 	scripting/api/waypoint.cpp
+	scripting/api/weapon.h
+	scripting/api/weapon.cpp
 	scripting/api/weaponclass.h
 	scripting/api/weaponclass.cpp
 	scripting/api/wing.h

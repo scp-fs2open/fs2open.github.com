@@ -4,10 +4,8 @@
 #include "asteroid.h"
 #include "object.h"
 #include "vecmath.h"
+#include "ship.h"
 #include "asteroid/asteroid.h"
-#include "scripting/lua.h"
-
-extern int ade_set_object_with_breed(lua_State *L, int obj_idx);
 
 namespace scripting {
 namespace api {

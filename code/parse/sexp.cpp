@@ -78,7 +78,6 @@
 #include "object/objectsnd.h"
 #include "object/waypoint.h"
 #include "parse/generic_log.h"
-#include "scripting/lua.h"
 #include "parse/parselo.h"
 #include "scripting/scripting.h"
 #include "parse/sexp.h"

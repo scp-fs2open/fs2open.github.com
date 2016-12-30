@@ -5,10 +5,9 @@
 #include "object.h"
 #include "vecmath.h"
 #include "ship_bank.h"
-#include "scripting/lua.h"
+#include "ship.h"
 #include "ship/shiphit.h"
 
-extern int ade_set_object_with_breed(lua_State *L, int obj_idx);
 bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, vec3d *turret_pos, vec3d *turret_fvec, vec3d *predicted_pos = NULL, float flak_range_override = 100.0f);
 
 namespace scripting {

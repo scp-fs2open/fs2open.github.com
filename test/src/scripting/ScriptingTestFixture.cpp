@@ -4,6 +4,10 @@
 #include "ScriptingTestFixture.h"
 #include "cfile/cfile.h"
 
+extern "C" {
+#include <lua.h>
+}
+
 namespace test {
 namespace scripting {
 

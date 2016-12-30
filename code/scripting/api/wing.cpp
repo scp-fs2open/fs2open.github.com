@@ -2,8 +2,8 @@
 //
 
 #include "wing.h"
+#include "ship.h"
 #include "object/object.h"
-#include "scripting/lua.h"
 #include "ship/ship.h"
 
 namespace scripting {

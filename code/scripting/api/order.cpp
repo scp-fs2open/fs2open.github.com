@@ -10,8 +10,6 @@
 #include "weapon/weapon.h"
 #include "playerman/player.h"
 
-extern int ade_set_object_with_breed(lua_State *L, int obj_idx);
-
 namespace scripting {
 namespace api {
 

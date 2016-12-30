@@ -27,7 +27,6 @@
 #include "ship/ship.h"
 #include "parse/parselo.h"
 
-extern int ade_set_object_with_breed(lua_State *L, int obj_idx);
 extern void ship_reset_disabled_physics(object *objp, int ship_class);
 
 namespace scripting {

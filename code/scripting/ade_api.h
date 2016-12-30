@@ -123,6 +123,16 @@ extern const ::scripting::ade_obj<type>& SCP_TOKEN_CONCAT(get_, field)(); \
 extern const ::scripting::ade_obj<type>& field
 
 /**
+ * @warning Utility macro. DO NOT USE!
+ */
+#define ADE_LIB_IMPL(field, name, short_name, desc, parent) \
+const ::scripting::ade_lib& SCP_TOKEN_CONCAT(get_, field)() { \
+	static ::scripting::ade_lib lib(name, parent, short_name, desc);\
+	return lib;\
+} \
+const ::scripting::ade_lib& field = SCP_TOKEN_CONCAT(get_, field)()
+
+/**
  * @brief Define an API library
  *
  * A library is similar to a C++ namespace or a class with static functions. It can be used to group multiple functions
@@ -135,12 +145,26 @@ extern const ::scripting::ade_obj<type>& field
  *
  * @ingroup ade_api
  */
-#define ADE_LIB(field, name, short_name, desc) \
-const ::scripting::ade_lib& SCP_TOKEN_CONCAT(get_, field)() { \
-	static ::scripting::ade_lib lib(name, nullptr, short_name, desc);\
-	return lib;\
-} \
-const ::scripting::ade_lib& field = SCP_TOKEN_CONCAT(get_, field)()
+#define ADE_LIB(field, name, short_name, desc) ADE_LIB_IMPL(field, name, short_name, desc, nullptr);
+
+/**
+ * @brief Define an API library which is the child of another library
+ *
+ * A library is similar to a C++ namespace or a class with static functions. It can be used to group multiple functions
+ * together that serve a similar pupose.
+ *
+ * A sublibrary is basically a nested namespace
+ *
+ * @param field The name of the field by which the class should be ac
+ * @param name The name the class should have in the documentationcessible
+ * @param short_name The short name of the library, makes writing scripts easier
+ * @param desc Documentation about what this class is
+ * @param parent The parent library, this should be the field name, e.g. l_Base
+ *
+ * @ingroup ade_api
+ */
+#define ADE_LIB_DERIV(field, name, short_name, desc, parent) \
+	ADE_LIB_IMPL(field, name, short_name, desc, &SCP_TOKEN_CONCAT(get_, parent)());
 
 /**
  * @brief Declare an API library but don't define it
