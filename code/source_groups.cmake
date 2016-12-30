@@ -939,22 +939,31 @@ set(file_root_scripting_api
 	scripting/api/hudgauge.cpp
 	scripting/api/mc_info.h
 	scripting/api/mc_info.cpp
+	scripting/api/message.h
+	scripting/api/message.cpp
 	scripting/api/model.h
 	scripting/api/model.cpp
 	scripting/api/object.h
 	scripting/api/object.cpp
+	scripting/api/order.h
+	scripting/api/order.cpp
 	scripting/api/physics_info.h
+	scripting/api/physics_info.cpp
 	scripting/api/physics_info.cpp
 	scripting/api/sexpvar.h
 	scripting/api/sexpvar.cpp
 	scripting/api/shields.h
 	scripting/api/shields.cpp
+	scripting/api/ship.h
+	scripting/api/ship.cpp
 	scripting/api/ship_bank.h
 	scripting/api/ship_bank.cpp
 	scripting/api/shipclass.h
 	scripting/api/shipclass.cpp
 	scripting/api/shiptype.h
 	scripting/api/shiptype.cpp
+	scripting/api/sound.h
+	scripting/api/sound.cpp
 	scripting/api/species.h
 	scripting/api/species.cpp
 	scripting/api/streaminganim.h
@@ -973,6 +982,8 @@ set(file_root_scripting_api
 	scripting/api/waypoint.cpp
 	scripting/api/weaponclass.h
 	scripting/api/weaponclass.cpp
+	scripting/api/wing.h
+	scripting/api/wing.cpp
 )
 
 # Ship files

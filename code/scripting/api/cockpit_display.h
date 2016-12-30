@@ -62,6 +62,19 @@ class cockpit_displays_info_h
 };
 DECLARE_ADE_OBJ(l_CockpitDisplayInfos, cockpit_displays_info_h);
 
+//**********HANDLE: CockpitDisplayArray
+class cockpit_displays_h
+{
+ private:
+	object *m_objp;
+ public:
+	cockpit_displays_h();
+	explicit cockpit_displays_h(object *objp);
+
+	bool isValid();
+};
+DECLARE_ADE_OBJ(l_CockpitDisplays, cockpit_displays_h);
+
 
 }
 }
