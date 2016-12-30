@@ -41,8 +41,6 @@ extern bool Scene_framebuffer_in_frame;
 
 extern void interp_render_arc_segment( vec3d *v1, vec3d *v2, int depth );
 
-model_draw_list *model_draw_list::Target = NULL;
-
 model_batch_buffer TransformBufferHandler;
 
 model_render_params::model_render_params():
@@ -401,8 +399,8 @@ void model_draw_list::reset()
 
 void model_draw_list::sort_draws()
 {
-	Target = this;
-	std::sort(Target->Render_keys.begin(), Target->Render_keys.end(), model_draw_list::sort_draw_pair);
+	std::sort(Render_keys.begin(), Render_keys.end(),
+			  [this](const int a, const int b) { return model_draw_list::sort_draw_pair(this, a, b); });
 }
 
 void model_draw_list::start_model_batch(int n_models)
@@ -703,10 +701,10 @@ void model_draw_list::render_outline(outline_draw &outline_info)
 	g3_done_instance(true);
 }
 
-bool model_draw_list::sort_draw_pair(const int a, const int b)
+bool model_draw_list::sort_draw_pair(model_draw_list* target, const int a, const int b)
 {
-	queued_buffer_draw *draw_call_a = &Target->Render_elements[a];
-	queued_buffer_draw *draw_call_b = &Target->Render_elements[b];
+	queued_buffer_draw *draw_call_a = &target->Render_elements[a];
+	queued_buffer_draw *draw_call_b = &target->Render_elements[b];
 
 	if ( draw_call_a->sdr_flags != draw_call_b->sdr_flags ) {
 		return draw_call_a->sdr_flags < draw_call_b->sdr_flags;

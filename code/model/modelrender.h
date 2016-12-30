@@ -242,8 +242,7 @@ class model_draw_list
 	SCP_vector<insignia_draw_data> Insignias;
 	SCP_vector<outline_draw> Outlines;
 
-	static model_draw_list *Target;
-	static bool sort_draw_pair(const int a, const int b);
+	static bool sort_draw_pair(model_draw_list* target, const int a, const int b);
 	void sort_draws();
 public:
 	model_draw_list();
