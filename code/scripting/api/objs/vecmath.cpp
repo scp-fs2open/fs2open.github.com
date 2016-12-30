@@ -1,5 +1,6 @@
 
-#include "scripting/api/vecmath.h"
+#include "vecmath.h"
+
 #include "math/vecmat.h"
 #include "render/3d.h"
 #include "render/3dinternal.h"

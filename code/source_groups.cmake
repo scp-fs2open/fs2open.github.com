@@ -902,78 +902,120 @@ set (file_root_render
 set(file_root_scripting
 	scripting/ade.cpp
 	scripting/ade.h
-	scripting/ade_api.cpp
 	scripting/ade_api.h
 	scripting/ade_args.cpp
 	scripting/ade_args.h
 	scripting/lua.cpp
-	scripting/lua.h
 	scripting/scripting.cpp
 	scripting/scripting.h
 )
 
-set(file_root_scripting_api
-	scripting/api/asteroid.h
-	scripting/api/asteroid.cpp
-	scripting/api/bitops.h
-	scripting/api/bitops.cpp
-	scripting/api/cockpit_display.h
-	scripting/api/cockpit_display.cpp
-	scripting/api/debris.h
-	scripting/api/debris.cpp
-	scripting/api/enums.cpp
-	scripting/api/enums.h
-	scripting/api/event.h
-	scripting/api/event.cpp
-	scripting/api/eye.h
-	scripting/api/eye.cpp
-	scripting/api/file.h
-	scripting/api/file.cpp
-	scripting/api/font.h
-	scripting/api/font.cpp
-	scripting/api/gameevent.h
-	scripting/api/gameevent.cpp
-	scripting/api/gamestate.h
-	scripting/api/gamestate.cpp
-	scripting/api/hudgauge.h
-	scripting/api/hudgauge.cpp
-	scripting/api/mc_info.h
-	scripting/api/mc_info.cpp
-	scripting/api/model.h
-	scripting/api/model.cpp
-	scripting/api/object.h
-	scripting/api/object.cpp
-	scripting/api/physics_info.h
-	scripting/api/physics_info.cpp
-	scripting/api/sexpvar.h
-	scripting/api/sexpvar.cpp
-	scripting/api/shields.h
-	scripting/api/shields.cpp
-	scripting/api/ship_bank.h
-	scripting/api/ship_bank.cpp
-	scripting/api/shipclass.h
-	scripting/api/shipclass.cpp
-	scripting/api/shiptype.h
-	scripting/api/shiptype.cpp
-	scripting/api/shiptype.cpp
-	scripting/api/species.h
-	scripting/api/species.cpp
-	scripting/api/streaminganim.h
-	scripting/api/streaminganim.cpp
-	scripting/api/subsystem.h
-	scripting/api/subsystem.cpp
-	scripting/api/team.h
-	scripting/api/team.cpp
-	scripting/api/texture.h
-	scripting/api/texture.cpp
-	scripting/api/texturemap.h
-	scripting/api/texturemap.cpp
-	scripting/api/vecmath.h
-	scripting/api/vecmath.cpp
-	scripting/api/waypoint.h
-	scripting/api/waypoint.cpp
-	scripting/api/weaponclass.h
-	scripting/api/weaponclass.cpp
+set(file_root_scripting_api_libs
+	scripting/api/libs/audio.cpp
+	scripting/api/libs/audio.h
+	scripting/api/libs/base.cpp
+	scripting/api/libs/base.h
+	scripting/api/libs/bitops.cpp
+	scripting/api/libs/bitops.h
+	scripting/api/libs/cfile.cpp
+	scripting/api/libs/cfile.h
+	scripting/api/libs/hookvars.cpp
+	scripting/api/libs/hookvars.h
+	scripting/api/libs/hud.cpp
+	scripting/api/libs/hud.h
+	scripting/api/libs/mission.cpp
+	scripting/api/libs/mission.h
+	scripting/api/libs/tables.cpp
+	scripting/api/libs/tables.h
+	scripting/api/libs/testing.cpp
+	scripting/api/libs/testing.h
+)
+
+set(file_root_scripting_api_objs
+	scripting/api/objs/asteroid.cpp
+	scripting/api/objs/asteroid.h
+	scripting/api/objs/beam.cpp
+	scripting/api/objs/beam.h
+	scripting/api/objs/camera.cpp
+	scripting/api/objs/camera.h
+	scripting/api/objs/cockpit_display.cpp
+	scripting/api/objs/cockpit_display.h
+	scripting/api/objs/control_info.cpp
+	scripting/api/objs/control_info.h
+	scripting/api/objs/controls.cpp
+	scripting/api/objs/controls.h
+	scripting/api/objs/debris.cpp
+	scripting/api/objs/debris.h
+	scripting/api/objs/enums.cpp
+	scripting/api/objs/enums.h
+	scripting/api/objs/event.cpp
+	scripting/api/objs/event.h
+	scripting/api/objs/eye.cpp
+	scripting/api/objs/eye.h
+	scripting/api/objs/file.cpp
+	scripting/api/objs/file.h
+	scripting/api/objs/font.cpp
+	scripting/api/objs/font.h
+	scripting/api/objs/gameevent.cpp
+	scripting/api/objs/gameevent.h
+	scripting/api/objs/gamestate.cpp
+	scripting/api/objs/gamestate.h
+	scripting/api/objs/graphics.cpp
+	scripting/api/objs/graphics.h
+	scripting/api/objs/hudgauge.cpp
+	scripting/api/objs/hudgauge.h
+	scripting/api/objs/mc_info.cpp
+	scripting/api/objs/mc_info.h
+	scripting/api/objs/message.cpp
+	scripting/api/objs/message.h
+	scripting/api/objs/model.cpp
+	scripting/api/objs/model.h
+	scripting/api/objs/object.cpp
+	scripting/api/objs/object.h
+	scripting/api/objs/order.cpp
+	scripting/api/objs/order.h
+	scripting/api/objs/particle.cpp
+	scripting/api/objs/particle.h
+	scripting/api/objs/physics_info.cpp
+	scripting/api/objs/physics_info.h
+	scripting/api/objs/player.cpp
+	scripting/api/objs/player.h
+	scripting/api/objs/sexpvar.cpp
+	scripting/api/objs/sexpvar.h
+	scripting/api/objs/shields.cpp
+	scripting/api/objs/shields.h
+	scripting/api/objs/ship_bank.cpp
+	scripting/api/objs/ship_bank.h
+	scripting/api/objs/shipclass.cpp
+	scripting/api/objs/shipclass.h
+	scripting/api/objs/ship.cpp
+	scripting/api/objs/ship.h
+	scripting/api/objs/shiptype.cpp
+	scripting/api/objs/shiptype.h
+	scripting/api/objs/sound.cpp
+	scripting/api/objs/sound.h
+	scripting/api/objs/species.cpp
+	scripting/api/objs/species.h
+	scripting/api/objs/streaminganim.cpp
+	scripting/api/objs/streaminganim.h
+	scripting/api/objs/subsystem.cpp
+	scripting/api/objs/subsystem.h
+	scripting/api/objs/team.cpp
+	scripting/api/objs/team.h
+	scripting/api/objs/texture.cpp
+	scripting/api/objs/texture.h
+	scripting/api/objs/texturemap.cpp
+	scripting/api/objs/texturemap.h
+	scripting/api/objs/vecmath.cpp
+	scripting/api/objs/vecmath.h
+	scripting/api/objs/waypoint.cpp
+	scripting/api/objs/waypoint.h
+	scripting/api/objs/weaponclass.cpp
+	scripting/api/objs/weaponclass.h
+	scripting/api/objs/weapon.cpp
+	scripting/api/objs/weapon.h
+	scripting/api/objs/wing.cpp
+	scripting/api/objs/wing.h
 )
 
 # Ship files
@@ -1220,7 +1262,8 @@ source_group("Popup"                              FILES ${file_root_popup})
 source_group("Radar"                              FILES ${file_root_radar})
 source_group("Render"                             FILES ${file_root_render})
 source_group("Scripting"                          FILES ${file_root_scripting})
-source_group("Scripting\\Api"                     FILES ${file_root_scripting_api})
+source_group("Scripting\\Api\\Libs"               FILES ${file_root_scripting_api_libs})
+source_group("Scripting\\Api\\Objs"               FILES ${file_root_scripting_api_objs})
 source_group("Ship"                               FILES ${file_root_ship})
 source_group("Sound"                              FILES ${file_root_sound})
 source_group("Sound\\FFmpeg"                      FILES ${file_root_sound_ffmpeg})
@@ -1312,7 +1355,8 @@ set (file_root
 	${file_root_radar}
 	${file_root_render}
 	${file_root_scripting}
-	${file_root_scripting_api}
+	${file_root_scripting_api_libs}
+	${file_root_scripting_api_objs}
 	${file_root_ship}
 	${file_root_sound}
 	${file_root_sound_ffmpeg}

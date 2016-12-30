@@ -2997,7 +2997,7 @@ int CFred_mission_save::save_objects() {
 			if (shipp->flags[Ship::Ship_Flags::Scramble_messages])
 				fout(" \"scramble-messages\"");
 			if (!(objp->flags[Object::Object_Flags::Collides]))
-				fout(" \"no-collide\"");
+				fout(" \"no_collide\"");
 			if (shipp->flags[Ship::Ship_Flags::No_disabled_self_destruct])
 				fout(" \"no-disabled-self-destruct\"");
 			fout(" )");

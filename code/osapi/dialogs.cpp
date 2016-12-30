@@ -2,15 +2,20 @@
 #include "osapi/dialogs.h"
 #include "osapi/osapi.h"
 #include "parse/parselo.h"
-#include "scripting/lua.h"
 #include "cmdline/cmdline.h"
 #include "graphics/2d.h"
+#include "scripting/ade.h"
 
 #include <SDL_messagebox.h>
 #include <SDL_clipboard.h>
 
 #include <string>
 #include <algorithm>
+
+extern "C" {
+#include <lauxlib.h>
+#include <lualib.h>
+}
 
 namespace
 {

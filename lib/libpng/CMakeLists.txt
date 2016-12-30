@@ -50,11 +50,9 @@ IF (FSO_BUILD_INCLUDED_LIBS OR NOT PNG_FOUND)
 		PROPERTIES
 			FOLDER "3rdparty"
 	)
-	
-	if (MSVC)
-		# Disable warnings if building from source
-		target_compile_options(png PRIVATE "/W0")
-	endif()
+    
+    # Disable warnings if building from source
+    suppress_warnings(png)
 
 	target_link_libraries(png PUBLIC ${ZLIB_LIBS})
 	target_link_libraries(png PUBLIC compiler)

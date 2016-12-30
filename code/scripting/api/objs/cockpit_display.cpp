@@ -471,6 +471,122 @@ ADE_FUNC(isValid, l_CockpitDisplayInfos, NULL, "Detects whether this handle is v
 }
 
 
+cockpit_displays_h::cockpit_displays_h() : m_objp( NULL ) {}
+cockpit_displays_h::cockpit_displays_h(object* objp) {
+	this->m_objp = objp;
+}
+bool cockpit_displays_h::isValid() {
+	if (m_objp == NULL)
+	{
+		return false;
+	}
+
+	if (m_objp != Player_obj)
+	{
+		return false;
+	}
+
+	if ( Ship_info[Player_ship->ship_info_index].cockpit_model_num < 0 ) {
+		return false;
+	}
+
+	if ( Player_cockpit_textures == NULL ) {
+		return false;
+	}
+
+	return true;
+}
+
+
+//**********HANDLE: CockpitDisplayArray
+ADE_OBJ(l_CockpitDisplays, cockpit_displays_h, "displays", "Player cockpit displays array handle");
+
+ADE_FUNC(__len, l_CockpitDisplays, NULL, "Gets the number of cockpit displays for the player ship", "number", "number of displays or -1 on error")
+{
+	cockpit_displays_h *cdh = NULL;
+	if(!ade_get_args(L, "o", l_CockpitDisplays.GetPtr(&cdh)))
+		return ade_set_error(L, "i", -1);
+
+	if (!cdh->isValid())
+		return ade_set_error(L, "i", -1);
+
+	return ade_set_args(L, "i", (int) Player_displays.size());
+}
+
+ADE_INDEXER(l_CockpitDisplays, "number/string", "Gets a cockpit display from the present player displays by either the index or the name of the display", "display", "Display handle or invalid handle on error")
+{
+	if (lua_isnumber(L, 2))
+	{
+		cockpit_displays_h *cdh = NULL;
+		int index = -1;
+
+		if (!ade_get_args(L, "oi", l_CockpitDisplays.GetPtr(&cdh), &index))
+		{
+			return ade_set_error(L, "o", l_CockpitDisplay.Set(cockpit_display_h()));
+		}
+
+		if (index < 0)
+		{
+			return ade_set_error(L, "o", l_CockpitDisplay.Set(cockpit_display_h()));
+		}
+
+		index--; // Lua -> C/C++
+
+		return ade_set_args(L, "o", l_CockpitDisplay.Set(cockpit_display_h(Player_obj, index)));
+	}
+	else
+	{
+		cockpit_displays_h *cdh = NULL;
+		char *name = NULL;
+
+		if (!ade_get_args(L, "os", l_CockpitDisplays.GetPtr(&cdh), &name))
+		{
+			return ade_set_error(L, "o", l_CockpitDisplay.Set(cockpit_display_h()));
+		}
+
+		if (!cdh->isValid())
+		{
+			return ade_set_error(L, "o", l_CockpitDisplay.Set(cockpit_display_h()));
+		}
+
+		if (name == NULL)
+		{
+			return ade_set_error(L, "o", l_CockpitDisplay.Set(cockpit_display_h()));
+		}
+
+		size_t index = 0;
+
+		for (SCP_vector<cockpit_display>::iterator iter = Player_displays.begin(); iter != Player_displays.end(); ++iter)
+		{
+			if (!strcmp(name, iter->name))
+			{
+				break;
+			}
+			else
+			{
+				index++;
+			}
+		}
+
+		if (index == Player_displays.size())
+		{
+			LuaError(L, "Couldn't find cockpit display info with name \"%s\"", name);
+			return ade_set_error(L, "o", l_CockpitDisplay.Set(cockpit_display_h()));
+		}
+
+		return ade_set_args(L, "o", l_CockpitDisplay.Set(cockpit_display_h(Player_obj, index)));
+	}
+}
+
+ADE_FUNC(isValid, l_CockpitDisplays, NULL, "Detects whether this handle is valid or not", "boolean", "true if valid, false otherwise")
+{
+	cockpit_displays_h *cdh = NULL;
+	if(!ade_get_args(L, "o", l_CockpitDisplays.GetPtr(&cdh)))
+		return ADE_RETURN_FALSE;
+
+	return ade_set_args(L, "b", cdh->isValid());
+}
+
 }
 }
 
