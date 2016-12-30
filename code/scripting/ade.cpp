@@ -5,13 +5,13 @@
 #include "ship/ship.h"
 #include "ade_api.h"
 
-#include "scripting/api/object.h"
-#include "scripting/api/ship.h"
-#include "scripting/api/asteroid.h"
-#include "scripting/api/debris.h"
-#include "scripting/api/waypoint.h"
-#include "scripting/api/weapon.h"
-#include "scripting/api/beam.h"
+#include "scripting/api/objs/object.h"
+#include "scripting/api/objs/ship.h"
+#include "scripting/api/objs/asteroid.h"
+#include "scripting/api/objs/debris.h"
+#include "scripting/api/objs/waypoint.h"
+#include "scripting/api/objs/weapon.h"
+#include "scripting/api/objs/beam.h"
 
 namespace {
 using namespace scripting;

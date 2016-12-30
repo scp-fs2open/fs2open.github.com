@@ -2,7 +2,7 @@
 //
 
 #include "hud.h"
-#include "hudgauge.h"
+#include "scripting/api/objs/hudgauge.h"
 
 #include "hud/hud.h"
 #include "hud/hudconfig.h"

@@ -2,8 +2,9 @@
 //
 
 #include "tables.h"
-#include "shipclass.h"
-#include "weaponclass.h"
+
+#include "scripting/api/objs/shipclass.h"
+#include "scripting/api/objs/weaponclass.h"
 
 #include "ship/ship.h"
 #include "weapon/weapon.h"

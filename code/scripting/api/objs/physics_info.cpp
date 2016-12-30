@@ -1,5 +1,5 @@
 
-#include "scripting/api/physics_info.h"
+#include "physics_info.h"
 #include "vecmath.h"
 
 namespace scripting {

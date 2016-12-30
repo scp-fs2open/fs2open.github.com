@@ -2,7 +2,7 @@
 //
 
 #include "cfile.h"
-#include "file.h"
+#include "scripting/api/objs/file.h"
 
 #include "cfile/cfile.h"
 #include "cfile/cfilesystem.h"

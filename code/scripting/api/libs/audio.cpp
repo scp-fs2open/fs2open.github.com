@@ -2,8 +2,9 @@
 //
 
 #include "audio.h"
-#include "sound.h"
-#include "vecmath.h"
+
+#include "scripting/api/objs/sound.h"
+#include "scripting/api/objs/vecmath.h"
 
 #include "gamesnd/gamesnd.h"
 #include "missionui/missionbrief.h"

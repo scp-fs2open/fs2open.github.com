@@ -2,11 +2,12 @@
 //
 
 #include "testing.h"
-#include "vecmath.h"
-#include "enums.h"
-#include "texture.h"
-#include "object.h"
-#include "particle.h"
+
+#include "scripting/api/objs/vecmath.h"
+#include "scripting/api/objs/enums.h"
+#include "scripting/api/objs/texture.h"
+#include "scripting/api/objs/object.h"
+#include "scripting/api/objs/particle.h"
 
 #include "physics/physics.h"
 #include "graphics/2d.h"
