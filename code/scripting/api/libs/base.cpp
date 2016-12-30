@@ -5,13 +5,15 @@
 #include <gamesequence/gamesequence.h>
 #include <network/multi.h>
 #include <playerman/player.h>
+
 #include "base.h"
-#include "vecmath.h"
-#include "gamestate.h"
-#include "player.h"
-#include "enums.h"
-#include "control_info.h"
-#include "gameevent.h"
+
+#include "scripting/api/objs/vecmath.h"
+#include "scripting/api/objs/gamestate.h"
+#include "scripting/api/objs/player.h"
+#include "scripting/api/objs/enums.h"
+#include "scripting/api/objs/control_info.h"
+#include "scripting/api/objs/gameevent.h"
 
 
 namespace scripting {
