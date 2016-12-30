@@ -105,6 +105,7 @@
 #include "scripting/api/weapon.h"
 #include "scripting/api/controls.h"
 #include "scripting/api/graphics.h"
+#include "scripting/api/hud.h"
 
 using namespace scripting;
 using namespace scripting::api;
