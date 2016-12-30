@@ -902,7 +902,6 @@ set (file_root_render
 set(file_root_scripting
 	scripting/ade.cpp
 	scripting/ade.h
-	scripting/ade_api.cpp
 	scripting/ade_api.h
 	scripting/ade_args.cpp
 	scripting/ade_args.h
