@@ -993,6 +993,8 @@ set(file_root_scripting_api
 	scripting/api/streaminganim.cpp
 	scripting/api/subsystem.h
 	scripting/api/subsystem.cpp
+	scripting/api/tables.h
+	scripting/api/tables.cpp
 	scripting/api/team.h
 	scripting/api/team.cpp
 	scripting/api/texture.h
