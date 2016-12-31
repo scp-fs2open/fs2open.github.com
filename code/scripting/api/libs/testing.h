@@ -5,7 +5,7 @@
 namespace scripting {
 namespace api {
 
-
+DECLARE_ADE_LIB(l_Testing);
 
 }
 }
