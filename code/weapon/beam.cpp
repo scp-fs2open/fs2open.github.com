@@ -24,6 +24,7 @@
 #include "iff_defs/iff_defs.h"
 #include "io/timer.h"
 #include "lighting/lighting.h"
+#include "mod_table/mod_table.h"
 #include "network/multi.h"
 #include "network/multimsgs.h"
 #include "object/objcollide.h"
@@ -438,6 +439,10 @@ int beam_fire(beam_fire_info *fire_info)
 		return -1;
 	}
 	new_item->objnum = objnum;
+
+	if (new_item->objp != nullptr && Weapons_inherit_parent_collision_group) {
+		Objects[objnum].collision_group_id = new_item->objp->collision_group_id;
+	}
 
 	// this sets up all info for the first frame the beam fires
 	beam_aim(new_item);						// to fill in shot_point, etc.	
@@ -2391,6 +2396,9 @@ int beam_collide_ship(obj_pair *pair)
 		return 1;
 	ship_objp = pair->b;
 	shipp = &Ships[ship_objp->instance];
+
+	if (reject_due_collision_groups(weapon_objp, ship_objp))
+		return 0;
 
 	int quadrant_num = -1;
 	int	valid_hit_occurred = 0;
