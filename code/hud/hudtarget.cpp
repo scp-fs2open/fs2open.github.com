@@ -2832,15 +2832,12 @@ void hud_tri(float x1,float y1,float x2,float y2,float x3,float y3)
 		x3 = tmp;
 	}
 
-	vertex * vertlist[3];
 	vertex verts[3];
 
 	// zero verts[] out, this is a faster way (nods to Kazan) to make sure that
 	// the specular colors are set to 0 to avoid rendering problems - taylor
 	memset(verts, 0, sizeof(verts));
 
-	for (i=0; i<3; i++ )	
-		vertlist[i] = &verts[i];
 
 	verts[0].screen.xyw.x = x1;
 	verts[0].screen.xyw.y = y1;

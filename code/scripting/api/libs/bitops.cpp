@@ -1,5 +1,5 @@
 
-#include "scripting/api/bitops.h"
+#include "bitops.h"
 
 namespace scripting {
 namespace api {

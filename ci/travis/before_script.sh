@@ -19,7 +19,7 @@ if [ "$TRAVIS_OS_NAME" = "linux" ]; then
             cd ..
         done
     else
-        eval $CMAKE -DCMAKE_BUILD_TYPE=$CONFIGURATION -DFSO_BUILD_TESTS=ON ..
+        eval $CMAKE -DCMAKE_BUILD_TYPE=$CONFIGURATION -DFSO_BUILD_TESTS=ON -DFSO_BUILD_INCLUDED_LIBS=ON ..
     fi
 elif [ "$TRAVIS_OS_NAME" = "osx" ]; then
     if [ "$BUILD_DEPLOYMENT" = true ]; then

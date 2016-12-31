@@ -277,7 +277,7 @@ void batching_add_point_bitmap(primitive_batch *batch, vertex *position, int ori
 		vm_vec_scale_add(&PNT, &PNT, &fvec, depth);
 
 	batch_vertex new_particle;
-	vec3d up = { 0.0f, 1.0f, 0.0f };
+	vec3d up = {{{ 0.0f, 1.0f, 0.0f }}};
 
 	new_particle.position = position->world;
 	new_particle.radius = radius;

@@ -16,6 +16,7 @@
 #include "ship/ship.h"
 #include "weapon/beam.h"
 #include "weapon/weapon.h"
+#include "ade.h"
 
 using namespace scripting;
 
@@ -550,7 +551,6 @@ bool ConditionedHook::IsOverride(script_state *sys, int action)
 //Most of the icky stuff is here. Lots of #ifdefs
 
 //WMC - defined in parse/scripting.h
-int ade_set_object_with_breed(lua_State *L, int obj_idx);
 void script_state::SetHookObject(char *name, object *objp)
 {
 	SetHookObjects(1, name, objp);

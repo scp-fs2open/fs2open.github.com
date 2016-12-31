@@ -780,39 +780,46 @@ void reset_ai_class_names()
 #define AI_CLASS_INCREMENT		10
 void parse_aitbl()
 {
-	read_file_text("ai.tbl", CF_TYPE_TABLES);
-	reset_parse();
+	try {
+		read_file_text("ai.tbl", CF_TYPE_TABLES);
+		reset_parse();
 
-	//Just in case parse_aitbl is called twice
-	free_ai_stuff();
-	
-	Num_ai_classes = 0;
-	Num_alloced_ai_classes = AI_CLASS_INCREMENT;
-	Ai_classes = (ai_class*) vm_malloc(Num_alloced_ai_classes * sizeof(ai_class));
-	Ai_class_names = (char**) vm_malloc(Num_alloced_ai_classes * sizeof(char*));
-	
-	required_string("#AI Classes");
+		//Just in case parse_aitbl is called twice
+		free_ai_stuff();
 
-	while (required_string_either("#End", "$Name:")) {
+		Num_ai_classes = 0;
+		Num_alloced_ai_classes = AI_CLASS_INCREMENT;
+		Ai_classes = (ai_class*) vm_malloc(Num_alloced_ai_classes * sizeof(ai_class));
+		Ai_class_names = (char**) vm_malloc(Num_alloced_ai_classes * sizeof(char*));
 
-		parse_ai_class();
+		required_string("#AI Classes");
 
-		Num_ai_classes++;
+		while (required_string_either("#End", "$Name:")) {
 
-		if(Num_ai_classes >= Num_alloced_ai_classes)
-		{
-			Num_alloced_ai_classes += AI_CLASS_INCREMENT;
-			Ai_classes = (ai_class*) vm_realloc(Ai_classes, Num_alloced_ai_classes * sizeof(ai_class));
+			parse_ai_class();
 
-			// Ai_class_names doesn't realloc all that well so we have to do it the hard way.
-			// Luckily, it's contents can be easily replaced so we don't have to save anything.
-			vm_free(Ai_class_names);
-			Ai_class_names = (char **) vm_malloc(Num_alloced_ai_classes * sizeof(char*));
-			reset_ai_class_names();
+			Num_ai_classes++;
+
+			if(Num_ai_classes >= Num_alloced_ai_classes)
+			{
+				Num_alloced_ai_classes += AI_CLASS_INCREMENT;
+				Ai_classes = (ai_class*) vm_realloc(Ai_classes, Num_alloced_ai_classes * sizeof(ai_class));
+
+				// Ai_class_names doesn't realloc all that well so we have to do it the hard way.
+				// Luckily, it's contents can be easily replaced so we don't have to save anything.
+				vm_free(Ai_class_names);
+				Ai_class_names = (char **) vm_malloc(Num_alloced_ai_classes * sizeof(char*));
+				reset_ai_class_names();
+			}
 		}
+
+		atexit(free_ai_stuff);
 	}
-	
-	atexit(free_ai_stuff);
+	catch (const parse::ParseException& e)
+	{
+		mprintf(("TABLES: Unable to parse 'ai.tbl'!  Error message = %s.\n", e.what()));
+		return;
+	}
 }
 
 LOCAL int ai_inited = 0;
@@ -8987,6 +8994,8 @@ void set_goal_dock_orient(matrix *dom, vec3d *docker_p0, vec3d *docker_p1, vec3d
 // Return the rotating submodel on which is mounted the specified dockpoint, or -1 for none.
 int find_parent_rotating_submodel(polymodel *pm, int dock_index)
 {
+	Assertion(pm != nullptr, "pm cannot be null!");
+	Assertion(dock_index >= 0 && dock_index < pm->n_docks, "for model %s, dock_index %d must be >= 0 and < %d!", pm->filename, dock_index, pm->n_docks);
 	int path_num, submodel;
 
 	// make sure we have a spline path to check against before going any further
@@ -9016,8 +9025,32 @@ int find_parent_rotating_submodel(polymodel *pm, int dock_index)
 }
 
 // Goober5000
+// pruned version of below function
+void find_adjusted_dockpoint_normal(vec3d *global_p0_norm, object *objp, polymodel *pm, int submodel, int dock_index)
+{
+	Assertion(global_p0_norm != nullptr && objp != nullptr && pm != nullptr, "arguments cannot be null!");
+	Assertion(dock_index >= 0 && dock_index < pm->n_docks, "for model %s, dock_index %d must be >= 0 and < %d!", pm->filename, dock_index, pm->n_docks);
+
+	// are we basing this off a rotating submodel?
+	if (submodel >= 0)
+	{
+		// find the normal of the first dockpoint
+		model_instance_find_world_dir(global_p0_norm, &pm->docking_bays[dock_index].norm[0], Ships[objp->instance].model_instance_num, submodel, &objp->orient);
+	}
+	// use the static dockpoints
+	else
+	{
+		vm_vec_unrotate(global_p0_norm, &pm->docking_bays[dock_index].norm[0], &objp->orient);
+	}
+}
+
+// Goober5000
 void find_adjusted_dockpoint_info(vec3d *global_p0, vec3d *global_p1, vec3d *global_p0_norm, object *objp, polymodel *pm, int modelnum, int submodel, int dock_index)
 {
+	Assertion(global_p0 != nullptr && global_p1 != nullptr && global_p0_norm != nullptr && objp != nullptr && pm != nullptr, "arguments cannot be null!");
+	Assertion(pm->id == modelnum, "inconsistent polymodel and modelnum!");
+	Assertion(dock_index >= 0 && dock_index < pm->n_docks, "for model %s, dock_index %d must be >= 0 and < %d!", pm->filename, dock_index, pm->n_docks);
+
 	// are we basing this off a rotating submodel?
 	if (submodel >= 0)
 	{

@@ -69,6 +69,16 @@ const size_t INVALID_ID = (size_t) -1; // Use -1 to get highest possible unsigne
 	static int parent##___indexer_f(lua_State *L)
 
 /**
+ * @warning Utility macro. DO NOT USE!
+ */
+#define ADE_OBJ_DERIV_IMPL(field, type, name, desc, deriv) \
+const ::scripting::ade_obj<type>& SCP_TOKEN_CONCAT(get_, field)() { \
+	static ::scripting::ade_obj<type> obj(name, desc, deriv);\
+	return obj;\
+} \
+const ::scripting::ade_obj<type>& field = SCP_TOKEN_CONCAT(get_, field)()
+
+/**
  * @brief Define an API object
  *
  * An object is similar to a C++ class. Use this if you want to return a special type from a function that should be
@@ -81,12 +91,22 @@ const size_t INVALID_ID = (size_t) -1; // Use -1 to get highest possible unsigne
  *
  * @ingroup ade_api
  */
-#define ADE_OBJ(field, type, name, desc) \
-const ::scripting::ade_obj<type>& SCP_TOKEN_CONCAT(get_, field)() { \
-	static ::scripting::ade_obj<type> obj(name, desc, nullptr);\
-	return obj;\
-} \
-const ::scripting::ade_obj<type>& field = SCP_TOKEN_CONCAT(get_, field)()
+#define ADE_OBJ(field, type, name, desc) ADE_OBJ_DERIV_IMPL(field, type, name, desc, nullptr)
+
+/**
+ * @brief Define an API object that derives from another
+ *
+ * This is the same as ADE_OBJ but this allows to derive this class from another
+ *
+ * @param field The name of the field by which the class should be accessible
+ * @param type The type of the data the class contains
+ * @param name The name the class should have in the documentation
+ * @param desc Documentation about what this class is
+ * @param deriv The class to derive from. This should be the name of the class field (e.g. l_Object)
+ *
+ * @ingroup ade_api
+ */
+#define ADE_OBJ_DERIV(field, type, name, desc, deriv) ADE_OBJ_DERIV_IMPL(field, type, name, desc, &SCP_TOKEN_CONCAT(get_, deriv)())
 
 /**
  * @brief Declare an API object but don't define it
@@ -103,6 +123,16 @@ extern const ::scripting::ade_obj<type>& SCP_TOKEN_CONCAT(get_, field)(); \
 extern const ::scripting::ade_obj<type>& field
 
 /**
+ * @warning Utility macro. DO NOT USE!
+ */
+#define ADE_LIB_IMPL(field, name, short_name, desc, parent) \
+const ::scripting::ade_lib& SCP_TOKEN_CONCAT(get_, field)() { \
+	static ::scripting::ade_lib lib(name, parent, short_name, desc);\
+	return lib;\
+} \
+const ::scripting::ade_lib& field = SCP_TOKEN_CONCAT(get_, field)()
+
+/**
  * @brief Define an API library
  *
  * A library is similar to a C++ namespace or a class with static functions. It can be used to group multiple functions
@@ -115,12 +145,26 @@ extern const ::scripting::ade_obj<type>& field
  *
  * @ingroup ade_api
  */
-#define ADE_LIB(field, name, short_name, desc) \
-const ::scripting::ade_lib& SCP_TOKEN_CONCAT(get_, field)() { \
-	static ::scripting::ade_lib lib(name, nullptr, short_name, desc);\
-	return lib;\
-} \
-const ::scripting::ade_lib& field = SCP_TOKEN_CONCAT(get_, field)()
+#define ADE_LIB(field, name, short_name, desc) ADE_LIB_IMPL(field, name, short_name, desc, nullptr);
+
+/**
+ * @brief Define an API library which is the child of another library
+ *
+ * A library is similar to a C++ namespace or a class with static functions. It can be used to group multiple functions
+ * together that serve a similar pupose.
+ *
+ * A sublibrary is basically a nested namespace
+ *
+ * @param field The name of the field by which the class should be ac
+ * @param name The name the class should have in the documentationcessible
+ * @param short_name The short name of the library, makes writing scripts easier
+ * @param desc Documentation about what this class is
+ * @param parent The parent library, this should be the field name, e.g. l_Base
+ *
+ * @ingroup ade_api
+ */
+#define ADE_LIB_DERIV(field, name, short_name, desc, parent) \
+	ADE_LIB_IMPL(field, name, short_name, desc, &SCP_TOKEN_CONCAT(get_, parent)());
 
 /**
  * @brief Declare an API library but don't define it

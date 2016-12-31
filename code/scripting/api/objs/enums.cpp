@@ -1,5 +1,6 @@
 
-#include "scripting/api/enums.h"
+#include "enums.h"
+
 #include "scripting/ade.h"
 
 namespace scripting {

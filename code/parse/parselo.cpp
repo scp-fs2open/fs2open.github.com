@@ -29,6 +29,7 @@
 
 #define	ERROR_LENGTH	64
 #define	RS_MAX_TRIES	5
+#define SHARP_S			(char)-33
 
 // to know that a modular table is currently being parsed
 bool	Parsing_modular_table = false;
@@ -1665,30 +1666,94 @@ int maybe_convert_foreign_character(int ch)
 }
 
 // Goober5000
-void maybe_convert_foreign_characters(char *line)
+// Yarn - The capacity of out must be at least the value returned by
+// get_converted_string_length(in) (plus one if add_null is true).
+// Returns the number of characters written to out.
+size_t maybe_convert_foreign_characters(const char *in, char *out, bool add_null)
 {
-	char *ch;
-	if (Fred_running)
-		return;
+	if (Fred_running) {
+		size_t len = strlen(in);
 
-	if (Lcl_pl)
-		return;
+		if (add_null) {
+			strcpy(out, in);
+			return len + 1;
+		} else {
+			strncpy(out, in, len);
+			return len;
+		}
+	} else {
+		auto inp = in;
+		auto outp = out;
 
-	for (ch = line; *ch != '\0'; ch++)
-			*ch = (char) maybe_convert_foreign_character(*ch);
+		while (*inp != '\0') {
+			if (*inp == SHARP_S) {
+				*outp++ = 's';
+				*outp++ = 's';
+			} else if (Lcl_pl) {
+				*outp++ = *inp;
+			} else {
+				*outp++ = (char) maybe_convert_foreign_character(*inp);
+			}
+			inp++;
+		}
+
+		if (add_null) {
+			*outp++ = '\0';
+		}
+
+		return outp - out;
+	}
 }
 
 // Goober5000
-void maybe_convert_foreign_characters(SCP_string &line)
+void maybe_convert_foreign_characters(SCP_string &text)
 {
-	if (Fred_running)
-		return;
+	if (!Fred_running) {
+		for (SCP_string::iterator ii = text.begin(); ii != text.end(); ++ii) {
+			text.reserve(get_converted_string_length(text));
 
-	if (Lcl_pl)
-		return;
+			if (*ii == SHARP_S) {
+				text.replace(ii, ii + 1, "ss");
+				++ii;
+			} else if (!Lcl_pl) {
+				*ii = (char) maybe_convert_foreign_character(*ii);
+			}
+		}
+	}
+}
 
-	for (SCP_string::iterator ii = line.begin(); ii != line.end(); ++ii)
-		*ii = (char) maybe_convert_foreign_character(*ii);
+// Yarn - Returns what the length of the text will be after it's processed by
+// maybe_convert_foreign_characters, not including the null terminator.
+size_t get_converted_string_length(const char *text)
+{
+	if (Fred_running) {
+		return strlen(text);
+	} else {
+		size_t count = 0;
+		auto s = strchr(text, SHARP_S);
+		while (s != nullptr) {
+			count++;
+			s = strchr(s + 1, SHARP_S);
+		}
+		return strlen(text) + count;
+	}
+}
+
+// Yarn - Returns what the length of the text will be after it's processed by
+// maybe_convert_foreign_characters.
+size_t get_converted_string_length(const SCP_string &text)
+{
+	if (Fred_running) {
+		return text.size();
+	} else {
+		size_t count = 0;
+		for (auto ii = text.begin(); ii != text.end(); ++ii) {
+			if (*ii == SHARP_S) {
+				count++;
+			}
+		}
+		return text.size() + count;
+	}
 }
 
 // Goober5000
@@ -2165,7 +2230,7 @@ void process_raw_file_text(char *processed_text, char *raw_text)
 {
 	char	*mp;
 	char	*mp_raw;
-	char outbuf[PARSE_BUF_SIZE], *str;
+	char outbuf[PARSE_BUF_SIZE];
 	bool in_quote = false;
 	bool in_multiline_comment_a = false;
 	bool in_multiline_comment_b = false;
@@ -2207,19 +2272,7 @@ void process_raw_file_text(char *processed_text, char *raw_text)
 
 		strip_comments(outbuf, in_quote, in_multiline_comment_a, in_multiline_comment_b);
 
-		maybe_convert_foreign_characters(outbuf);
-
-		str = outbuf;
-		while (*str) {
-			if (*str == (Lcl_pl ? -33 : -31)) {
-				*mp++ = 's';
-				*mp++ = 's';
-				str++;
-
-			} else {
-				*mp++ = *str++;
-			}
-		}
+		mp += maybe_convert_foreign_characters(outbuf, mp, false);
 
 //		strcpy_s(mp, outbuf);
 //		mp += strlen(outbuf);

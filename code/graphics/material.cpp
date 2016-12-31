@@ -86,11 +86,17 @@ void material_set_interface(material* mat_info, int texture, bool blended, float
 	mat_info->set_texture_map(TM_BASE_TYPE, texture);
 	mat_info->set_texture_type(material::TEX_TYPE_INTERFACE);
 
-	mat_info->set_blend_mode(ALPHA_BLEND_ALPHA_BLEND_ALPHA);
+	gr_alpha_blend blend_mode = material_determine_blend_mode(texture, blended);
+
+	mat_info->set_blend_mode(blend_mode);
 	mat_info->set_depth_mode(ZBUFFER_TYPE_NONE);
 	mat_info->set_cull_mode(false);
 
-	mat_info->set_color(1.0f, 1.0f, 1.0f, blended ? alpha : 1.0f);
+	if ( blend_mode == ALPHA_BLEND_ADDITIVE ) {
+		mat_info->set_color(alpha, alpha, alpha, 1.0f);
+	} else {
+		mat_info->set_color(1.0f, 1.0f, 1.0f, alpha);
+	}
 }
 
 void material_set_unlit_volume(particle_material* mat_info, int texture, bool point_sprites)
@@ -122,14 +128,17 @@ material::material():
 Sdr_type(SDR_TYPE_PASSTHROUGH_RENDER),
 Tex_type(TEX_TYPE_NORMAL),
 Texture_addressing(TMAP_ADDRESS_WRAP),
-Depth_bias(0),
 Depth_mode(ZBUFFER_TYPE_NONE),
 Blend_mode(ALPHA_BLEND_ALPHA_BLEND_ALPHA),
 Cull_mode(true),
 Fill_mode(GR_FILL_MODE_SOLID),
-Clr_scale(1.0f)
+Clr_scale(1.0f),
+Depth_bias(0)
 {
-	Clr = { 1.0f, 1.0f, 1.0f, 1.0f };
+	Clr.xyzw.x = 1.0f;
+	Clr.xyzw.y = 1.0f; 
+	Clr.xyzw.z = 1.0f; 
+	Clr.xyzw.w = 1.0f;
 	
 	Texture_maps[TM_BASE_TYPE]		= -1;
 	Texture_maps[TM_GLOW_TYPE]		= -1;
@@ -321,7 +330,10 @@ int material::get_depth_bias()
 
 void material::set_color(float red, float green, float blue, float alpha)
 {
-	Clr = { red, green, blue, alpha };
+	Clr.xyzw.x = red;
+	Clr.xyzw.y = green;
+	Clr.xyzw.z = blue;
+	Clr.xyzw.w = alpha;
 }
 
 void material::set_color(int r, int g, int b, int a)
@@ -331,15 +343,24 @@ void material::set_color(int r, int g, int b, int a)
 	CLAMP(g, 0, 255);
 	CLAMP(a, 0, 255);
 
-	Clr = { i2fl(r) / 255.0f, i2fl(g) / 255.0f, i2fl(b) / 255.0f, i2fl(a) / 255.0f };
+	Clr.xyzw.x = i2fl(r) / 255.0f;
+	Clr.xyzw.y = i2fl(g) / 255.0f;
+	Clr.xyzw.z = i2fl(b) / 255.0f;
+	Clr.xyzw.w = i2fl(a) / 255.0f;
 }
 
 void material::set_color(color &clr_in)
 {
 	if ( clr_in.is_alphacolor ) {
-		Clr = { i2fl(clr_in.red) / 255.0f, i2fl(clr_in.green) / 255.0f, i2fl(clr_in.blue) / 255.0f, 1.0f };
+		Clr.xyzw.x = i2fl(clr_in.red) / 255.0f;
+		Clr.xyzw.y = i2fl(clr_in.green) / 255.0f;
+		Clr.xyzw.z = i2fl(clr_in.blue) / 255.0f;
+		Clr.xyzw.w = 1.0f;
 	} else {
-		Clr = { i2fl(clr_in.red) / 255.0f, i2fl(clr_in.green) / 255.0f, i2fl(clr_in.blue) / 255.0f, i2fl(clr_in.green) / 255.0f };
+		Clr.xyzw.x = i2fl(clr_in.red) / 255.0f;
+		Clr.xyzw.y = i2fl(clr_in.green) / 255.0f;
+		Clr.xyzw.z = i2fl(clr_in.blue) / 255.0f;
+		Clr.xyzw.w = i2fl(clr_in.green) / 255.0f;
 	}
 }
 
@@ -358,25 +379,8 @@ float material::get_color_scale()
 	return Clr_scale;
 }
 
-model_material::model_material(): 
-material(), 
-Animated_effect(-1), 
-Animated_timer(0.0f), 
-Thrust_scale(-1.0f), 
-lighting(false), 
-Light_factor(1.0f), 
-Batched(false), 
-Team_color_set(false), 
-Center_alpha(0),
-Desaturate(false),
-Normal_alpha(false),
-Normal_alpha_min(0.0f),
-Normal_alpha_max(1.0f),
-Normal_extrude(false),
-Deferred(false),
-HDR(false)
-{ 
-	set_shader_type(SDR_TYPE_MODEL); 
+model_material::model_material() : material() {
+	set_shader_type(SDR_TYPE_MODEL);
 }
 
 void model_material::set_desaturation(bool enabled)
@@ -683,7 +687,11 @@ shield_material::shield_material() :
 	set_shader_type(SDR_TYPE_SHIELD_DECAL);
 
 	vm_set_identity(&Impact_orient);
-	Impact_pos = { 0.0f, 0.0f, 0.0f };
+
+	Impact_pos.xyz.x = 0.0f;
+	Impact_pos.xyz.y = 0.0f;
+	Impact_pos.xyz.z = 0.0f;
+
 	Impact_radius = 1.0f;
 }
 

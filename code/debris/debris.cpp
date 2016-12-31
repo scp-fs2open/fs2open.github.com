@@ -29,6 +29,7 @@
 #include "ship/shipfx.h"
 #include "species_defs/species_defs.h"
 #include "weapon/weapon.h"
+#include "tracing/Monitor.h"
 
 #define MAX_LIFE									10.0f
 #define MIN_RADIUS_FOR_PERSISTANT_DEBRIS	50		// ship radius at which debris from it becomes persistant

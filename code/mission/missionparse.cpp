@@ -74,6 +74,7 @@
 #include "starfield/nebula.h"
 #include "starfield/starfield.h"
 #include "weapon/weapon.h"
+#include "tracing/Monitor.h"
 
 LOCAL struct {
 	char docker[NAME_LENGTH];
@@ -310,6 +311,7 @@ flag_def_list_new<Mission::Parse_Object_Flags> Parse_object_flags[] = {
     { "weapons-locked",					Mission::Parse_Object_Flags::SF_Weapons_locked,			true, false },
     { "scramble-messages",				Mission::Parse_Object_Flags::SF_Scramble_messages,		true, false },
     { "no_collide",						Mission::Parse_Object_Flags::OF_No_collide,				true, false },
+	{ "no-disabled-self-destruct",		Mission::Parse_Object_Flags::SF_No_disabled_self_destruct, true, false }
 };
 
 const size_t num_parse_object_flags = sizeof(Parse_object_flags) / sizeof(flag_def_list_new<Mission::Parse_Object_Flags>);
@@ -2019,8 +2021,9 @@ int parse_create_object_sub(p_object *p_objp)
 	// game only before the game or during respawning.
 	// MWA -- changed the next line to remove the !(Game_mode & GM_MULTIPLAYER).  We shouldn't be setting
 	// this flag in single player mode -- it gets set in post process mission.
-    if ((p_objp->flags[Mission::Parse_Object_Flags::OF_Player_start]) && (Fred_running || ((Game_mode & GM_MULTIPLAYER) && !(Game_mode & GM_IN_MISSION))))
-        Objects[objnum].flags.set(Object::Object_Flags::Player_ship);
+    if ((p_objp->flags[Mission::Parse_Object_Flags::OF_Player_start]) && (Fred_running || ((Game_mode & GM_MULTIPLAYER) && !(Game_mode & GM_IN_MISSION)))) {
+		Objects[objnum].flags.set(Object::Object_Flags::Player_ship);
+	}
 
 	// a couple of ai_info flags.  Also, do a reasonable default for the kamikaze damage regardless of
 	// whether this flag is set or not
@@ -2090,8 +2093,9 @@ int parse_create_object_sub(p_object *p_objp)
         shipp->flags.set(Ship::Ship_Flags::No_departure_warp);
 
     // ditto for Kazan
-    if ((shipp->wingnum != -1) && (Wings[shipp->wingnum].flags[Ship::Wing_Flags::Nav_carry]))
-        shipp->flags.set(Ship::Ship_Flags::Navpoint_carry);
+    if ((shipp->wingnum != -1) && (Wings[shipp->wingnum].flags[Ship::Wing_Flags::Nav_carry])) {
+		shipp->flags.set(Ship::Ship_Flags::Navpoint_carry);
+	}
 
 	// if the wing index and wing pos are set for this parse object, set them for the ship.  This
 	// is useful in multiplayer when ships respawn
@@ -3495,7 +3499,7 @@ void mission_parse_maybe_create_parse_object(p_object *pobjp)
 			{
 				// be sure to set the variable in the ships structure for the final death time!!!
 				Ships[objp->instance].final_death_time = pobjp->destroy_before_mission_time;
-				Ships[objp->instance].flags[Ship::Ship_Flags::Kill_before_mission];
+				Ships[objp->instance].flags.set(Ship::Ship_Flags::Kill_before_mission);
 			}
 		}
 	}
@@ -7665,8 +7669,9 @@ void mission_bring_in_support_ship( object *requester_objp )
 
     pobj->flags.reset();
 
-    if (Player_obj->flags[Object::Object_Flags::No_shields])
-        pobj->flags.set(Mission::Parse_Object_Flags::OF_No_shields);	// support ships have no shields when player has not shields
+    if (Player_obj->flags[Object::Object_Flags::No_shields])  {
+		pobj->flags.set(Mission::Parse_Object_Flags::OF_No_shields);	// support ships have no shields when player has not shields
+	}
 
 	pobj->ai_class = Ship_info[pobj->ship_class].ai_class;
 	pobj->hotkey = -1;

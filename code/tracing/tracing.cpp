@@ -95,6 +95,7 @@ bool initialized = false;
 
 bool do_trace_events = false;
 bool do_async_events = false;
+bool do_counter_events = false;
 std::int64_t main_thread_id = -1;
 
 int gpu_start_query = -1;
@@ -200,11 +201,13 @@ namespace tracing {
 void init() {
 	do_trace_events = false;
 	do_async_events = false;
+	do_counter_events = false;
 
 	if (Cmdline_json_profiling) {
 		traceEventWriter.reset(new ThreadedTraceEventWriter());
 		do_trace_events = true;
 		do_async_events = true;
+		do_counter_events = true;
 	}
 	if (Cmdline_profile_write_file) {
 		mainFrameTimer.reset(new ThreadedMainFrameTimer());
@@ -359,6 +362,23 @@ void end(const Category& category, const Scope& async_scope) {
 
 	evt.type = EventType::AsyncEnd;
 	evt.scope = &async_scope;
+
+	submit_event(&evt);
+}
+
+}
+
+namespace counter {
+
+void value(const Category& category, float value) {
+	if (!do_counter_events) {
+		return;
+	}
+
+	trace_event evt;
+	init_event(category, &evt);
+	evt.type = EventType::Counter;
+	evt.value = value;
 
 	submit_event(&evt);
 }

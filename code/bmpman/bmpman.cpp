@@ -35,6 +35,7 @@
 #include "pngutils/pngutils.h"
 #include "ship/ship.h"
 #include "tgautils/tgautils.h"
+#include "tracing/Monitor.h"
 
 #include <ctype.h>
 #include <limits.h>
@@ -525,6 +526,7 @@ int bm_create(int bpp, int w, int h, void *data, int flags) {
 	bm_bitmaps[n].bm.h = (short)h;
 	bm_bitmaps[n].bm.rowsize = (short)w;
 	bm_bitmaps[n].bm.bpp = (ubyte)bpp;
+	bm_bitmaps[n].bm.true_bpp = (ubyte)bpp;
 	bm_bitmaps[n].bm.flags = (ubyte)flags;
 	bm_bitmaps[n].bm.data = 0;
 	bm_bitmaps[n].bm.palette = NULL;

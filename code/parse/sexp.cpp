@@ -78,7 +78,6 @@
 #include "object/objectsnd.h"
 #include "object/waypoint.h"
 #include "parse/generic_log.h"
-#include "scripting/lua.h"
 #include "parse/parselo.h"
 #include "scripting/scripting.h"
 #include "parse/sexp.h"
@@ -461,7 +460,8 @@ sexp_oper Operators[] = {
 	{ "transfer-cargo",					OP_TRANSFER_CARGO,						2,	2,			SEXP_ACTION_OPERATOR,	},
 	{ "exchange-cargo",					OP_EXCHANGE_CARGO,						2,	2,			SEXP_ACTION_OPERATOR,	},
 	{ "set-cargo",						OP_SET_CARGO,							2,	3,			SEXP_ACTION_OPERATOR,	},
-	{ "jettison-cargo-delay",			OP_JETTISON_CARGO,						2,	INT_MAX,	SEXP_ACTION_OPERATOR,	},
+	{ "jettison-cargo-delay",			OP_JETTISON_CARGO_DELAY,				2,	INT_MAX,	SEXP_ACTION_OPERATOR,	},
+	{ "jettison-cargo",					OP_JETTISON_CARGO_NEW,					1,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "set-docked",						OP_SET_DOCKED,							4,	4,			SEXP_ACTION_OPERATOR,	},	// Sushi
 	{ "cargo-no-deplete",				OP_CARGO_NO_DEPLETE,					1,	2,			SEXP_ACTION_OPERATOR,	},
 	{ "set-scanned",					OP_SET_SCANNED,							1,	2,			SEXP_ACTION_OPERATOR,	},
@@ -11981,15 +11981,16 @@ void sexp_cap_waypoint_speed(int n)
 
 /**
  * Causes a ship to jettison its cargo
- * note that the 2nd arg (jettison delay) is not implemented
  */
-void sexp_jettison_cargo(int n)
+void sexp_jettison_cargo(int n, bool jettison_new)
 {
 	char *shipname;
 	int ship_index;
+	float jettison_speed;
 
 	// get some data
 	shipname = CTEXT(n);
+	n = CDR(n);
 
 	// lookup the ship
 	ship_index = ship_name_lookup(shipname);
@@ -11997,17 +11998,26 @@ void sexp_jettison_cargo(int n)
 		return;
 	object *parent_objp = &Objects[Ships[ship_index].objnum];
 
-	// note: skipping over the unimplemented "jettison delay"
-	n = CDDR(n);
+	// in jettison-cargo-delay, this is the delay (which is unimplemented)
+	// in jettison-cargo, this is the jettison speed, which is optional
+	if (n >= 0)
+	{
+		jettison_speed = static_cast<float>(eval_num(n));
+		n = CDR(n);
+	}
+	// per sexp help, if unspecified, default to 25
+	// (see also OP_JETTISON_CARGO_NEW in sexp_tree.cpp)
+	else
+		jettison_speed = 25.0f;
 
 	// no arguments - jettison all docked objects
-	if (n == -1)
+	if (n < 0)
 	{
 		// Goober5000 - as with ai_deathroll_start, we can't simply iterate through the dock list while we're
 		// undocking things.  So just repeatedly jettison the first object.
 		while (object_is_docked(parent_objp))
 		{
-			object_jettison_cargo(parent_objp, dock_get_first_docked_object(parent_objp));
+			object_jettison_cargo(parent_objp, dock_get_first_docked_object(parent_objp), jettison_speed, jettison_new);
 		}
 	}
 	// arguments - jettison only those objects
@@ -12024,7 +12034,7 @@ void sexp_jettison_cargo(int n)
 			if (!dock_check_find_direct_docked_object(parent_objp, &Objects[Ships[ship_index].objnum]))
 				continue;
 
-			object_jettison_cargo(parent_objp, &Objects[Ships[ship_index].objnum]);			
+			object_jettison_cargo(parent_objp, &Objects[Ships[ship_index].objnum], jettison_speed, jettison_new);
 		}
 	}
 }
@@ -23768,8 +23778,9 @@ int eval_sexp(int cur_node, int referenced_node)
 				break;
 
 
-			case OP_JETTISON_CARGO:
-				sexp_jettison_cargo(node);
+			case OP_JETTISON_CARGO_DELAY:
+			case OP_JETTISON_CARGO_NEW:
+				sexp_jettison_cargo(node, (op_num==OP_JETTISON_CARGO_NEW));
 				sexp_val = SEXP_TRUE;
 				break;
 
@@ -25719,7 +25730,8 @@ int query_operator_return_type(int op)
 		case OP_TRANSFER_CARGO:
 		case OP_EXCHANGE_CARGO:
 		case OP_SET_CARGO:
-		case OP_JETTISON_CARGO:
+		case OP_JETTISON_CARGO_DELAY:
+		case OP_JETTISON_CARGO_NEW:
 		case OP_SET_DOCKED:
 		case OP_CARGO_NO_DEPLETE:
 		case OP_SET_SCANNED:
@@ -27283,7 +27295,8 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_SHIP_WING;
 			}
 
-		case OP_JETTISON_CARGO:
+		case OP_JETTISON_CARGO_DELAY:
+		case OP_JETTISON_CARGO_NEW:
 			if(argnum == 1){
 				return OPF_POSITIVE;
 			} else {
@@ -29640,7 +29653,8 @@ int get_subcategory(int sexp_id)
 		case OP_TRANSFER_CARGO:
 		case OP_EXCHANGE_CARGO:
 		case OP_SET_CARGO:
-		case OP_JETTISON_CARGO:
+		case OP_JETTISON_CARGO_DELAY:
+		case OP_JETTISON_CARGO_NEW:
 		case OP_SET_DOCKED:
 		case OP_CARGO_NO_DEPLETE:
 		case OP_SET_SCANNED:
@@ -32249,11 +32263,19 @@ sexp_help_struct Sexp_help[] = {
 		"\t1:\tTrue if the ship should have a drive; false otherwise\r\n"
 		"\tRest:\tList of ships" },
 
-	{ OP_JETTISON_CARGO, "jettison-cargo-delay\r\n"
+	{ OP_JETTISON_CARGO_DELAY, "jettison-cargo-delay (deprecated)\r\n"
 		"\tCauses a cargo carrying ship to jettison its cargo without the undocking procedure.  Takes 2 or more arguments...\r\n"
 		"\t1: Ship to jettison cargo\r\n"
 		"\t2: Delay after which to jettison cargo (note that this isn't actually used)\r\n"
 		"\tRest (optional): Cargo to jettison.  If no optional arguments are specified, the ship jettisons all cargo.\r\n"
+	},
+
+	{ OP_JETTISON_CARGO_NEW, "jettison-cargo\r\n"
+		"\tCauses a cargo carrying ship to jettison its cargo without the undocking procedure.  This is an upgrade of the old "
+		"jettison-cargo-delay sexp which a) didn't use a delay, and b) botched the physics calculations.  Takes 1 or more arguments...\r\n"
+		"\t1: Ship to jettison cargo\r\n"
+		"\t2 (optional): Speed with which to jettison cargo (defaults to 25)\r\n"
+		"\tRest (optional): Cargo to jettison.  If no cargo arguments are specified, the ship jettisons all cargo.\r\n"
 	},
 
 	{ OP_SET_DOCKED, "set-docked\r\n"

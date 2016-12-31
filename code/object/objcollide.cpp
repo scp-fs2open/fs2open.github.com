@@ -18,6 +18,7 @@
 #include "tracing/tracing.h"
 #include "weapon/beam.h"
 #include "weapon/weapon.h"
+#include "tracing/Monitor.h"
 
 
 

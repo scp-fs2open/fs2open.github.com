@@ -33,14 +33,14 @@ GLuint Framebuffer_fallback_texture_id = 0;
 
 opengl_vert_attrib GL_vertex_attrib_info[] =
 	{
-		{ opengl_vert_attrib::POSITION,		"vertPosition",		{ 0.0f, 0.0f, 0.0f, 1.0f } },
-		{ opengl_vert_attrib::COLOR,		"vertColor",		{ 1.0f, 1.0f, 1.0f, 1.0f } },
-		{ opengl_vert_attrib::TEXCOORD,		"vertTexCoord",		{ 1.0f, 1.0f, 1.0f, 1.0f } },
-		{ opengl_vert_attrib::NORMAL,		"vertNormal",		{ 0.0f, 0.0f, 1.0f, 0.0f } },
-		{ opengl_vert_attrib::TANGENT,		"vertTangent",		{ 1.0f, 0.0f, 0.0f, 0.0f } },
-		{ opengl_vert_attrib::MODEL_ID,		"vertModelID",		{ 0.0f, 0.0f, 0.0f, 0.0f } },
-		{ opengl_vert_attrib::RADIUS,		"vertRadius",		{ 1.0f, 0.0f, 0.0f, 0.0f } },
-		{ opengl_vert_attrib::UVEC,			"vertUvec",			{ 0.0f, 1.0f, 0.0f, 0.0f } }
+		{ opengl_vert_attrib::POSITION,		"vertPosition",		{{{ 0.0f, 0.0f, 0.0f, 1.0f }}} },
+		{ opengl_vert_attrib::COLOR,		"vertColor",		{{{ 1.0f, 1.0f, 1.0f, 1.0f }}} },
+		{ opengl_vert_attrib::TEXCOORD,		"vertTexCoord",		{{{ 1.0f, 1.0f, 1.0f, 1.0f }}} },
+		{ opengl_vert_attrib::NORMAL,		"vertNormal",		{{{ 0.0f, 0.0f, 1.0f, 0.0f }}} },
+		{ opengl_vert_attrib::TANGENT,		"vertTangent",		{{{ 1.0f, 0.0f, 0.0f, 0.0f }}} },
+		{ opengl_vert_attrib::MODEL_ID,		"vertModelID",		{{{ 0.0f, 0.0f, 0.0f, 0.0f }}} },
+		{ opengl_vert_attrib::RADIUS,		"vertRadius",		{{{ 1.0f, 0.0f, 0.0f, 0.0f }}} },
+		{ opengl_vert_attrib::UVEC,			"vertUvec",			{{{ 0.0f, 1.0f, 0.0f, 0.0f }}} }
 	};
 
 /**
@@ -826,7 +826,10 @@ void opengl_shader_set_passthrough(bool textured, bool alpha, vec4 *clr, float c
 
 void opengl_shader_set_passthrough(bool textured, bool alpha, color *clr)
 {
-	vec4 normalized_clr = { i2fl(clr->red) / 255.0f, i2fl(clr->green) / 255.0f, i2fl(clr->blue) / 255.0f, clr->is_alphacolor ? i2fl(clr->alpha) / 255.0f : 1.0f };
+	vec4 normalized_clr = {{{ i2fl(clr->red) / 255.0f,
+		i2fl(clr->green) / 255.0f,
+		i2fl(clr->blue) / 255.0f,
+		clr->is_alphacolor ? i2fl(clr->alpha) / 255.0f : 1.0f }}};
 
 	opengl_shader_set_passthrough(textured, alpha, &normalized_clr, 1.0f);
 }

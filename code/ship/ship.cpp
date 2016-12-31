@@ -84,6 +84,7 @@
 #include "weapon/shockwave.h"
 #include "weapon/swarm.h"
 #include "weapon/weapon.h"
+#include "tracing/Monitor.h"
 
 using namespace Ship;
 
@@ -5471,8 +5472,9 @@ void ship_add_exited_ship( ship *sp, Ship::Exit_Flags reason )
 		entry.time_cargo_revealed = sp->time_cargo_revealed;
 	}
 
-    if (sp->time_first_tagged > 0)
-        entry.flags.set(Ship::Exit_Flags::Been_tagged);
+    if (sp->time_first_tagged > 0) {
+		entry.flags.set(Ship::Exit_Flags::Been_tagged);
+	}
 	
 	//copy across the damage_ship arrays
 	for (int i = 0; i < MAX_DAMAGE_SLOTS ; i++) {
@@ -8342,11 +8344,14 @@ void ship_auto_repair_frame(int shipnum, float frametime)
 	if ( !Ship_auto_repair )	// only repair subsystems if Ship_auto_repair flag is set
 		return;
 	#endif
-
+	
 	Assert( shipnum >= 0 && shipnum < MAX_SHIPS);
 	sp = &Ships[shipnum];
 	sip = &Ship_info[sp->ship_info_index];
 	objp = &Objects[sp->objnum];
+
+	if (sp->flags[Ship::Ship_Flags::Dying]) // do not repair if already dead 
+		return;
 
 	//Repair the hull...or maybe unrepair?
 	if(sip->hull_repair_rate != 0.0f)
@@ -12014,6 +12019,21 @@ done_secondary:
 		}
 	}
 
+	if (has_fired) {
+		object *objp = &Objects[shipp->objnum];
+		object* target;
+		if (Ai_info[shipp->ai_index].target_objnum != -1)
+			target = &Objects[Ai_info[shipp->ai_index].target_objnum];
+		else
+			target = NULL;
+		if (objp == Player_obj && Player_ai->target_objnum != -1)
+			target = &Objects[Player_ai->target_objnum]; 
+		Script_system.SetHookObjects(2, "User", objp, "Target", target);
+		Script_system.RunCondition(CHA_ONWPFIRED, 0, NULL, objp);
+		Script_system.RunCondition(CHA_SECONDARYFIRE, 0, NULL, objp);
+		Script_system.RemHookVars(2, "User", "Target");
+	}
+
 	// AL 3-7-98: Move to next valid secondary bank if out of ammo
 	//
 
@@ -12043,21 +12063,6 @@ done_secondary:
 				snd_play( &Snds[ship_get_sound(Player_obj, SND_SECONDARY_CYCLE)] );		
 			}
 		}
-	}	
-
-	if (has_fired) {
-		object *objp = &Objects[shipp->objnum];
-		object* target;
-		if (Ai_info[shipp->ai_index].target_objnum != -1)
-			target = &Objects[Ai_info[shipp->ai_index].target_objnum];
-		else
-			target = NULL;
-		if (objp == Player_obj && Player_ai->target_objnum != -1)
-			target = &Objects[Player_ai->target_objnum]; 
-		Script_system.SetHookObjects(2, "User", objp, "Target", target);
-		Script_system.RunCondition(CHA_ONWPFIRED, 0, NULL, objp);
-		Script_system.RunCondition(CHA_SECONDARYFIRE, 0, NULL, objp);
-		Script_system.RemHookVars(2, "User", "Target");
 	}
 
 	return num_fired;
@@ -16660,9 +16665,9 @@ int ship_get_random_targetable_ship()
 }
 
 /**
- * Forcible jettison cargo from a ship
+ * Forcibly jettison cargo from a ship
  */
-void object_jettison_cargo(object *objp, object *cargo_objp)
+void object_jettison_cargo(object *objp, object *cargo_objp, float jettison_speed, bool jettison_new)
 {
 	// make sure we are docked
 	Assert((objp != NULL) && (cargo_objp != NULL));
@@ -16691,10 +16696,30 @@ void object_jettison_cargo(object *objp, object *cargo_objp)
 	mission_log_add_entry(LOG_SHIP_UNDOCKED, shipp->ship_name, cargo_shipp->ship_name);
 
 	// physics stuff
-	vm_vec_sub(&pos, &cargo_objp->pos, &objp->pos);
-	impulse = pos;
-	vm_vec_scale(&impulse, 100.0f);
-	vm_vec_normalize(&pos);
+	if (jettison_new)
+	{
+		// new method uses dockpoint normals and user-specified force
+		extern void find_adjusted_dockpoint_normal(vec3d *global_p0_norm, object *objp, polymodel *pm, int submodel, int dock_index);
+		extern int find_parent_rotating_submodel(polymodel *pm, int dock_index);
+
+		polymodel *pm = model_get(Ship_info[shipp->ship_info_index].model_num);
+		int docker_rotating_submodel = find_parent_rotating_submodel(pm, docker_index);
+		vec3d docker_p0_norm;
+
+		find_adjusted_dockpoint_normal(&docker_p0_norm, objp, pm, docker_rotating_submodel, docker_index);
+
+		// set for relative separation speed (see also do_dying_undock_physics)
+		pos = docker_p0_norm;
+		vm_vec_copy_scale(&impulse, &docker_p0_norm, jettison_speed * cargo_objp->phys_info.mass);
+	}
+	else
+	{
+		// the old method sends cargo in the wrong direction and with an impulse that depends on the size of the ship
+		vm_vec_sub(&pos, &cargo_objp->pos, &objp->pos);
+		impulse = pos;
+		vm_vec_scale(&impulse, 100.0f);
+		vm_vec_normalize(&pos);
+	}
 
 	// whack the ship
 	physics_apply_whack(&impulse, &pos, &cargo_objp->phys_info, &cargo_objp->orient, cargo_objp->phys_info.mass);

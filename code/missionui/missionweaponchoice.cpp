@@ -3961,7 +3961,6 @@ void wl_apply_current_loadout_to_all_ships_in_current_wing()
 	size_t i;
 
 	ship_info *sip, *source_sip;
-	weapon_info *wip;
 
 	char ship_name[NAME_LENGTH];
 	char *wep_display_name;
@@ -4029,7 +4028,6 @@ void wl_apply_current_loadout_to_all_ships_in_current_wing()
 
 			// determine the weapon we need
 			weapon_type_to_add = Wss_slots[source_wss_slot].wep[cur_bank];
-			wip = &Weapon_info[weapon_type_to_add];
 
 			// maybe localize
 			if (Lcl_gr)

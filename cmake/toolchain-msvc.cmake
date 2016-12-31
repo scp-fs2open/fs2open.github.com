@@ -134,7 +134,7 @@ else()
 endif()
 
 target_compile_definitions(compiler INTERFACE _CRT_SECURE_NO_DEPRECATE
-	_CRT_SECURE_NO_WARNINGS _SECURE_SCL=0 NOMINMAX)
+_CRT_SECURE_NO_WARNINGS _SECURE_SCL=0 NOMINMAX "$<$<CONFIG:FastDebug>:_ITERATOR_DEBUG_LEVEL=0>")
 	
 if (FSO_FATAL_WARNINGS)
 	# Make warnings fatal if the right variable is set
