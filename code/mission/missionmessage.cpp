@@ -454,15 +454,22 @@ void message_parse(bool importing_from_fsm)
 		msg.mood = 0;
 	}
 
+	msg.excluded_moods = 0;
 	if ( optional_string("$Exclude Mood:")) {
 		SCP_vector<SCP_string> buff;
 		bool found = false;
 
 		stuff_string_list(buff); 
-		for (SCP_vector<SCP_string>::iterator parsed_moods = buff.begin(); parsed_moods != buff.end(); ++parsed_moods) {
+		for (SCP_vector<SCP_string>::iterator parsed_mood = buff.begin(); parsed_mood != buff.end(); ++parsed_mood) {
 			for (SCP_vector<SCP_string>::iterator iter = Builtin_moods.begin(); iter != Builtin_moods.end(); ++iter) {
-				if (!stricmp(iter->c_str(), parsed_moods->c_str())) {
-					msg.excluded_moods.push_back((int)std::distance(Builtin_moods.begin(), iter));
+				if (!stricmp(iter->c_str(), parsed_mood->c_str())) {
+					int exclude_index = static_cast<int>(std::distance(Builtin_moods.begin(), iter));
+					if (exclude_index <= 31) {
+						msg.excluded_moods |= (1 << exclude_index);
+					} else {
+						Warning(LOCATION, "Mood %s can not be excluded as it is found at index %d in the mood list, which is higher than 31!", iter->c_str(), exclude_index);
+					}
+
 					found = true;
 					break;
 				}
@@ -470,7 +477,7 @@ void message_parse(bool importing_from_fsm)
 
 			if (!found) {
 				// found a mood, but it's not in the list of moods at the start of the table
-				Warning(LOCATION, "Message.tbl has an entry for exclude mood type %s, but this mood is not in the #Moods section of the table.", parsed_moods->c_str()); 
+				Warning(LOCATION, "Message.tbl has an entry for exclude mood type %s, but this mood is not in the #Moods section of the table.", parsed_mood->c_str()); 
 			}
 		}
 	}
@@ -2017,12 +2024,10 @@ void message_send_builtin_to_player( int type, ship *shipp, int priority, int ti
 			}
 
 			// check if the personas mood suits this particular message, first check if it is excluded
-			if (!Messages[i].excluded_moods.empty() && (current_builtin.type_of_match ==  BUILTIN_MATCHES_PERSONA_CHECK_MOOD)) {
-				for (SCP_vector<int>::iterator iter = Messages[i].excluded_moods.begin(); iter != Messages[i].excluded_moods.end(); ++iter) {
-					if (*iter == Current_mission_mood) {
-						current_builtin.type_of_match =  BUILTIN_MATCHES_PERSONA_EXCLUDED; 
-						break; 
-					}
+			if ((Messages[i].excluded_moods != 0) && (current_builtin.type_of_match ==  BUILTIN_MATCHES_PERSONA_CHECK_MOOD)) {
+				if (Messages[i].excluded_moods & (1 << Current_mission_mood)) {
+					current_builtin.type_of_match = BUILTIN_MATCHES_PERSONA_EXCLUDED;
+					break;
 				}
 			}
 
