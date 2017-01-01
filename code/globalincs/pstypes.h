@@ -189,21 +189,12 @@ struct particle_pnt {
 	vec3d up;
 };
 
-struct trail_shader_info {
-	vec3d pos;
-	vec3d fvec;
-
-	float intensity;
-	float width;
-	uv_pair tex_coord;
-};
-
 //def_list
-typedef struct flag_def_list {
-	char *name;
+struct flag_def_list {
+	const char *name;
 	int def;
 	ubyte var;
-} def_list;
+};
 
 template<class T>
 struct flag_def_list_new {
