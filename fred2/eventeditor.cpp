@@ -547,6 +547,7 @@ void event_editor::OnOk()
 	}
 
 	Num_messages = m_num_messages + Num_builtin_messages;
+	Messages.resize(Num_messages);
 	for (i=0; i<m_num_messages; i++)
 		Messages[i + Num_builtin_messages] = m_messages[i];
 
