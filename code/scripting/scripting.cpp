@@ -1076,8 +1076,16 @@ bool script_state::EvalString(const char *string, const char *format, void *rtn,
 		s.assign(string + 1, string + string_size);
 	}
 
+	SCP_string debug_name;
+	if (debug_str == nullptr) {
+		debug_name = "String: ";
+		debug_name += s;
+	} else {
+		debug_name = debug_str;
+	}
+
 	try {
-		auto function = LuaFunction::createFromCode(LuaState, s, debug_str);
+		auto function = LuaFunction::createFromCode(LuaState, s, debug_name);
 		function.setErrorFunction(LuaFunction::createFromCFunction(LuaState, ade_friendly_error));
 
 		try {
