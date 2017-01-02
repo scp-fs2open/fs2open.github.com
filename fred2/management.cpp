@@ -2296,7 +2296,7 @@ char *object_name(int obj)
 	return "*unknown*";
 }
 
-char *get_order_name(int order)
+const char *get_order_name(int order)
 {
 	int i;
 

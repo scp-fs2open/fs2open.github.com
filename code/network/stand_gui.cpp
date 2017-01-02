@@ -126,7 +126,7 @@ BOOL CALLBACK std_gen_dialog_proc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM
 }
 
 // create the validate dialog 
-void std_create_gen_dialog(char *title)
+void std_create_gen_dialog(const char *title)
 {
 	// if the dialog is already active, do nothing
 	if(Multi_gen_dialog != NULL){
@@ -160,7 +160,7 @@ void std_destroy_gen_dialog()
 
 // set the text in the filename of the validate dialog
 // valid values for field_num == 0 .. 2
-void std_gen_set_text(char *str, int field_num)
+void std_gen_set_text(const char *str, int field_num)
 {
 	HWND ctrl;
 
@@ -1532,7 +1532,7 @@ static HWND Standalone_multilog_string = NULL;
 void std_debug_init_debug_controls(HWND hwndDlg);
 
 // set the text on the standalones state indicator box
-void std_debug_set_standalone_state_string(char *str)
+void std_debug_set_standalone_state_string(const char *str)
 {
    // set the text
 	SetWindowText(Standalone_state_string,str);

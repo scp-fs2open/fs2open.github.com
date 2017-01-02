@@ -717,7 +717,7 @@ int required_string_one_of(int arg_count, ...)
 	return -1;
 }
 
-int required_string_either_fred(char *str1, char *str2)
+int required_string_either_fred(const char *str1, const char *str2)
 {
 	ignore_white_space();
 

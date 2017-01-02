@@ -364,7 +364,7 @@ int ship_ship_check_collision(collision_info_struct *ship_ship_hit_info, vec3d *
 			const char	*submode_string = "";
 			ai_info	*aip;
 
-			extern char *Mode_text[];
+			extern const char *Mode_text[];
 			aip = &Ai_info[Ships[collide_obj->instance].ai_index];
 
 			if (aip->mode == AIM_CHASE)
