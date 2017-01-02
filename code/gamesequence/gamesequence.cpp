@@ -44,7 +44,7 @@ script_hook GS_state_hooks[GS_NUM_STATES];
 
 // Text of state, corresponding to enum values for GS_STATE_*
 //XSTR:OFF
-char *GS_event_text[] =
+const char *GS_event_text[] =
 {
 	"GS_EVENT_MAIN_MENU",							// 0
 	"GS_EVENT_START_GAME",
@@ -120,7 +120,7 @@ int Num_gs_event_text = sizeof(GS_event_text)/sizeof(char*);
 
 // Text of state, corresponding to enum values for GS_STATE_*
 //XSTR:OFF
-char *GS_state_text[] =
+const char *GS_state_text[] =
 {
 	"NOT A VALID STATE",							// 0
 	"GS_STATE_MAIN_MENU",

@@ -274,7 +274,7 @@ extern int Global_error_count;
 	// No debug version of Int3
 	#define Int3() do { } while (0)
 #else
-	void debug_int3(char *file, int line);
+	void debug_int3(const char *file, int line);
 
 	// Debug version of Int3
 	#define Int3() debug_int3(__FILE__, __LINE__)

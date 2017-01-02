@@ -75,7 +75,7 @@ class UI_GADGET
 	friend class UI_DOT_SLIDER_NEW;
 
 	protected:
-		char *bm_filename;
+		const char *bm_filename;
 		int kind;
 		int hotkey;
 		int x, y, w, h;
@@ -151,7 +151,7 @@ class UI_GADGET
 		// anything < start_frame will not be loaded.
 		// this keeps the loading code from trying to load bitmaps which don't exist
 		// and taking an unnecessary disk hit.		
-		int set_bmaps(char *ani_filename, int nframes = 3, int start_frame = 1);		// extracts MAX_BMAPS_PER_GADGET from .ani file		
+		int set_bmaps(const char *ani_filename, int nframes = 3, int start_frame = 1);		// extracts MAX_BMAPS_PER_GADGET from .ani file
 
 		void reset();  // zero out m_flags
 		virtual int is_hidden();
@@ -632,8 +632,8 @@ protected:
 public:
 	UI_WINDOW();	// constructor
 	~UI_WINDOW();	// destructor
-	void set_mask_bmap(char *fname);
-	void set_mask_bmap(int bmap, char *name);
+	void set_mask_bmap(const char *fname);
+	void set_mask_bmap(int bmap, const char *name);
 	void set_foreground_bmap(char *fname);
 	void create( int _x, int _y, int _w, int _h, int _flags, int _f_id = -1 );
 	int process( int key_in = -1,int process_mouse = 1);
@@ -656,7 +656,7 @@ public:
 
 // 2 extremely useful structs
 typedef struct ui_button_info {
-	char *filename;
+	const char *filename;
 	int x, y, xt, yt;
 	int hotspot;
 	UI_BUTTON button;  // because we have a class inside this struct, we need the constructor below..

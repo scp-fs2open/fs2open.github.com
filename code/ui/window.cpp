@@ -72,7 +72,7 @@ UI_WINDOW::~UI_WINDOW()
 // Specify the filename for the mask bitmap to use.  This has the hotspots
 // for all the different controls.
 //
-void UI_WINDOW::set_mask_bmap(char *fname)
+void UI_WINDOW::set_mask_bmap(const char *fname)
 {
 	int bmap;
 
@@ -86,7 +86,7 @@ void UI_WINDOW::set_mask_bmap(char *fname)
 	}
 }
 
-void UI_WINDOW::set_mask_bmap(int bmap, char *name)
+void UI_WINDOW::set_mask_bmap(int bmap, const char *name)
 {
 	// int i;
 

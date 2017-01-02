@@ -650,7 +650,7 @@ bool script_state::CloseHookVarTable()
 	}
 }
 
-void script_state::SetHookVar(char *name, char format, void *data)
+void script_state::SetHookVar(char *name, char format, const void *data)
 {
 	if(format == '\0')
 		return;

@@ -188,7 +188,7 @@ public:
 	bool GetGlobal(char *name, char format='\0', void *data=NULL);
 	void RemGlobal(char *name);
 
-	void SetHookVar(char *name, char format, void *data=NULL);
+	void SetHookVar(char *name, char format, const void *data=NULL);
 	void SetHookObject(char *name, object *objp);
 	void SetHookObjects(int num, ...);
 	bool GetHookVar(char *name, char format='\0', void *data=NULL);

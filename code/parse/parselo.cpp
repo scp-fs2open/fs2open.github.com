@@ -633,7 +633,7 @@ int optional_string_fred(char *pstr, char *end, char *end2)
  * @details Advances the Mp until a string is found or exceeds RS_MAX_TRIES. Once a string is found, Mp is located at
  * the start of the found string.
  */
-int required_string_either(char *str1, char *str2)
+int required_string_either(const char *str1, const char *str2)
 {
 	ignore_white_space();
 

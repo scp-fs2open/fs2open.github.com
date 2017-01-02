@@ -108,7 +108,7 @@ extern int optional_string_one_of(int arg_count, ...);
 
 // required
 extern int required_string(const char *pstr);
-extern int required_string_either(char *str1, char *str2);
+extern int required_string_either(const char *str1, const char *str2);
 extern int required_string_one_of(int arg_count, ...);
 
 // stuff
@@ -266,7 +266,7 @@ int split_str(const char *src, int max_pixel_w, SCP_vector<int> &n_chars, SCP_ve
 
 // fred
 extern int required_string_fred(char *pstr, char *end = NULL);
-extern int required_string_either_fred(char *str1, char *str2);
+extern int required_string_either_fred(const char *str1, const char *str2);
 extern int optional_string_fred(char *pstr, char *end = NULL, char *end2 = NULL);
 
 // Goober5000 - returns position of replacement or -1 for exceeded length (SCP_string variants return the result)
