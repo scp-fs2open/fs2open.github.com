@@ -32,6 +32,15 @@ struct script_hook
 
 	//Actual hook
 	script_function hook_function;
+
+	void freeFunctions() {
+		if (override_function.function.isValid()) {
+			override_function.function.getReference()->removeReference();
+		}
+		if (hook_function.function.isValid()) {
+			hook_function.function.getReference()->removeReference();
+		}
+	}
 };
 
 extern void script_hook_init(script_hook *hook);
