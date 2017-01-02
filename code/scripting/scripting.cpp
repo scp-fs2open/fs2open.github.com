@@ -100,17 +100,14 @@ int scripting_state_inited = 0;
 // the prototype for this is in pstypes.h, below the script_hook struct
 void script_hook_init(script_hook *hook)
 {
-	hook->o_language = 0;
-	hook->h_language = 0;
-
-	hook->o_index = -1;
-	hook->h_index = -1;
+	hook->hook_function.language = 0;
+	hook->override_function.language = 0;
 }
 
 // ditto
 bool script_hook_valid(script_hook *hook)
 {
-	return hook->h_index >= 0;
+	return hook->hook_function.function.isValid();
 }
 
 void script_parse_table(const char *filename)
@@ -856,70 +853,32 @@ void script_state::UnloadImages()
 	ScriptImages.clear();
 }
 
-int script_state::RunBytecodeSub(int in_lang, int in_idx, char format, void *data)
+int script_state::RunBytecodeSub(script_function& func, char format, void *data)
 {
-	if(in_idx >= 0)
-	{
-		// if this is the hook for the hud, and the hud is disabled or we are in freelook mode, then don't run the script
-		// (admittedly this is wrong, but I'm not sure where else to put this check and have it work properly. hopefully
-		//  WMCoolmon can get some time to come back over this and fix the issues, or just make it better period. - taylor)
-		//WMC - Barf barf icky hack. Maybe later.
-		if (in_idx == Script_hudhook.h_index) {
-			if ( (Viewer_mode & VM_FREECAMERA) || hud_disabled() ) {
-				return 1;
-			}
+	using namespace luacpp;
+
+	if (!func.function.isValid()) {
+		return 1;
+	}
+
+	try {
+		auto ret = func.function.call();
+
+		if (data != NULL && ret.size() >= 1) {
+			auto stack_start = lua_gettop(LuaState);
+
+			auto val = ret.front();
+			val.pushValue();
+
+			char fmt[2] = {format, '\0'};
+			Ade_get_args_skip = stack_start;
+			Ade_get_args_lfunction = true;
+			ade_get_args(LuaState, fmt, data);
+			Ade_get_args_skip = 0;
+			Ade_get_args_lfunction = false;
 		}
-
-		if(in_lang == SC_LUA)
-		{
-			lua_pushcfunction(GetLuaSession(), ade_friendly_error);
-			int err_ldx = lua_gettop(GetLuaSession());
-			if(!lua_iscfunction(GetLuaSession(), err_ldx))
-			{
-				lua_pop(GetLuaSession(), 1);
-				return 0;
-			}
-			
-			int args_start = lua_gettop(LuaState);
-			
-			lua_getref(GetLuaSession(), in_idx);
-			int hook_ldx = lua_gettop(GetLuaSession());
-
-			if(lua_isfunction(GetLuaSession(), hook_ldx))
-			{
-				if(lua_pcall(GetLuaSession(), 0, format!='\0' ? 1 : 0, err_ldx) != 0)
-				{
-					//WMC - Pop all extra stuff from ze stack.
-					args_start = lua_gettop(GetLuaSession()) - args_start;
-					for(; args_start > 0; args_start--) lua_pop(GetLuaSession(), 1);
-
-					lua_pop(GetLuaSession(), 1);
-					return 0;
-				}
-
-				//WMC - Just allow one argument for now.
-				if(data != NULL)
-				{
-					char fmt[2] = {format, '\0'};
-					Ade_get_args_skip = args_start;
-					Ade_get_args_lfunction = true;
-					ade_get_args(LuaState, fmt, data);
-					Ade_get_args_skip = 0;
-					Ade_get_args_lfunction = false;
-				}
-
-				//WMC - Pop anything leftover from the function from the stack
-				args_start = lua_gettop(GetLuaSession()) - args_start;
-				for(; args_start > 0; args_start--) lua_pop(GetLuaSession(), 1);
-			}
-			else
-			{
-				lua_pop(GetLuaSession(), 1);	//"hook"
-				LuaError(GetLuaSession(),"RunBytecodeSub tried to call a non-function value!");
-			}
-			lua_pop(GetLuaSession(), 1);	//err
-			
-		}
+	} catch (const LuaException&) {
+		return 0;
 	}
 
 	return 1;
@@ -928,7 +887,7 @@ int script_state::RunBytecodeSub(int in_lang, int in_idx, char format, void *dat
 //returns 0 on failure (Parse error), 1 on success
 int script_state::RunBytecode(script_hook &hd, char format, void *data)
 {
-	RunBytecodeSub(hd.h_language, hd.h_index, format, data);
+	RunBytecodeSub(hd.hook_function, format, data);
 	return 1;
 }
 
@@ -1086,7 +1045,10 @@ int script_state::OutputMeta(char *filename)
 
 bool script_state::EvalString(const char *string, const char *format, void *rtn, const char *debug_str)
 {
-	char lastchar = string[strlen(string)-1];
+	using namespace luacpp;
+
+	size_t string_size = strlen(string);
+	char lastchar = string[string_size -1];
 
 	if(string[0] == '{')
 	{
@@ -1098,133 +1060,95 @@ bool script_state::EvalString(const char *string, const char *format, void *rtn,
 		return false;
 	}
 
-	size_t s_bufSize = strlen(string) + 8;
-	char *s = new char[ s_bufSize ];
+	size_t s_bufSize = string_size + 8;
+	std::string s;
+	s.reserve(s_bufSize);
 	if(string[0] != '[')
 	{
 		if(rtn != NULL)
 		{
-			strcpy_s(s, s_bufSize, "return ");
-			strcat_s(s, s_bufSize, string);
+			s = "return ";
 		}
-		else
-		{
-			strcpy_s(s, s_bufSize, string);
-		}
+		s += string;
 	}
 	else
 	{
-		strcpy_s(s, s_bufSize, string+1);
-		s[strlen(s)-1] = '\0';
+		s.assign(string + 1, string + string_size);
 	}
 
-	//WMC - So we can pop everything we put on the stack
-	int stack_start = lua_gettop(LuaState);
+	try {
+		auto function = LuaFunction::createFromCode(LuaState, s, debug_str);
+		function.setErrorFunction(LuaFunction::createFromCFunction(LuaState, ade_friendly_error));
 
-	//WMC - Push error handling function
-	lua_pushcfunction(LuaState, ade_friendly_error);
-	//Parse string
-	int rval = luaL_loadbuffer(LuaState, s, strlen(s), debug_str);
-	//We don't need s anymore.
-	delete[] s;
-	//Call function
-	if(!rval)
-	{
-		if(lua_pcall(LuaState, 0, LUA_MULTRET, -2))
-		{
+		try {
+			auto ret = function.call();
+
+			if (rtn != NULL && ret.size() >= 1) {
+				auto stack_start = lua_gettop(LuaState);
+
+				auto val = ret.front();
+				val.pushValue();
+
+				Ade_get_args_skip = stack_start+1;
+				Ade_get_args_lfunction = true;
+				ade_get_args(LuaState, format, rtn);
+				Ade_get_args_skip = 0;
+				Ade_get_args_lfunction = false;
+			}
+		} catch (const LuaException&) {
 			return false;
 		}
-		int stack_curr = lua_gettop(LuaState);
+	} catch (const LuaException& e) {
+		LuaError(GetLuaSession(), "%s", e.what());
 
-		//Only get args if we can put them someplace
-		//WMC - We must have more than one more arg on the stack than stack_start:
-		//(stack_start)
-		//ade_friendly_error
-		//(additional return values)
-		if(rtn != NULL && stack_curr > (stack_start+1))
-		{
-			Ade_get_args_skip = stack_start+1;
-			Ade_get_args_lfunction = true;
-			ade_get_args(LuaState, format, rtn);
-			Ade_get_args_skip = 0;
-			Ade_get_args_lfunction = false;
-		}
-
-		//WMC - Pop anything leftover from the function from the stack
-		stack_curr = lua_gettop(LuaState) - stack_start;
-		for(; stack_curr > 0; stack_curr--) lua_pop(LuaState, 1);
-	}
-	else
-	{
-		//Or return error
-		if(lua_isstring(GetLuaSession(), -1))
-			LuaError(GetLuaSession());
-		else
-			LuaError(GetLuaSession(), "Error parsing %s", debug_str);
+		return false;
 	}
 
 	return true;
 }
 
-void script_state::ParseChunkSub(int *out_lang, int *out_index, char* debug_str)
+void script_state::ParseChunkSub(script_function& script_func, const char* debug_str)
 {
-	Assert(out_lang != NULL);
-	Assert(out_index != NULL);
+	using namespace luacpp;
+
 	Assert(debug_str != NULL);
+
+	//Lua
+	script_func.language = SC_LUA;
+
+	std::string source;
+	std::string function_name(debug_str);
 
 	if(check_for_string("[["))
 	{
 		//Lua from file
 
-		//Lua
-		*out_lang = SC_LUA;
-
 		char *filename = alloc_block("[[", "]]");
 
 		//Load from file
 		CFILE *cfp = cfopen(filename, "rb", CFILE_NORMAL, CF_TYPE_SCRIPTS );
+
+		//WMC - use filename instead of debug_str so that the filename gets passed.
+		function_name = filename;
+		vm_free(filename);
+
 		if(cfp == NULL)
 		{
 			Warning(LOCATION, "Could not load lua script file '%s'", filename);
+			return;
 		}
 		else
 		{
 			int len = cfilelength(cfp);
 
-			char *raw_lua = (char*)vm_malloc(len+1);
-			raw_lua[len] = '\0';
-
-			cfread(raw_lua, len, 1, cfp);
+			source.resize((size_t) len);
+			cfread(&source[0], len, 1, cfp);
 			cfclose(cfp);
-
-			//WMC - use filename instead of debug_str so that the filename
-			//gets passed.
-			if(!luaL_loadbuffer(GetLuaSession(), raw_lua, len, filename))
-			{
-				//Stick it in the registry
-				*out_index = luaL_ref(GetLuaSession(), LUA_REGISTRYINDEX);
-			}
-			else
-			{
-				if(lua_isstring(GetLuaSession(), -1))
-					LuaError(GetLuaSession());
-				else
-					LuaError(GetLuaSession(), "Error parsing %s", filename);
-				*out_index = -1;
-			}
-			vm_free(raw_lua);
 		}
-		//dealloc
-		//WMC - For some reason these cause crashes
-		vm_free(filename);
 	}
 	else if(check_for_string("["))
 	{
 		//Lua string
-
-		//Assume Lua
-		*out_lang = SC_LUA;
-
 		//Allocate raw script
 		char* raw_lua = alloc_block("[", "]", 1);
 		//WMC - minor hack to make sure that the last line gets
@@ -1232,59 +1156,27 @@ void script_state::ParseChunkSub(int *out_lang, int *out_index, char* debug_str)
 		//crash, so this is here just to be on the safe side.
 		strcat(raw_lua, "\n");
 
-		char *tmp_ptr = raw_lua;
-		
-		//Load it into a buffer & parse it
-		//WMC - This is causing an access violation error. Sigh.
-		if(!luaL_loadbuffer(GetLuaSession(), tmp_ptr, strlen(tmp_ptr), debug_str))
-		{
-			//Stick it in the registry
-			*out_index = luaL_ref(GetLuaSession(), LUA_REGISTRYINDEX);
-		}
-		else
-		{
-			if(lua_isstring(GetLuaSession(), -1))
-				LuaError(GetLuaSession());
-			else
-				LuaError(GetLuaSession(), "Error parsing %s", debug_str);
-			*out_index = -1;
-		}
-
-		//free the mem
-		//WMC - This makes debug go wonky.
+		source = raw_lua;
 		vm_free(raw_lua);
 	}
 	else
 	{
-		char buf[PARSE_BUF_SIZE];
-
-		//Assume lua
-		*out_lang = SC_LUA;
-
-		strcpy_s(buf, "return ");
+		std::string buf;
 
 		//Stuff it
-		stuff_string(buf+strlen(buf), F_RAW, (int)(sizeof(buf) - strlen(buf)));
+		stuff_string(buf, F_RAW);
 
-		//Add ending
-		strcat_s(buf, "\n");
+		source = "return ";
+		source += buf;
+	}
 
-		auto len = strlen(buf);
+	try {
+		auto function = LuaFunction::createFromCode(LuaState, source, function_name);
+		function.setErrorFunction(LuaFunction::createFromCFunction(LuaState, ade_friendly_error));
 
-		//Load it into a buffer & parse it
-		if(!luaL_loadbuffer(GetLuaSession(), buf, len, debug_str))
-		{
-			//Stick it in the registry
-			*out_index = luaL_ref(GetLuaSession(), LUA_REGISTRYINDEX);
-		}
-		else
-		{
-			if(lua_isstring(GetLuaSession(), -1))
-				LuaError(GetLuaSession());
-			else
-				LuaError(GetLuaSession(), "Error parsing %s", debug_str);
-			*out_index = -1;
-		}
+		script_func.function = function;
+	} catch (const LuaException& e) {
+		LuaError(GetLuaSession(), "%s", e.what());
 	}
 }
 
@@ -1302,7 +1194,7 @@ void script_state::ParseChunk(script_hook *dest, char *debug_str)
 		sprintf(debug_str, "script_parse() count %d", total_parse_calls);
 	}
 
-	ParseChunkSub(&dest->h_language, &dest->h_index, debug_str);
+	ParseChunkSub(dest->hook_function, debug_str);
 
 	if(optional_string("+Override:"))
 	{
@@ -1310,7 +1202,7 @@ void script_state::ParseChunk(script_hook *dest, char *debug_str)
 		char *debug_str_over = (char*)vm_malloc(bufSize);
 		strcpy_s(debug_str_over, bufSize, debug_str);
 		strcat_s(debug_str_over, bufSize, " override");
-		ParseChunkSub(&dest->o_language, &dest->o_index, debug_str_over);
+		ParseChunkSub(dest->override_function, debug_str_over);
 		vm_free(debug_str_over);
 	}
 }
@@ -1417,11 +1309,11 @@ bool script_state::ParseCondition(const char *filename)
 //*************************CLASS: script_state*************************
 bool script_state::IsOverride(script_hook &hd)
 {
-	if(hd.h_index < 0)
+	if(!hd.hook_function.function.isValid())
 		return false;
 
 	bool b=false;
-	RunBytecodeSub(hd.o_language, hd.o_index, 'b', &b);
+	RunBytecodeSub(hd.override_function, 'b', &b);
 
 	return b;
 }

@@ -3,6 +3,7 @@
 
 #include "globalincs/globals.h"
 #include "globalincs/pstypes.h"
+#include "scripting/lua/LuaFunction.h"
 
 #include <stdio.h>
 
@@ -17,6 +18,24 @@ struct image_desc
 	char fname[MAX_FILENAME_LEN];
 	int handle;
 };
+
+struct script_function {
+	int language;
+	luacpp::LuaFunction function;
+};
+
+//-WMC
+struct script_hook
+{
+	//Override
+	script_function override_function;
+
+	//Actual hook
+	script_function hook_function;
+};
+
+extern void script_hook_init(script_hook *hook);
+extern bool script_hook_valid(script_hook *hook);
 
 //**********Main Conditional Hook stuff
 
@@ -143,8 +162,8 @@ private:
 
 private:
 
-	void ParseChunkSub(int *out_lang, int *out_index, char* debug_str=NULL);
-	int RunBytecodeSub(int in_lang, int in_idx, char format='\0', void *data=NULL);
+	void ParseChunkSub(script_function& out_func, const char* debug_str=NULL);
+	int RunBytecodeSub(script_function& func, char format='\0', void *data=NULL);
 
 	void SetLuaSession(struct lua_State *L);
 

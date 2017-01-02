@@ -4305,9 +4305,9 @@ void game_frame(bool paused)
 
 			Scripting_didnt_draw_hud = 1;
 			Script_system.SetHookObject("Self", Viewer_obj);
-			if(Script_system.IsOverride(Script_hudhook) || Script_system.IsConditionOverride(CHA_HUDDRAW, Viewer_obj))
+			if(Script_system.IsOverride(Script_hudhook) || Script_system.IsConditionOverride(CHA_HUDDRAW, Viewer_obj)) {
 				Scripting_didnt_draw_hud = 0;
-			Script_system.RemHookVar("Self");
+			}
 
 			if(Scripting_didnt_draw_hud) {
 				GR_DEBUG_SCOPE("Render HUD");
@@ -4320,10 +4320,12 @@ void game_frame(bool paused)
 				anim_render_all(0, flFrametime);
 			}
 
-			Script_system.SetHookObject("Self", Viewer_obj);
 			if (!(Viewer_mode & (VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY))) 
 			{
-				Script_system.RunBytecode(Script_hudhook);
+				// This check was previously hacked into the scripting system but this is the proper place for it
+				if (!((Viewer_mode & VM_FREECAMERA) || hud_disabled())) {
+					Script_system.RunBytecode(Script_hudhook);
+				}
 				Script_system.RunCondition(CHA_HUDDRAW, '\0', NULL, Viewer_obj);
 			}
 			Script_system.RemHookVar("Self");
