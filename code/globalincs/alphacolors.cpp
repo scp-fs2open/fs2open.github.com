@@ -292,7 +292,7 @@ void parse_colors(const char *filename)
 			int rgba[4] = { 0, 0, 0, 0 };
 			int i, j;
 
-			char* color_names[TOTAL_COLORS] = {
+			const char* color_names[TOTAL_COLORS] = {
 				"$Blue:",
 				"$Bright Blue:",
 				"$Green:",

@@ -30,14 +30,14 @@ struct net_player;
 //
 
 // create the validate dialog 
-void std_create_gen_dialog(char *title);
+void std_create_gen_dialog(const char *title);
 
 // kill the validate dialog();
 void std_destroy_gen_dialog();
 
 // set the text in the filename of the validate dialog
 // valid values for field_num == 0 .. 2
-void std_gen_set_text(char *str, int field_num);
+void std_gen_set_text(const char *str, int field_num);
 
 // is the validate dialog active
 int std_gen_is_active();
@@ -159,7 +159,7 @@ void std_gs_clear_controls();
 //
 
 // set the text on the standalones state indicator box
-void std_debug_set_standalone_state_string(char *str);
+void std_debug_set_standalone_state_string(const char *str);
 
 // clear all the controls for this page
 void std_debug_clear_controls();

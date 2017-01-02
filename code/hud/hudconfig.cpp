@@ -233,19 +233,19 @@ int HC_select_all = 0;
 //////////////////////////////////////////////////////////////////////////////
 
 
-char *Hud_config_fname[GR_NUM_RESOLUTIONS] = {
+const char *Hud_config_fname[GR_NUM_RESOLUTIONS] = {
 	"HUDConfig",
 	"2_HUDConfig"
 };
 
-char *Hud_config_mask_fname[GR_NUM_RESOLUTIONS] = {
+const char *Hud_config_mask_fname[GR_NUM_RESOLUTIONS] = {
 	"HUDConfig-m",
 	"2_HUDConfig-m"
 };
 
 struct HC_gauge_region
 {
-	char			*filename;
+	const char		*filename;
 	int			x,y;
 	int			hotspot;
 	int			use_iff;
@@ -255,7 +255,7 @@ struct HC_gauge_region
 	int			color;
 	UI_BUTTON	button;
 
-	HC_gauge_region(char *name, int x1, int y1, int h, int iff, int cp, int b, int nf, int cl) : filename(name), x(x1), y(y1), hotspot(h), use_iff(iff), can_popup(cp), bitmap(b), nframes(nf), color(cl){}
+	HC_gauge_region(const char *name, int x1, int y1, int h, int iff, int cp, int b, int nf, int cl) : filename(name), x(x1), y(y1), hotspot(h), use_iff(iff), can_popup(cp), bitmap(b), nframes(nf), color(cl){}
 };
 
 // hud config gauges
@@ -670,7 +670,7 @@ int HC_slider_coords[GR_NUM_RESOLUTIONS][NUM_HC_SLIDERS][4] = {
 };
 #define HCS_CONV(__v)			( 255 - (__v) )
 
-char *HC_slider_fname[GR_NUM_RESOLUTIONS] = {
+const char *HC_slider_fname[GR_NUM_RESOLUTIONS] = {
 	"slider",
 	"2_slider"
 };
@@ -1639,7 +1639,7 @@ void hud_config_color_save(char *name)
 	cfclose(out);	
 }
 
-void hud_config_color_load(char *name)
+void hud_config_color_load(const char *name)
 {
 	int idx;
 	char str[1024];

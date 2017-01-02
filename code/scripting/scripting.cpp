@@ -551,7 +551,7 @@ bool ConditionedHook::IsOverride(script_state *sys, int action)
 //Most of the icky stuff is here. Lots of #ifdefs
 
 //WMC - defined in parse/scripting.h
-void script_state::SetHookObject(char *name, object *objp)
+void script_state::SetHookObject(const char *name, object *objp)
 {
 	SetHookObjects(1, name, objp);
 }
@@ -650,7 +650,7 @@ bool script_state::CloseHookVarTable()
 	}
 }
 
-void script_state::SetHookVar(char *name, char format, const void *data)
+void script_state::SetHookVar(const char *name, char format, const void *data)
 {
 	if(format == '\0')
 		return;
@@ -720,7 +720,7 @@ void script_state::SetHookVar(char *name, char format, const void *data)
 }
 
 //WMC - data can be NULL, if we just want to know if it exists
-bool script_state::GetHookVar(char *name, char format, void *data)
+bool script_state::GetHookVar(const char *name, char format, void *data)
 {
 	bool got_global = false;
 	if(LuaState != NULL)
@@ -757,7 +757,7 @@ bool script_state::GetHookVar(char *name, char format, void *data)
 	return got_global;
 }
 
-void script_state::RemHookVar(char *name)
+void script_state::RemHookVar(const char *name)
 {
 	this->RemHookVars(1, name);
 }
@@ -793,7 +793,7 @@ void script_state::RemHookVars(unsigned int num, ...)
 }
 
 //WMC - data can be NULL, if we just want to know if it exists
-bool script_state::GetGlobal(char *name, char format, void *data)
+bool script_state::GetGlobal(const char *name, char format, void *data)
 {
 	bool got_global = false;
 	if(LuaState != NULL)
@@ -816,7 +816,7 @@ bool script_state::GetGlobal(char *name, char format, void *data)
 	return got_global;
 }
 
-void script_state::RemGlobal(char *name)
+void script_state::RemGlobal(const char *name)
 {
 	if(LuaState != NULL)
 	{

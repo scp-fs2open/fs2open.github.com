@@ -553,7 +553,7 @@ char *translate_key(char *key)
 	return text;
 }
 
-char *textify_scancode(int code)
+const char *textify_scancode(int code)
 {
 	static char text[40];
 

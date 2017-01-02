@@ -118,7 +118,7 @@ void NavSystem_Do();
 void NavSystem_Init();
 
 // parse autopilot.tbl
-void parse_autopilot_table(char *filename);
+void parse_autopilot_table(const char *filename);
 
 // Finds a Nav point by name
 int FindNav(char *Nav);

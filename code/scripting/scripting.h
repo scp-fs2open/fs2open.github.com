@@ -185,14 +185,14 @@ public:
 	//void MoveData(script_state &in);
 
 	//***Variable handling functions
-	bool GetGlobal(char *name, char format='\0', void *data=NULL);
-	void RemGlobal(char *name);
+	bool GetGlobal(const char *name, char format='\0', void *data=NULL);
+	void RemGlobal(const char *name);
 
-	void SetHookVar(char *name, char format, const void *data=NULL);
-	void SetHookObject(char *name, object *objp);
+	void SetHookVar(const char *name, char format, const void *data=NULL);
+	void SetHookObject(const char *name, object *objp);
 	void SetHookObjects(int num, ...);
-	bool GetHookVar(char *name, char format='\0', void *data=NULL);
-	void RemHookVar(char *name);
+	bool GetHookVar(const char *name, char format='\0', void *data=NULL);
+	void RemHookVar(const char *name);
 	void RemHookVars(unsigned int num, ...);
 
 	//***Hook creation functions

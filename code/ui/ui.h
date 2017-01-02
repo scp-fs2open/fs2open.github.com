@@ -162,7 +162,7 @@ class UI_GADGET
 #define UI_XSTR_COLOR_GREEN		0			// shades of green/gray
 #define UI_XSTR_COLOR_PINK			1			// pinkish hue
 typedef struct UI_XSTR {
-	char *xstr;										// base string
+	const char *xstr;										// base string
 	int xstr_id;									// xstring id	
 	int x, y;										// coords of the string
 	int clr;											// color to use
@@ -239,7 +239,7 @@ class UI_BUTTON : public UI_GADGET
 		int button_hilighted();	// is the mouse over this button?
 		void set_button_hilighted();	// force button to be highlighted
 		void press_button();		// force button to get pressed
-		void create(UI_WINDOW *wnd, char *_text, int _x, int _y, int _w, int _h, int do_repeat=0, int ignore_focus = 0);
+		void create(UI_WINDOW *wnd, const char *_text, int _x, int _y, int _w, int _h, int do_repeat=0, int ignore_focus = 0);
 		void set_highlight_action( void (*_user_function)(void) );
 		void set_disabled_action( void (*_user_function)(void) );
 		void draw_forced(int frame_num);
@@ -309,7 +309,7 @@ class UI_INPUTBOX : public UI_GADGET
 		virtual void destroy();
 
 	public:
-		void create(UI_WINDOW *wnd, int _x, int _y, int _w, int _textlen, char *_text, int _flags = 0, int pixel_lim = -1, color *clr = NULL);
+		void create(UI_WINDOW *wnd, int _x, int _y, int _w, int _textlen, const char *_text, int _flags = 0, int pixel_lim = -1, color *clr = NULL);
 		void set_valid_chars(char *vchars);
 		void set_invalid_chars(char *ichars);
 		int changed();
@@ -461,7 +461,7 @@ class UI_SLIDER2 : public UI_GADGET
 
 	public:
 		// create the slider
-		void create(UI_WINDOW *wnd, int _x, int _y, int _w, int _h, int _numberItems, char *_bitmapSliderControl,
+		void create(UI_WINDOW *wnd, int _x, int _y, int _w, int _h, int _numberItems, const char *_bitmapSliderControl,
 						void (*_upCallback)(), void (*_downCallback)(), void (*_captureCallback)());
 		
 		// range management
@@ -645,7 +645,7 @@ public:
 	ubyte *get_mask_data(int *w_md, int *h_md) { *w_md = mask_w; *h_md = mask_h; return mask_data; }
 	void render_tooltip(char *str);
 	void set_ignore_gadgets(int state);
-	void add_XSTR(char *string, int _xstr_id, int _x, int _y, UI_GADGET *_assoc, int _color_type, int _font_id = -1);
+	void add_XSTR(const char *string, int _xstr_id, int _x, int _y, UI_GADGET *_assoc, int _color_type, int _font_id = -1);
 	void add_XSTR(UI_XSTR *xstr);
 
 	const char *(*tooltip_handler)(const char *text);
@@ -661,7 +661,7 @@ typedef struct ui_button_info {
 	int hotspot;
 	UI_BUTTON button;  // because we have a class inside this struct, we need the constructor below..
 
-	ui_button_info(char *name, int x1, int y1, int xt1, int yt1, int h) : filename(name), x(x1), y(y1), xt(xt1), yt(yt1), hotspot(h) {}
+	ui_button_info(const char *name, int x1, int y1, int xt1, int yt1, int h) : filename(name), x(x1), y(y1), xt(xt1), yt(yt1), hotspot(h) {}
 } ui_button_info;
 
 

@@ -405,7 +405,7 @@ void common_maybe_play_cutscene(int movie_type, bool restart_music, int music)
 
 // function that sets the current palette to the interface palette.  This function
 // needs to be followed by common_free_interface_palette() to restore the game palette.
-void common_set_interface_palette(char *filename)
+void common_set_interface_palette(const char *filename)
 {
 	static char buf[MAX_FILENAME_LEN + 1] = {0};
 

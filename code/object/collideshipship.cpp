@@ -361,7 +361,7 @@ int ship_ship_check_collision(collision_info_struct *ship_ship_hit_info, vec3d *
 			collide_obj = heavy_obj;
 		}
 		if ((collide_obj != NULL) && (Ship_info[Ships[collide_obj->instance].ship_info_index].is_fighter_bomber())) {
-			char	*submode_string = "";
+			const char	*submode_string = "";
 			ai_info	*aip;
 
 			extern char *Mode_text[];

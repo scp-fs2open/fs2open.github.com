@@ -78,7 +78,7 @@ void UI_INPUTBOX::init_cursor()
 	cursor_current_frame=0;
 }
 
-void UI_INPUTBOX::create(UI_WINDOW *wnd, int _x, int _y, int _w, int _text_len, char *_text, int _flags, int pixel_lim, color *clr)
+void UI_INPUTBOX::create(UI_WINDOW *wnd, int _x, int _y, int _w, int _text_len, const char *_text, int _flags, int pixel_lim, color *clr)
 {
 	int tw, th;
 

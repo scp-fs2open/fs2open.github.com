@@ -875,7 +875,7 @@ void gr_opengl_set_line_width(float width)
 	GL_line_width = width;
 }
 
-int opengl_check_for_errors(char *err_at)
+int opengl_check_for_errors(const char *err_at)
 {
 #ifdef NDEBUG
 	return 0;

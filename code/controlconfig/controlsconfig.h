@@ -311,7 +311,7 @@ void control_config_cancel_exit();
 void control_config_reset_defaults(int presetnum=-1);
 int translate_key_to_index(const char *key, bool find_override=true);
 char *translate_key(char *key);
-char *textify_scancode(int code);
+const char *textify_scancode(int code);
 float check_control_timef(int id);
 int check_control(int id, int key = -1);
 void control_get_axes_readings(int *h, int *p, int *b, int *ta, int *tr);

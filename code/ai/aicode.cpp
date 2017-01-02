@@ -105,7 +105,7 @@
 
 //XSTR:OFF
 
-char *Mode_text[MAX_AI_BEHAVIORS] = {
+const char *Mode_text[MAX_AI_BEHAVIORS] = {
 	"CHASE",
 	"EVADE",
 	"GET_BEHIND",
@@ -130,7 +130,7 @@ char *Mode_text[MAX_AI_BEHAVIORS] = {
 };
 
 //	Submode text is only valid for CHASE mode.
-char *Submode_text[] = {
+const char *Submode_text[] = {
 "undefined",
 "CONT_TURN",
 "ATTACK   ",
@@ -151,7 +151,7 @@ char *Submode_text[] = {
 "BIG_PARL"
 };
 
-char *Strafe_submode_text[5] = {
+const char *Strafe_submode_text[5] = {
 "ATTACK",
 "AVOID",
 "RETREAT1",
@@ -570,7 +570,7 @@ void init_ai_class(ai_class *aicp)
 	aicp->ai_class_autoscale = true;	//Retail behavior is to do the stupid autoscaling
 }
 
-void set_aic_flag(ai_class *aicp, char *name, AI::Profile_Flags flag)
+void set_aic_flag(ai_class *aicp, const char *name, AI::Profile_Flags flag)
 {
     auto flags = &(aicp->ai_profile_flags);
     auto set = &(aicp->ai_profile_flags_set);

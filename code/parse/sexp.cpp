@@ -33820,7 +33820,7 @@ static void output_sexp_html(int sexp_idx, FILE *fp)
 /**
  * Output sexp.html file
  */
-bool output_sexps(char *filepath)
+bool output_sexps(const char *filepath)
 {
 	FILE *fp = fopen(filepath,"w");
 

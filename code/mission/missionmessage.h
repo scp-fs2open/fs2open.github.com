@@ -230,7 +230,7 @@ void message_load_wave(int index, const char *filename);
 
 // these two are probably safe
 // if change_message fails to find the message it'll fall through to add_message
-bool add_message(char *name, char *message, int persona_index, int multi_team);
-bool change_message(char *name, char *message, int persona_index, int multi_team);
+bool add_message(const char *name, char *message, int persona_index, int multi_team);
+bool change_message(const char *name, char *message, int persona_index, int multi_team);
 
 #endif

@@ -1223,7 +1223,7 @@ extern int Num_submenus;
 
 //WMC
 //Outputs sexp.html file
-bool output_sexps(char *filepath);
+bool output_sexps(const char *filepath);
 
 void multi_sexp_eval();
 
