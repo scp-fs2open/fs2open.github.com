@@ -926,6 +926,20 @@ void script_state::EndFrame()
 
 void script_state::Clear()
 {
+	// Free all lua value references
+	ConditionalHooks.clear();
+
+	// Also do the same to the old hooks
+	Script_globalhook.freeFunctions();
+	Script_simulationhook.freeFunctions();
+	Script_hudhook.freeFunctions();
+	Script_splashhook.freeFunctions();
+	Script_gameinithook.freeFunctions();
+
+	if(LuaState != NULL) {
+		lua_close(LuaState);
+	}
+
 	StateName[0] = '\0';
 	Langs = 0;
 
@@ -946,10 +960,6 @@ script_state::script_state(const char *name)
 
 script_state::~script_state()
 {
-	if(LuaState != NULL) {
-		lua_close(LuaState);
-	}
-
 	Clear();
 }
 
