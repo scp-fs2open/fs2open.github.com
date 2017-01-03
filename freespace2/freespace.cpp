@@ -1995,7 +1995,6 @@ void game_init()
 	Viewer_mode = 0;
 	Game_paused = 0;
 
-	Script_system.RunBytecode(Script_gameinithook);
 	Script_system.RunCondition(CHA_GAMEINIT);
 
 	game_title_screen_close();
@@ -2008,8 +2007,8 @@ void game_init()
 	nprintf(("General", "Ships.tbl is : %s\n", Game_ships_tbl_valid ? "VALID" : "INVALID!!!!"));
 	nprintf(("General", "Weapons.tbl is : %s\n", Game_weapons_tbl_valid ? "VALID" : "INVALID!!!!"));
 
-	mprintf(("cfile_init() took %d\n", e1 - s1));	
-	Script_system.RunBytecode(Script_gameinithook);
+	mprintf(("cfile_init() took %d\n", e1 - s1));
+
 	// if we are done initializing, start showing the cursor
 	io::mouse::CursorManager::get()->showCursor(true);
 
@@ -3940,7 +3939,7 @@ void game_simulation_frame()
 #endif
 	}
 
-	Script_system.RunBytecode(Script_simulationhook);
+	Script_system.RunCondition(CHA_SIMULATION);
 }
 
 // Maybe render and process the dead-popup
@@ -4305,7 +4304,7 @@ void game_frame(bool paused)
 
 			Scripting_didnt_draw_hud = 1;
 			Script_system.SetHookObject("Self", Viewer_obj);
-			if(Script_system.IsOverride(Script_hudhook) || Script_system.IsConditionOverride(CHA_HUDDRAW, Viewer_obj)) {
+			if(Script_system.IsConditionOverride(CHA_HUDDRAW, Viewer_obj)) {
 				Scripting_didnt_draw_hud = 0;
 			}
 
@@ -4322,10 +4321,6 @@ void game_frame(bool paused)
 
 			if (!(Viewer_mode & (VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY))) 
 			{
-				// This check was previously hacked into the scripting system but this is the proper place for it
-				if (!((Viewer_mode & VM_FREECAMERA) || hud_disabled())) {
-					Script_system.RunBytecode(Script_hudhook);
-				}
 				Script_system.RunCondition(CHA_HUDDRAW, '\0', NULL, Viewer_obj);
 			}
 			Script_system.RemHookVar("Self");
@@ -7868,10 +7863,9 @@ void game_title_screen_display()
 	}
 	*/
 
-	bool globalhook_override = Script_system.IsOverride(Script_splashhook);
 	bool condhook_override = Script_system.IsConditionOverride(CHA_SPLASHSCREEN);
 	mprintf(("SCRIPTING: Splash screen overrides checked\n"));
-	if(!globalhook_override && !condhook_override)
+	if(!condhook_override)
 	{
 		Game_title_logo = bm_load(Game_logo_screen_fname[gr_screen.res]);
 		Game_title_bitmap = bm_load(Game_title_screen_fname[gr_screen.res]);
@@ -7903,14 +7897,8 @@ void game_title_screen_display()
 		}
 	}
 
-	if(!condhook_override)
-		Script_system.RunBytecode(Script_splashhook);
-	
-	mprintf(("SCRIPTING: Splash hook has been run\n"));
+	Script_system.RunCondition(CHA_SPLASHSCREEN);
 
-	if(!globalhook_override || condhook_override)
-		Script_system.RunCondition(CHA_SPLASHSCREEN);
-		
 	mprintf(("SCRIPTING: Splash screen conditional hook has been run\n"));
 
 	// flip

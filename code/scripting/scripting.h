@@ -106,6 +106,7 @@ extern bool script_hook_valid(script_hook *hook);
 #define CHA_AFTERBURNSTART	36
 #define CHA_AFTERBURNEND    37
 #define CHA_BEAMFIRE        38
+#define CHA_SIMULATION      39
 
 // management stuff
 void scripting_state_init();
@@ -225,7 +226,8 @@ public:
 
 	//***Hook creation functions
 	bool EvalString(const char *string, const char *format=NULL, void *rtn=NULL, const char *debug_str=NULL);
-	void ParseChunk(script_hook *dest, char* debug_str=NULL);
+	void ParseChunk(script_hook *dest, const char* debug_str=NULL);
+	void ParseGlobalChunk(int hookType, const char* debug_str=NULL);
 	bool ParseCondition(const char *filename="<Unknown>");
 
 	//***Hook running functions
@@ -245,13 +247,6 @@ void script_init();
 //**********Script globals
 extern class script_state Script_system;
 extern bool Output_scripting_meta;
-
-//**********Script hook stuff (scripting.tbl)
-extern script_hook Script_globalhook;
-extern script_hook Script_simulationhook;
-extern script_hook Script_hudhook;
-extern script_hook Script_splashhook;
-extern script_hook Script_gameinithook;
 
 //*************************Conditional scripting*************************
 

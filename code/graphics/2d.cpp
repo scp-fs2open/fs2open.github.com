@@ -2139,8 +2139,6 @@ void gr_flip()
 	{
 		TRACE_SCOPE(tracing::LuaOnFrame);
 
-		//WMC - Evaluate global hook if not override.
-		Script_system.RunBytecode(Script_globalhook);
 		//WMC - Do conditional hooks. Yippee!
 		Script_system.RunCondition(CHA_ONFRAME);
 		//WMC - Do scripting reset stuff
