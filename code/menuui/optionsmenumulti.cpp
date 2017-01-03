@@ -32,22 +32,22 @@
 // general data section ------------------------------------------------
 UI_WINDOW *Om_window = NULL;
 
-static char* Om_background_0_fname[GR_NUM_RESOLUTIONS] = {
+static const char* Om_background_0_fname[GR_NUM_RESOLUTIONS] = {
 	"OptionsMultiGen",			// GR_640
 	"2_OptionsMultiGen"			// GR_1024
 };
 
-static char* Om_background_0_mask_fname[GR_NUM_RESOLUTIONS] = {
+static const char* Om_background_0_mask_fname[GR_NUM_RESOLUTIONS] = {
 	"OptionsMultiGen-M",			// GR_640
 	"2_OptionsMultiGen-M"		// GR_1024
 };
 
-static char* Om_background_1_fname[GR_NUM_RESOLUTIONS] = {
+static const char* Om_background_1_fname[GR_NUM_RESOLUTIONS] = {
 	"OptionsMultiVox",			// GR_640
 	"2_OptionsMultiVox"			// GR_1024
 };
 
-static char* Om_background_1_mask_fname[GR_NUM_RESOLUTIONS] = {
+static const char* Om_background_1_mask_fname[GR_NUM_RESOLUTIONS] = {
 	"OptionsMultiVox-M",			// GR_640
 	"2_OptionsMultiVox-M"		// GR_1024
 };

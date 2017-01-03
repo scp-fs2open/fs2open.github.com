@@ -422,7 +422,7 @@ void parse_everything_else(const char *filename)
 
 		// Previously-hardcoded interface colors
 		if (optional_string("#Interface Colors")) {
-			char *color_names[INTERFACE_COLORS] = {
+			const char *color_names[INTERFACE_COLORS] = {
 				"$Text Normal:",
 				"$Text Subselected:",
 				"$Text Selected:",
@@ -589,7 +589,7 @@ void parse_everything_else(const char *filename)
 
 		if (optional_string("#Default Text Colors")) {
 
-			char* color_names[MAX_DEFAULT_TEXT_COLORS] = {
+			const char* color_names[MAX_DEFAULT_TEXT_COLORS] = {
 				"$Fiction Viewer:",
 				"$Command Briefing:",
 				"$Briefing:",

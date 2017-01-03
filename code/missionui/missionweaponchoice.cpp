@@ -100,12 +100,12 @@ int Weapon_select_overlay_id = -1;
 
 // convenient struct for handling all button controls
 struct wl_buttons {
-	char *filename;
+	const char *filename;
 	int x, y, xt, yt;
 	int hotspot;
 	UI_BUTTON button;  // because we have a class inside this struct, we need the constructor below..
 
-	wl_buttons(char *name, int x1, int y1, int xt1, int yt1, int h) : filename(name), x(x1), y(y1), xt(xt1), yt(yt1), hotspot(h) {}
+	wl_buttons(const char *name, int x1, int y1, int xt1, int yt1, int h) : filename(name), x(x1), y(y1), xt(xt1), yt(yt1), hotspot(h) {}
 };
 
 static wl_buttons Buttons[GR_NUM_RESOLUTIONS][MAX_WEAPON_BUTTONS] = {
@@ -132,7 +132,7 @@ static wl_buttons Buttons[GR_NUM_RESOLUTIONS][MAX_WEAPON_BUTTONS] = {
 };
 
 
-static char *Wl_mask_single[NUM_WEAPON_SETTINGS][GR_NUM_RESOLUTIONS] = {
+static const char *Wl_mask_single[NUM_WEAPON_SETTINGS][GR_NUM_RESOLUTIONS] = {
 	{
 		"weaponloadout-m",
 		"2_weaponloadout-m"
@@ -143,7 +143,7 @@ static char *Wl_mask_single[NUM_WEAPON_SETTINGS][GR_NUM_RESOLUTIONS] = {
 	}
 };
 
-static char *Wl_mask_multi[NUM_WEAPON_SETTINGS][GR_NUM_RESOLUTIONS] = {
+static const char *Wl_mask_multi[NUM_WEAPON_SETTINGS][GR_NUM_RESOLUTIONS] = {
 	{
 		"weaponloadoutmulti-m",
 		"2_weaponloadoutmulti-m"
@@ -155,7 +155,7 @@ static char *Wl_mask_multi[NUM_WEAPON_SETTINGS][GR_NUM_RESOLUTIONS] = {
 	}
 };
 
-static char *Wl_loadout_select_mask[NUM_WEAPON_SETTINGS][GR_NUM_RESOLUTIONS] = {
+static const char *Wl_loadout_select_mask[NUM_WEAPON_SETTINGS][GR_NUM_RESOLUTIONS] = {
 	{
 		"weaponloadout-m",
 		"2_weaponloadout-m"
@@ -167,7 +167,7 @@ static char *Wl_loadout_select_mask[NUM_WEAPON_SETTINGS][GR_NUM_RESOLUTIONS] = {
 };
 
 
-static char *Weapon_select_background_fname[NUM_WEAPON_SETTINGS][GR_NUM_RESOLUTIONS] = {
+static const char *Weapon_select_background_fname[NUM_WEAPON_SETTINGS][GR_NUM_RESOLUTIONS] = {
 	{
 		"WeaponLoadout",
 		"2_WeaponLoadout"
@@ -178,7 +178,7 @@ static char *Weapon_select_background_fname[NUM_WEAPON_SETTINGS][GR_NUM_RESOLUTI
 	}
 };
 
-static char *Weapon_select_multi_background_fname[NUM_WEAPON_SETTINGS][GR_NUM_RESOLUTIONS] = {
+static const char *Weapon_select_multi_background_fname[NUM_WEAPON_SETTINGS][GR_NUM_RESOLUTIONS] = {
 	{
 		"WeaponLoadoutMulti",
 		"2_WeaponLoadoutMulti"

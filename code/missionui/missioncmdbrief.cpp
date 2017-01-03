@@ -32,7 +32,7 @@
 
 #define NUM_CMD_SETTINGS	2
 
-char *Cmd_brief_fname[NUM_CMD_SETTINGS][GR_NUM_RESOLUTIONS] =
+const char *Cmd_brief_fname[NUM_CMD_SETTINGS][GR_NUM_RESOLUTIONS] =
 {
 	{
 		"CommandBrief",
@@ -45,7 +45,7 @@ char *Cmd_brief_fname[NUM_CMD_SETTINGS][GR_NUM_RESOLUTIONS] =
 };
 
 
-char *Cmd_brief_mask[NUM_CMD_SETTINGS][GR_NUM_RESOLUTIONS] =
+const char *Cmd_brief_mask[NUM_CMD_SETTINGS][GR_NUM_RESOLUTIONS] =
 {
 	{
 		"CommandBrief-m",
@@ -175,7 +175,7 @@ static int Voice_good_to_go = 0;
 static int Voice_started_time = 0;
 static int Voice_ended_time;
 static generic_anim Cur_Anim;
-static char *Cur_anim_filename = "~~~~";
+static const char *Cur_anim_filename = "~~~~";
 
 static int Cmd_brief_last_voice;
 static int Cmd_brief_last_stage;
@@ -530,7 +530,7 @@ void cmd_brief_button_pressed(int n)
 
 void cmd_brief_ani_wave_init(int index)
 {
-	char *name;
+	const char *name;
 
 	// this is the first instance of the given anim filename
 	name = Cur_cmd_brief->stage[index].ani_filename;

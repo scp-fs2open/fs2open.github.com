@@ -195,7 +195,7 @@ enum cheatCode {
 
 struct Cheat {
 	cheatCode code;
-	char* data;
+	const char* data;
 };
 
 static struct Cheat cheatsTable[] = {

@@ -158,20 +158,20 @@ path_restriction_t Path_restrictions[MAX_PATH_RESTRICTIONS];
 
 //XSTR:OFF
 
-char *Nebula_filenames[NUM_NEBULAS] = {
+const char *Nebula_filenames[NUM_NEBULAS] = {
 	"Nebula01",
 	"Nebula02",
 	"Nebula03"	
 };
 
-char *Neb2_filenames[NUM_NEBULAS] = {
+const char *Neb2_filenames[NUM_NEBULAS] = {
 	"Nebfull01",
 	"Nebfull02",
 	"Nebfull03"
 };
 
 // Note: Nebula_colors[] and Nebula_palette_filenames are linked via index numbers
-char *Nebula_colors[NUM_NEBULA_COLORS] = {
+const char *Nebula_colors[NUM_NEBULA_COLORS] = {
 	"Red",
 	"Blue",
 	"Gold",
@@ -183,7 +183,7 @@ char *Nebula_colors[NUM_NEBULA_COLORS] = {
 	"Grey Green",
 };
 
-char *Ai_behavior_names[MAX_AI_BEHAVIORS] = {
+const char *Ai_behavior_names[MAX_AI_BEHAVIORS] = {
 	"Chase",
 	"Evade",
 	"Get behind",
@@ -210,9 +210,9 @@ char *Ai_behavior_names[MAX_AI_BEHAVIORS] = {
 char *Cargo_names[MAX_CARGO];
 char Cargo_names_buf[MAX_CARGO][NAME_LENGTH];
 
-char *Ship_class_names[MAX_SHIP_CLASSES];		// to be filled in from Ship_info array
+const char *Ship_class_names[MAX_SHIP_CLASSES];		// to be filled in from Ship_info array
 
-char *Icon_names[MIN_BRIEF_ICONS] = {
+const char *Icon_names[MIN_BRIEF_ICONS] = {
 	"Fighter", "Fighter Wing", "Cargo", "Cargo Wing", "Largeship",
 	"Largeship Wing", "Capital", "Planet", "Asteroid Field", "Waypoint",
 	"Support Ship", "Freighter(no cargo)", "Freighter(has cargo)",
@@ -222,37 +222,37 @@ char *Icon_names[MIN_BRIEF_ICONS] = {
 	"Knossos Device", "Transport Wing", "Corvette", "Gas Miner", "Awacs", "Supercap", "Sentry Gun", "Jump Node", "Transport"
 };
 
-char *Status_desc_names[MAX_STATUS_NAMES] = {
+const char *Status_desc_names[MAX_STATUS_NAMES] = {
 	"Shields Critical", "Engines Damaged", "Fully Operational",
 };
 
-char *Status_type_names[MAX_STATUS_NAMES] = {
+const char *Status_type_names[MAX_STATUS_NAMES] = {
 	"Damaged", "Disabled", "Corroded",
 };
 
-char *Status_target_names[MAX_STATUS_NAMES] = {
+const char *Status_target_names[MAX_STATUS_NAMES] = {
 	"Weapons", "Engines", "Cable TV",
 };
 
 // definitions for arrival locations for ships/wings
-char *Arrival_location_names[MAX_ARRIVAL_NAMES] = {
+const char *Arrival_location_names[MAX_ARRIVAL_NAMES] = {
 	"Hyperspace", "Near Ship", "In front of ship", "Docking Bay",
 };
 
-char *Departure_location_names[MAX_DEPARTURE_NAMES] = {
+const char *Departure_location_names[MAX_DEPARTURE_NAMES] = {
 	"Hyperspace", "Docking Bay",
 };
 
-char *Goal_type_names[MAX_GOAL_TYPE_NAMES] = {
+const char *Goal_type_names[MAX_GOAL_TYPE_NAMES] = {
 	"Primary", "Secondary", "Bonus",
 };
 
-char *Reinforcement_type_names[] = {
+const char *Reinforcement_type_names[] = {
 	"Attack/Protect",
 	"Repair/Rearm",
 };
 
-char *Old_game_types[OLD_MAX_GAME_TYPES] = {
+const char *Old_game_types[OLD_MAX_GAME_TYPES] = {
 	"Single Player Only",	
 	"Multiplayer Only",
 	"Single/Multi Player",
@@ -316,7 +316,7 @@ flag_def_list_new<Mission::Parse_Object_Flags> Parse_object_flags[] = {
 
 const size_t num_parse_object_flags = sizeof(Parse_object_flags) / sizeof(flag_def_list_new<Mission::Parse_Object_Flags>);
 
-char *Mission_event_log_flags[MAX_MISSION_EVENT_LOG_FLAGS] = {
+const char *Mission_event_log_flags[MAX_MISSION_EVENT_LOG_FLAGS] = {
 	"true",
 	"false",
 	"always true",			// disabled
@@ -1451,7 +1451,7 @@ void parse_briefing(mission *pm, int flags)
 			Assert(bs->num_icons <= MAX_STAGE_ICONS );
 
 			// static alias stuff - stupid, but it seems to be necessary
-			static char *temp_team_names[MAX_IFFS];
+			static const char *temp_team_names[MAX_IFFS];
 			for (i = 0; i < Num_iffs; i++)
 				temp_team_names[i] = Iff_info[i].iff_name;
 
@@ -2840,7 +2840,7 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 	}
 
 	// static alias stuff - stupid, but it seems to be necessary
-	static char *temp_team_names[MAX_IFFS];
+	static const char *temp_team_names[MAX_IFFS];
 	for (i = 0; i < Num_iffs; i++)
 		temp_team_names[i] = Iff_info[i].iff_name;
 
@@ -7402,7 +7402,7 @@ continue_outer_loop:
 int get_special_anchor(char *name)
 {
 	char tmp[NAME_LENGTH + 15];
-	char *iff_name;
+	const char *iff_name;
 	int iff_index;
 	
 	if (strnicmp(name, "<any ", 5))
@@ -7941,7 +7941,8 @@ int is_training_mission()
 /**
  * Go through all the displayed text in one section and fix the section and text delimiters should all be different
  */
-void conv_fix_punctuation_section(char *str, char *section_start, char *section_end, char *text_start, char *text_end)
+void conv_fix_punctuation_section(char *str, const char *section_start, const char *section_end, const char *text_start,
+								  const char *text_end)
 {
 	char *s1, *s2, *t1, *t2;
 

@@ -39,7 +39,7 @@
 
 #define MAX_TRIGGER_ANIMATION_TYPES			12
 
-extern char *Animation_type_names[MAX_TRIGGER_ANIMATION_TYPES];
+extern const char *Animation_type_names[MAX_TRIGGER_ANIMATION_TYPES];
 
 
 // Model Animation Position settings

@@ -51,7 +51,7 @@ brief_screen bscreen;
 #define BRIEF_CUPINFO_X2	639
 #define BRIEF_CUPINFO_Y2	438
 
-char *Brief_static_name[GR_NUM_RESOLUTIONS] = {
+const char *Brief_static_name[GR_NUM_RESOLUTIONS] = {
 	"BriefMap",
 	"2_BriefMap"
 };

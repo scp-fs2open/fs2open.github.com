@@ -66,7 +66,7 @@ extern int Show_target_weapons;
 #endif
 
 // used to print out + or - after target distance and speed
-char* modifiers[] = {
+const  char* modifiers[] = {
 //XSTR:OFF
 "+",
 "-",

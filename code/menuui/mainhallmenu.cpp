@@ -175,7 +175,7 @@ void main_hall_render_door_anims(float frametime);
 
 struct main_hall_region_info {
 	int mask;
-	char *name;
+	const char *name;
 };
 
 main_hall_region_info Main_hall_region_map[] = {

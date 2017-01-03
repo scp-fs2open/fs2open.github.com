@@ -21,10 +21,9 @@
 
 
 /// DOT_SLIDER class down here
-void UI_DOT_SLIDER_NEW::create(UI_WINDOW *wnd, int _x, int _y, int _num_pos, char *bm_slider, int slider_mask,
-																					char *bm_left, int left_mask, int left_x, int left_y,
-																					char *bm_right, int right_mask, int right_x, int right_y,
-																					int _dot_width)
+void UI_DOT_SLIDER_NEW::create(UI_WINDOW *wnd, int _x, int _y, int _num_pos, const char *bm_slider, int slider_mask,
+							   const char *bm_left, int left_mask, int left_x, int left_y, const char *bm_right,
+							   int right_mask, int right_x, int right_y, int _dot_width)
 {
 	// no end buttons yet
 	has_end_buttons = 0;

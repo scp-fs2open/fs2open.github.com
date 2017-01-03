@@ -30,7 +30,7 @@ bool logfile_init(int logfile_type);
 void logfile_close(int logfile_type);
 
 // printf function itself called by the log_printf macro
-void log_printf(int logfile_type, char *format, ...);
+void log_printf(int logfile_type, const char *format, ...);
 
 // string print function
 void log_string(int logfile_type, const char *string, int add_time = 0);

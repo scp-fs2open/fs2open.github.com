@@ -32,7 +32,7 @@
 
 // This is the fs2_open credit list, please only add yourself if you have actually contributed code
 // Rules!
-char *fs2_open_credit_text = 
+const char *fs2_open_credit_text =
 "SOURCE CODE PROJECT STAFF:\n"
 	"\n"
 	"Project Leader:\n"
@@ -105,8 +105,8 @@ char *fs2_open_credit_text =
 	"\n"
 	"\n";
 
-char *unmodified_credits = "ORIGINAL VOLITION STAFF:\n\n\n";
-char *mod_check = "Design:";
+const char *unmodified_credits = "ORIGINAL VOLITION STAFF:\n\n\n";
+const char *mod_check = "Design:";
 
 #define NUM_BUTTONS				5
 #define DEFAULT_NUM_IMAGES		46
@@ -123,12 +123,12 @@ char *mod_check = "Design:";
 #define CREDITS_W_COORD 2
 #define CREDITS_H_COORD 3
 
-static char* Credits_bitmap_fname[GR_NUM_RESOLUTIONS] = {
+static const char* Credits_bitmap_fname[GR_NUM_RESOLUTIONS] = {
 	"Credits",			// GR_640
 	"2_Credits"
 };
 
-static char* Credits_bitmap_mask_fname[GR_NUM_RESOLUTIONS] = {
+static const char* Credits_bitmap_mask_fname[GR_NUM_RESOLUTIONS] = {
 	"Credits-M",			// GR_640
 	"2_Credits-M"
 };
@@ -153,12 +153,12 @@ int Credits_text_coords[GR_NUM_RESOLUTIONS][4] = {
 };
 
 struct credits_screen_buttons {
-	char *filename;
+	const char *filename;
 	int x, y, xt, yt;
 	int hotspot;
 	UI_BUTTON button;  // because we have a class inside this struct, we need the constructor below..
 
-	credits_screen_buttons(char *name, int x1, int y1, int xt1, int yt1, int h) : filename(name), x(x1), y(y1), xt(xt1), yt(yt1), hotspot(h) {}
+	credits_screen_buttons(const char *name, int x1, int y1, int xt1, int yt1, int h) : filename(name), x(x1), y(y1), xt(xt1), yt(yt1), hotspot(h) {}
 };
 
 static int Background_bitmap;

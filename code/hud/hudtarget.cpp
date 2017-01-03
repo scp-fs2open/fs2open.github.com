@@ -384,7 +384,7 @@ int Weapon_secondary_reload_x[GR_NUM_RESOLUTIONS] = {
 	615,							// x location of where to draw the weapon reload time
 	998
 };
-char *Weapon_gauge_fnames[NUM_HUD_SETTINGS][GR_NUM_RESOLUTIONS][NUM_WEAPON_GAUGES] = 
+const char *Weapon_gauge_fnames[NUM_HUD_SETTINGS][GR_NUM_RESOLUTIONS][NUM_WEAPON_GAUGES] =
 {
 //XSTR:OFF
 	{ // normal HUD

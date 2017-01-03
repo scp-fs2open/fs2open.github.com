@@ -57,7 +57,7 @@ struct sexp_variable;
 
 #define CAMPAIGN_LOOP_MISSION_UNINITIALIZED	-2
 
-extern char *campaign_types[MAX_CAMPAIGN_TYPES];
+extern const char *campaign_types[MAX_CAMPAIGN_TYPES];
 
 
 // campaign flags - Goober5000

@@ -27,13 +27,13 @@
 // MISSION FICTION VIEWER DEFINES/VARS
 //
 #define NUM_FVW_SETTINGS	2
-char *Fiction_viewer_ui_names[NUM_FVW_SETTINGS] =
+const char *Fiction_viewer_ui_names[NUM_FVW_SETTINGS] =
 {
 	"FS2",	// FreeSpace 2
 	"WCS"	// Wing Commander Saga
 };
 
-char *Fiction_viewer_screen_filename[NUM_FVW_SETTINGS][GR_NUM_RESOLUTIONS] =
+const char *Fiction_viewer_screen_filename[NUM_FVW_SETTINGS][GR_NUM_RESOLUTIONS] =
 {
 	{
 		"FictionViewer",		// GR_640
@@ -45,7 +45,7 @@ char *Fiction_viewer_screen_filename[NUM_FVW_SETTINGS][GR_NUM_RESOLUTIONS] =
 	}
 };
 
-char *Fiction_viewer_screen_mask[NUM_FVW_SETTINGS][GR_NUM_RESOLUTIONS] =
+const char *Fiction_viewer_screen_mask[NUM_FVW_SETTINGS][GR_NUM_RESOLUTIONS] =
 {
 	{
 		"FictionViewer-m",		// GR_640
@@ -118,7 +118,7 @@ ui_button_info Fiction_viewer_buttons[NUM_FVW_SETTINGS][GR_NUM_RESOLUTIONS][NUM_
 	}
 };
 
-char *Fiction_viewer_slider_filename[NUM_FVW_SETTINGS][GR_NUM_RESOLUTIONS] =
+const char *Fiction_viewer_slider_filename[NUM_FVW_SETTINGS][GR_NUM_RESOLUTIONS] =
 {
 	// standard FS2-style interface
 	{

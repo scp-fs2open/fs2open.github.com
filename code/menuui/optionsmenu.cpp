@@ -87,14 +87,14 @@
 #define OPTIONS_H_COORD 3
 
 struct options_buttons {
-	char *filename;
+	const char *filename;
 	int x, y;
 	int hotspot;
 	int tab;
 	int flags;
 	UI_BUTTON button;  // because we have a class inside this struct, we need the constructor below..
 
-	options_buttons(char *name, int x1, int y1, int h, int t, int f = 0) : filename(name), x(x1), y(y1), hotspot(h), tab(t), flags(f) {}
+	options_buttons(const char *name, int x1, int y1, int h, int t, int f = 0) : filename(name), x(x1), y(y1), hotspot(h), tab(t), flags(f) {}
 };
 
 static options_buttons Buttons[GR_NUM_RESOLUTIONS][NUM_BUTTONS] = {
@@ -201,8 +201,8 @@ op_sliders Options_sliders[GR_NUM_RESOLUTIONS][NUM_OPTIONS_SLIDERS] = {
 };
 
 static struct {
-	char *filename;
-	char *mask_filename;
+	const char *filename;
+	const char *mask_filename;
 	int bitmap;
 	int mask;
 	

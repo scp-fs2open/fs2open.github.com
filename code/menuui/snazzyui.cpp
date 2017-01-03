@@ -178,7 +178,7 @@ void snazzy_menu_add_region(MENU_REGION* region, const char* text, int mask, int
 //
 //
 
-void read_menu_tbl(char* menu_name, char* bkg_filename, char* mask_filename, MENU_REGION* regions, int* num_regions, int play_sound)
+void read_menu_tbl(const char* menu_name, char* bkg_filename, char* mask_filename, MENU_REGION* regions, int* num_regions, int play_sound)
 {
 	CFILE* fp;
 	int state=0;

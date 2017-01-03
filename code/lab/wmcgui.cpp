@@ -172,7 +172,7 @@ void GUISystem::ParseClassInfo(char* filename)
 	}
 }
 
-void ClassInfoEntry::Parse(char* tag, int in_type)
+void ClassInfoEntry::Parse(const char* tag, int in_type)
 {
 	char buf[MAX_FILENAME_LEN];
 	strcpy_s(buf, "+");

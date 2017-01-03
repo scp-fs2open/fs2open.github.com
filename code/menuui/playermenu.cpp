@@ -63,11 +63,11 @@ int Choose_list_coords[GR_NUM_RESOLUTIONS][4] = {
 	}
 };
 
-char *Player_select_background_bitmap_name[GR_NUM_RESOLUTIONS] = {
+const char *Player_select_background_bitmap_name[GR_NUM_RESOLUTIONS] = {
 	"ChoosePilot",
 	"2_ChoosePilot"
 };
-char *Player_select_background_mask_bitmap[GR_NUM_RESOLUTIONS] = {
+const char *Player_select_background_mask_bitmap[GR_NUM_RESOLUTIONS] = {
 	"ChoosePilot-m",
 	"2_ChoosePilot-m"
 };
@@ -77,12 +77,12 @@ char *Player_select_background_mask_bitmap[GR_NUM_RESOLUTIONS] = {
 
 // convenient struct for handling all button controls
 struct barracks_buttons {
-	char *filename;
+	const char *filename;
 	int x, y, xt, yt;
 	int hotspot;
 	UI_BUTTON button;  // because we have a class inside this struct, we need the constructor below..
 
-	barracks_buttons(char *name, int x1, int y1, int xt1, int yt1, int h) : filename(name), x(x1), y(y1), xt(xt1), yt(yt1), hotspot(h) {}
+	barracks_buttons(const char *name, int x1, int y1, int xt1, int yt1, int h) : filename(name), x(x1), y(y1), xt(xt1), yt(yt1), hotspot(h) {}
 };
 
 static barracks_buttons Player_select_buttons[GR_NUM_RESOLUTIONS][NUM_PLAYER_SELECT_BUTTONS] = {

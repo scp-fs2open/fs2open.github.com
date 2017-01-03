@@ -167,12 +167,12 @@ int Barracks_squad_number_coords[GR_NUM_RESOLUTIONS][2] = {
 
 //XSTR:OFF
 // bitmaps defs
-static char *Barracks_bitmap_fname[GR_NUM_RESOLUTIONS] = {
+static const char *Barracks_bitmap_fname[GR_NUM_RESOLUTIONS] = {
 	"Barracks",		// GR_640
 	"2_Barracks"		// GR_1024
 };
 
-static char *Barracks_bitmap_mask_fname[GR_NUM_RESOLUTIONS] = {
+static const char *Barracks_bitmap_mask_fname[GR_NUM_RESOLUTIONS] = {
 	"Barracks-M",		// GR_640
 	"2_Barracks-M"		// GR_1024
 };
@@ -188,14 +188,14 @@ struct barracks_bitmaps {
 };
 
 struct barracks_buttons {
-	char *filename;
+	const char *filename;
 	int x, y;
 	int text_x, text_y;	// this is where the text label is
 	int hotspot;
 	int repeat;
 	UI_BUTTON button;  // because we have a class inside this struct, we need the constructor below..
 
-	barracks_buttons(char *name, int x1, int y1, int x2, int y2, int h, int r = 0) : filename(name), x(x1), y(y1), text_x(x2), text_y(y2), hotspot(h), repeat(r) {}
+	barracks_buttons(const char *name, int x1, int y1, int x2, int y2, int h, int r = 0) : filename(name), x(x1), y(y1), text_x(x2), text_y(y2), hotspot(h), repeat(r) {}
 };
 
 static int Background_bitmap = -1;
