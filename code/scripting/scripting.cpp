@@ -24,13 +24,6 @@ using namespace scripting;
 script_state Script_system("FS2_Open Scripting");
 bool Output_scripting_meta = false;
 
-//*************************Scripting hook globals*************************
-script_hook Script_splashhook;
-script_hook Script_simulationhook;
-script_hook Script_hudhook;
-script_hook Script_globalhook;
-script_hook Script_gameinithook;
-
 flag_def_list Script_conditions[] = 
 {
 	{"State",		CHC_STATE,			0},
@@ -89,7 +82,8 @@ flag_def_list Script_actions[] =
     {"On HUD Message Received", CHA_HUDMSGRECEIVED, 0},
 	{ "On Afterburner Engage",	CHA_AFTERBURNSTART, 0 },
 	{ "On Afterburner Stop",	CHA_AFTERBURNEND,	0 },
-	{ "On Beam Fire",			CHA_BEAMFIRE,		0 }
+	{ "On Beam Fire",			CHA_BEAMFIRE,		0 },
+	{ "On Simulation",			CHA_SIMULATION,		0 }
 };
 
 int Num_script_actions = sizeof(Script_actions)/sizeof(flag_def_list);
@@ -124,23 +118,23 @@ void script_parse_table(const char *filename)
 			//int num = 42;
 			//Script_system.SetHookVar("Version", 'i', &num);
 			if (optional_string("$Global:")) {
-				st->ParseChunk(&Script_globalhook, "Global");
+				st->ParseGlobalChunk(CHA_ONFRAME, "Global");
 			}
 
 			if (optional_string("$Splash:")) {
-				st->ParseChunk(&Script_splashhook, "Splash");
+				st->ParseGlobalChunk(CHA_SPLASHSCREEN, "Splash");
 			}
 
 			if (optional_string("$GameInit:")) {
-				st->ParseChunk(&Script_gameinithook, "GameInit");
+				st->ParseGlobalChunk(CHA_GAMEINIT, "GameInit");
 			}
 
 			if (optional_string("$Simulation:")) {
-				st->ParseChunk(&Script_simulationhook, "Simulation");
+				st->ParseGlobalChunk(CHA_SIMULATION, "Simulation");
 			}
 
 			if (optional_string("$HUD:")) {
-				st->ParseChunk(&Script_hudhook, "HUD");
+				st->ParseGlobalChunk(CHA_HUDDRAW, "HUD");
 			}
 
 			required_string("#End");
@@ -189,13 +183,6 @@ void script_parse_table(const char *filename)
 void script_init()
 {
 	mprintf(("SCRIPTING: Beginning initialization sequence...\n"));
-
-	// first things first: init all script hooks, since they are PODs now, not classes...
-	script_hook_init(&Script_splashhook);
-	script_hook_init(&Script_simulationhook);
-	script_hook_init(&Script_hudhook);
-	script_hook_init(&Script_globalhook);
-	script_hook_init(&Script_gameinithook);
 
 	mprintf(("SCRIPTING: Beginning Lua initialization...\n"));
 	Script_system.CreateLuaState();
@@ -929,13 +916,6 @@ void script_state::Clear()
 	// Free all lua value references
 	ConditionalHooks.clear();
 
-	// Also do the same to the old hooks
-	Script_globalhook.freeFunctions();
-	Script_simulationhook.freeFunctions();
-	Script_hudhook.freeFunctions();
-	Script_splashhook.freeFunctions();
-	Script_gameinithook.freeFunctions();
-
 	if(LuaState != NULL) {
 		lua_close(LuaState);
 	}
@@ -1198,7 +1178,7 @@ void script_state::ParseChunkSub(script_function& script_func, const char* debug
 	}
 }
 
-void script_state::ParseChunk(script_hook *dest, char *debug_str)
+void script_state::ParseChunk(script_hook *dest, const char *debug_str)
 {
 	static int total_parse_calls = 0;
 	char debug_buf[128];
@@ -1208,8 +1188,8 @@ void script_state::ParseChunk(script_hook *dest, char *debug_str)
 	//DANGER! This code means the debug_str must be used only before parsing
 	if(debug_str == NULL)
 	{
+		sprintf(debug_buf, "script_parse() count %d", total_parse_calls);
 		debug_str = debug_buf;
-		sprintf(debug_str, "script_parse() count %d", total_parse_calls);
 	}
 
 	ParseChunkSub(dest->hook_function, debug_str);
@@ -1248,6 +1228,19 @@ flag_def_list* script_parse_action()
 	}
 
 	return NULL;
+}
+void script_state::ParseGlobalChunk(int hookType, const char* debug_str) {
+	ConditionedHook hook;
+
+	script_action sat;
+	sat.action_type = hookType;
+
+	ParseChunk(&sat.hook, debug_str);
+
+	//Add the action
+	hook.AddAction(&sat);
+
+	ConditionalHooks.push_back(hook);
 }
 bool script_state::ParseCondition(const char *filename)
 {
