@@ -56,14 +56,14 @@ int Gp_last_screen;
 #define CONTINUE_BUTTON					2
 
 struct gameplay_help_buttons {
-	char *filename;
+	const char *filename;
 	int x, y;
 	int hotspot;
 	int tab;
 	int flags;
 	UI_BUTTON button;  // because we have a class inside this struct, we need the constructor below..
 
-	gameplay_help_buttons(char *name, int x1, int y1, int h) : filename(name), x(x1), y(y1), hotspot(h) {}
+	gameplay_help_buttons(const char *name, int x1, int y1, int h) : filename(name), x(x1), y(y1), hotspot(h) {}
 };
 
 static gameplay_help_buttons Buttons[GR_NUM_RESOLUTIONS][NUM_BUTTONS] = {
@@ -93,12 +93,12 @@ static UI_XSTR Game_help_text[GR_NUM_RESOLUTIONS][GAME_HELP_NUM_TEXT] = {
 	}
 };
 
-static char *Game_help_filename[GR_NUM_RESOLUTIONS] = {
+static const char *Game_help_filename[GR_NUM_RESOLUTIONS] = {
 	"F1",
 	"2_F1"
 };
 
-static char *Game_help_mask_filename[GR_NUM_RESOLUTIONS] = {
+static const char *Game_help_mask_filename[GR_NUM_RESOLUTIONS] = {
 	"F1-m",
 	"2_F1-m"
 };
@@ -112,7 +112,7 @@ static int Current_help_page;
 // generate a line for the on-line help for a control item with specified id
 // input:	id		=>	index for control item within Control_config[]
 //				buf	=> buffer with enough space to hold ouput string
-char *gameplay_help_control_text(int id, char *buf)
+const char *gameplay_help_control_text(int id, char *buf)
 {
 	int			has_key=0, has_joy=0;
 	config_item	*ci;

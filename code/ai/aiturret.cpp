@@ -47,7 +47,7 @@ float Player_lethality_bump[NUM_SKILL_LEVELS] = {
 	0.0f, 0.0f, 0.0f, 0.0f, 0.0f
 };
 
-char *Turret_target_order_names[NUM_TURRET_ORDER_TYPES] = {
+const char *Turret_target_order_names[NUM_TURRET_ORDER_TYPES] = {
 	"Bombs",
 	"Ships",
 	"Asteroids",

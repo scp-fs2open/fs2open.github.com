@@ -26,11 +26,11 @@
 extern int Cmdline_nomovies;
 
 
-char* Cutscene_bitmap_name[GR_NUM_RESOLUTIONS] = {
+const char* Cutscene_bitmap_name[GR_NUM_RESOLUTIONS] = {
 		"ViewFootage",
 		"2_ViewFootage"
 };
-char* Cutscene_mask_name[GR_NUM_RESOLUTIONS] = {
+const char* Cutscene_mask_name[GR_NUM_RESOLUTIONS] = {
 		"ViewFootage-m",
 		"2_ViewFootage-m"
 };

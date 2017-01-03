@@ -48,12 +48,12 @@
 #define CONTROL_W_COORD 2
 #define CONTROL_H_COORD 3
 
-char* Conflict_background_bitmap_fname[GR_NUM_RESOLUTIONS] = {
+const char* Conflict_background_bitmap_fname[GR_NUM_RESOLUTIONS] = {
 	"ControlConfig",		// GR_640
 	"2_ControlConfig"		// GR_1024
 };
 
-char* Conflict_background_bitmap_mask_fname[GR_NUM_RESOLUTIONS] = {
+const char* Conflict_background_bitmap_mask_fname[GR_NUM_RESOLUTIONS] = {
 	"ControlConfig-m",		// GR_640
 	"2_ControlConfig-m"		// GR_1024
 };

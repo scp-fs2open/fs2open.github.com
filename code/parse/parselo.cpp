@@ -291,7 +291,7 @@ void error_display(int error_level, const char *format, ...)
 }
 
 //	Advance Mp to the next eoln character.
-void advance_to_eoln(char *more_terminators)
+void advance_to_eoln(const char *more_terminators)
 {
 	char	terminators[128];
 
@@ -331,7 +331,7 @@ void advance_to_next_white()
 // Search for specified string, skipping everything up to that point.  Returns 1 if found,
 // 0 if string wasn't found (and hit end of file), or -1 if not found, but end of checking
 // block was reached.
-int skip_to_string(char *pstr, char *end)
+int skip_to_string(const char *pstr, const char *end)
 {
 	ignore_white_space();
 	auto len = strlen(pstr);
@@ -360,7 +360,7 @@ int skip_to_string(char *pstr, char *end)
 
 // Goober5000
 // Advance to start of pstr.  Return 0 is successful, otherwise return !0
-int skip_to_start_of_string(char *pstr, char *end)
+int skip_to_start_of_string(const char *pstr, const char *end)
 {
 	ignore_white_space();
 	auto len = strlen(pstr);
@@ -388,7 +388,7 @@ int skip_to_start_of_string(char *pstr, char *end)
 }
 
 // Advance to start of either pstr1 or pstr2.  Return 0 is successful, otherwise return !0
-int skip_to_start_of_string_either(char *pstr1, char *pstr2, char *end)
+int skip_to_start_of_string_either(const char *pstr1, const char *pstr2, const char *end)
 {
 	size_t len1, len2, endlen;
 
@@ -511,7 +511,7 @@ int optional_string(const char *pstr)
 	return 0;
 }
 
-int optional_string_either(char *str1, char *str2)
+int optional_string_either(const char *str1, const char *str2)
 {
 	ignore_white_space();
 
@@ -633,7 +633,7 @@ int optional_string_fred(char *pstr, char *end, char *end2)
  * @details Advances the Mp until a string is found or exceeds RS_MAX_TRIES. Once a string is found, Mp is located at
  * the start of the found string.
  */
-int required_string_either(char *str1, char *str2)
+int required_string_either(const char *str1, const char *str2)
 {
 	ignore_white_space();
 
@@ -717,7 +717,7 @@ int required_string_one_of(int arg_count, ...)
 	return -1;
 }
 
-int required_string_either_fred(char *str1, char *str2)
+int required_string_either_fred(const char *str1, const char *str2)
 {
 	ignore_white_space();
 
@@ -745,7 +745,7 @@ int required_string_either_fred(char *str1, char *str2)
 
 //	Copy characters from instr to outstr until eoln is found, or until max
 //	characters have been copied (including terminator).
-void copy_to_eoln(char *outstr, char *more_terminators, char *instr, int max)
+void copy_to_eoln(char *outstr, const char *more_terminators, const char *instr, int max)
 {
 	int	count = 0;
 	char	ch;
@@ -773,7 +773,7 @@ void copy_to_eoln(char *outstr, char *more_terminators, char *instr, int max)
 }
 
 //	Ditto for SCP_string.
-void copy_to_eoln(SCP_string &outstr, char *more_terminators, char *instr)
+void copy_to_eoln(SCP_string &outstr, const char *more_terminators, const char *instr)
 {
 	char	ch;
 	char	terminators[128];
@@ -1144,7 +1144,7 @@ void get_string(SCP_string &str)
 //	Stuff a string into a string buffer.
 //	Supports various FreeSpace primitive types.  If 'len' is supplied, it will override
 // the default string length if using the F_NAME case.
-void stuff_string(char *outstr, int type, int len, char *terminators)
+void stuff_string(char *outstr, int type, int len, const char *terminators)
 {
 	char read_str[PARSE_BUF_SIZE] = "";
 	int read_len = PARSE_BUF_SIZE;
@@ -1231,7 +1231,7 @@ void stuff_string(char *outstr, int type, int len, char *terminators)
 
 //	Stuff a string into a string buffer.
 //	Supports various FreeSpace primitive types.
-void stuff_string(SCP_string &outstr, int type, char *terminators)
+void stuff_string(SCP_string &outstr, int type, const char *terminators)
 {
 	SCP_string read_str;
 	int tag_id;

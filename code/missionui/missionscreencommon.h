@@ -90,7 +90,7 @@ void ship_select_common_init();
 
 int mission_ui_background_load(const char *custom_background, const char *single_background, const char *multi_background = NULL);
 
-void common_set_interface_palette(char *filename = NULL);		// set the interface palette
+void common_set_interface_palette(const char *filename = NULL);		// set the interface palette
 void common_free_interface_palette();		// restore game palette
 
 void load_wing_icons(char *filename);

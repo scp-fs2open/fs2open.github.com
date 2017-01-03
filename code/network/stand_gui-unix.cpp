@@ -972,11 +972,11 @@ void std_multi_add_goals() {}
 void std_multi_update_goals() {}
 void std_multi_update_netgame_info_controls() {}
 void std_multi_set_standalone_mission_name(char *mission_name) {}
-void std_gen_set_text(char *str, int field_num) {}
-void std_create_gen_dialog(char *title) {}
+void std_gen_set_text(const char *str, int field_num) {}
+void std_create_gen_dialog(const char *title) {}
 void std_destroy_gen_dialog() {}
 int std_gen_is_active() {return 0;}
-void std_debug_set_standalone_state_string(char *str) {}
+void std_debug_set_standalone_state_string(const char *str) {}
 void std_reset_standalone_gui() {}
 void std_reset_timestamps() {}
 void std_multi_set_standalone_missiontime(float mission_time) {}

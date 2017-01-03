@@ -84,8 +84,8 @@ int	Pattern_samples_per_measure[MAX_SOUNDTRACKS][MAX_PATTERNS];
 
 typedef struct pattern_info
 {
-	char *pattern_name;
-	char *pattern_desc;
+	const char *pattern_name;
+	const char *pattern_desc;
 	int pattern_can_force;
 	int pattern_loop_for;
 	int pattern_default_next_fs1;
@@ -1773,7 +1773,7 @@ int event_music_get_spooled_music_index(const SCP_string& name)
 	}
 
 // set a score based on name
-void event_music_set_score(int score_index, char *name)
+void event_music_set_score(int score_index, const char *name)
 {
 	Assert(score_index < NUM_SCORES);
 

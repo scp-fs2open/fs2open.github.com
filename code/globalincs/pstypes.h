@@ -189,21 +189,12 @@ struct particle_pnt {
 	vec3d up;
 };
 
-struct trail_shader_info {
-	vec3d pos;
-	vec3d fvec;
-
-	float intensity;
-	float width;
-	uv_pair tex_coord;
-};
-
 //def_list
-typedef struct flag_def_list {
-	char *name;
+struct flag_def_list {
+	const char *name;
 	int def;
 	ubyte var;
-} def_list;
+};
 
 template<class T>
 struct flag_def_list_new {
@@ -283,7 +274,7 @@ extern int Global_error_count;
 	// No debug version of Int3
 	#define Int3() do { } while (0)
 #else
-	void debug_int3(char *file, int line);
+	void debug_int3(const char *file, int line);
 
 	// Debug version of Int3
 	#define Int3() debug_int3(__FILE__, __LINE__)

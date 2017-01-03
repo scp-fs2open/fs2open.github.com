@@ -38,7 +38,7 @@ void set_flag(ai_profile_t *profile, const char *name, AI::Profile_Flags flag)
 	}
 }
 
-char *AI_path_types[] = {
+const char *AI_path_types[] = {
 	"normal",
 	"alt1",
 };

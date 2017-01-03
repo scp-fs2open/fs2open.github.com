@@ -1043,7 +1043,7 @@ void parse_triggers(int &n_trig, queued_animation **triggers, char *props);
 
 
 //reads a binary file containing a 3d model
-int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subsystem *subsystems, int ferror)
+int read_model_file(polymodel * pm, const char *filename, int n_subsystems, model_subsystem *subsystems, int ferror)
 {
 	CFILE *fp;
 	int version;
@@ -2610,7 +2610,7 @@ void model_load_texture(polymodel *pm, int i, char *file)
 }
 
 //returns the number of this model
-int model_load(char *filename, int n_subsystems, model_subsystem *subsystems, int ferror, int duplicate)
+int model_load(const  char *filename, int n_subsystems, model_subsystem *subsystems, int ferror, int duplicate)
 {
 	int i, num, arc_idx;
 	polymodel *pm = NULL;

@@ -26,7 +26,7 @@ camid Main_camera;
 
 //*************************CLASS: camera*************************
 //This is where the camera class beings! :D
-camera::camera(char *in_name, int in_signature)
+camera::camera(const char *in_name, int in_signature)
 {
 	set_name(in_name);
 	sig = in_signature;
@@ -78,7 +78,7 @@ void camera::reset()
 	}
 }
 
-void camera::set_name(char *in_name)
+void camera::set_name(const char *in_name)
 {
 	if(in_name != NULL)
 		strncpy(name, in_name, NAME_LENGTH-1);
@@ -885,14 +885,14 @@ int cam_get_next_sig()
 	return next_sig++;
 }
 
-camid cam_create(char *n_name, vec3d *n_pos, vec3d *n_norm, object *n_object, int n_object_host_submodel)
+camid cam_create(const char *n_name, vec3d *n_pos, vec3d *n_norm, object *n_object, int n_object_host_submodel)
 {
 	matrix ori;
 	vm_vector_2_matrix_norm(&ori, n_norm);
 	return cam_create(n_name, n_pos, &ori, n_object, n_object_host_submodel);
 }
 
-camid cam_create(char *n_name, vec3d *n_pos, matrix *n_ori, object *n_object, int n_object_host_submodel)
+camid cam_create(const char *n_name, vec3d *n_pos, matrix *n_ori, object *n_object, int n_object_host_submodel)
 {
 	camera *cam = NULL;
 	camid cid;

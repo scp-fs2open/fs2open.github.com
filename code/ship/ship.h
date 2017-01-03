@@ -252,7 +252,7 @@ extern SCP_vector<DamageTypeStruct>	Damage_types;
 #define SLT_DEFAULT	1
 
 #define NUM_TURRET_ORDER_TYPES		3
-extern char *Turret_target_order_names[NUM_TURRET_ORDER_TYPES];	//aiturret.cpp
+extern const char *Turret_target_order_names[NUM_TURRET_ORDER_TYPES];	//aiturret.cpp
 
 // Swifty: Cockpit displays
 typedef struct cockpit_display {

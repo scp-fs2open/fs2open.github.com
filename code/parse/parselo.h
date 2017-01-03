@@ -95,36 +95,36 @@ extern void diag_printf(char *format, ...);
 extern void error_display(int error_level, const char *format, ...);
 
 // skip
-extern int skip_to_string(char *pstr, char *end = NULL);
-extern int skip_to_start_of_string(char *pstr, char *end = NULL);
-extern int skip_to_start_of_string_either(char *pstr1, char *pstr2, char *end = NULL);
-extern void advance_to_eoln(char *terminators);
+extern int skip_to_string(const char *pstr, const char *end = NULL);
+extern int skip_to_start_of_string(const char *pstr, const char *end = NULL);
+extern int skip_to_start_of_string_either(const char *pstr1, const char *pstr2, const char *end = NULL);
+extern void advance_to_eoln(const char *terminators);
 extern void skip_token();
 
 // optional
 extern int optional_string(const char *pstr);
-extern int optional_string_either(char *str1, char *str2);
+extern int optional_string_either(const char *str1, const char *str2);
 extern int optional_string_one_of(int arg_count, ...);
 
 // required
 extern int required_string(const char *pstr);
-extern int required_string_either(char *str1, char *str2);
+extern int required_string_either(const char *str1, const char *str2);
 extern int required_string_one_of(int arg_count, ...);
 
 // stuff
-extern void copy_to_eoln(char *outstr, char *more_terminators, char *instr, int max);
+extern void copy_to_eoln(char *outstr, const char *more_terminators, const char *instr, int max);
 extern void copy_text_until(char *outstr, char *instr, char *endstr, int max_chars);
 extern void stuff_string_white(char *outstr, int len = 0);
 extern void stuff_string_until(char *outstr, char *endstr, int len = 0);
-extern void stuff_string(char *outstr, int type, int len, char *terminators = NULL);
+extern void stuff_string(char *outstr, int type, int len, const char *terminators = NULL);
 extern void stuff_string_line(char *outstr, int len);
 
 // SCP_string stuff
-extern void copy_to_eoln(SCP_string &outstr, char *more_terminators, char *instr);
+extern void copy_to_eoln(SCP_string &outstr, const char *more_terminators, const char *instr);
 extern void copy_text_until(SCP_string &outstr, char *instr, char *endstr);
 extern void stuff_string_white(SCP_string &outstr);
 extern void stuff_string_until(SCP_string &outstr, char *endstr);
-extern void stuff_string(SCP_string &outstr, int type, char *terminators = NULL);
+extern void stuff_string(SCP_string &outstr, int type, const char *terminators = NULL);
 extern void stuff_string_line(SCP_string &outstr);
 
 //alloc
@@ -266,7 +266,7 @@ int split_str(const char *src, int max_pixel_w, SCP_vector<int> &n_chars, SCP_ve
 
 // fred
 extern int required_string_fred(char *pstr, char *end = NULL);
-extern int required_string_either_fred(char *str1, char *str2);
+extern int required_string_either_fred(const char *str1, const char *str2);
 extern int optional_string_fred(char *pstr, char *end = NULL, char *end2 = NULL);
 
 // Goober5000 - returns position of replacement or -1 for exceeded length (SCP_string variants return the result)

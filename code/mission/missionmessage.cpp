@@ -2317,7 +2317,7 @@ void message_pagein_mission_messages()
 // ---------------------------------------------------
 // Add and remove messages - used by autopilot code now, but useful elswhere
 
-bool add_message(char *name, char *message, int persona_index, int multi_team)
+bool add_message(const char *name, char *message, int persona_index, int multi_team)
 {
 	MissionMessage msg; 
 	strcpy_s(msg.name, name);
@@ -2332,7 +2332,7 @@ bool add_message(char *name, char *message, int persona_index, int multi_team)
 	return true;
 }
 
-bool change_message(char *name, char *message, int persona_index, int multi_team)
+bool change_message(const char *name, char *message, int persona_index, int multi_team)
 {
 	for (int i = Num_builtin_messages; i < Num_messages; i++) 
 	{

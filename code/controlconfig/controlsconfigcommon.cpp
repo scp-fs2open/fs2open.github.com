@@ -199,7 +199,7 @@ config_item Control_config[CCFG_MAX + 1] = {
 	{                           -1,                 -1, -1,           false, "",                                       CC_TYPE_TRIGGER,    -1, -1, 0, false, false }
 };
 
-char *Scan_code_text_german[] = {
+const char *Scan_code_text_german[] = {
 	"",				"Esc",				"1",				"2",				"3",				"4",				"5",				"6",
 	"7",				"8",				"9",				"0",				"Akzent '",				"Eszett",				"R\x81""cktaste",		"Tab",
 	"Q",				"W",				"E",				"R",				"T",				"Z",				"U",				"I",
@@ -241,7 +241,7 @@ char *Scan_code_text_german[] = {
 	"",				"",				"",				"",				"",				"",				"",				"",
 };
 
-char *Joy_button_text_german[] = {
+const char *Joy_button_text_german[] = {
 	"Knopf 1",		"Knopf 2",		"Knopf 3",		"Knopf 4",		"Knopf 5",		"Knopf 6",
 	"Knopf 7",		"Knopf 8",		"Knopf 9",		"Knopf 10",		"Knopf 11",		"Knopf 12",
 	"Knopf 13",		"Knopf 14",		"Knopf 15",		"Knopf 16",		"Knopf 17",		"Knopf 18",
@@ -250,7 +250,7 @@ char *Joy_button_text_german[] = {
 	"Knopf 31",		"Knopf 32",		"Hut Hinten",	"Hut Vorne",	"Hut Links",	"Hut Rechts"
 };
 
-char *Scan_code_text_french[] = {
+const char *Scan_code_text_french[] = {
 	"",				"\x90""chap",			"1",				"2",				"3",				"4",				"5",				"6",
 	"7",				"8",				"9",				"0",				"-",				"=",				"Fl\x82""che Ret.",			"Tab",
 	"Q",				"W",				"E",				"R",				"T",				"Y",				"U",				"I",
@@ -292,7 +292,7 @@ char *Scan_code_text_french[] = {
 	"",				"",				"",				"",				"",				"",				"",				"",
 };
 
-char *Joy_button_text_french[] = {
+const char *Joy_button_text_french[] = {
 	"Bouton 1",		"Bouton 2",		"Bouton 3",		"Bouton 4",		"Bouton 5",		"Bouton 6",
 	"Bouton 7",		"Bouton 8",		"Bouton 9",		"Bouton 10",		"Bouton 11",		"Bouton 12",
 	"Bouton 13",		"Bouton 14",		"Bouton 15",		"Bouton 16",		"Bouton 17",		"Bouton 18",
@@ -301,7 +301,7 @@ char *Joy_button_text_french[] = {
 	"Bouton 31",		"Bouton 32",		"Chapeau Arri\x8Are",		"Chapeau Avant",		"Chapeau Gauche",		"Chapeau Droite"
 };
 
-char *Scan_code_text_polish[] = {
+const char *Scan_code_text_polish[] = {
 	"",				"Esc",			"1",				"2",				"3",				"4",				"5",				"6",
 	"7",				"8",				"9",				"0",				"-",				"=",				"Backspace",	"Tab",
 	"Q",				"W",				"E",				"R",				"T",				"Y",				"U",				"I",
@@ -343,7 +343,7 @@ char *Scan_code_text_polish[] = {
 	"",				"",				"",				"",				"",				"",				"",				"",
 };
 
-char *Joy_button_text_polish[] = {
+const char *Joy_button_text_polish[] = {
 	"Przyc.1",		"Przyc.2",		"Przyc.3",		"Przyc.4",		"Przyc.5",		"Przyc.6",
 	"Przyc.7",		"Przyc.8",		"Przyc.9",		"Przyc.10",	"Przyc.11",	"Przyc.12",
 	"Przyc.13",	"Przyc.14",	"Przyc.15",	"Przyc.16",	"Przyc.17",	"Przyc.18",
@@ -353,7 +353,7 @@ char *Joy_button_text_polish[] = {
 };
 
 //!	This is the text that is displayed on the screen for the keys a player selects
-char *Scan_code_text_english[] = {
+const char *Scan_code_text_english[] = {
 	"",				"Esc",			"1",				"2",				"3",				"4",				"5",				"6",
 	"7",				"8",				"9",				"0",				"-",				"=",				"Backspace",	"Tab",
 	"Q",				"W",				"E",				"R",				"T",				"Y",				"U",				"I",
@@ -395,7 +395,7 @@ char *Scan_code_text_english[] = {
 	"",				"",				"",				"",				"",				"",				"",				"",
 };
 
-char *Joy_button_text_english[] = {
+const char *Joy_button_text_english[] = {
 	"Button 1",		"Button 2",		"Button 3",		"Button 4",		"Button 5",		"Button 6",
 	"Button 7",		"Button 8",		"Button 9",		"Button 10",	"Button 11",	"Button 12",
 	"Button 13",	"Button 14",	"Button 15",	"Button 16",	"Button 17",	"Button 18",
@@ -404,8 +404,8 @@ char *Joy_button_text_english[] = {
 	"Button 31",	"Button 32",	"Hat Back",		"Hat Forward",	"Hat Left",		"Hat Right"
 };
 
-char **Scan_code_text = Scan_code_text_english;
-char **Joy_button_text = Joy_button_text_english;
+const char **Scan_code_text = Scan_code_text_english;
+const char **Joy_button_text = Joy_button_text_english;
 
 SCP_vector<config_item*> Control_config_presets;
 SCP_vector<SCP_string> Control_config_preset_names;
@@ -510,8 +510,8 @@ int translate_key_to_index(const char *key, bool find_override)
 char *translate_key(char *key)
 {
 	int index = -1, key_code = -1, joy_code = -1;
-	char *key_text = NULL;
-	char *joy_text = NULL;
+	const char *key_text = NULL;
+	const char *joy_text = NULL;
 
 	static char text[40] = {"None"};
 
@@ -553,7 +553,7 @@ char *translate_key(char *key)
 	return text;
 }
 
-char *textify_scancode(int code)
+const char *textify_scancode(int code)
 {
 	static char text[40];
 
