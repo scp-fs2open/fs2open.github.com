@@ -52,12 +52,12 @@ float Multi_pause_eat = -1.0f;
 #define MP_SCROLL_DOWN				1
 #define MP_EXIT_MISSION				2
 
-char *Multi_paused_bg_fname[GR_NUM_RESOLUTIONS] = {
+const char *Multi_paused_bg_fname[GR_NUM_RESOLUTIONS] = {
 	"MPPause",
 	"2_MPPause"
 };
 
-char *Multi_paused_bg_mask[GR_NUM_RESOLUTIONS] = {
+const char *Multi_paused_bg_mask[GR_NUM_RESOLUTIONS] = {
 	"MPPause-m",
 	"2_MPPause-m"
 };

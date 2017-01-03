@@ -2045,7 +2045,7 @@ void stars_draw_background()
 }
 
 // call this to set a specific model as the background model
-void stars_set_background_model(char *model_name, char *texture_name, int flags)
+void stars_set_background_model(const char *model_name, const char *texture_name, int flags)
 {
 	if (Nmodel_bitmap >= 0) {
 		bm_unload(Nmodel_bitmap);

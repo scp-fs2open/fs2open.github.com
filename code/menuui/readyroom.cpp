@@ -255,7 +255,7 @@ static int Sim_volition_icon_x[GR_NUM_RESOLUTIONS] = {
 // special icons themselves
 int Mission_icon_bitmaps[NUM_MISSION_ICONS];
 //XSTR:OFF
-char *Mission_icon_bitmap_filenames[NUM_MISSION_ICONS] = {
+const char *Mission_icon_bitmap_filenames[NUM_MISSION_ICONS] = {
 	"icon-volition"	
 };
 //XSTR:ON

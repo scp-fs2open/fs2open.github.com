@@ -2861,7 +2861,7 @@ float texture_info::GetTotalTime()
 {
 	return total_time;
 }
-int texture_info::LoadTexture(char *filename, char *dbg_name = "<UNKNOWN>")
+int texture_info::LoadTexture(const char *filename, const char *dbg_name)
 {
 	if (strlen(filename) + 4 >= NAME_LENGTH) //Filenames are passed in without extension
 	{

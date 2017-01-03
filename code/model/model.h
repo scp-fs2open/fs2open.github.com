@@ -66,7 +66,7 @@ extern int model_render_flags_size;
 #define SUBSYSTEM_MAX				12				//	maximum value for subsystem_xxx, for error checking
 
 // Goober5000
-extern char *Subsystem_types[SUBSYSTEM_MAX];
+extern const char *Subsystem_types[SUBSYSTEM_MAX];
 
 #define MAX_TFP						10				// maximum number of turret firing points
 
@@ -610,7 +610,7 @@ public:
 	int GetTexture();
 	float GetTotalTime();
 
-	int LoadTexture(char *filename, char *dbg_name);
+	int LoadTexture(const char *filename, const char *dbg_name = "<UNKNOWN>");
 
 	void PageIn();
 	void PageOut(bool release);

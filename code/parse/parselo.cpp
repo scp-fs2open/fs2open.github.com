@@ -185,7 +185,7 @@ void skip_token()
 
 //	Display a diagnostic message if Verbose is set.
 //	(Verbose is set if -v command line switch is present.)
-void diag_printf(char *format, ...)
+void diag_printf(const char *format, ...)
 {
 #ifndef NDEBUG
 	SCP_string buffer;

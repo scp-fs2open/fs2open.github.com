@@ -522,7 +522,7 @@ char *ChatGetString(void)
 }
 
 
-char * GetWordNum(int num, const char * l_String)
+const char * GetWordNum(int num, const char * l_String)
 {
 	static char strreturn[600];
 	static char ptokstr[600];
@@ -561,7 +561,7 @@ char * GetWordNum(int num, const char * l_String)
 	return strreturn;
 }
 
-int AddChatUser(char *nickname)
+int AddChatUser(const char *nickname)
 {
 	Curruser = Firstuser;
 	while(Curruser) 
@@ -597,7 +597,7 @@ int AddChatUser(char *nickname)
 
 }
 
-int RemoveChatUser(char *nickname)
+int RemoveChatUser(const char *nickname)
 {
 	Chat_user *prv_user = NULL;
 	
@@ -644,7 +644,7 @@ void RemoveAllChatUsers(void)
 char * ParseIRCMessage(char *Line, int iMode)
 {
 	char szRemLine[MAXLOCALSTRING] ="";
-	char *pszTempStr;
+	const char *pszTempStr;
 	char szPrefix[MAXLOCALSTRING] = "";
 	char szHackPrefix[MAXLOCALSTRING] = "";
 	char szTarget[MAXLOCALSTRING] = "";
@@ -1127,7 +1127,7 @@ char * ParseIRCMessage(char *Line, int iMode)
 }
 
 
-void AddChatCommandToQueue(int command,void *data,size_t len)
+void AddChatCommandToQueue(int command,const void *data,size_t len)
 {
 	Currcommand = Firstcommand;
 	if(Firstcommand==NULL)

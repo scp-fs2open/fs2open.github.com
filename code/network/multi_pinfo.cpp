@@ -33,11 +33,11 @@
 #define MULTI_PINFO_NUM_BUTTONS		4
 
 // bitmaps defs
-char *Multi_pinfo_bitmap_name[GR_NUM_RESOLUTIONS] = {
+const char *Multi_pinfo_bitmap_name[GR_NUM_RESOLUTIONS] = {
 	"PilotInfo",
 	"2_PilotInfo"
 };
-char *Multi_pinfo_bitmap_mask[GR_NUM_RESOLUTIONS] = {
+const char *Multi_pinfo_bitmap_mask[GR_NUM_RESOLUTIONS] = {
 	"PilotInfo-M",
 	"2_PilotInfo-M"
 };

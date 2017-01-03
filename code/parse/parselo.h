@@ -91,7 +91,7 @@ extern void ignore_gray_space();
 // error
 extern int get_line_num();
 extern char *next_tokens();
-extern void diag_printf(char *format, ...);
+extern void diag_printf(const char *format, ...);
 extern void error_display(int error_level, const char *format, ...);
 
 // skip
