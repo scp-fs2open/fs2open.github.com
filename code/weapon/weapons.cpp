@@ -7216,7 +7216,7 @@ void shield_impact_explosion(vec3d *hitpos, object *objp, float radius, int idx)
 	particle::create( hitpos, &vmd_zero_vector, 0.0f, radius, particle::PARTICLE_BITMAP_PERSISTENT, expl_ani_handle, objp );
 }
 
-void weapon_render(object* obj, draw_list *scene)
+void weapon_render(object* obj, model_draw_list *scene)
 {
 	int num;
 	weapon_info *wip;

@@ -110,7 +110,7 @@ typedef struct obj_flag_name {
 extern obj_flag_name Object_flag_names[];
 
 struct dock_instance;
-class draw_list;
+class model_draw_list;
 
 class object
 {
@@ -227,7 +227,7 @@ int obj_create(ubyte type,int parent_obj, int instance, matrix * orient, vec3d *
 
 void obj_render(object* obj);
 
-void obj_queue_render(object* obj, draw_list* scene);
+void obj_queue_render(object* obj, model_draw_list* scene);
 
 //Sorts and renders all the ojbects
 void obj_render_all(void (*render_function)(object *objp), bool* render_viewer_last );

@@ -45,7 +45,7 @@ void warpin_batch_draw_face( int texture, vertex *v1, vertex *v2, vertex *v3 )
 	batching_add_tri(texture, vertlist); // TODO render as emissive
 }
 
-void warpin_queue_render(draw_list *scene, object *obj, matrix *orient, vec3d *pos, int texture_bitmap_num, float radius, float life_percent, float max_radius, int warp_3d)
+void warpin_queue_render(model_draw_list *scene, object *obj, matrix *orient, vec3d *pos, int texture_bitmap_num, float radius, float life_percent, float max_radius, int warp_3d)
 {
 	vec3d center;
 	vec3d vecs[5];

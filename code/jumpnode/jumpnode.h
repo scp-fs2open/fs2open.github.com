@@ -20,7 +20,7 @@
 struct vec3d;
 class object;
 
-class draw_list;
+class model_draw_list;
 
 //Jump node flags
 #define JN_USE_DISPLAY_COLOR		(1<<0)		//Use display_color instead of HUD color
@@ -75,7 +75,7 @@ public:
 
     //Rendering
 	void Render(vec3d *pos, vec3d *view_pos = NULL);
-	void Render(draw_list *scene, vec3d *pos, vec3d *view_pos = NULL);
+	void Render(model_draw_list *scene, vec3d *pos, vec3d *view_pos = NULL);
 };
 
 //-----Globals------

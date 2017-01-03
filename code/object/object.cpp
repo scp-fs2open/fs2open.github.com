@@ -1554,7 +1554,7 @@ extern int Cmdline_dis_weapons;
 
 void obj_render(object *obj)
 {
-	draw_list render_list;
+	model_draw_list render_list;
 
 	obj_queue_render(obj, &render_list);
 
@@ -1572,7 +1572,7 @@ void obj_render(object *obj)
 	gr_set_lighting(false, false);
 }
 
-void obj_queue_render(object* obj, draw_list* scene)
+void obj_queue_render(object* obj, model_draw_list* scene)
 {
 	TRACE_SCOPE(tracing::QueueRender);
 

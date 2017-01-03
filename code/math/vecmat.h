@@ -115,6 +115,9 @@ vec3d *vm_vec_avg4(vec3d *dest, const vec3d *src0, const vec3d *src1, const vec3
 //scales a vector in place.  returns ptr to vector
 void vm_vec_scale(vec3d *dest, float s);
 
+//scales a 4-component vector in place. returns ptr to vector
+void vm_vec_scale(vec4 *dest, float s);
+
 //scales and copies a vector.  returns ptr to dest
 void vm_vec_copy_scale(vec3d *dest, const vec3d *src, float s);
 
@@ -441,6 +444,8 @@ void vm_matrix4_set_identity(matrix4 *out);
 void vm_matrix4_set_transform(matrix4 *out, matrix *m, vec3d *v);
 
 void vm_matrix4_get_orientation(matrix *out, matrix4 *m);
+
+void vm_matrix4_get_offset(vec3d *out, matrix4 *m);
 
 void vm_vec_transform(vec4 *dest, vec4 *src, matrix4 *m);
 void vm_vec_transform(vec3d *dest, vec3d *src, matrix4 *m, bool pos = true);

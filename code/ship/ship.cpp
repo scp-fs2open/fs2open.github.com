@@ -18591,7 +18591,7 @@ void ship_render_batch_thrusters(object *obj)
 	}
 }
 
-void ship_render_weapon_models(model_render_params *ship_render_info, draw_list *scene, object *obj, int render_flags)
+void ship_render_weapon_models(model_render_params *ship_render_info, model_draw_list *scene, object *obj, int render_flags)
 {
 	int num = obj->instance;
 	ship *shipp = &Ships[num];
@@ -18742,7 +18742,7 @@ void ship_render_set_animated_effect(model_render_params *render_info, ship *shi
 	}
 }
 
-void ship_render(object* obj, draw_list* scene)
+void ship_render(object* obj, model_draw_list* scene)
 {
 	int num = obj->instance;
 	ship *shipp = &Ships[num];
