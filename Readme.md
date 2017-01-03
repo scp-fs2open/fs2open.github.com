@@ -6,6 +6,8 @@ FreeSpace2 *S*ource *C*ode *P*roject
 
 Building
 --
+Before you do anything, make sure you have updated your git submodules, either by running git submodule update --init --recursive or by cloning the repository with the --recursive flag.<br/>
+<br/>
 For building you will need [CMake](http://www.cmake.org/cmake/resources/software.html). Version 3.4 is required. Once you have installed CMake you should create a build directory where the project/make files should be created, **do not create them inside the source tree!**<br>
 <br>
 On Windows you can use the `cmake-gui` executable to get a nice GUI, on Unix just use `cmake`. Use the newly created directory as build directory (change to this directory on Unix) and run cmake. On Windows this can be done by clicking the `Configure` button. Choose your compiler version and hit `Generate` when configuring is done. <br>
@@ -37,4 +39,4 @@ You should only use these variables if you know what you're doing
 * `MSVC_SIMD_INSTRUCTIONS`: The instruction set the executables will be optimized for.
 
 ### Generating an installation package
-CMake can automaticall generate installation packages of the project. To do this you will just need to run the `package` target of the build system and the package will be placed inside your build directory. On Windows you will have to install [NSIS](http://nsis.sourceforge.net/Main_Page) to use this.
+CMake can automatically generate installation packages of the project. To do this you will just need to run the `package` target of the build system and the package will be placed inside your build directory. On Windows you will have to install [NSIS](http://nsis.sourceforge.net/Main_Page) to use this.
