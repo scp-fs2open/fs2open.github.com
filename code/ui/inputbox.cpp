@@ -129,7 +129,7 @@ void UI_INPUTBOX::create(UI_WINDOW *wnd, int _x, int _y, int _w, int _text_len, 
 	invalid_chars = NULL;
 }
 
-void UI_INPUTBOX::set_valid_chars(char *vchars)
+void UI_INPUTBOX::set_valid_chars(const char *vchars)
 {
 	// free up any existing string
 	if(valid_chars != NULL){
@@ -140,7 +140,7 @@ void UI_INPUTBOX::set_valid_chars(char *vchars)
 	valid_chars = vm_strdup(vchars);
 }
 
-void UI_INPUTBOX::set_invalid_chars(char *ichars)
+void UI_INPUTBOX::set_invalid_chars(const char *ichars)
 {
 	// free up any existing string
 	if(invalid_chars != NULL){

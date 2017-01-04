@@ -1496,7 +1496,7 @@ void labviewer_variables_clear()
 	Lab_variables.clear();
 }
 
-void labviewer_variables_add(int *Y, char *var_name)
+void labviewer_variables_add(int *Y, const char *var_name)
 {
 	int y = 0;
 	Text *new_text;

@@ -90,12 +90,12 @@ int Campaign_list_coords[GR_NUM_RESOLUTIONS][4] = {
 #define CAMPAIGN_MISSION_HASH_SIZE 307
 
 struct sim_room_buttons {
-	char *filename;
+	const char *filename;
 	int x, y, xt, yt;
 	int hotspot;
 	UI_BUTTON button;  // because we have a class inside this struct, we need the constructor below..
 
-	sim_room_buttons(char *name, int x1, int y1, int xt1, int yt1, int h) : filename(name), x(x1), y(y1), xt(xt1), yt(yt1), hotspot(h) {}
+	sim_room_buttons(const char *name, int x1, int y1, int xt1, int yt1, int h) : filename(name), x(x1), y(y1), xt(xt1), yt(yt1), hotspot(h) {}
 };
 
 static sim_room_buttons Buttons[GR_NUM_RESOLUTIONS][NUM_BUTTONS] = {
@@ -131,25 +131,25 @@ static sim_room_buttons Buttons[GR_NUM_RESOLUTIONS][NUM_BUTTONS] = {
 //XSTR:ON
 };
 
-char *Sim_filename[GR_NUM_RESOLUTIONS] = {
+const char* Sim_filename[GR_NUM_RESOLUTIONS] = {
 	"LoadMission",
 	"2_LoadMission"
 };
-char *Sim_mask_filename[GR_NUM_RESOLUTIONS] = {
+const char* Sim_mask_filename[GR_NUM_RESOLUTIONS] = {
 	"LoadMission-m",
 	"2_LoadMission-m"
 };
 
-char *Campaign_filename[GR_NUM_RESOLUTIONS] = {
+const char* Campaign_filename[GR_NUM_RESOLUTIONS] = {
 	"Campaign",
 	"2_Campaign"
 };
-char *Campaign_mask_filename[GR_NUM_RESOLUTIONS] = {
+const char* Campaign_mask_filename[GR_NUM_RESOLUTIONS] = {
 	"Campaign-m",
 	"2_Campaign-m"
 };
 
-char *Sim_room_slider_filename[GR_NUM_RESOLUTIONS] = {
+const char* Sim_room_slider_filename[GR_NUM_RESOLUTIONS] = {
 	"slider",
 	"2_slider"
 };
@@ -255,7 +255,7 @@ static int Sim_volition_icon_x[GR_NUM_RESOLUTIONS] = {
 // special icons themselves
 int Mission_icon_bitmaps[NUM_MISSION_ICONS];
 //XSTR:OFF
-char *Mission_icon_bitmap_filenames[NUM_MISSION_ICONS] = {
+const char *Mission_icon_bitmap_filenames[NUM_MISSION_ICONS] = {
 	"icon-volition"	
 };
 //XSTR:ON

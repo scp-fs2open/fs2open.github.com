@@ -236,7 +236,7 @@ char *comm_order_get_text(int item)
 SCP_vector<squadmsg_history> Squadmsg_history; 
 
 // forward declarations
-void hud_add_issued_order(char *name, int order);
+void hud_add_issued_order(const char *name, int order);
 void hud_update_last_order(char *target, int order_source, int special_index);
 int hud_squadmsg_is_target_order_valid(int order, int find_order, ai_info *aip = NULL );
 int hud_squadmsg_ship_order_valid( int shipnum, int order );
@@ -2391,7 +2391,7 @@ int hud_squadmsg_do_frame( )
 		return 0;
 }
 
-void hud_add_issued_order(char *name, int order)
+void hud_add_issued_order(const char *name, int order)
 {  
 	squadmsg_history *latest_order = new squadmsg_history(); 
 

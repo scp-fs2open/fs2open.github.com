@@ -52,12 +52,12 @@ SCP_string Red_alert_precursor_mission;
 // Red Alert Interface
 /////////////////////////////////////////////////////////////////////////////
 
-char *Red_alert_fname[GR_NUM_RESOLUTIONS] = {
+const char *Red_alert_fname[GR_NUM_RESOLUTIONS] = {
 	"RedAlert",
 	"2_RedAlert"
 };
 
-char *Red_alert_mask[GR_NUM_RESOLUTIONS] = {
+const char *Red_alert_mask[GR_NUM_RESOLUTIONS] = {
 	"RedAlert-m",
 	"2_RedAlert-m"
 };

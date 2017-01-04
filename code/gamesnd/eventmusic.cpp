@@ -1743,7 +1743,7 @@ void event_music_set_soundtrack(char *name)
 	}
 }
 
-int event_music_get_soundtrack_index(char *name)
+int event_music_get_soundtrack_index(const char *name)
 {
 	// find the correct index for the event music
 	for ( int i = 0; i < Num_soundtracks; i++ ) {

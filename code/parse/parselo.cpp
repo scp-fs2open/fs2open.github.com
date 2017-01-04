@@ -185,7 +185,7 @@ void skip_token()
 
 //	Display a diagnostic message if Verbose is set.
 //	(Verbose is set if -v command line switch is present.)
-void diag_printf(char *format, ...)
+void diag_printf(const char *format, ...)
 {
 #ifndef NDEBUG
 	SCP_string buffer;
@@ -882,7 +882,7 @@ char* alloc_text_until(char* instr, char* endstr)
 //	Copy text until a certain string is matched.
 //	For example, this is used to copy mission notes, scanning until $END NOTES:
 // is found.
-void copy_text_until(char *outstr, char *instr, char *endstr, int max_chars)
+void copy_text_until(char *outstr, char *instr, const char *endstr, int max_chars)
 {
 	char *foundstr;
 	Assert(outstr && instr && endstr);
@@ -909,7 +909,7 @@ void copy_text_until(char *outstr, char *instr, char *endstr, int max_chars)
 }
 
 //	Ditto for SCP_string.
-void copy_text_until(SCP_string &outstr, char *instr, char *endstr)
+void copy_text_until(SCP_string &outstr, char *instr, const char *endstr)
 {
 	char *foundstr;
 	Assert(instr && endstr);
@@ -947,7 +947,7 @@ void stuff_string_white(SCP_string &outstr)
 }
 
 // Goober5000
-void stuff_string_until(char *outstr, char *endstr, int len)
+void stuff_string_until(char *outstr, const char *endstr, int len)
 {
 	if(!len)
 		len = NAME_LENGTH-1;
@@ -959,7 +959,7 @@ void stuff_string_until(char *outstr, char *endstr, int len)
 }
 
 // Goober5000
-void stuff_string_until(SCP_string &outstr, char *endstr)
+void stuff_string_until(SCP_string &outstr, const char *endstr)
 {
 	ignore_gray_space();
 	copy_text_until(outstr, Mp, endstr);
@@ -3206,14 +3206,17 @@ void stuff_matrix(matrix *mp)
 	stuff_vec3d(&mp->vec.fvec);
 }
 
-
-//	Given a string, find it in a string array.
-//	*description is only used for diagnostics in case it can't be found.
-//	*str1 is the string to be found.
-//	*strlist is the list of strings to search.
-//	max is the number of entries in *strlist to scan.
-int string_lookup(const char *str1, char *strlist[], size_t max, const char *description, int say_errors)
-{
+/**
+ * @brief Given a string, find it in a string array.
+ *
+ * @param str1 is the string to be found.
+ * @param strlist is the list of strings to search.
+ * @param max is the number of entries in *strlist to scan.
+ * @param description is only used for diagnostics in case it can't be found.
+ * @param say_errors @c true if errors should be reported
+ * @return
+ */
+int string_lookup(const char *str1, const char* const *strlist, size_t max, const char *description, bool say_errors) {
 	for (size_t i=0; i<max; i++) {
 		Assert(strlen(strlist[i]) != 0); //-V805
 
@@ -3230,7 +3233,7 @@ int string_lookup(const char *str1, char *strlist[], size_t max, const char *des
 //	Find a required string (*id), then stuff the text of type f_type that
 // follows it at *addr.  *strlist[] contains the strings it should try to
 // match.
-void find_and_stuff(const char *id, int *addr, int f_type, char *strlist[], size_t max, const char *description)
+void find_and_stuff(const char *id, int *addr, int f_type, const char *strlist[], size_t max, const char *description)
 {
 	char	token[128];
 	int checking_ship_classes = (stricmp(id, "$class:") == 0);
@@ -3252,7 +3255,7 @@ void find_and_stuff(const char *id, int *addr, int f_type, char *strlist[], size
 	}
 }
 
-void find_and_stuff_optional(const char *id, int *addr, int f_type, char *strlist[], size_t max, const char *description)
+void find_and_stuff_optional(const char *id, int *addr, int f_type, const char * const *strlist, size_t max, const char *description)
 {
 	char token[128];
 
@@ -3266,7 +3269,7 @@ void find_and_stuff_optional(const char *id, int *addr, int f_type, char *strlis
 //	Mp points at a string.
 //	Find the string in the list of strings *strlist[].
 // Returns the index of the match, -1 if none.
-int match_and_stuff(int f_type, char *strlist[], int max, char *description)
+int match_and_stuff(int f_type, const char * const *strlist, int max, const char *description)
 {
 	char	token[128];
 
@@ -3274,8 +3277,8 @@ int match_and_stuff(int f_type, char *strlist[], int max, char *description)
 	return string_lookup(token, strlist, max, description, 0);
 }
 
-void find_and_stuff_or_add(char *id, int *addr, int f_type, char *strlist[], int *total,
-	int max, char *description)
+void find_and_stuff_or_add(const char *id, int *addr, int f_type, char *strlist[], int *total,
+	int max, const char *description)
 {
 	char	token[128];
 

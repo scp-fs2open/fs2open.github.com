@@ -122,7 +122,7 @@ int	event_music_next_soundtrack(int delta);
 void event_sexp_change_soundtrack(char *name);
 void	event_music_set_soundtrack(char *name);
 void	event_music_set_score(int score_index, const char *name);
-int event_music_get_soundtrack_index(char *name);
+int event_music_get_soundtrack_index(const char *name);
 int	event_music_get_spooled_music_index(const char *name);
 int	event_music_get_spooled_music_index(const SCP_string& name);
 void	event_music_reset_choices();

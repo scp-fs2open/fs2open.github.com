@@ -64,12 +64,12 @@ char *GetTrackerIdByUser(char *nickname);
 char *GetChannelByUser(char *nickname);
 
 char *ChatGetString(void);
-char *GetWordNum(int num, const char *l_String);
+const char *GetWordNum(int num, const char *l_String);
 char *ParseIRCMessage(char *Line, int iMode);
-int AddChatUser(char *nickname);
-int RemoveChatUser(char *nickname);
+int AddChatUser(const char *nickname);
+int RemoveChatUser(const char *nickname);
 void RemoveAllChatUsers(void);
-void AddChatCommandToQueue(int command, void *data, size_t len);
+void AddChatCommandToQueue(int command, const void *data, size_t len);
 Chat_command *GetChatCommandFromQueue(void);
 void FlushChatCommandQueue(void);
 void AddChannel(char *channel, ushort numusers, char *topic);

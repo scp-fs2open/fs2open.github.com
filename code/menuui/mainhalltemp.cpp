@@ -27,12 +27,12 @@
 
 #define MHT_NUM_BUTTONS	6
 
-char *Mht_bitmap_fname[GR_NUM_RESOLUTIONS] = {
+const char *Mht_bitmap_fname[GR_NUM_RESOLUTIONS] = {
 	"mht_background",				// GR_640
 	"2_mht_background"			// GR_1024
 };
 
-char *Mht_bitmap_mask_fname[GR_NUM_RESOLUTIONS] = {
+const char *Mht_bitmap_mask_fname[GR_NUM_RESOLUTIONS] = {
 	"mht_mask",			// GR_640
 	"2_mht_mask"		// GR_1024
 };

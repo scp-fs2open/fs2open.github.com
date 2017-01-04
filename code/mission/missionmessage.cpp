@@ -172,7 +172,7 @@ int MessageQ_num;			// keeps track of number of entries on the queue.
 int Num_personas;
 Persona *Personas = NULL;
 
-char *Persona_type_names[MAX_PERSONA_TYPES] = 
+const char *Persona_type_names[MAX_PERSONA_TYPES] =
 {
 //XSTR:OFF
 	"wingman",
@@ -1622,7 +1622,7 @@ all_done:
 }
 
 // queues up a message to display to the player
-void message_queue_message( int message_num, int priority, int timing, char *who_from, int source, int group, int delay, int builtin_type )
+void message_queue_message( int message_num, int priority, int timing, const char *who_from, int source, int group, int delay, int builtin_type )
 {
 	int i, m_persona;
 	char temp_buf[MESSAGE_LENGTH];
@@ -1846,7 +1846,7 @@ int message_filter_multi(int id)
 void message_send_unique_to_player( char *id, void *data, int m_source, int priority, int group, int delay )
 {
 	int i, source;
-	char *who_from;
+	const char *who_from;
 
 	source = 0;
 	who_from = NULL;
@@ -1935,7 +1935,7 @@ void message_send_builtin_to_player( int type, ship *shipp, int priority, int ti
 	int i, persona_index = -1, persona_species = -1, message_index = -1, random_selection = -1;
 	int source;
 	int num_matching_builtins = 0;
-	char *who_from;
+	const char *who_from;
 	int best_match = -1;
 
 	matching_builtin current_builtin;
@@ -1988,7 +1988,7 @@ void message_send_builtin_to_player( int type, ship *shipp, int priority, int ti
 		persona_index = The_mission.command_persona;				// use the terran command persona
 	}
 
-	char *name = Builtin_messages[type].name;
+	const char *name = Builtin_messages[type].name;
 
 	if (persona_index >= 0) {
 		persona_species = Personas[persona_index].species;

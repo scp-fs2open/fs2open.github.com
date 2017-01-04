@@ -303,12 +303,12 @@ void multi_ingame_sync_close()
 // --------------------------------------------------------------------------------------------------
 // INGAME SHIP SELECT SCREEN 
 //
-static char *Multi_ingame_join_bitmap_fname[GR_NUM_RESOLUTIONS] = {
+static const char *Multi_ingame_join_bitmap_fname[GR_NUM_RESOLUTIONS] = {
 	"MultiIngame",				// GR_640
 	"2_MultiIngame"			// GR_1024
 };
 
-static char *Multi_ingame_join_bitmap_mask_fname[GR_NUM_RESOLUTIONS] = {
+static const char *Multi_ingame_join_bitmap_mask_fname[GR_NUM_RESOLUTIONS] = {
 	"MultiIngame-M",			// GR_640
 	"2_MultiIngame-M"			// GR_1024
 };

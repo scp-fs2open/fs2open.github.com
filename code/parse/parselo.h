@@ -91,7 +91,7 @@ extern void ignore_gray_space();
 // error
 extern int get_line_num();
 extern char *next_tokens();
-extern void diag_printf(char *format, ...);
+extern void diag_printf(const char *format, ...);
 extern void error_display(int error_level, const char *format, ...);
 
 // skip
@@ -113,17 +113,17 @@ extern int required_string_one_of(int arg_count, ...);
 
 // stuff
 extern void copy_to_eoln(char *outstr, const char *more_terminators, const char *instr, int max);
-extern void copy_text_until(char *outstr, char *instr, char *endstr, int max_chars);
+extern void copy_text_until(char *outstr, char *instr, const char *endstr, int max_chars);
 extern void stuff_string_white(char *outstr, int len = 0);
-extern void stuff_string_until(char *outstr, char *endstr, int len = 0);
+extern void stuff_string_until(char *outstr, const char *endstr, int len = 0);
 extern void stuff_string(char *outstr, int type, int len, const char *terminators = NULL);
 extern void stuff_string_line(char *outstr, int len);
 
 // SCP_string stuff
 extern void copy_to_eoln(SCP_string &outstr, const char *more_terminators, const char *instr);
-extern void copy_text_until(SCP_string &outstr, char *instr, char *endstr);
+extern void copy_text_until(SCP_string &outstr, char *instr, const char *endstr);
 extern void stuff_string_white(SCP_string &outstr);
-extern void stuff_string_until(SCP_string &outstr, char *endstr);
+extern void stuff_string_until(SCP_string &outstr, const char *endstr);
 extern void stuff_string(SCP_string &outstr, int type, const char *terminators = NULL);
 extern void stuff_string_line(SCP_string &outstr);
 
@@ -206,18 +206,19 @@ extern int stuff_vec3d_list(SCP_vector<vec3d> &vec_list);
 extern int stuff_bool_list(bool *blp, int max_bools);
 extern void stuff_vec3d(vec3d *vp);
 extern void stuff_matrix(matrix *mp);
-extern int string_lookup(const char *str1, char *strlist[], size_t max, const char *description = NULL, int say_errors = 0);
-extern void find_and_stuff(const char *id, int *addr, int f_type, char *strlist[], size_t max, const char *description);
-extern void find_and_stuff_optional(const char *id, int *addr, int f_type, char *strlist[], size_t max, const char *description);
-extern int match_and_stuff(int f_type, char *strlist[], int max, char *description);
-extern void find_and_stuff_or_add(char *id, int *addr, int f_type, char *strlist[], int *total,
-	int max, char *description);
+extern void find_and_stuff(const char *id, int *addr, int f_type, const char *strlist[], size_t max, const char *description);
+extern void find_and_stuff_optional(const char *id, int *addr, int f_type, const char * const *strlist, size_t max, const char *description);
+extern int match_and_stuff(int f_type, const char * const *strlist, int max, const char *description);
+extern void find_and_stuff_or_add(const char *id, int *addr, int f_type, char *strlist[], int *total,
+	int max, const char *description);
 extern int get_string(char *str, int max = -1);
 extern void get_string(SCP_string &str);
 extern void stuff_parenthesized_vec3d(vec3d *vp);
 extern void stuff_boolean(int *i, bool a_to_eol=true);
 extern void stuff_boolean(bool *b, bool a_to_eol=true);
 extern void stuff_boolean_flag(int *i, int flag, bool a_to_eol=true);
+
+int string_lookup(const char *str1, const char* const *strlist, size_t max, const char *description = NULL, bool say_errors = false);
 
 template<class Flags, class Flagset>
 void stuff_boolean_flag(Flagset& destination, Flags flag, bool a_to_eol = true)

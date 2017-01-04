@@ -61,12 +61,12 @@ HK_save_info Hotkey_saved_info[MAX_HOTKEY_TARGET_ITEMS];
 int Num_hotkeys_saved;
 
 
-static char *Hotkey_background_fname[GR_NUM_RESOLUTIONS] = {
+static const char *Hotkey_background_fname[GR_NUM_RESOLUTIONS] = {
 	"Hotkeys",		// GR_640
 	"2_Hotkeys"		// GR_1024
 };
 
-static char *Hotkey_mask_fname[GR_NUM_RESOLUTIONS] = {
+static const char *Hotkey_mask_fname[GR_NUM_RESOLUTIONS] = {
 	"Hotkeys-M",		// GR_640
 	"2_Hotkeys-M"	// GR_1024
 };
@@ -195,12 +195,12 @@ static int Hotkey_ship_x[GR_NUM_RESOLUTIONS] = {
 };
 
 struct hotkey_buttons {
-	char *filename;
+	const char *filename;
 	int x, y;
 	int hotspot;
 	UI_BUTTON button;  // because we have a class inside this struct, we need the constructor below..
 
-	hotkey_buttons(char *name, int x1, int y1, int h) : filename(name), x(x1), y(y1), hotspot(h) {}
+	hotkey_buttons(const char *name, int x1, int y1, int h) : filename(name), x(x1), y(y1), hotspot(h) {}
 };
 
 // button definitions

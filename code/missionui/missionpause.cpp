@@ -34,7 +34,7 @@
 //
 
 // pause bitmap name
-char *Pause_bmp_name[GR_NUM_RESOLUTIONS] = {
+const char *Pause_bmp_name[GR_NUM_RESOLUTIONS] = {
 	"PleaseWait",
 	"2_PleaseWait"
 };

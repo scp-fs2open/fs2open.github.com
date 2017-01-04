@@ -67,7 +67,7 @@ extern int iff_init_color(int r, int g, int b);
 extern void iff_init();
 
 // search for iff
-extern int iff_lookup(char *iff_name);
+extern int iff_lookup(const char *iff_name);
 
 // attack stuff
 // NB: As far as the differences between I attack him and he attacks me, think of a hidden traitor on your own team.

@@ -80,7 +80,7 @@ void logfile_close(int logfile_type)
 }
 
 // printf function itself called by the ml_printf macro
-void log_printf(int logfile_type, char *format, ...)
+void log_printf(int logfile_type, const char *format, ...)
 {
 	SCP_string temp;
 	va_list args;

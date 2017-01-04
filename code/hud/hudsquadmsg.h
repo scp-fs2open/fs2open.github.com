@@ -68,7 +68,7 @@ typedef struct comm_order {
 } comm_order;
 
 typedef struct sexp_com_order{ 
-	char *name; 
+	const char *name;
 	int xstring; 
 	int item; 
 }sexp_com_order;

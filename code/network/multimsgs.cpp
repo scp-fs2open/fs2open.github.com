@@ -3394,7 +3394,7 @@ void process_mission_log_packet( ubyte *data, header *hinfo )
 }
 
 // send a mission message packet
-void send_mission_message_packet( int id, char *who_from, int priority, int timing, int source, int builtin_type, int multi_target, int multi_team_filter, int delay)
+void send_mission_message_packet( int id, const char *who_from, int priority, int timing, int source, int builtin_type, int multi_target, int multi_team_filter, int delay)
 {
 	int packet_size;
 	ubyte data[MAX_PACKET_SIZE], up, us, utime;

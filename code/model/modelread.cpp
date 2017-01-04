@@ -92,7 +92,7 @@ void model_set_bay_path_nums(polymodel *pm);
 
 // Goober5000 - see SUBSYSTEM_X in model.h
 // NOTE: Each subsystem must match up with its #define, or there will be problems
-char *Subsystem_types[SUBSYSTEM_MAX] =
+const char *Subsystem_types[SUBSYSTEM_MAX] =
 {
 	"None",
 	"Engines",
@@ -814,7 +814,7 @@ void do_new_subsystem( int n_subsystems, model_subsystem *slist, int subobj_num,
 
 }
 
-void print_family_tree( polymodel *obj, int modelnum, char * ident, int islast )	
+void print_family_tree( polymodel *obj, int modelnum, const char * ident, int islast )
 {
 	char temp[50];
 

@@ -310,8 +310,8 @@ class UI_INPUTBOX : public UI_GADGET
 
 	public:
 		void create(UI_WINDOW *wnd, int _x, int _y, int _w, int _textlen, const char *_text, int _flags = 0, int pixel_lim = -1, color *clr = NULL);
-		void set_valid_chars(char *vchars);
-		void set_invalid_chars(char *ichars);
+		void set_valid_chars(const char *vchars);
+		void set_invalid_chars(const char *ichars);
 		int changed();
 		int pressed();
 		void get_text(char *out);
@@ -361,7 +361,7 @@ class UI_CHECKBOX : public UI_GADGET
 	public:
 		int changed();
 		int checked();
-		void create(UI_WINDOW *wnd, char *_text, int _x, int _y, int _state );
+		void create(UI_WINDOW *wnd, const char *_text, int _x, int _y, int _state );
 		void set_state(int _state);
 };
 
@@ -513,10 +513,10 @@ class UI_DOT_SLIDER_NEW : public UI_GADGET
 	public:
 		int pos;  // 0 thru 10
 
-		void create(UI_WINDOW *wnd, int _x, int _y, int _num_pos, char *bm_slider, int slider_mask,
-																					char *bm_left = NULL, int left_mask = -1, int left_x = -1, int left_y = -1,
-																					char *bm_right = NULL, int right_mask = -1, int right_x = -1, int right_y = -1,
-																					int _dot_width = 19);
+		void create(UI_WINDOW *wnd, int _x, int _y, int _num_pos, const char *bm_slider, int slider_mask,
+					const char *bm_left = NULL, int left_mask = -1, int left_x = -1, int left_y = -1,
+					const char *bm_right = NULL, int right_mask = -1, int right_x = -1, int right_y = -1,
+					int _dot_width = 19);
 		virtual void draw();
 		virtual void process(int focus = 0);		
 };

@@ -502,7 +502,7 @@ void iff_init()
  * @param iff_name Pointer to name as a string
  * @return Index into ::Iff_info array
  */
-int iff_lookup(char *iff_name)
+int iff_lookup(const char *iff_name)
 {
 	// bogus
 	Assert(iff_name);

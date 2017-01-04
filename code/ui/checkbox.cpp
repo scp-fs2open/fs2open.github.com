@@ -13,7 +13,7 @@
 #include "ui/ui.h"
 #include "ui/uidefs.h"
 
-void UI_CHECKBOX::create(UI_WINDOW *wnd, char *_text, int _x, int _y, int _state )
+void UI_CHECKBOX::create(UI_WINDOW *wnd, const char *_text, int _x, int _y, int _state )
 {
 	int _w, _h;
 

@@ -175,15 +175,15 @@ int Debrief_award_text_width[GR_NUM_RESOLUTIONS][2] = {
 	}
 };
 
-char *Debrief_single_name[GR_NUM_RESOLUTIONS] = {
+const char *Debrief_single_name[GR_NUM_RESOLUTIONS] = {
 	"DebriefSingle",		// GR_640
 	"2_DebriefSingle"		// GR_1024
 };
-char *Debrief_multi_name[GR_NUM_RESOLUTIONS] = {
+const char *Debrief_multi_name[GR_NUM_RESOLUTIONS] = {
 	"DebriefMulti",		// GR_640
 	"2_DebriefMulti"		// GR_1024
 };
-char *Debrief_mask_name[GR_NUM_RESOLUTIONS] = {
+const char *Debrief_mask_name[GR_NUM_RESOLUTIONS] = {
 	"Debrief-m",			// GR_640
 	"2_Debrief-m"			// GR_1024
 };
@@ -213,7 +213,7 @@ char *Debrief_mask_name[GR_NUM_RESOLUTIONS] = {
 #define REPEAT	1
 
 //XSTR:OFF
-char* Debrief_loading_bitmap_fname[GR_NUM_RESOLUTIONS] = {
+const char* Debrief_loading_bitmap_fname[GR_NUM_RESOLUTIONS] = {
 	"PleaseWait",		// GR_640
 	"2_PleaseWait"		// GR_1024
 };
@@ -445,7 +445,7 @@ voice_map Debrief_promotion_voice_mapping[NUM_VOLITION_CAMPAIGNS][MAX_CAMPAIGN_M
 	}
 };
 
-static char* Debrief_award_background[GR_NUM_RESOLUTIONS] = {
+static const char* Debrief_award_background[GR_NUM_RESOLUTIONS] = {
 	"DebriefAward",
 	"2_DebriefAward"
 };
