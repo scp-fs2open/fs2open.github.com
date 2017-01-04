@@ -70,9 +70,6 @@ endif()
 
 set(COMPILER_FLAGS "${COMPILER_FLAGS} ${SANITIZE_FLAGS}")
 
-# Omit "deprecated conversion from string constant to 'char*'" warnings.
-set(COMPILER_FLAGS "${COMPILER_FLAGS} -Wno-write-strings")
-
 set(COMPILER_FLAGS "${COMPILER_FLAGS} -Wno-unused-function")
 
 set(COMPILER_FLAGS "${COMPILER_FLAGS} -Wno-deprecated -Wno-char-subscripts")
