@@ -63,7 +63,7 @@ set(COMPILER_FLAGS "${COMPILER_FLAGS} -Wno-write-strings")
 
 set(COMPILER_FLAGS "${COMPILER_FLAGS} -Wno-unused-function")
 
-set(COMPILER_FLAGS "${COMPILER_FLAGS} -Wno-deprecated -Wno-char-subscripts")
+set(COMPILER_FLAGS "${COMPILER_FLAGS} -Wno-char-subscripts")
 
 set(COMPILER_FLAGS "${COMPILER_FLAGS} -Wno-unused-parameter")
 
