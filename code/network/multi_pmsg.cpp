@@ -69,8 +69,8 @@ char Multi_msg_text[MULTI_MSG_MAX_TEXT_LEN+1];
 #define MULTI_MSG_CMD_KICK						0								// kick command
 
 //XSTR:OFF
-char *Multi_msg_commands[MULTI_MSG_CMD_COUNT] = {						// commands themselves
-	"kick"	
+const char *Multi_msg_commands[MULTI_MSG_CMD_COUNT] = {						// commands themselves
+	"kick"
 };
 //XSTR:ON
 
@@ -425,7 +425,7 @@ void multi_msg_perform_command(int command,char *param)
 
 //XSTR:OFF
 
-char *Multi_msg_subsys_name[SUBSYSTEM_MAX] = {
+const char *Multi_msg_subsys_name[SUBSYSTEM_MAX] = {
 	"None",
 	"Engine",
 	"Turret",

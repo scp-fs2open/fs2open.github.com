@@ -42,7 +42,7 @@ bool outwnd_inited = false;
 // used for file logging
 int Log_debug_output_to_file = 1;
 FILE *Log_fp = NULL;
-char *FreeSpace_logfilename = NULL;
+const char *FreeSpace_logfilename = NULL;
 
 void load_filter_info(void)
 {

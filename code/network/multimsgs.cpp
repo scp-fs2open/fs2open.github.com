@@ -4811,7 +4811,7 @@ void process_jump_into_mission_packet(ubyte *data, header *hinfo)
 
 //XSTR:OFF
 
-char *repair_text[] = {
+const char *repair_text[] = {
 	"unknown",
 	"REPAIR_INFO_BEGIN",
 	"REPAIR_INFO_END",
@@ -6813,7 +6813,7 @@ void process_asteroid_info( ubyte *data, header *hinfo )
 	PACKET_SET_SIZE();
 }
 
-void send_host_restr_packet(char *callsign,int code,int mode)
+void send_host_restr_packet(const char *callsign,int code,int mode)
 {
 	ubyte data[MAX_PACKET_SIZE],val;
 	int packet_size = 0;

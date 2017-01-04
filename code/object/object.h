@@ -51,7 +51,7 @@
 
 #define UNUSED_OBJNUM		(-MAX_OBJECTS*2)	//	Newer systems use this instead of -1 for invalid object.
 
-extern char	*Object_type_names[MAX_OBJECT_TYPES];
+extern const char	*Object_type_names[MAX_OBJECT_TYPES];
 
 // each object type should have these functions:  (I will use weapon as example)
 //

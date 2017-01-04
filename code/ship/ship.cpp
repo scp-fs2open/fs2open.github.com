@@ -735,7 +735,7 @@ void parse_engine_wash(bool replace)
 	}
 }
 
-char *Warp_types[] = {
+const char *Warp_types[] = {
 	"Default",
 	"Knossos",
 	"Babylon5",
@@ -758,7 +758,7 @@ int warptype_match(char *p)
 	return -1;
 }
 
-char *Lightning_types[] = {
+const char *Lightning_types[] = {
 	"None",
 	"Default",
 };
@@ -1971,7 +1971,7 @@ int parse_ship_template()
 	return rtn;
 }
 
-void parse_ship_sound(char *name, GameSoundsIndex id, ship_info *sip)
+void parse_ship_sound(const char *name, GameSoundsIndex id, ship_info *sip)
 {
 	Assert( name != NULL );
 
@@ -2012,7 +2012,7 @@ void parse_ship_sounds(ship_info *sip)
 	parse_ship_sound("$ExplosionSnd:",                    SND_SHIP_EXPLODE_1, sip);
 } 
 
-void parse_ship_particle_effect(ship_info* sip, particle_effect* pe, char *id_string)
+void parse_ship_particle_effect(ship_info* sip, particle_effect* pe, const char *id_string)
 {
 	float tempf;
 	int temp;
@@ -2279,8 +2279,8 @@ int parse_and_add_briefing_icon_info()
 int parse_ship_values(ship_info* sip, const bool is_template, const bool first_time, const bool replace)
 {
 	char buf[SHIP_MULTITEXT_LENGTH];
-	char* info_type_name;
-	char* type_name;
+	const char* info_type_name;
+	const char* type_name;
 	int rtn = 0;
 	char name_tmp[NAME_LENGTH];
 
@@ -3409,7 +3409,7 @@ int parse_ship_values(ship_info* sip, const bool is_template, const bool first_t
 		for (auto i = 0; i < num_strings; i++)
 		{
 			// get ship type from ship flags
-			char *ship_type = ship_strings[i];
+			const char *ship_type = ship_strings[i];
 			bool flag_found = false;
 
 			// Goober5000 - in retail FreeSpace, some ship classes were specified differently
@@ -4741,7 +4741,7 @@ void parse_ship_type()
 		strcpy_s(stp->name, name_buf);
 	}
 
-	char *ship_type = NULL;
+	const char *ship_type = NULL;
 	if (!stricmp(stp->name, "sentrygun")) {
 		ship_type = "sentry gun";
 	} else if (!stricmp(stp->name, "escapepod")) {
@@ -17629,7 +17629,7 @@ int armor_type_constants_get(char *str){
 #define AT_NUM_STORAGE_LOCATIONS		8
 
 //STEP 2: Add the name string to the array
-char *TypeNames[] = {
+const char *TypeNames[] = {
 	"additive",
 	"multiplicative",
 	"exponential",
@@ -17944,7 +17944,7 @@ float ArmorType::GetPiercingLimit(int damage_type_idx)
 
 //***********************************Member functions
 
-ArmorType::ArmorType(char* in_name)
+ArmorType::ArmorType(const char* in_name)
 {
 	auto len = strlen(in_name);
 	if(len >= NAME_LENGTH) {

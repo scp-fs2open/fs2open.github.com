@@ -1660,7 +1660,7 @@ void fs2netd_update_game_count(const char *chan_name)
 	FS2NetD_GameCountUpdate(chan_name);
 }
 
-void fs2netd_spew_table_checksums(char *outfile)
+void fs2netd_spew_table_checksums(const char *outfile)
 {
 	char full_name[MAX_PATH_LEN];
 	FILE *out = NULL;

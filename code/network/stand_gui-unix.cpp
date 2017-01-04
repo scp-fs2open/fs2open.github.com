@@ -539,7 +539,7 @@ json_t* missionGoalsGet(ResourceContext *context) {
         json_object_set_new(goalEntity, "score", json_integer(goal.score));
         json_object_set_new(goalEntity, "team", json_integer(goal.team));
 
-        char *typeString;
+        const char *typeString;
         switch (goal.type) {
         case PRIMARY_GOAL:
             typeString = "primary";
@@ -556,7 +556,7 @@ json_t* missionGoalsGet(ResourceContext *context) {
         };
         json_object_set_new(goalEntity, "type", json_string(typeString));
 
-        char *statusString;
+        const char *statusString;
         switch (goal.satisfied) {
         case GOAL_FAILED:
             statusString = "failed";

@@ -43,7 +43,7 @@ ADE_VIRTVAR(ArmorClass, l_Subsystem, "string", "Current Armor class", "string", 
 {
 	ship_subsys_h *sso;
 	char *s = NULL;
-	char *name = NULL;
+	const char *name = NULL;
 
 	if(!ade_get_args(L, "o|s", l_Subsystem.GetPtr(&sso), &s))
 		return ade_set_error(L, "s", "");

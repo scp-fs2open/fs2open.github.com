@@ -958,7 +958,7 @@ void script_state::SetLuaSession(lua_State *L)
 	}
 }
 
-int script_state::OutputMeta(char *filename)
+int script_state::OutputMeta(const char *filename)
 {
 	FILE *fp = fopen(filename,"w");
 	int i;

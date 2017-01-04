@@ -1030,7 +1030,7 @@ ADE_FUNC(drawOffscreenIndicator, l_Graphics, "object Object, [boolean draw=true,
 }
 
 #define MAX_TEXT_LINES		256
-static char *BooleanValues[] = {"False", "True"};
+static const char *BooleanValues[] = {"False", "True"};
 
 ADE_FUNC(drawString, l_Graphics, "string Message, [number X1, number Y1, number X2, number Y2]",
 		 "Draws a string. Use x1/y1 to control position, x2/y2 to limit textbox size."
@@ -1047,7 +1047,7 @@ ADE_FUNC(drawString, l_Graphics, "string Message, [number X1, number Y1, number 
 	int x=NextDrawStringPos[0];
 	int y = NextDrawStringPos[1];
 
-	char *s = "(null)";
+	const char *s = "(null)";
 	int x2=-1,y2=-1;
 	int num_lines = 0;
 
