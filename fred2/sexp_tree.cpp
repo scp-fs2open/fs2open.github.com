@@ -2266,7 +2266,7 @@ int sexp_tree::add_default_operator(int op, int argnum)
 
 int sexp_tree::get_default_value(sexp_list_item *item, char *text_buf, int op, int i)
 {
-	char *str = NULL;
+	const char *str = NULL;
 	int type, index;
 	sexp_list_item *list;
 	HTREEITEM h;
