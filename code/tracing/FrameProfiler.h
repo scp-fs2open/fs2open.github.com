@@ -17,9 +17,6 @@ struct profile_sample_history {
 	bool valid;
 	//char name[256];
 	SCP_string name;
-	float avg;
-	float min;
-	float max;
 	uint64_t avg_micro_sec;
 	uint64_t min_micro_sec;
 	uint64_t max_micro_sec;
@@ -52,7 +49,7 @@ class FrameProfiler {
 	 * @param name The globally unique name for this profile (see profile_begin()/profile_end())
 	 * @param percent How much time the profiled section took to execute (as a percentage of overall frametime)
 	 */
-	void store_profile_in_history(SCP_string& name, float percent, uint64_t time);
+	void store_profile_in_history(SCP_string& name, uint64_t time);
 
 	/**
 	 * Gets the min, max and average values for a given profile
@@ -62,9 +59,6 @@ class FrameProfiler {
 	 * @param max Pointer to a float in which the maximum value will be stored (or 0.0 if no value has been saved)
 	 */
 	void get_profile_from_history(SCP_string& name,
-								  float* avg,
-								  float* min,
-								  float* max,
 								  uint64_t* avg_micro_sec,
 								  uint64_t* min_micro_sec,
 								  uint64_t* max_micro_sec);

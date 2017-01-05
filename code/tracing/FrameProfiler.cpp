@@ -163,28 +163,19 @@ void FrameProfiler::processEvent(const trace_event* event) {
 }
 
 void FrameProfiler::get_profile_from_history(SCP_string& name,
-											 float* avg,
-											 float* min,
-											 float* max,
 											 uint64_t* avg_micro_sec,
 											 uint64_t* min_micro_sec,
 											 uint64_t* max_micro_sec) {
 	for (int i = 0; i < (int) history.size(); i++) {
 		if (history[i].name == name) {
-			*avg = history[i].avg;
-			*min = history[i].min;
-			*max = history[i].max;
 			*avg_micro_sec = history[i].avg_micro_sec;
 			*min_micro_sec = history[i].min_micro_sec;
 			*max_micro_sec = history[i].max_micro_sec;
 			return;
 		}
 	}
-
-	*avg = *min = *max = 0.0f;
 }
 void FrameProfiler::store_profile_in_history(SCP_string& name,
-											 float percent,
 											 uint64_t time) {
 	float old_ratio;
 	float new_ratio = 0.8f * f2fl(Frametime);
@@ -198,25 +189,13 @@ void FrameProfiler::store_profile_in_history(SCP_string& name,
 	for (int i = 0; i < (int) history.size(); i++) {
 		if (history[i].valid && history[i].name == name) {
 			// found the sample
-			history[i].avg = (history[i].avg * old_ratio) + (percent * new_ratio);
 			history[i].avg_micro_sec = fl2i((history[i].avg_micro_sec * old_ratio) + (time * new_ratio));
 
-			if (percent < history[i].min) {
-				history[i].min = percent;
-			} else {
-				history[i].min = (history[i].min * old_ratio) + (percent * new_ratio);
-			}
 
 			if (time < history[i].min_micro_sec) {
 				history[i].min_micro_sec = time;
 			} else {
 				history[i].min_micro_sec = fl2i((history[i].min_micro_sec * old_ratio) + (time * new_ratio));
-			}
-
-			if (percent > history[i].max) {
-				history[i].max = percent;
-			} else {
-				history[i].max = (history[i].max * old_ratio) + (percent * new_ratio);
 			}
 
 			if (time > history[i].max_micro_sec) {
@@ -234,7 +213,6 @@ void FrameProfiler::store_profile_in_history(SCP_string& name,
 
 	new_history.name = name;
 	new_history.valid = true;
-	new_history.avg = new_history.min = new_history.max = percent;
 	new_history.avg_micro_sec = new_history.min_micro_sec = new_history.max_micro_sec = time;
 
 	history.push_back(new_history);
@@ -248,28 +226,18 @@ void FrameProfiler::dump_output(SCP_stringstream& out,
 
 	for (int i = 0; i < (int) samples.size(); i++) {
 		uint64_t sample_time;
-		float percent_time, avg_time, min_time, max_time;
 		uint64_t avg_micro_seconds, min_micro_seconds, max_micro_seconds;
 
 		Assert(samples[i].open_profiles == 0);
 
 		sample_time = samples[i].accumulator - samples[i].children_sample_time;
 
-		if (end_profile_time == start_profile_time) {
-			percent_time = 0.0f;
-		} else {
-			percent_time = (i2fl(sample_time) / i2fl(end_profile_time - start_profile_time)) * 100.0f;
-		}
 
 		avg_micro_seconds = min_micro_seconds = max_micro_seconds = sample_time;
-		avg_time = min_time = max_time = percent_time;
 
 		// add new measurement into the history and get avg, min, and max
-		store_profile_in_history(samples[i].name, percent_time, sample_time);
+		store_profile_in_history(samples[i].name, sample_time);
 		get_profile_from_history(samples[i].name,
-								 &avg_time,
-								 &min_time,
-								 &max_time,
 								 &avg_micro_seconds,
 								 &min_micro_seconds,
 								 &max_micro_seconds);
@@ -277,9 +245,9 @@ void FrameProfiler::dump_output(SCP_stringstream& out,
 		// format the data
 		char avg[64], min[64], max[64], num[64];
 
-		sprintf(avg, "%3.1f%% (%3.1fms)", avg_time, i2fl(avg_micro_seconds) * 0.000001f);
-		sprintf(min, "%3.1f%% (%3.1fms)", min_time, i2fl(min_micro_seconds) * 0.000001f);
-		sprintf(max, "%3.1f%% (%3.1fms)", max_time, i2fl(max_micro_seconds) * 0.000001f);
+		sprintf(avg, "%3.1fms", i2fl(avg_micro_seconds) * 0.000001f);
+		sprintf(min, "%3.1fms", i2fl(min_micro_seconds) * 0.000001f);
+		sprintf(max, "%3.1fms", i2fl(max_micro_seconds) * 0.000001f);
 		sprintf(num, "%3d", samples[i].profile_instances);
 
 		SCP_string indented_name(samples[i].name);
@@ -313,28 +281,15 @@ void FrameProfiler::processFrame() {
 	uint64_t start_profile_time = 0;
 	uint64_t end_profile_time = 0;
 
-	uint64_t last_timestamp = 0;
-	uint64_t time_offset = 0;
-
 	for (auto& event : _bufferedEvents) {
-		auto time = event.timestamp + time_offset;
-
-		if (start_found && time == last_timestamp) {
-			// These two event have the same time so we need to shift all the following events back a bit
-			++time_offset;
-			++time;
-		}
-
 		if (!start_found) {
-			start_profile_time = time;
+			start_profile_time = event.timestamp;
 			start_found = true;
 		}
 		if (!end_found) {
-			end_profile_time = time;
+			end_profile_time = event.timestamp;
 			end_found = true;
 		}
-
-		event.timestamp = time;
 
 		switch (event.type) {
 			case EventType::Begin:
@@ -346,8 +301,6 @@ void FrameProfiler::processFrame() {
 			default:
 				break;
 		}
-
-		last_timestamp = time;
 	}
 	_bufferedEvents.clear();
 
