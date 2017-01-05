@@ -104,6 +104,8 @@ int gpu_start_query = -1;
 std::uint64_t gpu_start_time = 0;
 std::uint64_t cpu_start_time = 0;
 
+std::uint64_t current_id = 0;
+
 void submit_event(trace_event* evt) {
 	if (evt->pid == GPU_PID) {
 		evt->timestamp -= gpu_start_time;
@@ -289,6 +291,7 @@ void start(const Category& category, trace_event* evt) {
 
 	evt->duration = 0;
 	evt->type = EventType::Complete;
+	evt->event_id = ++current_id;
 
 	if (do_gpu_queries && category.usesGPUCounter()) {
 		Assertion(get_tid() == main_thread_id, "This function must be called from the main thread!");
@@ -320,6 +323,7 @@ void end(trace_event* evt) {
 	Assertion(evt->tid == get_tid(), "Complete events must be generated from the same thread!");
 
 	evt->duration = timer_get_nanoseconds() - evt->timestamp;
+	evt->end_event_id = ++current_id;
 
 	// Process CPU events
 	submit_event(evt);
@@ -355,6 +359,7 @@ void begin(const Category& category, const Scope& async_scope) {
 
 	evt.type = EventType::AsyncBegin;
 	evt.scope = &async_scope;
+	evt.event_id = ++current_id;
 
 	submit_event(&evt);
 }
@@ -369,6 +374,7 @@ void step(const Category& category, const Scope& async_scope) {
 
 	evt.type = EventType::AsyncStep;
 	evt.scope = &async_scope;
+	evt.event_id = ++current_id;
 
 	submit_event(&evt);
 }
@@ -383,6 +389,7 @@ void end(const Category& category, const Scope& async_scope) {
 
 	evt.type = EventType::AsyncEnd;
 	evt.scope = &async_scope;
+	evt.event_id = ++current_id;
 
 	submit_event(&evt);
 }
@@ -400,6 +407,7 @@ void value(const Category& category, float value) {
 	init_event(category, &evt);
 	evt.type = EventType::Counter;
 	evt.value = value;
+	evt.event_id = ++current_id;
 
 	submit_event(&evt);
 }

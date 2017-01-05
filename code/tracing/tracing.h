@@ -47,6 +47,9 @@ struct trace_event {
 	std::uint64_t timestamp = 0;
 	std::uint64_t duration = 0;
 
+	std::uint64_t event_id = 0;
+	std::uint64_t end_event_id = 0;
+
 	std::int64_t tid = -1;
 	std::int64_t pid = -1;
 
