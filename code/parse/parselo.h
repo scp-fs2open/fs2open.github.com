@@ -128,7 +128,7 @@ extern void stuff_string(SCP_string &outstr, int type, const char *terminators =
 extern void stuff_string_line(SCP_string &outstr);
 
 //alloc
-extern char* alloc_block(char* startstr, char* endstr, int extra_chars = 0);
+extern char* alloc_block(const char* startstr, const char* endstr, int extra_chars = 0);
 
 // Exactly the same as stuff string only Malloc's the buffer.
 //	Supports various FreeSpace primitive types.  If 'len' is supplied, it will override

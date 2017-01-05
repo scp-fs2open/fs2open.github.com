@@ -182,7 +182,7 @@ int Rank_medal_index = -1;
 int Init_flags;
 
 medal_stuff::medal_stuff()
-	: num_versions(1), version_starts_at_1(false), available_from_start(false), kills_needed(0), promotion_text()
+	: num_versions(1), version_starts_at_1(false), available_from_start(false), kills_needed(0)
 {
 	name[0] = '\0';
 	bitmap[0] = '\0';
@@ -192,12 +192,6 @@ medal_stuff::medal_stuff()
 
 medal_stuff::~medal_stuff()
 {
-	SCP_map<int, char*>::iterator it;
-	for (it = promotion_text.begin(); it != promotion_text.end(); ++it) {
-		if (it->second) {
-			vm_free(it->second);
-		}
-	}
 	promotion_text.clear();
 }
 
@@ -217,26 +211,13 @@ void medal_stuff::clone(const medal_stuff &m)
 	kills_needed = m.kills_needed;
 	memcpy(voice_base, m.voice_base, MAX_FILENAME_LEN);
 
-	promotion_text.clear();
-	SCP_map<int, char*>::const_iterator it;
-	for (it = m.promotion_text.begin(); it != m.promotion_text.end(); ++it) {
-		if (it->second) {
-			promotion_text[it->first] = vm_strdup(it->second);
-		}
-	}
+	promotion_text = m.promotion_text;
 }
 
 // assignment operator
 const medal_stuff &medal_stuff::operator=(const medal_stuff &m)
 {
 	if (this != &m) {
-		SCP_map<int, char*>::iterator it;
-		for (it = promotion_text.begin(); it != promotion_text.end(); ++it) {
-			if (it->second) {
-				vm_free(it->second);
-			}
-		}
-		promotion_text.clear();
 		clone(m);
 	}
 
@@ -405,7 +386,7 @@ void parse_medal_tbl()
 							continue;
 						}
 					}
-					temp_medal.promotion_text[persona] = vm_strdup(buf);
+					temp_medal.promotion_text[persona] = SCP_string(buf);
 				}
 				if (temp_medal.promotion_text.find(-1) == temp_medal.promotion_text.end()) {
 					Warning(LOCATION, "%s medal is missing default debriefing text.\n", temp_medal.name);

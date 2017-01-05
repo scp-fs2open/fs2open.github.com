@@ -89,12 +89,12 @@ missile_obj Missile_objs[MAX_MISSILE_OBJS];	// array used to store missile objec
 missile_obj Missile_obj_list;						// head of linked list of missile_obj structs
 
 //WEAPON SUBTYPE STUFF
-char *Weapon_subtype_names[] = {
+const char *Weapon_subtype_names[] = {
 	"Laser",
 	"Missile",
 	"Beam"
 };
-int Num_weapon_subtypes = sizeof(Weapon_subtype_names)/sizeof(char *);
+int Num_weapon_subtypes = sizeof(Weapon_subtype_names)/sizeof(Weapon_subtype_names[0]);
 
 flag_def_list_new<Weapon::Burst_Flags> Burst_fire_flags[] = {
 	{ "fast firing",		Weapon::Burst_Flags::Fast_firing,		true, false },
@@ -704,7 +704,7 @@ void parse_wi_flags(weapon_info *weaponp, flagset<Weapon::Info_Flags> wi_flags)
     }
 }
 
-void parse_shockwave_info(shockwave_create_info *sci, char *pre_char)
+void parse_shockwave_info(shockwave_create_info *sci, const char *pre_char)
 {
 	char buf[NAME_LENGTH];
 

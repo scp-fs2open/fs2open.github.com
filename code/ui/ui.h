@@ -634,7 +634,7 @@ public:
 	~UI_WINDOW();	// destructor
 	void set_mask_bmap(const char *fname);
 	void set_mask_bmap(int bmap, const char *name);
-	void set_foreground_bmap(char *fname);
+	void set_foreground_bmap(const char *fname);
 	void create( int _x, int _y, int _w, int _h, int _flags, int _f_id = -1 );
 	int process( int key_in = -1,int process_mouse = 1);
 	void draw();

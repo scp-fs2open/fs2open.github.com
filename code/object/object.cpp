@@ -75,7 +75,7 @@ int Object_inited = 0;
 int Show_waypoints = 0;
 
 //WMC - Made these prettier
-char *Object_type_names[MAX_OBJECT_TYPES] = {
+const char *Object_type_names[MAX_OBJECT_TYPES] = {
 //XSTR:OFF
 	"None",
 	"Ship",

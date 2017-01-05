@@ -29,7 +29,7 @@
 
 void ui_hline(int x1, int x2, int y );
 void ui_vline(int y1, int y2, int x );
-void ui_string_centered( int x, int y, char * s );
+void ui_string_centered( int x, int y, const char * s );
 void ui_draw_shad( int x1, int y1, int x2, int y2, int r1, int g1, int b1, int r2, int g2, int b2 );
 void ui_draw_frame( int x1, int y1, int x2, int y2 );
 void ui_rect( int x1, int y1, int x2, int y2 );

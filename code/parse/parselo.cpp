@@ -973,7 +973,7 @@ void stuff_string_until(SCP_string &outstr, const char *endstr)
 //or NULL on failure
 //Does depth checks for the start and end strings
 //extra_chars indicates extra malloc space that should be allocated.
-char* alloc_block(char* startstr, char* endstr, int extra_chars)
+char* alloc_block(const char* startstr, const char* endstr, int extra_chars)
 {
 	Assert(startstr != NULL && endstr != NULL);
 	Assert(stricmp(startstr, endstr));

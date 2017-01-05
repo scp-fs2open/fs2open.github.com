@@ -65,7 +65,7 @@ ADE_LIB(l_CFile, "CFile", "cf", "CFile FS2 filesystem access");
 ADE_FUNC(deleteFile, l_CFile, "string Filename, string Path", "Deletes given file. Path must be specified. Use a slash for the root directory.", "boolean", "True if deleted, false")
 {
 	char *n_filename = NULL;
-	char *n_path = "";
+	const char *n_path = "";
 	if(!ade_get_args(L, "ss", &n_filename, &n_path))
 		return ade_set_error(L, "b", false);
 
@@ -82,7 +82,7 @@ ADE_FUNC(deleteFile, l_CFile, "string Filename, string Path", "Deletes given fil
 ADE_FUNC(fileExists, l_CFile, "string Filename, [string Path = \"\", boolean CheckVPs = false]", "Checks if a file exists. Use a blank string for path for any directory, or a slash for the root directory.", "boolean", "True if file exists, false or nil otherwise")
 {
 	char *n_filename = NULL;
-	char *n_path = "";
+	const char *n_path = "";
 	bool check_vps = false;
 	if(!ade_get_args(L, "s|sb", &n_filename, &n_path, &check_vps))
 		return ADE_RETURN_NIL;
@@ -107,8 +107,8 @@ ADE_FUNC(openFile, l_CFile, "string Filename, [string Mode=\"r\", string Path = 
 		 "File handle, or invalid file handle if the specified file couldn't be opened")
 {
 	char *n_filename = NULL;
-	char *n_mode = "r";
-	char *n_path = "";
+	const char *n_mode = "r";
+	const char *n_path = "";
 	if(!ade_get_args(L, "s|ss", &n_filename, &n_mode, &n_path))
 		return ade_set_error(L, "o", l_File.Set(NULL));
 
@@ -138,7 +138,7 @@ ADE_FUNC(renameFile, l_CFile, "string CurrentFilename, string NewFilename, strin
 {
 	char *n_filename = NULL;
 	char *n_new_filename = NULL;
-	char *n_path = "";
+	const char *n_path = "";
 	if(!ade_get_args(L, "ss|s", &n_filename, &n_new_filename, &n_path))
 		return ade_set_error(L, "b", false);
 

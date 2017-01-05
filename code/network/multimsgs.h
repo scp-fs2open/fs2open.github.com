@@ -436,7 +436,7 @@ void send_shield_explosion_packet(int objnum, int tri_num, vec3d hit_pos);
 
 void send_player_stats_block_packet(net_player *pl, int stats_type, net_player *target = NULL, short offset = 0);
 
-void send_host_restr_packet(char *callsign, int code, int mode);
+void send_host_restr_packet(const char *callsign, int code, int mode);
 
 void send_netgame_end_error_packet(int notify_code, int err_code);
 

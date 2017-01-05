@@ -208,7 +208,7 @@ public:
 	int CreateLuaState();
 
 	//***Get data
-	int OutputMeta(char *filename);
+	int OutputMeta(const char *filename);
 
 	//***Moves data
 	//void MoveData(script_state &in);

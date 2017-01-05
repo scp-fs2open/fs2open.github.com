@@ -93,7 +93,7 @@ void parse_rank_tbl()
 						continue;
 					}
 				}
-				Ranks[idx].promotion_text[persona] = vm_strdup(buf);
+				Ranks[idx].promotion_text[persona] = SCP_string(buf);
 			}
 			if (Ranks[idx].promotion_text.find(-1) == Ranks[idx].promotion_text.end()) {
 				Warning(LOCATION, "%s rank is missing default debriefing text.\n", Ranks[idx].name);
@@ -1305,11 +1305,6 @@ void scoreing_close()
 {
 	SCP_map<int, char*>::iterator it;
 	for(int i = 0; i<NUM_RANKS; i++) {
-		for (it = Ranks[i].promotion_text.begin(); it != Ranks[i].promotion_text.end(); ++it) {
-			if (it->second) {
-				vm_free(it->second);
-			}
-		}
 		Ranks[i].promotion_text.clear();
 	}
 }

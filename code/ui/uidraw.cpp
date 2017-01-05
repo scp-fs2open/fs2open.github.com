@@ -25,7 +25,7 @@ void ui_vline(int y1, int y2, int x )
 	gr_line(x,y1,x,y2,GR_RESIZE_MENU);
 }
 
-void ui_string_centered( int x, int y, char * s )
+void ui_string_centered( int x, int y, const char * s )
 {
 	int height, width;
 

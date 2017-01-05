@@ -29,7 +29,7 @@ class ship_subsys;
 #define	WP_LASER			0		// PLEASE NOTE that this flag specifies ballistic primaries as well - Goober5000
 #define	WP_MISSILE			1
 #define	WP_BEAM				2
-extern char *Weapon_subtype_names[];
+extern const char *Weapon_subtype_names[];
 extern int Num_weapon_subtypes;
 
 #define WRT_NONE	-1

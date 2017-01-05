@@ -364,7 +364,7 @@ public:
 	//-----
 
 	//Set stuff
-	void ParseClassInfo(char* section);
+	void ParseClassInfo(const char* section);
 	void SetActiveObject(GUIObject *cgp);
 	void SetGraspedObject(GUIObject *cgp, int button);
 	void SetFocusObject(GUIObject *cgp);

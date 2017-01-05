@@ -139,7 +139,7 @@ bool ScreenClassInfoEntry::Parse()
 	return false;
 }
 
-void GUISystem::ParseClassInfo(char* filename)
+void GUISystem::ParseClassInfo(const char* filename)
 {
 	if (ClassInfoParsed) {
 		Warning(LOCATION, "Class info is being parsed twice");

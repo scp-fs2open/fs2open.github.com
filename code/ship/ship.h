@@ -214,7 +214,7 @@ private:
 
 	SCP_vector<ArmorDamageType> DamageTypes;
 public:
-	ArmorType(char* in_name);
+	ArmorType(const char* in_name);
 	int flags;
 
 	//Get

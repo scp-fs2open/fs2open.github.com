@@ -208,7 +208,7 @@ extern "C" {
 //  This function is defined in code\network\multiutil.cpp so will be linked from multiutil.obj
 //  it's required fro the -missioncrcs command line option - Kazan
 void multi_spew_pxo_checksums(int max_files, const char *outfile);
-void fs2netd_spew_table_checksums(char *outfile);
+void fs2netd_spew_table_checksums(const char *outfile);
 
 extern bool frame_rate_display;
 
@@ -483,23 +483,23 @@ void game_title_screen_display();
 void game_title_screen_close();
 
 // loading background filenames
-static char *Game_loading_bground_fname[GR_NUM_RESOLUTIONS] = {
+static const char *Game_loading_bground_fname[GR_NUM_RESOLUTIONS] = {
 	"LoadingBG",		// GR_640
 	"2_LoadingBG"		// GR_1024
 };
 
 
-static char *Game_loading_ani_fname[GR_NUM_RESOLUTIONS] = {
+static const char *Game_loading_ani_fname[GR_NUM_RESOLUTIONS] = {
 	"Loading",		// GR_640
 	"2_Loading"		// GR_1024
 };
 
-static char *Game_title_screen_fname[GR_NUM_RESOLUTIONS] = {
+static const char *Game_title_screen_fname[GR_NUM_RESOLUTIONS] = {
 	"PreLoad",
 	"2_PreLoad"
 };
 
-static char *Game_logo_screen_fname[GR_NUM_RESOLUTIONS] = {
+static const char *Game_logo_screen_fname[GR_NUM_RESOLUTIONS] = {
 	"PreLoadLogo",
 	"2_PreLoadLogo"
 };

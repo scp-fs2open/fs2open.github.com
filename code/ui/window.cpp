@@ -124,7 +124,7 @@ void UI_WINDOW::set_mask_bmap(int bmap, const char *name)
 // Specify the filename for the mask bitmap to display on the ui window as
 // a background.
 //
-void UI_WINDOW::set_foreground_bmap(char *fname)
+void UI_WINDOW::set_foreground_bmap(const char *fname)
 {
 	// load in the background bitmap 
 	foreground_bmap_id = bm_load(fname);

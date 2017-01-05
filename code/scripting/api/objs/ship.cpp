@@ -181,7 +181,7 @@ ADE_VIRTVAR(ShieldArmorClass, l_Ship, "string", "Current Armor class of the ship
 {
 	object_h *objh;
 	char *s = NULL;
-	char *name = NULL;
+	const char *name = NULL;
 
 	if(!ade_get_args(L, "o|s", l_Ship.GetPtr(&objh), &s))
 		return ade_set_error(L, "s", "");
@@ -208,7 +208,7 @@ ADE_VIRTVAR(ArmorClass, l_Ship, "string", "Current Armor class", "string", "Armo
 {
 	object_h *objh;
 	char *s = NULL;
-	char *name = NULL;
+	const char *name = NULL;
 
 	if(!ade_get_args(L, "o|s", l_Ship.GetPtr(&objh), &s))
 		return ade_set_error(L, "s", "");

@@ -95,7 +95,7 @@ void ds_do_frame();
 // used for const array of default values
 typedef struct EFXREVERBPROPERTIES_list
 {
-	char *name;
+	const char *name;
 	float flDensity;
 	float flDiffusion;
 	float flGain;

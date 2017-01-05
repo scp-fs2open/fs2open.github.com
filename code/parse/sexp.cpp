@@ -770,7 +770,7 @@ sexp_ai_goal_link Sexp_ai_goal_links[] = {
 	{ AI_GOAL_FORM_ON_WING, OP_AI_FORM_ON_WING }
 };
 
-char *HUD_gauge_text[NUM_HUD_GAUGES] = 
+const char *HUD_gauge_text[NUM_HUD_GAUGES] =
 {
 	"LEAD_INDICATOR",
 	"ORIENTATION_TEE",
@@ -816,7 +816,7 @@ char *HUD_gauge_text[NUM_HUD_GAUGES] =
 
 void sexp_set_skybox_model_preload(char *name); // taylor
 int Num_skybox_flags = 6;
-char *Skybox_flags[] = {
+const char *Skybox_flags[] = {
 	"force-clamp",
 	"add-lighting",
 	"no-transparency",
@@ -867,11 +867,11 @@ void sexp_stop_music(int fade = 1);
 #define SEO_DECAY_TIME	1
 #define SEO_DAMPING		2
 int sexp_sound_environment_option_lookup(char *text);
-char *Sound_environment_option[] = { "volume", "decay time", "damping" };
+const char *Sound_environment_option[] = { "volume", "decay time", "damping" };
 int Num_sound_environment_options = 3;
 
 // for adjust-audio-volume - The E
-char *Adjust_audio_options[] = { "Music", "Voice", "Effects" };
+const char *Adjust_audio_options[] = { "Music", "Voice", "Effects" };
 int Num_adjust_audio_options = 3;
 int audio_volume_option_lookup(char *text);
 
@@ -885,7 +885,7 @@ int hud_gauge_type_lookup(char* name);
 #define EO_SHOCKWAVE_SPEED	4
 #define EO_DEATH_ROLL_TIME	5
 int sexp_explosion_option_lookup(char *text);
-char *Explosion_option[] = { "damage", "blast", "inner radius", "outer radius", "shockwave speed", "death roll time" };
+const char *Explosion_option[] = { "damage", "blast", "inner radius", "outer radius", "shockwave speed", "death roll time" };
 int Num_explosion_options = 6;
 
 int get_sexp();
@@ -1122,7 +1122,7 @@ void init_sexp()
 /**
  * Allocate an sexp node.
  */
-int alloc_sexp(char *text, int type, int subtype, int first, int rest)
+int alloc_sexp(const char *text, int type, int subtype, int first, int rest)
 {
 	int node;
 	int sexp_const = get_operator_const(text);
@@ -22668,7 +22668,7 @@ void maybe_write_to_event_log(int result)
 /**
 * Returns the constant used as a SEXP's result as text for printing to the event log
 */
-char *sexp_get_result_as_text(int result)
+const char *sexp_get_result_as_text(int result)
 {
 	switch (result) {
 		case SEXP_TRUE:
@@ -28471,7 +28471,7 @@ int sexp_query_type_match(int opf, int opr)
 	return 0;
 }
 
-char *sexp_error_message(int num)
+const char *sexp_error_message(int num)
 {
 	switch (num) {
 		case SEXP_CHECK_NONOP_ARGS:
@@ -33789,8 +33789,8 @@ static void output_sexp_html(int sexp_idx, FILE *fp)
 		{
 			char* new_buf = new char[2*strlen(Sexp_help[i].help)];
 			char* dest_ptr = new_buf;
-			char* curr_ptr = Sexp_help[i].help;
-			char* end_ptr = curr_ptr + strlen(Sexp_help[i].help);
+			const char* curr_ptr = Sexp_help[i].help;
+			const char* end_ptr = curr_ptr + strlen(Sexp_help[i].help);
 			while(curr_ptr < end_ptr)
 			{
 				if(*curr_ptr == '\n')

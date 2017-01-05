@@ -38,7 +38,7 @@ public:
 
 	//If this is a badge (kills_needed > 0)
 	char voice_base[MAX_FILENAME_LEN];
-	SCP_map<int, char*> promotion_text;
+	SCP_map<int, SCP_string> promotion_text;
 
 	medal_stuff();
 	~medal_stuff();
