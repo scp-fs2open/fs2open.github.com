@@ -49,7 +49,7 @@ const float GL_light_spec[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
 const float GL_light_zero[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
 const float GL_light_emission[4] = { 0.09f, 0.09f, 0.09f, 1.0f };
 const float GL_light_true_zero[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
-float GL_light_ambient[4] = { 0.3f, 0.3f, 0.3f, 1.0f };
+float GL_light_ambient[4] = { 0.47f, 0.47f, 0.47f, 1.0f };
 
 void FSLight2GLLight(light *FSLight, opengl_light *GLLight)
 {
@@ -314,12 +314,18 @@ void gr_opengl_reset_lighting()
 
 void opengl_calculate_ambient_factor()
 {
-	float amb_user = i2fl(Cmdline_ambient_factor) / 128.0f;
+	float amb_user = 0.0f;
+
+	// assuming that the default is "128", just skip this if not a user setting
+	if ( Cmdline_ambient_factor == 128 )
+		return;
+
+	amb_user = (float)((Cmdline_ambient_factor * 2) - 255) / 255.0f;
 
 	// set the ambient light
-	GL_light_ambient[0] *= amb_user;
-	GL_light_ambient[1] *= amb_user;
-	GL_light_ambient[2] *= amb_user;
+	GL_light_ambient[0] += amb_user;
+	GL_light_ambient[1] += amb_user;
+	GL_light_ambient[2] += amb_user;
 
 	CLAMP( GL_light_ambient[0], 0.02f, 1.0f );
 	CLAMP( GL_light_ambient[1], 0.02f, 1.0f );
