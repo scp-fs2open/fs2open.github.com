@@ -1125,6 +1125,8 @@ set (file_root_tgautils
 set (file_root_tracing
 	tracing/categories.cpp
 	tracing/categories.h
+	tracing/FrameProfiler.h
+	tracing/FrameProfiler.cpp
 	tracing/MainFrameTimer.h
 	tracing/MainFrameTimer.cpp
 	tracing/Monitor.h

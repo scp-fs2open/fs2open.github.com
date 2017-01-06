@@ -1170,8 +1170,6 @@ extern fireball Fireballs[];
 
 void obj_move_all_post(object *objp, float frametime)
 {
-	TRACE_SCOPE(tracing::PostMove);
-
 	switch (objp->type)
 	{
 		case OBJ_WEAPON:

@@ -2100,13 +2100,20 @@ void game_show_framerate()
 #endif
 
 
-	if (Show_framerate)	{
+	if (Show_framerate || Cmdline_frame_profile) {
 		gr_set_color_fast(&HUD_color_debug);
 
-		if (frametotal != 0.0f)
-			gr_printf_no_resize( gr_screen.center_offset_x + 20, gr_screen.center_offset_y + 100, "FPS: %0.1f", Framerate );
-		else
-			gr_string( gr_screen.center_offset_x + 20, gr_screen.center_offset_y + 100, "FPS: ?", GR_RESIZE_NONE );
+		if (Cmdline_frame_profile) {
+			gr_string(gr_screen.center_offset_x + 20, gr_screen.center_offset_y + 100 + line_height,
+					  tracing::get_frame_profile_output().c_str(), GR_RESIZE_NONE);
+		}
+
+		if (Show_framerate) {
+			if (frametotal != 0.0f)
+				gr_printf_no_resize( gr_screen.center_offset_x + 20, gr_screen.center_offset_y + 100, "FPS: %0.1f", Framerate );
+			else
+				gr_string( gr_screen.center_offset_x + 20, gr_screen.center_offset_y + 100, "FPS: ?", GR_RESIZE_NONE );
+		}
 	}
 
 #ifndef NDEBUG
@@ -4385,6 +4392,10 @@ void game_frame(bool paused)
 
 	// process lightning (nebula only)
 	nebl_process();
+
+	if (Cmdline_frame_profile) {
+		tracing::frame_profile_process_frame();
+	}
 
 	DEBUG_GET_TIME( total_time2 )
 

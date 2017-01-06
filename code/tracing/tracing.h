@@ -47,6 +47,9 @@ struct trace_event {
 	std::uint64_t timestamp = 0;
 	std::uint64_t duration = 0;
 
+	std::uint64_t event_id = 0;
+	std::uint64_t end_event_id = 0;
+
 	std::int64_t tid = -1;
 	std::int64_t pid = -1;
 
@@ -62,6 +65,14 @@ void init();
  * @brief Should be called regularly to process GPU events
  */
 void process_events();
+
+void frame_profile_process_frame();
+
+/**
+ * @brief Gets the output of the frame profiler.
+ * @return The frame profiler output
+ */
+SCP_string get_frame_profile_output();
 
 /**
  * @brief Deinitializes the tracing subsystem
