@@ -241,7 +241,7 @@ void GetLightInfo(int i, out vec3 lightDir, out float attenuation, out float spe
 vec3 CalculateLighting(vec3 normal, vec3 diffuseMaterial, vec3 specularMaterial, float gloss, float shadow, float aoFactor)
 {
 	vec3 eyeDir = vec3(normalize(-fragPosition).xyz);
-	vec3 lightAmbient = (emissionFactor + ambientFactor) * aoFactor;
+	vec3 lightAmbient = (emissionFactor + ambientFactor * ambientFactor) * aoFactor; // ambientFactor^2 due to legacy OpenGL compatibility behavior
 	vec3 lightAmbientDiffuse = vec3(0.0, 0.0, 0.0);
    vec3 lightDiffuse = vec3(0.0, 0.0, 0.0);
    vec3 lightSpecular = vec3(0.0, 0.0, 0.0);
