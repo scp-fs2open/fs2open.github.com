@@ -153,7 +153,7 @@ void FrameProfiler::processEvent(const trace_event* event) {
 
 	trace_event end = *event;
 	end.type = EventType::End;
-	begin.event_id = event->end_event_id;
+	end.event_id = event->end_event_id;
 	end.timestamp = event->timestamp + event->duration;
 	end.duration = event->duration;
 
@@ -189,19 +189,19 @@ void FrameProfiler::store_profile_in_history(SCP_string& name,
 	for (int i = 0; i < (int) history.size(); i++) {
 		if (history[i].valid && history[i].name == name) {
 			// found the sample
-			history[i].avg_micro_sec = fl2i((history[i].avg_micro_sec * old_ratio) + (time * new_ratio));
+			history[i].avg_micro_sec = (uint64_t)((history[i].avg_micro_sec * old_ratio) + (time * new_ratio));
 
 
 			if (time < history[i].min_micro_sec) {
 				history[i].min_micro_sec = time;
 			} else {
-				history[i].min_micro_sec = fl2i((history[i].min_micro_sec * old_ratio) + (time * new_ratio));
+				history[i].min_micro_sec = (uint64_t)((history[i].min_micro_sec * old_ratio) + (time * new_ratio));
 			}
 
 			if (time > history[i].max_micro_sec) {
 				history[i].max_micro_sec = time;
 			} else {
-				history[i].max_micro_sec = fl2i((history[i].max_micro_sec * old_ratio) + (time * new_ratio));
+				history[i].max_micro_sec = (uint64_t)((history[i].max_micro_sec * old_ratio) + (time * new_ratio));
 			}
 
 			return;
