@@ -21986,7 +21986,7 @@ int sexp_script_eval(int node, int return_type, bool concat_args = false)
 			{
 				char* s = CTEXT(n);
 				int r = -1;
-				bool success = Script_system.EvalString(CTEXT(n), "|i", &r);
+				bool success = Script_system.EvalString(s, "|i", &r);
 
 				if(!success)
 					Warning(LOCATION, "sexp-script-eval failed to evaluate string \"%s\"; check your syntax", s);
