@@ -1087,7 +1087,7 @@ bool script_state::EvalString(const char *string, const char *format, void *rtn,
 				auto val = ret.front();
 				val.pushValue();
 
-				Ade_get_args_skip = stack_start+1;
+				Ade_get_args_skip = stack_start;
 				Ade_get_args_lfunction = true;
 				ade_get_args(LuaState, format, rtn);
 				Ade_get_args_skip = 0;
