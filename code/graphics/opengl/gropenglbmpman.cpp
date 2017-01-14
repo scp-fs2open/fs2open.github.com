@@ -124,11 +124,7 @@ int gr_opengl_bm_make_render_target(int n, int *width, int *height, int *bpp, in
 	if ( Cmdline_no_fbo ) {
 		return 0;
 	}
-
-	if ( (flags & BMP_FLAG_CUBEMAP) ) {
-		return 0;
-	}
-
+	
 	if ( (flags & BMP_FLAG_CUBEMAP) && (*width != *height) ) {
 		MIN(*width, *height) = MAX(*width, *height);
 	}
