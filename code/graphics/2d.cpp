@@ -2254,12 +2254,14 @@ uint gr_determine_model_shader_flags(
 	return shader_flags;
 }
 
-void gr_print_timestamp(int x, int y, int timestamp, int resize_mode)
+void gr_print_timestamp(int x, int y, fix timestamp, int resize_mode)
 {
 	char time[8];
 
+	int seconds = fl2i(f2fl(timestamp));
+
 	// format the time information into strings
-	sprintf(time, "%.1d:%.2d:%.2d", (timestamp / 3600000) % 10, (timestamp / 60000) % 60, (timestamp / 1000) % 60);
+	sprintf(time, "%.1d:%.2d:%.2d", (seconds / 3600) % 10, (seconds / 60) % 60, seconds % 60);
 	time[7] = '\0';
 
 	gr_string(x, y, time, resize_mode);

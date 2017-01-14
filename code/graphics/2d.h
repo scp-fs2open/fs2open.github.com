@@ -1245,10 +1245,10 @@ void gr_pline_special(SCP_vector<vec3d> *pts, int thickness,int resize_mode=GR_R
 *
 * @param x The x position where the timestamp should be draw
 * @param y The y position where the timestamp should be draw
-* @param timestamp The timespamp in milliseconds to be printed
+* @param timestamp The timestamp (in 65536ths of a second) to be printed
 * @param resize_mode The resize mode to use
 */
-void gr_print_timestamp(int x, int y, int timestamp, int resize_mode);
+void gr_print_timestamp(int x, int y, fix timestamp, int resize_mode);
 
 namespace graphics {
 class DebugScope {
