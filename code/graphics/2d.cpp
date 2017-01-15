@@ -630,7 +630,7 @@ bool gr_unsize_screen_posf(float *x, float *y, float *w, float *h, int resize_mo
 	return true;
 }
 
-void gr_close(os::GraphicsOperations* graphicsOps)
+void gr_close()
 {
 	if ( !Gr_inited ) {
 		return;
@@ -642,7 +642,7 @@ void gr_close(os::GraphicsOperations* graphicsOps)
 
 	switch (gr_screen.mode) {
 		case GR_OPENGL:
-			gr_opengl_cleanup(graphicsOps, true);
+			gr_opengl_cleanup(true);
 			break;
 	
 		case GR_STUB:
@@ -724,12 +724,6 @@ void gr_set_palette( const char *name, ubyte * palette, int restrict_font_to_128
 
 void gr_screen_resize(int width, int height)
 {
-	// this should only be called from FRED!!
-	if ( !Fred_running ) {
-		Int3();
-		return;
-	}
-
 	gr_screen.save_center_w = gr_screen.center_w = gr_screen.save_max_w = gr_screen.max_w = gr_screen.max_w_unscaled = gr_screen.max_w_unscaled_zoomed = width;
 	gr_screen.save_center_h = gr_screen.center_h = gr_screen.save_max_h = gr_screen.max_h = gr_screen.max_h_unscaled = gr_screen.max_h_unscaled_zoomed = height;
 
@@ -771,7 +765,7 @@ int gr_get_resolution_class(int width, int height)
 	}
 }
 
-static bool gr_init_sub(os::GraphicsOperations* graphicsOps, int mode, int width, int height, int depth, float center_aspect_ratio)
+static bool gr_init_sub(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, int mode, int width, int height, int depth, float center_aspect_ratio)
 {
 	int res = GR_1024;
 	bool rc = false;
@@ -873,7 +867,7 @@ static bool gr_init_sub(os::GraphicsOperations* graphicsOps, int mode, int width
 	
 	switch (mode) {
 		case GR_OPENGL:
-			rc = gr_opengl_init(graphicsOps);
+			rc = gr_opengl_init(std::move(graphicsOps));
 			break;
 		case GR_STUB: 
 			rc = gr_stub_init();
@@ -889,7 +883,7 @@ static bool gr_init_sub(os::GraphicsOperations* graphicsOps, int mode, int width
 	return true;
 }
 
-bool gr_init(os::GraphicsOperations* graphicsOps, int d_mode, int d_width, int d_height, int d_depth)
+bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, int d_mode, int d_width, int d_height, int d_depth)
 {
 	int width = 1024, height = 768, depth = 32, mode = GR_OPENGL;
 	float center_aspect_ratio = -1.0f;
@@ -898,7 +892,7 @@ bool gr_init(os::GraphicsOperations* graphicsOps, int d_mode, int d_width, int d
 	if (Gr_inited) {
 		switch (gr_screen.mode) {
 			case GR_OPENGL:
-				gr_opengl_cleanup(graphicsOps, false);
+				gr_opengl_cleanup(false);
 				break;
 			
 			case GR_STUB:
@@ -1062,7 +1056,7 @@ bool gr_init(os::GraphicsOperations* graphicsOps, int d_mode, int d_width, int d
 	}
 
 	// now try to actually init everything...
-	if ( gr_init_sub(graphicsOps, mode, width, height, depth, center_aspect_ratio) == false ) {
+	if ( gr_init_sub(std::move(graphicsOps), mode, width, height, depth, center_aspect_ratio) == false ) {
 		return false;
 	}
 
@@ -2132,10 +2126,10 @@ void gr_set_bitmap(int bitmap_num, int alphablend_mode, int bitblt_mode, float a
 	gr_screen.current_bitmap = bitmap_num;
 }
 
-void gr_flip()
+void gr_flip(bool execute_scripting)
 {
 	// m!m avoid running CHA_ONFRAME when the "Quit mission" popup is shown. See mantis 2446 for reference
-	if (!quit_mission_popup_shown)
+	if (execute_scripting && !quit_mission_popup_shown)
 	{
 		TRACE_SCOPE(tracing::LuaOnFrame);
 

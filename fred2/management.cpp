@@ -276,7 +276,7 @@ void fred_preload_all_briefing_icons()
 	}
 }
 
-bool fred_init(os::GraphicsOperations* graphicsOps)
+bool fred_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 {
 	int i;
 	char palette_filename[1024];
@@ -342,7 +342,7 @@ bool fred_init(os::GraphicsOperations* graphicsOps)
  // 	Cmdline_noglow = 1;
  	Cmdline_window = 1;
 
-	gr_init(graphicsOps, GR_OPENGL, 640, 480, 32);
+	gr_init(std::move(graphicsOps), GR_OPENGL, 640, 480, 32);
 
 	io::mouse::CursorManager::get()->showCursor(false);
 

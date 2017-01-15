@@ -488,6 +488,7 @@ cmdline_parm json_pilot("-json_pilot", NULL, AT_NONE); //Cmdline_json_pilot
 cmdline_parm json_profiling("-json_profiling", NULL, AT_NONE); //Cmdline_json_profiling
 cmdline_parm show_video_info("-show_video_info", NULL, AT_NONE); //Cmdline_show_video_info
 cmdline_parm frame_profile_arg("-profile_frame_time", NULL, AT_NONE); //Cmdline_frame_profile
+cmdline_parm debug_window_arg("-debug_window", NULL, AT_NONE);	// Cmdline_debug_window
 
 
 char *Cmdline_start_mission = NULL;
@@ -516,6 +517,7 @@ bool Cmdline_json_pilot = false;
 bool Cmdline_json_profiling = false;
 bool Cmdline_frame_profile = false;
 bool Cmdline_show_video_info = false;
+bool Cmdline_debug_window = false;
 
 // Other
 cmdline_parm get_flags_arg("-get_flags", "Output the launcher flags file", AT_NONE);
@@ -1879,6 +1881,10 @@ bool SetCmdlineParams()
 	if (frame_profile_arg.found() )
 	{
 		Cmdline_frame_profile = true;
+	}
+
+	if (debug_window_arg.found()) {
+		Cmdline_debug_window = true;
 	}
 
 	if (show_video_info.found())

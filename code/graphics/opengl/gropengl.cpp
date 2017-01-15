@@ -91,6 +91,9 @@ GLuint GL_vao = 0;
 
 static std::unique_ptr<os::OpenGLContext> GL_context = nullptr;
 
+static std::unique_ptr<os::GraphicsOperations> graphic_operations = nullptr;
+static os::Viewport* current_viewport = nullptr;
+
 void opengl_go_fullscreen()
 {
 	if (Cmdline_fullscreen_window || Cmdline_window || GL_fullscreen || Fred_running)
@@ -166,7 +169,7 @@ void gr_opengl_flip()
 	if (Cmdline_gl_finish)
 		glFinish();
 
-	os::getMainViewport()->swapBuffers();
+	current_viewport->swapBuffers();
 
 	opengl_tcache_frame();
 	opengl_reset_immediate_buffer();
@@ -390,7 +393,7 @@ void gr_opengl_print_screen(const char *filename)
 	}
 }
 
-void gr_opengl_shutdown(os::GraphicsOperations* graphicsOps)
+void gr_opengl_shutdown()
 {
 	graphics::paths::PathRenderer::shutdown();
 
@@ -417,11 +420,11 @@ void gr_opengl_shutdown(os::GraphicsOperations* graphicsOps)
 		GL_original_gamma_ramp = NULL;
 	}
 
-	graphicsOps->makeOpenGLContextCurrent(nullptr, nullptr);
+	graphic_operations->makeOpenGLContextCurrent(nullptr, nullptr);
 	GL_context = nullptr;
 }
 
-void gr_opengl_cleanup(os::GraphicsOperations* graphicsOps, bool closing, int minimize)
+void gr_opengl_cleanup(bool closing, int minimize)
 {
 	if ( !GL_initted ) {
 		return;
@@ -442,7 +445,10 @@ void gr_opengl_cleanup(os::GraphicsOperations* graphicsOps, bool closing, int mi
 
 	opengl_minimize();
 
-	gr_opengl_shutdown(graphicsOps);
+	gr_opengl_shutdown();
+
+	current_viewport = nullptr;
+	graphic_operations.reset();
 }
 
 void gr_opengl_fog_set(int fog_mode, int r, int g, int b, float fog_near, float fog_far)
@@ -923,7 +929,32 @@ void opengl_setup_viewport()
 	}
 }
 
-int opengl_init_display_device(os::GraphicsOperations* graphicsOps)
+std::unique_ptr<os::Viewport> gr_opengl_create_viewport(const os::ViewPortProperties& props) {
+	os::ViewPortProperties attrs = props;
+	attrs.pixel_format.red_size = Gr_red.bits;
+	attrs.pixel_format.green_size = Gr_green.bits;
+	attrs.pixel_format.blue_size = Gr_blue.bits;
+	attrs.pixel_format.alpha_size = (gr_screen.bits_per_pixel == 32) ? Gr_alpha.bits : 0;
+	attrs.pixel_format.depth_size = (gr_screen.bits_per_pixel == 32) ? 24 : 16;
+	attrs.pixel_format.stencil_size = (gr_screen.bits_per_pixel == 32) ? 8 : 1;
+
+	attrs.pixel_format.multi_samples = os_config_read_uint(NULL, "OGL_AntiAliasSamples", 0);
+
+	attrs.enable_opengl = true;
+	attrs.gl_attributes.profile = os::OpenGLProfile::Core;
+
+	return graphic_operations->createViewport(attrs);
+}
+
+void gr_opengl_use_viewport(os::Viewport* view) {
+	graphic_operations->makeOpenGLContextCurrent(view, GL_context.get());
+	current_viewport = view;
+
+	auto size = view->getSize();
+	gr_screen_resize(size.first, size.second);
+}
+
+int opengl_init_display_device()
 {
 	int bpp = gr_screen.bits_per_pixel;
 
@@ -1033,15 +1064,6 @@ int opengl_init_display_device(os::GraphicsOperations* graphicsOps)
 	}
 
 	os::ViewPortProperties attrs;
-	attrs.pixel_format.red_size = Gr_red.bits;
-	attrs.pixel_format.green_size = Gr_green.bits;
-	attrs.pixel_format.blue_size = Gr_blue.bits;
-	attrs.pixel_format.alpha_size = (bpp == 32) ? Gr_alpha.bits : 0;
-	attrs.pixel_format.depth_size = (bpp == 32) ? 24 : 16;
-	attrs.pixel_format.stencil_size = (bpp == 32) ? 8 : 1;
-
-	attrs.pixel_format.multi_samples = os_config_read_uint(NULL, "OGL_AntiAliasSamples", 0);
-
 	attrs.enable_opengl = true;
 
 	attrs.gl_attributes.major_version = MIN_REQUIRED_GL_VERSION / 10;
@@ -1065,7 +1087,7 @@ int opengl_init_display_device(os::GraphicsOperations* graphicsOps)
 		attrs.flags.set(os::ViewPortFlags::Borderless);
 	}
 
-	auto viewport = graphicsOps->createViewport(attrs);
+	auto viewport = gr_opengl_create_viewport(attrs);
 	if (!viewport) {
 		return 1;
 	}
@@ -1079,7 +1101,7 @@ int opengl_init_display_device(os::GraphicsOperations* graphicsOps)
 		gl_attrs.major_version = ver / 10;
 		gl_attrs.minor_version = ver % 10;
 
-		GL_context = graphicsOps->createOpenGLContext(viewport.get(), gl_attrs);
+		GL_context = graphic_operations->createOpenGLContext(viewport.get(), gl_attrs);
 
 		if (GL_context != nullptr)
 		{
@@ -1091,10 +1113,12 @@ int opengl_init_display_device(os::GraphicsOperations* graphicsOps)
 		return 1;
 	}
 
-	graphicsOps->makeOpenGLContextCurrent(viewport.get(), GL_context.get());
-
 	auto port = os::addViewport(std::move(viewport));
 	os::setMainViewPort(port);
+
+	// We can't use gr_use_viewport because that tries to use OpenGL which hasn't been initialized yet
+	graphic_operations->makeOpenGLContextCurrent(port, GL_context.get());
+	current_viewport = port;
 
 	if (GL_original_gamma_ramp != NULL && os::getSDLMainWindow() != nullptr) {
 		SDL_GetWindowGammaRamp( os::getSDLMainWindow(), GL_original_gamma_ramp, (GL_original_gamma_ramp+256),
@@ -1103,7 +1127,6 @@ int opengl_init_display_device(os::GraphicsOperations* graphicsOps)
 
 	return 0;
 }
-
 
 void opengl_setup_function_pointers()
 {
@@ -1261,6 +1284,9 @@ void opengl_setup_function_pointers()
 	gr_screen.gf_query_value_available = gr_opengl_query_value_available;
 	gr_screen.gf_get_query_value = gr_opengl_get_query_value;
 	gr_screen.gf_delete_query_object = gr_opengl_delete_query_object;
+
+	gr_screen.gf_create_viewport = gr_opengl_create_viewport;
+	gr_screen.gf_use_viewport = gr_opengl_use_viewport;
 
 	// NOTE: All function pointers here should have a Cmdline_nohtl check at the top
 	//       if they shouldn't be run in non-HTL mode, Don't keep separate entries.
@@ -1432,10 +1458,10 @@ static void init_extensions() {
 	}
 }
 
-bool gr_opengl_init(os::GraphicsOperations* graphicsOps)
+bool gr_opengl_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 {
 	if (GL_initted) {
-		gr_opengl_cleanup(graphicsOps, false);
+		gr_opengl_cleanup(false);
 		GL_initted = false;
 	}
 
@@ -1444,7 +1470,9 @@ bool gr_opengl_init(os::GraphicsOperations* graphicsOps)
 		  gr_screen.max_h,
 		  gr_screen.bits_per_pixel ));
 
-	if ( opengl_init_display_device(graphicsOps) ) {
+	graphic_operations = std::move(graphicsOps);
+
+	if ( opengl_init_display_device() ) {
 		Error(LOCATION, "Unable to initialize display device!\n");
 	}
 

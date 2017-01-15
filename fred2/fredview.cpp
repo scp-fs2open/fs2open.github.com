@@ -122,8 +122,6 @@ void view_universe(int just_marked = 0);
 void select_objects();
 void drag_rotate_save_backup();
 
-static std::unique_ptr<MFCGraphicsOperations> graphicsOperations;
-
 /////////////////////////////////////////////////////////////////////////////
 // CFREDView
 
@@ -4596,8 +4594,7 @@ void CFREDView::OnDestroy()
 {
 	audiostream_close();
 	snd_close();
- 	gr_close(graphicsOperations.get());
-	graphicsOperations.reset();
+ 	gr_close();
 
 	CView::OnDestroy();
 }
@@ -4608,8 +4605,8 @@ int CFREDView::OnCreate(LPCREATESTRUCT lpCreateStruct)
 		return -1;
 	
 	MoveWindow(0,0,200,300,1);
-	graphicsOperations.reset(new MFCGraphicsOperations(this->GetSafeHwnd()));
-   	if(fred_init(graphicsOperations.get()) == false)
+	std::unique_ptr<os::GraphicsOperations> graphicsOperations(new MFCGraphicsOperations(this->GetSafeHwnd()));
+   	if(fred_init(std::move(graphicsOperations)) == false)
 		return -1;
 
 	return 0;

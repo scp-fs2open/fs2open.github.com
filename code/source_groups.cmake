@@ -760,6 +760,8 @@ set (file_root_observer
 
 # OsApi files
 set (file_root_osapi
+	osapi/DebugWindow.h
+	osapi/DebugWindow.cpp
 	osapi/osapi.h
 	osapi/osapi.cpp
 	osapi/dialogs.h

@@ -528,8 +528,6 @@ sound_env Game_sound_env;
 sound_env Game_default_sound_env = { EAX_ENVIRONMENT_BATHROOM, 0.2f, 0.2f, 1.0f };
 int Game_sound_env_update_timestamp;
 
-static std::unique_ptr<SDLGraphicsOperations> sdlGraphicsOperations;
-
 fs_builtin_mission *game_find_builtin_mission(char *filename)
 {
 	int idx;
@@ -1796,15 +1794,22 @@ void game_init()
 // SOUND INIT END
 /////////////////////////////
 
+	std::unique_ptr<SDLGraphicsOperations> sdlGraphicsOperations;
 	if (!Is_standalone) {
 		// Standalone mode doesn't require graphics operations
 		sdlGraphicsOperations.reset(new SDLGraphicsOperations());
 	}
-	if ( gr_init(sdlGraphicsOperations.get()) == false ) {
+	if ( gr_init(std::move(sdlGraphicsOperations)) == false ) {
 		os::dialogs::Message(os::dialogs::MESSAGEBOX_ERROR, "Error intializing graphics!");
 		exit(1);
 		return;
 	}
+
+#ifndef NDEBUG
+	if (Cmdline_debug_window) {
+		outwnd_debug_window_init();
+	}
+#endif
 
 	// This needs to happen after graphics initialization
 	tracing::init();
@@ -6606,6 +6611,13 @@ void game_do_state(int state)
 			break;
 
    } // end switch(gs_current_state)
+
+#ifndef NDEBUG
+	if (Cmdline_debug_window) {
+		// Do a frame for the debug window here since this code is always executed
+		outwnd_debug_window_do_frame(flFrametime);
+	}
+#endif
 }
 
 
@@ -7046,8 +7058,12 @@ void game_shutdown(void)
 
 	tracing::shutdown();
 
-	gr_close(sdlGraphicsOperations.get());
-	sdlGraphicsOperations.reset();
+#ifndef NDEBUG
+	outwnd_debug_window_deinit();
+#endif
+
+	gr_close();
+
 	os_cleanup();
 
 	cfile_close();

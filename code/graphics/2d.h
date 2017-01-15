@@ -811,6 +811,9 @@ typedef struct screen {
 	bool (*gf_query_value_available)(int obj);
 	std::uint64_t (*gf_get_query_value)(int obj);
 	void (*gf_delete_query_object)(int obj);
+
+	std::unique_ptr<os::Viewport> (*gf_create_viewport)(const os::ViewPortProperties& props);
+	void (*gf_use_viewport)(os::Viewport* view);
 } screen;
 
 // handy macro
@@ -835,14 +838,14 @@ typedef struct screen {
 
 extern const char *Resolution_prefixes[GR_NUM_RESOLUTIONS];
 
-extern bool gr_init(os::GraphicsOperations* graphicsOps, int d_mode = GR_DEFAULT,
+extern bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, int d_mode = GR_DEFAULT,
 					int d_width = GR_DEFAULT, int d_height = GR_DEFAULT, int d_depth = GR_DEFAULT);
 
 extern void gr_screen_resize(int width, int height);
 extern int gr_get_resolution_class(int width, int height);
 
 // Call this when your app ends.
-extern void gr_close(os::GraphicsOperations* graphicsOps);
+extern void gr_close();
 
 extern screen gr_screen;
 
@@ -904,7 +907,7 @@ extern void gr_activate(int active);
 #define gr_print_screen		GR_CALL(gr_screen.gf_print_screen)
 
 //#define gr_flip				GR_CALL(gr_screen.gf_flip)
-void gr_flip();
+void gr_flip(bool execute_scripting = false);
 
 //#define gr_set_clip			GR_CALL(gr_screen.gf_set_clip)
 __inline void gr_set_clip(int x, int y, int w, int h, int resize_mode=GR_RESIZE_FULL)
@@ -1178,6 +1181,13 @@ inline std::uint64_t gr_get_query_value(int obj)
 inline void gr_delete_query_object(int obj)
 {
 	(*gr_screen.gf_delete_query_object)(obj);
+}
+
+inline std::unique_ptr<os::Viewport> gr_create_viewport(const os::ViewPortProperties& props) {
+	return (*gr_screen.gf_create_viewport)(props);
+}
+inline void gr_use_viewport(os::Viewport* view) {
+	(*gr_screen.gf_use_viewport)(view);
 }
 
 // color functions
