@@ -402,8 +402,8 @@ namespace os
 			boxMessage += "\n\nUse Debug to break into Debugger\n";
 
 			const SDL_MessageBoxButtonData buttons[] = {
-				{ SDL_MESSAGEBOX_BUTTON_ESCAPEKEY_DEFAULT, 2, "Exit" },
-				{ SDL_MESSAGEBOX_BUTTON_RETURNKEY_DEFAULT, 1, "Continue" },
+				{ SDL_MESSAGEBOX_BUTTON_RETURNKEY_DEFAULT, 2, "Exit" },
+				{ SDL_MESSAGEBOX_BUTTON_ESCAPEKEY_DEFAULT, 1, "Continue" },
 				{ /* .flags, .buttonid, .text */        0, 0, "Debug" },
 			};
 
