@@ -1445,7 +1445,12 @@ bool gr_opengl_init(os::GraphicsOperations* graphicsOps)
 		  gr_screen.bits_per_pixel ));
 
 	if ( opengl_init_display_device(graphicsOps) ) {
-		Error(LOCATION, "Unable to initialize display device!\n");
+		if (os_config_read_uint(NULL, "OGL_AntiAliasSamples", 0) != 0) {
+			Error(LOCATION, "Unable to initialize display device!\n\nTry disabling Anti-Aliasing in the Launcher\n");
+		}
+		else {
+			Error(LOCATION, "Unable to initialize display device!\n");
+		}
 	}
 
 	// Initialize function pointers
