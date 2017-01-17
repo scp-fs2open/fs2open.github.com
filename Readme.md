@@ -1,6 +1,7 @@
 FreeSpace2 *S*ource *C*ode *P*roject
 ==
-[![Build Status](https://travis-ci.org/scp-fs2open/fs2open.github.com.svg?branch=master)](https://travis-ci.org/scp-fs2open/fs2open.github.com)
+[![Travis-CI Build Status](https://travis-ci.org/scp-fs2open/fs2open.github.com.svg?branch=master)](https://travis-ci.org/scp-fs2open/fs2open.github.com)
+[![AppVeyor Build Status](https://ci.appveyor.com/api/projects/status/github/scp-fs2open/fs2open.github.com?branch=master&svg=true)](https://ci.appveyor.com/project/SirKnightly/fs2open-github-com/branch/master)
 [![Coverity](https://img.shields.io/coverity/scan/870.svg)](https://scan.coverity.com/projects/870)
 
 Building
@@ -14,6 +15,7 @@ Depending on the makefile generator used build the `all` or `ALL_BUILD` target t
 * `FSO_BUILD_WXFRED2`: Build the wxfred2 project, requires wxWidgets
 * `FSO_FREESPACE_PATH`: Sets the path of your FreeSpace install, can be used to automatically run the generated executables with the correct working directory, this is an optional variable. By default this will use the value of the `FS2PATH` environment variable.
 * `FSO_BUILD_TOOLS`: Build some tools related to FSO
+* `CMAKE_BUILD_TYPE`: Sets the binary build type between `Debug` and `Release` (default)
 
 #### Windows only variables
 * `FSO_BUILD_FRED2`: Build FRED2, requires a Visual Studio version that ships with MFC
