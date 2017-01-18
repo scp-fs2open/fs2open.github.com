@@ -102,24 +102,37 @@ void DebugWindow::doFrame(float) {
 }
 
 float DebugWindow::print_line(float bottom_y, const LineInfo& line) {
-	int width, height;
-	gr_get_string_size(&width, &height, line.text.c_str());
-
 	int category_width;
 	gr_get_string_size(&category_width, nullptr, line.category.c_str());
 
-	float y_pos = bottom_y - height;
+	// Wrap the string to make sure everything can be read
+	SCP_vector<const char*> split_lines;
+	SCP_vector<int> line_lengths;
+
+	// Substract 40 so that we can have margins on both sides
+	auto max_w = std::max(10, gr_screen.max_w - max_category_width - 40);
+
+	split_str(line.text.c_str(), max_w, line_lengths, split_lines);
+
+	auto text_height = split_lines.size() * font::get_current_font()->getHeight();
+
+	float y_pos = bottom_y - text_height;
+
 	float cat_x_pos = max_category_width - category_width + 10.f;
 	// Give each category a unique color. We do this by hashing the string and using that to construct the RGB values
 	auto hash = std::hash<SCP_string>()(line.category);
 	gr_set_color((int) (hash & 0xFF), (int) ((hash & 0xFF00) >> 8), (int) ((hash & 0xFF0000) >> 16));
 	gr_string(cat_x_pos, y_pos, line.category.c_str(), GR_RESIZE_NONE);
 
-	// We could use word wrapping here if the width if the string is too big but that's currently not a problem
 	gr_set_color_fast(&Color_white);
-	gr_string(max_category_width + 18.f, bottom_y - height, line.text.c_str(), GR_RESIZE_NONE);
 
-	return bottom_y - height;
+	for (size_t i = 0; i < split_lines.size(); ++i) {
+		gr_string(max_category_width + 18.f, y_pos, split_lines[i], GR_RESIZE_NONE, line_lengths[i]);
+
+		y_pos += font::get_current_font()->getHeight();
+	}
+
+	return bottom_y - text_height;
 }
 
 void DebugWindow::addDebugMessage(const char* category, const char* text) {
