@@ -20,7 +20,7 @@ build_script:
 deploy:
     - provider: GitHub
       auth_token:
-          secure: 3kV4efHXwRnfXzmJPRAOs8D7+MhwXUXYeayI/P5y114L09kJa6b6L70beXdW7yYr
+          secure: rlKNAmYMWqtpWpQjv1hy8jlMJf9+dxDbux6zSU32wLHs3DkqhAFGetX9hPx15bug
       on:
           ReleaseBuild: true        # deploy on release push only
 

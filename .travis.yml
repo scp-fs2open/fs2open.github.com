@@ -26,7 +26,7 @@ addons:
 deploy:
     - provider: releases
       api_key:
-          secure: "Wdt4Ccefo7a0ZDjEJQJgpghh7n72FtNJuKSAPUvoz4gtEX6Ct9J8yJI1t9V3jE3CTbbLJ21/Q6eZRDfT7UfNJe5DdepoJsP9DeFhKMWqQCq+AChqQWlm0KeZAffJoJreL8vXYhnRYcLT9ceZHEH6AqwN9TPV+xJziGPISAkYNZ8="
+          secure: "a0sxAZQRYFsZwvf1NbqyZ6OVY6sHlFd+pxwB0hLUSzt2kfaoesdvpAy98pNI99JQ5a9N3oN6BGqsl3Zq0pwfEf553gL9g3Z0vc7q6dvr/pebarNReDFhUQembyuRc4tJ8G8EmC6oTf++pWRKuSruU2nFj3ZBVXElL+8KXY0xB3A="
       skip_cleanup: true
       file_glob: true
       file: "/tmp/builds/*"
