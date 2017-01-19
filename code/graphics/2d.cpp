@@ -1270,10 +1270,10 @@ void gr_bitmap(int _x, int _y, int resize_mode)
 	w = i2fl(_w);
 	h = i2fl(_h);
 
-	// I will tidy this up later - RT
-	if ( resize_mode != GR_RESIZE_NONE && (gr_screen.custom_size || (gr_screen.rendering_to_texture != -1)) ) {
-		gr_resize_screen_posf(&x, &y, &w, &h, resize_mode);
-	}
+	auto do_resize = gr_resize_screen_posf(&x, &y, &w, &h, resize_mode);
+
+	x += ((do_resize) ? gr_screen.offset_x : gr_screen.offset_x_unscaled);
+	y += ((do_resize) ? gr_screen.offset_y : gr_screen.offset_y_unscaled);
 
 	memset(verts, 0, sizeof(verts));
 
