@@ -1,10 +1,6 @@
 
 include(prebuilt.cmake)
 
-IF(APPLE)
-	ADD_SUBDIRECTORY(mac)
-ENDIF(APPLE)
-
 ADD_SUBDIRECTORY(libjpeg)
 
 ADD_SUBDIRECTORY(zlib)

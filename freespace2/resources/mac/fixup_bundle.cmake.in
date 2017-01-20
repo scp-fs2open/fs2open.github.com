@@ -1,5 +1,0 @@
-include(BundleUtilities)
-
-get_bundle_keys("$<TARGET_FILE:Freespace2>" "" "@FSO_MAC_FRAMEWORKS@" KEYS)
-message("${KEYS}")
-FIXUP_BUNDLE("$<TARGET_FILE:Freespace2>" "" "@FSO_MAC_FRAMEWORKS@")

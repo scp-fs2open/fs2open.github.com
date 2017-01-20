@@ -149,11 +149,19 @@ macro(configure_cotire target)
 endmacro(configure_cotire)
 
 macro(add_target_copy_files)
-	INSTALL(FILES ${ARGN}
-			DESTINATION ${LIBRAY_DESTINATION}
-	)
+	foreach(file ${ARGN})
+		if (IS_DIRECTORY "${file}")
+			INSTALL(DIRECTORY ${file}
+					DESTINATION ${LIBRAY_DESTINATION}
+					)
+		else()
+			INSTALL(FILES ${file}
+					DESTINATION ${LIBRAY_DESTINATION}
+					)
+		endif()
 
-	SET(TARGET_COPY_FILES ${TARGET_COPY_FILES} ${ARGN} CACHE INTERNAL "" FORCE)
+		SET(TARGET_COPY_FILES ${TARGET_COPY_FILES} ${file} CACHE INTERNAL "" FORCE)
+	endforeach()
 endmacro(add_target_copy_files)
 
 function(detect_simd_instructions _out_var)
