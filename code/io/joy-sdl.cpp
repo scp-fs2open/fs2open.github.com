@@ -902,7 +902,5 @@ int joy_down_count(int btn, int reset_count)
 
 int joy_down(int btn)
 {
-	auto current = io::joystick::getCurrentJoystick();
-
-	return current->getButtonDownTime(btn) > 0.0f;
+	return joy_down_time(btn) > 0.0f;
 }
