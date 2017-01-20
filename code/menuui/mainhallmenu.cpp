@@ -2187,9 +2187,10 @@ void parse_main_hall_table(const char* filename)
 				stuff_string(temp_string, F_NAME, MAX_FILENAME_LEN);
 				m->mask = temp_string;
 
-				required_string("+Music:");
-				stuff_string(temp_string, F_NAME, MAX_FILENAME_LEN);
-				m->music_name = temp_string;
+				if (optional_string("+Music:")) {	// Demo doesn't have these lines.
+					stuff_string(temp_string, F_NAME, MAX_FILENAME_LEN);
+					m->music_name = temp_string;
+				}
 
 				// Goober5000
 				if (optional_string("+Substitute Music:")) {
