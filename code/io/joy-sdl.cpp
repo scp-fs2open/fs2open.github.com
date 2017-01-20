@@ -902,27 +902,7 @@ int joy_down_count(int btn, int reset_count)
 
 int joy_down(int btn)
 {
-	if (btn < 0) return 0;
-
 	auto current = io::joystick::getCurrentJoystick();
 
-	if (current == nullptr)
-	{
-		return 0;
-	}
-
-	if (btn >= JOY_TOTAL_BUTTONS || (btn >= current->numButtons() && btn < JOY_NUM_BUTTONS))
-	{
-		// Not a valid button
-		return 0;
-
-	}
-	else if (btn >= JOY_NUM_BUTTONS)
-	{
-		// Is hat
-		return current->getHatDownTime(0, hatBtnToEnum(btn), false) > 0;
-	} // Else, is a button
-
-
-	return current->isButtonDown(btn) ? 1 : 0;
+	return current->getButtonDownTime(btn) > 0.0f;
 }
