@@ -995,10 +995,8 @@ bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, int d_mode, 
 
 	if (gr_get_resolution_class(width, height) != GR_640) {
 		// check for hi-res interface files so that we can verify our width/height is correct
-		bool has_sparky_hi = (cf_exists_full("2_ChoosePilot-m.pcx", CF_TYPE_ANY) && cf_exists_full("2_TechShipData-m.pcx", CF_TYPE_ANY));
-
 		// if we don't have it then fall back to 640x480 mode instead
-		if ( !has_sparky_hi ) {
+		if ( !cf_exists_full("2_ChoosePilot-m.pcx", CF_TYPE_ANY)) {
 			if ( (width == 1024) && (height == 768) ) {
 				width = 640;
 				height = 480;
