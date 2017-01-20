@@ -968,24 +968,9 @@ int script_state::OutputMeta(const char *filename)
 		return 0; 
 	}
 
-	if (FS_VERSION_BUILD == 0 && FS_VERSION_HAS_REVIS == 0) //-V547
-	{
-		fprintf(fp, "<html>\n<head>\n\t<title>Script Output - FSO v%i.%i (%s)</title>\n</head>\n", FS_VERSION_MAJOR, FS_VERSION_MINOR, StateName);
-		fputs("<body>", fp);
-		fprintf(fp,"\t<h1>Script Output - FSO v%i.%i (%s)</h1>\n", FS_VERSION_MAJOR, FS_VERSION_MINOR, StateName);
-	}
-	else if (FS_VERSION_HAS_REVIS == 0)
-	{
-		fprintf(fp, "<html>\n<head>\n\t<title>Script Output - FSO v%i.%i.%i (%s)</title>\n</head>\n", FS_VERSION_MAJOR, FS_VERSION_MINOR, FS_VERSION_BUILD, StateName);
-		fputs("<body>", fp);
-		fprintf(fp,"\t<h1>Script Output - FSO v%i.%i.%i (%s)</h1>\n", FS_VERSION_MAJOR, FS_VERSION_MINOR, FS_VERSION_BUILD, StateName);
-	}
-	else
-	{
-		fprintf(fp, "<html>\n<head>\n\t<title>Script Output - FSO v%i.%i.%i.%i (%s)</title>\n</head>\n", FS_VERSION_MAJOR, FS_VERSION_MINOR, FS_VERSION_BUILD, FS_VERSION_REVIS, StateName);
-		fputs("<body>", fp);
-		fprintf(fp,"\t<h1>Script Output - FSO v%i.%i.%i.%i (%s)</h1>\n", FS_VERSION_MAJOR, FS_VERSION_MINOR, FS_VERSION_BUILD, FS_VERSION_REVIS, StateName);
-	}
+	fprintf(fp, "<html>\n<head>\n\t<title>Script Output - FSO v%s (%s)</title>\n</head>\n", FS_VERSION_FULL, StateName);
+	fputs("<body>", fp);
+	fprintf(fp,"\t<h1>Script Output - FSO v%s (%s)</h1>\n", FS_VERSION_FULL, StateName);
 		
 	//Scripting languages links
 	fputs("<dl>", fp);

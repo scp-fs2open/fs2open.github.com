@@ -1700,11 +1700,7 @@ void game_init()
 	}
 
 #ifndef NDEBUG
-	#if FS_VERSION_HAS_REVIS == 0
-		mprintf(("FreeSpace 2 Open version: %i.%i.%i\n", FS_VERSION_MAJOR, FS_VERSION_MINOR, FS_VERSION_BUILD));
-	#else
-		mprintf(("FreeSpace 2 Open version: %i.%i.%i.%i\n", FS_VERSION_MAJOR, FS_VERSION_MINOR, FS_VERSION_BUILD, FS_VERSION_REVIS));
-	#endif
+	mprintf(("FreeSpace 2 Open version: %s\n", FS_VERSION_FULL));
 
 	extern void cmdline_debug_print_cmdline();
 	cmdline_debug_print_cmdline();
@@ -7544,11 +7540,7 @@ void get_version_string(char *str, int max_size)
 //XSTR:OFF
 	Assert( max_size > 6 );
 
-	#if FS_VERSION_HAS_REVIS == 0
-		sprintf(str, "FreeSpace 2 Open v%i.%i.%i", FS_VERSION_MAJOR, FS_VERSION_MINOR, FS_VERSION_BUILD);
-	#else
-		sprintf(str, "FreeSpace 2 Open v%i.%i.%i.%i", FS_VERSION_MAJOR, FS_VERSION_MINOR, FS_VERSION_BUILD, FS_VERSION_REVIS);
-	#endif
+	sprintf(str, "FreeSpace 2 Open v%s", FS_VERSION_FULL);
 
 #ifndef NDEBUG
 	strcat_s( str, max_size, " Debug" );
@@ -7561,18 +7553,6 @@ void get_version_string(char *str, int max_size)
 			strcat_s( str, max_size, " OpenGL" );
 			break;
 	}
-
-	// if a custom identifier exists, put it at the very end
-	#ifdef FS_VERSION_IDENT
-		strcat_s( str, max_size, " (" );
-		strcat_s( str, max_size, FS_VERSION_IDENT );
-		strcat_s( str, max_size, ")" );
-	#endif
-}
-
-void get_version_string_short(char *str)
-{
-	sprintf(str,"v%d.%d", FS_VERSION_MAJOR, FS_VERSION_MINOR);
 }
 
 // ----------------------------------------------------------------
