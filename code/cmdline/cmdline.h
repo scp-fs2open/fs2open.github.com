@@ -161,5 +161,6 @@ extern bool Cmdline_json_pilot;
 extern bool Cmdline_json_profiling;
 extern bool Cmdline_frame_profile;
 extern bool Cmdline_show_video_info;
+extern bool Cmdline_debug_window;
 
 #endif

@@ -704,5 +704,11 @@ bool gr_stub_init()
 	gr_screen.gf_get_query_value = gr_stub_get_query_value;
 	gr_screen.gf_delete_query_object = gr_stub_delete_query_object;
 
+	gr_screen.gf_create_viewport = [](const os::ViewPortProperties& props) {
+		return std::unique_ptr<os::Viewport>();
+	};
+	gr_screen.gf_use_viewport = [](os::Viewport*) {
+	};
+
 	return true;
 }

@@ -18,8 +18,8 @@
 
 const ubyte GL_zero_3ub[3] = { 0, 0, 0 };
 
-bool gr_opengl_init(os::GraphicsOperations* graphicsOps);
-void gr_opengl_cleanup(os::GraphicsOperations* graphicsOps, bool closing, int minimize=1);
+bool gr_opengl_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps);
+void gr_opengl_cleanup(bool closing, int minimize=1);
 int opengl_check_for_errors(const char *err_at = NULL);
 bool gr_opengl_is_capable(gr_capability capability);
 void gr_opengl_push_debug_group(const char* name);

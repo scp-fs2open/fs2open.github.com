@@ -15,15 +15,14 @@
 #include <stdarg.h>
 #include <string.h>
 
+#include "osapi/DebugWindow.h"
 #include "osapi/osapi.h"
 #include "osapi/outwnd.h"
 #include "graphics/2d.h"
 #include "freespaceresource.h"
 #include "globalincs/systemvars.h"
 #include "cfile/cfilesystem.h"
-#include "globalincs/globals.h"
 #include "parse/parselo.h"
-#include "windows_stub/config.h"
 
 struct outwnd_filter_struct {
 	char name[NAME_LENGTH];
@@ -43,6 +42,8 @@ bool outwnd_inited = false;
 int Log_debug_output_to_file = 1;
 FILE *Log_fp = NULL;
 const char *FreeSpace_logfilename = NULL;
+
+std::unique_ptr<osapi::DebugWindow> debugWindow;
 
 void load_filter_info(void)
 {
@@ -222,6 +223,10 @@ void outwnd_print(const char *id, const char *tmp)
 			fflush(Log_fp);
 		}
 	}
+
+	if (debugWindow) {
+		debugWindow->addDebugMessage(id, tmp);
+	}
 }
 
 void outwnd_init()
@@ -282,6 +287,16 @@ void outwnd_close()
 	}
 
 	outwnd_inited = false;
+}
+
+void outwnd_debug_window_init() {
+	debugWindow.reset(new osapi::DebugWindow());
+}
+void outwnd_debug_window_do_frame(float frametime) {
+	debugWindow->doFrame(frametime);
+}
+void outwnd_debug_window_deinit() {
+	debugWindow.reset();
 }
 
 #endif //NDEBUG

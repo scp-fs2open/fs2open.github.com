@@ -61,7 +61,7 @@ void test::FSTestFixture::TearDown() {
 
 		bm_unload_all();
 
-		gr_close(nullptr);
+		gr_close();
 	}
 
 	cfile_close();
