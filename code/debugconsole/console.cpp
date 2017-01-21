@@ -306,7 +306,7 @@ void dc_init(void)
 	dc_command_buf.reserve(MAX_CLI_LEN);
 	dc_command_buf.clear();
 
-	sprintf(dc_title, "FreeSpace Open v%i.%i.%i", FS_VERSION_MAJOR, FS_VERSION_MINOR, FS_VERSION_BUILD);
+	sprintf(dc_title, "FreeSpace Open v%s", FS_VERSION_FULL);
 	dc_printf("Debug console started.\n" );
 }
 
