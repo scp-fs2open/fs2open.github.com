@@ -29,6 +29,8 @@
 #include "missionui/redalert.h"
 #include "mod_table/mod_table.h"
 #include "model/model.h"
+#include "object/deadobjectdock.h"
+#include "object/objectdock.h"
 #include "ship/ship.h"
 #include "sound/audiostr.h"
 #include "sound/fsspeech.h"
@@ -787,6 +789,10 @@ void red_alert_delete_ship(ship *shipp, int ship_state)
 			Error(LOCATION, "Red Alert: asked to delete ship (%s) with invalid ship state (%d)", shipp->ship_name, ship_state);
 		}
 	}
+
+	// If this ship is docked with anybody, undock them all before deleting
+	dock_undock_all(&Objects[shipp->objnum]);
+	dock_dead_undock_all(&Objects[shipp->objnum]);
 
 	ship_add_exited_ship( shipp, Ship::Exit_Flags::Player_deleted );
 	obj_delete(shipp->objnum);
