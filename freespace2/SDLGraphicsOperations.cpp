@@ -159,6 +159,9 @@ std::unique_ptr<os::Viewport> SDLGraphicsOperations::createViewport(const os::Vi
 	if (props.flags[os::ViewPortFlags::Fullscreen]) {
 		windowflags |= SDL_WINDOW_FULLSCREEN;
 	}
+	if (props.flags[os::ViewPortFlags::Resizeable]) {
+		windowflags |= SDL_WINDOW_RESIZABLE;
+	}
 
 	SDL_Window* window = SDL_CreateWindow(props.title.c_str(),
 										  SDL_WINDOWPOS_CENTERED_DISPLAY(props.display),
