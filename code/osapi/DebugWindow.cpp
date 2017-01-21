@@ -41,14 +41,20 @@ DebugWindow::DebugWindow() {
 
 	SDL_Rect size;
 	SDL_GetDisplayBounds(display, &size);
-	attrs.width = (uint32_t) size.w;
-	attrs.height = (uint32_t) size.h - 40; // Reduce the height a bit to account for window decorations
+	// Make the window a bit smaller so that it doesn't take up the whole screen
+	attrs.width = (uint32_t) (size.w / 1.3f);
+	attrs.height = (uint32_t) (size.h / 1.3f);
 
 	attrs.title = "FreeSpace Open - Debug Window";
+
+	attrs.flags.set(os::ViewPortFlags::Resizeable); // Make this window resizeable
 
 	auto debugView = gr_create_viewport(attrs);
 	if (debugView) {
 		debug_view = os::addViewport(std::move(debugView));
+	}
+	if (debug_view->toSDLWindow() != nullptr && os::getSDLMainWindow() != nullptr) {
+		SDL_RaiseWindow(os::getSDLMainWindow());
 	}
 }
 
