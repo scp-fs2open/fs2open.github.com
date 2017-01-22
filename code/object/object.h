@@ -304,9 +304,37 @@ void obj_client_post_interpolate();
 // move an observer object in multiplayer
 void obj_observer_move(float frame_time);
 
-// Goober5000
+/**
+ * @brief Checks if the given object is docked with anyone.
+ *
+ * @returns Nonzero if docked, or
+ * @returns 0 if not docked
+ *
+ * @author Goober5000
+ */
 int object_is_docked(object *objp);
+
+/**
+ * @brief Checks if the given object is dead-docked with anyone.
+ *
+ * @returns Nonzero if docked, or
+ * @returns 0 if not docked
+ *
+ * @details An object is "dead-docked" when it is dying and still has objects docked to it. The dead_dock list is
+ *   populated when the object dies, and is used later on to jettison and maybe damage the docked objects.
+ *
+ * @author Goober5000
+ */
 int object_is_dead_docked(object *objp);
+
+/**
+ * @brief Moves a docked object to keep up with the parent object as it moves
+ *
+ * @param[in,out] objp The docked object
+ * @param[in]     parent_objp The object that it's docked to
+ *
+ * @author Goober5000
+ */
 void obj_move_one_docked_object(object *objp, object *parent_objp);
 
 //WMC

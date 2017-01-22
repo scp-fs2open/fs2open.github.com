@@ -677,8 +677,8 @@ void dock_undock_objects(object *objp1, object *objp2)
 void dock_undock_all(object *objp) {
 	Assert(objp != NULL);
 
-	while (objp->dock_list != NULL) {
-		object* dockee = objp->dock_list->docked_objp;
+	while (object_is_docked(objp)) {
+		object* dockee = dock_get_first_docked_object(objp);
 
 		dock_undock_objects(objp, dockee);
 	}
