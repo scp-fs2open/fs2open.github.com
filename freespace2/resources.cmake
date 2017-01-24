@@ -40,15 +40,19 @@ if(WIN32)
     	set_property(SOURCE ${subpath}/freespace.rc APPEND_STRING PROPERTY COMPILE_DEFINITIONS ";_SSE2")
     ENDIF()
 
-elseif(APPLE)
-    # Handling of apple resources
+elseif(PLATFORM_MAC)
+    # Handling of mac resources
     set(subpath resources/mac)
 
     set_target_properties(Freespace2 PROPERTIES MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/${subpath}/Info.plist)
-
+    
+    CONFIGURE_FILE("${CMAKE_CURRENT_SOURCE_DIR}/${subpath}/InfoPlist.strings.in" "${CMAKE_CURRENT_BINARY_DIR}/InfoPlist.strings")
+    
     # Copy everything from the Resources directory
     add_custom_command(TARGET Freespace2 POST_BUILD
         COMMAND cp -a "${CMAKE_CURRENT_SOURCE_DIR}/${subpath}/Resources" "$<TARGET_FILE_DIR:Freespace2>/../Resources"
+        COMMAND mkdir -p "$<TARGET_FILE_DIR:Freespace2>/../Resources/English.lproj/"
+        COMMAND cp -a "${CMAKE_CURRENT_BINARY_DIR}/InfoPlist.strings" "$<TARGET_FILE_DIR:Freespace2>/../Resources/English.lproj/"
         COMMENT "Copying resources into bundle..."
     )
 else()
