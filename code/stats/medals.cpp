@@ -729,7 +729,6 @@ void medal_main_close()
 
 	if (Init_flags & MASK_BITMAP_INIT) {
 		bm_unlock(Medals_bitmap_mask);
-		bm_release(Medals_bitmap_mask);
 	}
 
 	for (SCP_vector<medal_display_info>::iterator idx = Medal_display_info.begin(); idx != Medal_display_info.end(); ++idx) {
@@ -743,7 +742,13 @@ void medal_main_close()
 	Medal_regions = NULL;
 
 	Player_score = NULL;
+
 	Medals_window.destroy();
+
+	if (Init_flags & MASK_BITMAP_INIT) {
+		bm_release(Medals_bitmap_mask);
+	}
+
 	snazzy_menu_close();
 	palette_restore_palette();
 }
