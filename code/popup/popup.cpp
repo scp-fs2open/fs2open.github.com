@@ -1164,3 +1164,9 @@ void popup_change_text(const char *new_text)
 	// recalculate all display information
 	popup_split_lines(&Popup_info,Popup_flags);
 }
+
+// If we're running on demo data, certain menus can't be displayed; this message will get shown instead.
+void popup_game_feature_not_in_demo()
+{
+	popup(PF_USE_AFFIRMATIVE_ICON|PF_BODY_BIG, 1, POPUP_OK, XSTR( "Sorry, this feature is available only in the retail version", 200));
+}

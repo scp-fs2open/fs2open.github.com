@@ -578,6 +578,7 @@ HC_special_bitmap HC_special_bitmaps[NUM_HC_SPECIAL_BITMAPS] =
 */
 
 static int							HC_background_bitmap;
+static int							HC_background_bitmap_mask;
 static UI_WINDOW					HC_ui_window;
 
 static int							HC_gauge_hot;			// mouse is over this gauge
@@ -705,9 +706,19 @@ void hud_config_init_ui()
 
 	hud_config_synch_ui();
 	HC_background_bitmap = bm_load(Hud_config_fname[gr_screen.res]);
+	if (HC_background_bitmap < 0) {
+		Warning(LOCATION, "Error loading HUD config menu background %s", Hud_config_fname[gr_screen.res]);
+	}
 
 	HC_ui_window.create( 0, 0, gr_screen.max_w_unscaled, gr_screen.max_h_unscaled, 0 );
-	HC_ui_window.set_mask_bmap(Hud_config_mask_fname[gr_screen.res]);
+
+	HC_background_bitmap_mask = bm_load(Hud_config_mask_fname[gr_screen.res]);
+	if (HC_background_bitmap_mask < 0) {
+		Warning(LOCATION, "Error loading HUD config menu mask %s", Hud_config_mask_fname[gr_screen.res]);
+		return;
+	} else {
+		HC_ui_window.set_mask_bmap(Hud_config_mask_fname[gr_screen.res]);
+	}
 
 	for (i=0; i<NUM_HUD_GAUGES; i++) {
 		hg = &HC_gauge_regions[gr_screen.res][i];
@@ -1472,6 +1483,13 @@ void hud_config_do_frame(float frametime)
 		hud_config_init();
 	}
 
+	// If we don't have a mask, we don't have enough data to do anything with this screen.
+	if (HC_background_bitmap_mask == -1) {
+		popup_game_feature_not_in_demo();
+		gameseq_post_event(GS_EVENT_PREVIOUS_STATE);
+		return;
+	}
+
 	HC_gauge_hot = -1;
 
 	hud_config_set_button_state();
@@ -1545,7 +1563,15 @@ void hud_config_close()
 
 	hud_config_color_close();
 
+	if (HC_background_bitmap != -1) {
+		bm_release(HC_background_bitmap);
+	}
+
 	HC_ui_window.destroy();
+
+	if (HC_background_bitmap_mask != -1) {
+		bm_release(HC_background_bitmap_mask);
+	}
 }
 
 // hud_set_default_hud_config() will set the hud configuration to default values
