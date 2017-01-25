@@ -813,50 +813,33 @@ void vm_vector_2_matrix_gen_vectors(matrix *m)
 //returns ptr to matrix
 matrix *vm_vector_2_matrix(matrix *m, const vec3d *fvec, const vec3d *uvec, const vec3d *rvec)
 {
-	vec3d *xvec=&m->vec.rvec;
-	vec3d *yvec=&m->vec.uvec;
-	vec3d *zvec=&m->vec.fvec;
+	vec3d fvec_norm;
+	vm_vec_copy_normalize(&fvec_norm, fvec);
 
-	Assert(fvec != NULL);
-
-	vm_vec_copy_normalize(zvec,fvec);
-
-	if (uvec == NULL) {
-		if (rvec == NULL) {     //just forward vec
-			vm_vector_2_matrix_gen_vectors(m);
-		}
-		else {                      //use right vec
-			vm_vec_copy_normalize(xvec,rvec);
-
-			vm_vec_cross(yvec,zvec,xvec);
-
-			//normalize new perpendicular vector
-			vm_vec_normalize(yvec);
-
-			//now recompute right vector, in case it wasn't entirely perpendiclar
-			vm_vec_cross(xvec,yvec,zvec);
-		}
+	vec3d uvec_norm;
+	if (uvec != nullptr) {
+		vm_vec_copy_normalize(&uvec_norm, uvec);
+		uvec = &uvec_norm;
 	}
-	else {      //use up vec
-		vm_vec_copy_normalize(yvec,uvec);
 
-		vm_vec_cross(xvec,yvec,zvec);
-
-		//normalize new perpendicular vector
-		vm_vec_normalize(xvec);
-
-		//now recompute up vector, in case it wasn't entirely perpendiclar
-		vm_vec_cross(yvec,zvec,xvec);
+	vec3d rvec_norm;
+	if (rvec != nullptr) {
+		vm_vec_copy_normalize(&rvec_norm, rvec);
+		rvec = &rvec_norm;
 	}
-	return m;
+
+	// Call the actuall function for normalized vectors
+	return vm_vector_2_matrix_norm(m, fvec, uvec, rvec);
 }
 
 //quicker version of vm_vector_2_matrix() that takes normalized vectors
 matrix *vm_vector_2_matrix_norm(matrix *m, const vec3d *fvec, const vec3d *uvec, const vec3d *rvec)
 {
-	vec3d *xvec=&m->vec.rvec;
-	vec3d *yvec=&m->vec.uvec;
-	vec3d *zvec=&m->vec.fvec;
+	matrix temp = *m;
+
+	vec3d *xvec=&temp.vec.rvec;
+	vec3d *yvec=&temp.vec.uvec;
+	vec3d *zvec=&temp.vec.fvec;
 
 	Assert(fvec != NULL);
 
@@ -864,9 +847,11 @@ matrix *vm_vector_2_matrix_norm(matrix *m, const vec3d *fvec, const vec3d *uvec,
 
 	if (uvec == NULL) {
 		if (rvec == NULL) {     //just forward vec
-			vm_vector_2_matrix_gen_vectors(m);
+			vm_vector_2_matrix_gen_vectors(&temp);
 		}
 		else {                      //use right vec
+			*xvec = *rvec;
+
 			vm_vec_cross(yvec,zvec,xvec);
 
 			//normalize new perpendicular vector
@@ -877,14 +862,29 @@ matrix *vm_vector_2_matrix_norm(matrix *m, const vec3d *fvec, const vec3d *uvec,
 		}
 	}
 	else {      //use up vec
+		*yvec = *uvec;
+
 		vm_vec_cross(xvec,yvec,zvec);
 
-		//normalize new perpendicular vector
-		vm_vec_normalize(xvec);
+		if (vm_vec_equal(*xvec, vmd_zero_vector)) {
+			// uvec was bogus (either same as fvec or -fvec)
+			// Reset temp to the original values and do the setup again
+			temp = *m;
 
-		//now recompute up vector, in case it wasn't entirely perpendiclar
-		vm_vec_cross(yvec,zvec,xvec);
+			temp.vec.fvec = *fvec;
+
+			vm_vector_2_matrix_gen_vectors(&temp);
+		} else {
+			//normalize new perpendicular vector
+			vm_vec_normalize(xvec);
+
+			//now recompute up vector, in case it wasn't entirely perpendiclar
+			vm_vec_cross(yvec,zvec,xvec);
+		}
 	}
+
+	// Copy the computed values into the output parameter
+	*m = temp;
 	return m;
 }
 
