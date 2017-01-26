@@ -662,22 +662,17 @@ void dock_undock_objects(object *objp1, object *objp2)
 	Assert(objp1 != NULL);
 	Assert(objp2 != NULL);
 
-#ifndef NDEBUG
-	if ((dock_find_instance(objp1, objp2) == NULL) || (dock_find_instance(objp2, objp1) == NULL))
-	{
-		Error(LOCATION, "Trying to undock an object that isn't docked!\n");
-	}
-#endif
-
 	// remove objects from each others' dock lists
 	dock_remove_instance(objp1, objp2);
 	dock_remove_instance(objp2, objp1);
 }
 
-void dock_undock_all(object *objp) {
+void dock_undock_all(object *objp)
+{
 	Assert(objp != NULL);
 
-	while (object_is_docked(objp)) {
+	while (object_is_docked(objp))
+	{
 		object* dockee = dock_get_first_docked_object(objp);
 
 		dock_undock_objects(objp, dockee);
@@ -770,6 +765,16 @@ void dock_remove_instance(object *objp, object *other_objp)
 
 		// delete it
 		vm_free(ptr);
+	}
+	else
+	{
+		// Raise an error if we're in a release build.
+		// Raise a warning if we're in a debug build, the user may be doing something silly
+#ifndef NDEBUG
+		Error(LOCATION, "Tried to undock an object that isn't docked!\n");
+#else
+		Warning(LOCATION, "Tried to undock an object that isn't docked! Proceed with caution!\n");
+#endif
 	}
 }
 

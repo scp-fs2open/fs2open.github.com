@@ -7389,7 +7389,7 @@ void ship_destroy_instantly(object *ship_objp, int shipnum)
 void ship_cleanup(int shipnum, int cleanup_mode)
 {
 	Assert(shipnum >= 0 && shipnum < MAX_SHIPS);
-	Assert(cleanup_mode == SHIP_DESTROYED || cleanup_mode == SHIP_DEPARTED || cleanup_mode == SHIP_VANISHED);
+	Assert(cleanup_mode & (SHIP_DESTROYED | SHIP_DEPARTED | SHIP_VANISHED));
 	Assert(Objects[Ships[shipnum].objnum].type == OBJ_SHIP);
 	Assert(Objects[Ships[shipnum].objnum].flags[Object::Object_Flags::Should_be_dead]);
 
@@ -7397,14 +7397,21 @@ void ship_cleanup(int shipnum, int cleanup_mode)
 	object *objp = &Objects[shipp->objnum];
 
 	// add the information to the exited ship list
-	if (cleanup_mode == SHIP_DESTROYED) {
-		ship_add_exited_ship(shipp, Ship::Exit_Flags::Destroyed);
+	if (!(cleanup_mode & SHIP_REDALERT)) {
+		if (cleanup_mode & SHIP_DESTROYED) {
+			ship_add_exited_ship(shipp, Ship::Exit_Flags::Destroyed);
+		} else {
+			// (cleanup_mode & (SHIP_DEPARTED | SHIP_VANISHED)
+			ship_add_exited_ship(shipp, Ship::Exit_Flags::Departed);
+		}
 	} else {
-		ship_add_exited_ship(shipp, Ship::Exit_Flags::Departed);
+		// (cleanup_mode & SHIP_REDALERT)
+		// Ship was removed in previous mission. Mark as "player deleted" for this mission
+		ship_add_exited_ship(shipp, Ship::Exit_Flags::Player_deleted);
 	}
 
 	// record kill?
-	if (cleanup_mode == SHIP_DESTROYED) {
+	if (!(cleanup_mode & SHIP_REDALERT) && (cleanup_mode & SHIP_DESTROYED)) {
 		// determine if we need to count this ship as a kill in counting number of kills per ship type
 		// look at the ignore flag for the ship (if not in a wing), or the ignore flag for the wing
 		// (if the ship is in a wing), and add to the kill count if the flags are not set
@@ -7417,8 +7424,8 @@ void ship_cleanup(int shipnum, int cleanup_mode)
 	}
 
 	// add mission log entry?
-	// (vanished ships have no log, and destroyed ships are logged in ship_hit_kill)
-	if (cleanup_mode == SHIP_DEPARTED) {
+	// (vanished ships and red-alert deleted ships have no log, and destroyed ships are logged in ship_hit_kill)
+	if (!(cleanup_mode & SHIP_REDALERT) && (cleanup_mode & SHIP_DEPARTED)) {
 		// see if this ship departed within the radius of a jump node -- if so, put the node name into
 		// the secondary mission log field
 		CJumpNode *jnp = jumpnode_get_which_in(objp);
@@ -7430,20 +7437,27 @@ void ship_cleanup(int shipnum, int cleanup_mode)
 
 #ifndef NDEBUG
 	// add a debug log entry
-	if (cleanup_mode == SHIP_DESTROYED) {
-		nprintf(("Alan", "SHIP DESTROYED: %s\n", shipp->ship_name));
-	} else if (cleanup_mode == SHIP_DEPARTED) {
-		nprintf(("Alan", "SHIP DEPARTED: %s\n", shipp->ship_name));
+	if (cleanup_mode & SHIP_DESTROYED) {
+		nprintf(("Alan", "SHIP DESTROYED: %s", shipp->ship_name));
+	} else if (cleanup_mode & SHIP_DEPARTED) {
+		nprintf(("Alan", "SHIP DEPARTED: %s", shipp->ship_name));
 	} else {
-		nprintf(("Alan", "SHIP VANISHED: %s\n", shipp->ship_name));
+		nprintf(("Alan", "SHIP VANISHED: %s", shipp->ship_name));
+	}
+
+	// if it was removed via red_alert_delete_ship, log it as such
+	if (cleanup_mode & SHIP_REDALERT) {
+		nprintf(("Alan", "(RED-ALERT)\n"));
+	} else {
+		nprintf(("Alan", "\n"));
 	}
 #endif
 
 	// update wingman status gauge
 	if ( (shipp->wing_status_wing_index >= 0) && (shipp->wing_status_wing_pos >= 0) ) {
-		if (cleanup_mode == SHIP_DESTROYED) {
+		if (cleanup_mode & SHIP_DESTROYED) {
 			hud_set_wingman_status_dead(shipp->wing_status_wing_index, shipp->wing_status_wing_pos);
-		} else if (cleanup_mode == SHIP_DEPARTED) {
+		} else if ((cleanup_mode & SHIP_DEPARTED) && !(cleanup_mode & SHIP_REDALERT)){
 			hud_set_wingman_status_departed(shipp->wing_status_wing_index, shipp->wing_status_wing_pos);
 		} else {
 			hud_set_wingman_status_none(shipp->wing_status_wing_index, shipp->wing_status_wing_pos);
@@ -7454,9 +7468,9 @@ void ship_cleanup(int shipnum, int cleanup_mode)
 	if ( shipp->wingnum != -1 ) {
 		wing *wingp = &Wings[shipp->wingnum];
 
-		if (cleanup_mode == SHIP_DESTROYED) {
+		if (cleanup_mode & SHIP_DESTROYED) {
 			wingp->total_destroyed++;
-		} else if (cleanup_mode == SHIP_DEPARTED) {
+		} else if (cleanup_mode & SHIP_DEPARTED) {
 			wingp->total_departed++;
 		} else {
 			wingp->total_vanished++;
@@ -7467,7 +7481,7 @@ void ship_cleanup(int shipnum, int cleanup_mode)
 
 	// Note, this call to ai_ship_destroy must come after ship_wing_cleanup for guarded wings to
 	// properly note the destruction of a ship in their wing.
-	if (cleanup_mode == SHIP_DESTROYED) {
+	if (cleanup_mode & SHIP_DESTROYED) {
 		ai_ship_destroy(shipnum, Ship::Exit_Flags::Destroyed);	// Do AI stuff for destruction of ship.
 	} else {
 		ai_ship_destroy(shipnum, Ship::Exit_Flags::Departed);		// should still do AI cleanup after ship has departed
@@ -7476,11 +7490,9 @@ void ship_cleanup(int shipnum, int cleanup_mode)
 	// Goober5000 - lastly, clear out the dead-docked list, per Mantis #2294
 	// (for exploding ships, this list should have already been cleared by now, via
 	// do_dying_undock_physics, except in the case of the destroy-instantly sexp)
-	while (object_is_dead_docked(objp))
-	{
-		object *docked_objp = dock_get_first_dead_docked_object(objp);
-		dock_dead_undock_objects(objp, docked_objp);
-	}
+	// z64555 - Also clear out the docked list, since a red-alert-carry ship could be docked with somebody
+	dock_undock_all(objp);
+	dock_dead_undock_all(objp);
 }
 
 /**
