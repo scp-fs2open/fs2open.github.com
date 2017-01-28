@@ -147,6 +147,7 @@ Flag exe_params[] =
 	{ "-noglow",			"Disable glow maps",						true,	EASY_DEFAULT_MEM,	EASY_MEM_ALL_ON,	"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-glow", },
 	{ "-noenv",				"Disable environment maps",					true,	EASY_DEFAULT_MEM,	EASY_MEM_ALL_ON,	"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-env", },
 	{ "-nomotiondebris",	"Disable motion debris",					true,	EASY_ALL_ON,		EASY_DEFAULT,		"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-nomotiondebris",},
+	{ "-no_shudder",		"Disable viewpoint shudder",				true,	EASY_ALL_ON,		EASY_DEFAULT,		"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-no_shudder",},
 	{ "-noscalevid",		"Disable scale-to-window for movies",		true,	0,					EASY_DEFAULT,		"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-noscalevid", },
 	{ "-missile_lighting",	"Apply lighting to missiles"	,			true,	EASY_ALL_ON,		EASY_DEFAULT,		"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-missile_lighting", },
 	{ "-nonormal",			"Disable normal maps",						true,	EASY_DEFAULT_MEM,	EASY_MEM_ALL_ON,	"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-normal" },
@@ -306,6 +307,7 @@ cmdline_parm missile_lighting_arg("-missile_lighting", NULL, AT_NONE);	// Cmdlin
 cmdline_parm env("-noenv", NULL, AT_NONE);								// Cmdline_env
 cmdline_parm glow_arg("-noglow", NULL, AT_NONE); 						// Cmdline_glow  -- use Bobs glow code
 cmdline_parm nomotiondebris_arg("-nomotiondebris", NULL, AT_NONE);		// Cmdline_nomotiondebris  -- Removes those ugly floating rocks -C
+cmdline_parm no_shudder_arg("-no_shudder", NULL, AT_NONE);
 cmdline_parm noscalevid_arg("-noscalevid", NULL, AT_NONE);				// Cmdline_noscalevid  -- disable video scaling that fits to window
 cmdline_parm spec_arg("-nospec", NULL, AT_NONE);			// Cmdline_spec  --
 cmdline_parm noemissive_arg("-no_emissive_light", "Disable emissive light from ships", AT_NONE);		// Cmdline_no_emissive  -- don't use emissive light in OGL
@@ -334,6 +336,7 @@ int Cmdline_mipmap = 0;
 int Cmdline_missile_lighting = 0;
 int Cmdline_glow = 1;
 int Cmdline_nomotiondebris = 0;
+int Cmdline_no_shudder = 0;
 int Cmdline_noscalevid = 0;
 int Cmdline_spec = 1;
 int Cmdline_no_emissive = 0;
@@ -1551,6 +1554,10 @@ bool SetCmdlineParams()
 
 	if ( nomotiondebris_arg.found() ) {
 		Cmdline_nomotiondebris = 1;
+	}
+
+	if ( no_shudder_arg.found() ) {
+		Cmdline_no_shudder = 1;
 	}
 
 	if( mipmap_arg.found() ) {
