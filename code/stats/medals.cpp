@@ -20,6 +20,7 @@
 #include "palman/palman.h"
 #include "parse/parselo.h"
 #include "playerman/player.h"
+#include "popup/popup.h"
 #include "stats/medals.h"
 #include "ui/ui.h"
 
@@ -557,7 +558,7 @@ void medal_main_init(player *pl, int mode)
 
 	Medals_bitmap = bm_load(bitmap_buf);
 	if (Medals_bitmap < 0) {
-		Error(LOCATION, "Error loading medal background bitmap %s", bitmap_buf);
+		Warning(LOCATION, "Error loading medal background bitmap %s", bitmap_buf);
 	} else {
 		Init_flags |= MEDAL_BITMAP_INIT;
 	}
@@ -570,18 +571,21 @@ void medal_main_init(player *pl, int mode)
 
 	Medals_bitmap_mask = bm_load(bitmap_buf);
 	if (Medals_bitmap_mask < 0) {
-		Error(LOCATION, "Error loading medal mask file %s", bitmap_buf);
+		Warning(LOCATION, "Error loading medal mask file %s", bitmap_buf);
 	} else {
 		Init_flags |= MASK_BITMAP_INIT;
 		Medals_mask = bm_lock(Medals_bitmap_mask, 8, BMP_AABITMAP);
 		bm_get_info(Medals_bitmap_mask, &Medals_mask_w, &Medals_mask_h);
+
+		init_medal_bitmaps();
 	}
-	init_medal_bitmaps();
+
 	init_snazzy_regions();
 
 	gr_set_color_fast(&Color_normal);
 
-	Medals_window.set_mask_bmap(bitmap_buf);
+	if (Medals_bitmap_mask >= 0)
+		Medals_window.set_mask_bmap(bitmap_buf);
 }
 
 void blit_label(char *label, int num)
@@ -659,6 +663,16 @@ void blit_callsign()
 int medal_main_do()
 {
 	int region,selected, k;
+
+	// If we don't have a mask, we don't have enough data to do anything with this screen.
+	if (Medals_bitmap_mask == -1) {
+		popup_game_feature_not_in_demo();
+		if (Medals_mode == MM_NORMAL)
+			gameseq_post_event(GS_EVENT_PREVIOUS_STATE);
+		// any calling popup function will know to close the screen down
+		return 0;
+	}
+
 	k = Medals_window.process();
 
 	// process an exit command
@@ -729,7 +743,6 @@ void medal_main_close()
 
 	if (Init_flags & MASK_BITMAP_INIT) {
 		bm_unlock(Medals_bitmap_mask);
-		bm_release(Medals_bitmap_mask);
 	}
 
 	for (SCP_vector<medal_display_info>::iterator idx = Medal_display_info.begin(); idx != Medal_display_info.end(); ++idx) {
@@ -743,7 +756,13 @@ void medal_main_close()
 	Medal_regions = NULL;
 
 	Player_score = NULL;
+
 	Medals_window.destroy();
+
+	if (Init_flags & MASK_BITMAP_INIT) {
+		bm_release(Medals_bitmap_mask);
+	}
+
 	snazzy_menu_close();
 	palette_restore_palette();
 }

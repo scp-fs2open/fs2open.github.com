@@ -3080,6 +3080,10 @@ int bm_unload(int handle, int clear_render_targets, bool nodebug) {
 	bitmap_entry *be;
 	bitmap *bmp;
 
+	if (handle == -1) {
+		return -1;
+	}
+
 	int n = handle % MAX_BITMAPS;
 
 	Assert((n >= 0) && (n < MAX_BITMAPS));

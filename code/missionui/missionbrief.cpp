@@ -1156,7 +1156,9 @@ void brief_render(float frametime)
 		}
 	}
 
-	brief_maybe_blit_scene_cut(frametime);	
+	if (Fade_anim.first_frame != -1) {
+		brief_maybe_blit_scene_cut(frametime);
+	}
 
 #if !defined(NDEBUG)
 	gr_set_color_fast(&Color_normal);
@@ -1822,7 +1824,9 @@ void brief_close()
 	// unload the audio streams used for voice playback
 	brief_voice_unload_all();
 
-	bm_unload(Fade_anim.first_frame);
+	if (Fade_anim.first_frame != -1) {
+		bm_unload(Fade_anim.first_frame);
+	}
 
 	Brief_ui_window.destroy();
 
