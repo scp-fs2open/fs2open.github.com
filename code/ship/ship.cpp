@@ -5821,6 +5821,8 @@ void ship::clear()
 	target_shields_delta = 0.0f;
 	target_weapon_energy_delta = 0.0f;
 
+	weapons = ship_weapon();
+
 	// ---------- special weapons init that isn't setting things to 0
 	for (i = 0; i < MAX_SHIP_PRIMARY_BANKS; i++)
 	{
