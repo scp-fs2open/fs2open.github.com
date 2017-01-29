@@ -780,7 +780,15 @@ matrix *vm_vec_ang_2_matrix(matrix *m, const vec3d *v, float a)
 	return t;
 }
 
-//generate the vectors for the vm_vector_2_matrix() an vm_vector_2_matrix_norm() functions so we can avoid goto
+/**
+ * @brief Generates a matrix from a normalized fvec.
+ *
+ * @param[in,out] matrix The matrix to generate
+ *
+ * @details The matrix's fvec is used to generate the uvec and rvec
+ *
+ * @sa vm_vector_2_matrix(), vm_vector_2_matrix_norm()
+ */
 void vm_vector_2_matrix_gen_vectors(matrix *m)
 {
 	vec3d *xvec=&m->vec.rvec;
@@ -806,11 +814,6 @@ void vm_vector_2_matrix_gen_vectors(matrix *m)
 	}
 }
 
-//computes a matrix from one or more vectors. The forward vector is required,
-//with the other two being optional.  If both up & right vectors are passed,
-//the up vector is used.  If only the forward vector is passed, a bank of
-//zero is assumed
-//returns ptr to matrix
 matrix *vm_vector_2_matrix(matrix *m, const vec3d *fvec, const vec3d *uvec, const vec3d *rvec)
 {
 	vec3d fvec_norm;
@@ -832,7 +835,6 @@ matrix *vm_vector_2_matrix(matrix *m, const vec3d *fvec, const vec3d *uvec, cons
 	return vm_vector_2_matrix_norm(m, fvec, uvec, rvec);
 }
 
-//quicker version of vm_vector_2_matrix() that takes normalized vectors
 matrix *vm_vector_2_matrix_norm(matrix *m, const vec3d *fvec, const vec3d *uvec, const vec3d *rvec)
 {
 	matrix temp = *m;
@@ -874,7 +876,8 @@ matrix *vm_vector_2_matrix_norm(matrix *m, const vec3d *fvec, const vec3d *uvec,
 			temp.vec.fvec = *fvec;
 
 			vm_vector_2_matrix_gen_vectors(&temp);
-		} else {
+		}
+		else {
 			//normalize new perpendicular vector
 			vm_vec_normalize(xvec);
 

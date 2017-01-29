@@ -237,15 +237,39 @@ matrix *vm_angle_2_matrix(matrix *m, float a, int angle_index);
 //computes a matrix from a forward vector and an angle
 matrix *vm_vec_ang_2_matrix(matrix *m, const vec3d *v, float a);
 
-//computes a matrix from one or more vectors. The forward vector is required,
-//with the other two being optional.  If both up & right vectors are passed,
-//the up vector is used.  If only the forward vector is passed, a bank of
-//zero is assumed
-//returns ptr to matrix
+/**
+ * @brief Generates a matrix from one or more vectors
+ *
+ * @param[out] matrix The generated matrix. Does not need to be an Identity matrix
+ * @param[in] fvec Vector referencing the forward direction
+ * @param[in] uvec Vector referencing the up direction (Optional)
+ * @param[in] rvec Vector referencing the right-hand direction (Optional)
+ *
+ * @returns Pointer to the generated matrix
+ *
+ * @note If all three vectors are given, rvec is ignored.
+ * @note If uvec was bogus (either being in the same direction of fvec or -fvec) then only fvec is used
+ *
+ * @sa vm_vector_2_matrix_norm
+ */
 matrix *vm_vector_2_matrix(matrix *m, const vec3d *fvec, const vec3d *uvec, const vec3d *rvec);
 
-//this version of vector_2_matrix requires that the vectors be more-or-less
-//normalized and close to perpendicular
+
+/**
+ * @brief Generates a matrix from one or more normalized vectors
+ *
+ * @param[out] matrix The generated matrix. Does not need to be an Identity matrix
+ * @param[in] fvec Normalized Vector referencing the forward direction
+ * @param[in] uvec Normalized Vector referencing the up direction (Optional)
+ * @param[in] rvec Normalized Vector referencing the right-hand direction (Optional)
+ *
+ * @returns Pointer to the generated matrix
+ *
+ * @note If all three vectors are given, rvec is ignored.
+ * @note If uvec was bogus (either being in the same direction of fvec or -fvec) then only fvec is used
+ *
+ * @sa vm_vector_2_matrix
+ */
 matrix *vm_vector_2_matrix_norm(matrix *m, const vec3d *fvec, const vec3d *uvec = NULL, const vec3d *rvec = NULL);
 
 //rotates a vector through a matrix. returns ptr to dest vector
