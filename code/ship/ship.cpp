@@ -6425,7 +6425,7 @@ void ship_subsys::clear()
 	awacs_intensity = 0.0f;
 	awacs_radius = 0.0f;
 
-    weapons = ship_weapon();
+    weapons.clear();
 
 	memset(&submodel_info_1, 0, sizeof(submodel_instance_info));
 	memset(&submodel_info_2, 0, sizeof(submodel_instance_info));
