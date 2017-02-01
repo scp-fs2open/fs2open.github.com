@@ -39,7 +39,6 @@
 #include "mission/missiongoals.h"
 #include "mission/missionparse.h"
 #include "object/object.h"
-#include "palman/palman.h"
 #include "render/3d.h"
 #include "ship/ship.h"
 #include "starfield/starfield.h"

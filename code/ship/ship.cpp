@@ -1005,9 +1005,6 @@ void ship_info::clone(const ship_info& other)
 	memcpy(ct_info, other.ct_info, sizeof(trail_info) * MAX_SHIP_CONTRAILS);
 	ct_count = other.ct_count;
 
-	num_nondark_colors = other.num_nondark_colors;
-	memcpy(nondark_colors, other.nondark_colors, sizeof(ubyte) * MAX_NONDARK_COLORS * 3);
-
 	memcpy(shield_color, other.shield_color, sizeof(ubyte) * 3);
 
 	uses_team_colors = other.uses_team_colors;
@@ -1290,9 +1287,6 @@ void ship_info::move(ship_info&& other)
 
 	std::swap(ct_info, other.ct_info);
 	ct_count = other.ct_count;
-
-	num_nondark_colors = other.num_nondark_colors;
-	memcpy(nondark_colors, other.nondark_colors, sizeof(ubyte) * MAX_NONDARK_COLORS * 3);
 
 	std::swap(shield_color, other.shield_color);
 
@@ -1684,9 +1678,6 @@ ship_info::ship_info()
 
 	memset(&ct_info, 0, sizeof(trail_info) * MAX_SHIP_CONTRAILS);
 	ct_count = 0;
-
-	num_nondark_colors = 0;
-	memset(nondark_colors, 0, sizeof(ubyte) * MAX_NONDARK_COLORS * 3);
 
 	shield_color[0] = 255;
 	shield_color[1] = 255;
@@ -2571,17 +2562,13 @@ int parse_ship_values(ship_info* sip, const bool is_template, const bool first_t
 	}
 
 	// check for optional pixel colors
+	// This is dummied out; we no longer support palettized rendering modes
 	while(optional_string("$ND:")){		
 		ubyte nr, ng, nb;
 		stuff_ubyte(&nr);
 		stuff_ubyte(&ng);
 		stuff_ubyte(&nb);
 
-		if(sip->num_nondark_colors < MAX_NONDARK_COLORS){
-			sip->nondark_colors[sip->num_nondark_colors][0] = nr;
-			sip->nondark_colors[sip->num_nondark_colors][1] = ng;
-			sip->nondark_colors[sip->num_nondark_colors++][2] = nb;
-		}
 	}
 
 	if (optional_string("$Enable Team Colors:")) {

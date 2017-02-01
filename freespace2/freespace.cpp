@@ -1898,10 +1898,7 @@ void game_init()
 	//as long as it's not being used.
 	//Otherwise, it just keeps the parsed interface.tbl in memory.
 	GUI_system.ParseClassInfo("interface.tbl");
-
-	// load non-darkening pixel defs
-	palman_load_pixels();
-
+	
 	particle::ParticleManager::init();
 
 	iff_init();						// Goober5000 - this must be done even before species_defs :p

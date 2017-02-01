@@ -1287,11 +1287,8 @@ void barracks_draw_pilot_pic()
 	if (Cur_pilot->callsign[0] && (Pic_number >= 0) && (Pic_number < Num_pilot_images)) {
 		if (Pilot_images[Pic_number] >= 0) {
 			// JAS: This code is hacked to allow the animation to use all 256 colors
-			extern int Palman_allow_any_color;
-			Palman_allow_any_color = 1;
 			gr_set_bitmap(Pilot_images[Pic_number]);
 			gr_bitmap(Barracks_image_coords[gr_screen.res][BARRACKS_X_COORD], Barracks_image_coords[gr_screen.res][BARRACKS_Y_COORD], GR_RESIZE_MENU);
-			Palman_allow_any_color = 0;
 
 			// print number of the current pic
 			char buf[40];			
@@ -1312,11 +1309,8 @@ void barracks_draw_squad_pic()
 	if (Cur_pilot->callsign[0] && (Pic_squad_number >= 0) && (Pic_squad_number < Num_pilot_squad_images)) {
 		if (Pilot_squad_images[Pic_squad_number] >= 0) {
 			// JAS: This code is hacked to allow the animation to use all 256 colors
-			extern int Palman_allow_any_color;
-			Palman_allow_any_color = 1;
 			gr_set_bitmap(Pilot_squad_images[Pic_squad_number]);
 			gr_bitmap(Barracks_squad_coords[gr_screen.res][BARRACKS_X_COORD], Barracks_squad_coords[gr_screen.res][BARRACKS_Y_COORD], GR_RESIZE_MENU);
-			Palman_allow_any_color = 0;
 
 			// print number of current squad pic
 			if(Player_sel_mode != PLAYER_SELECT_MODE_SINGLE){

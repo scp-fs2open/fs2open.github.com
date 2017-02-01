@@ -32,7 +32,6 @@
 #include "io/keycontrol.h" // m!m
 #include "io/timer.h"
 #include "osapi/osapi.h"
-#include "palman/palman.h"
 #include "scripting/scripting.h"
 #include "parse/parselo.h"
 #include "render/3d.h"
@@ -635,9 +634,7 @@ void gr_close()
 	if ( !Gr_inited ) {
 		return;
 	}
-
-	palette_flush();
-
+	
 	font::close();
 
 	switch (gr_screen.mode) {
@@ -703,10 +700,6 @@ void gr_set_palette_internal( const char *name, ubyte * palette, int restrict_fo
 		if (palette) {
 			memmove(palette, Gr_current_palette, 768);
 		}
-
-		// Update Palette Manager tables
-		memmove( gr_palette, Gr_current_palette, 768 );
-		palette_update(name, restrict_font_to_128);
 	}
 }
 
@@ -714,7 +707,6 @@ void gr_set_palette_internal( const char *name, ubyte * palette, int restrict_fo
 void gr_set_palette( const char *name, ubyte * palette, int restrict_font_to_128 )
 {
 	char *p;
-	palette_flush();
 	strcpy_s( Gr_current_palette_name, name );
 	p = strchr( Gr_current_palette_name, '.' );
 	if ( p ) *p = 0;

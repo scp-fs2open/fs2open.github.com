@@ -15,7 +15,6 @@
 #include "tgautils/tgautils.h"
 #include "cfile/cfile.h"
 #include "bmpman/bmpman.h"
-#include "palman/palman.h"
 #include "graphics/2d.h"
 #include "cmdline/cmdline.h"
 
@@ -329,11 +328,6 @@ static void targa_read_pixel( int num_pixels, ubyte **dst, ubyte **src, int byte
 			if(dest_size == 2){
 				// stuff the final pixel		
 				memcpy( *dst, &pixel, bytes_per_pixel );			
-			}
-			// 8 bit destination 
-			else {
-				pal_index = (ubyte)palette_find((int)r, (int)g, (int)b);
-				**dst = pal_index;			
 			}
 		}
 

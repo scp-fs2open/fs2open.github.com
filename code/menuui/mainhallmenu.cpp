@@ -32,7 +32,6 @@
 #include "network/multi_voice.h"
 #include "network/multiui.h"
 #include "network/multiutil.h"
-#include "palman/palman.h"
 #include "parse/parselo.h"
 #include "scripting/scripting.h"
 #include "playerman/player.h"

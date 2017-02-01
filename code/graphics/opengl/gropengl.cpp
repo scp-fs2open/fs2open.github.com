@@ -29,7 +29,6 @@
 #include "nebula/neb.h"
 #include "osapi/osapi.h"
 #include "osapi/osregistry.h"
-#include "palman/palman.h"
 #include "render/3d.h"
 #include "popup/popup.h"
 #include "tracing/tracing.h"

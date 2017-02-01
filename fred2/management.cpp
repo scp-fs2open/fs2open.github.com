@@ -27,7 +27,6 @@
 #include "mission/missionbriefcommon.h"
 #include "Management.h"
 #include "cfile/cfile.h"
-#include "palman/palman.h"
 #include "graphics/2d.h"
 #include "render/3d.h"
 #include "weapon/weapon.h"
@@ -279,7 +278,6 @@ void fred_preload_all_briefing_icons()
 bool fred_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 {
 	int i;
-	char palette_filename[1024];
 
 	SDL_SetMainReady();
 
@@ -349,11 +347,7 @@ bool fred_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 	font::init();					// loads up all fonts  
 
 	gr_set_gamma(3.0f);
-
-	sprintf(palette_filename, "gamepalette%d-%02d", 1, 1);
-	mprintf(("Loading palette %s\n", palette_filename));
-	palette_load_table(palette_filename);
-
+	
 	key_init();
 	mouse_init();
 
@@ -961,12 +955,6 @@ void clear_mission()
 	The_mission.ai_profile = &Ai_profiles[Default_ai_profile];
 	
 	nebula_init(Nebula_filenames[Nebula_index], Nebula_pitch, Nebula_bank, Nebula_heading);
-
-	char palette_filename[1024];
-	strcpy_s(palette_filename, "gamepalette1-01");
-//	sprintf( palette_filename, "gamepalette%d-%02d", 1, Mission_palette+1 );
-	mprintf(( "Loading palette %s\n", palette_filename ));
-	palette_load_table(palette_filename);
 
 	strcpy_s(The_mission.loading_screen[GR_640],"");
 	strcpy_s(The_mission.loading_screen[GR_1024],"");

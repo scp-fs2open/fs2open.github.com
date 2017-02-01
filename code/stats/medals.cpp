@@ -17,7 +17,6 @@
 #include "io/key.h"
 #include "localization/localize.h"
 #include "menuui/snazzyui.h"
-#include "palman/palman.h"
 #include "parse/parselo.h"
 #include "playerman/player.h"
 #include "popup/popup.h"
@@ -764,7 +763,6 @@ void medal_main_close()
 	}
 
 	snazzy_menu_close();
-	palette_restore_palette();
 }
 
 // function to load in the medals for this player.  It loads medals that the player has (known

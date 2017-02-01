@@ -14,7 +14,6 @@
 #include "math/vecmat.h"
 #include "mission/missionparse.h"
 #include "nebula/neb.h"
-#include "palman/palman.h"
 #include "graphics/material.h"
 #include "render/3d.h"
 #include "starfield/nebula.h"
@@ -161,14 +160,6 @@ void nebula_init( const char *filename, angles * pbh )
 		Nebula_pbh.h = 0.0f;
 		Nebula_orient = vmd_identity_matrix;
 	}
-}
-
-void nebula_get_color_from_palette(ubyte *r, ubyte *g, ubyte *b, ubyte index)
-{
-	int pal = (index * (NEBULA_INDEXED_COLORS-1)) / 255;
-	*r = gr_palette[pal*3+0];
-	*g = gr_palette[pal*3+1];
-	*b = gr_palette[pal*3+2];
 }
 
 DCF(nebula,"Loads a different nebula")

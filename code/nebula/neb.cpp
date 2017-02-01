@@ -524,12 +524,7 @@ int neb2_skip_render(object *objp, float z_depth)
 	if (!neb_skip_opt) {
 		return 0;
 	}
-
-	// lame rendering
-	if (Neb2_render_mode == NEB2_RENDER_LAME) {
-		return 0;
-	}
-
+	
 	// get near and far fog values based upon object type and rendering mode
 	neb2_get_adjusted_fog_values(&fog_near, &fog_far, objp);
 
@@ -937,11 +932,6 @@ void neb2_render_player()
 		neb2_regen();
 		Neb2_regen = 0;
 	}
-
-	// don't render in lame mode
-	if ((Neb2_render_mode == NEB2_RENDER_LAME) || (Neb2_render_mode == NEB2_RENDER_NONE)) {
-		return;
-	}
     
     memset(&p, 0, sizeof(p));
 	memset(&ptemp, 0, sizeof(ptemp));
@@ -1294,14 +1284,6 @@ void neb2_get_pixel(int x, int y, int *r, int *g, int *b)
 	ubyte avg_count;
 	int xs, ys;
 
-	// if we're in lame rendering mode, return a constant value
-	if (Neb2_render_mode == NEB2_RENDER_LAME) {
-		*r = Neb2_background_color[0];
-		*g = Neb2_background_color[1];
-		*b = Neb2_background_color[2];
-
-		return;
-	}
 
 	// get the proper pixel index to be looking up
 	rv = gv = bv = 0;
@@ -1571,18 +1553,10 @@ DCF(neb2_mode, "Switches nebula render modes")
 			Neb2_render_mode = NEB2_RENDER_NONE;
 		break;
 
-		case NEB2_RENDER_POLY:
-			Neb2_render_mode = NEB2_RENDER_POLY;
-		break;
-
 		case NEB2_RENDER_POF:
 			Neb2_render_mode = NEB2_RENDER_POF;
 			stars_set_background_model(BACKGROUND_MODEL_FILENAME, "Eraseme3");
 			stars_set_background_orientation();
-		break;
-
-		case NEB2_RENDER_LAME:
-			Neb2_render_mode = NEB2_RENDER_LAME;
 		break;
 
 		case NEB2_RENDER_HTL:

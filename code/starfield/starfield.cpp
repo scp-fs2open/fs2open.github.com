@@ -1705,7 +1705,7 @@ void stars_draw(int show_stars, int show_suns, int show_nebulas, int show_subspa
 #endif
 	
 	// draw background stuff
-	if ( (Neb2_render_mode != NEB2_RENDER_POLY) && (Neb2_render_mode != NEB2_RENDER_LAME) && show_stars ) {
+	if ( show_stars ) {
 		// semi-hack, do we don't fog the background
 		int neb_save = Neb2_render_mode;
 		Neb2_render_mode = NEB2_RENDER_NONE;

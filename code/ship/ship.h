@@ -24,7 +24,6 @@
 #include "model/model.h"
 #include "model/modelanim.h"
 #include "network/multi_obj.h"
-#include "palman/palman.h"
 #include "radar/radarsetup.h"
 #include "render/3d.h"
 #include "species_defs/species_defs.h"
@@ -1110,10 +1109,6 @@ public:
 	// contrail info
 	trail_info ct_info[MAX_SHIP_CONTRAILS];	
 	int ct_count;
-
-	// rgb non-dimming pixels for this ship type
-	int num_nondark_colors;
-	ubyte nondark_colors[MAX_NONDARK_COLORS][3];
 
 	// rgb shield color
 	ubyte shield_color[3];
