@@ -279,7 +279,6 @@ static void targa_read_pixel( int num_pixels, ubyte **dst, ubyte **src, int byte
 	int idx;
 	ushort pixel;
 	int pixel32;
-	ubyte pal_index;
 	ubyte r, g, b;
 	ubyte al = 0;
 
