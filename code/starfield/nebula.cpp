@@ -171,58 +171,6 @@ void nebula_get_color_from_palette(ubyte *r, ubyte *g, ubyte *b, ubyte index)
 	*b = gr_palette[pal*3+2];
 }
 
-void nebula_render()
-{
-	int i;
-
-	if (Fred_running) {
-		// no nebula for you!
-		return;
-	}
-
-	if ( !Nebula_loaded ) {
-		return;
-	}
-
-	if ( !Detail.planets_suns )	{
-		return;
-	}	
-
-	// Rotate the nebula.
-	g3_start_instance_matrix( NULL, &Nebula_orient, false);
-
-	for (i=0; i<num_pts; i++ )	{
-		g3_rotate_faraway_vertex( &nebula_verts[i], &nebula_vecs[i] );
-		g3_project_vertex( &nebula_verts[i] );
-	}
-
-	material nebula_material;
-
-	nebula_material.set_depth_mode(ZBUFFER_TYPE_NONE);
-	nebula_material.set_blend_mode(ALPHA_BLEND_ALPHA_BLEND_ALPHA);
-	nebula_material.set_cull_mode(false);
-
-	for ( i = 0 ; i < num_tris; i++ ) {
-		vertex verts[3];
-		
-		verts[0] = nebula_verts[tri[i][0]];
-		verts[1] = nebula_verts[tri[i][1]];
-		verts[2] = nebula_verts[tri[i][2]];
-
-		nebula_get_color_from_palette(&verts[0].r, &verts[0].g, &verts[0].b, verts[0].b);
-		nebula_get_color_from_palette(&verts[1].r, &verts[1].g, &verts[1].b, verts[1].b);
-		nebula_get_color_from_palette(&verts[2].r, &verts[2].g, &verts[2].b, verts[2].b);
-
-		verts[0].a = 255;
-		verts[1].a = 255;
-		verts[2].a = 255;
-
-		g3_render_primitives_colored(&nebula_material, verts, 3, PRIM_TYPE_TRIFAN, true);
-	}
-
-	g3_done_instance(false);
-}
-
 DCF(nebula,"Loads a different nebula")
 {
 	SCP_string filename;

@@ -772,12 +772,6 @@ set (file_root_osapi
 	osapi/outwnd.cpp
 )
 
-# Palman files
-set (file_root_palman
-	palman/palman.cpp
-	palman/palman.h
-)
-
 # Parse files
 set (file_root_parse
 	parse/encrypt.cpp
@@ -1268,7 +1262,6 @@ source_group("Network"                            FILES ${file_root_network})
 source_group("Object"                             FILES ${file_root_object})
 source_group("Observer"                           FILES ${file_root_observer})
 source_group("OsApi"                              FILES ${file_root_osapi})
-source_group("Palman"                             FILES ${file_root_palman})
 source_group("Parse"                              FILES ${file_root_parse})
 source_group("Particle"                           FILES ${file_root_particle})
 source_group("Particle\\Effects"                  FILES ${file_root_particle_effects})
@@ -1362,7 +1355,6 @@ set (file_root
 	${file_root_object}
 	${file_root_observer}
 	${file_root_osapi}
-	${file_root_palman}
 	${file_root_parse}
 	${file_root_particle}
 	${file_root_particle_effects}

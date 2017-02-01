@@ -1703,11 +1703,7 @@ void stars_draw(int show_stars, int show_suns, int show_nebulas, int show_subspa
 	fix xt1, xt2;
 	xt1 = timer_get_fixed_seconds();
 #endif
-
-	if ( show_nebulas && (Game_detail_flags & DETAIL_FLAG_NEBULAS) && (Neb2_render_mode != NEB2_RENDER_POF) && (Neb2_render_mode != NEB2_RENDER_LAME))	{
-		nebula_render();
-	}
-
+	
 	// draw background stuff
 	if ( (Neb2_render_mode != NEB2_RENDER_POLY) && (Neb2_render_mode != NEB2_RENDER_LAME) && show_stars ) {
 		// semi-hack, do we don't fog the background
