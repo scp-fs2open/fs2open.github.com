@@ -6026,11 +6026,9 @@ ship_weapon::ship_weapon()
         primary_bank_start_ammo[i] = 0;
         primary_bank_capacity[i] = 0;
         primary_next_slot[i] = 0;
-        primary_bank_rearm_time[i] = timestamp(0);
         primary_bank_fof_cooldown[i] = 0;
 
         primary_animation_position[i] = EModelAnimationPosition::MA_POS_NOT_SET;
-        primary_animation_done_time[i] = 0;
 
         primary_bank_pattern_index[i] = 0;
 
@@ -6052,7 +6050,8 @@ ship_weapon::ship_weapon()
         secondary_bank_start_ammo[i] = 0;
         secondary_bank_capacity[i] = 0;
         secondary_next_slot[i] = 0;
-        secondary_bank_rearm_time[i] = timestamp(0);
+
+		secondary_animation_position[i] = EModelAnimationPosition::MA_POS_NOT_SET;
 
 		secondary_bank_pattern_index[i] = 0;
 
@@ -6065,12 +6064,8 @@ ship_weapon::ship_weapon()
     tertiary_bank_capacity = 0;
     tertiary_bank_rearm_time = timestamp(0);
 
-    last_fired_weapon_index = 0;
-    last_fired_weapon_signature = 0;
     detonate_weapon_time = 0;
     ai_class = 0;
-
-    next_tertiary_fire_stamp = timestamp(0);
 
     last_fired_weapon_index = -1;
     last_fired_weapon_signature = -1;
