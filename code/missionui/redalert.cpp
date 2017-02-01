@@ -781,20 +781,18 @@ void red_alert_store_wingman_status()
 void red_alert_delete_ship(int shipnum, int ship_state)
 {
 	ship* shipp = &Ships[shipnum];
+	int cleanup_mode;	// See ship.h for cleanup mode defines. SHIP_VANISHED etc.
 
-	int cleanup_mode = SHIP_REDALERT;	// See ship.h for cleanup mode defines
 	switch (ship_state) {
 	case RED_ALERT_DESTROYED_SHIP_CLASS:
-		cleanup_mode |= SHIP_DESTROYED;
+		cleanup_mode = SHIP_DESTROYED_REDALERT;
 		break;
 	case RED_ALERT_PLAYER_DEL_SHIP_CLASS:
-		cleanup_mode |= SHIP_DEPARTED;
+		cleanup_mode = SHIP_DEPARTED_REDALERT;
 		break;
 	default:
-#ifdef DEBUG
-		Warning(LOCATION, "Red-alert: Unknown delete state, assuming vanished.");
-#endif
-		cleanup_mode |= SHIP_VANISHED;
+		Assertion(false, "Red-alert: Unknown delete state '%i'\n", ship_state);
+		cleanup_mode = SHIP_VANISHED;
 		break;
 	}
 

@@ -1376,7 +1376,8 @@ extern int ship_get_num_ships();
 #define SHIP_DEPARTED_WARP		(1<<2)
 #define SHIP_DEPARTED_BAY		(1<<3)
 #define SHIP_DEPARTED			( SHIP_DEPARTED_BAY | SHIP_DEPARTED_WARP )
-#define SHIP_REDALERT			(1<<4)
+#define SHIP_DESTROYED_REDALERT	(1<<4)
+#define SHIP_DEPARTED_REDALERT	(1<<5)
 
 /**
  * @brief Deletes and de-inits a ship.

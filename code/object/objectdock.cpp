@@ -768,13 +768,8 @@ void dock_remove_instance(object *objp, object *other_objp)
 	}
 	else
 	{
-		// Raise an error if we're in a release build.
-		// Raise a warning if we're in a debug build, the user may be doing something silly
-#ifndef NDEBUG
-		Error(LOCATION, "Tried to undock an object that isn't docked!\n");
-#else
-		Warning(LOCATION, "Tried to undock an object that isn't docked! Proceed with caution!\n");
-#endif
+		// Trigger an assertion, we can recover from this one, thankfully.
+		Assertion(false, "Tried to undock an object that isn't docked!\n");
 	}
 }
 
