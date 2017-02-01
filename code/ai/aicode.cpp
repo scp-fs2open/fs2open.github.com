@@ -1218,7 +1218,6 @@ void ai_turn_towards_vector(vec3d *dest, object *objp, float frametime, float tu
 	//	This will allow you to rerun vm_forward_interpolate() with the values that caused the error.
 	//	Note, you'll need to enable the Int3() about ten lines below.
 #ifndef NDEBUG
-vec3d tvec = objp->orient.vec.fvec;
 vec3d	vel_in_copy;
 matrix	objp_orient_copy;
 
