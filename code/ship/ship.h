@@ -1386,9 +1386,10 @@ extern int ship_get_num_ships();
  * @param[in] cleanup_mode Flags describing how this ship is to be removed. See SHIP_VANISHED, SHIP_DESTROYED, etc.
  *
  * @details This is the deconstructor of a ship, it does all the necassary processes to remove the ship from the Ships
- *   array, and frees the slot for use by others. De-init of its Objects[] slot is handled elsewhere.
+ *   array, and frees the slot for use by others. De-init of its Objects[] slot is handled by obj_delete_all_that_should_be_dead().
  *
  * @author Goober5000
+ * @sa obj_delete_all_that_should_be_dead()
  */
 extern void ship_cleanup(int shipnum, int cleanup_mode);
 
