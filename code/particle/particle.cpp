@@ -340,6 +340,7 @@ namespace particle
 
 	void render_all()
 	{
+		GR_DEBUG_SCOPE("Render Particles");
 		TRACE_SCOPE(tracing::ParticlesRenderAll);
 
 		ubyte flags;
