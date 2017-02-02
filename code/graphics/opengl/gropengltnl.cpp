@@ -266,10 +266,6 @@ void opengl_reset_immediate_buffer()
 
 int opengl_create_texture_buffer_object()
 {
-	if ( GLSL_version < 130 ) {
-		return -1;
-	}
-
 	// create the buffer
 	int buffer_object_handle = opengl_create_buffer_object(GL_TEXTURE_BUFFER, GL_DYNAMIC_DRAW);
 

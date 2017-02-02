@@ -1434,12 +1434,6 @@ static void init_extensions() {
 		Error(LOCATION,  "Current GL Shading Langauge Version of %d is less than the required version of %d. Switch video modes or update your drivers.", GLSL_version, MIN_REQUIRED_GLSL_VERSION);
 	}
 
-	if ( GLSL_version < 120 ) {
-		mprintf(("  No hardware support for deferred lighting. Deferred lighting will be disabled. \n"));
-		Cmdline_no_deferred_lighting = 1;
-		Cmdline_no_batching = true;
-	}
-
 	GLint max_texture_units;
 	glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, &max_texture_units);
 
@@ -1453,8 +1447,7 @@ static void init_extensions() {
 		Cmdline_normal = 0;
 		Cmdline_height = 0;
 	} else if (max_texture_units < 4) {
-		mprintf(( "Not enough texture units found for GLSL support. We need at least 4, we found %d.\n", max_texture_units ));
-		GLSL_version = 0;
+		Error(LOCATION, "Not enough texture units found for proper rendering support! We need at least 4, we found %d.", max_texture_units);
 	}
 }
 
@@ -1646,15 +1639,15 @@ bool gr_opengl_is_capable(gr_capability capability)
 		return Cmdline_height ? true : false;
 	case CAPABILITY_SOFT_PARTICLES:
 	case CAPABILITY_DISTORTION:
-		return Cmdline_softparticles && (GLSL_version >= 120) && !Cmdline_no_fbo;
+		return Cmdline_softparticles && !Cmdline_no_fbo;
 	case CAPABILITY_POST_PROCESSING:
-		return Cmdline_postprocess && (GLSL_version >= 120) && !Cmdline_no_fbo;
+		return Cmdline_postprocess  && !Cmdline_no_fbo;
 	case CAPABILITY_DEFERRED_LIGHTING:
-		return !Cmdline_no_fbo && !Cmdline_no_deferred_lighting && (GLSL_version >= 120);
+		return !Cmdline_no_fbo && !Cmdline_no_deferred_lighting;
 	case CAPABILITY_SHADOWS:
 		return GL_version >= 32;
 	case CAPABILITY_BATCHED_SUBMODELS:
-		return (GLSL_version >= 150);
+		return true;
 	case CAPABILITY_POINT_PARTICLES:
 		return GL_version >= 32 && !Cmdline_no_geo_sdr_effects;
 	case CAPABILITY_TIMESTAMP_QUERY:

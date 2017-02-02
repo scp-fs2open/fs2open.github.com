@@ -601,7 +601,7 @@ int opengl_compile_shader(shader_type sdr, uint flags)
 	opengl_shader_set_current(&new_shader);
 
 	// bind fragment data locations
-	if ( GL_version >= 32 && GLSL_version >= 150 ) {
+	if ( GL_version >= 32 ) {
 		glBindFragDataLocation(new_shader.program->getShaderHandle(), 0, "fragOut0");
 		glBindFragDataLocation(new_shader.program->getShaderHandle(), 1, "fragOut1");
 		glBindFragDataLocation(new_shader.program->getShaderHandle(), 2, "fragOut2");
