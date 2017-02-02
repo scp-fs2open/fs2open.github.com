@@ -818,6 +818,7 @@ matrix *vm_vector_2_matrix(matrix *m, const vec3d *fvec, const vec3d *uvec, cons
 {
 	vec3d fvec_norm;
 	vm_vec_copy_normalize(&fvec_norm, fvec);
+	fvec = &fvec_norm;
 
 	vec3d uvec_norm;
 	if (uvec != nullptr) {
