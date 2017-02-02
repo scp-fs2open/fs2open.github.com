@@ -39,7 +39,6 @@
 #include "network/multimsgs.h"
 #include "network/multiteamselect.h"
 #include "network/multiutil.h"
-#include "palman/palman.h"
 #include "parse/sexp.h"
 #include "popup/popup.h"
 #include "render/3d.h"
@@ -441,9 +440,6 @@ void common_free_interface_palette()
 		bm_release(InterfacePaletteBitmap);
 		InterfacePaletteBitmap = -1;
 	}
-
-	// restore the normal game palette
-	palette_restore_palette();
 }
 
 // Init timers used for flashing buttons

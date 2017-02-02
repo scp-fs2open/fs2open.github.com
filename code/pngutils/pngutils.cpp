@@ -5,7 +5,6 @@
 #include "cfile/cfile.h"
 #include "globalincs/pstypes.h"
 #include "graphics/2d.h"
-#include "palman/palman.h"
 #include "pngutils/pngutils.h"
 
 struct png_read_status {

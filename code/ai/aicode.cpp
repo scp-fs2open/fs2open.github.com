@@ -1238,12 +1238,12 @@ objp->orient = objp_orient_copy; //-V587
 	} else {
 		vm_forward_interpolate(&desired_fvec, &curr_orient, &vel_in, delta_time, delta_bank, &objp->orient, &vel_out, &vel_limit, &acc_limit);
 	}
-	
-#ifndef NDEBUG
-if (!((objp->type == OBJ_WEAPON) && (Weapon_info[Weapons[objp->instance].weapon_info_index].subtype == WP_MISSILE))) {
-	Assertion(!(delta_time < 0.25f && vm_vec_dot(&objp->orient.vec.fvec, &tvec) < 0.1f), "A ship rotated too far. Offending vessel is %s, please investigate.\n", Ships[objp->instance].ship_name);
-}
-#endif
+
+	#ifndef NDEBUG
+		if (!((objp->type == OBJ_WEAPON) && (Weapon_info[Weapons[objp->instance].weapon_info_index].subtype == WP_MISSILE))) {
+		Assertion(!(delta_time < 0.25f && vm_vec_dot(&objp->orient.vec.fvec, &tvec) < 0.1f), "A ship rotated too far. Offending vessel is %s, please investigate.\n", Ships[objp->instance].ship_name);		
+	}
+	#endif
 
 	pip->rotvel = vel_out;
 }

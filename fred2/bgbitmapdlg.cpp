@@ -18,7 +18,6 @@
 #include "bmpman/bmpman.h"
 #include "FREDView.h"
 #include "FREDDoc.h"
-#include "palman/palman.h"
 #include "starfield/nebula.h"
 #include "nebula/neb.h"
 #include "nebula/neblightning.h"
@@ -486,18 +485,6 @@ void bg_bitmap_dlg::OnSelchangeNebcolor()
 
 	UpdateData(TRUE);
 	Mission_palette = m_nebula_color;
-
-
-	char palette_filename[1024];
-
-	Assert( Mission_palette >= 0 );
-	Assert( Mission_palette <= 98 );
-
-	sprintf( palette_filename, "gamepalette%d-%02d", 1, Mission_palette+1 );
-
-	mprintf(( "Loading palette %s\n", palette_filename ));
-
-	palette_load_table(palette_filename);
 	
 	Update_window = 1;
 }

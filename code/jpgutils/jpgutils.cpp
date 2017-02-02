@@ -30,7 +30,6 @@
 #include "jpgutils/jpgutils.h"
 #include "cfile/cfile.h"
 #include "bmpman/bmpman.h"
-#include "palman/palman.h"
 #include "graphics/2d.h"
 
 

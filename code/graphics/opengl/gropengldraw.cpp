@@ -33,7 +33,6 @@
 #include "nebula/neb.h"
 #include "tracing/tracing.h"
 #include "osapi/osapi.h"
-#include "palman/palman.h"
 #include "render/3d.h"
 #include "localization/localize.h"
 

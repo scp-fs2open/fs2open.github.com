@@ -15,7 +15,6 @@
 #include "io/timer.h"
 #include "localization/localize.h"
 #include "osapi/osapi.h"
-#include "palman/palman.h"
 #include "parse/parselo.h"
 #include "ui/ui.h"
 #include "ui/uidefs.h"

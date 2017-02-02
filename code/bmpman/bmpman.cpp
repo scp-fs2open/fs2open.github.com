@@ -29,7 +29,6 @@
 #include "io/timer.h"
 #include "jpgutils/jpgutils.h"
 #include "network/multiutil.h"
-#include "palman/palman.h"
 #include "parse/parselo.h"
 #include "pcxutils/pcxutils.h"
 #include "pngutils/pngutils.h"
@@ -2280,7 +2279,7 @@ void bm_lock_pcx(int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, int b
 	data = (ubyte *)bm_malloc(bitmapnum, be->mem_taken);
 	bmp->bpp = bpp;
 	bmp->data = (ptr_u)data;
-	bmp->palette = (bpp == 8) ? gr_palette : NULL;
+	bmp->palette = NULL;
 	memset(data, 0, be->mem_taken);
 
 	Assert(&be->bm == bmp);
