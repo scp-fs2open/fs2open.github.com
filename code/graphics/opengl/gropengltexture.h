@@ -26,12 +26,14 @@ typedef struct tcache_slot_opengl {
 	ushort w, h;
 	int bpp;
 	int mipmap_levels;
+	uint32_t array_index;
+	bool used;
 
-	tcache_slot_opengl() :
-		texture_id(0), texture_target(GL_TEXTURE_2D), wrap_mode(GL_REPEAT),
-		u_scale(1.0f), v_scale(1.0f), bitmap_handle(-1), size(0), w(0), h(0),
-		bpp(0), mipmap_levels(0)
+	int fbo_id;
+
+	tcache_slot_opengl()
 	{
+		this->reset();
 	}
 
 	void reset()
@@ -47,6 +49,9 @@ typedef struct tcache_slot_opengl {
 		h = 0;
 		bpp = 0;
 		mipmap_levels = 0;
+		array_index = 0;
+		used = false;
+		fbo_id = -1;
 	}
 } tcache_slot_opengl;
 
@@ -78,12 +83,11 @@ void opengl_kill_render_target(int slot);
 int opengl_make_render_target(int handle, int slot, int *w, int *h, int *bpp, int *mm_lvl, int flags);
 int opengl_set_render_target(int slot, int face = -1, int is_static = 0);
 void gr_opengl_get_bitmap_from_texture(void* data_out, int bitmap_num);
-int opengl_get_texture(GLenum target, GLenum pixel_format, GLenum data_format, int num_mipmaps, int width, int height, int bytes_per_pixel, void* image_data, int offset);
 size_t opengl_export_render_target( int slot, int width, int height, int alpha, int num_mipmaps, ubyte *image_data );
 void opengl_set_texture_target(GLenum target = GL_TEXTURE_2D);
 void opengl_set_texture_face(GLenum face = GL_TEXTURE_2D);
 
-int gr_opengl_tcache_set(int bitmap_handle, int bitmap_type, float *u_scale, float *v_scale, int stage = 0);
+int gr_opengl_tcache_set(int bitmap_handle, int bitmap_type, float *u_scale, float *v_scale, uint32_t *array_index, int stage = 0);
 int gr_opengl_preload(int bitmap_num, int is_aabitmap);
 void gr_opengl_set_texture_panning(float u, float v, bool enable);
 void gr_opengl_set_texture_addressing(int mode);

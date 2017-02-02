@@ -2171,7 +2171,7 @@ void model_interp_set_buffer_layout(vertex_layout *layout, uint stride, int flag
 	// NOTE: UV->NORM->TSB->MODEL_ID->VERT, This array order *must* be preserved!!
 
 	if ( flags & VB_FLAG_UV1 ) {
-		layout->add_vertex_component(vertex_format_data::TEX_COORD, stride, offset);
+		layout->add_vertex_component(vertex_format_data::TEX_COORD2, stride, offset);
 	}
 
 	offset += (2 * sizeof(float));

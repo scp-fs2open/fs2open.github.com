@@ -148,17 +148,19 @@ endif()
 SET(file_root_def_files_files
 	def_files/ai_profiles.tbl
 	def_files/autopilot.tbl
+	def_files/batched-f.sdr
+	def_files/batched-v.sdr
 	def_files/bloom-comp-f.sdr
 	def_files/blur-f.sdr
 	def_files/brightpass-f.sdr
 	def_files/controlconfigdefaults.tbl
+	def_files/default-material-f.sdr
 	def_files/deferred-clear-f.sdr
 	def_files/deferred-clear-v.sdr
 	def_files/deferred-f.sdr
 	def_files/deferred-v.sdr
 	def_files/effect-distort-f.sdr
 	def_files/effect-distort-v.sdr
-	def_files/effect-f.sdr
 	def_files/effect-particle-f.sdr
 	def_files/effect-screen-g.sdr
 	def_files/effect-v.sdr

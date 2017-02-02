@@ -1087,7 +1087,7 @@ int opengl_init_display_device()
 		return 1;
 	}
 
-	const int gl_versions[] = { 41, 40, 33, 32, 31, 30, 21, 20 };
+	const int gl_versions[] = { 45, 44, 43, 42, 41, 40, 33, 32 };
 
 	// find the latest and greatest OpenGL context
 	for (auto ver : gl_versions)
@@ -1248,6 +1248,7 @@ void opengl_setup_function_pointers()
 	gr_screen.gf_render_primitives_2d = gr_opengl_render_primitives_2d;
 	gr_screen.gf_render_primitives_2d_immediate = gr_opengl_render_primitives_2d_immediate;
 	gr_screen.gf_render_primitives_particle	= gr_opengl_render_primitives_particle;
+	gr_screen.gf_render_primitives_batched	= gr_opengl_render_primitives_batched;
 	gr_screen.gf_render_primitives_distortion = gr_opengl_render_primitives_distortion;
 	gr_screen.gf_render_movie = gr_opengl_render_movie;
 

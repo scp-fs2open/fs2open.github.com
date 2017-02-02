@@ -55,11 +55,8 @@ void gr_opengl_bm_free_data(int n, bool release)
 {
 	Assert( (n >= 0) && (n < MAX_BITMAPS) );
 
-	// might as well free up the on card texture data too in order to get rid
-	// of old interface stuff but don't free USER types, unless it's a total release,
-	// since we can reuse ANI slots for faster and less resource intensive rendering
-	if ( release || (bm_bitmaps[n].type != BM_TYPE_USER) )
-		opengl_free_texture_slot( n );
+	if ( release )
+		 opengl_free_texture_slot( n );
 
 	if ( (bm_bitmaps[n].type == BM_TYPE_RENDER_TARGET_STATIC) || (bm_bitmaps[n].type == BM_TYPE_RENDER_TARGET_DYNAMIC) )
 		opengl_kill_render_target( n );
@@ -112,9 +109,7 @@ void gr_opengl_bm_save_render_target(int n)
 		return;
 	}
 
-	if (Cmdline_save_render_targets) {
-		dds_save_image(bmp->w, bmp->h, bmp->true_bpp, be->num_mipmaps, (ubyte*)bmp->data, (bmp->flags & BMP_FLAG_CUBEMAP));
-	}
+	dds_save_image(bmp->w, bmp->h, bmp->true_bpp, be->num_mipmaps, (ubyte*)bmp->data, (bmp->flags & BMP_FLAG_CUBEMAP));
 }
 
 int gr_opengl_bm_make_render_target(int n, int *width, int *height, int *bpp, int *mm_lvl, int flags)

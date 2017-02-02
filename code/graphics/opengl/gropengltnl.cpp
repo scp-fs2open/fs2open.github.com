@@ -892,20 +892,23 @@ void opengl_tnl_set_material(material* material_info, bool set_base_map)
 		gr_opengl_set_clip_plane(NULL, NULL);
 	}
 
-	if ( Current_shader->shader == SDR_TYPE_PASSTHROUGH_RENDER ) {
-		opengl_shader_set_passthrough(base_map >= 0,
-									  material_info->get_texture_type() == TCACHE_TYPE_AABITMAP,
-									  &clr,
-									  material_info->get_color_scale(),
-									  material_info->get_clip_plane());
-	}
-
+	// This is only needed for the passthrough shader
+	uint32_t array_index = 0;
 	if ( set_base_map && base_map >= 0 ) {
 		float u_scale, v_scale;
 
-		if ( !gr_opengl_tcache_set(base_map, material_info->get_texture_type(), &u_scale, &v_scale) ) {
+		if ( !gr_opengl_tcache_set(base_map, material_info->get_texture_type(), &u_scale, &v_scale, &array_index) ) {
 			mprintf(("WARNING: Error setting bitmap texture (%i)!\n", base_map));
 		}
+	}
+
+	if ( Current_shader->shader == SDR_TYPE_DEFAULT_MATERIAL ) {
+		opengl_shader_set_default_material(base_map >= 0,
+										   material_info->get_texture_type() == TCACHE_TYPE_AABITMAP,
+										   &clr,
+										   material_info->get_color_scale(),
+										   array_index,
+										   clip_params);
 	}
 }
 
@@ -1024,7 +1027,9 @@ void opengl_tnl_set_model_material(model_material *material_info)
 			break;
 		}
 
-		gr_opengl_tcache_set(material_info->get_texture_map(TM_BASE_TYPE), TCACHE_TYPE_NORMAL, &u_scale, &v_scale, render_pass);
+		uint32_t array_index = 0;
+		gr_opengl_tcache_set(material_info->get_texture_map(TM_BASE_TYPE), TCACHE_TYPE_NORMAL, &u_scale, &v_scale, &array_index, render_pass);
+		Current_shader->program->Uniforms.setUniformi("sBasemapIndex", array_index);
 		
 		++render_pass;
 	}
@@ -1039,7 +1044,9 @@ void opengl_tnl_set_model_material(model_material *material_info)
 			Current_shader->program->Uniforms.setUniformi("overrideGlow", 0);
 		}
 
-		gr_opengl_tcache_set(material_info->get_texture_map(TM_GLOW_TYPE), TCACHE_TYPE_NORMAL, &u_scale, &v_scale, render_pass);
+		uint32_t array_index = 0;
+		gr_opengl_tcache_set(material_info->get_texture_map(TM_GLOW_TYPE), TCACHE_TYPE_NORMAL, &u_scale, &v_scale, &array_index, render_pass);
+		Current_shader->program->Uniforms.setUniformi("sGlowmapIndex", array_index);
 
 		++render_pass;
 	}
@@ -1054,8 +1061,9 @@ void opengl_tnl_set_model_material(model_material *material_info)
 			Current_shader->program->Uniforms.setUniformi("overrideSpec", 0);
 		}
 
+		uint32_t array_index = 0;
 		if ( material_info->get_texture_map(TM_SPEC_GLOSS_TYPE) > 0 ) {
-			gr_opengl_tcache_set(material_info->get_texture_map(TM_SPEC_GLOSS_TYPE), TCACHE_TYPE_NORMAL, &u_scale, &v_scale, render_pass);
+			gr_opengl_tcache_set(material_info->get_texture_map(TM_SPEC_GLOSS_TYPE), TCACHE_TYPE_NORMAL, &u_scale, &v_scale, &array_index, render_pass);
 
 			Current_shader->program->Uniforms.setUniformi("gammaSpec", 1);
 
@@ -1065,11 +1073,12 @@ void opengl_tnl_set_model_material(model_material *material_info)
 				Current_shader->program->Uniforms.setUniformi("alphaGloss", 1);
 			}
 		} else {
-			gr_opengl_tcache_set(material_info->get_texture_map(TM_SPECULAR_TYPE), TCACHE_TYPE_NORMAL, &u_scale, &v_scale, render_pass);
+			gr_opengl_tcache_set(material_info->get_texture_map(TM_SPECULAR_TYPE), TCACHE_TYPE_NORMAL, &u_scale, &v_scale, &array_index, render_pass);
 
 			Current_shader->program->Uniforms.setUniformi("gammaSpec", 0);
 			Current_shader->program->Uniforms.setUniformi("alphaGloss", 0);
 		}
+		Current_shader->program->Uniforms.setUniformi("sSpecmapIndex", array_index);
 		
 		++render_pass;
 
@@ -1089,7 +1098,8 @@ void opengl_tnl_set_model_material(model_material *material_info)
 			Current_shader->program->Uniforms.setUniformMatrix4f("envMatrix", texture_mat);
 			Current_shader->program->Uniforms.setUniformi("sEnvmap", render_pass);
 
-			gr_opengl_tcache_set(ENVMAP, TCACHE_TYPE_CUBEMAP, &u_scale, &v_scale, render_pass);
+			gr_opengl_tcache_set(ENVMAP, TCACHE_TYPE_CUBEMAP, &u_scale, &v_scale, &array_index, render_pass);
+			Assertion(array_index == 0, "Cube map arrays are not supported yet!");
 
 			++render_pass;
 		}
@@ -1098,7 +1108,9 @@ void opengl_tnl_set_model_material(model_material *material_info)
 	if ( Current_shader->flags & SDR_FLAG_MODEL_NORMAL_MAP ) {
 		Current_shader->program->Uniforms.setUniformi("sNormalmap", render_pass);
 
-		gr_opengl_tcache_set(material_info->get_texture_map(TM_NORMAL_TYPE), TCACHE_TYPE_NORMAL, &u_scale, &v_scale, render_pass);
+		uint32_t array_index = 0;
+		gr_opengl_tcache_set(material_info->get_texture_map(TM_NORMAL_TYPE), TCACHE_TYPE_NORMAL, &u_scale, &v_scale, &array_index, render_pass);
+		Current_shader->program->Uniforms.setUniformi("sNormalmapIndex", array_index);
 
 		++render_pass;
 	}
@@ -1106,7 +1118,9 @@ void opengl_tnl_set_model_material(model_material *material_info)
 	if ( Current_shader->flags & SDR_FLAG_MODEL_HEIGHT_MAP ) {
 		Current_shader->program->Uniforms.setUniformi("sHeightmap", render_pass);
 
-		gr_opengl_tcache_set(material_info->get_texture_map(TM_HEIGHT_TYPE), TCACHE_TYPE_NORMAL, &u_scale, &v_scale, render_pass);
+		uint32_t array_index = 0;
+		gr_opengl_tcache_set(material_info->get_texture_map(TM_HEIGHT_TYPE), TCACHE_TYPE_NORMAL, &u_scale, &v_scale, &array_index, render_pass);
+		Current_shader->program->Uniforms.setUniformi("sHeightmapIndex", array_index);
 
 		++render_pass;
 	}
@@ -1114,7 +1128,9 @@ void opengl_tnl_set_model_material(model_material *material_info)
 	if ( Current_shader->flags & SDR_FLAG_MODEL_AMBIENT_MAP ) {
 		Current_shader->program->Uniforms.setUniformi("sAmbientmap", render_pass);
 
-		gr_opengl_tcache_set(material_info->get_texture_map(TM_AMBIENT_TYPE), TCACHE_TYPE_NORMAL, &u_scale, &v_scale, render_pass);
+		uint32_t array_index = 0;
+		gr_opengl_tcache_set(material_info->get_texture_map(TM_AMBIENT_TYPE), TCACHE_TYPE_NORMAL, &u_scale, &v_scale, &array_index, render_pass);
+		Current_shader->program->Uniforms.setUniformi("sAmbientmapIndex", array_index);
 
 		++render_pass;
 	}
@@ -1122,7 +1138,9 @@ void opengl_tnl_set_model_material(model_material *material_info)
 	if ( Current_shader->flags & SDR_FLAG_MODEL_MISC_MAP ) {
 		Current_shader->program->Uniforms.setUniformi("sMiscmap", render_pass);
 
-		gr_opengl_tcache_set(material_info->get_texture_map(TM_MISC_TYPE), TCACHE_TYPE_NORMAL, &u_scale, &v_scale, render_pass);
+		uint32_t array_index = 0;
+		gr_opengl_tcache_set(material_info->get_texture_map(TM_MISC_TYPE), TCACHE_TYPE_NORMAL, &u_scale, &v_scale, &array_index, render_pass);
+		Current_shader->program->Uniforms.setUniformi("sMiscmapIndex", array_index);
 
 		++render_pass;
 	}
@@ -1265,6 +1283,19 @@ void opengl_tnl_set_material_particle(particle_material * material_info)
 		GL_state.Texture.Enable(Scene_depth_texture);
 	}
 }
+void opengl_tnl_set_material_batched(batched_bitmap_material* material_info) {
+	// This material assumes that the array index is supplied via the vertex attributes
+	opengl_tnl_set_material(material_info, true);
+
+	Current_shader->program->Uniforms.setUniformf("intensity", material_info->get_color_scale());
+
+	Current_shader->program->Uniforms.setUniform4f("color", material_info->get_color());
+
+	Current_shader->program->Uniforms.setUniformMatrix4f("modelViewMatrix", GL_model_view_matrix);
+	Current_shader->program->Uniforms.setUniformMatrix4f("projMatrix", GL_projection_matrix);
+
+	Current_shader->program->Uniforms.setUniformi("baseMap", 0);
+}
 
 void opengl_tnl_set_material_distortion(distortion_material* material_info)
 {
@@ -1285,15 +1316,18 @@ void opengl_tnl_set_material_distortion(distortion_material* material_info)
 	GL_state.Texture.SetTarget(GL_TEXTURE_2D);
 	GL_state.Texture.Enable(Scene_effect_texture);
 
-	if(material_info->get_thruster_rendering()) {
-		Current_shader->program->Uniforms.setUniformi("distMap", 3);
+	Current_shader->program->Uniforms.setUniformi("distMap", 3);
+	GL_state.Texture.SetActiveUnit(3);
+	GL_state.Texture.SetTarget(GL_TEXTURE_2D);
 
-		GL_state.Texture.SetActiveUnit(3);
-		GL_state.Texture.SetTarget(GL_TEXTURE_2D);
+	if(material_info->get_thruster_rendering()) {
 		GL_state.Texture.Enable(Distortion_texture[!Distortion_switch]);
+
 		Current_shader->program->Uniforms.setUniformf("use_offset", 1.0f);
 	} else {
-		Current_shader->program->Uniforms.setUniformi("distMap", 0);
+		// Disable this texture unit
+		GL_state.Texture.Enable(0);
+
 		Current_shader->program->Uniforms.setUniformf("use_offset", 0.0f);
 	}
 
@@ -1315,13 +1349,14 @@ void opengl_tnl_set_material_movie(movie_material* material_info) {
 	Current_shader->program->Uniforms.setUniformi("vtex", 2);
 
 	float u_scale, v_scale;
-	if ( !gr_opengl_tcache_set(material_info->getYtex(), material_info->get_texture_type(), &u_scale, &v_scale, 0) ) {
+	uint32_t index;
+	if ( !gr_opengl_tcache_set(material_info->getYtex(), material_info->get_texture_type(), &u_scale, &v_scale, &index, 0) ) {
 		mprintf(("WARNING: Error setting bitmap texture (%i)!\n", material_info->getYtex()));
 	}
-	if ( !gr_opengl_tcache_set(material_info->getUtex(), material_info->get_texture_type(), &u_scale, &v_scale, 1) ) {
+	if ( !gr_opengl_tcache_set(material_info->getUtex(), material_info->get_texture_type(), &u_scale, &v_scale, &index, 1) ) {
 		mprintf(("WARNING: Error setting bitmap texture (%i)!\n", material_info->getUtex()));
 	}
-	if ( !gr_opengl_tcache_set(material_info->getVtex(), material_info->get_texture_type(), &u_scale, &v_scale, 2) ) {
+	if ( !gr_opengl_tcache_set(material_info->getVtex(), material_info->get_texture_type(), &u_scale, &v_scale, &index, 2) ) {
 		mprintf(("WARNING: Error setting bitmap texture (%i)!\n", material_info->getVtex()));
 	}
 }

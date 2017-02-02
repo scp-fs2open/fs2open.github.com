@@ -51,8 +51,6 @@ class ShaderUniforms {
  public:
 	explicit ShaderUniforms(ShaderProgram* shaderProgram);
 
-	void initUniform(const SCP_string& name);
-
 	void setUniformi(const SCP_string &name, const int value);
 	void setUniform1iv(const SCP_string &name, const int count, const int *val);
 	void setUniformf(const SCP_string &name, const float value);

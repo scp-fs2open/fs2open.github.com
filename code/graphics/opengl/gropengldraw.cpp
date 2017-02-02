@@ -66,12 +66,13 @@ static opengl_vertex_bind GL_array_binding_data[] =
 	{ vertex_format_data::SCREEN_POS,	2, GL_INT,				GL_FALSE, opengl_vert_attrib::POSITION	},
 	{ vertex_format_data::COLOR3,		3, GL_UNSIGNED_BYTE,	GL_TRUE,opengl_vert_attrib::COLOR		},
 	{ vertex_format_data::COLOR4,		4, GL_UNSIGNED_BYTE,	GL_TRUE, opengl_vert_attrib::COLOR		},
-	{ vertex_format_data::TEX_COORD,	2, GL_FLOAT,			GL_FALSE, opengl_vert_attrib::TEXCOORD	},
+	{ vertex_format_data::TEX_COORD2,	2, GL_FLOAT,			GL_FALSE, opengl_vert_attrib::TEXCOORD	},
+	{ vertex_format_data::TEX_COORD3,	3, GL_FLOAT,			GL_FALSE, opengl_vert_attrib::TEXCOORD	},
 	{ vertex_format_data::NORMAL,		3, GL_FLOAT,			GL_FALSE, opengl_vert_attrib::NORMAL	},
 	{ vertex_format_data::TANGENT,		4, GL_FLOAT,			GL_FALSE, opengl_vert_attrib::TANGENT	},
 	{ vertex_format_data::MODEL_ID,		1, GL_FLOAT,			GL_FALSE, opengl_vert_attrib::MODEL_ID	},
 	{ vertex_format_data::RADIUS,		1, GL_FLOAT,			GL_FALSE, opengl_vert_attrib::RADIUS	},
-	{ vertex_format_data::UVEC,			3, GL_FLOAT,			GL_FALSE, opengl_vert_attrib::UVEC		}
+	{ vertex_format_data::UVEC,			3, GL_FLOAT,			GL_FALSE, opengl_vert_attrib::UVEC		},
 };
 
 inline GLenum opengl_primitive_type(primitive_type prim_type)
@@ -844,7 +845,7 @@ void gr_opengl_scene_texture_end()
 		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
 
-		opengl_shader_set_passthrough(true, false);
+		opengl_shader_set_passthrough(true);
 
 		GL_state.Array.BindArrayBuffer(0);
 
@@ -1063,10 +1064,10 @@ void gr_opengl_deferred_lighting_finish()
 	
 	if ( High_dynamic_range ) {
 		High_dynamic_range = false;
-		opengl_shader_set_passthrough(true, false);
+		opengl_shader_set_passthrough(true);
 		High_dynamic_range = true;
 	} else {
-		opengl_shader_set_passthrough(true, false);
+		opengl_shader_set_passthrough(true);
 	}
 	
 	GL_state.Texture.SetActiveUnit(0);
@@ -1100,7 +1101,7 @@ void gr_opengl_render_shield_impact(shield_material *material_info, primitive_ty
 	vec3d min;
 	vec3d max;
 	
-	opengl_tnl_set_material(material_info, true);
+	opengl_tnl_set_material(material_info, false);
 
 	float radius = material_info->get_impact_radius();
 	min.xyz.x = min.xyz.y = min.xyz.z = -radius;
@@ -1113,10 +1114,20 @@ void gr_opengl_render_shield_impact(shield_material *material_info, primitive_ty
 
 	vm_matrix4_set_inverse_transform(&impact_transform, &impact_orient, &impact_pos);
 
+	uint32_t array_index = 0;
+	if ( material_info->get_texture_map(TM_BASE_TYPE) >= 0 ) {
+		float u_scale, v_scale;
+
+		if ( !gr_opengl_tcache_set(material_info->get_texture_map(TM_BASE_TYPE), material_info->get_texture_type(), &u_scale, &v_scale, &array_index) ) {
+			mprintf(("WARNING: Error setting bitmap texture (%i)!\n", material_info->get_texture_map(TM_BASE_TYPE)));
+		}
+	}
+
 	Current_shader->program->Uniforms.setUniform3f("hitNormal", impact_orient.vec.fvec);
 	Current_shader->program->Uniforms.setUniformMatrix4f("shieldProjMatrix", impact_projection);
 	Current_shader->program->Uniforms.setUniformMatrix4f("shieldModelViewMatrix", impact_transform);
 	Current_shader->program->Uniforms.setUniformi("shieldMap", 0);
+	Current_shader->program->Uniforms.setUniformi("shieldMapIndex", array_index);
 	Current_shader->program->Uniforms.setUniformi("srgb", High_dynamic_range ? 1 : 0);
 	Current_shader->program->Uniforms.setUniform4f("color", material_info->get_color());
 	Current_shader->program->Uniforms.setUniformMatrix4f("modelViewMatrix", GL_model_view_matrix);
@@ -1140,7 +1151,7 @@ void gr_opengl_update_distortion()
 	GLboolean blend = GL_state.Blend(GL_FALSE);
 	GLboolean cull = GL_state.CullFace(GL_FALSE);
 
-	opengl_shader_set_passthrough(true, false);
+	opengl_shader_set_passthrough(true);
 
 	GL_state.PushFramebufferState();
 	GL_state.BindFrameBuffer(Distortion_framebuffer);
@@ -1183,11 +1194,11 @@ void gr_opengl_update_distortion()
 	vertex_layout vert_def;
 
 	vert_def.add_vertex_component(vertex_format_data::POSITION2, sizeof(vertex), offsetof(vertex, screen));
-	vert_def.add_vertex_component(vertex_format_data::TEX_COORD, sizeof(vertex), offsetof(vertex, texture_position));
+	vert_def.add_vertex_component(vertex_format_data::TEX_COORD2, sizeof(vertex), offsetof(vertex, texture_position));
 
 	opengl_render_primitives_immediate(PRIM_TYPE_TRISTRIP, &vert_def, 4, vertices, sizeof(vertex) * 4);
 
-	opengl_shader_set_passthrough(false, false);
+	opengl_shader_set_passthrough(false);
 
 	vertex distortion_verts[33];
 
@@ -1338,4 +1349,16 @@ void gr_opengl_render_movie(movie_material* material_info,
 	opengl_render_primitives(prim_type, layout, n_verts, buffer, 0, 0);
 
 	gr_opengl_end_2d_matrix();
+}
+void gr_opengl_render_primitives_batched(batched_bitmap_material* material_info,
+										 primitive_type prim_type,
+										 vertex_layout* layout,
+										 int offset,
+										 int n_verts,
+										 int buffer_handle) {
+	GR_DEBUG_SCOPE("Render batched primitives");
+
+	opengl_tnl_set_material_batched(material_info);
+
+	opengl_render_primitives(prim_type, layout, n_verts, buffer_handle, offset, 0);
 }

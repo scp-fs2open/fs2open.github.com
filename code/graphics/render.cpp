@@ -68,7 +68,7 @@ draw_textured_quad(material* mat, float x1, float y1, float u1, float v1, float 
 	vertex_layout vert_def;
 
 	vert_def.add_vertex_component(vertex_format_data::POSITION2, sizeof(float) * 4, 0);
-	vert_def.add_vertex_component(vertex_format_data::TEX_COORD, sizeof(float) * 4, sizeof(float) * 2);
+	vert_def.add_vertex_component(vertex_format_data::TEX_COORD2, sizeof(float) * 4, sizeof(float) * 2);
 
 	gr_render_primitives_immediate(mat, PRIM_TYPE_TRISTRIP, &vert_def, 4, glVertices, sizeof(float) * 4 * 4);
 }
@@ -528,7 +528,7 @@ static void gr_string_old(float sx,
 	vertex_layout vert_def;
 
 	vert_def.add_vertex_component(vertex_format_data::POSITION2, sizeof(v4), (int) offsetof(v4, x));
-	vert_def.add_vertex_component(vertex_format_data::TEX_COORD, sizeof(v4), (int) offsetof(v4, u));
+	vert_def.add_vertex_component(vertex_format_data::TEX_COORD2, sizeof(v4), (int) offsetof(v4, u));
 
 	// pick out letter coords, draw it, goto next letter and do the same
 	while (s < end) {
