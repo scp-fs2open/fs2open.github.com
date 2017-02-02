@@ -1191,8 +1191,6 @@ void opengl_setup_function_pointers()
 	gr_screen.gf_set_cull			= gr_opengl_set_cull;
 	gr_screen.gf_set_color_buffer	= gr_opengl_set_color_buffer;
 
-	gr_screen.gf_tcache_set			= gr_opengl_tcache_set;
-
 	gr_screen.gf_set_clear_color	= gr_opengl_set_clear_color;
 
 	gr_screen.gf_preload			= gr_opengl_preload;
