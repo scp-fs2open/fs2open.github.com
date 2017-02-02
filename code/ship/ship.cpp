@@ -7388,7 +7388,7 @@ void ship_destroy_instantly(object *ship_objp, int shipnum)
 void ship_cleanup(int shipnum, int cleanup_mode)
 {
 	Assert(shipnum >= 0 && shipnum < MAX_SHIPS);
-	Assert(cleanup_mode == SHIP_DESTROYED || cleanup_mode == SHIP_DEPARTED || cleanup_mode == SHIP_VANISHED);
+	Assert(cleanup_mode & (SHIP_DESTROYED | SHIP_DEPARTED | SHIP_VANISHED));
 	Assert(Objects[Ships[shipnum].objnum].type == OBJ_SHIP);
 	Assert(Objects[Ships[shipnum].objnum].flags[Object::Object_Flags::Should_be_dead]);
 
@@ -7396,10 +7396,27 @@ void ship_cleanup(int shipnum, int cleanup_mode)
 	object *objp = &Objects[shipp->objnum];
 
 	// add the information to the exited ship list
-	if (cleanup_mode == SHIP_DESTROYED) {
+	switch (cleanup_mode) {
+	case SHIP_DESTROYED:
 		ship_add_exited_ship(shipp, Ship::Exit_Flags::Destroyed);
-	} else {
+		break;
+	case SHIP_DEPARTED:
+	case SHIP_DEPARTED_WARP:
+	case SHIP_DEPARTED_BAY:
 		ship_add_exited_ship(shipp, Ship::Exit_Flags::Departed);
+		break;
+	case SHIP_DESTROYED_REDALERT:
+	case SHIP_DEPARTED_REDALERT:
+		// Ship was removed in previous mission. Mark as "player deleted" for this mission
+		ship_add_exited_ship(shipp, Ship::Exit_Flags::Player_deleted);
+		break;
+	case SHIP_VANISHED:
+		// Do nothing
+		break;
+	default:
+		// Can't Happen
+		Assertion(false, "Unknown cleanup_mode '%i' passed to ship_cleanup!", cleanup_mode);
+		break;
 	}
 
 	// record kill?
@@ -7416,8 +7433,8 @@ void ship_cleanup(int shipnum, int cleanup_mode)
 	}
 
 	// add mission log entry?
-	// (vanished ships have no log, and destroyed ships are logged in ship_hit_kill)
-	if (cleanup_mode == SHIP_DEPARTED) {
+	// (vanished ships and red-alert deleted ships have no log, and destroyed ships are logged in ship_hit_kill)
+	if ((cleanup_mode == SHIP_DEPARTED_WARP) || (cleanup_mode == SHIP_DEPARTED_BAY) || (cleanup_mode == SHIP_DEPARTED)) {\
 		// see if this ship departed within the radius of a jump node -- if so, put the node name into
 		// the secondary mission log field
 		CJumpNode *jnp = jumpnode_get_which_in(objp);
@@ -7428,24 +7445,51 @@ void ship_cleanup(int shipnum, int cleanup_mode)
 	}
 
 #ifndef NDEBUG
-	// add a debug log entry
-	if (cleanup_mode == SHIP_DESTROYED) {
-		nprintf(("Alan", "SHIP DESTROYED: %s\n", shipp->ship_name));
-	} else if (cleanup_mode == SHIP_DEPARTED) {
-		nprintf(("Alan", "SHIP DEPARTED: %s\n", shipp->ship_name));
-	} else {
-		nprintf(("Alan", "SHIP VANISHED: %s\n", shipp->ship_name));
+	switch (cleanup_mode) {
+	case SHIP_DESTROYED:
+		nprintf(("Alan", "SHIP DESTROYED: %s'\n'", shipp->ship_name));
+		break;
+	case SHIP_DEPARTED:
+	case SHIP_DEPARTED_WARP:
+	case SHIP_DEPARTED_BAY:
+		nprintf(("Alan", "SHIP DEPARTED: %s'\n'", shipp->ship_name));
+		break;
+	case SHIP_DESTROYED_REDALERT:
+		nprintf(("Alan", "SHIP REDALERT DESTROYED: %s'\n'", shipp->ship_name));
+		break;
+	case SHIP_DEPARTED_REDALERT:
+		nprintf(("Alan", "SHIP REDALERT DEPARTED: %s'\n'", shipp->ship_name));
+		break;
+	case SHIP_VANISHED:
+		nprintf(("Alan", "SHIP VANISHED: %s'\n'", shipp->ship_name));
+		break;
+	default:
+		// Can't Happen, but we should've already caught this
+		Assertion(false, "Unknown cleanup_mode '%i' passed to ship_cleanup!", cleanup_mode);
+		break;
 	}
 #endif
 
 	// update wingman status gauge
 	if ( (shipp->wing_status_wing_index >= 0) && (shipp->wing_status_wing_pos >= 0) ) {
-		if (cleanup_mode == SHIP_DESTROYED) {
+		switch (cleanup_mode) {
+		case SHIP_DESTROYED:
+		case SHIP_DESTROYED_REDALERT:
 			hud_set_wingman_status_dead(shipp->wing_status_wing_index, shipp->wing_status_wing_pos);
-		} else if (cleanup_mode == SHIP_DEPARTED) {
+			break;
+		case SHIP_DEPARTED:
+		case SHIP_DEPARTED_WARP:
+		case SHIP_DEPARTED_BAY:
+		case SHIP_DEPARTED_REDALERT:
 			hud_set_wingman_status_departed(shipp->wing_status_wing_index, shipp->wing_status_wing_pos);
-		} else {
+			break;
+		case SHIP_VANISHED:
 			hud_set_wingman_status_none(shipp->wing_status_wing_index, shipp->wing_status_wing_pos);
+			break;
+		default:
+			// Can't Happen, but we should've already caught this
+			Assertion(false, "Unknown cleanup_mode '%i' passed to ship_cleanup!", cleanup_mode);
+			break;
 		}
 	}
 
@@ -7453,14 +7497,25 @@ void ship_cleanup(int shipnum, int cleanup_mode)
 	if ( shipp->wingnum != -1 ) {
 		wing *wingp = &Wings[shipp->wingnum];
 
-		if (cleanup_mode == SHIP_DESTROYED) {
+		switch (cleanup_mode) {
+		case SHIP_DESTROYED:
+		case SHIP_DESTROYED_REDALERT:
 			wingp->total_destroyed++;
-		} else if (cleanup_mode == SHIP_DEPARTED) {
+			break;
+		case SHIP_DEPARTED:
+		case SHIP_DEPARTED_WARP:
+		case SHIP_DEPARTED_BAY:
+		case SHIP_DEPARTED_REDALERT:
 			wingp->total_departed++;
-		} else {
+			break;
+		case SHIP_VANISHED:
 			wingp->total_vanished++;
+			break;
+		default:
+			// Can't Happen, but we should've already caught this
+			Assertion(false, "Unknown cleanup_mode '%i' passed to ship_cleanup!", cleanup_mode);
+			break;
 		}
-
 		ship_wing_cleanup(shipnum, wingp);
 	}
 
@@ -7475,11 +7530,9 @@ void ship_cleanup(int shipnum, int cleanup_mode)
 	// Goober5000 - lastly, clear out the dead-docked list, per Mantis #2294
 	// (for exploding ships, this list should have already been cleared by now, via
 	// do_dying_undock_physics, except in the case of the destroy-instantly sexp)
-	while (object_is_dead_docked(objp))
-	{
-		object *docked_objp = dock_get_first_dead_docked_object(objp);
-		dock_dead_undock_objects(objp, docked_objp);
-	}
+	// z64555 - Also clear out the docked list, since a red-alert-carry ship could be docked with somebody
+	dock_undock_all(objp);
+	dock_dead_undock_all(objp);
 }
 
 /**

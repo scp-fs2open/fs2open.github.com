@@ -128,6 +128,12 @@ void dock_dock_objects(object *objp1, int dockpoint1, object *objp2, int dockpoi
 // remove objp1 and objp2 from each others' dock lists; currently only called by ai_do_objects_undocked_stuff
 void dock_undock_objects(object *objp1, object *objp2);
 
+/**
+ * @brief Undocks everything from the given object
+ * @note This is a slow method. use dock_free_dock_list() when doing object cleanup.
+ */
+void dock_undock_all(object *objp);
+
 // free the entire dock list without undocking anything; should only be used on object cleanup
 void dock_free_dock_list(object *objp);
 

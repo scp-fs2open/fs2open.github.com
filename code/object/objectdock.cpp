@@ -46,6 +46,8 @@ int dock_count_instances(object *objp);
 
 object *dock_get_first_docked_object(object *objp)
 {
+	Assert(objp != NULL);
+
 	// are we docked?
 	if (!object_is_docked(objp))
 		return NULL;
@@ -55,6 +57,8 @@ object *dock_get_first_docked_object(object *objp)
 
 bool dock_check_docked_one_on_one(object *objp)
 {
+	Assert(objp != NULL);
+
 	// we must be docked
 	if (!object_is_docked(objp))
 		return false;
@@ -76,11 +80,14 @@ bool dock_check_docked_one_on_one(object *objp)
 
 int dock_count_direct_docked_objects(object *objp)
 {
+	Assert(objp != NULL);
 	return dock_count_instances(objp);
 }
 
 int dock_count_total_docked_objects(object *objp)
 {
+	Assert(objp != NULL);
+
 	dock_function_info dfi;
 
 	dock_evaluate_all_docked_objects(objp, &dfi, dock_count_total_docked_objects_helper);
@@ -90,11 +97,17 @@ int dock_count_total_docked_objects(object *objp)
 
 bool dock_check_find_direct_docked_object(object *objp, object *other_objp)
 {
+	Assert(objp != NULL);
+	Assert(other_objp != NULL);
+
 	return (dock_find_instance(objp, other_objp) != NULL);
 }
 
 bool dock_check_find_docked_object(object *objp, object *other_objp)
 {
+	Assert(objp != NULL);
+	Assert(other_objp != NULL);
+
 	dock_function_info dfi;
 	dfi.parameter_variables.objp_value = other_objp;
 
@@ -105,6 +118,8 @@ bool dock_check_find_docked_object(object *objp, object *other_objp)
 
 object *dock_find_object_at_dockpoint(object *objp, int dockpoint)
 {
+	Assert(objp != NULL);
+
 	dock_instance *result = dock_find_instance(objp, dockpoint);
 	
 	if (result == NULL)
@@ -115,6 +130,9 @@ object *dock_find_object_at_dockpoint(object *objp, int dockpoint)
 
 int dock_find_dockpoint_used_by_object(object *objp, object *other_objp)
 {
+	Assert(objp != NULL);
+	Assert(other_objp != NULL);
+
 	dock_instance *result = dock_find_instance(objp, other_objp);
 	
 	if (result == NULL)
@@ -125,6 +143,9 @@ int dock_find_dockpoint_used_by_object(object *objp, object *other_objp)
 
 void dock_calc_docked_center(vec3d *dest, object *objp)
 {
+	Assert(dest != NULL);
+	Assert(objp != NULL);
+
 	vm_vec_zero(dest);
 
 	dock_function_info dfi;
@@ -138,6 +159,9 @@ void dock_calc_docked_center(vec3d *dest, object *objp)
 
 void dock_calc_docked_center_of_mass(vec3d *dest, object *objp)
 {
+	Assert(dest != NULL);
+	Assert(objp != NULL);
+
 	vm_vec_zero(dest);
 
 	dock_function_info dfi;
@@ -151,6 +175,8 @@ void dock_calc_docked_center_of_mass(vec3d *dest, object *objp)
 
 float dock_calc_total_docked_mass(object *objp)
 {
+	Assert(objp != NULL);
+
 	dock_function_info dfi;
 	
 	dock_evaluate_all_docked_objects(objp, &dfi, dock_calc_total_docked_mass_helper);
@@ -160,6 +186,8 @@ float dock_calc_total_docked_mass(object *objp)
 
 float dock_calc_max_cross_sectional_radius_perpendicular_to_axis(object *objp, axis_type axis)
 {
+	Assert(objp != NULL);
+
 	vec3d local_line_end;
 	vec3d *world_line_start, world_line_end;
 	dock_function_info dfi;
@@ -210,6 +238,8 @@ float dock_calc_max_cross_sectional_radius_perpendicular_to_axis(object *objp, a
 
 float dock_calc_max_semilatus_rectum_parallel_to_axis(object *objp, axis_type axis)
 {
+	Assert(objp != NULL);
+
 	vec3d local_line_end;
 	vec3d *world_line_start, world_line_end;
 	dock_function_info dfi;
@@ -260,6 +290,8 @@ float dock_calc_max_semilatus_rectum_parallel_to_axis(object *objp, axis_type ax
 
 float dock_calc_docked_fspeed(object *objp)
 {
+	Assert(objp != NULL);
+
 	// *sigh*... the docked fspeed is simply the max fspeed of all docked objects
 	dock_function_info dfi;
 	dock_evaluate_all_docked_objects(objp, &dfi, dock_find_max_fspeed_helper);
@@ -268,6 +300,8 @@ float dock_calc_docked_fspeed(object *objp)
 
 float dock_calc_docked_speed(object *objp)
 {
+	Assert(objp != NULL);
+
 	// ditto with speed
 	dock_function_info dfi;
 	dock_evaluate_all_docked_objects(objp, &dfi, dock_find_max_speed_helper);
@@ -370,6 +404,8 @@ void dock_evaluate_tree(object *objp, dock_function_info *infop, void (*function
 
 void dock_move_docked_objects(object *objp)
 {
+	Assert(objp != NULL);
+
 	if ((objp->type != OBJ_SHIP) && (objp->type != OBJ_START))
 		return;
 
@@ -601,6 +637,9 @@ void dock_find_max_speed_helper(object *objp, dock_function_info *infop)
 // dock management functions -------------------------------------------------------------------------------------
 void dock_dock_objects(object *objp1, int dockpoint1, object *objp2, int dockpoint2)
 {
+	Assert(objp1 != NULL);
+	Assert(objp2 != NULL);
+
 #ifndef NDEBUG
 	if ((dock_find_instance(objp1, objp2) != NULL) || (dock_find_instance(objp2, objp1) != NULL))
 	{
@@ -620,16 +659,24 @@ void dock_dock_objects(object *objp1, int dockpoint1, object *objp2, int dockpoi
 
 void dock_undock_objects(object *objp1, object *objp2)
 {
-#ifndef NDEBUG
-	if ((dock_find_instance(objp1, objp2) == NULL) || (dock_find_instance(objp2, objp1) == NULL))
-	{
-		Error(LOCATION, "Trying to undock an object that isn't docked!\n");
-	}
-#endif
+	Assert(objp1 != NULL);
+	Assert(objp2 != NULL);
 
 	// remove objects from each others' dock lists
 	dock_remove_instance(objp1, objp2);
 	dock_remove_instance(objp2, objp1);
+}
+
+void dock_undock_all(object *objp)
+{
+	Assert(objp != NULL);
+
+	while (object_is_docked(objp))
+	{
+		object* dockee = dock_get_first_docked_object(objp);
+
+		dock_undock_objects(objp, dockee);
+	}
 }
 
 // dock list functions -------------------------------------------------------------------------------------------
@@ -719,11 +766,18 @@ void dock_remove_instance(object *objp, object *other_objp)
 		// delete it
 		vm_free(ptr);
 	}
+	else
+	{
+		// Trigger an assertion, we can recover from this one, thankfully.
+		Assertion(false, "Tried to undock an object that isn't docked!\n");
+	}
 }
 
 // just free the list without worrying about undocking anything
 void dock_free_dock_list(object *objp)
 {
+	Assert(objp != NULL);
+
 	while (objp->dock_list != NULL)
 	{
 		dock_instance *ptr = objp->dock_list;

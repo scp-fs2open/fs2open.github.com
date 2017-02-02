@@ -1384,8 +1384,24 @@ extern int ship_get_num_ships();
 #define SHIP_DEPARTED_WARP		(1<<2)
 #define SHIP_DEPARTED_BAY		(1<<3)
 #define SHIP_DEPARTED			( SHIP_DEPARTED_BAY | SHIP_DEPARTED_WARP )
-// Goober5000
+#define SHIP_DESTROYED_REDALERT	(1<<4)
+#define SHIP_DEPARTED_REDALERT	(1<<5)
+
+/**
+ * @brief Deletes and de-inits a ship.
+ *
+ * @param[in] shipnum      Index of this ship in Ships[]
+ * @param[in] cleanup_mode Flags describing how this ship is to be removed. See SHIP_VANISHED, SHIP_DESTROYED, etc.
+ *
+ * @details This is the deconstructor of a ship, it does all the necassary processes to remove the ship from the Ships
+ *   array, and frees the slot for use by others. De-init of its Objects[] slot is handled by obj_delete_all_that_should_be_dead().
+ *
+ * @author Goober5000
+ * @sa obj_delete_all_that_should_be_dead()
+ */
 extern void ship_cleanup(int shipnum, int cleanup_mode);
+
+// Goober5000
 extern void ship_destroy_instantly(object *ship_obj, int shipnum);
 extern void ship_actually_depart(int shipnum, int method = SHIP_DEPARTED_WARP);
 
