@@ -5821,7 +5821,7 @@ void ship::clear()
 	target_shields_delta = 0.0f;
 	target_weapon_energy_delta = 0.0f;
 
-	weapons = ship_weapon();
+	weapons.clear();
 
 	// ---------- special weapons init that isn't setting things to 0
 	for (i = 0; i < MAX_SHIP_PRIMARY_BANKS; i++)
@@ -5993,7 +5993,7 @@ void ship::clear()
 	autoaim_fov = 0.0f;
 }
 
-ship_weapon::ship_weapon() 
+void ship_weapon::clear() 
 {
     flags.reset();
 
@@ -6074,6 +6074,10 @@ ship_weapon::ship_weapon()
 
     last_fired_weapon_index = -1;
     last_fired_weapon_signature = -1;
+}
+
+ship_weapon::ship_weapon() {
+	clear();
 }
 
 // NOTE: Now that the clear() member function exists, this function only sets the stuff associated with the object and ship class.
@@ -6421,7 +6425,7 @@ void ship_subsys::clear()
 	awacs_intensity = 0.0f;
 	awacs_radius = 0.0f;
 
-    weapons = ship_weapon();
+    weapons.clear();
 
 	memset(&submodel_info_1, 0, sizeof(submodel_instance_info));
 	memset(&submodel_info_2, 0, sizeof(submodel_instance_info));
