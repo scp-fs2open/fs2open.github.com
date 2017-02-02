@@ -1641,7 +1641,7 @@ bool gr_opengl_is_capable(gr_capability capability)
 	case CAPABILITY_BATCHED_SUBMODELS:
 		return true;
 	case CAPABILITY_POINT_PARTICLES:
-		return true && !Cmdline_no_geo_sdr_effects;
+		return !Cmdline_no_geo_sdr_effects;
 	case CAPABILITY_TIMESTAMP_QUERY:
 		return GL_version >= 33; // Timestamp queries are available from 3.3 onwards
 	}
