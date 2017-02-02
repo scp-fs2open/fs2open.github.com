@@ -383,6 +383,7 @@ void trail_object_died( trail *trailp )
 
 void trail_render_all()
 {
+	GR_DEBUG_SCOPE("Render trails");
 	TRACE_SCOPE(tracing::RenderTrails);
 
 	// No trails at slot 0

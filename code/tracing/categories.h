@@ -62,6 +62,15 @@ extern Category QueueRender;
 extern Category SubmitDraws;
 extern Category ApplyLights;
 extern Category DrawEffects;
+extern Category SetupNebula;
+extern Category DrawStars;
+extern Category DrawShields;
+extern Category DrawBeams;
+extern Category DrawStarfield;
+extern Category DrawMotionDebris;
+extern Category DrawBackground;
+extern Category DrawSuns;
+extern Category DrawBitmaps;
 
 extern Category RepeatingEvents;
 extern Category NonrepeatingEvents;

@@ -24,6 +24,7 @@
 #include "ship/ship.h"
 #include "species_defs/species_defs.h"
 #include "tracing/Monitor.h"
+#include "tracing/tracing.h"
 
 int	Show_shield_mesh = 0;
 
@@ -523,6 +524,9 @@ void render_shield(int shield_num)
  */
 void render_shields()
 {
+	GR_DEBUG_SCOPE("Render Shields");
+	TRACE_SCOPE(tracing::DrawShields);
+
 	int	i;
 
 	if (Detail.shield_effects == 0){

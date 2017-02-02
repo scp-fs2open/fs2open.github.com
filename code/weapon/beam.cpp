@@ -40,6 +40,7 @@
 #include "weapon/beam.h"
 #include "weapon/weapon.h"
 #include "globalincs/globals.h"
+#include "tracing/tracing.h"
 
 // ------------------------------------------------------------------------------------------------
 // BEAM WEAPON DEFINES/VARS
@@ -1517,6 +1518,9 @@ void beam_render_muzzle_glow(beam *b)
 // render all beam weapons
 void beam_render_all()
 {
+	GR_DEBUG_SCOPE("Render Beams");
+	TRACE_SCOPE(tracing::DrawBeams);
+
 	beam *moveup;	
 
 	// moves the U value of texture coods in beams if desired-Bobboau

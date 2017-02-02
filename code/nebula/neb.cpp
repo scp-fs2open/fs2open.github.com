@@ -24,6 +24,7 @@
 #include "ship/ship.h"
 #include "starfield/starfield.h"
 #include "tgautils/tgautils.h"
+#include "tracing/tracing.h"
 
 
 // --------------------------------------------------------------------------------------------------------
@@ -455,6 +456,9 @@ void neb2_level_close()
 // call before beginning all rendering
 void neb2_render_setup(camid cid)
 {
+	GR_DEBUG_SCOPE("Nebula Setup");
+	TRACE_SCOPE(tracing::SetupNebula);
+
 	// standalone servers can bail here
 	if (Game_mode & GM_STANDALONE_SERVER) {
 		return;
