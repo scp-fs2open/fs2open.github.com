@@ -1213,11 +1213,11 @@ void ai_turn_towards_vector(vec3d *dest, object *objp, float frametime, float tu
 	}
 
 	//	Dave Andsager: The non-indented lines here are debug code to help you track down the problem in the physics
-	//	that is causing ships to inexplicably rotate very far.  If you hit the Int3(), set the next statement to be
+	//	that is causing ships to inexplicably rotate very far.  If you hit the Warning, set the next statement to be
 	//	the one marked "HERE".  (Do this clicking the cursor there, then right clicking.  Choose the right option.)
 	//	This will allow you to rerun vm_forward_interpolate() with the values that caused the error.
-	//	Note, you'll need to enable the Int3() about ten lines below.
 #ifndef NDEBUG
+vec3d tvec = objp->orient.vec.fvec;
 vec3d	vel_in_copy;
 matrix	objp_orient_copy;
 
@@ -1238,6 +1238,12 @@ objp->orient = objp_orient_copy; //-V587
 		vm_forward_interpolate(&desired_fvec, &curr_orient, &vel_in, delta_time, delta_bank, &objp->orient, &vel_out, &vel_limit, &acc_limit);
 	}
 
+	#ifndef NDEBUG
+	if (!((objp->type == OBJ_WEAPON) && (Weapon_info[Weapons[objp->instance].weapon_info_index].subtype == WP_MISSILE))) {
+		if (!(delta_time < 0.25f && vm_vec_dot(&objp->orient.vec.fvec, &tvec) < 0.1f))
+			mprintf(("A ship rotated too far. Offending vessel is %s, please investigate.\n", Ships[objp->instance].ship_name));
+	}
+	#endif
 	pip->rotvel = vel_out;
 }
 
