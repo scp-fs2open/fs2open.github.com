@@ -328,20 +328,7 @@ int CFREDDoc::load_mission(char *pathname, int flags) {
 
 	Assert(Mission_palette >= 0);
 	Assert(Mission_palette <= 98);
-
-	// RT, don't need this anymore
-#if 0
-
-	if (The_mission.flags[Mission::Mission_Flags::Subspace]) {
-		strcpy_s(name, NOX("gamepalette-subspace"));
-	} else {
-		strcpy_s(name, "gamepalette1-01");
-		// sprintf(name, NOX("gamepalette1-%02d"), Mission_palette + 1);
-	}
-
-	palette_load_table(name);
-#endif
-
+	
 	// go through all ships and translate their callsign and alternate name indices	
 	objp = GET_FIRST(&obj_used_list);
 	while (objp != END_OF_LIST(&obj_used_list)) {
