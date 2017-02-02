@@ -406,10 +406,8 @@ void gr_opengl_shutdown()
 
 	GL_initted = false;
 
-	if ( GL_version >= 30 ) {
-		glDeleteVertexArrays(1, &GL_vao);
-		GL_vao = 0;
-	}
+	glDeleteVertexArrays(1, &GL_vao);
+	GL_vao = 0;
 	
 	if (GL_original_gamma_ramp != NULL && os::getSDLMainWindow() != nullptr) {
 		SDL_SetWindowGammaRamp( os::getSDLMainWindow(), GL_original_gamma_ramp, (GL_original_gamma_ramp+256), (GL_original_gamma_ramp+512) );
@@ -1536,11 +1534,9 @@ bool gr_opengl_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 	glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, &max_texture_units);
 	max_texture_coords = 1;
 
-	// create vertex array object to make OpenGL Core happy if we can
-	if ( GL_version >= 30 ) {
-		glGenVertexArrays(1, &GL_vao);
-		glBindVertexArray(GL_vao);
-	}
+	// create vertex array object to make OpenGL Core happy
+	glGenVertexArrays(1, &GL_vao);
+	glBindVertexArray(GL_vao);
 
 	GL_state.Texture.init(max_texture_units);
 	GL_state.Array.init(max_texture_coords);
@@ -1626,10 +1622,6 @@ bool gr_opengl_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 
 bool gr_opengl_is_capable(gr_capability capability)
 {
-	if ( GL_version < 20 ) {
-		return false;
-	}
-
 	switch ( capability ) {
 	case CAPABILITY_ENVIRONMENT_MAP:
 		return true;
@@ -1645,11 +1637,11 @@ bool gr_opengl_is_capable(gr_capability capability)
 	case CAPABILITY_DEFERRED_LIGHTING:
 		return !Cmdline_no_fbo && !Cmdline_no_deferred_lighting;
 	case CAPABILITY_SHADOWS:
-		return GL_version >= 32;
+		return true;
 	case CAPABILITY_BATCHED_SUBMODELS:
 		return true;
 	case CAPABILITY_POINT_PARTICLES:
-		return GL_version >= 32 && !Cmdline_no_geo_sdr_effects;
+		return true && !Cmdline_no_geo_sdr_effects;
 	case CAPABILITY_TIMESTAMP_QUERY:
 		return GL_version >= 33; // Timestamp queries are available from 3.3 onwards
 	}

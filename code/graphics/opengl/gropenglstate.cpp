@@ -153,11 +153,9 @@ void opengl_state::init()
 		clipplane_Status[i] = GL_FALSE;
 	}
 
-	if (GL_version >= 30) {
-		for (i = 0; i < (int)(sizeof(clipdistance_Status) / sizeof(GLboolean)); i++) {
-			//glDisable(GL_CLIP_DISTANCE0+i);
-			clipdistance_Status[i] = GL_FALSE;
-		}
+	for (i = 0; i < (int)(sizeof(clipdistance_Status) / sizeof(GLboolean)); i++) {
+		//glDisable(GL_CLIP_DISTANCE0+i);
+		clipdistance_Status[i] = GL_FALSE;
 	}
 
 	glDepthMask(GL_FALSE);
@@ -334,7 +332,7 @@ GLboolean opengl_state::ClipPlane(GLint num, GLint state)
 
 GLboolean opengl_state::ClipDistance(GLint num, GLint state)
 {
-	Assert( (num >= 0) || (num < (int)(sizeof(clipdistance_Status) / sizeof(GLboolean))) || GL_version >= 30 );
+	Assert( (num >= 0) && (num < (int)(sizeof(clipdistance_Status) / sizeof(GLboolean))) );
 
 	GLboolean save_state = clipdistance_Status[num];
 
@@ -700,9 +698,7 @@ void opengl_array_state::BindUniformBuffer(GLuint id)
 
 void gr_opengl_clear_states()
 {
-	if ( GL_version >= 30 ) {
-		glBindVertexArray(GL_vao);
-	}
+	glBindVertexArray(GL_vao);
 
 	gr_zbias(0);
 	gr_zbuffer_set(ZBUFFER_TYPE_READ);

@@ -50,9 +50,7 @@ namespace
 		GL_state.Texture.SetActiveUnit(0);
 		GL_state.Texture.SetTarget(0);
 
-		if ( GL_version >= 30 ) {
-			glBindVertexArray(GL_vao);
-		}
+		glBindVertexArray(GL_vao);
 
 		GL_state.Array.BindArrayBuffer(0);
 		GL_state.Array.BindUniformBuffer(0);
@@ -105,9 +103,7 @@ namespace graphics
 		{
 			GR_DEBUG_SCOPE("NanoVG flush");
 
-			if ( GL_version >= 30 ) {
-				glBindVertexArray(0);
-			}
+			glBindVertexArray(0);
 
 			gr_opengl_set_2d_matrix();
 
