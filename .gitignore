@@ -281,3 +281,6 @@ documentation/doxygen/*
 
 .idea/*
 projects/*
+/.vs
+/.vs
+CMakeSettings.json
