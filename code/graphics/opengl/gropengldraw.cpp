@@ -2039,7 +2039,7 @@ void opengl_clear_deferred_buffers()
 
 void gr_opengl_deferred_lighting_begin()
 {
-	if (GLSL_version < 120 || Cmdline_no_deferred_lighting)
+	if ( Cmdline_no_deferred_lighting)
 		return;
 
 	Deferred_lighting = true;
@@ -2069,7 +2069,7 @@ void gr_opengl_deferred_lighting_finish()
 {
 	TRACE_SCOPE(tracing::ApplyLights);
 
-	if ( GLSL_version < 120 || Cmdline_no_deferred_lighting ) {
+	if ( Cmdline_no_deferred_lighting ) {
 		return;
 	}
 

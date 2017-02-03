@@ -1767,9 +1767,7 @@ void poly_list::allocate(int _verts)
 			tsb = (tsb_t*)vm_malloc(sizeof(tsb_t) * _verts);
 		}
 
-		if ( GLSL_version >= 150 ) {
-			submodels = (int*)vm_malloc(sizeof(int) * _verts);
-		}
+		submodels = (int*)vm_malloc(sizeof(int) * _verts);
 
 		sorted_indices = (uint*)vm_malloc(sizeof(uint) * _verts);
 	}
@@ -1949,9 +1947,7 @@ void poly_list::make_index_buffer(SCP_vector<int> &vertex_list)
 			buffer_list_internal.tsb[z] = tsb[j];
 		}
 
-		if ( GLSL_version >= 150 ) {
-			buffer_list_internal.submodels[z] = submodels[j];
-		}
+		buffer_list_internal.submodels[z] = submodels[j];
 
 		buffer_list_internal.n_verts++;
 		z++;
@@ -1979,9 +1975,7 @@ poly_list& poly_list::operator = (poly_list &other_list)
 		memcpy(tsb, other_list.tsb, sizeof(tsb_t) * other_list.n_verts);
 	}
 
-	if ( GLSL_version >= 150 ) {
-		memcpy(submodels, other_list.submodels, sizeof(int) * other_list.n_verts);
-	}
+	memcpy(submodels, other_list.submodels, sizeof(int) * other_list.n_verts);
 
 	memcpy(sorted_indices, other_list.sorted_indices, sizeof(uint) * other_list.n_verts);
 
@@ -2151,9 +2145,7 @@ uint gr_determine_model_shader_flags(
 ) {
 	uint shader_flags = 0;
 
-	if ( GLSL_version >= 120 ) {
-		shader_flags |= SDR_FLAG_MODEL_CLIP;
-	}
+	shader_flags |= SDR_FLAG_MODEL_CLIP;
 
 	if ( transform ) {
 		shader_flags |= SDR_FLAG_MODEL_TRANSFORM;

@@ -692,12 +692,12 @@ int batch_add_bitmap(int texture, int tmap_flags, vertex *pnt, int orient, float
 		return 1;
 	}
 
-	if ( tmap_flags & TMAP_FLAG_SOFT_QUAD && ( !Cmdline_softparticles || GLSL_version <= 120 ) ) {
+	if ( tmap_flags & TMAP_FLAG_SOFT_QUAD && !Cmdline_softparticles ) {
 		// don't render this as a soft particle if we don't support soft particles
 		tmap_flags &= ~(TMAP_FLAG_SOFT_QUAD);
 	}
 
-	if ( GLSL_version > 120 && Cmdline_softparticles && !Cmdline_no_geo_sdr_effects && (tmap_flags & TMAP_FLAG_VERTEX_GEN) ) {
+	if ( Cmdline_softparticles && !Cmdline_no_geo_sdr_effects && (tmap_flags & TMAP_FLAG_VERTEX_GEN) ) {
 		geometry_batch_add_bitmap(texture, tmap_flags, pnt, orient, rad, alpha, depth);
 		return 0;
 	} else if ( tmap_flags & TMAP_FLAG_VERTEX_GEN ) {
@@ -761,7 +761,7 @@ int batch_add_bitmap_rotated(int texture, int tmap_flags, vertex *pnt, float ang
 		return 1;
 	}
 
-	if ( tmap_flags & TMAP_FLAG_SOFT_QUAD && ( !Cmdline_softparticles || GLSL_version <= 120 ) ) {
+	if ( tmap_flags & TMAP_FLAG_SOFT_QUAD && !Cmdline_softparticles ) {
 		// don't render this as a soft particle if we don't support soft particles
 		tmap_flags &= ~(TMAP_FLAG_SOFT_QUAD);
 	}
@@ -1143,11 +1143,6 @@ int distortion_add_bitmap_rotated(int texture, int tmap_flags, vertex *pnt, floa
 		return 1;
 	}
 
-	if ( GLSL_version < 120 ) {
-		// don't render distortions if we can't support them.
-		return 0;
-	}
-
 	batch_item *item = NULL;
 
 	SCP_map<int, batch_item>::iterator it = distortion_map.find(texture);
@@ -1176,11 +1171,6 @@ int distortion_add_beam(int texture, int tmap_flags, vec3d *start, vec3d *end, f
 	if (texture < 0) {
 		Int3();
 		return 1;
-	}
-
-	if ( GLSL_version < 120 ) {
-		// don't render distortions if we can't support them.
-		return 0;
 	}
 
 	batch_item *item = NULL;
