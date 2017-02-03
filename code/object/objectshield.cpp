@@ -87,7 +87,7 @@ void shield_add_strength(object *objp, float delta) {
 	float shield_str = shield_get_strength(objp);
 	float shield_recharge_limit = shield_get_max_strength(objp);
 
-	if (shield_str >= shield_recharge_limit)
+	if ((delta > 0.0f) && (shield_str >= shield_recharge_limit))
 		return;
 
 	if (!(Ai_info[Ships[objp->instance].ai_index].ai_profile_flags[AI::Profile_Flags::Smart_shield_management])
