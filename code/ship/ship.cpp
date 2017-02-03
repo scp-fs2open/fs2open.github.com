@@ -8132,7 +8132,7 @@ void ship_chase_shield_energy_targets(ship *shipp, object *obj, float frametime)
 		shield_add_strength(obj, delta);
 		shipp->target_shields_delta -= delta;
 	} else if (shipp->target_shields_delta < 0.0f) {
-		if (delta < -shipp->target_shields_delta)
+		//if (delta > -shipp->target_shields_delta)
 			delta = -shipp->target_shields_delta;
 
 		shield_add_strength(obj, -delta);
@@ -8148,7 +8148,7 @@ void ship_chase_shield_energy_targets(ship *shipp, object *obj, float frametime)
 		shipp->weapon_energy += delta;
 		shipp->target_weapon_energy_delta -= delta;
 	} else if (shipp->target_weapon_energy_delta < 0.0f) {
-		if (delta < -shipp->target_weapon_energy_delta)
+		//if (delta > -shipp->target_weapon_energy_delta)
 			delta = -shipp->target_weapon_energy_delta;
 
 		shipp->weapon_energy -= delta;
