@@ -1213,7 +1213,7 @@ void ai_turn_towards_vector(vec3d *dest, object *objp, float frametime, float tu
 	}
 
 	//	Dave Andsager: The non-indented lines here are debug code to help you track down the problem in the physics
-	//	that is causing ships to inexplicably rotate very far.  If you hit the Warning, set the next statement to be
+	//	that is causing ships to inexplicably rotate very far.  If you see the message below in the log, set the next statement to be
 	//	the one marked "HERE".  (Do this clicking the cursor there, then right clicking.  Choose the right option.)
 	//	This will allow you to rerun vm_forward_interpolate() with the values that caused the error.
 #ifndef NDEBUG
