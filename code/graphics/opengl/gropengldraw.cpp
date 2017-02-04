@@ -1900,6 +1900,8 @@ void gr_opengl_scene_texture_begin()
 		return;
 	}
 
+	GR_DEBUG_SCOPE("Begin scene texture");
+
 	glBindFramebuffer(GL_FRAMEBUFFER, Scene_framebuffer);
 
 	if (GL_rendering_to_texture)
@@ -2016,6 +2018,8 @@ void gr_opengl_copy_effect_texture()
 
 void opengl_clear_deferred_buffers()
 {
+	GR_DEBUG_SCOPE("Clear deferred buffers");
+
 	GLboolean depth = GL_state.DepthTest(GL_FALSE);
 	GLboolean depth_mask = GL_state.DepthMask(GL_FALSE);
 	GLboolean blend = GL_state.Blend(GL_FALSE);
@@ -2347,6 +2351,8 @@ void gr_opengl_update_distortion()
 
 void opengl_render_primitives(primitive_type prim_type, vertex_layout* layout, int n_verts, int buffer_handle, size_t vert_offset, size_t byte_offset)
 {
+	GR_DEBUG_SCOPE("Render primitives");
+
 	if ( buffer_handle >= 0 ) {
 		opengl_bind_buffer_object(buffer_handle);
 	} else {

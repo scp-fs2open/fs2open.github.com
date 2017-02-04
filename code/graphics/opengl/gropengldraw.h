@@ -109,6 +109,8 @@ inline void opengl_draw_textured_quad(
 	GLfloat x1, GLfloat y1, GLfloat u1, GLfloat v1,
 	GLfloat x2, GLfloat y2, GLfloat u2, GLfloat v2 )
 {
+	GR_DEBUG_SCOPE("Draw textured quad");
+
 	GLfloat glVertices[4][4] = {
 		{ x1, y1, u1, v1 },
 		{ x1, y2, u1, v2 },

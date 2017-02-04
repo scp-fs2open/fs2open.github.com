@@ -226,6 +226,8 @@ int gr_opengl_create_index_buffer(bool static_buffer)
 
 uint opengl_add_to_immediate_buffer(uint size, void *data)
 {
+	GR_DEBUG_SCOPE("Add data to immediate buffer");
+
 	if ( GL_immediate_buffer_handle < 0 ) {
 		GL_immediate_buffer_handle = opengl_create_buffer_object(GL_ARRAY_BUFFER, GL_STREAM_DRAW);
 	}
