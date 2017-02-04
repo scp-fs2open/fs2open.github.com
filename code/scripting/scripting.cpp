@@ -1117,7 +1117,7 @@ void script_state::ParseChunkSub(script_function& script_func, const char* debug
 
 		if(cfp == NULL)
 		{
-			Warning(LOCATION, "Could not load lua script file '%s'", filename);
+			Warning(LOCATION, "Could not load lua script file '%s'", function_name.c_str());
 			return;
 		}
 		else
