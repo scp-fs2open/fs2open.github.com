@@ -180,6 +180,11 @@ void opengl_state::init()
 
 	current_program = 0;
 	glUseProgram(0);
+
+	current_framebuffer = 0;
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+	framebuffer_stack.clear();
 }
 
 GLboolean opengl_state::Blend(GLint state)
@@ -507,6 +512,23 @@ void opengl_state::UseProgram(GLuint program)
 }
 bool opengl_state::IsCurrentProgram(GLuint program) {
 	return current_program == program;
+}
+void opengl_state::BindFrameBuffer(GLuint name) {
+	if (current_framebuffer != name) {
+		glBindFramebuffer(GL_FRAMEBUFFER, name);
+		current_framebuffer = name;
+	}
+}
+void opengl_state::PushFramebufferState() {
+	framebuffer_stack.push_back(current_framebuffer);
+}
+void opengl_state::PopFramebufferState() {
+	Assertion(framebuffer_stack.size() > 0, "Tried to pop the framebuffer state stack while it was empty!");
+
+	auto restoreBuffer = framebuffer_stack.back();
+	framebuffer_stack.pop_back();
+
+	BindFrameBuffer(restoreBuffer);
 }
 
 opengl_array_state::~opengl_array_state()

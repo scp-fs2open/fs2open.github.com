@@ -103,13 +103,15 @@ void opengl_post_pass_bloom()
 	// we need the scissor test disabled
 	GLboolean scissor_test = GL_state.ScissorTest(GL_FALSE);
 
+	GL_state.PushFramebufferState();
+
 	// ------  begin bright pass ------
 	int width, height;
 	{
 		GR_DEBUG_SCOPE("Bloom bright pass");
 		TRACE_SCOPE(tracing::BloomBrightPass);
 
-		glBindFramebuffer(GL_FRAMEBUFFER, Bloom_framebuffer);
+		GL_state.BindFrameBuffer(Bloom_framebuffer);
 		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, Bloom_textures[0], 0);
 
 		// width and height are 1/2 for the bright pass
@@ -224,7 +226,8 @@ void gr_opengl_post_process_begin()
 		return;
 	}
 
-	glBindFramebuffer(GL_FRAMEBUFFER, Post_framebuffer_id[0]);
+	GL_state.PushFramebufferState();
+	GL_state.BindFrameBuffer(Post_framebuffer_id[0]);
 
 	glDrawBuffer(GL_COLOR_ATTACHMENT0);
 
@@ -383,6 +386,8 @@ void gr_opengl_post_process_end()
 	// do tone mapping
 	opengl_post_pass_tonemap();
 
+	GL_state.PopFramebufferState();
+
     // Do FXAA
     if (Cmdline_fxaa && !fxaa_unavailable && !GL_rendering_to_texture) {
         opengl_post_pass_fxaa();
@@ -394,8 +399,8 @@ void gr_opengl_post_process_end()
 	GR_DEBUG_SCOPE("Draw post effects");
 	TRACE_SCOPE(tracing::DrawPostEffects);
 
-	// now write to the on-screen buffer
-	glBindFramebuffer(GL_FRAMEBUFFER, opengl_get_rtt_framebuffer());
+	// now write to the previous buffer
+	GL_state.PopFramebufferState();
 
 	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT);
@@ -432,7 +437,7 @@ void gr_opengl_post_process_end()
 	}
 
 	// now render it to the screen ...
-	glBindFramebuffer(GL_FRAMEBUFFER,0);
+	GL_state.BindFrameBuffer(0);
 	GL_state.Texture.SetActiveUnit(0);
 	GL_state.Texture.SetTarget(GL_TEXTURE_2D);
 	//GL_state.Texture.Enable(Scene_color_texture);
@@ -585,6 +590,7 @@ void gr_opengl_post_process_set_defaults()
 extern GLuint Cockpit_depth_texture;
 void gr_opengl_post_process_save_zbuffer()
 {
+	GR_DEBUG_SCOPE("Save z-Buffer");
 	if (Post_initialized)
 	{
 		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, Cockpit_depth_texture, 0);
@@ -870,7 +876,7 @@ void opengl_setup_bloom_textures()
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, MAX_MIP_BLUR_LEVELS-1);
 	}
 
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	GL_state.BindFrameBuffer(0);
 }
 
 // generate and test the framebuffer and textures that we are going to use
@@ -896,7 +902,7 @@ static bool opengl_post_init_framebuffer()
 		int size = (Cmdline_shadow_quality == 2 ? 1024 : 512);
 
 		glGenFramebuffers(1, &Post_shadow_framebuffer_id);
-		glBindFramebuffer(GL_FRAMEBUFFER, Post_shadow_framebuffer_id);
+		GL_state.BindFrameBuffer(Post_shadow_framebuffer_id);
 
 		glGenTextures(1, &Post_shadow_texture_id);
 		
@@ -947,7 +953,7 @@ static bool opengl_post_init_framebuffer()
 		glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, Post_shadow_depth_texture_id, 0);
 	}
 
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	GL_state.BindFrameBuffer(0);
 
 	rval = true;
 	

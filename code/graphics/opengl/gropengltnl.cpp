@@ -69,7 +69,6 @@ size_t GL_transform_buffer_offset = INVALID_SIZE;
 GLuint Shadow_map_texture = 0;
 GLuint Shadow_map_depth_texture = 0;
 GLuint shadow_fbo = 0;
-GLint saved_fb = 0;
 bool Rendering_to_shadow_map = false;
 
 int Transform_buffer_handle = -1;
@@ -342,7 +341,7 @@ void opengl_tnl_init()
 	{
 		//Setup shadow map framebuffer
 		glGenFramebuffers(1, &shadow_fbo);
-		glBindFramebuffer(GL_FRAMEBUFFER, shadow_fbo);
+		GL_state.BindFrameBuffer(shadow_fbo);
 
 		glGenTextures(1, &Shadow_map_depth_texture);
 
@@ -395,7 +394,7 @@ void opengl_tnl_init()
 		glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, Shadow_map_texture, 0);
 		//glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, Shadow_map_texture, 0);
 
-		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		GL_state.BindFrameBuffer(0);
 
 		opengl_check_for_errors("post_init_framebuffer()");
 	}
@@ -825,8 +824,8 @@ void gr_opengl_shadow_map_start(matrix4 *shadow_view_matrix, const matrix *light
 	if ( !Cmdline_shadow_quality )
 		return;
 
-	glGetIntegerv(GL_FRAMEBUFFER_BINDING, &saved_fb);
-	glBindFramebuffer(GL_FRAMEBUFFER, shadow_fbo);
+	GL_state.PushFramebufferState();
+	GL_state.BindFrameBuffer(shadow_fbo);
 
 	//glDrawBuffer(GL_COLOR_ATTACHMENT0);
 	GLenum buffers[] = { GL_COLOR_ATTACHMENT0};
@@ -852,25 +851,20 @@ void gr_opengl_shadow_map_start(matrix4 *shadow_view_matrix, const matrix *light
 
 void gr_opengl_shadow_map_end()
 {
-		if(!Rendering_to_shadow_map)
-			return;
+	if(!Rendering_to_shadow_map)
+		return;
 
-		gr_end_view_matrix();
-		Rendering_to_shadow_map = false;
+	gr_end_view_matrix();
+	Rendering_to_shadow_map = false;
 
-		gr_zbuffer_set(ZBUFFER_TYPE_FULL);
-		glBindFramebuffer(GL_FRAMEBUFFER, saved_fb);
-		if(saved_fb)
-		{
-// 			GLenum buffers[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
-// 			glDrawBuffers(2, buffers);
-		}
+	gr_zbuffer_set(ZBUFFER_TYPE_FULL);
+	GL_state.PopFramebufferState();
 
-		Glowpoint_override = Glowpoint_override_save;
-		GL_htl_projection_matrix_set = 0;
-		
-		glViewport(gr_screen.offset_x, (gr_screen.max_h - gr_screen.offset_y - gr_screen.clip_height), gr_screen.clip_width, gr_screen.clip_height);
-		glScissor(gr_screen.offset_x, (gr_screen.max_h - gr_screen.offset_y - gr_screen.clip_height), gr_screen.clip_width, gr_screen.clip_height);
+	Glowpoint_override = Glowpoint_override_save;
+	GL_htl_projection_matrix_set = 0;
+
+	glViewport(gr_screen.offset_x, (gr_screen.max_h - gr_screen.offset_y - gr_screen.clip_height), gr_screen.clip_width, gr_screen.clip_height);
+	glScissor(gr_screen.offset_x, (gr_screen.max_h - gr_screen.offset_y - gr_screen.clip_height), gr_screen.clip_width, gr_screen.clip_height);
 }
 
 void opengl_tnl_set_material(material* material_info, bool set_base_map)
