@@ -1252,7 +1252,7 @@ void hud_close()
 		num_gauges = it->hud_gauges.size();
 
 		for(j = 0; j < num_gauges; j++) {
-			vm_free(it->hud_gauges[j]);
+			delete it->hud_gauges[j];
 			it->hud_gauges[j] = NULL;
 		}
 		it->hud_gauges.clear();
