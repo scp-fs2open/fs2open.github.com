@@ -19,9 +19,7 @@
 #include "cmdline/cmdline.h"
 #include "osapi/osapi.h"
 
-
-#include <SDL_assert.h>
-
+#include <fstream>
 #include <algorithm>
 
 namespace
@@ -304,6 +302,11 @@ void os_sleep(uint ms)
 #endif
 }
 
+static bool file_exists(const SCP_string& path) {
+	std::ofstream str(path, std::ios::in);
+	return str.good();
+}
+
 bool os_is_legacy_mode()
 {
 	// Make this check a little faster by caching the result
@@ -318,19 +321,31 @@ bool os_is_legacy_mode()
 		checkedLegacyMode = true;
 	}
 	else {
+		bool old_config_exists = false;
+		bool new_config_exists = false;
+
 		SCP_stringstream path_stream;
 		path_stream << getPreferencesPath() << DIR_SEPARATOR_CHAR << Osreg_config_file_name;
 
-		// Use the existance of the fs2_open.ini file for determining if the launcher supports the new mode
-		auto file = fopen(path_stream.str().c_str(), "r");
+		new_config_exists = file_exists(path_stream.str());
+#ifdef SCP_UNIX
+        path_stream.str("");
+		path_stream << Cfile_user_dir_legacy << DIR_SEPARATOR_CHAR << Osreg_config_file_name;
 
-		if (file == nullptr)
-		{
+		old_config_exists = file_exists(path_stream.str());
+#else
+		// At this point we can't determine if the old config exists so just assume that it does
+		old_config_exists = true;
+#endif
+
+		if (new_config_exists) {
+			// If the new config exists then we never use the lagacy mode
+			legacyMode = false;
+		} else if (old_config_exists) {
+			// Old config exists but new doesn't -> use legacy mode
 			legacyMode = true;
-		}
-		else
-		{
-			fclose(file);
+		} else {
+			// Neither old nor new config exists -> this is a new install
 			legacyMode = false;
 		}
 	}
