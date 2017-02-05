@@ -48,11 +48,6 @@ int gr_stub_save_screen()
 	return 1;
 }
 
-int gr_stub_tcache_set(int bitmap_id, int bitmap_type, float *u_scale, float *v_scale, int tex_unit = 0)
-{
-	return 0;
-}
-
 int gr_stub_zbuffer_get()
 {
 	return 0;
@@ -606,8 +601,6 @@ bool gr_stub_init()
 
 	gr_screen.gf_set_cull			= gr_stub_set_cull;
 	gr_screen.gf_set_color_buffer	= gr_stub_set_color_buffer;
-
-	gr_screen.gf_tcache_set			= gr_stub_tcache_set;
 
 	gr_screen.gf_set_clear_color	= gr_stub_set_clear_color;
 

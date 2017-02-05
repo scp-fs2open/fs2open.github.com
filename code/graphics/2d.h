@@ -698,9 +698,6 @@ typedef struct screen {
 	// color buffer writes
 	int (*gf_set_color_buffer)(int mode);
 
-	// set a texture into cache. for sectioned bitmaps, pass in sx and sy to set that particular section of the bitmap
-	int (*gf_tcache_set)(int bitmap_id, int bitmap_type, float *u_scale, float *v_scale, int stage);	
-
 	// preload a bitmap into texture memory
 	int (*gf_preload)(int bitmap_num, int is_aabitmap);
 
@@ -1010,10 +1007,6 @@ __inline void gr_fog_set(int fog_mode, int r, int g, int b, float fog_near = -1.
 #define gr_set_cull			GR_CALL(gr_screen.gf_set_cull)
 #define gr_set_color_buffer	GR_CALL(gr_screen.gf_set_color_buffer)
 
-__inline int gr_tcache_set(int bitmap_id, int bitmap_type, float *u_scale, float *v_scale, int stage = 0)
-{
-	return (*gr_screen.gf_tcache_set)(bitmap_id, bitmap_type, u_scale, v_scale, stage);
-}
 
 #define gr_preload			GR_CALL(gr_screen.gf_preload)
 
