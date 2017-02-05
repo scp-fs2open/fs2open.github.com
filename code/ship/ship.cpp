@@ -7517,8 +7517,6 @@ void ship_cleanup(int shipnum, int cleanup_mode)
 	// Goober5000 - lastly, clear out the dead-docked list, per Mantis #2294
 	// (for exploding ships, this list should have already been cleared by now, via
 	// do_dying_undock_physics, except in the case of the destroy-instantly sexp)
-	// z64555 - Also clear out the docked list, since a red-alert-carry ship could be docked with somebody
-	dock_undock_all(objp);
 	dock_dead_undock_all(objp);
 }
 
