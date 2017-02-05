@@ -557,10 +557,6 @@ void cf_search_root_path(int root_index)
 	mprintf(( "Searching root '%s' ... ", root->path ));
 
 	char search_path[CF_MAX_PATHNAME_LENGTH];
-#ifdef SCP_UNIX
-    // This map stores the mapping between a specific path type and the actual path that we use for it
-	SCP_unordered_map<int, SCP_string> pathTypeToRealPath;
-#endif
 
 	for (i=CF_TYPE_ROOT; i<CF_MAX_PATH_TYPES; i++ )	{
 
@@ -680,20 +676,10 @@ void cf_search_root_path(int root_index)
 			// On Unix we can have a different case for the search paths so we also need to account for that
 			// We do that by looking at the parent of search_path and enumerating all directories and then check if any of
 			// them are a case-insensitive match
-			SCP_string directory_name;
-
-			auto parentPathIter = pathTypeToRealPath.find(Pathtypes[i].parent_index);
-
-//			if (parentPathIter == pathTypeToRealPath.end()) {
-				// No parent known yet, use the standard dirname
-				char dirname_copy[CF_MAX_PATHNAME_LENGTH];
-				memcpy(dirname_copy, search_path, sizeof(search_path));
-				// According to the documentation of directory_name and basename, the return value does not need to be freed
-				directory_name.assign(dirname(dirname_copy));
-//			} else {
-//				// we have a valid parent path -> use that
-//				directory_name = parentPathIter->second;
-//			}
+			char dirname_copy[CF_MAX_PATHNAME_LENGTH];
+			memcpy(dirname_copy, search_path, sizeof(search_path));
+			// According to the documentation of directory_name and basename, the return value does not need to be freed
+			auto directory_name = dirname(dirname_copy);
 
 			char basename_copy[CF_MAX_PATHNAME_LENGTH];
 			memcpy(basename_copy, search_path, sizeof(search_path));
