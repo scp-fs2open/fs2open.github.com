@@ -16,12 +16,25 @@
 #include <sstream>
 #include <algorithm>
 #include <memory>
+#include <locale>
+#include <codecvt>
 
 #ifdef _WIN32
 #include <io.h>
 #include <direct.h>
 #include <windows.h>
 #include <winbase.h>		/* needed for memory mapping of file functions */
+
+struct dir_handle_deleter {
+	typedef HANDLE pointer;
+
+	void operator()(HANDLE dirp) {
+		if (dirp != INVALID_HANDLE_VALUE) {
+			FindClose(dirp);
+		}
+	}
+};
+typedef std::unique_ptr<HANDLE, dir_handle_deleter> unique_dir_handle_ptr;
 #endif
 
 #ifdef SCP_UNIX
@@ -566,6 +579,62 @@ void cf_search_root_path(int root_index)
 		} 
 
 #if defined _WIN32
+		{
+			// Check if the case matches the case as specified in Pathtypes
+			// Since Windows paths are case insensitive this wouldn't cause issues here but other
+			// platforms would fail to find data paths in this case so we show a nice error if we detect that here
+
+			// Ignore the root since the case of that is allowed to differ (it's handled in the mod handling)
+			if (i != CF_TYPE_ROOT) {
+				// We use FindFirstFileNameW for this, it should hopefully work...
+				// First, convert our path from ASCII/UTF-8 to wchar_t
+				std::string search_string = search_path;
+				// Remove any trailing directory separators
+				if (search_string[search_string.size() - 1] == '\\') {
+					search_string = search_string.substr(0, search_string.size() - 1);
+				}
+
+				char parent_name[MAX_PATH];
+				memset(parent_name, 0, sizeof(parent_name));
+				strcpy_s(parent_name, search_string.c_str());
+
+				CHAR file_name[MAX_PATH];
+				memset(file_name, 0, sizeof(file_name));
+				strcpy_s(file_name, search_string.c_str());
+
+				PathStripPathA(file_name);
+				if (PathRemoveFileSpecA(parent_name)) {
+					strcat_s(parent_name, "\\*");
+
+					WIN32_FIND_DATAA find_data;
+					auto handle = unique_dir_handle_ptr(FindFirstFileA(parent_name, &find_data));
+					if (handle.get() != INVALID_HANDLE_VALUE) {
+						do {
+							if (stricmp(find_data.cFileName, file_name)) {
+								// Not the same name, not even if we check case-insensitive
+								continue;
+							}
+
+							// Same name, might have case differences
+							if (!strcmp(find_data.cFileName, file_name)) {
+								// Case matches, everything is alright.
+								continue;
+							}
+
+							// We need to do some formatting on the parent_name in order to show a nice error message
+							SCP_string parent_name_str = parent_name;
+							parent_name_str = parent_name_str.substr(0, parent_name_str.size() - 1); // Remove trailing *
+							parent_name_str += find_data.cFileName;
+
+							// If we are still here then the case didn't match which means that we have to show the error message
+							Error(LOCATION, "Data directory '%s' for path type '%s' does not match the required case! "
+								"All data directories must exactly match the case specified by the engine or your mod "
+								"will not work on other platforms.", parent_name_str.c_str(), Pathtypes[i].path);
+						} while (FindNextFileA(handle.get(), &find_data) != 0);
+					}
+				}
+			}
+		}
 		strcat_s( search_path, "*.*" );
 
 		intptr_t find_handle;
@@ -667,7 +736,7 @@ void cf_search_root_path(int root_index)
 				if (!fnmatch ("*.*", dir->d_name, 0))
 				{
 					SCP_string fn;
-					sprintf(fn, "%s/%s", search_path, dir->d_name);
+					sprintf(fn, "%s%s", search_path, dir->d_name);
 
 					struct stat buf;
 					if (stat(fn.c_str(), &buf) == -1) {
