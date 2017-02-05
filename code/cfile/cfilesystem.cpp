@@ -16,14 +16,13 @@
 #include <sstream>
 #include <algorithm>
 #include <memory>
-#include <locale>
-#include <codecvt>
 
 #ifdef _WIN32
 #include <io.h>
 #include <direct.h>
 #include <windows.h>
 #include <winbase.h>		/* needed for memory mapping of file functions */
+#include <shlwapi.h>
 
 struct dir_handle_deleter {
 	typedef HANDLE pointer;
@@ -686,7 +685,7 @@ void cf_search_root_path(int root_index)
 			// According to the documentation of dirname and basename, the return value does not need to be freed
 			auto search_name = basename(basename_copy);
 
-			auto parentDirP = unique_dir_ptr(opendir(directory_name.c_str()));
+			auto parentDirP = unique_dir_ptr(opendir(directory_name));
 			if (parentDirP) {
 				struct dirent *dir = nullptr;
 				while ((dir = readdir (parentDirP.get())) != nullptr) {
@@ -696,7 +695,7 @@ void cf_search_root_path(int root_index)
 					}
 
 					SCP_string fn;
-					sprintf(fn, "%s/%s", directory_name.c_str(), dir->d_name);
+					sprintf(fn, "%s/%s", directory_name, dir->d_name);
 
 					struct stat buf;
 					if (stat(fn.c_str(), &buf) == -1) {
