@@ -1658,7 +1658,7 @@ void gr_opengl_pop_debug_group() {
 }
 void opengl_set_object_label(GLenum type, GLuint handle, const SCP_string& name) {
 	if (GLAD_GL_KHR_debug) {
-		glObjectLabelKHR(type, handle, (GLsizei) name.size(), name.c_str());
+		glObjectLabel(type, handle, (GLsizei) name.size(), name.c_str());
 	}
 }
 
