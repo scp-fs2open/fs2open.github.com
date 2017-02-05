@@ -103,8 +103,6 @@ void opengl_post_pass_bloom()
 	// we need the scissor test disabled
 	GLboolean scissor_test = GL_state.ScissorTest(GL_FALSE);
 
-	GL_state.PushFramebufferState();
-
 	// ------  begin bright pass ------
 	int width, height;
 	{
@@ -379,14 +377,14 @@ void gr_opengl_post_process_end()
 	GLboolean cull = GL_state.CullFace(GL_FALSE);
 
 	GL_state.Texture.SetShaderMode(GL_TRUE);
+
+	GL_state.PushFramebufferState();
 	
 	// do bloom, hopefully ;)
 	opengl_post_pass_bloom();
 
 	// do tone mapping
 	opengl_post_pass_tonemap();
-
-	GL_state.PopFramebufferState();
 
     // Do FXAA
     if (Cmdline_fxaa && !fxaa_unavailable && !GL_rendering_to_texture) {
@@ -437,7 +435,7 @@ void gr_opengl_post_process_end()
 	}
 
 	// now render it to the screen ...
-	GL_state.BindFrameBuffer(0);
+	GL_state.PopFramebufferState();
 	GL_state.Texture.SetActiveUnit(0);
 	GL_state.Texture.SetTarget(GL_TEXTURE_2D);
 	//GL_state.Texture.Enable(Scene_color_texture);
