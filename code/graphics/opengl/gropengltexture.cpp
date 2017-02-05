@@ -1583,7 +1583,7 @@ int opengl_set_render_target( int slot, int face, int is_static )
 
 		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, 0, 0);
 
-		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		GL_state.BindFrameBuffer(0);
 		glBindRenderbuffer(GL_RENDERBUFFER, 0);
 
 		if (render_target != NULL) {
@@ -1622,7 +1622,7 @@ int opengl_set_render_target( int slot, int face, int is_static )
 	}
 
 //	glBindRenderbuffer(GL_RENDERBUFFER, fbo->renderbuffer_id);
-	glBindFramebuffer(GL_FRAMEBUFFER, fbo->framebuffer_id);
+	GL_state.BindFrameBuffer(fbo->framebuffer_id);
 
 	if (ts->texture_target == GL_TEXTURE_CUBE_MAP) {
 		Assert( (face >= 0) && (face < 6) );
@@ -1819,7 +1819,7 @@ int opengl_make_render_target( int handle, int slot, int *w, int *h, int *bpp, i
 
 	// frame buffer
 	glGenFramebuffers(1, &new_fbo.framebuffer_id);
-	glBindFramebuffer(GL_FRAMEBUFFER, new_fbo.framebuffer_id);
+	GL_state.BindFrameBuffer(new_fbo.framebuffer_id);
 
 	if (flags & BMP_FLAG_CUBEMAP) {
 		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X, ts->texture_id, 0);
@@ -1833,7 +1833,7 @@ int opengl_make_render_target( int handle, int slot, int *w, int *h, int *bpp, i
 		// Oops!!  reset everything and then bail
 		mprintf(("OpenGL: Unable to create FBO!\n"));
 
-		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		GL_state.BindFrameBuffer(0);
 
 		GL_state.Texture.Delete(ts->texture_id);
 		glDeleteTextures(1, &ts->texture_id);
@@ -1872,7 +1872,7 @@ int opengl_make_render_target( int handle, int slot, int *w, int *h, int *bpp, i
 	glClearColor(0.0f,0.0f,0.0f,1.0f);
 	glClear(GL_COLOR_BUFFER_BIT);
 
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	GL_state.BindFrameBuffer(0);
 
 	new_fbo.ref_count++;
 

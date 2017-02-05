@@ -173,6 +173,10 @@ class opengl_state
         gr_stencil_type Current_stencil_type;
 
 		GLuint current_program;
+
+		// The framebuffer state actually consists of draw and read buffers but we only use both at the same time
+		GLuint current_framebuffer;
+		SCP_vector<GLuint> framebuffer_stack;
 	public:
 		opengl_state() {}
 		~opengl_state() {}
@@ -213,6 +217,11 @@ class opengl_state
 
 		void UseProgram(GLuint program);
 		bool IsCurrentProgram(GLuint program);
+
+		void BindFrameBuffer(GLuint name);
+
+		void PushFramebufferState();
+		void PopFramebufferState();
 };
 
 inline GLenum opengl_state::FrontFaceValue(GLenum new_val)
@@ -276,6 +285,5 @@ extern opengl_state GL_state;
 
 void gr_opengl_clear_states();
 void opengl_setup_render_states(int &r,int &g,int &b,int &alpha, int &tmap_type, int flags, int is_scaler = 0);
-
 
 #endif	// _GROPENGLSTATE_H
