@@ -227,6 +227,8 @@ opengl_shader_t *Current_shader = NULL;
 void opengl_shader_set_current(opengl_shader_t *shader_obj)
 {
 	if (Current_shader != shader_obj) {
+		GR_DEBUG_SCOPE("Set shader");
+
 		GL_state.Array.ResetVertexAttribs();
 
 		if(shader_obj) {

@@ -848,6 +848,8 @@ int script_state::RunBytecodeSub(script_function& func, char format, void *data)
 		return 1;
 	}
 
+	GR_DEBUG_SCOPE("Lua code");
+
 	try {
 		auto ret = func.function.call();
 
