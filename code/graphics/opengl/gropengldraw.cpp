@@ -1577,7 +1577,7 @@ void opengl_setup_scene_textures()
 	// create framebuffer
 	glGenFramebuffers(1, &Scene_framebuffer);
 	GL_state.BindFrameBuffer(Scene_framebuffer);
-	glObjectLabelKHR(GL_FRAMEBUFFER, Scene_framebuffer, -1, "Scene framebuffer");
+	opengl_set_object_label(GL_FRAMEBUFFER, Scene_framebuffer, "Scene framebuffer");
 
 	// setup main render texture
 
@@ -1597,7 +1597,7 @@ void opengl_setup_scene_textures()
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, Scene_texture_width, Scene_texture_height, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
 
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, Scene_color_texture, 0);
-	glObjectLabelKHR(GL_TEXTURE, Scene_color_texture, -1, "Scene color texture");
+	opengl_set_object_label(GL_TEXTURE, Scene_color_texture, "Scene color texture");
 
 	// setup low dynamic range color texture
 	glGenTextures(1, &Scene_ldr_texture);
@@ -1613,7 +1613,7 @@ void opengl_setup_scene_textures()
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
 
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, Scene_texture_width, Scene_texture_height, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
-	glObjectLabelKHR(GL_TEXTURE, Scene_ldr_texture, -1, "Scene LDR texture");
+	opengl_set_object_label(GL_TEXTURE, Scene_ldr_texture, "Scene LDR texture");
 
 	// setup position render texture
 	glGenTextures(1, &Scene_position_texture);
@@ -1629,7 +1629,7 @@ void opengl_setup_scene_textures()
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
 
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, Scene_texture_width, Scene_texture_height, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
-	glObjectLabelKHR(GL_TEXTURE, Scene_position_texture, -1, "Scene Position texture");
+	opengl_set_object_label(GL_TEXTURE, Scene_position_texture, "Scene Position texture");
 
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, Scene_position_texture, 0);
 
@@ -1647,7 +1647,7 @@ void opengl_setup_scene_textures()
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
 
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, Scene_texture_width, Scene_texture_height, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
-	glObjectLabelKHR(GL_TEXTURE, Scene_normal_texture, -1, "Scene Normal texture");
+	opengl_set_object_label(GL_TEXTURE, Scene_normal_texture, "Scene Normal texture");
 
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D, Scene_normal_texture, 0);
 
@@ -1665,7 +1665,7 @@ void opengl_setup_scene_textures()
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
 
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, Scene_texture_width, Scene_texture_height, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
-	glObjectLabelKHR(GL_TEXTURE, Scene_specular_texture, -1, "Scene Specular texture");
+	opengl_set_object_label(GL_TEXTURE, Scene_specular_texture, "Scene Specular texture");
 
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT3, GL_TEXTURE_2D, Scene_specular_texture, 0);
 
@@ -1684,7 +1684,7 @@ void opengl_setup_scene_textures()
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
 
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, Scene_texture_width, Scene_texture_height, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
-	glObjectLabelKHR(GL_TEXTURE, Scene_luminance_texture, -1, "Scene Luminance texture");
+	opengl_set_object_label(GL_TEXTURE, Scene_luminance_texture, "Scene Luminance texture");
 
 	// setup effect texture
 
@@ -1701,7 +1701,7 @@ void opengl_setup_scene_textures()
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
 
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, Scene_texture_width, Scene_texture_height, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
-	glObjectLabelKHR(GL_TEXTURE, Scene_effect_texture, -1, "Scene Effect texture");
+	opengl_set_object_label(GL_TEXTURE, Scene_effect_texture, "Scene Effect texture");
 
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT4, GL_TEXTURE_2D, Scene_effect_texture, 0);
 
@@ -1720,7 +1720,7 @@ void opengl_setup_scene_textures()
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_NONE);
 
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT24, Scene_texture_width, Scene_texture_height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
-	glObjectLabelKHR(GL_TEXTURE, Cockpit_depth_texture, -1, "Cockpit depth texture");
+	opengl_set_object_label(GL_TEXTURE, Cockpit_depth_texture, "Cockpit depth texture");
 
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, Cockpit_depth_texture, 0);
 	gr_zbuffer_set(GR_ZBUFF_FULL);
@@ -1741,7 +1741,7 @@ void opengl_setup_scene_textures()
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_NONE);
 
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT24, Scene_texture_width, Scene_texture_height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
-	glObjectLabelKHR(GL_TEXTURE, Scene_depth_texture, -1, "Scene depth texture");
+	opengl_set_object_label(GL_TEXTURE, Scene_depth_texture, "Scene depth texture");
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, Scene_depth_texture, 0);
 
 	//setup main stencil buffer

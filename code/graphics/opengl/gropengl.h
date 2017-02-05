@@ -24,6 +24,17 @@ int opengl_check_for_errors(const char *err_at = NULL);
 bool gr_opengl_is_capable(gr_capability capability);
 void gr_opengl_push_debug_group(const char* name);
 void gr_opengl_pop_debug_group();
+
+/**
+ * @brief Assigns a string name to the specified handle
+ * @details This uses @c GL_KHR_debug for assigning a human readable name to an OpenGL object. This can help with debugging
+ *  since it makes it easier to identify which object is currently being used.
+ * @param type The type of the handle, e.g. GL_FRAMEBUFFER
+ * @param handle The handle of the object
+ * @param name The name of the object
+ */
+void opengl_set_object_label(GLenum type, GLuint handle, const SCP_string& name);
+
 uint opengl_data_type_size(GLenum data_type);
 
 #ifndef NDEBUG
