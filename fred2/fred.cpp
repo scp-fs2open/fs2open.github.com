@@ -206,6 +206,9 @@ BOOL CFREDApp::InitInstance() {
 	Enable3dControlsStatic();	// Call this when linking to MFC statically
 #endif
 
+	// Set the company registry key, settings saving doesn't work otherwise
+	SetRegistryKey("HardLightProductions");
+
 	LoadStdProfileSettings(9);  // Load standard INI file options (including MRU)
 	Show_stars = GetProfileInt("Preferences", "Show stars", Show_stars);
 	Show_grid_positions = GetProfileInt("Preferences", "Show grid positions", Show_grid_positions);
@@ -516,6 +519,7 @@ void CFREDApp::write_ini_file(int degree) {
 		write_window("Asteroid window", &Asteroid_wnd_data);
 		write_window("Mission notes window", &Mission_notes_wnd_data);
 	}
+	m_pRecentFileList->WriteList();
 }
 
 void CFREDApp::write_window(char *name, window_data *wndd) {
