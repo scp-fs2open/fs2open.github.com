@@ -15,6 +15,7 @@
 #include <errno.h>
 #include <sstream>
 #include <algorithm>
+#include <memory>
 
 #ifdef _WIN32
 #include <io.h>
@@ -31,7 +32,13 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <libgen.h>
-#include <cstdio>
+
+struct dir_deleter {
+	void operator()(DIR* dirp) {
+		closedir(dirp);
+	}
+};
+typedef std::unique_ptr<DIR, dir_deleter> unique_dir_ptr;
 #endif
 
 #include "cfile/cfile.h"
@@ -80,13 +87,12 @@ static int Num_path_roots = 0;
 
 // Created by searching all roots in order.   This means Files is then sorted by precedence.
 typedef struct cf_file {
-	char	name_ext[CF_MAX_FILENAME_LENGTH];	// Filename and extension
-	int		root_index;							// Where in Roots this is located
-	int		pathtype_index;						// Where in Paths this is located
-	time_t	write_time;							// When it was last written
-	int		size;								// How big it is in bytes
-	int		pack_offset;						// For pack files, where it is at.   0 if not in a pack file.  This can be used to tell if in a pack file.
-	char*	real_name;							// For real files, the full path
+	char		name_ext[CF_MAX_FILENAME_LENGTH];		// Filename and extension
+	int		root_index;										// Where in Roots this is located
+	int		pathtype_index;								// Where in Paths this is located
+	time_t	write_time;										// When it was last written
+	int		size;												// How big it is in bytes
+	int		pack_offset;									// For pack files, where it is at.   0 if not in a pack file.  This can be used to tell if in a pack file.
 } cf_file;
 
 #define CF_NUM_FILES_PER_BLOCK   512
@@ -596,77 +602,72 @@ void cf_search_root_path(int root_index)
 			_findclose( find_handle );
 		}
 #elif defined SCP_UNIX
-		DIR *dirp = nullptr;
-		SCP_string search_dir;
+		auto dirp = unique_dir_ptr(opendir(search_path));
+		if (!dirp)
 		{
-			if (i == CF_TYPE_ROOT) {
-				// Don't search for the same name for the root case since we would be searching in other mod directories in that case
-				dirp = opendir (search_path);
-				search_dir.assign(search_path);
-			} else {
-				// On Unix we can have a different case for the search paths so we also need to account for that
-				// We do that by looking at the parent of search_path and enumerating all directories and the check if any of
-				// them are a case-insensitive match
-				SCP_string directory_name;
+			// If the directory does not exist then check if it might exist with a different case. If that's the case
+			// we bail out with an error so inform the user that this is not valid.
 
-				auto parentPathIter = pathTypeToRealPath.find(Pathtypes[i].parent_index);
+			// On Unix we can have a different case for the search paths so we also need to account for that
+			// We do that by looking at the parent of search_path and enumerating all directories and then check if any of
+			// them are a case-insensitive match
+			SCP_string directory_name;
 
-				if (parentPathIter == pathTypeToRealPath.end()) {
-					// No parent known yet, use the standard dirname
-					char dirname_copy[CF_MAX_PATHNAME_LENGTH];
-					memcpy(dirname_copy, search_path, sizeof(search_path));
-					// According to the documentation of directory_name and basename, the return value does not need to be freed
-					directory_name.assign(dirname(dirname_copy));
-				} else {
-					// we have a valid parent path -> use that
-					directory_name = parentPathIter->second;
-				}
+			auto parentPathIter = pathTypeToRealPath.find(Pathtypes[i].parent_index);
 
-				char basename_copy[CF_MAX_PATHNAME_LENGTH];
-				memcpy(basename_copy, search_path, sizeof(search_path));
-				// According to the documentation of dirname and basename, the return value does not need to be freed
-				auto search_name = basename(basename_copy);
+//			if (parentPathIter == pathTypeToRealPath.end()) {
+				// No parent known yet, use the standard dirname
+				char dirname_copy[CF_MAX_PATHNAME_LENGTH];
+				memcpy(dirname_copy, search_path, sizeof(search_path));
+				// According to the documentation of directory_name and basename, the return value does not need to be freed
+				directory_name.assign(dirname(dirname_copy));
+//			} else {
+//				// we have a valid parent path -> use that
+//				directory_name = parentPathIter->second;
+//			}
 
-				auto parentDirP = opendir(directory_name.c_str());
+			char basename_copy[CF_MAX_PATHNAME_LENGTH];
+			memcpy(basename_copy, search_path, sizeof(search_path));
+			// According to the documentation of dirname and basename, the return value does not need to be freed
+			auto search_name = basename(basename_copy);
 
-				if (parentDirP) {
-					struct dirent *dir = nullptr;
-					while ((dir = readdir (parentDirP)) != nullptr) {
+			auto parentDirP = unique_dir_ptr(opendir(directory_name.c_str()));
+			if (parentDirP) {
+				struct dirent *dir = nullptr;
+				while ((dir = readdir (parentDirP.get())) != nullptr) {
 
-						if (stricmp(search_name, dir->d_name)) {
-							continue;
-						}
-
-						SCP_string fn;
-						sprintf(fn, "%s/%s", directory_name.c_str(), dir->d_name);
-
-						struct stat buf;
-						if (stat(fn.c_str(), &buf) == -1) {
-							continue;
-						}
-
-						if (S_ISDIR(buf.st_mode)) {
-							// Found a case insensitive match
-							dirp = opendir(fn.c_str());
-							search_dir = fn;
-							// We also need to store this in our mapping since we may need it in the future
-							pathTypeToRealPath.insert(std::make_pair(i, fn));
-							break;
-						}
+					if (stricmp(search_name, dir->d_name)) {
+						continue;
 					}
-					closedir(parentDirP);
+
+					SCP_string fn;
+					sprintf(fn, "%s/%s", directory_name.c_str(), dir->d_name);
+
+					struct stat buf;
+					if (stat(fn.c_str(), &buf) == -1) {
+						continue;
+					}
+
+					if (S_ISDIR(buf.st_mode)) {
+						// Found a case insensitive match
+						// If the name is not exactly the same as the one we are currently searching then it's an error
+						if (strcmp(search_name, dir->d_name)) {
+							Error(LOCATION, "Data directory '%s' for path type '%s' does not match the required case! "
+								"All data directories must exactly match the case specified by the engine or your mod "
+								"will not work on other platforms.", fn.c_str(), Pathtypes[i].path);
+						}
+						break;
+					}
 				}
 			}
-		}
-
-		if ( dirp ) {
+		} else {
 			struct dirent *dir = nullptr;
-			while ((dir = readdir (dirp)) != NULL)
+			while ((dir = readdir (dirp.get())) != NULL)
 			{
 				if (!fnmatch ("*.*", dir->d_name, 0))
 				{
 					SCP_string fn;
-					sprintf(fn, "%s/%s", search_dir.c_str(), dir->d_name);
+					sprintf(fn, "%s/%s", search_path, dir->d_name);
 
 					struct stat buf;
 					if (stat(fn.c_str(), &buf) == -1) {
@@ -693,15 +694,12 @@ void cf_search_root_path(int root_index)
 
 							file->pack_offset = 0;			// Mark as a non-packed file
 
-							file->real_name = vm_strdup(fn.c_str());
-
 							num_files++;
 							//mprintf(( "Found file '%s'\n", file->name_ext ));
 						}
 					}
 				}
 			}
-			closedir(dirp);
 		}
 #endif
 	}
@@ -896,14 +894,6 @@ void cf_free_secondary_filelist()
 	// Init the file blocks	
 	for (i=0; i<CF_MAX_FILE_BLOCKS; i++ )	{
 		if ( File_blocks[i] )	{
-			// Free file paths
-			for (auto& f : File_blocks[i]->files) {
-				if (f.real_name) {
-					vm_free(f.real_name);
-					f.real_name = nullptr;
-				}
-			}
-
 			vm_free( File_blocks[i] );
 			File_blocks[i] = NULL;
 		}
@@ -1062,14 +1052,17 @@ int cf_find_file_location( const char *filespec, int pathtype, int max_out, char
 						*offset = (size_t)f->pack_offset;
 
 					if (pack_filename) {
-						if (f->pack_offset < 1) {
-							// This is a real file, return the actual file path
-							strncpy( pack_filename, f->real_name, max_out );
-						} else {
-							// File is in a pack file
-							cf_root *r = cf_get_root(f->root_index);
+						cf_root *r = cf_get_root(f->root_index);
 
-							strncpy( pack_filename, r->path, max_out );
+						strncpy( pack_filename, r->path, max_out );
+
+						if (f->pack_offset < 1) {
+							strcat_s( pack_filename, max_out, Pathtypes[f->pathtype_index].path );
+
+							if ( pack_filename[strlen(pack_filename)-1] != DIR_SEPARATOR_CHAR )
+								strcat_s( pack_filename, max_out, DIR_SEPARATOR_STR );
+
+							strcat_s( pack_filename, max_out, f->name_ext );
 						}
 					}
 
@@ -1087,14 +1080,19 @@ int cf_find_file_location( const char *filespec, int pathtype, int max_out, char
 				*offset = (size_t)f->pack_offset;
 
 			if (pack_filename) {
-				if (f->pack_offset < 1) {
-					// This is a real file, return the actual file path
-					strncpy( pack_filename, f->real_name, max_out );
-				} else {
-					// File is in a pack file
-					cf_root *r = cf_get_root(f->root_index);
+				cf_root *r = cf_get_root(f->root_index);
 
-					strncpy( pack_filename, r->path, max_out );
+				strcpy( pack_filename, r->path );
+
+				if (f->pack_offset < 1) {
+					if ( strlen(Pathtypes[f->pathtype_index].path) ) {
+						strcat_s( pack_filename, max_out, Pathtypes[f->pathtype_index].path );
+
+						if ( pack_filename[strlen(pack_filename)-1] != DIR_SEPARATOR_CHAR )
+							strcat_s( pack_filename, max_out, DIR_SEPARATOR_STR );
+					}
+
+					strcat_s( pack_filename, max_out, f->name_ext );
 				}
 			}
 
@@ -1329,14 +1327,17 @@ int cf_find_file_location_ext( const char *filename, const int ext_num, const ch
 							*offset = f->pack_offset;
 
 						if (pack_filename) {
-							if (f->pack_offset < 1) {
-								// This is a real file, return the actual file path
-								strncpy( pack_filename, f->real_name, max_out );
-							} else {
-								// File is in a pack file
-								cf_root *r = cf_get_root(f->root_index);
+							cf_root *r = cf_get_root(f->root_index);
 
-								strncpy( pack_filename, r->path, max_out );
+							strncpy( pack_filename, r->path, max_out );
+
+							if (f->pack_offset < 1) {
+								strcat_s( pack_filename, max_out, Pathtypes[f->pathtype_index].path );
+
+								if ( pack_filename[strlen(pack_filename)-1] != DIR_SEPARATOR_CHAR )
+									strcat_s( pack_filename, max_out, DIR_SEPARATOR_STR );
+
+								strcat_s( pack_filename, max_out, f->name_ext );
 							}
 						}
 
@@ -1357,14 +1358,20 @@ int cf_find_file_location_ext( const char *filename, const int ext_num, const ch
 					*offset = f->pack_offset;
 
 				if (pack_filename) {
-					if (f->pack_offset < 1) {
-						// This is a real file, return the actual file path
-						strncpy( pack_filename, f->real_name, max_out );
-					} else {
-						// File is in a pack file
-						cf_root *r = cf_get_root(f->root_index);
+					cf_root *r = cf_get_root(f->root_index);
 
-						strncpy( pack_filename, r->path, max_out );
+					strcpy( pack_filename, r->path );
+
+					if (f->pack_offset < 1) {
+
+						if ( strlen(Pathtypes[f->pathtype_index].path) ) {
+							strcat_s( pack_filename, max_out, Pathtypes[f->pathtype_index].path );
+
+							if ( pack_filename[strlen(pack_filename)-1] != DIR_SEPARATOR_CHAR )
+								strcat_s( pack_filename, max_out, DIR_SEPARATOR_STR );
+						}
+
+						strcat_s( pack_filename, max_out, f->name_ext );
 					}
 				}
 
