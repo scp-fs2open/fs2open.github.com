@@ -797,6 +797,7 @@ void red_alert_delete_ship(int shipnum, int ship_state)
 	}
 
 	Objects[shipp->objnum].flags.set(Object::Object_Flags::Should_be_dead);
+	dock_undock_all(&Objects[shipp->objnum]);
 	ship_cleanup(shipnum, cleanup_mode);
 }
 

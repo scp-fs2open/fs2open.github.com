@@ -131,6 +131,7 @@ void dock_undock_objects(object *objp1, object *objp2);
 /**
  * @brief Undocks everything from the given object
  * @note This is a slow method. use dock_free_dock_list() when doing object cleanup.
+ * @note Currently, this function cannot be called from within ship_cleanup() [Github Issue #1177:https://github.com/scp-fs2open/fs2open.github.com/issues/1177]
  */
 void dock_undock_all(object *objp);
 
