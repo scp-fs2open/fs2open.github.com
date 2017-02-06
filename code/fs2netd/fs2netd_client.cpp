@@ -34,6 +34,7 @@
 #include "playerman/player.h"
 #include "popup/popup.h"
 #include "osapi/osapi.h"
+#include "hud/hudmessage.h"
 
 #ifndef WIN32
 #include <cstdio>
@@ -53,7 +54,6 @@
 
 
 extern int Multi_debrief_stats_accept_code;
-extern void HUD_printf(const char *format, ...);
 extern int game_hacked_data();
 
 

@@ -311,8 +311,8 @@ public:
 	void renderString(int x, int y, const char *str);
 	void renderString(int x, int y, int gauge_id, const char *str);
 	void renderStringAlignCenter(int x, int y, int area_width, const char *s);
-	void renderPrintf(int x, int y, const char* format, ...);
-	void renderPrintf(int x, int y, int gauge_id, const char* format, ...);
+	void renderPrintf(int x, int y, SCP_FORMAT_STRING const char* format, ...) SCP_FORMAT_STRING_ARGS(4, 5);
+	void renderPrintf(int x, int y, int gauge_id, SCP_FORMAT_STRING const char* format, ...)  SCP_FORMAT_STRING_ARGS(5, 6);
 	void renderLine(int x1, int y1, int x2, int y2);
 	void renderGradientLine(int x1, int y1, int x2, int y2);
 	void renderRect(int x, int y, int w, int h);

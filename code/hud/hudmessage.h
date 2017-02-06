@@ -65,11 +65,11 @@ void hud_init_msg_window();
 void hud_clear_msg_buffer();
 int HUD_team_get_source(int team);
 int HUD_source_get_team(int team);
-void HUD_printf(const char *format, ...);
+void HUD_printf(SCP_FORMAT_STRING const char *format, ...) SCP_FORMAT_STRING_ARGS(1, 2);
 void hud_sourced_print(int source, const char *msg);
-void HUD_sourced_printf(int source, const char *format, ...);  // send hud message from specified source
-void HUD_ship_sent_printf(int sh, const char *format, ...);  // send hud message from a specific ship
-void HUD_fixed_printf(float duration, color col, const char *format, ...);		//	Display a single message for duration seconds.
+void HUD_sourced_printf(int source, SCP_FORMAT_STRING const char *format, ...) SCP_FORMAT_STRING_ARGS(2, 3);  // send hud message from specified source
+void HUD_ship_sent_printf(int sh, SCP_FORMAT_STRING const char *format, ...) SCP_FORMAT_STRING_ARGS(2, 3);  // send hud message from a specific ship
+void HUD_fixed_printf(float duration, color col, SCP_FORMAT_STRING const char *format, ...) SCP_FORMAT_STRING_ARGS(3, 4);		//	Display a single message for duration seconds.
 void HUD_init_fixed_text();			//	Clear all pending fixed text.
 
 void HUD_add_to_scrollback(const char *text, int source);
