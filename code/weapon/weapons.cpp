@@ -576,131 +576,128 @@ void parse_wi_flags(weapon_info *weaponp, flagset<Weapon::Info_Flags> wi_flags)
 
     bool set_nopierce = false;
 
-    if (!unparsed_or_special.empty()) {
-
-        for (auto flag = unparsed_or_special.begin(); flag != unparsed_or_special.end(); ++flag) {
-            SCP_string flag_text = *flag;
-            //deal with spawn flag
-            if (!strnicmp(spawn_str, flag_text.c_str(), 5))
+    for (auto flag = unparsed_or_special.begin(); flag != unparsed_or_special.end(); ++flag) {
+        SCP_string flag_text = *flag;
+        //deal with spawn flag
+        if (!strnicmp(spawn_str, flag_text.c_str(), 5))
+        {
+            if (weaponp->num_spawn_weapons_defined < MAX_SPAWN_TYPES_PER_WEAPON)
             {
-                if (weaponp->num_spawn_weapons_defined < MAX_SPAWN_TYPES_PER_WEAPON)
-                {
-                    //We need more spawning slots
-                    //allocate in slots of 10
-                    if ((Num_spawn_types % 10) == 0) {
-                        Spawn_names = (char **)vm_realloc(Spawn_names, (Num_spawn_types + 10) * sizeof(*Spawn_names));
-                    }
+                //We need more spawning slots
+                //allocate in slots of 10
+                if ((Num_spawn_types % 10) == 0) {
+                    Spawn_names = (char **)vm_realloc(Spawn_names, (Num_spawn_types + 10) * sizeof(*Spawn_names));
+                }
 
-                    size_t	skip_length, name_length;
-					std::unique_ptr<char[]> temp_string(new char[flag_text.size() + 1]);
+                size_t	skip_length, name_length;
+				std::unique_ptr<char[]> temp_string(new char[flag_text.size() + 1]);
 
-                    strcpy(temp_string.get(), flag_text.c_str());
+                strcpy(temp_string.get(), flag_text.c_str());
 
-                    weaponp->wi_flags.set(Weapon::Info_Flags::Spawn);
-                    weaponp->spawn_info[weaponp->num_spawn_weapons_defined].spawn_type = (short)Num_spawn_types;
-                    skip_length = spawn_str_len + strspn(&temp_string[spawn_str_len], NOX(" \t"));
-                    char *num_start = strchr(&temp_string[skip_length], ',');
-                    if (num_start == NULL) {
-                        weaponp->spawn_info[weaponp->num_spawn_weapons_defined].spawn_count = DEFAULT_WEAPON_SPAWN_COUNT;
-                        name_length = 999;
-                    }
-                    else {
-                        weaponp->spawn_info[weaponp->num_spawn_weapons_defined].spawn_count = (short)atoi(num_start + 1);
-                        name_length = num_start - temp_string.get() - skip_length;
-                    }
-
-                    weaponp->total_children_spawned += weaponp->spawn_info[weaponp->num_spawn_weapons_defined].spawn_count;
-
-                    Spawn_names[Num_spawn_types] = vm_strndup(&flag_text[skip_length], name_length);
-                    Num_spawn_types++;
-                    weaponp->num_spawn_weapons_defined++;
+                weaponp->wi_flags.set(Weapon::Info_Flags::Spawn);
+                weaponp->spawn_info[weaponp->num_spawn_weapons_defined].spawn_type = (short)Num_spawn_types;
+                skip_length = spawn_str_len + strspn(&temp_string[spawn_str_len], NOX(" \t"));
+                char *num_start = strchr(&temp_string[skip_length], ',');
+                if (num_start == NULL) {
+                    weaponp->spawn_info[weaponp->num_spawn_weapons_defined].spawn_count = DEFAULT_WEAPON_SPAWN_COUNT;
+                    name_length = 999;
                 }
                 else {
-                    Warning(LOCATION, "Illegal to have more than %d spawn types for one weapon.\nIgnoring weapon %s", MAX_SPAWN_TYPES_PER_WEAPON, weaponp->name);
+                    weaponp->spawn_info[weaponp->num_spawn_weapons_defined].spawn_count = (short)atoi(num_start + 1);
+                    name_length = num_start - temp_string.get() - skip_length;
                 }
-            }
-            else if (!stricmp(NOX("beam"), flag_text.c_str())) {
-                weaponp->wi_flags.set(Weapon::Info_Flags::Pierce_shields);
-            }
-            else if (!stricmp(NOX("no pierce shields"), flag_text.c_str())) {
-                set_nopierce = true;
-            }
-            else if (!stricmp(NOX("beam no whack"), flag_text.c_str())) {
-                Warning(LOCATION, "The \"beam no whack\" flag has been deprecated.  Set the beam's mass to 0 instead.  This has been done for you.\n");
-                weaponp->mass = 0.0f;
-            }
-            else if (!stricmp(NOX("interceptable"), flag_text.c_str())) {
-                weaponp->wi_flags.set(Weapon::Info_Flags::Turret_Interceptable);
-                weaponp->wi_flags.set(Weapon::Info_Flags::Fighter_Interceptable);
-            }
-            else if (!stricmp(NOX("die on lost lock"), flag_text.c_str())) {
-                if (!(weaponp->is_locked_homing())) {
-                    Warning(LOCATION, "\"die on lost lock\" may only be used for Homing Type ASPECT/JAVELIN!");
-                    weaponp->wi_flags.remove(Weapon::Info_Flags::Die_on_lost_lock);
-                }
+
+                weaponp->total_children_spawned += weaponp->spawn_info[weaponp->num_spawn_weapons_defined].spawn_count;
+
+                Spawn_names[Num_spawn_types] = vm_strndup(&flag_text[skip_length], name_length);
+                Num_spawn_types++;
+                weaponp->num_spawn_weapons_defined++;
             }
             else {
-                Warning(LOCATION, "Unrecognized flag in flag list for weapon %s: \"%s\"", weaponp->name, (*flag).c_str());
+                Warning(LOCATION, "Illegal to have more than %d spawn types for one weapon.\nIgnoring weapon %s", MAX_SPAWN_TYPES_PER_WEAPON, weaponp->name);
             }
         }
+        else if (!stricmp(NOX("beam"), flag_text.c_str())) {
+            weaponp->wi_flags.set(Weapon::Info_Flags::Pierce_shields);
+        }
+        else if (!stricmp(NOX("no pierce shields"), flag_text.c_str())) {
+            set_nopierce = true;
+        }
+        else if (!stricmp(NOX("beam no whack"), flag_text.c_str())) {
+            Warning(LOCATION, "The \"beam no whack\" flag has been deprecated.  Set the beam's mass to 0 instead.  This has been done for you.\n");
+            weaponp->mass = 0.0f;
+        }
+        else if (!stricmp(NOX("interceptable"), flag_text.c_str())) {
+            weaponp->wi_flags.set(Weapon::Info_Flags::Turret_Interceptable);
+            weaponp->wi_flags.set(Weapon::Info_Flags::Fighter_Interceptable);
+        }
+        else if (!stricmp(NOX("die on lost lock"), flag_text.c_str())) {
+            if (!(weaponp->is_locked_homing())) {
+                Warning(LOCATION, "\"die on lost lock\" may only be used for Homing Type ASPECT/JAVELIN!");
+                weaponp->wi_flags.remove(Weapon::Info_Flags::Die_on_lost_lock);
+            }
+        }
+        else {
+            Warning(LOCATION, "Unrecognized flag in flag list for weapon %s: \"%s\"", weaponp->name, (*flag).c_str());
+        }
+    }
 
-        //Do cleanup and sanity checks
+    //Do cleanup and sanity checks
         
-		if (set_nopierce)
-            weaponp->wi_flags.remove(Weapon::Info_Flags::Pierce_shields);
+	if (set_nopierce)
+        weaponp->wi_flags.remove(Weapon::Info_Flags::Pierce_shields);
 
-        if (weaponp->wi_flags[Weapon::Info_Flags::Hard_target_bomb] && !weaponp->wi_flags[Weapon::Info_Flags::Bomb]) {
-            weaponp->wi_flags.remove(Weapon::Info_Flags::Hard_target_bomb);
-            Warning(LOCATION, "Weapon %s is not a bomb but has \"no radius doubling\" set. Ignoring this flag", weaponp->name);
-        }
+    if (weaponp->wi_flags[Weapon::Info_Flags::Hard_target_bomb] && !weaponp->wi_flags[Weapon::Info_Flags::Bomb]) {
+        weaponp->wi_flags.remove(Weapon::Info_Flags::Hard_target_bomb);
+        Warning(LOCATION, "Weapon %s is not a bomb but has \"no radius doubling\" set. Ignoring this flag", weaponp->name);
+    }
 
-        if (weaponp->wi_flags[Weapon::Info_Flags::In_tech_database])
-            weaponp->wi_flags.set(Weapon::Info_Flags::Default_in_tech_database);
+    if (weaponp->wi_flags[Weapon::Info_Flags::In_tech_database])
+        weaponp->wi_flags.set(Weapon::Info_Flags::Default_in_tech_database);
 
-        if (weaponp->wi_flags[Weapon::Info_Flags::Flak]) {
-            if (weaponp->wi_flags[Weapon::Info_Flags::Swarm] || weaponp->wi_flags[Weapon::Info_Flags::Corkscrew]) {
-                weaponp->wi_flags.remove(Weapon::Info_Flags::Swarm);
-                weaponp->wi_flags.remove(Weapon::Info_Flags::Corkscrew);
-                Warning(LOCATION, "Swarm, Corkscrew, and Flak are mutually exclusive!  Removing Swarm and Corkscrew attributes from weapon %s.\n", weaponp->name);
-            }
-        }
-
-        if (weaponp->wi_flags[Weapon::Info_Flags::Swarm] && weaponp->wi_flags[Weapon::Info_Flags::Corkscrew]) {
+    if (weaponp->wi_flags[Weapon::Info_Flags::Flak]) {
+        if (weaponp->wi_flags[Weapon::Info_Flags::Swarm] || weaponp->wi_flags[Weapon::Info_Flags::Corkscrew]) {
+            weaponp->wi_flags.remove(Weapon::Info_Flags::Swarm);
             weaponp->wi_flags.remove(Weapon::Info_Flags::Corkscrew);
-            Warning(LOCATION, "Swarm and Corkscrew are mutually exclusive!  Defaulting to Swarm on weapon %s.\n", weaponp->name);
+            Warning(LOCATION, "Swarm, Corkscrew, and Flak are mutually exclusive!  Removing Swarm and Corkscrew attributes from weapon %s.\n", weaponp->name);
         }
+    }
 
-        if (weaponp->wi_flags[Weapon::Info_Flags::Local_ssm]) {
-            if (!weaponp->is_homing() || weaponp->subtype != WP_MISSILE) {
-                Warning(LOCATION, "local ssm must be guided missile: %s", weaponp->name);
-            }
-        }
+    if (weaponp->wi_flags[Weapon::Info_Flags::Swarm] && weaponp->wi_flags[Weapon::Info_Flags::Corkscrew]) {
+        weaponp->wi_flags.remove(Weapon::Info_Flags::Corkscrew);
+        Warning(LOCATION, "Swarm and Corkscrew are mutually exclusive!  Defaulting to Swarm on weapon %s.\n", weaponp->name);
+    }
 
-        if (weaponp->wi_flags[Weapon::Info_Flags::Small_only] && weaponp->wi_flags[Weapon::Info_Flags::Huge])
-        {
-            Warning(LOCATION, "\"small only\" and \"huge\" flags are mutually exclusive.\nThey are used together in %s\nAI will most likely not use this weapon", weaponp->name);
+    if (weaponp->wi_flags[Weapon::Info_Flags::Local_ssm]) {
+        if (!weaponp->is_homing() || weaponp->subtype != WP_MISSILE) {
+            Warning(LOCATION, "local ssm must be guided missile: %s", weaponp->name);
         }
+    }
 
-        if (!weaponp->wi_flags[Weapon::Info_Flags::Spawn] && weaponp->wi_flags[Weapon::Info_Flags::Smart_spawn])
-        {
-            Warning(LOCATION, "\"smart spawn\" flag used without \"spawn\" flag in %s\n", weaponp->name);
-        }
+    if (weaponp->wi_flags[Weapon::Info_Flags::Small_only] && weaponp->wi_flags[Weapon::Info_Flags::Huge])
+    {
+        Warning(LOCATION, "\"small only\" and \"huge\" flags are mutually exclusive.\nThey are used together in %s\nAI will most likely not use this weapon", weaponp->name);
+    }
 
-        if (weaponp->wi_flags[Weapon::Info_Flags::Inherit_parent_target] && (!weaponp->wi_flags[Weapon::Info_Flags::Child]))
-        {
-            Warning(LOCATION, "Weapon %s has the \"inherit parent target\" flag, but not the \"child\" flag.  No changes in behavior will occur.", weaponp->name);
-        }
+    if (!weaponp->wi_flags[Weapon::Info_Flags::Spawn] && weaponp->wi_flags[Weapon::Info_Flags::Smart_spawn])
+    {
+        Warning(LOCATION, "\"smart spawn\" flag used without \"spawn\" flag in %s\n", weaponp->name);
+    }
 
-        if (!weaponp->wi_flags[Weapon::Info_Flags::Homing_heat] && weaponp->wi_flags[Weapon::Info_Flags::Untargeted_heat_seeker])
-        {
-            Warning(LOCATION, "Weapon '%s' has the \"untargeted heat seeker\" flag, but Homing Type is not set to \"HEAT\".", weaponp->name);
-        }
+    if (weaponp->wi_flags[Weapon::Info_Flags::Inherit_parent_target] && (!weaponp->wi_flags[Weapon::Info_Flags::Child]))
+    {
+        Warning(LOCATION, "Weapon %s has the \"inherit parent target\" flag, but not the \"child\" flag.  No changes in behavior will occur.", weaponp->name);
+    }
 
-        if (!weaponp->wi_flags[Weapon::Info_Flags::Cmeasure] && weaponp->wi_flags[Weapon::Info_Flags::Cmeasure_aspect_home_on])
-        {
-            weaponp->wi_flags.remove(Weapon::Info_Flags::Cmeasure_aspect_home_on);
-            Warning(LOCATION, "Weapon %s has the \"pulls aspect seekers\" flag, but is not a countermeasure.\n", weaponp->name);
-        }
+    if (!weaponp->wi_flags[Weapon::Info_Flags::Homing_heat] && weaponp->wi_flags[Weapon::Info_Flags::Untargeted_heat_seeker])
+    {
+        Warning(LOCATION, "Weapon '%s' has the \"untargeted heat seeker\" flag, but Homing Type is not set to \"HEAT\".", weaponp->name);
+    }
+
+    if (!weaponp->wi_flags[Weapon::Info_Flags::Cmeasure] && weaponp->wi_flags[Weapon::Info_Flags::Cmeasure_aspect_home_on])
+    {
+        weaponp->wi_flags.remove(Weapon::Info_Flags::Cmeasure_aspect_home_on);
+        Warning(LOCATION, "Weapon %s has the \"pulls aspect seekers\" flag, but is not a countermeasure.\n", weaponp->name);
     }
 }
 
