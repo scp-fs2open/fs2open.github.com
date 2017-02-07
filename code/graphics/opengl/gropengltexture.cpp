@@ -904,7 +904,8 @@ int opengl_create_texture(int bitmap_handle, int bitmap_type, tcache_slot_opengl
 	}
 
 	if ( (Detail.hardware_textures < 4) && (bitmap_type != TCACHE_TYPE_AABITMAP) && (bitmap_type != TCACHE_TYPE_INTERFACE)
-			&& ((bitmap_type != TCACHE_TYPE_COMPRESSED) || ((bitmap_type == TCACHE_TYPE_COMPRESSED) && (max_levels > 1))) )
+		&& (bitmap_type != TCACHE_TYPE_CUBEMAP)
+		&& ((bitmap_type != TCACHE_TYPE_COMPRESSED) || ((bitmap_type == TCACHE_TYPE_COMPRESSED) && (max_levels > 1))) )
 	{
 		if (max_levels == 1) {
 			// if we are going to cull the size then we need to force a resize
