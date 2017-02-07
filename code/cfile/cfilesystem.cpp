@@ -672,6 +672,11 @@ void cf_search_root_path(int root_index)
 			// If the directory does not exist then check if it might exist with a different case. If that's the case
 			// we bail out with an error so inform the user that this is not valid.
 
+			if (i == CF_TYPE_ROOT) {
+				// The root name may differ since that is handled elsewhere
+				continue;
+			}
+
 			// On Unix we can have a different case for the search paths so we also need to account for that
 			// We do that by looking at the parent of search_path and enumerating all directories and then check if any of
 			// them are a case-insensitive match
