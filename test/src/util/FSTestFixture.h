@@ -3,6 +3,8 @@
 #include <gtest/gtest.h>
 #include <globalincs/vmallocator.h>
 
+#include <cstdint>
+
 namespace test {
 
 enum InitFlags {
@@ -14,7 +16,7 @@ enum InitFlags {
 
 class FSTestFixture: public ::testing::Test {
  private:
-	uint64_t _initFlags;
+	std::uint64_t _initFlags;
 
 	SCP_vector<SCP_string> _cmdlineArgs;
 	SCP_string _currentModDir;

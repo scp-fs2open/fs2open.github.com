@@ -15,7 +15,8 @@ before_build:
   - git submodule update --init --recursive
 build_script:
   - ps: . $Env:APPVEYOR_BUILD_FOLDER/ci/appveyor/build.ps1
-
+test_script:
+  - ps: . $Env:APPVEYOR_BUILD_FOLDER/ci/appveyor/test.ps1
 
 deploy:
     - provider: GitHub
