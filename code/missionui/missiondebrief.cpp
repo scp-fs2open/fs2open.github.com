@@ -1557,9 +1557,9 @@ void debrief_stats_render()
 
 				if (!i) {
 					if ( Current_stage == DEBRIEF_MISSION_KILLS )
-						gr_printf_menu(0, y, XSTR( "Mission Kills by Ship Type", 447));
+						gr_printf_menu(0, y, "%s", XSTR( "Mission Kills by Ship Type", 447));
 					else
-						gr_printf_menu(0, y, XSTR( "All-time Kills by Ship Type", 448));
+						gr_printf_menu(0, y, "%s", XSTR( "All-time Kills by Ship Type", 448));
 
 				} else if (i > 1) {
 					//Assert: Was debrief_setup_ship_kill_stats called?
@@ -1575,9 +1575,9 @@ void debrief_stats_render()
 
 			if (Num_text_lines == 2) {
 				if ( Current_stage == DEBRIEF_MISSION_KILLS )
-					gr_printf_menu(0, y, XSTR( "(No ship kills this mission)", 449));
+					gr_printf_menu(0, y, "%s", XSTR( "(No ship kills this mission)", 449));
 				else
-					gr_printf_menu(0, y, XSTR( "(No ship kills)", 450));
+					gr_printf_menu(0, y, "%s", XSTR( "(No ship kills)", 450));
 			}
 
 			break;
@@ -2502,7 +2502,7 @@ void debrief_do_frame(float frametime)
 
 		gr_set_color_fast(&Color_more_indicator);
 		gr_get_string_size(&w, NULL, XSTR( "More", 459));
-		gr_printf_menu(Debrief_text_wnd_coords[gr_screen.res][0] + Debrief_text_wnd_coords[gr_screen.res][2] / 2 - w / 2, Debrief_text_wnd_coords[gr_screen.res][1] + Debrief_text_wnd_coords[gr_screen.res][3], XSTR( "More", 459));
+		gr_printf_menu(Debrief_text_wnd_coords[gr_screen.res][0] + Debrief_text_wnd_coords[gr_screen.res][2] / 2 - w / 2, Debrief_text_wnd_coords[gr_screen.res][1] + Debrief_text_wnd_coords[gr_screen.res][3], "%s", XSTR( "More", 459));
 	}
 
 	debrief_render_stagenum();

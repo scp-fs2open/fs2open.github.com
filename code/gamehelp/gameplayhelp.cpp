@@ -192,11 +192,11 @@ void gameplay_help_set_title(const char *title)
 	int w;
 	gr_get_string_size(&w, NULL, title);
 
-	gr_printf_menu((gr_screen.clip_width_unscaled - w) / 2,sy,title);
+	gr_printf_menu((gr_screen.clip_width_unscaled - w) / 2,sy,"%s", title);
 
 	sprintf(buf, XSTR("Page %d of %d", 132), Current_help_page + 1, Gp_last_screen + 1);
 	gr_get_string_size(&w, NULL, buf);
-	gr_printf_menu((gr_screen.clip_width_unscaled - w) / 2, sy + gr_get_font_height() + 2, buf);
+	gr_printf_menu((gr_screen.clip_width_unscaled - w) / 2, sy + gr_get_font_height() + 2, "%s", buf);
 	gr_set_color_fast(&Color_normal);
 }
 
@@ -372,7 +372,7 @@ void gameplay_help_draw_text()
 			gr_set_color_fast(&Color_bright);
 			int w;
 			gr_get_string_size(&w, NULL, XSTR("Function Keys", 134));
-			gr_printf_menu((gr_screen.clip_width - w) / 2, y_offset, XSTR("Function Keys", 134));
+			gr_printf_menu((gr_screen.clip_width - w) / 2, y_offset, "%s", XSTR("Function Keys", 134));
 			gr_set_color_fast(&Color_normal);
 
 			y_offset += separation;
@@ -766,7 +766,7 @@ void gameplay_help_draw_text()
 			gr_set_color_fast(&Color_bright);
 			int w;
 			gr_get_string_size(&w, NULL, XSTR("Ingame messaging keys (tap for text, hold for voice)", 168));
-			gr_printf_menu((gr_screen.clip_width - w) / 2, y_offset, XSTR("Ingame messaging keys (tap for text, hold for voice)", 168));
+			gr_printf_menu((gr_screen.clip_width - w) / 2, y_offset, "%s", XSTR("Ingame messaging keys (tap for text, hold for voice)", 168));
 			gr_set_color_fast(&Color_normal);
 
 			y_offset += separation;

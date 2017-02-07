@@ -1622,7 +1622,7 @@ void main_hall_notify_do()
 			font::set_font(Main_hall->font);
 
 			gr_get_string_size(&w,&h,Main_hall_notify_text);
-			gr_printf_menu_zoomed((gr_screen.max_w_unscaled_zoomed - w)/2, gr_screen.max_h_unscaled_zoomed - (h * 4 + 4), Main_hall_notify_text);
+			gr_printf_menu_zoomed((gr_screen.max_w_unscaled_zoomed - w)/2, gr_screen.max_h_unscaled_zoomed - (h * 4 + 4), "%s", Main_hall_notify_text);
 
 			font::set_font(old_font);
 		}

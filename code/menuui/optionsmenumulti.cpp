@@ -1213,7 +1213,7 @@ void options_multi_protocol_display_ips()
 			gr_set_color_fast(&Color_white);
 		}
 
-		gr_printf_menu(Ip_list_coords[gr_screen.res][0], y_start, Om_ip_addrs[idx]);
+		gr_printf_menu(Ip_list_coords[gr_screen.res][0], y_start, "%s", Om_ip_addrs[idx]);
 		y_start += line_height;
 	}
 }

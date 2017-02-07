@@ -674,7 +674,7 @@ void lcl_ext_localize_sub(const char *in, char *out, size_t max_len, int *id)
 	// if the string is < 9 chars, it can't be an XSTR("",) tag, so just copy it
 	if (str_len < 9) {
 		if (str_len > max_len)
-			error_display(0, "Token too long: [%s].  Length = %i.  Max is %i.\n", in, str_len, max_len);
+			error_display(0, "Token too long: [%s].  Length = " SIZE_T_ARG ".  Max is " SIZE_T_ARG ".\n", in, str_len, max_len);
 
 		strncpy(out, in, max_len);
 
@@ -688,7 +688,7 @@ void lcl_ext_localize_sub(const char *in, char *out, size_t max_len, int *id)
 	if (strnicmp(in, "XSTR", 4)) {
 		// NOT an XSTR() tag
 		if (str_len > max_len)
-			error_display(0, "Token too long: [%s].  Length = %i.  Max is %i.\n", in, str_len, max_len);
+			error_display(0, "Token too long: [%s].  Length = " SIZE_T_ARG ".  Max is " SIZE_T_ARG ".\n", in, str_len, max_len);
 
 		strncpy(out, in, max_len);
 
@@ -701,7 +701,7 @@ void lcl_ext_localize_sub(const char *in, char *out, size_t max_len, int *id)
 	// at this point we _know_ its an XSTR() tag, so split off the strings and id sections
 	if (!lcl_ext_get_text(in, text_str)) {
 		if (str_len > max_len)
-			error_display(0, "Token too long: [%s].  Length = %i.  Max is %i.\n", in, str_len, max_len);
+			error_display(0, "Token too long: [%s].  Length = " SIZE_T_ARG ".  Max is " SIZE_T_ARG ".\n", in, str_len, max_len);
 
 		strncpy(out, in, max_len);
 
@@ -712,7 +712,7 @@ void lcl_ext_localize_sub(const char *in, char *out, size_t max_len, int *id)
 	}
 	if (!lcl_ext_get_id(in, &str_id)) {
 		if (str_len > max_len)
-			error_display(0, "Token too long: [%s].  Length = %i.  Max is %i.\n", in, str_len, max_len);
+			error_display(0, "Token too long: [%s].  Length = " SIZE_T_ARG ".  Max is " SIZE_T_ARG ".\n", in, str_len, max_len);
 
 		strncpy(out, in, max_len);
 
@@ -725,7 +725,7 @@ void lcl_ext_localize_sub(const char *in, char *out, size_t max_len, int *id)
 	// if the localization file is not open, or we're running in the default language, return the original string
 	if ( !Xstr_inited || (str_id < 0) || (Lcl_current_lang == FS2_OPEN_DEFAULT_LANGUAGE) ) {
 		if ( strlen(text_str) > max_len )
-			error_display(0, "Token too long: [%s].  Length = %i.  Max is %i.\n", text_str, strlen(text_str), max_len);
+			error_display(0, "Token too long: [%s].  Length = " SIZE_T_ARG ".  Max is " SIZE_T_ARG ".\n", text_str, strlen(text_str), max_len);
 
 		strncpy(out, text_str, max_len);
 
@@ -739,14 +739,14 @@ void lcl_ext_localize_sub(const char *in, char *out, size_t max_len, int *id)
 	if ((str_id < LCL_MAX_STRINGS) && (Lcl_ext_str[str_id] != NULL)) {
 		// copy to the outgoing string
 		if ( strlen(Lcl_ext_str[str_id]) > max_len )
-			error_display(0, "Token too long: [%s].  Length = %i.  Max is %i.\n", Lcl_ext_str[str_id], strlen(Lcl_ext_str[str_id]), max_len);
+			error_display(0, "Token too long: [%s].  Length = " SIZE_T_ARG ".  Max is " SIZE_T_ARG ".\n", Lcl_ext_str[str_id], strlen(Lcl_ext_str[str_id]), max_len);
 
 		strncpy(out, Lcl_ext_str[str_id], max_len);
 	}
 	// otherwise use what we have - probably should Int3() or assert here
 	else {
 		if ( strlen(text_str) > max_len )
-			error_display(0, "Token too long: [%s].  Length = %i.  Max is %i.\n", text_str, strlen(text_str), max_len);
+			error_display(0, "Token too long: [%s].  Length = " SIZE_T_ARG ".  Max is " SIZE_T_ARG ".\n", text_str, strlen(text_str), max_len);
 
 		if (str_id >= LCL_MAX_STRINGS)
 			error_display(0, "Invalid XSTR ID: [%d]. (Must be less than %d.)\n", str_id, LCL_MAX_STRINGS);

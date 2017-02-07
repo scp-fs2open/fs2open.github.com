@@ -327,9 +327,9 @@ void ssm_create(object *target, vec3d *start, size_t ssm_index, ssm_firing_info 
 	
 	if(Ssm_info[ssm_index].send_message) {
 		if (!Ssm_info[ssm_index].use_custom_message)
-			HUD_printf(XSTR("Firing artillery", 1570));
+			HUD_printf("%s", XSTR("Firing artillery", 1570));
 		else
-			HUD_printf(Ssm_info[ssm_index].message);
+			HUD_printf("%s", Ssm_info[ssm_index].message);
 	}
 	if (Ssm_info[ssm_index].sound_index >= 0) {
 		snd_play(&Snds[Ssm_info[ssm_index].sound_index]);

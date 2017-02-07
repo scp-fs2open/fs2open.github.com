@@ -891,7 +891,7 @@ void mcp_1(object *player_objp, object *planet_objp)
 	ship_apply_global_damage( player_objp, planet_objp, NULL, PLANET_DAMAGE_SCALE * flFrametime * (float)pow((planet_radius*PLANET_DAMAGE_RANGE)/dist, 3.0f) );
 
 	if ((Missiontime - Last_planet_damage_time > F1_0) || (Missiontime < Last_planet_damage_time)) {
-		HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Too close to planet.  Taking damage!", 465));
+		HUD_sourced_printf(HUD_SOURCE_HIDDEN, "%s", XSTR( "Too close to planet.  Taking damage!", 465));
 		Last_planet_damage_time = Missiontime;
 		snd_play_3d( &Snds[ship_get_sound(player_objp, SND_ABURN_ENGAGE)], &player_objp->pos, &View_position );
 	}
@@ -1152,7 +1152,7 @@ int collide_ship_ship( obj_pair * pair )
 
 				if ( player_involved && (Player->control_mode == PCM_WARPOUT_STAGE1) )	{
 					gameseq_post_event( GS_EVENT_PLAYER_WARPOUT_STOP );
-					HUD_printf(XSTR( "Warpout sequence aborted.", 466));
+					HUD_printf("%s", XSTR( "Warpout sequence aborted.", 466));
 				}
 
 				damage = 0.005f * ship_ship_hit_info.impulse;	//	Cut collision-based damage in half.

@@ -546,7 +546,7 @@ void multi_msg_show_squadmsg(net_player *source,int command,ushort target_sig,in
 
 	// print it out
 	if(should_display){
-		HUD_printf(hud_string);
+		HUD_printf("%s", hud_string);
 	}
 }
 

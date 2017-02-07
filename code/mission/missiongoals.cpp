@@ -358,7 +358,7 @@ void goal_text::display(int n, int y)
 		buf[m_line_sizes[n]] = 0;
 	}
 
-	gr_printf_menu(Goal_screen_text_x, y, buf);
+	gr_printf_menu(Goal_screen_text_x, y, "%s", buf);
 }
 
 // mission_init_goals: initializes info for goals.  Called as part of mission initialization.

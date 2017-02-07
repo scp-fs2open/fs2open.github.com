@@ -141,7 +141,7 @@ void fs2netd_options_config_init()
 		long port_tmp = strtol(Multi_options_g.tracker_port, (char**)NULL, 10);
 
 		if ( (port_tmp < 1024) || (port_tmp > USHRT_MAX) ) {
-			ml_printf("NOTICE: The port specified for game/user trackers, '%i', is outside of the required range, %i through %i!", port_tmp, 1024, USHRT_MAX);
+			ml_printf("NOTICE: The port specified for game/user trackers, '%ld', is outside of the required range, %i through %i!", port_tmp, 1024, USHRT_MAX);
 			ml_printf("NOTICE: Port for game/user trackers is invalid, using default instead (%s).", FS2NETD_DEFAULT_PORT);
 			strncpy( Multi_options_g.tracker_port, FS2NETD_DEFAULT_PORT, STD_NAME_LEN );
 		}
@@ -689,7 +689,7 @@ static void fs2netd_handle_messages()
 					case NETGAME_STATE_IN_MISSION: // gotta make it paused
 						//multi_pause_request(1); 
 						//send_game_chat_packet(Net_player, str, MULTI_MSG_ALL, NULL);
-						HUD_printf(tbuf);
+						HUD_printf("%s", tbuf);
 						break;
 
 					default:

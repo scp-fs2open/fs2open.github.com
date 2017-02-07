@@ -1073,7 +1073,7 @@ void hud_init_targeting()
 void hud_target_subobject_common(int next_flag)
 {
 	if (Player_ai->target_objnum == -1) {
-		HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "No target selected.", 322));
+		HUD_sourced_printf(HUD_SOURCE_HIDDEN, "%s", XSTR( "No target selected.", 322));
 		snd_play( &Snds[SND_TARGET_FAIL] );
 		return;
 	}
@@ -4370,7 +4370,7 @@ void hud_cease_subsystem_targeting(int print_message)
 	Player_ai->targeted_subsys = NULL;
 	Player_ai->targeted_subsys_parent = -1;
 	if ( print_message ) {
-		HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Deactivating sub-system targeting", 324));
+		HUD_sourced_printf(HUD_SOURCE_HIDDEN, "%s", XSTR( "Deactivating sub-system targeting", 324));
 	}
 
 	hud_stop_looped_locking_sounds();
@@ -4384,7 +4384,7 @@ void hud_cease_targeting()
 	set_target_objnum( Player_ai, -1 );
 	Players[Player_num].flags &= ~PLAYER_FLAGS_AUTO_TARGETING;
 	hud_cease_subsystem_targeting(0);
-	HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Deactivating targeting system", 325));
+	HUD_sourced_printf(HUD_SOURCE_HIDDEN, "%s", XSTR( "Deactivating targeting system", 325));
 	hud_lock_reset();
 }
 
@@ -4610,7 +4610,7 @@ int hud_sensors_ok(ship *sp, int show_msg)
 	sensors_str = ship_get_subsystem_strength( sp, SUBSYSTEM_SENSORS );
 	if ( (sensors_str < MIN_SENSOR_STR_TO_TARGET) || (ship_subsys_disrupted(sp, SUBSYSTEM_SENSORS)) ) {
 		if ( show_msg ) {
-			HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Targeting is disabled due to sensors damage", 330));
+			HUD_sourced_printf(HUD_SOURCE_HIDDEN, "%s", XSTR( "Targeting is disabled due to sensors damage", 330));
 			snd_play(&Snds[SND_TARGET_FAIL]);
 		}
 		return 0;
@@ -4924,7 +4924,7 @@ int hud_target_closest_repair_ship(int goal_objnum)
 	else {
 		// inform player how to get a support ship
 		if ( goal_objnum == -1 ) {
-			HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "No support ships in area.  Use messaging to call one in.", 332));
+			HUD_sourced_printf(HUD_SOURCE_HIDDEN, "%s", XSTR( "No support ships in area.  Use messaging to call one in.", 332));
 		}
 		rval=0;
 	}

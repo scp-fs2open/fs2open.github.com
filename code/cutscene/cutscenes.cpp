@@ -585,7 +585,7 @@ void cutscenes_screen_do_frame()
 		}
 
 		gr_printf_menu(Cutscene_list_coords[gr_screen.res][0], Cutscene_list_coords[gr_screen.res][1] + y,
-					   Cutscenes[Cutscene_list[z]].name);
+					   "%s", Cutscenes[Cutscene_list[z]].name);
 
 		y += font_height;
 		z++;

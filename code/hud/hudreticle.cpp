@@ -570,7 +570,7 @@ void HudGaugeThrottle::render(float frametime)
 	}
 	
 	if ( Show_min_speed ) {
-		renderPrintf(position[0] + Zero_speed_offsets[0], position[1] + Zero_speed_offsets[1], XSTR( "0", 292));
+		renderPrintf(position[0] + Zero_speed_offsets[0], position[1] + Zero_speed_offsets[1], "%s", XSTR( "0", 292));
 	}
 }
 
@@ -599,7 +599,7 @@ void HudGaugeThrottle::renderThrottleSpeed(float current_speed, int y_end)
 		sy = position[1] + Orbit_center_offsets[1];
 	}
 	
-	renderPrintf(sx, sy, buf);
+	renderPrintf(sx, sy, "%s", buf);
 
 	if ( object_get_gliding(Player_obj) ) { 
 		if ( Use_custom_glide ) {

@@ -792,7 +792,7 @@ int scoring_eval_kill(object *ship_objp)
 
 							sprintf(dead_text, "%s gets the kill for %s", net_plr->m_player->callsign, dead_plr->m_player->callsign);							
 							send_game_chat_packet(Net_player, dead_text, MULTI_MSG_ALL, NULL, NULL, 2);
-							HUD_printf(dead_text);
+							HUD_printf("%s", dead_text);
 						}
 					}
 				}

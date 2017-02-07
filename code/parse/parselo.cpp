@@ -767,7 +767,7 @@ void copy_to_eoln(char *outstr, const char *more_terminators, const char *instr,
 	}
 
 	if (count >= max)
-		error_display(0, "Token too long: [%s].  Length = %i.  Max is %i.\n", next_tokens(), strlen(next_tokens()), max);
+		error_display(0, "Token too long: [%s].  Length = " SIZE_T_ARG ".  Max is %i.\n", next_tokens(), strlen(next_tokens()), max);
 
 	*outstr = 0;
 }
@@ -819,7 +819,7 @@ void copy_to_next_white(char *outstr, char *instr, int max)
 	}
 
 	if (count >= max)
-		error_display(0, "Token too long: [%s].  Length = %i.  Max is %i.\n", next_tokens(), strlen(next_tokens()), max);
+		error_display(0, "Token too long: [%s].  Length = " SIZE_T_ARG ".  Max is %i.\n", next_tokens(), strlen(next_tokens()), max);
 
 	*outstr = 0;
 }
@@ -1221,7 +1221,7 @@ void stuff_string(char *outstr, int type, int len, const char *terminators)
 	else
 	{
 		if ( strlen(read_str) > (uint)final_len )
-			error_display(0, "Token too long: [%s].  Length = %i.  Max is %i.\n", read_str, strlen(read_str), final_len);
+			error_display(0, "Token too long: [%s].  Length = " SIZE_T_ARG ".  Max is %i.\n", read_str, strlen(read_str), final_len);
 
 		strncpy(outstr, read_str, final_len);
 	}

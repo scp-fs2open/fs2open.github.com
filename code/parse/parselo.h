@@ -196,7 +196,7 @@ void stuff_flagset(T *dest) {
     if (*Mp == ',')
         Mp++;
 
-    diag_printf("Stuffed flagset: %i\n", dest->to_long());
+    diag_printf("Stuffed flagset: %ld\n", dest->to_long());
 }
 
 extern int stuff_int_list(int *ilp, int max_ints, int lookup_type = RAW_INTEGER_TYPE);

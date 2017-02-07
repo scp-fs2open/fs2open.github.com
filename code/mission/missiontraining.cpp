@@ -245,7 +245,7 @@ void HudGaugeDirectives::render(float frametime)
 	renderBitmap(directives_top.first_frame, position[0], position[1]);
 
 	// print out title
-	renderPrintf(position[0] + header_offsets[0], position[1] + header_offsets[1], EG_OBJ_TITLE, XSTR( "directives", 422));
+	renderPrintf(position[0] + header_offsets[0], position[1] + header_offsets[1], EG_OBJ_TITLE, "%s", XSTR( "directives", 422));
 
 	bx = position[0];
 	by = position[1] + middle_frame_offset_y;
@@ -1062,7 +1062,7 @@ void HudGaugeTrainingMessages::render(float frametime)
 		while ((str - Training_lines[i]) < Training_line_lengths[i]) {  // loop through each character of each line
 			if ((count < MAX_TRAINING_MESSAGE_MODS) && (str == Training_message_mods[count].pos)) {
 				buf[z] = 0;
-				renderPrintf(x, y, buf);
+				renderPrintf(x, y, "%s", buf);
 				gr_get_string_size(&z, NULL, buf);
 				x += z;
 				z = 0;
