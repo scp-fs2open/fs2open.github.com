@@ -33,7 +33,12 @@ void gr_opengl_pop_debug_group();
  * @param handle The handle of the object
  * @param name The name of the object
  */
+#if !defined(NDEBUG) || defined(FS_OPENGL_DEBUG) || defined(DOXYGEN)
 void opengl_set_object_label(GLenum type, GLuint handle, const SCP_string& name);
+#else
+// Remove this definition
+inline void opengl_set_object_label(GLenum, GLuint, const SCP_string&) {}
+#endif
 
 uint opengl_data_type_size(GLenum data_type);
 

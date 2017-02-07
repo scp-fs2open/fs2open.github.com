@@ -566,15 +566,15 @@ int opengl_compile_shader(shader_type sdr, uint flags)
 	}
 
 	auto shader_hash = get_shader_hash(vert_content, geom_content, frag_content);
-	std::unique_ptr<opengl::ShaderProgram> program(new opengl::ShaderProgram());
+	std::unique_ptr<opengl::ShaderProgram> program(new opengl::ShaderProgram(sdr_info->description));
 
 	if (!load_cached_shader_binary(program.get(), shader_hash)) {
 		GR_DEBUG_SCOPE("Compiling shader code");
 		try {
-			program->addShaderCode(opengl::STAGE_VERTEX, vert_content);
-			program->addShaderCode(opengl::STAGE_FRAGMENT, frag_content);
+			program->addShaderCode(opengl::STAGE_VERTEX, sdr_info->vert, vert_content);
+			program->addShaderCode(opengl::STAGE_FRAGMENT, sdr_info->frag, frag_content);
 			if (use_geo_sdr) {
-				program->addShaderCode(opengl::STAGE_GEOMETRY, geom_content);
+				program->addShaderCode(opengl::STAGE_GEOMETRY, sdr_info->geo, geom_content);
 			}
 
 			for (int i = 0; i < opengl_vert_attrib::NUM_ATTRIBS; ++i) {
