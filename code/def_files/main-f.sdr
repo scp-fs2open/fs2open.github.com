@@ -364,8 +364,8 @@ void main()
  #ifdef FLAG_TEAMCOLOR
 	vec4 teamMask = vec4(0.0, 0.0, 0.0, 0.0);
 	teamMask = texture(sMiscmap, texCoord);
-	vec3 base = base_color - vec3(0.5);
-	vec3 stripe = stripe_color - vec3(0.5);
+	vec3 base = max(base_color - vec3(0.5), vec3(0.0));
+	vec3 stripe = max(stripe_color - vec3(0.5), vec3(0.0));
 	baseColor.rgb += (base * teamMask.x) + (stripe * teamMask.y);
 	baseColor.rgb = max(baseColor.rgb, vec3(0.0));
  #endif
