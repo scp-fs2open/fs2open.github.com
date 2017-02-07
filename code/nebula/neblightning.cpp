@@ -322,6 +322,8 @@ void nebl_set_storm(char *name)
 // render all lightning bolts
 void nebl_render_all()
 {
+	GR_DEBUG_SCOPE("Nebula render all");
+
 	l_bolt *b;
 	bolt_type *bi;
 

@@ -915,6 +915,8 @@ int frame_count = 0;
 float frame_avg;
 void neb2_render_player()
 {
+	GR_DEBUG_SCOPE("Nebula render player");
+
 	vertex p, ptemp;
 	int idx1, idx2, idx3;
 	float alpha;
@@ -1075,6 +1077,7 @@ void neb2_render_player()
 				//g3_draw_rotated_bitmap(&p, fl_radians(Neb2_cubes[idx1][idx2][idx3].rot), Nd->prad, TMAP_FLAG_TEXTURED);
 				material mat_params;
 				material_set_unlit(&mat_params, Neb2_cubes[idx1][idx2][idx3].bmap, alpha + Neb2_cubes[idx1][idx2][idx3].flash, true, true);
+				mat_params.set_color_scale(3.f);
 				g3_render_rect_screen_aligned_rotated(&mat_params, &p, fl_radians(Neb2_cubes[idx1][idx2][idx3].rot), Nd->prad);
 			}
 		}
