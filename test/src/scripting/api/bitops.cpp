@@ -3,7 +3,7 @@
 
 class BitOpsTest : public test::scripting::ScriptingTestFixture {
  public:
-	BitOpsTest() : test::scripting::ScriptingTestFixture(0) {
+	BitOpsTest() : test::scripting::ScriptingTestFixture(INIT_NONE) {
 		pushModDir("bitops");
 	}
 };

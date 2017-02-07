@@ -7,7 +7,7 @@
 
 class ParseloTest : public test::FSTestFixture {
  public:
-	ParseloTest() : test::FSTestFixture(0) {
+	ParseloTest() : test::FSTestFixture(INIT_CFILE) {
 		pushModDir("parselo");
 	}
 

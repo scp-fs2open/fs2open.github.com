@@ -11,7 +11,7 @@ extern "C" {
 namespace test {
 namespace scripting {
 
-ScriptingTestFixture::ScriptingTestFixture(uint64_t init_flags) : FSTestFixture(init_flags) {
+ScriptingTestFixture::ScriptingTestFixture(uint64_t init_flags) : FSTestFixture(init_flags | INIT_CFILE) {
 	pushModDir("scripting");
 }
 void ScriptingTestFixture::SetUp() {
