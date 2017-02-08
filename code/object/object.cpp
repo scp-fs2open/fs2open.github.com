@@ -452,9 +452,11 @@ void obj_free(int objnum)
 
 	Assert(Num_objects >= 0);
 
-	if (objnum == Highest_object_index)
-		while (Objects[--Highest_object_index].type == OBJ_NONE);
-
+	if (objnum == Highest_object_index) {
+		while (Highest_object_index >= 0 && Objects[Highest_object_index].type == OBJ_NONE) {
+			--Highest_object_index;
+		}
+	}
 }
 
 /**
