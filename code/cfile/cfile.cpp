@@ -14,6 +14,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <errno.h>
+#include <sys/stat.h>
 
 #ifdef _WIN32
 #include <io.h>
@@ -23,7 +24,6 @@
 #endif
 
 #ifdef SCP_UNIX
-#include <sys/stat.h>
 #include <glob.h>
 #include <sys/mman.h>
 #endif
@@ -621,6 +621,7 @@ void cf_create_directory( int dir_type )
 	int num_dirs = 0;
 	int dir_tree[CF_MAX_PATH_TYPES];
 	char longname[MAX_PATH_LEN];
+	struct stat statbuf;
 
 	Assertion( CF_TYPE_SPECIFIED(dir_type), "Invalid dir_type passed to cf_create_directory." );
 
@@ -634,13 +635,14 @@ void cf_create_directory( int dir_type )
 
 	} while( current_dir != CF_TYPE_ROOT );
 
-	
 	int i;
 
 	for (i=num_dirs-1; i>=0; i-- )	{
 		cf_create_default_path_string( longname, sizeof(longname)-1, dir_tree[i], NULL );
-		mprintf(( "CFILE: Creating new directory '%s'\n", longname ));
-        mkdir_recursive(longname);
+		if (stat(longname, &statbuf) != 0) {
+			mprintf(( "CFILE: Creating new directory '%s'\n", longname ));
+			mkdir_recursive(longname);
+		}
 	}
 }
 
