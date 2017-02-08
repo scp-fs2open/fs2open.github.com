@@ -30,11 +30,6 @@ void test::FSTestFixture::SetUp() {
 
 	os_init("Test", "Test");
 
-	if (!(_initFlags & INIT_CFILE)) {
-		return;
-	}
-
-	// The rest depends on cfile initialization
 	SCP_string cfile_dir(TEST_DATA_PATH);
 	cfile_dir += DIR_SEPARATOR_CHAR;
 	cfile_dir += "test"; // Cfile expects something after the path
@@ -57,21 +52,19 @@ void test::FSTestFixture::SetUp() {
 	}
 }
 void test::FSTestFixture::TearDown() {
-	if (_initFlags & INIT_CFILE) {
-		if (_initFlags & INIT_SHIPS) {
-			ship_close();
-		}
-
-		if (_initFlags & INIT_GRAPHICS) {
-			io::mouse::CursorManager::shutdown();
-
-			bm_unload_all();
-
-			gr_close();
-		}
-
-		cfile_close();
+	if (_initFlags & INIT_SHIPS) {
+		ship_close();
 	}
+
+	if (_initFlags & INIT_GRAPHICS) {
+		io::mouse::CursorManager::shutdown();
+
+		bm_unload_all();
+
+		gr_close();
+	}
+
+	cfile_close();
 
 	timer_close();
 

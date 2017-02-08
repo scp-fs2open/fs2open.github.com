@@ -7,7 +7,7 @@
 
 class IntelParseTest : public test::FSTestFixture {
  public:
-	IntelParseTest() : test::FSTestFixture(INIT_CFILE) {
+	IntelParseTest() : test::FSTestFixture(0) {
 		pushModDir("menuui");
 		pushModDir("intel_parse");
 	}
