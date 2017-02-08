@@ -15,25 +15,12 @@
 #include <errno.h>
 #include <sstream>
 #include <algorithm>
-#include <memory>
 
 #ifdef _WIN32
 #include <io.h>
 #include <direct.h>
 #include <windows.h>
 #include <winbase.h>		/* needed for memory mapping of file functions */
-#include <shlwapi.h>
-
-struct dir_handle_deleter {
-	typedef HANDLE pointer;
-
-	void operator()(HANDLE dirp) {
-		if (dirp != INVALID_HANDLE_VALUE) {
-			FindClose(dirp);
-		}
-	}
-};
-typedef std::unique_ptr<HANDLE, dir_handle_deleter> unique_dir_handle_ptr;
 #endif
 
 #ifdef SCP_UNIX
@@ -43,14 +30,6 @@ typedef std::unique_ptr<HANDLE, dir_handle_deleter> unique_dir_handle_ptr;
 #include <fnmatch.h>
 #include <sys/stat.h>
 #include <unistd.h>
-#include <libgen.h>
-
-struct dir_deleter {
-	void operator()(DIR* dirp) {
-		closedir(dirp);
-	}
-};
-typedef std::unique_ptr<DIR, dir_deleter> unique_dir_ptr;
 #endif
 
 #include "cfile/cfile.h"
@@ -59,7 +38,6 @@ typedef std::unique_ptr<DIR, dir_deleter> unique_dir_ptr;
 #include "globalincs/pstypes.h"
 #include "localization/localize.h"
 #include "osapi/osapi.h"
-#include "parse/parselo.h"
 
 #define CF_ROOTTYPE_PATH 0
 #define CF_ROOTTYPE_PACK 1
@@ -574,62 +552,6 @@ void cf_search_root_path(int root_index)
 		} 
 
 #if defined _WIN32
-		{
-			// Check if the case matches the case as specified in Pathtypes
-			// Since Windows paths are case insensitive this wouldn't cause issues here but other
-			// platforms would fail to find data paths in this case so we show a nice error if we detect that here
-
-			// Ignore the root since the case of that is allowed to differ (it's handled in the mod handling)
-			if (i != CF_TYPE_ROOT) {
-				// We use FindFirstFileNameW for this, it should hopefully work...
-				// First, convert our path from ASCII/UTF-8 to wchar_t
-				std::string search_string = search_path;
-				// Remove any trailing directory separators
-				if (search_string[search_string.size() - 1] == '\\') {
-					search_string = search_string.substr(0, search_string.size() - 1);
-				}
-
-				char parent_name[MAX_PATH];
-				memset(parent_name, 0, sizeof(parent_name));
-				strcpy_s(parent_name, search_string.c_str());
-
-				CHAR file_name[MAX_PATH];
-				memset(file_name, 0, sizeof(file_name));
-				strcpy_s(file_name, search_string.c_str());
-
-				PathStripPathA(file_name);
-				if (PathRemoveFileSpecA(parent_name)) {
-					strcat_s(parent_name, "\\*");
-
-					WIN32_FIND_DATAA find_data;
-					auto handle = unique_dir_handle_ptr(FindFirstFileA(parent_name, &find_data));
-					if (handle.get() != INVALID_HANDLE_VALUE) {
-						do {
-							if (stricmp(find_data.cFileName, file_name)) {
-								// Not the same name, not even if we check case-insensitive
-								continue;
-							}
-
-							// Same name, might have case differences
-							if (!strcmp(find_data.cFileName, file_name)) {
-								// Case matches, everything is alright.
-								continue;
-							}
-
-							// We need to do some formatting on the parent_name in order to show a nice error message
-							SCP_string parent_name_str = parent_name;
-							parent_name_str = parent_name_str.substr(0, parent_name_str.size() - 1); // Remove trailing *
-							parent_name_str += find_data.cFileName;
-
-							// If we are still here then the case didn't match which means that we have to show the error message
-							Error(LOCATION, "Data directory '%s' for path type '%s' does not match the required case! "
-								"All data directories must exactly match the case specified by the engine or your mod "
-								"will not work on other platforms.", parent_name_str.c_str(), Pathtypes[i].path);
-						} while (FindNextFileA(handle.get(), &find_data) != 0);
-					}
-				}
-			}
-		}
 		strcat_s( search_path, "*.*" );
 
 		intptr_t find_handle;
@@ -666,65 +588,21 @@ void cf_search_root_path(int root_index)
 			_findclose( find_handle );
 		}
 #elif defined SCP_UNIX
-		auto dirp = unique_dir_ptr(opendir(search_path));
-		if (!dirp)
-		{
-			// If the directory does not exist then check if it might exist with a different case. If that's the case
-			// we bail out with an error so inform the user that this is not valid.
+		DIR *dirp;
+		struct dirent *dir;
 
-			// On Unix we can have a different case for the search paths so we also need to account for that
-			// We do that by looking at the parent of search_path and enumerating all directories and then check if any of
-			// them are a case-insensitive match
-			char dirname_copy[CF_MAX_PATHNAME_LENGTH];
-			memcpy(dirname_copy, search_path, sizeof(search_path));
-			// According to the documentation of directory_name and basename, the return value does not need to be freed
-			auto directory_name = dirname(dirname_copy);
-
-			char basename_copy[CF_MAX_PATHNAME_LENGTH];
-			memcpy(basename_copy, search_path, sizeof(search_path));
-			// According to the documentation of dirname and basename, the return value does not need to be freed
-			auto search_name = basename(basename_copy);
-
-			auto parentDirP = unique_dir_ptr(opendir(directory_name));
-			if (parentDirP) {
-				struct dirent *dir = nullptr;
-				while ((dir = readdir (parentDirP.get())) != nullptr) {
-
-					if (stricmp(search_name, dir->d_name)) {
-						continue;
-					}
-
-					SCP_string fn;
-					sprintf(fn, "%s/%s", directory_name, dir->d_name);
-
-					struct stat buf;
-					if (stat(fn.c_str(), &buf) == -1) {
-						continue;
-					}
-
-					if (S_ISDIR(buf.st_mode)) {
-						// Found a case insensitive match
-						// If the name is not exactly the same as the one we are currently searching then it's an error
-						if (strcmp(search_name, dir->d_name)) {
-							Error(LOCATION, "Data directory '%s' for path type '%s' does not match the required case! "
-								"All data directories must exactly match the case specified by the engine or your mod "
-								"will not work on other platforms.", fn.c_str(), Pathtypes[i].path);
-						}
-						break;
-					}
-				}
-			}
-		} else {
-			struct dirent *dir = nullptr;
-			while ((dir = readdir (dirp.get())) != NULL)
+		dirp = opendir (search_path);
+		if ( dirp ) {
+			while ((dir = readdir (dirp)) != NULL)
 			{
 				if (!fnmatch ("*.*", dir->d_name, 0))
 				{
-					SCP_string fn;
-					sprintf(fn, "%s%s", search_path, dir->d_name);
+					char fn[MAX_PATH];
+					snprintf(fn, MAX_PATH-1, "%s%s", search_path, dir->d_name);
+					fn[MAX_PATH-1] = 0;
 
 					struct stat buf;
-					if (stat(fn.c_str(), &buf) == -1) {
+					if (stat(fn, &buf) == -1) {
 						continue;
 					}
 					
@@ -754,6 +632,7 @@ void cf_search_root_path(int root_index)
 					}
 				}
 			}
+			closedir(dirp);
 		}
 #endif
 	}

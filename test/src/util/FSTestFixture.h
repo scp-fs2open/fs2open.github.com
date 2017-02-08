@@ -9,9 +9,8 @@ namespace test {
 
 enum InitFlags {
 	INIT_NONE = 0,
-	INIT_CFILE = 1 << 0,
-	INIT_GRAPHICS = 1 << 1 | INIT_CFILE, // This depends on CFILE
-	INIT_SHIPS = 1 << 2 | INIT_CFILE, // This depends on CFILE
+	INIT_GRAPHICS = 1 << 0,
+	INIT_SHIPS = 1 << 1,
 };
 
 class FSTestFixture: public ::testing::Test {
@@ -23,7 +22,7 @@ class FSTestFixture: public ::testing::Test {
 
 	void init_cmdline();
  protected:
-	explicit FSTestFixture(uint64_t init_flags = INIT_CFILE);
+	explicit FSTestFixture(uint64_t init_flags);
 	virtual ~FSTestFixture() {};
 
 	void addCommandlineArg(const SCP_string& arg);
