@@ -204,7 +204,9 @@ float vm_vec_dot3(float x, float y, float z, vec3d *v);
 //dest CANNOT equal either source
 vec3d *vm_vec_cross(vec3d *dest, const vec3d *src0, const vec3d *src1);
 
-// test if 2 vectors are parallel or not.
+/**
+ * @brief Tests if the two vectors are parallel
+ */
 int vm_test_parallel(const vec3d *src0, const vec3d *src1);
 
 //computes surface normal from three points. result is normalized
