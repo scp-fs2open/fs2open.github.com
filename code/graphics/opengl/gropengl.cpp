@@ -1656,11 +1656,13 @@ void gr_opengl_pop_debug_group() {
 		glPopDebugGroup();
 	}
 }
+#if !defined(NDEBUG) || defined(FS_OPENGL_DEBUG) || defined(DOXYGEN)
 void opengl_set_object_label(GLenum type, GLuint handle, const SCP_string& name) {
 	if (GLAD_GL_KHR_debug) {
 		glObjectLabel(type, handle, (GLsizei) name.size(), name.c_str());
 	}
 }
+#endif
 
 uint opengl_data_type_size(GLenum data_type)
 {

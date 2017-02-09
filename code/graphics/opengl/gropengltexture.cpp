@@ -425,6 +425,9 @@ int opengl_create_texture_sub(int bitmap_handle, int bitmap_type, int bmap_w, in
 
 	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 	glBindTexture(t->texture_target, t->texture_id);
+	if (!reload) {
+		opengl_set_object_label(GL_TEXTURE, t->texture_id, bm_get_filename(bitmap_handle));
+	}
 
 	GLenum min_filter = GL_LINEAR;
 

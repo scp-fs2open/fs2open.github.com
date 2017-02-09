@@ -84,7 +84,7 @@ class ShaderProgram {
 
 	void freeCompiledShaders();
  public:
-	ShaderProgram();
+	explicit ShaderProgram(const SCP_string& program_name);
 	~ShaderProgram();
 
 	ShaderUniforms Uniforms;
@@ -97,7 +97,7 @@ class ShaderProgram {
 
 	void use();
 
-	void addShaderCode(ShaderStage stage, const SCP_vector<SCP_string>& codeParts);
+	void addShaderCode(ShaderStage stage, const SCP_string& name, const SCP_vector<SCP_string>& codeParts);
 
 	void linkProgram();
 

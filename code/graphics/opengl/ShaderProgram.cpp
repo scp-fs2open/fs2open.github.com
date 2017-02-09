@@ -143,8 +143,9 @@ GLenum get_gl_shader_stage(opengl::ShaderStage stage) {
 }
 }
 
-opengl::ShaderProgram::ShaderProgram() : _program_id(0), Uniforms(this) {
+opengl::ShaderProgram::ShaderProgram(const SCP_string& program_name) : _program_id(0), Uniforms(this) {
 	_program_id = glCreateProgram();
+	opengl_set_object_label(GL_PROGRAM, _program_id, program_name);
 }
 opengl::ShaderProgram::~ShaderProgram() {
 	freeCompiledShaders();
@@ -172,8 +173,9 @@ void opengl::ShaderProgram::use() {
 GLuint opengl::ShaderProgram::getShaderHandle() {
 	return _program_id;
 }
-void opengl::ShaderProgram::addShaderCode(opengl::ShaderStage stage, const SCP_vector<SCP_string>& codeParts) {
+void opengl::ShaderProgram::addShaderCode(opengl::ShaderStage stage, const SCP_string& name, const SCP_vector<SCP_string>& codeParts) {
 	auto shader_obj = compile_shader_object(codeParts, get_gl_shader_stage(stage));
+	opengl_set_object_label(GL_SHADER, shader_obj, name);
 	_compiled_shaders.push_back(shader_obj);
 	glAttachShader(_program_id, shader_obj);
 }
