@@ -615,14 +615,16 @@ vec3d *vm_vec_cross(vec3d *dest, const vec3d *src0, const vec3d *src1)
 	return dest;
 }
 
-// test if 2 vectors are parallel or not.
 int vm_test_parallel(const vec3d *src0, const vec3d *src1)
 {
-	if ( (fl_abs(src0->xyz.x - src1->xyz.x) < 1e-4) && (fl_abs(src0->xyz.y - src1->xyz.y) < 1e-4) && (fl_abs(src0->xyz.z - src1->xyz.z) < 1e-4) ) {
-		return 1;
-	} else {
-		return 0;
-	}
+	// This version assumes SIMD/SSE optimizations, which would essentially be only 2 operations
+	// If SIMD/SSE is not available, you could check if the vectors are a scalar of each other. i.g. if((x1/x2) == (y1/y2) == (z1/z2)
+	// TODO: make a compile-time check for SIMD/SSE optimizations, If we have them, then use the vecmath method, if not, then use the logical method.
+
+	vec3d test;
+
+	vm_vec_cross(&test, src0, src1);
+	return vm_vec_equal(test, vmd_zero_vector);
 }
 
 //computes non-normalized surface normal from three points.
