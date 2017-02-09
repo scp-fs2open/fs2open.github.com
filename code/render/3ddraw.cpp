@@ -830,13 +830,12 @@ void g3_render_laser(material *mat_params, vec3d *headp, float head_width, vec3d
 	vm_vec_normalize(&reye);
 
 	// code intended to prevent possible null vector normalize issue - start
-	if ( vm_test_parallel(&reye, &fvec) ) {
+	if ( vm_vec_equal(reye, fvec) ) {
 		fvec.xyz.x = -reye.xyz.z;
 		fvec.xyz.y = 0.0f;
 		fvec.xyz.z = -reye.xyz.x;
-	}
 
-	if ( vm_test_parallel(&reye, &rfvec) ) {
+	} else if ( vm_vec_equal(reye, rfvec) ) {
 		fvec.xyz.x = reye.xyz.z;
 		fvec.xyz.y = 0.0f;
 		fvec.xyz.z = reye.xyz.x;
