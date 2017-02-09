@@ -1216,6 +1216,31 @@ float find_nearest_point_on_line(vec3d *nearest_point, const vec3d *p0, const ve
 	return dot/mag;
 }
 
+int find_intersection(float* s, const vec3d* p0, const vec3d* p1, const vec3d* v0, const vec3d* v1)
+{
+	// Vector v2 forms an edge between v0 and v1, thus forming a triangle.
+	// An intersection exists between v0 and v1 if their cross product is parallel with the cross product of v2 and v1
+	// The scalar of v0 can then be found by the ratio between the two cross products
+	vec3d v2, crossA, crossB;
+
+	vm_vec_sub(&v2, p1, p0);
+	vm_vec_cross(&crossA, v0, v1);
+	vm_vec_cross(&crossB, &v2, v1);
+
+	if (vm_vec_equal(crossA, ZERO_VECTOR)) {
+		// Colinear
+		return -1;
+	}
+
+	if (!vm_test_parallel(&crossA, &crossB)) {
+		// The two cross products are not parallel, so no intersection between v0 and v1
+		return -2;
+	}
+
+	*s = vm_vec_mag(&crossB) / vm_vec_mag(&crossA);
+	return 0;
+};
+
 //make sure matrix is orthogonal
 //computes a matrix from one or more vectors. The forward vector is required,
 //with the other two being optional.  If both up & right vectors are passed,
