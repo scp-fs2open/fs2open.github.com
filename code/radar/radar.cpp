@@ -360,6 +360,27 @@ void HudGaugeRadarStd::pageIn()
 	bm_page_in_aabitmap( Radar_gauge.first_frame, Radar_gauge.num_frames );
 }
 
+void HudGaugeRadarStd::clampBlip(vec3d* blip)
+{
+	float max_radius;
+	float hypotenuse;
+
+	max_radius = i2fl(Radar_radius[0] - 5);
+
+	// Scale blip to radar size
+	vm_vec_scale(blip, i2fl(Radar_radius[0])/2.0f);
+
+	hypotenuse = _hypotf(blip->xyz.x, blip->xyz.y);
+
+	// Clamp to inside of plot area, if needed
+	if (hypotenuse > max_radius) {
+		vm_vec_scale2(blip, max_radius, hypotenuse);
+	}
+
+	// Scale Y to respect aspect ratio
+	blip->xyz.y *= (i2fl(Radar_radius[1]) / i2fl(Radar_radius[0]));
+}
+
 void HudGaugeRadarStd::plotBlip(blip *b, int *x, int *y)
 {
 	float zdist, rscale;
@@ -368,43 +389,25 @@ void HudGaugeRadarStd::plotBlip(blip *b, int *x, int *y)
 	if (b->dist < pos->xyz.z) {
 		rscale = 0.0f;
 	} else {
-		rscale = (float) acosf(pos->xyz.z / b->dist) / PI;		//2.0f;	 
+		rscale = (float) acosf(pos->xyz.z / b->dist) / PI;
 	}
 
-	zdist = fl_sqrt((pos->xyz.x * pos->xyz.x) + (pos->xyz.y * pos->xyz.y));
+	zdist = _hypotf(pos->xyz.x, pos->xyz.y);
 
-	float new_x_dist, clipped_x_dist;
-	float new_y_dist, clipped_y_dist;
+	vec3d new_pos;
 
 	if (zdist < 0.01f)
 	{
-		new_x_dist = 0.0f;
-		new_y_dist = 0.0f;
-	}
-	else
-	{
-		new_x_dist = (pos->xyz.x / zdist) * rscale * (Radar_radius[0]/2.0f);
-		new_y_dist = (pos->xyz.y / zdist) * rscale * (Radar_radius[1]/2.0f);
-
-		// force new_x_dist and new_y_dist to be inside the radar
-
-		float hypotenuse;
-		float max_radius;
-
-		hypotenuse = (float) _hypot(new_x_dist, new_y_dist);
-		max_radius = i2fl(Radar_radius[0] - 5);
-
-		if (hypotenuse >= max_radius)
-		{
-			clipped_x_dist = max_radius * (new_x_dist / hypotenuse);
-			clipped_y_dist = max_radius * (new_y_dist / hypotenuse);
-			new_x_dist = clipped_x_dist;
-			new_y_dist = clipped_y_dist;
-		}
+		new_pos = ZERO_VECTOR;
+	} else {
+		new_pos = *pos;
+		new_pos.xyz.z = 0.0f;
+		vm_vec_scale(&new_pos, rscale / zdist);		// Values are within +/- 1.0f
+		clampBlip(&new_pos);
 	}
 
-	*x = fl2i(position[0] + Radar_center_offsets[0] + new_x_dist);
-	*y = fl2i(position[1] + Radar_center_offsets[1] - new_y_dist);
+	*x = fl2i(position[0] + Radar_center_offsets[0] + new_pos.xyz.x);
+	*y = fl2i(position[1] + Radar_center_offsets[1] - new_pos.xyz.y);
 }
 
 void HudGaugeRadarStd::drawCrosshairs(int x, int y)

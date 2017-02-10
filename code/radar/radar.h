@@ -44,6 +44,13 @@ class HudGaugeRadarStd: public HudGaugeRadar
 
 	// formerly parts of Current_radar_global
 	float Radar_center_offsets[2];
+
+protected:
+	/**
+	 * @brief Clamps and scales the blip to be within the plot area
+	 * @param[in] vec The blip coordinates (only x and y are nonzero)
+	 */
+	virtual void clampBlip(vec3d* blip);
 public:
 	HudGaugeRadarStd();
 	void initCenterOffsets(float x, float y);
