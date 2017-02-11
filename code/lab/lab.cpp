@@ -90,7 +90,11 @@ static char Lab_bitmap_filename[MAX_FILENAME_LEN];
 
 static float Lab_viewer_zoom = 1.2f;
 static vec3d Lab_viewer_pos = ZERO_VECTOR;
-static matrix Lab_viewer_orient = IDENTITY_MATRIX;
+/* Lab_viewer_orients default value is a PBH of -0.6, 0.0, 4.0 in radians, with the rotations applied in P, B, H order. 
+ * This aligns the model so it points to the bottom left corner of the screen, 
+ * which is pretty standard across 3D applications. (DahBlount)
+ */
+static matrix Lab_viewer_orient = { { { {{{ -0.653643608f, 0.427322835f, 0.624616086f }}}, {{{ 0.0f, 0.825335622f, -0.564642429f }}}, {{{ -0.756802499f, -0.369074941f, -0.539475381f }}} } } };
 static float Lab_viewer_rotation = 0.0f;
 static int Lab_viewer_flags = LAB_MODE_NONE;
 
@@ -760,10 +764,10 @@ void labviewer_render_model(float frametime)
 		view_angles.b = 0.0f;
 		view_angles.h = 0.0f;
 		vm_angles_2_matrix(&Lab_viewer_orient, &view_angles);
-
+		
 		rot_angles.p = 0.0f;
 		rot_angles.b = 0.0f;
-		rot_angles.h = Lab_viewer_rotation;
+		rot_angles.h = 4.0f + Lab_viewer_rotation;
 		vm_rotate_matrix_by_angles(&Lab_viewer_orient, &rot_angles);
 	}
 
