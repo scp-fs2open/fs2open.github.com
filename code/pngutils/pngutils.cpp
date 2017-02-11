@@ -145,7 +145,11 @@ int png_read_header(const char *real_filename, CFILE *img_cfp, int *w, int *h, i
 	if (w) *w = png_get_image_width(png_ptr, info_ptr);
 	if (h) *h = png_get_image_height(png_ptr, info_ptr);
 	// this turns out to be near useless, but meh
-	if (bpp) *bpp = (png_get_channels(png_ptr, info_ptr) * png_get_bit_depth(png_ptr, info_ptr));
+	if (bpp) {
+		// bit depth can also be 16 bit we tell libpng to reduce that to 8 bits so we also need to tell our caller about that
+		auto bits = std::min(8, (int)png_get_bit_depth(png_ptr, info_ptr));
+		*bpp = (png_get_channels(png_ptr, info_ptr) * bits);
+	}
 
 	if (img_cfp == NULL) {
 		cfclose(status.cfp);
