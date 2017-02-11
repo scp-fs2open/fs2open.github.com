@@ -347,7 +347,7 @@ float find_nearest_point_on_line(vec3d *nearest_point, const vec3d *p0, const ve
 /**
  * @brief Find the intersection between two lines
  *
- * @param[out] s  If successful, s is the scalar of v0 where the intersection is at
+ * @param[out] s  If successful, s is the scalar of v0
  * @param[in]  p0 Reference point for line 1
  * @param[in]  p1 Reference point for line 2
  * @param[in]  v0 Direction vector for line 1
@@ -357,7 +357,7 @@ float find_nearest_point_on_line(vec3d *nearest_point, const vec3d *p0, const ve
  * @returns -1 If colinear, or
  * @returns -2 If no intersection
  *
- * @note If you want the coords of the intersection, just vm_scale(in_ray, s)
+ * @note If you want the coords of the intersection, scale v0 by s, then add p0.
  */
 int find_intersection(float *s, const vec3d* p0, const vec3d* p1, const vec3d* v0, const vec3d* v1);
 

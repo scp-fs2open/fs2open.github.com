@@ -993,6 +993,8 @@ add_file_folder("Radar"
 	radar/radar.h
 	radar/radardradis.cpp
 	radar/radardradis.h
+	radar/radarngon.cpp
+	radar/radarngon.h
 	radar/radarorb.cpp
 	radar/radarorb.h
 	radar/radarsetup.cpp
