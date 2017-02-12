@@ -617,14 +617,26 @@ vec3d *vm_vec_cross(vec3d *dest, const vec3d *src0, const vec3d *src1)
 
 int vm_test_parallel(const vec3d *src0, const vec3d *src1)
 {
-	// This version assumes SIMD/SSE optimizations, which would essentially be only 2 operations
-	// If SIMD/SSE is not available, you could check if the vectors are a scalar of each other. i.g. if((x1/x2) == (y1/y2) == (z1/z2)
-	// TODO: make a compile-time check for SIMD/SSE optimizations, If we have them, then use the vecmath method, if not, then use the logical method.
+	vec3d partial1;
+	vec3d partial2;
 
-	vec3d test;
+	/*
+	 * To test if two vectors are parallel, calculate their cross product.
+	 * If the result is zero, then the vectors are parallel. It is better
+	 * to compare the two cross product "partials" (for lack of a better
+	 * word) against each other instead of the final cross product against
+	 * zero.
+	 */
 
-	vm_vec_cross(&test, src0, src1);
-	return vm_vec_equal(test, vmd_zero_vector);
+	partial1.xyz.x = (src0->xyz.y * src1->xyz.z);
+	partial1.xyz.y = (src0->xyz.z * src1->xyz.x);
+	partial1.xyz.z = (src0->xyz.x * src1->xyz.y);
+
+	partial2.xyz.x =  (src0->xyz.z * src1->xyz.y);
+	partial2.xyz.y =  (src0->xyz.x * src1->xyz.z);
+	partial2.xyz.z =  (src0->xyz.y * src1->xyz.x);
+
+	return vm_vec_equal(partial1, partial2);
 }
 
 //computes non-normalized surface normal from three points.
