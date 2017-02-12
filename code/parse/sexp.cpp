@@ -22773,22 +22773,26 @@ int eval_sexp(int cur_node, int referenced_node)
 	// trap known true and known false sexpressions.  We don't trap on SEXP_NAN sexpressions since
 	// they may yet evaluate to true or false.
 
+	// we want to log event values for KNOWN_X or FOREVER_X before returning
+	if (Log_event && ((Sexp_nodes[cur_node].value == SEXP_KNOWN_TRUE) || (Sexp_nodes[cur_node].value == SEXP_KNOWN_FALSE) || (Sexp_nodes[cur_node].value == SEXP_NAN_FOREVER))) {
+		// if this is a node that has been assigned the value by short-circuiting,
+		// it might not be the operator that returned the value
+		int op_index = get_operator_index(cur_node);
+		if (op_index < 0)
+			op_index = get_operator_index(CAR(cur_node));
+
+		// log the known value
+		add_to_event_log_buffer(op_index, Sexp_nodes[cur_node].value);
+	}
+
+	// now do a quick return whether or not we log, per the comment above about trapping known sexpressions
 	if (Sexp_nodes[cur_node].value == SEXP_KNOWN_TRUE) {
-		if (Log_event) {
-			add_to_event_log_buffer(get_operator_index(cur_node), SEXP_KNOWN_TRUE);
-		}
 		return SEXP_TRUE;
 	}
 	else if (Sexp_nodes[cur_node].value == SEXP_KNOWN_FALSE) {
-		if (Log_event) {
-			add_to_event_log_buffer(get_operator_index(cur_node), SEXP_KNOWN_FALSE);
-		}
 		return SEXP_FALSE;
 	}
 	else if (Sexp_nodes[cur_node].value == SEXP_NAN_FOREVER) {
-		if (Log_event) {
-			add_to_event_log_buffer(get_operator_index(cur_node), SEXP_NAN_FOREVER);
-		}
 		return SEXP_FALSE;
 	}
 
