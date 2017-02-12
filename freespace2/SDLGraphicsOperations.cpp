@@ -163,9 +163,28 @@ std::unique_ptr<os::Viewport> SDLGraphicsOperations::createViewport(const os::Vi
 		windowflags |= SDL_WINDOW_RESIZABLE;
 	}
 
+	SDL_Rect bounds;
+	if (SDL_GetDisplayBounds(props.display, &bounds) != 0) {
+		mprintf(("Failed to get display bounds: %s\n", SDL_GetError()));
+		return nullptr;
+	}
+
+	int x;
+	int y;
+
+	if (bounds.w == (int)props.width && bounds.h == (int)props.height) {
+		// If we have the same size as the desktop we explicitly specify 0,0 to make sure that the window borders aren't hidden
+		mprintf(("SDL: Creating window at %d,%d because window has same size as desktop.\n", bounds.x, bounds.y));
+		x = bounds.x;
+		y = bounds.y;
+	} else {
+		x = SDL_WINDOWPOS_CENTERED_DISPLAY(props.display);
+		y = SDL_WINDOWPOS_CENTERED_DISPLAY(props.display);
+	}
+
 	SDL_Window* window = SDL_CreateWindow(props.title.c_str(),
-										  SDL_WINDOWPOS_CENTERED_DISPLAY(props.display),
-										  SDL_WINDOWPOS_CENTERED_DISPLAY(props.display),
+										  x,
+										  y,
 										  props.width,
 										  props.height,
 										  windowflags);
