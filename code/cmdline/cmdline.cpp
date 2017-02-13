@@ -948,26 +948,23 @@ void os_init_cmdline(int argc, char *argv[])
 	reset_cmdline_parms();
 
 	FILE *fp;
-	
+
 	if (!has_cmdline_only_flag(argc, argv)) {
 		// Only parse the config file in the current directory if we are in legacy config mode
 		if (os_is_legacy_mode()) {
 			// read the cmdline_fso.cfg file from the data folder, and pass the command line arguments to
 			// the the parse_parms and validate_parms line.  Read these first so anything actually on
 			// the command line will take precedence
-#ifdef _WIN32
-			fp = fopen("data\\cmdline_fso.cfg", "rt");
-#elif defined(APPLE_APP)
+#ifdef APPLE_APP
 			char resolved_path[MAX_PATH], data_path[MAX_PATH_LEN];
 
-			GetCurrentDirectory(MAX_PATH_LEN - 1, data_path);
+			getcwd(data_path, sizeof(data_path));
 			snprintf(resolved_path, MAX_PATH, "%s/data/cmdline_fso.cfg", data_path);
 
 			fp = fopen(resolved_path, "rt");
 #else
-			fp = fopen("data/cmdline_fso.cfg", "rt");
+			fp = fopen("data" DIR_SEPARATOR_STR "cmdline_fso.cfg", "rt");
 #endif
-
 			// if the file exists, get a single line, and deal with it
 			if (fp) {
 				char *buf, *p;
@@ -981,7 +978,6 @@ void os_init_cmdline(int argc, char *argv[])
 					if ((p = strrchr(buf, '\n')) != NULL) {
 						*p = '\0';
 					}
-
 #ifdef SCP_UNIX
 					// append a space for the os_parse_parms() check
 					strcat_s(buf, len, " ");
@@ -1012,14 +1008,14 @@ void os_init_cmdline(int argc, char *argv[])
 
 				// append a space for the os_parse_parms() check
 				strcat_s(buf, len, " ");
-			
+
 				os_process_cmdline(buf);
 			}
 			delete [] buf;
 			fclose(fp);
 		}
 	} // If cmdline included PARSE_COMMAND_LINE_STRING
-    
+
 	// By parsing cmdline last, anything actually on the command line will take precedence.
 	os_parse_parms(argc, argv);
 	os_validate_parms(argc, argv);

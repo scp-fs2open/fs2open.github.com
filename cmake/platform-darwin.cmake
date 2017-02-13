@@ -1,5 +1,6 @@
 
 MESSAGE(STATUS "Doing Mac OSX specific things...")
+target_compile_definitions(platform INTERFACE APPLE_APP)
 SET(EXE_GUI_TYPE MACOSX_BUNDLE)
 
 FIND_LIBRARY(COCOA_LIBRARY Cocoa)
