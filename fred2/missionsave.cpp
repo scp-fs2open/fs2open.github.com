@@ -2260,7 +2260,7 @@ int CFred_mission_save::save_mission_info() {
 		else
 			fout("\n+Red Alert:");
 
-		fout(" %d", (The_mission.flags[Mission::Mission_Flags::Fullneb]) ? 1 : 0);
+		fout(" %d", (The_mission.flags[Mission::Mission_Flags::Red_alert]) ? 1 : 0);
 	}
 
 	if (Format_fs2_open == FSO_FORMAT_RETAIL) //-V581
