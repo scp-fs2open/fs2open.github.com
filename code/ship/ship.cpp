@@ -16087,7 +16087,7 @@ int get_max_ammo_count_for_bank(int ship_class, int bank, int ammo_type)
 		capacity = (float) Ship_info[ship_class].secondary_bank_ammo_capacity[bank];
 		size = (float) Weapon_info[ammo_type].cargo_size;
 		Assertion(size > 0.0f, "Weapon cargo size for %s must be greater than 0!", Weapon_info[ammo_type].name);
-		return (int) (capacity / size);
+		return fl2ir(capacity / size);
 	}
 }
 
