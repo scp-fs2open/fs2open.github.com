@@ -12,6 +12,10 @@ add_file_folder(root ""
     test_stubs.cpp
 )
 
+add_file_folder(cfile "CFile"
+    cfile/cfile.cpp
+)
+
 add_file_folder(graphics "Globalincs"
     globalincs/test_flagset.cpp
     globalincs/test_safe_strings.cpp
