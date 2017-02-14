@@ -8092,7 +8092,7 @@ int actual_main(int argc, char *argv[])
 	// Finder sets the working directory to the root of the drive so we have to get a little creative
 	// to find out where on the disk we should be running from for CFILE's sake.
 	char *path_name = SDL_GetBasePath();
-	SetCurrentDirectory(path_name);
+	chdir(path_name);
 	SDL_free(path_name);
 #endif
 
