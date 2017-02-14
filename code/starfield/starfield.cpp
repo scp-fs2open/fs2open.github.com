@@ -1104,7 +1104,7 @@ void stars_draw_sun(int show_sun)
 		g3_rotate_faraway_vertex(&sun_vex, &sun_pos);
 
 		if ( sun_vex.codes & (CC_BEHIND|CC_OFF_USER) ) {
-			return;
+			continue;
 		}
 
 		if ( !(sun_vex.flags & PF_PROJECTED) ) {
@@ -1112,7 +1112,7 @@ void stars_draw_sun(int show_sun)
 		}
 
 		if ( sun_vex.flags & PF_OVERFLOW ) {
-			return;
+			continue;
 		}
 
 		material mat_params;
