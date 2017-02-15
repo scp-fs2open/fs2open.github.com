@@ -21,3 +21,11 @@ SET(CMAKE_INSTALL_RPATH @loader_path/../Frameworks/)
 SET(LIBRAY_DESTINATION "../Frameworks")
 
 set(PLATFORM_MAC TRUE CACHE INTERNAL "" FORCE)
+
+# Generate and don't strip debug symbols
+# These settings don't seem to generate debug symbols for code and Freespace2
+# so those settings are set manually in code and Freespace2's CMakeLists.txt files
+set(CMAKE_XCODE_ATTRIBUTE_GCC_GENERATE_DEBUGGING_SYMBOLS "YES")
+set(CMAKE_XCODE_ATTRIBUTE_COPY_PHASE_STRIP "NO")
+set(CMAKE_XCODE_ATTRIBUTE_STRIP_INSTALLED_PRODUCT "NO")
+set(CMAKE_XCODE_ATTRIBUTE_GCC_SYMBOLS_PRIVATE_EXTERN "NO")
