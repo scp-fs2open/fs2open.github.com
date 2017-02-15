@@ -6791,11 +6791,8 @@ void game_spew_pof_info()
 				}				
 				cfputs("------------------------------------------------------------------------\n\n", out);				
 			}
-		}
-
-		if(counted >= MAX_POLYGON_MODELS - 5){
-			model_free_all();
-			counted = 0;
+			// Free memory of this model again
+			model_unload(model_num);
 		}
 	}
 
