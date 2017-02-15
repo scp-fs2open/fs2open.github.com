@@ -318,24 +318,6 @@ void print_instructions()
 	printf( "Creates a vp archive out of a FreeSpace data tree.\n\n" );
 	printf( "Usage:     cfilearchiver archive_name src_dir\n");
 	printf( "Example:   cfilearchiver freespace /tmp/freespace/data\n\n");
-	printf( "Directory structure options:\n" );
-	printf( "   Effects                   (.ani .pcx .neb .tga)\n" );
-	printf( "   Fonts                     (.vf)\n" );
-	printf( "   Hud                       (.ani .pcx .tga\n" );
-	printf( "   Interface                 (.pcx .ani .tga)\n" );
-	printf( "   Maps                      (.pcx .ani .tga)\n" );
-	printf( "   Missions                  (.ntl .ssv), FS1(.fsm .fsc), FS2(.fs2 .fc2)\n" );
-	printf( "   Models                    (.pof)\n" );
-	printf( "   Music                     (.wav)\n" );
-	printf( "   Sounds/8b22k              (.wav)\n" );
-	printf( "   Sounds/16b11k             (.wav)\n" );
-	printf( "   Tables                    (.tbl)\n" );
-	printf( "   Voice/Briefing            (.wav)\n" );
-	printf( "   Voice/Command briefings   (.wav)\n" );
-	printf( "   Voice/Debriefing          (.wav)\n" );
-	printf( "   Voice/Personas            (.wav)\n" );
-	printf( "   Voice/Special             (.wav)\n" );
-	printf( "   Voice/Training            (.wav)\n" );
 
 	exit(0);
 }
