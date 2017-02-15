@@ -1578,13 +1578,17 @@ void obj_queue_render(object* obj, model_draw_list* scene)
 
 	if ( obj->flags[Object::Object_Flags::Should_be_dead] ) return;
 
-	// need to figure out what to do with this hook. 
-	// maybe save an array of these and run the script conditions after we finish drawing
 	Script_system.SetHookObject("Self", obj);
+	
+	auto skip_render = Script_system.IsConditionOverride(CHA_OBJECTRENDER, obj);
+	
+	// Always execute the hook content
+	Script_system.RunCondition(CHA_OBJECTRENDER, '\0', NULL, obj);
+	
+	Script_system.RemHookVar("Self");
 
-	if ( Script_system.IsConditionOverride(CHA_OBJECTRENDER, obj) ) {
-		Script_system.RunCondition(CHA_OBJECTRENDER, '\0', NULL, obj);
-		Script_system.RemHookVar("Self");
+	if (skip_render) {
+		// Script said that it want's to skip rendering
 		return;
 	}
 
