@@ -96,3 +96,6 @@ if (FSO_FATAL_WARNINGS)
 	# Make warnings fatal if the right variable is set
 	target_compile_options(compiler INTERFACE "-Werror")
 endif()
+
+# Always define this to make sure that the fixed width format macros are available
+target_compile_definitions(compiler INTERFACE __STDC_FORMAT_MACROS)
