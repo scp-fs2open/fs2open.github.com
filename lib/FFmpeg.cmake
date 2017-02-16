@@ -61,8 +61,8 @@ ELSE(WIN32)
         set(FFMPEG_PATH "${PREBUILT_PATH}/ffmpeg")
         set(USING_PREBUILT_LIBS TRUE)
     else()
-        # Check if we have ffmpeg
-        PKG_SEARCH_MODULE(avcodec "libavcodec")
+        # Check if we have ffmpeg, the minimum version we support is 2.7
+        PKG_SEARCH_MODULE(avcodec "libavcodec >= 56.39")
         if (NOT avcodec_FOUND)
             message("FFmpeg libraries could not be found. Using prebuilt libraries...")
 
