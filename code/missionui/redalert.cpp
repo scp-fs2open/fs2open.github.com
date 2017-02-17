@@ -338,6 +338,9 @@ void red_alert_init()
 	// load in background image and flashing red alert animation
 	Background_bitmap = mission_ui_background_load(Briefing->background[gr_screen.res], Red_alert_fname[gr_screen.res]);
 
+	// Make sure word wrapping and rendering use the same font
+	font::set_font(font::FONT1);
+
 	if ( Briefing->num_stages > 0 ) {
 		brief_color_text_init(Briefing->stages[0].text.c_str(), Ra_brief_text_wnd_coords[gr_screen.res][RA_W_COORD], default_redalert_briefing_color, 0);
 	}

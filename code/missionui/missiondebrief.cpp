@@ -1835,6 +1835,9 @@ void debrief_text_init()
 		}
 	}
 
+	// Make sure that the text wrapping and the rendering code use the same font
+	font::set_font(DEBRIEFING_FONT);
+
 	Num_text_lines = Text_offset = brief_color_text_init("", Debrief_text_wnd_coords[gr_screen.res][2], default_debriefing_color, 0, 0);	// Initialize color stuff -MageKing17
 
 	fsspeech_start_buffer();
