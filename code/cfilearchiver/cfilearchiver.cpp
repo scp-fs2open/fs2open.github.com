@@ -315,28 +315,16 @@ int verify_directory( char *filespec )
 
 void print_instructions()
 {
-	printf( "Creates a vp archive out of a FreeSpace data tree.\n\n" );
-	printf( "Usage:     cfilearchiver archive_name src_dir\n");
-	printf( "Example:   cfilearchiver freespace /tmp/freespace/data\n\n");
-	printf( "Directory structure options:\n" );
-	printf( "   Effects                   (.ani .pcx .neb .tga)\n" );
-	printf( "   Fonts                     (.vf)\n" );
-	printf( "   Hud                       (.ani .pcx .tga\n" );
-	printf( "   Interface                 (.pcx .ani .tga)\n" );
-	printf( "   Maps                      (.pcx .ani .tga)\n" );
-	printf( "   Missions                  (.ntl .ssv), FS1(.fsm .fsc), FS2(.fs2 .fc2)\n" );
-	printf( "   Models                    (.pof)\n" );
-	printf( "   Music                     (.wav)\n" );
-	printf( "   Sounds/8b22k              (.wav)\n" );
-	printf( "   Sounds/16b11k             (.wav)\n" );
-	printf( "   Tables                    (.tbl)\n" );
-	printf( "   Voice/Briefing            (.wav)\n" );
-	printf( "   Voice/Command briefings   (.wav)\n" );
-	printf( "   Voice/Debriefing          (.wav)\n" );
-	printf( "   Voice/Personas            (.wav)\n" );
-	printf( "   Voice/Special             (.wav)\n" );
-	printf( "   Voice/Training            (.wav)\n" );
-
+	printf("Creates a vp archive out of a FreeSpace data tree.\n\n");
+	printf("Usage:     cfilearchiver archive_name src_dir\n");
+#ifdef _WIN32
+	printf("Example:   cfilearchiver freespace c:\\freespace\\data\n");
+#else
+	printf("Example:   cfilearchiver freespace /tmp/freespace/data\n\n");
+#endif
+	printf("Creates an archive named freespace out of the freespace data tree\n");
+	printf("For information about the FS2 directory structure, please consult\n");
+	printf("http://www.hard-light.net/wiki/index.php/FS2_Data_Structure\n");
 	exit(0);
 }
 
@@ -352,16 +340,7 @@ int main(int argc, char *argv[] )
 	char *p;
 
 	if ( argc < 3 )	{
-#ifdef _WIN32
-		printf( "Usage: %s archive_name src_dir\n", argv[0] );
-		printf( "Example: %s freespace c:\\freespace\\data\n", argv[0] );
-		printf( "Creates an archive named freespace out of the\nfreespace data tree\n" );
-		printf( "Press any key to exit...\n" );
-		getch();
-		return 1;
-#else
 		print_instructions();
-#endif
 	}
 
 	strcpy_s( archive, argv[1] );
