@@ -7,8 +7,9 @@
  *
 */
 
-#include "globalincs/pstypes.h"
 #include "globalincs/version.h"
+#include "globalincs/pstypes.h"
+#include "graphics/2d.h"
 
 #include "parse/parselo.h"
 
@@ -130,5 +131,24 @@ bool version::operator!=(const version& other) const {
 	return !(*this == other);
 }
 
+SCP_string get_version_string()
+{
+	SCP_string str;
+
+	sprintf(str, "FreeSpace 2 Open v%s", FS_VERSION_FULL);
+
+#ifndef NDEBUG
+	str += " Debug";
+#endif
+
+	// Lets get some more info in here
+	switch (gr_screen.mode) {
+	case GR_OPENGL:
+		str += " OpenGL";
+		break;
+	}
+
+	return str;
+}
 }
 

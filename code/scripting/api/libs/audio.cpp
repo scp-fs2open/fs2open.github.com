@@ -180,6 +180,26 @@ ADE_FUNC(playInterfaceSound, l_Audio, "Sound index", "Plays a sound from #Interf
 	}
 }
 
+ADE_FUNC(playInterfaceSoundByName, l_Audio, "string name",
+         "Plays a sound from #Interface Sounds in sounds.tbl by specifying the name of the sound entry. Sounds using "
+         "the retail sound syntax can be accessed by specifying the index number as a string.",
+         "boolean", "True if sound was played, false if not")
+{
+	const char* name;
+	if (!ade_get_args(L, "s", &name))
+		return ade_set_error(L, "b", false);
+
+	auto gamesnd_idx = gamesnd_get_by_iface_name(name);
+
+	if (gamesnd_idx.isValid()) {
+		gamesnd_play_iface(gamesnd_idx);
+		return ade_set_args(L, "b", true);
+	} else {
+		LuaError(L, "Invalid sound name %s in playInterfaceSoundByName()", name);
+		return ADE_RETURN_FALSE;
+	}
+}
+
 ADE_FUNC(playMusic, l_Audio, "string Filename, [float volume = 1.0, bool looping = true]", "Plays a music file using FS2Open's builtin music system. Volume is currently ignored, uses players music volume setting. Files passed to this function are looped by default.", "number", "Audiohandle of the created audiostream, or -1 on failure")
 {
 	char *s;

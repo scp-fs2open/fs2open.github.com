@@ -89,6 +89,8 @@ cf_pathtype Pathtypes[CF_MAX_PATH_TYPES]  = {
 	{ CF_TYPE_SCRIPTS,				"data" DIR_SEPARATOR_STR "scripts",											".lua .lc",							CF_TYPE_DATA	},
 	{ CF_TYPE_FICTION,				"data" DIR_SEPARATOR_STR "fiction",											".txt",								CF_TYPE_DATA	}, 
 	{ CF_TYPE_FREDDOCS,				"data" DIR_SEPARATOR_STR "freddocs",										".html",							CF_TYPE_DATA	},
+	{ CF_TYPE_INTERFACE_MARKUP,		"data" DIR_SEPARATOR_STR "interface" DIR_SEPARATOR_STR "markup",			".rml",								CF_TYPE_INTERFACE	},
+	{ CF_TYPE_INTERFACE_CSS,		"data" DIR_SEPARATOR_STR "interface" DIR_SEPARATOR_STR "css",				".rcss",							CF_TYPE_INTERFACE	},
 };
 // clang-format on
 
@@ -1960,4 +1962,34 @@ int cflush(CFILE *cfile)
 	cb->size = filelength(fileno(cb->fp));
 
 	return result;
+}
+
+int cfile_get_path_type(const SCP_string& dir)
+{
+	SCP_string buf = dir;
+
+	// Remove trailing slashes; avoid buffer overflow on 1-char strings
+	while (buf.size() > 0 && (buf[buf.size() - 1] == '\\' || buf[buf.size() - 1] == '/')) {
+		buf.resize(buf.size() - 1);
+	}
+
+	// Remove leading slashes
+	while (buf.size() > 0 && (buf[0] == '\\' || buf[0] == '/')) {
+		buf = buf.substr(1);
+	}
+
+	// Use official DIR_SEPARATOR_CHAR
+	for (char& c : buf) {
+		if (c == '\\' || c == '/') {
+			c = DIR_SEPARATOR_CHAR;
+		}
+	}
+
+	for (auto& Pathtype : Pathtypes) {
+		if (Pathtype.path != nullptr && buf == Pathtype.path) {
+			return Pathtype.index;
+		}
+	}
+
+	return CF_TYPE_INVALID;
 }

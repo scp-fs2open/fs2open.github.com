@@ -974,6 +974,7 @@ void opengl_tnl_set_material_nanovg(nanovg_material* material_info) {
 
 	Current_shader->program->Uniforms.setUniformi("nvg_tex", 0);
 }
+
 void opengl_tnl_set_material_decal(decal_material* material_info) {
 	opengl_tnl_set_material(material_info, false);
 
@@ -1013,6 +1014,34 @@ void opengl_tnl_set_material_decal(decal_material* material_info) {
 	if (Current_shader->flags & SDR_FLAG_DECAL_USE_NORMAL_MAP) {
 		GL_state.Texture.Enable(4, GL_TEXTURE_2D, Scene_normal_texture);
 		Current_shader->program->Uniforms.setUniformi("gNormalBuffer", 4);
+	}
+}
+
+void opengl_tnl_set_rocketui_material(interface_material* material_info)
+{
+	vec3d offset = vmd_zero_vector;
+	offset.xyz.x = material_info->get_offset().x;
+	offset.xyz.y = material_info->get_offset().y;
+
+	matrix4 modelViewMatrix;
+	vm_matrix4_set_transform(&modelViewMatrix, &vmd_identity_matrix, &offset);
+
+	opengl_tnl_set_material(material_info, false);
+
+	Current_shader->program->Uniforms.setUniformMatrix4f("modelViewMatrix", modelViewMatrix);
+	Current_shader->program->Uniforms.setUniformMatrix4f("projMatrix", gr_projection_matrix);
+
+	Current_shader->program->Uniforms.setUniformi("textured", material_info->is_textured() ? GL_TRUE : GL_FALSE);
+	Current_shader->program->Uniforms.setUniformi("baseMap", 0);
+
+	if (material_info->is_textured()) {
+		float u_scale, v_scale;
+		uint32_t array_index;
+		if (!gr_opengl_tcache_set(material_info->get_texture_map(TM_BASE_TYPE), material_info->get_texture_type(),
+		                          &u_scale, &v_scale, &array_index)) {
+			mprintf(("WARNING: Error setting bitmap texture (%i)!\n", material_info->get_texture_map(TM_BASE_TYPE)));
+		}
+		Current_shader->program->Uniforms.setUniformi("baseMapIndex", array_index);
 	}
 }
 

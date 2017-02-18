@@ -24,7 +24,7 @@ ADE_FUNC(readFileText, l_Parsing, "string file, string directory = <any>",
 
 	int type = CF_TYPE_ANY;
 	if (dir != nullptr) {
-		type = l_cf_get_path_id(dir);
+		type = cfile_get_path_type(dir);
 	}
 
 	if (type == CF_TYPE_INVALID) {

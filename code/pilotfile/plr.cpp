@@ -943,9 +943,6 @@ bool pilotfile::load_player(const char *callsign, player *_p)
 
 	hud_squadmsg_save_keys();
 
-	// set last pilot
-	os_config_write_string(NULL, "LastPlayer", (char*)callsign);
-
 	mprintf(("PLR => Loading complete!\n"));
 
 	// cleanup and return

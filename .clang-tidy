@@ -10,6 +10,7 @@ misc-*,\
 -misc-macro-parentheses,\
 -misc-misplaced-widening-cast,\
 -misc-static-assert,\
+-modernize-make-unique,\
 "
 WarningsAsErrors: ''
 HeaderFilterRegex: 'code/.*$|freespace2/.*$|qtfred/.*$|test/src/.*$|build/.*$'

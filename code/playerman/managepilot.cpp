@@ -51,7 +51,7 @@ int Num_pilot_squad_images = 0;
 // internal function to delete a player file.  Called after a pilot is obsoleted, and when a pilot is deleted
 // used in barracks and player_select
 //returns 0 on failure, 1 on success
-int delete_pilot_file(char *pilot_name)
+bool delete_pilot_file(const char *pilot_name)
 {
 	int delreturn;
 	char filename[MAX_FILENAME_LEN];
@@ -69,9 +69,9 @@ int delete_pilot_file(char *pilot_name)
 	// we must try and delete the campaign save files for a pilot as well.
 	if (delreturn) {
 		mission_campaign_delete_all_savefiles(basename);
-		return 1;
+		return true;
 	} else {
-		return 0;
+		return false;
 	}
 }
 

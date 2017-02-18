@@ -33,12 +33,6 @@
 #include "ship/ship.h"
 #include "ui/ui.h"
 
-
-
-
-//Returns 0 on failure, 1 on success
-int delete_pilot_file( char *pilot_name );		// manage_pilot.cpp
-
 // stats defines
 //#define NUM_STAT_LINES (21 + MAX_SHIP_CLASSES)	// Goober5000
 #define STAT_COLUMN1_W 40
@@ -539,7 +533,7 @@ int barracks_new_pilot_selected()
 		Cur_pilot->callsign[0] = 0;  // this indicates no pilot active
 		return -1;
 	} else {
-		if (!Pilot.load_savefile(Cur_pilot->current_campaign)) {
+		if (!Pilot.load_savefile(Cur_pilot, Cur_pilot->current_campaign)) {
 			// set single player squad image to multi if campaign can't be loaded
 			strcpy_s(Cur_pilot->s_squad_filename, Cur_pilot->m_squad_filename);
 		}
@@ -665,6 +659,20 @@ int barracks_pilot_accepted()
 	os_config_write_string(NULL, "LastPlayer", Cur_pilot->callsign);
 
 	return 0;
+}
+
+void barracks_accept_pilot(player* plr) {
+	// set pilot image
+	if (Game_mode & GM_MULTIPLAYER) {
+		player_set_squad_bitmap(plr, plr->m_squad_filename, true);
+	} else {
+		player_set_squad_bitmap(plr, plr->s_squad_filename, false);
+	}
+
+	// MWA -- I think that we should be writing plr here.
+	Pilot.save_player(plr);
+
+	os_config_write_string(nullptr, "LastPlayer", plr->callsign);
 }
 
 // scroll up barracks pilot list one line
@@ -831,7 +839,6 @@ void barracks_delete_pilot()
 {
 	char buf[MAX_FILENAME_LEN];
 	int active = 0;
-	int del_rval;
 
 	if (!Num_pilots) {
 		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
@@ -857,7 +864,7 @@ void barracks_delete_pilot()
 
 	strcpy_s(buf, Pilots[Selected_line]);
 
-	del_rval = delete_pilot_file(buf);
+	auto del_rval = delete_pilot_file(buf);
 
 	if ( !del_rval ) {
 		popup(PF_USE_AFFIRMATIVE_ICON | PF_TITLE_BIG | PF_TITLE_RED, 1, POPUP_OK, XSTR("Error\nFailed to delete pilot file. File may be read-only.", 1599));

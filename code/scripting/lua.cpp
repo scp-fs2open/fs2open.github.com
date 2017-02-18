@@ -64,6 +64,7 @@
 #include "scripting/api/libs/tables.h"
 #include "scripting/api/libs/testing.h"
 #include "scripting/api/libs/time_lib.h"
+#include "scripting/api/libs/ui.h"
 #include "scripting/api/libs/utf8.h"
 
 // End of definitions includes

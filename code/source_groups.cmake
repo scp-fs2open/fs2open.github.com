@@ -192,6 +192,8 @@ add_file_folder("Default files\\\\data\\\\effects"
 	def_files/data/effects/passthrough-v.sdr
 	def_files/data/effects/post-f.sdr
 	def_files/data/effects/post-v.sdr
+	def_files/data/effects/rocketui-f.sdr
+	def_files/data/effects/rocketui-v.sdr
 	def_files/data/effects/shadowdebug-f.sdr
 	def_files/data/effects/shadowdebug-v.sdr
 	def_files/data/effects/shadows.sdr
@@ -989,6 +991,24 @@ add_file_folder("Render"
 	render/batching.h
 )
 
+add_file_folder("ScpUi"
+	scpui/rocket_ui.cpp
+	scpui/rocket_ui.h
+	scpui/RocketFileInterface.cpp
+	scpui/RocketFileInterface.h
+	scpui/RocketRenderingInterface.cpp
+	scpui/RocketRenderingInterface.h
+	scpui/RocketSystemInterface.cpp
+	scpui/RocketSystemInterface.h
+	scpui/SoundPlugin.cpp
+	scpui/SoundPlugin.h
+)
+
+add_file_folder("ScpUi\\\\Elements"
+	scpui/elements/AnimationElement.cpp
+	scpui/elements/AnimationElement.h
+)
+
 add_file_folder("Scripting"
 	scripting/ade.cpp
 	scripting/ade.h
@@ -1032,6 +1052,8 @@ add_file_folder("Scripting\\\\Api\\\\Libs"
     scripting/api/libs/time_lib.h
 	scripting/api/libs/utf8.cpp
 	scripting/api/libs/utf8.h
+	scripting/api/libs/ui.cpp
+	scripting/api/libs/ui.h
 )
 
 add_file_folder("Scripting\\\\Api\\\\Objs"
@@ -1278,6 +1300,8 @@ add_file_folder("Utils"
 	utils/HeapAllocator.h
 	utils/id.h
 	utils/RandomRange.h
+	utils/string_utils.cpp
+	utils/string_utils.h
 	utils/strings.h
     utils/unicode.cpp
     utils/unicode.h

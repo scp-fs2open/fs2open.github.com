@@ -16,6 +16,7 @@ addons:
             - liblua5.1-0-dev
             - libjansson-dev
             - libsdl2-dev
+            - libfreetype6-dev
             - valgrind
             - qt57base
     coverity_scan:

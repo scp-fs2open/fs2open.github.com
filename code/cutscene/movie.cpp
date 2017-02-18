@@ -44,21 +44,11 @@ struct PlaybackState {
 	int subtitle_font = -1;
 };
 
-void processEvents(PlaybackState* state) {
+void processEvents()
+{
 	io::mouse::CursorManager::get()->showCursor(false);
 
 	os_poll();
-
-	int k = key_inkey();
-	switch (k) {
-	case KEY_ESC:
-	case KEY_ENTER:
-	case KEY_SPACEBAR:
-		state->playing = false;
-		break;
-	default:
-		break;
-	}
 }
 
 template<typename... Args>
@@ -193,6 +183,21 @@ void movie_display_loop(Player* player, PlaybackState* state) {
 	// We will sleep at most half the time a frame would be displayed
 	auto sleepTime = static_cast<std::uint64_t>((1. / (4. * player->getMovieProperties().fps)) * 1000.);
 
+	auto listener = [state](const SDL_Event& event) {
+		switch (event.key.keysym.sym) {
+		case SDLK_ESCAPE:
+		case SDLK_KP_ENTER:
+		case SDLK_RETURN:
+		case SDLK_SPACE:
+			state->playing = false;
+			return true;
+		default:
+			return false;
+		}
+	};
+	// Use a dedicated listener here since we want to listen for the KEYUP event
+	auto key_handle = os::events::addEventListener(SDL_KEYUP, os::events::DEFAULT_LISTENER_WEIGHT - 10, listener);
+
 	auto lastDisplayTimestamp = timer_get_microseconds();
 	while (state->playing) {
 		TRACE_SCOPE(tracing::CutsceneStep);
@@ -209,7 +214,7 @@ void movie_display_loop(Player* player, PlaybackState* state) {
 			displayVideo(player, state);
 		}
 
-		processEvents(state);
+		processEvents();
 
 		if (passed < sleepTime) {
 			auto sleep = sleepTime - passed;
@@ -217,6 +222,8 @@ void movie_display_loop(Player* player, PlaybackState* state) {
 			os_sleep(static_cast<uint>(sleep));
 		}
 	}
+
+	os::events::removeEventListener(key_handle);
 }
 
 }

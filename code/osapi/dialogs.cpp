@@ -364,11 +364,7 @@ namespace os
 			filename = clean_filename(filename);
 
 			// output to the debug log before anything else (so that we have a complete record)
-
-			SCP_string printfString = text;
-			std::transform(printfString.begin(), printfString.end(), printfString.begin(), replaceNewline);
-
-			mprintf(("WARNING: \"%s\" at %s:%d\n", printfString.c_str(), filename, line));
+			mprintf(("WARNING: \"%s\" at %s:%d\n", text.c_str(), filename, line));
 
 			// now go for the additional popup window, if we want it ...
 			if (Cmdline_noninteractive) {
@@ -376,7 +372,7 @@ namespace os
 			}
 
 			if (running_unittests) {
-				throw WarningException(printfString);
+				throw WarningException(text);
 			}
 
 			SCP_stringstream boxMsgStream;

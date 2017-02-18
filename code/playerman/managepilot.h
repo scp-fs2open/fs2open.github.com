@@ -16,8 +16,8 @@ class player;
 
 #define VALID_PILOT_CHARS	" _-"
 
-#define MAX_PILOTS			20
-#define MAX_PILOT_IMAGES	64
+const int MAX_PILOTS       = 20;
+const int MAX_PILOT_IMAGES = 64;
 
 // pilot pic image list stuff ( call pilot_load_pic_list() to make these valid )
 extern char Pilot_images_arr[MAX_PILOT_IMAGES][MAX_FILENAME_LEN];
@@ -54,5 +54,7 @@ void pilot_format_callsign_personal(char *in_callsign,char *out_callsign);
 int pilot_verify_overwrite();
 
 void pilot_set_start_campaign(player* p);
+
+bool delete_pilot_file(const char *pilot_name);
 
 #endif	// _MANAGEPILOT_H
