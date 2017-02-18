@@ -91,13 +91,6 @@ int scripting_state_inited = 0;
 
 //*************************Scripting init and handling*************************
 
-// the prototype for this is in pstypes.h, below the script_hook struct
-void script_hook_init(script_hook *hook)
-{
-	hook->hook_function.language = 0;
-	hook->override_function.language = 0;
-}
-
 // ditto
 bool script_hook_valid(script_hook *hook)
 {
