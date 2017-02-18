@@ -165,7 +165,6 @@ enum GS_STATE {
 // IMPORTANT:  When you add a new state, update the initialization for GS_state_text[]
 //             which is done in GameSequence.cpp
 //
-extern struct script_hook GS_state_hooks[];	//WMC-for scripting
 extern const char *GS_state_text[];		// text description for the GS_STATE_* #defines above
 extern int Num_gs_event_text;
 extern int Num_gs_state_text;		//WMC - for scripting

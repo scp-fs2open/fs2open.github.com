@@ -20,7 +20,7 @@ struct image_desc
 };
 
 struct script_function {
-	int language;
+	int language = 0;
 	luacpp::LuaFunction function;
 };
 
@@ -32,18 +32,8 @@ struct script_hook
 
 	//Actual hook
 	script_function hook_function;
-
-	void freeFunctions() {
-		if (override_function.function.isValid()) {
-			override_function.function.getReference()->removeReference();
-		}
-		if (hook_function.function.isValid()) {
-			hook_function.function.getReference()->removeReference();
-		}
-	}
 };
 
-extern void script_hook_init(script_hook *hook);
 extern bool script_hook_valid(script_hook *hook);
 
 //**********Main Conditional Hook stuff
@@ -138,7 +128,6 @@ public:
 	script_action()
 		: action_type(CHA_NONE)
 	{
-		script_hook_init(&hook);
 	}
 };
 
