@@ -360,7 +360,7 @@ void HudGaugeRadarStd::pageIn()
 	bm_page_in_aabitmap( Radar_gauge.first_frame, Radar_gauge.num_frames );
 }
 
-void HudGaugeRadarStd::clampBlip(vec3d* blip)
+void HudGaugeRadarStd::clampBlip(vec3d* b)
 {
 	float max_radius;
 	float hypotenuse;
@@ -368,17 +368,17 @@ void HudGaugeRadarStd::clampBlip(vec3d* blip)
 	max_radius = i2fl(Radar_radius[0] - 5);
 
 	// Scale blip to radar size
-	vm_vec_scale(blip, i2fl(Radar_radius[0])/2.0f);
+	vm_vec_scale(b, i2fl(Radar_radius[0])/2.0f);
 
-	hypotenuse = _hypotf(blip->xyz.x, blip->xyz.y);
+	hypotenuse = hypotf(b->xyz.x, b->xyz.y);
 
 	// Clamp to inside of plot area, if needed
 	if (hypotenuse > max_radius) {
-		vm_vec_scale2(blip, max_radius, hypotenuse);
+		vm_vec_scale2(b, max_radius, hypotenuse);
 	}
 
 	// Scale Y to respect aspect ratio
-	blip->xyz.y *= (i2fl(Radar_radius[1]) / i2fl(Radar_radius[0]));
+	b->xyz.y *= (i2fl(Radar_radius[1]) / i2fl(Radar_radius[0]));
 }
 
 void HudGaugeRadarStd::plotBlip(blip *b, int *x, int *y)
@@ -392,14 +392,12 @@ void HudGaugeRadarStd::plotBlip(blip *b, int *x, int *y)
 		rscale = (float) acosf(pos->xyz.z / b->dist) / PI;
 	}
 
-	zdist = _hypotf(pos->xyz.x, pos->xyz.y);
+	zdist = hypotf(pos->xyz.x, pos->xyz.y);
 
-	vec3d new_pos;
+	vec3d new_pos = ZERO_VECTOR;
 
-	if (zdist < 0.01f)
+	if (zdist >= 0.01f)
 	{
-		new_pos = ZERO_VECTOR;
-	} else {
 		new_pos = *pos;
 		new_pos.xyz.z = 0.0f;
 		vm_vec_scale(&new_pos, rscale / zdist);		// Values are within +/- 1.0f

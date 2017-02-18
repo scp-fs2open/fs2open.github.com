@@ -1227,7 +1227,7 @@ int find_intersection(float* s, const vec3d* p0, const vec3d* p1, const vec3d* v
 	vm_vec_cross(&crossA, v0, v1);
 	vm_vec_cross(&crossB, &v2, v1);
 
-	if (vm_vec_equal(crossA, ZERO_VECTOR)) {
+	if (vm_vec_equal(crossA, vmd_zero_vector)) {
 		// Colinear
 		return -1;
 	}

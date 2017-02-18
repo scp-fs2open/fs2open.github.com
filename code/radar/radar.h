@@ -48,9 +48,9 @@ class HudGaugeRadarStd: public HudGaugeRadar
 protected:
 	/**
 	 * @brief Clamps and scales the blip to be within the plot area
-	 * @param[in] vec The blip coordinates (only x and y are nonzero)
+	 * @param[in] b The blip coordinates (only x and y are nonzero)
 	 */
-	virtual void clampBlip(vec3d* blip);
+	virtual void clampBlip(vec3d* b);
 public:
 	HudGaugeRadarStd();
 	void initCenterOffsets(float x, float y);
