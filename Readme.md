@@ -6,7 +6,7 @@ FreeSpace2 *S*ource *C*ode *P*roject
 
 Building
 --
-Before you do anything, make sure you have updated your git submodules, either by running git submodule update --init --recursive or by cloning the repository with the --recursive flag.<br/>
+Before you do anything, make sure you have updated your git submodules, either by running `git submodule update --init --recursive` or by cloning the repository with the `--recursive` flag.<br/>
 <br/>
 For building you will need [CMake](http://www.cmake.org/cmake/resources/software.html). Version 3.4 is required. Once you have installed CMake you should create a build directory where the project/make files should be created, **do not create them inside the source tree!**<br>
 <br>
