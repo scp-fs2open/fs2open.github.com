@@ -1,0 +1,71 @@
+/*
+* z64555's Undo system, created for the FreeSpace Source Code project
+*
+* Released under Creative Commons Attribution-ShareAlike 4.0 International
+* https://creativecommons.org/licenses/by-sa/4.0/
+*/
+
+#include "globalincs/pstypes.h"
+#include "globalincs/undosys.h"
+#include "globalincs/vmallocator.h"
+
+Undo_system::Undo_system()
+	: max_undos(10) {};
+
+Undo_system::Undo_system(uint _undos)
+	: max_undos(_undos) {};
+
+template<typename T>
+size_t Undo_system::save(T& item) {
+	// De-construct all intances of Undo_item on the redo stack, then clear the stack
+	for (auto it = redo_stack.begin(); it != redo_stack.end(); ++it) {
+		delete *it;
+	}
+	redo_stack.clear();
+
+	// Create a new instance of Undo_tem, with the correct type reference
+	Undo_item_base *new_item = new Undo_item<T>(item);
+
+	// If operator new fails, then we've got bigger problems!
+	// If needed, You can modify this to be tolerate of the issue by throwing an error before proceding
+	Assert(new_item != nullptr);
+	undo_stack.push_back(new_item);
+
+	while (undo_stack.size() > max_undos) {
+		// If we're past the stack limit, de-construct and remove until we're in the limit
+		// If max_undos is held constant (as it should be), the loop isn't necassary. 
+		//   But, it also isn't that much different from an if{} when assembled, so there's no harm in using it
+		delete undo_stack.front();
+		undo_stack.pop_front();
+	}
+
+	return undo_stack.size();
+};
+
+size_t Undo_system::redo() {
+	auto &item = redo_stack.back();
+	item->restore();
+	undo_stack.push_back(item);
+	redo_stack.pop_back();
+
+	while (undo_stack.size() > max_undos) {
+		delete undo_stack.front();
+		undo_stack.pop_front();
+	}
+
+	return redo_stack.size();
+};
+
+size_t Undo_system::undo() {
+	auto &item = undo_stack.back();
+	item->restore();
+	redo_stack.push_back(item);
+	undo_stack.pop_back();
+
+	while (redo_stack.size() > max_undos) {
+		delete redo_stack.front();
+		redo_stack.pop_front();
+	}
+
+	return undo_stack.size();
+};
