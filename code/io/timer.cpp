@@ -28,6 +28,7 @@ static int Timer_inited = 0;
 #define MICROSECONDS_PER_SECOND 1000000
 #define NANOSECONDS_PER_SECOND 1000000000
 
+static long double Timer_to_microseconds;
 static long double Timer_to_nanoseconds;
 
 static uint64_t get_performance_counter()
@@ -52,6 +53,7 @@ void timer_init()
 		Timer_perf_counter_freq = SDL_GetPerformanceFrequency();
 		Timer_base_value = SDL_GetPerformanceCounter();
 		Timer_to_nanoseconds = (long double) NANOSECONDS_PER_SECOND / (long double) Timer_perf_counter_freq;
+		Timer_to_microseconds = (long double) MICROSECONDS_PER_SECOND / (long double) Timer_perf_counter_freq;
 		Timer_inited = 1;
 
 		atexit(timer_close);
@@ -100,7 +102,7 @@ std::uint64_t timer_get_microseconds()
 {
 	auto time = get_performance_counter();
 
-	return (time * MICROSECONDS_PER_SECOND) / Timer_perf_counter_freq;
+	return (uint64_t) (time * Timer_to_microseconds);
 }
 
 std::uint64_t timer_get_nanoseconds()
