@@ -113,7 +113,7 @@ size_t Undo_system::size_redo() {
 
 
 Undo_stack::Undo_stack()
-	: reverse(fase) {
+	: reverse(false) {
 }
 
 Undo_stack::Undo_stack(size_t size)
@@ -122,7 +122,7 @@ Undo_stack::Undo_stack(size_t size)
 }
 
 Undo_stack::~Undo_stack() {
-	for (auto it = stack.begin; it != stack.end(); ++it) {
+	for (auto it = stack.begin(); it != stack.end(); ++it) {
 		delete *it;
 	}
 	stack.clear();
