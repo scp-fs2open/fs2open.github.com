@@ -35,7 +35,7 @@ public:
  *
  * @sa Undo_item_base
  */
-template<typename T> class Undo_item : Undo_item_base
+template<typename T> class Undo_item : public Undo_item_base
 {
 public:
 	Undo_item()
@@ -94,6 +94,47 @@ private:
 
 
 /*!
+ * @brief Class which handles multiple undo operations as a single op within the Undo_system
+ */
+class Undo_stack : public Undo_item_base
+{
+public:
+	Undo_stack();
+
+	Undo_stack(size_t size);
+
+	~Undo_stack();
+
+	/*!
+	 * @brief Restores all items within the undo stack
+	 *
+	 * @details Maintains an internal flag which will reverse direction on the next call, thereby redo-ing
+	 * 
+	 * @returns A pair of references to the last item restored
+	 */
+	std::pair<const void*, const void*> restore();
+
+	/*!
+	 * @brief Saves the item onto the undo stack
+	 *
+	 * @param[in] item      The item to save
+	 * @param[in] container (Optional) The container wherein this item is located
+	 * @note Call this _before_ you do your operation on the item
+	 */
+	template<typename T>
+	size_t save(T& item, T* container = nullptr);
+
+	/*!
+	 * @brief Calls ::reserve() on the internal vector
+	 */
+	void reserve(size_t size);
+private:
+	bool reverse;   // Direction to walk the stack. forward = false, reverse = True
+
+	std::vector<Undo_item_base*> stack;
+};
+
+/*!
  * @brief Generic Undo/Redo system. Save whatever, restore whatever!
  *
  * @details Currently uses a pair of deques. Would ideally use a ring container so that the actual Undo_item instances don't go anywhere.
@@ -114,6 +155,11 @@ public:
 	 */
 	template<typename T>
 	size_t save(T& item, T* container = nullptr);
+
+	/*!
+	 * @brief Saves a stack of undo-items as a single undo-item within the system
+	 */
+	size_t save_stack(Undo_stack& stack);
 
 	/*!
 	 * @brief Undo's the last changed item and save the changes into the Redo stack
