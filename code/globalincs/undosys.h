@@ -10,6 +10,66 @@
 
 #include <utility>
 
+/**********************************************************
+Usage:
+First, you need an instance of the Undo_system within your module:
+	{
+		Undo_styem Undo_controls;
+	}
+
+From now on, you can save and restore items. (Just be sure to save them before you change them!)
+	{
+		Undo_controls.save(Control_config[z]);             // 1. Save the item!!
+		Control_config[z].bind(cid(CID_KEYBOARD, KEY_UP)); // 2. Make changes to the item!!
+		Undo_controls.undo();                              // 3. Undo's the changes you did in step 2!
+		Undo_controls.redo();                              // 4. Redo's the changes you did in step 2!
+	}
+The undo system can save any type of data, you don't have to have an instance of a system per data type.
+!!NOTE!! C style arrays and strings should be wrapped in a std::array when saving. Simply passing the array/string's head won't save the entire array.
+{
+	Undo_controls.save(std::array<int, JOY_AXIS_ACTIONS>(Axis_map_to));
+}
+
+In several cases, the client code would like to know exactly what was changed. The undo system provides a mechnism for doing this:
+	{
+		Undo_controls.save(Control_config[z], &Control_config[0]);   // Save the item, and a reference to its container. Here, we use the location of the first item in Control_config as our reference
+		Undo_controls.save(Axis_map_to[z], Axis_map_to);             // Saves an axis mapping, here, we use the array's head pointer as our reference (since a int[] is the same as a int*)
+
+		std::pair<const void*, const void*> ref = Undo_controls.undo();    // ::undo() returns a std::pair<const void*, const void*>, the first member referening the item that changed, and the second referencing the item's container (if we provided it)
+
+		// Once we've stored the return value fron ::undo, we can found out what the item is by comparing the second member with containers that we've been saving
+		if (ref.second == &Control_config[0]) {
+			cout << "I'm a button!";
+			Tab = static_cast<Config_item>(ref.first).tab;  // Sets the selected tab within the Controls Config menu. We do a static cast here so we can access the Config_item::tab member
+		} else if (ref.second == Axis_map_to) {
+			cout << "I'm an axis!";
+			Tab = SHIP_TAB;                                 // Sets the selected tab within the Controls config menu. Can't do a cast on this one, since it's a simple C array. But we already know where the axes are kept (on the ship tab)
+		} else {
+			cout << "I don't know what I am!!! D:";         // Usually an error condition. Depending on the client code this can be fatal or just a minor setback
+		}
+	}
+
+Lastly, you can make stacks of undo operations, so that a single op in the system can undo/redo multiple item changes.
+	{
+		Undo_stack stack;  // We'll want to save multiple changes as a single operation. So we have to make a stack.
+
+		for (int i = 0; i < JOY_AXIS_ACTIONS; ++i) {
+			stack.save(Axis_map_to[i], Axis_map_to);		// This example saves a C style array. Does the same thing without a wrapper, but wasteful
+	}
+
+	Undo_controls.save(stack);	// Save the stack as a single item!
+	std::pair<const void*, const void*> ref = Undo_controls.undo();
+	// Undo rolls through the items as they were saved, should your data operate on the same location, this will apply the changes in the correct sequence
+	ref.second == Axis_map_to;
+	ref.first == &Axis_map_to[0];     // ::first references the _last_ item that the undo stack changed
+
+	//Also, performing an undo reverses the stack. So when you do a system undo, the changes are applied in reverse
+	ref = Undo_controls.redo();
+	ref.second == Axis_map_to;
+	ref.first == &Axis_map_to[JOY_AXIS_ACTIONS - 1];      // ::first references the _last_ item that the undo stack changed
+
+***********************************************************/
+
 /*!
  * @brief Base class of Undo_item. Use this when making an undo stack!
  * @sa Undo_item
