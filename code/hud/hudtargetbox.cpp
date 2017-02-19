@@ -776,7 +776,7 @@ void HudGaugeTargetBox::renderTargetDebris(object *target_objp)
 	if (debrisp->parent_alt_name >= 0)
 		mission_parse_lookup_alt_index(debrisp->parent_alt_name, printable_ship_class);
 	else
-		strcpy_s(printable_ship_class, Ship_info[debrisp->ship_info_index].name);
+		strcpy_s(printable_ship_class, (Ship_info[debrisp->ship_info_index].alt_name[0]) ? Ship_info[debrisp->ship_info_index].alt_name : Ship_info[debrisp->ship_info_index].name);
 
 	end_string_at_first_hash_symbol(printable_ship_class);
 	
