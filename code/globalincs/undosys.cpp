@@ -16,7 +16,7 @@ Undo_system::Undo_system(uint _undos)
 	: max_undos(_undos) {};
 
 template<typename T>
-size_t Undo_system::save(T& item) {
+size_t Undo_system::save(T& item, T* container) {
 	// De-construct all intances of Undo_item on the redo stack, then clear the stack
 	for (auto it = redo_stack.begin(); it != redo_stack.end(); ++it) {
 		delete *it;
@@ -24,7 +24,7 @@ size_t Undo_system::save(T& item) {
 	redo_stack.clear();
 
 	// Create a new instance of Undo_tem, with the correct type reference
-	Undo_item_base *new_item = new Undo_item<T>(item);
+	Undo_item_base *new_item = new Undo_item<T>(item, container);
 
 	// If operator new fails, then we've got bigger problems!
 	// If needed, You can modify this to be tolerate of the issue by throwing an error before proceding
@@ -42,9 +42,16 @@ size_t Undo_system::save(T& item) {
 	return undo_stack.size();
 };
 
-size_t Undo_system::redo() {
+std::pair<const void*, const void*> Undo_system::redo() {
+	std::pair<const void*, const void*> retval;
+
+	if (redo_stack.empty()) {
+		// Nothing to redo
+		return std::pair<const void*, const void*>(nullptr, nullptr);
+	}
+
 	auto &item = redo_stack.back();
-	item->restore();
+	retval = item->restore();
 	undo_stack.push_back(item);
 	redo_stack.pop_back();
 
@@ -53,12 +60,19 @@ size_t Undo_system::redo() {
 		undo_stack.pop_front();
 	}
 
-	return redo_stack.size();
+	return retval;
 };
 
-size_t Undo_system::undo() {
+std::pair<const void*, const void*> Undo_system::undo() {
+	std::pair<const void*, const void*> retval;
+	
+	if (undo_stack.empty()) {
+		// Nothing to undo
+		return std::pair<const void*, const void*>(nullptr, nullptr);
+	}
+
 	auto &item = undo_stack.back();
-	item->restore();
+	retval = item->restore();
 	redo_stack.push_back(item);
 	undo_stack.pop_back();
 
@@ -67,5 +81,13 @@ size_t Undo_system::undo() {
 		redo_stack.pop_front();
 	}
 
-	return undo_stack.size();
+	return retval;
 };
+
+size_t Undo_system::size() {
+	return undo_stack.size();
+}
+
+size_t Undo_system::size_redo() {
+	return redo_stack.size();
+}
