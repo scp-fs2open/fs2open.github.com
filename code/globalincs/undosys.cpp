@@ -42,6 +42,25 @@ size_t Undo_system::save(T& item, T* container) {
 	return undo_stack.size();
 };
 
+size_t Undo_system::save_stack(Undo_stack& stack) {
+	for (auto it = redo_stack.begin(); it != redo_stack.end(); ++it) {
+		delete *it;
+	}
+	redo_stack.clear();
+
+	Undo_item_base *new_item = new Undo_stack(stack);
+
+	Assert(new_item != nullptr);
+	undo_stack.push_back(new_item);
+
+	while (undo_stack.size() > max_undos) {
+		delete undo_stack.front();
+		undo_stack.pop_front();
+	}
+
+	return undo_stack.size();
+}
+
 std::pair<const void*, const void*> Undo_system::redo() {
 	std::pair<const void*, const void*> retval;
 
@@ -91,3 +110,55 @@ size_t Undo_system::size() {
 size_t Undo_system::size_redo() {
 	return redo_stack.size();
 }
+
+
+Undo_stack::Undo_stack()
+	: reverse(fase) {
+}
+
+Undo_stack::Undo_stack(size_t size)
+	: reverse(false) {
+	stack.reserve(size);
+}
+
+Undo_stack::~Undo_stack() {
+	for (auto it = stack.begin; it != stack.end(); ++it) {
+		delete *it;
+	}
+	stack.clear();
+}
+
+void Undo_stack::reserve(size_t size) {
+	stack.reserve(size);
+}
+
+std::pair<const void*, const void*> Undo_stack::restore() {
+	std::pair<const void*, const void*> retval;
+
+	if (reverse) {
+		for (auto it = stack.rbegin(); it != stack.rend(); ++it) {
+			retval = (*it)->restore();
+		}
+	} else {
+		for (auto it = stack.begin(); it != stack.end(); ++it) {
+			retval = (*it)->restore();
+		}
+	}
+
+	reverse = !reverse;
+	return retval;
+}
+
+template<typename T>
+size_t Undo_stack::save(T& item, T* container) {
+	// Create a new instance of Undo_tem, with the correct type reference
+	Undo_item_base *new_item = new Undo_item<T>(item, container);
+
+	// If operator new fails, then we've got bigger problems!
+	// If needed, You can modify this to be tolerate of the issue by throwing an error before proceding
+	Assert(new_item != nullptr);
+	stack.push_back(new_item);
+
+	return stack.size();
+};
+
