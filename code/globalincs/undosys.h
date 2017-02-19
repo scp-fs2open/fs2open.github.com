@@ -15,6 +15,7 @@
 class Undo_item_base
 {
 public:
+	virtual ~Undo_item_base() = 0;
 	virtual void restore() = 0;
 };
 
