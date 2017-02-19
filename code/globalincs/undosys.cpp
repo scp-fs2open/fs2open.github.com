@@ -15,6 +15,18 @@ Undo_system::Undo_system()
 Undo_system::Undo_system(uint _undos)
 	: max_undos(_undos) {};
 
+void Undo_system::clear() {
+	for (auto it = redo_stack.begin(); it != redo_stack.end(); ++it) {
+		delete *it;
+	}
+	redo_stack.clear();
+
+	for (auto it = undo_stack.begin(); it != undo_stack.end(); ++it) {
+		delete *it;
+	}
+	undo_stack.clear();
+}
+
 template<typename T>
 size_t Undo_system::save(T& item, T* container) {
 	// De-construct all intances of Undo_item on the redo stack, then clear the stack
@@ -113,7 +125,7 @@ size_t Undo_system::size_redo() {
 
 
 Undo_stack::Undo_stack()
-	: reverse(fase) {
+	: reverse(false) {
 }
 
 Undo_stack::Undo_stack(size_t size)
@@ -122,7 +134,7 @@ Undo_stack::Undo_stack(size_t size)
 }
 
 Undo_stack::~Undo_stack() {
-	for (auto it = stack.begin; it != stack.end(); ++it) {
+	for (auto it = stack.begin(); it != stack.end(); ++it) {
 		delete *it;
 	}
 	stack.clear();
