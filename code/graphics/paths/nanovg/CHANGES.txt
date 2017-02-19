@@ -1,5 +1,6 @@
 The original source code of nanovg.c was changed slightly:
   - nvgText was changed to round vertex positions to reduce text blurring
+  - A GCC pragma was added to suppress a warning in stb_image
 
 Changes to fontstash.h
   - Increased memory size for newer stb_truetype version
