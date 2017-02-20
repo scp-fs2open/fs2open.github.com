@@ -101,6 +101,8 @@ void init_new_pilot(player *p, int reset)
 		Mouse_sensitivity = 4;
 		Joy_sensitivity = 9;
 		Joy_dead_zone_size = 10;
+
+		p->variables.clear();
 	}
 
 	// unassigned squadron
