@@ -44,7 +44,10 @@ elseif(PLATFORM_MAC)
     # Handling of mac resources
     set(subpath resources/mac)
 
-    set_target_properties(Freespace2 PROPERTIES MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/${subpath}/Info.plist)
+    set_target_properties(Freespace2 PROPERTIES MACOSX_BUNDLE_INFO_PLIST "${CMAKE_CURRENT_SOURCE_DIR}/${subpath}/Info.plist.in")
+    set_target_properties(Freespace2 PROPERTIES MACOSX_BUNDLE_ICON_FILE "FS2_Open")
+    set_target_properties(Freespace2 PROPERTIES MACOSX_BUNDLE_LONG_VERSION_STRING "${FSO_FULL_VERSION_STRING}")
+    set_target_properties(Freespace2 PROPERTIES MACOSX_BUNDLE_SHORT_VERSION_STRING "${FSO_FULL_VERSION_STRING}")
     
     CONFIGURE_FILE("${CMAKE_CURRENT_SOURCE_DIR}/${subpath}/InfoPlist.strings.in" "${CMAKE_CURRENT_BINARY_DIR}/InfoPlist.strings")
     
