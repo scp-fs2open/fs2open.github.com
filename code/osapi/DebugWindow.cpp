@@ -116,7 +116,8 @@ float DebugWindow::print_line(float bottom_y, const LineInfo& line) {
 	SCP_vector<int> line_lengths;
 
 	// Substract 40 so that we can have margins on both sides
-	auto max_w = std::max(10, gr_screen.max_w - max_category_width - 40);
+	// Make sure that the width doesn't go too low or else split_str will not be able to fit enough characters in one line
+	auto max_w = std::max(40, gr_screen.max_w - max_category_width - 40);
 
 	split_str(line.text.c_str(), max_w, line_lengths, split_lines);
 
