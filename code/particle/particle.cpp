@@ -87,6 +87,11 @@ namespace particle
 	void init()
 	{
 
+		if (Anim_bitmap_id_fire == -1) 
+		{
+			Anim_bitmap_id_fire = bm_load_animation("particleexp01", &Anim_num_frames_fire, nullptr, NULL, 0);
+		}
+
 		// Cough, cough
 		if (Anim_bitmap_id_smoke == -1)
 		{
