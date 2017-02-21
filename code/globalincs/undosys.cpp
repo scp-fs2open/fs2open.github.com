@@ -16,7 +16,14 @@ Undo_system::Undo_system(uint _undos)
 	: max_undos(_undos) {};
 
 void Undo_system::clear() {
+	for (auto it = redo_stack.begin(); it != redo_stack.end(); ++it) {
+		delete *it;
+	}
 	redo_stack.clear();
+
+	for (auto it = undo_stack.begin(); it != undo_stack.end(); ++it) {
+		delete *it;
+	}
 	undo_stack.clear();
 }
 
