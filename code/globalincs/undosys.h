@@ -207,6 +207,11 @@ public:
 	Undo_system(uint _undos);
 
 	/*!
+	 * @brief Deletes all undo and redo data
+	 */
+	void clear();
+	
+	/*!
 	 * @brief Saves the item onto the undo stack
 	 *
 	 * @param[in] item      The item to save
