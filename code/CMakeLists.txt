@@ -53,6 +53,8 @@ IF(FSO_BUILD_TOOLS)
 	ADD_SUBDIRECTORY(cfileextractor)
 ENDIF(FSO_BUILD_TOOLS)
 
+set_target_properties(code PROPERTIES COTIRE_CXX_PREFIX_HEADER_INIT "prefix_header.h")
+
 include(util)
 configure_cotire(code)
 

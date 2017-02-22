@@ -141,15 +141,10 @@ macro(set_if_not_defined VAR VALUE)
 endmacro(set_if_not_defined)
 
 macro(configure_cotire target)
-	IF(COTIRE_ENABLE)
-		# Disable unity build as it doesn't work well for us
-		set_target_properties(${target} PROPERTIES COTIRE_ADD_UNITY_BUILD FALSE)
+	# Disable unity build as it doesn't work well for us
+	set_target_properties(${target} PROPERTIES COTIRE_ADD_UNITY_BUILD FALSE)
 
-		# add ignored paths for the precompiled header here
-		set_target_properties(code PROPERTIES COTIRE_PREFIX_HEADER_IGNORE_PATH
-			"${CMAKE_SOURCE_DIR};${CMAKE_BINARY_DIR};${FFMPEG_ROOT_DIR}")
-		cotire(${target})
-	ENDIF(COTIRE_ENABLE)
+	cotire(${target})
 endmacro(configure_cotire)
 
 macro(add_target_copy_files)
