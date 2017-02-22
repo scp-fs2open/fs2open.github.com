@@ -22055,8 +22055,8 @@ int sexp_script_eval(int node, int return_type, bool concat_args = false)
 					if (!success)
 						Warning(LOCATION, "sexp-script-eval failed to evaluate string \"%s\"; check your syntax", script_cmd.c_str());
 				}
+				return SEXP_TRUE;
 			}
-			break;
 		default:
 			Error(LOCATION, "Bad type passed to sexp_script_eval - get a coder");
 			break;
