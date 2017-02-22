@@ -819,7 +819,22 @@ class waypoint_list;
 #define SEXP_ALL_BANKS_STRING		"<all weapon banks>"
 
 // macros for accessing sexpression atoms
+/**
+ * @brief Returns the first element of a SEXP list
+ *
+ * The name CAR originates from the original LISP language where it was a function which retrieved the first element of
+ * a list.
+ *
+ * @see https://en.wikipedia.org/wiki/CAR_and_CDR
+ */
 #define CAR(n)		((n < 0) ? -1 : Sexp_nodes[n].first)
+/**
+ * @brief Returns the rest of a SEXP list. The rest is everything starting from the second element.
+ *
+ * The name CDR originates from the original LISP language where it was a function which retrieved the "rest" of a list.
+ *
+ * @see https://en.wikipedia.org/wiki/CAR_and_CDR
+ */
 #define CDR(n)		((n < 0) ? -1 : Sexp_nodes[n].rest)
 #define CADR(n)		CAR(CDR(n))
 // #define CTEXT(n)	(Sexp_nodes[n].text)
