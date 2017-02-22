@@ -22024,8 +22024,8 @@ int sexp_script_eval(int node, int return_type, bool concat_args = false)
 
 					n = CDR(n);
 				}
+				break;
 			}
-			break;
 		case OPR_NULL:
 			{
 				SCP_string script_cmd;
@@ -22055,14 +22055,14 @@ int sexp_script_eval(int node, int return_type, bool concat_args = false)
 					if (!success)
 						Warning(LOCATION, "sexp-script-eval failed to evaluate string \"%s\"; check your syntax", script_cmd.c_str());
 				}
-				return SEXP_TRUE;
+				break;
 			}
 		default:
 			Error(LOCATION, "Bad type passed to sexp_script_eval - get a coder");
 			break;
 	}
 
-	return -1;
+	return SEXP_TRUE;
 }
 
 void sexp_script_eval_multi(int node)
