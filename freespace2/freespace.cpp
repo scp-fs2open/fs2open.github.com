@@ -4210,6 +4210,11 @@ void game_frame(bool paused)
 	// start timing frame
 	TRACE_SCOPE(tracing::MainFrame);
 
+	if(Player_obj)
+		Script_system.SetHookObject("Player", Player_obj);
+	else
+		Script_system.RemHookVar("Player");
+
 	DEBUG_GET_TIME( total_time1 )
 
 	if(paused)
@@ -4286,11 +4291,6 @@ void game_frame(bool paused)
 			if ( (Game_detail_flags & DETAIL_FLAG_CLEAR) ) {
 				gr_clear();
 			}
-
-			if(Player_obj)
-				Script_system.SetHookObject("Player", Player_obj);
-			else
-				Script_system.RemHookVar("Player");
 
 			DEBUG_GET_TIME( clear_time2 )
 			DEBUG_GET_TIME( render3_time1 )
