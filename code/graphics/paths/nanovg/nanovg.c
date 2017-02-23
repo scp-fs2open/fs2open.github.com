@@ -21,8 +21,19 @@
 #include "nanovg.h"
 #define FONTSTASH_IMPLEMENTATION
 #include "fontstash.h"
+
+#if defined(__GNUC__) && __GNUC__ > 5
+#pragma GCC diagnostic push
+// stb image uses shifts of negative values and GCC warns about that
+#pragma GCC diagnostic ignored "-Wshift-negative-value"
+#endif
+
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
+
+#if defined(__GNUC__) && __GNUC__ > 5
+#pragma GCC diagnostic pop
+#endif
 
 #ifdef _MSC_VER
 #pragma warning(disable: 4100)  // unreferenced formal parameter
