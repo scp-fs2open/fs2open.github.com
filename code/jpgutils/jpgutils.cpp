@@ -13,24 +13,24 @@
 #include <string.h>
 #include <setjmp.h>
 
-#include "jpeglib.h"
-
-#undef LOCAL // fix from a jpeg header, pstypes.h will define it again
-
-// fix a warning where jpeg and SDL headers collide
-#ifdef HAVE_STDDEF_H
-#undef HAVE_STDDEF_H
-#endif 
-
-#ifdef HAVE_STDLIB_H
-#undef HAVE_STDLIB_H
-#endif
-
 #include "globalincs/pstypes.h"
 #include "jpgutils/jpgutils.h"
 #include "cfile/cfile.h"
 #include "bmpman/bmpman.h"
 #include "graphics/2d.h"
+
+#undef LOCAL // fix for the jpeg header, pstypes.h has defined these macros
+
+// fix a warning where jpeg and SDL headers collide
+#ifdef HAVE_STDDEF_H
+#undef HAVE_STDDEF_H
+#endif
+
+#ifdef HAVE_STDLIB_H
+#undef HAVE_STDLIB_H
+#endif
+
+#include "jpeglib.h"
 
 
 // forward declarations

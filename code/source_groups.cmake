@@ -1,5 +1,6 @@
 # top-level files
 set (file_root
+	prefix_header.h
 )
 
 # AI files
