@@ -30,41 +30,45 @@ void test::FSTestFixture::SetUp() {
 
 	os_init("Test", "Test");
 
-	SCP_string cfile_dir(TEST_DATA_PATH);
-	cfile_dir += DIR_SEPARATOR_CHAR;
-	cfile_dir += "test"; // Cfile expects something after the path
+	if (_initFlags & INIT_CFILE) {
+		SCP_string cfile_dir(TEST_DATA_PATH);
+		cfile_dir += DIR_SEPARATOR_CHAR;
+		cfile_dir += "test"; // Cfile expects something after the path
 
-	if ( cfile_init(cfile_dir.c_str()) ) {
-		FAIL() << "Cfile init failed!";
-	}
-
-	lcl_init(-1);
-	lcl_xstr_init();
-
-	if (_initFlags & INIT_GRAPHICS) {
-		if (!gr_init(nullptr, GR_STUB, 1024, 768)) {
-			FAIL() << "Graphics init failed!";
+		if (cfile_init(cfile_dir.c_str())) {
+			FAIL() << "Cfile init failed!";
 		}
-	}
 
-	if (_initFlags & INIT_SHIPS) {
-		ship_init();
+		lcl_init(-1);
+		lcl_xstr_init();
+
+		if (_initFlags & INIT_GRAPHICS) {
+			if (!gr_init(nullptr, GR_STUB, 1024, 768)) {
+				FAIL() << "Graphics init failed!";
+			}
+		}
+
+		if (_initFlags & INIT_SHIPS) {
+			ship_init();
+		}
 	}
 }
 void test::FSTestFixture::TearDown() {
-	if (_initFlags & INIT_SHIPS) {
-		ship_close();
+	if (_initFlags & INIT_CFILE) {
+		if (_initFlags & INIT_SHIPS) {
+			ship_close();
+		}
+
+		if (_initFlags & INIT_GRAPHICS) {
+			io::mouse::CursorManager::shutdown();
+
+			bm_unload_all();
+
+			gr_close();
+		}
+
+		cfile_close();
 	}
-
-	if (_initFlags & INIT_GRAPHICS) {
-		io::mouse::CursorManager::shutdown();
-
-		bm_unload_all();
-
-		gr_close();
-	}
-
-	cfile_close();
 
 	timer_close();
 
@@ -87,7 +91,7 @@ void test::FSTestFixture::addCommandlineArg(const SCP_string& arg) {
 	_cmdlineArgs.push_back(arg);
 }
 void test::FSTestFixture::init_cmdline() {
-	std::unique_ptr<char*[]> parts(new char*[_cmdlineArgs.size()]);
+	std::unique_ptr<char* []> parts(new char* [_cmdlineArgs.size()]);
 
 	for (size_t i = 0; i < _cmdlineArgs.size(); ++i) {
 		parts[i] = const_cast<char*>(_cmdlineArgs[i].c_str());
