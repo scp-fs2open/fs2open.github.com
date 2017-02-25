@@ -582,6 +582,8 @@ void HudGaugeShield::showShields(object *objp, int mode)
 	}
 	else
 	{
+		GR_DEBUG_SCOPE("Render generated shield icon");
+
 		bool g3_yourself = !g3_in_frame();
 		angles rot_angles = {-1.570796327f,0.0f,0.0f};
 		matrix	object_orient;
@@ -667,6 +669,7 @@ void HudGaugeShield::showShields(object *objp, int mode)
 			if ( objp->shield_quadrant[i] < 0.1f )
 				continue;
 		}
+		GR_DEBUG_SCOPE("Render shield quadrant");
 
 		range = MAX(HUD_COLOR_ALPHA_MAX, HUD_color_alpha + objp->n_quadrants);
 
