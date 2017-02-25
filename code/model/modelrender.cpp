@@ -43,7 +43,7 @@ extern void interp_render_arc_segment( vec3d *v1, vec3d *v2, int depth );
 
 model_batch_buffer TransformBufferHandler;
 
-model_render_params::model_render_params():
+model_render_params::model_render_params() :
 	Model_flags(MR_NORMAL),
 	Debug_flags(0),
 	Objnum(-1),
@@ -55,6 +55,7 @@ model_render_params::model_render_params():
 	Forced_bitmap(-1),
 	Insignia_bitmap(-1),
 	Replacement_textures(NULL),
+	manage_replacement_textures(false),
 	Team_color_set(false),
 	Clip_plane_set(false),
 	Animated_effect(-1),
@@ -78,6 +79,12 @@ model_render_params::model_render_params():
 	}
 
 	gr_init_color(&Color, 0, 0, 0);
+}
+
+model_render_params::~model_render_params() 
+{
+	if (manage_replacement_textures)
+		vm_free(Replacement_textures);
 }
 
 uint model_render_params::get_model_flags()
@@ -208,6 +215,26 @@ bool model_render_params::is_team_color_set()
 void model_render_params::set_replacement_textures(int *textures)
 {
 	Replacement_textures = textures;
+}
+
+void model_render_params::set_replacement_textures(int modelnum, SCP_vector<texture_replace>& replacement_textures)
+{
+	Replacement_textures = (int*)vm_malloc(MAX_REPLACEMENT_TEXTURES * sizeof(int));
+	manage_replacement_textures = true;
+
+	polymodel* pm = model_get(modelnum);
+
+	for (auto tr : replacement_textures) 
+	{
+		for (int i = 0; i < pm->n_textures; ++i) 
+		{
+			texture_map *tmap = &pm->maps[i];
+
+			int tnum = tmap->FindTexture(tr.old_texture);
+			if (tnum > -1)
+				Replacement_textures[i * TM_NUM_TYPES + tnum] = bm_load(tr.new_texture);
+		}
+	}
 }
 
 void model_render_params::set_insignia_bitmap(int bitmap)
