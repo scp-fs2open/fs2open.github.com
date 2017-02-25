@@ -33,6 +33,7 @@
 #include "cutscene/cutscenes.h"
 #include "cutscene/player.h"
 #include "cutscene/movie.h"
+#include "config/ConfigurationManager.h"
 #include "debris/debris.h"
 #include "debugconsole/console.h"
 #include "exceptionhandler/exceptionhandler.h"
@@ -7053,6 +7054,10 @@ void game_shutdown(void)
 #endif
 
 	gr_close();
+
+	// Save the config system as late as possible so that all the other code has updates the config items if there were
+	// any changes
+	config::ConfigurationManager::getInstance().saveSettings();
 
 	os_cleanup();
 

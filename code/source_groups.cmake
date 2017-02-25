@@ -75,6 +75,16 @@ set (file_root_cmeasure
 	cmeasure/cmeasure.h
 )
 
+# Config files
+set (file_root_config
+	config/ConfigurationItem.cpp
+	config/ConfigurationItem.h
+	config/ConfigurationManager.cpp
+	config/ConfigurationManager.h
+	config/serializers.cpp
+	config/serializers.h
+)
+
 # ControlConfig files
 set (file_root_controlconfig
 	controlconfig/controlsconfig.cpp
@@ -1212,6 +1222,7 @@ source_group("Camera"                             FILES ${file_root_camera})
 source_group("CFile"                              FILES ${file_root_cfile})
 source_group("Cmdline"                            FILES ${file_root_cmdline})
 source_group("CMeasure"                           FILES ${file_root_cmeasure})
+source_group("Config"                             FILES ${file_root_config})
 source_group("ControlConfig"                      FILES ${file_root_controlconfig})
 source_group("Cutscene"                           FILES ${file_root_cutscene})
 source_group("Cutscene\\ffmpeg"                   FILES ${file_root_cutscene_ffmpeg})
@@ -1305,6 +1316,7 @@ set (file_root
 	${file_root_cfile}
 	${file_root_cmdline}
 	${file_root_cmeasure}
+	${file_root_config}
 	${file_root_controlconfig}
 	${file_root_cutscene}
 	${file_root_cutscene_ffmpeg}
