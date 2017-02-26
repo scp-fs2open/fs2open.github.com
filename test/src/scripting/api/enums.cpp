@@ -3,7 +3,7 @@
 
 class EnumsTest : public test::scripting::ScriptingTestFixture {
  public:
-	EnumsTest() : test::scripting::ScriptingTestFixture(0) {
+	EnumsTest() : test::scripting::ScriptingTestFixture(INIT_CFILE) {
 		pushModDir("enums");
 	}
 };
