@@ -1464,6 +1464,11 @@ void ship_select_do(float frametime)
 				render_info.set_team_color(sip->default_team_name, "none", 0, 0);
 			}
 
+			if (sip->replacement_textures.size() > 0)
+			{
+				render_info.set_replacement_textures(ShipSelectModelNum, sip->replacement_textures);
+			}
+
 			draw_model_rotating(
 				&render_info, 
 				ShipSelectModelNum,

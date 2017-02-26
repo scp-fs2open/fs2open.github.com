@@ -912,6 +912,12 @@ void labviewer_render_model(float frametime)
 				model_show_damaged(Lab_model_num, 1);
 			}
 		}
+
+		// Deal with tabled replacement textures
+		if (sip != NULL && sip->replacement_textures.size() > 0) 
+		{			
+			render_info.set_replacement_textures(Lab_model_num, sip->replacement_textures);
+		}
 		
 		if( !( flagggs & MR_NO_LIGHTING ) && Cmdline_shadow_quality ) {
 			polymodel *pm = model_get(Lab_model_num);

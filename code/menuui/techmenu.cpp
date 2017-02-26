@@ -562,6 +562,11 @@ void techroom_ships_render(float frametime)
 		}
 	}
 
+	if (sip->replacement_textures.size() > 0)
+	{
+		render_info.set_replacement_textures(Techroom_ship_modelnum, sip->replacement_textures);
+	}
+
     if(Cmdline_shadow_quality)
     {
         gr_reset_clip();

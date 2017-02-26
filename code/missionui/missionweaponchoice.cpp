@@ -903,6 +903,11 @@ void wl_render_overhead_view(float frametime)
 			model_clear_instance(wl_ship->model_num);
 			polymodel *pm = model_get(wl_ship->model_num);
 
+			if (sip->replacement_textures.size() > 0) 
+			{
+				render_info.set_replacement_textures(wl_ship->model_num, sip->replacement_textures);
+			}
+
 			if(Cmdline_shadow_quality)
 			{
 				gr_reset_clip();

@@ -18645,9 +18645,9 @@ void ship_render_weapon_models(model_render_params *ship_render_info, model_draw
 
 	scene->push_transform(&obj->pos, &obj->orient);
 
-	model_render_params render_info = *ship_render_info;
-
+	auto ship_render_flags = ship_render_info->get_model_flags();
 	render_flags &= ~MR_SHOW_THRUSTERS;
+	ship_render_info->set_flags(render_flags);
 
 	//primary weapons
 	for ( i = 0; i < swp->num_primary_banks; i++ ) {
@@ -18656,15 +18656,14 @@ void ship_render_weapon_models(model_render_params *ship_render_info, model_draw
 		}
 
 		w_bank *bank = &model_get(sip->model_num)->gun_banks[i];
+
 		for ( k = 0; k < bank->num_slots; k++ ) {
 			polymodel* pm = model_get(Weapon_info[swp->primary_bank_weapons[i]].external_model_num);
 
 			pm->gun_submodel_rotation = shipp->primary_rotate_ang[i];
 
-			render_info.set_flags(render_flags);
 
-			model_render_queue(&render_info, scene, Weapon_info[swp->primary_bank_weapons[i]].external_model_num, &vmd_identity_matrix, &bank->pnt[k]);
-
+			model_render_queue(ship_render_info, scene, Weapon_info[swp->primary_bank_weapons[i]].external_model_num, &vmd_identity_matrix, &bank->pnt[k]);
 			pm->gun_submodel_rotation = 0.0f;
 		}
 	}
@@ -18681,11 +18680,9 @@ void ship_render_weapon_models(model_render_params *ship_render_info, model_draw
 
 		bank = &(model_get(sip->model_num))->missile_banks[i];
 
-		if (Weapon_info[swp->secondary_bank_weapons[i]].wi_flags[Weapon::Info_Flags::External_weapon_lnch]) {
+		if (Weapon_info[swp->secondary_bank_weapons[i]].wi_flags[Weapon::Info_Flags::External_weapon_lnch]) {			
 			for(k = 0; k < bank->num_slots; k++) {
-				render_info.set_flags(render_flags);
-
-				model_render_queue(&render_info, scene, Weapon_info[swp->secondary_bank_weapons[i]].external_model_num, &vmd_identity_matrix, &bank->pnt[k]);
+				model_render_queue(ship_render_info, scene, Weapon_info[swp->secondary_bank_weapons[i]].external_model_num, &vmd_identity_matrix, &bank->pnt[k]);
 			}
 		} else {
 			num_secondaries_rendered = 0;
@@ -18705,12 +18702,12 @@ void ship_render_weapon_models(model_render_params *ship_render_info, model_draw
 
 				vm_vec_scale_add2(&secondary_weapon_pos, &vmd_z_vector, -(1.0f-shipp->secondary_point_reload_pct[i][k]) * model_get(Weapon_info[swp->secondary_bank_weapons[i]].external_model_num)->rad);
 
-				render_info.set_flags(render_flags);
-
-				model_render_queue(&render_info, scene, Weapon_info[swp->secondary_bank_weapons[i]].external_model_num, &vmd_identity_matrix, &secondary_weapon_pos);
+				model_render_queue(ship_render_info, scene, Weapon_info[swp->secondary_bank_weapons[i]].external_model_num, &vmd_identity_matrix, &secondary_weapon_pos);
 			}
 		}
 	}
+
+	ship_render_info->set_flags(ship_render_flags);
 
 	scene->pop_transform();
 }
