@@ -75,7 +75,7 @@ class model_render_params
 	int Insignia_bitmap;
 
 	int *Replacement_textures;
-	bool manage_replacement_textures; // This is set when we are rendering a model without an associated ship object;
+	bool Manage_replacement_textures; // This is set when we are rendering a model without an associated ship object;
 									  // in that case, model_render_params is responsible for allocating and destroying
 									  // the Replacement_textures array (this is handled elsewhere otherwise)
 
@@ -97,6 +97,8 @@ class model_render_params
 
 	bool Normal_extrude;
 	float Normal_extrude_width;
+
+	model_render_params(const model_render_params& other);
 public:
 	model_render_params();
 	~model_render_params();

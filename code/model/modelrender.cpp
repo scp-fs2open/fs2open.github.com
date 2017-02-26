@@ -55,7 +55,7 @@ model_render_params::model_render_params() :
 	Forced_bitmap(-1),
 	Insignia_bitmap(-1),
 	Replacement_textures(NULL),
-	manage_replacement_textures(false),
+	Manage_replacement_textures(false),
 	Team_color_set(false),
 	Clip_plane_set(false),
 	Animated_effect(-1),
@@ -83,7 +83,7 @@ model_render_params::model_render_params() :
 
 model_render_params::~model_render_params() 
 {
-	if (manage_replacement_textures)
+	if (Manage_replacement_textures)
 		vm_free(Replacement_textures);
 }
 
@@ -220,7 +220,7 @@ void model_render_params::set_replacement_textures(int *textures)
 void model_render_params::set_replacement_textures(int modelnum, SCP_vector<texture_replace>& replacement_textures)
 {
 	Replacement_textures = (int*)vm_malloc(MAX_REPLACEMENT_TEXTURES * sizeof(int));
-	manage_replacement_textures = true;
+	Manage_replacement_textures = true;
 
 	polymodel* pm = model_get(modelnum);
 
