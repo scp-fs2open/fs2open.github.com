@@ -60,6 +60,9 @@ set(COMPILER_FLAGS "${COMPILER_FLAGS} ${SANITIZE_FLAGS}")
 
 set(COMPILER_FLAGS "${COMPILER_FLAGS} -Wno-unused-function")
 
+# Dear Clang, please tell us if a function does not return a value since that part of the standard is stupid!
+set(COMPILER_FLAGS "${COMPILER_FLAGS} -Wreturn-type")
+
 set(COMPILER_FLAGS "${COMPILER_FLAGS} -Wno-char-subscripts")
 
 set(COMPILER_FLAGS "${COMPILER_FLAGS} -Wno-unused-parameter")
