@@ -98,7 +98,8 @@ class model_render_params
 	bool Normal_extrude;
 	float Normal_extrude_width;
 
-	model_render_params(const model_render_params& other);
+	model_render_params(const model_render_params&) = delete;
+	model_render_params& operator=(const model_render_params&) = delete;
 public:
 	model_render_params();
 	~model_render_params();
