@@ -999,9 +999,9 @@ void control_config_reset_defaults(int presetnum)
 
 	// Reset keyboard defaults
 	for (i=0; i<CCFG_MAX; i++) {
-		// Note that key_default and joy_default are NOT overwritten here;
-		// they should retain the values of the first preset because
-		// for example the key-pressed SEXP works off the defaults of the first preset
+		// Note that key_default, joy_default and default_text are NOT
+		// overwritten here; they should retain the values of the first preset
+		Control_config[i].text = preset[i].text;
 		Control_config[i].key_id = preset[i].key_default;
 		Control_config[i].joy_id = preset[i].joy_default;
 		Control_config[i].tab = preset[i].tab;
