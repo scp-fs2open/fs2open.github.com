@@ -148,7 +148,7 @@ SDLGraphicsOperations::~SDLGraphicsOperations() {
 	SDL_QuitSubSystem(SDL_INIT_VIDEO);
 }
 std::unique_ptr<os::Viewport> SDLGraphicsOperations::createViewport(const os::ViewPortProperties& props) {
-	uint32_t windowflags = SDL_WINDOW_SHOWN | SDL_WINDOW_ALLOW_HIGHDPI;
+	uint32_t windowflags = SDL_WINDOW_SHOWN;
 	if (props.enable_opengl) {
 		windowflags |= SDL_WINDOW_OPENGL;
 		setOGLProperties(props);
