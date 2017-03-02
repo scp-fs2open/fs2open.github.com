@@ -382,7 +382,7 @@ void main()
  #ifdef FLAG_HDR
 	envColour.rgb = pow(envColour.rgb, vec3(SRGB_GAMMA));
  #endif
-	envColour.rgb *= (envGloss) ? 1.0 : glossData;
+	envColour.rgb *= (envGloss) ? 1.0 : specColor.a;
 	baseColor.rgb += envColour.rgb * FresnelLazarovEnv(specColor.rgb, eyeDir, normal, glossData);
 #endif
 #ifdef FLAG_GLOW_MAP
