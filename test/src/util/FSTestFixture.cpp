@@ -55,6 +55,10 @@ void test::FSTestFixture::SetUp() {
 			if (!gr_init(nullptr, GR_STUB, 1024, 768)) {
 				FAIL() << "Graphics init failed!";
 			}
+
+			if (_initFlags & INIT_FONTS) {
+				font::init();
+			}
 		}
 
 		if (_initFlags & INIT_SHIPS) {
@@ -69,6 +73,10 @@ void test::FSTestFixture::TearDown() {
 		}
 
 		if (_initFlags & INIT_GRAPHICS) {
+			if (_initFlags & INIT_FONTS) {
+				font::close();
+			}
+
 			io::mouse::CursorManager::shutdown();
 
 			bm_unload_all();

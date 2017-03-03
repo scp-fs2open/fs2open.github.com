@@ -131,6 +131,8 @@ public:
 	void init();
 	void assign(const scoring_struct &s);
 
+	bool operator==(const scoring_struct& rhs) const;
+	bool operator!=(const scoring_struct& rhs) const;
 };
 
 extern rank_stuff Ranks[NUM_RANKS];

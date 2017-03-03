@@ -196,6 +196,7 @@ static void convert_binary_pilot_files() {
 		// This is simple, read the binary pilot and then write it again as JSON
 		pilotfile file;
 		player plr; // Player struct to save the loaded values in
+		plr.reset();
 
 		if (!file.load_player(callsign.c_str(), &plr, true)) {
 			mprintf(("Failed to load binary pilot '%s'!\n", callsign.c_str()));

@@ -88,6 +88,8 @@ class player
 public:
 	void reset();
 	void assign(const player *pl);
+	friend bool operator==(const player& lhs, const player& rhs);
+	friend bool operator!=(const player& lhs, const player& rhs);
 
 	char				callsign[CALLSIGN_LEN + 1];
 	char				short_callsign[CALLSIGN_LEN + 1];	// callsign truncated to SHORT_CALLSIGN_PIXEL_W pixels

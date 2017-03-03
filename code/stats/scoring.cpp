@@ -216,6 +216,27 @@ void scoring_struct::assign(const scoring_struct &s)
 
 	memcpy(m_dogfight_kills, s.m_dogfight_kills, MAX_PLAYERS * sizeof(int));
 }
+bool scoring_struct::operator==(const scoring_struct& rhs) const {
+	return flags == rhs.flags && score == rhs.score && rank == rhs.rank && medal_counts == rhs.medal_counts
+		&& memcmp(kills, rhs.kills, sizeof(kills)) == 0 && assists == rhs.assists && kill_count == rhs.kill_count
+		&& kill_count_ok == rhs.kill_count_ok && p_shots_fired == rhs.p_shots_fired
+		&& s_shots_fired == rhs.s_shots_fired && p_shots_hit == rhs.p_shots_hit && s_shots_hit == rhs.s_shots_hit
+		&& p_bonehead_hits == rhs.p_bonehead_hits && s_bonehead_hits == rhs.s_bonehead_hits
+		&& bonehead_kills == rhs.bonehead_kills && missions_flown == rhs.missions_flown
+		&& flight_time == rhs.flight_time && last_flown == rhs.last_flown && last_backup == rhs.last_backup
+		&& m_medal_earned == rhs.m_medal_earned && m_badge_earned == rhs.m_badge_earned
+		&& m_promotion_earned == rhs.m_promotion_earned && m_score == rhs.m_score
+		&& memcmp(m_kills, rhs.m_kills, sizeof(m_kills)) == 0
+		&& memcmp(m_okKills, rhs.m_okKills, sizeof(m_okKills)) == 0 && m_kill_count == rhs.m_kill_count
+		&& m_kill_count_ok == rhs.m_kill_count_ok && m_assists == rhs.m_assists && mp_shots_fired == rhs.mp_shots_fired
+		&& ms_shots_fired == rhs.ms_shots_fired && mp_shots_hit == rhs.mp_shots_hit && ms_shots_hit == rhs.ms_shots_hit
+		&& mp_bonehead_hits == rhs.mp_bonehead_hits && ms_bonehead_hits == rhs.ms_bonehead_hits
+		&& m_bonehead_kills == rhs.m_bonehead_kills && m_player_deaths == rhs.m_player_deaths
+		&& memcmp(m_dogfight_kills, rhs.m_dogfight_kills, sizeof(m_dogfight_kills)) == 0;
+}
+bool scoring_struct::operator!=(const scoring_struct& rhs) const {
+	return !(rhs == *this);
+}
 
 // initialize the Player's mission-based stats before he goes into a mission
 void scoring_level_init( scoring_struct *scp )
