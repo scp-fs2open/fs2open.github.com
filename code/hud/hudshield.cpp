@@ -791,6 +791,13 @@ void HudGaugeShield::renderShieldIcon(coord2d coords[6])
 
 	if ( gr_screen.rendering_to_texture != -1 ) {
 		gr_set_screen_scale(canvas_w, canvas_h, -1, -1, target_w, target_h, target_w, target_h, true);
+
+		// Respect the rendering display offset specified in the table
+		nx = display_offset_x;
+		ny = display_offset_y;
+
+		// Transfer the offset position into actual texture coordinates
+		gr_unsize_screen_pos(&nx, &ny);
 	} else {
 		if ( reticle_follow ) {
 			nx = HUD_nose_x;
