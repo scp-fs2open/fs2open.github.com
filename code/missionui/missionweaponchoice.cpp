@@ -357,8 +357,7 @@ static int Wl_mouse_down_on_region = -1;
 
 // weapon desc stuff
 #define WEAPON_DESC_WIPE_TIME			1.5f			// time in seconds for wipe to occur (over WEAPON_DESC_MAX_LENGTH number of chars)
-#define WEAPON_DESC_MAX_LINES			7				// max lines in the description incl. title
-#define WEAPON_DESC_MAX_LENGTH		50				// max chars per line of description text
+
 static int Weapon_desc_wipe_done = 0;
 static float Weapon_desc_wipe_time_elapsed = 0.0f;
 static char Weapon_desc_lines[WEAPON_DESC_MAX_LINES][WEAPON_DESC_MAX_LENGTH];			// 1st 2 lines are title, rest are desc
@@ -2428,9 +2427,6 @@ void wl_weapon_desc_start_wipe()
 			}
 
 			currchar_src++;
-
-			Assert(currline_dest < WEAPON_DESC_MAX_LINES);
-			Assert(currchar_dest < WEAPON_DESC_MAX_LENGTH);
 		}
 	}
 
