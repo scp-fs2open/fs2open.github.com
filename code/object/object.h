@@ -156,7 +156,7 @@ struct object_h {
 	object *objp;
 	int sig;
 
-	bool IsValid() const {return (objp != NULL && objp->signature == sig);}
+	bool IsValid() const {return (objp != NULL && objp->signature == sig && sig > 0);}
 	object_h(object *in){objp=in; if(objp!=NULL){sig=in->signature;}}
 	object_h(){objp=NULL;sig=-1;}
 };
