@@ -229,9 +229,6 @@ ADE_FUNC(getSignature, l_Object, NULL, "Gets the object's unique signature", "nu
 	if(!oh->IsValid())
 		return ade_set_error(L, "i", -1);
 
-	// this shouldn't be possible, added here to trap the offending object
-	Assert(oh->sig > 0);
-
 	return ade_set_args(L, "i", oh->sig);
 }
 
