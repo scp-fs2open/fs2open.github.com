@@ -9710,8 +9710,7 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 		}
 
 		// extra check
-		Assert(hull_pct > 0.0f && hull_pct <= 1.0f);
-		CLAMP(hull_pct, 0.1f, 1.0f);
+		CLAMP(hull_pct, 0.01f, 1.0f);
 
 		// shield
 		if (sp->special_shield > 0) {
