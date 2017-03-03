@@ -28,6 +28,7 @@
 #include "math/staticrand.h"
 #include "mod_table/mod_table.h"
 #include "model/modelrender.h"
+#include "missionui/missionweaponchoice.h"
 #include "network/multi.h"
 #include "network/multimsgs.h"
 #include "network/multiutil.h"
@@ -883,6 +884,27 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		}
 
 		stuff_malloc_string(&wip->desc, F_MULTITEXT);
+
+		// Check if the text exceeds the limits
+		auto current_line = wip->desc;
+		size_t num_lines = 0;
+		while (current_line != nullptr) {
+			auto line_end = strchr(current_line, '\n');
+			auto line_length = line_end - current_line;
+			if (line_end == nullptr) {
+				line_length = strlen(current_line);
+			}
+
+			if (line_length >= WEAPON_DESC_MAX_LENGTH) {
+				error_display(0, "Weapon description line " SIZE_T_ARG " is too long. Maximum is %d.", num_lines + 1, WEAPON_DESC_MAX_LENGTH);
+			}
+
+			++num_lines;
+			current_line = line_end == nullptr ? nullptr : line_end + 1; // Skip the \n character if it was a complete line
+		}
+		if (num_lines >= WEAPON_DESC_MAX_LINES) {
+			error_display(0, "Weapon description has too many lines. Maximum is %d.", WEAPON_DESC_MAX_LINES);
+		}
 	}
 
 	if (optional_string("+Tech Title:")) {

@@ -35,6 +35,8 @@ class ship_weapon;
 #define ICON_SHIP_SECONDARY_2		37
 #define ICON_SHIP_SECONDARY_3		38
 
+#define WEAPON_DESC_MAX_LINES			7				// max lines in the description incl. title
+#define WEAPON_DESC_MAX_LENGTH		50				// max chars per line of description text
 
 extern int Weapon_select_overlay_id;
 

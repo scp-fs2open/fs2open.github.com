@@ -60,3 +60,7 @@ add_file_folder(util "Util"
     util/FSTestFixture.cpp
     util/FSTestFixture.h
 )
+
+add_file_folder(weapon "Weapon"
+    weapon/weapons.cpp
+)
