@@ -755,6 +755,7 @@ typedef struct screen {
 	void (*gf_post_process_begin)();
 	void (*gf_post_process_end)();
 	void (*gf_post_process_save_zbuffer)();
+	void (*gf_post_process_restore_zbuffer)();
 
 	void (*gf_deferred_lighting_begin)();
 	void (*gf_deferred_lighting_end)();
@@ -1071,6 +1072,9 @@ __inline int gr_create_index_buffer(bool static_buffer = false)
 #define gr_post_process_begin			GR_CALL(*gr_screen.gf_post_process_begin)
 #define gr_post_process_end				GR_CALL(*gr_screen.gf_post_process_end)
 #define gr_post_process_save_zbuffer	GR_CALL(*gr_screen.gf_post_process_save_zbuffer)
+inline void gr_post_process_restore_zbuffer() {
+	gr_screen.gf_post_process_restore_zbuffer();
+}
 
 #define gr_deferred_lighting_begin		GR_CALL(*gr_screen.gf_deferred_lighting_begin)
 #define gr_deferred_lighting_end		GR_CALL(*gr_screen.gf_deferred_lighting_end)
