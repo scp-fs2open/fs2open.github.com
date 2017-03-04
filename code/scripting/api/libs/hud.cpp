@@ -99,7 +99,7 @@ ADE_FUNC(getHUDGaugeHandle, l_HUD, "string Name", "Returns a handle to a specifi
 	if (gauge == NULL)
 		return ADE_RETURN_NIL;
 	else
-		return ade_set_args(L, "o", l_HudGauge.Set(*gauge));
+		return ade_set_args(L, "o", l_HudGauge.Set(gauge));
 }
 
 

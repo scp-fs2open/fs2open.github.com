@@ -13,14 +13,14 @@ class particle_h
  public:
 	particle_h();
 
-	explicit particle_h(particle::WeakParticlePtr part_p);
+	explicit particle_h(const particle::WeakParticlePtr& part_p);
 
 	particle::WeakParticlePtr Get();
 
 	bool isValid();
 };
 
-DECLARE_ADE_OBJ(l_Particle, particle_h);
+DECLARE_ADE_OBJ(l_Particle, particle_h*);
 
 }
 }
