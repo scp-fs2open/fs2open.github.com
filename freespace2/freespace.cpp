@@ -3652,6 +3652,7 @@ void game_render_frame( camid cid )
 	{
 		gr_post_process_save_zbuffer();
 		ship_render_show_ship_cockpit(Viewer_obj);
+		gr_post_process_restore_zbuffer();
 	}
 
 
@@ -3671,6 +3672,7 @@ void game_render_frame( camid cid )
 
 		gr_post_process_save_zbuffer();
 		ship_render_cockpit(Viewer_obj);
+		gr_post_process_restore_zbuffer();
 	}
 
 	gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
