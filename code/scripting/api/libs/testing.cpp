@@ -116,7 +116,7 @@ ADE_FUNC(createParticle, l_Testing, "vector Position, vector Velocity, number Li
 	particle::WeakParticlePtr p = particle::create(&pi);
 
 	if (!p.expired())
-		return ade_set_args(L, "o", l_Particle.Set(particle_h(p)));
+		return ade_set_args(L, "o", l_Particle.Set(new particle_h(p)));
 	else
 		return ADE_RETURN_NIL;
 }

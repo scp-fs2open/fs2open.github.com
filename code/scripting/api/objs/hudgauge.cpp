@@ -6,13 +6,13 @@
 namespace scripting {
 namespace api {
 
-ADE_OBJ(l_HudGauge, HudGauge, "HudGauge", "HUD Gauge handle");
+ADE_OBJ(l_HudGauge, HudGauge*, "HudGauge", "HUD Gauge handle");
 
 ADE_VIRTVAR(Name, l_HudGauge, "string", "Custom HUD Gauge name", "string", "Custom HUD Gauge name, or nil if handle is invalid")
 {
 	HudGauge* gauge;
 
-	if (!ade_get_args(L, "o", l_HudGauge.GetPtr(&gauge)))
+	if (!ade_get_args(L, "o", l_HudGauge.Get(&gauge)))
 		return ADE_RETURN_NIL;
 
 	if (gauge->getObjectType() != HUD_OBJECT_CUSTOM)
@@ -26,7 +26,7 @@ ADE_VIRTVAR(Text, l_HudGauge, "string", "Custom HUD Gauge text", "string", "Cust
 	HudGauge* gauge;
 	char* text = NULL;
 
-	if (!ade_get_args(L, "o|s", l_HudGauge.GetPtr(&gauge), &text))
+	if (!ade_get_args(L, "o|s", l_HudGauge.Get(&gauge), &text))
 		return ADE_RETURN_NIL;
 
 	if (gauge->getObjectType() != HUD_OBJECT_CUSTOM)
