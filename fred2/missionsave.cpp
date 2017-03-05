@@ -1010,7 +1010,7 @@ int CFred_mission_save::save_briefing() {
 					else
 						fout("\n$label:");
 
-					fout(" %s", bi->label);
+					fout_ext(" ", "%s", bi->label);
 				}
 
 				if (optional_string_fred("+id:"))
