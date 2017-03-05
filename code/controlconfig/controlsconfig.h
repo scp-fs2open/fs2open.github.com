@@ -311,7 +311,26 @@ void control_config_cancel_exit();
 void control_config_reset_defaults(int presetnum=-1);
 int translate_key_to_index(const char *key, bool find_override=true);
 char *translate_key(char *key);
+
+/**
+ * @brief Converts the specified key code to a human readable string
+ *
+ * @note The returned value is localized to the current language
+ *
+ * @param code The key code to convert
+ * @return The text representation of the code. The returned value is stored in a temporary location, copy it to your
+ * own buffer if you want to continue using it.
+ */
 const char *textify_scancode(int code);
+
+/**
+ * @note Same as textify_scancode but always returns the same value regardless of current language
+ * @param code The key code to convert
+ * @return The name of the key
+ * @see textify_scancode
+ */
+const char *textify_scancode_universal(int code);
+
 float check_control_timef(int id);
 int check_control(int id, int key = -1);
 void control_get_axes_readings(int *h, int *p, int *b, int *ta, int *tr);

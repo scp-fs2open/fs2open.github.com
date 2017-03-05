@@ -634,7 +634,7 @@ void key_mark( uint code, int state, uint latency )
 			Current_key_down |= KEY_CTRLED;
 		}
 
-		Script_system.SetHookVar("Key", 's', textify_scancode(Current_key_down));
+		Script_system.SetHookVar("Key", 's', textify_scancode_universal(Current_key_down));
 		Script_system.RunCondition(CHA_KEYRELEASED);
 		Script_system.RemHookVar("Key");
 	} else {
@@ -662,7 +662,8 @@ void key_mark( uint code, int state, uint latency )
 				Current_key_down |= KEY_CTRLED;
 			}
 
-			Script_system.SetHookVar("Key", 's', textify_scancode(Current_key_down));
+			// We use the universal value here to keep the scripting interface consistent regardless of the current language
+			Script_system.SetHookVar("Key", 's', textify_scancode_universal(Current_key_down));
 			Script_system.RunCondition(CHA_KEYPRESSED);
 			Script_system.RemHookVar("Key");
 		} else if (!keyd_repeat) {
