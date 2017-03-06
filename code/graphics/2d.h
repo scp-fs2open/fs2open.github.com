@@ -622,12 +622,6 @@ typedef struct screen {
 	// dumps the current screen to a file
 	void (*gf_print_screen)(const char * filename);
 
-	// Call once before rendering anything.
-	void (*gf_start_frame)();
-
-	// Call after rendering is over.
-	void (*gf_stop_frame)();
-
 	// Retrieves the zbuffer mode.
 	int (*gf_zbuffer_get)();
 
@@ -699,8 +693,6 @@ typedef struct screen {
 	void (*gf_update_transform_buffer)(void* data, size_t size);
 	void (*gf_set_transform_buffer_offset)(size_t offset);
 
-	void (*gf_render_stream_buffer)(int buffer_handle, size_t offset, size_t n_verts, int flags);
-	
 	//the projection matrix; fov, aspect ratio, near, far
  	void (*gf_set_proj_matrix)(float, float, float, float);
   	void (*gf_end_proj_matrix)();
