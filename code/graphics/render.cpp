@@ -1054,6 +1054,32 @@ void gr_curve(int xc, int yc, int r, int direction, int resize_mode) {
 	endDrawing(path);
 }
 
+void gr_rect(int x, int y, int w, int h, int resize_mode)
+{
+	auto path = beginDrawing(resize_mode);
 
+	path->rectangle(i2fl(x), i2fl(y), i2fl(w), i2fl(h));
+	path->setFillColor(&gr_screen.current_color);
+	path->fill();
 
+	endDrawing(path);
+}
 
+void gr_shade(int x, int y, int w, int h, int resize_mode)
+{
+	auto r = (int)gr_screen.current_shader.r;
+	auto g = (int)gr_screen.current_shader.g;
+	auto b = (int)gr_screen.current_shader.b;
+	auto a = (int)gr_screen.current_shader.c;
+
+	color clr;
+	gr_init_alphacolor(&clr, r, g, b, a);
+
+	auto path = beginDrawing(resize_mode);
+
+	path->rectangle(i2fl(x), i2fl(y), i2fl(w), i2fl(h));
+	path->setFillColor(&clr);
+	path->fill();
+
+	endDrawing(path);
+}

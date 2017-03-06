@@ -46,3 +46,6 @@ void gr_arc(int xc, int yc, float r, float angle_start, float angle_end, bool fi
 
 void gr_curve(int x, int y, int r, int direction, int resize_mode);
 
+void gr_rect(int x, int y, int w, int h, int resize_mode = GR_RESIZE_FULL);
+
+void gr_shade(int x, int y, int w, int h, int resize_mode = GR_RESIZE_FULL);

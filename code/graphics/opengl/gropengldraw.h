@@ -25,7 +25,6 @@ struct opengl_vertex_bind {
 	opengl_vert_attrib::attrib_id attribute_id;
 };
 
-void gr_opengl_shade(int x, int y, int w, int h, int resize_mode);
 void gr_opengl_update_distortion();
 
 void opengl_set_spec_mapping(int tmap_type, float *u_scale, float *v_scale, int stage = 0);

@@ -1133,7 +1133,6 @@ void opengl_setup_function_pointers()
 //	gr_screen.gf_bitmap				= gr_opengl_bitmap;
 
 //	gr_screen.gf_rect				= gr_opengl_rect;
-//	gr_screen.gf_shade				= gr_opengl_shade;
 
 	gr_screen.gf_print_screen		= gr_opengl_print_screen;
 

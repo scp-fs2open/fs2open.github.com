@@ -883,8 +883,6 @@ void gr_set_bitmap(int bitmap_num, int alphablend = GR_ALPHABLEND_NONE, int bitb
 #define gr_clear				GR_CALL(gr_screen.gf_clear)
 
 void gr_shield_icon(coord2d coords[6], const int resize_mode = GR_RESIZE_FULL);
-void gr_rect(int x, int y, int w, int h, int resize_mode = GR_RESIZE_FULL);
-void gr_shade(int x, int y, int w, int h, int resize_mode = GR_RESIZE_FULL);
 
 #define gr_zbuffer_get		GR_CALL(gr_screen.gf_zbuffer_get)
 #define gr_zbuffer_set		GR_CALL(gr_screen.gf_zbuffer_set)

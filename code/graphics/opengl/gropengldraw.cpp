@@ -146,38 +146,6 @@ void opengl_bind_vertex_layout(vertex_layout &layout, uint base_vertex, ubyte* b
 	GL_state.Array.BindPointersEnd();
 }
 
-void gr_opengl_shade(int x, int y, int w, int h, int resize_mode)
-{
-	if (resize_mode != GR_RESIZE_NONE) {
-		gr_resize_screen_pos(&x, &y, &w, &h, resize_mode);
-	}
-
-	int x1 = (gr_screen.offset_x + x);
-	int y1 = (gr_screen.offset_y + y);
-	int x2 = (gr_screen.offset_x + w);
-	int y2 = (gr_screen.offset_y + h);
-
-	if ( (x1 >= gr_screen.max_w) || (y1 >= gr_screen.max_h) ) {
-		return;
-	}
-
-	CLAMP(x2, x1+1, gr_screen.max_w);
-	CLAMP(y2, y1+1, gr_screen.max_h);
-
-	GL_state.SetAlphaBlendMode(ALPHA_BLEND_ALPHA_BLEND_ALPHA);
-	GL_state.SetZbufferType(ZBUFFER_TYPE_NONE);
-
-	gr_opengl_set_2d_matrix();
-
-	color clr;
-	gr_init_alphacolor(&clr, gr_screen.current_shader.r, gr_screen.current_shader.g, gr_screen.current_shader.b, gr_screen.current_shader.c);
-	opengl_shader_set_passthrough(false, false, &clr);
-
-	opengl_draw_coloured_quad((GLint)x1, (GLint)y1, (GLint)x2, (GLint)y2);
-
-	gr_opengl_end_2d_matrix();
-}
-
 void gr_opengl_sphere(material* material_def, float rad)
 {
 	opengl_tnl_set_material(material_def, true);
