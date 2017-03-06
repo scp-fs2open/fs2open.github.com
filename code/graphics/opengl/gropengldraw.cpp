@@ -2154,7 +2154,7 @@ void gr_opengl_deferred_lighting_finish()
 				Current_shader->program->Uniforms.setUniformf( "coneInnerAngle", l->cone_inner_angle );
 				Current_shader->program->Uniforms.setUniform3f( "coneDir", l->vec2.xyz.x, l->vec2.xyz.y, l->vec2.xyz.z);
 			case LT_POINT:
-				Current_shader->program->Uniforms.setUniform3f( "diffuseLightColor", l->r * l->intensity * static_point_factor, l->g * l->intensity * static_point_factor, l->b * l->intensity * static_point_factor );
+				Current_shader->program->Uniforms.setUniform3f( "diffuseLightColor", l->r * l->intensity, l->g * l->intensity, l->b * l->intensity );
 				Current_shader->program->Uniforms.setUniform3f( "specLightColor", l->spec_r * l->intensity * static_point_factor, l->spec_g * l->intensity * static_point_factor, l->spec_b * l->intensity * static_point_factor );
 				Current_shader->program->Uniforms.setUniformf( "lightRadius", MAX(l->rada, l->radb) * 1.25f );
 
@@ -2167,7 +2167,7 @@ void gr_opengl_deferred_lighting_finish()
 				gr_opengl_draw_deferred_light_sphere(&l->vec, MAX(l->rada, l->radb) * 1.28f);
 				break;
 			case LT_TUBE:
-				Current_shader->program->Uniforms.setUniform3f( "diffuseLightColor", l->r * l->intensity * static_tube_factor, l->g * l->intensity * static_tube_factor, l->b * l->intensity * static_tube_factor );
+				Current_shader->program->Uniforms.setUniform3f( "diffuseLightColor", l->r * l->intensity, l->g * l->intensity, l->b * l->intensity );
 				Current_shader->program->Uniforms.setUniform3f( "specLightColor", l->spec_r * l->intensity * static_tube_factor, l->spec_g * l->intensity * static_tube_factor, l->spec_b * l->intensity * static_tube_factor );
 				Current_shader->program->Uniforms.setUniformf( "lightRadius", l->radb * 1.5f );
 				Current_shader->program->Uniforms.setUniformi( "lightType", 1 );
@@ -2191,12 +2191,13 @@ void gr_opengl_deferred_lighting_finish()
 					dist = vm_vec_mag(&a);
 				}
 
-				glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+				// commented out the stencil operations for now because deferred tube lights end up squashing other tube lights that write to stencil.
+				//glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
 				gr_opengl_draw_deferred_light_cylinder(&l->vec2, &orient, l->radb * 1.53f, length);
 				Current_shader->program->Uniforms.setUniformi( "lightType", 0 );
 				gr_opengl_draw_deferred_light_sphere(&l->vec, l->radb * 1.53f, false);
 				gr_opengl_draw_deferred_light_sphere(&l->vec2, l->radb * 1.53f, false);
-				glStencilOp(GL_ZERO, GL_ZERO, GL_ZERO);
+				//glStencilOp(GL_ZERO, GL_ZERO, GL_ZERO);
 				break;
 		}
 	}
