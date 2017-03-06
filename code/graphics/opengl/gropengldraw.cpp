@@ -221,10 +221,6 @@ void opengl_bind_vertex_layout(vertex_layout &layout, uint base_vertex, ubyte* b
 	GL_state.Array.BindPointersEnd();
 }
 
-void gr_opengl_pixel(int x, int y, int resize_mode)
-{
-	gr_line(x, y, x, y, resize_mode);
-}
 
 void gr_opengl_line(float x1, float y1, float x2, float y2, int resize_mode)
 {
@@ -245,46 +241,6 @@ void gr_opengl_line(float x1, float y1, float x2, float y2, int resize_mode)
         path->setStrokeColor(&gr_screen.current_color);
         path->stroke();
     }
-
-    endDrawing(path);
-}
-
-void gr_opengl_line(int x1, int y1, int x2, int y2, int resize_mode)
-{
-    gr_opengl_line(i2fl(x1), i2fl(y1), i2fl(x2), i2fl(y2), resize_mode);
-}
-
-void gr_opengl_aaline(vertex *v1, vertex *v2)
-{
-	float x1 = v1->screen.xyw.x;
-	float y1 = v1->screen.xyw.y;
-	float x2 = v2->screen.xyw.x;
-	float y2 = v2->screen.xyw.y;
-
-    // AA is now standard
-    gr_opengl_line(x1, y1, x2, y2, GR_RESIZE_NONE);
-}
-
-void gr_opengl_gradient(int x1, int y1, int x2, int y2, int resize_mode)
-{
-	if ( !gr_screen.current_color.is_alphacolor ) {
-		gr_opengl_line(x1, y1, x2, y2, resize_mode);
-		return;
-	}
-
-    auto path = beginDrawing(resize_mode);
-
-    color endColor = gr_screen.current_color;
-    endColor.alpha = 0;
-
-    auto gradientPaint = path->createLinearGradient(i2fl(x1), i2fl(y1),
-        i2fl(x2), i2fl(y2), &gr_screen.current_color, &endColor);
-
-    path->moveTo(i2fl(x1), i2fl(y1));
-    path->lineTo(i2fl(x2), i2fl(y2));
-
-    path->setStrokePaint(gradientPaint);
-    path->stroke();
 
     endDrawing(path);
 }

@@ -703,7 +703,7 @@ void setupTransforms(graphics::paths::PathRenderer* path, int resize_mode) {
 	float h = 1.0f;
 	bool do_resize = gr_resize_screen_posf(&x, &y, &w, &h, resize_mode);
 
-	if (gr_screen.rendering_to_texture) {
+	if (gr_screen.rendering_to_texture != -1) {
 		// Flip the Y-axis when rendering to texture
 		path->translate(0.f, i2fl(gr_screen.max_h));
 		path->scale(1.f, -1.f);
@@ -890,6 +890,69 @@ void gr_string(float sx, float sy, const char* s, int resize_mode, int in_length
 	} else {
 		Error(LOCATION, "Invalid type enumeration for font \"%s\". Get a coder!", currentFont->getName().c_str());
 	}
+}
+
+static void gr_line(float x1, float y1, float x2, float y2, int resize_mode)
+{
+	auto path = beginDrawing(resize_mode);
+
+	if ((x1 == x2) && (y1 == y2))
+	{
+		path->circle(x1, y1, 1.5);
+
+		path->setFillColor(&gr_screen.current_color);
+		path->fill();
+	}
+	else
+	{
+		path->moveTo(x1, y1);
+		path->lineTo(x2, y2);
+
+		path->setStrokeColor(&gr_screen.current_color);
+		path->stroke();
+	}
+
+	endDrawing(path);
+}
+
+void gr_line(int x1, int y1, int x2, int y2, int resize_mode) {
+	gr_line(i2fl(x1), i2fl(y1), i2fl(x2), i2fl(y2), resize_mode);
+}
+
+void gr_aaline(vertex *v1, vertex *v2) {
+	float x1 = v1->screen.xyw.x;
+	float y1 = v1->screen.xyw.y;
+	float x2 = v2->screen.xyw.x;
+	float y2 = v2->screen.xyw.y;
+
+	// AA is now standard
+	gr_line(x1, y1, x2, y2, GR_RESIZE_NONE);
+}
+
+void gr_gradient(int x1, int y1, int x2, int y2, int resize_mode) {
+	if ( !gr_screen.current_color.is_alphacolor ) {
+		gr_line(x1, y1, x2, y2, resize_mode);
+		return;
+	}
+
+	auto path = beginDrawing(resize_mode);
+
+	color endColor = gr_screen.current_color;
+	endColor.alpha = 0;
+
+	auto gradientPaint = path->createLinearGradient(i2fl(x1), i2fl(y1),
+													i2fl(x2), i2fl(y2), &gr_screen.current_color, &endColor);
+
+	path->moveTo(i2fl(x1), i2fl(y1));
+	path->lineTo(i2fl(x2), i2fl(y2));
+
+	path->setStrokePaint(gradientPaint);
+	path->stroke();
+
+	endDrawing(path);
+}
+void gr_pixel(int x, int y, int resize_mode) {
+	gr_line(x, y, x, y, resize_mode);
 }
 
 

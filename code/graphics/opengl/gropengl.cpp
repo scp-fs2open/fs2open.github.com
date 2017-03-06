@@ -1139,12 +1139,6 @@ void opengl_setup_function_pointers()
 	gr_screen.gf_arc				= gr_opengl_arc;
 	gr_screen.gf_curve				= gr_opengl_curve;
 
-	gr_screen.gf_line				= gr_opengl_line;
-	gr_screen.gf_aaline				= gr_opengl_aaline;
-	gr_screen.gf_pixel				= gr_opengl_pixel;
-
-	gr_screen.gf_gradient			= gr_opengl_gradient;
-
 	gr_screen.gf_print_screen		= gr_opengl_print_screen;
 
 	gr_screen.gf_zbuffer_get		= gr_opengl_zbuffer_get;

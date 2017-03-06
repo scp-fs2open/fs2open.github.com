@@ -62,10 +62,6 @@ void gr_set_fill_mode_stub(int mode)
 {
 }
 
-void gr_stub_aaline(vertex *v1, vertex *v2)
-{
-}
-
 void gr_stub_activate(int active)
 {
 }
@@ -119,18 +115,6 @@ void gr_stub_free_screen(int id)
 }
 
 void gr_stub_get_region(int front, int w, int h, ubyte *data)
-{
-}
-
-void gr_stub_gradient(int x1,int y1,int x2,int y2, int resize_mode)
-{
-}
-
-void gr_stub_line(int x1,int y1,int x2,int y2, int resize_mode = GR_RESIZE_NONE)
-{
-}
-
-void gr_stub_pixel(int x, int y, int resize_mode)
 {
 }
 
@@ -528,12 +512,6 @@ bool gr_stub_init()
 	gr_screen.gf_circle				= gr_stub_circle;
 	gr_screen.gf_unfilled_circle	= gr_stub_unfilled_circle;
 	gr_screen.gf_curve				= gr_stub_curve;
-
-	gr_screen.gf_line				= gr_stub_line;
-	gr_screen.gf_aaline				= gr_stub_aaline;
-	gr_screen.gf_pixel				= gr_stub_pixel;
-
-	gr_screen.gf_gradient			= gr_stub_gradient;
 
 	gr_screen.gf_print_screen		= gr_stub_print_screen;
 

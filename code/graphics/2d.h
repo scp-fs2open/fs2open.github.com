@@ -619,26 +619,11 @@ typedef struct screen {
 	// clears entire clipping region to current color
 	void (*gf_clear)();
 
-	// Draw a gradient line... x1,y1 is bright, x2,y2 is transparent.
-	void (*gf_gradient)(int x1, int y1, int x2, int y2, int resize_mode);
- 
 	void (*gf_circle)(int x, int y, int r, int resize_mode);
 	void (*gf_unfilled_circle)(int x, int y, int r, int resize_mode);
 	void (*gf_arc)(int x, int y, float r, float angle_start, float angle_end, bool fill, int resize_mode);
 	void (*gf_curve)(int x, int y, int r, int direction, int resize_mode);
 
-	// Integer line. Used to draw a fast but pixely line.  
-	void (*gf_line)(int x1, int y1, int x2, int y2, int resize_mode);
-
-	// Draws an antialiased line is the current color is an 
-	// alphacolor, otherwise just draws a fast line.  This
-	// gets called internally by g3_draw_line.   This assumes
-	// the vertex's are already clipped, so call g3_draw_line
-	// not this if you have two 3d points.
-	void (*gf_aaline)(vertex *v1, vertex *v2);
-
-	void (*gf_pixel)( int x, int y, int resize_mode );
-	
 	// dumps the current screen to a file
 	void (*gf_print_screen)(const char * filename);
 
@@ -930,23 +915,6 @@ __inline void gr_arc(int xc, int yc, float r, float angle_start, float angle_end
 }
 
 #define gr_curve				GR_CALL(gr_screen.gf_curve)
-
-__inline void gr_line(int x1, int y1, int x2, int y2, int resize_mode = GR_RESIZE_FULL)
-{
-	(*gr_screen.gf_line)(x1, y1, x2, y2, resize_mode);
-}
-
-#define gr_aaline				GR_CALL(gr_screen.gf_aaline)
-
-__inline void gr_pixel(int x, int y, int resize_mode = GR_RESIZE_FULL)
-{
-	(*gr_screen.gf_pixel)(x, y, resize_mode);
-}
-
-__inline void gr_gradient(int x1, int y1, int x2, int y2, int resize_mode = GR_RESIZE_FULL)
-{
-	(*gr_screen.gf_gradient)(x1, y1, x2, y2, resize_mode);
-}
 
 #define gr_zbuffer_get		GR_CALL(gr_screen.gf_zbuffer_get)
 #define gr_zbuffer_set		GR_CALL(gr_screen.gf_zbuffer_set)
