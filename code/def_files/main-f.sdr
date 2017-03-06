@@ -212,11 +212,10 @@ vec3 SpecularBlinnPhong(vec3 specColor, vec3 light, vec3 normal, vec3 halfVec, f
 	return mix(specColor, FresnelSchlick(specColor, light, halfVec), fresnel) * ((specPower + 2.0) / 8.0 ) * pow(clamp(dot(normal, halfVec), 0.0, 1.0), specPower) * dotNL;
 }
 #ifdef FLAG_LIGHT
-void GetLightInfo(int i, out vec3 lightDir, out float attenuation, out float specIntensity)
+void GetLightInfo(int i, out vec3 lightDir, out float attenuation)
 {
 	lightDir = normalize(lightPosition[i].xyz);
 	attenuation = 1.0;
-	specIntensity = SPEC_INTENSITY_DIRECTIONAL;
 	if (lightType[i] != LT_DIRECTIONAL) {
 		// Positional light source
 		float dist = distance(lightPosition[i].xyz, fragPosition.xyz);
@@ -234,8 +233,7 @@ void GetLightInfo(int i, out vec3 lightDir, out float attenuation, out float spe
 		}
 
 		lightDir = normalize(lightDir);
-		attenuation = 1.0 / (lightAttenuation[i] * dist);
-		specIntensity = SPEC_INTENSITY_POINT;
+		attenuation = 1.0 / (1.0 + lightAttenuation[i] * dist);
 	}
 }
 vec3 CalculateLighting(vec3 normal, vec3 diffuseMaterial, vec3 specularMaterial, float gloss, float fresnel, float shadow, float aoFactor)
@@ -255,9 +253,8 @@ vec3 CalculateLighting(vec3 normal, vec3 diffuseMaterial, vec3 specularMaterial,
 
 		vec3 lightDir;
 		float attenuation;
-		float specIntensity;
 		// gather light params
-		GetLightInfo(i, lightDir, attenuation, specIntensity);
+		GetLightInfo(i, lightDir, attenuation);
 		vec3 halfVec = normalize(lightDir + eyeDir);
 		float NdotL = max(dot(normal, lightDir), 0.0);
 		// Ambient, Diffuse, and Specular
