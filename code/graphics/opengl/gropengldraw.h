@@ -25,10 +25,6 @@ struct opengl_vertex_bind {
 	opengl_vert_attrib::attrib_id attribute_id;
 };
 
-void gr_opengl_circle(int xc, int yc, int d, int resize_mode);
-void gr_opengl_unfilled_circle(int xc, int yc, int d, int resize_mode);
-void gr_opengl_arc(int xc, int yc, float r, float angle_start, float angle_end, bool fill, int resize_mode);
-void gr_opengl_curve(int xc, int yc, int r, int direction, int resize_mode);
 void gr_opengl_shade(int x, int y, int w, int h, int resize_mode);
 void gr_opengl_update_distortion();
 

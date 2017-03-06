@@ -1134,10 +1134,6 @@ void opengl_setup_function_pointers()
 
 //	gr_screen.gf_rect				= gr_opengl_rect;
 //	gr_screen.gf_shade				= gr_opengl_shade;
-	gr_screen.gf_circle				= gr_opengl_circle;
-	gr_screen.gf_unfilled_circle	= gr_opengl_unfilled_circle;
-	gr_screen.gf_arc				= gr_opengl_arc;
-	gr_screen.gf_curve				= gr_opengl_curve;
 
 	gr_screen.gf_print_screen		= gr_opengl_print_screen;
 

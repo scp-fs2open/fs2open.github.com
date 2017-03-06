@@ -955,6 +955,105 @@ void gr_pixel(int x, int y, int resize_mode) {
 	gr_line(x, y, x, y, resize_mode);
 }
 
+void gr_circle(int xc, int yc, int d, int resize_mode) {
+	auto path = beginDrawing(resize_mode);
+
+	path->circle(i2fl(xc), i2fl(yc), d / 2.0f);
+	path->setFillColor(&gr_screen.current_color);
+	path->fill();
+
+	endDrawing(path);
+}
+void gr_unfilled_circle(int xc, int yc, int d, int resize_mode) {
+	auto path = beginDrawing(resize_mode);
+
+	path->circle(i2fl(xc), i2fl(yc), d / 2.0f);
+	path->setStrokeColor(&gr_screen.current_color);
+	path->stroke();
+
+	endDrawing(path);
+}
+void gr_arc(int xc, int yc, float r, float angle_start, float angle_end, bool fill, int resize_mode) {
+	// Ensure that angle_start < angle_end
+	if (angle_end < angle_start) {
+		float temp = angle_start;
+		angle_start = angle_end;
+		angle_end = temp;
+	}
+
+	using namespace graphics::paths;
+
+	auto path = beginDrawing(resize_mode);
+
+	if (fill)
+	{
+		path->arc(i2fl(xc), i2fl(yc), r, fl_radians(angle_start), fl_radians(angle_end), DIR_CW);
+		path->lineTo(i2fl(xc), i2fl(yc));
+
+		path->setFillColor(&gr_screen.current_color);
+		path->fill();
+	}
+	else
+	{
+		path->arc(i2fl(xc), i2fl(yc), r, fl_radians(angle_start), fl_radians(angle_end), DIR_CW);
+		path->setStrokeColor(&gr_screen.current_color);
+		path->stroke();
+	}
+
+	endDrawing(path);
+}
+void gr_curve(int xc, int yc, int r, int direction, int resize_mode) {
+	using namespace graphics::paths;
+
+	auto path = beginDrawing(resize_mode);
+	float centerX, centerY;
+	float beginAngle, endAngle;
+
+	switch (direction)
+	{
+		case 0:
+		{
+			centerX = i2fl(xc + r);
+			centerY = i2fl(yc + r);
+			beginAngle = fl_radians(180.f);
+			endAngle = fl_radians(270.f);
+			break;
+		}
+		case 1:
+		{
+			centerX = i2fl(xc);
+			centerY = i2fl(yc + r);
+			beginAngle = fl_radians(270.f);
+			endAngle = fl_radians(360.f);
+			break;
+		}
+		case 2:
+		{
+			centerX = i2fl(xc + r);
+			centerY = i2fl(yc);
+			beginAngle = fl_radians(90.f);
+			endAngle = fl_radians(180.f);
+			break;
+		}
+		case 3:
+		{
+			centerX = i2fl(xc);
+			centerY = i2fl(yc);
+			beginAngle = fl_radians(0.f);
+			endAngle = fl_radians(90.f);
+			break;
+		}
+		default:
+			return;
+	}
+
+	path->arc(centerX, centerY, i2fl(r), beginAngle, endAngle, DIR_CW);
+	path->setStrokeColor(&gr_screen.current_color);
+	path->stroke();
+
+	endDrawing(path);
+}
+
 
 
 

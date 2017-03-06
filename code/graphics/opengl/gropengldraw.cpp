@@ -7,93 +7,18 @@
  *
 */
 
-#include <algorithm>
-#include "bmpman/bmpman.h"
+#include "globalincs/pstypes.h"
 #include "cmdline/cmdline.h"
 #include "freespace.h"
-#include "globalincs/pstypes.h"
-#include "globalincs/systemvars.h"
-#include "graphics/grinternal.h"
 #include "gropengl.h"
-#include "gropenglbmpman.h"
 #include "gropengldraw.h"
 #include "gropengllight.h"
-#include "gropenglpostprocessing.h"
-#include "gropenglshader.h"
-#include "gropengltexture.h"
 #include "gropengltnl.h"
 #include "graphics/paths/PathRenderer.h"
-#include "graphics/software/font_internal.h"
-#include "graphics/software/FSFont.h"
-#include "graphics/software/NVGFont.h"
-#include "graphics/software/VFNTFont.h"
-#include "graphics/line.h"
-#include "lighting/lighting.h"
-#include "math/floating.h"
-#include "nebula/neb.h"
 #include "tracing/tracing.h"
-#include "osapi/osapi.h"
 #include "render/3d.h"
-#include "localization/localize.h"
 
-namespace
-{
-    void setupDrawingState(graphics::paths::PathRenderer* path)
-    {
-        path->resetState();
-    }
-
-    void setupTransforms(graphics::paths::PathRenderer* path, int resize_mode)
-    {
-        float x = 0.0f;
-        float y = 0.0f;
-        float w = 1.0f;
-        float h = 1.0f;
-        bool do_resize = gr_resize_screen_posf(&x, &y, &w, &h, resize_mode);
-
-		if (GL_rendering_to_texture) {
-			// Flip the Y-axis when rendering to texture
-			path->translate(0.f, i2fl(gr_screen.max_h));
-			path->scale(1.f, -1.f);
-		}
-
-        path->translate(x, y);
-        path->scale(w, h);
-
-        int clip_width = ((do_resize) ? gr_screen.clip_width_unscaled : gr_screen.clip_width);
-        int clip_height = ((do_resize) ? gr_screen.clip_height_unscaled : gr_screen.clip_height);
-
-        int offset_x = ((do_resize) ? gr_screen.offset_x_unscaled : gr_screen.offset_x);
-        int offset_y = ((do_resize) ? gr_screen.offset_y_unscaled : gr_screen.offset_y);
-
-        path->translate(i2fl(offset_x), i2fl(offset_y));
-
-        path->scissor(0.0f, 0.0f, i2fl(clip_width), i2fl(clip_height));
-    }
-
-    graphics::paths::PathRenderer* beginDrawing(int resize_mode)
-    {
-        auto path = graphics::paths::PathRenderer::instance();
-
-        path->saveState();
-        setupDrawingState(path);
-
-        path->beginFrame();
-        setupTransforms(path, resize_mode);
-
-        path->beginPath();
-
-		path->setStrokeWidth(gr_screen.line_width);
-
-        return path;
-    }
-
-    void endDrawing(graphics::paths::PathRenderer* path)
-    {
-        path->endFrame();
-        path->restoreState();
-    }
-}
+#include <algorithm>
 
 GLuint Scene_framebuffer;
 GLuint Scene_ldr_texture;
@@ -219,136 +144,6 @@ void opengl_bind_vertex_layout(vertex_layout &layout, uint base_vertex, ubyte* b
 	}
 
 	GL_state.Array.BindPointersEnd();
-}
-
-
-void gr_opengl_line(float x1, float y1, float x2, float y2, int resize_mode)
-{
-    auto path = beginDrawing(resize_mode);
-
-    if ((x1 == x2) && (y1 == y2))
-    {
-        path->circle(x1, y1, 1.5);
-
-        path->setFillColor(&gr_screen.current_color);
-        path->fill();
-    }
-    else
-    {
-        path->moveTo(x1, y1);
-        path->lineTo(x2, y2);
-
-        path->setStrokeColor(&gr_screen.current_color);
-        path->stroke();
-    }
-
-    endDrawing(path);
-}
-
-void gr_opengl_circle(int xc, int yc, int d, int resize_mode)
-{
-    auto path = beginDrawing(resize_mode);
-
-    path->circle(i2fl(xc), i2fl(yc), d / 2.0f);
-    path->setFillColor(&gr_screen.current_color);
-    path->fill();
-
-    endDrawing(path);
-}
-
-void gr_opengl_unfilled_circle(int xc, int yc, int d, int resize_mode)
-{
-    auto path = beginDrawing(resize_mode);
-
-    path->circle(i2fl(xc), i2fl(yc), d / 2.0f);
-    path->setStrokeColor(&gr_screen.current_color);
-    path->stroke();
-
-    endDrawing(path);
-}
-
-void gr_opengl_arc(int xc, int yc, float r, float angle_start, float angle_end, bool fill, int resize_mode)
-{
-	// Ensure that angle_start < angle_end
-	if (angle_end < angle_start) {
-		float temp = angle_start;
-		angle_start = angle_end;
-		angle_end = temp;
-	}
-
-    using namespace graphics::paths;
-
-    auto path = beginDrawing(resize_mode);
-
-    if (fill)
-    {
-        path->arc(i2fl(xc), i2fl(yc), r, fl_radians(angle_start), fl_radians(angle_end), DIR_CW);
-        path->lineTo(i2fl(xc), i2fl(yc));
-
-        path->setFillColor(&gr_screen.current_color);
-        path->fill();
-    }
-    else
-    {
-        path->arc(i2fl(xc), i2fl(yc), r, fl_radians(angle_start), fl_radians(angle_end), DIR_CW);
-        path->setStrokeColor(&gr_screen.current_color);
-        path->stroke();
-    }
-
-    endDrawing(path);
-}
-
-void gr_opengl_curve(int xc, int yc, int r, int direction, int resize_mode)
-{
-    using namespace graphics::paths;
-
-    auto path = beginDrawing(resize_mode);
-    float centerX, centerY;
-    float beginAngle, endAngle;
-
-    switch (direction)
-    {
-    case 0:
-    {
-        centerX = i2fl(xc + r);
-        centerY = i2fl(yc + r);
-        beginAngle = fl_radians(180.f);
-        endAngle = fl_radians(270.f);
-        break;
-    }
-    case 1:
-    {
-        centerX = i2fl(xc);
-        centerY = i2fl(yc + r);
-        beginAngle = fl_radians(270.f);
-        endAngle = fl_radians(360.f);
-        break;
-    }
-    case 2:
-    {
-        centerX = i2fl(xc + r);
-        centerY = i2fl(yc);
-        beginAngle = fl_radians(90.f);
-        endAngle = fl_radians(180.f);
-        break;
-    }
-    case 3:
-    {
-        centerX = i2fl(xc);
-        centerY = i2fl(yc);
-        beginAngle = fl_radians(0.f);
-        endAngle = fl_radians(90.f);
-        break;
-    }
-    default:
-        return;
-    }
-
-    path->arc(centerX, centerY, i2fl(r), beginAngle, endAngle, DIR_CW);
-    path->setStrokeColor(&gr_screen.current_color);
-    path->stroke();
-
-    endDrawing(path);
 }
 
 void gr_opengl_shade(int x, int y, int w, int h, int resize_mode)

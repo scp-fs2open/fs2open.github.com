@@ -36,3 +36,13 @@ void gr_aaline(vertex *v1, vertex *v2);
 void gr_gradient(int x1, int y1, int x2, int y2, int resize_mode = GR_RESIZE_FULL);
 
 void gr_pixel(int x, int y, int resize_mode = GR_RESIZE_FULL);
+
+
+void gr_circle(int xc, int yc, int d, int resize_mode = GR_RESIZE_FULL);
+
+void gr_unfilled_circle(int xc, int yc, int d, int resize_mode = GR_RESIZE_FULL);
+
+void gr_arc(int xc, int yc, float r, float angle_start, float angle_end, bool fill, int resize_mode = GR_RESIZE_FULL);
+
+void gr_curve(int x, int y, int r, int direction, int resize_mode);
+

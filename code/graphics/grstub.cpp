@@ -66,23 +66,12 @@ void gr_stub_activate(int active)
 {
 }
 
-void gr_stub_circle( int xc, int yc, int d, int resize_mode )
-{
-}
-
-void gr_stub_unfilled_circle( int xc, int yc, int d, int resize_mode )
-{
-}
 
 void gr_stub_cleanup(int minimize)
 {
 }
 
 void gr_stub_clear()
-{
-}
-
-void gr_stub_curve(int xc, int yc, int r, int direction, int resize_mode)
 {
 }
 
@@ -509,9 +498,6 @@ bool gr_stub_init()
 
 //	gr_screen.gf_rect				= gr_stub_rect;
 //	gr_screen.gf_shade				= gr_stub_shade;
-	gr_screen.gf_circle				= gr_stub_circle;
-	gr_screen.gf_unfilled_circle	= gr_stub_unfilled_circle;
-	gr_screen.gf_curve				= gr_stub_curve;
 
 	gr_screen.gf_print_screen		= gr_stub_print_screen;
 
