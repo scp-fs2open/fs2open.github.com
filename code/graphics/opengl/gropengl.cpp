@@ -62,8 +62,6 @@ static ushort *GL_original_gamma_ramp = NULL;
 
 int Use_PBOs = 0;
 
-float GL_line_width = 1.0f;
-
 static ubyte *GL_saved_screen = NULL;
 static int GL_saved_screen_id = -1;
 static GLuint GL_screen_pbo = 0;
@@ -875,7 +873,7 @@ void gr_opengl_set_line_width(float width)
 	if (width <= 1.0f) {
 		GL_state.SetLineWidth(width);
 	}
-	GL_line_width = width;
+	gr_screen.line_width = width;
 }
 
 int opengl_check_for_errors(const char *err_at)
@@ -1136,7 +1134,6 @@ void opengl_setup_function_pointers()
 
 //	gr_screen.gf_rect				= gr_opengl_rect;
 //	gr_screen.gf_shade				= gr_opengl_shade;
-	gr_screen.gf_string				= gr_opengl_string;
 	gr_screen.gf_circle				= gr_opengl_circle;
 	gr_screen.gf_unfilled_circle	= gr_opengl_unfilled_circle;
 	gr_screen.gf_arc				= gr_opengl_arc;

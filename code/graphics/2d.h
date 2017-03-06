@@ -605,6 +605,8 @@ typedef struct screen {
 
 	int envmap_render_target;
 
+	float line_width;
+
 	//switch onscreen, offscreen
 	void (*gf_flip)();
 
@@ -616,8 +618,6 @@ typedef struct screen {
 
 	// clears entire clipping region to current color
 	void (*gf_clear)();
-
-	void(*gf_string)(float x, float y, const char * text, int resize_mode, int length);
 
 	// Draw a gradient line... x1,y1 is bright, x2,y2 is transparent.
 	void (*gf_gradient)(int x1, int y1, int x2, int y2, int resize_mode);
@@ -913,16 +913,6 @@ void gr_set_bitmap(int bitmap_num, int alphablend = GR_ALPHABLEND_NONE, int bitb
 void gr_shield_icon(coord2d coords[6], const int resize_mode = GR_RESIZE_FULL);
 void gr_rect(int x, int y, int w, int h, int resize_mode = GR_RESIZE_FULL);
 void gr_shade(int x, int y, int w, int h, int resize_mode = GR_RESIZE_FULL);
-
-__inline void gr_string(float x, float y, const char* string, int resize_mode = GR_RESIZE_FULL, int length = -1)
-{
-	(*gr_screen.gf_string)(x, y, string, resize_mode, length);
-}
-
-__inline void gr_string(int x, int y, const char* string, int resize_mode = GR_RESIZE_FULL, int length = -1)
-{
-	gr_string(i2fl(x), i2fl(y), string, resize_mode, length);
-}
 
 __inline void gr_circle(int xc, int yc, int d, int resize_mode = GR_RESIZE_FULL)
 {

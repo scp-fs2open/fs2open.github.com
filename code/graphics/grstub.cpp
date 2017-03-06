@@ -255,10 +255,6 @@ void gr_stub_start_instance_matrix(const vec3d *offset, const matrix *rotation)
 {
 }
 
-void gr_stub_string( float sx, float sy, const char *s, int resize_mode = GR_RESIZE_NONE, int length = -1)
-{
-}
-
 void gr_stub_stuff_fog_coord(vertex *v)
 {
 }
@@ -529,7 +525,6 @@ bool gr_stub_init()
 
 //	gr_screen.gf_rect				= gr_stub_rect;
 //	gr_screen.gf_shade				= gr_stub_shade;
-	gr_screen.gf_string				= gr_stub_string;
 	gr_screen.gf_circle				= gr_stub_circle;
 	gr_screen.gf_unfilled_circle	= gr_stub_unfilled_circle;
 	gr_screen.gf_curve				= gr_stub_curve;

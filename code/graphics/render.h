@@ -13,3 +13,12 @@ void gr_aabitmap(int x, int y, int resize_mode = GR_RESIZE_FULL, bool mirror = f
 void gr_aabitmap_ex(int x, int y, int w, int h, int sx, int sy, int resize_mode = GR_RESIZE_FULL, bool mirror = false);
 
 void gr_bitmap_ex(int x, int y, int w, int h, int sx, int sy, int resize_mode = GR_RESIZE_FULL);
+
+
+void gr_string(float x, float y, const char* string, int resize_mode = GR_RESIZE_FULL, int length = -1);
+
+inline void gr_string(int x, int y, const char* string, int resize_mode = GR_RESIZE_FULL, int length = -1)
+{
+	gr_string(i2fl(x), i2fl(y), string, resize_mode, length);
+}
+

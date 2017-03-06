@@ -25,7 +25,6 @@ struct opengl_vertex_bind {
 	opengl_vert_attrib::attrib_id attribute_id;
 };
 
-void gr_opengl_string(float sx, float sy, const char *s, int resize_mode, int length);
 void gr_opengl_line(int x1,int y1,int x2,int y2, int resize_mode);
 void gr_opengl_aaline(vertex *v1, vertex *v2);
 void gr_opengl_pixel(int x, int y, int resize_mode);
