@@ -33,16 +33,7 @@ void gr_flash_alpha(int r, int g, int b, int a) {
 	render_material.set_blend_mode(ALPHA_BLEND_ADDITIVE);
 	render_material.set_depth_mode(ZBUFFER_TYPE_NONE);
 
-	int glVertices[8] = {
-		x1,
-		y1,
-		x1,
-		y2,
-		x2,
-		y1,
-		x2,
-		y2
-	};
+	int glVertices[8] = { x1, y1, x1, y2, x2, y1, x2, y2 };
 
 	vertex_layout vert_def;
 
@@ -55,30 +46,10 @@ static void
 draw_textured_quad(material* mat, float x1, float y1, float u1, float v1, float x2, float y2, float u2, float v2) {
 	GR_DEBUG_SCOPE("Draw textured quad");
 
-	float glVertices[4][4] = {{
-		x1,
-		y1,
-		u1,
-		v1
-	},
-		{
-			x1,
-			y2,
-			u1,
-			v2
-		},
-		{
-			x2,
-			y1,
-			u2,
-			v1
-		},
-		{
-			x2,
-			y2,
-			u2,
-			v2
-		}};
+	float glVertices[4][4] = {{ x1, y1, u1, v1 },
+							  { x1, y2, u1, v2 },
+							  { x2, y1, u2, v1 },
+							  { x2, y2, u2, v2 }};
 
 	vertex_layout vert_def;
 
@@ -892,19 +863,15 @@ void gr_string(float sx, float sy, const char* s, int resize_mode, int in_length
 	}
 }
 
-static void gr_line(float x1, float y1, float x2, float y2, int resize_mode)
-{
+static void gr_line(float x1, float y1, float x2, float y2, int resize_mode) {
 	auto path = beginDrawing(resize_mode);
 
-	if ((x1 == x2) && (y1 == y2))
-	{
+	if ((x1 == x2) && (y1 == y2)) {
 		path->circle(x1, y1, 1.5);
 
 		path->setFillColor(&gr_screen.current_color);
 		path->fill();
-	}
-	else
-	{
+	} else {
 		path->moveTo(x1, y1);
 		path->lineTo(x2, y2);
 
@@ -919,7 +886,7 @@ void gr_line(int x1, int y1, int x2, int y2, int resize_mode) {
 	gr_line(i2fl(x1), i2fl(y1), i2fl(x2), i2fl(y2), resize_mode);
 }
 
-void gr_aaline(vertex *v1, vertex *v2) {
+void gr_aaline(vertex* v1, vertex* v2) {
 	float x1 = v1->screen.xyw.x;
 	float y1 = v1->screen.xyw.y;
 	float x2 = v2->screen.xyw.x;
@@ -930,7 +897,7 @@ void gr_aaline(vertex *v1, vertex *v2) {
 }
 
 void gr_gradient(int x1, int y1, int x2, int y2, int resize_mode) {
-	if ( !gr_screen.current_color.is_alphacolor ) {
+	if (!gr_screen.current_color.is_alphacolor) {
 		gr_line(x1, y1, x2, y2, resize_mode);
 		return;
 	}
@@ -940,8 +907,8 @@ void gr_gradient(int x1, int y1, int x2, int y2, int resize_mode) {
 	color endColor = gr_screen.current_color;
 	endColor.alpha = 0;
 
-	auto gradientPaint = path->createLinearGradient(i2fl(x1), i2fl(y1),
-													i2fl(x2), i2fl(y2), &gr_screen.current_color, &endColor);
+	auto gradientPaint =
+		path->createLinearGradient(i2fl(x1), i2fl(y1), i2fl(x2), i2fl(y2), &gr_screen.current_color, &endColor);
 
 	path->moveTo(i2fl(x1), i2fl(y1));
 	path->lineTo(i2fl(x2), i2fl(y2));
@@ -985,16 +952,13 @@ void gr_arc(int xc, int yc, float r, float angle_start, float angle_end, bool fi
 
 	auto path = beginDrawing(resize_mode);
 
-	if (fill)
-	{
+	if (fill) {
 		path->arc(i2fl(xc), i2fl(yc), r, fl_radians(angle_start), fl_radians(angle_end), DIR_CW);
 		path->lineTo(i2fl(xc), i2fl(yc));
 
 		path->setFillColor(&gr_screen.current_color);
 		path->fill();
-	}
-	else
-	{
+	} else {
 		path->arc(i2fl(xc), i2fl(yc), r, fl_radians(angle_start), fl_radians(angle_end), DIR_CW);
 		path->setStrokeColor(&gr_screen.current_color);
 		path->stroke();
@@ -1009,34 +973,29 @@ void gr_curve(int xc, int yc, int r, int direction, int resize_mode) {
 	float centerX, centerY;
 	float beginAngle, endAngle;
 
-	switch (direction)
-	{
-		case 0:
-		{
+	switch (direction) {
+		case 0: {
 			centerX = i2fl(xc + r);
 			centerY = i2fl(yc + r);
 			beginAngle = fl_radians(180.f);
 			endAngle = fl_radians(270.f);
 			break;
 		}
-		case 1:
-		{
+		case 1: {
 			centerX = i2fl(xc);
 			centerY = i2fl(yc + r);
 			beginAngle = fl_radians(270.f);
 			endAngle = fl_radians(360.f);
 			break;
 		}
-		case 2:
-		{
+		case 2: {
 			centerX = i2fl(xc + r);
 			centerY = i2fl(yc);
 			beginAngle = fl_radians(90.f);
 			endAngle = fl_radians(180.f);
 			break;
 		}
-		case 3:
-		{
+		case 3: {
 			centerX = i2fl(xc);
 			centerY = i2fl(yc);
 			beginAngle = fl_radians(0.f);
@@ -1054,8 +1013,7 @@ void gr_curve(int xc, int yc, int r, int direction, int resize_mode) {
 	endDrawing(path);
 }
 
-void gr_rect(int x, int y, int w, int h, int resize_mode)
-{
+void gr_rect(int x, int y, int w, int h, int resize_mode) {
 	auto path = beginDrawing(resize_mode);
 
 	path->rectangle(i2fl(x), i2fl(y), i2fl(w), i2fl(h));
@@ -1065,12 +1023,11 @@ void gr_rect(int x, int y, int w, int h, int resize_mode)
 	endDrawing(path);
 }
 
-void gr_shade(int x, int y, int w, int h, int resize_mode)
-{
-	auto r = (int)gr_screen.current_shader.r;
-	auto g = (int)gr_screen.current_shader.g;
-	auto b = (int)gr_screen.current_shader.b;
-	auto a = (int)gr_screen.current_shader.c;
+void gr_shade(int x, int y, int w, int h, int resize_mode) {
+	auto r = (int) gr_screen.current_shader.r;
+	auto g = (int) gr_screen.current_shader.g;
+	auto b = (int) gr_screen.current_shader.b;
+	auto a = (int) gr_screen.current_shader.c;
 
 	color clr;
 	gr_init_alphacolor(&clr, r, g, b, a);
