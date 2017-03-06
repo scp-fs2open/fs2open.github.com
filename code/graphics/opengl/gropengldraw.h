@@ -25,8 +25,6 @@ struct opengl_vertex_bind {
 	opengl_vert_attrib::attrib_id attribute_id;
 };
 
-void gr_opengl_aabitmap_ex(int x, int y, int w, int h, int sx, int sy, int resize_mode, bool mirror);
-void gr_opengl_aabitmap(int x, int y, int resize_mode, bool mirror);
 void gr_opengl_string(float sx, float sy, const char *s, int resize_mode, int length);
 void gr_opengl_line(int x1,int y1,int x2,int y2, int resize_mode);
 void gr_opengl_aaline(vertex *v1, vertex *v2);
@@ -37,9 +35,6 @@ void gr_opengl_unfilled_circle(int xc, int yc, int d, int resize_mode);
 void gr_opengl_arc(int xc, int yc, float r, float angle_start, float angle_end, bool fill, int resize_mode);
 void gr_opengl_curve(int xc, int yc, int r, int direction, int resize_mode);
 void gr_opengl_shade(int x, int y, int w, int h, int resize_mode);
-void gr_opengl_flash(int r, int g, int b);
-void gr_opengl_flash_alpha(int r, int g, int b, int a);
-void gr_opengl_bitmap_ex(int x, int y, int w, int h, int sx, int sy, int resize_mode);
 void gr_opengl_update_distortion();
 
 void opengl_set_spec_mapping(int tmap_type, float *u_scale, float *v_scale, int stage = 0);

@@ -13,7 +13,7 @@
 #define _GRAPHICS_H
 
 #include "graphics/grinternal.h"
-#include <osapi/osapi.h>
+#include "osapi/osapi.h"
 #include "bmpman/bmpman.h"
 #include "cfile/cfile.h"
 #include "globalincs/pstypes.h"
@@ -608,10 +608,6 @@ typedef struct screen {
 	//switch onscreen, offscreen
 	void (*gf_flip)();
 
-	// Flash the screen
-	void (*gf_flash)( int r, int g, int b );
-	void (*gf_flash_alpha)(int r, int g, int b, int a);
-
 	// sets the clipping region
 	void (*gf_set_clip)(int x, int y, int w, int h, int resize_mode);
 
@@ -620,12 +616,6 @@ typedef struct screen {
 
 	// clears entire clipping region to current color
 	void (*gf_clear)();
-
-	// void (*gf_bitmap)(int x, int y, int resize_mode);
-	void (*gf_bitmap_ex)(int x, int y, int w, int h, int sx, int sy, int resize_mode);
-
-	void (*gf_aabitmap)(int x, int y, int resize_mode, bool mirror);
-	void (*gf_aabitmap_ex)(int x, int y, int w, int h, int sx, int sy, int resize_mode, bool mirror);
 
 	void(*gf_string)(float x, float y, const char * text, int resize_mode, int length);
 
@@ -919,20 +909,6 @@ __inline void gr_set_clip(int x, int y, int w, int h, int resize_mode=GR_RESIZE_
 void gr_set_bitmap(int bitmap_num, int alphablend = GR_ALPHABLEND_NONE, int bitbltmode = GR_BITBLT_MODE_NORMAL, float alpha = 1.0f);
 
 #define gr_clear				GR_CALL(gr_screen.gf_clear)
-__inline void gr_aabitmap(int x, int y, int resize_mode = GR_RESIZE_FULL, bool mirror = false)
-{
-	(*gr_screen.gf_aabitmap)(x,y,resize_mode,mirror);
-}
-
-__inline void gr_aabitmap_ex(int x, int y, int w, int h, int sx, int sy, int resize_mode = GR_RESIZE_FULL, bool mirror = false)
-{
-	(*gr_screen.gf_aabitmap_ex)(x,y,w,h,sx,sy,resize_mode,mirror);
-}
-
-__inline void gr_bitmap_ex(int x, int y, int w, int h, int sx, int sy, int resize_mode = GR_RESIZE_FULL)
-{
-	(*gr_screen.gf_bitmap_ex)(x, y, w, h, sx, sy, resize_mode);
-}
 
 void gr_shield_icon(coord2d coords[6], const int resize_mode = GR_RESIZE_FULL);
 void gr_rect(int x, int y, int w, int h, int resize_mode = GR_RESIZE_FULL);
@@ -981,9 +957,6 @@ __inline void gr_gradient(int x1, int y1, int x2, int y2, int resize_mode = GR_R
 {
 	(*gr_screen.gf_gradient)(x1, y1, x2, y2, resize_mode);
 }
-
-#define gr_flash			GR_CALL(gr_screen.gf_flash)
-#define gr_flash_alpha		GR_CALL(gr_screen.gf_flash_alpha)
 
 #define gr_zbuffer_get		GR_CALL(gr_screen.gf_zbuffer_get)
 #define gr_zbuffer_set		GR_CALL(gr_screen.gf_zbuffer_set)
@@ -1287,5 +1260,8 @@ enum AnimatedShader {
 	ANIMATED_SHADER_LOADOUTSELECT_FS2= 1,
 	ANIMATED_SHADER_CLOAK = 2,
 };
+
+// Include this last to make the 2D rendering function available everywhere
+#include "graphics/render.h"
 
 #endif

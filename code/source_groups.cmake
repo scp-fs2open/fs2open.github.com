@@ -295,11 +295,13 @@ set (file_root_graphics
 	graphics/grbatch.cpp
 	graphics/grbatch.h
 	graphics/grinternal.h
-	graphics/tmapper.h
-	graphics/shadows.cpp
-	graphics/shadows.h
 	graphics/material.cpp
 	graphics/material.h
+	graphics/render.cpp
+	graphics/render.h
+	graphics/shadows.cpp
+	graphics/shadows.h
+	graphics/tmapper.h
 )
 
 # Graphics -> OpenGLGr files

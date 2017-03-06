@@ -1133,9 +1133,6 @@ void opengl_setup_function_pointers()
 
 	gr_screen.gf_clear				= gr_opengl_clear;
 //	gr_screen.gf_bitmap				= gr_opengl_bitmap;
-	gr_screen.gf_bitmap_ex			= gr_opengl_bitmap_ex;
-	gr_screen.gf_aabitmap			= gr_opengl_aabitmap;
-	gr_screen.gf_aabitmap_ex		= gr_opengl_aabitmap_ex;
 
 //	gr_screen.gf_rect				= gr_opengl_rect;
 //	gr_screen.gf_shade				= gr_opengl_shade;
@@ -1152,9 +1149,6 @@ void opengl_setup_function_pointers()
 	gr_screen.gf_gradient			= gr_opengl_gradient;
 
 	gr_screen.gf_print_screen		= gr_opengl_print_screen;
-
-	gr_screen.gf_flash				= gr_opengl_flash;
-	gr_screen.gf_flash_alpha		= gr_opengl_flash_alpha;
 
 	gr_screen.gf_zbuffer_get		= gr_opengl_zbuffer_get;
 	gr_screen.gf_zbuffer_set		= gr_opengl_zbuffer_set;

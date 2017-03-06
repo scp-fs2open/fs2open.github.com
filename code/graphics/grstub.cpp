@@ -62,27 +62,11 @@ void gr_set_fill_mode_stub(int mode)
 {
 }
 
-void gr_stub_aabitmap_ex(int x,int y,int w,int h,int sx,int sy,int resize_mode,bool mirror)
-{
-}
-
-void gr_stub_aabitmap(int x, int y,int resize_mode, bool mirror)
-{
-}
-
 void gr_stub_aaline(vertex *v1, vertex *v2)
 {
 }
 
 void gr_stub_activate(int active)
-{
-}
-
-void gr_stub_bitmap_ex(int x, int y, int w, int h, int sx, int sy, int resize_mode)
-{
-}
-
-void gr_stub_bitmap(int x, int y)
 {
 }
 
@@ -119,14 +103,6 @@ void gr_stub_end_projection_matrix()
 }
 
 void gr_stub_end_view_matrix()
-{
-}
-
-void gr_stub_flash_alpha(int r, int g, int b, int a)
-{
-}
-
-void gr_stub_flash(int r, int g, int b)
 {
 }
 
@@ -550,11 +526,7 @@ bool gr_stub_init()
 	gr_screen.gf_reset_clip			= gr_stub_reset_clip;
 	
 	gr_screen.gf_clear				= gr_stub_clear;
-//	gr_screen.gf_bitmap				= gr_stub_bitmap;
-	gr_screen.gf_bitmap_ex			= gr_stub_bitmap_ex;
-	gr_screen.gf_aabitmap			= gr_stub_aabitmap;
-	gr_screen.gf_aabitmap_ex		= gr_stub_aabitmap_ex;
-	
+
 //	gr_screen.gf_rect				= gr_stub_rect;
 //	gr_screen.gf_shade				= gr_stub_shade;
 	gr_screen.gf_string				= gr_stub_string;
@@ -570,9 +542,6 @@ bool gr_stub_init()
 
 	gr_screen.gf_print_screen		= gr_stub_print_screen;
 
-	gr_screen.gf_flash				= gr_stub_flash;
-	gr_screen.gf_flash_alpha		= gr_stub_flash_alpha;
-	
 	gr_screen.gf_zbuffer_get		= gr_stub_zbuffer_get;
 	gr_screen.gf_zbuffer_set		= gr_stub_zbuffer_set;
 	gr_screen.gf_zbuffer_clear		= gr_stub_zbuffer_clear;
