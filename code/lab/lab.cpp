@@ -1369,24 +1369,33 @@ typedef struct lab_flag {
 	bool second;
 } lab_flag;
 
-static SCP_vector<lab_flag> Lab_flags;
+template<class T>
+struct lab_flag_new {
+	Checkbox* cb;
+	T flag;
+};
+
+static SCP_vector<lab_flag_new<Ship::Info_Flags>> Ship_Class_Flags;
+static SCP_vector<lab_flag_new<Weapon::Info_Flags>> Weapon_Class_Flags;
 
 void labviewer_flags_clear()
 {
 	if (Lab_flags_window != NULL) {
 		Lab_flags_window->DeleteChildren();
 	}
-
-	Lab_flags.clear();
+	
+	Ship_Class_Flags.clear();
+	Weapon_Class_Flags.clear();
 }
 
-void labviewer_flags_add(int *X, int *Y, char *flag_name, int flag, bool flags2 = false)
+template <class T>
+void labviewer_flags_add(int* X, int* Y, const char *flag_name, T flag, SCP_vector<lab_flag_new<T>>& flag_list) 
 {
 	int x = 0, y = 0;
 
-	Assert( (Lab_flags_window != NULL) && (flag_name != NULL) );
+	Assert((Lab_flags_window != NULL) && (flag_name != NULL));
 
-	lab_flag new_flag;
+	lab_flag_new<T> new_flag;
 
 	if (X) {
 		x = *X;
@@ -1396,11 +1405,9 @@ void labviewer_flags_add(int *X, int *Y, char *flag_name, int flag, bool flags2 
 		y = *Y;
 	}
 
-	new_flag.cb = (Checkbox*) Lab_flags_window->AddChild(new Checkbox(flag_name, x, y));
+	new_flag.cb = (Checkbox*)Lab_flags_window->AddChild(new Checkbox(flag_name, x, y));
 	new_flag.flag = flag;
-	new_flag.second = flags2;
-
-	Lab_flags.push_back( new_flag );
+	flag_list.push_back(new_flag);
 
 	if (X) {
 		*X += new_flag.cb->GetWidth() + 2;
@@ -1424,13 +1431,21 @@ void labviewer_populate_flags_window()
 	// clear out anything that already exists
 	labviewer_flags_clear();
     
+	int y = 0;
+
     // ship flags ...
     if (Lab_mode == LAB_MODE_SHIP) {
-        //Needs reimplementation
+		for (int i = 0; i < Num_ship_flags; ++i) 
+		{
+			labviewer_flags_add<Ship::Info_Flags>(nullptr, &y, Ship_flags[i].name, Ship_flags[i].def, Ship_Class_Flags);
+		}
     }
     // weapon flags ...
     else if (Lab_mode == LAB_MODE_WEAPON) {
-        //Needs reimplementation
+		for (int i = 0; i < num_weapon_info_flags; ++i)
+		{
+			labviewer_flags_add<Weapon::Info_Flags>(nullptr, &y, Weapon_Info_Flags[i].name, Weapon_Info_Flags[i].def, Weapon_Class_Flags);
+		}
     }
 }
 
@@ -1439,18 +1454,24 @@ void labviewer_update_flags_window()
 	if ( (Lab_selected_index < 0) || (Lab_mode == LAB_MODE_NONE) ) {
 		return;
 	}
-
-	// no flags? then don't bother
-	if (Lab_flags.empty()) {
-		return;
-	}
-
-
+	
     if (Lab_mode == LAB_MODE_SHIP) {
-        //Needs reimplementation
+		auto sip = &Ship_info[Lab_selected_index];
+
+		for (auto flag_def : Ship_Class_Flags) 
+		{
+			if (flag_def.flag == Ship::Info_Flags::NUM_VALUES) continue;
+			flag_def.cb->SetFlag(sip->flags, flag_def.flag, sip);
+		}
     }
     else if (Lab_mode == LAB_MODE_WEAPON) {
-        //Needs reimplementation
+		auto wip = &Weapon_info[Lab_selected_index];
+
+		for (auto flag_def : Weapon_Class_Flags)
+		{
+			if (flag_def.flag == Weapon::Info_Flags::NUM_VALUES) continue;
+			flag_def.cb->SetFlag(wip->wi_flags, flag_def.flag, wip);
+		}
     }
 }
 
@@ -1458,7 +1479,8 @@ void labviewer_close_flags_window(GUIObject *caller)
 {
 	Lab_flags_window = NULL;
 
-	Lab_flags.clear();
+	Ship_Class_Flags.empty();
+	Weapon_Class_Flags.empty();
 }
 
 void labviewer_make_flags_window(Button *caller)

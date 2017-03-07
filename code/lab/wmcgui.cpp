@@ -2475,9 +2475,19 @@ int Checkbox::DoMouseUp(float frametime)
 				*FlagPtr &= ~Flag;
 				IsChecked = false;
 			}
-		} else if (BoolFlagPtr != NULL) {
+		}
+		else if (BoolFlagPtr != NULL) {
 			*BoolFlagPtr = !(*BoolFlagPtr);
 			IsChecked = *BoolFlagPtr;
+		}
+		else if (Sip != nullptr)
+		{
+			Sip->flags.toggle(static_cast<Ship::Info_Flags>(Flag));
+			IsChecked = Sip->flags[static_cast<Ship::Info_Flags>(Flag)];
+		} else if (Wip != nullptr) 
+		{
+			Wip->wi_flags.toggle(static_cast<Weapon::Info_Flags>(Flag));
+			IsChecked = Wip->wi_flags[static_cast<Weapon::Info_Flags>(Flag)];
 		} else {
 			IsChecked = !IsChecked;
 		}

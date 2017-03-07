@@ -13,6 +13,8 @@
 #include "globalincs/linklist.h"
 #include "globalincs/pstypes.h"
 #include "io/mouse.h"
+#include "ship/ship.h"
+#include "weapon/weapon.h"
 
 #include <string>
 #include <limits.h>
@@ -622,7 +624,10 @@ class Checkbox : public GUIObject
 
 	//For toggling flags with this thing
 	int* FlagPtr;
-	int Flag;
+	size_t Flag;
+
+	ship_info* Sip;
+	weapon_info* Wip;
 
 	bool *BoolFlagPtr;
 
@@ -665,6 +670,22 @@ public:
 
 	void SetFlag(uint* in_flag_ptr, int in_flag) {
 		SetFlag((int*)in_flag_ptr, in_flag);
+	}
+
+	template <class T>
+	void SetFlag(flagset<T>& in_flag_set, T flag_value, ship_info* si) {
+		FlagPtr = nullptr;
+		Sip = si;
+		Flag = static_cast<size_t>(flag_value);
+		IsChecked = in_flag_set[flag_value];
+	}
+
+	template <class T>
+	void SetFlag(flagset<T>& in_flag_set, T flag_value, weapon_info* wi) {
+		FlagPtr = nullptr;
+		Wip = wi;
+		Flag = static_cast<size_t>(flag_value);
+		IsChecked = in_flag_set[flag_value];
 	}
 
 	void SetBool(bool *in_bool_ptr) {

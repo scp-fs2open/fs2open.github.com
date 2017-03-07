@@ -1243,6 +1243,9 @@ private:
 	const ship_info &operator=(const ship_info& other);
 };
 
+extern flag_def_list_new<Ship::Info_Flags> Ship_flags[];
+extern const size_t Num_ship_flags;
+
 extern int Num_wings;
 extern ship Ships[MAX_SHIPS];
 extern ship	*Player_ship;
