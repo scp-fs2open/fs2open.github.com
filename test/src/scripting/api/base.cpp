@@ -3,7 +3,7 @@
 
 class ScriptingBaseTest : public test::scripting::ScriptingTestFixture {
  public:
-	ScriptingBaseTest() : test::scripting::ScriptingTestFixture(0) {
+	ScriptingBaseTest() : test::scripting::ScriptingTestFixture(INIT_CFILE) {
 		pushModDir("base");
 	}
 };

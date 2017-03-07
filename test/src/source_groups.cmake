@@ -59,4 +59,9 @@ add_file_folder(scripting_api "Scripting\\\\Lua"
 add_file_folder(util "Util"
     util/FSTestFixture.cpp
     util/FSTestFixture.h
+    util/test_util.h
+)
+
+add_file_folder(weapon "Weapon"
+    weapon/weapons.cpp
 )

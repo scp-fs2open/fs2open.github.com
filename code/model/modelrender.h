@@ -15,6 +15,7 @@
 #include "lighting/lighting.h"
 #include "math/vecmat.h"
 #include "model/model.h"
+#include "mission/missionparse.h"
 
 extern light Lights[MAX_LIGHTS];
 extern int Num_lights;
@@ -74,6 +75,9 @@ class model_render_params
 	int Insignia_bitmap;
 
 	int *Replacement_textures;
+	bool Manage_replacement_textures; // This is set when we are rendering a model without an associated ship object;
+									  // in that case, model_render_params is responsible for allocating and destroying
+									  // the Replacement_textures array (this is handled elsewhere otherwise)
 
 	bool Team_color_set;
 	team_color Current_team_color;
@@ -93,8 +97,12 @@ class model_render_params
 
 	bool Normal_extrude;
 	float Normal_extrude_width;
+
+	model_render_params(const model_render_params&) = delete;
+	model_render_params& operator=(const model_render_params&) = delete;
 public:
 	model_render_params();
+	~model_render_params();
 
 	void set_flags(uint flags);
 	void set_debug_flags(uint flags);
@@ -108,6 +116,7 @@ public:
 	void set_forced_bitmap(int bitmap);
 	void set_insignia_bitmap(int bitmap);
 	void set_replacement_textures(int *textures);
+	void set_replacement_textures(int modelnum, SCP_vector<texture_replace>& replacement_textures);
 	void set_team_color(team_color &clr);
 	void set_team_color(const SCP_string &team, const SCP_string &secondaryteam, fix timestamp, int fadetime);
 	void set_clip_plane(vec3d &pos, vec3d &normal);

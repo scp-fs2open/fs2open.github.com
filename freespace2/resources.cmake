@@ -1,6 +1,6 @@
 
 if(WIN32)
-    # Handling of windows resources+
+    # Handling of windows resources
 
     set(subpath resources/win)
 
@@ -23,16 +23,22 @@ if(WIN32)
         ${subpath}/V_sse-d.ico
         ${subpath}/V_sse.ico
     )
+    
+    set(MANIFESTS
+        ${subpath}/default.manifest
+    )
 
     set(RESOURCES
         ${RESOURCE_FILES}
         ${ICONS}
+        ${MANIFESTS}
     )
 
     target_sources(Freespace2 PRIVATE ${RESOURCES})
 
     source_group("Resources" FILES ${RESOURCE_FILES})
     source_group("Resources\\Icons" FILES ${ICONS})
+    source_group("Resources\\Manifests" FILES ${MANIFESTS})
 
     SET_SOURCE_FILES_PROPERTIES(${subpath}/freespace.rc PROPERTIES COMPILE_DEFINITIONS "_VC08")
 

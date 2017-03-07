@@ -1093,6 +1093,8 @@ void g3_render_rod(color *clr, int num_points, vec3d *pvecs, float width)
 // adapted from g3_draw_2d_shield_icon()
 void g3_render_shield_icon(color *clr, coord2d coords[6], int resize_mode)
 {
+	GR_DEBUG_SCOPE("Render shield icon");
+
 	vertex v[6];
 
 	memset(v, 0, sizeof(vertex) * 6);
@@ -1188,7 +1190,7 @@ void g3_render_shield_icon(color *clr, coord2d coords[6], int resize_mode)
 	material_instance.set_color(1.0f, 1.0f, 1.0f, 1.0f);
 
 	// draw the polys
-	g3_render_primitives_colored(&material_instance, v, 4, PRIM_TYPE_TRISTRIP, true);
+	g3_render_primitives_colored(&material_instance, v, 6, PRIM_TYPE_TRISTRIP, true);
 }
 
 void g3_render_shield_icon(coord2d coords[6], int resize_mode)

@@ -355,14 +355,6 @@ void opengl_post_lightshafts()
 			}
 		}
 	}
-
-	if ( zbuffer_saved ) {
-		zbuffer_saved = false;
-		gr_zbuffer_set(GR_ZBUFF_FULL);
-		glClear(GL_DEPTH_BUFFER_BIT);
-		gr_zbuffer_set(GR_ZBUFF_NONE);
-		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, Scene_depth_texture, 0);
-	}
 }
 
 void gr_opengl_post_process_end()
@@ -600,6 +592,20 @@ void gr_opengl_post_process_save_zbuffer()
 		// If we can't save the z-buffer then just clear it so cockpits are still rendered correctly when
 		// post-processing isn't available/enabled.
 		gr_zbuffer_clear(TRUE);
+	}
+}
+void gr_opengl_post_process_restore_zbuffer()
+{
+	GR_DEBUG_SCOPE("Restore z-Buffer");
+
+	if (zbuffer_saved) {
+		gr_zbuffer_set(GR_ZBUFF_FULL);
+		glClear(GL_DEPTH_BUFFER_BIT);
+		gr_zbuffer_set(GR_ZBUFF_NONE);
+
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, Scene_depth_texture, 0);
+
+		zbuffer_saved = false;
 	}
 }
 

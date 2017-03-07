@@ -1603,8 +1603,7 @@ int cf_get_file_list( SCP_vector<SCP_string> &list, int pathtype, const char *fi
 	}
 #endif
 
-	bool skip_packfiles = (Skip_packfile_search != 0);
-
+	bool skip_packfiles = false;
 	if ( (pathtype == CF_TYPE_PLAYERS) || (pathtype == CF_TYPE_SINGLE_PLAYERS) || (pathtype == CF_TYPE_MULTI_PLAYERS) ) {
 		skip_packfiles = true;
 	} else if (Get_file_list_child != NULL) {
@@ -1626,6 +1625,11 @@ int cf_get_file_list( SCP_vector<SCP_string> &list, int pathtype, const char *fi
 			}
 
 			if ( cf_file_already_in_list(list, f->name_ext))	{
+				continue;
+			}
+
+			if (Skip_packfile_search && f->pack_offset != 0) {
+				// If the packfile skip flag is set we skip files in VPs but still search in directories
 				continue;
 			}
 
@@ -1805,8 +1809,16 @@ int cf_get_file_list( int max, char **list, int pathtype, const char *filter, in
 	}
 #endif
 
+	bool skip_packfiles = false;
+	if ((pathtype == CF_TYPE_PLAYERS) || (pathtype == CF_TYPE_SINGLE_PLAYERS) || (pathtype == CF_TYPE_MULTI_PLAYERS)) {
+		skip_packfiles = true;
+	}
+	else if (Get_file_list_child != NULL) {
+		skip_packfiles = true;
+	}
+
 	// Search all the packfiles and CD.
-	if ( !Skip_packfile_search )	{
+	if ( !skip_packfiles)	{
 		for (i=0; i<Num_files; i++ )	{
 			cf_file * f = cf_get_file(i);
 
@@ -1823,6 +1835,11 @@ int cf_get_file_list( int max, char **list, int pathtype, const char *filter, in
 			}
 
 			if ( cf_file_already_in_list(num_files,list,f->name_ext))	{
+				continue;
+			}
+
+			if (Skip_packfile_search && f->pack_offset != 0) {
+				// If the packfile skip flag is set we skip files in VPs but still search in directories
 				continue;
 			}
 
@@ -2009,8 +2026,16 @@ int cf_get_file_list_preallocated( int max, char arr[][MAX_FILENAME_LEN], char *
 	}
 #endif
 
+	bool skip_packfiles = false;
+	if ((pathtype == CF_TYPE_PLAYERS) || (pathtype == CF_TYPE_SINGLE_PLAYERS) || (pathtype == CF_TYPE_MULTI_PLAYERS)) {
+		skip_packfiles = true;
+	}
+	else if (Get_file_list_child != NULL) {
+		skip_packfiles = true;
+	}
+
 	// Search all the packfiles and CD.
-	if ( !Skip_packfile_search )	{
+	if (!skip_packfiles) {
 		for (uint i=0; i<Num_files; i++ )	{
 			cf_file * f = cf_get_file(i);
 
@@ -2028,6 +2053,11 @@ int cf_get_file_list_preallocated( int max, char arr[][MAX_FILENAME_LEN], char *
 			}
 
 			if ( cf_file_already_in_list_preallocated( num_files, arr, f->name_ext ))	{
+				continue;
+			}
+
+			if (Skip_packfile_search && f->pack_offset != 0) {
+				// If the packfile skip flag is set we skip files in VPs but still search in directories
 				continue;
 			}
 

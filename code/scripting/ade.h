@@ -225,6 +225,9 @@ class ade_lib_handle {
 template<class StoreType>
 class ade_obj: public ade_lib_handle {
  public:
+	// Make sure that the stored type is compatible with our requirements
+	static_assert(std::is_trivially_copyable<StoreType>::value, "ADE object types must be trivially copyable!");
+
 	ade_obj(const char* in_name, const char* in_desc, const ade_lib_handle* in_deriv = NULL) {
 		ade_table_entry ate;
 

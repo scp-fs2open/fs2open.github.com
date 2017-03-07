@@ -384,7 +384,7 @@ namespace os
 			}
 
 			if (running_unittests) {
-				throw AssertException(printfString);
+				throw WarningException(printfString);
 			}
 
 			SCP_stringstream boxMsgStream;

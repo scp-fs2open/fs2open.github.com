@@ -1761,6 +1761,8 @@ void hud_render_gauges(int cockpit_display_num)
 		num_gauges = sip->hud_gauges.size();
 
 		for(j = 0; j < num_gauges; j++) {
+			GR_DEBUG_SCOPE("Render HUD gauge");
+
 			// only preprocess gauges if we're not rendering to cockpit
 			if ( cockpit_display_num < 0 ) {
 				sip->hud_gauges[j]->preprocess();
@@ -1784,6 +1786,8 @@ void hud_render_gauges(int cockpit_display_num)
 		num_gauges = default_hud_gauges.size();
 
 		for(j = 0; j < num_gauges; j++) {
+			GR_DEBUG_SCOPE("Render HUD gauge");
+
 			default_hud_gauges[j]->preprocess();
 
 			default_hud_gauges[j]->onFrame(flFrametime);

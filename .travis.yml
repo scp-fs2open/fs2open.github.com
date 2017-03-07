@@ -69,6 +69,7 @@ matrix:
                       - llvm-toolchain-precise
                   packages:
                       - clang-3.6
+                      - libc++-dev
                       - *global_deps
         - os: osx
           env: CONFIGURATION="Debug"
@@ -90,6 +91,7 @@ matrix:
                       - llvm-toolchain-precise
                   packages:
                       - clang-3.6
+                      - libc++-dev
                       - *global_deps
         - os: osx
           env: CONFIGURATION="Release"

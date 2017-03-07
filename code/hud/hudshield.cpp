@@ -582,6 +582,8 @@ void HudGaugeShield::showShields(object *objp, int mode)
 	}
 	else
 	{
+		GR_DEBUG_SCOPE("Render generated shield icon");
+
 		bool g3_yourself = !g3_in_frame();
 		angles rot_angles = {-1.570796327f,0.0f,0.0f};
 		matrix	object_orient;
@@ -667,6 +669,7 @@ void HudGaugeShield::showShields(object *objp, int mode)
 			if ( objp->shield_quadrant[i] < 0.1f )
 				continue;
 		}
+		GR_DEBUG_SCOPE("Render shield quadrant");
 
 		range = MAX(HUD_COLOR_ALPHA_MAX, HUD_color_alpha + objp->n_quadrants);
 
@@ -788,6 +791,13 @@ void HudGaugeShield::renderShieldIcon(coord2d coords[6])
 
 	if ( gr_screen.rendering_to_texture != -1 ) {
 		gr_set_screen_scale(canvas_w, canvas_h, -1, -1, target_w, target_h, target_w, target_h, true);
+
+		// Respect the rendering display offset specified in the table
+		nx = display_offset_x;
+		ny = display_offset_y;
+
+		// Transfer the offset position into actual texture coordinates
+		gr_unsize_screen_pos(&nx, &ny);
 	} else {
 		if ( reticle_follow ) {
 			nx = HUD_nose_x;

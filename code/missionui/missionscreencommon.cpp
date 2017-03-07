@@ -1619,6 +1619,11 @@ void draw_model_icon(int model_id, int flags, float closeup_zoom, int x, int y, 
 		light_rotate_all();
 	}
 
+	if (sip != NULL && sip->replacement_textures.size() > 0) 
+	{
+		render_info.set_replacement_textures(model_id, sip->replacement_textures);
+	}
+
 	Glowpoint_override = true;
 	model_clear_instance(model_id);
 
