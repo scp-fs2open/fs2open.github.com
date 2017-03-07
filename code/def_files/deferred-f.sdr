@@ -46,22 +46,6 @@ void main()
 		discard;
 	vec3 lightDir = lightPosition - position.xyz;
 	float dist = length(lightDir);
-	float attenuation = (1.0 - dist/lightRadius);
-	if(lightType == 2)
-	{
-		float coneDot = dot(normalize(-lightDir), coneDir);
-		if(dualCone) {
-			if(abs(coneDot) < coneAngle)
-				discard;
-			else
-				attenuation *= smoothstep(coneAngle, coneInnerAngle, abs(coneDot));
-		} else {
-			if(coneDot < coneAngle)
-				discard;
-			else
-				attenuation *= smoothstep(coneAngle, coneInnerAngle, coneDot);
-		}
-	}
 	if(dist > lightRadius && lightType != 1)
 		discard;
 	vec3 color = texture(ColorBuffer, screenPos).rgb;
@@ -84,9 +68,27 @@ void main()
 		if(dist > lightRadius)
 			discard;
 	}
+
+	float attenuation = 1.0 - clamp(dist / lightRadius, 0.0, 1.0);
+
+	if(lightType == 2)
+	{
+		float coneDot = dot(normalize(-lightDir), coneDir);
+		if(dualCone) {
+			if(abs(coneDot) < coneAngle)
+				discard;
+			else
+				attenuation *= smoothstep(coneAngle, coneInnerAngle, abs(coneDot));
+		} else {
+			if(coneDot < coneAngle)
+				discard;
+			else
+				attenuation *= smoothstep(coneAngle, coneInnerAngle, coneDot);
+		}
+	}
+
 	lightDir /= dist;
 	vec3 halfVec = normalize(lightDir + eyeDir);
-	float NdotHV = clamp(dot(normal.xyz, halfVec), 0.0, 1.0);
 	float NdotL = clamp(dot(normal.xyz, lightDir), 0.0, 1.0);
 	vec4 fragmentColor = vec4(color * (diffuseLightColor * NdotL * attenuation), 1.0);
 	fragmentColor.rgb += SpecularBlinnPhong(specColor.rgb, lightDir, normal.xyz, halfVec, exp2(10.0 * gloss + 1.0), fresnel, NdotL).rgb * specLightColor * attenuation;
