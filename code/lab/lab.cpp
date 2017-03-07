@@ -1363,20 +1363,14 @@ void labviewer_set_class_window(int mode)
 
 
 // ------------------------------  Flags Window --------------------------------
-typedef struct lab_flag {
-	Checkbox *cb;
-	int flag;
-	bool second;
-} lab_flag;
-
 template<class T>
-struct lab_flag_new {
+struct lab_flag {
 	Checkbox* cb;
 	T flag;
 };
 
-static SCP_vector<lab_flag_new<Ship::Info_Flags>> Ship_Class_Flags;
-static SCP_vector<lab_flag_new<Weapon::Info_Flags>> Weapon_Class_Flags;
+static SCP_vector<lab_flag<Ship::Info_Flags>> Ship_Class_Flags;
+static SCP_vector<lab_flag<Weapon::Info_Flags>> Weapon_Class_Flags;
 
 void labviewer_flags_clear()
 {
@@ -1389,13 +1383,13 @@ void labviewer_flags_clear()
 }
 
 template <class T>
-void labviewer_flags_add(int* X, int* Y, const char *flag_name, T flag, SCP_vector<lab_flag_new<T>>& flag_list) 
+void labviewer_flags_add(int* X, int* Y, const char *flag_name, T flag, SCP_vector<lab_flag<T>>& flag_list) 
 {
 	int x = 0, y = 0;
 
 	Assert((Lab_flags_window != NULL) && (flag_name != NULL));
 
-	lab_flag_new<T> new_flag;
+	lab_flag<T> new_flag;
 
 	if (X) {
 		x = *X;
