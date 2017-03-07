@@ -255,20 +255,20 @@ void outwnd_init()
 
 		Log_fp = fopen(os_get_config_path(pathname).c_str(), "wb");
 
+		outwnd_inited = Log_fp != nullptr;
+
 		if (Log_fp == NULL) {
-			outwnd_printf("Error", "Error opening %s\n", pathname);
+			fprintf(stderr, "Error opening %s\n", pathname);
 		} else {
 			time_t timedate = time(NULL);
 			char datestr[50];
 
-			memset( datestr, 0, sizeof(datestr) );
-			strftime( datestr, sizeof(datestr)-1, "%a %b %d %H:%M:%S %Y", localtime(&timedate) );
+			memset(datestr, 0, sizeof(datestr));
+			strftime(datestr, sizeof(datestr) - 1, "%a %b %d %H:%M:%S %Y", localtime(&timedate));
 
 			outwnd_printf("General", "Opened log '%s', %s ...\n", pathname, datestr);
 		}
 	}
-
-	outwnd_inited = true;
 }
 
 void outwnd_close()
