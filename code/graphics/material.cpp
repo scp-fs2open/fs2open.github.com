@@ -123,6 +123,19 @@ void material_set_distortion(distortion_material *mat_info, int texture, bool th
 	mat_info->set_cull_mode(false);
 	mat_info->set_color(1.0f, 1.0f, 1.0f, 1.0f);
 }
+void material_set_movie(movie_material* mat_info, int y_bm, int u_bm, int v_bm) {
+	mat_info->set_depth_mode(ZBUFFER_TYPE_NONE);
+	mat_info->set_blend_mode(ALPHA_BLEND_ALPHA_BLEND_ALPHA);
+
+	mat_info->set_cull_mode(false);
+	mat_info->set_color(1.0f, 1.0f, 1.0f, 1.0f);
+
+	mat_info->setYtex(y_bm);
+	mat_info->setUtex(u_bm);
+	mat_info->setVtex(v_bm);
+
+	mat_info->set_texture_type(material::TEX_TYPE_AABITMAP);
+}
 
 material::material():
 Sdr_type(SDR_TYPE_PASSTHROUGH_RENDER),
@@ -719,4 +732,26 @@ const vec3d& shield_material::get_impact_pos()
 float shield_material::get_impact_radius()
 {
 	return Impact_radius;
+}
+
+movie_material::movie_material() : material() {
+	set_shader_type(SDR_TYPE_VIDEO_PROCESS);
+}
+int movie_material::getYtex() const {
+	return Ytex;
+}
+int movie_material::getUtex() const {
+	return Utex;
+}
+int movie_material::getVtex() const {
+	return Vtex;
+}
+void movie_material::setYtex(int _Ytex) {
+	this->Ytex = _Ytex;
+}
+void movie_material::setUtex(int _Utex) {
+	this->Utex = _Utex;
+}
+void movie_material::setVtex(int _Vtex) {
+	movie_material::Vtex = _Vtex;
 }

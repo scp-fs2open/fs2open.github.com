@@ -480,6 +480,9 @@ void gr_stub_render_primitives_distortion(distortion_material* material_info, pr
 {
 
 }
+void gr_stub_render_movie(movie_material* material_info, primitive_type prim_type, vertex_layout* layout, int n_verts, int buffer)
+{
+}
 
 bool gr_stub_is_capable(gr_capability capability)
 {
@@ -686,6 +689,7 @@ bool gr_stub_init()
 	gr_screen.gf_render_primitives_2d_immediate = gr_stub_render_primitives_2d_immediate;
 	gr_screen.gf_render_primitives_particle	= gr_stub_render_primitives_particle;
 	gr_screen.gf_render_primitives_distortion = gr_stub_render_primitives_distortion;
+	gr_screen.gf_render_movie = gr_stub_render_movie;
 
 	gr_screen.gf_is_capable = gr_stub_is_capable;
 

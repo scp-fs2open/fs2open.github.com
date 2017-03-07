@@ -92,6 +92,8 @@ set (file_root_cutscene
 	cutscene/movie.h
 	cutscene/player.cpp
 	cutscene/player.h
+	cutscene/VideoPresenter.cpp
+	cutscene/VideoPresenter.h
 )
 
 # Cutscene\ffmpeg files
@@ -104,12 +106,6 @@ set (file_root_cutscene_ffmpeg
 	cutscene/ffmpeg/internal.h
 	cutscene/ffmpeg/VideoDecoder.cpp
 	cutscene/ffmpeg/VideoDecoder.h
-)
-
-set(file_root_cutscene_player
-	cutscene/player/VideoPresenter.h
-	cutscene/player/OpenGLVideoPresenter.cpp
-	cutscene/player/OpenGLVideoPresenter.h
 )
 
 # ddsutils files
