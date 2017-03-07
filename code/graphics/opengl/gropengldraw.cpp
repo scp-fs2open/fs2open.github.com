@@ -2134,11 +2134,6 @@ void gr_opengl_deferred_lighting_finish()
 
 	std::sort(lights_copy, lights_copy+Num_lights, light_compare_by_type);
 
-	glEnable(GL_STENCIL_TEST);
-	glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
-	glStencilOp(GL_ZERO, GL_ZERO, GL_ZERO);
-	glStencilMask(0xFF);
-
 	for(int i = 0; i < Num_lights; ++i)
 	{
 		GR_DEBUG_SCOPE("Deferred apply single light");
@@ -2191,20 +2186,13 @@ void gr_opengl_deferred_lighting_finish()
 					dist = vm_vec_mag(&a);
 				}
 
-				// commented out the stencil operations for now because deferred tube lights end up squashing other tube lights that write to stencil.
-				//glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
 				gr_opengl_draw_deferred_light_cylinder(&l->vec2, &orient, l->radb * 1.53f, length);
 				Current_shader->program->Uniforms.setUniformi( "lightType", 0 );
 				gr_opengl_draw_deferred_light_sphere(&l->vec, l->radb * 1.53f, false);
 				gr_opengl_draw_deferred_light_sphere(&l->vec2, l->radb * 1.53f, false);
-				//glStencilOp(GL_ZERO, GL_ZERO, GL_ZERO);
 				break;
 		}
 	}
-
-	glStencilOp(GL_KEEP, GL_KEEP, GL_INCR);
-	glClear(GL_STENCIL_BUFFER_BIT);
-	glDisable(GL_STENCIL_TEST);
 
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, Scene_color_texture, 0);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, Scene_depth_texture, 0);
