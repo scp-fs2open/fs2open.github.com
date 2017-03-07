@@ -355,12 +355,12 @@ void material::set_color(color &clr_in)
 		Clr.xyzw.x = i2fl(clr_in.red) / 255.0f;
 		Clr.xyzw.y = i2fl(clr_in.green) / 255.0f;
 		Clr.xyzw.z = i2fl(clr_in.blue) / 255.0f;
-		Clr.xyzw.w = 1.0f;
+		Clr.xyzw.w = i2fl(clr_in.alpha) / 255.0f;
 	} else {
 		Clr.xyzw.x = i2fl(clr_in.red) / 255.0f;
 		Clr.xyzw.y = i2fl(clr_in.green) / 255.0f;
 		Clr.xyzw.z = i2fl(clr_in.blue) / 255.0f;
-		Clr.xyzw.w = i2fl(clr_in.green) / 255.0f;
+		Clr.xyzw.w = 1.0f;
 	}
 }
 
