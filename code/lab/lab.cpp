@@ -1429,14 +1429,14 @@ void labviewer_populate_flags_window()
 
     // ship flags ...
     if (Lab_mode == LAB_MODE_SHIP) {
-		for (auto i = 0; i < Num_ship_flags; ++i) 
+		for (size_t i = 0; i < Num_ship_flags; ++i) 
 		{
 			labviewer_flags_add<Ship::Info_Flags>(nullptr, &y, Ship_flags[i].name, Ship_flags[i].def, Ship_Class_Flags);
 		}
     }
     // weapon flags ...
     else if (Lab_mode == LAB_MODE_WEAPON) {
-		for (auto i = 0; i < num_weapon_info_flags; ++i)
+		for (size_t i = 0; i < num_weapon_info_flags; ++i)
 		{
 			labviewer_flags_add<Weapon::Info_Flags>(nullptr, &y, Weapon_Info_Flags[i].name, Weapon_Info_Flags[i].def, Weapon_Class_Flags);
 		}
