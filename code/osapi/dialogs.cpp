@@ -5,6 +5,7 @@
 #include "cmdline/cmdline.h"
 #include "graphics/2d.h"
 #include "scripting/ade.h"
+#include "mod_table/mod_table.h"
 
 #include <SDL_messagebox.h>
 #include <SDL_clipboard.h>
@@ -358,37 +359,23 @@ namespace os
 			gr_activate(1);
 		}
 
-		// Actual implementation of the warning function. Used by the various warning functions
-		void WarningImpl(const char* filename, int line, const SCP_string& text)
+		void WarningDialog(const char* text)
 		{
-			filename = clean_filename(filename);
-
-			// output to the debug log before anything else (so that we have a complete record)
-
-			SCP_string printfString = text;
-			std::transform(printfString.begin(), printfString.end(), printfString.begin(), replaceNewline);
-
-			mprintf(("WARNING: \"%s\" at %s:%d\n", printfString.c_str(), filename, line));
-
 			// now go for the additional popup window, if we want it ...
 			if (Cmdline_noninteractive) {
 				return;
 			}
 
 			if (running_unittests) {
-				throw WarningException(printfString);
+				throw WarningException(text);
 			}
 
-			SCP_stringstream boxMsgStream;
-			boxMsgStream << "Warning: " << text << "\n";
-			boxMsgStream << "File: " << filename << "\n";
-			boxMsgStream << "Line: " << line << "\n";
+			set_clipboard_text(text);
 
-			set_clipboard_text(boxMsgStream.str().c_str());
+			SCP_stringstream messageStream;
+			messageStream << text;
 
-			boxMsgStream << "\n";
-
-			SCP_string boxMessage = truncateLines(boxMsgStream, Messagebox_lines);
+			SCP_string boxMessage = truncateLines(messageStream, Messagebox_lines);
 			boxMessage += "\n[ This info is in the clipboard so you can paste it somewhere now ]\n";
 			boxMessage += "\n\nUse Debug to break into Debugger\n";
 
@@ -420,32 +407,52 @@ namespace os
 
 			switch (buttonId)
 			{
-			case 2:
-				exit(1);
+				case 2:
+					exit(1);
 
-			case 0:
-				Int3();
-				break;
+				case 0:
+					Int3();
+					break;
 
-			default:
-				break;
+				default:
+					break;
 			}
 
 			gr_activate(1);
 		}
 
+		void WarningImpl(const char* filename, int line, const SCP_string& text) {
+			filename = clean_filename(filename);
 
-		void ReleaseWarning(const char* filename, int line, const char* format, ...) {
+			SCP_string printfString = text;
+			std::transform(printfString.begin(), printfString.end(), printfString.begin(), replaceNewline);
+
+			mprintf(("WARNING: \"%s\" at %s:%d\n", printfString.c_str(), filename, line));
+
+			SCP_stringstream boxMsgStream;
+			boxMsgStream << "Warning: " << text << "\n";
+			boxMsgStream << "File: " << filename << "\n";
+			boxMsgStream << "Line: " << line << "\n";
+
+			boxMsgStream << "\n";
+			boxMsgStream << dump_stacktrace();
+
+			WarningDialog(boxMsgStream.str().c_str());
+		}
+
+		void ReleaseWarning(const char* filename, int line, const char* format, ...)
+		{
 			Global_warning_count++;
 
-			SCP_string msg;
-			va_list args;
+			// output to the debug log before anything else (so that we have a complete record)
 
+			SCP_string formatMessage;
+			va_list args;
 			va_start(args, format);
-			vsprintf(msg, format, args);
+			vsprintf(formatMessage, format, args);
 			va_end(args);
 
-			WarningImpl(filename, line, msg);
+			WarningImpl(filename, line, formatMessage);
 		}
 		
 		void Warning(const char* filename, int line, const char* format, ...)
@@ -461,6 +468,44 @@ namespace os
 			va_end(args);
 
 			WarningImpl(filename, line, msg);
+#endif
+		}
+
+		void CategoryWarning(const char* filename, int line, const char* category, const char* format, ...) {
+			Global_warning_count++;
+
+#ifndef NDEBUG
+			SCP_string formatMessage;
+			va_list args;
+			va_start(args, format);
+			vsprintf(formatMessage, format, args);
+			va_end(args);
+
+			SCP_string printfString = formatMessage;
+			std::transform(printfString.begin(), printfString.end(), printfString.begin(), replaceNewline);
+
+			// Check if this warning was suppressed
+			if (Suppressed_warning_categories.find(SCP_string(category)) != Suppressed_warning_categories.end()) {
+				// Warning is in suppression list, just print a message to the log and continue silently
+				mprintf(("SUPPRESSED WARNING: \"%s\" at %s:%d\n", printfString.c_str(), filename, line));
+				return;
+			}
+
+			filename = clean_filename(filename);
+
+			// output to the debug log before anything else (so that we have a complete record)
+			mprintf(("WARNING: \"%s\" at %s:%d\n", printfString.c_str(), filename, line));
+
+			SCP_stringstream boxMsgStream;
+			boxMsgStream << "Warning: " << formatMessage << "\n";
+			boxMsgStream << "File: " << filename << "\n";
+			boxMsgStream << "Line: " << line << "\n";
+			boxMsgStream << "Category: " << category << "\n";
+
+			boxMsgStream << "\n";
+			boxMsgStream << dump_stacktrace();
+
+			WarningDialog(boxMsgStream.str().c_str());
 #endif
 		}
 
