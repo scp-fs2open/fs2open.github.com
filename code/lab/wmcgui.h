@@ -672,16 +672,14 @@ public:
 		SetFlag((int*)in_flag_ptr, in_flag);
 	}
 
-	template <class T>
-	void SetFlag(flagset<T>& in_flag_set, T flag_value, ship_info* si) {
+	void SetFlag(flagset<Ship::Info_Flags>& in_flag_set, Ship::Info_Flags flag_value, ship_info* si) {
 		FlagPtr = nullptr;
 		Sip = si;
 		Flag = static_cast<size_t>(flag_value);
 		IsChecked = in_flag_set[flag_value];
 	}
 
-	template <class T>
-	void SetFlag(flagset<T>& in_flag_set, T flag_value, weapon_info* wi) {
+	void SetFlag(flagset<Weapon::Info_Flags>& in_flag_set, Weapon::Info_Flags flag_value, weapon_info* wi) {
 		FlagPtr = nullptr;
 		Wip = wi;
 		Flag = static_cast<size_t>(flag_value);
