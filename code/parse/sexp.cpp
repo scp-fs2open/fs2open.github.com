@@ -28877,7 +28877,7 @@ void sexp_add_array_block_variable(int index, bool is_numeric)
  *
  * This should be called in mission when an sexp_variable is to be modified
  */
-void sexp_modify_variable(char *text, int index, bool sexp_callback)
+void sexp_modify_variable(const char *text, int index, bool sexp_callback)
 {
 	Assert(index >= 0 && index < MAX_SEXP_VARIABLES);
 	Assert(Sexp_variables[index].type & SEXP_VARIABLE_SET);
@@ -28891,7 +28891,7 @@ void sexp_modify_variable(char *text, int index, bool sexp_callback)
 
 		// copy to original buffer
 		auto len = temp_text.copy(Sexp_variables[index].text, TOKEN_LENGTH);
-		text[len] = 0;
+		Sexp_variables[index].text[len] = 0;
 	}
 	else
 	{
