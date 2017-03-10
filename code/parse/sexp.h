@@ -1176,7 +1176,7 @@ int query_node_in_sexp(int node, int sexp);
 void flush_sexp_tree(int node);
 
 // sexp_variable
-void sexp_modify_variable(char *text, int index, bool sexp_callback = true);
+void sexp_modify_variable(const char *text, int index, bool sexp_callback = true);
 int get_index_sexp_variable_from_node (int node);
 int get_index_sexp_variable_name(const char *text);
 int get_index_sexp_variable_name(SCP_string &text);	// Goober5000
