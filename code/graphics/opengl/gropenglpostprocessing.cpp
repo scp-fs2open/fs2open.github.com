@@ -599,10 +599,6 @@ void gr_opengl_post_process_restore_zbuffer()
 	GR_DEBUG_SCOPE("Restore z-Buffer");
 
 	if (zbuffer_saved) {
-		gr_zbuffer_set(GR_ZBUFF_FULL);
-		glClear(GL_DEPTH_BUFFER_BIT);
-		gr_zbuffer_set(GR_ZBUFF_NONE);
-
 		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, Scene_depth_texture, 0);
 
 		zbuffer_saved = false;
