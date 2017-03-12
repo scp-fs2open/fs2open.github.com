@@ -52,6 +52,9 @@ class CFileTest : public test::FSTestFixture {
 		test::FSTestFixture::SetUp();
 	}
 	virtual void TearDown() override {
+		extern bool Skip_memory_files;
+		Skip_memory_files = false;
+
 		test::FSTestFixture::TearDown();
 
 		cfile_close();
@@ -60,6 +63,10 @@ class CFileTest : public test::FSTestFixture {
 
 TEST_F(CFileTest, list_files_in_vps_and_dirs) {
 	SCP_vector<SCP_string> table_files;
+	extern bool Skip_memory_files;
+
+	// For this test we need to skip the memory files to keep the results consistent
+	Skip_memory_files = true;
 	ASSERT_EQ(4, cf_get_file_list(table_files, CF_TYPE_TABLES, "*", CF_SORT_NAME));
 
 	ASSERT_EQ((size_t)4, table_files.size());
@@ -80,4 +87,28 @@ TEST_F(CFileTest, list_files_in_vps_and_dirs) {
 
 	ASSERT_STREQ("dir", table_files[0].c_str());
 	ASSERT_STREQ("dir2", table_files[1].c_str());
+}
+
+TEST_F(CFileTest, access_default_file) {
+	// We use the controlconfig file since that should stay relatively stable
+	ASSERT_TRUE(cf_exists("controlconfigdefaults.tbl", CF_TYPE_TABLES));
+
+	auto fp = cfopen("controlconfigdefaults.tbl", "rb", CFILE_NORMAL, CF_TYPE_TABLES);
+	ASSERT_TRUE(fp != nullptr);
+
+	ASSERT_EQ(28, cfilelength(fp));
+
+	cfclose(fp);
+}
+
+TEST_F(CFileTest, override_default_file) {
+	// We use the controlconfig file since that should stay relatively stable
+	ASSERT_TRUE(cf_exists("controlconfigdefaults.tbl", CF_TYPE_TABLES));
+
+	auto fp = cfopen("controlconfigdefaults.tbl", "rb", CFILE_NORMAL, CF_TYPE_TABLES);
+	ASSERT_TRUE(fp != nullptr);
+
+	ASSERT_EQ(66, cfilelength(fp));
+
+	cfclose(fp);
 }
