@@ -48,10 +48,13 @@ typedef struct post_effect_t {
 	float div;
 	float add;
 
+	vec3d rgb;
+
 	bool always_on;
 
 	post_effect_t() :
 		intensity(0.0f), default_intensity(0.0f), div(1.0f), add(0.0f),
+		rgb(),
 		always_on(false)
 	{
 	}
@@ -422,7 +425,12 @@ void gr_opengl_post_process_end()
 			const char *name = Post_effects[idx].uniform_name.c_str();
 			float value = Post_effects[idx].intensity;
 
-			Current_shader->program->Uniforms.setUniformf( name, value);
+			if (!(vmd_zero_vector == Post_effects[idx].rgb)) {
+				Current_shader->program->Uniforms.setUniform3f( name, Post_effects[idx].rgb );
+			}
+			else {
+				Current_shader->program->Uniforms.setUniformf( name, value );
+			}
 		}
 	}
 
@@ -649,6 +657,10 @@ static bool opengl_post_init_table()
 
 				required_string("$Add:");
 				stuff_float(&eff.add);
+
+				if (optional_string("$RGB:")) {
+					stuff_vec3d(&eff.rgb);
+				}
 
 				// Post_effects index is used for flag checks, so we can't have more than 32
 				if (Post_effects.size() < 32) {

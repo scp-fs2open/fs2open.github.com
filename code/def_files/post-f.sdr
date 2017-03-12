@@ -26,6 +26,9 @@ uniform float cutoff;
 #ifdef FLAG_DITH
 uniform float dither;
 #endif
+#ifdef FLAG_TINT
+uniform vec3 tint;
+#endif
 uniform sampler2D blurred_tex;
 uniform sampler2D depth_tex;
 void main()
@@ -98,6 +101,9 @@ void main()
 	float downsampling_factor = 4;
 	float bias = 0.5;
 	color_out.rgb = floor(color_out.rgb * downsampling_factor + bias) / downsampling_factor;
+ #endif
+ #ifdef FLAG_TINT
+	color_out.rgb += tint;
  #endif
 	color_out.a = 1.0;
 	fragOut0 = color_out;
