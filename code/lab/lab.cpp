@@ -1238,6 +1238,8 @@ void labviewer_render_bitmap(float frametime)
 
 void labviewer_do_render(float frametime)
 {
+	GR_DEBUG_SCOPE("Lab Render");
+
 	int w, h;
 
 	if ( (Lab_model_num < 0) && (Lab_bitmap_id < 0) ) {
@@ -1250,7 +1252,8 @@ void labviewer_do_render(float frametime)
 
 	// render our particular thing
 	if (Lab_model_num >= 0) {
-		
+		GR_DEBUG_SCOPE("Lab Render model");
+
 		gr_scene_texture_begin();
 
 		labviewer_render_model(frametime);
@@ -1264,6 +1267,8 @@ void labviewer_do_render(float frametime)
 			gr_string(gr_screen.center_offset_x + gr_screen.center_w - w, gr_screen.center_offset_y + gr_screen.center_h - h, Lab_model_filename, GR_RESIZE_NONE);
 		}
 	} else if (Lab_bitmap_id >= 0) {
+		GR_DEBUG_SCOPE("Lab Render bitmap");
+
 		gr_scene_texture_begin();
 
 		labviewer_render_bitmap(frametime);
@@ -1377,13 +1382,13 @@ void labviewer_flags_clear()
 	if (Lab_flags_window != NULL) {
 		Lab_flags_window->DeleteChildren();
 	}
-	
+
 	Ship_Class_Flags.clear();
 	Weapon_Class_Flags.clear();
 }
 
 template <class T>
-void labviewer_flags_add(int* X, int* Y, const char *flag_name, T flag, SCP_vector<lab_flag<T>>& flag_list) 
+void labviewer_flags_add(int* X, int* Y, const char *flag_name, T flag, SCP_vector<lab_flag<T>>& flag_list)
 {
 	int x = 0, y = 0;
 
@@ -1424,12 +1429,12 @@ void labviewer_populate_flags_window()
 
 	// clear out anything that already exists
 	labviewer_flags_clear();
-    
+
 	int y = 0;
 
     // ship flags ...
     if (Lab_mode == LAB_MODE_SHIP) {
-		for (size_t i = 0; i < Num_ship_flags; ++i) 
+		for (size_t i = 0; i < Num_ship_flags; ++i)
 		{
 			labviewer_flags_add<Ship::Info_Flags>(nullptr, &y, Ship_flags[i].name, Ship_flags[i].def, Ship_Class_Flags);
 		}
@@ -1448,11 +1453,11 @@ void labviewer_update_flags_window()
 	if ( (Lab_selected_index < 0) || (Lab_mode == LAB_MODE_NONE) ) {
 		return;
 	}
-	
+
     if (Lab_mode == LAB_MODE_SHIP) {
 		auto sip = &Ship_info[Lab_selected_index];
 
-		for (auto flag_def : Ship_Class_Flags) 
+		for (auto flag_def : Ship_Class_Flags)
 		{
 			if (flag_def.flag == Ship::Info_Flags::NUM_VALUES) continue;
 			flag_def.cb->SetFlag(sip->flags, flag_def.flag, sip);
@@ -1633,20 +1638,20 @@ void labviewer_populate_variables_window()
 		labviewer_variables_add(&y, "Lifetime");
 		labviewer_variables_add(&y, "Range");
 		labviewer_variables_add(&y, "Min Range");
-	
+
 		VAR_ADD_HEADER("Damage");
 		labviewer_variables_add(&y, "Fire wait");
 		labviewer_variables_add(&y, "Damage");
 		labviewer_variables_add(&y, "Armor factor");
 		labviewer_variables_add(&y, "Shield factor");
 		labviewer_variables_add(&y, "Subsys factor");
-	
+
 		VAR_ADD_HEADER("Armor");
 		labviewer_variables_add(&y, "Damage type");
-	
+
 		VAR_ADD_HEADER("Shockwave");
 		labviewer_variables_add(&y, "Speed");
-	
+
 		VAR_ADD_HEADER("Missiles");
 		labviewer_variables_add(&y, "Turn time");
 		labviewer_variables_add(&y, "FOV");
@@ -1757,17 +1762,17 @@ void labviewer_update_variables_window()
 		VAR_SET_VALUE_SAVE(wip->lifetime, 0);
 		VAR_SET_VALUE_SAVE(wip->weapon_range, 0);
 		VAR_SET_VALUE_SAVE(wip->WeaponMinRange, 0);
-	
+
 		VAR_SET_VALUE_SAVE(wip->fire_wait, 0);
 		VAR_SET_VALUE_SAVE(wip->damage, 0);
 		VAR_SET_VALUE_SAVE(wip->armor_factor, 0);
 		VAR_SET_VALUE_SAVE(wip->shield_factor, 0);
 		VAR_SET_VALUE_SAVE(wip->subsystem_factor, 0);
-	
+
 		VAR_SET_VALUE_SAVE(wip->damage_type_idx, 0);
-	
+
 		VAR_SET_VALUE_SAVE(wip->shockwave.speed, 0);
-	
+
 		VAR_SET_VALUE_SAVE(wip->turn_time, 0);
 		VAR_SET_VALUE_SAVE(wip->fov, 0);
 		VAR_SET_VALUE_SAVE(wip->min_lock_time, 0);
@@ -2276,7 +2281,7 @@ void labviewer_change_ship(Tree *caller)
 	if ( !Lab_in_mission ) {
 		return;
 	}
-	
+
 	Lab_selected_index = (int)(caller->GetSelectedItem()->GetData());
 
 	labviewer_update_desc_window();
@@ -2370,7 +2375,7 @@ void labviewer_make_weap_window(Button* caller)
 
 	// populate the weapons window
 	Tree *cmp = (Tree*)Lab_class_window->AddChild(new Tree("Weapon Tree", 0, 0));
-	
+
 	// Unfortunately these are hardcoded
 	TreeItem **type_nodes = new TreeItem*[Num_weapon_subtypes];
 	int i;
@@ -2388,7 +2393,7 @@ void labviewer_make_weap_window(Button* caller)
 			Warning(LOCATION, "Invalid weapon subtype found on weapon %s", Weapon_info[i].name);
 			continue;
 		}
-		
+
 		if (Weapon_info[i].wi_flags[Weapon::Info_Flags::Beam]) {
 			stip = type_nodes[WP_BEAM];
 		} else {
@@ -2520,6 +2525,8 @@ void lab_init()
 #include "controlconfig/controlsconfig.h"
 void lab_do_frame(float frametime)
 {
+	GR_DEBUG_SCOPE("Lab Frame");
+
 	gr_reset_clip();
 	gr_clear();
 
