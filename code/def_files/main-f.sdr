@@ -365,7 +365,7 @@ void main()
 	baseColor.rgb = CalculateLighting(normal, baseColor.rgb, specColor.rgb, glossData, fresnelFactor, shadow, aoFactors.x);
 #else
  #ifdef FLAG_SPEC_MAP
-	baseColor.rgb += pow(1.0 - dot(eyeDir, normal), 5.0 * clamp(glossData, 0.01, 1.0)) * specColor.rgb;
+	baseColor.rgb += pow(1.0 - clamp(dot(eyeDir, normal), 0.0, 1.0), 5.0 * clamp(glossData, 0.01, 1.0)) * specColor.rgb;
  #endif
 #endif
 #ifdef FLAG_ENV_MAP
