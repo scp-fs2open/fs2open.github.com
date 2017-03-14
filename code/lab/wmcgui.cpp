@@ -472,6 +472,8 @@ void GUIScreen::DeleteObject(GUIObject* dgp)
 
 int GUIScreen::OnFrame(float frametime, bool doevents)
 {
+	GR_DEBUG_SCOPE("GUIScreen Frame");
+
 	GUIObject* cgp;
 	GUIObject* cgp_prev;
 	bool SomethingPressed = false;
@@ -608,6 +610,8 @@ ScreenClassInfoEntry *GUISystem::GetScreenClassInfo(const SCP_string & screen_na
 
 int GUISystem::OnFrame(float frametime, bool doevents, bool clearandflip)
 {
+	GR_DEBUG_SCOPE("GUISystem Frame");
+
 	//Set the global status variables for this frame
 	LastStatus = Status;
 	Status = GST_MOUSE_OVER;
@@ -748,7 +752,7 @@ GUIObject::GUIObject(const SCP_string &in_Name, int x_coord, int y_coord, int x_
 	if (x_width == 0 || y_height == 0) {
 		return;
 	}
-	
+
 	//No! Bad!
 	if (in_Name.length() < 1) {
 		return;
@@ -831,7 +835,7 @@ GUIObject* GUIObject::AddChildInternal(GUIObject *cgp)
 	cgp->GetOIECoords(&cgp->Coords[0], &cgp->Coords[1], &cgp->Coords[2], &cgp->Coords[3]);
 	//In case we need to resize
 	cgp->OnRefreshSize();
-	
+
 	return cgp;
 }
 
@@ -840,7 +844,7 @@ GUIObject* GUIObject::AddChild(GUIObject* cgp)
 	if (cgp == NULL) {
 		return NULL;
 	}
-	
+
 	//AddInternalChild must be used
 	if (cgp->Style & GS_INTERNALCHILD) {
 		return NULL;
@@ -892,6 +896,8 @@ void GUIObject::OnDraw(float frametime)
 
 int GUIObject::OnFrame(float frametime, int *unused_queue)
 {
+	GR_DEBUG_SCOPE("GUIObject Frame");
+
 	int rval = OF_TRUE;
 
 	GUIObject *cgp_prev;	//Elements will move themselves to the end of the list if they become active

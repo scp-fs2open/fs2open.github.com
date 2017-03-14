@@ -2338,7 +2338,7 @@ void gr_opengl_update_distortion()
 		distortion_verts[i].b = 255;
 		distortion_verts[i].a = 255;
 
-		distortion_verts[i].screen.xyw.x = 0.04f;
+		distortion_verts[i].screen.xyw.x = 1.f;
 		distortion_verts[i].screen.xyw.y = (float)gr_screen.max_h*0.03125f*i;
 	}
 
