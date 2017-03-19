@@ -16693,14 +16693,17 @@ void sexp_set_post_effect(int node)
 	if (amount < 0 || amount > 100)
 		amount = 0;
 
-	vec3d rgb = { 0.0f, 0.0f, 0.0f };
+	vec3d rgb; rgb.xyz.x = 0.0f; rgb.xyz.y = 0.0f; rgb.xyz.z = 0.0f; // clang you are a PITA
 	node = CDDR(node);
 	if (node != -1) {
-		// expect that the next 3 will all be supplied
 		rgb.xyz.x = static_cast<float>(eval_num(node)) / 255.0f;
 		node = CDR(node);
+	}
+	if (node != -1) {
 		rgb.xyz.y = static_cast<float>(eval_num(node)) / 255.0f;
 		node = CDR(node);
+	}
+	if (node != -1) {
 		rgb.xyz.z = static_cast<float>(eval_num(node)) / 255.0f;
 		node = CDR(node);
 	}

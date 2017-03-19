@@ -168,7 +168,7 @@ ADE_FUNC(setPostEffect, l_Graphics, "string name, [number value=0] [red 0.0 - 1.
 {
 	char* name = NULL;
 	int intensity = 0;
-	vec3d rgb = { 0.0f, 0.0f, 0.0f };
+	vec3d rgb; rgb.xyz.x = 0.0f; rgb.xyz.y = 0.0f; rgb.xyz.z = 0.0f; // clang you are a PITA
 
 	if (!ade_get_args(L, "s|ifff", &name, &intensity, &rgb.xyz.x, &rgb.xyz.y, &rgb.xyz.z))
 		return ADE_RETURN_FALSE;
