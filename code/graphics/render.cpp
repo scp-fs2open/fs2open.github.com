@@ -8,15 +8,7 @@
 
 #include "localization/localize.h"
 
-void gr_flash(int r, int g, int b) {
-	gr_flash_alpha(r, g, b, 255);
-}
-
-void gr_flash_alpha(int r, int g, int b, int a) {
-	if (!(r || g || b || a)) {
-		return;
-	}
-
+static void gr_flash_internal(int r, int g, int b, int a, bool alpha_flash) {
 	CLAMP(r, 0, 255);
 	CLAMP(g, 0, 255);
 	CLAMP(b, 0, 255);
@@ -29,9 +21,15 @@ void gr_flash_alpha(int r, int g, int b, int a) {
 
 	material render_material;
 	// By default materials use the immediate mode shader which is fine for us
-	render_material.set_color(r, g, b, 255);
-	render_material.set_blend_mode(ALPHA_BLEND_ADDITIVE);
 	render_material.set_depth_mode(ZBUFFER_TYPE_NONE);
+
+	if (alpha_flash) {
+		render_material.set_color(r, g, b, a);
+		render_material.set_blend_mode(ALPHA_BLEND_ALPHA_BLEND_ALPHA);
+	} else {
+		render_material.set_color(r, g, b, 255);
+		render_material.set_blend_mode(ALPHA_BLEND_ALPHA_ADDITIVE);
+	}
 
 	int glVertices[8] = { x1, y1, x1, y2, x2, y1, x2, y2 };
 
@@ -40,6 +38,22 @@ void gr_flash_alpha(int r, int g, int b, int a) {
 	vert_def.add_vertex_component(vertex_format_data::SCREEN_POS, 0, 0);
 
 	gr_render_primitives_2d_immediate(&render_material, PRIM_TYPE_TRISTRIP, &vert_def, 4, glVertices, sizeof(int) * 8);
+}
+
+void gr_flash(int r, int g, int b) {
+	if (!(r || g || b)) {
+		return;
+	}
+
+	gr_flash_internal(r, g, b, 255, false);
+}
+
+void gr_flash_alpha(int r, int g, int b, int a) {
+	if (!(r || g || b || a)) {
+		return;
+	}
+
+	gr_flash_internal(r, g, b, a, true);
 }
 
 static void
