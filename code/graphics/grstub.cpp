@@ -321,7 +321,7 @@ int gr_stub_alpha_mask_set(int mode, float alpha)
 {
 }*/
 
-void gr_stub_post_process_set_effect(const char *name, int x)
+void gr_stub_post_process_set_effect(const char *name, int x, const vec3d *rgb)
 {
 }
 

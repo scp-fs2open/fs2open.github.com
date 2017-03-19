@@ -164,18 +164,23 @@ ADE_FUNC(__len, l_Graphics_Posteffects, NULL, "Gets the number or available post
 	return ade_set_args(L, "i", ((int) names.size()) + 1);
 }
 
-ADE_FUNC(setPostEffect, l_Graphics, "string name, [number value=0]", "Sets the intensity of the specified post processing effect", "boolean", "true when successful, false otherwise")
+ADE_FUNC(setPostEffect, l_Graphics, "string name, [number value=0] [red 0.0 - 1.0] [green 0.0 - 1.0] [blue 0.0 - 1.0]", "Sets the intensity of the specified post processing effect. Optionally set RGB values for post effects that use them", "boolean", "true when successful, false otherwise")
 {
 	char* name = NULL;
 	int intensity = 0;
+	vec3d rgb = { 0.0f, 0.0f, 0.0f };
 
-	if (!ade_get_args(L, "s|i", &name, &intensity))
+	if (!ade_get_args(L, "s|ifff", &name, &intensity, &rgb.xyz.x, &rgb.xyz.y, &rgb.xyz.z))
 		return ADE_RETURN_FALSE;
 
 	if (name == NULL || intensity < 0)
 		return ADE_RETURN_FALSE;
 
-	gr_post_process_set_effect(name, intensity);
+	CAP(rgb.xyz.x, 0.0f, 1.0f);
+	CAP(rgb.xyz.y, 0.0f, 1.0f);
+	CAP(rgb.xyz.z, 0.0f, 1.0f);
+
+	gr_post_process_set_effect(name, intensity, &rgb);
 
 	return ADE_RETURN_TRUE;
 }

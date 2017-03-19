@@ -530,7 +530,7 @@ void opengl_post_init_uniforms(int flags)
 	}
 }
 
-void gr_opengl_post_process_set_effect(const char *name, int value)
+void gr_opengl_post_process_set_effect(const char *name, int value, const vec3d *rgb)
 {
 	if ( !Post_initialized ) {
 		return;
@@ -555,6 +555,9 @@ void gr_opengl_post_process_set_effect(const char *name, int value)
 
 		if ( !stricmp(eff_name, name) ) {
 			Post_effects[idx].intensity = (value / Post_effects[idx].div) + Post_effects[idx].add;
+			if ((rgb != nullptr) && !(vmd_zero_vector == *rgb)) {
+				Post_effects[idx].rgb = *rgb;
+			}
 			break;
 		}
 	}
