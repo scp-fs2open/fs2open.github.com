@@ -164,7 +164,7 @@ ADE_FUNC(__len, l_Graphics_Posteffects, NULL, "Gets the number or available post
 	return ade_set_args(L, "i", ((int) names.size()) + 1);
 }
 
-ADE_FUNC(setPostEffect, l_Graphics, "string name, [number value=0] [red 0.0 - 1.0] [green 0.0 - 1.0] [blue 0.0 - 1.0]", "Sets the intensity of the specified post processing effect. Optionally set RGB values for post effects that use them", "boolean", "true when successful, false otherwise")
+ADE_FUNC(setPostEffect, l_Graphics, "string name, [number value=0, number red=0.0, number green=0.0, number blue=0.0]", "Sets the intensity of the specified post processing effect. Optionally sets RGB values for post effects that use them (valid values are 0.0 to 1.0)", "boolean", "true when successful, false otherwise")
 {
 	char* name = NULL;
 	int intensity = 0;
