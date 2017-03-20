@@ -841,9 +841,9 @@ void hud_escort_view_toggle()
 {
 	Show_escort_view ^= 1;
 	if ( Show_escort_view ) {
-		HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Escort view enabled", 286));
+		HUD_sourced_printf(HUD_SOURCE_HIDDEN, "%s", XSTR( "Escort view enabled", 286));
 	} else {
-		HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Escort view disabled", 287));
+		HUD_sourced_printf(HUD_SOURCE_HIDDEN, "%s", XSTR( "Escort view disabled", 287));
 	}
 }
 

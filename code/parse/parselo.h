@@ -91,8 +91,8 @@ extern void ignore_gray_space();
 // error
 extern int get_line_num();
 extern char *next_tokens();
-extern void diag_printf(const char *format, ...);
-extern void error_display(int error_level, const char *format, ...);
+extern void diag_printf(SCP_FORMAT_STRING const char *format, ...) SCP_FORMAT_STRING_ARGS(1, 2);
+extern void error_display(int error_level, SCP_FORMAT_STRING const char *format, ...) SCP_FORMAT_STRING_ARGS(2, 3);
 
 // skip
 extern int skip_to_string(const char *pstr, const char *end = NULL);
@@ -196,7 +196,7 @@ void stuff_flagset(T *dest) {
     if (*Mp == ',')
         Mp++;
 
-    diag_printf("Stuffed flagset: %i\n", dest->to_long());
+    diag_printf("Stuffed flagset: %ld\n", dest->to_long());
 }
 
 extern int stuff_int_list(int *ilp, int max_ints, int lookup_type = RAW_INTEGER_TYPE);
@@ -289,7 +289,7 @@ extern bool can_construe_as_integer(const char *text);
 
 // Goober5000 (ditto for C++)
 extern void vsprintf(SCP_string &dest, const char *format, va_list ap);
-extern void sprintf(SCP_string &dest, const char *format, ...);
+extern void sprintf(SCP_string &dest, SCP_FORMAT_STRING const char *format, ...) SCP_FORMAT_STRING_ARGS(2, 3);
 
 // Goober5000
 extern int subsystem_stricmp(const char *str1, const char *str2);

@@ -609,7 +609,7 @@ void debug_change_song(int delta)
 		HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Soundtrack changed to: %s", 2), buf);
 
 	} else {
-		HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Event music is not playing", 3));
+		HUD_sourced_printf(HUD_SOURCE_HIDDEN, "%s", XSTR( "Event music is not playing", 3));
 	}
 }
 
@@ -934,9 +934,9 @@ void process_debug_keys(int k)
 			Weapon_energy_cheat = !Weapon_energy_cheat;
 			if (Weapon_energy_cheat) {
 				if (k & KEY_SHIFTED)
-					HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Weapon energy and missile count will always be at full ALL SHIPS!", 15));
+					HUD_sourced_printf(HUD_SOURCE_HIDDEN, "%s", XSTR( "Weapon energy and missile count will always be at full ALL SHIPS!", 15));
 				else
-					HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Weapon energy and missile count will always be at full for player", 16));
+					HUD_sourced_printf(HUD_SOURCE_HIDDEN, "%s", XSTR( "Weapon energy and missile count will always be at full for player", 16));
 
 				debug_max_secondary_weapons(Player_obj);
 				debug_max_primary_weapons(Player_obj);
@@ -951,7 +951,7 @@ void process_debug_keys(int k)
 				}
 
 			} else
-				HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Normal weapon energy system / missile count restored", 17));
+				HUD_sourced_printf(HUD_SOURCE_HIDDEN, "%s", XSTR( "Normal weapon energy system / missile count restored", 17));
 
 			break;
 
@@ -1008,7 +1008,7 @@ void process_debug_keys(int k)
 			objp->phys_info.vel = vel;
 			objp->phys_info.desired_vel = vel;
 			objp->pos = Player_obj->pos;
-			HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Asteroid launched", 1595));
+			HUD_sourced_printf(HUD_SOURCE_HIDDEN, "%s", XSTR( "Asteroid launched", 1595));
 			break;
 		}
 
@@ -1050,11 +1050,11 @@ void process_debug_keys(int k)
 		case KEY_DEBUGGED + KEY_M: {
 			if ( Event_music_enabled ) {
 				event_music_disable();
-				HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Event music disabled", 20));
+				HUD_sourced_printf(HUD_SOURCE_HIDDEN, "%s", XSTR( "Event music disabled", 20));
 
 			} else {
 				event_music_enable();
-				HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Event music enabled", 21));
+				HUD_sourced_printf(HUD_SOURCE_HIDDEN, "%s", XSTR( "Event music enabled", 21));
 			}
 
 			break;
@@ -1097,14 +1097,14 @@ void process_debug_keys(int k)
 				break;
 
 			Test_begin = 1;
-			HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Frame Rate test started", 23));
+			HUD_sourced_printf(HUD_SOURCE_HIDDEN, "%s", XSTR( "Frame Rate test started", 23));
 
 			break;
 		}
 #endif
 		case KEY_DEBUGGED + KEY_A:	{
 
-			HUD_printf("frame rate currently is %0.2 FPS", 1/flFrametime);
+			HUD_printf("frame rate currently is %0.2f FPS", 1.f/flFrametime);
 
 			break;
 		}
@@ -1179,7 +1179,7 @@ void process_debug_keys(int k)
 		case KEY_DEBUGGED + KEY_T: {
 			char buf[256];
 			event_music_get_info(buf);
-			HUD_sourced_printf(HUD_SOURCE_HIDDEN, buf);
+			HUD_sourced_printf(HUD_SOURCE_HIDDEN, "%s", buf);
 			break;
 		}
 
@@ -1846,7 +1846,7 @@ int button_function_critical(int n, net_player *p = NULL)
 
 			if ( objp == Player_obj ) {
 				if ( Player_ship->weapons.num_secondary_banks <= 0 ) {
-					HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "This ship has no secondary weapons", 33));
+					HUD_sourced_printf(HUD_SOURCE_HIDDEN, "%s", XSTR( "This ship has no secondary weapons", 33));
 					gamesnd_play_iface(SND_GENERAL_FAIL);
 					break;
 				}
@@ -1859,14 +1859,14 @@ int button_function_critical(int n, net_player *p = NULL)
             if (Ships[objp->instance].flags[Ship::Ship_Flags::Secondary_dual_fire] || firepoints < 2) {
                 Ships[objp->instance].flags.remove(Ship::Ship_Flags::Secondary_dual_fire);
 				if(at_self) {
-					HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Secondary weapon set to normal fire mode", 34));
+					HUD_sourced_printf(HUD_SOURCE_HIDDEN, "%s", XSTR( "Secondary weapon set to normal fire mode", 34));
 					snd_play( &Snds[ship_get_sound(Player_obj, SND_SECONDARY_CYCLE)] );
 					hud_gauge_popup_start(HUD_WEAPONS_GAUGE);
 				}
 			} else {
                 Ships[objp->instance].flags.set(Ship::Ship_Flags::Secondary_dual_fire);
 				if(at_self) {
-					HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Secondary weapon set to dual fire mode", 35));
+					HUD_sourced_printf(HUD_SOURCE_HIDDEN, "%s", XSTR( "Secondary weapon set to dual fire mode", 35));
 					snd_play( &Snds[ship_get_sound(Player_obj, SND_SECONDARY_CYCLE)] );
 					hud_gauge_popup_start(HUD_WEAPONS_GAUGE);
 				}
@@ -2125,9 +2125,9 @@ int button_function_demo_valid(int n)
 		if ( Viewer_mode & VM_EXTERNAL ) {
 		Viewer_mode ^= VM_CAMERA_LOCKED;
 		if ( Viewer_mode & VM_CAMERA_LOCKED ) {
-			HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "External camera is locked, controls will move ship", 36));
+			HUD_sourced_printf(HUD_SOURCE_HIDDEN, "%s", XSTR( "External camera is locked, controls will move ship", 36));
 			} else {
-				HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "External camera is free, controls will move the camera, not the ship", 37));
+				HUD_sourced_printf(HUD_SOURCE_HIDDEN, "%s", XSTR( "External camera is free, controls will move the camera, not the ship", 37));
 			}
 		}
 		ret = 1;
@@ -2417,16 +2417,16 @@ int button_function(int n)
 			&& collide_predict_large_ship(Player_obj, 100000.0f)))
 			{
 				gamesnd_play_iface(SND_GENERAL_FAIL);
-				HUD_printf(XSTR( "** WARNING ** Collision danger.  Subspace drive not activated.", 39));
+				HUD_printf("%s", XSTR( "** WARNING ** Collision danger.  Subspace drive not activated.", 39));
 			} else if (!ship_engine_ok_to_warp(Player_ship)) {
 				gamesnd_play_iface(SND_GENERAL_FAIL);
-				HUD_printf(XSTR("Engine failure.  Cannot engage subspace drive.", 40));
+				HUD_printf("%s", XSTR("Engine failure.  Cannot engage subspace drive.", 40));
 			} else if (!ship_navigation_ok_to_warp(Player_ship)) {
 				gamesnd_play_iface(SND_GENERAL_FAIL);
-				HUD_printf(XSTR("Navigation failure.  Cannot engage subspace drive.", 1596));
+				HUD_printf("%s", XSTR("Navigation failure.  Cannot engage subspace drive.", 1596));
 			} else if ( (Player_obj != NULL) && object_get_gliding(Player_obj)) {
 				gamesnd_play_iface(SND_GENERAL_FAIL);
-				HUD_printf(XSTR("Cannot engage subspace drive while gliding.", 1597));
+				HUD_printf("%s", XSTR("Cannot engage subspace drive while gliding.", 1597));
 			} else {
 				gameseq_post_event( GS_EVENT_PLAYER_WARPOUT_START );
 			}
@@ -2775,16 +2775,16 @@ int button_function(int n)
 			&& collide_predict_large_ship(Player_obj, 100000.0f)))
 			{
 				gamesnd_play_iface(SND_GENERAL_FAIL);
-				HUD_printf(XSTR( "** WARNING ** Collision danger.  Subspace drive not activated.", 39));
+				HUD_printf("%s", XSTR( "** WARNING ** Collision danger.  Subspace drive not activated.", 39));
 			} else if (!ship_engine_ok_to_warp(Player_ship)) {
 				gamesnd_play_iface(SND_GENERAL_FAIL);
-				HUD_printf(XSTR("Engine failure.  Cannot engage subspace drive.", 40));
+				HUD_printf("%s", XSTR("Engine failure.  Cannot engage subspace drive.", 40));
 			} else if (!ship_navigation_ok_to_warp(Player_ship)) {
 				gamesnd_play_iface(SND_GENERAL_FAIL);
-				HUD_printf(XSTR("Navigation failure.  Cannot engage subspace drive.", 1572));
+				HUD_printf("%s", XSTR("Navigation failure.  Cannot engage subspace drive.", 1572));
 			} else if (Player_obj != NULL && object_get_gliding(Player_obj)) {
 				gamesnd_play_iface(SND_GENERAL_FAIL);
-				HUD_printf(XSTR("Cannot engage subspace drive while gliding.", 1573));			
+				HUD_printf("%s", XSTR("Cannot engage subspace drive while gliding.", 1573));
 			} else {
 				gameseq_post_event( GS_EVENT_PLAYER_WARPOUT_START );
 			}			

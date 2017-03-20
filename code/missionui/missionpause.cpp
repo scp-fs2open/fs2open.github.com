@@ -330,9 +330,9 @@ void pause_debug_do()
 	if ( Pause_external_view_mode_check.changed())	{
 		Pause_external_view_mode = Pause_external_view_mode_check.checked();
 		if (Pause_external_view_mode){
-			HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "External view of player ship.", 182));
+			HUD_sourced_printf(HUD_SOURCE_HIDDEN, "%s", XSTR( "External view of player ship.", 182));
 		} else {
-			HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "View from inside player ship.", 183));
+			HUD_sourced_printf(HUD_SOURCE_HIDDEN, "%s", XSTR( "View from inside player ship.", 183));
 		}
 	}
 

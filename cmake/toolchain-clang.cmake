@@ -64,6 +64,8 @@ endif()
 
 set(COMPILER_FLAGS "${COMPILER_FLAGS} ${SANITIZE_FLAGS}")
 
+set(COMPILER_FLAGS "${COMPILER_FLAGS} -Wformat-security")
+
 set(COMPILER_FLAGS "${COMPILER_FLAGS} -Wno-unused-function")
 
 # Dear Clang, please tell us if a function does not return a value since that part of the standard is stupid!

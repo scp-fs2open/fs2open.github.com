@@ -313,7 +313,7 @@ ParticleEffectIndex parseEffectElement(EffectType forcedType, const SCP_string& 
 
 			if (effect->getType() != forcedType) {
 				error_display(0, "Particle effect '%s' has the wrong effect type! Expected %s but was %s!",
-							  getEffectTypeName(forcedType), getEffectTypeName(effect->getType()));
+							  newName.c_str(), getEffectTypeName(forcedType), getEffectTypeName(effect->getType()));
 			}
 		}
 

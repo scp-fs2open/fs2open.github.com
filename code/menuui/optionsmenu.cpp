@@ -492,7 +492,7 @@ void options_notify_do_frame()
 
 		} else {
 			gr_get_string_size(&w, &h, Options_notify_string);
-			gr_printf_menu((gr_screen.max_w_unscaled - w) / 2, OPTIONS_NOTIFY_Y, Options_notify_string);
+			gr_printf_menu((gr_screen.max_w_unscaled - w) / 2, OPTIONS_NOTIFY_Y, "%s", Options_notify_string);
 		}
 	}
 }

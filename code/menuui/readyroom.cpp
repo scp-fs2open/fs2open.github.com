@@ -1292,12 +1292,12 @@ void sim_room_do_frame(float frametime)
 		gr_set_color_fast(&Color_text_heading);
 		strcpy_s(buf, Campaign.name);
 		font::force_fit_string(buf, 255, list_w1);
-		gr_printf_menu(list_x1, Mission_list_coords[gr_screen.res][1], buf);
+		gr_printf_menu(list_x1, Mission_list_coords[gr_screen.res][1], "%s", buf);
 
 		if (Campaign.filename[0] != '\0') {			
 			sprintf(buf, NOX("%s%s"), Campaign.filename, FS_CAMPAIGN_FILE_EXT);
 			font::force_fit_string(buf, 255, list_w2);
-			gr_printf_menu(list_x2, Mission_list_coords[gr_screen.res][1], buf);		
+			gr_printf_menu(list_x2, Mission_list_coords[gr_screen.res][1], "%s", buf);
 
 			// blit the proper icons if necessary
 			char full_name[256];
@@ -1330,12 +1330,12 @@ void sim_room_do_frame(float frametime)
 
 		strcpy_s(buf, sim_room_lines[line].name);
 		font::force_fit_string(buf, 255, list_x1 + list_w1 - sim_room_lines[line].x);
-		gr_printf_menu(sim_room_lines[line].x, y, buf);
+		gr_printf_menu(sim_room_lines[line].x, y, "%s", buf);
 
 		if (sim_room_lines[line].filename) {
 			strcpy_s(buf, sim_room_lines[line].filename);
 			font::force_fit_string(buf, 255, list_w2);
-			gr_printf_menu(list_x2, y, buf);
+			gr_printf_menu(list_x2, y, "%s", buf);
 		}
 
 		// blit additional icon information
@@ -1863,7 +1863,7 @@ void campaign_room_do_frame(float frametime)
 
 		strcpy_s(buf, sim_room_lines[line].name);
 		font::force_fit_string(buf, 255, Cr_list_coords[gr_screen.res][0] + Cr_list_coords[gr_screen.res][2] - sim_room_lines[line].x);
-		gr_printf_menu(sim_room_lines[line].x, y, buf);
+		gr_printf_menu(sim_room_lines[line].x, y, "%s", buf);
 		line++;
 	}
 

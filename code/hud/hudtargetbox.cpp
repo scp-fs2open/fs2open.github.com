@@ -1246,7 +1246,7 @@ void HudGaugeTargetBox::renderTargetJumpNode(object *target_objp)
 		hud_num_make_mono(outstr, font_num);
 		gr_get_string_size(&w,&h,outstr);
 	
-		renderPrintf(position[0] + Dist_offsets[0]+hx, position[1] + Dist_offsets[1]+hy, EG_TBOX_DIST, outstr);
+		renderPrintf(position[0] + Dist_offsets[0]+hx, position[1] + Dist_offsets[1]+hy, EG_TBOX_DIST, "%s", outstr);
 	}
 }
 
@@ -1726,13 +1726,13 @@ void HudGaugeTargetBox::renderTargetShipInfo(object *target_objp)
 		if (n_linebreaks) {
 			p_line = strtok(outstr,linebreak);
 			while (p_line != NULL) {
-				renderPrintf(subsys_name_pos_x, subsys_name_pos_y-h-((h+1)*n_linebreaks), p_line);
+				renderPrintf(subsys_name_pos_x, subsys_name_pos_y-h-((h+1)*n_linebreaks), "%s", p_line);
 				p_line = strtok(NULL,linebreak);
 				n_linebreaks--;
 			}
 		} else {
 			hud_targetbox_truncate_subsys_name(outstr);
-			renderPrintf(subsys_name_pos_x, subsys_name_pos_y-h, outstr);
+			renderPrintf(subsys_name_pos_x, subsys_name_pos_y-h, "%s", outstr);
 		}
 
 		int subsys_integrity_pos_x;
@@ -2026,7 +2026,7 @@ void HudGaugeTargetBox::showTargetData(float frametime)
 				break;
 			}
 
-			gr_printf_no_resize(sx, sy, outstr);
+			gr_printf_no_resize(sx, sy, "%s", outstr);
 			sy += dy;
 
 			gr_printf_no_resize(sx, sy, "Max speed = %d, (%d%%)", (int) shipp->current_max_speed, (int) (100.0f * vm_vec_mag(&target_objp->phys_info.vel)/shipp->current_max_speed));
@@ -2059,7 +2059,7 @@ void HudGaugeTargetBox::showTargetData(float frametime)
 
 				if ( aip->targeted_subsys != NULL ) {
 					sprintf(outstr, "Subsys: %s", aip->targeted_subsys->system_info->subobj_name);
-					gr_printf_no_resize(sx, sy, outstr);
+					gr_printf_no_resize(sx, sy, "%s", outstr);
 				}
 				sy += dy;
 			}
@@ -2068,11 +2068,11 @@ void HudGaugeTargetBox::showTargetData(float frametime)
 			sy = gr_screen.center_offset_y + 70;
 
 			sprintf(outstr,"MAX G/E: %.0f/%.0f",shipp->weapon_energy,shipp->current_max_speed);
-			gr_printf_no_resize(sx, sy, outstr);
+			gr_printf_no_resize(sx, sy, "%s", outstr);
 			sy += dy;
 			 
 			sprintf(outstr,"G/S/E: %.2f/%.2f/%.2f",Energy_levels[shipp->weapon_recharge_index],Energy_levels[shipp->shield_recharge_index],Energy_levels[shipp->engine_recharge_index]);
-			gr_printf_no_resize(sx, sy, outstr);
+			gr_printf_no_resize(sx, sy, "%s", outstr);
 			sy += dy;
 
 			//	Show information about attacker.
@@ -2096,7 +2096,7 @@ void HudGaugeTargetBox::showTargetData(float frametime)
 
 							dot = vm_vec_dot(&v2t, &Enemy_attacker->orient.vec.fvec);
 
-							gr_printf_no_resize(sx, sy, "#%i: %s", Enemy_attacker-Objects, Ships[Enemy_attacker->instance].ship_name);
+							gr_printf_no_resize(sx, sy, "#%i: %s", OBJ_INDEX(Enemy_attacker), Ships[Enemy_attacker->instance].ship_name);
 							sy += dy;
 							gr_printf_no_resize(sx, sy, "Targ dist: %5.1f", dist);
 							sy += dy;
@@ -2153,21 +2153,21 @@ void HudGaugeTargetBox::showTargetData(float frametime)
 		dy = gr_get_font_height();
 
 		sprintf(outstr,"Num primaries: %d", swp->num_primary_banks);
-		gr_printf_no_resize(sx,sy,outstr);
+		gr_printf_no_resize(sx,sy,"%s", outstr);
 		sy += dy;
 		for ( i = 0; i < swp->num_primary_banks; i++ ) {
 			sprintf(outstr,"%d. %s", i+1, Weapon_info[swp->primary_bank_weapons[i]].name);
-			gr_printf_no_resize(sx,sy,outstr);
+			gr_printf_no_resize(sx,sy,"%s", outstr);
 			sy += dy;
 		}
 
 		sy += dy;
 		sprintf(outstr,"Num secondaries: %d", swp->num_secondary_banks);
-		gr_printf_no_resize(sx,sy,outstr);
+		gr_printf_no_resize(sx,sy,"%s", outstr);
 		sy += dy;
 		for ( i = 0; i < swp->num_secondary_banks; i++ ) {
 			sprintf(outstr,"%d. %s", i+1, Weapon_info[swp->secondary_bank_weapons[i]].name);
-			gr_printf_no_resize(sx,sy,outstr);
+			gr_printf_no_resize(sx,sy,"%s", outstr);
 			sy += dy;
 		}
 	}

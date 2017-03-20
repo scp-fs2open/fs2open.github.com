@@ -1724,7 +1724,7 @@ void ship_self_destruct( object *objp )
 
 			// printf
 			if(!(Game_mode & GM_STANDALONE_SERVER)){
-				HUD_printf(msg);
+				HUD_printf("%s", msg);
 			}
 		}
 	}

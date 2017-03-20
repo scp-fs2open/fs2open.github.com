@@ -517,7 +517,8 @@ void help_overlay_blit(int overlay_id, int resolution_index)
 		gr_get_string_size(&width, &height, help_overlaylist[overlay_id].textlist.at(0).at(idx).string, (int)strlen(help_overlaylist[overlay_id].textlist.at(0).at(idx).string));
 		gr_rect(help_overlaylist[overlay_id].textlist.at(resolution_index).at(idx).x_coord-2*HELP_PADDING, help_overlaylist[overlay_id].textlist.at(resolution_index).at(idx).y_coord-3*HELP_PADDING, width+4*HELP_PADDING, height+4*HELP_PADDING, GR_RESIZE_MENU);
 		gr_set_color_fast(&Color_bright_white);
-		gr_printf_menu(help_overlaylist[overlay_id].textlist.at(resolution_index).at(idx).x_coord, help_overlaylist[overlay_id].textlist.at(resolution_index).at(idx).y_coord, help_overlaylist[overlay_id].textlist.at(0).at(idx).string);
+		gr_printf_menu(help_overlaylist[overlay_id].textlist.at(resolution_index).at(idx).x_coord, help_overlaylist[overlay_id].textlist.at(resolution_index).at(idx).y_coord,
+					   "%s", help_overlaylist[overlay_id].textlist.at(0).at(idx).string);
 	}
 	font::set_font(font::FONT1);
 
@@ -606,7 +607,7 @@ void showlbracketpos(int num)
 void showplinepos(int plinenum)
 {
 	int i;
-	dc_printf("pline %d on overlay %d vertices are now ", plinenum, current_helpid, help_overlaylist[current_helpid].textlist.at(current_resolution).at(plinenum).y_coord );
+	dc_printf("pline %d on overlay %d vertices are now ", plinenum, current_helpid );
 	for (i=0; i<help_overlaylist[current_helpid].plinelist.at(gr_screen.res).at(plinenum).vtxcount; i++)
 	{
 		dc_printf("(%3.0f %3.0f) ", help_overlaylist[current_helpid].plinelist.at(current_resolution).at(plinenum).vtx.at(i).xyz.x, help_overlaylist[current_helpid].plinelist.at(current_resolution).at(plinenum).vtx.at(i).xyz.y);

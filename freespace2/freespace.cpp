@@ -2900,11 +2900,11 @@ void say_view_target()
 			color col;
 			gr_init_color(&col, 0, 255, 0);
 			if((Game_mode & GM_MULTIPLAYER) && (Net_player->flags & NETINFO_FLAG_OBSERVER) && (Player_obj->type == OBJ_OBSERVER)){
-				HUD_fixed_printf(2.0f, col, XSTR( "Viewing from observer\n", 187));
+				HUD_fixed_printf(2.0f, col, "%s", XSTR( "Viewing from observer\n", 187));
 				Show_viewing_from_self = 1;
 			} else {
 				if (Show_viewing_from_self)
-					HUD_fixed_printf(2.0f, col, XSTR( "Viewing from self\n", 188));
+					HUD_fixed_printf(2.0f, col, "%s", XSTR( "Viewing from self\n", 188));
 			}
 		}
 	}
@@ -7303,7 +7303,7 @@ void game_show_event_debug(float frametime)
 			}
 		}
 
-		gr_printf_no_resize(gr_screen.center_offset_x + 10, y_index, buf);
+		gr_printf_no_resize(gr_screen.center_offset_x + 10, y_index, "%s", buf);
 		y_index += font_height;
 		k++;
 	}

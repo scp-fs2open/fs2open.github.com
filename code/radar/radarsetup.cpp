@@ -472,11 +472,11 @@ void HudGaugeRadar::drawRange()
 	switch ( HUD_config.rp_dist ) {
 
 	case RR_SHORT:
-		renderPrintf(position[0] + Radar_dist_offsets[RR_SHORT][0], position[1] + Radar_dist_offsets[RR_SHORT][1], XSTR( "2k", 467));
+		renderPrintf(position[0] + Radar_dist_offsets[RR_SHORT][0], position[1] + Radar_dist_offsets[RR_SHORT][1], "%s", XSTR( "2k", 467));
 		break;
 
 	case RR_LONG:
-		renderPrintf(position[0] + Radar_dist_offsets[RR_LONG][0], position[1] + Radar_dist_offsets[RR_LONG][1], XSTR( "10k", 468));
+		renderPrintf(position[0] + Radar_dist_offsets[RR_LONG][0], position[1] + Radar_dist_offsets[RR_LONG][1], "%s", XSTR( "10k", 468));
 		break;
 
 	case RR_INFINITY:

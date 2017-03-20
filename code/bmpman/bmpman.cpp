@@ -418,7 +418,7 @@ DCF(bmpman, "Shows/changes bitmap caching parameters and usage") {
 	}
 
 	if (dc_optional_string_either("status", "--status") || dc_optional_string_either("?", "--?")) {
-		dc_printf("Total RAM usage: %d bytes\n", bm_texture_ram);
+		dc_printf("Total RAM usage: " SIZE_T_ARG " bytes\n", bm_texture_ram);
 
 		if (Bm_max_ram > 1024 * 1024) {
 			dc_printf("\tMax RAM allowed: %.1f MB\n", i2fl(Bm_max_ram) / (1024.0f*1024.0f));
@@ -434,14 +434,14 @@ DCF(bmpman, "Shows/changes bitmap caching parameters and usage") {
 
 
 	if (dc_optional_string("flush")) {
-		dc_printf("Total RAM usage before flush: %d bytes\n", bm_texture_ram);
+		dc_printf("Total RAM usage before flush: " SIZE_T_ARG " bytes\n", bm_texture_ram);
 		int i;
 		for (i = 0; i < MAX_BITMAPS; i++) {
 			if (bm_bitmaps[i].type != BM_TYPE_NONE) {
 				bm_free_data(i);
 			}
 		}
-		dc_printf("Total RAM after flush: %d bytes\n", bm_texture_ram);
+		dc_printf("Total RAM after flush: " SIZE_T_ARG " bytes\n", bm_texture_ram);
 	} else if (dc_optional_string("ram")) {
 		dc_stuff_int(&Bm_max_ram);
 

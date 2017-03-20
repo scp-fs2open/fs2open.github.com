@@ -1158,7 +1158,7 @@ void barracks_display_pilot_callsigns(int prospective_pilot)
 			}
 		}
 
-		gr_printf_menu(Barracks_list_coords[gr_screen.res][BARRACKS_X_COORD], Barracks_list_coords[gr_screen.res][BARRACKS_Y_COORD] + y, Pilots[cur_pilot_idx]);
+		gr_printf_menu(Barracks_list_coords[gr_screen.res][BARRACKS_X_COORD], Barracks_list_coords[gr_screen.res][BARRACKS_Y_COORD] + y, "%s", Pilots[cur_pilot_idx]);
 		gr_set_bitmap(Rank_pips_bitmaps + Pilot_ranks[cur_pilot_idx]);
 		gr_bitmap(Barracks_list_coords[gr_screen.res][BARRACKS_X_COORD] - 34, Barracks_list_coords[gr_screen.res][BARRACKS_Y_COORD] + y, GR_RESIZE_MENU);
  
@@ -1293,7 +1293,7 @@ void barracks_draw_pilot_pic()
 			// print number of the current pic
 			char buf[40];			
 			sprintf(buf, XSTR( "%d of %d", 71), Pic_number + 1, Num_pilot_images);
-			gr_printf_menu(Barracks_image_number_coords[gr_screen.res][BARRACKS_X_COORD], Barracks_image_number_coords[gr_screen.res][BARRACKS_Y_COORD], buf);				
+			gr_printf_menu(Barracks_image_number_coords[gr_screen.res][BARRACKS_X_COORD], Barracks_image_number_coords[gr_screen.res][BARRACKS_Y_COORD], "%s", buf);
 		}
 	} else {
 		Pic_number = -1;
@@ -1315,7 +1315,7 @@ void barracks_draw_squad_pic()
 			// print number of current squad pic
 			if(Player_sel_mode != PLAYER_SELECT_MODE_SINGLE){
 				sprintf(buf,XSTR( "%d of %d", 71), Pic_squad_number+1, Num_pilot_squad_images);
-				gr_printf_menu(Barracks_squad_number_coords[gr_screen.res][BARRACKS_X_COORD], Barracks_squad_number_coords[gr_screen.res][BARRACKS_Y_COORD], buf);
+				gr_printf_menu(Barracks_squad_number_coords[gr_screen.res][BARRACKS_X_COORD], Barracks_squad_number_coords[gr_screen.res][BARRACKS_Y_COORD], "%s", buf);
 			}
 		}
 	} else {

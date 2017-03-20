@@ -768,7 +768,7 @@ int FS2NetD_ValidateTableList(bool do_send)
 		}
 
 		if ( num_tables > (int)Table_valid_status.size() ) {
-			ml_printf("FS2NetD WARNING: Table list contains %i tables, but we only requested %i!  Invalid data!", num_tables, Table_valid_status.size());
+			ml_printf("FS2NetD WARNING: Table list contains %i tables, but we only requested " SIZE_T_ARG "!  Invalid data!", num_tables, Table_valid_status.size());
 			return -1;
 		}
 

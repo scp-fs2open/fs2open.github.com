@@ -10325,12 +10325,12 @@ int ship_launch_countermeasure(object *objp, int rand_val)
 		if ( objp == Player_obj ) {
 			if(sip->cmeasure_max < 1 || sip->cmeasure_type < 0) {
 				//TODO: multi-lingual support
-				HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Not equipped with countermeasures", 1633));
+				HUD_sourced_printf(HUD_SOURCE_HIDDEN, "%s", XSTR( "Not equipped with countermeasures", 1633));
 			} else if(shipp->current_cmeasure < 0) {
 				//TODO: multi-lingual support
-				HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "No countermeasures selected", 1634));
+				HUD_sourced_printf(HUD_SOURCE_HIDDEN, "%s", XSTR( "No countermeasures selected", 1634));
 			} else if(shipp->cmeasure_count <= 0) {
-				HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "No more countermeasure charges.", 485));
+				HUD_sourced_printf(HUD_SOURCE_HIDDEN, "%s", XSTR( "No more countermeasure charges.", 485));
 			}
 			snd_play( &Snds[ship_get_sound(Player_obj, SND_OUT_OF_MISSLES)], 0.0f );
 		}
@@ -11753,7 +11753,7 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 					}
 
 					if ((aip->target_objnum != -1) && (vm_vec_dist_quick(&obj->pos, &Objects[aip->target_objnum].pos) > max_dist)) {
-						HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Too far from target to acquire lock", 487));
+						HUD_sourced_printf(HUD_SOURCE_HIDDEN, "%s", XSTR( "Too far from target to acquire lock", 487));
 					} else {
 						char missile_name[NAME_LENGTH];
 						strcpy_s(missile_name, wip->name);
@@ -12173,7 +12173,7 @@ int ship_select_next_primary(object *objp, int direction)
 	{
 		if ( objp == Player_obj )
 		{
-			HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "This ship has no primary weapons", 490));
+			HUD_sourced_printf(HUD_SOURCE_HIDDEN, "%s", XSTR( "This ship has no primary weapons", 490));
 			gamesnd_play_error_beep();
 		}
 		return 0;
@@ -12371,7 +12371,7 @@ int ship_select_next_secondary(object *objp)
 	{
 		if ( objp == Player_obj )
 		{
-			HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "This ship has no secondary weapons", 492));
+			HUD_sourced_printf(HUD_SOURCE_HIDDEN, "%s", XSTR( "This ship has no secondary weapons", 492));
 			gamesnd_play_error_beep();
 		}
 		return 0;
@@ -13490,7 +13490,7 @@ int ship_do_rearm_frame( object *objp, float frametime )
 	if ( shipp->flags[Ship_Flags::Warp_broken] ) {
 		// TODO: maybe do something here like informing player warp is fixed?
 		// like this? -- Goober5000
-		HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Subspace drive repaired.", 1635));
+		HUD_sourced_printf(HUD_SOURCE_HIDDEN, "%s", XSTR( "Subspace drive repaired.", 1635));
 		shipp->flags.remove(Ship_Flags::Warp_broken);
 	}
 
