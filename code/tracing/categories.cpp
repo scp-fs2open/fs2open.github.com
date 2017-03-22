@@ -17,6 +17,8 @@ Category LuaOnFrame("LUA On Frame", true);
 Category DrawSceneTexture("Draw scene texture", true);
 Category UpdateDistortion("Update distortion", true);
 
+Category SceneTextureBegin("Scene texture begin", true);
+Category SceneTextureEnd("Scene texture end", true);
 Category Tonemapping("Tonemapping", true);
 Category Bloom("Bloom", true);
 Category BloomBrightPass("Bloom bright pass", true);

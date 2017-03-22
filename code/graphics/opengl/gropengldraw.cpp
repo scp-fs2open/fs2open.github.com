@@ -1912,6 +1912,7 @@ void gr_opengl_scene_texture_begin()
 	}
 
 	GR_DEBUG_SCOPE("Begin scene texture");
+	TRACE_SCOPE(tracing::SceneTextureBegin);
 
 	GL_state.PushFramebufferState();
 	GL_state.BindFrameBuffer(Scene_framebuffer);
@@ -1956,11 +1957,13 @@ void gr_opengl_scene_texture_begin()
 float time_buffer = 0.0f;
 void gr_opengl_scene_texture_end()
 {
-	GR_DEBUG_SCOPE("End scene texture");
 
 	if ( !Scene_framebuffer_in_frame ) {
 		return;
 	}
+
+	GR_DEBUG_SCOPE("End scene texture");
+	TRACE_SCOPE(tracing::SceneTextureEnd);
 
 	time_buffer+=flFrametime;
 	if(time_buffer>0.03f)

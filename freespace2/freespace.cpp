@@ -212,8 +212,6 @@ void fs2netd_spew_table_checksums(const char *outfile);
 
 extern bool frame_rate_display;
 
-bool Env_cubemap_drawn = false;
-
 void game_reset_view_clip();
 void game_reset_shade_frame();
 void game_post_level_init();
@@ -349,8 +347,6 @@ int Debug_dump_frame_num = 0;
 int Player_died_popup_wait = -1;
 
 int Multi_ping_timestamp = -1;
-
-int Default_env_map = -1;
 
 // builtin mission list stuff
 int Game_builtin_mission_count = 92;
@@ -924,15 +920,9 @@ void game_level_close()
 		audiostream_unpause_all();
 		Game_paused = 0;
 
-		if (gr_screen.envmap_render_target >= 0) {
-			if ( bm_release(gr_screen.envmap_render_target, 1) ) {
-				gr_screen.envmap_render_target = -1;
-			}
-		}
-
 		gr_set_ambient_light(120, 120, 120);
 
-		ENVMAP = Default_env_map;
+		stars_level_close();
 	}
 	else
 	{
@@ -1053,8 +1043,6 @@ void game_level_init()
 
 	// campaign wasn't ended
 	Campaign_ending_via_supernova = 0;
-
-	Env_cubemap_drawn = false;
 
 	load_gl_init = (uint) (time(NULL) - load_gl_init);
 
@@ -1329,9 +1317,6 @@ void freespace_mission_load_stuff()
  */
 void game_post_level_init()
 {
-	extern void game_environment_map_gen();
-	game_environment_map_gen();
-
 	HUD_init();
 	hud_setup_escort_list();
 	mission_hotkey_set_defaults();	// set up the default hotkeys (from mission file)
@@ -1984,10 +1969,6 @@ void game_init()
 	if(!Cmdline_reparse_mainhall)
 	{
 		main_hall_table_init();
-	}
-
-	if (Cmdline_env) {
-		ENVMAP = Default_env_map = bm_load("cubemap");
 	}
 
 	Viewer_mode = 0;
@@ -3027,169 +3008,6 @@ void apply_view_shake(matrix *eye_orient)
 //	Player's velocity just before he blew up.  Used to keep camera target moving.
 vec3d	Dead_player_last_vel = { { { 1.0f, 1.0f, 1.0f } } };
 
-extern float View_zoom;
-inline void render_environment(int i, vec3d *eye_pos, matrix *new_orient, float new_zoom)
-{
-	bm_set_render_target(gr_screen.envmap_render_target, i);
-
-	gr_clear();
-
-	g3_set_view_matrix( eye_pos, new_orient, new_zoom );
-
-	gr_set_proj_matrix( PI_2 * new_zoom, 1.0f, Min_draw_distance, Max_draw_distance);
-	gr_set_view_matrix( &Eye_position, &Eye_matrix );
-
-	if ( Game_subspace_effect ) {
-		stars_draw(0, 0, 0, 1, 1);
-	} else {
-		stars_draw(0, 1, 1, 0, 1);
-	}
-
-	gr_end_view_matrix();
-	gr_end_proj_matrix();
-}
-
-void setup_environment_mapping(camid cid)
-{
-	GR_DEBUG_SCOPE("Environment Mapping");
-	TRACE_SCOPE(tracing::EnvironmentMapping);
-
-	matrix new_orient = IDENTITY_MATRIX;
-	float old_zoom = View_zoom, new_zoom = 1.0f;//0.925f;
-	int i = 0;
-
-	if(!cid.isValid())
-		return;
-
-	vec3d cam_pos;
-	matrix cam_orient;
-	cid.getCamera()->get_info(&cam_pos, &cam_orient);
-
-	// prefer the mission specified envmap over the static-generated envmap, but
-	// the dynamic envmap should always get preference if in a subspace mission
-	if ( !Dynamic_environment && strlen(The_mission.envmap_name) ) {
-		ENVMAP = bm_load(The_mission.envmap_name);
-
-		if (ENVMAP >= 0)
-			return;
-	}
-
-	if (gr_screen.envmap_render_target < 0) {
-		if (ENVMAP >= 0)
-			return;
-
-		if (strlen(The_mission.envmap_name)) {
-			ENVMAP = bm_load(The_mission.envmap_name);
-
-			if (ENVMAP < 0)
-				ENVMAP = Default_env_map;
-		} else {
-			ENVMAP = Default_env_map;
-		}
-
-		return;
-	}
-
-	ENVMAP = gr_screen.envmap_render_target;
-
-/*
-	Envmap matrix setup -- left-handed
-	-------------------------------------------------
-	Face --	Forward		Up		Right
-	px		+X			+Y		-Z
-	nx		-X			+Y		+Z
-	py		+Y			-Z		+X
-	ny		-Y			+Z		+X
-	pz		+Z 			+Y		+X
-	nz		-Z			+Y		-X
-*/
-
-	// NOTE: OpenGL needs up/down reversed
-
-	// face 1 (px / right)
-	memset( &new_orient, 0, sizeof(matrix) );
-	new_orient.vec.fvec.xyz.x =  1.0f;
-	new_orient.vec.uvec.xyz.y =  1.0f;
-	new_orient.vec.rvec.xyz.z = -1.0f;
-	render_environment(i, &cam_pos, &new_orient, new_zoom);
-	i++; // bump!
-
-	// face 2 (nx / left)
-	memset( &new_orient, 0, sizeof(matrix) );
-	new_orient.vec.fvec.xyz.x = -1.0f;
-	new_orient.vec.uvec.xyz.y =  1.0f;
-	new_orient.vec.rvec.xyz.z =  1.0f;
-	render_environment(i, &cam_pos, &new_orient, new_zoom);
-	i++; // bump!
-
-	// face 3 (py / up)
-	memset( &new_orient, 0, sizeof(matrix) );
-	new_orient.vec.fvec.xyz.y =  (gr_screen.mode == GR_OPENGL) ?  1.0f : -1.0f;
-	new_orient.vec.uvec.xyz.z =  (gr_screen.mode == GR_OPENGL) ? -1.0f :  1.0f;
-	new_orient.vec.rvec.xyz.x =  1.0f;
-	render_environment(i, &cam_pos, &new_orient, new_zoom);
-	i++; // bump!
-
-	// face 4 (ny / down)
-	memset( &new_orient, 0, sizeof(matrix) );
-	new_orient.vec.fvec.xyz.y =  (gr_screen.mode == GR_OPENGL) ? -1.0f :  1.0f;
-	new_orient.vec.uvec.xyz.z =  (gr_screen.mode == GR_OPENGL) ?  1.0f : -1.0f;
-	new_orient.vec.rvec.xyz.x =  1.0f;
-	render_environment(i, &cam_pos, &new_orient, new_zoom);
-	i++; // bump!
-
-	// face 5 (pz / forward)
-	memset( &new_orient, 0, sizeof(matrix) );
-	new_orient.vec.fvec.xyz.z =  1.0f;
-	new_orient.vec.uvec.xyz.y =  1.0f;
-	new_orient.vec.rvec.xyz.x =  1.0f;
-	render_environment(i, &cam_pos, &new_orient, new_zoom);
-	i++; // bump!
-
-	// face 6 (nz / back)
-	memset( &new_orient, 0, sizeof(matrix) );
-	new_orient.vec.fvec.xyz.z = -1.0f;
-	new_orient.vec.uvec.xyz.y =  1.0f;
-	new_orient.vec.rvec.xyz.x = -1.0f;
-	render_environment(i, &cam_pos, &new_orient, new_zoom);
-
-
-	// we're done, so now reset
-	bm_set_render_target(-1);
-	g3_set_view_matrix( &cam_pos, &cam_orient, old_zoom );
-}
-
-// setup the render target ready for this mission's environment map
-void game_environment_map_gen()
-{
-	const int size = 512;
-	int gen_flags = (BMP_FLAG_RENDER_TARGET_STATIC | BMP_FLAG_CUBEMAP | BMP_FLAG_RENDER_TARGET_MIPMAP);
-
-	if ( !Cmdline_env ) {
-		return;
-	}
-
-	if (gr_screen.envmap_render_target >= 0) {
-		if ( !bm_release(gr_screen.envmap_render_target, 1) ) {
-			Warning(LOCATION, "Unable to release environment map render target.");
-		}
-
-		gr_screen.envmap_render_target = -1;
-	}
-
-	if ( Dynamic_environment || (The_mission.flags[Mission::Mission_Flags::Subspace]) ) {
-		Dynamic_environment = true;
-		gen_flags &= ~BMP_FLAG_RENDER_TARGET_STATIC;
-		gen_flags |= BMP_FLAG_RENDER_TARGET_DYNAMIC;
-	}
-	// bail if we are going to be static, and have an envmap specified already
-	else if ( strlen(The_mission.envmap_name) ) {
-		return;
-	}
-
-	gr_screen.envmap_render_target = bm_make_render_target(size, size, gen_flags);
-}
-
 int Scripting_didnt_draw_hud = 1;
 
 camid chase_get_camera()
@@ -3578,14 +3396,8 @@ void game_render_frame( camid cid )
 	}
 
 	// this needs to happen after g3_start_frame() and before the primary projection and view matrix is setup
-	// Note: environment mapping gets disabled when rendering to texture; if you change
-	// this, make sure that the current render target gets restored right afterwards!
-	if ( Cmdline_env && !Env_cubemap_drawn && gr_screen.rendering_to_texture == -1 ) {
-		setup_environment_mapping(cid);
-
-		if ( !Dynamic_environment ) {
-			Env_cubemap_drawn = true;
-		}
+	if ( Cmdline_env ) {
+		stars_setup_environment_mapping(cid);
 	}
 	gr_zbuffer_clear(TRUE);
 

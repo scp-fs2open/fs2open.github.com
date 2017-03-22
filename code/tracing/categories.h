@@ -29,6 +29,8 @@ extern Category LuaOnFrame;
 extern Category DrawSceneTexture;
 extern Category UpdateDistortion;
 
+extern Category SceneTextureBegin;
+extern Category SceneTextureEnd;
 extern Category Tonemapping;
 extern Category Bloom;
 extern Category BloomBrightPass;
