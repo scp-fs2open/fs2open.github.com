@@ -314,12 +314,14 @@ set (file_root_graphics_openglgr
 set (file_root_graphics_openglgr_opengl_cpps
 	graphics/opengl/gropengl.cpp
 	graphics/opengl/gropenglbmpman.cpp
+	graphics/opengl/gropengldeferred.cpp
 	graphics/opengl/gropengldraw.cpp
 	graphics/opengl/gropengllight.cpp
 	graphics/opengl/gropenglpostprocessing.cpp
 	graphics/opengl/gropenglquery.cpp
 	graphics/opengl/gropenglshader.cpp
 	graphics/opengl/gropenglstate.cpp
+	graphics/opengl/gropenglsync.cpp
 	graphics/opengl/gropengltexture.cpp
 	graphics/opengl/gropengltnl.cpp
 	graphics/opengl/ShaderProgram.cpp
@@ -329,12 +331,14 @@ set (file_root_graphics_openglgr_opengl_cpps
 set (file_root_graphics_openglgr_opengl_headers
 	graphics/opengl/gropengl.h
 	graphics/opengl/gropenglbmpman.h
+	graphics/opengl/gropengldeferred.h
 	graphics/opengl/gropengldraw.h
 	graphics/opengl/gropengllight.h
 	graphics/opengl/gropenglpostprocessing.h
 	graphics/opengl/gropenglquery.h
 	graphics/opengl/gropenglshader.h
 	graphics/opengl/gropenglstate.h
+	graphics/opengl/gropenglsync.h
 	graphics/opengl/gropengltexture.h
 	graphics/opengl/gropengltnl.h
 	graphics/opengl/ShaderProgram.h
@@ -383,6 +387,16 @@ set (file_root_graphics_softwaregr_font
 	graphics/software/NVGFont.cpp
 	graphics/software/VFNTFont.h
 	graphics/software/VFNTFont.cpp
+)
+
+set(file_root_graphics_util
+	graphics/util/uniform_structs.h
+	graphics/util/UniformAligner.h
+	graphics/util/UniformAligner.cpp
+	graphics/util/UniformBuffer.h
+	graphics/util/UniformBuffer.cpp
+	graphics/util/UniformBufferManager.h
+	graphics/util/UniformBufferManager.cpp
 )
 
 # HeadTracking files
@@ -1240,6 +1254,7 @@ source_group("Graphics\\Paths"                    FILES ${file_root_graphics_pat
 source_group("Graphics\\Paths\\nanovg"            FILES ${file_root_graphics_paths_nanovg})
 source_group("Graphics\\SoftwareGr"               FILES ${file_root_graphics_softwaregr})
 source_group("Graphics\\SoftwareGr\\Font"         FILES ${file_root_graphics_softwaregr_font})
+source_group("Graphics\\Util"                     FILES ${file_root_graphics_util})
 source_group("HeadTracking"                       FILES ${file_root_headtracking})
 source_group("Hud"                                FILES ${file_root_hud})
 source_group("iff_defs"                           FILES ${file_root_iff_defs})
@@ -1333,6 +1348,7 @@ set (file_root
 	${file_root_graphics_paths_nanovg}
 	${file_root_graphics_softwaregr}
 	${file_root_graphics_softwaregr_font}
+	${file_root_graphics_util}
 	${file_root_headtracking}
 	${file_root_hud}
 	${file_root_iff_defs}

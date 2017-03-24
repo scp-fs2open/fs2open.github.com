@@ -22,6 +22,7 @@ bool gr_opengl_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps);
 void gr_opengl_cleanup(bool closing, int minimize=1);
 int opengl_check_for_errors(const char *err_at = NULL);
 bool gr_opengl_is_capable(gr_capability capability);
+bool gr_opengl_get_property(gr_property prop, void* dest);
 void gr_opengl_push_debug_group(const char* name);
 void gr_opengl_pop_debug_group();
 

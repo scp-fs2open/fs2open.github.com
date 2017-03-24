@@ -711,6 +711,22 @@ void opengl_array_state::BindUniformBuffer(GLuint id)
 
 	uniform_buffer = id;
 }
+opengl_constant_state::opengl_constant_state() {
+}
+void opengl_constant_state::init() {
+	glGetIntegerv(GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT, &_uniform_buffer_offset_alignment);
+	glGetIntegerv(GL_MAX_UNIFORM_BLOCK_SIZE, &_max_uniform_block_size);
+	glGetIntegerv(GL_MAX_UNIFORM_BUFFER_BINDINGS, &_max_uniform_block_bindings);
+}
+GLint opengl_constant_state::GetUniformBufferOffsetAlignment() {
+	return _uniform_buffer_offset_alignment;
+}
+GLint opengl_constant_state::GetMaxUniformBlockSize() {
+	return _max_uniform_block_size;
+}
+GLint opengl_constant_state::GetMaxUniformBlockBindings() {
+	return _max_uniform_block_bindings;
+}
 
 void gr_opengl_clear_states()
 {

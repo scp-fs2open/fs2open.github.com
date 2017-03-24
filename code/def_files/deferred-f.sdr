@@ -1,21 +1,31 @@
 in vec3 beamVec;
 in vec3 lightPosition;
 out vec4 fragOut0;
+
 uniform sampler2D ColorBuffer;
 uniform sampler2D NormalBuffer;
 uniform sampler2D PositionBuffer;
 uniform sampler2D SpecBuffer;
+
 uniform float specFactor;
 uniform float invScreenWidth;
 uniform float invScreenHeight;
-uniform int lightType;
-uniform float lightRadius;
-uniform vec3 diffuseLightColor;
-uniform vec3 specLightColor;
-uniform float coneAngle;
-uniform float coneInnerAngle;
-uniform bool dualCone;
-uniform vec3 coneDir;
+
+layout (std140) uniform lightData {
+	vec3 diffuseLightColor;
+	float coneAngle;
+
+	vec3 specLightColor;
+	float coneInnerAngle;
+
+	vec3 coneDir;
+	bool dualCone;
+
+	vec3 scale;
+	float lightRadius;
+
+	int lightType;
+};
 
 #define SPEC_INTENSITY_POINT			5.3 // Point light
 #define SPEC_INTENSITY_DIRECTIONAL		3.0 // Directional light

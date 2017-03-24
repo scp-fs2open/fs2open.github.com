@@ -55,13 +55,13 @@ void opengl_create_perspective_projection_matrix(matrix4 *out, float left, float
 void opengl_create_orthographic_projection_matrix(matrix4* out, float left, float right, float bottom, float top, float near_dist, float far_dist);
 void opengl_create_view_matrix(matrix4 *out, const vec3d *pos, const matrix *orient);
 
-int gr_opengl_create_vertex_buffer(bool static_buffer);
-int gr_opengl_create_index_buffer(bool static_buffer);
+int gr_opengl_create_buffer(BufferType type, BufferUsageHint usage);
 
 void opengl_bind_buffer_object(int handle);
 void gr_opengl_update_buffer_data(int handle, size_t size, void* data);
 void gr_opengl_update_buffer_data_offset(int handle, size_t offset, size_t size, void* data);
 void gr_opengl_delete_buffer(int handle);
+void gr_opengl_bind_uniform_buffer(uniform_block_type bind_point, size_t offset, size_t size, int buffer);
 
 void gr_opengl_update_transform_buffer(void* data, size_t size);
 void gr_opengl_set_transform_buffer_offset(size_t offset);
