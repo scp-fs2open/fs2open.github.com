@@ -317,39 +317,19 @@ GLboolean opengl_state::PolygonOffsetFill(GLint state)
 	return save_state;
 }
 
-GLboolean opengl_state::ClipPlane(GLint num, GLint state)
-{
-	Assert( (num >= 0) || (num < (int)(sizeof(clipplane_Status) / sizeof(GLboolean))) );
-
-	GLboolean save_state = clipplane_Status[num];
-
-	if ( !((state == -1) || (state == clipplane_Status[num])) ) {
-		if (state) {
-			Assert( state == GL_TRUE );
-			clipplane_Status[num] = GL_TRUE;
-		} else {
-			clipplane_Status[num] = GL_FALSE;
-		}
-	}
-
-	return save_state;
-}
-
-GLboolean opengl_state::ClipDistance(GLint num, GLint state)
+GLboolean opengl_state::ClipDistance(GLint num, bool state)
 {
 	Assert( (num >= 0) && (num < (int)(sizeof(clipdistance_Status) / sizeof(GLboolean))) );
 
 	GLboolean save_state = clipdistance_Status[num];
 
-	if ( !((state == -1) || (state == clipdistance_Status[num])) ) {
+	if (state != clipdistance_Status[num]) {
 		if (state) {
-			Assert( state == GL_TRUE );
-			//glEnable(GL_CLIP_DISTANCE0+num);
-			clipdistance_Status[num] = GL_TRUE;
+			glEnable(GL_CLIP_DISTANCE0+num);
 		} else {
-			//glDisable(GL_CLIP_DISTANCE0+num);
-			clipdistance_Status[num] = GL_FALSE;
+			glDisable(GL_CLIP_DISTANCE0+num);
 		}
+		clipdistance_Status[num] = state;
 	}
 
 	return save_state;

@@ -184,7 +184,7 @@ static opengl_shader_variant_t GL_shader_variants[] = {
 		"Submodel Transforms" },
 	
 	{ SDR_TYPE_MODEL, false, SDR_FLAG_MODEL_CLIP, "FLAG_CLIP", 
-		{ "use_clip_plane", "clip_normal", "clip_position" }, {  },
+		{ "use_clip_plane", "clip_equation" }, {  },
 		"Clip Plane" },
 
 	{ SDR_TYPE_MODEL, false, SDR_FLAG_MODEL_HDR, "FLAG_HDR",

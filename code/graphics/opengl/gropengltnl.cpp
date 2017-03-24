@@ -793,26 +793,12 @@ void gr_opengl_start_clip_plane()
 
 void gr_opengl_set_clip_plane(vec3d *clip_normal, vec3d *clip_point)
 {
-	if ( Current_shader != NULL && Current_shader->shader == SDR_TYPE_MODEL) {
-		return;
-	}
-
 	if ( clip_normal == NULL || clip_point == NULL ) {
-		GL_state.ClipPlane(0, GL_FALSE);
+		GL_state.ClipDistance(0, false);
 	} else {
-		GLdouble clip_equation[4];
+		Assertion(Current_shader != NULL && Current_shader->shader == SDR_TYPE_MODEL, "Clip planes are only supported by the model shader!");
 
-		clip_equation[0] = (GLdouble)clip_normal->xyz.x;
-		clip_equation[1] = (GLdouble)clip_normal->xyz.y;
-		clip_equation[2] = (GLdouble)clip_normal->xyz.z;
-
-		clip_equation[3] = (GLdouble)(clip_normal->xyz.x * clip_point->xyz.x)
-			+ (GLdouble)(clip_normal->xyz.y * clip_point->xyz.y)
-			+ (GLdouble)(clip_normal->xyz.z * clip_point->xyz.z);
-		clip_equation[3] *= -1.0;
-
-
-		GL_state.ClipPlane(0, GL_TRUE);
+		GL_state.ClipDistance(0, true);
 	}
 }
 
@@ -902,7 +888,7 @@ void opengl_tnl_set_material(material* material_info, bool set_base_map)
 
 	material::clip_plane &clip_params = material_info->get_clip_plane();
 
-	if ( clip_params.enabled ) {
+	if ( material_info->is_clipped() ) {
 		gr_opengl_set_clip_plane(&clip_params.normal, &clip_params.position);
 	} else {
 		gr_opengl_set_clip_plane(NULL, NULL);
@@ -951,14 +937,18 @@ void opengl_tnl_set_model_material(model_material *material_info)
 	}
 
 	if ( Current_shader->flags & SDR_FLAG_MODEL_CLIP ) {
-		bool clip = material_info->is_clipped();
-
-		if ( clip ) {
+		if (material_info->is_clipped()) {
 			material::clip_plane &clip_info = material_info->get_clip_plane();
 			
 			Current_shader->program->Uniforms.setUniformi("use_clip_plane", 1);
-			Current_shader->program->Uniforms.setUniform3f("clip_normal", clip_info.normal);
-			Current_shader->program->Uniforms.setUniform3f("clip_position", clip_info.position);
+
+			vec4 clip_equation;
+			clip_equation.xyzw.x = clip_info.normal.xyz.x;
+			clip_equation.xyzw.y = clip_info.normal.xyz.y;
+			clip_equation.xyzw.z = clip_info.normal.xyz.z;
+			clip_equation.xyzw.w = -vm_vec_dot(&clip_info.normal, &clip_info.position);
+
+			Current_shader->program->Uniforms.setUniform4f("clip_equation", clip_equation);
 		} else {
 			Current_shader->program->Uniforms.setUniformi("use_clip_plane", 0);
 		}

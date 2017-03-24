@@ -152,7 +152,7 @@ class opengl_state
 		GLboolean polygonoffsetfill_Status;
 		GLboolean normalize_Status;
 		GLboolean clipplane_Status[6];
-		GLboolean clipdistance_Status[6];
+		bool clipdistance_Status[6];
 		GLboolean depthmask_Status;
         GLboolean colormask_Status;
 
@@ -202,8 +202,7 @@ class opengl_state
         GLboolean StencilTest(GLint state = -1);
 		GLboolean CullFace(GLint state = -1);
 		GLboolean PolygonOffsetFill(GLint state = -1);
-		GLboolean ClipPlane(GLint num, GLint state = -1);
-		GLboolean ClipDistance(GLint num, GLint state = -1);
+		GLboolean ClipDistance(GLint num, bool state = false);
 		GLboolean DepthMask(GLint state = -1);
         GLboolean ColorMask(GLint state = -1);
 
