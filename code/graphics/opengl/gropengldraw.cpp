@@ -107,7 +107,7 @@ GLuint Scene_depth_texture;
 GLuint Cockpit_depth_texture;
 GLuint Scene_stencil_buffer;
 
-GLuint Distortion_framebuffer;
+GLuint Distortion_framebuffer = 0;
 GLuint Distortion_texture[2];
 int Distortion_switch = 0;
 
@@ -2272,6 +2272,11 @@ void gr_opengl_render_shield_impact(shield_material *material_info, primitive_ty
 
 void gr_opengl_update_distortion()
 {
+	if (Distortion_framebuffer == 0) {
+		// distortion is disabled
+		return;
+	}
+
 	GR_DEBUG_SCOPE("Update distortion");
 	TRACE_SCOPE(tracing::UpdateDistortion);
 

@@ -1349,12 +1349,15 @@ static void APIENTRY debug_callback(GLenum source, GLenum type, GLuint id, GLenu
 			break;
 	}
 
+	bool print_to_general_log = false;
 	switch(severity) {
 		case GL_DEBUG_SEVERITY_HIGH_ARB:
 			severityStr = "High";
+			print_to_general_log = true; // High and medium messages are sent to the normal log for later troubleshooting
 			break;
 		case GL_DEBUG_SEVERITY_MEDIUM_ARB:
 			severityStr = "Medium";
+			print_to_general_log = true;
 			break;
 		case GL_DEBUG_SEVERITY_LOW_ARB:
 			severityStr = "Low";
@@ -1364,8 +1367,14 @@ static void APIENTRY debug_callback(GLenum source, GLenum type, GLuint id, GLenu
 			break;
 	}
 
-	nprintf(("OpenGL Debug", "OpenGL Debug: Source:%s\tType:%s\tID:%d\tSeverity:%s\tMessage:%s\n",
-		sourceStr, typeStr, id, severityStr, message));
+	if (print_to_general_log) {
+		mprintf(("OpenGL Debug: Source:%s\tType:%s\tID:%d\tSeverity:%s\tMessage:%s\n",
+			sourceStr, typeStr, id, severityStr, message));
+	} else {
+		// We still print these messages but only to the special debug stream
+		nprintf(("OpenGL Debug", "OpenGL Debug: Source:%s\tType:%s\tID:%d\tSeverity:%s\tMessage:%s\n",
+			sourceStr, typeStr, id, severityStr, message));
+	}
 	printf("OpenGL Debug: Source:%s\tType:%s\tID:%d\tSeverity:%s\tMessage:%s\n",
 		   sourceStr, typeStr, id, severityStr, message);
 }
