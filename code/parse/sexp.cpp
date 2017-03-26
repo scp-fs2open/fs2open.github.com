@@ -3505,11 +3505,6 @@ int get_sexp()
 			case OP_MISSION_SET_NEBULA:
 				// set flag for WMC
 				Nebula_sexp_used = true;
-				Dynamic_environment = true;
-				break;
-				
-			case OP_MISSION_SET_SUBSPACE:
-				Dynamic_environment = true;
 				break;
 
 			case OP_WARP_EFFECT:
@@ -3529,7 +3524,6 @@ int get_sexp()
 				// model is argument #1
 				n = CDR(start);
 				do_preload_for_arguments(sexp_set_skybox_model_preload, n, arg_handler);
-				Dynamic_environment = true;
 				break;
 
 			case OP_TURRET_CHANGE_WEAPON:
@@ -3541,13 +3535,11 @@ int get_sexp()
 			case OP_ADD_SUN_BITMAP:
 				n = CDR(start);
 				do_preload_for_arguments(stars_preload_sun_bitmap, n, arg_handler);
-				Dynamic_environment = true;
 				break;
 
 			case OP_ADD_BACKGROUND_BITMAP:
 				n = CDR(start);
 				do_preload_for_arguments(stars_preload_background_bitmap, n, arg_handler);
-				Dynamic_environment = true;
 				break;
 
 			case OP_TECH_ADD_INTEL_XSTR:
@@ -12157,7 +12149,8 @@ void sexp_mission_set_subspace(int n)
         Game_subspace_effect = 0;
 		game_stop_subspace_ambient_sound();
 	}
-    
+
+	stars_set_dynamic_environment(Game_subspace_effect != 0);
     The_mission.flags.set(Mission::Mission_Flags::Subspace, Game_subspace_effect != 0);
 }
 
