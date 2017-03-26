@@ -11,10 +11,6 @@ out vec4 fragTexCoord;
 in float geoNotVisible[];
 out float fragNotVisible;
 #endif
-#ifdef FLAG_CLIP
-in float geoClipDistance[];
-out float fragClipDistance;
-#endif
 void main(void)
 {
 	int instanceID = int(geoInstance[0]);
@@ -31,7 +27,7 @@ void main(void)
 		fragNotVisible = geoNotVisible[0];
 #endif
 #ifdef FLAG_CLIP
-		fragClipDistance = geoClipDistance[0];
+		gl_ClipDistance[0] = gl_in[vert].gl_ClipDistance[0];
 #endif
 		EmitVertex();
 	}

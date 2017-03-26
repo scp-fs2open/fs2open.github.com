@@ -82,10 +82,6 @@ uniform float neardist;
 uniform float middist;
 uniform float fardist;
 #endif
-#ifdef FLAG_CLIP
-uniform int use_clip_plane;
-in float fragClipDistance;
-#endif
 #ifdef FLAG_NORMAL_ALPHA
 uniform vec2 normalAlphaMinMax;
 #endif
@@ -270,9 +266,6 @@ void main()
 	if(fragNotVisible >= 0.9) { discard; }
 #endif
 #ifdef FLAG_SHADOW_MAP
- #ifdef FLAG_CLIP
-	if(use_clip_plane == 1) { if(fragClipDistance <= 0.0) { discard; } }
- #endif
 	// need depth and depth squared for variance shadow maps
 	fragOut0 = vec4(fragPosition.z, fragPosition.z * fragPosition.z * VARIANCE_SHADOW_SCALE_INV, 0.0, 1.0);
 	return;
@@ -444,10 +437,6 @@ void main()
 #ifdef FLAG_NORMAL_ALPHA
 	float normViewOffset = dot(vec3(0.0, 0.0, 1.0), normal);
 	baseColor.a = smoothstep(min(normalAlphaMinMax.x, normalAlphaMinMax.y), max(normalAlphaMinMax.x, normalAlphaMinMax.y), clamp(normalAlphaMinMax.x > normalAlphaMinMax.y ? normViewOffset : 1.0 - normViewOffset, 0.0, 1.0));
-#endif
-#ifdef FLAG_CLIP
-	// for some odd reason if we try to discard the pixel early for plane clipping, it screws up glow maps so let's just do it down here.
-	if(use_clip_plane == 1) { if(fragClipDistance <= 0.0) { discard; } }
 #endif
 	fragOut0 = baseColor;
 #ifdef FLAG_DEFERRED
