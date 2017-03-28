@@ -102,6 +102,29 @@ extern Category CutsceneProcessAudioData;
 
 extern Category CutsceneFFmpegVideoDecoder;
 extern Category CutsceneFFmpegAudioDecoder;
+
+// Loading scopes
+extern Category LoadMissionLoad;
+extern Category LoadPostMissionLoad;
+extern Category LoadModelFile;
+extern Category ReadModelFile;
+extern Category ModelCreateVertexBuffers;
+extern Category ModelCreateOctants;
+extern Category ModelParseAllBSPTrees;
+extern Category ModelParseBSPTree;
+extern Category ModelConfigureVertexBuffers;
+extern Category ModelCreateTransparencyIndexBuffer;
+extern Category ModelCreateDetailIndexBuffers;
+
+extern Category PreloadMissionSounds;
+extern Category LoadSound;
+
+extern Category LevelPageIn;
+extern Category PageInStop;
+extern Category PageInSingleBitmap;
+extern Category ShipPageIn;
+extern Category WeaponPageIn;
+
 }
 
 #endif // _TRACING_CATEGORIES_H

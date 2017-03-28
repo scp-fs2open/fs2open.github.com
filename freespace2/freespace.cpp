@@ -1272,17 +1272,21 @@ void freespace_mission_load_stuff()
 		game_busy( NOX("** unloading interface sounds **") );
 		gamesnd_unload_interface_sounds();		// unload interface sounds from memory
 
-		game_busy( NOX("** preloading common game sounds **") );
-		gamesnd_preload_common_sounds();			// load in sounds that are expected to play
+		{
+			TRACE_SCOPE(tracing::PreloadMissionSounds);
 
-		if (Cmdline_snd_preload) {
-			game_busy( NOX("** preloading gameplay sounds **") );
-			gamesnd_load_gameplay_sounds();			// preload in gameplay sounds if wanted
+			game_busy( NOX("** preloading common game sounds **") );
+			gamesnd_preload_common_sounds();			// load in sounds that are expected to play
+
+			if (Cmdline_snd_preload) {
+				game_busy( NOX("** preloading gameplay sounds **") );
+				gamesnd_load_gameplay_sounds();			// preload in gameplay sounds if wanted
+			}
+
+			game_busy( NOX("** assigning sound environment for mission **") );
+			ship_assign_sound_all();	// assign engine sounds to ships
+			game_assign_sound_environment();	 // assign the sound environment for this mission
 		}
-
-		game_busy( NOX("** assigning sound environment for mission **") );
-		ship_assign_sound_all();	// assign engine sounds to ships
-		game_assign_sound_environment();	 // assign the sound environment for this mission
 
 		obj_merge_created_list();
 
@@ -1317,6 +1321,8 @@ void freespace_mission_load_stuff()
  */
 void game_post_level_init()
 {
+	TRACE_SCOPE(tracing::LoadPostMissionLoad);
+
 	HUD_init();
 	hud_setup_escort_list();
 	mission_hotkey_set_defaults();	// set up the default hotkeys (from mission file)

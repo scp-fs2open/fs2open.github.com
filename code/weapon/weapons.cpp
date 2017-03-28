@@ -56,6 +56,7 @@
 #include "particle/effects/BeamPiercingEffect.h"
 #include "particle/effects/ParticleEmitterEffect.h"
 #include "tracing/Monitor.h"
+#include "tracing/tracing.h"
 
 // Since SSMs are parsed after weapons, if we want to allow SSM strikes to be specified by name, we need to store those names until after SSMs are parsed.
 typedef struct delayed_ssm_data {
@@ -6355,6 +6356,8 @@ void weapon_mark_as_used(int weapon_type)
 
 void weapons_page_in()
 {
+	TRACE_SCOPE(tracing::WeaponPageIn);
+
 	int i, j, idx;
 
 	Assert( used_weapons != NULL );

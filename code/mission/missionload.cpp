@@ -21,7 +21,7 @@
 #include "missionui/missionshipchoice.h"
 #include "playerman/managepilot.h"
 #include "ui/ui.h"
-
+#include "tracing/tracing.h"
 
 
 extern mission The_mission;  // need to send this info to the briefing
@@ -82,6 +82,8 @@ void ml_update_recent_missions(char *filename)
 // returns -1 if failed, 0 if successful
 int mission_load(char *filename_ext)
 {
+	TRACE_SCOPE(tracing::LoadMissionLoad);
+
 	char filename[MAX_PATH_LEN], *ext;
 
 	if ( (filename_ext != NULL) && (Game_current_mission_filename != filename_ext) )

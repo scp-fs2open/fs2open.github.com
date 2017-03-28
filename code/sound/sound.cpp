@@ -25,6 +25,7 @@
 #include "sound/ds3d.h"
 #include "sound/dscap.h"
 #include "tracing/Monitor.h"
+#include "tracing/tracing.h"
 
 #include "globalincs/pstypes.h"
 
@@ -313,6 +314,7 @@ int snd_load( game_snd *gs, int allow_hardware_load )
 
 	si = &snd->info;
 
+	TRACE_SCOPE(tracing::LoadSound);
 
 	std::unique_ptr<ffmpeg::WaveFile> audio_file(new ffmpeg::WaveFile());
 
