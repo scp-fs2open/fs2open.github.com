@@ -91,4 +91,24 @@ Category CutsceneProcessAudioData("Process audio data", false);
 Category CutsceneFFmpegVideoDecoder("FFmpeg decode video", false);
 Category CutsceneFFmpegAudioDecoder("FFmpeg decode video", false);
 
+Category LoadMissionLoad("Load mission", false);
+Category LoadPostMissionLoad("Mission load post processing", false);
+Category LoadModelFile("Load model file", false);
+Category ReadModelFile("Read model file", false);
+Category ModelCreateVertexBuffers("Create model vertex buffers", false);
+Category ModelCreateOctants("Create model octants", false);
+Category ModelParseAllBSPTrees("Parse all BSP trees", false);
+Category ModelParseBSPTree("Parse BSP tree", false);
+Category ModelConfigureVertexBuffers("Model configure vertex buffers", false);
+Category ModelCreateTransparencyIndexBuffer("Model create transparency buffer", false);
+Category ModelCreateDetailIndexBuffers("Model create detail index buffers", false);
+
+Category PreloadMissionSounds("Preload mission sounds", false);
+Category LoadSound("Load Sound", false);
+
+Category LevelPageIn("Level page in", false);
+Category PageInStop("Finish page in", false);
+Category PageInSingleBitmap("Page in single bitmap", false);
+Category ShipPageIn("Ship page in", false);
+Category WeaponPageIn("Weapon page in", false);
 }

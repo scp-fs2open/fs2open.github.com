@@ -35,6 +35,7 @@
 #include "ship/shipfx.h"
 #include "weapon/shockwave.h"
 #include "tracing/Monitor.h"
+#include "tracing/tracing.h"
 
 #include <limits.h>
 
@@ -2255,6 +2256,8 @@ bool model_interp_config_buffer(indexed_vertex_source *vert_src, vertex_buffer *
 
 void interp_configure_vertex_buffers(polymodel *pm, int mn)
 {
+	TRACE_SCOPE(tracing::ModelConfigureVertexBuffers);
+
 	int i, j, first_index;
 	uint total_verts = 0;
 	SCP_vector<int> vertex_list;
@@ -2501,6 +2504,8 @@ void interp_fill_detail_index_buffer(SCP_vector<int> &submodel_list, polymodel *
 
 void interp_create_detail_index_buffer(polymodel *pm, int detail_num)
 {
+	TRACE_SCOPE(tracing::ModelCreateDetailIndexBuffers);
+
 	SCP_vector<int> submodel_list;
 
 	submodel_list.clear();
@@ -2523,6 +2528,8 @@ void interp_create_detail_index_buffer(polymodel *pm, int detail_num)
 
 void interp_create_transparency_index_buffer(polymodel *pm, int mn)
 {
+	TRACE_SCOPE(tracing::ModelCreateTransparencyIndexBuffer);
+
 	const int NUM_VERTS_PER_TRI = 3;
 
 	bsp_info *sub_model = &pm->submodel[mn];

@@ -36,6 +36,8 @@
 #include "render/3dinternal.h"
 #include "ship/ship.h"
 #include "weapon/weapon.h"
+#include "tracing/tracing.h"
+
 #include <algorithm>
 
 flag_def_list model_render_flags[] =
@@ -877,6 +879,8 @@ void create_vertex_buffer(polymodel *pm)
 		return;
 	}
 
+	TRACE_SCOPE(tracing::ModelCreateVertexBuffers);
+
 	int i;
 
 	// determine the size and configuration of each buffer segment
@@ -1061,7 +1065,9 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 		}
 
 		return -1;
-	}		
+	}
+
+	TRACE_SCOPE(tracing::ReadModelFile);
 
 	// generate checksum for the POF
 	cfseek(fp, 0, SEEK_SET);	
@@ -2637,7 +2643,9 @@ int model_load(const  char *filename, int n_subsystems, model_subsystem *subsyst
 	if ( num == -1 )	{
 		Error( LOCATION, "Too many models" );
 		return -1;
-	}	
+	}
+
+	TRACE_SCOPE(tracing::LoadModelFile);
 
 	mprintf(( "Loading model '%s' into slot '%i'\n", filename, num ));
 
@@ -2846,6 +2854,8 @@ int model_load(const  char *filename, int n_subsystems, model_subsystem *subsyst
 	model_octant_create( pm );
 
 	if ( !Cmdline_old_collision_sys ) {
+		TRACE_SCOPE(tracing::ModelParseAllBSPTrees);
+
 		for ( i = 0; i < pm->n_models; ++i ) {
 			pm->submodel[i].collision_tree_index = model_create_bsp_collision_tree();
 			bsp_collision_tree *tree = model_get_bsp_collision_tree(pm->submodel[i].collision_tree_index);

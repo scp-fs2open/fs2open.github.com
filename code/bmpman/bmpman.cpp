@@ -35,6 +35,7 @@
 #include "ship/ship.h"
 #include "tgautils/tgautils.h"
 #include "tracing/Monitor.h"
+#include "tracing/tracing.h"
 
 #include <ctype.h>
 #include <limits.h>
@@ -2577,6 +2578,8 @@ void bm_page_in_start() {
 }
 
 void bm_page_in_stop() {
+	TRACE_SCOPE(tracing::PageInStop);
+
 	int i;
 
 #ifndef NDEBUG
@@ -2593,6 +2596,7 @@ void bm_page_in_stop() {
 	for (i = 0; i < MAX_BITMAPS; i++) {
 		if ((bm_bitmaps[i].type != BM_TYPE_NONE) && (bm_bitmaps[i].type != BM_TYPE_RENDER_TARGET_DYNAMIC) && (bm_bitmaps[i].type != BM_TYPE_RENDER_TARGET_STATIC)) {
 			if (bm_bitmaps[i].preloaded) {
+				TRACE_SCOPE(tracing::PageInSingleBitmap);
 				if (bm_preloading) {
 					if (!gr_preload(bm_bitmaps[i].handle, (bm_bitmaps[i].preloaded == 2))) {
 						mprintf(("Out of VRAM.  Done preloading.\n"));
