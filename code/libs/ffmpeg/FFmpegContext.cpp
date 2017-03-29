@@ -43,7 +43,7 @@ int64_t cfileSeek(void* ptr, int64_t offset, int whence) {
 	
 	auto ret = cfseek(cfile, intOff, op);
 
-	if (ret < 0) {
+	if (ret != 0) {
 		// Error
 		return -1;
 	}
