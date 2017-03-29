@@ -80,7 +80,7 @@ struct model_uniform_data {
 
 	model_light lights[MAX_UNIFORM_LIGHTS];
 
-	float extrudeWidth;
+	float outlineWidth;
 	float fogStart;
 	float fogScale;
 	int buffer_matrix_offset;

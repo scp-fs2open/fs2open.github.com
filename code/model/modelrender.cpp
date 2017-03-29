@@ -65,8 +65,7 @@ model_render_params::model_render_params() :
 	Animated_effect(-1),
 	Animated_timer(0.0f),
 	Thruster_info(),
-	Normal_alpha(false),
-	Normal_extrude(false)
+	Normal_alpha(false)
 {
 	Warp_scale.xyz.x = 1.0f;
 	Warp_scale.xyz.y = 1.0f;
@@ -332,20 +331,14 @@ float model_render_params::get_normal_alpha_max()
 	return Normal_alpha_max;
 }
 
-void model_render_params::set_normal_extrude_width(float width)
-{
-	Normal_extrude = true;
-	Normal_extrude_width = width;
+void model_render_params::set_outline_thickness(float thickness) {
+	Outline_thickness = thickness;
 }
-
-bool model_render_params::is_normal_extrude_set()
-{
-	return Normal_extrude;
+float model_render_params::get_outline_thickness() {
+	return Outline_thickness;
 }
-
-float model_render_params::get_normal_extrude_width()
-{
-	return Normal_extrude_width;
+bool model_render_params::uses_thick_outlines() {
+	return Outline_thickness > 0.0f;
 }
 
 void model_batch_buffer::reset()
@@ -2737,8 +2730,8 @@ void model_render_queue(model_render_params *interp, model_draw_list *scene, int
 		rendering_material.set_normal_alpha(interp->get_normal_alpha_min(), interp->get_normal_alpha_max());
 	}
 
-	if ( interp->is_normal_extrude_set() ) {
-		rendering_material.set_normal_extrude(interp->get_normal_extrude_width());
+	if ( interp->uses_thick_outlines() ) {
+		rendering_material.set_outline_thickness(interp->get_outline_thickness());
 	}
 
 	if ( ( model_flags & MR_NO_CULL ) || ( model_flags & MR_ALL_XPARENT ) || ( interp->get_warp_bitmap() >= 0 ) ) {

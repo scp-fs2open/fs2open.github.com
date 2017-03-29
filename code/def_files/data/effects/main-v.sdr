@@ -36,7 +36,7 @@ layout (std140) uniform modelData {
 
 	model_light lights[MAX_LIGHTS];
 
-	float extrudeWidth;
+	float outlineWidth;
 	float fogStart;
 	float fogScale;
 	int buffer_matrix_offset;
@@ -187,9 +187,6 @@ void main()
   #endif
  #else
 	gl_Position = projMatrix * position;
- #endif
- #ifdef FLAG_NORMAL_EXTRUDE
-	gl_Position.xy += (mat3(projMatrix) * normal.xyz).xy * gl_Position.z * extrudeWidth;
  #endif
  #ifdef FLAG_SHADOWS
 	vec4 shadowPos = shadow_mv_matrix * modelMatrix * orient * vertPosition;
