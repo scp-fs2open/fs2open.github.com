@@ -47,6 +47,8 @@ IF(UNIX)
 	TARGET_LINK_LIBRARIES(code PUBLIC ${MONGOOSE_LIBS})
 ENDIF(UNIX)
 
+target_link_libraries(code PUBLIC glm)
+
 IF(FSO_BUILD_TOOLS)
 	ADD_SUBDIRECTORY(cfilearchiver)
 

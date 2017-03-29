@@ -24,3 +24,5 @@ ENDIF(UNIX)
 add_subdirectory(md5)
 
 include(FFmpeg.cmake)
+
+add_subdirectory(glm)
