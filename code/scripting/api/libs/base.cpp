@@ -259,6 +259,10 @@ ADE_FUNC(XSTR,
 	return ade_set_args(L, "s", translated.c_str());
 }
 
+ADE_FUNC(inMissionEditor, l_Base, nullptr, "Determine if the current script is running in the mission editor (e.g. FRED2). This should be used to control which code paths will be executed even if running in the editor.", "boolean", "true when we are in the mission editor, false otherwise") {
+	return ade_set_args(L, "b", Fred_running != 0);
+}
+
 //**********SUBLIBRARY: Base/Events
 ADE_LIB_DERIV(l_Base_Events, "GameEvents", NULL, "Freespace 2 game events", l_Base);
 

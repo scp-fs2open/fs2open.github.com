@@ -79,7 +79,6 @@ END_MESSAGE_MAP()
 static int Add_count, Replace_count;
 static int Modify_variable;
 
-
 // constructor
 sexp_tree::sexp_tree()
 {

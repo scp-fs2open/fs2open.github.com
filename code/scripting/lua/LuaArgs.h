@@ -31,7 +31,7 @@ inline int getArgsInternal(lua_State* L, bool, int, int) {
 
 template<typename T>
 inline int popArgumentValue(lua_State* L, T& target, bool& optionalOut, int& stackIndexOut) {
-	target = convert::popValue<T>(L, stackIndexOut, false);
+	convert::popValue(L, target, stackIndexOut, false);
 	stackIndexOut = stackIndexOut + 1;
 
 	return 1;

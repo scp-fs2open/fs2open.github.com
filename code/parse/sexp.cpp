@@ -101,6 +101,8 @@
 #include "weapon/shockwave.h"
 #include "weapon/weapon.h"
 
+#include "parse/sexp/sexp_lookup.h"
+
 #ifndef NDEBUG
 #include "hud/hudmessage.h"
 #endif
@@ -1102,13 +1104,6 @@ void init_sexp()
 	Sexp_current_argument_nesting_level = 0;
 	Current_sexp_network_packet.initialize();
 
-	static bool done_sexp_atexit = false;
-	if (!done_sexp_atexit)
-	{
-		atexit(sexp_nodes_close);
-		done_sexp_atexit = true;
-	}
-
 	sexp_nodes_init();
 	init_sexp_vars();
 	Locked_sexp_false = Locked_sexp_true = -1;
@@ -1122,6 +1117,12 @@ void init_sexp()
 	Assert(Locked_sexp_true != -1);
 	Sexp_nodes[Locked_sexp_true].type = SEXP_ATOM;  // fix bypassing value
 	Sexp_nodes[Locked_sexp_true].value = SEXP_KNOWN_TRUE;
+}
+
+void sexp_shutdown() {
+	sexp_nodes_close();
+
+	sexp::dynamic_sexp_shutdown();
 }
 
 /**
@@ -25179,9 +25180,15 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_set_turret_secondary_ammo(node);
 				break;
 
-			default:
-				Error(LOCATION, "Looking for SEXP operator, found '%s'.\n", CTEXT(cur_node));
-				break;
+			default:{
+				// Check if we have a dynamic SEXP with this operator and if there is, execute that
+				auto dynamicSEXP = sexp::get_dynamic_sexp(op_num);
+				if (dynamicSEXP != nullptr) {
+					sexp_val = dynamicSEXP->execute(node);
+				} else {
+					Error(LOCATION, "Looking for SEXP operator, found '%s'.\n", CTEXT(cur_node));
+				}
+			}
 		}
 
 		if (Log_event) {
@@ -26250,8 +26257,14 @@ int query_operator_return_type(int op)
 		case OP_FOR_COUNTER:
 			return OPR_FLEXIBLE_ARGUMENT;
 
-		default:
+		default: {
+			auto dynamicSEXP = sexp::get_dynamic_sexp(op);
+			if (dynamicSEXP != nullptr) {
+				return dynamicSEXP->getReturnType();
+			}
+
 			Int3();
+		}
 	}
 
 	return 0;
@@ -28449,8 +28462,13 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_SET_MOTION_DEBRIS:
 			return OPF_BOOL;
 
-		default:
+		default: {
+			auto dynamicSEXP = sexp::get_dynamic_sexp(op);
+			if (dynamicSEXP != nullptr) {
+				return dynamicSEXP->getArgumentType(argnum);
+			}
 			Int3();
+		}
 	}
 
 	return 0;
@@ -30239,8 +30257,16 @@ int get_subcategory(int sexp_id)
 		case OP_SCRIPT_EVAL_NUM:
 			return STATUS_SUBCATEGORY_OTHER;
 
-		default:
-			return -1;		// sexp doesn't have a subcategory
+		default: {
+			// Check if we have a dynamic SEXP with this operator and if there is, execute that
+			auto dynamicSEXP = sexp::get_dynamic_sexp(sexp_id);
+			if (dynamicSEXP != nullptr) {
+				return dynamicSEXP->getSubcategory();
+			}
+			else {
+				return -1;		// sexp doesn't have a subcategory
+			}
+		}
 	}
 }
 
@@ -34053,7 +34079,7 @@ SCP_vector<op_menu_struct> op_submenu =
 	{	"Damage",						STATUS_SUBCATEGORY_DAMAGE							},
 	{	"Distance and Coordinates",		STATUS_SUBCATEGORY_DISTANCE_AND_COORDINATES			},
 	{	"Variables",					STATUS_SUBCATEGORY_VARIABLES						},
-	{	"Other",						STATUS_SUBCATEGORY_OTHER							},
+	{	"Other",						STATUS_SUBCATEGORY_OTHER							}
 };
 
 /**

@@ -40,6 +40,7 @@ gameversion::version Targetted_version; // Defaults to retail
 SCP_string Window_title;
 bool Unicode_text_mode;
 SCP_string Movie_subtitle_font;
+bool Enable_scripts_in_fred; // By default FRED does not initialize the scripting system
 
 void parse_mod_table(const char *filename)
 {
@@ -270,6 +271,16 @@ void parse_mod_table(const char *filename)
 			}
 		}
 
+		if (optional_string("$Enable scripting in FRED:")) {
+			stuff_boolean(&Enable_scripts_in_fred);
+			if (Enable_scripts_in_fred) {
+				mprintf(("Game Settings Table: FRED - Scripts will be executed when running FRED.\n"));
+			}
+			else {
+				mprintf(("Game Settings Table: FRED - Scripts will not be executed when running FRED.\n"));
+			}
+		}
+
 		optional_string("#OTHER SETTINGS");
 
 		if (optional_string("$Fixed Turret Collisions:")) {
@@ -397,4 +408,5 @@ void mod_table_reset() {
 	Window_title = "";
 	Unicode_text_mode = false;
 	Movie_subtitle_font = "font01.vf";
+	Enable_scripts_in_fred = false;
 }

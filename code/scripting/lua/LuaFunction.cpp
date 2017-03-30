@@ -140,7 +140,9 @@ LuaValueList LuaFunction::call(const LuaValueList& args) {
 			err_msg = "Invalid lua value on stack!";
 			lua_pop(_luaState, 1); // Remove the value on the stack
 		} else {
-			err_msg = convert::popValue<std::string>(_luaState);
+			if (!convert::popValue(_luaState, err_msg)) {
+				err_msg = "Failed to get error message from Lua stack!";
+			}
 		}
 
 		// Throw exception with generated message
@@ -154,4 +156,23 @@ LuaValueList LuaFunction::call(const LuaValueList& args) {
 		throw exception;
 	}
 }
+
+bool ::luacpp::convert::popValue(lua_State* luaState, LuaFunction& target, int stackposition, bool remove) {
+	if (!internal::isValidIndex(luaState, stackposition)) {
+		return false;
+	}
+
+	if (!lua_isfunction(luaState, stackposition)) {
+		return false;
+	} else {
+		target.setReference(UniqueLuaReference::create(luaState, stackposition));
+
+		if (remove) {
+			lua_remove(luaState, stackposition);
+		}
+
+		return true;
+	}
+}
+
 }
