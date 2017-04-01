@@ -106,7 +106,7 @@ static opengl_shader_type_t GL_shader_types[] = {
 		{ opengl_vert_attrib::POSITION, opengl_vert_attrib::TEXCOORD }, "Video Playback" },
 
 	{ SDR_TYPE_PASSTHROUGH_RENDER, "passthrough-v.sdr", "passthrough-f.sdr", 0,
-		{ "modelViewMatrix", "projMatrix", "baseMap", "noTexturing", "alphaTexture", "srgb", "intensity", "color", "alphaThreshold" },
+		{ "modelViewMatrix", "projMatrix", "baseMap", "noTexturing", "alphaTexture", "srgb", "intensity", "color", "alphaThreshold", "clipEnabled", "clipEquation", "modelMatrix" },
 		{ opengl_vert_attrib::POSITION, opengl_vert_attrib::TEXCOORD, opengl_vert_attrib::COLOR }, "Passthrough" },
 
 	{ SDR_TYPE_SHIELD_DECAL, "shield-impact-v.sdr",	"shield-impact-f.sdr", 0,
@@ -788,7 +788,7 @@ void opengl_shader_compile_passthrough_shader()
 	opengl_shader_set_current();
 }
 
-void opengl_shader_set_passthrough(bool textured, bool alpha, vec4 *clr, float color_scale)
+void opengl_shader_set_passthrough(bool textured, bool alpha, vec4 *clr, float color_scale, const material::clip_plane& clip_plane)
 {
 	opengl_shader_set_current(gr_opengl_maybe_create_shader(SDR_TYPE_PASSTHROUGH_RENDER, 0));
 
@@ -818,6 +818,21 @@ void opengl_shader_set_passthrough(bool textured, bool alpha, vec4 *clr, float c
 		Current_shader->program->Uniforms.setUniform4f("color", *clr);
 	} else {
 		Current_shader->program->Uniforms.setUniform4f("color", 1.0f, 1.0f, 1.0f, 1.0f);
+	}
+
+	if (clip_plane.enabled) {
+		Current_shader->program->Uniforms.setUniformi("clipEnabled", 1);
+
+		vec4 clip_equation;
+		clip_equation.xyzw.x = clip_plane.normal.xyz.x;
+		clip_equation.xyzw.y = clip_plane.normal.xyz.y;
+		clip_equation.xyzw.z = clip_plane.normal.xyz.z;
+		clip_equation.xyzw.w = -vm_vec_dot(&clip_plane.normal, &clip_plane.position);
+
+		Current_shader->program->Uniforms.setUniform4f("clipEquation", clip_equation);
+		Current_shader->program->Uniforms.setUniformMatrix4f("modelMatrix", GL_model_matrix_stack.get_transform());
+	} else {
+		Current_shader->program->Uniforms.setUniformi("clipEnabled", 0);
 	}
 
 	Current_shader->program->Uniforms.setUniformMatrix4f("modelViewMatrix", GL_model_view_matrix);

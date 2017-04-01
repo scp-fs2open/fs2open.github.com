@@ -796,7 +796,9 @@ void gr_opengl_set_clip_plane(vec3d *clip_normal, vec3d *clip_point)
 	if ( clip_normal == NULL || clip_point == NULL ) {
 		GL_state.ClipDistance(0, false);
 	} else {
-		Assertion(Current_shader != NULL && Current_shader->shader == SDR_TYPE_MODEL, "Clip planes are only supported by the model shader!");
+		Assertion(Current_shader != NULL &&
+				  (Current_shader->shader == SDR_TYPE_MODEL || Current_shader->shader == SDR_TYPE_PASSTHROUGH_RENDER),
+				  "Clip planes are not supported by this shader!");
 
 		GL_state.ClipDistance(0, true);
 	}
@@ -863,10 +865,6 @@ void opengl_tnl_set_material(material* material_info, bool set_base_map)
 
 	opengl_shader_set_current(shader_handle);
 
-	if ( Current_shader->shader == SDR_TYPE_PASSTHROUGH_RENDER ) {
-		opengl_shader_set_passthrough(base_map >= 0, material_info->get_texture_type() == TCACHE_TYPE_AABITMAP, &clr, material_info->get_color_scale());
-	}
-
 	GL_state.SetAlphaBlendMode(material_info->get_blend_mode());
 	GL_state.SetZbufferType(material_info->get_depth_mode());
 
@@ -892,6 +890,14 @@ void opengl_tnl_set_material(material* material_info, bool set_base_map)
 		gr_opengl_set_clip_plane(&clip_params.normal, &clip_params.position);
 	} else {
 		gr_opengl_set_clip_plane(NULL, NULL);
+	}
+
+	if ( Current_shader->shader == SDR_TYPE_PASSTHROUGH_RENDER ) {
+		opengl_shader_set_passthrough(base_map >= 0,
+									  material_info->get_texture_type() == TCACHE_TYPE_AABITMAP,
+									  &clr,
+									  material_info->get_color_scale(),
+									  material_info->get_clip_plane());
 	}
 
 	if ( set_base_map && base_map >= 0 ) {
