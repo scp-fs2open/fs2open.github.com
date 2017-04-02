@@ -131,6 +131,10 @@ set (file_root_debugconsole
 	debugconsole/consoleparse.h
 )
 
+set(file_root_decals
+	decals/decals.cpp
+	decals/decals.h
+)
 
 SET(file_root_def_files
 	def_files/def_files.h
@@ -156,6 +160,8 @@ SET(file_root_def_files_files
 	def_files/blur-f.sdr
 	def_files/brightpass-f.sdr
 	def_files/controlconfigdefaults.tbl
+	def_files/decal-f.sdr
+	def_files/decal-v.sdr
 	def_files/default-material-f.sdr
 	def_files/deferred-clear-f.sdr
 	def_files/deferred-clear-v.sdr
@@ -298,6 +304,8 @@ set(file_root_globalincs_toolchain
 set (file_root_graphics
 	graphics/2d.cpp
 	graphics/2d.h
+	graphics/decal_draw_list.cpp
+	graphics/decal_draw_list.h
 	graphics/grbatch.cpp
 	graphics/grbatch.h
 	graphics/grinternal.h
@@ -1257,6 +1265,7 @@ source_group("Cutscene\\Player"                   FILES ${file_root_cutscene_pla
 source_group("ddsutils"                           FILES ${file_root_ddsutils})
 source_group("Debris"                             FILES ${file_root_debris})
 source_group("DebugConsole"                       FILES ${file_root_debugconsole})
+source_group("Decals"                             FILES ${file_root_decals})
 source_group("Default files"                      FILES ${file_root_def_files})
 source_group("Default files\\Files"               FILES ${file_root_def_files_files})
 source_group("ExceptionHandler"                   FILES ${file_root_exceptionhandler})
@@ -1352,6 +1361,7 @@ set (file_root
 	${file_root_ddsutils}
 	${file_root_debris}
 	${file_root_debugconsole}
+	${file_root_decals}
 	${file_root_def_files}
 	${file_root_def_files_files}
 	${file_root_exceptionhandler}

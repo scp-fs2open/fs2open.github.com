@@ -2600,6 +2600,10 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		}
 	}
 
+	// New decal system parsing
+	if (optional_string("$Impact Decal:")) {
+		decals::parseDecalReference(wip->impact_decal, create_if_not_found);
+	}
 
 	if (optional_string("$Transparent:")) {
         wip->wi_flags.set(Weapon::Info_Flags::Transparent);
@@ -3338,6 +3342,8 @@ void weapon_load_bitmaps(int weapon_index)
 			generic_anim_load(&wip->thruster_glow);
 		}
 	}
+
+	decals::loadBitmaps(wip->impact_decal);
 
 	// if this weapon isn't already marked as used, then mark it as such now
 	// (this should really only happen if the player is cheating)
@@ -6456,6 +6462,8 @@ void weapons_page_in()
 
 		bm_page_in_texture(wip->thruster_flame.first_frame);
 		bm_page_in_texture(wip->thruster_glow.first_frame);
+
+		decals::pageInDecal(wip->impact_decal);
 	}
 }
 
@@ -6641,6 +6649,9 @@ bool weapon_page_in(int weapon_type)
 
 		bm_page_in_texture(wip->thruster_flame.first_frame);
 		bm_page_in_texture(wip->thruster_glow.first_frame);
+
+		// Page in decal bitmaps
+		decals::pageInDecal(wip->impact_decal);
 
 		used_weapons[page_in_weapons.at(k)]++;	// Ensures weapon can be counted as used
 	}
@@ -7717,4 +7728,7 @@ void weapon_info::reset()
 	this->hud_locked_snd = -1;
 	this->hud_tracking_snd = -1;
 	this->hud_in_flight_snd = -1;
+
+	// Reset using default constructor
+	this->impact_decal = decals::creation_info();
 }

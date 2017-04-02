@@ -167,6 +167,7 @@
 #include "stats/stats.h"
 #include "tracing/tracing.h"
 #include "weapon/beam.h"
+#include "decals/decals.h"
 #include "weapon/emp.h"
 #include "weapon/flak.h"
 #include "weapon/muzzleflash.h"
@@ -1348,7 +1349,10 @@ void game_post_level_init()
 	// While trying to track down the nebula bug I encountered a cool effect -
 	// comment this out to fly a mission in a void. Maybe we should develop this
 	// into a full effect or something, because it is seriously cool.
-	neb2_post_level_init();		
+	neb2_post_level_init();
+
+	// Initialize decal system
+	decals::initializeMission();
 
 #ifndef NDEBUG
 	game_event_debug_init();
@@ -1948,6 +1952,8 @@ void game_init()
 	// initialize alpha colors
 	// CommanderDJ: try with colors.tbl first, then use the old way if that doesn't work
 	alpha_colors_init();
+
+	decals::initialize();
 
 	obj_init();	
 	mflash_game_init();	
@@ -6863,6 +6869,8 @@ void game_shutdown(void)
 	weapon_close();					// free any memory that was allocated for the weapons
 	ship_close();					// free any memory that was allocated for the ships
 	hud_free_scrollback_list();// free space allocated to store hud messages in hud scrollback
+
+	decals::shutdown();
 
 	io::mouse::CursorManager::shutdown();
 

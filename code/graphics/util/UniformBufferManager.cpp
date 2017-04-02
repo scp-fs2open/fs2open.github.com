@@ -13,6 +13,8 @@ size_t getElementSize(uniform_block_type type) {
 		return sizeof(graphics::model_uniform_data);
 	case uniform_block_type::NanoVGData:
 		return sizeof(graphics::nanovg_draw_data);
+	case uniform_block_type::DecalInfo:
+		return sizeof(graphics::decal_info);
 	case uniform_block_type::NUM_BLOCK_TYPES:
 	default:
 		Assertion(false, "Invalid block type encountered!");
@@ -23,10 +25,11 @@ size_t getElementSize(uniform_block_type type) {
 size_t getHeaderSize(uniform_block_type type) {
 	switch (type) {
 	case uniform_block_type::Lights:
-		return 0;
 	case uniform_block_type::ModelData:
 	case uniform_block_type::NanoVGData:
 		return 0;
+	case uniform_block_type::DecalInfo:
+		return sizeof(graphics::decal_globals);
 	case uniform_block_type::NUM_BLOCK_TYPES:
 	default:
 		Assertion(false, "Invalid block type encountered!");

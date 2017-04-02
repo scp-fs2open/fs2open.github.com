@@ -1,0 +1,30 @@
+
+in vec4 vertPosition;
+
+layout (std140) uniform decalGlobalData {
+	mat4 viewMatrix;
+	mat4 projMatrix;
+	mat4 invViewMatrix;
+	mat4 invProjMatrix;
+
+	vec2 viewportSize;
+};
+
+layout (std140) uniform decalInfoData {
+	mat4 model_matrix;
+	mat4 inv_model_matrix;
+
+	vec3 decal_direction;
+	float normal_angle_cutoff;
+
+	int diffuse_index;
+	int normal_index;
+	float angle_fade_start;
+	float alpha_scale;
+
+	int blend_mode;
+};
+
+void main() {
+	gl_Position = projMatrix * viewMatrix * model_matrix * vertPosition;
+}
