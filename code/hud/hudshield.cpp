@@ -590,14 +590,16 @@ void HudGaugeShield::showShields(object *objp, int mode)
 
 		vm_angles_2_matrix(&object_orient, &rot_angles);
 
-		gr_screen.clip_width = 112;
-		gr_screen.clip_height = 93;
+		static const int cw = 112;
+		static const int ch = 93;
+		gr_screen.clip_width = cw;
+		gr_screen.clip_height = ch;
 
 		//Fire it up
 		if(g3_yourself)
 			g3_start_frame(1);
 		hud_save_restore_camera_data(1);
-		setClip(sx, sy, 112, 93);
+		setClip(sx, sy, cw, ch);
 
 		//if(!digitus_improbus)
 			g3_set_view_matrix( &sip->closeup_pos, &vmd_identity_matrix, sip->closeup_zoom * 2.5f);
@@ -707,7 +709,7 @@ void HudGaugeShield::showShields(object *objp, int mode)
 				//Ugh, draw four shield quadrants
 				static const int TRI_EDGE = 6;
 				static const int BAR_LENGTH = 112;
-				static const int BAR_HEIGHT = 54;
+				static const int BAR_HEIGHT = 63;
 				static const int BAR_WIDTH = 6;
 				static const int SHIELD_OFFSET = BAR_WIDTH + TRI_EDGE + 3;
 
