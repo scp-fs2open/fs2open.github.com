@@ -590,16 +590,16 @@ void HudGaugeShield::showShields(object *objp, int mode)
 
 		vm_angles_2_matrix(&object_orient, &rot_angles);
 
-		static const int cw = 112;
-		static const int ch = 93;
-		gr_screen.clip_width = cw;
-		gr_screen.clip_height = ch;
+		const int CLIP_WIDTH = 112;
+		const int CLIP_HEIGHT = 93;
+		gr_screen.clip_width = CLIP_WIDTH;
+		gr_screen.clip_height = CLIP_HEIGHT;
 
 		//Fire it up
 		if(g3_yourself)
 			g3_start_frame(1);
 		hud_save_restore_camera_data(1);
-		setClip(sx, sy, cw, ch);
+		setClip(sx, sy, CLIP_WIDTH, CLIP_HEIGHT);
 
 		//if(!digitus_improbus)
 			g3_set_view_matrix( &sip->closeup_pos, &vmd_identity_matrix, sip->closeup_zoom * 2.5f);
