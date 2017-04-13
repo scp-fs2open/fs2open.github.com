@@ -19,7 +19,7 @@ class LuaTable;
  * be in the exact same state when you call the next method of this class.
  */
 class LuaTableIterator {
-	lua_State* _L = nullptr;
+	lua_State* _luaState = nullptr;
 
 	int _stackTop = 0;
 
