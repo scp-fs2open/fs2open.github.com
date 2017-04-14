@@ -5,6 +5,7 @@
 #define FS2_OPEN_ADE_H
 
 #include "globalincs/pstypes.h"
+#include "platformChecks.h"
 
 extern "C" {
 #include <lauxlib.h>
@@ -226,8 +227,9 @@ template<class StoreType>
 class ade_obj: public ade_lib_handle {
  public:
 	// Make sure that the stored type is compatible with our requirements
+#ifdef HAVE_STD_IS_TRIVIALLY_COPYABLE
 	static_assert(std::is_trivially_copyable<StoreType>::value, "ADE object types must be trivially copyable!");
-
+#endif
 	ade_obj(const char* in_name, const char* in_desc, const ade_lib_handle* in_deriv = NULL) {
 		ade_table_entry ate;
 
