@@ -4518,7 +4518,11 @@ static void weapon_set_state(weapon_info* wip, weapon* wp, WeaponState state)
 		return;
 	}
 
-	if (wp->weapon_state == WeaponState::INVALID)
+	auto current_state = wp->weapon_state;
+
+	wp->weapon_state = state;
+
+	if (current_state == WeaponState::INVALID)
 	{
 		// First weapon state, create the in-flight effect
 		auto map_entry = wip->state_effects.find(WeaponState::NORMAL);
@@ -4533,8 +4537,6 @@ static void weapon_set_state(weapon_info* wip, weapon* wp, WeaponState state)
 			source.finish();
 		}
 	}
-
-	wp->weapon_state = state;
 
 	auto map_entry = wip->state_effects.find(wp->weapon_state);
 
