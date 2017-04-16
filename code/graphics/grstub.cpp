@@ -153,7 +153,10 @@ void gr_stub_save_mouse_area(int x, int y, int w, int h)
 
 void gr_stub_update_buffer_data(int handle, size_t size, void* data)
 {
+}
 
+void gr_stub_update_buffer_data_offset(int handle, size_t offset, size_t size, void* data)
+{
 }
 
 void gr_stub_update_transform_buffer(void* data, size_t size)
@@ -397,17 +400,7 @@ void gr_stub_render_primitives(material* material_info, primitive_type prim_type
 
 }
 
-void gr_stub_render_primitives_immediate(material* material_info, primitive_type prim_type, vertex_layout* layout, int n_verts, void* data, int size)
-{
-
-}
-
 void gr_stub_render_primitives_2d(material* material_info, primitive_type prim_type, vertex_layout* layout, int offset, int n_verts, int buffer_handle)
-{
-
-}
-
-void gr_stub_render_primitives_2d_immediate(material* material_info, primitive_type prim_type, vertex_layout* layout, int n_verts, void* data, int size)
 {
 
 }
@@ -552,6 +545,7 @@ bool gr_stub_init()
 
 	gr_screen.gf_update_transform_buffer	= gr_stub_update_transform_buffer;
 	gr_screen.gf_update_buffer_data		= gr_stub_update_buffer_data;
+	gr_screen.gf_update_buffer_data_offset = gr_stub_update_buffer_data_offset;
 	gr_screen.gf_set_transform_buffer_offset	= gr_stub_set_transform_buffer_offset;
 
 	gr_screen.gf_start_instance_matrix			= gr_stub_start_instance_matrix;
@@ -610,9 +604,7 @@ bool gr_stub_init()
 
 	gr_screen.gf_render_model = gr_stub_render_model;
 	gr_screen.gf_render_primitives	= gr_stub_render_primitives;
-	gr_screen.gf_render_primitives_immediate = gr_stub_render_primitives_immediate;
 	gr_screen.gf_render_primitives_2d	= gr_stub_render_primitives_2d;
-	gr_screen.gf_render_primitives_2d_immediate = gr_stub_render_primitives_2d_immediate;
 	gr_screen.gf_render_primitives_particle	= gr_stub_render_primitives_particle;
 	gr_screen.gf_render_primitives_distortion = gr_stub_render_primitives_distortion;
 	gr_screen.gf_render_movie = gr_stub_render_movie;

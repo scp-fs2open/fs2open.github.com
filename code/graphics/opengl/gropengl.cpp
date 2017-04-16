@@ -169,7 +169,6 @@ void gr_opengl_flip()
 	current_viewport->swapBuffers();
 
 	opengl_tcache_frame();
-	opengl_reset_immediate_buffer();
 
 #ifndef NDEBUG
 	int ic = opengl_check_for_errors();
@@ -1181,10 +1180,11 @@ void opengl_setup_function_pointers()
 	gr_screen.gf_set_fill_mode			= gr_opengl_set_fill_mode;
 	gr_screen.gf_set_texture_panning	= gr_opengl_set_texture_panning;
 
-	gr_screen.gf_create_vertex_buffer	= gr_opengl_create_vertex_buffer;
-	gr_screen.gf_create_index_buffer	= gr_opengl_create_index_buffer;
-	gr_screen.gf_delete_buffer		= gr_opengl_delete_buffer;
-	gr_screen.gf_update_buffer_data		= gr_opengl_update_buffer_data;
+	gr_screen.gf_create_vertex_buffer		= gr_opengl_create_vertex_buffer;
+	gr_screen.gf_create_index_buffer		= gr_opengl_create_index_buffer;
+	gr_screen.gf_delete_buffer				= gr_opengl_delete_buffer;
+	gr_screen.gf_update_buffer_data			= gr_opengl_update_buffer_data;
+	gr_screen.gf_update_buffer_data_offset	= gr_opengl_update_buffer_data_offset;
 
 	gr_screen.gf_update_transform_buffer	= gr_opengl_update_transform_buffer;
 	gr_screen.gf_set_transform_buffer_offset	= gr_opengl_set_transform_buffer_offset;
@@ -1244,9 +1244,7 @@ void opengl_setup_function_pointers()
 
 	gr_screen.gf_render_model = gr_opengl_render_model;
 	gr_screen.gf_render_primitives= gr_opengl_render_primitives;
-	gr_screen.gf_render_primitives_immediate = gr_opengl_render_primitives_immediate;
 	gr_screen.gf_render_primitives_2d = gr_opengl_render_primitives_2d;
-	gr_screen.gf_render_primitives_2d_immediate = gr_opengl_render_primitives_2d_immediate;
 	gr_screen.gf_render_primitives_particle	= gr_opengl_render_primitives_particle;
 	gr_screen.gf_render_primitives_batched	= gr_opengl_render_primitives_batched;
 	gr_screen.gf_render_primitives_distortion = gr_opengl_render_primitives_distortion;

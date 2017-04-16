@@ -95,7 +95,7 @@ inline GLenum opengl_primitive_type(primitive_type prim_type)
 	}
 }
 
-void opengl_bind_vertex_component(vertex_format_data &vert_component, uint base_vertex, ubyte* base_ptr)
+void opengl_bind_vertex_component(const vertex_format_data &vert_component, uint base_vertex, ubyte* base_ptr)
 {
 	opengl_vertex_bind &bind_info = GL_array_binding_data[vert_component.format_type];
 	opengl_vert_attrib &attrib_info = GL_vertex_attrib_info[bind_info.attribute_id];
@@ -115,13 +115,7 @@ void opengl_bind_vertex_component(vertex_format_data &vert_component, uint base_
 		}
 	}
 
-	GLubyte *data_src;
-
-	if ( vert_component.offset >= 0 ) {
-		data_src = (GLubyte*)base_ptr + vert_component.offset + byte_offset;
-	} else {
-		data_src = (GLubyte*)vert_component.data_src + byte_offset;
-	}
+	GLubyte *data_src = (GLubyte*)base_ptr + vert_component.offset + byte_offset;
 
 	if ( Current_shader != NULL ) {
 		// grabbing a vertex attribute is dependent on what current shader has been set. i hope no one calls opengl_bind_vertex_layout before opengl_set_current_shader
@@ -1237,11 +1231,9 @@ void opengl_render_primitives(primitive_type prim_type, vertex_layout* layout, i
 {
 	GR_DEBUG_SCOPE("Render primitives");
 
-	if ( buffer_handle >= 0 ) {
-		opengl_bind_buffer_object(buffer_handle);
-	} else {
-		GL_state.Array.BindArrayBuffer(0);
-	}
+	Assertion(buffer_handle >= 0, "A valid buffer handle is required! Use the immediate buffer if data is not in GPU buffer yet.");
+
+	opengl_bind_buffer_object(buffer_handle);
 
 	opengl_bind_vertex_layout(*layout, 0, (ubyte*)byte_offset);
 
@@ -1250,9 +1242,9 @@ void opengl_render_primitives(primitive_type prim_type, vertex_layout* layout, i
 
 void opengl_render_primitives_immediate(primitive_type prim_type, vertex_layout* layout, int n_verts, void* data, int size)
 {
-	uint offset = opengl_add_to_immediate_buffer(size, data);
+	auto offset = gr_add_to_immediate_buffer(size, data);
 
-	opengl_render_primitives(prim_type, layout, n_verts, GL_immediate_buffer_handle, 0, offset);
+	opengl_render_primitives(prim_type, layout, n_verts, gr_immediate_buffer_handle, 0, offset);
 }
 
 void gr_opengl_render_primitives(material* material_info, primitive_type prim_type, vertex_layout* layout, int offset, int n_verts, int buffer_handle)
@@ -1264,13 +1256,6 @@ void gr_opengl_render_primitives(material* material_info, primitive_type prim_ty
 	opengl_render_primitives(prim_type, layout, n_verts, buffer_handle, offset, 0);
 
 	GL_CHECK_FOR_ERRORS("end of gr_opengl_render_primitives()");
-}
-
-void gr_opengl_render_primitives_immediate(material* material_info, primitive_type prim_type, vertex_layout* layout, int n_verts, void* data, int size)
-{
-	opengl_tnl_set_material(material_info, true);
-
-	opengl_render_primitives_immediate(prim_type, layout, n_verts, data, size);
 }
 
 void gr_opengl_render_primitives_2d(material* material_info, primitive_type prim_type, vertex_layout* layout, int offset, int n_verts, int buffer_handle)
@@ -1289,24 +1274,6 @@ void gr_opengl_render_primitives_2d(material* material_info, primitive_type prim
 	//glPopMatrix();
 
 	GL_CHECK_FOR_ERRORS("end of gr_opengl_render_primitives_2d()");
-}
-
-void gr_opengl_render_primitives_2d_immediate(material* material_info, primitive_type prim_type, vertex_layout* layout, int n_verts, void* data, int size)
-{
-	GL_CHECK_FOR_ERRORS("start of gr_opengl_render_primitives_2d_immediate()");
-
-	//glPushMatrix();
-	//glTranslatef((float)gr_screen.offset_x, (float)gr_screen.offset_y, -0.99f);
-
-	gr_opengl_set_2d_matrix();
-
-	gr_opengl_render_primitives_immediate(material_info, prim_type, layout, n_verts, data, size);
-
-	gr_opengl_end_2d_matrix();
-
-	//glPopMatrix();
-
-	GL_CHECK_FOR_ERRORS("end of gr_opengl_render_primitives_2d_immediate()");
 }
 
 void gr_opengl_render_primitives_particle(particle_material* material_info, primitive_type prim_type, vertex_layout* layout, int offset, int n_verts, int buffer_handle)
@@ -1335,6 +1302,7 @@ void gr_opengl_render_primitives_distortion(distortion_material* material_info, 
 
 	GL_CHECK_FOR_ERRORS("start of gr_opengl_render_primitives_distortion()");
 }
+
 void gr_opengl_render_movie(movie_material* material_info,
 							primitive_type prim_type,
 							vertex_layout* layout,
@@ -1350,6 +1318,7 @@ void gr_opengl_render_movie(movie_material* material_info,
 
 	gr_opengl_end_2d_matrix();
 }
+
 void gr_opengl_render_primitives_batched(batched_bitmap_material* material_info,
 										 primitive_type prim_type,
 										 vertex_layout* layout,
@@ -1361,4 +1330,29 @@ void gr_opengl_render_primitives_batched(batched_bitmap_material* material_info,
 	opengl_tnl_set_material_batched(material_info);
 
 	opengl_render_primitives(prim_type, layout, n_verts, buffer_handle, offset, 0);
+}
+
+void opengl_draw_textured_quad(GLfloat x1,
+							   GLfloat y1,
+							   GLfloat u1,
+							   GLfloat v1,
+							   GLfloat x2,
+							   GLfloat y2,
+							   GLfloat u2,
+							   GLfloat v2) {
+	GR_DEBUG_SCOPE("Draw textured quad");
+
+	GLfloat glVertices[4][4] = {
+		{ x1, y1, u1, v1 },
+		{ x1, y2, u1, v2 },
+		{ x2, y1, u2, v1 },
+		{ x2, y2, u2, v2 }
+	};
+
+	vertex_layout vert_def;
+
+	vert_def.add_vertex_component(vertex_format_data::POSITION2, sizeof(GLfloat) * 4, 0);
+	vert_def.add_vertex_component(vertex_format_data::TEX_COORD2, sizeof(GLfloat) * 4, sizeof(GLfloat) * 2);
+
+	opengl_render_primitives_immediate(PRIM_TYPE_TRISTRIP, &vert_def, 4, glVertices, sizeof(GLfloat) * 4 * 4);
 }

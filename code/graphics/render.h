@@ -165,3 +165,13 @@ void gr_arc(int xc, int yc, float r, float angle_start, float angle_end, bool fi
  * @param resize_mode The mode for translating the screen positions
  */
 void gr_curve(int x, int y, int r, int direction, int resize_mode);
+
+
+extern int gr_immediate_buffer_handle;
+
+size_t gr_add_to_immediate_buffer(size_t size, void *data);
+
+void gr_reset_immediate_buffer();
+
+void gr_render_primitives_immediate(material* material_info, primitive_type prim_type, vertex_layout* layout, int n_verts, void* data, int size);
+void gr_render_primitives_2d_immediate(material* material_info, primitive_type prim_type, vertex_layout* layout, int n_verts, void* data, int size);

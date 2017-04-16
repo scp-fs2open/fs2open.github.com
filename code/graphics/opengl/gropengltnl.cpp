@@ -92,11 +92,6 @@ struct opengl_buffer_object {
 static SCP_vector<opengl_buffer_object> GL_buffer_objects;
 static int GL_vertex_buffers_in_use = 0;
 
-int GL_immediate_buffer_handle = -1;
-static uint GL_immediate_buffer_offset = 0;
-static uint GL_immediate_buffer_size = 0;
-static const int IMMEDIATE_BUFFER_RESIZE_BLOCK_SIZE = 2048;
-
 int opengl_create_buffer_object(GLenum type, GLenum usage)
 {
 	GR_DEBUG_SCOPE("Create buffer object");
@@ -161,7 +156,7 @@ void gr_opengl_update_buffer_data(int handle, size_t size, void* data)
 	glBufferData(buffer_obj.type, size, data, buffer_obj.usage);
 }
 
-void opengl_update_buffer_data_offset(int handle, uint offset, uint size, void* data)
+void gr_opengl_update_buffer_data_offset(int handle, size_t offset, size_t size, void* data)
 {
 	GR_DEBUG_SCOPE("Update buffer data with offset");
 
@@ -221,48 +216,6 @@ int gr_opengl_create_vertex_buffer(bool static_buffer)
 int gr_opengl_create_index_buffer(bool static_buffer)
 {
 	return opengl_create_buffer_object(GL_ELEMENT_ARRAY_BUFFER, static_buffer ? GL_STATIC_DRAW : GL_STREAM_DRAW);
-}
-
-uint opengl_add_to_immediate_buffer(uint size, void *data)
-{
-	GR_DEBUG_SCOPE("Add data to immediate buffer");
-
-	if ( GL_immediate_buffer_handle < 0 ) {
-		GL_immediate_buffer_handle = opengl_create_buffer_object(GL_ARRAY_BUFFER, GL_STREAM_DRAW);
-	}
-
-	Assert(size > 0 && data != NULL);
-
-	if ( GL_immediate_buffer_offset + size > GL_immediate_buffer_size ) {
-		// incoming data won't fit the immediate buffer. time to reallocate.
-		GL_immediate_buffer_offset = 0;
-		GL_immediate_buffer_size += MAX(IMMEDIATE_BUFFER_RESIZE_BLOCK_SIZE, size);
-		
-		gr_opengl_update_buffer_data(GL_immediate_buffer_handle, GL_immediate_buffer_size, NULL);
-	}
-
-	// only update a section of the immediate vertex buffer
-	opengl_update_buffer_data_offset(GL_immediate_buffer_handle, GL_immediate_buffer_offset, size, data);
-
-	uint old_offset = GL_immediate_buffer_offset;
-
-	GL_immediate_buffer_offset += size;
-
-	return old_offset;
-}
-
-void opengl_reset_immediate_buffer()
-{
-	if ( GL_immediate_buffer_handle < 0 ) {
-		// we haven't used the immediate buffer yet
-		return;
-	}
-
-	// orphan the immediate buffer so we can start fresh in a new frame
-	gr_opengl_update_buffer_data(GL_immediate_buffer_handle, GL_immediate_buffer_size, NULL);
-
-	// bring our offset to the beginning of the immediate buffer
-	GL_immediate_buffer_offset = 0;
 }
 
 int opengl_create_texture_buffer_object()
@@ -417,15 +370,11 @@ void opengl_tnl_shutdown()
 
 static void opengl_init_arrays(indexed_vertex_source *vert_src, vertex_buffer *bufferp)
 {
-	GLubyte *ptr = NULL;
+	Assertion(vert_src->Vbuffer_handle >= 0, "Vertex buffers require a valid buffer handle!");
 
-	if ( vert_src->Vbuffer_handle >= 0 ) {
-		opengl_bind_buffer_object(vert_src->Vbuffer_handle);
-	} else {
-		ptr = (GLubyte*)vert_src->Vertex_list;
-	}
+	opengl_bind_buffer_object(vert_src->Vbuffer_handle);
 	
-	opengl_bind_vertex_layout(bufferp->layout, 0, ptr);
+	opengl_bind_vertex_layout(bufferp->layout);
 }
 
 void opengl_render_model_program(model_material* material_info, indexed_vertex_source *vert_source, vertex_buffer* bufferp, buffer_data *datap)
@@ -447,11 +396,9 @@ void opengl_render_model_program(model_material* material_info, indexed_vertex_s
 	// basic setup of all data
 	opengl_init_arrays(vert_source, bufferp);
 
-	if ( vert_source->Ibuffer_handle >= 0 ) {
-		opengl_bind_buffer_object(vert_source->Ibuffer_handle);
-	} else {
-		ibuffer = (GLubyte*)vert_source->Index_list;
-	}
+	Assertion(vert_source->Ibuffer_handle >= 0, "The index values must be located in a GPU buffer!");
+
+	opengl_bind_buffer_object(vert_source->Ibuffer_handle);
 
 	if ( Rendering_to_shadow_map ) {
 		glDrawElementsInstancedBaseVertex(GL_TRIANGLES, (GLsizei) count, element_type,
