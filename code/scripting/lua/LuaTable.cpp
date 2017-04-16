@@ -97,36 +97,36 @@ LuaTable::iterator LuaTable::end() {
 	return iterator(); // Empty iterator
 }
 
-LuaTableIterator::LuaTableIterator(const LuaTable& t) : _L(t.getLuaState()) {
-	_stackTop = lua_gettop(_L);
+LuaTableIterator::LuaTableIterator(const LuaTable& t) : _luaState(t.getLuaState()) {
+	_stackTop = lua_gettop(_luaState);
 
 	t.pushValue();
-	lua_pushnil(_L);
+	lua_pushnil(_luaState);
 
 	toNextElement();
 }
 LuaTableIterator::~LuaTableIterator() {
-	lua_settop(_L, _stackTop);
+	lua_settop(_luaState, _stackTop);
 }
 bool LuaTableIterator::hasElement() {
 	return _hasElement;
 }
 void LuaTableIterator::toNextElement() {
-	auto ret = lua_next(_L, -2);
+	auto ret = lua_next(_luaState, -2);
 
 	_hasElement = ret != 0;
 
 	if (_hasElement) {
 		LuaValue key;
-		key.setReference(UniqueLuaReference::create(_L, -2));
+		key.setReference(UniqueLuaReference::create(_luaState, -2));
 
 		LuaValue value;
-		value.setReference(UniqueLuaReference::create(_L, -1));
+		value.setReference(UniqueLuaReference::create(_luaState, -1));
 
 		_currentVal = std::make_pair(key, value);
 
 		// Remove value from stack
-		lua_pop(_L, 1);
+		lua_pop(_luaState, 1);
 	}
 }
 std::pair<LuaValue, LuaValue> LuaTableIterator::getElement() {
