@@ -311,7 +311,7 @@ const size_t INVALID_SIZE = static_cast<size_t>(-1);
 #include "math/floating.h"
 
 // Some constants for stuff
-#define MAX_FILENAME_LEN	32		// Length for filenames, ie "title.pcx"
+#define MAX_FILENAME_LEN	256		// Length for filenames, ie "title.pcx"
 #define MAX_PATH_LEN		256		// Length for pathnames, ie "c:\bitmaps\title.pcx"
 
 // contants and defined for byteswapping routines (useful for mac)
