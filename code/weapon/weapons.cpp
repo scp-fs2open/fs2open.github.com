@@ -3915,13 +3915,26 @@ void find_homing_object_cmeasures()
 {
 	object	*weapon_objp;
 
-	if (Cmeasures_homing_check == 0)
-		return;
+	if (Countermeasure_processing_interval != 0) {
+		static fix cm_last_processed = timestamp(Countermeasure_processing_interval);
+		if (!timestamp_elapsed(cm_last_processed)) {
+			return;
+		}
+		else {
+			cm_last_processed = timestamp(Countermeasure_processing_interval);
+			nprintf(("CounterMeasures", "Proccesing countermeasures @ frame: %i\n", Framecount));
+		}
+	}
+	else {
+		// this is retail behaviour
+		if (Cmeasures_homing_check == 0)
+			return;
 
-	if (Cmeasures_homing_check <= 0)
-		Cmeasures_homing_check = 1;
+		if (Cmeasures_homing_check <= 0)
+			Cmeasures_homing_check = 1;
 
-	Cmeasures_homing_check--;
+		Cmeasures_homing_check--;
+	}
 
 	for (weapon_objp = GET_FIRST(&obj_used_list); weapon_objp != END_OF_LIST(&obj_used_list); weapon_objp = GET_NEXT(weapon_objp) ) {
 		if (weapon_objp->type == OBJ_WEAPON) {
