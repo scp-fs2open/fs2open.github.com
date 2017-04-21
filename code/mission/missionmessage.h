@@ -123,8 +123,8 @@ typedef struct MissionMessage {
 	char	message[MESSAGE_LENGTH];			// actual message
 	int	persona_index;							// which persona says this message
 	int	multi_team;								// multiplayer team filter (important for TvT only)
-	int				mood;
-	SCP_vector<int> excluded_moods;
+	int mood;
+	int excluded_moods;
 
 	// unions for avi/wave information.  Because of issues with Fred, we are using
 	// the union to specify either the index into the avi or wave arrays above,
