@@ -53,9 +53,9 @@ void show_stats_label(int stage, int sx, int sy, int dy)
 			sy += dy;
 			gr_printf_menu(sx,sy,"%s", XSTR( "Primary friendly hits", 118));
 			sy += dy;
-			gr_printf_menu(sx,sy,"%s", XSTR( "Primary hit %%", 119));
+			gr_printf_menu(sx,sy,"%s", XSTR( "Primary hit %", 119));
 			sy += dy;
-			gr_printf_menu(sx,sy,"%s", XSTR( "Primary friendly hit %%", 120));
+			gr_printf_menu(sx,sy,"%s", XSTR( "Primary friendly hit %", 120));
 			sy += 2*dy;
 
 			gr_printf_menu(sx,sy,"%s", XSTR( "Secondary weapon shots", 121));
@@ -64,9 +64,9 @@ void show_stats_label(int stage, int sx, int sy, int dy)
 			sy += dy;
 			gr_printf_menu(sx,sy,"%s", XSTR( "Secondary friendly hits", 123));
 			sy += dy;
-			gr_printf_menu(sx,sy,"%s", XSTR( "Secondary hit %%", 124));
+			gr_printf_menu(sx,sy,"%s", XSTR( "Secondary hit %", 124));
 			sy += dy;
-			gr_printf_menu(sx,sy,"%s", XSTR( "Secondary friendly hit %%", 125));
+			gr_printf_menu(sx,sy,"%s", XSTR( "Secondary friendly hit %", 125));
 			sy += 2*dy;
 
 			gr_printf_menu(sx,sy,"%s", XSTR( "Assists", 126));
@@ -93,9 +93,9 @@ void show_stats_label(int stage, int sx, int sy, int dy)
 			sy += dy;
 			gr_printf_menu(sx,sy,"%s", XSTR( "Primary friendly hits", 118));
 			sy += dy;
-			gr_printf_menu(sx,sy,"%s", XSTR( "Primary hit %%", 119));
+			gr_printf_menu(sx,sy,"%s", XSTR( "Primary hit %", 119));
 			sy += dy;
-			gr_printf_menu(sx,sy,"%s", XSTR( "Primary friendly hit %%", 120));
+			gr_printf_menu(sx,sy,"%s", XSTR( "Primary friendly hit %", 120));
 			sy += 2*dy;
 
 			gr_printf_menu(sx,sy,"%s", XSTR( "Secondary weapon shots", 121));
@@ -104,9 +104,9 @@ void show_stats_label(int stage, int sx, int sy, int dy)
 			sy += dy;
 			gr_printf_menu(sx,sy,"%s", XSTR( "Secondary friendly hits", 123));
 			sy += dy;
-			gr_printf_menu(sx,sy,"%s", XSTR( "Secondary hit %%", 124));
+			gr_printf_menu(sx,sy,"%s", XSTR( "Secondary hit %", 124));
 			sy += dy;
-			gr_printf_menu(sx,sy,"%s", XSTR( "Secondary friendly hit %%", 125));
+			gr_printf_menu(sx,sy,"%s", XSTR( "Secondary friendly hit %", 125));
 			sy += 2*dy;			
 
 			gr_printf_menu(sx,sy,"%s", XSTR( "Assists", 126));
@@ -153,13 +153,13 @@ void show_stats_numbers(int stage, int sx, int sy, int dy,int add_mission)
 			if(Active_player->stats.mp_shots_fired>0)
 				pct=(float)100.0*((float)Active_player->stats.mp_shots_hit/(float)Active_player->stats.mp_shots_fired);
 			else pct=(float)0.0;
-			sprintf(text,"%d",(int)pct); strcat_s(text," %%");
+			sprintf(text,"%d",(int)pct); strcat_s(text," %");
 			gr_printf_menu(sx,sy,"%s", text);
 			sy += dy;
 			if(Active_player->stats.mp_shots_fired>0)
 				pct=(float)100.0*((float)Active_player->stats.mp_bonehead_hits/(float)Active_player->stats.mp_shots_fired);
 			else pct=(float)0.0;
-			sprintf(text,"%d",(int)pct); strcat_s(text," %%");
+			sprintf(text,"%d",(int)pct); strcat_s(text," %");
 			gr_printf_menu(sx,sy,"%s", text);
 			sy += 2*dy;
 
@@ -176,13 +176,13 @@ void show_stats_numbers(int stage, int sx, int sy, int dy,int add_mission)
 			if(Active_player->stats.ms_shots_fired>0)
 				pct=(float)100.0*((float)Active_player->stats.ms_shots_hit/(float)Active_player->stats.ms_shots_fired);
 			else pct=(float)0.0;
-			sprintf(text,"%d",(int)pct); strcat_s(text," %%");
+			sprintf(text,"%d",(int)pct); strcat_s(text," %");
 			gr_printf_menu(sx,sy,"%s", text);
 			sy += dy;
 			if(Active_player->stats.ms_shots_fired>0)
 				pct=(float)100.0*((float)Active_player->stats.ms_bonehead_hits/(float)Active_player->stats.ms_shots_fired);
 			else pct=(float)0.0;
-			sprintf(text,"%d",(int)pct); strcat_s(text," %%");
+			sprintf(text,"%d",(int)pct); strcat_s(text," %");
 			gr_printf_menu(sx,sy,"%s", text);
 			sy += 2*dy;
 
@@ -237,13 +237,13 @@ void show_stats_numbers(int stage, int sx, int sy, int dy,int add_mission)
 			if((Active_player->stats.p_shots_fired + add.p_shots_fired)>0)
 				pct=(float)100.0*((float)(Active_player->stats.p_shots_hit+add.p_shots_hit)/(float)(Active_player->stats.p_shots_fired + add.p_shots_fired));
 			else pct=(float)0.0;
-			sprintf(text,"%d",(int)pct); strcat_s(text," %%");
+			sprintf(text,"%d",(int)pct); strcat_s(text," %");
 			gr_printf_menu(sx,sy,"%s", text);
 			sy += dy;
 			if((Active_player->stats.p_bonehead_hits + add.p_bonehead_hits)>0)
 				pct=(float)100.0*((float)(Active_player->stats.p_bonehead_hits+add.p_bonehead_hits)/(float)(Active_player->stats.p_shots_fired + add.p_shots_fired));
 			else pct=(float)0.0;
-			sprintf(text,"%d",(int)pct); strcat_s(text," %%");
+			sprintf(text,"%d",(int)pct); strcat_s(text," %");
 			gr_printf_menu(sx,sy,"%s", text);
 			sy += 2*dy;
 
@@ -260,13 +260,13 @@ void show_stats_numbers(int stage, int sx, int sy, int dy,int add_mission)
 			if((Active_player->stats.s_shots_fired+add.s_shots_fired)>0)
 				pct=(float)100.0*((float)(Active_player->stats.s_shots_hit + add.s_shots_hit)/(float)(Active_player->stats.s_shots_fired + add.s_shots_fired));
 			else pct=(float)0.0;
-			sprintf(text,"%d",(int)pct); strcat_s(text," %%");
+			sprintf(text,"%d",(int)pct); strcat_s(text," %");
 			gr_printf_menu(sx,sy,"%s", text);
 			sy += dy;
 			if((Active_player->stats.s_bonehead_hits + add.s_bonehead_hits)>0)
 				pct=(float)100.0*((float)(Active_player->stats.s_bonehead_hits+add.s_bonehead_hits)/(float)(Active_player->stats.s_shots_fired+add.s_shots_fired));
 			else pct=(float)0.0;
-			sprintf(text,"%d",(int)pct); strcat_s(text," %%");
+			sprintf(text,"%d",(int)pct); strcat_s(text," %");
 			gr_printf_menu(sx,sy,"%s", text);
 			sy += 2*dy;
 
