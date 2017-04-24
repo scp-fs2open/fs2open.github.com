@@ -28,7 +28,7 @@ deploy:
     - provider: BinTray
       username: sirknightly
       api_key:
-          secure: pYWqfiZhIWvFYdjVWPXNaHobmnkXIWa4+LwoiyMTEiu4Z0CiCAW0ZrMfTKVkORKz
+          secure: 242iJ1rSVahaH+SskiwK2YcIVTO+yEOn5lRAvrBESHVfw6cqrSWfUROPp0Y6bxxX
       subject: scp-fs2open
       repo: FSO
       package: nightly
