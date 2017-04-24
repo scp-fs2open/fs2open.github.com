@@ -997,10 +997,11 @@ void options_menu_init()
 	// create slider	
 	for ( i = 0; i < NUM_OPTIONS_SLIDERS; i++ ) {
 		 Options_sliders[gr_screen.res][i].slider.create(&Ui_window, Options_sliders[gr_screen.res][i].x, Options_sliders[gr_screen.res][i].y,
-															Options_sliders[gr_screen.res][i].dots, Options_sliders[gr_screen.res][i].filename,
-															Options_sliders[gr_screen.res][i].hotspot, Options_sliders[gr_screen.res][i].left_filename, Options_sliders[gr_screen.res][i].left_mask, Options_sliders[gr_screen.res][i].left_x, Options_sliders[gr_screen.res][i].left_y,
-															Options_sliders[gr_screen.res][i].right_filename, Options_sliders[gr_screen.res][i].right_mask, Options_sliders[gr_screen.res][i].right_x, Options_sliders[gr_screen.res][i].right_y,
-															Options_sliders[gr_screen.res][i].dot_w);
+														 Options_sliders[gr_screen.res][i].dots, Options_sliders[gr_screen.res][i].filename,
+														 Options_sliders[gr_screen.res][i].hotspot,
+														 Options_sliders[gr_screen.res][i].right_filename, Options_sliders[gr_screen.res][i].right_mask, Options_sliders[gr_screen.res][i].right_x, Options_sliders[gr_screen.res][i].right_y,
+														 Options_sliders[gr_screen.res][i].left_filename, Options_sliders[gr_screen.res][i].left_mask, Options_sliders[gr_screen.res][i].left_x, Options_sliders[gr_screen.res][i].left_y,
+														 Options_sliders[gr_screen.res][i].dot_w);
 	}	
 
 	// maybe disable the skill slider
