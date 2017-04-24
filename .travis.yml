@@ -37,7 +37,7 @@ deploy:
     - provider: bintray
       user: sirknightly
       key:
-          secure: "CZtvDW/zPf1Nxru21i8Wd+9hgiBRA8VowWBX0gmCOGgRq9WHISttKQQmBWGHuyVZ3rYvtE4Va2bR+2qRN+TFNkUUuOCOQkdBJTCal9nS3G/LprEmsOashG0Q5PTfMMBnlKzKxaxGJW6UhFj2GySmHEAjsFLVpuNWGJeeZgZQ3UE="
+          secure: "N/6QerkSgkt3elhJMeOyyHHjFri1Bi0GF0msucVCuTXVxMmq/E2XVldHT1TVfD7u6EUlkH5Tr+Aer5fXrrDfk2RZH1RXgQk1FYWUC+JY9dpD6AOtlffRfVHwhSMsZbuSt0sbDmHjnrFiGnxOFojBHpA/iTdZ4fvUl6Mg47hxaVI="
       file: ci/bintray.json
       on:
           condition: '"$NIGHTLY_BUILD" == true'
