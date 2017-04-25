@@ -4,6 +4,8 @@ configuration:
   - Release
 clone_depth: 10
 environment:
+  INDIEGAMES_USER:
+    secure: qYjBh+lgEf+DktbBh4rpDQ==
   matrix:
     - BuildID: 0
       CMAKE_GENERATOR: Visual Studio 12 2013
@@ -25,15 +27,23 @@ deploy:
       on:
           ReleaseBuild: true        # deploy on release push only
 
-    - provider: BinTray
-      username: sirknightly
-      api_key:
-          secure: 242iJ1rSVahaH+SskiwK2YcIVTO+yEOn5lRAvrBESHVfw6cqrSWfUROPp0Y6bxxX
-      subject: scp-fs2open
-      repo: FSO
-      package: nightly
-      version: $(VersionName)
-      publish: true
-      override: true
+    - provider: FTP
+      protocol: sftp
+      host: scp.indiegames.us:22
+      username: $(INDIEGAMES_USER)
+      password:
+        secure: U9TBaMEMZyAWE52oudZ30Q==
+      folder: /home/$(INDIEGAMES_USER)/public_html/builds/nightly/$(VersionName)/
+      on:
+          NightlyBuild: true        # deploy on nightly push only
+
+    - provider: FTP
+      protocol: ftp
+      host: swc.fs2downloads.com:21
+      username: 
+        secure: p0kIQ+ZucNpwP/kfijXQSQ==
+      password:
+        secure: 7mbQOfwTIkMbsF4hG1onow==
+      folder: /swc.fs2downloads.com/builds/nightly/$(VersionName)"
       on:
           NightlyBuild: true        # deploy on nightly push only
