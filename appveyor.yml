@@ -25,15 +25,25 @@ deploy:
       on:
           ReleaseBuild: true        # deploy on release push only
 
-    - provider: BinTray
-      username: sirknightly
-      api_key:
-          secure: 242iJ1rSVahaH+SskiwK2YcIVTO+yEOn5lRAvrBESHVfw6cqrSWfUROPp0Y6bxxX
-      subject: scp-fs2open
-      repo: FSO
-      package: nightly
-      version: $(VersionName)
-      publish: true
-      override: true
+    - provider: FTP
+      protocol: sftp
+      host: scp.indiegames.us
+      username:
+        secure: qYjBh+lgEf+DktbBh4rpDQ==
+      password:
+        secure: U9TBaMEMZyAWE52oudZ30Q==
+      folder: public_html/builds/nightly/$(VersionName)
+      on:
+          NightlyBuild: true        # deploy on nightly push only
+
+    - provider: FTP
+      protocol: ftp
+      host: swc.fs2downloads.com
+      username: 
+        secure: p0kIQ+ZucNpwP/kfijXQSQ==
+      password:
+        secure: 7mbQOfwTIkMbsF4hG1onow==
+      folder: swc.fs2downloads.com/builds/nightly/$(VersionName)
+      beta: true
       on:
           NightlyBuild: true        # deploy on nightly push only
