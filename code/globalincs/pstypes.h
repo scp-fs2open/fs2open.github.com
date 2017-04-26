@@ -318,6 +318,7 @@ const size_t INVALID_SIZE = static_cast<size_t>(-1);
 
 #ifdef SCP_SOLARIS // Solaris
 #define INTEL_INT(x)	x
+#define INTEL_LONG(x)   x
 #define INTEL_SHORT(x)	x
 #define INTEL_FLOAT(x)	(*x)
 #elif BYTE_ORDER == BIG_ENDIAN
