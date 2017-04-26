@@ -29,9 +29,9 @@ deploy:
       protocol: sftp
       host: scp.indiegames.us
       username:
-        secure: qYjBh+lgEf+DktbBh4rpDQ==
+        secure: SFivQZfatqWHXK1ijYK3GQ==
       password:
-        secure: U9TBaMEMZyAWE52oudZ30Q==
+        secure: q6Zk/412o1ri+NEya1dl1Q==
       folder: public_html/builds/nightly/$(VersionName)
       on:
           NightlyBuild: true        # deploy on nightly push only
@@ -40,9 +40,9 @@ deploy:
       protocol: ftp
       host: swc.fs2downloads.com
       username: 
-        secure: p0kIQ+ZucNpwP/kfijXQSQ==
+        secure: EXg2ADoKzMduZF90ip2Q0g==
       password:
-        secure: 7mbQOfwTIkMbsF4hG1onow==
+        secure: x0LL0uY9yBAQ7JTARhQ6AA==
       folder: swc.fs2downloads.com/builds/nightly/$(VersionName)
       beta: true
       on:
