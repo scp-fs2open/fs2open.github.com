@@ -53,35 +53,35 @@ void parse_mod_table(const char *filename)
 
 		// start parsing
 		optional_string("#GAME SETTINGS");
-		
+
 		if (optional_string("$Minimum version:")) {
 			int major = 0;
 			int minor = 0;
 			int build = 0;
 			int revision = 0;
-			
+
 			required_string("+Major:");
 			stuff_int(&major);
-			
+
 			required_string("+Minor:");
 			stuff_int(&minor);
-			
+
 			required_string("+Build:");
 			stuff_int(&build);
-			
+
 			if (optional_string("+Revision:")) {
 				stuff_int(&revision);
 			}
-			
-			mprintf(("Game Settings Table: Parsed minimum version of %s\n", version::format_version(major, minor, build, revision).c_str()));
-			
-			if (!version::check_at_least(major, minor, build, revision)) {
+
+			mprintf(("Game Settings Table: Parsed minimum version of %s\n", gameversion::format_version(major, minor, build, revision).c_str()));
+
+			if (!gameversion::check_at_least(major, minor, build, revision)) {
 				Error(LOCATION, "This modification needs at least version %s of FreeSpace Open. However, the current is only %s!",
-					  version::format_version(major, minor, build, revision).c_str(),
-					  version::format_version(FS_VERSION_MAJOR, FS_VERSION_MINOR, FS_VERSION_BUILD, FS_VERSION_REVIS).c_str());
+					gameversion::format_version(major, minor, build, revision).c_str(),
+					gameversion::format_version(FS_VERSION_MAJOR, FS_VERSION_MINOR, FS_VERSION_BUILD, FS_VERSION_REVIS).c_str());
 			}
 		}
-		
+
 		optional_string("#CAMPAIGN SETTINGS");
 
 		if (optional_string("$Default Campaign File Name:")) {
@@ -215,19 +215,16 @@ void parse_mod_table(const char *filename)
 			Briefing_window_FOV = fov;
 		}
 
-		
-			if (optional_string("$Generic Pain Flash Factor:")) {
+		if (optional_string("$Generic Pain Flash Factor:")) {
 			stuff_float(&Generic_pain_flash_factor);
 			if (Generic_pain_flash_factor != 1.0f)
 				mprintf(("Game Settings Table: Setting generic pain flash factor to %.2f\n", Generic_pain_flash_factor));
-			
 		}
-		
-			if (optional_string("$Shield Pain Flash Factor:")) {
+
+		if (optional_string("$Shield Pain Flash Factor:")) {
 			stuff_float(&Shield_pain_flash_factor);
 			if (Shield_pain_flash_factor != 0.0f)
 				 mprintf(("Game Settings Table: Setting shield pain flash factor to %.2f\n", Shield_pain_flash_factor));
-			
 		}
 
 		optional_string("#NETWORK SETTINGS");
@@ -343,7 +340,7 @@ void parse_mod_table(const char *filename)
 }
 
 void mod_table_init()
-{	
+{
 	// first parse the default table
 	parse_mod_table(NULL);
 

@@ -1180,7 +1180,7 @@ int asteroid_check_collision(object *pasteroid, object *other_obj, vec3d *hitpos
 	}
 }
 
-void asteroid_render(object * obj, draw_list *scene)
+void asteroid_render(object * obj, model_draw_list *scene)
 {
 	if (Asteroids_enabled) {
 		int			num;

@@ -8,7 +8,7 @@
 
 namespace
 {
-	const char* const TOKEN_SEPARATORS = "\n\t";
+	const char* const TOKEN_SEPARATORS = "\n\t\r";
 }
 
 namespace font

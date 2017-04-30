@@ -1272,7 +1272,7 @@ void NavSystem_Init()
 
 // ********************************************************************************************
 
-void parse_autopilot_table(char *filename)
+void parse_autopilot_table(const char *filename)
 {
 	SCP_vector<SCP_string> lines;
 
@@ -1315,7 +1315,7 @@ void parse_autopilot_table(char *filename)
 			Cmdline_autopilot_interruptable = 0;
 
 		// No Nav selected message
-		char *msg_tags[] = { "$No Nav Selected:", "$Gliding:",
+		const char *msg_tags[] = { "$No Nav Selected:", "$Gliding:",
 			"$Too Close:", "$Hostiles:", "$Linked:", "$Hazard:",
 			"$Support Present:", "$Support Working:" };
 		for (int i = 0; i < NP_NUM_MESSAGES; i++)

@@ -24,7 +24,6 @@
 #include "model/model.h"
 #include "model/modelanim.h"
 #include "network/multi_obj.h"
-#include "palman/palman.h"
 #include "radar/radarsetup.h"
 #include "render/3d.h"
 #include "species_defs/species_defs.h"
@@ -158,7 +157,15 @@ public:
 	size_t primary_bank_pattern_index[MAX_SHIP_PRIMARY_BANKS];
 	size_t secondary_bank_pattern_index[MAX_SHIP_SECONDARY_BANKS];
 
+	/**
+	 * @brief Constructor. Calls clear()
+	 */
     ship_weapon();
+
+	/**
+	 * @brief Inits ship_weapon
+	 */
+	void clear();
 };
 
 //**************************************************************
@@ -214,7 +221,7 @@ private:
 
 	SCP_vector<ArmorDamageType> DamageTypes;
 public:
-	ArmorType(char* in_name);
+	ArmorType(const char* in_name);
 	int flags;
 
 	//Get
@@ -252,7 +259,7 @@ extern SCP_vector<DamageTypeStruct>	Damage_types;
 #define SLT_DEFAULT	1
 
 #define NUM_TURRET_ORDER_TYPES		3
-extern char *Turret_target_order_names[NUM_TURRET_ORDER_TYPES];	//aiturret.cpp
+extern const char *Turret_target_order_names[NUM_TURRET_ORDER_TYPES];	//aiturret.cpp
 
 // Swifty: Cockpit displays
 typedef struct cockpit_display {
@@ -936,6 +943,7 @@ public:
 	vec3d		cockpit_offset;
 	char		pof_file[MAX_FILENAME_LEN];			// POF file to load/associate with ship
 	char		pof_file_hud[MAX_FILENAME_LEN];		// POF file to load for the HUD target box
+	char		pof_file_tech[MAX_FILENAME_LEN];	// POF file to load for the techroom
 	int		num_detail_levels;				// number of detail levels for this ship
 	int		detail_distance[MAX_SHIP_DETAIL_LEVELS];					// distance to change detail levels at
 	int		collision_lod;						// check for collisions using a LOD
@@ -1110,10 +1118,6 @@ public:
 	trail_info ct_info[MAX_SHIP_CONTRAILS];	
 	int ct_count;
 
-	// rgb non-dimming pixels for this ship type
-	int num_nondark_colors;
-	ubyte nondark_colors[MAX_NONDARK_COLORS][3];
-
 	// rgb shield color
 	ubyte shield_color[3];
 
@@ -1239,6 +1243,9 @@ private:
 	const ship_info &operator=(const ship_info& other);
 };
 
+extern flag_def_list_new<Ship::Info_Flags> Ship_flags[];
+extern const size_t Num_ship_flags;
+
 extern int Num_wings;
 extern ship Ships[MAX_SHIPS];
 extern ship	*Player_ship;
@@ -1363,7 +1370,7 @@ extern void change_ship_type(int n, int ship_type, int by_sexp = 0);
 extern void ship_model_change(int n, int ship_type);
 extern void ship_process_pre( object * objp, float frametime );
 extern void ship_process_post( object * objp, float frametime );
-extern void ship_render( object * obj, draw_list * scene );
+extern void ship_render( object * obj, model_draw_list * scene );
 extern void ship_render_cockpit( object * objp);
 extern void ship_render_show_ship_cockpit( object * objp);
 extern void ship_delete( object * objp );
@@ -1375,8 +1382,24 @@ extern int ship_get_num_ships();
 #define SHIP_DEPARTED_WARP		(1<<2)
 #define SHIP_DEPARTED_BAY		(1<<3)
 #define SHIP_DEPARTED			( SHIP_DEPARTED_BAY | SHIP_DEPARTED_WARP )
-// Goober5000
+#define SHIP_DESTROYED_REDALERT	(1<<4)
+#define SHIP_DEPARTED_REDALERT	(1<<5)
+
+/**
+ * @brief Deletes and de-inits a ship.
+ *
+ * @param[in] shipnum      Index of this ship in Ships[]
+ * @param[in] cleanup_mode Flags describing how this ship is to be removed. See SHIP_VANISHED, SHIP_DESTROYED, etc.
+ *
+ * @details This is the deconstructor of a ship, it does all the necassary processes to remove the ship from the Ships
+ *   array, and frees the slot for use by others. De-init of its Objects[] slot is handled by obj_delete_all_that_should_be_dead().
+ *
+ * @author Goober5000
+ * @sa obj_delete_all_that_should_be_dead()
+ */
 extern void ship_cleanup(int shipnum, int cleanup_mode);
+
+// Goober5000
 extern void ship_destroy_instantly(object *ship_obj, int shipnum);
 extern void ship_actually_depart(int shipnum, int method = SHIP_DEPARTED_WARP);
 
@@ -1450,7 +1473,6 @@ extern void shield_hit_close();
 
 void ship_draw_shield( object *objp);
 
-float apply_damage_to_shield(object *objp, int quadrant, float damage);
 float compute_shield_strength(object *objp);
 
 // Returns true if the shield presents any opposition to something 
@@ -1630,7 +1652,7 @@ bool turret_fov_test(ship_subsys *ss, vec3d *gvec, vec3d *v2e, float size_mod = 
 float get_adjusted_turret_rof(ship_subsys *ss);
 
 // forcible jettison cargo from a ship
-void object_jettison_cargo(object *objp, object *cargo_objp);
+void object_jettison_cargo(object *objp, object *cargo_objp, float jettison_speed, bool jettison_new);
 
 // get damage done by exploding ship, takes into account mods for individual ship
 float ship_get_exp_damage(object* objp);

@@ -303,12 +303,12 @@ void multi_ingame_sync_close()
 // --------------------------------------------------------------------------------------------------
 // INGAME SHIP SELECT SCREEN 
 //
-static char *Multi_ingame_join_bitmap_fname[GR_NUM_RESOLUTIONS] = {
+static const char *Multi_ingame_join_bitmap_fname[GR_NUM_RESOLUTIONS] = {
 	"MultiIngame",				// GR_640
 	"2_MultiIngame"			// GR_1024
 };
 
-static char *Multi_ingame_join_bitmap_mask_fname[GR_NUM_RESOLUTIONS] = {
+static const char *Multi_ingame_join_bitmap_mask_fname[GR_NUM_RESOLUTIONS] = {
 	"MultiIngame-M",			// GR_640
 	"2_MultiIngame-M"			// GR_1024
 };
@@ -1398,7 +1398,6 @@ void send_ingame_ship_request_packet(int code,int rdata,net_player *pl)
 {
 	ubyte data[MAX_PACKET_SIZE],val;
 	ship *shipp;
-	ship_info *sip;
 	int i, packet_size = 0;
 	ushort signature;
 	p_object *pobj;
@@ -1419,7 +1418,6 @@ void send_ingame_ship_request_packet(int code,int rdata,net_player *pl)
 	case INGAME_SR_CONFIRM:
 		// get a pointer to the ship
 		shipp = &Ships[Objects[rdata].instance];
-		sip = &Ship_info[shipp->ship_info_index];
 
 		// add the most recent position and orientation for the requested ship
 		ADD_VECTOR(Objects[rdata].pos);

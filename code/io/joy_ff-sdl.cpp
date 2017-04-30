@@ -50,7 +50,7 @@ static haptic_effect_t pExplode;
 static int joy_ff_create_effects();
 static int joy_ff_has_valid_effects();
 static int joy_ff_effect_playing(haptic_effect_t *eff);
-static void joy_ff_start_effect(haptic_effect_t *eff, char *name);
+static void joy_ff_start_effect(haptic_effect_t *eff, const char *name);
 
 int joy_ff_init()
 {
@@ -399,7 +399,7 @@ static int joy_ff_create_effects()
 	return 0;
 }
 
-static void joy_ff_start_effect(haptic_effect_t *eff, char *name)
+static void joy_ff_start_effect(haptic_effect_t *eff, const char *name)
 {
 	if ( !eff->loaded ) {
 		return;

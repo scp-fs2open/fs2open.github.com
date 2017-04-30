@@ -27,7 +27,6 @@
 #include "mission/missionbriefcommon.h"
 #include "Management.h"
 #include "cfile/cfile.h"
-#include "palman/palman.h"
 #include "graphics/2d.h"
 #include "render/3d.h"
 #include "weapon/weapon.h"
@@ -65,6 +64,7 @@
 #include "menuui/techmenu.h"
 #include "missionui/fictionviewer.h"
 #include "mod_table/mod_table.h"
+#include "libs/ffmpeg/FFmpeg.h"
 
 #include <direct.h>
 #include "cmdline/cmdline.h"
@@ -275,10 +275,9 @@ void fred_preload_all_briefing_icons()
 	}
 }
 
-bool fred_init(os::GraphicsOperations* graphicsOps)
+bool fred_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 {
 	int i;
-	char palette_filename[1024];
 
 	SDL_SetMainReady();
 
@@ -341,18 +340,14 @@ bool fred_init(os::GraphicsOperations* graphicsOps)
  // 	Cmdline_noglow = 1;
  	Cmdline_window = 1;
 
-	gr_init(graphicsOps, GR_OPENGL, 640, 480, 32);
+	gr_init(std::move(graphicsOps), GR_OPENGL, 640, 480, 32);
 
 	io::mouse::CursorManager::get()->showCursor(false);
 
 	font::init();					// loads up all fonts  
 
 	gr_set_gamma(3.0f);
-
-	sprintf(palette_filename, "gamepalette%d-%02d", 1, 1);
-	mprintf(("Loading palette %s\n", palette_filename));
-	palette_load_table(palette_filename);
-
+	
 	key_init();
 	mouse_init();
 
@@ -420,6 +415,8 @@ bool fred_init(os::GraphicsOperations* graphicsOps)
 
 	// neb lightning
 	nebl_init();
+
+	libs::ffmpeg::initialize();
 
 	gr_reset_clip();
 	g3_start_frame(0);
@@ -958,12 +955,6 @@ void clear_mission()
 	The_mission.ai_profile = &Ai_profiles[Default_ai_profile];
 	
 	nebula_init(Nebula_filenames[Nebula_index], Nebula_pitch, Nebula_bank, Nebula_heading);
-
-	char palette_filename[1024];
-	strcpy_s(palette_filename, "gamepalette1-01");
-//	sprintf( palette_filename, "gamepalette%d-%02d", 1, Mission_palette+1 );
-	mprintf(( "Loading palette %s\n", palette_filename ));
-	palette_load_table(palette_filename);
 
 	strcpy_s(The_mission.loading_screen[GR_640],"");
 	strcpy_s(The_mission.loading_screen[GR_1024],"");
@@ -2293,7 +2284,7 @@ char *object_name(int obj)
 	return "*unknown*";
 }
 
-char *get_order_name(int order)
+const char *get_order_name(int order)
 {
 	int i;
 

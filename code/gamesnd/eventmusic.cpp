@@ -84,8 +84,8 @@ int	Pattern_samples_per_measure[MAX_SOUNDTRACKS][MAX_PATTERNS];
 
 typedef struct pattern_info
 {
-	char *pattern_name;
-	char *pattern_desc;
+	const char *pattern_name;
+	const char *pattern_desc;
 	int pattern_can_force;
 	int pattern_loop_for;
 	int pattern_default_next_fs1;
@@ -297,17 +297,7 @@ void event_music_init()
 
 	// look for any modular tables
 	parse_modular_table(NOX("*-mus.tbm"), event_music_parse_musictbl);
-
-	/* this doesn't work properly!!
-	for (i = 0; i < Num_soundtracks; i++) {
-		for (j = 0; j < Soundtracks[i].num_patterns; j++) {
-			int spm = snd_get_samples_per_measure(Soundtracks[i].pattern_fnames[j], Pattern_num_measures[i][j]);
-
-			if (spm > 0)
-				Pattern_samples_per_measure[i][j] = spm;
-		}
-	} */
-
+	
 	Event_music_inited = TRUE;
 	Event_music_begun = FALSE;
 }
@@ -1361,7 +1351,7 @@ void parse_menumusic()
 
 	// Goober5000 - check for existence of file
 	// taylor - check for all file types
-	// chief1983 - use type list defined in audiostr.h
+	// chief1983 - use type list defined in ffmpeg.h
 	if ( cf_exists_full_ext(Spooled_music[idx].filename, CF_TYPE_MUSIC, NUM_AUDIO_EXT, audio_ext_list) )
 		Spooled_music[idx].flags |= SMF_VALID;
 
@@ -1753,7 +1743,7 @@ void event_music_set_soundtrack(char *name)
 	}
 }
 
-int event_music_get_soundtrack_index(char *name)
+int event_music_get_soundtrack_index(const char *name)
 {
 	// find the correct index for the event music
 	for ( int i = 0; i < Num_soundtracks; i++ ) {
@@ -1783,7 +1773,7 @@ int event_music_get_spooled_music_index(const SCP_string& name)
 	}
 
 // set a score based on name
-void event_music_set_score(int score_index, char *name)
+void event_music_set_score(int score_index, const char *name)
 {
 	Assert(score_index < NUM_SCORES);
 

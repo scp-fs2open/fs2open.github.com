@@ -199,7 +199,7 @@ config_item Control_config[CCFG_MAX + 1] = {
 	{                           -1,                 -1, -1,           false, "",                                       CC_TYPE_TRIGGER,    -1, -1, 0, false, false }
 };
 
-char *Scan_code_text_german[] = {
+const char *Scan_code_text_german[] = {
 	"",				"Esc",				"1",				"2",				"3",				"4",				"5",				"6",
 	"7",				"8",				"9",				"0",				"Akzent '",				"Eszett",				"R\x81""cktaste",		"Tab",
 	"Q",				"W",				"E",				"R",				"T",				"Z",				"U",				"I",
@@ -241,7 +241,7 @@ char *Scan_code_text_german[] = {
 	"",				"",				"",				"",				"",				"",				"",				"",
 };
 
-char *Joy_button_text_german[] = {
+const char *Joy_button_text_german[] = {
 	"Knopf 1",		"Knopf 2",		"Knopf 3",		"Knopf 4",		"Knopf 5",		"Knopf 6",
 	"Knopf 7",		"Knopf 8",		"Knopf 9",		"Knopf 10",		"Knopf 11",		"Knopf 12",
 	"Knopf 13",		"Knopf 14",		"Knopf 15",		"Knopf 16",		"Knopf 17",		"Knopf 18",
@@ -250,7 +250,7 @@ char *Joy_button_text_german[] = {
 	"Knopf 31",		"Knopf 32",		"Hut Hinten",	"Hut Vorne",	"Hut Links",	"Hut Rechts"
 };
 
-char *Scan_code_text_french[] = {
+const char *Scan_code_text_french[] = {
 	"",				"\x90""chap",			"1",				"2",				"3",				"4",				"5",				"6",
 	"7",				"8",				"9",				"0",				"-",				"=",				"Fl\x82""che Ret.",			"Tab",
 	"Q",				"W",				"E",				"R",				"T",				"Y",				"U",				"I",
@@ -292,7 +292,7 @@ char *Scan_code_text_french[] = {
 	"",				"",				"",				"",				"",				"",				"",				"",
 };
 
-char *Joy_button_text_french[] = {
+const char *Joy_button_text_french[] = {
 	"Bouton 1",		"Bouton 2",		"Bouton 3",		"Bouton 4",		"Bouton 5",		"Bouton 6",
 	"Bouton 7",		"Bouton 8",		"Bouton 9",		"Bouton 10",		"Bouton 11",		"Bouton 12",
 	"Bouton 13",		"Bouton 14",		"Bouton 15",		"Bouton 16",		"Bouton 17",		"Bouton 18",
@@ -301,7 +301,7 @@ char *Joy_button_text_french[] = {
 	"Bouton 31",		"Bouton 32",		"Chapeau Arri\x8Are",		"Chapeau Avant",		"Chapeau Gauche",		"Chapeau Droite"
 };
 
-char *Scan_code_text_polish[] = {
+const char *Scan_code_text_polish[] = {
 	"",				"Esc",			"1",				"2",				"3",				"4",				"5",				"6",
 	"7",				"8",				"9",				"0",				"-",				"=",				"Backspace",	"Tab",
 	"Q",				"W",				"E",				"R",				"T",				"Y",				"U",				"I",
@@ -343,7 +343,7 @@ char *Scan_code_text_polish[] = {
 	"",				"",				"",				"",				"",				"",				"",				"",
 };
 
-char *Joy_button_text_polish[] = {
+const char *Joy_button_text_polish[] = {
 	"Przyc.1",		"Przyc.2",		"Przyc.3",		"Przyc.4",		"Przyc.5",		"Przyc.6",
 	"Przyc.7",		"Przyc.8",		"Przyc.9",		"Przyc.10",	"Przyc.11",	"Przyc.12",
 	"Przyc.13",	"Przyc.14",	"Przyc.15",	"Przyc.16",	"Przyc.17",	"Przyc.18",
@@ -353,7 +353,7 @@ char *Joy_button_text_polish[] = {
 };
 
 //!	This is the text that is displayed on the screen for the keys a player selects
-char *Scan_code_text_english[] = {
+const char *Scan_code_text_english[] = {
 	"",				"Esc",			"1",				"2",				"3",				"4",				"5",				"6",
 	"7",				"8",				"9",				"0",				"-",				"=",				"Backspace",	"Tab",
 	"Q",				"W",				"E",				"R",				"T",				"Y",				"U",				"I",
@@ -395,7 +395,7 @@ char *Scan_code_text_english[] = {
 	"",				"",				"",				"",				"",				"",				"",				"",
 };
 
-char *Joy_button_text_english[] = {
+const char *Joy_button_text_english[] = {
 	"Button 1",		"Button 2",		"Button 3",		"Button 4",		"Button 5",		"Button 6",
 	"Button 7",		"Button 8",		"Button 9",		"Button 10",	"Button 11",	"Button 12",
 	"Button 13",	"Button 14",	"Button 15",	"Button 16",	"Button 17",	"Button 18",
@@ -404,8 +404,8 @@ char *Joy_button_text_english[] = {
 	"Button 31",	"Button 32",	"Hat Back",		"Hat Forward",	"Hat Left",		"Hat Right"
 };
 
-char **Scan_code_text = Scan_code_text_english;
-char **Joy_button_text = Joy_button_text_english;
+const char **Scan_code_text = Scan_code_text_english;
+const char **Joy_button_text = Joy_button_text_english;
 
 SCP_vector<config_item*> Control_config_presets;
 SCP_vector<SCP_string> Control_config_preset_names;
@@ -510,8 +510,8 @@ int translate_key_to_index(const char *key, bool find_override)
 char *translate_key(char *key)
 {
 	int index = -1, key_code = -1, joy_code = -1;
-	char *key_text = NULL;
-	char *joy_text = NULL;
+	const char *key_text = NULL;
+	const char *joy_text = NULL;
 
 	static char text[40] = {"None"};
 
@@ -553,7 +553,7 @@ char *translate_key(char *key)
 	return text;
 }
 
-char *textify_scancode(int code)
+const char *textify_scancode(int code)
 {
 	static char text[40];
 
@@ -584,6 +584,28 @@ char *textify_scancode(int code)
 	}
 
 	strcat_s(text, Scan_code_text[keycode]);
+	return text;
+}
+
+const char *textify_scancode_universal(int code)
+{
+	if (code < 0)
+		return "None";
+
+	int keycode = code & KEY_MASK;
+
+	static char text[40];
+	*text = 0;
+	if (code & KEY_ALTED && !(keycode == KEY_LALT || keycode == KEY_RALT)) {
+		strcat_s(text, "Alt-");
+	}
+
+	if (code & KEY_SHIFTED && !(keycode == KEY_LSHIFT || keycode == KEY_RSHIFT)) {
+		strcat_s(text, "Shift-");
+	}
+
+	// Always use the english version here
+	strcat_s(text, Scan_code_text_english[keycode]);
 	return text;
 }
 //XSTR:ON
@@ -811,116 +833,123 @@ void control_config_common_load_overrides()
 {
 	LoadEnumsIntoMaps();
 
-	if (cf_exists_full("controlconfigdefaults.tbl", CF_TYPE_TABLES)) {
-		read_file_text("controlconfigdefaults.tbl", CF_TYPE_TABLES);
-	} else {
-		read_file_text_from_default(defaults_get_file("controlconfigdefaults.tbl"));
-	}
-
-	reset_parse();
-
-	// start parsing
-	// TODO: Split this out into more helps. Too many tabs!
-	while(optional_string("#ControlConfigOverride")) {
-		config_item *cfg_preset = new config_item[CCFG_MAX + 1];
-		std::copy(Control_config, Control_config + CCFG_MAX + 1, cfg_preset);
-		Control_config_presets.push_back(cfg_preset);
-
-		SCP_string preset_name;
-		if (optional_string("$Name:")) {
-			stuff_string_line(preset_name);
+	try {
+		if (cf_exists_full("controlconfigdefaults.tbl", CF_TYPE_TABLES)) {
+			read_file_text("controlconfigdefaults.tbl", CF_TYPE_TABLES);
 		} else {
-			preset_name = "<unnamed preset>";
+			read_file_text_from_default(defaults_get_file("controlconfigdefaults.tbl"));
 		}
-		Control_config_preset_names.push_back(preset_name);
 
-		while (required_string_either("#End","$Bind Name:")) {
-			const int iBufferLength = 64;
-			char szTempBuffer[iBufferLength];
+		reset_parse();
 
-			required_string("$Bind Name:");
-			stuff_string(szTempBuffer, F_NAME, iBufferLength);
+		// start parsing
+		// TODO: Split this out into more helps. Too many tabs!
+		while(optional_string("#ControlConfigOverride")) {
+			config_item *cfg_preset = new config_item[CCFG_MAX + 1];
+			std::copy(Control_config, Control_config + CCFG_MAX + 1, cfg_preset);
+			Control_config_presets.push_back(cfg_preset);
 
-			const size_t cCntrlAryLength = sizeof(Control_config) / sizeof(Control_config[0]);
-			for (size_t i = 0; i < cCntrlAryLength; ++i) {
-				config_item& r_ccConfig = cfg_preset[i];
+			SCP_string preset_name;
+			if (optional_string("$Name:")) {
+				stuff_string_line(preset_name);
+			} else {
+				preset_name = "<unnamed preset>";
+			}
+			Control_config_preset_names.push_back(preset_name);
 
-				if (!strcmp(szTempBuffer, r_ccConfig.text)) {
-					/**
-					* short key_default;
-					* short joy_default;
-					* char tab;
-					* bool hasXSTR;
-					* char type;
-					*/
+			while (required_string_either("#End","$Bind Name:")) {
+				const int iBufferLength = 64;
+				char szTempBuffer[iBufferLength];
 
-					int iTemp;
+				required_string("$Bind Name:");
+				stuff_string(szTempBuffer, F_NAME, iBufferLength);
 
-					if (optional_string("$Key Default:")) {
-						if (optional_string("NONE")) {
-							r_ccConfig.key_default = (short)-1;
-						} else {
-							stuff_string(szTempBuffer, F_NAME, iBufferLength);
-							r_ccConfig.key_default = (short)mKeyNameToVal[szTempBuffer];
+				const size_t cCntrlAryLength = sizeof(Control_config) / sizeof(Control_config[0]);
+				for (size_t i = 0; i < cCntrlAryLength; ++i) {
+					config_item& r_ccConfig = cfg_preset[i];
+
+					if (!strcmp(szTempBuffer, r_ccConfig.text)) {
+						/**
+                        * short key_default;
+                        * short joy_default;
+                        * char tab;
+                        * bool hasXSTR;
+                        * char type;
+                        */
+
+						int iTemp;
+
+						if (optional_string("$Key Default:")) {
+							if (optional_string("NONE")) {
+								r_ccConfig.key_default = (short)-1;
+							} else {
+								stuff_string(szTempBuffer, F_NAME, iBufferLength);
+								r_ccConfig.key_default = (short)mKeyNameToVal[szTempBuffer];
+							}
 						}
-					}
 
-					if (optional_string("$Joy Default:")) {
-						stuff_int(&iTemp);
-						r_ccConfig.joy_default = (short)iTemp;
-					}
+						if (optional_string("$Joy Default:")) {
+							stuff_int(&iTemp);
+							r_ccConfig.joy_default = (short)iTemp;
+						}
 
-					if (optional_string("$Key Mod Shift:")) {
-						stuff_int(&iTemp);
-						r_ccConfig.key_default |= (iTemp == 1) ? KEY_SHIFTED : 0;
-					}
+						if (optional_string("$Key Mod Shift:")) {
+							stuff_int(&iTemp);
+							r_ccConfig.key_default |= (iTemp == 1) ? KEY_SHIFTED : 0;
+						}
 
-					if (optional_string("$Key Mod Alt:")) {
-						stuff_int(&iTemp);
-						r_ccConfig.key_default |= (iTemp == 1) ? KEY_ALTED : 0;
-					}
+						if (optional_string("$Key Mod Alt:")) {
+							stuff_int(&iTemp);
+							r_ccConfig.key_default |= (iTemp == 1) ? KEY_ALTED : 0;
+						}
 
-					if (optional_string("$Key Mod Ctrl:")) {
-						stuff_int(&iTemp);
-						r_ccConfig.key_default |= (iTemp == 1) ? KEY_CTRLED : 0;
-					}
+						if (optional_string("$Key Mod Ctrl:")) {
+							stuff_int(&iTemp);
+							r_ccConfig.key_default |= (iTemp == 1) ? KEY_CTRLED : 0;
+						}
 
-					if (optional_string("$Category:")) {
-						stuff_string(szTempBuffer, F_NAME, iBufferLength);
-						r_ccConfig.tab = (char)mCCTabNameToVal[szTempBuffer];
-					}
+						if (optional_string("$Category:")) {
+							stuff_string(szTempBuffer, F_NAME, iBufferLength);
+							r_ccConfig.tab = (char)mCCTabNameToVal[szTempBuffer];
+						}
 
-					if (optional_string("$Has XStr:")) {
-						stuff_int(&iTemp);
-						r_ccConfig.hasXSTR = (iTemp == 1);
-					}
+						if (optional_string("$Has XStr:")) {
+							stuff_int(&iTemp);
+							r_ccConfig.hasXSTR = (iTemp == 1);
+						}
 
-					if (optional_string("$Type:")) {
-						stuff_string(szTempBuffer, F_NAME, iBufferLength);
-						r_ccConfig.type = (char)mCCTypeNameToVal[szTempBuffer];
-					}
+						if (optional_string("$Type:")) {
+							stuff_string(szTempBuffer, F_NAME, iBufferLength);
+							r_ccConfig.type = (char)mCCTypeNameToVal[szTempBuffer];
+						}
 
-					if (optional_string("+Disable")) {
-						r_ccConfig.disabled = true;
+						if (optional_string("+Disable")) {
+							r_ccConfig.disabled = true;
+						}
+						if (optional_string("$Disable:")) {
+							stuff_boolean(&r_ccConfig.disabled);
+						}
+
+						// Nerf the buffer now.
+						szTempBuffer[0] = '\0';
+					} else if ((i + 1) == cCntrlAryLength) {
+						error_display(1, "Bind Name not found: %s\n", szTempBuffer);
+						advance_to_eoln(NULL);
+						ignore_white_space();
+						return;
 					}
-					if (optional_string("$Disable:")) {
-						stuff_boolean(&r_ccConfig.disabled);
-					}
-					
-					// Nerf the buffer now.
-					szTempBuffer[0] = '\0';
-				} else if ((i + 1) == cCntrlAryLength) {
-					error_display(1, "Bind Name not found: %s\n", szTempBuffer);
-					advance_to_eoln(NULL);
-					ignore_white_space();
-					return;
 				}
 			}
-		}
 
-		required_string("#End");
+			required_string("#End");
+		}
 	}
-	
+	catch (const parse::ParseException& e)
+	{
+		mprintf(("TABLES: Unable to parse 'controlconfigdefaults.tbl'!  Error message = %s.\n", e.what()));
+		return;
+	}
+
 	// Overwrite the control config with the first preset that was found
 	if (!Control_config_presets.empty()) {
 		std::copy(Control_config_presets[0], Control_config_presets[0] + CCFG_MAX + 1, Control_config);

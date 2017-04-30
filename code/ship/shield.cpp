@@ -23,6 +23,8 @@
 #include "object/objectshield.h"
 #include "ship/ship.h"
 #include "species_defs/species_defs.h"
+#include "tracing/Monitor.h"
+#include "tracing/tracing.h"
 
 int	Show_shield_mesh = 0;
 
@@ -497,7 +499,7 @@ void render_shield(int shield_num)
 
 		if ( (Detail.shield_effects == 1) || (Detail.shield_effects == 2) ) {
 			shield_render_low_detail_bitmap(bitmap_id, alpha, &Global_tris[Shield_hits[shield_num].tri_list[0]], orient, centerp, Shield_hits[shield_num].rgb[0], Shield_hits[shield_num].rgb[1], Shield_hits[shield_num].rgb[2]);
-		} else if ( Detail.shield_effects <= 4 ) {
+		} else if ( Detail.shield_effects < 4 ) {
 			for ( int i = 0; i < Shield_hits[shield_num].num_tris; i++ ) {
 				shield_render_triangle(bitmap_id, alpha, &Global_tris[Shield_hits[shield_num].tri_list[i]], orient, centerp, Shield_hits[shield_num].rgb[0], Shield_hits[shield_num].rgb[1], Shield_hits[shield_num].rgb[2]);
 			}
@@ -522,6 +524,9 @@ void render_shield(int shield_num)
  */
 void render_shields()
 {
+	GR_DEBUG_SCOPE("Render Shields");
+	TRACE_SCOPE(tracing::DrawShields);
+
 	int	i;
 
 	if (Detail.shield_effects == 0){
@@ -677,40 +682,6 @@ void copy_shield_to_globals( int objnum, shield_info *shieldp, matrix *hit_orien
 	}
 }
 
-
-/**
- * Return absolute amount of damage not applied.
- *
- * This is the version that works on a quadrant basis.
- */
-float apply_damage_to_shield(object *objp, int quadrant, float damage)
-{
-	ai_info	*aip;
-
-	// multiplayer clients bail here
-	if(MULTIPLAYER_CLIENT){
-		return damage;
-	}
-
-	if ( (quadrant < 0)  || (quadrant >= objp->n_quadrants) ) return damage;	
-	
-	Assert(objp->type == OBJ_SHIP);
-	aip = &Ai_info[Ships[objp->instance].ai_index];
-	aip->last_hit_quadrant = quadrant;
-
-	objp->shield_quadrant[quadrant] -= damage;
-
-	if (objp->shield_quadrant[quadrant] < 0.0f) {
-		float	remaining_damage;
-
-		remaining_damage = -objp->shield_quadrant[quadrant];
-		objp->shield_quadrant[quadrant] = 0.0f;
-		return remaining_damage;
-	} else {
-		return 0.0f;
-	}
-		
-}
 
 /**
  * This function needs to be called by big ships which have shields. It should be able to be modified to deal with
@@ -1009,14 +980,14 @@ int ship_is_shield_up( object *obj, int quadrant )
 {
 	if ( (quadrant >= 0) && (quadrant < obj->n_quadrants))	{
 		// Just check one quadrant
-		if (obj->shield_quadrant[quadrant] > MAX(2.0f, 0.1f * get_max_shield_quad(obj)))	{
+		if (obj->shield_quadrant[quadrant] > MAX(2.0f, 0.1f * shield_get_max_quad(obj)))	{
 			return 1;
 		}
 	} else {
 		// Check all quadrants
 		float strength = shield_get_strength(obj);
 
-		if ( strength > MAX(2.0f*4.0f, 0.1f * Ships[obj->instance].ship_max_shield_strength ))	{
+		if ( strength > MAX(2.0f*4.0f, 0.1f * shield_get_max_strength(obj)) )	{
 			return 1;
 		}
 	}

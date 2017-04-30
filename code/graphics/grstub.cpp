@@ -48,11 +48,6 @@ int gr_stub_save_screen()
 	return 1;
 }
 
-int gr_stub_tcache_set(int bitmap_id, int bitmap_type, float *u_scale, float *v_scale, int tex_unit = 0)
-{
-	return 0;
-}
-
 int gr_stub_zbuffer_get()
 {
 	return 0;
@@ -607,8 +602,6 @@ bool gr_stub_init()
 	gr_screen.gf_set_cull			= gr_stub_set_cull;
 	gr_screen.gf_set_color_buffer	= gr_stub_set_color_buffer;
 
-	gr_screen.gf_tcache_set			= gr_stub_tcache_set;
-
 	gr_screen.gf_set_clear_color	= gr_stub_set_clear_color;
 
 	gr_screen.gf_preload			= gr_stub_preload;
@@ -646,6 +639,7 @@ bool gr_stub_init()
 	gr_screen.gf_post_process_begin		= gr_stub_post_process_begin;
 	gr_screen.gf_post_process_end		= gr_stub_post_process_end;
 	gr_screen.gf_post_process_save_zbuffer	= gr_stub_post_process_save_zbuffer;
+	gr_screen.gf_post_process_restore_zbuffer = [](){};
 
 	gr_screen.gf_scene_texture_begin = gr_stub_scene_texture_begin;
 	gr_screen.gf_scene_texture_end = gr_stub_scene_texture_end;
@@ -703,6 +697,12 @@ bool gr_stub_init()
 	gr_screen.gf_query_value_available = gr_stub_query_value_available;
 	gr_screen.gf_get_query_value = gr_stub_get_query_value;
 	gr_screen.gf_delete_query_object = gr_stub_delete_query_object;
+
+	gr_screen.gf_create_viewport = [](const os::ViewPortProperties& props) {
+		return std::unique_ptr<os::Viewport>();
+	};
+	gr_screen.gf_use_viewport = [](os::Viewport*) {
+	};
 
 	return true;
 }

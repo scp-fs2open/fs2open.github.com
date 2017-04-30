@@ -51,7 +51,7 @@ brief_screen bscreen;
 #define BRIEF_CUPINFO_X2	639
 #define BRIEF_CUPINFO_Y2	438
 
-char *Brief_static_name[GR_NUM_RESOLUTIONS] = {
+const char *Brief_static_name[GR_NUM_RESOLUTIONS] = {
 	"BriefMap",
 	"2_BriefMap"
 };
@@ -1148,9 +1148,9 @@ void brief_blit_stage_num(int stage_num, int stage_max)
 	gr_set_color_fast(&Color_text_heading);
 	sprintf(buf, XSTR( "Stage %d of %d", 394), stage_num + 1, stage_max);
 	if (Game_mode & GM_MULTIPLAYER) {
-		gr_printf_menu(Brief_stage_text_coords_multi[gr_screen.res][0], Brief_stage_text_coords_multi[gr_screen.res][1], buf);
+		gr_printf_menu(Brief_stage_text_coords_multi[gr_screen.res][0], Brief_stage_text_coords_multi[gr_screen.res][1], "%s", buf);
 	} else {
-		gr_printf_menu(Brief_stage_text_coords[gr_screen.res][0], Brief_stage_text_coords[gr_screen.res][1], buf);
+		gr_printf_menu(Brief_stage_text_coords[gr_screen.res][0], Brief_stage_text_coords[gr_screen.res][1], "%s", buf);
 	}
 }
 
@@ -2018,7 +2018,7 @@ grid *brief_create_grid(grid *gridp, vec3d *forward, vec3d *right, vec3d *center
 	gridp->gmatrix.vec.uvec = uvec;
 
 	gridp->planeD = -(center->xyz.x * uvec.xyz.x + center->xyz.y * uvec.xyz.y + center->xyz.z * uvec.xyz.z);
-	Assert(!_isnan(gridp->planeD));
+	Assert(!fl_is_nan(gridp->planeD));
 
 	gridp->gmatrix.vec.fvec = dfvec;
 	gridp->gmatrix.vec.rvec = drvec;

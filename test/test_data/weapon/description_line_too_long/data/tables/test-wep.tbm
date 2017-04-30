@@ -1,0 +1,42 @@
+
+#Primary Weapons
+
+#End
+
+#Secondary Weapons
+
+$Name:                                 		Test weapon
++Title:                                 	XSTR("A test!", -1)
++Description:	XSTR("This   is   a   very   long   line   to   test   the   parsing   code", -1)
+$end_multi_text
+$Model File:								<none>
+$Mass:										0.1
+$Velocity:									5000.0
+$Fire Wait:									6.0
+$Damage:									1.0
+$Blast Force:								1.0
+$Inner Radius:								1.0
+$Outer Radius:								1.5
+$Shockwave Speed:							0
+$Armor Factor:								0.0
+$Shield Factor:								0.0
+$Subsystem Factor:							0.0
+$Lifetime:									0.5
+$Energy Consumed:							0.0													;; Energy used when fired
+$Cargo Size:								1.0													;; Amount of space taken up in weapon cargo
+$Homing:									YES
+	+Type:					ASPECT
+	+Turn Time:				0.1
+	+View Cone:				360.0
+	+Min Lock Time:			2.0
+	+Lock Pixels/Sec:		110
+	+Catch-up Pixels/Sec:	100
+	+Catch-up Penalty:		30
+	+Seeker Strength:		999
+$LaunchSnd:									-1                                       ;; The sound it makes when fired
+$ImpactSnd:									-1                                        ;; The sound it makes when it hits something
+$FlyBySnd:									-1
+$Rearm Rate:								1.0													;; number of missiles/sec that are rearmed
+$Flags:										( "player allowed" "no homing speed ramp" "no dumbfire")
+
+#End

@@ -69,7 +69,7 @@ void	convert_multiline_string(CString &dest, const char *src);
 void	deconvert_multiline_string(char *dest, const CString &str, int max_len);
 void	deconvert_multiline_string(SCP_string &dest, const CString &str);
 
-bool	fred_init(os::GraphicsOperations* graphicsOps);
+bool	fred_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps);
 void	set_physics_controls();
 int	dup_object(object *objp);
 int	create_object_on_grid(int waypoint_instance = -1);
@@ -119,7 +119,7 @@ int	reference_handler(char *name, int type, int obj);
 int	orders_reference_handler(int code, char *msg);
 int	sexp_reference_handler(int node, int code, char *msg);
 char	*object_name(int obj);
-char	*get_order_name(int order);
+const char* get_order_name(int order);
 void	object_moved(object *ptr);
 int	invalidate_references(char *name, int type);
 int	query_whole_wing_marked(int wing);

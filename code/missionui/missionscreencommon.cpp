@@ -39,7 +39,6 @@
 #include "network/multimsgs.h"
 #include "network/multiteamselect.h"
 #include "network/multiutil.h"
-#include "palman/palman.h"
 #include "parse/sexp.h"
 #include "popup/popup.h"
 #include "render/3d.h"
@@ -405,7 +404,7 @@ void common_maybe_play_cutscene(int movie_type, bool restart_music, int music)
 
 // function that sets the current palette to the interface palette.  This function
 // needs to be followed by common_free_interface_palette() to restore the game palette.
-void common_set_interface_palette(char *filename)
+void common_set_interface_palette(const char *filename)
 {
 	static char buf[MAX_FILENAME_LEN + 1] = {0};
 
@@ -441,9 +440,6 @@ void common_free_interface_palette()
 		bm_release(InterfacePaletteBitmap);
 		InterfacePaletteBitmap = -1;
 	}
-
-	// restore the normal game palette
-	palette_restore_palette();
 }
 
 // Init timers used for flashing buttons
@@ -991,7 +987,7 @@ void common_select_close()
 // ------------------------------------------------------------------------
 //	load_wing_icons() creates the bitmaps for wing icons 
 //
-void load_wing_icons(char *filename)
+void load_wing_icons(const char *filename)
 {
 	int first_frame, num_frames;
 
@@ -1621,6 +1617,11 @@ void draw_model_icon(int model_id, int flags, float closeup_zoom, int x, int y, 
 		light_dir.xyz.z = -2.0f;	
 		light_add_directional(&light_dir, 0.65f, 1.0f, 1.0f, 1.0f);
 		light_rotate_all();
+	}
+
+	if (sip != NULL && sip->replacement_textures.size() > 0) 
+	{
+		render_info.set_replacement_textures(model_id, sip->replacement_textures);
 	}
 
 	Glowpoint_override = true;

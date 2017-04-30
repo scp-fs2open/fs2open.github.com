@@ -896,6 +896,7 @@ void sexp_tree::right_clicked(int mode)
 							case OP_TECH_ADD_INTEL:
 							case OP_HUD_GAUGE_SET_ACTIVE:
 							case OP_HUD_ACTIVATE_GAUGE_TYPE:
+							case OP_JETTISON_CARGO_DELAY:
 								j = Num_op_menus;	// don't allow these operators to be visible
 								break;
 						}
@@ -938,6 +939,7 @@ void sexp_tree::right_clicked(int mode)
 							case OP_TECH_ADD_INTEL:
 							case OP_HUD_GAUGE_SET_ACTIVE:
 							case OP_HUD_ACTIVATE_GAUGE_TYPE:
+							case OP_JETTISON_CARGO_DELAY:
 								j = Num_submenus;	// don't allow these operators to be visible
 								break;
 						}
@@ -2572,7 +2574,7 @@ int sexp_tree::add_default_operator(int op, int argnum)
 
 int sexp_tree::get_default_value(sexp_list_item *item, char *text_buf, int op, int i)
 {
-	char *str = NULL;
+	const char *str = NULL;
 	int type, index;
 	sexp_list_item *list;
 	HTREEITEM h;
@@ -2580,7 +2582,8 @@ int sexp_tree::get_default_value(sexp_list_item *item, char *text_buf, int op, i
 	h = item_handle;
 	index = item_index;
 	type = query_operator_argument_type(op, i);
-	switch (type) {
+	switch (type)
+	{
 		case OPF_NULL:
 			item->set_op(OP_NOP);
 			return 0;
@@ -2703,26 +2706,29 @@ int sexp_tree::get_default_value(sexp_list_item *item, char *text_buf, int op, i
 				int temp = 0;
 				char sexp_str_token[TOKEN_LENGTH];
 
-				if (i==4) temp = 100;
+				if (i==4)
+					temp = 100;
 
 				sprintf(sexp_str_token, "%d", temp);
 				item->set_data_dup(sexp_str_token, (SEXPT_NUMBER | SEXPT_VALID));
 			}
-			else if ((Operators[op].value == OP_MODIFY_VARIABLE)) {
-				if (get_modify_variable_type(index) == OPF_NUMBER) {
+			else if ((Operators[op].value == OP_MODIFY_VARIABLE))
+			{
+				if (get_modify_variable_type(index) == OPF_NUMBER)
 					item->set_data("0", (SEXPT_NUMBER | SEXPT_VALID));
-				}
-				else {					
+				else
 					item->set_data("<any data>", (SEXPT_STRING | SEXPT_VALID));
-				}
 			}
-			else if ((Operators[op].value == OP_SET_VARIABLE_BY_INDEX)) {
-				if (i == 0) {
+			else if ((Operators[op].value == OP_SET_VARIABLE_BY_INDEX))
+			{
+				if (i == 0)
 					item->set_data("0", (SEXPT_NUMBER | SEXPT_VALID));
-				}
-				else {					
+				else
 					item->set_data("<any data>", (SEXPT_STRING | SEXPT_VALID));
-				}
+			}
+			else if (Operators[op].value == OP_JETTISON_CARGO_NEW)
+			{
+				item->set_data("25", (SEXPT_NUMBER | SEXPT_VALID));
 			}
 			else
 			{
@@ -2792,7 +2798,8 @@ int sexp_tree::get_default_value(sexp_list_item *item, char *text_buf, int op, i
 	}
 
 	// catch anything that doesn't have a default value.  Just describe what should be here instead
-	switch (type) {
+	switch (type)
+	{
 		case OPF_SHIP:
 		case OPF_SHIP_NOT_PLAYER:
 		case OPF_SHIP_POINT:

@@ -17,8 +17,7 @@
 #include "windows_stub/config.h"
 #include "globalincs/scp_defines.h"
 #include "globalincs/toolchain.h"
-
-#include "SDL.h"
+#include "utils/strings.h"
 
 #include <stdio.h>	// For NULL, etc
 #include <stdlib.h>
@@ -190,21 +189,12 @@ struct particle_pnt {
 	vec3d up;
 };
 
-struct trail_shader_info {
-	vec3d pos;
-	vec3d fvec;
-
-	float intensity;
-	float width;
-	uv_pair tex_coord;
-};
-
 //def_list
-typedef struct flag_def_list {
-	char *name;
+struct flag_def_list {
+	const char *name;
 	int def;
 	ubyte var;
-} def_list;
+};
 
 template<class T>
 struct flag_def_list_new {
@@ -284,7 +274,7 @@ extern int Global_error_count;
 	// No debug version of Int3
 	#define Int3() do { } while (0)
 #else
-	void debug_int3(char *file, int line);
+	void debug_int3(const char *file, int line);
 
 	// Debug version of Int3
 	#define Int3() debug_int3(__FILE__, __LINE__)
@@ -328,6 +318,7 @@ const size_t INVALID_SIZE = static_cast<size_t>(-1);
 
 #ifdef SCP_SOLARIS // Solaris
 #define INTEL_INT(x)	x
+#define INTEL_LONG(x)   x
 #define INTEL_SHORT(x)	x
 #define INTEL_FLOAT(x)	(*x)
 #elif BYTE_ORDER == BIG_ENDIAN
@@ -390,38 +381,6 @@ extern int game_busy_callback( void (*callback)(int count), int delta_step = -1 
 // Call whenever loading to display cursor
 extern void game_busy(const char *filename = NULL);
 
-//=========================================================
-// Functions to monitor performance
-#ifndef NDEBUG
-
-class monitor {
-	public:
-	char	*name;
-	int	value;					// Value that gets cleared to 0 each frame.
-	int	min, max, sum, cnt;		// Min & Max of value.  Sum is used to calculate average
-	monitor(char *name);		// constructor
-};
-
-// Creates a monitor variable
-#define MONITOR(function_name)				monitor mon_##function_name(#function_name);
-
-// Increments a monitor variable
-#define MONITOR_INC(function_name,inc)		do { mon_##function_name.value+=(inc); } while(0)
-
-// Call this once per frame to update monitor file
-void monitor_update();
-
-#else
-
-#define MONITOR(function_name)
-
-#define MONITOR_INC(function_name,inc)		do { } while(0)
-
-// Call this once per frame to update monitor file
-#define monitor_update() do { } while(0)
-
-#endif
-
 #define NOX(s) s
 
 const char *XSTR(const char *str, int index);
@@ -444,23 +403,6 @@ template <class T> void CAP( T& v, T mn, T mx )
 //=========================================================
 
 #include "globalincs/fsmemory.h"
-
-//=========================================================
-// Scripting
-//=========================================================
-//-WMC
-typedef struct script_hook
-{
-	//Override
-	int o_language;
-	int o_index;
-	//Actual hook
-	int h_language;
-	int h_index;
-} script_hook;
-
-extern void script_hook_init(script_hook *hook);
-extern bool script_hook_valid(script_hook *hook);
 
 class camid
 {

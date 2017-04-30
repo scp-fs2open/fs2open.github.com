@@ -116,33 +116,33 @@ static int Brief_infobox_coords[GR_NUM_RESOLUTIONS][2] = {
 	}
 };
 
-static char *Brief_infobox_filename[GR_NUM_RESOLUTIONS] = {
+static const char *Brief_infobox_filename[GR_NUM_RESOLUTIONS] = {
 	"InfoBox",
 	"2_Infobox"
 };
 
-static char *Brief_filename[GR_NUM_RESOLUTIONS] = {
+static const char *Brief_filename[GR_NUM_RESOLUTIONS] = {
 	"Brief",
 	"2_Brief"
 };
 
-static char *Brief_multi_filename[GR_NUM_RESOLUTIONS] = {
+static const char *Brief_multi_filename[GR_NUM_RESOLUTIONS] = {
 	"BriefMulti",
 	"2_BriefMulti"
 };
 
-static char *Brief_mask_filename[GR_NUM_RESOLUTIONS] = {
+static const char *Brief_mask_filename[GR_NUM_RESOLUTIONS] = {
 	"Brief-m",
 	"2_Brief-m"
 };
 
-static char *Brief_multi_mask_filename[GR_NUM_RESOLUTIONS] = {
+static const char *Brief_multi_mask_filename[GR_NUM_RESOLUTIONS] = {
 	"BriefMulti-m",
 	"2_BriefMulti-m"
 };
 
 
-static char *Brief_win_filename[GR_NUM_RESOLUTIONS] = {
+static const char *Brief_win_filename[GR_NUM_RESOLUTIONS] = {
 	"Briefwin",
 	"2_Briefwin"
 };
@@ -163,12 +163,12 @@ int Closeup_region[GR_NUM_RESOLUTIONS][4] = {
 	}, 
 };
 
-char *Closeup_background_filename[GR_NUM_RESOLUTIONS] = {
+const char *Closeup_background_filename[GR_NUM_RESOLUTIONS] = {
 	NOX("BriefPop"),	// GR_640
 	NOX("2_BriefPop")	// GR_1024
 };
 
-char *Closeup_button_filename[GR_NUM_RESOLUTIONS] = {
+const char *Closeup_button_filename[GR_NUM_RESOLUTIONS] = {
 	NOX("BPB_00"),		// GR_640
 	NOX("2_BPB_00"),		// GR_1024
 };
@@ -219,14 +219,14 @@ int Max_brief_Lines;
 #define	BRIEF_PAUSE_MASK					16
 
 struct brief_buttons {	
-	char *filename;
+	const char *filename;
 	int x, y;
 	int xt, yt;
 	int hotspot;
 	int repeat;
 	UI_BUTTON button;  // because we have a class inside this struct, we need the constructor below..
 
-	brief_buttons(char *name, int x1, int y1, int xt1, int yt1, int h, int r = 0) : filename(name), x(x1), y(y1), xt(xt1), yt(yt1), hotspot(h), repeat(r) {}
+	brief_buttons(const char *name, int x1, int y1, int xt1, int yt1, int h, int r = 0) : filename(name), x(x1), y(y1), xt(xt1), yt(yt1), hotspot(h), repeat(r) {}
 };
 
 int	Brief_grid_bitmap = -1;
@@ -1158,7 +1158,9 @@ void brief_render(float frametime)
 		}
 	}
 
-	brief_maybe_blit_scene_cut(frametime);	
+	if (Fade_anim.first_frame != -1) {
+		brief_maybe_blit_scene_cut(frametime);
+	}
 
 #if !defined(NDEBUG)
 	gr_set_color_fast(&Color_normal);
@@ -1824,7 +1826,9 @@ void brief_close()
 	// unload the audio streams used for voice playback
 	brief_voice_unload_all();
 
-	bm_unload(Fade_anim.first_frame);
+	if (Fade_anim.first_frame != -1) {
+		bm_unload(Fade_anim.first_frame);
+	}
 
 	Brief_ui_window.destroy();
 

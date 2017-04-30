@@ -957,7 +957,7 @@ long dc_parse_long(const char *ch, dc_token type) {
 		dc_printf("Error: Could not convert all of the buffer '%s'.\n", buffer_str.c_str());
 		if (Dc_debug_on) {
 			dc_printf("<debug> Buffer value: %s\n", buffer_str.c_str());
-			dc_printf("<debug> Return value: %i", ret);
+			dc_printf("<debug> Return value: %ld", ret);
 		}
 		throw errParse(ch, type);
 	}
@@ -1046,7 +1046,7 @@ ulong dc_parse_ulong(const char *ch, dc_token type) {
 		dc_printf("Error: Could not convert all of the buffer '%s'.\n", buffer_str.c_str());
 		if (Dc_debug_on) {
 			dc_printf("<debug> Buffer value: %s\n", buffer_str.c_str());
-			dc_printf("<debug> Return value: %i", ret);
+			dc_printf("<debug> Return value: %ld", ret);
 		}
 		throw errParse(ch, type);
 	}

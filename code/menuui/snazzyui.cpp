@@ -136,7 +136,7 @@ int snazzy_menu_do(ubyte *data, int mask_w, int mask_h, int num_regions, MENU_RE
 		int w;
 		gr_get_string_size(&w, NULL, regions[i].text);
 
-		gr_printf_menu( (gr_screen.clip_width_unscaled - w) / 2, 450, regions[i].text );
+		gr_printf_menu( (gr_screen.clip_width_unscaled - w) / 2, 450, "%s", regions[i].text );
 	}
 
 	if ( mouse_down(MOUSE_LEFT_BUTTON) ){
@@ -178,7 +178,7 @@ void snazzy_menu_add_region(MENU_REGION* region, const char* text, int mask, int
 //
 //
 
-void read_menu_tbl(char* menu_name, char* bkg_filename, char* mask_filename, MENU_REGION* regions, int* num_regions, int play_sound)
+void read_menu_tbl(const char* menu_name, char* bkg_filename, char* mask_filename, MENU_REGION* regions, int* num_regions, int play_sound)
 {
 	CFILE* fp;
 	int state=0;

@@ -16,18 +16,18 @@
 #include "math/floating.h"
 
 
-#define vm_is_vec_nan(v) (_isnan((v)->xyz.x) || _isnan((v)->xyz.y) || _isnan((v)->xyz.z))
+#define vm_is_vec_nan(v) (fl_is_nan((v)->xyz.x) || fl_is_nan((v)->xyz.y) || fl_is_nan((v)->xyz.z))
 
 //Macros/functions to fill in fields of structures
 
 //macro to check if vector is zero
-#define IS_VEC_NULL_SQ_SAFE(v) ( ( (v)->xyz.x > -1e-16 ) && ( (v)->xyz.x < 1e-16 ) && \
-								 ( (v)->xyz.y > -1e-16 ) && ( (v)->xyz.y < 1e-16 ) && \
-								 ( (v)->xyz.z > -1e-16 ) && ( (v)->xyz.z < 1e-16 ) )
+#define IS_VEC_NULL_SQ_SAFE(v) (IS_NEAR_ZERO((v)->xyz.x, 1e-16) && \
+								IS_NEAR_ZERO((v)->xyz.y, 1e-16) && \
+								IS_NEAR_ZERO((v)->xyz.z, 1e-16))
 
-#define IS_VEC_NULL(v) ( ( (v)->xyz.x > -1e-36 ) && ( (v)->xyz.x < 1e-36 ) && \
-						 ( (v)->xyz.y > -1e-36 ) && ( (v)->xyz.y < 1e-36 ) && \
-						 ( (v)->xyz.z > -1e-36 ) && ( (v)->xyz.z < 1e-36 ) )
+#define IS_VEC_NULL(v) (IS_NEAR_ZERO((v)->xyz.x, 1e-36) && \
+						IS_NEAR_ZERO((v)->xyz.y, 1e-36) && \
+						IS_NEAR_ZERO((v)->xyz.z, 1e-36))
 
 #define IS_MAT_NULL(v) (IS_VEC_NULL(&(v)->vec.fvec) && IS_VEC_NULL(&(v)->vec.uvec) && IS_VEC_NULL(&(v)->vec.rvec))
 
@@ -115,6 +115,9 @@ vec3d *vm_vec_avg4(vec3d *dest, const vec3d *src0, const vec3d *src1, const vec3
 //scales a vector in place.  returns ptr to vector
 void vm_vec_scale(vec3d *dest, float s);
 
+//scales a 4-component vector in place. returns ptr to vector
+void vm_vec_scale(vec4 *dest, float s);
+
 //scales and copies a vector.  returns ptr to dest
 void vm_vec_copy_scale(vec3d *dest, const vec3d *src, float s);
 
@@ -184,13 +187,11 @@ float vm_vec_normalize_quick(vec3d *v);
 
 //normalize a vector. returns mag of source vec. uses approx mag
 float vm_vec_copy_normalize_quick_mag(vec3d *dest, const vec3d *src);
-float vm_vec_normalize_quick_mag(vec3d *v);
 
 //return the normalized direction vector between two points
 //dest = normalized(end - start).  Returns mag of direction vector
 //NOTE: the order of the parameters matches the vector subtraction
 float vm_vec_normalized_dir(vec3d *dest,const vec3d *end, const vec3d *start);
-float vm_vec_normalized_dir_quick_mag(vec3d *dest, const vec3d *end, const vec3d *start);
 // Returns mag of direction vector
 float vm_vec_normalized_dir_quick(vec3d *dest, const vec3d *end, const vec3d *start);
 
@@ -203,7 +204,9 @@ float vm_vec_dot3(float x, float y, float z, vec3d *v);
 //dest CANNOT equal either source
 vec3d *vm_vec_cross(vec3d *dest, const vec3d *src0, const vec3d *src1);
 
-// test if 2 vectors are parallel or not.
+/**
+ * @brief Tests if the two vectors are parallel
+ */
 int vm_test_parallel(const vec3d *src0, const vec3d *src1);
 
 //computes surface normal from three points. result is normalized
@@ -236,15 +239,39 @@ matrix *vm_angle_2_matrix(matrix *m, float a, int angle_index);
 //computes a matrix from a forward vector and an angle
 matrix *vm_vec_ang_2_matrix(matrix *m, const vec3d *v, float a);
 
-//computes a matrix from one or more vectors. The forward vector is required,
-//with the other two being optional.  If both up & right vectors are passed,
-//the up vector is used.  If only the forward vector is passed, a bank of
-//zero is assumed
-//returns ptr to matrix
+/**
+ * @brief Generates a matrix from one or more vectors
+ *
+ * @param[out] matrix The generated matrix. Does not need to be an Identity matrix
+ * @param[in] fvec Vector referencing the forward direction
+ * @param[in] uvec Vector referencing the up direction (Optional)
+ * @param[in] rvec Vector referencing the right-hand direction (Optional)
+ *
+ * @returns Pointer to the generated matrix
+ *
+ * @note If all three vectors are given, rvec is ignored.
+ * @note If uvec was bogus (either being in the same direction of fvec or -fvec) then only fvec is used
+ *
+ * @sa vm_vector_2_matrix_norm
+ */
 matrix *vm_vector_2_matrix(matrix *m, const vec3d *fvec, const vec3d *uvec, const vec3d *rvec);
 
-//this version of vector_2_matrix requires that the vectors be more-or-less
-//normalized and close to perpendicular
+
+/**
+ * @brief Generates a matrix from one or more normalized vectors
+ *
+ * @param[out] matrix The generated matrix. Does not need to be an Identity matrix
+ * @param[in] fvec Normalized Vector referencing the forward direction
+ * @param[in] uvec Normalized Vector referencing the up direction (Optional)
+ * @param[in] rvec Normalized Vector referencing the right-hand direction (Optional)
+ *
+ * @returns Pointer to the generated matrix
+ *
+ * @note If all three vectors are given, rvec is ignored.
+ * @note If uvec was bogus (either being in the same direction of fvec or -fvec) then only fvec is used
+ *
+ * @sa vm_vector_2_matrix
+ */
 matrix *vm_vector_2_matrix_norm(matrix *m, const vec3d *fvec, const vec3d *uvec = NULL, const vec3d *rvec = NULL);
 
 //rotates a vector through a matrix. returns ptr to dest vector
@@ -443,6 +470,8 @@ void vm_matrix4_set_identity(matrix4 *out);
 void vm_matrix4_set_transform(matrix4 *out, matrix *m, vec3d *v);
 
 void vm_matrix4_get_orientation(matrix *out, matrix4 *m);
+
+void vm_matrix4_get_offset(vec3d *out, matrix4 *m);
 
 void vm_vec_transform(vec4 *dest, vec4 *src, matrix4 *m);
 void vm_vec_transform(vec3d *dest, vec3d *src, matrix4 *m, bool pos = true);

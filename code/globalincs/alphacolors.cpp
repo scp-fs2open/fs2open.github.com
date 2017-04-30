@@ -277,10 +277,11 @@ void alpha_colors_init()
 void parse_colors(const char *filename)
 {
 	Assertion(filename != NULL, "parse_colors() called on NULL; get a coder!\n");
-	read_file_text(filename, CF_TYPE_TABLES);
 	
 	try
 	{
+		read_file_text(filename, CF_TYPE_TABLES);
+
 		reset_parse();
 
 		// we search for the colors based on their order of definition above
@@ -291,7 +292,7 @@ void parse_colors(const char *filename)
 			int rgba[4] = { 0, 0, 0, 0 };
 			int i, j;
 
-			char* color_names[TOTAL_COLORS] = {
+			const char* color_names[TOTAL_COLORS] = {
 				"$Blue:",
 				"$Bright Blue:",
 				"$Green:",
@@ -353,10 +354,11 @@ void parse_colors(const char *filename)
 void parse_everything_else(const char *filename)
 {
 	Assertion(filename != NULL, "parse_everything_else() called on NULL; get a coder!\n");
-	read_file_text(filename, CF_TYPE_TABLES);
 
 	try
 	{
+		read_file_text(filename, CF_TYPE_TABLES);
+
 		reset_parse();
 
 		int rgba[4] = { 0, 0, 0, 0 };
@@ -420,7 +422,7 @@ void parse_everything_else(const char *filename)
 
 		// Previously-hardcoded interface colors
 		if (optional_string("#Interface Colors")) {
-			char *color_names[INTERFACE_COLORS] = {
+			const char *color_names[INTERFACE_COLORS] = {
 				"$Text Normal:",
 				"$Text Subselected:",
 				"$Text Selected:",
@@ -587,7 +589,7 @@ void parse_everything_else(const char *filename)
 
 		if (optional_string("#Default Text Colors")) {
 
-			char* color_names[MAX_DEFAULT_TEXT_COLORS] = {
+			const char* color_names[MAX_DEFAULT_TEXT_COLORS] = {
 				"$Fiction Viewer:",
 				"$Command Briefing:",
 				"$Briefing:",

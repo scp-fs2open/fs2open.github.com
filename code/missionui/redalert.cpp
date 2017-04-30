@@ -29,6 +29,8 @@
 #include "missionui/redalert.h"
 #include "mod_table/mod_table.h"
 #include "model/model.h"
+#include "object/deadobjectdock.h"
+#include "object/objectdock.h"
 #include "ship/ship.h"
 #include "sound/audiostr.h"
 #include "sound/fsspeech.h"
@@ -52,12 +54,12 @@ SCP_string Red_alert_precursor_mission;
 // Red Alert Interface
 /////////////////////////////////////////////////////////////////////////////
 
-char *Red_alert_fname[GR_NUM_RESOLUTIONS] = {
+const char *Red_alert_fname[GR_NUM_RESOLUTIONS] = {
 	"RedAlert",
 	"2_RedAlert"
 };
 
-char *Red_alert_mask[GR_NUM_RESOLUTIONS] = {
+const char *Red_alert_mask[GR_NUM_RESOLUTIONS] = {
 	"RedAlert-m",
 	"2_RedAlert-m"
 };
@@ -335,6 +337,9 @@ void red_alert_init()
 
 	// load in background image and flashing red alert animation
 	Background_bitmap = mission_ui_background_load(Briefing->background[gr_screen.res], Red_alert_fname[gr_screen.res]);
+
+	// Make sure word wrapping and rendering use the same font
+	font::set_font(font::FONT1);
 
 	if ( Briefing->num_stages > 0 ) {
 		brief_color_text_init(Briefing->stages[0].text.c_str(), Ra_brief_text_wnd_coords[gr_screen.res][RA_W_COORD], default_redalert_briefing_color, 0);
@@ -776,23 +781,27 @@ void red_alert_store_wingman_status()
 }
 
 // Delete a ship in a red alert mission (since it must have died/departed in the previous mission)
-void red_alert_delete_ship(ship *shipp, int ship_state)
+void red_alert_delete_ship(int shipnum, int ship_state)
 {
-	if ( (shipp->wing_status_wing_index >= 0) && (shipp->wing_status_wing_pos >= 0) ) {
-		if (ship_state == RED_ALERT_DESTROYED_SHIP_CLASS) {
-		hud_set_wingman_status_dead(shipp->wing_status_wing_index, shipp->wing_status_wing_pos);
-		} else if (ship_state == RED_ALERT_PLAYER_DEL_SHIP_CLASS) {
-			hud_set_wingman_status_none(shipp->wing_status_wing_index, shipp->wing_status_wing_pos);
-		} else {
-			Error(LOCATION, "Red Alert: asked to delete ship (%s) with invalid ship state (%d)", shipp->ship_name, ship_state);
-		}
+	ship* shipp = &Ships[shipnum];
+	int cleanup_mode;	// See ship.h for cleanup mode defines. SHIP_VANISHED etc.
+
+	switch (ship_state) {
+	case RED_ALERT_DESTROYED_SHIP_CLASS:
+		cleanup_mode = SHIP_DESTROYED_REDALERT;
+		break;
+	case RED_ALERT_PLAYER_DEL_SHIP_CLASS:
+		cleanup_mode = SHIP_DEPARTED_REDALERT;
+		break;
+	default:
+		Assertion(false, "Red-alert: Unknown delete state '%i'\n", ship_state);
+		cleanup_mode = SHIP_VANISHED;
+		break;
 	}
 
-	ship_add_exited_ship( shipp, Ship::Exit_Flags::Player_deleted );
-	obj_delete(shipp->objnum);
-	if ( shipp->wingnum >= 0 ) {
-		ship_wing_cleanup( SHIP_INDEX(shipp), &Wings[shipp->wingnum] );
-	}
+	Objects[shipp->objnum].flags.set(Object::Object_Flags::Should_be_dead);
+	dock_undock_all(&Objects[shipp->objnum]);
+	ship_cleanup(shipnum, cleanup_mode);
 }
 
 // just mark the parse object as never going to arrive
@@ -896,7 +905,7 @@ void red_alert_bash_wingman_status()
 		if ( !ship_data_restored ) {
 			// we need to be a little tricky here because deletion invalidates the ship_obj
 			ship_obj *next_so = GET_NEXT(so);
-			red_alert_delete_ship(shipp, ship_state);
+			red_alert_delete_ship(ship_objp->instance, ship_state);
 			so = next_so;
 		} else {
 			so = GET_NEXT(so);

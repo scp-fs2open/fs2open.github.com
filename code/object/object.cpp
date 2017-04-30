@@ -43,6 +43,7 @@
 #include "weapon/shockwave.h"
 #include "weapon/swarm.h"
 #include "weapon/weapon.h"
+#include "tracing/Monitor.h"
 
 
 
@@ -74,7 +75,7 @@ int Object_inited = 0;
 int Show_waypoints = 0;
 
 //WMC - Made these prettier
-char *Object_type_names[MAX_OBJECT_TYPES] = {
+const char *Object_type_names[MAX_OBJECT_TYPES] = {
 //XSTR:OFF
 	"None",
 	"Ship",
@@ -266,17 +267,6 @@ int free_object_slots(int num_used)
 }
 
 // Goober5000
-float get_max_shield_quad(object *objp)
-{
-	Assert(objp);
-	if(objp->type != OBJ_SHIP) {
-		return 0.0f;
-	}
-
-	return Ships[objp->instance].ship_max_shield_strength / objp->n_quadrants;
-}
-
-// Goober5000
 float get_hull_pct(object *objp)
 {
 	Assert(objp);
@@ -322,7 +312,7 @@ float get_shield_pct(object *objp)
 	if (objp->type != OBJ_SHIP)
 		return 0.0f;
 
-	float total_strength = Ships[objp->instance].ship_max_shield_strength;
+	float total_strength = shield_get_max_strength(objp);
 
 	if (total_strength == 0.0f)
 		return 0.0f;
@@ -462,9 +452,11 @@ void obj_free(int objnum)
 
 	Assert(Num_objects >= 0);
 
-	if (objnum == Highest_object_index)
-		while (Objects[--Highest_object_index].type == OBJ_NONE);
-
+	if (objnum == Highest_object_index) {
+		while (Highest_object_index >= 0 && Objects[Highest_object_index].type == OBJ_NONE) {
+			--Highest_object_index;
+		}
+	}
 }
 
 /**
@@ -790,6 +782,8 @@ void obj_player_fire_stuff( object *objp, control_info ci )
 
 void obj_move_call_physics(object *objp, float frametime)
 {
+	TRACE_SCOPE(tracing::Physics);
+
 	int has_fired = -1;	//stop fireing stuff-Bobboau
 
 	//	Do physics for objects with OF_PHYSICS flag set and with some engine strength remaining.
@@ -1112,6 +1106,8 @@ void obj_set_flags( object *obj, const flagset<Object::Object_Flags>& new_flags 
 
 void obj_move_all_pre(object *objp, float frametime)
 {
+	TRACE_SCOPE(tracing::PreMove);
+
 	switch( objp->type )	{
 	case OBJ_WEAPON:
 		if (!physics_paused){
@@ -1180,7 +1176,7 @@ void obj_move_all_post(object *objp, float frametime)
 	{
 		case OBJ_WEAPON:
 		{
-			profile_auto profile_scope("Weapon post move");
+			TRACE_SCOPE(tracing::WeaponPostMove);
 
 			if ( !physics_paused )
 				weapon_process_post( objp, frametime );
@@ -1227,7 +1223,7 @@ void obj_move_all_post(object *objp, float frametime)
 
 		case OBJ_SHIP:
 		{
-			profile_auto profile_scope("Ship post move");
+			TRACE_SCOPE(tracing::ShipPostMove);
 
 			if ( !physics_paused || (objp==Player_obj) ) {
 				ship_process_post( objp, frametime );
@@ -1274,7 +1270,7 @@ void obj_move_all_post(object *objp, float frametime)
 
 		case OBJ_FIREBALL:
 		{
-			profile_auto profile_scope("Fireball post move");
+			TRACE_SCOPE(tracing::FireballPostMove);
 
 			if ( !physics_paused )
 				fireball_process_post(objp,frametime);
@@ -1319,7 +1315,7 @@ void obj_move_all_post(object *objp, float frametime)
 
 		case OBJ_DEBRIS:
 		{
-			profile_auto profile_scope("Debris post move");
+			TRACE_SCOPE(tracing::DebrisPostMove);
 
 			if ( !physics_paused )
 				debris_process_post(objp, frametime);
@@ -1355,7 +1351,7 @@ void obj_move_all_post(object *objp, float frametime)
 
 		case OBJ_ASTEROID:
 		{
-			profile_auto profile_scope("Asteroid post move");
+			TRACE_SCOPE(tracing::AsteroidPostMove);
 
 			if ( !physics_paused )
 				asteroid_process_post(objp);
@@ -1402,6 +1398,8 @@ MONITOR( NumObjects )
  */
 void obj_move_all(float frametime)
 {
+	TRACE_SCOPE(tracing::MoveObjects);
+
 	object *objp;	
 
 	// Goober5000 - HACK HACK HACK
@@ -1436,7 +1434,7 @@ void obj_move_all(float frametime)
 #endif
 
 		// pre-move
-		PROFILE("Pre Move", obj_move_all_pre(objp, frametime));
+		obj_move_all_pre(objp, frametime);
 
 		// store last pos and orient
 		objp->last_pos = cur_pos;
@@ -1449,12 +1447,12 @@ void obj_move_all(float frametime)
 				multi_oo_interp(objp);
 			} else {
 				// physics
-				PROFILE("Physics", obj_move_call_physics(objp, frametime));
+				obj_move_call_physics(objp, frametime);
 			}
 		}
 
 		// move post
-		PROFILE("Post Move", obj_move_all_post(objp, frametime));
+		obj_move_all_post(objp, frametime);
 
 		// Equipment script processing
 		if (objp->type == OBJ_SHIP) {
@@ -1526,15 +1524,14 @@ void obj_move_all(float frametime)
 	// do pre-collision stuff for beam weapons
 	beam_move_all_pre();
 
-	profile_begin("Collision Detection");
 	if ( Collisions_enabled ) {
+		TRACE_SCOPE(tracing::CollisionDetection);
 		if ( Cmdline_old_collision_sys ) {
 			obj_check_all_collisions();
 		} else {
 			obj_sort_and_collide();
 		}
 	}
-	profile_end("Collision Detection");
 
 	turret_swarm_check_validity();
 
@@ -1557,7 +1554,7 @@ extern int Cmdline_dis_weapons;
 
 void obj_render(object *obj)
 {
-	draw_list render_list;
+	model_draw_list render_list;
 
 	obj_queue_render(obj, &render_list);
 
@@ -1575,17 +1572,23 @@ void obj_render(object *obj)
 	gr_set_lighting(false, false);
 }
 
-void obj_queue_render(object* obj, draw_list* scene)
+void obj_queue_render(object* obj, model_draw_list* scene)
 {
+	TRACE_SCOPE(tracing::QueueRender);
+
 	if ( obj->flags[Object::Object_Flags::Should_be_dead] ) return;
 
-	// need to figure out what to do with this hook. 
-	// maybe save an array of these and run the script conditions after we finish drawing
 	Script_system.SetHookObject("Self", obj);
+	
+	auto skip_render = Script_system.IsConditionOverride(CHA_OBJECTRENDER, obj);
+	
+	// Always execute the hook content
+	Script_system.RunCondition(CHA_OBJECTRENDER, '\0', NULL, obj);
+	
+	Script_system.RemHookVar("Self");
 
-	if ( Script_system.IsConditionOverride(CHA_OBJECTRENDER, obj) ) {
-		Script_system.RunCondition(CHA_OBJECTRENDER, '\0', NULL, obj);
-		Script_system.RemHookVar("Self");
+	if (skip_render) {
+		// Script said that it want's to skip rendering
 		return;
 	}
 

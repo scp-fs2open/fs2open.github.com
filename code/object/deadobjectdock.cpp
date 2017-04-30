@@ -23,6 +23,8 @@ dock_instance *dead_dock_find_instance(object *objp, int dockpoint);
 
 object *dock_get_first_dead_docked_object(object *objp)
 {
+	Assert(objp != NULL);
+
 	// are we docked?
 	if (!object_is_dead_docked(objp))
 		return NULL;
@@ -32,6 +34,9 @@ object *dock_get_first_dead_docked_object(object *objp)
 
 int dock_find_dead_dockpoint_used_by_object(object *objp, object *other_objp)
 {
+	Assert(objp != NULL);
+	Assert(other_objp != NULL);
+
 	dock_instance *result = dead_dock_find_instance(objp, other_objp);
 	
 	if (result == NULL)
@@ -43,6 +48,9 @@ int dock_find_dead_dockpoint_used_by_object(object *objp, object *other_objp)
 // dock management functions -------------------------------------------------------------------------------------
 void dock_dead_dock_objects(object *objp1, int dockpoint1, object *objp2, int dockpoint2)
 {
+	Assert(objp1 != NULL);
+	Assert(objp2 != NULL);
+
 #ifndef NDEBUG
 	if ((dead_dock_find_instance(objp1, objp2) != NULL) || (dead_dock_find_instance(objp2, objp1) != NULL))
 	{
@@ -62,16 +70,24 @@ void dock_dead_dock_objects(object *objp1, int dockpoint1, object *objp2, int do
 
 void dock_dead_undock_objects(object *objp1, object *objp2)
 {
-#ifndef NDEBUG
-	if ((dead_dock_find_instance(objp1, objp2) == NULL) || (dead_dock_find_instance(objp2, objp1) == NULL))
-	{
-		Error(LOCATION, "Trying to undock an object that isn't docked!\n");
-	}
-#endif
+	Assert(objp1 != NULL);
+	Assert(objp2 != NULL);
 
 	// remove objects from each others' dock lists
 	dead_dock_remove_instance(objp1, objp2);
 	dead_dock_remove_instance(objp2, objp1);
+}
+
+void dock_dead_undock_all(object *objp)
+{
+	Assert(objp != NULL);
+
+	while (object_is_dead_docked(objp))
+	{
+		object* dockee = dock_get_first_dead_docked_object(objp);
+
+		dock_dead_undock_objects(objp, dockee);
+	}
 }
 
 void dead_dock_add_instance(object *objp, int dockpoint, object *other_objp)
@@ -128,11 +144,18 @@ void dead_dock_remove_instance(object *objp, object *other_objp)
 		// delete it
 		vm_free(ptr);
 	}
+	else
+	{
+		// Trigger assertion. We can recover from this, thankfully
+		Assertion(false, "Tried to undock an object that isn't dead docked!\n");
+	}
 }
 
 // just free the list without worrying about undocking anything
 void dock_free_dead_dock_list(object *objp)
 {
+	Assert(objp != NULL);
+
 	while (objp->dead_dock_list != NULL)
 	{
 		dock_instance *ptr = objp->dead_dock_list;

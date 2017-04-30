@@ -12,6 +12,7 @@
 
 #include "bmpman/bmpman.h"
 #include "globalincs/systemvars.h"
+#include "tracing/tracing.h"
 
 /**
  * @defgroup particleSystems Particle System
@@ -20,7 +21,7 @@
 namespace {
 using namespace particle;
 
-const char* effectTypeNames[static_cast<size_t>(EffectType::MAX)] = {
+const char* effectTypeNames[static_cast<int64_t>(EffectType::MAX)] = {
 	"Single",
 	"Composite",
 	"Cone",
@@ -28,11 +29,11 @@ const char* effectTypeNames[static_cast<size_t>(EffectType::MAX)] = {
 };
 
 const char* getEffectTypeName(EffectType type) {
-	Assertion(static_cast<size_t>(type) >= static_cast<size_t>(EffectType::Single)
-				  && static_cast<size_t>(type) < static_cast<size_t>(EffectType::MAX),
+	Assertion(static_cast<int64_t>(type) >= static_cast<int64_t>(EffectType::Single)
+				  && static_cast<int64_t>(type) < static_cast<int64_t>(EffectType::MAX),
 			  "Invalid effect type specified!");
 
-	return effectTypeNames[static_cast<size_t>(type)];
+	return effectTypeNames[static_cast<int64_t>(type)];
 }
 
 ParticleEffectPtr constructEffect(const SCP_string& name, EffectType type) {
@@ -89,22 +90,29 @@ EffectType parseEffectType() {
 void parseCallback(const char* fileName) {
 	using namespace particle;
 
-	read_file_text(fileName, CF_TYPE_TABLES);
+	try {
+		read_file_text(fileName, CF_TYPE_TABLES);
 
-	reset_parse();
+		reset_parse();
 
-	required_string("#Particle Effects");
+		required_string("#Particle Effects");
 
-	while (optional_string("$Effect:")) {
-		SCP_string name;
-		stuff_string(name, F_NAME);
+		while (optional_string("$Effect:")) {
+			SCP_string name;
+			stuff_string(name, F_NAME);
 
-		auto type = parseEffectType();
+			auto type = parseEffectType();
 
-		ParticleManager::get()->addEffect(constructEffect(name, type));
+			ParticleManager::get()->addEffect(constructEffect(name, type));
+		}
+
+		required_string("#End");
 	}
-
-	required_string("#End");
+	catch (const parse::ParseException& e)
+	{
+		mprintf(("TABLES: Unable to parse '%s'!  Error message = %s.\n", fileName, e.what()));
+		return;
+	}
 }
 
 void parseConfigFiles() {
@@ -171,6 +179,8 @@ void ParticleManager::doFrame(float) {
 		m_sources.clear(); // Always clear the vector to free memory
 	}
 	else {
+		TRACE_SCOPE(tracing::ProcessParticleEffects);
+
 		m_processingSources = true;
 
 		for (auto source = std::begin(m_sources); source != std::end(m_sources);) {
@@ -303,7 +313,7 @@ ParticleEffectIndex parseEffectElement(EffectType forcedType, const SCP_string& 
 
 			if (effect->getType() != forcedType) {
 				error_display(0, "Particle effect '%s' has the wrong effect type! Expected %s but was %s!",
-							  getEffectTypeName(forcedType), getEffectTypeName(effect->getType()));
+							  newName.c_str(), getEffectTypeName(forcedType), getEffectTypeName(effect->getType()));
 			}
 		}
 

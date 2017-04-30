@@ -186,7 +186,7 @@ int ship_weapon_check_collision(object *ship_objp, object *weapon_objp, float ti
 	//
 	//	Note: This code is obviously stupid. We want to add the shield point if there is shield to hit, but:
 	//		1. We want the size/color of the hit effect to indicate shield damage done.  (i.e., for already-weak shield, smaller effect)
-	//		2. Currently (8/9/97), apply_damage_to_shield() passes lefer damage to hull, which might not make sense.  If
+	//		2. Currently (8/9/97), shield_apply_damage() passes lefer damage to hull, which might not make sense.  If
 	//			wouldn't have collided with hull, shouldn't do damage.  Once this is fixed, the code below needs to cast the
 	//			vector through to the hull if there is leftover damage.
 	//

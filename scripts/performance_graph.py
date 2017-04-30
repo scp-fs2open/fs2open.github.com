@@ -21,9 +21,10 @@ parser.add_argument("--fps", action="store_true",
 parser.add_argument("--save_img", help="Saves the generated graph to the specified file path.")
 args = parser.parse_args()
 
-averageTime = 0.2
+averageTime = 0.3
 
-MICROSECONDS_PER_SECOND = 1000000.
+NANOSECONDS_PER_SECOND = 1000000000.
+
 
 def average(time, frametime):
     startIndex = 0
@@ -46,8 +47,8 @@ def average(time, frametime):
 
 
 def adjustData(data):
-    times = data[2:, 0] / MICROSECONDS_PER_SECOND
-    frametimes = data[2:, 1] / MICROSECONDS_PER_SECOND
+    times = data[2:, 0] / NANOSECONDS_PER_SECOND
+    frametimes = data[2:, 1] / NANOSECONDS_PER_SECOND
 
     times = times - times[0]
 
@@ -62,6 +63,12 @@ changedData = np.genfromtxt(args.changed_data, delimiter=';')
 
 nT, nF = adjustData(normalData)
 cT, cF = adjustData(changedData)
+
+avgNormalData = np.mean(nF)
+avgChangedData = np.mean(cF)
+
+ratio = avgNormalData / avgChangedData
+print(ratio)
 
 plot.plot(nT, nF, label=args.base_title)
 plot.plot(cT, cF, label=args.changed_title)

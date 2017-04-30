@@ -11,7 +11,6 @@
 
 #include "cfile/cfile.h"
 #include "pcxutils/pcxutils.h"
-#include "palman/palman.h"
 #include "bmpman/bmpman.h"
 
 
@@ -328,21 +327,13 @@ int pcx_read_bitmap( const char * real_filename, ubyte *org_data, ubyte *pal, in
 						bit_16 = 0;
 						memset(&bit_32, 0, sizeof(COLOR32));
 
-						// 16-bit non-darkening reads
-						if ( (byte_size == 2) && nondark ) {
-							al = 0;
-							if (palman_is_nondarkening(r, g, b)) {
-								al = 255;
-							}
-						} else {
-							// if the color matches the transparent color, make it so
-							al = 255;
+						// if the color matches the transparent color, make it so
+						al = 255;
 
-							if ( (0 == (int)palette[data*3]) && (255 == (int)palette[data*3+1]) && (0 == (int)palette[data*3+2]) ) {
-								r = b = 0;
-								g = (byte_size == 4) ? 0 : 255;
-								al = 0;					
-							}
+						if ( (0 == (int)palette[data*3]) && (255 == (int)palette[data*3+1]) && (0 == (int)palette[data*3+2]) ) {
+							r = b = 0;
+							g = (byte_size == 4) ? 0 : 255;
+							al = 0;					
 						}
 
 						// normal 16-bit reads

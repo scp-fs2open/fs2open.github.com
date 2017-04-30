@@ -310,7 +310,7 @@ void multi_common_notify_do()
 // common icon stuff
 int Multi_common_icons[MULTI_NUM_COMMON_ICONS];
 //XSTR:OFF
-char *Multi_common_icon_names[MULTI_NUM_COMMON_ICONS] = {
+const char *Multi_common_icon_names[MULTI_NUM_COMMON_ICONS] = {
 	"DotRed",				// voice denied
 	"DotGreen",				// voice recording
 	"OvalGreen",			// team 0
@@ -469,19 +469,19 @@ void multi_common_verify_cd()
 // bitmaps defs
 #define MULTI_JOIN_PALETTE				"InterfacePalette"
 
-static char *Multi_join_bitmap_fname[GR_NUM_RESOLUTIONS] = {
+static const char *Multi_join_bitmap_fname[GR_NUM_RESOLUTIONS] = {
 	"MultiJoin",		// GR_640
 	"2_MultiJoin"			// GR_1024
 };
 
-static char *Multi_join_bitmap_mask_fname[GR_NUM_RESOLUTIONS] = {
+static const char *Multi_join_bitmap_mask_fname[GR_NUM_RESOLUTIONS] = {
 	"MultiJoin-M",		// GR_640
 	"2_MultiJoin-M"		// GR_1024
 };
 //XSTR:ON
 
 // slider
-char *Mj_slider_name[GR_NUM_RESOLUTIONS] = {
+const char *Mj_slider_name[GR_NUM_RESOLUTIONS] = {
 	"slider",
 	"2_slider"
 };
@@ -657,7 +657,7 @@ int Mj_ping_coords[GR_NUM_RESOLUTIONS][4] = {
 
 // game speed labels
 #define MJ_NUM_SPEED_LABELS		5
-char *Multi_join_speed_labels[MJ_NUM_SPEED_LABELS] = {
+const char *Multi_join_speed_labels[MJ_NUM_SPEED_LABELS] = {
 	"< 56k",
 	"56k",
 	"isdn",
@@ -2083,12 +2083,12 @@ void multi_join_blit_protocol()
 // bitmap defs
 #define MULTI_SG_PALETTE			"InterfacePalette"
 
-static char *Multi_sg_bitmap_fname[GR_NUM_RESOLUTIONS] = {
+static const char *Multi_sg_bitmap_fname[GR_NUM_RESOLUTIONS] = {
 	"MultiStartGame",			// GR_640
 	"2_MultiStartGame"			// GR_1024
 };
 
-static char *Multi_sg_bitmap_mask_fname[GR_NUM_RESOLUTIONS] = {
+static const char *Multi_sg_bitmap_mask_fname[GR_NUM_RESOLUTIONS] = {
 	"MultiStartGame-M",			// GR_640
 	"2_MultiStartGame-M"			// GR_1024
 };
@@ -3001,17 +3001,17 @@ void multi_sg_select_rank_default()
 
 //XSTR:OFF
 // bitmaps defs
-char *Multi_create_bitmap_fname[GR_NUM_RESOLUTIONS] = {
+const char *Multi_create_bitmap_fname[GR_NUM_RESOLUTIONS] = {
 	"MultiCreate",			// GR_640
 	"2_MultiCreate"		// GR_1024
 };
 
-char *Multi_create_bitmap_mask_fname[GR_NUM_RESOLUTIONS] = {
+const char *Multi_create_bitmap_mask_fname[GR_NUM_RESOLUTIONS] = {
 	"MultiCreate-M",		// GR_640
 	"2_MultiCreate-M"		// GR_1024
 };
 
-char *Multi_create_loading_fname[GR_NUM_RESOLUTIONS] = {
+const char *Multi_create_loading_fname[GR_NUM_RESOLUTIONS] = {
 	"PleaseWait",			// GR_640
 	"2_PleaseWait"			// GR_1024
 };
@@ -3150,7 +3150,7 @@ UI_XSTR Multi_create_text[GR_NUM_RESOLUTIONS][MULTI_CREATE_NUM_BUTTONS] = {
 
 // squad war checkbox
 UI_CHECKBOX	Multi_create_sw_checkbox;
-char *Multi_create_sw_checkbox_fname[GR_NUM_RESOLUTIONS] = {
+const char *Multi_create_sw_checkbox_fname[GR_NUM_RESOLUTIONS] = {
 	"MC_SW_00",
 	"MC_SW_00",
 };
@@ -3291,7 +3291,7 @@ int Mc_slider_coords[GR_NUM_RESOLUTIONS][4] = {
 	}
 };
 
-char *Mc_slider_bitmap[GR_NUM_RESOLUTIONS] = {
+const char *Mc_slider_bitmap[GR_NUM_RESOLUTIONS] = {
 	"slider",
 	"2_slider"
 };
@@ -5491,12 +5491,12 @@ void multi_create_sw_clicked()
 // bitmaps defs
 #define MULTI_HO_PALETTE				"InterfacePalette"
 
-static char *Multi_ho_bitmap_fname[GR_NUM_RESOLUTIONS] = {
+static const char *Multi_ho_bitmap_fname[GR_NUM_RESOLUTIONS] = {
 	"MultiHost",			// GR_640
 	"2_MultiHost"			// GR_1024
 };
 
-static char *Multi_ho_bitmap_mask_fname[GR_NUM_RESOLUTIONS] = {
+static const char *Multi_ho_bitmap_mask_fname[GR_NUM_RESOLUTIONS] = {
 	"MultiHost-M",			// GR_640
 	"2_MultiHost-M"		// GR_1024
 };
@@ -5639,14 +5639,14 @@ int Multi_ho_radio_info[MULTI_HO_NUM_RADIO_BUTTONS][3] = {	// info related to ea
 #define MULTI_HO_SLIDER_VOICE_DUR			1						// max duration of voice recording
 #define MULTI_HO_SLIDER_SKILL					2						// skill level
 struct ho_sliders {
-	char *filename;
+	const char *filename;
 	int x, y, xt, yt;
 	int hotspot;
 	int dot_w;
 	int dots;
 	UI_DOT_SLIDER_NEW slider;  // because we have a class inside this struct, we need the constructor below..
 
-	ho_sliders(char *name, int x1, int y1, int xt1, int yt1, int h, int _dot_w, int _dots) : filename(name), x(x1), y(y1), xt(xt1), yt(yt1), hotspot(h), dot_w(_dot_w), dots(_dots){}
+	ho_sliders(const char *name, int x1, int y1, int xt1, int yt1, int h, int _dot_w, int _dots) : filename(name), x(x1), y(y1), xt(xt1), yt(yt1), hotspot(h), dot_w(_dot_w), dots(_dots){}
 };
 ho_sliders Multi_ho_sliders[GR_NUM_RESOLUTIONS][MULTI_HO_NUM_SLIDERS] = {
 	{ // GR_640
@@ -6506,12 +6506,12 @@ void multi_ho_display_skill_level()
 // bitmaps defs
 #define MULTI_JW_PALETTE				"InterfacePalette"
 
-static char *Multi_jw_bitmap_fname[GR_NUM_RESOLUTIONS] = {
+static const char *Multi_jw_bitmap_fname[GR_NUM_RESOLUTIONS] = {
 	"MultiJoinWait",		// GR_640
 	"2_MultiJoinWait"		// GR_1024
 };
 
-static char *Multi_jw_bitmap_mask_fname[GR_NUM_RESOLUTIONS] = {
+static const char *Multi_jw_bitmap_mask_fname[GR_NUM_RESOLUTIONS] = {
 	"MultiJoinWait-M",		// GR_640
 	"2_MultiJoinWait-M"		// GR_1024
 };
@@ -6603,7 +6603,7 @@ int Mjw_mission_name_coords[GR_NUM_RESOLUTIONS][2] = {
 
 // squad war checkbox
 UI_CHECKBOX	Multi_jw_sw_checkbox;
-char *Multi_jw_sw_checkbox_fname[GR_NUM_RESOLUTIONS] = {
+const char *Multi_jw_sw_checkbox_fname[GR_NUM_RESOLUTIONS] = {
 	"MC_SW_00",
 	"MC_SW_00",
 };
@@ -7229,12 +7229,12 @@ short multi_jw_get_mouse_id()
 #define MULTI_SYNC_HOST_COUNT				4		// host uses 4 buttons (and sometimes 5)
 #define MULTI_SYNC_CLIENT_COUNT			3		// client only uses 3 buttons
 
-char *Multi_sync_bitmap_fname[GR_NUM_RESOLUTIONS] = {
+const char *Multi_sync_bitmap_fname[GR_NUM_RESOLUTIONS] = {
 	"MultiSynch",		// GR_640
 	"2_MultiSynch"		// GR_1024
 };
 
-char *Multi_sync_bitmap_mask_fname[GR_NUM_RESOLUTIONS] = {
+const char *Multi_sync_bitmap_mask_fname[GR_NUM_RESOLUTIONS] = {
 	"MultiSynch-M",		// GR_640
 	"2_MultiSynch-M"			// GR_1024
 };
@@ -7347,7 +7347,7 @@ int Multi_launch_button_created;
 
 //XSTR:OFF
 // countdown animation timer
-char* Multi_sync_countdown_fname[GR_NUM_RESOLUTIONS] = {
+const char* Multi_sync_countdown_fname[GR_NUM_RESOLUTIONS] = {
 	"Count",		// GR_640
 	"2_Count"		// GR_1024
 };
@@ -9043,12 +9043,12 @@ void multi_debrief_server_process()
 
 //XSTR:OFF
 // bitmaps defs
-static char *Multi_pwd_bitmap_fname[GR_NUM_RESOLUTIONS] = {
+static const char *Multi_pwd_bitmap_fname[GR_NUM_RESOLUTIONS] = {
 	"Password",			// GR_640
 	"2_Password"		// GR_1024
 };
 
-static char *Multi_pwd_bitmap_mask_fname[GR_NUM_RESOLUTIONS] = {
+static const char *Multi_pwd_bitmap_mask_fname[GR_NUM_RESOLUTIONS] = {
 	"Password-M",		// GR_640
 	"2_Password-M"		// GR_1024
 };

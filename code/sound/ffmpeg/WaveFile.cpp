@@ -14,20 +14,22 @@ using namespace ffmpeg;
 AudioProperties getAudioProps(AVStream* stream) {
 	AudioProperties props;
 
+	int channels;
 #if LIBAVCODEC_VERSION_INT > AV_VERSION_INT(57, 24, 255)
-	props.channels = stream->codecpar->channels;
-	props.channel_layout = stream->codecpar->channel_layout;
-	props.sample_rate = stream->codecpar->sample_rate;
-	props.format = (AVSampleFormat)stream->codecpar->format;
+    channels = stream->codecpar->channels;
+    props.channel_layout = stream->codecpar->channel_layout;
+    props.sample_rate = stream->codecpar->sample_rate;
+    props.format = (AVSampleFormat)stream->codecpar->format;
 #else
-	props.channels = stream->codec->channels;
+	channels = stream->codec->channels;
 	props.channel_layout = stream->codec->channel_layout;
 	props.sample_rate = stream->codec->sample_rate;
 	props.format = stream->codec->sample_fmt;
 #endif
+
 	if (props.channel_layout == 0) {
 		// Use a default channel layout value
-		props.channel_layout = (uint64_t) av_get_default_channel_layout(props.channels);
+		props.channel_layout = av_get_default_channel_layout(channels);
 	}
 
 	return props;
@@ -41,7 +43,6 @@ AudioProperties getAdjustedAudioProps(const AudioProperties& baseProps) {
 	if (av_get_channel_layout_nb_channels(baseProps.channel_layout) > 2) {
 		adjusted.channel_layout = AV_CH_LAYOUT_STEREO;
 	}
-	adjusted.channels = av_get_channel_layout_nb_channels(adjusted.channel_layout);
 
 	int max_bytes_per_sample;
 	switch (Ds_sound_quality) {
@@ -81,30 +82,23 @@ AudioProperties getAdjustedAudioProps(const AudioProperties& baseProps) {
 }
 
 SwrContext* getSWRContext(const AudioProperties& base, const AudioProperties& adjusted) {
-	auto swr = swr_alloc();
+	SwrContext* swr = nullptr;
+	swr = swr_alloc_set_opts(swr, adjusted.channel_layout, adjusted.format, adjusted.sample_rate,
+							 base.channel_layout, base.format, base.sample_rate, 0, nullptr);
 
-	av_opt_set_int(swr, "in_channel_layout", base.channel_layout, 0);
-	av_opt_set_int(swr, "in_sample_rate", base.sample_rate, 0);
-	av_opt_set_int(swr, "in_sample_fmt", base.format, 0);
-
-	av_opt_set_int(swr, "out_channel_layout", adjusted.channel_layout, 0);
-	av_opt_set_int(swr, "out_sample_rate", adjusted.sample_rate, 0);
-	av_opt_set_int(swr, "out_sample_fmt", adjusted.format, 0);
-
-	swr_init(swr);
+	if (swr_init(swr) < 0) {
+		return nullptr;
+	}
 
 	return swr;
 }
 }
 
-namespace ffmpeg
-{
+namespace ffmpeg {
 WaveFile::WaveFile() {
 	// Init data members
 	m_audioProps = AudioProperties();
 	m_ctx.reset();
-
-	m_al_format = AL_FORMAT_MONO8;
 
 	m_decodeFrame = av_frame_alloc();
 }
@@ -130,16 +124,15 @@ WaveFile::~WaveFile() {
 }
 
 // Open
-bool WaveFile::Open(const char *pszFilename, bool keep_ext)
-{
+bool WaveFile::Open(const char* pszFilename, bool keep_ext) {
 	using namespace libs::ffmpeg;
 
 	size_t FileSize, FileOffset;
-	char fullpath[MAX_PATH];
+	char fullpath[MAX_PATH_LEN];
 	char filename[MAX_FILENAME_LEN];
 
-	// NOTE: we assume that the extension has already been stripped off if it was supposed to be!!
-	strcpy_s( filename, pszFilename );
+	// NOTE: the extension will be removed and set to the actual extension of keep_ext is false, otherwise it's not changed
+	strcpy_s(filename, pszFilename);
 
 	try {
 		int rc = -1;
@@ -159,8 +152,8 @@ bool WaveFile::Open(const char *pszFilename, bool keep_ext)
 
 			cf_find_file_location(pszFilename, CF_TYPE_ANY, sizeof(fullpath) - 1, fullpath, &FileSize, &FileOffset);
 		}
-		// ... otherwise we just find the best match
 		else {
+			// ... otherwise we just find the best match
 			rc = cf_find_file_location_ext(filename,
 										   NUM_AUDIO_EXT,
 										   audio_ext_list,
@@ -171,17 +164,24 @@ bool WaveFile::Open(const char *pszFilename, bool keep_ext)
 										   &FileOffset);
 
 			if (rc < 0) {
-				throw FFmpegException("Unknown file extension.");
+				throw FFmpegException("File not found with any known extension.");
 			}
 
-			// set proper filename for later use (assumes that it doesn't already have an extension)
+			// cf_find_file_location_ext already handles file names with extensions so we also need to handle that here
+			auto dot = strrchr(filename, '.');
+			if (dot && (strlen(dot) > 2)) {
+				(*dot) = 0;
+			}
+
+			// set proper filename for later use
 			strcat_s(filename, audio_ext_list[rc]);
 		}
 
 		auto cfp = cfopen_special(fullpath, "rb", FileSize, FileOffset, CF_TYPE_ANY);
 
-		if (cfp == NULL)
+		if (cfp == NULL) {
 			throw FFmpegException("Failed to open file.");
+		}
 
 		m_ctx = FFmpegContext::createContext(cfp);
 		auto ctx = m_ctx->ctx();
@@ -195,15 +195,15 @@ bool WaveFile::Open(const char *pszFilename, bool keep_ext)
 
 		int err;
 #if LIBAVCODEC_VERSION_INT > AV_VERSION_INT(57, 24, 255)
-		m_audioCodecCtx = avcodec_alloc_context3(audio_codec);
+        m_audioCodecCtx = avcodec_alloc_context3(audio_codec);
 
-		// Copy codec parameters from input stream to output codec context
-		err = avcodec_parameters_to_context(m_audioCodecCtx, m_audioStream->codecpar);
-		if (err < 0) {
-			char errorStr[512];
-			av_strerror(err, errorStr, sizeof(errorStr));
-			throw FFmpegException(errorStr);
-		}
+        // Copy codec parameters from input stream to output codec context
+        err = avcodec_parameters_to_context(m_audioCodecCtx, m_audioStream->codecpar);
+        if (err < 0) {
+            char errorStr[512];
+            av_strerror(err, errorStr, sizeof(errorStr));
+            throw FFmpegException(errorStr);
+        }
 #else
 		m_audioCodecCtx = m_audioStream->codec;
 #endif
@@ -217,19 +217,15 @@ bool WaveFile::Open(const char *pszFilename, bool keep_ext)
 
 		m_baseAudioProps = getAudioProps(m_audioStream);
 
-		m_audioProps = getAdjustedAudioProps(m_baseAudioProps);
+		setAdjustedAudioProperties(getAdjustedAudioProps(m_baseAudioProps));
 
-		m_resampleCtx = getSWRContext(m_baseAudioProps, m_audioProps);
-
-		m_al_format = openal_get_format(av_get_bytes_per_sample(m_audioProps.format) * 8, m_audioProps.channels);
-
-		if (m_al_format == AL_INVALID_VALUE) {
+		if (getALFormat() == AL_INVALID_VALUE) {
 			throw FFmpegException("Invalid audio format.");
 		}
 
 		nprintf(("SOUND", "SOUND => %s => Using codec %s (%s)\n", filename, audio_codec->long_name, audio_codec->name));
 	} catch (const FFmpegException& e) {
-		nprintf(("SOUND", "SOUND ==> Could not open wave file %s for streaming. Reason: %s\n", filename, e.what()));
+		mprintf(("SOUND ==> Could not open wave file %s for streaming. Reason: %s\n", filename, e.what()));
 		return false;
 	}
 
@@ -237,28 +233,42 @@ bool WaveFile::Open(const char *pszFilename, bool keep_ext)
 	Cue();
 	m_frameReader.reset(new FFmpegAudioReader(m_ctx->ctx(), m_audioCodecCtx, m_audioStreamIndex));
 
-	nprintf(("SOUND", "AUDIOSTR => Successfully opened: %s\n", filename));
+	nprintf(("SOUND", "SOUND => Successfully opened: %s\n", filename));
 
 	// If we are here it means that everything went fine
 	return true;
 }
 
 
-bool WaveFile::Cue()
-{
-	auto err = av_seek_frame(m_ctx->ctx(), m_audioStreamIndex, 0, 0);
-	avcodec_flush_buffers(m_audioCodecCtx);
+bool WaveFile::Cue() {
+	auto err = av_seek_frame(m_ctx->ctx(), m_audioStreamIndex, 0, AVSEEK_FLAG_BYTE);
+
+	if (err >= 0) {
+		avcodec_flush_buffers(m_audioCodecCtx);
+		avformat_flush(m_ctx->ctx());
+	}
 
 	return err >= 0;
 }
 
+void WaveFile::setAdjustedAudioProperties(const AudioProperties& props) {
+	if (m_resampleCtx) {
+		swr_free(&m_resampleCtx);
+	}
+	m_audioProps = props;
+	m_resampleCtx = getSWRContext(m_baseAudioProps, m_audioProps);
+
+	Assertion(m_resampleCtx != nullptr, "Resample context creation failed! This should not happen!");
+}
+
 size_t WaveFile::handleDecodedFrame(AVFrame* av_frame, uint8_t* out_buffer, size_t buffer_size) {
-	const auto sample_size = (av_get_bytes_per_sample(m_audioProps.format) * m_audioProps.channels);
+	const auto sample_size = (av_get_bytes_per_sample(m_audioProps.format) * getNumChannels());
+
 	int dest_num_samples = static_cast<int>(buffer_size / sample_size);
 	auto written = swr_convert(m_resampleCtx,
 							   &out_buffer,
 							   dest_num_samples,
-							   (const uint8_t**) av_frame->data,
+							   (const uint8_t**) av_frame->extended_data,
 							   av_frame->nb_samples);
 
 
@@ -270,11 +280,11 @@ size_t WaveFile::getBufferedData(uint8_t* buffer, size_t buffer_size) {
 	auto buffered = swr_get_out_samples(m_resampleCtx, 0);
 
 	if (buffered > 0) {
-		const auto sample_size = (av_get_bytes_per_sample(m_audioProps.format) * m_audioProps.channels);
+		const auto sample_size = (av_get_bytes_per_sample(m_audioProps.format) * getNumChannels());
 		int dest_num_samples = static_cast<int>(buffer_size / sample_size);
 		auto written = swr_convert(m_resampleCtx, &buffer, dest_num_samples, nullptr, 0);
 
-		auto advance = (size_t)(written * sample_size);
+		auto advance = (size_t) (written * sample_size);
 		Assertion(advance <= buffer_size,
 				  "Buffer overrun!!! Decoding has written more data into the buffer than available!");
 
@@ -283,8 +293,7 @@ size_t WaveFile::getBufferedData(uint8_t* buffer, size_t buffer_size) {
 	return 0;
 }
 
-int WaveFile::Read(uint8_t* pbDest, size_t cbSize)
-{
+int WaveFile::Read(uint8_t* pbDest, size_t cbSize) {
 	size_t buffer_pos = 0;
 	buffer_pos += getBufferedData(pbDest, cbSize);
 	if (buffer_pos == cbSize) {
@@ -294,11 +303,6 @@ int WaveFile::Read(uint8_t* pbDest, size_t cbSize)
 	while (m_frameReader->readFrame(m_decodeFrame)) {
 		// Got a new frame
 		auto advance = handleDecodedFrame(m_decodeFrame, pbDest + buffer_pos, cbSize - buffer_pos);
-
-		if (advance == 0) {
-			// No new data, return what we currently have
-			return (int) buffer_pos;
-		}
 
 		buffer_pos += advance;
 		Assertion(buffer_pos <= cbSize,
@@ -321,16 +325,19 @@ int WaveFile::Read(uint8_t* pbDest, size_t cbSize)
 }
 
 int WaveFile::getSampleByteSize() const {
-	return av_get_bytes_per_sample(m_audioProps.format) * m_audioProps.channels;
+	return av_get_bytes_per_sample(m_audioProps.format) * getNumChannels();
 }
 
 int WaveFile::getSampleRate() const {
 	return m_audioProps.sample_rate;
 }
-int WaveFile::getTotalSamples() const {
-	auto duration = m_audioStream->time_base;
-	duration.num *= (int)m_audioStream->duration;
 
+double WaveFile::getDuration() const {
+	return av_q2d(av_mul_q(av_make_q(static_cast<int>(m_audioStream->duration), 1), m_audioStream->time_base));
+}
+
+int WaveFile::getTotalSamples() const {
+	auto duration = av_mul_q(av_make_q(static_cast<int>(m_audioStream->duration), 1), m_audioStream->time_base);
 	auto samples_r = av_mul_q(av_make_q(m_audioProps.sample_rate, 1), duration);
 
 	// Compute the actual sample number and round the result up
@@ -339,4 +346,10 @@ int WaveFile::getTotalSamples() const {
 	return samples;
 }
 
+int WaveFile::getNumChannels() const {
+	return av_get_channel_layout_nb_channels(m_audioProps.channel_layout);
+}
+ALenum WaveFile::getALFormat() const {
+	return openal_get_format(av_get_bytes_per_sample(m_audioProps.format) * 8, getNumChannels());;
+}
 }

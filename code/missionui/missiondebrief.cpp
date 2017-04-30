@@ -175,15 +175,15 @@ int Debrief_award_text_width[GR_NUM_RESOLUTIONS][2] = {
 	}
 };
 
-char *Debrief_single_name[GR_NUM_RESOLUTIONS] = {
+const char *Debrief_single_name[GR_NUM_RESOLUTIONS] = {
 	"DebriefSingle",		// GR_640
 	"2_DebriefSingle"		// GR_1024
 };
-char *Debrief_multi_name[GR_NUM_RESOLUTIONS] = {
+const char *Debrief_multi_name[GR_NUM_RESOLUTIONS] = {
 	"DebriefMulti",		// GR_640
 	"2_DebriefMulti"		// GR_1024
 };
-char *Debrief_mask_name[GR_NUM_RESOLUTIONS] = {
+const char *Debrief_mask_name[GR_NUM_RESOLUTIONS] = {
 	"Debrief-m",			// GR_640
 	"2_Debrief-m"			// GR_1024
 };
@@ -213,7 +213,7 @@ char *Debrief_mask_name[GR_NUM_RESOLUTIONS] = {
 #define REPEAT	1
 
 //XSTR:OFF
-char* Debrief_loading_bitmap_fname[GR_NUM_RESOLUTIONS] = {
+const char* Debrief_loading_bitmap_fname[GR_NUM_RESOLUTIONS] = {
 	"PleaseWait",		// GR_640
 	"2_PleaseWait"		// GR_1024
 };
@@ -445,7 +445,7 @@ voice_map Debrief_promotion_voice_mapping[NUM_VOLITION_CAMPAIGNS][MAX_CAMPAIGN_M
 	}
 };
 
-static char* Debrief_award_background[GR_NUM_RESOLUTIONS] = {
+static const char* Debrief_award_background[GR_NUM_RESOLUTIONS] = {
 	"DebriefAward",
 	"2_DebriefAward"
 };
@@ -1557,9 +1557,9 @@ void debrief_stats_render()
 
 				if (!i) {
 					if ( Current_stage == DEBRIEF_MISSION_KILLS )
-						gr_printf_menu(0, y, XSTR( "Mission Kills by Ship Type", 447));
+						gr_printf_menu(0, y, "%s", XSTR( "Mission Kills by Ship Type", 447));
 					else
-						gr_printf_menu(0, y, XSTR( "All-time Kills by Ship Type", 448));
+						gr_printf_menu(0, y, "%s", XSTR( "All-time Kills by Ship Type", 448));
 
 				} else if (i > 1) {
 					//Assert: Was debrief_setup_ship_kill_stats called?
@@ -1575,9 +1575,9 @@ void debrief_stats_render()
 
 			if (Num_text_lines == 2) {
 				if ( Current_stage == DEBRIEF_MISSION_KILLS )
-					gr_printf_menu(0, y, XSTR( "(No ship kills this mission)", 449));
+					gr_printf_menu(0, y, "%s", XSTR( "(No ship kills this mission)", 449));
 				else
-					gr_printf_menu(0, y, XSTR( "(No ship kills)", 450));
+					gr_printf_menu(0, y, "%s", XSTR( "(No ship kills)", 450));
 			}
 
 			break;
@@ -1834,6 +1834,9 @@ void debrief_text_init()
 			break;
 		}
 	}
+
+	// Make sure that the text wrapping and the rendering code use the same font
+	font::set_font(DEBRIEFING_FONT);
 
 	Num_text_lines = Text_offset = brief_color_text_init("", Debrief_text_wnd_coords[gr_screen.res][2], default_debriefing_color, 0, 0);	// Initialize color stuff -MageKing17
 
@@ -2501,7 +2504,7 @@ void debrief_do_frame(float frametime)
 
 		gr_set_color_fast(&Color_more_indicator);
 		gr_get_string_size(&w, NULL, XSTR( "More", 459));
-		gr_printf_menu(Debrief_text_wnd_coords[gr_screen.res][0] + Debrief_text_wnd_coords[gr_screen.res][2] / 2 - w / 2, Debrief_text_wnd_coords[gr_screen.res][1] + Debrief_text_wnd_coords[gr_screen.res][3], XSTR( "More", 459));
+		gr_printf_menu(Debrief_text_wnd_coords[gr_screen.res][0] + Debrief_text_wnd_coords[gr_screen.res][2] / 2 - w / 2, Debrief_text_wnd_coords[gr_screen.res][1] + Debrief_text_wnd_coords[gr_screen.res][3], "%s", XSTR( "More", 459));
 	}
 
 	debrief_render_stagenum();

@@ -300,7 +300,7 @@ public:
 	void resetCockpitTarget();
 	
 	void setFont();
-	void setGaugeColor(int bright_index = -4);
+	void setGaugeColor(int bright_index = HUD_C_NONE);
 	
 	// rendering functions
 	void renderBitmap(int x, int y);
@@ -311,8 +311,8 @@ public:
 	void renderString(int x, int y, const char *str);
 	void renderString(int x, int y, int gauge_id, const char *str);
 	void renderStringAlignCenter(int x, int y, int area_width, const char *s);
-	void renderPrintf(int x, int y, const char* format, ...);
-	void renderPrintf(int x, int y, int gauge_id, const char* format, ...);
+	void renderPrintf(int x, int y, SCP_FORMAT_STRING const char* format, ...) SCP_FORMAT_STRING_ARGS(4, 5);
+	void renderPrintf(int x, int y, int gauge_id, SCP_FORMAT_STRING const char* format, ...)  SCP_FORMAT_STRING_ARGS(5, 6);
 	void renderLine(int x1, int y1, int x2, int y2);
 	void renderGradientLine(int x1, int y1, int x2, int y2);
 	void renderRect(int x, int y, int w, int h);
@@ -419,6 +419,24 @@ public:
 
 class HudGaugeDamage: public HudGauge
 {
+	struct DamageInfo {
+		SCP_string name;
+		int strength = -1;
+
+		int bright_index = HUD_C_NONE;
+		color* color_override = nullptr;
+
+		int name_x = -1;
+		int name_y = -1;
+
+		int value_x = -1;
+		int value_y = -1;
+
+		bool draw_background = false;
+		int background_x = -1;
+		int background_y = -1;
+	};
+
 protected:
 	hud_frames damage_top;
 	hud_frames damage_middle;

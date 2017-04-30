@@ -121,13 +121,13 @@ static int Hud_mission_log_status_coords[GR_NUM_RESOLUTIONS][2] = {
 */
 
 struct scrollback_buttons {
-	char *filename;
+	const char *filename;
 	int x, y;
 	int xt, yt;
 	int hotspot;
 	UI_BUTTON button;  // because we have a class inside this struct, we need the constructor below..
 
-	scrollback_buttons(char *name, int x1, int y1, int x2, int y2, int h) : filename(name), x(x1), y(y1), xt(x2), yt(y2), hotspot(h) {}
+	scrollback_buttons(const char *name, int x1, int y1, int x2, int y2, int h) : filename(name), x(x1), y(y1), xt(x2), yt(y2), hotspot(h) {}
 };
 
 SCP_vector<HUD_message_data> HUD_msg_buffer;
@@ -160,7 +160,7 @@ static int Scrollback_mode = SCROLLBACK_MODE_OBJECTIVES;
 static int Background_bitmap;
 static UI_WINDOW Ui_window;
 
-static char* Hud_mission_log_fname[GR_NUM_RESOLUTIONS] = {
+static const char* Hud_mission_log_fname[GR_NUM_RESOLUTIONS] = {
 	"MissionLog",		// GR_640
 	"2_MissionLog"		// GR_1024
 };
@@ -172,7 +172,7 @@ static char* Hud_mission_log_status_fname[GR_NUM_RESOLUTIONS] = {
 };
 */
 
-static char* Hud_mission_log_mask_fname[GR_NUM_RESOLUTIONS] = {
+static const char* Hud_mission_log_mask_fname[GR_NUM_RESOLUTIONS] = {
 	"MissionLog-m",		// GR_640
 	"2_MissionLog-m"		// GR_1024
 };

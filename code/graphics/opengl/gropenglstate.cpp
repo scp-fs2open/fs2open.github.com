@@ -153,11 +153,9 @@ void opengl_state::init()
 		clipplane_Status[i] = GL_FALSE;
 	}
 
-	if (GL_version >= 30) {
-		for (i = 0; i < (int)(sizeof(clipdistance_Status) / sizeof(GLboolean)); i++) {
-			//glDisable(GL_CLIP_DISTANCE0+i);
-			clipdistance_Status[i] = GL_FALSE;
-		}
+	for (i = 0; i < (int)(sizeof(clipdistance_Status) / sizeof(GLboolean)); i++) {
+		//glDisable(GL_CLIP_DISTANCE0+i);
+		clipdistance_Status[i] = GL_FALSE;
 	}
 
 	glDepthMask(GL_FALSE);
@@ -182,6 +180,11 @@ void opengl_state::init()
 
 	current_program = 0;
 	glUseProgram(0);
+
+	current_framebuffer = 0;
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+	framebuffer_stack.clear();
 }
 
 GLboolean opengl_state::Blend(GLint state)
@@ -314,39 +317,19 @@ GLboolean opengl_state::PolygonOffsetFill(GLint state)
 	return save_state;
 }
 
-GLboolean opengl_state::ClipPlane(GLint num, GLint state)
+GLboolean opengl_state::ClipDistance(GLint num, bool state)
 {
-	Assert( (num >= 0) || (num < (int)(sizeof(clipplane_Status) / sizeof(GLboolean))) );
-
-	GLboolean save_state = clipplane_Status[num];
-
-	if ( !((state == -1) || (state == clipplane_Status[num])) ) {
-		if (state) {
-			Assert( state == GL_TRUE );
-			clipplane_Status[num] = GL_TRUE;
-		} else {
-			clipplane_Status[num] = GL_FALSE;
-		}
-	}
-
-	return save_state;
-}
-
-GLboolean opengl_state::ClipDistance(GLint num, GLint state)
-{
-	Assert( (num >= 0) || (num < (int)(sizeof(clipdistance_Status) / sizeof(GLboolean))) || GL_version >= 30 );
+	Assert( (num >= 0) && (num < (int)(sizeof(clipdistance_Status) / sizeof(GLboolean))) );
 
 	GLboolean save_state = clipdistance_Status[num];
 
-	if ( !((state == -1) || (state == clipdistance_Status[num])) ) {
+	if (state != clipdistance_Status[num]) {
 		if (state) {
-			Assert( state == GL_TRUE );
-			//glEnable(GL_CLIP_DISTANCE0+num);
-			clipdistance_Status[num] = GL_TRUE;
+			glEnable(GL_CLIP_DISTANCE0+num);
 		} else {
-			//glDisable(GL_CLIP_DISTANCE0+num);
-			clipdistance_Status[num] = GL_FALSE;
+			glDisable(GL_CLIP_DISTANCE0+num);
 		}
+		clipdistance_Status[num] = state;
 	}
 
 	return save_state;
@@ -510,6 +493,23 @@ void opengl_state::UseProgram(GLuint program)
 bool opengl_state::IsCurrentProgram(GLuint program) {
 	return current_program == program;
 }
+void opengl_state::BindFrameBuffer(GLuint name) {
+	if (current_framebuffer != name) {
+		glBindFramebuffer(GL_FRAMEBUFFER, name);
+		current_framebuffer = name;
+	}
+}
+void opengl_state::PushFramebufferState() {
+	framebuffer_stack.push_back(current_framebuffer);
+}
+void opengl_state::PopFramebufferState() {
+	Assertion(framebuffer_stack.size() > 0, "Tried to pop the framebuffer state stack while it was empty!");
+
+	auto restoreBuffer = framebuffer_stack.back();
+	framebuffer_stack.pop_back();
+
+	BindFrameBuffer(restoreBuffer);
+}
 
 opengl_array_state::~opengl_array_state()
 {
@@ -536,212 +536,10 @@ void opengl_array_state::init(GLuint n_units)
 		client_texture_units[i].used_for_draw = false;
 	}
 
-	color_array_Buffer = 0;
-	color_array_Status = GL_FALSE;
-	color_array_size = 4;
-	color_array_type = GL_FLOAT;
-	color_array_stride = 0;
-	color_array_pointer = 0;
-	color_array_reset_ptr = false;
-	color_array_used_for_draw = false;
-
-	normal_array_Buffer = 0;
-	normal_array_Status = GL_FALSE;
-	normal_array_Type = GL_FLOAT;
-	normal_array_Stride = 0;
-	normal_array_Pointer = 0;
-	normal_array_reset_ptr = false;
-	normal_array_used_for_draw = false;
-
-	vertex_array_Buffer = 0;
-	vertex_array_Status = GL_FALSE;
-	vertex_array_Size = 4;
-	vertex_array_Type = GL_FLOAT;
-	vertex_array_Stride = 0;
-	vertex_array_Pointer = 0;
-	vertex_array_reset_ptr = false;
-	vertex_array_used_for_draw = false;
-
 	array_buffer = 0;
 	element_array_buffer = 0;
 	texture_array_buffer = 0;
 	uniform_buffer = 0;
-}
-
-void opengl_array_state::SetActiveClientUnit(GLuint id)
-{
-	// this function is deprecated in OGL Core
-}
-
-void opengl_array_state::EnableClientTexture()
-{
-	client_texture_units[active_client_texture_unit].used_for_draw = true;
-
-	if ( client_texture_units[active_client_texture_unit].status == GL_TRUE ) {
-		return;
-	}
-
-
-	client_texture_units[active_client_texture_unit].status = GL_TRUE;
-}
-
-void opengl_array_state::DisableClientTexture()
-{
-	if ( client_texture_units[active_client_texture_unit].status == GL_FALSE ) {
-		return;
-	}
-
-
-	client_texture_units[active_client_texture_unit].status = GL_FALSE;
-}
-
-void opengl_array_state::TexPointer(GLint size, GLenum type, GLsizei stride, GLvoid *pointer)
-{
-	opengl_client_texture_unit *ct_unit = &client_texture_units[active_client_texture_unit];
-
-	if ( 
-		!ct_unit->reset_ptr 
-		&& ct_unit->pointer == pointer 
-		&& ct_unit->size == size 
-		&& ct_unit->type == type 
-		&& ct_unit->stride == stride 
-		&& ct_unit->buffer == array_buffer 
-	) {
-		return;
-	}
-
-
-	ct_unit->size = size;
-	ct_unit->type = type;
-	ct_unit->stride = stride;
-	ct_unit->pointer = pointer;
-	ct_unit->buffer = array_buffer;
-	ct_unit->reset_ptr = false;
-}
-
-void opengl_array_state::EnableClientColor()
-{
-	color_array_used_for_draw = true;
-
-	if ( color_array_Status == GL_TRUE ) {
-		return;
-	}
-
-
-	color_array_Status = GL_TRUE;
-}
-
-void opengl_array_state::DisableClientColor()
-{
-	if ( color_array_Status == GL_FALSE ) {
-		return;
-	}
-
-
-	color_array_Status = GL_FALSE;
-}
-
-void opengl_array_state::ColorPointer(GLint size, GLenum type, GLsizei stride, GLvoid *pointer)
-{
-	if ( 
-		!color_array_reset_ptr 
-		&& color_array_size == size 
-		&& color_array_type == type 
-		&& color_array_stride == stride 
-		&& color_array_pointer == pointer 
-		&& color_array_Buffer == array_buffer 
-	) {
-		return;
-	}
-
-
-	color_array_size = size;
-	color_array_type = type;
-	color_array_stride = stride;
-	color_array_pointer = pointer;
-	color_array_Buffer = array_buffer;
-	color_array_reset_ptr = false;
-}
-
-void opengl_array_state::EnableClientNormal()
-{
-	normal_array_used_for_draw = true;
-
-	if ( normal_array_Status == GL_TRUE ) {
-		return;
-	}
-
-
-	normal_array_Status = GL_TRUE;
-}
-
-void opengl_array_state::DisableClientNormal()
-{
-	if ( normal_array_Status == GL_FALSE ) {
-		return;
-	}
-
-	normal_array_Status = GL_FALSE;
-}
-
-void opengl_array_state::NormalPointer(GLenum type, GLsizei stride, GLvoid *pointer)
-{
-	if ( 
-		!normal_array_reset_ptr 
-		&& normal_array_Type == type 
-		&& normal_array_Stride == stride 
-		&& normal_array_Pointer == pointer 
-		&& normal_array_Buffer == array_buffer 
-	) {
-		return;
-	}
-
-	normal_array_Type = type;
-	normal_array_Stride = stride;
-	normal_array_Pointer = pointer;
-	normal_array_Buffer = array_buffer;
-	normal_array_reset_ptr = false;
-}
-
-void opengl_array_state::EnableClientVertex()
-{
-	vertex_array_used_for_draw = true;
-
-	if ( vertex_array_Status == GL_TRUE ) {
-		return;
-	}
-
-	vertex_array_Status = GL_TRUE;
-}
-
-void opengl_array_state::DisableClientVertex()
-{
-	if ( vertex_array_Status == GL_FALSE ) {
-		return;
-	}
-
-	vertex_array_Status = GL_FALSE;
-}
-
-void opengl_array_state::VertexPointer(GLint size, GLenum type, GLsizei stride, GLvoid *pointer)
-{
-	if (
-		!vertex_array_reset_ptr 
-		&& vertex_array_Size == size 
-		&& vertex_array_Type == type 
-		&& vertex_array_Stride == stride 
-		&& vertex_array_Pointer == pointer 
-		&& vertex_array_Buffer == array_buffer 
-	) {
-		return;
-	}
-
-	vertex_array_Size = size;
-	vertex_array_Type = type;
-	vertex_array_Stride = stride;
-	vertex_array_Pointer = pointer;
-	vertex_array_Buffer = array_buffer;
-	vertex_array_reset_ptr = false;
 }
 
 void opengl_array_state::EnableVertexAttrib(GLuint index)
@@ -815,11 +613,6 @@ void opengl_array_state::ResetVertexAttribs()
 
 void opengl_array_state::BindPointersBegin()
 {
-	// set all available client states to not used
-	vertex_array_used_for_draw = false;
-	color_array_used_for_draw = false;
-	normal_array_used_for_draw = false;
-
 	for (unsigned int i = 0; i < num_client_texture_units; i++) {
 		client_texture_units[i].used_for_draw = false;
 	}
@@ -833,18 +626,6 @@ void opengl_array_state::BindPointersBegin()
 
 void opengl_array_state::BindPointersEnd()
 {
-	// any client states not used, disable them
-	if ( !vertex_array_used_for_draw ) DisableClientVertex();
-	if ( !color_array_used_for_draw ) DisableClientColor();
-	if ( !normal_array_used_for_draw ) DisableClientNormal();
-
-	for (unsigned int i = 0; i < num_client_texture_units; i++) {
-		if ( !client_texture_units[i].used_for_draw ) {
-			SetActiveClientUnit(i);
-			DisableClientTexture();
-		}
-	}
-
 	SCP_map<GLuint, opengl_vertex_attrib_unit>::iterator it;
 
 	for (it = vertex_attrib_units.begin(); it != vertex_attrib_units.end(); ++it) {
@@ -861,10 +642,6 @@ void opengl_array_state::BindArrayBuffer(GLuint id)
 	glBindBuffer(GL_ARRAY_BUFFER, id);
 
 	array_buffer = id;
-
-	vertex_array_reset_ptr = true;
-	color_array_reset_ptr = true;
-	normal_array_reset_ptr = true;
 
 	for (unsigned int i = 0; i < num_client_texture_units; i++) {
 		client_texture_units[i].reset_ptr = true;
@@ -921,176 +698,9 @@ void opengl_array_state::BindUniformBuffer(GLuint id)
 	uniform_buffer = id;
 }
 
-opengl_light_state::opengl_light_state(int light_num): Light_num(light_num)
-{
-
-}
-
-void opengl_light_state::Enable()
-{
-	Assert ( Light_num >= 0 && Light_num < GL_max_lights );
-
-	if ( Enabled ) {
-		return;
-	}
-
-	Enabled = true;
-}
-
-void opengl_light_state::Disable()
-{
-	Assert ( Light_num >= 0 && Light_num < GL_max_lights );
-
-	if ( !Enabled ) {
-		return;
-	}
-
-	Enabled = false;
-}
-
-void opengl_light_state::Invalidate()
-{
-	InvalidPosition = true;
-}
-
-void opengl_light_state::SetPosition(GLfloat *val)
-{
-	Assert(Light_num >= 0 && Light_num < GL_max_lights);
-
-	if ( !InvalidPosition && 
-		fl_equal(Position[0], val[0]) && 
-		fl_equal(Position[1], val[1]) && 
-		fl_equal(Position[2], val[2]) && 
-		fl_equal(Position[3], val[3]) ) {
-		return;
-	}
-
-	Position[0] = val[0];
-	Position[1] = val[1];
-	Position[2] = val[2];
-	Position[3] = val[3];
-
-	InvalidPosition = false;
-}
-
-void opengl_light_state::SetAmbient(GLfloat *val)
-{
-	Assert(Light_num >= 0 && Light_num < GL_max_lights);
-
-	if ( fl_equal(Ambient[0], val[0]) &&
-		fl_equal(Ambient[1], val[1]) &&
-		fl_equal(Ambient[2], val[2]) &&
-		fl_equal(Ambient[3], val[3]) ) {
-		return;
-	}
-
-	Ambient[0] = val[0];
-	Ambient[1] = val[1];
-	Ambient[2] = val[2];
-	Ambient[3] = val[3];
-}
-
-void opengl_light_state::SetDiffuse(GLfloat *val)
-{
-	Assert(Light_num >= 0 && Light_num < GL_max_lights);
-
-	if ( fl_equal(Diffuse[0], val[0]) &&
-		fl_equal(Diffuse[1], val[1]) &&
-		fl_equal(Diffuse[2], val[2]) &&
-		fl_equal(Diffuse[3], val[3]) ) {
-		return;
-	}
-
-	Diffuse[0] = val[0];
-	Diffuse[1] = val[1];
-	Diffuse[2] = val[2];
-	Diffuse[3] = val[3];
-
-}
-
-void opengl_light_state::SetSpecular(GLfloat *val)
-{
-	Assert(Light_num >= 0 && Light_num < GL_max_lights);
-
-	if ( fl_equal(Specular[0], val[0]) &&
-		fl_equal(Specular[1], val[1]) &&
-		fl_equal(Specular[2], val[2]) &&
-		fl_equal(Specular[3], val[3]) ) {
-		return;
-	}
-
-	Specular[0] = val[0];
-	Specular[1] = val[1];
-	Specular[2] = val[2];
-	Specular[3] = val[3];
-
-}
-
-void opengl_light_state::SetConstantAttenuation(GLfloat val)
-{
-	Assert(Light_num >= 0 && Light_num < GL_max_lights);
-
-	if ( fl_equal(ConstantAttenuation, val) ) {
-		return;
-	}
-
-	ConstantAttenuation = val;
-
-}
-
-void opengl_light_state::SetLinearAttenuation(GLfloat val)
-{
-	Assert(Light_num >= 0 && Light_num < GL_max_lights);
-
-	if ( fl_equal(LinearAttenuation, val) ) {
-		return;
-	}
-
-	LinearAttenuation = val;
-
-}
-
-void opengl_light_state::SetQuadraticAttenuation(GLfloat val)
-{
-	Assert(Light_num >= 0 && Light_num < GL_max_lights);
-
-	if ( fl_equal(QuadraticAttenuation, val) ) {
-		return;
-	}
-
-	QuadraticAttenuation = val;
-
-}
-
-void opengl_light_state::SetSpotExponent(GLfloat val)
-{
-	Assert(Light_num >= 0 && Light_num < GL_max_lights);
-
-	if ( fl_equal(SpotExponent, val) ) {
-		return;
-	}
-
-	SpotExponent = val;
-
-}
-
-void opengl_light_state::SetSpotCutoff(GLfloat val)
-{
-	Assert(Light_num >= 0 && Light_num < GL_max_lights);
-
-	if ( fl_equal(SpotCutoff, val) ) {
-		return;
-	}
-
-	SpotCutoff = val;
-
-}
-
 void gr_opengl_clear_states()
 {
-	if ( GL_version >= 30 ) {
-		glBindVertexArray(GL_vao);
-	}
+	glBindVertexArray(GL_vao);
 
 	gr_zbias(0);
 	gr_zbuffer_set(ZBUFFER_TYPE_READ);
@@ -1100,81 +710,4 @@ void gr_opengl_clear_states()
 	gr_set_lighting(false, false);
 
 	opengl_shader_set_current();
-}
-
-void opengl_setup_render_states(int &r, int &g, int &b, int &alpha, int &tmap_type, int flags, int is_scaler)
-{
-	gr_alpha_blend alpha_blend = (gr_alpha_blend)(-1);
-	gr_zbuffer_type zbuffer_type = (gr_zbuffer_type)(-1);
-	
-	if (gr_zbuffering) {
-		if ( is_scaler || (gr_screen.current_alphablend_mode == GR_ALPHABLEND_FILTER) ) {
-			zbuffer_type = ZBUFFER_TYPE_READ;
-		} else {
-			zbuffer_type = ZBUFFER_TYPE_FULL;
-		}
-	} else {
-		zbuffer_type = ZBUFFER_TYPE_NONE;
-	}
-
-	tmap_type = TCACHE_TYPE_NORMAL;
-
-	if (flags & TMAP_FLAG_TEXTURED) {
-		r = g = b = 255;
-	} else {
-		r = gr_screen.current_color.red;
-		g = gr_screen.current_color.green;
-		b = gr_screen.current_color.blue;
-	}
-
-	if (flags & TMAP_FLAG_BW_TEXTURE) {
-		r = gr_screen.current_color.red;
-		g = gr_screen.current_color.green;
-		b = gr_screen.current_color.blue;
-	}
-
-	if ( gr_screen.current_alphablend_mode == GR_ALPHABLEND_FILTER ) {
-		if ( (gr_screen.current_bitmap >= 0) && bm_has_alpha_channel(gr_screen.current_bitmap) ) {
-			tmap_type = TCACHE_TYPE_XPARENT;
-
-			alpha_blend = ALPHA_BLEND_ALPHA_BLEND_ALPHA;
-
-			// Blend with screen pixel using src*alpha+dst
-			float factor = gr_screen.current_alpha;
-
-			if (factor >= 1.0f) {
-				alpha = 255;
-			} else {
-				alpha = fl2i(gr_screen.current_alpha*255.0f);
-			}
-		} else {
-			tmap_type = TCACHE_TYPE_NORMAL;
-			alpha_blend = ALPHA_BLEND_ADDITIVE;	// ALPHA_BLEND_ALPHA_ADDITIVE;
-
-			// Blend with screen pixel using src*alpha+dst
-			float factor = gr_screen.current_alpha;
-
-			alpha = 255;
-
-			if (factor < 1.0f) {
-				r = fl2i(r * gr_screen.current_alpha);
-				g = fl2i(g * gr_screen.current_alpha);
-				b = fl2i(b * gr_screen.current_alpha);
-			}
-		}
-	} else {
-		alpha_blend = ALPHA_BLEND_ALPHA_BLEND_ALPHA;
-		alpha = fl2i(gr_screen.current_alpha * 255.0f);
-	}
-
-	
-	if (flags & TMAP_FLAG_TEXTURED) {
-		// use nonfiltered textures for interface graphics
-		if (flags & TMAP_FLAG_INTERFACE) {
-			tmap_type = TCACHE_TYPE_INTERFACE;
-		}
-	}
-
-	GL_state.SetAlphaBlendMode(alpha_blend);
-	GL_state.SetZbufferType(zbuffer_type);
 }

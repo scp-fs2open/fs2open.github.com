@@ -78,6 +78,7 @@ void batching_init_buffer(primitive_batch_buffer *buffer, primitive_type prim_ty
 	buffer->buffer_num = gr_create_vertex_buffer();
 	buffer->buffer_ptr = NULL;
 	buffer->buffer_size = 0;
+	buffer->desired_buffer_size = 0;
 	buffer->prim_type = prim_type;
 }
 
@@ -276,7 +277,7 @@ void batching_add_point_bitmap(primitive_batch *batch, vertex *position, int ori
 		vm_vec_scale_add(&PNT, &PNT, &fvec, depth);
 
 	batch_vertex new_particle;
-	vec3d up = { 0.0f, 1.0f, 0.0f };
+	vec3d up = {{{ 0.0f, 1.0f, 0.0f }}};
 
 	new_particle.position = position->world;
 	new_particle.radius = radius;
@@ -858,7 +859,8 @@ void batching_add_tri(int texture, vertex *verts)
 
 void batching_render_batch_item(primitive_batch_item *item, vertex_layout *layout, primitive_type prim_type, int buffer_num)
 {
-	profile_auto profile_scope("Render batch item");
+	GR_DEBUG_SCOPE("Batching render item");
+	TRACE_SCOPE(tracing::RenderBatchItem);
 
 	if ( item->batch_item_info.mat_type == batch_info::VOLUME_EMISSIVE ) { // Cmdline_softparticles
 		particle_material material_def;
@@ -913,7 +915,8 @@ void batching_allocate_and_load_buffer(primitive_batch_buffer *draw_queue)
 
 void batching_load_buffers(bool distortion)
 {
-	profile_auto profile_scope("Load batching buffers");
+	GR_DEBUG_SCOPE("Batching load buffers");
+	TRACE_SCOPE(tracing::LoadBatchingBuffers);
 
 	SCP_map<batch_info, primitive_batch>::iterator bi;
 	SCP_map<batch_buffer_key, primitive_batch_buffer>::iterator buffer_iter;
@@ -961,7 +964,8 @@ void batching_load_buffers(bool distortion)
 
 void batching_render_buffer(primitive_batch_buffer *buffer)
 {
-	profile_auto profile_scope("Render batching buffer");
+	GR_DEBUG_SCOPE("Batching render buffer");
+	TRACE_SCOPE(tracing::RenderBatchBuffer);
 
 	size_t num_batches = buffer->items.size();
 
@@ -981,6 +985,7 @@ void batching_render_buffer(primitive_batch_buffer *buffer)
 void batching_render_all(bool render_distortions)
 {
 	GR_DEBUG_SCOPE("Batching render all");
+	TRACE_SCOPE(tracing::DrawEffects);
 
 	batching_load_buffers(render_distortions);
 

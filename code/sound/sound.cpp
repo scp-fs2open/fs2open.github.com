@@ -19,17 +19,16 @@
 #include "globalincs/vmallocator.h"
 #include "osapi/osapi.h"
 #include "render/3d.h"
-#include "sound/acm.h"
+#include "sound/ffmpeg/WaveFile.h"
 #include "sound/audiostr.h"
 #include "sound/ds.h"
 #include "sound/ds3d.h"
 #include "sound/dscap.h"
+#include "tracing/Monitor.h"
+#include "tracing/tracing.h"
 
 #include "globalincs/pstypes.h"
 
-#ifdef _WIN32
-#include <windows.h>
-#endif
 #include <limits.h>
 
 const unsigned int SND_ENHANCED_MAX_LIMIT = 15; // seems like a good max limit
@@ -49,7 +48,7 @@ typedef struct sound	{
 SCP_vector<sound> Sounds;
 
 int Sound_enabled = FALSE;				// global flag to turn sound on/off
-int Snd_sram;								// mem (in bytes) used up by storing sounds in system memory
+size_t Snd_sram;								// mem (in bytes) used up by storing sounds in system memory
 float Master_sound_volume = 1.0f;	// range is 0 -> 1, used for non-music sound fx
 float Master_voice_volume = 0.7f;	// range is 0 -> 1, used for all voice playback
 
@@ -149,11 +148,7 @@ int snd_init()
 		Cmdline_freespace_no_sound = Cmdline_freespace_no_music = 1;
 		goto Failure;
 	}
-
-	if ( OGG_init() == -1 ) {
-		mprintf(("Could not initialize the OGG vorbis converter.\n"));
-	}
-
+	
 	snd_aav_init();
 
 	// Init the audio streaming stuff
@@ -283,11 +278,6 @@ int snd_load( game_snd *gs, int allow_hardware_load )
 	int				type;
 	sound_info		*si;
 	sound			*snd;
-	WAVEFORMATEX	*header = NULL;
-	int				rc;
-	size_t			FileSize, FileOffset;
-	char			fullpath[MAX_PATH];
-	char			filename[MAX_FILENAME_LEN];
 	size_t			n;
 
 
@@ -324,77 +314,70 @@ int snd_load( game_snd *gs, int allow_hardware_load )
 
 	si = &snd->info;
 
-	si->data = NULL;
-	si->size = 0;
+	TRACE_SCOPE(tracing::LoadSound);
 
-	// strip the extension from the filename and try to open any extension
-	strcpy_s( filename, gs->filename );
-	char *p = strrchr(filename, '.');
-	if ( p ) *p = 0;
+	std::unique_ptr<ffmpeg::WaveFile> audio_file(new ffmpeg::WaveFile());
 
-	rc = cf_find_file_location_ext(filename, NUM_AUDIO_EXT, audio_ext_list, CF_TYPE_ANY, sizeof(fullpath) - 1, fullpath, &FileSize, &FileOffset);
+	nprintf(("Sound", "SOUND ==> Loading '%s'\n", gs->filename));
 
-	if (rc < 0)
-		return -1;
-
-	// open the file
-	CFILE *fp = cfopen_special(fullpath, "rb", FileSize, FileOffset);
-
-	// ok, we got it, so set the proper filename for logging purposes
-	strcat_s(filename, audio_ext_list[rc]);
-
-	nprintf(("Sound", "SOUND => Loading '%s'\n", filename));
-
-	// ds_parse_sound() will do a NULL check on fp for us
-	if ( ds_parse_sound(fp, &si->data, &si->size, &header, (rc == 0), &si->ogg_info) == -1 ) {
-		nprintf(("Sound", "SOUND ==> Could not read sound file!\n"));
-
-		if (fp != NULL) {
-			cfclose(fp);
-		}
-
+	if (!audio_file->Open(gs->filename, false)) {
 		return -1;
 	}
-
-	// Load was a success, should be some sort of WAV or an OGG
-	si->format				= header->wFormatTag;		// 16-bit flag (wFormatTag)
-	si->n_channels			= header->nChannels;		// 16-bit channel count (nChannels)
-	si->sample_rate			= header->nSamplesPerSec;	// 32-bit sample rate (nSamplesPerSec)
-	si->avg_bytes_per_sec	= header->nAvgBytesPerSec;	// 32-bit average bytes per second (nAvgBytesPerSec)
-	si->n_block_align		= header->nBlockAlign;		// 16-bit block alignment (nBlockAlign)
-	si->bits				= header->wBitsPerSample;	// Read 16-bit bits per sample	
 
 	type = 0;
-
 	if (gs->flags & GAME_SND_USE_DS3D) {
 		type |= DS_3D;
+
+		if (audio_file->getNumChannels() > 1) {
+			// We need to resample the audio down to one channel
+			auto current = audio_file->getAudioProperties();
+			current.channel_layout = AV_CH_LAYOUT_MONO;
+
+			audio_file->setAdjustedAudioProperties(current);
+
+#ifndef NDEBUG
+            // Retail has a few sounds that triggers this warning so we need to ignore those
+            const char* warning_ignore_list[] = {
+				"l_hit.wav",
+				"m_hit.wav",
+				"s_hit_2.wav",
+				"Pirate.wav",
+			};
+
+			bool show_warning = true;
+			for (auto& name : warning_ignore_list) {
+				if (!stricmp(name, gs->filename)) {
+					show_warning = false;
+					break;
+				}
+			}
+
+			if (show_warning) {
+				Warning(LOCATION, "Sound '%s' has more than one channel but is used as a 3D sound! 3D sounds may only have one channel.", gs->filename);
+			}
+#endif
+		}
 	}
 
-	rc = ds_load_buffer(&snd->sid, &snd->uncompressed_size, header, si, type);
+	// Load was a success
+	si->n_channels			= audio_file->getNumChannels();		// 16-bit channel count (nChannels)
+	si->sample_rate			= audio_file->getSampleRate();	// 32-bit sample rate (nSamplesPerSec)
+	si->avg_bytes_per_sec	= audio_file->getSampleRate() * audio_file->getSampleByteSize();	// 32-bit average bytes per second (nAvgBytesPerSec)
+	si->bits					= audio_file->getSampleByteSize() / audio_file->getNumChannels() * 8;	// Read 16-bit bits per sample	
+	si->size					= audio_file->getTotalSamples() * audio_file->getSampleByteSize();
 
-	// NOTE: "si" values can change once loaded in the buffer
-	snd->duration = fl2i(1000.0f * ((si->size / (si->bits/8.0f)) / si->sample_rate / si->n_channels));
+	snd->uncompressed_size = si->size;
 
-	// free the header if needed
-	if (header != NULL)
-		vm_free(header);
-
-	// we don't need to keep si->data around anymore, this should be NULL for OGG files
-	if (si->data != NULL) {
-		vm_free(si->data);
-		si->data = NULL;
- 	}
- 
-	// make sure the file handle is closed
-	if (fp != NULL)
-		cfclose(fp);
-
-	if ( rc == -1 ) {
-		nprintf(("Sound", "SOUND ==> Failed to load '%s'\n", filename));
+	auto rc = ds_load_buffer(&snd->sid, type, audio_file.get());
+	if (rc == -1) {
+		nprintf(("Sound", "SOUND ==> Failed to load '%s'\n", gs->filename));
 		return -1;
 	}
 
-	strncpy( snd->filename, gs->filename, MAX_FILENAME_LEN );
+	// NOTE: "si" values can change once loaded in the buffer
+	snd->duration = fl2i(1000.0f * audio_file->getDuration());
+
+	strcpy_s( snd->filename, gs->filename );
 	snd->flags = SND_F_USED;
 
 	snd->sig = snd_next_sig++;
@@ -402,7 +385,7 @@ int snd_load( game_snd *gs, int allow_hardware_load )
 	gs->id_sig = snd->sig;
 	gs->id = (int)n;
 
-//	nprintf(("Sound", "SOUND ==> Finished loading '%s'\n", filename));
+	nprintf(("Sound", "SOUND ==> Finished loading '%s'\n", gs->filename));
 
 	return (int)n;
 }
@@ -1122,7 +1105,7 @@ void snd_rewind(int snd_handle, game_snd *gs, float seconds)
 {			
 	float current_time,desired_time;
 	float bps;
-	DWORD current_offset,desired_offset;
+	uint32_t current_offset,desired_offset;
 	sound_info *snd;
 
 	if(!snd_is_playing(snd_handle))
@@ -1142,7 +1125,7 @@ void snd_rewind(int snd_handle, game_snd *gs, float seconds)
 		return;
 
 	desired_time = current_time - seconds;											// where we want to be
-	desired_offset = (DWORD)(desired_time * bps);								// the target
+	desired_offset = (uint32_t)(desired_time * bps);								// the target
 			
 	ds_set_position(ds_get_channel(snd_handle),desired_offset);
 }
@@ -1152,7 +1135,7 @@ void snd_ffwd(int snd_handle, game_snd *gs, float seconds)
 {
 	float current_time,desired_time;
 	float bps;
-	DWORD current_offset,desired_offset;
+	uint32_t current_offset,desired_offset;
 	sound_info *snd;
 
 	if(!snd_is_playing(snd_handle))
@@ -1172,7 +1155,7 @@ void snd_ffwd(int snd_handle, game_snd *gs, float seconds)
 		return;
 
 	desired_time = current_time + seconds;											// where we want to be
-	desired_offset = (DWORD)(desired_time * bps);								// the target
+	desired_offset = (uint32_t)(desired_time * bps);								// the target
 			
 	ds_set_position(ds_get_channel(snd_handle),desired_offset);
 }
@@ -1193,14 +1176,14 @@ void snd_set_pos(int snd_handle, game_snd *gs, float val,int as_pct)
 	// set position as an absolute from 0 to 1
 	if(as_pct){
 		Assert((val >= 0.0) && (val <= 1.0));
-		ds_set_position(ds_get_channel(snd_handle),(DWORD)((float)snd->size * val));
+		ds_set_position(ds_get_channel(snd_handle),(uint32_t)((float)snd->size * val));
 	} 
 	// set the position as an absolute # of seconds from the beginning of the sound
 	else {
 		float bps;
 		Assert(val <= (float)snd->duration/1000.0f);
 		bps = (float)snd->sample_rate * (float)snd->bits;							// data rate			
-		ds_set_position(ds_get_channel(snd_handle),(DWORD)(bps * val));
+		ds_set_position(ds_get_channel(snd_handle),(uint32_t)(bps * val));
 	}
 }
 
@@ -1423,44 +1406,6 @@ void snd_do_frame()
 	}
 
 	ds_do_frame();
-}
-
-// return the number of samples per pre-defined measure in a piece of audio
-int snd_get_samples_per_measure(char *filename, float num_measures)
-{
-	sound_info si;
-	uint total_bytes = 0;
-	int bytes_per_measure = 0;
-
-	// although this function doesn't require sound to work, if sound is disabled then this is useless
-	if ( !Sound_enabled )
-		return -1;
-
-	if ( !VALID_FNAME(filename) )
-		return -1;
-
-	if (num_measures <= 0.0f)
-		return -1;
-
-
-	if ( ds_parse_sound_info(filename, &si) ) {
-		nprintf(("Sound", "Could not read sould file '%s' for SPM check!\n", filename));
-		return -1;
-	}
-
-	total_bytes = (uint)si.size;
-
-	// if it's ADPCM then we have to account for the uncompressed size
-	if (si.format == WAVE_FORMAT_ADPCM) {
-		total_bytes *= 16;	// we always decode APDCM to 16-bit (for OpenAL at least)
-		total_bytes /= si.bits;
-		total_bytes *= 2;	// this part isn't at all accurate though
-	}
-
-	bytes_per_measure = fl2i(total_bytes / num_measures);
-
-	// ok, now return the samples per measure (which is half of bytes_per_measure)
-	return (bytes_per_measure / 2);
 }
 
 void snd_adjust_audio_volume(int type, float percent, int time)

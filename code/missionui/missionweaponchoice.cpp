@@ -100,12 +100,12 @@ int Weapon_select_overlay_id = -1;
 
 // convenient struct for handling all button controls
 struct wl_buttons {
-	char *filename;
+	const char *filename;
 	int x, y, xt, yt;
 	int hotspot;
 	UI_BUTTON button;  // because we have a class inside this struct, we need the constructor below..
 
-	wl_buttons(char *name, int x1, int y1, int xt1, int yt1, int h) : filename(name), x(x1), y(y1), xt(xt1), yt(yt1), hotspot(h) {}
+	wl_buttons(const char *name, int x1, int y1, int xt1, int yt1, int h) : filename(name), x(x1), y(y1), xt(xt1), yt(yt1), hotspot(h) {}
 };
 
 static wl_buttons Buttons[GR_NUM_RESOLUTIONS][MAX_WEAPON_BUTTONS] = {
@@ -132,7 +132,7 @@ static wl_buttons Buttons[GR_NUM_RESOLUTIONS][MAX_WEAPON_BUTTONS] = {
 };
 
 
-static char *Wl_mask_single[NUM_WEAPON_SETTINGS][GR_NUM_RESOLUTIONS] = {
+static const char *Wl_mask_single[NUM_WEAPON_SETTINGS][GR_NUM_RESOLUTIONS] = {
 	{
 		"weaponloadout-m",
 		"2_weaponloadout-m"
@@ -143,7 +143,7 @@ static char *Wl_mask_single[NUM_WEAPON_SETTINGS][GR_NUM_RESOLUTIONS] = {
 	}
 };
 
-static char *Wl_mask_multi[NUM_WEAPON_SETTINGS][GR_NUM_RESOLUTIONS] = {
+static const char *Wl_mask_multi[NUM_WEAPON_SETTINGS][GR_NUM_RESOLUTIONS] = {
 	{
 		"weaponloadoutmulti-m",
 		"2_weaponloadoutmulti-m"
@@ -155,7 +155,7 @@ static char *Wl_mask_multi[NUM_WEAPON_SETTINGS][GR_NUM_RESOLUTIONS] = {
 	}
 };
 
-static char *Wl_loadout_select_mask[NUM_WEAPON_SETTINGS][GR_NUM_RESOLUTIONS] = {
+static const char *Wl_loadout_select_mask[NUM_WEAPON_SETTINGS][GR_NUM_RESOLUTIONS] = {
 	{
 		"weaponloadout-m",
 		"2_weaponloadout-m"
@@ -167,7 +167,7 @@ static char *Wl_loadout_select_mask[NUM_WEAPON_SETTINGS][GR_NUM_RESOLUTIONS] = {
 };
 
 
-static char *Weapon_select_background_fname[NUM_WEAPON_SETTINGS][GR_NUM_RESOLUTIONS] = {
+static const char *Weapon_select_background_fname[NUM_WEAPON_SETTINGS][GR_NUM_RESOLUTIONS] = {
 	{
 		"WeaponLoadout",
 		"2_WeaponLoadout"
@@ -178,7 +178,7 @@ static char *Weapon_select_background_fname[NUM_WEAPON_SETTINGS][GR_NUM_RESOLUTI
 	}
 };
 
-static char *Weapon_select_multi_background_fname[NUM_WEAPON_SETTINGS][GR_NUM_RESOLUTIONS] = {
+static const char *Weapon_select_multi_background_fname[NUM_WEAPON_SETTINGS][GR_NUM_RESOLUTIONS] = {
 	{
 		"WeaponLoadoutMulti",
 		"2_WeaponLoadoutMulti"
@@ -357,8 +357,7 @@ static int Wl_mouse_down_on_region = -1;
 
 // weapon desc stuff
 #define WEAPON_DESC_WIPE_TIME			1.5f			// time in seconds for wipe to occur (over WEAPON_DESC_MAX_LENGTH number of chars)
-#define WEAPON_DESC_MAX_LINES			7				// max lines in the description incl. title
-#define WEAPON_DESC_MAX_LENGTH		50				// max chars per line of description text
+
 static int Weapon_desc_wipe_done = 0;
 static float Weapon_desc_wipe_time_elapsed = 0.0f;
 static char Weapon_desc_lines[WEAPON_DESC_MAX_LINES][WEAPON_DESC_MAX_LENGTH];			// 1st 2 lines are title, rest are desc
@@ -755,7 +754,12 @@ void wl_render_overhead_view(float frametime)
 		{
 			if (wl_ship->model_num < 0)
 			{
-				wl_ship->model_num = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0]);
+				if (sip->pof_file_tech[0] != '\0') {
+					wl_ship->model_num = model_load(sip->pof_file_tech, sip->n_subsystems, &sip->subsystems[0]);
+				}
+				else {
+					wl_ship->model_num = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0]);
+				}
 				model_page_in_textures(wl_ship->model_num, ship_class);
 			}
 
@@ -823,13 +827,18 @@ void wl_render_overhead_view(float frametime)
 		// Load the necessary model file, if necessary
 		if (wl_ship->model_num < 0)
 		{
-			wl_ship->model_num = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0]);
+			if (sip->pof_file_tech[0] != '\0') {
+				wl_ship->model_num = model_load(sip->pof_file_tech, sip->n_subsystems, &sip->subsystems[0]);
+			}
+			else {
+				wl_ship->model_num = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0]);
+			}
 			model_page_in_textures(wl_ship->model_num, ship_class);
 		}
 		
 		if (wl_ship->model_num < 0)
 		{
-			mprintf(("Couldn't load model file in missionweaponchoice.cpp\n"));
+			mprintf(("Couldn't load model file '%s' in missionweaponchoice.cpp\n", sip->pof_file));
 		}
 		else
 		{
@@ -892,6 +901,11 @@ void wl_render_overhead_view(float frametime)
             
 			model_clear_instance(wl_ship->model_num);
 			polymodel *pm = model_get(wl_ship->model_num);
+
+			if (sip->replacement_textures.size() > 0) 
+			{
+				render_info.set_replacement_textures(wl_ship->model_num, sip->replacement_textures);
+			}
 
 			if(Cmdline_shadow_quality)
 			{
@@ -2413,9 +2427,6 @@ void wl_weapon_desc_start_wipe()
 			}
 
 			currchar_src++;
-
-			Assert(currline_dest < WEAPON_DESC_MAX_LINES);
-			Assert(currchar_dest < WEAPON_DESC_MAX_LENGTH);
 		}
 	}
 
@@ -3951,7 +3962,6 @@ void wl_apply_current_loadout_to_all_ships_in_current_wing()
 	size_t i;
 
 	ship_info *sip, *source_sip;
-	weapon_info *wip;
 
 	char ship_name[NAME_LENGTH];
 	char *wep_display_name;
@@ -4019,7 +4029,6 @@ void wl_apply_current_loadout_to_all_ships_in_current_wing()
 
 			// determine the weapon we need
 			weapon_type_to_add = Wss_slots[source_wss_slot].wep[cur_bank];
-			wip = &Weapon_info[weapon_type_to_add];
 
 			// maybe localize
 			if (Lcl_gr)

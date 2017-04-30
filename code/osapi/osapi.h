@@ -178,6 +178,7 @@ namespace os
 	{
 		Fullscreen = 0,
 		Borderless,
+		Resizeable,
 
 		NUM_VALUES
 	};

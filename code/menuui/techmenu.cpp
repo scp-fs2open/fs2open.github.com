@@ -25,6 +25,7 @@
 #include "missionui/missionscreencommon.h"
 #include "parse/parselo.h"
 #include "playerman/player.h"
+#include "popup/popup.h"
 #include "render/3d.h"
 #include "render/batching.h"
 #include "ship/ship.h"
@@ -78,15 +79,15 @@
 
 // background filename for species
 // note weapon filename is now same as ship filename
-char *Tech_background_filename[GR_NUM_RESOLUTIONS] = {
+const char *Tech_background_filename[GR_NUM_RESOLUTIONS] = {
 	"TechShipData",
 	"2_TechShipData"
 };
-char *Tech_mask_filename[GR_NUM_RESOLUTIONS] = {
+const char *Tech_mask_filename[GR_NUM_RESOLUTIONS] = {
 	"TechShipData-M",
 	"2_TechShipData-M"
 };
-char *Tech_slider_filename[GR_NUM_RESOLUTIONS] = {
+const char *Tech_slider_filename[GR_NUM_RESOLUTIONS] = {
 	"slider",
 	"2_slider"
 };
@@ -140,14 +141,14 @@ int Tech_slider_coords[GR_NUM_RESOLUTIONS][4] = {
 #define MAX_TEXT_LINE_LEN	256
 
 struct techroom_buttons {
-	char *filename;
+	const char *filename;
 	int x, y, xt, yt;
 	int hotspot;
 	int tab;
 	int flags;
 	UI_BUTTON button;  // because we have a class inside this struct, we need the constructor below..
 
-	techroom_buttons(char *name, int x1, int y1, int xt1, int yt1, int h, int t, int f = 0) : filename(name), x(x1), y(y1), xt(xt1), yt(yt1), hotspot(h), tab(t), flags(f) {}
+	techroom_buttons(const char *name, int x1, int y1, int xt1, int yt1, int h, int t, int f = 0) : filename(name), x(x1), y(y1), xt(xt1), yt(yt1), hotspot(h), tab(t), flags(f) {}
 };
 
 static techroom_buttons Buttons[GR_NUM_RESOLUTIONS][NUM_BUTTONS] = {
@@ -192,6 +193,7 @@ static techroom_buttons Buttons[GR_NUM_RESOLUTIONS][NUM_BUTTONS] = {
 static UI_WINDOW Ui_window;
 static UI_BUTTON View_window;
 static int Tech_background_bitmap;
+static int Tech_background_bitmap_mask;
 static int Tab = SHIPS_DATA_TAB;
 static int List_offset;
 static int Select_tease_line;
@@ -210,7 +212,6 @@ static int Cur_entry_index = -1;		// this is the current entry selected, using m
 static int Techroom_ship_modelnum;
 static float Techroom_ship_rot;
 static UI_BUTTON List_buttons[LIST_BUTTONS_MAX];  // buttons for each line of text in list
-static int Palette_bmp;
 
 static int Ships_loaded = 0;
 static int Weapons_loaded = 0;
@@ -559,6 +560,11 @@ void techroom_ships_render(float frametime)
 				model_set_instance_techroom(Techroom_ship_modelnum, msp->turret_gun_sobj, p, 0.0f );
 			}
 		}
+	}
+
+	if (sip->replacement_textures.size() > 0)
+	{
+		render_info.set_replacement_textures(Techroom_ship_modelnum, sip->replacement_textures);
 	}
 
     if(Cmdline_shadow_quality)
@@ -1117,12 +1123,19 @@ void techroom_init()
 
 	// set up UI stuff
 	Ui_window.create(0, 0, gr_screen.max_w_unscaled, gr_screen.max_h_unscaled, 0);
-	Ui_window.set_mask_bmap(Tech_mask_filename[gr_screen.res]);
 
 	Tech_background_bitmap = bm_load(Tech_background_filename[gr_screen.res]);
 	if (Tech_background_bitmap < 0) {
 		// failed to load bitmap, not a good thing
-		Error(LOCATION,"Couldn't load techroom background bitmap");
+		Warning(LOCATION,"Error loading techroom background bitmap %s", Tech_background_filename[gr_screen.res]);
+	}
+
+	Tech_background_bitmap_mask = bm_load(Tech_mask_filename[gr_screen.res]);
+	if (Tech_background_bitmap_mask < 0) {
+		Warning(LOCATION, "Error loading techroom background mask %s", Tech_mask_filename[gr_screen.res]);
+		return;
+	} else {
+		Ui_window.set_mask_bmap(Tech_mask_filename[gr_screen.res]);
 	}
 
 	for (i=0; i<NUM_BUTTONS; i++) {
@@ -1260,21 +1273,30 @@ void techroom_close()
 
 	Techroom_show_all = 0;
 
-	if (Tech_background_bitmap) {
+	if (Tech_background_bitmap != -1) {
 		bm_release(Tech_background_bitmap);
 	}
 
 	Ui_window.destroy();
-	common_free_interface_palette();		// restore game palette
-	if (Palette_bmp){
-		bm_release(Palette_bmp);
+
+	if (Tech_background_bitmap_mask != -1) {
+		bm_release(Tech_background_bitmap_mask);
 	}
+
+	common_free_interface_palette();		// restore game palette
 }
 
 void techroom_do_frame(float frametime)
 {
 	
 	int i, k;	
+
+	// If we don't have a mask, we don't have enough data to do anything with this screen.
+	if (Tech_background_bitmap_mask == -1) {
+		popup_game_feature_not_in_demo();
+		gameseq_post_event(GS_EVENT_MAIN_MENU);
+		return;
+	}
 
 	// turn off controls when overlay is on
 	if ( help_overlay_active(Techroom_overlay_id) ) {

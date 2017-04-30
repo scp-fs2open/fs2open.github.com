@@ -105,7 +105,7 @@
 
 //XSTR:OFF
 
-char *Mode_text[MAX_AI_BEHAVIORS] = {
+const char *Mode_text[MAX_AI_BEHAVIORS] = {
 	"CHASE",
 	"EVADE",
 	"GET_BEHIND",
@@ -130,7 +130,7 @@ char *Mode_text[MAX_AI_BEHAVIORS] = {
 };
 
 //	Submode text is only valid for CHASE mode.
-char *Submode_text[] = {
+const char *Submode_text[] = {
 "undefined",
 "CONT_TURN",
 "ATTACK   ",
@@ -151,7 +151,7 @@ char *Submode_text[] = {
 "BIG_PARL"
 };
 
-char *Strafe_submode_text[5] = {
+const char *Strafe_submode_text[5] = {
 "ATTACK",
 "AVOID",
 "RETREAT1",
@@ -570,7 +570,7 @@ void init_ai_class(ai_class *aicp)
 	aicp->ai_class_autoscale = true;	//Retail behavior is to do the stupid autoscaling
 }
 
-void set_aic_flag(ai_class *aicp, char *name, AI::Profile_Flags flag)
+void set_aic_flag(ai_class *aicp, const char *name, AI::Profile_Flags flag)
 {
     auto flags = &(aicp->ai_profile_flags);
     auto set = &(aicp->ai_profile_flags_set);
@@ -780,39 +780,46 @@ void reset_ai_class_names()
 #define AI_CLASS_INCREMENT		10
 void parse_aitbl()
 {
-	read_file_text("ai.tbl", CF_TYPE_TABLES);
-	reset_parse();
+	try {
+		read_file_text("ai.tbl", CF_TYPE_TABLES);
+		reset_parse();
 
-	//Just in case parse_aitbl is called twice
-	free_ai_stuff();
-	
-	Num_ai_classes = 0;
-	Num_alloced_ai_classes = AI_CLASS_INCREMENT;
-	Ai_classes = (ai_class*) vm_malloc(Num_alloced_ai_classes * sizeof(ai_class));
-	Ai_class_names = (char**) vm_malloc(Num_alloced_ai_classes * sizeof(char*));
-	
-	required_string("#AI Classes");
+		//Just in case parse_aitbl is called twice
+		free_ai_stuff();
 
-	while (required_string_either("#End", "$Name:")) {
+		Num_ai_classes = 0;
+		Num_alloced_ai_classes = AI_CLASS_INCREMENT;
+		Ai_classes = (ai_class*) vm_malloc(Num_alloced_ai_classes * sizeof(ai_class));
+		Ai_class_names = (char**) vm_malloc(Num_alloced_ai_classes * sizeof(char*));
 
-		parse_ai_class();
+		required_string("#AI Classes");
 
-		Num_ai_classes++;
+		while (required_string_either("#End", "$Name:")) {
 
-		if(Num_ai_classes >= Num_alloced_ai_classes)
-		{
-			Num_alloced_ai_classes += AI_CLASS_INCREMENT;
-			Ai_classes = (ai_class*) vm_realloc(Ai_classes, Num_alloced_ai_classes * sizeof(ai_class));
+			parse_ai_class();
 
-			// Ai_class_names doesn't realloc all that well so we have to do it the hard way.
-			// Luckily, it's contents can be easily replaced so we don't have to save anything.
-			vm_free(Ai_class_names);
-			Ai_class_names = (char **) vm_malloc(Num_alloced_ai_classes * sizeof(char*));
-			reset_ai_class_names();
+			Num_ai_classes++;
+
+			if(Num_ai_classes >= Num_alloced_ai_classes)
+			{
+				Num_alloced_ai_classes += AI_CLASS_INCREMENT;
+				Ai_classes = (ai_class*) vm_realloc(Ai_classes, Num_alloced_ai_classes * sizeof(ai_class));
+
+				// Ai_class_names doesn't realloc all that well so we have to do it the hard way.
+				// Luckily, it's contents can be easily replaced so we don't have to save anything.
+				vm_free(Ai_class_names);
+				Ai_class_names = (char **) vm_malloc(Num_alloced_ai_classes * sizeof(char*));
+				reset_ai_class_names();
+			}
 		}
+
+		atexit(free_ai_stuff);
 	}
-	
-	atexit(free_ai_stuff);
+	catch (const parse::ParseException& e)
+	{
+		mprintf(("TABLES: Unable to parse 'ai.tbl'!  Error message = %s.\n", e.what()));
+		return;
+	}
 }
 
 LOCAL int ai_inited = 0;
@@ -1206,10 +1213,9 @@ void ai_turn_towards_vector(vec3d *dest, object *objp, float frametime, float tu
 	}
 
 	//	Dave Andsager: The non-indented lines here are debug code to help you track down the problem in the physics
-	//	that is causing ships to inexplicably rotate very far.  If you hit the Int3(), set the next statement to be
+	//	that is causing ships to inexplicably rotate very far.  If you see the message below in the log, set the next statement to be
 	//	the one marked "HERE".  (Do this clicking the cursor there, then right clicking.  Choose the right option.)
 	//	This will allow you to rerun vm_forward_interpolate() with the values that caused the error.
-	//	Note, you'll need to enable the Int3() about ten lines below.
 #ifndef NDEBUG
 vec3d tvec = objp->orient.vec.fvec;
 vec3d	vel_in_copy;
@@ -1231,13 +1237,13 @@ objp->orient = objp_orient_copy; //-V587
 	} else {
 		vm_forward_interpolate(&desired_fvec, &curr_orient, &vel_in, delta_time, delta_bank, &objp->orient, &vel_out, &vel_limit, &acc_limit);
 	}
-	
-#ifndef NDEBUG
-if (!((objp->type == OBJ_WEAPON) && (Weapon_info[Weapons[objp->instance].weapon_info_index].subtype == WP_MISSILE))) {
-	Assertion(!(delta_time < 0.25f && vm_vec_dot(&objp->orient.vec.fvec, &tvec) < 0.1f), "A ship rotated too far. Offending vessel is %s, please investigate.\n", Ships[objp->instance].ship_name);
-}
-#endif
 
+	#ifndef NDEBUG
+	if (!((objp->type == OBJ_WEAPON) && (Weapon_info[Weapons[objp->instance].weapon_info_index].subtype == WP_MISSILE))) {
+		if (delta_time < 0.25f && vm_vec_dot(&objp->orient.vec.fvec, &tvec) < 0.1f)
+			mprintf(("A ship rotated too far. Offending vessel is %s, please investigate.\n", Ships[objp->instance].ship_name));
+	}
+	#endif
 	pip->rotvel = vel_out;
 }
 
@@ -8987,6 +8993,8 @@ void set_goal_dock_orient(matrix *dom, vec3d *docker_p0, vec3d *docker_p1, vec3d
 // Return the rotating submodel on which is mounted the specified dockpoint, or -1 for none.
 int find_parent_rotating_submodel(polymodel *pm, int dock_index)
 {
+	Assertion(pm != nullptr, "pm cannot be null!");
+	Assertion(dock_index >= 0 && dock_index < pm->n_docks, "for model %s, dock_index %d must be >= 0 and < %d!", pm->filename, dock_index, pm->n_docks);
 	int path_num, submodel;
 
 	// make sure we have a spline path to check against before going any further
@@ -9016,8 +9024,32 @@ int find_parent_rotating_submodel(polymodel *pm, int dock_index)
 }
 
 // Goober5000
+// pruned version of below function
+void find_adjusted_dockpoint_normal(vec3d *global_p0_norm, object *objp, polymodel *pm, int submodel, int dock_index)
+{
+	Assertion(global_p0_norm != nullptr && objp != nullptr && pm != nullptr, "arguments cannot be null!");
+	Assertion(dock_index >= 0 && dock_index < pm->n_docks, "for model %s, dock_index %d must be >= 0 and < %d!", pm->filename, dock_index, pm->n_docks);
+
+	// are we basing this off a rotating submodel?
+	if (submodel >= 0)
+	{
+		// find the normal of the first dockpoint
+		model_instance_find_world_dir(global_p0_norm, &pm->docking_bays[dock_index].norm[0], Ships[objp->instance].model_instance_num, submodel, &objp->orient);
+	}
+	// use the static dockpoints
+	else
+	{
+		vm_vec_unrotate(global_p0_norm, &pm->docking_bays[dock_index].norm[0], &objp->orient);
+	}
+}
+
+// Goober5000
 void find_adjusted_dockpoint_info(vec3d *global_p0, vec3d *global_p1, vec3d *global_p0_norm, object *objp, polymodel *pm, int modelnum, int submodel, int dock_index)
 {
+	Assertion(global_p0 != nullptr && global_p1 != nullptr && global_p0_norm != nullptr && objp != nullptr && pm != nullptr, "arguments cannot be null!");
+	Assertion(pm->id == modelnum, "inconsistent polymodel and modelnum!");
+	Assertion(dock_index >= 0 && dock_index < pm->n_docks, "for model %s, dock_index %d must be >= 0 and < %d!", pm->filename, dock_index, pm->n_docks);
+
 	// are we basing this off a rotating submodel?
 	if (submodel >= 0)
 	{
@@ -12238,70 +12270,12 @@ void ai_chase_circle(object *objp)
  */
 void ai_transfer_shield(object *objp, int quadrant_num)
 {
-	int	i;
-	float	transfer_amount;
-	float	transfer_delta;
-	float	max_quadrant_strength;
-
-	max_quadrant_strength = get_max_shield_quad(objp);
-
-	transfer_amount = 0.0f;
-	transfer_delta = (SHIELD_BALANCE_RATE/2) * max_quadrant_strength;
-
-	if (objp->shield_quadrant[quadrant_num] + (objp->n_quadrants-1)*transfer_delta > max_quadrant_strength)
-		transfer_delta = (max_quadrant_strength - objp->shield_quadrant[quadrant_num])/(objp->n_quadrants-1);
-
-	for (i=0; i<objp->n_quadrants; i++)
-		if (i != quadrant_num) {
-			if (objp->shield_quadrant[i] >= transfer_delta) {
-				objp->shield_quadrant[i] -= transfer_delta;
-				transfer_amount += transfer_delta;
-			} else {
-				transfer_amount += objp->shield_quadrant[i];
-				objp->shield_quadrant[i] = 0.0f;
-			}
-		}
-
-	objp->shield_quadrant[quadrant_num] += transfer_amount;
+	shield_transfer(objp, quadrant_num, (SHIELD_BALANCE_RATE / 2));
 }
 
 void ai_balance_shield(object *objp)
 {
-	int	i;
-	float	shield_strength_avg;
-	float	delta;
-
-	// if we are already at the max shield strength for all quads then just bail now
-	if ( Ships[objp->instance].ship_max_shield_strength == shield_get_strength(objp) )
-		return;
-
-
-	shield_strength_avg = shield_get_strength(objp)/objp->n_quadrants;
-
-	delta = SHIELD_BALANCE_RATE * shield_strength_avg;
-
-	for (i=0; i<objp->n_quadrants; i++) {
-		if (objp->shield_quadrant[i] < shield_strength_avg) {
-			// only do it the retail way if using smart shields (since that's a bigger thing) - taylor
-			if (Ai_info[Ships[objp->instance].ai_index].ai_profile_flags[AI::Profile_Flags::Smart_shield_management])
-				shield_add_strength(objp, delta);
-			else
-				objp->shield_quadrant[i] += delta/objp->n_quadrants;
-
-			if (objp->shield_quadrant[i] > shield_strength_avg)
-				objp->shield_quadrant[i] = shield_strength_avg;
-
-		} else {
-			// only do it the retail way if using smart shields (since that's a bigger thing) - taylor
-			if (Ai_info[Ships[objp->instance].ai_index].ai_profile_flags[AI::Profile_Flags::Smart_shield_management])
-				shield_add_strength(objp, -delta);
-			else
-				objp->shield_quadrant[i] -= delta/objp->n_quadrants;
-
-			if (objp->shield_quadrant[i] < shield_strength_avg)
-				objp->shield_quadrant[i] = shield_strength_avg;
-		}
-	}
+	shield_balance(objp, SHIELD_BALANCE_RATE, 0.0f);
 }
 
 //	Manage the shield for this ship.

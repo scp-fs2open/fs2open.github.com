@@ -2,15 +2,20 @@
 #include "osapi/dialogs.h"
 #include "osapi/osapi.h"
 #include "parse/parselo.h"
-#include "scripting/lua.h"
 #include "cmdline/cmdline.h"
 #include "graphics/2d.h"
+#include "scripting/ade.h"
 
 #include <SDL_messagebox.h>
 #include <SDL_clipboard.h>
 
 #include <string>
 #include <algorithm>
+
+extern "C" {
+#include <lauxlib.h>
+#include <lualib.h>
+}
 
 namespace
 {
@@ -296,12 +301,12 @@ namespace os
 			mprintf(("\n%s\n", text));
 
 			if (Cmdline_noninteractive) {
-				exit(1);
+				abort();
 				return;
 			}
 
 			if (running_unittests) {
-				throw AssertException(text);
+				throw ErrorException(text);
 			}
 
 			SCP_stringstream messageStream;
@@ -379,7 +384,7 @@ namespace os
 			}
 
 			if (running_unittests) {
-				throw AssertException(printfString);
+				throw WarningException(printfString);
 			}
 
 			SCP_stringstream boxMsgStream;
@@ -397,8 +402,8 @@ namespace os
 			boxMessage += "\n\nUse Debug to break into Debugger\n";
 
 			const SDL_MessageBoxButtonData buttons[] = {
-				{ SDL_MESSAGEBOX_BUTTON_ESCAPEKEY_DEFAULT, 2, "Exit" },
-				{ SDL_MESSAGEBOX_BUTTON_RETURNKEY_DEFAULT, 1, "Continue" },
+				{ SDL_MESSAGEBOX_BUTTON_RETURNKEY_DEFAULT, 2, "Exit" },
+				{ SDL_MESSAGEBOX_BUTTON_ESCAPEKEY_DEFAULT, 1, "Continue" },
 				{ /* .flags, .buttonid, .text */        0, 0, "Debug" },
 			};
 

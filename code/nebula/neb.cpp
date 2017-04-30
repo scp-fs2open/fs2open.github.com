@@ -24,6 +24,7 @@
 #include "ship/ship.h"
 #include "starfield/starfield.h"
 #include "tgautils/tgautils.h"
+#include "tracing/tracing.h"
 
 
 // --------------------------------------------------------------------------------------------------------
@@ -455,6 +456,9 @@ void neb2_level_close()
 // call before beginning all rendering
 void neb2_render_setup(camid cid)
 {
+	GR_DEBUG_SCOPE("Nebula Setup");
+	TRACE_SCOPE(tracing::SetupNebula);
+
 	// standalone servers can bail here
 	if (Game_mode & GM_STANDALONE_SERVER) {
 		return;
@@ -524,12 +528,7 @@ int neb2_skip_render(object *objp, float z_depth)
 	if (!neb_skip_opt) {
 		return 0;
 	}
-
-	// lame rendering
-	if (Neb2_render_mode == NEB2_RENDER_LAME) {
-		return 0;
-	}
-
+	
 	// get near and far fog values based upon object type and rendering mode
 	neb2_get_adjusted_fog_values(&fog_near, &fog_far, objp);
 
@@ -916,6 +915,8 @@ int frame_count = 0;
 float frame_avg;
 void neb2_render_player()
 {
+	GR_DEBUG_SCOPE("Nebula render player");
+
 	vertex p, ptemp;
 	int idx1, idx2, idx3;
 	float alpha;
@@ -936,11 +937,6 @@ void neb2_render_player()
 	if (Neb2_regen) {
 		neb2_regen();
 		Neb2_regen = 0;
-	}
-
-	// don't render in lame mode
-	if ((Neb2_render_mode == NEB2_RENDER_LAME) || (Neb2_render_mode == NEB2_RENDER_NONE)) {
-		return;
 	}
     
     memset(&p, 0, sizeof(p));
@@ -1081,6 +1077,7 @@ void neb2_render_player()
 				//g3_draw_rotated_bitmap(&p, fl_radians(Neb2_cubes[idx1][idx2][idx3].rot), Nd->prad, TMAP_FLAG_TEXTURED);
 				material mat_params;
 				material_set_unlit(&mat_params, Neb2_cubes[idx1][idx2][idx3].bmap, alpha + Neb2_cubes[idx1][idx2][idx3].flash, true, true);
+				mat_params.set_color_scale(3.f);
 				g3_render_rect_screen_aligned_rotated(&mat_params, &p, fl_radians(Neb2_cubes[idx1][idx2][idx3].rot), Nd->prad);
 			}
 		}
@@ -1294,14 +1291,6 @@ void neb2_get_pixel(int x, int y, int *r, int *g, int *b)
 	ubyte avg_count;
 	int xs, ys;
 
-	// if we're in lame rendering mode, return a constant value
-	if (Neb2_render_mode == NEB2_RENDER_LAME) {
-		*r = Neb2_background_color[0];
-		*g = Neb2_background_color[1];
-		*b = Neb2_background_color[2];
-
-		return;
-	}
 
 	// get the proper pixel index to be looking up
 	rv = gv = bv = 0;
@@ -1571,18 +1560,10 @@ DCF(neb2_mode, "Switches nebula render modes")
 			Neb2_render_mode = NEB2_RENDER_NONE;
 		break;
 
-		case NEB2_RENDER_POLY:
-			Neb2_render_mode = NEB2_RENDER_POLY;
-		break;
-
 		case NEB2_RENDER_POF:
 			Neb2_render_mode = NEB2_RENDER_POF;
 			stars_set_background_model(BACKGROUND_MODEL_FILENAME, "Eraseme3");
 			stars_set_background_orientation();
-		break;
-
-		case NEB2_RENDER_LAME:
-			Neb2_render_mode = NEB2_RENDER_LAME;
 		break;
 
 		case NEB2_RENDER_HTL:

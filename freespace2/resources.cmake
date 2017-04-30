@@ -1,6 +1,6 @@
 
 if(WIN32)
-    # Handling of windows resources+
+    # Handling of windows resources
 
     set(subpath resources/win)
 
@@ -23,16 +23,22 @@ if(WIN32)
         ${subpath}/V_sse-d.ico
         ${subpath}/V_sse.ico
     )
+    
+    set(MANIFESTS
+        ${subpath}/default.manifest
+    )
 
     set(RESOURCES
         ${RESOURCE_FILES}
         ${ICONS}
+        ${MANIFESTS}
     )
 
     target_sources(Freespace2 PRIVATE ${RESOURCES})
 
     source_group("Resources" FILES ${RESOURCE_FILES})
     source_group("Resources\\Icons" FILES ${ICONS})
+    source_group("Resources\\Manifests" FILES ${MANIFESTS})
 
     SET_SOURCE_FILES_PROPERTIES(${subpath}/freespace.rc PROPERTIES COMPILE_DEFINITIONS "_VC08")
 
@@ -40,30 +46,23 @@ if(WIN32)
     	set_property(SOURCE ${subpath}/freespace.rc APPEND_STRING PROPERTY COMPILE_DEFINITIONS ";_SSE2")
     ENDIF()
 
-elseif(APPLE)
-    # Handling of apple resources
+elseif(PLATFORM_MAC)
+    # Handling of mac resources
     set(subpath resources/mac)
 
-    set_target_properties(Freespace2 PROPERTIES MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/${subpath}/Info.plist)
-
+    set_target_properties(Freespace2 PROPERTIES MACOSX_BUNDLE_INFO_PLIST "${CMAKE_CURRENT_SOURCE_DIR}/${subpath}/Info.plist.in")
+    set_target_properties(Freespace2 PROPERTIES MACOSX_BUNDLE_ICON_FILE "FS2_Open")
+    set_target_properties(Freespace2 PROPERTIES MACOSX_BUNDLE_LONG_VERSION_STRING "${FSO_FULL_VERSION_STRING}")
+    set_target_properties(Freespace2 PROPERTIES MACOSX_BUNDLE_SHORT_VERSION_STRING "${FSO_FULL_VERSION_STRING}")
+    
+    CONFIGURE_FILE("${CMAKE_CURRENT_SOURCE_DIR}/${subpath}/InfoPlist.strings.in" "${CMAKE_CURRENT_BINARY_DIR}/InfoPlist.strings")
+    
     # Copy everything from the Resources directory
     add_custom_command(TARGET Freespace2 POST_BUILD
         COMMAND cp -a "${CMAKE_CURRENT_SOURCE_DIR}/${subpath}/Resources" "$<TARGET_FILE_DIR:Freespace2>/../Resources"
+        COMMAND mkdir -p "$<TARGET_FILE_DIR:Freespace2>/../Resources/English.lproj/"
+        COMMAND cp -a "${CMAKE_CURRENT_BINARY_DIR}/InfoPlist.strings" "$<TARGET_FILE_DIR:Freespace2>/../Resources/English.lproj/"
         COMMENT "Copying resources into bundle..."
-    )
-
-    #configure_file("${CMAKE_CURRENT_SOURCE_DIR}/${subpath}/fixup_bundle.cmake.in"
-    #    "${CMAKE_CURRENT_BINARY_DIR}/fixup_bundle.cmake"
-    #   @ONLY)
-
-    #file(GENERATE
-    #    OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/fixup_bundle-$<CONFIG>.cmake"
-    #    INPUT "${CMAKE_CURRENT_BINARY_DIR}/fixup_bundle.cmake")
-
-    add_custom_command(TARGET Freespace2 POST_BUILD
-		COMMAND cp -a "${FSO_MAC_FRAMEWORKS}" "$<TARGET_FILE_DIR:Freespace2>/../Frameworks"
-        #COMMAND "${CMAKE_COMMAND}" -P "${CMAKE_CURRENT_BINARY_DIR}/fixup_bundle-$<CONFIG>.cmake"
-        COMMENT "Copying frameworks into bundle..."
     )
 else()
     # No special resource handling required, add rules for new platforms here

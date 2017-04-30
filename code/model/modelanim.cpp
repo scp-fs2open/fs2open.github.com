@@ -19,7 +19,7 @@ extern float flFrametime;
 
 SCP_vector<triggered_rotation> Triggered_rotations;
 
-char *Animation_type_names[MAX_TRIGGER_ANIMATION_TYPES] =
+const char *Animation_type_names[MAX_TRIGGER_ANIMATION_TYPES] =
 {
 	"initial",
 	"docking-stage-1",

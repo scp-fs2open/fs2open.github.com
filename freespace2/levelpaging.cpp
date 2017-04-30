@@ -12,6 +12,8 @@
 #include "freespace.h"
 #include "levelpaging.h"
 
+#include "tracing/tracing.h"
+
 
 // All the page in functions
 extern void ship_page_in();
@@ -38,6 +40,8 @@ namespace particle
 // loaded mission.  Call game_busy() occasionally...
 void level_page_in()
 {
+	TRACE_SCOPE(tracing::LevelPageIn);
+
 	// Most important ones first
 	game_busy( NOX("*** paging in ships ***") );
 	ship_page_in();

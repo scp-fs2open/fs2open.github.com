@@ -3,8 +3,15 @@
 
 #include "scripting/ade.h"
 #include "ship/ship.h"
+#include "ade_api.h"
 
-#include <memory>
+#include "scripting/api/objs/object.h"
+#include "scripting/api/objs/ship.h"
+#include "scripting/api/objs/asteroid.h"
+#include "scripting/api/objs/debris.h"
+#include "scripting/api/objs/waypoint.h"
+#include "scripting/api/objs/weapon.h"
+#include "scripting/api/objs/beam.h"
 
 namespace {
 using namespace scripting;
@@ -718,8 +725,9 @@ void ade_table_entry::OutputMeta(FILE *fp)
 	fputs("<dd><dl>\n", fp);
 	for(i = 0; i < Num_subentries; i++)
 	{
-		if(ParentIdx == UINT_MAX || stricmp(getTableEntry(Subentries[i]).Name, "__indexer"))
-			getTableEntry(Subentries[i]).OutputMeta(fp);
+		auto entry = &getTableEntry(Subentries[i]);
+		if(ParentIdx == UINT_MAX || stricmp(entry->Name, "__indexer"))
+			entry->OutputMeta(fp);
 	}
 	fputs("</dl></dd>\n", fp);
 
@@ -727,7 +735,7 @@ void ade_table_entry::OutputMeta(FILE *fp)
 		fputs("<br></dl></dd>\n", fp);
 }
 
-ade_lib::ade_lib(const char* in_name, ade_lib_handle* parent, const char* in_shortname, const char* in_desc) {
+ade_lib::ade_lib(const char* in_name, const ade_lib_handle* parent, const char* in_shortname, const char* in_desc) {
 	ade_table_entry ate;
 
 	ate.Name = in_name;
@@ -753,7 +761,7 @@ ade_lib::ade_lib(const char* in_name, ade_lib_handle* parent, const char* in_sho
 		LibIdx = ade_manager::getInstance()->addTableEntry(ate);
 }
 
-const char *ade_lib::GetName()
+const char *ade_lib::GetName() const
 {
 	if(GetIdx() == UINT_MAX)
 		return "<Invalid>";
@@ -763,7 +771,7 @@ const char *ade_lib::GetName()
 
 ade_func::ade_func(const char* name,
 				   lua_CFunction func,
-				   ade_lib_handle& parent,
+				   const ade_lib_handle& parent,
 				   const char* args,
 				   const char* desc,
 				   const char* ret_type,
@@ -784,7 +792,7 @@ ade_func::ade_func(const char* name,
 
 ade_virtvar::ade_virtvar(const char* name,
 						 lua_CFunction func,
-						 ade_lib_handle& parent,
+						 const ade_lib_handle& parent,
 						 const char* args,
 						 const char* desc,
 						 const char* ret_type,
@@ -804,7 +812,7 @@ ade_virtvar::ade_virtvar(const char* name,
 }
 
 ade_indexer::ade_indexer(lua_CFunction func,
-						 ade_lib_handle& parent,
+						 const ade_lib_handle& parent,
 						 const char* args,
 						 const char* desc,
 						 const char* ret_type,
@@ -961,6 +969,34 @@ const char *ade_get_type_string(lua_State *L, int argnum)
 		return "Unknown";
 
 	return Lua_type_names[type];
+}
+
+int ade_set_object_with_breed(lua_State *L, int obj_idx)
+{
+	using namespace scripting::api;
+
+	if(obj_idx < 0 || obj_idx >= MAX_OBJECTS)
+		return ade_set_error(L, "o", l_Object.Set(object_h()));
+
+	object *objp = &Objects[obj_idx];
+
+	switch(objp->type)
+	{
+		case OBJ_SHIP:
+			return ade_set_args(L, "o", l_Ship.Set(object_h(objp)));
+		case OBJ_ASTEROID:
+			return ade_set_args(L, "o", l_Asteroid.Set(object_h(objp)));
+		case OBJ_DEBRIS:
+			return ade_set_args(L, "o", l_Debris.Set(object_h(objp)));
+		case OBJ_WAYPOINT:
+			return ade_set_args(L, "o", l_Waypoint.Set(object_h(objp)));
+		case OBJ_WEAPON:
+			return ade_set_args(L, "o", l_Weapon.Set(object_h(objp)));
+		case OBJ_BEAM:
+			return ade_set_args(L, "o", l_Beam.Set(object_h(objp)));
+		default:
+			return ade_set_args(L, "o", l_Object.Set(object_h(objp)));
+	}
 }
 
 }

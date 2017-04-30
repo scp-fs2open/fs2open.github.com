@@ -28,6 +28,7 @@
 #include "math/staticrand.h"
 #include "mod_table/mod_table.h"
 #include "model/modelrender.h"
+#include "missionui/missionweaponchoice.h"
 #include "network/multi.h"
 #include "network/multimsgs.h"
 #include "network/multiutil.h"
@@ -54,6 +55,8 @@
 #include "particle/effects/SingleParticleEffect.h"
 #include "particle/effects/BeamPiercingEffect.h"
 #include "particle/effects/ParticleEmitterEffect.h"
+#include "tracing/Monitor.h"
+#include "tracing/tracing.h"
 
 // Since SSMs are parsed after weapons, if we want to allow SSM strikes to be specified by name, we need to store those names until after SSMs are parsed.
 typedef struct delayed_ssm_data {
@@ -88,12 +91,12 @@ missile_obj Missile_objs[MAX_MISSILE_OBJS];	// array used to store missile objec
 missile_obj Missile_obj_list;						// head of linked list of missile_obj structs
 
 //WEAPON SUBTYPE STUFF
-char *Weapon_subtype_names[] = {
+const char *Weapon_subtype_names[] = {
 	"Laser",
 	"Missile",
 	"Beam"
 };
-int Num_weapon_subtypes = sizeof(Weapon_subtype_names)/sizeof(char *);
+int Num_weapon_subtypes = sizeof(Weapon_subtype_names)/sizeof(Weapon_subtype_names[0]);
 
 flag_def_list_new<Weapon::Burst_Flags> Burst_fire_flags[] = {
 	{ "fast firing",		Weapon::Burst_Flags::Fast_firing,		true, false },
@@ -575,135 +578,132 @@ void parse_wi_flags(weapon_info *weaponp, flagset<Weapon::Info_Flags> wi_flags)
 
     bool set_nopierce = false;
 
-    if (!unparsed_or_special.empty()) {
-
-        for (auto flag = unparsed_or_special.begin(); flag != unparsed_or_special.end(); ++flag) {
-            SCP_string flag_text = *flag;
-            //deal with spawn flag
-            if (!strnicmp(spawn_str, flag_text.c_str(), 5))
+    for (auto flag = unparsed_or_special.begin(); flag != unparsed_or_special.end(); ++flag) {
+        SCP_string flag_text = *flag;
+        //deal with spawn flag
+        if (!strnicmp(spawn_str, flag_text.c_str(), 5))
+        {
+            if (weaponp->num_spawn_weapons_defined < MAX_SPAWN_TYPES_PER_WEAPON)
             {
-                if (weaponp->num_spawn_weapons_defined < MAX_SPAWN_TYPES_PER_WEAPON)
-                {
-                    //We need more spawning slots
-                    //allocate in slots of 10
-                    if ((Num_spawn_types % 10) == 0) {
-                        Spawn_names = (char **)vm_realloc(Spawn_names, (Num_spawn_types + 10) * sizeof(*Spawn_names));
-                    }
+                //We need more spawning slots
+                //allocate in slots of 10
+                if ((Num_spawn_types % 10) == 0) {
+                    Spawn_names = (char **)vm_realloc(Spawn_names, (Num_spawn_types + 10) * sizeof(*Spawn_names));
+                }
 
-                    size_t	skip_length, name_length;
-					std::unique_ptr<char[]> temp_string(new char[flag_text.size() + 1]);
+                size_t	skip_length, name_length;
+				std::unique_ptr<char[]> temp_string(new char[flag_text.size() + 1]);
 
-                    strcpy(temp_string.get(), flag_text.c_str());
+                strcpy(temp_string.get(), flag_text.c_str());
 
-                    weaponp->wi_flags.set(Weapon::Info_Flags::Spawn);
-                    weaponp->spawn_info[weaponp->num_spawn_weapons_defined].spawn_type = (short)Num_spawn_types;
-                    skip_length = spawn_str_len + strspn(&temp_string[spawn_str_len], NOX(" \t"));
-                    char *num_start = strchr(&temp_string[skip_length], ',');
-                    if (num_start == NULL) {
-                        weaponp->spawn_info[weaponp->num_spawn_weapons_defined].spawn_count = DEFAULT_WEAPON_SPAWN_COUNT;
-                        name_length = 999;
-                    }
-                    else {
-                        weaponp->spawn_info[weaponp->num_spawn_weapons_defined].spawn_count = (short)atoi(num_start + 1);
-                        name_length = num_start - temp_string.get() - skip_length;
-                    }
-
-                    weaponp->total_children_spawned += weaponp->spawn_info[weaponp->num_spawn_weapons_defined].spawn_count;
-
-                    Spawn_names[Num_spawn_types] = vm_strndup(&flag_text[skip_length], name_length);
-                    Num_spawn_types++;
-                    weaponp->num_spawn_weapons_defined++;
+                weaponp->wi_flags.set(Weapon::Info_Flags::Spawn);
+                weaponp->spawn_info[weaponp->num_spawn_weapons_defined].spawn_type = (short)Num_spawn_types;
+                skip_length = spawn_str_len + strspn(&temp_string[spawn_str_len], NOX(" \t"));
+                char *num_start = strchr(&temp_string[skip_length], ',');
+                if (num_start == NULL) {
+                    weaponp->spawn_info[weaponp->num_spawn_weapons_defined].spawn_count = DEFAULT_WEAPON_SPAWN_COUNT;
+                    name_length = 999;
                 }
                 else {
-                    Warning(LOCATION, "Illegal to have more than %d spawn types for one weapon.\nIgnoring weapon %s", MAX_SPAWN_TYPES_PER_WEAPON, weaponp->name);
+                    weaponp->spawn_info[weaponp->num_spawn_weapons_defined].spawn_count = (short)atoi(num_start + 1);
+                    name_length = num_start - temp_string.get() - skip_length;
                 }
-            }
-            else if (!stricmp(NOX("beam"), flag_text.c_str())) {
-                weaponp->wi_flags.set(Weapon::Info_Flags::Pierce_shields);
-            }
-            else if (!stricmp(NOX("no pierce shields"), flag_text.c_str())) {
-                set_nopierce = true;
-            }
-            else if (!stricmp(NOX("beam no whack"), flag_text.c_str())) {
-                Warning(LOCATION, "The \"beam no whack\" flag has been deprecated.  Set the beam's mass to 0 instead.  This has been done for you.\n");
-                weaponp->mass = 0.0f;
-            }
-            else if (!stricmp(NOX("interceptable"), flag_text.c_str())) {
-                weaponp->wi_flags.set(Weapon::Info_Flags::Turret_Interceptable);
-                weaponp->wi_flags.set(Weapon::Info_Flags::Fighter_Interceptable);
-            }
-            else if (!stricmp(NOX("die on lost lock"), flag_text.c_str())) {
-                if (!(weaponp->is_locked_homing())) {
-                    Warning(LOCATION, "\"die on lost lock\" may only be used for Homing Type ASPECT/JAVELIN!");
-                    weaponp->wi_flags.remove(Weapon::Info_Flags::Die_on_lost_lock);
-                }
+
+                weaponp->total_children_spawned += weaponp->spawn_info[weaponp->num_spawn_weapons_defined].spawn_count;
+
+                Spawn_names[Num_spawn_types] = vm_strndup(&flag_text[skip_length], name_length);
+                Num_spawn_types++;
+                weaponp->num_spawn_weapons_defined++;
             }
             else {
-                Warning(LOCATION, "Unrecognized flag in flag list for weapon %s: \"%s\"", weaponp->name, (*flag).c_str());
+                Warning(LOCATION, "Illegal to have more than %d spawn types for one weapon.\nIgnoring weapon %s", MAX_SPAWN_TYPES_PER_WEAPON, weaponp->name);
             }
         }
+        else if (!stricmp(NOX("beam"), flag_text.c_str())) {
+            weaponp->wi_flags.set(Weapon::Info_Flags::Pierce_shields);
+        }
+        else if (!stricmp(NOX("no pierce shields"), flag_text.c_str())) {
+            set_nopierce = true;
+        }
+        else if (!stricmp(NOX("beam no whack"), flag_text.c_str())) {
+            Warning(LOCATION, "The \"beam no whack\" flag has been deprecated.  Set the beam's mass to 0 instead.  This has been done for you.\n");
+            weaponp->mass = 0.0f;
+        }
+        else if (!stricmp(NOX("interceptable"), flag_text.c_str())) {
+            weaponp->wi_flags.set(Weapon::Info_Flags::Turret_Interceptable);
+            weaponp->wi_flags.set(Weapon::Info_Flags::Fighter_Interceptable);
+        }
+        else if (!stricmp(NOX("die on lost lock"), flag_text.c_str())) {
+            if (!(weaponp->is_locked_homing())) {
+                Warning(LOCATION, "\"die on lost lock\" may only be used for Homing Type ASPECT/JAVELIN!");
+                weaponp->wi_flags.remove(Weapon::Info_Flags::Die_on_lost_lock);
+            }
+        }
+        else {
+            Warning(LOCATION, "Unrecognized flag in flag list for weapon %s: \"%s\"", weaponp->name, (*flag).c_str());
+        }
+    }
 
-        //Do cleanup and sanity checks
+    //Do cleanup and sanity checks
         
-		if (set_nopierce)
-            weaponp->wi_flags.remove(Weapon::Info_Flags::Pierce_shields);
+	if (set_nopierce)
+        weaponp->wi_flags.remove(Weapon::Info_Flags::Pierce_shields);
 
-        if (weaponp->wi_flags[Weapon::Info_Flags::Hard_target_bomb] && !weaponp->wi_flags[Weapon::Info_Flags::Bomb]) {
-            weaponp->wi_flags.remove(Weapon::Info_Flags::Hard_target_bomb);
-            Warning(LOCATION, "Weapon %s is not a bomb but has \"no radius doubling\" set. Ignoring this flag", weaponp->name);
-        }
+    if (weaponp->wi_flags[Weapon::Info_Flags::Hard_target_bomb] && !weaponp->wi_flags[Weapon::Info_Flags::Bomb]) {
+        weaponp->wi_flags.remove(Weapon::Info_Flags::Hard_target_bomb);
+        Warning(LOCATION, "Weapon %s is not a bomb but has \"no radius doubling\" set. Ignoring this flag", weaponp->name);
+    }
 
-        if (weaponp->wi_flags[Weapon::Info_Flags::In_tech_database])
-            weaponp->wi_flags.set(Weapon::Info_Flags::Default_in_tech_database);
+    if (weaponp->wi_flags[Weapon::Info_Flags::In_tech_database])
+        weaponp->wi_flags.set(Weapon::Info_Flags::Default_in_tech_database);
 
-        if (weaponp->wi_flags[Weapon::Info_Flags::Flak]) {
-            if (weaponp->wi_flags[Weapon::Info_Flags::Swarm] || weaponp->wi_flags[Weapon::Info_Flags::Corkscrew]) {
-                weaponp->wi_flags.remove(Weapon::Info_Flags::Swarm);
-                weaponp->wi_flags.remove(Weapon::Info_Flags::Corkscrew);
-                Warning(LOCATION, "Swarm, Corkscrew, and Flak are mutually exclusive!  Removing Swarm and Corkscrew attributes from weapon %s.\n", weaponp->name);
-            }
-        }
-
-        if (weaponp->wi_flags[Weapon::Info_Flags::Swarm] && weaponp->wi_flags[Weapon::Info_Flags::Corkscrew]) {
+    if (weaponp->wi_flags[Weapon::Info_Flags::Flak]) {
+        if (weaponp->wi_flags[Weapon::Info_Flags::Swarm] || weaponp->wi_flags[Weapon::Info_Flags::Corkscrew]) {
+            weaponp->wi_flags.remove(Weapon::Info_Flags::Swarm);
             weaponp->wi_flags.remove(Weapon::Info_Flags::Corkscrew);
-            Warning(LOCATION, "Swarm and Corkscrew are mutually exclusive!  Defaulting to Swarm on weapon %s.\n", weaponp->name);
+            Warning(LOCATION, "Swarm, Corkscrew, and Flak are mutually exclusive!  Removing Swarm and Corkscrew attributes from weapon %s.\n", weaponp->name);
         }
+    }
 
-        if (weaponp->wi_flags[Weapon::Info_Flags::Local_ssm]) {
-            if (!weaponp->is_homing() || weaponp->subtype != WP_MISSILE) {
-                Warning(LOCATION, "local ssm must be guided missile: %s", weaponp->name);
-            }
-        }
+    if (weaponp->wi_flags[Weapon::Info_Flags::Swarm] && weaponp->wi_flags[Weapon::Info_Flags::Corkscrew]) {
+        weaponp->wi_flags.remove(Weapon::Info_Flags::Corkscrew);
+        Warning(LOCATION, "Swarm and Corkscrew are mutually exclusive!  Defaulting to Swarm on weapon %s.\n", weaponp->name);
+    }
 
-        if (weaponp->wi_flags[Weapon::Info_Flags::Small_only] && weaponp->wi_flags[Weapon::Info_Flags::Huge])
-        {
-            Warning(LOCATION, "\"small only\" and \"huge\" flags are mutually exclusive.\nThey are used together in %s\nAI will most likely not use this weapon", weaponp->name);
+    if (weaponp->wi_flags[Weapon::Info_Flags::Local_ssm]) {
+        if (!weaponp->is_homing() || weaponp->subtype != WP_MISSILE) {
+            Warning(LOCATION, "local ssm must be guided missile: %s", weaponp->name);
         }
+    }
 
-        if (!weaponp->wi_flags[Weapon::Info_Flags::Spawn] && weaponp->wi_flags[Weapon::Info_Flags::Smart_spawn])
-        {
-            Warning(LOCATION, "\"smart spawn\" flag used without \"spawn\" flag in %s\n", weaponp->name);
-        }
+    if (weaponp->wi_flags[Weapon::Info_Flags::Small_only] && weaponp->wi_flags[Weapon::Info_Flags::Huge])
+    {
+        Warning(LOCATION, "\"small only\" and \"huge\" flags are mutually exclusive.\nThey are used together in %s\nAI will most likely not use this weapon", weaponp->name);
+    }
 
-        if (weaponp->wi_flags[Weapon::Info_Flags::Inherit_parent_target] && (!weaponp->wi_flags[Weapon::Info_Flags::Child]))
-        {
-            Warning(LOCATION, "Weapon %s has the \"inherit parent target\" flag, but not the \"child\" flag.  No changes in behavior will occur.", weaponp->name);
-        }
+    if (!weaponp->wi_flags[Weapon::Info_Flags::Spawn] && weaponp->wi_flags[Weapon::Info_Flags::Smart_spawn])
+    {
+        Warning(LOCATION, "\"smart spawn\" flag used without \"spawn\" flag in %s\n", weaponp->name);
+    }
 
-        if (!weaponp->wi_flags[Weapon::Info_Flags::Homing_heat] && weaponp->wi_flags[Weapon::Info_Flags::Untargeted_heat_seeker])
-        {
-            Warning(LOCATION, "Weapon '%s' has the \"untargeted heat seeker\" flag, but Homing Type is not set to \"HEAT\".", weaponp->name);
-        }
+    if (weaponp->wi_flags[Weapon::Info_Flags::Inherit_parent_target] && (!weaponp->wi_flags[Weapon::Info_Flags::Child]))
+    {
+        Warning(LOCATION, "Weapon %s has the \"inherit parent target\" flag, but not the \"child\" flag.  No changes in behavior will occur.", weaponp->name);
+    }
 
-        if (!weaponp->wi_flags[Weapon::Info_Flags::Cmeasure] && weaponp->wi_flags[Weapon::Info_Flags::Cmeasure_aspect_home_on])
-        {
-            weaponp->wi_flags.remove(Weapon::Info_Flags::Cmeasure_aspect_home_on);
-            Warning(LOCATION, "Weapon %s has the \"pulls aspect seekers\" flag, but is not a countermeasure.\n", weaponp->name);
-        }
+    if (!weaponp->wi_flags[Weapon::Info_Flags::Homing_heat] && weaponp->wi_flags[Weapon::Info_Flags::Untargeted_heat_seeker])
+    {
+        Warning(LOCATION, "Weapon '%s' has the \"untargeted heat seeker\" flag, but Homing Type is not set to \"HEAT\".", weaponp->name);
+    }
+
+    if (!weaponp->wi_flags[Weapon::Info_Flags::Cmeasure] && weaponp->wi_flags[Weapon::Info_Flags::Cmeasure_aspect_home_on])
+    {
+        weaponp->wi_flags.remove(Weapon::Info_Flags::Cmeasure_aspect_home_on);
+        Warning(LOCATION, "Weapon %s has the \"pulls aspect seekers\" flag, but is not a countermeasure.\n", weaponp->name);
     }
 }
 
-void parse_shockwave_info(shockwave_create_info *sci, char *pre_char)
+void parse_shockwave_info(shockwave_create_info *sci, const char *pre_char)
 {
 	char buf[NAME_LENGTH];
 
@@ -885,6 +885,27 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		}
 
 		stuff_malloc_string(&wip->desc, F_MULTITEXT);
+
+		// Check if the text exceeds the limits
+		auto current_line = wip->desc;
+		size_t num_lines = 0;
+		while (current_line != nullptr) {
+			auto line_end = strchr(current_line, '\n');
+			auto line_length = line_end - current_line;
+			if (line_end == nullptr) {
+				line_length = strlen(current_line);
+			}
+
+			if (line_length >= WEAPON_DESC_MAX_LENGTH) {
+				error_display(0, "Weapon description line " SIZE_T_ARG " is too long. Maximum is %d.", num_lines + 1, WEAPON_DESC_MAX_LENGTH);
+			}
+
+			++num_lines;
+			current_line = line_end == nullptr ? nullptr : line_end + 1; // Skip the \n character if it was a complete line
+		}
+		if (num_lines >= WEAPON_DESC_MAX_LINES) {
+			error_display(0, "Weapon description has too many lines. Maximum is %d.", WEAPON_DESC_MAX_LINES);
+		}
 	}
 
 	if (optional_string("+Tech Title:")) {
@@ -3324,10 +3345,20 @@ void weapon_generate_indexes_for_substitution() {
 				int weapon_index = -1;
 				if ( stricmp("none", wip->weapon_substitution_pattern_names[j]) != 0 ) {
 					weapon_index = weapon_info_lookup(wip->weapon_substitution_pattern_names[j]);
+
 					if ( weapon_index == -1 ) { // invalid sub weapon
 						Warning(LOCATION, "Weapon '%s' requests substitution with '%s' which does not seem to exist",
 							wip->name, wip->weapon_substitution_pattern_names[j]);
 						continue;
+					}
+
+					if (Weapon_info[weapon_index].subtype != wip->subtype) {
+						// Check to make sure secondaries can't be launched by primaries and vice versa
+						Warning(LOCATION, "Weapon '%s' requests substitution with '%s' which is of a different subtype.",
+							wip->name, wip->weapon_substitution_pattern_names[j]);
+						wip->num_substitution_patterns = 0;
+						memset(wip->weapon_substitution_pattern, -1, MAX_SUBSTITUTION_PATTERNS);
+						break;
 					}
 				}
 
@@ -4487,7 +4518,11 @@ static void weapon_set_state(weapon_info* wip, weapon* wp, WeaponState state)
 		return;
 	}
 
-	if (wp->weapon_state == WeaponState::INVALID)
+	auto current_state = wp->weapon_state;
+
+	wp->weapon_state = state;
+
+	if (current_state == WeaponState::INVALID)
 	{
 		// First weapon state, create the in-flight effect
 		auto map_entry = wip->state_effects.find(WeaponState::NORMAL);
@@ -4502,8 +4537,6 @@ static void weapon_set_state(weapon_info* wip, weapon* wp, WeaponState state)
 			source.finish();
 		}
 	}
-
-	wp->weapon_state = state;
 
 	auto map_entry = wip->state_effects.find(wp->weapon_state);
 
@@ -5078,15 +5111,21 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 		size_t *position = get_pointer_to_weapon_fire_pattern_index(weapon_type, parent_shipp, src_turret);
 		Assertion( position != NULL, "'%s' is trying to fire a weapon that is not selected", Ships[parent_objp->instance].ship_name );
 
+		size_t curr_pos = *position;
+		if (((Weapon_info[weapon_type].subtype == WP_LASER && Player_ship->flags[Ship::Ship_Flags::Primary_linked]) || 
+			 (Weapon_info[weapon_type].subtype == WP_MISSILE && Player_ship->flags[Ship::Ship_Flags::Secondary_dual_fire])) && 
+			 (curr_pos > 0)) {
+			curr_pos--;
+		}
 		++(*position);
 		*position = (*position) % wip->num_substitution_patterns;
 
-		if ( wip->weapon_substitution_pattern[*position] == -1 ) {
+		if ( wip->weapon_substitution_pattern[curr_pos] == -1 ) {
 			// weapon doesn't want any sub
 			return -1;
-		} else if ( wip->weapon_substitution_pattern[*position] != weapon_type ) {
+		} else if ( wip->weapon_substitution_pattern[curr_pos] != weapon_type ) {
 			// weapon wants to sub with weapon other than me
-			return weapon_create(pos, porient, wip->weapon_substitution_pattern[*position], parent_objnum, group_id, is_locked, is_spawned, fof_cooldown);
+			return weapon_create(pos, porient, wip->weapon_substitution_pattern[curr_pos], parent_objnum, group_id, is_locked, is_spawned, fof_cooldown);
 		}
 	}
 
@@ -6244,7 +6283,7 @@ void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos, int qu
 
 	// spawn weapons - note the change from FS 1 multiplayer.
 	if (wip->wi_flags[Weapon::Info_Flags::Spawn]){
-		if (!((wip->wi_flags[Weapon::Info_Flags::Dont_spawn_if_shot]) && (sw_flag == SW_WEAPON_KILL))){			// prevent spawning of children if shot down and the dont spawn if shot flag is set (DahBlount)
+		if (!((wip->wi_flags[Weapon::Info_Flags::Dont_spawn_if_shot]) && (Weapons[num].weapon_flags[Weapon::Weapon_Flags::Destroyed_by_weapon]))){			// prevent spawning of children if shot down and the dont spawn if shot flag is set (DahBlount)
 			spawn_child_weapons(weapon_obj);
 		}
 	}	
@@ -6309,11 +6348,18 @@ void weapon_mark_as_used(int weapon_type)
 
 	if (weapon_type < Num_weapon_types) {
 		used_weapons[weapon_type]++;
+		if (Weapon_info[weapon_type].num_substitution_patterns > 0) {
+			for (size_t i = 0; i < Weapon_info[weapon_type].num_substitution_patterns; i++) {
+				used_weapons[Weapon_info[weapon_type].weapon_substitution_pattern[i]]++;
+			}
+		}
 	}
 }
 
 void weapons_page_in()
 {
+	TRACE_SCOPE(tracing::WeaponPageIn);
+
 	int i, j, idx;
 
 	Assert( used_weapons != NULL );
@@ -6496,6 +6542,138 @@ void weapons_page_in_cheats()
 
 		used_weapons[i]++;
 	}
+}
+
+/* Helper function for l_Weaponclass.isWeaponLoaded()
+ * Pages in a single weapon and its substitutes and chilren given the weapon_info index for it
+ */
+bool weapon_page_in(int weapon_type)
+{
+	Assert(used_weapons != NULL);
+
+	if (weapon_type < 0 || weapon_type >= Num_weapon_types) {
+		return false;
+	}
+
+	SCP_vector<int> page_in_weapons;
+	page_in_weapons.push_back(weapon_type);
+	
+	// Make sure substitution weapons are paged in as well
+	if (Weapon_info[weapon_type].num_substitution_patterns > 0) {
+		for (size_t i = 0; i < Weapon_info[weapon_type].num_substitution_patterns; i++) {
+			page_in_weapons.push_back(Weapon_info[weapon_type].weapon_substitution_pattern[i]);
+		}
+	}
+
+	// this grabs all spawn weapon types (Cluster Baby, etc.) which can't be
+	// assigned directly to a ship
+	// if it's got a spawn type then grab it
+	size_t size = page_in_weapons.size();
+	for (size_t x = 0; x < size; x++) {
+		if (Weapon_info[page_in_weapons.at(x)].num_spawn_weapons_defined > 0) {
+			for (int j = 0; j < Weapon_info[page_in_weapons.at(x)].num_spawn_weapons_defined; j++) {
+				page_in_weapons.push_back((int)Weapon_info[page_in_weapons.at(x)].spawn_info[j].spawn_type);
+			}
+		}
+	}
+
+	for (size_t k = 0; k < page_in_weapons.size(); k++) {
+		if (used_weapons[page_in_weapons.at(k)]) {
+			continue;		// If weapon is already paged_in, we don't need to page it in again
+		}
+
+		// Page in bitmaps for the weapon
+		weapon_load_bitmaps(page_in_weapons.at(k));
+
+		weapon_info *wip = &Weapon_info[page_in_weapons.at(k)];
+
+		wip->wi_flags.remove(Weapon::Info_Flags::Thruster);		// Assume no thrusters
+
+		switch (wip->render_type)
+		{
+		case WRT_POF:
+		{
+			wip->model_num = model_load(wip->pofbitmap_name, 0, NULL);
+
+			polymodel *pm = model_get(wip->model_num);
+
+			// If it has a model, and the model pof has thrusters, then set
+			// the flags
+			if (pm->n_thrusters > 0) {
+				wip->wi_flags.set(Weapon::Info_Flags::Thruster);
+			}
+
+			for (int j = 0; j < pm->n_textures; j++)
+				pm->maps[j].PageIn();
+
+			break;
+		}
+
+		case WRT_LASER:
+		{
+			bm_page_in_texture(wip->laser_bitmap.first_frame);
+			bm_page_in_texture(wip->laser_glow_bitmap.first_frame);
+
+			break;
+		}
+
+		default:
+			Assertion(wip->render_type != WRT_POF && wip->render_type != WRT_LASER, "Weapon %s does not have a valid rendering type. Type passed: %d\n", wip->name, wip->render_type);	// Invalid weapon rendering type.
+		}
+
+		wip->external_model_num = -1;
+
+		if (strlen(wip->external_model_name))
+			wip->external_model_num = model_load(wip->external_model_name, 0, NULL);
+
+		if (wip->external_model_num == -1)
+			wip->external_model_num = wip->model_num;
+
+
+		//Load shockwaves
+		shockwave_create_info_load(&wip->shockwave);
+		shockwave_create_info_load(&wip->dinky_shockwave);
+
+		// trail bitmaps
+		if ((wip->wi_flags[Weapon::Info_Flags::Trail]) && (wip->tr_info.texture.bitmap_id > -1))
+			bm_page_in_texture(wip->tr_info.texture.bitmap_id);
+
+		// if this is a beam weapon, page in its stuff
+		if (wip->wi_flags[Weapon::Info_Flags::Beam]) {
+			// all beam sections
+			for (int idx = 0; idx < wip->b_info.beam_num_sections; idx++)
+				bm_page_in_texture(wip->b_info.sections[idx].texture.first_frame);
+
+			// muzzle glow
+			bm_page_in_texture(wip->b_info.beam_glow.first_frame);
+
+			// particle ani
+			bm_page_in_texture(wip->b_info.beam_particle_ani.first_frame);
+		}
+
+		if (wip->wi_flags[Weapon::Info_Flags::Particle_spew]) {
+			for (size_t s = 0; s < MAX_PARTICLE_SPEWERS; s++) {	// looped, multi particle spew -nuke
+				if (wip->particle_spewers[s].particle_spew_type != PSPEW_NONE) {
+					bm_page_in_texture(wip->particle_spewers[s].particle_spew_anim.first_frame);
+				}
+			}
+		}
+
+		// muzzle flashes
+		if (wip->muzzle_flash >= 0)
+			mflash_mark_as_used(wip->muzzle_flash);
+
+		bm_page_in_texture(wip->thruster_flame.first_frame);
+		bm_page_in_texture(wip->thruster_glow.first_frame);
+
+		used_weapons[page_in_weapons.at(k)]++;	// Ensures weapon can be counted as used
+	}
+
+	return true;
+}
+
+bool weapon_used(int weapon_type) {
+	return used_weapons[weapon_type] > 0;
 }
 
 /**
@@ -7062,7 +7240,7 @@ void shield_impact_explosion(vec3d *hitpos, object *objp, float radius, int idx)
 	particle::create( hitpos, &vmd_zero_vector, 0.0f, radius, particle::PARTICLE_BITMAP_PERSISTENT, expl_ani_handle, objp );
 }
 
-void weapon_render(object* obj, draw_list *scene)
+void weapon_render(object* obj, model_draw_list *scene)
 {
 	int num;
 	weapon_info *wip;

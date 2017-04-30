@@ -1,11 +1,11 @@
 /*
  * Copyright (C) Volition, Inc. 1999.  All rights reserved.
  *
- * All source code herein is the property of Volition, Inc. You may not sell 
- * or otherwise commercially exploit the source or things you created based on the 
+ * All source code herein is the property of Volition, Inc. You may not sell
+ * or otherwise commercially exploit the source or things you created based on the
  * source.
  *
-*/ 
+*/
 
 
 
@@ -26,14 +26,18 @@ static int Timer_inited = 0;
 
 
 #define MICROSECONDS_PER_SECOND 1000000
+#define NANOSECONDS_PER_SECOND 1000000000
 
-#define NANOSECONDS_PER_SECOND 10000000000
+static long double Timer_to_microseconds;
+static long double Timer_to_nanoseconds;
 
 static uint64_t get_performance_counter()
 {
 	Assertion(Timer_inited, "This function can only be used when the timer system is initialized!");
 
-	return SDL_GetPerformanceCounter() - Timer_base_value;
+	auto counter = SDL_GetPerformanceCounter();
+
+	return counter - Timer_base_value;
 }
 
 void timer_close()
@@ -48,7 +52,8 @@ void timer_init()
 	if ( !Timer_inited )	{
 		Timer_perf_counter_freq = SDL_GetPerformanceFrequency();
 		Timer_base_value = SDL_GetPerformanceCounter();
-
+		Timer_to_nanoseconds = (long double) NANOSECONDS_PER_SECOND / (long double) Timer_perf_counter_freq;
+		Timer_to_microseconds = (long double) MICROSECONDS_PER_SECOND / (long double) Timer_perf_counter_freq;
 		Timer_inited = 1;
 
 		atexit(timer_close);
@@ -97,14 +102,14 @@ std::uint64_t timer_get_microseconds()
 {
 	auto time = get_performance_counter();
 
-	return (time * MICROSECONDS_PER_SECOND) / Timer_perf_counter_freq;
+	return (uint64_t) (time * Timer_to_microseconds);
 }
 
 std::uint64_t timer_get_nanoseconds()
 {
 	auto time = get_performance_counter();
 
-	return (time * NANOSECONDS_PER_SECOND) / Timer_perf_counter_freq;
+    return (uint64_t) (time * Timer_to_nanoseconds);
 }
 
 // 0 means invalid,
@@ -119,27 +124,9 @@ void timestamp_reset()
 
 // Restrict all time values between 0 and MAX_TIME
 // so we don't have to use UINTs to calculate rollover.
-// For debugging & testing, you could set this to 
+// For debugging & testing, you could set this to
 // something like 1 minute (6000).
-#define MAX_TIME (INT_MAX/2)
-
-void timestamp_inc(fix frametime)
-{
-	// Compute the microseconds, assumes that a fix uses the lower 16 bit for storing the fractional part
-	auto delta = (std::uint64_t)frametime;
-	delta = delta * (MICROSECONDS_PER_SECOND / 65536);
-
-	timestamp_ticker += delta;
-
-	if ( timestamp_ticker > MAX_TIME )	{
-		timestamp_ticker = 2;		// Roll!
-	}
-
-	if (timestamp_ticker < 2 ) {
-		mprintf(("Whoa!!!  timestamp_ticker < 2 -- resetting to 2!!!\n"));
-		timestamp_ticker = 2;
-	}
-}
+const std::uint32_t MAX_TIME = INT_MAX / 2;
 
 static int timestamp_ms() {
 	if (timestamp_ticker <= 2) {
@@ -149,12 +136,30 @@ static int timestamp_ms() {
 	return (int)(timestamp_ticker / 1000);
 }
 
+void timestamp_inc(fix frametime)
+{
+	// Compute the microseconds, assumes that a fix uses the lower 16 bit for storing the fractional part
+	auto delta = (std::uint64_t)frametime;
+	delta = delta * (MICROSECONDS_PER_SECOND / 65536);
+
+	timestamp_ticker += delta;
+
+	if ( timestamp_ms() > (int)MAX_TIME )	{
+		timestamp_ticker = 2;		// Roll!
+	}
+
+	if (timestamp_ticker < 2 ) {
+		mprintf(("Whoa!!!  timestamp_ticker < 2 -- resetting to 2!!!\n"));
+		timestamp_ticker = 2;
+	}
+}
+
 int timestamp(int delta_ms ) {
 	int t2;
 	if (delta_ms < 0 ) return 0;
 	if (delta_ms == 0 ) return 1;
 	t2 = timestamp_ms() + delta_ms;
-	if ( t2 > MAX_TIME )	{
+	if ( t2 > (int)MAX_TIME )	{
 		// wrap!!!
 		t2 = delta_ms - (MAX_TIME-timestamp_ms());
 	}
@@ -168,14 +173,14 @@ int timestamp_until(int stamp) {
 	// JAS: FIX
 	// HACK!! This doesn't handle rollover!
 	// (Will it ever happen?)
-	
+
 	return stamp - timestamp_ms();
 
 /*
 	uint	delta;
 
 	delta = stamp - timestamp_ticker;
-	
+
 
 	if (delta > UINT_MAX/2)
 		delta = UINT_MAX - delta + 1;

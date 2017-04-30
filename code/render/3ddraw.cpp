@@ -830,13 +830,12 @@ void g3_render_laser(material *mat_params, vec3d *headp, float head_width, vec3d
 	vm_vec_normalize(&reye);
 
 	// code intended to prevent possible null vector normalize issue - start
-	if ( vm_test_parallel(&reye, &fvec) ) {
+	if ( vm_vec_equal(reye, fvec) ) {
 		fvec.xyz.x = -reye.xyz.z;
 		fvec.xyz.y = 0.0f;
 		fvec.xyz.z = -reye.xyz.x;
-	}
 
-	if ( vm_test_parallel(&reye, &rfvec) ) {
+	} else if ( vm_vec_equal(reye, rfvec) ) {
 		fvec.xyz.x = reye.xyz.z;
 		fvec.xyz.y = 0.0f;
 		fvec.xyz.z = reye.xyz.x;
@@ -1094,6 +1093,8 @@ void g3_render_rod(color *clr, int num_points, vec3d *pvecs, float width)
 // adapted from g3_draw_2d_shield_icon()
 void g3_render_shield_icon(color *clr, coord2d coords[6], int resize_mode)
 {
+	GR_DEBUG_SCOPE("Render shield icon");
+
 	vertex v[6];
 
 	memset(v, 0, sizeof(vertex) * 6);
@@ -1189,7 +1190,7 @@ void g3_render_shield_icon(color *clr, coord2d coords[6], int resize_mode)
 	material_instance.set_color(1.0f, 1.0f, 1.0f, 1.0f);
 
 	// draw the polys
-	g3_render_primitives_colored(&material_instance, v, 4, PRIM_TYPE_TRISTRIP, true);
+	g3_render_primitives_colored(&material_instance, v, 6, PRIM_TYPE_TRISTRIP, true);
 }
 
 void g3_render_shield_icon(coord2d coords[6], int resize_mode)
@@ -1233,7 +1234,7 @@ void g3_render_sphere(color *clr, vec3d* position, float radius)
 {
 	g3_start_instance_matrix(position, &vmd_identity_matrix, true);
 
-	vec3d scale = { radius, radius, radius };
+	vec3d scale = {{{ radius, radius, radius }}};
 	gr_push_scale_matrix(&scale);
 
 	material material_def;

@@ -10,7 +10,7 @@
 #include "globalincs/pstypes.h"
 #include "globalincs/version.h"
 
-namespace version
+namespace gameversion
 {
 	bool check_at_least(int major, int minor, int build, int revision)
 	{

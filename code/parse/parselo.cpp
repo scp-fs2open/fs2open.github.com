@@ -29,6 +29,7 @@
 
 #define	ERROR_LENGTH	64
 #define	RS_MAX_TRIES	5
+#define SHARP_S			(char)-33
 
 // to know that a modular table is currently being parsed
 bool	Parsing_modular_table = false;
@@ -184,7 +185,7 @@ void skip_token()
 
 //	Display a diagnostic message if Verbose is set.
 //	(Verbose is set if -v command line switch is present.)
-void diag_printf(char *format, ...)
+void diag_printf(const char *format, ...)
 {
 #ifndef NDEBUG
 	SCP_string buffer;
@@ -290,7 +291,7 @@ void error_display(int error_level, const char *format, ...)
 }
 
 //	Advance Mp to the next eoln character.
-void advance_to_eoln(char *more_terminators)
+void advance_to_eoln(const char *more_terminators)
 {
 	char	terminators[128];
 
@@ -330,7 +331,7 @@ void advance_to_next_white()
 // Search for specified string, skipping everything up to that point.  Returns 1 if found,
 // 0 if string wasn't found (and hit end of file), or -1 if not found, but end of checking
 // block was reached.
-int skip_to_string(char *pstr, char *end)
+int skip_to_string(const char *pstr, const char *end)
 {
 	ignore_white_space();
 	auto len = strlen(pstr);
@@ -359,7 +360,7 @@ int skip_to_string(char *pstr, char *end)
 
 // Goober5000
 // Advance to start of pstr.  Return 0 is successful, otherwise return !0
-int skip_to_start_of_string(char *pstr, char *end)
+int skip_to_start_of_string(const char *pstr, const char *end)
 {
 	ignore_white_space();
 	auto len = strlen(pstr);
@@ -387,7 +388,7 @@ int skip_to_start_of_string(char *pstr, char *end)
 }
 
 // Advance to start of either pstr1 or pstr2.  Return 0 is successful, otherwise return !0
-int skip_to_start_of_string_either(char *pstr1, char *pstr2, char *end)
+int skip_to_start_of_string_either(const char *pstr1, const char *pstr2, const char *end)
 {
 	size_t len1, len2, endlen;
 
@@ -446,14 +447,19 @@ int required_string(const char *pstr)
 	return 1;
 }
 
-int check_for_eof()
+int check_for_eof_raw()
 {
-	ignore_white_space();
-
 	if (*Mp == EOF_CHAR)
 		return 1;
 
 	return 0;
+}
+
+int check_for_eof()
+{
+	ignore_white_space();
+
+	return check_for_eof_raw();
 }
 
 /**
@@ -505,7 +511,7 @@ int optional_string(const char *pstr)
 	return 0;
 }
 
-int optional_string_either(char *str1, char *str2)
+int optional_string_either(const char *str1, const char *str2)
 {
 	ignore_white_space();
 
@@ -627,7 +633,7 @@ int optional_string_fred(char *pstr, char *end, char *end2)
  * @details Advances the Mp until a string is found or exceeds RS_MAX_TRIES. Once a string is found, Mp is located at
  * the start of the found string.
  */
-int required_string_either(char *str1, char *str2)
+int required_string_either(const char *str1, const char *str2)
 {
 	ignore_white_space();
 
@@ -711,7 +717,7 @@ int required_string_one_of(int arg_count, ...)
 	return -1;
 }
 
-int required_string_either_fred(char *str1, char *str2)
+int required_string_either_fred(const char *str1, const char *str2)
 {
 	ignore_white_space();
 
@@ -739,7 +745,7 @@ int required_string_either_fred(char *str1, char *str2)
 
 //	Copy characters from instr to outstr until eoln is found, or until max
 //	characters have been copied (including terminator).
-void copy_to_eoln(char *outstr, char *more_terminators, char *instr, int max)
+void copy_to_eoln(char *outstr, const char *more_terminators, const char *instr, int max)
 {
 	int	count = 0;
 	char	ch;
@@ -761,13 +767,13 @@ void copy_to_eoln(char *outstr, char *more_terminators, char *instr, int max)
 	}
 
 	if (count >= max)
-		error_display(0, "Token too long: [%s].  Length = %i.  Max is %i.\n", next_tokens(), strlen(next_tokens()), max);
+		error_display(0, "Token too long: [%s].  Length = " SIZE_T_ARG ".  Max is %i.\n", next_tokens(), strlen(next_tokens()), max);
 
 	*outstr = 0;
 }
 
 //	Ditto for SCP_string.
-void copy_to_eoln(SCP_string &outstr, char *more_terminators, char *instr)
+void copy_to_eoln(SCP_string &outstr, const char *more_terminators, const char *instr)
 {
 	char	ch;
 	char	terminators[128];
@@ -813,7 +819,7 @@ void copy_to_next_white(char *outstr, char *instr, int max)
 	}
 
 	if (count >= max)
-		error_display(0, "Token too long: [%s].  Length = %i.  Max is %i.\n", next_tokens(), strlen(next_tokens()), max);
+		error_display(0, "Token too long: [%s].  Length = " SIZE_T_ARG ".  Max is %i.\n", next_tokens(), strlen(next_tokens()), max);
 
 	*outstr = 0;
 }
@@ -876,7 +882,7 @@ char* alloc_text_until(char* instr, char* endstr)
 //	Copy text until a certain string is matched.
 //	For example, this is used to copy mission notes, scanning until $END NOTES:
 // is found.
-void copy_text_until(char *outstr, char *instr, char *endstr, int max_chars)
+void copy_text_until(char *outstr, char *instr, const char *endstr, int max_chars)
 {
 	char *foundstr;
 	Assert(outstr && instr && endstr);
@@ -903,7 +909,7 @@ void copy_text_until(char *outstr, char *instr, char *endstr, int max_chars)
 }
 
 //	Ditto for SCP_string.
-void copy_text_until(SCP_string &outstr, char *instr, char *endstr)
+void copy_text_until(SCP_string &outstr, char *instr, const char *endstr)
 {
 	char *foundstr;
 	Assert(instr && endstr);
@@ -941,7 +947,7 @@ void stuff_string_white(SCP_string &outstr)
 }
 
 // Goober5000
-void stuff_string_until(char *outstr, char *endstr, int len)
+void stuff_string_until(char *outstr, const char *endstr, int len)
 {
 	if(!len)
 		len = NAME_LENGTH-1;
@@ -953,7 +959,7 @@ void stuff_string_until(char *outstr, char *endstr, int len)
 }
 
 // Goober5000
-void stuff_string_until(SCP_string &outstr, char *endstr)
+void stuff_string_until(SCP_string &outstr, const char *endstr)
 {
 	ignore_gray_space();
 	copy_text_until(outstr, Mp, endstr);
@@ -967,7 +973,7 @@ void stuff_string_until(SCP_string &outstr, char *endstr)
 //or NULL on failure
 //Does depth checks for the start and end strings
 //extra_chars indicates extra malloc space that should be allocated.
-char* alloc_block(char* startstr, char* endstr, int extra_chars)
+char* alloc_block(const char* startstr, const char* endstr, int extra_chars)
 {
 	Assert(startstr != NULL && endstr != NULL);
 	Assert(stricmp(startstr, endstr));
@@ -1138,7 +1144,7 @@ void get_string(SCP_string &str)
 //	Stuff a string into a string buffer.
 //	Supports various FreeSpace primitive types.  If 'len' is supplied, it will override
 // the default string length if using the F_NAME case.
-void stuff_string(char *outstr, int type, int len, char *terminators)
+void stuff_string(char *outstr, int type, int len, const char *terminators)
 {
 	char read_str[PARSE_BUF_SIZE] = "";
 	int read_len = PARSE_BUF_SIZE;
@@ -1215,7 +1221,7 @@ void stuff_string(char *outstr, int type, int len, char *terminators)
 	else
 	{
 		if ( strlen(read_str) > (uint)final_len )
-			error_display(0, "Token too long: [%s].  Length = %i.  Max is %i.\n", read_str, strlen(read_str), final_len);
+			error_display(0, "Token too long: [%s].  Length = " SIZE_T_ARG ".  Max is %i.\n", read_str, strlen(read_str), final_len);
 
 		strncpy(outstr, read_str, final_len);
 	}
@@ -1225,7 +1231,7 @@ void stuff_string(char *outstr, int type, int len, char *terminators)
 
 //	Stuff a string into a string buffer.
 //	Supports various FreeSpace primitive types.
-void stuff_string(SCP_string &outstr, int type, char *terminators)
+void stuff_string(SCP_string &outstr, int type, const char *terminators)
 {
 	SCP_string read_str;
 	int tag_id;
@@ -1660,30 +1666,94 @@ int maybe_convert_foreign_character(int ch)
 }
 
 // Goober5000
-void maybe_convert_foreign_characters(char *line)
+// Yarn - The capacity of out must be at least the value returned by
+// get_converted_string_length(in) (plus one if add_null is true).
+// Returns the number of characters written to out.
+size_t maybe_convert_foreign_characters(const char *in, char *out, bool add_null)
 {
-	char *ch;
-	if (Fred_running)
-		return;
+	if (Fred_running) {
+		size_t len = strlen(in);
 
-	if (Lcl_pl)
-		return;
+		if (add_null) {
+			strcpy(out, in);
+			return len + 1;
+		} else {
+			strncpy(out, in, len);
+			return len;
+		}
+	} else {
+		auto inp = in;
+		auto outp = out;
 
-	for (ch = line; *ch != '\0'; ch++)
-			*ch = (char) maybe_convert_foreign_character(*ch);
+		while (*inp != '\0') {
+			if (*inp == SHARP_S) {
+				*outp++ = 's';
+				*outp++ = 's';
+			} else if (Lcl_pl) {
+				*outp++ = *inp;
+			} else {
+				*outp++ = (char) maybe_convert_foreign_character(*inp);
+			}
+			inp++;
+		}
+
+		if (add_null) {
+			*outp++ = '\0';
+		}
+
+		return outp - out;
+	}
 }
 
 // Goober5000
-void maybe_convert_foreign_characters(SCP_string &line)
+void maybe_convert_foreign_characters(SCP_string &text)
 {
-	if (Fred_running)
-		return;
+	if (!Fred_running) {
+		for (SCP_string::iterator ii = text.begin(); ii != text.end(); ++ii) {
+			text.reserve(get_converted_string_length(text));
 
-	if (Lcl_pl)
-		return;
+			if (*ii == SHARP_S) {
+				text.replace(ii, ii + 1, "ss");
+				++ii;
+			} else if (!Lcl_pl) {
+				*ii = (char) maybe_convert_foreign_character(*ii);
+			}
+		}
+	}
+}
 
-	for (SCP_string::iterator ii = line.begin(); ii != line.end(); ++ii)
-		*ii = (char) maybe_convert_foreign_character(*ii);
+// Yarn - Returns what the length of the text will be after it's processed by
+// maybe_convert_foreign_characters, not including the null terminator.
+size_t get_converted_string_length(const char *text)
+{
+	if (Fred_running) {
+		return strlen(text);
+	} else {
+		size_t count = 0;
+		auto s = strchr(text, SHARP_S);
+		while (s != nullptr) {
+			count++;
+			s = strchr(s + 1, SHARP_S);
+		}
+		return strlen(text) + count;
+	}
+}
+
+// Yarn - Returns what the length of the text will be after it's processed by
+// maybe_convert_foreign_characters.
+size_t get_converted_string_length(const SCP_string &text)
+{
+	if (Fred_running) {
+		return text.size();
+	} else {
+		size_t count = 0;
+		for (auto ii = text.begin(); ii != text.end(); ++ii) {
+			if (*ii == SHARP_S) {
+				count++;
+			}
+		}
+		return text.size() + count;
+	}
 }
 
 // Goober5000
@@ -2160,7 +2230,7 @@ void process_raw_file_text(char *processed_text, char *raw_text)
 {
 	char	*mp;
 	char	*mp_raw;
-	char outbuf[PARSE_BUF_SIZE], *str;
+	char outbuf[PARSE_BUF_SIZE];
 	bool in_quote = false;
 	bool in_multiline_comment_a = false;
 	bool in_multiline_comment_b = false;
@@ -2202,19 +2272,7 @@ void process_raw_file_text(char *processed_text, char *raw_text)
 
 		strip_comments(outbuf, in_quote, in_multiline_comment_a, in_multiline_comment_b);
 
-		maybe_convert_foreign_characters(outbuf);
-
-		str = outbuf;
-		while (*str) {
-			if (*str == (Lcl_pl ? -33 : -31)) {
-				*mp++ = 's';
-				*mp++ = 's';
-				str++;
-
-			} else {
-				*mp++ = *str++;
-			}
-		}
+		mp += maybe_convert_foreign_characters(outbuf, mp, false);
 
 //		strcpy_s(mp, outbuf);
 //		mp += strlen(outbuf);
@@ -3148,14 +3206,17 @@ void stuff_matrix(matrix *mp)
 	stuff_vec3d(&mp->vec.fvec);
 }
 
-
-//	Given a string, find it in a string array.
-//	*description is only used for diagnostics in case it can't be found.
-//	*str1 is the string to be found.
-//	*strlist is the list of strings to search.
-//	max is the number of entries in *strlist to scan.
-int string_lookup(const char *str1, char *strlist[], size_t max, const char *description, int say_errors)
-{
+/**
+ * @brief Given a string, find it in a string array.
+ *
+ * @param str1 is the string to be found.
+ * @param strlist is the list of strings to search.
+ * @param max is the number of entries in *strlist to scan.
+ * @param description is only used for diagnostics in case it can't be found.
+ * @param say_errors @c true if errors should be reported
+ * @return
+ */
+int string_lookup(const char *str1, const char* const *strlist, size_t max, const char *description, bool say_errors) {
 	for (size_t i=0; i<max; i++) {
 		Assert(strlen(strlist[i]) != 0); //-V805
 
@@ -3172,7 +3233,7 @@ int string_lookup(const char *str1, char *strlist[], size_t max, const char *des
 //	Find a required string (*id), then stuff the text of type f_type that
 // follows it at *addr.  *strlist[] contains the strings it should try to
 // match.
-void find_and_stuff(const char *id, int *addr, int f_type, char *strlist[], size_t max, const char *description)
+void find_and_stuff(const char *id, int *addr, int f_type, const char *strlist[], size_t max, const char *description)
 {
 	char	token[128];
 	int checking_ship_classes = (stricmp(id, "$class:") == 0);
@@ -3194,7 +3255,7 @@ void find_and_stuff(const char *id, int *addr, int f_type, char *strlist[], size
 	}
 }
 
-void find_and_stuff_optional(const char *id, int *addr, int f_type, char *strlist[], size_t max, const char *description)
+void find_and_stuff_optional(const char *id, int *addr, int f_type, const char * const *strlist, size_t max, const char *description)
 {
 	char token[128];
 
@@ -3208,7 +3269,7 @@ void find_and_stuff_optional(const char *id, int *addr, int f_type, char *strlis
 //	Mp points at a string.
 //	Find the string in the list of strings *strlist[].
 // Returns the index of the match, -1 if none.
-int match_and_stuff(int f_type, char *strlist[], int max, char *description)
+int match_and_stuff(int f_type, const char * const *strlist, int max, const char *description)
 {
 	char	token[128];
 
@@ -3216,8 +3277,8 @@ int match_and_stuff(int f_type, char *strlist[], int max, char *description)
 	return string_lookup(token, strlist, max, description, 0);
 }
 
-void find_and_stuff_or_add(char *id, int *addr, int f_type, char *strlist[], int *total,
-	int max, char *description)
+void find_and_stuff_or_add(const char *id, int *addr, int f_type, char *strlist[], int *total,
+	int max, const char *description)
 {
 	char	token[128];
 

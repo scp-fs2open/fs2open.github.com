@@ -22,6 +22,7 @@
 #include "render/3d.h"
 #include "render/batching.h"
 #include "tracing/tracing.h"
+#include "tracing/Monitor.h"
 
 using namespace particle;
 
@@ -85,6 +86,11 @@ namespace particle
 	// Reset everything between levels
 	void init()
 	{
+		// FIRE!!!
+		if (Anim_bitmap_id_fire == -1)
+		{
+			Anim_bitmap_id_fire = bm_load_animation("particleexp01", &Anim_num_frames_fire, nullptr, NULL, 0);
+		}
 
 		// Cough, cough
 		if (Anim_bitmap_id_smoke == -1)
@@ -258,6 +264,8 @@ namespace particle
 
 	void move_all(float frametime)
 	{
+		TRACE_SCOPE(tracing::ParticlesMoveAll);
+
 		MONITOR_INC(NumParticles, Num_particles);
 
 		if (!Particles_enabled)
@@ -337,6 +345,9 @@ namespace particle
 
 	void render_all()
 	{
+		GR_DEBUG_SCOPE("Render Particles");
+		TRACE_SCOPE(tracing::ParticlesRenderAll);
+
 		ubyte flags;
 		float alpha;
 		vertex pos;
@@ -417,12 +428,10 @@ namespace particle
 			}
 		}
 
-		profile_begin("Batch Render");
 		if (render_batch)
 		{
 			batching_render_all();
 		}
-		profile_end("Batch Render");
 	}
 
 	//============================================================================

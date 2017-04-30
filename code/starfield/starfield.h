@@ -47,7 +47,6 @@ extern int Cur_background;
 extern background_t Backgrounds[MAX_BACKGROUNDS];
 extern int Nmodel_flags;
 
-extern bool Dynamic_environment;
 extern bool Motion_debris_override;
 
 void stars_swap_backgrounds(int idx1, int idx2);
@@ -94,6 +93,8 @@ void stars_pre_level_init(bool clear_backgrounds = true);
 // call this in game_post_level_init() so we know whether we're running in full nebula mode or not
 void stars_post_level_init();
 
+void stars_level_close();
+
 // draw background bitmaps
 void stars_draw_background();
 
@@ -111,7 +112,7 @@ void stars_draw_sun_glow(int sun_n);
 void stars_camera_cut();
 
 // call this to set a specific model as the background model
-void stars_set_background_model(char *model_name, char *texture_name, int flags = DEFAULT_NMODEL_FLAGS);
+void stars_set_background_model(const char *model_name, const char *texture_name, int flags = DEFAULT_NMODEL_FLAGS);
 void stars_set_background_orientation(matrix *orient = NULL);
 
 // lookup a starfield bitmap, return index or -1 on fail
@@ -144,5 +145,20 @@ void stars_modify_entry_FRED(int index, const char *name, starfield_list_entry *
 void stars_load_first_valid_background();
 int stars_get_first_valid_background();
 void stars_load_background(int background_idx);
+
+void stars_setup_environment_mapping(camid cid);
+
+/**
+ * @brief Enabled dynamic rendering of environment map
+ * @param dynamic @c true if the environment should be dynamic
+ */
+void stars_set_dynamic_environment(bool dynamic);
+
+/**
+ * @brief Invalidates the current environment map
+ *
+ * This will cause a redraw of the environment map in the next frame
+ */
+void stars_invalidate_environment_map();
 
 #endif

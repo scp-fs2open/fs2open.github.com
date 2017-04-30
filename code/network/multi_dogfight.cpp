@@ -57,11 +57,11 @@ ui_button_info Multi_df_buttons[GR_NUM_RESOLUTIONS][NUM_MULTI_DF_BUTTONS] = {
 };
 
 int Multi_df_background_bitmap = -1;
-char *Multi_df_background_fname[GR_NUM_RESOLUTIONS] = {
+const char *Multi_df_background_fname[GR_NUM_RESOLUTIONS] = {
 	"KillMatrix",
 	"2_KillMatrix"
 };
-char *Multi_df_mask_fname[GR_NUM_RESOLUTIONS] = {
+const char *Multi_df_mask_fname[GR_NUM_RESOLUTIONS] = {
 	"KillMatrix-m",
 	"2_KillMatrix-m"
 };

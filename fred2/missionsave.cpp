@@ -1010,7 +1010,7 @@ int CFred_mission_save::save_briefing() {
 					else
 						fout("\n$label:");
 
-					fout(" %s", bi->label);
+					fout_ext(" ", "%s", bi->label);
 				}
 
 				if (optional_string_fred("+id:"))
@@ -2377,7 +2377,7 @@ int CFred_mission_save::save_mission_info() {
 		else
 			fout("\n+Red Alert:");
 
-		fout(" %d", (The_mission.flags[Mission::Mission_Flags::Fullneb]) ? 1 : 0);
+		fout(" %d", (The_mission.flags[Mission::Mission_Flags::Red_alert]) ? 1 : 0);
 	}
 
 	if (Format_fs2_open == FSO_FORMAT_RETAIL) //-V581
@@ -3116,7 +3116,7 @@ int CFred_mission_save::save_objects() {
 			if (shipp->flags[Ship::Ship_Flags::Scramble_messages])
 				fout(" \"scramble-messages\"");
 			if (!(objp->flags[Object::Object_Flags::Collides]))
-				fout(" \"no-collide\"");
+				fout(" \"no_collide\"");
 			if (shipp->flags[Ship::Ship_Flags::No_disabled_self_destruct])
 				fout(" \"no-disabled-self-destruct\"");
 			fout(" )");

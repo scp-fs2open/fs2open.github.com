@@ -43,13 +43,13 @@ protected:
 	vec3d c_pos;
 	matrix c_ori;
 public:
-	camera(char *in_name=NULL, int in_signature=-1);
+	camera(const char *in_name=NULL, int in_signature=-1);
 	~camera();
 	void clear();
 	void reset();
 
 	//Set
-	void set_name(char *in_name);
+	void set_name(const char *in_name);
 
 	void set_object_host(object *objp, int n_object_host_submodel = -1);
 	void set_object_target(object *objp, int n_object_target_submodel = -1);
@@ -158,8 +158,8 @@ extern float Sexp_fov;
 void cam_init();
 void cam_close();
 void cam_do_frame(float frametime);
-camid cam_create(char *n_name=NULL, vec3d *n_pos=NULL, matrix *n_ori=NULL, object *n_object=NULL, int n_submodel_parent=-1);
-camid cam_create(char *n_name, vec3d *n_pos, vec3d *n_norm, object *n_object=NULL, int n_submodel_parent=-1);
+camid cam_create(const char *n_name=NULL, vec3d *n_pos=NULL, matrix *n_ori=NULL, object *n_object=NULL, int n_submodel_parent=-1);
+camid cam_create(const char *n_name, vec3d *n_pos, vec3d *n_norm, object *n_object=NULL, int n_submodel_parent=-1);
 void cam_delete(camid cid);
 bool cam_set_camera(camid cid);
 void cam_reset_camera();

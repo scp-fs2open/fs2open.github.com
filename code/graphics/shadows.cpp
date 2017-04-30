@@ -18,6 +18,7 @@
 #include "model/model.h"
 #include "model/modelrender.h"
 #include "render/3d.h"
+#include "tracing/tracing.h"
 
 extern vec3d check_offsets[8];
 
@@ -400,6 +401,7 @@ void shadows_end_render()
 void shadows_render_all(float fov, matrix *eye_orient, vec3d *eye_pos)
 {
 	GR_DEBUG_SCOPE("Render shadows");
+	TRACE_SCOPE(tracing::BuildShadowMap);
 
 	if ( Static_light.empty() ) {
 		return;
@@ -420,7 +422,7 @@ void shadows_render_all(float fov, matrix *eye_orient, vec3d *eye_pos)
 	// maybe we could use a more programmatic algorithim? 
 	matrix light_matrix = shadows_start_render(eye_orient, eye_pos, fov, gr_screen.clip_aspect, 200.0f, 600.0f, 2500.0f, 8000.0f);
 
-	draw_list scene;
+	model_draw_list scene;
 	object *objp = Objects;
 
 	for ( int i = 0; i <= Highest_object_index; i++, objp++ ) {

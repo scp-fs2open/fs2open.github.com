@@ -32,7 +32,6 @@
 #include "globalincs/pstypes.h"
 #include "globalincs/systemvars.h"
 #include "cmdline/cmdline.h"
-#include "scripting/lua.h"
 #include "parse/parselo.h"
 #include "debugconsole/console.h"
 

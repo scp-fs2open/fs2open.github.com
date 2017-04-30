@@ -1,4 +1,4 @@
-#!/usr/bin/env sh
+#!/usr/bin/env bash
 
 set -ex
 
@@ -6,7 +6,15 @@ mkdir -p build
 cd build
 
 if [ "$TRAVIS_OS_NAME" = "linux" ]; then
-    export CXXFLAGS="-m64 -mtune=generic -mfpmath=sse -msse -msse2 -pipe -Wno-unknown-pragmas"
+    CXXFLAGS="-m64 -mtune=generic -mfpmath=sse -msse -msse2 -pipe -Wno-unknown-pragmas"
+    CFLAGS="-m64 -mtune=generic -mfpmath=sse -msse -msse2 -pipe -Wno-unknown-pragmas"
+
+    if [[ "$CC" =~ ^clang.*$ ]]; then
+        CXXFLAGS="$CXXFLAGS -stdlib=libc++"
+    fi
+
+    export CXXFLAGS
+    export CFLAGS
     CMAKE="cmake -G Ninja -DFSO_FATAL_WARNINGS=ON"
     if [ "$BUILD_DEPLOYMENT" = true ]; then
         for config in $BUILD_CONFIGS
@@ -19,7 +27,7 @@ if [ "$TRAVIS_OS_NAME" = "linux" ]; then
             cd ..
         done
     else
-        eval $CMAKE -DCMAKE_BUILD_TYPE=$CONFIGURATION -DFSO_BUILD_TESTS=ON ..
+        eval $CMAKE -DCMAKE_BUILD_TYPE=$CONFIGURATION -DFSO_BUILD_TESTS=ON -DFSO_BUILD_INCLUDED_LIBS=ON ..
     fi
 elif [ "$TRAVIS_OS_NAME" = "osx" ]; then
     if [ "$BUILD_DEPLOYMENT" = true ]; then

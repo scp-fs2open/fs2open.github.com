@@ -54,17 +54,11 @@ uniform float thruster_scale;
 #endif
 #ifdef FLAG_CLIP
 uniform int use_clip_plane;
-uniform vec3 clip_normal;
-uniform vec3 clip_position;
-#ifdef FLAG_SHADOW_MAP
-out float geoClipDistance;
-#else
-out float fragClipDistance;
-#endif
+uniform vec4 clip_equation;
 #endif
 #ifdef FLAG_TRANSFORM
 #define TEXELS_PER_MATRIX 4
-void getModelTransform(inout mat4 transform, inout float invisible, int id, int matrix_offset)
+void getModelTransform(inout mat4 transform, out float invisible, int id, int matrix_offset)
 {
 	transform[0] = texelFetch(transform_tex, (matrix_offset + id) * TEXELS_PER_MATRIX);
 	transform[1] = texelFetch(transform_tex, (matrix_offset + id) * TEXELS_PER_MATRIX + 1);
@@ -147,13 +141,11 @@ void main()
 	fragFogDist = clamp((gl_Position.z - fogStart) * 0.75 * fogScale, 0.0, 1.0);
  #endif
  #ifdef FLAG_CLIP
-   float clip_dist = 0.0;
-	if(use_clip_plane == 1) clip_dist = dot(normalize((modelMatrix * orient * vertex).xyz - clip_position), clip_normal);
-  #ifdef FLAG_SHADOW_MAP
-   geoClipDistance = clip_dist;
-  #else
-   fragClipDistance = clip_dist;
-  #endif
+	if(use_clip_plane == 1) {
+		gl_ClipDistance[0] = dot(clip_equation, modelMatrix * orient * vertex);
+	} else {
+		gl_ClipDistance[0] = -1.0f;
+	}
  #endif
  #ifndef FLAG_SHADOW_MAP
 	fragPosition = position;

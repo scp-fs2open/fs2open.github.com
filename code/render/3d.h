@@ -98,6 +98,11 @@ void g3_draw_horizon_line();
 void g3_start_instance_matrix(const vec3d *pos, const matrix *orient, bool set_api = true);
 
 /**
+ * Instance at specified point with specified transform.
+ */
+void g3_start_instance_matrix(const matrix4 *transform, bool set_api = true);
+
+/**
  * Instance at specified point with specified orientation
  */
 void g3_start_instance_angles(const vec3d *pos, const angles *orient);

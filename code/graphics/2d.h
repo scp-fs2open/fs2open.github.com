@@ -38,32 +38,6 @@ class particle_material;
 class distortion_material;
 class shield_material;
 
-struct transform
-{
-	matrix basis;
-	vec3d origin;
-	vec3d scale;
-
-	transform() : basis(vmd_identity_matrix), origin(vmd_zero_vector), scale(vmd_scale_identity_vector) {}
-	transform(matrix *m, vec3d *v) : basis(*m), origin(*v) {}
-
-	matrix4 get_matrix4()
-	{
-		matrix4 new_mat;
-		vm_matrix4_set_identity(&new_mat);
-
-		new_mat.a1d[0] = basis.vec.rvec.xyz.x;   new_mat.a1d[4] = basis.vec.uvec.xyz.x;   new_mat.a1d[8] = basis.vec.fvec.xyz.x;
-		new_mat.a1d[1] = basis.vec.rvec.xyz.y;   new_mat.a1d[5] = basis.vec.uvec.xyz.y;   new_mat.a1d[9] = basis.vec.fvec.xyz.y;
-		new_mat.a1d[2] = basis.vec.rvec.xyz.z;   new_mat.a1d[6] = basis.vec.uvec.xyz.z;   new_mat.a1d[10] = basis.vec.fvec.xyz.z;
-		new_mat.a1d[12] = origin.xyz.x;
-		new_mat.a1d[13] = origin.xyz.y;
-		new_mat.a1d[14] = origin.xyz.z;
-
-		return new_mat;
-	}
-};
-
-
 class transform_stack {
 	
 	matrix4 Current_transform;
@@ -382,24 +356,6 @@ private:
 	int find_first_vertex(int idx);
 	int find_first_vertex_fast(int idx);
 	void generate_sorted_index_list();
-};
-
-class colored_vector
-{
-public:
-	colored_vector()
-		: pad(1.0f)
-	{}
-
-	vec3d vec;
-	float pad;	//needed so I can just memcpy it in d3d
-	ubyte color[4];
-};
-
-
-struct line_list {
-	int n_line;
-	vertex *vert;
 };
 
 class buffer_data
@@ -742,9 +698,6 @@ typedef struct screen {
 	// color buffer writes
 	int (*gf_set_color_buffer)(int mode);
 
-	// set a texture into cache. for sectioned bitmaps, pass in sx and sy to set that particular section of the bitmap
-	int (*gf_tcache_set)(int bitmap_id, int bitmap_type, float *u_scale, float *v_scale, int stage);	
-
 	// preload a bitmap into texture memory
 	int (*gf_preload)(int bitmap_num, int is_aabitmap);
 
@@ -802,6 +755,7 @@ typedef struct screen {
 	void (*gf_post_process_begin)();
 	void (*gf_post_process_end)();
 	void (*gf_post_process_save_zbuffer)();
+	void (*gf_post_process_restore_zbuffer)();
 
 	void (*gf_deferred_lighting_begin)();
 	void (*gf_deferred_lighting_end)();
@@ -855,6 +809,9 @@ typedef struct screen {
 	bool (*gf_query_value_available)(int obj);
 	std::uint64_t (*gf_get_query_value)(int obj);
 	void (*gf_delete_query_object)(int obj);
+
+	std::unique_ptr<os::Viewport> (*gf_create_viewport)(const os::ViewPortProperties& props);
+	void (*gf_use_viewport)(os::Viewport* view);
 } screen;
 
 // handy macro
@@ -879,14 +836,14 @@ typedef struct screen {
 
 extern const char *Resolution_prefixes[GR_NUM_RESOLUTIONS];
 
-extern bool gr_init(os::GraphicsOperations* graphicsOps, int d_mode = GR_DEFAULT,
+extern bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, int d_mode = GR_DEFAULT,
 					int d_width = GR_DEFAULT, int d_height = GR_DEFAULT, int d_depth = GR_DEFAULT);
 
 extern void gr_screen_resize(int width, int height);
 extern int gr_get_resolution_class(int width, int height);
 
 // Call this when your app ends.
-extern void gr_close(os::GraphicsOperations* graphicsOps);
+extern void gr_close();
 
 extern screen gr_screen;
 
@@ -919,13 +876,13 @@ bool gr_resize_screen_posf(float *x, float *y, float *w = NULL, float *h = NULL,
 // Does formatted printing.  This calls gr_string after formatting,
 // so if you don't need to format the string, then call gr_string
 // directly.
-extern void gr_printf( int x, int y, const char * format, ... );
+extern void gr_printf( int x, int y, const char * format, SCP_FORMAT_STRING ... ) SCP_FORMAT_STRING_ARGS(3, 4);
 // same as gr_printf but positions text correctly in menus
-extern void gr_printf_menu( int x, int y, const char * format, ... );
+extern void gr_printf_menu( int x, int y, const char * format, SCP_FORMAT_STRING ... )  SCP_FORMAT_STRING_ARGS(3, 4);
 // same as gr_printf_menu but accounts for menu zooming
-extern void gr_printf_menu_zoomed( int x, int y, const char * format, ... );
+extern void gr_printf_menu_zoomed( int x, int y, const char * format, SCP_FORMAT_STRING ... )  SCP_FORMAT_STRING_ARGS(3, 4);
 // same as gr_printf but doesn't resize for non-standard resolutions
-extern void gr_printf_no_resize( int x, int y, const char * format, ... );
+extern void gr_printf_no_resize( int x, int y, const char * format, SCP_FORMAT_STRING ... )  SCP_FORMAT_STRING_ARGS(3, 4);
 
 // Returns the size of the string in pixels in w and h
 extern void gr_get_string_size( int *w, int *h, const char * text, int len = 9999 );
@@ -948,7 +905,7 @@ extern void gr_activate(int active);
 #define gr_print_screen		GR_CALL(gr_screen.gf_print_screen)
 
 //#define gr_flip				GR_CALL(gr_screen.gf_flip)
-void gr_flip();
+void gr_flip(bool execute_scripting = true);
 
 //#define gr_set_clip			GR_CALL(gr_screen.gf_set_clip)
 __inline void gr_set_clip(int x, int y, int w, int h, int resize_mode=GR_RESIZE_FULL)
@@ -1051,10 +1008,6 @@ __inline void gr_fog_set(int fog_mode, int r, int g, int b, float fog_near = -1.
 #define gr_set_cull			GR_CALL(gr_screen.gf_set_cull)
 #define gr_set_color_buffer	GR_CALL(gr_screen.gf_set_color_buffer)
 
-__inline int gr_tcache_set(int bitmap_id, int bitmap_type, float *u_scale, float *v_scale, int stage = 0)
-{
-	return (*gr_screen.gf_tcache_set)(bitmap_id, bitmap_type, u_scale, v_scale, stage);
-}
 
 #define gr_preload			GR_CALL(gr_screen.gf_preload)
 
@@ -1119,6 +1072,9 @@ __inline int gr_create_index_buffer(bool static_buffer = false)
 #define gr_post_process_begin			GR_CALL(*gr_screen.gf_post_process_begin)
 #define gr_post_process_end				GR_CALL(*gr_screen.gf_post_process_end)
 #define gr_post_process_save_zbuffer	GR_CALL(*gr_screen.gf_post_process_save_zbuffer)
+inline void gr_post_process_restore_zbuffer() {
+	gr_screen.gf_post_process_restore_zbuffer();
+}
 
 #define gr_deferred_lighting_begin		GR_CALL(*gr_screen.gf_deferred_lighting_begin)
 #define gr_deferred_lighting_end		GR_CALL(*gr_screen.gf_deferred_lighting_end)
@@ -1224,6 +1180,13 @@ inline void gr_delete_query_object(int obj)
 	(*gr_screen.gf_delete_query_object)(obj);
 }
 
+inline std::unique_ptr<os::Viewport> gr_create_viewport(const os::ViewPortProperties& props) {
+	return (*gr_screen.gf_create_viewport)(props);
+}
+inline void gr_use_viewport(os::Viewport* view) {
+	(*gr_screen.gf_use_viewport)(view);
+}
+
 // color functions
 void gr_get_color( int *r, int *g, int  b );
 void gr_init_color(color *c, int r, int g, int b);
@@ -1289,10 +1252,10 @@ void gr_pline_special(SCP_vector<vec3d> *pts, int thickness,int resize_mode=GR_R
 *
 * @param x The x position where the timestamp should be draw
 * @param y The y position where the timestamp should be draw
-* @param timestamp The timespamp in milliseconds to be printed
+* @param timestamp The timestamp (in 65536ths of a second) to be printed
 * @param resize_mode The resize mode to use
 */
-void gr_print_timestamp(int x, int y, int timestamp, int resize_mode);
+void gr_print_timestamp(int x, int y, fix timestamp, int resize_mode);
 
 namespace graphics {
 class DebugScope {
@@ -1307,9 +1270,7 @@ class DebugScope {
 }
 
 #ifndef NDEBUG
-#define GR_TOKEN_CONCAT1(x, y) x ## y
-#define GR_TOKEN_CONCAT2(x, y) GR_TOKEN_CONCAT1(x, y)
-#define GR_DEBUG_SCOPE(name) ::graphics::DebugScope GR_TOKEN_CONCAT2(gr_scope, __LINE__)(name)
+#define GR_DEBUG_SCOPE(name) ::graphics::DebugScope SCP_TOKEN_CONCAT(gr_scope, __LINE__)(name)
 #else
 #define GR_DEBUG_SCOPE(name) do {} while(0)
 #endif

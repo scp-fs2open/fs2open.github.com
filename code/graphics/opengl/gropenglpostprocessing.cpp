@@ -79,7 +79,7 @@ static int Post_texture_height = 0;
 void opengl_post_pass_tonemap()
 {
 	GR_DEBUG_SCOPE("Tonemapping");
-	profile_auto trace_scope("Tonemapping");
+	TRACE_SCOPE(tracing::Tonemapping);
 
 	opengl_shader_set_current( gr_opengl_maybe_create_shader(SDR_TYPE_POST_PROCESS_TONEMAPPING, 0) );
 
@@ -98,7 +98,7 @@ void opengl_post_pass_tonemap()
 void opengl_post_pass_bloom()
 {
 	GR_DEBUG_SCOPE("Bloom");
-	profile_auto trace_scope("Bloom");
+	TRACE_SCOPE(tracing::Bloom);
 
 	// we need the scissor test disabled
 	GLboolean scissor_test = GL_state.ScissorTest(GL_FALSE);
@@ -107,9 +107,9 @@ void opengl_post_pass_bloom()
 	int width, height;
 	{
 		GR_DEBUG_SCOPE("Bloom bright pass");
-		profile_auto draw_scope("Bloom bright pass");
+		TRACE_SCOPE(tracing::BloomBrightPass);
 
-		glBindFramebuffer(GL_FRAMEBUFFER, Bloom_framebuffer);
+		GL_state.BindFrameBuffer(Bloom_framebuffer);
 		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, Bloom_textures[0], 0);
 
 		// width and height are 1/2 for the bright pass
@@ -144,7 +144,7 @@ void opengl_post_pass_bloom()
 	for ( int iteration = 0; iteration < 2; iteration++) {
 		for (int pass = 0; pass < 2; pass++) {
 			GR_DEBUG_SCOPE("Bloom iteration step");
-			profile_auto draw_scope("Bloom iteration step");
+			TRACE_SCOPE(tracing::BloomIterationStep);
 
 			GLuint source_tex = Bloom_textures[pass];
 			GLuint dest_tex = Bloom_textures[1 - pass];
@@ -181,7 +181,7 @@ void opengl_post_pass_bloom()
 	// composite blur to the color texture
 	{
 		GR_DEBUG_SCOPE("Bloom composite step");
-		profile_auto draw_scope("Bloom composite step");
+		TRACE_SCOPE(tracing::BloomCompositeStep);
 
 		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, Scene_color_texture, 0);
 
@@ -224,7 +224,8 @@ void gr_opengl_post_process_begin()
 		return;
 	}
 
-	glBindFramebuffer(GL_FRAMEBUFFER, Post_framebuffer_id[0]);
+	GL_state.PushFramebufferState();
+	GL_state.BindFrameBuffer(Post_framebuffer_id[0]);
 
 	glDrawBuffer(GL_COLOR_ATTACHMENT0);
 
@@ -249,7 +250,7 @@ void recompile_fxaa_shader() {
 
 void opengl_post_pass_fxaa() {
 	GR_DEBUG_SCOPE("FXAA");
-	profile_auto trace_scope("FXAA");
+	TRACE_SCOPE(tracing::FXAA);
 
 	//If the preset changed, recompile the shader
 	if (Fxaa_preset_last_frame != Cmdline_fxaa_preset) {
@@ -304,7 +305,7 @@ extern float Sun_spot;
 void opengl_post_lightshafts()
 {
 	GR_DEBUG_SCOPE("Lightshafts");
-	profile_auto trace_scope("Lightshafts");
+	TRACE_SCOPE(tracing::Lightshafts);
 
 	opengl_shader_set_current(gr_opengl_maybe_create_shader(SDR_TYPE_POST_PROCESS_LIGHTSHAFTS, 0));
 
@@ -354,20 +355,12 @@ void opengl_post_lightshafts()
 			}
 		}
 	}
-
-	if ( zbuffer_saved ) {
-		zbuffer_saved = false;
-		gr_zbuffer_set(GR_ZBUFF_FULL);
-		glClear(GL_DEPTH_BUFFER_BIT);
-		gr_zbuffer_set(GR_ZBUFF_NONE);
-		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, Scene_depth_texture, 0);
-	}
 }
 
 void gr_opengl_post_process_end()
 {
 	GR_DEBUG_SCOPE("Draw scene texture");
-	profile_auto trace_scope("Draw scene texture");
+	TRACE_SCOPE(tracing::DrawSceneTexture);
 
 	// state switch just the once (for bloom pass and final render-to-screen)
 	GLboolean depth = GL_state.DepthTest(GL_FALSE);
@@ -376,6 +369,8 @@ void gr_opengl_post_process_end()
 	GLboolean cull = GL_state.CullFace(GL_FALSE);
 
 	GL_state.Texture.SetShaderMode(GL_TRUE);
+
+	GL_state.PushFramebufferState();
 	
 	// do bloom, hopefully ;)
 	opengl_post_pass_bloom();
@@ -392,10 +387,10 @@ void gr_opengl_post_process_end()
 	opengl_post_lightshafts();
 
 	GR_DEBUG_SCOPE("Draw post effects");
-	profile_auto draw_scope("Draw post effects");
+	TRACE_SCOPE(tracing::DrawPostEffects);
 
-	// now write to the on-screen buffer
-	glBindFramebuffer(GL_FRAMEBUFFER, opengl_get_rtt_framebuffer());
+	// now write to the previous buffer
+	GL_state.PopFramebufferState();
 
 	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT);
@@ -432,7 +427,7 @@ void gr_opengl_post_process_end()
 	}
 
 	// now render it to the screen ...
-	glBindFramebuffer(GL_FRAMEBUFFER,0);
+	GL_state.PopFramebufferState();
 	GL_state.Texture.SetActiveUnit(0);
 	GL_state.Texture.SetTarget(GL_TEXTURE_2D);
 	//GL_state.Texture.Enable(Scene_color_texture);
@@ -585,6 +580,7 @@ void gr_opengl_post_process_set_defaults()
 extern GLuint Cockpit_depth_texture;
 void gr_opengl_post_process_save_zbuffer()
 {
+	GR_DEBUG_SCOPE("Save z-Buffer");
 	if (Post_initialized)
 	{
 		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, Cockpit_depth_texture, 0);
@@ -596,6 +592,16 @@ void gr_opengl_post_process_save_zbuffer()
 		// If we can't save the z-buffer then just clear it so cockpits are still rendered correctly when
 		// post-processing isn't available/enabled.
 		gr_zbuffer_clear(TRUE);
+	}
+}
+void gr_opengl_post_process_restore_zbuffer()
+{
+	GR_DEBUG_SCOPE("Restore z-Buffer");
+
+	if (zbuffer_saved) {
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, Scene_depth_texture, 0);
+
+		zbuffer_saved = false;
 	}
 }
 
@@ -731,16 +737,13 @@ void opengl_post_shader_header(SCP_stringstream &sflags, shader_type shader_t, i
 		sprintf(temp, "#define SAMPLE_NUM %d\n", ls_samplenum);
 		sflags << temp;
 	} else if ( shader_t == SDR_TYPE_POST_PROCESS_FXAA ) {
-		/* GLSL version < 120 are guarded against reaching this code
-		   path via testing is_minimum_GLSL_version().
-		   Accordingly do not test for them again here. */
-		if (GLSL_version == 120) {
-			sflags << "#define FXAA_GLSL_120 1\n";
-			sflags << "#define FXAA_GLSL_130 0\n";
-		}
-		if (GLSL_version > 120) {
-			sflags << "#define FXAA_GLSL_120 0\n";
-			sflags << "#define FXAA_GLSL_130 1\n";
+		// Since we require OpenGL 3.2 we always have support for GLSL 130
+		sflags << "#define FXAA_GLSL_120 0\n";
+		sflags << "#define FXAA_GLSL_130 1\n";
+
+		if (GLSL_version >= 400) {
+			// The gather function became part of the standard with GLSL 4.00
+			sflags << "#define FXAA_GATHER4_ALPHA 1\n";
 		}
 
 		switch (Cmdline_fxaa_preset) {
@@ -873,7 +876,7 @@ void opengl_setup_bloom_textures()
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, MAX_MIP_BLUR_LEVELS-1);
 	}
 
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	GL_state.BindFrameBuffer(0);
 }
 
 // generate and test the framebuffer and textures that we are going to use
@@ -899,7 +902,7 @@ static bool opengl_post_init_framebuffer()
 		int size = (Cmdline_shadow_quality == 2 ? 1024 : 512);
 
 		glGenFramebuffers(1, &Post_shadow_framebuffer_id);
-		glBindFramebuffer(GL_FRAMEBUFFER, Post_shadow_framebuffer_id);
+		GL_state.BindFrameBuffer(Post_shadow_framebuffer_id);
 
 		glGenTextures(1, &Post_shadow_texture_id);
 		
@@ -950,7 +953,7 @@ static bool opengl_post_init_framebuffer()
 		glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, Post_shadow_depth_texture_id, 0);
 	}
 
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	GL_state.BindFrameBuffer(0);
 
 	rval = true;
 	

@@ -26,6 +26,7 @@
 #include "cfile/cfile.h"
 #include "localization/localize.h"
 #include "parse/parselo.h"
+#include "tracing/Monitor.h"
 
 namespace
 {

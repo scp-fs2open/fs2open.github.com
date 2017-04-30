@@ -361,10 +361,10 @@ int ship_ship_check_collision(collision_info_struct *ship_ship_hit_info, vec3d *
 			collide_obj = heavy_obj;
 		}
 		if ((collide_obj != NULL) && (Ship_info[Ships[collide_obj->instance].ship_info_index].is_fighter_bomber())) {
-			char	*submode_string = "";
+			const char	*submode_string = "";
 			ai_info	*aip;
 
-			extern char *Mode_text[];
+			extern const char *Mode_text[];
 			aip = &Ai_info[Ships[collide_obj->instance].ai_index];
 
 			if (aip->mode == AIM_CHASE)
@@ -705,14 +705,19 @@ void calculate_ship_ship_collision_physics(collision_info_struct *ship_ship_hit_
 	// include a frictional collision impulse F parallel to the collision plane
 	// F = I * sin (collision_normal, normalized v_rel_m)  [sin is ratio of v_rel_parallel_m to v_rel_m]
 	// note:  (-) sign is needed to account for the direction of the v_rel_parallel_m
-	float collision_speed_parallel;
-	float parallel_mag;
-	impulse = ship_ship_hit_info->collision_normal;
-	vm_vec_projection_onto_plane(&v_rel_parallel_m, &v_rel_m, &ship_ship_hit_info->collision_normal);
-	collision_speed_parallel = vm_vec_normalize_safe(&v_rel_parallel_m);
-	float friction = (lighter->type == OBJ_SHIP) ? light_sip->collision_physics.friction : COLLISION_FRICTION_FACTOR;
-	parallel_mag = float(-friction) * collision_speed_parallel / vm_vec_mag(&v_rel_m);
-	vm_vec_scale_add2(&impulse, &v_rel_parallel_m, parallel_mag);
+	if (IS_VEC_NULL(&v_rel_m)) {
+		// If the relative velocity is zero then the compuatation below would cause NaN errors
+		vm_vec_zero(&impulse);
+	} else {
+		float collision_speed_parallel;
+		float parallel_mag;
+		impulse = ship_ship_hit_info->collision_normal;
+		vm_vec_projection_onto_plane(&v_rel_parallel_m, &v_rel_m, &ship_ship_hit_info->collision_normal);
+		collision_speed_parallel = vm_vec_normalize_safe(&v_rel_parallel_m);
+		float friction = (lighter->type == OBJ_SHIP) ? light_sip->collision_physics.friction : COLLISION_FRICTION_FACTOR;
+		parallel_mag = float(-friction) * collision_speed_parallel / vm_vec_mag(&v_rel_m);
+		vm_vec_scale_add2(&impulse, &v_rel_parallel_m, parallel_mag);
+	}
 	
 	// calculate the effect on the velocity of the collison point per unit impulse
 	// first find the effect thru change in rotvel
@@ -886,7 +891,7 @@ void mcp_1(object *player_objp, object *planet_objp)
 	ship_apply_global_damage( player_objp, planet_objp, NULL, PLANET_DAMAGE_SCALE * flFrametime * (float)pow((planet_radius*PLANET_DAMAGE_RANGE)/dist, 3.0f) );
 
 	if ((Missiontime - Last_planet_damage_time > F1_0) || (Missiontime < Last_planet_damage_time)) {
-		HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Too close to planet.  Taking damage!", 465));
+		HUD_sourced_printf(HUD_SOURCE_HIDDEN, "%s", XSTR( "Too close to planet.  Taking damage!", 465));
 		Last_planet_damage_time = Missiontime;
 		snd_play_3d( &Snds[ship_get_sound(player_objp, SND_ABURN_ENGAGE)], &player_objp->pos, &View_position );
 	}
@@ -1147,7 +1152,7 @@ int collide_ship_ship( obj_pair * pair )
 
 				if ( player_involved && (Player->control_mode == PCM_WARPOUT_STAGE1) )	{
 					gameseq_post_event( GS_EVENT_PLAYER_WARPOUT_STOP );
-					HUD_printf(XSTR( "Warpout sequence aborted.", 466));
+					HUD_printf("%s", XSTR( "Warpout sequence aborted.", 466));
 				}
 
 				damage = 0.005f * ship_ship_hit_info.impulse;	//	Cut collision-based damage in half.

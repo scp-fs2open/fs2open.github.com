@@ -48,12 +48,12 @@
 #define CONTROL_W_COORD 2
 #define CONTROL_H_COORD 3
 
-char* Conflict_background_bitmap_fname[GR_NUM_RESOLUTIONS] = {
+const char* Conflict_background_bitmap_fname[GR_NUM_RESOLUTIONS] = {
 	"ControlConfig",		// GR_640
 	"2_ControlConfig"		// GR_1024
 };
 
-char* Conflict_background_bitmap_mask_fname[GR_NUM_RESOLUTIONS] = {
+const char* Conflict_background_bitmap_mask_fname[GR_NUM_RESOLUTIONS] = {
 	"ControlConfig-m",		// GR_640
 	"2_ControlConfig-m"		// GR_1024
 };
@@ -1974,7 +1974,7 @@ void control_config_do_frame(float frametime)
 		if (t % 2) {
 			gr_set_color_fast(&Color_text_normal);
 			gr_get_string_size(&w, NULL, XSTR( "?", 208));
-			gr_printf_menu(x - w / 2, y - font_height / 2, XSTR( "?", 208));
+			gr_printf_menu(x - w / 2, y - font_height / 2, "%s", XSTR( "?", 208));
 		}
 
 	} else if (!(z & JOY_AXIS) && ((Conflicts[z].key >= 0) || (Conflicts[z].joy >= 0))) {
@@ -1986,7 +1986,7 @@ void control_config_do_frame(float frametime)
 		gr_set_color_fast(&Color_text_normal);
 		str = XSTR( "Control conflicts with:", 209);
 		gr_get_string_size(&w, NULL, str);
-		gr_printf_menu(x - w / 2, y - font_height, str);
+		gr_printf_menu(x - w / 2, y - font_height, "%s", str);
 
 		if (Control_config[i].hasXSTR) {
 			strcpy_s(buf, XSTR(Control_config[i].text, CONTROL_CONFIG_XSTR + i));
@@ -1996,12 +1996,12 @@ void control_config_do_frame(float frametime)
 
 		font::force_fit_string(buf, 255, Conflict_wnd_coords[gr_screen.res][CONTROL_W_COORD]);
 		gr_get_string_size(&w, NULL, buf);
-		gr_printf_menu(x - w / 2, y, buf);
+		gr_printf_menu(x - w / 2, y, "%s", buf);
 
 	} else if (*bound_string) {
 		gr_set_color_fast(&Color_text_normal);
 		gr_get_string_size(&w, NULL, bound_string);
-		gr_printf_menu(x - w / 2, y - font_height / 2, bound_string);
+		gr_printf_menu(x - w / 2, y - font_height / 2, "%s", bound_string);
 		if (timestamp_elapsed(bound_timestamp)) {
 			*bound_string = 0;
 		}
@@ -2009,7 +2009,7 @@ void control_config_do_frame(float frametime)
 
 	if (Cc_lines[Num_cc_lines - 1].y + font_height > Cc_lines[Scroll_offset].y + Control_list_coords[gr_screen.res][CONTROL_H_COORD]) {
 		gr_set_color_fast(&Color_white);
-		gr_printf_menu(Control_more_coords[gr_screen.res][CONTROL_X_COORD], Control_more_coords[gr_screen.res][CONTROL_Y_COORD], XSTR( "More...", 210));
+		gr_printf_menu(Control_more_coords[gr_screen.res][CONTROL_X_COORD], Control_more_coords[gr_screen.res][CONTROL_Y_COORD], "%s", XSTR( "More...", 210));
 	}
 
 	conflict = 0;
@@ -2035,7 +2035,7 @@ void control_config_do_frame(float frametime)
 		if (Cc_lines[line].label) {
 			strcpy_s(buf, Cc_lines[line].label);
 			font::force_fit_string(buf, 255, Control_list_ctrl_w[gr_screen.res]);
-			gr_printf_menu(Control_list_coords[gr_screen.res][CONTROL_X_COORD], y, buf);
+			gr_printf_menu(Control_list_coords[gr_screen.res][CONTROL_X_COORD], y, "%s", buf);
 		}
 
 		if (!(z & JOY_AXIS)) {
@@ -2046,7 +2046,7 @@ void control_config_do_frame(float frametime)
 
 			if ((k < 0) && (j < 0)) {
 				gr_set_color_fast(&Color_grey);
-				gr_printf_menu(x, y, XSTR( "None", 211));
+				gr_printf_menu(x, y, "%s", XSTR( "None", 211));
 
 			} else {
 				if (k >= 0) {
@@ -2066,7 +2066,7 @@ void control_config_do_frame(float frametime)
 						gr_set_color_fast(c);
 					}
 
-					gr_printf_menu(x, y, buf);
+					gr_printf_menu(x, y, "%s", buf);
 
 					Cc_lines[line].kx = x - Control_list_coords[gr_screen.res][CONTROL_X_COORD];
 					gr_get_string_size(&w, NULL, buf);
@@ -2075,7 +2075,7 @@ void control_config_do_frame(float frametime)
 
 					if (j >= 0) {
 						gr_set_color_fast(&Color_text_normal);
-						gr_printf_menu(x, y, XSTR( ", ", 212));
+						gr_printf_menu(x, y, "%s", XSTR( ", ", 212));
 						gr_get_string_size(&w, NULL, XSTR( ", ", 212));
 						x += w;
 					}
@@ -2099,7 +2099,7 @@ void control_config_do_frame(float frametime)
 					}
 
 					font::force_fit_string(buf, 255, Control_list_key_w[gr_screen.res] + Control_list_key_x[gr_screen.res] - x);
-					gr_printf_menu(x, y, buf);
+					gr_printf_menu(x, y, "%s", buf);
 
 					Cc_lines[line].jx = x - Control_list_coords[gr_screen.res][CONTROL_X_COORD];
 					gr_get_string_size(&Cc_lines[line].jw, NULL, buf);
@@ -2115,7 +2115,7 @@ void control_config_do_frame(float frametime)
 
 			if (j < 0) {
 				gr_set_color_fast(&Color_grey);
-				gr_printf_menu(x, y, XSTR( "None", 211));
+				gr_printf_menu(x, y, "%s", XSTR( "None", 211));
 
 			} else {
 				if (Conflicts_axes[z & ~JOY_AXIS] >= 0) {

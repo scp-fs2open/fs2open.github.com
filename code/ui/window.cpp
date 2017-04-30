@@ -15,7 +15,6 @@
 #include "io/timer.h"
 #include "localization/localize.h"
 #include "osapi/osapi.h"
-#include "palman/palman.h"
 #include "parse/parselo.h"
 #include "ui/ui.h"
 #include "ui/uidefs.h"
@@ -72,7 +71,7 @@ UI_WINDOW::~UI_WINDOW()
 // Specify the filename for the mask bitmap to use.  This has the hotspots
 // for all the different controls.
 //
-void UI_WINDOW::set_mask_bmap(char *fname)
+void UI_WINDOW::set_mask_bmap(const char *fname)
 {
 	int bmap;
 
@@ -86,7 +85,7 @@ void UI_WINDOW::set_mask_bmap(char *fname)
 	}
 }
 
-void UI_WINDOW::set_mask_bmap(int bmap, char *name)
+void UI_WINDOW::set_mask_bmap(int bmap, const char *name)
 {
 	// int i;
 
@@ -124,7 +123,7 @@ void UI_WINDOW::set_mask_bmap(int bmap, char *name)
 // Specify the filename for the mask bitmap to display on the ui window as
 // a background.
 //
-void UI_WINDOW::set_foreground_bmap(char *fname)
+void UI_WINDOW::set_foreground_bmap(const char *fname)
 {
 	// load in the background bitmap 
 	foreground_bmap_id = bm_load(fname);
@@ -206,7 +205,8 @@ void UI_WINDOW::destroy()
 		// free up this struct
 		if(xstrs[idx] != NULL){
 			if(xstrs[idx]->xstr != NULL){
-				vm_free(xstrs[idx]->xstr);
+				// This const_cast is safe since the string was allocated by vm_strdup
+				vm_free(const_cast<char*>(xstrs[idx]->xstr));
 			}
 			vm_free(xstrs[idx]);
 			xstrs[idx] = NULL;
@@ -470,7 +470,7 @@ void UI_WINDOW::set_ignore_gadgets(int state)
 	ignore_gadgets = state;
 }
 
-void UI_WINDOW::add_XSTR(char *string, int _xstr_id, int _x, int _y, UI_GADGET *_assoc, int _color_type, int _font_id)
+void UI_WINDOW::add_XSTR(const char *string, int _xstr_id, int _x, int _y, UI_GADGET *_assoc, int _color_type, int _font_id)
 {
 	int idx;
 	int found = -1;

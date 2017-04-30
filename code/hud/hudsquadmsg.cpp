@@ -236,7 +236,7 @@ char *comm_order_get_text(int item)
 SCP_vector<squadmsg_history> Squadmsg_history; 
 
 // forward declarations
-void hud_add_issued_order(char *name, int order);
+void hud_add_issued_order(const char *name, int order);
 void hud_update_last_order(char *target, int order_source, int special_index);
 int hud_squadmsg_is_target_order_valid(int order, int find_order, ai_info *aip = NULL );
 int hud_squadmsg_ship_order_valid( int shipnum, int order );
@@ -2214,7 +2214,7 @@ void hud_squadmsg_shortcut( int command )
 {
 	// check if the communications system is capable of sending a message
 	if ( (hud_communications_state(Player_ship) != COMM_OK) && (command != REARM_REPAIR_ME_ITEM) ) {
-		HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Messaging is restricted due to communications damage", 331));
+		HUD_sourced_printf(HUD_SOURCE_HIDDEN, "%s", XSTR( "Messaging is restricted due to communications damage", 331));
 		return;
 	}
 
@@ -2391,7 +2391,7 @@ int hud_squadmsg_do_frame( )
 		return 0;
 }
 
-void hud_add_issued_order(char *name, int order)
+void hud_add_issued_order(const char *name, int order)
 {  
 	squadmsg_history *latest_order = new squadmsg_history(); 
 
@@ -2744,22 +2744,22 @@ void HudGaugeSquadMessage::render(float frametime)
 	startFlashPageScroll();
 	maybeFlashPageScroll();
 	if ( First_menu_item > 0 ) {
-		renderPrintf(position[0] + Pgup_offsets[0], position[1] + Pgup_offsets[1], XSTR( "[pgup]", 312) );
+		renderPrintf(position[0] + Pgup_offsets[0], position[1] + Pgup_offsets[1], "%s", XSTR( "[pgup]", 312) );
 	}
 
 	if ( (First_menu_item + nitems) < Num_menu_items ) {
-		renderPrintf(position[0] + Pgdn_offsets[0], position[1] + Pgdn_offsets[1], XSTR( "[pgdn]", 313));
+		renderPrintf(position[0] + Pgdn_offsets[0], position[1] + Pgdn_offsets[1], "%s", XSTR( "[pgdn]", 313));
 	}
 
 	if ( messaging_allowed ) {
 		if ( none_valid ){
-			renderPrintf( sx, by - Item_h + 2, XSTR( "No valid items", 314));
+			renderPrintf( sx, by - Item_h + 2, "%s", XSTR( "No valid items", 314));
 		} else if (Msg_shortcut_command != -1){
 			renderPrintf( sx, by - Item_h + 2, "%s", comm_order_get_text(Msg_shortcut_command));
 		}
 	} else {
 		// if this player is not allowed to message, then display message saying so
-		renderPrintf( sx, by - Item_h + 2, XSTR( "Not allowed to message", 315));
+		renderPrintf( sx, by - Item_h + 2, "%s", XSTR( "Not allowed to message", 315));
 	}
 
 }

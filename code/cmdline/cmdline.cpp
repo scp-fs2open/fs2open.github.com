@@ -150,6 +150,7 @@ Flag exe_params[] =
 	{ "-noscalevid",		"Disable scale-to-window for movies",		true,	0,					EASY_DEFAULT,		"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-noscalevid", },
 	{ "-missile_lighting",	"Apply lighting to missiles"	,			true,	EASY_ALL_ON,		EASY_DEFAULT,		"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-missile_lighting", },
 	{ "-nonormal",			"Disable normal maps",						true,	EASY_DEFAULT_MEM,	EASY_MEM_ALL_ON,	"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-normal" },
+	{ "-no_emissive_light",	"Disable emissive light from ships",		true,	0,					EASY_DEFAULT,		"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-no_emissive_light" },
 	{ "-noheight",			"Disable height/parallax maps",				true,	EASY_DEFAULT_MEM,	EASY_MEM_ALL_ON,	"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-height" },
 	{ "-3dshockwave",		"Enable 3D shockwaves",						true,	EASY_MEM_ALL_ON,	EASY_DEFAULT_MEM,	"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-3dshockwave" },
 	{ "-post_process",		"Enable post processing",					true,	EASY_ALL_ON,		EASY_DEFAULT,		"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-post_process" },
@@ -233,13 +234,14 @@ Flag exe_params[] =
 	{ "-save_render_target",	"Save render targets to file",			true,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-save_render_target", },
 	{ "-verify_vps",		"Spew VP CRCs to vp_crcs.txt",				true,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-verify_vps", },
 	{ "-reparse_mainhall",	"Reparse mainhall.tbl when loading halls",	false,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-reparse_mainhall", },
-	{ "-profile_frame_time","Profile engine subsystems",				true,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-profile_frame_timings", },
 	{ "-profile_write_file", "Write profiling information to file",		true,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-profile_write_file", },
 	{ "-no_unfocused_pause","Don't pause if the window isn't focused",	true,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-no_unfocused_pause", },
 	{ "-benchmark_mode",	"Puts the game into benchmark mode",		true,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-benchmark_mode", },
 	{ "-noninteractive",	"Disables interactive dialogs",				true,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-noninteractive", },
 	{ "-json_pilot",		"Dump pilot files in JSON format",			true,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-json_pilot", },
 	{ "-json_profiling",	"Generate JSON profiling output",			true,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-json_profiling", },
+	{ "-profile_frame_time","Profile engine subsystems",				true,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-profile_frame_timings", },
+	{ "-debug_window",		"Enable the debug window",					true,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-debug_window", },
 };
 
 // forward declaration
@@ -480,13 +482,15 @@ cmdline_parm center_res_arg("-center_res", "Resolution of center monitor, format
 cmdline_parm verify_vps_arg("-verify_vps", NULL, AT_NONE);	// Cmdline_verify_vps  -- spew VP crcs to vp_crcs.txt
 cmdline_parm parse_cmdline_only(PARSE_COMMAND_LINE_STRING, "Ignore any cmdline_fso.cfg files", AT_NONE);
 cmdline_parm reparse_mainhall_arg("-reparse_mainhall", NULL, AT_NONE); //Cmdline_reparse_mainhall
-cmdline_parm frame_profile_arg("-profile_frame_time", NULL, AT_NONE); //Cmdline_frame_profile
 cmdline_parm frame_profile_write_file("-profile_write_file", NULL, AT_NONE); // Cmdline_profile_write_file
 cmdline_parm no_unfocused_pause_arg("-no_unfocused_pause", NULL, AT_NONE); //Cmdline_no_unfocus_pause
 cmdline_parm benchmark_mode_arg("-benchmark_mode", NULL, AT_NONE); //Cmdline_benchmark_mode
 cmdline_parm noninteractive_arg("-noninteractive", NULL, AT_NONE); //Cmdline_noninteractive
 cmdline_parm json_pilot("-json_pilot", NULL, AT_NONE); //Cmdline_json_pilot
 cmdline_parm json_profiling("-json_profiling", NULL, AT_NONE); //Cmdline_json_profiling
+cmdline_parm show_video_info("-show_video_info", NULL, AT_NONE); //Cmdline_show_video_info
+cmdline_parm frame_profile_arg("-profile_frame_time", NULL, AT_NONE); //Cmdline_frame_profile
+cmdline_parm debug_window_arg("-debug_window", NULL, AT_NONE);	// Cmdline_debug_window
 
 
 char *Cmdline_start_mission = NULL;
@@ -507,13 +511,15 @@ char *Cmdline_res = 0;
 char *Cmdline_center_res = 0;
 int Cmdline_verify_vps = 0;
 int Cmdline_reparse_mainhall = 0;
-bool Cmdline_frame_profile = false;
 bool Cmdline_profile_write_file = false;
 bool Cmdline_no_unfocus_pause = false;
 bool Cmdline_benchmark_mode = false;
 bool Cmdline_noninteractive = false;
 bool Cmdline_json_pilot = false;
 bool Cmdline_json_profiling = false;
+bool Cmdline_frame_profile = false;
+bool Cmdline_show_video_info = false;
+bool Cmdline_debug_window = false;
 
 // Other
 cmdline_parm get_flags_arg("-get_flags", "Output the launcher flags file", AT_NONE);
@@ -783,12 +789,7 @@ void os_validate_parms(int argc, char *argv[])
 			if (parm_found == 0) {
 				// if we got a -help, --help, -h, or -? then show the help text, otherwise show unknown option
 				if (!stricmp(token, "-help") || !stricmp(token, "--help") || !stricmp(token, "-h") || !stricmp(token, "-?")) {
-					if (FS_VERSION_HAS_REVIS == 0) {
-						printf("FreeSpace 2 Open, version %i.%i.%i\n", FS_VERSION_MAJOR, FS_VERSION_MINOR, FS_VERSION_BUILD);
-					}
-					else {
-						printf("FreeSpace 2 Open, version %i.%i.%i.%i\n", FS_VERSION_MAJOR, FS_VERSION_MINOR, FS_VERSION_BUILD, FS_VERSION_REVIS);
-					}
+					printf("FreeSpace 2 Open, version %s\n", FS_VERSION_FULL);
 					printf("Website: http://scp.indiegames.us\n");
 					printf("Mantis (bug reporting): http://scp.indiegames.us/mantis/\n\n");
 					printf("Usage: fs2_open [options]\n");
@@ -947,26 +948,23 @@ void os_init_cmdline(int argc, char *argv[])
 	reset_cmdline_parms();
 
 	FILE *fp;
-	
+
 	if (!has_cmdline_only_flag(argc, argv)) {
 		// Only parse the config file in the current directory if we are in legacy config mode
 		if (os_is_legacy_mode()) {
 			// read the cmdline_fso.cfg file from the data folder, and pass the command line arguments to
 			// the the parse_parms and validate_parms line.  Read these first so anything actually on
 			// the command line will take precedence
-#ifdef _WIN32
-			fp = fopen("data\\cmdline_fso.cfg", "rt");
-#elif defined(APPLE_APP)
+#ifdef APPLE_APP
 			char resolved_path[MAX_PATH], data_path[MAX_PATH_LEN];
 
-			GetCurrentDirectory(MAX_PATH_LEN - 1, data_path);
+			getcwd(data_path, sizeof(data_path));
 			snprintf(resolved_path, MAX_PATH, "%s/data/cmdline_fso.cfg", data_path);
 
 			fp = fopen(resolved_path, "rt");
 #else
-			fp = fopen("data/cmdline_fso.cfg", "rt");
+			fp = fopen("data" DIR_SEPARATOR_STR "cmdline_fso.cfg", "rt");
 #endif
-
 			// if the file exists, get a single line, and deal with it
 			if (fp) {
 				char *buf, *p;
@@ -980,7 +978,6 @@ void os_init_cmdline(int argc, char *argv[])
 					if ((p = strrchr(buf, '\n')) != NULL) {
 						*p = '\0';
 					}
-
 #ifdef SCP_UNIX
 					// append a space for the os_parse_parms() check
 					strcat_s(buf, len, " ");
@@ -1011,14 +1008,14 @@ void os_init_cmdline(int argc, char *argv[])
 
 				// append a space for the os_parse_parms() check
 				strcat_s(buf, len, " ");
-			
+
 				os_process_cmdline(buf);
 			}
 			delete [] buf;
 			fclose(fp);
 		}
 	} // If cmdline included PARSE_COMMAND_LINE_STRING
-    
+
 	// By parsing cmdline last, anything actually on the command line will take precedence.
 	os_parse_parms(argc, argv);
 	os_validate_parms(argc, argv);
@@ -1844,14 +1841,8 @@ bool SetCmdlineParams()
 		Cmdline_no_deferred_lighting = 1;
 	}
 
-	if (frame_profile_arg.found() )
-	{
-		Cmdline_frame_profile = true;
-	}
-
 	if (frame_profile_write_file.found())
 	{
-		Cmdline_frame_profile = true;
 		Cmdline_profile_write_file = true;
 	}
 
@@ -1878,6 +1869,20 @@ bool SetCmdlineParams()
 	if (json_profiling.found())
 	{
 		Cmdline_json_profiling = true;
+	}
+
+	if (frame_profile_arg.found() )
+	{
+		Cmdline_frame_profile = true;
+	}
+
+	if (debug_window_arg.found()) {
+		Cmdline_debug_window = true;
+	}
+
+	if (show_video_info.found())
+	{
+		Cmdline_show_video_info = true;
 	}
 
 	//Deprecated flags - CommanderDJ

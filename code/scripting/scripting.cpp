@@ -16,19 +16,13 @@
 #include "ship/ship.h"
 #include "weapon/beam.h"
 #include "weapon/weapon.h"
+#include "ade.h"
 
 using namespace scripting;
 
 //tehe. Declare the main event
 script_state Script_system("FS2_Open Scripting");
 bool Output_scripting_meta = false;
-
-//*************************Scripting hook globals*************************
-script_hook Script_splashhook;
-script_hook Script_simulationhook;
-script_hook Script_hudhook;
-script_hook Script_globalhook;
-script_hook Script_gameinithook;
 
 flag_def_list Script_conditions[] = 
 {
@@ -88,7 +82,8 @@ flag_def_list Script_actions[] =
     {"On HUD Message Received", CHA_HUDMSGRECEIVED, 0},
 	{ "On Afterburner Engage",	CHA_AFTERBURNSTART, 0 },
 	{ "On Afterburner Stop",	CHA_AFTERBURNEND,	0 },
-	{ "On Beam Fire",			CHA_BEAMFIRE,		0 }
+	{ "On Beam Fire",			CHA_BEAMFIRE,		0 },
+	{ "On Simulation",			CHA_SIMULATION,		0 }
 };
 
 int Num_script_actions = sizeof(Script_actions)/sizeof(flag_def_list);
@@ -96,20 +91,10 @@ int scripting_state_inited = 0;
 
 //*************************Scripting init and handling*************************
 
-// the prototype for this is in pstypes.h, below the script_hook struct
-void script_hook_init(script_hook *hook)
-{
-	hook->o_language = 0;
-	hook->h_language = 0;
-
-	hook->o_index = -1;
-	hook->h_index = -1;
-}
-
 // ditto
 bool script_hook_valid(script_hook *hook)
 {
-	return hook->h_index >= 0;
+	return hook->hook_function.function.isValid();
 }
 
 void script_parse_table(const char *filename)
@@ -126,23 +111,23 @@ void script_parse_table(const char *filename)
 			//int num = 42;
 			//Script_system.SetHookVar("Version", 'i', &num);
 			if (optional_string("$Global:")) {
-				st->ParseChunk(&Script_globalhook, "Global");
+				st->ParseGlobalChunk(CHA_ONFRAME, "Global");
 			}
 
 			if (optional_string("$Splash:")) {
-				st->ParseChunk(&Script_splashhook, "Splash");
+				st->ParseGlobalChunk(CHA_SPLASHSCREEN, "Splash");
 			}
 
 			if (optional_string("$GameInit:")) {
-				st->ParseChunk(&Script_gameinithook, "GameInit");
+				st->ParseGlobalChunk(CHA_GAMEINIT, "GameInit");
 			}
 
 			if (optional_string("$Simulation:")) {
-				st->ParseChunk(&Script_simulationhook, "Simulation");
+				st->ParseGlobalChunk(CHA_SIMULATION, "Simulation");
 			}
 
 			if (optional_string("$HUD:")) {
-				st->ParseChunk(&Script_hudhook, "HUD");
+				st->ParseGlobalChunk(CHA_HUDDRAW, "HUD");
 			}
 
 			required_string("#End");
@@ -191,13 +176,6 @@ void script_parse_table(const char *filename)
 void script_init()
 {
 	mprintf(("SCRIPTING: Beginning initialization sequence...\n"));
-
-	// first things first: init all script hooks, since they are PODs now, not classes...
-	script_hook_init(&Script_splashhook);
-	script_hook_init(&Script_simulationhook);
-	script_hook_init(&Script_hudhook);
-	script_hook_init(&Script_globalhook);
-	script_hook_init(&Script_gameinithook);
 
 	mprintf(("SCRIPTING: Beginning Lua initialization...\n"));
 	Script_system.CreateLuaState();
@@ -550,8 +528,7 @@ bool ConditionedHook::IsOverride(script_state *sys, int action)
 //Most of the icky stuff is here. Lots of #ifdefs
 
 //WMC - defined in parse/scripting.h
-int ade_set_object_with_breed(lua_State *L, int obj_idx);
-void script_state::SetHookObject(char *name, object *objp)
+void script_state::SetHookObject(const char *name, object *objp)
 {
 	SetHookObjects(1, name, objp);
 }
@@ -650,7 +627,7 @@ bool script_state::CloseHookVarTable()
 	}
 }
 
-void script_state::SetHookVar(char *name, char format, void *data)
+void script_state::SetHookVar(const char *name, char format, const void *data)
 {
 	if(format == '\0')
 		return;
@@ -720,7 +697,7 @@ void script_state::SetHookVar(char *name, char format, void *data)
 }
 
 //WMC - data can be NULL, if we just want to know if it exists
-bool script_state::GetHookVar(char *name, char format, void *data)
+bool script_state::GetHookVar(const char *name, char format, void *data)
 {
 	bool got_global = false;
 	if(LuaState != NULL)
@@ -757,7 +734,7 @@ bool script_state::GetHookVar(char *name, char format, void *data)
 	return got_global;
 }
 
-void script_state::RemHookVar(char *name)
+void script_state::RemHookVar(const char *name)
 {
 	this->RemHookVars(1, name);
 }
@@ -793,7 +770,7 @@ void script_state::RemHookVars(unsigned int num, ...)
 }
 
 //WMC - data can be NULL, if we just want to know if it exists
-bool script_state::GetGlobal(char *name, char format, void *data)
+bool script_state::GetGlobal(const char *name, char format, void *data)
 {
 	bool got_global = false;
 	if(LuaState != NULL)
@@ -816,7 +793,7 @@ bool script_state::GetGlobal(char *name, char format, void *data)
 	return got_global;
 }
 
-void script_state::RemGlobal(char *name)
+void script_state::RemGlobal(const char *name)
 {
 	if(LuaState != NULL)
 	{
@@ -856,70 +833,34 @@ void script_state::UnloadImages()
 	ScriptImages.clear();
 }
 
-int script_state::RunBytecodeSub(int in_lang, int in_idx, char format, void *data)
+int script_state::RunBytecodeSub(script_function& func, char format, void *data)
 {
-	if(in_idx >= 0)
-	{
-		// if this is the hook for the hud, and the hud is disabled or we are in freelook mode, then don't run the script
-		// (admittedly this is wrong, but I'm not sure where else to put this check and have it work properly. hopefully
-		//  WMCoolmon can get some time to come back over this and fix the issues, or just make it better period. - taylor)
-		//WMC - Barf barf icky hack. Maybe later.
-		if (in_idx == Script_hudhook.h_index) {
-			if ( (Viewer_mode & VM_FREECAMERA) || hud_disabled() ) {
-				return 1;
-			}
+	using namespace luacpp;
+
+	if (!func.function.isValid()) {
+		return 1;
+	}
+
+	GR_DEBUG_SCOPE("Lua code");
+
+	try {
+		auto ret = func.function.call();
+
+		if (data != NULL && ret.size() >= 1) {
+			auto stack_start = lua_gettop(LuaState);
+
+			auto val = ret.front();
+			val.pushValue();
+
+			char fmt[2] = {format, '\0'};
+			Ade_get_args_skip = stack_start;
+			Ade_get_args_lfunction = true;
+			ade_get_args(LuaState, fmt, data);
+			Ade_get_args_skip = 0;
+			Ade_get_args_lfunction = false;
 		}
-
-		if(in_lang == SC_LUA)
-		{
-			lua_pushcfunction(GetLuaSession(), ade_friendly_error);
-			int err_ldx = lua_gettop(GetLuaSession());
-			if(!lua_iscfunction(GetLuaSession(), err_ldx))
-			{
-				lua_pop(GetLuaSession(), 1);
-				return 0;
-			}
-			
-			int args_start = lua_gettop(LuaState);
-			
-			lua_getref(GetLuaSession(), in_idx);
-			int hook_ldx = lua_gettop(GetLuaSession());
-
-			if(lua_isfunction(GetLuaSession(), hook_ldx))
-			{
-				if(lua_pcall(GetLuaSession(), 0, format!='\0' ? 1 : 0, err_ldx) != 0)
-				{
-					//WMC - Pop all extra stuff from ze stack.
-					args_start = lua_gettop(GetLuaSession()) - args_start;
-					for(; args_start > 0; args_start--) lua_pop(GetLuaSession(), 1);
-
-					lua_pop(GetLuaSession(), 1);
-					return 0;
-				}
-
-				//WMC - Just allow one argument for now.
-				if(data != NULL)
-				{
-					char fmt[2] = {format, '\0'};
-					Ade_get_args_skip = args_start;
-					Ade_get_args_lfunction = true;
-					ade_get_args(LuaState, fmt, data);
-					Ade_get_args_skip = 0;
-					Ade_get_args_lfunction = false;
-				}
-
-				//WMC - Pop anything leftover from the function from the stack
-				args_start = lua_gettop(GetLuaSession()) - args_start;
-				for(; args_start > 0; args_start--) lua_pop(GetLuaSession(), 1);
-			}
-			else
-			{
-				lua_pop(GetLuaSession(), 1);	//"hook"
-				LuaError(GetLuaSession(),"RunBytecodeSub tried to call a non-function value!");
-			}
-			lua_pop(GetLuaSession(), 1);	//err
-			
-		}
+	} catch (const LuaException&) {
+		return 0;
 	}
 
 	return 1;
@@ -928,7 +869,7 @@ int script_state::RunBytecodeSub(int in_lang, int in_idx, char format, void *dat
 //returns 0 on failure (Parse error), 1 on success
 int script_state::RunBytecode(script_hook &hd, char format, void *data)
 {
-	RunBytecodeSub(hd.h_language, hd.h_index, format, data);
+	RunBytecodeSub(hd.hook_function, format, data);
 	return 1;
 }
 
@@ -967,6 +908,13 @@ void script_state::EndFrame()
 
 void script_state::Clear()
 {
+	// Free all lua value references
+	ConditionalHooks.clear();
+
+	if(LuaState != NULL) {
+		lua_close(LuaState);
+	}
+
 	StateName[0] = '\0';
 	Langs = 0;
 
@@ -987,10 +935,6 @@ script_state::script_state(const char *name)
 
 script_state::~script_state()
 {
-	if(LuaState != NULL) {
-		lua_close(LuaState);
-	}
-
 	Clear();
 }
 
@@ -1009,7 +953,7 @@ void script_state::SetLuaSession(lua_State *L)
 	}
 }
 
-int script_state::OutputMeta(char *filename)
+int script_state::OutputMeta(const char *filename)
 {
 	FILE *fp = fopen(filename,"w");
 	int i;
@@ -1019,24 +963,9 @@ int script_state::OutputMeta(char *filename)
 		return 0; 
 	}
 
-	if (FS_VERSION_BUILD == 0 && FS_VERSION_HAS_REVIS == 0) //-V547
-	{
-		fprintf(fp, "<html>\n<head>\n\t<title>Script Output - FSO v%i.%i (%s)</title>\n</head>\n", FS_VERSION_MAJOR, FS_VERSION_MINOR, StateName);
-		fputs("<body>", fp);
-		fprintf(fp,"\t<h1>Script Output - FSO v%i.%i (%s)</h1>\n", FS_VERSION_MAJOR, FS_VERSION_MINOR, StateName);
-	}
-	else if (FS_VERSION_HAS_REVIS == 0)
-	{
-		fprintf(fp, "<html>\n<head>\n\t<title>Script Output - FSO v%i.%i.%i (%s)</title>\n</head>\n", FS_VERSION_MAJOR, FS_VERSION_MINOR, FS_VERSION_BUILD, StateName);
-		fputs("<body>", fp);
-		fprintf(fp,"\t<h1>Script Output - FSO v%i.%i.%i (%s)</h1>\n", FS_VERSION_MAJOR, FS_VERSION_MINOR, FS_VERSION_BUILD, StateName);
-	}
-	else
-	{
-		fprintf(fp, "<html>\n<head>\n\t<title>Script Output - FSO v%i.%i.%i.%i (%s)</title>\n</head>\n", FS_VERSION_MAJOR, FS_VERSION_MINOR, FS_VERSION_BUILD, FS_VERSION_REVIS, StateName);
-		fputs("<body>", fp);
-		fprintf(fp,"\t<h1>Script Output - FSO v%i.%i.%i.%i (%s)</h1>\n", FS_VERSION_MAJOR, FS_VERSION_MINOR, FS_VERSION_BUILD, FS_VERSION_REVIS, StateName);
-	}
+	fprintf(fp, "<html>\n<head>\n\t<title>Script Output - FSO v%s (%s)</title>\n</head>\n", FS_VERSION_FULL, StateName);
+	fputs("<body>", fp);
+	fprintf(fp,"\t<h1>Script Output - FSO v%s (%s)</h1>\n", FS_VERSION_FULL, StateName);
 		
 	//Scripting languages links
 	fputs("<dl>", fp);
@@ -1086,7 +1015,10 @@ int script_state::OutputMeta(char *filename)
 
 bool script_state::EvalString(const char *string, const char *format, void *rtn, const char *debug_str)
 {
-	char lastchar = string[strlen(string)-1];
+	using namespace luacpp;
+
+	size_t string_size = strlen(string);
+	char lastchar = string[string_size -1];
 
 	if(string[0] == '{')
 	{
@@ -1098,133 +1030,103 @@ bool script_state::EvalString(const char *string, const char *format, void *rtn,
 		return false;
 	}
 
-	size_t s_bufSize = strlen(string) + 8;
-	char *s = new char[ s_bufSize ];
+	size_t s_bufSize = string_size + 8;
+	std::string s;
+	s.reserve(s_bufSize);
 	if(string[0] != '[')
 	{
 		if(rtn != NULL)
 		{
-			strcpy_s(s, s_bufSize, "return ");
-			strcat_s(s, s_bufSize, string);
+			s = "return ";
 		}
-		else
-		{
-			strcpy_s(s, s_bufSize, string);
-		}
+		s += string;
 	}
 	else
 	{
-		strcpy_s(s, s_bufSize, string+1);
-		s[strlen(s)-1] = '\0';
+		s.assign(string + 1, string + string_size);
 	}
 
-	//WMC - So we can pop everything we put on the stack
-	int stack_start = lua_gettop(LuaState);
+	SCP_string debug_name;
+	if (debug_str == nullptr) {
+		debug_name = "String: ";
+		debug_name += s;
+	} else {
+		debug_name = debug_str;
+	}
 
-	//WMC - Push error handling function
-	lua_pushcfunction(LuaState, ade_friendly_error);
-	//Parse string
-	int rval = luaL_loadbuffer(LuaState, s, strlen(s), debug_str);
-	//We don't need s anymore.
-	delete[] s;
-	//Call function
-	if(!rval)
-	{
-		if(lua_pcall(LuaState, 0, LUA_MULTRET, -2))
-		{
+	try {
+		auto function = LuaFunction::createFromCode(LuaState, s, debug_name);
+		function.setErrorFunction(LuaFunction::createFromCFunction(LuaState, ade_friendly_error));
+
+		try {
+			auto ret = function.call();
+
+			if (rtn != NULL && ret.size() >= 1) {
+				auto stack_start = lua_gettop(LuaState);
+
+				auto val = ret.front();
+				val.pushValue();
+
+				Ade_get_args_skip = stack_start;
+				Ade_get_args_lfunction = true;
+				ade_get_args(LuaState, format, rtn);
+				Ade_get_args_skip = 0;
+				Ade_get_args_lfunction = false;
+			}
+		} catch (const LuaException&) {
 			return false;
 		}
-		int stack_curr = lua_gettop(LuaState);
+	} catch (const LuaException& e) {
+		LuaError(GetLuaSession(), "%s", e.what());
 
-		//Only get args if we can put them someplace
-		//WMC - We must have more than one more arg on the stack than stack_start:
-		//(stack_start)
-		//ade_friendly_error
-		//(additional return values)
-		if(rtn != NULL && stack_curr > (stack_start+1))
-		{
-			Ade_get_args_skip = stack_start+1;
-			Ade_get_args_lfunction = true;
-			ade_get_args(LuaState, format, rtn);
-			Ade_get_args_skip = 0;
-			Ade_get_args_lfunction = false;
-		}
-
-		//WMC - Pop anything leftover from the function from the stack
-		stack_curr = lua_gettop(LuaState) - stack_start;
-		for(; stack_curr > 0; stack_curr--) lua_pop(LuaState, 1);
-	}
-	else
-	{
-		//Or return error
-		if(lua_isstring(GetLuaSession(), -1))
-			LuaError(GetLuaSession());
-		else
-			LuaError(GetLuaSession(), "Error parsing %s", debug_str);
+		return false;
 	}
 
 	return true;
 }
 
-void script_state::ParseChunkSub(int *out_lang, int *out_index, char* debug_str)
+void script_state::ParseChunkSub(script_function& script_func, const char* debug_str)
 {
-	Assert(out_lang != NULL);
-	Assert(out_index != NULL);
+	using namespace luacpp;
+
 	Assert(debug_str != NULL);
+
+	//Lua
+	script_func.language = SC_LUA;
+
+	std::string source;
+	std::string function_name(debug_str);
 
 	if(check_for_string("[["))
 	{
 		//Lua from file
 
-		//Lua
-		*out_lang = SC_LUA;
-
 		char *filename = alloc_block("[[", "]]");
 
 		//Load from file
 		CFILE *cfp = cfopen(filename, "rb", CFILE_NORMAL, CF_TYPE_SCRIPTS );
+
+		//WMC - use filename instead of debug_str so that the filename gets passed.
+		function_name = filename;
+		vm_free(filename);
+
 		if(cfp == NULL)
 		{
-			Warning(LOCATION, "Could not load lua script file '%s'", filename);
+			Warning(LOCATION, "Could not load lua script file '%s'", function_name.c_str());
+			return;
 		}
 		else
 		{
 			int len = cfilelength(cfp);
 
-			char *raw_lua = (char*)vm_malloc(len+1);
-			raw_lua[len] = '\0';
-
-			cfread(raw_lua, len, 1, cfp);
+			source.resize((size_t) len);
+			cfread(&source[0], len, 1, cfp);
 			cfclose(cfp);
-
-			//WMC - use filename instead of debug_str so that the filename
-			//gets passed.
-			if(!luaL_loadbuffer(GetLuaSession(), raw_lua, len, filename))
-			{
-				//Stick it in the registry
-				*out_index = luaL_ref(GetLuaSession(), LUA_REGISTRYINDEX);
-			}
-			else
-			{
-				if(lua_isstring(GetLuaSession(), -1))
-					LuaError(GetLuaSession());
-				else
-					LuaError(GetLuaSession(), "Error parsing %s", filename);
-				*out_index = -1;
-			}
-			vm_free(raw_lua);
 		}
-		//dealloc
-		//WMC - For some reason these cause crashes
-		vm_free(filename);
 	}
 	else if(check_for_string("["))
 	{
 		//Lua string
-
-		//Assume Lua
-		*out_lang = SC_LUA;
-
 		//Allocate raw script
 		char* raw_lua = alloc_block("[", "]", 1);
 		//WMC - minor hack to make sure that the last line gets
@@ -1232,63 +1134,31 @@ void script_state::ParseChunkSub(int *out_lang, int *out_index, char* debug_str)
 		//crash, so this is here just to be on the safe side.
 		strcat(raw_lua, "\n");
 
-		char *tmp_ptr = raw_lua;
-		
-		//Load it into a buffer & parse it
-		//WMC - This is causing an access violation error. Sigh.
-		if(!luaL_loadbuffer(GetLuaSession(), tmp_ptr, strlen(tmp_ptr), debug_str))
-		{
-			//Stick it in the registry
-			*out_index = luaL_ref(GetLuaSession(), LUA_REGISTRYINDEX);
-		}
-		else
-		{
-			if(lua_isstring(GetLuaSession(), -1))
-				LuaError(GetLuaSession());
-			else
-				LuaError(GetLuaSession(), "Error parsing %s", debug_str);
-			*out_index = -1;
-		}
-
-		//free the mem
-		//WMC - This makes debug go wonky.
+		source = raw_lua;
 		vm_free(raw_lua);
 	}
 	else
 	{
-		char buf[PARSE_BUF_SIZE];
-
-		//Assume lua
-		*out_lang = SC_LUA;
-
-		strcpy_s(buf, "return ");
+		std::string buf;
 
 		//Stuff it
-		stuff_string(buf+strlen(buf), F_RAW, (int)(sizeof(buf) - strlen(buf)));
+		stuff_string(buf, F_RAW);
 
-		//Add ending
-		strcat_s(buf, "\n");
+		source = "return ";
+		source += buf;
+	}
 
-		auto len = strlen(buf);
+	try {
+		auto function = LuaFunction::createFromCode(LuaState, source, function_name);
+		function.setErrorFunction(LuaFunction::createFromCFunction(LuaState, ade_friendly_error));
 
-		//Load it into a buffer & parse it
-		if(!luaL_loadbuffer(GetLuaSession(), buf, len, debug_str))
-		{
-			//Stick it in the registry
-			*out_index = luaL_ref(GetLuaSession(), LUA_REGISTRYINDEX);
-		}
-		else
-		{
-			if(lua_isstring(GetLuaSession(), -1))
-				LuaError(GetLuaSession());
-			else
-				LuaError(GetLuaSession(), "Error parsing %s", debug_str);
-			*out_index = -1;
-		}
+		script_func.function = function;
+	} catch (const LuaException& e) {
+		LuaError(GetLuaSession(), "%s", e.what());
 	}
 }
 
-void script_state::ParseChunk(script_hook *dest, char *debug_str)
+void script_state::ParseChunk(script_hook *dest, const char *debug_str)
 {
 	static int total_parse_calls = 0;
 	char debug_buf[128];
@@ -1298,11 +1168,11 @@ void script_state::ParseChunk(script_hook *dest, char *debug_str)
 	//DANGER! This code means the debug_str must be used only before parsing
 	if(debug_str == NULL)
 	{
+		sprintf(debug_buf, "script_parse() count %d", total_parse_calls);
 		debug_str = debug_buf;
-		sprintf(debug_str, "script_parse() count %d", total_parse_calls);
 	}
 
-	ParseChunkSub(&dest->h_language, &dest->h_index, debug_str);
+	ParseChunkSub(dest->hook_function, debug_str);
 
 	if(optional_string("+Override:"))
 	{
@@ -1310,7 +1180,7 @@ void script_state::ParseChunk(script_hook *dest, char *debug_str)
 		char *debug_str_over = (char*)vm_malloc(bufSize);
 		strcpy_s(debug_str_over, bufSize, debug_str);
 		strcat_s(debug_str_over, bufSize, " override");
-		ParseChunkSub(&dest->o_language, &dest->o_index, debug_str_over);
+		ParseChunkSub(dest->override_function, debug_str_over);
 		vm_free(debug_str_over);
 	}
 }
@@ -1338,6 +1208,19 @@ flag_def_list* script_parse_action()
 	}
 
 	return NULL;
+}
+void script_state::ParseGlobalChunk(int hookType, const char* debug_str) {
+	ConditionedHook hook;
+
+	script_action sat;
+	sat.action_type = hookType;
+
+	ParseChunk(&sat.hook, debug_str);
+
+	//Add the action
+	hook.AddAction(&sat);
+
+	ConditionalHooks.push_back(hook);
 }
 bool script_state::ParseCondition(const char *filename)
 {
@@ -1417,11 +1300,11 @@ bool script_state::ParseCondition(const char *filename)
 //*************************CLASS: script_state*************************
 bool script_state::IsOverride(script_hook &hd)
 {
-	if(hd.h_index < 0)
+	if(!hd.hook_function.function.isValid())
 		return false;
 
 	bool b=false;
-	RunBytecodeSub(hd.o_language, hd.o_index, 'b', &b);
+	RunBytecodeSub(hd.override_function, 'b', &b);
 
 	return b;
 }

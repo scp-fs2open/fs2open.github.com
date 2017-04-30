@@ -18,7 +18,6 @@
 #include "ui/ui.h"
 #include "io/key.h"
 #include "bmpman/bmpman.h"
-#include "palman/palman.h"
 #include "gamesnd/gamesnd.h"
 #include "gamesequence/gamesequence.h"
 #include "cfile/cfile.h"
@@ -416,7 +415,7 @@ int Multi_pxo_player_slider_coords[GR_NUM_RESOLUTIONS][4] = {
 		2, 219, 33, 314
 	}
 };
-char *Multi_pxo_player_slider_name[GR_NUM_RESOLUTIONS] = {
+const char *Multi_pxo_player_slider_name[GR_NUM_RESOLUTIONS] = {
 	"slider",				// GR_640
 	"2_slider"			// GR_1024
 };
@@ -549,7 +548,7 @@ int Multi_pxo_chat_slider_coords[GR_NUM_RESOLUTIONS][4] = {
 	}
 };
 
-char *Multi_pxo_chat_slider_name[GR_NUM_RESOLUTIONS] = {
+const char *Multi_pxo_chat_slider_name[GR_NUM_RESOLUTIONS] = {
 	"slider",
 	"2_slider"
 };
@@ -642,11 +641,11 @@ void multi_pxo_motd_maybe_blit();
 
 
 // common dialog stuff ------------------------------------------------
-char *Multi_pxo_com_fname[GR_NUM_RESOLUTIONS] = {
+const char *Multi_pxo_com_fname[GR_NUM_RESOLUTIONS] = {
 	"PXOPop",
 	"2_PXOPop"
 };
-char *Multi_pxo_com_mask_fname[GR_NUM_RESOLUTIONS] = {
+const char *Multi_pxo_com_mask_fname[GR_NUM_RESOLUTIONS] = {
 	"PXOPop-m",
 	"2_PXOPop-m"
 };
@@ -805,11 +804,11 @@ void multi_pxo_find_search_process();
 
 
 // player info stuff -----------------------------------------
-char *Multi_pxo_pinfo_fname[GR_NUM_RESOLUTIONS] = {
+const char *Multi_pxo_pinfo_fname[GR_NUM_RESOLUTIONS] = {
 	"PilotInfo2",
 	"2_PilotInfo2"
 };
-char *Multi_pxo_pinfo_mask_fname[GR_NUM_RESOLUTIONS] = {
+const char *Multi_pxo_pinfo_mask_fname[GR_NUM_RESOLUTIONS] = {
 	"PilotInfo2-M",
 	"2_PilotInfo2-M"
 };
@@ -921,11 +920,11 @@ void multi_pxo_notify_blit();
 
 // help screen stuff -----------------------------------------
 //XSTR:OFF
-char *Multi_pxo_help_fname[GR_NUM_RESOLUTIONS] = {
+const char *Multi_pxo_help_fname[GR_NUM_RESOLUTIONS] = {
 	"PXHelp",
 	"2_PXHelp"
 };
-char *Multi_pxo_help_mask_fname[GR_NUM_RESOLUTIONS] = {
+const char *Multi_pxo_help_mask_fname[GR_NUM_RESOLUTIONS] = {
 	"PXOHelp-M",
 	"2_PXOHelp-M"
 };
@@ -3426,7 +3425,7 @@ void multi_pxo_scroll_chat_down()
  */
 void multi_pxo_chat_process()
 {
-	char *remainder;
+	const char *remainder;
 	const char *result;
 	char msg[512];
 	int msg_pixel_width;
@@ -3441,10 +3440,10 @@ void multi_pxo_chat_process()
 	// then send the message
 	gr_get_string_size(&msg_pixel_width, NULL, msg);
 	if ( msg_pixel_width >= (Multi_pxo_input_coords[gr_screen.res][2])) {
-		remainder = strrchr(msg, ' ');
-		if ( remainder ) {
-			*remainder = '\0';
-			remainder++;
+		auto last_space = strrchr(msg, ' ');
+		if ( last_space ) {
+			*last_space = '\0';
+			remainder = last_space + 1;
 		} else {
 			remainder = "";
 		}	

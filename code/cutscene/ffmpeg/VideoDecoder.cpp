@@ -1,5 +1,7 @@
 #include "cutscene/ffmpeg/VideoDecoder.h"
 
+#include "tracing/tracing.h"
+
 namespace {
 const AVPixelFormat DESTINATION_FORMAT = AV_PIX_FMT_YUV420P;
 
@@ -99,10 +101,11 @@ void VideoDecoder::convertAndPushPicture(const AVFrame* frame) {
 	videoFramePtr->uvSize.width = static_cast<size_t>(m_status->videoCodecPars.width / 2);
 	videoFramePtr->uvSize.stride = static_cast<size_t>(yuvFrame->linesize[1]);
 
-	pushFrame(std::move(VideoFramePtr(videoFramePtr.release())));
+	pushFrame(VideoFramePtr(videoFramePtr.release()));
 }
 
 void VideoDecoder::decodePacket(AVPacket* packet) {
+	TRACE_SCOPE(tracing::CutsceneFFmpegVideoDecoder);
 #if LIBAVCODEC_VERSION_INT > AV_VERSION_INT(57, 24, 255)
 	int send_result;
 	do {
@@ -123,6 +126,8 @@ void VideoDecoder::decodePacket(AVPacket* packet) {
 }
 
 void VideoDecoder::finishDecoding() {
+	TRACE_SCOPE(tracing::CutsceneFFmpegVideoDecoder);
+
 #if LIBAVCODEC_VERSION_INT > AV_VERSION_INT(57, 24, 255)
 	// Send flush packet
 	avcodec_send_packet(m_status->videoCodecCtx, nullptr);

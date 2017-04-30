@@ -218,7 +218,6 @@ void game_shudder_apply(int, float){}
 int game_hacked_data(){return 0;}
 int game_single_step;
 int last_single_step;
-void get_version_string_short(char *){}
 void game_tst_mark(class object *, class ship *){}
 int tst;
 //int Player_multi_died_check;

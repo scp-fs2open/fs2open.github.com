@@ -41,7 +41,7 @@ int Popup_max_display[GR_NUM_RESOLUTIONS] = {
 	19
 };
 
-char *Popup_slider_name[GR_NUM_RESOLUTIONS] = {
+const char *Popup_slider_name[GR_NUM_RESOLUTIONS] = {
 	"slider",
 	"2_slider"
 };
@@ -112,7 +112,7 @@ int Popup_input_text_y_offset[GR_NUM_RESOLUTIONS] = {
 
 typedef struct popup_background
 {
-	char	*filename;							// filename for background
+	const char *filename;							// filename for background
 	int	coords[2];							// coords to draw background at
 } popup_background;
 
@@ -189,7 +189,7 @@ static popup_background Popup_background[GR_NUM_RESOLUTIONS][3] =
 #define BUTTON_GENERIC_FIRST		2
 #define BUTTON_GENERIC_SECOND		3
 #define BUTTON_GENERIC_THIRD		4
-static char *Popup_button_filenames[GR_NUM_RESOLUTIONS][2][5] = 
+static const char *Popup_button_filenames[GR_NUM_RESOLUTIONS][2][5] =
 {
 	{ // GR_640
 		{"Pop_00",				// negative
@@ -388,9 +388,9 @@ void popup_split_lines(popup_info *pi, int flags)
 }
 
 // figure out what filename to use for the button icon
-char *popup_get_button_filename(popup_info *pi, int i, int flags)
+const char *popup_get_button_filename(popup_info *pi, int i, int flags)
 {
-	char *fname = NULL;
+	const char *fname = NULL;
 	int is_tiny=0;	
 
 	// check for special button texts and if found, use specialized buttons for them.
@@ -464,7 +464,7 @@ int popup_init(popup_info *pi, int flags)
 	int					i;
 	UI_BUTTON			*b;
 	popup_background	*pbg;
-	char					*fname;
+	const char			*fname;
 
 	if(pi->nchoices == 0){
 		pbg = &Popup_background[gr_screen.res][0];
@@ -1163,4 +1163,10 @@ void popup_change_text(const char *new_text)
 
 	// recalculate all display information
 	popup_split_lines(&Popup_info,Popup_flags);
+}
+
+// If we're running on demo data, certain menus can't be displayed; this message will get shown instead.
+void popup_game_feature_not_in_demo()
+{
+	popup(PF_USE_AFFIRMATIVE_ICON|PF_BODY_BIG, 1, POPUP_OK, XSTR( "Sorry, this feature is available only in the retail version", 200));
 }

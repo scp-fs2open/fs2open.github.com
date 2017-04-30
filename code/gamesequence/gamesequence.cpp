@@ -40,11 +40,9 @@ static int state_reentry = 0;  // set if we are already in state processing
 static int state_processing_event_post = 0;  // set if we are already processing an event to switch states
 static int state_in_event_processer = 0;
 
-script_hook GS_state_hooks[GS_NUM_STATES];
-
 // Text of state, corresponding to enum values for GS_STATE_*
 //XSTR:OFF
-char *GS_event_text[] =
+const char *GS_event_text[] =
 {
 	"GS_EVENT_MAIN_MENU",							// 0
 	"GS_EVENT_START_GAME",
@@ -120,7 +118,7 @@ int Num_gs_event_text = sizeof(GS_event_text)/sizeof(char*);
 
 // Text of state, corresponding to enum values for GS_STATE_*
 //XSTR:OFF
-char *GS_state_text[] =
+const char *GS_state_text[] =
 {
 	"NOT A VALID STATE",							// 0
 	"GS_STATE_MAIN_MENU",
@@ -191,10 +189,6 @@ void gameseq_init()
 		gs[i].previous_state = 0;
 		gs[i].queue_tail=0;
 		gs[i].queue_head=0;
-	}
-
-	for (i=0; i<GS_NUM_STATES; i++ )	{
-		script_hook_init(&GS_state_hooks[i]);
 	}
 
 	gs_current_stack = 0;

@@ -196,11 +196,18 @@ ELSE(FSO_USE_LUAJIT)
 			PROPERTIES
 				FOLDER "3rdparty"
 		)
-	
-		if (MSVC)
-			# Disable warnings if building from source
-			target_compile_options(lua51 PRIVATE "/W0")
+
+		# Set the correct defines for the current platform
+		if (PLATFORM_LINUX)
+			target_compile_definitions(lua51 PUBLIC LUA_USE_LINUX)
+		elseif(PLATFORM_MAC)
+			target_compile_definitions(lua51 PUBLIC LUA_USE_MACOSX)
 		endif()
+
+		# Disable warnings if building from source
+		suppress_warnings(lua51)
+
+		target_link_libraries(lua51 PUBLIC compiler)
 
 		SET(LUA_INCLUDE_DIR ${CMAKE_CURRENT_LIST_DIR} CACHE INTERNAL "Lua 5.1 include directory")
 

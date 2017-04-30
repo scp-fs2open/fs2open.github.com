@@ -69,7 +69,7 @@ int Popupdead_button_coords[GR_NUM_RESOLUTIONS][POPUPDEAD_NUM_CHOICES_MAX][2] =
 	}
 };
 
-char *Popupdead_background_filename[GR_NUM_RESOLUTIONS] = {
+const char *Popupdead_background_filename[GR_NUM_RESOLUTIONS] = {
 	"PopDeath",		// GR_640
 	"2_PopDeath"	// GR-1024
 };
@@ -84,7 +84,7 @@ int Popupdead_background_coords[GR_NUM_RESOLUTIONS][2] =
 	}
 };
 
-char *Popupdead_button_filenames[GR_NUM_RESOLUTIONS][POPUPDEAD_NUM_CHOICES_MAX] = 
+const char *Popupdead_button_filenames[GR_NUM_RESOLUTIONS][POPUPDEAD_NUM_CHOICES_MAX] =
 {
 	{	// GR_640
 		"PopD_00",				// first choice

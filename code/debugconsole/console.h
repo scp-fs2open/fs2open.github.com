@@ -268,7 +268,7 @@ bool dc_pause_output(void);
  * @brief Prints the given char string to the debug console
  * @details See the doc for std::printf() for formating and more details
  */
-void dc_printf(const char *format, ...);
+void dc_printf(SCP_FORMAT_STRING const char *format, ...) SCP_FORMAT_STRING_ARGS(1, 2);
 
 /**
  * @brief Opens and processes the debug console. (Blocking call)

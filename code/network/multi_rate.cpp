@@ -75,7 +75,7 @@ void multi_rate_reset(int np_index)
 }
 
 // add data of the specified type to datarate processing, returns 0 on fail (if we ran out of types, etc, etc)
-int multi_rate_add(int np_index, char *type, int size)
+int multi_rate_add(int np_index, const char *type, int size)
 {	
 	int idx;
 	mr_info *m;

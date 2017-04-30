@@ -34,6 +34,8 @@
 #include "ship/ship.h"
 #include "ship/shipfx.h"
 #include "weapon/shockwave.h"
+#include "tracing/Monitor.h"
+#include "tracing/tracing.h"
 
 #include <limits.h>
 
@@ -2254,6 +2256,8 @@ bool model_interp_config_buffer(indexed_vertex_source *vert_src, vertex_buffer *
 
 void interp_configure_vertex_buffers(polymodel *pm, int mn)
 {
+	TRACE_SCOPE(tracing::ModelConfigureVertexBuffers);
+
 	int i, j, first_index;
 	uint total_verts = 0;
 	SCP_vector<int> vertex_list;
@@ -2282,10 +2286,8 @@ void interp_configure_vertex_buffers(polymodel *pm, int mn)
 		polygon_list[i].n_verts = vert_count;
 
 		// set submodel ID
-		if ( GLSL_version >= 150 ) {
-			for ( j = 0; j < polygon_list[i].n_verts; ++j ) {
-				polygon_list[i].submodels[j] = mn;
-			}
+		for ( j = 0; j < polygon_list[i].n_verts; ++j ) {
+			polygon_list[i].submodels[j] = mn;
 		}
 
 		// for the moment we can only support INT_MAX worth of verts per index buffer
@@ -2342,9 +2344,7 @@ void interp_configure_vertex_buffers(polymodel *pm, int mn)
 			memcpy( (model_list->tsb) + model_list->n_verts, polygon_list[i].tsb, sizeof(tsb_t) * polygon_list[i].n_verts );
 		}
 
-		if ( GLSL_version >= 150 ) {
-			memcpy( (model_list->submodels) + model_list->n_verts, polygon_list[i].submodels, sizeof(int) * polygon_list[i].n_verts );
-		}
+		memcpy( (model_list->submodels) + model_list->n_verts, polygon_list[i].submodels, sizeof(int) * polygon_list[i].n_verts );
 
 		model_list->n_verts += polygon_list[i].n_verts;
 	}
@@ -2362,7 +2362,6 @@ void interp_configure_vertex_buffers(polymodel *pm, int mn)
 	}
 
 	if ( model_list->submodels != NULL ) {
-		Assert( GLSL_version >= 150 );
 		vertex_flags |= VB_FLAG_MODEL_ID;
 	}
 
@@ -2505,6 +2504,8 @@ void interp_fill_detail_index_buffer(SCP_vector<int> &submodel_list, polymodel *
 
 void interp_create_detail_index_buffer(polymodel *pm, int detail_num)
 {
+	TRACE_SCOPE(tracing::ModelCreateDetailIndexBuffers);
+
 	SCP_vector<int> submodel_list;
 
 	submodel_list.clear();
@@ -2527,6 +2528,8 @@ void interp_create_detail_index_buffer(polymodel *pm, int detail_num)
 
 void interp_create_transparency_index_buffer(polymodel *pm, int mn)
 {
+	TRACE_SCOPE(tracing::ModelCreateTransparencyIndexBuffer);
+
 	const int NUM_VERTS_PER_TRI = 3;
 
 	bsp_info *sub_model = &pm->submodel[mn];
@@ -2860,7 +2863,7 @@ float texture_info::GetTotalTime()
 {
 	return total_time;
 }
-int texture_info::LoadTexture(char *filename, char *dbg_name = "<UNKNOWN>")
+int texture_info::LoadTexture(const char *filename, const char *dbg_name)
 {
 	if (strlen(filename) + 4 >= NAME_LENGTH) //Filenames are passed in without extension
 	{

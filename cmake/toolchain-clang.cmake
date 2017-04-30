@@ -7,16 +7,25 @@ MESSAGE(STATUS "Doing configuration specific to clang...")
 option(CLANG_ENABLE_LEAK_CHECK "Enable -fsanitize=leak" OFF)
 option(CLANG_ENABLE_ADDRESS_SANITIZER "Enable -fsanitize=address" OFF)
 
-unset(COMPILER_FLAGS)
+# These are the default values
+set(C_BASE_FLAGS "-march=native -pipe")
+set(CXX_BASE_FLAGS "-march=native -pipe")
+
+# For C and C++, the values can be overwritten independently
 if(DEFINED ENV{CXXFLAGS})
-	set(COMPILER_FLAGS $ENV{CXXFLAGS})
+	set(CXX_BASE_FLAGS $ENV{CXXFLAGS})
+endif()
+if(DEFINED ENV{CFLAGS})
+	set(C_BASE_FLAGS $ENV{CFLAGS})
 endif()
 
-if(NOT COMPILER_FLAGS)
-	set(COMPILER_FLAGS "-march=native -pipe")
-endif()
+# Initialize with an empty string to make sure we always get a clean start
+set(COMPILER_FLAGS "")
 
-globally_enable_extra_compiler_warnings()
+# This is a slight hack since our flag setup is a bit more complicated
+_enable_extra_compiler_warnings_flags()
+set(COMPILER_FLAGS "${COMPILER_FLAGS} ${_flags}")
+
 set(COMPILER_FLAGS "${COMPILER_FLAGS} -funroll-loops -fsigned-char -Wno-unknown-pragmas")
 
 # Omit "argument unused during compilation" when clang is used with ccache.
@@ -55,12 +64,14 @@ endif()
 
 set(COMPILER_FLAGS "${COMPILER_FLAGS} ${SANITIZE_FLAGS}")
 
-# Omit "deprecated conversion from string constant to 'char*'" warnings.
-set(COMPILER_FLAGS "${COMPILER_FLAGS} -Wno-write-strings")
+set(COMPILER_FLAGS "${COMPILER_FLAGS} -Wformat-security")
 
 set(COMPILER_FLAGS "${COMPILER_FLAGS} -Wno-unused-function")
 
-set(COMPILER_FLAGS "${COMPILER_FLAGS} -Wno-deprecated -Wno-char-subscripts")
+# Dear Clang, please tell us if a function does not return a value since that part of the standard is stupid!
+set(COMPILER_FLAGS "${COMPILER_FLAGS} -Wreturn-type")
+
+set(COMPILER_FLAGS "${COMPILER_FLAGS} -Wno-char-subscripts")
 
 set(COMPILER_FLAGS "${COMPILER_FLAGS} -Wno-unused-parameter")
 
@@ -73,13 +84,9 @@ set(COMPILER_FLAGS_RELEASE "-O2 -Wno-unused-variable")
 
 set(COMPILER_FLAGS_DEBUG "-O0 -g -Wshadow")
 
-if (FSO_FATAL_WARNINGS)
-	# Make warnings fatal if the right variable is set
-	set(COMPILER_FLAGS "${COMPILER_FLAGS} -Werror")
-endif()
-
-set(CMAKE_CXX_FLAGS ${COMPILER_FLAGS})
-set(CMAKE_C_FLAGS ${COMPILER_FLAGS})
+# Always use the base flags and add our compiler flags at the bacl
+set(CMAKE_CXX_FLAGS "${CXX_BASE_FLAGS} ${COMPILER_FLAGS}")
+set(CMAKE_C_FLAGS "${C_BASE_FLAGS} ${COMPILER_FLAGS}")
 
 set(CMAKE_CXX_FLAGS_RELEASE ${COMPILER_FLAGS_RELEASE})
 set(CMAKE_C_FLAGS_RELEASE ${COMPILER_FLAGS_RELEASE})
@@ -96,3 +103,11 @@ endif()
 
 set(CMAKE_EXE_LINKER_FLAGS_RELEASE "")
 set(CMAKE_EXE_LINKER_FLAGS_DEBUG "-g -rdynamic")
+
+if (FSO_FATAL_WARNINGS)
+	# Make warnings fatal if the right variable is set
+	target_compile_options(compiler INTERFACE "-Werror")
+endif()
+
+# Always define this to make sure that the fixed width format macros are available
+target_compile_definitions(compiler INTERFACE __STDC_FORMAT_MACROS)

@@ -8,17 +8,20 @@
 #include <glad/glad.h>
 
 #include <memory>
+#include <graphics/2d.h>
 
 namespace cutscene {
 namespace player {
 class OpenGLVideoPresenter: public VideoPresenter {
-	int _vertexBuffer;
+	int _vertexBuffer = -1;
+	vertex_layout _vertexLayout;
+	int _sdr_handle = -1;
 
-	bool _scaleVideo;
+	bool _scaleVideo = false;
 
-	GLuint _ytex;
-	GLuint _utex;
-	GLuint _vtex;
+	GLuint _ytex = 0;
+	GLuint _utex = 0;
+	GLuint _vtex = 0;
  public:
 	OpenGLVideoPresenter(const MovieProperties& props);
 

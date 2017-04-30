@@ -13,6 +13,8 @@
 #include "globalincs/linklist.h"
 #include "globalincs/pstypes.h"
 #include "io/mouse.h"
+#include "ship/ship.h"
+#include "weapon/weapon.h"
 
 #include <string>
 #include <limits.h>
@@ -126,7 +128,7 @@ public:
 	~ClassInfoEntry();
 
 	//--SET FUNCTIONS
-	void Parse(char* tag, int in_type);
+	void Parse(const char* tag, int in_type);
 
 	//--GET FUNCTIONS
 	int GetImageHandle(int ID=CIE_HANDLE_N){return Handles[ID].Image;}
@@ -364,7 +366,7 @@ public:
 	//-----
 
 	//Set stuff
-	void ParseClassInfo(char* section);
+	void ParseClassInfo(const char* section);
 	void SetActiveObject(GUIObject *cgp);
 	void SetGraspedObject(GUIObject *cgp, int button);
 	void SetFocusObject(GUIObject *cgp);
@@ -622,7 +624,10 @@ class Checkbox : public GUIObject
 
 	//For toggling flags with this thing
 	int* FlagPtr;
-	int Flag;
+	size_t Flag;
+
+	ship_info* Sip;
+	weapon_info* Wip;
 
 	bool *BoolFlagPtr;
 
@@ -665,6 +670,20 @@ public:
 
 	void SetFlag(uint* in_flag_ptr, int in_flag) {
 		SetFlag((int*)in_flag_ptr, in_flag);
+	}
+
+	void SetFlag(flagset<Ship::Info_Flags>& in_flag_set, Ship::Info_Flags flag_value, ship_info* si) {
+		FlagPtr = nullptr;
+		Sip = si;
+		Flag = static_cast<size_t>(flag_value);
+		IsChecked = in_flag_set[flag_value];
+	}
+
+	void SetFlag(flagset<Weapon::Info_Flags>& in_flag_set, Weapon::Info_Flags flag_value, weapon_info* wi) {
+		FlagPtr = nullptr;
+		Wip = wi;
+		Flag = static_cast<size_t>(flag_value);
+		IsChecked = in_flag_set[flag_value];
 	}
 
 	void SetBool(bool *in_bool_ptr) {

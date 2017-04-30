@@ -1,5 +1,7 @@
 #include "cutscene/ffmpeg/AudioDecoder.h"
 
+#include "tracing/tracing.h"
+
 namespace {
 const int OUT_CH_LAYOUT = AV_CH_LAYOUT_STEREO;
 const int OUT_SAMPLE_RATE = 48000;
@@ -97,6 +99,7 @@ AudioDecoder::~AudioDecoder() {
 void AudioDecoder::flushAudioBuffer() {
 	if (m_audioBuffer.empty()) {
 		// Nothing to do here
+		return;
 	}
 
 	AudioFramePtr audioFrame(new AudioFrame());
@@ -157,6 +160,7 @@ void AudioDecoder::handleDecodedFrame(AVFrame* frame) {
 }
 
 void AudioDecoder::decodePacket(AVPacket* packet) {
+	TRACE_SCOPE(tracing::CutsceneFFmpegAudioDecoder);
 #if LIBAVCODEC_VERSION_INT > AV_VERSION_INT(57, 24, 255)
 	int send_result;
 	do {
@@ -177,6 +181,7 @@ void AudioDecoder::decodePacket(AVPacket* packet) {
 }
 
 void AudioDecoder::finishDecoding() {
+	TRACE_SCOPE(tracing::CutsceneFFmpegAudioDecoder);
 #if LIBAVCODEC_VERSION_INT > AV_VERSION_INT(57, 24, 255)
 	// Send flush packet
 	avcodec_send_packet(m_status->audioCodecCtx, nullptr);

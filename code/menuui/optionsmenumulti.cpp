@@ -32,22 +32,22 @@
 // general data section ------------------------------------------------
 UI_WINDOW *Om_window = NULL;
 
-static char* Om_background_0_fname[GR_NUM_RESOLUTIONS] = {
+static const char* Om_background_0_fname[GR_NUM_RESOLUTIONS] = {
 	"OptionsMultiGen",			// GR_640
 	"2_OptionsMultiGen"			// GR_1024
 };
 
-static char* Om_background_0_mask_fname[GR_NUM_RESOLUTIONS] = {
+static const char* Om_background_0_mask_fname[GR_NUM_RESOLUTIONS] = {
 	"OptionsMultiGen-M",			// GR_640
 	"2_OptionsMultiGen-M"		// GR_1024
 };
 
-static char* Om_background_1_fname[GR_NUM_RESOLUTIONS] = {
+static const char* Om_background_1_fname[GR_NUM_RESOLUTIONS] = {
 	"OptionsMultiVox",			// GR_640
 	"2_OptionsMultiVox"			// GR_1024
 };
 
-static char* Om_background_1_mask_fname[GR_NUM_RESOLUTIONS] = {
+static const char* Om_background_1_mask_fname[GR_NUM_RESOLUTIONS] = {
 	"OptionsMultiVox-M",			// GR_640
 	"2_OptionsMultiVox-M"		// GR_1024
 };
@@ -1213,7 +1213,7 @@ void options_multi_protocol_display_ips()
 			gr_set_color_fast(&Color_white);
 		}
 
-		gr_printf_menu(Ip_list_coords[gr_screen.res][0], y_start, Om_ip_addrs[idx]);
+		gr_printf_menu(Ip_list_coords[gr_screen.res][0], y_start, "%s", Om_ip_addrs[idx]);
 		y_start += line_height;
 	}
 }

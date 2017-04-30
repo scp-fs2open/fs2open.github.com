@@ -35,6 +35,7 @@
 #include "network/multiutil.h"
 #include "object/object.h"
 #include "object/objectdock.h"
+#include "object/objectshield.h"
 #include "object/objectsnd.h"
 #include "parse/parselo.h"
 #include "scripting/scripting.h"
@@ -48,6 +49,7 @@
 #include "weapon/emp.h"
 #include "weapon/shockwave.h"
 #include "weapon/weapon.h"
+#include "tracing/Monitor.h"
 
 //#pragma optimize("", off)
 //#pragma auto_inline(off)
@@ -1722,7 +1724,7 @@ void ship_self_destruct( object *objp )
 
 			// printf
 			if(!(Game_mode & GM_STANDALONE_SERVER)){
-				HUD_printf(msg);
+				HUD_printf("%s", msg);
 			}
 		}
 	}
@@ -2090,7 +2092,7 @@ static void ship_do_damage(object *ship_objp, object *other_obj, vec3d *hitpos, 
 				damage *= difficulty_scale_factor;
 			}
 
-			damage = apply_damage_to_shield(ship_objp, quadrant, damage);
+			damage = shield_apply_damage(ship_objp, quadrant, damage);
 
 			if (damage > 0.0f) {
 				subsystem_damage *= (damage / pre_shield);
@@ -2558,16 +2560,16 @@ void ship_hit_pain(float damage, int quadrant)
     if (!(Player_obj->flags[Object::Object_Flags::Invulnerable]))
     {
 		if (Shield_pain_flash_factor != 0.0f && quadrant >= 0)
-			 {
-			float effect = (Shield_pain_flash_factor * Player_obj->shield_quadrant[quadrant] * 4) / shipp->ship_max_shield_strength;
+		{
+			float effect = (Shield_pain_flash_factor * Player_obj->shield_quadrant[quadrant] * Player_obj->n_quadrants) / shield_get_max_strength(Player_obj);
+
+			if (Shield_pain_flash_factor < 0.0f)
+				effect -= Shield_pain_flash_factor;
 			
-				if (Shield_pain_flash_factor < 0.0f)
-				 effect -= Shield_pain_flash_factor;
-			
-				game_flash((sip->shield_color[0] * effect) / 255.0f, (sip->shield_color[1] * effect) / 255.0f, (sip->shield_color[2] * effect) / 255.0f);
-			}
+			game_flash((sip->shield_color[0] * effect) / 255.0f, (sip->shield_color[1] * effect) / 255.0f, (sip->shield_color[2] * effect) / 255.0f);
+		}
 		else
-			 game_flash(damage * Generic_pain_flash_factor / 15.0f, -damage * Generic_pain_flash_factor / 30.0f, -damage * Generic_pain_flash_factor / 30.0f);
+			game_flash(damage * Generic_pain_flash_factor / 15.0f, -damage * Generic_pain_flash_factor / 30.0f, -damage * Generic_pain_flash_factor / 30.0f);
     }
 
 	// kill any active popups when you get hit.

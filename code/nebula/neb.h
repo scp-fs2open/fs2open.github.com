@@ -29,10 +29,8 @@ extern float Neb_backg_fog_far;
 
 // nebula rendering mode
 #define NEB2_RENDER_NONE								0			// no rendering
-#define NEB2_RENDER_POLY								1			// background is the old-school polygons
-#define NEB2_RENDER_POF									2			// background is the nice pof file
-#define NEB2_RENDER_LAME								3			// super simple nebula effect 
-#define NEB2_RENDER_HTL									4			// We are using proper fogging now 
+#define NEB2_RENDER_POF									1			// background is the nice pof file -- used by FRED
+#define NEB2_RENDER_HTL									2			// We are using proper fogging now 
 extern int Neb2_render_mode;
 
 // the AWACS suppresion level for the nebula

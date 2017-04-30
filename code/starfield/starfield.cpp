@@ -28,6 +28,7 @@
 #include "starfield/nebula.h"
 #include "starfield/starfield.h"
 #include "starfield/supernova.h"
+#include "tracing/tracing.h"
 
 #define MAX_DEBRIS_VCLIPS			4
 #define DEBRIS_ROT_MIN				10000
@@ -175,6 +176,10 @@ int Num_debris_nebula = 0;
 
 bool Dynamic_environment = false;
 bool Motion_debris_override = false;
+
+static int Default_env_map = -1;
+static int Mission_env_map = -1;
+static bool Env_cubemap_drawn = false;
 
 void stars_release_debris_vclips(debris_vclip *vclips)
 {
@@ -701,6 +706,10 @@ void stars_init()
 	parse_startbl("stars.tbl");
 
 	parse_modular_table("*-str.tbm", parse_startbl);
+
+	if (Cmdline_env) {
+		ENVMAP = Default_env_map = bm_load("cubemap");
+	}
 }
 
 // call only from game_shutdown()!!
@@ -777,6 +786,41 @@ void stars_pre_level_init(bool clear_backgrounds)
 
 	Dynamic_environment = false;
 	Motion_debris_override = false;
+
+	Env_cubemap_drawn = false;
+}
+
+// setup the render target ready for this mission's environment map
+static void environment_map_gen()
+{
+	const int size = 512;
+	int gen_flags = (BMP_FLAG_RENDER_TARGET_STATIC | BMP_FLAG_CUBEMAP | BMP_FLAG_RENDER_TARGET_MIPMAP);
+
+	if ( !Cmdline_env ) {
+		return;
+	}
+
+	if (gr_screen.envmap_render_target >= 0) {
+		if ( !bm_release(gr_screen.envmap_render_target, 1) ) {
+			Warning(LOCATION, "Unable to release environment map render target.");
+		}
+
+		gr_screen.envmap_render_target = -1;
+	}
+
+	if ( Dynamic_environment || (The_mission.flags[Mission::Mission_Flags::Subspace]) ) {
+		Dynamic_environment = true;
+		gen_flags &= ~BMP_FLAG_RENDER_TARGET_STATIC;
+		gen_flags |= BMP_FLAG_RENDER_TARGET_DYNAMIC;
+	}
+		// bail if we are going to be static, and have an envmap specified already
+	else if ( strlen(The_mission.envmap_name) ) {
+		// Load the mission map so we can use it later
+		Mission_env_map = bm_load(The_mission.envmap_name);
+		return;
+	}
+
+	gr_screen.envmap_render_target = bm_make_render_target(size, size, gen_flags);
 }
 
 // call this in game_post_level_init() so we know whether we're running in full nebula mode or not
@@ -852,6 +896,23 @@ void stars_post_level_init()
 	}
 
 	starfield_generate_bitmap_buffers();
+
+	environment_map_gen();
+}
+
+void stars_level_close() {
+	if (gr_screen.envmap_render_target >= 0) {
+		if ( bm_release(gr_screen.envmap_render_target, 1) ) {
+			gr_screen.envmap_render_target = -1;
+		}
+	}
+
+	if (Mission_env_map >= 0) {
+		bm_release(Mission_env_map);
+		Mission_env_map = -1;
+	}
+
+	ENVMAP = Default_env_map;
 }
 
 
@@ -1038,6 +1099,9 @@ void stars_get_sun_pos(int sun_n, vec3d *pos)
 // draw sun
 void stars_draw_sun(int show_sun)
 {	
+	GR_DEBUG_SCOPE("Draw Suns");
+	TRACE_SCOPE(tracing::DrawSuns);
+
 	int idx;
 	vec3d sun_pos;
 	vec3d sun_dir;
@@ -1100,7 +1164,7 @@ void stars_draw_sun(int show_sun)
 		g3_rotate_faraway_vertex(&sun_vex, &sun_pos);
 
 		if ( sun_vex.codes & (CC_BEHIND|CC_OFF_USER) ) {
-			return;
+			continue;
 		}
 
 		if ( !(sun_vex.flags & PF_PROJECTED) ) {
@@ -1108,7 +1172,7 @@ void stars_draw_sun(int show_sun)
 		}
 
 		if ( sun_vex.flags & PF_OVERFLOW ) {
-			return;
+			continue;
 		}
 
 		material mat_params;
@@ -1248,6 +1312,9 @@ void stars_draw_sun_glow(int sun_n)
 
 void stars_draw_bitmaps(int show_bitmaps)
 {
+	GR_DEBUG_SCOPE("Draw Bitmaps");
+	TRACE_SCOPE(tracing::DrawBitmaps);
+
 	int idx;
 	int star_index;
 
@@ -1504,6 +1571,9 @@ void subspace_render()
 
 void stars_draw_stars()
 {
+	GR_DEBUG_SCOPE("Draw Starfield");
+	TRACE_SCOPE(tracing::DrawStarfield);
+
 	int i;
 	star *sp;
 	float dist = 0.0f;
@@ -1608,6 +1678,9 @@ void stars_draw_stars()
 
 void stars_draw_debris()
 {
+	GR_DEBUG_SCOPE("Draw motion debris");
+	TRACE_SCOPE(tracing::DrawMotionDebris);
+
 	int i;
 	float vdist;
 	vec3d tmp;
@@ -1688,6 +1761,9 @@ void stars_draw_debris()
 
 void stars_draw(int show_stars, int show_suns, int show_nebulas, int show_subspace, int env)
 {
+	GR_DEBUG_SCOPE("Draw Stars");
+	TRACE_SCOPE(tracing::DrawStars);
+
 	int gr_zbuffering_save = gr_zbuffer_get();
 	gr_zbuffer_set(GR_ZBUFF_NONE);
 
@@ -1703,13 +1779,9 @@ void stars_draw(int show_stars, int show_suns, int show_nebulas, int show_subspa
 	fix xt1, xt2;
 	xt1 = timer_get_fixed_seconds();
 #endif
-
-	if ( show_nebulas && (Game_detail_flags & DETAIL_FLAG_NEBULAS) && (Neb2_render_mode != NEB2_RENDER_POF) && (Neb2_render_mode != NEB2_RENDER_LAME))	{
-		nebula_render();
-	}
-
+	
 	// draw background stuff
-	if ( (Neb2_render_mode != NEB2_RENDER_POLY) && (Neb2_render_mode != NEB2_RENDER_LAME) && show_stars ) {
+	if ( show_stars ) {
 		// semi-hack, do we don't fog the background
 		int neb_save = Neb2_render_mode;
 		Neb2_render_mode = NEB2_RENDER_NONE;
@@ -2028,6 +2100,9 @@ void stars_page_in()
 // background nebula models and planets
 void stars_draw_background()
 {	
+	GR_DEBUG_SCOPE("Draw Background");
+	TRACE_SCOPE(tracing::DrawBackground);
+
 	if (Nmodel_num < 0)
 		return;
 
@@ -2045,7 +2120,7 @@ void stars_draw_background()
 }
 
 // call this to set a specific model as the background model
-void stars_set_background_model(char *model_name, char *texture_name, int flags)
+void stars_set_background_model(const char *model_name, const char *texture_name, int flags)
 {
 	if (Nmodel_bitmap >= 0) {
 		bm_unload(Nmodel_bitmap);
@@ -2077,6 +2152,9 @@ void stars_set_background_model(char *model_name, char *texture_name, int flags)
 			Nmodel_instance_num = model_create_instance(false, Nmodel_num);
 		}
 	}
+
+	// Since we have a new skybox we need to rerender the environment map
+	stars_invalidate_environment_map();
 }
 
 // call this to set a specific orientation for the background
@@ -2201,6 +2279,9 @@ int stars_add_sun_entry(starfield_list_entry *sun_ptr)
 		}
 	}
 
+	// The background changed so we need to invalidate the environment map
+	stars_invalidate_environment_map();
+
 	// now check if we can make use of a previously discarded instance entry
 	// this should never happen with FRED
 	if ( !Fred_running ) {
@@ -2259,6 +2340,9 @@ int stars_add_bitmap_entry(starfield_list_entry *sle)
 			}
 		}
 	}
+
+	// The background changed so we need to invalidate the environment map
+	stars_invalidate_environment_map();
 
 	// now check if we can make use of a previously discarded instance entry
 	for (int i = 0; i < (int)Starfield_bitmap_instances.size(); i++) {
@@ -2364,6 +2448,9 @@ void stars_mark_instance_unused(int index, bool is_a_sun)
 		delete [] Starfield_bitmap_instances[index].verts;
 		Starfield_bitmap_instances[index].verts = NULL;
 	}
+
+	// The background changed so we need to invalidate the environment map
+	stars_invalidate_environment_map();
 }
 
 // retrieves the name from starfield_bitmap for the instance index
@@ -2412,6 +2499,8 @@ void stars_set_nebula(bool activate)
 		Debris_vclips = Debris_vclips_normal;
 		HUD_contrast = 0;
 	}
+	// We need to reload the environment map now
+	stars_invalidate_environment_map();
 }
 
 // retrieves the name from starfield_bitmap, really only used by FRED2
@@ -2647,4 +2736,150 @@ void stars_pack_backgrounds()
 			}
 		}
 	}
+}
+
+static void render_environment(int i, vec3d *eye_pos, matrix *new_orient, float new_zoom)
+{
+	bm_set_render_target(gr_screen.envmap_render_target, i);
+
+	gr_clear();
+
+	g3_set_view_matrix( eye_pos, new_orient, new_zoom );
+
+	gr_set_proj_matrix( PI_2 * new_zoom, 1.0f, Min_draw_distance, Max_draw_distance);
+	gr_set_view_matrix( &Eye_position, &Eye_matrix );
+
+	if ( Game_subspace_effect ) {
+		stars_draw(0, 0, 0, 1, 1);
+	} else {
+		stars_draw(0, 1, 1, 0, 1);
+	}
+
+	gr_end_view_matrix();
+	gr_end_proj_matrix();
+}
+
+void stars_setup_environment_mapping(camid cid) {
+	matrix new_orient = IDENTITY_MATRIX;
+
+	extern float View_zoom;
+	float old_zoom = View_zoom, new_zoom = 1.0f;//0.925f;
+	int i = 0;
+
+	if(!cid.isValid())
+		return;
+
+	vec3d cam_pos;
+	matrix cam_orient;
+	cid.getCamera()->get_info(&cam_pos, &cam_orient);
+
+	// prefer the mission specified envmap over the static-generated envmap, but
+	// the dynamic envmap should always get preference if in a subspace mission
+	if ( !Dynamic_environment && Mission_env_map >= 0 ) {
+		ENVMAP = Mission_env_map;
+		return;
+	}
+
+	if (gr_screen.envmap_render_target < 0) {
+		if (ENVMAP >= 0)
+			return;
+
+		if (Mission_env_map >= 0) {
+			ENVMAP = Mission_env_map;
+		} else {
+			ENVMAP = Default_env_map;
+		}
+
+		return;
+	}
+
+	if (Env_cubemap_drawn) {
+		// Nothing to do here anymore
+		return;
+	}
+
+	GR_DEBUG_SCOPE("Environment Mapping");
+	TRACE_SCOPE(tracing::EnvironmentMapping);
+
+	ENVMAP = gr_screen.envmap_render_target;
+
+	/*
+	 * Envmap matrix setup -- left-handed
+	 * -------------------------------------------------
+	 * Face --	Forward		Up		Right
+	 * px		+X			+Y		-Z
+	 * nx		-X			+Y		+Z
+	 * py		+Y			-Z		+X
+	 * ny		-Y			+Z		+X
+	 * pz		+Z 			+Y		+X
+	 * nz		-Z			+Y		-X
+	*/
+	// NOTE: OpenGL needs up/down reversed
+
+	// Save the previous render target so we can reset it once we are done here
+	auto previous_target = gr_screen.rendering_to_texture;
+
+	// face 1 (px / right)
+	memset( &new_orient, 0, sizeof(matrix) );
+	new_orient.vec.fvec.xyz.x =  1.0f;
+	new_orient.vec.uvec.xyz.y =  1.0f;
+	new_orient.vec.rvec.xyz.z = -1.0f;
+	render_environment(i, &cam_pos, &new_orient, new_zoom);
+	i++; // bump!
+
+	// face 2 (nx / left)
+	memset( &new_orient, 0, sizeof(matrix) );
+	new_orient.vec.fvec.xyz.x = -1.0f;
+	new_orient.vec.uvec.xyz.y =  1.0f;
+	new_orient.vec.rvec.xyz.z =  1.0f;
+	render_environment(i, &cam_pos, &new_orient, new_zoom);
+	i++; // bump!
+
+	// face 3 (py / up)
+	memset( &new_orient, 0, sizeof(matrix) );
+	new_orient.vec.fvec.xyz.y =  (gr_screen.mode == GR_OPENGL) ?  1.0f : -1.0f;
+	new_orient.vec.uvec.xyz.z =  (gr_screen.mode == GR_OPENGL) ? -1.0f :  1.0f;
+	new_orient.vec.rvec.xyz.x =  1.0f;
+	render_environment(i, &cam_pos, &new_orient, new_zoom);
+	i++; // bump!
+
+	// face 4 (ny / down)
+	memset( &new_orient, 0, sizeof(matrix) );
+	new_orient.vec.fvec.xyz.y =  (gr_screen.mode == GR_OPENGL) ? -1.0f :  1.0f;
+	new_orient.vec.uvec.xyz.z =  (gr_screen.mode == GR_OPENGL) ?  1.0f : -1.0f;
+	new_orient.vec.rvec.xyz.x =  1.0f;
+	render_environment(i, &cam_pos, &new_orient, new_zoom);
+	i++; // bump!
+
+	// face 5 (pz / forward)
+	memset( &new_orient, 0, sizeof(matrix) );
+	new_orient.vec.fvec.xyz.z =  1.0f;
+	new_orient.vec.uvec.xyz.y =  1.0f;
+	new_orient.vec.rvec.xyz.x =  1.0f;
+	render_environment(i, &cam_pos, &new_orient, new_zoom);
+	i++; // bump!
+
+	// face 6 (nz / back)
+	memset( &new_orient, 0, sizeof(matrix) );
+	new_orient.vec.fvec.xyz.z = -1.0f;
+	new_orient.vec.uvec.xyz.y =  1.0f;
+	new_orient.vec.rvec.xyz.x = -1.0f;
+	render_environment(i, &cam_pos, &new_orient, new_zoom);
+
+
+	// we're done, so now reset
+	bm_set_render_target(previous_target);
+	g3_set_view_matrix( &cam_pos, &cam_orient, old_zoom );
+
+	if ( !Dynamic_environment ) {
+		Env_cubemap_drawn = true;
+	}
+}
+void stars_set_dynamic_environment(bool dynamic) {
+	Dynamic_environment = dynamic;
+	stars_invalidate_environment_map();
+}
+void stars_invalidate_environment_map() {
+	// This will cause a redraw in the next frame
+	Env_cubemap_drawn = false;
 }

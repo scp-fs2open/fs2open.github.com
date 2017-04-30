@@ -167,12 +167,12 @@ int Barracks_squad_number_coords[GR_NUM_RESOLUTIONS][2] = {
 
 //XSTR:OFF
 // bitmaps defs
-static char *Barracks_bitmap_fname[GR_NUM_RESOLUTIONS] = {
+static const char *Barracks_bitmap_fname[GR_NUM_RESOLUTIONS] = {
 	"Barracks",		// GR_640
 	"2_Barracks"		// GR_1024
 };
 
-static char *Barracks_bitmap_mask_fname[GR_NUM_RESOLUTIONS] = {
+static const char *Barracks_bitmap_mask_fname[GR_NUM_RESOLUTIONS] = {
 	"Barracks-M",		// GR_640
 	"2_Barracks-M"		// GR_1024
 };
@@ -188,14 +188,14 @@ struct barracks_bitmaps {
 };
 
 struct barracks_buttons {
-	char *filename;
+	const char *filename;
 	int x, y;
 	int text_x, text_y;	// this is where the text label is
 	int hotspot;
 	int repeat;
 	UI_BUTTON button;  // because we have a class inside this struct, we need the constructor below..
 
-	barracks_buttons(char *name, int x1, int y1, int x2, int y2, int h, int r = 0) : filename(name), x(x1), y(y1), text_x(x2), text_y(y2), hotspot(h), repeat(r) {}
+	barracks_buttons(const char *name, int x1, int y1, int x2, int y2, int h, int r = 0) : filename(name), x(x1), y(y1), text_x(x2), text_y(y2), hotspot(h), repeat(r) {}
 };
 
 static int Background_bitmap = -1;
@@ -1158,7 +1158,7 @@ void barracks_display_pilot_callsigns(int prospective_pilot)
 			}
 		}
 
-		gr_printf_menu(Barracks_list_coords[gr_screen.res][BARRACKS_X_COORD], Barracks_list_coords[gr_screen.res][BARRACKS_Y_COORD] + y, Pilots[cur_pilot_idx]);
+		gr_printf_menu(Barracks_list_coords[gr_screen.res][BARRACKS_X_COORD], Barracks_list_coords[gr_screen.res][BARRACKS_Y_COORD] + y, "%s", Pilots[cur_pilot_idx]);
 		gr_set_bitmap(Rank_pips_bitmaps + Pilot_ranks[cur_pilot_idx]);
 		gr_bitmap(Barracks_list_coords[gr_screen.res][BARRACKS_X_COORD] - 34, Barracks_list_coords[gr_screen.res][BARRACKS_Y_COORD] + y, GR_RESIZE_MENU);
  
@@ -1287,16 +1287,13 @@ void barracks_draw_pilot_pic()
 	if (Cur_pilot->callsign[0] && (Pic_number >= 0) && (Pic_number < Num_pilot_images)) {
 		if (Pilot_images[Pic_number] >= 0) {
 			// JAS: This code is hacked to allow the animation to use all 256 colors
-			extern int Palman_allow_any_color;
-			Palman_allow_any_color = 1;
 			gr_set_bitmap(Pilot_images[Pic_number]);
 			gr_bitmap(Barracks_image_coords[gr_screen.res][BARRACKS_X_COORD], Barracks_image_coords[gr_screen.res][BARRACKS_Y_COORD], GR_RESIZE_MENU);
-			Palman_allow_any_color = 0;
 
 			// print number of the current pic
 			char buf[40];			
 			sprintf(buf, XSTR( "%d of %d", 71), Pic_number + 1, Num_pilot_images);
-			gr_printf_menu(Barracks_image_number_coords[gr_screen.res][BARRACKS_X_COORD], Barracks_image_number_coords[gr_screen.res][BARRACKS_Y_COORD], buf);				
+			gr_printf_menu(Barracks_image_number_coords[gr_screen.res][BARRACKS_X_COORD], Barracks_image_number_coords[gr_screen.res][BARRACKS_Y_COORD], "%s", buf);
 		}
 	} else {
 		Pic_number = -1;
@@ -1312,16 +1309,13 @@ void barracks_draw_squad_pic()
 	if (Cur_pilot->callsign[0] && (Pic_squad_number >= 0) && (Pic_squad_number < Num_pilot_squad_images)) {
 		if (Pilot_squad_images[Pic_squad_number] >= 0) {
 			// JAS: This code is hacked to allow the animation to use all 256 colors
-			extern int Palman_allow_any_color;
-			Palman_allow_any_color = 1;
 			gr_set_bitmap(Pilot_squad_images[Pic_squad_number]);
 			gr_bitmap(Barracks_squad_coords[gr_screen.res][BARRACKS_X_COORD], Barracks_squad_coords[gr_screen.res][BARRACKS_Y_COORD], GR_RESIZE_MENU);
-			Palman_allow_any_color = 0;
 
 			// print number of current squad pic
 			if(Player_sel_mode != PLAYER_SELECT_MODE_SINGLE){
 				sprintf(buf,XSTR( "%d of %d", 71), Pic_squad_number+1, Num_pilot_squad_images);
-				gr_printf_menu(Barracks_squad_number_coords[gr_screen.res][BARRACKS_X_COORD], Barracks_squad_number_coords[gr_screen.res][BARRACKS_Y_COORD], buf);
+				gr_printf_menu(Barracks_squad_number_coords[gr_screen.res][BARRACKS_X_COORD], Barracks_squad_number_coords[gr_screen.res][BARRACKS_Y_COORD], "%s", buf);
 			}
 		}
 	} else {

@@ -5,26 +5,58 @@
 #include "cfile/cfile.h"
 #include "globalincs/pstypes.h"
 #include "graphics/2d.h"
-#include "palman/palman.h"
 #include "pngutils/pngutils.h"
 
-CFILE *png_file = NULL;
+struct png_read_status {
+	CFILE* cfp = nullptr;
+	const char* filename = nullptr;
+	bool reading_header = false;
+};
 
 /*
  * @brief copy/pasted from libpng
  */
-void png_scp_read_data(png_structp png_ptr, png_bytep data, png_size_t length)
+static void png_scp_read_data(png_structp png_ptr, png_bytep data, png_size_t length)
 {
 	png_size_t check;
 
 	if (png_ptr == NULL)
 		return;
+
+	png_read_status* status = reinterpret_cast<png_read_status*>(png_get_io_ptr(png_ptr));
+
 	/* fread() returns 0 on error, so it is OK to store this in a png_size_t
 	* instead of an int, which is what fread() actually returns.
 	*/
-	check = (png_size_t)cfread(data, (png_size_t)1, (int)length, png_file);
+	check = (png_size_t)cfread(data, (png_size_t)1, (int)length, status->cfp);
 	if (check != length)
 		png_error(png_ptr, "Read Error");
+}
+
+static png_voidp png_malloc_fn(png_structp, png_size_t size)
+{
+	return vm_malloc(size);
+}
+
+static void png_free_fn(png_structp, png_voidp ptr)
+{
+	vm_free(ptr);
+}
+
+static void png_error_fn(png_structp png_ptr, png_const_charp message)
+{
+	png_read_status* status = reinterpret_cast<png_read_status*>(png_get_error_ptr(png_ptr));
+
+	mprintf(("PNG error while reading %s of %s: %s\n", status->reading_header ? "header" : "pixel data", status->filename, message));
+
+	longjmp(png_jmpbuf(png_ptr), 1);
+}
+
+static void png_warning_fn(png_structp png_ptr, png_const_charp message)
+{
+	png_read_status* status = reinterpret_cast<png_read_status*>(png_get_error_ptr(png_ptr));
+
+	mprintf(("PNG warning while reading %s of %s: %s\n", status->reading_header ? "header" : "pixel data", status->filename, message));
 }
 
 /*
@@ -44,7 +76,9 @@ int png_read_header(const char *real_filename, CFILE *img_cfp, int *w, int *h, i
 	png_infop info_ptr;
 	png_structp png_ptr;
 
-	png_file = NULL;
+	png_read_status status;
+	status.reading_header = true;
+	status.filename = real_filename;
 
 	if (img_cfp == NULL) {
 		strcpy_s( filename, real_filename );
@@ -55,18 +89,18 @@ int png_read_header(const char *real_filename, CFILE *img_cfp, int *w, int *h, i
 			*p = 0;
 		strcat_s( filename, ".png" );
 
-		png_file = cfopen( filename , "rb" );
+		status.cfp = cfopen( filename , "rb" );
 
-		if ( !png_file ) {
+		if ( !status.cfp ) {
 			return PNG_ERROR_READING;
 		}
 	} else {
-		png_file = img_cfp;
+		status.cfp = img_cfp;
 	}
 
-	Assert( png_file != NULL );
+	Assert( status.cfp != NULL );
 
-	if (png_file == NULL)
+	if (status.cfp == NULL)
 		return PNG_ERROR_READING;
 
 	/* Create and initialize the png_struct with the desired error handler
@@ -75,12 +109,12 @@ int png_read_header(const char *real_filename, CFILE *img_cfp, int *w, int *h, i
 	* the compiler header file version, so that we know if the application
 	* was compiled with a compatible version of the library.  REQUIRED
 	*/
-	png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
+	png_ptr = png_create_read_struct_2(PNG_LIBPNG_VER_STRING, &status, png_error_fn, png_warning_fn, &status, png_malloc_fn, png_free_fn);
 
 	if (png_ptr == NULL)
 	{
 		mprintf(("png_read_header: error creating read struct\n"));
-		cfclose(png_file);
+		cfclose(status.cfp);
 		return PNG_ERROR_READING;
 	}
 
@@ -89,7 +123,7 @@ int png_read_header(const char *real_filename, CFILE *img_cfp, int *w, int *h, i
 	if (info_ptr == NULL)
 	{
 		mprintf(("png_read_header: error creating info struct\n"));
-		cfclose(png_file);
+		cfclose(status.cfp);
 		png_destroy_read_struct(&png_ptr, NULL, NULL);
 		return PNG_ERROR_READING;
 	}
@@ -99,23 +133,27 @@ int png_read_header(const char *real_filename, CFILE *img_cfp, int *w, int *h, i
 		mprintf(("png_read_header: something went wrong\n"));
 		/* Free all of the memory associated with the png_ptr and info_ptr */
 		png_destroy_read_struct(&png_ptr, &info_ptr, NULL);
-		cfclose(png_file);
+		cfclose(status.cfp);
 		/* If we get here, we had a problem reading the file */
 		return PNG_ERROR_READING;
 	}
 
-	png_set_read_fn(png_ptr, &png_file, png_scp_read_data);
+	png_set_read_fn(png_ptr, &status, png_scp_read_data);
 
 	png_read_info(png_ptr, info_ptr);
 
 	if (w) *w = png_get_image_width(png_ptr, info_ptr);
 	if (h) *h = png_get_image_height(png_ptr, info_ptr);
 	// this turns out to be near useless, but meh
-	if (bpp) *bpp = (png_get_channels(png_ptr, info_ptr) * png_get_bit_depth(png_ptr, info_ptr));
+	if (bpp) {
+		// bit depth can also be 16 bit we tell libpng to reduce that to 8 bits so we also need to tell our caller about that
+		auto bits = std::min(8, (int)png_get_bit_depth(png_ptr, info_ptr));
+		*bpp = (png_get_channels(png_ptr, info_ptr) * bits);
+	}
 
 	if (img_cfp == NULL) {
-		cfclose(png_file);
-		png_file = NULL;
+		cfclose(status.cfp);
+		status.cfp = NULL;
 	}
 
 	png_destroy_read_struct(&png_ptr, &info_ptr, NULL);
@@ -142,16 +180,18 @@ int png_read_bitmap(const char *real_filename, ubyte *image_data, int *bpp, int 
 	png_bytepp row_pointers;
 	unsigned int i;
 
-	png_file = NULL;
+	png_read_status status;
+	status.reading_header = false;
+	status.filename = real_filename;
 
 	strcpy_s( filename, real_filename );
 	char *p = strchr( filename, '.' );
 	if ( p ) *p = 0;
 	strcat_s( filename, ".png" );
 
-	png_file = cfopen(filename, "rb", CFILE_NORMAL, cf_type);
+	status.cfp = cfopen(filename, "rb", CFILE_NORMAL, cf_type);
 
-	if (png_file == NULL)
+	if (status.cfp == NULL)
 		return PNG_ERROR_READING;
 
 	/* Create and initialize the png_struct with the desired error handler
@@ -160,12 +200,12 @@ int png_read_bitmap(const char *real_filename, ubyte *image_data, int *bpp, int 
 	* the compiler header file version, so that we know if the application
 	* was compiled with a compatible version of the library.  REQUIRED
 	*/
-	png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
+	png_ptr = png_create_read_struct_2(PNG_LIBPNG_VER_STRING, &status, png_error_fn, png_warning_fn, NULL, NULL, NULL);
 
 	if (png_ptr == NULL)
 	{
 		mprintf(("png_read_bitmap: png_ptr went wrong\n"));
-		cfclose(png_file);
+		cfclose(status.cfp);
 		return PNG_ERROR_READING;
 	}
 
@@ -174,7 +214,7 @@ int png_read_bitmap(const char *real_filename, ubyte *image_data, int *bpp, int 
 	if (info_ptr == NULL)
 	{
 		mprintf(("png_read_bitmap: info_ptr went wrong\n"));
-		cfclose(png_file);
+		cfclose(status.cfp);
 		png_destroy_read_struct(&png_ptr, NULL, NULL);
 		return PNG_ERROR_READING;
 	}
@@ -184,12 +224,12 @@ int png_read_bitmap(const char *real_filename, ubyte *image_data, int *bpp, int 
 		mprintf(("png_read_bitmap: something went wrong\n"));
 		/* Free all of the memory associated with the png_ptr and info_ptr */
 		png_destroy_read_struct(&png_ptr, &info_ptr, NULL);
-		cfclose(png_file);
+		cfclose(status.cfp);
 		/* If we get here, we had a problem reading the file */
 		return PNG_ERROR_READING;
 	}
 
-	png_set_read_fn(png_ptr, &png_file, png_scp_read_data);
+	png_set_read_fn(png_ptr, &status, png_scp_read_data);
 
 	png_read_png(png_ptr, info_ptr, PNG_TRANSFORM_BGR | PNG_TRANSFORM_EXPAND | PNG_TRANSFORM_STRIP_16, NULL);
 	auto len = png_get_rowbytes(png_ptr, info_ptr);
@@ -206,7 +246,7 @@ int png_read_bitmap(const char *real_filename, ubyte *image_data, int *bpp, int 
 	}
 
 	png_destroy_read_struct(&png_ptr, &info_ptr, NULL);
-	cfclose(png_file);
+	cfclose(status.cfp);
 
 	return PNG_ERROR_NONE;
 }
@@ -569,7 +609,7 @@ void apng_ani::prev_frame()
 	_reading = false;
 	if (current_frame > 0) {
 		frame = _frames.at(--current_frame);
-		nprintf(("apng", "apng prev_frame; (%03i/%03lu)\n", current_frame, _frames.size()));
+		nprintf(("apng", "apng prev_frame; (%03i/%03u)\n", current_frame, static_cast<uint>(_frames.size())));
 	}
 }
 
@@ -605,10 +645,10 @@ void apng_ani::next_frame()
 			_process_chunk();
 		}
 
-		nprintf(("apng", "apng next_frame; new (%03i/%03lu/%03i) (%u) (%u) %03u|%03u %03u|%03u (%02lu) (%04f)\n",
-				current_frame, _frames.size(), nframes, _dispose_op, _blend_op,
+		nprintf(("apng", "apng next_frame; new (%03i/%03u/%03i) (%u) (%u) %03u|%03u %03u|%03u (%02u) (%04f)\n",
+				current_frame, static_cast<uint>(_frames.size()), nframes, _dispose_op, _blend_op,
 				_framew, _x_offset, _frameh, _y_offset,
-				_frame_offsets.size(), frame.delay));
+				static_cast<uint>(_frame_offsets.size()), frame.delay));
 
 		if (_got_IDAT && _processing_finish()) {
 			_apng_failed("couldn't finish fdat apng frame");
@@ -627,7 +667,7 @@ void apng_ani::next_frame()
 	}
 	else {
 		if (current_frame < nframes) {
-			nprintf(("apng", "apng next_frame; used old (%03i/%03lu)\n", current_frame, _frames.size()));
+			nprintf(("apng", "apng next_frame; used old (%03i/%03u)\n", current_frame, static_cast<uint>(_frames.size())));
 			frame = _frames.at(current_frame);
 		}
 	}

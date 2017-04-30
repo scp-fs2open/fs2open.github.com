@@ -6,7 +6,7 @@
 #include "parse/parselo.h"
 
 namespace {
-const int MIN_LOG_LEVEL = AV_LOG_ERROR;
+const int MIN_LOG_LEVEL = AV_LOG_WARNING;
 
 bool initialized = false;
 
@@ -63,7 +63,7 @@ void initialize() {
 
 #ifndef NDEBUG
 	av_log_set_callback(&log_callback_report);
-	av_log_set_level(AV_LOG_ERROR);
+	av_log_set_level(MIN_LOG_LEVEL);
 #else
 	av_log_set_level(AV_LOG_QUIET);
 #endif

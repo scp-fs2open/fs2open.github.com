@@ -6,6 +6,10 @@
 
 namespace particle {
 namespace effects {
+ParticleEmitterEffect::ParticleEmitterEffect() : ParticleEffect("") {
+	memset(&m_emitter, 0, sizeof(m_emitter));
+}
+
 bool ParticleEmitterEffect::processSource(const ParticleSource* source) {
 	particle_emitter emitter = m_emitter;
 	source->getOrigin()->getGlobalPosition(&emitter.pos);

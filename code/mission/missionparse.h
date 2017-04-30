@@ -240,22 +240,22 @@ typedef struct path_restriction_t {
 	char path_names[MAX_SHIP_BAY_PATHS][MAX_NAME_LEN];
 } path_restriction_t;
 
-extern char *Ship_class_names[MAX_SHIP_CLASSES];
-extern char *Ai_behavior_names[MAX_AI_BEHAVIORS];
+extern const char *Ship_class_names[MAX_SHIP_CLASSES];
+extern const char *Ai_behavior_names[MAX_AI_BEHAVIORS];
 extern char *Formation_names[MAX_FORMATION_NAMES];
-extern char *Status_desc_names[MAX_STATUS_NAMES];
-extern char *Status_type_names[MAX_STATUS_NAMES];
-extern char *Status_target_names[MAX_STATUS_NAMES];
-extern char *Arrival_location_names[MAX_ARRIVAL_NAMES];
-extern char *Departure_location_names[MAX_DEPARTURE_NAMES];
-extern char *Goal_type_names[MAX_GOAL_TYPE_NAMES];
+extern const char *Status_desc_names[MAX_STATUS_NAMES];
+extern const char *Status_type_names[MAX_STATUS_NAMES];
+extern const char *Status_target_names[MAX_STATUS_NAMES];
+extern const char *Arrival_location_names[MAX_ARRIVAL_NAMES];
+extern const char *Departure_location_names[MAX_DEPARTURE_NAMES];
+extern const char *Goal_type_names[MAX_GOAL_TYPE_NAMES];
 
-extern char *Reinforcement_type_names[];
+extern const char *Reinforcement_type_names[];
 extern char *Object_flags[];
 extern flag_def_list_new<Mission::Parse_Object_Flags> Parse_object_flags[];
 extern const size_t num_parse_object_flags;
-extern char *Icon_names[];
-extern char *Mission_event_log_flags[];
+extern const char *Icon_names[];
+extern const char *Mission_event_log_flags[];
 
 extern char *Cargo_names[MAX_CARGO];
 extern char Cargo_names_buf[MAX_CARGO][NAME_LENGTH];
@@ -462,8 +462,8 @@ extern p_object	*Player_start_pobject;
 
 extern int Mission_palette;  // index of palette file to use for mission
 extern int Nebula_index;  // index into Nebula_filenames[] of nebula to use in mission.
-extern char *Nebula_filenames[NUM_NEBULAS];
-extern char *Nebula_colors[NUM_NEBULA_COLORS];
+extern const char *Nebula_filenames[NUM_NEBULAS];
+extern const char *Nebula_colors[NUM_NEBULA_COLORS];
 extern p_object *Arriving_support_ship;
 
 extern char Neb2_texture_name[MAX_FILENAME_LEN];

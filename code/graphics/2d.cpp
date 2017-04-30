@@ -32,7 +32,6 @@
 #include "io/keycontrol.h" // m!m
 #include "io/timer.h"
 #include "osapi/osapi.h"
-#include "palman/palman.h"
 #include "scripting/scripting.h"
 #include "parse/parselo.h"
 #include "render/3d.h"
@@ -630,19 +629,17 @@ bool gr_unsize_screen_posf(float *x, float *y, float *w, float *h, int resize_mo
 	return true;
 }
 
-void gr_close(os::GraphicsOperations* graphicsOps)
+void gr_close()
 {
 	if ( !Gr_inited ) {
 		return;
 	}
-
-	palette_flush();
-
+	
 	font::close();
 
 	switch (gr_screen.mode) {
 		case GR_OPENGL:
-			gr_opengl_cleanup(graphicsOps, true);
+			gr_opengl_cleanup(true);
 			break;
 	
 		case GR_STUB:
@@ -703,10 +700,6 @@ void gr_set_palette_internal( const char *name, ubyte * palette, int restrict_fo
 		if (palette) {
 			memmove(palette, Gr_current_palette, 768);
 		}
-
-		// Update Palette Manager tables
-		memmove( gr_palette, Gr_current_palette, 768 );
-		palette_update(name, restrict_font_to_128);
 	}
 }
 
@@ -714,7 +707,6 @@ void gr_set_palette_internal( const char *name, ubyte * palette, int restrict_fo
 void gr_set_palette( const char *name, ubyte * palette, int restrict_font_to_128 )
 {
 	char *p;
-	palette_flush();
 	strcpy_s( Gr_current_palette_name, name );
 	p = strchr( Gr_current_palette_name, '.' );
 	if ( p ) *p = 0;
@@ -724,12 +716,6 @@ void gr_set_palette( const char *name, ubyte * palette, int restrict_font_to_128
 
 void gr_screen_resize(int width, int height)
 {
-	// this should only be called from FRED!!
-	if ( !Fred_running ) {
-		Int3();
-		return;
-	}
-
 	gr_screen.save_center_w = gr_screen.center_w = gr_screen.save_max_w = gr_screen.max_w = gr_screen.max_w_unscaled = gr_screen.max_w_unscaled_zoomed = width;
 	gr_screen.save_center_h = gr_screen.center_h = gr_screen.save_max_h = gr_screen.max_h = gr_screen.max_h_unscaled = gr_screen.max_h_unscaled_zoomed = height;
 
@@ -771,7 +757,7 @@ int gr_get_resolution_class(int width, int height)
 	}
 }
 
-static bool gr_init_sub(os::GraphicsOperations* graphicsOps, int mode, int width, int height, int depth, float center_aspect_ratio)
+static bool gr_init_sub(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, int mode, int width, int height, int depth, float center_aspect_ratio)
 {
 	int res = GR_1024;
 	bool rc = false;
@@ -873,7 +859,7 @@ static bool gr_init_sub(os::GraphicsOperations* graphicsOps, int mode, int width
 	
 	switch (mode) {
 		case GR_OPENGL:
-			rc = gr_opengl_init(graphicsOps);
+			rc = gr_opengl_init(std::move(graphicsOps));
 			break;
 		case GR_STUB: 
 			rc = gr_stub_init();
@@ -889,7 +875,7 @@ static bool gr_init_sub(os::GraphicsOperations* graphicsOps, int mode, int width
 	return true;
 }
 
-bool gr_init(os::GraphicsOperations* graphicsOps, int d_mode, int d_width, int d_height, int d_depth)
+bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, int d_mode, int d_width, int d_height, int d_depth)
 {
 	int width = 1024, height = 768, depth = 32, mode = GR_OPENGL;
 	float center_aspect_ratio = -1.0f;
@@ -898,7 +884,7 @@ bool gr_init(os::GraphicsOperations* graphicsOps, int d_mode, int d_width, int d
 	if (Gr_inited) {
 		switch (gr_screen.mode) {
 			case GR_OPENGL:
-				gr_opengl_cleanup(graphicsOps, false);
+				gr_opengl_cleanup(false);
 				break;
 			
 			case GR_STUB:
@@ -1001,10 +987,8 @@ bool gr_init(os::GraphicsOperations* graphicsOps, int d_mode, int d_width, int d
 
 	if (gr_get_resolution_class(width, height) != GR_640) {
 		// check for hi-res interface files so that we can verify our width/height is correct
-		bool has_sparky_hi = (cf_exists_full("2_ChoosePilot-m.pcx", CF_TYPE_ANY) && cf_exists_full("2_TechShipData-m.pcx", CF_TYPE_ANY));
-
 		// if we don't have it then fall back to 640x480 mode instead
-		if ( !has_sparky_hi ) {
+		if ( !cf_exists_full("2_ChoosePilot-m.pcx", CF_TYPE_ANY)) {
 			if ( (width == 1024) && (height == 768) ) {
 				width = 640;
 				height = 480;
@@ -1062,7 +1046,7 @@ bool gr_init(os::GraphicsOperations* graphicsOps, int d_mode, int d_width, int d
 	}
 
 	// now try to actually init everything...
-	if ( gr_init_sub(graphicsOps, mode, width, height, depth, center_aspect_ratio) == false ) {
+	if ( gr_init_sub(std::move(graphicsOps), mode, width, height, depth, center_aspect_ratio) == false ) {
 		return false;
 	}
 
@@ -1270,10 +1254,10 @@ void gr_bitmap(int _x, int _y, int resize_mode)
 	w = i2fl(_w);
 	h = i2fl(_h);
 
-	// I will tidy this up later - RT
-	if ( resize_mode != GR_RESIZE_NONE && (gr_screen.custom_size || (gr_screen.rendering_to_texture != -1)) ) {
-		gr_resize_screen_posf(&x, &y, &w, &h, resize_mode);
-	}
+	auto do_resize = gr_resize_screen_posf(&x, &y, &w, &h, resize_mode);
+
+	x += ((do_resize) ? gr_screen.offset_x : gr_screen.offset_x_unscaled);
+	y += ((do_resize) ? gr_screen.offset_y : gr_screen.offset_y_unscaled);
 
 	memset(verts, 0, sizeof(verts));
 
@@ -1306,7 +1290,7 @@ void gr_bitmap(int _x, int _y, int resize_mode)
 		&mat_params, 
 		gr_screen.current_bitmap, 
 		gr_screen.current_alphablend_mode == GR_ALPHABLEND_FILTER ? true : false, 
-		gr_screen.current_alphablend_mode == GR_ALPHABLEND_FILTER ? gr_screen.current_alpha : 1.0f
+		gr_screen.current_alpha
 	);
 
 	g3_render_primitives_textured(&mat_params, verts, 4, PRIM_TYPE_TRIFAN, true);
@@ -1358,7 +1342,7 @@ void gr_bitmap_uv(int _x, int _y, int _w, int _h, float _u0, float _v0, float _u
 		&material_params,
 		gr_screen.current_bitmap,
 		gr_screen.current_alphablend_mode == GR_ALPHABLEND_FILTER ? true : false,
-		gr_screen.current_alphablend_mode == GR_ALPHABLEND_FILTER ? gr_screen.current_alpha : 1.0f
+		gr_screen.current_alpha
 	);
 	g3_render_primitives_textured(&material_params, verts, 4, PRIM_TYPE_TRIFAN, true);
 }
@@ -1470,7 +1454,7 @@ void gr_bitmap_list(bitmap_rect_list* list, int n_bm, int resize_mode)
 		&mat_params,
 		gr_screen.current_bitmap,
 		gr_screen.current_alphablend_mode == GR_ALPHABLEND_FILTER ? true : false,
-		gr_screen.current_alphablend_mode == GR_ALPHABLEND_FILTER ? gr_screen.current_alpha : 1.0f
+		gr_screen.current_alpha
 	);
 	g3_render_primitives_textured(&mat_params, vert_list, 6 * n_bm, PRIM_TYPE_TRIS, true);
 
@@ -1783,9 +1767,7 @@ void poly_list::allocate(int _verts)
 			tsb = (tsb_t*)vm_malloc(sizeof(tsb_t) * _verts);
 		}
 
-		if ( GLSL_version >= 150 ) {
-			submodels = (int*)vm_malloc(sizeof(int) * _verts);
-		}
+		submodels = (int*)vm_malloc(sizeof(int) * _verts);
 
 		sorted_indices = (uint*)vm_malloc(sizeof(uint) * _verts);
 	}
@@ -1965,9 +1947,7 @@ void poly_list::make_index_buffer(SCP_vector<int> &vertex_list)
 			buffer_list_internal.tsb[z] = tsb[j];
 		}
 
-		if ( GLSL_version >= 150 ) {
-			buffer_list_internal.submodels[z] = submodels[j];
-		}
+		buffer_list_internal.submodels[z] = submodels[j];
 
 		buffer_list_internal.n_verts++;
 		z++;
@@ -1995,9 +1975,7 @@ poly_list& poly_list::operator = (poly_list &other_list)
 		memcpy(tsb, other_list.tsb, sizeof(tsb_t) * other_list.n_verts);
 	}
 
-	if ( GLSL_version >= 150 ) {
-		memcpy(submodels, other_list.submodels, sizeof(int) * other_list.n_verts);
-	}
+	memcpy(submodels, other_list.submodels, sizeof(int) * other_list.n_verts);
 
 	memcpy(sorted_indices, other_list.sorted_indices, sizeof(uint) * other_list.n_verts);
 
@@ -2132,19 +2110,17 @@ void gr_set_bitmap(int bitmap_num, int alphablend_mode, int bitblt_mode, float a
 	gr_screen.current_bitmap = bitmap_num;
 }
 
-void gr_flip()
+void gr_flip(bool execute_scripting)
 {
 	// m!m avoid running CHA_ONFRAME when the "Quit mission" popup is shown. See mantis 2446 for reference
-	if (!quit_mission_popup_shown)
+	if (execute_scripting && !quit_mission_popup_shown)
 	{
-		profile_begin("LUA On Frame");
-		//WMC - Evaluate global hook if not override.
-		Script_system.RunBytecode(Script_globalhook);
+		TRACE_SCOPE(tracing::LuaOnFrame);
+
 		//WMC - Do conditional hooks. Yippee!
 		Script_system.RunCondition(CHA_ONFRAME);
 		//WMC - Do scripting reset stuff
 		Script_system.EndFrame();
-		profile_end("LUA On Frame");
 	}
 
 	gr_screen.gf_flip();
@@ -2169,9 +2145,7 @@ uint gr_determine_model_shader_flags(
 ) {
 	uint shader_flags = 0;
 
-	if ( GLSL_version >= 120 ) {
-		shader_flags |= SDR_FLAG_MODEL_CLIP;
-	}
+	shader_flags |= SDR_FLAG_MODEL_CLIP;
 
 	if ( transform ) {
 		shader_flags |= SDR_FLAG_MODEL_TRANSFORM;
@@ -2256,12 +2230,14 @@ uint gr_determine_model_shader_flags(
 	return shader_flags;
 }
 
-void gr_print_timestamp(int x, int y, int timestamp, int resize_mode)
+void gr_print_timestamp(int x, int y, fix timestamp, int resize_mode)
 {
 	char time[8];
 
+	int seconds = fl2i(f2fl(timestamp));
+
 	// format the time information into strings
-	sprintf(time, "%.1d:%.2d:%.2d", (timestamp / 3600000) % 10, (timestamp / 60000) % 60, (timestamp / 1000) % 60);
+	sprintf(time, "%.1d:%.2d:%.2d", (seconds / 3600) % 10, (seconds / 60) % 60, seconds % 60);
 	time[7] = '\0';
 
 	gr_string(x, y, time, resize_mode);

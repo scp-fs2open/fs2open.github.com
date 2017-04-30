@@ -29,7 +29,7 @@ class ship_subsys;
 #define	WP_LASER			0		// PLEASE NOTE that this flag specifies ballistic primaries as well - Goober5000
 #define	WP_MISSILE			1
 #define	WP_BEAM				2
-extern char *Weapon_subtype_names[];
+extern const char *Weapon_subtype_names[];
 extern int Num_weapon_subtypes;
 
 #define WRT_NONE	-1
@@ -467,6 +467,9 @@ public:
 	void reset();
 } weapon_info;
 
+extern flag_def_list_new<Weapon::Info_Flags> Weapon_Info_Flags[];
+extern const size_t num_weapon_info_flags;
+
 // Data structure to track the active missiles
 typedef struct missile_obj {
 	missile_obj *next, *prev;
@@ -529,13 +532,17 @@ int weapon_info_lookup(const char *name = NULL);
 void weapon_init();					// called at game startup
 void weapon_close();				// called at game shutdown
 void weapon_level_init();			// called before the start of each level
-void weapon_render(object* obj, draw_list *scene);
+void weapon_render(object* obj, model_draw_list *scene);
 void weapon_delete( object * obj );
 void weapon_process_pre( object *obj, float frame_time);
 void weapon_process_post( object *obj, float frame_time);
 
 //Call before weapons_page_in to mark a weapon as used
 void weapon_mark_as_used(int weapon_id);
+
+// Helper functions for l_Weaponclass.isWeaponUsed
+bool weapon_page_in(int weapon_type);
+bool weapon_used(int weapon_type);
 
 // Group_id:  If you should quad lasers, they should all have the same group id.  
 // This will be used to optimize lighting, since each group only needs to cast one light.

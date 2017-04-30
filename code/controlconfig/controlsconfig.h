@@ -63,7 +63,7 @@ typedef struct config_item {
 	short joy_default;		//!< default joystick button bound to action
 	char tab;				//!< what tab (category) it belongs in
 	bool hasXSTR;			//!< whether we should translate this with an XSTR
-	char *text;				//!< describes the action in the config screen
+	const char *text;		//!< describes the action in the config screen
 	char type;				//!< manner control should be checked in
 	short key_id;			//!< actual key bound to action
 	short joy_id;			//!< joystick button bound to action
@@ -296,8 +296,8 @@ extern int Control_config_overlay_id;
 extern config_item Control_config[];		//!< Stores the keyboard configuration
 extern SCP_vector<config_item*> Control_config_presets; // tabled control presets; pointers to config_item arrays
 extern SCP_vector<SCP_string> Control_config_preset_names; // names for Control_config_presets (identical order of items)
-extern char **Scan_code_text;
-extern char **Joy_button_text;
+extern const char **Scan_code_text;
+extern const char **Joy_button_text;
 
 void control_config_common_init();			//!< initialize common control config stuff - call at game startup after localization has been initialized
 void control_config_common_close();			//!< close common control config stuff - call at game shutdown
@@ -311,7 +311,26 @@ void control_config_cancel_exit();
 void control_config_reset_defaults(int presetnum=-1);
 int translate_key_to_index(const char *key, bool find_override=true);
 char *translate_key(char *key);
-char *textify_scancode(int code);
+
+/**
+ * @brief Converts the specified key code to a human readable string
+ *
+ * @note The returned value is localized to the current language
+ *
+ * @param code The key code to convert
+ * @return The text representation of the code. The returned value is stored in a temporary location, copy it to your
+ * own buffer if you want to continue using it.
+ */
+const char *textify_scancode(int code);
+
+/**
+ * @note Same as textify_scancode but always returns the same value regardless of current language
+ * @param code The key code to convert
+ * @return The name of the key
+ * @see textify_scancode
+ */
+const char *textify_scancode_universal(int code);
+
 float check_control_timef(int id);
 int check_control(int id, int key = -1);
 void control_get_axes_readings(int *h, int *p, int *b, int *ta, int *tr);

@@ -56,14 +56,14 @@ int Gp_last_screen;
 #define CONTINUE_BUTTON					2
 
 struct gameplay_help_buttons {
-	char *filename;
+	const char *filename;
 	int x, y;
 	int hotspot;
 	int tab;
 	int flags;
 	UI_BUTTON button;  // because we have a class inside this struct, we need the constructor below..
 
-	gameplay_help_buttons(char *name, int x1, int y1, int h) : filename(name), x(x1), y(y1), hotspot(h) {}
+	gameplay_help_buttons(const char *name, int x1, int y1, int h) : filename(name), x(x1), y(y1), hotspot(h) {}
 };
 
 static gameplay_help_buttons Buttons[GR_NUM_RESOLUTIONS][NUM_BUTTONS] = {
@@ -93,12 +93,12 @@ static UI_XSTR Game_help_text[GR_NUM_RESOLUTIONS][GAME_HELP_NUM_TEXT] = {
 	}
 };
 
-static char *Game_help_filename[GR_NUM_RESOLUTIONS] = {
+static const char *Game_help_filename[GR_NUM_RESOLUTIONS] = {
 	"F1",
 	"2_F1"
 };
 
-static char *Game_help_mask_filename[GR_NUM_RESOLUTIONS] = {
+static const char *Game_help_mask_filename[GR_NUM_RESOLUTIONS] = {
 	"F1-m",
 	"2_F1-m"
 };
@@ -112,7 +112,7 @@ static int Current_help_page;
 // generate a line for the on-line help for a control item with specified id
 // input:	id		=>	index for control item within Control_config[]
 //				buf	=> buffer with enough space to hold ouput string
-char *gameplay_help_control_text(int id, char *buf)
+const char *gameplay_help_control_text(int id, char *buf)
 {
 	int			has_key=0, has_joy=0;
 	config_item	*ci;
@@ -192,11 +192,11 @@ void gameplay_help_set_title(const char *title)
 	int w;
 	gr_get_string_size(&w, NULL, title);
 
-	gr_printf_menu((gr_screen.clip_width_unscaled - w) / 2,sy,title);
+	gr_printf_menu((gr_screen.clip_width_unscaled - w) / 2,sy,"%s", title);
 
 	sprintf(buf, XSTR("Page %d of %d", 132), Current_help_page + 1, Gp_last_screen + 1);
 	gr_get_string_size(&w, NULL, buf);
-	gr_printf_menu((gr_screen.clip_width_unscaled - w) / 2, sy + gr_get_font_height() + 2, buf);
+	gr_printf_menu((gr_screen.clip_width_unscaled - w) / 2, sy + gr_get_font_height() + 2, "%s", buf);
 	gr_set_color_fast(&Color_normal);
 }
 
@@ -372,7 +372,7 @@ void gameplay_help_draw_text()
 			gr_set_color_fast(&Color_bright);
 			int w;
 			gr_get_string_size(&w, NULL, XSTR("Function Keys", 134));
-			gr_printf_menu((gr_screen.clip_width - w) / 2, y_offset, XSTR("Function Keys", 134));
+			gr_printf_menu((gr_screen.clip_width - w) / 2, y_offset, "%s", XSTR("Function Keys", 134));
 			gr_set_color_fast(&Color_normal);
 
 			y_offset += separation;
@@ -766,7 +766,7 @@ void gameplay_help_draw_text()
 			gr_set_color_fast(&Color_bright);
 			int w;
 			gr_get_string_size(&w, NULL, XSTR("Ingame messaging keys (tap for text, hold for voice)", 168));
-			gr_printf_menu((gr_screen.clip_width - w) / 2, y_offset, XSTR("Ingame messaging keys (tap for text, hold for voice)", 168));
+			gr_printf_menu((gr_screen.clip_width - w) / 2, y_offset, "%s", XSTR("Ingame messaging keys (tap for text, hold for voice)", 168));
 			gr_set_color_fast(&Color_normal);
 
 			y_offset += separation;

@@ -59,6 +59,7 @@
 #include "network/multimsgs.h"
 #include "network/multiutil.h"
 #include "object/parseobjectdock.h"
+#include "object/objectshield.h"
 #include "object/waypoint.h"
 #include "parse/generic_log.h"
 #include "parse/parselo.h"
@@ -73,6 +74,7 @@
 #include "starfield/nebula.h"
 #include "starfield/starfield.h"
 #include "weapon/weapon.h"
+#include "tracing/Monitor.h"
 
 LOCAL struct {
 	char docker[NAME_LENGTH];
@@ -156,20 +158,20 @@ path_restriction_t Path_restrictions[MAX_PATH_RESTRICTIONS];
 
 //XSTR:OFF
 
-char *Nebula_filenames[NUM_NEBULAS] = {
+const char *Nebula_filenames[NUM_NEBULAS] = {
 	"Nebula01",
 	"Nebula02",
 	"Nebula03"	
 };
 
-char *Neb2_filenames[NUM_NEBULAS] = {
+const char *Neb2_filenames[NUM_NEBULAS] = {
 	"Nebfull01",
 	"Nebfull02",
 	"Nebfull03"
 };
 
 // Note: Nebula_colors[] and Nebula_palette_filenames are linked via index numbers
-char *Nebula_colors[NUM_NEBULA_COLORS] = {
+const char *Nebula_colors[NUM_NEBULA_COLORS] = {
 	"Red",
 	"Blue",
 	"Gold",
@@ -181,7 +183,7 @@ char *Nebula_colors[NUM_NEBULA_COLORS] = {
 	"Grey Green",
 };
 
-char *Ai_behavior_names[MAX_AI_BEHAVIORS] = {
+const char *Ai_behavior_names[MAX_AI_BEHAVIORS] = {
 	"Chase",
 	"Evade",
 	"Get behind",
@@ -208,9 +210,9 @@ char *Ai_behavior_names[MAX_AI_BEHAVIORS] = {
 char *Cargo_names[MAX_CARGO];
 char Cargo_names_buf[MAX_CARGO][NAME_LENGTH];
 
-char *Ship_class_names[MAX_SHIP_CLASSES];		// to be filled in from Ship_info array
+const char *Ship_class_names[MAX_SHIP_CLASSES];		// to be filled in from Ship_info array
 
-char *Icon_names[MIN_BRIEF_ICONS] = {
+const char *Icon_names[MIN_BRIEF_ICONS] = {
 	"Fighter", "Fighter Wing", "Cargo", "Cargo Wing", "Largeship",
 	"Largeship Wing", "Capital", "Planet", "Asteroid Field", "Waypoint",
 	"Support Ship", "Freighter(no cargo)", "Freighter(has cargo)",
@@ -220,37 +222,37 @@ char *Icon_names[MIN_BRIEF_ICONS] = {
 	"Knossos Device", "Transport Wing", "Corvette", "Gas Miner", "Awacs", "Supercap", "Sentry Gun", "Jump Node", "Transport"
 };
 
-char *Status_desc_names[MAX_STATUS_NAMES] = {
+const char *Status_desc_names[MAX_STATUS_NAMES] = {
 	"Shields Critical", "Engines Damaged", "Fully Operational",
 };
 
-char *Status_type_names[MAX_STATUS_NAMES] = {
+const char *Status_type_names[MAX_STATUS_NAMES] = {
 	"Damaged", "Disabled", "Corroded",
 };
 
-char *Status_target_names[MAX_STATUS_NAMES] = {
+const char *Status_target_names[MAX_STATUS_NAMES] = {
 	"Weapons", "Engines", "Cable TV",
 };
 
 // definitions for arrival locations for ships/wings
-char *Arrival_location_names[MAX_ARRIVAL_NAMES] = {
+const char *Arrival_location_names[MAX_ARRIVAL_NAMES] = {
 	"Hyperspace", "Near Ship", "In front of ship", "Docking Bay",
 };
 
-char *Departure_location_names[MAX_DEPARTURE_NAMES] = {
+const char *Departure_location_names[MAX_DEPARTURE_NAMES] = {
 	"Hyperspace", "Docking Bay",
 };
 
-char *Goal_type_names[MAX_GOAL_TYPE_NAMES] = {
+const char *Goal_type_names[MAX_GOAL_TYPE_NAMES] = {
 	"Primary", "Secondary", "Bonus",
 };
 
-char *Reinforcement_type_names[] = {
+const char *Reinforcement_type_names[] = {
 	"Attack/Protect",
 	"Repair/Rearm",
 };
 
-char *Old_game_types[OLD_MAX_GAME_TYPES] = {
+const char *Old_game_types[OLD_MAX_GAME_TYPES] = {
 	"Single Player Only",	
 	"Multiplayer Only",
 	"Single/Multi Player",
@@ -309,11 +311,12 @@ flag_def_list_new<Mission::Parse_Object_Flags> Parse_object_flags[] = {
     { "weapons-locked",					Mission::Parse_Object_Flags::SF_Weapons_locked,			true, false },
     { "scramble-messages",				Mission::Parse_Object_Flags::SF_Scramble_messages,		true, false },
     { "no_collide",						Mission::Parse_Object_Flags::OF_No_collide,				true, false },
+	{ "no-disabled-self-destruct",		Mission::Parse_Object_Flags::SF_No_disabled_self_destruct, true, false }
 };
 
 const size_t num_parse_object_flags = sizeof(Parse_object_flags) / sizeof(flag_def_list_new<Mission::Parse_Object_Flags>);
 
-char *Mission_event_log_flags[MAX_MISSION_EVENT_LOG_FLAGS] = {
+const char *Mission_event_log_flags[MAX_MISSION_EVENT_LOG_FLAGS] = {
 	"true",
 	"false",
 	"always true",			// disabled
@@ -1448,7 +1451,7 @@ void parse_briefing(mission *pm, int flags)
 			Assert(bs->num_icons <= MAX_STAGE_ICONS );
 
 			// static alias stuff - stupid, but it seems to be necessary
-			static char *temp_team_names[MAX_IFFS];
+			static const char *temp_team_names[MAX_IFFS];
 			for (i = 0; i < Num_iffs; i++)
 				temp_team_names[i] = Iff_info[i].iff_name;
 
@@ -2018,8 +2021,9 @@ int parse_create_object_sub(p_object *p_objp)
 	// game only before the game or during respawning.
 	// MWA -- changed the next line to remove the !(Game_mode & GM_MULTIPLAYER).  We shouldn't be setting
 	// this flag in single player mode -- it gets set in post process mission.
-    if ((p_objp->flags[Mission::Parse_Object_Flags::OF_Player_start]) && (Fred_running || ((Game_mode & GM_MULTIPLAYER) && !(Game_mode & GM_IN_MISSION))))
-        Objects[objnum].flags.set(Object::Object_Flags::Player_ship);
+    if ((p_objp->flags[Mission::Parse_Object_Flags::OF_Player_start]) && (Fred_running || ((Game_mode & GM_MULTIPLAYER) && !(Game_mode & GM_IN_MISSION)))) {
+		Objects[objnum].flags.set(Object::Object_Flags::Player_ship);
+	}
 
 	// a couple of ai_info flags.  Also, do a reasonable default for the kamikaze damage regardless of
 	// whether this flag is set or not
@@ -2089,8 +2093,9 @@ int parse_create_object_sub(p_object *p_objp)
         shipp->flags.set(Ship::Ship_Flags::No_departure_warp);
 
     // ditto for Kazan
-    if ((shipp->wingnum != -1) && (Wings[shipp->wingnum].flags[Ship::Wing_Flags::Nav_carry]))
-        shipp->flags.set(Ship::Ship_Flags::Navpoint_carry);
+    if ((shipp->wingnum != -1) && (Wings[shipp->wingnum].flags[Ship::Wing_Flags::Nav_carry])) {
+		shipp->flags.set(Ship::Ship_Flags::Navpoint_carry);
+	}
 
 	// if the wing index and wing pos are set for this parse object, set them for the ship.  This
 	// is useful in multiplayer when ships respawn
@@ -2308,7 +2313,7 @@ int parse_create_object_sub(p_object *p_objp)
 		Objects[objnum].hull_strength = p_objp->initial_hull * shipp->ship_max_hull_strength / 100.0f;
 		for (iLoop = 0; iLoop<Objects[objnum].n_quadrants; iLoop++)
 		{
-			Objects[objnum].shield_quadrant[iLoop] = (float) (shipp->max_shield_recharge * p_objp->initial_shields * get_max_shield_quad(&Objects[objnum]) / 100.0f);
+			Objects[objnum].shield_quadrant[iLoop] = (float) (shipp->max_shield_recharge * p_objp->initial_shields * shield_get_max_quad(&Objects[objnum]) / 100.0f);
 		}
 
 		// initial velocities now do not apply to ships which warp in after mission starts
@@ -2835,7 +2840,7 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 	}
 
 	// static alias stuff - stupid, but it seems to be necessary
-	static char *temp_team_names[MAX_IFFS];
+	static const char *temp_team_names[MAX_IFFS];
 	for (i = 0; i < Num_iffs; i++)
 		temp_team_names[i] = Iff_info[i].iff_name;
 
@@ -3494,7 +3499,7 @@ void mission_parse_maybe_create_parse_object(p_object *pobjp)
 			{
 				// be sure to set the variable in the ships structure for the final death time!!!
 				Ships[objp->instance].final_death_time = pobjp->destroy_before_mission_time;
-				Ships[objp->instance].flags[Ship::Ship_Flags::Kill_before_mission];
+				Ships[objp->instance].flags.set(Ship::Ship_Flags::Kill_before_mission);
 			}
 		}
 	}
@@ -7417,7 +7422,7 @@ continue_outer_loop:
 int get_special_anchor(char *name)
 {
 	char tmp[NAME_LENGTH + 15];
-	char *iff_name;
+	const char *iff_name;
 	int iff_index;
 	
 	if (strnicmp(name, "<any ", 5))
@@ -7684,8 +7689,9 @@ void mission_bring_in_support_ship( object *requester_objp )
 
     pobj->flags.reset();
 
-    if (Player_obj->flags[Object::Object_Flags::No_shields])
-        pobj->flags.set(Mission::Parse_Object_Flags::OF_No_shields);	// support ships have no shields when player has not shields
+    if (Player_obj->flags[Object::Object_Flags::No_shields])  {
+		pobj->flags.set(Mission::Parse_Object_Flags::OF_No_shields);	// support ships have no shields when player has not shields
+	}
 
 	pobj->ai_class = Ship_info[pobj->ship_class].ai_class;
 	pobj->hotkey = -1;
@@ -7955,7 +7961,8 @@ int is_training_mission()
 /**
  * Go through all the displayed text in one section and fix the section and text delimiters should all be different
  */
-void conv_fix_punctuation_section(char *str, char *section_start, char *section_end, char *text_start, char *text_end)
+void conv_fix_punctuation_section(char *str, const char *section_start, const char *section_end, const char *text_start,
+								  const char *text_end)
 {
 	char *s1, *s2, *t1, *t2;
 

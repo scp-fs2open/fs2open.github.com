@@ -1034,7 +1034,7 @@ void read_player_controls(object *objp, float frametime)
 
 				// check if warp ability has been disabled
 				if (!(Warpout_forced) && (Ships[objp->instance].flags[Ship::Ship_Flags::Warp_broken] || Ships[objp->instance].flags[Ship::Ship_Flags::Warp_never]) ) {
-					HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Cannot warp out at this time.", 81));
+					HUD_sourced_printf(HUD_SOURCE_HIDDEN, "%s", XSTR( "Cannot warp out at this time.", 81));
 					snd_play(&Snds[SND_PLAYER_WARP_FAIL]);
 					gameseq_post_event( GS_EVENT_PLAYER_WARPOUT_STOP );
 				} else {
@@ -1149,7 +1149,7 @@ void player_match_target_speed(char *no_target_text, char *match_off_text, char 
 	if ( Player_ai->target_objnum == -1) {
 		if ( no_target_text ) {
 			if ( no_target_text[0] ) {
-				HUD_sourced_printf(HUD_SOURCE_HIDDEN, no_target_text );
+				HUD_sourced_printf(HUD_SOURCE_HIDDEN, "%s", no_target_text );
 			}
 		} else {
 //			HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR("No currently selected target.",-1) );
@@ -1167,7 +1167,7 @@ void player_match_target_speed(char *no_target_text, char *match_off_text, char 
 		Player->flags &= ~PLAYER_FLAGS_MATCH_TARGET;
 		if ( match_off_text ) {
 			if ( match_off_text[0] ) {
-				HUD_sourced_printf(HUD_SOURCE_HIDDEN, match_off_text );
+				HUD_sourced_printf(HUD_SOURCE_HIDDEN, "%s", match_off_text );
 			}
 		} else {
 //			HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR("No longer matching speed with current target.",-1) );
@@ -1192,7 +1192,7 @@ void player_match_target_speed(char *no_target_text, char *match_off_text, char 
 			Player->flags |= PLAYER_FLAGS_MATCH_TARGET;
 			if ( match_on_text ) {
 				if ( match_on_text[0] ) {
-					HUD_sourced_printf(HUD_SOURCE_HIDDEN, match_on_text );
+					HUD_sourced_printf(HUD_SOURCE_HIDDEN, "%s", match_on_text );
 				}
 			} else {
 //				HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR("Matching speed with current target.",-1) );
@@ -1917,7 +1917,7 @@ void player_show_death_message()
 	color col;
 	gr_init_color(&col, 255, 0, 0);
 	// display the message
-	HUD_fixed_printf(30.0f, col, msg.c_str());
+	HUD_fixed_printf(30.0f, col, "%s", msg.c_str());
 }
 
 void player_set_next_all_alone_msg_timestamp()
@@ -2044,7 +2044,7 @@ void player_display_padlock_view()
 			}
 		color col;
 		gr_init_color(&col, 0, 255, 0);
-		HUD_fixed_printf(0.01f, col, str);
+		HUD_fixed_printf(0.01f, col, "%s", str);
 	}
 }
 

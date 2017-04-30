@@ -152,12 +152,12 @@ struct goal_list {
 };
 
 struct goal_buttons {
-	char *filename;
+	const char *filename;
 	int x, y;
 	int hotspot;
 	UI_BUTTON button;  // because we have a class inside this struct, we need the constructor below..
 
-	goal_buttons(char *name, int x1, int y1, int h) : filename(name), x(x1), y(y1), hotspot(h) {}
+	goal_buttons(const char *name, int x1, int y1, int h) : filename(name), x(x1), y(y1), hotspot(h) {}
 };
 
 struct goal_text {
@@ -358,7 +358,7 @@ void goal_text::display(int n, int y)
 		buf[m_line_sizes[n]] = 0;
 	}
 
-	gr_printf_menu(Goal_screen_text_x, y, buf);
+	gr_printf_menu(Goal_screen_text_x, y, "%s", buf);
 }
 
 // mission_init_goals: initializes info for goals.  Called as part of mission initialization.
@@ -1047,7 +1047,9 @@ void mission_eval_goals()
 			}
 
 			// if we get here, then the timestamp on the event has popped -- we should reevaluate
-			PROFILE("Repeating events", mission_process_event(i));
+
+			TRACE_SCOPE(tracing::RepeatingEvents);
+			mission_process_event(i);
 		}
 	}
 	
@@ -1081,7 +1083,8 @@ void mission_eval_goals()
 			// we will evaluate repeatable events at the top of the file so we can get
 			// the exact interval that the designer asked for.
 			if ( !timestamp_valid( Mission_events[i].timestamp) ){
-				PROFILE("Nonrepeating events", mission_process_event( i ));
+				TRACE_SCOPE(tracing::NonrepeatingEvents);
+				mission_process_event( i );
 			}
 		}
 	}
@@ -1302,7 +1305,7 @@ DCF(change_mission_goal, "Changes the mission goal status")
 {
 	int num;
 	bool val_b;
-	char *string;
+	const char *string;
 
 	if (dc_optional_string_either("help", "--help")) {
 		dc_printf("Usage: change_mission_goal <goal_num> [status]\n");

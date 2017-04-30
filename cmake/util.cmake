@@ -66,6 +66,22 @@ ENDIF(EXISTS \"${CMAKE_CURRENT_BINARY_DIR}/${TARGET}/${FILE}\")
 	SET(${OUTVAR} "${CMAKE_COMMAND}" -P ${CMAKE_CURRENT_BINARY_DIR}/${TARGET}/${NAME} PARENT_SCOPE)
 ENDFUNCTION(EP_CHECK_FILE_EXISTS)
 
+MACRO(COPY_FILE_TO_TARGET _target _file)
+	if(UNIX)
+		ADD_CUSTOM_COMMAND(
+			TARGET ${_target} POST_BUILD
+			COMMAND cp -a "${_file}"  "$<TARGET_FILE_DIR:${_target}>/${LIBRAY_DESTINATION}/"
+			COMMENT "copying '${_file}'..."
+		)
+	else()
+		ADD_CUSTOM_COMMAND(
+			TARGET ${_target} POST_BUILD
+			COMMAND ${CMAKE_COMMAND} -E copy_if_different "${_file}"  "$<TARGET_FILE_DIR:${_target}>/${LIBRAY_DESTINATION}/"
+			COMMENT "copying '${_file}'..."
+		)
+	endif()
+endmacro(COPY_FILE_TO_TARGET)
+
 MACRO(COPY_FILES_TO_TARGET _target)
 	if(UNIX)
 		ADD_CUSTOM_COMMAND(
@@ -76,19 +92,7 @@ MACRO(COPY_FILES_TO_TARGET _target)
 	endif()
 	
 	FOREACH(file IN LISTS TARGET_COPY_FILES)
-		if(UNIX)
-			ADD_CUSTOM_COMMAND(
-				TARGET ${_target} POST_BUILD
-				COMMAND cp -a "${file}"  "$<TARGET_FILE_DIR:${_target}>/${LIBRAY_DESTINATION}/"
-				COMMENT "copying '${file}'..."
-			)
-		else()
-			ADD_CUSTOM_COMMAND(
-				TARGET ${_target} POST_BUILD
-				COMMAND ${CMAKE_COMMAND} -E copy_if_different "${file}"  "$<TARGET_FILE_DIR:${_target}>/${LIBRAY_DESTINATION}/"
-				COMMENT "copying '${file}'..."
-			)
-		endif()
+		COPY_FILE_TO_TARGET("${_target}" "${file}")
 	ENDFOREACH(file)
 ENDMACRO(COPY_FILES_TO_TARGET)
 
@@ -137,23 +141,26 @@ macro(set_if_not_defined VAR VALUE)
 endmacro(set_if_not_defined)
 
 macro(configure_cotire target)
-	IF(COTIRE_ENABLE)
-		# Disable unity build as it doesn't work well for us
-		set_target_properties(${target} PROPERTIES COTIRE_ADD_UNITY_BUILD FALSE)
+	# Disable unity build as it doesn't work well for us
+	set_target_properties(${target} PROPERTIES COTIRE_ADD_UNITY_BUILD FALSE)
 
-		# add ignored paths for the precompiled header here
-		set_target_properties(code PROPERTIES COTIRE_PREFIX_HEADER_IGNORE_PATH
-			"${CMAKE_SOURCE_DIR};${CMAKE_BINARY_DIR};${FFMPEG_ROOT_DIR}")
-		cotire(${target})
-	ENDIF(COTIRE_ENABLE)
+	cotire(${target})
 endmacro(configure_cotire)
 
 macro(add_target_copy_files)
-	INSTALL(FILES ${ARGN}
-			DESTINATION ${LIBRAY_DESTINATION}
-	)
+	foreach(file ${ARGN})
+		if (IS_DIRECTORY "${file}")
+			INSTALL(DIRECTORY ${file}
+					DESTINATION ${LIBRAY_DESTINATION}
+					)
+		else()
+			INSTALL(FILES ${file}
+					DESTINATION ${LIBRAY_DESTINATION}
+					)
+		endif()
 
-	SET(TARGET_COPY_FILES ${TARGET_COPY_FILES} ${ARGN} CACHE INTERNAL "" FORCE)
+		SET(TARGET_COPY_FILES ${TARGET_COPY_FILES} ${file} CACHE INTERNAL "" FORCE)
+	endforeach()
 endmacro(add_target_copy_files)
 
 function(detect_simd_instructions _out_var)
@@ -178,3 +185,13 @@ function (check_linker_flag _flag _out_var)
 	SET(CMAKE_REQUIRED_FLAGS "${_flag}")
 	CHECK_C_COMPILER_FLAG("" ${_out_var})
 endfunction(check_linker_flag)
+
+# Suppresses warnings for the specified target
+function(suppress_warnings _target)
+    if (MSVC)
+        target_compile_options(${_target} PRIVATE "/W0")
+	else()
+        # Assume everything else uses GCC style options
+		target_compile_options(${_target} PRIVATE "-w")
+    endif()
+endfunction(suppress_warnings)

@@ -68,7 +68,7 @@ char Default_campaign_file_name[MAX_FILENAME_LEN - 4]  = { 0 };
 static bool MC_desc = false;
 static bool MC_multiplayer = false;
 
-char *campaign_types[MAX_CAMPAIGN_TYPES] = 
+const char *campaign_types[MAX_CAMPAIGN_TYPES] =
 {
 //XSTR:OFF
 	"single",
@@ -866,12 +866,12 @@ void campaign_delete_save( char *cfn, char *pname)
 void mission_campaign_delete_all_savefiles( char *pilot_name )
 {
 	int dir_type, num_files, i;
-	char file_spec[MAX_FILENAME_LEN + 2], *ext;
+	char file_spec[MAX_FILENAME_LEN + 2];
 	char filename[1024];
 	int (*filter_save)(const char *filename);
 	SCP_vector<SCP_string> names;
 
-	ext = NOX(".csg");
+	auto ext = NOX(".csg");
 	dir_type = CF_TYPE_PLAYERS;
 
 	sprintf(file_spec, NOX("%s.*%s"), pilot_name, ext);

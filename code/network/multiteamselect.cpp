@@ -50,12 +50,12 @@ extern int Next_screen;
 // bitmap defines
 #define MULTI_TS_PALETTE							"InterfacePalette"
 
-char *Multi_ts_bitmap_fname[GR_NUM_RESOLUTIONS] = {
+const char *Multi_ts_bitmap_fname[GR_NUM_RESOLUTIONS] = {
 	"TeamSelect",		// GR_640
 	"2_TeamSelect"		// GR_1024
 };
 
-char *Multi_ts_bitmap_mask_fname[GR_NUM_RESOLUTIONS] = {
+const char *Multi_ts_bitmap_mask_fname[GR_NUM_RESOLUTIONS] = {
 	"TeamSelect-M",	// GR_640
 	"2_TeamSelect-M"		// GR_1024
 };
@@ -101,7 +101,7 @@ ui_button_info Multi_ts_buttons[GR_NUM_RESOLUTIONS][MULTI_TS_NUM_BUTTONS] = {
 // players locked ani graphic
 #define MULTI_TS_NUM_LOCKED_BITMAPS				3
 
-char *Multi_ts_bmap_names[GR_NUM_RESOLUTIONS][3] = {
+const char *Multi_ts_bmap_names[GR_NUM_RESOLUTIONS][3] = {
 	{ // GR_640
 		"TSB_340000",
 		"TSB_340001",

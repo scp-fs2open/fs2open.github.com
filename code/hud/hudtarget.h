@@ -63,8 +63,8 @@ extern int Hud_target_w, Hud_target_h;
 extern shader Training_msg_glass;
 
 extern char **Ai_class_names;
-extern char *Submode_text[];
-extern char *Strafe_submode_text[];
+extern const char *Submode_text[];
+extern const char *Strafe_submode_text[];
 
 extern void hud_init_targeting_colors();
 

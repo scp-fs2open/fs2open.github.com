@@ -18,7 +18,7 @@
 
 // captureCallback is called when an item is "selected" by mouse release. That is, the user has clicked, dragged and _released_. 
 // the callback is called when the scrollbar has been released
-void UI_SLIDER2::create(UI_WINDOW *wnd, int _x, int _y, int _w, int _h, int _numberItems, char *_bitmapSliderControl, void (* _upCallback)(), void (*_downCallback)(),
+void UI_SLIDER2::create(UI_WINDOW *wnd, int _x, int _y, int _w, int _h, int _numberItems, const char *_bitmapSliderControl, void (* _upCallback)(), void (*_downCallback)(),
 				void (* _captureCallback)()) {
 
 	int buttonHeight, buttonWidth;

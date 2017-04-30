@@ -18,6 +18,8 @@
 #include "math/vecmat.h"
 #include "model/model.h"
 #include "model/modelsinc.h"
+#include "tracing/tracing.h"
+#include "tracing/Monitor.h"
 
 
 
@@ -730,6 +732,8 @@ void model_collide_parse_bsp_flatpoly(bsp_collision_leaf *leaf, SCP_vector<model
 
 void model_collide_parse_bsp(bsp_collision_tree *tree, void *model_ptr, int version)
 {
+	TRACE_SCOPE(tracing::ModelParseBSPTree);
+
 	ubyte *p = (ubyte *)model_ptr;
 	ubyte *next_p;
 

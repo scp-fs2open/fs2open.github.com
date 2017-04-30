@@ -107,4 +107,7 @@ void popup_kill_any_active();
 // change the text inside of the popup 
 void popup_change_text(const char *new_text);
 
+// Used if certain data is missing (e.g. running demo data).
+void popup_game_feature_not_in_demo();
+
 #endif

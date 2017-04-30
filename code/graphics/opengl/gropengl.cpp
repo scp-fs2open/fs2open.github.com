@@ -29,9 +29,9 @@
 #include "nebula/neb.h"
 #include "osapi/osapi.h"
 #include "osapi/osregistry.h"
-#include "palman/palman.h"
 #include "render/3d.h"
 #include "popup/popup.h"
+#include "tracing/tracing.h"
 
 #if defined(_WIN32)
 #include <windows.h>
@@ -89,6 +89,9 @@ static GLenum GL_read_format = GL_BGRA;
 GLuint GL_vao = 0;
 
 static std::unique_ptr<os::OpenGLContext> GL_context = nullptr;
+
+static std::unique_ptr<os::GraphicsOperations> graphic_operations = nullptr;
+static os::Viewport* current_viewport = nullptr;
 
 void opengl_go_fullscreen()
 {
@@ -156,6 +159,8 @@ void gr_opengl_flip()
 	if ( !GL_initted )
 		return;
 
+	TRACE_SCOPE(tracing::PageFlip);
+
 	gr_reset_clip();
 
 	mouse_reset_deltas();
@@ -163,7 +168,7 @@ void gr_opengl_flip()
 	if (Cmdline_gl_finish)
 		glFinish();
 
-	os::getMainViewport()->swapBuffers();
+	current_viewport->swapBuffers();
 
 	opengl_tcache_frame();
 	opengl_reset_immediate_buffer();
@@ -387,7 +392,7 @@ void gr_opengl_print_screen(const char *filename)
 	}
 }
 
-void gr_opengl_shutdown(os::GraphicsOperations* graphicsOps)
+void gr_opengl_shutdown()
 {
 	graphics::paths::PathRenderer::shutdown();
 
@@ -400,10 +405,8 @@ void gr_opengl_shutdown(os::GraphicsOperations* graphicsOps)
 
 	GL_initted = false;
 
-	if ( GL_version >= 30 ) {
-		glDeleteVertexArrays(1, &GL_vao);
-		GL_vao = 0;
-	}
+	glDeleteVertexArrays(1, &GL_vao);
+	GL_vao = 0;
 	
 	if (GL_original_gamma_ramp != NULL && os::getSDLMainWindow() != nullptr) {
 		SDL_SetWindowGammaRamp( os::getSDLMainWindow(), GL_original_gamma_ramp, (GL_original_gamma_ramp+256), (GL_original_gamma_ramp+512) );
@@ -414,11 +417,11 @@ void gr_opengl_shutdown(os::GraphicsOperations* graphicsOps)
 		GL_original_gamma_ramp = NULL;
 	}
 
-	graphicsOps->makeOpenGLContextCurrent(nullptr, nullptr);
+	graphic_operations->makeOpenGLContextCurrent(nullptr, nullptr);
 	GL_context = nullptr;
 }
 
-void gr_opengl_cleanup(os::GraphicsOperations* graphicsOps, bool closing, int minimize)
+void gr_opengl_cleanup(bool closing, int minimize)
 {
 	if ( !GL_initted ) {
 		return;
@@ -439,7 +442,10 @@ void gr_opengl_cleanup(os::GraphicsOperations* graphicsOps, bool closing, int mi
 
 	opengl_minimize();
 
-	gr_opengl_shutdown(graphicsOps);
+	gr_opengl_shutdown();
+
+	current_viewport = nullptr;
+	graphic_operations.reset();
 }
 
 void gr_opengl_fog_set(int fog_mode, int r, int g, int b, float fog_near, float fog_far)
@@ -872,7 +878,7 @@ void gr_opengl_set_line_width(float width)
 	GL_line_width = width;
 }
 
-int opengl_check_for_errors(char *err_at)
+int opengl_check_for_errors(const char *err_at)
 {
 #ifdef NDEBUG
 	return 0;
@@ -920,7 +926,32 @@ void opengl_setup_viewport()
 	}
 }
 
-int opengl_init_display_device(os::GraphicsOperations* graphicsOps)
+std::unique_ptr<os::Viewport> gr_opengl_create_viewport(const os::ViewPortProperties& props) {
+	os::ViewPortProperties attrs = props;
+	attrs.pixel_format.red_size = Gr_red.bits;
+	attrs.pixel_format.green_size = Gr_green.bits;
+	attrs.pixel_format.blue_size = Gr_blue.bits;
+	attrs.pixel_format.alpha_size = (gr_screen.bits_per_pixel == 32) ? Gr_alpha.bits : 0;
+	attrs.pixel_format.depth_size = (gr_screen.bits_per_pixel == 32) ? 24 : 16;
+	attrs.pixel_format.stencil_size = (gr_screen.bits_per_pixel == 32) ? 8 : 1;
+
+	attrs.pixel_format.multi_samples = os_config_read_uint(NULL, "OGL_AntiAliasSamples", 0);
+
+	attrs.enable_opengl = true;
+	attrs.gl_attributes.profile = os::OpenGLProfile::Core;
+
+	return graphic_operations->createViewport(attrs);
+}
+
+void gr_opengl_use_viewport(os::Viewport* view) {
+	graphic_operations->makeOpenGLContextCurrent(view, GL_context.get());
+	current_viewport = view;
+
+	auto size = view->getSize();
+	gr_screen_resize(size.first, size.second);
+}
+
+int opengl_init_display_device()
 {
 	int bpp = gr_screen.bits_per_pixel;
 
@@ -1030,15 +1061,6 @@ int opengl_init_display_device(os::GraphicsOperations* graphicsOps)
 	}
 
 	os::ViewPortProperties attrs;
-	attrs.pixel_format.red_size = Gr_red.bits;
-	attrs.pixel_format.green_size = Gr_green.bits;
-	attrs.pixel_format.blue_size = Gr_blue.bits;
-	attrs.pixel_format.alpha_size = (bpp == 32) ? Gr_alpha.bits : 0;
-	attrs.pixel_format.depth_size = (bpp == 32) ? 24 : 16;
-	attrs.pixel_format.stencil_size = (bpp == 32) ? 8 : 1;
-
-	attrs.pixel_format.multi_samples = os_config_read_uint(NULL, "OGL_AntiAliasSamples", 0);
-
 	attrs.enable_opengl = true;
 
 	attrs.gl_attributes.major_version = MIN_REQUIRED_GL_VERSION / 10;
@@ -1062,7 +1084,7 @@ int opengl_init_display_device(os::GraphicsOperations* graphicsOps)
 		attrs.flags.set(os::ViewPortFlags::Borderless);
 	}
 
-	auto viewport = graphicsOps->createViewport(attrs);
+	auto viewport = gr_opengl_create_viewport(attrs);
 	if (!viewport) {
 		return 1;
 	}
@@ -1076,7 +1098,7 @@ int opengl_init_display_device(os::GraphicsOperations* graphicsOps)
 		gl_attrs.major_version = ver / 10;
 		gl_attrs.minor_version = ver % 10;
 
-		GL_context = graphicsOps->createOpenGLContext(viewport.get(), gl_attrs);
+		GL_context = graphic_operations->createOpenGLContext(viewport.get(), gl_attrs);
 
 		if (GL_context != nullptr)
 		{
@@ -1088,10 +1110,12 @@ int opengl_init_display_device(os::GraphicsOperations* graphicsOps)
 		return 1;
 	}
 
-	graphicsOps->makeOpenGLContextCurrent(viewport.get(), GL_context.get());
-
 	auto port = os::addViewport(std::move(viewport));
 	os::setMainViewPort(port);
+
+	// We can't use gr_use_viewport because that tries to use OpenGL which hasn't been initialized yet
+	graphic_operations->makeOpenGLContextCurrent(port, GL_context.get());
+	current_viewport = port;
 
 	if (GL_original_gamma_ramp != NULL && os::getSDLMainWindow() != nullptr) {
 		SDL_GetWindowGammaRamp( os::getSDLMainWindow(), GL_original_gamma_ramp, (GL_original_gamma_ramp+256),
@@ -1100,7 +1124,6 @@ int opengl_init_display_device(os::GraphicsOperations* graphicsOps)
 
 	return 0;
 }
-
 
 void opengl_setup_function_pointers()
 {
@@ -1165,8 +1188,6 @@ void opengl_setup_function_pointers()
 	gr_screen.gf_set_cull			= gr_opengl_set_cull;
 	gr_screen.gf_set_color_buffer	= gr_opengl_set_color_buffer;
 
-	gr_screen.gf_tcache_set			= gr_opengl_tcache_set;
-
 	gr_screen.gf_set_clear_color	= gr_opengl_set_clear_color;
 
 	gr_screen.gf_preload			= gr_opengl_preload;
@@ -1202,6 +1223,7 @@ void opengl_setup_function_pointers()
 	gr_screen.gf_post_process_begin		= gr_opengl_post_process_begin;
 	gr_screen.gf_post_process_end		= gr_opengl_post_process_end;
 	gr_screen.gf_post_process_save_zbuffer	= gr_opengl_post_process_save_zbuffer;
+	gr_screen.gf_post_process_restore_zbuffer	= gr_opengl_post_process_restore_zbuffer;
 
 	gr_screen.gf_scene_texture_begin = gr_opengl_scene_texture_begin;
 	gr_screen.gf_scene_texture_end = gr_opengl_scene_texture_end;
@@ -1258,6 +1280,9 @@ void opengl_setup_function_pointers()
 	gr_screen.gf_query_value_available = gr_opengl_query_value_available;
 	gr_screen.gf_get_query_value = gr_opengl_get_query_value;
 	gr_screen.gf_delete_query_object = gr_opengl_delete_query_object;
+
+	gr_screen.gf_create_viewport = gr_opengl_create_viewport;
+	gr_screen.gf_use_viewport = gr_opengl_use_viewport;
 
 	// NOTE: All function pointers here should have a Cmdline_nohtl check at the top
 	//       if they shouldn't be run in non-HTL mode, Don't keep separate entries.
@@ -1324,12 +1349,15 @@ static void APIENTRY debug_callback(GLenum source, GLenum type, GLuint id, GLenu
 			break;
 	}
 
+	bool print_to_general_log = false;
 	switch(severity) {
 		case GL_DEBUG_SEVERITY_HIGH_ARB:
 			severityStr = "High";
+			print_to_general_log = true; // High and medium messages are sent to the normal log for later troubleshooting
 			break;
 		case GL_DEBUG_SEVERITY_MEDIUM_ARB:
 			severityStr = "Medium";
+			print_to_general_log = true;
 			break;
 		case GL_DEBUG_SEVERITY_LOW_ARB:
 			severityStr = "Low";
@@ -1339,8 +1367,14 @@ static void APIENTRY debug_callback(GLenum source, GLenum type, GLuint id, GLenu
 			break;
 	}
 
-	nprintf(("OpenGL Debug", "OpenGL Debug: Source:%s\tType:%s\tID:%d\tSeverity:%s\tMessage:%s\n",
-		sourceStr, typeStr, id, severityStr, message));
+	if (print_to_general_log) {
+		mprintf(("OpenGL Debug: Source:%s\tType:%s\tID:%d\tSeverity:%s\tMessage:%s\n",
+			sourceStr, typeStr, id, severityStr, message));
+	} else {
+		// We still print these messages but only to the special debug stream
+		nprintf(("OpenGL Debug", "OpenGL Debug: Source:%s\tType:%s\tID:%d\tSeverity:%s\tMessage:%s\n",
+			sourceStr, typeStr, id, severityStr, message));
+	}
 	printf("OpenGL Debug: Source:%s\tType:%s\tID:%d\tSeverity:%s\tMessage:%s\n",
 		   sourceStr, typeStr, id, severityStr, message);
 }
@@ -1405,12 +1439,6 @@ static void init_extensions() {
 		Error(LOCATION,  "Current GL Shading Langauge Version of %d is less than the required version of %d. Switch video modes or update your drivers.", GLSL_version, MIN_REQUIRED_GLSL_VERSION);
 	}
 
-	if ( GLSL_version < 120 ) {
-		mprintf(("  No hardware support for deferred lighting. Deferred lighting will be disabled. \n"));
-		Cmdline_no_deferred_lighting = 1;
-		Cmdline_no_batching = true;
-	}
-
 	GLint max_texture_units;
 	glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, &max_texture_units);
 
@@ -1424,15 +1452,14 @@ static void init_extensions() {
 		Cmdline_normal = 0;
 		Cmdline_height = 0;
 	} else if (max_texture_units < 4) {
-		mprintf(( "Not enough texture units found for GLSL support. We need at least 4, we found %d.\n", max_texture_units ));
-		GLSL_version = 0;
+		Error(LOCATION, "Not enough texture units found for proper rendering support! We need at least 4, we found %d.", max_texture_units);
 	}
 }
 
-bool gr_opengl_init(os::GraphicsOperations* graphicsOps)
+bool gr_opengl_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 {
 	if (GL_initted) {
-		gr_opengl_cleanup(graphicsOps, false);
+		gr_opengl_cleanup(false);
 		GL_initted = false;
 	}
 
@@ -1441,8 +1468,13 @@ bool gr_opengl_init(os::GraphicsOperations* graphicsOps)
 		  gr_screen.max_h,
 		  gr_screen.bits_per_pixel ));
 
-	if ( opengl_init_display_device(graphicsOps) ) {
-		Error(LOCATION, "Unable to initialize display device!\n");
+	graphic_operations = std::move(graphicsOps);
+
+	if ( opengl_init_display_device() ) {
+		Error(LOCATION, "Unable to initialize display device!\n"
+		      "This most likely means that your graphics drivers do not support the minimum required OpenGL version which is %d.%d.\n",
+			  (MIN_REQUIRED_GL_VERSION / 10),
+			  (MIN_REQUIRED_GL_VERSION % 10));
 	}
 
 	// Initialize function pointers
@@ -1512,11 +1544,9 @@ bool gr_opengl_init(os::GraphicsOperations* graphicsOps)
 	glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, &max_texture_units);
 	max_texture_coords = 1;
 
-	// create vertex array object to make OpenGL Core happy if we can
-	if ( GL_version >= 30 ) {
-		glGenVertexArrays(1, &GL_vao);
-		glBindVertexArray(GL_vao);
-	}
+	// create vertex array object to make OpenGL Core happy
+	glGenVertexArrays(1, &GL_vao);
+	glBindVertexArray(GL_vao);
 
 	GL_state.Texture.init(max_texture_units);
 	GL_state.Array.init(max_texture_coords);
@@ -1602,10 +1632,6 @@ bool gr_opengl_init(os::GraphicsOperations* graphicsOps)
 
 bool gr_opengl_is_capable(gr_capability capability)
 {
-	if ( GL_version < 20 ) {
-		return false;
-	}
-
 	switch ( capability ) {
 	case CAPABILITY_ENVIRONMENT_MAP:
 		return true;
@@ -1615,17 +1641,17 @@ bool gr_opengl_is_capable(gr_capability capability)
 		return Cmdline_height ? true : false;
 	case CAPABILITY_SOFT_PARTICLES:
 	case CAPABILITY_DISTORTION:
-		return Cmdline_softparticles && (GLSL_version >= 120) && !Cmdline_no_fbo;
+		return Cmdline_softparticles && !Cmdline_no_fbo;
 	case CAPABILITY_POST_PROCESSING:
-		return Cmdline_postprocess && (GLSL_version >= 120) && !Cmdline_no_fbo;
+		return Cmdline_postprocess  && !Cmdline_no_fbo;
 	case CAPABILITY_DEFERRED_LIGHTING:
-		return !Cmdline_no_fbo && !Cmdline_no_deferred_lighting && (GLSL_version >= 120);
+		return !Cmdline_no_fbo && !Cmdline_no_deferred_lighting;
 	case CAPABILITY_SHADOWS:
-		return GL_version >= 32;
+		return true;
 	case CAPABILITY_BATCHED_SUBMODELS:
-		return (GLSL_version >= 150);
+		return true;
 	case CAPABILITY_POINT_PARTICLES:
-		return GL_version >= 32 && !Cmdline_no_geo_sdr_effects;
+		return !Cmdline_no_geo_sdr_effects;
 	case CAPABILITY_TIMESTAMP_QUERY:
 		return GL_version >= 33; // Timestamp queries are available from 3.3 onwards
 	}
@@ -1643,6 +1669,13 @@ void gr_opengl_pop_debug_group() {
 		glPopDebugGroup();
 	}
 }
+#if !defined(NDEBUG) || defined(FS_OPENGL_DEBUG) || defined(DOXYGEN)
+void opengl_set_object_label(GLenum type, GLuint handle, const SCP_string& name) {
+	if (GLAD_GL_KHR_debug) {
+		glObjectLabel(type, handle, (GLsizei) name.size(), name.c_str());
+	}
+}
+#endif
 
 uint opengl_data_type_size(GLenum data_type)
 {

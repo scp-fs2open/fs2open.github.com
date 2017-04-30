@@ -90,12 +90,12 @@ int Campaign_list_coords[GR_NUM_RESOLUTIONS][4] = {
 #define CAMPAIGN_MISSION_HASH_SIZE 307
 
 struct sim_room_buttons {
-	char *filename;
+	const char *filename;
 	int x, y, xt, yt;
 	int hotspot;
 	UI_BUTTON button;  // because we have a class inside this struct, we need the constructor below..
 
-	sim_room_buttons(char *name, int x1, int y1, int xt1, int yt1, int h) : filename(name), x(x1), y(y1), xt(xt1), yt(yt1), hotspot(h) {}
+	sim_room_buttons(const char *name, int x1, int y1, int xt1, int yt1, int h) : filename(name), x(x1), y(y1), xt(xt1), yt(yt1), hotspot(h) {}
 };
 
 static sim_room_buttons Buttons[GR_NUM_RESOLUTIONS][NUM_BUTTONS] = {
@@ -131,25 +131,25 @@ static sim_room_buttons Buttons[GR_NUM_RESOLUTIONS][NUM_BUTTONS] = {
 //XSTR:ON
 };
 
-char *Sim_filename[GR_NUM_RESOLUTIONS] = {
+const char* Sim_filename[GR_NUM_RESOLUTIONS] = {
 	"LoadMission",
 	"2_LoadMission"
 };
-char *Sim_mask_filename[GR_NUM_RESOLUTIONS] = {
+const char* Sim_mask_filename[GR_NUM_RESOLUTIONS] = {
 	"LoadMission-m",
 	"2_LoadMission-m"
 };
 
-char *Campaign_filename[GR_NUM_RESOLUTIONS] = {
+const char* Campaign_filename[GR_NUM_RESOLUTIONS] = {
 	"Campaign",
 	"2_Campaign"
 };
-char *Campaign_mask_filename[GR_NUM_RESOLUTIONS] = {
+const char* Campaign_mask_filename[GR_NUM_RESOLUTIONS] = {
 	"Campaign-m",
 	"2_Campaign-m"
 };
 
-char *Sim_room_slider_filename[GR_NUM_RESOLUTIONS] = {
+const char* Sim_room_slider_filename[GR_NUM_RESOLUTIONS] = {
 	"slider",
 	"2_slider"
 };
@@ -218,6 +218,7 @@ static int list_w1;
 static int list_w2;
 static int list_h;
 static int Background_bitmap;
+static int Campaign_background_bitmap_mask;
 static UI_WINDOW Ui_window;
 static UI_BUTTON List_buttons[LIST_BUTTONS_MAX];  // buttons for each line of text in list
 
@@ -255,7 +256,7 @@ static int Sim_volition_icon_x[GR_NUM_RESOLUTIONS] = {
 // special icons themselves
 int Mission_icon_bitmaps[NUM_MISSION_ICONS];
 //XSTR:OFF
-char *Mission_icon_bitmap_filenames[NUM_MISSION_ICONS] = {
+const char *Mission_icon_bitmap_filenames[NUM_MISSION_ICONS] = {
 	"icon-volition"	
 };
 //XSTR:ON
@@ -1291,12 +1292,12 @@ void sim_room_do_frame(float frametime)
 		gr_set_color_fast(&Color_text_heading);
 		strcpy_s(buf, Campaign.name);
 		font::force_fit_string(buf, 255, list_w1);
-		gr_printf_menu(list_x1, Mission_list_coords[gr_screen.res][1], buf);
+		gr_printf_menu(list_x1, Mission_list_coords[gr_screen.res][1], "%s", buf);
 
 		if (Campaign.filename[0] != '\0') {			
 			sprintf(buf, NOX("%s%s"), Campaign.filename, FS_CAMPAIGN_FILE_EXT);
 			font::force_fit_string(buf, 255, list_w2);
-			gr_printf_menu(list_x2, Mission_list_coords[gr_screen.res][1], buf);		
+			gr_printf_menu(list_x2, Mission_list_coords[gr_screen.res][1], "%s", buf);
 
 			// blit the proper icons if necessary
 			char full_name[256];
@@ -1329,12 +1330,12 @@ void sim_room_do_frame(float frametime)
 
 		strcpy_s(buf, sim_room_lines[line].name);
 		font::force_fit_string(buf, 255, list_x1 + list_w1 - sim_room_lines[line].x);
-		gr_printf_menu(sim_room_lines[line].x, y, buf);
+		gr_printf_menu(sim_room_lines[line].x, y, "%s", buf);
 
 		if (sim_room_lines[line].filename) {
 			strcpy_s(buf, sim_room_lines[line].filename);
 			font::force_fit_string(buf, 255, list_w2);
-			gr_printf_menu(list_x2, y, buf);
+			gr_printf_menu(list_x2, y, "%s", buf);
 		}
 
 		// blit additional icon information
@@ -1641,7 +1642,13 @@ void campaign_room_init()
 	list_h = Mission_list_coords[gr_screen.res][3];
 
 	Ui_window.create(0, 0, gr_screen.max_w_unscaled, gr_screen.max_h_unscaled, 0);
-	Ui_window.set_mask_bmap(Campaign_mask_filename[gr_screen.res]);
+
+	Campaign_background_bitmap_mask = bm_load(Campaign_mask_filename[gr_screen.res]);
+	if (Campaign_background_bitmap_mask < 0) {
+		Warning(LOCATION, "Error loading campaign room mask %s", Campaign_mask_filename[gr_screen.res]);
+	} else {
+		Ui_window.set_mask_bmap(Campaign_mask_filename[gr_screen.res]);
+	}
 
 	for (i=0; i<CR_NUM_BUTTONS; i++) {
 		b = &Cr_buttons[gr_screen.res][i];
@@ -1672,6 +1679,9 @@ void campaign_room_init()
 	// Cr_buttons[gr_screen.res][CR_HELP_BUTTON].button.set_hotkey(KEY_F2);
 
 	Background_bitmap = bm_load(Campaign_filename[gr_screen.res]);
+	if (Background_bitmap < 0) {
+		Warning(LOCATION, "Error loading campaign room background %s", Campaign_filename[gr_screen.res]);
+	}
 
 	// load in help overlay bitmap	
 	Campaign_room_overlay_id = help_overlay_get_index(CAMPAIGN_ROOM_OVERLAY);
@@ -1718,6 +1728,11 @@ void campaign_room_close()
 	mission_campaign_free_list();
 
 	Ui_window.destroy();
+
+	if (Campaign_background_bitmap_mask >= 0) {
+		bm_release(Campaign_background_bitmap_mask);
+	}
+
 	common_free_interface_palette();		// restore game palette
 	Pilot.save_player();
 }
@@ -1728,6 +1743,20 @@ void campaign_room_do_frame(float frametime)
 	char line_text[MAX_INFO_LINE_LEN];
 	int i, k, y, line;
 	int select_tease_line = -1;  // line mouse is down on, but won't be selected until button released
+
+	// If we don't have a mask, we don't have enough data to do anything with this screen.
+	if (Campaign_background_bitmap_mask == -1) {
+		{
+			//popup_game_feature_not_in_demo();
+			int reset_campaign = popup(PF_USE_AFFIRMATIVE_ICON|PF_BODY_BIG, 2, "Exit", "Restart Campaign", "Campaign Room only available in full version. However, you may restart the campaign.");
+			if (reset_campaign == 1) {
+				// Rather than hardcoding the reset, let's reuse this.
+				campaign_room_reset_campaign(Active_campaign_index);
+			}
+		}
+		gameseq_post_event(GS_EVENT_MAIN_MENU);
+		return;
+	}
 
 	if ( help_overlay_active(Campaign_room_overlay_id) ) {
 		// Cr_buttons[gr_screen.res][CR_HELP_BUTTON].button.reset_status();
@@ -1834,7 +1863,7 @@ void campaign_room_do_frame(float frametime)
 
 		strcpy_s(buf, sim_room_lines[line].name);
 		font::force_fit_string(buf, 255, Cr_list_coords[gr_screen.res][0] + Cr_list_coords[gr_screen.res][2] - sim_room_lines[line].x);
-		gr_printf_menu(sim_room_lines[line].x, y, buf);
+		gr_printf_menu(sim_room_lines[line].x, y, "%s", buf);
 		line++;
 	}
 

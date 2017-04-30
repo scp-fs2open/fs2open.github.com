@@ -21,6 +21,7 @@
 #include "render/3d.h"
 #include "render/batching.h"
 #include "ship/ship.h"
+#include "tracing/Monitor.h"
 
 #include <stdlib.h>
 
@@ -964,7 +965,7 @@ float fireball_wormhole_intensity( object *obj )
 	return rad;
 } 
 
-void fireball_render(object* obj, draw_list *scene)
+void fireball_render(object* obj, model_draw_list *scene)
 {
 	int		num;
 	vertex	p;

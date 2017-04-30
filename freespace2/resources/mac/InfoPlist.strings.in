@@ -1,0 +1,5 @@
+/* Localized versions of Info.plist keys */
+
+CFBundleShortVersionString = "FreeSpace 2 Open version ${FSO_FULL_VERSION_STRING}";
+CFBundleGetInfoString = "FreeSpace 2 Open version ${FSO_FULL_VERSION_STRING}, Copyright 1999 Volition, Inc. & Copyright 2005-2010 The Source Code Project.";
+NSHumanReadableCopyright = "Copyright 1999 Volition, Inc. & Copyright 2005-2010 The Source Code Project.";

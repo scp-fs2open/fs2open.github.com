@@ -23,7 +23,7 @@
 //			ignore_focus	=>		whether to allow Enter/Spacebar to affect pressed state when
 //										control has focus
 //
-void UI_BUTTON::create(UI_WINDOW *wnd, char *_text, int _x, int _y, int _w, int _h, int do_repeat, int ignore_focus)
+void UI_BUTTON::create(UI_WINDOW *wnd, const char *_text, int _x, int _y, int _w, int _h, int do_repeat, int ignore_focus)
 {
 	text = NULL;
 

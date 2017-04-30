@@ -33,14 +33,14 @@ GLuint Framebuffer_fallback_texture_id = 0;
 
 opengl_vert_attrib GL_vertex_attrib_info[] =
 	{
-		{ opengl_vert_attrib::POSITION,		"vertPosition",		{ 0.0f, 0.0f, 0.0f, 1.0f } },
-		{ opengl_vert_attrib::COLOR,		"vertColor",		{ 1.0f, 1.0f, 1.0f, 1.0f } },
-		{ opengl_vert_attrib::TEXCOORD,		"vertTexCoord",		{ 1.0f, 1.0f, 1.0f, 1.0f } },
-		{ opengl_vert_attrib::NORMAL,		"vertNormal",		{ 0.0f, 0.0f, 1.0f, 0.0f } },
-		{ opengl_vert_attrib::TANGENT,		"vertTangent",		{ 1.0f, 0.0f, 0.0f, 0.0f } },
-		{ opengl_vert_attrib::MODEL_ID,		"vertModelID",		{ 0.0f, 0.0f, 0.0f, 0.0f } },
-		{ opengl_vert_attrib::RADIUS,		"vertRadius",		{ 1.0f, 0.0f, 0.0f, 0.0f } },
-		{ opengl_vert_attrib::UVEC,			"vertUvec",			{ 0.0f, 1.0f, 0.0f, 0.0f } }
+		{ opengl_vert_attrib::POSITION,		"vertPosition",		{{{ 0.0f, 0.0f, 0.0f, 1.0f }}} },
+		{ opengl_vert_attrib::COLOR,		"vertColor",		{{{ 1.0f, 1.0f, 1.0f, 1.0f }}} },
+		{ opengl_vert_attrib::TEXCOORD,		"vertTexCoord",		{{{ 1.0f, 1.0f, 1.0f, 1.0f }}} },
+		{ opengl_vert_attrib::NORMAL,		"vertNormal",		{{{ 0.0f, 0.0f, 1.0f, 0.0f }}} },
+		{ opengl_vert_attrib::TANGENT,		"vertTangent",		{{{ 1.0f, 0.0f, 0.0f, 0.0f }}} },
+		{ opengl_vert_attrib::MODEL_ID,		"vertModelID",		{{{ 0.0f, 0.0f, 0.0f, 0.0f }}} },
+		{ opengl_vert_attrib::RADIUS,		"vertRadius",		{{{ 1.0f, 0.0f, 0.0f, 0.0f }}} },
+		{ opengl_vert_attrib::UVEC,			"vertUvec",			{{{ 0.0f, 1.0f, 0.0f, 0.0f }}} }
 	};
 
 /**
@@ -106,7 +106,7 @@ static opengl_shader_type_t GL_shader_types[] = {
 		{ opengl_vert_attrib::POSITION, opengl_vert_attrib::TEXCOORD }, "Video Playback" },
 
 	{ SDR_TYPE_PASSTHROUGH_RENDER, "passthrough-v.sdr", "passthrough-f.sdr", 0,
-		{ "modelViewMatrix", "projMatrix", "baseMap", "noTexturing", "alphaTexture", "srgb", "intensity", "color", "alphaThreshold" },
+		{ "modelViewMatrix", "projMatrix", "baseMap", "noTexturing", "alphaTexture", "srgb", "intensity", "color", "alphaThreshold", "clipEnabled", "clipEquation", "modelMatrix" },
 		{ opengl_vert_attrib::POSITION, opengl_vert_attrib::TEXCOORD, opengl_vert_attrib::COLOR }, "Passthrough" },
 
 	{ SDR_TYPE_SHIELD_DECAL, "shield-impact-v.sdr",	"shield-impact-f.sdr", 0,
@@ -184,7 +184,7 @@ static opengl_shader_variant_t GL_shader_variants[] = {
 		"Submodel Transforms" },
 	
 	{ SDR_TYPE_MODEL, false, SDR_FLAG_MODEL_CLIP, "FLAG_CLIP", 
-		{ "use_clip_plane", "clip_normal", "clip_position" }, {  },
+		{ "use_clip_plane", "clip_equation" }, {  },
 		"Clip Plane" },
 
 	{ SDR_TYPE_MODEL, false, SDR_FLAG_MODEL_HDR, "FLAG_HDR",
@@ -227,6 +227,8 @@ opengl_shader_t *Current_shader = NULL;
 void opengl_shader_set_current(opengl_shader_t *shader_obj)
 {
 	if (Current_shader != shader_obj) {
+		GR_DEBUG_SCOPE("Set shader");
+
 		GL_state.Array.ResetVertexAttribs();
 
 		if(shader_obj) {
@@ -564,21 +566,28 @@ int opengl_compile_shader(shader_type sdr, uint flags)
 	}
 
 	auto shader_hash = get_shader_hash(vert_content, geom_content, frag_content);
-	std::unique_ptr<opengl::ShaderProgram> program(new opengl::ShaderProgram());
+	std::unique_ptr<opengl::ShaderProgram> program(new opengl::ShaderProgram(sdr_info->description));
 
 	if (!load_cached_shader_binary(program.get(), shader_hash)) {
 		GR_DEBUG_SCOPE("Compiling shader code");
 		try {
-			program->addShaderCode(opengl::STAGE_VERTEX, vert_content);
-			program->addShaderCode(opengl::STAGE_FRAGMENT, frag_content);
+			program->addShaderCode(opengl::STAGE_VERTEX, sdr_info->vert, vert_content);
+			program->addShaderCode(opengl::STAGE_FRAGMENT, sdr_info->frag, frag_content);
 			if (use_geo_sdr) {
-				program->addShaderCode(opengl::STAGE_GEOMETRY, geom_content);
+				program->addShaderCode(opengl::STAGE_GEOMETRY, sdr_info->geo, geom_content);
 			}
 
 			for (int i = 0; i < opengl_vert_attrib::NUM_ATTRIBS; ++i) {
 				// assign vert attribute binding locations before we link the shader
 				glBindAttribLocation(program->getShaderHandle(), i, GL_vertex_attrib_info[i].name.c_str());
 			}
+
+			// bind fragment data locations before we link the shader
+			glBindFragDataLocation(program->getShaderHandle(), 0, "fragOut0");
+			glBindFragDataLocation(program->getShaderHandle(), 1, "fragOut1");
+			glBindFragDataLocation(program->getShaderHandle(), 2, "fragOut2");
+			glBindFragDataLocation(program->getShaderHandle(), 3, "fragOut3");
+			glBindFragDataLocation(program->getShaderHandle(), 4, "fragOut4");
 
 			if (do_shader_caching()) {
 				// Enable shader caching
@@ -599,15 +608,6 @@ int opengl_compile_shader(shader_type sdr, uint flags)
 	new_shader.program = std::move(program);
 
 	opengl_shader_set_current(&new_shader);
-
-	// bind fragment data locations
-	if ( GL_version >= 32 && GLSL_version >= 150 ) {
-		glBindFragDataLocation(new_shader.program->getShaderHandle(), 0, "fragOut0");
-		glBindFragDataLocation(new_shader.program->getShaderHandle(), 1, "fragOut1");
-		glBindFragDataLocation(new_shader.program->getShaderHandle(), 2, "fragOut2");
-		glBindFragDataLocation(new_shader.program->getShaderHandle(), 3, "fragOut3");
-		glBindFragDataLocation(new_shader.program->getShaderHandle(), 4, "fragOut4");
-	}
 
 	// initialize uniforms and attributes
 	for (auto& unif : sdr_info->uniforms) {
@@ -788,7 +788,7 @@ void opengl_shader_compile_passthrough_shader()
 	opengl_shader_set_current();
 }
 
-void opengl_shader_set_passthrough(bool textured, bool alpha, vec4 *clr, float color_scale)
+void opengl_shader_set_passthrough(bool textured, bool alpha, vec4 *clr, float color_scale, const material::clip_plane& clip_plane)
 {
 	opengl_shader_set_current(gr_opengl_maybe_create_shader(SDR_TYPE_PASSTHROUGH_RENDER, 0));
 
@@ -820,13 +820,31 @@ void opengl_shader_set_passthrough(bool textured, bool alpha, vec4 *clr, float c
 		Current_shader->program->Uniforms.setUniform4f("color", 1.0f, 1.0f, 1.0f, 1.0f);
 	}
 
+	if (clip_plane.enabled) {
+		Current_shader->program->Uniforms.setUniformi("clipEnabled", 1);
+
+		vec4 clip_equation;
+		clip_equation.xyzw.x = clip_plane.normal.xyz.x;
+		clip_equation.xyzw.y = clip_plane.normal.xyz.y;
+		clip_equation.xyzw.z = clip_plane.normal.xyz.z;
+		clip_equation.xyzw.w = -vm_vec_dot(&clip_plane.normal, &clip_plane.position);
+
+		Current_shader->program->Uniforms.setUniform4f("clipEquation", clip_equation);
+		Current_shader->program->Uniforms.setUniformMatrix4f("modelMatrix", GL_model_matrix_stack.get_transform());
+	} else {
+		Current_shader->program->Uniforms.setUniformi("clipEnabled", 0);
+	}
+
 	Current_shader->program->Uniforms.setUniformMatrix4f("modelViewMatrix", GL_model_view_matrix);
 	Current_shader->program->Uniforms.setUniformMatrix4f("projMatrix", GL_projection_matrix);
 }
 
 void opengl_shader_set_passthrough(bool textured, bool alpha, color *clr)
 {
-	vec4 normalized_clr = { i2fl(clr->red) / 255.0f, i2fl(clr->green) / 255.0f, i2fl(clr->blue) / 255.0f, clr->is_alphacolor ? i2fl(clr->alpha) / 255.0f : 1.0f };
+	vec4 normalized_clr = {{{ i2fl(clr->red) / 255.0f,
+		i2fl(clr->green) / 255.0f,
+		i2fl(clr->blue) / 255.0f,
+		clr->is_alphacolor ? i2fl(clr->alpha) / 255.0f : 1.0f }}};
 
 	opengl_shader_set_passthrough(textured, alpha, &normalized_clr, 1.0f);
 }

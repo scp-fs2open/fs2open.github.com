@@ -13,8 +13,9 @@ void setOGLProperties(const os::ViewPortProperties& props) {
 	SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, props.pixel_format.depth_size);
 	SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, props.pixel_format.stencil_size);
 	SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
-	SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, (props.pixel_format.multi_samples == 0) ? 0 : 1);
-	SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, props.pixel_format.multi_samples);
+	// disabled due to issues with implementation; may be re-enabled in future
+	SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 0);
+	SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 0);
 
 	mprintf(("  Requested SDL Pixel values = R: %d, G: %d, B: %d, depth: %d, stencil: %d, double-buffer: %d, FSAA: %d\n",
 		props.pixel_format.red_size, props.pixel_format.green_size, props.pixel_format.blue_size,
@@ -158,10 +159,32 @@ std::unique_ptr<os::Viewport> SDLGraphicsOperations::createViewport(const os::Vi
 	if (props.flags[os::ViewPortFlags::Fullscreen]) {
 		windowflags |= SDL_WINDOW_FULLSCREEN;
 	}
+	if (props.flags[os::ViewPortFlags::Resizeable]) {
+		windowflags |= SDL_WINDOW_RESIZABLE;
+	}
+
+	SDL_Rect bounds;
+	if (SDL_GetDisplayBounds(props.display, &bounds) != 0) {
+		mprintf(("Failed to get display bounds: %s\n", SDL_GetError()));
+		return nullptr;
+	}
+
+	int x;
+	int y;
+
+	if (bounds.w == (int)props.width && bounds.h == (int)props.height) {
+		// If we have the same size as the desktop we explicitly specify 0,0 to make sure that the window borders aren't hidden
+		mprintf(("SDL: Creating window at %d,%d because window has same size as desktop.\n", bounds.x, bounds.y));
+		x = bounds.x;
+		y = bounds.y;
+	} else {
+		x = SDL_WINDOWPOS_CENTERED_DISPLAY(props.display);
+		y = SDL_WINDOWPOS_CENTERED_DISPLAY(props.display);
+	}
 
 	SDL_Window* window = SDL_CreateWindow(props.title.c_str(),
-										  SDL_WINDOWPOS_CENTERED_DISPLAY(props.display),
-										  SDL_WINDOWPOS_CENTERED_DISPLAY(props.display),
+										  x,
+										  y,
 										  props.width,
 										  props.height,
 										  windowflags);

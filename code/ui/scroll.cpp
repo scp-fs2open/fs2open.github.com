@@ -72,8 +72,8 @@ void UI_SCROLLBAR::unhide()
 
 void UI_SCROLLBAR::create(UI_WINDOW *wnd, int _x, int _y, int _h, int _start, int _stop, int _position, int _window_size)
 {
-	char *up = "^";
-	char *down = "v";
+	const char *up = "^";
+	const char *down = "v";
 	int bw = 20;
 
 	base_create( wnd, UI_KIND_SCROLLBAR, _x, _y + bw, bw, _h - bw * 2 );

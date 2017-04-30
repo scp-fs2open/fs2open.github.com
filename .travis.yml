@@ -9,9 +9,6 @@ addons:
         packages: &global_deps
             - ninja-build
             - libopenal-dev
-            - libogg-dev
-            - libvorbis-dev
-            - libtheora-dev
             - libreadline6-dev
             - libpng12-dev
             - libjpeg62-dev
@@ -26,6 +23,19 @@ addons:
         build_command:   "ci/travis/script.sh"
         # must match TRAVIS_BRANCH check below
         branch_pattern: coverity_scan
+env:
+    global:
+     # The next declaration is the encrypted COVERITY_SCAN_TOKEN, created
+     #   via the "travis encrypt" command using the project repo's public key
+     #   also note that fork's don't get access to secure keys
+     #   you have to test using a branch in the main repo
+     - secure: "C3wF967ZeliwwP1vC12EMIBOaC568n26Z/cPnwzn317ve59DWH3YSfPZVgvt08GzmaXITGGsJvPB+qxfGoKvQzYE4O1B73q81RpUe5pB3IhF+ThQ91VfQZIRJR5xEGJaLINUlHTTZGX5jxlkVO9wAcauVj/s3b8sQ3dvUZauPvk="
+     # These declarations set INDIEGAMES_USER and INDIEGAMES_PASSWORD for uploading nightly builds to the indiegames server
+     - secure: "lUuRu8XIi8MKNf1ebOfyC4iVEpPyASojJIDWXRo2bNqEF4ILAljXdkVeXeN6H5yKCHD52cxCNTtyePIG/o3p3QEuGSVud9bDS3D7LaQicLETGGrsw3l07U49gF2OKHXGopg0MzBbZUU9QmhoFTAe8t6PV9NDuEayYCheqvTqjZg="
+     - secure: "E/DHLYcPK/hBUqxBYYlUqp5sjgvIqY5A0qRHyQ4bmjsB+WB/Xx71bGCSiF7hk6lTxar1ZI1i5RAXXh9AIvNVaYAIdEOlCP+q3gvwCYuc5naZEKmkxlUCf0oEL4O9Fye93A/3VkFHuBdC1TGPYYf69m4W5r4367wWO9dPRIdWpJA="
+     # These declarations set FS2DOWNLOADS_USER and FS2DOWNLOADS_PASSWORD
+     - secure: "h6GbMX2jLsW1bS9fCM9fthOSJ1nfQQIRWi6EUH2p8u4NFLD5Bfi/C8JhQPKHUzyo3wvKkSHl+PsW7bgr1oXLusRwAur/dtv2N3imqvtbfIz305b00hZlsvbcYmQmUzQFSAdOGShK57JJ5aKQKccaUBP25KqB7Q+JaqBRdaMBS54="
+     - secure: "fUDAPAUUaaYZy8I4zU3SJ0JcK7aw4eb6eTdaEr7LyNyTMSfPgwY6P1MrbSQC0lJNQIUQ5ffjdxE5g7D7OYpoJF9L14ni4UY8t2QASt7kmpgcYihmjeuYy8FQXgmFG8CTxiWBPKTybZJ7voQcvIvRaNG7b2wM9PMfc5lRIondB6c="
 deploy:
     - provider: releases
       api_key:
@@ -37,21 +47,12 @@ deploy:
           condition: '"$RELEASE_BUILD" == true'
           tags: true
 
-    - provider: bintray
-      user: sirknightly
-      key:
-          secure: "CZtvDW/zPf1Nxru21i8Wd+9hgiBRA8VowWBX0gmCOGgRq9WHISttKQQmBWGHuyVZ3rYvtE4Va2bR+2qRN+TFNkUUuOCOQkdBJTCal9nS3G/LprEmsOashG0Q5PTfMMBnlKzKxaxGJW6UhFj2GySmHEAjsFLVpuNWGJeeZgZQ3UE="
-      file: ci/bintray.json
+    - provider: script
+      script: ci/travis/nightly_deploy.sh
       on:
           condition: '"$NIGHTLY_BUILD" == true'
           tags: true
-env:
-    global:
-     # The next declaration is the encrypted COVERITY_SCAN_TOKEN, created
-     #   via the "travis encrypt" command using the project repo's public key
-     #   also note that fork's don't get access to secure keys
-     #   you have to test using a branch in the main repo
-     - secure: "C3wF967ZeliwwP1vC12EMIBOaC568n26Z/cPnwzn317ve59DWH3YSfPZVgvt08GzmaXITGGsJvPB+qxfGoKvQzYE4O1B73q81RpUe5pB3IhF+ThQ91VfQZIRJR5xEGJaLINUlHTTZGX5jxlkVO9wAcauVj/s3b8sQ3dvUZauPvk="
+
 matrix:
     include:
         # note that gcc Debug MUST be 1st for Coverity
@@ -72,6 +73,7 @@ matrix:
                       - llvm-toolchain-precise
                   packages:
                       - clang-3.6
+                      - libc++-dev
                       - *global_deps
         - os: osx
           env: CONFIGURATION="Debug"
@@ -93,6 +95,7 @@ matrix:
                       - llvm-toolchain-precise
                   packages:
                       - clang-3.6
+                      - libc++-dev
                       - *global_deps
         - os: osx
           env: CONFIGURATION="Release"
@@ -112,5 +115,3 @@ before_script:
     - "./ci/travis/before_script.sh"
 script:
     - if [ "$BUILD_DEPLOYMENT" = true ] ; then ./ci/travis/release.sh ; else ./ci/travis/script.sh ; fi
-before_deploy:
-    - "./ci/travis/before_deploy.sh"

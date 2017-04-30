@@ -336,10 +336,11 @@ void obj_render_all(void (*render_function)(object *objp), bool *draw_viewer_las
 void obj_render_queue_all()
 {
 	GR_DEBUG_SCOPE("Render all objects");
+	TRACE_SCOPE(tracing::RenderScene);
 
 	object *objp;
 	int i;
-	draw_list scene;
+	model_draw_list scene;
 
 	objp = Objects;
 
@@ -368,19 +369,18 @@ void obj_render_queue_all()
 			if ( obj_render_is_model(objp) ) {
 				if( (objp->type == OBJ_SHIP) && Ships[objp->instance].shader_effect_active ) {
 					effect_ships.push_back(objp);
+					continue;
 				}
 			}
 
             objp->flags.set(Object::Object_Flags::Was_rendered);
-			profile_begin("Queue Render");
 			obj_queue_render(objp, &scene);
-			profile_end("Queue Render");
 		}
 	}
 
 	scene.init_render();
 
-	PROFILE("Submit Draws", scene.render_all(ZBUFFER_TYPE_FULL));
+	scene.render_all(ZBUFFER_TYPE_FULL);
 	gr_zbuffer_set(ZBUFFER_TYPE_READ);
 	gr_zbias(0);
 	gr_set_cull(0);
@@ -389,7 +389,7 @@ void obj_render_queue_all()
 	gr_set_fill_mode(GR_FILL_MODE_SOLID);
 
  	gr_deferred_lighting_end();
-	PROFILE("Apply Lights", gr_deferred_lighting_finish());
+	gr_deferred_lighting_finish();
 
 	gr_zbuffer_set(ZBUFFER_TYPE_READ);
 
@@ -397,8 +397,8 @@ void obj_render_queue_all()
 	gr_set_lighting(false, false);
 
 	// now render transparent meshes
-	PROFILE("Submit Draws", scene.render_all(ZBUFFER_TYPE_READ));
-	PROFILE("Submit Draws", scene.render_all(ZBUFFER_TYPE_NONE));
+	scene.render_all(ZBUFFER_TYPE_READ);
+	scene.render_all(ZBUFFER_TYPE_NONE);
 
 	// render electricity effects and insignias
 	scene.render_outlines();
@@ -420,7 +420,7 @@ void obj_render_queue_all()
 		gr_fog_set(GR_FOGMODE_NONE, 0, 0, 0);
 	}
 
-	PROFILE("Draw Effects", batching_render_all());
+	batching_render_all();
 
 	gr_zbias(0);
 	gr_zbuffer_set(ZBUFFER_TYPE_READ);

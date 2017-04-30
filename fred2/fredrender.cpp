@@ -41,7 +41,6 @@
 #include "model/model.h"
 #include "mod_table/mod_table.h"
 #include "object/object.h"
-#include "palman/palman.h"
 #include "physics/physics.h"
 #include "render/3d.h"
 #include "render/3dinternal.h"

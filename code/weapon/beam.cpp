@@ -24,6 +24,7 @@
 #include "iff_defs/iff_defs.h"
 #include "io/timer.h"
 #include "lighting/lighting.h"
+#include "mod_table/mod_table.h"
 #include "network/multi.h"
 #include "network/multimsgs.h"
 #include "object/objcollide.h"
@@ -39,6 +40,7 @@
 #include "weapon/beam.h"
 #include "weapon/weapon.h"
 #include "globalincs/globals.h"
+#include "tracing/tracing.h"
 
 // ------------------------------------------------------------------------------------------------
 // BEAM WEAPON DEFINES/VARS
@@ -438,6 +440,10 @@ int beam_fire(beam_fire_info *fire_info)
 		return -1;
 	}
 	new_item->objnum = objnum;
+
+	if (new_item->objp != nullptr && Weapons_inherit_parent_collision_group) {
+		Objects[objnum].collision_group_id = new_item->objp->collision_group_id;
+	}
 
 	// this sets up all info for the first frame the beam fires
 	beam_aim(new_item);						// to fill in shot_point, etc.	
@@ -1512,6 +1518,9 @@ void beam_render_muzzle_glow(beam *b)
 // render all beam weapons
 void beam_render_all()
 {
+	GR_DEBUG_SCOPE("Render Beams");
+	TRACE_SCOPE(tracing::DrawBeams);
+
 	beam *moveup;	
 
 	// moves the U value of texture coods in beams if desired-Bobboau
@@ -1908,7 +1917,7 @@ int beam_start_firing(beam *b)
 	}	
 
 	Script_system.SetHookObjects(3, "Beam", &Objects[b->objnum], "User", b->objp, "Target", b->target);
-	Script_system.RunCondition(CHA_BEAMFIRE, 0, NULL, b->objp, b->weapon_info_index);
+	Script_system.RunCondition(CHA_BEAMFIRE, 0, NULL, &Objects[b->objnum], b->weapon_info_index);
 	Script_system.RemHookVars(3, "Beam", "User", "Target");
 
 	// success
@@ -2391,6 +2400,9 @@ int beam_collide_ship(obj_pair *pair)
 		return 1;
 	ship_objp = pair->b;
 	shipp = &Ships[ship_objp->instance];
+
+	if (reject_due_collision_groups(weapon_objp, ship_objp))
+		return 0;
 
 	int quadrant_num = -1;
 	int	valid_hit_occurred = 0;
@@ -3187,10 +3199,12 @@ void beam_handle_collisions(beam *b)
 							trgt->hull_strength -= damage;
 
 							if (trgt->hull_strength < 0) {
+								Weapons[trgt->instance].weapon_flags.set(Weapon::Weapon_Flags::Destroyed_by_weapon);
 								weapon_hit(trgt, NULL, &trgt->pos);
 							}
 						} else {
 							if (!(Game_mode & GM_MULTIPLAYER) || MULTIPLAYER_MASTER) {
+								Weapons[trgt->instance].weapon_flags.set(Weapon::Weapon_Flags::Destroyed_by_weapon);
 								weapon_hit(&Objects[target], NULL, &Objects[target].pos);
 							}
 						}
@@ -3202,6 +3216,7 @@ void beam_handle_collisions(beam *b)
 					Assert(Weapon_info[Weapons[Objects[target].instance].weapon_info_index].subtype == WP_MISSILE);
 
 					if (!(Game_mode & GM_MULTIPLAYER) || MULTIPLAYER_MASTER) {
+						Weapons[Objects[target].instance].weapon_flags.set(Weapon::Weapon_Flags::Destroyed_by_weapon);
 						weapon_hit(&Objects[target], NULL, &Objects[target].pos);
 					}
 				}

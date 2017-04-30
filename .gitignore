@@ -281,3 +281,8 @@ documentation/doxygen/*
 
 .idea/*
 projects/*
+/.vs
+CMakeSettings.json
+
+# Weird files created by Linux
+.fuse_hidden*

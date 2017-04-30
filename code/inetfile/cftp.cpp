@@ -124,7 +124,7 @@ CFtpGet::CFtpGet(char *URL, char *localfile, char *Username, char *Password)
 	//Parse the URL
 	//Get rid of any extra ftp:// stuff
 	char *pURL = URL;
-	if(_strnicmp(URL,"ftp:",4)==0)
+	if(strnicmp(URL,"ftp:",4)==0)
 	{
 		pURL +=4;
 		while(*pURL == '/')
@@ -334,8 +334,8 @@ uint CFtpGet::IssuePort()
 #else
    int iLength;								// Length of the address structure
 #endif
-   UINT nLocalPort;							// Local port for listening
-	UINT nReplyCode;							// FTP server reply code
+	uint32_t nLocalPort;							// Local port for listening
+	uint32_t nReplyCode;							// FTP server reply code
 
 
    // Get the address for the hListenSocket

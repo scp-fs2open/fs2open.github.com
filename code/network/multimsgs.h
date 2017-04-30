@@ -300,7 +300,7 @@ void send_ship_depart_packet( object *objp, int method = -1 );
 void send_mission_log_packet( int entry );
 
 // send a mission message packet
-void send_mission_message_packet(int id, char *who_from, int priority, int timing, int source, int builtin_type, int multi_target, int multi_team_filter, int delay = 0);
+void send_mission_message_packet(int id, const char *who_from, int priority, int timing, int source, int builtin_type, int multi_target, int multi_team_filter, int delay = 0);
 
 // broadcast a query for active games. TCP will either request from the MT or from the specified list
 void broadcast_game_query();
@@ -436,7 +436,7 @@ void send_shield_explosion_packet(int objnum, int tri_num, vec3d hit_pos);
 
 void send_player_stats_block_packet(net_player *pl, int stats_type, net_player *target = NULL, short offset = 0);
 
-void send_host_restr_packet(char *callsign, int code, int mode);
+void send_host_restr_packet(const char *callsign, int code, int mode);
 
 void send_netgame_end_error_packet(int notify_code, int err_code);
 

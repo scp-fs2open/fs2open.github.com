@@ -229,7 +229,7 @@ extern int Brief_bmap_coords[GR_NUM_RESOLUTIONS][2];
 extern int Brief_grid_coords[GR_NUM_RESOLUTIONS][4];
 extern int Brief_text_coords[GR_NUM_RESOLUTIONS][4];
 extern int Brief_text_max_lines[GR_NUM_RESOLUTIONS];
-extern char *Brief_static_name[GR_NUM_RESOLUTIONS];
+extern const char *Brief_static_name[GR_NUM_RESOLUTIONS];
 extern int Brief_static_coords[GR_NUM_RESOLUTIONS][2];
 
 // Needed for Fred

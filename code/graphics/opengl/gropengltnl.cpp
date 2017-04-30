@@ -69,7 +69,6 @@ size_t GL_transform_buffer_offset = INVALID_SIZE;
 GLuint Shadow_map_texture = 0;
 GLuint Shadow_map_depth_texture = 0;
 GLuint shadow_fbo = 0;
-GLint saved_fb = 0;
 bool Rendering_to_shadow_map = false;
 
 int Transform_buffer_handle = -1;
@@ -226,6 +225,8 @@ int gr_opengl_create_index_buffer(bool static_buffer)
 
 uint opengl_add_to_immediate_buffer(uint size, void *data)
 {
+	GR_DEBUG_SCOPE("Add data to immediate buffer");
+
 	if ( GL_immediate_buffer_handle < 0 ) {
 		GL_immediate_buffer_handle = opengl_create_buffer_object(GL_ARRAY_BUFFER, GL_STREAM_DRAW);
 	}
@@ -266,10 +267,6 @@ void opengl_reset_immediate_buffer()
 
 int opengl_create_texture_buffer_object()
 {
-	if ( GLSL_version < 130 ) {
-		return -1;
-	}
-
 	// create the buffer
 	int buffer_object_handle = opengl_create_buffer_object(GL_TEXTURE_BUFFER, GL_DYNAMIC_DRAW);
 
@@ -344,7 +341,7 @@ void opengl_tnl_init()
 	{
 		//Setup shadow map framebuffer
 		glGenFramebuffers(1, &shadow_fbo);
-		glBindFramebuffer(GL_FRAMEBUFFER, shadow_fbo);
+		GL_state.BindFrameBuffer(shadow_fbo);
 
 		glGenTextures(1, &Shadow_map_depth_texture);
 
@@ -397,7 +394,7 @@ void opengl_tnl_init()
 		glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, Shadow_map_texture, 0);
 		//glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, Shadow_map_texture, 0);
 
-		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		GL_state.BindFrameBuffer(0);
 
 		opengl_check_for_errors("post_init_framebuffer()");
 	}
@@ -796,26 +793,14 @@ void gr_opengl_start_clip_plane()
 
 void gr_opengl_set_clip_plane(vec3d *clip_normal, vec3d *clip_point)
 {
-	if ( Current_shader != NULL && Current_shader->shader == SDR_TYPE_MODEL) {
-		return;
-	}
-
 	if ( clip_normal == NULL || clip_point == NULL ) {
-		GL_state.ClipPlane(0, GL_FALSE);
+		GL_state.ClipDistance(0, false);
 	} else {
-		GLdouble clip_equation[4];
+		Assertion(Current_shader != NULL &&
+				  (Current_shader->shader == SDR_TYPE_MODEL || Current_shader->shader == SDR_TYPE_PASSTHROUGH_RENDER),
+				  "Clip planes are not supported by this shader!");
 
-		clip_equation[0] = (GLdouble)clip_normal->xyz.x;
-		clip_equation[1] = (GLdouble)clip_normal->xyz.y;
-		clip_equation[2] = (GLdouble)clip_normal->xyz.z;
-
-		clip_equation[3] = (GLdouble)(clip_normal->xyz.x * clip_point->xyz.x)
-			+ (GLdouble)(clip_normal->xyz.y * clip_point->xyz.y)
-			+ (GLdouble)(clip_normal->xyz.z * clip_point->xyz.z);
-		clip_equation[3] *= -1.0;
-
-
-		GL_state.ClipPlane(0, GL_TRUE);
+		GL_state.ClipDistance(0, true);
 	}
 }
 
@@ -827,8 +812,8 @@ void gr_opengl_shadow_map_start(matrix4 *shadow_view_matrix, const matrix *light
 	if ( !Cmdline_shadow_quality )
 		return;
 
-	glGetIntegerv(GL_FRAMEBUFFER_BINDING, &saved_fb);
-	glBindFramebuffer(GL_FRAMEBUFFER, shadow_fbo);
+	GL_state.PushFramebufferState();
+	GL_state.BindFrameBuffer(shadow_fbo);
 
 	//glDrawBuffer(GL_COLOR_ATTACHMENT0);
 	GLenum buffers[] = { GL_COLOR_ATTACHMENT0};
@@ -854,25 +839,20 @@ void gr_opengl_shadow_map_start(matrix4 *shadow_view_matrix, const matrix *light
 
 void gr_opengl_shadow_map_end()
 {
-		if(!Rendering_to_shadow_map)
-			return;
+	if(!Rendering_to_shadow_map)
+		return;
 
-		gr_end_view_matrix();
-		Rendering_to_shadow_map = false;
+	gr_end_view_matrix();
+	Rendering_to_shadow_map = false;
 
-		gr_zbuffer_set(ZBUFFER_TYPE_FULL);
-		glBindFramebuffer(GL_FRAMEBUFFER, saved_fb);
-		if(saved_fb)
-		{
-// 			GLenum buffers[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
-// 			glDrawBuffers(2, buffers);
-		}
+	gr_zbuffer_set(ZBUFFER_TYPE_FULL);
+	GL_state.PopFramebufferState();
 
-		Glowpoint_override = Glowpoint_override_save;
-		GL_htl_projection_matrix_set = 0;
-		
-		glViewport(gr_screen.offset_x, (gr_screen.max_h - gr_screen.offset_y - gr_screen.clip_height), gr_screen.clip_width, gr_screen.clip_height);
-		glScissor(gr_screen.offset_x, (gr_screen.max_h - gr_screen.offset_y - gr_screen.clip_height), gr_screen.clip_width, gr_screen.clip_height);
+	Glowpoint_override = Glowpoint_override_save;
+	GL_htl_projection_matrix_set = 0;
+
+	glViewport(gr_screen.offset_x, (gr_screen.max_h - gr_screen.offset_y - gr_screen.clip_height), gr_screen.clip_width, gr_screen.clip_height);
+	glScissor(gr_screen.offset_x, (gr_screen.max_h - gr_screen.offset_y - gr_screen.clip_height), gr_screen.clip_width, gr_screen.clip_height);
 }
 
 void opengl_tnl_set_material(material* material_info, bool set_base_map)
@@ -884,10 +864,6 @@ void opengl_tnl_set_material(material* material_info, bool set_base_map)
 	Assert(shader_handle >= 0);
 
 	opengl_shader_set_current(shader_handle);
-
-	if ( Current_shader->shader == SDR_TYPE_PASSTHROUGH_RENDER ) {
-		opengl_shader_set_passthrough(base_map >= 0, material_info->get_texture_type() == TCACHE_TYPE_AABITMAP, &clr, material_info->get_color_scale());
-	}
 
 	GL_state.SetAlphaBlendMode(material_info->get_blend_mode());
 	GL_state.SetZbufferType(material_info->get_depth_mode());
@@ -910,10 +886,18 @@ void opengl_tnl_set_material(material* material_info, bool set_base_map)
 
 	material::clip_plane &clip_params = material_info->get_clip_plane();
 
-	if ( clip_params.enabled ) {
+	if ( material_info->is_clipped() ) {
 		gr_opengl_set_clip_plane(&clip_params.normal, &clip_params.position);
 	} else {
 		gr_opengl_set_clip_plane(NULL, NULL);
+	}
+
+	if ( Current_shader->shader == SDR_TYPE_PASSTHROUGH_RENDER ) {
+		opengl_shader_set_passthrough(base_map >= 0,
+									  material_info->get_texture_type() == TCACHE_TYPE_AABITMAP,
+									  &clr,
+									  material_info->get_color_scale(),
+									  material_info->get_clip_plane());
 	}
 
 	if ( set_base_map && base_map >= 0 ) {
@@ -959,14 +943,18 @@ void opengl_tnl_set_model_material(model_material *material_info)
 	}
 
 	if ( Current_shader->flags & SDR_FLAG_MODEL_CLIP ) {
-		bool clip = material_info->is_clipped();
-
-		if ( clip ) {
+		if (material_info->is_clipped()) {
 			material::clip_plane &clip_info = material_info->get_clip_plane();
 			
 			Current_shader->program->Uniforms.setUniformi("use_clip_plane", 1);
-			Current_shader->program->Uniforms.setUniform3f("clip_normal", clip_info.normal);
-			Current_shader->program->Uniforms.setUniform3f("clip_position", clip_info.position);
+
+			vec4 clip_equation;
+			clip_equation.xyzw.x = clip_info.normal.xyz.x;
+			clip_equation.xyzw.y = clip_info.normal.xyz.y;
+			clip_equation.xyzw.z = clip_info.normal.xyz.z;
+			clip_equation.xyzw.w = -vm_vec_dot(&clip_info.normal, &clip_info.position);
+
+			Current_shader->program->Uniforms.setUniform4f("clip_equation", clip_equation);
 		} else {
 			Current_shader->program->Uniforms.setUniformi("use_clip_plane", 0);
 		}
@@ -1036,11 +1024,7 @@ void opengl_tnl_set_model_material(model_material *material_info)
 			break;
 		}
 
-		if ( material_info->get_texture_map(TM_UNLIT_TYPE) >= 0 ) {
-			gr_opengl_tcache_set(material_info->get_texture_map(TM_UNLIT_TYPE), TCACHE_TYPE_NORMAL, &u_scale, &v_scale, render_pass);
-		} else {
-			gr_opengl_tcache_set(material_info->get_texture_map(TM_BASE_TYPE), TCACHE_TYPE_NORMAL, &u_scale, &v_scale, render_pass);
-		}
+		gr_opengl_tcache_set(material_info->get_texture_map(TM_BASE_TYPE), TCACHE_TYPE_NORMAL, &u_scale, &v_scale, render_pass);
 		
 		++render_pass;
 	}
@@ -1123,6 +1107,14 @@ void opengl_tnl_set_model_material(model_material *material_info)
 		Current_shader->program->Uniforms.setUniformi("sHeightmap", render_pass);
 
 		gr_opengl_tcache_set(material_info->get_texture_map(TM_HEIGHT_TYPE), TCACHE_TYPE_NORMAL, &u_scale, &v_scale, render_pass);
+
+		++render_pass;
+	}
+
+	if ( Current_shader->flags & SDR_FLAG_MODEL_AMBIENT_MAP ) {
+		Current_shader->program->Uniforms.setUniformi("sAmbientmap", render_pass);
+
+		gr_opengl_tcache_set(material_info->get_texture_map(TM_AMBIENT_TYPE), TCACHE_TYPE_NORMAL, &u_scale, &v_scale, render_pass);
 
 		++render_pass;
 	}

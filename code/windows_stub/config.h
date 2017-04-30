@@ -7,8 +7,11 @@
 
 #include <stdio.h>
 
+
+#include <SDL.h>
+
 #ifndef BYTE_ORDER
-#include "SDL_endian.h"
+#include <SDL_endian.h>
 #endif
 
 #ifndef BYTE_ORDER
@@ -41,9 +44,6 @@
 #else  // ! Win32
 
 
-#include "SDL.h"
-#include "SDL_thread.h"
-
 #include <unistd.h>
 #include <cmath>
 #include <cstdint>
@@ -52,19 +52,6 @@
 // don't verbose stub funtions unless we're debugging
 #define STUB_FUNCTION nprintf(( "Warning", "STUB: %s in " __FILE__ " at line %d, thread %d\n", __FUNCTION__, __LINE__, getpid() ))
 #define DEBUGME(d1) nprintf(( "Warning", "DEBUGME: %s in " __FILE__ " at line %d, msg \"%s\", thread %d\n", __FUNCTION__, __LINE__, d1, getpid() ))
-
-
-// Standard data types
-typedef std::int32_t BOOL;
-typedef std::uint16_t WORD;
-typedef std::uint32_t UINT;
-typedef std::uint32_t DWORD;
-typedef std::uint32_t FOURCC;
-typedef std::uint32_t *PDWORD, *LPDWORD;
-
-typedef struct _LARGE_INTEGER {
-	std::int64_t QuadPart;
-} LARGE_INTEGER;
 
 // networking/socket stuff
 #define SOCKET			int
@@ -90,36 +77,6 @@ typedef struct _LARGE_INTEGER {
 #define INVALID_SOCKET ((SOCKET) -1)
 #endif
 
-// sound defines/structs
-#define WAVE_FORMAT_PCM		1
-#define WAVE_FORMAT_ADPCM		2
-#define WAVE_FORMAT_IEEE_FLOAT	3
-
-#pragma pack(1) // required to get proper values in ds_parse_wave()
-typedef struct {
-	WORD wFormatTag;
-	WORD nChannels;
-	DWORD nSamplesPerSec;
-	DWORD nAvgBytesPerSec;
-	WORD nBlockAlign;
-} WAVEFORMAT;
-
-typedef struct {
-	WAVEFORMAT wf;
-	WORD wBitsPerSample;
-} PCMWAVEFORMAT;
-
-typedef struct {
-	WORD  wFormatTag;
-	WORD  nChannels;
-	DWORD nSamplesPerSec;
-	DWORD nAvgBytesPerSec;
-	WORD  nBlockAlign;
-	WORD  wBitsPerSample;
-	WORD  cbSize;
-} WAVEFORMATEX;
-#pragma pack()
-
 // file related items
 #define _MAX_FNAME					255
 #define _MAX_PATH					255
@@ -132,24 +89,10 @@ int _getcwd(char *buffer, unsigned int len);
 int _mkdir(const char *path);
 void _splitpath(char *path, char *drive, char *dir, char *fname, char *ext);
 
-// string related
-#define stricmp(s1, s2)			strcasecmp((s1), (s2))
-#define strnicmp(s1, s2, n)		strncasecmp((s1), (s2), (n))
-#define _strnicmp(s1, s2, n)	strncasecmp((s1), (s2), (n))
-#define _strlwr(s)				strlwr(s)
-
-void strlwr(char *s);
-char *strnset( char *string, int fill, size_t count);
-
 // other stuff
-#define _isnan(f)     std::isnan(f)
 #define _hypot(x, y)  hypot(x, y)
 
 int MulDiv(int number, int numerator, int denominator);
-
-struct POINT {
-	int x, y;
-};
 
 #endif  // if !defined (WINDOWS)
 

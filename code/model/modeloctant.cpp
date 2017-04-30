@@ -18,6 +18,7 @@
 #include "math/vecmat.h"
 #include "model/model.h"
 #include "model/modelsinc.h"
+#include "tracing/tracing.h"
 
 // returns 1 if a point is in an octant.
 int point_in_octant( polymodel * pm, model_octant * oct, vec3d *vert )
@@ -311,6 +312,8 @@ void model_octant_find_faces( polymodel * pm, model_octant * oct )
 // Creates the octants for a given polygon model
 void model_octant_create( polymodel * pm )
 {
+	TRACE_SCOPE(tracing::ModelCreateOctants);
+
 	vec3d min, max, center;
 	int i, x, y, z;
 

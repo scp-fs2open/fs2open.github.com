@@ -39,8 +39,8 @@ set(WARNING_FLAGS
 target_compile_options(compiler INTERFACE ${WARNING_FLAGS})
 
 # Base
-set(CMAKE_C_FLAGS "/MP /GS- /analyze- /Zc:wchar_t /errorReport:prompt /WX- /Zc:forScope /Gd /EHsc /nologo")
-set(CMAKE_CXX_FLAGS "/MP /GS- /analyze- /Zc:wchar_t /errorReport:prompt /WX- /Zc:forScope /Gd /EHsc /nologo")
+set(CMAKE_C_FLAGS "/MP /GS- /analyze- /Zc:wchar_t /errorReport:prompt /WX- /Zc:forScope /Gd /EHsc /nologo /Zm200")
+set(CMAKE_CXX_FLAGS "/MP /GS- /analyze- /Zc:wchar_t /errorReport:prompt /WX- /Zc:forScope /Gd /EHsc /nologo /Zm200")
 
 set(CMAKE_EXE_LINKER_FLAGS "/MANIFEST /DYNAMICBASE:NO /SAFESEH:NO /ERRORREPORT:PROMPT /NOLOGO")
 set(CMAKE_STATIC_LINKER_FLAGS "")
@@ -134,7 +134,7 @@ else()
 endif()
 
 target_compile_definitions(compiler INTERFACE _CRT_SECURE_NO_DEPRECATE
-	_CRT_SECURE_NO_WARNINGS _SECURE_SCL=0 NOMINMAX)
+_CRT_SECURE_NO_WARNINGS _SECURE_SCL=0 NOMINMAX "$<$<CONFIG:FastDebug>:_ITERATOR_DEBUG_LEVEL=0>")
 	
 if (FSO_FATAL_WARNINGS)
 	# Make warnings fatal if the right variable is set

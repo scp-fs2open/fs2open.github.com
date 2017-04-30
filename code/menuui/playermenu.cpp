@@ -63,11 +63,11 @@ int Choose_list_coords[GR_NUM_RESOLUTIONS][4] = {
 	}
 };
 
-char *Player_select_background_bitmap_name[GR_NUM_RESOLUTIONS] = {
+const char *Player_select_background_bitmap_name[GR_NUM_RESOLUTIONS] = {
 	"ChoosePilot",
 	"2_ChoosePilot"
 };
-char *Player_select_background_mask_bitmap[GR_NUM_RESOLUTIONS] = {
+const char *Player_select_background_mask_bitmap[GR_NUM_RESOLUTIONS] = {
 	"ChoosePilot-m",
 	"2_ChoosePilot-m"
 };
@@ -77,12 +77,12 @@ char *Player_select_background_mask_bitmap[GR_NUM_RESOLUTIONS] = {
 
 // convenient struct for handling all button controls
 struct barracks_buttons {
-	char *filename;
+	const char *filename;
 	int x, y, xt, yt;
 	int hotspot;
 	UI_BUTTON button;  // because we have a class inside this struct, we need the constructor below..
 
-	barracks_buttons(char *name, int x1, int y1, int xt1, int yt1, int h) : filename(name), x(x1), y(y1), xt(xt1), yt(yt1), hotspot(h) {}
+	barracks_buttons(const char *name, int x1, int y1, int xt1, int yt1, int h) : filename(name), x(x1), y(y1), xt(xt1), yt(yt1), hotspot(h) {}
 };
 
 static barracks_buttons Player_select_buttons[GR_NUM_RESOLUTIONS][NUM_PLAYER_SELECT_BUTTONS] = {
@@ -949,7 +949,7 @@ void player_select_draw_list()
 			gr_set_color_fast(&Color_text_normal);
 		}
 		// draw the actual callsign
-		gr_printf_menu(Choose_list_coords[gr_screen.res][0], Choose_list_coords[gr_screen.res][1] + (idx * gr_get_font_height()), Pilots[idx + Player_select_list_start]);
+		gr_printf_menu(Choose_list_coords[gr_screen.res][0], Choose_list_coords[gr_screen.res][1] + (idx * gr_get_font_height()), "%s", Pilots[idx + Player_select_list_start]);
 	}
 }
 
@@ -1152,7 +1152,7 @@ void player_select_display_all_text()
 
 		w = (gr_screen.max_w_unscaled - w) / 2;
 		gr_set_color_fast(&Color_bright_white);
-		gr_printf_menu(w, Player_select_bottom_text_y[gr_screen.res], Player_select_bottom_text);
+		gr_printf_menu(w, Player_select_bottom_text_y[gr_screen.res], "%s", Player_select_bottom_text);
 	}
 
 	// only draw if we actually have a valid string
@@ -1161,7 +1161,7 @@ void player_select_display_all_text()
 
 		w = (gr_screen.max_w_unscaled - w) / 2;
 		gr_set_color_fast(&Color_bright_white);
-		gr_printf_menu(w, Player_select_middle_text_y[gr_screen.res], Player_select_middle_text);
+		gr_printf_menu(w, Player_select_middle_text_y[gr_screen.res], "%s", Player_select_middle_text);
 	}
 }
 
@@ -1275,7 +1275,7 @@ DCF(bastion,"Sets the player to be on the bastion (or any other main hall)")
 
 		} else {
 			main_hall_get_name(Player_select_force_main_hall, idx);
-			dc_printf("Player is now on main hall '%d'\n", Player_select_force_main_hall.c_str());
+			dc_printf("Player is now on main hall '%s'\n", Player_select_force_main_hall.c_str());
 		}
 	
 	} else {

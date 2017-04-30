@@ -129,7 +129,6 @@
 #include "osapi/osregistry.h"
 #include "parse/encrypt.h"
 #include "parse/generic_log.h"
-#include "scripting/lua.h"
 #include "parse/parselo.h"
 #include "scripting/scripting.h"
 #include "parse/sexp.h"
@@ -166,6 +165,7 @@
 #include "weapon/muzzleflash.h"
 #include "weapon/shockwave.h"
 #include "weapon/weapon.h"
+#include "tracing/Monitor.h"
 
 #include "SDLGraphicsOperations.h"
 
@@ -208,11 +208,9 @@ extern "C" {
 //  This function is defined in code\network\multiutil.cpp so will be linked from multiutil.obj
 //  it's required fro the -missioncrcs command line option - Kazan
 void multi_spew_pxo_checksums(int max_files, const char *outfile);
-void fs2netd_spew_table_checksums(char *outfile);
+void fs2netd_spew_table_checksums(const char *outfile);
 
 extern bool frame_rate_display;
-
-bool Env_cubemap_drawn = false;
 
 void game_reset_view_clip();
 void game_reset_shade_frame();
@@ -350,8 +348,6 @@ int Player_died_popup_wait = -1;
 
 int Multi_ping_timestamp = -1;
 
-int Default_env_map = -1;
-
 // builtin mission list stuff
 int Game_builtin_mission_count = 92;
 fs_builtin_mission Game_builtin_mission_list[MAX_BUILTIN_MISSIONS] = {
@@ -483,23 +479,23 @@ void game_title_screen_display();
 void game_title_screen_close();
 
 // loading background filenames
-static char *Game_loading_bground_fname[GR_NUM_RESOLUTIONS] = {
+static const char *Game_loading_bground_fname[GR_NUM_RESOLUTIONS] = {
 	"LoadingBG",		// GR_640
 	"2_LoadingBG"		// GR_1024
 };
 
 
-static char *Game_loading_ani_fname[GR_NUM_RESOLUTIONS] = {
+static const char *Game_loading_ani_fname[GR_NUM_RESOLUTIONS] = {
 	"Loading",		// GR_640
 	"2_Loading"		// GR_1024
 };
 
-static char *Game_title_screen_fname[GR_NUM_RESOLUTIONS] = {
+static const char *Game_title_screen_fname[GR_NUM_RESOLUTIONS] = {
 	"PreLoad",
 	"2_PreLoad"
 };
 
-static char *Game_logo_screen_fname[GR_NUM_RESOLUTIONS] = {
+static const char *Game_logo_screen_fname[GR_NUM_RESOLUTIONS] = {
 	"PreLoadLogo",
 	"2_PreLoadLogo"
 };
@@ -507,10 +503,6 @@ static char *Game_logo_screen_fname[GR_NUM_RESOLUTIONS] = {
 // for title screens
 static int Game_title_bitmap = -1;
 static int Game_title_logo = -1;
-
-// cdrom stuff
-char Game_CDROM_dir[MAX_PATH_LEN];
-int init_cdrom();
 
 // How much RAM is on this machine. Set in WinMain
 uint64_t FreeSpace_total_ram = 0;
@@ -531,8 +523,6 @@ float Game_shudder_intensity = 0.0f;			// should be between 0.0 and 100.0
 sound_env Game_sound_env;
 sound_env Game_default_sound_env = { EAX_ENVIRONMENT_BATHROOM, 0.2f, 0.2f, 1.0f };
 int Game_sound_env_update_timestamp;
-
-static std::unique_ptr<SDLGraphicsOperations> sdlGraphicsOperations;
 
 fs_builtin_mission *game_find_builtin_mission(char *filename)
 {
@@ -930,15 +920,9 @@ void game_level_close()
 		audiostream_unpause_all();
 		Game_paused = 0;
 
-		if (gr_screen.envmap_render_target >= 0) {
-			if ( bm_release(gr_screen.envmap_render_target, 1) ) {
-				gr_screen.envmap_render_target = -1;
-			}
-		}
-
 		gr_set_ambient_light(120, 120, 120);
 
-		ENVMAP = Default_env_map;
+		stars_level_close();
 	}
 	else
 	{
@@ -1059,8 +1043,6 @@ void game_level_init()
 
 	// campaign wasn't ended
 	Campaign_ending_via_supernova = 0;
-
-	Env_cubemap_drawn = false;
 
 	load_gl_init = (uint) (time(NULL) - load_gl_init);
 
@@ -1290,17 +1272,21 @@ void freespace_mission_load_stuff()
 		game_busy( NOX("** unloading interface sounds **") );
 		gamesnd_unload_interface_sounds();		// unload interface sounds from memory
 
-		game_busy( NOX("** preloading common game sounds **") );
-		gamesnd_preload_common_sounds();			// load in sounds that are expected to play
+		{
+			TRACE_SCOPE(tracing::PreloadMissionSounds);
 
-		if (Cmdline_snd_preload) {
-			game_busy( NOX("** preloading gameplay sounds **") );
-			gamesnd_load_gameplay_sounds();			// preload in gameplay sounds if wanted
+			game_busy( NOX("** preloading common game sounds **") );
+			gamesnd_preload_common_sounds();			// load in sounds that are expected to play
+
+			if (Cmdline_snd_preload) {
+				game_busy( NOX("** preloading gameplay sounds **") );
+				gamesnd_load_gameplay_sounds();			// preload in gameplay sounds if wanted
+			}
+
+			game_busy( NOX("** assigning sound environment for mission **") );
+			ship_assign_sound_all();	// assign engine sounds to ships
+			game_assign_sound_environment();	 // assign the sound environment for this mission
 		}
-
-		game_busy( NOX("** assigning sound environment for mission **") );
-		ship_assign_sound_all();	// assign engine sounds to ships
-		game_assign_sound_environment();	 // assign the sound environment for this mission
 
 		obj_merge_created_list();
 
@@ -1335,8 +1321,7 @@ void freespace_mission_load_stuff()
  */
 void game_post_level_init()
 {
-	extern void game_environment_map_gen();
-	game_environment_map_gen();
+	TRACE_SCOPE(tracing::LoadPostMissionLoad);
 
 	HUD_init();
 	hud_setup_escort_list();
@@ -1704,11 +1689,7 @@ void game_init()
 	}
 
 #ifndef NDEBUG
-	#if FS_VERSION_HAS_REVIS == 0
-		mprintf(("FreeSpace 2 Open version: %i.%i.%i\n", FS_VERSION_MAJOR, FS_VERSION_MINOR, FS_VERSION_BUILD));
-	#else
-		mprintf(("FreeSpace 2 Open version: %i.%i.%i.%i\n", FS_VERSION_MAJOR, FS_VERSION_MINOR, FS_VERSION_BUILD, FS_VERSION_REVIS));
-	#endif
+	mprintf(("FreeSpace 2 Open version: %s\n", FS_VERSION_FULL));
 
 	extern void cmdline_debug_print_cmdline();
 	cmdline_debug_print_cmdline();
@@ -1721,11 +1702,10 @@ void game_init()
 	strcat_s(whee, DIR_SEPARATOR_STR);
 	strcat_s(whee, EXE_FNAME);
 
-	profile_init();
 	//Initialize the libraries
 	s1 = timer_get_milliseconds();
 
-	if ( cfile_init(whee, strlen(Game_CDROM_dir) ? Game_CDROM_dir : NULL) ) {			// initialize before calling any cfopen stuff!!!
+	if ( cfile_init(whee, NULL) ) {			// initialize before calling any cfopen stuff!!!
 		exit(1);
 	}
 
@@ -1801,15 +1781,25 @@ void game_init()
 // SOUND INIT END
 /////////////////////////////
 
+	std::unique_ptr<SDLGraphicsOperations> sdlGraphicsOperations;
 	if (!Is_standalone) {
 		// Standalone mode doesn't require graphics operations
 		sdlGraphicsOperations.reset(new SDLGraphicsOperations());
 	}
-	if ( gr_init(sdlGraphicsOperations.get()) == false ) {
+	if ( gr_init(std::move(sdlGraphicsOperations)) == false ) {
 		os::dialogs::Message(os::dialogs::MESSAGEBOX_ERROR, "Error intializing graphics!");
 		exit(1);
 		return;
 	}
+
+#ifndef NDEBUG
+	if (Cmdline_debug_window) {
+		outwnd_debug_window_init();
+	}
+#endif
+
+	// This needs to happen after graphics initialization
+	tracing::init();
 
 // Karajorma - Moved here from the sound init code cause otherwise windows complains
 #ifdef FS2_VOICER
@@ -1899,10 +1889,7 @@ void game_init()
 	//as long as it's not being used.
 	//Otherwise, it just keeps the parsed interface.tbl in memory.
 	GUI_system.ParseClassInfo("interface.tbl");
-
-	// load non-darkening pixel defs
-	palman_load_pixels();
-
+	
 	particle::ParticleManager::init();
 
 	iff_init();						// Goober5000 - this must be done even before species_defs :p
@@ -1990,14 +1977,9 @@ void game_init()
 		main_hall_table_init();
 	}
 
-	if (Cmdline_env) {
-		ENVMAP = Default_env_map = bm_load("cubemap");
-	}
-
 	Viewer_mode = 0;
 	Game_paused = 0;
 
-	Script_system.RunBytecode(Script_gameinithook);
 	Script_system.RunCondition(CHA_GAMEINIT);
 
 	game_title_screen_close();
@@ -2010,8 +1992,8 @@ void game_init()
 	nprintf(("General", "Ships.tbl is : %s\n", Game_ships_tbl_valid ? "VALID" : "INVALID!!!!"));
 	nprintf(("General", "Weapons.tbl is : %s\n", Game_weapons_tbl_valid ? "VALID" : "INVALID!!!!"));
 
-	mprintf(("cfile_init() took %d\n", e1 - s1));	
-	Script_system.RunBytecode(Script_gameinithook);
+	mprintf(("cfile_init() took %d\n", e1 - s1));
+
 	// if we are done initializing, start showing the cursor
 	io::mouse::CursorManager::get()->showCursor(true);
 
@@ -2103,11 +2085,12 @@ void game_show_framerate()
 #endif
 
 
-	if (Show_framerate || Cmdline_frame_profile)	{
+	if (Show_framerate || Cmdline_frame_profile) {
 		gr_set_color_fast(&HUD_color_debug);
 
 		if (Cmdline_frame_profile) {
-			gr_string(gr_screen.center_offset_x + 20, gr_screen.center_offset_y + 100 + line_height, profile_output.c_str(), GR_RESIZE_NONE);
+			gr_string(gr_screen.center_offset_x + 20, gr_screen.center_offset_y + 100 + line_height,
+					  tracing::get_frame_profile_output().c_str(), GR_RESIZE_NONE);
 		}
 
 		if (Show_framerate) {
@@ -2904,11 +2887,11 @@ void say_view_target()
 			color col;
 			gr_init_color(&col, 0, 255, 0);
 			if((Game_mode & GM_MULTIPLAYER) && (Net_player->flags & NETINFO_FLAG_OBSERVER) && (Player_obj->type == OBJ_OBSERVER)){
-				HUD_fixed_printf(2.0f, col, XSTR( "Viewing from observer\n", 187));
+				HUD_fixed_printf(2.0f, col, "%s", XSTR( "Viewing from observer\n", 187));
 				Show_viewing_from_self = 1;
 			} else {
 				if (Show_viewing_from_self)
-					HUD_fixed_printf(2.0f, col, XSTR( "Viewing from self\n", 188));
+					HUD_fixed_printf(2.0f, col, "%s", XSTR( "Viewing from self\n", 188));
 			}
 		}
 	}
@@ -3030,166 +3013,6 @@ void apply_view_shake(matrix *eye_orient)
 
 //	Player's velocity just before he blew up.  Used to keep camera target moving.
 vec3d	Dead_player_last_vel = { { { 1.0f, 1.0f, 1.0f } } };
-
-extern float View_zoom;
-inline void render_environment(int i, vec3d *eye_pos, matrix *new_orient, float new_zoom)
-{
-	bm_set_render_target(gr_screen.envmap_render_target, i);
-
-	gr_clear();
-
-	g3_set_view_matrix( eye_pos, new_orient, new_zoom );
-
-	gr_set_proj_matrix( PI_2 * new_zoom, 1.0f, Min_draw_distance, Max_draw_distance);
-	gr_set_view_matrix( &Eye_position, &Eye_matrix );
-
-	if ( Game_subspace_effect ) {
-		stars_draw(0, 0, 0, 1, 1);
-	} else {
-		stars_draw(0, 1, 1, 0, 1);
-	}
-
-	gr_end_view_matrix();
-	gr_end_proj_matrix();
-}
-
-void setup_environment_mapping(camid cid)
-{
-	matrix new_orient = IDENTITY_MATRIX;
-	float old_zoom = View_zoom, new_zoom = 1.0f;//0.925f;
-	int i = 0;
-
-	if(!cid.isValid())
-		return;
-
-	vec3d cam_pos;
-	matrix cam_orient;
-	cid.getCamera()->get_info(&cam_pos, &cam_orient);
-
-	// prefer the mission specified envmap over the static-generated envmap, but
-	// the dynamic envmap should always get preference if in a subspace mission
-	if ( !Dynamic_environment && strlen(The_mission.envmap_name) ) {
-		ENVMAP = bm_load(The_mission.envmap_name);
-
-		if (ENVMAP >= 0)
-			return;
-	}
-
-	if (gr_screen.envmap_render_target < 0) {
-		if (ENVMAP >= 0)
-			return;
-
-		if (strlen(The_mission.envmap_name)) {
-			ENVMAP = bm_load(The_mission.envmap_name);
-
-			if (ENVMAP < 0)
-				ENVMAP = Default_env_map;
-		} else {
-			ENVMAP = Default_env_map;
-		}
-
-		return;
-	}
-
-	ENVMAP = gr_screen.envmap_render_target;
-
-/*
-	Envmap matrix setup -- left-handed
-	-------------------------------------------------
-	Face --	Forward		Up		Right
-	px		+X			+Y		-Z
-	nx		-X			+Y		+Z
-	py		+Y			-Z		+X
-	ny		-Y			+Z		+X
-	pz		+Z 			+Y		+X
-	nz		-Z			+Y		-X
-*/
-
-	// NOTE: OpenGL needs up/down reversed
-
-	// face 1 (px / right)
-	memset( &new_orient, 0, sizeof(matrix) );
-	new_orient.vec.fvec.xyz.x =  1.0f;
-	new_orient.vec.uvec.xyz.y =  1.0f;
-	new_orient.vec.rvec.xyz.z = -1.0f;
-	render_environment(i, &cam_pos, &new_orient, new_zoom);
-	i++; // bump!
-
-	// face 2 (nx / left)
-	memset( &new_orient, 0, sizeof(matrix) );
-	new_orient.vec.fvec.xyz.x = -1.0f;
-	new_orient.vec.uvec.xyz.y =  1.0f;
-	new_orient.vec.rvec.xyz.z =  1.0f;
-	render_environment(i, &cam_pos, &new_orient, new_zoom);
-	i++; // bump!
-
-	// face 3 (py / up)
-	memset( &new_orient, 0, sizeof(matrix) );
-	new_orient.vec.fvec.xyz.y =  (gr_screen.mode == GR_OPENGL) ?  1.0f : -1.0f;
-	new_orient.vec.uvec.xyz.z =  (gr_screen.mode == GR_OPENGL) ? -1.0f :  1.0f;
-	new_orient.vec.rvec.xyz.x =  1.0f;
-	render_environment(i, &cam_pos, &new_orient, new_zoom);
-	i++; // bump!
-
-	// face 4 (ny / down)
-	memset( &new_orient, 0, sizeof(matrix) );
-	new_orient.vec.fvec.xyz.y =  (gr_screen.mode == GR_OPENGL) ? -1.0f :  1.0f;
-	new_orient.vec.uvec.xyz.z =  (gr_screen.mode == GR_OPENGL) ?  1.0f : -1.0f;
-	new_orient.vec.rvec.xyz.x =  1.0f;
-	render_environment(i, &cam_pos, &new_orient, new_zoom);
-	i++; // bump!
-
-	// face 5 (pz / forward)
-	memset( &new_orient, 0, sizeof(matrix) );
-	new_orient.vec.fvec.xyz.z =  1.0f;
-	new_orient.vec.uvec.xyz.y =  1.0f;
-	new_orient.vec.rvec.xyz.x =  1.0f;
-	render_environment(i, &cam_pos, &new_orient, new_zoom);
-	i++; // bump!
-
-	// face 6 (nz / back)
-	memset( &new_orient, 0, sizeof(matrix) );
-	new_orient.vec.fvec.xyz.z = -1.0f;
-	new_orient.vec.uvec.xyz.y =  1.0f;
-	new_orient.vec.rvec.xyz.x = -1.0f;
-	render_environment(i, &cam_pos, &new_orient, new_zoom);
-
-
-	// we're done, so now reset
-	bm_set_render_target(-1);
-	g3_set_view_matrix( &cam_pos, &cam_orient, old_zoom );
-}
-
-// setup the render target ready for this mission's environment map
-void game_environment_map_gen()
-{
-	const int size = 512;
-	int gen_flags = (BMP_FLAG_RENDER_TARGET_STATIC | BMP_FLAG_CUBEMAP | BMP_FLAG_RENDER_TARGET_MIPMAP);
-
-	if ( !Cmdline_env ) {
-		return;
-	}
-
-	if (gr_screen.envmap_render_target >= 0) {
-		if ( !bm_release(gr_screen.envmap_render_target, 1) ) {
-			Warning(LOCATION, "Unable to release environment map render target.");
-		}
-
-		gr_screen.envmap_render_target = -1;
-	}
-
-	if ( Dynamic_environment || (The_mission.flags[Mission::Mission_Flags::Subspace]) ) {
-		Dynamic_environment = true;
-		gen_flags &= ~BMP_FLAG_RENDER_TARGET_STATIC;
-		gen_flags |= BMP_FLAG_RENDER_TARGET_DYNAMIC;
-	}
-	// bail if we are going to be static, and have an envmap specified already
-	else if ( strlen(The_mission.envmap_name) ) {
-		return;
-	}
-
-	gr_screen.envmap_render_target = bm_make_render_target(size, size, gen_flags);
-}
 
 int Scripting_didnt_draw_hud = 1;
 
@@ -3535,6 +3358,8 @@ extern SCP_vector<object*> transparent_objects;
 void game_render_frame( camid cid )
 {
 	GR_DEBUG_SCOPE("Main Frame");
+	TRACE_SCOPE(tracing::RenderMainFrame);
+
 	g3_start_frame(game_zbuffer);
 
 	camera *cam = cid.getCamera();
@@ -3577,16 +3402,8 @@ void game_render_frame( camid cid )
 	}
 
 	// this needs to happen after g3_start_frame() and before the primary projection and view matrix is setup
-	// Note: environment mapping gets disabled when rendering to texture; if you change
-	// this, make sure that the current render target gets restored right afterwards!
-	if ( Cmdline_env && !Env_cubemap_drawn && gr_screen.rendering_to_texture == -1 ) {
-		GR_DEBUG_SCOPE("Environment Mapping");
-
-		PROFILE("Environment Mapping", setup_environment_mapping(cid));
-
-		if ( !Dynamic_environment ) {
-			Env_cubemap_drawn = true;
-		}
+	if ( Cmdline_env ) {
+		stars_setup_environment_mapping(cid);
 	}
 	gr_zbuffer_clear(TRUE);
 
@@ -3605,13 +3422,13 @@ void game_render_frame( camid cid )
 		stars_draw(1,1,1,0,0);
 	}
 
-	PROFILE("Build Shadow Map", shadows_render_all(Proj_fov, &Eye_matrix, &Eye_position));
-	PROFILE("Render Scene", obj_render_queue_all());
+	shadows_render_all(Proj_fov, &Eye_matrix, &Eye_position);
+	obj_render_queue_all();
 
 	render_shields();
 
-	PROFILE("Trails", trail_render_all());						// render missilie trails after everything else.
-	PROFILE("Particles", particle::render_all());					// render particles after everything else.	
+	trail_render_all();						// render missilie trails after everything else.
+	particle::render_all();					// render particles after everything else.
 	
 #ifdef DYN_CLIP_DIST
 	gr_end_proj_matrix();
@@ -3653,6 +3470,7 @@ void game_render_frame( camid cid )
 	{
 		gr_post_process_save_zbuffer();
 		ship_render_show_ship_cockpit(Viewer_obj);
+		gr_post_process_restore_zbuffer();
 	}
 
 
@@ -3672,6 +3490,7 @@ void game_render_frame( camid cid )
 
 		gr_post_process_save_zbuffer();
 		ship_render_cockpit(Viewer_obj);
+		gr_post_process_restore_zbuffer();
 	}
 
 	gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
@@ -3747,7 +3566,10 @@ extern int Player_dead_state;
 
 //	Flip the page and time how long it took.
 void game_flip_page_and_time_it()
-{	
+{
+	tracing::async::end(tracing::MainFrame, tracing::MainFrameScope);
+	tracing::async::begin(tracing::MainFrame, tracing::MainFrameScope);
+
 	fix t1, t2,d;
 	int t;
 	t1 = timer_get_fixed_seconds();
@@ -3760,6 +3582,8 @@ void game_flip_page_and_time_it()
 
 void game_simulation_frame()
 {
+	TRACE_SCOPE(tracing::Simulation);
+
 	//Do camera stuff
 	//This is for the warpout cam
 	if ( Player->control_mode != PCM_NORMAL )
@@ -3870,7 +3694,7 @@ void game_simulation_frame()
 		}
 		
 		// move all the objects now
-		PROFILE("Move Objects - Master", obj_move_all(flFrametime));
+		obj_move_all(flFrametime);
 
 		mission_eval_goals();
 	}
@@ -3889,7 +3713,7 @@ void game_simulation_frame()
 		}
 
 		// move all objects - does interpolation now as well
-		PROFILE("Move Objects - Client", obj_move_all(flFrametime));
+		obj_move_all(flFrametime);
 
 
 	}
@@ -3912,11 +3736,11 @@ void game_simulation_frame()
 
 		if (!physics_paused)	{
 			// Move particle system
-			PROFILE("Move Particles", particle::move_all(flFrametime));
-			PROFILE("Process Particle Effects", particle::ParticleManager::get()->doFrame(flFrametime));
+			particle::move_all(flFrametime);
+			particle::ParticleManager::get()->doFrame(flFrametime);
 
 			// Move missile trails
-			PROFILE("Move Trails", trail_move_all(flFrametime));		
+			trail_move_all(flFrametime);
 
 			// Flash the gun flashes
 			shipfx_flash_do_frame(flFrametime);			
@@ -3940,7 +3764,7 @@ void game_simulation_frame()
 #endif
 	}
 
-	Script_system.RunBytecode(Script_simulationhook);
+	Script_system.RunCondition(CHA_SIMULATION);
 }
 
 // Maybe render and process the dead-popup
@@ -4204,7 +4028,12 @@ void game_frame(bool paused)
 	}
 #endif
 	// start timing frame
-	profile_begin("Main Frame");
+	TRACE_SCOPE(tracing::MainFrame);
+
+	if(Player_obj)
+		Script_system.SetHookObject("Player", Player_obj);
+	else
+		Script_system.RemHookVar("Player");
 
 	DEBUG_GET_TIME( total_time1 )
 
@@ -4263,7 +4092,7 @@ void game_frame(bool paused)
 			return;
 		}
 		
-		PROFILE("Simulation", game_simulation_frame()); 
+		game_simulation_frame();
 		
 		// if not actually in a game play state, then return.  This condition could only be true in 
 		// a multiplayer game.
@@ -4283,17 +4112,12 @@ void game_frame(bool paused)
 				gr_clear();
 			}
 
-			if(Player_obj)
-				Script_system.SetHookObject("Player", Player_obj);
-			else
-				Script_system.RemHookVar("Player");
-
 			DEBUG_GET_TIME( clear_time2 )
 			DEBUG_GET_TIME( render3_time1 )
 			
 			camid cid = game_render_frame_setup();
 
-			PROFILE("Render", game_render_frame( cid ));
+			game_render_frame( cid );
 			
 			//Cutscene bars
 			clip_frame_view();
@@ -4305,9 +4129,9 @@ void game_frame(bool paused)
 
 			Scripting_didnt_draw_hud = 1;
 			Script_system.SetHookObject("Self", Viewer_obj);
-			if(Script_system.IsOverride(Script_hudhook) || Script_system.IsConditionOverride(CHA_HUDDRAW, Viewer_obj))
+			if(Script_system.IsConditionOverride(CHA_HUDDRAW, Viewer_obj)) {
 				Scripting_didnt_draw_hud = 0;
-			Script_system.RemHookVar("Self");
+			}
 
 			if(Scripting_didnt_draw_hud) {
 				GR_DEBUG_SCOPE("Render HUD");
@@ -4320,10 +4144,8 @@ void game_frame(bool paused)
 				anim_render_all(0, flFrametime);
 			}
 
-			Script_system.SetHookObject("Self", Viewer_obj);
 			if (!(Viewer_mode & (VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY))) 
 			{
-				Script_system.RunBytecode(Script_hudhook);
 				Script_system.RunCondition(CHA_HUDDRAW, '\0', NULL, Viewer_obj);
 			}
 			Script_system.RemHookVar("Self");
@@ -4374,7 +4196,7 @@ void game_frame(bool paused)
 			// If a regular popup is active, don't flip (popup code flips)
 			if( !popup_running_state() ){
 				DEBUG_GET_TIME( flip_time1 )
-				PROFILE("Page Flip", game_flip_page_and_time_it());
+				game_flip_page_and_time_it();
 				DEBUG_GET_TIME( flip_time2 )
 			}
 
@@ -4389,9 +4211,9 @@ void game_frame(bool paused)
 	// process lightning (nebula only)
 	nebl_process();
 
-	profile_end("Main Frame");
-	profile_dump_output();
-	profile_dump_json_output();
+	if (Cmdline_frame_profile) {
+		tracing::frame_profile_process_frame();
+	}
 
 	DEBUG_GET_TIME( total_time2 )
 
@@ -4673,8 +4495,6 @@ void game_do_frame()
 	last_single_step = game_single_step;
 
 	game_frame();
-
-	monitor_update();			// Update monitor variables
 }
 
 void multi_maybe_do_frame()
@@ -5492,6 +5312,8 @@ void game_leave_state( int old_state, int new_state )
 			break;
 
 		case GS_STATE_GAME_PLAY:
+			tracing::async::end(tracing::MainFrame, tracing::MainFrameScope);
+
 			if ( !(Game_mode & GM_STANDALONE_SERVER) ) {
 				player_save_target_and_weapon_link_prefs();
 				game_stop_looped_sounds();
@@ -6072,6 +5894,8 @@ void mouse_force_pos(int x, int y);
 			memset(&Multi_ship_status_bi, 0, sizeof(button_info));
 			
 			io::mouse::CursorManager::get()->showCursor(false, true);
+
+			tracing::async::begin(tracing::MainFrame, tracing::MainFrameScope);
 			break;
 
 		case GS_STATE_HUD_CONFIG:
@@ -6600,6 +6424,13 @@ void game_do_state(int state)
 			break;
 
    } // end switch(gs_current_state)
+
+#ifndef NDEBUG
+	if (Cmdline_debug_window) {
+		// Do a frame for the debug window here since this code is always executed
+		outwnd_debug_window_do_frame(flFrametime);
+	}
+#endif
 }
 
 
@@ -6780,11 +6611,8 @@ void game_spew_pof_info()
 				}				
 				cfputs("------------------------------------------------------------------------\n\n", out);				
 			}
-		}
-
-		if(counted >= MAX_POLYGON_MODELS - 5){
-			model_free_all();
-			counted = 0;
+			// Free memory of this model again
+			model_unload(model_num);
 		}
 	}
 
@@ -6850,8 +6678,6 @@ int game_main(int argc, char *argv[])
 		nprintf(("Network", "Standalone running\n"));
 	}
 
-	init_cdrom();
-
 	game_init();
 
 	if (!headtracking::init())
@@ -6911,6 +6737,9 @@ int game_main(int argc, char *argv[])
 		if ( state == GS_STATE_QUIT_GAME ) {
 			break;
 		}
+
+		// Since tracing is always active this needs to happen in the main loop
+		tracing::process_events();
 	} 
 
 	game_shutdown();
@@ -6963,8 +6792,6 @@ void game_launch_launcher_on_exit()
 void game_shutdown(void)
 {
 	headtracking::shutdown();
-
-	profile_deinit();
 
 	fsspeech_deinit();
 #ifdef FS2_VOICER
@@ -7039,8 +6866,14 @@ void game_shutdown(void)
 	model_free_all();
 	bm_unload_all();			// unload/free bitmaps, has to be called *after* model_free_all()!
 
-	gr_close(sdlGraphicsOperations.get());
-	sdlGraphicsOperations.reset();
+	tracing::shutdown();
+
+#ifndef NDEBUG
+	outwnd_debug_window_deinit();
+#endif
+
+	gr_close();
+
 	os_cleanup();
 
 	cfile_close();
@@ -7288,7 +7121,7 @@ void game_show_event_debug(float frametime)
 			}
 		}
 
-		gr_printf_no_resize(gr_screen.center_offset_x + 10, y_index, buf);
+		gr_printf_no_resize(gr_screen.center_offset_x + 10, y_index, "%s", buf);
 		y_index += font_height;
 		k++;
 	}
@@ -7537,11 +7370,7 @@ void get_version_string(char *str, int max_size)
 //XSTR:OFF
 	Assert( max_size > 6 );
 
-	#if FS_VERSION_HAS_REVIS == 0
-		sprintf(str, "FreeSpace 2 Open v%i.%i.%i", FS_VERSION_MAJOR, FS_VERSION_MINOR, FS_VERSION_BUILD);
-	#else
-		sprintf(str, "FreeSpace 2 Open v%i.%i.%i.%i", FS_VERSION_MAJOR, FS_VERSION_MINOR, FS_VERSION_BUILD, FS_VERSION_REVIS);
-	#endif
+	sprintf(str, "FreeSpace 2 Open v%s", FS_VERSION_FULL);
 
 #ifndef NDEBUG
 	strcat_s( str, max_size, " Debug" );
@@ -7554,18 +7383,6 @@ void get_version_string(char *str, int max_size)
 			strcat_s( str, max_size, " OpenGL" );
 			break;
 	}
-
-	// if a custom identifier exists, put it at the very end
-	#ifdef FS_VERSION_IDENT
-		strcat_s( str, max_size, " (" );
-		strcat_s( str, max_size, FS_VERSION_IDENT );
-		strcat_s( str, max_size, ")" );
-	#endif
-}
-
-void get_version_string_short(char *str)
-{
-	sprintf(str,"v%d.%d", FS_VERSION_MAJOR, FS_VERSION_MINOR);
 }
 
 // ----------------------------------------------------------------
@@ -7607,376 +7424,6 @@ void game_stop_subspace_ambient_sound()
 // Subspace Ambient Sound END
 //
 // ----------------------------------------------------------------
-
-
-// ----------------------------------------------------------------
-//
-// CDROM detection code START
-//
-// ----------------------------------------------------------------
-
-#define CD_SIZE_72_MINUTE_MAX			(697000000)
-
-uint game_get_cd_used_space(char *path)
-{
-#ifdef _WIN32
-	uint total = 0;
-	char use_path[512] = "";
-	char sub_path[512] = "";
-	WIN32_FIND_DATA	find;
-	HANDLE find_handle;
-
-	// recurse through all files and directories
-	strcpy_s(use_path, path);
-	strcat_s(use_path, "*.*");
-	find_handle = FindFirstFile(use_path, &find);
-
-	// bogus
-	if(find_handle == INVALID_HANDLE_VALUE){
-		return 0;
-	}	
-
-	// whee
-	do {
-		// subdirectory. make sure to ignore . and ..
-		if((find.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) && stricmp(find.cFileName, ".") && stricmp(find.cFileName, "..")){
-			// subsearch
-			strcpy_s(sub_path, path);
-			strcat_s(sub_path, find.cFileName);
-			strcat_s(sub_path, DIR_SEPARATOR_STR);
-			total += game_get_cd_used_space(sub_path);	
-		} else {
-			total += (uint)find.nFileSizeLow;
-		}				
-	} while(FindNextFile(find_handle, &find));	
-
-	// close
-	FindClose(find_handle);
-
-	// total
-	return total;
-#else
-	if (path == NULL) {
-		// bail
-		mprintf(("NULL path passed to game_get_cd_used_space.\n"));
-		return 0;
-	}
-
-	STUB_FUNCTION;
-
-	return 0;
-#endif // _WIN32
-}
-
-
-// if volume_name is non-null, the CD name must match that
-int find_freespace_cd(char *volume_name)
-{
-#ifdef _WIN32
-	char oldpath[MAX_PATH];
-	char volume[256];
-	int i;
-	int cdrom_drive=-1;
-	int volume_match = 0;
-	_finddata_t find;
-
-	GetCurrentDirectory(MAX_PATH-1, oldpath);
-
-	for (i = 0; i < 26; i++) 
-	{
-//XSTR:OFF
-		char path[]="d:\\";
-//XSTR:ON
-
-		path[0] = (char)('A'+i);
-		if (GetDriveType(path) == DRIVE_CDROM) {
-			cdrom_drive = -3;
-			if ( GetVolumeInformation(path, volume, 256, NULL, NULL, NULL, NULL, 0) == TRUE ) {
-				nprintf(("CD", "CD volume: %s\n", volume));
-			
-				// check for any CD volume
-				int volume1_present = 0;
-				int volume2_present = 0;
-				int volume3_present = 0;		
-
-				char full_check[512] = "";
-
-				// look for setup.exe
-				strcpy_s(full_check, path);
-				strcat_s(full_check, "setup.exe");				
-				auto find_handle = _findfirst(full_check, &find);
-				if(find_handle != -1){
-					volume1_present = 1;				
-					_findclose(find_handle);				
-				}
-
-				// look for intro.mve
-				strcpy_s(full_check, path);
-				strcat_s(full_check, "intro.mve");				
-				find_handle = _findfirst(full_check, &find);
-				if(find_handle != -1){
-					volume2_present = 1;
-					_findclose(find_handle);						
-				}				
-
-				// look for endpart1.mve
-				strcpy_s(full_check, path);
-				strcat_s(full_check, "endpart1.mve");				
-				find_handle = _findfirst(full_check, &find);
-				if(find_handle != -1){
-					volume3_present = 1;
-					_findclose(find_handle);				
-				}				
-			
-				// see if we have the specific CD we're looking for
-				if ( volume_name ) {
-					// volume 1
-					if ( !stricmp(volume_name, FS_CDROM_VOLUME_1) && volume1_present) {
-						volume_match = 1;
-					}
-					// volume 2
-					if ( !stricmp(volume_name, FS_CDROM_VOLUME_2) && volume2_present) {
-						volume_match = 1;
-					}
-					// volume 3
-					if ( !stricmp(volume_name, FS_CDROM_VOLUME_3) && volume3_present) {
-						volume_match = 1;
-					}
-				} else {										
-					if ( volume1_present || volume2_present || volume3_present ) {
-						volume_match = 1;
-					}
-				}
-				
-				// here's where we make sure that CD's 2 and 3 are not just ripped - check to make sure its capacity is > 697,000,000 bytes				
-				if ( volume_match ){				
-					// we don't care about CD1 though. let it be whatever size it wants, since the game will demand CD's 2 and 3 at the proper time
-					if(volume2_present || volume3_present) {
-						// first step - check to make sure its a cdrom
-						if(GetDriveType(path) != DRIVE_CDROM){							
-							break;
-						}
-						// oem not on 80 min cds, so don't check tha size
-						// check its size
-						uint used_space = game_get_cd_used_space(path);											
-						if(used_space < CD_SIZE_72_MINUTE_MAX){							
-							break;
-						}
-					}					
-
-					cdrom_drive = i;
-					break;
-				}
-			}
-		}
-	}	
-
-	SetCurrentDirectory(oldpath);
-	return cdrom_drive;
-#else
-//	STUB_FUNCTION;
-
-	if (volume_name != NULL) {
-		// volume specific checks
-		STUB_FUNCTION;
-	}
-
-	return -1;
-#endif // _WIN32
-}
-
-int set_cdrom_path(int drive_num)
-{
-	int rval;
-
-	if (drive_num < 0) {			//no CD
-//		#ifndef NDEBUG
-//		strcpy_s(CDROM_dir,"j:\\FreeSpaceCD\\");				//set directory
-//		rval = 1;
-//		#else
-		memset(Game_CDROM_dir, 0, sizeof(Game_CDROM_dir));
-		rval = 0;
-//		#endif
-	} else {
-		sprintf(Game_CDROM_dir,NOX("%c:\\"), 'a' + drive_num );			//set directory
-		rval = 1;
-	}
-
-	return rval;
-}
-
-int init_cdrom()
-{
-	int i, rval;
-
-	//scan for CD, etc.
-	i = find_freespace_cd();
-
-	rval = set_cdrom_path(i);
-
-	return rval;
-}
-
-int Last_cd_label_found = 0;
-char Last_cd_label[256];
-
-int game_cd_changed()
-{
-#ifdef _WIN32
-	char label[256];
-	int found;
-	int changed = 0;
-	
-	if ( strlen(Game_CDROM_dir) == 0 ) { //-V805
-		init_cdrom();
-	}
-
-	if ( strlen(Game_CDROM_dir) == 0 ) { //-V805
-		return 0;
-	}
-
-	found = GetVolumeInformation(Game_CDROM_dir, label, 256, NULL, NULL, NULL, NULL, 0);
-
-	if ( found != Last_cd_label_found )	{
-		Last_cd_label_found = found;
-		if ( found )	{
-			mprintf(( "CD '%s' was inserted\n", label ));
-		} else {
-			mprintf(( "CD '%s' was removed\n", Last_cd_label ));
-		}
-		changed = 1;
-	} else {
-		if ( Last_cd_label_found )	{
-			if ( !stricmp( Last_cd_label, label ))	{
-				//mprintf(( "CD didn't change\n" ));
-			} else {
-				mprintf(( "CD was changed from '%s' to '%s'\n", Last_cd_label, label ));
-				changed = 1;
-			}
-		} else {
-			// none found before, none found now.
-			//mprintf(( "still no CD...\n" ));
-		}
-	}
-	
-	Last_cd_label_found = found;
-	if ( found )	{
-		strcpy_s( Last_cd_label, label );
-	} else {
-		strcpy_s( Last_cd_label, "" );
-	}
-
-	return changed;
-#else
-	STUB_FUNCTION;
-
-	return 0;
-#endif // _WIN32
-}
-
-// check if _any_ FreeSpace2 CDs are in the drive
-// return: 1	=> CD now in drive
-//			  0	=>	Could not find CD, they refuse to put it in the drive
-int game_do_cd_check(char *volume_name)
-{	
-#if !defined(GAME_CD_CHECK)
-	return 1;
-#else
-	int cd_present = 0;
-	int cd_drive_num;
-
-	int num_attempts = 0;
-	int refresh_files = 0;
-	while(1) {
-		int path_set_ok, popup_rval;
-
-		cd_drive_num = find_freespace_cd(volume_name);
-		path_set_ok = set_cdrom_path(cd_drive_num);
-		if ( path_set_ok ) {
-			cd_present = 1;
-			if ( refresh_files ) {
-				cfile_refresh();
-				refresh_files = 0;
-			}
-			break;
-		}
-
-		// standalone mode
-		if(Is_standalone){
-			cd_present = 0;
-			break;
-		} else {
-			// no CD found, so prompt user
-			popup_rval = popup(PF_BODY_BIG | PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR( "FreeSpace 2 CD not found\n\nInsert a FreeSpace 2 CD to continue", 202));
-			refresh_files = 1;
-			if ( popup_rval != 1 ) {
-				cd_present = 0;
-				break;
-			}
-
-			if ( num_attempts++ > 5 ) {
-				cd_present = 0;
-				break;
-			}
-		}
-	}
-
-	return cd_present;
-#endif
-}
-
-// check if _any_ FreeSpace2 CDs are in the drive
-// return: 1	=> CD now in drive
-//			  0	=>	Could not find CD, they refuse to put it in the drive
-int game_do_cd_check_specific(char *volume_name, int cdnum)
-{	
-	int cd_present = 0;
-	int cd_drive_num;
-
-	int num_attempts = 0;
-	int refresh_files = 0;
-	while(1) {
-		int path_set_ok, popup_rval;
-
-		cd_drive_num = find_freespace_cd(volume_name);
-		path_set_ok = set_cdrom_path(cd_drive_num);
-		if ( path_set_ok ) {
-			cd_present = 1;
-			if ( refresh_files ) {
-				cfile_refresh();
-				refresh_files = 0;
-			}
-			break;
-		}
-
-		if(Is_standalone){
-			cd_present = 0;
-			break;
-		} else {
-			// no CD found, so prompt user
-			popup_rval = popup(PF_BODY_BIG | PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("Please insert CD %d", 1468), cdnum);
-			refresh_files = 1;
-			if ( popup_rval != 1 ) {
-				cd_present = 0;
-				break;
-			}
-
-			if ( num_attempts++ > 5 ) {
-				cd_present = 0;
-				break;
-			}
-		}
-	}
-
-	return cd_present;
-}
-
-// ----------------------------------------------------------------
-//
-// CDROM detection code END
-//
-// ----------------------------------------------------------------
-
 
 // ----------------------------------------------------------------
 // Language autodetection stuff
@@ -8237,10 +7684,9 @@ void game_title_screen_display()
 	}
 	*/
 
-	bool globalhook_override = Script_system.IsOverride(Script_splashhook);
 	bool condhook_override = Script_system.IsConditionOverride(CHA_SPLASHSCREEN);
 	mprintf(("SCRIPTING: Splash screen overrides checked\n"));
-	if(!globalhook_override && !condhook_override)
+	if(!condhook_override)
 	{
 		Game_title_logo = bm_load(Game_logo_screen_fname[gr_screen.res]);
 		Game_title_bitmap = bm_load(Game_title_screen_fname[gr_screen.res]);
@@ -8272,14 +7718,8 @@ void game_title_screen_display()
 		}
 	}
 
-	if(!condhook_override)
-		Script_system.RunBytecode(Script_splashhook);
-	
-	mprintf(("SCRIPTING: Splash hook has been run\n"));
+	Script_system.RunCondition(CHA_SPLASHSCREEN);
 
-	if(!globalhook_override || condhook_override)
-		Script_system.RunCondition(CHA_SPLASHSCREEN);
-		
 	mprintf(("SCRIPTING: Splash screen conditional hook has been run\n"));
 
 	// flip
@@ -8469,7 +7909,7 @@ int actual_main(int argc, char *argv[])
 	// Finder sets the working directory to the root of the drive so we have to get a little creative
 	// to find out where on the disk we should be running from for CFILE's sake.
 	char *path_name = SDL_GetBasePath();
-	SetCurrentDirectory(path_name);
+	chdir(path_name);
 	SDL_free(path_name);
 #endif
 
@@ -8479,7 +7919,7 @@ int actual_main(int argc, char *argv[])
 
 #if defined(GAME_ERRORLOG_TXT) && defined(_MSC_VER)
 	__try {
-#else
+#elif !defined(DONT_CATCH_MAIN_EXCEPTIONS)
 	try {
 #endif
 		result = game_main(argc, argv);
@@ -8491,14 +7931,18 @@ int actual_main(int argc, char *argv[])
 		// get called unless you return EXCEPTION_EXECUTE_HANDLER from
 		// the __except clause.
 	}
-#else
+#elif !defined(DONT_CATCH_MAIN_EXCEPTIONS)
 	}
-	catch (std::exception &ex) {
+	catch (const std::exception &ex) {
+		Error(LOCATION, "Caught std::exception in main(): '%s'!", ex.what());
 		fprintf(stderr, "Caught std::exception in main(): '%s'!\n", ex.what());
+
 		result = EXIT_FAILURE;
 	}
 	catch (...) {
+		Error(LOCATION, "Caught exception in main()!");
 		fprintf(stderr, "Caught exception in main()!\n");
+
 		result = EXIT_FAILURE;
 	}
 #endif

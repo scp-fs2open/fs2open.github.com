@@ -52,8 +52,6 @@ void gr_opengl_draw_deferred_light_sphere(const vec3d *position, float rad, bool
 void gr_opengl_deferred_light_cylinder_init(int segments);
 void gr_opengl_draw_deferred_light_cylinder(const vec3d *position, const matrix *orient, float rad, float length, bool clearStencil);
 
-void gr_opengl_draw_line_list(const colored_vector *lines, int num);
-
 void gr_opengl_shadow_map_start(matrix4 *shadow_view_matrix, const matrix *light_orient);
 void gr_opengl_shadow_map_end();
 
@@ -111,6 +109,8 @@ inline void opengl_draw_textured_quad(
 	GLfloat x1, GLfloat y1, GLfloat u1, GLfloat v1,
 	GLfloat x2, GLfloat y2, GLfloat u2, GLfloat v2 )
 {
+	GR_DEBUG_SCOPE("Draw textured quad");
+
 	GLfloat glVertices[4][4] = {
 		{ x1, y1, u1, v1 },
 		{ x1, y2, u1, v2 },

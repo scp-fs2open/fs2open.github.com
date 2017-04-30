@@ -153,12 +153,14 @@ extern int Cmdline_show_stats;
 extern int Cmdline_save_render_targets;
 extern int Cmdline_verify_vps;
 extern int Cmdline_reparse_mainhall;
-extern bool Cmdline_frame_profile;
 extern bool Cmdline_profile_write_file;
 extern bool Cmdline_no_unfocus_pause;
 extern bool Cmdline_benchmark_mode;
 extern bool Cmdline_noninteractive;
 extern bool Cmdline_json_pilot;
 extern bool Cmdline_json_profiling;
+extern bool Cmdline_frame_profile;
+extern bool Cmdline_show_video_info;
+extern bool Cmdline_debug_window;
 
 #endif

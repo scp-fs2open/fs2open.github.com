@@ -1,10 +1,6 @@
 
 include(prebuilt.cmake)
 
-IF(APPLE)
-	ADD_SUBDIRECTORY(mac)
-ENDIF(APPLE)
-
 ADD_SUBDIRECTORY(libjpeg)
 
 ADD_SUBDIRECTORY(zlib)
@@ -12,8 +8,6 @@ ADD_SUBDIRECTORY(zlib)
 ADD_SUBDIRECTORY(libpng)
 
 ADD_SUBDIRECTORY(lua)
-
-ADD_SUBDIRECTORY(oggvorbis)
 
 ADD_SUBDIRECTORY(openal)
 

@@ -51,7 +51,7 @@
 
 #define UNUSED_OBJNUM		(-MAX_OBJECTS*2)	//	Newer systems use this instead of -1 for invalid object.
 
-extern char	*Object_type_names[MAX_OBJECT_TYPES];
+extern const char	*Object_type_names[MAX_OBJECT_TYPES];
 
 // each object type should have these functions:  (I will use weapon as example)
 //
@@ -110,7 +110,7 @@ typedef struct obj_flag_name {
 extern obj_flag_name Object_flag_names[];
 
 struct dock_instance;
-class draw_list;
+class model_draw_list;
 
 class object
 {
@@ -156,7 +156,7 @@ struct object_h {
 	object *objp;
 	int sig;
 
-	bool IsValid() const {return (objp != NULL && objp->signature == sig);}
+	bool IsValid() const {return (objp != NULL && objp->signature == sig && sig > 0);}
 	object_h(object *in){objp=in; if(objp!=NULL){sig=in->signature;}}
 	object_h(){objp=NULL;sig=-1;}
 };
@@ -227,7 +227,7 @@ int obj_create(ubyte type,int parent_obj, int instance, matrix * orient, vec3d *
 
 void obj_render(object* obj);
 
-void obj_queue_render(object* obj, draw_list* scene);
+void obj_queue_render(object* obj, model_draw_list* scene);
 
 //Sorts and renders all the ojbects
 void obj_render_all(void (*render_function)(object *objp), bool* render_viewer_last );
@@ -269,7 +269,6 @@ void obj_init_all_ships_physics();
 float get_hull_pct(object *objp);
 float get_sim_hull_pct(object *objp);
 float get_shield_pct(object *objp);
-float get_max_shield_quad(object *objp);
 
 // returns the average 3-space position of all ships.  useful to find "center" of battle (sort of)
 void obj_get_average_ship_pos(vec3d *pos);
@@ -305,9 +304,37 @@ void obj_client_post_interpolate();
 // move an observer object in multiplayer
 void obj_observer_move(float frame_time);
 
-// Goober5000
+/**
+ * @brief Checks if the given object is docked with anyone.
+ *
+ * @returns Nonzero if docked, or
+ * @returns 0 if not docked
+ *
+ * @author Goober5000
+ */
 int object_is_docked(object *objp);
+
+/**
+ * @brief Checks if the given object is dead-docked with anyone.
+ *
+ * @returns Nonzero if docked, or
+ * @returns 0 if not docked
+ *
+ * @details An object is "dead-docked" when it is dying and still has objects docked to it. The dead_dock list is
+ *   populated when the object dies, and is used later on to jettison and maybe damage the docked objects.
+ *
+ * @author Goober5000
+ */
 int object_is_dead_docked(object *objp);
+
+/**
+ * @brief Moves a docked object to keep up with the parent object as it moves
+ *
+ * @param[in,out] objp The docked object
+ * @param[in]     parent_objp The object that it's docked to
+ *
+ * @author Goober5000
+ */
 void obj_move_one_docked_object(object *objp, object *parent_objp);
 
 //WMC

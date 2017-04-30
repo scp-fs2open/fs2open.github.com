@@ -18,6 +18,7 @@
 #include "tracing/tracing.h"
 #include "weapon/beam.h"
 #include "weapon/weapon.h"
+#include "tracing/Monitor.h"
 
 
 
@@ -1228,21 +1229,30 @@ void obj_sort_and_collide()
 	SCP_vector<int> sort_list_z;
 
 	sort_list_y.clear();
-	PROFILE("Sort Colliders", obj_quicksort_colliders(&Collision_sort_list, 0, (int)(Collision_sort_list.size() - 1), 0));
+	{
+		TRACE_SCOPE(tracing::SortColliders);
+		obj_quicksort_colliders(&Collision_sort_list, 0, (int)(Collision_sort_list.size() - 1), 0);
+	}
 	obj_find_overlap_colliders(&sort_list_y, &Collision_sort_list, 0, false);
 
 	sort_list_z.clear();
-	PROFILE("Sort Colliders", obj_quicksort_colliders(&sort_list_y, 0, (int)(sort_list_y.size() - 1), 1));
+	{
+		TRACE_SCOPE(tracing::SortColliders);
+		obj_quicksort_colliders(&sort_list_y, 0, (int)(sort_list_y.size() - 1), 1);
+	}
 	obj_find_overlap_colliders(&sort_list_z, &sort_list_y, 1, false);
 
 	sort_list_y.clear();
-	PROFILE("Sort Colliders", obj_quicksort_colliders(&sort_list_z, 0, (int)(sort_list_z.size() - 1), 2));
+	{
+		TRACE_SCOPE(tracing::SortColliders);
+		obj_quicksort_colliders(&sort_list_z, 0, (int)(sort_list_z.size() - 1), 2);
+	}
 	obj_find_overlap_colliders(&sort_list_y, &sort_list_z, 2, true);
 }
 
 void obj_find_overlap_colliders(SCP_vector<int> *overlap_list_out, SCP_vector<int> *list, int axis, bool collide)
 {
-	profile_auto profile_scope("Find overlap colliders");
+	TRACE_SCOPE(tracing::FindOverlapColliders);
 
 	size_t i, j;
 	bool overlapped;
@@ -1380,7 +1390,7 @@ void obj_quicksort_colliders(SCP_vector<int> *list, int left, int right, int axi
 
 void obj_collide_pair(object *A, object *B)
 {
-	profile_auto profile_scope("Collide Pair");
+	TRACE_SCOPE(tracing::CollidePair);
 
 	uint ctype;
 	int (*check_collision)( obj_pair *pair );

@@ -3,7 +3,7 @@
 
 #include "globalincs/globals.h"
 #include "globalincs/pstypes.h"
-#include "lua.h"
+#include "scripting/lua/LuaFunction.h"
 
 #include <stdio.h>
 
@@ -18,6 +18,23 @@ struct image_desc
 	char fname[MAX_FILENAME_LEN];
 	int handle;
 };
+
+struct script_function {
+	int language = 0;
+	luacpp::LuaFunction function;
+};
+
+//-WMC
+struct script_hook
+{
+	//Override
+	script_function override_function;
+
+	//Actual hook
+	script_function hook_function;
+};
+
+extern bool script_hook_valid(script_hook *hook);
 
 //**********Main Conditional Hook stuff
 
@@ -79,6 +96,7 @@ struct image_desc
 #define CHA_AFTERBURNSTART	36
 #define CHA_AFTERBURNEND    37
 #define CHA_BEAMFIRE        38
+#define CHA_SIMULATION      39
 
 // management stuff
 void scripting_state_init();
@@ -110,7 +128,6 @@ public:
 	script_action()
 		: action_type(CHA_NONE)
 	{
-		script_hook_init(&hook);
 	}
 };
 
@@ -144,8 +161,8 @@ private:
 
 private:
 
-	void ParseChunkSub(int *out_lang, int *out_index, char* debug_str=NULL);
-	int RunBytecodeSub(int in_lang, int in_idx, char format='\0', void *data=NULL);
+	void ParseChunkSub(script_function& out_func, const char* debug_str=NULL);
+	int RunBytecodeSub(script_function& func, char format='\0', void *data=NULL);
 
 	void SetLuaSession(struct lua_State *L);
 
@@ -180,25 +197,26 @@ public:
 	int CreateLuaState();
 
 	//***Get data
-	int OutputMeta(char *filename);
+	int OutputMeta(const char *filename);
 
 	//***Moves data
 	//void MoveData(script_state &in);
 
 	//***Variable handling functions
-	bool GetGlobal(char *name, char format='\0', void *data=NULL);
-	void RemGlobal(char *name);
+	bool GetGlobal(const char *name, char format='\0', void *data=NULL);
+	void RemGlobal(const char *name);
 
-	void SetHookVar(char *name, char format, void *data=NULL);
-	void SetHookObject(char *name, object *objp);
+	void SetHookVar(const char *name, char format, const void *data=NULL);
+	void SetHookObject(const char *name, object *objp);
 	void SetHookObjects(int num, ...);
-	bool GetHookVar(char *name, char format='\0', void *data=NULL);
-	void RemHookVar(char *name);
+	bool GetHookVar(const char *name, char format='\0', void *data=NULL);
+	void RemHookVar(const char *name);
 	void RemHookVars(unsigned int num, ...);
 
 	//***Hook creation functions
 	bool EvalString(const char *string, const char *format=NULL, void *rtn=NULL, const char *debug_str=NULL);
-	void ParseChunk(script_hook *dest, char* debug_str=NULL);
+	void ParseChunk(script_hook *dest, const char* debug_str=NULL);
+	void ParseGlobalChunk(int hookType, const char* debug_str=NULL);
 	bool ParseCondition(const char *filename="<Unknown>");
 
 	//***Hook running functions
@@ -218,13 +236,6 @@ void script_init();
 //**********Script globals
 extern class script_state Script_system;
 extern bool Output_scripting_meta;
-
-//**********Script hook stuff (scripting.tbl)
-extern script_hook Script_globalhook;
-extern script_hook Script_simulationhook;
-extern script_hook Script_hudhook;
-extern script_hook Script_splashhook;
-extern script_hook Script_gameinithook;
 
 //*************************Conditional scripting*************************
 

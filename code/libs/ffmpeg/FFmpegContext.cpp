@@ -35,9 +35,15 @@ int64_t cfileSeek(void* ptr, int64_t offset, int whence) {
 			return cfilelength(cfile);
 	}
 
-	auto ret = cfseek(cfile, static_cast<int>(offset), op);
+	auto intOff = static_cast<int>(offset);
+	if ((int64_t)intOff != offset) {
+		// Overflow!!!
+		return -1;
+	}
+	
+	auto ret = cfseek(cfile, intOff, op);
 
-	if (ret < 0) {
+	if (ret != 0) {
 		// Error
 		return -1;
 	}

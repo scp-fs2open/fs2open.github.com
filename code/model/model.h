@@ -66,7 +66,7 @@ extern int model_render_flags_size;
 #define SUBSYSTEM_MAX				12				//	maximum value for subsystem_xxx, for error checking
 
 // Goober5000
-extern char *Subsystem_types[SUBSYSTEM_MAX];
+extern const char *Subsystem_types[SUBSYSTEM_MAX];
 
 #define MAX_TFP						10				// maximum number of turret firing points
 
@@ -610,7 +610,7 @@ public:
 	int GetTexture();
 	float GetTotalTime();
 
-	int LoadTexture(char *filename, char *dbg_name);
+	int LoadTexture(const char *filename, const char *dbg_name = "<UNKNOWN>");
 
 	void PageIn();
 	void PageOut(bool release);
@@ -626,9 +626,8 @@ public:
 #define TM_HEIGHT_TYPE		4		// optional height map (for parallax mapping)
 #define TM_MISC_TYPE		5		// optional utility map
 #define TM_SPEC_GLOSS_TYPE	6		// optional reflectance map (specular and gloss)
-#define TM_UNLIT_TYPE		7		// optional unlit map to display instead of the base when rendering unlit models
-#define TM_AMBIENT_TYPE		8		// optional ambient occlusion map with ambient occlusion and cavity occlusion factors for red and green channels.
-#define TM_NUM_TYPES		9		//WMC - Number of texture_info objects in texture_map
+#define TM_AMBIENT_TYPE		7		// optional ambient occlusion map with ambient occlusion and cavity occlusion factors for red and green channels.
+#define TM_NUM_TYPES		8		//WMC - Number of texture_info objects in texture_map
 									//Used by scripting - if you change this, do a search
 									//to update switch() statement in lua.cpp
 // taylor
@@ -670,10 +669,10 @@ public:
 	polymodel()
 		: id(-1), version(0), flags(0), n_detail_levels(0), num_debris_objects(0), n_models(0), num_lights(0), lights(NULL),
 		n_view_positions(0), rad(0.0f), core_radius(0.0f), n_textures(0), submodel(NULL), n_guns(0), n_missiles(0), n_docks(0),
-		n_thrusters(0), gun_banks(NULL), missile_banks(NULL), docking_bays(NULL), thrusters(NULL), ship_bay(NULL),
+		n_thrusters(0), gun_banks(NULL), missile_banks(NULL), docking_bays(NULL), thrusters(NULL), ship_bay(NULL), shield(),
 		shield_collision_tree(NULL), sldc_size(0), n_paths(0), paths(NULL), mass(0), num_xc(0), xc(NULL), num_split_plane(0),
 		num_ins(0), used_this_mission(0), n_glow_point_banks(0), glow_point_banks(NULL), gun_submodel_rotation(0),
-		vert_source(), shield()
+		vert_source()
 	{
 		filename[0] = 0;
 		mins = maxs = autocenter = center_of_mass = vmd_zero_vector;
@@ -795,7 +794,7 @@ void model_free_all();
 void model_instance_free_all();
 
 // Loads a model from disk and returns the model number it loaded into.
-int model_load(char *filename, int n_subsystems, model_subsystem *subsystems, int ferror = 1, int duplicate = 0);
+int model_load(const char *filename, int n_subsystems, model_subsystem *subsystems, int ferror = 1, int duplicate = 0);
 
 int model_create_instance(bool is_ship, int model_num);
 void model_delete_instance(int model_instance_num);

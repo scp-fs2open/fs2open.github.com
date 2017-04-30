@@ -36,7 +36,7 @@
 
 #include "project.h"
 
-namespace version
+namespace gameversion
 {
 	/**
 	 * @brief Checks if the current version is at least the given version

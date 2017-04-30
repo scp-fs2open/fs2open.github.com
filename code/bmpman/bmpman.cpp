@@ -29,12 +29,13 @@
 #include "io/timer.h"
 #include "jpgutils/jpgutils.h"
 #include "network/multiutil.h"
-#include "palman/palman.h"
 #include "parse/parselo.h"
 #include "pcxutils/pcxutils.h"
 #include "pngutils/pngutils.h"
 #include "ship/ship.h"
 #include "tgautils/tgautils.h"
+#include "tracing/Monitor.h"
+#include "tracing/tracing.h"
 
 #include <ctype.h>
 #include <limits.h>
@@ -55,7 +56,6 @@ MONITOR(SizeBitmapPage)
 
 // --------------------------------------------------------------------------------------------------------------------
 // Definition of public variables (declared as extern in bmpman.h).
-int UNLITMAP = -1;
 int GLOWMAP = -1;
 int SPECMAP = -1;
 int SPECGLOSSMAP = -1;
@@ -419,7 +419,7 @@ DCF(bmpman, "Shows/changes bitmap caching parameters and usage") {
 	}
 
 	if (dc_optional_string_either("status", "--status") || dc_optional_string_either("?", "--?")) {
-		dc_printf("Total RAM usage: %d bytes\n", bm_texture_ram);
+		dc_printf("Total RAM usage: " SIZE_T_ARG " bytes\n", bm_texture_ram);
 
 		if (Bm_max_ram > 1024 * 1024) {
 			dc_printf("\tMax RAM allowed: %.1f MB\n", i2fl(Bm_max_ram) / (1024.0f*1024.0f));
@@ -435,14 +435,14 @@ DCF(bmpman, "Shows/changes bitmap caching parameters and usage") {
 
 
 	if (dc_optional_string("flush")) {
-		dc_printf("Total RAM usage before flush: %d bytes\n", bm_texture_ram);
+		dc_printf("Total RAM usage before flush: " SIZE_T_ARG " bytes\n", bm_texture_ram);
 		int i;
 		for (i = 0; i < MAX_BITMAPS; i++) {
 			if (bm_bitmaps[i].type != BM_TYPE_NONE) {
 				bm_free_data(i);
 			}
 		}
-		dc_printf("Total RAM after flush: %d bytes\n", bm_texture_ram);
+		dc_printf("Total RAM after flush: " SIZE_T_ARG " bytes\n", bm_texture_ram);
 	} else if (dc_optional_string("ram")) {
 		dc_stuff_int(&Bm_max_ram);
 
@@ -525,6 +525,7 @@ int bm_create(int bpp, int w, int h, void *data, int flags) {
 	bm_bitmaps[n].bm.h = (short)h;
 	bm_bitmaps[n].bm.rowsize = (short)w;
 	bm_bitmaps[n].bm.bpp = (ubyte)bpp;
+	bm_bitmaps[n].bm.true_bpp = (ubyte)bpp;
 	bm_bitmaps[n].bm.flags = (ubyte)flags;
 	bm_bitmaps[n].bm.data = 0;
 	bm_bitmaps[n].bm.palette = NULL;
@@ -2158,7 +2159,7 @@ void bm_lock_apng(int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, int 
 		cumulative_frame_delay += the_apng->frame.delay;
 		be->info.ani.apng.frame_delay = cumulative_frame_delay;
 
-		nprintf(("apng", "locking apng frame: %s (%i|%i|%i) (%f) %lu\n", be->filename, bpp, bmp->bpp, bm->true_bpp, be->info.ani.apng.frame_delay, be->mem_taken));
+		nprintf(("apng", "locking apng frame: %s (%i|%i|%i) (%f) " SIZE_T_ARG "\n", be->filename, bpp, bmp->bpp, bm->true_bpp, be->info.ani.apng.frame_delay, be->mem_taken));
 	}
 }
 
@@ -2279,7 +2280,7 @@ void bm_lock_pcx(int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, int b
 	data = (ubyte *)bm_malloc(bitmapnum, be->mem_taken);
 	bmp->bpp = bpp;
 	bmp->data = (ptr_u)data;
-	bmp->palette = (bpp == 8) ? gr_palette : NULL;
+	bmp->palette = NULL;
 	memset(data, 0, be->mem_taken);
 
 	Assert(&be->bm == bmp);
@@ -2577,6 +2578,8 @@ void bm_page_in_start() {
 }
 
 void bm_page_in_stop() {
+	TRACE_SCOPE(tracing::PageInStop);
+
 	int i;
 
 #ifndef NDEBUG
@@ -2593,6 +2596,7 @@ void bm_page_in_stop() {
 	for (i = 0; i < MAX_BITMAPS; i++) {
 		if ((bm_bitmaps[i].type != BM_TYPE_NONE) && (bm_bitmaps[i].type != BM_TYPE_RENDER_TARGET_DYNAMIC) && (bm_bitmaps[i].type != BM_TYPE_RENDER_TARGET_STATIC)) {
 			if (bm_bitmaps[i].preloaded) {
+				TRACE_SCOPE(tracing::PageInSingleBitmap);
 				if (bm_preloading) {
 					if (!gr_preload(bm_bitmaps[i].handle, (bm_bitmaps[i].preloaded == 2))) {
 						mprintf(("Out of VRAM.  Done preloading.\n"));
@@ -2994,6 +2998,8 @@ void bm_set_low_mem(int mode) {
 }
 
 bool bm_set_render_target(int handle, int face) {
+	GR_DEBUG_SCOPE("Set render target");
+
 	int n = handle % MAX_BITMAPS;
 
 	if (n >= 0) {
@@ -3076,6 +3082,10 @@ bool bm_set_render_target(int handle, int face) {
 int bm_unload(int handle, int clear_render_targets, bool nodebug) {
 	bitmap_entry *be;
 	bitmap *bmp;
+
+	if (handle == -1) {
+		return -1;
+	}
 
 	int n = handle % MAX_BITMAPS;
 

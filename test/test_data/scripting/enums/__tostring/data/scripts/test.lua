@@ -1,0 +1,2 @@
+
+assert(tostring(MESSAGE_PRIORITY_LOW) == "MESSAGE_PRIORITY_LOW")

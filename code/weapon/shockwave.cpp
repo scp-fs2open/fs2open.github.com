@@ -26,8 +26,8 @@
 // Module-wide globals
 // -----------------------------------------------------------
 
-static char *Default_shockwave_2D_filename = "shockwave01";
-static char *Default_shockwave_3D_filename = "shockwave.pof";
+static const char *Default_shockwave_2D_filename = "shockwave01";
+static const char *Default_shockwave_3D_filename = "shockwave.pof";
 static int Default_shockwave_loaded = 0;
 
 SCP_vector<shockwave_info> Shockwave_info;
@@ -362,7 +362,7 @@ void shockwave_move(object *shockwave_objp, float frametime)
 * @param objp	pointer to shockwave object
 * @param scene	the scene's draw list we're adding this to
 */
-void shockwave_render(object *objp, draw_list *scene)
+void shockwave_render(object *objp, model_draw_list *scene)
 {
 	shockwave		*sw;
 	vertex			p;
@@ -416,7 +416,7 @@ void shockwave_render(object *objp, draw_list *scene)
 /**
  * Call to load a shockwave, or add it and then load it
  */
-int shockwave_load(char *s_name, bool shock_3D)
+int shockwave_load(const char *s_name, bool shock_3D)
 {
 	size_t i;
 	int s_index = -1;

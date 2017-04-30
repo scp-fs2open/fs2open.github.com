@@ -61,12 +61,12 @@ HK_save_info Hotkey_saved_info[MAX_HOTKEY_TARGET_ITEMS];
 int Num_hotkeys_saved;
 
 
-static char *Hotkey_background_fname[GR_NUM_RESOLUTIONS] = {
+static const char *Hotkey_background_fname[GR_NUM_RESOLUTIONS] = {
 	"Hotkeys",		// GR_640
 	"2_Hotkeys"		// GR_1024
 };
 
-static char *Hotkey_mask_fname[GR_NUM_RESOLUTIONS] = {
+static const char *Hotkey_mask_fname[GR_NUM_RESOLUTIONS] = {
 	"Hotkeys-M",		// GR_640
 	"2_Hotkeys-M"	// GR_1024
 };
@@ -195,12 +195,12 @@ static int Hotkey_ship_x[GR_NUM_RESOLUTIONS] = {
 };
 
 struct hotkey_buttons {
-	char *filename;
+	const char *filename;
 	int x, y;
 	int hotspot;
 	UI_BUTTON button;  // because we have a class inside this struct, we need the constructor below..
 
-	hotkey_buttons(char *name, int x1, int y1, int h) : filename(name), x(x1), y(y1), hotspot(h) {}
+	hotkey_buttons(const char *name, int x1, int y1, int h) : filename(name), x(x1), y(y1), hotspot(h) {}
 };
 
 // button definitions
@@ -1158,7 +1158,7 @@ void mission_hotkey_do_frame(float frametime)
 	gr_set_color_fast(&Color_text_normal);
 	strcpy_s(buf, Scan_code_text[Key_sets[Cur_hotkey]]);
 	gr_get_string_size(&w, &h, buf);
-	gr_printf_menu(Hotkey_function_name_coords[gr_screen.res][0] + (Hotkey_function_name_coords[gr_screen.res][2] - w) / 2, Hotkey_function_name_coords[gr_screen.res][1], buf);
+	gr_printf_menu(Hotkey_function_name_coords[gr_screen.res][0] + (Hotkey_function_name_coords[gr_screen.res][2] - w) / 2, Hotkey_function_name_coords[gr_screen.res][1], "%s", buf);
 
 	font::set_font(font::FONT1);
 	line = Scroll_offset;
@@ -1229,7 +1229,7 @@ void mission_hotkey_do_frame(float frametime)
 		if (hotkeys) {
 			for (i=0; i<MAX_KEYED_TARGETS; i++) {
 				if (hotkeys & (1 << i)) {
-					gr_printf_menu(Hotkey_list_coords[gr_screen.res][0] + Hotkey_function_field_width[gr_screen.res]*i, y, Scan_code_text[Key_sets[i]]);
+					gr_printf_menu(Hotkey_list_coords[gr_screen.res][0] + Hotkey_function_field_width[gr_screen.res]*i, y, "%s", Scan_code_text[Key_sets[i]]);
 				}
 			}
 /*
@@ -1254,10 +1254,10 @@ void mission_hotkey_do_frame(float frametime)
 		if (Hotkey_lines[line].type == HOTKEY_LINE_SUBSHIP) {
 			// indent
 			font::force_fit_string(buf, 255, Hotkey_list_coords[gr_screen.res][0] + Hotkey_list_coords[gr_screen.res][2] - (Hotkey_ship_x[gr_screen.res]+20));
-			gr_printf_menu(Hotkey_ship_x[gr_screen.res]+20, y, buf);
+			gr_printf_menu(Hotkey_ship_x[gr_screen.res]+20, y, "%s", buf);
 		} else {
 			font::force_fit_string(buf, 255, Hotkey_list_coords[gr_screen.res][0] + Hotkey_list_coords[gr_screen.res][2] - Hotkey_ship_x[gr_screen.res]);
-			gr_printf_menu(Hotkey_ship_x[gr_screen.res], y, buf);
+			gr_printf_menu(Hotkey_ship_x[gr_screen.res], y, "%s", buf);
 		}
 
 		line++;
