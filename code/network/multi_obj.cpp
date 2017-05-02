@@ -526,7 +526,7 @@ int multi_oo_pack_data(net_player *pl, object *objp, ubyte oo_flags, ubyte *data
 		// flag
 		support_extra = 1;		
 		PACK_BYTE( support_extra );
-		PACK_ULONG( Ai_info[shipp->ai_index].ai_flags.to_long() );
+		PACK_ULONG( Ai_info[shipp->ai_index].ai_flags.to_u64() );
 		PACK_INT( Ai_info[shipp->ai_index].mode );
 		PACK_INT( Ai_info[shipp->ai_index].submode );
 
@@ -940,7 +940,7 @@ int multi_oo_unpack_data(net_player *pl, ubyte *data)
 	if(support_extra){
 		ushort dock_sig;
 		int ai_mode, ai_submode;
-		std::int64_t ai_flags;
+		std::uint64_t ai_flags;
 
 		// flag		
 		GET_ULONG(ai_flags);
@@ -950,7 +950,7 @@ int multi_oo_unpack_data(net_player *pl, ubyte *data)
 
 		// valid ship?							
 		if((shipp != NULL) && (shipp->ai_index >= 0) && (shipp->ai_index < MAX_AI_INFO)){
-			Ai_info[shipp->ai_index].ai_flags.from_long(ai_flags);
+			Ai_info[shipp->ai_index].ai_flags.from_u64(ai_flags);
 			Ai_info[shipp->ai_index].mode = ai_mode;
 			Ai_info[shipp->ai_index].submode = ai_submode;
 

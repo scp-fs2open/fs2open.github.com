@@ -186,7 +186,12 @@ template<class T>
 void stuff_flagset(T *dest) {
     long l;
     bool success = atol2(&l);
-    dest->from_long(l);
+
+	if (l < 0) {
+		error_display(0, "Expected flagset value but got negative value %lu!\n", l);
+		l = 0;
+	}
+    dest->from_u64((std::uint64_t) l);
 
     if (!success)
         skip_token();
@@ -196,7 +201,7 @@ void stuff_flagset(T *dest) {
     if (*Mp == ',')
         Mp++;
 
-    diag_printf("Stuffed flagset: %ld\n", dest->to_long());
+    diag_printf("Stuffed flagset: %" PRIu64 "\n", dest->to_u64());
 }
 
 extern int stuff_int_list(int *ilp, int max_ints, int lookup_type = RAW_INTEGER_TYPE);

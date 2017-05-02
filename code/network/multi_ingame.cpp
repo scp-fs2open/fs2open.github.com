@@ -972,7 +972,7 @@ void multi_ingame_handle_timeout()
 void process_ingame_ships_packet( ubyte *data, header *hinfo )
 {
 	int offset, team, j;
-    uint64_t oflags, sflags;
+    std::uint64_t oflags, sflags;
 	ubyte p_type;
 	ushort net_signature;	
 	short wing_data;	
@@ -1039,12 +1039,12 @@ void process_ingame_ships_packet( ubyte *data, header *hinfo )
 		 multi_set_network_signature( net_signature, MULTI_SIG_SHIP );
 		objnum = parse_create_object( p_objp );
 		ship_num = Objects[objnum].instance;
-        Objects[objnum].flags.from_long(oflags);
+        Objects[objnum].flags.from_u64(oflags);
 		Objects[objnum].net_signature = net_signature;
 
 		// assign any common data
 		strcpy_s(Ships[ship_num].ship_name, ship_name);
-		Ships[ship_num].flags.from_long(sflags);
+		Ships[ship_num].flags.from_u64(sflags);
 		Ships[ship_num].team = team;
 		Ships[ship_num].wingnum = (int)wing_data;				
 
@@ -1132,8 +1132,8 @@ void send_ingame_ships_packet(net_player *player)
 		ADD_DATA( p_type );
 		ADD_STRING( shipp->ship_name );
 		ADD_USHORT( Objects[so->objnum].net_signature );
-		ADD_ULONG( shipp->flags.to_long() );
-		ADD_ULONG( Objects[so->objnum].flags.to_long() );
+		ADD_ULONG( shipp->flags.to_u64() );
+		ADD_ULONG( Objects[so->objnum].flags.to_u64() );
 		ADD_INT( shipp->team );
 		wing_data = (short)shipp->wingnum;
 		ADD_SHORT(wing_data);
@@ -1809,7 +1809,7 @@ void send_ingame_ship_update_packet(net_player *p,ship *sp)
 	// just send net signature, shield and hull percentages
 	objp = &Objects[sp->objnum];
 	ADD_USHORT(objp->net_signature);
-	ADD_ULONG(objp->flags.to_long());
+	ADD_ULONG(objp->flags.to_u64());
 	ADD_INT(objp->n_quadrants);
 	ADD_FLOAT(objp->hull_strength);
 	
@@ -1853,7 +1853,7 @@ void process_ingame_ship_update_packet(ubyte *data, header *hinfo)
 		return;
 	}
 	// otherwise read in the ship values
-	lookup->flags.from_long(flags);
+	lookup->flags.from_u64(flags);
 	lookup->n_quadrants = n_quadrants;
  	GET_FLOAT(lookup->hull_strength);
 	for(idx=0;idx<n_quadrants;idx++){
