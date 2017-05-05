@@ -123,8 +123,8 @@ class flagset {
 	bool any_set() { return values.any(); }
 	bool none_set() { return values.none(); }
 
-	void from_long(std::uint64_t num) { values = num; }
-	std::uint64_t to_long() const { return values.to_ulong(); }
+	void from_u64(std::uint64_t num) { values = (unsigned long) num; }
+	std::uint64_t to_u64() const { return (std::uint64_t) values.to_ulong(); }
 };
 
 #define FLAG_LIST(Type) enum class Type : size_t

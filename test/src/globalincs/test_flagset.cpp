@@ -53,3 +53,15 @@ TEST(FlagsetTests, three_flags) {
 	}
 }
 
+TEST(FlagsetTests, numeric_conversion) {
+	{
+		flagset<TestFlags> base{ TestFlags::First, TestFlags::Second, TestFlags::Another };
+
+		flagset<TestFlags> converted;
+		
+		converted.from_u64(base.to_u64());
+		
+		ASSERT_TRUE(base == converted);
+	}
+}
+

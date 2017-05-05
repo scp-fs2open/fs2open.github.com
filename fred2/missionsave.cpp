@@ -2201,7 +2201,7 @@ int CFred_mission_save::save_mission_info() {
 		fout("\n+Flags:");
 	}
 
-	fout(" %d", The_mission.flags);
+	fout(" %" PRIu64, The_mission.flags.to_u64());
 
 	// maybe write out Nebula intensity
 	if (The_mission.flags[Mission::Mission_Flags::Fullneb]) {
