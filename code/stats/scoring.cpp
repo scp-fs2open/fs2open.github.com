@@ -105,12 +105,10 @@ void parse_rank_tbl()
 		required_string("#End");
 
 		// be sure that all rank points are in order
-#ifndef NDEBUG
 		for (idx = 0; idx < NUM_RANKS - 1; idx++) {
 			if (Ranks[idx].points >= Ranks[idx + 1].points)
-				Int3();
+				Warning(LOCATION, "Rank #%d (%s) has a higher \"$Points:\" value (%d) than the following rank (%s, %d points). This shouldn't actually crash FSO, but it might result in unexpected or incorrect behavior.\n", idx + 1, Ranks[idx].name, Ranks[idx].points, Ranks[idx+1].name, Ranks[idx+1].points);
 		}
-#endif
 	}
 	catch (const parse::ParseException& e)
 	{
