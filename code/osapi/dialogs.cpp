@@ -357,23 +357,15 @@ namespace os
 			}
 			gr_activate(1);
 		}
-		
-		void ReleaseWarning(const char* filename, int line, const char* format, ...)
-		{
-			Global_warning_count++;
 
+		// Actual implementation of the warning function. Used by the various warning functions
+		void WarningImpl(const char* filename, int line, const SCP_string& text)
+		{
 			filename = clean_filename(filename);
 
 			// output to the debug log before anything else (so that we have a complete record)
 
-			SCP_string formatMessage;
-			va_list args;
-			va_start(args, format);
-			vsprintf(formatMessage, format, args);
-			va_end(args);
-
-
-			SCP_string printfString = formatMessage;
+			SCP_string printfString = text;
 			std::transform(printfString.begin(), printfString.end(), printfString.begin(), replaceNewline);
 
 			mprintf(("WARNING: \"%s\" at %s:%d\n", printfString.c_str(), filename, line));
@@ -388,7 +380,7 @@ namespace os
 			}
 
 			SCP_stringstream boxMsgStream;
-			boxMsgStream << "Warning: " << formatMessage << "\n";
+			boxMsgStream << "Warning: " << text << "\n";
 			boxMsgStream << "File: " << filename << "\n";
 			boxMsgStream << "Line: " << line << "\n";
 
@@ -442,9 +434,25 @@ namespace os
 
 			gr_activate(1);
 		}
+
+
+		void ReleaseWarning(const char* filename, int line, const char* format, ...) {
+			Global_warning_count++;
+
+			SCP_string msg;
+			va_list args;
+
+			va_start(args, format);
+			vsprintf(msg, format, args);
+			va_end(args);
+
+			WarningImpl(filename, line, msg);
+		}
 		
 		void Warning(const char* filename, int line, const char* format, ...)
 		{
+			Global_warning_count++;
+
 #ifndef NDEBUG
 			SCP_string msg;
 			va_list args;
@@ -453,7 +461,7 @@ namespace os
 			vsprintf(msg, format, args);
 			va_end(args);
 
-			ReleaseWarning(filename, line, "%s", msg.c_str());
+			WarningImpl(filename, line, msg);
 #endif
 		}
 
