@@ -7,7 +7,11 @@
 
 #include <SDL_syswm.h>
 
+#ifdef _WIN64
+#define TRACKIRBRIDGEDLLNAME "scptrackir64.dll"
+#else
 #define TRACKIRBRIDGEDLLNAME "scptrackir.dll"
+#endif
 
 #define SCP_INITRESULT_SUCCESS 0
 #define SCP_INITRESULT_BADKEY 1
