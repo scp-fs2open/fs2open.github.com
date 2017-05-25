@@ -6,6 +6,7 @@
 #include <QDebug>
 
 #include "editor.h"
+#include "renderwidget.h"
 
 namespace fso {
 namespace fred {
@@ -22,10 +23,10 @@ MainWindow::~MainWindow()
     delete ui;
 }
 
-void MainWindow::setEditor(std::shared_ptr<Editor> editor)
+void MainWindow::setEditor(Editor* editor)
 {
     fred = editor;
-    ui->centralwidget->setEditor(editor);
+    ui->centralwidget->getWindow()->setEditor(editor);
 }
 
 void MainWindow::loadMission()
@@ -42,7 +43,7 @@ void MainWindow::loadMission()
     statusBar()->showMessage(tr("Loading mission %1").arg(pathName));
     try {
         fred->loadMission(pathName.toStdString());
-        ui->centralwidget->updateGL();
+        ui->centralwidget->getWindow()->updateGL();
         statusBar()->showMessage(tr("Units = %1 meters").arg(fred->renderer()->The_grid->square_size));
     }
     catch (const fso::fred::mission_load_error &) {
@@ -51,35 +52,39 @@ void MainWindow::loadMission()
     }
 }
 
+void MainWindow::on_actionShow_Stars_triggered(bool checked)
+{
+	fred->renderer()->view.Show_stars = checked;
+}
+
+void MainWindow::on_actionShow_Horizon_triggered(bool checked)
+{
+	fred->renderer()->view.Show_horizon = checked;
+}
+
+void MainWindow::on_actionShow_Grid_triggered(bool checked)
+{
+	fred->renderer()->view.Show_grid = checked;
+}
+
+void MainWindow::on_actionShow_Distances_triggered(bool checked)
+{
+	fred->renderer()->view.Show_distances = checked;
+}
+
+void MainWindow::on_actionShow_Coordinates_triggered(bool checked)
+{
+	fred->renderer()->view.Show_coordinates = checked;
+}
+
+void MainWindow::on_actionShow_Outlines_triggered(bool checked)
+{
+	fred->renderer()->view.Show_outlines = checked;
+}
+RenderWindow* MainWindow::getRenderWidget() {
+	return ui->centralwidget->getWindow();
+}
+
 } // namespace fred
 } // namespace fso
 
-void fso::fred::MainWindow::on_actionShow_Stars_triggered(bool checked)
-{
-    fred->renderer()->view.Show_stars = checked;
-}
-
-void fso::fred::MainWindow::on_actionShow_Horizon_triggered(bool checked)
-{
-    fred->renderer()->view.Show_horizon = checked;
-}
-
-void fso::fred::MainWindow::on_actionShow_Grid_triggered(bool checked)
-{
-    fred->renderer()->view.Show_grid = checked;
-}
-
-void fso::fred::MainWindow::on_actionShow_Distances_triggered(bool checked)
-{
-    fred->renderer()->view.Show_distances = checked;
-}
-
-void fso::fred::MainWindow::on_actionShow_Coordinates_triggered(bool checked)
-{
-    fred->renderer()->view.Show_coordinates = checked;
-}
-
-void fso::fred::MainWindow::on_actionShow_Outlines_triggered(bool checked)
-{
-    fred->renderer()->view.Show_outlines = checked;
-}

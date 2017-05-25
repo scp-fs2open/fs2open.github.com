@@ -5,21 +5,22 @@
 find_package(Qt5 COMPONENTS Widgets OpenGL REQUIRED)
 
 set(QTFRED_SRC
-    src/iterators.h
-    src/main.cpp
-    src/fredstubs.cpp
-    src/object.cpp
-    src/renderwidget.h
-    src/renderwidget.cpp
-    src/mainwindow.h
-    src/mainwindow.cpp
     src/editor.h
     src/editor.cpp
-    src/wing.h
-    src/object.h
-
     src/FredRenderer.h
     src/FredRenderer.cpp
+    src/fredstubs.cpp
+    src/iterators.h
+    src/main.cpp
+    src/mainwindow.h
+    src/mainwindow.cpp
+    src/object.h
+    src/object.cpp
+    src/QtGraphicsOperations.h
+    src/QtGraphicsOperations.cpp
+    src/renderwidget.h
+    src/renderwidget.cpp
+    src/wing.h
 )
 
 set(QTFRED_RESOURCES
@@ -51,7 +52,7 @@ set_target_properties(qtfred PROPERTIES OUTPUT_NAME "qtfred_${FSO_BINARY_SUFFIX}
 
 target_compile_definitions(qtfred PRIVATE "$<$<CONFIG:RELEASE>:NDEBUG>;$<$<CONFIG:DEBUG>:_DEBUG;$<$<CXX_COMPILER_ID:MSVC>:PDB_DEBUGGING=1>>")
 
-target_compile_definitions(qtfred PRIVATE -DFRED)
+target_compile_definitions(qtfred PUBLIC USING_THIRD_PARTY_LIBS FRED)
 
 target_include_directories(qtfred PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/src

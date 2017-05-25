@@ -44,10 +44,14 @@ int main(int argc, char *argv[])
     QSplashScreen splash(QPixmap(":/images/splash.png"));
     splash.show();
     app.processEvents();
-    std::shared_ptr<fso::fred::Editor> fred = std::make_shared<fso::fred::Editor>();
+    std::unique_ptr<fso::fred::Editor> fred(new fso::fred::Editor());
 
 #ifdef WIN32
     SCP_mspdbcs_Initialise();
+#endif
+
+#ifndef NDEBUG
+	outwnd_init();
 #endif
 
     auto baseDir = QDir::toNativeSeparators(QDir::current().absolutePath());
@@ -61,6 +65,7 @@ int main(int argc, char *argv[])
         {fso::fred::SubSystem::Fonts, app.tr("Fonts")},
         {fso::fred::SubSystem::Keyboard, app.tr("Initializing keyboard")},
         {fso::fred::SubSystem::Mouse, app.tr("Initializing mouse")},
+        {fso::fred::SubSystem::Particles, app.tr("Initializing particles")},
         {fso::fred::SubSystem::Iff, app.tr("Initializing IFF")},
         {fso::fred::SubSystem::Objects, app.tr("Initializing objects")},
         {fso::fred::SubSystem::Species, app.tr("Initializing species")},
@@ -76,19 +81,14 @@ int main(int argc, char *argv[])
         {fso::fred::SubSystem::View, app.tr("Setting view")}
     };
 
-    fso::fred::initialize(baseDir.toStdString(), [&](const fso::fred::SubSystem &which) {
+    fso::fred::initialize(baseDir.toStdString(), fred.get(), [&](const fso::fred::SubSystem &which) {
         if (initializers.count(which))
             splash.showMessage(initializers.at(which), Qt::AlignHCenter | Qt::AlignBottom, Qt::white);
         app.processEvents();
     });
 
-    fso::fred::MainWindow mw;
-    mw.setEditor(fred);
-    splash.showMessage(qApp->tr("Switching rendering window"), Qt::AlignHCenter | Qt::AlignBottom, Qt::white);
-    app.processEvents();
-    fred->setRenderWindow(reinterpret_cast<void *>(mw.effectiveWinId()));
-    mw.show();
-    splash.finish(&mw);
+	app.processEvents();
+    splash.close();
 
     auto ret = app.exec();
 

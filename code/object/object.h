@@ -18,6 +18,8 @@
 #include "physics/physics.h"
 #include "object/object_flags.h"
 
+#include <functional>
+
 /*
  *		CONSTANTS
  */
@@ -230,7 +232,7 @@ void obj_render(object* obj);
 void obj_queue_render(object* obj, model_draw_list* scene);
 
 //Sorts and renders all the ojbects
-void obj_render_all(void (*render_function)(object *objp), bool* render_viewer_last );
+void obj_render_all(std::function<void(object*)> render_function, bool* render_viewer_last );
 
 //move all objects for the current frame
 void obj_move_all(float frametime);		// moves all objects

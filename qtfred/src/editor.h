@@ -8,11 +8,13 @@ namespace fso {
 namespace fred {
 
 enum class SubSystem {
-    OSRegistry, OS, Timer, CFile, Locale, Graphics, Fonts, Keyboard, Mouse, Iff, Objects, Species,
+    OSRegistry, OS, Timer, CFile, Locale, Graphics, Fonts, Keyboard, Mouse, Particles, Iff, Objects, Species,
     MissionBrief, AI, AIProfiles, Armor, Weapon, Medals, Ships, Nebulas, Stars, View,
 };
 
 typedef std::function<void (const SubSystem &)> InitializerCallback;
+
+class Editor;
 
 /*! Initialize fs2open subsystems needed by the editor.
  *
@@ -24,7 +26,7 @@ typedef std::function<void (const SubSystem &)> InitializerCallback;
  * \param[in]   cfilepath   CFile root directory.
  * \param[in]   listener    A callback function called after each initializer.
  */
-void initialize(const std::string &cfilepath, InitializerCallback listener = [](const SubSystem &) {});
+void initialize(const std::string &cfilepath, Editor* editor, InitializerCallback listener = [](const SubSystem &) {});
 
 struct mission_load_error : public std::runtime_error {
     mission_load_error(const char *msg) : std::runtime_error {msg} {}

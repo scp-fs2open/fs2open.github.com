@@ -1,11 +1,14 @@
 #pragma once
-#include <memory>
+
 #include <QMainWindow>
+
+#include <QtGui/QSurfaceFormat>
 
 namespace fso {
 namespace fred {
 
 class Editor;
+class RenderWindow;
 
 namespace Ui {
 class MainWindow;
@@ -18,7 +21,9 @@ class MainWindow : public QMainWindow
 public:
     explicit MainWindow(QWidget *parent = 0);
     ~MainWindow();
-    void setEditor(std::shared_ptr<Editor>);
+    void setEditor(Editor* editor);
+
+	RenderWindow* getRenderWidget();
 
 public slots:
     void loadMission();
@@ -38,7 +43,7 @@ private slots:
 
 private:
     Ui::MainWindow *ui;
-    std::shared_ptr<Editor> fred;
+    Editor* fred;
 };
 
 
