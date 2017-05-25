@@ -85,7 +85,7 @@ OPTION(FSO_BUILD_TESTS "Build unit tests" OFF)
 
 OPTION(FSO_DEVELOPMENT_MODE "Generate binaries in development mode, only use if you know what you're doing!" OFF)
 
-OPTION(FSO_BUILD_WXFRED2 "Build wxFRED2 binary" OFF)
+OPTION(FSO_BUILD_QTFRED "Build qtFRED2 binary" OFF)
 
 IF(WIN32 OR APPLE)
 	# On windows and mac the default should be to always build the included libraries
@@ -147,9 +147,9 @@ IF(FSO_BUILD_FRED2)
 	ADD_SUBDIRECTORY(fred2)
 ENDIF(FSO_BUILD_FRED2)
 
-IF(FSO_BUILD_WXFRED2)
-	ADD_SUBDIRECTORY(wxfred2)
-ENDIF(FSO_BUILD_WXFRED2)
+IF(FSO_BUILD_QTFRED)
+	ADD_SUBDIRECTORY(qtfred)
+ENDIF()
 
 if(FSO_BUILD_TESTS)
 	add_subdirectory(test)
