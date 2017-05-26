@@ -7887,11 +7887,33 @@ void game_unpause()
 	}
 }
 
+static bool check_simd_usage() {
+#if defined(SIMD_USE_AVX)
+	return SDL_HasAVX() == SDL_TRUE;
+#elif defined(SIMD_USE_SSE2)
+	return SDL_HasSSE2() == SDL_TRUE;
+#elif defined(SIMD_USE_SSE)
+	return SDL_HasSSE() == SDL_TRUE;
+#elif defined(SIMD_USE_NONE)
+	return true;
+#else
+	return true;
+#endif
+}
+
 
 int actual_main(int argc, char *argv[])
 {
 	int result = -1;
 	Assert(argc > 0);
+
+#ifdef SIMD_SET
+	// Check if we support the SIMD set with which this binary was compiled with
+	if (!check_simd_usage()) {
+		Message(os::dialogs::MESSAGEBOX_ERROR, "Your CPU does not support the SIMD feature \"" SIMD_SET "\" with which this executable was compiled with!");
+		return EXIT_FAILURE;
+	}
+#endif
 
 #ifdef WIN32
 	// Don't let more than one instance of FreeSpace run.
