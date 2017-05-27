@@ -1564,20 +1564,22 @@ void FredRenderer::render_models(int cur_object_index,
 
 	bool f = false;
 	enable_htl();
+	
+	auto render_function = [&](object* objp)
+	{
+		this->render_one_model_htl(objp,
+								   cur_object_index,
+								   Show_starts,
+								   Show_ships,
+								   Show_iff,
+								   Bg_bitmap_dialog,
+								   Show_dock_points,
+								   Show_ship_models,
+								   Show_paths_fred,
+								   Lighting_on,
+								   FullDetail);
+	};
 
-	std::function<void(object*)> render_function(std::bind(&FredRenderer::render_one_model_htl,
-														   this,
-														   std::placeholders::_1,
-														   cur_object_index,
-														   Show_starts,
-														   Show_ships,
-														   Show_iff,
-														   Bg_bitmap_dialog,
-														   Show_dock_points,
-														   Show_ship_models,
-														   Show_paths_fred,
-														   Lighting_on,
-														   FullDetail));
 	obj_render_all(render_function, &f);
 
 	disable_htl();
