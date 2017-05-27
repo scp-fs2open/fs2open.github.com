@@ -65,12 +65,13 @@ int main(int argc, char* argv[]) {
 
 	auto baseDir = QDir::toNativeSeparators(QDir::current().absolutePath());
 
-	std::unordered_map<SubSystem, QString> initializers = {{ SubSystem::OSRegistry,   app.tr("OS registry") },
-														   { SubSystem::Timer,        app.tr("Timer") },
-														   { SubSystem::CFile,        app.tr("CFile") },
+	std::unordered_map<SubSystem, QString> initializers = {{ SubSystem::OS,           app.tr("Initializing OS interface") },
+														   { SubSystem::CommandLine,  app.tr("Parsing command line") },
+														   { SubSystem::Timer,        app.tr("Initializing Timer") },
+														   { SubSystem::CFile,        app.tr("Initializing CFile") },
 														   { SubSystem::Locale,       app.tr("Initialization locale") },
 														   { SubSystem::Graphics,     app.tr("Initializating graphics") },
-														   { SubSystem::Fonts,        app.tr("Fonts") },
+														   { SubSystem::Fonts,        app.tr("Initializing Fonts") },
 														   { SubSystem::Keyboard,     app.tr("Initializing keyboard") },
 														   { SubSystem::Mouse,        app.tr("Initializing mouse") },
 														   { SubSystem::Particles,    app.tr("Initializing particles") },
@@ -88,7 +89,7 @@ int main(int argc, char* argv[]) {
 														   { SubSystem::Stars,        app.tr("Initializing stars") },
 														   { SubSystem::View,         app.tr("Setting view") }};
 
-	fso::fred::initialize(baseDir.toStdString(), fred.get(), [&](const SubSystem& which) {
+	fso::fred::initialize(baseDir.toStdString(), argc, argv, fred.get(), [&](const SubSystem& which) {
 		if (initializers.count(which)) {
 			splash.showMessage(initializers.at(which), Qt::AlignHCenter | Qt::AlignBottom, Qt::white);
 		}
