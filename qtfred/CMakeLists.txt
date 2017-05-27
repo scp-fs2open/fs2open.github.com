@@ -2,6 +2,12 @@
 # Find includes in corresponding build directories
 
 # Find the QtWidgets library
+
+SET(QT5_INSTALL_ROOT "" CACHE PATH
+"The path to the Qt5 installation root. May be necessary on windows if the standard find_package fails to find the Qt installation.")
+
+list(APPEND CMAKE_PREFIX_PATH "${QT5_INSTALL_ROOT}")
+
 find_package(Qt5 COMPONENTS Widgets OpenGL REQUIRED)
 
 include(source_groups.cmake)
