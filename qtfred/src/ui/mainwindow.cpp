@@ -5,7 +5,7 @@
 #include <QMessageBox>
 #include <QDebug>
 
-#include "editor.h"
+#include "mission/editor.h"
 #include "renderwidget.h"
 
 namespace fso {

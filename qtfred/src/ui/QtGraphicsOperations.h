@@ -1,7 +1,7 @@
 #pragma once
 
 #include <osapi/osapi.h>
-#include "editor.h"
+#include "mission/editor.h"
 #include "mainwindow.h"
 
 #include <QtGui/QOpenGLContext>

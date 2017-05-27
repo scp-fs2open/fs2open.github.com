@@ -31,7 +31,7 @@
 #include "osapi/osapi.h" // os_get_window, os_set_window.
 #include "graphics/font.h"
 
-#include "QtGraphicsOperations.h"
+#include "ui/QtGraphicsOperations.h"
 
 extern int Xstr_inited;
 

@@ -4,7 +4,6 @@
 #include <globalincs/systemvars.h>
 #include <io/timer.h>
 #include <osapi/osapi.h>
-#include <object.h>
 #include <io/key.h>
 #include <object/object.h>
 #include <globalincs/linklist.h>
@@ -15,9 +14,11 @@
 #include <ship/ship.h>
 #include <jumpnode/jumpnode.h>
 #include <asteroid/asteroid.h>
-#include <iterators.h>
 #include <iff_defs/iff_defs.h>
 #include <math/fvi.h>
+
+#include "mission/iterators.h"
+#include "mission/object.h"
 
 using std::begin;
 using std::end;

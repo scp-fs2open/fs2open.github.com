@@ -14,7 +14,7 @@
 #include "io/timer.h"
 #include "starfield/starfield.h"
 
-#include "editor.h"
+#include "mission/editor.h"
 #include "fredGlobals.h"
 
 namespace fso {

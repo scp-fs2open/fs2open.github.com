@@ -25,6 +25,8 @@ set(QTFRED_SRC
     src/wing.h
 )
 
+include(source_groups.cmake)
+
 set(QTFRED_RESOURCES
     resources/resources.qrc
 )
@@ -33,17 +35,12 @@ set(QTFRED_UI
     ui/mainwindow.ui
 )
 
-qt5_wrap_ui(QTFRED_UI_GENERATED ${QTFRED_UI})
+qt5_wrap_ui(QTFRED_UI_GENERATED ${files_ui})
 
-source_group(""                         FILES ${QTFRED_SRC})
-source_group("Resources"                FILES ${QTFRED_RESOURCES})
-source_group("UI"                       FILES ${QTFRED_UI})
 source_group("UI\\Generated"            FILES ${QTFRED_UI_GENERATED})
 
 add_executable(qtfred ${EXE_GUI_TYPE}
-    ${QTFRED_SRC}
-    ${QTFRED_RESOURCES}
-    ${QTFRED_UI}
+    ${source_files}
     ${QTFRED_UI_GENERATED}
 )
 set_target_properties(qtfred PROPERTIES

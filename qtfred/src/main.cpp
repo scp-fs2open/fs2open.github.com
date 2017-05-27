@@ -18,10 +18,10 @@
 
 #include "globalincs/globals.h" // MAX_SHIPS, NAME_LENGTH
 
-#include "editor.h"
-#include "mainwindow.h"
+#include "mission/editor.h"
 
-#include "fredGlobals.h"
+#include "ui/mainwindow.h"
+#include "ui/fredGlobals.h"
 
 // Globals needed by the engine when built in 'FRED' mode.
 int Fred_running = 1;

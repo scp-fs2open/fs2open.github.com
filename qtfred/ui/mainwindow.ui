@@ -111,7 +111,7 @@
   <customwidget>
    <class>fso::fred::RenderWidget</class>
    <extends>QWidget</extends>
-   <header>renderwidget.h</header>
+   <header>ui/renderwidget.h</header>
    <container>1</container>
   </customwidget>
  </customwidgets>
