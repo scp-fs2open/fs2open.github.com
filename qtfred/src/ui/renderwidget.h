@@ -31,6 +31,8 @@ class RenderWindow: public QWindow {
  protected:
 	void paintGL();
 
+	bool event(QEvent* evt) override;
+
 	void keyPressEvent(QKeyEvent*) override;
 	void keyReleaseEvent(QKeyEvent*) override;
 	void mouseReleaseEvent(QMouseEvent*) override;

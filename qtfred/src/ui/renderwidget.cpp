@@ -50,17 +50,26 @@ void RenderWindow::initializeGL(const QSurfaceFormat& surfaceFmt) {
 }
 
 void RenderWindow::startRendering() {
-	auto timer = new QTimer(this);
-	connect(timer, &QTimer::timeout, this, &RenderWindow::paintGL);
-	timer->start(0);
-
 	_isRendering = true;
 
 	fred->resize(size().width(), size().height());
+
+	// Paint the first frame
+	updateGL();
 }
 
 void RenderWindow::paintGL() {
 	fred->update();
+}
+
+bool RenderWindow::event(QEvent* evt) {
+	switch (evt->type()) {
+	case QEvent::UpdateRequest:
+		updateGL();
+		return true;
+	default:
+		return QWindow::event(evt);
+	}
 }
 
 void RenderWindow::keyPressEvent(QKeyEvent* key) {
@@ -76,6 +85,8 @@ void RenderWindow::keyPressEvent(QKeyEvent* key) {
 
 	key->accept();
 	key_mark(qt2fsKeys.at(key->key()), 1, 0);
+
+	updateGL();
 }
 
 void RenderWindow::keyReleaseEvent(QKeyEvent* key) {
@@ -100,11 +111,17 @@ void RenderWindow::resizeEvent(QResizeEvent* event) {
 	if (_isRendering) {
 		// Only send resize event if we are actually rendering
 		fred->resize(event->size().width(), event->size().height());
+
+		// Make sure we repaint
+		updateGL();
 	}
 }
 
 void RenderWindow::updateGL() {
 	paintGL();
+
+	// Continue requesting updates
+	requestUpdate();
 }
 RenderWindow::~RenderWindow() {
 }
