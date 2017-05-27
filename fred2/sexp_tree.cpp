@@ -6708,7 +6708,6 @@ int sexp_tree::get_container_count(const char *container_name)
 {
 	uint idx;
 	int count = 0;
-	char compare_name[64];
 
 	// look for compare name
 	for (idx=0; idx<tree_nodes.size(); idx++) {
