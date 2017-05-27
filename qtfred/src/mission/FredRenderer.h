@@ -97,12 +97,6 @@ namespace fso
             void cancel_display_active_ship_subsystem(subsys_to_render& Render_subsys);
             void display_active_ship_subsystem(subsys_to_render& Render_subsys, int cur_object_index);
 
-            void render_one_model_nohtl(
-                object* objp, int cur_object_index,
-                bool Show_starts, bool Show_ships, bool Show_iff[],
-                bool Bg_bitmap_dialog,
-                bool Show_ship_models, bool Show_dock_points,
-                bool Show_paths_fred);
             void render_model_x_htl(vec3d* pos, grid* gridp, int col_scheme = 0);
             void render_compass(bool Show_compass);
             void draw_orient_sphere2(int col, object* obj, int r, int g, int b);
