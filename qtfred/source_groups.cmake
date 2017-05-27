@@ -3,8 +3,8 @@ set(source_files)
 
 macro(add_file_folder VAR_NAME FOLDER_NAME)
     set(files_${VAR_NAME} ${ARGN})
-    string(REPLACE "/" "\\" FOLDER_NAME "${FOLDER_NAME}")
-    source_group("${FOLDER_NAME}" FILES ${files_${VAR_NAME}})
+    string(REPLACE "/" "\\" FIXED_NAME "${FOLDER_NAME}")
+    source_group("${FIXED_NAME}" FILES ${files_${VAR_NAME}})
     set(source_files ${source_files} ${files_${VAR_NAME}})
 endmacro(add_file_folder)
 

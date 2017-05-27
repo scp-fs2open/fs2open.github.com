@@ -4,32 +4,7 @@
 # Find the QtWidgets library
 find_package(Qt5 COMPONENTS Widgets OpenGL REQUIRED)
 
-set(QTFRED_SRC
-    src/editor.h
-    src/editor.cpp
-    src/fredGlobals.h
-    src/fredGlobals.cpp
-    src/FredRenderer.h
-    src/FredRenderer.cpp
-    src/fredstubs.cpp
-    src/iterators.h
-    src/main.cpp
-    src/mainwindow.h
-    src/mainwindow.cpp
-    src/object.h
-    src/object.cpp
-    src/QtGraphicsOperations.h
-    src/QtGraphicsOperations.cpp
-    src/renderwidget.h
-    src/renderwidget.cpp
-    src/wing.h
-)
-
 include(source_groups.cmake)
-
-set(QTFRED_RESOURCES
-    resources/resources.qrc
-)
 
 set(QTFRED_UI
     ui/mainwindow.ui
@@ -49,7 +24,7 @@ set_target_properties(qtfred PROPERTIES
 
 set_target_properties(qtfred PROPERTIES OUTPUT_NAME "qtfred_${FSO_BINARY_SUFFIX}")
 
-target_compile_definitions(qtfred PRIVATE "$<$<CONFIG:RELEASE>:NDEBUG>;$<$<CONFIG:DEBUG>:_DEBUG;$<$<CXX_COMPILER_ID:MSVC>:PDB_DEBUGGING=1>>")
+target_compile_definitions(qtfred PRIVATE "$<$<CXX_COMPILER_ID:MSVC>:PDB_DEBUGGING=1>")
 
 target_compile_definitions(qtfred PUBLIC USING_THIRD_PARTY_LIBS FRED)
 
@@ -65,7 +40,7 @@ target_link_libraries(qtfred
 
 include(CreateLaunchers)
 create_target_launcher(qtfred
-    WORKING_DIRECTORY ${FSO_FREESPACE_PATH}/data
+    WORKING_DIRECTORY ${FSO_FREESPACE_PATH}
     ARGS ${FSO_RUN_ARGUMENTS})
 
 INSTALL(
