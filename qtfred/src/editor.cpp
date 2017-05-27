@@ -33,6 +33,7 @@
 
 #include "QtGraphicsOperations.h"
 
+extern int Xstr_inited;
 
 namespace fso {
 namespace fred {
@@ -54,7 +55,12 @@ void initialize(const std::string& cfilepath, Editor* editor, InitializerCallbac
 
 			 cfile_init(file_path.c_str());
 		 },                                                                                SubSystem::CFile },
-		 { std::bind(lcl_init, FS2_OPEN_DEFAULT_LANGUAGE),                                 SubSystem::Locale },
+		 { []() {
+			 lcl_init(FS2_OPEN_DEFAULT_LANGUAGE);
+
+			 // Goober5000 - force init XSTRs (so they work, but only work in English, based on above comment)
+			 Xstr_inited = 1;
+		 },                                                                                SubSystem::Locale },
 		 { [=]() {
 			 std::unique_ptr<QtGraphicsOperations> graphicsOps(new QtGraphicsOperations(editor));
 			 gr_init(std::move(graphicsOps));
