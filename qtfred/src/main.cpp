@@ -95,6 +95,7 @@ int main(int argc, char* argv[]) {
 		app.processEvents();
 	});
 
+	// Allow other parts of the code to execute code that needs to run after everything has been set up
 	emit fredGlobals->initializeComplete();
 
 	app.processEvents();
