@@ -16,6 +16,7 @@ class RenderWindow: public QWindow {
  Q_OBJECT
  public:
 	explicit RenderWindow(QWidget* parent = 0);
+	~RenderWindow();
 
 	void setEditor(Editor* editor) {
 		fred = editor;

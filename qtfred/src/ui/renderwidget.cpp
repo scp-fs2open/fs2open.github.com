@@ -106,12 +106,16 @@ void RenderWindow::resizeEvent(QResizeEvent* event) {
 void RenderWindow::updateGL() {
 	paintGL();
 }
+RenderWindow::~RenderWindow() {
+}
 
 RenderWidget::RenderWidget(QWidget* parent) : QWidget(parent) {
 	_window = new RenderWindow(this);
 
 	auto layout = new QHBoxLayout(this);
+	layout->setSpacing(0);
 	layout->addWidget(QWidget::createWindowContainer(_window, this));
+	layout->setContentsMargins(0, 0, 0, 0);
 
 	setLayout(layout);
 }
