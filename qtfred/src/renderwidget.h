@@ -23,6 +23,8 @@ class RenderWindow: public QWindow {
 
 	void initializeGL(const QSurfaceFormat& surfaceFmt);
 
+	void startRendering();
+
 	void updateGL();
 
  protected:
@@ -38,6 +40,7 @@ class RenderWindow: public QWindow {
  private:
 	std::unordered_map<int, int> qt2fsKeys;
 	Editor* fred;
+	bool _isRendering = false;
 };
 
 class RenderWidget: public QWidget {

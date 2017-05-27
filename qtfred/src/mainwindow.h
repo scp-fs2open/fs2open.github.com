@@ -4,6 +4,8 @@
 
 #include <QtGui/QSurfaceFormat>
 
+#include <memory>
+
 namespace fso {
 namespace fred {
 
@@ -42,7 +44,7 @@ private slots:
     void on_actionShow_Outlines_triggered(bool checked);
 
 private:
-    Ui::MainWindow *ui;
+    std::unique_ptr<Ui::MainWindow> ui;
     Editor* fred;
 };
 

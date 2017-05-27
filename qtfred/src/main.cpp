@@ -19,82 +19,95 @@
 #include "globalincs/globals.h" // MAX_SHIPS, NAME_LENGTH
 
 #include "editor.h"
-
 #include "mainwindow.h"
+
+#include "fredGlobals.h"
 
 // Globals needed by the engine when built in 'FRED' mode.
 int Fred_running = 1;
-char Fred_callsigns[MAX_SHIPS][NAME_LENGTH+1];
-char Fred_alt_names[MAX_SHIPS][NAME_LENGTH+1];
+char Fred_callsigns[MAX_SHIPS][NAME_LENGTH + 1];
+char Fred_alt_names[MAX_SHIPS][NAME_LENGTH + 1];
 int Show_cpu = 0;
 
 // Empty functions to make fred link with the sexp_mission_set_subspace
-void game_start_subspace_ambient_sound() {}
-void game_stop_subspace_ambient_sound() {}
+void game_start_subspace_ambient_sound() {
+}
+void game_stop_subspace_ambient_sound() {
+}
 
 // SDL defines this on windows which causes problems
 #ifdef main
 #undef main
 #endif
 
-int main(int argc, char *argv[])
-{
+int main(int argc, char* argv[]) {
+	using namespace fso::fred;
 
-    QApplication app(argc, argv);
-    QSplashScreen splash(QPixmap(":/images/splash.png"));
-    splash.show();
-    app.processEvents();
-    std::unique_ptr<fso::fred::Editor> fred(new fso::fred::Editor());
+	SDL_SetMainReady();
+
+	QApplication app(argc, argv);
+
+	// Init Qt parts of the global object
+	fredGlobals->qtInit();
+
+	QSplashScreen splash(QPixmap(":/images/splash.png"));
+	splash.show();
+	app.processEvents();
+	std::unique_ptr<Editor> fred(new Editor());
+
+	// Initialize renderer once initialize is complete
+	// TODO: Decide how to handle this. It could be done inside Editor but that is currently free of Qt code
+	QObject::connect(fredGlobals, &QtFredGlobals::initializeComplete, [&fred]() { fred->initializeRenderer(); });
 
 #ifdef WIN32
-    SCP_mspdbcs_Initialise();
+	SCP_mspdbcs_Initialise();
 #endif
 
-#ifndef NDEBUG
-	outwnd_init();
-#endif
+	auto baseDir = QDir::toNativeSeparators(QDir::current().absolutePath());
 
-    auto baseDir = QDir::toNativeSeparators(QDir::current().absolutePath());
+	std::unordered_map<SubSystem, QString> initializers = {{ SubSystem::OSRegistry,   app.tr("OS registry") },
+														   { SubSystem::Timer,        app.tr("Timer") },
+														   { SubSystem::CFile,        app.tr("CFile") },
+														   { SubSystem::Locale,       app.tr("Initialization locale") },
+														   { SubSystem::Graphics,     app.tr("Initializating graphics") },
+														   { SubSystem::Fonts,        app.tr("Fonts") },
+														   { SubSystem::Keyboard,     app.tr("Initializing keyboard") },
+														   { SubSystem::Mouse,        app.tr("Initializing mouse") },
+														   { SubSystem::Particles,    app.tr("Initializing particles") },
+														   { SubSystem::Iff,          app.tr("Initializing IFF") },
+														   { SubSystem::Objects,      app.tr("Initializing objects") },
+														   { SubSystem::Species,      app.tr("Initializing species") },
+														   { SubSystem::MissionBrief, app.tr("Initializing briefings") },
+														   { SubSystem::AI,           app.tr("Initializing AI") },
+														   { SubSystem::AIProfiles,   app.tr("Initializing AI profiles") },
+														   { SubSystem::Armor,        app.tr("Initializing armors") },
+														   { SubSystem::Weapon,       app.tr("Initializing weaponry") },
+														   { SubSystem::Medals,       app.tr("Initializing medals") },
+														   { SubSystem::Ships,        app.tr("Initializing ships") },
+														   { SubSystem::Nebulas,      app.tr("Initializing nebulas") },
+														   { SubSystem::Stars,        app.tr("Initializing stars") },
+														   { SubSystem::View,         app.tr("Setting view") }};
 
-    std::unordered_map<fso::fred::SubSystem, QString> initializers = {
-        {fso::fred::SubSystem::OSRegistry, app.tr("OS registry")},
-        {fso::fred::SubSystem::Timer, app.tr("Timer")},
-        {fso::fred::SubSystem::CFile, app.tr("CFile")},
-        {fso::fred::SubSystem::Locale, app.tr("Initialization locale")},
-        {fso::fred::SubSystem::Graphics, app.tr("Initializating graphics")},
-        {fso::fred::SubSystem::Fonts, app.tr("Fonts")},
-        {fso::fred::SubSystem::Keyboard, app.tr("Initializing keyboard")},
-        {fso::fred::SubSystem::Mouse, app.tr("Initializing mouse")},
-        {fso::fred::SubSystem::Particles, app.tr("Initializing particles")},
-        {fso::fred::SubSystem::Iff, app.tr("Initializing IFF")},
-        {fso::fred::SubSystem::Objects, app.tr("Initializing objects")},
-        {fso::fred::SubSystem::Species, app.tr("Initializing species")},
-        {fso::fred::SubSystem::MissionBrief, app.tr("Initializing briefings")},
-        {fso::fred::SubSystem::AI, app.tr("Initializing AI")},
-        {fso::fred::SubSystem::AIProfiles, app.tr("Initializing AI profiles")},
-        {fso::fred::SubSystem::Armor, app.tr("Initializing armors")},
-        {fso::fred::SubSystem::Weapon, app.tr("Initializing weaponry")},
-        {fso::fred::SubSystem::Medals, app.tr("Initializing medals")},
-        {fso::fred::SubSystem::Ships, app.tr("Initializing ships")},
-        {fso::fred::SubSystem::Nebulas, app.tr("Initializing nebulas")},
-        {fso::fred::SubSystem::Stars, app.tr("Initializing stars")},
-        {fso::fred::SubSystem::View, app.tr("Setting view")}
-    };
+	fso::fred::initialize(baseDir.toStdString(), fred.get(), [&](const SubSystem& which) {
+		if (initializers.count(which)) {
+			splash.showMessage(initializers.at(which), Qt::AlignHCenter | Qt::AlignBottom, Qt::white);
+		}
+		app.processEvents();
+	});
 
-    fso::fred::initialize(baseDir.toStdString(), fred.get(), [&](const fso::fred::SubSystem &which) {
-        if (initializers.count(which))
-            splash.showMessage(initializers.at(which), Qt::AlignHCenter | Qt::AlignBottom, Qt::white);
-        app.processEvents();
-    });
+	emit fredGlobals->initializeComplete();
 
 	app.processEvents();
-    splash.close();
+	splash.close();
 
-    auto ret = app.exec();
+	auto ret = app.exec();
+
+	// Clean up resources after we are done
+	fso::fred::shutdown();
 
 #ifdef WIN32
-    SCP_mspdbcs_Cleanup();
+	SCP_mspdbcs_Cleanup();
 #endif
 
-    return ret;
+	return ret;
 }

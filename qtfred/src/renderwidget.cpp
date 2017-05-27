@@ -7,6 +7,7 @@
 #include <QKeyEvent>
 #include <QTimer>
 #include <QtGui/QtGui>
+#include <QtWidgets/QHBoxLayout>
 
 #include "osapi/osapi.h"
 #include "io/key.h"
@@ -14,6 +15,7 @@
 #include "starfield/starfield.h"
 
 #include "editor.h"
+#include "fredGlobals.h"
 
 namespace fso {
 namespace fred {
@@ -41,8 +43,20 @@ RenderWindow::RenderWindow(QWidget* parent) : QWindow(parent->windowHandle()) {
 void RenderWindow::initializeGL(const QSurfaceFormat& surfaceFmt) {
 	setFormat(surfaceFmt);
 
-	// Force creation of this window so that we can use it work OpenGL
+	// Force creation of this window so that we can use it for OpenGL
 	create();
+
+	fredGlobals->runAfterInit([this]() { startRendering(); });
+}
+
+void RenderWindow::startRendering() {
+	auto timer = new QTimer(this);
+	connect(timer, &QTimer::timeout, this, &RenderWindow::paintGL);
+	timer->start(0);
+
+	_isRendering = true;
+
+	fred->resize(size().width(), size().height());
 }
 
 void RenderWindow::paintGL() {
@@ -83,15 +97,23 @@ void RenderWindow::mouseReleaseEvent(QMouseEvent* mouse) {
 	fred->findFirstObjectUnder(mouse->x(), mouse->y());
 }
 void RenderWindow::resizeEvent(QResizeEvent* event) {
-	//fred->resize(event->size().width(), event->size().height());
+	if (_isRendering) {
+		// Only send resize event if we are actually rendering
+		fred->resize(event->size().width(), event->size().height());
+	}
 }
+
 void RenderWindow::updateGL() {
 	paintGL();
 }
 
-RenderWidget::RenderWidget(QWidget* parent) :
-	QWidget(parent) {
+RenderWidget::RenderWidget(QWidget* parent) : QWidget(parent) {
 	_window = new RenderWindow(this);
+
+	auto layout = new QHBoxLayout(this);
+	layout->addWidget(QWidget::createWindowContainer(_window, this));
+
+	setLayout(layout);
 }
 RenderWindow* RenderWidget::getWindow() const {
 	return _window;

@@ -76,7 +76,16 @@ void QtGraphicsOperations::makeOpenGLContextCurrent(os::Viewport* view, os::Open
 	auto qtPort = static_cast<QtViewport*>(view);
 	auto qtContext = static_cast<QtOpenGLContext*>(ctx);
 
-	qtContext->makeCurrent(qtPort->getWindow()->getRenderWidget());
+	if (qtPort == nullptr && qtContext == nullptr) {
+		// Qt requires a context pointer for disabling it so we retrieve the current context and the disable that
+		auto current = QOpenGLContext::currentContext();
+
+		if (current != nullptr) {
+			current->doneCurrent();
+		}
+	} else {
+		qtContext->makeCurrent(qtPort->getWindow()->getRenderWidget());
+	}
 }
 
 QtViewport::QtViewport(std::unique_ptr<MainWindow>&& window, const os::ViewPortProperties& viewProps) :
@@ -93,8 +102,6 @@ std::unique_ptr<os::Viewport> QtGraphicsOperations::createViewport(const os::Vie
 	mw->setEditor(_editor);
 	mw->show();
 
-	qApp->processEvents();
-
 	return std::unique_ptr<os::Viewport>(new QtViewport(std::move(mw), props));
 }
 
@@ -107,7 +114,9 @@ std::pair<uint32_t, uint32_t> QtViewport::getSize() {
 	return std::make_pair((uint32_t) size.width(), (uint32_t) size.height());
 }
 void QtViewport::swapBuffers() {
-	// TODO: Not implemented yet!
+	if (_viewportWindow->isVisible()) {
+		QOpenGLContext::currentContext()->swapBuffers(_viewportWindow->getRenderWidget());
+	}
 }
 void QtViewport::setState(os::ViewportState state) {
 	// Not used in FRED
@@ -138,7 +147,7 @@ static void* openglFunctionLoader(const char* name) {
 QtOpenGLContext::QtOpenGLContext(std::unique_ptr<QOpenGLContext>&& context) : _context(std::move(context)) {
 }
 QtOpenGLContext::~QtOpenGLContext() {
-
+	_context->doneCurrent();
 }
 os::OpenGLLoadProc QtOpenGLContext::getLoaderFunction() {
 	return openglFunctionLoader;

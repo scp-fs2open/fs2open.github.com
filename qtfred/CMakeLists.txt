@@ -7,6 +7,8 @@ find_package(Qt5 COMPONENTS Widgets OpenGL REQUIRED)
 set(QTFRED_SRC
     src/editor.h
     src/editor.cpp
+    src/fredGlobals.h
+    src/fredGlobals.cpp
     src/FredRenderer.h
     src/FredRenderer.cpp
     src/fredstubs.cpp
@@ -79,9 +81,6 @@ COPY_FILES_TO_TARGET(qtfred)
 
 if (WIN32)
     set(additional_dlls
-        icudt52.dll
-        icuin52.dll
-        icuuc52.dll
     )
 
     include(util)

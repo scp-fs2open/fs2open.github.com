@@ -28,6 +28,8 @@ class Editor;
  */
 void initialize(const std::string &cfilepath, Editor* editor, InitializerCallback listener = [](const SubSystem &) {});
 
+void shutdown();
+
 struct mission_load_error : public std::runtime_error {
     mission_load_error(const char *msg) : std::runtime_error {msg} {}
 };
@@ -44,12 +46,6 @@ class Editor
 {
 public:
     Editor();
-
-    /*! Configure which window in the GUI (if any) will override the rendering target.
-     *
-     * \param[in] handle Target window handle provided by the GUI.
-     */
-    void setRenderWindow(const void *handle);
 
     /*! Initialize renderer. */
     void initializeRenderer();

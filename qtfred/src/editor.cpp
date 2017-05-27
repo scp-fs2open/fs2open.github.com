@@ -6,6 +6,7 @@
 #include <clocale>
 
 #include <SDL.h>
+#include <sound/audiostr.h>
 
 #include "globalincs/pstypes.h" // vm_init
 #include "osapi/osregistry.h" // os_registry_init
@@ -37,6 +38,11 @@ namespace fso {
 namespace fred {
 
 void initialize(const std::string& cfilepath, Editor* editor, InitializerCallback listener) {
+
+#ifndef NDEBUG
+	outwnd_init();
+#endif
+
 	std::setlocale(LC_ALL, "C");
 
 	std::vector<std::pair<std::function<void(void)>, SubSystem>> initializers =
@@ -77,15 +83,24 @@ void initialize(const std::string& cfilepath, Editor* editor, InitializerCallbac
 	for (const auto& initializer : initializers) {
 		const auto& init_function = initializer.first;
 		const auto& which = initializer.second;
-		init_function();
 		listener(which);
+		init_function();
 	}
 }
 
-Editor::Editor() : currentObject{ -1 } {
+void shutdown() {
+	audiostream_close();
+	snd_close();
+	gr_close();
+
+	os_cleanup();
+
+#ifndef NDEBUG
+	outwnd_close();
+#endif
 }
 
-void Editor::setRenderWindow(const void* handle) {
+Editor::Editor() : currentObject{ -1 } {
 }
 
 void Editor::initializeRenderer() {
