@@ -11,9 +11,6 @@
 
 #ifdef _WIN32
 #include "globalincs/mspdb_callstack.h"
-#ifndef _MINGW
-#include <crtdbg.h>
-#endif // !_MINGW
 #endif
 
 #include "globalincs/globals.h" // MAX_SHIPS, NAME_LENGTH

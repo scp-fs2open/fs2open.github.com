@@ -114,7 +114,7 @@ std::pair<uint32_t, uint32_t> QtViewport::getSize() {
 	return std::make_pair((uint32_t) size.width(), (uint32_t) size.height());
 }
 void QtViewport::swapBuffers() {
-	if (_viewportWindow->isVisible()) {
+	if (_viewportWindow->getRenderWidget()->isVisible()) {
 		QOpenGLContext::currentContext()->swapBuffers(_viewportWindow->getRenderWidget());
 	}
 }
@@ -147,7 +147,6 @@ static void* openglFunctionLoader(const char* name) {
 QtOpenGLContext::QtOpenGLContext(std::unique_ptr<QOpenGLContext>&& context) : _context(std::move(context)) {
 }
 QtOpenGLContext::~QtOpenGLContext() {
-	_context->doneCurrent();
 }
 os::OpenGLLoadProc QtOpenGLContext::getLoaderFunction() {
 	return openglFunctionLoader;
