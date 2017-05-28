@@ -4,6 +4,7 @@
 #include <unordered_map>
 
 #include <QWindow>
+#include <QWidget>
 
 #include "osapi/osapi.h"
 
