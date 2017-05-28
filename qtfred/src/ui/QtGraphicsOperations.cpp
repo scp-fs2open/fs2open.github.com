@@ -33,8 +33,12 @@ QSurfaceFormat getSurfaceFormat(const os::ViewPortProperties& viewProps, const o
 		break;
 	}
 
-	format.setOption(QSurfaceFormat::DebugContext, glAttrs.flags[os::OpenGLContextFlags::Debug]);
-	format.setOption(QSurfaceFormat::DeprecatedFunctions, !glAttrs.flags[os::OpenGLContextFlags::ForwardCompatible]);
+	if (glAttrs.flags[os::OpenGLContextFlags::Debug]) {
+		format.setOption(QSurfaceFormat::DebugContext);
+	}
+	if (!glAttrs.flags[os::OpenGLContextFlags::ForwardCompatible]) {
+		format.setOption(QSurfaceFormat::DeprecatedFunctions);
+	}
 
 	format.setMajorVersion(glAttrs.major_version);
 	format.setMinorVersion(glAttrs.minor_version);
