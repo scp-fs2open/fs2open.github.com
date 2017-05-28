@@ -291,14 +291,14 @@ void fredhtl_render_subsystem_bounding_box(subsys_to_render* s2r, subsys_to_rend
 		&& (s2r->cur_subsys->system_info->turret_gun_sobj != s2r->cur_subsys->system_info->subobj_num)) {
 		bsp_info* bsp_turret = &pm->submodel[s2r->cur_subsys->system_info->turret_gun_sobj];
 
-		vec3d front_top_left = bsp_turret->bounding_box[7];
-		vec3d front_top_right = bsp_turret->bounding_box[6];
-		vec3d front_bot_left = bsp_turret->bounding_box[4];
-		vec3d front_bot_right = bsp_turret->bounding_box[5];
-		vec3d back_top_left = bsp_turret->bounding_box[3];
-		vec3d back_top_right = bsp_turret->bounding_box[2];
-		vec3d back_bot_left = bsp_turret->bounding_box[0];
-		vec3d back_bot_right = bsp_turret->bounding_box[1];
+		front_top_left = bsp_turret->bounding_box[7];
+		front_top_right = bsp_turret->bounding_box[6];
+		front_bot_left = bsp_turret->bounding_box[4];
+		front_bot_right = bsp_turret->bounding_box[5];
+		back_top_left = bsp_turret->bounding_box[3];
+		back_top_right = bsp_turret->bounding_box[2];
+		back_bot_left = bsp_turret->bounding_box[0];
+		back_bot_right = bsp_turret->bounding_box[1];
 
 		g3_start_instance_matrix(&bsp_turret->offset, &vmd_identity_matrix, true);
 
@@ -340,7 +340,6 @@ void display_active_ship_subsystem(subsys_to_render& Render_subsys, int cur_obje
 	if (cur_object_index != -1) {
 		if (Objects[cur_object_index].type == OBJ_SHIP) {
 			object* objp = &Objects[cur_object_index];
-			int x1, y1, x2, y2;
 			char buf[256];
 
 			// switching to a new ship, so reset
@@ -372,7 +371,7 @@ void render_active_rect(bool box_marking, const Marking_box& marking_box) {
 }
 
 void draw_compass_arrow(vec3d* v0) {
-	vec3d v1 = {{{ 0.0f }}};
+	vec3d v1 = vmd_zero_vector;
 	vertex tv0, tv1;
 
 	g3_rotate_vertex(&tv0, v0);
@@ -967,7 +966,6 @@ void FredRenderer::display_active_ship_subsystem(subsys_to_render& Render_subsys
 	if (cur_object_index != -1) {
 		if (Objects[cur_object_index].type == OBJ_SHIP) {
 			object* objp = &Objects[cur_object_index];
-			int x1, y1, x2, y2;
 			char buf[256];
 
 			// switching to a new ship, so reset
