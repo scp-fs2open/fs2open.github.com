@@ -123,6 +123,8 @@ void Editor::resize(int width, int height) {
 }
 
 void Editor::update() {
+	Assertion(m_renderer, "Render has not been initialized yet!");
+
 	m_renderer->game_do_frame(-1, 0, 0, -1);
 	std::array<bool, MAX_IFFS> iffs;
 	iffs.fill(true);
@@ -145,6 +147,8 @@ void Editor::update() {
 }
 
 void Editor::loadMission(const std::string& filepath) {
+	Assertion(m_renderer, "Render has not been initialized yet!");
+
 	if (parse_main(filepath.c_str())) {
 		throw mission_load_error("Parse error");
 	}
@@ -157,6 +161,8 @@ void Editor::loadMission(const std::string& filepath) {
 }
 
 void Editor::findFirstObjectUnder(int x, int y) {
+	Assertion(m_renderer, "Render has not been initialized yet!");
+
 	std::array<bool, MAX_IFFS> iffs;
 	iffs.fill(true);
 
@@ -168,6 +174,8 @@ void Editor::findFirstObjectUnder(int x, int y) {
 }
 
 void Editor::resetPhysics() {
+	Assertion(m_renderer, "Render has not been initialized yet!");
+
 	int physics_speed = 100;
 	int physics_rot = 20;
 
