@@ -143,6 +143,8 @@ void RenderWindow::exposeEvent(QExposeEvent* event) {
 }
 
 RenderWidget::RenderWidget(QWidget* parent) : QWidget(parent) {
+	setFocusPolicy(Qt::StrongFocus);
+
 	_window = new RenderWindow(this);
 
 	auto layout = new QHBoxLayout(this);
