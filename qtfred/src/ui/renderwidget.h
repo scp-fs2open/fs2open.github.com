@@ -39,6 +39,8 @@ class RenderWindow: public QWindow {
 	void mouseReleaseEvent(QMouseEvent*) override;
 	void resizeEvent(QResizeEvent* event) override;
 
+	void exposeEvent(QExposeEvent* event) override;
+
  signals:
 
  private:

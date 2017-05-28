@@ -66,7 +66,7 @@ bool RenderWindow::event(QEvent* evt) {
 	switch (evt->type()) {
 	case QEvent::UpdateRequest:
 		updateGL();
-		return true;
+		return QWindow::event(evt);
 	default:
 		return QWindow::event(evt);
 	}
@@ -118,12 +118,28 @@ void RenderWindow::resizeEvent(QResizeEvent* event) {
 }
 
 void RenderWindow::updateGL() {
-	paintGL();
+	if (_isRendering) {
+		paintGL();
+	}
 
 	// Continue requesting updates
+#if QT_VERSION >= QT_VERSION_CHECK(5, 5, 0)
 	requestUpdate();
+#else
+    // This causes issues with the open dialog but is here for compatibility with older Qt versions
+	QCoreApplication::postEvent(this, new QEvent(QEvent::UpdateRequest));
+#endif
 }
 RenderWindow::~RenderWindow() {
+}
+void RenderWindow::exposeEvent(QExposeEvent* event) {
+	if (isExposed()) {
+		updateGL();
+
+		event->accept();
+	} else {
+		QWindow::exposeEvent(event);
+	}
 }
 
 RenderWidget::RenderWidget(QWidget* parent) : QWidget(parent) {
