@@ -38,6 +38,8 @@ void game_stop_subspace_ambient_sound() {
 #endif
 
 int main(int argc, char* argv[]) {
+	Q_INIT_RESOURCE(resources);
+
 	using namespace fso::fred;
 
 	SDL_SetMainReady();
@@ -54,7 +56,7 @@ int main(int argc, char* argv[]) {
 
 	// Initialize renderer once initialize is complete
 	// TODO: Decide how to handle this. It could be done inside Editor but that is currently free of Qt code
-	QObject::connect(fredGlobals, &QtFredGlobals::initializeComplete, [&fred]() { fred->initializeRenderer(); });
+	fredGlobals->runAfterInit([&fred]() { fred->initializeRenderer(); });
 
 #ifdef WIN32
 	SCP_mspdbcs_Initialise();
