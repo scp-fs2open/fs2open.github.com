@@ -9,7 +9,7 @@
 namespace fso {
 namespace fred {
 
-class QtOpenGLContext : public os::OpenGLContext {
+class QtOpenGLContext: public os::OpenGLContext {
 	std::unique_ptr<QOpenGLContext> _context;
  public:
 	QtOpenGLContext(std::unique_ptr<QOpenGLContext>&& context);
@@ -21,7 +21,7 @@ class QtOpenGLContext : public os::OpenGLContext {
 	void makeCurrent(QSurface* surface);
 };
 
-class QtViewport : public os::Viewport {
+class QtViewport: public os::Viewport {
 	std::unique_ptr<MainWindow> _viewportWindow;
 	os::ViewPortProperties _viewProps;
  public:
@@ -39,7 +39,7 @@ class QtViewport : public os::Viewport {
 	MainWindow* getWindow();
 };
 
-class QtGraphicsOperations : public os::GraphicsOperations{
+class QtGraphicsOperations: public os::GraphicsOperations {
 	Editor* _editor = nullptr;
  public:
 	QtGraphicsOperations(Editor* editor);
@@ -52,7 +52,6 @@ class QtGraphicsOperations : public os::GraphicsOperations{
 
 	std::unique_ptr<os::Viewport> createViewport(const os::ViewPortProperties& props) override;
 };
-
 
 }
 }
