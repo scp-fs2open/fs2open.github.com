@@ -69,7 +69,7 @@ int main(int argc, char* argv[]) {
 														   { SubSystem::Timer,        app.tr("Initializing Timer") },
 														   { SubSystem::CFile,        app.tr("Initializing CFile") },
 														   { SubSystem::Locale,       app.tr("Initialization locale") },
-														   { SubSystem::Graphics,     app.tr("Initializating graphics") },
+														   { SubSystem::Graphics,     app.tr("Initializing graphics") },
 														   { SubSystem::Fonts,        app.tr("Initializing Fonts") },
 														   { SubSystem::Keyboard,     app.tr("Initializing keyboard") },
 														   { SubSystem::Mouse,        app.tr("Initializing mouse") },
