@@ -32,7 +32,6 @@ const float LOLLIPOP_SIZE = 2.5f;
 const float CONVERT_DEGREES = 57.29578f; // conversion factor from radians to degrees
 
 const float FRED_DEFAULT_HTL_FOV = 0.485f;
-const float FRED_BRIEFING_HTL_FOV = 0.325f;
 const float FRED_DEAFULT_HTL_DRAW_DIST = 300000.0f;
 
 const int FRED_COLOUR_WHITE = 0xffffff;
@@ -429,7 +428,7 @@ void verticalize_object(matrix* orient) {
 
 namespace fso {
 namespace fred {
-FredRenderer::FredRenderer() : my_pos({ 0.0f, 0.0f, -5.0f }) {
+FredRenderer::FredRenderer() : my_pos({{{ 0.0f, 0.0f, -5.0f }}}) {
 	vec3d f, u, r;
 
 	physics_init(&view_physics);
@@ -1287,7 +1286,7 @@ void FredRenderer::render_one_model_htl(object* objp,
 			j = MR_NO_POLYS;
 		}
 
-		uint debug_flags;
+		uint debug_flags = 0;
 		if (Show_dock_points) {
 			debug_flags |= MR_DEBUG_BAY_PATHS;
 		}
@@ -1502,7 +1501,6 @@ void FredRenderer::render_frame(int cur_object_index,
 	light_reset();
 
 	g3_set_view_matrix(&eye_pos, &eye_orient, 0.5f);
-	Viewer_pos = eye_pos; // for starfield code
 
 	enable_htl();
 	if (Bg_bitmap_dialog) {

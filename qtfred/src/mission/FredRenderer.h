@@ -51,11 +51,6 @@ namespace fso
             vec3d Last_eye_pos;
 
             vec3d eye_pos;
-            vec3d Grid_center;
-            vec3d Viewer_pos;
-            vec3d Tp1;
-            vec3d Tp2; // test points
-            matrix Grid_gmatrix;
             vec3d Last_control_pos = vmd_zero_vector;
             vec3d my_pos;
             matrix eye_orient;
