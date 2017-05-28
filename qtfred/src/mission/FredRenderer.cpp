@@ -428,7 +428,9 @@ void verticalize_object(matrix* orient) {
 
 namespace fso {
 namespace fred {
-FredRenderer::FredRenderer() : my_pos({{{ 0.0f, 0.0f, -5.0f }}}) {
+FredRenderer::FredRenderer() {
+	my_pos = vmd_zero_vector;
+	my_pos.xyz.z = -5.0f;
 	vec3d f, u, r;
 
 	physics_init(&view_physics);
