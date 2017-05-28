@@ -1,5 +1,5 @@
 
-set(gtest_force_shared_crt "${MSVC_RELEASE_DEBUGGING}")
+set(gtest_force_shared_crt "${MSVC_USE_RUNTIME_DLL}" CACHE BOOL "Always use msvcrt.dll" FORCE)
 
 add_subdirectory(gtest)
 
