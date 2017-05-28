@@ -4,8 +4,8 @@
 #include <unordered_map>
 
 #include <QWindow>
-#include <QOpenGLWidget>
-#include <osapi/osapi.h>
+
+#include "osapi/osapi.h"
 
 namespace fso {
 namespace fred {
