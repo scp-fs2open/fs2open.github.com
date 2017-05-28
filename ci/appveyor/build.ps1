@@ -103,8 +103,8 @@ if ($DeployBuild) {
 	$buildConfig = $BuildConfigurations[$buildID]
 	
 	cmake -DCMAKE_INSTALL_PREFIX="$env:APPVEYOR_BUILD_FOLDER/../install" -DFSO_USE_SPEECH="ON" `
-		-DFSO_USE_VOICEREC="ON" -DMSVC_SIMD_INSTRUCTIONS="$($buildConfig.SimdType)" `
-		-DFSO_BUILD_QTFRED=ON -DQT5_INSTALL_ROOT="$($buildConfig.QtDir)" `
+		-DFSO_USE_VOICEREC="ON" -DMSVC_SIMD_INSTRUCTIONS="$($buildConfig.SimdType)" -DFSO_BUILD_FRED2="OFF" `
+		-DFSO_BUILD_QTFRED=ON -DQT5_INSTALL_ROOT="$($buildConfig.QtDir)" -DMSVC_USE_RUNTIME_DLL="ON" `
 		-G "$($buildConfig.Generator)" -T "$($buildConfig.Toolset)" ..
 
 	$Configs = @("Release", "FastDebug")
@@ -120,7 +120,8 @@ if ($DeployBuild) {
     Push-AppveyorArtifact "$($PackageName)-builds-$($buildConfig.PackageType).zip"
 } else {
 	cmake -DFSO_USE_SPEECH="ON" -DFSO_FATAL_WARNINGS="ON" -DFSO_USE_VOICEREC="ON" -DFSO_BUILD_TESTS="ON" -DMSVC_SIMD_INSTRUCTIONS=SSE2 `
-	-DFSO_BUILD_QTFRED=ON -DQT5_INSTALL_ROOT="$env:QT_DIR" -G "$Env:CMAKE_GENERATOR" -T "$Env:PlatformToolset" ..
+	-DFSO_BUILD_QTFRED=ON -DQT5_INSTALL_ROOT="$env:QT_DIR" -DMSVC_USE_RUNTIME_DLL="ON" -DFSO_BUILD_FRED2="OFF" `
+	-G "$Env:CMAKE_GENERATOR" -T "$Env:PlatformToolset" ..
 
     cmake --build . --config "$Env:CONFIGURATION" -- /verbosity:minimal
 

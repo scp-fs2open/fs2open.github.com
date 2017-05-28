@@ -176,7 +176,6 @@ include(doxygen)
 
 # Print used options to log
 IF (WIN32)
-	message(STATUS "Building FRED2: ${FSO_BUILD_FRED2}")
 	message(STATUS "Using text to speech: ${FSO_USE_SPEECH}")
 	message(STATUS "Using voice recogition: ${FSO_USE_VOICEREC}")
 elseif(UNIX)
