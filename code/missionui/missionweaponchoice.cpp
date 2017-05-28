@@ -16,6 +16,7 @@
 #include "gamehelp/contexthelp.h"
 #include "gamesnd/gamesnd.h"
 #include "globalincs/alphacolors.h"
+#include "graphics/shadows.h"
 #include "hud/hudbrackets.h"
 #include "io/mouse.h"
 #include "io/timer.h"
