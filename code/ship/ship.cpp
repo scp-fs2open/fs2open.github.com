@@ -13612,10 +13612,7 @@ int ship_do_rearm_frame( object *objp, float frametime )
 			// loading equipment moving into place
 			if ( aip->rearm_first_missile == TRUE )
 			{
-				swp->secondary_bank_rearm_time[i] = timestamp(snd_get_duration(Snds[SND_MISSILE_START_LOAD].id));			
-
-				if (i == swp->num_secondary_banks - 1) 
-					aip->rearm_first_missile = FALSE;
+				swp->secondary_bank_rearm_time[i] = timestamp(snd_get_duration(Snds[SND_MISSILE_START_LOAD].id));
 			}
 			
 			if ( swp->secondary_bank_ammo[i] < swp->secondary_bank_start_ammo[i] )
@@ -13651,8 +13648,13 @@ int ship_do_rearm_frame( object *objp, float frametime )
 				banks_full++;
 			}
 
-			if ((aip->rearm_first_missile == TRUE) && (i == swp->num_secondary_banks - 1) && (banks_full != swp->num_secondary_banks))
+			if ((aip->rearm_first_missile == TRUE) && (i == swp->num_secondary_banks - 1))
+			{
+				if ((banks_full != swp->num_secondary_banks))
 					snd_play_3d( &Snds[SND_MISSILE_START_LOAD], &objp->pos, &View_position );
+
+				aip->rearm_first_missile = FALSE;
+			}
 		}	// end for
 
 		// rearm ballistic primaries - Goober5000
@@ -13680,10 +13682,7 @@ int ship_do_rearm_frame( object *objp, float frametime )
 					else
 						sound_index = SND_MISSILE_START_LOAD;
 
-					swp->primary_bank_rearm_time[i] = timestamp(snd_get_duration(Snds[sound_index].id));			
-
-					if (i == last_ballistic_idx) 
-						aip->rearm_first_ballistic_primary = FALSE;
+					swp->primary_bank_rearm_time[i] = timestamp(snd_get_duration(Snds[sound_index].id));
 				}
 
 				if ( swp->primary_bank_ammo[i] < swp->primary_bank_start_ammo[i] )
@@ -13727,16 +13726,20 @@ int ship_do_rearm_frame( object *objp, float frametime )
 				primary_banks_full++;
 			}
 
-			if ((aip->rearm_first_ballistic_primary == TRUE) && (i == last_ballistic_idx) && (primary_banks_full != swp->num_primary_banks))
+			if ((aip->rearm_first_ballistic_primary == TRUE) && (i == last_ballistic_idx))
 			{
-				// Goober5000
-				int sound_index;
-				if (Snds[SND_BALLISTIC_START_LOAD].id >= 0)
-					sound_index = SND_BALLISTIC_START_LOAD;
-				else
-					sound_index = SND_MISSILE_START_LOAD;
+				if (primary_banks_full != swp->num_primary_banks) {
+					// Goober5000
+					int sound_index;
+					if (Snds[SND_BALLISTIC_START_LOAD].id >= 0)
+						sound_index = SND_BALLISTIC_START_LOAD;
+					else
+						sound_index = SND_MISSILE_START_LOAD;
 
-				snd_play_3d( &Snds[sound_index], &objp->pos, &View_position );
+					snd_play_3d( &Snds[sound_index], &objp->pos, &View_position );
+				}
+
+				aip->rearm_first_ballistic_primary = FALSE;
 			}
 		}	// end for
 	} // end if (subsys_all_ok)
