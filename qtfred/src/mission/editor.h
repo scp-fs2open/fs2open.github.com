@@ -1,8 +1,12 @@
 #pragma once
+
+#include "FredRenderer.h"
+
 #include <functional>
 #include <memory>
 #include <stdexcept>
-#include "FredRenderer.h"
+
+#include <QObject>
 
 namespace fso {
 namespace fred {
@@ -68,7 +72,9 @@ struct mission_load_error: public std::runtime_error {
  * simultaneously, this class should be treated as a singleton.
  *
  */
-class Editor {
+class Editor : public QObject {
+	Q_OBJECT
+
  public:
 	Editor();
 
@@ -96,11 +102,15 @@ class Editor {
 
 	///! Non-copyable.
 	Editor(const Editor&) = delete;
-
 	///! Non-copyable.
 	const Editor& operator=(const Editor&) = delete;
+
+signals:
+	void missionLoaded(const std::string& filepath);
+
  private:
 	void resetPhysics();
+
 	std::unique_ptr<FredRenderer> m_renderer;
 	subsys_to_render Render_subsys;
 	int currentObject;

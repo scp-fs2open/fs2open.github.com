@@ -158,6 +158,8 @@ void Editor::loadMission(const std::string& filepath) {
 	m_renderer->view_orient = Parse_viewer_orient;
 	m_renderer->view_pos = Parse_viewer_pos;
 	stars_post_level_init();
+
+	missionLoaded(filepath);
 }
 
 void Editor::findFirstObjectUnder(int x, int y) {
