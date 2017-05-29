@@ -16,6 +16,10 @@ addons:
             - libjansson-dev
             - libsdl2-dev
             - valgrind
+            - qt5-default
+            - qtbase5-dev
+            - libqt5opengl5-dev
+            - qtbase5-dev-tools
     coverity_scan:
         project:
             name: "scp-fs2open/fs2open.github.com"

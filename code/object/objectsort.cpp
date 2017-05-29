@@ -168,7 +168,7 @@ inline bool obj_render_is_model(object *obj)
 }
 
 // Sorts all the objects by Z and renders them
-void obj_render_all(void (*render_function)(object *objp), bool *draw_viewer_last )
+void obj_render_all(std::function<void(object*)> render_function, bool *draw_viewer_last )
 {
 	object *objp;
 	int i;
@@ -280,7 +280,7 @@ void obj_render_all(void (*render_function)(object *objp), bool *draw_viewer_las
 			if( ((obj->type == OBJ_SHIP) && Ships[obj->instance].shader_effect_active) || (obj->type == OBJ_FIREBALL) )
 				effect_ships.push_back(obj);
 			else 
-				(*render_function)(obj);
+				render_function(obj);
 		}
 		if(object_had_transparency)
 		{
@@ -319,7 +319,7 @@ void obj_render_all(void (*render_function)(object *objp), bool *draw_viewer_las
 			}
 		}
 
-		(*render_function)(obj);
+		render_function(obj);
 	}
 
 	Sorted_objects.clear();
