@@ -88,7 +88,7 @@ void QtGraphicsOperations::makeOpenGLContextCurrent(os::Viewport* view, os::Open
 			current->doneCurrent();
 		}
 	} else {
-		qtContext->makeCurrent(qtPort->getWindow()->getRenderWidget());
+		qtContext->makeCurrent(qtPort->getWindow()->getRenderWindow());
 	}
 }
 
@@ -101,7 +101,7 @@ QtViewport::~QtViewport() {
 
 std::unique_ptr<os::Viewport> QtGraphicsOperations::createViewport(const os::ViewPortProperties& props) {
 	std::unique_ptr<MainWindow> mw(new MainWindow());
-	mw->getRenderWidget()->initializeGL(getSurfaceFormat(props, props.gl_attributes));
+	mw->getRenderWindow()->initializeGL(getSurfaceFormat(props, props.gl_attributes));
 
 	mw->setEditor(_editor);
 	mw->show();
@@ -118,8 +118,8 @@ std::pair<uint32_t, uint32_t> QtViewport::getSize() {
 	return std::make_pair((uint32_t) size.width(), (uint32_t) size.height());
 }
 void QtViewport::swapBuffers() {
-	if (_viewportWindow->getRenderWidget()->isVisible()) {
-		QOpenGLContext::currentContext()->swapBuffers(_viewportWindow->getRenderWidget());
+	if (_viewportWindow->getRenderWindow()->isVisible()) {
+		QOpenGLContext::currentContext()->swapBuffers(_viewportWindow->getRenderWindow());
 	}
 }
 void QtViewport::setState(os::ViewportState state) {

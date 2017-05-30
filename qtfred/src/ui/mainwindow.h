@@ -25,7 +25,7 @@ public:
     ~MainWindow();
     void setEditor(Editor* editor);
 
-	RenderWindow* getRenderWidget();
+	RenderWindow* getRenderWindow();
 
 public slots:
     void loadMission();
@@ -44,6 +44,11 @@ private slots:
     void on_actionShow_Outlines_triggered(bool checked);
 
 	void on_mission_loaded(const std::string& filepath);
+
+protected:
+	void keyPressEvent(QKeyEvent* event) override;
+
+	void keyReleaseEvent(QKeyEvent* event) override;
 
 private:
     std::unique_ptr<Ui::MainWindow> ui;

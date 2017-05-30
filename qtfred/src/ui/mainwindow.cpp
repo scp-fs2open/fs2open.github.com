@@ -7,6 +7,8 @@
 
 #include <project.h>
 
+#include <qevent.h>
+
 #include "mission/editor.h"
 #include "renderwidget.h"
 
@@ -108,7 +110,16 @@ void MainWindow::on_mission_loaded(const std::string& filepath) {
 	setWindowTitle(title);
 }
 
-RenderWindow* MainWindow::getRenderWidget() {
+void MainWindow::keyPressEvent(QKeyEvent* event) {
+	// Forward all uncaught keyboard events to the render window so we don't have to focus it explicitly.
+	qGuiApp->sendEvent(getRenderWindow(), event);
+}
+
+void MainWindow::keyReleaseEvent(QKeyEvent* event) {
+	qGuiApp->sendEvent(getRenderWindow(), event);
+}
+
+RenderWindow* MainWindow::getRenderWindow() {
 	return ui->centralwidget->getWindow();
 }
 
