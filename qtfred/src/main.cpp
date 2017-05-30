@@ -95,11 +95,18 @@ int main(int argc, char* argv[]) {
 		app.processEvents();
 	});
 
+	splash.showMessage(app.tr("Showing editor window"), Qt::AlignHCenter | Qt::AlignBottom, Qt::white);
+	splash.finish(qApp->activeWindow());
+
+	for (auto& window : qApp->topLevelWidgets()) {
+		// Show all top level windows that are our window
+		if (qobject_cast<MainWindow*>(window) != nullptr) {
+			window->show();
+		}
+	}
+
 	// Allow other parts of the code to execute code that needs to run after everything has been set up
 	fredGlobals->initializeComplete();
-
-	app.processEvents();
-	splash.close();
 
 	auto ret = app.exec();
 

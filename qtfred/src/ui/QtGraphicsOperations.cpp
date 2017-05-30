@@ -6,6 +6,7 @@
 #include "renderwidget.h"
 
 #include <QtWidgets/QtWidgets>
+#include "fredGlobals.h"
 
 namespace {
 
@@ -104,7 +105,12 @@ std::unique_ptr<os::Viewport> QtGraphicsOperations::createViewport(const os::Vie
 	mw->getRenderWindow()->initializeGL(getSurfaceFormat(props, props.gl_attributes));
 
 	mw->setEditor(_editor);
-	mw->show();
+
+	if (fredGlobals->isInitializeComplete()) {
+		// Only show new viewports if the initialization has already been completed
+		// The windows created at program start will only be shown once initialization is completed
+		mw->show();
+	}
 
 	return std::unique_ptr<os::Viewport>(new QtViewport(std::move(mw), props));
 }
