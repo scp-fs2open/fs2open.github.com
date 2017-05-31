@@ -536,8 +536,9 @@ void FredRenderer::process_controls(vec3d* pos, matrix* orient, float frametime,
 	if (Flying_controls_mode) {
 		grid_read_camera_controls(&view_controls, frametime);
 
-		if (key_get_shift_status())
+		if (key_get_shift_status()) {
 			memset(&view_controls, 0, sizeof(control_info));
+		}
 
 		///! \todo Notify update window.
 		if ((fabs(view_controls.pitch) > (frametime / 100)) && (fabs(view_controls.vertical) > (frametime / 100))
@@ -1407,9 +1408,8 @@ void FredRenderer::render_models(int cur_object_index,
 
 	bool f = false;
 	enable_htl();
-	
-	auto render_function = [&](object* objp)
-	{
+
+	auto render_function = [&](object* objp) {
 		this->render_one_model_htl(objp,
 								   cur_object_index,
 								   Show_starts,
