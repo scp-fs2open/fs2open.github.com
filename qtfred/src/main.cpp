@@ -72,9 +72,8 @@ int main(int argc, char* argv[]) {
 	SDL_SetMainReady();
 
 	QApplication app(argc, argv);
-
-	// Init Qt parts of the global object
-	fredGlobals->qtInit();
+	// This instance will be registered as the global fredGlobals pointer
+	QtFredGlobals globalsInstance;
 
 	QSplashScreen splash(QPixmap(":/images/splash.png"));
 	splash.show();

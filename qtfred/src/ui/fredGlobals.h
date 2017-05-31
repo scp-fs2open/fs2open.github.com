@@ -15,21 +15,17 @@ class QtFredGlobals : public QObject
 private:
 	bool _initializeEmitted;
 
-	QtFredGlobals();
-
-	static QtFredGlobals instance;
 public:
+	QtFredGlobals();
+	~QtFredGlobals();
+
 	QtFredGlobals(const QtFredGlobals&) = delete;
 	QtFredGlobals& operator=(const QtFredGlobals&) = delete;
 
 	QtFredGlobals(QtFredGlobals&&) = delete;
 	QtFredGlobals& operator=(QtFredGlobals&&) = delete;
 
-	static QtFredGlobals& getInstance() { return instance; }
-
 	bool isInitializeComplete() const { return _initializeEmitted; }
-
-	void qtInit();
 
 	void runAfterInit(std::function<void()>&& action);
 signals:
