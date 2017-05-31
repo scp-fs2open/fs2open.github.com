@@ -158,8 +158,8 @@ int shockwave_create(int parent_objnum, vec3d *pos, shockwave_create_info *sci, 
  */
 void shockwave_delete(object *objp)
 {
-	Assert(objp->type == OBJ_SHOCKWAVE);
-	Assert(objp->instance >= 0 && objp->instance < MAX_SHOCKWAVES);
+	Assertion(objp->type == OBJ_SHOCKWAVE, "shockwave_delete() called on an object with a type of %d instead of OBJ_SHOCKWAVE (%d); get a coder!\n", objp->type, OBJ_SHOCKWAVE);
+	Assertion(objp->instance >= 0 && objp->instance < MAX_SHOCKWAVES, "shockwave_delete() called on an object with an invalid instance of %d (should be 0-%d); get a coder!\n", objp->instance, MAX_SHOCKWAVES - 1);
 
 	Shockwaves[objp->instance].flags = 0;
 	Shockwaves[objp->instance].objnum = -1;	
@@ -190,7 +190,7 @@ void shockwave_set_framenum(int index)
 	shockwave		*sw;
 	shockwave_info	*si;
 
-	Assert( (index >= 0) && (index < MAX_SHOCKWAVES) );
+	Assertion( (index >= 0) && (index < MAX_SHOCKWAVES), "shockwave_set_framenum called with an index of %d (should be 0-%d); get a coder!\n", index, MAX_SHOCKWAVES - 1 );
 
 	sw = &Shockwaves[index];
 	si = &Shockwave_info[sw->shockwave_info_index];
@@ -236,8 +236,8 @@ void shockwave_move(object *shockwave_objp, float frametime)
 	float			blast,damage;
 	int			i;
 
-	Assert(shockwave_objp->type == OBJ_SHOCKWAVE);
-	Assert(shockwave_objp->instance  >= 0 && shockwave_objp->instance < MAX_SHOCKWAVES);
+	Assertion(shockwave_objp->type == OBJ_SHOCKWAVE, "shockwave_move() called on an object of type %d instead of OBJ_SHOCKWAVE (%d); get a coder!\n", shockwave_objp->type, OBJ_SHOCKWAVE);
+	Assertion(shockwave_objp->instance  >= 0 && shockwave_objp->instance < MAX_SHOCKWAVES, "shockwave_move() called on an object with an instance of %d (should be 0-%d); get a coder!\n", shockwave_objp->instance, MAX_SHOCKWAVES - 1);
 	sw = &Shockwaves[shockwave_objp->instance];
 
 	// if the shockwave has a delay on it
@@ -367,8 +367,8 @@ void shockwave_render(object *objp, model_draw_list *scene)
 	shockwave		*sw;
 	vertex			p;
 
-	Assert(objp->type == OBJ_SHOCKWAVE);
-	Assert(objp->instance >= 0 && objp->instance < MAX_SHOCKWAVES);
+	Assertion(objp->type == OBJ_SHOCKWAVE, "shockwave_render() called on an object of type %d instead of OBJ_SHOCKWAVE (%d); get a coder!\n", objp->type, OBJ_SHOCKWAVE);
+	Assertion(objp->instance >= 0 && objp->instance < MAX_SHOCKWAVES, "shockwave_render() called on an object with an instance of %d (should be 0-%d); get a coder!\n", objp->instance, MAX_SHOCKWAVES - 1);
 
 	sw = &Shockwaves[objp->instance];
 
@@ -418,7 +418,6 @@ void shockwave_render(object *objp, model_draw_list *scene)
  */
 int shockwave_load(const char *s_name, bool shock_3D)
 {
-	size_t i;
 	int s_index = -1;
 	shockwave_info *si = NULL;
 
@@ -428,9 +427,9 @@ int shockwave_load(const char *s_name, bool shock_3D)
 	if ( !VALID_FNAME(s_name) )
 		return -1;
 
-	for (i = 0; i < Shockwave_info.size(); i++) {
-		if ( !stricmp(Shockwave_info[i].filename, s_name) ) {
-			s_index = (int)i;
+	for (auto it = Shockwave_info.cbegin(); it != Shockwave_info.cend(); ++it) {
+		if ( !stricmp(it->filename, s_name) ) {
+			s_index = (int)std::distance(Shockwave_info.cbegin(), it);
 			break;
 		}
 	}
@@ -531,10 +530,12 @@ void shockwave_level_init()
 		// have to make sure that the default 3D model is still valid and usable
 		// the 2D shockwave shouldn't need anything like this
 		if (Shockwave_info[0].model_id >= 0)
+			Assertion(!strcmp(Shockwave_info[0].filename, Default_shockwave_3D_filename), "Shockwave_info[0] should be the default shockwave, but somehow isn't.\nShockwave_info[0].filename = \"%s\"\nDefault_shockwave_3D_filename = \"%s\"\nGet a coder!\n", Shockwave_info[0].filename, Default_shockwave_3D_filename);
 			Shockwave_info[0].model_id = model_load( Default_shockwave_3D_filename, 0, NULL );
 	}
 
-	Assert( ((Shockwave_info[0].bitmap_id >= 0) || (Shockwave_info[0].model_id >= 0)) );
+	Assertion( !Shockwave_info.empty(), "Default shockwave claims to be loaded, but Shockwave_info vector is empty!");
+	Assertion( ((Shockwave_info[0].bitmap_id >= 0) || (Shockwave_info[0].model_id >= 0)), "Default shockwave claims to be loaded, but has no bitmap or model; get a coder!\n" );
 
 	list_init(&Shockwave_list);
 
@@ -557,27 +558,25 @@ void shockwave_level_close()
 
 	shockwave_delete_all();
 	
-	size_t i;
+	Assertion( !Shockwave_info.empty(), "Shockwave_info is empty in shockwave_level_close() despite theoretically having been initialized correctly; get a coder!\n");
 
 	// unload default shockwave, and erase all others
-	for (i = 0; i < Shockwave_info.size(); i++) {
-		if ( !i ) {
-			if (Shockwave_info[i].bitmap_id >= 0)
-				bm_unload( Shockwave_info[i].bitmap_id );
-			else if (Shockwave_info[i].model_id >= 0)
-				model_page_out_textures( Shockwave_info[i].model_id );
+	auto it = Shockwave_info.begin();
+	if (it->bitmap_id >= 0)
+		bm_unload( it->bitmap_id );
+	else if (it->model_id >= 0)
+		model_page_out_textures( it->model_id );
 
-			continue;
-		}
+	for (++it; it != Shockwave_info.end(); ++it) {
+		if (it->bitmap_id >= 0)
+			bm_release( it->bitmap_id );
 
-		if (Shockwave_info[i].bitmap_id >= 0)
-			bm_release( Shockwave_info[i].bitmap_id );
-
-		if (Shockwave_info[i].model_id >= 0)
-			model_unload( Shockwave_info[i].model_id );
-
-		Shockwave_info.erase( Shockwave_info.begin() + i );
+		if (it->model_id >= 0)
+			model_unload( it->model_id );
 	}
+
+	// if there's no extra shockwaves, this is still fine (erasing from end() to end() is both valid and a no-op)
+	Shockwave_info.erase( Shockwave_info.begin() + 1, Shockwave_info.end() );
 
 	Shockwave_inited = 0;
 }
@@ -605,7 +604,7 @@ void shockwave_move_all(float frametime)
  */
 int shockwave_get_weapon_index(int index)
 {
-	Assert( (index >= 0) && (index < MAX_SHOCKWAVES) );
+	Assertion( (index >= 0) && (index < MAX_SHOCKWAVES), "shockwave_get_weapon_index() called on an index of %d (should be 0-%d); get a coder!\n", index, MAX_SHOCKWAVES - 1 );
 	return Shockwaves[index].weapon_info_index;
 }
 
@@ -614,7 +613,7 @@ int shockwave_get_weapon_index(int index)
  */
 float shockwave_get_max_radius(int index)
 {
-	Assert( (index >= 0) && (index < MAX_SHOCKWAVES) );
+	Assertion( (index >= 0) && (index < MAX_SHOCKWAVES), "shockwave_get_max_radius() called on an index of %d (should be 0-%d); get a coder!\n", index, MAX_SHOCKWAVES - 1 );
 	return Shockwaves[index].outer_radius;
 }
 
@@ -623,7 +622,7 @@ float shockwave_get_max_radius(int index)
  */
 float shockwave_get_min_radius(int index)
 {
-	Assert( (index >= 0) && (index < MAX_SHOCKWAVES) );
+	Assertion( (index >= 0) && (index < MAX_SHOCKWAVES), "shockwave_get_min_radius() called on an index of %d (should be 0-%d); get a coder!\n", index, MAX_SHOCKWAVES - 1 );
 	return Shockwaves[index].inner_radius;
 }
 
@@ -632,7 +631,7 @@ float shockwave_get_min_radius(int index)
  */
 float shockwave_get_damage(int index)
 {
-	Assert( (index >= 0) && (index < MAX_SHOCKWAVES) );
+	Assertion( (index >= 0) && (index < MAX_SHOCKWAVES), "shockwave_get_damage() called on an index of %d (should be 0-%d); get a coder!\n", index, MAX_SHOCKWAVES - 1 );
 	return Shockwaves[index].damage;
 }
 
@@ -641,7 +640,7 @@ float shockwave_get_damage(int index)
  */
 int shockwave_get_damage_type_idx(int index)
 {
-	Assert( (index >= 0) && (index < MAX_SHOCKWAVES) );
+	Assertion( (index >= 0) && (index < MAX_SHOCKWAVES), "shockwave_get_damage_type_idx() called on an index of %d (should be 0-%d); get a coder!\n", index, MAX_SHOCKWAVES - 1 );
 	return Shockwaves[index].damage_type_idx;
 }
 
@@ -650,25 +649,23 @@ int shockwave_get_damage_type_idx(int index)
  */
 int shockwave_get_flags(int index)
 {
-	Assert( (index >= 0) && (index < MAX_SHOCKWAVES) );
+	Assertion( (index >= 0) && (index < MAX_SHOCKWAVES), "shockwave_get_flags() called on an index of %d (should be 0-%d); get a coder!\n", index, MAX_SHOCKWAVES - 1 );
 	return Shockwaves[index].flags;
 }
 
 void shockwave_page_in()
 {
-	size_t i;
-
 	// load in shockwaves
-	for (i = 0; i < Shockwave_info.size(); i++) {
-		if (Shockwave_info[i].bitmap_id >= 0) {
-			bm_page_in_texture( Shockwave_info[i].bitmap_id, Shockwave_info[i].num_frames );
-		} else if (Shockwave_info[i].model_id >= 0) {
+	for (auto it = Shockwave_info.begin(); it != Shockwave_info.end(); ++it) {
+		if (it->bitmap_id >= 0) {
+			bm_page_in_texture( it->bitmap_id, it->num_frames );
+		} else if (it->model_id >= 0) {
 			// for a model we have to run model_load() on it again to make sure
 			// that it's ref_count is sane for this mission
-			int idx __UNUSED = model_load( Shockwave_info[i].filename, 0, NULL );
-			Assert( idx == Shockwave_info[i].model_id );
+			int idx __UNUSED = model_load( it->filename, 0, NULL );
+			Assertion( idx == it->model_id , "Shockwave_info[" SIZE_T_ARG "] got two different model_ids: %d and %d. Filename is \"%s\". Get a coder!\n", std::distance(Shockwave_info.begin(), it), idx, it->model_id, it->filename);
 
-			model_page_in_textures( Shockwave_info[i].model_id );
+			model_page_in_textures( it->model_id );
 		}
 	}
 }
