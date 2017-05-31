@@ -32,15 +32,42 @@ void game_start_subspace_ambient_sound() {
 void game_stop_subspace_ambient_sound() {
 }
 
+void fsoMessageOutput(QtMsgType type, const QMessageLogContext &context, const QString &msg)
+{
+	auto errorMsg = qFormatLogMessage(type, context, msg).toUtf8();
+	switch (type) {
+	case QtDebugMsg:
+		mprintf(("Qt Debug: %s\n", errorMsg.constData()));
+		fprintf(stderr, "Qt Debug: %s\n", errorMsg.constData());
+		break;
+	case QtInfoMsg:
+		mprintf(("Qt Info: %s\n", errorMsg.constData()));
+		fprintf(stderr, "Qt Info: %s\n", errorMsg.constData());
+		break;
+	case QtWarningMsg:
+		mprintf(("Qt Warning: %s\n", errorMsg.constData()));
+		fprintf(stderr, "Qt Warning: %s\n", errorMsg.constData());
+		break;
+	case QtCriticalMsg:
+		mprintf(("Qt Critical: %s\n", errorMsg.constData()));
+		fprintf(stderr, "Qt Critical: %s\n", errorMsg.constData());
+		break;
+	case QtFatalMsg:
+		Error(context.file, context.line, "Qt Critical: %s", errorMsg.constData());
+		break;
+	}
+}
+
 // SDL defines this on windows which causes problems
 #ifdef main
 #undef main
 #endif
 
 int main(int argc, char* argv[]) {
-	Q_INIT_RESOURCE(resources);
-
 	using namespace fso::fred;
+
+	Q_INIT_RESOURCE(resources);
+	qInstallMessageHandler(fsoMessageOutput);
 
 	SDL_SetMainReady();
 
