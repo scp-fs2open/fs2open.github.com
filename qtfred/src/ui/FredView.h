@@ -13,16 +13,16 @@ class Editor;
 class RenderWindow;
 
 namespace Ui {
-class MainWindow;
+class FredView;
 }
 
-class MainWindow : public QMainWindow
+class FredView : public QMainWindow
 {
     Q_OBJECT
 
 public:
-    explicit MainWindow(QWidget *parent = 0);
-    ~MainWindow();
+    explicit FredView(QWidget *parent = 0);
+    ~FredView();
     void setEditor(Editor* editor);
 
 	RenderWindow* getRenderWindow();
@@ -31,7 +31,7 @@ public slots:
     void loadMission();
 
 private slots:
-    void on_actionShow_Stars_triggered(bool checked);
+    void on_actionShow_Background_triggered(bool checked);
 
     void on_actionShow_Horizon_triggered(bool checked);
 
@@ -51,7 +51,7 @@ protected:
 	void keyReleaseEvent(QKeyEvent* event) override;
 
 private:
-    std::unique_ptr<Ui::MainWindow> ui;
+    std::unique_ptr<Ui::FredView> ui;
     Editor* fred = nullptr;
 };
 

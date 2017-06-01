@@ -17,7 +17,7 @@
 
 #include "mission/editor.h"
 
-#include "ui/mainwindow.h"
+#include "ui/FredView.h"
 #include "ui/fredGlobals.h"
 
 // Globals needed by the engine when built in 'FRED' mode.
@@ -125,8 +125,8 @@ int main(int argc, char* argv[]) {
 
 	for (auto& window : qApp->topLevelWidgets()) {
 		// Show all top level windows that are our window
-		if (qobject_cast<MainWindow*>(window) != nullptr) {
-			window->show();
+		if (qobject_cast<FredView*>(window) != nullptr) {
+			window->showMaximized();
 		}
 	}
 

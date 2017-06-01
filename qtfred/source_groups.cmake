@@ -29,8 +29,8 @@ add_file_folder(src_mission "Source/Mission"
 add_file_folder(src_ui "Source/UI"
     src/ui/fredGlobals.cpp
     src/ui/fredGlobals.h
-    src/ui/mainwindow.cpp
-    src/ui/mainwindow.h
+    src/ui/FredView.cpp
+    src/ui/FredView.h
     src/ui/QtGraphicsOperations.cpp
     src/ui/QtGraphicsOperations.h
     src/ui/renderwidget.cpp
@@ -38,7 +38,6 @@ add_file_folder(src_ui "Source/UI"
 )
 
 add_file_folder(ui "UI"
-    ui/mainwindow.ui
     ui/FredView.ui
 )
 

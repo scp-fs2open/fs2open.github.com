@@ -93,7 +93,7 @@ void QtGraphicsOperations::makeOpenGLContextCurrent(os::Viewport* view, os::Open
 	}
 }
 
-QtViewport::QtViewport(std::unique_ptr<MainWindow>&& window, const os::ViewPortProperties& viewProps) :
+QtViewport::QtViewport(std::unique_ptr<FredView>&& window, const os::ViewPortProperties& viewProps) :
 	_viewProps(viewProps) {
 	_viewportWindow = std::move(window);
 }
@@ -101,7 +101,7 @@ QtViewport::~QtViewport() {
 }
 
 std::unique_ptr<os::Viewport> QtGraphicsOperations::createViewport(const os::ViewPortProperties& props) {
-	std::unique_ptr<MainWindow> mw(new MainWindow());
+	std::unique_ptr<FredView> mw(new FredView());
 	mw->getRenderWindow()->initializeGL(getSurfaceFormat(props, props.gl_attributes));
 
 	mw->setEditor(_editor);
@@ -140,7 +140,7 @@ void QtViewport::restore() {
 const os::ViewPortProperties& QtViewport::getViewProperties() const {
 	return _viewProps;
 }
-MainWindow* QtViewport::getWindow() {
+FredView* QtViewport::getWindow() {
 	return _viewportWindow.get();
 }
 

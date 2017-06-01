@@ -1,5 +1,6 @@
-#include "mainwindow.h"
-#include "ui_mainwindow.h"
+
+#include "FredView.h"
+#include "ui_FredView.h"
 
 #include <QFileDialog>
 #include <QMessageBox>
@@ -15,31 +16,31 @@
 namespace fso {
 namespace fred {
 
-MainWindow::MainWindow(QWidget *parent) :
+FredView::FredView(QWidget *parent) :
     QMainWindow(parent),
-    ui(new Ui::MainWindow())
+    ui(new Ui::FredView())
 {
     ui->setupUi(this);
 }
 
-MainWindow::~MainWindow()
+FredView::~FredView()
 {
 }
 
-void MainWindow::setEditor(Editor* editor)
+void FredView::setEditor(Editor* editor)
 {
 	Assertion(fred == nullptr, "Resetting the editor is currently not supported!");
 
     fred = editor;
-    ui->centralwidget->getWindow()->setEditor(editor);
+    getRenderWindow()->setEditor(editor);
 
-	connect(fred, &Editor::missionLoaded, this, &MainWindow::on_mission_loaded);
+	connect(fred, &Editor::missionLoaded, this, &FredView::on_mission_loaded);
 
 	// Sets the initial window title
 	on_mission_loaded("");
 }
 
-void MainWindow::loadMission()
+void FredView::loadMission()
 {
     qDebug() << "Loading from directory:" << QDir::currentPath();
     QString pathName = QFileDialog::getOpenFileName(this,
@@ -58,7 +59,7 @@ void MainWindow::loadMission()
 
 		QApplication::restoreOverrideCursor();
 
-        ui->centralwidget->getWindow()->updateGL();
+		getRenderWindow()->updateGL();
         statusBar()->showMessage(tr("Units = %1 meters").arg(fred->renderer()->The_grid->square_size));
     }
     catch (const fso::fred::mission_load_error &) {
@@ -69,37 +70,37 @@ void MainWindow::loadMission()
     }
 }
 
-void MainWindow::on_actionShow_Stars_triggered(bool checked)
+void FredView::on_actionShow_Background_triggered(bool checked)
 {
 	fred->renderer()->view.Show_stars = checked;
 }
 
-void MainWindow::on_actionShow_Horizon_triggered(bool checked)
+void FredView::on_actionShow_Horizon_triggered(bool checked)
 {
 	fred->renderer()->view.Show_horizon = checked;
 }
 
-void MainWindow::on_actionShow_Grid_triggered(bool checked)
+void FredView::on_actionShow_Grid_triggered(bool checked)
 {
 	fred->renderer()->view.Show_grid = checked;
 }
 
-void MainWindow::on_actionShow_Distances_triggered(bool checked)
+void FredView::on_actionShow_Distances_triggered(bool checked)
 {
 	fred->renderer()->view.Show_distances = checked;
 }
 
-void MainWindow::on_actionShow_Coordinates_triggered(bool checked)
+void FredView::on_actionShow_Coordinates_triggered(bool checked)
 {
 	fred->renderer()->view.Show_coordinates = checked;
 }
 
-void MainWindow::on_actionShow_Outlines_triggered(bool checked)
+void FredView::on_actionShow_Outlines_triggered(bool checked)
 {
 	fred->renderer()->view.Show_outlines = checked;
 }
 
-void MainWindow::on_mission_loaded(const std::string& filepath) {
+void FredView::on_mission_loaded(const std::string& filepath) {
 	QString filename = "Untitled";
 	if (!filepath.empty()) {
 		filename = QFileInfo(QString::fromStdString(filepath)).fileName();
@@ -110,17 +111,17 @@ void MainWindow::on_mission_loaded(const std::string& filepath) {
 	setWindowTitle(title);
 }
 
-void MainWindow::keyPressEvent(QKeyEvent* event) {
+void FredView::keyPressEvent(QKeyEvent* event) {
 	// Forward all uncaught keyboard events to the render window so we don't have to focus it explicitly.
 	qGuiApp->sendEvent(getRenderWindow(), event);
 }
 
-void MainWindow::keyReleaseEvent(QKeyEvent* event) {
+void FredView::keyReleaseEvent(QKeyEvent* event) {
 	qGuiApp->sendEvent(getRenderWindow(), event);
 }
 
-RenderWindow* MainWindow::getRenderWindow() {
-	return ui->centralwidget->getWindow();
+RenderWindow* FredView::getRenderWindow() {
+	return ui->centralWidget->getWindow();
 }
 
 } // namespace fred

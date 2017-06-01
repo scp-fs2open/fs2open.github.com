@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>FredView</class>
- <widget class="QMainWindow" name="FredView">
+ <class>fso::fred::FredView</class>
+ <widget class="QMainWindow" name="fso::fred::FredView">
   <property name="geometry">
    <rect>
     <x>0</x>
@@ -149,7 +149,7 @@
    </widget>
    <widget class="QMenu" name="menuEditors">
     <property name="title">
-     <string>Editors</string>
+     <string>Edito&amp;rs</string>
     </property>
     <addaction name="actionShips"/>
     <addaction name="actionWings"/>
@@ -238,7 +238,7 @@
    <addaction name="menuHelp"/>
   </widget>
   <widget class="QStatusBar" name="statusBar"/>
-  <widget class="QxToolBar" name="toolBar">
+  <widget class="QToolBar" name="toolBar">
    <property name="windowTitle">
     <string>toolBar</string>
    </property>
@@ -1095,11 +1095,6 @@
    <extends>QWidget</extends>
    <header>ui/renderwidget.h</header>
    <container>1</container>
-  </customwidget>
-  <customwidget>
-   <class>QxToolBar</class>
-   <extends>QToolBar</extends>
-   <header location="global">qxtoolbar.h</header>
   </customwidget>
  </customwidgets>
  <resources>

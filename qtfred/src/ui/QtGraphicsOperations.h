@@ -2,7 +2,7 @@
 
 #include <osapi/osapi.h>
 #include "mission/editor.h"
-#include "mainwindow.h"
+#include "FredView.h"
 
 #include <QtGui/QOpenGLContext>
 
@@ -22,10 +22,10 @@ class QtOpenGLContext: public os::OpenGLContext {
 };
 
 class QtViewport: public os::Viewport {
-	std::unique_ptr<MainWindow> _viewportWindow;
+	std::unique_ptr<FredView> _viewportWindow;
 	os::ViewPortProperties _viewProps;
  public:
-	QtViewport(std::unique_ptr<MainWindow>&& window, const os::ViewPortProperties& viewProps);
+	QtViewport(std::unique_ptr<FredView>&& window, const os::ViewPortProperties& viewProps);
 	~QtViewport();
 
 	SDL_Window* toSDLWindow() override;
@@ -36,7 +36,7 @@ class QtViewport: public os::Viewport {
 	void restore() override;
 
 	const os::ViewPortProperties& getViewProperties() const;
-	MainWindow* getWindow();
+	FredView* getWindow();
 };
 
 class QtGraphicsOperations: public os::GraphicsOperations {
