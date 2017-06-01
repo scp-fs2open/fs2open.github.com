@@ -10910,6 +10910,7 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 					float dist_mult;
 					dist_mult = sip->minimum_convergence_distance / dist_to_aim;
 					vm_vec_scale_add(&predicted_target_pos, &obj->pos, &plr_to_target_vec, dist_mult);
+					dist_to_aim = sip->minimum_convergence_distance;
 				}
 			}
 			
