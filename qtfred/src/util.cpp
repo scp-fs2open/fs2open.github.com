@@ -3,14 +3,16 @@
 #include <QtGlobal>
 #include <QtCore/QProcess>
 
+#include <windows.h>
+
 namespace fso {
 namespace fred {
 
 SCP_string getUsername() {
 #ifdef Q_OS_WIN
-    char acUserName[MAX_USERNAME];
+    char acUserName[256];
     DWORD nUserName = sizeof(acUserName);
-    if (GetUserName(acUserName, &nUserName))
+    if (GetUserNameA(acUserName, &nUserName))
         return SCP_string(acUserName);
     else
     	return "";
