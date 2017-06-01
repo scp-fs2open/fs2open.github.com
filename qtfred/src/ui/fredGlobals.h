@@ -13,7 +13,7 @@ class QtFredGlobals : public QObject
 	Q_OBJECT
 
 private:
-	bool _initializeEmitted;
+	bool _initializeEmitted = false;
 
 public:
 	QtFredGlobals();
