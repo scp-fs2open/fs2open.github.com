@@ -39,6 +39,7 @@ add_file_folder(src_ui "Source/UI"
 
 add_file_folder(ui "UI"
     ui/mainwindow.ui
+    ui/frmFRED.ui
 )
 
 add_file_folder(resources "Resources"
