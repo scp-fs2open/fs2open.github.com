@@ -7,6 +7,16 @@
 
 #include <SDL.h>
 #include <sound/audiostr.h>
+#include <parse/parselo.h>
+#include <missionui/fictionviewer.h>
+#include <mission/missiongoals.h>
+#include <asteroid/asteroid.h>
+#include <jumpnode/jumpnode.h>
+#include <util.h>
+#include <QtCore/QDateTime>
+#include <mission/missionmessage.h>
+#include <gamesnd/eventmusic.h>
+#include <starfield/nebula.h>
 
 #include "globalincs/pstypes.h" // vm_init
 #include "osapi/osregistry.h" // os_registry_init
@@ -32,8 +42,24 @@
 #include "graphics/font.h"
 
 #include "ui/QtGraphicsOperations.h"
+#include "ai/aigoals.h"
+
+#include "object.h"
+#include "iterators.h"
 
 extern int Xstr_inited;
+
+extern int Nmodel_num;
+extern int Nmodel_instance_num;
+extern matrix Nmodel_orient;
+extern int Nmodel_bitmap;
+
+extern void allocate_mission_text(size_t size);
+
+extern void parse_init(bool basic = false);
+
+char Fred_callsigns[MAX_SHIPS][NAME_LENGTH + 1];
+char Fred_alt_names[MAX_SHIPS][NAME_LENGTH + 1];
 
 namespace fso {
 namespace fred {
@@ -83,6 +109,7 @@ void initialize(const std::string& cfilepath, int argc, char* argv[], Editor* ed
 		 { weapon_init,                                                              SubSystem::Weapon },
 		 { parse_medal_tbl,                                                          SubSystem::Medals },
 		 { ship_init,                                                                SubSystem::Ships },
+		 { []() { parse_init(); },                                                   SubSystem::Parse },
 		 { neb2_init,                                                                SubSystem::Nebulas },
 		 { []() {
 			 stars_init();
@@ -115,7 +142,8 @@ Editor::Editor() : currentObject{ -1 } {
 
 void Editor::initializeRenderer() {
 	m_renderer.reset(new FredRenderer());
-	resetPhysics();
+
+	clearMission();
 }
 
 void Editor::resize(int width, int height) {
@@ -162,17 +190,38 @@ void Editor::loadMission(const std::string& filepath) {
 	missionLoaded(filepath);
 }
 
-void Editor::findFirstObjectUnder(int x, int y) {
+int Editor::findFirstObjectUnder(int x, int y) {
 	Assertion(m_renderer, "Render has not been initialized yet!");
 
 	std::array<bool, MAX_IFFS> iffs;
 	iffs.fill(true);
 
-	currentObject = m_renderer->select_object(x, y, false, true, true, &iffs[0], true);
+	return m_renderer->select_object(x, y, false, true, true, &iffs[0], true);
+}
+void Editor::unmark_all() {
+	if (numMarked) {
+		for (auto i = 0; i < MAX_OBJECTS; i++) {
+			Objects[i].flags.remove(Object::Object_Flags::Marked);
+		}
 
-	if (currentObject != -1) {
-		Objects[currentObject].flags.set(Object::Object_Flags::Marked);
-	}  // set as marked
+		numMarked = 0;
+		setupCurrentObjectIndices(-1);
+
+		scheduleUpdate();
+	}
+}
+void Editor::markObject(int obj) {
+	Assert(query_valid_object(obj));
+	if (!(Objects[obj].flags[Object::Object_Flags::Marked])) {
+		Objects[obj].flags.set(Object::Object_Flags::Marked);  // set as marked
+		numMarked++;
+
+		if (currentObject == -1) {
+			setupCurrentObjectIndices(obj);
+		}
+
+		scheduleUpdate();
+	}
 }
 
 void Editor::resetPhysics() {
@@ -193,6 +242,230 @@ void Editor::resetPhysics() {
 	view_physics.flags |= PF_ACCELERATES | PF_SLIDE_ENABLED;
 
 	m_renderer->view_physics = view_physics;
+}
+void Editor::clearMission() {
+	// clean up everything we need to before we reset back to defaults.
+#if 0
+    if (Briefing_dialog){
+        Briefing_dialog->reset_editor();
+    }
+#endif
+
+	allocate_mission_text(MISSION_TEXT_SIZE);
+
+	The_mission.cutscenes.clear();
+	fiction_viewer_reset();
+	cmd_brief_reset();
+	mission_event_shutdown();
+
+	Asteroid_field.num_initial_asteroids = 0;  // disable asteroid field by default.
+	Asteroid_field.speed = 0.0f;
+	vm_vec_make(&Asteroid_field.min_bound, -1000.0f, -1000.0f, -1000.0f);
+	vm_vec_make(&Asteroid_field.max_bound, 1000.0f, 1000.0f, 1000.0f);
+	vm_vec_make(&Asteroid_field.inner_min_bound, -500.0f, -500.0f, -500.0f);
+	vm_vec_make(&Asteroid_field.inner_max_bound, 500.0f, 500.0f, 500.0f);
+	Asteroid_field.has_inner_bound = 0;
+	Asteroid_field.field_type = FT_ACTIVE;
+	Asteroid_field.debris_genre = DG_ASTEROID;
+	Asteroid_field.field_debris_type[0] = -1;
+	Asteroid_field.field_debris_type[1] = -1;
+	Asteroid_field.field_debris_type[2] = -1;
+
+	strcpy_s(Mission_parse_storm_name, "none");
+
+	obj_init();
+	model_free_all();                // Free all existing models
+	ai_init();
+	ai_profiles_init();
+	ship_init();
+	jumpnode_level_close();
+	waypoint_level_close();
+
+	Num_wings = 0;
+	for (auto i = 0; i < MAX_WINGS; i++) {
+		Wings[i].wave_count = 0;
+		Wings[i].wing_squad_filename[0] = '\0';
+		Wings[i].wing_insignia_texture = -1;
+	}
+
+	Num_ai_dock_names = 0;
+	Num_reinforcements = 0;
+	setupCurrentObjectIndices(-1);
+
+	auto userName = getUsername();
+
+	auto currentTime = QDateTime::currentDateTime();
+	auto timeStr = currentTime.toString(Qt::ISODate);
+
+	strcpy_s(The_mission.name, "Untitled");
+	strcpy_s(The_mission.author, userName.c_str());
+	The_mission.author[NAME_LENGTH - 1] = 0;
+	strcpy_s(The_mission.created, timeStr.toUtf8().constData());
+	strcpy_s(The_mission.modified, The_mission.created);
+	strcpy_s(The_mission.notes, "This is a FRED2_OPEN created mission.\n");
+	strcpy_s(The_mission.mission_desc, "Put mission description here\n");
+	The_mission.game_type = MISSION_TYPE_SINGLE;
+	strcpy_s(The_mission.squad_name, "");
+	strcpy_s(The_mission.squad_filename, "");
+	The_mission.num_respawns = 3;
+	The_mission.max_respawn_delay = -1;
+
+	Player_starts = 0;
+	Num_teams = 1;
+
+	// reset alternate name & callsign stuff
+	for (auto i = 0; i < MAX_SHIPS; i++) {
+		strcpy_s(Fred_alt_names[i], "");
+		strcpy_s(Fred_callsigns[i], "");
+	}
+
+	// set up the default ship types for all teams.  For now, this is the same class
+	// of ships for all teams
+	for (auto i = 0; i < MAX_TVT_TEAMS; i++) {
+		auto count = 0;
+		for (auto j = 0; j < static_cast<int>(Ship_info.size()); j++) {
+			if (Ship_info[j].flags[Ship::Info_Flags::Default_player_ship]) {
+				Team_data[i].ship_list[count] = j;
+				strcpy_s(Team_data[i].ship_list_variables[count], "");
+				Team_data[i].ship_count[count] = 5;
+				strcpy_s(Team_data[i].ship_count_variables[count], "");
+				count++;
+			}
+		}
+		Team_data[i].num_ship_choices = count;
+
+		count = 0;
+		for (auto j = 0; j < MAX_WEAPON_TYPES; j++) {
+			if (Weapon_info[j].wi_flags[Weapon::Info_Flags::Player_allowed]) {
+				if (Weapon_info[j].subtype == WP_LASER) {
+					Team_data[i].weaponry_count[count] = 16;
+				} else {
+					Team_data[i].weaponry_count[count] = 500;
+				}
+				Team_data[i].weaponry_pool[count] = j;
+				strcpy_s(Team_data[i].weaponry_pool_variable[count], "");
+				strcpy_s(Team_data[i].weaponry_amount_variable[count], "");
+				count++;
+			}
+			Team_data[i].weapon_required[j] = false;
+		}
+		Team_data[i].num_weapon_choices = count;
+	}
+
+	*Mission_text = *Mission_text_raw = EOF_CHAR;
+	Mission_text[1] = Mission_text_raw[1] = 0;
+
+	waypoint_parse_init();
+	Num_mission_events = 0;
+	Num_goals = 0;
+	unmark_all();
+	obj_init();
+	model_free_all();                // Free all existing models
+	m_renderer->resetView();
+	init_sexp();
+	messages_init();
+	brief_reset();
+	debrief_reset();
+	ship_init();
+	event_music_reset_choices();
+	clear_texture_replacements();
+
+	mission_parse_reset_alt();        // alternate ship type names
+	mission_parse_reset_callsign();
+
+	strcpy(Cargo_names[0], "Nothing");
+	Num_cargo = 1;
+	resetPhysics();
+
+	// reset background bitmaps and suns
+	stars_pre_level_init();
+	Nebula_index = 0;
+	Mission_palette = 1;
+	Nebula_pitch = (int) ((float) (rand() & 0x0fff) * 360.0f / 4096.0f);
+	Nebula_bank = (int) ((float) (rand() & 0x0fff) * 360.0f / 4096.0f);
+	Nebula_heading = (int) ((float) (rand() & 0x0fff) * 360.0f / 4096.0f);
+	Neb2_awacs = -1.0f;
+	Neb2_poof_flags = 0;
+	strcpy_s(Neb2_texture_name, "");
+	for (auto i = 0; i < MAX_NEB2_POOFS; i++) {
+		Neb2_poof_flags |= (1 << i);
+	}
+
+	Nmodel_flags = DEFAULT_NMODEL_FLAGS;
+	Nmodel_num = -1;
+	Nmodel_instance_num = -1;
+	vm_set_identity(&Nmodel_orient);
+	Nmodel_bitmap = -1;
+
+	The_mission.contrail_threshold = CONTRAIL_THRESHOLD_DEFAULT;
+
+	// Goober5000
+	The_mission.command_persona = Default_command_persona;
+	strcpy_s(The_mission.command_sender, DEFAULT_COMMAND);
+
+	// Goober5000: reset ALL mission flags, not just nebula!
+	The_mission.flags.reset();
+	The_mission.support_ships.max_support_ships = -1;    // negative means infinite
+	The_mission.support_ships.max_hull_repair_val = 0.0f;
+	The_mission.support_ships.max_subsys_repair_val = 100.0f;
+	The_mission.ai_profile = &Ai_profiles[Default_ai_profile];
+
+	nebula_init(Nebula_filenames[Nebula_index], Nebula_pitch, Nebula_bank, Nebula_heading);
+
+	strcpy_s(The_mission.loading_screen[GR_640], "");
+	strcpy_s(The_mission.loading_screen[GR_1024], "");
+	strcpy_s(The_mission.skybox_model, "");
+	vm_set_identity(&The_mission.skybox_orientation);
+	strcpy_s(The_mission.envmap_name, "");
+	The_mission.skybox_flags = DEFAULT_NMODEL_FLAGS;
+
+	// no sound environment
+	The_mission.sound_environment.id = -1;
+
+	ENVMAP = -1;
+
+	scheduleUpdate();
+	missionLoaded("");
+}
+void Editor::setupCurrentObjectIndices(int selectedObj) {
+	// TODO: Handle other object types
+
+	if (query_valid_object(selectedObj)) {
+		currentObject = selectedObj;
+
+		return;
+	}
+
+	if (selectedObj == -1 || !Num_objects) {
+		return;
+	}
+
+	object* ptr;
+	if (query_valid_object(currentObject)) {
+		ptr = Objects[currentObject].next;
+	} else {
+		ptr = GET_FIRST(&obj_used_list);
+	}
+
+	if (ptr == END_OF_LIST(&obj_used_list)) {
+		ptr = ptr->next;
+	}
+
+	Assert(ptr != END_OF_LIST(&obj_used_list));
+	currentObject = OBJ_INDEX(ptr);
+
+	Assert(ptr->type != OBJ_NONE);
+}
+void Editor::selectObject(int objId) {
+	if (objId < 0) {
+		unmark_all();
+	} else {
+		markObject(objId);
+	}
+
+	setupCurrentObjectIndices(objId);  // select the new object
+
+	scheduleUpdate();
 }
 
 } // namespace fred

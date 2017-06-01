@@ -19,9 +19,7 @@ class RenderWindow: public QWindow {
 	explicit RenderWindow(QWidget* parent = 0);
 	~RenderWindow();
 
-	void setEditor(Editor* editor) {
-		fred = editor;
-	}
+	void setEditor(Editor* editor);
 
 	void initializeGL(const QSurfaceFormat& surfaceFmt);
 
@@ -45,7 +43,7 @@ class RenderWindow: public QWindow {
 
  private:
 	std::unordered_map<int, int> qt2fsKeys;
-	Editor* fred;
+	Editor* fred = nullptr;
 	bool _isRendering = false;
 };
 

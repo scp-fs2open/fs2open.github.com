@@ -11,6 +11,8 @@ endmacro(add_file_folder)
 add_file_folder(src "Source"
     src/fredstubs.cpp
     src/main.cpp
+    src/util.cpp
+    src/util.h
 )
 
 add_file_folder(src_mission "Source/Mission"

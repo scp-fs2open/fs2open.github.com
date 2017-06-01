@@ -6,6 +6,8 @@
 #include <memory>
 #include <stdexcept>
 
+#include <globalincs/globals.h>
+
 #include <QObject>
 
 namespace fso {
@@ -32,6 +34,7 @@ enum class SubSystem {
 	Weapon,
 	Medals,
 	Ships,
+	Parse,
 	Nebulas,
 	Stars,
 	View,
@@ -91,10 +94,18 @@ class Editor : public QObject {
 	/*! Update the game an renders a frame. */
 	void update();
 
+	void clearMission();
+
+	void unmark_all();
+
 	/*! Load a mission. */
 	void loadMission(const std::string& filepath);
 
-	void findFirstObjectUnder(int x, int y);
+	int findFirstObjectUnder(int x, int y);
+
+	void markObject(int objId);
+
+	void selectObject(int objId);
 
 	FredRenderer* renderer() {
 		return m_renderer.get();
@@ -106,18 +117,34 @@ class Editor : public QObject {
 	const Editor& operator=(const Editor&) = delete;
 
 signals:
+	/**
+	 * @brief Signal for when a new mission has been loaded
+	 * @param filepath The path of the mission file, empty if new mission
+	 */
 	void missionLoaded(const std::string& filepath);
+
+	/**
+	 * @brief Signal for when the editor wants to update the render window
+	 */
+	void scheduleUpdate();
 
  private:
 	void resetPhysics();
 
+	void setupCurrentObjectIndices(int obj);
+
 	std::unique_ptr<FredRenderer> m_renderer;
 	subsys_to_render Render_subsys;
-	int currentObject;
+
+	int currentObject = -1;
+	int numMarked = 0;
 };
 
 } // namespace fred
 } // namespace fso
+
+extern char Fred_callsigns[MAX_SHIPS][NAME_LENGTH + 1];
+extern char Fred_alt_names[MAX_SHIPS][NAME_LENGTH + 1];
 
 // Define hash function for Initialized.
 namespace std {

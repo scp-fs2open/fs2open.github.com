@@ -22,8 +22,6 @@
 
 // Globals needed by the engine when built in 'FRED' mode.
 int Fred_running = 1;
-char Fred_callsigns[MAX_SHIPS][NAME_LENGTH + 1];
-char Fred_alt_names[MAX_SHIPS][NAME_LENGTH + 1];
 int Show_cpu = 0;
 
 // Empty functions to make fred link with the sexp_mission_set_subspace
@@ -110,6 +108,7 @@ int main(int argc, char* argv[]) {
 														   { SubSystem::Weapon,       app.tr("Initializing weaponry") },
 														   { SubSystem::Medals,       app.tr("Initializing medals") },
 														   { SubSystem::Ships,        app.tr("Initializing ships") },
+														   { SubSystem::Parse,        app.tr("Initializing parser") },
 														   { SubSystem::Nebulas,      app.tr("Initializing nebulas") },
 														   { SubSystem::Stars,        app.tr("Initializing stars") },
 														   { SubSystem::View,         app.tr("Setting view") }};

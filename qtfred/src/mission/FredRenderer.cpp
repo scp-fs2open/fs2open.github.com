@@ -429,6 +429,12 @@ void verticalize_object(matrix* orient) {
 namespace fso {
 namespace fred {
 FredRenderer::FredRenderer() {
+	resetView();
+}
+
+FredRenderer::~FredRenderer() {
+}
+void FredRenderer::resetView() {
 	my_pos = vmd_zero_vector;
 	my_pos.xyz.z = -5.0f;
 	vec3d f, u, r;
@@ -449,9 +455,6 @@ FredRenderer::FredRenderer() {
 	//	vm_set_identity(&view_orient);
 
 	init_fred_colors();
-}
-
-FredRenderer::~FredRenderer() {
 }
 
 void FredRenderer::inc_mission_time() {

@@ -105,7 +105,9 @@ void RenderWindow::keyReleaseEvent(QKeyEvent* key) {
 }
 
 void RenderWindow::mouseReleaseEvent(QMouseEvent* mouse) {
-	fred->findFirstObjectUnder(mouse->x(), mouse->y());
+	auto obj = fred->findFirstObjectUnder(mouse->x(), mouse->y());
+
+	fred->selectObject(obj);
 }
 void RenderWindow::resizeEvent(QResizeEvent* event) {
 	if (_isRendering) {
@@ -123,12 +125,8 @@ void RenderWindow::updateGL() {
 	}
 
 	// Continue requesting updates
-#if QT_VERSION >= QT_VERSION_CHECK(5, 5, 0)
+	// TODO: Remove this once update scheduling is implemented properly
 	requestUpdate();
-#else
-    // This causes issues with the open dialog but is here for compatibility with older Qt versions
-	QCoreApplication::postEvent(this, new QEvent(QEvent::UpdateRequest));
-#endif
 }
 RenderWindow::~RenderWindow() {
 }
@@ -140,6 +138,14 @@ void RenderWindow::exposeEvent(QExposeEvent* event) {
 	} else {
 		QWindow::exposeEvent(event);
 	}
+}
+void RenderWindow::setEditor(Editor* editor) {
+	Assertion(fred == nullptr, "Render widget current does not support resetting the editor!");
+
+	fred = editor;
+
+	// When the editor want to update the main window we have to do that.
+	connect(fred, &Editor::scheduleUpdate, [this](){ requestUpdate(); });
 }
 
 RenderWidget::RenderWidget(QWidget* parent) : QWidget(parent) {

@@ -72,6 +72,9 @@ class FredRenderer {
  public:
 	FredRenderer();
 	~FredRenderer();
+
+	void resetView();
+
 	void inc_mission_time();
 	void move_mouse(int btn, int mdx, int mdy);
 	void process_system_keys(int key);
