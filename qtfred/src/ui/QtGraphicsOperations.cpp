@@ -3,9 +3,10 @@
 
 #include "QtGraphicsOperations.h"
 
-#include "renderwidget.h"
+#include "widgets/renderwidget.h"
 
 #include <QtWidgets/QtWidgets>
+
 #include "fredGlobals.h"
 
 namespace {

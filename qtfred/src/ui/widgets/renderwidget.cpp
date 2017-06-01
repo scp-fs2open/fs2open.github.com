@@ -15,7 +15,7 @@
 #include "starfield/starfield.h"
 
 #include "mission/editor.h"
-#include "fredGlobals.h"
+#include "ui/fredGlobals.h"
 
 namespace fso {
 namespace fred {

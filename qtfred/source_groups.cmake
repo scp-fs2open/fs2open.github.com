@@ -33,8 +33,13 @@ add_file_folder(src_ui "Source/UI"
     src/ui/FredView.h
     src/ui/QtGraphicsOperations.cpp
     src/ui/QtGraphicsOperations.h
-    src/ui/renderwidget.cpp
-    src/ui/renderwidget.h
+)
+
+add_file_folder(src_ui_widgets "Source/UI/Widgets"
+    src/ui/widgets/ColorComboBox.cpp
+    src/ui/widgets/ColorComboBox.h
+    src/ui/widgets/renderwidget.cpp
+    src/ui/widgets/renderwidget.h
 )
 
 add_file_folder(ui "UI"

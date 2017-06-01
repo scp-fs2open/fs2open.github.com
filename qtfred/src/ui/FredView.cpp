@@ -11,7 +11,8 @@
 #include <qevent.h>
 
 #include "mission/editor.h"
-#include "renderwidget.h"
+
+#include "widgets/ColorComboBox.h"
 
 namespace fso {
 namespace fred {
@@ -21,6 +22,11 @@ FredView::FredView(QWidget *parent) :
     ui(new Ui::FredView())
 {
     ui->setupUi(this);
+
+	// A combo box cannot be added by the designer so we do that manually here
+	_shipClassBox.reset(new ColorComboBox());
+
+	ui->toolBar->addWidget(_shipClassBox.get());
 }
 
 FredView::~FredView()

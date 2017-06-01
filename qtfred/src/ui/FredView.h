@@ -5,6 +5,7 @@
 #include <QtGui/QSurfaceFormat>
 
 #include <memory>
+#include <QtWidgets/QComboBox>
 
 namespace fso {
 namespace fred {
@@ -52,6 +53,9 @@ protected:
 
 private:
     std::unique_ptr<Ui::FredView> ui;
+
+	std::unique_ptr<QComboBox> _shipClassBox;
+
     Editor* fred = nullptr;
 };
 
