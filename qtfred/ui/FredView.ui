@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>frmFRED</class>
- <widget class="QMainWindow" name="frmFRED">
+ <class>FredView</class>
+ <widget class="QMainWindow" name="FredView">
   <property name="geometry">
    <rect>
     <x>0</x>
@@ -221,7 +221,7 @@
    </widget>
    <widget class="QMenu" name="menuHelp">
     <property name="title">
-     <string>Help</string>
+     <string>He&amp;lp</string>
     </property>
     <addaction name="actionHelp_Topics"/>
     <addaction name="actionShow_SEXP_Help"/>
