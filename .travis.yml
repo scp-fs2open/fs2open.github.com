@@ -117,8 +117,7 @@ install:
     - "./ci/travis/install.sh"
     - export PATH=$HOME/cmake/bin:$PATH
 before_script:
-    - "QT_ENV_SCRIPT=$(find /opt -name 'qt*-env.sh')"
-    - "source $QT_ENV_SCRIPT"
+    - if [ "$TRAVIS_OS_NAME" = "linux" ]; then QT_ENV_SCRIPT=$(find /opt -name 'qt*-env.sh'); source $QT_ENV_SCRIPT; fi
     - "./ci/travis/before_script.sh"
 script:
     - if [ "$BUILD_DEPLOYMENT" = true ] ; then ./ci/travis/release.sh ; else ./ci/travis/script.sh ; fi
