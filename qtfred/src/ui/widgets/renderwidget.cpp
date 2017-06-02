@@ -55,10 +55,13 @@ void RenderWindow::startRendering() {
 	fred->resize(size().width(), size().height());
 
 	// Paint the first frame
-	updateGL();
+	requestUpdate();
 }
 
 void RenderWindow::paintGL() {
+	// Make sure our OpenGL context is used for rendering
+	gr_use_viewport(os::getMainViewport());
+
 	fred->update();
 }
 
