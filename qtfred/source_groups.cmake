@@ -2,10 +2,11 @@
 set(source_files)
 
 macro(add_file_folder VAR_NAME FOLDER_NAME)
-    set(files_${VAR_NAME} ${ARGN})
+    set(files_${VAR_NAME} ${files_${VAR_NAME}} ${ARGN})
     string(REPLACE "/" "\\" FIXED_NAME "${FOLDER_NAME}")
-    source_group("${FIXED_NAME}" FILES ${files_${VAR_NAME}})
-    set(source_files ${source_files} ${files_${VAR_NAME}})
+
+    source_group("${FIXED_NAME}" FILES ${ARGN})
+    set(source_files ${source_files} ${ARGN})
 endmacro(add_file_folder)
 
 add_file_folder(src "Source"
@@ -49,6 +50,12 @@ add_file_folder(ui "UI"
 add_file_folder(resources "Resources"
     resources/resources.qrc
 )
+
+if (WIN32)
+    add_file_folder(resources_win "Resources/Windows"
+        resources/win/qtfred.manifest
+    )
+endif()
 
 add_file_folder(resources_images "Resources/Images"
     resources/images/bitmap1.png
