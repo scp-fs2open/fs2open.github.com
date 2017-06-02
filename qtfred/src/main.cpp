@@ -70,6 +70,11 @@ int main(int argc, char* argv[]) {
 	SDL_SetMainReady();
 
 	QApplication app(argc, argv);
+
+	QCoreApplication::setOrganizationName("HardLightProductions");
+	QCoreApplication::setOrganizationDomain("hard-light.net");
+	QCoreApplication::setApplicationName("qtFRED");
+
 	// This instance will be registered as the global fredGlobals pointer
 	QtFredGlobals globalsInstance;
 
