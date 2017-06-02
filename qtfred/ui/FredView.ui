@@ -98,6 +98,7 @@
     <addaction name="separator"/>
     <addaction name="actionShow_Ship_Models"/>
     <addaction name="actionShow_Outlines"/>
+    <addaction name="actionShow_Ship_Info"/>
     <addaction name="actionShow_Coordinates"/>
     <addaction name="actionShow_Grid_Positions"/>
     <addaction name="actionShow_Distances"/>
@@ -551,15 +552,24 @@
    <property name="text">
     <string>&amp;New</string>
    </property>
+   <property name="shortcut">
+    <string/>
+   </property>
   </action>
   <action name="actionOpen">
    <property name="text">
     <string>&amp;Open...</string>
    </property>
+   <property name="shortcut">
+    <string>Ctrl+O</string>
+   </property>
   </action>
   <action name="actionSave">
    <property name="text">
     <string>&amp;Save</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+S</string>
    </property>
   </action>
   <action name="actionSave_As">
@@ -596,6 +606,9 @@
    <property name="text">
     <string>Run &amp;FreeSpace</string>
    </property>
+   <property name="shortcut">
+    <string/>
+   </property>
   </action>
   <action name="actionRecent_Files">
    <property name="text">
@@ -611,15 +624,24 @@
    <property name="text">
     <string>&amp;Undo</string>
    </property>
+   <property name="shortcut">
+    <string>Ctrl+Z</string>
+   </property>
   </action>
   <action name="actionDelete">
    <property name="text">
     <string>&amp;Delete</string>
    </property>
+   <property name="shortcut">
+    <string>Del</string>
+   </property>
   </action>
   <action name="actionDelete_Wing">
    <property name="text">
     <string>Delete &amp;Wing</string>
+   </property>
+   <property name="shortcut">
+    <string/>
    </property>
   </action>
   <action name="actionDisable_Undo">
@@ -676,25 +698,40 @@
    <property name="text">
     <string>Show Ship Models</string>
    </property>
+   <property name="shortcut">
+    <string>Alt+Shift+M</string>
+   </property>
   </action>
   <action name="actionShow_Outlines">
    <property name="text">
     <string>Show &amp;Outlines</string>
+   </property>
+   <property name="shortcut">
+    <string>Alt+Shift+O</string>
    </property>
   </action>
   <action name="actionShow_Coordinates">
    <property name="text">
     <string>Show &amp;Coordinates</string>
    </property>
+   <property name="shortcut">
+    <string>Alt+Shift+C</string>
+   </property>
   </action>
   <action name="actionShow_Grid_Positions">
    <property name="text">
     <string>Show &amp;Grid Positions</string>
    </property>
+   <property name="shortcut">
+    <string>Alt+Shift+P</string>
+   </property>
   </action>
   <action name="actionShow_Distances">
    <property name="text">
     <string>Show D&amp;istances</string>
+   </property>
+   <property name="shortcut">
+    <string>D</string>
    </property>
   </action>
   <action name="actionShow_Model_Paths">
@@ -711,10 +748,16 @@
    <property name="text">
     <string>Show Grid</string>
    </property>
+   <property name="shortcut">
+    <string>Alt+Shift+G</string>
+   </property>
   </action>
   <action name="actionShow_Horizon">
    <property name="text">
     <string>Show Hori&amp;zon</string>
+   </property>
+   <property name="shortcut">
+    <string>Alt+Shift+H</string>
    </property>
   </action>
   <action name="actionDouble_Fine_Gridlines">
@@ -731,15 +774,24 @@
    <property name="text">
     <string>Show &amp;3D Compass</string>
    </property>
+   <property name="shortcut">
+    <string>Alt+Shift+3</string>
+   </property>
   </action>
   <action name="actionShow_Background">
    <property name="text">
     <string>Show &amp;Background</string>
    </property>
+   <property name="shortcut">
+    <string>Alt+Shift+B</string>
+   </property>
   </action>
   <action name="actionSave_Camera_Pos">
    <property name="text">
     <string>Save Camera &amp;Pos</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+P</string>
    </property>
   </action>
   <action name="actionRestore_Camera_Pos">
@@ -766,65 +818,104 @@
    <property name="text">
     <string>&amp;x1</string>
    </property>
+   <property name="shortcut">
+    <string>1</string>
+   </property>
   </action>
   <action name="actionx2">
    <property name="text">
     <string>x&amp;2</string>
+   </property>
+   <property name="shortcut">
+    <string>2</string>
    </property>
   </action>
   <action name="actionx3">
    <property name="text">
     <string>x&amp;3</string>
    </property>
+   <property name="shortcut">
+    <string>3</string>
+   </property>
   </action>
   <action name="actionx5">
    <property name="text">
     <string>x&amp;5</string>
+   </property>
+   <property name="shortcut">
+    <string>4</string>
    </property>
   </action>
   <action name="actionx8">
    <property name="text">
     <string>x&amp;8</string>
    </property>
+   <property name="shortcut">
+    <string>5</string>
+   </property>
   </action>
   <action name="actionx10">
    <property name="text">
     <string>x&amp;10</string>
+   </property>
+   <property name="shortcut">
+    <string>6</string>
    </property>
   </action>
   <action name="actionx50">
    <property name="text">
     <string>x5&amp;0</string>
    </property>
+   <property name="shortcut">
+    <string>7</string>
+   </property>
   </action>
   <action name="actionx100">
    <property name="text">
     <string>x100</string>
+   </property>
+   <property name="shortcut">
+    <string>8</string>
    </property>
   </action>
   <action name="actionx1_2">
    <property name="text">
     <string>&amp;x1</string>
    </property>
+   <property name="shortcut">
+    <string>Shift+1</string>
+   </property>
   </action>
   <action name="actionx5_2">
    <property name="text">
     <string>x&amp;5</string>
+   </property>
+   <property name="shortcut">
+    <string>Shift+2</string>
    </property>
   </action>
   <action name="actionx12">
    <property name="text">
     <string>x&amp;12</string>
    </property>
+   <property name="shortcut">
+    <string>Shift+3</string>
+   </property>
   </action>
   <action name="actionx25">
    <property name="text">
     <string>x&amp;25</string>
    </property>
+   <property name="shortcut">
+    <string>Shift+4</string>
+   </property>
   </action>
   <action name="actionx50_2">
    <property name="text">
     <string>x5&amp;0</string>
+   </property>
+   <property name="shortcut">
+    <string>Shift+5</string>
    </property>
   </action>
   <action name="actionShips">
@@ -1085,6 +1176,14 @@
   <action name="actionAbout_FRED2">
    <property name="text">
     <string>&amp;About qtFRED...</string>
+   </property>
+  </action>
+  <action name="actionShow_Ship_Info">
+   <property name="text">
+    <string>Show Ship Info</string>
+   </property>
+   <property name="shortcut">
+    <string>Alt+Shift+I</string>
    </property>
   </action>
  </widget>

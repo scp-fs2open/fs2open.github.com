@@ -13,7 +13,6 @@
 #include <asteroid/asteroid.h>
 #include <jumpnode/jumpnode.h>
 #include <util.h>
-#include <QtCore/QDateTime>
 #include <mission/missionmessage.h>
 #include <gamesnd/eventmusic.h>
 #include <starfield/nebula.h>
@@ -294,13 +293,16 @@ void Editor::clearMission() {
 
 	auto userName = getUsername();
 
-	auto currentTime = QDateTime::currentDateTime();
-	auto timeStr = currentTime.toString(Qt::ISODate);
+	time_t currentTime;
+	time(&currentTime);
+	auto tm_info = localtime(&currentTime);
+	char time_buffer[26];
+	strftime(time_buffer, 26, "%Y-%m-%d %H:%M:%S", tm_info);
 
 	strcpy_s(The_mission.name, "Untitled");
 	strcpy_s(The_mission.author, userName.c_str());
 	The_mission.author[NAME_LENGTH - 1] = 0;
-	strcpy_s(The_mission.created, timeStr.toUtf8().constData());
+	strcpy_s(The_mission.created, time_buffer);
 	strcpy_s(The_mission.modified, The_mission.created);
 	strcpy_s(The_mission.notes, "This is a FRED2_OPEN created mission.\n");
 	strcpy_s(The_mission.mission_desc, "Put mission description here\n");
