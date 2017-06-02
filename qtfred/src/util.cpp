@@ -3,7 +3,9 @@
 #include <QtGlobal>
 #include <QtCore/QProcess>
 
+#ifdef Q_OS_WIN
 #include <windows.h>
+#endif
 
 namespace fso {
 namespace fred {
