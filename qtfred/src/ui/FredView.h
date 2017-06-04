@@ -32,6 +32,8 @@ public:
 public slots:
     void loadMission();
 
+	void newMission();
+
 private slots:
     void on_actionShow_Background_triggered(bool checked);
 

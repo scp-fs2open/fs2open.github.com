@@ -27,6 +27,9 @@ FredView::FredView(QWidget *parent) :
 	_shipClassBox.reset(new ColorComboBox());
 
 	ui->toolBar->addWidget(_shipClassBox.get());
+
+	connect(ui->actionOpen, &QAction::triggered, this, &FredView::loadMission);
+	connect(ui->actionNew, &QAction::triggered, this, &FredView::newMission);
 }
 
 FredView::~FredView()
@@ -149,6 +152,9 @@ void FredView::keyReleaseEvent(QKeyEvent* event) {
 
 RenderWindow* FredView::getRenderWindow() {
 	return ui->centralWidget->getWindow();
+}
+void FredView::newMission() {
+	fred->createNewMission();
 }
 
 } // namespace fred

@@ -86,6 +86,8 @@ class Editor : public QObject {
 
 	void unmark_all();
 
+	void createNewMission();
+
 	/*! Load a mission. */
 	void loadMission(const std::string& filepath);
 

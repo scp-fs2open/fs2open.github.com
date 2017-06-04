@@ -462,6 +462,9 @@ void Editor::updateAllRenderers() {
 		renderer->scheduleUpdate();
 	}
 }
+void Editor::createNewMission() {
+	clearMission();
+}
 
 } // namespace fred
 } // namespace fso
