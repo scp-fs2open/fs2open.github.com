@@ -18,6 +18,12 @@ add_file_folder(src "Source"
     src/util.h
 )
 
+if (WIN32)
+    add_file_folder(src "Source"
+        src/qmain.cpp
+    )
+endif()
+
 add_file_folder(src_mission "Source/Mission"
     src/mission/editor.cpp
     src/mission/editor.h
