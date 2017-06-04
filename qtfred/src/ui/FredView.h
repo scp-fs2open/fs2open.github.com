@@ -54,8 +54,10 @@ protected:
 
 	void keyReleaseEvent(QKeyEvent* event) override;
 
+	bool eventFilter(QObject* watched, QEvent* event) override;
+
 private:
-    std::unique_ptr<Ui::FredView> ui;
+	std::unique_ptr<Ui::FredView> ui;
 
 	std::unique_ptr<QComboBox> _shipClassBox;
 

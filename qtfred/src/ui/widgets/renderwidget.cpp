@@ -24,18 +24,18 @@ RenderWindow::RenderWindow(QWidget* parent) : QWindow(parent->windowHandle()) {
 	qt2fsKeys[Qt::Key_Shift] = KEY_LSHIFT;
 	qt2fsKeys[Qt::Key_A] = KEY_A;
 	qt2fsKeys[Qt::Key_Z] = KEY_Z;
-	qt2fsKeys[Qt::Key_0] = KEY_PAD0;
-	qt2fsKeys[Qt::Key_1] = KEY_PAD1;
-	qt2fsKeys[Qt::Key_2] = KEY_PAD2;
-	qt2fsKeys[Qt::Key_3] = KEY_PAD3;
-	qt2fsKeys[Qt::Key_4] = KEY_PAD4;
-	qt2fsKeys[Qt::Key_5] = KEY_PAD5;
-	qt2fsKeys[Qt::Key_6] = KEY_PAD6;
-	qt2fsKeys[Qt::Key_7] = KEY_PAD7;
-	qt2fsKeys[Qt::Key_8] = KEY_PAD8;
-	qt2fsKeys[Qt::Key_9] = KEY_PAD9;
-	qt2fsKeys[Qt::Key_Plus] = KEY_PADPLUS;
-	qt2fsKeys[Qt::Key_Minus] = KEY_PADMINUS;
+	qt2fsKeys[Qt::Key_0 + Qt::KeypadModifier] = KEY_PAD0;
+	qt2fsKeys[Qt::Key_1 + Qt::KeypadModifier] = KEY_PAD1;
+	qt2fsKeys[Qt::Key_2 + Qt::KeypadModifier] = KEY_PAD2;
+	qt2fsKeys[Qt::Key_3 + Qt::KeypadModifier] = KEY_PAD3;
+	qt2fsKeys[Qt::Key_4 + Qt::KeypadModifier] = KEY_PAD4;
+	qt2fsKeys[Qt::Key_5 + Qt::KeypadModifier] = KEY_PAD5;
+	qt2fsKeys[Qt::Key_6 + Qt::KeypadModifier] = KEY_PAD6;
+	qt2fsKeys[Qt::Key_7 + Qt::KeypadModifier] = KEY_PAD7;
+	qt2fsKeys[Qt::Key_8 + Qt::KeypadModifier] = KEY_PAD8;
+	qt2fsKeys[Qt::Key_9 + Qt::KeypadModifier] = KEY_PAD9;
+	qt2fsKeys[Qt::Key_Plus + Qt::KeypadModifier] = KEY_PADPLUS;
+	qt2fsKeys[Qt::Key_Minus + Qt::KeypadModifier] = KEY_PADMINUS;
 
 	setSurfaceType(QWindow::OpenGLSurface);
 }
@@ -94,13 +94,14 @@ void RenderWindow::keyPressEvent(QKeyEvent* key) {
 		return;
 	}
 
-	if (!qt2fsKeys.count(key->key())) {
+	auto code = key->key() + (int)key->modifiers();
+	if (!qt2fsKeys.count(code)) {
 		QWindow::keyPressEvent(key);
 		return;
 	}
 
 	key->accept();
-	key_mark(qt2fsKeys.at(key->key()), 1, 0);
+	key_mark(qt2fsKeys.at(code), 1, 0);
 }
 
 void RenderWindow::keyReleaseEvent(QKeyEvent* key) {
@@ -109,13 +110,14 @@ void RenderWindow::keyReleaseEvent(QKeyEvent* key) {
 		return;
 	}
 
-	if (!qt2fsKeys.count(key->key())) {
+	auto code = key->key() + (int)key->modifiers();
+	if (!qt2fsKeys.count(code)) {
 		QWindow::keyReleaseEvent(key);
 		return;
 	}
 
 	key->accept();
-	key_mark(qt2fsKeys.at(key->key()), 0, 0);
+	key_mark(qt2fsKeys.at(code), 0, 0);
 }
 
 void RenderWindow::mouseReleaseEvent(QMouseEvent* mouse) {

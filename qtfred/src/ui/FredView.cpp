@@ -30,6 +30,8 @@ FredView::FredView(QWidget *parent) :
 
 	connect(ui->actionOpen, &QAction::triggered, this, &FredView::loadMission);
 	connect(ui->actionNew, &QAction::triggered, this, &FredView::newMission);
+
+	installEventFilter(this);
 }
 
 FredView::~FredView()
@@ -155,6 +157,19 @@ RenderWindow* FredView::getRenderWindow() {
 }
 void FredView::newMission() {
 	fred->createNewMission();
+}
+bool FredView::eventFilter(QObject* watched, QEvent* event) {
+	if (event->type() == QEvent::ShortcutOverride) {
+		auto keyEvent = static_cast<QKeyEvent*>(event);
+
+		// Only use shortcuts on the keyboard since the keypad is needed for the camera controls
+		// This currently only affects the shortcuts using 1-8
+		if (keyEvent->modifiers().testFlag(Qt::KeypadModifier)) {
+			keyEvent->accept();
+			return true;
+		}
+	}
+	return QObject::eventFilter(watched, event);
 }
 
 } // namespace fred
