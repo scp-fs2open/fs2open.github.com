@@ -3,6 +3,8 @@
 #include <globalincs/pstypes.h>
 #include <physics/physics.h>
 #include <mission/missiongrid.h>
+#include <osapi/osapi.h>
+#include <QtCore/QObject>
 
 class object;
 class ship_subsys;
@@ -34,7 +36,10 @@ struct ViewSettings {
 	bool Show_grid_positions = true;
 };
 
-class FredRenderer {
+class Editor;
+
+class FredRenderer : public QObject {
+	Q_OBJECT
 
 	/**
      * A lot of this stuff doesn't belong here
@@ -66,12 +71,17 @@ class FredRenderer {
 
 	fix lasttime = 0;
 
+	Editor* _editor = nullptr;
+	os::Viewport* _targetView = nullptr;
+
 	FredRenderer(const FredRenderer& other) = delete;
 	FredRenderer& operator=(const FredRenderer& other) = delete;
 
  public:
-	FredRenderer();
+	explicit FredRenderer(Editor* editor, os::Viewport* targetView);
 	~FredRenderer();
+
+	void resize(int width, int height);
 
 	void resetView();
 
@@ -157,6 +167,9 @@ class FredRenderer {
 	vec3d view_pos;
 	physics_info view_physics;
 	grid* The_grid;
+
+signals:
+	void scheduleUpdate();
 };
 }
 }

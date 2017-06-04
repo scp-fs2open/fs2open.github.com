@@ -7,7 +7,7 @@
 
 #include <QtWidgets/QtWidgets>
 
-#include "fredGlobals.h"
+#include "FredApplication.h"
 
 namespace {
 
@@ -83,15 +83,15 @@ void QtGraphicsOperations::makeOpenGLContextCurrent(os::Viewport* view, os::Open
 	auto qtContext = static_cast<QtOpenGLContext*>(ctx);
 
 	if (qtPort == nullptr && qtContext == nullptr) {
-		// Qt requires a context pointer for disabling it so we retrieve the current context and the disable that
-		auto current = QOpenGLContext::currentContext();
-
-		if (current != nullptr) {
-			current->doneCurrent();
+		if (_lastContext != nullptr) {
+			_lastContext->makeCurrent(nullptr);
 		}
 	} else {
 		qtContext->makeCurrent(qtPort->getWindow()->getRenderWindow());
 	}
+
+	// We keep track of our last context since the qt information may return contexts managed by the GUI framework
+	_lastContext = qtContext;
 }
 
 QtViewport::QtViewport(std::unique_ptr<FredView>&& window, const os::ViewPortProperties& viewProps) :
@@ -105,22 +105,26 @@ std::unique_ptr<os::Viewport> QtGraphicsOperations::createViewport(const os::Vie
 	std::unique_ptr<FredView> mw(new FredView());
 	mw->getRenderWindow()->initializeGL(getSurfaceFormat(props, props.gl_attributes));
 
-	mw->setEditor(_editor);
+	auto viewPtr = mw.get();
+	auto view = std::unique_ptr<os::Viewport>(new QtViewport(std::move(mw), props));
 
-	if (fredGlobals->isInitializeComplete()) {
+	auto renderer = _editor->createRenderer(view.get());
+	viewPtr->setEditor(_editor, renderer);
+
+	if (fredApp->isInitializeComplete()) {
 		// Only show new viewports if the initialization has already been completed
 		// The windows created at program start will only be shown once initialization is completed
-		mw->show();
+		viewPtr->show();
 	}
 
-	return std::unique_ptr<os::Viewport>(new QtViewport(std::move(mw), props));
+	return view;
 }
 
 SDL_Window* QtViewport::toSDLWindow() {
 	return nullptr;
 }
 std::pair<uint32_t, uint32_t> QtViewport::getSize() {
-	auto size = _viewportWindow->size();
+	auto size = _viewportWindow->getRenderWindow()->size();
 
 	return std::make_pair((uint32_t) size.width(), (uint32_t) size.height());
 }

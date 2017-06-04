@@ -1,4 +1,7 @@
+
 #include "FredRenderer.h"
+#include "editor.h"
+
 #include <globalincs/alphacolors.h>
 #include <mission/missiongrid.h>
 #include <globalincs/systemvars.h>
@@ -428,7 +431,7 @@ void verticalize_object(matrix* orient) {
 
 namespace fso {
 namespace fred {
-FredRenderer::FredRenderer() {
+FredRenderer::FredRenderer(Editor* editor, os::Viewport* targetView) : _editor(editor), _targetView(targetView) {
 	resetView();
 }
 
@@ -543,10 +546,10 @@ void FredRenderer::process_controls(vec3d* pos, matrix* orient, float frametime,
 			memset(&view_controls, 0, sizeof(control_info));
 		}
 
-		///! \todo Notify update window.
 		if ((fabs(view_controls.pitch) > (frametime / 100)) && (fabs(view_controls.vertical) > (frametime / 100))
 			&& (fabs(view_controls.heading) > (frametime / 100)) && (fabs(view_controls.sideways) > (frametime / 100))
 			&& (fabs(view_controls.bank) > (frametime / 100)) && (fabs(view_controls.forward) > (frametime / 100))) {
+			scheduleUpdate();
 		}
 
 		//view_physics.flags |= (PF_ACCELERATES | PF_SLIDE_ENABLED);
@@ -690,8 +693,8 @@ void FredRenderer::game_do_frame(const int view_obj,
 				objp = GET_NEXT(objp);
 			}
 
-			///! \todo Notify.
-			//set_modified();
+			// Notify the editor that the mission has changed
+			_editor->missionChanged();
 		}
 
 		break;
@@ -726,22 +729,19 @@ void FredRenderer::game_do_frame(const int view_obj,
 
 	if (Cursor_over != Last_cursor_over) {
 		Last_cursor_over = Cursor_over;
-		///! \todo Notify update_window.
-		//Update_window = 1;
+		scheduleUpdate();
 	}
 
 	// redraw screen if controlled object moved or rotated
 	if (vm_vec_cmp(&control_pos, &Last_control_pos) || vm_matrix_cmp(&control_orient, &Last_control_orient)) {
-		///! \todo Notify update window.
-		//Update_window = 1;
+		scheduleUpdate();
 		Last_control_pos = control_pos;
 		Last_control_orient = control_orient;
 	}
 
 	// redraw screen if current viewpoint moved or rotated
 	if (vm_vec_cmp(&eye_pos, &Last_eye_pos) || vm_matrix_cmp(&eye_orient, &Last_eye_orient)) {
-		///! \todo Notify update window.
-		//Update_window = 1;
+		scheduleUpdate();
 		Last_eye_pos = eye_pos;
 		Last_eye_orient = eye_orient;
 	}
@@ -1456,6 +1456,13 @@ void FredRenderer::render_frame(int cur_object_index,
 								bool Render_compass,
 								bool Lighting_on,
 								bool FullDetail) {
+
+	// Make sure our OpenGL context is used for rendering
+	gr_use_viewport(_targetView);
+
+	// Resize the rendering window in case the previous size was different
+	gr_screen_resize(_targetView->getSize().first, _targetView->getSize().second);
+
 	char buf[256];
 	int x, y, w, h, inst;
 	vec3d pos;
@@ -1824,7 +1831,7 @@ void FredRenderer::level_controlled(const int viewpoint, const int view_obj) {
 		level_object(&Objects[view_obj].orient);
 		object_moved(&Objects[view_obj]);
 		///! \todo Notify.
-		//set_modified();
+		_editor->missionChanged();
 		//FREDDoc_ptr->autosave("level object");
 		break;
 
@@ -1849,16 +1856,16 @@ void FredRenderer::level_controlled(const int viewpoint, const int view_obj) {
 		}
 
 		///! \todo Notify.
-#if 0
         if (count) {
+			/*
             if (count > 1)
                 FREDDoc_ptr->autosave("level objects");
             else
                 FREDDoc_ptr->autosave("level object");
+                */
 
-                //set_modified();
+            _editor->missionChanged();
         }
-#endif
 
 		break;
 	}
@@ -1885,7 +1892,7 @@ void FredRenderer::verticalize_controlled(const int viewpoint, const int view_ob
 		object_moved(&Objects[view_obj]);
 		///! \todo notify.
 		//FREDDoc_ptr->autosave("align object");
-		//set_modified();
+		_editor->missionChanged();
 		break;
 
 	case 1: //	Control the current object's location and orientation
@@ -1909,21 +1916,30 @@ void FredRenderer::verticalize_controlled(const int viewpoint, const int view_ob
 		}
 
 		///! \todo Notify.
-#if 0
         if (count) {
+			/*
             if (count > 1)
                 FREDDoc_ptr->autosave("align objects");
             else
                 FREDDoc_ptr->autosave("align object");
+                */
 
-            set_modified();
+            _editor->missionChanged();
         }
-#endif
 
 		break;
 	}
 
 	return;
+}
+void FredRenderer::resize(int width, int height) {
+	// Make sure the following call targets the right view port
+	gr_use_viewport(_targetView);
+
+	gr_screen_resize(width, height);
+
+	// We need to rerender the scene now
+	scheduleUpdate();
 }
 }
 }

@@ -45,6 +45,7 @@
 
 #include "object.h"
 #include "iterators.h"
+#include <FredApplication.h>
 
 extern int Xstr_inited;
 
@@ -137,68 +138,50 @@ void shutdown() {
 }
 
 Editor::Editor() : currentObject{ -1 } {
+	connect(fredApp, &FredApplication::onIdle, this, &Editor::update);
+
+	// When the mission changes we need to update all renderers
+	connect(this, &Editor::missionChanged, this, &Editor::updateAllRenderers);
+
+	// When a mission was loaded we need to notify everyone that the mission has changed
+	connect(this, &Editor::missionLoaded, [this](const std::string&) { missionChanged(); });
+
+	fredApp->runAfterInit([this]() { clearMission(); });
 }
 
-void Editor::initializeRenderer() {
-	m_renderer.reset(new FredRenderer());
+FredRenderer* Editor::createRenderer(os::Viewport* renderView) {
+	std::unique_ptr<FredRenderer> renderer(new FredRenderer(this, renderView));
 
-	clearMission();
-}
+	auto ptr = renderer.get();
+	_renderers.push_back(std::move(renderer));
 
-void Editor::resize(int width, int height) {
-	gr_screen_resize(width, height);
+	return ptr;
 }
 
 void Editor::update() {
-	Assertion(m_renderer, "Render has not been initialized yet!");
-
-	m_renderer->game_do_frame(-1, 0, 0, -1);
-	std::array<bool, MAX_IFFS> iffs;
-	iffs.fill(true);
-	m_renderer->render_frame(-1,
-							 Render_subsys,
-							 false,
-							 Marking_box(),
-							 currentObject,
-							 true,
-							 true,
-							 &iffs[0],
-							 true,
-							 true,
-							 true,
-							 true,
-							 false,
-							 true,
-							 true,
-							 true);
+	// Do updates for all renderers
+	for (auto& renderer : _renderers) {
+		renderer->game_do_frame(-1, 0, 0, -1);
+	}
 }
 
 void Editor::loadMission(const std::string& filepath) {
-	Assertion(m_renderer, "Render has not been initialized yet!");
-
 	if (parse_main(filepath.c_str())) {
 		throw mission_load_error("Parse error");
 	}
 
 	obj_merge_created_list();
 
-	m_renderer->view_orient = Parse_viewer_orient;
-	m_renderer->view_pos = Parse_viewer_pos;
+	for (auto& renderer : _renderers) {
+		renderer->view_orient = Parse_viewer_orient;
+		renderer->view_pos = Parse_viewer_pos;
+	}
 	stars_post_level_init();
 
 	missionLoaded(filepath);
 }
-
-int Editor::findFirstObjectUnder(int x, int y) {
-	Assertion(m_renderer, "Render has not been initialized yet!");
-
-	std::array<bool, MAX_IFFS> iffs;
-	iffs.fill(true);
-
-	return m_renderer->select_object(x, y, false, true, true, &iffs[0], true);
-}
 void Editor::unmark_all() {
-	if (numMarked) {
+	if (numMarked > 0) {
 		for (auto i = 0; i < MAX_OBJECTS; i++) {
 			Objects[i].flags.remove(Object::Object_Flags::Marked);
 		}
@@ -206,7 +189,7 @@ void Editor::unmark_all() {
 		numMarked = 0;
 		setupCurrentObjectIndices(-1);
 
-		scheduleUpdate();
+		missionChanged();
 	}
 }
 void Editor::markObject(int obj) {
@@ -219,13 +202,11 @@ void Editor::markObject(int obj) {
 			setupCurrentObjectIndices(obj);
 		}
 
-		scheduleUpdate();
+		missionChanged();
 	}
 }
 
 void Editor::resetPhysics() {
-	Assertion(m_renderer, "Render has not been initialized yet!");
-
 	int physics_speed = 100;
 	int physics_rot = 20;
 
@@ -240,7 +221,9 @@ void Editor::resetPhysics() {
 	view_physics.max_rotvel.xyz.z *= physics_rot / 30.0f;
 	view_physics.flags |= PF_ACCELERATES | PF_SLIDE_ENABLED;
 
-	m_renderer->view_physics = view_physics;
+	for (auto& renderer : _renderers) {
+		renderer->view_physics = view_physics;
+	}
 }
 void Editor::clearMission() {
 	// clean up everything we need to before we reset back to defaults.
@@ -363,7 +346,11 @@ void Editor::clearMission() {
 	unmark_all();
 	obj_init();
 	model_free_all();                // Free all existing models
-	m_renderer->resetView();
+
+	for (auto& renderer : _renderers) {
+		renderer->resetView();
+	}
+
 	init_sexp();
 	messages_init();
 	brief_reset();
@@ -426,7 +413,6 @@ void Editor::clearMission() {
 
 	ENVMAP = -1;
 
-	scheduleUpdate();
 	missionLoaded("");
 }
 void Editor::setupCurrentObjectIndices(int selectedObj) {
@@ -467,7 +453,14 @@ void Editor::selectObject(int objId) {
 
 	setupCurrentObjectIndices(objId);  // select the new object
 
-	scheduleUpdate();
+	missionChanged();
+}
+void Editor::updateAllRenderers() {
+	// This takes all renderers and issues an update request for each of them. For now that is only one but this allows
+	// us to expand FRED to multiple view ports in the future.
+	for (auto& renderer : _renderers) {
+		renderer->scheduleUpdate();
+	}
 }
 
 } // namespace fred

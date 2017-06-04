@@ -33,12 +33,15 @@ FredView::~FredView()
 {
 }
 
-void FredView::setEditor(Editor* editor)
+void FredView::setEditor(Editor* editor, FredRenderer* renderer)
 {
 	Assertion(fred == nullptr, "Resetting the editor is currently not supported!");
+	Assertion(_renderer == nullptr, "Resetting the renderer is currently not supported!");
 
     fred = editor;
-    getRenderWindow()->setEditor(editor);
+	_renderer = renderer;
+
+    getRenderWindow()->setEditor(editor, renderer);
 
 	connect(fred, &Editor::missionLoaded, this, &FredView::on_mission_loaded);
 
@@ -66,7 +69,7 @@ void FredView::loadMission()
 		QApplication::restoreOverrideCursor();
 
 		getRenderWindow()->updateGL();
-        statusBar()->showMessage(tr("Units = %1 meters").arg(fred->renderer()->The_grid->square_size));
+        statusBar()->showMessage(tr("Units = %1 meters").arg(_renderer->The_grid->square_size));
     }
     catch (const fso::fred::mission_load_error &) {
 		QApplication::restoreOverrideCursor();
@@ -78,32 +81,50 @@ void FredView::loadMission()
 
 void FredView::on_actionShow_Background_triggered(bool checked)
 {
-	fred->renderer()->view.Show_stars = checked;
+	_renderer->view.Show_stars = checked;
+
+	// View has changed so we need to schedule an update
+	_renderer->scheduleUpdate();
 }
 
 void FredView::on_actionShow_Horizon_triggered(bool checked)
 {
-	fred->renderer()->view.Show_horizon = checked;
+	_renderer->view.Show_horizon = checked;
+
+	// View has changed so we need to schedule an update
+	_renderer->scheduleUpdate();
 }
 
 void FredView::on_actionShow_Grid_triggered(bool checked)
 {
-	fred->renderer()->view.Show_grid = checked;
+	_renderer->view.Show_grid = checked;
+
+	// View has changed so we need to schedule an update
+	_renderer->scheduleUpdate();
 }
 
 void FredView::on_actionShow_Distances_triggered(bool checked)
 {
-	fred->renderer()->view.Show_distances = checked;
+	_renderer->view.Show_distances = checked;
+
+	// View has changed so we need to schedule an update
+	_renderer->scheduleUpdate();
 }
 
 void FredView::on_actionShow_Coordinates_triggered(bool checked)
 {
-	fred->renderer()->view.Show_coordinates = checked;
+	_renderer->view.Show_coordinates = checked;
+
+	// View has changed so we need to schedule an update
+	_renderer->scheduleUpdate();
 }
 
 void FredView::on_actionShow_Outlines_triggered(bool checked)
 {
-	fred->renderer()->view.Show_outlines = checked;
+	_renderer->view.Show_outlines = checked;
+
+	// View has changed so we need to schedule an update
+	_renderer->scheduleUpdate();
 }
 
 void FredView::on_mission_loaded(const std::string& filepath) {

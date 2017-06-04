@@ -41,6 +41,8 @@ class QtViewport: public os::Viewport {
 
 class QtGraphicsOperations: public os::GraphicsOperations {
 	Editor* _editor = nullptr;
+
+	QtOpenGLContext* _lastContext = nullptr;
  public:
 	QtGraphicsOperations(Editor* editor);
 	~QtGraphicsOperations();

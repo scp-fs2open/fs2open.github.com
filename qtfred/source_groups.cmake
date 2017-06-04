@@ -10,6 +10,8 @@ macro(add_file_folder VAR_NAME FOLDER_NAME)
 endmacro(add_file_folder)
 
 add_file_folder(src "Source"
+    src/FredApplication.cpp
+    src/FredApplication.h
     src/fredstubs.cpp
     src/main.cpp
     src/util.cpp
@@ -28,8 +30,6 @@ add_file_folder(src_mission "Source/Mission"
 )
 
 add_file_folder(src_ui "Source/UI"
-    src/ui/fredGlobals.cpp
-    src/ui/fredGlobals.h
     src/ui/FredView.cpp
     src/ui/FredView.h
     src/ui/QtGraphicsOperations.cpp

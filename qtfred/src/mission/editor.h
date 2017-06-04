@@ -9,6 +9,7 @@
 #include <globalincs/globals.h>
 
 #include <QObject>
+#include <osapi/osapi.h>
 
 namespace fso {
 namespace fred {
@@ -81,19 +82,6 @@ class Editor : public QObject {
  public:
 	Editor();
 
-	/*! Initialize renderer. */
-	void initializeRenderer();
-
-	/*! Handle resizing.
-     *
-     * \param[in]   width   New width.
-     * \param[in]   height  New height.
-     */
-	void resize(int width, int height);
-
-	/*! Update the game an renders a frame. */
-	void update();
-
 	void clearMission();
 
 	void unmark_all();
@@ -101,20 +89,23 @@ class Editor : public QObject {
 	/*! Load a mission. */
 	void loadMission(const std::string& filepath);
 
-	int findFirstObjectUnder(int x, int y);
-
 	void markObject(int objId);
 
 	void selectObject(int objId);
 
-	FredRenderer* renderer() {
-		return m_renderer.get();
-	}
+	FredRenderer* createRenderer(os::Viewport* renderView);
+
+	/* Schedules updates for all renderes */
+	void updateAllRenderers();
 
 	///! Non-copyable.
 	Editor(const Editor&) = delete;
 	///! Non-copyable.
 	const Editor& operator=(const Editor&) = delete;
+
+public slots:
+	/*! Update the game but doesn't render anything. */
+	void update();
 
 signals:
 	/**
@@ -124,17 +115,16 @@ signals:
 	void missionLoaded(const std::string& filepath);
 
 	/**
-	 * @brief Signal for when the editor wants to update the render window
+	 * @brief A signal emitted when the mission has changed somehow
 	 */
-	void scheduleUpdate();
+	void missionChanged();
 
  private:
 	void resetPhysics();
 
 	void setupCurrentObjectIndices(int obj);
 
-	std::unique_ptr<FredRenderer> m_renderer;
-	subsys_to_render Render_subsys;
+	SCP_vector<std::unique_ptr<FredRenderer>> _renderers;
 
 	int currentObject = -1;
 	int numMarked = 0;

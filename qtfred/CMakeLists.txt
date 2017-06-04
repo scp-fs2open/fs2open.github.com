@@ -39,6 +39,9 @@ target_compile_definitions(qtfred PRIVATE "$<$<CXX_COMPILER_ID:MSVC>:PDB_DEBUGGI
 # Undefine emit since it conflicts with our code
 target_compile_definitions(qtfred PRIVATE QT_NO_EMIT)
 
+# Define the deprecated attribute so that usage of such functions causes a warning
+target_compile_definitions(qtfred PRIVATE QT_DEPRECATED_WARNINGS)
+
 target_compile_definitions(qtfred PUBLIC USING_THIRD_PARTY_LIBS FRED)
 
 target_include_directories(qtfred PUBLIC

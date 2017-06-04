@@ -15,7 +15,7 @@
 #include "starfield/starfield.h"
 
 #include "mission/editor.h"
-#include "ui/fredGlobals.h"
+#include "FredApplication.h"
 
 namespace fso {
 namespace fred {
@@ -46,23 +46,36 @@ void RenderWindow::initializeGL(const QSurfaceFormat& surfaceFmt) {
 	// Force creation of this window so that we can use it for OpenGL
 	create();
 
-	fredGlobals->runAfterInit([this]() { startRendering(); });
+	fredApp->runAfterInit([this]() { startRendering(); });
 }
 
 void RenderWindow::startRendering() {
 	_isRendering = true;
 
-	fred->resize(size().width(), size().height());
-
-	// Paint the first frame
-	requestUpdate();
+	_renderer->resize(size().width(), size().height());
 }
 
 void RenderWindow::paintGL() {
-	// Make sure our OpenGL context is used for rendering
-	gr_use_viewport(os::getMainViewport());
+	std::array<bool, MAX_IFFS> iffs;
+	iffs.fill(true);
+	subsys_to_render Render_subsys;
 
-	fred->update();
+	_renderer->render_frame(-1,
+							Render_subsys,
+							false,
+							Marking_box(),
+							-1,
+							true,
+							true,
+							&iffs[0],
+							true,
+							true,
+							true,
+							true,
+							false,
+							true,
+							true,
+							true);
 }
 
 bool RenderWindow::event(QEvent* evt) {
@@ -88,8 +101,6 @@ void RenderWindow::keyPressEvent(QKeyEvent* key) {
 
 	key->accept();
 	key_mark(qt2fsKeys.at(key->key()), 1, 0);
-
-	updateGL();
 }
 
 void RenderWindow::keyReleaseEvent(QKeyEvent* key) {
@@ -108,17 +119,17 @@ void RenderWindow::keyReleaseEvent(QKeyEvent* key) {
 }
 
 void RenderWindow::mouseReleaseEvent(QMouseEvent* mouse) {
-	auto obj = fred->findFirstObjectUnder(mouse->x(), mouse->y());
+	std::array<bool, MAX_IFFS> iffs;
+	iffs.fill(true);
 
-	fred->selectObject(obj);
+	auto obj_num = _renderer->select_object(mouse->x(), mouse->y(), false, true, true, &iffs[0], true);
+
+	fred->selectObject(obj_num);
 }
 void RenderWindow::resizeEvent(QResizeEvent* event) {
 	if (_isRendering) {
 		// Only send resize event if we are actually rendering
-		fred->resize(event->size().width(), event->size().height());
-
-		// Make sure we repaint
-		updateGL();
+		_renderer->resize(event->size().width(), event->size().height());
 	}
 }
 
@@ -135,20 +146,25 @@ RenderWindow::~RenderWindow() {
 }
 void RenderWindow::exposeEvent(QExposeEvent* event) {
 	if (isExposed()) {
-		updateGL();
+		requestUpdate();
 
 		event->accept();
 	} else {
 		QWindow::exposeEvent(event);
 	}
 }
-void RenderWindow::setEditor(Editor* editor) {
-	Assertion(fred == nullptr, "Render widget current does not support resetting the editor!");
+void RenderWindow::setEditor(Editor* editor, FredRenderer* renderer) {
+	Assertion(fred == nullptr, "Render widget currently does not support resetting the editor!");
+	Assertion(_renderer == nullptr, "Render widget currently does not support resetting the renderer!");
+
+	Assertion(editor != nullptr, "Invalid editor pointer passed!");
+	Assertion(renderer != nullptr, "Invalid renderer pointer passed!");
 
 	fred = editor;
+	_renderer = renderer;
 
 	// When the editor want to update the main window we have to do that.
-	connect(fred, &Editor::scheduleUpdate, [this](){ requestUpdate(); });
+	connect(_renderer, &FredRenderer::scheduleUpdate, [this]() { requestUpdate(); });
 }
 
 RenderWidget::RenderWidget(QWidget* parent) : QWidget(parent) {

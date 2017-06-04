@@ -18,7 +18,8 @@
 #include "mission/editor.h"
 
 #include "ui/FredView.h"
-#include "ui/fredGlobals.h"
+#include "FredApplication.h"
+#include "FredApplication.h"
 
 // Globals needed by the engine when built in 'FRED' mode.
 int Fred_running = 1;
@@ -64,32 +65,28 @@ void fsoMessageOutput(QtMsgType type, const QMessageLogContext &context, const Q
 int main(int argc, char* argv[]) {
 	using namespace fso::fred;
 
+#ifdef WIN32
+	SCP_mspdbcs_Initialise();
+#endif
+
 	Q_INIT_RESOURCE(resources);
 	qInstallMessageHandler(fsoMessageOutput);
 
 	SDL_SetMainReady();
 
-	QApplication app(argc, argv);
-
 	QCoreApplication::setOrganizationName("HardLightProductions");
 	QCoreApplication::setOrganizationDomain("hard-light.net");
 	QCoreApplication::setApplicationName("qtFRED");
 
-	// This instance will be registered as the global fredGlobals pointer
-	QtFredGlobals globalsInstance;
+	QApplication app(argc, argv);
+
+	// This will be available as the global instance
+	FredApplication localFredApp;
 
 	QSplashScreen splash(QPixmap(":/images/splash.png"));
 	splash.show();
-	app.processEvents();
+	qGuiApp->processEvents();
 	std::unique_ptr<Editor> fred(new Editor());
-
-	// Initialize renderer once initialize is complete
-	// TODO: Decide how to handle this. It could be done inside Editor but that is currently free of Qt code
-	fredGlobals->runAfterInit([&fred]() { fred->initializeRenderer(); });
-
-#ifdef WIN32
-	SCP_mspdbcs_Initialise();
-#endif
 
 	auto baseDir = QDir::toNativeSeparators(QDir::current().absolutePath());
 
@@ -122,7 +119,7 @@ int main(int argc, char* argv[]) {
 		if (initializers.count(which)) {
 			splash.showMessage(initializers.at(which), Qt::AlignHCenter | Qt::AlignBottom, Qt::white);
 		}
-		app.processEvents();
+		qGuiApp->processEvents();
 	});
 
 	splash.showMessage(app.tr("Showing editor window"), Qt::AlignHCenter | Qt::AlignBottom, Qt::white);
@@ -136,16 +133,7 @@ int main(int argc, char* argv[]) {
 	}
 
 	// Allow other parts of the code to execute code that needs to run after everything has been set up
-	fredGlobals->initializeComplete();
+	fredApp->initializeComplete();
 
-	auto ret = app.exec();
-
-	// Clean up resources after we are done
-	fso::fred::shutdown();
-
-#ifdef WIN32
-	SCP_mspdbcs_Cleanup();
-#endif
-
-	return ret;
+	return QGuiApplication::exec();
 }

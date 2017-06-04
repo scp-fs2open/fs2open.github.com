@@ -6,6 +6,7 @@
 
 #include <memory>
 #include <QtWidgets/QComboBox>
+#include <mission/FredRenderer.h>
 
 namespace fso {
 namespace fred {
@@ -24,7 +25,7 @@ class FredView : public QMainWindow
 public:
     explicit FredView(QWidget *parent = 0);
     ~FredView();
-    void setEditor(Editor* editor);
+    void setEditor(Editor* editor, FredRenderer* renderer);
 
 	RenderWindow* getRenderWindow();
 
@@ -57,6 +58,7 @@ private:
 	std::unique_ptr<QComboBox> _shipClassBox;
 
     Editor* fred = nullptr;
+	FredRenderer* _renderer = nullptr;
 };
 
 
