@@ -226,6 +226,7 @@ int generic_anim_stream(generic_anim *ga, const bool cache)
 				mprintf(("Failed to load apng: %s\n", e.what() ));
 				delete ga->png.anim;
 				ga->png.anim = nullptr;
+				ga->type = BM_TYPE_NONE;
 				return -1;
 			}
 			nprintf(("apng", "apng read OK (%ix%i@%i) duration (%f)\n", ga->png.anim->w, ga->png.anim->h,
