@@ -43,9 +43,11 @@ private slots:
 
     void on_actionShow_Outlines_triggered(bool checked);
 
+	void on_mission_loaded(const std::string& filepath);
+
 private:
     std::unique_ptr<Ui::MainWindow> ui;
-    Editor* fred;
+    Editor* fred = nullptr;
 };
 
 

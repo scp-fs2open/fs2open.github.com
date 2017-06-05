@@ -36,6 +36,9 @@ set_target_properties(qtfred PROPERTIES OUTPUT_NAME "qtfred_${FSO_BINARY_SUFFIX}
 
 target_compile_definitions(qtfred PRIVATE "$<$<CXX_COMPILER_ID:MSVC>:PDB_DEBUGGING=1>")
 
+# Undefine emit since it conflicts with our code
+target_compile_definitions(qtfred PRIVATE QT_NO_EMIT)
+
 target_compile_definitions(qtfred PUBLIC USING_THIRD_PARTY_LIBS FRED)
 
 target_include_directories(qtfred PUBLIC

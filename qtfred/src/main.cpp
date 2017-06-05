@@ -96,7 +96,7 @@ int main(int argc, char* argv[]) {
 	});
 
 	// Allow other parts of the code to execute code that needs to run after everything has been set up
-	emit fredGlobals->initializeComplete();
+	fredGlobals->initializeComplete();
 
 	app.processEvents();
 	splash.close();

@@ -5,6 +5,8 @@
 #include <QMessageBox>
 #include <QDebug>
 
+#include <project.h>
+
 #include "mission/editor.h"
 #include "renderwidget.h"
 
@@ -24,8 +26,15 @@ MainWindow::~MainWindow()
 
 void MainWindow::setEditor(Editor* editor)
 {
+	Assertion(fred == nullptr, "Resetting the editor is currently not supported!");
+
     fred = editor;
     ui->centralwidget->getWindow()->setEditor(editor);
+
+	connect(fred, &Editor::missionLoaded, this, &MainWindow::on_mission_loaded);
+
+	// Sets the initial window title
+	on_mission_loaded("");
 }
 
 void MainWindow::loadMission()
@@ -41,11 +50,18 @@ void MainWindow::loadMission()
 
     statusBar()->showMessage(tr("Loading mission %1").arg(pathName));
     try {
+		QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
+
         fred->loadMission(pathName.toStdString());
+
+		QApplication::restoreOverrideCursor();
+
         ui->centralwidget->getWindow()->updateGL();
         statusBar()->showMessage(tr("Units = %1 meters").arg(fred->renderer()->The_grid->square_size));
     }
     catch (const fso::fred::mission_load_error &) {
+		QApplication::restoreOverrideCursor();
+
         QMessageBox::critical(this, tr("Failed loading mission."), tr("Could not parse the mission."));
         statusBar()->clearMessage();
     }
@@ -80,6 +96,18 @@ void MainWindow::on_actionShow_Outlines_triggered(bool checked)
 {
 	fred->renderer()->view.Show_outlines = checked;
 }
+
+void MainWindow::on_mission_loaded(const std::string& filepath) {
+	QString filename = "Untitled";
+	if (!filepath.empty()) {
+		filename = QFileInfo(QString::fromStdString(filepath)).fileName();
+	}
+
+	auto title = QString("%1 - qtFRED v%2 - FreeSpace 2 Mission Editor").arg(filename, FS_VERSION_FULL);
+
+	setWindowTitle(title);
+}
+
 RenderWindow* MainWindow::getRenderWidget() {
 	return ui->centralwidget->getWindow();
 }

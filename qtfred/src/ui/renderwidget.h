@@ -55,7 +55,7 @@ class RenderWidget: public QWidget {
  Q_OBJECT
 
  public:
-	RenderWidget(QWidget* parent);
+	explicit RenderWidget(QWidget* parent);
 
 	RenderWindow* getWindow() const;
 };

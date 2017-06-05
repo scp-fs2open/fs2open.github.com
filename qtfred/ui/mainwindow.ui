@@ -46,7 +46,10 @@
   <widget class="QStatusBar" name="statusbar"/>
   <action name="action_Load">
    <property name="text">
-    <string>&amp;Load...</string>
+    <string>&amp;Open</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+O</string>
    </property>
   </action>
   <action name="actionShow_Stars">
