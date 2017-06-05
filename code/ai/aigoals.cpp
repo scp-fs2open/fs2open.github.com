@@ -1640,7 +1640,7 @@ int ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 		}
 		else
 		{
-			Int3();		// get ALLENDER
+			mprintf(("Potentially incorrect behaviour in AI goal for ship %s: Ship %s could not be found among currently active, departed, or yet-to-arrive ships.\nPlease check the mission file.\n", Ships[objp->instance].ship_name, aigp->target_name));
 			status = SHIP_STATUS_UNKNOWN;
 		}
 	}
