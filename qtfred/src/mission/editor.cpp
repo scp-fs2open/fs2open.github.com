@@ -46,6 +46,7 @@
 #include "object.h"
 #include "iterators.h"
 #include <FredApplication.h>
+#include <hud/hudsquadmsg.h>
 
 extern int Xstr_inited;
 
@@ -146,7 +147,7 @@ Editor::Editor() : currentObject{ -1 } {
 	// When a mission was loaded we need to notify everyone that the mission has changed
 	connect(this, &Editor::missionLoaded, [this](const std::string&) { missionChanged(); });
 
-	fredApp->runAfterInit([this]() { clearMission(); });
+	fredApp->runAfterInit([this]() { initialSetup(); });
 }
 
 FredRenderer* Editor::createRenderer(os::Viewport* renderView) {
@@ -415,6 +416,14 @@ void Editor::clearMission() {
 
 	missionLoaded("");
 }
+
+void Editor::initialSetup() {
+	// Get the default player ship
+	Default_player_model = get_default_player_ship_index();
+
+	createNewMission();
+}
+
 void Editor::setupCurrentObjectIndices(int selectedObj) {
 	// TODO: Handle other object types
 
@@ -462,8 +471,121 @@ void Editor::updateAllRenderers() {
 		renderer->scheduleUpdate();
 	}
 }
+
+int Editor::create_player(int num, vec3d* pos, matrix* orient, int type, int init) {
+	int obj;
+
+	if (type == -1) {
+		type = Default_player_model;
+	}
+
+	Assert(type >= 0);
+	Assert(Player_starts < MAX_PLAYERS);
+	Player_starts++;
+	obj = create_ship(orient, pos, type);
+	Objects[obj].type = OBJ_START;
+
+	// be sure arrival/departure cues are set
+	Ships[Objects[obj].instance].arrival_cue = Locked_sexp_true;
+	Ships[Objects[obj].instance].departure_cue = Locked_sexp_false;
+	obj_merge_created_list();
+
+	missionChanged();
+
+	return obj;
+}
+
+int Editor::create_ship(matrix* orient, vec3d* pos, int ship_type) {
+	int obj, z1, z2;
+	float temp_max_hull_strength;
+	ship_info* sip;
+	
+	obj = ship_create(orient, pos, ship_type);
+	if (obj == -1)
+		return -1;
+	
+	Objects[obj].phys_info.speed = 33.0f;
+
+	ship* shipp = &Ships[Objects[obj].instance];
+	sip = &Ship_info[shipp->ship_info_index];
+
+	if (query_ship_name_duplicate(Objects[obj].instance))
+		fix_ship_name(Objects[obj].instance);
+
+	// default stuff according to species and IFF
+	shipp->team = Species_info[Ship_info[shipp->ship_info_index].species].default_iff;
+	resolve_parse_flags(&Objects[obj], Iff_info[shipp->team].default_parse_flags);
+
+	// default shield setting
+	shipp->special_shield = -1;
+
+	z1 = Shield_sys_teams[shipp->team];
+	z2 = Shield_sys_types[ship_type];
+	if (((z1 == 1) && z2) || (z2 == 1))
+		Objects[obj].flags.set(Object::Object_Flags::No_shields);
+
+	// set orders according to whether the ship is on the player ship's team
+	{
+		object* temp_objp;
+		ship* temp_shipp = NULL;
+
+		// find the first player ship
+		for (temp_objp = GET_FIRST(&obj_used_list); temp_objp != END_OF_LIST(&obj_used_list); temp_objp = GET_NEXT(temp_objp)) {
+			if (temp_objp->type == OBJ_START) {
+				temp_shipp = &Ships[temp_objp->instance];
+				break;
+			}
+		}
+
+		// set orders if teams match, or if player couldn't be found
+		if (temp_shipp == NULL || shipp->team == temp_shipp->team) {
+			// if this ship is not a small ship, then make the orders be the default orders without
+			// the depart item
+			if (!(sip->is_small_ship())) {
+				shipp->orders_accepted = ship_get_default_orders_accepted(sip);
+				shipp->orders_accepted &= ~DEPART_ITEM;
+			}
+		} else {
+			shipp->orders_accepted = 0;
+		}
+	}
+
+	// calc kamikaze stuff
+	if (shipp->use_special_explosion) {
+		temp_max_hull_strength = (float)shipp->special_exp_blast;
+	} else {
+		temp_max_hull_strength = sip->max_hull_strength;
+	}
+
+	Ai_info[shipp->ai_index].kamikaze_damage = (int)std::min(1000.0f, 200.0f + (temp_max_hull_strength / 4.0f));
+
+	missionChanged();
+
+	return obj;
+}
+
+bool Editor::query_ship_name_duplicate(int ship) {
+	int i;
+
+	for (i = 0; i < MAX_SHIPS; i++)
+		if ((i != ship) && (Ships[i].objnum != -1))
+			if (!stricmp(Ships[i].ship_name, Ships[ship].ship_name))
+				return true;
+
+	return false;
+}
+
+void Editor::fix_ship_name(int ship) {
+	int i = 1;
+
+	do {
+		sprintf(Ships[ship].ship_name, "U.R.A. Moron %d", i++);
+	} while (query_ship_name_duplicate(ship));
+}
+
 void Editor::createNewMission() {
 	clearMission();
+	create_player(0, &vmd_zero_vector, &vmd_identity_matrix);
 }
 
 } // namespace fred

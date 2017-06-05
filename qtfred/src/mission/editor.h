@@ -82,8 +82,6 @@ class Editor : public QObject {
  public:
 	Editor();
 
-	void clearMission();
-
 	void unmark_all();
 
 	void createNewMission();
@@ -99,6 +97,14 @@ class Editor : public QObject {
 
 	/* Schedules updates for all renderes */
 	void updateAllRenderers();
+
+	int create_player(int num, vec3d *pos, matrix *orient, int type = -1, int init = 1);
+
+	int create_ship(matrix* orient, vec3d* pos, int ship_type);
+
+	bool query_ship_name_duplicate(int ship);
+
+	void fix_ship_name(int ship);
 
 	///! Non-copyable.
 	Editor(const Editor&) = delete;
@@ -122,6 +128,10 @@ signals:
 	void missionChanged();
 
  private:
+	void clearMission();
+
+	void initialSetup();
+
 	void resetPhysics();
 
 	void setupCurrentObjectIndices(int obj);
@@ -130,6 +140,11 @@ signals:
 
 	int currentObject = -1;
 	int numMarked = 0;
+
+	int Default_player_model = -1;
+
+	int Shield_sys_teams[MAX_IFFS] = { 0 };
+	int Shield_sys_types[MAX_SHIP_CLASSES] = { 0 };
 };
 
 } // namespace fred
