@@ -69,6 +69,8 @@ void initialize(const std::string& cfilepath, int argc, char* argv[], Editor* ed
 
 #ifndef NDEBUG
 	outwnd_init();
+
+	load_filter_info();
 #endif
 
 	std::setlocale(LC_ALL, "C");
