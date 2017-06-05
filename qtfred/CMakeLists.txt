@@ -50,6 +50,8 @@ if(WIN32)
     set_property(TARGET qtfred PROPERTY QT5_NO_LINK_QTMAIN ON)
 endif()
 
+set(CMAKE_MAP_IMPORTED_CONFIG_FASTDEBUG Release Debug)
+
 target_link_libraries(qtfred
     PUBLIC
     code
@@ -97,6 +99,5 @@ if (WIN32)
 
     install(FILES ${file_paths}
         DESTINATION ${BINARY_DESTINATION}
-        CONFIGURATIONS Debug Release
     )
 endif(WIN32)
