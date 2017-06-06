@@ -41,6 +41,12 @@
      <addaction name="actionFS1_Mission"/>
      <addaction name="actionFS1_Weapon_Loadouts"/>
     </widget>
+    <widget class="QMenu" name="menuRe_cent_Files">
+     <property name="title">
+      <string>Re&amp;cent Files</string>
+     </property>
+     <addaction name="actionEmpty"/>
+    </widget>
     <addaction name="actionNew"/>
     <addaction name="actionOpen"/>
     <addaction name="actionSave"/>
@@ -52,7 +58,7 @@
     <addaction name="separator"/>
     <addaction name="actionRun_FreeSpace_2_Open"/>
     <addaction name="separator"/>
-    <addaction name="actionRecent_Files"/>
+    <addaction name="menuRe_cent_Files"/>
     <addaction name="separator"/>
     <addaction name="actionExit"/>
    </widget>
@@ -602,11 +608,6 @@
    </property>
    <property name="shortcut">
     <string/>
-   </property>
-  </action>
-  <action name="actionRecent_Files">
-   <property name="text">
-    <string>Re&amp;cent Files</string>
    </property>
   </action>
   <action name="actionExit">
@@ -1172,6 +1173,11 @@
    </property>
    <property name="shortcut">
     <string>Alt+Shift+I</string>
+   </property>
+  </action>
+  <action name="actionEmpty">
+   <property name="text">
+    <string>Empty</string>
    </property>
   </action>
  </widget>

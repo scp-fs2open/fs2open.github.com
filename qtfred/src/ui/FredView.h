@@ -27,10 +27,12 @@ public:
     ~FredView();
     void setEditor(Editor* editor, FredRenderer* renderer);
 
+	void loadMissionFile(const QString& pathName);
+
 	RenderWindow* getRenderWindow();
 
 public slots:
-    void loadMission();
+    void openLoadMissionDIalog();
 
 	void newMission();
 
@@ -47,6 +49,8 @@ private slots:
 
     void on_actionShow_Outlines_triggered(bool checked);
 
+	void on_actionExit_triggered(bool);
+
 	void on_mission_loaded(const std::string& filepath);
 
 protected:
@@ -57,6 +61,11 @@ protected:
 	bool eventFilter(QObject* watched, QEvent* event) override;
 
 private:
+	void addToRecentFiles(const QString& path);
+	void updateRecentFileList();
+
+	void recentFileOpened();
+
 	std::unique_ptr<Ui::FredView> ui;
 
 	std::unique_ptr<QComboBox> _shipClassBox;

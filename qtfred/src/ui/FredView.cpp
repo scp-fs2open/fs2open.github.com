@@ -5,6 +5,7 @@
 #include <QFileDialog>
 #include <QMessageBox>
 #include <QDebug>
+#include <QSettings>
 
 #include <project.h>
 
@@ -37,8 +38,10 @@ FredView::FredView(QWidget *parent) :
 
 	ui->toolBar->addWidget(_shipClassBox.get());
 
-	connect(ui->actionOpen, &QAction::triggered, this, &FredView::loadMission);
+	connect(ui->actionOpen, &QAction::triggered, this, &FredView::openLoadMissionDIalog);
 	connect(ui->actionNew, &QAction::triggered, this, &FredView::newMission);
+
+	updateRecentFileList();
 
 	installEventFilter(this);
 }
@@ -63,7 +66,27 @@ void FredView::setEditor(Editor* editor, FredRenderer* renderer)
 	on_mission_loaded("");
 }
 
-void FredView::loadMission()
+void FredView::loadMissionFile(const QString& pathName) {
+	statusBar()->showMessage(tr("Loading mission %1").arg(pathName));
+	try {
+		QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
+
+		fred->loadMission(pathName.toStdString());
+
+		QApplication::restoreOverrideCursor();
+
+		getRenderWindow()->updateGL();
+		statusBar()->showMessage(tr("Units = %1 meters").arg(_renderer->The_grid->square_size));
+	}
+	catch (const fso::fred::mission_load_error &) {
+		QApplication::restoreOverrideCursor();
+
+		QMessageBox::critical(this, tr("Failed loading mission."), tr("Could not parse the mission."));
+		statusBar()->clearMessage();
+	}
+}
+
+void FredView::openLoadMissionDIalog()
 {
     qDebug() << "Loading from directory:" << QDir::currentPath();
     QString pathName = QFileDialog::getOpenFileName(this,
@@ -74,23 +97,7 @@ void FredView::loadMission()
     if (pathName.isEmpty())
         return;
 
-    statusBar()->showMessage(tr("Loading mission %1").arg(pathName));
-    try {
-		QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
-
-        fred->loadMission(pathName.toStdString());
-
-		QApplication::restoreOverrideCursor();
-
-		getRenderWindow()->updateGL();
-        statusBar()->showMessage(tr("Units = %1 meters").arg(_renderer->The_grid->square_size));
-    }
-    catch (const fso::fred::mission_load_error &) {
-		QApplication::restoreOverrideCursor();
-
-        QMessageBox::critical(this, tr("Failed loading mission."), tr("Could not parse the mission."));
-        statusBar()->clearMessage();
-    }
+	loadMissionFile(pathName);
 }
 
 void FredView::on_actionShow_Background_triggered(bool checked)
@@ -154,6 +161,10 @@ void FredView::on_mission_loaded(const std::string& filepath) {
 	auto title = QString("%1 - qtFRED v%2 - FreeSpace 2 Mission Editor").arg(filename, FS_VERSION_FULL);
 
 	setWindowTitle(title);
+
+	if (!filepath.empty()) {
+		addToRecentFiles(QString::fromStdString(filepath));
+	}
 }
 
 void FredView::keyPressEvent(QKeyEvent* event) {
@@ -185,6 +196,58 @@ bool FredView::eventFilter(QObject* watched, QEvent* event) {
 	return QObject::eventFilter(watched, event);
 }
 
+void FredView::addToRecentFiles(const QString& path) {
+	// First get the list of existing files
+	QSettings settings;
+	auto recentFiles = settings.value("FredView/recentFiles").toStringList();
+
+	if (recentFiles.contains(path)) {
+		// If this file is already here then remove it since we don't want duplicate entries
+		recentFiles.removeAll(path);
+	}
+	// Add the path to the start
+	recentFiles.prepend(path);
+
+	// Only keep the last 8 entries
+	while (recentFiles.size() > 8) {
+		recentFiles.removeLast();
+	}
+
+	settings.setValue("FredView/recentFiles", recentFiles);
+	updateRecentFileList();
+}
+
+void FredView::updateRecentFileList() {
+	QSettings settings;
+	auto recentFiles = settings.value("FredView/recentFiles").toStringList();
+
+	if (recentFiles.empty()) {
+		// If there are no files, clear the menu and disable it
+		ui->menuRe_cent_Files->clear();
+		ui->menuRe_cent_Files->setEnabled(false);
+	} else {
+		// Reset the menu in case there was something there before and enable it
+		ui->menuRe_cent_Files->clear();
+		ui->menuRe_cent_Files->setEnabled(true);
+
+		// Now add the individual files as actions
+		for (auto& path : recentFiles) {
+			auto action = new QAction(path, this);
+			connect(action, &QAction::triggered, this, &FredView::recentFileOpened);
+
+			ui->menuRe_cent_Files->addAction(action);
+		}
+	}
+}
+
+void FredView::recentFileOpened() {
+	auto sender = qobject_cast<QAction*>(QObject::sender());
+
+	Q_ASSERT(sender != nullptr);
+
+	auto path = sender->text();
+	loadMissionFile(path);
+}
 } // namespace fred
 } // namespace fso
 
