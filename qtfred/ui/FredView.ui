@@ -560,16 +560,10 @@
    <property name="text">
     <string>&amp;Open...</string>
    </property>
-   <property name="shortcut">
-    <string>Ctrl+O</string>
-   </property>
   </action>
   <action name="actionSave">
    <property name="text">
     <string>&amp;Save</string>
-   </property>
-   <property name="shortcut">
-    <string>Ctrl+S</string>
    </property>
   </action>
   <action name="actionSave_As">
@@ -624,16 +618,10 @@
    <property name="text">
     <string>&amp;Undo</string>
    </property>
-   <property name="shortcut">
-    <string>Ctrl+Z</string>
-   </property>
   </action>
   <action name="actionDelete">
    <property name="text">
     <string>&amp;Delete</string>
-   </property>
-   <property name="shortcut">
-    <string>Del</string>
    </property>
   </action>
   <action name="actionDelete_Wing">
@@ -641,7 +629,7 @@
     <string>Delete &amp;Wing</string>
    </property>
    <property name="shortcut">
-    <string/>
+    <string>Ctrl+Del</string>
    </property>
   </action>
   <action name="actionDisable_Undo">

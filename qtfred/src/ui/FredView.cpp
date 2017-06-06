@@ -23,6 +23,15 @@ FredView::FredView(QWidget *parent) :
 {
     ui->setupUi(this);
 
+	// This is not possible to do with the designer
+	ui->actionNew->setShortcuts(QKeySequence::New);
+	ui->actionOpen->setShortcuts(QKeySequence::Open);
+	ui->actionSave->setShortcuts(QKeySequence::Save);
+	ui->actionSave_As->setShortcuts(QKeySequence::SaveAs);
+	ui->actionExit->setShortcuts(QKeySequence::Quit);
+	ui->actionUndo->setShortcuts(QKeySequence::Undo);
+	ui->actionDelete->setShortcuts(QKeySequence::Delete);
+
 	// A combo box cannot be added by the designer so we do that manually here
 	_shipClassBox.reset(new ColorComboBox());
 
@@ -130,6 +139,10 @@ void FredView::on_actionShow_Outlines_triggered(bool checked)
 
 	// View has changed so we need to schedule an update
 	_renderer->scheduleUpdate();
+}
+
+void FredView::on_actionExit_triggered(bool) {
+	close();
 }
 
 void FredView::on_mission_loaded(const std::string& filepath) {
