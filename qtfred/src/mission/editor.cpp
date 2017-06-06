@@ -140,7 +140,15 @@ void shutdown() {
 #endif
 }
 
-Editor::Editor() : currentObject{ -1 }, Shield_sys_teams{ 0 }, Shield_sys_types{ 0 } {
+Editor::Editor() : currentObject{ -1 } {
+	// We need to do this the hard way since MSVC 2013 is too stupid to support array initializers...
+	for (auto& a : Shield_sys_teams) {
+		a = 0;
+	}
+	for (auto& a : Shield_sys_types) {
+		a = 0;
+	}
+
 	connect(fredApp, &FredApplication::onIdle, this, &Editor::update);
 
 	// When the mission changes we need to update all renderers
