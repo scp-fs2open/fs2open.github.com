@@ -56,8 +56,6 @@ void RenderWindow::startRendering() {
 }
 
 void RenderWindow::paintGL() {
-	std::array<bool, MAX_IFFS> iffs;
-	iffs.fill(true);
 	subsys_to_render Render_subsys;
 
 	_renderer->render_frame(-1,
@@ -65,17 +63,7 @@ void RenderWindow::paintGL() {
 							false,
 							Marking_box(),
 							-1,
-							true,
-							true,
-							&iffs[0],
-							true,
-							true,
-							true,
-							true,
-							false,
-							true,
-							true,
-							true);
+							false);
 }
 
 bool RenderWindow::event(QEvent* evt) {
@@ -121,10 +109,7 @@ void RenderWindow::keyReleaseEvent(QKeyEvent* key) {
 }
 
 void RenderWindow::mouseReleaseEvent(QMouseEvent* mouse) {
-	std::array<bool, MAX_IFFS> iffs;
-	iffs.fill(true);
-
-	auto obj_num = _renderer->select_object(mouse->x(), mouse->y(), false, true, true, &iffs[0], true);
+	auto obj_num = _renderer->select_object(mouse->x(), mouse->y(), false);
 
 	fred->selectObject(obj_num);
 }

@@ -1,10 +1,14 @@
 #pragma once
 
-#include <globalincs/pstypes.h>
+#include <QtCore/QObject>
+
 #include <physics/physics.h>
 #include <mission/missiongrid.h>
 #include <osapi/osapi.h>
-#include <QtCore/QObject>
+#include <globalincs/pstypes.h>
+#include <globalincs/globals.h>
+
+#include <array>
 
 class object;
 class ship_subsys;
@@ -34,6 +38,17 @@ struct ViewSettings {
 	bool Show_coordinates = false;
 	bool Show_outlines = false;
 	bool Show_grid_positions = true;
+	bool Show_dock_points = false;
+	bool Show_starts = true;
+	bool Show_ships = true;
+	std::array<bool, MAX_IFFS> Show_iff;
+	bool Show_ship_info = true;
+	bool Show_ship_models = true;
+	bool Show_paths_fred = false;
+	bool Lighting_on = false;
+	bool FullDetail = false;
+
+	ViewSettings();
 };
 
 class Editor;
@@ -94,67 +109,33 @@ class FredRenderer : public QObject {
 	void hilight_bitmap();
 	void display_distances();
 	void
-	display_ship_info(int cur_object_index, bool Show_starts, bool Show_ships, bool Show_iff[], bool Show_ship_info);
+	display_ship_info(int cur_object_index);
 	void cancel_display_active_ship_subsystem(subsys_to_render& Render_subsys);
 	void display_active_ship_subsystem(subsys_to_render& Render_subsys, int cur_object_index);
 
 	void render_model_x_htl(vec3d* pos, grid* gridp, int col_scheme = 0);
-	void render_compass(bool Show_compass);
+	void render_compass();
 	void draw_orient_sphere2(int col, object* obj, int r, int g, int b);
 	void draw_orient_sphere(object* obj, int r, int g, int b);
 	void render_model_x(vec3d* pos, grid* gridp, int col_scheme = 0);
 	void render_one_model_htl(object* objp,
 							  int cur_object_index,
-							  bool Show_starts,
-							  bool Show_ships,
-							  bool Show_iff[],
-							  bool Bg_bitmap_dialog,
-							  bool Show_ship_models,
-							  bool Show_dock_points,
-							  bool Show_paths_fred,
-							  bool Lighting_on,
-							  bool FullDetail);
+							  bool Bg_bitmap_dialog);
 	void render_models(int cur_object_index,
-					   bool Show_starts,
-					   bool Show_ships,
-					   bool Show_iff[],
-					   bool Bg_bitmap_dialog,
-					   bool Show_dock_points,
-					   bool Show_ship_models,
-					   bool Show_paths_fred,
-					   bool Lighting_on,
-					   bool FullDetail);
+					   bool Bg_bitmap_dialog);
 	void render_frame(int cur_object_index,
 					  subsys_to_render& Render_subsys,
 					  bool box_marking,
 					  const Marking_box& marking_box,
 					  int Cursor_over,
-					  bool Show_starts,
-					  bool Show_ships,
-					  bool Show_iff[],
-					  bool Show_ship_info,
-					  bool Show_ship_models,
-					  bool Show_dock_points,
-					  bool Show_paths_fred,
-					  bool Bg_bitmap_dialog,
-					  bool Render_compass,
-					  bool Lighting_on,
-					  bool FullDetail);
+					  bool Bg_bitmap_dialog);
 	int object_check_collision(object* objp,
 							   vec3d* p0,
 							   vec3d* p1,
-							   vec3d* hitpos,
-							   bool Show_starts,
-							   bool Show_ships,
-							   bool Show_iff[],
-							   bool Show_ship_models);
+							   vec3d* hitpos);
 	int select_object(int cx,
 					  int cy,
-					  bool Selection_lock,
-					  bool Show_starts,
-					  bool Show_ships,
-					  bool Show_iff[],
-					  bool Show_ship_models);
+					  bool Selection_lock);
 	void level_object(matrix* orient);
 	// viewpoint -> attach camera to current ship.
 	// cur_obj -> ship viewed.
