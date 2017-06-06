@@ -546,9 +546,9 @@ void FredRenderer::process_controls(vec3d* pos, matrix* orient, float frametime,
 			memset(&view_controls, 0, sizeof(control_info));
 		}
 
-		if ((fabs(view_controls.pitch) > (frametime / 100)) && (fabs(view_controls.vertical) > (frametime / 100))
-			&& (fabs(view_controls.heading) > (frametime / 100)) && (fabs(view_controls.sideways) > (frametime / 100))
-			&& (fabs(view_controls.bank) > (frametime / 100)) && (fabs(view_controls.forward) > (frametime / 100))) {
+		if ((fabs(view_controls.pitch) > (frametime / 100)) || (fabs(view_controls.vertical) > (frametime / 100))
+			|| (fabs(view_controls.heading) > (frametime / 100)) || (fabs(view_controls.sideways) > (frametime / 100))
+			|| (fabs(view_controls.bank) > (frametime / 100)) || (fabs(view_controls.forward) > (frametime / 100))) {
 			scheduleUpdate();
 		}
 

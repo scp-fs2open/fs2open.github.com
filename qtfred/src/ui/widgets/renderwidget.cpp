@@ -139,10 +139,6 @@ void RenderWindow::updateGL() {
 	if (_isRendering) {
 		paintGL();
 	}
-
-	// Continue requesting updates
-	// TODO: Remove this once update scheduling is implemented properly
-	requestUpdate();
 }
 RenderWindow::~RenderWindow() {
 }
