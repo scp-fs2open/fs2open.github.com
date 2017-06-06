@@ -140,7 +140,7 @@ void shutdown() {
 #endif
 }
 
-Editor::Editor() : currentObject{ -1 } {
+Editor::Editor() : currentObject{ -1 }, Shield_sys_teams{ 0 }, Shield_sys_types{ 0 } {
 	connect(fredApp, &FredApplication::onIdle, this, &Editor::update);
 
 	// When the mission changes we need to update all renderers

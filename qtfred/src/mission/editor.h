@@ -143,8 +143,8 @@ signals:
 
 	int Default_player_model = -1;
 
-	int Shield_sys_teams[MAX_IFFS] = { 0 };
-	int Shield_sys_types[MAX_SHIP_CLASSES] = { 0 };
+	int Shield_sys_teams[MAX_IFFS];
+	int Shield_sys_types[MAX_SHIP_CLASSES];
 };
 
 } // namespace fred
