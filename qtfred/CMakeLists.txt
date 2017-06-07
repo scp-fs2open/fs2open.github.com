@@ -6,10 +6,6 @@
 SET(QT5_INSTALL_ROOT "" CACHE PATH
 "The path to the Qt5 installation root. May be necessary on windows if the standard find_package fails to find the Qt installation.")
 
-if (MSVC AND NOT MSVC_USE_RUNTIME_DLL)
-    message("Project not configured to compile with a dynamic runtime! This will cause issues when trying to link qtmain and qtFRED.")
-endif()
-
 list(APPEND CMAKE_PREFIX_PATH "${QT5_INSTALL_ROOT}")
 
 find_package(Qt5 COMPONENTS Widgets OpenGL REQUIRED)
@@ -39,12 +35,22 @@ target_compile_definitions(qtfred PRIVATE "$<$<CXX_COMPILER_ID:MSVC>:PDB_DEBUGGI
 # Undefine emit since it conflicts with our code
 target_compile_definitions(qtfred PRIVATE QT_NO_EMIT)
 
+# Define the deprecated attribute so that usage of such functions causes a warning
+target_compile_definitions(qtfred PRIVATE QT_DEPRECATED_WARNINGS)
+
 target_compile_definitions(qtfred PUBLIC USING_THIRD_PARTY_LIBS FRED)
 
 target_include_directories(qtfred PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/src
     ${CMAKE_CURRENT_BINARY_DIR}
 )
+
+if(WIN32)
+    # We handle the main method ourself since the prebuilt version conflicts with our setup
+    set_property(TARGET qtfred PROPERTY QT5_NO_LINK_QTMAIN ON)
+endif()
+
+set(CMAKE_MAP_IMPORTED_CONFIG_FASTDEBUG Release Debug)
 
 target_link_libraries(qtfred
     PUBLIC
@@ -93,6 +99,5 @@ if (WIN32)
 
     install(FILES ${file_paths}
         DESTINATION ${BINARY_DESTINATION}
-        CONFIGURATIONS Debug Release
     )
 endif(WIN32)

@@ -6,7 +6,10 @@
 #include <memory>
 #include <stdexcept>
 
+#include <globalincs/globals.h>
+
 #include <QObject>
+#include <osapi/osapi.h>
 
 namespace fso {
 namespace fred {
@@ -32,6 +35,7 @@ enum class SubSystem {
 	Weapon,
 	Medals,
 	Ships,
+	Parse,
 	Nebulas,
 	Stars,
 	View,
@@ -78,46 +82,76 @@ class Editor : public QObject {
  public:
 	Editor();
 
-	/*! Initialize renderer. */
-	void initializeRenderer();
+	void unmark_all();
 
-	/*! Handle resizing.
-     *
-     * \param[in]   width   New width.
-     * \param[in]   height  New height.
-     */
-	void resize(int width, int height);
-
-	/*! Update the game an renders a frame. */
-	void update();
+	void createNewMission();
 
 	/*! Load a mission. */
 	void loadMission(const std::string& filepath);
 
-	void findFirstObjectUnder(int x, int y);
+	void markObject(int objId);
 
-	FredRenderer* renderer() {
-		return m_renderer.get();
-	}
+	void selectObject(int objId);
+
+	FredRenderer* createRenderer(os::Viewport* renderView);
+
+	/* Schedules updates for all renderes */
+	void updateAllRenderers();
+
+	int create_player(int num, vec3d *pos, matrix *orient, int type = -1, int init = 1);
+
+	int create_ship(matrix* orient, vec3d* pos, int ship_type);
+
+	bool query_ship_name_duplicate(int ship);
+
+	void fix_ship_name(int ship);
 
 	///! Non-copyable.
 	Editor(const Editor&) = delete;
 	///! Non-copyable.
 	const Editor& operator=(const Editor&) = delete;
 
+public slots:
+	/*! Update the game but doesn't render anything. */
+	void update();
+
 signals:
+	/**
+	 * @brief Signal for when a new mission has been loaded
+	 * @param filepath The path of the mission file, empty if new mission
+	 */
 	void missionLoaded(const std::string& filepath);
 
+	/**
+	 * @brief A signal emitted when the mission has changed somehow
+	 */
+	void missionChanged();
+
  private:
+	void clearMission();
+
+	void initialSetup();
+
 	void resetPhysics();
 
-	std::unique_ptr<FredRenderer> m_renderer;
-	subsys_to_render Render_subsys;
-	int currentObject;
+	void setupCurrentObjectIndices(int obj);
+
+	SCP_vector<std::unique_ptr<FredRenderer>> _renderers;
+
+	int currentObject = -1;
+	int numMarked = 0;
+
+	int Default_player_model = -1;
+
+	int Shield_sys_teams[MAX_IFFS];
+	int Shield_sys_types[MAX_SHIP_CLASSES];
 };
 
 } // namespace fred
 } // namespace fso
+
+extern char Fred_callsigns[MAX_SHIPS][NAME_LENGTH + 1];
+extern char Fred_alt_names[MAX_SHIPS][NAME_LENGTH + 1];
 
 // Define hash function for Initialized.
 namespace std {

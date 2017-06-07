@@ -3,9 +3,11 @@
 
 #include "QtGraphicsOperations.h"
 
-#include "renderwidget.h"
+#include "widgets/renderwidget.h"
 
 #include <QtWidgets/QtWidgets>
+
+#include "FredApplication.h"
 
 namespace {
 
@@ -81,18 +83,18 @@ void QtGraphicsOperations::makeOpenGLContextCurrent(os::Viewport* view, os::Open
 	auto qtContext = static_cast<QtOpenGLContext*>(ctx);
 
 	if (qtPort == nullptr && qtContext == nullptr) {
-		// Qt requires a context pointer for disabling it so we retrieve the current context and the disable that
-		auto current = QOpenGLContext::currentContext();
-
-		if (current != nullptr) {
-			current->doneCurrent();
+		if (_lastContext != nullptr) {
+			_lastContext->makeCurrent(nullptr);
 		}
 	} else {
-		qtContext->makeCurrent(qtPort->getWindow()->getRenderWidget());
+		qtContext->makeCurrent(qtPort->getWindow()->getRenderWindow());
 	}
+
+	// We keep track of our last context since the qt information may return contexts managed by the GUI framework
+	_lastContext = qtContext;
 }
 
-QtViewport::QtViewport(std::unique_ptr<MainWindow>&& window, const os::ViewPortProperties& viewProps) :
+QtViewport::QtViewport(std::unique_ptr<FredView>&& window, const os::ViewPortProperties& viewProps) :
 	_viewProps(viewProps) {
 	_viewportWindow = std::move(window);
 }
@@ -100,26 +102,35 @@ QtViewport::~QtViewport() {
 }
 
 std::unique_ptr<os::Viewport> QtGraphicsOperations::createViewport(const os::ViewPortProperties& props) {
-	std::unique_ptr<MainWindow> mw(new MainWindow());
-	mw->getRenderWidget()->initializeGL(getSurfaceFormat(props, props.gl_attributes));
+	std::unique_ptr<FredView> mw(new FredView());
+	mw->getRenderWindow()->initializeGL(getSurfaceFormat(props, props.gl_attributes));
 
-	mw->setEditor(_editor);
-	mw->show();
+	auto viewPtr = mw.get();
+	auto view = std::unique_ptr<os::Viewport>(new QtViewport(std::move(mw), props));
 
-	return std::unique_ptr<os::Viewport>(new QtViewport(std::move(mw), props));
+	auto renderer = _editor->createRenderer(view.get());
+	viewPtr->setEditor(_editor, renderer);
+
+	if (fredApp->isInitializeComplete()) {
+		// Only show new viewports if the initialization has already been completed
+		// The windows created at program start will only be shown once initialization is completed
+		viewPtr->show();
+	}
+
+	return view;
 }
 
 SDL_Window* QtViewport::toSDLWindow() {
 	return nullptr;
 }
 std::pair<uint32_t, uint32_t> QtViewport::getSize() {
-	auto size = _viewportWindow->size();
+	auto size = _viewportWindow->getRenderWindow()->size();
 
 	return std::make_pair((uint32_t) size.width(), (uint32_t) size.height());
 }
 void QtViewport::swapBuffers() {
-	if (_viewportWindow->getRenderWidget()->isVisible()) {
-		QOpenGLContext::currentContext()->swapBuffers(_viewportWindow->getRenderWidget());
+	if (_viewportWindow->getRenderWindow()->isVisible()) {
+		QOpenGLContext::currentContext()->swapBuffers(_viewportWindow->getRenderWindow());
 	}
 }
 void QtViewport::setState(os::ViewportState state) {
@@ -134,7 +145,7 @@ void QtViewport::restore() {
 const os::ViewPortProperties& QtViewport::getViewProperties() const {
 	return _viewProps;
 }
-MainWindow* QtViewport::getWindow() {
+FredView* QtViewport::getWindow() {
 	return _viewportWindow.get();
 }
 

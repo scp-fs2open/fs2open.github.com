@@ -1,5 +1,63 @@
 <RCC>
-    <qresource prefix="/images">
-        <file>splash.png</file>
+    <qresource prefix="/">
+        <file>images/bitmap1.png</file>
+        <file>images/black_do.png</file>
+        <file>images/bmp00001.png</file>
+        <file>images/chained.png</file>
+        <file>images/chained_directive.png</file>
+        <file>images/constx.png</file>
+        <file>images/constxy.png</file>
+        <file>images/constxz.png</file>
+        <file>images/consty.png</file>
+        <file>images/constyz.png</file>
+        <file>images/constz.png</file>
+        <file>images/data.png</file>
+        <file>images/data00.png</file>
+        <file>images/data05.png</file>
+        <file>images/data10.png</file>
+        <file>images/data15.png</file>
+        <file>images/data20.png</file>
+        <file>images/data25.png</file>
+        <file>images/data30.png</file>
+        <file>images/data35.png</file>
+        <file>images/data40.png</file>
+        <file>images/data45.png</file>
+        <file>images/data50.png</file>
+        <file>images/data55.png</file>
+        <file>images/data60.png</file>
+        <file>images/data65.png</file>
+        <file>images/data70.png</file>
+        <file>images/data75.png</file>
+        <file>images/data80.png</file>
+        <file>images/data85.png</file>
+        <file>images/data90.png</file>
+        <file>images/data95.png</file>
+        <file>images/fred.ico</file>
+        <file>images/fred_app.png</file>
+        <file>images/fred_debug.png</file>
+        <file>images/freddoc.ico</file>
+        <file>images/fredknows.png</file>
+        <file>images/fred_splash.png</file>
+        <file>images/green_do.png</file>
+        <file>images/orbitsel.png</file>
+        <file>images/play.png</file>
+        <file>images/root.png</file>
+        <file>images/root_directive.png</file>
+        <file>images/rotlocal.png</file>
+        <file>images/select.png</file>
+        <file>images/selectlist.png</file>
+        <file>images/selectlock.png</file>
+        <file>images/selectmove.png</file>
+        <file>images/selectrot.png</file>
+        <file>images/showdist.png</file>
+        <file>images/splash.png</file>
+        <file>images/toolbar.png</file>
+        <file>images/toolbar1.png</file>
+        <file>images/variable.png</file>
+        <file>images/V_fred.png</file>
+        <file>images/wingdisband.png</file>
+        <file>images/wingform.png</file>
+        <file>images/zoomext.png</file>
+        <file>images/zoomsel.png</file>
     </qresource>
 </RCC>

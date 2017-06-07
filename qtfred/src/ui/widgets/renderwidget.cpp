@@ -15,7 +15,7 @@
 #include "starfield/starfield.h"
 
 #include "mission/editor.h"
-#include "fredGlobals.h"
+#include "FredApplication.h"
 
 namespace fso {
 namespace fred {
@@ -24,18 +24,18 @@ RenderWindow::RenderWindow(QWidget* parent) : QWindow(parent->windowHandle()) {
 	qt2fsKeys[Qt::Key_Shift] = KEY_LSHIFT;
 	qt2fsKeys[Qt::Key_A] = KEY_A;
 	qt2fsKeys[Qt::Key_Z] = KEY_Z;
-	qt2fsKeys[Qt::Key_0] = KEY_PAD0;
-	qt2fsKeys[Qt::Key_1] = KEY_PAD1;
-	qt2fsKeys[Qt::Key_2] = KEY_PAD2;
-	qt2fsKeys[Qt::Key_3] = KEY_PAD3;
-	qt2fsKeys[Qt::Key_4] = KEY_PAD4;
-	qt2fsKeys[Qt::Key_5] = KEY_PAD5;
-	qt2fsKeys[Qt::Key_6] = KEY_PAD6;
-	qt2fsKeys[Qt::Key_7] = KEY_PAD7;
-	qt2fsKeys[Qt::Key_8] = KEY_PAD8;
-	qt2fsKeys[Qt::Key_9] = KEY_PAD9;
-	qt2fsKeys[Qt::Key_Plus] = KEY_PADPLUS;
-	qt2fsKeys[Qt::Key_Minus] = KEY_PADMINUS;
+	qt2fsKeys[Qt::Key_0 + Qt::KeypadModifier] = KEY_PAD0;
+	qt2fsKeys[Qt::Key_1 + Qt::KeypadModifier] = KEY_PAD1;
+	qt2fsKeys[Qt::Key_2 + Qt::KeypadModifier] = KEY_PAD2;
+	qt2fsKeys[Qt::Key_3 + Qt::KeypadModifier] = KEY_PAD3;
+	qt2fsKeys[Qt::Key_4 + Qt::KeypadModifier] = KEY_PAD4;
+	qt2fsKeys[Qt::Key_5 + Qt::KeypadModifier] = KEY_PAD5;
+	qt2fsKeys[Qt::Key_6 + Qt::KeypadModifier] = KEY_PAD6;
+	qt2fsKeys[Qt::Key_7 + Qt::KeypadModifier] = KEY_PAD7;
+	qt2fsKeys[Qt::Key_8 + Qt::KeypadModifier] = KEY_PAD8;
+	qt2fsKeys[Qt::Key_9 + Qt::KeypadModifier] = KEY_PAD9;
+	qt2fsKeys[Qt::Key_Plus + Qt::KeypadModifier] = KEY_PADPLUS;
+	qt2fsKeys[Qt::Key_Minus + Qt::KeypadModifier] = KEY_PADMINUS;
 
 	setSurfaceType(QWindow::OpenGLSurface);
 }
@@ -46,20 +46,24 @@ void RenderWindow::initializeGL(const QSurfaceFormat& surfaceFmt) {
 	// Force creation of this window so that we can use it for OpenGL
 	create();
 
-	fredGlobals->runAfterInit([this]() { startRendering(); });
+	fredApp->runAfterInit([this]() { startRendering(); });
 }
 
 void RenderWindow::startRendering() {
 	_isRendering = true;
 
-	fred->resize(size().width(), size().height());
-
-	// Paint the first frame
-	updateGL();
+	_renderer->resize(size().width(), size().height());
 }
 
 void RenderWindow::paintGL() {
-	fred->update();
+	subsys_to_render Render_subsys;
+
+	_renderer->render_frame(-1,
+							Render_subsys,
+							false,
+							Marking_box(),
+							-1,
+							false);
 }
 
 bool RenderWindow::event(QEvent* evt) {
@@ -78,15 +82,14 @@ void RenderWindow::keyPressEvent(QKeyEvent* key) {
 		return;
 	}
 
-	if (!qt2fsKeys.count(key->key())) {
+	auto code = key->key() + (int)key->modifiers();
+	if (!qt2fsKeys.count(code)) {
 		QWindow::keyPressEvent(key);
 		return;
 	}
 
 	key->accept();
-	key_mark(qt2fsKeys.at(key->key()), 1, 0);
-
-	updateGL();
+	key_mark(qt2fsKeys.at(code), 1, 0);
 }
 
 void RenderWindow::keyReleaseEvent(QKeyEvent* key) {
@@ -95,25 +98,25 @@ void RenderWindow::keyReleaseEvent(QKeyEvent* key) {
 		return;
 	}
 
-	if (!qt2fsKeys.count(key->key())) {
+	auto code = key->key() + (int)key->modifiers();
+	if (!qt2fsKeys.count(code)) {
 		QWindow::keyReleaseEvent(key);
 		return;
 	}
 
 	key->accept();
-	key_mark(qt2fsKeys.at(key->key()), 0, 0);
+	key_mark(qt2fsKeys.at(code), 0, 0);
 }
 
 void RenderWindow::mouseReleaseEvent(QMouseEvent* mouse) {
-	fred->findFirstObjectUnder(mouse->x(), mouse->y());
+	auto obj_num = _renderer->select_object(mouse->x(), mouse->y(), false);
+
+	fred->selectObject(obj_num);
 }
 void RenderWindow::resizeEvent(QResizeEvent* event) {
 	if (_isRendering) {
 		// Only send resize event if we are actually rendering
-		fred->resize(event->size().width(), event->size().height());
-
-		// Make sure we repaint
-		updateGL();
+		_renderer->resize(event->size().width(), event->size().height());
 	}
 }
 
@@ -121,25 +124,30 @@ void RenderWindow::updateGL() {
 	if (_isRendering) {
 		paintGL();
 	}
-
-	// Continue requesting updates
-#if QT_VERSION >= QT_VERSION_CHECK(5, 5, 0)
-	requestUpdate();
-#else
-    // This causes issues with the open dialog but is here for compatibility with older Qt versions
-	QCoreApplication::postEvent(this, new QEvent(QEvent::UpdateRequest));
-#endif
 }
 RenderWindow::~RenderWindow() {
 }
 void RenderWindow::exposeEvent(QExposeEvent* event) {
 	if (isExposed()) {
-		updateGL();
+		requestUpdate();
 
 		event->accept();
 	} else {
 		QWindow::exposeEvent(event);
 	}
+}
+void RenderWindow::setEditor(Editor* editor, FredRenderer* renderer) {
+	Assertion(fred == nullptr, "Render widget currently does not support resetting the editor!");
+	Assertion(_renderer == nullptr, "Render widget currently does not support resetting the renderer!");
+
+	Assertion(editor != nullptr, "Invalid editor pointer passed!");
+	Assertion(renderer != nullptr, "Invalid renderer pointer passed!");
+
+	fred = editor;
+	_renderer = renderer;
+
+	// When the editor want to update the main window we have to do that.
+	connect(_renderer, &FredRenderer::scheduleUpdate, [this]() { requestUpdate(); });
 }
 
 RenderWidget::RenderWidget(QWidget* parent) : QWidget(parent) {

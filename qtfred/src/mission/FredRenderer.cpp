@@ -1,4 +1,7 @@
+
 #include "FredRenderer.h"
+#include "editor.h"
+
 #include <globalincs/alphacolors.h>
 #include <mission/missiongrid.h>
 #include <globalincs/systemvars.h>
@@ -428,7 +431,17 @@ void verticalize_object(matrix* orient) {
 
 namespace fso {
 namespace fred {
-FredRenderer::FredRenderer() {
+ViewSettings::ViewSettings() {
+	Show_iff.fill(true);
+}
+
+FredRenderer::FredRenderer(Editor* editor, os::Viewport* targetView) : _editor(editor), _targetView(targetView) {
+	resetView();
+}
+
+FredRenderer::~FredRenderer() {
+}
+void FredRenderer::resetView() {
 	my_pos = vmd_zero_vector;
 	my_pos.xyz.z = -5.0f;
 	vec3d f, u, r;
@@ -449,9 +462,6 @@ FredRenderer::FredRenderer() {
 	//	vm_set_identity(&view_orient);
 
 	init_fred_colors();
-}
-
-FredRenderer::~FredRenderer() {
 }
 
 void FredRenderer::inc_mission_time() {
@@ -536,13 +546,14 @@ void FredRenderer::process_controls(vec3d* pos, matrix* orient, float frametime,
 	if (Flying_controls_mode) {
 		grid_read_camera_controls(&view_controls, frametime);
 
-		if (key_get_shift_status())
+		if (key_get_shift_status()) {
 			memset(&view_controls, 0, sizeof(control_info));
+		}
 
-		///! \todo Notify update window.
-		if ((fabs(view_controls.pitch) > (frametime / 100)) && (fabs(view_controls.vertical) > (frametime / 100))
-			&& (fabs(view_controls.heading) > (frametime / 100)) && (fabs(view_controls.sideways) > (frametime / 100))
-			&& (fabs(view_controls.bank) > (frametime / 100)) && (fabs(view_controls.forward) > (frametime / 100))) {
+		if ((fabs(view_controls.pitch) > (frametime / 100)) || (fabs(view_controls.vertical) > (frametime / 100))
+			|| (fabs(view_controls.heading) > (frametime / 100)) || (fabs(view_controls.sideways) > (frametime / 100))
+			|| (fabs(view_controls.bank) > (frametime / 100)) || (fabs(view_controls.forward) > (frametime / 100))) {
+			scheduleUpdate();
 		}
 
 		//view_physics.flags |= (PF_ACCELERATES | PF_SLIDE_ENABLED);
@@ -686,8 +697,8 @@ void FredRenderer::game_do_frame(const int view_obj,
 				objp = GET_NEXT(objp);
 			}
 
-			///! \todo Notify.
-			//set_modified();
+			// Notify the editor that the mission has changed
+			_editor->missionChanged();
 		}
 
 		break;
@@ -722,22 +733,19 @@ void FredRenderer::game_do_frame(const int view_obj,
 
 	if (Cursor_over != Last_cursor_over) {
 		Last_cursor_over = Cursor_over;
-		///! \todo Notify update_window.
-		//Update_window = 1;
+		scheduleUpdate();
 	}
 
 	// redraw screen if controlled object moved or rotated
 	if (vm_vec_cmp(&control_pos, &Last_control_pos) || vm_matrix_cmp(&control_orient, &Last_control_orient)) {
-		///! \todo Notify update window.
-		//Update_window = 1;
+		scheduleUpdate();
 		Last_control_pos = control_pos;
 		Last_control_orient = control_orient;
 	}
 
 	// redraw screen if current viewpoint moved or rotated
 	if (vm_vec_cmp(&eye_pos, &Last_eye_pos) || vm_matrix_cmp(&eye_orient, &Last_eye_orient)) {
-		///! \todo Notify update window.
-		//Update_window = 1;
+		scheduleUpdate();
 		Last_eye_pos = eye_pos;
 		Last_eye_orient = eye_orient;
 	}
@@ -857,11 +865,7 @@ void FredRenderer::display_distances() {
 	}
 }
 
-void FredRenderer::display_ship_info(int cur_object_index,
-									 bool Show_starts,
-									 bool Show_ships,
-									 bool Show_iff[],
-									 bool Show_ship_info) {
+void FredRenderer::display_ship_info(int cur_object_index) {
 	char buf[512], pos[80];
 	int render = 1;
 	object* objp;
@@ -884,16 +888,16 @@ void FredRenderer::display_ship_info(int cur_object_index,
 			render = 0;
 		}
 
-		if ((objp->type == OBJ_START) && !Show_starts) {
+		if ((objp->type == OBJ_START) && !view.Show_starts) {
 			render = 0;
 		}
 
 		if ((objp->type == OBJ_SHIP) || (objp->type == OBJ_START)) {
-			if (!Show_ships) {
+			if (!view.Show_ships) {
 				render = 0;
 			}
 
-			if (!Show_iff[Ships[objp->instance].team]) {
+			if (!view.Show_iff[Ships[objp->instance].team]) {
 				render = 0;
 			}
 		}
@@ -906,7 +910,7 @@ void FredRenderer::display_ship_info(int cur_object_index,
 		if (!(v.codes & CC_BEHIND) && render) {
 			if (!(g3_project_vertex(&v) & PF_OVERFLOW)) {
 				*buf = 0;
-				if (Show_ship_info) {
+				if (view.Show_ship_info) {
 					if ((objp->type == OBJ_SHIP) || (objp->type == OBJ_START)) {
 						ship* shipp;
 						int ship_type;
@@ -1014,11 +1018,7 @@ int get_subsys_bounding_rect(object* ship_obj, ship_subsys* subsys, int* x1, int
 	return 0;
 }
 
-void FredRenderer::render_compass(bool Show_compass) {
-	if (!Show_compass) {
-		return;
-	}
-
+void FredRenderer::render_compass() {
 	vec3d v, eye = vmd_zero_vector;
 
 	gr_set_clip(gr_screen.max_w - 100, 0, 100, 100);
@@ -1224,15 +1224,7 @@ void FredRenderer::render_model_x_htl(vec3d* pos, grid* gridp, int col_scheme) {
 
 void FredRenderer::render_one_model_htl(object* objp,
 										int cur_object_index,
-										bool Show_starts,
-										bool Show_ships,
-										bool Show_iff[],
-										bool Bg_bitmap_dialog,
-										bool Show_ship_models,
-										bool Show_dock_points,
-										bool Show_paths_fred,
-										bool Lighting_on,
-										bool FullDetail) {
+										bool Bg_bitmap_dialog) {
 	int j, z;
 	object* o2;
 
@@ -1246,16 +1238,16 @@ void FredRenderer::render_one_model_htl(object* objp,
 		return;
 	}
 
-	if ((objp->type == OBJ_START) && !Show_starts) {
+	if ((objp->type == OBJ_START) && !view.Show_starts) {
 		return;
 	}
 
 	if ((objp->type == OBJ_SHIP) || (objp->type == OBJ_START)) {
-		if (!Show_ships) {
+		if (!view.Show_ships) {
 			return;
 		}
 
-		if (!Show_iff[Ships[objp->instance].team]) {
+		if (!view.Show_iff[Ships[objp->instance].team]) {
 			return;
 		}
 	}
@@ -1280,20 +1272,20 @@ void FredRenderer::render_one_model_htl(object* objp,
 	}
 
 	// build flags
-	if ((Show_ship_models || view.Show_outlines) && ((objp->type == OBJ_SHIP) || (objp->type == OBJ_START))) {
+	if ((view.Show_ship_models || view.Show_outlines) && ((objp->type == OBJ_SHIP) || (objp->type == OBJ_START))) {
 		g3_start_instance_matrix(&Eye_position, &Eye_matrix, 0);
-		if (Show_ship_models) {
+		if (view.Show_ship_models) {
 			j = MR_NORMAL;
 		} else {
 			j = MR_NO_POLYS;
 		}
 
 		uint debug_flags = 0;
-		if (Show_dock_points) {
+		if (view.Show_dock_points) {
 			debug_flags |= MR_DEBUG_BAY_PATHS;
 		}
 
-		if (Show_paths_fred) {
+		if (view.Show_paths_fred) {
 			debug_flags |= MR_DEBUG_PATHS;
 		}
 
@@ -1301,12 +1293,12 @@ void FredRenderer::render_one_model_htl(object* objp,
 
 		model_clear_instance(Ship_info[Ships[z].ship_info_index].model_num);
 
-		if (!Lighting_on) {
+		if (!view.Lighting_on) {
 			j |= MR_NO_LIGHTING;
 			gr_set_lighting(false, false);
 		}
 
-		if (FullDetail) {
+		if (view.FullDetail) {
 			j |= MR_FULL_DETAIL;
 		}
 
@@ -1327,7 +1319,7 @@ void FredRenderer::render_one_model_htl(object* objp,
 		int r = 0, g = 0, b = 0;
 
 		if (objp->type == OBJ_SHIP) {
-			if (!Show_ships) {
+			if (!view.Show_ships) {
 				return;
 			}
 
@@ -1388,15 +1380,7 @@ void FredRenderer::render_one_model_htl(object* objp,
 }
 
 void FredRenderer::render_models(int cur_object_index,
-								 bool Show_starts,
-								 bool Show_ships,
-								 bool Show_iff[],
-								 bool Bg_bitmap_dialog,
-								 bool Show_dock_points,
-								 bool Show_ship_models,
-								 bool Show_paths_fred,
-								 bool Lighting_on,
-								 bool FullDetail) {
+								 bool Bg_bitmap_dialog) {
 	gr_set_color_fast(&colour_white);
 
 	rendering_order.clear();
@@ -1407,20 +1391,11 @@ void FredRenderer::render_models(int cur_object_index,
 
 	bool f = false;
 	enable_htl();
-	
-	auto render_function = [&](object* objp)
-	{
+
+	auto render_function = [&](object* objp) {
 		this->render_one_model_htl(objp,
 								   cur_object_index,
-								   Show_starts,
-								   Show_ships,
-								   Show_iff,
-								   Bg_bitmap_dialog,
-								   Show_dock_points,
-								   Show_ship_models,
-								   Show_paths_fred,
-								   Lighting_on,
-								   FullDetail);
+								   Bg_bitmap_dialog);
 	};
 
 	obj_render_all(render_function, &f);
@@ -1442,17 +1417,14 @@ void FredRenderer::render_frame(int cur_object_index,
 								bool box_marking,
 								const Marking_box& marking_box,
 								int Cursor_over,
-								bool Show_starts,
-								bool Show_ships,
-								bool Show_iff[],
-								bool Show_ship_info,
-								bool Show_ship_models,
-								bool Show_dock_points,
-								bool Show_paths_fred,
-								bool Bg_bitmap_dialog,
-								bool Render_compass,
-								bool Lighting_on,
-								bool FullDetail) {
+								bool Bg_bitmap_dialog) {
+
+	// Make sure our OpenGL context is used for rendering
+	gr_use_viewport(_targetView);
+
+	// Resize the rendering window in case the previous size was different
+	gr_screen_resize(_targetView->getSize().first, _targetView->getSize().second);
+
 	char buf[256];
 	int x, y, w, h, inst;
 	vec3d pos;
@@ -1531,21 +1503,13 @@ void FredRenderer::render_frame(int cur_object_index,
 
 	gr_set_color(0, 0, 64);
 	render_models(cur_object_index,
-				  Show_starts,
-				  Show_ships,
-				  Show_iff,
-				  Bg_bitmap_dialog,
-				  Show_ship_models,
-				  Show_dock_points,
-				  Show_paths_fred,
-				  Lighting_on,
-				  FullDetail);
+				  Bg_bitmap_dialog);
 
 	if (view.Show_distances) {
 		display_distances();
 	}
 
-	display_ship_info(cur_object_index, Show_starts, Show_ships, Show_iff, Show_ship_info);
+	display_ship_info(cur_object_index);
 	display_active_ship_subsystem(Render_subsys, cur_object_index);
 	render_active_rect(box_marking, marking_box);
 
@@ -1618,7 +1582,7 @@ void FredRenderer::render_frame(int cur_object_index,
 	gr_string(gr_screen.max_w - w - 2, 2, buf);
 
 	g3_end_frame(); // ** Accounted for
-	render_compass(Render_compass);
+	render_compass();
 
 	gr_flip();
 
@@ -1636,11 +1600,7 @@ void FredRenderer::render_frame(int cur_object_index,
 int FredRenderer::object_check_collision(object* objp,
 										 vec3d* p0,
 										 vec3d* p1,
-										 vec3d* hitpos,
-										 bool Show_starts,
-										 bool Show_ships,
-										 bool Show_iff[],
-										 bool Show_ship_models) {
+										 vec3d* hitpos) {
 	mc_info mc;
 	mc_info_init(&mc);
 
@@ -1652,16 +1612,16 @@ int FredRenderer::object_check_collision(object* objp,
 		return 0;
 	}
 
-	if ((objp->type == OBJ_START) && !Show_starts) {
+	if ((objp->type == OBJ_START) && !view.Show_starts) {
 		return 0;
 	}
 
 	if ((objp->type == OBJ_SHIP) || (objp->type == OBJ_START)) {
-		if (!Show_ships) {
+		if (!view.Show_ships) {
 			return 0;
 		}
 
-		if (!Show_iff[Ships[objp->instance].team]) {
+		if (!view.Show_iff[Ships[objp->instance].team]) {
 			return 0;
 		}
 	}
@@ -1670,9 +1630,9 @@ int FredRenderer::object_check_collision(object* objp,
 		return 0;
 	}
 
-	if ((Show_ship_models || view.Show_outlines) && (objp->type == OBJ_SHIP)) {
+	if ((view.Show_ship_models || view.Show_outlines) && (objp->type == OBJ_SHIP)) {
 		mc.model_num = Ship_info[Ships[objp->instance].ship_info_index].model_num; // Fill in the model to check
-	} else if ((Show_ship_models || view.Show_outlines) && (objp->type == OBJ_START)) {
+	} else if ((view.Show_ship_models || view.Show_outlines) && (objp->type == OBJ_START)) {
 		mc.model_num = Ship_info[Ships[objp->instance].ship_info_index].model_num; // Fill in the model to check
 	} else {
 		return fvi_ray_sphere(hitpos, p0, p1, &objp->pos, (objp->radius > 0.1f) ? objp->radius : LOLLIPOP_SIZE);
@@ -1702,11 +1662,7 @@ int FredRenderer::object_check_collision(object* objp,
 
 int FredRenderer::select_object(int cx,
 								int cy,
-								bool Selection_lock,
-								bool Show_starts,
-								bool Show_ships,
-								bool Show_iff[],
-								bool Show_ship_models) {
+								bool Selection_lock) {
 	using object_iterator = fso::fred::iterator<object>;
 	int best = -1;
 	double dist, best_dist = 9e99;
@@ -1745,7 +1701,7 @@ g3_set_view_matrix(&eye_pos, &eye_orient, 0.5f);*/
 	vm_vec_scale_add(&p1, &p0, &v, 100.0f);
 
 	for (object_iterator ptr(begin(obj_used_list)); ptr != end(obj_used_list); ++ptr) {
-		if (object_check_collision(*ptr, &p0, &p1, &hitpos, Show_starts, Show_ships, Show_iff, Show_ship_models)) {
+		if (object_check_collision(*ptr, &p0, &p1, &hitpos)) {
 			hitpos.xyz.x = (*ptr)->pos.xyz.x - view_pos.xyz.x;
 			hitpos.xyz.y = (*ptr)->pos.xyz.y - view_pos.xyz.y;
 			hitpos.xyz.z = (*ptr)->pos.xyz.z - view_pos.xyz.z;
@@ -1821,7 +1777,7 @@ void FredRenderer::level_controlled(const int viewpoint, const int view_obj) {
 		level_object(&Objects[view_obj].orient);
 		object_moved(&Objects[view_obj]);
 		///! \todo Notify.
-		//set_modified();
+		_editor->missionChanged();
 		//FREDDoc_ptr->autosave("level object");
 		break;
 
@@ -1846,16 +1802,16 @@ void FredRenderer::level_controlled(const int viewpoint, const int view_obj) {
 		}
 
 		///! \todo Notify.
-#if 0
         if (count) {
+			/*
             if (count > 1)
                 FREDDoc_ptr->autosave("level objects");
             else
                 FREDDoc_ptr->autosave("level object");
+                */
 
-                //set_modified();
+            _editor->missionChanged();
         }
-#endif
 
 		break;
 	}
@@ -1882,7 +1838,7 @@ void FredRenderer::verticalize_controlled(const int viewpoint, const int view_ob
 		object_moved(&Objects[view_obj]);
 		///! \todo notify.
 		//FREDDoc_ptr->autosave("align object");
-		//set_modified();
+		_editor->missionChanged();
 		break;
 
 	case 1: //	Control the current object's location and orientation
@@ -1906,21 +1862,30 @@ void FredRenderer::verticalize_controlled(const int viewpoint, const int view_ob
 		}
 
 		///! \todo Notify.
-#if 0
         if (count) {
+			/*
             if (count > 1)
                 FREDDoc_ptr->autosave("align objects");
             else
                 FREDDoc_ptr->autosave("align object");
+                */
 
-            set_modified();
+            _editor->missionChanged();
         }
-#endif
 
 		break;
 	}
 
 	return;
+}
+void FredRenderer::resize(int width, int height) {
+	// Make sure the following call targets the right view port
+	gr_use_viewport(_targetView);
+
+	gr_screen_resize(width, height);
+
+	// We need to rerender the scene now
+	scheduleUpdate();
 }
 }
 }
