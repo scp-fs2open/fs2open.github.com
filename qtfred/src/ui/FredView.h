@@ -70,11 +70,14 @@ private:
 	 * @brief Synchronize the view options in the renderer and the state of the view check boxes in the menu
 	 */
 	void syncViewOptions();
-
-	void initializeStatusBar();
 	void updateUI();
 
+	void initializeStatusBar();
+	void initializePopupMenus();
+
 	QLabel* _statusBarUnitsLabel = nullptr;
+
+	QMenu* _viewPopup = nullptr;
 
 	std::unique_ptr<Ui::FredView> ui;
 

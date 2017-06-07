@@ -55,6 +55,7 @@ FredView::FredView(QWidget* parent) : QMainWindow(parent), ui(new Ui::FredView()
 	updateRecentFileList();
 
 	initializeStatusBar();
+	initializePopupMenus();
 }
 
 FredView::~FredView() {
@@ -265,18 +266,20 @@ void FredView::connectActionToViewSetting(QAction* option, bool* destination) {
 	});
 }
 void FredView::showContextMenu(const QPoint& globalPos) {
-	QMenu menu(this);
-	menu.addAction(ui->actionShow_Ship_Models);
-	menu.addAction(ui->actionShow_Outlines);
-	menu.addAction(ui->actionShow_Ship_Info);
-	menu.addAction(ui->actionShow_Coordinates);
-	menu.addAction(ui->actionShow_Grid_Positions);
-	menu.addAction(ui->actionShow_Distances);
-	menu.addSeparator();
-	menu.addMenu(ui->menuViewpoint);
-	menu.addSeparator();
+	_viewPopup->exec(globalPos);
+}
+void FredView::initializePopupMenus() {
+	_viewPopup = new QMenu(this);
 
-	menu.exec(globalPos);
+	_viewPopup->addAction(ui->actionShow_Ship_Models);
+	_viewPopup->addAction(ui->actionShow_Outlines);
+	_viewPopup->addAction(ui->actionShow_Ship_Info);
+	_viewPopup->addAction(ui->actionShow_Coordinates);
+	_viewPopup->addAction(ui->actionShow_Grid_Positions);
+	_viewPopup->addAction(ui->actionShow_Distances);
+	_viewPopup->addSeparator();
+	_viewPopup->addMenu(ui->menuViewpoint);
+	_viewPopup->addSeparator();
 }
 
 } // namespace fred
