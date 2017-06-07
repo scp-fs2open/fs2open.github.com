@@ -40,9 +40,9 @@ class RenderWindow: public QWindow {
 
 	void exposeEvent(QExposeEvent* event) override;
 
- signals:
-
+	bool eventFilter(QObject* watched, QEvent* event) override;
  private:
+
 	std::unordered_map<int, int> qt2fsKeys;
 	Editor* fred = nullptr;
 	FredRenderer* _renderer = nullptr;
@@ -58,6 +58,9 @@ class RenderWidget: public QWidget {
 	explicit RenderWidget(QWidget* parent);
 
 	RenderWindow* getWindow() const;
+
+ protected:
+	void contextMenuEvent(QContextMenuEvent* event) override;
 };
 
 } // namespace fred

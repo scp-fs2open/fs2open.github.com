@@ -264,6 +264,20 @@ void FredView::connectActionToViewSetting(QAction* option, bool* destination) {
 		_renderer->scheduleUpdate();
 	});
 }
+void FredView::showContextMenu(const QPoint& globalPos) {
+	QMenu menu(this);
+	menu.addAction(ui->actionShow_Ship_Models);
+	menu.addAction(ui->actionShow_Outlines);
+	menu.addAction(ui->actionShow_Ship_Info);
+	menu.addAction(ui->actionShow_Coordinates);
+	menu.addAction(ui->actionShow_Grid_Positions);
+	menu.addAction(ui->actionShow_Distances);
+	menu.addSeparator();
+	menu.addMenu(ui->menuViewpoint);
+	menu.addSeparator();
+
+	menu.exec(globalPos);
+}
 
 } // namespace fred
 } // namespace fso

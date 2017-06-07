@@ -33,6 +33,8 @@ public:
 
 	RenderWindow* getRenderWindow();
 
+	void showContextMenu(const QPoint& globalPos);
+
 public slots:
     void openLoadMissionDIalog();
 

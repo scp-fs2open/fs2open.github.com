@@ -16,6 +16,7 @@
 
 #include "mission/editor.h"
 #include "FredApplication.h"
+#include "ui/FredView.h"
 
 namespace fso {
 namespace fred {
@@ -38,6 +39,8 @@ RenderWindow::RenderWindow(QWidget* parent) : QWindow(parent->windowHandle()) {
 	qt2fsKeys[Qt::Key_Minus + Qt::KeypadModifier] = KEY_PADMINUS;
 
 	setSurfaceType(QWindow::OpenGLSurface);
+
+	installEventFilter(this);
 }
 
 void RenderWindow::initializeGL(const QSurfaceFormat& surfaceFmt) {
@@ -109,6 +112,12 @@ void RenderWindow::keyReleaseEvent(QKeyEvent* key) {
 }
 
 void RenderWindow::mouseReleaseEvent(QMouseEvent* mouse) {
+	if (mouse->button() != Qt::LeftButton) {
+		// We only handle events of the left button
+		mouse->ignore();
+		return QWindow::mouseReleaseEvent(mouse);
+	}
+
 	auto obj_num = _renderer->select_object(mouse->x(), mouse->y(), false);
 
 	fred->selectObject(obj_num);
@@ -149,6 +158,24 @@ void RenderWindow::setEditor(Editor* editor, FredRenderer* renderer) {
 	// When the editor want to update the main window we have to do that.
 	connect(_renderer, &FredRenderer::scheduleUpdate, [this]() { requestUpdate(); });
 }
+bool RenderWindow::eventFilter(QObject* watched, QEvent* event) {
+	switch (event->type()) {
+	case QEvent::MouseButtonPress:
+	case QEvent::MouseButtonRelease:
+	{
+		// Filter all mouse events and propagate them to our parent if it doesn't use the left mouse button
+		auto mouseEvent = static_cast<QMouseEvent*>(event);
+		if (mouseEvent->button() != Qt::LeftButton) {
+			qGuiApp->sendEvent(parent(), event);
+			return true;
+		}
+		return false;
+	}
+	default:
+		// Don't filter this
+		return false;
+	}
+}
 
 RenderWidget::RenderWidget(QWidget* parent) : QWidget(parent) {
 	setFocusPolicy(Qt::StrongFocus);
@@ -164,6 +191,15 @@ RenderWidget::RenderWidget(QWidget* parent) : QWidget(parent) {
 }
 RenderWindow* RenderWidget::getWindow() const {
 	return _window;
+}
+void RenderWidget::contextMenuEvent(QContextMenuEvent* event) {
+	event->accept();
+
+	auto parentView = static_cast<FredView*>(parentWidget());
+
+	Q_ASSERT(parentView);
+
+	parentView->showContextMenu(event->globalPos());
 }
 } // namespace fred
 } // namespace fso
