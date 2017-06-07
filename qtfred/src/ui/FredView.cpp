@@ -102,48 +102,6 @@ void FredView::openLoadMissionDIalog() {
 	loadMissionFile(pathName);
 }
 
-void FredView::on_actionShow_Background_triggered(bool checked) {
-	_renderer->view.Show_stars = checked;
-
-	// View has changed so we need to schedule an update
-	_renderer->scheduleUpdate();
-}
-
-void FredView::on_actionShow_Horizon_triggered(bool checked) {
-	_renderer->view.Show_horizon = checked;
-
-	// View has changed so we need to schedule an update
-	_renderer->scheduleUpdate();
-}
-
-void FredView::on_actionShow_Grid_triggered(bool checked) {
-	_renderer->view.Show_grid = checked;
-
-	// View has changed so we need to schedule an update
-	_renderer->scheduleUpdate();
-}
-
-void FredView::on_actionShow_Distances_triggered(bool checked) {
-	_renderer->view.Show_distances = checked;
-
-	// View has changed so we need to schedule an update
-	_renderer->scheduleUpdate();
-}
-
-void FredView::on_actionShow_Coordinates_triggered(bool checked) {
-	_renderer->view.Show_coordinates = checked;
-
-	// View has changed so we need to schedule an update
-	_renderer->scheduleUpdate();
-}
-
-void FredView::on_actionShow_Outlines_triggered(bool checked) {
-	_renderer->view.Show_outlines = checked;
-
-	// View has changed so we need to schedule an update
-	_renderer->scheduleUpdate();
-}
-
 void FredView::on_actionExit_triggered(bool) {
 	close();
 }
@@ -266,6 +224,63 @@ void FredView::syncViewOptions() {
 	copyActionSettings(ui->actionAnti_Aliased_Gridlines, &_renderer->view.Aa_gridlines);
 	copyActionSettings(ui->actionShow_3D_Compass, &_renderer->view.Show_compass);
 	copyActionSettings(ui->actionShow_Background, &_renderer->view.Show_stars);
+
+	copyActionSettings(ui->actionLighting_from_Suns, &_renderer->view.Lighting_on);
+}
+
+void FredView::on_actionShow_Background_triggered(bool checked) {
+	handleViewSettingsUpdate(&_renderer->view.Show_stars, checked);
+}
+void FredView::on_actionShow_Horizon_triggered(bool checked) {
+	handleViewSettingsUpdate(&_renderer->view.Show_horizon, checked);
+}
+void FredView::on_actionShow_Grid_triggered(bool checked) {
+	handleViewSettingsUpdate(&_renderer->view.Show_grid, checked);
+}
+void FredView::on_actionShow_Distances_triggered(bool checked) {
+	handleViewSettingsUpdate(&_renderer->view.Show_distances, checked);
+}
+void FredView::on_actionShow_Grid_Positions_triggered(bool checked) {
+	handleViewSettingsUpdate(&_renderer->view.Show_grid_positions, checked);
+}
+void FredView::on_actionShow_Coordinates_triggered(bool checked) {
+	handleViewSettingsUpdate(&_renderer->view.Show_coordinates, checked);
+}
+void FredView::on_actionShow_Outlines_triggered(bool checked) {
+	handleViewSettingsUpdate(&_renderer->view.Show_outlines, checked);
+}
+void FredView::on_actionShow_Ships_triggered(bool checked) {
+	handleViewSettingsUpdate(&_renderer->view.Show_ships, checked);
+}
+void FredView::on_actionShow_Player_Starts_triggered(bool checked) {
+	handleViewSettingsUpdate(&_renderer->view.Show_starts, checked);
+}
+void FredView::on_actionShow_Waypoints_triggered(bool checked) {
+	handleViewSettingsUpdate(&_renderer->view.Show_waypoints, checked);
+}
+void FredView::on_actionShow_Ship_Models_triggered(bool checked) {
+	handleViewSettingsUpdate(&_renderer->view.Show_ship_models, checked);
+}
+void FredView::on_actionShow_Ship_Info_triggered(bool checked) {
+	handleViewSettingsUpdate(&_renderer->view.Show_ship_info, checked);
+}
+void FredView::on_actionShow_Model_Paths_triggered(bool checked) {
+	handleViewSettingsUpdate(&_renderer->view.Show_paths_fred, checked);
+}
+void FredView::on_actionShow_Model_Dock_Points_triggered(bool checked) {
+	handleViewSettingsUpdate(&_renderer->view.Show_dock_points, checked);
+}
+void FredView::on_actionDouble_Fine_Gridlines_triggered(bool checked) {
+	handleViewSettingsUpdate(&double_fine_gridlines, checked);
+}
+void FredView::on_actionAnti_Aliased_Gridlines_triggered(bool checked) {
+	handleViewSettingsUpdate(&_renderer->view.Aa_gridlines, checked);
+}
+void FredView::on_actionShow_3D_Compass_triggered(bool checked) {
+	handleViewSettingsUpdate(&_renderer->view.Show_compass, checked);
+}
+void FredView::on_actionLighting_from_Suns_triggered(bool checked) {
+	handleViewSettingsUpdate(&_renderer->view.Lighting_on, checked);
 }
 } // namespace fred
 } // namespace fso

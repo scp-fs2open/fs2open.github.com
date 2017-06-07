@@ -837,6 +837,9 @@
    </property>
   </action>
   <action name="actionLighting_from_Suns">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
    <property name="text">
     <string>&amp;Lighting from Suns...</string>
    </property>
