@@ -9,6 +9,7 @@
 #include <project.h>
 
 #include <qevent.h>
+#include <FredApplication.h>
 
 #include "mission/editor.h"
 
@@ -49,7 +50,11 @@ FredView::FredView(QWidget* parent) : QMainWindow(parent), ui(new Ui::FredView()
 	connect(ui->actionOpen, &QAction::triggered, this, &FredView::openLoadMissionDIalog);
 	connect(ui->actionNew, &QAction::triggered, this, &FredView::newMission);
 
+	connect(fredApp, &FredApplication::onIdle, this, &FredView::updateUI);
+
 	updateRecentFileList();
+
+	initializeStatusBar();
 }
 
 FredView::~FredView() {
@@ -226,6 +231,38 @@ void FredView::syncViewOptions() {
 	connectActionToViewSetting(ui->actionShow_Background, &_renderer->view.Show_stars);
 
 	connectActionToViewSetting(ui->actionLighting_from_Suns, &_renderer->view.Lighting_on);
+}
+void FredView::initializeStatusBar() {
+	_statusBarUnitsLabel = new QLabel();
+	statusBar()->addPermanentWidget(_statusBarUnitsLabel);
+}
+void FredView::updateUI() {
+	if (!_renderer) {
+		// The following code requires a valid renderer
+		return;
+	}
+
+	_statusBarUnitsLabel->setText(tr("Units = %1 Meters").arg(_renderer->The_grid->square_size));
+
+	viewIdle();
+}
+void FredView::connectActionToViewSetting(QAction* option, bool* destination) {
+	Q_ASSERT(option->isCheckable());
+
+	// Use our view idle function for updating the action status whenever possible
+	// TODO: Maybe this could be improved with an event based property system but that would need to be implemented
+	connect(this, &FredView::viewIdle, [option, destination]() {
+		option->setChecked(*destination);
+	});
+
+	// then connect the signal to a handler for updating the view setting
+	// The pointer should be valid as long as this signal is active since it should be pointing inside the renderer (I hope...)
+	connect(option, &QAction::triggered, [this,destination](bool value) {
+		*destination = value;
+
+		// View settings have changed so we need to update the window
+		_renderer->scheduleUpdate();
+	});
 }
 
 } // namespace fred

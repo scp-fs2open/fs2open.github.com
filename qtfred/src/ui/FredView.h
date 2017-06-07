@@ -4,6 +4,7 @@
 #include <QAction>
 
 #include <QtGui/QSurfaceFormat>
+#include <QtWidgets/QLabel>
 
 #include <memory>
 #include <QtWidgets/QComboBox>
@@ -39,6 +40,13 @@ public slots:
 
 private slots:
 	void on_actionExit_triggered(bool);
+
+signals:
+	/**
+	 * @brief Special version of FredApplication::onIdle which is limited to the lifetime of this object
+	 */
+	void viewIdle();
+
 protected:
 	void keyPressEvent(QKeyEvent* event) override;
 
@@ -49,23 +57,7 @@ protected:
 private:
 	void on_mission_loaded(const std::string& filepath);
 
-	template<typename T>
-	void connectActionToViewSetting(QAction* option, T* destination) {
-		Q_ASSERT(option->isCheckable());
-
-		// First copy the existing value to the action
-		// Double negate to promote an integer to a real boolean
-		option->setChecked(!!(*destination));
-
-		// then connect the signal to a handler for updating the view setting
-		// The pointer should be valid as long as this signal is active since it should be pointing inside the renderer (I hope...)
-		connect(option, &QAction::triggered, [this,destination](bool value) {
-			*destination = value;
-
-			// View settings have changed so we need to update the window
-			_renderer->scheduleUpdate();
-		});
-	}
+	void connectActionToViewSetting(QAction* option, bool* destination);
 
 	void addToRecentFiles(const QString& path);
 	void updateRecentFileList();
@@ -76,6 +68,11 @@ private:
 	 * @brief Synchronize the view options in the renderer and the state of the view check boxes in the menu
 	 */
 	void syncViewOptions();
+
+	void initializeStatusBar();
+	void updateUI();
+
+	QLabel* _statusBarUnitsLabel = nullptr;
 
 	std::unique_ptr<Ui::FredView> ui;
 
