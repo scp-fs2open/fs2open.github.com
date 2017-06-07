@@ -52,7 +52,7 @@ void fsoMessageOutput(QtMsgType type, const QMessageLogContext &context, const Q
 		fprintf(stderr, "Qt Critical: %s\n", errorMsg.constData());
 		break;
 	case QtFatalMsg:
-		Error(context.file, context.line, "Qt Critical: %s", errorMsg.constData());
+		Error(context.file == nullptr ? "Unknown" : context.file, context.line, "Qt Critical: %s", errorMsg.constData());
 		break;
 	}
 }
