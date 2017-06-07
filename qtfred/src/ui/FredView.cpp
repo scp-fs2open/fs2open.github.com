@@ -203,85 +203,31 @@ void FredView::recentFileOpened() {
 	loadMissionFile(path);
 }
 void FredView::syncViewOptions() {
-	copyActionSettings(ui->actionShow_Ships, &_renderer->view.Show_ships);
-	copyActionSettings(ui->actionShow_Player_Starts, &_renderer->view.Show_starts);
-	copyActionSettings(ui->actionShow_Waypoints, &_renderer->view.Show_waypoints);
+	connectActionToViewSetting(ui->actionShow_Ships, &_renderer->view.Show_ships);
+	connectActionToViewSetting(ui->actionShow_Player_Starts, &_renderer->view.Show_starts);
+	connectActionToViewSetting(ui->actionShow_Waypoints, &_renderer->view.Show_waypoints);
 
 	// TODO: Dynamically handle the Show teams option
 
-	copyActionSettings(ui->actionShow_Ship_Models, &_renderer->view.Show_ship_models);
-	copyActionSettings(ui->actionShow_Outlines, &_renderer->view.Show_outlines);
-	copyActionSettings(ui->actionShow_Ship_Info, &_renderer->view.Show_ship_info);
-	copyActionSettings(ui->actionShow_Coordinates, &_renderer->view.Show_coordinates);
-	copyActionSettings(ui->actionShow_Grid_Positions, &_renderer->view.Show_grid_positions);
-	copyActionSettings(ui->actionShow_Distances, &_renderer->view.Show_distances);
-	copyActionSettings(ui->actionShow_Model_Paths, &_renderer->view.Show_paths_fred);
-	copyActionSettings(ui->actionShow_Model_Dock_Points, &_renderer->view.Show_dock_points);
+	connectActionToViewSetting(ui->actionShow_Ship_Models, &_renderer->view.Show_ship_models);
+	connectActionToViewSetting(ui->actionShow_Outlines, &_renderer->view.Show_outlines);
+	connectActionToViewSetting(ui->actionShow_Ship_Info, &_renderer->view.Show_ship_info);
+	connectActionToViewSetting(ui->actionShow_Coordinates, &_renderer->view.Show_coordinates);
+	connectActionToViewSetting(ui->actionShow_Grid_Positions, &_renderer->view.Show_grid_positions);
+	connectActionToViewSetting(ui->actionShow_Distances, &_renderer->view.Show_distances);
+	connectActionToViewSetting(ui->actionShow_Model_Paths, &_renderer->view.Show_paths_fred);
+	connectActionToViewSetting(ui->actionShow_Model_Dock_Points, &_renderer->view.Show_dock_points);
 
-	copyActionSettings(ui->actionShow_Grid, &_renderer->view.Show_grid);
-	copyActionSettings(ui->actionShow_Horizon, &_renderer->view.Show_horizon);
-	copyActionSettings(ui->actionDouble_Fine_Gridlines, &double_fine_gridlines);
-	copyActionSettings(ui->actionAnti_Aliased_Gridlines, &_renderer->view.Aa_gridlines);
-	copyActionSettings(ui->actionShow_3D_Compass, &_renderer->view.Show_compass);
-	copyActionSettings(ui->actionShow_Background, &_renderer->view.Show_stars);
+	connectActionToViewSetting(ui->actionShow_Grid, &_renderer->view.Show_grid);
+	connectActionToViewSetting(ui->actionShow_Horizon, &_renderer->view.Show_horizon);
+	connectActionToViewSetting(ui->actionDouble_Fine_Gridlines, &double_fine_gridlines);
+	connectActionToViewSetting(ui->actionAnti_Aliased_Gridlines, &_renderer->view.Aa_gridlines);
+	connectActionToViewSetting(ui->actionShow_3D_Compass, &_renderer->view.Show_compass);
+	connectActionToViewSetting(ui->actionShow_Background, &_renderer->view.Show_stars);
 
-	copyActionSettings(ui->actionLighting_from_Suns, &_renderer->view.Lighting_on);
+	connectActionToViewSetting(ui->actionLighting_from_Suns, &_renderer->view.Lighting_on);
 }
 
-void FredView::on_actionShow_Background_triggered(bool checked) {
-	handleViewSettingsUpdate(&_renderer->view.Show_stars, checked);
-}
-void FredView::on_actionShow_Horizon_triggered(bool checked) {
-	handleViewSettingsUpdate(&_renderer->view.Show_horizon, checked);
-}
-void FredView::on_actionShow_Grid_triggered(bool checked) {
-	handleViewSettingsUpdate(&_renderer->view.Show_grid, checked);
-}
-void FredView::on_actionShow_Distances_triggered(bool checked) {
-	handleViewSettingsUpdate(&_renderer->view.Show_distances, checked);
-}
-void FredView::on_actionShow_Grid_Positions_triggered(bool checked) {
-	handleViewSettingsUpdate(&_renderer->view.Show_grid_positions, checked);
-}
-void FredView::on_actionShow_Coordinates_triggered(bool checked) {
-	handleViewSettingsUpdate(&_renderer->view.Show_coordinates, checked);
-}
-void FredView::on_actionShow_Outlines_triggered(bool checked) {
-	handleViewSettingsUpdate(&_renderer->view.Show_outlines, checked);
-}
-void FredView::on_actionShow_Ships_triggered(bool checked) {
-	handleViewSettingsUpdate(&_renderer->view.Show_ships, checked);
-}
-void FredView::on_actionShow_Player_Starts_triggered(bool checked) {
-	handleViewSettingsUpdate(&_renderer->view.Show_starts, checked);
-}
-void FredView::on_actionShow_Waypoints_triggered(bool checked) {
-	handleViewSettingsUpdate(&_renderer->view.Show_waypoints, checked);
-}
-void FredView::on_actionShow_Ship_Models_triggered(bool checked) {
-	handleViewSettingsUpdate(&_renderer->view.Show_ship_models, checked);
-}
-void FredView::on_actionShow_Ship_Info_triggered(bool checked) {
-	handleViewSettingsUpdate(&_renderer->view.Show_ship_info, checked);
-}
-void FredView::on_actionShow_Model_Paths_triggered(bool checked) {
-	handleViewSettingsUpdate(&_renderer->view.Show_paths_fred, checked);
-}
-void FredView::on_actionShow_Model_Dock_Points_triggered(bool checked) {
-	handleViewSettingsUpdate(&_renderer->view.Show_dock_points, checked);
-}
-void FredView::on_actionDouble_Fine_Gridlines_triggered(bool checked) {
-	handleViewSettingsUpdate(&double_fine_gridlines, checked);
-}
-void FredView::on_actionAnti_Aliased_Gridlines_triggered(bool checked) {
-	handleViewSettingsUpdate(&_renderer->view.Aa_gridlines, checked);
-}
-void FredView::on_actionShow_3D_Compass_triggered(bool checked) {
-	handleViewSettingsUpdate(&_renderer->view.Show_compass, checked);
-}
-void FredView::on_actionLighting_from_Suns_triggered(bool checked) {
-	handleViewSettingsUpdate(&_renderer->view.Lighting_on, checked);
-}
 } // namespace fred
 } // namespace fso
 

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QMainWindow>
+#include <QAction>
 
 #include <QtGui/QSurfaceFormat>
 
@@ -38,44 +39,6 @@ public slots:
 
 private slots:
 	void on_actionExit_triggered(bool);
-
-
-	void on_actionShow_Ships_triggered(bool checked);
-
-	void on_actionShow_Player_Starts_triggered(bool checked);
-
-	void on_actionShow_Waypoints_triggered(bool checked);
-
-	void on_actionShow_Ship_Models_triggered(bool checked);
-
-	void on_actionShow_Outlines_triggered(bool checked);
-
-	void on_actionShow_Ship_Info_triggered(bool checked);
-
-	void on_actionShow_Coordinates_triggered(bool checked);
-
-	void on_actionShow_Grid_Positions_triggered(bool checked);
-
-	void on_actionShow_Distances_triggered(bool checked);
-
-	void on_actionShow_Model_Paths_triggered(bool checked);
-
-	void on_actionShow_Model_Dock_Points_triggered(bool checked);
-
-	void on_actionShow_Grid_triggered(bool checked);
-
-	void on_actionShow_Horizon_triggered(bool checked);
-
-	void on_actionDouble_Fine_Gridlines_triggered(bool checked);
-
-	void on_actionAnti_Aliased_Gridlines_triggered(bool checked);
-
-	void on_actionShow_3D_Compass_triggered(bool checked);
-
-    void on_actionShow_Background_triggered(bool checked);
-
-	void on_actionLighting_from_Suns_triggered(bool checked);
-
 protected:
 	void keyPressEvent(QKeyEvent* event) override;
 
@@ -87,11 +50,21 @@ private:
 	void on_mission_loaded(const std::string& filepath);
 
 	template<typename T>
-	void handleViewSettingsUpdate(T* viewVariable, bool enabled) {
-		*viewVariable = enabled;
+	void connectActionToViewSetting(QAction* option, T* destination) {
+		Q_ASSERT(option->isCheckable());
 
-		// View settings have changed so we need to update the window
-		_renderer->scheduleUpdate();
+		// First copy the existing value to the action
+		// Double negate to promote an integer to a real boolean
+		option->setChecked(!!(*destination));
+
+		// then connect the signal to a handler for updating the view setting
+		// The pointer should be valid as long as this signal is active since it should be pointing inside the renderer (I hope...)
+		connect(option, &QAction::triggered, [this,destination](bool value) {
+			*destination = value;
+
+			// View settings have changed so we need to update the window
+			_renderer->scheduleUpdate();
+		});
 	}
 
 	void addToRecentFiles(const QString& path);
