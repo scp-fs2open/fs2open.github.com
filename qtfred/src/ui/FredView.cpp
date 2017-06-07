@@ -1,4 +1,3 @@
-
 #include "FredView.h"
 #include "ui_FredView.h"
 
@@ -18,11 +17,8 @@
 namespace fso {
 namespace fred {
 
-FredView::FredView(QWidget *parent) :
-    QMainWindow(parent),
-    ui(new Ui::FredView())
-{
-    ui->setupUi(this);
+FredView::FredView(QWidget* parent) : QMainWindow(parent), ui(new Ui::FredView()) {
+	ui->setupUi(this);
 
 	// This is not possible to do with the designer
 	ui->actionNew->setShortcuts(QKeySequence::New);
@@ -46,19 +42,17 @@ FredView::FredView(QWidget *parent) :
 	installEventFilter(this);
 }
 
-FredView::~FredView()
-{
+FredView::~FredView() {
 }
 
-void FredView::setEditor(Editor* editor, FredRenderer* renderer)
-{
+void FredView::setEditor(Editor* editor, FredRenderer* renderer) {
 	Assertion(fred == nullptr, "Resetting the editor is currently not supported!");
 	Assertion(_renderer == nullptr, "Resetting the renderer is currently not supported!");
 
-    fred = editor;
+	fred = editor;
 	_renderer = renderer;
 
-    getRenderWindow()->setEditor(editor, renderer);
+	getRenderWindow()->setEditor(editor, renderer);
 
 	connect(fred, &Editor::missionLoaded, this, &FredView::on_mission_loaded);
 
@@ -77,8 +71,7 @@ void FredView::loadMissionFile(const QString& pathName) {
 
 		getRenderWindow()->updateGL();
 		statusBar()->showMessage(tr("Units = %1 meters").arg(_renderer->The_grid->square_size));
-	}
-	catch (const fso::fred::mission_load_error &) {
+	} catch (const fso::fred::mission_load_error&) {
 		QApplication::restoreOverrideCursor();
 
 		QMessageBox::critical(this, tr("Failed loading mission."), tr("Could not parse the mission."));
@@ -86,62 +79,53 @@ void FredView::loadMissionFile(const QString& pathName) {
 	}
 }
 
-void FredView::openLoadMissionDIalog()
-{
-    qDebug() << "Loading from directory:" << QDir::currentPath();
-    QString pathName = QFileDialog::getOpenFileName(this,
-                                                    tr("Load mission"),
-                                                    QString(),
-                                                    tr("FS2 missions (*.fs2)"));
+void FredView::openLoadMissionDIalog() {
+	qDebug() << "Loading from directory:" << QDir::currentPath();
+	QString pathName = QFileDialog::getOpenFileName(this, tr("Load mission"), QString(), tr("FS2 missions (*.fs2)"));
 
-    if (pathName.isEmpty())
-        return;
+	if (pathName.isEmpty()) {
+		return;
+	}
 
 	loadMissionFile(pathName);
 }
 
-void FredView::on_actionShow_Background_triggered(bool checked)
-{
+void FredView::on_actionShow_Background_triggered(bool checked) {
 	_renderer->view.Show_stars = checked;
 
 	// View has changed so we need to schedule an update
 	_renderer->scheduleUpdate();
 }
 
-void FredView::on_actionShow_Horizon_triggered(bool checked)
-{
+void FredView::on_actionShow_Horizon_triggered(bool checked) {
 	_renderer->view.Show_horizon = checked;
 
 	// View has changed so we need to schedule an update
 	_renderer->scheduleUpdate();
 }
 
-void FredView::on_actionShow_Grid_triggered(bool checked)
-{
+void FredView::on_actionShow_Grid_triggered(bool checked) {
 	_renderer->view.Show_grid = checked;
 
 	// View has changed so we need to schedule an update
 	_renderer->scheduleUpdate();
 }
 
-void FredView::on_actionShow_Distances_triggered(bool checked)
-{
+void FredView::on_actionShow_Distances_triggered(bool checked) {
 	_renderer->view.Show_distances = checked;
 
 	// View has changed so we need to schedule an update
 	_renderer->scheduleUpdate();
 }
 
-void FredView::on_actionShow_Coordinates_triggered(bool checked)
-{
+void FredView::on_actionShow_Coordinates_triggered(bool checked) {
 	_renderer->view.Show_coordinates = checked;
 
 	// View has changed so we need to schedule an update
 	_renderer->scheduleUpdate();
 }
 
-void FredView::on_actionShow_Outlines_triggered(bool checked)
-{
+void FredView::on_actionShow_Outlines_triggered(bool checked) {
 	_renderer->view.Show_outlines = checked;
 
 	// View has changed so we need to schedule an update
