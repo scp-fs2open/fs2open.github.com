@@ -58,7 +58,7 @@ protected:
 
 	void keyReleaseEvent(QKeyEvent* event) override;
 
-	bool eventFilter(QObject* watched, QEvent* event) override;
+	bool event(QEvent* event) override;
 
 private:
 	void addToRecentFiles(const QString& path);

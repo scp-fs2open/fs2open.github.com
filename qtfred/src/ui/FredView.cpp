@@ -50,8 +50,6 @@ FredView::FredView(QWidget* parent) : QMainWindow(parent), ui(new Ui::FredView()
 	connect(ui->actionNew, &QAction::triggered, this, &FredView::newMission);
 
 	updateRecentFileList();
-
-	installEventFilter(this);
 }
 
 FredView::~FredView() {
@@ -180,7 +178,7 @@ RenderWindow* FredView::getRenderWindow() {
 void FredView::newMission() {
 	fred->createNewMission();
 }
-bool FredView::eventFilter(QObject* watched, QEvent* event) {
+bool FredView::event(QEvent* event) {
 	if (event->type() == QEvent::ShortcutOverride) {
 		auto keyEvent = static_cast<QKeyEvent*>(event);
 
@@ -191,7 +189,7 @@ bool FredView::eventFilter(QObject* watched, QEvent* event) {
 			return true;
 		}
 	}
-	return QObject::eventFilter(watched, event);
+	return QMainWindow::event(event);
 }
 
 void FredView::addToRecentFiles(const QString& path) {
