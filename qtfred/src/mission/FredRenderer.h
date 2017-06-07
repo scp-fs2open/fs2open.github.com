@@ -151,6 +151,10 @@ class FredRenderer : public QObject {
 	physics_info view_physics;
 	grid* The_grid;
 
+	vec3d Constraint = {{{ 1.0f, 0.0f, 1.0f }}};
+	vec3d Anticonstraint = {{{ 0.0f, 1.0f, 0.0f }}};
+	bool Single_axis_constraint = false;
+
 signals:
 	void scheduleUpdate();
 };

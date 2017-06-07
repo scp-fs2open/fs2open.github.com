@@ -20,7 +20,7 @@
      <x>0</x>
      <y>0</y>
      <width>926</width>
-     <height>25</height>
+     <height>28</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -64,7 +64,7 @@
    </widget>
    <widget class="QMenu" name="menuEdit">
     <property name="title">
-     <string>Edit</string>
+     <string>E&amp;dit</string>
     </property>
     <addaction name="actionUndo"/>
     <addaction name="actionDelete"/>
@@ -264,12 +264,12 @@
    <addaction name="separator"/>
    <addaction name="actionRotateLocal"/>
    <addaction name="separator"/>
-   <addaction name="actionConstraintX"/>
-   <addaction name="actionConstraintY"/>
-   <addaction name="actionConstraintZ"/>
-   <addaction name="actionConstraintXZ"/>
-   <addaction name="actionConstraintYZ"/>
-   <addaction name="actionConstraintXY"/>
+   <addaction name="actionConstrainX"/>
+   <addaction name="actionConstrainY"/>
+   <addaction name="actionConstrainZ"/>
+   <addaction name="actionConstrainXZ"/>
+   <addaction name="actionConstrainYZ"/>
+   <addaction name="actionConstrainXY"/>
    <addaction name="separator"/>
    <addaction name="actionSelectionList"/>
    <addaction name="actionSelectionLock"/>
@@ -347,7 +347,7 @@
     <string>X</string>
    </property>
   </action>
-  <action name="actionConstraintX">
+  <action name="actionConstrainX">
    <property name="checkable">
     <bool>true</bool>
    </property>
@@ -362,7 +362,7 @@
     <string>X Constraint (`)</string>
    </property>
   </action>
-  <action name="actionConstraintY">
+  <action name="actionConstrainY">
    <property name="checkable">
     <bool>true</bool>
    </property>
@@ -377,7 +377,7 @@
     <string>Y Constraint (`)</string>
    </property>
   </action>
-  <action name="actionConstraintZ">
+  <action name="actionConstrainZ">
    <property name="checkable">
     <bool>true</bool>
    </property>
@@ -392,7 +392,7 @@
     <string>Z Constraint (`)</string>
    </property>
   </action>
-  <action name="actionConstraintXZ">
+  <action name="actionConstrainXZ">
    <property name="checkable">
     <bool>true</bool>
    </property>
@@ -407,7 +407,7 @@
     <string>XZ Constraint (`)</string>
    </property>
   </action>
-  <action name="actionConstraintYZ">
+  <action name="actionConstrainYZ">
    <property name="checkable">
     <bool>true</bool>
    </property>
@@ -422,7 +422,7 @@
     <string>YZ Constraint</string>
    </property>
   </action>
-  <action name="actionConstraintXY">
+  <action name="actionConstrainXY">
    <property name="checkable">
     <bool>true</bool>
    </property>

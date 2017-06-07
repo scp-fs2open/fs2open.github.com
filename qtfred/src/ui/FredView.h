@@ -43,6 +43,13 @@ public slots:
 private slots:
 	void on_actionExit_triggered(bool);
 
+	void on_actionConstrainX_triggered(bool enabled);
+	void on_actionConstrainXY_triggered(bool enabled);
+	void on_actionConstrainY_triggered(bool enabled);
+	void on_actionConstrainZ_triggered(bool enabled);
+	void on_actionConstrainXZ_triggered(bool enabled);
+	void on_actionConstrainYZ_triggered(bool enabled);
+
 signals:
 	/**
 	 * @brief Special version of FredApplication::onIdle which is limited to the lifetime of this object
@@ -85,6 +92,14 @@ private:
 
     Editor* fred = nullptr;
 	FredRenderer* _renderer = nullptr;
+
+	void onUpdateConstrainX();
+	void onUpdateConstrainY();
+	void onUpdateConstrainZ();
+	void onUpdateConstrainXz();
+	void onUpdateConstrainXy();
+	void onUpdateConstrainYz();
+	void syncConstrainButtons();
 };
 
 
