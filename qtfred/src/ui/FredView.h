@@ -66,6 +66,11 @@ private:
 
 	void recentFileOpened();
 
+	/**
+	 * @brief Synchronize the view options in the renderer and the state of the view check boxes in the menu
+	 */
+	void syncViewOptions();
+
 	std::unique_ptr<Ui::FredView> ui;
 
 	std::unique_ptr<QComboBox> _shipClassBox;

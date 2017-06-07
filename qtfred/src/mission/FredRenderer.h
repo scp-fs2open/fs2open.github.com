@@ -47,6 +47,8 @@ struct ViewSettings {
 	bool Show_paths_fred = false;
 	bool Lighting_on = false;
 	bool FullDetail = false;
+	bool Show_waypoints = true;
+	bool Show_compass = true;
 
 	ViewSettings();
 };

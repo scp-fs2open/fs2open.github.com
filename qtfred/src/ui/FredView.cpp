@@ -14,6 +14,18 @@
 
 #include "widgets/ColorComboBox.h"
 
+namespace {
+
+template<typename T>
+void copyActionSettings(QAction* action, T* target) {
+	Q_ASSERT(action->isCheckable());
+
+	// Double negate so that integers get promoted to a "true" boolean
+	action->setChecked(!!(*target));
+}
+
+}
+
 namespace fso {
 namespace fred {
 
@@ -58,6 +70,8 @@ void FredView::setEditor(Editor* editor, FredRenderer* renderer) {
 
 	// Sets the initial window title
 	on_mission_loaded("");
+
+	syncViewOptions();
 }
 
 void FredView::loadMissionFile(const QString& pathName) {
@@ -142,7 +156,7 @@ void FredView::on_mission_loaded(const std::string& filepath) {
 		filename = QFileInfo(QString::fromStdString(filepath)).fileName();
 	}
 
-	auto title = QString("%1 - qtFRED v%2 - FreeSpace 2 Mission Editor").arg(filename, FS_VERSION_FULL);
+	auto title = tr("%1 - qtFRED v%2 - FreeSpace 2 Mission Editor").arg(filename, FS_VERSION_FULL);
 
 	setWindowTitle(title);
 
@@ -231,6 +245,29 @@ void FredView::recentFileOpened() {
 
 	auto path = sender->text();
 	loadMissionFile(path);
+}
+void FredView::syncViewOptions() {
+	copyActionSettings(ui->actionShow_Ships, &_renderer->view.Show_ships);
+	copyActionSettings(ui->actionShow_Player_Starts, &_renderer->view.Show_starts);
+	copyActionSettings(ui->actionShow_Waypoints, &_renderer->view.Show_waypoints);
+
+	// TODO: Dynamically handle the Show teams option
+
+	copyActionSettings(ui->actionShow_Ship_Models, &_renderer->view.Show_ship_models);
+	copyActionSettings(ui->actionShow_Outlines, &_renderer->view.Show_outlines);
+	copyActionSettings(ui->actionShow_Ship_Info, &_renderer->view.Show_ship_info);
+	copyActionSettings(ui->actionShow_Coordinates, &_renderer->view.Show_coordinates);
+	copyActionSettings(ui->actionShow_Grid_Positions, &_renderer->view.Show_grid_positions);
+	copyActionSettings(ui->actionShow_Distances, &_renderer->view.Show_distances);
+	copyActionSettings(ui->actionShow_Model_Paths, &_renderer->view.Show_paths_fred);
+	copyActionSettings(ui->actionShow_Model_Dock_Points, &_renderer->view.Show_dock_points);
+
+	copyActionSettings(ui->actionShow_Grid, &_renderer->view.Show_grid);
+	copyActionSettings(ui->actionShow_Horizon, &_renderer->view.Show_horizon);
+	copyActionSettings(ui->actionDouble_Fine_Gridlines, &double_fine_gridlines);
+	copyActionSettings(ui->actionAnti_Aliased_Gridlines, &_renderer->view.Aa_gridlines);
+	copyActionSettings(ui->actionShow_3D_Compass, &_renderer->view.Show_compass);
+	copyActionSettings(ui->actionShow_Background, &_renderer->view.Show_stars);
 }
 } // namespace fred
 } // namespace fso

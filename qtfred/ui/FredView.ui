@@ -649,16 +649,25 @@
    </property>
   </action>
   <action name="actionShow_Ships">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
    <property name="text">
     <string>&amp;Show Ships</string>
    </property>
   </action>
   <action name="actionShow_Player_Starts">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
    <property name="text">
     <string>Show &amp;Player Starts</string>
    </property>
   </action>
   <action name="actionShow_Waypoints">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
    <property name="text">
     <string>Show &amp;Waypoints</string>
    </property>
@@ -684,6 +693,9 @@
    </property>
   </action>
   <action name="actionShow_Ship_Models">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
    <property name="text">
     <string>Show Ship Models</string>
    </property>
@@ -692,6 +704,9 @@
    </property>
   </action>
   <action name="actionShow_Outlines">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
    <property name="text">
     <string>Show &amp;Outlines</string>
    </property>
@@ -700,6 +715,9 @@
    </property>
   </action>
   <action name="actionShow_Coordinates">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
    <property name="text">
     <string>Show &amp;Coordinates</string>
    </property>
@@ -708,6 +726,9 @@
    </property>
   </action>
   <action name="actionShow_Grid_Positions">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
    <property name="text">
     <string>Show &amp;Grid Positions</string>
    </property>
@@ -716,6 +737,9 @@
    </property>
   </action>
   <action name="actionShow_Distances">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
    <property name="text">
     <string>Show D&amp;istances</string>
    </property>
@@ -724,16 +748,25 @@
    </property>
   </action>
   <action name="actionShow_Model_Paths">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
    <property name="text">
     <string>Show &amp;Model Paths</string>
    </property>
   </action>
   <action name="actionShow_Model_Dock_Points">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
    <property name="text">
     <string>Show Model Doc&amp;k Points</string>
    </property>
   </action>
   <action name="actionShow_Grid">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
    <property name="text">
     <string>Show Grid</string>
    </property>
@@ -742,6 +775,9 @@
    </property>
   </action>
   <action name="actionShow_Horizon">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
    <property name="text">
     <string>Show Hori&amp;zon</string>
    </property>
@@ -750,16 +786,25 @@
    </property>
   </action>
   <action name="actionDouble_Fine_Gridlines">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
    <property name="text">
     <string>Double &amp;Fine Gridlines</string>
    </property>
   </action>
   <action name="actionAnti_Aliased_Gridlines">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
    <property name="text">
     <string>&amp;Anti-Aliased Gridlines</string>
    </property>
   </action>
   <action name="actionShow_3D_Compass">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
    <property name="text">
     <string>Show &amp;3D Compass</string>
    </property>
@@ -768,6 +813,9 @@
    </property>
   </action>
   <action name="actionShow_Background">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
    <property name="text">
     <string>Show &amp;Background</string>
    </property>
@@ -804,6 +852,9 @@
    </property>
   </action>
   <action name="actionx1">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
    <property name="text">
     <string>&amp;x1</string>
    </property>
@@ -812,6 +863,9 @@
    </property>
   </action>
   <action name="actionx2">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
    <property name="text">
     <string>x&amp;2</string>
    </property>
@@ -820,6 +874,9 @@
    </property>
   </action>
   <action name="actionx3">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
    <property name="text">
     <string>x&amp;3</string>
    </property>
@@ -828,6 +885,9 @@
    </property>
   </action>
   <action name="actionx5">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
    <property name="text">
     <string>x&amp;5</string>
    </property>
@@ -836,6 +896,9 @@
    </property>
   </action>
   <action name="actionx8">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
    <property name="text">
     <string>x&amp;8</string>
    </property>
@@ -844,6 +907,9 @@
    </property>
   </action>
   <action name="actionx10">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
    <property name="text">
     <string>x&amp;10</string>
    </property>
@@ -852,6 +918,9 @@
    </property>
   </action>
   <action name="actionx50">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
    <property name="text">
     <string>x5&amp;0</string>
    </property>
@@ -860,6 +929,9 @@
    </property>
   </action>
   <action name="actionx100">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
    <property name="text">
     <string>x100</string>
    </property>
@@ -868,6 +940,9 @@
    </property>
   </action>
   <action name="actionx1_2">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
    <property name="text">
     <string>&amp;x1</string>
    </property>
@@ -876,6 +951,9 @@
    </property>
   </action>
   <action name="actionx5_2">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
    <property name="text">
     <string>x&amp;5</string>
    </property>
@@ -884,6 +962,9 @@
    </property>
   </action>
   <action name="actionx12">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
    <property name="text">
     <string>x&amp;12</string>
    </property>
@@ -892,6 +973,9 @@
    </property>
   </action>
   <action name="actionx25">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
    <property name="text">
     <string>x&amp;25</string>
    </property>
@@ -900,6 +984,9 @@
    </property>
   </action>
   <action name="actionx50_2">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
    <property name="text">
     <string>x5&amp;0</string>
    </property>
@@ -1168,6 +1255,9 @@
    </property>
   </action>
   <action name="actionShow_Ship_Info">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
    <property name="text">
     <string>Show Ship I&amp;nfo</string>
    </property>
@@ -1177,7 +1267,7 @@
   </action>
   <action name="actionEmpty">
    <property name="text">
-    <string>Empty</string>
+    <string>&amp;Empty</string>
    </property>
   </action>
  </widget>

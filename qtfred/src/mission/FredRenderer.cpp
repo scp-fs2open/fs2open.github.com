@@ -884,7 +884,7 @@ void FredRenderer::display_ship_info(int cur_object_index) {
 			Fred_outline = 0;
 		}
 
-		if ((objp->type == OBJ_WAYPOINT) && !Show_waypoints) {
+		if ((objp->type == OBJ_WAYPOINT) && !view.Show_waypoints) {
 			render = 0;
 		}
 
@@ -1019,6 +1019,10 @@ int get_subsys_bounding_rect(object* ship_obj, ship_subsys* subsys, int* x1, int
 }
 
 void FredRenderer::render_compass() {
+	if (!view.Show_compass) {
+		return;
+	}
+
 	vec3d v, eye = vmd_zero_vector;
 
 	gr_set_clip(gr_screen.max_w - 100, 0, 100, 100);
@@ -1234,7 +1238,7 @@ void FredRenderer::render_one_model_htl(object* objp,
 		return;
 	}
 
-	if ((objp->type == OBJ_WAYPOINT) && !Show_waypoints) {
+	if ((objp->type == OBJ_WAYPOINT) && !view.Show_waypoints) {
 		return;
 	}
 
@@ -1608,7 +1612,7 @@ int FredRenderer::object_check_collision(object* objp,
 		return 0;
 	}
 
-	if ((objp->type == OBJ_WAYPOINT) && !Show_waypoints) {
+	if ((objp->type == OBJ_WAYPOINT) && !view.Show_waypoints) {
 		return 0;
 	}
 
