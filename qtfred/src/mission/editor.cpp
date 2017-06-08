@@ -172,7 +172,7 @@ FredRenderer* Editor::createRenderer(os::Viewport* renderView) {
 void Editor::update() {
 	// Do updates for all renderers
 	for (auto& renderer : _renderers) {
-		renderer->game_do_frame(-1, 0, 0, -1);
+		renderer->game_do_frame(-1, 0, 0);
 	}
 }
 

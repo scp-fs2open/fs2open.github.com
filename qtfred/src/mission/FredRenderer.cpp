@@ -586,8 +586,7 @@ void FredRenderer::process_controls(vec3d* pos, matrix* orient, float frametime,
 
 void FredRenderer::game_do_frame(const int view_obj,
 								 const int viewpoint,
-								 const int cur_object_index,
-								 const int Cursor_over) {
+								 const int cur_object_index) {
 	int key, cmode;
 	vec3d viewer_position, control_pos;
 	object* objp;
@@ -1420,7 +1419,6 @@ void FredRenderer::render_frame(int cur_object_index,
 								subsys_to_render& Render_subsys,
 								bool box_marking,
 								const Marking_box& marking_box,
-								int Cursor_over,
 								bool Bg_bitmap_dialog) {
 
 	// Make sure our OpenGL context is used for rendering
@@ -1697,7 +1695,6 @@ g3_set_view_matrix(&eye_pos, &eye_orient, 0.5f);*/
 
 	//	g3_end_frame();
 	if (!v.xyz.x && !v.xyz.y && !v.xyz.z) { // zero vector {
-		mprintf(("select_object: zero vector"));
 		return -1;
 	}
 
@@ -1712,7 +1709,6 @@ g3_set_view_matrix(&eye_pos, &eye_orient, 0.5f);*/
 			dist = hitpos.xyz.x * hitpos.xyz.x + hitpos.xyz.y * hitpos.xyz.y + hitpos.xyz.z * hitpos.xyz.z;
 			if (dist < best_dist) {
 				best = OBJ_INDEX(*ptr);
-				mprintf(("select_object: best so far %d", best));
 				best_dist = dist;
 			}
 		}

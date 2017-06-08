@@ -75,6 +75,7 @@ add_file_folder(resources_images "Resources/Images"
     resources/images/consty.png
     resources/images/constyz.png
     resources/images/constz.png
+    resources/images/cursor_rotate.png
     resources/images/data00.png
     resources/images/data05.png
     resources/images/data10.png

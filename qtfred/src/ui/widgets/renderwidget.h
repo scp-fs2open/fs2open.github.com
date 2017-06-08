@@ -35,6 +35,9 @@ class RenderWindow: public QWindow {
 
 	void keyPressEvent(QKeyEvent*) override;
 	void keyReleaseEvent(QKeyEvent*) override;
+	void mousePressEvent(QMouseEvent* event) override;
+	void mouseDoubleClickEvent(QMouseEvent* event) override;
+	void mouseMoveEvent(QMouseEvent* event) override;
 	void mouseReleaseEvent(QMouseEvent*) override;
 	void resizeEvent(QResizeEvent* event) override;
 
@@ -42,6 +45,9 @@ class RenderWindow: public QWindow {
 
 	bool eventFilter(QObject* watched, QEvent* event) override;
  private:
+	std::unique_ptr<QCursor> _standardCursor;
+	std::unique_ptr<QCursor> _moveCursor;
+	std::unique_ptr<QCursor> _rotateCursor;
 
 	std::unordered_map<int, int> qt2fsKeys;
 	Editor* fred = nullptr;

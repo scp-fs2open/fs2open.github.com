@@ -106,7 +106,7 @@ class FredRenderer : public QObject {
 	void move_mouse(int btn, int mdx, int mdy);
 	void process_system_keys(int key);
 	void process_controls(vec3d* pos, matrix* orient, float frametime, int key, int mode = 0);
-	void game_do_frame(const int view_obj, const int viewpoint, const int cur_object_index, const int Cursor_over);
+	void game_do_frame(const int view_obj, const int viewpoint, const int cur_object_index);
 	void render_grid(grid* gridp);
 	void hilight_bitmap();
 	void display_distances();
@@ -129,7 +129,6 @@ class FredRenderer : public QObject {
 					  subsys_to_render& Render_subsys,
 					  bool box_marking,
 					  const Marking_box& marking_box,
-					  int Cursor_over,
 					  bool Bg_bitmap_dialog);
 	int object_check_collision(object* objp,
 							   vec3d* p0,
@@ -146,13 +145,15 @@ class FredRenderer : public QObject {
 
 	ViewSettings view;
 
+	int Cursor_over = -1;
+
 	matrix view_orient = vmd_identity_matrix;
 	vec3d view_pos;
 	physics_info view_physics;
 	grid* The_grid;
 
-	vec3d Constraint = {{{ 1.0f, 0.0f, 1.0f }}};
-	vec3d Anticonstraint = {{{ 0.0f, 1.0f, 0.0f }}};
+	vec3d Constraint = {{ 1.0f, 0.0f, 1.0f }};
+	vec3d Anticonstraint = {{ 0.0f, 1.0f, 0.0f }};
 	bool Single_axis_constraint = false;
 
 signals:

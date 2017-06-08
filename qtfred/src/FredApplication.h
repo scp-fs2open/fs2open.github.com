@@ -24,7 +24,7 @@ class FredApplication: public QObject {
 
 	void onIdle();
 
- private slots:
+private slots:
 	void shutdown();
 
 	void idleFunction();

@@ -41,6 +41,14 @@ RenderWindow::RenderWindow(QWidget* parent) : QWindow(parent->windowHandle()) {
 	setSurfaceType(QWindow::OpenGLSurface);
 
 	installEventFilter(this);
+
+	_standardCursor.reset(new QCursor(Qt::ArrowCursor));
+	_moveCursor.reset(new QCursor(Qt::SizeAllCursor));
+
+	QPixmap rotatePixmap(":/images/cursor_rotate.png");
+	_rotateCursor.reset(new QCursor(rotatePixmap, 15, 16)); // These values are from the original cursor file
+
+	setCursor(*_standardCursor);
 }
 
 void RenderWindow::initializeGL(const QSurfaceFormat& surfaceFmt) {
@@ -65,7 +73,6 @@ void RenderWindow::paintGL() {
 							Render_subsys,
 							false,
 							Marking_box(),
-							-1,
 							false);
 }
 
@@ -174,6 +181,23 @@ bool RenderWindow::eventFilter(QObject* watched, QEvent* event) {
 	default:
 		// Don't filter this
 		return false;
+	}
+}
+void RenderWindow::mousePressEvent(QMouseEvent* event) {
+	QWindow::mousePressEvent(event);
+}
+void RenderWindow::mouseDoubleClickEvent(QMouseEvent* event) {
+	QWindow::mouseDoubleClickEvent(event);
+}
+void RenderWindow::mouseMoveEvent(QMouseEvent* event) {
+	// No matter in which mode we are, we always check which object is under the cursor
+	auto obj_num = _renderer->select_object(event->x(), event->y(), false);
+	_renderer->Cursor_over = obj_num;
+
+	if (obj_num >= 0) {
+		setCursor(*_moveCursor);
+	} else {
+		setCursor(*_standardCursor);
 	}
 }
 

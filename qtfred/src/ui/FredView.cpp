@@ -42,6 +42,8 @@ FredView::FredView(QWidget* parent) : QMainWindow(parent), ui(new Ui::FredView()
 	ui->actionUndo->setShortcuts(QKeySequence::Undo);
 	ui->actionDelete->setShortcuts(QKeySequence::Delete);
 
+	setFocusPolicy(Qt::WheelFocus);
+
 	// A combo box cannot be added by the designer so we do that manually here
 	_shipClassBox.reset(new ColorComboBox());
 
@@ -56,6 +58,8 @@ FredView::FredView(QWidget* parent) : QMainWindow(parent), ui(new Ui::FredView()
 
 	initializeStatusBar();
 	initializePopupMenus();
+
+	installEventFilter(this);
 }
 
 FredView::~FredView() {
@@ -143,10 +147,9 @@ RenderWindow* FredView::getRenderWindow() {
 void FredView::newMission() {
 	fred->createNewMission();
 }
-bool FredView::event(QEvent* event) {
+bool FredView::eventFilter(QObject* watched, QEvent* event) {
 	if (event->type() == QEvent::ShortcutOverride) {
 		auto keyEvent = static_cast<QKeyEvent*>(event);
-
 		// Only use shortcuts on the keyboard since the keypad is needed for the camera controls
 		// This currently only affects the shortcuts using 1-8
 		if (keyEvent->modifiers().testFlag(Qt::KeypadModifier)) {
@@ -154,7 +157,7 @@ bool FredView::event(QEvent* event) {
 			return true;
 		}
 	}
-	return QMainWindow::event(event);
+	return false;
 }
 
 void FredView::addToRecentFiles(const QString& path) {

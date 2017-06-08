@@ -1,5 +1,6 @@
 
 #include <QtCore/QAbstractEventDispatcher>
+#include <QDebug>
 
 #include <mission/editor.h>
 
@@ -45,6 +46,7 @@ void FredApplication::runAfterInit(std::function<void()>&& action) {
 		connect(this, &FredApplication::initializeComplete, action);
 	}
 }
+
 void FredApplication::shutdown() {
 	// Clean up resources after we are done
 	fso::fred::shutdown();

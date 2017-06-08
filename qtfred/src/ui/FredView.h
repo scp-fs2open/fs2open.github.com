@@ -61,7 +61,7 @@ protected:
 
 	void keyReleaseEvent(QKeyEvent* event) override;
 
-	bool event(QEvent* event) override;
+	bool eventFilter(QObject* watched, QEvent* event) override;
 
 private:
 	void on_mission_loaded(const std::string& filepath);
