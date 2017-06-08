@@ -151,7 +151,7 @@ bool FredView::eventFilter(QObject* watched, QEvent* event) {
 			return true;
 		}
 	}
-	return false;
+	return QMainWindow::eventFilter(watched, event);
 }
 
 void FredView::addToRecentFiles(const QString& path) {
