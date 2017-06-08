@@ -26,8 +26,6 @@ class RenderWindow: public QWindow {
 
 	void startRendering();
 
-	void updateGL();
-
  protected:
 	void paintGL();
 

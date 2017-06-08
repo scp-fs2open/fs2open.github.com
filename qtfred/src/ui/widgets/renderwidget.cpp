@@ -37,6 +37,9 @@ void RenderWindow::startRendering() {
 }
 
 void RenderWindow::paintGL() {
+	if (!_renderer || !fredApp->isInitializeComplete()) {
+		return;
+	}
 	subsys_to_render Render_subsys;
 
 	_renderer->render_frame(-1,
@@ -49,7 +52,7 @@ void RenderWindow::paintGL() {
 bool RenderWindow::event(QEvent* evt) {
 	switch (evt->type()) {
 	case QEvent::UpdateRequest:
-		updateGL();
+		paintGL();
 		return QWindow::event(evt);
 	default:
 		return QWindow::event(evt);
@@ -59,12 +62,6 @@ void RenderWindow::resizeEvent(QResizeEvent* event) {
 	if (_renderer) {
 		// Only send resize event if we are actually rendering
 		_renderer->resize(event->size().width(), event->size().height());
-	}
-}
-
-void RenderWindow::updateGL() {
-	if (_renderer) {
-		paintGL();
 	}
 }
 RenderWindow::~RenderWindow() {
@@ -93,7 +90,8 @@ void RenderWindow::setEditor(Editor* editor, FredRenderer* renderer) {
 }
 
 RenderWidget::RenderWidget(QWidget* parent) : QWidget(parent) {
-	setFocusPolicy(Qt::StrongFocus);
+	setFocusPolicy(Qt::NoFocus);
+	setMouseTracking(true);
 
 	_window = new RenderWindow(this);
 	_window->installEventFilter(this);
@@ -130,8 +128,6 @@ RenderWidget::RenderWidget(QWidget* parent) : QWidget(parent) {
 	_window->setCursor(*_standardCursor);
 
 	fredApp->runAfterInit([this]() { _window->startRendering(); });
-
-	setMouseTracking(true);
 }
 QSurface* RenderWidget::getRenderSurface() const {
 	return _window;
@@ -161,7 +157,6 @@ void RenderWidget::keyPressEvent(QKeyEvent* key) {
 		return;
 	}
 
-	key->accept();
 	key_mark(qt2fsKeys.at(code), 1, 0);
 }
 
@@ -177,7 +172,6 @@ void RenderWidget::keyReleaseEvent(QKeyEvent* key) {
 		return;
 	}
 
-	key->accept();
 	key_mark(qt2fsKeys.at(code), 0, 0);
 }
 

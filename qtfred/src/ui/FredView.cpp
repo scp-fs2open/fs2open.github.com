@@ -34,6 +34,9 @@ namespace fred {
 FredView::FredView(QWidget* parent) : QMainWindow(parent), ui(new Ui::FredView()) {
 	ui->setupUi(this);
 
+	// Forward all focus related events to the render widget since we don't do much ourself
+	setFocusProxy(ui->centralWidget);
+
 	// This is not possible to do with the designer
 	ui->actionNew->setShortcuts(QKeySequence::New);
 	ui->actionOpen->setShortcuts(QKeySequence::Open);
@@ -129,15 +132,6 @@ void FredView::on_mission_loaded(const std::string& filepath) {
 	if (!filepath.empty()) {
 		addToRecentFiles(QString::fromStdString(filepath));
 	}
-}
-
-void FredView::keyPressEvent(QKeyEvent* event) {
-	// Forward all uncaught keyboard events to the render window so we don't have to focus it explicitly.
-	qGuiApp->sendEvent(ui->centralWidget, event);
-}
-
-void FredView::keyReleaseEvent(QKeyEvent* event) {
-	qGuiApp->sendEvent(ui->centralWidget, event);
 }
 
 QSurface* FredView::getRenderSurface() {
@@ -385,7 +379,7 @@ void FredView::windowActivated() {
 }
 void FredView::windowDeactivated() {
 	key_lost_focus();
-	
+
 	_renderer->Cursor_over = -1;
 }
 
