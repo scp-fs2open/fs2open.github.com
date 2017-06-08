@@ -153,6 +153,8 @@ class FredRenderer : public QObject {
 	void level_controlled();
 	void verticalize_controlled();
 
+	void resetViewPhysics();
+
 	ViewSettings view;
 
 	int Cursor_over = -1;
@@ -162,6 +164,9 @@ class FredRenderer : public QObject {
 	vec3d view_pos;
 	physics_info view_physics;
 	grid* The_grid;
+
+	int physics_speed = 1;
+	int physics_rot = 25;
 
 	vec3d Constraint = {{ 1.0f, 0.0f, 1.0f }};
 	vec3d Anticonstraint = {{ 0.0f, 1.0f, 0.0f }};

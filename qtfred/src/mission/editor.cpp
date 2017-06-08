@@ -241,25 +241,6 @@ void Editor::unmarkObject(int obj) {
 	}
 }
 
-void Editor::resetPhysics() {
-	int physics_speed = 100;
-	int physics_rot = 20;
-
-	physics_info view_physics;
-	physics_init(&view_physics);
-	view_physics.max_vel.xyz.x *= physics_speed / 3.0f;
-	view_physics.max_vel.xyz.y *= physics_speed / 3.0f;
-	view_physics.max_vel.xyz.z *= physics_speed / 3.0f;
-	view_physics.max_rear_vel *= physics_speed / 3.0f;
-	view_physics.max_rotvel.xyz.x *= physics_rot / 30.0f;
-	view_physics.max_rotvel.xyz.y *= physics_rot / 30.0f;
-	view_physics.max_rotvel.xyz.z *= physics_rot / 30.0f;
-	view_physics.flags |= PF_ACCELERATES | PF_SLIDE_ENABLED;
-
-	for (auto& renderer : _renderers) {
-		renderer->view_physics = view_physics;
-	}
-}
 void Editor::clearMission() {
 	// clean up everything we need to before we reset back to defaults.
 #if 0
@@ -399,7 +380,9 @@ void Editor::clearMission() {
 
 	strcpy(Cargo_names[0], "Nothing");
 	Num_cargo = 1;
-	resetPhysics();
+	for (auto& renderer : _renderers) {
+		renderer->resetViewPhysics();
+	}
 
 	// reset background bitmaps and suns
 	stars_pre_level_init();

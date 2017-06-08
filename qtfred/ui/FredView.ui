@@ -145,11 +145,11 @@
      <property name="title">
       <string>&amp;Rotation</string>
      </property>
-     <addaction name="actionx1_2"/>
-     <addaction name="actionx5_2"/>
-     <addaction name="actionx12"/>
-     <addaction name="actionx25"/>
-     <addaction name="actionx50_2"/>
+     <addaction name="actionRotx1"/>
+     <addaction name="actionRotx5"/>
+     <addaction name="actionRotx12"/>
+     <addaction name="actionRotx25"/>
+     <addaction name="actionRotx50"/>
     </widget>
     <addaction name="menuMovement"/>
     <addaction name="menuRotation"/>
@@ -954,7 +954,7 @@
     <string>8</string>
    </property>
   </action>
-  <action name="actionx1_2">
+  <action name="actionRotx1">
    <property name="checkable">
     <bool>true</bool>
    </property>
@@ -965,7 +965,7 @@
     <string>Shift+1</string>
    </property>
   </action>
-  <action name="actionx5_2">
+  <action name="actionRotx5">
    <property name="checkable">
     <bool>true</bool>
    </property>
@@ -976,7 +976,7 @@
     <string>Shift+2</string>
    </property>
   </action>
-  <action name="actionx12">
+  <action name="actionRotx12">
    <property name="checkable">
     <bool>true</bool>
    </property>
@@ -987,7 +987,7 @@
     <string>Shift+3</string>
    </property>
   </action>
-  <action name="actionx25">
+  <action name="actionRotx25">
    <property name="checkable">
     <bool>true</bool>
    </property>
@@ -998,7 +998,7 @@
     <string>Shift+4</string>
    </property>
   </action>
-  <action name="actionx50_2">
+  <action name="actionRotx50">
    <property name="checkable">
     <bool>true</bool>
    </property>

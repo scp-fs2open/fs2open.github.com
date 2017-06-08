@@ -138,8 +138,6 @@ signals:
 
 	void initialSetup();
 
-	void resetPhysics();
-
 	void setupCurrentObjectIndices(int obj);
 
 	SCP_vector<std::unique_ptr<FredRenderer>> _renderers;

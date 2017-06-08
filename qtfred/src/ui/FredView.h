@@ -59,6 +59,21 @@ private slots:
 	void on_actionHide_Marked_Objects_triggered(bool enabled);
 	void on_actionShow_All_Hidden_Objects_triggered(bool enabled);
 
+	void on_actionx1_triggered(bool enabled);
+	void on_actionx2_triggered(bool enabled);
+	void on_actionx3_triggered(bool enabled);
+	void on_actionx5_triggered(bool enabled);
+	void on_actionx8_triggered(bool enabled);
+	void on_actionx10_triggered(bool enabled);
+	void on_actionx50_triggered(bool enabled);
+	void on_actionx100_triggered(bool enabled);
+
+	void on_actionRotx1_triggered(bool enabled);
+	void on_actionRotx5_triggered(bool enabled);
+	void on_actionRotx12_triggered(bool enabled);
+	void on_actionRotx25_triggered(bool enabled);
+	void on_actionRotx50_triggered(bool enabled);
+
 signals:
 	/**
 	 * @brief Special version of FredApplication::onIdle which is limited to the lifetime of this object
@@ -102,6 +117,7 @@ protected:
 
 	void onUpdateConstrains();
 	void onUpdateEditingMode();
+	void onUpdateViewSpeeds();
 
 	void windowActivated();
 	void windowDeactivated();

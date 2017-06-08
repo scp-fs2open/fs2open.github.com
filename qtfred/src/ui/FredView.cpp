@@ -86,6 +86,7 @@ void FredView::setEditor(Editor* editor, FredRenderer* renderer) {
 	syncViewOptions();
 	connect(this, &FredView::viewIdle, this, &FredView::onUpdateConstrains);
 	connect(this, &FredView::viewIdle, this, &FredView::onUpdateEditingMode);
+	connect(this, &FredView::viewIdle, this, &FredView::onUpdateViewSpeeds);
 }
 
 void FredView::loadMissionFile(const QString& pathName) {
@@ -387,6 +388,87 @@ void FredView::on_actionHide_Marked_Objects_triggered(bool enabled) {
 }
 void FredView::on_actionShow_All_Hidden_Objects_triggered(bool enabled) {
 	fred->showHiddenObjects();
+}
+void FredView::onUpdateViewSpeeds() {
+	ui->actionx1->setChecked(_renderer->physics_speed == 1);
+	ui->actionx2->setChecked(_renderer->physics_speed == 2);
+	ui->actionx3->setChecked(_renderer->physics_speed == 3);
+	ui->actionx5->setChecked(_renderer->physics_speed == 5);
+	ui->actionx8->setChecked(_renderer->physics_speed == 8);
+	ui->actionx10->setChecked(_renderer->physics_speed == 10);
+	ui->actionx50->setChecked(_renderer->physics_speed == 50);
+	ui->actionx100->setChecked(_renderer->physics_speed == 100);
+
+	ui->actionRotx1->setChecked(_renderer->physics_rot == 2);
+	ui->actionRotx5->setChecked(_renderer->physics_rot == 10);
+	ui->actionRotx12->setChecked(_renderer->physics_rot == 25);
+	ui->actionRotx25->setChecked(_renderer->physics_rot == 50);
+	ui->actionRotx50->setChecked(_renderer->physics_rot == 100);
+}
+void FredView::on_actionx1_triggered(bool enabled) {
+	if (enabled) {
+		_renderer->physics_speed = 1;
+	}
+}
+void FredView::on_actionx2_triggered(bool enabled) {
+	if (enabled) {
+		_renderer->physics_speed = 2;
+	}
+}
+void FredView::on_actionx3_triggered(bool enabled) {
+	if (enabled) {
+		_renderer->physics_speed = 3;
+	}
+}
+void FredView::on_actionx5_triggered(bool enabled) {
+	if (enabled) {
+		_renderer->physics_speed = 5;
+	}
+}
+void FredView::on_actionx8_triggered(bool enabled) {
+	if (enabled) {
+		_renderer->physics_speed = 8;
+	}
+}
+void FredView::on_actionx10_triggered(bool enabled) {
+	if (enabled) {
+		_renderer->physics_speed = 10;
+	}
+}
+void FredView::on_actionx50_triggered(bool enabled) {
+	if (enabled) {
+		_renderer->physics_speed = 50;
+	}
+}
+void FredView::on_actionx100_triggered(bool enabled) {
+	if (enabled) {
+		_renderer->physics_speed = 100;
+	}
+}
+void FredView::on_actionRotx1_triggered(bool enabled) {
+	if (enabled) {
+		_renderer->physics_rot = 2;
+	}
+}
+void FredView::on_actionRotx5_triggered(bool enabled) {
+	if (enabled) {
+		_renderer->physics_rot = 10;
+	}
+}
+void FredView::on_actionRotx12_triggered(bool enabled) {
+	if (enabled) {
+		_renderer->physics_rot = 25;
+	}
+}
+void FredView::on_actionRotx25_triggered(bool enabled) {
+	if (enabled) {
+		_renderer->physics_rot = 50;
+	}
+}
+void FredView::on_actionRotx50_triggered(bool enabled) {
+	if (enabled) {
+		_renderer->physics_rot = 100;
+	}
 }
 
 } // namespace fred

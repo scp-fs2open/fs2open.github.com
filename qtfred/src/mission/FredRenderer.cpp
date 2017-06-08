@@ -1880,5 +1880,16 @@ void FredRenderer::resize(int width, int height) {
 	// We need to rerender the scene now
 	scheduleUpdate();
 }
+void FredRenderer::resetViewPhysics() {
+	physics_init(&view_physics);
+	view_physics.max_vel.xyz.x *= physics_speed / 3.0f;
+	view_physics.max_vel.xyz.y *= physics_speed / 3.0f;
+	view_physics.max_vel.xyz.z *= physics_speed / 3.0f;
+	view_physics.max_rear_vel *= physics_speed / 3.0f;
+	view_physics.max_rotvel.xyz.x *= physics_rot / 30.0f;
+	view_physics.max_rotvel.xyz.y *= physics_rot / 30.0f;
+	view_physics.max_rotvel.xyz.z *= physics_rot / 30.0f;
+	view_physics.flags |= PF_ACCELERATES | PF_SLIDE_ENABLED;
+}
 }
 }
