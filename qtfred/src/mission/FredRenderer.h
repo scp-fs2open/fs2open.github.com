@@ -168,8 +168,8 @@ class FredRenderer : public QObject {
 	int physics_speed = 1;
 	int physics_rot = 25;
 
-	vec3d Constraint = {{ 1.0f, 0.0f, 1.0f }};
-	vec3d Anticonstraint = {{ 0.0f, 1.0f, 0.0f }};
+	vec3d Constraint;
+	vec3d Anticonstraint;
 	bool Single_axis_constraint = false;
 
 signals:

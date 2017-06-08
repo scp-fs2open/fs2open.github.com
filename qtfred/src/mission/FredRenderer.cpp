@@ -433,6 +433,8 @@ ViewSettings::ViewSettings() {
 }
 
 FredRenderer::FredRenderer(Editor* editor, os::Viewport* targetView) : _editor(editor), _targetView(targetView) {
+	vm_vec_make(&Constraint, 1.0f, 0.0f, 1.0f);
+	vm_vec_make(&Anticonstraint, 0.0f, 1.0f, 0.0f);
 	resetView();
 }
 
