@@ -408,66 +408,79 @@ void FredView::onUpdateViewSpeeds() {
 void FredView::on_actionx1_triggered(bool enabled) {
 	if (enabled) {
 		_renderer->physics_speed = 1;
+		_renderer->resetViewPhysics();
 	}
 }
 void FredView::on_actionx2_triggered(bool enabled) {
 	if (enabled) {
 		_renderer->physics_speed = 2;
+		_renderer->resetViewPhysics();
 	}
 }
 void FredView::on_actionx3_triggered(bool enabled) {
 	if (enabled) {
 		_renderer->physics_speed = 3;
+		_renderer->resetViewPhysics();
 	}
 }
 void FredView::on_actionx5_triggered(bool enabled) {
 	if (enabled) {
 		_renderer->physics_speed = 5;
+		_renderer->resetViewPhysics();
 	}
 }
 void FredView::on_actionx8_triggered(bool enabled) {
 	if (enabled) {
 		_renderer->physics_speed = 8;
+		_renderer->resetViewPhysics();
 	}
 }
 void FredView::on_actionx10_triggered(bool enabled) {
 	if (enabled) {
 		_renderer->physics_speed = 10;
+		_renderer->resetViewPhysics();
 	}
 }
 void FredView::on_actionx50_triggered(bool enabled) {
 	if (enabled) {
 		_renderer->physics_speed = 50;
+		_renderer->resetViewPhysics();
 	}
 }
 void FredView::on_actionx100_triggered(bool enabled) {
 	if (enabled) {
 		_renderer->physics_speed = 100;
+		_renderer->resetViewPhysics();
 	}
 }
 void FredView::on_actionRotx1_triggered(bool enabled) {
 	if (enabled) {
 		_renderer->physics_rot = 2;
+		_renderer->resetViewPhysics();
 	}
 }
 void FredView::on_actionRotx5_triggered(bool enabled) {
 	if (enabled) {
 		_renderer->physics_rot = 10;
+		_renderer->resetViewPhysics();
 	}
 }
 void FredView::on_actionRotx12_triggered(bool enabled) {
 	if (enabled) {
 		_renderer->physics_rot = 25;
+		_renderer->resetViewPhysics();
 	}
 }
 void FredView::on_actionRotx25_triggered(bool enabled) {
 	if (enabled) {
 		_renderer->physics_rot = 50;
+		_renderer->resetViewPhysics();
 	}
 }
 void FredView::on_actionRotx50_triggered(bool enabled) {
 	if (enabled) {
 		_renderer->physics_rot = 100;
+		_renderer->resetViewPhysics();
 	}
 }
 
