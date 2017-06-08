@@ -842,7 +842,7 @@ void FredRenderer::display_distances() {
 	gr_set_color(255, 0, 0);
 	for ( auto objp = GET_FIRST(&obj_used_list); objp !=END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) ) {
 		if (objp->flags[Object::Object_Flags::Marked]) {
-			for ( auto o2 = objp; objp !=END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) ) {
+			for ( auto o2 = objp; o2 !=END_OF_LIST(&obj_used_list); o2 = GET_NEXT(o2) ) {
 				if (o2->flags[Object::Object_Flags::Marked]) {
 					rpd_line(&objp->pos, &o2->pos);
 					vm_vec_avg(&pos, &objp->pos, &o2->pos);
