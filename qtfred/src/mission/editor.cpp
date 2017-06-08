@@ -39,14 +39,14 @@
 #include "starfield/starfield.h" // stars_init, stars_pre_level_init, stars_post_level_init
 #include "osapi/osapi.h" // os_get_window, os_set_window.
 #include "graphics/font.h"
+#include "hud/hudsquadmsg.h"
+#include "globalincs/linklist.h"
 
 #include "ui/QtGraphicsOperations.h"
 #include "ai/aigoals.h"
 
 #include "object.h"
-#include "iterators.h"
 #include <FredApplication.h>
-#include <hud/hudsquadmsg.h>
 
 extern int Xstr_inited;
 

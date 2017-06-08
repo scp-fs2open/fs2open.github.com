@@ -20,13 +20,10 @@
 #include <iff_defs/iff_defs.h>
 #include <math/fvi.h>
 
-#include "mission/iterators.h"
 #include "mission/object.h"
 
 using std::begin;
 using std::end;
-using fso::fred::begin;
-using fso::fred::end;
 
 namespace {
 const fix MAX_FRAMETIME = (F1_0 / 4); // Frametime gets saturated at this.
@@ -837,23 +834,22 @@ g3_draw_line(&p[3], &p[0]);
 }
 
 void FredRenderer::display_distances() {
-	using object_iterator = fso::fred::iterator<object>;
 	char buf[20];
 	vec3d pos;
 	vertex v;
 
 
 	gr_set_color(255, 0, 0);
-	for (object_iterator objp(begin(obj_used_list)); objp != end(obj_used_list); ++objp) {
-		if ((*objp)->flags[Object::Object_Flags::Marked]) {
-			for (object_iterator o2(objp); o2 != end(obj_used_list); ++o2) {
-				if ((*o2)->flags[Object::Object_Flags::Marked]) {
-					rpd_line(&(*objp)->pos, &(*o2)->pos);
-					vm_vec_avg(&pos, &(*objp)->pos, &(*o2)->pos);
+	for ( auto objp = GET_FIRST(&obj_used_list); objp !=END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) ) {
+		if (objp->flags[Object::Object_Flags::Marked]) {
+			for ( auto o2 = objp; objp !=END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) ) {
+				if (o2->flags[Object::Object_Flags::Marked]) {
+					rpd_line(&objp->pos, &o2->pos);
+					vm_vec_avg(&pos, &objp->pos, &o2->pos);
 					g3_rotate_vertex(&v, &pos);
 					if (!(v.codes & CC_BEHIND)) {
 						if (!(g3_project_vertex(&v) & PF_OVERFLOW)) {
-							sprintf(buf, "%.1f", vm_vec_dist(&(*objp)->pos, &(*o2)->pos));
+							sprintf(buf, "%.1f", vm_vec_dist(&objp->pos, &o2->pos));
 							gr_set_color_fast(&colour_white);
 							gr_string((int) v.screen.xyw.x, (int) v.screen.xyw.y, buf);
 						}
@@ -1665,7 +1661,6 @@ int FredRenderer::object_check_collision(object* objp,
 int FredRenderer::select_object(int cx,
 								int cy,
 								bool Selection_lock) {
-	using object_iterator = fso::fred::iterator<object>;
 	int best = -1;
 	double dist, best_dist = 9e99;
 	vec3d p0, p1, v, hitpos;
@@ -1701,14 +1696,14 @@ g3_set_view_matrix(&eye_pos, &eye_orient, 0.5f);*/
 	p0 = view_pos;
 	vm_vec_scale_add(&p1, &p0, &v, 100.0f);
 
-	for (object_iterator ptr(begin(obj_used_list)); ptr != end(obj_used_list); ++ptr) {
-		if (object_check_collision(*ptr, &p0, &p1, &hitpos)) {
-			hitpos.xyz.x = (*ptr)->pos.xyz.x - view_pos.xyz.x;
-			hitpos.xyz.y = (*ptr)->pos.xyz.y - view_pos.xyz.y;
-			hitpos.xyz.z = (*ptr)->pos.xyz.z - view_pos.xyz.z;
+	for ( auto objp = GET_FIRST(&obj_used_list); objp !=END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) ) {
+		if (object_check_collision(objp, &p0, &p1, &hitpos)) {
+			hitpos.xyz.x = objp->pos.xyz.x - view_pos.xyz.x;
+			hitpos.xyz.y = objp->pos.xyz.y - view_pos.xyz.y;
+			hitpos.xyz.z = objp->pos.xyz.z - view_pos.xyz.z;
 			dist = hitpos.xyz.x * hitpos.xyz.x + hitpos.xyz.y * hitpos.xyz.y + hitpos.xyz.z * hitpos.xyz.z;
 			if (dist < best_dist) {
-				best = OBJ_INDEX(*ptr);
+				best = OBJ_INDEX(objp);
 				best_dist = dist;
 			}
 		}
@@ -1721,15 +1716,15 @@ g3_set_view_matrix(&eye_pos, &eye_orient, 0.5f);*/
 		return best;
 	}
 
-	for (object_iterator ptr(begin(obj_used_list)); ptr != end(obj_used_list); ++ptr) {
-		g3_rotate_vertex(&vt, &(*ptr)->pos);
+	for ( auto objp = GET_FIRST(&obj_used_list); objp !=END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) ) {
+		g3_rotate_vertex(&vt, &objp->pos);
 		if (!(vt.codes & CC_BEHIND)) {
 			if (!(g3_project_vertex(&vt) & PF_OVERFLOW)) {
 				hitpos.xyz.x = vt.screen.xyw.x - cx;
 				hitpos.xyz.y = vt.screen.xyw.y - cy;
 				dist = hitpos.xyz.x * hitpos.xyz.x + hitpos.xyz.y * hitpos.xyz.y;
 				if ((dist < 8) && (dist < best_dist)) {
-					best = OBJ_INDEX(*ptr);
+					best = OBJ_INDEX(objp);
 					best_dist = dist;
 				}
 			}
