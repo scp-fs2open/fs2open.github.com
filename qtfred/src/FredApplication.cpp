@@ -1,6 +1,7 @@
 
 #include <QtCore/QAbstractEventDispatcher>
 #include <QDebug>
+#include <QTimer>
 
 #include <mission/editor.h>
 
@@ -25,9 +26,12 @@ FredApplication::FredApplication() {
 	// Put our shutdown code into a slot connected to the quit signal. That's the recommended way of doing cleanup
 	connect(qGuiApp, &QCoreApplication::aboutToQuit, this, &FredApplication::shutdown);
 
+	_elapsedTimer.start();
+
+	auto idleTimer = new QTimer(this);
 	// This will call our function whenever the processing loop is idle, allowing us to do regular operations
-	connect(QAbstractEventDispatcher::instance(), &QAbstractEventDispatcher::aboutToBlock, this,
-			&FredApplication::idleFunction);
+	connect(idleTimer, &QTimer::timeout, this, &FredApplication::idleFunction);
+	idleTimer->start(0);
 
 	fredApp = this;
 }
@@ -57,8 +61,13 @@ void FredApplication::shutdown() {
 }
 
 void FredApplication::idleFunction() {
-	// emit the public signal
-	onIdle();
+	// We limit the number of idle events per second to reduce the CPU usage
+	if (_elapsedTimer.elapsed() > 5) {
+		// emit the public signal
+		onIdle();
+
+		_elapsedTimer.restart();
+	}
 }
 }
 }

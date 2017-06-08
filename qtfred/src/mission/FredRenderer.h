@@ -112,7 +112,7 @@ class FredRenderer : public QObject {
 
 	void resetView();
 
-	void inc_mission_time();
+	bool inc_mission_time();
 	void move_mouse(int btn, int mdx, int mdy);
 	void process_system_keys(int key);
 	void process_controls(vec3d* pos, matrix* orient, float frametime, int key, int mode = 0);

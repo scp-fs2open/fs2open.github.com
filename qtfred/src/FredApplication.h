@@ -3,6 +3,7 @@
 #include <QGuiApplication>
 
 #include <functional>
+#include <QtCore/QElapsedTimer>
 
 namespace fso {
 namespace fred {
@@ -11,6 +12,8 @@ class FredApplication: public QObject {
  Q_OBJECT
  private:
 	bool _initializeEmitted = false;
+
+	QElapsedTimer _elapsedTimer;
 
  public:
 	FredApplication();

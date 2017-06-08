@@ -463,30 +463,34 @@ void FredRenderer::resetView() {
 	init_fred_colors();
 }
 
-void FredRenderer::inc_mission_time() {
-	fix thistime;
-
-	thistime = timer_get_fixed_seconds();
+/**
+ * @brief Increments mission time
+ *
+ * @details This only increments the mission time if the time difference is greater than the minimum frametime to avoid
+ * excessive computation
+ *
+ * @return @c true if the mission time was incremented, @c false otherwise.
+ */
+bool FredRenderer::inc_mission_time() {
+	fix thistime = timer_get_fixed_seconds();
+	fix time_diff; // This holds the computed time difference since the last time this function was called
 	if (!lasttime) {
-		Frametime = F1_0 / 30;
+		time_diff = F1_0 / 30;
 	} else {
-		Frametime = thistime - lasttime;
+		time_diff = thistime - lasttime;
 	}
 
-	if (Frametime > MAX_FRAMETIME) {
-		Frametime = MAX_FRAMETIME;
-	} else if (Frametime < MIN_FRAMETIME) {
-		if (!Cmdline_NoFPSCap) {
-			thistime = MIN_FRAMETIME - Frametime;
-			os_sleep(f2i(thistime) * 1000);
-			thistime = timer_get_fixed_seconds();
-		}
-
-		Frametime = MIN_FRAMETIME;
+	if (time_diff > MAX_FRAMETIME) {
+		time_diff = MAX_FRAMETIME;
+	} else if (time_diff < MIN_FRAMETIME) {
+		return false;
 	}
 
+	Frametime = time_diff;
 	Missiontime += Frametime;
 	lasttime = thistime;
+
+	return true;
 }
 
 void FredRenderer::move_mouse(int btn, int mdx, int mdy) {
@@ -589,7 +593,10 @@ void FredRenderer::game_do_frame(const int cur_object_index) {
 	object* objp;
 	matrix control_orient;
 
-	inc_mission_time();
+	if (!inc_mission_time()) {
+		// Don't do anything if the mission time wasn't incremented
+		return;
+	}
 
 	viewer_position = my_orient.vec.fvec;
 	vm_vec_scale(&viewer_position, my_pos.xyz.z);
