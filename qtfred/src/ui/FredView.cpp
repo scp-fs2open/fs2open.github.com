@@ -382,6 +382,12 @@ void FredView::windowDeactivated() {
 
 	_renderer->Cursor_over = -1;
 }
+void FredView::on_actionHide_Marked_Objects_triggered(bool enabled) {
+	fred->hideMarkedObjects();
+}
+void FredView::on_actionShow_All_Hidden_Objects_triggered(bool enabled) {
+	fred->showHiddenObjects();
+}
 
 } // namespace fred
 } // namespace fso

@@ -56,6 +56,9 @@ private slots:
 	void on_actionSelectMove_triggered(bool enabled);
 	void on_actionSelectRotate_triggered(bool enabled);
 
+	void on_actionHide_Marked_Objects_triggered(bool enabled);
+	void on_actionShow_All_Hidden_Objects_triggered(bool enabled);
+
 signals:
 	/**
 	 * @brief Special version of FredApplication::onIdle which is limited to the lifetime of this object

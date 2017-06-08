@@ -42,7 +42,7 @@ void RenderWindow::paintGL() {
 	}
 	subsys_to_render Render_subsys;
 
-	_renderer->render_frame(-1,
+	_renderer->render_frame(fred->getCurrentObject(),
 							Render_subsys,
 							false,
 							Marking_box(),
@@ -53,7 +53,8 @@ bool RenderWindow::event(QEvent* evt) {
 	switch (evt->type()) {
 	case QEvent::UpdateRequest:
 		paintGL();
-		return QWindow::event(evt);
+		evt->accept();
+		return true;
 	default:
 		return QWindow::event(evt);
 	}
@@ -180,7 +181,6 @@ void RenderWidget::mouseReleaseEvent(QMouseEvent* mouse) {
 		auto obj_num = _renderer->select_object(mouse->x(), mouse->y(), false);
 
 		fred->selectObject(obj_num);
-		return;
 	}
 }
 void RenderWidget::mouseMoveEvent(QMouseEvent* event) {

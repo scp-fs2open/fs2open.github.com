@@ -172,7 +172,7 @@ FredRenderer* Editor::createRenderer(os::Viewport* renderView) {
 void Editor::update() {
 	// Do updates for all renderers
 	for (auto& renderer : _renderers) {
-		renderer->game_do_frame(-1, 0, 0);
+		renderer->game_do_frame(currentObject);
 	}
 }
 
@@ -214,6 +214,30 @@ void Editor::markObject(int obj) {
 		}
 
 		missionChanged();
+	}
+}
+void Editor::unmarkObject(int obj) {
+	Assert(query_valid_object(obj));
+	if (Objects[obj].flags[Object::Object_Flags::Marked]) {
+		Objects[obj].flags.remove(Object::Object_Flags::Marked);
+		numMarked--;
+		if (obj == currentObject) {  // need to find a new index
+			object *ptr;
+
+			ptr = GET_FIRST(&obj_used_list);
+			while (ptr != END_OF_LIST(&obj_used_list)) {
+				if (ptr->flags[Object::Object_Flags::Marked]) {
+					setupCurrentObjectIndices(OBJ_INDEX(ptr));  // found one
+					return;
+				}
+
+				ptr = GET_NEXT(ptr);
+			}
+
+			setupCurrentObjectIndices(-1);  // can't find one; nothing is marked.
+		}
+
+		updateAllRenderers();
 	}
 }
 
@@ -444,6 +468,7 @@ void Editor::setupCurrentObjectIndices(int selectedObj) {
 	}
 
 	if (selectedObj == -1 || !Num_objects) {
+		currentObject = -1;
 		return;
 	}
 
@@ -596,6 +621,35 @@ void Editor::fix_ship_name(int ship) {
 void Editor::createNewMission() {
 	clearMission();
 	create_player(0, &vmd_zero_vector, &vmd_identity_matrix);
+}
+int Editor::getCurrentObject() {
+	return currentObject;
+}
+void Editor::hideMarkedObjects() {
+	object *ptr;
+
+	ptr = GET_FIRST(&obj_used_list);
+	while (ptr != END_OF_LIST(&obj_used_list)) {
+		if (ptr->flags[Object::Object_Flags::Marked]) {
+			ptr->flags.set(Object::Object_Flags::Hidden);
+			unmarkObject(OBJ_INDEX(ptr));
+		}
+
+		ptr = GET_NEXT(ptr);
+	}
+
+	updateAllRenderers();
+}
+void Editor::showHiddenObjects() {
+	object *ptr;
+
+	ptr = GET_FIRST(&obj_used_list);
+	while (ptr != END_OF_LIST(&obj_used_list)) {
+		ptr->flags.remove(Object::Object_Flags::Hidden);
+		ptr = GET_NEXT(ptr);
+	}
+
+	updateAllRenderers();
 }
 
 } // namespace fred

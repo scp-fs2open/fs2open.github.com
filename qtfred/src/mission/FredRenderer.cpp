@@ -581,9 +581,7 @@ void FredRenderer::process_controls(vec3d* pos, matrix* orient, float frametime,
 	}
 }
 
-void FredRenderer::game_do_frame(const int view_obj,
-								 const int viewpoint,
-								 const int cur_object_index) {
+void FredRenderer::game_do_frame(const int cur_object_index) {
 	int key, cmode;
 	vec3d viewer_position, control_pos;
 	object* objp;
@@ -594,9 +592,9 @@ void FredRenderer::game_do_frame(const int view_obj,
 	viewer_position = my_orient.vec.fvec;
 	vm_vec_scale(&viewer_position, my_pos.xyz.z);
 
-	///! \bug Reset viewpoint.
 	if ((viewpoint == 1) && !query_valid_object(view_obj)) {
-		/*viewpoint = 0*/}
+		viewpoint = 0;
+	}
 
 	key = key_inkey();
 	process_system_keys(key);
@@ -1754,7 +1752,7 @@ void FredRenderer::level_object(matrix* orient) {
 	vm_fix_matrix(orient);
 }
 
-void FredRenderer::level_controlled(const int viewpoint, const int view_obj) {
+void FredRenderer::level_controlled() {
 	int cmode, count = 0;
 	object* objp;
 
@@ -1814,7 +1812,7 @@ void FredRenderer::level_controlled(const int viewpoint, const int view_obj) {
 	return;
 }
 
-void FredRenderer::verticalize_controlled(const int viewpoint, const int view_obj) {
+void FredRenderer::verticalize_controlled() {
 	int cmode, count = 0;
 	object* objp;
 

@@ -80,6 +80,9 @@ class FredRenderer : public QObject {
 	matrix eye_orient;
 	control_info view_controls;
 
+	int viewpoint = 0;
+	int view_obj = -1;
+
 	SCP_vector<int> rendering_order;
 	int Last_cursor_over = -1;
 	int Control_mode = 0;
@@ -113,7 +116,7 @@ class FredRenderer : public QObject {
 	void move_mouse(int btn, int mdx, int mdy);
 	void process_system_keys(int key);
 	void process_controls(vec3d* pos, matrix* orient, float frametime, int key, int mode = 0);
-	void game_do_frame(const int view_obj, const int viewpoint, const int cur_object_index);
+	void game_do_frame(const int cur_object_index);
 	void render_grid(grid* gridp);
 	void hilight_bitmap();
 	void display_distances();
@@ -147,8 +150,8 @@ class FredRenderer : public QObject {
 	void level_object(matrix* orient);
 	// viewpoint -> attach camera to current ship.
 	// cur_obj -> ship viewed.
-	void level_controlled(const int viewpoint, const int cur_obj);
-	void verticalize_controlled(const int viewpoint, const int cur_obj);
+	void level_controlled();
+	void verticalize_controlled();
 
 	ViewSettings view;
 
