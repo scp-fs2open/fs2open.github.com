@@ -21,6 +21,8 @@
 #include "FredApplication.h"
 #include "FredApplication.h"
 
+#include <signal.h>
+
 // Globals needed by the engine when built in 'FRED' mode.
 int Fred_running = 1;
 int Show_cpu = 0;
@@ -62,7 +64,16 @@ void fsoMessageOutput(QtMsgType type, const QMessageLogContext &context, const Q
 #undef main
 #endif
 
+void handler(int signal) {
+	auto stacktrace = dump_stacktrace();
+
+	fprintf(stderr, "Stack: %s\n", stacktrace.c_str());
+	exit( signal );
+}
+
 int main(int argc, char* argv[]) {
+	signal( SIGSEGV, handler );
+
 	using namespace fso::fred;
 
 #ifdef WIN32

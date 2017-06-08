@@ -80,7 +80,8 @@ void FredView::setEditor(Editor* editor, FredRenderer* renderer) {
 	on_mission_loaded("");
 
 	syncViewOptions();
-	syncConstrainButtons();
+	connect(this, &FredView::viewIdle, this, &FredView::onUpdateConstrains);
+	connect(this, &FredView::viewIdle, this, &FredView::onUpdateEditingMode);
 }
 
 void FredView::loadMissionFile(const QString& pathName) {
@@ -283,6 +284,20 @@ void FredView::initializePopupMenus() {
 	_viewPopup->addSeparator();
 }
 
+void FredView::onUpdateConstrains() {
+	ui->actionConstrainX->setChecked(
+		_renderer->Constraint.xyz.x && !_renderer->Constraint.xyz.y && !_renderer->Constraint.xyz.z);
+	ui->actionConstrainY->setChecked(
+		!_renderer->Constraint.xyz.x && _renderer->Constraint.xyz.y && !_renderer->Constraint.xyz.z);
+	ui->actionConstrainZ->setChecked(
+		!_renderer->Constraint.xyz.x && !_renderer->Constraint.xyz.y && _renderer->Constraint.xyz.z);
+	ui->actionConstrainXZ->setChecked(
+		_renderer->Constraint.xyz.x && !_renderer->Constraint.xyz.y && _renderer->Constraint.xyz.z);
+	ui->actionConstrainXY->setChecked(
+		_renderer->Constraint.xyz.x && _renderer->Constraint.xyz.y && !_renderer->Constraint.xyz.z);
+	ui->actionConstrainYZ->setChecked(
+		!_renderer->Constraint.xyz.x && _renderer->Constraint.xyz.y && _renderer->Constraint.xyz.z);
+}
 void FredView::on_actionConstrainX_triggered(bool enabled) {
 	if (enabled) {
 		vm_vec_make(&_renderer->Constraint, 1.0f, 0.0f, 0.0f);
@@ -290,12 +305,6 @@ void FredView::on_actionConstrainX_triggered(bool enabled) {
 		_renderer->Single_axis_constraint = true;
 	}
 }
-
-void FredView::onUpdateConstrainX() {
-	ui->actionConstrainX->setChecked(
-		_renderer->Constraint.xyz.x && !_renderer->Constraint.xyz.y && !_renderer->Constraint.xyz.z);
-}
-
 void FredView::on_actionConstrainY_triggered(bool enabled) {
 	if (enabled) {
 		vm_vec_make(&_renderer->Constraint, 0.0f, 1.0f, 0.0f);
@@ -303,66 +312,58 @@ void FredView::on_actionConstrainY_triggered(bool enabled) {
 		_renderer->Single_axis_constraint = true;
 	}
 }
-
-void FredView::onUpdateConstrainY() {
-	ui->actionConstrainY->setChecked(
-		!_renderer->Constraint.xyz.x && _renderer->Constraint.xyz.y && !_renderer->Constraint.xyz.z);
-}
-
 void FredView::on_actionConstrainZ_triggered(bool enabled) {
-	vm_vec_make(&_renderer->Constraint, 0.0f, 0.0f, 1.0f);
-	vm_vec_make(&_renderer->Anticonstraint, 1.0f, 1.0f, 0.0f);
-	_renderer->Single_axis_constraint = true;
+	if (enabled) {
+		vm_vec_make(&_renderer->Constraint, 0.0f, 0.0f, 1.0f);
+		vm_vec_make(&_renderer->Anticonstraint, 1.0f, 1.0f, 0.0f);
+		_renderer->Single_axis_constraint = true;
+	}
 }
-
-void FredView::onUpdateConstrainZ() {
-	ui->actionConstrainZ->setChecked(
-		!_renderer->Constraint.xyz.x && !_renderer->Constraint.xyz.y && _renderer->Constraint.xyz.z);
-}
-
 void FredView::on_actionConstrainXZ_triggered(bool enabled) {
-	vm_vec_make(&_renderer->Constraint, 1.0f, 0.0f, 1.0f);
-	vm_vec_make(&_renderer->Anticonstraint, 0.0f, 1.0f, 0.0f);
-	_renderer->Single_axis_constraint = false;
+	if (enabled) {
+		vm_vec_make(&_renderer->Constraint, 1.0f, 0.0f, 1.0f);
+		vm_vec_make(&_renderer->Anticonstraint, 0.0f, 1.0f, 0.0f);
+		_renderer->Single_axis_constraint = false;
+	}
 }
-
-void FredView::onUpdateConstrainXz() {
-	ui->actionConstrainXZ->setChecked(
-		_renderer->Constraint.xyz.x && !_renderer->Constraint.xyz.y && _renderer->Constraint.xyz.z);
-}
-
 void FredView::on_actionConstrainXY_triggered(bool enabled) {
-	vm_vec_make(&_renderer->Constraint, 1.0f, 1.0f, 0.0f);
-	vm_vec_make(&_renderer->Anticonstraint, 0.0f, 0.0f, 1.0f);
-	_renderer->Single_axis_constraint = false;
+	if (enabled) {
+		vm_vec_make(&_renderer->Constraint, 1.0f, 1.0f, 0.0f);
+		vm_vec_make(&_renderer->Anticonstraint, 0.0f, 0.0f, 1.0f);
+		_renderer->Single_axis_constraint = false;
+	}
 }
-
-void FredView::onUpdateConstrainXy() {
-	ui->actionConstrainXY->setChecked(
-		_renderer->Constraint.xyz.x && _renderer->Constraint.xyz.y && !_renderer->Constraint.xyz.z);
-}
-
 void FredView::on_actionConstrainYZ_triggered(bool enabled) {
-	vm_vec_make(&_renderer->Constraint, 0.0f, 1.0f, 1.0f);
-	vm_vec_make(&_renderer->Anticonstraint, 1.0f, 0.0f, 0.0f);
-	_renderer->Single_axis_constraint = false;
-}
-
-void FredView::onUpdateConstrainYz() {
-	ui->actionConstrainYZ->setChecked(
-		!_renderer->Constraint.xyz.x && _renderer->Constraint.xyz.y && _renderer->Constraint.xyz.z);
-}
-void FredView::syncConstrainButtons() {
-	connect(this, &FredView::viewIdle, this, &FredView::onUpdateConstrainX);
-	connect(this, &FredView::viewIdle, this, &FredView::onUpdateConstrainY);
-	connect(this, &FredView::viewIdle, this, &FredView::onUpdateConstrainZ);
-
-	connect(this, &FredView::viewIdle, this, &FredView::onUpdateConstrainXz);
-	connect(this, &FredView::viewIdle, this, &FredView::onUpdateConstrainYz);
-	connect(this, &FredView::viewIdle, this, &FredView::onUpdateConstrainXy);
+	if (enabled) {
+		vm_vec_make(&_renderer->Constraint, 0.0f, 1.0f, 1.0f);
+		vm_vec_make(&_renderer->Anticonstraint, 1.0f, 0.0f, 0.0f);
+		_renderer->Single_axis_constraint = false;
+	}
 }
 RenderWidget* FredView::getRenderWidget() {
 	return ui->centralWidget;
+}
+void FredView::on_actionSelect_triggered(bool enabled) {
+	if (enabled) {
+		_renderer->Editing_mode = CursorMode::Selecting;
+	}
+}
+void FredView::on_actionSelectMove_triggered(bool enabled) {
+	if (enabled) {
+		_renderer->Editing_mode = CursorMode::Moving;
+	}
+}
+void FredView::on_actionSelectRotate_triggered(bool enabled) {
+	if (enabled) {
+		_renderer->Editing_mode = CursorMode::Rotating;
+	}
+}
+void FredView::onUpdateEditingMode() {
+	ui->actionSelect->setChecked(_renderer->Editing_mode == CursorMode::Selecting);
+	ui->actionSelectMove->setChecked(_renderer->Editing_mode == CursorMode::Moving);
+	ui->actionSelectRotate->setChecked(_renderer->Editing_mode == CursorMode::Rotating);
+
+	ui->centralWidget->setCursorMode(_renderer->Editing_mode);
 }
 
 } // namespace fred

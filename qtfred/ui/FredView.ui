@@ -285,6 +285,9 @@
    <addaction name="separator"/>
   </widget>
   <action name="actionSelect">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
    <property name="icon">
     <iconset resource="../resources/resources.qrc">
      <normaloff>:/images/select.png</normaloff>:/images/select.png</iconset>
@@ -300,6 +303,9 @@
    </property>
   </action>
   <action name="actionSelectMove">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
    <property name="icon">
     <iconset resource="../resources/resources.qrc">
      <normaloff>:/images/selectmove.png</normaloff>:/images/selectmove.png</iconset>
@@ -315,6 +321,9 @@
    </property>
   </action>
   <action name="actionSelectRotate">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
    <property name="icon">
     <iconset resource="../resources/resources.qrc">
      <normaloff>:/images/selectrot.png</normaloff>:/images/selectrot.png</iconset>

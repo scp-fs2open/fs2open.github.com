@@ -42,6 +42,8 @@ class RenderWindow: public QWindow {
 };
 
 class RenderWidget: public QWidget {
+ Q_OBJECT
+
 	RenderWindow* _window = nullptr;
 
 	std::unique_ptr<QCursor> _standardCursor;
@@ -52,7 +54,7 @@ class RenderWidget: public QWidget {
 	Editor* fred = nullptr;
 	FredRenderer* _renderer = nullptr;
 
- Q_OBJECT
+	CursorMode _cursorMode = CursorMode::Selecting;
 
  public:
 	explicit RenderWidget(QWidget* parent);
@@ -61,6 +63,8 @@ class RenderWidget: public QWidget {
 	QSurface* getRenderSurface() const;
 
 	void setEditor(Editor* editor, FredRenderer* renderer);
+
+	void setCursorMode(CursorMode mode);
 
  protected:
 	void contextMenuEvent(QContextMenuEvent* event) override;

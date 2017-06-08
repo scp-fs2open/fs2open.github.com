@@ -130,6 +130,8 @@ RenderWidget::RenderWidget(QWidget* parent) : QWidget(parent) {
 	_window->setCursor(*_standardCursor);
 
 	fredApp->runAfterInit([this]() { _window->startRendering(); });
+
+	setMouseTracking(true);
 }
 QSurface* RenderWidget::getRenderSurface() const {
 	return _window;
@@ -193,7 +195,17 @@ void RenderWidget::mouseMoveEvent(QMouseEvent* event) {
 	_renderer->Cursor_over = obj_num;
 
 	if (obj_num >= 0) {
-		_window->setCursor(*_moveCursor);
+		switch(_cursorMode) {
+		case CursorMode::Selecting:
+			_window->setCursor(*_standardCursor);
+			break;
+		case CursorMode::Moving:
+			_window->setCursor(*_moveCursor);
+			break;
+		case CursorMode::Rotating:
+			_window->setCursor(*_rotateCursor);
+			break;
+		}
 	} else {
 		_window->setCursor(*_standardCursor);
 	}
@@ -231,6 +243,9 @@ void RenderWidget::setEditor(Editor* editor, FredRenderer* renderer) {
 	_renderer = renderer;
 
 	_window->setEditor(editor, renderer);
+}
+void RenderWidget::setCursorMode(CursorMode mode) {
+	_cursorMode = mode;
 }
 } // namespace fred
 } // namespace fso

@@ -27,6 +27,13 @@ struct Marking_box {
 
 namespace fso {
 namespace fred {
+
+enum class CursorMode {
+	Selecting,
+	Moving,
+	Rotating
+};
+
 struct ViewSettings {
 	bool Universal_heading = false;
 	bool Show_stars = true;
@@ -146,6 +153,7 @@ class FredRenderer : public QObject {
 	ViewSettings view;
 
 	int Cursor_over = -1;
+	CursorMode Editing_mode = CursorMode::Moving;
 
 	matrix view_orient = vmd_identity_matrix;
 	vec3d view_pos;
