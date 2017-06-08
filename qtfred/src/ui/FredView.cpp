@@ -72,7 +72,7 @@ void FredView::setEditor(Editor* editor, FredRenderer* renderer) {
 	fred = editor;
 	_renderer = renderer;
 
-	getRenderWindow()->setEditor(editor, renderer);
+	ui->centralWidget->setEditor(editor, renderer);
 
 	connect(fred, &Editor::missionLoaded, this, &FredView::on_mission_loaded);
 
@@ -91,9 +91,6 @@ void FredView::loadMissionFile(const QString& pathName) {
 		fred->loadMission(pathName.toStdString());
 
 		QApplication::restoreOverrideCursor();
-
-		getRenderWindow()->updateGL();
-		statusBar()->showMessage(tr("Units = %1 meters").arg(_renderer->The_grid->square_size));
 	} catch (const fso::fred::mission_load_error&) {
 		QApplication::restoreOverrideCursor();
 
@@ -134,15 +131,15 @@ void FredView::on_mission_loaded(const std::string& filepath) {
 
 void FredView::keyPressEvent(QKeyEvent* event) {
 	// Forward all uncaught keyboard events to the render window so we don't have to focus it explicitly.
-	qGuiApp->sendEvent(getRenderWindow(), event);
+	qGuiApp->sendEvent(ui->centralWidget, event);
 }
 
 void FredView::keyReleaseEvent(QKeyEvent* event) {
-	qGuiApp->sendEvent(getRenderWindow(), event);
+	qGuiApp->sendEvent(ui->centralWidget, event);
 }
 
-RenderWindow* FredView::getRenderWindow() {
-	return ui->centralWidget->getWindow();
+QSurface* FredView::getRenderSurface() {
+	return ui->centralWidget->getRenderSurface();
 }
 void FredView::newMission() {
 	fred->createNewMission();
@@ -363,6 +360,9 @@ void FredView::syncConstrainButtons() {
 	connect(this, &FredView::viewIdle, this, &FredView::onUpdateConstrainXz);
 	connect(this, &FredView::viewIdle, this, &FredView::onUpdateConstrainYz);
 	connect(this, &FredView::viewIdle, this, &FredView::onUpdateConstrainXy);
+}
+RenderWidget* FredView::getRenderWidget() {
+	return ui->centralWidget;
 }
 
 } // namespace fred

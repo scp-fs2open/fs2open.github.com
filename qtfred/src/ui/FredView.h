@@ -2,19 +2,20 @@
 
 #include <QMainWindow>
 #include <QAction>
-
 #include <QtGui/QSurfaceFormat>
 #include <QtWidgets/QLabel>
+#include <QtWidgets/QComboBox>
+#include <QtGui/QSurface>
+
+#include <mission/FredRenderer.h>
 
 #include <memory>
-#include <QtWidgets/QComboBox>
-#include <mission/FredRenderer.h>
 
 namespace fso {
 namespace fred {
 
 class Editor;
-class RenderWindow;
+class RenderWidget;
 
 namespace Ui {
 class FredView;
@@ -31,7 +32,8 @@ public:
 
 	void loadMissionFile(const QString& pathName);
 
-	RenderWindow* getRenderWindow();
+	QSurface* getRenderSurface();
+	RenderWidget* getRenderWidget();
 
 	void showContextMenu(const QPoint& globalPos);
 

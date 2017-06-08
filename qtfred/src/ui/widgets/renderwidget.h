@@ -33,18 +33,17 @@ class RenderWindow: public QWindow {
 
 	bool event(QEvent* evt) override;
 
-	void keyPressEvent(QKeyEvent*) override;
-	void keyReleaseEvent(QKeyEvent*) override;
-	void mousePressEvent(QMouseEvent* event) override;
-	void mouseDoubleClickEvent(QMouseEvent* event) override;
-	void mouseMoveEvent(QMouseEvent* event) override;
-	void mouseReleaseEvent(QMouseEvent*) override;
 	void resizeEvent(QResizeEvent* event) override;
 
 	void exposeEvent(QExposeEvent* event) override;
-
-	bool eventFilter(QObject* watched, QEvent* event) override;
  private:
+	Editor* fred = nullptr;
+	FredRenderer* _renderer = nullptr;
+};
+
+class RenderWidget: public QWidget {
+	RenderWindow* _window = nullptr;
+
 	std::unique_ptr<QCursor> _standardCursor;
 	std::unique_ptr<QCursor> _moveCursor;
 	std::unique_ptr<QCursor> _rotateCursor;
@@ -52,21 +51,29 @@ class RenderWindow: public QWindow {
 	std::unordered_map<int, int> qt2fsKeys;
 	Editor* fred = nullptr;
 	FredRenderer* _renderer = nullptr;
-	bool _isRendering = false;
-};
-
-class RenderWidget: public QWidget {
-	RenderWindow* _window = nullptr;
 
  Q_OBJECT
 
  public:
 	explicit RenderWidget(QWidget* parent);
 
-	RenderWindow* getWindow() const;
+	void setSurfaceFormat(const QSurfaceFormat& fmt);
+	QSurface* getRenderSurface() const;
+
+	void setEditor(Editor* editor, FredRenderer* renderer);
 
  protected:
 	void contextMenuEvent(QContextMenuEvent* event) override;
+
+	void keyPressEvent(QKeyEvent*) override;
+	void keyReleaseEvent(QKeyEvent*) override;
+	void mousePressEvent(QMouseEvent* event) override;
+	void mouseDoubleClickEvent(QMouseEvent* event) override;
+	void mouseMoveEvent(QMouseEvent* event) override;
+	void mouseReleaseEvent(QMouseEvent*) override;
+
+ public:
+	bool eventFilter(QObject* watched, QEvent* event) override;
 };
 
 } // namespace fred
