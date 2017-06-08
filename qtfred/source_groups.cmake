@@ -29,7 +29,6 @@ add_file_folder(src_mission "Source/Mission"
     src/mission/editor.h
     src/mission/FredRenderer.cpp
     src/mission/FredRenderer.h
-    src/mission/iterators.h
     src/mission/object.cpp
     src/mission/object.h
     src/mission/wing.h
