@@ -842,28 +842,40 @@ g3_draw_line(&p[3], &p[0]);
 
 void FredRenderer::display_distances() {
 	char buf[20];
+	object *objp, *o2;
 	vec3d pos;
 	vertex v;
 
 
 	gr_set_color(255, 0, 0);
-	for ( auto objp = GET_FIRST(&obj_used_list); objp !=END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) ) {
-		if (objp->flags[Object::Object_Flags::Marked]) {
-			for ( auto o2 = objp; o2 !=END_OF_LIST(&obj_used_list); o2 = GET_NEXT(o2) ) {
-				if (o2->flags[Object::Object_Flags::Marked]) {
+	objp = GET_FIRST(&obj_used_list);
+	while (objp != END_OF_LIST(&obj_used_list))
+	{
+		if (objp->flags[Object::Object_Flags::Marked])
+		{
+			o2 = GET_NEXT(objp);
+			while (o2 != END_OF_LIST(&obj_used_list))
+			{
+				if (o2->flags[Object::Object_Flags::Marked])
+				{
 					rpd_line(&objp->pos, &o2->pos);
 					vm_vec_avg(&pos, &objp->pos, &o2->pos);
 					g3_rotate_vertex(&v, &pos);
-					if (!(v.codes & CC_BEHIND)) {
+					if (!(v.codes & CC_BEHIND))
 						if (!(g3_project_vertex(&v) & PF_OVERFLOW)) {
 							sprintf(buf, "%.1f", vm_vec_dist(&objp->pos, &o2->pos));
 							gr_set_color_fast(&colour_white);
-							gr_string((int) v.screen.xyw.x, (int) v.screen.xyw.y, buf);
+							gr_string((int)v.screen.xyw.x, (int)v.screen.xyw.y, buf);
 						}
-					}
 				}
+
+
+
+				o2 = GET_NEXT(o2);
 			}
 		}
+
+		objp = GET_NEXT(objp);
 	}
 }
 
