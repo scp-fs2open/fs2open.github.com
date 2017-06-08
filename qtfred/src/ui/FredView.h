@@ -69,7 +69,9 @@ protected:
 
 	bool eventFilter(QObject* watched, QEvent* event) override;
 
-private:
+	bool event(QEvent* event) override;
+
+ private:
 	void on_mission_loaded(const std::string& filepath);
 
 	void connectActionToViewSetting(QAction* option, bool* destination);
@@ -101,6 +103,9 @@ private:
 
 	void onUpdateConstrains();
 	void onUpdateEditingMode();
+
+	void windowActivated();
+	void windowDeactivated();
 };
 
 

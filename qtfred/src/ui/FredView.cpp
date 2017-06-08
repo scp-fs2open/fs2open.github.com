@@ -10,6 +10,7 @@
 
 #include <qevent.h>
 #include <FredApplication.h>
+#include <io/key.h>
 
 #include "mission/editor.h"
 
@@ -364,6 +365,28 @@ void FredView::onUpdateEditingMode() {
 	ui->actionSelectRotate->setChecked(_renderer->Editing_mode == CursorMode::Rotating);
 
 	ui->centralWidget->setCursorMode(_renderer->Editing_mode);
+}
+bool FredView::event(QEvent* event) {
+	switch(event->type()) {
+	case QEvent::WindowActivate:
+		windowActivated();
+		return true;
+	case QEvent::WindowDeactivate:
+		windowDeactivated();
+		return true;
+	default:
+		return QMainWindow::event(event);
+	}
+}
+void FredView::windowActivated() {
+	key_got_focus();
+
+	_renderer->Cursor_over = -1;
+}
+void FredView::windowDeactivated() {
+	key_lost_focus();
+	
+	_renderer->Cursor_over = -1;
 }
 
 } // namespace fred
