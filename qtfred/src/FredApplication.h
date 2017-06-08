@@ -13,8 +13,6 @@ class FredApplication: public QObject {
  private:
 	bool _initializeEmitted = false;
 
-	QElapsedTimer _elapsedTimer;
-
  public:
 	FredApplication();
 	~FredApplication();
