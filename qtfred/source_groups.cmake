@@ -34,6 +34,11 @@ add_file_folder(src_mission "Source/Mission"
     src/mission/wing.h
 )
 
+add_file_folder(src_mission_dialogs "Source/Mission/Dialogs"
+    src/mission/dialogs/AbstractDialogModel.cpp
+    src/mission/dialogs/AbstractDialogModel.h
+)
+
 add_file_folder(src_ui "Source/UI"
     src/ui/FredView.cpp
     src/ui/FredView.h
