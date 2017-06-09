@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>914</width>
+    <width>926</width>
     <height>857</height>
    </rect>
   </property>
@@ -33,7 +33,10 @@
          <item row="0" column="0">
           <widget class="QLabel" name="label">
            <property name="text">
-            <string>Directive text</string>
+            <string>Directive te&amp;xt</string>
+           </property>
+           <property name="buddy">
+            <cstring>editDirectiveText</cstring>
            </property>
           </widget>
          </item>
@@ -41,6 +44,9 @@
           <widget class="QLabel" name="label_2">
            <property name="text">
             <string>Directive keypress text</string>
+           </property>
+           <property name="buddy">
+            <cstring>editDirectiveKeypressText</cstring>
            </property>
           </widget>
          </item>
@@ -156,7 +162,10 @@
        <item row="4" column="0">
         <widget class="QLabel" name="label_4">
          <property name="text">
-          <string>Repeat Count</string>
+          <string>Repea&amp;t Count</string>
+         </property>
+         <property name="buddy">
+          <cstring>spinBox</cstring>
          </property>
         </widget>
        </item>
@@ -205,7 +214,10 @@
        <item row="6" column="0">
         <widget class="QLabel" name="label_5">
          <property name="text">
-          <string>Trigger Count</string>
+          <string>Tri&amp;gger Count</string>
+         </property>
+         <property name="buddy">
+          <cstring>spinBox_2</cstring>
          </property>
         </widget>
        </item>
@@ -213,6 +225,9 @@
         <widget class="QLabel" name="label_6">
          <property name="text">
           <string>Interval time</string>
+         </property>
+         <property name="buddy">
+          <cstring>spinBox_3</cstring>
          </property>
         </widget>
        </item>
@@ -228,6 +243,9 @@
          <property name="text">
           <string>Score</string>
          </property>
+         <property name="buddy">
+          <cstring>spinBox_4</cstring>
+         </property>
         </widget>
        </item>
        <item row="9" column="0">
@@ -242,7 +260,10 @@
        <item row="14" column="0">
         <widget class="QLabel" name="label_8">
          <property name="text">
-          <string>Chain Delay</string>
+          <string>Chain Dela&amp;y</string>
+         </property>
+         <property name="buddy">
+          <cstring>spinBox_5</cstring>
          </property>
         </widget>
        </item>
@@ -279,6 +300,9 @@
                <property name="text">
                 <string>ANI file</string>
                </property>
+               <property name="buddy">
+                <cstring>comboBox_2</cstring>
+               </property>
               </widget>
              </item>
              <item row="0" column="1">
@@ -289,12 +313,18 @@
                <property name="text">
                 <string>Wave file</string>
                </property>
+               <property name="buddy">
+                <cstring>comboBox_3</cstring>
+               </property>
               </widget>
              </item>
              <item row="3" column="0" alignment="Qt::AlignRight">
               <widget class="QLabel" name="label_13">
                <property name="text">
                 <string>Team</string>
+               </property>
+               <property name="buddy">
+                <cstring>comboBox_5</cstring>
                </property>
               </widget>
              </item>
@@ -311,6 +341,9 @@
               <widget class="QLabel" name="label_12">
                <property name="text">
                 <string>Persona</string>
+               </property>
+               <property name="buddy">
+                <cstring>comboBox_4</cstring>
                </property>
               </widget>
              </item>
@@ -359,6 +392,9 @@
            <widget class="QLabel" name="label_9">
             <property name="text">
              <string>Name</string>
+            </property>
+            <property name="buddy">
+             <cstring>lineEdit_2</cstring>
             </property>
            </widget>
           </item>
