@@ -81,8 +81,6 @@ signals:
 	void viewIdle();
 
 protected:
-	bool eventFilter(QObject* watched, QEvent* event) override;
-
 	bool event(QEvent* event) override;
 
  private:

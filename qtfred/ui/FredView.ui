@@ -874,7 +874,7 @@
     <string>&amp;x1</string>
    </property>
    <property name="shortcut">
-    <string>1</string>
+    <string>Shift+Alt+1</string>
    </property>
   </action>
   <action name="actionx2">
@@ -885,7 +885,7 @@
     <string>x&amp;2</string>
    </property>
    <property name="shortcut">
-    <string>2</string>
+    <string>Shift+Alt+2</string>
    </property>
   </action>
   <action name="actionx3">
@@ -896,7 +896,7 @@
     <string>x&amp;3</string>
    </property>
    <property name="shortcut">
-    <string>3</string>
+    <string>Shift+Alt+3</string>
    </property>
   </action>
   <action name="actionx5">
@@ -907,7 +907,7 @@
     <string>x&amp;5</string>
    </property>
    <property name="shortcut">
-    <string>4</string>
+    <string>Shift+Alt+4</string>
    </property>
   </action>
   <action name="actionx8">
@@ -918,7 +918,7 @@
     <string>x&amp;8</string>
    </property>
    <property name="shortcut">
-    <string>5</string>
+    <string>Shift+Alt+5</string>
    </property>
   </action>
   <action name="actionx10">
@@ -929,7 +929,7 @@
     <string>x&amp;10</string>
    </property>
    <property name="shortcut">
-    <string>6</string>
+    <string>Shift+Alt+6</string>
    </property>
   </action>
   <action name="actionx50">
@@ -940,7 +940,7 @@
     <string>x5&amp;0</string>
    </property>
    <property name="shortcut">
-    <string>7</string>
+    <string>Shift+Alt+7</string>
    </property>
   </action>
   <action name="actionx100">
@@ -951,7 +951,7 @@
     <string>x100</string>
    </property>
    <property name="shortcut">
-    <string>8</string>
+    <string>Shift+Alt+8</string>
    </property>
   </action>
   <action name="actionRotx1">
