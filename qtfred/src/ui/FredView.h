@@ -74,6 +74,8 @@ private slots:
 	void on_actionRotx25_triggered(bool enabled);
 	void on_actionRotx50_triggered(bool enabled);
 
+	void on_actionCamera_triggered(bool enabled);
+	void on_actionCurrent_Ship_triggered(bool enabled);
 signals:
 	/**
 	 * @brief Special version of FredApplication::onIdle which is limited to the lifetime of this object
@@ -116,6 +118,7 @@ protected:
 	void onUpdateConstrains();
 	void onUpdateEditingMode();
 	void onUpdateViewSpeeds();
+	void onUpdateViewpointMenu();
 
 	void windowActivated();
 	void windowDeactivated();

@@ -46,8 +46,6 @@ FredView::FredView(QWidget* parent) : QMainWindow(parent), ui(new Ui::FredView()
 	ui->actionUndo->setShortcuts(QKeySequence::Undo);
 	ui->actionDelete->setShortcuts(QKeySequence::Delete);
 
-	setFocusPolicy(Qt::WheelFocus);
-
 	// A combo box cannot be added by the designer so we do that manually here
 	_shipClassBox.reset(new ColorComboBox());
 
@@ -85,6 +83,7 @@ void FredView::setEditor(Editor* editor, FredRenderer* renderer) {
 	connect(this, &FredView::viewIdle, this, &FredView::onUpdateConstrains);
 	connect(this, &FredView::viewIdle, this, &FredView::onUpdateEditingMode);
 	connect(this, &FredView::viewIdle, this, &FredView::onUpdateViewSpeeds);
+	connect(this, &FredView::viewIdle, this, &FredView::onUpdateViewpointMenu);
 }
 
 void FredView::loadMissionFile(const QString& pathName) {
@@ -466,6 +465,25 @@ void FredView::on_actionRotx50_triggered(bool enabled) {
 	if (enabled) {
 		_renderer->physics_rot = 100;
 		_renderer->resetViewPhysics();
+	}
+}
+void FredView::onUpdateViewpointMenu() {
+	ui->actionCamera->setChecked(_renderer->viewpoint == 0);
+	ui->actionCurrent_Ship->setChecked(_renderer->viewpoint == 1);
+}
+void FredView::on_actionCamera_triggered(bool enabled) {
+	if (enabled) {
+		_renderer->viewpoint = 0;
+
+		_renderer->scheduleUpdate();
+	}
+}
+void FredView::on_actionCurrent_Ship_triggered(bool enabled) {
+	if (enabled) {
+		_renderer->viewpoint = 1;
+		_renderer->view_obj = fred->getCurrentObject();
+
+		_renderer->scheduleUpdate();
 	}
 }
 
