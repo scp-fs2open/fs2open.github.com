@@ -93,6 +93,9 @@ protected:
 
 	void connectActionToViewSetting(QAction* option, bool* destination);
 
+	void on_actionControlModeCamera_triggered(bool enabled);
+	void on_actionControlModeCurrentShip_triggered(bool enabled);
+
 	void addToRecentFiles(const QString& path);
 	void updateRecentFileList();
 
@@ -111,6 +114,10 @@ protected:
 
 	QMenu* _viewPopup = nullptr;
 
+	QMenu* _controlModeMenu = nullptr;
+	QAction* _controlModeCamera = nullptr;
+	QAction* _controlModeCurrentShip = nullptr;
+
 	std::unique_ptr<Ui::FredView> ui;
 
 	std::unique_ptr<QComboBox> _shipClassBox;
@@ -118,10 +125,13 @@ protected:
     Editor* fred = nullptr;
 	FredRenderer* _renderer = nullptr;
 
+	bool _inKeyPressHandler = false;
+	bool _inKeyReleaseHandler = false;
+
 	void onUpdateConstrains();
 	void onUpdateEditingMode();
 	void onUpdateViewSpeeds();
-	void onUpdateViewpointMenu();
+	void onUpdateCameraControlActions();
 
 	void windowActivated();
 	void windowDeactivated();

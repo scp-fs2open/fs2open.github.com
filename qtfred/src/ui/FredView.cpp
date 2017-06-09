@@ -34,7 +34,7 @@ namespace fred {
 FredView::FredView(QWidget* parent) : QMainWindow(parent), ui(new Ui::FredView()) {
 	ui->setupUi(this);
 
-	setFocusPolicy(Qt::StrongFocus);
+	setFocusPolicy(Qt::NoFocus);
 	setFocusProxy(ui->centralWidget);
 
 	// This is not possible to do with the designer
@@ -83,7 +83,7 @@ void FredView::setEditor(Editor* editor, FredRenderer* renderer) {
 	connect(this, &FredView::viewIdle, this, &FredView::onUpdateConstrains);
 	connect(this, &FredView::viewIdle, this, &FredView::onUpdateEditingMode);
 	connect(this, &FredView::viewIdle, this, &FredView::onUpdateViewSpeeds);
-	connect(this, &FredView::viewIdle, this, &FredView::onUpdateViewpointMenu);
+	connect(this, &FredView::viewIdle, this, &FredView::onUpdateCameraControlActions);
 }
 
 void FredView::loadMissionFile(const QString& pathName) {
@@ -247,6 +247,7 @@ void FredView::connectActionToViewSetting(QAction* option, bool* destination) {
 		_renderer->scheduleUpdate();
 	});
 }
+
 void FredView::showContextMenu(const QPoint& globalPos) {
 	_viewPopup->exec(globalPos);
 }
@@ -260,6 +261,19 @@ void FredView::initializePopupMenus() {
 	_viewPopup->addAction(ui->actionShow_Grid_Positions);
 	_viewPopup->addAction(ui->actionShow_Distances);
 	_viewPopup->addSeparator();
+
+	_controlModeMenu = new QMenu(tr("Control Mode"), _viewPopup);
+	_controlModeCamera = new QAction(tr("Camera"), _controlModeMenu);
+	_controlModeCamera->setCheckable(true);
+	connect(_controlModeCamera, &QAction::triggered, this, &FredView::on_actionControlModeCamera_triggered);
+	_controlModeMenu->addAction(_controlModeCamera);
+
+	_controlModeCurrentShip = new QAction(tr("Current Ship"), _controlModeMenu);
+	_controlModeCurrentShip->setCheckable(true);
+	connect(_controlModeCurrentShip, &QAction::triggered, this, &FredView::on_actionControlModeCurrentShip_triggered);
+	_controlModeMenu->addAction(_controlModeCurrentShip);
+
+	_viewPopup->addMenu(_controlModeMenu);
 	_viewPopup->addMenu(ui->menuViewpoint);
 	_viewPopup->addSeparator();
 }
@@ -467,9 +481,12 @@ void FredView::on_actionRotx50_triggered(bool enabled) {
 		_renderer->resetViewPhysics();
 	}
 }
-void FredView::onUpdateViewpointMenu() {
+void FredView::onUpdateCameraControlActions() {
 	ui->actionCamera->setChecked(_renderer->viewpoint == 0);
 	ui->actionCurrent_Ship->setChecked(_renderer->viewpoint == 1);
+	
+	_controlModeCamera->setChecked(_renderer->Control_mode == 0);
+	_controlModeCurrentShip->setChecked(_renderer->Control_mode == 1);
 }
 void FredView::on_actionCamera_triggered(bool enabled) {
 	if (enabled) {
@@ -486,17 +503,36 @@ void FredView::on_actionCurrent_Ship_triggered(bool enabled) {
 		_renderer->scheduleUpdate();
 	}
 }
-void FredView::keyPressEvent(QKeyEvent* event) {
-	if (!qGuiApp->sendEvent(ui->centralWidget, event)) {
-		// Accept any events that get out of the renderview to avoid infinite recursion
-		event->accept();
+void FredView::on_actionControlModeCamera_triggered(bool enabled) {
+	if (enabled) {
+		_renderer->Control_mode = 0;
 	}
 }
-void FredView::keyReleaseEvent(QKeyEvent* event) {
-	if (!qGuiApp->sendEvent(ui->centralWidget, event)) {
-		// Accept any events that get out of the renderview to avoid infinite recursion
-		event->accept();
+void FredView::on_actionControlModeCurrentShip_triggered(bool enabled) {
+	if (enabled) {
+		_renderer->Control_mode = 1;
 	}
+}
+
+void FredView::keyPressEvent(QKeyEvent* event) {
+	if (_inKeyPressHandler) {
+		return;
+	}
+	_inKeyPressHandler = true;
+
+	qGuiApp->sendEvent(ui->centralWidget, event);
+
+	_inKeyPressHandler = false;
+}
+void FredView::keyReleaseEvent(QKeyEvent* event) {
+	if (_inKeyReleaseHandler) {
+		return;
+	}
+	_inKeyReleaseHandler = true;
+
+	qGuiApp->sendEvent(ui->centralWidget, event);
+
+	_inKeyReleaseHandler = false;
 }
 
 } // namespace fred
