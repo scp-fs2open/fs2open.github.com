@@ -47,6 +47,8 @@ add_file_folder("Source/UI"
     src/ui/FredView.h
     src/ui/QtGraphicsOperations.cpp
     src/ui/QtGraphicsOperations.h
+    src/ui/BriefingEditorDialog.cpp
+    src/ui/BriefingEditorDialog.h
 )
 
 add_file_folder("Source/UI/Widgets"
@@ -58,6 +60,7 @@ add_file_folder("Source/UI/Widgets"
 
 add_file_folder("UI"
     ui/FredView.ui
+    ui/BriefingEditorDialog.ui
 )
 
 add_file_folder("Resources"
