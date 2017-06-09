@@ -37,6 +37,7 @@ add_file_folder(src_mission "Source/Mission"
 add_file_folder(src_mission_dialogs "Source/Mission/Dialogs"
     src/mission/dialogs/AbstractDialogModel.cpp
     src/mission/dialogs/AbstractDialogModel.h
+    src/mission/dialogs/AbstractDialogModel.h
 )
 
 add_file_folder(src_ui "Source/UI"
@@ -122,8 +123,8 @@ add_file_folder(resources_images "Resources/Images"
     resources/images/splash.png
     resources/images/toolbar1.png
     resources/images/toolbar.png
+    resources/images/V_fred.ico
     resources/images/variable.png
-    resources/images/V_fred.png
     resources/images/wingdisband.png
     resources/images/wingform.png
     resources/images/zoomext.png

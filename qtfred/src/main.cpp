@@ -91,6 +91,8 @@ int main(int argc, char* argv[]) {
 
 	QApplication app(argc, argv);
 
+	QGuiApplication::setWindowIcon(QIcon(":/images/V_fred.ico"));
+
 	// This will be available as the global instance
 	FredApplication localFredApp;
 
