@@ -2,6 +2,9 @@
 set(source_files)
 
 macro(add_file_folder FOLDER_NAME)
+    string(REPLACE "/" "_" VARIABLE_NAME "${FOLDER_NAME}")
+    set(files_${VARIABLE_NAME} ${files_${VAR_NAME}} ${ARGN})
+
     string(REPLACE "/" "\\" FIXED_FOLDER_FILE "${FOLDER_NAME}")
 
     source_group("${FIXED_FOLDER_FILE}" FILES ${ARGN})

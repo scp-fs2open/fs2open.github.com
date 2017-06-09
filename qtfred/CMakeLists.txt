@@ -12,11 +12,7 @@ find_package(Qt5 COMPONENTS Widgets OpenGL REQUIRED)
 
 include(source_groups.cmake)
 
-set(QTFRED_UI
-    ui/mainwindow.ui
-)
-
-qt5_wrap_ui(QTFRED_UI_GENERATED ${files_ui})
+qt5_wrap_ui(QTFRED_UI_GENERATED ${files_UI})
 
 source_group("UI\\Generated"            FILES ${QTFRED_UI_GENERATED})
 
