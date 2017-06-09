@@ -2,6 +2,7 @@
 #include <QtCore/QAbstractEventDispatcher>
 #include <QDebug>
 #include <QTimer>
+#include <QtGui/QtEvents>
 
 #include <mission/editor.h>
 
@@ -32,6 +33,11 @@ FredApplication::FredApplication() {
 	idleTimer->start(5);
 
 	fredApp = this;
+
+	// When there are issues with event handling, enable this define to see the events in the log and stdout
+#ifdef EVENT_DEBUGGING
+	qGuiApp->installEventFilter(this);
+#endif
 }
 FredApplication::~FredApplication() {
 	fredApp = nullptr;
@@ -61,6 +67,13 @@ void FredApplication::shutdown() {
 void FredApplication::idleFunction() {
 	// emit the public signal
 	onIdle();
+}
+bool FredApplication::eventFilter(QObject* watched, QEvent* event) {
+	// Skip timer events since there are a lot of those
+	if (event->type() != QEvent::Timer) {
+		qDebug() << watched << " " << event;
+	}
+	return QObject::eventFilter(watched, event);
 }
 }
 }

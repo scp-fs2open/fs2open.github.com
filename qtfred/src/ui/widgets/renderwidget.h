@@ -13,11 +13,12 @@ namespace fso {
 namespace fred {
 
 class Editor;
+class RenderWidget;
 
 class RenderWindow: public QWindow {
  Q_OBJECT
  public:
-	explicit RenderWindow(QWidget* parent = 0);
+	explicit RenderWindow(RenderWidget* parent = nullptr);
 	~RenderWindow();
 
 	void setEditor(Editor* editor, FredRenderer* renderer);
@@ -34,7 +35,10 @@ class RenderWindow: public QWindow {
 	void resizeEvent(QResizeEvent* event) override;
 
 	void exposeEvent(QExposeEvent* event) override;
+
  private:
+	RenderWidget* _renderWidget = nullptr;
+
 	Editor* fred = nullptr;
 	FredRenderer* _renderer = nullptr;
 };
@@ -65,17 +69,13 @@ class RenderWidget: public QWidget {
 	void setCursorMode(CursorMode mode);
 
  protected:
-	void contextMenuEvent(QContextMenuEvent* event) override;
-
 	void keyPressEvent(QKeyEvent*) override;
 	void keyReleaseEvent(QKeyEvent*) override;
 	void mousePressEvent(QMouseEvent* event) override;
 	void mouseDoubleClickEvent(QMouseEvent* event) override;
 	void mouseMoveEvent(QMouseEvent* event) override;
 	void mouseReleaseEvent(QMouseEvent*) override;
-
- public:
-	bool eventFilter(QObject* watched, QEvent* event) override;
+	void contextMenuEvent(QContextMenuEvent* event) override;
 };
 
 } // namespace fred

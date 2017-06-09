@@ -20,6 +20,8 @@ class FredApplication: public QObject {
 	bool isInitializeComplete() const;
 
 	void runAfterInit(std::function<void()>&& action);
+
+	bool eventFilter(QObject* watched, QEvent* event) override;
  signals:
 	void initializeComplete();
 

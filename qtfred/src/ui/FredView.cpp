@@ -34,7 +34,7 @@ namespace fred {
 FredView::FredView(QWidget* parent) : QMainWindow(parent), ui(new Ui::FredView()) {
 	ui->setupUi(this);
 
-	// Forward all focus related events to the render widget since we don't do much ourself
+	setFocusPolicy(Qt::StrongFocus);
 	setFocusProxy(ui->centralWidget);
 
 	// This is not possible to do with the designer
@@ -484,6 +484,18 @@ void FredView::on_actionCurrent_Ship_triggered(bool enabled) {
 		_renderer->view_obj = fred->getCurrentObject();
 
 		_renderer->scheduleUpdate();
+	}
+}
+void FredView::keyPressEvent(QKeyEvent* event) {
+	if (!qGuiApp->sendEvent(ui->centralWidget, event)) {
+		// Accept any events that get out of the renderview to avoid infinite recursion
+		event->accept();
+	}
+}
+void FredView::keyReleaseEvent(QKeyEvent* event) {
+	if (!qGuiApp->sendEvent(ui->centralWidget, event)) {
+		// Accept any events that get out of the renderview to avoid infinite recursion
+		event->accept();
 	}
 }
 

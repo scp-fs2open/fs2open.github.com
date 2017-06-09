@@ -80,9 +80,6 @@ class FredRenderer : public QObject {
 	matrix eye_orient;
 	control_info view_controls;
 
-	int viewpoint = 0;
-	int view_obj = -1;
-
 	SCP_vector<int> rendering_order;
 	int Last_cursor_over = -1;
 	int Control_mode = 0;
@@ -171,6 +168,9 @@ class FredRenderer : public QObject {
 	vec3d Constraint;
 	vec3d Anticonstraint;
 	bool Single_axis_constraint = false;
+
+	int viewpoint = 0;
+	int view_obj = -1;
 
 signals:
 	void scheduleUpdate();

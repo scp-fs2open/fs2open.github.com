@@ -85,6 +85,9 @@ signals:
 protected:
 	bool event(QEvent* event) override;
 
+	void keyPressEvent(QKeyEvent* event) override;
+	void keyReleaseEvent(QKeyEvent* event) override;
+
  private:
 	void on_mission_loaded(const std::string& filepath);
 

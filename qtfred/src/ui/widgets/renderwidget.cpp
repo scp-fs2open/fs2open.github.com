@@ -21,7 +21,7 @@
 namespace fso {
 namespace fred {
 
-RenderWindow::RenderWindow(QWidget* parent) : QWindow(parent->windowHandle()) {
+RenderWindow::RenderWindow(RenderWidget* renderWidget) : QWindow((QWindow*)nullptr), _renderWidget(renderWidget) {
 	setSurfaceType(QWindow::OpenGLSurface);
 }
 
@@ -51,6 +51,29 @@ void RenderWindow::paintGL() {
 
 bool RenderWindow::event(QEvent* evt) {
 	switch (evt->type()) {
+	case QEvent::MouseButtonRelease:
+	case QEvent::MouseButtonPress: {
+		auto mouseEvent = static_cast<QMouseEvent*>(evt);
+
+		if (mouseEvent->button() == Qt::RightButton) {
+			// Right button events may cause a context menu so we send that to our parent which will handle that
+			qGuiApp->sendEvent(parent(), evt);
+		}
+		else {
+			// The rest will be handled by the render widget
+			qGuiApp->sendEvent(_renderWidget, evt);
+		}
+		return true;
+	}
+	case QEvent::KeyPress:
+	case QEvent::KeyRelease:
+	case QEvent::MouseButtonDblClick:
+	case QEvent::MouseMove:
+	{
+		// Redirect all the events to the render widget since we want to handle them in in the QtWidget related code
+		qGuiApp->sendEvent(_renderWidget, evt);
+		return true;
+	}
 	case QEvent::UpdateRequest:
 		paintGL();
 		evt->accept();
@@ -89,13 +112,11 @@ void RenderWindow::setEditor(Editor* editor, FredRenderer* renderer) {
 	// When the editor want to update the main window we have to do that.
 	connect(_renderer, &FredRenderer::scheduleUpdate, this, &QWindow::requestUpdate);
 }
-
 RenderWidget::RenderWidget(QWidget* parent) : QWidget(parent) {
 	setFocusPolicy(Qt::NoFocus);
 	setMouseTracking(true);
 
 	_window = new RenderWindow(this);
-	_window->installEventFilter(this);
 
 	auto layout = new QHBoxLayout(this);
 	layout->setSpacing(0);
@@ -127,6 +148,8 @@ RenderWidget::RenderWidget(QWidget* parent) : QWidget(parent) {
 	_rotateCursor.reset(new QCursor(rotatePixmap, 15, 16)); // These values are from the original cursor file
 
 	_window->setCursor(*_standardCursor);
+
+	setContextMenuPolicy(Qt::DefaultContextMenu);
 
 	fredApp->runAfterInit([this]() { _window->startRendering(); });
 }
@@ -177,11 +200,21 @@ void RenderWidget::keyReleaseEvent(QKeyEvent* key) {
 }
 
 void RenderWidget::mouseReleaseEvent(QMouseEvent* mouse) {
-	if (mouse->button() == Qt::LeftButton) {
+	Qt::MouseButton button = mouse->button();
+	if (button == Qt::LeftButton) {
 		auto obj_num = _renderer->select_object(mouse->x(), mouse->y(), false);
 
 		fred->selectObject(obj_num);
+		return;
 	}
+
+	QWidget::mouseReleaseEvent(mouse);
+}
+void RenderWidget::mousePressEvent(QMouseEvent* event) {
+	QWidget::mousePressEvent(event);
+}
+void RenderWidget::mouseDoubleClickEvent(QMouseEvent* event) {
+	QWidget::mouseDoubleClickEvent(event);
 }
 void RenderWidget::mouseMoveEvent(QMouseEvent* event) {
 	// No matter in which mode we are, we always check which object is under the cursor
@@ -203,28 +236,6 @@ void RenderWidget::mouseMoveEvent(QMouseEvent* event) {
 	} else {
 		_window->setCursor(*_standardCursor);
 	}
-}
-bool RenderWidget::eventFilter(QObject* watched, QEvent* event) {
-	switch(event->type()) {
-	case QEvent::KeyPress:
-	case QEvent::KeyRelease:
-	case QEvent::MouseButtonRelease:
-	case QEvent::MouseButtonPress:
-	case QEvent::MouseButtonDblClick:
-	case QEvent::MouseMove:
-		// Redirect all the events to us since we want to handle them in in the QtWidget related code
-		qGuiApp->sendEvent(this, event);
-		return true;
-	default:
-		// Don't filter event, process as usual
-		return false;
-	}
-}
-void RenderWidget::mousePressEvent(QMouseEvent* event) {
-	QWidget::mousePressEvent(event);
-}
-void RenderWidget::mouseDoubleClickEvent(QMouseEvent* event) {
-	QWidget::mouseDoubleClickEvent(event);
 }
 void RenderWidget::setEditor(Editor* editor, FredRenderer* renderer) {
 	Assertion(fred == nullptr, "Render widget currently does not support resetting the editor!");

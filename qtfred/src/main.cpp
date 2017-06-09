@@ -8,6 +8,7 @@
 #include <QApplication>
 #include <QDir>
 #include <QSplashScreen>
+#include <QtCore/QLoggingCategory>
 
 #ifdef _WIN32
 #include "globalincs/mspdb_callstack.h"
@@ -90,6 +91,11 @@ int main(int argc, char* argv[]) {
 	QCoreApplication::setApplicationName("qtFRED");
 
 	QApplication app(argc, argv);
+
+#ifndef NDEBUG
+	QLoggingCategory::defaultCategory()->setEnabled(QtDebugMsg, true);
+	QLoggingCategory::defaultCategory()->setEnabled(QtInfoMsg, true);
+#endif
 
 	QGuiApplication::setWindowIcon(QIcon(":/images/V_fred.ico"));
 
