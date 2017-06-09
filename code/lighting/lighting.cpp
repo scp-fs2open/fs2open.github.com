@@ -254,9 +254,6 @@ void light_add_point(const vec3d *pos, float r1, float r2, float intensity, floa
 	Assertion( r1 > 0.0f, "Invalid radius r1 specified for light: %f. Radius must be > 0.0f. Examine stack trace to determine culprit.\n", r1 );
 	Assertion( r2 > 0.0f, "Invalid radius r2 specified for light: %f. Radius must be > 0.0f. Examine stack trace to determine culprit.\n", r2 );
 
-	if (r1 < 0.0001f || r2 < 0.0001f)
-		return;
-
 	if(!specular){
 		spec_r = r;
 		spec_g = g;
@@ -301,9 +298,6 @@ void light_add_point_unique(const vec3d *pos, float r1, float r2, float intensit
 	Assertion(r1 > 0.0f, "Invalid radius r1 specified for light: %f. Radius must be > 0.0f. Examine stack trace to determine culprit.\n", r1);
 	Assertion(r2 > 0.0f, "Invalid radius r2 specified for light: %f. Radius must be > 0.0f. Examine stack trace to determine culprit.\n", r2);
 
-	if (r1 < 0.0001f || r2 < 0.0001f)
-		return;
-
 	if(!specular){
 		spec_r = r;
 		spec_g = g;
@@ -347,9 +341,6 @@ void light_add_tube(const vec3d *p0, const vec3d *p1, float r1, float r2, float 
 {
 	Assertion(r1 > 0.0f, "Invalid radius r1 specified for light: %f. Radius must be > 0.0f. Examine stack trace to determine culprit.\n", r1);
 	Assertion(r2 > 0.0f, "Invalid radius r2 specified for light: %f. Radius must be > 0.0f. Examine stack trace to determine culprit.\n", r2);
-
-	if (r1 < 0.0001f || r2 < 0.0001f)
-		return;
 
 	if(!specular){
 		spec_r = r;
@@ -1051,9 +1042,6 @@ void light_add_cone(const vec3d *pos, const vec3d *dir, float angle, float inner
 {
 	Assertion( r1 > 0.0f, "Invalid radius r1 specified for light: %f. Radius must be > 0.0f. Examine stack trace to determine culprit.\n", r1 );
 	Assertion( r2 > 0.0f, "Invalid radius r2 specified for light: %f. Radius must be > 0.0f. Examine stack trace to determine culprit.\n", r2 );
-
-	if (r1 < 0.0001f || r2 < 0.0001f)
-		return;
 
 	if(!specular){
 		spec_r = r;
