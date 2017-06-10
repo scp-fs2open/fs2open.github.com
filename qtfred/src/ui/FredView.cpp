@@ -11,6 +11,7 @@
 #include <qevent.h>
 #include <FredApplication.h>
 #include <io/key.h>
+#include <ui/dialogs/EventEditorDialog.h>
 
 #include "mission/editor.h"
 #include "mission/management.h"
@@ -372,7 +373,7 @@ void FredView::onUpdateEditingMode() {
 	ui->centralWidget->setCursorMode(_renderer->Editing_mode);
 }
 bool FredView::event(QEvent* event) {
-	switch(event->type()) {
+	switch (event->type()) {
 	case QEvent::WindowActivate:
 		windowActivated();
 		return true;
@@ -496,7 +497,7 @@ void FredView::on_actionRotx50_triggered(bool enabled) {
 void FredView::onUpdateCameraControlActions() {
 	ui->actionCamera->setChecked(_renderer->viewpoint == 0);
 	ui->actionCurrent_Ship->setChecked(_renderer->viewpoint == 1);
-	
+
 	_controlModeCamera->setChecked(_renderer->Control_mode == 0);
 	_controlModeCurrentShip->setChecked(_renderer->Control_mode == 1);
 }
@@ -545,6 +546,10 @@ void FredView::keyReleaseEvent(QKeyEvent* event) {
 	qGuiApp->sendEvent(ui->centralWidget, event);
 
 	_inKeyReleaseHandler = false;
+}
+void FredView::on_actionEvents_triggered(bool) {
+	auto eventEditor = new dialogs::EventEditorDialog(this, fred, _renderer);
+	eventEditor->show();
 }
 
 } // namespace fred

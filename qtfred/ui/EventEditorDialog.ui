@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>Dialog</class>
- <widget class="QDialog" name="Dialog">
+ <class>fso::fred::dialogs::EventEditorDialog</class>
+ <widget class="QDialog" name="fso::fred::dialogs::EventEditorDialog">
   <property name="geometry">
    <rect>
     <x>0</x>
@@ -43,7 +43,7 @@
          <item row="1" column="0">
           <widget class="QLabel" name="label_2">
            <property name="text">
-            <string>Directive keypress text</string>
+            <string>Directive &amp;keypress text</string>
            </property>
            <property name="buddy">
             <cstring>editDirectiveKeypressText</cstring>
@@ -162,7 +162,7 @@
        <item row="4" column="0">
         <widget class="QLabel" name="label_4">
          <property name="text">
-          <string>Repea&amp;t Count</string>
+          <string>Repeat Co&amp;unt</string>
          </property>
          <property name="buddy">
           <cstring>spinBox</cstring>
@@ -449,5 +449,38 @@
  <resources>
   <include location="../resources/resources.qrc"/>
  </resources>
- <connections/>
+ <connections>
+  <connection>
+   <sender>buttonBox</sender>
+   <signal>accepted()</signal>
+   <receiver>fso::fred::dialogs::EventEditorDialog</receiver>
+   <slot>accept()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>782</x>
+     <y>568</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>504</x>
+     <y>-11</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>buttonBox</sender>
+   <signal>rejected()</signal>
+   <receiver>fso::fred::dialogs::EventEditorDialog</receiver>
+   <slot>reject()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>673</x>
+     <y>570</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>530</x>
+     <y>7</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
 </ui>

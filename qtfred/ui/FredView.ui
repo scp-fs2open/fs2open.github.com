@@ -1039,6 +1039,9 @@
    <property name="text">
     <string>&amp;Events</string>
    </property>
+   <property name="shortcut">
+    <string>Shift+E</string>
+   </property>
   </action>
   <action name="actionTeam_Loadout">
    <property name="text">
