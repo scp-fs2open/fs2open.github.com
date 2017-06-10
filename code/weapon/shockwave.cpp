@@ -28,6 +28,7 @@
 
 static const char *Default_shockwave_2D_filename = "shockwave01";
 static const char *Default_shockwave_3D_filename = "shockwave.pof";
+static int Default_2D_shockwave_index = -1;
 static int Default_shockwave_loaded = 0;
 
 SCP_vector<shockwave_info> Shockwave_info;
@@ -395,11 +396,11 @@ void shockwave_render(object *objp, model_draw_list *scene)
 
 		model_render_queue( &render_info, scene, sw->model_id, &Objects[sw->objnum].orient, &sw->pos);
 
-		if ( Cmdline_fb_explosions ) {
+		if ( Cmdline_fb_explosions && Default_2D_shockwave_index > -1) {
 			g3_transfer_vertex(&p, &sw->pos);
 
 			float intensity = ((sw->time_elapsed / sw->total_time) > 0.9f) ? (1.0f - (sw->time_elapsed / sw->total_time))*10.0f : 1.0f;
-			batching_add_distortion_bitmap_rotated(Shockwave_info[1].bitmap_id + shockwave_get_framenum(objp->instance, Shockwave_info[1].bitmap_id), &p, fl_radians(sw->rot_angles.p), sw->radius, intensity);
+			batching_add_distortion_bitmap_rotated(Shockwave_info[Default_2D_shockwave_index].bitmap_id + shockwave_get_framenum(objp->instance, Shockwave_info[Default_2D_shockwave_index].bitmap_id), &p, fl_radians(sw->rot_angles.p), sw->radius, intensity);
 		}
 	} else {
 		g3_transfer_vertex(&p, &sw->pos);
@@ -493,6 +494,7 @@ void shockwave_level_init()
 				mprintf(("SHOCKWAVE =>  Default model load: SUCCEEDED!!\n"));
 			else
 				mprintf(("SHOCKWAVE =>  Default model load: FAILED!!  Falling back to 2D effect...\n"));
+			Assertion(i <= 0, "Default 3D shockwave should be the first shockwave loaded, but instead got loaded into index %d; get a coder!\n", i);
 		}
 
 		// next, try the 2d shockwave effect, unless the 3d effect was loaded
@@ -506,6 +508,8 @@ void shockwave_level_init()
 				mprintf(("SHOCKWAVE =>  Default animation load: SUCCEEDED!!\n"));
 			else
 				mprintf(("SHOCKWAVE =>  Default animation load: FAILED!!  Checking if 3d effect was already tried...\n"));
+			Assertion(i <= 1, "Default 2D shockwave should be either the first or second shockwave loaded, but instead got loaded into index %d; get a coder!\n", i);
+			Default_2D_shockwave_index = i;
 		}
 			
 		// chief1983 - The first patch broke mods that don't provide a 2d shockwave or define a specific shockwave for each model/weapon (shame on them)
@@ -520,6 +524,7 @@ void shockwave_level_init()
 				mprintf(("SHOCKWAVE =>  Default model load: SUCCEEDED!!\n"));
 			else
 				mprintf(("SHOCKWAVE =>  Default model load: FAILED!!  No effect loaded...\n"));
+			Assertion(i <= 0, "Default 3D shockwave should be the first shockwave loaded, but instead got loaded into index %d; get a coder!\n", i);
 		}
 
 		if (i < 0)
@@ -566,6 +571,12 @@ void shockwave_level_close()
 		bm_unload( it->bitmap_id );
 	else if (it->model_id >= 0)
 		model_page_out_textures( it->model_id );
+	if (Default_2D_shockwave_index == 1) {
+		// 3D shockwaves and framebuffer shockwaves are both enabled and the default 2D shockwave is in the next slot of the vector
+		++it;
+		Assertion(it->bitmap_id >= 0, "Default 2D shockwave was loaded but is somehow missing its bitmap; get a coder!\n");
+		bm_unload(it->bitmap_id);
+	}
 
 	for (++it; it != Shockwave_info.end(); ++it) {
 		if (it->bitmap_id >= 0)
@@ -576,7 +587,7 @@ void shockwave_level_close()
 	}
 
 	// if there's no extra shockwaves, this is still fine (erasing from end() to end() is both valid and a no-op)
-	Shockwave_info.erase( Shockwave_info.begin() + 1, Shockwave_info.end() );
+	Shockwave_info.erase( Shockwave_info.begin() + (Default_2D_shockwave_index == 1 ? 2 : 1), Shockwave_info.end() );
 
 	Shockwave_inited = 0;
 }
