@@ -13,8 +13,11 @@
 #include <io/key.h>
 
 #include "mission/editor.h"
+#include "mission/management.h"
 
 #include "widgets/ColorComboBox.h"
+
+#include "util.h"
 
 namespace {
 
@@ -216,6 +219,9 @@ void FredView::syncViewOptions() {
 	connectActionToViewSetting(ui->actionLighting_from_Suns, &_renderer->view.Lighting_on);
 }
 void FredView::initializeStatusBar() {
+	_statusBarViewmode = new QLabel();
+	statusBar()->addPermanentWidget(_statusBarViewmode);
+
 	_statusBarUnitsLabel = new QLabel();
 	statusBar()->addPermanentWidget(_statusBarUnitsLabel);
 }
@@ -226,6 +232,12 @@ void FredView::updateUI() {
 	}
 
 	_statusBarUnitsLabel->setText(tr("Units = %1 Meters").arg(_renderer->The_grid->square_size));
+
+	if (_renderer->viewpoint == 1) {
+		_statusBarViewmode->setText(tr("Viewpoint: %1").arg(object_name(_renderer->view_obj)));
+	} else {
+		_statusBarViewmode->setText(tr("Viewpoint: Camera"));
+	}
 
 	viewIdle();
 }

@@ -110,6 +110,7 @@ protected:
 	void initializeStatusBar();
 	void initializePopupMenus();
 
+	QLabel* _statusBarViewmode = nullptr;
 	QLabel* _statusBarUnitsLabel = nullptr;
 
 	QMenu* _viewPopup = nullptr;
