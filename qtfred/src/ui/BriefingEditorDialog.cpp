@@ -1,5 +1,5 @@
 #include "BriefingEditorDialog.h"
-#include "ui_briefingeditordialog.h"
+#include "ui_BriefingEditorDialog.h"
 #include <QtWidgets/QMenuBar>
 
 namespace fso {
