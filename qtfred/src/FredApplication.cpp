@@ -1,5 +1,8 @@
 
 #include <QtCore/QAbstractEventDispatcher>
+#include <QDebug>
+#include <QTimer>
+#include <QtGui/QtEvents>
 
 #include <mission/editor.h>
 
@@ -24,11 +27,17 @@ FredApplication::FredApplication() {
 	// Put our shutdown code into a slot connected to the quit signal. That's the recommended way of doing cleanup
 	connect(qGuiApp, &QCoreApplication::aboutToQuit, this, &FredApplication::shutdown);
 
-	// This will call our function whenever the processing loop is idle, allowing us to do regular operations
-	connect(QAbstractEventDispatcher::instance(), &QAbstractEventDispatcher::aboutToBlock, this,
-			&FredApplication::idleFunction);
+	// This will call our function in regular increments which allows us to do mission simulation stuff
+	auto idleTimer = new QTimer(this);
+	connect(idleTimer, &QTimer::timeout, this, &FredApplication::idleFunction);
+	idleTimer->start(5);
 
 	fredApp = this;
+
+	// When there are issues with event handling, enable this define to see the events in the log and stdout
+#ifdef EVENT_DEBUGGING
+	qGuiApp->installEventFilter(this);
+#endif
 }
 FredApplication::~FredApplication() {
 	fredApp = nullptr;
@@ -45,6 +54,7 @@ void FredApplication::runAfterInit(std::function<void()>&& action) {
 		connect(this, &FredApplication::initializeComplete, action);
 	}
 }
+
 void FredApplication::shutdown() {
 	// Clean up resources after we are done
 	fso::fred::shutdown();
@@ -57,6 +67,13 @@ void FredApplication::shutdown() {
 void FredApplication::idleFunction() {
 	// emit the public signal
 	onIdle();
+}
+bool FredApplication::eventFilter(QObject* watched, QEvent* event) {
+	// Skip timer events since there are a lot of those
+	if (event->type() != QEvent::Timer) {
+		qDebug() << watched << " " << event;
+	}
+	return QObject::eventFilter(watched, event);
 }
 }
 }

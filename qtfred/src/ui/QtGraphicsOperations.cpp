@@ -87,7 +87,7 @@ void QtGraphicsOperations::makeOpenGLContextCurrent(os::Viewport* view, os::Open
 			_lastContext->makeCurrent(nullptr);
 		}
 	} else {
-		qtContext->makeCurrent(qtPort->getWindow()->getRenderWindow());
+		qtContext->makeCurrent(qtPort->getWindow()->getRenderSurface());
 	}
 
 	// We keep track of our last context since the qt information may return contexts managed by the GUI framework
@@ -103,7 +103,7 @@ QtViewport::~QtViewport() {
 
 std::unique_ptr<os::Viewport> QtGraphicsOperations::createViewport(const os::ViewPortProperties& props) {
 	std::unique_ptr<FredView> mw(new FredView());
-	mw->getRenderWindow()->initializeGL(getSurfaceFormat(props, props.gl_attributes));
+	mw->getRenderWidget()->setSurfaceFormat(getSurfaceFormat(props, props.gl_attributes));
 
 	auto viewPtr = mw.get();
 	auto view = std::unique_ptr<os::Viewport>(new QtViewport(std::move(mw), props));
@@ -124,13 +124,13 @@ SDL_Window* QtViewport::toSDLWindow() {
 	return nullptr;
 }
 std::pair<uint32_t, uint32_t> QtViewport::getSize() {
-	auto size = _viewportWindow->getRenderWindow()->size();
+	auto size = _viewportWindow->getRenderSurface()->size();
 
 	return std::make_pair((uint32_t) size.width(), (uint32_t) size.height());
 }
 void QtViewport::swapBuffers() {
-	if (_viewportWindow->getRenderWindow()->isVisible()) {
-		QOpenGLContext::currentContext()->swapBuffers(_viewportWindow->getRenderWindow());
+	if (_viewportWindow->getRenderWidget()->isVisible()) {
+		QOpenGLContext::currentContext()->swapBuffers(_viewportWindow->getRenderSurface());
 	}
 }
 void QtViewport::setState(os::ViewportState state) {

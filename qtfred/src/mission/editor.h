@@ -90,6 +90,7 @@ class Editor : public QObject {
 	void loadMission(const std::string& filepath);
 
 	void markObject(int objId);
+	void unmarkObject(int objId);
 
 	void selectObject(int objId);
 
@@ -105,6 +106,11 @@ class Editor : public QObject {
 	bool query_ship_name_duplicate(int ship);
 
 	void fix_ship_name(int ship);
+
+	int getCurrentObject();
+
+	void hideMarkedObjects();
+	void showHiddenObjects();
 
 	///! Non-copyable.
 	Editor(const Editor&) = delete;
@@ -131,8 +137,6 @@ signals:
 	void clearMission();
 
 	void initialSetup();
-
-	void resetPhysics();
 
 	void setupCurrentObjectIndices(int obj);
 

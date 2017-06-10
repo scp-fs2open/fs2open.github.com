@@ -20,7 +20,7 @@
      <x>0</x>
      <y>0</y>
      <width>926</width>
-     <height>25</height>
+     <height>28</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -64,7 +64,7 @@
    </widget>
    <widget class="QMenu" name="menuEdit">
     <property name="title">
-     <string>Edit</string>
+     <string>E&amp;dit</string>
     </property>
     <addaction name="actionUndo"/>
     <addaction name="actionDelete"/>
@@ -145,11 +145,11 @@
      <property name="title">
       <string>&amp;Rotation</string>
      </property>
-     <addaction name="actionx1_2"/>
-     <addaction name="actionx5_2"/>
-     <addaction name="actionx12"/>
-     <addaction name="actionx25"/>
-     <addaction name="actionx50_2"/>
+     <addaction name="actionRotx1"/>
+     <addaction name="actionRotx5"/>
+     <addaction name="actionRotx12"/>
+     <addaction name="actionRotx25"/>
+     <addaction name="actionRotx50"/>
     </widget>
     <addaction name="menuMovement"/>
     <addaction name="menuRotation"/>
@@ -246,6 +246,9 @@
   </widget>
   <widget class="QStatusBar" name="statusBar"/>
   <widget class="QToolBar" name="toolBar">
+   <property name="contextMenuPolicy">
+    <enum>Qt::PreventContextMenu</enum>
+   </property>
    <property name="windowTitle">
     <string>toolBar</string>
    </property>
@@ -261,12 +264,12 @@
    <addaction name="separator"/>
    <addaction name="actionRotateLocal"/>
    <addaction name="separator"/>
-   <addaction name="actionConstraintX"/>
-   <addaction name="actionConstraintY"/>
-   <addaction name="actionConstraintZ"/>
-   <addaction name="actionConstraintXZ"/>
-   <addaction name="actionConstraintYZ"/>
-   <addaction name="actionConstraintXY"/>
+   <addaction name="actionConstrainX"/>
+   <addaction name="actionConstrainY"/>
+   <addaction name="actionConstrainZ"/>
+   <addaction name="actionConstrainXZ"/>
+   <addaction name="actionConstrainYZ"/>
+   <addaction name="actionConstrainXY"/>
    <addaction name="separator"/>
    <addaction name="actionSelectionList"/>
    <addaction name="actionSelectionLock"/>
@@ -282,6 +285,9 @@
    <addaction name="separator"/>
   </widget>
   <action name="actionSelect">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
    <property name="icon">
     <iconset resource="../resources/resources.qrc">
      <normaloff>:/images/select.png</normaloff>:/images/select.png</iconset>
@@ -297,6 +303,9 @@
    </property>
   </action>
   <action name="actionSelectMove">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
    <property name="icon">
     <iconset resource="../resources/resources.qrc">
      <normaloff>:/images/selectmove.png</normaloff>:/images/selectmove.png</iconset>
@@ -312,6 +321,9 @@
    </property>
   </action>
   <action name="actionSelectRotate">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
    <property name="icon">
     <iconset resource="../resources/resources.qrc">
      <normaloff>:/images/selectrot.png</normaloff>:/images/selectrot.png</iconset>
@@ -344,7 +356,7 @@
     <string>X</string>
    </property>
   </action>
-  <action name="actionConstraintX">
+  <action name="actionConstrainX">
    <property name="checkable">
     <bool>true</bool>
    </property>
@@ -359,7 +371,7 @@
     <string>X Constraint (`)</string>
    </property>
   </action>
-  <action name="actionConstraintY">
+  <action name="actionConstrainY">
    <property name="checkable">
     <bool>true</bool>
    </property>
@@ -374,7 +386,7 @@
     <string>Y Constraint (`)</string>
    </property>
   </action>
-  <action name="actionConstraintZ">
+  <action name="actionConstrainZ">
    <property name="checkable">
     <bool>true</bool>
    </property>
@@ -389,7 +401,7 @@
     <string>Z Constraint (`)</string>
    </property>
   </action>
-  <action name="actionConstraintXZ">
+  <action name="actionConstrainXZ">
    <property name="checkable">
     <bool>true</bool>
    </property>
@@ -404,7 +416,7 @@
     <string>XZ Constraint (`)</string>
    </property>
   </action>
-  <action name="actionConstraintYZ">
+  <action name="actionConstrainYZ">
    <property name="checkable">
     <bool>true</bool>
    </property>
@@ -419,7 +431,7 @@
     <string>YZ Constraint</string>
    </property>
   </action>
-  <action name="actionConstraintXY">
+  <action name="actionConstrainXY">
    <property name="checkable">
     <bool>true</bool>
    </property>
@@ -649,16 +661,25 @@
    </property>
   </action>
   <action name="actionShow_Ships">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
    <property name="text">
     <string>&amp;Show Ships</string>
    </property>
   </action>
   <action name="actionShow_Player_Starts">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
    <property name="text">
     <string>Show &amp;Player Starts</string>
    </property>
   </action>
   <action name="actionShow_Waypoints">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
    <property name="text">
     <string>Show &amp;Waypoints</string>
    </property>
@@ -684,6 +705,9 @@
    </property>
   </action>
   <action name="actionShow_Ship_Models">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
    <property name="text">
     <string>Show Ship Models</string>
    </property>
@@ -692,6 +716,9 @@
    </property>
   </action>
   <action name="actionShow_Outlines">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
    <property name="text">
     <string>Show &amp;Outlines</string>
    </property>
@@ -700,6 +727,9 @@
    </property>
   </action>
   <action name="actionShow_Coordinates">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
    <property name="text">
     <string>Show &amp;Coordinates</string>
    </property>
@@ -708,6 +738,9 @@
    </property>
   </action>
   <action name="actionShow_Grid_Positions">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
    <property name="text">
     <string>Show &amp;Grid Positions</string>
    </property>
@@ -716,6 +749,9 @@
    </property>
   </action>
   <action name="actionShow_Distances">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
    <property name="text">
     <string>Show D&amp;istances</string>
    </property>
@@ -724,16 +760,25 @@
    </property>
   </action>
   <action name="actionShow_Model_Paths">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
    <property name="text">
     <string>Show &amp;Model Paths</string>
    </property>
   </action>
   <action name="actionShow_Model_Dock_Points">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
    <property name="text">
     <string>Show Model Doc&amp;k Points</string>
    </property>
   </action>
   <action name="actionShow_Grid">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
    <property name="text">
     <string>Show Grid</string>
    </property>
@@ -742,6 +787,9 @@
    </property>
   </action>
   <action name="actionShow_Horizon">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
    <property name="text">
     <string>Show Hori&amp;zon</string>
    </property>
@@ -750,16 +798,25 @@
    </property>
   </action>
   <action name="actionDouble_Fine_Gridlines">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
    <property name="text">
     <string>Double &amp;Fine Gridlines</string>
    </property>
   </action>
   <action name="actionAnti_Aliased_Gridlines">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
    <property name="text">
     <string>&amp;Anti-Aliased Gridlines</string>
    </property>
   </action>
   <action name="actionShow_3D_Compass">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
    <property name="text">
     <string>Show &amp;3D Compass</string>
    </property>
@@ -768,6 +825,9 @@
    </property>
   </action>
   <action name="actionShow_Background">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
    <property name="text">
     <string>Show &amp;Background</string>
    </property>
@@ -789,85 +849,121 @@
    </property>
   </action>
   <action name="actionLighting_from_Suns">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
    <property name="text">
     <string>&amp;Lighting from Suns...</string>
    </property>
   </action>
   <action name="actionCamera">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
    <property name="text">
     <string>&amp;Camera</string>
    </property>
   </action>
   <action name="actionCurrent_Ship">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
    <property name="text">
     <string>Current &amp;Ship</string>
    </property>
   </action>
   <action name="actionx1">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
    <property name="text">
     <string>&amp;x1</string>
    </property>
    <property name="shortcut">
-    <string>1</string>
+    <string>Alt+Shift+1</string>
    </property>
   </action>
   <action name="actionx2">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
    <property name="text">
     <string>x&amp;2</string>
    </property>
    <property name="shortcut">
-    <string>2</string>
+    <string>Alt+Shift+2</string>
    </property>
   </action>
   <action name="actionx3">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
    <property name="text">
     <string>x&amp;3</string>
    </property>
    <property name="shortcut">
-    <string>3</string>
+    <string>Alt+Shift+3</string>
    </property>
   </action>
   <action name="actionx5">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
    <property name="text">
     <string>x&amp;5</string>
    </property>
    <property name="shortcut">
-    <string>4</string>
+    <string>Alt+Shift+4</string>
    </property>
   </action>
   <action name="actionx8">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
    <property name="text">
     <string>x&amp;8</string>
    </property>
    <property name="shortcut">
-    <string>5</string>
+    <string>Alt+Shift+5</string>
    </property>
   </action>
   <action name="actionx10">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
    <property name="text">
     <string>x&amp;10</string>
    </property>
    <property name="shortcut">
-    <string>6</string>
+    <string>Alt+Shift+6</string>
    </property>
   </action>
   <action name="actionx50">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
    <property name="text">
     <string>x5&amp;0</string>
    </property>
    <property name="shortcut">
-    <string>7</string>
+    <string>Alt+Shift+7</string>
    </property>
   </action>
   <action name="actionx100">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
    <property name="text">
     <string>x100</string>
    </property>
    <property name="shortcut">
-    <string>8</string>
+    <string>Alt+Shift+8</string>
    </property>
   </action>
-  <action name="actionx1_2">
+  <action name="actionRotx1">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
    <property name="text">
     <string>&amp;x1</string>
    </property>
@@ -875,7 +971,10 @@
     <string>Shift+1</string>
    </property>
   </action>
-  <action name="actionx5_2">
+  <action name="actionRotx5">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
    <property name="text">
     <string>x&amp;5</string>
    </property>
@@ -883,7 +982,10 @@
     <string>Shift+2</string>
    </property>
   </action>
-  <action name="actionx12">
+  <action name="actionRotx12">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
    <property name="text">
     <string>x&amp;12</string>
    </property>
@@ -891,7 +993,10 @@
     <string>Shift+3</string>
    </property>
   </action>
-  <action name="actionx25">
+  <action name="actionRotx25">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
    <property name="text">
     <string>x&amp;25</string>
    </property>
@@ -899,7 +1004,10 @@
     <string>Shift+4</string>
    </property>
   </action>
-  <action name="actionx50_2">
+  <action name="actionRotx50">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
    <property name="text">
     <string>x5&amp;0</string>
    </property>
@@ -1168,6 +1276,9 @@
    </property>
   </action>
   <action name="actionShow_Ship_Info">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
    <property name="text">
     <string>Show Ship I&amp;nfo</string>
    </property>
@@ -1177,7 +1288,7 @@
   </action>
   <action name="actionEmpty">
    <property name="text">
-    <string>Empty</string>
+    <string>&amp;Empty</string>
    </property>
   </action>
  </widget>

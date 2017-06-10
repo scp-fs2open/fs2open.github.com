@@ -39,14 +39,14 @@
 #include "starfield/starfield.h" // stars_init, stars_pre_level_init, stars_post_level_init
 #include "osapi/osapi.h" // os_get_window, os_set_window.
 #include "graphics/font.h"
+#include "hud/hudsquadmsg.h"
+#include "globalincs/linklist.h"
 
 #include "ui/QtGraphicsOperations.h"
 #include "ai/aigoals.h"
 
 #include "object.h"
-#include "iterators.h"
 #include <FredApplication.h>
-#include <hud/hudsquadmsg.h>
 
 extern int Xstr_inited;
 
@@ -172,7 +172,7 @@ FredRenderer* Editor::createRenderer(os::Viewport* renderView) {
 void Editor::update() {
 	// Do updates for all renderers
 	for (auto& renderer : _renderers) {
-		renderer->game_do_frame(-1, 0, 0, -1);
+		renderer->game_do_frame(currentObject);
 	}
 }
 
@@ -216,26 +216,31 @@ void Editor::markObject(int obj) {
 		missionChanged();
 	}
 }
+void Editor::unmarkObject(int obj) {
+	Assert(query_valid_object(obj));
+	if (Objects[obj].flags[Object::Object_Flags::Marked]) {
+		Objects[obj].flags.remove(Object::Object_Flags::Marked);
+		numMarked--;
+		if (obj == currentObject) {  // need to find a new index
+			object *ptr;
 
-void Editor::resetPhysics() {
-	int physics_speed = 100;
-	int physics_rot = 20;
+			ptr = GET_FIRST(&obj_used_list);
+			while (ptr != END_OF_LIST(&obj_used_list)) {
+				if (ptr->flags[Object::Object_Flags::Marked]) {
+					setupCurrentObjectIndices(OBJ_INDEX(ptr));  // found one
+					return;
+				}
 
-	physics_info view_physics;
-	physics_init(&view_physics);
-	view_physics.max_vel.xyz.x *= physics_speed / 3.0f;
-	view_physics.max_vel.xyz.y *= physics_speed / 3.0f;
-	view_physics.max_vel.xyz.z *= physics_speed / 3.0f;
-	view_physics.max_rear_vel *= physics_speed / 3.0f;
-	view_physics.max_rotvel.xyz.x *= physics_rot / 30.0f;
-	view_physics.max_rotvel.xyz.y *= physics_rot / 30.0f;
-	view_physics.max_rotvel.xyz.z *= physics_rot / 30.0f;
-	view_physics.flags |= PF_ACCELERATES | PF_SLIDE_ENABLED;
+				ptr = GET_NEXT(ptr);
+			}
 
-	for (auto& renderer : _renderers) {
-		renderer->view_physics = view_physics;
+			setupCurrentObjectIndices(-1);  // can't find one; nothing is marked.
+		}
+
+		updateAllRenderers();
 	}
 }
+
 void Editor::clearMission() {
 	// clean up everything we need to before we reset back to defaults.
 #if 0
@@ -375,7 +380,9 @@ void Editor::clearMission() {
 
 	strcpy(Cargo_names[0], "Nothing");
 	Num_cargo = 1;
-	resetPhysics();
+	for (auto& renderer : _renderers) {
+		renderer->resetViewPhysics();
+	}
 
 	// reset background bitmaps and suns
 	stars_pre_level_init();
@@ -444,6 +451,7 @@ void Editor::setupCurrentObjectIndices(int selectedObj) {
 	}
 
 	if (selectedObj == -1 || !Num_objects) {
+		currentObject = -1;
 		return;
 	}
 
@@ -596,6 +604,35 @@ void Editor::fix_ship_name(int ship) {
 void Editor::createNewMission() {
 	clearMission();
 	create_player(0, &vmd_zero_vector, &vmd_identity_matrix);
+}
+int Editor::getCurrentObject() {
+	return currentObject;
+}
+void Editor::hideMarkedObjects() {
+	object *ptr;
+
+	ptr = GET_FIRST(&obj_used_list);
+	while (ptr != END_OF_LIST(&obj_used_list)) {
+		if (ptr->flags[Object::Object_Flags::Marked]) {
+			ptr->flags.set(Object::Object_Flags::Hidden);
+			unmarkObject(OBJ_INDEX(ptr));
+		}
+
+		ptr = GET_NEXT(ptr);
+	}
+
+	updateAllRenderers();
+}
+void Editor::showHiddenObjects() {
+	object *ptr;
+
+	ptr = GET_FIRST(&obj_used_list);
+	while (ptr != END_OF_LIST(&obj_used_list)) {
+		ptr->flags.remove(Object::Object_Flags::Hidden);
+		ptr = GET_NEXT(ptr);
+	}
+
+	updateAllRenderers();
 }
 
 } // namespace fred

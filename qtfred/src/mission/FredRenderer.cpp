@@ -20,13 +20,10 @@
 #include <iff_defs/iff_defs.h>
 #include <math/fvi.h>
 
-#include "mission/iterators.h"
 #include "mission/object.h"
 
 using std::begin;
 using std::end;
-using fso::fred::begin;
-using fso::fred::end;
 
 namespace {
 const fix MAX_FRAMETIME = (F1_0 / 4); // Frametime gets saturated at this.
@@ -436,6 +433,8 @@ ViewSettings::ViewSettings() {
 }
 
 FredRenderer::FredRenderer(Editor* editor, os::Viewport* targetView) : _editor(editor), _targetView(targetView) {
+	vm_vec_make(&Constraint, 1.0f, 0.0f, 1.0f);
+	vm_vec_make(&Anticonstraint, 0.0f, 1.0f, 0.0f);
 	resetView();
 }
 
@@ -464,30 +463,34 @@ void FredRenderer::resetView() {
 	init_fred_colors();
 }
 
-void FredRenderer::inc_mission_time() {
-	fix thistime;
-
-	thistime = timer_get_fixed_seconds();
+/**
+ * @brief Increments mission time
+ *
+ * @details This only increments the mission time if the time difference is greater than the minimum frametime to avoid
+ * excessive computation
+ *
+ * @return @c true if the mission time was incremented, @c false otherwise.
+ */
+bool FredRenderer::inc_mission_time() {
+	fix thistime = timer_get_fixed_seconds();
+	fix time_diff; // This holds the computed time difference since the last time this function was called
 	if (!lasttime) {
-		Frametime = F1_0 / 30;
+		time_diff = F1_0 / 30;
 	} else {
-		Frametime = thistime - lasttime;
+		time_diff = thistime - lasttime;
 	}
 
-	if (Frametime > MAX_FRAMETIME) {
-		Frametime = MAX_FRAMETIME;
-	} else if (Frametime < MIN_FRAMETIME) {
-		if (!Cmdline_NoFPSCap) {
-			thistime = MIN_FRAMETIME - Frametime;
-			os_sleep(f2i(thistime) * 1000);
-			thistime = timer_get_fixed_seconds();
-		}
-
-		Frametime = MIN_FRAMETIME;
+	if (time_diff > MAX_FRAMETIME) {
+		time_diff = MAX_FRAMETIME;
+	} else if (time_diff < MIN_FRAMETIME) {
+		return false;
 	}
 
+	Frametime = time_diff;
 	Missiontime += Frametime;
 	lasttime = thistime;
+
+	return true;
 }
 
 void FredRenderer::move_mouse(int btn, int mdx, int mdy) {
@@ -584,23 +587,23 @@ void FredRenderer::process_controls(vec3d* pos, matrix* orient, float frametime,
 	}
 }
 
-void FredRenderer::game_do_frame(const int view_obj,
-								 const int viewpoint,
-								 const int cur_object_index,
-								 const int Cursor_over) {
+void FredRenderer::game_do_frame(const int cur_object_index) {
 	int key, cmode;
 	vec3d viewer_position, control_pos;
 	object* objp;
 	matrix control_orient;
 
-	inc_mission_time();
+	if (!inc_mission_time()) {
+		// Don't do anything if the mission time wasn't incremented
+		return;
+	}
 
 	viewer_position = my_orient.vec.fvec;
 	vm_vec_scale(&viewer_position, my_pos.xyz.z);
 
-	///! \bug Reset viewpoint.
 	if ((viewpoint == 1) && !query_valid_object(view_obj)) {
-		/*viewpoint = 0*/}
+		viewpoint = 0;
+	}
 
 	key = key_inkey();
 	process_system_keys(key);
@@ -838,30 +841,41 @@ g3_draw_line(&p[3], &p[0]);
 }
 
 void FredRenderer::display_distances() {
-	using object_iterator = fso::fred::iterator<object>;
 	char buf[20];
+	object *objp, *o2;
 	vec3d pos;
 	vertex v;
 
 
 	gr_set_color(255, 0, 0);
-	for (object_iterator objp(begin(obj_used_list)); objp != end(obj_used_list); ++objp) {
-		if ((*objp)->flags[Object::Object_Flags::Marked]) {
-			for (object_iterator o2(objp); o2 != end(obj_used_list); ++o2) {
-				if ((*o2)->flags[Object::Object_Flags::Marked]) {
-					rpd_line(&(*objp)->pos, &(*o2)->pos);
-					vm_vec_avg(&pos, &(*objp)->pos, &(*o2)->pos);
+	objp = GET_FIRST(&obj_used_list);
+	while (objp != END_OF_LIST(&obj_used_list))
+	{
+		if (objp->flags[Object::Object_Flags::Marked])
+		{
+			o2 = GET_NEXT(objp);
+			while (o2 != END_OF_LIST(&obj_used_list))
+			{
+				if (o2->flags[Object::Object_Flags::Marked])
+				{
+					rpd_line(&objp->pos, &o2->pos);
+					vm_vec_avg(&pos, &objp->pos, &o2->pos);
 					g3_rotate_vertex(&v, &pos);
-					if (!(v.codes & CC_BEHIND)) {
+					if (!(v.codes & CC_BEHIND))
 						if (!(g3_project_vertex(&v) & PF_OVERFLOW)) {
-							sprintf(buf, "%.1f", vm_vec_dist(&(*objp)->pos, &(*o2)->pos));
+							sprintf(buf, "%.1f", vm_vec_dist(&objp->pos, &o2->pos));
 							gr_set_color_fast(&colour_white);
-							gr_string((int) v.screen.xyw.x, (int) v.screen.xyw.y, buf);
+							gr_string((int)v.screen.xyw.x, (int)v.screen.xyw.y, buf);
 						}
-					}
 				}
+
+
+
+				o2 = GET_NEXT(o2);
 			}
 		}
+
+		objp = GET_NEXT(objp);
 	}
 }
 
@@ -884,7 +898,7 @@ void FredRenderer::display_ship_info(int cur_object_index) {
 			Fred_outline = 0;
 		}
 
-		if ((objp->type == OBJ_WAYPOINT) && !Show_waypoints) {
+		if ((objp->type == OBJ_WAYPOINT) && !view.Show_waypoints) {
 			render = 0;
 		}
 
@@ -1019,6 +1033,10 @@ int get_subsys_bounding_rect(object* ship_obj, ship_subsys* subsys, int* x1, int
 }
 
 void FredRenderer::render_compass() {
+	if (!view.Show_compass) {
+		return;
+	}
+
 	vec3d v, eye = vmd_zero_vector;
 
 	gr_set_clip(gr_screen.max_w - 100, 0, 100, 100);
@@ -1234,7 +1252,7 @@ void FredRenderer::render_one_model_htl(object* objp,
 		return;
 	}
 
-	if ((objp->type == OBJ_WAYPOINT) && !Show_waypoints) {
+	if ((objp->type == OBJ_WAYPOINT) && !view.Show_waypoints) {
 		return;
 	}
 
@@ -1416,7 +1434,6 @@ void FredRenderer::render_frame(int cur_object_index,
 								subsys_to_render& Render_subsys,
 								bool box_marking,
 								const Marking_box& marking_box,
-								int Cursor_over,
 								bool Bg_bitmap_dialog) {
 
 	// Make sure our OpenGL context is used for rendering
@@ -1608,7 +1625,7 @@ int FredRenderer::object_check_collision(object* objp,
 		return 0;
 	}
 
-	if ((objp->type == OBJ_WAYPOINT) && !Show_waypoints) {
+	if ((objp->type == OBJ_WAYPOINT) && !view.Show_waypoints) {
 		return 0;
 	}
 
@@ -1663,7 +1680,6 @@ int FredRenderer::object_check_collision(object* objp,
 int FredRenderer::select_object(int cx,
 								int cy,
 								bool Selection_lock) {
-	using object_iterator = fso::fred::iterator<object>;
 	int best = -1;
 	double dist, best_dist = 9e99;
 	vec3d p0, p1, v, hitpos;
@@ -1693,22 +1709,20 @@ g3_set_view_matrix(&eye_pos, &eye_orient, 0.5f);*/
 
 	//	g3_end_frame();
 	if (!v.xyz.x && !v.xyz.y && !v.xyz.z) { // zero vector {
-		mprintf(("select_object: zero vector"));
 		return -1;
 	}
 
 	p0 = view_pos;
 	vm_vec_scale_add(&p1, &p0, &v, 100.0f);
 
-	for (object_iterator ptr(begin(obj_used_list)); ptr != end(obj_used_list); ++ptr) {
-		if (object_check_collision(*ptr, &p0, &p1, &hitpos)) {
-			hitpos.xyz.x = (*ptr)->pos.xyz.x - view_pos.xyz.x;
-			hitpos.xyz.y = (*ptr)->pos.xyz.y - view_pos.xyz.y;
-			hitpos.xyz.z = (*ptr)->pos.xyz.z - view_pos.xyz.z;
+	for ( auto objp = GET_FIRST(&obj_used_list); objp !=END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) ) {
+		if (object_check_collision(objp, &p0, &p1, &hitpos)) {
+			hitpos.xyz.x = objp->pos.xyz.x - view_pos.xyz.x;
+			hitpos.xyz.y = objp->pos.xyz.y - view_pos.xyz.y;
+			hitpos.xyz.z = objp->pos.xyz.z - view_pos.xyz.z;
 			dist = hitpos.xyz.x * hitpos.xyz.x + hitpos.xyz.y * hitpos.xyz.y + hitpos.xyz.z * hitpos.xyz.z;
 			if (dist < best_dist) {
-				best = OBJ_INDEX(*ptr);
-				mprintf(("select_object: best so far %d", best));
+				best = OBJ_INDEX(objp);
 				best_dist = dist;
 			}
 		}
@@ -1721,15 +1735,15 @@ g3_set_view_matrix(&eye_pos, &eye_orient, 0.5f);*/
 		return best;
 	}
 
-	for (object_iterator ptr(begin(obj_used_list)); ptr != end(obj_used_list); ++ptr) {
-		g3_rotate_vertex(&vt, &(*ptr)->pos);
+	for ( auto objp = GET_FIRST(&obj_used_list); objp !=END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) ) {
+		g3_rotate_vertex(&vt, &objp->pos);
 		if (!(vt.codes & CC_BEHIND)) {
 			if (!(g3_project_vertex(&vt) & PF_OVERFLOW)) {
 				hitpos.xyz.x = vt.screen.xyw.x - cx;
 				hitpos.xyz.y = vt.screen.xyw.y - cy;
 				dist = hitpos.xyz.x * hitpos.xyz.x + hitpos.xyz.y * hitpos.xyz.y;
 				if ((dist < 8) && (dist < best_dist)) {
-					best = OBJ_INDEX(*ptr);
+					best = OBJ_INDEX(objp);
 					best_dist = dist;
 				}
 			}
@@ -1759,7 +1773,7 @@ void FredRenderer::level_object(matrix* orient) {
 	vm_fix_matrix(orient);
 }
 
-void FredRenderer::level_controlled(const int viewpoint, const int view_obj) {
+void FredRenderer::level_controlled() {
 	int cmode, count = 0;
 	object* objp;
 
@@ -1819,7 +1833,7 @@ void FredRenderer::level_controlled(const int viewpoint, const int view_obj) {
 	return;
 }
 
-void FredRenderer::verticalize_controlled(const int viewpoint, const int view_obj) {
+void FredRenderer::verticalize_controlled() {
 	int cmode, count = 0;
 	object* objp;
 
@@ -1886,6 +1900,17 @@ void FredRenderer::resize(int width, int height) {
 
 	// We need to rerender the scene now
 	scheduleUpdate();
+}
+void FredRenderer::resetViewPhysics() {
+	physics_init(&view_physics);
+	view_physics.max_vel.xyz.x *= physics_speed / 3.0f;
+	view_physics.max_vel.xyz.y *= physics_speed / 3.0f;
+	view_physics.max_vel.xyz.z *= physics_speed / 3.0f;
+	view_physics.max_rear_vel *= physics_speed / 3.0f;
+	view_physics.max_rotvel.xyz.x *= physics_rot / 30.0f;
+	view_physics.max_rotvel.xyz.y *= physics_rot / 30.0f;
+	view_physics.max_rotvel.xyz.z *= physics_rot / 30.0f;
+	view_physics.flags |= PF_ACCELERATES | PF_SLIDE_ENABLED;
 }
 }
 }

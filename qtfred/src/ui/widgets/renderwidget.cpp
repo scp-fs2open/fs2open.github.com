@@ -16,27 +16,12 @@
 
 #include "mission/editor.h"
 #include "FredApplication.h"
+#include "ui/FredView.h"
 
 namespace fso {
 namespace fred {
 
-RenderWindow::RenderWindow(QWidget* parent) : QWindow(parent->windowHandle()) {
-	qt2fsKeys[Qt::Key_Shift] = KEY_LSHIFT;
-	qt2fsKeys[Qt::Key_A] = KEY_A;
-	qt2fsKeys[Qt::Key_Z] = KEY_Z;
-	qt2fsKeys[Qt::Key_0 + Qt::KeypadModifier] = KEY_PAD0;
-	qt2fsKeys[Qt::Key_1 + Qt::KeypadModifier] = KEY_PAD1;
-	qt2fsKeys[Qt::Key_2 + Qt::KeypadModifier] = KEY_PAD2;
-	qt2fsKeys[Qt::Key_3 + Qt::KeypadModifier] = KEY_PAD3;
-	qt2fsKeys[Qt::Key_4 + Qt::KeypadModifier] = KEY_PAD4;
-	qt2fsKeys[Qt::Key_5 + Qt::KeypadModifier] = KEY_PAD5;
-	qt2fsKeys[Qt::Key_6 + Qt::KeypadModifier] = KEY_PAD6;
-	qt2fsKeys[Qt::Key_7 + Qt::KeypadModifier] = KEY_PAD7;
-	qt2fsKeys[Qt::Key_8 + Qt::KeypadModifier] = KEY_PAD8;
-	qt2fsKeys[Qt::Key_9 + Qt::KeypadModifier] = KEY_PAD9;
-	qt2fsKeys[Qt::Key_Plus + Qt::KeypadModifier] = KEY_PADPLUS;
-	qt2fsKeys[Qt::Key_Minus + Qt::KeypadModifier] = KEY_PADMINUS;
-
+RenderWindow::RenderWindow(RenderWidget* renderWidget) : QWindow((QWindow*)nullptr), _renderWidget(renderWidget) {
 	setSurfaceType(QWindow::OpenGLSurface);
 }
 
@@ -45,84 +30,62 @@ void RenderWindow::initializeGL(const QSurfaceFormat& surfaceFmt) {
 
 	// Force creation of this window so that we can use it for OpenGL
 	create();
-
-	fredApp->runAfterInit([this]() { startRendering(); });
 }
 
 void RenderWindow::startRendering() {
-	_isRendering = true;
-
 	_renderer->resize(size().width(), size().height());
 }
 
 void RenderWindow::paintGL() {
+	if (!_renderer || !fredApp->isInitializeComplete()) {
+		return;
+	}
 	subsys_to_render Render_subsys;
 
-	_renderer->render_frame(-1,
+	_renderer->render_frame(fred->getCurrentObject(),
 							Render_subsys,
 							false,
 							Marking_box(),
-							-1,
 							false);
 }
 
 bool RenderWindow::event(QEvent* evt) {
 	switch (evt->type()) {
+	case QEvent::MouseButtonRelease:
+	case QEvent::MouseButtonPress: {
+		auto mouseEvent = static_cast<QMouseEvent*>(evt);
+
+		if (mouseEvent->button() == Qt::RightButton) {
+			// Right button events may cause a context menu so we send that to our parent which will handle that
+			qGuiApp->sendEvent(parent(), evt);
+		}
+		else {
+			// The rest will be handled by the render widget
+			qGuiApp->sendEvent(_renderWidget, evt);
+		}
+		return true;
+	}
+	case QEvent::KeyPress:
+	case QEvent::KeyRelease:
+	case QEvent::MouseButtonDblClick:
+	case QEvent::MouseMove:
+	{
+		// Redirect all the events to the render widget since we want to handle them in in the QtWidget related code
+		qGuiApp->sendEvent(_renderWidget, evt);
+		return true;
+	}
 	case QEvent::UpdateRequest:
-		updateGL();
-		return QWindow::event(evt);
+		paintGL();
+		evt->accept();
+		return true;
 	default:
 		return QWindow::event(evt);
 	}
 }
-
-void RenderWindow::keyPressEvent(QKeyEvent* key) {
-	if (key->isAutoRepeat()) {
-		QWindow::keyPressEvent(key);
-		return;
-	}
-
-	auto code = key->key() + (int)key->modifiers();
-	if (!qt2fsKeys.count(code)) {
-		QWindow::keyPressEvent(key);
-		return;
-	}
-
-	key->accept();
-	key_mark(qt2fsKeys.at(code), 1, 0);
-}
-
-void RenderWindow::keyReleaseEvent(QKeyEvent* key) {
-	if (key->isAutoRepeat()) {
-		QWindow::keyReleaseEvent(key);
-		return;
-	}
-
-	auto code = key->key() + (int)key->modifiers();
-	if (!qt2fsKeys.count(code)) {
-		QWindow::keyReleaseEvent(key);
-		return;
-	}
-
-	key->accept();
-	key_mark(qt2fsKeys.at(code), 0, 0);
-}
-
-void RenderWindow::mouseReleaseEvent(QMouseEvent* mouse) {
-	auto obj_num = _renderer->select_object(mouse->x(), mouse->y(), false);
-
-	fred->selectObject(obj_num);
-}
 void RenderWindow::resizeEvent(QResizeEvent* event) {
-	if (_isRendering) {
+	if (_renderer) {
 		// Only send resize event if we are actually rendering
 		_renderer->resize(event->size().width(), event->size().height());
-	}
-}
-
-void RenderWindow::updateGL() {
-	if (_isRendering) {
-		paintGL();
 	}
 }
 RenderWindow::~RenderWindow() {
@@ -147,11 +110,11 @@ void RenderWindow::setEditor(Editor* editor, FredRenderer* renderer) {
 	_renderer = renderer;
 
 	// When the editor want to update the main window we have to do that.
-	connect(_renderer, &FredRenderer::scheduleUpdate, [this]() { requestUpdate(); });
+	connect(_renderer, &FredRenderer::scheduleUpdate, this, &QWindow::requestUpdate);
 }
-
 RenderWidget::RenderWidget(QWidget* parent) : QWidget(parent) {
-	setFocusPolicy(Qt::StrongFocus);
+	setFocusPolicy(Qt::NoFocus);
+	setMouseTracking(true);
 
 	_window = new RenderWindow(this);
 
@@ -161,9 +124,133 @@ RenderWidget::RenderWidget(QWidget* parent) : QWidget(parent) {
 	layout->setContentsMargins(0, 0, 0, 0);
 
 	setLayout(layout);
+
+	qt2fsKeys[Qt::Key_Shift] = KEY_LSHIFT;
+	qt2fsKeys[Qt::Key_A] = KEY_A;
+	qt2fsKeys[Qt::Key_Z] = KEY_Z;
+	qt2fsKeys[Qt::Key_0 + Qt::KeypadModifier] = KEY_PAD0;
+	qt2fsKeys[Qt::Key_1 + Qt::KeypadModifier] = KEY_PAD1;
+	qt2fsKeys[Qt::Key_2 + Qt::KeypadModifier] = KEY_PAD2;
+	qt2fsKeys[Qt::Key_3 + Qt::KeypadModifier] = KEY_PAD3;
+	qt2fsKeys[Qt::Key_4 + Qt::KeypadModifier] = KEY_PAD4;
+	qt2fsKeys[Qt::Key_5 + Qt::KeypadModifier] = KEY_PAD5;
+	qt2fsKeys[Qt::Key_6 + Qt::KeypadModifier] = KEY_PAD6;
+	qt2fsKeys[Qt::Key_7 + Qt::KeypadModifier] = KEY_PAD7;
+	qt2fsKeys[Qt::Key_8 + Qt::KeypadModifier] = KEY_PAD8;
+	qt2fsKeys[Qt::Key_9 + Qt::KeypadModifier] = KEY_PAD9;
+	qt2fsKeys[Qt::Key_Plus + Qt::KeypadModifier] = KEY_PADPLUS;
+	qt2fsKeys[Qt::Key_Minus + Qt::KeypadModifier] = KEY_PADMINUS;
+
+	_standardCursor.reset(new QCursor(Qt::ArrowCursor));
+	_moveCursor.reset(new QCursor(Qt::SizeAllCursor));
+
+	QPixmap rotatePixmap(":/images/cursor_rotate.png");
+	_rotateCursor.reset(new QCursor(rotatePixmap, 15, 16)); // These values are from the original cursor file
+
+	_window->setCursor(*_standardCursor);
+
+	setContextMenuPolicy(Qt::DefaultContextMenu);
+
+	fredApp->runAfterInit([this]() { _window->startRendering(); });
 }
-RenderWindow* RenderWidget::getWindow() const {
+QSurface* RenderWidget::getRenderSurface() const {
 	return _window;
+}
+void RenderWidget::setSurfaceFormat(const QSurfaceFormat& fmt) {
+	_window->initializeGL(fmt);
+}
+void RenderWidget::contextMenuEvent(QContextMenuEvent* event) {
+	event->accept();
+
+	auto parentView = static_cast<FredView*>(parentWidget());
+
+	Q_ASSERT(parentView);
+
+	parentView->showContextMenu(event->globalPos());
+}
+
+void RenderWidget::keyPressEvent(QKeyEvent* key) {
+	if (key->isAutoRepeat()) {
+		QWidget::keyPressEvent(key);
+		return;
+	}
+
+	auto code = key->key() + (int)key->modifiers();
+	if (!qt2fsKeys.count(code)) {
+		QWidget::keyPressEvent(key);
+		return;
+	}
+
+	key_mark(qt2fsKeys.at(code), 1, 0);
+}
+
+void RenderWidget::keyReleaseEvent(QKeyEvent* key) {
+	if (key->isAutoRepeat()) {
+		QWidget::keyReleaseEvent(key);
+		return;
+	}
+
+	auto code = key->key() + (int)key->modifiers();
+	if (!qt2fsKeys.count(code)) {
+		QWidget::keyReleaseEvent(key);
+		return;
+	}
+
+	key_mark(qt2fsKeys.at(code), 0, 0);
+}
+
+void RenderWidget::mouseReleaseEvent(QMouseEvent* mouse) {
+	Qt::MouseButton button = mouse->button();
+	if (button == Qt::LeftButton) {
+		auto obj_num = _renderer->select_object(mouse->x(), mouse->y(), false);
+
+		fred->selectObject(obj_num);
+		return;
+	}
+
+	QWidget::mouseReleaseEvent(mouse);
+}
+void RenderWidget::mousePressEvent(QMouseEvent* event) {
+	QWidget::mousePressEvent(event);
+}
+void RenderWidget::mouseDoubleClickEvent(QMouseEvent* event) {
+	QWidget::mouseDoubleClickEvent(event);
+}
+void RenderWidget::mouseMoveEvent(QMouseEvent* event) {
+	// No matter in which mode we are, we always check which object is under the cursor
+	auto obj_num = _renderer->select_object(event->x(), event->y(), false);
+	_renderer->Cursor_over = obj_num;
+
+	if (obj_num >= 0) {
+		switch(_cursorMode) {
+		case CursorMode::Selecting:
+			_window->setCursor(*_standardCursor);
+			break;
+		case CursorMode::Moving:
+			_window->setCursor(*_moveCursor);
+			break;
+		case CursorMode::Rotating:
+			_window->setCursor(*_rotateCursor);
+			break;
+		}
+	} else {
+		_window->setCursor(*_standardCursor);
+	}
+}
+void RenderWidget::setEditor(Editor* editor, FredRenderer* renderer) {
+	Assertion(fred == nullptr, "Render widget currently does not support resetting the editor!");
+	Assertion(_renderer == nullptr, "Render widget currently does not support resetting the renderer!");
+
+	Assertion(editor != nullptr, "Invalid editor pointer passed!");
+	Assertion(renderer != nullptr, "Invalid renderer pointer passed!");
+
+	fred = editor;
+	_renderer = renderer;
+
+	_window->setEditor(editor, renderer);
+}
+void RenderWidget::setCursorMode(CursorMode mode) {
+	_cursorMode = mode;
 }
 } // namespace fred
 } // namespace fso

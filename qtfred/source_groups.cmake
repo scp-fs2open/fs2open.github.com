@@ -1,15 +1,17 @@
 
 set(source_files)
 
-macro(add_file_folder VAR_NAME FOLDER_NAME)
-    set(files_${VAR_NAME} ${files_${VAR_NAME}} ${ARGN})
-    string(REPLACE "/" "\\" FIXED_NAME "${FOLDER_NAME}")
+macro(add_file_folder FOLDER_NAME)
+    string(REPLACE "/" "_" VARIABLE_NAME "${FOLDER_NAME}")
+    set(files_${VARIABLE_NAME} ${files_${VAR_NAME}} ${ARGN})
 
-    source_group("${FIXED_NAME}" FILES ${ARGN})
+    string(REPLACE "/" "\\" FIXED_FOLDER_FILE "${FOLDER_NAME}")
+
+    source_group("${FIXED_FOLDER_FILE}" FILES ${ARGN})
     set(source_files ${source_files} ${ARGN})
 endmacro(add_file_folder)
 
-add_file_folder(src "Source"
+add_file_folder("Source"
     src/FredApplication.cpp
     src/FredApplication.h
     src/fredstubs.cpp
@@ -19,51 +21,56 @@ add_file_folder(src "Source"
 )
 
 if (WIN32)
-    add_file_folder(src "Source"
+    add_file_folder("Source"
         src/qmain.cpp
     )
 endif()
 
-add_file_folder(src_mission "Source/Mission"
+add_file_folder("Source/Mission"
     src/mission/editor.cpp
     src/mission/editor.h
     src/mission/FredRenderer.cpp
     src/mission/FredRenderer.h
-    src/mission/iterators.h
     src/mission/object.cpp
     src/mission/object.h
     src/mission/wing.h
 )
 
-add_file_folder(src_ui "Source/UI"
+add_file_folder("Source/Mission/Dialogs"
+    src/mission/dialogs/AbstractDialogModel.cpp
+    src/mission/dialogs/AbstractDialogModel.h
+    src/mission/dialogs/AbstractDialogModel.h
+)
+
+add_file_folder("Source/UI"
     src/ui/FredView.cpp
     src/ui/FredView.h
     src/ui/QtGraphicsOperations.cpp
     src/ui/QtGraphicsOperations.h
 )
 
-add_file_folder(src_ui_widgets "Source/UI/Widgets"
+add_file_folder("Source/UI/Widgets"
     src/ui/widgets/ColorComboBox.cpp
     src/ui/widgets/ColorComboBox.h
     src/ui/widgets/renderwidget.cpp
     src/ui/widgets/renderwidget.h
 )
 
-add_file_folder(ui "UI"
+add_file_folder("UI"
     ui/FredView.ui
 )
 
-add_file_folder(resources "Resources"
+add_file_folder("Resources"
     resources/resources.qrc
 )
 
 if (WIN32)
-    add_file_folder(resources_win "Resources/Windows"
+    add_file_folder("Resources/Windows"
         resources/win/qtfred.manifest
     )
 endif()
 
-add_file_folder(resources_images "Resources/Images"
+add_file_folder("Resources/Images"
     resources/images/bitmap1.png
     resources/images/black_do.png
     resources/images/bmp00001.png
@@ -75,6 +82,7 @@ add_file_folder(resources_images "Resources/Images"
     resources/images/consty.png
     resources/images/constyz.png
     resources/images/constz.png
+    resources/images/cursor_rotate.png
     resources/images/data00.png
     resources/images/data05.png
     resources/images/data10.png
@@ -117,8 +125,8 @@ add_file_folder(resources_images "Resources/Images"
     resources/images/splash.png
     resources/images/toolbar1.png
     resources/images/toolbar.png
+    resources/images/V_fred.ico
     resources/images/variable.png
-    resources/images/V_fred.png
     resources/images/wingdisband.png
     resources/images/wingform.png
     resources/images/zoomext.png

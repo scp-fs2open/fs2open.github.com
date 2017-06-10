@@ -27,6 +27,13 @@ struct Marking_box {
 
 namespace fso {
 namespace fred {
+
+enum class CursorMode {
+	Selecting,
+	Moving,
+	Rotating
+};
+
 struct ViewSettings {
 	bool Universal_heading = false;
 	bool Show_stars = true;
@@ -47,6 +54,8 @@ struct ViewSettings {
 	bool Show_paths_fred = false;
 	bool Lighting_on = false;
 	bool FullDetail = false;
+	bool Show_waypoints = true;
+	bool Show_compass = true;
 
 	ViewSettings();
 };
@@ -73,7 +82,6 @@ class FredRenderer : public QObject {
 
 	SCP_vector<int> rendering_order;
 	int Last_cursor_over = -1;
-	int Control_mode = 0;
 	bool Group_rotate = true;
 	bool Lookat_mode = false;
 	int Flying_controls_mode = 1;
@@ -100,11 +108,11 @@ class FredRenderer : public QObject {
 
 	void resetView();
 
-	void inc_mission_time();
+	bool inc_mission_time();
 	void move_mouse(int btn, int mdx, int mdy);
 	void process_system_keys(int key);
 	void process_controls(vec3d* pos, matrix* orient, float frametime, int key, int mode = 0);
-	void game_do_frame(const int view_obj, const int viewpoint, const int cur_object_index, const int Cursor_over);
+	void game_do_frame(const int cur_object_index);
 	void render_grid(grid* gridp);
 	void hilight_bitmap();
 	void display_distances();
@@ -127,7 +135,6 @@ class FredRenderer : public QObject {
 					  subsys_to_render& Render_subsys,
 					  bool box_marking,
 					  const Marking_box& marking_box,
-					  int Cursor_over,
 					  bool Bg_bitmap_dialog);
 	int object_check_collision(object* objp,
 							   vec3d* p0,
@@ -139,15 +146,32 @@ class FredRenderer : public QObject {
 	void level_object(matrix* orient);
 	// viewpoint -> attach camera to current ship.
 	// cur_obj -> ship viewed.
-	void level_controlled(const int viewpoint, const int cur_obj);
-	void verticalize_controlled(const int viewpoint, const int cur_obj);
+	void level_controlled();
+	void verticalize_controlled();
+
+	void resetViewPhysics();
 
 	ViewSettings view;
+
+	int Cursor_over = -1;
+	CursorMode Editing_mode = CursorMode::Moving;
 
 	matrix view_orient = vmd_identity_matrix;
 	vec3d view_pos;
 	physics_info view_physics;
 	grid* The_grid;
+
+	int physics_speed = 1;
+	int physics_rot = 25;
+
+	vec3d Constraint;
+	vec3d Anticonstraint;
+	bool Single_axis_constraint = false;
+
+	int viewpoint = 0;
+	int view_obj = -1;
+
+	int Control_mode = 0;
 
 signals:
 	void scheduleUpdate();
