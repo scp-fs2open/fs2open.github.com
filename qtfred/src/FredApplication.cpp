@@ -5,6 +5,7 @@
 #include <QtGui/QtEvents>
 
 #include <mission/editor.h>
+#include <mission/management.h>
 
 #include "globalincs/pstypes.h"
 
