@@ -17,7 +17,7 @@ class EventEditorDialog;
 class EventEditorDialog: public QDialog {
  Q_OBJECT
  public:
-	EventEditorDialog(QWidget* parent, Editor* editor, FredRenderer* renderer);
+	EventEditorDialog(QWidget* parent, Editor* editor, EditorViewport* viewport);
 	~EventEditorDialog();
 
  private:

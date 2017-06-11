@@ -3,6 +3,7 @@
 #include <QtCore/QObject>
 
 #include <mission/Editor.h>
+#include <mission/EditorViewport.h>
 
 namespace fso {
 namespace fred {
@@ -13,10 +14,10 @@ class AbstractDialogModel : public QObject {
 
  protected:
 	Editor* _editor = nullptr;
-	FredRenderer* _renderer = nullptr;
+	EditorViewport* _viewport = nullptr;
 
  public:
-	AbstractDialogModel(QObject* parent, Editor* editor, FredRenderer* renderer);
+	AbstractDialogModel(QObject* parent, Editor* editor, EditorViewport* viewport);
 };
 
 }

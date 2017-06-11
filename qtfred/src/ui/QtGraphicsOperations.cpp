@@ -108,7 +108,7 @@ std::unique_ptr<os::Viewport> QtGraphicsOperations::createViewport(const os::Vie
 	auto viewPtr = mw.get();
 	auto view = std::unique_ptr<os::Viewport>(new QtViewport(std::move(mw), props));
 
-	auto renderer = _editor->createRenderer(view.get());
+	auto renderer = _editor->createEditorViewport(view.get());
 	viewPtr->setEditor(_editor, renderer);
 
 	if (fredApp->isInitializeComplete()) {

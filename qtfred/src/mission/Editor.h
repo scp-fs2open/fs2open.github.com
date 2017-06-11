@@ -1,6 +1,7 @@
 #pragma once
 
 #include "FredRenderer.h"
+#include "EditorViewport.h"
 
 #include <functional>
 #include <memory>
@@ -41,10 +42,10 @@ class Editor : public QObject {
 
 	void selectObject(int objId);
 
-	FredRenderer* createRenderer(os::Viewport* renderView);
+	EditorViewport* createEditorViewport(os::Viewport* renderView);
 
 	/* Schedules updates for all renderes */
-	void updateAllRenderers();
+	void updateAllViewports();
 
 	int create_player(int num, vec3d *pos, matrix *orient, int type = -1, int init = 1);
 
@@ -87,7 +88,7 @@ signals:
 
 	void setupCurrentObjectIndices(int obj);
 
-	SCP_vector<std::unique_ptr<FredRenderer>> _renderers;
+	SCP_vector<std::unique_ptr<EditorViewport>> _viewports;
 
 	int currentObject = -1;
 	int numMarked = 0;

@@ -59,7 +59,7 @@ Editor::Editor() : currentObject{ -1 } {
 	connect(fredApp, &FredApplication::onIdle, this, &Editor::update);
 
 	// When the mission changes we need to update all renderers
-	connect(this, &Editor::missionChanged, this, &Editor::updateAllRenderers);
+	connect(this, &Editor::missionChanged, this, &Editor::updateAllViewports);
 
 	// When a mission was loaded we need to notify everyone that the mission has changed
 	connect(this, &Editor::missionLoaded, [this](const std::string&) { missionChanged(); });
@@ -67,19 +67,20 @@ Editor::Editor() : currentObject{ -1 } {
 	fredApp->runAfterInit([this]() { initialSetup(); });
 }
 
-FredRenderer* Editor::createRenderer(os::Viewport* renderView) {
-	std::unique_ptr<FredRenderer> renderer(new FredRenderer(this, renderView));
+EditorViewport* Editor::createEditorViewport(os::Viewport* renderView) {
+	std::unique_ptr<FredRenderer> renderer(new FredRenderer(renderView));
+	std::unique_ptr<EditorViewport> viewport(new EditorViewport(this, std::move(renderer)));
 
-	auto ptr = renderer.get();
-	_renderers.push_back(std::move(renderer));
+	auto ptr = viewport.get();
+	_viewports.push_back(std::move(viewport));
 
 	return ptr;
 }
 
 void Editor::update() {
 	// Do updates for all renderers
-	for (auto& renderer : _renderers) {
-		renderer->game_do_frame(currentObject);
+	for (auto& viewport : _viewports) {
+		viewport->game_do_frame(currentObject);
 	}
 }
 
@@ -90,9 +91,9 @@ void Editor::loadMission(const std::string& filepath) {
 
 	obj_merge_created_list();
 
-	for (auto& renderer : _renderers) {
-		renderer->view_orient = Parse_viewer_orient;
-		renderer->view_pos = Parse_viewer_pos;
+	for (auto& viewport : _viewports) {
+		viewport->view_orient = Parse_viewer_orient;
+		viewport->view_pos = Parse_viewer_pos;
 	}
 	stars_post_level_init();
 
@@ -129,7 +130,7 @@ void Editor::unmarkObject(int obj) {
 		Objects[obj].flags.remove(Object::Object_Flags::Marked);
 		numMarked--;
 		if (obj == currentObject) {  // need to find a new index
-			object *ptr;
+			object* ptr;
 
 			ptr = GET_FIRST(&obj_used_list);
 			while (ptr != END_OF_LIST(&obj_used_list)) {
@@ -144,7 +145,7 @@ void Editor::unmarkObject(int obj) {
 			setupCurrentObjectIndices(-1);  // can't find one; nothing is marked.
 		}
 
-		updateAllRenderers();
+		updateAllViewports();
 	}
 }
 
@@ -270,8 +271,8 @@ void Editor::clearMission() {
 	obj_init();
 	model_free_all();                // Free all existing models
 
-	for (auto& renderer : _renderers) {
-		renderer->resetView();
+	for (auto& viewport : _viewports) {
+		viewport->resetView();
 	}
 
 	init_sexp();
@@ -287,8 +288,8 @@ void Editor::clearMission() {
 
 	strcpy(Cargo_names[0], "Nothing");
 	Num_cargo = 1;
-	for (auto& renderer : _renderers) {
-		renderer->resetViewPhysics();
+	for (auto& viewport : _viewports) {
+		viewport->resetViewPhysics();
 	}
 
 	// reset background bitmaps and suns
@@ -389,11 +390,11 @@ void Editor::selectObject(int objId) {
 
 	missionChanged();
 }
-void Editor::updateAllRenderers() {
+void Editor::updateAllViewports() {
 	// This takes all renderers and issues an update request for each of them. For now that is only one but this allows
 	// us to expand FRED to multiple view ports in the future.
-	for (auto& renderer : _renderers) {
-		renderer->scheduleUpdate();
+	for (auto& viewport : _viewports) {
+		viewport->needsUpdate();
 	}
 }
 
@@ -424,18 +425,20 @@ int Editor::create_ship(matrix* orient, vec3d* pos, int ship_type) {
 	int obj, z1, z2;
 	float temp_max_hull_strength;
 	ship_info* sip;
-	
+
 	obj = ship_create(orient, pos, ship_type);
-	if (obj == -1)
+	if (obj == -1) {
 		return -1;
-	
+	}
+
 	Objects[obj].phys_info.speed = 33.0f;
 
 	ship* shipp = &Ships[Objects[obj].instance];
 	sip = &Ship_info[shipp->ship_info_index];
 
-	if (query_ship_name_duplicate(Objects[obj].instance))
+	if (query_ship_name_duplicate(Objects[obj].instance)) {
 		fix_ship_name(Objects[obj].instance);
+	}
 
 	// default stuff according to species and IFF
 	shipp->team = Species_info[Ship_info[shipp->ship_info_index].species].default_iff;
@@ -446,8 +449,9 @@ int Editor::create_ship(matrix* orient, vec3d* pos, int ship_type) {
 
 	z1 = Shield_sys_teams[shipp->team];
 	z2 = Shield_sys_types[ship_type];
-	if (((z1 == 1) && z2) || (z2 == 1))
+	if (((z1 == 1) && z2) || (z2 == 1)) {
 		Objects[obj].flags.set(Object::Object_Flags::No_shields);
+	}
 
 	// set orders according to whether the ship is on the player ship's team
 	{
@@ -455,7 +459,8 @@ int Editor::create_ship(matrix* orient, vec3d* pos, int ship_type) {
 		ship* temp_shipp = NULL;
 
 		// find the first player ship
-		for (temp_objp = GET_FIRST(&obj_used_list); temp_objp != END_OF_LIST(&obj_used_list); temp_objp = GET_NEXT(temp_objp)) {
+		for (temp_objp = GET_FIRST(&obj_used_list); temp_objp != END_OF_LIST(&obj_used_list);
+			 temp_objp = GET_NEXT(temp_objp)) {
 			if (temp_objp->type == OBJ_START) {
 				temp_shipp = &Ships[temp_objp->instance];
 				break;
@@ -477,12 +482,12 @@ int Editor::create_ship(matrix* orient, vec3d* pos, int ship_type) {
 
 	// calc kamikaze stuff
 	if (shipp->use_special_explosion) {
-		temp_max_hull_strength = (float)shipp->special_exp_blast;
+		temp_max_hull_strength = (float) shipp->special_exp_blast;
 	} else {
 		temp_max_hull_strength = sip->max_hull_strength;
 	}
 
-	Ai_info[shipp->ai_index].kamikaze_damage = (int)std::min(1000.0f, 200.0f + (temp_max_hull_strength / 4.0f));
+	Ai_info[shipp->ai_index].kamikaze_damage = (int) std::min(1000.0f, 200.0f + (temp_max_hull_strength / 4.0f));
 
 	missionChanged();
 
@@ -492,10 +497,13 @@ int Editor::create_ship(matrix* orient, vec3d* pos, int ship_type) {
 bool Editor::query_ship_name_duplicate(int ship) {
 	int i;
 
-	for (i = 0; i < MAX_SHIPS; i++)
-		if ((i != ship) && (Ships[i].objnum != -1))
-			if (!stricmp(Ships[i].ship_name, Ships[ship].ship_name))
+	for (i = 0; i < MAX_SHIPS; i++) {
+		if ((i != ship) && (Ships[i].objnum != -1)) {
+			if (!stricmp(Ships[i].ship_name, Ships[ship].ship_name)) {
 				return true;
+			}
+		}
+	}
 
 	return false;
 }
@@ -516,7 +524,7 @@ int Editor::getCurrentObject() {
 	return currentObject;
 }
 void Editor::hideMarkedObjects() {
-	object *ptr;
+	object* ptr;
 
 	ptr = GET_FIRST(&obj_used_list);
 	while (ptr != END_OF_LIST(&obj_used_list)) {
@@ -528,10 +536,10 @@ void Editor::hideMarkedObjects() {
 		ptr = GET_NEXT(ptr);
 	}
 
-	updateAllRenderers();
+	updateAllViewports();
 }
 void Editor::showHiddenObjects() {
-	object *ptr;
+	object* ptr;
 
 	ptr = GET_FIRST(&obj_used_list);
 	while (ptr != END_OF_LIST(&obj_used_list)) {
@@ -539,7 +547,7 @@ void Editor::showHiddenObjects() {
 		ptr = GET_NEXT(ptr);
 	}
 
-	updateAllRenderers();
+	updateAllViewports();
 }
 
 } // namespace fred

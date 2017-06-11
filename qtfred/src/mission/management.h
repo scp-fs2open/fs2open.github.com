@@ -60,8 +60,6 @@ struct mission_load_error: public std::runtime_error {
 	mission_load_error(const char* msg);
 };
 
-const char *object_name(int obj);
-
 }
 }
 

@@ -31,89 +31,38 @@ struct Marking_box {
 namespace fso {
 namespace fred {
 
+const float LOLLIPOP_SIZE = 2.5f;
+
 enum class CursorMode {
 	Selecting, Moving, Rotating
 };
 
-struct ViewSettings {
-	bool Universal_heading = false;
-	bool Show_stars = true;
-	bool Show_horizon = false;
-	bool Show_grid = true;
-	bool Show_distances = true;
-	bool Show_asteroid_field = true;
-	bool Aa_gridlines = false;
-	bool Show_coordinates = false;
-	bool Show_outlines = false;
-	bool Show_grid_positions = true;
-	bool Show_dock_points = false;
-	bool Show_starts = true;
-	bool Show_ships = true;
-	std::array<bool, MAX_IFFS> Show_iff;
-	bool Show_ship_info = true;
-	bool Show_ship_models = true;
-	bool Show_paths_fred = false;
-	bool Lighting_on = false;
-	bool FullDetail = false;
-	bool Show_waypoints = true;
-	bool Show_compass = true;
-
-	ViewSettings();
-};
-
 class Editor;
+class EditorViewport;
+struct ViewSettings;
 
 class FredRenderer: public QObject {
  Q_OBJECT
 
-	/**
-     * A lot of this stuff doesn't belong here
-     * @todo: Move camera stuff into own class
-     */
-	int last_x = 0;
-	int last_y = 0;
-
-	vec3d Last_eye_pos;
-
-	vec3d eye_pos;
-	vec3d Last_control_pos = vmd_zero_vector;
-	vec3d my_pos;
-	matrix eye_orient;
-	control_info view_controls;
-
 	SCP_vector<int> rendering_order;
-	int Last_cursor_over = -1;
-	bool Group_rotate = true;
-	bool Lookat_mode = false;
-	int Flying_controls_mode = 1;
 	int Fred_outline = 0;
 
-	matrix my_orient = vmd_identity_matrix;
-	matrix trackball_orient = vmd_identity_matrix;
-	matrix Last_eye_orient = vmd_identity_matrix;
-	matrix Last_control_orient = vmd_identity_matrix;
-
-	fix lasttime = 0;
-
-	Editor* _editor = nullptr;
+	EditorViewport* _viewport = nullptr;
 	os::Viewport* _targetView = nullptr;
 
 	FredRenderer(const FredRenderer& other) = delete;
 	FredRenderer& operator=(const FredRenderer& other) = delete;
 
+	ViewSettings& view();
+
  public:
-	explicit FredRenderer(Editor* editor, os::Viewport* targetView);
+	explicit FredRenderer(os::Viewport* targetView);
 	~FredRenderer();
+
+	void setViewport(EditorViewport* viewport);
 
 	void resize(int width, int height);
 
-	void resetView();
-
-	bool inc_mission_time();
-	void move_mouse(int btn, int mdx, int mdy);
-	void process_system_keys(int key);
-	void process_controls(vec3d* pos, matrix* orient, float frametime, int key, int mode = 0);
-	void game_do_frame(const int cur_object_index);
 	void render_grid(grid* gridp);
 	void hilight_bitmap();
 	void display_distances();
@@ -133,39 +82,6 @@ class FredRenderer: public QObject {
 					  bool box_marking,
 					  const Marking_box& marking_box,
 					  bool Bg_bitmap_dialog);
-	int object_check_collision(object* objp, vec3d* p0, vec3d* p1, vec3d* hitpos);
-	int select_object(int cx, int cy, bool Selection_lock);
-	void level_object(matrix* orient);
-	// viewpoint -> attach camera to current ship.
-	// cur_obj -> ship viewed.
-	void level_controlled();
-	void verticalize_controlled();
-
-	void select_objects(const Marking_box& box);
-
-	void resetViewPhysics();
-
-	ViewSettings view;
-
-	int Cursor_over = -1;
-	CursorMode Editing_mode = CursorMode::Moving;
-
-	matrix view_orient = vmd_identity_matrix;
-	vec3d view_pos;
-	physics_info view_physics;
-	grid* The_grid;
-
-	int physics_speed = 1;
-	int physics_rot = 25;
-
-	vec3d Constraint;
-	vec3d Anticonstraint;
-	bool Single_axis_constraint = false;
-
-	int viewpoint = 0;
-	int view_obj = -1;
-
-	int Control_mode = 0;
 
  signals:
 	void scheduleUpdate();

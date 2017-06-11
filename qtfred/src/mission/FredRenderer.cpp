@@ -1,6 +1,7 @@
 
 #include "FredRenderer.h"
 #include "Editor.h"
+#include "EditorViewport.h"
 
 #include <globalincs/alphacolors.h>
 #include <mission/missiongrid.h>
@@ -26,9 +27,6 @@ using std::begin;
 using std::end;
 
 namespace {
-const fix MAX_FRAMETIME = (F1_0 / 4); // Frametime gets saturated at this.
-const fix MIN_FRAMETIME = (F1_0 / 120);
-const float LOLLIPOP_SIZE = 2.5f;
 const float CONVERT_DEGREES = 57.29578f; // conversion factor from radians to degrees
 
 const float FRED_DEFAULT_HTL_FOV = 0.485f;
@@ -77,65 +75,6 @@ color Fred_grid_bright;
 color Fred_grid_dark;
 color Fred_grid_bright_aa;
 color Fred_grid_dark_aa;
-
-void process_movement_keys(int key, vec3d* mvec, angles* angs) {
-	int raw_key;
-
-	mvec->xyz.x = 0.0f;
-	mvec->xyz.y = 0.0f;
-	mvec->xyz.z = 0.0f;
-	angs->p = 0.0f;
-	angs->b = 0.0f;
-	angs->h = 0.0f;
-
-	raw_key = key & 0xff;
-
-	switch (raw_key) {
-	case KEY_PAD1:
-		mvec->xyz.x += -1.0f;
-		break;
-	case KEY_PAD3:
-		mvec->xyz.x += +1.0f;
-		break;
-	case KEY_PADPLUS:
-		mvec->xyz.y += -1.0f;
-		break;
-	case KEY_PADMINUS:
-		mvec->xyz.y += +1.0f;
-		break;
-	case KEY_A:
-		mvec->xyz.z += +1.0f;
-		break;
-	case KEY_Z:
-		mvec->xyz.z += -1.0f;
-		break;
-	case KEY_PAD4:
-		angs->h += -0.1f;
-		break;
-	case KEY_PAD6:
-		angs->h += +0.1f;
-		break;
-	case KEY_PAD8:
-		angs->p += -0.1f;
-		break;
-	case KEY_PAD2:
-		angs->p += +0.1f;
-		break;
-	case KEY_PAD7:
-		angs->b += -0.1f;
-		break;
-	case KEY_PAD9:
-		angs->b += +0.1f;
-		break;
-	}
-
-	if (key & KEY_SHIFTED) {
-		vm_vec_scale(mvec, 5.0f);
-		angs->p *= 5.0f;
-		angs->b *= 5.0f;
-		angs->h *= 5.0f;
-	}
-}
 
 void draw_asteroid_field() {
 	int i, j;
@@ -382,48 +321,6 @@ void draw_compass_arrow(vec3d* v0) {
 	g3_draw_line(&tv0, &tv1);
 }
 
-void align_vector_to_axis(vec3d* v) {
-	float x, y, z;
-
-	x = v->xyz.x;
-	if (x < 0) {
-		x = -x;
-	}
-
-	y = v->xyz.y;
-	if (y < 0) {
-		y = -y;
-	}
-
-	z = v->xyz.z;
-	if (z < 0) {
-		z = -z;
-	}
-
-	if ((x > y) && (x > z)) { // x axis
-		if (v->xyz.x < 0) // negative x
-			vm_vec_make(v, -1.0f, 0.0f, 0.0f);
-		else // positive x
-			vm_vec_make(v, 1.0f, 0.0f, 0.0f);
-	} else if (y > z) { // y axis
-		if (v->xyz.y < 0) // negative y
-			vm_vec_make(v, 0.0f, -1.0f, 0.0f);
-		else // positive y
-			vm_vec_make(v, 0.0f, 1.0f, 0.0f);
-	} else { // z axis
-		if (v->xyz.z < 0) // negative z
-			vm_vec_make(v, 0.0f, 0.0f, -1.0f);
-		else // positive z
-			vm_vec_make(v, 0.0f, 0.0f, 1.0f);
-	}
-}
-
-void verticalize_object(matrix* orient) {
-	align_vector_to_axis(&orient->vec.fvec);
-	align_vector_to_axis(&orient->vec.uvec);
-	align_vector_to_axis(&orient->vec.rvec);
-	vm_fix_matrix(orient); // just in case something odd occurs.
-}
 }
 
 namespace fso {
@@ -432,326 +329,16 @@ ViewSettings::ViewSettings() {
 	Show_iff.fill(true);
 }
 
-FredRenderer::FredRenderer(Editor* editor, os::Viewport* targetView) : _editor(editor), _targetView(targetView) {
-	vm_vec_make(&Constraint, 1.0f, 0.0f, 1.0f);
-	vm_vec_make(&Anticonstraint, 0.0f, 1.0f, 0.0f);
-	resetView();
-}
-
-FredRenderer::~FredRenderer() {
-}
-void FredRenderer::resetView() {
-	my_pos = vmd_zero_vector;
-	my_pos.xyz.z = -5.0f;
-	vec3d f, u, r;
-
-	physics_init(&view_physics);
-	view_physics.max_vel.xyz.z = 5.0f; //forward/backward
-	view_physics.max_rotvel.xyz.x = 1.5f; //pitch
-	memset(&view_controls, 0, sizeof(control_info));
-
-	vm_vec_make(&view_pos, 0.0f, 150.0f, -200.0f);
-	vm_vec_make(&f, 0.0f, -0.5f, 0.866025404f); // 30 degree angle
-	vm_vec_make(&u, 0.0f, 0.866025404f, 0.5f);
-	vm_vec_make(&r, 1.0f, 0.0f, 0.0f);
-	vm_vector_2_matrix(&view_orient, &f, &u, &r);
-
-	The_grid = create_default_grid();
-	maybe_create_new_grid(The_grid, &view_pos, &view_orient, 1);
-	//	vm_set_identity(&view_orient);
-
+FredRenderer::FredRenderer(os::Viewport* targetView) : _targetView(targetView) {
 	init_fred_colors();
 }
-
-/**
- * @brief Increments mission time
- *
- * @details This only increments the mission time if the time difference is greater than the minimum frametime to avoid
- * excessive computation
- *
- * @return @c true if the mission time was incremented, @c false otherwise.
- */
-bool FredRenderer::inc_mission_time() {
-	fix thistime = timer_get_fixed_seconds();
-	fix time_diff; // This holds the computed time difference since the last time this function was called
-	if (!lasttime) {
-		time_diff = F1_0 / 30;
-	} else {
-		time_diff = thistime - lasttime;
-	}
-
-	if (time_diff > MAX_FRAMETIME) {
-		time_diff = MAX_FRAMETIME;
-	} else if (time_diff < MIN_FRAMETIME) {
-		return false;
-	}
-
-	Frametime = time_diff;
-	Missiontime += Frametime;
-	lasttime = thistime;
-
-	return true;
+FredRenderer::~FredRenderer() {
 }
+void FredRenderer::setViewport(EditorViewport* viewport) {
+	Assertion(_viewport == nullptr, "Resetting viewport is not supported");
+	Assertion(viewport != nullptr, "Invalid viewport specified!");
 
-void FredRenderer::move_mouse(int btn, int mdx, int mdy) {
-	int dx, dy;
-
-	dx = mdx - last_x;
-	dy = mdy - last_y;
-	last_x = mdx;
-	last_y = mdy;
-
-	if (btn & 1) {
-		matrix tempm, mousem;
-
-		if (dx || dy) {
-			vm_trackball(dx, dy, &mousem);
-			vm_matrix_x_matrix(&tempm, &trackball_orient, &mousem);
-			trackball_orient = tempm;
-			view_orient = trackball_orient;
-		}
-	}
-
-	if (btn & 2) {
-		my_pos.xyz.z += (float) dy;
-	}
-}
-
-///////////////////////////////////////////////////
-void FredRenderer::process_system_keys(int key) {
-	//	mprintf(("Key = %d\n", key));
-	switch (key) {
-	case KEY_LAPOSTRO:
-		///! \todo cycle through axis-constraints for rotations.
-		//CFREDView::GetView()->cycle_constraint();
-		break;
-
-	case KEY_R: // for some stupid reason, an accelerator for 'R' doesn't work.
-		///! \todo Change editing mode to 'move and rotate'.
-		//Editing_mode = 2;
-		break;
-
-	case KEY_SPACEBAR:
-		///! \todo Toggle selection lock.
-		//Selection_lock = !Selection_lock;
-		break;
-
-	case KEY_ESC:
-		///! \todo Cancel drag.
-		//if (button_down)
-		//	cancel_drag();
-
-		break;
-	}
-}
-
-void FredRenderer::process_controls(vec3d* pos, matrix* orient, float frametime, int key, int mode) {
-	if (Flying_controls_mode) {
-		grid_read_camera_controls(&view_controls, frametime);
-
-		if (key_get_shift_status()) {
-			memset(&view_controls, 0, sizeof(control_info));
-		}
-
-		if ((fabs(view_controls.pitch) > (frametime / 100)) || (fabs(view_controls.vertical) > (frametime / 100))
-			|| (fabs(view_controls.heading) > (frametime / 100)) || (fabs(view_controls.sideways) > (frametime / 100))
-			|| (fabs(view_controls.bank) > (frametime / 100)) || (fabs(view_controls.forward) > (frametime / 100))) {
-			scheduleUpdate();
-		}
-
-		//view_physics.flags |= (PF_ACCELERATES | PF_SLIDE_ENABLED);
-		physics_read_flying_controls(orient, &view_physics, &view_controls, frametime);
-		if (mode) {
-			physics_sim_editor(pos, orient, &view_physics, frametime);
-		} else {
-			physics_sim(pos, orient, &view_physics, frametime);
-		}
-	} else {
-		vec3d movement_vec, rel_movement_vec;
-		angles rotangs;
-		matrix newmat, rotmat;
-
-		process_movement_keys(key, &movement_vec, &rotangs);
-		vm_vec_rotate(&rel_movement_vec, &movement_vec, &The_grid->gmatrix);
-		vm_vec_add2(pos, &rel_movement_vec);
-
-		vm_angles_2_matrix(&rotmat, &rotangs);
-		if (rotangs.h && view.Universal_heading) {
-			vm_transpose(orient);
-		}
-		vm_matrix_x_matrix(&newmat, orient, &rotmat);
-		*orient = newmat;
-		if (rotangs.h && view.Universal_heading) {
-			vm_transpose(orient);
-		}
-	}
-}
-
-void FredRenderer::game_do_frame(const int cur_object_index) {
-	int key, cmode;
-	vec3d viewer_position, control_pos;
-	object* objp;
-	matrix control_orient;
-
-	if (!inc_mission_time()) {
-		// Don't do anything if the mission time wasn't incremented
-		return;
-	}
-
-	viewer_position = my_orient.vec.fvec;
-	vm_vec_scale(&viewer_position, my_pos.xyz.z);
-
-	if ((viewpoint == 1) && !query_valid_object(view_obj)) {
-		viewpoint = 0;
-	}
-
-	key = key_inkey();
-	process_system_keys(key);
-	cmode = Control_mode;
-	if ((viewpoint == 1) && !cmode) {
-		cmode = 2;
-	}
-
-	control_pos = Last_control_pos;
-	control_orient = Last_control_orient;
-
-	//	if ((key & KEY_MASK) == key)  // unmodified
-	switch (cmode) {
-	case 0: //	Control the viewer's location and orientation
-		process_controls(&view_pos, &view_orient, f2fl(Frametime), key, 1);
-		control_pos = view_pos;
-		control_orient = view_orient;
-		break;
-
-	case 2: // Control viewpoint object
-		process_controls(&Objects[view_obj].pos, &Objects[view_obj].orient, f2fl(Frametime), key);
-		object_moved(&Objects[view_obj]);
-		control_pos = Objects[view_obj].pos;
-		control_orient = Objects[view_obj].orient;
-		break;
-
-	case 1: //	Control the current object's location and orientation
-		if (query_valid_object(cur_object_index)) {
-			vec3d delta_pos, leader_old_pos;
-			matrix leader_orient, leader_transpose, tmp;
-			object* leader;
-
-			leader = &Objects[cur_object_index];
-			leader_old_pos = leader->pos; // save original position
-			leader_orient = leader->orient; // save original orientation
-			vm_copy_transpose(&leader_transpose, &leader_orient);
-
-			process_controls(&leader->pos, &leader->orient, f2fl(Frametime), key);
-			vm_vec_sub(&delta_pos, &leader->pos, &leader_old_pos); // get position change
-			control_pos = leader->pos;
-			control_orient = leader->orient;
-
-			objp = GET_FIRST(&obj_used_list);
-			while (objp != END_OF_LIST(&obj_used_list)) {
-				Assert(objp->type != OBJ_NONE);
-				if ((objp->flags[Object::Object_Flags::Marked]) && (cur_object_index != OBJ_INDEX(objp))) {
-					if (Group_rotate) {
-						matrix rot_trans;
-						vec3d tmpv1, tmpv2;
-
-						// change rotation matrix to rotate in opposite direction.  This rotation
-						// matrix is what the leader ship has rotated by.
-						vm_copy_transpose(&rot_trans, &view_physics.last_rotmat);
-
-						// get point relative to our point of rotation (make POR the origin).  Since
-						// only the leader has been moved yet, and not the objects, we have to use
-						// the old leader's position.
-						vm_vec_sub(&tmpv1, &objp->pos, &leader_old_pos);
-
-						// convert point from real-world coordinates to leader's relative coordinate
-						// system (z=forward vec, y=up vec, x=right vec
-						vm_vec_rotate(&tmpv2, &tmpv1, &leader_orient);
-
-						// now rotate the point by the transpose from above.
-						vm_vec_rotate(&tmpv1, &tmpv2, &rot_trans);
-
-						// convert point back into real-world coordinates
-						vm_vec_rotate(&tmpv2, &tmpv1, &leader_transpose);
-
-						// and move origin back to real-world origin.  Object is now at its correct
-						// position.  Note we used the leader's new position, instead of old position.
-						vm_vec_add(&objp->pos, &leader->pos, &tmpv2);
-
-						// Now fix the object's orientation to what it should be.
-						vm_matrix_x_matrix(&tmp, &objp->orient, &view_physics.last_rotmat);
-						vm_orthogonalize_matrix(&tmp); // safety check
-						objp->orient = tmp;
-					} else {
-						vm_vec_add2(&objp->pos, &delta_pos);
-						vm_matrix_x_matrix(&tmp, &objp->orient, &view_physics.last_rotmat);
-						objp->orient = tmp;
-					}
-				}
-
-				objp = GET_NEXT(objp);
-			}
-
-			objp = GET_FIRST(&obj_used_list);
-			while (objp != END_OF_LIST(&obj_used_list)) {
-				if (objp->flags[Object::Object_Flags::Marked]) {
-					object_moved(objp);
-				}
-
-				objp = GET_NEXT(objp);
-			}
-
-			// Notify the editor that the mission has changed
-			_editor->missionChanged();
-		}
-
-		break;
-
-	default:
-		Assert(0);
-	}
-
-	if (Lookat_mode && query_valid_object(cur_object_index)) {
-		float dist;
-
-		dist = vm_vec_dist(&view_pos, &Objects[cur_object_index].pos);
-		vm_vec_scale_add(&view_pos, &Objects[cur_object_index].pos, &view_orient.vec.fvec, -dist);
-	}
-
-	switch (viewpoint) {
-	case 0:
-		eye_pos = view_pos;
-		eye_orient = view_orient;
-		break;
-
-	case 1:
-		eye_pos = Objects[view_obj].pos;
-		eye_orient = Objects[view_obj].orient;
-		break;
-
-	default:
-		Assert(0);
-	}
-
-	maybe_create_new_grid(The_grid, &eye_pos, &eye_orient);
-
-	if (Cursor_over != Last_cursor_over) {
-		Last_cursor_over = Cursor_over;
-		scheduleUpdate();
-	}
-
-	// redraw screen if controlled object moved or rotated
-	if (vm_vec_cmp(&control_pos, &Last_control_pos) || vm_matrix_cmp(&control_orient, &Last_control_orient)) {
-		scheduleUpdate();
-		Last_control_pos = control_pos;
-		Last_control_orient = control_orient;
-	}
-
-	// redraw screen if current viewpoint moved or rotated
-	if (vm_vec_cmp(&eye_pos, &Last_eye_pos) || vm_matrix_cmp(&eye_orient, &Last_eye_orient)) {
-		scheduleUpdate();
-		Last_eye_pos = eye_pos;
-		Last_eye_orient = eye_orient;
-	}
+	_viewport = viewport;
 }
 
 void FredRenderer::render_grid(grid* gridp) {
@@ -776,7 +363,7 @@ void FredRenderer::render_grid(grid* gridp) {
 		nrows *= 2;
 	}
 
-	if (view.Aa_gridlines) {
+	if (view().Aa_gridlines) {
 		gr_set_color_fast(&Fred_grid_dark_aa);
 	} else {
 		gr_set_color_fast(&Fred_grid_dark);
@@ -795,7 +382,7 @@ void FredRenderer::render_grid(grid* gridp) {
 	nrows = gridp->nrows / 2;
 
 	// now draw the larger, brighter gridlines that is x10 the scale of smaller one.
-	if (view.Aa_gridlines) {
+	if (view().Aa_gridlines) {
 		gr_set_color_fast(&Fred_grid_bright_aa);
 	} else {
 		gr_set_color_fast(&Fred_grid_bright);
@@ -898,20 +485,20 @@ void FredRenderer::display_ship_info(int cur_object_index) {
 			Fred_outline = 0;
 		}
 
-		if ((objp->type == OBJ_WAYPOINT) && !view.Show_waypoints) {
+		if ((objp->type == OBJ_WAYPOINT) && !view().Show_waypoints) {
 			render = 0;
 		}
 
-		if ((objp->type == OBJ_START) && !view.Show_starts) {
+		if ((objp->type == OBJ_START) && !view().Show_starts) {
 			render = 0;
 		}
 
 		if ((objp->type == OBJ_SHIP) || (objp->type == OBJ_START)) {
-			if (!view.Show_ships) {
+			if (!view().Show_ships) {
 				render = 0;
 			}
 
-			if (!view.Show_iff[Ships[objp->instance].team]) {
+			if (!view().Show_iff[Ships[objp->instance].team]) {
 				render = 0;
 			}
 		}
@@ -924,7 +511,7 @@ void FredRenderer::display_ship_info(int cur_object_index) {
 		if (!(v.codes & CC_BEHIND) && render) {
 			if (!(g3_project_vertex(&v) & PF_OVERFLOW)) {
 				*buf = 0;
-				if (view.Show_ship_info) {
+				if (view().Show_ship_info) {
 					if ((objp->type == OBJ_SHIP) || (objp->type == OBJ_START)) {
 						ship* shipp;
 						int ship_type;
@@ -949,7 +536,7 @@ void FredRenderer::display_ship_info(int cur_object_index) {
 						Assert(0);
 				}
 
-				if (view.Show_coordinates) {
+				if (view().Show_coordinates) {
 					sprintf(pos, "(%.0f,%.0f,%.0f)", objp->pos.xyz.x, objp->pos.xyz.y, objp->pos.xyz.z);
 					if (*buf)
 						strcat_s(buf, "\n");
@@ -1033,7 +620,7 @@ int get_subsys_bounding_rect(object* ship_obj, ship_subsys* subsys, int* x1, int
 }
 
 void FredRenderer::render_compass() {
-	if (!view.Show_compass) {
+	if (!view().Show_compass) {
 		return;
 	}
 
@@ -1042,8 +629,8 @@ void FredRenderer::render_compass() {
 	gr_set_clip(gr_screen.max_w - 100, 0, 100, 100);
 	g3_start_frame(0); // ** Accounted for
 	// required !!!
-	vm_vec_scale_add2(&eye, &eye_orient.vec.fvec, -1.5f);
-	g3_set_view_matrix(&eye, &eye_orient, 1.0f);
+	vm_vec_scale_add2(&eye, &_viewport->eye_orient.vec.fvec, -1.5f);
+	g3_set_view_matrix(&eye, &_viewport->eye_orient, 1.0f);
 
 	v.xyz.x = 1.0f;
 	v.xyz.y = v.xyz.z = 0.0f;
@@ -1081,13 +668,13 @@ void FredRenderer::draw_orient_sphere2(int col, object* obj, int r, int g, int b
 	vec3d v1, v2;
 	float size;
 
-	size = fl_sqrt(vm_vec_dist(&eye_pos, &obj->pos) / 20.0f);
+	size = fl_sqrt(vm_vec_dist(&_viewport->eye_pos, &obj->pos) / 20.0f);
 	if (size < LOLLIPOP_SIZE) {
 		size = LOLLIPOP_SIZE;
 	}
 
 	if ((obj->type != OBJ_WAYPOINT) && (obj->type != OBJ_POINT)) {
-		flag = (vm_vec_dot(&eye_orient.vec.fvec, &obj->orient.vec.fvec) < 0.0f);
+		flag = (vm_vec_dot(&_viewport->eye_orient.vec.fvec, &obj->orient.vec.fvec) < 0.0f);
 
 		v1 = v2 = obj->pos;
 		vm_vec_scale_add2(&v1, &obj->orient.vec.fvec, size);
@@ -1121,13 +708,13 @@ void FredRenderer::draw_orient_sphere(object* obj, int r, int g, int b) {
 	vec3d v1, v2;
 	float size;
 
-	size = fl_sqrt(vm_vec_dist(&eye_pos, &obj->pos) / 20.0f);
+	size = fl_sqrt(vm_vec_dist(&_viewport->eye_pos, &obj->pos) / 20.0f);
 	if (size < LOLLIPOP_SIZE) {
 		size = LOLLIPOP_SIZE;
 	}
 
 	if ((obj->type != OBJ_WAYPOINT) && (obj->type != OBJ_POINT)) {
-		flag = (vm_vec_dot(&eye_orient.vec.fvec, &obj->orient.vec.fvec) < 0.0f);
+		flag = (vm_vec_dot(&_viewport->eye_orient.vec.fvec, &obj->orient.vec.fvec) < 0.0f);
 		v1 = v2 = obj->pos;
 		vm_vec_scale_add2(&v1, &obj->orient.vec.fvec, size);
 		vm_vec_scale_add2(&v2, &obj->orient.vec.fvec, size * 1.5f);
@@ -1159,7 +746,7 @@ void FredRenderer::render_model_x(vec3d* pos, grid* gridp, int col_scheme) {
 	plane tplane;
 	vec3d* gv;
 
-	if (!view.Show_grid_positions) {
+	if (!view().Show_grid_positions) {
 		return;
 	}
 
@@ -1203,7 +790,7 @@ void FredRenderer::render_model_x_htl(vec3d* pos, grid* gridp, int col_scheme) {
 	plane tplane;
 	vec3d* gv;
 
-	if (!view.Show_grid_positions) {
+	if (!view().Show_grid_positions) {
 		return;
 	}
 
@@ -1252,20 +839,20 @@ void FredRenderer::render_one_model_htl(object* objp,
 		return;
 	}
 
-	if ((objp->type == OBJ_WAYPOINT) && !view.Show_waypoints) {
+	if ((objp->type == OBJ_WAYPOINT) && !view().Show_waypoints) {
 		return;
 	}
 
-	if ((objp->type == OBJ_START) && !view.Show_starts) {
+	if ((objp->type == OBJ_START) && !view().Show_starts) {
 		return;
 	}
 
 	if ((objp->type == OBJ_SHIP) || (objp->type == OBJ_START)) {
-		if (!view.Show_ships) {
+		if (!view().Show_ships) {
 			return;
 		}
 
-		if (!view.Show_iff[Ships[objp->instance].team]) {
+		if (!view().Show_iff[Ships[objp->instance].team]) {
 			return;
 		}
 	}
@@ -1279,31 +866,31 @@ void FredRenderer::render_one_model_htl(object* objp,
 		Fred_outline = FRED_COLOUR_WHITE;
 	} else if ((objp->flags[Object::Object_Flags::Marked]) && !Bg_bitmap_dialog) { // is it a marked object?
 		Fred_outline = FRED_COLOUR_YELLOW;
-	} else if ((objp->type == OBJ_SHIP) && view.Show_outlines) {
+	} else if ((objp->type == OBJ_SHIP) && view().Show_outlines) {
 		color* iff_color = iff_get_color_by_team_and_object(Ships[objp->instance].team, -1, 1, objp);
 
 		Fred_outline = (iff_color->red << 16) | (iff_color->green << 8) | (iff_color->blue);
-	} else if ((objp->type == OBJ_START) && view.Show_outlines) {
+	} else if ((objp->type == OBJ_START) && view().Show_outlines) {
 		Fred_outline = 0x007f00;
 	} else {
 		Fred_outline = 0;
 	}
 
 	// build flags
-	if ((view.Show_ship_models || view.Show_outlines) && ((objp->type == OBJ_SHIP) || (objp->type == OBJ_START))) {
+	if ((view().Show_ship_models || view().Show_outlines) && ((objp->type == OBJ_SHIP) || (objp->type == OBJ_START))) {
 		g3_start_instance_matrix(&Eye_position, &Eye_matrix, 0);
-		if (view.Show_ship_models) {
+		if (view().Show_ship_models) {
 			j = MR_NORMAL;
 		} else {
 			j = MR_NO_POLYS;
 		}
 
 		uint debug_flags = 0;
-		if (view.Show_dock_points) {
+		if (view().Show_dock_points) {
 			debug_flags |= MR_DEBUG_BAY_PATHS;
 		}
 
-		if (view.Show_paths_fred) {
+		if (view().Show_paths_fred) {
 			debug_flags |= MR_DEBUG_PATHS;
 		}
 
@@ -1311,12 +898,12 @@ void FredRenderer::render_one_model_htl(object* objp,
 
 		model_clear_instance(Ship_info[Ships[z].ship_info_index].model_num);
 
-		if (!view.Lighting_on) {
+		if (!view().Lighting_on) {
 			j |= MR_NO_LIGHTING;
 			gr_set_lighting(false, false);
 		}
 
-		if (view.FullDetail) {
+		if (view().FullDetail) {
 			j |= MR_FULL_DETAIL;
 		}
 
@@ -1337,7 +924,7 @@ void FredRenderer::render_one_model_htl(object* objp,
 		int r = 0, g = 0, b = 0;
 
 		if (objp->type == OBJ_SHIP) {
-			if (!view.Show_ships) {
+			if (!view().Show_ships) {
 				return;
 			}
 
@@ -1367,7 +954,7 @@ void FredRenderer::render_one_model_htl(object* objp,
 		} else
 			Assert(0);
 
-		float size = fl_sqrt(vm_vec_dist(&eye_pos, &objp->pos) / 20.0f);
+		float size = fl_sqrt(vm_vec_dist(&_viewport->eye_pos, &objp->pos) / 20.0f);
 
 		if (size < LOLLIPOP_SIZE) {
 			size = LOLLIPOP_SIZE;
@@ -1393,7 +980,7 @@ void FredRenderer::render_one_model_htl(object* objp,
 		}
 	}
 
-	render_model_x_htl(&objp->pos, The_grid);
+	render_model_x_htl(&objp->pos, _viewport->The_grid);
 	rendering_order.push_back(OBJ_INDEX(objp));
 }
 
@@ -1491,28 +1078,28 @@ void FredRenderer::render_frame(int cur_object_index,
 	font::set_font(font::FONT1);
 	light_reset();
 
-	g3_set_view_matrix(&eye_pos, &eye_orient, 0.5f);
+	g3_set_view_matrix(&_viewport->eye_pos, &_viewport->eye_orient, 0.5f);
 
 	enable_htl();
 	if (Bg_bitmap_dialog) {
-		stars_draw(view.Show_stars, 1, view.Show_stars, 0, 0);
+		stars_draw(view().Show_stars, 1, view().Show_stars, 0, 0);
 	} else {
-		stars_draw(view.Show_stars, view.Show_stars, view.Show_stars, 0, 0);
+		stars_draw(view().Show_stars, view().Show_stars, view().Show_stars, 0, 0);
 	}
 	disable_htl();
 
-	if (view.Show_horizon) {
+	if (view().Show_horizon) {
 		gr_set_color(128, 128, 64);
 		g3_draw_horizon_line();
 	}
 
-	if (view.Show_asteroid_field) {
+	if (view().Show_asteroid_field) {
 		gr_set_color(192, 96, 16);
 		draw_asteroid_field();
 	}
 
-	if (view.Show_grid) {
-		render_grid(The_grid);
+	if (view().Show_grid) {
+		render_grid(_viewport->The_grid);
 	}
 	if (Bg_bitmap_dialog) {
 		hilight_bitmap();
@@ -1522,7 +1109,7 @@ void FredRenderer::render_frame(int cur_object_index,
 	render_models(cur_object_index,
 				  Bg_bitmap_dialog);
 
-	if (view.Show_distances) {
+	if (view().Show_distances) {
 		display_distances();
 	}
 
@@ -1530,11 +1117,11 @@ void FredRenderer::render_frame(int cur_object_index,
 	display_active_ship_subsystem(Render_subsys, cur_object_index);
 	render_active_rect(box_marking, marking_box);
 
-	if (query_valid_object(Cursor_over)) { // display a tool-tip like infobox
-		pos = Objects[Cursor_over].pos;
-		inst = Objects[Cursor_over].instance;
-		if ((Objects[Cursor_over].type == OBJ_SHIP) || (Objects[Cursor_over].type == OBJ_START)) {
-			vm_extract_angles_matrix(&a, &Objects[Cursor_over].orient);
+	if (query_valid_object(_viewport->Cursor_over)) { // display a tool-tip like infobox
+		pos = Objects[_viewport->Cursor_over].pos;
+		inst = Objects[_viewport->Cursor_over].instance;
+		if ((Objects[_viewport->Cursor_over].type == OBJ_SHIP) || (Objects[_viewport->Cursor_over].type == OBJ_START)) {
+			vm_extract_angles_matrix(&a, &Objects[_viewport->Cursor_over].orient);
 
 			a_deg.h = a.h * CONVERT_DEGREES; // convert angles to more readable degrees
 			a_deg.p = a.p * CONVERT_DEGREES;
@@ -1550,7 +1137,7 @@ void FredRenderer::render_frame(int cur_object_index,
 					a_deg.h,
 					a_deg.p,
 					a_deg.b);
-		} else if (Objects[Cursor_over].type == OBJ_WAYPOINT) {
+		} else if (Objects[_viewport->Cursor_over].type == OBJ_WAYPOINT) {
 			int idx;
 			waypoint_list* wp_list = find_waypoint_list_with_instance(inst, &idx);
 			Assert(wp_list != NULL);
@@ -1561,7 +1148,7 @@ void FredRenderer::render_frame(int cur_object_index,
 					pos.xyz.x,
 					pos.xyz.y,
 					pos.xyz.z);
-		} else if (Objects[Cursor_over].type == OBJ_POINT) {
+		} else if (Objects[_viewport->Cursor_over].type == OBJ_POINT) {
 			sprintf(buf, "Briefing icon\n( %.1f , %.1f , %.1f ) ", pos.xyz.x, pos.xyz.y, pos.xyz.z);
 		} else {
 			sprintf(buf, "( %.1f , %.1f , %.1f ) ", pos.xyz.x, pos.xyz.y, pos.xyz.z);
@@ -1593,7 +1180,7 @@ void FredRenderer::render_frame(int cur_object_index,
 	jumpnode_render_all();
 	disable_htl();
 
-	sprintf(buf, "(%.1f,%.1f,%.1f)", eye_pos.xyz.x, eye_pos.xyz.y, eye_pos.xyz.z);
+	sprintf(buf, "(%.1f,%.1f,%.1f)", _viewport->eye_pos.xyz.x, _viewport->eye_pos.xyz.y, _viewport->eye_pos.xyz.z);
 	gr_get_string_size(&w, &h, buf);
 	gr_set_color_fast(&colour_white);
 	gr_string(gr_screen.max_w - w - 2, 2, buf);
@@ -1611,286 +1198,7 @@ void FredRenderer::render_frame(int cur_object_index,
 #endif
 
 	g3_start_frame(0); // ** Accounted for
-	g3_set_view_matrix(&eye_pos, &eye_orient, 0.5f);
-}
-
-int FredRenderer::object_check_collision(object* objp,
-										 vec3d* p0,
-										 vec3d* p1,
-										 vec3d* hitpos) {
-	mc_info mc;
-	mc_info_init(&mc);
-
-	if ((objp->type == OBJ_NONE) || (objp->type == OBJ_POINT)) {
-		return 0;
-	}
-
-	if ((objp->type == OBJ_WAYPOINT) && !view.Show_waypoints) {
-		return 0;
-	}
-
-	if ((objp->type == OBJ_START) && !view.Show_starts) {
-		return 0;
-	}
-
-	if ((objp->type == OBJ_SHIP) || (objp->type == OBJ_START)) {
-		if (!view.Show_ships) {
-			return 0;
-		}
-
-		if (!view.Show_iff[Ships[objp->instance].team]) {
-			return 0;
-		}
-	}
-
-	if (objp->flags[Object::Object_Flags::Hidden]) {
-		return 0;
-	}
-
-	if ((view.Show_ship_models || view.Show_outlines) && (objp->type == OBJ_SHIP)) {
-		mc.model_num = Ship_info[Ships[objp->instance].ship_info_index].model_num; // Fill in the model to check
-	} else if ((view.Show_ship_models || view.Show_outlines) && (objp->type == OBJ_START)) {
-		mc.model_num = Ship_info[Ships[objp->instance].ship_info_index].model_num; // Fill in the model to check
-	} else {
-		return fvi_ray_sphere(hitpos, p0, p1, &objp->pos, (objp->radius > 0.1f) ? objp->radius : LOLLIPOP_SIZE);
-	}
-
-	mc.model_instance_num = -1;
-	mc.orient = &objp->orient; // The object's orient
-	mc.pos = &objp->pos; // The object's position
-	mc.p0 = p0; // Point 1 of ray to check
-	mc.p1 = p1; // Point 2 of ray to check
-	mc.flags = MC_CHECK_MODEL | MC_CHECK_RAY; // flags
-	model_collide(&mc);
-	*hitpos = mc.hit_point_world;
-	if (mc.num_hits < 1) {
-		// check shield
-		mc.orient = &objp->orient; // The object's orient
-		mc.pos = &objp->pos; // The object's position
-		mc.p0 = p0; // Point 1 of ray to check
-		mc.p1 = p1; // Point 2 of ray to check
-		mc.flags = MC_CHECK_SHIELD; // flags
-		model_collide(&mc);
-		*hitpos = mc.hit_point_world;
-	}
-
-	return mc.num_hits;
-}
-
-int FredRenderer::select_object(int cx,
-								int cy,
-								bool Selection_lock) {
-	int best = -1;
-	double dist, best_dist = 9e99;
-	vec3d p0, p1, v, hitpos;
-	vertex vt;
-
-	///! \fixme Briefing!
-#if 0
-    if (Briefing_dialog) {
-        best = Briefing_dialog->check_mouse_hit(cx, cy);
-        if (best >= 0)
-        {
-            if (Selection_lock && !(Objects[best].flags & OF_MARKED))
-            {
-                return -1;
-            }
-            return best;
-        }
-    }
-#endif
-
-	/*	gr_reset_clip();
-g3_start_frame(0); ////////////////
-g3_set_view_matrix(&eye_pos, &eye_orient, 0.5f);*/
-
-	//	Get 3d vector specified by mouse cursor location.
-	g3_point_to_vec(&v, cx, cy);
-
-	//	g3_end_frame();
-	if (!v.xyz.x && !v.xyz.y && !v.xyz.z) { // zero vector {
-		return -1;
-	}
-
-	p0 = view_pos;
-	vm_vec_scale_add(&p1, &p0, &v, 100.0f);
-
-	for ( auto objp = GET_FIRST(&obj_used_list); objp !=END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) ) {
-		if (object_check_collision(objp, &p0, &p1, &hitpos)) {
-			hitpos.xyz.x = objp->pos.xyz.x - view_pos.xyz.x;
-			hitpos.xyz.y = objp->pos.xyz.y - view_pos.xyz.y;
-			hitpos.xyz.z = objp->pos.xyz.z - view_pos.xyz.z;
-			dist = hitpos.xyz.x * hitpos.xyz.x + hitpos.xyz.y * hitpos.xyz.y + hitpos.xyz.z * hitpos.xyz.z;
-			if (dist < best_dist) {
-				best = OBJ_INDEX(objp);
-				best_dist = dist;
-			}
-		}
-	}
-
-	if (best >= 0) {
-		if (Selection_lock && !(Objects[best].flags[Object::Object_Flags::Marked])) {
-			return -1;
-		}
-		return best;
-	}
-
-	for ( auto objp = GET_FIRST(&obj_used_list); objp !=END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) ) {
-		g3_rotate_vertex(&vt, &objp->pos);
-		if (!(vt.codes & CC_BEHIND)) {
-			if (!(g3_project_vertex(&vt) & PF_OVERFLOW)) {
-				hitpos.xyz.x = vt.screen.xyw.x - cx;
-				hitpos.xyz.y = vt.screen.xyw.y - cy;
-				dist = hitpos.xyz.x * hitpos.xyz.x + hitpos.xyz.y * hitpos.xyz.y;
-				if ((dist < 8) && (dist < best_dist)) {
-					best = OBJ_INDEX(objp);
-					best_dist = dist;
-				}
-			}
-		}
-	}
-
-	if (Selection_lock && !(Objects[best].flags[Object::Object_Flags::Marked])) {
-		return -1;
-	}
-
-	return best;
-}
-
-void FredRenderer::level_object(matrix* orient) {
-	vec3d u;
-
-	u = orient->vec.uvec = The_grid->gmatrix.vec.uvec;
-	if (u.xyz.x) // y-z plane
-	{
-		orient->vec.fvec.xyz.x = orient->vec.rvec.xyz.x = 0.0f;
-	} else if (u.xyz.y) { // x-z plane
-		orient->vec.fvec.xyz.y = orient->vec.rvec.xyz.y = 0.0f;
-	} else if (u.xyz.z) { // x-y plane
-		orient->vec.fvec.xyz.z = orient->vec.rvec.xyz.z = 0.0f;
-	}
-
-	vm_fix_matrix(orient);
-}
-
-void FredRenderer::level_controlled() {
-	int cmode, count = 0;
-	object* objp;
-
-	cmode = Control_mode;
-	if ((viewpoint == 1) && !cmode) {
-		cmode = 2;
-	}
-
-	switch (cmode) {
-	case 0: //	Control the viewer's location and orientation
-		level_object(&view_orient);
-		break;
-
-	case 2: // Control viewpoint object
-		level_object(&Objects[view_obj].orient);
-		object_moved(&Objects[view_obj]);
-		///! \todo Notify.
-		_editor->missionChanged();
-		//FREDDoc_ptr->autosave("level object");
-		break;
-
-	case 1: //	Control the current object's location and orientation
-		objp = GET_FIRST(&obj_used_list);
-		while (objp != END_OF_LIST(&obj_used_list)) {
-			if (objp->flags[Object::Object_Flags::Marked]) {
-				level_object(&objp->orient);
-			}
-
-			objp = GET_NEXT(objp);
-		}
-
-		objp = GET_FIRST(&obj_used_list);
-		while (objp != END_OF_LIST(&obj_used_list)) {
-			if (objp->flags[Object::Object_Flags::Marked]) {
-				object_moved(objp);
-				count++;
-			}
-
-			objp = GET_NEXT(objp);
-		}
-
-		///! \todo Notify.
-        if (count) {
-			/*
-            if (count > 1)
-                FREDDoc_ptr->autosave("level objects");
-            else
-                FREDDoc_ptr->autosave("level object");
-                */
-
-            _editor->missionChanged();
-        }
-
-		break;
-	}
-
-	return;
-}
-
-void FredRenderer::verticalize_controlled() {
-	int cmode, count = 0;
-	object* objp;
-
-	cmode = Control_mode;
-	if ((viewpoint == 1) && !cmode) {
-		cmode = 2;
-	}
-
-	switch (cmode) {
-	case 0: //	Control the viewer's location and orientation
-		verticalize_object(&view_orient);
-		break;
-
-	case 2: // Control viewpoint object
-		verticalize_object(&Objects[view_obj].orient);
-		object_moved(&Objects[view_obj]);
-		///! \todo notify.
-		//FREDDoc_ptr->autosave("align object");
-		_editor->missionChanged();
-		break;
-
-	case 1: //	Control the current object's location and orientation
-		objp = GET_FIRST(&obj_used_list);
-		while (objp != END_OF_LIST(&obj_used_list)) {
-			if (objp->flags[Object::Object_Flags::Marked]) {
-				verticalize_object(&objp->orient);
-			}
-
-			objp = GET_NEXT(objp);
-		}
-
-		objp = GET_FIRST(&obj_used_list);
-		while (objp != END_OF_LIST(&obj_used_list)) {
-			if (objp->flags[Object::Object_Flags::Marked]) {
-				object_moved(objp);
-				count++;
-			}
-
-			objp = GET_NEXT(objp);
-		}
-
-		///! \todo Notify.
-        if (count) {
-			/*
-            if (count > 1)
-                FREDDoc_ptr->autosave("align objects");
-            else
-                FREDDoc_ptr->autosave("align object");
-                */
-
-            _editor->missionChanged();
-        }
-
-		break;
-	}
-
-	return;
+	g3_set_view_matrix(&_viewport->eye_pos, &_viewport->eye_orient, 0.5f);
 }
 void FredRenderer::resize(int width, int height) {
 	// Make sure the following call targets the right view port
@@ -1901,96 +1209,9 @@ void FredRenderer::resize(int width, int height) {
 	// We need to rerender the scene now
 	scheduleUpdate();
 }
-void FredRenderer::resetViewPhysics() {
-	physics_init(&view_physics);
-	view_physics.max_vel.xyz.x *= physics_speed / 3.0f;
-	view_physics.max_vel.xyz.y *= physics_speed / 3.0f;
-	view_physics.max_vel.xyz.z *= physics_speed / 3.0f;
-	view_physics.max_rear_vel *= physics_speed / 3.0f;
-	view_physics.max_rotvel.xyz.x *= physics_rot / 30.0f;
-	view_physics.max_rotvel.xyz.y *= physics_rot / 30.0f;
-	view_physics.max_rotvel.xyz.z *= physics_rot / 30.0f;
-	view_physics.flags |= PF_ACCELERATES | PF_SLIDE_ENABLED;
+ViewSettings& FredRenderer::view() {
+	return _viewport->view;
 }
-void FredRenderer::select_objects(const Marking_box& box) {
-	int	x, y, valid, icon_mode = 0;
-	vertex	v;
-	object	*ptr;
 
-	// Copy this so we can modify it
-	auto marking_box = box;
-
-	if (marking_box.x1 > marking_box.x2) {
-		x = marking_box.x1;
-		marking_box.x1 = marking_box.x2;
-		marking_box.x2 = x;
-	}
-
-	if (marking_box.y1 > marking_box.y2) {
-		y = marking_box.y1;
-		marking_box.y1 = marking_box.y2;
-		marking_box.y2 = y;
-	}
-
-	ptr = GET_FIRST(&obj_used_list);
-	while (ptr != END_OF_LIST(&obj_used_list)) {
-		valid = 1;
-		if (ptr->flags[Object::Object_Flags::Hidden])
-			valid = 0;
-
-		Assert(ptr->type != OBJ_NONE);
-		switch (ptr->type) {
-		case OBJ_WAYPOINT:
-			if (!Show_waypoints)
-				valid = 0;
-			break;
-
-		case OBJ_START:
-			if (!view.Show_starts || !view.Show_ships)
-				valid = 0;
-			break;
-
-		case OBJ_SHIP:
-			if (!view.Show_ships)
-				valid = 0;
-
-			if (!view.Show_iff[Ships[ptr->instance].team])
-				valid = 0;
-
-			break;
-		}
-
-		g3_rotate_vertex(&v, &ptr->pos);
-		if (!(v.codes & CC_BEHIND) && valid)
-			if (!(g3_project_vertex(&v) & PF_OVERFLOW)) {
-				x = (int) v.screen.xyw.x;
-				y = (int) v.screen.xyw.y;
-
-				if (x >= marking_box.x1 && x <= marking_box.x2 && y >= marking_box.y1 && y <= marking_box.y2) {
-					if (ptr->flags[Object::Object_Flags::Marked])
-						_editor->unmarkObject(OBJ_INDEX(ptr));
-					else
-						_editor->markObject(OBJ_INDEX(ptr));
-
-					if (ptr->type == OBJ_POINT)
-						icon_mode = 1;
-				}
-			}
-
-		ptr = GET_NEXT(ptr);
-	}
-
-	if (icon_mode) {
-		ptr = GET_FIRST(&obj_used_list);
-		while (ptr != END_OF_LIST(&obj_used_list)) {
-			if ((ptr->flags[Object::Object_Flags::Marked]) && (ptr->type != OBJ_POINT))
-				_editor->unmarkObject(OBJ_INDEX(ptr));
-
-			ptr = GET_NEXT(ptr);
-		}
-	}
-
-	scheduleUpdate();
-}
 }
 }

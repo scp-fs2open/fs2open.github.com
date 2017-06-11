@@ -29,6 +29,8 @@ endif()
 add_file_folder("Source/Mission"
     src/mission/Editor.cpp
     src/mission/Editor.h
+    src/mission/EditorViewport.cpp
+    src/mission/EditorViewport.h
     src/mission/FredRenderer.cpp
     src/mission/FredRenderer.h
     src/mission/management.cpp

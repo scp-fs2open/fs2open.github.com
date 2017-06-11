@@ -26,9 +26,9 @@ class FredView : public QMainWindow
     Q_OBJECT
 
 public:
-    explicit FredView(QWidget *parent = 0);
+    explicit FredView(QWidget *parent = nullptr);
     ~FredView();
-    void setEditor(Editor* editor, FredRenderer* renderer);
+    void setEditor(Editor* editor, EditorViewport* viewport);
 
 	void loadMissionFile(const QString& pathName);
 
@@ -126,7 +126,7 @@ protected:
 	std::unique_ptr<QComboBox> _shipClassBox;
 
     Editor* fred = nullptr;
-	FredRenderer* _renderer = nullptr;
+	EditorViewport* _viewport = nullptr;
 
 	bool _inKeyPressHandler = false;
 	bool _inKeyReleaseHandler = false;

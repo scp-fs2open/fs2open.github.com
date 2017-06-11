@@ -54,7 +54,7 @@ class RenderWidget: public QWidget {
 
 	std::unordered_map<int, int> qt2fsKeys;
 	Editor* fred = nullptr;
-	FredRenderer* _renderer = nullptr;
+	EditorViewport* _viewport = nullptr;
 
 	CursorMode _cursorMode = CursorMode::Selecting;
 
@@ -69,7 +69,7 @@ class RenderWidget: public QWidget {
 	void setSurfaceFormat(const QSurfaceFormat& fmt);
 	QSurface* getRenderSurface() const;
 
-	void setEditor(Editor* editor, FredRenderer* renderer);
+	void setEditor(Editor* editor, EditorViewport* viewport);
 
 	void setCursorMode(CursorMode mode);
 

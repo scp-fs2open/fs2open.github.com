@@ -9,9 +9,9 @@ namespace dialogs {
 
 
 AbstractDialogModel::AbstractDialogModel(QObject* parent,
-										 fso::fred::Editor* editor,
-										 fso::fred::FredRenderer* renderer) :
-	QObject(parent), _editor(editor), _renderer(renderer) {
+										 Editor* editor,
+										 EditorViewport* viewport) :
+	QObject(parent), _editor(editor), _viewport(viewport) {
 }
 
 }

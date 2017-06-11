@@ -205,7 +205,7 @@ void RenderWidget::mousePressEvent(QMouseEvent* event) {
 	_markingBox.x1 = event->x();
 	_markingBox.y1 = event->y();
 
-	auto on_object = _renderer->select_object(event->x(), event->y(), false);
+	auto on_object = _viewport->select_object(event->x(), event->y(), false);
 
 	if (event->modifiers().testFlag(Qt::ControlModifier)) {
 		// TODO: Add object creation
@@ -239,12 +239,12 @@ void RenderWidget::mouseMoveEvent(QMouseEvent* event) {
 	if (!event->buttons().testFlag(Qt::LeftButton)) {
 		// In case the button was released without the button release event
 		_usingMarkingBox = false;
-		_renderer->scheduleUpdate();
+		_viewport->needsUpdate();
 	}
 
 	// No matter in which mode we are, we always check which object is under the cursor
-	auto obj_num = _renderer->select_object(event->x(), event->y(), false);
-	_renderer->Cursor_over = obj_num;
+	auto obj_num = _viewport->select_object(event->x(), event->y(), false);
+	_viewport->Cursor_over = obj_num;
 	updateCursor();
 
 	if (event->buttons().testFlag(Qt::LeftButton)) {
@@ -267,7 +267,7 @@ void RenderWidget::mouseMoveEvent(QMouseEvent* event) {
 
 			if (mouseDX.manhattanLength() > 0) {
 				// Marking box has changed -> need to rerender
-				_renderer->scheduleUpdate();
+				_viewport->needsUpdate();
 			}
 		}
 	}
@@ -283,13 +283,13 @@ void RenderWidget::mouseReleaseEvent(QMouseEvent* event) {
 		if (_usingMarkingBox) {
 			_usingMarkingBox = false;
 
-			_renderer->select_objects(_markingBox);
-			_renderer->scheduleUpdate();
+			_viewport->select_objects(_markingBox);
+			_viewport->needsUpdate();
 		}
 	}
 }
 void RenderWidget::updateCursor() const {
-	if (_renderer->Cursor_over >= 0) {
+	if (_viewport->Cursor_over >= 0) {
 		switch(_cursorMode) {
 		case CursorMode::Selecting:
 			_window->setCursor(*_standardCursor);
@@ -305,17 +305,17 @@ void RenderWidget::updateCursor() const {
 		_window->setCursor(*_standardCursor);
 	}
 }
-void RenderWidget::setEditor(Editor* editor, FredRenderer* renderer) {
+void RenderWidget::setEditor(Editor* editor, EditorViewport* viewport) {
 	Assertion(fred == nullptr, "Render widget currently does not support resetting the editor!");
-	Assertion(_renderer == nullptr, "Render widget currently does not support resetting the renderer!");
+	Assertion(_viewport == nullptr, "Render widget currently does not support resetting the viewport!");
 
 	Assertion(editor != nullptr, "Invalid editor pointer passed!");
-	Assertion(renderer != nullptr, "Invalid renderer pointer passed!");
+	Assertion(viewport != nullptr, "Invalid viewport pointer passed!");
 
 	fred = editor;
-	_renderer = renderer;
+	_viewport = viewport;
 
-	_window->setEditor(editor, renderer);
+	_window->setEditor(editor, _viewport->renderer);
 }
 void RenderWidget::setCursorMode(CursorMode mode) {
 	_cursorMode = mode;
@@ -323,7 +323,7 @@ void RenderWidget::setCursorMode(CursorMode mode) {
 void RenderWidget::renderFrame() {
 	subsys_to_render Render_subsys;
 
-	_renderer->render_frame(fred->getCurrentObject(),
+	_viewport->renderer->render_frame(fred->getCurrentObject(),
 							Render_subsys,
 							_usingMarkingBox,
 							_markingBox,
