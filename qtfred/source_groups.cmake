@@ -81,6 +81,7 @@ add_file_folder("Resources"
 if (WIN32)
     add_file_folder("Resources/Windows"
         resources/win/qtfred.manifest
+        resources/win/qtfred.rc
     )
 endif()
 
