@@ -52,11 +52,11 @@ add_file_folder("Source/UI"
     src/ui/FredView.h
     src/ui/QtGraphicsOperations.cpp
     src/ui/QtGraphicsOperations.h
-    src/ui/BriefingEditorDialog.cpp
-    src/ui/BriefingEditorDialog.h
 )
 
 add_file_folder("Source/UI/Dialogs"
+    src/ui/dialogs/BriefingEditorDialog.cpp
+    src/ui/dialogs/BriefingEditorDialog.h
     src/ui/dialogs/EventEditorDialog.cpp
     src/ui/dialogs/EventEditorDialog.h
 )

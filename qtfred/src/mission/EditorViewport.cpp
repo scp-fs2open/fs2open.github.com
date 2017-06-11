@@ -124,8 +124,8 @@ void verticalize_object(matrix* orient) {
 namespace fso {
 namespace fred {
 
-EditorViewport::EditorViewport(Editor* editor, std::unique_ptr<FredRenderer>&& in_renderer) :
-	_renderer(std::move(in_renderer)), editor(editor) {
+EditorViewport::EditorViewport(Editor* in_editor, std::unique_ptr<FredRenderer>&& in_renderer) :
+	_renderer(std::move(in_renderer)), editor(in_editor) {
 	renderer = _renderer.get();
 
 	_renderer->setViewport(this);

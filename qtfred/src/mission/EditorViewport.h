@@ -61,7 +61,7 @@ class EditorViewport {
 	void process_controls(vec3d* pos, matrix* orient, float frametime, int key, int mode = 0);
 	void level_object(matrix* orient);
  public:
-	EditorViewport(Editor* editor, std::unique_ptr<FredRenderer>&& in_renderer);
+	EditorViewport(Editor* in_editor, std::unique_ptr<FredRenderer>&& in_renderer);
 
 	void needsUpdate();
 
