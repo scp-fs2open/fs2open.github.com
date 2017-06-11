@@ -1912,5 +1912,85 @@ void FredRenderer::resetViewPhysics() {
 	view_physics.max_rotvel.xyz.z *= physics_rot / 30.0f;
 	view_physics.flags |= PF_ACCELERATES | PF_SLIDE_ENABLED;
 }
+void FredRenderer::select_objects(const Marking_box& box) {
+	int	x, y, valid, icon_mode = 0;
+	vertex	v;
+	object	*ptr;
+
+	// Copy this so we can modify it
+	auto marking_box = box;
+
+	if (marking_box.x1 > marking_box.x2) {
+		x = marking_box.x1;
+		marking_box.x1 = marking_box.x2;
+		marking_box.x2 = x;
+	}
+
+	if (marking_box.y1 > marking_box.y2) {
+		y = marking_box.y1;
+		marking_box.y1 = marking_box.y2;
+		marking_box.y2 = y;
+	}
+
+	ptr = GET_FIRST(&obj_used_list);
+	while (ptr != END_OF_LIST(&obj_used_list)) {
+		valid = 1;
+		if (ptr->flags[Object::Object_Flags::Hidden])
+			valid = 0;
+
+		Assert(ptr->type != OBJ_NONE);
+		switch (ptr->type) {
+		case OBJ_WAYPOINT:
+			if (!Show_waypoints)
+				valid = 0;
+			break;
+
+		case OBJ_START:
+			if (!view.Show_starts || !view.Show_ships)
+				valid = 0;
+			break;
+
+		case OBJ_SHIP:
+			if (!view.Show_ships)
+				valid = 0;
+
+			if (!view.Show_iff[Ships[ptr->instance].team])
+				valid = 0;
+
+			break;
+		}
+
+		g3_rotate_vertex(&v, &ptr->pos);
+		if (!(v.codes & CC_BEHIND) && valid)
+			if (!(g3_project_vertex(&v) & PF_OVERFLOW)) {
+				x = (int) v.screen.xyw.x;
+				y = (int) v.screen.xyw.y;
+
+				if (x >= marking_box.x1 && x <= marking_box.x2 && y >= marking_box.y1 && y <= marking_box.y2) {
+					if (ptr->flags[Object::Object_Flags::Marked])
+						_editor->unmarkObject(OBJ_INDEX(ptr));
+					else
+						_editor->markObject(OBJ_INDEX(ptr));
+
+					if (ptr->type == OBJ_POINT)
+						icon_mode = 1;
+				}
+			}
+
+		ptr = GET_NEXT(ptr);
+	}
+
+	if (icon_mode) {
+		ptr = GET_FIRST(&obj_used_list);
+		while (ptr != END_OF_LIST(&obj_used_list)) {
+			if ((ptr->flags[Object::Object_Flags::Marked]) && (ptr->type != OBJ_POINT))
+				_editor->unmarkObject(OBJ_INDEX(ptr));
+
+			ptr = GET_NEXT(ptr);
+		}
+	}
+
+	scheduleUpdate();
+}
 }
 }

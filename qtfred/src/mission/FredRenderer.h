@@ -22,16 +22,17 @@ struct subsys_to_render {
 
 ///! \fixme does NOT belong here.
 struct Marking_box {
-	int x1, y1, x2, y2;
+	int x1 = 0;
+	int y1 = 0;
+	int x2 = 0;
+	int y2 = 0;
 };
 
 namespace fso {
 namespace fred {
 
 enum class CursorMode {
-	Selecting,
-	Moving,
-	Rotating
+	Selecting, Moving, Rotating
 };
 
 struct ViewSettings {
@@ -62,8 +63,8 @@ struct ViewSettings {
 
 class Editor;
 
-class FredRenderer : public QObject {
-	Q_OBJECT
+class FredRenderer: public QObject {
+ Q_OBJECT
 
 	/**
      * A lot of this stuff doesn't belong here
@@ -116,8 +117,7 @@ class FredRenderer : public QObject {
 	void render_grid(grid* gridp);
 	void hilight_bitmap();
 	void display_distances();
-	void
-	display_ship_info(int cur_object_index);
+	void display_ship_info(int cur_object_index);
 	void cancel_display_active_ship_subsystem(subsys_to_render& Render_subsys);
 	void display_active_ship_subsystem(subsys_to_render& Render_subsys, int cur_object_index);
 
@@ -126,28 +126,22 @@ class FredRenderer : public QObject {
 	void draw_orient_sphere2(int col, object* obj, int r, int g, int b);
 	void draw_orient_sphere(object* obj, int r, int g, int b);
 	void render_model_x(vec3d* pos, grid* gridp, int col_scheme = 0);
-	void render_one_model_htl(object* objp,
-							  int cur_object_index,
-							  bool Bg_bitmap_dialog);
-	void render_models(int cur_object_index,
-					   bool Bg_bitmap_dialog);
+	void render_one_model_htl(object* objp, int cur_object_index, bool Bg_bitmap_dialog);
+	void render_models(int cur_object_index, bool Bg_bitmap_dialog);
 	void render_frame(int cur_object_index,
 					  subsys_to_render& Render_subsys,
 					  bool box_marking,
 					  const Marking_box& marking_box,
 					  bool Bg_bitmap_dialog);
-	int object_check_collision(object* objp,
-							   vec3d* p0,
-							   vec3d* p1,
-							   vec3d* hitpos);
-	int select_object(int cx,
-					  int cy,
-					  bool Selection_lock);
+	int object_check_collision(object* objp, vec3d* p0, vec3d* p1, vec3d* hitpos);
+	int select_object(int cx, int cy, bool Selection_lock);
 	void level_object(matrix* orient);
 	// viewpoint -> attach camera to current ship.
 	// cur_obj -> ship viewed.
 	void level_controlled();
 	void verticalize_controlled();
+
+	void select_objects(const Marking_box& box);
 
 	void resetViewPhysics();
 
@@ -173,7 +167,7 @@ class FredRenderer : public QObject {
 
 	int Control_mode = 0;
 
-signals:
+ signals:
 	void scheduleUpdate();
 };
 }

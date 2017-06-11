@@ -58,6 +58,11 @@ class RenderWidget: public QWidget {
 
 	CursorMode _cursorMode = CursorMode::Selecting;
 
+	bool _usingMarkingBox = false;
+	Marking_box _markingBox;
+
+	QPoint _lastMouse;
+
  public:
 	explicit RenderWidget(QWidget* parent);
 
@@ -68,14 +73,19 @@ class RenderWidget: public QWidget {
 
 	void setCursorMode(CursorMode mode);
 
+	void renderFrame();
  protected:
 	void keyPressEvent(QKeyEvent*) override;
 	void keyReleaseEvent(QKeyEvent*) override;
-	void mousePressEvent(QMouseEvent* event) override;
+
 	void mouseDoubleClickEvent(QMouseEvent* event) override;
 	void mouseMoveEvent(QMouseEvent* event) override;
+
+	void mousePressEvent(QMouseEvent* event) override;
 	void mouseReleaseEvent(QMouseEvent*) override;
+
 	void contextMenuEvent(QContextMenuEvent* event) override;
+	void updateCursor() const;
 };
 
 } // namespace fred
