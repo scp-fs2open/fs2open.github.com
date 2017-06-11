@@ -2,7 +2,7 @@
 
 #include <functional>
 
-#include "editor.h"
+#include "Editor.h"
 
 namespace fso {
 namespace fred {

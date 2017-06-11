@@ -27,8 +27,8 @@ if (WIN32)
 endif()
 
 add_file_folder("Source/Mission"
-    src/mission/editor.cpp
-    src/mission/editor.h
+    src/mission/Editor.cpp
+    src/mission/Editor.h
     src/mission/FredRenderer.cpp
     src/mission/FredRenderer.h
     src/mission/management.cpp

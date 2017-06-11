@@ -1,6 +1,6 @@
 
 #include "FredRenderer.h"
-#include "editor.h"
+#include "Editor.h"
 
 #include <globalincs/alphacolors.h>
 #include <mission/missiongrid.h>

@@ -4,7 +4,7 @@
 #include <QTimer>
 #include <QtGui/QtEvents>
 
-#include <mission/editor.h>
+#include <mission/Editor.h>
 #include <mission/management.h>
 
 #include "globalincs/pstypes.h"

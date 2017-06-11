@@ -13,7 +13,7 @@
 #include <io/key.h>
 #include <ui/dialogs/EventEditorDialog.h>
 
-#include "mission/editor.h"
+#include "mission/Editor.h"
 #include "mission/management.h"
 
 #include "widgets/ColorComboBox.h"

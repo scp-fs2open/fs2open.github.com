@@ -2,7 +2,7 @@
 
 #include <QtCore/QObject>
 
-#include <mission/editor.h>
+#include <mission/Editor.h>
 
 namespace fso {
 namespace fred {

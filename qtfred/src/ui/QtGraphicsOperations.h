@@ -1,7 +1,7 @@
 #pragma once
 
 #include <osapi/osapi.h>
-#include "mission/editor.h"
+#include "mission/Editor.h"
 #include "FredView.h"
 
 #include <QtGui/QOpenGLContext>

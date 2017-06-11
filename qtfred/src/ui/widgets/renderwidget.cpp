@@ -14,7 +14,7 @@
 #include "io/timer.h"
 #include "starfield/starfield.h"
 
-#include "mission/editor.h"
+#include "mission/Editor.h"
 #include "FredApplication.h"
 #include "ui/FredView.h"
 
