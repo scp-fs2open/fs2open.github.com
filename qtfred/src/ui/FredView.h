@@ -26,9 +26,9 @@ class FredView : public QMainWindow
     Q_OBJECT
 
 public:
-    explicit FredView(QWidget *parent = 0);
+    explicit FredView(QWidget *parent = nullptr);
     ~FredView();
-    void setEditor(Editor* editor, FredRenderer* renderer);
+    void setEditor(Editor* editor, EditorViewport* viewport);
 
 	void loadMissionFile(const QString& pathName);
 
@@ -76,6 +76,8 @@ private slots:
 
 	void on_actionCamera_triggered(bool enabled);
 	void on_actionCurrent_Ship_triggered(bool enabled);
+
+	void on_actionEvents_triggered(bool);
 signals:
 	/**
 	 * @brief Special version of FredApplication::onIdle which is limited to the lifetime of this object
@@ -110,6 +112,7 @@ protected:
 	void initializeStatusBar();
 	void initializePopupMenus();
 
+	QLabel* _statusBarViewmode = nullptr;
 	QLabel* _statusBarUnitsLabel = nullptr;
 
 	QMenu* _viewPopup = nullptr;
@@ -123,7 +126,7 @@ protected:
 	std::unique_ptr<QComboBox> _shipClassBox;
 
     Editor* fred = nullptr;
-	FredRenderer* _renderer = nullptr;
+	EditorViewport* _viewport = nullptr;
 
 	bool _inKeyPressHandler = false;
 	bool _inKeyReleaseHandler = false;

@@ -1,4 +1,4 @@
-#include "editor.h"
+#include "Editor.h"
 
 #include <array>
 #include <vector>
@@ -17,28 +17,13 @@
 #include <gamesnd/eventmusic.h>
 #include <starfield/nebula.h>
 
-#include "globalincs/pstypes.h" // vm_init
-#include "osapi/osregistry.h" // os_registry_init
-#include "io/timer.h" // timer_init
-#include "cfile/cfile.h" // cfile_chdir, cfile_init
-#include "localization/localize.h" // lcl_init
-#include "graphics/2d.h" // gr_init
-#include "graphics/font.h" // gr_font_init
-#include "io/key.h" // key_init
-#include "io/mouse.h" // mouse_init
 #include "iff_defs/iff_defs.h" // iff_init
 #include "object/object.h" // obj_init
 #include "species_defs/species_defs.h" // species_init
-#include "mission/missionbriefcommon.h" // mission_brief_init
-#include "ai/ai.h" // ai_init
-#include "ai/ai_profiles.h" // ai_profiles_init
 #include "ship/ship.h" // armor_init, ship_init
 #include "weapon/weapon.h" // weapon_init
-#include "stats/medals.h" // parse_medal_tbl
 #include "nebula/neb.h" // neb2_init
 #include "starfield/starfield.h" // stars_init, stars_pre_level_init, stars_post_level_init
-#include "osapi/osapi.h" // os_get_window, os_set_window.
-#include "graphics/font.h"
 #include "hud/hudsquadmsg.h"
 #include "globalincs/linklist.h"
 
@@ -46,99 +31,21 @@
 #include "ai/aigoals.h"
 
 #include "object.h"
-#include <FredApplication.h>
+#include "management.h"
+#include "FredApplication.h"
 
-extern int Xstr_inited;
+char Fred_callsigns[MAX_SHIPS][NAME_LENGTH + 1];
+char Fred_alt_names[MAX_SHIPS][NAME_LENGTH + 1];
+
+extern void allocate_mission_text(size_t size);
 
 extern int Nmodel_num;
 extern int Nmodel_instance_num;
 extern matrix Nmodel_orient;
 extern int Nmodel_bitmap;
 
-extern void allocate_mission_text(size_t size);
-
-extern void parse_init(bool basic = false);
-
-char Fred_callsigns[MAX_SHIPS][NAME_LENGTH + 1];
-char Fred_alt_names[MAX_SHIPS][NAME_LENGTH + 1];
-
 namespace fso {
 namespace fred {
-
-void initialize(const std::string& cfilepath, int argc, char* argv[], Editor* editor, InitializerCallback listener) {
-
-#ifndef NDEBUG
-	outwnd_init();
-
-	load_filter_info();
-#endif
-
-	std::setlocale(LC_ALL, "C");
-
-	std::vector<std::pair<std::function<void(void)>, SubSystem>> initializers =
-		{{ std::bind(os_init, Osreg_company_name, Osreg_app_name, nullptr, nullptr), SubSystem::OS },
-		 { timer_init,                                                               SubSystem::Timer },
-		 { [&]() {
-			 // this should enable mods - Kazan
-			 parse_cmdline(argc, argv);
-		 },                                                                          SubSystem::CommandLine },
-		 { [&cfilepath](void) {
-			 // cfile needs a file path...
-			 auto file_path = cfilepath + DIR_SEPARATOR_STR + "qtfred.exe";
-
-			 cfile_init(file_path.c_str());
-		 },                                                                          SubSystem::CFile },
-		 { []() {
-			 lcl_init(FS2_OPEN_DEFAULT_LANGUAGE);
-
-			 // Goober5000 - force init XSTRs (so they work, but only work in English, based on above comment)
-			 Xstr_inited = 1;
-		 },                                                                          SubSystem::Locale },
-		 { [=]() {
-			 std::unique_ptr<QtGraphicsOperations> graphicsOps(new QtGraphicsOperations(editor));
-			 gr_init(std::move(graphicsOps));
-		 },                                                                          SubSystem::Graphics },
-		 { font::init,                                                               SubSystem::Fonts },
-		 { key_init,                                                                 SubSystem::Keyboard },
-		 { mouse_init,                                                               SubSystem::Mouse },
-		 { particle::ParticleManager::init,                                          SubSystem::Particles },
-		 { iff_init,                                                                 SubSystem::Iff },
-		 { obj_init,                                                                 SubSystem::Objects },
-		 { species_init,                                                             SubSystem::Species },
-		 { mission_brief_common_init,                                                SubSystem::MissionBrief },
-		 { ai_init,                                                                  SubSystem::AI },
-		 { ai_profiles_init,                                                         SubSystem::AIProfiles },
-		 { armor_init,                                                               SubSystem::Armor },
-		 { weapon_init,                                                              SubSystem::Weapon },
-		 { parse_medal_tbl,                                                          SubSystem::Medals },
-		 { ship_init,                                                                SubSystem::Ships },
-		 { []() { parse_init(); },                                                   SubSystem::Parse },
-		 { neb2_init,                                                                SubSystem::Nebulas },
-		 { []() {
-			 stars_init();
-			 stars_pre_level_init(true);
-			 stars_post_level_init();
-		 },                                                                          SubSystem::Stars }};
-
-	for (const auto& initializer : initializers) {
-		const auto& init_function = initializer.first;
-		const auto& which = initializer.second;
-		listener(which);
-		init_function();
-	}
-}
-
-void shutdown() {
-	audiostream_close();
-	snd_close();
-	gr_close();
-
-	os_cleanup();
-
-#ifndef NDEBUG
-	outwnd_close();
-#endif
-}
 
 Editor::Editor() : currentObject{ -1 } {
 	// We need to do this the hard way since MSVC 2013 is too stupid to support array initializers...
@@ -152,7 +59,7 @@ Editor::Editor() : currentObject{ -1 } {
 	connect(fredApp, &FredApplication::onIdle, this, &Editor::update);
 
 	// When the mission changes we need to update all renderers
-	connect(this, &Editor::missionChanged, this, &Editor::updateAllRenderers);
+	connect(this, &Editor::missionChanged, this, &Editor::updateAllViewports);
 
 	// When a mission was loaded we need to notify everyone that the mission has changed
 	connect(this, &Editor::missionLoaded, [this](const std::string&) { missionChanged(); });
@@ -160,19 +67,20 @@ Editor::Editor() : currentObject{ -1 } {
 	fredApp->runAfterInit([this]() { initialSetup(); });
 }
 
-FredRenderer* Editor::createRenderer(os::Viewport* renderView) {
-	std::unique_ptr<FredRenderer> renderer(new FredRenderer(this, renderView));
+EditorViewport* Editor::createEditorViewport(os::Viewport* renderView) {
+	std::unique_ptr<FredRenderer> renderer(new FredRenderer(renderView));
+	std::unique_ptr<EditorViewport> viewport(new EditorViewport(this, std::move(renderer)));
 
-	auto ptr = renderer.get();
-	_renderers.push_back(std::move(renderer));
+	auto ptr = viewport.get();
+	_viewports.push_back(std::move(viewport));
 
 	return ptr;
 }
 
 void Editor::update() {
 	// Do updates for all renderers
-	for (auto& renderer : _renderers) {
-		renderer->game_do_frame(currentObject);
+	for (auto& viewport : _viewports) {
+		viewport->game_do_frame(currentObject);
 	}
 }
 
@@ -183,9 +91,9 @@ void Editor::loadMission(const std::string& filepath) {
 
 	obj_merge_created_list();
 
-	for (auto& renderer : _renderers) {
-		renderer->view_orient = Parse_viewer_orient;
-		renderer->view_pos = Parse_viewer_pos;
+	for (auto& viewport : _viewports) {
+		viewport->view_orient = Parse_viewer_orient;
+		viewport->view_pos = Parse_viewer_pos;
 	}
 	stars_post_level_init();
 
@@ -222,7 +130,7 @@ void Editor::unmarkObject(int obj) {
 		Objects[obj].flags.remove(Object::Object_Flags::Marked);
 		numMarked--;
 		if (obj == currentObject) {  // need to find a new index
-			object *ptr;
+			object* ptr;
 
 			ptr = GET_FIRST(&obj_used_list);
 			while (ptr != END_OF_LIST(&obj_used_list)) {
@@ -237,7 +145,7 @@ void Editor::unmarkObject(int obj) {
 			setupCurrentObjectIndices(-1);  // can't find one; nothing is marked.
 		}
 
-		updateAllRenderers();
+		updateAllViewports();
 	}
 }
 
@@ -363,8 +271,8 @@ void Editor::clearMission() {
 	obj_init();
 	model_free_all();                // Free all existing models
 
-	for (auto& renderer : _renderers) {
-		renderer->resetView();
+	for (auto& viewport : _viewports) {
+		viewport->resetView();
 	}
 
 	init_sexp();
@@ -380,8 +288,8 @@ void Editor::clearMission() {
 
 	strcpy(Cargo_names[0], "Nothing");
 	Num_cargo = 1;
-	for (auto& renderer : _renderers) {
-		renderer->resetViewPhysics();
+	for (auto& viewport : _viewports) {
+		viewport->resetViewPhysics();
 	}
 
 	// reset background bitmaps and suns
@@ -482,11 +390,11 @@ void Editor::selectObject(int objId) {
 
 	missionChanged();
 }
-void Editor::updateAllRenderers() {
+void Editor::updateAllViewports() {
 	// This takes all renderers and issues an update request for each of them. For now that is only one but this allows
 	// us to expand FRED to multiple view ports in the future.
-	for (auto& renderer : _renderers) {
-		renderer->scheduleUpdate();
+	for (auto& viewport : _viewports) {
+		viewport->needsUpdate();
 	}
 }
 
@@ -517,18 +425,20 @@ int Editor::create_ship(matrix* orient, vec3d* pos, int ship_type) {
 	int obj, z1, z2;
 	float temp_max_hull_strength;
 	ship_info* sip;
-	
+
 	obj = ship_create(orient, pos, ship_type);
-	if (obj == -1)
+	if (obj == -1) {
 		return -1;
-	
+	}
+
 	Objects[obj].phys_info.speed = 33.0f;
 
 	ship* shipp = &Ships[Objects[obj].instance];
 	sip = &Ship_info[shipp->ship_info_index];
 
-	if (query_ship_name_duplicate(Objects[obj].instance))
+	if (query_ship_name_duplicate(Objects[obj].instance)) {
 		fix_ship_name(Objects[obj].instance);
+	}
 
 	// default stuff according to species and IFF
 	shipp->team = Species_info[Ship_info[shipp->ship_info_index].species].default_iff;
@@ -539,8 +449,9 @@ int Editor::create_ship(matrix* orient, vec3d* pos, int ship_type) {
 
 	z1 = Shield_sys_teams[shipp->team];
 	z2 = Shield_sys_types[ship_type];
-	if (((z1 == 1) && z2) || (z2 == 1))
+	if (((z1 == 1) && z2) || (z2 == 1)) {
 		Objects[obj].flags.set(Object::Object_Flags::No_shields);
+	}
 
 	// set orders according to whether the ship is on the player ship's team
 	{
@@ -548,7 +459,8 @@ int Editor::create_ship(matrix* orient, vec3d* pos, int ship_type) {
 		ship* temp_shipp = NULL;
 
 		// find the first player ship
-		for (temp_objp = GET_FIRST(&obj_used_list); temp_objp != END_OF_LIST(&obj_used_list); temp_objp = GET_NEXT(temp_objp)) {
+		for (temp_objp = GET_FIRST(&obj_used_list); temp_objp != END_OF_LIST(&obj_used_list);
+			 temp_objp = GET_NEXT(temp_objp)) {
 			if (temp_objp->type == OBJ_START) {
 				temp_shipp = &Ships[temp_objp->instance];
 				break;
@@ -570,12 +482,12 @@ int Editor::create_ship(matrix* orient, vec3d* pos, int ship_type) {
 
 	// calc kamikaze stuff
 	if (shipp->use_special_explosion) {
-		temp_max_hull_strength = (float)shipp->special_exp_blast;
+		temp_max_hull_strength = (float) shipp->special_exp_blast;
 	} else {
 		temp_max_hull_strength = sip->max_hull_strength;
 	}
 
-	Ai_info[shipp->ai_index].kamikaze_damage = (int)std::min(1000.0f, 200.0f + (temp_max_hull_strength / 4.0f));
+	Ai_info[shipp->ai_index].kamikaze_damage = (int) std::min(1000.0f, 200.0f + (temp_max_hull_strength / 4.0f));
 
 	missionChanged();
 
@@ -585,10 +497,13 @@ int Editor::create_ship(matrix* orient, vec3d* pos, int ship_type) {
 bool Editor::query_ship_name_duplicate(int ship) {
 	int i;
 
-	for (i = 0; i < MAX_SHIPS; i++)
-		if ((i != ship) && (Ships[i].objnum != -1))
-			if (!stricmp(Ships[i].ship_name, Ships[ship].ship_name))
+	for (i = 0; i < MAX_SHIPS; i++) {
+		if ((i != ship) && (Ships[i].objnum != -1)) {
+			if (!stricmp(Ships[i].ship_name, Ships[ship].ship_name)) {
 				return true;
+			}
+		}
+	}
 
 	return false;
 }
@@ -609,7 +524,7 @@ int Editor::getCurrentObject() {
 	return currentObject;
 }
 void Editor::hideMarkedObjects() {
-	object *ptr;
+	object* ptr;
 
 	ptr = GET_FIRST(&obj_used_list);
 	while (ptr != END_OF_LIST(&obj_used_list)) {
@@ -621,10 +536,10 @@ void Editor::hideMarkedObjects() {
 		ptr = GET_NEXT(ptr);
 	}
 
-	updateAllRenderers();
+	updateAllViewports();
 }
 void Editor::showHiddenObjects() {
-	object *ptr;
+	object* ptr;
 
 	ptr = GET_FIRST(&obj_used_list);
 	while (ptr != END_OF_LIST(&obj_used_list)) {
@@ -632,7 +547,7 @@ void Editor::showHiddenObjects() {
 		ptr = GET_NEXT(ptr);
 	}
 
-	updateAllRenderers();
+	updateAllViewports();
 }
 
 } // namespace fred

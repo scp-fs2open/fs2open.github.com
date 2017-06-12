@@ -16,7 +16,8 @@
 
 #include "globalincs/globals.h" // MAX_SHIPS, NAME_LENGTH
 
-#include "mission/editor.h"
+#include "mission/Editor.h"
+#include "mission/management.h"
 
 #include "ui/FredView.h"
 #include "FredApplication.h"

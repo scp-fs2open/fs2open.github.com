@@ -27,10 +27,14 @@ if (WIN32)
 endif()
 
 add_file_folder("Source/Mission"
-    src/mission/editor.cpp
-    src/mission/editor.h
+    src/mission/Editor.cpp
+    src/mission/Editor.h
+    src/mission/EditorViewport.cpp
+    src/mission/EditorViewport.h
     src/mission/FredRenderer.cpp
     src/mission/FredRenderer.h
+    src/mission/management.cpp
+    src/mission/management.h
     src/mission/object.cpp
     src/mission/object.h
     src/mission/wing.h
@@ -39,7 +43,8 @@ add_file_folder("Source/Mission"
 add_file_folder("Source/Mission/Dialogs"
     src/mission/dialogs/AbstractDialogModel.cpp
     src/mission/dialogs/AbstractDialogModel.h
-    src/mission/dialogs/AbstractDialogModel.h
+    src/mission/dialogs/EventEditorDialogModel.cpp
+    src/mission/dialogs/EventEditorDialogModel.h
 )
 
 add_file_folder("Source/UI"
@@ -47,8 +52,13 @@ add_file_folder("Source/UI"
     src/ui/FredView.h
     src/ui/QtGraphicsOperations.cpp
     src/ui/QtGraphicsOperations.h
-    src/ui/BriefingEditorDialog.cpp
-    src/ui/BriefingEditorDialog.h
+)
+
+add_file_folder("Source/UI/Dialogs"
+    src/ui/dialogs/BriefingEditorDialog.cpp
+    src/ui/dialogs/BriefingEditorDialog.h
+    src/ui/dialogs/EventEditorDialog.cpp
+    src/ui/dialogs/EventEditorDialog.h
 )
 
 add_file_folder("Source/UI/Widgets"
@@ -59,6 +69,7 @@ add_file_folder("Source/UI/Widgets"
 )
 
 add_file_folder("UI"
+    ui/EventEditorDialog.ui
     ui/FredView.ui
     ui/BriefingEditorDialog.ui
 )
@@ -70,6 +81,7 @@ add_file_folder("Resources"
 if (WIN32)
     add_file_folder("Resources/Windows"
         resources/win/qtfred.manifest
+        resources/win/qtfred.rc
     )
 endif()
 
