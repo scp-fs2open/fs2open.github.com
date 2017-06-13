@@ -10,6 +10,7 @@
 #include <mission/FredRenderer.h>
 
 #include <memory>
+#include <ui/widgets/ColorComboBox.h>
 
 namespace fso {
 namespace fred {
@@ -78,6 +79,8 @@ private slots:
 	void on_actionCurrent_Ship_triggered(bool enabled);
 
 	void on_actionEvents_triggered(bool);
+
+	void on_actionSelectionLock_triggered(bool enabled);
 signals:
 	/**
 	 * @brief Special version of FredApplication::onIdle which is limited to the lifetime of this object
@@ -123,7 +126,7 @@ protected:
 
 	std::unique_ptr<Ui::FredView> ui;
 
-	std::unique_ptr<QComboBox> _shipClassBox;
+	std::unique_ptr<ColorComboBox> _shipClassBox;
 
     Editor* fred = nullptr;
 	EditorViewport* _viewport = nullptr;
@@ -135,6 +138,10 @@ protected:
 	void onUpdateEditingMode();
 	void onUpdateViewSpeeds();
 	void onUpdateCameraControlActions();
+	void onUpdateSelectionLock();
+	void onUpdateShipClassBox();
+
+	void onShipClassSelected(int ship_class);
 
 	void windowActivated();
 	void windowDeactivated();

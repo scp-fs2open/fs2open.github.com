@@ -16,6 +16,8 @@
 #include <mission/missionmessage.h>
 #include <gamesnd/eventmusic.h>
 #include <starfield/nebula.h>
+#include <object/objectdock.h>
+#include <ai/aigoals.h>
 
 #include "iff_defs/iff_defs.h" // iff_init
 #include "object/object.h" // obj_init
@@ -28,11 +30,36 @@
 #include "globalincs/linklist.h"
 
 #include "ui/QtGraphicsOperations.h"
-#include "ai/aigoals.h"
 
 #include "object.h"
 #include "management.h"
 #include "FredApplication.h"
+
+namespace {
+
+int query_referenced_in_ai_goals(int type, const char* name) {
+	int i;
+
+	for (i = 0; i < MAX_AI_INFO; i++) {  // loop through all Ai_info entries
+		if (Ai_info[i].shipnum >= 0) {  // skip if unused
+			if (query_referenced_in_ai_goals(Ai_info[i].goals, type, name)) {
+				return Ai_info[i].shipnum | SRC_SHIP_ORDER;
+			}
+		}
+	}
+
+	for (i = 0; i < MAX_WINGS; i++) {
+		if (Wings[i].wave_count) {
+			if (query_referenced_in_ai_goals(Wings[i].ai_goals, type, name)) {
+				return i | SRC_WING_ORDER;
+			}
+		}
+	}
+
+	return 0;
+}
+
+}
 
 char Fred_callsigns[MAX_SHIPS][NAME_LENGTH + 1];
 char Fred_alt_names[MAX_SHIPS][NAME_LENGTH + 1];
@@ -346,6 +373,9 @@ void Editor::initialSetup() {
 	// Get the default player ship
 	Default_player_model = get_default_player_ship_index();
 
+	Id_select_type_jump_node = (int) (Ship_info.size() + 1);
+	Id_select_type_waypoint = (int) (Ship_info.size());
+
 	createNewMission();
 }
 
@@ -548,6 +578,783 @@ void Editor::showHiddenObjects() {
 	}
 
 	updateAllViewports();
+}
+int Editor::create_waypoint(vec3d* pos, int waypoint_instance) {
+	int obj = waypoint_add(pos, waypoint_instance);
+
+	missionChanged();
+
+	return obj;
+}
+int Editor::getNumMarked() {
+	return numMarked;
+}
+int Editor::dup_object(object* objp) {
+
+	int i, j, n, inst, obj = -1;
+	ai_info* aip1, * aip2;
+	object* objp1, * objp2;
+	ship_subsys* subp1, * subp2;
+	static int waypoint_instance(-1);
+
+	if (!objp) {
+		waypoint_instance = -1;
+		return 0;
+	}
+
+	inst = objp->instance;
+	if ((objp->type == OBJ_SHIP) || (objp->type == OBJ_START)) {
+		obj = create_ship(&objp->orient, &objp->pos, Ships[inst].ship_info_index);
+		if (obj == -1) {
+			return -1;
+		}
+
+		n = Objects[obj].instance;
+		Ships[n].team = Ships[inst].team;
+		Ships[n].arrival_cue = dup_sexp_chain(Ships[inst].arrival_cue);
+		Ships[n].departure_cue = dup_sexp_chain(Ships[inst].departure_cue);
+		Ships[n].cargo1 = Ships[inst].cargo1;
+		Ships[n].arrival_location = Ships[inst].arrival_location;
+		Ships[n].departure_location = Ships[inst].departure_location;
+		Ships[n].arrival_delay = Ships[inst].arrival_delay;
+		Ships[n].departure_delay = Ships[inst].departure_delay;
+		Ships[n].weapons = Ships[inst].weapons;
+		Ships[n].hotkey = Ships[inst].hotkey;
+
+		aip1 = &Ai_info[Ships[n].ai_index];
+		aip2 = &Ai_info[Ships[inst].ai_index];
+		aip1->behavior = aip2->behavior;
+		aip1->ai_class = aip2->ai_class;
+		for (i = 0; i < MAX_AI_GOALS; i++) {
+			aip1->goals[i] = aip2->goals[i];
+		}
+
+		if (aip2->ai_flags[AI::AI_Flags::Kamikaze]) {
+			aip1->ai_flags.set(AI::AI_Flags::Kamikaze);
+		}
+		if (aip2->ai_flags[AI::AI_Flags::No_dynamic]) {
+			aip2->ai_flags.set(AI::AI_Flags::No_dynamic);
+		}
+
+		aip1->kamikaze_damage = aip2->kamikaze_damage;
+
+		objp1 = &Objects[obj];
+		objp2 = &Objects[Ships[inst].objnum];
+		objp1->phys_info.speed = objp2->phys_info.speed;
+		objp1->phys_info.fspeed = objp2->phys_info.fspeed;
+		objp1->hull_strength = objp2->hull_strength;
+		objp1->shield_quadrant[0] = objp2->shield_quadrant[0];
+
+		subp1 = GET_FIRST(&Ships[n].subsys_list);
+		subp2 = GET_FIRST(&Ships[inst].subsys_list);
+		while (subp1 != END_OF_LIST(&Ships[n].subsys_list)) {
+			Assert(subp2 != END_OF_LIST(&Ships[inst].subsys_list));
+			subp1->current_hits = subp2->current_hits;
+			subp1 = GET_NEXT(subp1);
+			subp2 = GET_NEXT(subp2);
+		}
+
+		for (i = 0; i < Num_reinforcements; i++) {
+			if (!stricmp(Reinforcements[i].name, Ships[inst].ship_name)) {
+				if (Num_reinforcements < MAX_REINFORCEMENTS) {
+					j = Num_reinforcements++;
+					strcpy_s(Reinforcements[j].name, Ships[n].ship_name);
+					Reinforcements[j].type = Reinforcements[i].type;
+					Reinforcements[j].uses = Reinforcements[i].uses;
+				}
+
+				break;
+			}
+		}
+
+	} else if (objp->type == OBJ_WAYPOINT) {
+		obj = create_waypoint(&objp->pos, waypoint_instance);
+		waypoint_instance = Objects[obj].instance;
+	}
+
+	if (obj == -1) {
+		return -1;
+	}
+
+	Objects[obj].pos = objp->pos;
+	Objects[obj].orient = objp->orient;
+	Objects[obj].flags.set(Object::Object_Flags::Temp_marked);
+	return obj;
+}
+
+int Editor::common_object_delete(int obj) {
+	char msg[255], * name;
+	int i, z, r, type;
+	object* objp;
+	SCP_list<CJumpNode>::iterator jnp;
+
+	type = Objects[obj].type;
+	if (type == OBJ_START) {
+		i = Objects[obj].instance;
+		if (Player_starts < 2) {  // player 1 start
+			os::dialogs::Message(os::dialogs::MESSAGEBOX_ERROR, "Must have at least 1 player starting point!");
+
+			unmarkObject(obj);
+			return 1;
+		}
+
+		Assert((i >= 0) && (i < MAX_SHIPS));
+		sprintf(msg, "Player %d", i + 1);
+		name = msg;
+		r = reference_handler(name, REF_TYPE_PLAYER, obj);
+		if (r) {
+			return r;
+		}
+
+		if (Ships[i].wingnum >= 0) {
+			r = delete_ship_from_wing(i);
+			if (r) {
+				return r;
+			}
+		}
+
+		Objects[obj].type = OBJ_SHIP;  // was allocated as a ship originally, so remove as such.
+		invalidate_references(name, REF_TYPE_PLAYER);
+
+		// check if any ship is docked with this ship and break dock if so
+		while (object_is_docked(&Objects[obj])) {
+			ai_do_objects_undocked_stuff(&Objects[obj], dock_get_first_docked_object(&Objects[obj]));
+		}
+
+		if (Player_start_shipnum == i) {  // need a new single player start.
+			objp = GET_FIRST(&obj_used_list);
+			while (objp != END_OF_LIST(&obj_used_list)) {
+				if (objp->type == OBJ_START) {
+					Player_start_shipnum = objp->instance;
+					break;
+				}
+
+				objp = GET_NEXT(objp);
+			}
+		}
+
+		Player_starts--;
+
+	} else if (type == OBJ_WAYPOINT) {
+		waypoint* wpt = find_waypoint_with_instance(Objects[obj].instance);
+		Assert(wpt != NULL);
+		waypoint_list* wp_list = wpt->get_parent_list();
+		int index = calc_waypoint_list_index(Objects[obj].instance);
+		int count = (int) wp_list->get_waypoints().size();
+
+		// we'll end up deleting the path, so check for path references
+		if (count == 1) {
+			name = wp_list->get_name();
+			r = reference_handler(name, REF_TYPE_PATH, obj);
+			if (r) {
+				return r;
+			}
+		}
+
+		// check for waypoint references
+		sprintf(msg, "%s:%d", wp_list->get_name(), index + 1);
+		name = msg;
+		r = reference_handler(name, REF_TYPE_WAYPOINT, obj);
+		if (r) {
+			return r;
+		}
+
+		// at this point we've confirmed we want to delete it
+
+		invalidate_references(name, REF_TYPE_WAYPOINT);
+		if (count == 1) {
+			invalidate_references(wp_list->get_name(), REF_TYPE_PATH);
+		}
+
+		// the actual removal code has been moved to this function in waypoints.cpp
+		waypoint_remove(wpt);
+
+	} else if (type == OBJ_SHIP) {
+		name = Ships[Objects[obj].instance].ship_name;
+		r = reference_handler(name, REF_TYPE_SHIP, obj);
+		if (r) {
+			return r;
+		}
+
+		z = Objects[obj].instance;
+		if (Ships[z].wingnum >= 1) {
+			invalidate_references(name, REF_TYPE_SHIP);
+			r = delete_ship_from_wing(z);
+			if (r) {
+				return r;
+			}
+
+		} else if (Ships[z].wingnum >= 0) {
+			r = delete_ship_from_wing(z);
+			if (r) {
+				return r;
+			}
+
+			invalidate_references(name, REF_TYPE_SHIP);
+		}
+
+		for (i = 0; i < Num_reinforcements; i++) {
+			if (!stricmp(name, Reinforcements[i].name)) {
+				delete_reinforcement(i);
+				break;
+			}
+		}
+
+		// check if any ship is docked with this ship and break dock if so
+		while (object_is_docked(&Objects[obj])) {
+			ai_do_objects_undocked_stuff(&Objects[obj], dock_get_first_docked_object(&Objects[obj]));
+		}
+
+	} else if (type == OBJ_POINT) {
+		/*
+		 TODO: Implement vriefing dialog
+
+		Assert(Briefing_dialog);
+		Briefing_dialog->delete_icon(Objects[obj].instance);
+		Update_window = 1;
+		 */
+		return 0;
+
+	} else if (type == OBJ_JUMP_NODE) {
+		for (jnp = Jump_nodes.begin(); jnp != Jump_nodes.end(); ++jnp) {
+			if (jnp->GetSCPObject() == &Objects[obj]) {
+				break;
+			}
+		}
+
+		// come on, WMC, we don't want to call obj_delete twice...
+		// fool the destructor into not calling obj_delete yet
+		Objects[obj].type = OBJ_NONE;
+
+		// now call the destructor
+		Jump_nodes.erase(jnp);
+
+		// now restore the jump node type so that the below unmark and obj_delete will work
+		Objects[obj].type = OBJ_JUMP_NODE;
+	}
+
+	unmarkObject(obj);
+
+	//we need to call obj_delete() even if obj is a jump node
+	//the statement "delete Objects[obj].jnp" deletes the jnp object
+	//obj_delete() frees up the object slot where the node used to reside.
+	//if we don't call this then the node will still show up in fred and you can try to delete it twice
+	//this causes an ugly crash.
+	obj_delete(obj);
+
+	missionChanged();
+	return 0;
+}
+
+int Editor::delete_object(int obj) {
+	int r;
+
+	r = common_object_delete(obj);
+	return r;
+}
+int Editor::reference_handler(const char* name, int type, int obj) {
+
+	char msg[2048], text[128], type_name[128];
+	int r, n, node;
+
+	switch (type) {
+	case REF_TYPE_SHIP:
+		sprintf(type_name, "Ship \"%s\"", name);
+		break;
+
+	case REF_TYPE_WING:
+		sprintf(type_name, "Wing \"%s\"", name);
+		break;
+
+	case REF_TYPE_PLAYER:
+		strcpy_s(type_name, name);
+		break;
+
+	case REF_TYPE_WAYPOINT:
+		sprintf(type_name, "Waypoint \"%s\"", name);
+		break;
+
+	case REF_TYPE_PATH:
+		sprintf(type_name, "Waypoint path \"%s\"", name);
+		break;
+
+	default:
+		Error(LOCATION, "Type unknown for object \"%s\".  Let Hoffos know now!", name);
+	}
+
+	r = query_referenced_in_sexp(type, name, &node);
+	if (r) {
+		n = r & SRC_DATA_MASK;
+		switch (r & SRC_MASK) {
+		case SRC_SHIP_ARRIVAL:
+			sprintf(text, "the arrival cue of ship \"%s\"", Ships[n].ship_name);
+			break;
+
+		case SRC_SHIP_DEPARTURE:
+			sprintf(text, "the departure cue of ship \"%s\"", Ships[n].ship_name);
+			break;
+
+		case SRC_WING_ARRIVAL:
+			sprintf(text, "the arrival cue of wing \"%s\"", Wings[n].name);
+			break;
+
+		case SRC_WING_DEPARTURE:
+			sprintf(text, "the departure cue of wing \"%s\"", Wings[n].name);
+			break;
+
+		case SRC_EVENT:
+			if (*Mission_events[n].name) {
+				sprintf(text, "event \"%s\"", Mission_events[n].name);
+			} else {
+				sprintf(text, "event #%d", n);
+			}
+
+			break;
+
+		case SRC_MISSION_GOAL:
+			if (*Mission_goals[n].name) {
+				sprintf(text, "mission goal \"%s\"", Mission_goals[n].name);
+			} else {
+				sprintf(text, "mission goal #%d", n);
+			}
+
+			break;
+
+		case SRC_DEBRIEFING:
+			sprintf(text, "debriefing #%d", n);
+			break;
+
+		case SRC_BRIEFING:
+			sprintf(text, "briefing #%d", n);
+			break;
+
+		default:  // very bad.  Someone added an sexp somewhere and didn't change this.
+			Warning(LOCATION, "\"%s\" referenced by an unknown sexp source!  "
+				"Run for the hills and let Hoffoss know right now!", name);
+
+			delete_flag = 1;
+			return 2;
+		}
+
+		sprintf(msg, "%s is referenced by %s (possibly more sexps).\n"
+			"Do you want to delete it anyway?\n\n"
+			"(click Cancel to go to the reference)", type_name, text);
+
+		r = sexp_reference_handler(node, r, msg);
+		if (r == 1) {
+			if (obj >= 0) {
+				unmarkObject(obj);
+			}
+
+			return 1;
+		}
+
+		if (r == 2) {
+			delete_flag = 1;
+			return 2;
+		}
+	}
+
+	r = query_referenced_in_ai_goals(type, name);
+	if (r) {
+		n = r & SRC_DATA_MASK;
+		switch (r & SRC_MASK) {
+		case SRC_SHIP_ORDER:
+			sprintf(text, "ship \"%s\"", Ships[n].ship_name);
+			break;
+
+		case SRC_WING_ORDER:
+			sprintf(text, "wing \"%s\"", Wings[n].name);
+			break;
+
+		default:  // very bad.  Someone added an sexp somewhere and didn't change this.
+			Error(LOCATION, "\"%s\" referenced by an unknown initial orders source!  "
+				"Run for the hills and let Hoffoss know right now!", name);
+		}
+
+		sprintf(msg, "%s is referenced by the initial orders of %s (possibly \n"
+			"more initial orders).  Do you want to delete it anyway?\n\n"
+			"(click Cancel to go to the reference)", type_name, text);
+
+		r = orders_reference_handler(r, msg);
+		if (r == 1) {
+			if (obj >= 0) {
+				unmarkObject(obj);
+			}
+
+			return 1;
+		}
+
+		if (r == 2) {
+			delete_flag = 1;
+			return 2;
+		}
+	}
+
+	if ((type != REF_TYPE_SHIP) && (type != REF_TYPE_WING)) {
+		return 0;
+	}
+
+	for (n = 0; n < Num_reinforcements; n++) {
+		if (!stricmp(name, Reinforcements[n].name)) {
+			break;
+		}
+	}
+
+	if (n < Num_reinforcements) {
+		sprintf(msg, "Ship \"%s\" is a reinforcement unit.\n"
+			"Do you want to delete it anyway?", name);
+
+		os::dialogs::Message(os::dialogs::MESSAGEBOX_ERROR, msg);
+		r = 0; // TODO: Make this a Yes/No choice once we have a generic dialog interface
+		if (r == 0) {
+			if (obj >= 0) {
+				unmarkObject(obj);
+			}
+
+			return 1;
+		}
+	}
+
+	return 0;
+}
+
+int Editor::orders_reference_handler(int code, char* msg) {
+	// TODO: add a generic dialog system for showing these dialogs
+	/*
+	int r, n;
+
+	r = Fred_main_wnd->MessageBox(msg, "Warning", MB_YESNOCANCEL | MB_ICONEXCLAMATION);
+	if (r == IDNO)
+		return 1;
+
+	if (r == IDYES)
+		return 0;
+
+	ShipGoalsDlg dlg_goals;
+
+	n = code & SRC_DATA_MASK;
+	switch (code & SRC_MASK) {
+	case SRC_SHIP_ORDER:
+		unmark_all();
+		mark_object(Ships[n].objnum);
+
+		dlg_goals.self_ship = n;
+		dlg_goals.DoModal();
+		if (!query_initial_orders_empty(Ai_info[Ships[n].ai_index].goals))
+			if ((Ships[n].wingnum >= 0) && (query_initial_orders_conflict(Ships[n].wingnum)))
+				Fred_main_wnd->MessageBox("This ship's wing also has initial orders", "Possible conflict");
+
+		break;
+
+	case SRC_WING_ORDER:
+		unmark_all();
+		mark_wing(n);
+
+		dlg_goals.self_wing = n;
+		dlg_goals.DoModal();
+		if (query_initial_orders_conflict(n))
+			Fred_main_wnd->MessageBox("One or more ships of this wing also has initial orders", "Possible conflict");
+
+		break;
+
+	default:  // very bad.  Someone added an sexp somewhere and didn't change this.
+		Error(LOCATION, "Unknown initial order reference source");
+	}
+	*/
+
+	delete_flag = 1;
+	return 2;
+}
+int Editor::sexp_reference_handler(int node, int code, const char* msg) {
+	// TODO: add a generic dialog system for showing these dialogs
+	/*
+	int r;
+
+	r = Fred_main_wnd->MessageBox(msg, "Warning", MB_YESNOCANCEL | MB_ICONEXCLAMATION);
+	if (r == IDNO)
+		return 1;
+
+	if (r == IDYES)
+		return 0;
+
+	switch (code & SRC_MASK) {
+	case SRC_SHIP_ARRIVAL:
+	case SRC_SHIP_DEPARTURE:
+		if (!Ship_editor_dialog.GetSafeHwnd())
+			Ship_editor_dialog.Create();
+
+		Ship_editor_dialog.SetWindowPos(&Fred_main_wnd->wndTop, 0, 0, 0, 0,
+										SWP_SHOWWINDOW | SWP_NOMOVE | SWP_NOSIZE);
+		Ship_editor_dialog.ShowWindow(SW_RESTORE);
+
+		Ship_editor_dialog.select_sexp_node = node;
+		unmark_all();
+		mark_object(Ships[code & SRC_DATA_MASK].objnum);
+		break;
+
+	case SRC_WING_ARRIVAL:
+	case SRC_WING_DEPARTURE:
+		if (!Wing_editor_dialog.GetSafeHwnd())
+			Wing_editor_dialog.Create();
+
+		Wing_editor_dialog.SetWindowPos(&Fred_main_wnd->wndTop, 0, 0, 0, 0,
+										SWP_SHOWWINDOW | SWP_NOMOVE | SWP_NOSIZE);
+		Wing_editor_dialog.ShowWindow(SW_RESTORE);
+
+		Wing_editor_dialog.select_sexp_node = node;
+		unmark_all();
+		mark_wing(code & SRC_DATA_MASK);
+		break;
+
+	case SRC_EVENT:
+		if (Message_editor_dlg) {
+			Fred_main_wnd->MessageBox("You must close the message editor before the event editor can be opened");
+			break;
+		}
+
+		if (!Event_editor_dlg) {
+			Event_editor_dlg = new event_editor;
+			Event_editor_dlg->select_sexp_node = node;
+			Event_editor_dlg->Create(event_editor::IDD);
+		}
+
+		Event_editor_dlg->SetWindowPos(&CWnd::wndTop, 0, 0, 0, 0, SWP_SHOWWINDOW | SWP_NOMOVE | SWP_NOSIZE);
+		Event_editor_dlg->ShowWindow(SW_RESTORE);
+		break;
+
+	case SRC_MISSION_GOAL: {
+		CMissionGoalsDlg dlg;
+
+		dlg.select_sexp_node = node;
+		dlg.DoModal();
+		break;
+	}
+
+	case SRC_DEBRIEFING: {
+		debriefing_editor_dlg dlg;
+
+		dlg.select_sexp_node = node;
+		dlg.DoModal();
+		break;
+	}
+
+	case SRC_BRIEFING: {
+		if (!Briefing_dialog) {
+			Briefing_dialog = new briefing_editor_dlg;
+			Briefing_dialog->create();
+		}
+
+		Briefing_dialog->SetWindowPos(&Briefing_dialog->wndTop, 0, 0, 0, 0,
+									  SWP_SHOWWINDOW | SWP_NOMOVE | SWP_NOSIZE);
+		Briefing_dialog->ShowWindow(SW_RESTORE);
+		Briefing_dialog->focus_sexp(node);
+		break;
+	}
+
+	default:  // very bad.  Someone added an sexp somewhere and didn't change this.
+		Error(LOCATION, "Unknown sexp reference source");
+	}
+	 */
+
+	delete_flag = 1;
+	return 2;
+}
+int Editor::delete_ship_from_wing(int ship) {
+	char name[NAME_LENGTH];
+	int i, r, wing, end;
+
+	wing = Ships[ship].wingnum;
+	if (wing >= 0) {
+		if (Wings[wing].wave_count == 1) {
+			cur_wing = -1;
+			r = delete_wing(wing, 1);
+			if (r) {
+				if (r == 2) {
+					delete_flag = 1;
+				}
+
+				return r;
+			}
+
+		} else {
+			i = Wings[wing].wave_count;
+			end = i - 1;
+			while (i--) {
+				if (wing_objects[wing][i] == Ships[ship].objnum) {
+					break;
+				}
+			}
+
+			Assert(i != -1);  // Error, object should be in wing.
+			if (Wings[wing].special_ship == i) {
+				Wings[wing].special_ship = 0;
+			} else if (Wings[wing].special_ship > i) {
+				Wings[wing].special_ship--;
+			}
+
+			if (i != end) {
+				wing_objects[wing][i] = wing_objects[wing][end];
+				Wings[wing].ship_index[i] = Wings[wing].ship_index[end];
+				if (Objects[wing_objects[wing][i]].type == OBJ_SHIP) {
+					wing_bash_ship_name(name, Wings[wing].name, i + 1);
+					rename_ship(Wings[wing].ship_index[i], name);
+				}
+			}
+
+			if (Wings[wing].threshold >= Wings[wing].wave_count) {
+				Wings[wing].threshold = Wings[wing].wave_count - 1;
+			}
+
+			Wings[wing].wave_count--;
+			if (Wings[wing].wave_count && (Wings[wing].threshold >= Wings[wing].wave_count)) {
+				Wings[wing].threshold = Wings[wing].wave_count - 1;
+			}
+		}
+	}
+
+	missionChanged();
+	return 0;
+}
+int Editor::invalidate_references(const char* name, int type) {
+	char new_name[512];
+	int i;
+
+	sprintf(new_name, "<%s>", name);
+	update_sexp_references(name, new_name);
+	ai_update_goal_references(type, name, new_name);
+	update_texture_replacements(name, new_name);
+	for (i = 0; i < Num_reinforcements; i++) {
+		if (!stricmp(name, Reinforcements[i].name)) {
+			strcpy_s(Reinforcements[i].name, new_name);
+		}
+	}
+
+	return 0;
+}
+void Editor::ai_update_goal_references(int type, const char* old_name, const char* new_name) {
+	int i;
+
+	for (i = 0; i < MAX_AI_INFO; i++) {  // loop through all Ai_info entries
+		if (Ai_info[i].shipnum != -1) {  // skip if unused
+			::ai_update_goal_references(Ai_info[i].goals, type, old_name, new_name);
+		}
+	}
+
+	for (i = 0; i < MAX_WINGS; i++) {
+		if (Wings[i].wave_count) {
+			::ai_update_goal_references(Wings[i].ai_goals, type, old_name, new_name);
+		}
+	}
+}
+void Editor::update_texture_replacements(const char* old_name, const char* new_name) {
+	for (SCP_vector<texture_replace>::iterator ii = Fred_texture_replacements.begin();
+		 ii != Fred_texture_replacements.end(); ++ii) {
+		if (!stricmp(ii->ship_name, old_name))
+			strcpy_s(ii->ship_name, new_name);
+	}
+}
+int Editor::rename_ship(int ship, char* name) {
+	int i;
+
+	Assert(ship >= 0);
+	Assert(strlen(name) < NAME_LENGTH);
+
+	update_sexp_references(Ships[ship].ship_name, name);
+	ai_update_goal_references(REF_TYPE_SHIP, Ships[ship].ship_name, name);
+	update_texture_replacements(Ships[ship].ship_name, name);
+	for (i=0; i<Num_reinforcements; i++)
+		if (!stricmp(Ships[ship].ship_name, Reinforcements[i].name)) {
+			strcpy_s(Reinforcements[i].name, name);
+		}
+
+	strcpy_s(Ships[ship].ship_name, name);
+
+	missionChanged();
+
+	return 0;
+}
+void Editor::delete_reinforcement(int num) {
+	int i;
+
+	for (i=num; i<Num_reinforcements-1; i++)
+		Reinforcements[i] = Reinforcements[i + 1];
+
+	Num_reinforcements--;
+	missionChanged();
+}
+int Editor::delete_wing(int wing_num, int bypass) {
+	int i, r, total;
+
+	if (already_deleting_wing)
+		return 0;
+
+	r = check_wing_dependencies(wing_num);
+	if (r)
+		return r;
+
+	already_deleting_wing = 1;
+	for (i = 0; i<Num_reinforcements; i++)
+		if (!stricmp(Wings[wing_num].name, Reinforcements[i].name)) {
+			delete_reinforcement(i);
+			break;
+		}
+
+	invalidate_references(Wings[wing_num].name, REF_TYPE_WING);
+	if (!bypass) {
+		total = Wings[wing_num].wave_count;
+		for (i = 0; i<total; i++)
+			delete_object(wing_objects[wing_num][i]);
+	}
+
+	Wings[wing_num].wave_count = 0;
+	Wings[wing_num].wing_squad_filename[0] = '\0';
+	Wings[wing_num].wing_insignia_texture = -1;
+
+	if (cur_wing == wing_num)
+		set_cur_wing(-1);
+
+	free_sexp2(Wings[wing_num].arrival_cue);
+	free_sexp2(Wings[wing_num].departure_cue);
+
+	Num_wings--;
+	missionChanged();
+
+	update_custom_wing_indexes();
+
+	already_deleting_wing = 0;
+	return 0;
+}
+void Editor::set_cur_wing(int wing) {
+	cur_wing = wing;
+/*	if (cur_ship != -1)
+		Assert(cur_wing == Ships[cur_ship].wingnum);
+	if ((cur_object_index != -1) && (Objects[cur_object_index].type == OBJ_SHIP))
+		Assert(cur_wing == Ships[Objects[cur_object_index].instance].wingnum);*/
+	updateAllViewports();
+	// TODO: Add notification for a changed selection
+}
+int Editor::check_wing_dependencies(int wing_num) {
+	const char* name = Wings[wing_num].name;
+	return reference_handler(name, REF_TYPE_WING, -1);
+}
+void Editor::update_custom_wing_indexes() {
+	int i;
+
+	for (i = 0; i < MAX_STARTING_WINGS; i++)
+	{
+		Starting_wings[i] = wing_name_lookup(Starting_wing_names[i], 1);
+	}
+
+	for (i = 0; i < MAX_SQUADRON_WINGS; i++)
+	{
+		Squadron_wings[i] = wing_name_lookup(Squadron_wing_names[i], 1);
+	}
+
+	for (i = 0; i < MAX_TVT_WINGS; i++)
+	{
+		TVT_wings[i] = wing_name_lookup(TVT_wing_names[i], 1);
+	}
 }
 
 } // namespace fred

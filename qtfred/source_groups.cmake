@@ -37,7 +37,6 @@ add_file_folder("Source/Mission"
     src/mission/management.h
     src/mission/object.cpp
     src/mission/object.h
-    src/mission/wing.h
 )
 
 add_file_folder("Source/Mission/Dialogs"

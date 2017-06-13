@@ -51,11 +51,6 @@ FredView::FredView(QWidget* parent) : QMainWindow(parent), ui(new Ui::FredView()
 	ui->actionUndo->setShortcuts(QKeySequence::Undo);
 	ui->actionDelete->setShortcuts(QKeySequence::Delete);
 
-	// A combo box cannot be added by the designer so we do that manually here
-	_shipClassBox.reset(new ColorComboBox());
-
-	ui->toolBar->addWidget(_shipClassBox.get());
-
 	connect(ui->actionOpen, &QAction::triggered, this, &FredView::openLoadMissionDIalog);
 	connect(ui->actionNew, &QAction::triggered, this, &FredView::newMission);
 
@@ -79,16 +74,25 @@ void FredView::setEditor(Editor* editor, EditorViewport* viewport) {
 
 	ui->centralWidget->setEditor(editor, _viewport);
 
+	// A combo box cannot be added by the designer so we do that manually here
+	// This needs to be done since the viewport pointer is not valid earlier
+	_shipClassBox.reset(new ColorComboBox(nullptr, _viewport));
+	ui->toolBar->addWidget(_shipClassBox.get());
+	connect(_shipClassBox.get(), &ColorComboBox::shipClassSelected, this, &FredView::onShipClassSelected);
+
 	connect(fred, &Editor::missionLoaded, this, &FredView::on_mission_loaded);
 
 	// Sets the initial window title
 	on_mission_loaded("");
 
 	syncViewOptions();
+
 	connect(this, &FredView::viewIdle, this, &FredView::onUpdateConstrains);
 	connect(this, &FredView::viewIdle, this, &FredView::onUpdateEditingMode);
 	connect(this, &FredView::viewIdle, this, &FredView::onUpdateViewSpeeds);
 	connect(this, &FredView::viewIdle, this, &FredView::onUpdateCameraControlActions);
+	connect(this, &FredView::viewIdle, this, &FredView::onUpdateSelectionLock);
+	connect(this, &FredView::viewIdle, this, &FredView::onUpdateShipClassBox);
 }
 
 void FredView::loadMissionFile(const QString& pathName) {
@@ -551,6 +555,18 @@ void FredView::keyReleaseEvent(QKeyEvent* event) {
 void FredView::on_actionEvents_triggered(bool) {
 	auto eventEditor = new dialogs::EventEditorDialog(this, fred, _viewport);
 	eventEditor->show();
+}
+void FredView::on_actionSelectionLock_triggered(bool enabled) {
+	_viewport->Selection_lock = enabled;
+}
+void FredView::onUpdateSelectionLock() {
+	ui->actionSelectionLock->setChecked(_viewport->Selection_lock);
+}
+void FredView::onUpdateShipClassBox() {
+	_shipClassBox->selectShipClass(_viewport->cur_model_index);
+}
+void FredView::onShipClassSelected(int ship_class) {
+	_viewport->cur_model_index = ship_class;
 }
 
 } // namespace fred
