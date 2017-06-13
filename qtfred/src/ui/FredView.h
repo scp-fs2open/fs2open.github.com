@@ -79,6 +79,7 @@ private slots:
 	void on_actionCurrent_Ship_triggered(bool enabled);
 
 	void on_actionEvents_triggered(bool);
+	void on_actionBriefing_triggered(bool);
 
 	void on_actionSelectionLock_triggered(bool enabled);
 signals:

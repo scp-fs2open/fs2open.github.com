@@ -12,6 +12,7 @@
 #include <FredApplication.h>
 #include <io/key.h>
 #include <ui/dialogs/EventEditorDialog.h>
+#include <ui/dialogs/BriefingEditorDialog.h>
 
 #include "mission/Editor.h"
 #include "mission/management.h"
@@ -567,6 +568,10 @@ void FredView::onUpdateShipClassBox() {
 }
 void FredView::onShipClassSelected(int ship_class) {
 	_viewport->cur_model_index = ship_class;
+}
+void FredView::on_actionBriefing_triggered(bool) {
+	auto eventEditor = new dialogs::BriefingEditorDialog(this);
+	eventEditor->show();
 }
 
 } // namespace fred

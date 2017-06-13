@@ -1072,10 +1072,16 @@
    <property name="text">
     <string>Br&amp;iefing</string>
    </property>
+   <property name="shortcut">
+    <string>Shift+B</string>
+   </property>
   </action>
   <action name="actionDebriefing">
    <property name="text">
     <string>&amp;Debriefing</string>
+   </property>
+   <property name="shortcut">
+    <string/>
    </property>
   </action>
   <action name="actionCommand_Briefing">
