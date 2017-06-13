@@ -947,7 +947,7 @@ int EditorViewport::drag_objects(int x, int y)
 	if (!query_valid_object(editor->getCurrentObject()))
 		return -1;
 
-	if ((Dup_drag == 1)
+	if (Dup_drag == 1
 		//&& (Briefing_dialog) TODO
 		) {
 		Dup_drag = 0;
