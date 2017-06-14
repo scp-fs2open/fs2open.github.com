@@ -537,6 +537,9 @@
    </property>
   </action>
   <action name="actionShowDistances">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
    <property name="icon">
     <iconset resource="../resources/resources.qrc">
      <normaloff>:/images/showdist.png</normaloff>:/images/showdist.png</iconset>

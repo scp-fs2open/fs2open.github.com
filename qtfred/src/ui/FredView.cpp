@@ -224,6 +224,9 @@ void FredView::syncViewOptions() {
 	connectActionToViewSetting(ui->actionShow_Background, &_viewport->view.Show_stars);
 
 	connectActionToViewSetting(ui->actionLighting_from_Suns, &_viewport->view.Lighting_on);
+
+
+	connectActionToViewSetting(ui->actionShowDistances, &_viewport->view.Show_distances);
 }
 void FredView::initializeStatusBar() {
 	_statusBarViewmode = new QLabel();
