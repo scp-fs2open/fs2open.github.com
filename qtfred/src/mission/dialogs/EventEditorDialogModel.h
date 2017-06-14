@@ -9,7 +9,7 @@ namespace dialogs {
 class EventEditorDialogModel: public AbstractDialogModel {
  Q_OBJECT
  public:
-	EventEditorDialogModel(QObject* parent, Editor* editor, EditorViewport* viewport);
+	EventEditorDialogModel(QObject* parent, EditorViewport* viewport);
 
 	void applyChanges();
 	void discardChanges();

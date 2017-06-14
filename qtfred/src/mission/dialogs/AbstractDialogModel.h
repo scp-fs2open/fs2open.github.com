@@ -17,7 +17,7 @@ class AbstractDialogModel : public QObject {
 	EditorViewport* _viewport = nullptr;
 
  public:
-	AbstractDialogModel(QObject* parent, Editor* editor, EditorViewport* viewport);
+	AbstractDialogModel(QObject* parent, EditorViewport* viewport);
 };
 
 }
