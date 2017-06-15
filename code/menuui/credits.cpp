@@ -28,6 +28,7 @@
 #include "sound/audiostr.h"
 #include "ui/ui.h"
 
+#include <lua.h>
 
 
 // This is the fs2_open credit list, please only add yourself if you have actually contributed code
@@ -97,7 +98,7 @@ const char *fs2_open_credit_text =
 	"Ogg Vorbis - (C) 2005, Xiph.Org Foundation\n"
 	"JPEG - Independent JPEG Group, (C) 1991-1998, Thomas G. Lane\n"
 	"libpng - Copyright (C) 1998-2010 Glenn Randers-Pehrson\n"
-	"liblua - Copyright (C) 1994-2008 Lua.org, PUC-Rio\n"
+	"liblua (" LUA_RELEASE ") - " LUA_COPYRIGHT "\n"
 	"zlib - Copyright (C) 1995-2005 Jean-loup Gailly and Mark Adler\n"
 	"FXAA - Copyright (c) 2010 NVIDIA Corporation. All rights reserved.\n"
 	"This software uses libraries from the FFmpeg project under the LGPLv2.1\n"
