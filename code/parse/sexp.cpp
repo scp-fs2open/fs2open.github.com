@@ -22294,7 +22294,7 @@ void sexp_manipulate_colgroup(int node, bool add_to_group) {
 			if (add_to_group) {
 				colgroup_id |= (1<<group);
 			} else {
-				colgroup_id &= !(1<<group);
+				colgroup_id &= ~(1<<group);
 			}
 		}
 
