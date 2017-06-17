@@ -459,7 +459,7 @@ void initial_status::OnOK()
 		MODIFY(Objects[cur_object_index].shield_quadrant[0], (float) m_shields);
 		MODIFY(Objects[cur_object_index].hull_strength, (float) m_hull);
 
-		Objects[cur_object_index].flags.set(Object::Object_Flags::No_shields, m_has_shields != 0);
+		Objects[cur_object_index].flags.set(Object::Object_Flags::No_shields, m_has_shields == 0);
 
         Ships[m_ship].flags.set(Ship::Ship_Flags::Force_shields_on, m_force_shields == 1);
         Ships[m_ship].flags.set(Ship::Ship_Flags::Ship_locked, m_ship_locked == 1);
