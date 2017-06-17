@@ -69,6 +69,8 @@ class Editor : public QObject {
 
 	int delete_object(int obj);
 
+	void setActiveViewport(EditorViewport* viewport);
+
 	///! Non-copyable.
 	Editor(const Editor&) = delete;
 	///! Non-copyable.
@@ -105,6 +107,7 @@ signals:
 	void setupCurrentObjectIndices(int obj);
 
 	SCP_vector<std::unique_ptr<EditorViewport>> _viewports;
+	EditorViewport* _lastActiveViewport = nullptr;
 
 	int currentObject = -1;
 	int numMarked = 0;

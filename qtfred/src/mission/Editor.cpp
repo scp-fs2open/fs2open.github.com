@@ -692,7 +692,7 @@ int Editor::common_object_delete(int obj) {
 	if (type == OBJ_START) {
 		i = Objects[obj].instance;
 		if (Player_starts < 2) {  // player 1 start
-			os::dialogs::Message(os::dialogs::MESSAGEBOX_ERROR, "Must have at least 1 player starting point!");
+			_lastActiveViewport->dialogProvider->showButtonDialog(DialogType::Error, "Error", "Must have at least 1 player starting point!", { DialogButton::Ok });
 
 			unmarkObject(obj);
 			return 1;
@@ -852,6 +852,11 @@ int Editor::delete_object(int obj) {
 	r = common_object_delete(obj);
 	return r;
 }
+
+void Editor::setActiveViewport(EditorViewport* viewport) {
+	_lastActiveViewport = viewport;
+}
+
 int Editor::reference_handler(const char* name, int type, int obj) {
 
 	char msg[2048], text[128], type_name[128];
@@ -1005,7 +1010,7 @@ int Editor::reference_handler(const char* name, int type, int obj) {
 		sprintf(msg, "Ship \"%s\" is a reinforcement unit.\n"
 			"Do you want to delete it anyway?", name);
 
-		os::dialogs::Message(os::dialogs::MESSAGEBOX_ERROR, msg);
+		_lastActiveViewport->dialogProvider->showButtonDialog(DialogType::Error, "Error", msg, { DialogButton::Ok });
 		r = 0; // TODO: Make this a Yes/No choice once we have a generic dialog interface
 		if (r == 0) {
 			if (obj >= 0) {
@@ -1020,20 +1025,18 @@ int Editor::reference_handler(const char* name, int type, int obj) {
 }
 
 int Editor::orders_reference_handler(int code, char* msg) {
-	// TODO: add a generic dialog system for showing these dialogs
-	/*
-	int r, n;
-
-	r = Fred_main_wnd->MessageBox(msg, "Warning", MB_YESNOCANCEL | MB_ICONEXCLAMATION);
-	if (r == IDNO)
+	auto r = _lastActiveViewport->dialogProvider->showButtonDialog(DialogType::Warning, "Warning", msg, { DialogButton::Yes, DialogButton::No, DialogButton::Cancel });
+	if (r == DialogButton::No)
 		return 1;
 
-	if (r == IDYES)
+	if (r == DialogButton::Yes)
 		return 0;
 
+	// TODO: add a generic dialog system for showing these dialogs
+	/*
 	ShipGoalsDlg dlg_goals;
 
-	n = code & SRC_DATA_MASK;
+	auto n = code & SRC_DATA_MASK;
 	switch (code & SRC_MASK) {
 	case SRC_SHIP_ORDER:
 		unmark_all();
@@ -1067,17 +1070,15 @@ int Editor::orders_reference_handler(int code, char* msg) {
 	return 2;
 }
 int Editor::sexp_reference_handler(int node, int code, const char* msg) {
-	// TODO: add a generic dialog system for showing these dialogs
-	/*
-	int r;
-
-	r = Fred_main_wnd->MessageBox(msg, "Warning", MB_YESNOCANCEL | MB_ICONEXCLAMATION);
-	if (r == IDNO)
+	auto r = _lastActiveViewport->dialogProvider->showButtonDialog(DialogType::Warning, "Warning", msg, { DialogButton::Yes, DialogButton::No, DialogButton::Cancel });
+	if (r == DialogButton::No)
 		return 1;
 
-	if (r == IDYES)
+	if (r == DialogButton::Yes)
 		return 0;
 
+	// TODO: add a generic dialog system for showing these dialogs
+	/*
 	switch (code & SRC_MASK) {
 	case SRC_SHIP_ARRIVAL:
 	case SRC_SHIP_DEPARTURE:

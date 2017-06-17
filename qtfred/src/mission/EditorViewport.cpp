@@ -867,8 +867,7 @@ int EditorViewport::create_object_on_grid(int x, int y, int waypoint_instance) {
 			// FREDDoc_ptr->autosave("object create");
 
 		} else if (obj == -1) {
-			os::dialogs::Message(os::dialogs::MESSAGEBOX_ERROR,
-								 "Maximum ship limit reached.  Can't add any more ships.");
+			dialogProvider->showButtonDialog(DialogType::Error, "Error", "Maximum ship limit reached.  Can't add any more ships.", { DialogButton::Ok });
 		}
 	}
 

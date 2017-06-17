@@ -73,6 +73,9 @@ void FredView::setEditor(Editor* editor, EditorViewport* viewport) {
 	fred = editor;
 	_viewport = viewport;
 
+	// Let the viewport use us for displaying dialogs
+	_viewport->dialogProvider = this;
+
 	ui->centralWidget->setEditor(editor, _viewport);
 
 	// A combo box cannot be added by the designer so we do that manually here
@@ -397,6 +400,9 @@ void FredView::windowActivated() {
 	key_got_focus();
 
 	_viewport->Cursor_over = -1;
+
+	// Track the last active viewport
+	fred->setActiveViewport(_viewport);
 }
 void FredView::windowDeactivated() {
 	key_lost_focus();
@@ -557,7 +563,7 @@ void FredView::keyReleaseEvent(QKeyEvent* event) {
 	_inKeyReleaseHandler = false;
 }
 void FredView::on_actionEvents_triggered(bool) {
-	auto eventEditor = new dialogs::EventEditorDialog(this, fred, _viewport);
+	auto eventEditor = new dialogs::EventEditorDialog(this, _viewport);
 	eventEditor->show();
 }
 void FredView::on_actionSelectionLock_triggered(bool enabled) {
@@ -575,6 +581,69 @@ void FredView::onShipClassSelected(int ship_class) {
 void FredView::on_actionBriefing_triggered(bool) {
 	auto eventEditor = new dialogs::BriefingEditorDialog(this);
 	eventEditor->show();
+}
+DialogButton FredView::showButtonDialog(DialogType type,
+										const SCP_string& title,
+										const SCP_string& message,
+										const flagset<DialogButton>& buttons) {
+	QMessageBox dialog(this);
+
+	dialog.setWindowTitle(QApplication::applicationName()); // This follows the recommendation found in the QMessageBox documentation
+	dialog.setText(QString::fromStdString(title));
+	dialog.setInformativeText(QString::fromStdString(message));
+
+	QMessageBox::StandardButtons qtButtons = 0;
+	QMessageBox::StandardButton defaultButton = QMessageBox::NoButton;
+	if (buttons[DialogButton::Yes]) {
+		qtButtons |= QMessageBox::Yes;
+		defaultButton = QMessageBox::Yes;
+	}
+	if (buttons[DialogButton::No]) {
+		qtButtons |= QMessageBox::No;
+		defaultButton = QMessageBox::No;
+	}
+	if (buttons[DialogButton::Cancel]) {
+		qtButtons |= QMessageBox::Cancel;
+		defaultButton = QMessageBox::Cancel;
+	}
+	if (buttons[DialogButton::Ok]) {
+		qtButtons |= QMessageBox::Ok;
+		defaultButton = QMessageBox::Ok;
+	}
+	dialog.setStandardButtons(qtButtons);
+	dialog.setDefaultButton(defaultButton);
+
+	QMessageBox::Icon dialogIcon = QMessageBox::Critical;
+	switch(type) {
+	case DialogType::Error:
+		dialogIcon = QMessageBox::Critical;
+		break;
+	case DialogType::Warning:
+		dialogIcon = QMessageBox::Warning;
+		break;
+	case DialogType::Information:
+		dialogIcon = QMessageBox::Information;
+		break;
+	case DialogType::Question:
+		dialogIcon = QMessageBox::Question;
+		break;
+	}
+	dialog.setIcon(dialogIcon);
+
+	auto ret = dialog.exec();
+
+	switch(ret) {
+	case QMessageBox::Yes:
+		return DialogButton::Yes;
+	case QMessageBox::No:
+		return DialogButton::No;
+	case QMessageBox::Cancel:
+		return DialogButton::Cancel;
+	case QMessageBox::Ok:
+		return DialogButton::Ok;
+	default:
+		return DialogButton::Cancel;
+	}
 }
 
 } // namespace fred

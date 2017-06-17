@@ -8,6 +8,7 @@
 #include <QtGui/QSurface>
 
 #include <mission/FredRenderer.h>
+#include <mission/IDialogProvider.h>
 
 #include <memory>
 #include <ui/widgets/ColorComboBox.h>
@@ -22,7 +23,7 @@ namespace Ui {
 class FredView;
 }
 
-class FredView : public QMainWindow
+class FredView : public QMainWindow, public IDialogProvider
 {
     Q_OBJECT
 
@@ -146,6 +147,12 @@ protected:
 
 	void windowActivated();
 	void windowDeactivated();
+
+ public:
+	DialogButton showButtonDialog(DialogType type,
+								  const SCP_string& title,
+								  const SCP_string& message,
+								  const flagset<DialogButton>& buttons) override;
 };
 
 

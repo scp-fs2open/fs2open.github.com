@@ -3,6 +3,7 @@
 
 #include "FredRenderer.h"
 #include "Editor.h"
+#include "IDialogProvider.h"
 
 #include <object/object.h>
 
@@ -153,6 +154,7 @@ class EditorViewport {
 
 	Editor* editor = nullptr;
 	FredRenderer* renderer = nullptr;
+	IDialogProvider* dialogProvider = nullptr;
 };
 
 }

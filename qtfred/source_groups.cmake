@@ -33,6 +33,7 @@ add_file_folder("Source/Mission"
     src/mission/EditorViewport.h
     src/mission/FredRenderer.cpp
     src/mission/FredRenderer.h
+    src/mission/IDialogProvider.h
     src/mission/management.cpp
     src/mission/management.h
     src/mission/object.cpp
