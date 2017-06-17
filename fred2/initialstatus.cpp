@@ -30,6 +30,21 @@ void initial_status_mark_dock_leader_helper(object *objp, dock_function_info *in
 void initial_status_unmark_dock_handled_flag(object *objp, dock_function_info *infop);
 void reset_arrival_to_false(int shipnum, bool reset_wing);
 
+/**
+ * @brief Handles setting a flag on a flagset when the value is inconsistent
+ *
+ * This is necessary in case multiple ships with inconsistent object flags have been selected in which case
+ * that flag may not be edited since it would corrupt the value of that flag. This function simplifies handling
+ * that case.
+ */
+template<typename T>
+static void handle_inconsistent_flag(flagset<T>& flags, T flag, int value) {
+	if (value == 1) {
+		flags.set(flag);
+	} else if (value == 0) {
+		flags.remove(flag);
+	}
+}
 
 /////////////////////////////////////////////////////////////////////////////
 // initial_status dialog
@@ -438,17 +453,21 @@ void initial_status::OnOK()
 				if (hflag)
 					MODIFY(objp->hull_strength, (float) m_hull);
 
-				objp->flags.set(Object::Object_Flags::No_shields, m_has_shields == 0);
+				if (m_has_shields == 1)
+					objp->flags.remove(Object::Object_Flags::No_shields);
+				else if (m_has_shields == 0)
+					objp->flags.set(Object::Object_Flags::No_shields);
 
                 auto shipp = &Ships[get_ship_from_obj(objp)];
 				
-                shipp->flags.set(Ship::Ship_Flags::Force_shields_on, m_force_shields == 1);
-                shipp->flags.set(Ship::Ship_Flags::Ship_locked, m_ship_locked == 1);
-                shipp->flags.set(Ship::Ship_Flags::Weapons_locked, m_weapons_locked == 1);
-                shipp->flags.set(Ship::Ship_Flags::Primaries_locked, m_primaries_locked == 1);
-                shipp->flags.set(Ship::Ship_Flags::Secondaries_locked, m_secondaries_locked == 1);
-                shipp->flags.set(Ship::Ship_Flags::Lock_all_turrets_initially, m_turrets_locked == 1);
-                shipp->flags.set(Ship::Ship_Flags::Afterburner_locked, m_afterburner_locked == 1);
+				// We need to ensure that we handle the inconsistent "boolean" value correctly
+                handle_inconsistent_flag(shipp->flags, Ship::Ship_Flags::Force_shields_on, m_force_shields);
+                handle_inconsistent_flag(shipp->flags, Ship::Ship_Flags::Ship_locked, m_ship_locked);
+                handle_inconsistent_flag(shipp->flags, Ship::Ship_Flags::Weapons_locked, m_weapons_locked);
+                handle_inconsistent_flag(shipp->flags, Ship::Ship_Flags::Primaries_locked, m_primaries_locked);
+                handle_inconsistent_flag(shipp->flags, Ship::Ship_Flags::Secondaries_locked, m_secondaries_locked);
+                handle_inconsistent_flag(shipp->flags, Ship::Ship_Flags::Lock_all_turrets_initially, m_turrets_locked);
+                handle_inconsistent_flag(shipp->flags, Ship::Ship_Flags::Afterburner_locked, m_afterburner_locked);
 			}
 
 			objp = GET_NEXT(objp);
@@ -461,13 +480,14 @@ void initial_status::OnOK()
 
 		Objects[cur_object_index].flags.set(Object::Object_Flags::No_shields, m_has_shields == 0);
 
-        Ships[m_ship].flags.set(Ship::Ship_Flags::Force_shields_on, m_force_shields == 1);
-        Ships[m_ship].flags.set(Ship::Ship_Flags::Ship_locked, m_ship_locked == 1);
-        Ships[m_ship].flags.set(Ship::Ship_Flags::Weapons_locked, m_weapons_locked == 1);
-        Ships[m_ship].flags.set(Ship::Ship_Flags::Primaries_locked, m_primaries_locked == 1);
-        Ships[m_ship].flags.set(Ship::Ship_Flags::Secondaries_locked, m_secondaries_locked == 1);
-        Ships[m_ship].flags.set(Ship::Ship_Flags::Lock_all_turrets_initially, m_turrets_locked == 1);
-        Ships[m_ship].flags.set(Ship::Ship_Flags::Afterburner_locked, m_afterburner_locked == 1);
+		// We need to ensure that we handle the inconsistent "boolean" value correctly. Not strictly needed here but just to be safe...
+		handle_inconsistent_flag(Ships[m_ship].flags, Ship::Ship_Flags::Force_shields_on, m_force_shields);
+		handle_inconsistent_flag(Ships[m_ship].flags, Ship::Ship_Flags::Ship_locked, m_ship_locked);
+		handle_inconsistent_flag(Ships[m_ship].flags, Ship::Ship_Flags::Weapons_locked, m_weapons_locked);
+		handle_inconsistent_flag(Ships[m_ship].flags, Ship::Ship_Flags::Primaries_locked, m_primaries_locked);
+		handle_inconsistent_flag(Ships[m_ship].flags, Ship::Ship_Flags::Secondaries_locked, m_secondaries_locked);
+		handle_inconsistent_flag(Ships[m_ship].flags, Ship::Ship_Flags::Lock_all_turrets_initially, m_turrets_locked);
+		handle_inconsistent_flag(Ships[m_ship].flags, Ship::Ship_Flags::Afterburner_locked, m_afterburner_locked);
 	}
 
 	if (m_team_color_setting.IsWindowEnabled() && m_team_color_setting.GetCurSel() > 0)
