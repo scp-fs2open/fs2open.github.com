@@ -59,6 +59,10 @@ add_file_folder("Source/UI/Dialogs"
     src/ui/dialogs/BriefingEditorDialog.h
     src/ui/dialogs/EventEditorDialog.cpp
     src/ui/dialogs/EventEditorDialog.h
+	src/ui/dialogs/MissionGoalsDialog.cpp
+	src/ui/dialogs/MissionGoalsDialog.h
+	src/ui/dialogs/TeamLoadoutDialog.cpp
+	src/ui/dialogs/TeamLoadoutDialog.h
 )
 
 add_file_folder("Source/UI/Widgets"
@@ -72,6 +76,8 @@ add_file_folder("UI"
     ui/EventEditorDialog.ui
     ui/FredView.ui
     ui/BriefingEditorDialog.ui
+	ui/MissionGoalsDialog.ui
+	ui/TeamLoadoutDialog.ui
 )
 
 add_file_folder("Resources"
