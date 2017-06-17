@@ -23,11 +23,11 @@ if [ "$TRAVIS_OS_NAME" = "linux" ]; then
             cd $config
             eval $CMAKE -DFSO_INSTALL_DEBUG_FILES=ON -DCMAKE_BUILD_TYPE=$config -DCMAKE_INSTALL_PREFIX="/tmp/release/$config" \
                 -DFSO_BUILD_APPIMAGE=ON -DAPPIMAGE_ASSISTANT="$HOME/AppImageAssistant" \
-                -DFSO_BUILD_INCLUDED_LIBS=ON -DFFMPEG_USE_PRECOMPILED=ON ../..
+                -DFSO_BUILD_INCLUDED_LIBS=ON -DFFMPEG_USE_PRECOMPILED=ON -DFSO_BUILD_QTFRED=ON ../..
             cd ..
         done
     else
-        eval $CMAKE -DCMAKE_BUILD_TYPE=$CONFIGURATION -DFSO_BUILD_TESTS=ON -DFSO_BUILD_INCLUDED_LIBS=ON ..
+        eval $CMAKE -DCMAKE_BUILD_TYPE=$CONFIGURATION -DFSO_BUILD_TESTS=ON -DFSO_BUILD_INCLUDED_LIBS=ON -DFSO_BUILD_QTFRED=ON ..
     fi
 elif [ "$TRAVIS_OS_NAME" = "osx" ]; then
     if [ "$BUILD_DEPLOYMENT" = true ]; then

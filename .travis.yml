@@ -16,6 +16,7 @@ addons:
             - libjansson-dev
             - libsdl2-dev
             - valgrind
+            - qt57base
     coverity_scan:
         project:
             name: "scp-fs2open/fs2open.github.com"
@@ -62,19 +63,21 @@ matrix:
               apt:
                   sources:
                       - ubuntu-toolchain-r-test
+                      - sourceline: 'ppa:beineri/opt-qt571-trusty'
                   packages:
-                      - g++-5
                       - *global_deps
+                      - g++-5
         - os: linux
           env: CONFIGURATION="Debug" CC=clang-3.6 CXX=clang++-3.6
           addons:
               apt:
                   sources:
                       - llvm-toolchain-precise
+                      - sourceline: 'ppa:beineri/opt-qt571-trusty'
                   packages:
+                      - *global_deps
                       - clang-3.6
                       - libc++-dev
-                      - *global_deps
         - os: osx
           env: CONFIGURATION="Debug"
 
@@ -84,19 +87,21 @@ matrix:
               apt:
                   sources:
                       - ubuntu-toolchain-r-test
+                      - sourceline: 'ppa:beineri/opt-qt571-trusty'
                   packages:
-                      - g++-5
                       - *global_deps
+                      - g++-5
         - os: linux
           env: CONFIGURATION="Release" CC=clang-3.6 CXX=clang++-3.6
           addons:
               apt:
                   sources:
                       - llvm-toolchain-precise
+                      - sourceline: 'ppa:beineri/opt-qt571-trusty'
                   packages:
+                      - *global_deps
                       - clang-3.6
                       - libc++-dev
-                      - *global_deps
         - os: osx
           env: CONFIGURATION="Release"
 before_install:
@@ -112,6 +117,7 @@ install:
     - "./ci/travis/install.sh"
     - export PATH=$HOME/cmake/bin:$PATH
 before_script:
+    - if [ "$TRAVIS_OS_NAME" = "linux" ]; then QT_ENV_SCRIPT=$(find /opt -name 'qt*-env.sh'); source $QT_ENV_SCRIPT; fi
     - "./ci/travis/before_script.sh"
 script:
     - if [ "$BUILD_DEPLOYMENT" = true ] ; then ./ci/travis/release.sh ; else ./ci/travis/script.sh ; fi

@@ -1,0 +1,1311 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>fso::fred::FredView</class>
+ <widget class="QMainWindow" name="fso::fred::FredView">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>926</width>
+    <height>300</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>qtFRED</string>
+  </property>
+  <widget class="fso::fred::RenderWidget" name="centralWidget"/>
+  <widget class="QMenuBar" name="menuBar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>926</width>
+     <height>28</height>
+    </rect>
+   </property>
+   <widget class="QMenu" name="menuFile">
+    <property name="title">
+     <string>&amp;File</string>
+    </property>
+    <widget class="QMenu" name="menuSave_Format">
+     <property name="title">
+      <string>Save For&amp;mat</string>
+     </property>
+     <addaction name="actionFS2_Open"/>
+     <addaction name="actionFS2_Retail"/>
+    </widget>
+    <widget class="QMenu" name="menuImport">
+     <property name="title">
+      <string>&amp;Import</string>
+     </property>
+     <addaction name="actionFS1_Mission"/>
+     <addaction name="actionFS1_Weapon_Loadouts"/>
+    </widget>
+    <widget class="QMenu" name="menuRe_cent_Files">
+     <property name="title">
+      <string>Re&amp;cent Files</string>
+     </property>
+     <addaction name="actionEmpty"/>
+    </widget>
+    <addaction name="actionNew"/>
+    <addaction name="actionOpen"/>
+    <addaction name="actionSave"/>
+    <addaction name="actionSave_As"/>
+    <addaction name="actionRevert"/>
+    <addaction name="separator"/>
+    <addaction name="menuSave_Format"/>
+    <addaction name="menuImport"/>
+    <addaction name="separator"/>
+    <addaction name="actionRun_FreeSpace_2_Open"/>
+    <addaction name="separator"/>
+    <addaction name="menuRe_cent_Files"/>
+    <addaction name="separator"/>
+    <addaction name="actionExit"/>
+   </widget>
+   <widget class="QMenu" name="menuEdit">
+    <property name="title">
+     <string>E&amp;dit</string>
+    </property>
+    <addaction name="actionUndo"/>
+    <addaction name="actionDelete"/>
+    <addaction name="actionDelete_Wing"/>
+    <addaction name="separator"/>
+    <addaction name="actionDisable_Undo"/>
+   </widget>
+   <widget class="QMenu" name="menuView">
+    <property name="title">
+     <string>&amp;View</string>
+    </property>
+    <widget class="QMenu" name="menuDisplay_Filter">
+     <property name="title">
+      <string>&amp;Display Filter</string>
+     </property>
+     <addaction name="actionShow_Ships"/>
+     <addaction name="actionShow_Player_Starts"/>
+     <addaction name="actionShow_Waypoints"/>
+     <addaction name="separator"/>
+     <addaction name="actionShow_Friendly"/>
+     <addaction name="actionShow_Hostile"/>
+    </widget>
+    <widget class="QMenu" name="menuViewpoint">
+     <property name="title">
+      <string>&amp;Viewpoint</string>
+     </property>
+     <addaction name="actionCamera"/>
+     <addaction name="actionCurrent_Ship"/>
+    </widget>
+    <addaction name="actionTool_Bar"/>
+    <addaction name="actionStatus_Bar"/>
+    <addaction name="separator"/>
+    <addaction name="menuDisplay_Filter"/>
+    <addaction name="separator"/>
+    <addaction name="actionHide_Marked_Objects"/>
+    <addaction name="actionShow_All_Hidden_Objects"/>
+    <addaction name="separator"/>
+    <addaction name="actionShow_Ship_Models"/>
+    <addaction name="actionShow_Outlines"/>
+    <addaction name="actionShow_Ship_Info"/>
+    <addaction name="actionShow_Coordinates"/>
+    <addaction name="actionShow_Grid_Positions"/>
+    <addaction name="actionShow_Distances"/>
+    <addaction name="actionShow_Model_Paths"/>
+    <addaction name="actionShow_Model_Dock_Points"/>
+    <addaction name="separator"/>
+    <addaction name="actionShow_Grid"/>
+    <addaction name="actionShow_Horizon"/>
+    <addaction name="actionDouble_Fine_Gridlines"/>
+    <addaction name="actionAnti_Aliased_Gridlines"/>
+    <addaction name="actionShow_3D_Compass"/>
+    <addaction name="actionShow_Background"/>
+    <addaction name="separator"/>
+    <addaction name="menuViewpoint"/>
+    <addaction name="actionSave_Camera_Pos"/>
+    <addaction name="actionRestore_Camera_Pos"/>
+    <addaction name="separator"/>
+    <addaction name="actionLighting_from_Suns"/>
+   </widget>
+   <widget class="QMenu" name="menuSpeed">
+    <property name="title">
+     <string>Speed</string>
+    </property>
+    <widget class="QMenu" name="menuMovement">
+     <property name="title">
+      <string>&amp;Movement</string>
+     </property>
+     <addaction name="actionx1"/>
+     <addaction name="actionx2"/>
+     <addaction name="actionx3"/>
+     <addaction name="actionx5"/>
+     <addaction name="actionx8"/>
+     <addaction name="actionx10"/>
+     <addaction name="actionx50"/>
+     <addaction name="actionx100"/>
+    </widget>
+    <widget class="QMenu" name="menuRotation">
+     <property name="title">
+      <string>&amp;Rotation</string>
+     </property>
+     <addaction name="actionRotx1"/>
+     <addaction name="actionRotx5"/>
+     <addaction name="actionRotx12"/>
+     <addaction name="actionRotx25"/>
+     <addaction name="actionRotx50"/>
+    </widget>
+    <addaction name="menuMovement"/>
+    <addaction name="menuRotation"/>
+   </widget>
+   <widget class="QMenu" name="menuEditors">
+    <property name="title">
+     <string>Edito&amp;rs</string>
+    </property>
+    <addaction name="actionShips"/>
+    <addaction name="actionWings"/>
+    <addaction name="actionObjects"/>
+    <addaction name="actionWaypoint_Paths"/>
+    <addaction name="actionEvents"/>
+    <addaction name="actionTeam_Loadout"/>
+    <addaction name="actionBackground"/>
+    <addaction name="actionReinforcements"/>
+    <addaction name="actionAsteroid_Field"/>
+    <addaction name="actionMission_Specs"/>
+    <addaction name="actionBriefing"/>
+    <addaction name="actionDebriefing"/>
+    <addaction name="actionCommand_Briefing"/>
+    <addaction name="actionFiction_Viewer"/>
+    <addaction name="actionShield_System"/>
+    <addaction name="actionSet_Global_Ship_Flags"/>
+    <addaction name="actionVoice_Manager"/>
+    <addaction name="separator"/>
+    <addaction name="actionCampaign"/>
+   </widget>
+   <widget class="QMenu" name="menuGroups">
+    <property name="title">
+     <string>&amp;Groups</string>
+    </property>
+    <widget class="QMenu" name="menuSet_Group">
+     <property name="title">
+      <string>&amp;Set Group</string>
+     </property>
+     <addaction name="actionGroup_10"/>
+     <addaction name="actionGroup_11"/>
+     <addaction name="actionGroup_12"/>
+     <addaction name="actionGroup_13"/>
+     <addaction name="actionGroup_14"/>
+     <addaction name="actionGroup_15"/>
+     <addaction name="actionGroup_16"/>
+     <addaction name="actionGroup_17"/>
+     <addaction name="actionGroup_18"/>
+    </widget>
+    <addaction name="actionGroup_1"/>
+    <addaction name="actionGroup_2"/>
+    <addaction name="actionGroup_3"/>
+    <addaction name="actionGroup_4"/>
+    <addaction name="actionGroup_5"/>
+    <addaction name="actionGroup_6"/>
+    <addaction name="actionGroup_7"/>
+    <addaction name="actionGroup_8"/>
+    <addaction name="actionGroup_9"/>
+    <addaction name="separator"/>
+    <addaction name="menuSet_Group"/>
+   </widget>
+   <widget class="QMenu" name="menuMisc">
+    <property name="title">
+     <string>&amp;Misc</string>
+    </property>
+    <addaction name="actionLevel_Object"/>
+    <addaction name="actionAlign_Object"/>
+    <addaction name="actionMark_Wing"/>
+    <addaction name="actionControl_Object"/>
+    <addaction name="actionNext_Object"/>
+    <addaction name="actionPrev_Object"/>
+    <addaction name="actionAdjust_Grid"/>
+    <addaction name="actionNext_Subsystem"/>
+    <addaction name="actionPrev_Subsystem"/>
+    <addaction name="actionCancel_Subsystem"/>
+    <addaction name="actionMission_Statistics"/>
+    <addaction name="separator"/>
+    <addaction name="actionError_Checker"/>
+   </widget>
+   <widget class="QMenu" name="menuHelp">
+    <property name="title">
+     <string>He&amp;lp</string>
+    </property>
+    <addaction name="actionHelp_Topics"/>
+    <addaction name="actionShow_SEXP_Help"/>
+    <addaction name="separator"/>
+    <addaction name="actionAbout_FRED2"/>
+   </widget>
+   <addaction name="menuFile"/>
+   <addaction name="menuEdit"/>
+   <addaction name="menuView"/>
+   <addaction name="menuSpeed"/>
+   <addaction name="menuEditors"/>
+   <addaction name="menuGroups"/>
+   <addaction name="menuMisc"/>
+   <addaction name="menuHelp"/>
+  </widget>
+  <widget class="QStatusBar" name="statusBar"/>
+  <widget class="QToolBar" name="toolBar">
+   <property name="contextMenuPolicy">
+    <enum>Qt::PreventContextMenu</enum>
+   </property>
+   <property name="windowTitle">
+    <string>toolBar</string>
+   </property>
+   <attribute name="toolBarArea">
+    <enum>TopToolBarArea</enum>
+   </attribute>
+   <attribute name="toolBarBreak">
+    <bool>false</bool>
+   </attribute>
+   <addaction name="actionSelect"/>
+   <addaction name="actionSelectMove"/>
+   <addaction name="actionSelectRotate"/>
+   <addaction name="separator"/>
+   <addaction name="actionRotateLocal"/>
+   <addaction name="separator"/>
+   <addaction name="actionConstrainX"/>
+   <addaction name="actionConstrainY"/>
+   <addaction name="actionConstrainZ"/>
+   <addaction name="actionConstrainXZ"/>
+   <addaction name="actionConstrainYZ"/>
+   <addaction name="actionConstrainXY"/>
+   <addaction name="separator"/>
+   <addaction name="actionSelectionList"/>
+   <addaction name="actionSelectionLock"/>
+   <addaction name="separator"/>
+   <addaction name="actionWingForm"/>
+   <addaction name="actionWingDisband"/>
+   <addaction name="separator"/>
+   <addaction name="actionZoomSelected"/>
+   <addaction name="actionZoomExtents"/>
+   <addaction name="separator"/>
+   <addaction name="actionShowDistances"/>
+   <addaction name="actionOrbitSelected"/>
+   <addaction name="separator"/>
+  </widget>
+  <action name="actionSelect">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="../resources/resources.qrc">
+     <normaloff>:/images/select.png</normaloff>:/images/select.png</iconset>
+   </property>
+   <property name="text">
+    <string>Select</string>
+   </property>
+   <property name="toolTip">
+    <string>Select (S)</string>
+   </property>
+   <property name="shortcut">
+    <string>S</string>
+   </property>
+  </action>
+  <action name="actionSelectMove">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="../resources/resources.qrc">
+     <normaloff>:/images/selectmove.png</normaloff>:/images/selectmove.png</iconset>
+   </property>
+   <property name="text">
+    <string>SelectMove</string>
+   </property>
+   <property name="toolTip">
+    <string>Select and Move (M)</string>
+   </property>
+   <property name="shortcut">
+    <string>M</string>
+   </property>
+  </action>
+  <action name="actionSelectRotate">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="../resources/resources.qrc">
+     <normaloff>:/images/selectrot.png</normaloff>:/images/selectrot.png</iconset>
+   </property>
+   <property name="text">
+    <string>SelectRotate</string>
+   </property>
+   <property name="toolTip">
+    <string>Select and Rotate</string>
+   </property>
+   <property name="shortcut">
+    <string>R</string>
+   </property>
+  </action>
+  <action name="actionRotateLocal">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="../resources/resources.qrc">
+     <normaloff>:/images/rotlocal.png</normaloff>:/images/rotlocal.png</iconset>
+   </property>
+   <property name="text">
+    <string>RotateLocal</string>
+   </property>
+   <property name="toolTip">
+    <string>Rotate Locally (X)</string>
+   </property>
+   <property name="shortcut">
+    <string>X</string>
+   </property>
+  </action>
+  <action name="actionConstrainX">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="../resources/resources.qrc">
+     <normaloff>:/images/constx.png</normaloff>:/images/constx.png</iconset>
+   </property>
+   <property name="text">
+    <string>ConstraintX</string>
+   </property>
+   <property name="toolTip">
+    <string>X Constraint (`)</string>
+   </property>
+  </action>
+  <action name="actionConstrainY">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="../resources/resources.qrc">
+     <normaloff>:/images/consty.png</normaloff>:/images/consty.png</iconset>
+   </property>
+   <property name="text">
+    <string>ConstraintY</string>
+   </property>
+   <property name="toolTip">
+    <string>Y Constraint (`)</string>
+   </property>
+  </action>
+  <action name="actionConstrainZ">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="../resources/resources.qrc">
+     <normaloff>:/images/constz.png</normaloff>:/images/constz.png</iconset>
+   </property>
+   <property name="text">
+    <string>ConstraintZ</string>
+   </property>
+   <property name="toolTip">
+    <string>Z Constraint (`)</string>
+   </property>
+  </action>
+  <action name="actionConstrainXZ">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="../resources/resources.qrc">
+     <normaloff>:/images/constxz.png</normaloff>:/images/constxz.png</iconset>
+   </property>
+   <property name="text">
+    <string>ConstraintXZ</string>
+   </property>
+   <property name="toolTip">
+    <string>XZ Constraint (`)</string>
+   </property>
+  </action>
+  <action name="actionConstrainYZ">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="../resources/resources.qrc">
+     <normaloff>:/images/constyz.png</normaloff>:/images/constyz.png</iconset>
+   </property>
+   <property name="text">
+    <string>ConstraintYZ</string>
+   </property>
+   <property name="toolTip">
+    <string>YZ Constraint</string>
+   </property>
+  </action>
+  <action name="actionConstrainXY">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="../resources/resources.qrc">
+     <normaloff>:/images/constxy.png</normaloff>:/images/constxy.png</iconset>
+   </property>
+   <property name="text">
+    <string>ConstraintXY</string>
+   </property>
+   <property name="toolTip">
+    <string>XY Constaint (`)</string>
+   </property>
+  </action>
+  <action name="actionSelectionList">
+   <property name="icon">
+    <iconset resource="../resources/resources.qrc">
+     <normaloff>:/images/selectlist.png</normaloff>:/images/selectlist.png</iconset>
+   </property>
+   <property name="text">
+    <string>SelectionList</string>
+   </property>
+   <property name="toolTip">
+    <string>Selection List (H)</string>
+   </property>
+   <property name="shortcut">
+    <string>H</string>
+   </property>
+  </action>
+  <action name="actionSelectionLock">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="../resources/resources.qrc">
+     <normaloff>:/images/selectlock.png</normaloff>:/images/selectlock.png</iconset>
+   </property>
+   <property name="text">
+    <string>SelectionLock</string>
+   </property>
+   <property name="toolTip">
+    <string>Selection Lock (L)</string>
+   </property>
+   <property name="shortcut">
+    <string>L</string>
+   </property>
+  </action>
+  <action name="actionWingForm">
+   <property name="icon">
+    <iconset resource="../resources/resources.qrc">
+     <normaloff>:/images/wingform.png</normaloff>:/images/wingform.png</iconset>
+   </property>
+   <property name="text">
+    <string>WingForm</string>
+   </property>
+   <property name="toolTip">
+    <string>Form Wing (Ctrl + W)</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+W</string>
+   </property>
+  </action>
+  <action name="actionWingDisband">
+   <property name="icon">
+    <iconset resource="../resources/resources.qrc">
+     <normaloff>:/images/wingdisband.png</normaloff>:/images/wingdisband.png</iconset>
+   </property>
+   <property name="text">
+    <string>WingDisband</string>
+   </property>
+   <property name="toolTip">
+    <string>Disband Wing (Ctrl + D)</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+D</string>
+   </property>
+  </action>
+  <action name="actionZoomSelected">
+   <property name="icon">
+    <iconset resource="../resources/resources.qrc">
+     <normaloff>:/images/zoomsel.png</normaloff>:/images/zoomsel.png</iconset>
+   </property>
+   <property name="text">
+    <string>ZoomSelected</string>
+   </property>
+   <property name="toolTip">
+    <string>Zoom on Selected (Alt + Z)</string>
+   </property>
+  </action>
+  <action name="actionZoomExtents">
+   <property name="icon">
+    <iconset resource="../resources/resources.qrc">
+     <normaloff>:/images/zoomext.png</normaloff>:/images/zoomext.png</iconset>
+   </property>
+   <property name="text">
+    <string>ZoomExtents</string>
+   </property>
+   <property name="toolTip">
+    <string>Zoom Extents (Shift + Z)</string>
+   </property>
+   <property name="shortcut">
+    <string>Shift+Z</string>
+   </property>
+  </action>
+  <action name="actionShowDistances">
+   <property name="icon">
+    <iconset resource="../resources/resources.qrc">
+     <normaloff>:/images/showdist.png</normaloff>:/images/showdist.png</iconset>
+   </property>
+   <property name="text">
+    <string>ShowDistances</string>
+   </property>
+   <property name="toolTip">
+    <string>Show Distances (D)</string>
+   </property>
+   <property name="shortcut">
+    <string>D</string>
+   </property>
+  </action>
+  <action name="actionOrbitSelected">
+   <property name="icon">
+    <iconset resource="../resources/resources.qrc">
+     <normaloff>:/images/orbitsel.png</normaloff>:/images/orbitsel.png</iconset>
+   </property>
+   <property name="text">
+    <string>OrbitSelected</string>
+   </property>
+   <property name="toolTip">
+    <string>Rotate about Selected (Ctrl + V)</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+V</string>
+   </property>
+  </action>
+  <action name="actionNew">
+   <property name="text">
+    <string>&amp;New</string>
+   </property>
+   <property name="shortcut">
+    <string/>
+   </property>
+  </action>
+  <action name="actionOpen">
+   <property name="text">
+    <string>&amp;Open...</string>
+   </property>
+  </action>
+  <action name="actionSave">
+   <property name="text">
+    <string>&amp;Save</string>
+   </property>
+  </action>
+  <action name="actionSave_As">
+   <property name="text">
+    <string>Sa&amp;ve As...</string>
+   </property>
+  </action>
+  <action name="actionRevert">
+   <property name="text">
+    <string>&amp;Revert</string>
+   </property>
+  </action>
+  <action name="actionFS2_Open">
+   <property name="text">
+    <string>&amp;FS2 Open</string>
+   </property>
+  </action>
+  <action name="actionFS2_Retail">
+   <property name="text">
+    <string>FS2 &amp;Retail</string>
+   </property>
+  </action>
+  <action name="actionFS1_Mission">
+   <property name="text">
+    <string>&amp;FS1 Mission</string>
+   </property>
+  </action>
+  <action name="actionFS1_Weapon_Loadouts">
+   <property name="text">
+    <string>FS1 &amp;Weapon Loadouts</string>
+   </property>
+  </action>
+  <action name="actionRun_FreeSpace_2_Open">
+   <property name="text">
+    <string>Run &amp;FreeSpace</string>
+   </property>
+   <property name="shortcut">
+    <string/>
+   </property>
+  </action>
+  <action name="actionExit">
+   <property name="text">
+    <string>&amp;Exit</string>
+   </property>
+  </action>
+  <action name="actionUndo">
+   <property name="text">
+    <string>&amp;Undo</string>
+   </property>
+  </action>
+  <action name="actionDelete">
+   <property name="text">
+    <string>&amp;Delete</string>
+   </property>
+  </action>
+  <action name="actionDelete_Wing">
+   <property name="text">
+    <string>Delete &amp;Wing</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Del</string>
+   </property>
+  </action>
+  <action name="actionDisable_Undo">
+   <property name="text">
+    <string>D&amp;isable Undo</string>
+   </property>
+  </action>
+  <action name="actionTool_Bar">
+   <property name="text">
+    <string>&amp;Tool Bar</string>
+   </property>
+  </action>
+  <action name="actionStatus_Bar">
+   <property name="text">
+    <string>&amp;Status Bar</string>
+   </property>
+  </action>
+  <action name="actionShow_Ships">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>&amp;Show Ships</string>
+   </property>
+  </action>
+  <action name="actionShow_Player_Starts">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Show &amp;Player Starts</string>
+   </property>
+  </action>
+  <action name="actionShow_Waypoints">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Show &amp;Waypoints</string>
+   </property>
+  </action>
+  <action name="actionShow_Friendly">
+   <property name="text">
+    <string>Show &amp;Friendly</string>
+   </property>
+  </action>
+  <action name="actionShow_Hostile">
+   <property name="text">
+    <string>Show &amp;Hostile</string>
+   </property>
+  </action>
+  <action name="actionHide_Marked_Objects">
+   <property name="text">
+    <string>&amp;Hide Marked Objects</string>
+   </property>
+  </action>
+  <action name="actionShow_All_Hidden_Objects">
+   <property name="text">
+    <string>Sho&amp;w Hidden Objects</string>
+   </property>
+  </action>
+  <action name="actionShow_Ship_Models">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Show Ship Models</string>
+   </property>
+   <property name="shortcut">
+    <string>Alt+Shift+M</string>
+   </property>
+  </action>
+  <action name="actionShow_Outlines">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Show &amp;Outlines</string>
+   </property>
+   <property name="shortcut">
+    <string>Alt+Shift+O</string>
+   </property>
+  </action>
+  <action name="actionShow_Coordinates">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Show &amp;Coordinates</string>
+   </property>
+   <property name="shortcut">
+    <string>Alt+Shift+C</string>
+   </property>
+  </action>
+  <action name="actionShow_Grid_Positions">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Show &amp;Grid Positions</string>
+   </property>
+   <property name="shortcut">
+    <string>Alt+Shift+P</string>
+   </property>
+  </action>
+  <action name="actionShow_Distances">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Show D&amp;istances</string>
+   </property>
+   <property name="shortcut">
+    <string>D</string>
+   </property>
+  </action>
+  <action name="actionShow_Model_Paths">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Show &amp;Model Paths</string>
+   </property>
+  </action>
+  <action name="actionShow_Model_Dock_Points">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Show Model Doc&amp;k Points</string>
+   </property>
+  </action>
+  <action name="actionShow_Grid">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Show Grid</string>
+   </property>
+   <property name="shortcut">
+    <string>Alt+Shift+G</string>
+   </property>
+  </action>
+  <action name="actionShow_Horizon">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Show Hori&amp;zon</string>
+   </property>
+   <property name="shortcut">
+    <string>Alt+Shift+H</string>
+   </property>
+  </action>
+  <action name="actionDouble_Fine_Gridlines">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Double &amp;Fine Gridlines</string>
+   </property>
+  </action>
+  <action name="actionAnti_Aliased_Gridlines">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>&amp;Anti-Aliased Gridlines</string>
+   </property>
+  </action>
+  <action name="actionShow_3D_Compass">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Show &amp;3D Compass</string>
+   </property>
+   <property name="shortcut">
+    <string>Alt+Shift+3</string>
+   </property>
+  </action>
+  <action name="actionShow_Background">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Show &amp;Background</string>
+   </property>
+   <property name="shortcut">
+    <string>Alt+Shift+B</string>
+   </property>
+  </action>
+  <action name="actionSave_Camera_Pos">
+   <property name="text">
+    <string>Save Camera &amp;Pos</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+P</string>
+   </property>
+  </action>
+  <action name="actionRestore_Camera_Pos">
+   <property name="text">
+    <string>&amp;Restore Camera Pos</string>
+   </property>
+  </action>
+  <action name="actionLighting_from_Suns">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>&amp;Lighting from Suns...</string>
+   </property>
+  </action>
+  <action name="actionCamera">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>&amp;Camera</string>
+   </property>
+  </action>
+  <action name="actionCurrent_Ship">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Current &amp;Ship</string>
+   </property>
+  </action>
+  <action name="actionx1">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>&amp;x1</string>
+   </property>
+   <property name="shortcut">
+    <string>Alt+Shift+1</string>
+   </property>
+  </action>
+  <action name="actionx2">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>x&amp;2</string>
+   </property>
+   <property name="shortcut">
+    <string>Alt+Shift+2</string>
+   </property>
+  </action>
+  <action name="actionx3">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>x&amp;3</string>
+   </property>
+   <property name="shortcut">
+    <string>Alt+Shift+3</string>
+   </property>
+  </action>
+  <action name="actionx5">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>x&amp;5</string>
+   </property>
+   <property name="shortcut">
+    <string>Alt+Shift+4</string>
+   </property>
+  </action>
+  <action name="actionx8">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>x&amp;8</string>
+   </property>
+   <property name="shortcut">
+    <string>Alt+Shift+5</string>
+   </property>
+  </action>
+  <action name="actionx10">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>x&amp;10</string>
+   </property>
+   <property name="shortcut">
+    <string>Alt+Shift+6</string>
+   </property>
+  </action>
+  <action name="actionx50">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>x5&amp;0</string>
+   </property>
+   <property name="shortcut">
+    <string>Alt+Shift+7</string>
+   </property>
+  </action>
+  <action name="actionx100">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>x100</string>
+   </property>
+   <property name="shortcut">
+    <string>Alt+Shift+8</string>
+   </property>
+  </action>
+  <action name="actionRotx1">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>&amp;x1</string>
+   </property>
+   <property name="shortcut">
+    <string>Shift+1</string>
+   </property>
+  </action>
+  <action name="actionRotx5">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>x&amp;5</string>
+   </property>
+   <property name="shortcut">
+    <string>Shift+2</string>
+   </property>
+  </action>
+  <action name="actionRotx12">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>x&amp;12</string>
+   </property>
+   <property name="shortcut">
+    <string>Shift+3</string>
+   </property>
+  </action>
+  <action name="actionRotx25">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>x&amp;25</string>
+   </property>
+   <property name="shortcut">
+    <string>Shift+4</string>
+   </property>
+  </action>
+  <action name="actionRotx50">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>x5&amp;0</string>
+   </property>
+   <property name="shortcut">
+    <string>Shift+5</string>
+   </property>
+  </action>
+  <action name="actionShips">
+   <property name="text">
+    <string>&amp;Ships</string>
+   </property>
+  </action>
+  <action name="actionWings">
+   <property name="text">
+    <string>&amp;Wings</string>
+   </property>
+  </action>
+  <action name="actionObjects">
+   <property name="text">
+    <string>&amp;Objects</string>
+   </property>
+  </action>
+  <action name="actionWaypoint_Paths">
+   <property name="text">
+    <string>Waypoint &amp;Paths</string>
+   </property>
+  </action>
+  <action name="actionEvents">
+   <property name="text">
+    <string>&amp;Events</string>
+   </property>
+   <property name="shortcut">
+    <string>Shift+E</string>
+   </property>
+  </action>
+  <action name="actionTeam_Loadout">
+   <property name="text">
+    <string>&amp;Team Loadout</string>
+   </property>
+  </action>
+  <action name="actionBackground">
+   <property name="text">
+    <string>&amp;Background</string>
+   </property>
+  </action>
+  <action name="actionReinforcements">
+   <property name="text">
+    <string>&amp;Reinforcements</string>
+   </property>
+  </action>
+  <action name="actionAsteroid_Field">
+   <property name="text">
+    <string>&amp;Asteroid Field</string>
+   </property>
+  </action>
+  <action name="actionMission_Specs">
+   <property name="text">
+    <string>&amp;Mission Specs</string>
+   </property>
+  </action>
+  <action name="actionBriefing">
+   <property name="text">
+    <string>Br&amp;iefing</string>
+   </property>
+  </action>
+  <action name="actionDebriefing">
+   <property name="text">
+    <string>&amp;Debriefing</string>
+   </property>
+  </action>
+  <action name="actionCommand_Briefing">
+   <property name="text">
+    <string>&amp;Command Briefing</string>
+   </property>
+  </action>
+  <action name="actionFiction_Viewer">
+   <property name="text">
+    <string>&amp;Fiction Viewer</string>
+   </property>
+  </action>
+  <action name="actionShield_System">
+   <property name="text">
+    <string>Shie&amp;ld System</string>
+   </property>
+  </action>
+  <action name="actionSet_Global_Ship_Flags">
+   <property name="text">
+    <string>Set &amp;Global Ship Flags</string>
+   </property>
+  </action>
+  <action name="actionVoice_Manager">
+   <property name="text">
+    <string>&amp;Voice Manager</string>
+   </property>
+  </action>
+  <action name="actionCampaign">
+   <property name="text">
+    <string>Campaig&amp;n</string>
+   </property>
+  </action>
+  <action name="actionGroup_1">
+   <property name="text">
+    <string>&amp;Group 1</string>
+   </property>
+  </action>
+  <action name="actionGroup_2">
+   <property name="text">
+    <string>Group &amp;2</string>
+   </property>
+  </action>
+  <action name="actionGroup_3">
+   <property name="text">
+    <string>Group &amp;3</string>
+   </property>
+  </action>
+  <action name="actionGroup_4">
+   <property name="text">
+    <string>Group &amp;4</string>
+   </property>
+  </action>
+  <action name="actionGroup_5">
+   <property name="text">
+    <string>Group &amp;5</string>
+   </property>
+  </action>
+  <action name="actionGroup_6">
+   <property name="text">
+    <string>Group &amp;6</string>
+   </property>
+  </action>
+  <action name="actionGroup_7">
+   <property name="text">
+    <string>Group &amp;7</string>
+   </property>
+  </action>
+  <action name="actionGroup_8">
+   <property name="text">
+    <string>Group &amp;8</string>
+   </property>
+  </action>
+  <action name="actionGroup_9">
+   <property name="text">
+    <string>Group &amp;9</string>
+   </property>
+  </action>
+  <action name="actionSet_Group">
+   <property name="text">
+    <string>Set Group</string>
+   </property>
+  </action>
+  <action name="actionGroup_10">
+   <property name="text">
+    <string>&amp;Group 1</string>
+   </property>
+  </action>
+  <action name="actionGroup_11">
+   <property name="text">
+    <string>Group &amp;2</string>
+   </property>
+  </action>
+  <action name="actionGroup_12">
+   <property name="text">
+    <string>Group &amp;3</string>
+   </property>
+  </action>
+  <action name="actionGroup_13">
+   <property name="text">
+    <string>Group &amp;4</string>
+   </property>
+  </action>
+  <action name="actionGroup_14">
+   <property name="text">
+    <string>Group &amp;5</string>
+   </property>
+  </action>
+  <action name="actionGroup_15">
+   <property name="text">
+    <string>Group &amp;6</string>
+   </property>
+  </action>
+  <action name="actionGroup_16">
+   <property name="text">
+    <string>Group &amp;7</string>
+   </property>
+  </action>
+  <action name="actionGroup_17">
+   <property name="text">
+    <string>Group &amp;8</string>
+   </property>
+  </action>
+  <action name="actionGroup_18">
+   <property name="text">
+    <string>Group &amp;9</string>
+   </property>
+  </action>
+  <action name="actionLevel_Object">
+   <property name="text">
+    <string>&amp;Level Object</string>
+   </property>
+  </action>
+  <action name="actionAlign_Object">
+   <property name="text">
+    <string>&amp;Align Object</string>
+   </property>
+  </action>
+  <action name="actionMark_Wing">
+   <property name="text">
+    <string>&amp;Mark Wing</string>
+   </property>
+  </action>
+  <action name="actionControl_Object">
+   <property name="text">
+    <string>&amp;Control Object</string>
+   </property>
+  </action>
+  <action name="actionNext_Object">
+   <property name="text">
+    <string>&amp;Next Object</string>
+   </property>
+  </action>
+  <action name="actionPrev_Object">
+   <property name="text">
+    <string>&amp;Prev Object</string>
+   </property>
+  </action>
+  <action name="actionAdjust_Grid">
+   <property name="text">
+    <string>Adjust &amp;Grid</string>
+   </property>
+  </action>
+  <action name="actionNext_Subsystem">
+   <property name="text">
+    <string>Ne&amp;xt Subsystem</string>
+   </property>
+  </action>
+  <action name="actionPrev_Subsystem">
+   <property name="text">
+    <string>P&amp;rev Subsystem</string>
+   </property>
+  </action>
+  <action name="actionCancel_Subsystem">
+   <property name="text">
+    <string>Cancel S&amp;ubsystem</string>
+   </property>
+  </action>
+  <action name="actionMission_Statistics">
+   <property name="text">
+    <string>M&amp;ission Statistics</string>
+   </property>
+  </action>
+  <action name="actionError_Checker">
+   <property name="text">
+    <string>&amp;Error Checker</string>
+   </property>
+  </action>
+  <action name="actionHelp_Topics">
+   <property name="text">
+    <string>&amp;Help Topics</string>
+   </property>
+  </action>
+  <action name="actionShow_SEXP_Help">
+   <property name="text">
+    <string>&amp;Show SEXP Help</string>
+   </property>
+  </action>
+  <action name="actionAbout_FRED2">
+   <property name="text">
+    <string>&amp;About qtFRED...</string>
+   </property>
+  </action>
+  <action name="actionShow_Ship_Info">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Show Ship I&amp;nfo</string>
+   </property>
+   <property name="shortcut">
+    <string>Alt+Shift+I</string>
+   </property>
+  </action>
+  <action name="actionEmpty">
+   <property name="text">
+    <string>&amp;Empty</string>
+   </property>
+  </action>
+ </widget>
+ <layoutdefault spacing="6" margin="11"/>
+ <customwidgets>
+  <customwidget>
+   <class>fso::fred::RenderWidget</class>
+   <extends>QWidget</extends>
+   <header>ui/widgets/renderwidget.h</header>
+   <container>1</container>
+  </customwidget>
+ </customwidgets>
+ <resources>
+  <include location="../resources/resources.qrc"/>
+ </resources>
+ <connections/>
+</ui>
