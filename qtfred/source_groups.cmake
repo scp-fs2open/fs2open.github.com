@@ -78,6 +78,7 @@ add_file_folder("UI"
     ui/BriefingEditorDialog.ui
 	ui/MissionGoalsDialog.ui
 	ui/TeamLoadoutDialog.ui
+    ui/WaypointEditorDialog.ui
 )
 
 add_file_folder("Resources"
