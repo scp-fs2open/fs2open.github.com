@@ -25,7 +25,7 @@
   <property name="modal">
    <bool>true</bool>
   </property>
-  <layout class="QGridLayout" name="gridLayout_2">
+  <layout class="QGridLayout" name="mainLayout">
    <property name="horizontalSpacing">
     <number>3</number>
    </property>
@@ -46,7 +46,7 @@
      <item>
       <layout class="QFormLayout" name="displayTypeLayout">
        <property name="sizeConstraint">
-        <enum>QLayout::SetDefaultConstraint</enum>
+        <enum>QLayout::SetFixedSize</enum>
        </property>
        <property name="formAlignment">
         <set>Qt::AlignRight|Qt::AlignTop|Qt::AlignTrailing</set>
@@ -378,22 +378,15 @@
         </widget>
        </item>
        <item>
-        <widget class="QPushButton" name="okButton">
-         <property name="text">
-          <string>OK</string>
+        <widget class="QDialogButtonBox" name="buttonBox">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
          </property>
-         <property name="autoDefault">
-          <bool>false</bool>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QPushButton" name="cancelButton">
-         <property name="text">
-          <string>Cancel</string>
-         </property>
-         <property name="autoDefault">
-          <bool>false</bool>
+         <property name="standardButtons">
+          <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
          </property>
         </widget>
        </item>
