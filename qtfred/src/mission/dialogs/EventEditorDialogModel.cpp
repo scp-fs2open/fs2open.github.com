@@ -7,8 +7,8 @@ namespace fso {
 namespace fred {
 namespace dialogs {
 
-EventEditorDialogModel::EventEditorDialogModel(QObject* parent, Editor* editor, EditorViewport* viewport) :
-	AbstractDialogModel(parent, editor, viewport) {
+EventEditorDialogModel::EventEditorDialogModel(QObject* parent, EditorViewport* viewport) :
+	AbstractDialogModel(parent, viewport) {
 }
 void EventEditorDialogModel::applyChanges() {
 

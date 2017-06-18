@@ -3,6 +3,9 @@
 
 #include "FredRenderer.h"
 #include "Editor.h"
+#include "IDialogProvider.h"
+
+#include <object/object.h>
 
 namespace fso {
 namespace fred {
@@ -60,7 +63,13 @@ class EditorViewport {
 	void process_system_keys(int key);
 	void process_controls(vec3d* pos, matrix* orient, float frametime, int key, int mode = 0);
 	void level_object(matrix* orient);
+
+	void initialSetup();
  public:
+	enum {
+		DUP_DRAG_OF_WING = 2
+	};
+
 	EditorViewport(Editor* in_editor, std::unique_ptr<FredRenderer>&& in_renderer);
 
 	void needsUpdate();
@@ -77,13 +86,23 @@ class EditorViewport {
 
 	int object_check_collision(object* objp, vec3d* p0, vec3d* p1, vec3d* hitpos);
 
-	int select_object(int cx, int cy, bool Selection_lock);
+	int select_object(int cx, int cy);
 
 
 	// viewpoint -> attach camera to current ship.
 	// cur_obj -> ship viewed.
 	void level_controlled();
 	void verticalize_controlled();
+
+	void drag_rotate_save_backup();
+
+	int create_object_on_grid(int x, int y, int waypoint_instance);
+
+	int	create_object(vec3d *pos, int waypoint_instance = -1);
+
+	int drag_objects(int x, int y);
+
+	int drag_rotate_objects(int mouse_dx, int mouse_dy);
 
 	vec3d Last_eye_pos;
 
@@ -115,9 +134,27 @@ class EditorViewport {
 
 	int Control_mode = 0;
 
+	bool Selection_lock = false;
+
+	bool button_down = false;
+	int on_object = -1;
+	int Dup_drag = 0;
+
+	int cur_model_index = 0;
+
+	bool Bg_bitmap_dialog = false;
+
+	object_orient_pos rotation_backup[MAX_OBJECTS];
+
+	vec3d original_pos;
+
+	bool moved = false;
+
+	int Duped_wing;
 
 	Editor* editor = nullptr;
 	FredRenderer* renderer = nullptr;
+	IDialogProvider* dialogProvider = nullptr;
 };
 
 }

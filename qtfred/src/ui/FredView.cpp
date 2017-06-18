@@ -12,6 +12,7 @@
 #include <FredApplication.h>
 #include <io/key.h>
 #include <ui/dialogs/EventEditorDialog.h>
+#include <ui/dialogs/BriefingEditorDialog.h>
 
 #include "mission/Editor.h"
 #include "mission/management.h"
@@ -51,11 +52,6 @@ FredView::FredView(QWidget* parent) : QMainWindow(parent), ui(new Ui::FredView()
 	ui->actionUndo->setShortcuts(QKeySequence::Undo);
 	ui->actionDelete->setShortcuts(QKeySequence::Delete);
 
-	// A combo box cannot be added by the designer so we do that manually here
-	_shipClassBox.reset(new ColorComboBox());
-
-	ui->toolBar->addWidget(_shipClassBox.get());
-
 	connect(ui->actionOpen, &QAction::triggered, this, &FredView::openLoadMissionDIalog);
 	connect(ui->actionNew, &QAction::triggered, this, &FredView::newMission);
 
@@ -77,7 +73,16 @@ void FredView::setEditor(Editor* editor, EditorViewport* viewport) {
 	fred = editor;
 	_viewport = viewport;
 
+	// Let the viewport use us for displaying dialogs
+	_viewport->dialogProvider = this;
+
 	ui->centralWidget->setEditor(editor, _viewport);
+
+	// A combo box cannot be added by the designer so we do that manually here
+	// This needs to be done since the viewport pointer is not valid earlier
+	_shipClassBox.reset(new ColorComboBox(nullptr, _viewport));
+	ui->toolBar->addWidget(_shipClassBox.get());
+	connect(_shipClassBox.get(), &ColorComboBox::shipClassSelected, this, &FredView::onShipClassSelected);
 
 	connect(fred, &Editor::missionLoaded, this, &FredView::on_mission_loaded);
 
@@ -85,10 +90,13 @@ void FredView::setEditor(Editor* editor, EditorViewport* viewport) {
 	on_mission_loaded("");
 
 	syncViewOptions();
+
 	connect(this, &FredView::viewIdle, this, &FredView::onUpdateConstrains);
 	connect(this, &FredView::viewIdle, this, &FredView::onUpdateEditingMode);
 	connect(this, &FredView::viewIdle, this, &FredView::onUpdateViewSpeeds);
 	connect(this, &FredView::viewIdle, this, &FredView::onUpdateCameraControlActions);
+	connect(this, &FredView::viewIdle, this, &FredView::onUpdateSelectionLock);
+	connect(this, &FredView::viewIdle, this, &FredView::onUpdateShipClassBox);
 }
 
 void FredView::loadMissionFile(const QString& pathName) {
@@ -219,6 +227,9 @@ void FredView::syncViewOptions() {
 	connectActionToViewSetting(ui->actionShow_Background, &_viewport->view.Show_stars);
 
 	connectActionToViewSetting(ui->actionLighting_from_Suns, &_viewport->view.Lighting_on);
+
+
+	connectActionToViewSetting(ui->actionShowDistances, &_viewport->view.Show_distances);
 }
 void FredView::initializeStatusBar() {
 	_statusBarViewmode = new QLabel();
@@ -389,6 +400,9 @@ void FredView::windowActivated() {
 	key_got_focus();
 
 	_viewport->Cursor_over = -1;
+
+	// Track the last active viewport
+	fred->setActiveViewport(_viewport);
 }
 void FredView::windowDeactivated() {
 	key_lost_focus();
@@ -549,8 +563,87 @@ void FredView::keyReleaseEvent(QKeyEvent* event) {
 	_inKeyReleaseHandler = false;
 }
 void FredView::on_actionEvents_triggered(bool) {
-	auto eventEditor = new dialogs::EventEditorDialog(this, fred, _viewport);
+	auto eventEditor = new dialogs::EventEditorDialog(this, _viewport);
 	eventEditor->show();
+}
+void FredView::on_actionSelectionLock_triggered(bool enabled) {
+	_viewport->Selection_lock = enabled;
+}
+void FredView::onUpdateSelectionLock() {
+	ui->actionSelectionLock->setChecked(_viewport->Selection_lock);
+}
+void FredView::onUpdateShipClassBox() {
+	_shipClassBox->selectShipClass(_viewport->cur_model_index);
+}
+void FredView::onShipClassSelected(int ship_class) {
+	_viewport->cur_model_index = ship_class;
+}
+void FredView::on_actionBriefing_triggered(bool) {
+	auto eventEditor = new dialogs::BriefingEditorDialog(this);
+	eventEditor->show();
+}
+DialogButton FredView::showButtonDialog(DialogType type,
+										const SCP_string& title,
+										const SCP_string& message,
+										const flagset<DialogButton>& buttons) {
+	QMessageBox dialog(this);
+
+	dialog.setWindowTitle(QApplication::applicationName()); // This follows the recommendation found in the QMessageBox documentation
+	dialog.setText(QString::fromStdString(title));
+	dialog.setInformativeText(QString::fromStdString(message));
+
+	QMessageBox::StandardButtons qtButtons = 0;
+	QMessageBox::StandardButton defaultButton = QMessageBox::NoButton;
+	if (buttons[DialogButton::Yes]) {
+		qtButtons |= QMessageBox::Yes;
+		defaultButton = QMessageBox::Yes;
+	}
+	if (buttons[DialogButton::No]) {
+		qtButtons |= QMessageBox::No;
+		defaultButton = QMessageBox::No;
+	}
+	if (buttons[DialogButton::Cancel]) {
+		qtButtons |= QMessageBox::Cancel;
+		defaultButton = QMessageBox::Cancel;
+	}
+	if (buttons[DialogButton::Ok]) {
+		qtButtons |= QMessageBox::Ok;
+		defaultButton = QMessageBox::Ok;
+	}
+	dialog.setStandardButtons(qtButtons);
+	dialog.setDefaultButton(defaultButton);
+
+	QMessageBox::Icon dialogIcon = QMessageBox::Critical;
+	switch(type) {
+	case DialogType::Error:
+		dialogIcon = QMessageBox::Critical;
+		break;
+	case DialogType::Warning:
+		dialogIcon = QMessageBox::Warning;
+		break;
+	case DialogType::Information:
+		dialogIcon = QMessageBox::Information;
+		break;
+	case DialogType::Question:
+		dialogIcon = QMessageBox::Question;
+		break;
+	}
+	dialog.setIcon(dialogIcon);
+
+	auto ret = dialog.exec();
+
+	switch(ret) {
+	case QMessageBox::Yes:
+		return DialogButton::Yes;
+	case QMessageBox::No:
+		return DialogButton::No;
+	case QMessageBox::Cancel:
+		return DialogButton::Cancel;
+	case QMessageBox::Ok:
+		return DialogButton::Ok;
+	default:
+		return DialogButton::Cancel;
+	}
 }
 
 } // namespace fred

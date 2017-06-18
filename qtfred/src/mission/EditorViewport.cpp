@@ -11,11 +11,15 @@
 
 #include "EditorViewport.h"
 #include <math/fvi.h>
+#include <jumpnode/jumpnode.h>
+#include <FredApplication.h>
 
 namespace {
 
 const fix MAX_FRAMETIME = (F1_0 / 4); // Frametime gets saturated at this.
 const fix MIN_FRAMETIME = (F1_0 / 120);
+
+const float REDUCER = 100.0f;
 
 void process_movement_keys(int key, vec3d* mvec, angles* angs) {
 	int raw_key;
@@ -98,14 +102,12 @@ void align_vector_to_axis(vec3d* v) {
 			vm_vec_make(v, -1.0f, 0.0f, 0.0f);
 		else // positive x
 			vm_vec_make(v, 1.0f, 0.0f, 0.0f);
-	}
-	else if (y > z) { // y axis
+	} else if (y > z) { // y axis
 		if (v->xyz.y < 0) // negative y
 			vm_vec_make(v, 0.0f, -1.0f, 0.0f);
 		else // positive y
 			vm_vec_make(v, 0.0f, 1.0f, 0.0f);
-	}
-	else { // z axis
+	} else { // z axis
 		if (v->xyz.z < 0) // negative z
 			vm_vec_make(v, 0.0f, 0.0f, -1.0f);
 		else // positive z
@@ -133,6 +135,8 @@ EditorViewport::EditorViewport(Editor* in_editor, std::unique_ptr<FredRenderer>&
 	vm_vec_make(&Constraint, 1.0f, 0.0f, 1.0f);
 	vm_vec_make(&Anticonstraint, 0.0f, 1.0f, 0.0f);
 	resetView();
+
+	fredApp->runAfterInit([this]() { initialSetup(); });
 }
 void EditorViewport::needsUpdate() {
 	_renderer->scheduleUpdate();
@@ -149,9 +153,9 @@ void EditorViewport::resetViewPhysics() {
 	view_physics.flags |= PF_ACCELERATES | PF_SLIDE_ENABLED;
 }
 void EditorViewport::select_objects(const Marking_box& box) {
-	int	x, y, valid, icon_mode = 0;
-	vertex	v;
-	object	*ptr;
+	int x, y, valid, icon_mode = 0;
+	vertex v;
+	object* ptr;
 
 	// Copy this so we can modify it
 	auto marking_box = box;
@@ -171,47 +175,55 @@ void EditorViewport::select_objects(const Marking_box& box) {
 	ptr = GET_FIRST(&obj_used_list);
 	while (ptr != END_OF_LIST(&obj_used_list)) {
 		valid = 1;
-		if (ptr->flags[Object::Object_Flags::Hidden])
+		if (ptr->flags[Object::Object_Flags::Hidden]) {
 			valid = 0;
+		}
 
 		Assert(ptr->type != OBJ_NONE);
 		switch (ptr->type) {
 		case OBJ_WAYPOINT:
-			if (!Show_waypoints)
+			if (!Show_waypoints) {
 				valid = 0;
+			}
 			break;
 
 		case OBJ_START:
-			if (!view.Show_starts || !view.Show_ships)
+			if (!view.Show_starts || !view.Show_ships) {
 				valid = 0;
+			}
 			break;
 
 		case OBJ_SHIP:
-			if (!view.Show_ships)
+			if (!view.Show_ships) {
 				valid = 0;
+			}
 
-			if (!view.Show_iff[Ships[ptr->instance].team])
+			if (!view.Show_iff[Ships[ptr->instance].team]) {
 				valid = 0;
+			}
 
 			break;
 		}
 
 		g3_rotate_vertex(&v, &ptr->pos);
-		if (!(v.codes & CC_BEHIND) && valid)
+		if (!(v.codes & CC_BEHIND) && valid) {
 			if (!(g3_project_vertex(&v) & PF_OVERFLOW)) {
 				x = (int) v.screen.xyw.x;
 				y = (int) v.screen.xyw.y;
 
 				if (x >= marking_box.x1 && x <= marking_box.x2 && y >= marking_box.y1 && y <= marking_box.y2) {
-					if (ptr->flags[Object::Object_Flags::Marked])
+					if (ptr->flags[Object::Object_Flags::Marked]) {
 						editor->unmarkObject(OBJ_INDEX(ptr));
-					else
+					} else {
 						editor->markObject(OBJ_INDEX(ptr));
+					}
 
-					if (ptr->type == OBJ_POINT)
+					if (ptr->type == OBJ_POINT) {
 						icon_mode = 1;
+					}
 				}
 			}
+		}
 
 		ptr = GET_NEXT(ptr);
 	}
@@ -219,8 +231,9 @@ void EditorViewport::select_objects(const Marking_box& box) {
 	if (icon_mode) {
 		ptr = GET_FIRST(&obj_used_list);
 		while (ptr != END_OF_LIST(&obj_used_list)) {
-			if ((ptr->flags[Object::Object_Flags::Marked]) && (ptr->type != OBJ_POINT))
+			if ((ptr->flags[Object::Object_Flags::Marked]) && (ptr->type != OBJ_POINT)) {
 				editor->unmarkObject(OBJ_INDEX(ptr));
+			}
 
 			ptr = GET_NEXT(ptr);
 		}
@@ -271,7 +284,7 @@ void EditorViewport::move_mouse(int btn, int mdx, int mdy) {
 	}
 
 	if (btn & 2) {
-		my_pos.xyz.z += (float)dy;
+		my_pos.xyz.z += (float) dy;
 	}
 }
 
@@ -285,13 +298,12 @@ void EditorViewport::process_system_keys(int key) {
 		break;
 
 	case KEY_R: // for some stupid reason, an accelerator for 'R' doesn't work.
-				///! \todo Change editing mode to 'move and rotate'.
-				//Editing_mode = 2;
+		///! \todo Change editing mode to 'move and rotate'.
+		//Editing_mode = 2;
 		break;
 
 	case KEY_SPACEBAR:
-		///! \todo Toggle selection lock.
-		//Selection_lock = !Selection_lock;
+		Selection_lock = !Selection_lock;
 		break;
 
 	case KEY_ESC:
@@ -321,12 +333,10 @@ void EditorViewport::process_controls(vec3d* pos, matrix* orient, float frametim
 		physics_read_flying_controls(orient, &view_physics, &view_controls, frametime);
 		if (mode) {
 			physics_sim_editor(pos, orient, &view_physics, frametime);
-		}
-		else {
+		} else {
 			physics_sim(pos, orient, &view_physics, frametime);
 		}
-	}
-	else {
+	} else {
 		vec3d movement_vec, rel_movement_vec;
 		angles rotangs;
 		matrix newmat, rotmat;
@@ -360,15 +370,13 @@ bool EditorViewport::inc_mission_time() {
 	fix time_diff; // This holds the computed time difference since the last time this function was called
 	if (!lasttime) {
 		time_diff = F1_0 / 30;
-	}
-	else {
+	} else {
 		time_diff = thistime - lasttime;
 	}
 
 	if (time_diff > MAX_FRAMETIME) {
 		time_diff = MAX_FRAMETIME;
-	}
-	else if (time_diff < MIN_FRAMETIME) {
+	} else if (time_diff < MIN_FRAMETIME) {
 		return false;
 	}
 
@@ -473,8 +481,7 @@ void EditorViewport::game_do_frame(const int cur_object_index) {
 						vm_matrix_x_matrix(&tmp, &objp->orient, &view_physics.last_rotmat);
 						vm_orthogonalize_matrix(&tmp); // safety check
 						objp->orient = tmp;
-					}
-					else {
+					} else {
 						vm_vec_add2(&objp->pos, &delta_pos);
 						vm_matrix_x_matrix(&tmp, &objp->orient, &view_physics.last_rotmat);
 						objp->orient = tmp;
@@ -674,21 +681,16 @@ void EditorViewport::level_object(matrix* orient) {
 	if (u.xyz.x) // y-z plane
 	{
 		orient->vec.fvec.xyz.x = orient->vec.rvec.xyz.x = 0.0f;
-	}
-	else if (u.xyz.y) { // x-z plane
+	} else if (u.xyz.y) { // x-z plane
 		orient->vec.fvec.xyz.y = orient->vec.rvec.xyz.y = 0.0f;
-	}
-	else if (u.xyz.z) { // x-y plane
+	} else if (u.xyz.z) { // x-y plane
 		orient->vec.fvec.xyz.z = orient->vec.rvec.xyz.z = 0.0f;
 	}
 
 	vm_fix_matrix(orient);
 }
 
-int EditorViewport::object_check_collision(object* objp,
-	vec3d* p0,
-	vec3d* p1,
-	vec3d* hitpos) {
+int EditorViewport::object_check_collision(object* objp, vec3d* p0, vec3d* p1, vec3d* hitpos) {
 	mc_info mc;
 	mc_info_init(&mc);
 
@@ -720,11 +722,9 @@ int EditorViewport::object_check_collision(object* objp,
 
 	if ((view.Show_ship_models || view.Show_outlines) && (objp->type == OBJ_SHIP)) {
 		mc.model_num = Ship_info[Ships[objp->instance].ship_info_index].model_num; // Fill in the model to check
-	}
-	else if ((view.Show_ship_models || view.Show_outlines) && (objp->type == OBJ_START)) {
+	} else if ((view.Show_ship_models || view.Show_outlines) && (objp->type == OBJ_START)) {
 		mc.model_num = Ship_info[Ships[objp->instance].ship_info_index].model_num; // Fill in the model to check
-	}
-	else {
+	} else {
 		return fvi_ray_sphere(hitpos, p0, p1, &objp->pos, (objp->radius > 0.1f) ? objp->radius : LOLLIPOP_SIZE);
 	}
 
@@ -750,9 +750,7 @@ int EditorViewport::object_check_collision(object* objp,
 	return mc.num_hits;
 }
 
-int EditorViewport::select_object(int cx,
-	int cy,
-	bool Selection_lock) {
+int EditorViewport::select_object(int cx, int cy) {
 	int best = -1;
 	double dist, best_dist = 9e99;
 	vec3d p0, p1, v, hitpos;
@@ -760,17 +758,17 @@ int EditorViewport::select_object(int cx,
 
 	///! \fixme Briefing!
 #if 0
-	if (Briefing_dialog) {
-		best = Briefing_dialog->check_mouse_hit(cx, cy);
-		if (best >= 0)
-		{
-			if (Selection_lock && !(Objects[best].flags & OF_MARKED))
-			{
-				return -1;
-			}
-			return best;
-		}
-	}
+    if (Briefing_dialog) {
+        best = Briefing_dialog->check_mouse_hit(cx, cy);
+        if (best >= 0)
+        {
+            if (Selection_lock && !(Objects[best].flags & OF_MARKED))
+            {
+                return -1;
+            }
+            return best;
+        }
+    }
 #endif
 
 	/*	gr_reset_clip();
@@ -829,5 +827,399 @@ int EditorViewport::select_object(int cx,
 
 	return best;
 }
+
+void EditorViewport::drag_rotate_save_backup() {
+	object* objp;
+
+	/*
+	if (Cur_bitmap != -1)
+		bitmap_matrix_backup = Starfield_bitmaps[Cur_bitmap].m;
+		*/
+
+	objp = GET_FIRST(&obj_used_list);
+	while (objp != END_OF_LIST(&obj_used_list)) {
+		Assert(objp->type != OBJ_NONE);
+		if (objp->flags[Object::Object_Flags::Marked]) {
+			rotation_backup[OBJ_INDEX(objp)].pos = objp->pos;
+			rotation_backup[OBJ_INDEX(objp)].orient = objp->orient;
+		}
+
+		objp = GET_NEXT(objp);
+	}
+}
+
+int EditorViewport::create_object_on_grid(int x, int y, int waypoint_instance) {
+	int obj = -1;
+	float rval;
+	vec3d dir, pos;
+
+	g3_point_to_vec_delayed(&dir, x, y);
+
+	rval = fvi_ray_plane(&pos, &The_grid->center, &The_grid->gmatrix.vec.uvec, &view_pos, &dir, 0.0f);
+
+	if (rval >= 0.0f) {
+		editor->unmark_all();
+		obj = create_object(&pos, waypoint_instance);
+		if (obj >= 0) {
+			editor->markObject(obj);
+
+			// TODO: Add autosave here
+			// FREDDoc_ptr->autosave("object create");
+
+		} else if (obj == -1) {
+			dialogProvider->showButtonDialog(DialogType::Error, "Error", "Maximum ship limit reached.  Can't add any more ships.", { DialogButton::Ok });
+		}
+	}
+
+	return obj;
+}
+int EditorViewport::create_object(vec3d* pos, int waypoint_instance) {
+
+	int obj, n;
+
+	if (cur_model_index == editor->Id_select_type_waypoint) {
+		obj = editor->create_waypoint(pos, waypoint_instance);
+	} else if (cur_model_index == editor->Id_select_type_jump_node) {
+		CJumpNode jnp(pos);
+		obj = jnp.GetSCPObjectNumber();
+		Jump_nodes.push_back(std::move(jnp));
+	} else if(Ship_info[cur_model_index].flags[Ship::Info_Flags::No_fred]){
+		obj = -1;
+	} else {  // creating a ship
+		obj = editor->create_ship(NULL, pos, cur_model_index);
+		if (obj == -1)
+			return -1;
+
+		n = Objects[obj].instance;
+		Ships[n].arrival_cue = alloc_sexp("true", SEXP_ATOM, SEXP_ATOM_OPERATOR, -1, -1);
+		Ships[n].departure_cue = alloc_sexp("false", SEXP_ATOM, SEXP_ATOM_OPERATOR, -1, -1);
+		Ships[n].cargo1 = 0;
+	}
+
+	if (obj < 0)
+		return obj;
+
+	obj_merge_created_list();
+
+	needsUpdate();
+	return obj;
+}
+void EditorViewport::initialSetup() {
+	cur_model_index = get_default_player_ship_index();
+}
+
+//	If cur_object_index references a valid object, drag it from its current
+//	location to the new cursor location specified by "point".
+//	It is dragged relative to the main grid.  Its y coordinate is not changed.
+//	Return value: 0/1 = didn't/did move object all the way to goal.
+int EditorViewport::drag_objects(int x, int y)
+{
+	int z, cobj, flag, rval = 1;
+	float r;
+	float	distance_moved = 0.0f;
+	vec3d cursor_dir, int_pnt;
+	vec3d movement_vector;
+	vec3d obj;
+	vec3d vec1, vec2;
+	object *objp, *ptr;
+	// starfield_bitmaps *bmp;
+
+	/*
+	if (Bg_bitmap_dialog) {
+		if (Cur_bitmap < 0)
+			return -1;
+
+		bmp = &Starfield_bitmaps[Cur_bitmap];
+		if (Single_axis_constraint && Constraint.z) {
+			bmp->dist *= 1.0f + mouse_dx / -800.0f;
+			calculate_bitmap_points(bmp, 0.0f);
+
+		} else {
+			g3_point_to_vec_delayed(&bmp->m.fvec, marking_box.x2, marking_box.y2);
+			vm_orthogonalize_matrix(&bmp->m);
+			calculate_bitmap_points(bmp, 0.0f);
+		}
+		return rval;
+	}
+	*/
+
+	if (!query_valid_object(editor->getCurrentObject()))
+		return -1;
+
+	if (Dup_drag == 1
+		//&& (Briefing_dialog) TODO
+		) {
+		Dup_drag = 0;
+	}
+
+	if (Dup_drag == 1) {
+		editor->dup_object(NULL);  // reset waypoint list
+		cobj = Duped_wing = -1;
+		flag = 0;
+		objp = GET_FIRST(&obj_used_list);
+		while (objp != END_OF_LIST(&obj_used_list))	{
+			Assert(objp->type != OBJ_NONE);
+			if (objp->flags[Object::Object_Flags::Marked]) {
+				if ((objp->type == OBJ_SHIP) || (objp->type == OBJ_START)) {
+					z = Ships[objp->instance].wingnum;
+					if (!flag)
+						Duped_wing = z;
+					else if (Duped_wing != z)
+						Duped_wing = -1;
+
+				} else
+					Duped_wing = -1;
+
+				flag = 1;
+				z = editor->dup_object(objp);
+				if (z == -1) {
+					cobj = -1;
+					break;
+				}
+
+				if (editor->getCurrentObject() == OBJ_INDEX(objp) )
+					cobj = z;
+			}
+
+			objp = GET_NEXT(objp);
+		}
+
+		obj_merge_created_list();
+		if (cobj == -1) {
+			objp = GET_FIRST(&obj_used_list);
+			while (objp != END_OF_LIST(&obj_used_list))	{
+				ptr = GET_NEXT(objp);
+				if (objp->flags [Object::Object_Flags::Temp_marked])
+					editor->delete_object(OBJ_INDEX(objp));
+
+				objp = ptr;
+			}
+
+			button_down = 0;
+			return -1;
+		}
+
+		editor->unmark_all();
+
+		objp = GET_FIRST(&obj_used_list);
+		while (objp != END_OF_LIST(&obj_used_list))	{
+			if (objp->flags [Object::Object_Flags::Temp_marked]) {
+				objp->flags.remove(Object::Object_Flags::Temp_marked);
+				editor->markObject(OBJ_INDEX(objp));
+			}
+
+			objp = GET_NEXT(objp);
+		}
+
+		editor->selectObject(cobj);
+		if (Duped_wing != -1)
+			Dup_drag = DUP_DRAG_OF_WING;  // indication for later that we duped objects in a wing
+		else
+			Dup_drag = 0;
+
+		drag_rotate_save_backup();
+
+		editor->missionChanged();
+	}
+
+	objp = &Objects[editor->getCurrentObject()];
+	Assert(objp->type != OBJ_NONE);
+	obj = int_pnt = objp->pos;
+
+	//	Get 3d vector specified by mouse cursor location.
+	g3_point_to_vec_delayed(&cursor_dir, x, y);
+	if (Single_axis_constraint)	{
+//		if (fvi_ray_plane(&int_pnt, &obj, &view_orient.fvec, &view_pos, &cursor_dir, 0.0f) >= 0.0f )	{
+//			vm_vec_add(&p1, &obj, &Constraint);
+//			find_nearest_point_on_line(&nearest_point, &obj, &p1, &int_pnt);
+//			int_pnt = nearest_point;
+//			distance_moved = vm_vec_dist(&obj, &int_pnt);
+//		}
+
+		vec3d tmpAnticonstraint = Anticonstraint;
+		vec3d tmpObject = obj;
+
+		tmpAnticonstraint.xyz.x = 0.0f;
+		r = fvi_ray_plane(&int_pnt, &tmpObject, &tmpAnticonstraint, &view_pos, &cursor_dir, 0.0f);
+
+		//	If intersected behind viewer, don't move.  Too confusing, not what user wants.
+		vm_vec_sub(&vec1, &int_pnt, &view_pos);
+		vm_vec_sub(&vec2, &obj, &view_pos);
+		if ((r>=0.0f) && (vm_vec_dot(&vec1, &vec2) >= 0.0f))	{
+			vec3d tmp1;
+			vm_vec_sub( &tmp1, &int_pnt, &obj );
+			tmp1.xyz.x *= Constraint.xyz.x;
+			tmp1.xyz.y *= Constraint.xyz.y;
+			tmp1.xyz.z *= Constraint.xyz.z;
+			vm_vec_add( &int_pnt, &obj, &tmp1 );
+
+			distance_moved = vm_vec_dist(&obj, &int_pnt);
+		}
+
+
+	} else {  // Move in x-z plane, defined by grid.  Preserve height.
+		r = fvi_ray_plane(&int_pnt, &obj, &Anticonstraint, &view_pos, &cursor_dir, 0.0f);
+
+		//	If intersected behind viewer, don't move.  Too confusing, not what user wants.
+		vm_vec_sub(&vec1, &int_pnt, &view_pos);
+		vm_vec_sub(&vec2, &obj, &view_pos);
+		if ((r>=0.0f) && (vm_vec_dot(&vec1, &vec2) >= 0.0f))
+			distance_moved = vm_vec_dist(&obj, &int_pnt);
+	}
+
+	//	If moved too far, then move max distance along vector.
+	vm_vec_sub(&movement_vector, &int_pnt, &obj);
+/*	if (distance_moved > MAX_MOVE_DISTANCE)	{
+		vm_vec_normalize(&movement_vector);
+		vm_vec_scale(&movement_vector, MAX_MOVE_DISTANCE);
+	} */
+
+	if (distance_moved) {
+		objp = GET_FIRST(&obj_used_list);
+		while (objp != END_OF_LIST(&obj_used_list))	{
+			Assert(objp->type != OBJ_NONE);
+			if (objp->flags[Object::Object_Flags::Marked]) {
+				vm_vec_add(&objp->pos, &objp->pos, &movement_vector);
+				if (objp->type == OBJ_WAYPOINT) {
+					waypoint *wpt = find_waypoint_with_instance(objp->instance);
+					Assert(wpt != NULL);
+					wpt->set_pos(&objp->pos);
+				}
+			}
+
+			objp = GET_NEXT(objp);
+		}
+
+		objp = GET_FIRST(&obj_used_list);
+		while (objp != END_OF_LIST(&obj_used_list)) {
+			if (objp->flags[Object::Object_Flags::Marked])
+				object_moved(objp);
+
+			objp = GET_NEXT(objp);
+		}
+	}
+
+	/*
+	TODO: Implement brieding dialog
+	if (Briefing_dialog)
+		Briefing_dialog->update_positions();
+	 */
+
+	editor->missionChanged();
+	return rval;
+}
+int EditorViewport::drag_rotate_objects(int mouse_dx, int mouse_dy) {
+	int rval = 1;
+	vec3d int_pnt, obj;
+	angles a;
+	matrix leader_orient, leader_transpose, tmp, newmat, rotmat;
+	object *leader, *objp;
+	// starfield_bitmaps *bmp;
+
+	needsUpdate();
+	/*
+    if (Bg_bitmap_dialog) {
+        if (Cur_bitmap < 0)
+            return -1;
+
+        bmp = &Starfield_bitmaps[Cur_bitmap];
+        calculate_bitmap_points(bmp, mouse_dx / -300.0f);
+        return rval;
+    }
+    */
+
+	if (!query_valid_object(editor->getCurrentObject())){
+		return -1;
+	}
+
+	objp = &Objects[editor->getCurrentObject()];
+	Assert(objp->type != OBJ_NONE);
+	obj = int_pnt = objp->pos;
+
+	memset(&a, 0, sizeof(angles));
+	if (Single_axis_constraint) {
+		if (Constraint.xyz.x)
+			a.p = mouse_dy / REDUCER;
+		else if (Constraint.xyz.y)
+			a.h = mouse_dx / REDUCER;
+		else if (Constraint.xyz.z)
+			a.b = -mouse_dx / REDUCER;
+
+	} else {
+		if (!Constraint.xyz.x) {				// yz
+			a.b = -mouse_dx / REDUCER;
+			a.h = mouse_dy / REDUCER;
+		} else if (!Constraint.xyz.y) {	// xz
+			a.p = mouse_dy / REDUCER;
+			a.b = -mouse_dx / REDUCER;
+		} else if (!Constraint.xyz.z) {	// xy
+			a.p = mouse_dy / REDUCER;
+			a.h = mouse_dx / REDUCER;
+		}
+	}
+
+	leader = &Objects[editor->getCurrentObject()];
+	leader_orient = leader->orient;			// save original orientation
+	vm_copy_transpose(&leader_transpose, &leader_orient);
+
+	vm_angles_2_matrix(&rotmat, &a);
+	vm_matrix_x_matrix(&newmat, &leader->orient, &rotmat);
+	leader->orient = newmat;
+
+	objp = GET_FIRST(&obj_used_list);
+	while (objp != END_OF_LIST(&obj_used_list))			{
+		Assert(objp->type != OBJ_NONE);
+		if ((objp->flags[Object::Object_Flags::Marked]) && (editor->getCurrentObject() != OBJ_INDEX(objp) )) {
+			if (Group_rotate) {
+				matrix rot_trans;
+				vec3d tmpv1, tmpv2;
+
+				// change rotation matrix to rotate in opposite direction.  This rotation
+				// matrix is what the leader ship has rotated by.
+				vm_copy_transpose(&rot_trans, &rotmat);
+
+				// get point relative to our point of rotation (make POR the origin).
+				vm_vec_sub(&tmpv1, &objp->pos, &leader->pos);
+
+				// convert point from real-world coordinates to leader's relative coordinate
+				// system (z=forward vec, y=up vec, x=right vec
+				vm_vec_rotate(&tmpv2, &tmpv1, &leader_orient);
+
+				// now rotate the point by the transpose from above.
+				vm_vec_rotate(&tmpv1, &tmpv2, &rot_trans);
+
+				// convert point back into real-world coordinates
+				vm_vec_rotate(&tmpv2, &tmpv1, &leader_transpose);
+
+				// and move origin back to real-world origin.  Object is now at its correct
+				// position.
+				vm_vec_add(&objp->pos, &leader->pos, &tmpv2);
+
+				// Now fix the object's orientation to what it should be.
+				vm_matrix_x_matrix(&tmp, &objp->orient, &rotmat);
+				vm_orthogonalize_matrix(&tmp);  // safety check
+				objp->orient = tmp;
+
+			} else {
+				vm_matrix_x_matrix(&tmp, &objp->orient, &rotmat);
+				objp->orient = tmp;
+			}
+		}
+
+		objp = GET_NEXT(objp);
+	}
+
+	objp = GET_FIRST(&obj_used_list);
+	while (objp != END_OF_LIST(&obj_used_list)) {
+		if (objp->flags[Object::Object_Flags::Marked])
+			object_moved(objp);
+
+		objp = GET_NEXT(objp);
+	}
+
+	editor->missionChanged();
+	return rval;
+}
+
 }
 }

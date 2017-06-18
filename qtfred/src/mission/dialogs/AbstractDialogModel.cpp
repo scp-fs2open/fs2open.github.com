@@ -9,9 +9,8 @@ namespace dialogs {
 
 
 AbstractDialogModel::AbstractDialogModel(QObject* parent,
-										 Editor* editor,
 										 EditorViewport* viewport) :
-	QObject(parent), _editor(editor), _viewport(viewport) {
+	QObject(parent), _editor(viewport->editor), _viewport(viewport) {
 }
 
 }

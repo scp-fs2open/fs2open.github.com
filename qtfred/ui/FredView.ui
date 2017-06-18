@@ -537,6 +537,9 @@
    </property>
   </action>
   <action name="actionShowDistances">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
    <property name="icon">
     <iconset resource="../resources/resources.qrc">
      <normaloff>:/images/showdist.png</normaloff>:/images/showdist.png</iconset>
@@ -1072,10 +1075,16 @@
    <property name="text">
     <string>Br&amp;iefing</string>
    </property>
+   <property name="shortcut">
+    <string>Shift+B</string>
+   </property>
   </action>
   <action name="actionDebriefing">
    <property name="text">
     <string>&amp;Debriefing</string>
+   </property>
+   <property name="shortcut">
+    <string/>
    </property>
   </action>
   <action name="actionCommand_Briefing">

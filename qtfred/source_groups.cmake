@@ -33,11 +33,11 @@ add_file_folder("Source/Mission"
     src/mission/EditorViewport.h
     src/mission/FredRenderer.cpp
     src/mission/FredRenderer.h
+    src/mission/IDialogProvider.h
     src/mission/management.cpp
     src/mission/management.h
     src/mission/object.cpp
     src/mission/object.h
-    src/mission/wing.h
 )
 
 add_file_folder("Source/Mission/Dialogs"
