@@ -2857,7 +2857,7 @@ int stuff_int_list(int *ilp, int max_ints, int lookup_type)
 					break;
 
 				default:
-					Error(LOCATION,"Unknown lookup_type in stuff_int_list");
+					Error(LOCATION,"Unknown lookup_type %d in stuff_int_list", lookup_type);
 					break;
 			}
 
@@ -3079,7 +3079,7 @@ void mark_int_list(int *ilp, int max_ints, int lookup_type)
 					break;
 
 				default:
-					Error(LOCATION,"Unknown lookup_type in stuff_int_list");
+					Error(LOCATION,"Unknown lookup_type %d in mark_int_list", lookup_type);
 					break;
 			}
 
