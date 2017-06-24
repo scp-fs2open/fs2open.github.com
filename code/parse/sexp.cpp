@@ -15020,7 +15020,7 @@ int sexp_targeted(int node)
 	}
 
 	z = ship_name_lookup(CTEXT(node), 1);
-	if ((z < 0) || !Player_ai || (Ships[z].objnum != Player_ai->target_objnum)){
+	if ((z < 0) || !Player_ai || (Ships[z].objnum != Players_target)){
 		return SEXP_FALSE;
 	}
 
@@ -15031,7 +15031,7 @@ int sexp_targeted(int node)
 		}
 
 		if (CDR(CDR(node)) >= 0) {
-			ptr = Player_ai->targeted_subsys;
+			ptr = Players_targeted_subsys;
 			if (!ptr || subsystem_stricmp(ptr->system_info->subobj_name, CTEXT(CDR(CDR(node))))){
 				return SEXP_FALSE;
 			}
@@ -15047,7 +15047,7 @@ int sexp_node_targeted(int node)
 
 	CJumpNode *jnp = jumpnode_get_by_name(CTEXT(node));
 
-	if (jnp==NULL || !Player_ai || (jnp->GetSCPObjectNumber() != Player_ai->target_objnum)){
+	if (jnp==NULL || !Player_ai || (jnp->GetSCPObjectNumber() != Players_target)){
 		return SEXP_FALSE;
 	}
 
