@@ -15031,7 +15031,7 @@ int sexp_targeted(int node)
 		}
 
 		if (CDR(CDR(node)) >= 0) {
-			ptr = Player_ai->targeted_subsys;
+			ptr = Players_targeted_subsys;
 			if (!ptr || subsystem_stricmp(ptr->system_info->subobj_name, CTEXT(CDR(CDR(node))))){
 				return SEXP_FALSE;
 			}
