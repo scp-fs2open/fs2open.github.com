@@ -1,5 +1,5 @@
 
-set(PREBUILT_VERSION_NAME "7775d50e9b162b9668160c4c0e7c8b9b4abeeb3c")
+set(PREBUILT_VERSION_NAME "d08440c3a886e1cd24357ee42cfbc7d25f035336")
 
 set(FSO_PREBUILT_OVERRIDE "" CACHE PATH "Path to the prebuilt binaries, if empty the binaries will be downloaded.")
 set(PREBUILT_LIB_DIR "${CMAKE_CURRENT_BINARY_DIR}/prebuilt")
@@ -20,20 +20,20 @@ function(get_prebuilt_path OUT_VAR)
     endif()
     
     set(PREBUILT_PATH)
-    set(FILENAME "bin-${PREBUILT_VERSION_NAME}")
+    set(TAG_NAME "bin-${PREBUILT_VERSION_NAME}")
     if(PLATFORM_WINDOWS)
         if (IS_64BIT)
-            set(FILENAME "${FILENAME}-win64.zip")
+            set(FILENAME "bin-win64.zip")
         else()
-            set(FILENAME "${FILENAME}-win32.zip")
+            set(FILENAME "bin-win32.zip")
         endif()
     elseif(PLATFORM_MAC)
-        set(FILENAME "${FILENAME}-mac.tar.gz")
+        set(FILENAME "bin-mac.tar.gz")
     else()
         # Use Linux binaries...
-        set(FILENAME "${FILENAME}-linux.tar.gz")
+        set(FILENAME "bin-linux.tar.gz")
     endif()
-    set(DOWNLOAD_URL "https://bintray.com/scp-fs2open/FSO/download_file?file_path=${FILENAME}")
+    set(DOWNLOAD_URL "https://github.com/scp-fs2open/scp-prebuilt/releases/download/${TAG_NAME}/${FILENAME}")
     set(DOWNLOAD_FILE "${CURRENT_ROOT}/${FILENAME}")
     
     message(STATUS "Downloading prebuilt libraries from \"${DOWNLOAD_URL}\"")
