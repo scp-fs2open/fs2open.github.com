@@ -3438,7 +3438,7 @@ char *split_str_once(char *src, int max_pixel_w)
 //	returns:			number of lines src is broken into
 //						-1 is returned when an error occurs
 //
-int split_str(const char *src, int max_pixel_w, int *n_chars, const char **p_str, int max_lines, char ignore_char)
+int split_str(const char *src, int max_pixel_w, int *n_chars, const char **p_str, int max_lines, char ignore_char, bool strip_leading_whitespace)
 {
 	char buffer[SPLIT_STR_BUFFER_SIZE];
 	const char *breakpoint = NULL;
@@ -3457,7 +3457,7 @@ int split_str(const char *src, int max_pixel_w, int *n_chars, const char **p_str
 	ignore_until_whitespace = 0;
 
 	// get rid of any leading whitespace
-	while (is_white_space(*src))
+	while (strip_leading_whitespace && is_white_space(*src))
 		src++;
 
 	new_line = 1;
@@ -3472,7 +3472,7 @@ int split_str(const char *src, int max_pixel_w, int *n_chars, const char **p_str
 		// starting a new line of text, init stuff for that
 		if (new_line) {
 			p_str[line_num] = NULL;
-			if (is_gray_space(*src))
+			if (strip_leading_whitespace && is_gray_space(*src))
 				continue;
 
 			p_str[line_num] = src;
@@ -3560,7 +3560,7 @@ int split_str(const char *src, int max_pixel_w, int *n_chars, const char **p_str
 	return line_num;
 }
 
-int split_str(const char *src, int max_pixel_w, SCP_vector<int> &n_chars, SCP_vector<const char*> &p_str, char ignore_char)
+int split_str(const char *src, int max_pixel_w, SCP_vector<int> &n_chars, SCP_vector<const char*> &p_str, char ignore_char, bool strip_leading_whitespace)
 {
 	char buffer[SPLIT_STR_BUFFER_SIZE];
 	const char *breakpoint = NULL;
@@ -3574,7 +3574,7 @@ int split_str(const char *src, int max_pixel_w, SCP_vector<int> &n_chars, SCP_ve
 	memset(buffer, 0, SPLIT_STR_BUFFER_SIZE);
 
 	// get rid of any leading whitespace
-	while (is_white_space(*src))
+	while (strip_leading_whitespace && is_white_space(*src))
 		src++;
 
 	p_str.clear();
@@ -3585,7 +3585,7 @@ int split_str(const char *src, int max_pixel_w, SCP_vector<int> &n_chars, SCP_ve
 
 		// starting a new line of text, init stuff for that
 		if (new_line) {
-			if (is_gray_space(*src))
+			if (strip_leading_whitespace && is_gray_space(*src))
 				continue;
 
 			p_str.push_back(src);
