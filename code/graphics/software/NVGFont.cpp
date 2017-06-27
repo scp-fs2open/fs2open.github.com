@@ -189,6 +189,13 @@ namespace font
 
 						int charWidth;
 						int spacing;
+
+						if (m_specialCharacters == nullptr) {
+							Error(LOCATION,
+								  "Font %s has no special characters font! This is usually caused by ignoring a font table parsing warning.",
+								  getName().c_str());
+						}
+
 						get_char_width_old(m_specialCharacters, static_cast<ubyte>(*s), '\0', &charWidth, &spacing);
 
 						lineWidth += i2fl(spacing);

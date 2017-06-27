@@ -188,7 +188,16 @@ namespace
 		else
 		{
 			fo::font* fontData = FontManager::loadFontOld("font01.vf");
-			nvgFont->setSpecialCharacterFont(fontData);
+
+			if (fontData == nullptr) {
+				error_display(0,
+							  "Failed to load default font \"%s\" for special characters of font \"%s\"! "
+								  "This font is required for rendering special characters and will cause an error later.",
+							  "font01.vf",
+							  fontFilename.c_str());
+			} else {
+				nvgFont->setSpecialCharacterFont(fontData);
+			}
 		}
 
 		nvgFont->setName(fontStr);
