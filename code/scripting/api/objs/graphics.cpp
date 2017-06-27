@@ -1084,8 +1084,8 @@ ADE_FUNC(drawString, l_Graphics, "string Message, [number X1, number Y1, number 
 	}
 	else
 	{
-		int linelengths[MAX_TEXT_LINES];
-		const char *linestarts[MAX_TEXT_LINES];
+		SCP_vector<int> linelengths;
+		SCP_vector<const char*> linestarts;
 
 		if (y2 >= 0 && y2 < y)
 		{
@@ -1097,7 +1097,7 @@ ADE_FUNC(drawString, l_Graphics, "string Message, [number X1, number Y1, number 
 			y2 = temp;
 		}
 
-		num_lines = split_str(s, x2-x, linelengths, linestarts, MAX_TEXT_LINES);
+		num_lines = split_str(s, x2-x, linelengths, linestarts, -1, false);
 
 		//Make sure we don't go over size
 		int line_ht = gr_get_font_height();
