@@ -13,6 +13,7 @@
 #include <io/key.h>
 #include <ui/dialogs/EventEditorDialog.h>
 #include <ui/dialogs/BriefingEditorDialog.h>
+#include <ui/dialogs/WaypointEditorDialog.h>
 
 #include "mission/Editor.h"
 #include "mission/management.h"
@@ -403,6 +404,8 @@ void FredView::windowActivated() {
 
 	// Track the last active viewport
 	fred->setActiveViewport(_viewport);
+
+	viewWindowActivated();
 }
 void FredView::windowDeactivated() {
 	key_lost_focus();
@@ -526,7 +529,7 @@ void FredView::on_actionCamera_triggered(bool enabled) {
 void FredView::on_actionCurrent_Ship_triggered(bool enabled) {
 	if (enabled) {
 		_viewport->viewpoint = 1;
-		_viewport->view_obj = fred->getCurrentObject();
+		_viewport->view_obj = fred->currentObject;
 
 		_viewport->needsUpdate();
 	}
@@ -581,6 +584,10 @@ void FredView::onShipClassSelected(int ship_class) {
 void FredView::on_actionBriefing_triggered(bool) {
 	auto eventEditor = new dialogs::BriefingEditorDialog(this);
 	eventEditor->show();
+}
+void FredView::on_actionWaypoint_Paths_triggered(bool) {
+	auto editorDialog = new dialogs::WaypointEditorDialog(this, _viewport);
+	editorDialog->show();
 }
 DialogButton FredView::showButtonDialog(DialogType type,
 										const SCP_string& title,

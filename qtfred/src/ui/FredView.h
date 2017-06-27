@@ -81,6 +81,7 @@ private slots:
 
 	void on_actionEvents_triggered(bool);
 	void on_actionBriefing_triggered(bool);
+	void on_actionWaypoint_Paths_triggered(bool);
 
 	void on_actionSelectionLock_triggered(bool enabled);
 signals:
@@ -89,6 +90,10 @@ signals:
 	 */
 	void viewIdle();
 
+	/**
+	 * @brief This is emitted when the view window is activated after being deactivated
+	 */
+	void viewWindowActivated();
 protected:
 	bool event(QEvent* event) override;
 

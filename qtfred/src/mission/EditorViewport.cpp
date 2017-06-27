@@ -304,6 +304,7 @@ void EditorViewport::process_system_keys(int key) {
 
 	case KEY_SPACEBAR:
 		Selection_lock = !Selection_lock;
+		dialogProvider->showButtonDialog(DialogType::Error, "Title test", "Message", { DialogButton::Yes, DialogButton::No, DialogButton::Cancel });
 		break;
 
 	case KEY_ESC:
@@ -943,7 +944,7 @@ int EditorViewport::drag_objects(int x, int y)
 	}
 	*/
 
-	if (!query_valid_object(editor->getCurrentObject()))
+	if (!query_valid_object(editor->currentObject))
 		return -1;
 
 	if (Dup_drag == 1
@@ -977,7 +978,7 @@ int EditorViewport::drag_objects(int x, int y)
 					break;
 				}
 
-				if (editor->getCurrentObject() == OBJ_INDEX(objp) )
+				if (editor->currentObject == OBJ_INDEX(objp) )
 					cobj = z;
 			}
 
@@ -1022,7 +1023,7 @@ int EditorViewport::drag_objects(int x, int y)
 		editor->missionChanged();
 	}
 
-	objp = &Objects[editor->getCurrentObject()];
+	objp = &Objects[editor->currentObject];
 	Assert(objp->type != OBJ_NONE);
 	obj = int_pnt = objp->pos;
 
@@ -1128,11 +1129,11 @@ int EditorViewport::drag_rotate_objects(int mouse_dx, int mouse_dy) {
     }
     */
 
-	if (!query_valid_object(editor->getCurrentObject())){
+	if (!query_valid_object(editor->currentObject)){
 		return -1;
 	}
 
-	objp = &Objects[editor->getCurrentObject()];
+	objp = &Objects[editor->currentObject];
 	Assert(objp->type != OBJ_NONE);
 	obj = int_pnt = objp->pos;
 
@@ -1158,7 +1159,7 @@ int EditorViewport::drag_rotate_objects(int mouse_dx, int mouse_dy) {
 		}
 	}
 
-	leader = &Objects[editor->getCurrentObject()];
+	leader = &Objects[editor->currentObject];
 	leader_orient = leader->orient;			// save original orientation
 	vm_copy_transpose(&leader_transpose, &leader_orient);
 
@@ -1169,7 +1170,7 @@ int EditorViewport::drag_rotate_objects(int mouse_dx, int mouse_dy) {
 	objp = GET_FIRST(&obj_used_list);
 	while (objp != END_OF_LIST(&obj_used_list))			{
 		Assert(objp->type != OBJ_NONE);
-		if ((objp->flags[Object::Object_Flags::Marked]) && (editor->getCurrentObject() != OBJ_INDEX(objp) )) {
+		if ((objp->flags[Object::Object_Flags::Marked]) && (editor->currentObject != OBJ_INDEX(objp) )) {
 			if (Group_rotate) {
 				matrix rot_trans;
 				vec3d tmpv1, tmpv2;

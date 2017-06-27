@@ -130,6 +130,10 @@ void Editor::unmark_all() {
 	if (numMarked > 0) {
 		for (auto i = 0; i < MAX_OBJECTS; i++) {
 			Objects[i].flags.remove(Object::Object_Flags::Marked);
+			if (Objects[i].type != OBJ_NONE) {
+				// Only emit signals for valid objects
+				objectMarkingChanged(i, false);
+			}
 		}
 
 		numMarked = 0;
@@ -142,6 +146,7 @@ void Editor::markObject(int obj) {
 	Assert(query_valid_object(obj));
 	if (!(Objects[obj].flags[Object::Object_Flags::Marked])) {
 		Objects[obj].flags.set(Object::Object_Flags::Marked);  // set as marked
+		objectMarkingChanged(obj, true);
 		numMarked++;
 
 		if (currentObject == -1) {
@@ -155,6 +160,7 @@ void Editor::unmarkObject(int obj) {
 	Assert(query_valid_object(obj));
 	if (Objects[obj].flags[Object::Object_Flags::Marked]) {
 		Objects[obj].flags.remove(Object::Object_Flags::Marked);
+		objectMarkingChanged(obj, false);
 		numMarked--;
 		if (obj == currentObject) {  // need to find a new index
 			object* ptr;
@@ -172,7 +178,7 @@ void Editor::unmarkObject(int obj) {
 			setupCurrentObjectIndices(-1);  // can't find one; nothing is marked.
 		}
 
-		updateAllViewports();
+		missionChanged();
 	}
 }
 
@@ -380,16 +386,40 @@ void Editor::initialSetup() {
 }
 
 void Editor::setupCurrentObjectIndices(int selectedObj) {
-	// TODO: Handle other object types
-
 	if (query_valid_object(selectedObj)) {
 		currentObject = selectedObj;
 
+		cur_ship = cur_wing = -1;
+		cur_waypoint_list = NULL;
+		cur_waypoint = NULL;
+
+		if ((Objects[selectedObj].type == OBJ_SHIP) || (Objects[selectedObj].type == OBJ_START)) {
+			cur_ship = Objects[selectedObj].instance;
+			cur_wing = Ships[cur_ship].wingnum;
+			if (cur_wing >= 0) {
+				for (auto i = 0; i < Wings[cur_wing].wave_count; i++) {
+					if (wing_objects[cur_wing][i] == currentObject) {
+						cur_wing_index = i;
+						break;
+					}
+				}
+			}
+		} else if (Objects[selectedObj].type == OBJ_WAYPOINT) {
+			cur_waypoint = find_waypoint_with_instance(Objects[selectedObj].instance);
+			Assert(cur_waypoint != NULL);
+			cur_waypoint_list = cur_waypoint->get_parent_list();
+		}
+
+		currentObjectChanged(currentObject);
 		return;
 	}
 
 	if (selectedObj == -1 || !Num_objects) {
-		currentObject = -1;
+		currentObject = cur_ship = cur_wing = -1;
+		cur_waypoint_list = NULL;
+		cur_waypoint = NULL;
+
+		currentObjectChanged(currentObject);
 		return;
 	}
 
@@ -406,8 +436,28 @@ void Editor::setupCurrentObjectIndices(int selectedObj) {
 
 	Assert(ptr != END_OF_LIST(&obj_used_list));
 	currentObject = OBJ_INDEX(ptr);
-
 	Assert(ptr->type != OBJ_NONE);
+
+	cur_ship = cur_wing = -1;
+	cur_waypoint_list = NULL;
+	cur_waypoint = NULL;
+
+	if (ptr->type == OBJ_SHIP) {
+		cur_ship = ptr->instance;
+		cur_wing = Ships[cur_ship].wingnum;
+		for (auto i=0; i<Wings[cur_wing].wave_count; i++) {
+			if (wing_objects[cur_wing][i] == currentObject) {
+				cur_wing_index = i;
+				break;
+			}
+		}
+	} else if (ptr->type == OBJ_WAYPOINT) {
+		cur_waypoint = find_waypoint_with_instance(ptr->instance);
+		Assert(cur_waypoint != NULL);
+		cur_waypoint_list = cur_waypoint->get_parent_list();
+	}
+
+	currentObjectChanged(currentObject);
 }
 void Editor::selectObject(int objId) {
 	if (objId < 0) {
@@ -549,9 +599,6 @@ void Editor::fix_ship_name(int ship) {
 void Editor::createNewMission() {
 	clearMission();
 	create_player(0, &vmd_zero_vector, &vmd_identity_matrix);
-}
-int Editor::getCurrentObject() {
-	return currentObject;
 }
 void Editor::hideMarkedObjects() {
 	object* ptr;

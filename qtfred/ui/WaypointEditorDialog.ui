@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>fso::fred::dialogs:WaypointDialog</class>
- <widget class="QDialog" name="fso::fred::dialogs:WaypointDialog">
+ <class>fso::fred::dialogs::WaypointEditorDialog</class>
+ <widget class="QDialog" name="fso::fred::dialogs::WaypointEditorDialog">
   <property name="geometry">
    <rect>
     <x>0</x>
