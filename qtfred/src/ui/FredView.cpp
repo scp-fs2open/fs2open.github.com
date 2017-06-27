@@ -275,7 +275,29 @@ void FredView::connectActionToViewSetting(QAction* option, bool* destination) {
 }
 
 void FredView::showContextMenu(const QPoint& globalPos) {
-	_viewPopup->exec(globalPos);
+	auto localPos = ui->centralWidget->mapFromGlobal(globalPos);
+
+	auto obj = _viewport->select_object(localPos.x(), localPos.y());
+	if (obj >= 0) {
+		_currentPopupObject = obj;
+
+		// There is an object under the cursor
+		SCP_string objName;
+		if (fred->getNumMarked() > 1) {
+			objName = "Marked Ships";
+		} else {
+			objName = object_name(obj);
+		}
+
+		_editObjectAction->setText(tr("Edit %1").arg(objName.c_str()));
+
+		_editPopup->exec(globalPos);
+
+		_currentPopupObject = obj;
+	} else {
+		// Nothing is here...
+		_viewPopup->exec(globalPos);
+	}
 }
 void FredView::initializePopupMenus() {
 	_viewPopup = new QMenu(this);
@@ -302,6 +324,19 @@ void FredView::initializePopupMenus() {
 	_viewPopup->addMenu(_controlModeMenu);
 	_viewPopup->addMenu(ui->menuViewpoint);
 	_viewPopup->addSeparator();
+
+	// Begin construction edit popup
+	_editPopup = new QMenu(this);
+
+	_editObjectAction = new QAction(tr("Edit !Object!"), _editPopup);
+	connect(_editObjectAction, &QAction::triggered, this, &FredView::editObjectTriggered);
+	_editPopup->addAction(_editObjectAction);
+
+	_editOrientPositionAction = new QAction(tr("Edit Position and Orientation"), _editPopup);
+	_editPopup->addAction(_editOrientPositionAction);
+
+	_editWingAction = new QAction(tr("Edit Wing"), _editPopup);
+	_editPopup->addAction(_editWingAction);
 }
 
 void FredView::onUpdateConstrains() {
@@ -621,7 +656,7 @@ DialogButton FredView::showButtonDialog(DialogType type,
 	dialog.setDefaultButton(defaultButton);
 
 	QMessageBox::Icon dialogIcon = QMessageBox::Critical;
-	switch(type) {
+	switch (type) {
 	case DialogType::Error:
 		dialogIcon = QMessageBox::Critical;
 		break;
@@ -639,7 +674,7 @@ DialogButton FredView::showButtonDialog(DialogType type,
 
 	auto ret = dialog.exec();
 
-	switch(ret) {
+	switch (ret) {
 	case QMessageBox::Yes:
 		return DialogButton::Yes;
 	case QMessageBox::No:
@@ -652,7 +687,44 @@ DialogButton FredView::showButtonDialog(DialogType type,
 		return DialogButton::Cancel;
 	}
 }
+void FredView::editObjectTriggered() {
+	handleObjectEditor(_currentPopupObject);
+}
+void FredView::handleObjectEditor(int objNum) {
+	if (fred->getNumMarked() > 1) {
+		// Open ship editor dialog
+		// TODO: Not yet implemented!
+	} else {
+		Assertion(objNum >= 0, "Popup object is not valid when editObjectTriggered was called!");
+
+		if ((Objects[objNum].type == OBJ_START) || (Objects[objNum].type == OBJ_SHIP)) {
+			// TODO: Not yet implemented!
+		} else if (Objects[objNum].type == OBJ_JUMP_NODE
+			|| Objects[objNum].type == OBJ_WAYPOINT) {
+
+			// Select the object before displaying the dialog
+			fred->selectObject(objNum);
+
+			// Use the existing slot for this to avoid duplicating code
+			on_actionWaypoint_Paths_triggered(false);
+		} else if (Objects[objNum].type == OBJ_POINT) {
+			return;
+		} else {
+			Assertion(false, "Unhandled object type!");
+		}
+	}
+}
+void FredView::mouseDoubleClickEvent(QMouseEvent* event) {
+	auto viewLocal = ui->centralWidget->mapFromGlobal(event->globalPos());
+	auto obj = _viewport->select_object(viewLocal.x(), viewLocal.y());
+
+	if (obj >= 0) {
+		handleObjectEditor(obj);
+	} else {
+		// Ignore event
+		QWidget::mouseDoubleClickEvent(event);
+	}
+}
 
 } // namespace fred
 } // namespace fso
-

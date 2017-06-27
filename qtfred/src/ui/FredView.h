@@ -23,14 +23,13 @@ namespace Ui {
 class FredView;
 }
 
-class FredView : public QMainWindow, public IDialogProvider
-{
-    Q_OBJECT
+class FredView: public QMainWindow, public IDialogProvider {
+ Q_OBJECT
 
-public:
-    explicit FredView(QWidget *parent = nullptr);
-    ~FredView();
-    void setEditor(Editor* editor, EditorViewport* viewport);
+ public:
+	explicit FredView(QWidget* parent = nullptr);
+	~FredView();
+	void setEditor(Editor* editor, EditorViewport* viewport);
 
 	void loadMissionFile(const QString& pathName);
 
@@ -39,12 +38,12 @@ public:
 
 	void showContextMenu(const QPoint& globalPos);
 
-public slots:
-    void openLoadMissionDIalog();
+ public slots:
+	void openLoadMissionDIalog();
 
 	void newMission();
 
-private slots:
+ private slots:
 	void on_actionExit_triggered(bool);
 
 	void on_actionConstrainX_triggered(bool enabled);
@@ -84,7 +83,7 @@ private slots:
 	void on_actionWaypoint_Paths_triggered(bool);
 
 	void on_actionSelectionLock_triggered(bool enabled);
-signals:
+ signals:
 	/**
 	 * @brief Special version of FredApplication::onIdle which is limited to the lifetime of this object
 	 */
@@ -94,11 +93,13 @@ signals:
 	 * @brief This is emitted when the view window is activated after being deactivated
 	 */
 	void viewWindowActivated();
-protected:
+ protected:
 	bool event(QEvent* event) override;
 
 	void keyPressEvent(QKeyEvent* event) override;
 	void keyReleaseEvent(QKeyEvent* event) override;
+
+	void mouseDoubleClickEvent(QMouseEvent* event) override;
 
  private:
 	void on_mission_loaded(const std::string& filepath);
@@ -127,6 +128,11 @@ protected:
 
 	QMenu* _viewPopup = nullptr;
 
+	QMenu* _editPopup = nullptr;
+	QAction* _editObjectAction = nullptr;
+	QAction* _editOrientPositionAction = nullptr;
+	QAction* _editWingAction = nullptr;
+
 	QMenu* _controlModeMenu = nullptr;
 	QAction* _controlModeCamera = nullptr;
 	QAction* _controlModeCurrentShip = nullptr;
@@ -135,11 +141,13 @@ protected:
 
 	std::unique_ptr<ColorComboBox> _shipClassBox;
 
-    Editor* fred = nullptr;
+	Editor* fred = nullptr;
 	EditorViewport* _viewport = nullptr;
 
 	bool _inKeyPressHandler = false;
 	bool _inKeyReleaseHandler = false;
+
+	int _currentPopupObject = -1; //!< This is the object that was under the cursor when the context menu was requested
 
 	void onUpdateConstrains();
 	void onUpdateEditingMode();
@@ -153,13 +161,15 @@ protected:
 	void windowActivated();
 	void windowDeactivated();
 
+	void editObjectTriggered();
+
  public:
 	DialogButton showButtonDialog(DialogType type,
 								  const SCP_string& title,
 								  const SCP_string& message,
 								  const flagset<DialogButton>& buttons) override;
+	void handleObjectEditor(int objNum);
 };
-
 
 } // namespace fred
 } // namespace fso

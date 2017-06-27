@@ -1,3 +1,4 @@
+
 #include "renderwidget.h"
 
 #include <array>
@@ -198,7 +199,7 @@ void RenderWidget::keyReleaseEvent(QKeyEvent* key) {
 	key_mark(qt2fsKeys.at(code), 0, 0);
 }
 void RenderWidget::mouseDoubleClickEvent(QMouseEvent* event) {
-	QWidget::mouseDoubleClickEvent(event);
+	event->ignore();
 }
 void RenderWidget::mousePressEvent(QMouseEvent* event) {
 	if (event->button() != Qt::LeftButton) {
