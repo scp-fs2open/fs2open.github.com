@@ -45,6 +45,8 @@ add_file_folder("Source/Mission/Dialogs"
     src/mission/dialogs/AbstractDialogModel.h
     src/mission/dialogs/EventEditorDialogModel.cpp
     src/mission/dialogs/EventEditorDialogModel.h
+	src/mission/dialogs/WaypointEditorDialogModel.cpp
+	src/mission/dialogs/WaypointEditorDialogModel.h
 )
 
 add_file_folder("Source/UI"
@@ -63,6 +65,8 @@ add_file_folder("Source/UI/Dialogs"
 	src/ui/dialogs/MissionGoalsDialog.h
 	src/ui/dialogs/TeamLoadoutDialog.cpp
 	src/ui/dialogs/TeamLoadoutDialog.h
+	src/ui/dialogs/WaypointEditorDialog.cpp
+	src/ui/dialogs/WaypointEditorDialog.h
 )
 
 add_file_folder("Source/UI/Widgets"
