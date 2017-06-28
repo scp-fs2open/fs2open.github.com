@@ -1037,6 +1037,9 @@
    <property name="text">
     <string>Waypoint &amp;Paths</string>
    </property>
+   <property name="shortcut">
+    <string>Shift+Y</string>
+   </property>
   </action>
   <action name="actionEvents">
    <property name="text">

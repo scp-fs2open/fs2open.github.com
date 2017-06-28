@@ -11,8 +11,8 @@ class EventEditorDialogModel: public AbstractDialogModel {
  public:
 	EventEditorDialogModel(QObject* parent, EditorViewport* viewport);
 
-	void applyChanges();
-	void discardChanges();
+	bool apply() override;
+	void reject() override;
 };
 
 }

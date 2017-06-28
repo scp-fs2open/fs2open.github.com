@@ -10,8 +10,8 @@
 #include <stdexcept>
 
 #include <globalincs/globals.h>
-
 #include <osapi/osapi.h>
+#include <object/waypoint.h>
 
 namespace fso {
 namespace fred {
@@ -58,8 +58,6 @@ class Editor : public QObject {
 
 	void fix_ship_name(int ship);
 
-	int getCurrentObject();
-
 	int getNumMarked();
 
 	void hideMarkedObjects();
@@ -91,6 +89,19 @@ signals:
 	 * @brief A signal emitted when the mission has changed somehow
 	 */
 	void missionChanged();
+
+	/**
+	 * @brief Signal which is emitted when the currently selected object changed
+	 * @param new_obj The newly selected object index, may be -1 if no object is selected
+	 */
+	void currentObjectChanged(int new_obj);
+
+	/**
+	 * @brief A signal which is emitted if the marking status of an object changed
+	 * @param obj The object which changed
+	 * @param marked @c true if the object is now marked, @c false otherwise
+	 */
+	void objectMarkingChanged(int obj, bool marked);
  public:
 
 	int Id_select_type_jump_node = 0;
@@ -98,6 +109,20 @@ signals:
 
 	// object numbers for ships in a wing.
 	int wing_objects[MAX_WINGS][MAX_SHIPS_PER_WING];
+
+	int currentObject = -1;
+	int cur_wing = -1;
+	int cur_ship = -1;
+
+	int cur_wing_index = -1;
+
+	waypoint *cur_waypoint = nullptr;
+	waypoint_list *cur_waypoint_list = nullptr;
+
+	void ai_update_goal_references(int type, const char *old_name, const char *new_name);
+
+	// Goober5000
+	void update_texture_replacements(const char *old_name, const char *new_name);
 
  private:
 	void clearMission();
@@ -109,7 +134,6 @@ signals:
 	SCP_vector<std::unique_ptr<EditorViewport>> _viewports;
 	EditorViewport* _lastActiveViewport = nullptr;
 
-	int currentObject = -1;
 	int numMarked = 0;
 
 	int Default_player_model = -1;
@@ -118,8 +142,6 @@ signals:
 	int Shield_sys_types[MAX_SHIP_CLASSES];
 
 	int delete_flag;
-
-	int cur_wing = -1;
 
 	bool already_deleting_wing = false;
 
@@ -133,11 +155,6 @@ signals:
 	int delete_ship_from_wing(int ship);
 
 	int invalidate_references(const char *name, int type);
-
-	void ai_update_goal_references(int type, const char *old_name, const char *new_name);
-
-	// Goober5000
-	void update_texture_replacements(const char *old_name, const char *new_name);
 
 	// DA 1/7/99 These ship names are not variables
 	int rename_ship(int ship, char *name);

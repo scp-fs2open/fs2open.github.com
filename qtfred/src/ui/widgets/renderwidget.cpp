@@ -1,3 +1,4 @@
+
 #include "renderwidget.h"
 
 #include <array>
@@ -198,7 +199,7 @@ void RenderWidget::keyReleaseEvent(QKeyEvent* key) {
 	key_mark(qt2fsKeys.at(code), 0, 0);
 }
 void RenderWidget::mouseDoubleClickEvent(QMouseEvent* event) {
-	QWidget::mouseDoubleClickEvent(event);
+	event->ignore();
 }
 void RenderWidget::mousePressEvent(QMouseEvent* event) {
 	if (event->button() != Qt::LeftButton) {
@@ -207,14 +208,11 @@ void RenderWidget::mousePressEvent(QMouseEvent* event) {
 	}
 
 	int waypoint_instance = -1;
-	/*
-	 * // TODO: Port this when waypoints are implemented
-	if (cur_waypoint != NULL)
+	if (fred->cur_waypoint != NULL)
 	{
-		Assert(cur_waypoint_list != NULL);
-		waypoint_instance = Objects[cur_waypoint->get_objnum()].instance;
+		Assert(fred->cur_waypoint_list != NULL);
+		waypoint_instance = Objects[fred->cur_waypoint->get_objnum()].instance;
 	}
-	*/
 
 	_markingBox.x1 = event->x();
 	_markingBox.y1 = event->y();
@@ -268,8 +266,8 @@ void RenderWidget::mousePressEvent(QMouseEvent* event) {
 		}
 	}
 
-	if (query_valid_object(fred->getCurrentObject())) {
-		_viewport->original_pos = Objects[fred->getCurrentObject()].pos;
+	if (query_valid_object(fred->currentObject)) {
+		_viewport->original_pos = Objects[fred->currentObject].pos;
 	}
 
 	_viewport->moved = 0;
@@ -480,7 +478,7 @@ void RenderWidget::setCursorMode(CursorMode mode) {
 void RenderWidget::renderFrame() {
 	subsys_to_render Render_subsys;
 
-	_viewport->renderer->render_frame(fred->getCurrentObject(), Render_subsys, _usingMarkingBox, _markingBox, false);
+	_viewport->renderer->render_frame(fred->currentObject, Render_subsys, _usingMarkingBox, _markingBox, false);
 }
 } // namespace fred
 } // namespace fso
