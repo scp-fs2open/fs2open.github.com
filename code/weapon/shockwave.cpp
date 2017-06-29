@@ -534,9 +534,10 @@ void shockwave_level_init()
 	} else {
 		// have to make sure that the default 3D model is still valid and usable
 		// the 2D shockwave shouldn't need anything like this
-		if (Shockwave_info[0].model_id >= 0)
+		if (Shockwave_info[0].model_id >= 0) {
 			Assertion(!strcmp(Shockwave_info[0].filename, Default_shockwave_3D_filename), "Shockwave_info[0] should be the default shockwave, but somehow isn't.\nShockwave_info[0].filename = \"%s\"\nDefault_shockwave_3D_filename = \"%s\"\nGet a coder!\n", Shockwave_info[0].filename, Default_shockwave_3D_filename);
 			Shockwave_info[0].model_id = model_load( Default_shockwave_3D_filename, 0, NULL );
+		}
 	}
 
 	Assertion( !Shockwave_info.empty(), "Default shockwave claims to be loaded, but Shockwave_info vector is empty!");
