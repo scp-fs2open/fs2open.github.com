@@ -31689,7 +31689,7 @@ sexp_help_struct Sexp_help[] = {
 		"\t2:\tString variable to contain the result\r\n" },
 
 	// Goober5000
-	{ OP_STRING_CONCATENATE, "string-concatenate\r\n"
+	{ OP_STRING_CONCATENATE, "string-concatenate (deprecated in favor of string-concatenate-block)\r\n"
 		"\tConcatenates two strings, putting the result into a string variable.  If the length of the string will "
 		"exceed the sexp variable token limit (currently 32), it will be truncated.\r\n\r\n"
 		"Takes 3 arguments...\r\n"
