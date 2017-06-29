@@ -678,6 +678,7 @@ sexp_oper Operators[] = {
 	{ "copy-variable-between-indexes",	OP_COPY_VARIABLE_BETWEEN_INDEXES,		2,	2,			SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "int-to-string",					OP_INT_TO_STRING,						2,	2,			SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "string-concatenate",				OP_STRING_CONCATENATE,					3,	3,			SEXP_ACTION_OPERATOR,	},	// Goober5000
+	{ "string-concatenate-block",		OP_STRING_CONCATENATE_BLOCK,			3,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "string-get-substring",			OP_STRING_GET_SUBSTRING,				4,	4,			SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "string-set-substring",			OP_STRING_SET_SUBSTRING,				5,	5,			SEXP_ACTION_OPERATOR,	},	// Goober5000  
 
@@ -3092,6 +3093,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 
 					// some demand a string variable
 					case OP_STRING_CONCATENATE:
+					case OP_STRING_CONCATENATE_BLOCK:
 					case OP_INT_TO_STRING:
 					case OP_STRING_GET_SUBSTRING:
 					case OP_STRING_SET_SUBSTRING:
@@ -20298,6 +20300,49 @@ void sexp_string_concatenate(int n)
 }
 
 // Goober5000
+void sexp_string_concatenate_block(int n)
+{
+	int sexp_variable_index;
+	SCP_string new_text;
+
+	// Only do single player or multi host
+	if (MULTIPLAYER_CLIENT)
+		return;
+
+	// get sexp_variable index
+	Assert(Sexp_nodes[n].first == -1);
+	sexp_variable_index = atoi(Sexp_nodes[n].text);
+	n = CDR(n);
+
+	// verify variable set
+	Assert(Sexp_variables[sexp_variable_index].type & SEXP_VARIABLE_SET);
+
+	// check variable type
+	if (!(Sexp_variables[sexp_variable_index].type & SEXP_VARIABLE_STRING))
+	{
+		Warning(LOCATION, "Cannot assign a string to a non-string variable!");
+		return;
+	}
+
+	// concatenate strings
+	while (n >= 0)
+	{
+		new_text.append(CTEXT(n));
+		n = CDR(n);
+	}
+
+	// check length
+	if (new_text.length() >= TOKEN_LENGTH)
+	{
+		Warning(LOCATION, "Concatenated string is too long and will be truncated.");
+		new_text.resize(TOKEN_LENGTH - 1);
+	}
+
+	// assign to variable
+	sexp_modify_variable(new_text.c_str(), sexp_variable_index);
+}
+
+// Goober5000
 int sexp_string_get_length(int node)
 {
 	return (int)strlen(CTEXT(node));
@@ -24162,6 +24207,12 @@ int eval_sexp(int cur_node, int referenced_node)
 				break;
 
 			// Goober5000
+			case OP_STRING_CONCATENATE_BLOCK:
+				sexp_string_concatenate_block(node);
+				sexp_val = SEXP_TRUE;
+				break;
+
+				// Goober5000
 			case OP_STRING_GET_SUBSTRING:
 				sexp_string_get_substring(node);
 				sexp_val = SEXP_TRUE;
@@ -25988,6 +26039,7 @@ int query_operator_return_type(int op)
 		case OP_HUD_GAUGE_SET_ACTIVE:
 		case OP_HUD_ACTIVATE_GAUGE_TYPE:
 		case OP_STRING_CONCATENATE:
+		case OP_STRING_CONCATENATE_BLOCK:
 		case OP_INT_TO_STRING:
 		case OP_DISABLE_ETS:
 		case OP_ENABLE_ETS:
@@ -26152,6 +26204,13 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_STRING;
 			} else if (argnum == 2) {
 				return OPF_VARIABLE_NAME;
+			}
+
+		case OP_STRING_CONCATENATE_BLOCK:
+			if (argnum == 0) {
+				return OPF_VARIABLE_NAME;
+			} else {
+				return OPF_STRING;
 			}
 
 		case OP_INT_TO_STRING:
@@ -29867,6 +29926,7 @@ int get_subcategory(int sexp_id)
 		case OP_COPY_VARIABLE_BETWEEN_INDEXES:
 		case OP_INT_TO_STRING:
 		case OP_STRING_CONCATENATE:
+		case OP_STRING_CONCATENATE_BLOCK:
 		case OP_STRING_GET_SUBSTRING:
 		case OP_STRING_SET_SUBSTRING:
 			return CHANGE_SUBCATEGORY_VARIABLES;
@@ -31636,6 +31696,14 @@ sexp_help_struct Sexp_help[] = {
 		"\t1: First string\r\n"
 		"\t2: Second string\r\n"
 		"\t3: String variable to hold the result\r\n" },
+
+	// Goober5000
+	{ OP_STRING_CONCATENATE_BLOCK, "string-concatenate-block\r\n"
+		"\tConcatenates two or more strings, putting the result into a string variable.  If the length of the string will "
+		"exceed the sexp variable token limit (currently 32), it will be truncated.\r\n\r\n"
+		"Takes 3 or more arguments...\r\n"
+		"\t1: String variable to hold the result\r\n"
+		"\tRest: Strings to concatenate.  At least two of these are required; the rest are optional.\r\n" },
 
 	// Goober5000
 	{ OP_STRING_GET_SUBSTRING, "string-get-substring\r\n"
