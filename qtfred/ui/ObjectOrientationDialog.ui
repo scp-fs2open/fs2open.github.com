@@ -1,19 +1,31 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>Dialog</class>
- <widget class="QDialog" name="Dialog">
+ <class>fso::fred::dialogs::ObjectOrientEditorDialog</class>
+ <widget class="QDialog" name="fso::fred::dialogs::ObjectOrientEditorDialog">
+  <property name="windowModality">
+   <enum>Qt::WindowModal</enum>
+  </property>
+  <property name="enabled">
+   <bool>true</bool>
+  </property>
   <property name="geometry">
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>512</width>
-    <height>258</height>
+    <width>515</width>
+    <height>272</height>
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Dialog</string>
+   <string>Object Orientation Editor</string>
+  </property>
+  <property name="modal">
+   <bool>true</bool>
   </property>
   <layout class="QGridLayout" name="gridLayout">
+   <property name="sizeConstraint">
+    <enum>QLayout::SetFixedSize</enum>
+   </property>
    <item row="0" column="0">
     <layout class="QVBoxLayout" name="verticalLayout_2">
      <item>
@@ -29,34 +41,67 @@
        </property>
        <layout class="QGridLayout" name="gridLayout_2">
         <item row="1" column="1">
-         <widget class="QDoubleSpinBox" name="doubleSpinBox_2"/>
+         <widget class="QDoubleSpinBox" name="position_y">
+          <property name="minimum">
+           <double>-9999.000000000000000</double>
+          </property>
+          <property name="maximum">
+           <double>9999.000000000000000</double>
+          </property>
+          <property name="value">
+           <double>0.000000000000000</double>
+          </property>
+         </widget>
         </item>
         <item row="0" column="1">
-         <widget class="QDoubleSpinBox" name="doubleSpinBox"/>
+         <widget class="QDoubleSpinBox" name="position_x">
+          <property name="minimum">
+           <double>-9999.000000000000000</double>
+          </property>
+          <property name="maximum">
+           <double>9999.000000000000000</double>
+          </property>
+         </widget>
         </item>
         <item row="1" column="0">
          <widget class="QLabel" name="label_2">
           <property name="text">
-           <string>Y:</string>
+           <string>&amp;Y:</string>
+          </property>
+          <property name="buddy">
+           <cstring>position_y</cstring>
           </property>
          </widget>
         </item>
         <item row="0" column="0">
          <widget class="QLabel" name="label">
           <property name="text">
-           <string>X:</string>
+           <string>&amp;X:</string>
+          </property>
+          <property name="buddy">
+           <cstring>position_x</cstring>
           </property>
          </widget>
         </item>
         <item row="2" column="0">
          <widget class="QLabel" name="label_3">
           <property name="text">
-           <string>Z:</string>
+           <string>&amp;Z:</string>
+          </property>
+          <property name="buddy">
+           <cstring>position_z</cstring>
           </property>
          </widget>
         </item>
         <item row="2" column="1">
-         <widget class="QDoubleSpinBox" name="doubleSpinBox_3"/>
+         <widget class="QDoubleSpinBox" name="position_z">
+          <property name="minimum">
+           <double>-9999.000000000000000</double>
+          </property>
+          <property name="maximum">
+           <double>9999.000000000000000</double>
+          </property>
+         </widget>
         </item>
        </layout>
       </widget>
@@ -77,64 +122,153 @@
     </layout>
    </item>
    <item row="0" column="1">
-    <layout class="QVBoxLayout" name="verticalLayout">
-     <item>
-      <widget class="QCheckBox" name="checkBox">
-       <property name="text">
-        <string>Point to:</string>
+    <layout class="QGridLayout" name="gridLayout_3" columnstretch="0,0,0">
+     <item row="1" column="0">
+      <spacer name="horizontalSpacer">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <property name="sizeType">
+        <enum>QSizePolicy::Fixed</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>40</width>
+         <height>20</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+     <item row="2" column="1">
+      <spacer name="horizontalSpacer_2">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <property name="sizeType">
+        <enum>QSizePolicy::Fixed</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>40</width>
+         <height>20</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+     <item row="5" column="2">
+      <widget class="QDoubleSpinBox" name="location_x">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="minimum">
+        <double>-9999.000000000000000</double>
+       </property>
+       <property name="maximum">
+        <double>9999.000000000000000</double>
        </property>
       </widget>
      </item>
-     <item>
-      <widget class="QRadioButton" name="radioButton">
-       <property name="text">
-        <string>Ob&amp;ject:</string>
+     <item row="6" column="2">
+      <widget class="QDoubleSpinBox" name="location_y">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="minimum">
+        <double>-9999.000000000000000</double>
+       </property>
+       <property name="maximum">
+        <double>9999.000000000000000</double>
        </property>
       </widget>
      </item>
-     <item>
-      <widget class="QComboBox" name="comboBox"/>
+     <item row="7" column="2">
+      <widget class="QDoubleSpinBox" name="location_z">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="minimum">
+        <double>-9999.000000000000000</double>
+       </property>
+       <property name="maximum">
+        <double>9999.000000000000000</double>
+       </property>
+      </widget>
      </item>
-     <item>
-      <widget class="QRadioButton" name="radioButton_2">
+     <item row="2" column="2">
+      <widget class="QComboBox" name="objectComboBox">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="minimumSize">
+        <size>
+         <width>0</width>
+         <height>0</height>
+        </size>
+       </property>
+      </widget>
+     </item>
+     <item row="3" column="1" colspan="2">
+      <widget class="QRadioButton" name="locationRadio">
        <property name="text">
         <string>Loca&amp;tion</string>
        </property>
       </widget>
      </item>
-     <item>
-      <layout class="QFormLayout" name="formLayout">
-       <item row="0" column="0">
-        <widget class="QLabel" name="label_4">
-         <property name="text">
-          <string>X:</string>
-         </property>
-        </widget>
-       </item>
-       <item row="0" column="1">
-        <widget class="QDoubleSpinBox" name="doubleSpinBox_4"/>
-       </item>
-       <item row="1" column="1">
-        <widget class="QDoubleSpinBox" name="doubleSpinBox_5"/>
-       </item>
-       <item row="2" column="1">
-        <widget class="QDoubleSpinBox" name="doubleSpinBox_6"/>
-       </item>
-       <item row="1" column="0">
-        <widget class="QLabel" name="label_5">
-         <property name="text">
-          <string>Y:</string>
-         </property>
-        </widget>
-       </item>
-       <item row="2" column="0">
-        <widget class="QLabel" name="label_6">
-         <property name="text">
-          <string>Z:</string>
-         </property>
-        </widget>
-       </item>
-      </layout>
+     <item row="1" column="1" colspan="2">
+      <widget class="QRadioButton" name="objectRadio">
+       <property name="text">
+        <string>Ob&amp;ject:</string>
+       </property>
+      </widget>
+     </item>
+     <item row="0" column="0" colspan="3">
+      <widget class="QCheckBox" name="pointToCheck">
+       <property name="text">
+        <string>Point to:</string>
+       </property>
+      </widget>
+     </item>
+     <item row="5" column="0" colspan="2" alignment="Qt::AlignRight">
+      <widget class="QLabel" name="label_4">
+       <property name="text">
+        <string>X:</string>
+       </property>
+       <property name="buddy">
+        <cstring>location_x</cstring>
+       </property>
+      </widget>
+     </item>
+     <item row="6" column="0" colspan="2" alignment="Qt::AlignRight">
+      <widget class="QLabel" name="label_5">
+       <property name="text">
+        <string>Y:</string>
+       </property>
+       <property name="buddy">
+        <cstring>location_y</cstring>
+       </property>
+      </widget>
+     </item>
+     <item row="7" column="0" colspan="2" alignment="Qt::AlignRight">
+      <widget class="QLabel" name="label_6">
+       <property name="text">
+        <string>Z:</string>
+       </property>
+       <property name="buddy">
+        <cstring>location_z</cstring>
+       </property>
+      </widget>
      </item>
     </layout>
    </item>
@@ -145,7 +279,7 @@
   <connection>
    <sender>buttonBox</sender>
    <signal>accepted()</signal>
-   <receiver>Dialog</receiver>
+   <receiver>fso::fred::dialogs::ObjectOrientEditorDialog</receiver>
    <slot>accept()</slot>
    <hints>
     <hint type="sourcelabel">
@@ -161,7 +295,7 @@
   <connection>
    <sender>buttonBox</sender>
    <signal>rejected()</signal>
-   <receiver>Dialog</receiver>
+   <receiver>fso::fred::dialogs::ObjectOrientEditorDialog</receiver>
    <slot>reject()</slot>
    <hints>
     <hint type="sourcelabel">

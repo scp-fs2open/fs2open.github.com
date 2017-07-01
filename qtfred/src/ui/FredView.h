@@ -81,6 +81,7 @@ class FredView: public QMainWindow, public IDialogProvider {
 	void on_actionEvents_triggered(bool);
 	void on_actionBriefing_triggered(bool);
 	void on_actionWaypoint_Paths_triggered(bool);
+	void on_actionObjects_triggered(bool);
 
 	void on_actionSelectionLock_triggered(bool enabled);
  signals:
@@ -147,14 +148,13 @@ class FredView: public QMainWindow, public IDialogProvider {
 	bool _inKeyPressHandler = false;
 	bool _inKeyReleaseHandler = false;
 
-	int _currentPopupObject = -1; //!< This is the object that was under the cursor when the context menu was requested
-
 	void onUpdateConstrains();
 	void onUpdateEditingMode();
 	void onUpdateViewSpeeds();
 	void onUpdateCameraControlActions();
 	void onUpdateSelectionLock();
 	void onUpdateShipClassBox();
+	void onUpdateEditorActions();
 
 	void onShipClassSelected(int ship_class);
 
@@ -162,13 +162,15 @@ class FredView: public QMainWindow, public IDialogProvider {
 	void windowDeactivated();
 
 	void editObjectTriggered();
+	void orientEditorTriggered();
+
+	void handleObjectEditor(int objNum);
 
  public:
 	DialogButton showButtonDialog(DialogType type,
 								  const SCP_string& title,
 								  const SCP_string& message,
 								  const flagset<DialogButton>& buttons) override;
-	void handleObjectEditor(int objNum);
 };
 
 } // namespace fred

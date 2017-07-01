@@ -1032,6 +1032,9 @@
    <property name="text">
     <string>&amp;Objects</string>
    </property>
+   <property name="shortcut">
+    <string>Shift+O</string>
+   </property>
   </action>
   <action name="actionWaypoint_Paths">
    <property name="text">
