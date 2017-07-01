@@ -3224,7 +3224,7 @@ int sexp_tree::get_modify_variable_type(int parent)
 
 void sexp_tree::verify_and_fix_arguments(int node)
 {
-	int op, arg_num, type, tmp;
+	int op_index, arg_num, type, tmp;
 	sexp_list_item *list, *ptr;
 	bool is_variable_arg = false; 
 
@@ -3233,8 +3233,8 @@ void sexp_tree::verify_and_fix_arguments(int node)
 		return;
 
 	was_here = true;
-	op = get_operator_index(tree_nodes[node].text);
-	if (op < 0)
+	op_index = get_operator_index(tree_nodes[node].text);
+	if (op_index < 0)
 		return;
 
 	tmp = item_index;
@@ -3243,7 +3243,7 @@ void sexp_tree::verify_and_fix_arguments(int node)
 	item_index = tree_nodes[node].child;
 	while (item_index >= 0) {
 		// get listing of valid argument values for node item_index
-		type = query_operator_argument_type(op, arg_num);
+		type = query_operator_argument_type(op_index, arg_num);
 		// special case for modify-variable
 		if (type == OPF_AMBIGUOUS) {
 			is_variable_arg = true;
@@ -3251,7 +3251,7 @@ void sexp_tree::verify_and_fix_arguments(int node)
 		}
 		if (query_restricted_opf_range(type)) {
 			list = get_listing_opf(type, node, arg_num);
-			if (!list && (arg_num >= Operators[op].min)) {
+			if (!list && (arg_num >= Operators[op_index].min)) {
 				free_node(item_index, 1);
 				item_index = tmp;
 				flag--;
@@ -3265,15 +3265,7 @@ void sexp_tree::verify_and_fix_arguments(int node)
 				char default_variable_text[TOKEN_LENGTH];
 				if (tree_nodes[item_index].type & SEXPT_VARIABLE) {
 					// special case for SEXPs which can modify a variable 
-					if ((arg_num == 0 && Operators[op].value == OP_MODIFY_VARIABLE) ||
-						(arg_num == 8 && Operators[op].value == OP_ADD_BACKGROUND_BITMAP) ||
-						(arg_num == 5 && Operators[op].value == OP_ADD_SUN_BITMAP) ||
-						(arg_num == 2 && Operators[op].value == OP_STRING_CONCATENATE) ||
-						(arg_num == 1 && Operators[op].value == OP_INT_TO_STRING) ||
-						(arg_num == 3 && Operators[op].value == OP_STRING_GET_SUBSTRING) ||
-						(arg_num == 4 && Operators[op].value == OP_STRING_SET_SUBSTRING) ||
-						(arg_num == 1 && Operators[op].value == OP_COPY_VARIABLE_FROM_INDEX))
-					{
+					if (type == OPF_VARIABLE_NAME) {
 						// make text_ptr to start - before '('
 						get_variable_name_from_sexp_tree_node_text(tree_nodes[item_index].text, default_variable_text);
 						text_ptr = default_variable_text;
