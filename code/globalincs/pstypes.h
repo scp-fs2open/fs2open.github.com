@@ -101,6 +101,11 @@ inline bool operator==(const vec3d &self, const vec3d &other)
 	);
 }
 
+inline bool operator!=(const vec3d &self, const vec3d &other)
+{
+	return !(self == other);
+}
+
 typedef struct vec2d {
 	float x, y;
 } vec2d;

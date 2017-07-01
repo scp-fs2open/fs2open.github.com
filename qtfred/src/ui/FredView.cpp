@@ -14,6 +14,7 @@
 #include <ui/dialogs/EventEditorDialog.h>
 #include <ui/dialogs/BriefingEditorDialog.h>
 #include <ui/dialogs/WaypointEditorDialog.h>
+#include <ui/dialogs/ObjectOrientEditorDialog.h>
 
 #include "mission/Editor.h"
 #include "mission/management.h"
@@ -98,6 +99,7 @@ void FredView::setEditor(Editor* editor, EditorViewport* viewport) {
 	connect(this, &FredView::viewIdle, this, &FredView::onUpdateCameraControlActions);
 	connect(this, &FredView::viewIdle, this, &FredView::onUpdateSelectionLock);
 	connect(this, &FredView::viewIdle, this, &FredView::onUpdateShipClassBox);
+	connect(this, &FredView::viewIdle, this, &FredView::onUpdateEditorActions);
 }
 
 void FredView::loadMissionFile(const QString& pathName) {
@@ -279,7 +281,7 @@ void FredView::showContextMenu(const QPoint& globalPos) {
 
 	auto obj = _viewport->select_object(localPos.x(), localPos.y());
 	if (obj >= 0) {
-		_currentPopupObject = obj;
+		fred->selectObject(obj);
 
 		// There is an object under the cursor
 		SCP_string objName;
@@ -292,8 +294,6 @@ void FredView::showContextMenu(const QPoint& globalPos) {
 		_editObjectAction->setText(tr("Edit %1").arg(objName.c_str()));
 
 		_editPopup->exec(globalPos);
-
-		_currentPopupObject = obj;
 	} else {
 		// Nothing is here...
 		_viewPopup->exec(globalPos);
@@ -333,6 +333,7 @@ void FredView::initializePopupMenus() {
 	_editPopup->addAction(_editObjectAction);
 
 	_editOrientPositionAction = new QAction(tr("Edit Position and Orientation"), _editPopup);
+	connect(_editOrientPositionAction, &QAction::triggered, this, &FredView::orientEditorTriggered);
 	_editPopup->addAction(_editOrientPositionAction);
 
 	_editWingAction = new QAction(tr("Edit Wing"), _editPopup);
@@ -624,6 +625,9 @@ void FredView::on_actionWaypoint_Paths_triggered(bool) {
 	auto editorDialog = new dialogs::WaypointEditorDialog(this, _viewport);
 	editorDialog->show();
 }
+void FredView::on_actionObjects_triggered(bool) {
+	orientEditorTriggered();
+}
 DialogButton FredView::showButtonDialog(DialogType type,
 										const SCP_string& title,
 										const SCP_string& message,
@@ -688,7 +692,7 @@ DialogButton FredView::showButtonDialog(DialogType type,
 	}
 }
 void FredView::editObjectTriggered() {
-	handleObjectEditor(_currentPopupObject);
+	handleObjectEditor(fred->currentObject);
 }
 void FredView::handleObjectEditor(int objNum) {
 	if (fred->getNumMarked() > 1) {
@@ -724,6 +728,14 @@ void FredView::mouseDoubleClickEvent(QMouseEvent* event) {
 		// Ignore event
 		QWidget::mouseDoubleClickEvent(event);
 	}
+}
+void FredView::orientEditorTriggered() {
+	auto dialog = new dialogs::ObjectOrientEditorDialog(this, _viewport);
+	// This is a modal dialog
+	dialog->exec();
+}
+void FredView::onUpdateEditorActions() {
+	ui->actionObjects->setEnabled(query_valid_object(fred->currentObject));
 }
 
 } // namespace fred

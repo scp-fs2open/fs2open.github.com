@@ -25,25 +25,25 @@ void object_moved(object *objp)
 	}
 }
 
-int query_valid_object(int index)
+bool query_valid_object(int index)
 {
-	int obj_found = FALSE;
+	bool obj_found = false;
 	object *ptr;
 
 	if (index < 0 || index >= MAX_OBJECTS || Objects[index].type == OBJ_NONE)
-		return FALSE;
+		return false;
 
 	ptr = GET_FIRST(&obj_used_list);
 	while (ptr != END_OF_LIST(&obj_used_list)) {
 		Assert(ptr->type != OBJ_NONE);
 		if (OBJ_INDEX(ptr) == index)
-			obj_found = TRUE;
+			obj_found = true;
 
 		ptr = GET_NEXT(ptr);
 	}
 
 	Assert(obj_found);  // just to make sure it's in the list like it should be.
-	return TRUE;
+	return true;
 }
 
 

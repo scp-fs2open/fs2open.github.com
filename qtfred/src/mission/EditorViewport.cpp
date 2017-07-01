@@ -304,7 +304,6 @@ void EditorViewport::process_system_keys(int key) {
 
 	case KEY_SPACEBAR:
 		Selection_lock = !Selection_lock;
-		dialogProvider->showButtonDialog(DialogType::Error, "Title test", "Message", { DialogButton::Yes, DialogButton::No, DialogButton::Cancel });
 		break;
 
 	case KEY_ESC:
