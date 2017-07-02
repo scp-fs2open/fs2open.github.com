@@ -65,6 +65,8 @@ add_file_folder("Source/UI/Dialogs"
     src/ui/dialogs/EventEditorDialog.h
 	src/ui/dialogs/MissionGoalsDialog.cpp
 	src/ui/dialogs/MissionGoalsDialog.h
+	src/ui/dialogs/MissionSpecDialog.cpp
+	src/ui/dialogs/MissionSpecDialog.h
 	src/ui/dialogs/ObjectOrientEditorDialog.cpp
 	src/ui/dialogs/ObjectOrientEditorDialog.h
 	src/ui/dialogs/TeamLoadoutDialog.cpp
@@ -85,6 +87,7 @@ add_file_folder("UI"
     ui/FredView.ui
     ui/BriefingEditorDialog.ui
 	ui/MissionGoalsDialog.ui
+	ui/MissionSpecDialog.ui
 	ui/ObjectOrientationDialog.ui
 	ui/TeamLoadoutDialog.ui
     ui/WaypointEditorDialog.ui

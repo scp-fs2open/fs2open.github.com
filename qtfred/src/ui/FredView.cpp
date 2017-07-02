@@ -15,6 +15,7 @@
 #include <ui/dialogs/BriefingEditorDialog.h>
 #include <ui/dialogs/WaypointEditorDialog.h>
 #include <ui/dialogs/ObjectOrientEditorDialog.h>
+#include <ui/dialogs/MissionSpecDialog.h>
 
 #include "mission/Editor.h"
 #include "mission/management.h"
@@ -620,6 +621,10 @@ void FredView::onShipClassSelected(int ship_class) {
 void FredView::on_actionBriefing_triggered(bool) {
 	auto eventEditor = new dialogs::BriefingEditorDialog(this);
 	eventEditor->show();
+}
+void FredView::on_actionMission_Specs_triggered(bool) {
+	auto missionSpecEditor = new dialogs::MissionSpecDialog(this, _viewport);
+	missionSpecEditor->show();
 }
 void FredView::on_actionWaypoint_Paths_triggered(bool) {
 	auto editorDialog = new dialogs::WaypointEditorDialog(this, _viewport);
