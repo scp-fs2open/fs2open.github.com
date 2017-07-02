@@ -776,9 +776,9 @@ void CEditContainerDlg::OnBnClickedAddNewContainer()
 
 	edit_sexp_containers.push_back(temp_container); 
 	
-	// add the new container to the list of containers combo box and make it the selected 
+	// add the new container to the list of containers combo box and make it the selected option
 	cbox->AddString(temp_name); 
-	m_current_container = edit_sexp_containers.size() - 1; 
+	m_current_container = (int) edit_sexp_containers.size() - 1; 
 	cbox->SetCurSel(m_current_container);
 
 	// get rid of any old data that might still be displayed
