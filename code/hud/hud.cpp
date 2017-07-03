@@ -54,7 +54,7 @@
 #include "weapon/emp.h"
 #include "weapon/weapon.h"
 
-SCP_vector<HudGauge*> default_hud_gauges;
+SCP_vector<std::unique_ptr<HudGauge>> default_hud_gauges;
 
 // new values for HUD alpha
 #define HUD_NEW_ALPHA_DIM				80	
@@ -1246,24 +1246,10 @@ void hud_level_close()
  */
 void hud_close()
 {
-	size_t j, num_gauges = 0;
-
 	for (auto it = Ship_info.begin(); it != Ship_info.end(); ++it) {
-		num_gauges = it->hud_gauges.size();
-
-		for(j = 0; j < num_gauges; j++) {
-			delete it->hud_gauges[j];
-			it->hud_gauges[j] = NULL;
-		}
 		it->hud_gauges.clear();
 	}
 
-	num_gauges = default_hud_gauges.size();
-
-	for(j = 0; j < num_gauges; j++) {
-		delete default_hud_gauges[j];
-		default_hud_gauges[j] = NULL;
-	}
 	default_hud_gauges.clear();
 }
 
@@ -3785,7 +3771,7 @@ HudGauge* hud_get_gauge(const char* name)
 
 			gauge_name = Ship_info[Player_ship->ship_info_index].hud_gauges[j]->getCustomGaugeName();
 			if(!strcmp(name, gauge_name)) {
-				return Ship_info[Player_ship->ship_info_index].hud_gauges[j];
+				return Ship_info[Player_ship->ship_info_index].hud_gauges[j].get();
 			}
 		}
 	} else {
@@ -3793,7 +3779,7 @@ HudGauge* hud_get_gauge(const char* name)
 
 			gauge_name = default_hud_gauges[j]->getCustomGaugeName();
 			if(!strcmp(name, gauge_name)) {
-				return default_hud_gauges[j];
+				return default_hud_gauges[j].get();
 			}
 		}
 	}

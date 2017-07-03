@@ -992,7 +992,7 @@ ADE_FUNC(drawOffscreenIndicator, l_Graphics, "object Object, [boolean draw=true,
 
 	for(j = 0; j < num_gauges; j++) {
 		if (default_hud_gauges[j]->getObjectType() == HUD_OBJECT_OFFSCREEN) {
-			HudGaugeOffscreen *offscreengauge = static_cast<HudGaugeOffscreen*>(default_hud_gauges[j]);
+			HudGaugeOffscreen *offscreengauge = static_cast<HudGaugeOffscreen*>(default_hud_gauges[j].get());
 
 			offscreengauge->preprocess();
 			offscreengauge->onFrame(flFrametime);
