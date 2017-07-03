@@ -33,7 +33,8 @@ private:
 
 	void updateUI();
 
-	void updateDesigner(const QString &designerName);
+	void updateTitle();
+	void updateDesigner();
 	void updateMissionType();
 
 	void singleRadioToggled(bool);

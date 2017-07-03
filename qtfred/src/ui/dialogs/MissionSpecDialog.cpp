@@ -20,7 +20,8 @@ MissionSpecDialog::MissionSpecDialog(FredView* parent, EditorViewport* viewport)
 
 	connect(_model.get(), &AbstractDialogModel::modelChanged, this, &MissionSpecDialog::updateUI);
 
-	connect(ui->missionDesigner, static_cast<void (QLineEdit::*)(const QString &)>(&QLineEdit::textEdited), this, &MissionSpecDialog::updateDesigner);
+	connect(ui->missionTitle, static_cast<void (QLineEdit::*)(const QString &)>(&QLineEdit::textChanged), this, &MissionSpecDialog::updateTitle);
+	connect(ui->missionDesigner, static_cast<void (QLineEdit::*)(const QString &)>(&QLineEdit::textChanged), this, &MissionSpecDialog::updateDesigner);
 
 	connect(ui->m_type_SinglePlayer, &QRadioButton::toggled, this, &MissionSpecDialog::singleRadioToggled);
 	connect(ui->m_type_MultiPlayer, &QRadioButton::toggled, this, &MissionSpecDialog::multiRadioToggled);
@@ -58,16 +59,23 @@ void MissionSpecDialog::closeEvent(QCloseEvent* event) {
 }
 
 void MissionSpecDialog::updateUI() {
-	ui->aiProfileCombo->clear();
-	for (auto &i : _model->getAIProfiles()) {
-		ui->aiProfileCombo->addItem(QString(i.c_str()));
-	}
+	ui->missionTitle->setText(_model->getMissionTitle().c_str());
+	ui->missionDesigner->setText(_model->getDesigner().c_str());
 
 	updateMissionType();
+
+	ui->aiProfileCombo->clear();
+	for (auto &profile : _model->getAIProfiles()) {
+		ui->aiProfileCombo->addItem(QString(profile.c_str()));
+	}
 }
 
-void MissionSpecDialog::updateDesigner(const QString &designerName) {
-	_model->setDesigner(designerName.toStdString());
+void MissionSpecDialog::updateTitle() {
+	_model->setMissionTitle(ui->missionTitle->text().toStdString());
+}
+
+void MissionSpecDialog::updateDesigner() {
+	_model->setDesigner(ui->missionDesigner->text().toStdString());
 }
 
 void MissionSpecDialog::updateMissionType() {
@@ -91,7 +99,9 @@ void MissionSpecDialog::updateMissionType() {
 	}
 
 	ui->m_type_Cooperative->setChecked(m_type & MISSION_TYPE_MULTI_COOP);
+
 	ui->m_type_TeamVsTeam->setChecked(m_type & MISSION_TYPE_MULTI_TEAMS);
+
 	ui->m_type_Dogfight->setChecked(m_type & MISSION_TYPE_MULTI_DOGFIGHT);
 }
 

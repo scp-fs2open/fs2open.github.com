@@ -260,12 +260,21 @@ bool MissionSpecDialogModel::apply() {
 void MissionSpecDialogModel::reject() {
 }
 
+SCP_string MissionSpecDialogModel::getMissionTitle()
+{
+	return _m_mission_title;
+}
+
+void MissionSpecDialogModel::setMissionTitle(SCP_string m_mission_title){
+	this->_m_mission_title = m_mission_title;
+}
+
 SCP_string MissionSpecDialogModel::getDesigner() {
 	return _m_designer_name;
 }
 
-void MissionSpecDialogModel::setDesigner(SCP_string designer_name) {
-	this->_m_designer_name = designer_name;
+void MissionSpecDialogModel::setDesigner(SCP_string m_designer_name) {
+	this->_m_designer_name = m_designer_name;
 	modelChanged();
 }
 

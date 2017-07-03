@@ -66,11 +66,14 @@ public:
 	bool apply() override;
 	void reject() override;
 
+	SCP_string getMissionTitle();
+	void setMissionTitle(SCP_string m_mission_title);
 	SCP_string getDesigner();
-	void setDesigner(SCP_string designer_name);
-	const SCP_vector<SCP_string>& getAIProfiles() const;
+	void setDesigner(SCP_string m_designer_name);
 	void setMissionType(int m_type);
 	int getMissionType();
+
+	const SCP_vector<SCP_string>& getAIProfiles() const;
 
 	bool query_modified();
 };
