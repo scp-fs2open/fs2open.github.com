@@ -445,7 +445,7 @@ void Editor::setupCurrentObjectIndices(int selectedObj) {
 	if (ptr->type == OBJ_SHIP) {
 		cur_ship = ptr->instance;
 		cur_wing = Ships[cur_ship].wingnum;
-		for (auto i=0; i<Wings[cur_wing].wave_count; i++) {
+		for (auto i = 0; i < Wings[cur_wing].wave_count; i++) {
 			if (wing_objects[cur_wing][i] == currentObject) {
 				cur_wing_index = i;
 				break;
@@ -739,7 +739,10 @@ int Editor::common_object_delete(int obj) {
 	if (type == OBJ_START) {
 		i = Objects[obj].instance;
 		if (Player_starts < 2) {  // player 1 start
-			_lastActiveViewport->dialogProvider->showButtonDialog(DialogType::Error, "Error", "Must have at least 1 player starting point!", { DialogButton::Ok });
+			_lastActiveViewport->dialogProvider->showButtonDialog(DialogType::Error,
+																  "Error",
+																  "Must have at least 1 player starting point!",
+																  { DialogButton::Ok });
 
 			unmarkObject(obj);
 			return 1;
@@ -1072,12 +1075,19 @@ int Editor::reference_handler(const char* name, int type, int obj) {
 }
 
 int Editor::orders_reference_handler(int code, char* msg) {
-	auto r = _lastActiveViewport->dialogProvider->showButtonDialog(DialogType::Warning, "Warning", msg, { DialogButton::Yes, DialogButton::No, DialogButton::Cancel });
-	if (r == DialogButton::No)
+	auto r = _lastActiveViewport->dialogProvider->showButtonDialog(DialogType::Warning,
+																   "Warning",
+																   msg,
+																   { DialogButton::Yes,
+																	 DialogButton::No,
+																	 DialogButton::Cancel });
+	if (r == DialogButton::No) {
 		return 1;
+	}
 
-	if (r == DialogButton::Yes)
+	if (r == DialogButton::Yes) {
 		return 0;
+	}
 
 	// TODO: add a generic dialog system for showing these dialogs
 	/*
@@ -1117,12 +1127,19 @@ int Editor::orders_reference_handler(int code, char* msg) {
 	return 2;
 }
 int Editor::sexp_reference_handler(int node, int code, const char* msg) {
-	auto r = _lastActiveViewport->dialogProvider->showButtonDialog(DialogType::Warning, "Warning", msg, { DialogButton::Yes, DialogButton::No, DialogButton::Cancel });
-	if (r == DialogButton::No)
+	auto r = _lastActiveViewport->dialogProvider->showButtonDialog(DialogType::Warning,
+																   "Warning",
+																   msg,
+																   { DialogButton::Yes,
+																	 DialogButton::No,
+																	 DialogButton::Cancel });
+	if (r == DialogButton::No) {
 		return 1;
+	}
 
-	if (r == DialogButton::Yes)
+	if (r == DialogButton::Yes) {
 		return 0;
+	}
 
 	// TODO: add a generic dialog system for showing these dialogs
 	/*
@@ -1311,10 +1328,11 @@ int Editor::rename_ship(int ship, char* name) {
 	update_sexp_references(Ships[ship].ship_name, name);
 	ai_update_goal_references(REF_TYPE_SHIP, Ships[ship].ship_name, name);
 	update_texture_replacements(Ships[ship].ship_name, name);
-	for (i=0; i<Num_reinforcements; i++)
+	for (i = 0; i < Num_reinforcements; i++) {
 		if (!stricmp(Ships[ship].ship_name, Reinforcements[i].name)) {
 			strcpy_s(Reinforcements[i].name, name);
 		}
+	}
 
 	strcpy_s(Ships[ship].ship_name, name);
 
@@ -1325,85 +1343,94 @@ int Editor::rename_ship(int ship, char* name) {
 void Editor::delete_reinforcement(int num) {
 	int i;
 
-	for (i=num; i<Num_reinforcements-1; i++)
+	for (i = num; i < Num_reinforcements - 1; i++) {
 		Reinforcements[i] = Reinforcements[i + 1];
+	}
 
 	Num_reinforcements--;
 	missionChanged();
-}
-int Editor::delete_wing(int wing_num, int bypass) {
-	int i, r, total;
-
-	if (already_deleting_wing)
-		return 0;
-
-	r = check_wing_dependencies(wing_num);
-	if (r)
-		return r;
-
-	already_deleting_wing = 1;
-	for (i = 0; i<Num_reinforcements; i++)
-		if (!stricmp(Wings[wing_num].name, Reinforcements[i].name)) {
-			delete_reinforcement(i);
-			break;
-		}
-
-	invalidate_references(Wings[wing_num].name, REF_TYPE_WING);
-	if (!bypass) {
-		total = Wings[wing_num].wave_count;
-		for (i = 0; i<total; i++)
-			delete_object(wing_objects[wing_num][i]);
-	}
-
-	Wings[wing_num].wave_count = 0;
-	Wings[wing_num].wing_squad_filename[0] = '\0';
-	Wings[wing_num].wing_insignia_texture = -1;
-
-	if (cur_wing == wing_num)
-		set_cur_wing(-1);
-
-	free_sexp2(Wings[wing_num].arrival_cue);
-	free_sexp2(Wings[wing_num].departure_cue);
-
-	Num_wings--;
-	missionChanged();
-
-	update_custom_wing_indexes();
-
-	already_deleting_wing = 0;
-	return 0;
-}
-void Editor::set_cur_wing(int wing) {
-	cur_wing = wing;
-/*	if (cur_ship != -1)
-		Assert(cur_wing == Ships[cur_ship].wingnum);
-	if ((cur_object_index != -1) && (Objects[cur_object_index].type == OBJ_SHIP))
-		Assert(cur_wing == Ships[Objects[cur_object_index].instance].wingnum);*/
-	updateAllViewports();
-	// TODO: Add notification for a changed selection
 }
 int Editor::check_wing_dependencies(int wing_num) {
 	const char* name = Wings[wing_num].name;
 	return reference_handler(name, REF_TYPE_WING, -1);
 }
-void Editor::update_custom_wing_indexes() {
-	int i;
+int Editor::set_reinforcement(const char* name, int state) {
+	int i, index, cur = -1;
 
-	for (i = 0; i < MAX_STARTING_WINGS; i++)
-	{
-		Starting_wings[i] = wing_name_lookup(Starting_wing_names[i], 1);
+	for (i = 0; i < Num_reinforcements; i++) {
+		if (!stricmp(Reinforcements[i].name, name)) {
+			cur = i;
+		}
 	}
 
-	for (i = 0; i < MAX_SQUADRON_WINGS; i++)
-	{
-		Squadron_wings[i] = wing_name_lookup(Squadron_wing_names[i], 1);
+	if (!state && (cur != -1)) {
+		Num_reinforcements--;
+		Reinforcements[cur] = Reinforcements[Num_reinforcements];
+
+		// clear the ship/wing flag for this reinforcement
+		index = ship_name_lookup(name);
+		if (index != -1) {
+			Ships[index].flags.remove(Ship::Ship_Flags::Reinforcement);
+		} else {
+			index = wing_name_lookup(name);
+			if (index != -1) {
+				Wings[index].flags.remove(Ship::Wing_Flags::Reinforcement);
+			}
+		}
+		if (index == -1) {
+			Int3();                // get allender -- coudln't find ship/wing for clearing reinforcement flag
+		}
+
+		missionChanged();
+		return -1;
 	}
 
-	for (i = 0; i < MAX_TVT_WINGS; i++)
-	{
-		TVT_wings[i] = wing_name_lookup(TVT_wing_names[i], 1);
+	if (state && (cur == -1) && (Num_reinforcements < MAX_REINFORCEMENTS)) {
+		Assert(strlen(name) < NAME_LENGTH);
+		strcpy_s(Reinforcements[Num_reinforcements].name, name);
+		Reinforcements[Num_reinforcements].uses = 1;
+		Reinforcements[Num_reinforcements].arrival_delay = 0;
+		memset(Reinforcements[Num_reinforcements].no_messages, 0, MAX_REINFORCEMENT_MESSAGES * NAME_LENGTH);
+		memset(Reinforcements[Num_reinforcements].yes_messages, 0, MAX_REINFORCEMENT_MESSAGES * NAME_LENGTH);
+		Num_reinforcements++;
+
+		// set the reinforcement flag on the ship or wing
+		index = ship_name_lookup(name);
+		if (index != -1) {
+			Ships[index].flags.set(Ship::Ship_Flags::Reinforcement);
+		} else {
+			index = wing_name_lookup(name);
+			if (index != -1) {
+				Wings[index].flags.set(Ship::Wing_Flags::Reinforcement);
+			}
+		}
+		if (index == -1) {
+			Int3();                // get allender -- coudln't find ship/wing for setting reinforcement flag
+		}
+
+		missionChanged();
+		return 1;
 	}
+
+	// this code will take care of setting the bits for the ship/wing flags
+	if (state && (cur != -1)) {
+		// set the reinforcement flag on the ship or wing
+		index = ship_name_lookup(name);
+		if (index != -1) {
+			Ships[index].flags.set(Ship::Ship_Flags::Reinforcement);
+		} else {
+			index = wing_name_lookup(name);
+			if (index != -1) {
+				Wings[index].flags.set(Ship::Wing_Flags::Reinforcement);
+			}
+		}
+		missionChanged();
+		if (index == -1) {
+			Int3();                // get allender -- coudln't find ship/wing for setting reinforcement flag
+		}
+	}
+
+	return 0;
 }
-
 } // namespace fred
 } // namespace fso
