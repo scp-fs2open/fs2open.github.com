@@ -8,7 +8,57 @@ namespace dialogs {
 
 class MissionSpecDialogModel : public AbstractDialogModel {
 private:
-	SCP_string designer_name;
+	void initializeData();
+
+	SCP_string _m_created;
+	SCP_string _m_modified;
+	SCP_string _m_mission_notes;
+	SCP_string _m_designer_name;
+	SCP_string _m_mission_title;
+	SCP_string _m_mission_desc;
+	SCP_string _m_squad_filename;
+	SCP_string _m_squad_name;
+	SCP_string _m_loading_640;
+	SCP_string _m_loading_1024;
+	int		_m_ai_profile;
+	int		_m_event_music;
+	SCP_string	_m_substitute_event_music;
+	int		_m_command_persona;
+	SCP_string	_m_command_sender;
+	bool		_m_full_war;
+	bool		_m_red_alert;
+	bool		_m_scramble;
+	bool		_m_daisy_chained_docking;
+	uint		_m_num_respawns;
+	int			_m_max_respawn_delay;
+	int			_m_disallow_support;
+	bool		_m_no_promotion;
+	bool		_m_no_builtin_msgs;
+	bool		_m_no_builtin_command_msgs;
+	bool		_m_no_traitor;
+	bool		_m_toggle_trails;
+	bool		_m_support_repairs_hull;
+	bool		_m_beam_free_all_by_default;
+	bool		_m_player_start_using_ai;
+	bool		_m_no_briefing;
+	bool		_m_no_debriefing;
+	bool		_m_autpilot_cinematics;
+	bool		_m_no_autpilot;
+	bool		_m_2d_mission;
+	bool		_m_always_show_goals;
+	bool		_m_end_to_mainhall;
+	float		_m_max_hull_repair_val;
+	float		_m_max_subsys_repair_val;
+	bool		_m_contrail_threshold_flag;
+	int			_m_contrail_threshold;
+
+	SCP_vector<SCP_string> _ai_profiles;
+	SCP_vector<SCP_string> _event_music;
+	SCP_vector<SCP_string> _sub_event_music;
+	SCP_vector<SCP_string> _command_personas;
+	SCP_vector<SCP_string> _command_senders;
+
+	int _m_type;
 
 public:
 	MissionSpecDialogModel(QObject* parent, EditorViewport* viewport);
@@ -18,6 +68,9 @@ public:
 
 	SCP_string getDesigner();
 	void setDesigner(SCP_string designer_name);
+	const SCP_vector<SCP_string>& getAIProfiles() const;
+	void setMissionType(int m_type);
+	int getMissionType();
 
 	bool query_modified();
 };

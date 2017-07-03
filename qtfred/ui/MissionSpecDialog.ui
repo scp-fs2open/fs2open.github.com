@@ -831,9 +831,42 @@
   </layout>
  </widget>
  <resources/>
- <connections/>
+ <connections>
+  <connection>
+   <sender>dialogButtonBox</sender>
+   <signal>accepted()</signal>
+   <receiver>fso::fred::dialogs::MissionSpecDialog</receiver>
+   <slot>accept()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>628</x>
+     <y>19</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>357</x>
+     <y>297</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>dialogButtonBox</sender>
+   <signal>rejected()</signal>
+   <receiver>fso::fred::dialogs::MissionSpecDialog</receiver>
+   <slot>reject()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>628</x>
+     <y>19</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>357</x>
+     <y>297</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
  <buttongroups>
-  <buttongroup name="mt_multiGroup"/>
   <buttongroup name="mt_baseGroup"/>
+  <buttongroup name="mt_multiGroup"/>
  </buttongroups>
 </ui>

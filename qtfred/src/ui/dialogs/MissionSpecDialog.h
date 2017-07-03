@@ -34,6 +34,14 @@ private:
 	void updateUI();
 
 	void updateDesigner(const QString &designerName);
+	void updateMissionType();
+
+	void singleRadioToggled(bool);
+	void multiRadioToggled(bool);
+	void trainingRadioToggled(bool);
+	void coopRadioToggled(bool);
+	void multiTeamRadioToggled(bool);
+	void dogfightRadioToggled(bool);
 };
 
 }
