@@ -7,7 +7,6 @@
 #include "ship/ship.h"
 #include "gamesnd/eventmusic.h"
 #include "cfile/cfile.h"
-#include "mission/missionparse.h"
 #include "mission/missionmessage.h"
 
 #include <QtWidgets>
@@ -25,13 +24,6 @@ MissionSpecDialogModel::MissionSpecDialogModel(QObject* parent, EditorViewport* 
 
 void MissionSpecDialogModel::initializeData() {
 	int i, box_index = 0, mission_command_persona_box_index = -1;
-	QComboBox *box;
-	QLineEdit *edit;
-
-	// set up the radio box states
-	//coop = (CButton *)GetDlgItem(IDC_COOP);
-	//team = (CButton *)GetDlgItem(IDC_TEAMVTEAM);
-	//dogfight = (CButton *)GetDlgItem(IDC_DOGFIGHT);
 
 	_m_mission_title = The_mission.name;
 	_m_designer_name = The_mission.author;
@@ -58,6 +50,8 @@ void MissionSpecDialogModel::initializeData() {
 	_m_2d_mission = (The_mission.flags[Mission::Mission_Flags::Mission_2d]) ? 1 : 0;
 	_m_no_autpilot = (The_mission.flags[Mission::Mission_Flags::Deactivate_ap]) ? 1 : 0;
 	_m_always_show_goals = (The_mission.flags[Mission::Mission_Flags::Always_show_goals]) ? 1 : 0;
+
+	_m_flags = The_mission.flags;
 
 	_m_loading_640 = The_mission.loading_screen[GR_640];
 	_m_loading_1024 = The_mission.loading_screen[GR_1024];
@@ -112,8 +106,6 @@ void MissionSpecDialogModel::initializeData() {
 	_m_command_persona = mission_command_persona_box_index;
 	_m_command_sender = The_mission.command_sender;
 
-	//_m_respawn_spin.SetRange(0, 99);
-	//_m_max_respawn_delay_spin.SetRange(-1, 999);
 	_m_num_respawns = The_mission.num_respawns;
 	_m_max_respawn_delay = The_mission.max_respawn_delay;
 	_m_max_hull_repair_val = The_mission.support_ships.max_hull_repair_val;
@@ -121,10 +113,6 @@ void MissionSpecDialogModel::initializeData() {
 
 	_m_contrail_threshold = The_mission.contrail_threshold;
 	_m_contrail_threshold_flag = (_m_contrail_threshold != CONTRAIL_THRESHOLD_DEFAULT);
-	//edit = (CEdit *)GetDlgItem(IDC_CONTRAIL_THRESHOLD);
-	//edit->SetReadOnly(!_m_contrail_threshold_flag);
-
-	//theApp.init_window(&Mission_notes_wnd_data, this);
 
 	modelChanged();
 }
@@ -147,14 +135,14 @@ bool MissionSpecDialogModel::apply() {
 
 	The_mission.game_type = new_m_type;
 	The_mission.num_respawns = _m_num_respawns;
-	The_mission.max_respawn_delay, _m_max_respawn_delay;
-	The_mission.support_ships.max_support_ships, (_m_disallow_support) ? 0 : -1;
-	The_mission.support_ships.max_hull_repair_val, _m_max_hull_repair_val;
-	The_mission.support_ships.max_subsys_repair_val, _m_max_subsys_repair_val;
+	The_mission.max_respawn_delay = _m_max_respawn_delay;
+	The_mission.support_ships.max_support_ships = (_m_disallow_support) ? 0 : -1;
+	The_mission.support_ships.max_hull_repair_val = _m_max_hull_repair_val;
+	The_mission.support_ships.max_subsys_repair_val = _m_max_subsys_repair_val;
 
 	flags = The_mission.flags;
 
-	// set flags for red alert
+	/*// set flags for red alert
 	The_mission.flags.set(Mission::Mission_Flags::Red_alert, _m_red_alert != 0);
 
 	// set flags for scramble
@@ -177,14 +165,14 @@ bool MissionSpecDialogModel::apply() {
 
 	//set ship trail flags
 	The_mission.flags.set(Mission::Mission_Flags::Toggle_ship_trails, _m_toggle_trails != 0);
-
+	*/
 	// set ship trail threshold
 	if (_m_contrail_threshold_flag) {
 		The_mission.contrail_threshold = _m_contrail_threshold;
 	} else {
 		The_mission.contrail_threshold = CONTRAIL_THRESHOLD_DEFAULT;
 	}
-
+	/*
 	//set support ship repairing flags
 	The_mission.flags.set(Mission::Mission_Flags::Support_repairs_hull, _m_support_repairs_hull != 0);
 
@@ -213,7 +201,9 @@ bool MissionSpecDialogModel::apply() {
 	The_mission.flags.set(Mission::Mission_Flags::Always_show_goals, _m_always_show_goals != 0);
 
 	// End to mainhall
-	The_mission.flags.set(Mission::Mission_Flags::End_to_mainhall, _m_end_to_mainhall != 0);
+	The_mission.flags.set(Mission::Mission_Flags::End_to_mainhall, _m_end_to_mainhall != 0);*/
+
+	The_mission.flags = _m_flags;
 
 	if (flags != The_mission.flags) {
 		// Doc has been changed
@@ -258,10 +248,10 @@ bool MissionSpecDialogModel::apply() {
 }
 
 void MissionSpecDialogModel::reject() {
+
 }
 
-SCP_string MissionSpecDialogModel::getMissionTitle()
-{
+SCP_string MissionSpecDialogModel::getMissionTitle() {
 	return _m_mission_title;
 }
 
@@ -283,16 +273,43 @@ const SCP_vector<SCP_string>& MissionSpecDialogModel::getAIProfiles() const {
 }
 
 void MissionSpecDialogModel::setMissionType(int m_type) {
-	_m_type = m_type;
-	modelChanged();
+	if (m_type & (MISSION_TYPE_SINGLE |
+		MISSION_TYPE_MULTI |
+		MISSION_TYPE_TRAINING |
+		MISSION_TYPE_MULTI_COOP |
+		MISSION_TYPE_MULTI_DOGFIGHT |
+		MISSION_TYPE_MULTI_TEAMS)) {
+		_m_type = m_type;
+		modelChanged();
+	} else {
+		auto button = _viewport->dialogProvider->showButtonDialog(DialogType::Error, "Invalid mission type", "You must select the game type: training, single, or multiplayer",
+		{ DialogButton::Ok });
+		if (button == DialogButton::Ok) {
+			return;
+		}
+	}
 }
 
 int MissionSpecDialogModel::getMissionType() {
 	return _m_type;
 }
 
-bool MissionSpecDialogModel::query_modified()
-{
+void MissionSpecDialogModel::setMissionFlag(Mission::Mission_Flags flag, bool enabled) {
+	_m_flags.set(flag, enabled);
+	modelChanged();
+}
+
+const flagset<Mission::Mission_Flags>& MissionSpecDialogModel::getMissionFlags() const {
+	return _m_flags;
+}
+
+void MissionSpecDialogModel::setMissionFullWar(bool enabled) {
+	_m_full_war = enabled;
+	_m_flags.set(Mission::Mission_Flags::All_attack, enabled);
+	modelChanged();
+}
+
+bool MissionSpecDialogModel::query_modified() {
 	return true;
 }
 

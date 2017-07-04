@@ -2,6 +2,8 @@
 
 #include "AbstractDialogModel.h"
 
+#include "mission/missionparse.h"
+
 namespace fso {
 namespace fred {
 namespace dialogs {
@@ -52,6 +54,8 @@ private:
 	bool		_m_contrail_threshold_flag;
 	int			_m_contrail_threshold;
 
+	flagset<Mission::Mission_Flags> _m_flags;
+
 	SCP_vector<SCP_string> _ai_profiles;
 	SCP_vector<SCP_string> _event_music;
 	SCP_vector<SCP_string> _sub_event_music;
@@ -72,6 +76,10 @@ public:
 	void setDesigner(SCP_string m_designer_name);
 	void setMissionType(int m_type);
 	int getMissionType();
+
+	void setMissionFlag(Mission::Mission_Flags flag, bool enabled);
+	const flagset<Mission::Mission_Flags>& getMissionFlags() const;
+	void setMissionFullWar(bool enabled);
 
 	const SCP_vector<SCP_string>& getAIProfiles() const;
 

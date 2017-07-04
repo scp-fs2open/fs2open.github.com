@@ -2,6 +2,7 @@
 #define MISSIONSPECDIALOG_H
 
 #include <QtWidgets/QDialog>
+#include <QAbstractButton>
 
 #include <ui/FredView.h>
 
@@ -36,6 +37,7 @@ private:
 	void updateTitle();
 	void updateDesigner();
 	void updateMissionType();
+	void updateFlags();
 
 	void singleRadioToggled(bool);
 	void multiRadioToggled(bool);
@@ -43,6 +45,9 @@ private:
 	void coopRadioToggled(bool);
 	void multiTeamRadioToggled(bool);
 	void dogfightRadioToggled(bool);
+
+	void flagToggled(bool enabled, Mission::Mission_Flags flag);
+	
 };
 
 }

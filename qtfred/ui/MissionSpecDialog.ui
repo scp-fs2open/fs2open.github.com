@@ -32,6 +32,9 @@
    <property name="bottomMargin">
     <number>6</number>
    </property>
+   <property name="horizontalSpacing">
+    <number>15</number>
+   </property>
    <property name="verticalSpacing">
     <number>0</number>
    </property>
@@ -206,16 +209,6 @@
          </property>
         </widget>
        </item>
-       <item row="0" column="1">
-        <widget class="QDoubleSpinBox" name="maxRespawnCount">
-         <property name="decimals">
-          <number>0</number>
-         </property>
-         <property name="value">
-          <double>3.000000000000000</double>
-         </property>
-        </widget>
-       </item>
        <item row="1" column="0">
         <widget class="QLabel" name="respawnDelayLabel">
          <property name="text">
@@ -223,23 +216,30 @@
          </property>
         </widget>
        </item>
-       <item row="1" column="1">
-        <widget class="QDoubleSpinBox" name="respawnDelayCount">
-         <property name="decimals">
-          <number>0</number>
+       <item row="0" column="1">
+        <widget class="QSpinBox" name="maxRespawnCount">
+         <property name="value">
+          <number>3</number>
          </property>
+        </widget>
+       </item>
+       <item row="1" column="1">
+        <widget class="QSpinBox" name="respawnDelayCount">
          <property name="minimum">
-          <double>-1.000000000000000</double>
+          <number>-1</number>
+         </property>
+         <property name="maximum">
+          <number>999</number>
          </property>
          <property name="value">
-          <double>-1.000000000000000</double>
+          <number>-1</number>
          </property>
         </widget>
        </item>
       </layout>
      </item>
      <item>
-      <widget class="QPushButton" name="pushButton">
+      <widget class="QPushButton" name="customWingNameButton">
        <property name="text">
         <string>Custom Wing Names</string>
        </property>
@@ -262,13 +262,10 @@
        <property name="title">
         <string>Squadron Reassign</string>
        </property>
-       <layout class="QFormLayout" name="formLayout_4">
-        <property name="horizontalSpacing">
-         <number>13</number>
-        </property>
-        <property name="verticalSpacing">
-         <number>6</number>
-        </property>
+       <property name="alignment">
+        <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
+       </property>
+       <layout class="QGridLayout" name="gridLayout">
         <property name="leftMargin">
          <number>6</number>
         </property>
@@ -281,8 +278,20 @@
         <property name="bottomMargin">
          <number>3</number>
         </property>
+        <property name="horizontalSpacing">
+         <number>3</number>
+        </property>
+        <property name="verticalSpacing">
+         <number>6</number>
+        </property>
         <item row="0" column="0">
          <widget class="QLabel" name="squadronNameLabel">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
           <property name="text">
            <string>Name</string>
           </property>
@@ -296,6 +305,12 @@
         </item>
         <item row="1" column="0">
          <widget class="QPushButton" name="squadronLogoButton">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
           <property name="text">
            <string>Logo</string>
           </property>
@@ -318,16 +333,7 @@
        <property name="title">
         <string>Loading Screen</string>
        </property>
-       <layout class="QFormLayout" name="formLayout_5">
-        <property name="formAlignment">
-         <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
-        </property>
-        <property name="horizontalSpacing">
-         <number>3</number>
-        </property>
-        <property name="verticalSpacing">
-         <number>3</number>
-        </property>
+       <layout class="QGridLayout" name="gridLayout_2">
         <property name="leftMargin">
          <number>6</number>
         </property>
@@ -338,6 +344,9 @@
          <number>6</number>
         </property>
         <property name="bottomMargin">
+         <number>3</number>
+        </property>
+        <property name="spacing">
          <number>3</number>
         </property>
         <item row="0" column="0">
@@ -375,7 +384,10 @@
        <property name="title">
         <string>Support Ships</string>
        </property>
-       <layout class="QGridLayout" name="gridLayout_5">
+       <layout class="QVBoxLayout" name="verticalLayout">
+        <property name="spacing">
+         <number>3</number>
+        </property>
         <property name="leftMargin">
          <number>6</number>
         </property>
@@ -386,71 +398,88 @@
          <number>6</number>
         </property>
         <property name="bottomMargin">
-         <number>3</number>
+         <number>6</number>
         </property>
-        <property name="verticalSpacing">
-         <number>3</number>
-        </property>
-        <item row="0" column="0" colspan="3">
+        <item>
          <widget class="QCheckBox" name="toggleSupportShip">
           <property name="text">
            <string>Disallow Support Ships</string>
           </property>
          </widget>
         </item>
-        <item row="1" column="0" colspan="3">
+        <item>
          <widget class="QCheckBox" name="toggleHullRepair">
           <property name="text">
            <string>Support Ships Repair Hull</string>
           </property>
          </widget>
         </item>
-        <item row="2" column="0">
-         <widget class="QLabel" name="hullRepairLabel">
-          <property name="text">
-           <string>Hull Repair Ceiling</string>
-          </property>
-         </widget>
-        </item>
-        <item row="2" column="1">
-         <widget class="QLineEdit" name="hullRepairMax">
-          <property name="baseSize">
-           <size>
-            <width>0</width>
-            <height>0</height>
-           </size>
-          </property>
-         </widget>
-        </item>
-        <item row="2" column="2">
-         <widget class="QLabel" name="hullRepairPercentLabel">
-          <property name="text">
-           <string>%</string>
-          </property>
-          <property name="alignment">
-           <set>Qt::AlignCenter</set>
-          </property>
-         </widget>
-        </item>
-        <item row="3" column="0">
-         <widget class="QLabel" name="subsysRepairLabel">
-          <property name="text">
-           <string>Subsystem Repair</string>
-          </property>
-         </widget>
-        </item>
-        <item row="3" column="1">
-         <widget class="QLineEdit" name="subsysRepairMax"/>
-        </item>
-        <item row="3" column="2">
-         <widget class="QLabel" name="subsysRepairPercentLabel">
-          <property name="text">
-           <string>%</string>
-          </property>
-          <property name="alignment">
-           <set>Qt::AlignCenter</set>
-          </property>
-         </widget>
+        <item>
+         <layout class="QGridLayout" name="gridLayout_3">
+          <item row="0" column="0">
+           <widget class="QLabel" name="hullRepairLabel">
+            <property name="text">
+             <string>Hull Repair Ceiling</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="1">
+           <widget class="QSpinBox" name="hullRepairMax">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="buttonSymbols">
+             <enum>QAbstractSpinBox::NoButtons</enum>
+            </property>
+            <property name="maximum">
+             <number>100</number>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="2">
+           <widget class="QLabel" name="hullRepairPercentLabel">
+            <property name="text">
+             <string>%</string>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignCenter</set>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="0">
+           <widget class="QLabel" name="subsysRepairLabel">
+            <property name="text">
+             <string>Subsystem Repair</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="1">
+           <widget class="QSpinBox" name="subsysRepairMax">
+            <property name="buttonSymbols">
+             <enum>QAbstractSpinBox::NoButtons</enum>
+            </property>
+            <property name="maximum">
+             <number>100</number>
+            </property>
+            <property name="value">
+             <number>100</number>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="2">
+           <widget class="QLabel" name="subsysRepairPercentLabel">
+            <property name="text">
+             <string>%</string>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignCenter</set>
+            </property>
+           </widget>
+          </item>
+         </layout>
         </item>
        </layout>
       </widget>
@@ -462,16 +491,19 @@
        </property>
        <layout class="QGridLayout" name="gridLayout_6">
         <property name="leftMargin">
-         <number>6</number>
+         <number>2</number>
         </property>
         <property name="topMargin">
-         <number>6</number>
+         <number>0</number>
         </property>
         <property name="rightMargin">
-         <number>6</number>
+         <number>2</number>
         </property>
         <property name="bottomMargin">
-         <number>6</number>
+         <number>0</number>
+        </property>
+        <property name="verticalSpacing">
+         <number>0</number>
         </property>
         <item row="0" column="0" colspan="2">
          <widget class="QCheckBox" name="toggleTrail">
@@ -488,12 +520,21 @@
          </widget>
         </item>
         <item row="1" column="1">
-         <widget class="QLineEdit" name="minSpeedDisplay">
-          <property name="baseSize">
-           <size>
-            <width>0</width>
-            <height>0</height>
-           </size>
+         <widget class="QDoubleSpinBox" name="minDisplaySpeed">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="buttonSymbols">
+           <enum>QAbstractSpinBox::NoButtons</enum>
+          </property>
+          <property name="maximum">
+           <double>9999.000000000000000</double>
+          </property>
+          <property name="value">
+           <double>0.000000000000000</double>
           </property>
          </widget>
         </item>
@@ -511,6 +552,9 @@
         </property>
         <property name="topMargin">
          <number>3</number>
+        </property>
+        <property name="rightMargin">
+         <number>6</number>
         </property>
         <property name="bottomMargin">
          <number>6</number>
@@ -550,8 +594,14 @@
         <property name="horizontalSpacing">
          <number>6</number>
         </property>
+        <property name="leftMargin">
+         <number>6</number>
+        </property>
         <property name="topMargin">
          <number>3</number>
+        </property>
+        <property name="rightMargin">
+         <number>6</number>
         </property>
         <property name="bottomMargin">
          <number>6</number>
@@ -661,6 +711,9 @@
           <property name="text">
            <string>All Teams at War</string>
           </property>
+          <attribute name="buttonGroup">
+           <string notr="true">m_flagGroup</string>
+          </attribute>
          </widget>
         </item>
         <item>
@@ -668,6 +721,9 @@
           <property name="text">
            <string>Red Alert Mission</string>
           </property>
+          <attribute name="buttonGroup">
+           <string notr="true">m_flagGroup</string>
+          </attribute>
          </widget>
         </item>
         <item>
@@ -675,6 +731,9 @@
           <property name="text">
            <string>Scramble Mission</string>
           </property>
+          <attribute name="buttonGroup">
+           <string notr="true">m_flagGroup</string>
+          </attribute>
          </widget>
         </item>
         <item>
@@ -682,6 +741,9 @@
           <property name="text">
            <string>Disallow Promotions/Badges</string>
           </property>
+          <attribute name="buttonGroup">
+           <string notr="true">m_flagGroup</string>
+          </attribute>
          </widget>
         </item>
         <item>
@@ -689,6 +751,9 @@
           <property name="text">
            <string>Disable Built-in Messages</string>
           </property>
+          <attribute name="buttonGroup">
+           <string notr="true">m_flagGroup</string>
+          </attribute>
          </widget>
         </item>
         <item>
@@ -696,6 +761,9 @@
           <property name="text">
            <string>Disable Built-in Command Messages</string>
           </property>
+          <attribute name="buttonGroup">
+           <string notr="true">m_flagGroup</string>
+          </attribute>
          </widget>
         </item>
         <item>
@@ -703,6 +771,9 @@
           <property name="text">
            <string>No Traitor</string>
           </property>
+          <attribute name="buttonGroup">
+           <string notr="true">m_flagGroup</string>
+          </attribute>
          </widget>
         </item>
         <item>
@@ -710,6 +781,9 @@
           <property name="text">
            <string>All Ships Beam-Freed By Default</string>
           </property>
+          <attribute name="buttonGroup">
+           <string notr="true">m_flagGroup</string>
+          </attribute>
          </widget>
         </item>
         <item>
@@ -717,6 +791,9 @@
           <property name="text">
            <string>Allow Daisy-Chained Docking</string>
           </property>
+          <attribute name="buttonGroup">
+           <string notr="true">m_flagGroup</string>
+          </attribute>
          </widget>
         </item>
         <item>
@@ -724,6 +801,9 @@
           <property name="text">
            <string>No Briefing</string>
           </property>
+          <attribute name="buttonGroup">
+           <string notr="true">m_flagGroup</string>
+          </attribute>
          </widget>
         </item>
         <item>
@@ -731,6 +811,9 @@
           <property name="text">
            <string>Toggle Debriefing (On/Off)</string>
           </property>
+          <attribute name="buttonGroup">
+           <string notr="true">m_flagGroup</string>
+          </attribute>
          </widget>
         </item>
         <item>
@@ -738,6 +821,9 @@
           <property name="text">
            <string>Use Autopilot Cinematics</string>
           </property>
+          <attribute name="buttonGroup">
+           <string notr="true">m_flagGroup</string>
+          </attribute>
          </widget>
         </item>
         <item>
@@ -745,6 +831,9 @@
           <property name="text">
            <string>Deactivate Hardcoded Autopilot</string>
           </property>
+          <attribute name="buttonGroup">
+           <string notr="true">m_flagGroup</string>
+          </attribute>
          </widget>
         </item>
         <item>
@@ -752,6 +841,9 @@
           <property name="text">
            <string>Player Starts under AI Control (NO MULTI)</string>
           </property>
+          <attribute name="buttonGroup">
+           <string notr="true">m_flagGroup</string>
+          </attribute>
          </widget>
         </item>
         <item>
@@ -759,6 +851,9 @@
           <property name="text">
            <string>2D Mission</string>
           </property>
+          <attribute name="buttonGroup">
+           <string notr="true">m_flagGroup</string>
+          </attribute>
          </widget>
         </item>
         <item>
@@ -766,6 +861,9 @@
           <property name="text">
            <string>Always Show Mission Goals In Briefing</string>
           </property>
+          <attribute name="buttonGroup">
+           <string notr="true">m_flagGroup</string>
+          </attribute>
          </widget>
         </item>
         <item>
@@ -773,6 +871,9 @@
           <property name="text">
            <string>Mission End to Mainhall</string>
           </property>
+          <attribute name="buttonGroup">
+           <string notr="true">m_flagGroup</string>
+          </attribute>
          </widget>
         </item>
        </layout>
@@ -866,7 +967,12 @@
   </connection>
  </connections>
  <buttongroups>
-  <buttongroup name="mt_baseGroup"/>
   <buttongroup name="mt_multiGroup"/>
+  <buttongroup name="m_flagGroup">
+   <property name="exclusive">
+    <bool>false</bool>
+   </property>
+  </buttongroup>
+  <buttongroup name="mt_baseGroup"/>
  </buttongroups>
 </ui>
