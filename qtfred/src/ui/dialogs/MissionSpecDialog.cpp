@@ -2,7 +2,7 @@
 
 #include "ui_MissionSpecDialog.h"
 
-#include "mission\missionparse.h"
+#include "mission/missionparse.h"
 
 #include <QCloseEvent>
 #include <QFileDialog>
@@ -136,11 +136,7 @@ void MissionSpecDialog::updateUI() {
 
 	updateFlags();
 
-	ui->aiProfileCombo->clear();
-	for (int i = 0; i < Num_ai_profiles; i++) {
-		ui->aiProfileCombo->addItem(Ai_profiles[i].profile_name, QVariant(AI_PROFILES_INDEX(&Ai_profiles[i])));
-	}
-	ui->aiProfileCombo->setCurrentIndex(ui->aiProfileCombo->findData(_model->getAIProfileIndex()));
+	updateAIProfiles();
 
 	updateTextEditors();
 }
@@ -193,6 +189,15 @@ void MissionSpecDialog::updateFlags() {
 	ui->toggleScramble->setChecked(flags[Mission::Mission_Flags::Scramble]);
 	ui->toggleHullRepair->setChecked(flags[Mission::Mission_Flags::Support_repairs_hull]);
 	ui->toggleTrail->setChecked(flags[Mission::Mission_Flags::Toggle_ship_trails]);
+}
+
+void MissionSpecDialog::updateAIProfiles() {
+	int idx = _model->getAIProfileIndex();
+	ui->aiProfileCombo->clear();
+	for (int i = 0; i < Num_ai_profiles; i++) {
+		ui->aiProfileCombo->addItem(Ai_profiles[i].profile_name, QVariant(AI_PROFILES_INDEX(&Ai_profiles[i])));
+	}
+	ui->aiProfileCombo->setCurrentIndex(ui->aiProfileCombo->findData(idx));
 }
 
 void MissionSpecDialog::updateTextEditors() {

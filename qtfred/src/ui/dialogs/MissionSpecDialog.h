@@ -41,6 +41,7 @@ private:
 
 	void updateMissionType();
 	void updateFlags();
+	void updateAIProfiles();
 	void updateTextEditors();
 
 	void missionTitleChanged(const QString &);

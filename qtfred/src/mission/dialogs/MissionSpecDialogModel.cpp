@@ -2,7 +2,7 @@
 //
 
 #include "MissionSpecDialogModel.h"
-#include "ui\dialogs\MissionSpecDialog.h"
+#include "ui/dialogs/MissionSpecDialog.h"
 
 #include "ship/ship.h"
 #include "gamesnd/eventmusic.h"
