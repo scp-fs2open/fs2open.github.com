@@ -5,6 +5,7 @@
 #include "mission\missionparse.h"
 
 #include <QCloseEvent>
+#include <QFileDialog>
 
 namespace fso {
 namespace fred {
@@ -32,11 +33,30 @@ MissionSpecDialog::MissionSpecDialog(FredView* parent, EditorViewport* viewport)
 	connect(ui->m_type_TeamVsTeam, &QRadioButton::toggled, this, &MissionSpecDialog::multiTeamRadioToggled);
 	connect(ui->m_type_Dogfight, &QRadioButton::toggled, this, &MissionSpecDialog::dogfightRadioToggled);
 
+	// Respawn info
+	connect(ui->maxRespawnCount, static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged), this, &MissionSpecDialog::maxRespawnChanged);
+	connect(ui->respawnDelayCount, static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged), this, &MissionSpecDialog::respawnDelayChanged);
+
+	// Custom Wing Names
+	// Placeholder - UI and Model need to be made
+
+	// Squadron Reassign
+	connect(ui->squadronName, &QLineEdit::textChanged, this, &MissionSpecDialog::squadronNameChanged);
+	
+	// Loading Screen
+
 	// Support Ships
+	connect(ui->toggleSupportShip, &QCheckBox::toggled, this, &MissionSpecDialog::disallowSupportChanged);
 	connect(ui->toggleHullRepair, &QCheckBox::toggled, this, [this](bool param) {flagToggled(param, Mission::Mission_Flags::Support_repairs_hull); });
 
 	// Ship Trails
 	connect(ui->toggleTrail, &QCheckBox::toggled, this, [this](bool param) {flagToggled(param, Mission::Mission_Flags::Toggle_ship_trails); });
+
+	// Built-in Command Messages
+
+	// Mission Music
+
+	// Sound Environment
 
 	// Mission flags - Lambda functions are used to allow the passing of additional parameters to a single method
 	connect(ui->toggleAllTeamsAtWar, &QCheckBox::toggled, _model.get(), &MissionSpecDialogModel::setMissionFullWar);
@@ -98,15 +118,29 @@ void MissionSpecDialog::updateUI() {
 	ui->missionTitle->setText(_model->getMissionTitle().c_str());
 	ui->missionDesigner->setText(_model->getDesigner().c_str());
 
+	ui->createdLabel->setText(_model->getCreatedTime().c_str());
+	ui->modifiedLabel->setText(_model->getModifiedTime().c_str());
+
 	updateMissionType();
+
+	ui->maxRespawnCount->setValue(_model->getNumRespawns());
+	ui->respawnDelayCount->setValue(_model->getMaxRespawnDelay());
+
+	ui->squadronName->setText(_model->getSquadronName().c_str());
+	ui->squadronLogo->setText(_model->getSquadronLogo().c_str());
+
+	ui->lowResScreen->setText(_model->getLowResLoadingScren().c_str());
+	ui->highResScreen->setText(_model->getHighResLoadingScren().c_str());
+
+	ui->toggleSupportShip->setChecked(_model->getDisallowSupport());
 
 	updateFlags();
 
 	ui->aiProfileCombo->clear();
 	for (int i = 0; i < Num_ai_profiles; i++) {
-		ui->aiProfileCombo->addItem(QString(Ai_profiles[i].profile_name));
+		ui->aiProfileCombo->addItem(Ai_profiles[i].profile_name, QVariant(AI_PROFILES_INDEX(&Ai_profiles[i])));
 	}
-	ui->aiProfileCombo->setCurrentIndex(_model->getAIProfileIndex());
+	ui->aiProfileCombo->setCurrentIndex(ui->aiProfileCombo->findData(_model->getAIProfileIndex()));
 
 	updateTextEditors();
 }
@@ -173,12 +207,12 @@ void MissionSpecDialog::updateTextEditors() {
 	ui->designerNoteEditor->setTextCursor(textCursor);
 }
 
-void MissionSpecDialog::missionTitleChanged() {
-	_model->setMissionTitle(ui->missionTitle->text().toStdString());
+void MissionSpecDialog::missionTitleChanged(const QString & string) {
+	_model->setMissionTitle(string.toStdString());
 }
 
-void MissionSpecDialog::missionDesignerChanged() {
-	_model->setDesigner(ui->missionDesigner->text().toStdString());
+void MissionSpecDialog::missionDesignerChanged(const QString & string) {
+	_model->setDesigner(string.toStdString());
 }
 
 void MissionSpecDialog::singleRadioToggled(bool enabled) {
@@ -217,6 +251,45 @@ void MissionSpecDialog::dogfightRadioToggled(bool enabled) {
 	}
 }
 
+void MissionSpecDialog::maxRespawnChanged(int value) {
+	_model->setNumRespawns(value);
+}
+
+void MissionSpecDialog::respawnDelayChanged(int value) {
+	_model->setMaxRespawnDelay(value);
+}
+
+void MissionSpecDialog::squadronNameChanged(const QString & string) {
+	QSignalBlocker blocker(ui->squadronName);
+
+	_model->setSquadronName(string.toStdString());
+}
+
+void MissionSpecDialog::on_squadronLogoButton_clicked() {
+	QString filename = QFileDialog::getOpenFileName(this, tr("Open Image"), "", tr("Image Files (*.dds *.pcx);;DDS (*.dds);;PCX(*.pcx);;All Files (*.*)"));
+	if (!(filename.isNull() || filename.isEmpty())) {
+		_model->setSquadronLogo(QFileInfo(filename).fileName().toStdString());
+	}
+}
+
+void MissionSpecDialog::on_lowResScreenButton_clicked() {
+	QString filename = QFileDialog::getOpenFileName(this, tr("Open Image"), "", tr("Image Files (*.dds *.pcx *.jpg *.jpeg *.tga *.png);;DDS (*.dds);;PCX (*.pcx);;JPG (*.jpg *.jpeg);;TGA (*.tga);;PNG (*.png) ;;All Files (*.*)"));
+	if (!(filename.isNull() || filename.isEmpty())) {
+		_model->setLowResLoadingScreen(QFileInfo(filename).fileName().toStdString());
+	}
+}
+
+void MissionSpecDialog::on_highResScreenButton_clicked() {
+	QString filename = QFileDialog::getOpenFileName(this, tr("Open Image"), "", tr("Image Files (*.dds *.pcx *.jpg *.jpeg *.tga *.png);;DDS (*.dds);;PCX (*.pcx);;JPG (*.jpg *.jpeg);;TGA (*.tga);;PNG (*.png) ;;All Files (*.*)"));
+	if (!(filename.isNull() || filename.isEmpty())) {
+		_model->setHighResLoadingScreen(QFileInfo(filename).fileName().toStdString());
+	}
+}
+
+void MissionSpecDialog::disallowSupportChanged(bool enabled) {
+	_model->setDisallowSupport(enabled);
+}
+
 void MissionSpecDialog::flagToggled(bool enabled, Mission::Mission_Flags flag) {
 	_model->setMissionFlag(flag, enabled);
 }
@@ -236,8 +309,8 @@ void MissionSpecDialog::designerNotesChanged() {
 void MissionSpecDialog::aiProfileIndexChanged(int index) {
 	QSignalBlocker blocker(ui->aiProfileCombo);
 
-	auto aiProfileIndex = ui->aiProfileCombo->itemData(index).value<int>();
-	_model->setAIProfileIndex(aiProfileIndex);
+	auto aipIndex = ui->aiProfileCombo->itemData(index).value<int>();
+	_model->setAIProfileIndex(aipIndex);
 }
 
 }

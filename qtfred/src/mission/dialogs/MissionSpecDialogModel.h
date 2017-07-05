@@ -28,27 +28,9 @@ private:
 	int		_m_command_persona;
 	SCP_string	_m_command_sender;
 	bool		_m_full_war;
-	bool		_m_red_alert;
-	bool		_m_scramble;
-	bool		_m_daisy_chained_docking;
 	uint		_m_num_respawns;
 	int			_m_max_respawn_delay;
-	int			_m_disallow_support;
-	bool		_m_no_promotion;
-	bool		_m_no_builtin_msgs;
-	bool		_m_no_builtin_command_msgs;
-	bool		_m_no_traitor;
-	bool		_m_toggle_trails;
-	bool		_m_support_repairs_hull;
-	bool		_m_beam_free_all_by_default;
-	bool		_m_player_start_using_ai;
-	bool		_m_no_briefing;
-	bool		_m_no_debriefing;
-	bool		_m_autpilot_cinematics;
-	bool		_m_no_autpilot;
-	bool		_m_2d_mission;
-	bool		_m_always_show_goals;
-	bool		_m_end_to_mainhall;
+	bool		_m_disallow_support;
 	float		_m_max_hull_repair_val;
 	float		_m_max_subsys_repair_val;
 	bool		_m_contrail_threshold_flag;
@@ -69,19 +51,45 @@ public:
 	bool apply() override;
 	void reject() override;
 
-	SCP_string getMissionTitle();
 	void setMissionTitle(SCP_string m_mission_title);
-	SCP_string getDesigner();
+	SCP_string getMissionTitle();
+
 	void setDesigner(SCP_string m_designer_name);
+	SCP_string getDesigner();
+
+	SCP_string getCreatedTime();
+
+	SCP_string getModifiedTime();
+
 	void setMissionType(int m_type);
 	int getMissionType();
 
+	void setNumRespawns(uint);
+	uint getNumRespawns();
+
+	void setMaxRespawnDelay(int);
+	int getMaxRespawnDelay();
+
+	void setSquadronName(SCP_string);
+	SCP_string getSquadronName();
+	void setSquadronLogo(SCP_string);
+	SCP_string getSquadronLogo();
+
+	void setLowResLoadingScreen(SCP_string);
+	SCP_string getLowResLoadingScren();
+	void setHighResLoadingScreen(SCP_string);
+	SCP_string getHighResLoadingScren();
+
+	void setDisallowSupport(bool);
+	bool getDisallowSupport();
+
 	void setMissionFlag(Mission::Mission_Flags flag, bool enabled);
 	const flagset<Mission::Mission_Flags>& getMissionFlags() const;
+
 	void setMissionFullWar(bool enabled);
 
 	void setAIProfileIndex(int m_ai_profile);
-	int getAIProfileIndex();
+	int getAIProfileIndex() const;
 
 	void setMissionDescText(SCP_string);
 	SCP_string getMissionDescText();

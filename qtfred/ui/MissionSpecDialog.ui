@@ -212,7 +212,7 @@
        <item row="1" column="0">
         <widget class="QLabel" name="respawnDelayLabel">
          <property name="text">
-          <string>Max Respawns Delay</string>
+          <string>Max Respawn Delay</string>
          </property>
         </widget>
        </item>

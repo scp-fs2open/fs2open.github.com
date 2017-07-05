@@ -31,25 +31,9 @@ void MissionSpecDialogModel::initializeData() {
 	_m_modified = The_mission.modified;
 	_m_mission_notes = The_mission.notes;
 	_m_mission_desc = The_mission.mission_desc;
-	_m_red_alert = (The_mission.flags[Mission::Mission_Flags::Red_alert]) ? 1 : 0;
-	_m_scramble = (The_mission.flags[Mission::Mission_Flags::Scramble]) ? 1 : 0;
+
 	_m_full_war = Mission_all_attack;
-	_m_daisy_chained_docking = (The_mission.flags[Mission::Mission_Flags::Allow_dock_trees]) ? 1 : 0;
-	_m_disallow_support = (The_mission.support_ships.max_support_ships == 0) ? 1 : 0;
-	_m_no_promotion = (The_mission.flags[Mission::Mission_Flags::No_promotion]) ? 1 : 0;
-	_m_no_builtin_msgs = (The_mission.flags[Mission::Mission_Flags::No_builtin_msgs]) ? 1 : 0;
-	_m_no_builtin_command_msgs = (The_mission.flags[Mission::Mission_Flags::No_builtin_command]) ? 1 : 0;
-	_m_no_traitor = (The_mission.flags[Mission::Mission_Flags::No_traitor]) ? 1 : 0;
-	_m_toggle_trails = (The_mission.flags[Mission::Mission_Flags::Toggle_ship_trails]) ? 1 : 0;
-	_m_support_repairs_hull = (The_mission.flags[Mission::Mission_Flags::Support_repairs_hull]) ? 1 : 0;
-	_m_beam_free_all_by_default = (The_mission.flags[Mission::Mission_Flags::Beam_free_all_by_default]) ? 1 : 0;
-	_m_player_start_using_ai = (The_mission.flags[Mission::Mission_Flags::Player_start_ai]) ? 1 : 0;
-	_m_no_briefing = (The_mission.flags[Mission::Mission_Flags::No_briefing]) ? 1 : 0;
-	_m_no_debriefing = (The_mission.flags[Mission::Mission_Flags::Toggle_debriefing]) ? 1 : 0;
-	_m_autpilot_cinematics = (The_mission.flags[Mission::Mission_Flags::Use_ap_cinematics]) ? 1 : 0;
-	_m_2d_mission = (The_mission.flags[Mission::Mission_Flags::Mission_2d]) ? 1 : 0;
-	_m_no_autpilot = (The_mission.flags[Mission::Mission_Flags::Deactivate_ap]) ? 1 : 0;
-	_m_always_show_goals = (The_mission.flags[Mission::Mission_Flags::Always_show_goals]) ? 1 : 0;
+	_m_disallow_support = (The_mission.support_ships.max_support_ships == 0);
 
 	_m_flags = The_mission.flags;
 
@@ -186,21 +170,31 @@ void MissionSpecDialogModel::reject() {
 
 }
 
+void MissionSpecDialogModel::setMissionTitle(SCP_string m_mission_title) {
+	this->_m_mission_title = m_mission_title;
+}
+
 SCP_string MissionSpecDialogModel::getMissionTitle() {
 	return _m_mission_title;
 }
 
-void MissionSpecDialogModel::setMissionTitle(SCP_string m_mission_title){
-	this->_m_mission_title = m_mission_title;
+void MissionSpecDialogModel::setDesigner(SCP_string m_designer_name) {
+	this->_m_designer_name = m_designer_name;
+	modelChanged();
 }
 
 SCP_string MissionSpecDialogModel::getDesigner() {
 	return _m_designer_name;
 }
 
-void MissionSpecDialogModel::setDesigner(SCP_string m_designer_name) {
-	this->_m_designer_name = m_designer_name;
-	modelChanged();
+SCP_string MissionSpecDialogModel::getCreatedTime()
+{
+	return _m_created;
+}
+
+SCP_string MissionSpecDialogModel::getModifiedTime()
+{
+	return _m_modified;
 }
 
 void MissionSpecDialogModel::setMissionType(int m_type) {
@@ -225,6 +219,74 @@ int MissionSpecDialogModel::getMissionType() {
 	return _m_type;
 }
 
+void MissionSpecDialogModel::setNumRespawns(uint m_num_respawns) {
+	_m_num_respawns = m_num_respawns;
+}
+
+uint MissionSpecDialogModel::getNumRespawns()
+{
+	return _m_num_respawns;
+}
+
+void MissionSpecDialogModel::setMaxRespawnDelay(int m_max_respawn_delay) {
+	_m_max_respawn_delay = m_max_respawn_delay;
+}
+
+int MissionSpecDialogModel::getMaxRespawnDelay()
+{
+	return _m_max_respawn_delay;
+}
+
+void MissionSpecDialogModel::setSquadronName(SCP_string m_squad_name) {
+	_m_squad_name = m_squad_name;
+	modelChanged();
+}
+
+SCP_string MissionSpecDialogModel::getSquadronName()
+{
+	return _m_squad_name;
+}
+
+void MissionSpecDialogModel::setSquadronLogo(SCP_string m_squad_filename) {
+	_m_squad_filename = m_squad_filename;
+	modelChanged();
+}
+
+SCP_string MissionSpecDialogModel::getSquadronLogo()
+{
+	return _m_squad_filename;
+}
+
+void MissionSpecDialogModel::setLowResLoadingScreen(SCP_string m_loading_640) {
+	_m_loading_640 = m_loading_640;
+	modelChanged();
+}
+
+SCP_string MissionSpecDialogModel::getLowResLoadingScren() {
+	return _m_loading_640;
+}
+
+void MissionSpecDialogModel::setHighResLoadingScreen(SCP_string m_loading_1024) {
+	_m_loading_1024 = m_loading_1024;
+	modelChanged();
+}
+
+SCP_string MissionSpecDialogModel::getHighResLoadingScren()
+{
+	return _m_loading_1024;
+}
+
+void MissionSpecDialogModel::setDisallowSupport(bool m_disallow_support) {
+	if (_m_disallow_support != m_disallow_support) {
+		_m_disallow_support = m_disallow_support;
+		modelChanged();
+	}
+}
+
+bool MissionSpecDialogModel::getDisallowSupport() {
+	return _m_disallow_support;
+}
+
 void MissionSpecDialogModel::setMissionFlag(Mission::Mission_Flags flag, bool enabled) {
 	_m_flags.set(flag, enabled);
 	modelChanged();
@@ -247,8 +309,7 @@ void MissionSpecDialogModel::setAIProfileIndex(int m_ai_profile) {
 	}
 }
 
-int MissionSpecDialogModel::getAIProfileIndex()
-{
+int MissionSpecDialogModel::getAIProfileIndex() const {
 	return _m_ai_profile;
 }
 

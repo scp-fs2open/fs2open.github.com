@@ -27,6 +27,11 @@ public:
 protected:
 	void closeEvent(QCloseEvent*) override;
 
+private slots:
+	void on_squadronLogoButton_clicked();
+	void on_lowResScreenButton_clicked();
+	void on_highResScreenButton_clicked();
+
 private:
     std::unique_ptr<Ui::MissionSpecDialog> ui;
 	std::unique_ptr<MissionSpecDialogModel> _model;
@@ -38,8 +43,8 @@ private:
 	void updateFlags();
 	void updateTextEditors();
 
-	void missionTitleChanged();
-	void missionDesignerChanged();
+	void missionTitleChanged(const QString &);
+	void missionDesignerChanged(const QString &);
 
 	void singleRadioToggled(bool);
 	void multiRadioToggled(bool);
@@ -47,6 +52,13 @@ private:
 	void coopRadioToggled(bool);
 	void multiTeamRadioToggled(bool);
 	void dogfightRadioToggled(bool);
+
+	void maxRespawnChanged(int);
+	void respawnDelayChanged(int);
+
+	void squadronNameChanged(const QString &);
+
+	void disallowSupportChanged(bool);
 
 	void flagToggled(bool enabled, Mission::Mission_Flags flag);
 
