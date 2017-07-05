@@ -34,10 +34,12 @@ private:
 
 	void updateUI();
 
-	void updateTitle();
-	void updateDesigner();
 	void updateMissionType();
 	void updateFlags();
+	void updateTextEditors();
+
+	void missionTitleChanged();
+	void missionDesignerChanged();
 
 	void singleRadioToggled(bool);
 	void multiRadioToggled(bool);
@@ -47,6 +49,11 @@ private:
 	void dogfightRadioToggled(bool);
 
 	void flagToggled(bool enabled, Mission::Mission_Flags flag);
+
+	void missionDescChanged();
+	void designerNotesChanged();
+
+	void aiProfileIndexChanged(int index);
 	
 };
 

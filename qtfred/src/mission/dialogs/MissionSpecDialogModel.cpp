@@ -56,11 +56,6 @@ void MissionSpecDialogModel::initializeData() {
 	_m_loading_640 = The_mission.loading_screen[GR_640];
 	_m_loading_1024 = The_mission.loading_screen[GR_1024];
 
-	
-	for (i = 0; i < Num_ai_profiles; i++) {
-		_ai_profiles.push_back(Ai_profiles[i].profile_name);
-	}
-
 	_event_music.push_back("None");
 	for (i = 0; i < Num_soundtracks; i++) {
 		_event_music.push_back(Soundtracks[i].name);
@@ -118,8 +113,7 @@ void MissionSpecDialogModel::initializeData() {
 }
 
 bool MissionSpecDialogModel::apply() {
-	int new_m_type, is_multi = 0, is_training = 0, is_single = 0;
-	flagset<Mission::Mission_Flags> flags;
+	int new_m_type;
 
 	// deal with changing the mission type.  Code is done this way since training missions
 	// just override anything else.
@@ -139,74 +133,15 @@ bool MissionSpecDialogModel::apply() {
 	The_mission.support_ships.max_support_ships = (_m_disallow_support) ? 0 : -1;
 	The_mission.support_ships.max_hull_repair_val = _m_max_hull_repair_val;
 	The_mission.support_ships.max_subsys_repair_val = _m_max_subsys_repair_val;
+	
+	// Copy mission flags
+	The_mission.flags = _m_flags;
 
-	flags = The_mission.flags;
-
-	/*// set flags for red alert
-	The_mission.flags.set(Mission::Mission_Flags::Red_alert, _m_red_alert != 0);
-
-	// set flags for scramble
-	The_mission.flags.set(Mission::Mission_Flags::Scramble, _m_scramble != 0);
-
-	// set flags for dock trees
-	The_mission.flags.set(Mission::Mission_Flags::Allow_dock_trees, _m_daisy_chained_docking != 0);
-
-	// set the flags for no promotion
-	The_mission.flags.set(Mission::Mission_Flags::No_promotion, _m_no_promotion != 0);
-
-	// set flags for no builtin messages
-	The_mission.flags.set(Mission::Mission_Flags::No_builtin_msgs, _m_no_builtin_msgs != 0);
-
-	// set flags for no builtin command messages
-	The_mission.flags.set(Mission::Mission_Flags::No_builtin_command, _m_no_builtin_command_msgs != 0);
-
-	// set no traitor flags
-	The_mission.flags.set(Mission::Mission_Flags::No_traitor, _m_no_traitor != 0);
-
-	//set ship trail flags
-	The_mission.flags.set(Mission::Mission_Flags::Toggle_ship_trails, _m_toggle_trails != 0);
-	*/
 	// set ship trail threshold
 	if (_m_contrail_threshold_flag) {
 		The_mission.contrail_threshold = _m_contrail_threshold;
 	} else {
 		The_mission.contrail_threshold = CONTRAIL_THRESHOLD_DEFAULT;
-	}
-	/*
-	//set support ship repairing flags
-	The_mission.flags.set(Mission::Mission_Flags::Support_repairs_hull, _m_support_repairs_hull != 0);
-
-	// set default beam free
-	The_mission.flags.set(Mission::Mission_Flags::Beam_free_all_by_default, _m_beam_free_all_by_default != 0);
-
-	// set player AI by default
-	The_mission.flags.set(Mission::Mission_Flags::Player_start_ai, _m_player_start_using_ai != 0);
-
-	// set briefing
-	The_mission.flags.set(Mission::Mission_Flags::No_briefing, _m_no_briefing != 0);
-
-	// set debriefing
-	The_mission.flags.set(Mission::Mission_Flags::Toggle_debriefing, _m_no_debriefing != 0);
-
-	// set autopilot cinematics
-	The_mission.flags.set(Mission::Mission_Flags::Use_ap_cinematics, _m_autpilot_cinematics != 0);
-
-	// 2D mission
-	The_mission.flags.set(Mission::Mission_Flags::Mission_2d, _m_2d_mission != 0);
-
-	// set autopilot disabled
-	The_mission.flags.set(Mission::Mission_Flags::Deactivate_ap, _m_no_autpilot != 0);
-
-	// always show mission goals
-	The_mission.flags.set(Mission::Mission_Flags::Always_show_goals, _m_always_show_goals != 0);
-
-	// End to mainhall
-	The_mission.flags.set(Mission::Mission_Flags::End_to_mainhall, _m_end_to_mainhall != 0);*/
-
-	The_mission.flags = _m_flags;
-
-	if (flags != The_mission.flags) {
-		// Doc has been changed
 	}
 
 	strncpy(The_mission.name, _m_mission_title.c_str(), NAME_LENGTH-1);
@@ -268,10 +203,6 @@ void MissionSpecDialogModel::setDesigner(SCP_string m_designer_name) {
 	modelChanged();
 }
 
-const SCP_vector<SCP_string>& MissionSpecDialogModel::getAIProfiles() const {
-	return _ai_profiles;
-}
-
 void MissionSpecDialogModel::setMissionType(int m_type) {
 	if (m_type & (MISSION_TYPE_SINGLE |
 		MISSION_TYPE_MULTI |
@@ -309,8 +240,44 @@ void MissionSpecDialogModel::setMissionFullWar(bool enabled) {
 	modelChanged();
 }
 
+void MissionSpecDialogModel::setAIProfileIndex(int m_ai_profile) {
+	if (_m_ai_profile != m_ai_profile) {
+		_m_ai_profile = m_ai_profile;
+		modelChanged();
+	}
+}
+
+int MissionSpecDialogModel::getAIProfileIndex()
+{
+	return _m_ai_profile;
+}
+
+void MissionSpecDialogModel::setMissionDescText(SCP_string m_mission_desc) {
+	_m_mission_desc = m_mission_desc.substr(0,MIN(MISSION_DESC_LENGTH, m_mission_desc.length()));
+	modelChanged();
+}
+
+SCP_string MissionSpecDialogModel::getMissionDescText()
+{
+	return _m_mission_desc;
+}
+
+void MissionSpecDialogModel::setDesignerNoteText(SCP_string m_mission_notes) {
+	_m_mission_notes = m_mission_notes.substr(0,MIN(NOTES_LENGTH, m_mission_notes.length()));
+	modelChanged();
+}
+
+SCP_string MissionSpecDialogModel::getDesignerNoteText()
+{
+	return _m_mission_notes;
+}
+
 bool MissionSpecDialogModel::query_modified() {
-	return true;
+	if (_m_flags != The_mission.flags) {
+		return true;
+	}
+
+	return false;
 }
 
 }

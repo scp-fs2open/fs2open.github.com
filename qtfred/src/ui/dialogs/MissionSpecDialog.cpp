@@ -21,8 +21,8 @@ MissionSpecDialog::MissionSpecDialog(FredView* parent, EditorViewport* viewport)
 	connect(_model.get(), &AbstractDialogModel::modelChanged, this, &MissionSpecDialog::updateUI);
 
 	// Mission title and creator
-	connect(ui->missionTitle, static_cast<void (QLineEdit::*)(const QString &)>(&QLineEdit::textChanged), this, &MissionSpecDialog::updateTitle);
-	connect(ui->missionDesigner, static_cast<void (QLineEdit::*)(const QString &)>(&QLineEdit::textChanged), this, &MissionSpecDialog::updateDesigner);
+	connect(ui->missionTitle, static_cast<void (QLineEdit::*)(const QString &)>(&QLineEdit::textChanged), this, &MissionSpecDialog::missionTitleChanged);
+	connect(ui->missionDesigner, static_cast<void (QLineEdit::*)(const QString &)>(&QLineEdit::textChanged), this, &MissionSpecDialog::missionDesignerChanged);
 
 	// Mission type
 	connect(ui->m_type_SinglePlayer, &QRadioButton::toggled, this, &MissionSpecDialog::singleRadioToggled);
@@ -31,6 +31,12 @@ MissionSpecDialog::MissionSpecDialog(FredView* parent, EditorViewport* viewport)
 	connect(ui->m_type_Cooperative, &QRadioButton::toggled, this, &MissionSpecDialog::coopRadioToggled);
 	connect(ui->m_type_TeamVsTeam, &QRadioButton::toggled, this, &MissionSpecDialog::multiTeamRadioToggled);
 	connect(ui->m_type_Dogfight, &QRadioButton::toggled, this, &MissionSpecDialog::dogfightRadioToggled);
+
+	// Support Ships
+	connect(ui->toggleHullRepair, &QCheckBox::toggled, this, [this](bool param) {flagToggled(param, Mission::Mission_Flags::Support_repairs_hull); });
+
+	// Ship Trails
+	connect(ui->toggleTrail, &QCheckBox::toggled, this, [this](bool param) {flagToggled(param, Mission::Mission_Flags::Toggle_ship_trails); });
 
 	// Mission flags - Lambda functions are used to allow the passing of additional parameters to a single method
 	connect(ui->toggleAllTeamsAtWar, &QCheckBox::toggled, _model.get(), &MissionSpecDialogModel::setMissionFullWar);
@@ -51,12 +57,14 @@ MissionSpecDialog::MissionSpecDialog(FredView* parent, EditorViewport* viewport)
 	connect(ui->toggleGoalsInBriefing, &QCheckBox::toggled, this, [this](bool param) {flagToggled(param, Mission::Mission_Flags::Always_show_goals); });
 	connect(ui->toggleMissionEndToMainhall, &QCheckBox::toggled, this, [this](bool param) {flagToggled(param, Mission::Mission_Flags::End_to_mainhall); });
 
-	// Support Ships
-	connect(ui->toggleHullRepair, &QCheckBox::toggled, this, [this](bool param) {flagToggled(param, Mission::Mission_Flags::Support_repairs_hull); });
-	
-	// Ship Trails
-	connect(ui->toggleTrail, &QCheckBox::toggled, this, [this](bool param) {flagToggled(param, Mission::Mission_Flags::Toggle_ship_trails); });
-	
+	// AI Profiles
+	connect(ui->aiProfileCombo, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged), this, &MissionSpecDialog::aiProfileIndexChanged);
+
+	// Mission Description
+	connect(ui->missionDescEditor,&QPlainTextEdit::textChanged, this, &MissionSpecDialog::missionDescChanged);
+
+	// Designer Notes
+	connect(ui->designerNoteEditor, &QPlainTextEdit::textChanged, this, &MissionSpecDialog::designerNotesChanged);
 
 	updateUI();
 
@@ -91,19 +99,16 @@ void MissionSpecDialog::updateUI() {
 	ui->missionDesigner->setText(_model->getDesigner().c_str());
 
 	updateMissionType();
+
 	updateFlags();
+
 	ui->aiProfileCombo->clear();
-	for (auto &profile : _model->getAIProfiles()) {
-		ui->aiProfileCombo->addItem(QString(profile.c_str()));
+	for (int i = 0; i < Num_ai_profiles; i++) {
+		ui->aiProfileCombo->addItem(QString(Ai_profiles[i].profile_name));
 	}
-}
+	ui->aiProfileCombo->setCurrentIndex(_model->getAIProfileIndex());
 
-void MissionSpecDialog::updateTitle() {
-	_model->setMissionTitle(ui->missionTitle->text().toStdString());
-}
-
-void MissionSpecDialog::updateDesigner() {
-	_model->setDesigner(ui->missionDesigner->text().toStdString());
+	updateTextEditors();
 }
 
 void MissionSpecDialog::updateMissionType() {
@@ -152,6 +157,28 @@ void MissionSpecDialog::updateFlags() {
 	ui->togglePromotion->setChecked(flags[Mission::Mission_Flags::No_promotion]);
 	ui->toggleRedAlert->setChecked(flags[Mission::Mission_Flags::Red_alert]);
 	ui->toggleScramble->setChecked(flags[Mission::Mission_Flags::Scramble]);
+	ui->toggleHullRepair->setChecked(flags[Mission::Mission_Flags::Support_repairs_hull]);
+	ui->toggleTrail->setChecked(flags[Mission::Mission_Flags::Toggle_ship_trails]);
+}
+
+void MissionSpecDialog::updateTextEditors() {
+	QTextCursor textCursor;
+	
+	textCursor = ui->missionDescEditor->textCursor();
+	ui->missionDescEditor->document()->setPlainText(_model->getMissionDescText().c_str());
+	ui->missionDescEditor->setTextCursor(textCursor);
+
+	textCursor = ui->designerNoteEditor->textCursor();
+	ui->designerNoteEditor->document()->setPlainText(_model->getDesignerNoteText().c_str());
+	ui->designerNoteEditor->setTextCursor(textCursor);
+}
+
+void MissionSpecDialog::missionTitleChanged() {
+	_model->setMissionTitle(ui->missionTitle->text().toStdString());
+}
+
+void MissionSpecDialog::missionDesignerChanged() {
+	_model->setDesigner(ui->missionDesigner->text().toStdString());
 }
 
 void MissionSpecDialog::singleRadioToggled(bool enabled) {
@@ -192,6 +219,25 @@ void MissionSpecDialog::dogfightRadioToggled(bool enabled) {
 
 void MissionSpecDialog::flagToggled(bool enabled, Mission::Mission_Flags flag) {
 	_model->setMissionFlag(flag, enabled);
+}
+
+void MissionSpecDialog::missionDescChanged() {
+	QSignalBlocker blocker(ui->missionDescEditor);
+
+	_model->setMissionDescText(ui->missionDescEditor->document()->toPlainText().toStdString());
+}
+
+void MissionSpecDialog::designerNotesChanged() {
+	QSignalBlocker blocker(ui->designerNoteEditor);
+
+	_model->setDesignerNoteText(ui->designerNoteEditor->document()->toPlainText().toStdString());
+}
+
+void MissionSpecDialog::aiProfileIndexChanged(int index) {
+	QSignalBlocker blocker(ui->aiProfileCombo);
+
+	auto aiProfileIndex = ui->aiProfileCombo->itemData(index).value<int>();
+	_model->setAIProfileIndex(aiProfileIndex);
 }
 
 }

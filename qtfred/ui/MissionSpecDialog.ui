@@ -218,6 +218,12 @@
        </item>
        <item row="0" column="1">
         <widget class="QSpinBox" name="maxRespawnCount">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
          <property name="value">
           <number>3</number>
          </property>
@@ -225,6 +231,12 @@
        </item>
        <item row="1" column="1">
         <widget class="QSpinBox" name="respawnDelayCount">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
          <property name="minimum">
           <number>-1</number>
          </property>
@@ -287,7 +299,7 @@
         <item row="0" column="0">
          <widget class="QLabel" name="squadronNameLabel">
           <property name="sizePolicy">
-           <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+           <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
             <horstretch>0</horstretch>
             <verstretch>0</verstretch>
            </sizepolicy>
@@ -306,7 +318,7 @@
         <item row="1" column="0">
          <widget class="QPushButton" name="squadronLogoButton">
           <property name="sizePolicy">
-           <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+           <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
             <horstretch>0</horstretch>
             <verstretch>0</verstretch>
            </sizepolicy>
@@ -903,6 +915,12 @@
    </item>
    <item row="1" column="0" colspan="3">
     <layout class="QVBoxLayout" name="missionDescLayout">
+     <property name="spacing">
+      <number>3</number>
+     </property>
+     <property name="topMargin">
+      <number>3</number>
+     </property>
      <item>
       <widget class="QLabel" name="missionDescLabel">
        <property name="text">
@@ -911,12 +929,25 @@
       </widget>
      </item>
      <item>
-      <widget class="QTextEdit" name="missionDescEditor"/>
+      <widget class="QPlainTextEdit" name="missionDescEditor">
+       <property name="overwriteMode">
+        <bool>false</bool>
+       </property>
+       <property name="textInteractionFlags">
+        <set>Qt::TextEditorInteraction</set>
+       </property>
+      </widget>
      </item>
     </layout>
    </item>
    <item row="2" column="0" colspan="3">
     <layout class="QVBoxLayout" name="designerNoteLayout">
+     <property name="spacing">
+      <number>3</number>
+     </property>
+     <property name="topMargin">
+      <number>3</number>
+     </property>
      <item>
       <widget class="QLabel" name="designerNoteLabel">
        <property name="text">
@@ -925,7 +956,7 @@
       </widget>
      </item>
      <item>
-      <widget class="QTextEdit" name="designerNoteEditor"/>
+      <widget class="QPlainTextEdit" name="designerNoteEditor"/>
      </item>
     </layout>
    </item>
@@ -967,12 +998,12 @@
   </connection>
  </connections>
  <buttongroups>
-  <buttongroup name="mt_multiGroup"/>
   <buttongroup name="m_flagGroup">
    <property name="exclusive">
     <bool>false</bool>
    </property>
   </buttongroup>
   <buttongroup name="mt_baseGroup"/>
+  <buttongroup name="mt_multiGroup"/>
  </buttongroups>
 </ui>

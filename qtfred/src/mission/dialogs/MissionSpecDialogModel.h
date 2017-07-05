@@ -56,7 +56,6 @@ private:
 
 	flagset<Mission::Mission_Flags> _m_flags;
 
-	SCP_vector<SCP_string> _ai_profiles;
 	SCP_vector<SCP_string> _event_music;
 	SCP_vector<SCP_string> _sub_event_music;
 	SCP_vector<SCP_string> _command_personas;
@@ -81,7 +80,14 @@ public:
 	const flagset<Mission::Mission_Flags>& getMissionFlags() const;
 	void setMissionFullWar(bool enabled);
 
-	const SCP_vector<SCP_string>& getAIProfiles() const;
+	void setAIProfileIndex(int m_ai_profile);
+	int getAIProfileIndex();
+
+	void setMissionDescText(SCP_string);
+	SCP_string getMissionDescText();
+
+	void setDesignerNoteText(SCP_string);
+	SCP_string getDesignerNoteText();
 
 	bool query_modified();
 };
