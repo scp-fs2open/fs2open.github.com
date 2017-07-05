@@ -781,8 +781,14 @@ void gr_opengl_string(float sx, float sy, const char *s, int resize_mode, int in
 
 				if (specialChar) {
 					if (pass == 1) {
+						// We compute the top offset of the special character by aligning it to the base line of the string
+						// This is done by moving to the base line of the string by adding the ascender value and then
+						// accounting for the height of the text with the height of the special font
+						auto yOffset = nvgFont->getTopOffset() +
+							(nvgFont->getAscender() - nvgFont->getSpecialCharacterFont()->h);
+
 						gr_opengl_string_old(sx + x * scaleX,
-											 sy + (y + nvgFont->getTopOffset()) * scaleY,
+											 sy + (y + yOffset) * scaleY,
 											 text,
 											 text + 1,
 											 nvgFont->getSpecialCharacterFont(),

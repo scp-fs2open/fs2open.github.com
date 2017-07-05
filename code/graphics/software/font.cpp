@@ -203,7 +203,7 @@ namespace
 		nvgFont->setName(fontStr);
 
 		// Make sure that the height is not invalid
-		nvgFont->checkHeight();
+		nvgFont->computeFontMetrics();
 	}
 
 	void parse_vfnt_font(const SCP_string& fontFilename)
@@ -300,7 +300,7 @@ namespace
 			font->setBottomOffset(temp);
 		}
 		// Make sure that the height is not invalid
-		font->checkHeight();
+		font->computeFontMetrics();
 	}
 
 	void font_parse_setup(const char *fileName)
