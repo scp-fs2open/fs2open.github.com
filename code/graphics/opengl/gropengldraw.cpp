@@ -553,7 +553,7 @@ void gr_opengl_string_old(float sx, float sy, const char* s, const char* end, fo
 			break;
 		}
 
-		letter = font::get_char_width_old(fontData, s[0], s[1], &width, &spacing);
+		letter = font::get_char_width_old(fontData, (ubyte)s[0], (ubyte)s[1], &width, &spacing);
 		s++;
 
 		// not in font, draw as space
@@ -793,24 +793,21 @@ void gr_opengl_string(float sx, float sy, const char *s, int resize_mode, int in
 
 					int width;
 					int spacing;
-					get_char_width_old(nvgFont->getSpecialCharacterFont(), *text, '\0', &width, &spacing);
+					get_char_width_old(nvgFont->getSpecialCharacterFont(), (ubyte)*text, (ubyte)*(text + 1), &width, &spacing);
 
-					x += spacing;
+					x += i2fl(spacing) * invscaleX;
 				}
 				else if (doRender) {
 					if (doRender && tokenLength > 0) {
 						float advance;
-						float currentX = x;
+						float currentX = x * scaleX;
 						float currentY = y + nvgFont->getTopOffset();
 
 						if (pass == 0) {
-							advance = path->text(currentX, currentY, text, text + tokenLength) - currentX;
-						}
-						else {
-							advance =
-								path->textBounds(currentX, currentY, text, text + tokenLength, nullptr) - currentX;
+							path->text(currentX, currentY, text, text + tokenLength);
 						}
 
+						advance = path->textBounds(0.f, 0.f, text, text + tokenLength, nullptr);
 						x += advance * invscaleX;
 					}
 				}
