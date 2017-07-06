@@ -284,6 +284,9 @@ extern int    Current_file_length;
 
 #define SUBSYS_STATUS_NO_CHANGE	-999
 
+// Squadron Default Name
+#define NO_SQUAD	"<none>"
+
 typedef struct subsys_status {
 	char	name[NAME_LENGTH];
 	float	percent;  // percent damaged

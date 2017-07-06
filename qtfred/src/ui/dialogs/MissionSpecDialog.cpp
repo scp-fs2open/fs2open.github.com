@@ -26,12 +26,12 @@ MissionSpecDialog::MissionSpecDialog(FredView* parent, EditorViewport* viewport)
 	connect(ui->missionDesigner, static_cast<void (QLineEdit::*)(const QString &)>(&QLineEdit::textChanged), this, &MissionSpecDialog::missionDesignerChanged);
 
 	// Mission type
-	connect(ui->m_type_SinglePlayer, &QRadioButton::toggled, this, &MissionSpecDialog::singleRadioToggled);
-	connect(ui->m_type_MultiPlayer, &QRadioButton::toggled, this, &MissionSpecDialog::multiRadioToggled);
-	connect(ui->m_type_Training, &QRadioButton::toggled, this, &MissionSpecDialog::trainingRadioToggled);
-	connect(ui->m_type_Cooperative, &QRadioButton::toggled, this, &MissionSpecDialog::coopRadioToggled);
-	connect(ui->m_type_TeamVsTeam, &QRadioButton::toggled, this, &MissionSpecDialog::multiTeamRadioToggled);
-	connect(ui->m_type_Dogfight, &QRadioButton::toggled, this, &MissionSpecDialog::dogfightRadioToggled);
+	connect(ui->m_type_SinglePlayer, &QRadioButton::toggled, this, [this](bool param) {missionTypeToggled(param, MISSION_TYPE_SINGLE); });
+	connect(ui->m_type_MultiPlayer, &QRadioButton::toggled, this, [this](bool param) {missionTypeToggled(param, MISSION_TYPE_MULTI | MISSION_TYPE_MULTI_COOP); });
+	connect(ui->m_type_Training, &QRadioButton::toggled, this, [this](bool param) {missionTypeToggled(param, MISSION_TYPE_TRAINING); });
+	connect(ui->m_type_Cooperative, &QRadioButton::toggled, this, [this](bool param) {missionTypeToggled(param, MISSION_TYPE_MULTI | MISSION_TYPE_MULTI_COOP); });
+	connect(ui->m_type_TeamVsTeam, &QRadioButton::toggled, this, [this](bool param) {missionTypeToggled(param, MISSION_TYPE_MULTI | MISSION_TYPE_MULTI_TEAMS); });
+	connect(ui->m_type_Dogfight, &QRadioButton::toggled, this, [this](bool param) {missionTypeToggled(param, MISSION_TYPE_MULTI | MISSION_TYPE_MULTI_DOGFIGHT); });
 
 	// Respawn info
 	connect(ui->maxRespawnCount, static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged), this, &MissionSpecDialog::maxRespawnChanged);
@@ -43,14 +43,18 @@ MissionSpecDialog::MissionSpecDialog(FredView* parent, EditorViewport* viewport)
 	// Squadron Reassign
 	connect(ui->squadronName, &QLineEdit::textChanged, this, &MissionSpecDialog::squadronNameChanged);
 	
-	// Loading Screen
+	// Loading Screen - Nothing to connect as buttons are connected directly to slots
 
 	// Support Ships
 	connect(ui->toggleSupportShip, &QCheckBox::toggled, this, &MissionSpecDialog::disallowSupportChanged);
 	connect(ui->toggleHullRepair, &QCheckBox::toggled, this, [this](bool param) {flagToggled(param, Mission::Mission_Flags::Support_repairs_hull); });
+	connect(ui->hullRepairMax, static_cast<void (QDoubleSpinBox::*)(double)>(&QDoubleSpinBox::valueChanged), this, &MissionSpecDialog::hullRepairMaxChanged);
+	connect(ui->subsysRepairMax, static_cast<void (QDoubleSpinBox::*)(double)>(&QDoubleSpinBox::valueChanged), this, &MissionSpecDialog::subsysRepairMaxChanged);
 
 	// Ship Trails
 	connect(ui->toggleTrail, &QCheckBox::toggled, this, [this](bool param) {flagToggled(param, Mission::Mission_Flags::Toggle_ship_trails); });
+	connect(ui->toggleSpeedDisplay, &QCheckBox::toggled, this, &MissionSpecDialog::trailDisplaySpeedToggled);
+	connect(ui->minDisplaySpeed, static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged), this, &MissionSpecDialog::minTrailDisplaySpeedChanged);
 
 	// Built-in Command Messages
 
@@ -123,16 +127,25 @@ void MissionSpecDialog::updateUI() {
 
 	updateMissionType();
 
+	ui->maxRespawnCount->setEnabled(_model->getMissionType() & MISSION_TYPE_MULTI);
+	ui->respawnDelayCount->setEnabled(_model->getMissionType() & MISSION_TYPE_MULTI);
 	ui->maxRespawnCount->setValue(_model->getNumRespawns());
 	ui->respawnDelayCount->setValue(_model->getMaxRespawnDelay());
 
 	ui->squadronName->setText(_model->getSquadronName().c_str());
+	ui->squadronLogo->setEnabled(false);
 	ui->squadronLogo->setText(_model->getSquadronLogo().c_str());
 
 	ui->lowResScreen->setText(_model->getLowResLoadingScren().c_str());
 	ui->highResScreen->setText(_model->getHighResLoadingScren().c_str());
 
 	ui->toggleSupportShip->setChecked(_model->getDisallowSupport());
+	ui->hullRepairMax->setValue(_model->getHullRepairMax());
+	ui->subsysRepairMax->setValue(_model->getSubsysRepairMax());
+
+	ui->toggleSpeedDisplay->setChecked(_model->getTrailThresholdFlag());
+	ui->minDisplaySpeed->setEnabled(_model->getTrailThresholdFlag());
+	ui->minDisplaySpeed->setValue(_model->getTrailDisplaySpeed());
 
 	updateFlags();
 
@@ -220,39 +233,9 @@ void MissionSpecDialog::missionDesignerChanged(const QString & string) {
 	_model->setDesigner(string.toStdString());
 }
 
-void MissionSpecDialog::singleRadioToggled(bool enabled) {
+void MissionSpecDialog::missionTypeToggled(bool enabled, int m_type) {
 	if (enabled) {
-		_model->setMissionType(MISSION_TYPE_SINGLE);
-	}
-}
-
-void MissionSpecDialog::multiRadioToggled(bool enabled) {
-	if (enabled) {
-		_model->setMissionType(MISSION_TYPE_MULTI | MISSION_TYPE_MULTI_COOP);	// Coop is the default multiplayer mission type
-	}
-}
-
-void MissionSpecDialog::trainingRadioToggled(bool enabled) {
-	if (enabled) {
-		_model->setMissionType(MISSION_TYPE_TRAINING);
-	}
-}
-
-void MissionSpecDialog::coopRadioToggled(bool enabled) {
-	if (enabled) {
-		_model->setMissionType(MISSION_TYPE_MULTI | MISSION_TYPE_MULTI_COOP);
-	}
-}
-
-void MissionSpecDialog::multiTeamRadioToggled(bool enabled) {
-	if (enabled) {
-		_model->setMissionType(MISSION_TYPE_MULTI | MISSION_TYPE_MULTI_TEAMS);
-	}
-}
-
-void MissionSpecDialog::dogfightRadioToggled(bool enabled) {
-	if (enabled) {
-		_model->setMissionType(MISSION_TYPE_MULTI | MISSION_TYPE_MULTI_DOGFIGHT);
+		_model->setMissionType(m_type);
 	}
 }
 
@@ -293,6 +276,22 @@ void MissionSpecDialog::on_highResScreenButton_clicked() {
 
 void MissionSpecDialog::disallowSupportChanged(bool enabled) {
 	_model->setDisallowSupport(enabled);
+}
+
+void MissionSpecDialog::hullRepairMaxChanged(double value) {
+	_model->setHullRepairMax((float)value);
+}
+
+void MissionSpecDialog::subsysRepairMaxChanged(double value) {
+	_model->setSubsysRepairMax((float)value);
+}
+
+void MissionSpecDialog::trailDisplaySpeedToggled(bool enabled) {
+	_model->setTrailThresholdFlag(enabled);
+}
+
+void MissionSpecDialog::minTrailDisplaySpeedChanged(int value) {
+	_model->setTrailDisplaySpeed(value);
 }
 
 void MissionSpecDialog::flagToggled(bool enabled, Mission::Mission_Flags flag) {

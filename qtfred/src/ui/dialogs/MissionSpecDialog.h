@@ -47,12 +47,7 @@ private:
 	void missionTitleChanged(const QString &);
 	void missionDesignerChanged(const QString &);
 
-	void singleRadioToggled(bool);
-	void multiRadioToggled(bool);
-	void trainingRadioToggled(bool);
-	void coopRadioToggled(bool);
-	void multiTeamRadioToggled(bool);
-	void dogfightRadioToggled(bool);
+	void missionTypeToggled(bool, int);
 
 	void maxRespawnChanged(int);
 	void respawnDelayChanged(int);
@@ -60,6 +55,11 @@ private:
 	void squadronNameChanged(const QString &);
 
 	void disallowSupportChanged(bool);
+	void hullRepairMaxChanged(double);
+	void subsysRepairMaxChanged(double);
+
+	void trailDisplaySpeedToggled(bool);
+	void minTrailDisplaySpeedChanged(int);
 
 	void flagToggled(bool enabled, Mission::Mission_Flags flag);
 

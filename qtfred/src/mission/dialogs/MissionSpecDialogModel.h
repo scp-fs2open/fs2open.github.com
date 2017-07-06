@@ -82,6 +82,15 @@ public:
 
 	void setDisallowSupport(bool);
 	bool getDisallowSupport();
+	void setHullRepairMax(float);
+	int getHullRepairMax();
+	void setSubsysRepairMax(float);
+	int getSubsysRepairMax();
+
+	void setTrailThresholdFlag(bool);
+	bool getTrailThresholdFlag();
+	void setTrailDisplaySpeed(int);
+	int getTrailDisplaySpeed();
 
 	void setMissionFlag(Mission::Mission_Flags flag, bool enabled);
 	const flagset<Mission::Mission_Flags>& getMissionFlags() const;

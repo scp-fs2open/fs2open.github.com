@@ -15,8 +15,6 @@ namespace fso {
 namespace fred {
 namespace dialogs {
 
-#define NO_SQUAD	"<none>"
-
 MissionSpecDialogModel::MissionSpecDialogModel(QObject* parent, EditorViewport* viewport) :
 	AbstractDialogModel(parent, viewport) {
 	initializeData();
@@ -223,8 +221,7 @@ void MissionSpecDialogModel::setNumRespawns(uint m_num_respawns) {
 	_m_num_respawns = m_num_respawns;
 }
 
-uint MissionSpecDialogModel::getNumRespawns()
-{
+uint MissionSpecDialogModel::getNumRespawns() {
 	return _m_num_respawns;
 }
 
@@ -232,34 +229,37 @@ void MissionSpecDialogModel::setMaxRespawnDelay(int m_max_respawn_delay) {
 	_m_max_respawn_delay = m_max_respawn_delay;
 }
 
-int MissionSpecDialogModel::getMaxRespawnDelay()
-{
+int MissionSpecDialogModel::getMaxRespawnDelay() {
 	return _m_max_respawn_delay;
 }
 
 void MissionSpecDialogModel::setSquadronName(SCP_string m_squad_name) {
-	_m_squad_name = m_squad_name;
-	modelChanged();
+	if (_m_squad_name != m_squad_name) {
+		_m_squad_name = m_squad_name;
+		modelChanged();
+	}
 }
 
-SCP_string MissionSpecDialogModel::getSquadronName()
-{
+SCP_string MissionSpecDialogModel::getSquadronName() {
 	return _m_squad_name;
 }
 
 void MissionSpecDialogModel::setSquadronLogo(SCP_string m_squad_filename) {
-	_m_squad_filename = m_squad_filename;
-	modelChanged();
+	if (_m_squad_filename != m_squad_filename) {
+		_m_squad_filename = m_squad_filename;
+		modelChanged();
+	}
 }
 
-SCP_string MissionSpecDialogModel::getSquadronLogo()
-{
+SCP_string MissionSpecDialogModel::getSquadronLogo() {
 	return _m_squad_filename;
 }
 
 void MissionSpecDialogModel::setLowResLoadingScreen(SCP_string m_loading_640) {
-	_m_loading_640 = m_loading_640;
-	modelChanged();
+	if (_m_loading_640 != m_loading_640) {
+		_m_loading_640 = m_loading_640;
+		modelChanged();
+	}
 }
 
 SCP_string MissionSpecDialogModel::getLowResLoadingScren() {
@@ -267,12 +267,13 @@ SCP_string MissionSpecDialogModel::getLowResLoadingScren() {
 }
 
 void MissionSpecDialogModel::setHighResLoadingScreen(SCP_string m_loading_1024) {
-	_m_loading_1024 = m_loading_1024;
-	modelChanged();
+	if (_m_loading_1024 != m_loading_1024) {
+		_m_loading_1024 = m_loading_1024;
+		modelChanged();
+	}
 }
 
-SCP_string MissionSpecDialogModel::getHighResLoadingScren()
-{
+SCP_string MissionSpecDialogModel::getHighResLoadingScren() {
 	return _m_loading_1024;
 }
 
@@ -285,6 +286,50 @@ void MissionSpecDialogModel::setDisallowSupport(bool m_disallow_support) {
 
 bool MissionSpecDialogModel::getDisallowSupport() {
 	return _m_disallow_support;
+}
+
+void MissionSpecDialogModel::setHullRepairMax(float m_max_hull_repair_val) {
+	if (_m_max_hull_repair_val != m_max_hull_repair_val) {
+		_m_max_hull_repair_val = m_max_hull_repair_val;
+		modelChanged();
+	}
+}
+
+int MissionSpecDialogModel::getHullRepairMax() {
+	return _m_max_hull_repair_val;
+}
+
+void MissionSpecDialogModel::setSubsysRepairMax(float m_max_subsys_repair_val){
+	if (_m_max_subsys_repair_val != m_max_subsys_repair_val) {
+		_m_max_subsys_repair_val = m_max_subsys_repair_val;
+		modelChanged();
+	}
+}
+
+int MissionSpecDialogModel::getSubsysRepairMax() {
+	return _m_max_subsys_repair_val;
+}
+
+void MissionSpecDialogModel::setTrailThresholdFlag(bool m_contrail_threshold_flag) {
+	if (_m_contrail_threshold_flag != m_contrail_threshold_flag) {
+		_m_contrail_threshold_flag = m_contrail_threshold_flag;
+		modelChanged();
+	}
+}
+
+bool MissionSpecDialogModel::getTrailThresholdFlag() {
+	return _m_contrail_threshold_flag;
+}
+
+void MissionSpecDialogModel::setTrailDisplaySpeed(int m_contrail_threshold) {
+	if (_m_contrail_threshold != m_contrail_threshold) {
+		_m_contrail_threshold = m_contrail_threshold;
+		modelChanged();
+	}
+}
+
+int MissionSpecDialogModel::getTrailDisplaySpeed() {
+	return _m_contrail_threshold;
 }
 
 void MissionSpecDialogModel::setMissionFlag(Mission::Mission_Flags flag, bool enabled) {
@@ -318,8 +363,7 @@ void MissionSpecDialogModel::setMissionDescText(SCP_string m_mission_desc) {
 	modelChanged();
 }
 
-SCP_string MissionSpecDialogModel::getMissionDescText()
-{
+SCP_string MissionSpecDialogModel::getMissionDescText() {
 	return _m_mission_desc;
 }
 
@@ -328,8 +372,7 @@ void MissionSpecDialogModel::setDesignerNoteText(SCP_string m_mission_notes) {
 	modelChanged();
 }
 
-SCP_string MissionSpecDialogModel::getDesignerNoteText()
-{
+SCP_string MissionSpecDialogModel::getDesignerNoteText() {
 	return _m_mission_notes;
 }
 
