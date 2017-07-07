@@ -47,11 +47,6 @@ private:
 
 	flagset<Mission::Mission_Flags> _m_flags;
 
-	SCP_vector<SCP_string> _event_music;
-	SCP_vector<SCP_string> _sub_event_music;
-	SCP_vector<SCP_string> _command_personas;
-	SCP_vector<SCP_string> _command_senders;
-
 	int _m_type;
 
 public:

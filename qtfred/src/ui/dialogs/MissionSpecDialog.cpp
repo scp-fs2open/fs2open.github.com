@@ -60,9 +60,9 @@ MissionSpecDialog::MissionSpecDialog(FredView* parent, EditorViewport* viewport)
 	connect(ui->personaComboBox, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged), this, &MissionSpecDialog::cmdPersonaChanged);
 
 	// Mission Music
-
+	
 	// Sound Environment
-
+	
 	// Mission flags - Lambda functions are used to allow the passing of additional parameters to a single method
 	connect(ui->toggleAllTeamsAtWar, &QCheckBox::toggled, _model.get(), &MissionSpecDialogModel::setMissionFullWar);
 	connect(ui->toggleRedAlert, &QCheckBox::toggled, this, [this](bool param) {flagToggled(param, Mission::Mission_Flags::Red_alert); });
@@ -299,6 +299,11 @@ void MissionSpecDialog::squadronNameChanged(const QString & string) {
 	QSignalBlocker blocker(ui->squadronName);
 
 	_model->setSquadronName(string.toStdString());
+}
+
+void MissionSpecDialog::on_customWingNameButton_clicked() {
+	CustomWingNamesDialog* dialog = new CustomWingNamesDialog(this, _viewport);
+	dialog->exec();
 }
 
 void MissionSpecDialog::on_squadronLogoButton_clicked() {

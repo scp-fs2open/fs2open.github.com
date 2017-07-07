@@ -7,6 +7,7 @@
 #include <ui/FredView.h>
 
 #include <mission/dialogs/MissionSpecDialogModel.h>
+#include "CustomWingNamesDialog.h"
 
 namespace fso {
 namespace fred {
@@ -28,6 +29,7 @@ protected:
 	void closeEvent(QCloseEvent*) override;
 
 private slots:
+	void on_customWingNameButton_clicked();
 	void on_squadronLogoButton_clicked();
 	void on_lowResScreenButton_clicked();
 	void on_highResScreenButton_clicked();

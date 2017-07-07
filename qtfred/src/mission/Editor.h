@@ -119,6 +119,11 @@ signals:
 	waypoint *cur_waypoint = nullptr;
 	waypoint_list *cur_waypoint_list = nullptr;
 
+	// Goober5000
+	// This must be done when either the wing name or the custom name is changed.
+	// (It's also duplicated in FS2, in post_process_mission, for setting the indexes at mission load.)
+	void update_custom_wing_indexes();
+
 	void ai_update_goal_references(int type, const char *old_name, const char *new_name);
 
 	// Goober5000
@@ -174,10 +179,6 @@ signals:
 	 */
 	int check_wing_dependencies(int wing_num);
 
-	// Goober5000
-// This must be done when either the wing name or the custom name is changed.
-// (It's also duplicated in FS2, in post_process_mission, for setting the indexes at mission load.)
-	void update_custom_wing_indexes();
 };
 
 } // namespace fred
