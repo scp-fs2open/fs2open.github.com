@@ -3,6 +3,7 @@
 #include "AbstractDialogModel.h"
 
 #include "mission/missionparse.h"
+#include "mission/missionmessage.h"
 
 namespace fso {
 namespace fred {
@@ -97,6 +98,16 @@ public:
 	bool getTrailThresholdFlag();
 	void setTrailDisplaySpeed(int);
 	int getTrailDisplaySpeed();
+
+	void setCommandSender(SCP_string);
+	SCP_string getCommandSender();
+	void setCommandPersona(int);
+	int getCommandPersona();
+
+	void setEventMusic(int);
+	int getEventMusic();
+	void setSubEventMusic(SCP_string);
+	SCP_string getSubEventMusic();
 
 	void setMissionFlag(Mission::Mission_Flags flag, bool enabled);
 	const flagset<Mission::Mission_Flags>& getMissionFlags() const;

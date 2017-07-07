@@ -3,6 +3,7 @@
 #include "ui_MissionSpecDialog.h"
 
 #include "mission/missionparse.h"
+#include "ship\ship.h"
 
 #include <QCloseEvent>
 #include <QFileDialog>
@@ -57,6 +58,8 @@ MissionSpecDialog::MissionSpecDialog(FredView* parent, EditorViewport* viewport)
 	connect(ui->minDisplaySpeed, static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged), this, &MissionSpecDialog::minTrailDisplaySpeedChanged);
 
 	// Built-in Command Messages
+	connect(ui->senderCombBox, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged),this, &MissionSpecDialog::cmdSenderChanged);
+	connect(ui->personaComboBox, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged), this, &MissionSpecDialog::cmdPersonaChanged);
 
 	// Mission Music
 
@@ -147,6 +150,10 @@ void MissionSpecDialog::updateUI() {
 	ui->minDisplaySpeed->setEnabled(_model->getTrailThresholdFlag());
 	ui->minDisplaySpeed->setValue(_model->getTrailDisplaySpeed());
 
+	updateCmdMessage();
+
+	updateMusic();
+
 	updateFlags();
 
 	updateAIProfiles();
@@ -179,6 +186,32 @@ void MissionSpecDialog::updateMissionType() {
 	ui->m_type_TeamVsTeam->setChecked(m_type & MISSION_TYPE_MULTI_TEAMS);
 
 	ui->m_type_Dogfight->setChecked(m_type & MISSION_TYPE_MULTI_DOGFIGHT);
+}
+
+void MissionSpecDialog::updateCmdMessage() {
+	int i, save_idx = 0;
+
+	auto sender = _model->getCommandSender();
+	ui->senderCombBox->clear();
+	ui->senderCombBox->addItem(DEFAULT_COMMAND, QVariant(QString(DEFAULT_COMMAND)));
+	for (i = 0; i < MAX_SHIPS; i++) {
+		if (Ships[i].objnum >= 0)
+			if (Ship_info[Ships[i].ship_info_index].is_huge_ship())
+				ui->senderCombBox->addItem(Ships[i].ship_name, QVariant(QString(Ships[i].ship_name)));
+	}
+	ui->senderCombBox->setCurrentIndex(ui->senderCombBox->findText(sender.c_str()));
+
+	save_idx = _model->getCommandPersona();
+	ui->personaComboBox->clear();
+	for (i = 0; i < Num_personas; i++) {
+		if (Personas[i].flags & PERSONA_FLAG_COMMAND) {
+			ui->personaComboBox->addItem(Personas[i].name, QVariant(i));
+		}
+	}
+	ui->personaComboBox->setCurrentIndex(ui->personaComboBox->findData(save_idx));
+}
+
+void MissionSpecDialog::updateMusic() {
 }
 
 void MissionSpecDialog::updateFlags() {
@@ -292,6 +325,26 @@ void MissionSpecDialog::trailDisplaySpeedToggled(bool enabled) {
 
 void MissionSpecDialog::minTrailDisplaySpeedChanged(int value) {
 	_model->setTrailDisplaySpeed(value);
+}
+
+void MissionSpecDialog::cmdSenderChanged(int index) {
+	QSignalBlocker blocker(ui->senderCombBox);
+
+	auto sender = ui->senderCombBox->itemData(index).value<QString>().toStdString();
+	_model->setCommandSender(sender);
+}
+
+void MissionSpecDialog::cmdPersonaChanged(int index) {
+	QSignalBlocker blocker(ui->personaComboBox);
+
+	auto cmdPIndex = ui->personaComboBox->itemData(index).value<int>();
+	_model->setCommandPersona(cmdPIndex);
+}
+
+void MissionSpecDialog::eventMusicChanged(int index) {
+}
+
+void MissionSpecDialog::subEventMusicChanged(int index) {
 }
 
 void MissionSpecDialog::flagToggled(bool enabled, Mission::Mission_Flags flag) {

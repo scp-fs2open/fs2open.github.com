@@ -48,22 +48,6 @@ void MissionSpecDialogModel::initializeData() {
 		_sub_event_music.push_back(Soundtracks[i].name);
 	}
 
-	for (i = 0; i < Num_personas; i++) {
-		if (Personas[i].flags & PERSONA_FLAG_COMMAND) {
-			_command_personas.push_back(Personas[i].name);
-			if (i == The_mission.command_persona)
-				mission_command_persona_box_index = box_index;
-			box_index++;
-		}
-	}
-
-	_command_senders.push_back(DEFAULT_COMMAND);
-	for (i = 0; i < MAX_SHIPS; i++) {
-		if (Ships[i].objnum >= 0)
-			if (Ship_info[Ships[i].ship_info_index].is_huge_ship())
-				_command_senders.push_back(Ships[i].ship_name);
-	}
-
 	// squad info
 	if (strlen(The_mission.squad_name) > 0) { //-V805
 		_m_squad_name = The_mission.squad_name;
@@ -80,7 +64,7 @@ void MissionSpecDialogModel::initializeData() {
 	_m_event_music = Current_soundtrack_num + 1;
 	_m_substitute_event_music = The_mission.substitute_event_music_name;
 
-	_m_command_persona = mission_command_persona_box_index;
+	_m_command_persona = The_mission.command_persona;
 	_m_command_sender = The_mission.command_sender;
 
 	_m_num_respawns = The_mission.num_respawns;
@@ -155,7 +139,7 @@ bool MissionSpecDialogModel::apply() {
 
 	Mission_all_attack = (int)_m_full_war;
 
-	// update the Nu_m_teams variable accoriding to mission types
+	// update the Num_teams variable accoriding to mission types
 	Num_teams = 1;
 	if ((The_mission.game_type & MISSION_TYPE_MULTI) && (The_mission.game_type & MISSION_TYPE_MULTI_TEAMS)) {
 		Num_teams = 2;
@@ -185,13 +169,11 @@ SCP_string MissionSpecDialogModel::getDesigner() {
 	return _m_designer_name;
 }
 
-SCP_string MissionSpecDialogModel::getCreatedTime()
-{
+SCP_string MissionSpecDialogModel::getCreatedTime() {
 	return _m_created;
 }
 
-SCP_string MissionSpecDialogModel::getModifiedTime()
-{
+SCP_string MissionSpecDialogModel::getModifiedTime() {
 	return _m_modified;
 }
 
@@ -298,19 +280,51 @@ bool MissionSpecDialogModel::getTrailThresholdFlag() {
 }
 
 void MissionSpecDialogModel::setTrailDisplaySpeed(int m_contrail_threshold) {
-	if (_m_contrail_threshold != m_contrail_threshold) {
-		_m_contrail_threshold = m_contrail_threshold;
-		modelChanged();
-	}
+	modify(_m_contrail_threshold, m_contrail_threshold);
 }
 
 int MissionSpecDialogModel::getTrailDisplaySpeed() {
 	return _m_contrail_threshold;
 }
 
+void MissionSpecDialogModel::setCommandSender(SCP_string m_command_sender) {
+	modify(_m_command_sender, m_command_sender);
+}
+
+SCP_string MissionSpecDialogModel::getCommandSender() {
+	return _m_command_sender;
+}
+
+void MissionSpecDialogModel::setCommandPersona(int m_command_persona) {
+	modify(_m_command_persona, m_command_persona);
+}
+
+int MissionSpecDialogModel::getCommandPersona() {
+	return _m_command_persona;
+}
+
+void MissionSpecDialogModel::setEventMusic(int m_event_music) {
+	modify(_m_event_music, m_event_music);
+}
+
+int MissionSpecDialogModel::getEventMusic() {
+	return _m_event_music;
+}
+
+void MissionSpecDialogModel::setSubEventMusic(SCP_string m_substitute_event_music) {
+	modify(_m_substitute_event_music, m_substitute_event_music);
+}
+
+SCP_string MissionSpecDialogModel::getSubEventMusic() {
+	return _m_substitute_event_music;
+}
+
 void MissionSpecDialogModel::setMissionFlag(Mission::Mission_Flags flag, bool enabled) {
-	_m_flags.set(flag, enabled);
-	modelChanged();
+	if (_m_flags[flag] != enabled) {
+		_m_flags.set(flag, enabled);
+		set_modified();
+		modelChanged();
+	}
 }
 
 const flagset<Mission::Mission_Flags>& MissionSpecDialogModel::getMissionFlags() const {
@@ -318,9 +332,12 @@ const flagset<Mission::Mission_Flags>& MissionSpecDialogModel::getMissionFlags()
 }
 
 void MissionSpecDialogModel::setMissionFullWar(bool enabled) {
-	_m_full_war = enabled;
-	_m_flags.set(Mission::Mission_Flags::All_attack, enabled);
-	modelChanged();
+	if (_m_full_war != enabled) {
+		_m_full_war = enabled;
+		_m_flags.set(Mission::Mission_Flags::All_attack, enabled);
+		set_modified();
+		modelChanged();
+	}
 }
 
 void MissionSpecDialogModel::setAIProfileIndex(int m_ai_profile) {

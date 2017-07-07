@@ -40,6 +40,8 @@ private:
 	void updateUI();
 
 	void updateMissionType();
+	void updateCmdMessage();
+	void updateMusic();
 	void updateFlags();
 	void updateAIProfiles();
 	void updateTextEditors();
@@ -60,6 +62,12 @@ private:
 
 	void trailDisplaySpeedToggled(bool);
 	void minTrailDisplaySpeedChanged(int);
+
+	void cmdSenderChanged(int);
+	void cmdPersonaChanged(int);
+
+	void eventMusicChanged(int);
+	void subEventMusicChanged(int);
 
 	void flagToggled(bool enabled, Mission::Mission_Flags flag);
 
