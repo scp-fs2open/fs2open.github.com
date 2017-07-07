@@ -17,7 +17,7 @@ private:
 	void initializeData();
 
 	template<typename T> 
-	void modify(T &a, T &b);
+	void modify(T &a, const T &b);
 
 	bool _modified = false;
 
@@ -125,7 +125,7 @@ public:
 };
 
 template<typename T>
-inline void MissionSpecDialogModel::modify(T &a, T &b) {
+inline void MissionSpecDialogModel::modify(T &a, const T &b) {
 	if (a != b) {
 		a = b;
 		set_modified();

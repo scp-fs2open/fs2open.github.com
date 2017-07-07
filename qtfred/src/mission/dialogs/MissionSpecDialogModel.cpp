@@ -19,8 +19,6 @@ MissionSpecDialogModel::MissionSpecDialogModel(QObject* parent, EditorViewport* 
 }
 
 void MissionSpecDialogModel::initializeData() {
-	int i, box_index = 0, mission_command_persona_box_index = -1;
-
 	_m_mission_title = The_mission.name;
 	_m_designer_name = The_mission.author;
 	_m_created = The_mission.created;
