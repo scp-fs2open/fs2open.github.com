@@ -202,7 +202,7 @@ void MissionSpecDialogModel::setMissionType(int m_type) {
 		MISSION_TYPE_MULTI_COOP |
 		MISSION_TYPE_MULTI_DOGFIGHT |
 		MISSION_TYPE_MULTI_TEAMS)) {
-		_m_type = m_type;
+		modify(_m_type, m_type);
 		modelChanged();
 	} else {
 		auto button = _viewport->dialogProvider->showButtonDialog(DialogType::Error, "Invalid mission type", "You must select the game type: training, single, or multiplayer",
@@ -218,7 +218,7 @@ int MissionSpecDialogModel::getMissionType() {
 }
 
 void MissionSpecDialogModel::setNumRespawns(uint m_num_respawns) {
-	_m_num_respawns = m_num_respawns;
+	modify(_m_num_respawns, m_num_respawns);
 }
 
 uint MissionSpecDialogModel::getNumRespawns() {
@@ -226,7 +226,7 @@ uint MissionSpecDialogModel::getNumRespawns() {
 }
 
 void MissionSpecDialogModel::setMaxRespawnDelay(int m_max_respawn_delay) {
-	_m_max_respawn_delay = m_max_respawn_delay;
+	modify(_m_max_respawn_delay, m_max_respawn_delay);
 }
 
 int MissionSpecDialogModel::getMaxRespawnDelay() {
@@ -234,10 +234,7 @@ int MissionSpecDialogModel::getMaxRespawnDelay() {
 }
 
 void MissionSpecDialogModel::setSquadronName(SCP_string m_squad_name) {
-	if (_m_squad_name != m_squad_name) {
-		_m_squad_name = m_squad_name;
-		modelChanged();
-	}
+	modify(_m_squad_name, m_squad_name);
 }
 
 SCP_string MissionSpecDialogModel::getSquadronName() {
@@ -245,10 +242,7 @@ SCP_string MissionSpecDialogModel::getSquadronName() {
 }
 
 void MissionSpecDialogModel::setSquadronLogo(SCP_string m_squad_filename) {
-	if (_m_squad_filename != m_squad_filename) {
-		_m_squad_filename = m_squad_filename;
-		modelChanged();
-	}
+	modify(_m_squad_filename, m_squad_filename);
 }
 
 SCP_string MissionSpecDialogModel::getSquadronLogo() {
@@ -256,10 +250,7 @@ SCP_string MissionSpecDialogModel::getSquadronLogo() {
 }
 
 void MissionSpecDialogModel::setLowResLoadingScreen(SCP_string m_loading_640) {
-	if (_m_loading_640 != m_loading_640) {
-		_m_loading_640 = m_loading_640;
-		modelChanged();
-	}
+	modify(_m_loading_640, m_loading_640);
 }
 
 SCP_string MissionSpecDialogModel::getLowResLoadingScren() {
@@ -267,10 +258,7 @@ SCP_string MissionSpecDialogModel::getLowResLoadingScren() {
 }
 
 void MissionSpecDialogModel::setHighResLoadingScreen(SCP_string m_loading_1024) {
-	if (_m_loading_1024 != m_loading_1024) {
-		_m_loading_1024 = m_loading_1024;
-		modelChanged();
-	}
+	modify(_m_loading_1024, m_loading_1024);
 }
 
 SCP_string MissionSpecDialogModel::getHighResLoadingScren() {
@@ -278,10 +266,7 @@ SCP_string MissionSpecDialogModel::getHighResLoadingScren() {
 }
 
 void MissionSpecDialogModel::setDisallowSupport(bool m_disallow_support) {
-	if (_m_disallow_support != m_disallow_support) {
-		_m_disallow_support = m_disallow_support;
-		modelChanged();
-	}
+	modify(_m_disallow_support, m_disallow_support);
 }
 
 bool MissionSpecDialogModel::getDisallowSupport() {
@@ -289,10 +274,7 @@ bool MissionSpecDialogModel::getDisallowSupport() {
 }
 
 void MissionSpecDialogModel::setHullRepairMax(float m_max_hull_repair_val) {
-	if (_m_max_hull_repair_val != m_max_hull_repair_val) {
-		_m_max_hull_repair_val = m_max_hull_repair_val;
-		modelChanged();
-	}
+	modify(_m_max_hull_repair_val, m_max_hull_repair_val);
 }
 
 int MissionSpecDialogModel::getHullRepairMax() {
@@ -300,10 +282,7 @@ int MissionSpecDialogModel::getHullRepairMax() {
 }
 
 void MissionSpecDialogModel::setSubsysRepairMax(float m_max_subsys_repair_val){
-	if (_m_max_subsys_repair_val != m_max_subsys_repair_val) {
-		_m_max_subsys_repair_val = m_max_subsys_repair_val;
-		modelChanged();
-	}
+	modify(_m_max_subsys_repair_val, m_max_subsys_repair_val);
 }
 
 int MissionSpecDialogModel::getSubsysRepairMax() {
@@ -311,10 +290,7 @@ int MissionSpecDialogModel::getSubsysRepairMax() {
 }
 
 void MissionSpecDialogModel::setTrailThresholdFlag(bool m_contrail_threshold_flag) {
-	if (_m_contrail_threshold_flag != m_contrail_threshold_flag) {
-		_m_contrail_threshold_flag = m_contrail_threshold_flag;
-		modelChanged();
-	}
+	modify(_m_contrail_threshold_flag, m_contrail_threshold_flag);
 }
 
 bool MissionSpecDialogModel::getTrailThresholdFlag() {
@@ -348,10 +324,7 @@ void MissionSpecDialogModel::setMissionFullWar(bool enabled) {
 }
 
 void MissionSpecDialogModel::setAIProfileIndex(int m_ai_profile) {
-	if (_m_ai_profile != m_ai_profile) {
-		_m_ai_profile = m_ai_profile;
-		modelChanged();
-	}
+	modify(_m_ai_profile, m_ai_profile);
 }
 
 int MissionSpecDialogModel::getAIProfileIndex() const {
@@ -359,8 +332,7 @@ int MissionSpecDialogModel::getAIProfileIndex() const {
 }
 
 void MissionSpecDialogModel::setMissionDescText(SCP_string m_mission_desc) {
-	_m_mission_desc = m_mission_desc.substr(0,MIN(MISSION_DESC_LENGTH, m_mission_desc.length()));
-	modelChanged();
+	modify(_m_mission_desc, m_mission_desc.substr(0, MIN(MISSION_DESC_LENGTH, m_mission_desc.length())));
 }
 
 SCP_string MissionSpecDialogModel::getMissionDescText() {
@@ -368,20 +340,21 @@ SCP_string MissionSpecDialogModel::getMissionDescText() {
 }
 
 void MissionSpecDialogModel::setDesignerNoteText(SCP_string m_mission_notes) {
-	_m_mission_notes = m_mission_notes.substr(0,MIN(NOTES_LENGTH, m_mission_notes.length()));
-	modelChanged();
+	modify(_m_mission_notes, m_mission_notes.substr(0, MIN(NOTES_LENGTH, m_mission_notes.length())));
 }
 
 SCP_string MissionSpecDialogModel::getDesignerNoteText() {
 	return _m_mission_notes;
 }
 
-bool MissionSpecDialogModel::query_modified() {
-	if (_m_flags != The_mission.flags) {
-		return true;
+void MissionSpecDialogModel::set_modified() {
+	if (!_modified) {
+		_modified = true;
 	}
+}
 
-	return false;
+bool MissionSpecDialogModel::query_modified() {
+	return _modified;
 }
 
 }

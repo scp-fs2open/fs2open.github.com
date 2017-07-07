@@ -8,9 +8,15 @@ namespace fso {
 namespace fred {
 namespace dialogs {
 
+
 class MissionSpecDialogModel : public AbstractDialogModel {
 private:
 	void initializeData();
+
+	template<typename T> 
+	void modify(T &a, T &b);
+
+	bool _modified = false;
 
 	SCP_string _m_created;
 	SCP_string _m_modified;
@@ -106,8 +112,18 @@ public:
 	void setDesignerNoteText(SCP_string);
 	SCP_string getDesignerNoteText();
 
+	void set_modified();
 	bool query_modified();
 };
+
+template<typename T>
+inline void MissionSpecDialogModel::modify(T &a, T &b) {
+	if (a != b) {
+		a = b;
+		set_modified();
+		modelChanged();
+	}
+}
 
 }
 }
