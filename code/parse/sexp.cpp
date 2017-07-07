@@ -20448,6 +20448,7 @@ void sexp_debug(int node)
 	node = CDR(node); 
 	Assertion (node >= 0, "No message defined in debug SEXP"); 
 	id = CTEXT(node);
+	strcpy_s(temp_buf, id);
 
 	for (i=0; i<Num_messages; i++) {
 		// find the message
@@ -26184,10 +26185,8 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_DEBUG:
 			if (argnum == 0) {
 				return OPF_BOOL;
-			}else if (argnum == 1) {
-				return OPF_MESSAGE; 
-			}else  {
-				return OPF_STRING;
+			} else {
+				return OPF_MESSAGE_OR_STRING;
 			}
 
 		case OP_HAS_TIME_ELAPSED:
@@ -31662,8 +31661,8 @@ sexp_help_struct Sexp_help[] = {
 	{ OP_DEBUG, "debug\r\n"
 		"\tPops up a warning on debug builds (and optionally on release builds)\r\n"
 		"Takes 1 or more arguments...\r\n"
-		"\t1:\t If false, popup messages in release builds too. Defaults to true.\r\n"
-		"\t2:\tName of a message which will appear in the warning (optional)\r\n"},
+		"\t1:\tLimit warning to debug builds.  If false, display warning in release builds too. Defaults to true.\r\n"
+		"\t2:\tA short string which will appear in the warning, or a message if the string matches a message name.\r\n"},
 
 	{ OP_GRANT_PROMOTION, "Grant promotion (Action operator)\r\n"
 		"\tIn a single player game, this function grants a player an automatic promotion to the "
@@ -31732,7 +31731,7 @@ sexp_help_struct Sexp_help[] = {
 		"have scanned each one.\r\n\r\n"
 		"Returns a boolean value after <delay> seconds when all cargo is known.  Takes 2 or more arguments...\r\n"
 		"\t1:\tDelay in seconds after which sexpression will return true when all cargo scanned."
-		"\tRest:\tNames of ships/cargo to check for cargo known.." },
+		"\tRest:\tNames of ships/cargo to check for cargo known." },
 
 	{ OP_WAS_PROMOTION_GRANTED, "Was promotion granted (Boolean operator)\r\n"
 		"\tReturns true if a promotion was granted via the 'Grant promotion' operator in the mission.\r\n\r\n"
