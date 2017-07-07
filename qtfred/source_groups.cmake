@@ -45,6 +45,8 @@ add_file_folder("Source/Mission/Dialogs"
     src/mission/dialogs/AbstractDialogModel.h
     src/mission/dialogs/EventEditorDialogModel.cpp
     src/mission/dialogs/EventEditorDialogModel.h
+	src/mission/dialogs/MissionSpecDialogModel.cpp
+	src/mission/dialogs/MissionSpecDialogModel.h
 	src/mission/dialogs/ObjectOrientEditorDialogModel.cpp
 	src/mission/dialogs/ObjectOrientEditorDialogModel.h
 	src/mission/dialogs/WaypointEditorDialogModel.cpp
