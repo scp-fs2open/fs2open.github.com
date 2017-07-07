@@ -18,7 +18,7 @@
 
 grid	Global_grid;
 grid	*The_grid;
-int	double_fine_gridlines = 0;
+bool double_fine_gridlines = false;
 
 void grid_read_camera_controls( control_info * ci, float frametime )
 {

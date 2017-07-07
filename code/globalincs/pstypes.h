@@ -101,6 +101,11 @@ inline bool operator==(const vec3d &self, const vec3d &other)
 	);
 }
 
+inline bool operator!=(const vec3d &self, const vec3d &other)
+{
+	return !(self == other);
+}
+
 typedef struct vec2d {
 	float x, y;
 } vec2d;
@@ -428,7 +433,7 @@ SCP_string dump_stacktrace();
 // DEBUG compile time catch for dangerous uses of memset/memcpy/memmove
 // would prefer std::is_trivially_copyable but it's not supported by gcc yet
 // ref: http://gcc.gnu.org/onlinedocs/libstdc++/manual/status.html
-#ifndef NDEBUG
+#if !defined(NDEBUG) && !defined(USING_THIRD_PARTY_LIBS)
 	#if SCP_COMPILER_CXX_STATIC_ASSERT && SCP_COMPILER_CXX_AUTO_TYPE
 	// feature support seems to be: gcc   clang   msvc
 	// auto                         4.4   2.9     2010
