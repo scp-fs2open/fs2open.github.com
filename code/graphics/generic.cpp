@@ -323,8 +323,8 @@ void generic_anim_unload(generic_anim *ga)
 	if(ga->num_frames > 0) {
 		if(ga->streaming) {
 			if(ga->type == BM_TYPE_ANI) {
-				anim_free(ga->ani.animation);
 				free_anim_instance(ga->ani.instance);
+				anim_free(ga->ani.animation);
 			}
 			if(ga->type == BM_TYPE_EFF) {
 				if(ga->eff.next_frame >= 0) 
