@@ -3,6 +3,10 @@
 
 #include <QDialog>
 
+#include <ui/FredView.h>
+
+#include "mission\dialogs\CustomWingNamesDialogModel.h"
+
 namespace fso {
 namespace fred {
 namespace dialogs {
