@@ -2,6 +2,8 @@
 
 #include "AbstractDialogModel.h"
 
+#include "ship/ship.h"
+#include "gamesnd/eventmusic.h"
 #include "mission/missionparse.h"
 #include "mission/missionmessage.h"
 

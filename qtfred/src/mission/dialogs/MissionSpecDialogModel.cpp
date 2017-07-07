@@ -4,8 +4,6 @@
 #include "MissionSpecDialogModel.h"
 #include "ui/dialogs/MissionSpecDialog.h"
 
-#include "ship/ship.h"
-#include "gamesnd/eventmusic.h"
 #include "cfile/cfile.h"
 #include "mission/missionmessage.h"
 
@@ -37,16 +35,6 @@ void MissionSpecDialogModel::initializeData() {
 
 	_m_loading_640 = The_mission.loading_screen[GR_640];
 	_m_loading_1024 = The_mission.loading_screen[GR_1024];
-
-	_event_music.push_back("None");
-	for (i = 0; i < Num_soundtracks; i++) {
-		_event_music.push_back(Soundtracks[i].name);
-	}
-
-	_sub_event_music.push_back("None");
-	for (i = 0; i < Num_soundtracks; i++) {
-		_sub_event_music.push_back(Soundtracks[i].name);
-	}
 
 	// squad info
 	if (strlen(The_mission.squad_name) > 0) { //-V805

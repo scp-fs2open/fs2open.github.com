@@ -2,8 +2,6 @@
 
 #include "ui_MissionSpecDialog.h"
 
-#include "mission/missionparse.h"
-#include "ship\ship.h"
 
 #include <QCloseEvent>
 #include <QFileDialog>
@@ -212,6 +210,23 @@ void MissionSpecDialog::updateCmdMessage() {
 }
 
 void MissionSpecDialog::updateMusic() {
+	int i, idx;
+
+	idx = _model->getEventMusic();
+	ui->defaultMusicCombo->clear();
+	ui->defaultMusicCombo->addItem("None",QVariant(0));
+	for (i = 0; i < Num_soundtracks; i++) {
+		ui->defaultMusicCombo->addItem(Soundtracks[i].name, QVariant(i+1));
+	}
+	ui->defaultMusicCombo->setCurrentIndex(ui->defaultMusicCombo->findData(idx));
+
+	auto musicPack = _model->getSubEventMusic();
+	ui->musicPackCombo->clear();
+	ui->musicPackCombo->addItem("None");
+	for (i = 0; i < Num_soundtracks; i++) {
+		ui->musicPackCombo->addItem(Soundtracks[i].name, QVariant(QString(Soundtracks[i].name)));
+	}
+	ui->musicPackCombo->setCurrentIndex(ui->musicPackCombo->findText(musicPack.c_str()));
 }
 
 void MissionSpecDialog::updateFlags() {
@@ -342,9 +357,17 @@ void MissionSpecDialog::cmdPersonaChanged(int index) {
 }
 
 void MissionSpecDialog::eventMusicChanged(int index) {
+	QSignalBlocker blocker(ui->defaultMusicCombo);
+
+	auto defMusicIdx = ui->defaultMusicCombo->itemData(index).value<int>();
+	_model->setEventMusic(defMusicIdx);
 }
 
 void MissionSpecDialog::subEventMusicChanged(int index) {
+	QSignalBlocker blocker(ui->musicPackCombo);
+
+	auto subMusic = ui->musicPackCombo->itemData(index).value<QString>().toStdString();
+	_model->setSubEventMusic(subMusic);
 }
 
 void MissionSpecDialog::flagToggled(bool enabled, Mission::Mission_Flags flag) {
