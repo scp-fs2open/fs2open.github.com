@@ -139,7 +139,7 @@ void MissionSpecDialogModel::reject() {
 }
 
 void MissionSpecDialogModel::setMissionTitle(SCP_string m_mission_title) {
-	this->_m_mission_title = m_mission_title;
+	modify(_m_mission_title, m_mission_title);
 }
 
 SCP_string MissionSpecDialogModel::getMissionTitle() {
@@ -147,8 +147,7 @@ SCP_string MissionSpecDialogModel::getMissionTitle() {
 }
 
 void MissionSpecDialogModel::setDesigner(SCP_string m_designer_name) {
-	this->_m_designer_name = m_designer_name;
-	modelChanged();
+	modify(_m_designer_name, m_designer_name);
 }
 
 SCP_string MissionSpecDialogModel::getDesigner() {

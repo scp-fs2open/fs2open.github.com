@@ -49,6 +49,8 @@ private:
 
 	int _m_type;
 
+	void set_modified();
+
 public:
 	MissionSpecDialogModel(QObject* parent, EditorViewport* viewport);
 
@@ -120,7 +122,6 @@ public:
 	void setDesignerNoteText(SCP_string);
 	SCP_string getDesignerNoteText();
 
-	void set_modified();
 	bool query_modified();
 };
 

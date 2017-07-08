@@ -15,14 +15,16 @@ bool CustomWingNamesDialogModel::apply() {
 	int i;
 	if (strcmp(_m_starting[0].c_str(), _m_tvt[0].c_str()))
 	{
-		//MessageBox("The first starting wing and the first team-versus-team wing must have the same wing name.");
+		auto button = _viewport->dialogProvider->showButtonDialog(DialogType::Error, "Custom Wing Error", "The first starting wing and the first team-versus-team wing must have the same wing name.",
+		{ DialogButton::Ok });
 		return false;
 	}
 
 	if (!stricmp(_m_starting[0].c_str(), _m_starting[1].c_str()) || !stricmp(_m_starting[0].c_str(), _m_starting[2].c_str())
 		|| !stricmp(_m_starting[1].c_str(), _m_starting[2].c_str()))
 	{
-		//MessageBox("Duplicate wing names in starting wing list.");
+		auto button = _viewport->dialogProvider->showButtonDialog(DialogType::Error, "Custom Wing Error", "Duplicate wing names in starting wing list.",
+		{ DialogButton::Ok });
 		return false;
 	}
 
@@ -31,13 +33,15 @@ bool CustomWingNamesDialogModel::apply() {
 		|| !stricmp(_m_squadron[2].c_str(), _m_squadron[3].c_str()) || !stricmp(_m_squadron[2].c_str(), _m_squadron[4].c_str())
 		|| !stricmp(_m_squadron[3].c_str(), _m_squadron[4].c_str()))
 	{
-		//MessageBox("Duplicate wing names in squadron wing list.");
+		auto button = _viewport->dialogProvider->showButtonDialog(DialogType::Error, "Custom Wing Error", "Duplicate wing names in squadron wing list.",
+		{ DialogButton::Ok });
 		return false;
 	}
 
 	if (!stricmp(_m_tvt[0].c_str(), _m_tvt[1].c_str()))
 	{
-		//MessageBox("Duplicate wing names in team-versus-team wing list.");
+		auto button = _viewport->dialogProvider->showButtonDialog(DialogType::Error, "Custom Wing Error", "Duplicate wing names in team-versus-team wing list.",
+		{ DialogButton::Ok });
 		return false;
 	}
 
