@@ -1076,6 +1076,9 @@
    <property name="text">
     <string>&amp;Mission Specs</string>
    </property>
+   <property name="shortcut">
+    <string>Shift+N</string>
+   </property>
   </action>
   <action name="actionBriefing">
    <property name="text">
