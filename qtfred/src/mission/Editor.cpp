@@ -112,6 +112,8 @@ void Editor::update() {
 }
 
 void Editor::loadMission(const std::string& filepath) {
+	clearMission();
+
 	if (parse_main(filepath.c_str())) {
 		throw mission_load_error("Parse error");
 	}
