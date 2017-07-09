@@ -40,9 +40,8 @@ typedef struct {
 
 enum
 {
-	PAGE_FROM_MEM		  = 0,
-	PAGE_FROM_DISK		  = 1,
-	PAGE_FROM_DISK_FORCED = 2
+	PAGE_FROM_DISK		  = 0,
+	PAGE_FROM_MEM		  = 1
 };
 
 extern int Anim_paused;
@@ -59,7 +58,7 @@ int				anim_stop_playing(anim_instance* anim_instance);
 int				anim_show_next_frame(anim_instance *instance, float frametime);
 void				anim_release_all_instances(int screen_id = 0);
 void				anim_release_render_instance(anim_instance* instance);
-anim			  *anim_load(const char *name, int cf_dir_type = CF_TYPE_ANY, int file_mapped = PAGE_FROM_MEM);
+anim			  *anim_load(const char *name, int cf_dir_type = CF_TYPE_ANY, int file_mapped = PAGE_FROM_DISK);
 int				anim_free(anim *ptr);
 int				anim_playing(anim_instance *ai);
 int				anim_write_frames_out(char *filename);
