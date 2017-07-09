@@ -210,7 +210,7 @@ void orient_editor::update_object(object *ptr)
 		vec3d v, loc;
 		matrix m;
 
-		memset(&v, 0, sizeof(vec3d));
+		vm_vec_zero(&v);
 		loc.xyz.x = convert(m_location_x);
 		loc.xyz.y = convert(m_location_y);
 		loc.xyz.z = convert(m_location_z);
@@ -223,10 +223,11 @@ void orient_editor::update_object(object *ptr)
 			vm_vec_sub(&v, &loc, &ptr->pos);
 
 		} else {
-			Assert(0);  // neither radio button is checked.
+			Assertion(0, "neither radio button is checked!");
+			return;
 		}
 
-		if (!v.xyz.x && !v.xyz.y && !v.xyz.z){
+		if (IS_VEC_NULL(&v)) {
 			return;  // can't point to itself.
 		}
 
