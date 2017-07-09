@@ -104,6 +104,7 @@ void FredView::setEditor(Editor* editor, EditorViewport* viewport) {
 	connect(this, &FredView::viewIdle, this, &FredView::onUpdateSelectionLock);
 	connect(this, &FredView::viewIdle, this, &FredView::onUpdateShipClassBox);
 	connect(this, &FredView::viewIdle, this, &FredView::onUpdateEditorActions);
+	connect(this, &FredView::viewIdle, this, &FredView::onUpdateWingActionStatus);
 }
 
 void FredView::loadMissionFile(const QString& pathName) {
@@ -782,6 +783,44 @@ void FredView::on_actionWingForm_triggered(bool enabled) {
 	if (fred->create_wing()) {
 		// TODO: Autosave
 	}
+}
+void FredView::on_actionWingDisband_triggered(bool enabled) {
+	if (fred->query_single_wing_marked()) {
+		fred->remove_wing(fred->cur_wing);
+	} else {
+		showButtonDialog(DialogType::Error,
+						 "Error",
+						 "One and only one wing must be selected for this operation",
+						 { DialogButton::Ok });
+	}
+}
+void FredView::onUpdateWingActionStatus() {
+	int count = 0;
+	object *ptr;
+
+	if (query_valid_object(fred->currentObject)) {
+		ptr = GET_FIRST(&obj_used_list);
+		while (ptr != END_OF_LIST(&obj_used_list)) {
+			if (ptr->flags[Object::Object_Flags::Marked]) {
+				if (ptr->type == OBJ_SHIP)
+				{
+					int ship_type = ship_query_general_type(ptr->instance);
+					if(ship_type > -1 && (Ship_types[ship_type].flags[Ship::Type_Info_Flags::AI_can_form_wing]))
+					{
+						count++;
+					}
+				}
+
+				if (ptr->type == OBJ_START)
+					count++;
+			}
+
+			ptr = GET_NEXT(ptr);
+		}
+	}
+
+	ui->actionWingForm->setEnabled(count > 0);
+	ui->actionWingDisband->setEnabled(fred->query_single_wing_marked());
 }
 std::unique_ptr<IDialog<dialogs::FormWingDialogModel>> FredView::createFormWingDialog() {
 	std::unique_ptr<IDialog<dialogs::FormWingDialogModel>> dialog(new dialogs::FormWingDialog(nullptr, _viewport));

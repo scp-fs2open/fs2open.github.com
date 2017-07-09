@@ -412,5 +412,33 @@ void Editor::mark_wing(int wing) {
 	}
 }
 
+bool Editor::query_single_wing_marked() {
+	int i, obj;
+
+	if (!query_valid_object(currentObject))
+		return false;
+
+	if (cur_wing == -1)
+		return false;
+
+	i = Wings[cur_wing].wave_count;
+	if (numMarked != i)  // does marked object count match number of ships in wing?
+		return false;
+
+	while (i--) {
+		obj = wing_objects[cur_wing][i];
+		if ((Objects[obj].type != OBJ_SHIP) && (Objects[obj].type != OBJ_START))
+			Error(LOCATION, "Invalid objects detected in wing \"%s\"", Wings[cur_wing].name);
+
+//		if (Ships[Objects[obj].instance].wingnum != cur_wing)
+//			return false;
+		Assert(Ships[Objects[obj].instance].wingnum == cur_wing);
+		if (!(Objects[obj].flags[Object::Object_Flags::Marked]))  // ensure all ships in wing.are marked
+			return false;
+	}
+
+	return true;
+}
+
 }
 }

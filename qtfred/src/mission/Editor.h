@@ -147,6 +147,15 @@ class Editor: public QObject {
 	 */
 	void mark_wing(int wing);
 
+	bool query_single_wing_marked();
+
+	/**
+	 * @brief Delete a whole wing, leaving ships intact but wingless.
+	 *
+	 * @param[in] wing_num Index of the wing
+	 */
+	void remove_wing(int wing_num);
+
  private:
 	void clearMission();
 

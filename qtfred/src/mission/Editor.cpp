@@ -1432,5 +1432,41 @@ int Editor::set_reinforcement(const char* name, int state) {
 
 	return 0;
 }
+void Editor::remove_wing(int wing_num) {
+
+	int i, total;
+	object *ptr;
+
+	if (check_wing_dependencies(wing_num))
+		return;
+
+	total = Wings[wing_num].wave_count;
+	for (i=0; i<total; i++) {
+		ptr = &Objects[wing_objects[wing_num][i]];
+		if (ptr->type == OBJ_SHIP)
+			remove_ship_from_wing(ptr->instance, 0);
+		else if (ptr->type == OBJ_START)
+			remove_player_from_wing(ptr->instance, 0);
+	}
+
+	Assert(!Wings[wing_num].wave_count);
+
+	Wings[wing_num].wave_count = 0;
+	Wings[wing_num].wing_squad_filename[0] = '\0';
+	Wings[wing_num].wing_insignia_texture = -1;
+
+	if (cur_wing == wing_num) {
+		set_cur_wing(cur_wing = -1);  // yes, one '=' is correct.
+	}
+
+	free_sexp2(Wings[wing_num].arrival_cue);
+	free_sexp2(Wings[wing_num].departure_cue);
+
+	Num_wings--;
+
+	update_custom_wing_indexes();
+
+	missionChanged();
+}
 } // namespace fred
 } // namespace fso

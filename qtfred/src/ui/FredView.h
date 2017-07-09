@@ -87,6 +87,7 @@ class FredView: public QMainWindow, public IDialogProvider {
 	void on_actionSelectionLock_triggered(bool enabled);
 
 	void on_actionWingForm_triggered(bool enabled);
+	void on_actionWingDisband_triggered(bool enabled);
  signals:
 	/**
 	 * @brief Special version of FredApplication::onIdle which is limited to the lifetime of this object
@@ -158,6 +159,7 @@ class FredView: public QMainWindow, public IDialogProvider {
 	void onUpdateSelectionLock();
 	void onUpdateShipClassBox();
 	void onUpdateEditorActions();
+	void onUpdateWingActionStatus();
 
 	void onShipClassSelected(int ship_class);
 
