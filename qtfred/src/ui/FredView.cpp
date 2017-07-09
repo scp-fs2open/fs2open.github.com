@@ -105,6 +105,10 @@ void FredView::setEditor(Editor* editor, EditorViewport* viewport) {
 	connect(this, &FredView::viewIdle, this, &FredView::onUpdateShipClassBox);
 	connect(this, &FredView::viewIdle, this, &FredView::onUpdateEditorActions);
 	connect(this, &FredView::viewIdle, this, &FredView::onUpdateWingActionStatus);
+	connect(this,
+			&FredView::viewIdle,
+			this,
+			[this]() { ui->actionZoomSelected->setEnabled(query_valid_object(fred->currentObject)); });
 }
 
 void FredView::loadMissionFile(const QString& pathName) {
@@ -796,23 +800,22 @@ void FredView::on_actionWingDisband_triggered(bool enabled) {
 }
 void FredView::onUpdateWingActionStatus() {
 	int count = 0;
-	object *ptr;
+	object* ptr;
 
 	if (query_valid_object(fred->currentObject)) {
 		ptr = GET_FIRST(&obj_used_list);
 		while (ptr != END_OF_LIST(&obj_used_list)) {
 			if (ptr->flags[Object::Object_Flags::Marked]) {
-				if (ptr->type == OBJ_SHIP)
-				{
+				if (ptr->type == OBJ_SHIP) {
 					int ship_type = ship_query_general_type(ptr->instance);
-					if(ship_type > -1 && (Ship_types[ship_type].flags[Ship::Type_Info_Flags::AI_can_form_wing]))
-					{
+					if (ship_type > -1 && (Ship_types[ship_type].flags[Ship::Type_Info_Flags::AI_can_form_wing])) {
 						count++;
 					}
 				}
 
-				if (ptr->type == OBJ_START)
+				if (ptr->type == OBJ_START) {
 					count++;
+				}
 			}
 
 			ptr = GET_NEXT(ptr);
@@ -821,6 +824,18 @@ void FredView::onUpdateWingActionStatus() {
 
 	ui->actionWingForm->setEnabled(count > 0);
 	ui->actionWingDisband->setEnabled(fred->query_single_wing_marked());
+}
+void FredView::on_actionZoomSelected_triggered(bool) {
+	if (query_valid_object(fred->currentObject)) {
+		if (fred->getNumMarked() > 1) {
+			_viewport->view_universe(true);
+		} else {
+			_viewport->view_object(fred->currentObject);
+		}
+	}
+}
+void FredView::on_actionZoomExtents_triggered(bool) {
+	_viewport->view_universe(false);
 }
 std::unique_ptr<IDialog<dialogs::FormWingDialogModel>> FredView::createFormWingDialog() {
 	std::unique_ptr<IDialog<dialogs::FormWingDialogModel>> dialog(new dialogs::FormWingDialog(nullptr, _viewport));

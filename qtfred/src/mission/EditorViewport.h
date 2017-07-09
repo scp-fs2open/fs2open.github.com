@@ -104,6 +104,10 @@ class EditorViewport {
 
 	int drag_rotate_objects(int mouse_dx, int mouse_dy);
 
+	void view_universe(bool just_marked);
+
+	void view_object(int obj_num);
+
 	vec3d Last_eye_pos;
 
 	vec3d eye_pos;
