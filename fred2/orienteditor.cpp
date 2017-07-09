@@ -215,9 +215,10 @@ void orient_editor::update_object(object *ptr)
 		loc.xyz.y = convert(m_location_y);
 		loc.xyz.z = convert(m_location_z);
 		if (((CButton *) GetDlgItem(IDC_POINT_TO_OBJECT))->GetCheck() == 1) {
-			v = Objects[index[m_object_index]].pos;
-			vm_vec_sub2(&v, &ptr->pos);
-
+			if (m_object_index >= 0) {
+				v = Objects[index[m_object_index]].pos;
+				vm_vec_sub2(&v, &ptr->pos);
+			}
 		} else if (((CButton *) GetDlgItem(IDC_POINT_TO_LOCATION))->GetCheck() == 1) {
 			vm_vec_sub(&v, &loc, &ptr->pos);
 
