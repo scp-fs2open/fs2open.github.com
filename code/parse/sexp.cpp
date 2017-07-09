@@ -20437,8 +20437,7 @@ void sexp_string_set_substring(int node)
 void sexp_debug(int node)
 {
 	int i;
-	char *id;
-	char temp_buf[MESSAGE_LENGTH] = {""};
+	SCP_string warning_message;
 
 	#ifdef NDEBUG
 	int no_release_message;
@@ -20446,26 +20445,29 @@ void sexp_debug(int node)
 	#endif
 
 	node = CDR(node); 
-	Assertion (node >= 0, "No message defined in debug SEXP"); 
-	id = CTEXT(node);
-	strcpy_s(temp_buf, id);
+	Assertion (node >= 0, "No message defined in debug SEXP");
 
+	// we'll suppose it's the string for now
+	warning_message = CTEXT(node);
+
+	// but use an actual message if one exists
 	for (i=0; i<Num_messages; i++) {
 		// find the message
-		if ( !stricmp(id, Messages[i].name) ) {
-			//replace variables if necessary
-			strcpy_s(temp_buf, Messages[i].message);
-			sexp_replace_variable_names_with_values(temp_buf, MESSAGE_LENGTH); 
+		if ( !stricmp(Messages[i].name, warning_message.c_str()) ) {
+			warning_message = Messages[i].message;
 			break;
 		}
 	}
 
+	// replace variables if necessary
+	sexp_replace_variable_names_with_values(warning_message);
+
 	//send the message
 	#ifndef NDEBUG
-		Warning(LOCATION, "%s", temp_buf);
+		Warning(LOCATION, "%s", warning_message.c_str());
     #else	
 	if (!no_release_message) {	
-		ReleaseWarning(LOCATION, "%s", temp_buf);
+		ReleaseWarning(LOCATION, "%s", warning_message.c_str());
 	}
 	#endif
 }
