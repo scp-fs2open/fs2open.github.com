@@ -91,6 +91,8 @@ class FredView: public QMainWindow, public IDialogProvider {
 
 	void on_actionZoomSelected_triggered(bool);
 	void on_actionZoomExtents_triggered(bool);
+
+	void on_actionSelectionList_triggered(bool);
  signals:
 	/**
 	 * @brief Special version of FredApplication::onIdle which is limited to the lifetime of this object

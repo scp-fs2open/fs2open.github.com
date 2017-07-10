@@ -19,6 +19,7 @@
 #include <ui/dialogs/MissionSpecDialog.h>
 #include <ui/dialogs/FormWingDialog.h>
 #include <globalincs/linklist.h>
+#include <ui/dialogs/SelectionDialog.h>
 
 #include "mission/Editor.h"
 #include "mission/management.h"
@@ -856,6 +857,11 @@ bool FredView::showModalDialog(IBaseDialog* dlg) {
 	qdlg->setParent(prevParent, Qt::Dialog);
 
 	return ret == QDialog::Accepted;
+}
+void FredView::on_actionSelectionList_triggered(bool) {
+	auto dialog = new dialogs::SelectionDialog(this, _viewport);
+	// This is a modal dialog
+	dialog->exec();
 }
 
 } // namespace fred

@@ -54,6 +54,8 @@ add_file_folder("Source/Mission/Dialogs"
 	src/mission/dialogs/MissionSpecDialogModel.h
 	src/mission/dialogs/ObjectOrientEditorDialogModel.cpp
 	src/mission/dialogs/ObjectOrientEditorDialogModel.h
+	src/mission/dialogs/SelectionDialogModel.cpp
+	src/mission/dialogs/SelectionDialogModel.h
 	src/mission/dialogs/WaypointEditorDialogModel.cpp
 	src/mission/dialogs/WaypointEditorDialogModel.h
 )
@@ -80,6 +82,8 @@ add_file_folder("Source/UI/Dialogs"
 	src/ui/dialogs/MissionSpecDialog.h
 	src/ui/dialogs/ObjectOrientEditorDialog.cpp
 	src/ui/dialogs/ObjectOrientEditorDialog.h
+	src/ui/dialogs/SelectionDialog.cpp
+	src/ui/dialogs/SelectionDialog.h
 	src/ui/dialogs/TeamLoadoutDialog.cpp
 	src/ui/dialogs/TeamLoadoutDialog.h
 	src/ui/dialogs/WaypointEditorDialog.cpp
@@ -102,6 +106,7 @@ add_file_folder("UI"
 	ui/MissionGoalsDialog.ui
 	ui/MissionSpecDialog.ui
 	ui/ObjectOrientationDialog.ui
+	ui/SelectionDialog.ui
 	ui/TeamLoadoutDialog.ui
     ui/WaypointEditorDialog.ui
 )
