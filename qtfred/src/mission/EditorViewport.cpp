@@ -1220,6 +1220,94 @@ int EditorViewport::drag_rotate_objects(int mouse_dx, int mouse_dy) {
 	editor->missionChanged();
 	return rval;
 }
+void EditorViewport::view_universe(bool just_marked) {
+	int max = 0;
+	float dist, largest = 20.0f;
+	vec3d center, p1, p2;		// center of all the objects collectively
+	vertex v;
+	object *ptr;
+
+	if (just_marked)
+		ptr = &Objects[editor->currentObject];
+	else
+		ptr = GET_FIRST(&obj_used_list);
+
+	p1.xyz.x = p2.xyz.x = ptr->pos.xyz.x;
+	p1.xyz.y = p2.xyz.y = ptr->pos.xyz.y;
+	p1.xyz.z = p2.xyz.z = ptr->pos.xyz.z;
+
+	ptr = GET_FIRST(&obj_used_list);
+	while (ptr != END_OF_LIST(&obj_used_list)) {
+		if (!just_marked || (ptr->flags[Object::Object_Flags::Marked])) {
+			center = ptr->pos;
+			if (center.xyz.x < p1.xyz.x)
+				p1.xyz.x = center.xyz.x;
+			if (center.xyz.x > p2.xyz.x)
+				p2.xyz.x = center.xyz.x;
+			if (center.xyz.y < p1.xyz.y)
+				p1.xyz.y = center.xyz.y;
+			if (center.xyz.y > p2.xyz.y)
+				p2.xyz.y = center.xyz.y;
+			if (center.xyz.z < p1.xyz.z)
+				p1.xyz.z = center.xyz.z;
+			if (center.xyz.z > p2.xyz.z)
+				p2.xyz.z = center.xyz.z;
+		}
+
+		ptr = GET_NEXT(ptr);
+	}
+
+	vm_vec_avg(&center, &p1, &p2);
+	ptr = GET_FIRST(&obj_used_list);
+	while (ptr != END_OF_LIST(&obj_used_list)) {
+		if (!just_marked || (ptr->flags[Object::Object_Flags::Marked])) {
+			dist = vm_vec_dist_squared(&center, &ptr->pos);
+			if (dist > largest)
+				largest = dist;
+
+			if (OBJ_INDEX(ptr) > max)
+				max = OBJ_INDEX(ptr);
+		}
+
+		ptr = GET_NEXT(ptr);
+	}
+
+	dist = fl_sqrt(largest) + 1.0f;
+	vm_vec_scale_add(&view_pos, &center, &view_orient.vec.fvec, -dist);
+	g3_set_view_matrix(&view_pos, &view_orient, 0.5f);
+
+	ptr = GET_FIRST(&obj_used_list);
+	while (ptr != END_OF_LIST(&obj_used_list)) {
+		if (!just_marked || (ptr->flags[Object::Object_Flags::Marked])) {
+			g3_rotate_vertex(&v, &ptr->pos);
+			Assert(!(v.codes & CC_BEHIND));
+			if (g3_project_vertex(&v) & PF_OVERFLOW)
+				Int3();
+
+			while (v.codes & CC_OFF) {  // is point off screen?
+				dist += 5.0f;  // zoom out a little and check again.
+				vm_vec_scale_add(&view_pos, &center, &view_orient.vec.fvec, -dist);
+				g3_set_view_matrix(&view_pos, &view_orient, 0.5f);
+				g3_rotate_vertex(&v, &ptr->pos);
+				if (g3_project_vertex(&v) & PF_OVERFLOW)
+					Int3();
+			}
+		}
+
+		ptr = GET_NEXT(ptr);
+	}
+
+	dist *= 1.1f;
+	vm_vec_scale_add(&view_pos, &center, &view_orient.vec.fvec, -dist);
+	g3_set_view_matrix(&view_pos, &view_orient, 0.5f);
+
+	needsUpdate();
+}
+void EditorViewport::view_object(int obj_num) {
+	vm_vec_scale_add(&view_pos, &Objects[obj_num].pos, &view_orient.vec.fvec, Objects[obj_num].radius * -3.0f);
+
+	needsUpdate();
+}
 
 }
 }

@@ -25,8 +25,8 @@ namespace fred {
  * simultaneously, this class should be treated as a singleton.
  *
  */
-class Editor : public QObject {
-	Q_OBJECT
+class Editor: public QObject {
+ Q_OBJECT
 
  public:
 	Editor();
@@ -48,11 +48,11 @@ class Editor : public QObject {
 	/* Schedules updates for all renderes */
 	void updateAllViewports();
 
-	int create_player(int num, vec3d *pos, matrix *orient, int type = -1, int init = 1);
+	int create_player(int num, vec3d* pos, matrix* orient, int type = -1, int init = 1);
 
 	int create_ship(matrix* orient, vec3d* pos, int ship_type);
 
-	int create_waypoint(vec3d *pos, int waypoint_instance);
+	int create_waypoint(vec3d* pos, int waypoint_instance);
 
 	bool query_ship_name_duplicate(int ship);
 
@@ -63,7 +63,7 @@ class Editor : public QObject {
 	void hideMarkedObjects();
 	void showHiddenObjects();
 
-	int	dup_object(object *objp);
+	int dup_object(object* objp);
 
 	int delete_object(int obj);
 
@@ -74,11 +74,11 @@ class Editor : public QObject {
 	///! Non-copyable.
 	const Editor& operator=(const Editor&) = delete;
 
-public slots:
+ public slots:
 	/*! Update the game but doesn't render anything. */
 	void update();
 
-signals:
+ signals:
 	/**
 	 * @brief Signal for when a new mission has been loaded
 	 * @param filepath The path of the mission file, empty if new mission
@@ -116,18 +116,45 @@ signals:
 
 	int cur_wing_index = -1;
 
-	waypoint *cur_waypoint = nullptr;
-	waypoint_list *cur_waypoint_list = nullptr;
+	waypoint* cur_waypoint = nullptr;
+	waypoint_list* cur_waypoint_list = nullptr;
 
 	// Goober5000
 	// This must be done when either the wing name or the custom name is changed.
 	// (It's also duplicated in FS2, in post_process_mission, for setting the indexes at mission load.)
 	void update_custom_wing_indexes();
 
-	void ai_update_goal_references(int type, const char *old_name, const char *new_name);
+	void ai_update_goal_references(int type, const char* old_name, const char* new_name);
 
 	// Goober5000
-	void update_texture_replacements(const char *old_name, const char *new_name);
+	void update_texture_replacements(const char* old_name, const char* new_name);
+
+
+	int set_reinforcement(const char* name, int state);
+
+	/**
+	 * @brief Forms a wing from marked objects
+	 *
+	 * @returns  0 If successful, or
+	 * @returns -1 If an error occured
+	 */
+	int create_wing();
+
+	/**
+	 * @brief Mark all ships within this wing
+	 *
+	 * @param[in] wing Index of the wing to mark
+	 */
+	void mark_wing(int wing);
+
+	bool query_single_wing_marked();
+
+	/**
+	 * @brief Delete a whole wing, leaving ships intact but wingless.
+	 *
+	 * @param[in] wing_num Index of the wing
+	 */
+	void remove_wing(int wing_num);
 
  private:
 	void clearMission();
@@ -152,21 +179,21 @@ signals:
 
 	int common_object_delete(int obj);
 
-	int	reference_handler(const char *name, int type, int obj);
+	int reference_handler(const char* name, int type, int obj);
 
-	int sexp_reference_handler(int node, int code, const char *msg);
+	int sexp_reference_handler(int node, int code, const char* msg);
 	int orders_reference_handler(int code, char* msg);
 
 	int delete_ship_from_wing(int ship);
 
-	int invalidate_references(const char *name, int type);
+	int invalidate_references(const char* name, int type);
 
 	// DA 1/7/99 These ship names are not variables
-	int rename_ship(int ship, char *name);
+	int rename_ship(int ship, char* name);
 
 	void delete_reinforcement(int num);
 
-	int delete_wing(int wing_num, int bypass);
+	int delete_wing(int wing_num, int bypass = 0);
 
 	// changes the currently selected wing.  It is assumed that cur_wing == cur_ship's wing
 	// number.  Don't call this if this won't be true, or else you'll screw things up.
@@ -179,6 +206,25 @@ signals:
 	 */
 	int check_wing_dependencies(int wing_num);
 
+	/**
+	 * @brief Takes a player out of a wing, deleting wing if that was the only ship in it.
+	 */
+	void remove_player_from_wing(int player, int min = 1);
+
+	/**
+	 * @brief Takes a ship out of a wing, deleting the wing if that was the only ship in it.
+	 *
+	 * @param[in] ship Index of the ship to remove (Ships[i])
+	 * @param[in] min  Minimum number of ships in a wing.
+	 *   Pass a 0 to allow a wing to exist without any ships in it, or pass a value >1 to have the wing deleted when it has
+	 *   this many members in it
+	 */
+	void remove_ship_from_wing(int ship, int min = 1);
+
+	/**
+	 * @brief Finds a free wing slot (i.e. unused)
+	 */
+	int find_free_wing();
 };
 
 } // namespace fred

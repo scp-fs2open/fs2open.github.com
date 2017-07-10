@@ -7,15 +7,18 @@
 #include <QSettings>
 
 #include <project.h>
+#include <io/key.h>
 
 #include <qevent.h>
 #include <FredApplication.h>
-#include <io/key.h>
+
 #include <ui/dialogs/EventEditorDialog.h>
 #include <ui/dialogs/BriefingEditorDialog.h>
 #include <ui/dialogs/WaypointEditorDialog.h>
 #include <ui/dialogs/ObjectOrientEditorDialog.h>
 #include <ui/dialogs/MissionSpecDialog.h>
+#include <ui/dialogs/FormWingDialog.h>
+#include <globalincs/linklist.h>
 
 #include "mission/Editor.h"
 #include "mission/management.h"
@@ -101,6 +104,11 @@ void FredView::setEditor(Editor* editor, EditorViewport* viewport) {
 	connect(this, &FredView::viewIdle, this, &FredView::onUpdateSelectionLock);
 	connect(this, &FredView::viewIdle, this, &FredView::onUpdateShipClassBox);
 	connect(this, &FredView::viewIdle, this, &FredView::onUpdateEditorActions);
+	connect(this, &FredView::viewIdle, this, &FredView::onUpdateWingActionStatus);
+	connect(this,
+			&FredView::viewIdle,
+			this,
+			[this]() { ui->actionZoomSelected->setEnabled(query_valid_object(fred->currentObject)); });
 }
 
 void FredView::loadMissionFile(const QString& pathName) {
@@ -708,8 +716,7 @@ void FredView::handleObjectEditor(int objNum) {
 
 		if ((Objects[objNum].type == OBJ_START) || (Objects[objNum].type == OBJ_SHIP)) {
 			// TODO: Not yet implemented!
-		} else if (Objects[objNum].type == OBJ_JUMP_NODE
-			|| Objects[objNum].type == OBJ_WAYPOINT) {
+		} else if (Objects[objNum].type == OBJ_JUMP_NODE || Objects[objNum].type == OBJ_WAYPOINT) {
 
 			// Select the object before displaying the dialog
 			fred->selectObject(objNum);
@@ -741,6 +748,114 @@ void FredView::orientEditorTriggered() {
 }
 void FredView::onUpdateEditorActions() {
 	ui->actionObjects->setEnabled(query_valid_object(fred->currentObject));
+}
+void FredView::on_actionWingForm_triggered(bool enabled) {
+	object* ptr = GET_FIRST(&obj_used_list);
+	bool found = false;
+	while (ptr != END_OF_LIST(&obj_used_list)) {
+		if (((ptr->type == OBJ_SHIP) || (ptr->type == OBJ_START)) && (ptr->flags[Object::Object_Flags::Marked])) {
+			if (Ships[ptr->instance].flags[Ship::Ship_Flags::Reinforcement]) {
+				found = true;
+				break;
+			}
+		}
+
+		ptr = GET_NEXT(ptr);
+	}
+
+	if (found) {
+		auto button = showButtonDialog(DialogType::Warning,
+									   "Reinforcement conflict",
+									   "Some of the ships you selected to create a wing are marked as reinforcements. "
+										   "Press Ok to clear the flag on all selected ships. Press Cancel to not create the wing.",
+									   { DialogButton::Ok, DialogButton::Cancel });
+		if (button == DialogButton::Ok) {
+			ptr = GET_FIRST(&obj_used_list);
+			while (ptr != END_OF_LIST(&obj_used_list)) {
+				if (((ptr->type == OBJ_SHIP) || (ptr->type == OBJ_START))
+					&& (ptr->flags[Object::Object_Flags::Marked])) {
+					fred->set_reinforcement(Ships[ptr->instance].ship_name, 0);
+				}
+
+				ptr = GET_NEXT(ptr);
+			}
+		} else {
+			return;
+		}
+	}
+
+	if (fred->create_wing()) {
+		// TODO: Autosave
+	}
+}
+void FredView::on_actionWingDisband_triggered(bool enabled) {
+	if (fred->query_single_wing_marked()) {
+		fred->remove_wing(fred->cur_wing);
+	} else {
+		showButtonDialog(DialogType::Error,
+						 "Error",
+						 "One and only one wing must be selected for this operation",
+						 { DialogButton::Ok });
+	}
+}
+void FredView::onUpdateWingActionStatus() {
+	int count = 0;
+	object* ptr;
+
+	if (query_valid_object(fred->currentObject)) {
+		ptr = GET_FIRST(&obj_used_list);
+		while (ptr != END_OF_LIST(&obj_used_list)) {
+			if (ptr->flags[Object::Object_Flags::Marked]) {
+				if (ptr->type == OBJ_SHIP) {
+					int ship_type = ship_query_general_type(ptr->instance);
+					if (ship_type > -1 && (Ship_types[ship_type].flags[Ship::Type_Info_Flags::AI_can_form_wing])) {
+						count++;
+					}
+				}
+
+				if (ptr->type == OBJ_START) {
+					count++;
+				}
+			}
+
+			ptr = GET_NEXT(ptr);
+		}
+	}
+
+	ui->actionWingForm->setEnabled(count > 0);
+	ui->actionWingDisband->setEnabled(fred->query_single_wing_marked());
+}
+void FredView::on_actionZoomSelected_triggered(bool) {
+	if (query_valid_object(fred->currentObject)) {
+		if (fred->getNumMarked() > 1) {
+			_viewport->view_universe(true);
+		} else {
+			_viewport->view_object(fred->currentObject);
+		}
+	}
+}
+void FredView::on_actionZoomExtents_triggered(bool) {
+	_viewport->view_universe(false);
+}
+std::unique_ptr<IDialog<dialogs::FormWingDialogModel>> FredView::createFormWingDialog() {
+	std::unique_ptr<IDialog<dialogs::FormWingDialogModel>> dialog(new dialogs::FormWingDialog(nullptr, _viewport));
+	return dialog;
+}
+bool FredView::showModalDialog(IBaseDialog* dlg) {
+	auto qdlg = dynamic_cast<QDialog*>(dlg);
+	if (qdlg == nullptr) {
+		return false;
+	}
+
+	// We need to temporarily reparent the dialog so it's shown in the right location
+	auto prevParent = qdlg->parentWidget();
+	qdlg->setParent(this, Qt::Dialog);
+
+	auto ret = qdlg->exec();
+
+	qdlg->setParent(prevParent, Qt::Dialog);
+
+	return ret == QDialog::Accepted;
 }
 
 } // namespace fred
