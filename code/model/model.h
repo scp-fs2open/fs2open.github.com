@@ -102,7 +102,7 @@ typedef struct polymodel_instance {
 	submodel_instance *submodel;	// array of submodel instances; mirrors the polymodel->submodel array
 } polymodel_instance;
 
-#define MAX_MODEL_SUBSYSTEMS		200				// used in ships.cpp (only place?) for local stack variable DTP; bumped to 200
+#define MAX_MODEL_SUBSYSTEMS		500				// used in ships.cpp (only place?) for local stack variable DTP; bumped to 200
 													// when reading in ships.tbl
 
 // definition of stepped rotation struct
