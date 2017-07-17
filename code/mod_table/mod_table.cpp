@@ -15,29 +15,30 @@
 #include "parse/parselo.h"
 #include "sound/sound.h"
 
-int Directive_wait_time = 3000;
-bool True_loop_argument_sexps = false;
-bool Fixed_turret_collisions = false;
-bool Damage_impacted_subsystem_first = false;
-bool Cutscene_camera_displays_hud = false;
-bool Alternate_chaining_behavior = false;
-int Default_ship_select_effect = 2;
-int Default_weapon_select_effect = 2;
-int Default_fiction_viewer_ui = -1;
-bool Enable_external_shaders = false;
-int Default_detail_level = 3; // "very high" seems a reasonable default in 2012 -zookeeper
-bool Full_color_head_anis = false;
-bool Weapons_inherit_parent_collision_group = false;
-bool Flight_controls_follow_eyepoint_orientation = false;
-int FS2NetD_port = 0;
-float Briefing_window_FOV = 0.29375f;
-bool Disable_hc_message_ani = false;
-bool Red_alert_applies_to_delayed_ships = false;
-bool Beams_use_damage_factors = false;
-float Generic_pain_flash_factor = 1.0f;
-float Shield_pain_flash_factor = 0.0f;
-gameversion::version Targetted_version(2, 0, 0, 0); // Defaults to retail
-SCP_string Window_title = "";
+int Directive_wait_time;
+bool True_loop_argument_sexps;
+bool Fixed_turret_collisions;
+bool Damage_impacted_subsystem_first;
+bool Cutscene_camera_displays_hud;
+bool Alternate_chaining_behavior;
+int Default_ship_select_effect;
+int Default_weapon_select_effect;
+int Default_fiction_viewer_ui;
+bool Enable_external_shaders;
+int Default_detail_level;
+bool Full_color_head_anis;
+bool Weapons_inherit_parent_collision_group;
+bool Flight_controls_follow_eyepoint_orientation;
+int FS2NetD_port;
+float Briefing_window_FOV;
+bool Disable_hc_message_ani;
+bool Red_alert_applies_to_delayed_ships;
+bool Beams_use_damage_factors;
+float Generic_pain_flash_factor;
+float Shield_pain_flash_factor;
+gameversion::version Targetted_version; // Defaults to retail
+SCP_string Window_title;
+bool Unicode_text_mode;
 
 void parse_mod_table(const char *filename)
 {
@@ -69,6 +70,12 @@ void parse_mod_table(const char *filename)
 
 		if (optional_string("$Window title:")) {
 			stuff_string(Window_title, F_NAME);
+		}
+		
+		if (optional_string("$Unicode mode:")) {
+			stuff_boolean(&Unicode_text_mode);
+
+			mprintf(("Game settings table: Unicode mode: %s\n", Unicode_text_mode ? "yes" : "no"));
 		}
 
 		optional_string("#CAMPAIGN SETTINGS");
@@ -341,6 +348,8 @@ void parse_mod_table(const char *filename)
 
 void mod_table_init()
 {
+	mod_table_reset();
+
 	// first parse the default table
 	parse_mod_table(NULL);
 
@@ -354,4 +363,31 @@ void mod_table_init()
 }
 bool mod_supports_version(int major, int minor, int build) {
 	return Targetted_version >= gameversion::version(major, minor, build, 0);
+}
+void mod_table_reset() {
+
+	Directive_wait_time = 3000;
+	True_loop_argument_sexps = false;
+	Fixed_turret_collisions = false;
+	Damage_impacted_subsystem_first = false;
+	Cutscene_camera_displays_hud = false;
+	Alternate_chaining_behavior = false;
+	Default_ship_select_effect = 2;
+	Default_weapon_select_effect = 2;
+	Default_fiction_viewer_ui = -1;
+	Enable_external_shaders = false;
+	Default_detail_level = 3; // "very high" seems a reasonable default in 2012 -zookeeper
+	Full_color_head_anis = false;
+	Weapons_inherit_parent_collision_group = false;
+	Flight_controls_follow_eyepoint_orientation = false;
+	FS2NetD_port = 0;
+	Briefing_window_FOV = 0.29375f;
+	Disable_hc_message_ani = false;
+	Red_alert_applies_to_delayed_ships = false;
+	Beams_use_damage_factors = false;
+	Generic_pain_flash_factor = 1.0f;
+	Shield_pain_flash_factor = 0.0f;
+	Targetted_version = gameversion::version(2, 0, 0, 0); // Defaults to retail
+	Window_title = "";
+	Unicode_text_mode = false;
 }

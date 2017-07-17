@@ -7,7 +7,7 @@
 
 class ParseloTest : public test::FSTestFixture {
  public:
-	ParseloTest() : test::FSTestFixture(INIT_CFILE) {
+	ParseloTest() : test::FSTestFixture(INIT_MOD_TABLE | INIT_CFILE) {
 		pushModDir("parselo");
 	}
 
@@ -50,6 +50,16 @@ TEST_F(ParseloTest, parse_pausing) {
 	required_string("$Token:");
 	required_string("+OtherToken:");
 	required_string("#End");
+}
+
+TEST_F(ParseloTest, utf8_with_bom) {
+	read_file_text("bom_test.tbl", CF_TYPE_TABLES);
+	reset_parse();
+
+	SCP_string content;
+	stuff_string(content, F_NAME);
+
+	ASSERT_STREQ(content.c_str(), "Hello World");
 }
 
 TEST(ParseloUtilTest, drop_trailing_whitespace_cstr) {
@@ -163,3 +173,4 @@ TEST(ParseloUtilTest, drop_whitespace) {
 	drop_white_space(test_str);
 	ASSERT_EQ(test_str, "");
 }
+

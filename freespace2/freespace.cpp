@@ -1714,11 +1714,12 @@ void game_init()
 
 	e1 = timer_get_milliseconds();
 
+	mod_table_init();		// load in all the mod dependent settings
+
 	// initialize localization module. Make sure this is done AFTER initialzing OS.
 	lcl_init( detect_lang() );	
 	lcl_xstr_init();
 
-	mod_table_init();		// load in all the mod dependent settings
 
 	if (Is_standalone) {
 		// force off some cmdlines if they are on
