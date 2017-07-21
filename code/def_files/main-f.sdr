@@ -291,7 +291,7 @@ void main()
    // Normal map - convert from DXT5nm
    vec2 normalSample;
    normal.rg = normalSample = (texture(sNormalmap, texCoord).ag * 2.0) - 1.0;
-   normal.b = 1.0;;
+   normal.b = 1.0;
    normal = fragTangentMatrix * normal;
    float norm = length(normal);
    // prevent breaking of normal maps
