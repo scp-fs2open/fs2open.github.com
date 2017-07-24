@@ -4,6 +4,7 @@ class BuildConfig {
 	[string]$PackageType
 	[string]$Toolset
 	[string]$SimdType
+	[Bool]$SourcePackage
 }
 
 $NightlyConfigurations = @(
@@ -12,12 +13,14 @@ $NightlyConfigurations = @(
 		PackageType="Win64";
 		Toolset="v140_xp";
 		SimdType="SSE2";
+		SourcePackage=$false;
 	},
 	[BuildConfig]@{ 
 		Generator="Visual Studio 14 2015";
 		PackageType="Win32";
 		Toolset="v140_xp";
 		SimdType="SSE2";
+		SourcePackage=$false;
 	}
 )
 $ReleaseConfigurations = @(
@@ -26,24 +29,28 @@ $ReleaseConfigurations = @(
 		PackageType="Win32";
 		Toolset="v140_xp";
 		SimdType="SSE2";
+		SourcePackage=$true;
 	}
 	[BuildConfig]@{
 		Generator="Visual Studio 14 2015";
 		PackageType="Win32-AVX";
 		Toolset="v140_xp";
 		SimdType="AVX";
+		SourcePackage=$false;
 	}
 	[BuildConfig]@{
 		Generator="Visual Studio 14 2015 Win64";
 		PackageType="Win64";
 		Toolset="v140_xp";
 		SimdType="SSE2";
+		SourcePackage=$false;
 	}
 	[BuildConfig]@{
 		Generator="Visual Studio 14 2015 Win64";
 		PackageType="Win64-AVX";
 		Toolset="v140_xp";
 		SimdType="AVX";
+		SourcePackage=$false;
 	}
 )
 
@@ -54,14 +61,18 @@ $ReleaseBuild = $false
 $NightlyBuild = $false
 $DeployBuild = $false
 
-if ([System.Convert]::ToBoolean($env:APPVEYOR_REPO_TAG) -And ("$env:APPVEYOR_REPO_TAG_NAME" -match "^release_(.*)")) {
+# Set to true to test either the release or the nightly part of this script
+$ReleaseTest = $false
+$NightlyTest = $false
+
+if ($ReleaseTest -Or ([System.Convert]::ToBoolean($env:APPVEYOR_REPO_TAG) -And ("$env:APPVEYOR_REPO_TAG_NAME" -match "^release_(.*)"))) {
     # Tag matches
     $ReleaseBuild = $true
     $PackageName = "fs2_open_$($matches[1])"
 	$BuildConfigurations = $ReleaseConfigurations
 }
 
-if ([System.Convert]::ToBoolean($env:APPVEYOR_REPO_TAG) -And ("$env:APPVEYOR_REPO_TAG_NAME" -match "^nightly_(.*)")) {
+if ($NightlyTest -Or ([System.Convert]::ToBoolean($env:APPVEYOR_REPO_TAG) -And ("$env:APPVEYOR_REPO_TAG_NAME" -match "^nightly_(.*)"))) {
     # Tag matches
     $NightlyBuild = $true
     $PackageName = "nightly_$($matches[1])"
@@ -94,6 +105,11 @@ if ($DeployBuild) {
 	}
 
 	$buildConfig = $BuildConfigurations[$buildID]
+
+	if ($buildConfig.SourcePackage -eq $True) {
+		7z a -xr'!.git' "$($PackageName)-source-Win.zip" "$env:APPVEYOR_BUILD_FOLDER"
+		Push-AppveyorArtifact "$($PackageName)-source-Win.zip"
+	}
 	
 	cmake -DCMAKE_INSTALL_PREFIX="$env:APPVEYOR_BUILD_FOLDER/../install" -DFSO_USE_SPEECH="ON" `
 		-DFSO_USE_VOICEREC="ON" -DMSVC_SIMD_INSTRUCTIONS="$($buildConfig.SimdType)" `
