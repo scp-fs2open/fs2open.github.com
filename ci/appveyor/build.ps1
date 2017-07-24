@@ -59,11 +59,12 @@ $BuildConfigurations = $null
 # Default values
 $ReleaseBuild = $false
 $NightlyBuild = $false
-$DeployBuild = $false
+$TestBuild = $false
 
 # Set to true to test either the release or the nightly part of this script
 $ReleaseTest = $false
 $NightlyTest = $false
+$TestBuildTest = $false
 
 if ($ReleaseTest -Or ([System.Convert]::ToBoolean($env:APPVEYOR_REPO_TAG) -And ("$env:APPVEYOR_REPO_TAG_NAME" -match "^release_(.*)"))) {
     # Tag matches
@@ -80,19 +81,31 @@ if ($NightlyTest -Or ([System.Convert]::ToBoolean($env:APPVEYOR_REPO_TAG) -And (
 	$BuildConfigurations = $NightlyConfigurations
 }
 
+if ($TestBuildTest -Or ([System.Convert]::ToInt32($env:APPVEYOR_PULL_REQUEST_NUMBER) -le 0 -And ("$env:APPVEYOR_REPO_BRANCH" -match "^test\/(.*)"))) {
+    # Tag matches
+    $TestBuild = $true
+    $PackageName = "test_$($matches[1])"
+	Set-AppveyorBuildVariable 'VersionName' "$($matches[1])"
+	$BuildConfigurations = $NightlyConfigurations
+
+    # Override the revision string so that the builds are named correctly
+	[System.IO.File]::WriteAllLines("$env:APPVEYOR_BUILD_FOLDER/version_override.cmake", "set(FSO_VERSION_REVISION_STR $env:VersionName)")
+}
+
 # Multiply by 2 so that we can add 0 or 1 for debug or release Configs
 $buildID = [convert]::ToInt32($env:BuildID) * 2
 if ($Env:Configuration -eq "Release") {
     $buildID = $buildID + 1
 }
-Write-Host "$buildID"
 
-if ($ReleaseBuild -Or $NightlyBuild) {
+$DeployBuild = $false
+if ($ReleaseBuild -Or $NightlyBuild -Or $TestBuild) {
     $DeployBuild = $true
 }
 
 Set-AppveyorBuildVariable 'ReleaseBuild' "$ReleaseBuild"
 Set-AppveyorBuildVariable 'NightlyBuild' "$NightlyBuild"
+Set-AppveyorBuildVariable 'TestBuild' "$TestBuild"
 
 New-Item build -type directory
 Set-Location -Path build
