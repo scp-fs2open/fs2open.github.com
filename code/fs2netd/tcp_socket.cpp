@@ -34,6 +34,14 @@
 #include <ctype.h>
 
 #define WSAGetLastError()  (errno)
+#define RESTART(syscall)                        \
+  ({                                            \
+    __typeof__(syscall) _res;                   \
+    do                                          \
+      _res = syscall;                           \
+    while (_res == -1 && errno == EINTR);       \
+    _res;                                       \
+})
 #else
 #include <windows.h>
 #include <process.h>
