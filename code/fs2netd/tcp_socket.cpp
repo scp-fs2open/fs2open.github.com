@@ -281,7 +281,13 @@ int FS2NetD_SendData(char *buffer, int blen)
 
 #if defined(SCP_UNIX) && !defined(SO_NOSIGPIPE) && !defined(MSG_NOSIGNAL) && _POSIX_REALTIME_SIGNALS > 0
 		// Step 3: Accept any pending SIGPIPE using sigtimedwait.
-		struct timespec zerotime = {0};
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wmissing-field-initializers"
+		// Some older GCC versions seem to incorrectly warn on this initialization.
+		// The pragmas should be removable once GCC 5+ is in use everywhere.
+		// Reference: https://gcc.gnu.org/bugzilla/show_bug.cgi?id=61489
+		struct timespec zerotime = {};
+#pragma GCC diagnostic pop
 		if (sigtimedwait(&sigpipe_mask, 0, &zerotime) == -1) {
 			ml_printf("Could not accept possible pending SIGPIPE with sigtimedwait in FS2NetD_SendData");
 			exit(1);
