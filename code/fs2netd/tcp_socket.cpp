@@ -273,16 +273,18 @@ int FS2NetD_SendData(char *buffer, int blen)
 		is per-process).
 	*/
 	sigset_t pending;
+	bool sigpipe_pending;
+	bool sigpipe_unblock;
 	sigemptyset(&pending);
 	sigpending(&pending);
-	control.sigpipe_pending = sigismember(&pending, SIGPIPE);
-	if (!control.sigpipe_pending) {
+	sigpipe_pending = sigismember(&pending, SIGPIPE);
+	if (!sigpipe_pending) {
 		sigset_t blocked;
 		sigemptyset(&blocked);
 		pthread_sigmask(SIG_BLOCK, &config.sigpipe_mask, &blocked);
 
 		/* Maybe is was blocked already?  */
-		control.sigpipe_unblock = ! sigismember(&blocked, SIGPIPE);
+		sigpipe_unblock = ! sigismember(&blocked, SIGPIPE);
 	}
 #endif  /* defined(SCP_UNIX) && ! defined(MSG_NOSIGNAL) && ! defined(SO_NOSIGPIPE) */
 
@@ -295,7 +297,7 @@ int FS2NetD_SendData(char *buffer, int blen)
 		clearing pending status).  Then we unblock SIGPIPE, but only if it
 		were us who blocked it.
 	*/
-	if (!control.sigpipe_pending) {
+	if (!sigpipe_pending) {
 		sigset_t pending;
 		sigemptyset(&pending);
 		sigpending(&pending);
@@ -309,7 +311,7 @@ int FS2NetD_SendData(char *buffer, int blen)
 			RESTART(sigtimedwait(&config.sigpipe_mask, NULL, &nowait));
 		}
 
-		if (control.sigpipe_unblock) {
+		if (sigpipe_unblock) {
 			pthread_sigmask(SIG_UNBLOCK, &config.sigpipe_mask, NULL);
 		}
 	}
