@@ -273,6 +273,7 @@ int FS2NetD_SendData(char *buffer, int blen)
 		is per-process).
 	*/
 	sigset_t pending;
+	sigset_t sigpipe_mask;
 	bool sigpipe_pending;
 	bool sigpipe_unblock;
 	sigemptyset(&pending);
@@ -281,7 +282,7 @@ int FS2NetD_SendData(char *buffer, int blen)
 	if (!sigpipe_pending) {
 		sigset_t blocked;
 		sigemptyset(&blocked);
-		pthread_sigmask(SIG_BLOCK, &config.sigpipe_mask, &blocked);
+		pthread_sigmask(SIG_BLOCK, &sigpipe_mask, &blocked);
 
 		/* Maybe is was blocked already?  */
 		sigpipe_unblock = ! sigismember(&blocked, SIGPIPE);
@@ -298,7 +299,6 @@ int FS2NetD_SendData(char *buffer, int blen)
 		were us who blocked it.
 	*/
 	if (!sigpipe_pending) {
-		sigset_t pending;
 		sigemptyset(&pending);
 		sigpending(&pending);
 		if (sigismember(&pending, SIGPIPE)) {
@@ -308,11 +308,11 @@ int FS2NetD_SendData(char *buffer, int blen)
 				other thread before we had a chance to wait for it.
 			*/
 			static const struct timespec nowait = { 0, 0 };
-			RESTART(sigtimedwait(&config.sigpipe_mask, NULL, &nowait));
+			RESTART(sigtimedwait(&sigpipe_mask, NULL, &nowait));
 		}
 
 		if (sigpipe_unblock) {
-			pthread_sigmask(SIG_UNBLOCK, &config.sigpipe_mask, NULL);
+			pthread_sigmask(SIG_UNBLOCK, &sigpipe_mask, NULL);
 		}
 	}
 #endif  /* defined(SCP_UNIX) && ! defined(MSG_NOSIGNAL) && ! defined(SO_NOSIGPIPE) */
