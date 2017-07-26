@@ -4,8 +4,10 @@ set -ex
 mkdir -p /tmp/builds
 
 if [ "$TRAVIS_OS_NAME" = "linux" ]; then
-    PARENT_DIR="$(basename $PWD)"
-    (cd .. && tar cvf /tmp/builds/$PACKAGE_NAME-source-Unix.tar.gz --exclude-vcs "$PARENT_DIR")
+    if [ "$RELEASE_BUILD" = true ]; then
+        PARENT_DIR="$(basename $PWD)"
+        (cd .. && tar cvf /tmp/builds/$PACKAGE_NAME-source-Unix.tar.gz --exclude-vcs "$PARENT_DIR")
+    fi
 
 	cd build
     for config in $BUILD_CONFIGS

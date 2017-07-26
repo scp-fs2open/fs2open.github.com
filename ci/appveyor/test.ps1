@@ -1,5 +1,5 @@
 
-if ([System.Convert]::ToBoolean($env:ReleaseBuild) -Or [System.Convert]::ToBoolean($env:NightlyBuild)) {
+if ([System.Convert]::ToBoolean($env:ReleaseBuild) -Or [System.Convert]::ToBoolean($env:NightlyBuild) -Or [System.Convert]::ToBoolean($env:TestBuild)) {
     # Skip tests for deployment
     exit 0
 } else {
