@@ -288,7 +288,9 @@ int FS2NetD_SendData(char *buffer, int blen)
 		// Reference: https://gcc.gnu.org/bugzilla/show_bug.cgi?id=61489
 		struct timespec zerotime = {};
 #pragma GCC diagnostic pop
-		if (sigtimedwait(&sigpipe_mask, 0, &zerotime) == -1) {
+		int my_error = 0;
+		my_error = errno;
+		if (sent_chars == -1 && my_error == EPIPE && sigtimedwait(&sigpipe_mask, 0, &zerotime) == -1) {
 			ml_printf("Could not accept possible pending SIGPIPE with sigtimedwait in FS2NetD_SendData");
 			exit(1);
 		}
