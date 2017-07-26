@@ -3036,7 +3036,13 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
         parse_string_flag_list(p_objp->flags, Parse_object_flags, num_parse_object_flags, &unparsed);
         if (!unparsed.empty()) {
             for (size_t k = 0; k < unparsed.size(); ++k) {
-                WarningEx(LOCATION, "Unknown flag in parse object flags: %s", unparsed[k].c_str());
+				// catch typos or deprecations
+				if (!stricmp(unparsed[k].c_str(), "no-collide") || !stricmp(unparsed[k].c_str(), "no_collide")) {
+					p_objp->flags.set(Mission::Parse_Object_Flags::OF_No_collide);
+				}
+				else {
+					WarningEx(LOCATION, "Unknown flag in parse object flags: %s", unparsed[k].c_str());
+				}
             }
         }
     }

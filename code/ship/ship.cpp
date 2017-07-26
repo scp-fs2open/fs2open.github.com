@@ -3430,7 +3430,15 @@ int parse_ship_values(ship_info* sip, const bool is_template, const bool first_t
 						Warning(LOCATION, "Use of '%s' flag for %s '%s' - this flag is no longer needed.", Ship_flags[idx].name, info_type_name, sip->name);
 					else 
 						sip->flags.set(Ship_flags[idx].def);
+
+					break;
 				}
+			}
+
+			// catch typos or deprecations
+			if (!stricmp(ship_strings[i], "no-collide") || !stricmp(ship_strings[i], "no_collide")) {
+				flag_found = true;
+				sip->flags.set(Ship::Info_Flags::No_collide);
 			}
 
 			if ( !flag_found && (ship_type_index < 0) )
