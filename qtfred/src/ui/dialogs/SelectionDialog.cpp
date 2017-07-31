@@ -1,10 +1,13 @@
 //
 //
 
-#include <iff_defs/iff_defs.h>
 #include "SelectionDialog.h"
 
+#include <iff_defs/iff_defs.h>
+
 #include "ui_SelectionDialog.h"
+
+#include <QtDebug>
 
 namespace fso {
 namespace fred {
@@ -53,6 +56,7 @@ SelectionDialog::SelectionDialog(FredView* parent, EditorViewport* viewport) :
 	connect(ui->wingSelectionList, &QListWidget::currentItemChanged, this, &SelectionDialog::wingSelectionChanged);
 
 	connect(_model.get(), &SelectionDialogModel::modelChanged, this, &SelectionDialog::updateUI);
+	connect(_model.get(), &SelectionDialogModel::selectionUpdated, this, &SelectionDialog::updateListSelection);
 
 	// Initial UI update
 	updateUI();
@@ -79,8 +83,6 @@ void SelectionDialog::updateUI() {
 		auto item = new QListWidgetItem(QString::fromStdString(entry.name));
 		item->setData(Qt::UserRole, entry.id);
 		ui->shipSelectionList->addItem(item);
-
-		item->setSelected(entry.selected);
 	}
 
 	// Update wing and waypoint list
@@ -91,17 +93,15 @@ void SelectionDialog::updateUI() {
 		item->setData(Qt::UserRole, entry.id);
 		item->setData(Qt::UserRole + 1, true); // This is a wing item
 		ui->wingSelectionList->addItem(item);
-
-		item->setSelected(entry.selected);
 	}
 	for (auto& entry : _model->getWaypointList()) {
 		auto item = new QListWidgetItem(QString::fromStdString(entry.name));
 		item->setData(Qt::UserRole, entry.id);
 		item->setData(Qt::UserRole + 1, false);
 		ui->wingSelectionList->addItem(item);
-
-		item->setSelected(entry.selected);
 	}
+
+	updateListSelection();
 }
 void SelectionDialog::objectSelectionChanged() {
 	auto current = _model->getObjectList(); // Copy the vector so we can change the selection
@@ -121,7 +121,7 @@ void SelectionDialog::objectSelectionChanged() {
 
 	_model->updateObjectSelection(current);
 }
-void SelectionDialog::wingSelectionChanged(QListWidgetItem *current, QListWidgetItem *previous) {
+void SelectionDialog::wingSelectionChanged(QListWidgetItem* current, QListWidgetItem* previous) {
 	auto isWing = current->data(Qt::UserRole + 1).value<bool>();
 	auto id = current->data(Qt::UserRole).value<int>();
 
@@ -129,6 +129,51 @@ void SelectionDialog::wingSelectionChanged(QListWidgetItem *current, QListWidget
 		_model->selectWing(id);
 	} else {
 		_model->selectWaypointPath(id);
+	}
+}
+void SelectionDialog::updateListSelection() {
+	QSignalBlocker shipBlocker(ui->shipSelectionList);
+	QSignalBlocker wingBlocker(ui->wingSelectionList);
+
+	for (auto& entry : _model->getObjectList()) {
+		auto items =
+			ui->shipSelectionList->model()->match(ui->shipSelectionList->model()->index(0, 0), Qt::UserRole, entry.id);
+
+		Assertion(items.size() > 0, "No items for object index found!");
+		Assertion(items.size() <= 1, "Found multiple items for one object index!");
+
+		ui->shipSelectionList->selectionModel()->select(items[0],
+														entry.selected ? QItemSelectionModel::Select
+																	   : QItemSelectionModel::Deselect);
+	}
+
+	auto& wingList = _model->getWingList();
+	auto& waypointList = _model->getWaypointList();
+
+	for (auto i = 0; i < ui->wingSelectionList->count(); ++i) {
+		auto item = ui->wingSelectionList->item(i);
+		auto id = item->data(Qt::UserRole).value<int>();
+		auto isWing = item->data(Qt::UserRole + 1).value<bool>();
+
+		if (isWing) {
+			for (auto& entry : wingList) {
+				if (entry.id != id) {
+					continue;
+				}
+
+				item->setSelected(entry.selected);
+				break;
+			}
+		} else {
+			for (auto& entry : waypointList) {
+				if (entry.id != id) {
+					continue;
+				}
+
+				item->setSelected(entry.selected);
+				break;
+			}
+		}
 	}
 }
 

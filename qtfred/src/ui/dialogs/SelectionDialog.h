@@ -16,12 +16,14 @@ class SelectionDialog;
 }
 
 class SelectionDialog : public QDialog {
+	Q_OBJECT
 public:
 	SelectionDialog(FredView* parent, EditorViewport* viewport);
 	~SelectionDialog();
 
  private:
 	void updateUI();
+	void updateListSelection();
 
 	void objectSelectionChanged();
 

@@ -11,6 +11,7 @@ namespace fred {
 namespace dialogs {
 
 class SelectionDialogModel : public AbstractDialogModel {
+	Q_OBJECT
  public:
 	struct ListEntry {
 		SCP_string name;
@@ -43,6 +44,9 @@ class SelectionDialogModel : public AbstractDialogModel {
  public:
 	bool apply() override;
 	void reject() override;
+
+signals:
+	void selectionUpdated();
 
  public:
 	SelectionDialogModel(QObject* parent, EditorViewport* viewport);

@@ -227,33 +227,39 @@ bool SelectionDialogModel::isFilterShips() const {
 	return _filter_ships;
 }
 void SelectionDialogModel::setFilterShips(bool filter_ships) {
-	_filter_ships = filter_ships;
+	if (_filter_ships != filter_ships) {
+		_filter_ships = filter_ships;
 
-	updateObjectList();
+		updateObjectList();
 
-	modelChanged();
+		modelChanged();
+	}
 }
 
 bool SelectionDialogModel::isFilterStarts() const {
 	return _filter_starts;
 }
 void SelectionDialogModel::setFilterStarts(bool filter_starts) {
-	_filter_starts = filter_starts;
+	if (_filter_starts != filter_starts) {
+		_filter_starts = filter_starts;
 
-	updateObjectList();
+		updateObjectList();
 
-	modelChanged();
+		modelChanged();
+	}
 }
 
 bool SelectionDialogModel::isFilterWaypoints() const {
 	return _filter_waypoints;
 }
 void SelectionDialogModel::setFilterWaypoints(bool filter_waypoints) {
-	_filter_waypoints = filter_waypoints;
+	if (_filter_waypoints != filter_waypoints) {
+		_filter_waypoints = filter_waypoints;
 
-	updateObjectList();
+		updateObjectList();
 
-	modelChanged();
+		modelChanged();
+	}
 }
 
 bool SelectionDialogModel::isFilterIFFTeam(int team) const {
@@ -264,11 +270,13 @@ bool SelectionDialogModel::isFilterIFFTeam(int team) const {
 void SelectionDialogModel::setFilterIFFTeam(int team, bool filter) {
 	Assertion(team >= 0 && team < Num_iffs, "Team index %d is invalid!", team);
 
-	_filter_iff[team] = filter;
+	if (filter != _filter_iff[team]) {
+		_filter_iff[team] = filter;
 
-	updateObjectList();
+		updateObjectList();
 
-	modelChanged();
+		modelChanged();
+	}
 }
 void SelectionDialogModel::updateStatus(bool first_time) {
 	auto ptr = GET_FIRST(&obj_used_list);
@@ -329,20 +337,30 @@ void SelectionDialogModel::updateObjectSelection(const SCP_vector<ListEntry>& ne
 
 	if (changed) {
 		updateWingListSelection();
-		modelChanged();
+		selectionUpdated();
 	}
 }
 void SelectionDialogModel::selectWing(int wing_id) {
 	for (auto& entry : _wing_list) {
 		entry.selected = entry.id == wing_id;
 	}
-	modelChanged();
+	for (auto& entry : _waypoint_list) {
+		entry.selected = false;
+	}
+
+	updateShipListSelection();
+	selectionUpdated();
 }
 void SelectionDialogModel::selectWaypointPath(int wp_id) {
+	for (auto& entry : _wing_list) {
+		entry.selected = false;
+	}
 	for (auto& entry : _waypoint_list) {
 		entry.selected = entry.id == wp_id;
 	}
-	modelChanged();
+
+	updateShipListSelection();
+	selectionUpdated();
 }
 void SelectionDialogModel::reject() {
 }
