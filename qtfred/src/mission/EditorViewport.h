@@ -53,7 +53,6 @@ class EditorViewport {
 	int Last_cursor_over = -1;
 
 	bool Group_rotate = true;
-	bool Lookat_mode = false;
 
 	int Flying_controls_mode = 1;
 
@@ -155,6 +154,8 @@ class EditorViewport {
 	bool moved = false;
 
 	int Duped_wing;
+
+	bool Lookat_mode = false;
 
 	Editor* editor = nullptr;
 	FredRenderer* renderer = nullptr;

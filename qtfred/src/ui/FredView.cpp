@@ -110,6 +110,7 @@ void FredView::setEditor(Editor* editor, EditorViewport* viewport) {
 			&FredView::viewIdle,
 			this,
 			[this]() { ui->actionZoomSelected->setEnabled(query_valid_object(fred->currentObject)); });
+	connect(this, &FredView::viewIdle, this, [this]() { ui->actionOrbitSelected->setChecked(_viewport->Lookat_mode); });
 }
 
 void FredView::loadMissionFile(const QString& pathName) {
@@ -862,6 +863,21 @@ void FredView::on_actionSelectionList_triggered(bool) {
 	auto dialog = new dialogs::SelectionDialog(this, _viewport);
 	// This is a modal dialog
 	dialog->exec();
+}
+void FredView::on_actionOrbitSelected_triggered(bool enabled) {
+	_viewport->Lookat_mode = enabled;
+	if (_viewport->Lookat_mode && query_valid_object(fred->currentObject)) {
+		vec3d v, loc;
+		matrix m;
+
+		loc = Objects[fred->currentObject].pos;
+		vm_vec_sub(&v, &loc, &_viewport->view_pos);
+
+		if (v.xyz.x || v.xyz.y || v.xyz.z) {
+			vm_vector_2_matrix(&m, &v, NULL, NULL);
+			_viewport->view_orient = m;
+		}
+	}
 }
 
 } // namespace fred
