@@ -95,6 +95,8 @@ class FredView: public QMainWindow, public IDialogProvider {
 	void on_actionSelectionList_triggered(bool);
 
 	void on_actionOrbitSelected_triggered(bool enabled);
+
+	void on_actionRotateLocal_triggered(bool enabled);
  signals:
 	/**
 	 * @brief Special version of FredApplication::onIdle which is limited to the lifetime of this object

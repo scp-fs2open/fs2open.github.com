@@ -52,8 +52,6 @@ class EditorViewport {
 	matrix Last_control_orient = vmd_identity_matrix;
 	int Last_cursor_over = -1;
 
-	bool Group_rotate = true;
-
 	int Flying_controls_mode = 1;
 
 	fix lasttime = 0;
@@ -155,6 +153,7 @@ class EditorViewport {
 
 	int Duped_wing;
 
+	bool Group_rotate = true;
 	bool Lookat_mode = false;
 
 	Editor* editor = nullptr;

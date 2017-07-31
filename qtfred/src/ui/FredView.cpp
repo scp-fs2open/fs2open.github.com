@@ -111,6 +111,7 @@ void FredView::setEditor(Editor* editor, EditorViewport* viewport) {
 			this,
 			[this]() { ui->actionZoomSelected->setEnabled(query_valid_object(fred->currentObject)); });
 	connect(this, &FredView::viewIdle, this, [this]() { ui->actionOrbitSelected->setChecked(_viewport->Lookat_mode); });
+	connect(this, &FredView::viewIdle, this, [this]() { ui->actionRotateLocal->setChecked(_viewport->Group_rotate); });
 }
 
 void FredView::loadMissionFile(const QString& pathName) {
@@ -878,6 +879,9 @@ void FredView::on_actionOrbitSelected_triggered(bool enabled) {
 			_viewport->view_orient = m;
 		}
 	}
+}
+void FredView::on_actionRotateLocal_triggered(bool enabled) {
+	_viewport->Group_rotate = enabled;
 }
 
 } // namespace fred
