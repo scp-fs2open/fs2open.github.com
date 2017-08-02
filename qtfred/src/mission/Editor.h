@@ -36,7 +36,7 @@ class Editor: public QObject {
 	void createNewMission();
 
 	/*! Load a mission. */
-	void loadMission(const std::string& filepath);
+	bool loadMission(const std::string& filepath, int flags = 0);
 
 	void markObject(int objId);
 	void unmarkObject(int objId);
@@ -225,6 +225,10 @@ class Editor: public QObject {
 	 * @brief Finds a free wing slot (i.e. unused)
 	 */
 	int find_free_wing();
+
+	void generate_wing_weaponry_usage_list(int* arr, int wing);
+
+	void generate_team_weaponry_usage_list(int team, int* arr);
 };
 
 } // namespace fred

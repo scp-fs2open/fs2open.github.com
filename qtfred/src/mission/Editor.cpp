@@ -18,6 +18,7 @@
 #include <starfield/nebula.h>
 #include <object/objectdock.h>
 #include <ai/aigoals.h>
+#include <localization/fhash.h>
 
 #include "iff_defs/iff_defs.h" // iff_init
 #include "object/object.h" // obj_init
@@ -111,14 +112,161 @@ void Editor::update() {
 	}
 }
 
-void Editor::loadMission(const std::string& filepath) {
+bool Editor::loadMission(const std::string& filepath, int flags) {
+	char name[512], * old_name;
+	int i, j, k, ob;
+	int used_pool[MAX_WEAPON_TYPES];
+	object* objp;
+
+	// activate the localizer hash table
+	fhash_flush();
+
 	clearMission();
 
-	if (parse_main(filepath.c_str())) {
-		throw mission_load_error("Parse error");
+	if (parse_main(filepath.c_str(), flags)) {
+		if (flags & MPF_IMPORT_FSM) {
+			SCP_string msg;
+			sprintf(msg, "Unable to import the file \"%s\".", filepath.c_str());
+
+			_lastActiveViewport->dialogProvider->showButtonDialog(DialogType::Error,
+																  "Load Error",
+																  msg,
+																  { DialogButton::Ok });
+		} else {
+			SCP_string msg;
+			sprintf(msg, "Unable to load the file \"%s\".", filepath.c_str());
+			_lastActiveViewport->dialogProvider->showButtonDialog(DialogType::Error,
+																  "Load Error",
+																  msg,
+																  { DialogButton::Ok });
+		}
+		createNewMission();
+
+		return false;
+	}
+
+	if ((Num_unknown_ship_classes > 0) || (Num_unknown_weapon_classes > 0) || (Num_unknown_loadout_classes > 0)) {
+		if (flags & MPF_IMPORT_FSM) {
+			SCP_string msg;
+			sprintf(msg,
+					"Fred encountered unknown ship/weapon classes when importing \"%s\" (path \"%s\"). You will have to manually edit the converted mission to correct this.",
+					The_mission.name,
+					filepath.c_str());
+
+			_lastActiveViewport->dialogProvider->showButtonDialog(DialogType::Warning,
+																  "Unknown Ship classes",
+																  msg,
+																  { DialogButton::Ok });
+		} else {
+			_lastActiveViewport->dialogProvider->showButtonDialog(DialogType::Warning,
+																  "Unknown Ship classes",
+																  "Fred encountered unknown ship/weapon classes when parsing the mission file. This may be due to mission disk data you do not have.",
+																  { DialogButton::Ok });
+		}
 	}
 
 	obj_merge_created_list();
+	objp = GET_FIRST(&obj_used_list);
+	while (objp != END_OF_LIST(&obj_used_list)) {
+		if (objp->flags[Object::Object_Flags::Player_ship]) {
+			Assert(objp->type == OBJ_SHIP);
+			objp->type = OBJ_START;
+			//			Player_starts++;
+		}
+
+		objp = GET_NEXT(objp);
+	}
+
+	for (i = 0; i < Num_wings; i++) {
+		for (j = 0; j < Wings[i].wave_count; j++) {
+			ob = Ships[Wings[i].ship_index[j]].objnum;
+			wing_objects[i][j] = ob;
+			Ships[Wings[i].ship_index[j]].wingnum = i;
+			Ships[Wings[i].ship_index[j]].arrival_cue = Locked_sexp_false;
+		}
+
+		// fix old ship names for ships in wings if needed
+		while (j--) {
+			if ((Objects[wing_objects[i][j]].type == OBJ_SHIP)
+				|| (Objects[wing_objects[i][j]].type == OBJ_START)) {  // don't change player ship names
+				wing_bash_ship_name(name, Wings[i].name, j + 1);
+				old_name = Ships[Wings[i].ship_index[j]].ship_name;
+				if (stricmp(name, old_name)) {  // need to fix name
+					update_sexp_references(old_name, name);
+					ai_update_goal_references(REF_TYPE_SHIP, old_name, name);
+					update_texture_replacements(old_name, name);
+					for (k = 0; k < Num_reinforcements; k++) {
+						if (!strcmp(old_name, Reinforcements[k].name)) {
+							Assert(strlen(name) < NAME_LENGTH);
+							strcpy_s(Reinforcements[k].name, name);
+						}
+					}
+
+					strcpy_s(Ships[Wings[i].ship_index[j]].ship_name, name);
+				}
+			}
+		}
+	}
+
+	for (i = 0; i < Num_teams; i++) {
+		generate_team_weaponry_usage_list(i, used_pool);
+		for (j = 0; j < Team_data[i].num_weapon_choices; j++) {
+			// The amount used in wings is always set by a static loadout entry so skip any that were set by Sexp variables
+			if ((!strlen(Team_data[i].weaponry_pool_variable[j]))
+				&& (!strlen(Team_data[i].weaponry_amount_variable[j]))) {
+				// convert weaponry_pool to be extras available beyond the current ships weapons
+				Team_data[i].weaponry_count[j] -= used_pool[Team_data[i].weaponry_pool[j]];
+				if (Team_data[i].weaponry_count[j] < 0) {
+					Team_data[i].weaponry_count[j] = 0;
+				}
+
+				// zero the used pool entry
+				used_pool[Team_data[i].weaponry_pool[j]] = 0;
+			}
+		}
+		// double check the used pool is empty
+		for (j = 0; j < MAX_WEAPON_TYPES; j++) {
+			if (used_pool[j] != 0) {
+				Warning(LOCATION,
+						"%s is used in wings of team %d but was not in the loadout. Fixing now",
+						Weapon_info[j].name,
+						i + 1);
+
+				// add the weapon as a new entry
+				Team_data[i].weaponry_pool[Team_data[i].num_weapon_choices] = j;
+				Team_data[i].weaponry_count[Team_data[i].num_weapon_choices] = used_pool[j];
+				strcpy_s(Team_data[i].weaponry_amount_variable[Team_data[i].num_weapon_choices], "");
+				strcpy_s(Team_data[i].weaponry_pool_variable[Team_data[i].num_weapon_choices++], "");
+			}
+		}
+	}
+
+	Assert(Mission_palette >= 0);
+	Assert(Mission_palette <= 98);
+
+	// go through all ships and translate their callsign and alternate name indices
+	objp = GET_FIRST(&obj_used_list);
+	while (objp != END_OF_LIST(&obj_used_list)) {
+		// if this is a ship, check it, and mark its possible alternate name down in the auxiliary array
+		if (((objp->type == OBJ_SHIP) || (objp->type == OBJ_START)) && (objp->instance >= 0)) {
+			if (Ships[objp->instance].alt_type_index >= 0) {
+				mission_parse_lookup_alt_index(Ships[objp->instance].alt_type_index, Fred_alt_names[objp->instance]);
+
+				// also zero it
+				Ships[objp->instance].alt_type_index = -1;
+			}
+
+			if (Ships[objp->instance].callsign_index >= 0) {
+				mission_parse_lookup_callsign_index(Ships[objp->instance].callsign_index,
+													Fred_callsigns[objp->instance]);
+
+				// also zero it
+				Ships[objp->instance].callsign_index = -1;
+			}
+		}
+
+		objp = GET_NEXT(objp);
+	}
 
 	for (auto& viewport : _viewports) {
 		viewport->view_orient = Parse_viewer_orient;
@@ -127,6 +275,8 @@ void Editor::loadMission(const std::string& filepath) {
 	stars_post_level_init();
 
 	missionLoaded(filepath);
+
+	return true;
 }
 void Editor::unmark_all() {
 	if (numMarked > 0) {
@@ -1437,18 +1587,20 @@ int Editor::set_reinforcement(const char* name, int state) {
 void Editor::remove_wing(int wing_num) {
 
 	int i, total;
-	object *ptr;
+	object* ptr;
 
-	if (check_wing_dependencies(wing_num))
+	if (check_wing_dependencies(wing_num)) {
 		return;
+	}
 
 	total = Wings[wing_num].wave_count;
-	for (i=0; i<total; i++) {
+	for (i = 0; i < total; i++) {
 		ptr = &Objects[wing_objects[wing_num][i]];
-		if (ptr->type == OBJ_SHIP)
+		if (ptr->type == OBJ_SHIP) {
 			remove_ship_from_wing(ptr->instance, 0);
-		else if (ptr->type == OBJ_START)
+		} else if (ptr->type == OBJ_START) {
 			remove_player_from_wing(ptr->instance, 0);
+		}
 	}
 
 	Assert(!Wings[wing_num].wave_count);
@@ -1469,6 +1621,50 @@ void Editor::remove_wing(int wing_num) {
 	update_custom_wing_indexes();
 
 	missionChanged();
+}
+void Editor::generate_wing_weaponry_usage_list(int* arr, int wing) {
+	int i, j;
+	ship_weapon *swp;
+
+	if (wing < 0)
+		return;
+
+	i = Wings[wing].wave_count;
+	while (i--) {
+		swp = &Ships[Wings[wing].ship_index[i]].weapons;
+		j = swp->num_primary_banks;
+		while (j--) {
+			if (swp->primary_bank_weapons[j] >= 0 && swp->primary_bank_weapons[j] < MAX_WEAPON_TYPES) {
+				arr[swp->primary_bank_weapons[j]]++;
+			}
+		}
+
+		j = swp->num_secondary_banks;
+		while (j--) {
+			if (swp->secondary_bank_weapons[j] >=0 && swp->secondary_bank_weapons[j] < MAX_WEAPON_TYPES) {
+				arr[swp->secondary_bank_weapons[j]] += (int) floor((swp->secondary_bank_ammo[j] * swp->secondary_bank_capacity[j] / 100.0f / Weapon_info[swp->secondary_bank_weapons[j]].cargo_size) + 0.5f);
+			}
+		}
+	}
+}
+void Editor::generate_team_weaponry_usage_list(int team, int* arr) {
+	int i;
+
+	for (i=0; i<MAX_WEAPON_TYPES; i++)
+		arr[i] = 0;
+
+	if (The_mission.game_type & MISSION_TYPE_MULTI_TEAMS) {
+		Assert (team >= 0 && team < MAX_TVT_TEAMS);
+
+		for (i=0; i<MAX_TVT_WINGS_PER_TEAM; i++) {
+			generate_wing_weaponry_usage_list(arr, TVT_wings[(team * MAX_TVT_WINGS_PER_TEAM) + i]);
+		}
+	}
+	else {
+		for (i=0; i<MAX_STARTING_WINGS; i++) {
+			generate_wing_weaponry_usage_list(arr, Starting_wings[i]);
+		}
+	}
 }
 } // namespace fred
 } // namespace fso

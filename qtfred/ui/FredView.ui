@@ -555,6 +555,9 @@
    </property>
   </action>
   <action name="actionOrbitSelected">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
    <property name="icon">
     <iconset resource="../resources/resources.qrc">
      <normaloff>:/images/orbitsel.png</normaloff>:/images/orbitsel.png</iconset>

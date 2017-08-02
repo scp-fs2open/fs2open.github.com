@@ -19,6 +19,7 @@
 #include <ui/dialogs/MissionSpecDialog.h>
 #include <ui/dialogs/FormWingDialog.h>
 #include <globalincs/linklist.h>
+#include <ui/dialogs/SelectionDialog.h>
 
 #include "mission/Editor.h"
 #include "mission/management.h"
@@ -109,6 +110,8 @@ void FredView::setEditor(Editor* editor, EditorViewport* viewport) {
 			&FredView::viewIdle,
 			this,
 			[this]() { ui->actionZoomSelected->setEnabled(query_valid_object(fred->currentObject)); });
+	connect(this, &FredView::viewIdle, this, [this]() { ui->actionOrbitSelected->setChecked(_viewport->Lookat_mode); });
+	connect(this, &FredView::viewIdle, this, [this]() { ui->actionRotateLocal->setChecked(_viewport->Group_rotate); });
 }
 
 void FredView::loadMissionFile(const QString& pathName) {
@@ -856,6 +859,29 @@ bool FredView::showModalDialog(IBaseDialog* dlg) {
 	qdlg->setParent(prevParent, Qt::Dialog);
 
 	return ret == QDialog::Accepted;
+}
+void FredView::on_actionSelectionList_triggered(bool) {
+	auto dialog = new dialogs::SelectionDialog(this, _viewport);
+	// This is a modal dialog
+	dialog->exec();
+}
+void FredView::on_actionOrbitSelected_triggered(bool enabled) {
+	_viewport->Lookat_mode = enabled;
+	if (_viewport->Lookat_mode && query_valid_object(fred->currentObject)) {
+		vec3d v, loc;
+		matrix m;
+
+		loc = Objects[fred->currentObject].pos;
+		vm_vec_sub(&v, &loc, &_viewport->view_pos);
+
+		if (v.xyz.x || v.xyz.y || v.xyz.z) {
+			vm_vector_2_matrix(&m, &v, NULL, NULL);
+			_viewport->view_orient = m;
+		}
+	}
+}
+void FredView::on_actionRotateLocal_triggered(bool enabled) {
+	_viewport->Group_rotate = enabled;
 }
 
 } // namespace fred
