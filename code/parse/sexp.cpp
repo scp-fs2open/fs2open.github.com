@@ -22988,13 +22988,13 @@ bool get_replace_text_for_modifier(SCP_string &text, int con_index, size_t &look
 
 			case SNF_CONTAINER_GET_RANDOM:
 				number_of_elements = (int)Sexp_containers[con_index].list_data.size();
-				data_index = rand_internal(0, number_of_elements); 
+				data_index = rand_internal(0, number_of_elements-1); 
 				replacement_text.assign(Sexp_containers[con_index].list_data.at(data_index));
 				break;
 
 			case SNF_CONTAINER_REMOVE_RANDOM:
 				number_of_elements = (int)Sexp_containers[con_index].list_data.size();
-				data_index = rand_internal(0, number_of_elements); 
+				data_index = rand_internal(0, number_of_elements-1); 
 				replacement_text.assign(Sexp_containers[con_index].list_data.at(data_index));	
 				Sexp_containers[con_index].list_data.erase(Sexp_containers[con_index].list_data.begin() + data_index);
 				break;
@@ -29542,13 +29542,13 @@ bool deal_with_container_sub(int &node, int container_index, SCP_string &result)
 	
 			case SNF_CONTAINER_GET_RANDOM:
 				number_of_elements = (int)Sexp_containers[container_index].list_data.size();
-				data_index = rand_internal(0, number_of_elements); 
+				data_index = rand_internal(0, number_of_elements-1); 
 				result.assign(Sexp_containers[container_index].list_data.at(data_index));
 				return true;
 
 			case SNF_CONTAINER_REMOVE_RANDOM:
 				number_of_elements = (int)Sexp_containers[container_index].list_data.size();
-				data_index = rand_internal(0, number_of_elements); 
+				data_index = rand_internal(0, number_of_elements-1); 
 				result.assign(Sexp_containers[container_index].list_data.at(data_index));				
 				if (allow_container_modifications()) {
 					Sexp_containers[container_index].list_data.erase(Sexp_containers[container_index].list_data.begin() + data_index);
