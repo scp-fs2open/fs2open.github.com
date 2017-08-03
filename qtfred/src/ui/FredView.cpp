@@ -64,6 +64,9 @@ FredView::FredView(QWidget* parent) : QMainWindow(parent), ui(new Ui::FredView()
 
 	connect(fredApp, &FredApplication::onIdle, this, &FredView::updateUI);
 
+	// TODO: Hook this up with the modified state of the mission
+	setWindowModified(false);
+
 	updateRecentFileList();
 
 	initializeStatusBar();
@@ -151,9 +154,12 @@ void FredView::on_mission_loaded(const std::string& filepath) {
 		filename = QFileInfo(QString::fromStdString(filepath)).fileName();
 	}
 
-	auto title = tr("%1 - qtFRED v%2 - FreeSpace 2 Mission Editor").arg(filename, FS_VERSION_FULL);
+	// The "[*]" is the placeholder for showing the modified state of the window
+	auto title = tr("%1[*]").arg(filename, FS_VERSION_FULL);
 
 	setWindowTitle(title);
+	// This will add some additional features on platforms that make use of this information
+	setWindowFilePath(QString::fromStdString(filepath));
 
 	if (!filepath.empty()) {
 		addToRecentFiles(QString::fromStdString(filepath));
@@ -650,9 +656,8 @@ DialogButton FredView::showButtonDialog(DialogType type,
 										const flagset<DialogButton>& buttons) {
 	QMessageBox dialog(this);
 
-	dialog.setWindowTitle(QApplication::applicationName()); // This follows the recommendation found in the QMessageBox documentation
-	dialog.setText(QString::fromStdString(title));
-	dialog.setInformativeText(QString::fromStdString(message));
+	dialog.setWindowTitle(QString::fromStdString(title));
+	dialog.setText(QString::fromStdString(message));
 
 	QMessageBox::StandardButtons qtButtons = 0;
 	QMessageBox::StandardButton defaultButton = QMessageBox::NoButton;
