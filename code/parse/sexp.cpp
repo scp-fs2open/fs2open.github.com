@@ -304,6 +304,8 @@ sexp_oper Operators[] = {
 
 	//Containers Sub-Category
 	{ "is-container-empty",				OP_IS_CONTAINER_EMPTY,					1,	1,			SEXP_INTEGER_OPERATOR,	}, // Karajorma
+	{ "container-has-data",				OP_CONTAINER_HAS_DATA,					2,	INT_MAX,	SEXP_INTEGER_OPERATOR,	}, // Karajorma
+	{ "container-has-key",				OP_CONTAINER_HAS_KEY,					2,	INT_MAX,	SEXP_INTEGER_OPERATOR,	}, // Karajorma
 
 	//Other Sub-Category
 	{ "script-eval-num",				OP_SCRIPT_EVAL_NUM,						1,	1,			SEXP_INTEGER_OPERATOR,	},
@@ -22816,6 +22818,118 @@ int sexp_is_container_empty (int node)
 	return SEXP_FALSE;
 }
 
+/**
+* Check if a SEXP container contains a specific element or elements.
+*/
+int sexp_container_has_data(int node)
+{
+	bool found = false;
+	char *possible_data;
+	char *container_name = CTEXT(node);
+	int index = get_index_sexp_container_name(container_name);
+
+	if (index < 0) {
+		Warning(LOCATION, "Container %s does not exist.", container_name);
+		return -1;
+	}
+
+	node = CDR(node);
+
+	if (Sexp_containers[index].type & SEXP_CONTAINER_MAP) {
+		while (node != -1) {
+			possible_data = CTEXT(node);
+			for (SCP_unordered_map<SCP_string, SCP_string>::iterator iter = Sexp_containers[index].map_data.begin(); iter != Sexp_containers[index].map_data.end(); ++iter) {
+				if (!strcmp(iter->second.c_str(), possible_data)) {
+					found = true;
+					break;
+				}
+			}
+
+			if (!found) {
+				return SEXP_FALSE;
+			}
+
+			found = false;
+			node = CDR(node);
+		}
+
+		return SEXP_TRUE;
+	}
+	else if (Sexp_containers[index].type & SEXP_CONTAINER_LIST) {
+		while (node != -1) {
+			possible_data = CTEXT(node);
+			for (SCP_deque<SCP_string>::iterator iter = Sexp_containers[index].list_data.begin(); iter != Sexp_containers[index].list_data.end(); iter++) {
+				if (!strcmp(iter->c_str(), possible_data)) {
+					found = true;
+					break;
+				}
+			}
+
+			if (!found) {
+				return SEXP_FALSE;
+			}
+
+			found = false;
+			node = CDR(node);
+		}
+			
+		return SEXP_TRUE;
+	}
+	else {
+		Error(LOCATION, "Unknown container type. Container %s is of type %d and this is not a valid type", Sexp_containers[index].container_name, Sexp_containers[index].type);
+	}
+
+	return SEXP_FALSE;
+}
+
+/**
+* Check if a SEXP container contains a specific element or elements.
+*/
+int sexp_container_has_key(int node)
+{
+	bool found = false;
+	char *possible_key;
+	char *container_name = CTEXT(node);
+	SCP_vector<SCP_string> keys; 
+	int index = get_index_sexp_container_name(container_name);
+
+	if (index < 0) {
+		Warning(LOCATION, "Container %s does not exist.", container_name);
+		return -1;
+	}
+
+	node = CDR(node);
+
+	if (!Sexp_containers[index].type & SEXP_CONTAINER_MAP) {
+		return SEXP_FALSE;
+	}	
+
+	// get a list of the keys
+	for (SCP_unordered_map<SCP_string, SCP_string>::iterator iter = Sexp_containers[index].map_data.begin(); iter != Sexp_containers[index].map_data.end(); ++iter) {
+		keys.push_back(iter->first);
+	}
+
+	// now loop through the list of keys and see if there are matches
+	while (node != -1) {
+		possible_key = CTEXT(node);
+		for (SCP_vector<SCP_string>::iterator iter = keys.begin(); iter != keys.end(); iter++) {
+			if (!strcmp(iter->c_str(), possible_key)) {
+				found = true;
+				break;
+			}
+		}
+
+		if (!found) {
+			return SEXP_FALSE;
+		}
+
+		found = false;
+		node = CDR(node);
+	}
+
+	return SEXP_TRUE;
+}
+
 void sexp_clear_container (int node)
 {
 	char *container_name = CTEXT(node);
@@ -24846,7 +24960,16 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = sexp_is_container_empty(node);
 				break;
 
+			// Karajomra
+			case OP_CONTAINER_HAS_DATA:
+				sexp_val = sexp_container_has_data(node);
+				break;
+
 			// Karajorma
+			case OP_CONTAINER_HAS_KEY:
+				sexp_val = sexp_container_has_key(node);
+				break;
+
 			case OP_DEBUG:
 				sexp_debug(node);
 				sexp_val = SEXP_TRUE;
@@ -26269,6 +26392,8 @@ int query_operator_return_type(int op)
 		case OP_PLAYER_IS_CHEATING_BASTARD:
 		case OP_ARE_SHIP_FLAGS_SET:
 		case OP_IS_CONTAINER_EMPTY:
+		case OP_CONTAINER_HAS_DATA:
+		case OP_CONTAINER_HAS_KEY:
 			return OPR_BOOL;
 
 		case OP_PLUS:
@@ -27890,6 +28015,22 @@ int query_operator_argument_type(int op, int argnum)
 
 		case OP_IS_CONTAINER_EMPTY:
 			return OPF_CONTAINER_NAME;
+
+		case OP_CONTAINER_HAS_DATA:
+			if (argnum == 0) {
+				return OPF_CONTAINER_NAME;
+			}
+			else {
+				return OPF_STRING;
+			}
+
+		case OP_CONTAINER_HAS_KEY:
+			if (argnum == 0) {
+				return OPF_MAP_CONTAINER_NAME;
+			}
+			else {
+				return OPF_STRING;
+			}
 
 		case OP_CAP_SUBSYS_CARGO_KNOWN_DELAY:
 			if ( argnum == 0 ) {
@@ -30935,6 +31076,8 @@ int get_subcategory(int sexp_id)
 			return STATUS_SUBCATEGORY_VARIABLES;
 
 		case OP_IS_CONTAINER_EMPTY:
+		case OP_CONTAINER_HAS_DATA:
+		case OP_CONTAINER_HAS_KEY:
 			return STATUS_SUBCATEGORY_CONTAINERS;
 
 
@@ -32612,8 +32755,22 @@ sexp_help_struct Sexp_help[] = {
 	// Karajorma
 	{ OP_IS_CONTAINER_EMPTY, "Is Container Empty (Boolean operator)\r\n"
 		"\tReturns true if the specified container has no elements in it.\r\n\r\n"
-		"Takes 1 argument1...\r\n"
+		"Takes 1 argument...\r\n"
 		"\t1:\tName of the container." },
+
+	// Karajorma
+	{ OP_CONTAINER_HAS_DATA, "Container-has-data (Boolean operator)\r\n"
+		"\tReturns true if the specified container has elements which match the supplied strings.\r\n\r\n"
+		"Takes 2 or more arguments...\r\n"
+		"\t1:\tName of the container." 
+		"\tRest:\tString that might be in the container" },
+
+	// Karajorma
+	{ OP_CONTAINER_HAS_KEY, "Container-has-key (Boolean operator)\r\n"
+		"\tReturns true if the specified container has keys which match the supplied strings.\r\n\r\n"
+		"Takes 2 or more arguments...\r\n"
+		"\t1:\tName of the container."
+		"\tRest:\tKeys that might be in the container" },
 
 	// Goober5000
 	{ OP_INT_TO_STRING, "int-to-string\r\n"

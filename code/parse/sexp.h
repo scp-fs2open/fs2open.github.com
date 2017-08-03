@@ -396,6 +396,8 @@ class waypoint_list;
 
 #define OP_TURRET_GET_SECONDARY_AMMO		(0x0050 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// DahBlount, part of the turret ammo code
 #define OP_IS_CONTAINER_EMPTY				(0x0051 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// Karajorma
+#define OP_CONTAINER_HAS_DATA				(0x0052 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// Karajorma
+#define OP_CONTAINER_HAS_KEY				(0x0053 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// Karajorma
 
 // conditional sexpressions
 #define OP_WHEN								(0x0000 | OP_CATEGORY_CONDITIONAL)
