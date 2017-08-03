@@ -48,7 +48,7 @@ deploy:
           tags: true
 
     - provider: script
-      script: ci/travis/ftp_deploy.sh
+      script: bash ci/travis/ftp_deploy.sh
       on:
           condition: '"$NIGHTLY_BUILD" == true'
           tags: true
