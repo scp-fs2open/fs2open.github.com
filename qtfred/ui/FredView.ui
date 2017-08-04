@@ -851,6 +851,9 @@
    <property name="text">
     <string>&amp;Restore Camera Pos</string>
    </property>
+   <property name="shortcut">
+    <string>Ctrl+R</string>
+   </property>
   </action>
   <action name="actionLighting_from_Suns">
    <property name="checkable">

@@ -116,6 +116,10 @@ void FredView::setEditor(Editor* editor, EditorViewport* viewport) {
 			[this]() { ui->actionZoomSelected->setEnabled(query_valid_object(fred->currentObject)); });
 	connect(this, &FredView::viewIdle, this, [this]() { ui->actionOrbitSelected->setChecked(_viewport->Lookat_mode); });
 	connect(this, &FredView::viewIdle, this, [this]() { ui->actionRotateLocal->setChecked(_viewport->Group_rotate); });
+	connect(this,
+			&FredView::viewIdle,
+			this,
+			[this]() { ui->actionRestore_Camera_Pos->setEnabled(!IS_VEC_NULL(&_viewport->saved_cam_orient.vec.fvec)); });
 
 	// The Show teams actions need to be initialized after everything has been set up since the IFFs may not have been
 	// initialized yet
@@ -900,6 +904,16 @@ void FredView::on_actionOrbitSelected_triggered(bool enabled) {
 }
 void FredView::on_actionRotateLocal_triggered(bool enabled) {
 	_viewport->Group_rotate = enabled;
+}
+void FredView::on_actionSave_Camera_Pos_triggered(bool) {
+	_viewport->saved_cam_pos = _viewport->view_pos;
+	_viewport->saved_cam_orient = _viewport->view_orient;
+}
+void FredView::on_actionRestore_Camera_Pos_triggered(bool) {
+	_viewport->view_pos = _viewport->saved_cam_pos;
+	_viewport->view_orient = _viewport->saved_cam_orient;
+
+	_viewport->needsUpdate();
 }
 
 } // namespace fred

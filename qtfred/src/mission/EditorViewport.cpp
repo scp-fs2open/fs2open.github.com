@@ -136,6 +136,8 @@ EditorViewport::EditorViewport(Editor* in_editor, std::unique_ptr<FredRenderer>&
 	vm_vec_make(&Anticonstraint, 0.0f, 1.0f, 0.0f);
 	resetView();
 
+	memset(&saved_cam_orient, 0, sizeof(saved_cam_orient));
+
 	fredApp->runAfterInit([this]() { initialSetup(); });
 }
 void EditorViewport::needsUpdate() {

@@ -97,6 +97,9 @@ class FredView: public QMainWindow, public IDialogProvider {
 	void on_actionOrbitSelected_triggered(bool enabled);
 
 	void on_actionRotateLocal_triggered(bool enabled);
+
+	void on_actionSave_Camera_Pos_triggered(bool);
+	void on_actionRestore_Camera_Pos_triggered(bool);
  signals:
 	/**
 	 * @brief Special version of FredApplication::onIdle which is limited to the lifetime of this object
