@@ -476,9 +476,7 @@ void RenderWidget::setCursorMode(CursorMode mode) {
 	_cursorMode = mode;
 }
 void RenderWidget::renderFrame() {
-	subsys_to_render Render_subsys;
-
-	_viewport->renderer->render_frame(fred->currentObject, Render_subsys, _usingMarkingBox, _markingBox, false);
+	_viewport->renderer->render_frame(fred->currentObject, fred->Render_subsys, _usingMarkingBox, _markingBox, false);
 }
 } // namespace fred
 } // namespace fso

@@ -1006,6 +1006,15 @@ void FredView::on_actionAlign_Object_triggered(bool) {
 void FredView::on_actionControl_Object_triggered(bool) {
 	_viewport->Control_mode = (_viewport->Control_mode + 1) % 2;
 }
+void FredView::on_actionNext_Subsystem_triggered(bool) {
+	fred->select_next_subsystem();
+}
+void FredView::on_actionPrev_Subsystem_triggered(bool) {
+	fred->select_previous_subsystem();
+}
+void FredView::on_actionCancel_Subsystem_triggered(bool) {
+	fred->cancel_select_subsystem();
+}
 
 } // namespace fred
 } // namespace fso

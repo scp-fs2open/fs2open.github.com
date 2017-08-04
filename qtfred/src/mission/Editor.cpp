@@ -1685,5 +1685,140 @@ void Editor::delete_marked() {
 
 	missionChanged();
 }
+void Editor::select_next_subsystem() {
+
+	object *objp;
+
+	if (currentObject < 0) {
+		cancel_select_subsystem();
+	}
+
+	objp = &Objects[currentObject];
+
+	// check if cur object is ship type
+	if (objp->type == OBJ_SHIP) {
+
+		// check if same ship
+		if (Render_subsys.ship_obj == objp) {
+
+			// if already on, advance to next
+			if (Render_subsys.do_render) {
+				if ( !get_next_visible_subsys(&Ships[objp->instance], &Render_subsys.cur_subsys) ) {
+					cancel_select_subsystem();
+				}
+			} else {
+				Int3();
+			}
+		} else {
+			// clean up
+			cancel_select_subsystem();
+
+			// set up new and advance to first
+			Render_subsys.do_render = true;
+			Render_subsys.ship_obj = objp;
+			if ( !get_next_visible_subsys(&Ships[objp->instance], &Render_subsys.cur_subsys) ) {
+				cancel_select_subsystem();
+			}
+		}
+	} else {
+		// not ship type
+		cancel_select_subsystem();
+	}
+}
+void Editor::select_previous_subsystem() {
+	if (!Render_subsys.do_render) {
+		return;
+	}
+
+	if ( (currentObject < 0)  || (Objects[currentObject].type != OBJ_SHIP) || (&Objects[currentObject] != Render_subsys.ship_obj) ) {
+		cancel_select_subsystem();
+		return;
+	}
+
+	if ( !get_prev_visible_subsys(&Ships[Objects[currentObject].instance], &Render_subsys.cur_subsys) ) {
+		cancel_select_subsystem();
+	}
+
+}
+void Editor::cancel_select_subsystem() {
+	Render_subsys.do_render = false;
+	Render_subsys.ship_obj = NULL;
+	Render_subsys.cur_subsys = NULL;
+	updateAllViewports();
+}
+int Editor::get_visible_sub_system_count(ship * shipp) {
+	int count = 0;
+	ship_subsys *cur_subsys;
+
+	for (cur_subsys = GET_FIRST(&shipp->subsys_list); cur_subsys != END_OF_LIST(&shipp->subsys_list); cur_subsys = GET_NEXT(cur_subsys)) {
+		if (cur_subsys->system_info->subobj_num != -1) {
+			count++;
+		}
+	}
+
+	return count;
+}
+int Editor::get_next_visible_subsys(ship * shipp, ship_subsys * *next_subsys) {
+	int count = get_visible_sub_system_count(shipp);
+
+	// return don't try to display
+	if (count == 0) {
+		return 0;
+	}
+
+	// first timer
+	if (*next_subsys == NULL) {
+		*next_subsys = &shipp->subsys_list;
+	}
+
+	// look before wrap
+	for (*next_subsys = GET_NEXT(*next_subsys); *next_subsys != END_OF_LIST(&shipp->subsys_list); *next_subsys = GET_NEXT(*next_subsys)) {
+		if ((*next_subsys)->system_info->subobj_num != -1) {
+			updateAllViewports();
+			return 1;
+		}
+	}
+
+	// look for first after wrap
+	for (*next_subsys = GET_FIRST(&shipp->subsys_list); *next_subsys != END_OF_LIST(&shipp->subsys_list); *next_subsys = GET_NEXT(*next_subsys)) {
+		if ((*next_subsys)->system_info->subobj_num != -1) {
+			updateAllViewports();
+			return 1;
+		}
+	}
+
+	Int3();	// should be impossible to miss
+	return 0;
+}
+int Editor::get_prev_visible_subsys(ship * shipp, ship_subsys * *prev_subsys) {
+	int count = get_visible_sub_system_count(shipp);
+
+	// return don't try to display
+	if (count == 0) {
+		return 0;
+	}
+
+	// first timer
+	Assert(*prev_subsys != NULL);
+
+	// look before wrap
+	for (*prev_subsys = GET_PREV(*prev_subsys); *prev_subsys != END_OF_LIST(&shipp->subsys_list); *prev_subsys = GET_PREV(*prev_subsys)) {
+		if ((*prev_subsys)->system_info->subobj_num != -1) {
+			updateAllViewports();
+			return 1;
+		}
+	}
+
+	// look for first after wrap
+	for (*prev_subsys = GET_LAST(&shipp->subsys_list); *prev_subsys != END_OF_LIST(&shipp->subsys_list); *prev_subsys = GET_PREV(*prev_subsys)) {
+		if ((*prev_subsys)->system_info->subobj_num != -1) {
+			updateAllViewports();
+			return 1;
+		}
+	}
+
+	Int3();	// should be impossible to miss
+	return 0;
+}
 } // namespace fred
 } // namespace fso

@@ -12,6 +12,7 @@
 #include <globalincs/globals.h>
 #include <osapi/osapi.h>
 #include <object/waypoint.h>
+#include <ship/ship.h>
 
 namespace fso {
 namespace fred {
@@ -119,6 +120,8 @@ class Editor: public QObject {
 	waypoint* cur_waypoint = nullptr;
 	waypoint_list* cur_waypoint_list = nullptr;
 
+	subsys_to_render Render_subsys;
+
 	// Goober5000
 	// This must be done when either the wing name or the custom name is changed.
 	// (It's also duplicated in FS2, in post_process_mission, for setting the indexes at mission load.)
@@ -159,6 +162,10 @@ class Editor: public QObject {
 	void delete_marked();
 
 	int delete_wing(int wing_num, int bypass = 0);
+
+	void select_next_subsystem();
+	void select_previous_subsystem();
+	void cancel_select_subsystem();
 
  private:
 	void clearMission();
@@ -231,6 +238,12 @@ class Editor: public QObject {
 	void generate_wing_weaponry_usage_list(int* arr, int wing);
 
 	void generate_team_weaponry_usage_list(int team, int* arr);
+
+	int get_visible_sub_system_count(ship *shipp);
+
+	int get_next_visible_subsys(ship *shipp, ship_subsys **next_subsys);
+
+	int get_prev_visible_subsys(ship *shipp, ship_subsys **prev_subsys);
 };
 
 } // namespace fred

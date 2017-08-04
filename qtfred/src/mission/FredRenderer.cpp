@@ -140,12 +140,6 @@ void draw_asteroid_field() {
 	}
 }
 
-void cancel_display_active_ship_subsystem(subsys_to_render& Render_subsys) {
-	Render_subsys.do_render = false;
-	Render_subsys.ship_obj = NULL;
-	Render_subsys.cur_subsys = NULL;
-}
-
 vec3d* get_subsystem_world_pos2(object* parent_obj, ship_subsys* subsys, vec3d* world_pos) {
 	if (subsys == NULL) {
 		*world_pos = parent_obj->pos;
@@ -272,30 +266,6 @@ void fredhtl_render_subsystem_bounding_box(subsys_to_render* s2r, subsys_to_rend
 	g3_project_vertex(&text_center);
 	gr_set_color_fast(&colour_white);
 	gr_string((int) text_center.screen.xyw.x, (int) text_center.screen.xyw.y, buf);
-}
-
-void display_active_ship_subsystem(subsys_to_render& Render_subsys, int cur_object_index) {
-	if (cur_object_index != -1) {
-		if (Objects[cur_object_index].type == OBJ_SHIP) {
-			object* objp = &Objects[cur_object_index];
-			char buf[256];
-
-			// switching to a new ship, so reset
-			if (objp != Render_subsys.ship_obj) {
-				cancel_display_active_ship_subsystem(Render_subsys);
-				return;
-			}
-
-			if (Render_subsys.do_render) {
-				// get subsys name
-				strcpy_s(buf, Render_subsys.cur_subsys->system_info->subobj_name);
-
-				fredhtl_render_subsystem_bounding_box(&Render_subsys, Render_subsys);
-			} else {
-				cancel_display_active_ship_subsystem(Render_subsys);
-			}
-		}
-	}
 }
 
 void render_active_rect(bool box_marking, const Marking_box& marking_box) {
