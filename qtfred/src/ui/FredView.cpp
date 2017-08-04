@@ -915,6 +915,12 @@ void FredView::on_actionRestore_Camera_Pos_triggered(bool) {
 
 	_viewport->needsUpdate();
 }
+void FredView::on_actionTool_Bar_triggered(bool enabled) {
+	ui->toolBar->setVisible(enabled);
+}
+void FredView::on_actionStatus_Bar_triggered(bool enabled) {
+	statusBar()->setVisible(enabled);
+}
 
 } // namespace fred
 } // namespace fso
