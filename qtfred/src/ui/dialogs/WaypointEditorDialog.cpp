@@ -34,6 +34,9 @@ WaypointEditorDialog::WaypointEditorDialog(FredView* parent, EditorViewport* vie
 
 	// Initial set up of the UI
 	updateUI();
+
+	// Resize the dialog to the minimum size
+	resize(QDialog::sizeHint());
 }
 WaypointEditorDialog::~WaypointEditorDialog() {
 }
@@ -57,6 +60,8 @@ void WaypointEditorDialog::updateComboBox() {
 
 	auto itemIndex = ui->pathSelection->findData(QVariant(_model->getCurrentElementId()));
 	ui->pathSelection->setCurrentIndex(itemIndex); // This also works if the index is -1
+
+	ui->pathSelection->setEnabled(ui->pathSelection->count() > 0);
 }
 void WaypointEditorDialog::updateUI() {
 	// We need to block signals here or else updating the combobox would lead to and update of the model
