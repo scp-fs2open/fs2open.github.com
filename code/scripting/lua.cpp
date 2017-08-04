@@ -271,6 +271,9 @@ void script_state::OutputLuaMeta(FILE *fp)
 	ade_table_entry *ate;
 	fputs("<dl>\n", fp);
 
+	//***Version info
+	fprintf(fp, "<dd>Version: %s</dd>\n", LUA_RELEASE);
+
 	SCP_vector<ade_table_entry*> table_entries;
 
 	//***TOC: Libraries

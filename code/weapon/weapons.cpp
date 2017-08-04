@@ -2337,12 +2337,8 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 			if ( optional_string("+Texture:") ) {
 				stuff_string(fname, F_NAME, NAME_LENGTH);
 
-				// invisible textures are okay
-				if (!stricmp(fname, "invisible")) {
-					generic_anim_init(&bsip->texture);
-				} else {
-					generic_anim_init(&bsip->texture, fname);
-				}
+				// invisible textures are okay - see weapon_clean_entries()
+				generic_anim_init(&bsip->texture, fname);
 			}
 
 			// The E -- Dummied out due to not being used anywhere
@@ -3081,7 +3077,15 @@ void weapon_clean_entries()
 			int removed = 0;
 
 			for (int s_idx = 0; s_idx < wip->b_info.beam_num_sections; s_idx++) {
-				if ( !strlen(wip->b_info.sections[s_idx].texture.filename) ) {
+				beam_weapon_section_info *bsip = &wip->b_info.sections[s_idx];
+
+				// If this is an invisible beam section, we want to keep it.  Originally invisible sections were initialized as they were parsed,
+				// but then they were inadvertently cleaned up in this function.  So let's properly set the filename here while not removing the section.
+				if ( !stricmp(bsip->texture.filename, "invisible") ) {
+					memset(bsip->texture.filename, 0, MAX_FILENAME_LEN);
+				}
+				// Now remove empty beam sections as before
+				else if ( !strlen(bsip->texture.filename) ) {
 					int new_idx = s_idx + 1;
 
 					while (new_idx < MAX_BEAM_SECTIONS) {
@@ -3096,6 +3100,10 @@ void weapon_clean_entries()
 			if (removed) {
 				mprintf(("NOTE: weapon-cleanup is removing %i stale beam sections, out of %i original, from '%s'.\n", removed, wip->b_info.beam_num_sections, wip->name));
 				wip->b_info.beam_num_sections -= removed;
+			}
+
+			if (wip->b_info.beam_num_sections == 0) {
+				Warning(LOCATION, "The beam '%s' has 0 usable sections!", wip->name);
 			}
 		}
 	}

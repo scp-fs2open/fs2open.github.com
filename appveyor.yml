@@ -49,3 +49,15 @@ deploy:
       beta: true
       on:
           NightlyBuild: true        # deploy on nightly push only
+
+    - provider: FTP
+      protocol: ftp
+      host: swc.fs2downloads.com
+      username: 
+        secure: EXg2ADoKzMduZF90ip2Q0g==
+      password:
+        secure: x0LL0uY9yBAQ7JTARhQ6AA==
+      folder: swc.fs2downloads.com/builds/test/$(VersionName)
+      beta: true
+      on:
+          TestBuild: true        # deploy on test build push only

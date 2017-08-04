@@ -108,21 +108,7 @@ namespace font
 	
 	float NVGFont::getTextHeight() const
 	{
-		auto path = graphics::paths::PathRenderer::instance();
-
-		path->saveState();
-		path->resetState();
-
-		path->fontFaceId(m_handle);
-		path->fontSize(m_size);
-		path->textLetterSpacing(m_letterSpacing);
-
-		float lineh;
-		path->textMetrics(nullptr, nullptr, &lineh);
-
-		path->restoreState();
-
-		return lineh;
+		return m_lineHeight;
 	}
 
 	extern int get_char_width_old(font* fnt, ubyte c1, ubyte c2, int *width, int* spacing);
@@ -189,6 +175,13 @@ namespace font
 
 						int charWidth;
 						int spacing;
+
+						if (m_specialCharacters == nullptr) {
+							Error(LOCATION,
+								  "Font %s has no special characters font! This is usually caused by ignoring a font table parsing warning.",
+								  getName().c_str());
+						}
+
 						get_char_width_old(m_specialCharacters, static_cast<ubyte>(*s), '\0', &charWidth, &spacing);
 
 						lineWidth += i2fl(spacing);
@@ -224,5 +217,23 @@ namespace font
 			*width = w;
 
 		path->restoreState();
+	}
+	void NVGFont::computeFontMetrics() {
+		auto path = graphics::paths::PathRenderer::instance();
+
+		path->saveState();
+		path->resetState();
+
+		path->fontFaceId(m_handle);
+		path->fontSize(m_size);
+		path->textLetterSpacing(m_letterSpacing);
+
+		path->textMetrics(&_ascender, &_descender, &m_lineHeight);
+
+		path->restoreState();
+
+		_height = m_lineHeight + this->offsetTop + this->offsetBottom;
+
+		checkFontMetrics();
 	}
 }

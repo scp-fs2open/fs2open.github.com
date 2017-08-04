@@ -37,7 +37,7 @@ namespace font
 
 	float FSFont::getHeight() const
 	{
-		return this->getTextHeight() + this->offsetTop + this->offsetBottom;
+		return _height;
 	}
 
 	const SCP_string &FSFont::getName() const
@@ -45,13 +45,26 @@ namespace font
 		return this->name;
 	}
 
-	void FSFont::checkHeight() {
-		float height = this->getTextHeight() + this->offsetTop + this->offsetBottom;
+	void FSFont::computeFontMetrics() {
+		_height = this->getTextHeight() + this->offsetTop + this->offsetBottom;
 
-		if (height <= 1.0f)
+		// By default the base line of the font is also the lowest point of the font
+		_ascender = _height;
+		_descender = 0.0f;
+
+		checkFontMetrics();
+	}
+	void FSFont::checkFontMetrics() {
+		if (_height <= 1.0f)
 		{
 			Warning(LOCATION, "The height of font %s has an invalid height of %f, must be greater than one!",
-					getName().c_str(), height);
+					getName().c_str(), _height);
 		}
+	}
+	float FSFont::getAscender() {
+		return _ascender;
+	}
+	float FSFont::getDescender() {
+		return _descender;
 	}
 }

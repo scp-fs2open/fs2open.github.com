@@ -391,11 +391,6 @@ void debug_int3(const char *file, int line)
 #endif
 
 	gr_activate(1);
-	// we have to call os_deinit() before abort() so we make sure that SDL gets
-	// closed out and we don't lose video/input control
-	os_deinit();
-
-	abort();
 }
 
 namespace os
