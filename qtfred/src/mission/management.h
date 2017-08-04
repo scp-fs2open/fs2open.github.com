@@ -12,6 +12,7 @@ enum class SubSystem {
 	CommandLine,
 	Timer,
 	CFile,
+	ModTable,
 	Locale,
 	Graphics,
 	Fonts,
