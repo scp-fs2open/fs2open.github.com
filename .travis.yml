@@ -49,10 +49,17 @@ deploy:
           tags: true
 
     - provider: script
-      script: ci/travis/nightly_deploy.sh
+      script: bash ci/travis/ftp_deploy.sh
       on:
           condition: '"$NIGHTLY_BUILD" == true'
           tags: true
+
+    - provider: script
+      skip_cleanup: true
+      script: bash ci/travis/ftp_deploy.sh
+      on:
+          condition: $TEST_BUILD = true
+          all_branches: true
 
 matrix:
     include:

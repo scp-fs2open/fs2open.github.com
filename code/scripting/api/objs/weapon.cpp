@@ -9,6 +9,7 @@
 #include "vecmath.h"
 #include "team.h"
 #include "mc_info.h"
+#include "iff_defs/iff_defs.h"
 
 namespace scripting {
 namespace api {
@@ -285,7 +286,7 @@ ADE_VIRTVAR(Team, l_Weapon, "team", "Weapon's team", "team", "Weapon team, or in
 
 	weapon *wp = &Weapons[oh->objp->instance];
 
-	if(ADE_SETTING_VAR && nt > -1 && nt < Num_teams) {
+	if(ADE_SETTING_VAR && nt > -1 && nt < Num_iffs) {
 		wp->team = nt;
 	}
 

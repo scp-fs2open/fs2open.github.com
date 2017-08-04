@@ -89,7 +89,7 @@ Category CutsceneProcessVideoData("Process video data", true);
 Category CutsceneProcessAudioData("Process audio data", false);
 
 Category CutsceneFFmpegVideoDecoder("FFmpeg decode video", false);
-Category CutsceneFFmpegAudioDecoder("FFmpeg decode video", false);
+Category CutsceneFFmpegAudioDecoder("FFmpeg decode audio", false);
 
 Category LoadMissionLoad("Load mission", false);
 Category LoadPostMissionLoad("Mission load post processing", false);

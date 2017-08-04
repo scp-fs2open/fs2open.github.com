@@ -765,7 +765,7 @@ anim *anim_load(const char *real_filename, int cf_dir_type, int file_mapped)
 		}
 
 		// couldn't memory-map file... must be in a packfile, so stream manually
-		if ( file_mapped && !ptr->cfile_ptr ) {
+		if ( file_mapped == PAGE_FROM_MEM && !ptr->cfile_ptr ) {
 			ptr->flags &= ~ANF_MEM_MAPPED;
 			ptr->flags |= ANF_STREAMED;
 			ptr->cfile_ptr = cfopen(name, "rb", CFILE_NORMAL, cf_dir_type);

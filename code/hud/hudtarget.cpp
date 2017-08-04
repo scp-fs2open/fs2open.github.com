@@ -3289,7 +3289,11 @@ void hud_show_message_sender()
 	targetp = &Objects[Ships[Message_shipnum].objnum];
 	Assert ( targetp != NULL );
 
-	Assert ( targetp->type == OBJ_SHIP );
+	if (targetp->type != OBJ_SHIP) {
+		// if it's not a ship (maybe it got ship-vanished in the middle of talking) then clear Message_shipnum
+		Message_shipnum = -1;
+		return;
+	}
 
 	// Don't do this for the ship you're flying!
 	if ( targetp == Player_obj ) {

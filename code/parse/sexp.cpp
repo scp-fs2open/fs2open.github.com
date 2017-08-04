@@ -1538,23 +1538,27 @@ int is_sexp_top_level( int node )
 /**
  * Find argument number
  */
-int find_argnum(int parent, int arg)
+int find_argnum(int parent_node, int arg_node)
 {
 	int n, tally;
+	Assertion((parent_node >= 0) && (parent_node < Num_sexp_nodes), "find_argnum was passed an invalid parent!");
+	Assertion((arg_node >= 0) && (arg_node < Num_sexp_nodes), "find_argnum was passed an invalid child!");
 
-	n = CDR(parent);
+	n = CDR(parent_node);
 	tally = 0;
 	
-	while (CAR(n) != arg)
+	while (n >= 0)
 	{
-		if (n == -1)
-			return -1;
+		// check if there is an operator node at this position which matches our expected node
+		if (CAR(n) == arg_node)
+			return tally;
 
 		tally++;
 		n = CDR(n);
 	}
 
-	return tally;
+	// argument node not found
+	return -1;
 }
 
 /**
@@ -15020,7 +15024,7 @@ int sexp_targeted(int node)
 	}
 
 	z = ship_name_lookup(CTEXT(node), 1);
-	if ((z < 0) || !Player_ai || (Ships[z].objnum != Player_ai->target_objnum)){
+	if ((z < 0) || !Player_ai || (Ships[z].objnum != Players_target)){
 		return SEXP_FALSE;
 	}
 
@@ -15031,7 +15035,7 @@ int sexp_targeted(int node)
 		}
 
 		if (CDR(CDR(node)) >= 0) {
-			ptr = Player_ai->targeted_subsys;
+			ptr = Players_targeted_subsys;
 			if (!ptr || subsystem_stricmp(ptr->system_info->subobj_name, CTEXT(CDR(CDR(node))))){
 				return SEXP_FALSE;
 			}
@@ -15047,7 +15051,7 @@ int sexp_node_targeted(int node)
 
 	CJumpNode *jnp = jumpnode_get_by_name(CTEXT(node));
 
-	if (jnp==NULL || !Player_ai || (jnp->GetSCPObjectNumber() != Player_ai->target_objnum)){
+	if (jnp==NULL || !Player_ai || (jnp->GetSCPObjectNumber() != Players_target)){
 		return SEXP_FALSE;
 	}
 
@@ -20433,8 +20437,7 @@ void sexp_string_set_substring(int node)
 void sexp_debug(int node)
 {
 	int i;
-	char *id;
-	char temp_buf[MESSAGE_LENGTH] = {""};
+	SCP_string warning_message;
 
 	#ifdef NDEBUG
 	int no_release_message;
@@ -20442,25 +20445,29 @@ void sexp_debug(int node)
 	#endif
 
 	node = CDR(node); 
-	Assertion (node >= 0, "No message defined in debug SEXP"); 
-	id = CTEXT(node);
+	Assertion (node >= 0, "No message defined in debug SEXP");
 
+	// we'll suppose it's the string for now
+	warning_message = CTEXT(node);
+
+	// but use an actual message if one exists
 	for (i=0; i<Num_messages; i++) {
 		// find the message
-		if ( !stricmp(id, Messages[i].name) ) {
-			//replace variables if necessary
-			strcpy_s(temp_buf, Messages[i].message);
-			sexp_replace_variable_names_with_values(temp_buf, MESSAGE_LENGTH); 
+		if ( !stricmp(Messages[i].name, warning_message.c_str()) ) {
+			warning_message = Messages[i].message;
 			break;
 		}
 	}
 
+	// replace variables if necessary
+	sexp_replace_variable_names_with_values(warning_message);
+
 	//send the message
 	#ifndef NDEBUG
-		Warning(LOCATION, "%s", temp_buf);
+		Warning(LOCATION, "%s", warning_message.c_str());
     #else	
 	if (!no_release_message) {	
-		ReleaseWarning(LOCATION, "%s", temp_buf);
+		ReleaseWarning(LOCATION, "%s", warning_message.c_str());
 	}
 	#endif
 }
@@ -22294,7 +22301,7 @@ void sexp_manipulate_colgroup(int node, bool add_to_group) {
 			if (add_to_group) {
 				colgroup_id |= (1<<group);
 			} else {
-				colgroup_id &= !(1<<group);
+				colgroup_id &= ~(1<<group);
 			}
 		}
 
@@ -25028,20 +25035,18 @@ int eval_sexp(int cur_node, int referenced_node)
 		if (sexp_val < 0)
 		{
 			int parent_node = find_parent_operator(cur_node);
-			int arg_num = find_argnum(parent_node, cur_node);
 
-			// make sure everything works okay
-			if (arg_num == -1)
+			// if the SEXP has no parent, the point is moot
+			if (parent_node >= 0)
 			{
-				SCP_string sexp_text;
-				convert_sexp_to_string(sexp_text, cur_node, SEXP_ERROR_CHECK_MODE);
-				Error(LOCATION, "Error finding sexp argument.  Received value %d for sexp:\n%s", sexp_val, sexp_text.c_str());
-			}
+				int arg_num = find_argnum(parent_node, cur_node);
+				Assertion(arg_num >= 0, "Error finding sexp argument.  The SEXP is not listed among its parent's children.");
 
-			// if we need a positive value, make it positive
-			if (query_operator_argument_type(get_operator_index(parent_node), arg_num) == OPF_POSITIVE)
-			{
-				sexp_val *= -1;
+				// if we need a positive value, make it positive
+				if (query_operator_argument_type(get_operator_index(parent_node), arg_num) == OPF_POSITIVE)
+				{
+					sexp_val *= -1;
+				}
 			}
 		}
 
@@ -26182,10 +26187,8 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_DEBUG:
 			if (argnum == 0) {
 				return OPF_BOOL;
-			}else if (argnum == 1) {
-				return OPF_MESSAGE; 
-			}else  {
-				return OPF_STRING;
+			} else {
+				return OPF_MESSAGE_OR_STRING;
 			}
 
 		case OP_HAS_TIME_ELAPSED:
@@ -31660,8 +31663,8 @@ sexp_help_struct Sexp_help[] = {
 	{ OP_DEBUG, "debug\r\n"
 		"\tPops up a warning on debug builds (and optionally on release builds)\r\n"
 		"Takes 1 or more arguments...\r\n"
-		"\t1:\t If false, popup messages in release builds too. Defaults to true.\r\n"
-		"\t2:\tName of a message which will appear in the warning (optional)\r\n"},
+		"\t1:\tLimit warning to debug builds.  If false, display warning in release builds too. Defaults to true.\r\n"
+		"\t2:\tA short string which will appear in the warning, or a message if the string matches a message name.\r\n"},
 
 	{ OP_GRANT_PROMOTION, "Grant promotion (Action operator)\r\n"
 		"\tIn a single player game, this function grants a player an automatic promotion to the "
@@ -31730,7 +31733,7 @@ sexp_help_struct Sexp_help[] = {
 		"have scanned each one.\r\n\r\n"
 		"Returns a boolean value after <delay> seconds when all cargo is known.  Takes 2 or more arguments...\r\n"
 		"\t1:\tDelay in seconds after which sexpression will return true when all cargo scanned."
-		"\tRest:\tNames of ships/cargo to check for cargo known.." },
+		"\tRest:\tNames of ships/cargo to check for cargo known." },
 
 	{ OP_WAS_PROMOTION_GRANTED, "Was promotion granted (Boolean operator)\r\n"
 		"\tReturns true if a promotion was granted via the 'Grant promotion' operator in the mission.\r\n\r\n"
