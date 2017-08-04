@@ -921,6 +921,16 @@ void FredView::on_actionTool_Bar_triggered(bool enabled) {
 void FredView::on_actionStatus_Bar_triggered(bool enabled) {
 	statusBar()->setVisible(enabled);
 }
+void FredView::on_actionDelete_triggered(bool) {
+	if (fred->getNumMarked() > 0) {
+		fred->delete_marked();
+	}
+}
+void FredView::on_actionDelete_Wing_triggered(bool) {
+	if (fred->cur_wing >= 0) {
+		fred->delete_wing(fred->cur_wing, 0);
+	}
+}
 
 } // namespace fred
 } // namespace fso

@@ -1666,5 +1666,24 @@ void Editor::generate_team_weaponry_usage_list(int team, int* arr) {
 		}
 	}
 }
+void Editor::delete_marked() {
+	object *ptr, *next;
+
+	delete_flag = 0;
+	ptr = GET_FIRST(&obj_used_list);
+	while (ptr != END_OF_LIST(&obj_used_list)) {
+		next = GET_NEXT(ptr);
+		if (ptr->flags[Object::Object_Flags::Marked])
+			if (delete_object(OBJ_INDEX(ptr)) == 2)  // user went to a reference, so don't get in the way.
+				break;
+
+		ptr = next;
+	}
+
+	if (!delete_flag)
+		setupCurrentObjectIndices(-1);
+
+	missionChanged();
+}
 } // namespace fred
 } // namespace fso

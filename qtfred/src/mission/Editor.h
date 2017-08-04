@@ -156,6 +156,10 @@ class Editor: public QObject {
 	 */
 	void remove_wing(int wing_num);
 
+	void delete_marked();
+
+	int delete_wing(int wing_num, int bypass = 0);
+
  private:
 	void clearMission();
 
@@ -192,8 +196,6 @@ class Editor: public QObject {
 	int rename_ship(int ship, char* name);
 
 	void delete_reinforcement(int num);
-
-	int delete_wing(int wing_num, int bypass = 0);
 
 	// changes the currently selected wing.  It is assumed that cur_wing == cur_ship's wing
 	// number.  Don't call this if this won't be true, or else you'll screw things up.
