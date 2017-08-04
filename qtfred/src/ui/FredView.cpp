@@ -20,6 +20,7 @@
 #include <ui/dialogs/FormWingDialog.h>
 #include <globalincs/linklist.h>
 #include <ui/dialogs/SelectionDialog.h>
+#include <iff_defs/iff_defs.h>
 
 #include "mission/Editor.h"
 #include "mission/management.h"
@@ -115,6 +116,18 @@ void FredView::setEditor(Editor* editor, EditorViewport* viewport) {
 			[this]() { ui->actionZoomSelected->setEnabled(query_valid_object(fred->currentObject)); });
 	connect(this, &FredView::viewIdle, this, [this]() { ui->actionOrbitSelected->setChecked(_viewport->Lookat_mode); });
 	connect(this, &FredView::viewIdle, this, [this]() { ui->actionRotateLocal->setChecked(_viewport->Group_rotate); });
+
+	// The Show teams actions need to be initialized after everything has been set up since the IFFs may not have been
+	// initialized yet
+	fredApp->runAfterInit([this]() {
+		for (auto i = 0; i < Num_iffs; ++i) {
+			auto action = new QAction(QString::fromUtf8(Iff_info[i].iff_name), ui->menuDisplay_Filter);
+			action->setCheckable(true);
+			connectActionToViewSetting(action, &_viewport->view.Show_iff[i]);
+
+			ui->menuDisplay_Filter->addAction(action);
+		}
+	});
 }
 
 void FredView::loadMissionFile(const QString& pathName) {
@@ -155,7 +168,7 @@ void FredView::on_mission_loaded(const std::string& filepath) {
 	}
 
 	// The "[*]" is the placeholder for showing the modified state of the window
-	auto title = tr("%1[*]").arg(filename, FS_VERSION_FULL);
+	auto title = tr("%1[*]").arg(filename);
 
 	setWindowTitle(title);
 	// This will add some additional features on platforms that make use of this information
@@ -280,13 +293,13 @@ void FredView::connectActionToViewSetting(QAction* option, bool* destination) {
 
 	// Use our view idle function for updating the action status whenever possible
 	// TODO: Maybe this could be improved with an event based property system but that would need to be implemented
-	connect(this, &FredView::viewIdle, [option, destination]() {
+	connect(this, &FredView::viewIdle, this, [option, destination]() {
 		option->setChecked(*destination);
 	});
 
 	// then connect the signal to a handler for updating the view setting
 	// The pointer should be valid as long as this signal is active since it should be pointing inside the renderer (I hope...)
-	connect(option, &QAction::triggered, [this, destination](bool value) {
+	connect(option, &QAction::triggered, this, [this, destination](bool value) {
 		*destination = value;
 
 		// View settings have changed so we need to update the window

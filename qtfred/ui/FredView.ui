@@ -84,8 +84,6 @@
      <addaction name="actionShow_Player_Starts"/>
      <addaction name="actionShow_Waypoints"/>
      <addaction name="separator"/>
-     <addaction name="actionShow_Friendly"/>
-     <addaction name="actionShow_Hostile"/>
     </widget>
     <widget class="QMenu" name="menuViewpoint">
      <property name="title">
