@@ -17,6 +17,7 @@
 namespace fso {
 namespace fred {
 
+const size_t MAX_DOCKS = 1000;
 
 /*! Game editor.
  * Handles everything needed to edit the game,
@@ -167,6 +168,8 @@ class Editor: public QObject {
 	void select_previous_subsystem();
 	void cancel_select_subsystem();
 
+	bool global_error_check();
+
  private:
 	void clearMission();
 
@@ -187,6 +190,14 @@ class Editor: public QObject {
 	int delete_flag;
 
 	bool already_deleting_wing = false;
+
+// used by error checker, but needed in more than just one function.
+	char *names[MAX_OBJECTS];
+	char err_flags[MAX_OBJECTS];
+	int obj_count = 0;
+	int g_err = 0;
+
+	char *Docking_bay_list[MAX_DOCKS];
 
 	int common_object_delete(int obj);
 
@@ -244,6 +255,23 @@ class Editor: public QObject {
 	int get_next_visible_subsys(ship *shipp, ship_subsys **next_subsys);
 
 	int get_prev_visible_subsys(ship *shipp, ship_subsys **prev_subsys);
+
+	int global_error_check_impl();
+
+	int error(SCP_FORMAT_STRING const char* msg, ...) SCP_FORMAT_STRING_ARGS(2, 3);
+	int internal_error(SCP_FORMAT_STRING const char *msg, ...) SCP_FORMAT_STRING_ARGS(2, 3);
+
+	int fred_check_sexp(int sexp, int type, const char *msg, ...);
+
+	const char *error_check_initial_orders(ai_goal *goals, int ship, int wing);
+
+	int global_error_check_mixed_player_wing(int w);
+
+	int global_error_check_player_wings(int multi);
+
+	const char *get_order_name(int order);
+
+	int get_docking_list(int model_index);
 };
 
 } // namespace fred

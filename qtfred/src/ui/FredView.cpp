@@ -1015,6 +1015,9 @@ void FredView::on_actionPrev_Subsystem_triggered(bool) {
 void FredView::on_actionCancel_Subsystem_triggered(bool) {
 	fred->cancel_select_subsystem();
 }
+void FredView::on_actionError_Checker_triggered(bool) {
+	fred->global_error_check();
+}
 
 } // namespace fred
 } // namespace fso

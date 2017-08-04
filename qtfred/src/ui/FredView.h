@@ -114,6 +114,7 @@ class FredView: public QMainWindow, public IDialogProvider {
 	void on_actionNext_Subsystem_triggered(bool);
 	void on_actionPrev_Subsystem_triggered(bool);
 	void on_actionCancel_Subsystem_triggered(bool);
+	void on_actionError_Checker_triggered(bool);
  signals:
 	/**
 	 * @brief Special version of FredApplication::onIdle which is limited to the lifetime of this object
