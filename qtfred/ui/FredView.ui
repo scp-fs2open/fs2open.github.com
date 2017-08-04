@@ -231,7 +231,7 @@
     <addaction name="actionHelp_Topics"/>
     <addaction name="actionShow_SEXP_Help"/>
     <addaction name="separator"/>
-    <addaction name="actionAbout_FRED2"/>
+    <addaction name="actionAbout"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuEdit"/>
@@ -1367,7 +1367,7 @@
     <string>&amp;Show SEXP Help</string>
    </property>
   </action>
-  <action name="actionAbout_FRED2">
+  <action name="actionAbout">
    <property name="text">
     <string>&amp;About qtFRED...</string>
    </property>

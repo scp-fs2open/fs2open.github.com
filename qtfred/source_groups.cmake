@@ -68,6 +68,8 @@ add_file_folder("Source/UI"
 )
 
 add_file_folder("Source/UI/Dialogs"
+	src/ui/dialogs/AboutDialog.cpp
+	src/ui/dialogs/AboutDialog.h
     src/ui/dialogs/BriefingEditorDialog.cpp
     src/ui/dialogs/BriefingEditorDialog.h
 	src/ui/dialogs/CustomWingNamesDialog.cpp
@@ -98,6 +100,7 @@ add_file_folder("Source/UI/Widgets"
 )
 
 add_file_folder("UI"
+	ui/AboutDialog.ui
 	ui/BriefingEditorDialog.ui
 	ui/CustomWingNamesDialog.ui
     ui/EventEditorDialog.ui

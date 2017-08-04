@@ -18,6 +18,7 @@
 #include <ui/dialogs/ObjectOrientEditorDialog.h>
 #include <ui/dialogs/MissionSpecDialog.h>
 #include <ui/dialogs/FormWingDialog.h>
+#include <ui/dialogs/AboutDialog.h>
 #include <globalincs/linklist.h>
 #include <ui/dialogs/SelectionDialog.h>
 #include <iff_defs/iff_defs.h>
@@ -1017,6 +1018,10 @@ void FredView::on_actionCancel_Subsystem_triggered(bool) {
 }
 void FredView::on_actionError_Checker_triggered(bool) {
 	fred->global_error_check();
+}
+void FredView::on_actionAbout_triggered(bool) {
+	dialogs::AboutDialog dialog(this);
+	dialog.exec();
 }
 
 } // namespace fred
