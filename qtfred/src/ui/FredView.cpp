@@ -72,6 +72,8 @@ FredView::FredView(QWidget* parent) : QMainWindow(parent), ui(new Ui::FredView()
 
 	initializeStatusBar();
 	initializePopupMenus();
+
+	initializeGroupActions();
 }
 
 FredView::~FredView() {
@@ -930,6 +932,70 @@ void FredView::on_actionDelete_Wing_triggered(bool) {
 	if (fred->cur_wing >= 0) {
 		fred->delete_wing(fred->cur_wing, 0);
 	}
+}
+void FredView::initializeGroupActions() {
+	// This is a bit ugly but it's easier than iterating though all actions in the menu...
+	connect(ui->actionGroup_1, &QAction::triggered, this, [this]() { onGroupSelected(1); });
+	connect(ui->actionGroup_2, &QAction::triggered, this, [this]() { onGroupSelected(2); });
+	connect(ui->actionGroup_3, &QAction::triggered, this, [this]() { onGroupSelected(3); });
+	connect(ui->actionGroup_4, &QAction::triggered, this, [this]() { onGroupSelected(4); });
+	connect(ui->actionGroup_5, &QAction::triggered, this, [this]() { onGroupSelected(5); });
+	connect(ui->actionGroup_6, &QAction::triggered, this, [this]() { onGroupSelected(6); });
+	connect(ui->actionGroup_7, &QAction::triggered, this, [this]() { onGroupSelected(7); });
+	connect(ui->actionGroup_8, &QAction::triggered, this, [this]() { onGroupSelected(8); });
+	connect(ui->actionGroup_9, &QAction::triggered, this, [this]() { onGroupSelected(9); });
+
+
+	connect(ui->actionSetGroup_1, &QAction::triggered, this, [this]() { onSetGroup(1); });
+	connect(ui->actionSetGroup_2, &QAction::triggered, this, [this]() { onSetGroup(2); });
+	connect(ui->actionSetGroup_3, &QAction::triggered, this, [this]() { onSetGroup(3); });
+	connect(ui->actionSetGroup_4, &QAction::triggered, this, [this]() { onSetGroup(4); });
+	connect(ui->actionSetGroup_5, &QAction::triggered, this, [this]() { onSetGroup(5); });
+	connect(ui->actionSetGroup_6, &QAction::triggered, this, [this]() { onSetGroup(6); });
+	connect(ui->actionSetGroup_7, &QAction::triggered, this, [this]() { onSetGroup(7); });
+	connect(ui->actionSetGroup_8, &QAction::triggered, this, [this]() { onSetGroup(8); });
+	connect(ui->actionSetGroup_9, &QAction::triggered, this, [this]() { onSetGroup(9); });
+}
+void FredView::onGroupSelected(int group) {
+	fred->unmark_all();
+	auto objp = GET_FIRST(&obj_used_list);
+	while (objp != END_OF_LIST(&obj_used_list)) {
+		if (objp->type == OBJ_SHIP) {
+			if (Ships[objp->instance].group & group) {
+				fred->markObject(OBJ_INDEX(objp));
+			}
+		}
+
+		objp = GET_NEXT(objp);
+	}
+}
+void FredView::onSetGroup(int group) {
+	bool err = false;
+
+	for (auto i = 0; i < MAX_SHIPS; i++) {
+		Ships[i].group &= ~group;
+	}
+
+	auto objp = GET_FIRST(&obj_used_list);
+	while (objp != END_OF_LIST(&obj_used_list)) {
+		if (objp->flags[Object::Object_Flags::Marked]) {
+			if (objp->type == OBJ_SHIP) {
+				Ships[objp->instance].group |= group;
+
+			} else {
+				err = true;
+			}
+		}
+
+		objp = GET_NEXT(objp);
+	}
+
+	if (err) {
+		showButtonDialog(DialogType::Error, "Error", "Only ships can be in groups, and not players or waypoints, etc.\n"
+			"These illegal objects you marked were not placed in the group", { DialogButton::Ok });
+	}
+
+	fred->updateAllViewports();
 }
 
 } // namespace fred

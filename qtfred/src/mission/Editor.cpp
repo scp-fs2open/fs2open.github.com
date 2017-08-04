@@ -305,7 +305,7 @@ void Editor::markObject(int obj) {
 			setupCurrentObjectIndices(obj);
 		}
 
-		missionChanged();
+		updateAllViewports();
 	}
 }
 void Editor::unmarkObject(int obj) {

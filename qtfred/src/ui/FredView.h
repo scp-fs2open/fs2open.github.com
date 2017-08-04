@@ -146,6 +146,9 @@ class FredView: public QMainWindow, public IDialogProvider {
 	void initializeStatusBar();
 	void initializePopupMenus();
 
+	void onGroupSelected(int group);
+	void onSetGroup(int group);
+
 	QLabel* _statusBarViewmode = nullptr;
 	QLabel* _statusBarUnitsLabel = nullptr;
 
@@ -198,6 +201,7 @@ class FredView: public QMainWindow, public IDialogProvider {
 	std::unique_ptr<IDialog<dialogs::FormWingDialogModel>> createFormWingDialog() override;
 
 	bool showModalDialog(IBaseDialog* dlg) override;
+	void initializeGroupActions();
 };
 
 } // namespace fred
