@@ -1000,6 +1000,9 @@ void FredView::onSetGroup(int group) {
 void FredView::on_actionLevel_Object_triggered(bool) {
 	_viewport->level_controlled();
 }
+void FredView::on_actionAlign_Object_triggered(bool) {
+	_viewport->verticalize_controlled();
+}
 
 } // namespace fred
 } // namespace fso
