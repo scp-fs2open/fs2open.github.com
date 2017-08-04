@@ -1003,6 +1003,9 @@ void FredView::on_actionLevel_Object_triggered(bool) {
 void FredView::on_actionAlign_Object_triggered(bool) {
 	_viewport->verticalize_controlled();
 }
+void FredView::on_actionControl_Object_triggered(bool) {
+	_viewport->Control_mode = (_viewport->Control_mode + 1) % 2;
+}
 
 } // namespace fred
 } // namespace fso
