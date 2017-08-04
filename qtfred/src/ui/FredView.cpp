@@ -997,6 +997,9 @@ void FredView::onSetGroup(int group) {
 
 	fred->updateAllViewports();
 }
+void FredView::on_actionLevel_Object_triggered(bool) {
+	_viewport->level_controlled();
+}
 
 } // namespace fred
 } // namespace fso
