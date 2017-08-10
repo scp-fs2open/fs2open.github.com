@@ -141,6 +141,19 @@ int joy_ff_init()
 	}
 
 	Joy_ff_directional_hit_effect_enabled = os_config_read_uint(NULL, "EnableHitEffect", 1);
+	// ForceFeedback.Strength lets the user specify how strong the effects should be. This uses SDL_HapticSetGain which
+	// needs to be supported by the haptic device
+	int ff_strength = os_config_read_uint("ForceFeedback", "Strength", 100);
+	CLAMP(ff_strength, 0, 100);
+	if (SDL_HapticQuery(haptic) & SDL_HAPTIC_GAIN) {
+		SDL_HapticSetGain(haptic, ff_strength);
+	} else {
+		if (ff_strength != 100) {
+			ReleaseWarning(LOCATION, "The configuration file is configured with a force feedback strength value of %d%% "
+				"but your haptic device does not support setting the global strength of the effects. All effects will be"
+				"played with full strength.", ff_strength);
+		}
+	}
 
 	mprintf(("\n"));
 	mprintf(("    Number of haptic axes: %d\n", SDL_HapticNumAxes(haptic)));
