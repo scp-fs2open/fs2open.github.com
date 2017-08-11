@@ -4902,7 +4902,7 @@ void process_repair_info_packet(ubyte *data, header *hinfo)
 			ai_info *aip = &Ai_info[Ships[repair_objp->instance].ai_index];
 			Assert(aip->active_goal >= 0);
 			ai_goal *aigp = &aip->goals[aip->active_goal];
-			Assert(aigp->flags[AI::Goal_Flags::Dockee_index_valid, AI::Goal_Flags::Docker_index_valid]);
+			Assert(aigp->flags[AI::Goal_Flags::Dockee_index_valid] || aigp->flags[AI::Goal_Flags::Docker_index_valid]);
 
 			int docker_index = aigp->docker.index;
 			int dockee_index = aigp->dockee.index;
