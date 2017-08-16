@@ -3814,7 +3814,7 @@ float ai_path_0()
 		int path_num;
 		Assert(aip->active_goal >= 0);
 		ai_goal *aigp = &aip->goals[aip->active_goal];
-		Assert(aigp->flags[AI::Goal_Flags::Dockee_index_valid] || aigp->flags[AI::Goal_Flags::Docker_index_valid]);
+		Assert(aigp->flags[AI::Goal_Flags::Dockee_index_valid] && aigp->flags[AI::Goal_Flags::Docker_index_valid]);
 
 		path_num = ai_return_path_num_from_dockbay(&Objects[aip->goal_objnum], aigp->dockee.index);
 		ai_find_path(Pl_objp, aip->goal_objnum, path_num, 0);
@@ -3957,7 +3957,7 @@ float ai_path_1()
 		int path_num;
 		Assert(aip->active_goal >= 0);
 		ai_goal *aigp = &aip->goals[aip->active_goal];
-		Assert(aigp->flags[AI::Goal_Flags::Dockee_index_valid] || aigp->flags[AI::Goal_Flags::Docker_index_valid]);
+		Assert(aigp->flags[AI::Goal_Flags::Dockee_index_valid] && aigp->flags[AI::Goal_Flags::Docker_index_valid]);
 
 		path_num = ai_return_path_num_from_dockbay(&Objects[aip->goal_objnum], aigp->dockee.index);
 		ai_find_path(Pl_objp, aip->goal_objnum, path_num, 0);
@@ -10399,7 +10399,7 @@ void ai_get_dock_goal_indexes(object *objp, ai_info *aip, ai_goal *aigp, object 
 		{
 			// get them from the active goal
 			Assert(aigp != NULL);
-			Assert(aigp->flags[AI::Goal_Flags::Dockee_index_valid] || aigp->flags[AI::Goal_Flags::Docker_index_valid]);
+			Assert(aigp->flags[AI::Goal_Flags::Dockee_index_valid] && aigp->flags[AI::Goal_Flags::Docker_index_valid]);
 			docker_index = aigp->docker.index;
 			dockee_index = aigp->dockee.index;
 			Assert(docker_index >= 0);

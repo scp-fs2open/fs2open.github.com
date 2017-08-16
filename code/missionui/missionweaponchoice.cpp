@@ -16,6 +16,7 @@
 #include "gamehelp/contexthelp.h"
 #include "gamesnd/gamesnd.h"
 #include "globalincs/alphacolors.h"
+#include "graphics/shadows.h"
 #include "hud/hudbrackets.h"
 #include "io/mouse.h"
 #include "io/timer.h"
@@ -2009,13 +2010,7 @@ void weapon_select_init()
 
 	WeaponSelectMaskBitmap = bm_load(Wl_loadout_select_mask[Uses_apply_all_button][gr_screen.res]);
 	if (WeaponSelectMaskBitmap < 0) {
-		if (gr_screen.res == GR_640) {
-			Error(LOCATION,"Could not load in 'weaponloadout-m'!");
-		} else if (gr_screen.res == GR_1024) {
-			Error(LOCATION,"Could not load in '2_weaponloadout-m'!");
-		} else {
-			Error(LOCATION,"Could not load in 'weaponloadout-m'!");
-		}
+		Error(LOCATION,"Could not load in '%s'!", Wl_loadout_select_mask[Uses_apply_all_button][gr_screen.res]);
 	}
 
 	Weaponselect_mask_w = -1;

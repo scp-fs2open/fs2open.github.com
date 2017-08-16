@@ -1619,6 +1619,10 @@ int bm_load_animation(const char *real_filename, int *nframes, int *fps, int *ke
 #endif
 		anim_read_header(&the_anim, img_cfp);
 
+		if (the_anim.width < 0 || the_anim.height < 0) {
+			Error(LOCATION, "Ani file %s has a faulty header and cannot be loaded.", real_filename);
+		}
+
 		anim_frames = the_anim.total_frames;
 		anim_fps = the_anim.fps;
 		if (anim_fps == 0) {

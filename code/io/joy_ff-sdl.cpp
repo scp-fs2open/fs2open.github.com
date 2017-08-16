@@ -52,6 +52,34 @@ static int joy_ff_has_valid_effects();
 static int joy_ff_effect_playing(haptic_effect_t *eff);
 static void joy_ff_start_effect(haptic_effect_t *eff, const char *name);
 
+static void check_and_print_haptic_feature(uint32_t flags, uint32_t check_flag, const char* description) {
+	auto has_flag = (flags & check_flag) == check_flag;
+
+	mprintf(("      Supports %s: %s\n", description, has_flag ? "true" : "false"));
+}
+
+static void print_haptic_support() {
+	mprintf(("    Haptic feature support:\n"));
+
+	auto supported = SDL_HapticQuery(haptic);
+	check_and_print_haptic_feature(supported, SDL_HAPTIC_CONSTANT, "Constant effect");
+	check_and_print_haptic_feature(supported, SDL_HAPTIC_SINE, "Sine effect");
+	check_and_print_haptic_feature(supported, SDL_HAPTIC_LEFTRIGHT, "Left right effect");
+	check_and_print_haptic_feature(supported, SDL_HAPTIC_TRIANGLE, "Triangle effect");
+	check_and_print_haptic_feature(supported, SDL_HAPTIC_SAWTOOTHUP, "Sawtooth up effect");
+	check_and_print_haptic_feature(supported, SDL_HAPTIC_SAWTOOTHDOWN, "Sawtooth down effect");
+	check_and_print_haptic_feature(supported, SDL_HAPTIC_RAMP, "Ramp effect");
+	check_and_print_haptic_feature(supported, SDL_HAPTIC_SPRING, "Spring effect");
+	check_and_print_haptic_feature(supported, SDL_HAPTIC_DAMPER, "Damper effect");
+	check_and_print_haptic_feature(supported, SDL_HAPTIC_INERTIA, "Inertia effect");
+	check_and_print_haptic_feature(supported, SDL_HAPTIC_FRICTION, "Friction effect");
+	check_and_print_haptic_feature(supported, SDL_HAPTIC_CUSTOM, "Custom effect");
+	check_and_print_haptic_feature(supported, SDL_HAPTIC_GAIN, "global gain");
+	check_and_print_haptic_feature(supported, SDL_HAPTIC_AUTOCENTER, "Autocenter");
+	check_and_print_haptic_feature(supported, SDL_HAPTIC_STATUS, "Status query");
+	check_and_print_haptic_feature(supported, SDL_HAPTIC_PAUSE, "Pause effects");
+}
+
 int joy_ff_init()
 {
 	int ff_enabled = 0;
@@ -118,6 +146,7 @@ int joy_ff_init()
 	mprintf(("    Number of haptic axes: %d\n", SDL_HapticNumAxes(haptic)));
 	mprintf(("    Number of effects supported: %d\n", SDL_HapticNumEffects(haptic)));
 	mprintf(("    Number of simultaneous effects: %d\n", SDL_HapticNumEffectsPlaying(haptic)));
+	print_haptic_support();
 
 	mprintf(("  ... Haptic successfully initialized!\n"));
 
@@ -129,6 +158,11 @@ void joy_ff_shutdown()
 	if ( !Joy_ff_enabled ) {
 		return;
 	}
+
+	if (pSpring.loaded) {
+		SDL_HapticStopEffect(haptic, pSpring.id);
+	}
+	joy_ff_stop_effects();
 
 	SDL_HapticClose(haptic);
 	haptic = NULL;
@@ -292,7 +326,7 @@ static int joy_ff_create_effects()
 	pAfterburn1.eff.periodic.direction.dir[0] = 0;
 	pAfterburn1.eff.periodic.length = SDL_HAPTIC_INFINITY;
 	pAfterburn1.eff.periodic.period = 20;
-	pAfterburn1.eff.periodic.magnitude = 0x6665;
+	pAfterburn1.eff.periodic.magnitude = 0x3332;
 
 	pAfterburn1.id = SDL_HapticNewEffect(haptic, &pAfterburn1.eff);
 
@@ -310,7 +344,7 @@ static int joy_ff_create_effects()
 	pAfterburn2.eff.periodic.direction.dir[0] = 9000;
 	pAfterburn2.eff.periodic.length = 125;
 	pAfterburn2.eff.periodic.period = 100;
-	pAfterburn2.eff.periodic.magnitude = 0x3332;
+	pAfterburn2.eff.periodic.magnitude = 0x1999;
 
 	pAfterburn2.id = SDL_HapticNewEffect(haptic, &pAfterburn2.eff);
 
@@ -416,7 +450,15 @@ void joy_ff_stop_effects()
 		return;
 	}
 
-	SDL_HapticStopAll(haptic);
+	joy_ff_afterburn_off();
+
+	if (pDeathroll1.loaded) {
+		SDL_HapticStopEffect(haptic, pDeathroll1.id);
+	}
+
+	if (pDeathroll2.loaded) {
+		SDL_HapticStopEffect(haptic, pDeathroll2.id);
+	}
 }
 
 void joy_ff_mission_init(vec3d v)
@@ -632,7 +674,7 @@ void joy_ff_docked()
 
 	SDL_HapticStopEffect(haptic, pDock.id);
 
-	pDock.eff.periodic.magnitude = 0x7fff;
+	pDock.eff.periodic.magnitude = 0x3332;
 
 	if ( SDL_HapticUpdateEffect(haptic, pDock.id, &pDock.eff) < 0 ) {
 		mprintf(("HapticERROR:  Unable to update pDock:\n  %s\n", SDL_GetError()));
@@ -653,7 +695,7 @@ void joy_ff_play_reload_effect()
 
 	SDL_HapticStopEffect(haptic, pDock.id);
 
-	pDock.eff.periodic.magnitude = 0x3fff;
+	pDock.eff.periodic.magnitude = 0x1999;
 
 	if ( SDL_HapticUpdateEffect(haptic, pDock.id, &pDock.eff) < 0 ) {
 		mprintf(("HapticERROR:  Unable to update pDock:\n  %s\n", SDL_GetError()));
@@ -674,7 +716,7 @@ void joy_ff_afterburn_on()
 		SDL_HapticStopEffect(haptic, pAfterburn1.id);
 
 		pAfterburn1.eff.periodic.length = SDL_HAPTIC_INFINITY;
-		pAfterburn1.eff.periodic.magnitude = 0x3fff;
+		pAfterburn1.eff.periodic.magnitude = 0x3332;
 
 		if ( SDL_HapticUpdateEffect(haptic, pAfterburn1.id, &pAfterburn1.eff) < 0 ) {
 			mprintf(("HapticERROR:  Unable to update pAfterburn1:\n  %s\n", SDL_GetError()));
@@ -685,7 +727,7 @@ void joy_ff_afterburn_on()
 		SDL_HapticStopEffect(haptic, pAfterburn2.id);
 
 		pAfterburn2.eff.periodic.length = SDL_HAPTIC_INFINITY;
-		pAfterburn2.eff.periodic.magnitude = 0x3fff;
+		pAfterburn2.eff.periodic.magnitude = 0x1999;
 
 		if ( SDL_HapticUpdateEffect(haptic, pAfterburn2.id, &pAfterburn2.eff) < 0 ) {
 			mprintf(("HapticERROR:  Unable to update pAfterburn2:\n  %s\n", SDL_GetError()));

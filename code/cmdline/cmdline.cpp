@@ -987,32 +987,32 @@ void os_init_cmdline(int argc, char *argv[])
 				delete[] buf;
 				fclose(fp);
 			}
-		}
+		} else {
+			// parse user specific cmdline_fso config file (will supersede options in global file)
+			fp = fopen(os_get_config_path("data/cmdline_fso.cfg").c_str(), "rt");
 
-		// parse user specific cmdline_fso config file (will supersede options in global file)
-		fp = fopen(os_get_config_path("data/cmdline_fso.cfg").c_str(), "rt");
+			// if the file exists, get a single line, and deal with it
+			if ( fp ) {
+				char *buf, *p;
 
-		// if the file exists, get a single line, and deal with it
-		if ( fp ) {
-			char *buf, *p;
+				auto len = static_cast<int>(filelength( fileno(fp) )) + 2;
+				buf = new char [len];
 
-			auto len = static_cast<int>(filelength( fileno(fp) )) + 2;
-			buf = new char [len];
+				if (fgets(buf, len-1, fp) != nullptr)
+				{
+					// replace the newline character with a NULL
+					if ( (p = strrchr(buf, '\n')) != NULL ) {
+						*p = '\0';
+					}
 
-			if (fgets(buf, len-1, fp) != nullptr)
-			{
-				// replace the newline character with a NULL
-				if ( (p = strrchr(buf, '\n')) != NULL ) {
-					*p = '\0';
+					// append a space for the os_parse_parms() check
+					strcat_s(buf, len, " ");
+
+					os_process_cmdline(buf);
 				}
-
-				// append a space for the os_parse_parms() check
-				strcat_s(buf, len, " ");
-
-				os_process_cmdline(buf);
+				delete [] buf;
+				fclose(fp);
 			}
-			delete [] buf;
-			fclose(fp);
 		}
 	} // If cmdline included PARSE_COMMAND_LINE_STRING
 

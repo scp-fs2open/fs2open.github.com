@@ -186,7 +186,12 @@ template<class T>
 void stuff_flagset(T *dest) {
     long l;
     bool success = atol2(&l);
-    dest->from_long(l);
+
+	if (l < 0) {
+		error_display(0, "Expected flagset value but got negative value %lu!\n", l);
+		l = 0;
+	}
+    dest->from_u64((std::uint64_t) l);
 
     if (!success)
         skip_token();
@@ -196,7 +201,7 @@ void stuff_flagset(T *dest) {
     if (*Mp == ',')
         Mp++;
 
-    diag_printf("Stuffed flagset: %ld\n", dest->to_long());
+    diag_printf("Stuffed flagset: %" PRIu64 "\n", dest->to_u64());
 }
 
 extern int stuff_int_list(int *ilp, int max_ints, int lookup_type = RAW_INTEGER_TYPE);
@@ -262,8 +267,8 @@ extern void maybe_convert_foreign_characters(SCP_string &text);
 extern size_t get_converted_string_length(const char *text);
 extern size_t get_converted_string_length(const SCP_string &text);
 char *split_str_once(char *src, int max_pixel_w);
-int split_str(const char *src, int max_pixel_w, int *n_chars, const char **p_str, int max_lines, char ignore_char = -1);
-int split_str(const char *src, int max_pixel_w, SCP_vector<int> &n_chars, SCP_vector<const char*> &p_str, char ignore_char = -1);
+int split_str(const char *src, int max_pixel_w, int *n_chars, const char **p_str, int max_lines, char ignore_char = -1, bool strip_leading_whitespace = true);
+int split_str(const char *src, int max_pixel_w, SCP_vector<int> &n_chars, SCP_vector<const char*> &p_str, char ignore_char = -1, bool strip_leading_whitespace = true);
 
 // fred
 extern int required_string_fred(char *pstr, char *end = NULL);

@@ -748,11 +748,6 @@ void message_mission_free_avi(int m_index)
 	if ( (m_index < 0) || (m_index >= Num_message_avis) )
 		return;
 
-	// Make sure this code doesn't get run if the talking head guage is off
-	// helps prevent a crash on jump out if this code doesn't work right
-	if ( !hud_gauge_active(HUD_TALKING_HEAD) )
-		return;
-
 	generic_anim_unload(&Message_avis[m_index].anim_data);
 }
 

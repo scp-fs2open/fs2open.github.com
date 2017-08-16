@@ -37,6 +37,12 @@ namespace font
 		float offsetTop;		//!< The offset at the top of a line of text
 		float offsetBottom;	//!< The offset at the bottom of a line of text
 
+		float _height;
+		float _ascender;
+		float _descender;
+
+		void checkFontMetrics();
+
 	public:
 
 		/**
@@ -92,7 +98,7 @@ namespace font
 		*
 		* @return	The height.
 		*/
-		virtual float getHeight() const;
+		float getHeight() const;
 
 		/**
 		* @brief	Gets the height of this font in pixels without the top and bottom offsets.
@@ -155,6 +161,21 @@ namespace font
 		*/
 		void setBottomOffset(float newOffset);
 
-		void checkHeight();
+		/**
+		 * @brief Recomputes the font metrics
+		 */
+		virtual void computeFontMetrics();
+
+		/**
+		 * @brief Gets the ascender value of this font
+		 * @return The ascender value
+		 */
+		float getAscender();
+
+		/**
+		 * @breif Gets the descender value of this font
+		 * @return The descender value
+		 */
+		float getDescender();
 	};
 }

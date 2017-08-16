@@ -226,6 +226,7 @@ int generic_anim_stream(generic_anim *ga, const bool cache)
 				mprintf(("Failed to load apng: %s\n", e.what() ));
 				delete ga->png.anim;
 				ga->png.anim = nullptr;
+				ga->type = BM_TYPE_NONE;
 				return -1;
 			}
 			nprintf(("apng", "apng read OK (%ix%i@%i) duration (%f)\n", ga->png.anim->w, ga->png.anim->h,
@@ -322,8 +323,8 @@ void generic_anim_unload(generic_anim *ga)
 	if(ga->num_frames > 0) {
 		if(ga->streaming) {
 			if(ga->type == BM_TYPE_ANI) {
-				anim_free(ga->ani.animation);
 				free_anim_instance(ga->ani.instance);
+				anim_free(ga->ani.animation);
 			}
 			if(ga->type == BM_TYPE_EFF) {
 				if(ga->eff.next_frame >= 0) 

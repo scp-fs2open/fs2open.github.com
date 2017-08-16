@@ -41,6 +41,8 @@ class FrameProfiler {
 
 	SCP_vector<profile_sample_history> history;
 
+	std::int64_t _mainThreadID = -1;
+
 	SCP_string content;
 
 	/**

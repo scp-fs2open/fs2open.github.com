@@ -136,6 +136,17 @@ void FrameProfiler::processEvent(const trace_event* event) {
 		return;
 	}
 
+	if (_mainThreadID == -1) {
+		// We need the ID of the main thread to filter out multi threaded events. We just assume that the first event
+		// of the main process we see is from the main thread. That should be a safe assumption.
+		_mainThreadID = event->tid;
+	}
+
+	if (event->tid != _mainThreadID) {
+		// Multithreaded events don't have a deterministic sequence and that confuses the old profiling system
+		return;
+	}
+
 	if (event->duration == 0) {
 		// Discard events with no duration
 		return;

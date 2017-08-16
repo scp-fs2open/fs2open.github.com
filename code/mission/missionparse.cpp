@@ -2409,7 +2409,8 @@ int parse_create_object_sub(p_object *p_objp)
 		}
 	}
 
-	if (Game_mode & GM_IN_MISSION) {
+	// If the ship is in a wing, this will be done in mission_set_wing_arrival_location() instead
+	if (Game_mode & GM_IN_MISSION && shipp->wingnum == -1) {
 		if (anchor_objnum >= 0)
 			Script_system.SetHookObjects(2, "Ship", &Objects[objnum], "Parent", &Objects[anchor_objnum]);
 		else
@@ -3035,7 +3036,13 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
         parse_string_flag_list(p_objp->flags, Parse_object_flags, num_parse_object_flags, &unparsed);
         if (!unparsed.empty()) {
             for (size_t k = 0; k < unparsed.size(); ++k) {
-                WarningEx(LOCATION, "Unknown flag in parse object flags: %s", unparsed[k].c_str());
+				// catch typos or deprecations
+				if (!stricmp(unparsed[k].c_str(), "no-collide") || !stricmp(unparsed[k].c_str(), "no_collide")) {
+					p_objp->flags.set(Mission::Parse_Object_Flags::OF_No_collide);
+				}
+				else {
+					WarningEx(LOCATION, "Unknown flag in parse object flags: %s", unparsed[k].c_str());
+				}
             }
         }
     }
@@ -6046,6 +6053,7 @@ void mission_parse_close()
 void mission_set_wing_arrival_location( wing *wingp, int num_to_set )
 {
 	int index;
+	int anchor_objnum = -1;
 
 	// get the starting index into the ship_index array of the first ship whose location we need set.
 
@@ -6055,7 +6063,7 @@ void mission_set_wing_arrival_location( wing *wingp, int num_to_set )
 			object *objp;
 
 			objp = &Objects[Ships[wingp->ship_index[index]].objnum];
-			mission_set_arrival_location(wingp->arrival_anchor, wingp->arrival_location, wingp->arrival_distance, OBJ_INDEX(objp), wingp->arrival_path_mask, NULL, NULL);
+			anchor_objnum = mission_set_arrival_location(wingp->arrival_anchor, wingp->arrival_location, wingp->arrival_distance, OBJ_INDEX(objp), wingp->arrival_path_mask, NULL, NULL);
 
 			index++;
 		}
@@ -6069,7 +6077,8 @@ void mission_set_wing_arrival_location( wing *wingp, int num_to_set )
 		// or in front of some other ship.
 		index = wingp->current_count - num_to_set;
 		leader_objp = &Objects[Ships[wingp->ship_index[index]].objnum];
-		if (mission_set_arrival_location(wingp->arrival_anchor, wingp->arrival_location, wingp->arrival_distance, OBJ_INDEX(leader_objp), wingp->arrival_path_mask, &pos, &orient) != -1) {
+		anchor_objnum = mission_set_arrival_location(wingp->arrival_anchor, wingp->arrival_location, wingp->arrival_distance, OBJ_INDEX(leader_objp), wingp->arrival_path_mask, &pos, &orient);
+		if (anchor_objnum != -1) {
 			// modify the remaining ships created
 			index++;
 			wing_index = 1;
@@ -6088,10 +6097,21 @@ void mission_set_wing_arrival_location( wing *wingp, int num_to_set )
 		}
 	}
 
-	// create warp effect if in mission and not arriving from docking bay
-	if ( (Game_mode & GM_IN_MISSION) && (wingp->arrival_location != ARRIVE_FROM_DOCK_BAY) ) {
+	if (Game_mode & GM_IN_MISSION) {
 		for ( index = wingp->current_count - num_to_set; index < wingp->current_count; index ++ ) {
-			shipfx_warpin_start( &Objects[Ships[wingp->ship_index[index]].objnum] );
+			object *objp = &Objects[Ships[wingp->ship_index[index]].objnum];
+
+			if (anchor_objnum >= 0)
+				Script_system.SetHookObjects(2, "Ship", objp, "Parent", &Objects[anchor_objnum]);
+			else
+				Script_system.SetHookObjects(2, "Ship", objp, "Parent", NULL);
+
+			Script_system.RunCondition(CHA_ONSHIPARRIVE, 0, NULL, objp);
+			Script_system.RemHookVars(2, "Ship", "Parent");
+
+			if (wingp->arrival_location != ARRIVE_FROM_DOCK_BAY) {
+				shipfx_warpin_start(objp);
+			}
 		}
 	}
 }
