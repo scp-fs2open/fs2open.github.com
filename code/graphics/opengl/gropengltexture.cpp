@@ -37,7 +37,6 @@ int GL_textures_in_frame = 0;
 int GL_last_detail = -1;
 GLint GL_supported_texture_units = 2;
 int GL_should_preload = 0;
-ubyte GL_xlat[256];
 GLfloat GL_anisotropy = 1.0f;
 GLfloat GL_max_anisotropy = -1.0f;
 int GL_mipmap_filter = 0;
@@ -167,16 +166,6 @@ void opengl_tcache_init()
 		CLAMP(GL_anisotropy, 1.0f, GL_max_anisotropy);
 	}
 
-
-	// set the alpha gamma settings (for fonts)
-	memset( GL_xlat, 0, sizeof(GL_xlat) );
-
-	for (i = 1; i < 15; i++) {
-		GL_xlat[i] = (ubyte)(GL_xlat[i-1] + 17);
-	}
-
-	GL_xlat[15] = GL_xlat[1];
-	
 	Assert( GL_supported_texture_units >= 2 );
 
 	GL_last_detail = Detail.hardware_textures;
@@ -544,7 +533,7 @@ int opengl_create_texture_sub(int bitmap_handle, int bitmap_type, int bmap_w, in
 								*texmemp++ = (ubyte)(luminance / byte_mult);
 							}
 						} else {
-							*texmemp++ = GL_xlat[bmp_data[i*bmap_w+j]];
+							*texmemp++ = bmp_data[i*bmap_w+j];
 						}
 					} else {
 						*texmemp++ = 0;
@@ -1403,7 +1392,7 @@ void gr_opengl_update_texture(int bitmap_handle, int bpp, const ubyte* data, int
 							*texmemp++ = (ubyte)(luminance / true_byte_mult);
 						}
 					} else {
-						*texmemp++ = GL_xlat[data[i*width+j]];
+						*texmemp++ = data[i*width+j];
 					}
 				} else {
 					*texmemp++ = 0;
