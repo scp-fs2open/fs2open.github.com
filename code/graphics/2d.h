@@ -1282,4 +1282,10 @@ class DebugScope {
 #define GR_DEBUG_SCOPE(name) do {} while(0)
 #endif
 
+enum AnimatedShader {
+	ANIMATED_SHADER_LOADOUTSELECT_FS1= 0,
+	ANIMATED_SHADER_LOADOUTSELECT_FS2= 1,
+	ANIMATED_SHADER_CLOAK = 2,
+};
+
 #endif

@@ -19,7 +19,6 @@
 #include "globalincs/alphacolors.h"
 #include "globalincs/linklist.h"
 #include "graphics/2d.h"
-#include "graphics/opengl/gropengllight.h"
 #include "io/key.h"
 #include "io/timer.h"
 #include "math/fvi.h"
