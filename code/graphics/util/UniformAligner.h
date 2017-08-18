@@ -9,6 +9,9 @@
 namespace graphics {
 namespace util {
 
+/**
+ * @brief Aligns data so that each element starts at a specific offset. Useful for storing uniform buffer data
+ */
 class UniformAligner {
  private:
 	static_assert(sizeof(uint8_t) == 1, "A uint8_t must be exactly one byte!");

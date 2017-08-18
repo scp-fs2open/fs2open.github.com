@@ -9,6 +9,10 @@ namespace util {
 
 /**
  * @brief Manages a single uniform buffer
+ *
+ * This is a wrapper around a buffer handle from the graphics system which also provides access to a uniform data
+ * aligner. It also manages the fence object which detects if this buffer is still in use or can be reused by other
+ * rendering operations.
  */
 class UniformBuffer {
 	int _buffer_obj = -1;
@@ -47,6 +51,10 @@ class UniformBuffer {
 	 */
 	void finished();
 
+	/**
+	 * @brief Determines if the buffer is still in use by the GPU
+	 * @return @c true if the GPU may still be using this buffer, @c false if not
+	 */
 	bool isInUse();
 };
 

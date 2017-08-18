@@ -7,6 +7,15 @@
 namespace graphics {
 namespace util {
 
+/**
+ * @brief A class for managing uniform buffers for a specific block type
+ *
+ * This class can be used for retrieving an unused uniform buffer for a specific uniform block type. External code
+ * should use gr_get_uniform_buffer instead of creating an instance of this class.
+ *
+ * @details This system uses fence sync objects for detecting if a buffer is still in use. By using those objects it is
+ * possible to avoid any synchronization operations when updating the buffer data.
+ */
 class UniformBufferManager {
 	uniform_block_type _type;
 
