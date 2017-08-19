@@ -110,10 +110,6 @@ void gr_stub_reset_clip()
 {
 }
 
-void gr_stub_reset_lighting()
-{
-}
-
 void gr_stub_restore_screen(int id)
 {
 }
@@ -159,14 +155,6 @@ int gr_stub_set_color_buffer(int mode)
 }
 
 void gr_stub_set_gamma(float gamma)
-{
-}
-
-void gr_stub_set_lighting(bool set, bool state)
-{
-}
-
-void gr_stub_set_light(light *light)
 {
 }
 
@@ -261,10 +249,6 @@ void gr_stub_deferred_lighting_end()
 }
 
 void gr_stub_deferred_lighting_finish()
-{
-}
-
-void gr_stub_set_ambient_light(int red, int green, int blue)
 {
 }
 
@@ -498,10 +482,6 @@ bool gr_stub_init()
 	gr_screen.gf_update_buffer_data_offset = gr_stub_update_buffer_data_offset;
 	gr_screen.gf_set_transform_buffer_offset	= gr_stub_set_transform_buffer_offset;
 
-	gr_screen.gf_set_light			= gr_stub_set_light;
-	gr_screen.gf_reset_lighting		= gr_stub_reset_lighting;
-	gr_screen.gf_set_ambient_light	= gr_stub_set_ambient_light;
-
 	gr_screen.gf_post_process_set_effect	= gr_stub_post_process_set_effect;
 	gr_screen.gf_post_process_set_defaults	= gr_stub_post_process_set_defaults;
 
@@ -517,8 +497,6 @@ bool gr_stub_init()
 	gr_screen.gf_deferred_lighting_begin = gr_stub_deferred_lighting_begin;
 	gr_screen.gf_deferred_lighting_end = gr_stub_deferred_lighting_end;
 	gr_screen.gf_deferred_lighting_finish = gr_stub_deferred_lighting_finish;
-
-	gr_screen.gf_lighting			= gr_stub_set_lighting;
 
 	gr_screen.gf_set_line_width		= gr_stub_set_line_width;
 

@@ -23,6 +23,7 @@
 #include "globalincs/systemvars.h"
 #include "graphics/2d.h"
 #include "graphics/matrix.h"
+#include "graphics/light.h"
 #include "graphics/font.h"
 #include "graphics/grbatch.h"
 #include "graphics/grinternal.h"
@@ -648,6 +649,8 @@ void gr_close()
 	
 	font::close();
 
+	gr_light_shutdown();
+
 	switch (gr_screen.mode) {
 		case GR_OPENGL:
 			gr_opengl_cleanup(true);
@@ -1058,6 +1061,8 @@ bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, int d_mode, 
 	if ( gr_init_sub(std::move(graphicsOps), mode, width, height, depth, center_aspect_ratio) == false ) {
 		return false;
 	}
+
+	gr_light_init();
 
 	mprintf(("Initializing path renderer...\n"));
 	graphics::paths::PathRenderer::init();

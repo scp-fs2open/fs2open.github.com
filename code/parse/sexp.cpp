@@ -39,6 +39,7 @@
 #include "globalincs/version.h"
 #include "graphics/2d.h"
 #include "graphics/font.h"
+#include "graphics/light.h"
 #include "hud/hud.h"
 #include "hud/hudartillery.h"
 #include "hud/hudconfig.h"

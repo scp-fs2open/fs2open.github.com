@@ -15,7 +15,6 @@
 #include "gropengl.h"
 #include "gropenglbmpman.h"
 #include "gropengldraw.h"
-#include "gropengllight.h"
 #include "gropenglpostprocessing.h"
 #include "gropenglquery.h"
 #include "gropenglsync.h"
@@ -397,7 +396,6 @@ void gr_opengl_shutdown()
 	graphics::paths::PathRenderer::shutdown();
 
 	opengl_tcache_shutdown();
-	opengl_light_shutdown();
 	opengl_tnl_shutdown();
 	opengl_scene_texture_shutdown();
 	opengl_post_process_shutdown();
@@ -1178,10 +1176,6 @@ void opengl_setup_function_pointers()
 	gr_screen.gf_update_transform_buffer	= gr_opengl_update_transform_buffer;
 	gr_screen.gf_set_transform_buffer_offset	= gr_opengl_set_transform_buffer_offset;
 
-	gr_screen.gf_set_light			= gr_opengl_set_light;
-	gr_screen.gf_reset_lighting		= gr_opengl_reset_lighting;
-	gr_screen.gf_set_ambient_light	= gr_opengl_set_ambient_light;
-
 	gr_screen.gf_post_process_set_effect	= gr_opengl_post_process_set_effect;
 	gr_screen.gf_post_process_set_defaults	= gr_opengl_post_process_set_defaults;
 
@@ -1197,8 +1191,6 @@ void opengl_setup_function_pointers()
 	gr_screen.gf_deferred_lighting_begin = gr_opengl_deferred_lighting_begin;
 	gr_screen.gf_deferred_lighting_end = gr_opengl_deferred_lighting_end;
 	gr_screen.gf_deferred_lighting_finish = gr_opengl_deferred_lighting_finish;
-
-	gr_screen.gf_lighting			= gr_opengl_set_lighting;
 
 	gr_screen.gf_set_line_width		= gr_opengl_set_line_width;
 
@@ -1491,9 +1483,6 @@ bool gr_opengl_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 	}
 
 	init_extensions();
-
-	// setup the lighting stuff that will get used later
-	opengl_light_init();
 
 	// init state system (must come AFTER light is set up)
 	GL_state.init();

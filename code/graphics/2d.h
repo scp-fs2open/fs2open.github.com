@@ -709,10 +709,6 @@ typedef struct screen {
 	void (*gf_update_transform_buffer)(void* data, size_t size);
 	void (*gf_set_transform_buffer_offset)(size_t offset);
 
-	void (*gf_set_light)(light*);
-	void (*gf_reset_lighting)();
-	void (*gf_set_ambient_light)(int,int,int);
-
 	// postprocessing effects
 	void (*gf_post_process_set_effect)(const char*, int, const vec3d*);
 	void (*gf_post_process_set_defaults)();
@@ -729,8 +725,6 @@ typedef struct screen {
 	void (*gf_scene_texture_begin)();
 	void (*gf_scene_texture_end)();
 	void (*gf_copy_effect_texture)();
-
-	void (*gf_lighting)(bool,bool);
 
 	void (*gf_zbias)(int zbias);
 
@@ -953,10 +947,6 @@ inline int gr_create_buffer(BufferType type, BufferUsageHint usage)
 #define gr_update_transform_buffer		GR_CALL(*gr_screen.gf_update_transform_buffer)
 #define gr_set_transform_buffer_offset	GR_CALL(*gr_screen.gf_set_transform_buffer_offset)
 
-#define	gr_set_light					GR_CALL(*gr_screen.gf_set_light)
-#define gr_reset_lighting				GR_CALL(*gr_screen.gf_reset_lighting)
-#define gr_set_ambient_light			GR_CALL(*gr_screen.gf_set_ambient_light)
-
 #define gr_scene_texture_begin			GR_CALL(*gr_screen.gf_scene_texture_begin)
 #define gr_scene_texture_end			GR_CALL(*gr_screen.gf_scene_texture_end)
 #define gr_copy_effect_texture			GR_CALL(*gr_screen.gf_copy_effect_texture)
@@ -973,8 +963,6 @@ inline void gr_post_process_restore_zbuffer() {
 #define gr_deferred_lighting_begin		GR_CALL(*gr_screen.gf_deferred_lighting_begin)
 #define gr_deferred_lighting_end		GR_CALL(*gr_screen.gf_deferred_lighting_end)
 #define gr_deferred_lighting_finish		GR_CALL(*gr_screen.gf_deferred_lighting_finish)
-
-#define	gr_set_lighting					GR_CALL(*gr_screen.gf_lighting)
 
 #define	gr_zbias						GR_CALL(*gr_screen.gf_zbias)
 #define	gr_set_fill_mode				GR_CALL(*gr_screen.gf_set_fill_mode)

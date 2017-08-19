@@ -14,7 +14,6 @@
 #include "graphics/matrix.h"
 #include "graphics/grinternal.h"
 #include "graphics/opengl/gropengldraw.h"
-#include "graphics/opengl/gropengllight.h"
 #include "graphics/opengl/gropenglpostprocessing.h"
 #include "graphics/opengl/gropenglshader.h"
 #include "graphics/opengl/gropenglstate.h"

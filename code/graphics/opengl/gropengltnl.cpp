@@ -20,7 +20,6 @@
 #include "graphics/matrix.h"
 #include "graphics/grinternal.h"
 #include "gropengldraw.h"
-#include "gropengllight.h"
 #include "gropenglshader.h"
 #include "gropenglstate.h"
 #include "gropengltexture.h"
@@ -33,6 +32,7 @@
 #include "particle/particle.h"
 #include "graphics/shadows.h"
 #include "graphics/material.h"
+#include "graphics/light.h"
 
 extern int GLOWMAP;
 extern int CLOAKMAP;
@@ -539,7 +539,7 @@ void gr_opengl_shadow_map_start(matrix4 *shadow_view_matrix, const matrix *light
 	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	gr_opengl_set_lighting(false,false);
+	gr_set_lighting(false,false);
 	
 	Rendering_to_shadow_map = true;
 	Glowpoint_override_save = Glowpoint_override;
@@ -638,7 +638,7 @@ void opengl_tnl_set_model_material(model_material *material_info)
 		GL_state.FrontFaceValue(GL_CW);
 	}
 	
-	gr_opengl_set_center_alpha(material_info->get_center_alpha());
+	gr_set_center_alpha(material_info->get_center_alpha());
 
 	Assert( Current_shader->shader == SDR_TYPE_MODEL );
 
@@ -679,30 +679,30 @@ void opengl_tnl_set_model_material(model_material *material_info)
 	}
 
 	if ( Current_shader->flags & SDR_FLAG_MODEL_LIGHT ) {
-		int num_lights = MIN(Num_active_gl_lights, GL_max_lights) - 1;
+		int num_lights = MIN(Num_active_gr_lights, gr_max_lights) - 1;
 		float light_factor = material_info->get_light_factor();
 		Current_shader->program->Uniforms.setUniformi("n_lights", num_lights);
-		Current_shader->program->Uniforms.setUniform4fv("lightPosition", GL_max_lights, opengl_light_uniforms.Position);
-		Current_shader->program->Uniforms.setUniform3fv("lightDirection", GL_max_lights, opengl_light_uniforms.Direction);
-		Current_shader->program->Uniforms.setUniform3fv("lightDiffuseColor", GL_max_lights, opengl_light_uniforms.Diffuse_color);
-		Current_shader->program->Uniforms.setUniform3fv("lightSpecColor", GL_max_lights, opengl_light_uniforms.Spec_color);
-		Current_shader->program->Uniforms.setUniform1iv("lightType", GL_max_lights, opengl_light_uniforms.Light_type);
-		Current_shader->program->Uniforms.setUniform1fv("lightAttenuation", GL_max_lights, opengl_light_uniforms.Attenuation);
+		Current_shader->program->Uniforms.setUniform4fv("lightPosition", gr_max_lights, gr_light_uniforms.Position);
+		Current_shader->program->Uniforms.setUniform3fv("lightDirection", gr_max_lights, gr_light_uniforms.Direction);
+		Current_shader->program->Uniforms.setUniform3fv("lightDiffuseColor", gr_max_lights, gr_light_uniforms.Diffuse_color);
+		Current_shader->program->Uniforms.setUniform3fv("lightSpecColor", gr_max_lights, gr_light_uniforms.Spec_color);
+		Current_shader->program->Uniforms.setUniform1iv("lightType", gr_max_lights, gr_light_uniforms.Light_type);
+		Current_shader->program->Uniforms.setUniform1fv("lightAttenuation", gr_max_lights, gr_light_uniforms.Attenuation);
 
 		if ( !material_info->get_center_alpha() ) {
-			Current_shader->program->Uniforms.setUniform3f("diffuseFactor", GL_light_color[0] * light_factor, GL_light_color[1] * light_factor, GL_light_color[2] * light_factor);
-			Current_shader->program->Uniforms.setUniform3f("ambientFactor", GL_light_ambient[0], GL_light_ambient[1], GL_light_ambient[2]);
+			Current_shader->program->Uniforms.setUniform3f("diffuseFactor", gr_light_color[0] * light_factor, gr_light_color[1] * light_factor, gr_light_color[2] * light_factor);
+			Current_shader->program->Uniforms.setUniform3f("ambientFactor", gr_light_ambient[0], gr_light_ambient[1], gr_light_ambient[2]);
 		} else {
 			//Current_shader->program->Uniforms.setUniform3f("diffuseFactor", GL_light_true_zero[0], GL_light_true_zero[1], GL_light_true_zero[2]);
 			//Current_shader->program->Uniforms.setUniform3f("ambientFactor", GL_light_true_zero[0], GL_light_true_zero[1], GL_light_true_zero[2]);
-			Current_shader->program->Uniforms.setUniform3f("diffuseFactor", GL_light_color[0] * light_factor, GL_light_color[1] * light_factor, GL_light_color[2] * light_factor);
-			Current_shader->program->Uniforms.setUniform3f("ambientFactor", GL_light_ambient[0], GL_light_ambient[1], GL_light_ambient[2]);
+			Current_shader->program->Uniforms.setUniform3f("diffuseFactor", gr_light_color[0] * light_factor, gr_light_color[1] * light_factor, gr_light_color[2] * light_factor);
+			Current_shader->program->Uniforms.setUniform3f("ambientFactor", gr_light_ambient[0], gr_light_ambient[1], gr_light_ambient[2]);
 		}
 
 		if ( material_info->get_light_factor() > 0.25f && !Cmdline_no_emissive ) {
-			Current_shader->program->Uniforms.setUniform3f("emissionFactor", GL_light_emission[0], GL_light_emission[1], GL_light_emission[2]);
+			Current_shader->program->Uniforms.setUniform3f("emissionFactor", gr_light_emission[0], gr_light_emission[1], gr_light_emission[2]);
 		} else {
-			Current_shader->program->Uniforms.setUniform3f("emissionFactor", GL_light_zero[0], GL_light_zero[1], GL_light_zero[2]);
+			Current_shader->program->Uniforms.setUniform3f("emissionFactor", gr_light_zero[0], gr_light_zero[1], gr_light_zero[2]);
 		}
 
 		Current_shader->program->Uniforms.setUniformf("specPower", Cmdline_ogl_spec);

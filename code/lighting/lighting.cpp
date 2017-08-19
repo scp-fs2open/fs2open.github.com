@@ -13,6 +13,7 @@
 #include "debugconsole/console.h"
 #include "globalincs/systemvars.h"
 #include "graphics/2d.h"
+#include "graphics/light.h"
 #include "lighting/lighting.h"
 #include "math/vecmat.h"
 #include "model/modelrender.h"

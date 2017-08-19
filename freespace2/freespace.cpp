@@ -52,6 +52,7 @@
 #include "graphics/font.h"
 #include "graphics/shadows.h"
 #include "graphics/matrix.h"
+#include "graphics/light.h"
 #include "headtracking/headtracking.h"
 #include "hud/hud.h"
 #include "hud/hudconfig.h"
