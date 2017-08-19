@@ -37,7 +37,7 @@ void gr_opengl_draw_deferred_light_sphere(const vec3d *position, float rad, bool
 void gr_opengl_deferred_light_cylinder_init(int segments);
 void gr_opengl_draw_deferred_light_cylinder(const vec3d *position, const matrix *orient, float rad, float length, bool clearStencil);
 
-void gr_opengl_shadow_map_start(matrix4 *shadow_view_matrix, const matrix *light_orient);
+void gr_opengl_shadow_map_start(glm::mat4& shadow_view_matrix, const matrix *light_orient);
 void gr_opengl_shadow_map_end();
 
 void gr_opengl_render_shield_impact(shield_material *material_info, primitive_type prim_type, vertex_layout *layout, int buffer_handle, int n_verts);

@@ -55,7 +55,7 @@ typedef struct tcache_slot_opengl {
 	}
 } tcache_slot_opengl;
 
-extern matrix4 GL_texture_matrix;
+extern glm::mat4 GL_texture_matrix;
 
 extern int GL_min_texture_width;
 extern GLint GL_max_texture_width;

@@ -15,7 +15,9 @@
 
 #include "gropengl.h"
 #include "lighting/lighting.h"
+
 #include <glad/glad.h>
+#include <glm/glm.hpp>
 
 // Structures
 struct opengl_light
@@ -36,7 +38,7 @@ struct opengl_light
 };
 
 struct opengl_light_uniform_data {
-	vec4 *Position;
+	glm::vec4 *Position;
 	vec3d *Diffuse_color;
 	vec3d *Spec_color;
 	vec3d *Direction;

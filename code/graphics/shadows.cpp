@@ -20,8 +20,8 @@
 
 extern vec3d check_offsets[8];
 
-matrix4 Shadow_view_matrix;
-matrix4 Shadow_proj_matrix[MAX_SHADOW_CASCADES];
+glm::mat4 Shadow_view_matrix;
+glm::mat4 Shadow_proj_matrix[MAX_SHADOW_CASCADES];
 float Shadow_cascade_distances[MAX_SHADOW_CASCADES];
 
 light_frustum_info Shadow_frustums[MAX_SHADOW_CASCADES];
@@ -42,19 +42,6 @@ bool shadows_obj_in_frustum(object *objp, matrix *light_orient, vec3d *min, vec3
 	}
 
 	return true;
-}
-
-void shadows_construct_light_proj(light_frustum_info *shadow_data)
-{
-	memset(&shadow_data->proj_matrix, 0, sizeof(matrix4));
-
-	shadow_data->proj_matrix.a1d[0] = 2.0f / ( shadow_data->max.xyz.x - shadow_data->min.xyz.x );
-	shadow_data->proj_matrix.a1d[5] = 2.0f / ( shadow_data->max.xyz.y - shadow_data->min.xyz.y );
-	shadow_data->proj_matrix.a1d[10] = -2.0f / ( shadow_data->max.xyz.z - shadow_data->min.xyz.z );
-	shadow_data->proj_matrix.a1d[12] = -(shadow_data->max.xyz.x + shadow_data->min.xyz.x) / ( shadow_data->max.xyz.x - shadow_data->min.xyz.x );
-	shadow_data->proj_matrix.a1d[13] = -(shadow_data->max.xyz.y + shadow_data->min.xyz.y) / ( shadow_data->max.xyz.y - shadow_data->min.xyz.y );
-	shadow_data->proj_matrix.a1d[14] = -(shadow_data->max.xyz.z + shadow_data->min.xyz.z) / ( shadow_data->max.xyz.z - shadow_data->min.xyz.z );
-	shadow_data->proj_matrix.a1d[15] = 1.0f;
 }
 
 void shadows_debug_show_frustum(matrix* orient, vec3d *pos, float fov, float aspect, float z_near, float z_far)
@@ -351,7 +338,12 @@ void shadows_construct_light_frustum(light_frustum_info *shadow_data, matrix *li
 	shadow_data->min = min;
 	shadow_data->max = max;
 
-	shadows_construct_light_proj(shadow_data);
+	shadow_data->proj_matrix = glm::ortho(shadow_data->min.xyz.x,
+										  shadow_data->max.xyz.x,
+										  shadow_data->min.xyz.y,
+										  shadow_data->max.xyz.y,
+										  shadow_data->min.xyz.z,
+										  shadow_data->max.xyz.z);
 }
 
 matrix shadows_start_render(matrix *eye_orient, vec3d *eye_pos, float fov, float aspect, float veryneardist, float neardist, float middist, float fardist)
@@ -386,7 +378,7 @@ matrix shadows_start_render(matrix *eye_orient, vec3d *eye_pos, float fov, float
 	Shadow_proj_matrix[2] = Shadow_frustums[2].proj_matrix;
 	Shadow_proj_matrix[3] = Shadow_frustums[3].proj_matrix;
 
-	gr_shadow_map_start(&Shadow_view_matrix, &light_matrix);
+	gr_shadow_map_start(Shadow_view_matrix, &light_matrix);
 
 	return light_matrix;
 }

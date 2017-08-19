@@ -918,9 +918,9 @@ void opengl_setup_viewport()
 
 	// the top and bottom positions are reversed on purpose, but RTT needs them the other way
 	if (GL_rendering_to_texture) {
-		opengl_create_orthographic_projection_matrix(&GL_projection_matrix, 0, i2fl(gr_screen.max_w), 0, i2fl(gr_screen.max_h), -1.0, 1.0);
+		GL_projection_matrix = glm::ortho(0.0f, i2fl(gr_screen.max_w), 0.0f, i2fl(gr_screen.max_h), -1.0f, 1.0f);
 	} else {
-		opengl_create_orthographic_projection_matrix(&GL_projection_matrix, 0, i2fl(gr_screen.max_w), i2fl(gr_screen.max_h), 0, -1.0, 1.0);
+		GL_projection_matrix = glm::ortho(0.0f, i2fl(gr_screen.max_w), i2fl(gr_screen.max_h), 0.0f, -1.0f, 1.0f);
 	}
 }
 
@@ -1554,8 +1554,8 @@ bool gr_opengl_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 	opengl_set_vsync( !Cmdline_no_vsync );
 
 	opengl_setup_viewport();
-	vm_matrix4_set_identity(&GL_view_matrix);
-	vm_matrix4_set_identity(&GL_model_view_matrix);
+	GL_view_matrix = glm::mat4();
+	GL_model_view_matrix = glm::mat4();
 
 	glClear(GL_DEPTH_BUFFER_BIT);
 	glClear(GL_STENCIL_BUFFER_BIT);

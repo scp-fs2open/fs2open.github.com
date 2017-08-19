@@ -41,7 +41,7 @@ struct opengl_vert_attrib {
 
 	attrib_id attribute_id;
 	SCP_string name;
-	vec4 default_value;
+	glm::vec4 default_value;
 };
 
 extern opengl_vert_attrib GL_vertex_attrib_info[];
@@ -166,7 +166,6 @@ void opengl_shader_compile_passthrough_shader();
 
 void opengl_shader_set_passthrough(bool textured = true);
 
-void opengl_shader_set_default_material(bool textured, bool alpha, vec4* clr, float color_scale, uint32_t array_index, const material::clip_plane& clip_plane);
-
+void opengl_shader_set_default_material(bool textured, bool alpha, const glm::vec4* clr, float color_scale, uint32_t array_index, const material::clip_plane& clip_plane);
 
 #endif	// _GROPENGLSHADER_H

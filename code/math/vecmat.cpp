@@ -15,6 +15,9 @@
 #endif
 
 #include "math/vecmat.h"
+#include "bitarray.h"
+
+#include <glm/gtc/type_ptr.hpp>
 
 
 #define	SMALL_NUM	1e-7
@@ -29,11 +32,6 @@ vec3d vmd_z_vector = { { { 0.0f, 0.0f, 1.0f } } };
 matrix vmd_identity_matrix = IDENTITY_MATRIX;
 
 #define	UNINITIALIZED_VALUE	-12345678.9f
-
-bool vm_vec_equal(const vec4 &self, const vec4 &other)
-{
-	return fl_equal(self.a1d[0], other.a1d[0]) && fl_equal(self.a1d[1], other.a1d[1]) && fl_equal(self.a1d[2], other.a1d[2]) && fl_equal(self.a1d[3], other.a1d[3]);
-}
 
 bool vm_vec_equal(const vec3d &self, const vec3d &other)
 {
@@ -50,12 +48,13 @@ bool vm_matrix_equal(const matrix &self, const matrix &other)
 	return vm_vec_equal(self.vec.fvec, other.vec.fvec) && vm_vec_equal(self.vec.uvec, other.vec.uvec) && vm_vec_equal(self.vec.rvec, other.vec.rvec);
 }
 
-bool vm_matrix_equal(const matrix4 &self, const matrix4 &other)
-{
-	return vm_vec_equal(self.vec.fvec, other.vec.fvec) && 
-		vm_vec_equal(self.vec.rvec, other.vec.rvec) && 
-		vm_vec_equal(self.vec.uvec, other.vec.uvec) && 
-		vm_vec_equal(self.vec.pos, other.vec.pos);
+bool vm_vec_equal(const glm::vec4& self, const glm::vec4& other) {
+	return fl_equal(self[0], other[0]) && fl_equal(self[1], other[1]) && fl_equal(self[2], other[2])
+		&& fl_equal(self[3], other[3]);
+}
+bool vm_matrix_equal(const glm::mat4& self, const glm::mat4& other) {
+	return vm_vec_equal(self[0], other[0]) && vm_vec_equal(self[1], other[1]) && vm_vec_equal(self[2], other[2])
+		&& vm_vec_equal(self[3], other[3]);
 }
 
 // -----------------------------------------------------------
@@ -249,15 +248,6 @@ void vm_vec_scale(vec3d *dest, float s)
 	dest->xyz.x = dest->xyz.x * s;
 	dest->xyz.y = dest->xyz.y * s;
 	dest->xyz.z = dest->xyz.z * s;
-}
-
-//scales a 4-component vector in place.
-void vm_vec_scale(vec4 *dest, float s)
-{
-	dest->xyzw.x = dest->xyzw.x * s;
-	dest->xyzw.y = dest->xyzw.y * s;
-	dest->xyzw.z = dest->xyzw.z * s;
-	dest->xyzw.w = dest->xyzw.w * s;
 }
 
 //scales and copies a vector.
@@ -2535,297 +2525,35 @@ void vm_vec_boxscale(vec2d *vec, float scale)
 	vec->y *= ratio;
 }
 
-// TODO Remove this function if we ever move to a math library like glm
-/**
-* @brief							Attempts to invert a 4x4 matrix
-* @param[in]			m			Pointer to the matrix we want to invert
-* @param[inout]		invOut		The inverted matrix, or nullptr if inversion is impossible
-*
-* @returns							Whether or not the matrix is invertible
-*/
-bool vm_inverse_matrix4(const matrix4 *m, matrix4 *invOut)
-{
-	matrix4 inv;	// create a temp matrix so we can avoid getting a determinant that is 0
-	float det;
-	int i, j;
+glm::vec3 vm_vec_to_glm(const vec3d& vec) {
+	return glm::make_vec3(vec.a1d);
+}
+vec3d vm_glm_to_vec(const glm::vec3& vec) {
+	vec3d ret;
+	ret.xyz.x = vec.x;
+	ret.xyz.y = vec.y;
+	ret.xyz.z = vec.z;
 
-	// Use a2d so it's easier for people to read
-	inv.a2d[0][0] = m->a2d[1][1] * m->a2d[2][2] * m->a2d[3][3] -
-					m->a2d[1][1] * m->a2d[2][3] * m->a2d[3][2] -
-					m->a2d[2][1] * m->a2d[1][2] * m->a2d[3][3] +
-					m->a2d[2][1] * m->a2d[1][3] * m->a2d[3][2] +
-					m->a2d[3][1] * m->a2d[1][2] * m->a2d[2][3] -
-					m->a2d[3][1] * m->a2d[1][3] * m->a2d[2][2];
+	return ret;
+}
+glm::mat3 vm_mat_to_glm(const matrix& mat) {
+	// NOTE: This assumes that our matrices are stored in column major
+	return glm::make_mat3(mat.a1d);
+}
+matrix vm_glm_to_mat(const glm::mat3& mat) {
+	matrix m;
 
-	inv.a2d[1][0] = -m->a2d[1][0] * m->a2d[2][2] * m->a2d[3][3] +
-					m->a2d[1][0] * m->a2d[2][3] * m->a2d[3][2] +
-					m->a2d[2][0] * m->a2d[1][2] * m->a2d[3][3] -
-					m->a2d[2][0] * m->a2d[1][3] * m->a2d[3][2] -
-					m->a2d[3][0] * m->a2d[1][2] * m->a2d[2][3] +
-					m->a2d[3][0] * m->a2d[1][3] * m->a2d[2][2];
+	m.vec.rvec = vm_glm_to_vec(mat[0]);
+	m.vec.uvec = vm_glm_to_vec(mat[1]);
+	m.vec.fvec = vm_glm_to_vec(mat[2]);
 
-	inv.a2d[2][0] = m->a2d[1][0] * m->a2d[2][1] * m->a2d[3][3] -
-					m->a2d[1][0] * m->a2d[2][3] * m->a2d[3][1] -
-					m->a2d[2][0] * m->a2d[1][1] * m->a2d[3][3] +
-					m->a2d[2][0] * m->a2d[1][3] * m->a2d[3][1] +
-					m->a2d[3][0] * m->a2d[1][1] * m->a2d[2][3] -
-					m->a2d[3][0] * m->a2d[1][3] * m->a2d[2][1];
-
-	inv.a2d[3][0] = -m->a2d[1][0] * m->a2d[2][1] * m->a2d[3][2] +
-					 m->a2d[1][0] * m->a2d[2][2] * m->a2d[3][1] +
-					 m->a2d[2][0] * m->a2d[1][1] * m->a2d[3][2] -
-					 m->a2d[2][0] * m->a2d[1][2] * m->a2d[3][1] -
-					 m->a2d[3][0] * m->a2d[1][1] * m->a2d[2][2] +
-					 m->a2d[3][0] * m->a2d[1][2] * m->a2d[2][1];
-
-	inv.a2d[0][1] = -m->a2d[0][1] * m->a2d[2][2] * m->a2d[3][3] +
-					 m->a2d[0][1] * m->a2d[2][3] * m->a2d[3][2] +
-					 m->a2d[2][1] * m->a2d[0][2] * m->a2d[3][3] -
-					 m->a2d[2][1] * m->a2d[0][3] * m->a2d[3][2] -
-					 m->a2d[3][1] * m->a2d[0][2] * m->a2d[2][3] +
-					 m->a2d[3][1] * m->a2d[0][3] * m->a2d[2][2];
-
-	inv.a2d[1][1] = m->a2d[0][0] * m->a2d[2][2] * m->a2d[3][3] -
-					m->a2d[0][0] * m->a2d[2][3] * m->a2d[3][2] -
-					m->a2d[2][0] * m->a2d[0][2] * m->a2d[3][3] +
-					m->a2d[2][0] * m->a2d[0][3] * m->a2d[3][2] +
-					m->a2d[3][0] * m->a2d[0][2] * m->a2d[2][3] -
-					m->a2d[3][0] * m->a2d[0][3] * m->a2d[2][2];
-
-	inv.a2d[2][1] = -m->a2d[0][0] * m->a2d[2][1] * m->a2d[3][3] +
-					 m->a2d[0][0] * m->a2d[2][3] * m->a2d[3][1] +
-					 m->a2d[2][0] * m->a2d[0][1] * m->a2d[3][3] -
-					 m->a2d[2][0] * m->a2d[0][3] * m->a2d[3][1] -
-					 m->a2d[3][0] * m->a2d[0][1] * m->a2d[2][3] +
-					 m->a2d[3][0] * m->a2d[0][3] * m->a2d[2][1];
-
-	inv.a2d[3][1] = m->a2d[0][0] * m->a2d[2][1] * m->a2d[3][2] -
-					m->a2d[0][0] * m->a2d[2][2] * m->a2d[3][1] -
-					m->a2d[2][0] * m->a2d[0][1] * m->a2d[3][2] +
-					m->a2d[2][0] * m->a2d[0][2] * m->a2d[3][1] +
-					m->a2d[3][0] * m->a2d[0][1] * m->a2d[2][2] -
-					m->a2d[3][0] * m->a2d[0][2] * m->a2d[2][1];
-
-	inv.a2d[0][2] = m->a2d[0][1] * m->a2d[1][2] * m->a2d[3][3] -
-					m->a2d[0][1] * m->a2d[1][3] * m->a2d[3][2] -
-					m->a2d[1][1] * m->a2d[0][2] * m->a2d[3][3] +
-					m->a2d[1][1] * m->a2d[0][3] * m->a2d[3][2] +
-					m->a2d[3][1] * m->a2d[0][2] * m->a2d[1][3] -
-					m->a2d[3][1] * m->a2d[0][3] * m->a2d[1][2];
-
-	inv.a2d[1][2] = -m->a2d[0][0] * m->a2d[1][2] * m->a2d[3][3] +
-					 m->a2d[0][0] * m->a2d[1][3] * m->a2d[3][2] +
-					 m->a2d[1][0] * m->a2d[0][2] * m->a2d[3][3] -
-					 m->a2d[1][0] * m->a2d[0][3] * m->a2d[3][2] -
-					 m->a2d[3][0] * m->a2d[0][2] * m->a2d[1][3] +
-					 m->a2d[3][0] * m->a2d[0][3] * m->a2d[1][2];
-
-	inv.a2d[2][2] = m->a2d[0][0] * m->a2d[1][1] * m->a2d[3][3] -
-					m->a2d[0][0] * m->a2d[1][3] * m->a2d[3][1] -
-					m->a2d[1][0] * m->a2d[0][1] * m->a2d[3][3] +
-					m->a2d[1][0] * m->a2d[0][3] * m->a2d[3][1] +
-					m->a2d[3][0] * m->a2d[0][1] * m->a2d[1][3] -
-					m->a2d[3][0] * m->a2d[0][3] * m->a2d[1][1];
-
-	inv.a2d[3][2] = -m->a2d[0][0] * m->a2d[1][1] * m->a2d[3][2] +
-					 m->a2d[0][0] * m->a2d[1][2] * m->a2d[3][1] +
-					 m->a2d[1][0] * m->a2d[0][1] * m->a2d[3][2] -
-					 m->a2d[1][0] * m->a2d[0][2] * m->a2d[3][1] -
-					 m->a2d[3][0] * m->a2d[0][1] * m->a2d[1][2] +
-					 m->a2d[3][0] * m->a2d[0][2] * m->a2d[1][1];
-
-	inv.a2d[0][3] = -m->a2d[0][1] * m->a2d[1][2] * m->a2d[2][3] +
-					 m->a2d[0][1] * m->a2d[1][3] * m->a2d[2][2] +
-					 m->a2d[1][1] * m->a2d[0][2] * m->a2d[2][3] -
-					 m->a2d[1][1] * m->a2d[0][3] * m->a2d[2][2] -
-					 m->a2d[2][1] * m->a2d[0][2] * m->a2d[1][3] +
-					 m->a2d[2][1] * m->a2d[0][3] * m->a2d[1][2];
-
-	inv.a2d[1][3] = m->a2d[0][0] * m->a2d[1][2] * m->a2d[2][3] -
-					m->a2d[0][0] * m->a2d[1][3] * m->a2d[2][2] -
-					m->a2d[1][0] * m->a2d[0][2] * m->a2d[2][3] +
-					m->a2d[1][0] * m->a2d[0][3] * m->a2d[2][2] +
-					m->a2d[2][0] * m->a2d[0][2] * m->a2d[1][3] -
-					m->a2d[2][0] * m->a2d[0][3] * m->a2d[1][2];
-
-	inv.a2d[2][3] = -m->a2d[0][0] * m->a2d[1][1] * m->a2d[2][3] +
-					 m->a2d[0][0] * m->a2d[1][3] * m->a2d[2][1] +
-					 m->a2d[1][0] * m->a2d[0][1] * m->a2d[2][3] -
-					 m->a2d[1][0] * m->a2d[0][3] * m->a2d[2][1] -
-					 m->a2d[2][0] * m->a2d[0][1] * m->a2d[1][3] +
-					 m->a2d[2][0] * m->a2d[0][3] * m->a2d[1][1];
-
-	inv.a2d[3][3] = m->a2d[0][0] * m->a2d[1][1] * m->a2d[2][2] -
-					m->a2d[0][0] * m->a2d[1][2] * m->a2d[2][1] -
-					m->a2d[1][0] * m->a2d[0][1] * m->a2d[2][2] +
-					m->a2d[1][0] * m->a2d[0][2] * m->a2d[2][1] +
-					m->a2d[2][0] * m->a2d[0][1] * m->a2d[1][2] -
-					m->a2d[2][0] * m->a2d[0][2] * m->a2d[1][1];
-
-	det = m->a2d[0][0] * inv.a2d[0][0] + m->a2d[0][1] * inv.a2d[1][0] + m->a2d[0][2] * inv.a2d[2][0] + m->a2d[0][3] * inv.a2d[3][0];
-
-	if (det == 0) {
-		invOut = nullptr;
-		return false;
+	return m;
+}
+void vm_matrix4_get_transform(const glm::mat4& mat, vec3d* pos_out, matrix* orient_out) {
+	if (pos_out) {
+		*pos_out = vm_glm_to_vec(glm::vec3(mat[3]));
 	}
-
-	det = 1.0f / det;
-
-	for (i = 0; i < 4; i++) {
-		for (j = 0; j < 4; j++) {
-			invOut->a2d[i][j] = inv.a2d[i][j] * det;
-		}
+	if (orient_out) {
+		*orient_out = vm_glm_to_mat(glm::mat3(mat));
 	}
-
-	return true;
-}
-
-void vm_matrix4_set_orthographic(matrix4* out, vec3d *max, vec3d *min)
-{
-	memset(out, 0, sizeof(matrix4));
-
-	out->a1d[0] = 2.0f / (max->xyz.x - min->xyz.x);
-	out->a1d[5] = 2.0f / (max->xyz.y - min->xyz.y);
-	out->a1d[10] = -2.0f / (max->xyz.z - min->xyz.z);
-	out->a1d[12] = -(max->xyz.x + min->xyz.x) / (max->xyz.x - min->xyz.x);
-	out->a1d[13] = -(max->xyz.y + min->xyz.y) / (max->xyz.y - min->xyz.y);
-	out->a1d[14] = -(max->xyz.z + min->xyz.z) / (max->xyz.z - min->xyz.z);
-	out->a1d[15] = 1.0f;
-}
-
-void vm_matrix4_set_inverse_transform(matrix4 *out, matrix *m, vec3d *v)
-{
-	// this is basically the same function as the opengl view matrix construction
-	// except we don't invert the Z-axis
-	vec3d scaled_pos;
-	vec3d inv_pos;
-	matrix inv_orient;
-
-	vm_vec_copy_scale(&scaled_pos, v, -1.0f);
-
-	vm_copy_transpose(&inv_orient, m);
-	vm_vec_rotate(&inv_pos, &scaled_pos, m);
-
-	vm_matrix4_set_transform(out, &inv_orient, &inv_pos);
-}
-
-void vm_matrix4_set_identity(matrix4 *out)
-{
-	out->a2d[0][0] = 1.0f;
-	out->a2d[0][1] = 0.0f;
-	out->a2d[0][2] = 0.0f;
-	out->a2d[0][3] = 0.0f;
-
-	out->a2d[1][0] = 0.0f;
-	out->a2d[1][1] = 1.0f;
-	out->a2d[1][2] = 0.0f;
-	out->a2d[1][3] = 0.0f;
-
-	out->a2d[2][0] = 0.0f;
-	out->a2d[2][1] = 0.0f;
-	out->a2d[2][2] = 1.0f;
-	out->a2d[2][3] = 0.0f;
-
-	out->a2d[3][0] = 0.0f;
-	out->a2d[3][1] = 0.0f;
-	out->a2d[3][2] = 0.0f;
-	out->a2d[3][3] = 1.0f;
-}
-
-void vm_matrix4_set_transform(matrix4 *out, matrix *m, vec3d *v)
-{
-	vm_matrix4_set_identity(out);
-
-	out->a2d[0][0] = m->a2d[0][0];
-	out->a2d[0][1] = m->a2d[0][1];
-	out->a2d[0][2] = m->a2d[0][2];
-
-	out->a2d[1][0] = m->a2d[1][0];
-	out->a2d[1][1] = m->a2d[1][1];
-	out->a2d[1][2] = m->a2d[1][2];
-
-	out->a2d[2][0] = m->a2d[2][0];
-	out->a2d[2][1] = m->a2d[2][1];
-	out->a2d[2][2] = m->a2d[2][2];
-
-	out->a2d[3][0] = v->a1d[0];
-	out->a2d[3][1] = v->a1d[1];
-	out->a2d[3][2] = v->a1d[2];
-}
-
-void vm_matrix4_get_orientation(matrix *out, matrix4 *m)
-{
-	out->a2d[0][0] = m->a2d[0][0];
-	out->a2d[0][1] = m->a2d[0][1];
-	out->a2d[0][2] = m->a2d[0][2];
-
-	out->a2d[1][0] = m->a2d[1][0];
-	out->a2d[1][1] = m->a2d[1][1];
-	out->a2d[1][2] = m->a2d[1][2];
-
-	out->a2d[2][0] = m->a2d[2][0];
-	out->a2d[2][1] = m->a2d[2][1];
-	out->a2d[2][2] = m->a2d[2][2];
-}
-
-void vm_matrix4_get_offset(vec3d *out, matrix4 *m)
-{
-	out->xyz.x = m->vec.pos.xyzw.x;
-	out->xyz.y = m->vec.pos.xyzw.y;
-	out->xyz.z = m->vec.pos.xyzw.z;
-}
-
-void vm_matrix4_x_matrix4(matrix4 *dest, const matrix4 *src0, const matrix4 *src1)
-{
-	dest->vec.rvec.xyzw.x	= vm_vec4_dot4(src0->vec.rvec.xyzw.x, src0->vec.uvec.xyzw.x, src0->vec.fvec.xyzw.x, src0->vec.pos.xyzw.x, &src1->vec.rvec);
-	dest->vec.uvec.xyzw.x	= vm_vec4_dot4(src0->vec.rvec.xyzw.x, src0->vec.uvec.xyzw.x, src0->vec.fvec.xyzw.x, src0->vec.pos.xyzw.x, &src1->vec.uvec);
-	dest->vec.fvec.xyzw.x	= vm_vec4_dot4(src0->vec.rvec.xyzw.x, src0->vec.uvec.xyzw.x, src0->vec.fvec.xyzw.x, src0->vec.pos.xyzw.x, &src1->vec.fvec);
-	dest->vec.pos.xyzw.x	= vm_vec4_dot4(src0->vec.rvec.xyzw.x, src0->vec.uvec.xyzw.x, src0->vec.fvec.xyzw.x, src0->vec.pos.xyzw.x, &src1->vec.pos);
-	
-	dest->vec.rvec.xyzw.y	= vm_vec4_dot4(src0->vec.rvec.xyzw.y, src0->vec.uvec.xyzw.y, src0->vec.fvec.xyzw.y, src0->vec.pos.xyzw.y, &src1->vec.rvec);
-	dest->vec.uvec.xyzw.y	= vm_vec4_dot4(src0->vec.rvec.xyzw.y, src0->vec.uvec.xyzw.y, src0->vec.fvec.xyzw.y, src0->vec.pos.xyzw.y, &src1->vec.uvec);
-	dest->vec.fvec.xyzw.y	= vm_vec4_dot4(src0->vec.rvec.xyzw.y, src0->vec.uvec.xyzw.y, src0->vec.fvec.xyzw.y, src0->vec.pos.xyzw.y, &src1->vec.fvec);
-	dest->vec.pos.xyzw.y	= vm_vec4_dot4(src0->vec.rvec.xyzw.y, src0->vec.uvec.xyzw.y, src0->vec.fvec.xyzw.y, src0->vec.pos.xyzw.y, &src1->vec.pos);
-
-	dest->vec.rvec.xyzw.z	= vm_vec4_dot4(src0->vec.rvec.xyzw.z, src0->vec.uvec.xyzw.z, src0->vec.fvec.xyzw.z, src0->vec.pos.xyzw.z, &src1->vec.rvec);
-	dest->vec.uvec.xyzw.z	= vm_vec4_dot4(src0->vec.rvec.xyzw.z, src0->vec.uvec.xyzw.z, src0->vec.fvec.xyzw.z, src0->vec.pos.xyzw.z, &src1->vec.uvec);
-	dest->vec.fvec.xyzw.z	= vm_vec4_dot4(src0->vec.rvec.xyzw.z, src0->vec.uvec.xyzw.z, src0->vec.fvec.xyzw.z, src0->vec.pos.xyzw.z, &src1->vec.fvec);
-	dest->vec.pos.xyzw.z	= vm_vec4_dot4(src0->vec.rvec.xyzw.z, src0->vec.uvec.xyzw.z, src0->vec.fvec.xyzw.z, src0->vec.pos.xyzw.z, &src1->vec.pos);
-
-	dest->vec.rvec.xyzw.w	= vm_vec4_dot4(src0->vec.rvec.xyzw.w, src0->vec.uvec.xyzw.w, src0->vec.fvec.xyzw.w, src0->vec.pos.xyzw.w, &src1->vec.rvec);
-	dest->vec.uvec.xyzw.w	= vm_vec4_dot4(src0->vec.rvec.xyzw.w, src0->vec.uvec.xyzw.w, src0->vec.fvec.xyzw.w, src0->vec.pos.xyzw.w, &src1->vec.uvec);
-	dest->vec.fvec.xyzw.w	= vm_vec4_dot4(src0->vec.rvec.xyzw.w, src0->vec.uvec.xyzw.w, src0->vec.fvec.xyzw.w, src0->vec.pos.xyzw.w, &src1->vec.fvec);
-	dest->vec.pos.xyzw.w	= vm_vec4_dot4(src0->vec.rvec.xyzw.w, src0->vec.uvec.xyzw.w, src0->vec.fvec.xyzw.w, src0->vec.pos.xyzw.w, &src1->vec.pos);
-}
-
-float vm_vec4_dot4(float x, float y, float z, float w, const vec4 *v)
-{
-	return (x * v->xyzw.x) + (y * v->xyzw.y) + (z * v->xyzw.z) + (w * v->xyzw.w);
-}
-
-void vm_vec_transform(vec4 *dest, vec4 *src, matrix4 *m)
-{
-	dest->xyzw.x = (m->vec.rvec.xyzw.x * src->xyzw.x) + (m->vec.uvec.xyzw.x * src->xyzw.y) + (m->vec.fvec.xyzw.x * src->xyzw.z) + (m->vec.pos.xyzw.x * src->xyzw.w);
-	dest->xyzw.y = (m->vec.rvec.xyzw.y * src->xyzw.x) + (m->vec.uvec.xyzw.y * src->xyzw.y) + (m->vec.fvec.xyzw.y * src->xyzw.z) + (m->vec.pos.xyzw.y * src->xyzw.w);
-	dest->xyzw.z = (m->vec.rvec.xyzw.z * src->xyzw.x) + (m->vec.uvec.xyzw.z * src->xyzw.y) + (m->vec.fvec.xyzw.z * src->xyzw.z) + (m->vec.pos.xyzw.z * src->xyzw.w);
-	dest->xyzw.w = (m->vec.rvec.xyzw.w * src->xyzw.x) + (m->vec.uvec.xyzw.w * src->xyzw.y) + (m->vec.fvec.xyzw.w * src->xyzw.z) + (m->vec.pos.xyzw.w * src->xyzw.w);
-}
-
-void vm_vec_transform(vec3d *dest, vec3d *src, matrix4 *m, bool pos)
-{
-	vec4 temp_src, temp_dest;
-
-	temp_src.xyzw.x = src->xyz.x;
-	temp_src.xyzw.y = src->xyz.y;
-	temp_src.xyzw.z = src->xyz.z;
-
-	// whether to treat vec3d src as a position or a vector. 
-	// 0.0f will prevent matrix4 m's offset from being added. 1.0f will add the offset. 
-	temp_src.xyzw.w = pos ? 1.0f : 0.0f;
-
-	vm_vec_transform(&temp_dest, &temp_src, m);
-
-	dest->xyz.x = temp_dest.xyzw.x;
-	dest->xyz.y = temp_dest.xyzw.y;
-	dest->xyz.z = temp_dest.xyzw.z;
 }

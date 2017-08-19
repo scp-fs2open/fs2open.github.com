@@ -41,5 +41,3 @@ add_library(glm STATIC ${ROOT_TEXT} ${ROOT_MD} ${ROOT_NAT}
 	${GTC_SOURCE}     ${GTC_INLINE}     ${GTC_HEADER}
 	${GTX_SOURCE}     ${GTX_INLINE}     ${GTX_HEADER}
 	${SIMD_SOURCE}    ${SIMD_INLINE}    ${SIMD_HEADER})
-
-target_include_directories(glm SYSTEM PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/..")

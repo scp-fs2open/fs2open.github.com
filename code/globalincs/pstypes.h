@@ -66,15 +66,6 @@ typedef struct ccodes {
 
 struct vertex;
 
-typedef struct vec4 {
-	union {
-		struct {
-			float x,y,z,w;
-		} xyzw;
-		float a1d[4];
-	};
-} vec4;
-
 // sometimes, you just need some integers
 typedef struct ivec3 {
 	int x, y, z;
@@ -118,16 +109,6 @@ typedef struct matrix {
 		float a1d[9];
 	};
 } matrix;
-
-typedef struct matrix4 {
-	union {
-		struct {
-			vec4 rvec, uvec, fvec, pos;
-		} vec;
-		float a2d[4][4];
-		float a1d[16];
-	};
-} matrix4;
 
 typedef struct uv_pair {
 	float u,v;

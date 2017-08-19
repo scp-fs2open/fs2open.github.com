@@ -100,7 +100,7 @@ void g3_start_instance_matrix(const vec3d *pos, const matrix *orient, bool set_a
 /**
  * Instance at specified point with specified transform.
  */
-void g3_start_instance_matrix(const matrix4 *transform, bool set_api = true);
+void g3_start_instance_matrix(const glm::mat4 &transform, bool set_api = true);
 
 /**
  * Instance at specified point with specified orientation
