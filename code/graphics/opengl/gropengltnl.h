@@ -33,28 +33,6 @@ extern float shadow_middist;
 extern float shadow_fardist;
 extern bool Rendering_to_shadow_map;
 
-extern transform_stack GL_model_matrix_stack;
-extern matrix4 GL_view_matrix;
-extern matrix4 GL_model_view_matrix;
-extern matrix4 GL_projection_matrix;
-extern matrix4 GL_last_projection_matrix;
-
-void gr_opengl_start_instance_matrix(const vec3d *offset, const matrix *rotation);
-void gr_opengl_start_instance_angles(const vec3d *pos, const angles *rotation);
-void gr_opengl_end_instance_matrix();
-void gr_opengl_set_projection_matrix(float fov, float aspect, float z_near, float z_far);
-void gr_opengl_end_projection_matrix();
-void gr_opengl_set_view_matrix(const vec3d *pos, const matrix *orient);
-void gr_opengl_end_view_matrix();
-void gr_opengl_set_2d_matrix(/*int x, int y, int w, int h*/);
-void gr_opengl_end_2d_matrix();
-void gr_opengl_push_scale_matrix(const vec3d *scale_factor);
-void gr_opengl_pop_scale_matrix();
-
-void opengl_create_perspective_projection_matrix(matrix4 *out, float left, float right, float bottom, float top, float near_dist, float far_dist);
-void opengl_create_orthographic_projection_matrix(matrix4* out, float left, float right, float bottom, float top, float near_dist, float far_dist);
-void opengl_create_view_matrix(matrix4 *out, const vec3d *pos, const matrix *orient);
-
 int gr_opengl_create_buffer(BufferType type, BufferUsageHint usage);
 
 void opengl_bind_buffer_object(int handle);
@@ -79,5 +57,7 @@ void opengl_tnl_set_material_movie(movie_material* material_info);
 void opengl_tnl_set_material_batched(batched_bitmap_material * material_info);
 
 void opengl_tnl_set_model_material(model_material *material_info);
+
+void gr_opengl_set_viewport(int x, int y, int width, int height);
 
 #endif //_GROPENGLTNL_H

@@ -15,6 +15,7 @@
 #include "debugconsole/console.h"
 #include "freespace.h"
 #include "graphics/paths/PathRenderer.h"
+#include "graphics/matrix.h"
 #include "hud/hud.h"
 #include "hud/hudtarget.h"
 #include "io/timer.h"

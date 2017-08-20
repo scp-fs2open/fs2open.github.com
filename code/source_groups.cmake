@@ -299,6 +299,8 @@ set (file_root_graphics
 	graphics/grinternal.h
 	graphics/material.cpp
 	graphics/material.h
+	graphics/matrix.cpp
+	graphics/matrix.h
 	graphics/render.cpp
 	graphics/render.h
 	graphics/shadows.cpp

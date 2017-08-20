@@ -17,6 +17,7 @@
 #include "gamesnd/gamesnd.h"
 #include "globalincs/alphacolors.h"
 #include "globalincs/linklist.h"
+#include "graphics/matrix.h"
 #include "hud/hudartillery.h"
 #include "hud/hudbrackets.h"
 #include "hud/hudlock.h"

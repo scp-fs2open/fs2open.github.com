@@ -24,6 +24,7 @@
 #include "gamesnd/eventmusic.h"
 #include "gamesnd/gamesnd.h"
 #include "globalincs/alphacolors.h"
+#include "graphics/matrix.h"
 #include "def_files/def_files.h"
 #include "globalincs/linklist.h"
 #include "hud/hud.h"

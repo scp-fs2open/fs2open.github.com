@@ -70,18 +70,6 @@ void gr_stub_clear()
 {
 }
 
-void gr_stub_end_instance_matrix()
-{
-}
-
-void gr_stub_end_projection_matrix()
-{
-}
-
-void gr_stub_end_view_matrix()
-{
-}
-
 void gr_stub_flip()
 {
 }
@@ -98,10 +86,6 @@ void gr_stub_get_region(int front, int w, int h, ubyte *data)
 {
 }
 
-void gr_stub_pop_scale_matrix()
-{
-}
-
 void gr_stub_pop_texture_matrix(int unit)
 {
 }
@@ -111,10 +95,6 @@ void gr_stub_preload_init()
 }
 
 void gr_stub_print_screen(const char *filename)
-{
-}
-
-void gr_stub_push_scale_matrix(const vec3d *scale_factor)
 {
 }
 
@@ -190,27 +170,11 @@ void gr_stub_set_light(light *light)
 {
 }
 
-void gr_stub_set_projection_matrix(float fov, float aspect, float z_near, float z_far)
-{
-}
-
 void gr_stub_set_tex_env_scale(float scale)
 {
 }
 
 void gr_stub_set_texture_addressing(int mode)
-{
-}
-
-void gr_stub_set_view_matrix(const vec3d *pos, const matrix* orient)
-{
-}
-
-void gr_stub_start_instance_angles(const vec3d *pos, const angles *rotation)
-{
-}
-
-void gr_stub_start_instance_matrix(const vec3d *offset, const matrix *rotation)
 {
 }
 
@@ -534,10 +498,6 @@ bool gr_stub_init()
 	gr_screen.gf_update_buffer_data_offset = gr_stub_update_buffer_data_offset;
 	gr_screen.gf_set_transform_buffer_offset	= gr_stub_set_transform_buffer_offset;
 
-	gr_screen.gf_start_instance_matrix			= gr_stub_start_instance_matrix;
-	gr_screen.gf_end_instance_matrix			= gr_stub_end_instance_matrix;
-	gr_screen.gf_start_angles_instance_matrix	= gr_stub_start_instance_angles;
-
 	gr_screen.gf_set_light			= gr_stub_set_light;
 	gr_screen.gf_reset_lighting		= gr_stub_reset_lighting;
 	gr_screen.gf_set_ambient_light	= gr_stub_set_ambient_light;
@@ -560,15 +520,6 @@ bool gr_stub_init()
 
 	gr_screen.gf_lighting			= gr_stub_set_lighting;
 
-	gr_screen.gf_set_proj_matrix	= gr_stub_set_projection_matrix;
-	gr_screen.gf_end_proj_matrix	= gr_stub_end_projection_matrix;
-
-	gr_screen.gf_set_view_matrix	= gr_stub_set_view_matrix;
-	gr_screen.gf_end_view_matrix	= gr_stub_end_view_matrix;
-
-	gr_screen.gf_push_scale_matrix	= gr_stub_push_scale_matrix;
-	gr_screen.gf_pop_scale_matrix	= gr_stub_pop_scale_matrix;
-	
 	gr_screen.gf_set_line_width		= gr_stub_set_line_width;
 
 	gr_screen.gf_sphere				= gr_stub_draw_sphere;

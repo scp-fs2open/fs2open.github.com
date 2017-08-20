@@ -22,6 +22,7 @@
 #include "gamesequence/gamesequence.h"	//WMC - for scripting hooks in gr_flip()
 #include "globalincs/systemvars.h"
 #include "graphics/2d.h"
+#include "graphics/matrix.h"
 #include "graphics/font.h"
 #include "graphics/grbatch.h"
 #include "graphics/grinternal.h"
@@ -752,10 +753,7 @@ void gr_screen_resize(int width, int height)
 	gr_screen.save_max_w_unscaled_zoomed = gr_screen.max_w_unscaled_zoomed;
 	gr_screen.save_max_h_unscaled_zoomed = gr_screen.max_h_unscaled_zoomed;
 
-	if (gr_screen.mode == GR_OPENGL) {
-		extern void opengl_setup_viewport();
-		opengl_setup_viewport();
-	}
+	gr_setup_viewport();
 }
 
 int gr_get_resolution_class(int width, int height)

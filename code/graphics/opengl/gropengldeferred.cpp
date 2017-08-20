@@ -6,6 +6,7 @@
 #include "gropengldraw.h"
 #include "gropengldeferred.h"
 #include "gropengltnl.h"
+#include "graphics/matrix.h"
 #include "graphics/util/UniformAligner.h"
 #include "graphics/util/uniform_structs.h"
 #include "graphics/util/UniformBuffer.h"
@@ -290,8 +291,8 @@ void gr_opengl_draw_deferred_light_sphere(const vec3d *position)
 {
 	g3_start_instance_matrix(position, &vmd_identity_matrix, true);
 
-	Current_shader->program->Uniforms.setUniformMatrix4f("modelViewMatrix", GL_model_view_matrix);
-	Current_shader->program->Uniforms.setUniformMatrix4f("projMatrix", GL_projection_matrix);
+	Current_shader->program->Uniforms.setUniformMatrix4f("modelViewMatrix", gr_model_view_matrix);
+	Current_shader->program->Uniforms.setUniformMatrix4f("projMatrix", gr_projection_matrix);
 
 	opengl_draw_sphere();
 
@@ -522,8 +523,8 @@ void gr_opengl_draw_deferred_light_cylinder(const vec3d *position, const matrix 
 {
 	g3_start_instance_matrix(position, orient, true);
 
-	Current_shader->program->Uniforms.setUniformMatrix4f("modelViewMatrix", GL_model_view_matrix);
-	Current_shader->program->Uniforms.setUniformMatrix4f("projMatrix", GL_projection_matrix);
+	Current_shader->program->Uniforms.setUniformMatrix4f("modelViewMatrix", gr_model_view_matrix);
+	Current_shader->program->Uniforms.setUniformMatrix4f("projMatrix", gr_projection_matrix);
 
 	GL_state.Array.BindArrayBuffer(deferred_light_cylinder_vbo);
 	GL_state.Array.BindElementBuffer(deferred_light_cylinder_ibo);

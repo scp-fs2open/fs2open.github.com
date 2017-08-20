@@ -16,6 +16,7 @@
 #include "gamesnd/gamesnd.h"
 #include "globalincs/linklist.h"
 #include "graphics/font.h"
+#include "graphics/matrix.h"
 #include "iff_defs/iff_defs.h"
 #include "io/timer.h"
 #include "jumpnode/jumpnode.h"
