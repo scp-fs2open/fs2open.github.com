@@ -61,6 +61,12 @@ class UniformAligner {
 
 	size_t getOffset(size_t index);
 
+	/**
+	 * @brief Gets the offset of the last element in the aligner
+	 * @return The offset in bytes
+	 */
+	size_t getCurrentOffset();
+
 	template<typename T>
 	T* nextTypedElement(T* currentEl) {
 		Assertion(sizeof(T) == _dataSize,

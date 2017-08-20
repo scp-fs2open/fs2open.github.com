@@ -49,6 +49,8 @@ Category CollisionDetection("Collision Detection", false);
 Category RenderBuffer("Render Buffer", true);
 
 Category QueueRender("Queue Render", false);
+Category BuildModelUniforms("Build Model Uniforms", false);
+Category UploadModelUniforms("Upload Model Uniforms", true);
 Category SubmitDraws("Submit Draws", true);
 Category ApplyLights("Apply Lights", true);
 Category DrawEffects("Draw Effects", true);

@@ -49,7 +49,8 @@ struct opengl_uniform_block_binding {
 };
 
 opengl_uniform_block_binding GL_uniform_blocks[] = {
-	{ uniform_block_type::Lights, "lightData" }
+	{ uniform_block_type::Lights, "lightData" },
+	{ uniform_block_type::ModelData, "modelData" },
 };
 
 /**

@@ -718,4 +718,15 @@ bool bm_is_texture_array(const int handle);
  */
 int bm_get_base_frame(const int handle, int* num_frames = nullptr);
 
+/**
+ * @brief Get the array index of the specified bitmap
+ *
+ * This should be used when passing the array index to the GPU (e.g. when building uniform structs or streaming particle
+ * data)
+ *
+ * @param handle The handle of the bitmap
+ * @return The index into the array
+ */
+int bm_get_array_index(const int handle);
+
 #endif

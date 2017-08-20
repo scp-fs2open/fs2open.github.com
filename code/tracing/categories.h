@@ -61,6 +61,8 @@ extern Category CollisionDetection;
 extern Category RenderBuffer;
 
 extern Category QueueRender;
+extern Category BuildModelUniforms;
+extern Category UploadModelUniforms;
 extern Category SubmitDraws;
 extern Category ApplyLights;
 extern Category DrawEffects;

@@ -118,6 +118,10 @@ public:
 
 		Current_transform = Stack.back();
 	}
+
+	size_t depth() {
+		return Stack.size();
+	}
 };
 
 enum primitive_type {
@@ -185,6 +189,7 @@ enum shader_type {
 
 enum class uniform_block_type {
 	Lights = 0,
+	ModelData = 1,
 
 	NUM_BLOCK_TYPES
 };
@@ -707,7 +712,6 @@ typedef struct screen {
 	void (*gf_update_buffer_data)(int handle, size_t size, void* data);
 	void (*gf_update_buffer_data_offset)(int handle, size_t offset, size_t size, void* data);
 	void (*gf_update_transform_buffer)(void* data, size_t size);
-	void (*gf_set_transform_buffer_offset)(size_t offset);
 
 	// postprocessing effects
 	void (*gf_post_process_set_effect)(const char*, int, const vec3d*);
@@ -729,7 +733,6 @@ typedef struct screen {
 	void (*gf_zbias)(int zbias);
 
 	void (*gf_set_fill_mode)(int);
-	void (*gf_set_texture_panning)(float u, float v, bool enable);
 
 	void (*gf_set_line_width)(float width);
 
@@ -945,7 +948,6 @@ inline int gr_create_buffer(BufferType type, BufferUsageHint usage)
 #define gr_update_buffer_data			GR_CALL(*gr_screen.gf_update_buffer_data)
 #define gr_update_buffer_data_offset	GR_CALL(*gr_screen.gf_update_buffer_data_offset)
 #define gr_update_transform_buffer		GR_CALL(*gr_screen.gf_update_transform_buffer)
-#define gr_set_transform_buffer_offset	GR_CALL(*gr_screen.gf_set_transform_buffer_offset)
 
 #define gr_scene_texture_begin			GR_CALL(*gr_screen.gf_scene_texture_begin)
 #define gr_scene_texture_end			GR_CALL(*gr_screen.gf_scene_texture_end)
@@ -966,7 +968,6 @@ inline void gr_post_process_restore_zbuffer() {
 
 #define	gr_zbias						GR_CALL(*gr_screen.gf_zbias)
 #define	gr_set_fill_mode				GR_CALL(*gr_screen.gf_set_fill_mode)
-#define	gr_set_texture_panning			GR_CALL(*gr_screen.gf_set_texture_panning)
 
 #define gr_set_line_width				GR_CALL(*gr_screen.gf_set_line_width)
 

@@ -480,6 +480,21 @@ void vm_matrix4_x_matrix4(matrix4 *dest, const matrix4 *src0, const matrix4 *src
 
 float vm_vec4_dot4(float x, float y, float z, float w, const vec4 *v);
 
+/**
+ * @brief Converts a 4 component vector to a 3 component vector by discarding the w component
+ * @param vec The vector to convert
+ * @return The converted 3 component vector
+ */
+vec3d vm_vec4_to_vec3(const vec4& vec);
+
+/**
+ * @brief Converts a 3 component vector to a 4 component vector with the specified w value
+ * @param vec The first 3 components of the new vector
+ * @param w The w component of the new vector. Defaults to 1.0f which is correct for position vectors.
+ * @return The 4 component vector
+ */
+vec4 vm_vec3_to_ve4(const vec3d& vec, float w = 1.0f);
+
 #endif
 
 

@@ -2829,3 +2829,22 @@ void vm_vec_transform(vec3d *dest, vec3d *src, matrix4 *m, bool pos)
 	dest->xyz.y = temp_dest.xyzw.y;
 	dest->xyz.z = temp_dest.xyzw.z;
 }
+vec3d vm_vec4_to_vec3(const vec4& vec) {
+	vec3d out;
+
+	out.xyz.x = vec.xyzw.x;
+	out.xyz.y = vec.xyzw.y;
+	out.xyz.z = vec.xyzw.z;
+
+	return out;
+}
+vec4 vm_vec3_to_ve4(const vec3d& vec, float w) {
+	vec4 out;
+
+	out.xyzw.x = vec.xyz.x;
+	out.xyzw.y = vec.xyz.y;
+	out.xyzw.z = vec.xyz.z;
+	out.xyzw.w = w;
+
+	return out;
+}

@@ -9,6 +9,7 @@
 #cmakedefine HAVE_STD_MAX_ALIGN_T
 
 #cmakedefine HAVE_STD_IS_TRIVIALLY_COPYABLE
+#cmakedefine HAVE_STD_IS_TRIVIALLY_COPYABLE_ARRAY
 
 #cmakedefine01 IS_64BIT
 

@@ -308,6 +308,8 @@ set (file_root_graphics
 	graphics/shadows.cpp
 	graphics/shadows.h
 	graphics/tmapper.h
+	graphics/uniforms.cpp
+	graphics/uniforms.h
 )
 
 # Graphics -> OpenGLGr files

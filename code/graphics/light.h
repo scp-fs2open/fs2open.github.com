@@ -3,20 +3,12 @@
 
 #include "globalincs/pstypes.h"
 #include "lighting/lighting.h"
-
-struct gr_light_uniform_data {
-	vec4 *Position;
-	vec3d *Diffuse_color;
-	vec3d *Spec_color;
-	vec3d *Direction;
-	int *Light_type;
-	float *Attenuation;
-};
-
-extern gr_light_uniform_data gr_light_uniforms;
+#include "graphics/util/uniform_structs.h"
 
 //Variables
-extern const int gr_max_lights;
+extern graphics::model_light gr_light_uniforms[graphics::MAX_UNIFORM_LIGHTS];
+
+//Variables
 extern int Num_active_gr_lights;
 
 extern const float gr_light_color[4];

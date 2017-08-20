@@ -3329,3 +3329,6 @@ int bm_get_base_frame(const int handle, int* num_frames) {
 	}
 	return animation_begin;
 }
+int bm_get_array_index(const int handle) {
+	return handle - bm_get_base_frame(handle, nullptr);
+}

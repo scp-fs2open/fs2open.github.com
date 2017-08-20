@@ -9,6 +9,8 @@ size_t getElementSize(uniform_block_type type) {
 	switch (type) {
 	case uniform_block_type::Lights:
 		return sizeof(graphics::deferred_light_data);
+	case uniform_block_type::ModelData:
+		return sizeof(graphics::model_uniform_data);
 	case uniform_block_type::NUM_BLOCK_TYPES:
 	default:
 		Assertion(false, "Invalid block type encountered!");
@@ -19,6 +21,8 @@ size_t getElementSize(uniform_block_type type) {
 size_t getHeaderSize(uniform_block_type type) {
 	switch (type) {
 	case uniform_block_type::Lights:
+		return 0;
+	case uniform_block_type::ModelData:
 		return 0;
 	case uniform_block_type::NUM_BLOCK_TYPES:
 	default:
@@ -57,6 +61,8 @@ UniformBuffer* UniformBufferManager::getBuffer() {
 	return ptr;
 }
 void UniformBufferManager::retireBuffers() {
+	GR_DEBUG_SCOPE("Retiring buffers of buffer manager");
+
 	for (auto& buffer : _usedBuffers) {
 		if (!buffer->isInUse()) {
 			// This buffer will be retired soon so add it to the list before removing it from the used list

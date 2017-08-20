@@ -8,6 +8,8 @@ matrix4 gr_projection_matrix;
 matrix4 gr_last_projection_matrix;
 matrix4 gr_last_view_matrix;
 
+matrix4 gr_texture_matrix;
+
 matrix4 gr_env_texture_matrix;
 static bool gr_env_texture_matrix_set = false;
 
@@ -71,10 +73,6 @@ void gr_start_instance_matrix(const vec3d *offset, const matrix *rotation)
 	if (rotation == NULL) {
 		rotation = &vmd_identity_matrix;
 	}
-
-	vec3d axis;
-	float ang;
-	vm_matrix_to_rot_axis_and_angle(rotation, &ang, &axis);
 
 	gr_model_matrix_stack.push(offset, rotation);
 
@@ -296,4 +294,14 @@ void gr_reset_matrices() {
 
 	vm_matrix4_set_identity(&gr_model_view_matrix);
 	gr_model_matrix_stack.clear();
+
+	vm_matrix4_set_identity(&gr_texture_matrix);
+}
+
+void gr_set_texture_panning(float u, float v, bool enable) {
+	vm_matrix4_set_identity(&gr_texture_matrix);
+	if (enable) {
+		gr_texture_matrix.a2d[3][0] = u;
+		gr_texture_matrix.a2d[3][1] = v;
+	}
 }

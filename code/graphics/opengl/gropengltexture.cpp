@@ -1171,24 +1171,6 @@ int gr_opengl_preload(int bitmap_num, int is_aabitmap)
 	return retval;
 }
 
-static int GL_texture_panning_enabled = 0;
-void gr_opengl_set_texture_panning(float u, float v, bool enable)
-{
-	if (enable) {
-		vm_matrix4_set_identity(&GL_texture_matrix);
-		GL_texture_matrix.vec.pos.xyzw.x = u;
-		GL_texture_matrix.vec.pos.xyzw.y = v;
-
-
-		GL_texture_panning_enabled = 1;
-	} else if (GL_texture_panning_enabled) {
-		vm_matrix4_set_identity(&GL_texture_matrix);
-
-	
-		GL_texture_panning_enabled = 0;
-	}
-}
-
 void gr_opengl_set_texture_addressing(int mode)
 {
 	GL_CHECK_FOR_ERRORS("start of set_texture_addressing()");

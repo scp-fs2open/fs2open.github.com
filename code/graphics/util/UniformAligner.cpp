@@ -80,5 +80,8 @@ void* UniformAligner::getData() {
 void UniformAligner::clear() {
 	resize(0);
 }
+size_t UniformAligner::getCurrentOffset() {
+	return getOffset(getNumElements() - 1);
+}
 }
 }
