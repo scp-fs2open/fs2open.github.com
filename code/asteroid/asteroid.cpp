@@ -1568,8 +1568,12 @@ void asteroid_maybe_break_up(object *pasteroid_obj)
 						vec3d tempv = dir_vec;
 						vm_vec_random_cone(&dir_vec, &tempv, (360.0f / total_roids / 2));
 
-						// Make the roid inherit half of the parent's velocity
-						vm_vec_copy_normalize(&parent_vel, &pasteroid_obj->phys_info.vel);
+						// Make the roid inherit half of parent's directional movement
+						if (!IS_VEC_NULL(&pasteroid_obj->phys_info.vel)) {
+							vm_vec_copy_normalize(&parent_vel, &pasteroid_obj->phys_info.vel);
+						} else {
+							vm_vec_rand_vec_quick(&parent_vel);
+						}
 						vm_vec_scale(&parent_vel, 0.5f);
 
 						// Make the hit position affect the direction, but only a little
