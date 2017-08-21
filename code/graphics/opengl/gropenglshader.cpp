@@ -373,7 +373,7 @@ static SCP_string get_shader_hash(const SCP_vector<SCP_string>& vert,
 }
 
 static bool do_shader_caching() {
-	if (GL_version < 41) {
+	if (!GLAD_GL_ARB_get_program_binary) {
 		// Not supported until OpenGL 4.1
 		return false;
 	}
