@@ -10,8 +10,6 @@
 #include "asteroid/asteroid.h"
 #include "cmdline/cmdline.h"
 #include "debris/debris.h"
-#include "graphics/opengl/gropengldraw.h"
-#include "graphics/opengl/gropengltnl.h"
 #include "graphics/shadows.h"
 #include "lighting/lighting.h"
 #include "math/vecmat.h"

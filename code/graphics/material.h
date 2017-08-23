@@ -217,6 +217,23 @@ public:
 	float get_impact_radius();
 };
 
+class movie_material : public material
+{
+	int Ytex = -1;
+	int Utex = -1;
+	int Vtex = -1;
+ public:
+	movie_material();
+
+	int getYtex() const;
+	int getUtex() const;
+	int getVtex() const;
+
+	void setYtex(int _Ytex);
+	void setUtex(int _Utex);
+	void setVtex(int _Vtex);
+};
+
 gr_alpha_blend material_determine_blend_mode(int base_bitmap, bool is_transparent);
 gr_zbuffer_type material_determine_depth_mode(bool depth_testing, bool is_transparent);
 
@@ -227,5 +244,6 @@ void material_set_unlit_color(material* mat_info, int texture, color *clr, bool 
 void material_set_unlit_color(material* mat_info, int texture, color *clr, float alpha, bool blending, bool depth_testing);
 void material_set_unlit_volume(particle_material* mat_info, int texture, bool point_sprites);
 void material_set_distortion(distortion_material *mat_info, int texture, bool thruster);
+void material_set_movie(movie_material *mat_info, int y_bm, int u_bm, int v_bm);
 
 #endif

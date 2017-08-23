@@ -77,6 +77,7 @@ void gr_opengl_render_primitives_2d(material* material_info, primitive_type prim
 void gr_opengl_render_primitives_2d_immediate(material* material_info, primitive_type prim_type, vertex_layout* layout, int n_verts, void* data, int size);
 void gr_opengl_render_primitives_particle(particle_material* material_info, primitive_type prim_type, vertex_layout* layout, int offset, int n_verts, int buffer_handle);
 void gr_opengl_render_primitives_distortion(distortion_material* material_info, primitive_type prim_type, vertex_layout* layout, int offset, int n_verts, int buffer_handle);
+void gr_opengl_render_movie(movie_material* material_info, primitive_type prim_type, vertex_layout* layout, int n_verts, int buffer);
 
 void opengl_bind_vertex_layout(vertex_layout &layout, uint base_vertex = 0, ubyte* base_ptr = NULL);
 

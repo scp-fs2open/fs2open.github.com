@@ -1269,6 +1269,7 @@ void opengl_setup_function_pointers()
 	gr_screen.gf_render_primitives_2d_immediate = gr_opengl_render_primitives_2d_immediate;
 	gr_screen.gf_render_primitives_particle	= gr_opengl_render_primitives_particle;
 	gr_screen.gf_render_primitives_distortion = gr_opengl_render_primitives_distortion;
+	gr_screen.gf_render_movie = gr_opengl_render_movie;
 
 	gr_screen.gf_is_capable = gr_opengl_is_capable;
 

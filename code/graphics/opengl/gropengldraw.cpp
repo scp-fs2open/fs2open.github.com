@@ -2475,3 +2475,18 @@ void gr_opengl_render_primitives_distortion(distortion_material* material_info, 
 
 	GL_CHECK_FOR_ERRORS("start of gr_opengl_render_primitives_distortion()");
 }
+void gr_opengl_render_movie(movie_material* material_info,
+							primitive_type prim_type,
+							vertex_layout* layout,
+							int n_verts,
+							int buffer) {
+	GR_DEBUG_SCOPE("Render movie frame");
+
+	gr_opengl_set_2d_matrix();
+
+	opengl_tnl_set_material_movie(material_info);
+
+	opengl_render_primitives(prim_type, layout, n_verts, buffer, 0, 0);
+
+	gr_opengl_end_2d_matrix();
+}

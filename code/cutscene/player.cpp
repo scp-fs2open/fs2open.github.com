@@ -1,7 +1,7 @@
 #include "cutscene/player.h"
 
 #include "cutscene/Decoder.h"
-#include "cutscene/player/VideoPresenter.h"
+#include "cutscene/VideoPresenter.h"
 #include "cutscene/ffmpeg/FFMPEGDecoder.h"
 
 #include "graphics/2d.h"
@@ -18,8 +18,6 @@
 #include "io/timer.h"
 
 #include "parse/parselo.h"
-
-#include "cutscene/player/OpenGLVideoPresenter.h"
 
 using namespace cutscene::player;
 
@@ -93,7 +91,7 @@ void videoPlaybackInit(PlayerState* state) {
 	Assert(state != NULL);
 
 	if (gr_screen.mode == GR_OPENGL) {
-		state->videoPresenter.reset(new OpenGLVideoPresenter(state->props));
+		state->videoPresenter.reset(new VideoPresenter(state->props));
 	}
 
 	state->videoInited = true;

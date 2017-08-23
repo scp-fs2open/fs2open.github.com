@@ -37,6 +37,7 @@ class model_material;
 class particle_material;
 class distortion_material;
 class shield_material;
+class movie_material;
 
 class transform_stack {
 	
@@ -798,6 +799,7 @@ typedef struct screen {
 	void (*gf_render_primitives_distortion)(distortion_material* material_info, primitive_type prim_type, vertex_layout* layout, int offset, int n_verts, int buffer_handle);
 	void (*gf_render_primitives_2d)(material* material_info, primitive_type prim_type, vertex_layout* layout, int offset, int n_verts, int buffer_handle);
 	void (*gf_render_primitives_2d_immediate)(material* material_info, primitive_type prim_type, vertex_layout* layout, int n_verts, void* data, int size);
+	void (*gf_render_movie)(movie_material* material_info, primitive_type prim_type, vertex_layout* layout, int n_verts, int buffer);
 
 	bool (*gf_is_capable)(gr_capability capability);
 
@@ -1135,6 +1137,11 @@ __inline void gr_render_primitives_2d_immediate(material* material_info, primiti
 	(*gr_screen.gf_render_primitives_2d_immediate)(material_info, prim_type, layout, n_verts, data, size);
 }
 
+inline void gr_render_movie(movie_material* material_info, primitive_type prim_type, vertex_layout* layout, int n_verts, int buffer)
+{
+	(*gr_screen.gf_render_movie)(material_info, prim_type, layout, n_verts, buffer);
+}
+
 __inline void gr_render_model(model_material* material_info, indexed_vertex_source *vert_source, vertex_buffer* bufferp, size_t texi)
 {
 	(*gr_screen.gf_render_model)(material_info, vert_source, bufferp, texi);
@@ -1274,5 +1281,11 @@ class DebugScope {
 #else
 #define GR_DEBUG_SCOPE(name) do {} while(0)
 #endif
+
+enum AnimatedShader {
+	ANIMATED_SHADER_LOADOUTSELECT_FS1= 0,
+	ANIMATED_SHADER_LOADOUTSELECT_FS2= 1,
+	ANIMATED_SHADER_CLOAK = 2,
+};
 
 #endif

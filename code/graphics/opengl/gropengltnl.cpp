@@ -1303,3 +1303,25 @@ void opengl_tnl_set_material_distortion(distortion_material* material_info)
 	GL_state.Texture.SetTarget(GL_TEXTURE_2D);
 	GL_state.Texture.Enable(Scene_depth_texture);
 }
+
+void opengl_tnl_set_material_movie(movie_material* material_info) {
+	opengl_tnl_set_material(material_info, false);
+
+	Current_shader->program->Uniforms.setUniformMatrix4f("modelViewMatrix", GL_model_view_matrix);
+	Current_shader->program->Uniforms.setUniformMatrix4f("projMatrix", GL_projection_matrix);
+
+	Current_shader->program->Uniforms.setUniformi("ytex", 0);
+	Current_shader->program->Uniforms.setUniformi("utex", 1);
+	Current_shader->program->Uniforms.setUniformi("vtex", 2);
+
+	float u_scale, v_scale;
+	if ( !gr_opengl_tcache_set(material_info->getYtex(), material_info->get_texture_type(), &u_scale, &v_scale, 0) ) {
+		mprintf(("WARNING: Error setting bitmap texture (%i)!\n", material_info->getYtex()));
+	}
+	if ( !gr_opengl_tcache_set(material_info->getUtex(), material_info->get_texture_type(), &u_scale, &v_scale, 1) ) {
+		mprintf(("WARNING: Error setting bitmap texture (%i)!\n", material_info->getUtex()));
+	}
+	if ( !gr_opengl_tcache_set(material_info->getVtex(), material_info->get_texture_type(), &u_scale, &v_scale, 2) ) {
+		mprintf(("WARNING: Error setting bitmap texture (%i)!\n", material_info->getVtex()));
+	}
+}

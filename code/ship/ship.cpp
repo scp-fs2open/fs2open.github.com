@@ -26,7 +26,6 @@
 #include "globalincs/alphacolors.h"
 #include "def_files/def_files.h"
 #include "globalincs/linklist.h"
-#include "graphics/opengl/gropenglshader.h"
 #include "hud/hud.h"
 #include "hud/hudartillery.h"
 #include "hud/hudets.h"
