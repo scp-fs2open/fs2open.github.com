@@ -655,7 +655,7 @@ sexp_oper Operators[] = {
 	{ "hide-jumpnode",					OP_JUMP_NODE_HIDE_JUMPNODE,				1,	INT_MAX,	SEXP_ACTION_OPERATOR,	},
 
 	//Special Effects Sub-Category
-	{ "set-post-effect",				OP_SET_POST_EFFECT,						2,	2,			SEXP_ACTION_OPERATOR,	},	// Hery
+	{ "set-post-effect",				OP_SET_POST_EFFECT,						2,	5,			SEXP_ACTION_OPERATOR,	},	// Hery
 	{ "ship-effect",					OP_SHIP_EFFECT,							3,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Valathil
 	{ "ship-create",					OP_SHIP_CREATE,							5,	8,			SEXP_ACTION_OPERATOR,	},	// WMC
 	{ "weapon-create",					OP_WEAPON_CREATE,						5,	10,			SEXP_ACTION_OPERATOR,	},	// Goober5000
@@ -16690,7 +16690,25 @@ void sexp_set_post_effect(int node)
 	if (amount < 0 || amount > 100)
 		amount = 0;
 
-	gr_post_process_set_effect(name, amount);
+	vec3d rgb; rgb.xyz.x = 0.0f; rgb.xyz.y = 0.0f; rgb.xyz.z = 0.0f; // clang you are a PITA
+	node = CDDR(node);
+	if (node != -1) {
+		rgb.xyz.x = static_cast<float>(eval_num(node)) / 255.0f;
+		node = CDR(node);
+	}
+	if (node != -1) {
+		rgb.xyz.y = static_cast<float>(eval_num(node)) / 255.0f;
+		node = CDR(node);
+	}
+	if (node != -1) {
+		rgb.xyz.z = static_cast<float>(eval_num(node)) / 255.0f;
+		node = CDR(node);
+	}
+	CAP(rgb.xyz.x, 0.0f, 1.0f);
+	CAP(rgb.xyz.y, 0.0f, 1.0f);
+	CAP(rgb.xyz.z, 0.0f, 1.0f);
+
+	gr_post_process_set_effect(name, amount, &rgb);
 }
 
 // Goober5000
@@ -33045,6 +33063,9 @@ sexp_help_struct Sexp_help[] = {
 		"\tTakes 2 arguments\r\n"
 		"\t1: Effect type\r\n"
 		"\t2: Effect intensity (0 - 100)."
+		"\t3: (Optional) Red (0 - 255)."
+		"\t4: (Optional) Green (0 - 255)."
+		"\t5: (Optional) Blue (0 - 255)."
 	},
 
 	{ OP_CHANGE_SUBSYSTEM_NAME, "change-subsystem-name\r\n"

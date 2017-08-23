@@ -749,7 +749,7 @@ typedef struct screen {
 	void (*gf_set_ambient_light)(int,int,int);
 
 	// postprocessing effects
-	void (*gf_post_process_set_effect)(const char*, int);
+	void (*gf_post_process_set_effect)(const char*, int, const vec3d*);
 	void (*gf_post_process_set_defaults)();
 
 	void (*gf_post_process_begin)();
