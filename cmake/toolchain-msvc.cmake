@@ -88,7 +88,7 @@ ENDIF(MSVC_USE_RUNTIME_DLL)
 INCLUDE(MSVCMultipleProcessCompile)
 
 # Visual Studio supports compiling for multiple vector instruction sets
-SET(POSSIBLE_INSTUCTION_SETS "" SSE SSE2 AVX)
+SET(POSSIBLE_INSTUCTION_SETS "" SSE SSE2 AVX AVX2)
 
 if (NOT DEFINED MSVC_SIMD_INSTRUCTIONS)
 	detect_simd_instructions(MSVC_DETECTED_SIMD_INSTRUCTIONS)
