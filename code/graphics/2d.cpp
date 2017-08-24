@@ -828,6 +828,7 @@ static bool gr_init_sub(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, i
 	gr_screen.bytes_per_pixel= depth / 8;
 	gr_screen.rendering_to_texture = -1;
 	gr_screen.envmap_render_target = -1;
+	gr_screen.line_width = 1.0f;
 	gr_screen.mode = mode;
 	gr_screen.res = res;
 	gr_screen.aspect = 1.0f;			// Normal PC screen
@@ -2072,34 +2073,6 @@ void gr_shield_icon(coord2d coords[6], int resize_mode)
 	}
 	
 	g3_render_shield_icon(&gr_screen.current_color, coords, resize_mode);
-}
-
-void gr_rect(int x, int y, int w, int h, int resize_mode)
-{
-	if (gr_screen.mode == GR_STUB) {
-		return;
-	}
-
-	g3_render_colored_rect(&gr_screen.current_color, x, y, w, h, resize_mode);
-}
-
-void gr_shade(int x, int y, int w, int h, int resize_mode)
-{
-	int r, g, b, a;
-
-	if (gr_screen.mode == GR_STUB) {
-		return;
-	}
-	
-	r = (int)gr_screen.current_shader.r;
-	g = (int)gr_screen.current_shader.g;
-	b = (int)gr_screen.current_shader.b;
-	a = (int)gr_screen.current_shader.c;
-	
-	color clr;
-	gr_init_alphacolor(&clr, r, g, b, a);
-
-	g3_render_colored_rect(&clr, x, y, w, h, resize_mode);
 }
 
 void gr_set_bitmap(int bitmap_num, int alphablend_mode, int bitblt_mode, float alpha)

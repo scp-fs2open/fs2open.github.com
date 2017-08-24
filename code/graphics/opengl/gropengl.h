@@ -56,6 +56,5 @@ extern int Use_PBOs;
 extern GLuint GL_vao;
 
 extern float GL_alpha_threshold;
-extern float GL_line_width;
 
 #endif
