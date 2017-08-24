@@ -7625,6 +7625,7 @@ void weapon_info::reset()
 	this->cm_effective_rad = MAX_CMEASURE_TRACK_DIST;
 	this->cm_detonation_rad = CMEASURE_DETONATE_DISTANCE;
 	this->cm_kill_single = false;
+	this->cmeasure_timer_interval = 0;
 
 	this->b_info.beam_type = -1;
 	this->b_info.beam_life = -1.0f;
