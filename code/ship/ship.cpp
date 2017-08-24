@@ -1088,7 +1088,13 @@ void ship_info::clone(const ship_info& other)
 	damage_lightning_type = other.damage_lightning_type;
 
 	shield_impact_explosion_anim = other.shield_impact_explosion_anim;
-	hud_gauges = other.hud_gauges;
+
+	// We can't copy the HUD gauge vector here since we can't construct a copy of every HUD gauge since the type
+	// information is not available anymore when we are at this point. Since this function is only needed before HUD
+	// gauge parsing it should be save to assume that the other HUD gauge vector is empty
+	Assertion(other.hud_gauges.empty(), "Ship_info cloning is only possible if there are no HUD gauges in the ship class.");
+	hud_gauges.clear();
+
 	hud_enabled = other.hud_enabled;
 	hud_retail = other.hud_retail;
 
@@ -7076,7 +7082,7 @@ void ship_set_hud_cockpit_targets()
 		return;
 	}
 
-	SCP_vector<HudGauge*> &hud = Ship_info[Player_ship->ship_info_index].hud_gauges;
+	auto& hud = Ship_info[Player_ship->ship_info_index].hud_gauges;
 
 	for ( int i = 0; i < (int)hud.size(); i++ ) {
 		for ( int j = 0; j < (int)Player_displays.size(); j++ ) {
