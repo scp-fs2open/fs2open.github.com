@@ -5,7 +5,7 @@
  * or otherwise commercially exploit the source or things you created based on the 
  * source.
  *
-*/ 
+*/
 
 
 
@@ -18,6 +18,7 @@
 #include <algorithm>
 
 #include "cmdline/cmdline.h"
+#include "config/ConfigurationItem.h"
 #include "debugconsole/console.h"
 #include "gamesequence/gamesequence.h"	//WMC - for scripting hooks in gr_flip()
 #include "globalincs/systemvars.h"
@@ -53,7 +54,7 @@ color_gun Gr_ta_red, Gr_ta_green, Gr_ta_blue, Gr_ta_alpha;
 color_gun *Gr_current_red, *Gr_current_green, *Gr_current_blue, *Gr_current_alpha;
 
 
-ubyte Gr_original_palette[768];		// The palette 
+ubyte Gr_original_palette[768];		// The palette
 ubyte Gr_current_palette[768];
 char Gr_current_palette_name[128] = NOX("none");
 
@@ -95,6 +96,73 @@ float Gr_save_menu_offset_X = 0.0f, Gr_save_menu_offset_Y = 0.0f;
 float Gr_save_menu_zoomed_offset_X = 0.0f, Gr_save_menu_zoomed_offset_Y = 0.0f;
 
 bool Save_custom_screen_size;
+
+// Resolution configuration item
+struct resolution_info {
+	int backend = GR_DEFAULT;
+
+	int width = -1;
+	int height = -1;
+
+	int bits = -1;
+
+	resolution_info() {
+	}
+	resolution_info(int _width, int _height, int _bits) : width(_width), height(_height), bits(_bits) {
+	}
+
+	static resolution_info deserialize(const SCP_string& data) {
+		resolution_info info;
+
+		// Get the mode prefix
+		auto modeStr = data.substr(0, 4);
+		if (modeStr == "OGL ") {
+			info.backend = GR_OPENGL;
+		} else {
+			throw config::serialization_error("Invalid backend type specified!");
+		}
+
+		auto ptr = data.c_str();
+
+		// NOTE: The "ptr+5" is to skip over the initial "????-" in the video string.
+		//       If the format of that string changes you'll have to change this too!!!
+		if (sscanf(ptr + 5, "(%dx%d)x%d ", &info.width, &info.height, &info.bits) != 3) {
+			throw config::serialization_error("Can't understand 'VideocardFs2open' config entry!");
+		}
+
+		if (info.width <= 0) {
+			throw config::serialization_error("Width must be at least 1!");
+		}
+
+		if (info.height <= 0) {
+			throw config::serialization_error("Height must be at least 1!");
+		}
+
+		if (info.bits <= 0) {
+			throw config::serialization_error("Depth must be at least 1!");
+		}
+
+		return info;
+	}
+	static SCP_string serialize(const resolution_info& info) {
+		const char* backendStr = nullptr;
+		switch(info.backend) {
+			case GR_OPENGL:
+				backendStr = "OGL";
+				break;
+			default:
+				Assertion(false, "Unhandled graphics backend!");
+				break;
+		}
+
+		SCP_string value;
+		sprintf(value, "%-4s-(%dx%d)x%d", backendStr, info.width, info.height, info.bits);
+		return value;
+	}
+};
+
+static config::ConfigurationItem<resolution_info, resolution_info> resolution_config(nullptr, "VideocardFs2open",
+																					 resolution_info());
 
 void gr_set_screen_scale(int w, int h, int zoom_w, int zoom_h, int max_w, int max_h, int center_w, int center_h, bool force_stretch)
 {
@@ -634,17 +702,17 @@ void gr_close()
 	if ( !Gr_inited ) {
 		return;
 	}
-	
+
 	font::close();
 
 	switch (gr_screen.mode) {
 		case GR_OPENGL:
 			gr_opengl_cleanup(true);
 			break;
-	
+
 		case GR_STUB:
 			break;
-	
+
 		default:
 			Int3();		// Invalid graphics mode
 	}
@@ -821,7 +889,7 @@ static bool gr_init_sub(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, i
 
 	Gr_save_menu_zoomed_offset_X = Gr_menu_zoomed_offset_X = Gr_menu_offset_X;
 	Gr_save_menu_zoomed_offset_Y = Gr_menu_zoomed_offset_Y = Gr_menu_offset_Y;
-	
+
 
 	gr_screen.signature = Gr_signature++;
 	gr_screen.bits_per_pixel = depth;
@@ -856,12 +924,12 @@ static bool gr_init_sub(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, i
 	gr_screen.save_max_h_unscaled = gr_screen.max_h_unscaled;
 	gr_screen.save_max_w_unscaled_zoomed = gr_screen.max_w_unscaled_zoomed;
 	gr_screen.save_max_h_unscaled_zoomed = gr_screen.max_h_unscaled_zoomed;
-	
+
 	switch (mode) {
 		case GR_OPENGL:
 			rc = gr_opengl_init(std::move(graphicsOps));
 			break;
-		case GR_STUB: 
+		case GR_STUB:
 			rc = gr_stub_init();
 			break;
 		default:
@@ -879,27 +947,25 @@ bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, int d_mode, 
 {
 	int width = 1024, height = 768, depth = 32, mode = GR_OPENGL;
 	float center_aspect_ratio = -1.0f;
-	const char *ptr = NULL;
 	// If already inited, shutdown the previous graphics
 	if (Gr_inited) {
 		switch (gr_screen.mode) {
 			case GR_OPENGL:
 				gr_opengl_cleanup(false);
 				break;
-			
+
 			case GR_STUB:
 				break;
-	
+
 			default:
 				Int3();		// Invalid graphics mode
 		}
 	}
 
-	// We cannot continue without this, quit, but try to help the user out first
-	ptr = os_config_read_string(NULL, NOX("VideocardFs2open"), NULL);
+	auto resolution = resolution_config.getValue();
 
 	// if we don't have a config string then construct one, using OpenGL 1024x768 32-bit as the default
-	if (ptr == NULL) {
+	if (resolution.width < 0) {
 		// If we don't have a display mode, use SDL to get default settings
 		// We need to initialize SDL to do this
 
@@ -934,20 +1000,18 @@ bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, int d_mode, 
 					}
 				}
 
-				SCP_string videomode;
-				sprintf(videomode, "OGL -(%dx%d)x%d bit", width, height, depth);
+				resolution_info new_info;
+				new_info.width = width;
+				new_info.height = height;
+				new_info.bits = depth;
 
-				os_config_write_string(NULL, NOX("VideocardFs2open"), videomode.c_str());
+				resolution_config.setValue(new_info);
 			}
 		}
 	} else {
-		Assert(ptr != NULL);
-
-		// NOTE: The "ptr+5" is to skip over the initial "????-" in the video string.
-		//       If the format of that string changes you'll have to change this too!!!
-		if (sscanf(ptr + 5, "(%dx%d)x%d ", &width, &height, &depth) != 3) {
-			Error(LOCATION, "Can't understand 'VideocardFs2open' config entry!");
-		}
+		width = resolution.width;
+		height = resolution.height;
+		depth = resolution.bits;
 	}
 
 	if (Cmdline_res != NULL) {
@@ -1102,7 +1166,7 @@ void gr_force_windowed()
 	switch( gr_screen.mode ) {
 		case GR_OPENGL:
 			break;
-		case GR_STUB: 
+		case GR_STUB:
 			break;
 		default:
 			Int3();		// Invalid graphics mode
@@ -1122,7 +1186,7 @@ void gr_activate(int active)
 	}
 	gr_activated = active;
 
-	if ( !Gr_inited ) { 
+	if ( !Gr_inited ) {
 		return;
 	}
 
@@ -1141,7 +1205,7 @@ void gr_activate(int active)
 			extern void gr_opengl_activate(int active);
 			gr_opengl_activate(active);
 			break;
-		case GR_STUB: 
+		case GR_STUB:
 			break;
 		default:
 			Int3();		// Invalid graphics mode
@@ -1196,7 +1260,7 @@ void gr_set_color( int r, int g, int b )
 	Assert((g >= 0) && (g < 256));
 	Assert((b >= 0) && (b < 256));
 
-	gr_init_color( &gr_screen.current_color, r, g, b );	
+	gr_init_color( &gr_screen.current_color, r, g, b );
 }
 
 void gr_set_color_fast(color *dst)
@@ -1287,9 +1351,9 @@ void gr_bitmap(int _x, int _y, int resize_mode)
 
 	material mat_params;
 	material_set_interface(
-		&mat_params, 
-		gr_screen.current_bitmap, 
-		gr_screen.current_alphablend_mode == GR_ALPHABLEND_FILTER ? true : false, 
+		&mat_params,
+		gr_screen.current_bitmap,
+		gr_screen.current_alphablend_mode == GR_ALPHABLEND_FILTER ? true : false,
 		gr_screen.current_alpha
 	);
 
@@ -1908,7 +1972,7 @@ void poly_list::make_index_buffer(SCP_vector<int> &vertex_list)
     Assert( nverts_good != NULL );
 	if ( nverts_good == NULL )
 		return;
-    
+
 	memset( nverts_good, 0, n_verts );
 
 	vertex_list.reserve(n_verts);
@@ -1995,7 +2059,7 @@ void poly_list::generate_sorted_index_list()
 
 bool poly_list::finder::operator()(const uint a, const uint b)
 {
-	vertex *vert_a; 
+	vertex *vert_a;
 	vertex *vert_b;
 	vec3d *norm_a;
 	vec3d *norm_b;
@@ -2013,7 +2077,7 @@ bool poly_list::finder::operator()(const uint a, const uint b)
 		vert_a = &search_list->vert[a];
 		norm_a = &search_list->norm[a];
 	}
-	
+
 	if ( b == (uint)search_list->n_verts ) {
 		Assert(vert_to_find != NULL);
 		Assert(norm_to_find != NULL);
@@ -2070,7 +2134,7 @@ void gr_shield_icon(coord2d coords[6], int resize_mode)
 	if (gr_screen.mode == GR_STUB) {
 		return;
 	}
-	
+
 	g3_render_shield_icon(&gr_screen.current_color, coords, resize_mode);
 }
 
@@ -2090,12 +2154,12 @@ void gr_shade(int x, int y, int w, int h, int resize_mode)
 	if (gr_screen.mode == GR_STUB) {
 		return;
 	}
-	
+
 	r = (int)gr_screen.current_shader.r;
 	g = (int)gr_screen.current_shader.g;
 	b = (int)gr_screen.current_shader.b;
 	a = (int)gr_screen.current_shader.c;
-	
+
 	color clr;
 	gr_init_alphacolor(&clr, r, g, b, a);
 
@@ -2127,17 +2191,17 @@ void gr_flip(bool execute_scripting)
 }
 
 uint gr_determine_model_shader_flags(
-	bool lighting, 
-	bool fog, 
-	bool textured, 
-	bool in_shadow_map, 
-	bool thruster_scale, 
+	bool lighting,
+	bool fog,
+	bool textured,
+	bool in_shadow_map,
+	bool thruster_scale,
 	bool transform,
 	bool team_color_set,
-	int tmap_flags, 
-	int spec_map, 
-	int glow_map, 
-	int normal_map, 
+	int tmap_flags,
+	int spec_map,
+	int glow_map,
+	int normal_map,
 	int height_map,
 	int ambient_map,
 	int env_map,
