@@ -1401,6 +1401,13 @@ void obj_move_all(float frametime)
 	TRACE_SCOPE(tracing::MoveObjects);
 
 	object *objp;	
+	SCP_vector<object*> cmeasure_list;
+	const bool global_cmeasure_timer = (Cmeasures_homing_check > 0);
+
+	Assertion(Cmeasures_homing_check >= 0, "Cmeasures_homing_check is %d in obj_move_all(); it should never be negative. Get a coder!\n", Cmeasures_homing_check);
+
+	if (global_cmeasure_timer)
+		Cmeasures_homing_check--;
 
 	// Goober5000 - HACK HACK HACK
 	// this function also resets the OF_DOCKED_ALREADY_HANDLED flag, to save trips
@@ -1425,6 +1432,24 @@ void obj_move_all(float frametime)
 		// if this is an observer object, skip it
 		if (objp->type == OBJ_OBSERVER) {
 			continue;
+		}
+
+		// Compile a list of active countermeasures during an existing traversal of obj_used_list
+		if (objp->type == OBJ_WEAPON) {
+			weapon *wp = &Weapons[objp->instance];
+			weapon_info *wip = &Weapon_info[wp->weapon_info_index];
+
+			if (wip->wi_flags[Weapon::Info_Flags::Cmeasure]) {
+				if ((wip->cmeasure_timer_interval > 0 && timestamp_elapsed(wp->cmeasure_timer))	// If it's timer-based and ready to pulse...
+					|| (wip->cmeasure_timer_interval <= 0 && global_cmeasure_timer)) {	// ...or it's not and the global counter is active...
+					// ...then it's actively pulsing and we need to add objp to cmeasure_list.
+					cmeasure_list.push_back(objp);
+					if (wip->cmeasure_timer_interval > 0) {
+						// Reset the timer
+						wp->cmeasure_timer = timestamp(wip->cmeasure_timer_interval);
+					}
+				}
+			}
 		}
 
 		vec3d cur_pos = objp->pos;			// Save the current position
@@ -1519,7 +1544,8 @@ void obj_move_all(float frametime)
 		objp = GET_NEXT(objp);
 	}
 
-	find_homing_object_cmeasures();	//	If any cmeasures fired, maybe steer away homing missiles	
+	if (!cmeasure_list.empty())
+		find_homing_object_cmeasures(cmeasure_list);	//	If any cmeasures are active, maybe steer away homing missiles
 
 	// do pre-collision stuff for beam weapons
 	beam_move_all_pre();
