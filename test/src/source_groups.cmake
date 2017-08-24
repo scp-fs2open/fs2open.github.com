@@ -19,6 +19,7 @@ add_file_folder(cfile "CFile"
 add_file_folder(graphics "Globalincs"
     globalincs/test_flagset.cpp
     globalincs/test_safe_strings.cpp
+    globalincs/test_version.cpp
 )
 
 add_file_folder(graphics "Graphics"
@@ -27,6 +28,10 @@ add_file_folder(graphics "Graphics"
 
 add_file_folder(menuui "menuui"
     menuui/test_intel_parse.cpp
+)
+
+add_file_folder(mod "mod"
+    mod/test_mod_table.cpp
 )
 
 add_file_folder(graphics "Parse"

@@ -36,7 +36,7 @@ bool Red_alert_applies_to_delayed_ships = false;
 bool Beams_use_damage_factors = false;
 float Generic_pain_flash_factor = 1.0f;
 float Shield_pain_flash_factor = 0.0f;
-
+gameversion::version Targetted_version(2, 0, 0, 0); // Defaults to retail
 
 void parse_mod_table(const char *filename)
 {
@@ -54,31 +54,15 @@ void parse_mod_table(const char *filename)
 		// start parsing
 		optional_string("#GAME SETTINGS");
 
-		if (optional_string("$Minimum version:")) {
-			int major = 0;
-			int minor = 0;
-			int build = 0;
-			int revision = 0;
+		if (optional_string("$Minimum version:") || optional_string("$Target Version:")) {
+			Targetted_version = gameversion::parse_version();
 
-			required_string("+Major:");
-			stuff_int(&major);
+			mprintf(("Game Settings Table: Parsed target version of %s\n", gameversion::format_version(Targetted_version).c_str()));
 
-			required_string("+Minor:");
-			stuff_int(&minor);
-
-			required_string("+Build:");
-			stuff_int(&build);
-
-			if (optional_string("+Revision:")) {
-				stuff_int(&revision);
-			}
-
-			mprintf(("Game Settings Table: Parsed minimum version of %s\n", gameversion::format_version(major, minor, build, revision).c_str()));
-
-			if (!gameversion::check_at_least(major, minor, build, revision)) {
+			if (!gameversion::check_at_least(Targetted_version)) {
 				Error(LOCATION, "This modification needs at least version %s of FreeSpace Open. However, the current is only %s!",
-					gameversion::format_version(major, minor, build, revision).c_str(),
-					gameversion::format_version(FS_VERSION_MAJOR, FS_VERSION_MINOR, FS_VERSION_BUILD, FS_VERSION_REVIS).c_str());
+					gameversion::format_version(Targetted_version).c_str(),
+					gameversion::format_version(gameversion::get_executable_version()).c_str());
 			}
 		}
 
@@ -351,4 +335,7 @@ void mod_table_init()
 
 	// parse any modular tables
 	parse_modular_table("*-mod.tbm", parse_mod_table);
+}
+bool mod_supports_version(int major, int minor, int build) {
+	return Targetted_version >= gameversion::version(major, minor, build, 0);
 }
