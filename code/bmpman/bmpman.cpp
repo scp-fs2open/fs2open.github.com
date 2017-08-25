@@ -1798,6 +1798,7 @@ int bm_load_animation(const char *real_filename, int *nframes, int *fps, int *ke
 		}
 		if (bm_bitmaps[n].comp_type != bm_bitmaps[n + i].comp_type) {
 			// Different compression type
+			is_array = false;
 
 			Warning(LOCATION, "Animation '%s' has images that are of different compression formats (currently at frame %d)."
 				"Performance could be improved by making all images the same compression format.", filename, i + 1);
