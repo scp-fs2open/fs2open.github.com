@@ -17,19 +17,22 @@ uniform vec3 diffuseFactor;
 uniform vec3 emissionFactor;
 #endif
 #ifdef FLAG_DIFFUSE_MAP
-uniform sampler2D sBasemap;
+uniform sampler2DArray sBasemap;
+uniform int sBasemapIndex;
 uniform int desaturate;
 uniform int blend_alpha;
 uniform bool overrideDiffuse;
 uniform vec3 diffuseClr;
 #endif
 #ifdef FLAG_GLOW_MAP
-uniform sampler2D sGlowmap;
+uniform sampler2DArray sGlowmap;
+uniform int sGlowmapIndex;
 uniform bool overrideGlow;
 uniform vec3 glowClr;
 #endif
 #ifdef FLAG_SPEC_MAP
-uniform sampler2D sSpecmap;
+uniform sampler2DArray sSpecmap;
+uniform int sSpecmapIndex;
 uniform bool overrideSpec;
 uniform vec3 specClr;
 uniform bool alphaGloss;
@@ -42,11 +45,13 @@ uniform bool alpha_spec;
 in vec3 fragEnvReflect;
 #endif
 #ifdef FLAG_NORMAL_MAP
-uniform sampler2D sNormalmap;
+uniform sampler2DArray sNormalmap;
+uniform int sNormalmapIndex;
 in mat3 fragTangentMatrix;
 #endif
 #ifdef FLAG_AMBIENT_MAP
-uniform sampler2D sAmbientmap;
+uniform sampler2DArray sAmbientmap;
+uniform int sAmbientmapIndex;
 #endif
 #ifdef FLAG_FOG
 uniform vec4 fogColor;
@@ -69,7 +74,8 @@ uniform bool team_glow_enabled;
 vec2 teamMask = vec2(0.0, 0.0);
 #endif
 #ifdef FLAG_MISC_MAP
-uniform sampler2D sMiscmap;
+uniform sampler2DArray sMiscmap;
+uniform int sMiscmapIndex;
 #endif
 #ifdef FLAG_SHADOWS
 in vec4 fragShadowUV[4];
@@ -283,14 +289,14 @@ void main()
 #ifdef	FLAG_AMBIENT_MAP
 	// red channel is ambient occlusion factor which only affects ambient lighting.
 	// green is cavity occlusion factor which only affects diffuse and specular lighting.
-	aoFactors = texture(sAmbientmap, texCoord).xy;
+	aoFactors = texture(sAmbientmap, vec3(texCoord, float(sAmbientmapIndex))).xy;
 #endif
 	vec3 unitNormal = normalize(fragNormal);
 	vec3 normal = unitNormal;
 #ifdef FLAG_NORMAL_MAP
    // Normal map - convert from DXT5nm
    vec2 normalSample;
-   normal.rg = normalSample = (texture(sNormalmap, texCoord).ag * 2.0) - 1.0;
+   normal.rg = normalSample = (texture(sNormalmap, vec3(texCoord, float(sNormalmapIndex))).ag * 2.0) - 1.0;
    normal.b = clamp(sqrt(1.0 - dot(normal.rg, normal.rg)), 0.0001, 1.0);
    normal = fragTangentMatrix * normal;
    float norm = length(normal);
@@ -312,7 +318,7 @@ void main()
       diffuseTexCoord = texCoord + distort*(1.0-anim_timer);
    }
  #endif
-	baseColor = texture(sBasemap, diffuseTexCoord);
+	baseColor = texture(sBasemap, vec3(diffuseTexCoord, float(sBasemapIndex)));
 	if ( blend_alpha == 0 && baseColor.a < 0.95 ) discard; // if alpha blending is not on, discard transparent pixels
 	// premultiply alpha if blend_alpha is 1. assume that our blend function is srcColor + (1-Alpha)*destColor.
 	// if blend_alpha is 2, assume blend func is additive and don't modify color
@@ -324,7 +330,7 @@ void main()
 	baseColor.rgb = pow(baseColor.rgb, vec3(SRGB_GAMMA));
 #endif
 #ifdef FLAG_SPEC_MAP
-	specColor = texture(sSpecmap, texCoord);
+	specColor = texture(sSpecmap, vec3(texCoord, float(sSpecmapIndex)));
 	if(alphaGloss) glossData = specColor.a;
 	if(overrideSpec) {
 		specColor.rgb = specClr;
@@ -343,7 +349,7 @@ void main()
 #ifdef FLAG_MISC_MAP
  #ifdef FLAG_TEAMCOLOR
 	vec4 teamMask = vec4(0.0, 0.0, 0.0, 0.0);
-	teamMask = texture(sMiscmap, texCoord);
+	teamMask = texture(sMiscmap, vec3(texCoord, float(sMiscmapIndex)));
 	vec3 base = max(base_color - vec3(0.5), vec3(0.0));
 	vec3 stripe = max(stripe_color - vec3(0.5), vec3(0.0));
 	baseColor.rgb += (base * teamMask.x) + (stripe * teamMask.y);
@@ -376,7 +382,7 @@ void main()
 	baseColor.rgb += envColour.rgb * FresnelLazarovEnv(specColor.rgb, eyeDir, normal, glossData);
 #endif
 #ifdef FLAG_GLOW_MAP
-	vec3 glowColor = texture(sGlowmap, texCoord).rgb;
+	vec3 glowColor = texture(sGlowmap, vec3(texCoord, float(sGlowmapIndex))).rgb;
 	if(overrideGlow) glowColor = glowClr;
  #ifdef FLAG_HDR
 	glowColor = pow(glowColor, vec3(SRGB_GAMMA)) * 3.0f;

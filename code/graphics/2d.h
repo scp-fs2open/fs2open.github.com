@@ -38,6 +38,7 @@ class particle_material;
 class distortion_material;
 class shield_material;
 class movie_material;
+class batched_bitmap_material;
 
 class transform_stack {
 	
@@ -139,8 +140,10 @@ enum shader_type {
 	SDR_TYPE_DEFERRED_LIGHTING,
 	SDR_TYPE_DEFERRED_CLEAR,
 	SDR_TYPE_VIDEO_PROCESS,
-	SDR_TYPE_PASSTHROUGH_RENDER,
+	SDR_TYPE_PASSTHROUGH_RENDER, //!< Shader for doing the old style fixed-function rendering. Only used internally, use SDR_TYPE_DEFAULT_MATERIAL.
 	SDR_TYPE_SHIELD_DECAL,
+	SDR_TYPE_BATCHED_BITMAP,
+	SDR_TYPE_DEFAULT_MATERIAL,
 	NUM_SHADER_TYPES
 };
 
@@ -182,12 +185,13 @@ struct vertex_format_data
 		SCREEN_POS,
 		COLOR3,
 		COLOR4,
-		TEX_COORD,
+		TEX_COORD2,
+		TEX_COORD3,
 		NORMAL,
 		TANGENT,
 		MODEL_ID,
 		RADIUS,
-		UVEC
+		UVEC,
 	};
 
 	vertex_format format_type;
@@ -762,6 +766,7 @@ typedef struct screen {
 	void (*gf_render_primitives_2d)(material* material_info, primitive_type prim_type, vertex_layout* layout, int offset, int n_verts, int buffer_handle);
 	void (*gf_render_primitives_2d_immediate)(material* material_info, primitive_type prim_type, vertex_layout* layout, int n_verts, void* data, int size);
 	void (*gf_render_movie)(movie_material* material_info, primitive_type prim_type, vertex_layout* layout, int n_verts, int buffer);
+	void (*gf_render_primitives_batched)(batched_bitmap_material* material_info, primitive_type prim_type, vertex_layout* layout, int offset, int n_verts, int buffer_handle);
 
 	bool (*gf_is_capable)(gr_capability capability);
 
@@ -1019,6 +1024,11 @@ __inline void gr_render_primitives_immediate(material* material_info, primitive_
 __inline void gr_render_primitives_particle(particle_material* material_info, primitive_type prim_type, vertex_layout* layout, int offset, int n_verts, int buffer_handle = -1)
 {
 	(*gr_screen.gf_render_primitives_particle)(material_info, prim_type, layout, offset, n_verts, buffer_handle);
+}
+
+__inline void gr_render_primitives_batched(batched_bitmap_material* material_info, primitive_type prim_type, vertex_layout* layout, int offset, int n_verts, int buffer_handle = -1)
+{
+	(*gr_screen.gf_render_primitives_batched)(material_info, prim_type, layout, offset, n_verts, buffer_handle);
 }
 
 __inline void gr_render_primitives_distortion(distortion_material* material_info, primitive_type prim_type, vertex_layout* layout, int offset, int n_verts, int buffer_handle = -1)

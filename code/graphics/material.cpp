@@ -123,6 +123,7 @@ void material_set_distortion(distortion_material *mat_info, int texture, bool th
 	mat_info->set_cull_mode(false);
 	mat_info->set_color(1.0f, 1.0f, 1.0f, 1.0f);
 }
+
 void material_set_movie(movie_material* mat_info, int y_bm, int u_bm, int v_bm) {
 	mat_info->set_depth_mode(ZBUFFER_TYPE_NONE);
 	mat_info->set_blend_mode(ALPHA_BLEND_ALPHA_BLEND_ALPHA);
@@ -137,8 +138,14 @@ void material_set_movie(movie_material* mat_info, int y_bm, int u_bm, int v_bm) 
 	mat_info->set_texture_type(material::TEX_TYPE_AABITMAP);
 }
 
+void material_set_batched_bitmap(batched_bitmap_material* mat_info, int base_tex, float alpha, float color_scale) {
+	material_set_unlit(mat_info, base_tex, alpha, true, true);
+
+	mat_info->set_color_scale(color_scale);
+}
+
 material::material():
-Sdr_type(SDR_TYPE_PASSTHROUGH_RENDER),
+Sdr_type(SDR_TYPE_DEFAULT_MATERIAL),
 Tex_type(TEX_TYPE_NORMAL),
 Texture_addressing(TMAP_ADDRESS_WRAP),
 Depth_mode(ZBUFFER_TYPE_NONE),
@@ -754,4 +761,8 @@ void movie_material::setUtex(int _Utex) {
 }
 void movie_material::setVtex(int _Vtex) {
 	movie_material::Vtex = _Vtex;
+}
+
+batched_bitmap_material::batched_bitmap_material() {
+	set_shader_type(SDR_TYPE_BATCHED_BITMAP);
 }

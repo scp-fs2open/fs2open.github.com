@@ -40,7 +40,7 @@ opengl_vert_attrib GL_vertex_attrib_info[] =
 		{ opengl_vert_attrib::TANGENT,		"vertTangent",		{{{ 1.0f, 0.0f, 0.0f, 0.0f }}} },
 		{ opengl_vert_attrib::MODEL_ID,		"vertModelID",		{{{ 0.0f, 0.0f, 0.0f, 0.0f }}} },
 		{ opengl_vert_attrib::RADIUS,		"vertRadius",		{{{ 1.0f, 0.0f, 0.0f, 0.0f }}} },
-		{ opengl_vert_attrib::UVEC,			"vertUvec",			{{{ 0.0f, 1.0f, 0.0f, 0.0f }}} }
+		{ opengl_vert_attrib::UVEC,			"vertUvec",			{{{ 0.0f, 1.0f, 0.0f, 0.0f }}} },
 	};
 
 /**
@@ -48,70 +48,60 @@ opengl_vert_attrib GL_vertex_attrib_info[] =
  * When adding a new shader, list all associated uniforms and attributes here
  */
 static opengl_shader_type_t GL_shader_types[] = {
-	{ SDR_TYPE_MODEL, "main-v.sdr", "main-f.sdr", "main-g.sdr", 
-		{ "modelViewMatrix", "modelMatrix", "viewMatrix", "projMatrix", "textureMatrix", "color" },
+	{ SDR_TYPE_MODEL, "main-v.sdr", "main-f.sdr", "main-g.sdr",
 		{ opengl_vert_attrib::POSITION, opengl_vert_attrib::TEXCOORD, opengl_vert_attrib::NORMAL, opengl_vert_attrib::TANGENT, opengl_vert_attrib::MODEL_ID }, "Model Rendering" },
 
-	{ SDR_TYPE_EFFECT_PARTICLE, "effect-v.sdr", "effect-particle-f.sdr", "effect-screen-g.sdr", 
-		{ "modelViewMatrix", "projMatrix", "baseMap", "depthMap", "window_width", "window_height", "nearZ", "farZ", "linear_depth", "srgb", "blend_alpha" },
+	{ SDR_TYPE_EFFECT_PARTICLE, "effect-v.sdr", "effect-particle-f.sdr", "effect-screen-g.sdr",
 		{ opengl_vert_attrib::POSITION, opengl_vert_attrib::TEXCOORD, opengl_vert_attrib::RADIUS, opengl_vert_attrib::COLOR }, "Particle Effects" },
 
-	{ SDR_TYPE_EFFECT_DISTORTION, "effect-distort-v.sdr", "effect-distort-f.sdr", 0, 
-		{ "modelViewMatrix", "projMatrix", "baseMap", "window_width", "window_height", "distMap", "frameBuffer", "use_offset" },
+	{ SDR_TYPE_EFFECT_DISTORTION, "effect-distort-v.sdr", "effect-distort-f.sdr", 0,
 		{ opengl_vert_attrib::POSITION, opengl_vert_attrib::TEXCOORD, opengl_vert_attrib::RADIUS, opengl_vert_attrib::COLOR }, "Distortion Effects" },
 
-	{ SDR_TYPE_POST_PROCESS_MAIN, "post-v.sdr", "post-f.sdr", 0, 
-		{ "tex", "depth_tex", "timer" },
+	{ SDR_TYPE_POST_PROCESS_MAIN, "post-v.sdr", "post-f.sdr", 0,
 		{ opengl_vert_attrib::POSITION, opengl_vert_attrib::TEXCOORD }, "Post Processing" },
 
-	{ SDR_TYPE_POST_PROCESS_BLUR, "post-v.sdr", "blur-f.sdr", 0, 
-		{ "tex", "texSize", "level", "tapSize", "debug" },
+	{ SDR_TYPE_POST_PROCESS_BLUR, "post-v.sdr", "blur-f.sdr", 0,
 		{ opengl_vert_attrib::POSITION, opengl_vert_attrib::TEXCOORD }, "Gaussian Blur" },
 
-	{ SDR_TYPE_POST_PROCESS_BLOOM_COMP, "post-v.sdr", "bloom-comp-f.sdr", 0, 
-		{ "bloomed", "bloom_intensity", "levels" },
+	{ SDR_TYPE_POST_PROCESS_BLOOM_COMP, "post-v.sdr", "bloom-comp-f.sdr", 0,
 		{ opengl_vert_attrib::POSITION, opengl_vert_attrib::TEXCOORD }, "Bloom Compositing" },
 
-	{ SDR_TYPE_POST_PROCESS_BRIGHTPASS, "post-v.sdr", "brightpass-f.sdr", 0, 
-		{ "tex" },
+	{ SDR_TYPE_POST_PROCESS_BRIGHTPASS, "post-v.sdr", "brightpass-f.sdr", 0,
 		{ opengl_vert_attrib::POSITION, opengl_vert_attrib::TEXCOORD }, "Bloom Brightpass" },
 
-	{ SDR_TYPE_POST_PROCESS_FXAA, "fxaa-v.sdr", "fxaa-f.sdr", 0, 
-		{ "tex0", "rt_w", "rt_h" },
+	{ SDR_TYPE_POST_PROCESS_FXAA, "fxaa-v.sdr", "fxaa-f.sdr", 0,
 		{ opengl_vert_attrib::POSITION }, "FXAA" },
 
-	{ SDR_TYPE_POST_PROCESS_FXAA_PREPASS, "post-v.sdr", "fxaapre-f.sdr", 0, 
-		{ "tex" },
+	{ SDR_TYPE_POST_PROCESS_FXAA_PREPASS, "post-v.sdr", "fxaapre-f.sdr", 0,
 		{ opengl_vert_attrib::POSITION, opengl_vert_attrib::TEXCOORD }, "FXAA Prepass" },
 
-	{ SDR_TYPE_POST_PROCESS_LIGHTSHAFTS, "post-v.sdr", "ls-f.sdr", 0, 
-		{ "scene", "cockpit", "sun_pos", "weight", "intensity", "falloff", "density", "cp_intensity" },
+	{ SDR_TYPE_POST_PROCESS_LIGHTSHAFTS, "post-v.sdr", "ls-f.sdr", 0,
 		{ opengl_vert_attrib::POSITION, opengl_vert_attrib::TEXCOORD }, "Lightshafts" },
 
-	{ SDR_TYPE_POST_PROCESS_TONEMAPPING, "post-v.sdr", "tonemapping-f.sdr", 0, 
-		{ "tex", "exposure" },
+	{ SDR_TYPE_POST_PROCESS_TONEMAPPING, "post-v.sdr", "tonemapping-f.sdr", 0,
 		{ opengl_vert_attrib::POSITION, opengl_vert_attrib::TEXCOORD }, "Tonemapping" },
 
-	{ SDR_TYPE_DEFERRED_LIGHTING, "deferred-v.sdr", "deferred-f.sdr", 0, 
-		{ "modelViewMatrix", "projMatrix", "scale", "ColorBuffer", "NormalBuffer", "PositionBuffer", "SpecBuffer", "invScreenWidth", "invScreenHeight", "lightType", "lightRadius",
-		"diffuseLightColor", "specLightColor", "dualCone", "coneDir", "coneAngle", "coneInnerAngle", "specFactor" }, 
+	{ SDR_TYPE_DEFERRED_LIGHTING, "deferred-v.sdr", "deferred-f.sdr", 0,
 		{ opengl_vert_attrib::POSITION }, "Deferred Lighting" },
 	
-	{ SDR_TYPE_DEFERRED_CLEAR, "deferred-clear-v.sdr", "deferred-clear-f.sdr", 0, 
-		{  },
+	{ SDR_TYPE_DEFERRED_CLEAR, "deferred-clear-v.sdr", "deferred-clear-f.sdr", 0,
 		{ opengl_vert_attrib::POSITION }, "Clear Deferred Lighting Buffer" },
 
-	{ SDR_TYPE_VIDEO_PROCESS, "video-v.sdr", "video-f.sdr", 0, 
-		{ "modelViewMatrix", "projMatrix", "ytex", "utex", "vtex" },
+	{ SDR_TYPE_VIDEO_PROCESS, "video-v.sdr", "video-f.sdr", 0,
 		{ opengl_vert_attrib::POSITION, opengl_vert_attrib::TEXCOORD }, "Video Playback" },
 
 	{ SDR_TYPE_PASSTHROUGH_RENDER, "passthrough-v.sdr", "passthrough-f.sdr", 0,
-		{ "modelViewMatrix", "projMatrix", "baseMap", "noTexturing", "alphaTexture", "srgb", "intensity", "color", "alphaThreshold", "clipEnabled", "clipEquation", "modelMatrix" },
 		{ opengl_vert_attrib::POSITION, opengl_vert_attrib::TEXCOORD, opengl_vert_attrib::COLOR }, "Passthrough" },
 
 	{ SDR_TYPE_SHIELD_DECAL, "shield-impact-v.sdr",	"shield-impact-f.sdr", 0,
-		{ "modelViewMatrix", "projMatrix", "shieldMap", "shieldModelViewMatrix", "shieldProjMatrix", "hitNormal", "srgb", "color" }, 
-		{ opengl_vert_attrib::POSITION, opengl_vert_attrib::NORMAL }, "Shield Decals" }
+		{ opengl_vert_attrib::POSITION, opengl_vert_attrib::NORMAL }, "Shield Decals" },
+
+	{ SDR_TYPE_BATCHED_BITMAP, "batched-v.sdr", "batched-f.sdr", nullptr,
+		{ opengl_vert_attrib::POSITION, opengl_vert_attrib::TEXCOORD, opengl_vert_attrib::COLOR }, "Batched bitmaps" },
+
+	{ SDR_TYPE_DEFAULT_MATERIAL, "passthrough-v.sdr", "default-material-f.sdr", 0,
+		{ opengl_vert_attrib::POSITION, opengl_vert_attrib::TEXCOORD, opengl_vert_attrib::COLOR }, "Default material" },
+
 };
 
 /**
@@ -119,100 +109,100 @@ static opengl_shader_type_t GL_shader_types[] = {
  * When adding a new shader variant for a shader, list all associated uniforms and attributes here
  */
 static opengl_shader_variant_t GL_shader_variants[] = {
-	{ SDR_TYPE_MODEL, false, SDR_FLAG_MODEL_LIGHT, "FLAG_LIGHT", 
-		{ "n_lights", "lightPosition", "lightDirection", "lightDiffuseColor", "lightSpecColor", "lightType", "lightAttenuation", "ambientFactor", "diffuseFactor", "emissionFactor", "defaultGloss" }, {  },
+	{ SDR_TYPE_MODEL, false, SDR_FLAG_MODEL_LIGHT, "FLAG_LIGHT",
+		{  },
 		"Lighting" },
 
 	{ SDR_TYPE_MODEL, false, SDR_FLAG_MODEL_FOG, "FLAG_FOG", 
-		{ "fogStart", "fogScale", "fogColor" }, {  },
+		{  },
 		"Fog Effect" },
 
 	{ SDR_TYPE_MODEL, false, SDR_FLAG_MODEL_DIFFUSE_MAP, "FLAG_DIFFUSE_MAP", 
-		{ "sBasemap", "desaturate", "blend_alpha", "overrideDiffuse", "diffuseClr" }, {  },
+		{  },
 		"Diffuse Mapping" },
 	
 	{ SDR_TYPE_MODEL, false, SDR_FLAG_MODEL_GLOW_MAP, "FLAG_GLOW_MAP", 
-		{ "sGlowmap", "overrideGlow", "glowClr" }, {  },
+		{  },
 		"Glow Mapping" },
 	
 	{ SDR_TYPE_MODEL, false, SDR_FLAG_MODEL_SPEC_MAP, "FLAG_SPEC_MAP", 
-		{ "sSpecmap", "overrideSpec", "specClr", "gammaSpec", "alphaGloss" }, {  },
+		{  },
 		"Specular Mapping" },
 	
 	{ SDR_TYPE_MODEL, false, SDR_FLAG_MODEL_NORMAL_MAP, "FLAG_NORMAL_MAP", 
-		{ "sNormalmap" }, {  },
+		{  },
 		"Normal Mapping" },
 	
 	{ SDR_TYPE_MODEL, false, SDR_FLAG_MODEL_HEIGHT_MAP, "FLAG_HEIGHT_MAP", 
-		{ "sHeightmap" }, {  },
+		{  },
 		"Parallax Mapping" },
 	
 	{ SDR_TYPE_MODEL, false, SDR_FLAG_MODEL_ENV_MAP, "FLAG_ENV_MAP", 
-		{ "sEnvmap", "envGloss", "envMatrix" }, {  },
+		{  },
 		"Environment Mapping" },
 	
 	{ SDR_TYPE_MODEL, false, SDR_FLAG_MODEL_ANIMATED, "FLAG_ANIMATED", 
-		{ "sFramebuffer", "effect_num", "anim_timer", "vpwidth", "vpheight" }, {  },
+		{  },
 		"Animated Effects" },
 	
 	{ SDR_TYPE_MODEL, false, SDR_FLAG_MODEL_MISC_MAP, "FLAG_MISC_MAP", 
-		{ "sMiscmap" }, {  },
+		{  },
 		"Utility mapping" },
 	
 	{ SDR_TYPE_MODEL, false, SDR_FLAG_MODEL_TEAMCOLOR, "FLAG_TEAMCOLOR", 
-		{ "stripe_color", "base_color", "team_glow_enabled" }, {  },
+		{  },
 		"Team Colors" },
 	
 	{ SDR_TYPE_MODEL, false, SDR_FLAG_MODEL_DEFERRED, "FLAG_DEFERRED", 
-		{ }, {  },
+		{  },
 		"Deferred lighting" },
 	
 	{ SDR_TYPE_MODEL, true, SDR_FLAG_MODEL_SHADOW_MAP, "FLAG_SHADOW_MAP", 
-		{ "shadow_proj_matrix" }, {  },
+		{  },
 		"Shadow Mapping" },
 	
 	{ SDR_TYPE_MODEL, false, SDR_FLAG_MODEL_SHADOWS, "FLAG_SHADOWS", 
-		{ "shadow_map", "shadow_mv_matrix", "shadow_proj_matrix", "veryneardist", "neardist", "middist", "fardist" }, { },
+		{ },
 		"Shadows" },
 	
 	{ SDR_TYPE_MODEL, false, SDR_FLAG_MODEL_THRUSTER, "FLAG_THRUSTER", 
-		{ "thruster_scale" }, {  },
+		{  },
 		"Thruster scaling" },
 	
 	{ SDR_TYPE_MODEL, false, SDR_FLAG_MODEL_TRANSFORM, "FLAG_TRANSFORM", 
-		{ "transform_tex", "buffer_matrix_offset" }, {  },
+		{  },
 		"Submodel Transforms" },
 	
-	{ SDR_TYPE_MODEL, false, SDR_FLAG_MODEL_CLIP, "FLAG_CLIP", 
-		{ "use_clip_plane", "clip_equation" }, {  },
+	{ SDR_TYPE_MODEL, false, SDR_FLAG_MODEL_CLIP, "FLAG_CLIP",
+		{  },
 		"Clip Plane" },
 
 	{ SDR_TYPE_MODEL, false, SDR_FLAG_MODEL_HDR, "FLAG_HDR",
-		{ }, {  },
+		{  },
 		"High Dynamic Range" },
 
 	{ SDR_TYPE_MODEL, false, SDR_FLAG_MODEL_AMBIENT_MAP, "FLAG_AMBIENT_MAP",
-		{ "sAmbientmap" }, {  },
+		{  },
 		"Ambient Occlusion Map" },
 
 	{ SDR_TYPE_MODEL, false, SDR_FLAG_MODEL_NORMAL_ALPHA, "FLAG_NORMAL_ALPHA",
-		{ "normalAlphaMinMax" }, { },
+		{ },
 		"Normal Alpha" },
 
 	{ SDR_TYPE_MODEL, false, SDR_FLAG_MODEL_NORMAL_EXTRUDE, "FLAG_NORMAL_EXTRUDE",
-		{ "extrudeWidth" }, { },
+		{ },
 		"Normal Extrusion" },
 
 	{ SDR_TYPE_EFFECT_PARTICLE, true, SDR_FLAG_PARTICLE_POINT_GEN, "FLAG_EFFECT_GEOMETRY", 
-		{ }, { opengl_vert_attrib::UVEC },
+		{ opengl_vert_attrib::UVEC },
 		"Geometry shader point-based particles" },
 	
 	{ SDR_TYPE_POST_PROCESS_BLUR, false, SDR_FLAG_BLUR_HORIZONTAL, "PASS_0", 
-		{ }, {  },
+		{  },
 		"Horizontal blur pass" },
 	
 	{ SDR_TYPE_POST_PROCESS_BLUR, false, SDR_FLAG_BLUR_VERTICAL, "PASS_1", 
-		{ }, {  },
+		{  },
 		"Vertical blur pass" }
 };
 
@@ -609,18 +599,9 @@ int opengl_compile_shader(shader_type sdr, uint flags)
 
 	opengl_shader_set_current(&new_shader);
 
-	// initialize uniforms and attributes
-	for (auto& unif : sdr_info->uniforms) {
-		new_shader.program->Uniforms.initUniform(unif);
-	}
-
+	// initialize the attributes
 	for (auto& attr : sdr_info->attributes) {
 		new_shader.program->initAttribute(GL_vertex_attrib_info[attr].name, GL_vertex_attrib_info[attr].default_value);
-	}
-
-	// if this shader is POST_PROCESS_MAIN, hack in the user-defined flags
-	if ( sdr_info->type_id == SDR_TYPE_POST_PROCESS_MAIN ) {
-		opengl_post_init_uniforms(flags);
 	}
 
 	mprintf(("Shader Variant Features:\n"));
@@ -630,10 +611,6 @@ int opengl_compile_shader(shader_type sdr, uint flags)
 		opengl_shader_variant_t &variant = GL_shader_variants[i];
 
 		if ( sdr_info->type_id == variant.type_id && variant.flag & flags ) {
-			for (auto& unif : variant.uniforms) {
-				new_shader.program->Uniforms.initUniform(unif);
-			}
-
 			for (auto& attr : variant.attributes) {
 				auto& attr_info = GL_vertex_attrib_info[attr];
 				new_shader.program->initAttribute(attr_info.name, attr_info.default_value);
@@ -705,8 +682,6 @@ void opengl_shader_init()
 	opengl_shader_compile_passthrough_shader();
 
 	mprintf(("\n"));
-
-	opengl_shader_compile_passthrough_shader();
 }
 
 /**
@@ -761,34 +736,20 @@ void opengl_shader_compile_deferred_light_shader()
 
 void opengl_shader_compile_passthrough_shader()
 {
-	bool in_error = false;
-
 	mprintf(("Compiling passthrough shader...\n"));
 
 	int sdr_handle = gr_opengl_maybe_create_shader(SDR_TYPE_PASSTHROUGH_RENDER, 0);
 
-	if ( sdr_handle >= 0 ) {
-		opengl_shader_set_current(sdr_handle);
+	opengl_shader_set_current(sdr_handle);
 
-		//Hardcoded Uniforms
-		Current_shader->program->Uniforms.setUniformi("baseMap", 0);
-		Current_shader->program->Uniforms.setUniformi("noTexturing", 0);
-		Current_shader->program->Uniforms.setUniformi("alphaTexture", 0);
-		Current_shader->program->Uniforms.setUniformi("srgb", 0);
-	} else {
-		opengl_shader_set_current();
-		mprintf(("Failed to compile passthrough shader!\n"));
-		in_error = true;
-	}
-
-	if ( in_error ) {
-		mprintf(("  Shader in_error! Passthrough shader unavailable!\n"));
-	}
+	//Hardcoded Uniforms
+	Current_shader->program->Uniforms.setUniformi("baseMap", 0);
+	Current_shader->program->Uniforms.setUniformi("clipEnabled", 0);
 
 	opengl_shader_set_current();
 }
 
-void opengl_shader_set_passthrough(bool textured, bool alpha, vec4 *clr, float color_scale, const material::clip_plane& clip_plane)
+void opengl_shader_set_passthrough(bool textured)
 {
 	opengl_shader_set_current(gr_opengl_maybe_create_shader(SDR_TYPE_PASSTHROUGH_RENDER, 0));
 
@@ -796,6 +757,32 @@ void opengl_shader_set_passthrough(bool textured, bool alpha, vec4 *clr, float c
 		Current_shader->program->Uniforms.setUniformi("noTexturing", 0);
 	} else {
 		Current_shader->program->Uniforms.setUniformi("noTexturing", 1);
+	}
+
+	Current_shader->program->Uniforms.setUniformi("alphaTexture", 0);
+
+	Current_shader->program->Uniforms.setUniformi("srgb", High_dynamic_range ? 1 : 0);
+	Current_shader->program->Uniforms.setUniformf("intensity", 1.0f);
+
+	Current_shader->program->Uniforms.setUniformf("alphaThreshold", GL_alpha_threshold);
+
+	Current_shader->program->Uniforms.setUniform4f("color", 1.0f, 1.0f, 1.0f, 1.0f);
+
+	Current_shader->program->Uniforms.setUniformMatrix4f("modelViewMatrix", GL_model_view_matrix);
+	Current_shader->program->Uniforms.setUniformMatrix4f("projMatrix", GL_projection_matrix);
+}
+
+void opengl_shader_set_default_material(bool textured, bool alpha, vec4 *clr, float color_scale, uint32_t array_index, const material::clip_plane& clip_plane)
+{
+	Current_shader->program->Uniforms.setUniformi("baseMap", 0);
+
+	if ( textured ) {
+		Current_shader->program->Uniforms.setUniformi("noTexturing", 0);
+		Current_shader->program->Uniforms.setUniformi("baseMapIndex", array_index);
+	} else {
+		Current_shader->program->Uniforms.setUniformi("noTexturing", 1);
+		// array_index is probably not valid here
+		Current_shader->program->Uniforms.setUniformi("baseMapIndex", 0);
 	}
 
 	if ( alpha ) {
@@ -837,14 +824,4 @@ void opengl_shader_set_passthrough(bool textured, bool alpha, vec4 *clr, float c
 
 	Current_shader->program->Uniforms.setUniformMatrix4f("modelViewMatrix", GL_model_view_matrix);
 	Current_shader->program->Uniforms.setUniformMatrix4f("projMatrix", GL_projection_matrix);
-}
-
-void opengl_shader_set_passthrough(bool textured, bool alpha, color *clr)
-{
-	vec4 normalized_clr = {{{ i2fl(clr->red) / 255.0f,
-		i2fl(clr->green) / 255.0f,
-		i2fl(clr->blue) / 255.0f,
-		clr->is_alphacolor ? i2fl(clr->alpha) / 255.0f : 1.0f }}};
-
-	opengl_shader_set_passthrough(textured, alpha, &normalized_clr, 1.0f);
 }
