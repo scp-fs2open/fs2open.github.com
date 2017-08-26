@@ -1546,16 +1546,8 @@ void campaign_room_commit()
 		return;
 	}
 
-	if (stricmp(Campaign_file_names[Selected_campaign_index], Campaign.filename)) {  // new campaign selected
-		/* This is all that's stopping us from switching campaigns without restarting - taylor
-		if ((Active_campaign_index >= 0) && campaign_room_reset_campaign(Active_campaign_index)) {
-			gamesnd_play_iface(SND_GENERAL_FAIL);
-			return;
-		}
-
-		mission_campaign_savefile_delete(Campaign_file_names[Selected_campaign_index]);
-		*/
-
+	// new campaign selected?
+	if (stricmp(Campaign_file_names[Selected_campaign_index], Campaign.filename)) {
 		// Goober5000 - reinitialize tech database if needed
 		if ( (Campaign.flags & CF_CUSTOM_TECH_DATABASE) || !stricmp(Campaign.filename, "freespace2") )
 		{
