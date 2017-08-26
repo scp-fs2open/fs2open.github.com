@@ -43,6 +43,8 @@ class pilotfile {
 		bool save_player(player *_p = NULL);
 		bool save_savefile();
 
+		void clear_savefile(bool reset_ships_and_weapons);
+
 		// updating stats, multi and/or all-time
 		void update_stats(scoring_struct *stats, bool training = false);
 		void update_stats_backout(scoring_struct *stats, bool training = false);
@@ -168,7 +170,7 @@ class pilotfile {
 		// --------------------------------------------------------------------
 		// CSG specific
 		// --------------------------------------------------------------------
-		void csg_reset_data();
+		void csg_reset_data(bool reset_ships_and_weapons);
 		void csg_close();
 
 		void csg_read_flags();

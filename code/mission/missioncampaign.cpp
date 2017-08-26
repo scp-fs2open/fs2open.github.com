@@ -414,7 +414,7 @@ void mission_campaign_get_sw_info()
  * this file.  If you change the format of the campaign file, you should be sure these related
  * functions work properly and update them if it breaks them.
  */
-int mission_campaign_load( char *filename, player *pl, int load_savefile, bool reset_stats )
+int mission_campaign_load( char *filename, player *pl, int load_savefile )
 {
 	int i;
 	char name[NAME_LENGTH], type[NAME_LENGTH], temp[NAME_LENGTH];
@@ -685,13 +685,11 @@ int mission_campaign_load( char *filename, player *pl, int load_savefile, bool r
 				Campaign.num_missions = 0;
 				Campaign_load_failure = CAMPAIGN_ERROR_SAVEFILE;
 				return CAMPAIGN_ERROR_SAVEFILE;
-			} else {
-				// make sure we initialize red alert data for the new CSG
-				red_alert_clear();
-				// and reset stats when requested
-				if (reset_stats) {
-					pl->stats.init();
-				}
+			}
+			// start with fresh new campaign data
+			else {
+				Pilot.clear_savefile(false);	// don't reset ships and weapons because they are currently the campaign's starting ones
+				Campaign.next_mission = 0;
 				Pilot.save_savefile();
 			}
 		}
