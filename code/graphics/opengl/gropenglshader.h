@@ -60,8 +60,6 @@ struct opengl_shader_type_t {
 	const char *frag;
 	const char *geo;
 
-	SCP_vector<const char*> uniforms;
-
 	SCP_vector<opengl_vert_attrib::attrib_id> attributes;
 
 	const char* description;
@@ -74,8 +72,6 @@ struct opengl_shader_variant_t {
 
 	int flag;
 	SCP_string flag_text;
-
-	SCP_vector<const char*> uniforms;
 
 	SCP_vector<opengl_vert_attrib::attrib_id> attributes;
 
@@ -167,11 +163,10 @@ void opengl_shader_compile_deferred_light_shader();
 void opengl_shader_compile_deferred_light_clear_shader();
 
 void opengl_shader_compile_passthrough_shader();
-void opengl_shader_set_passthrough(bool textured = true, bool alpha = false, vec4* clr = NULL, float color_scale = 1.0f, const material::clip_plane& clip_plane = material::clip_plane());
-void opengl_shader_set_passthrough(bool textured, bool alpha, color *clr);
 
-#define ANIMATED_SHADER_LOADOUTSELECT_FS1	0
-#define ANIMATED_SHADER_LOADOUTSELECT_FS2	1
-#define ANIMATED_SHADER_CLOAK				2
+void opengl_shader_set_passthrough(bool textured = true);
+
+void opengl_shader_set_default_material(bool textured, bool alpha, vec4* clr, float color_scale, uint32_t array_index, const material::clip_plane& clip_plane);
+
 
 #endif	// _GROPENGLSHADER_H

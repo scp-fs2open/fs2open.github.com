@@ -7,6 +7,7 @@ in float vertRadius;
  out vec3 geoUvec;
  out float geoRadius;
  out vec4 geoColor;
+ out float geoArrayIndex;
 #else
  out float fragRadius;
  out vec4 fragPosition;
@@ -26,11 +27,12 @@ void main()
 	 geoUvec = vertUvec;
 	 gl_Position = modelViewMatrix * vertPosition;
 	 geoColor = vertColor;
+	 geoArrayIndex = vertTexCoord.z;
 	#else
 	 fragRadius = vertRadius;
 	 gl_Position = projMatrix * modelViewMatrix * vertPosition;
 	 fragPosition = modelViewMatrix * vertPosition;
-	 fragTexCoord = vertTexCoord;
+	 fragTexCoord = vec4(vertTexCoord.xyz, 0.0);
 	 fragColor = vertColor;
 	#endif
 	#ifdef FLAG_EFFECT_DISTORTION

@@ -3,6 +3,7 @@ layout (triangle_strip, max_vertices = 4) out;
 in vec3 geoUvec[];
 in float geoRadius[];
 in vec4 geoColor[];
+in float geoArrayIndex[];
 out float fragRadius;
 out vec4 fragPosition;
 out vec4 fragTexCoord;
@@ -18,7 +19,7 @@ void main(void)
 	pos = (gl_in[0].gl_Position - vec4(geoRadius[0] * up_vec, 0.0) - vec4(geoRadius[0] * right_vec, 0.0));
 	gl_Position = projMatrix * pos;
 	fragPosition = pos;
-	fragTexCoord = vec4(0.0, 0.0, 0.0, 0.0);
+	fragTexCoord = vec4(0.0, 0.0, geoArrayIndex[0], 0.0);
 	fragRadius = geoRadius[0];
 	fragColor = geoColor[0];
 	EmitVertex();
@@ -26,7 +27,7 @@ void main(void)
 	pos = (gl_in[0].gl_Position - vec4(geoRadius[0] * up_vec, 0.0) + vec4(geoRadius[0] * right_vec, 0.0));
 	gl_Position = projMatrix * pos;
 	fragPosition = pos;
-	fragTexCoord = vec4(0.0, 1.0, 0.0, 0.0);
+	fragTexCoord = vec4(0.0, 1.0, geoArrayIndex[0], 0.0);
 	fragRadius = geoRadius[0];
 	fragColor = geoColor[0];
 	EmitVertex();
@@ -34,7 +35,7 @@ void main(void)
 	pos = (gl_in[0].gl_Position + vec4(geoRadius[0] * up_vec, 0.0) - vec4(geoRadius[0] * right_vec, 0.0));
 	gl_Position = projMatrix * pos;
 	fragPosition = pos;
-	fragTexCoord = vec4(1.0, 0.0, 0.0, 0.0);
+	fragTexCoord = vec4(1.0, 0.0, geoArrayIndex[0], 0.0);
 	fragRadius = geoRadius[0];
 	fragColor = geoColor[0];
 	EmitVertex();
@@ -42,7 +43,7 @@ void main(void)
 	pos = (gl_in[0].gl_Position + vec4(geoRadius[0] * up_vec, 0.0) + vec4(geoRadius[0] * right_vec, 0.0));
 	gl_Position = projMatrix * pos;
 	fragPosition = pos;
-	fragTexCoord = vec4(1.0, 1.0, 0.0, 0.0);
+	fragTexCoord = vec4(1.0, 1.0, geoArrayIndex[0], 0.0);
 	fragRadius = geoRadius[0];
 	fragColor = geoColor[0];
 	EmitVertex();

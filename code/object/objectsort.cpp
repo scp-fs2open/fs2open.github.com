@@ -16,7 +16,6 @@
 #include "asteroid/asteroid.h"
 #include "cmdline/cmdline.h"
 #include "debris/debris.h"
-#include "graphics/opengl/gropengldraw.h"
 #include "jumpnode/jumpnode.h"
 #include "mission/missionparse.h"
 #include "model/modelrender.h"

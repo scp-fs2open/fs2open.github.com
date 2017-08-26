@@ -384,10 +384,9 @@ namespace os
 			boxMsgStream << "File: " << filename << "\n";
 			boxMsgStream << "Line: " << line << "\n";
 
-			boxMsgStream << "\n";
-			boxMsgStream << dump_stacktrace();
-
 			set_clipboard_text(boxMsgStream.str().c_str());
+
+			boxMsgStream << "\n";
 
 			SCP_string boxMessage = truncateLines(boxMsgStream, Messagebox_lines);
 			boxMessage += "\n[ This info is in the clipboard so you can paste it somewhere now ]\n";

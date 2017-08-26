@@ -25,21 +25,6 @@ struct opengl_vertex_bind {
 	opengl_vert_attrib::attrib_id attribute_id;
 };
 
-void gr_opengl_aabitmap_ex(int x, int y, int w, int h, int sx, int sy, int resize_mode, bool mirror);
-void gr_opengl_aabitmap(int x, int y, int resize_mode, bool mirror);
-void gr_opengl_string(float sx, float sy, const char *s, int resize_mode, int length);
-void gr_opengl_line(int x1,int y1,int x2,int y2, int resize_mode);
-void gr_opengl_aaline(vertex *v1, vertex *v2);
-void gr_opengl_pixel(int x, int y, int resize_mode);
-void gr_opengl_gradient(int x1, int y1, int x2, int y2, int resize_mode);
-void gr_opengl_circle(int xc, int yc, int d, int resize_mode);
-void gr_opengl_unfilled_circle(int xc, int yc, int d, int resize_mode);
-void gr_opengl_arc(int xc, int yc, float r, float angle_start, float angle_end, bool fill, int resize_mode);
-void gr_opengl_curve(int xc, int yc, int r, int direction, int resize_mode);
-void gr_opengl_shade(int x, int y, int w, int h, int resize_mode);
-void gr_opengl_flash(int r, int g, int b);
-void gr_opengl_flash_alpha(int r, int g, int b, int a);
-void gr_opengl_bitmap_ex(int x, int y, int w, int h, int sx, int sy, int resize_mode);
 void gr_opengl_update_distortion();
 
 void opengl_set_spec_mapping(int tmap_type, float *u_scale, float *v_scale, int stage = 0);
@@ -76,7 +61,9 @@ void gr_opengl_render_primitives_immediate(material* material_info, primitive_ty
 void gr_opengl_render_primitives_2d(material* material_info, primitive_type prim_type, vertex_layout* layout, int offset, int n_verts, int buffer_handle);
 void gr_opengl_render_primitives_2d_immediate(material* material_info, primitive_type prim_type, vertex_layout* layout, int n_verts, void* data, int size);
 void gr_opengl_render_primitives_particle(particle_material* material_info, primitive_type prim_type, vertex_layout* layout, int offset, int n_verts, int buffer_handle);
+void gr_opengl_render_primitives_batched(batched_bitmap_material* material_info, primitive_type prim_type, vertex_layout* layout, int offset, int n_verts, int buffer_handle);
 void gr_opengl_render_primitives_distortion(distortion_material* material_info, primitive_type prim_type, vertex_layout* layout, int offset, int n_verts, int buffer_handle);
+void gr_opengl_render_movie(movie_material* material_info, primitive_type prim_type, vertex_layout* layout, int n_verts, int buffer);
 
 void opengl_bind_vertex_layout(vertex_layout &layout, uint base_vertex = 0, ubyte* base_ptr = NULL);
 
@@ -97,7 +84,7 @@ inline void opengl_draw_textured_quad_instanced(
 	vertex_layout vert_def;
 
 	vert_def.add_vertex_component(vertex_format_data::POSITION2, sizeof(glVertices[0]), glVertices);
-	vert_def.add_vertex_component(vertex_format_data::TEX_COORD, sizeof(glVertices[0]), &(glVertices[0][2]));
+	vert_def.add_vertex_component(vertex_format_data::TEX_COORD2, sizeof(glVertices[0]), &(glVertices[0][2]));
 
 	opengl_bind_vertex_layout(vert_def);
 
@@ -121,7 +108,7 @@ inline void opengl_draw_textured_quad(
 	vertex_layout vert_def;
 
 	vert_def.add_vertex_component(vertex_format_data::POSITION2, sizeof(GLfloat) * 4, 0);
-	vert_def.add_vertex_component(vertex_format_data::TEX_COORD, sizeof(GLfloat) * 4, sizeof(GLfloat) * 2);
+	vert_def.add_vertex_component(vertex_format_data::TEX_COORD2, sizeof(GLfloat) * 4, sizeof(GLfloat) * 2);
 
 	opengl_render_primitives_immediate(PRIM_TYPE_TRISTRIP, &vert_def, 4, glVertices, sizeof(GLfloat) * 4 * 4);
 }

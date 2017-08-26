@@ -62,8 +62,6 @@ static ushort *GL_original_gamma_ramp = NULL;
 
 int Use_PBOs = 0;
 
-float GL_line_width = 1.0f;
-
 static ubyte *GL_saved_screen = NULL;
 static int GL_saved_screen_id = -1;
 static GLuint GL_screen_pbo = 0;
@@ -875,7 +873,7 @@ void gr_opengl_set_line_width(float width)
 	if (width <= 1.0f) {
 		GL_state.SetLineWidth(width);
 	}
-	GL_line_width = width;
+	gr_screen.line_width = width;
 }
 
 int opengl_check_for_errors(const char *err_at)
@@ -1089,7 +1087,7 @@ int opengl_init_display_device()
 		return 1;
 	}
 
-	const int gl_versions[] = { 41, 40, 33, 32, 31, 30, 21, 20 };
+	const int gl_versions[] = { 45, 44, 43, 42, 41, 40, 33, 32 };
 
 	// find the latest and greatest OpenGL context
 	for (auto ver : gl_versions)
@@ -1133,28 +1131,10 @@ void opengl_setup_function_pointers()
 
 	gr_screen.gf_clear				= gr_opengl_clear;
 //	gr_screen.gf_bitmap				= gr_opengl_bitmap;
-	gr_screen.gf_bitmap_ex			= gr_opengl_bitmap_ex;
-	gr_screen.gf_aabitmap			= gr_opengl_aabitmap;
-	gr_screen.gf_aabitmap_ex		= gr_opengl_aabitmap_ex;
 
 //	gr_screen.gf_rect				= gr_opengl_rect;
-//	gr_screen.gf_shade				= gr_opengl_shade;
-	gr_screen.gf_string				= gr_opengl_string;
-	gr_screen.gf_circle				= gr_opengl_circle;
-	gr_screen.gf_unfilled_circle	= gr_opengl_unfilled_circle;
-	gr_screen.gf_arc				= gr_opengl_arc;
-	gr_screen.gf_curve				= gr_opengl_curve;
-
-	gr_screen.gf_line				= gr_opengl_line;
-	gr_screen.gf_aaline				= gr_opengl_aaline;
-	gr_screen.gf_pixel				= gr_opengl_pixel;
-
-	gr_screen.gf_gradient			= gr_opengl_gradient;
 
 	gr_screen.gf_print_screen		= gr_opengl_print_screen;
-
-	gr_screen.gf_flash				= gr_opengl_flash;
-	gr_screen.gf_flash_alpha		= gr_opengl_flash_alpha;
 
 	gr_screen.gf_zbuffer_get		= gr_opengl_zbuffer_get;
 	gr_screen.gf_zbuffer_set		= gr_opengl_zbuffer_set;
@@ -1268,7 +1248,9 @@ void opengl_setup_function_pointers()
 	gr_screen.gf_render_primitives_2d = gr_opengl_render_primitives_2d;
 	gr_screen.gf_render_primitives_2d_immediate = gr_opengl_render_primitives_2d_immediate;
 	gr_screen.gf_render_primitives_particle	= gr_opengl_render_primitives_particle;
+	gr_screen.gf_render_primitives_batched	= gr_opengl_render_primitives_batched;
 	gr_screen.gf_render_primitives_distortion = gr_opengl_render_primitives_distortion;
+	gr_screen.gf_render_movie = gr_opengl_render_movie;
 
 	gr_screen.gf_is_capable = gr_opengl_is_capable;
 

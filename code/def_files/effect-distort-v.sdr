@@ -12,6 +12,6 @@ void main()
 {
 	gl_Position = projMatrix * modelViewMatrix * vertPosition;
 	fragOffset = vertRadius * use_offset;
-	fragTexCoord = vertTexCoord;
+	fragTexCoord = vec4(vertTexCoord.xyz, 0.0);
 	fragColor = vertColor;
 }

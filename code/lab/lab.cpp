@@ -12,9 +12,6 @@
 #include "cmdline/cmdline.h"
 #include "freespace.h"
 #include "gamesequence/gamesequence.h"
-#include "graphics/opengl/gropengldraw.h"
-#include "graphics/opengl/gropengllight.h"
-#include "graphics/opengl/gropenglshader.h"
 #include "graphics/shadows.h"
 #include "hud/hudshield.h"
 #include "io/key.h"
@@ -988,7 +985,7 @@ void labviewer_render_model(float frametime)
 		gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, 1.0f, Max_draw_distance);
 		gr_set_view_matrix(&Eye_position, &Eye_matrix);
 
-		gr_opengl_deferred_lighting_begin();
+		gr_deferred_lighting_begin();
 
 // 		render_info.set_animated_effect(
 // 			ANIMATED_SHADER_LOADOUTSELECT_FS1, 
@@ -1052,8 +1049,8 @@ void labviewer_render_model(float frametime)
 		render_info.set_flags(flagggs);
 
 		model_render_immediate(&render_info, Lab_model_num, &Lab_viewer_orient, &vmd_zero_vector, MODEL_RENDER_OPAQUE);
-		gr_opengl_deferred_lighting_end();
-		gr_opengl_deferred_lighting_finish();
+		gr_deferred_lighting_end();
+		gr_deferred_lighting_finish();
 		bool gpo_save = Glowpoint_override;
 		Glowpoint_override = true;
 		model_render_immediate(&render_info, Lab_model_num, &Lab_viewer_orient, &vmd_zero_vector, MODEL_RENDER_TRANS);

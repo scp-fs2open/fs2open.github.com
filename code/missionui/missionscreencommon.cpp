@@ -24,7 +24,6 @@
 #include "globalincs/linklist.h"
 #include "graphics/2d.h"
 #include "graphics/shadows.h"
-#include "graphics/opengl/gropenglshader.h"
 #include "hud/hudwingmanstatus.h"
 #include "io/key.h"
 #include "io/mouse.h"

@@ -1204,7 +1204,7 @@ public:
 
 	int damage_lightning_type;
 
-	SCP_vector<HudGauge*> hud_gauges;
+	SCP_vector<std::unique_ptr<HudGauge>> hud_gauges;
 	bool hud_enabled;
 	bool hud_retail;
 

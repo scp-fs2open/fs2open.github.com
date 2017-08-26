@@ -13,7 +13,7 @@
 #define _GRAPHICS_H
 
 #include "graphics/grinternal.h"
-#include <osapi/osapi.h>
+#include "osapi/osapi.h"
 #include "bmpman/bmpman.h"
 #include "cfile/cfile.h"
 #include "globalincs/pstypes.h"
@@ -37,6 +37,8 @@ class model_material;
 class particle_material;
 class distortion_material;
 class shield_material;
+class movie_material;
+class batched_bitmap_material;
 
 class transform_stack {
 	
@@ -138,8 +140,10 @@ enum shader_type {
 	SDR_TYPE_DEFERRED_LIGHTING,
 	SDR_TYPE_DEFERRED_CLEAR,
 	SDR_TYPE_VIDEO_PROCESS,
-	SDR_TYPE_PASSTHROUGH_RENDER,
+	SDR_TYPE_PASSTHROUGH_RENDER, //!< Shader for doing the old style fixed-function rendering. Only used internally, use SDR_TYPE_DEFAULT_MATERIAL.
 	SDR_TYPE_SHIELD_DECAL,
+	SDR_TYPE_BATCHED_BITMAP,
+	SDR_TYPE_DEFAULT_MATERIAL,
 	NUM_SHADER_TYPES
 };
 
@@ -181,12 +185,13 @@ struct vertex_format_data
 		SCREEN_POS,
 		COLOR3,
 		COLOR4,
-		TEX_COORD,
+		TEX_COORD2,
+		TEX_COORD3,
 		NORMAL,
 		TANGENT,
 		MODEL_ID,
 		RADIUS,
-		UVEC
+		UVEC,
 	};
 
 	vertex_format format_type;
@@ -604,12 +609,10 @@ typedef struct screen {
 
 	int envmap_render_target;
 
+	float line_width;
+
 	//switch onscreen, offscreen
 	void (*gf_flip)();
-
-	// Flash the screen
-	void (*gf_flash)( int r, int g, int b );
-	void (*gf_flash_alpha)(int r, int g, int b, int a);
 
 	// sets the clipping region
 	void (*gf_set_clip)(int x, int y, int w, int h, int resize_mode);
@@ -620,42 +623,8 @@ typedef struct screen {
 	// clears entire clipping region to current color
 	void (*gf_clear)();
 
-	// void (*gf_bitmap)(int x, int y, int resize_mode);
-	void (*gf_bitmap_ex)(int x, int y, int w, int h, int sx, int sy, int resize_mode);
-
-	void (*gf_aabitmap)(int x, int y, int resize_mode, bool mirror);
-	void (*gf_aabitmap_ex)(int x, int y, int w, int h, int sx, int sy, int resize_mode, bool mirror);
-
-	void(*gf_string)(float x, float y, const char * text, int resize_mode, int length);
-
-	// Draw a gradient line... x1,y1 is bright, x2,y2 is transparent.
-	void (*gf_gradient)(int x1, int y1, int x2, int y2, int resize_mode);
- 
-	void (*gf_circle)(int x, int y, int r, int resize_mode);
-	void (*gf_unfilled_circle)(int x, int y, int r, int resize_mode);
-	void (*gf_arc)(int x, int y, float r, float angle_start, float angle_end, bool fill, int resize_mode);
-	void (*gf_curve)(int x, int y, int r, int direction, int resize_mode);
-
-	// Integer line. Used to draw a fast but pixely line.  
-	void (*gf_line)(int x1, int y1, int x2, int y2, int resize_mode);
-
-	// Draws an antialiased line is the current color is an 
-	// alphacolor, otherwise just draws a fast line.  This
-	// gets called internally by g3_draw_line.   This assumes
-	// the vertex's are already clipped, so call g3_draw_line
-	// not this if you have two 3d points.
-	void (*gf_aaline)(vertex *v1, vertex *v2);
-
-	void (*gf_pixel)( int x, int y, int resize_mode );
-	
 	// dumps the current screen to a file
 	void (*gf_print_screen)(const char * filename);
-
-	// Call once before rendering anything.
-	void (*gf_start_frame)();
-
-	// Call after rendering is over.
-	void (*gf_stop_frame)();
 
 	// Retrieves the zbuffer mode.
 	int (*gf_zbuffer_get)();
@@ -728,8 +697,6 @@ typedef struct screen {
 	void (*gf_update_transform_buffer)(void* data, size_t size);
 	void (*gf_set_transform_buffer_offset)(size_t offset);
 
-	void (*gf_render_stream_buffer)(int buffer_handle, size_t offset, size_t n_verts, int flags);
-	
 	//the projection matrix; fov, aspect ratio, near, far
  	void (*gf_set_proj_matrix)(float, float, float, float);
   	void (*gf_end_proj_matrix)();
@@ -749,7 +716,7 @@ typedef struct screen {
 	void (*gf_set_ambient_light)(int,int,int);
 
 	// postprocessing effects
-	void (*gf_post_process_set_effect)(const char*, int);
+	void (*gf_post_process_set_effect)(const char*, int, const vec3d*);
 	void (*gf_post_process_set_defaults)();
 
 	void (*gf_post_process_begin)();
@@ -798,6 +765,8 @@ typedef struct screen {
 	void (*gf_render_primitives_distortion)(distortion_material* material_info, primitive_type prim_type, vertex_layout* layout, int offset, int n_verts, int buffer_handle);
 	void (*gf_render_primitives_2d)(material* material_info, primitive_type prim_type, vertex_layout* layout, int offset, int n_verts, int buffer_handle);
 	void (*gf_render_primitives_2d_immediate)(material* material_info, primitive_type prim_type, vertex_layout* layout, int n_verts, void* data, int size);
+	void (*gf_render_movie)(movie_material* material_info, primitive_type prim_type, vertex_layout* layout, int n_verts, int buffer);
+	void (*gf_render_primitives_batched)(batched_bitmap_material* material_info, primitive_type prim_type, vertex_layout* layout, int offset, int n_verts, int buffer_handle);
 
 	bool (*gf_is_capable)(gr_capability capability);
 
@@ -917,71 +886,8 @@ __inline void gr_set_clip(int x, int y, int w, int h, int resize_mode=GR_RESIZE_
 void gr_set_bitmap(int bitmap_num, int alphablend = GR_ALPHABLEND_NONE, int bitbltmode = GR_BITBLT_MODE_NORMAL, float alpha = 1.0f);
 
 #define gr_clear				GR_CALL(gr_screen.gf_clear)
-__inline void gr_aabitmap(int x, int y, int resize_mode = GR_RESIZE_FULL, bool mirror = false)
-{
-	(*gr_screen.gf_aabitmap)(x,y,resize_mode,mirror);
-}
-
-__inline void gr_aabitmap_ex(int x, int y, int w, int h, int sx, int sy, int resize_mode = GR_RESIZE_FULL, bool mirror = false)
-{
-	(*gr_screen.gf_aabitmap_ex)(x,y,w,h,sx,sy,resize_mode,mirror);
-}
-
-__inline void gr_bitmap_ex(int x, int y, int w, int h, int sx, int sy, int resize_mode = GR_RESIZE_FULL)
-{
-	(*gr_screen.gf_bitmap_ex)(x, y, w, h, sx, sy, resize_mode);
-}
 
 void gr_shield_icon(coord2d coords[6], const int resize_mode = GR_RESIZE_FULL);
-void gr_rect(int x, int y, int w, int h, int resize_mode = GR_RESIZE_FULL);
-void gr_shade(int x, int y, int w, int h, int resize_mode = GR_RESIZE_FULL);
-
-__inline void gr_string(float x, float y, const char* string, int resize_mode = GR_RESIZE_FULL, int length = -1)
-{
-	(*gr_screen.gf_string)(x, y, string, resize_mode, length);
-}
-
-__inline void gr_string(int x, int y, const char* string, int resize_mode = GR_RESIZE_FULL, int length = -1)
-{
-	gr_string(i2fl(x), i2fl(y), string, resize_mode, length);
-}
-
-__inline void gr_circle(int xc, int yc, int d, int resize_mode = GR_RESIZE_FULL)
-{
-	(*gr_screen.gf_circle)(xc,yc,d,resize_mode);
-}
-
-__inline void gr_unfilled_circle(int xc, int yc, int d, int resize_mode = GR_RESIZE_FULL)
-{
-	(*gr_screen.gf_unfilled_circle)(xc,yc,d,resize_mode);
-}
-
-__inline void gr_arc(int xc, int yc, float r, float angle_start, float angle_end, bool fill, int resize_mode = GR_RESIZE_FULL)
-{
-	(*gr_screen.gf_arc)(xc,yc,r,angle_start,angle_end,fill,resize_mode);
-}
-
-#define gr_curve				GR_CALL(gr_screen.gf_curve)
-
-__inline void gr_line(int x1, int y1, int x2, int y2, int resize_mode = GR_RESIZE_FULL)
-{
-	(*gr_screen.gf_line)(x1, y1, x2, y2, resize_mode);
-}
-
-#define gr_aaline				GR_CALL(gr_screen.gf_aaline)
-
-__inline void gr_pixel(int x, int y, int resize_mode = GR_RESIZE_FULL)
-{
-	(*gr_screen.gf_pixel)(x, y, resize_mode);
-}
-
-__inline void gr_gradient(int x1, int y1, int x2, int y2, int resize_mode = GR_RESIZE_FULL)
-{
-	(*gr_screen.gf_gradient)(x1, y1, x2, y2, resize_mode);
-}
-
-#define gr_flash			GR_CALL(gr_screen.gf_flash)
-#define gr_flash_alpha		GR_CALL(gr_screen.gf_flash_alpha)
 
 #define gr_zbuffer_get		GR_CALL(gr_screen.gf_zbuffer_get)
 #define gr_zbuffer_set		GR_CALL(gr_screen.gf_zbuffer_set)
@@ -1120,6 +1026,11 @@ __inline void gr_render_primitives_particle(particle_material* material_info, pr
 	(*gr_screen.gf_render_primitives_particle)(material_info, prim_type, layout, offset, n_verts, buffer_handle);
 }
 
+__inline void gr_render_primitives_batched(batched_bitmap_material* material_info, primitive_type prim_type, vertex_layout* layout, int offset, int n_verts, int buffer_handle = -1)
+{
+	(*gr_screen.gf_render_primitives_batched)(material_info, prim_type, layout, offset, n_verts, buffer_handle);
+}
+
 __inline void gr_render_primitives_distortion(distortion_material* material_info, primitive_type prim_type, vertex_layout* layout, int offset, int n_verts, int buffer_handle = -1)
 {
 	(*gr_screen.gf_render_primitives_distortion)(material_info, prim_type, layout, offset, n_verts, buffer_handle);
@@ -1133,6 +1044,11 @@ __inline void gr_render_primitives_2d(material* material_info, primitive_type pr
 __inline void gr_render_primitives_2d_immediate(material* material_info, primitive_type prim_type, vertex_layout* layout, int n_verts, void* data, int size)
 {
 	(*gr_screen.gf_render_primitives_2d_immediate)(material_info, prim_type, layout, n_verts, data, size);
+}
+
+inline void gr_render_movie(movie_material* material_info, primitive_type prim_type, vertex_layout* layout, int n_verts, int buffer)
+{
+	(*gr_screen.gf_render_movie)(material_info, prim_type, layout, n_verts, buffer);
 }
 
 __inline void gr_render_model(model_material* material_info, indexed_vertex_source *vert_source, vertex_buffer* bufferp, size_t texi)
@@ -1274,5 +1190,14 @@ class DebugScope {
 #else
 #define GR_DEBUG_SCOPE(name) do {} while(0)
 #endif
+
+enum AnimatedShader {
+	ANIMATED_SHADER_LOADOUTSELECT_FS1= 0,
+	ANIMATED_SHADER_LOADOUTSELECT_FS2= 1,
+	ANIMATED_SHADER_CLOAK = 2,
+};
+
+// Include this last to make the 2D rendering function available everywhere
+#include "graphics/render.h"
 
 #endif

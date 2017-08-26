@@ -396,7 +396,7 @@ void g3_render_primitives_textured(material* mat, vertex* verts, int n_verts, pr
 		layout.add_vertex_component(vertex_format_data::POSITION3, sizeof(vertex), (int)offsetof(vertex, world));
 	}
 
-	layout.add_vertex_component(vertex_format_data::TEX_COORD, sizeof(vertex), (int)offsetof(vertex, texture_position));
+	layout.add_vertex_component(vertex_format_data::TEX_COORD2, sizeof(vertex), (int)offsetof(vertex, texture_position));
 
 	if ( orthographic ) {
 		gr_render_primitives_2d_immediate(mat, prim_type, &layout, n_verts, verts, n_verts * sizeof(vertex));
@@ -434,7 +434,7 @@ void g3_render_primitives_colored_textured(material* mat, vertex* verts, int n_v
 		layout.add_vertex_component(vertex_format_data::POSITION3, sizeof(vertex), (int)offsetof(vertex, world));
 	}
 
-	layout.add_vertex_component(vertex_format_data::TEX_COORD, sizeof(vertex), (int)offsetof(vertex, texture_position));
+	layout.add_vertex_component(vertex_format_data::TEX_COORD2, sizeof(vertex), (int)offsetof(vertex, texture_position));
 	layout.add_vertex_component(vertex_format_data::COLOR4, sizeof(vertex), (int)offsetof(vertex, r));
 
 	if ( orthographic ) {

@@ -13,8 +13,6 @@
 #include "debugconsole/console.h"
 #include "globalincs/systemvars.h"
 #include "graphics/2d.h"
-#include "graphics/opengl/gropengldraw.h"
-#include "graphics/opengl/gropengllight.h"
 #include "lighting/lighting.h"
 #include "math/vecmat.h"
 #include "model/modelrender.h"

@@ -62,47 +62,16 @@ void gr_set_fill_mode_stub(int mode)
 {
 }
 
-void gr_stub_aabitmap_ex(int x,int y,int w,int h,int sx,int sy,int resize_mode,bool mirror)
-{
-}
-
-void gr_stub_aabitmap(int x, int y,int resize_mode, bool mirror)
-{
-}
-
-void gr_stub_aaline(vertex *v1, vertex *v2)
-{
-}
-
 void gr_stub_activate(int active)
 {
 }
 
-void gr_stub_bitmap_ex(int x, int y, int w, int h, int sx, int sy, int resize_mode)
-{
-}
-
-void gr_stub_bitmap(int x, int y)
-{
-}
-
-void gr_stub_circle( int xc, int yc, int d, int resize_mode )
-{
-}
-
-void gr_stub_unfilled_circle( int xc, int yc, int d, int resize_mode )
-{
-}
 
 void gr_stub_cleanup(int minimize)
 {
 }
 
 void gr_stub_clear()
-{
-}
-
-void gr_stub_curve(int xc, int yc, int r, int direction, int resize_mode)
 {
 }
 
@@ -122,14 +91,6 @@ void gr_stub_end_view_matrix()
 {
 }
 
-void gr_stub_flash_alpha(int r, int g, int b, int a)
-{
-}
-
-void gr_stub_flash(int r, int g, int b)
-{
-}
-
 void gr_stub_flip()
 {
 }
@@ -143,18 +104,6 @@ void gr_stub_free_screen(int id)
 }
 
 void gr_stub_get_region(int front, int w, int h, ubyte *data)
-{
-}
-
-void gr_stub_gradient(int x1,int y1,int x2,int y2, int resize_mode)
-{
-}
-
-void gr_stub_line(int x1,int y1,int x2,int y2, int resize_mode = GR_RESIZE_NONE)
-{
-}
-
-void gr_stub_pixel(int x, int y, int resize_mode)
 {
 }
 
@@ -217,10 +166,6 @@ void gr_stub_set_transform_buffer_offset(size_t offset)
 
 }
 
-void gr_stub_render_stream_buffer(int buffer_handle, size_t offset, size_t n_verts, int flags)
-{
-}
-
 void gr_stub_set_clear_color(int r, int g, int b)
 {
 }
@@ -279,10 +224,6 @@ void gr_stub_start_instance_matrix(const vec3d *offset, const matrix *rotation)
 {
 }
 
-void gr_stub_string( float sx, float sy, const char *s, int resize_mode = GR_RESIZE_NONE, int length = -1)
-{
-}
-
 void gr_stub_stuff_fog_coord(vertex *v)
 {
 }
@@ -321,7 +262,7 @@ int gr_stub_alpha_mask_set(int mode, float alpha)
 {
 }*/
 
-void gr_stub_post_process_set_effect(const char *name, int x)
+void gr_stub_post_process_set_effect(const char *name, int x, const vec3d *rgb)
 {
 }
 
@@ -480,6 +421,13 @@ void gr_stub_render_primitives_distortion(distortion_material* material_info, pr
 {
 
 }
+void gr_stub_render_movie(movie_material* material_info, primitive_type prim_type, vertex_layout* layout, int n_verts, int buffer)
+{
+}
+
+void gr_stub_render_primitives_batched(batched_bitmap_material* material_info, primitive_type prim_type, vertex_layout* layout, int offset, int n_verts, int buffer_handle)
+{
+}
 
 bool gr_stub_is_capable(gr_capability capability)
 {
@@ -547,29 +495,12 @@ bool gr_stub_init()
 	gr_screen.gf_reset_clip			= gr_stub_reset_clip;
 	
 	gr_screen.gf_clear				= gr_stub_clear;
-//	gr_screen.gf_bitmap				= gr_stub_bitmap;
-	gr_screen.gf_bitmap_ex			= gr_stub_bitmap_ex;
-	gr_screen.gf_aabitmap			= gr_stub_aabitmap;
-	gr_screen.gf_aabitmap_ex		= gr_stub_aabitmap_ex;
-	
+
 //	gr_screen.gf_rect				= gr_stub_rect;
 //	gr_screen.gf_shade				= gr_stub_shade;
-	gr_screen.gf_string				= gr_stub_string;
-	gr_screen.gf_circle				= gr_stub_circle;
-	gr_screen.gf_unfilled_circle	= gr_stub_unfilled_circle;
-	gr_screen.gf_curve				= gr_stub_curve;
-
-	gr_screen.gf_line				= gr_stub_line;
-	gr_screen.gf_aaline				= gr_stub_aaline;
-	gr_screen.gf_pixel				= gr_stub_pixel;
-
-	gr_screen.gf_gradient			= gr_stub_gradient;
 
 	gr_screen.gf_print_screen		= gr_stub_print_screen;
 
-	gr_screen.gf_flash				= gr_stub_flash;
-	gr_screen.gf_flash_alpha		= gr_stub_flash_alpha;
-	
 	gr_screen.gf_zbuffer_get		= gr_stub_zbuffer_get;
 	gr_screen.gf_zbuffer_set		= gr_stub_zbuffer_set;
 	gr_screen.gf_zbuffer_clear		= gr_stub_zbuffer_clear;
@@ -622,8 +553,6 @@ bool gr_stub_init()
 	gr_screen.gf_update_transform_buffer	= gr_stub_update_transform_buffer;
 	gr_screen.gf_update_buffer_data		= gr_stub_update_buffer_data;
 	gr_screen.gf_set_transform_buffer_offset	= gr_stub_set_transform_buffer_offset;
-
-	gr_screen.gf_render_stream_buffer		= gr_stub_render_stream_buffer;
 
 	gr_screen.gf_start_instance_matrix			= gr_stub_start_instance_matrix;
 	gr_screen.gf_end_instance_matrix			= gr_stub_end_instance_matrix;
@@ -686,6 +615,8 @@ bool gr_stub_init()
 	gr_screen.gf_render_primitives_2d_immediate = gr_stub_render_primitives_2d_immediate;
 	gr_screen.gf_render_primitives_particle	= gr_stub_render_primitives_particle;
 	gr_screen.gf_render_primitives_distortion = gr_stub_render_primitives_distortion;
+	gr_screen.gf_render_movie = gr_stub_render_movie;
+	gr_screen.gf_render_primitives_batched = gr_stub_render_primitives_batched;
 
 	gr_screen.gf_is_capable = gr_stub_is_capable;
 

@@ -871,7 +871,7 @@ int bm_get_info(int handle, int *w, int * h, ubyte * flags, int *nframes, int *f
 	if (h) *h = bmp->h;
 	if (flags) *flags = bmp->flags;
 
-	if (bm_is_anim(bitmapnum) == true) {
+	if (bm_is_anim(bitmapnum)) {
 		if (nframes) {
 			*nframes = bm_bitmaps[bitmapnum].info.ani.num_frames;
 		}
@@ -1701,6 +1701,8 @@ int bm_load_animation(const char *real_filename, int *nframes, int *fps, int *ke
 	}
 
 	int first_handle = bm_get_next_handle();
+	// if all images of the animation have the same size then we can use a texture array
+	bool is_array = true;
 
 	for (i = 0; i < anim_frames; i++) {
 		memset(&bm_bitmaps[n + i], 0, sizeof(bitmap_entry));
@@ -1787,7 +1789,38 @@ int bm_load_animation(const char *real_filename, int *nframes, int *fps, int *ke
 			bm_bitmaps[n + i].info.ani.apng.is_apng = false;
 		}
 
+		if (bm_bitmaps[n].bm.w != bm_bitmaps[n + i].bm.w || bm_bitmaps[n].bm.h != bm_bitmaps[n + i].bm.h) {
+			// We found a frame with a different size than the first frame -> this can't be used as a texture array
+			is_array = false;
+
+			Warning(LOCATION, "Animation '%s' has images that are of different sizes (currently at frame %d)."
+				"Performance could be improved by making all images the same size.", filename, i + 1);
+		}
+		if (bm_bitmaps[n].comp_type != bm_bitmaps[n + i].comp_type) {
+			// Different compression type
+			is_array = false;
+
+			Warning(LOCATION, "Animation '%s' has images that are of different compression formats (currently at frame %d)."
+				"Performance could be improved by making all images the same compression format.", filename, i + 1);
+		}
+		if (bm_bitmaps[n].bm.true_bpp != bm_bitmaps[n + i].bm.true_bpp) {
+			// We found a frame with an incompatible pixel format
+			is_array = false;
+
+			Warning(LOCATION, "Animation '%s' has images that are of different pixel formats (currently at frame %d)."
+				"Performance could be improved by making all images the same pixel format.", filename, i + 1);
+		}
+		if (bm_bitmaps[n].num_mipmaps != bm_bitmaps[n + i].num_mipmaps) {
+			// We found a frame with a different number of mipmaps
+			is_array = false;
+
+			Warning(LOCATION, "Animation '%s' has images that have a different number of mipmaps (currently at frame %d)."
+				"Performance could be improved by giving all frames the same number of mipmaps.", filename, i + 1);
+		}
 	}
+
+	// Set array flag of first frame
+	bm_bitmaps[n].info.ani.is_array = is_array;
 
 	if (nframes != nullptr)
 		*nframes = anim_frames;
@@ -2837,12 +2870,16 @@ int bm_release(int handle, int clear_render_targets) {
 	}
 
 	// be sure that all frames of an ani are unloaded - taylor
-	if (bm_is_anim(n) == true) {
+	if (bm_is_anim(n)) {
 		int i, first = be->info.ani.first_frame, total = bm_bitmaps[first].info.ani.num_frames;
 
+		// The graphics system requires that the bitmap information for the whole animation is still valid when the data
+		// is freed so we first free all the data and then clear the bitmaps data
 		for (i = 0; i < total; i++) {
 			bm_free_data(first + i, true);		// clears flags, bbp, data, etc
+		}
 
+		for (i = 0; i < total; i++) {
 			memset(&bm_bitmaps[first + i], 0, sizeof(bitmap_entry));
 
 			bm_bitmaps[first + i].type = BM_TYPE_NONE;
@@ -3260,4 +3297,37 @@ int find_block_of(int n)
 	}
 
 	return -1;
+}
+
+bool bm_is_texture_array(const int handle) {
+	int bitmapnum = handle % MAX_BITMAPS;
+
+	if (!bm_is_anim(bitmapnum)) {
+		return true;
+	}
+
+	// This will return the index of the first animation frame
+	int n = bm_get_cache_slot(handle, 0);
+	bitmap_entry *be = &bm_bitmaps[n];
+
+	return be->info.ani.is_array;
+}
+
+int bm_get_base_frame(const int handle, int* num_frames) {
+	// If the bitmap is no animation then num_frames will still be at least 1
+	auto animation_begin = bm_get_info(handle, nullptr, nullptr, nullptr, num_frames);
+
+	if (animation_begin < 0) {
+		// Some kind of error
+		return -1;
+	}
+
+	if (!bm_is_texture_array(animation_begin)) {
+		// If this is not a texture array then we just treat it like a single frame animation
+		animation_begin = handle;
+		if (num_frames != nullptr) {
+			*num_frames = 1;
+		}
+	}
+	return animation_begin;
 }

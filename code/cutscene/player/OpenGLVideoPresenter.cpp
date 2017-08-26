@@ -141,7 +141,7 @@ OpenGLVideoPresenter::OpenGLVideoPresenter(const MovieProperties& props) : _scal
 	glVertices[3][3] = 1.0f;
 
 	_vertexLayout.add_vertex_component(vertex_format_data::POSITION2, sizeof(glVertices[0]), 0);
-	_vertexLayout.add_vertex_component(vertex_format_data::TEX_COORD, sizeof(glVertices[0]), sizeof(GLfloat) * 2);
+	_vertexLayout.add_vertex_component(vertex_format_data::TEX_COORD2, sizeof(glVertices[0]), sizeof(GLfloat) * 2);
 
 	gr_update_buffer_data(_vertexBuffer, sizeof(glVertices[0]) * 4, glVertices);
 }

@@ -698,4 +698,24 @@ bool bm_load_and_parse_eff(const char *filename, int dir_type, int *nframes, int
  */
 int bm_get_anim_frame(const int frame1_handle, float elapsed_time, const float divisor = 0.0f, const bool loop = false);
 
+/**
+ * @brief Determines if the given handle could be used in a texture array
+ *
+ * @param handle The handle to query the value for
+ * @return @c true if all frames have the same size, @c false otherwise. Always returns @c true for single images
+ */
+bool bm_is_texture_array(const int handle);
+
+/**
+ * @brief Gets the base frame of the specified animation
+ *
+ * @details The base frame is the frame of the animation that should be used to determine if two animation frames can be
+ * used in the same draw call. Use this if you want to optimize your draw calls to make use of texture arrays.
+ *
+ * @param handle The handle of the animation to check. This may also be a single frame bitmap
+ * @param num_frames Optionally return the number of frames in the animation
+ * @return The bitmap handle of the base frame or -1 on error
+ */
+int bm_get_base_frame(const int handle, int* num_frames = nullptr);
+
 #endif

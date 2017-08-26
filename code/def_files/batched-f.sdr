@@ -1,0 +1,15 @@
+in vec4 fragTexCoord;
+in vec4 fragColor;
+out vec4 fragOut0;
+uniform sampler2DArray baseMap;
+uniform float intensity;
+#define SRGB_GAMMA 2.2
+void main()
+{
+	vec4 baseColor = texture(baseMap, fragTexCoord.xyz);
+
+	baseColor.rgb = pow(baseColor.rgb, vec3(SRGB_GAMMA));
+	vec4 blendColor = vec4(pow(fragColor.rgb, vec3(SRGB_GAMMA)), fragColor.a);
+
+	fragOut0 = baseColor * blendColor * intensity;
+}

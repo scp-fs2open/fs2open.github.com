@@ -717,8 +717,14 @@ void beam_unpause_sounds()
 	if(moveup == NULL){
 		return;
 	}
-	while(moveup != END_OF_LIST(&Beam_used_list)){				
-		beam_recalc_sounds(moveup);
+	while(moveup != END_OF_LIST(&Beam_used_list)){
+		if (Cmdline_no_3d_sound) {
+			beam_recalc_sounds(moveup);
+		} else {
+			if (moveup->beam_sound_loop >= 0) {
+				snd_set_volume(moveup->beam_sound_loop, 1.0f);
+			}
+		}
 
 		// next beam
 		moveup = GET_NEXT(moveup);

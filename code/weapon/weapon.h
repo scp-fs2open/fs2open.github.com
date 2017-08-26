@@ -110,6 +110,7 @@ typedef struct weapon {
 	vec3d	big_attack_point;				//	Target-relative location of attack point.
 
 	SCP_vector<int>* cmeasure_ignore_list;
+	int		cmeasure_timer;
 
 	// corkscrew info (taken out for now)
 	short	cscrew_index;						// corkscrew info index
@@ -407,6 +408,7 @@ typedef struct weapon_info {
 	float cm_effective_rad;
 	float cm_detonation_rad;
 	bool  cm_kill_single;       // should the countermeasure kill just the single decoyed missile within CMEASURE_DETONATE_DISTANCE?
+	int   cmeasure_timer_interval;	// how many milliseconds between pulses
 
     // *
                
@@ -576,7 +578,7 @@ int	weapon_area_calc_damage(object *objp, vec3d *pos, float inner_rad, float out
 
 void	missile_obj_list_rebuild();	// called by save/restore code only
 missile_obj *missile_obj_return_address(int index);
-void find_homing_object_cmeasures();
+void find_homing_object_cmeasures(const SCP_vector<object*> &cmeasure_list);
 
 // THE FOLLOWING FUNCTION IS IN SHIP.CPP!!!!
 // JAS - figure out which thruster bitmap will get rendered next
