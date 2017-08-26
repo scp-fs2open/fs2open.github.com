@@ -304,6 +304,7 @@ sexp_oper Operators[] = {
 
 	//Containers Sub-Category
 	{ "is-container-empty",				OP_IS_CONTAINER_EMPTY,					1,	1,			SEXP_INTEGER_OPERATOR,	}, // Karajorma
+	{ "get-container-size",				OP_GET_CONTAINER_SIZE,					1,	1,			SEXP_INTEGER_OPERATOR,	}, // Karajorma
 	{ "container-has-data",				OP_CONTAINER_HAS_DATA,					2,	INT_MAX,	SEXP_INTEGER_OPERATOR,	}, // Karajorma
 	{ "container-data-index",			OP_CONTAINER_DATA_INDEX,				2,	2,			SEXP_INTEGER_OPERATOR,	}, // Karajorma
 	{ "container-has-key",				OP_CONTAINER_HAS_KEY,					2,	INT_MAX,	SEXP_INTEGER_OPERATOR,	}, // Karajorma
@@ -23031,6 +23032,27 @@ int sexp_is_container_empty (int node)
 	return SEXP_FALSE;
 }
 
+int sexp_get_container_size(int node)
+{
+	int index = get_container_index_from_node(node, SEXP_CONTAINER_LIST);
+
+	if (index < 0) {
+		return 0;
+	}
+
+	Assert(index < Sexp_containers.size());
+
+	if (Sexp_containers[index].type & SEXP_CONTAINER_MAP) {
+		return (int)Sexp_containers[index].map_data.size();
+	}
+	else if (Sexp_containers[index].type & SEXP_CONTAINER_LIST) {
+		return (int)Sexp_containers[index].list_data.size();
+	}
+	
+	int type = Sexp_containers[index].type;
+	Error(LOCATION, "Unknown container type. Container is not a valid type", type);
+}
+
 void sexp_clear_container (int node)
 {
 	char *container_name = CTEXT(node);
@@ -25072,6 +25094,10 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = sexp_is_container_empty(node);
 				break;
 
+			case OP_GET_CONTAINER_SIZE:
+				sexp_val = sexp_get_container_size(node);
+				break;
+
 			// Karajomra
 			case OP_CONTAINER_HAS_DATA:
 				sexp_val = sexp_container_has_data(node);
@@ -26538,6 +26564,7 @@ int query_operator_return_type(int op)
 		case OP_GET_VARIABLE_BY_INDEX:
 		case OP_GET_COLGROUP_ID:
 		case OP_CONTAINER_DATA_INDEX:
+		case OP_GET_CONTAINER_SIZE:
 			return OPR_NUMBER;
 
 		case OP_ABS:
@@ -28146,6 +28173,7 @@ int query_operator_argument_type(int op, int argnum)
 			}
 
 		case OP_IS_CONTAINER_EMPTY:
+		case OP_GET_CONTAINER_SIZE:
 			return OPF_CONTAINER_NAME;
 
 		case OP_CONTAINER_HAS_DATA:
@@ -31212,6 +31240,7 @@ int get_subcategory(int sexp_id)
 			return STATUS_SUBCATEGORY_VARIABLES;
 
 		case OP_IS_CONTAINER_EMPTY:
+		case OP_GET_CONTAINER_SIZE:
 		case OP_CONTAINER_HAS_DATA:
 		case OP_CONTAINER_DATA_INDEX:
 		case OP_CONTAINER_HAS_KEY:
@@ -32904,6 +32933,12 @@ sexp_help_struct Sexp_help[] = {
 	// Karajorma
 	{ OP_IS_CONTAINER_EMPTY, "Is Container Empty (Boolean operator)\r\n"
 		"\tReturns true if the specified container has no elements in it.\r\n\r\n"
+		"Takes 1 argument...\r\n"
+		"\t1:\tName of the container." },
+
+	// Karajorma
+	{ OP_GET_CONTAINER_SIZE, "get-container-size (Status operator)\r\n"
+		"\tReturns the number of elements in the specified container (or 0 if empty).\r\n\r\n"
 		"Takes 1 argument...\r\n"
 		"\t1:\tName of the container." },
 
