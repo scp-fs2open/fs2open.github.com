@@ -2411,7 +2411,7 @@ void bm_lock_tga(int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, int b
 	Assert(byte_size);
 	Assert(be->mem_taken > 0);
 
-	data = (ubyte*)bm_malloc(bitmapnum, be->mem_taken);
+	data = (ubyte*)bm_malloc(bitmapnum, static_cast<size_t>(bmp->w * bmp->h * byte_size));
 
 	if (data) {
 		memset(data, 0, be->mem_taken);
