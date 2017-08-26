@@ -128,6 +128,7 @@ ui_button_info Medals_buttons[GR_NUM_RESOLUTIONS][MEDALS_NUM_BUTTONS] = {
 		ui_button_info("2_MEB_18",	919,	691,	-1,	-1,	18),
 	}
 };
+static int Exit_button_hotspot_override = -1;
 
 #define MEDALS_NUM_TEXT		1
 UI_XSTR Medals_text[GR_NUM_RESOLUTIONS][MEDALS_NUM_TEXT] = {
@@ -249,6 +250,11 @@ void parse_medal_tbl()
 		}
 		else {
 			strcpy_s(Medals_mask_filename, Default_medals_mask_filename);
+		}
+
+		// configurable hotspot for the exit button
+		if (optional_string("+Exit Button Hotspot Index:")) {
+			stuff_int(&Exit_button_hotspot_override);
 		}
 
 		// special positioning for player callsign
@@ -529,6 +535,13 @@ void medal_main_init(player *pl, int mode)
 	Medals_mode = mode;
 	snazzy_menu_init();
 	Medals_window.create( 0, 0, gr_screen.max_w_unscaled, gr_screen.max_h_unscaled, 0 );
+
+	// maybe override which hotspot is used for the exit button
+	if (Exit_button_hotspot_override >= 0) {
+		for (idx = 0; idx < GR_NUM_RESOLUTIONS; idx++) {
+			Medals_buttons[idx][MEDALS_EXIT].hotspot = Exit_button_hotspot_override;
+		}
+	}
 
 	// create the interface buttons
 	for (idx=0; idx<MEDALS_NUM_BUTTONS; idx++) {
