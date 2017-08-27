@@ -97,6 +97,20 @@ void opengl_texture_state::Enable(GLuint tex_id)
 	}
 }
 
+void opengl_texture_state::Enable(GLuint unit, GLenum tex_target, GLuint tex_id) {
+	Assertion(unit < num_texture_units, "Invalid texture unit value!");
+
+	if (units[unit].texture_target == tex_target && units[unit].texture_id == tex_id) {
+		// The texture unit already uses this texture. There is no need to change it
+		return;
+	}
+
+	// Go the standard route
+	SetActiveUnit(unit);
+	SetTarget(tex_target);
+	Enable(tex_id);
+}
+
 void opengl_texture_state::Delete(GLuint tex_id)
 {
 	if (tex_id == 0) {

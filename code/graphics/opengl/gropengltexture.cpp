@@ -1064,10 +1064,10 @@ int gr_opengl_tcache_set_internal(int bitmap_handle, int bitmap_type, float *u_s
 	int n = bm_get_cache_slot (bitmap_handle, 1);
 	tcache_slot_opengl *t = &Textures[n];
 
-	GL_state.Texture.SetActiveUnit(tex_unit);
-
 	if (!bm_is_render_target(bitmap_handle) && t->bitmap_handle < 0)
 	{
+		GL_state.Texture.SetActiveUnit(tex_unit);
+
 		ret_val = opengl_create_texture( bitmap_handle, bitmap_type, t );
 	}
 
@@ -1077,12 +1077,13 @@ int gr_opengl_tcache_set_internal(int bitmap_handle, int bitmap_type, float *u_s
 		*v_scale = t->v_scale;
 		*array_index = t->array_index;
 
-		GL_state.Texture.SetTarget(t->texture_target);
-		GL_state.Texture.Enable(t->texture_id);
+		GL_state.Texture.Enable(tex_unit, t->texture_target, t->texture_id);
 
 		if ( (t->wrap_mode != GL_texture_addressing) && (bitmap_type != TCACHE_TYPE_AABITMAP)
 			&& (bitmap_type != TCACHE_TYPE_INTERFACE) && (bitmap_type != TCACHE_TYPE_CUBEMAP) )
 		{
+			// In this case we need to make sure that the texture unit is actually active
+			GL_state.Texture.SetActiveUnit(tex_unit);
 			glTexParameteri(t->texture_target, GL_TEXTURE_WRAP_S, GL_texture_addressing);
 			glTexParameteri(t->texture_target, GL_TEXTURE_WRAP_T, GL_texture_addressing);
 			glTexParameteri(t->texture_target, GL_TEXTURE_WRAP_R, GL_texture_addressing);

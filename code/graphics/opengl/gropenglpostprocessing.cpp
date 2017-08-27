@@ -91,9 +91,7 @@ void opengl_post_pass_tonemap()
 
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, Scene_ldr_texture, 0);
 
-	GL_state.Texture.SetActiveUnit(0);
-	GL_state.Texture.SetTarget(GL_TEXTURE_2D);
-	GL_state.Texture.Enable(Scene_color_texture);
+	GL_state.Texture.Enable(0, GL_TEXTURE_2D, Scene_color_texture);
 
 	opengl_draw_textured_quad(-1.0f, -1.0f, 0.0f, 0.0f, 1.0f, 1.0f, Scene_texture_u_scale, Scene_texture_u_scale);
 }
@@ -128,9 +126,7 @@ void opengl_post_pass_bloom()
 
 		Current_shader->program->Uniforms.setUniformi("tex", 0);
 
-		GL_state.Texture.SetActiveUnit(0);
-		GL_state.Texture.SetTarget(GL_TEXTURE_2D);
-		GL_state.Texture.Enable(Scene_color_texture);
+		GL_state.Texture.Enable(0, GL_TEXTURE_2D, Scene_color_texture);
 
 		opengl_draw_textured_quad(-1.0f, -1.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f, 1.0f);
 	}
@@ -138,9 +134,7 @@ void opengl_post_pass_bloom()
 
 	// ------ begin blur pass ------
 
-	GL_state.Texture.SetActiveUnit(0);
-	GL_state.Texture.SetTarget(GL_TEXTURE_2D);
-	GL_state.Texture.Enable(Bloom_textures[0]);
+	GL_state.Texture.Enable(0, GL_TEXTURE_2D, Bloom_textures[0]);
 
 	glGenerateMipmap(GL_TEXTURE_2D);
 
@@ -160,9 +154,7 @@ void opengl_post_pass_bloom()
 
 			Current_shader->program->Uniforms.setUniformi("tex", 0);
 
-			GL_state.Texture.SetActiveUnit(0);
-			GL_state.Texture.SetTarget(GL_TEXTURE_2D);
-			GL_state.Texture.Enable(source_tex);
+			GL_state.Texture.Enable(0, GL_TEXTURE_2D, source_tex);
 
 			for (int mipmap = 0; mipmap < MAX_MIP_BLUR_LEVELS; ++mipmap) {
 				int bloom_width = width >> mipmap;
@@ -194,9 +186,7 @@ void opengl_post_pass_bloom()
 		Current_shader->program->Uniforms.setUniformi("levels", MAX_MIP_BLUR_LEVELS);
 		Current_shader->program->Uniforms.setUniformf("bloom_intensity", Cmdline_bloom_intensity / 100.0f);
 
-		GL_state.Texture.SetActiveUnit(0);
-		GL_state.Texture.SetTarget(GL_TEXTURE_2D);
-		GL_state.Texture.Enable(Bloom_textures[0]);
+		GL_state.Texture.Enable(0, GL_TEXTURE_2D, Bloom_textures[0]);
 
 		GL_state.SetAlphaBlendMode(ALPHA_BLEND_ADDITIVE);
 
@@ -272,9 +262,7 @@ void opengl_post_pass_fxaa() {
 
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, Scene_luminance_texture, 0);
 
-	GL_state.Texture.SetActiveUnit(0);
-	GL_state.Texture.SetTarget(GL_TEXTURE_2D);
-	GL_state.Texture.Enable(Scene_ldr_texture);
+	GL_state.Texture.Enable(0, GL_TEXTURE_2D, Scene_ldr_texture);
 
 	opengl_draw_textured_quad(-1.0f, -1.0f, 0.0f, 0.0f, 1.0f, 1.0f, Scene_texture_u_scale, Scene_texture_u_scale);
 
@@ -288,9 +276,7 @@ void opengl_post_pass_fxaa() {
 	Current_shader->program->Uniforms.setUniformf( "rt_w", static_cast<float>(Post_texture_width));
 	Current_shader->program->Uniforms.setUniformf( "rt_h", static_cast<float>(Post_texture_height));
 
-	GL_state.Texture.SetActiveUnit(0);
-	GL_state.Texture.SetTarget(GL_TEXTURE_2D);
-	GL_state.Texture.Enable(Scene_luminance_texture);
+	GL_state.Texture.Enable(0, GL_TEXTURE_2D, Scene_luminance_texture);
 
 	opengl_draw_textured_quad(-1.0f, -1.0f, 0.0f, 0.0f, 1.0f, 1.0f, Scene_texture_u_scale, Scene_texture_u_scale);
 
@@ -342,12 +328,8 @@ void opengl_post_lightshafts()
 				Current_shader->program->Uniforms.setUniformf("intensity", Sun_spot * ls_intensity);
 				Current_shader->program->Uniforms.setUniformf("cp_intensity", Sun_spot * ls_cpintensity);
 
-				GL_state.Texture.SetActiveUnit(0);
-				GL_state.Texture.SetTarget(GL_TEXTURE_2D);
-				GL_state.Texture.Enable(Scene_depth_texture);
-				GL_state.Texture.SetActiveUnit(1);
-				GL_state.Texture.SetTarget(GL_TEXTURE_2D);
-				GL_state.Texture.Enable(Cockpit_depth_texture);
+				GL_state.Texture.Enable(0, GL_TEXTURE_2D, Scene_depth_texture);
+				GL_state.Texture.Enable(1, GL_TEXTURE_2D, Cockpit_depth_texture);
 				GL_state.Blend(GL_TRUE);
 				GL_state.SetAlphaBlendMode(ALPHA_BLEND_ADDITIVE);
 
@@ -436,14 +418,10 @@ void gr_opengl_post_process_end()
 
 	// now render it to the screen ...
 	GL_state.PopFramebufferState();
-	GL_state.Texture.SetActiveUnit(0);
-	GL_state.Texture.SetTarget(GL_TEXTURE_2D);
 	//GL_state.Texture.Enable(Scene_color_texture);
-	GL_state.Texture.Enable(Scene_ldr_texture);
+	GL_state.Texture.Enable(0, GL_TEXTURE_2D, Scene_ldr_texture);
 
-	GL_state.Texture.SetActiveUnit(1);
-	GL_state.Texture.SetTarget(GL_TEXTURE_2D);
-	GL_state.Texture.Enable(Scene_depth_texture);
+	GL_state.Texture.Enable(1, GL_TEXTURE_2D, Scene_depth_texture);
 
 	opengl_draw_textured_quad(-1.0f, -1.0f, 0.0f, 0.0f, 1.0f, 1.0f, Scene_texture_u_scale, Scene_texture_u_scale);
 
@@ -936,8 +914,6 @@ static bool opengl_post_init_framebuffer()
 
 		glGenTextures(1, &Post_shadow_depth_texture_id);
 
-		GL_state.Texture.SetActiveUnit(0);
-		GL_state.Texture.SetTarget(GL_TEXTURE_2D_ARRAY);
 //		GL_state.Texture.SetTarget(GL_TEXTURE_2D);
 		GL_state.Texture.Enable(Post_shadow_depth_texture_id);
 
