@@ -10,7 +10,8 @@ UniformBuffer::UniformBuffer(size_t element_size, size_t header_size) : _aligner
 	Assertion(success, "Uniform buffer usage requires a backend which allows to query the offset alignment!");
 	_aligner.setAlignment(static_cast<size_t>(offsetAlignment));
 
-	_buffer_obj = gr_create_buffer(BufferType::Uniform, BufferUsageHint::Streaming);
+	// This uses Dynamic since that matches our usage pattern the closest (update once and then use multiple times)
+	_buffer_obj = gr_create_buffer(BufferType::Uniform, BufferUsageHint::Dynamic);
 
 	Assertion(_buffer_obj >= 0, "Creation of buffer object failed!");
 }
@@ -22,6 +23,11 @@ UniformBuffer::~UniformBuffer() {
 	}
 }
 void UniformBuffer::submitData() {
+	if (_aligner.getSize() == 0) {
+		// No data to submit, return now to avoid causing graphics errors
+		return;
+	}
+
 	gr_update_buffer_data(_buffer_obj, _aligner.getSize(), _aligner.getData());
 }
 void UniformBuffer::finished() {
