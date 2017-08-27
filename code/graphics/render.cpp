@@ -1122,7 +1122,7 @@ void gr_render_primitives_immediate(material* material_info,
 									vertex_layout* layout,
 									int n_verts,
 									void* data,
-									int size) {
+									size_t size) {
 	auto offset = gr_add_to_immediate_buffer(size, data);
 
 	vertex_layout immediate_layout = adjust_immediate_vertex_layout(layout, offset);
@@ -1135,7 +1135,7 @@ void gr_render_primitives_2d_immediate(material* material_info,
 									   vertex_layout* layout,
 									   int n_verts,
 									   void* data,
-									   int size) {
+									   size_t size) {
 	auto offset = gr_add_to_immediate_buffer(size, data);
 
 	vertex_layout immediate_layout = adjust_immediate_vertex_layout(layout, offset);
