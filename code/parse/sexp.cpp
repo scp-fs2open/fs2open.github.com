@@ -20291,7 +20291,7 @@ void sexp_string_concatenate(int n)
 	// check length
 	if (strlen(new_text) >= TOKEN_LENGTH)
 	{
-		Warning(LOCATION, "Concatenated string is too long and will be truncated.");
+		Warning(LOCATION, "Concatenated string '%s' is too long and will be truncated.", new_text);
 		new_text[TOKEN_LENGTH] = 0;
 	}
 
@@ -20334,7 +20334,7 @@ void sexp_string_concatenate_block(int n)
 	// check length
 	if (new_text.length() >= TOKEN_LENGTH)
 	{
-		Warning(LOCATION, "Concatenated string is too long and will be truncated.");
+		Warning(LOCATION, "Concatenated string '%s' is too long and will be truncated.", new_text.c_str());
 		new_text.resize(TOKEN_LENGTH - 1);
 	}
 
