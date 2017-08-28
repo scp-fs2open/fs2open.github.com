@@ -664,7 +664,7 @@ sexp_oper Operators[] = {
 	{ "ship-vaporize",					OP_SHIP_VAPORIZE,						1,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "ship-no-vaporize",				OP_SHIP_NO_VAPORIZE,					1,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "set-explosion-option",			OP_SET_EXPLOSION_OPTION,				3,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Goober5000
-	{ "explosion-effect",				OP_EXPLOSION_EFFECT,					11,	13,			SEXP_ACTION_OPERATOR,	},	// Goober5000
+	{ "explosion-effect",				OP_EXPLOSION_EFFECT,					11,	14,			SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "warp-effect",					OP_WARP_EFFECT,							12, 12,			SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "remove-weapons",					OP_REMOVE_WEAPONS,						0,	1,			SEXP_ACTION_OPERATOR,	},	// Karajorma
 	{ "set-time-compression",			OP_CUTSCENES_SET_TIME_COMPRESSION,		1,	3,			SEXP_ACTION_OPERATOR,	},
@@ -10734,7 +10734,7 @@ void sexp_explosion_effect(int n)
 /* From the SEXP help...
 	{ OP_EXPLOSION_EFFECT, "explosion-effect\r\n"
 		"\tCauses an explosion at a given origin, with the given parameters.  "
-		"Takes 11 or 13 arguments...\r\n"
+		"Takes 11 to 14 arguments...\r\n"
 		"\t1:  Origin X\r\n"
 		"\t2:  Origin Y\r\n"
 		"\t3:  Origin Z\r\n"
@@ -10744,18 +10744,21 @@ void sexp_explosion_effect(int n)
 		"\t7:  Inner radius to apply damage (if 0, explosion will not be visible)\r\n"
 		"\t8:  Outer radius to apply damage (if 0, explosion will not be visible)\r\n"
 		"\t9:  Shockwave speed (if 0, there will be no shockwave)\r\n"
-		"\t10: Type (0 = medium, 1 = large1, 2 = large2)\r\n"  (otherwise use the index in fireball.tbl - FUBAR)
-		"\t11: Sound (index into sounds.tbl)\r\n"
+		"\t10: Type - For backward compatibility 0 = medium, 1 = large1 (4th in table), 2 = large2 (5th in table)\r\n"
+		"           3 or greater link to respctive entry in fireball.tbl\r\n"
+		"\t11: Sound (index into sounds.tbl or name of the sound entry)\r\n"
 		"\t12: EMP intensity (optional)\r\n"
-		"\t13: EMP duration in seconds (optional)" },
+		"\t13: EMP duration in seconds (optional)\r\n"
+		"\t14: Whether to use the full EMP time for capship turrets (optional, defaults to false)" },
 */
 // Basically, this function pretends that there's a ship at the origin that's blowing up, and
 // it does stuff accordingly.  In some places, it has to tiptoe around a little because the
 // code often expects a parent object when in fact there is none. <.<  >.>
 {
 	vec3d origin;
-	int max_damage, max_blast, explosion_size, inner_radius, outer_radius, shockwave_speed, fireball_type, sound_index;
+	int max_damage, max_blast, explosion_size, inner_radius, outer_radius, shockwave_speed, num, fireball_type, sound_index;
 	int emp_intensity, emp_duration;
+	bool use_emp_time_for_capship_turrets;
 
 	Assert( n >= 0 );
 
@@ -10783,34 +10786,37 @@ void sexp_explosion_effect(int n)
 	n = CDR(n);
 
 	// fireball type
-	if (eval_num(n) == 0)
+	num = eval_num(n);
+	if (num == 0)
 	{
 		fireball_type = FIREBALL_EXPLOSION_MEDIUM;
 	}
-	else if (eval_num(n) == 1)
+	else if (num == 1)
 	{
 		fireball_type = FIREBALL_EXPLOSION_LARGE1;
 	}
-	else if (eval_num(n) == 2)
+	else if (num == 2)
 	{
 		fireball_type = FIREBALL_EXPLOSION_LARGE2;
 	}
-	else if (eval_num(n) >= Num_fireball_types)	{
-		Warning(LOCATION, "explosion-effect type is out of range; quitting the explosion...\n");
+	else if (num >= Num_fireball_types)
+	{
+		Warning(LOCATION, "explosion-effect fireball type is out of range; quitting the explosion...\n");
 		return;
 	}
-	else {
-		fireball_type = eval_num(n);
+	else
+	{
+		fireball_type = num;
 	}
 	n = CDR(n);
 
 	sound_index = sexp_get_sound_index(n);
-
 	n = CDR(n);
 
 	// optional EMP
 	emp_intensity = 0;
 	emp_duration = 0;
+	use_emp_time_for_capship_turrets = false;
 	if (n != -1)
 	{
 		emp_intensity = eval_num(n);
@@ -10819,6 +10825,11 @@ void sexp_explosion_effect(int n)
 	if (n != -1)
 	{
 		emp_duration = eval_num(n);
+		n = CDR(n);
+	}
+	if (n != -1)
+	{
+		use_emp_time_for_capship_turrets = is_sexp_true(n);
 		n = CDR(n);
 	}
 
@@ -10912,7 +10923,7 @@ void sexp_explosion_effect(int n)
 	// apply emp damage if applicable --------------
 	if (emp_intensity && emp_duration)
 	{
-		emp_apply(&origin, (float)inner_radius, (float)outer_radius, (float)emp_intensity, (float)emp_duration);
+		emp_apply(&origin, (float)inner_radius, (float)outer_radius, (float)emp_intensity, (float)emp_duration, use_emp_time_for_capship_turrets);
 	}
 }
 
@@ -31379,7 +31390,7 @@ sexp_help_struct Sexp_help[] = {
 	// Goober5000
 	{ OP_EXPLOSION_EFFECT, "explosion-effect\r\n"
 		"\tCauses an explosion at a given origin, with the given parameters.  "
-		"Takes 11 or 13 arguments...\r\n"
+		"Takes 11 to 14 arguments...\r\n"
 		"\t1:  Origin X\r\n"
 		"\t2:  Origin Y\r\n"
 		"\t3:  Origin Z\r\n"
@@ -31393,7 +31404,8 @@ sexp_help_struct Sexp_help[] = {
 		"           3 or greater link to respctive entry in fireball.tbl\r\n"
 		"\t11: Sound (index into sounds.tbl or name of the sound entry)\r\n"
 		"\t12: EMP intensity (optional)\r\n"
-		"\t13: EMP duration in seconds (optional)" },
+		"\t13: EMP duration in seconds (optional)\r\n"
+		"\t14: Whether to use the full EMP time for capship turrets (optional, defaults to false)" },
 
 	// Goober5000
 	{ OP_WARP_EFFECT, "warp-effect\r\n"
