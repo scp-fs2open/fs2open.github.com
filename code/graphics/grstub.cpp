@@ -339,6 +339,14 @@ void gr_stub_render_movie(movie_material* material_info, primitive_type prim_typ
 {
 }
 
+void gr_stub_render_nanovg(nanovg_material* material_info,
+							  primitive_type prim_type,
+							  vertex_layout* layout,
+							  int offset,
+							  int n_verts,
+							  int buffer_handle) {
+}
+
 void gr_stub_render_primitives_batched(batched_bitmap_material* material_info, primitive_type prim_type, vertex_layout* layout, int offset, int n_verts, int buffer_handle)
 {
 }
@@ -503,6 +511,7 @@ bool gr_stub_init()
 	gr_screen.gf_render_primitives_particle	= gr_stub_render_primitives_particle;
 	gr_screen.gf_render_primitives_distortion = gr_stub_render_primitives_distortion;
 	gr_screen.gf_render_movie = gr_stub_render_movie;
+	gr_screen.gf_render_nanovg = gr_stub_render_nanovg;
 	gr_screen.gf_render_primitives_batched = gr_stub_render_primitives_batched;
 
 	gr_screen.gf_is_capable = gr_stub_is_capable;

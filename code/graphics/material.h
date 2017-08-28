@@ -4,6 +4,29 @@
 #include "graphics/grinternal.h"
 #include "model/model.h"
 
+enum class ComparisionFunction
+{
+	Never,
+	Always,
+	Less,
+	Greater,
+	Equal,
+	NotEqual,
+	LessOrEqual,
+	GreaterOrEqual
+};
+
+enum class StencilOperation {
+	Keep,
+	Zero,
+	Replace,
+	Increment,
+	IncrementWrap,
+	Decrement,
+	DecrementWrap,
+	Invert
+};
+
 class material
 {
 public:
@@ -31,6 +54,18 @@ public:
 		TEX_TYPE_INTERFACE
 	};
 
+	struct StencilFunc {
+		ComparisionFunction compare = ComparisionFunction::Always;
+		int ref = 1;
+		uint32_t mask = 0xFFFFFFFF;
+	};
+
+	struct StencilOp {
+		StencilOperation stencilFailOperation = StencilOperation::Keep;
+		StencilOperation depthFailOperation = StencilOperation::Keep;
+		StencilOperation successOperation = StencilOperation::Keep;
+	};
+
 private:
 	shader_type Sdr_type;
 
@@ -47,6 +82,12 @@ private:
 	vec4 Clr;
 	float Clr_scale;
 	int Depth_bias;
+	bvec4 Color_mask;
+	bool Stencil_test = false;
+	uint32_t Stencil_mask = 0xFF;
+	StencilFunc Stencil_func;
+	StencilOp Front_stencil_op;
+	StencilOp Back_stencil_op;
 
 protected:
 	void set_shader_type(shader_type init_sdr_type = SDR_TYPE_NONE);
@@ -85,6 +126,9 @@ public:
 	void set_fill_mode(int mode);
 	int get_fill_mode() const;
 
+	void set_color_mask(bool red, bool green, bool blue, bool alpha);
+	const bvec4& get_color_mask() const;
+
 	void set_blend_mode(gr_alpha_blend mode);
 	gr_alpha_blend get_blend_mode() const;
 
@@ -98,6 +142,25 @@ public:
 
 	void set_color_scale(float scale);
 	float get_color_scale() const;
+
+	void set_stencil_test(bool stencil);
+	bool is_stencil_enabled() const;
+
+	void set_stencil_mask(uint32_t mask);
+	uint32_t get_stencil_mask() const;
+
+	void set_stencil_func(ComparisionFunction compare, int ref, uint32_t mask);
+	const StencilFunc& get_stencil_func() const;
+
+	void set_front_stencil_op(StencilOperation stencilFailOperation,
+							  StencilOperation depthFailOperation,
+							  StencilOperation successOperation);
+	const StencilOp& get_front_stencil_op() const;
+
+	void set_back_stencil_op(StencilOperation stencilFailOperation,
+							  StencilOperation depthFailOperation,
+							  StencilOperation successOperation);
+	const StencilOp& get_back_stencil_op() const;
 };
 
 class model_material : public material
@@ -239,6 +302,11 @@ class batched_bitmap_material : public material
 	batched_bitmap_material();
 };
 
+class nanovg_material : public material {
+ public:
+	nanovg_material();
+};
+
 gr_alpha_blend material_determine_blend_mode(int base_bitmap, bool is_transparent);
 gr_zbuffer_type material_determine_depth_mode(bool depth_testing, bool is_transparent);
 
@@ -251,5 +319,6 @@ void material_set_unlit_volume(particle_material* mat_info, int texture, bool po
 void material_set_distortion(distortion_material *mat_info, int texture, bool thruster);
 void material_set_movie(movie_material *mat_info, int y_bm, int u_bm, int v_bm);
 void material_set_batched_bitmap(batched_bitmap_material* mat_info, int base_tex, float alpha, float color_scale);
+void material_set_nanovg(nanovg_material* mat_info, int base_tex);
 
 #endif

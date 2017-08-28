@@ -46,6 +46,7 @@ class distortion_material;
 class shield_material;
 class movie_material;
 class batched_bitmap_material;
+class nanovg_material;
 
 class transform_stack {
 
@@ -155,6 +156,7 @@ enum shader_type {
 	SDR_TYPE_SHIELD_DECAL,
 	SDR_TYPE_BATCHED_BITMAP,
 	SDR_TYPE_DEFAULT_MATERIAL,
+	SDR_TYPE_NANOVG,
 	NUM_SHADER_TYPES
 };
 
@@ -187,9 +189,12 @@ enum shader_type {
 #define SDR_FLAG_BLUR_HORIZONTAL			(1<<0)
 #define SDR_FLAG_BLUR_VERTICAL				(1<<1)
 
+#define SDR_FLAG_NANOVG_EDGE_AA		(1<<0)
+
 enum class uniform_block_type {
 	Lights = 0,
 	ModelData = 1,
+	NanoVGData = 2,
 
 	NUM_BLOCK_TYPES
 };
@@ -762,6 +767,7 @@ typedef struct screen {
 	void (*gf_render_primitives_distortion)(distortion_material* material_info, primitive_type prim_type, vertex_layout* layout, int offset, int n_verts, int buffer_handle);
 	void (*gf_render_movie)(movie_material* material_info, primitive_type prim_type, vertex_layout* layout, int n_verts, int buffer);
 	void (*gf_render_primitives_batched)(batched_bitmap_material* material_info, primitive_type prim_type, vertex_layout* layout, int offset, int n_verts, int buffer_handle);
+	void (*gf_render_nanovg)(nanovg_material* material_info, primitive_type prim_type, vertex_layout* layout, int offset, int n_verts, int buffer_handle);
 
 	bool (*gf_is_capable)(gr_capability capability);
 	bool (*gf_get_property)(gr_property property, void* destination);
@@ -1003,6 +1009,11 @@ __inline void gr_render_primitives_particle(particle_material* material_info, pr
 __inline void gr_render_primitives_batched(batched_bitmap_material* material_info, primitive_type prim_type, vertex_layout* layout, int offset, int n_verts, int buffer_handle = -1)
 {
 	(*gr_screen.gf_render_primitives_batched)(material_info, prim_type, layout, offset, n_verts, buffer_handle);
+}
+
+__inline void gr_render_nanovg(nanovg_material* material_info, primitive_type prim_type, vertex_layout* layout, int offset, int n_verts, int buffer_handle)
+{
+	(*gr_screen.gf_render_nanovg)(material_info, prim_type, layout, offset, n_verts, buffer_handle);
 }
 
 __inline void gr_render_primitives_distortion(distortion_material* material_info, primitive_type prim_type, vertex_layout* layout, int offset, int n_verts, int buffer_handle = -1)

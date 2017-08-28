@@ -124,6 +124,65 @@ static GLenum convertUsageHint(BufferUsageHint usage) {
 	}
 }
 
+static GLenum convertStencilOp(const StencilOperation stencil_op) {
+	switch (stencil_op) {
+	case StencilOperation::Keep:
+		return GL_KEEP;
+	case StencilOperation::Zero:
+		return GL_ZERO;
+	case StencilOperation::Replace:
+		return GL_REPLACE;
+	case StencilOperation::Increment:
+		return GL_INCR;
+	case StencilOperation::IncrementWrap:
+		return GL_INCR_WRAP;
+	case StencilOperation::Decrement:
+		return GL_DECR;
+	case StencilOperation::DecrementWrap:
+		return GL_DECR_WRAP;
+	case StencilOperation::Invert:
+		return GL_INVERT;
+	default:
+		Assertion(false, "Unhandled enum value encountered!");
+		return GL_NONE;
+	}
+}
+
+static GLenum convertComparisionFunction(ComparisionFunction func) {
+	GLenum mode;
+	switch (func) {
+	case ComparisionFunction::Always:
+		mode = GL_ALWAYS;
+		break;
+	case ComparisionFunction::Equal:
+		mode = GL_EQUAL;
+		break;
+	case ComparisionFunction::Greater:
+		mode = GL_GREATER;
+		break;
+	case ComparisionFunction::GreaterOrEqual:
+		mode = GL_GEQUAL;
+		break;
+	case ComparisionFunction::Less:
+		mode = GL_LESS;
+		break;
+	case ComparisionFunction::LessOrEqual:
+		mode = GL_LEQUAL;
+		break;
+	case ComparisionFunction::Never:
+		mode = GL_NEVER;
+		break;
+	case ComparisionFunction::NotEqual:
+		mode = GL_NOTEQUAL;
+		break;
+	default:
+		Assertion(false, "Unhandled comparision function value!");
+		mode = GL_ALWAYS;
+		break;
+	}
+	return mode;
+}
+
 int opengl_create_buffer_object(GLenum type, GLenum usage)
 {
 	GR_DEBUG_SCOPE("Create buffer object");
@@ -640,6 +699,27 @@ void opengl_tnl_set_material(material* material_info, bool set_base_map)
 		gr_opengl_set_clip_plane(NULL, NULL);
 	}
 
+	GL_state.StencilMask(material_info->get_stencil_mask());
+
+	auto& stencilFunc = material_info->get_stencil_func();
+	GL_state.StencilFunc(convertComparisionFunction(stencilFunc.compare), stencilFunc.ref, stencilFunc.mask);
+
+	auto& frontStencilOp = material_info->get_front_stencil_op();
+	GL_state.StencilOpSeparate(GL_FRONT,
+							   convertStencilOp(frontStencilOp.stencilFailOperation),
+							   convertStencilOp(frontStencilOp.depthFailOperation),
+							   convertStencilOp(frontStencilOp.successOperation));
+	auto& backStencilOp = material_info->get_back_stencil_op();
+	GL_state.StencilOpSeparate(GL_BACK,
+							   convertStencilOp(backStencilOp.stencilFailOperation),
+							   convertStencilOp(backStencilOp.depthFailOperation),
+							   convertStencilOp(backStencilOp.successOperation));
+
+	GL_state.StencilTest(material_info->is_stencil_enabled() ? GL_TRUE : GL_FALSE);
+
+	auto& color_mask = material_info->get_color_mask();
+	GL_state.ColorMask(color_mask.x, color_mask.y, color_mask.z, color_mask.w);
+
 	// This is only needed for the passthrough shader
 	uint32_t array_index = 0;
 	if ( set_base_map && base_map >= 0 ) {
@@ -884,6 +964,12 @@ void opengl_tnl_set_material_movie(movie_material* material_info) {
 		mprintf(("WARNING: Error setting bitmap texture (%i)!\n", material_info->getVtex()));
 	}
 }
+void opengl_tnl_set_material_nanovg(nanovg_material* material_info) {
+	opengl_tnl_set_material(material_info, true);
+
+	Current_shader->program->Uniforms.setUniformi("nvg_tex", 0);
+}
+
 void gr_opengl_set_viewport(int x, int y, int width, int height) {
 	glViewport(x, y, width, height);
 }
