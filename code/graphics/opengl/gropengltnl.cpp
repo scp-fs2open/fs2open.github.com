@@ -345,7 +345,8 @@ void opengl_tnl_init()
 
 		glGenTextures(1, &Shadow_map_depth_texture);
 
-//		GL_state.Texture.SetTarget(GL_TEXTURE_2D);
+		GL_state.Texture.SetActiveUnit(0);
+		GL_state.Texture.SetTarget(GL_TEXTURE_2D_ARRAY);
 		GL_state.Texture.Enable(Shadow_map_depth_texture);
 		
 		glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
@@ -371,7 +372,8 @@ void opengl_tnl_init()
 
 		glGenTextures(1, &Shadow_map_texture);
 
-		//GL_state.Texture.SetTarget(GL_TEXTURE_2D);
+		GL_state.Texture.SetActiveUnit(0);
+		GL_state.Texture.SetTarget(GL_TEXTURE_2D_ARRAY);
 		GL_state.Texture.Enable(Shadow_map_texture);
 
 		glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
