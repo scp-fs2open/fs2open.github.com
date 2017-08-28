@@ -838,9 +838,7 @@ void gr_opengl_scene_texture_end()
 
 		GL_state.PopFramebufferState();
 
-		GL_state.Texture.SetActiveUnit(0);
-		GL_state.Texture.SetTarget(GL_TEXTURE_2D);
-		GL_state.Texture.Enable(Scene_color_texture);
+		GL_state.Texture.Enable(0, GL_TEXTURE_2D, Scene_color_texture);
 
 		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
@@ -966,21 +964,13 @@ void gr_opengl_deferred_lighting_finish()
 
 	GL_state.Texture.SetShaderMode(GL_TRUE);
 
-	GL_state.Texture.SetActiveUnit(0);
-	GL_state.Texture.SetTarget(GL_TEXTURE_2D);
-	GL_state.Texture.Enable(Scene_color_texture);
+	GL_state.Texture.Enable(0, GL_TEXTURE_2D, Scene_color_texture);
 
-	GL_state.Texture.SetActiveUnit(1);
-	GL_state.Texture.SetTarget(GL_TEXTURE_2D);
-	GL_state.Texture.Enable(Scene_normal_texture);
+	GL_state.Texture.Enable(1, GL_TEXTURE_2D, Scene_normal_texture);
 
-	GL_state.Texture.SetActiveUnit(2);
-	GL_state.Texture.SetTarget(GL_TEXTURE_2D);
-	GL_state.Texture.Enable(Scene_position_texture);
+	GL_state.Texture.Enable(2, GL_TEXTURE_2D, Scene_position_texture);
 
-	GL_state.Texture.SetActiveUnit(3);
-	GL_state.Texture.SetTarget(GL_TEXTURE_2D);
-	GL_state.Texture.Enable(Scene_specular_texture);
+	GL_state.Texture.Enable(3, GL_TEXTURE_2D, Scene_specular_texture);
 
 	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT);
@@ -1069,10 +1059,8 @@ void gr_opengl_deferred_lighting_finish()
 	} else {
 		opengl_shader_set_passthrough(true);
 	}
-	
-	GL_state.Texture.SetActiveUnit(0);
-	GL_state.Texture.SetTarget(GL_TEXTURE_2D);
-	GL_state.Texture.Enable(Scene_luminance_texture);
+
+	GL_state.Texture.Enable(0, GL_TEXTURE_2D, Scene_luminance_texture);
 
 	GL_state.SetAlphaBlendMode( ALPHA_BLEND_ADDITIVE );
 	GL_state.DepthMask(GL_FALSE);
@@ -1159,9 +1147,7 @@ void gr_opengl_update_distortion()
 	glDrawBuffer(GL_COLOR_ATTACHMENT0);
 
 	glViewport(0,0,32,32);
-	GL_state.Texture.SetActiveUnit(0);
-	GL_state.Texture.SetTarget(GL_TEXTURE_2D);
-	GL_state.Texture.Enable(Distortion_texture[Distortion_switch]);
+	GL_state.Texture.Enable(0, GL_TEXTURE_2D, Distortion_texture[Distortion_switch]);
 	glClearColor(0.5f, 0.5f, 0.0f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT);
 
