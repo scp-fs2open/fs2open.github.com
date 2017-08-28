@@ -3781,7 +3781,7 @@ void stuff_sexp_text_string(SCP_string &dest, int node, int mode)
 
 		int sexp_variables_index = get_index_sexp_variable_name(Sexp_nodes[node].text);
 		// during error-reporting mode, sexp variables have already been transcoded to their indexes
-		if (sexp_variables_index < 0) {
+		if (mode == SEXP_ERROR_CHECK_MODE && sexp_variables_index < 0) {
 			if (can_construe_as_integer(Sexp_nodes[node].text)) {
 				sexp_variables_index = atoi(Sexp_nodes[node].text);
 			}
