@@ -132,6 +132,10 @@ extern Category WeaponPageIn;
 
 extern Category RenderDecals;
 extern Category RenderSingleDecal;
+
+extern Category GpuHeapAllocate;
+extern Category GpuHeapDeallocate;
+
 }
 
 #endif // _TRACING_CATEGORIES_H

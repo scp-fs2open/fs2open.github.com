@@ -19,6 +19,7 @@
 #include "globalincs/alphacolors.h"
 #include "globalincs/linklist.h"
 #include "graphics/2d.h"
+#include "graphics/util/GPUMemoryHeap.h"
 #include "io/key.h"
 #include "io/timer.h"
 #include "math/fvi.h"
@@ -1998,7 +1999,7 @@ void find_sortnorm(int offset, ubyte *bsp_data)
 	if (postlist) find_tri_counts(offset+postlist, bsp_data);
 }
 
-void model_interp_submit_buffers(indexed_vertex_source *vert_src)
+void model_interp_submit_buffers(indexed_vertex_source *vert_src, size_t vertex_stride)
 {
 	Assert(vert_src != NULL);
 
@@ -2006,19 +2007,22 @@ void model_interp_submit_buffers(indexed_vertex_source *vert_src)
 		return;
 	}
 
-	vert_src->Vbuffer_handle = gr_create_buffer(BufferType::Vertex, BufferUsageHint::Static);
+	if ( vert_src->Vertex_list != NULL ) {
+		size_t offset;
+		gr_heap_allocate(GpuHeap::ModelVertex, vert_src->Vertex_list_size, vert_src->Vertex_list, offset, vert_src->Vbuffer_handle);
 
-	if ( vert_src->Vbuffer_handle > -1 && vert_src->Vertex_list != NULL ) {
-		gr_update_buffer_data(vert_src->Vbuffer_handle, vert_src->Vertex_list_size, vert_src->Vertex_list);
+		// If this happens then someone must have allocated something from the heap with a different stride than what we
+		// are using.
+		Assertion(offset % vertex_stride == 0, "Offset returned by GPU heap allocation does not match stride value!");
+		vert_src->Base_vertex_offset = offset / vertex_stride;
+		vert_src->Vertex_offset = offset;
 
 		vm_free(vert_src->Vertex_list);
 		vert_src->Vertex_list = NULL;
 	}
 
-	vert_src->Ibuffer_handle = gr_create_buffer(BufferType::Index, BufferUsageHint::Static);
-
-	if ( vert_src->Ibuffer_handle > -1 && vert_src->Index_list != NULL ) {
-		gr_update_buffer_data(vert_src->Ibuffer_handle, vert_src->Index_list_size, vert_src->Index_list);
+	if ( vert_src->Index_list != NULL ) {
+		gr_heap_allocate(GpuHeap::ModelIndex, vert_src->Index_list_size, vert_src->Index_list, vert_src->Index_offset, vert_src->Ibuffer_handle);
 
 		vm_free(vert_src->Index_list);
 		vert_src->Index_list = NULL;
@@ -2030,13 +2034,8 @@ bool model_interp_pack_buffer(indexed_vertex_source *vert_src, vertex_buffer *vb
 	if ( vert_src == NULL ) {
 		return false;
 	}
-	
-	// NULL means that we are done with the buffer and can create the IBO/VBO
-	// returns false here only for some minor error prevention
-	if ( vb == NULL ) {
-		model_interp_submit_buffers(vert_src);
-		return false;
-	}
+
+	Assertion(vb != nullptr, "Invalid vertex buffer specified!");
 
 	int i, n_verts = 0;
 	size_t j;

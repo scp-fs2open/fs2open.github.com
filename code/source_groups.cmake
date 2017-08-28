@@ -403,6 +403,8 @@ set (file_root_graphics_softwaregr_font
 )
 
 set(file_root_graphics_util
+	graphics/util/GPUMemoryHeap.cpp
+	graphics/util/GPUMemoryHeap.h
 	graphics/util/uniform_structs.h
 	graphics/util/UniformAligner.h
 	graphics/util/UniformAligner.cpp
@@ -1200,6 +1202,8 @@ set (file_root_ui
 set(file_root_utils
 	utils/encoding.cpp
     utils/encoding.h
+	utils/HeapAllocator.cpp
+	utils/HeapAllocator.h
 	utils/RandomRange.h
 	utils/strings.h
     utils/unicode.cpp
