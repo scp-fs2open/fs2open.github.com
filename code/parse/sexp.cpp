@@ -20291,7 +20291,7 @@ void sexp_string_concatenate(int n)
 	// check length
 	if (strlen(new_text) >= TOKEN_LENGTH)
 	{
-		Warning(LOCATION, "Concatenated string '%s' has %d characters, but the maximum is %d.  The string will be truncated.", new_text, strlen(new_text), TOKEN_LENGTH - 1);
+		Warning(LOCATION, "Concatenated string '%s' has " SIZE_T_ARG " characters, but the maximum is " SIZE_T_ARG ".  The string will be truncated.", new_text, strlen(new_text), TOKEN_LENGTH - 1);
 		new_text[TOKEN_LENGTH] = 0;
 	}
 
@@ -20334,7 +20334,7 @@ void sexp_string_concatenate_block(int n)
 	// check length
 	if (new_text.length() >= TOKEN_LENGTH)
 	{
-		Warning(LOCATION, "Concatenated string '%s' has %d characters, but the maximum is %d.  The string will be truncated.", new_text.c_str(), new_text.length(), TOKEN_LENGTH - 1);
+		Warning(LOCATION, "Concatenated string '%s' has " SIZE_T_ARG " characters, but the maximum is " SIZE_T_ARG ".  The string will be truncated.", new_text.c_str(), new_text.length(), TOKEN_LENGTH - 1);
 		new_text.resize(TOKEN_LENGTH - 1);
 	}
 
