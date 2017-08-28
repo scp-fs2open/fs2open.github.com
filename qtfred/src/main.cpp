@@ -24,6 +24,7 @@
 #include "FredApplication.h"
 
 #include <signal.h>
+#include <project.h>
 
 // Globals needed by the engine when built in 'FRED' mode.
 int Fred_running = 1;
@@ -92,6 +93,8 @@ int main(int argc, char* argv[]) {
 	QCoreApplication::setApplicationName("qtFRED");
 
 	QApplication app(argc, argv);
+
+	QGuiApplication::setApplicationDisplayName(app.tr("qtFRED v%1").arg(FS_VERSION_FULL));
 
 #ifndef NDEBUG
 	QLoggingCategory::defaultCategory()->setEnabled(QtDebugMsg, true);

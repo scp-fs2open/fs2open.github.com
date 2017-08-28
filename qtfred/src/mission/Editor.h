@@ -12,10 +12,12 @@
 #include <globalincs/globals.h>
 #include <osapi/osapi.h>
 #include <object/waypoint.h>
+#include <ship/ship.h>
 
 namespace fso {
 namespace fred {
 
+const size_t MAX_DOCKS = 1000;
 
 /*! Game editor.
  * Handles everything needed to edit the game,
@@ -119,6 +121,8 @@ class Editor: public QObject {
 	waypoint* cur_waypoint = nullptr;
 	waypoint_list* cur_waypoint_list = nullptr;
 
+	subsys_to_render Render_subsys;
+
 	// Goober5000
 	// This must be done when either the wing name or the custom name is changed.
 	// (It's also duplicated in FS2, in post_process_mission, for setting the indexes at mission load.)
@@ -156,6 +160,16 @@ class Editor: public QObject {
 	 */
 	void remove_wing(int wing_num);
 
+	void delete_marked();
+
+	int delete_wing(int wing_num, int bypass = 0);
+
+	void select_next_subsystem();
+	void select_previous_subsystem();
+	void cancel_select_subsystem();
+
+	bool global_error_check();
+
  private:
 	void clearMission();
 
@@ -177,6 +191,14 @@ class Editor: public QObject {
 
 	bool already_deleting_wing = false;
 
+// used by error checker, but needed in more than just one function.
+	char *names[MAX_OBJECTS];
+	char err_flags[MAX_OBJECTS];
+	int obj_count = 0;
+	int g_err = 0;
+
+	char *Docking_bay_list[MAX_DOCKS];
+
 	int common_object_delete(int obj);
 
 	int reference_handler(const char* name, int type, int obj);
@@ -192,8 +214,6 @@ class Editor: public QObject {
 	int rename_ship(int ship, char* name);
 
 	void delete_reinforcement(int num);
-
-	int delete_wing(int wing_num, int bypass = 0);
 
 	// changes the currently selected wing.  It is assumed that cur_wing == cur_ship's wing
 	// number.  Don't call this if this won't be true, or else you'll screw things up.
@@ -229,6 +249,29 @@ class Editor: public QObject {
 	void generate_wing_weaponry_usage_list(int* arr, int wing);
 
 	void generate_team_weaponry_usage_list(int team, int* arr);
+
+	int get_visible_sub_system_count(ship *shipp);
+
+	int get_next_visible_subsys(ship *shipp, ship_subsys **next_subsys);
+
+	int get_prev_visible_subsys(ship *shipp, ship_subsys **prev_subsys);
+
+	int global_error_check_impl();
+
+	int error(SCP_FORMAT_STRING const char* msg, ...) SCP_FORMAT_STRING_ARGS(2, 3);
+	int internal_error(SCP_FORMAT_STRING const char *msg, ...) SCP_FORMAT_STRING_ARGS(2, 3);
+
+	int fred_check_sexp(int sexp, int type, const char *msg, ...);
+
+	const char *error_check_initial_orders(ai_goal *goals, int ship, int wing);
+
+	int global_error_check_mixed_player_wing(int w);
+
+	int global_error_check_player_wings(int multi);
+
+	const char *get_order_name(int order);
+
+	int get_docking_list(int model_index);
 };
 
 } // namespace fred

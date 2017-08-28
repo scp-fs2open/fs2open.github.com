@@ -73,3 +73,15 @@ const char* object_name(int obj) {
 
 	return "*unknown*";
 }
+int get_ship_from_obj(int obj) {
+	Assertion(query_valid_object(obj), "Invalid object index detected!");
+
+	return get_ship_from_obj(&Objects[obj]);
+}
+int get_ship_from_obj(object* objp) {
+	if ((objp->type == OBJ_SHIP) || (objp->type == OBJ_START))
+		return objp->instance;
+
+	Int3();
+	return 0;
+}

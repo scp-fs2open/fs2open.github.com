@@ -147,7 +147,10 @@ class EditorViewport {
 
 	object_orient_pos rotation_backup[MAX_OBJECTS];
 
-	vec3d original_pos;
+	vec3d saved_cam_pos = vmd_zero_vector;
+	matrix saved_cam_orient;
+
+	vec3d original_pos = vmd_zero_vector;
 
 	bool moved = false;
 

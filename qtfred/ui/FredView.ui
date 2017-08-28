@@ -84,8 +84,6 @@
      <addaction name="actionShow_Player_Starts"/>
      <addaction name="actionShow_Waypoints"/>
      <addaction name="separator"/>
-     <addaction name="actionShow_Friendly"/>
-     <addaction name="actionShow_Hostile"/>
     </widget>
     <widget class="QMenu" name="menuViewpoint">
      <property name="title">
@@ -186,15 +184,15 @@
      <property name="title">
       <string>&amp;Set Group</string>
      </property>
-     <addaction name="actionGroup_10"/>
-     <addaction name="actionGroup_11"/>
-     <addaction name="actionGroup_12"/>
-     <addaction name="actionGroup_13"/>
-     <addaction name="actionGroup_14"/>
-     <addaction name="actionGroup_15"/>
-     <addaction name="actionGroup_16"/>
-     <addaction name="actionGroup_17"/>
-     <addaction name="actionGroup_18"/>
+     <addaction name="actionSetGroup_1"/>
+     <addaction name="actionSetGroup_2"/>
+     <addaction name="actionSetGroup_3"/>
+     <addaction name="actionSetGroup_4"/>
+     <addaction name="actionSetGroup_5"/>
+     <addaction name="actionSetGroup_6"/>
+     <addaction name="actionSetGroup_7"/>
+     <addaction name="actionSetGroup_8"/>
+     <addaction name="actionSetGroup_9"/>
     </widget>
     <addaction name="actionGroup_1"/>
     <addaction name="actionGroup_2"/>
@@ -233,7 +231,7 @@
     <addaction name="actionHelp_Topics"/>
     <addaction name="actionShow_SEXP_Help"/>
     <addaction name="separator"/>
-    <addaction name="actionAbout_FRED2"/>
+    <addaction name="actionAbout"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuEdit"/>
@@ -657,11 +655,23 @@
    </property>
   </action>
   <action name="actionTool_Bar">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
    <property name="text">
     <string>&amp;Tool Bar</string>
    </property>
   </action>
   <action name="actionStatus_Bar">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
    <property name="text">
     <string>&amp;Status Bar</string>
    </property>
@@ -852,6 +862,9 @@
   <action name="actionRestore_Camera_Pos">
    <property name="text">
     <string>&amp;Restore Camera Pos</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+R</string>
    </property>
   </action>
   <action name="actionLighting_from_Suns">
@@ -1133,45 +1146,72 @@
    <property name="text">
     <string>&amp;Group 1</string>
    </property>
+   <property name="shortcut">
+    <string>Ctrl+1</string>
+   </property>
   </action>
   <action name="actionGroup_2">
    <property name="text">
     <string>Group &amp;2</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+2</string>
    </property>
   </action>
   <action name="actionGroup_3">
    <property name="text">
     <string>Group &amp;3</string>
    </property>
+   <property name="shortcut">
+    <string>Ctrl+3</string>
+   </property>
   </action>
   <action name="actionGroup_4">
    <property name="text">
     <string>Group &amp;4</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+4</string>
    </property>
   </action>
   <action name="actionGroup_5">
    <property name="text">
     <string>Group &amp;5</string>
    </property>
+   <property name="shortcut">
+    <string>Ctrl+5</string>
+   </property>
   </action>
   <action name="actionGroup_6">
    <property name="text">
     <string>Group &amp;6</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+6</string>
    </property>
   </action>
   <action name="actionGroup_7">
    <property name="text">
     <string>Group &amp;7</string>
    </property>
+   <property name="shortcut">
+    <string>Ctrl+7</string>
+   </property>
   </action>
   <action name="actionGroup_8">
    <property name="text">
     <string>Group &amp;8</string>
    </property>
+   <property name="shortcut">
+    <string>Ctrl+8</string>
+   </property>
   </action>
   <action name="actionGroup_9">
    <property name="text">
     <string>Group &amp;9</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+9</string>
    </property>
   </action>
   <action name="actionSet_Group">
@@ -1179,47 +1219,47 @@
     <string>Set Group</string>
    </property>
   </action>
-  <action name="actionGroup_10">
+  <action name="actionSetGroup_1">
    <property name="text">
     <string>&amp;Group 1</string>
    </property>
   </action>
-  <action name="actionGroup_11">
+  <action name="actionSetGroup_2">
    <property name="text">
     <string>Group &amp;2</string>
    </property>
   </action>
-  <action name="actionGroup_12">
+  <action name="actionSetGroup_3">
    <property name="text">
     <string>Group &amp;3</string>
    </property>
   </action>
-  <action name="actionGroup_13">
+  <action name="actionSetGroup_4">
    <property name="text">
     <string>Group &amp;4</string>
    </property>
   </action>
-  <action name="actionGroup_14">
+  <action name="actionSetGroup_5">
    <property name="text">
     <string>Group &amp;5</string>
    </property>
   </action>
-  <action name="actionGroup_15">
+  <action name="actionSetGroup_6">
    <property name="text">
     <string>Group &amp;6</string>
    </property>
   </action>
-  <action name="actionGroup_16">
+  <action name="actionSetGroup_7">
    <property name="text">
     <string>Group &amp;7</string>
    </property>
   </action>
-  <action name="actionGroup_17">
+  <action name="actionSetGroup_8">
    <property name="text">
     <string>Group &amp;8</string>
    </property>
   </action>
-  <action name="actionGroup_18">
+  <action name="actionSetGroup_9">
    <property name="text">
     <string>Group &amp;9</string>
    </property>
@@ -1228,30 +1268,48 @@
    <property name="text">
     <string>&amp;Level Object</string>
    </property>
+   <property name="shortcut">
+    <string>L</string>
+   </property>
   </action>
   <action name="actionAlign_Object">
    <property name="text">
     <string>&amp;Align Object</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+L</string>
    </property>
   </action>
   <action name="actionMark_Wing">
    <property name="text">
     <string>&amp;Mark Wing</string>
    </property>
+   <property name="shortcut">
+    <string>W</string>
+   </property>
   </action>
   <action name="actionControl_Object">
    <property name="text">
     <string>&amp;Control Object</string>
+   </property>
+   <property name="shortcut">
+    <string>T</string>
    </property>
   </action>
   <action name="actionNext_Object">
    <property name="text">
     <string>&amp;Next Object</string>
    </property>
+   <property name="shortcut">
+    <string>Tab</string>
+   </property>
   </action>
   <action name="actionPrev_Object">
    <property name="text">
     <string>&amp;Prev Object</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Tab</string>
    </property>
   </action>
   <action name="actionAdjust_Grid">
@@ -1263,25 +1321,40 @@
    <property name="text">
     <string>Ne&amp;xt Subsystem</string>
    </property>
+   <property name="shortcut">
+    <string>K</string>
+   </property>
   </action>
   <action name="actionPrev_Subsystem">
    <property name="text">
     <string>P&amp;rev Subsystem</string>
+   </property>
+   <property name="shortcut">
+    <string>Shift+K</string>
    </property>
   </action>
   <action name="actionCancel_Subsystem">
    <property name="text">
     <string>Cancel S&amp;ubsystem</string>
    </property>
+   <property name="shortcut">
+    <string>Alt+K</string>
+   </property>
   </action>
   <action name="actionMission_Statistics">
    <property name="text">
     <string>M&amp;ission Statistics</string>
    </property>
+   <property name="shortcut">
+    <string>Ctrl+Shift+D</string>
+   </property>
   </action>
   <action name="actionError_Checker">
    <property name="text">
     <string>&amp;Error Checker</string>
+   </property>
+   <property name="shortcut">
+    <string/>
    </property>
   </action>
   <action name="actionHelp_Topics">
@@ -1294,7 +1367,7 @@
     <string>&amp;Show SEXP Help</string>
    </property>
   </action>
-  <action name="actionAbout_FRED2">
+  <action name="actionAbout">
    <property name="text">
     <string>&amp;About qtFRED...</string>
    </property>

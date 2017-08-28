@@ -18,8 +18,10 @@
 #include <ui/dialogs/ObjectOrientEditorDialog.h>
 #include <ui/dialogs/MissionSpecDialog.h>
 #include <ui/dialogs/FormWingDialog.h>
+#include <ui/dialogs/AboutDialog.h>
 #include <globalincs/linklist.h>
 #include <ui/dialogs/SelectionDialog.h>
+#include <iff_defs/iff_defs.h>
 
 #include "mission/Editor.h"
 #include "mission/management.h"
@@ -64,10 +66,15 @@ FredView::FredView(QWidget* parent) : QMainWindow(parent), ui(new Ui::FredView()
 
 	connect(fredApp, &FredApplication::onIdle, this, &FredView::updateUI);
 
+	// TODO: Hook this up with the modified state of the mission
+	setWindowModified(false);
+
 	updateRecentFileList();
 
 	initializeStatusBar();
 	initializePopupMenus();
+
+	initializeGroupActions();
 }
 
 FredView::~FredView() {
@@ -112,6 +119,22 @@ void FredView::setEditor(Editor* editor, EditorViewport* viewport) {
 			[this]() { ui->actionZoomSelected->setEnabled(query_valid_object(fred->currentObject)); });
 	connect(this, &FredView::viewIdle, this, [this]() { ui->actionOrbitSelected->setChecked(_viewport->Lookat_mode); });
 	connect(this, &FredView::viewIdle, this, [this]() { ui->actionRotateLocal->setChecked(_viewport->Group_rotate); });
+	connect(this,
+			&FredView::viewIdle,
+			this,
+			[this]() { ui->actionRestore_Camera_Pos->setEnabled(!IS_VEC_NULL(&_viewport->saved_cam_orient.vec.fvec)); });
+
+	// The Show teams actions need to be initialized after everything has been set up since the IFFs may not have been
+	// initialized yet
+	fredApp->runAfterInit([this]() {
+		for (auto i = 0; i < Num_iffs; ++i) {
+			auto action = new QAction(QString::fromUtf8(Iff_info[i].iff_name), ui->menuDisplay_Filter);
+			action->setCheckable(true);
+			connectActionToViewSetting(action, &_viewport->view.Show_iff[i]);
+
+			ui->menuDisplay_Filter->addAction(action);
+		}
+	});
 }
 
 void FredView::loadMissionFile(const QString& pathName) {
@@ -151,9 +174,12 @@ void FredView::on_mission_loaded(const std::string& filepath) {
 		filename = QFileInfo(QString::fromStdString(filepath)).fileName();
 	}
 
-	auto title = tr("%1 - qtFRED v%2 - FreeSpace 2 Mission Editor").arg(filename, FS_VERSION_FULL);
+	// The "[*]" is the placeholder for showing the modified state of the window
+	auto title = tr("%1[*]").arg(filename);
 
 	setWindowTitle(title);
+	// This will add some additional features on platforms that make use of this information
+	setWindowFilePath(QString::fromStdString(filepath));
 
 	if (!filepath.empty()) {
 		addToRecentFiles(QString::fromStdString(filepath));
@@ -274,13 +300,13 @@ void FredView::connectActionToViewSetting(QAction* option, bool* destination) {
 
 	// Use our view idle function for updating the action status whenever possible
 	// TODO: Maybe this could be improved with an event based property system but that would need to be implemented
-	connect(this, &FredView::viewIdle, [option, destination]() {
+	connect(this, &FredView::viewIdle, this, [option, destination]() {
 		option->setChecked(*destination);
 	});
 
 	// then connect the signal to a handler for updating the view setting
 	// The pointer should be valid as long as this signal is active since it should be pointing inside the renderer (I hope...)
-	connect(option, &QAction::triggered, [this, destination](bool value) {
+	connect(option, &QAction::triggered, this, [this, destination](bool value) {
 		*destination = value;
 
 		// View settings have changed so we need to update the window
@@ -650,9 +676,8 @@ DialogButton FredView::showButtonDialog(DialogType type,
 										const flagset<DialogButton>& buttons) {
 	QMessageBox dialog(this);
 
-	dialog.setWindowTitle(QApplication::applicationName()); // This follows the recommendation found in the QMessageBox documentation
-	dialog.setText(QString::fromStdString(title));
-	dialog.setInformativeText(QString::fromStdString(message));
+	dialog.setWindowTitle(QString::fromStdString(title));
+	dialog.setText(QString::fromStdString(message));
 
 	QMessageBox::StandardButtons qtButtons = 0;
 	QMessageBox::StandardButton defaultButton = QMessageBox::NoButton;
@@ -882,6 +907,121 @@ void FredView::on_actionOrbitSelected_triggered(bool enabled) {
 }
 void FredView::on_actionRotateLocal_triggered(bool enabled) {
 	_viewport->Group_rotate = enabled;
+}
+void FredView::on_actionSave_Camera_Pos_triggered(bool) {
+	_viewport->saved_cam_pos = _viewport->view_pos;
+	_viewport->saved_cam_orient = _viewport->view_orient;
+}
+void FredView::on_actionRestore_Camera_Pos_triggered(bool) {
+	_viewport->view_pos = _viewport->saved_cam_pos;
+	_viewport->view_orient = _viewport->saved_cam_orient;
+
+	_viewport->needsUpdate();
+}
+void FredView::on_actionTool_Bar_triggered(bool enabled) {
+	ui->toolBar->setVisible(enabled);
+}
+void FredView::on_actionStatus_Bar_triggered(bool enabled) {
+	statusBar()->setVisible(enabled);
+}
+void FredView::on_actionDelete_triggered(bool) {
+	if (fred->getNumMarked() > 0) {
+		fred->delete_marked();
+	}
+}
+void FredView::on_actionDelete_Wing_triggered(bool) {
+	if (fred->cur_wing >= 0) {
+		fred->delete_wing(fred->cur_wing, 0);
+	}
+}
+void FredView::initializeGroupActions() {
+	// This is a bit ugly but it's easier than iterating though all actions in the menu...
+	connect(ui->actionGroup_1, &QAction::triggered, this, [this]() { onGroupSelected(1); });
+	connect(ui->actionGroup_2, &QAction::triggered, this, [this]() { onGroupSelected(2); });
+	connect(ui->actionGroup_3, &QAction::triggered, this, [this]() { onGroupSelected(3); });
+	connect(ui->actionGroup_4, &QAction::triggered, this, [this]() { onGroupSelected(4); });
+	connect(ui->actionGroup_5, &QAction::triggered, this, [this]() { onGroupSelected(5); });
+	connect(ui->actionGroup_6, &QAction::triggered, this, [this]() { onGroupSelected(6); });
+	connect(ui->actionGroup_7, &QAction::triggered, this, [this]() { onGroupSelected(7); });
+	connect(ui->actionGroup_8, &QAction::triggered, this, [this]() { onGroupSelected(8); });
+	connect(ui->actionGroup_9, &QAction::triggered, this, [this]() { onGroupSelected(9); });
+
+
+	connect(ui->actionSetGroup_1, &QAction::triggered, this, [this]() { onSetGroup(1); });
+	connect(ui->actionSetGroup_2, &QAction::triggered, this, [this]() { onSetGroup(2); });
+	connect(ui->actionSetGroup_3, &QAction::triggered, this, [this]() { onSetGroup(3); });
+	connect(ui->actionSetGroup_4, &QAction::triggered, this, [this]() { onSetGroup(4); });
+	connect(ui->actionSetGroup_5, &QAction::triggered, this, [this]() { onSetGroup(5); });
+	connect(ui->actionSetGroup_6, &QAction::triggered, this, [this]() { onSetGroup(6); });
+	connect(ui->actionSetGroup_7, &QAction::triggered, this, [this]() { onSetGroup(7); });
+	connect(ui->actionSetGroup_8, &QAction::triggered, this, [this]() { onSetGroup(8); });
+	connect(ui->actionSetGroup_9, &QAction::triggered, this, [this]() { onSetGroup(9); });
+}
+void FredView::onGroupSelected(int group) {
+	fred->unmark_all();
+	auto objp = GET_FIRST(&obj_used_list);
+	while (objp != END_OF_LIST(&obj_used_list)) {
+		if (objp->type == OBJ_SHIP) {
+			if (Ships[objp->instance].group & group) {
+				fred->markObject(OBJ_INDEX(objp));
+			}
+		}
+
+		objp = GET_NEXT(objp);
+	}
+}
+void FredView::onSetGroup(int group) {
+	bool err = false;
+
+	for (auto i = 0; i < MAX_SHIPS; i++) {
+		Ships[i].group &= ~group;
+	}
+
+	auto objp = GET_FIRST(&obj_used_list);
+	while (objp != END_OF_LIST(&obj_used_list)) {
+		if (objp->flags[Object::Object_Flags::Marked]) {
+			if (objp->type == OBJ_SHIP) {
+				Ships[objp->instance].group |= group;
+
+			} else {
+				err = true;
+			}
+		}
+
+		objp = GET_NEXT(objp);
+	}
+
+	if (err) {
+		showButtonDialog(DialogType::Error, "Error", "Only ships can be in groups, and not players or waypoints, etc.\n"
+			"These illegal objects you marked were not placed in the group", { DialogButton::Ok });
+	}
+
+	fred->updateAllViewports();
+}
+void FredView::on_actionLevel_Object_triggered(bool) {
+	_viewport->level_controlled();
+}
+void FredView::on_actionAlign_Object_triggered(bool) {
+	_viewport->verticalize_controlled();
+}
+void FredView::on_actionControl_Object_triggered(bool) {
+	_viewport->Control_mode = (_viewport->Control_mode + 1) % 2;
+}
+void FredView::on_actionNext_Subsystem_triggered(bool) {
+	fred->select_next_subsystem();
+}
+void FredView::on_actionPrev_Subsystem_triggered(bool) {
+	fred->select_previous_subsystem();
+}
+void FredView::on_actionCancel_Subsystem_triggered(bool) {
+	fred->cancel_select_subsystem();
+}
+void FredView::on_actionError_Checker_triggered(bool) {
+	fred->global_error_check();
+}
+void FredView::on_actionAbout_triggered(bool) {
+	dialogs::AboutDialog dialog(this);
+	dialog.exec();
 }
 
 } // namespace fred

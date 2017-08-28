@@ -97,6 +97,26 @@ class FredView: public QMainWindow, public IDialogProvider {
 	void on_actionOrbitSelected_triggered(bool enabled);
 
 	void on_actionRotateLocal_triggered(bool enabled);
+
+	void on_actionSave_Camera_Pos_triggered(bool);
+	void on_actionRestore_Camera_Pos_triggered(bool);
+
+	void on_actionTool_Bar_triggered(bool enabled);
+	void on_actionStatus_Bar_triggered(bool enabled);
+
+	void on_actionDelete_triggered(bool);
+	void on_actionDelete_Wing_triggered(bool);
+
+	void on_actionLevel_Object_triggered(bool);
+	void on_actionAlign_Object_triggered(bool);
+	void on_actionControl_Object_triggered(bool);
+
+	void on_actionNext_Subsystem_triggered(bool);
+	void on_actionPrev_Subsystem_triggered(bool);
+	void on_actionCancel_Subsystem_triggered(bool);
+	void on_actionError_Checker_triggered(bool);
+
+	void on_actionAbout_triggered(bool);
  signals:
 	/**
 	 * @brief Special version of FredApplication::onIdle which is limited to the lifetime of this object
@@ -136,6 +156,9 @@ class FredView: public QMainWindow, public IDialogProvider {
 
 	void initializeStatusBar();
 	void initializePopupMenus();
+
+	void onGroupSelected(int group);
+	void onSetGroup(int group);
 
 	QLabel* _statusBarViewmode = nullptr;
 	QLabel* _statusBarUnitsLabel = nullptr;
@@ -189,6 +212,7 @@ class FredView: public QMainWindow, public IDialogProvider {
 	std::unique_ptr<IDialog<dialogs::FormWingDialogModel>> createFormWingDialog() override;
 
 	bool showModalDialog(IBaseDialog* dlg) override;
+	void initializeGroupActions();
 };
 
 } // namespace fred

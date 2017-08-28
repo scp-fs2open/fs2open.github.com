@@ -6,18 +6,21 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>210</width>
-    <height>64</height>
+    <width>217</width>
+    <height>90</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>Waypoint Path/Jump Node Editor</string>
   </property>
   <layout class="QFormLayout" name="formLayout">
+   <property name="sizeConstraint">
+    <enum>QLayout::SetFixedSize</enum>
+   </property>
    <item row="1" column="0">
     <widget class="QLabel" name="label">
      <property name="text">
-      <string>Name</string>
+      <string>&amp;Name</string>
      </property>
      <property name="buddy">
       <cstring>nameEdit</cstring>
@@ -30,7 +33,7 @@
    <item row="0" column="0">
     <widget class="QLabel" name="label_2">
      <property name="text">
-      <string>Waypoint Path</string>
+      <string>Wa&amp;ypoint Path</string>
      </property>
      <property name="buddy">
       <cstring>pathSelection</cstring>
@@ -38,7 +41,14 @@
     </widget>
    </item>
    <item row="0" column="1">
-    <widget class="QComboBox" name="pathSelection"/>
+    <widget class="QComboBox" name="pathSelection">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+    </widget>
    </item>
   </layout>
  </widget>

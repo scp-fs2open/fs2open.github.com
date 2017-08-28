@@ -10,6 +10,7 @@
 #include <ui/QtGraphicsOperations.h>
 #include <io/key.h>
 #include <io/mouse.h>
+#include <mod_table/mod_table.h>
 #include <iff_defs/iff_defs.h>
 #include <weapon/weapon.h>
 #include <stats/medals.h>
@@ -52,6 +53,10 @@ void initialize(const std::string& cfilepath, int argc, char* argv[], Editor* ed
 
 			 cfile_init(file_path.c_str());
 		 },                                                                          SubSystem::CFile },
+		 {[]()
+		 {
+			 mod_table_init();
+		 },                                                                          SubSystem::ModTable },
 		 { []() {
 			 lcl_init(FS2_OPEN_DEFAULT_LANGUAGE);
 
