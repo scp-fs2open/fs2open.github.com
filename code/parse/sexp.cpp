@@ -233,6 +233,7 @@ sexp_oper Operators[] = {
 
 	//Ship Status Sub-Category
 	{ "is-in-mission",					OP_IS_IN_MISSION,						1,	INT_MAX,	SEXP_BOOLEAN_OPERATOR,	},	// Goober5000
+	{ "is-docked",						OP_IS_DOCKED,							1,	INT_MAX,	SEXP_BOOLEAN_OPERATOR,	},	// Goober5000
 	{ "is-ship-visible",				OP_IS_SHIP_VISIBLE,						1,	1,			SEXP_BOOLEAN_OPERATOR,	},
 	{ "is-ship-stealthy",				OP_IS_SHIP_STEALTHY,					1,	1,			SEXP_BOOLEAN_OPERATOR,	},
 	{ "is-friendly-stealth-visible",	OP_IS_FRIENDLY_STEALTH_VISIBLE,			1,	1,			SEXP_BOOLEAN_OPERATOR,	},
@@ -22294,6 +22295,44 @@ int sexp_is_in_mission(int node)
 	return SEXP_TRUE;
 }
 
+int sexp_is_docked(int node)
+{
+	const ship *host_shipp = nullptr;
+
+	for (int n = node; n != -1; n = CDR(n))
+	{
+		const char *shipname;
+		int shipnum;
+		const ship *current_shipp;
+
+		shipname = CTEXT(n);
+	
+		// if ship is gone or departed, cannot ever evaluate properly.  Return NAN_FOREVER
+		if (mission_log_get_time(LOG_SHIP_DESTROYED, shipname, NULL, NULL) || mission_log_get_time(LOG_SHIP_DEPARTED, shipname, NULL, NULL) || mission_log_get_time(LOG_SELF_DESTRUCTED, shipname, NULL, NULL))
+			return SEXP_NAN_FOREVER;
+
+		shipnum = ship_name_lookup( shipname, 1 );
+		if (shipnum == -1)					// hmm.. if true, must not have arrived yet
+			return SEXP_NAN;
+
+		current_shipp = &Ships[shipnum];
+
+		// if we're currently handling the host ship, this is all we need to do for this loop iteration
+		if (host_shipp == nullptr)
+		{
+			host_shipp = current_shipp;
+			continue;
+		}
+
+		// if we are not docked, do a quick out
+		if (!dock_check_find_direct_docked_object(&Objects[host_shipp->objnum], &Objects[current_shipp->objnum]))
+			return SEXP_FALSE;
+	}
+
+	// all ships are docked
+	return SEXP_TRUE;
+}
+
 void sexp_manipulate_colgroup(int node, bool add_to_group) {
 	object* objp;
 	ship* shipp;
@@ -23206,6 +23245,10 @@ int eval_sexp(int cur_node, int referenced_node)
 
 			case OP_IS_IN_MISSION:
 				sexp_val = sexp_is_in_mission(node);
+				break;
+
+			case OP_IS_DOCKED:
+				sexp_val = sexp_is_docked(node);
 				break;
 
 			case OP_IS_SHIP_VISIBLE:
@@ -25617,6 +25660,7 @@ int query_operator_return_type(int op)
 		case OP_DIRECTIVE_VALUE:
 		case OP_IS_IN_BOX:
 		case OP_IS_IN_MISSION:
+		case OP_IS_DOCKED:
 		case OP_PLAYER_IS_CHEATING_BASTARD:
 		case OP_ARE_SHIP_FLAGS_SET:
 			return OPR_BOOL;
@@ -26637,6 +26681,9 @@ int query_operator_argument_type(int op, int argnum)
 
 		case OP_IS_IN_MISSION:
 			return OPF_STRING;
+
+		case OP_IS_DOCKED:
+			return OPF_SHIP;
 
 		// Sesquipedalian
 		case OP_MISSILE_LOCKED:
@@ -29936,6 +29983,7 @@ int get_subcategory(int sexp_id)
 		case OP_GET_THROTTLE_SPEED:
 		case OP_IS_FACING:
 		case OP_IS_IN_MISSION:
+		case OP_IS_DOCKED:
 		case OP_NAV_ISLINKED:
 		case OP_ARE_SHIP_FLAGS_SET:
 			return STATUS_SUBCATEGORY_SHIP_STATUS;
@@ -30757,10 +30805,19 @@ sexp_help_struct Sexp_help[] = {
 		"\t7: Max Z\r\n"
 		"\t8: Ship to use as reference frame (optional)." },
 
-	{ OP_IS_IN_MISSION, "Checks whether a given ship is presently in the mission.  This sexp doesn't check the arrival list or exited status; it only tests to see if the "
+	{ OP_IS_IN_MISSION, "Is-In-Mission (Status operator)\r\n"
+		"\tChecks whether a given ship is presently in the mission.  This sexp doesn't check the arrival list or exited status; it only tests to see if the "
 		"ship is active.  This means that internally the sexp only returns SEXP_TRUE or SEXP_FALSE and does not use any of the special shortcut values.  This is useful "
 		"for ships created with ship-create, as those ships will not have used the conventional ship arrival list.\r\n\r\n"
-		"Takes 1 or more string arguments, which are checked against the ship list." },
+		"Takes 1 or more string arguments, which are checked against the ship list.  (If more than 1 argument is specified, the sexp will only evaluate to true if all ships "
+		"are in the mission simultaneously.)" },
+
+	{ OP_IS_DOCKED, "Is-Docked (Status operator)\r\n"
+		"\tChecks whether the specified ships are currently docked.  This sexp is different from has-docked-delay, which will return true if the ships have docked at "
+		"any point in the past.  The has-docked-delay sexp checks the mission log, whereas the is-docked sexp examines the actual dockpoints.\r\n\r\n"
+		"Takes 2 or more arguments.  (If more than 2 arguments are specified, the sexp will only evaluate to true if all ships are docked simultaneously.)\r\n"
+		"\t1:\tThe host ship.\r\n"
+		"\tRest:\tShip to check as docked to the host ship." },
 
 	{ OP_GET_DAMAGE_CAUSED, "Get damage caused (Status operator)\r\n"
 		"\tReturns the amount of damage one or more ships have done to a ship.\r\n\r\n"
