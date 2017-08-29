@@ -861,7 +861,7 @@ int Players_mlocked_timestamp;
 
 // for play-music - Goober5000
 int	Sexp_music_handle = -1;
-void sexp_stop_music(int fade = 1);
+void sexp_stop_music(bool fade = true);
 
 // for sound environments - Goober5000/Taylor
 #define SEO_VOLUME		0
@@ -4365,22 +4365,22 @@ int rand_sexp(int n, bool multiple)
 // need to keep.
 int sexp_or(int n)
 {
-    int all_false, result;
+	bool all_false = true;
+	bool result = false;
 
-	all_false = 1;
-	result = 0;
 	if (n != -1)
 	{
 		if (CAR(n) != -1)
 		{
 			result |= is_sexp_true(CAR(n));
-			if ( Sexp_nodes[CAR(n)].value == SEXP_KNOWN_TRUE )
+			if (Sexp_nodes[CAR(n)].value == SEXP_KNOWN_TRUE)
 				return SEXP_KNOWN_TRUE;								// if one of the OR clauses is TRUE, whole clause is true
-			if ( Sexp_nodes[CAR(n)].value != SEXP_KNOWN_FALSE )		// if the value is still unknown, they all can't be false
-				all_false = 0;
+			if (Sexp_nodes[CAR(n)].value != SEXP_KNOWN_FALSE)		// if the value is still unknown, they all can't be false
+				all_false = false;
 		}
+		// this should never happen, because all arguments which return logical values are operators
 		else
-			result |= atoi(CTEXT(n));
+			result |= (atoi(CTEXT(n)) != 0);
 
 		while (CDR(n) != -1)
 		{
@@ -4388,7 +4388,7 @@ int sexp_or(int n)
 			if ( Sexp_nodes[CDR(n)].value == SEXP_KNOWN_TRUE )
 				return SEXP_KNOWN_TRUE;								// if one of the OR clauses is TRUE, whole clause is true
 			if ( Sexp_nodes[CDR(n)].value != SEXP_KNOWN_FALSE )		// if the value is still unknown, they all can't be false
-				all_false = 0;
+				all_false = false;
 
 			n = CDR(n);
 		}
@@ -4397,7 +4397,7 @@ int sexp_or(int n)
 	if (all_false)
 		return SEXP_KNOWN_FALSE;
 
-	return result;
+	return result ? SEXP_TRUE : SEXP_FALSE;
 }
 
 // this function does the 'and' operator.  It will short circuit evaluation  *but* it will still
@@ -4405,10 +4405,9 @@ int sexp_or(int n)
 // to get marked as essential for goal purposes, and evaluation is pretty much the only way
 int sexp_and(int n)
 {
-	int all_true, result;
+	bool all_true = true;
+	bool result = true;
 
-	result = -1;
-	all_true = 1;
 	if (n != -1)
 	{
 		if (CAR(n) != -1)
@@ -4417,21 +4416,19 @@ int sexp_and(int n)
 			if ( Sexp_nodes[CAR(n)].value == SEXP_KNOWN_FALSE || Sexp_nodes[CAR(n)].value == SEXP_NAN_FOREVER )
 				return SEXP_KNOWN_FALSE;							// if one of the AND clauses is FALSE, whole clause is false
 			if ( Sexp_nodes[CAR(n)].value != SEXP_KNOWN_TRUE )		// if the value is still unknown, they all can't be true
-				all_true = 0;
+				all_true = false;
 		}
+		// this should never happen, because all arguments which return logical values are operators
 		else
-			result &= atoi(CTEXT(n));
+			result &= (atoi(CTEXT(n)) != 0);
 
 		while (CDR(n) != -1)
 		{
-			int new_result;
-
-			new_result = is_sexp_true(CDR(n));
-			result &= new_result;
+			result &= is_sexp_true(CDR(n));
 			if ( Sexp_nodes[CDR(n)].value == SEXP_KNOWN_FALSE || Sexp_nodes[CDR(n)].value == SEXP_NAN_FOREVER )
 				return SEXP_KNOWN_FALSE;							// if one of the AND clauses is FALSE, whole clause is false
 			if ( Sexp_nodes[CDR(n)].value != SEXP_KNOWN_TRUE )		// if the value is still unknown, they all can't be true
-				all_true = 0;
+				all_true = false;
 
 			n = CDR(n);
 		}
@@ -4440,30 +4437,30 @@ int sexp_and(int n)
 	if (all_true)
 		return SEXP_KNOWN_TRUE;
 
-	return result;
+	return result ? SEXP_TRUE : SEXP_FALSE;
 }
 
-// this version of the 'and' operator determines whether or not it's arguments become true
+// this version of the 'and' operator determines whether or not its arguments become true
 // in the order in which they are specified in the when statement.  Should be a simple matter of 
-// seeing if anything evaluates to true later than something that evalueated to false
+// seeing if anything evaluates to true later than something that evaluated to false
 int sexp_and_in_sequence(int n)
 {
-	int result = -1;
-	int all_true;
+	bool all_true = true;									// represents whether or not all nodes we have seen so far are true
+	bool result = true;
 
-	all_true = 1;											// represents whether or not all nodes we have seen so far are true
 	if (n != -1)
 	{
 		if (CAR(n) != -1)
 		{
 			result &= is_sexp_true(CAR(n));
 			if ( Sexp_nodes[CAR(n)].value == SEXP_KNOWN_FALSE || Sexp_nodes[CAR(n)].value == SEXP_NAN_FOREVER )
-				return SEXP_KNOWN_FALSE;														// if one of the AND clauses is FALSE, whole clause is false
+				return SEXP_KNOWN_FALSE;							// if one of the AND clauses is FALSE, whole clause is false
 			if ( Sexp_nodes[CAR(n)].value != SEXP_KNOWN_TRUE )		// if value is true, mark our all_true variable for later checking
-				all_true = 0;
+				all_true = false;
 		}
+		// this should never happen, because all arguments which return logical values are operators
 		else
-			result &= atoi(CTEXT(n));
+			result &= (atoi(CTEXT(n)) != 0);
 
 		// a little test -- if the previous sexpressions was true, then mark the node itself as always
 		// true.  I did this because of the distance function.  It might become true, then when waiting for
@@ -4474,16 +4471,15 @@ int sexp_and_in_sequence(int n)
 
 		while (CDR(n) != -1)
 		{
-			int next_result;
-
-			next_result = is_sexp_true(CDR(n));
-			if ( next_result && !result )				// if current result is true, and our running result is false, thngs didn't become true in order
+			bool next_result = is_sexp_true(CDR(n));
+			if ( next_result && !result )				// if current result is true, and our running result is false, things didn't become true in order
 				return SEXP_KNOWN_FALSE;
+
 			result &= next_result;
 			if ( Sexp_nodes[CDR(n)].value == SEXP_KNOWN_FALSE || Sexp_nodes[CDR(n)].value == SEXP_NAN_FOREVER )
-				return SEXP_KNOWN_FALSE;															// if one of the OR clauses is TRUE, whole clause is true
-			if ( Sexp_nodes[CDR(n)].value != SEXP_KNOWN_TRUE )				// if the value is still unknown, they all can't be false
-				all_true = 0;
+				return SEXP_KNOWN_FALSE;							// if one of the AND clauses is FALSE, whole clause is false
+			if ( Sexp_nodes[CDR(n)].value != SEXP_KNOWN_TRUE )		// if the value is still unknown, they all can't be true
+				all_true = false;
 
 			// see comment above for explanation of next lines
 			if ( result )
@@ -4496,7 +4492,7 @@ int sexp_and_in_sequence(int n)
 	if ( all_true )
 		return SEXP_KNOWN_TRUE;
 
-	return result;
+	return result ? SEXP_TRUE : SEXP_FALSE;
 }
 
 // for these four basic boolean operations (not, <, >, and =), we have special cases that we must deal
@@ -4505,7 +4501,7 @@ int sexp_and_in_sequence(int n)
 // this special NAN value and adjust their return types accordingly.  NAN values represent false return values
 int sexp_not(int n)
 {
-	int result = 0;
+	bool result = false;
 
 	if (n != -1)
 	{
@@ -4519,11 +4515,12 @@ int sexp_not(int n)
 			else if ( Sexp_nodes[CAR(n)].value == SEXP_NAN )				// not NAN == TRUE (I think)
 				return SEXP_TRUE;
 		}
+		// this should never happen, because all arguments which return logical values are operators
 		else
-			result = atoi(CTEXT(n));
+			result = (atoi(CTEXT(n)) != 0);
 	}
 
-	return !result;
+	return result ? SEXP_FALSE : SEXP_TRUE;
 }
 
 int sexp_xor(int node)
@@ -6114,7 +6111,8 @@ int sexp_team_score(int node)
  */
 int sexp_hits_left_subsystem(int n)
 {
-	int shipnum, percent, type, single_subsystem = 0;
+	bool single_subsystem = false;
+	int shipnum, percent, type;
 	char *shipname;
 	char *subsys_name;
 
@@ -6649,7 +6647,7 @@ int sexp_num_within_box(int n)
 }	
 
 // Goober5000
-void sexp_set_object_speed(object *objp, int speed, int axis, int subjective)
+void sexp_set_object_speed(object *objp, int speed, int axis, bool subjective)
 {
 	Assert(axis >= 0 && axis <= 2);
 
@@ -6677,7 +6675,8 @@ void sexp_set_object_speed(int n, int axis)
 {
 	Assert(n >= 0);
 
-	int speed, subjective = 0;
+	int speed;
+	bool subjective = false;
 	object_ship_wing_point_team oswpt;
 
 	sexp_get_object_ship_wing_point_team(&oswpt, CTEXT(n));
@@ -6751,7 +6750,8 @@ int sexp_get_object_speed(int n, int axis)
 {
 	Assert(n >= 0);
 
-	int speed, subjective = 0;
+	int speed;
+	bool subjective = false;
 	object_ship_wing_point_team oswpt;
 
 	sexp_get_object_ship_wing_point_team(&oswpt, CTEXT(n));
@@ -7315,7 +7315,7 @@ void sexp_set_ship_maneuver(int n, int op_num)
 		}
 
 		n = CDR(n);
-		apply_all_rotate = (is_sexp_true(n) != 0);
+		apply_all_rotate = is_sexp_true(n);
 	}
 
 	if (op_num == OP_SHIP_LAT_MANEUVER || op_num == OP_SHIP_MANEUVER) {
@@ -7335,7 +7335,7 @@ void sexp_set_ship_maneuver(int n, int op_num)
 		}
 
 		n = CDR(n);
-		apply_all_lat = (is_sexp_true(n) != 0);
+		apply_all_lat = is_sexp_true(n);
 	}
 
 	if ((bank == 0) && (pitch == 0) && (heading == 0) && !apply_all_rotate && (up == 0) && (sideways == 0) && (forward == 0) && !apply_all_lat)
@@ -10051,7 +10051,7 @@ void sexp_hud_display_gauge(int n) {
 void sexp_hud_gauge_set_active(int n) {
 	HudGauge* hg;
 	char* name = CTEXT(n);
-	bool active = (is_sexp_true(CDR(n)) != 0);
+	bool active = is_sexp_true(CDR(n));
 
 	hg = hud_get_gauge(name);
 
@@ -10062,7 +10062,7 @@ void sexp_hud_gauge_set_active(int n) {
 
 void sexp_hud_set_custom_gauge_active(int node) {
 	HudGauge* hg;
-	bool activate = (is_sexp_true(node) > 0);
+	bool activate = is_sexp_true(node);
 	node = CDR(node);
 	for(; node >= 0; node = CDR(node)) {
 
@@ -10087,7 +10087,7 @@ int hud_gauge_type_lookup(char* name) {
 
 void sexp_hud_activate_gauge_type(int n) {
 	int config_type = hud_gauge_type_lookup(CTEXT(n));
-	bool active = (is_sexp_true(CDR(n)) != 0);
+	bool active = is_sexp_true(CDR(n));
 	
 	if (config_type != -1) { 
 		if(!Ship_info[Player_ship->ship_info_index].hud_gauges.empty()) {
@@ -10110,7 +10110,7 @@ void sexp_hud_activate_gauge_type(int n) {
 
 void sexp_hud_set_retail_gauge_active(int node) {
 
-	bool activate = (is_sexp_true(node) > 0);
+	bool activate = is_sexp_true(node);
 	node = CDR(node);
 
 	for(; node >= 0; node = CDR(node)) {
@@ -10162,7 +10162,7 @@ void sexp_allow_treason (int n)
 {
 	n = CDR(n);
 	if (n != -1) {
-        The_mission.flags.set(Mission::Mission_Flags::No_traitor, is_sexp_true(n) != 0);
+        The_mission.flags.set(Mission::Mission_Flags::No_traitor, is_sexp_true(n));
 	}
 }
 
@@ -10170,7 +10170,7 @@ void sexp_set_player_orders(int n)
 {
 	ship *shipp; 
 	int i;
-	int allow_order;
+	bool allow_order;
 	int orders = 0;
 	int default_orders; 
 
@@ -10242,7 +10242,7 @@ void sexp_pause_unpause_music(bool pause)
 }
 
 // Goober5000
-void sexp_stop_music(int fade)
+void sexp_stop_music(bool fade)
 {
 	if ( Sexp_music_handle != -1 ) {
 		audiostream_close_file(Sexp_music_handle, fade);
@@ -10388,7 +10388,7 @@ void multi_sexp_play_sound_from_table()
 // Goober5000
 void sexp_close_sound_from_file(int n)
 {
-	int fade = is_sexp_true(n);
+	bool fade = is_sexp_true(n);
 	sexp_stop_music(fade);
 
 	if (MULTIPLAYER_MASTER) {
@@ -10462,7 +10462,7 @@ void multi_sexp_play_sound_from_file()
 // Goober5000
 void sexp_pause_sound_from_file(int node)
 {
-	bool pause = (is_sexp_true(node) != 0);
+	bool pause = is_sexp_true(node);
 
 	if (MULTIPLAYER_MASTER) {
 		Current_sexp_network_packet.send_bool(pause); 
@@ -11253,7 +11253,7 @@ void sexp_end_of_campaign(int n)
 // campaign, and otherwise to do the conventional code
 void sexp_end_campaign(int n)
 {
-	int ignore_player_mortality = 1;
+	bool ignore_player_mortality = true;
 
 	if (!(Game_mode & GM_CAMPAIGN_MODE)) {
 		return;
@@ -11398,7 +11398,8 @@ void sexp_sabotage_subsystem(int n)
 void sexp_repair_subsystem(int n)
 {
 	char *shipname, *subsystem;
-	int	percentage, shipnum, index, do_submodel_repair, generic_type;
+	int	percentage, shipnum, index, generic_type;
+	bool do_submodel_repair;
 	float repair_hits;
 	ship *shipp;
 	ship_subsys *ss = NULL, *ss_start;
@@ -11408,7 +11409,7 @@ void sexp_repair_subsystem(int n)
 	subsystem = CTEXT(CDR(n));
 	shipnum = ship_name_lookup(shipname);
 	
-	do_submodel_repair = CDDDR(n) == -1 || is_sexp_true(CDDDR(n));
+	do_submodel_repair = (CDDDR(n) == -1) || is_sexp_true(CDDDR(n));
 	
 	// if no ship, then return immediately.
 	if ( shipnum == -1 ) {
@@ -11509,7 +11510,8 @@ void sexp_repair_subsystem(int n)
 void sexp_set_subsystem_strength(int n)
 {
 	char *shipname, *subsystem;
-	int	percentage, shipnum, index, do_submodel_repair, generic_type;
+	int	percentage, shipnum, index, generic_type;
+	bool do_submodel_repair;
 	ship *shipp;
 	ship_subsys *ss = NULL, *ss_start;
 	bool do_loop = true;
@@ -11518,7 +11520,7 @@ void sexp_set_subsystem_strength(int n)
 	subsystem = CTEXT(CDR(n));
 	percentage = eval_num(CDR(CDR(n)));
 
-	do_submodel_repair = CDDDR(n) == -1 || is_sexp_true(CDDDR(n));
+	do_submodel_repair = (CDDDR(n) == -1) || is_sexp_true(CDDDR(n));
 
 	shipnum = ship_name_lookup(shipname);
 	
@@ -12366,14 +12368,15 @@ void sexp_nebula_change_storm(int n)
 void sexp_nebula_toggle_poof(int n)
 {
 	char *name = CTEXT(n);
-	int result = is_sexp_true(CDR(n));
+	bool result = is_sexp_true(CDR(n));
 	int i;
 
 	if (name == NULL) return;
 
 	for (i = 0; i < MAX_NEB2_POOFS; i++)
 	{
-		if (!stricmp(name,Neb2_poof_filenames[i])) break;
+		if (!stricmp(name,Neb2_poof_filenames[i]))
+			break;
 	}
 
 	//coulnd't find the poof
@@ -12401,9 +12404,9 @@ void sexp_nebula_change_pattern(int n)
  */
 void sexp_end_mission(int n)
 {
-	int ignore_player_mortality = 1;
-	int boot_to_main_hall = 0;
-	int from_debrief_to_main_hall = 0;
+	bool ignore_player_mortality = true;
+	bool boot_to_main_hall = false;
+	bool from_debrief_to_main_hall = false;
 
 	if (n != -1) {
 		ignore_player_mortality = is_sexp_true(n);
@@ -12444,7 +12447,7 @@ void sexp_end_mission(int n)
 // Goober5000
 void sexp_set_debriefing_toggled(int node)
 {
-    The_mission.flags.set(Mission::Mission_Flags::Toggle_debriefing, is_sexp_true(node) != 0);
+    The_mission.flags.set(Mission::Mission_Flags::Toggle_debriefing, is_sexp_true(node));
 }
 
 /**
@@ -13660,7 +13663,8 @@ int sexp_previous_goal_status( int n, int status )
 {
 	int rval = 0;
 	char *goal_name, *mission_name;
-	int i, mission_num, default_value = 0, use_defaults = 1;
+	int i, mission_num;
+	bool default_value = false, use_defaults = true;
 
 	mission_name = CTEXT(n);
 	goal_name = CTEXT(CDR(n));
@@ -13683,9 +13687,9 @@ int sexp_previous_goal_status( int n, int status )
 			else
 				rval = SEXP_KNOWN_TRUE;
 
-			use_defaults = 0;
+			use_defaults = false;
 		} else if (Campaign.missions[i].flags & CMISSION_FLAG_SKIPPED) {
-			use_defaults = 1;
+			use_defaults = true;
 		} else {
 			// now try and find the goal this mission
 			mission_num = i;
@@ -13709,7 +13713,7 @@ int sexp_previous_goal_status( int n, int status )
 					rval = SEXP_KNOWN_FALSE;
 			}
 
-			use_defaults = 0;
+			use_defaults = false;
 		}
 	}
 
@@ -13739,7 +13743,8 @@ int sexp_previous_event_status( int n, int status )
 {
 	int rval = 0;
 	char *name, *mission_name;
-	int i, mission_num, default_value = 0, use_defaults = 1;
+	int i, mission_num;
+	bool default_value = false, use_defaults = true;
 
 	mission_name = CTEXT(n);
 	name = CTEXT(CDR(n));
@@ -13763,9 +13768,9 @@ int sexp_previous_event_status( int n, int status )
 				rval = SEXP_KNOWN_TRUE;
 			}
 
-			use_defaults = 0;
+			use_defaults = false;
 		} else if (Campaign.missions[i].flags & CMISSION_FLAG_SKIPPED) {
-			use_defaults = 1;
+			use_defaults = true;
 		} else {
 			// now try and find the goal this mission
 			mission_num = i;
@@ -13789,7 +13794,7 @@ int sexp_previous_event_status( int n, int status )
 					rval = SEXP_KNOWN_FALSE;
 			}
 
-			use_defaults = 0;
+			use_defaults = false;
 		}
 	} 
 
@@ -13861,7 +13866,7 @@ int sexp_event_delay_status( int n, int want_true, bool use_msecs = false)
 	int i, result;
 	fix delay;
 	int rval = SEXP_FALSE;
-	int use_as_directive = 0;
+	bool use_as_directive = false;
 
 	name = CTEXT(n);
 
@@ -14158,7 +14163,7 @@ void sexp_ship_deal_with_subsystem_flag(int node, Ship::Subsystem_Flags ss_flag,
 	if (!((ss_flag == Ship::Subsystem_Flags::Untargetable) || (ss_flag == Ship::Subsystem_Flags::No_SS_targeting)))
 	{
 		node = CDR(node);
-		setit = (is_sexp_true(node) ? true : false);
+		setit = is_sexp_true(node);
 	}
 	
 	//multiplayer packet start
@@ -17427,7 +17432,8 @@ void sexp_turret_change_weapon(int node)
 void sexp_set_armor_type(int node)
 {	
 	int sindex;
-	int armor, rset;
+	int armor;
+	bool rset;
 	ship_subsys *ss = NULL;
 	ship *shipp = NULL;
 	ship_info *sip = NULL;
@@ -17496,7 +17502,8 @@ void sexp_set_armor_type(int node)
 
 void sexp_weapon_set_damage_type(int node)
 {	
-	int windex, damage, swave, rset;
+	int windex, damage;
+	bool swave, rset;
 	size_t t;
 
 	// weapon or shockwave
@@ -17549,7 +17556,8 @@ void sexp_weapon_set_damage_type(int node)
 
 void sexp_ship_set_damage_type(int node)
 {	
-	int sindex, damage, debris, rset;
+	int sindex, damage;
+	bool debris, rset;
 	size_t t;
 	ship *shipp = NULL;
 
@@ -17607,7 +17615,8 @@ void sexp_ship_set_damage_type(int node)
 }
 void sexp_ship_shockwave_set_damage_type(int node)
 {	
-	int sindex, damage, rset;
+	int sindex, damage;
+	bool rset;
 	size_t t;
 
 	// get damage type
@@ -18400,7 +18409,7 @@ void sexp_trigger_submodel_animation(int node)
 	// instant or not
 	if (n >= 0)
 	{
-		instant = (is_sexp_true(n) != 0);
+		instant = is_sexp_true(n);
 		n = CDR(n);
 	}
 	else
@@ -18775,7 +18784,7 @@ void sexp_set_arrival_info(int node)
 	// get warp effect
 	show_warp = true;
 	if (n >= 0)
-		show_warp = (is_sexp_true(n) != 0);
+		show_warp = is_sexp_true(n);
 
 	// now set all that information depending on the first argument
 	if (oswpt.type == OSWPT_TYPE_SHIP)
@@ -18874,7 +18883,7 @@ void sexp_set_departure_info(int node)
 	// get warp effect
 	show_warp = true;
 	if (n >= 0)
-		show_warp = (is_sexp_true(n) != 0);
+		show_warp = is_sexp_true(n);
 
 	// now set all that information depending on the first argument
 	if (oswpt.type == OSWPT_TYPE_SHIP)
@@ -19337,14 +19346,14 @@ void multi_del_nav()
 //args: 1, boolean enable/disable
 void set_use_ap_cinematics(int node)
 {
-    The_mission.flags.set(Mission::Mission_Flags::Use_ap_cinematics, is_sexp_true(node) != 0);
+    The_mission.flags.set(Mission::Mission_Flags::Use_ap_cinematics, is_sexp_true(node));
 }
 
 //text: use-autopilot
 //args: 1, boolean enable/disable
 void set_use_ap(int node)
 {
-    The_mission.flags.set(Mission::Mission_Flags::Deactivate_ap, is_sexp_true(node) == 0);
+    The_mission.flags.set(Mission::Mission_Flags::Deactivate_ap, !is_sexp_true(node));
 }
 
 //text: hide-nav
@@ -19521,7 +19530,7 @@ int sexp_is_player (int node)
 	int sindex, np_index;
 	p_object *p_objp;
 
-	int standard_check = is_sexp_true(node);
+	bool standard_check = is_sexp_true(node);
 
 	if (!(Game_mode & GM_MULTIPLAYER)){	
 		sindex = ship_name_lookup(CTEXT(CDR(node)));
@@ -20465,8 +20474,7 @@ void sexp_debug(int node)
 	SCP_string warning_message;
 
 	#ifdef NDEBUG
-	int no_release_message;
-	no_release_message = is_sexp_true(node); 
+	bool no_release_message = is_sexp_true(node); 
 	#endif
 
 	node = CDR(node); 
@@ -21362,12 +21370,12 @@ void sexp_show_subtitle(int node)
 			n = CDR(n);
 			if(n != -1)
 			{
-				center_x = is_sexp_true(n) != 0;
+				center_x = is_sexp_true(n);
 
 				n = CDR(n);
 				if(n != -1)
 				{
-					center_y = is_sexp_true(n) != 0;
+					center_y = is_sexp_true(n);
 						
 					n = CDR(n);
 					if(n != -1)
@@ -21392,7 +21400,7 @@ void sexp_show_subtitle(int node)
 									n = CDR(n);
 									if ( n !=-1 )
 									{
-										post_shaded = is_sexp_true(n) != 0;
+										post_shaded = is_sexp_true(n);
 									}
 								}
 							}
@@ -21461,10 +21469,10 @@ void sexp_show_subtitle_text(int node)
 	int y_pct = eval_num(n);
 	n = CDR(n);
 
-	bool center_x = is_sexp_true(n) != 0;
+	bool center_x = is_sexp_true(n);
 	n = CDR(n);
 
-	bool center_y = is_sexp_true(n) != 0;
+	bool center_y = is_sexp_true(n);
 	n = CDR(n);
 
 	float display_time = eval_num(n) / 1000.0f;
@@ -21517,7 +21525,7 @@ void sexp_show_subtitle_text(int node)
 	bool post_shaded = false;
 	if (n >= 0)
 	{
-		post_shaded = is_sexp_true(n) != 0;
+		post_shaded = is_sexp_true(n);
 		n = CDR(n);
 	}
 
@@ -21629,10 +21637,10 @@ void sexp_show_subtitle_image(int node)
 	int y_pct = eval_num(n);
 	n = CDR(n);
 
-	bool center_x = is_sexp_true(n) != 0;
+	bool center_x = is_sexp_true(n);
 	n = CDR(n);
 
-	bool center_y = is_sexp_true(n) != 0;
+	bool center_y = is_sexp_true(n);
 	n = CDR(n);
 
 	int width_pct = eval_num(n);
@@ -21654,7 +21662,7 @@ void sexp_show_subtitle_image(int node)
 	bool post_shaded = false;
 	if (n >= 0)
 	{
-		post_shaded = is_sexp_true(n) != 0;
+		post_shaded = is_sexp_true(n);
 		n = CDR(n);
 	}
 
@@ -21793,7 +21801,7 @@ extern bool Perspective_locked;
 
 void sexp_force_perspective(int n)
 {
-	Perspective_locked = (is_sexp_true(n) != 0);
+	Perspective_locked = is_sexp_true(n);
 	n=CDR(n);
 
 	if(n != -1)
@@ -21938,7 +21946,7 @@ void sexp_set_jumpnode_model(int n)
 	n=CDR(n);
 	char* model_name = CTEXT(n);
 	n=CDR(n);
-	bool show_polys = (is_sexp_true(n) != 0);
+	bool show_polys = is_sexp_true(n);
 
 	jnp->SetModel(model_name, show_polys);
 
@@ -22094,7 +22102,7 @@ void sexp_script_eval_multi(int node)
 {
 	char s[TOKEN_LENGTH];
 	bool success = true;
-	int execute_on_server;
+	bool execute_on_server;
 	int sindex;
 	player *p;
 
@@ -22202,9 +22210,9 @@ void sexp_force_glide(int node)
 	if (!Ship_info[shipp->ship_info_index].can_glide)
 		return;
 
-	int glide = is_sexp_true(CDR(node));
+	bool glide = is_sexp_true(CDR(node));
 
-	object_set_gliding(&Objects[shipp->objnum], (glide > 0), true);
+	object_set_gliding(&Objects[shipp->objnum], glide, true);
 
 	return;
 }
@@ -22558,7 +22566,7 @@ int sexp_player_is_cheating_bastard() {
 }
 
 void sexp_set_motion_debris(int node) {
-	Motion_debris_override = is_sexp_true(node) != 0;
+	Motion_debris_override = is_sexp_true(node);
 }
 
 /**
@@ -22593,11 +22601,12 @@ bool ship_class_unchanged(int ship_index)
 }
 
 // Goober5000 - needed because any nonzero integer value is "true"
-int is_sexp_true(int cur_node, int referenced_node)
+bool is_sexp_true(int cur_node, int referenced_node)
 {
 	int result = eval_sexp(cur_node, referenced_node);
 
-	return (result == SEXP_TRUE); // note: any SEXP_KNOWN_TRUE result will return SEXP_TRUE
+	// any SEXP_KNOWN_TRUE result will return SEXP_TRUE from eval_sexp, but let's be defensive
+	return (result == SEXP_TRUE) || (result == SEXP_KNOWN_TRUE);
 }
 
 
