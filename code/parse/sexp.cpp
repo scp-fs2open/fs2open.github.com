@@ -3781,6 +3781,12 @@ void stuff_sexp_text_string(SCP_string &dest, int node, int mode)
 	if (Sexp_nodes[node].type & SEXP_FLAG_VARIABLE) {
 
 		int sexp_variables_index = get_index_sexp_variable_name(Sexp_nodes[node].text);
+		// during the last pass through error-reporting mode, sexp variables have already been transcoded to their indexes
+		if (mode == SEXP_ERROR_CHECK_MODE && sexp_variables_index < 0) {
+			if (can_construe_as_integer(Sexp_nodes[node].text)) {
+				sexp_variables_index = atoi(Sexp_nodes[node].text);
+			}
+		}
 		Assertion(sexp_variables_index != -1, "Couldn't find variable: %s\n", Sexp_nodes[node].text);
 		Assert( (Sexp_variables[sexp_variables_index].type & SEXP_VARIABLE_NUMBER) || (Sexp_variables[sexp_variables_index].type & SEXP_VARIABLE_STRING) );
 
