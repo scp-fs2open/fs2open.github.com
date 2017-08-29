@@ -26907,13 +26907,13 @@ int query_operator_argument_type(int op, int argnum)
 			if (argnum == 3)
 				return OPF_GAME_SND;
 			else
-				return OPF_POSITIVE;
+				return OPF_NUMBER;
 
 		case OP_PLAY_SOUND_FROM_FILE:
 			if (argnum==0)
 				return OPF_STRING;
 			else
-				return OPF_POSITIVE;
+				return OPF_NUMBER;
 
 		case OP_CLOSE_SOUND_FROM_FILE:
 		case OP_PAUSE_SOUND_FROM_FILE:
