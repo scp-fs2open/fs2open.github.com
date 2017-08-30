@@ -76,8 +76,8 @@ int Xstr_inited = 0;
 // table/mission externalization stuff --------------------
 #define PARSE_TEXT_BUF_SIZE			PARSE_BUF_SIZE
 #define PARSE_ID_BUF_SIZE			5
-#define LCL_MAX_STRINGS					4500
-char *Lcl_ext_str[LCL_MAX_STRINGS];
+
+SCP_unordered_map<int, char*> Lcl_ext_str;
 
 
 // ------------------------------------------------------------------------------------------------------------
@@ -276,8 +276,8 @@ void parse_stringstbl_common(const char *filename, const bool external)
 				stuff_string(buf, F_RAW, sizeof(buf));
 			}
 
-			if (external && (index < 0 || index >= LCL_MAX_STRINGS)) {
-				error_display(0, "Invalid tstrings table index specified (%i). Please increment LCL_MAX_STRINGS in localize.cpp.", index);
+			if (external && index < 0) {
+				error_display(0, "Invalid tstrings table index specified (%i). The index must be positive.", index);
 				return;
 			} else if (!external && (index < 0 || index >= XSTR_SIZE)) {
 				Error(LOCATION, "Invalid strings table index specified (%i)", index);
@@ -353,23 +353,23 @@ void parse_stringstbl_common(const char *filename, const bool external)
 
 			// write into Xstr_table (for strings.tbl) or Lcl_ext_str (for tstrings.tbl)
 			if (Parsing_modular_table) {
-				if ( external && (Lcl_ext_str[index] != NULL) ) {
+				if ( external && (Lcl_ext_str.find(index) != Lcl_ext_str.end()) ) {
 					vm_free((void *) Lcl_ext_str[index]);
-					Lcl_ext_str[index] = NULL;
+					Lcl_ext_str.erase(Lcl_ext_str.find(index));
 				} else if ( !external && (Xstr_table[index].str != NULL) ) {
 					vm_free((void *) Xstr_table[index].str);
 					Xstr_table[index].str = NULL;
 				}
 			}
 
-			if (external && (Lcl_ext_str[index] != NULL)) {
+			if (external && (Lcl_ext_str.find(index) != Lcl_ext_str.end())) {
 				Warning(LOCATION, "Tstrings table index %d used more than once", index);
 			} else if (!external && (Xstr_table[index].str != NULL)) {
 				Warning(LOCATION, "Strings table index %d used more than once", index);
 			}
 
 			if (external) {
-				Lcl_ext_str[index] = vm_strdup(buf);
+				Lcl_ext_str.insert(std::make_pair(index, vm_strdup(buf)));
 			} else {
 				Xstr_table[index].str = vm_strdup(buf);
 			}
@@ -427,9 +427,8 @@ void lcl_xstr_init()
 	for (i = 0; i < XSTR_SIZE; i++)
 		Xstr_table[i].str = NULL;
 
-	for (i = 0; i < LCL_MAX_STRINGS; i++)
-		Lcl_ext_str[i] = NULL;
-
+	Assertion(Lcl_ext_str.size() == 0, "Localize system was not shut down properly!");
+	Lcl_ext_str.clear();
 
 	try
 	{
@@ -471,12 +470,12 @@ void lcl_xstr_close()
 		}
 	}
 
-	for (i=0; i<LCL_MAX_STRINGS; i++){
-		if (Lcl_ext_str[i] != NULL) {
-			vm_free((void *) Lcl_ext_str[i]);
-			Lcl_ext_str[i] = NULL;
+	for (const auto& entry : Lcl_ext_str) {
+		if (entry.second != nullptr) {
+			vm_free(entry.second);
 		}
 	}
+	Lcl_ext_str.clear();
 }
 
 
@@ -736,7 +735,7 @@ void lcl_ext_localize_sub(const char *in, char *out, size_t max_len, int *id)
 	}
 
 	// get the string if it exists
-	if ((str_id < LCL_MAX_STRINGS) && (Lcl_ext_str[str_id] != NULL)) {
+	if (Lcl_ext_str.find(str_id) != Lcl_ext_str.end()) {
 		// copy to the outgoing string
 		if ( strlen(Lcl_ext_str[str_id]) > max_len )
 			error_display(0, "Token too long: [%s].  Length = " SIZE_T_ARG ".  Max is " SIZE_T_ARG ".\n", Lcl_ext_str[str_id], strlen(Lcl_ext_str[str_id]), max_len);
@@ -747,9 +746,6 @@ void lcl_ext_localize_sub(const char *in, char *out, size_t max_len, int *id)
 	else {
 		if ( strlen(text_str) > max_len )
 			error_display(0, "Token too long: [%s].  Length = " SIZE_T_ARG ".  Max is " SIZE_T_ARG ".\n", text_str, strlen(text_str), max_len);
-
-		if (str_id >= LCL_MAX_STRINGS)
-			error_display(0, "Invalid XSTR ID: [%d]. (Must be less than %d.)\n", str_id, LCL_MAX_STRINGS);
 
 		strncpy(out, text_str, max_len);
 	}
@@ -821,15 +817,12 @@ void lcl_ext_localize_sub(const SCP_string &in, SCP_string &out, int *id)
 	}
 
 	// get the string if it exists
-	if ((str_id < LCL_MAX_STRINGS) && (Lcl_ext_str[str_id] != NULL)) {
+	if (Lcl_ext_str.find(str_id) != Lcl_ext_str.end()) {
 		// copy to the outgoing string
 		out = Lcl_ext_str[str_id];
 	}
 	// otherwise use what we have - probably should Int3() or assert here
 	else {
-		if (str_id >= LCL_MAX_STRINGS)
-			error_display(0, "Invalid XSTR ID: [%d]. (Must be less than %d.)\n", str_id, LCL_MAX_STRINGS);
-
 		out = text_str;
 	}
 
