@@ -4372,7 +4372,7 @@ int sexp_or(int n)
 	{
 		if (CAR(n) != -1)
 		{
-			result = result || is_sexp_true(CAR(n));
+			result = is_sexp_true(CAR(n)) || result;
 			if (Sexp_nodes[CAR(n)].value == SEXP_KNOWN_TRUE)
 				return SEXP_KNOWN_TRUE;								// if one of the OR clauses is TRUE, whole clause is true
 			if (Sexp_nodes[CAR(n)].value != SEXP_KNOWN_FALSE)		// if the value is still unknown, they all can't be false
@@ -4380,11 +4380,11 @@ int sexp_or(int n)
 		}
 		// this should never happen, because all arguments which return logical values are operators
 		else
-			result = result || (atoi(CTEXT(n)) != 0);
+			result = (atoi(CTEXT(n)) != 0) || result;
 
 		while (CDR(n) != -1)
 		{
-			result = result || is_sexp_true(CDR(n));
+			result = is_sexp_true(CDR(n)) || result;
 			if ( Sexp_nodes[CDR(n)].value == SEXP_KNOWN_TRUE )
 				return SEXP_KNOWN_TRUE;								// if one of the OR clauses is TRUE, whole clause is true
 			if ( Sexp_nodes[CDR(n)].value != SEXP_KNOWN_FALSE )		// if the value is still unknown, they all can't be false
@@ -4412,7 +4412,7 @@ int sexp_and(int n)
 	{
 		if (CAR(n) != -1)
 		{
-			result = result && is_sexp_true(CAR(n));
+			result = is_sexp_true(CAR(n)) && result;
 			if ( Sexp_nodes[CAR(n)].value == SEXP_KNOWN_FALSE || Sexp_nodes[CAR(n)].value == SEXP_NAN_FOREVER )
 				return SEXP_KNOWN_FALSE;							// if one of the AND clauses is FALSE, whole clause is false
 			if ( Sexp_nodes[CAR(n)].value != SEXP_KNOWN_TRUE )		// if the value is still unknown, they all can't be true
@@ -4420,11 +4420,11 @@ int sexp_and(int n)
 		}
 		// this should never happen, because all arguments which return logical values are operators
 		else
-			result = result && (atoi(CTEXT(n)) != 0);
+			result = (atoi(CTEXT(n)) != 0) && result;
 
 		while (CDR(n) != -1)
 		{
-			result = result && is_sexp_true(CDR(n));
+			result = is_sexp_true(CDR(n)) && result;
 			if ( Sexp_nodes[CDR(n)].value == SEXP_KNOWN_FALSE || Sexp_nodes[CDR(n)].value == SEXP_NAN_FOREVER )
 				return SEXP_KNOWN_FALSE;							// if one of the AND clauses is FALSE, whole clause is false
 			if ( Sexp_nodes[CDR(n)].value != SEXP_KNOWN_TRUE )		// if the value is still unknown, they all can't be true
@@ -4452,7 +4452,7 @@ int sexp_and_in_sequence(int n)
 	{
 		if (CAR(n) != -1)
 		{
-			result = result && is_sexp_true(CAR(n));
+			result = is_sexp_true(CAR(n)) && result;
 			if ( Sexp_nodes[CAR(n)].value == SEXP_KNOWN_FALSE || Sexp_nodes[CAR(n)].value == SEXP_NAN_FOREVER )
 				return SEXP_KNOWN_FALSE;							// if one of the AND clauses is FALSE, whole clause is false
 			if ( Sexp_nodes[CAR(n)].value != SEXP_KNOWN_TRUE )		// if value is true, mark our all_true variable for later checking
@@ -4460,7 +4460,7 @@ int sexp_and_in_sequence(int n)
 		}
 		// this should never happen, because all arguments which return logical values are operators
 		else
-			result = result && (atoi(CTEXT(n)) != 0);
+			result = (atoi(CTEXT(n)) != 0) && result;
 
 		// a little test -- if the previous sexpressions was true, then mark the node itself as always
 		// true.  I did this because of the distance function.  It might become true, then when waiting for
@@ -4475,7 +4475,7 @@ int sexp_and_in_sequence(int n)
 			if ( next_result && !result )				// if current result is true, and our running result is false, things didn't become true in order
 				return SEXP_KNOWN_FALSE;
 
-			result = result && next_result;
+			result = next_result && result;
 			if ( Sexp_nodes[CDR(n)].value == SEXP_KNOWN_FALSE || Sexp_nodes[CDR(n)].value == SEXP_NAN_FOREVER )
 				return SEXP_KNOWN_FALSE;							// if one of the AND clauses is FALSE, whole clause is false
 			if ( Sexp_nodes[CDR(n)].value != SEXP_KNOWN_TRUE )		// if the value is still unknown, they all can't be true
