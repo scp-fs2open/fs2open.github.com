@@ -6715,7 +6715,8 @@ void sexp_set_object_speed(int n, int axis)
 void multi_sexp_set_object_speed()
 {
 	object *objp;
-	int speed = 0, axis = 0, subjective = 0;
+	int speed = 0, axis = 0;
+	bool subjective = false;
 
     Current_sexp_network_packet.get_object(objp);
     Current_sexp_network_packet.get_int(speed);
@@ -6725,7 +6726,7 @@ void multi_sexp_set_object_speed()
 	sexp_set_object_speed(objp, speed, axis, subjective);
 }
 
-int sexp_get_object_speed(object *objp, int axis, int subjective)
+int sexp_get_object_speed(object *objp, int axis, bool subjective)
 {
 	Assertion(((axis >= 0) && (axis <= 2)), "Axis is out of range (%d)", axis);
 	int speed;
@@ -17052,7 +17053,7 @@ void sexp_beam_free(int node)
 
 void sexp_set_thrusters(int node) 
 {
-	bool activate = is_sexp_true(node) > 0;
+	bool activate = is_sexp_true(node);
 	node = CDR(node);
 
 	for(; node >= 0; node = CDR(node)) {
