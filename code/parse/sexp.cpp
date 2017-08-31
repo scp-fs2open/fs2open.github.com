@@ -6715,15 +6715,14 @@ void sexp_set_object_speed(int n, int axis)
 void multi_sexp_set_object_speed()
 {
 	object *objp;
-	int speed = 0, axis = 0;
-	bool subjective = false;
+	int speed = 0, axis = 0, subjective = 0;
 
     Current_sexp_network_packet.get_object(objp);
     Current_sexp_network_packet.get_int(speed);
     Current_sexp_network_packet.get_int(axis);
     Current_sexp_network_packet.get_int(subjective);
 
-	sexp_set_object_speed(objp, speed, axis, subjective);
+	sexp_set_object_speed(objp, speed, axis, subjective != 0);
 }
 
 int sexp_get_object_speed(object *objp, int axis, bool subjective)
