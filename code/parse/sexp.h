@@ -1150,7 +1150,7 @@ extern int get_sexp_main(void);	//	Returns start node
 extern int run_sexp(const char* sexpression); // debug and lua sexps
 extern int stuff_sexp_variable_list();
 extern int eval_sexp(int cur_node, int referenced_node = -1);
-extern int is_sexp_true(int cur_node, int referenced_node = -1);
+extern bool is_sexp_true(int cur_node, int referenced_node = -1);
 extern int query_operator_return_type(int op);
 extern int query_operator_argument_type(int op, int argnum);
 extern void update_sexp_references(const char *old_name, const char *new_name);
