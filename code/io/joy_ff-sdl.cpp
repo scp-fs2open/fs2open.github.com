@@ -86,7 +86,7 @@ int joy_ff_init()
 
 	ff_enabled = os_config_read_uint(NULL, "EnableJoystickFF", 1);
 
-	if ( !ff_enabled ) {
+	if ( !ff_enabled || io::joystick::getCurrentJoystick() == nullptr) {
 		return 0;
 	}
 
@@ -114,11 +114,8 @@ int joy_ff_init()
 		}
 	}
 #endif
-	
-	// This should be how we do it, but it's currently bugged in SDL so it fails to re-enumerate haptic axes.
-	//haptic = SDL_HapticOpenFromJoystick(joy_get_device());
 
-	haptic = SDL_HapticOpen(0);
+	haptic = SDL_HapticOpenFromJoystick(io::joystick::getCurrentJoystick()->getDevice());
 
 	if (haptic == NULL) {
 		mprintf(("    ERROR: Unable to open haptic joystick: %s\n", SDL_GetError()));
