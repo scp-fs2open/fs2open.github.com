@@ -1054,3 +1054,91 @@ void gr_shade(int x, int y, int w, int h, int resize_mode) {
 
 	endDrawing(path);
 }
+
+int gr_immediate_buffer_handle = -1;
+static size_t immediate_buffer_offset = 0;
+static size_t immediate_buffer_size = 0;
+static const int IMMEDIATE_BUFFER_RESIZE_BLOCK_SIZE = 2048;
+
+size_t gr_add_to_immediate_buffer(size_t size, void* data) {
+	GR_DEBUG_SCOPE("Add data to immediate buffer");
+
+	if ( gr_immediate_buffer_handle < 0 ) {
+		gr_immediate_buffer_handle = gr_create_vertex_buffer(false);
+	}
+
+	Assert(size > 0 && data != NULL);
+
+	if ( immediate_buffer_offset + size > immediate_buffer_size ) {
+		// incoming data won't fit the immediate buffer. time to reallocate.
+		immediate_buffer_offset = 0;
+		immediate_buffer_size += MAX(IMMEDIATE_BUFFER_RESIZE_BLOCK_SIZE, size);
+
+		gr_update_buffer_data(gr_immediate_buffer_handle, immediate_buffer_size, NULL);
+	}
+
+	// only update a section of the immediate vertex buffer
+	gr_update_buffer_data_offset(gr_immediate_buffer_handle, immediate_buffer_offset, size, data);
+
+	auto old_offset = immediate_buffer_offset;
+
+	immediate_buffer_offset += size;
+
+	return old_offset;
+}
+void gr_reset_immediate_buffer() {
+	if ( gr_immediate_buffer_handle < 0 ) {
+		// we haven't used the immediate buffer yet
+		return;
+	}
+
+	// orphan the immediate buffer so we can start fresh in a new frame
+	gr_update_buffer_data(gr_immediate_buffer_handle, immediate_buffer_size, NULL);
+
+	// bring our offset to the beginning of the immediate buffer
+	immediate_buffer_offset = 0;
+}
+
+/**
+ * @brief Adjusts the offset in a vertex layout to adjust for the immediate buffer offset
+ * @param layout
+ * @param immediate_offset
+ * @return
+ */
+static vertex_layout adjust_immediate_vertex_layout(const vertex_layout* layout, size_t immediate_offset) {
+	vertex_layout adjusted;
+
+	for (size_t i = 0; i < layout->get_num_vertex_components(); ++i) {
+		auto component = layout->get_vertex_component(i);
+
+		adjusted.add_vertex_component(component->format_type, component->stride, component->offset + immediate_offset);
+	}
+
+	return adjusted;
+}
+
+void gr_render_primitives_immediate(material* material_info,
+									primitive_type prim_type,
+									vertex_layout* layout,
+									int n_verts,
+									void* data,
+									size_t size) {
+	auto offset = gr_add_to_immediate_buffer(size, data);
+
+	vertex_layout immediate_layout = adjust_immediate_vertex_layout(layout, offset);
+
+	gr_render_primitives(material_info, prim_type, &immediate_layout, 0, n_verts, gr_immediate_buffer_handle);
+}
+
+void gr_render_primitives_2d_immediate(material* material_info,
+									   primitive_type prim_type,
+									   vertex_layout* layout,
+									   int n_verts,
+									   void* data,
+									   size_t size) {
+	auto offset = gr_add_to_immediate_buffer(size, data);
+
+	vertex_layout immediate_layout = adjust_immediate_vertex_layout(layout, offset);
+
+	gr_render_primitives_2d(material_info, prim_type, &immediate_layout, 0, n_verts, gr_immediate_buffer_handle);
+}

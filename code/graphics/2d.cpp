@@ -2096,6 +2096,8 @@ void gr_flip(bool execute_scripting)
 		Script_system.EndFrame();
 	}
 
+	gr_reset_immediate_buffer();
+
 	gr_screen.gf_flip();
 }
 
