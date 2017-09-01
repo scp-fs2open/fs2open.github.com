@@ -347,7 +347,6 @@ void opengl_tnl_init()
 
 		GL_state.Texture.SetActiveUnit(0);
 		GL_state.Texture.SetTarget(GL_TEXTURE_2D_ARRAY);
-//		GL_state.Texture.SetTarget(GL_TEXTURE_2D);
 		GL_state.Texture.Enable(Shadow_map_depth_texture);
 		
 		glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
@@ -375,7 +374,6 @@ void opengl_tnl_init()
 
 		GL_state.Texture.SetActiveUnit(0);
 		GL_state.Texture.SetTarget(GL_TEXTURE_2D_ARRAY);
-		//GL_state.Texture.SetTarget(GL_TEXTURE_2D);
 		GL_state.Texture.Enable(Shadow_map_texture);
 
 		glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
@@ -1154,9 +1152,7 @@ void opengl_tnl_set_model_material(model_material *material_info)
 		Current_shader->program->Uniforms.setUniformf("fardist", Shadow_cascade_distances[3]);
 		Current_shader->program->Uniforms.setUniformi("shadow_map", render_pass);
 
-		GL_state.Texture.SetActiveUnit(render_pass);
-		GL_state.Texture.SetTarget(GL_TEXTURE_2D_ARRAY);
-		GL_state.Texture.Enable(Shadow_map_texture);
+		GL_state.Texture.Enable(render_pass, GL_TEXTURE_2D_ARRAY, Shadow_map_texture);
 
 		++render_pass; // bump!
 	}
@@ -1168,14 +1164,11 @@ void opengl_tnl_set_model_material(model_material *material_info)
 	if ( Current_shader->flags & SDR_FLAG_MODEL_ANIMATED ) {
 		Current_shader->program->Uniforms.setUniformi("sFramebuffer", render_pass);
 
-		GL_state.Texture.SetActiveUnit(render_pass);
-		GL_state.Texture.SetTarget(GL_TEXTURE_2D);
-
 		if ( Scene_framebuffer_in_frame ) {
-			GL_state.Texture.Enable(Scene_effect_texture);
+			GL_state.Texture.Enable(render_pass, GL_TEXTURE_2D, Scene_effect_texture);
 			glDrawBuffer(GL_COLOR_ATTACHMENT0);
 		} else {
-			GL_state.Texture.Enable(Framebuffer_fallback_texture_id);
+			GL_state.Texture.Enable(render_pass, GL_TEXTURE_2D, Framebuffer_fallback_texture_id);
 		}
 
 		++render_pass;
@@ -1184,10 +1177,8 @@ void opengl_tnl_set_model_material(model_material *material_info)
 	if ( Current_shader->flags & SDR_FLAG_MODEL_TRANSFORM ) {
 		Current_shader->program->Uniforms.setUniformi("transform_tex", render_pass);
 		Current_shader->program->Uniforms.setUniformi("buffer_matrix_offset", (int)GL_transform_buffer_offset);
-		
-		GL_state.Texture.SetActiveUnit(render_pass);
-		GL_state.Texture.SetTarget(GL_TEXTURE_BUFFER);
-		GL_state.Texture.Enable(opengl_get_transform_buffer_texture());
+
+		GL_state.Texture.Enable(render_pass, GL_TEXTURE_BUFFER, opengl_get_transform_buffer_texture());
 
 		++render_pass;
 	}
@@ -1272,15 +1263,11 @@ void opengl_tnl_set_material_particle(particle_material * material_info)
 	if ( !Cmdline_no_deferred_lighting ) {
 		Assert(Scene_position_texture != 0);
 
-		GL_state.Texture.SetActiveUnit(1);
-		GL_state.Texture.SetTarget(GL_TEXTURE_2D);
-		GL_state.Texture.Enable(Scene_position_texture);
+		GL_state.Texture.Enable(1, GL_TEXTURE_2D, Scene_position_texture);
 	} else {
 		Assert(Scene_depth_texture != 0);
 
-		GL_state.Texture.SetActiveUnit(1);
-		GL_state.Texture.SetTarget(GL_TEXTURE_2D);
-		GL_state.Texture.Enable(Scene_depth_texture);
+		GL_state.Texture.Enable(1, GL_TEXTURE_2D, Scene_depth_texture);
 	}
 }
 void opengl_tnl_set_material_batched(batched_bitmap_material* material_info) {
@@ -1312,30 +1299,24 @@ void opengl_tnl_set_material_distortion(distortion_material* material_info)
 	Current_shader->program->Uniforms.setUniformf("farZ", Max_draw_distance);
 	Current_shader->program->Uniforms.setUniformi("frameBuffer", 2);
 
-	GL_state.Texture.SetActiveUnit(2);
-	GL_state.Texture.SetTarget(GL_TEXTURE_2D);
-	GL_state.Texture.Enable(Scene_effect_texture);
+	GL_state.Texture.Enable(2, GL_TEXTURE_2D, Scene_effect_texture);
 
 	Current_shader->program->Uniforms.setUniformi("distMap", 3);
-	GL_state.Texture.SetActiveUnit(3);
-	GL_state.Texture.SetTarget(GL_TEXTURE_2D);
 
 	if(material_info->get_thruster_rendering()) {
-		GL_state.Texture.Enable(Distortion_texture[!Distortion_switch]);
+		GL_state.Texture.Enable(3, GL_TEXTURE_2D, Distortion_texture[!Distortion_switch]);
 
 		Current_shader->program->Uniforms.setUniformf("use_offset", 1.0f);
 	} else {
 		// Disable this texture unit
-		GL_state.Texture.Enable(0);
+		GL_state.Texture.Enable(3, GL_TEXTURE_2D, 0);
 
 		Current_shader->program->Uniforms.setUniformf("use_offset", 0.0f);
 	}
 
 	Assert(Scene_depth_texture != 0);
 
-	GL_state.Texture.SetActiveUnit(1);
-	GL_state.Texture.SetTarget(GL_TEXTURE_2D);
-	GL_state.Texture.Enable(Scene_depth_texture);
+	GL_state.Texture.Enable(1, GL_TEXTURE_2D, Scene_depth_texture);
 }
 
 void opengl_tnl_set_material_movie(movie_material* material_info) {

@@ -395,11 +395,12 @@ class waypoint_list;
 #define OP_TURRET_GET_PRIMARY_AMMO			(0x004f | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// DahBlount, part of the turret ammo code
 
 #define OP_TURRET_GET_SECONDARY_AMMO		(0x0050 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// DahBlount, part of the turret ammo code
-#define OP_IS_CONTAINER_EMPTY				(0x0051 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// Karajorma
-#define OP_GET_CONTAINER_SIZE				(0x0052 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// Karajorma
-#define OP_CONTAINER_HAS_DATA				(0x0053 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// Karajorma
-#define OP_CONTAINER_DATA_INDEX				(0x0054 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// Karajorma
-#define OP_CONTAINER_HAS_KEY				(0x0055 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// Karajorma
+#define OP_IS_DOCKED						(0x0051 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// Goober5000
+#define OP_IS_CONTAINER_EMPTY				(0x0052 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// Karajorma
+#define OP_GET_CONTAINER_SIZE				(0x0053 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// Karajorma
+#define OP_CONTAINER_HAS_DATA				(0x0054 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// Karajorma
+#define OP_CONTAINER_DATA_INDEX				(0x0055 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// Karajorma
+#define OP_CONTAINER_HAS_KEY				(0x0056 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// Karajorma
 
 // conditional sexpressions
 #define OP_WHEN								(0x0000 | OP_CATEGORY_CONDITIONAL)
@@ -746,13 +747,14 @@ class waypoint_list;
 #define OP_TURRET_SET_PRIMARY_AMMO			(0x002c | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// DahBlount, part of the turret ammo changes
 #define OP_TURRET_SET_SECONDARY_AMMO		(0x002d | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// DahBlount, part of the turret ammo changes
 #define OP_JETTISON_CARGO_NEW				(0x002e | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Goober5000
-#define OP_CONTAINER_ADD_TO_LIST			(0x002f | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Karajorma
-#define OP_CONTAINER_ADD_TO_MAP				(0x0030 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Karajorma
+#define OP_STRING_CONCATENATE_BLOCK			(0x002f | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Goober5000
+#define OP_CONTAINER_ADD_TO_LIST			(0x0030 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Karajorma
+#define OP_CONTAINER_ADD_TO_MAP				(0x0031 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Karajorma
 
-#define OP_CLEAR_CONTAINER					(0x0031 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Karajorma
-#define OP_GET_MAP_KEYS						(0x0032 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Karajorma
-#define OP_CONTAINER_REMOVE_FROM_LIST		(0x0033 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Karajorma
-#define OP_CONTAINER_REMOVE_FROM_MAP		(0x0034 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Karajorma
+#define OP_CLEAR_CONTAINER					(0x0032 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Karajorma
+#define OP_GET_MAP_KEYS						(0x0033 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Karajorma
+#define OP_CONTAINER_REMOVE_FROM_LIST		(0x0034 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Karajorma
+#define OP_CONTAINER_REMOVE_FROM_MAP		(0x0035 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Karajorma
 
 // defined for AI goals
 #define OP_AI_CHASE							(0x0000 | OP_CATEGORY_AI | OP_NONCAMPAIGN_FLAG)
@@ -1220,7 +1222,7 @@ extern int stuff_sexp_variable_list();
 extern void stuff_sexp_list_container();
 extern void stuff_sexp_map_container();
 extern int eval_sexp(int cur_node, int referenced_node = -1);
-extern int is_sexp_true(int cur_node, int referenced_node = -1);
+extern bool is_sexp_true(int cur_node, int referenced_node = -1);
 extern int query_operator_return_type(int op);
 extern int query_operator_argument_type(int op, int argnum);
 extern void update_sexp_references(const char *old_name, const char *new_name);

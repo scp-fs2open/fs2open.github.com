@@ -897,6 +897,7 @@ void sexp_tree::right_clicked(int mode)
 							case OP_HUD_GAUGE_SET_ACTIVE:
 							case OP_HUD_ACTIVATE_GAUGE_TYPE:
 							case OP_JETTISON_CARGO_DELAY:
+							case OP_STRING_CONCATENATE:
 								j = Num_op_menus;	// don't allow these operators to be visible
 								break;
 						}
@@ -940,6 +941,7 @@ void sexp_tree::right_clicked(int mode)
 							case OP_HUD_GAUGE_SET_ACTIVE:
 							case OP_HUD_ACTIVATE_GAUGE_TYPE:
 							case OP_JETTISON_CARGO_DELAY:
+							case OP_STRING_CONCATENATE:
 								j = Num_submenus;	// don't allow these operators to be visible
 								break;
 						}
