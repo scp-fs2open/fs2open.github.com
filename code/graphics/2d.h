@@ -22,6 +22,9 @@
 #include "math/vecmat.h"
 #include "io/cursor.h"
 
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+
 extern const float Default_min_draw_distance;
 extern const float Default_max_draw_distance;
 extern float Min_draw_distance;
@@ -42,31 +45,29 @@ class batched_bitmap_material;
 
 class transform_stack {
 	
-	matrix4 Current_transform;
-	SCP_vector<matrix4> Stack;
+	glm::mat4 Current_transform;
+	SCP_vector<glm::mat4> Stack;
 public:
 	transform_stack()
 	{
-		vm_matrix4_set_identity(&Current_transform);
-
 		Stack.clear();
 		Stack.push_back(Current_transform);
 	}
 
-	matrix4 &get_transform()
+	const glm::mat4& get_transform()
 	{
 		return Current_transform;
 	}
 
 	void clear()
 	{
-		vm_matrix4_set_identity(&Current_transform);
+		Current_transform = glm::mat4();
 
 		Stack.clear();
 		Stack.push_back(Current_transform);
 	}
 
-	void push_and_replace(matrix4 new_transform)
+	void push_and_replace(const glm::mat4& new_transform)
 	{
 		Current_transform = new_transform;
 		Stack.push_back(Current_transform);
@@ -78,18 +79,15 @@ public:
 		matrix new_orient = IDENTITY_MATRIX;
 		vec3d new_pos = ZERO_VECTOR;
 
-		matrix4 current_transform_copy = Current_transform;
-		matrix4 new_transform;
-
-		if ( pos != NULL ) {
+		if (pos != NULL) {
 			new_pos = *pos;
 		}
 
-		if ( orient != NULL ) {
+		if (orient != NULL) {
 			new_orient = *orient;
 		}
 
-		if ( scale != NULL ) {
+		if (scale != NULL) {
 			new_scale = *scale;
 		}
 
@@ -97,9 +95,10 @@ public:
 		vm_vec_scale(&new_orient.vec.uvec, new_scale.xyz.y);
 		vm_vec_scale(&new_orient.vec.fvec, new_scale.xyz.z);
 
-		vm_matrix4_set_transform(&new_transform, &new_orient, &new_pos);
-
-		vm_matrix4_x_matrix4(&Current_transform, &current_transform_copy, &new_transform);
+		glm::mat4 new_transform = vm_mat_to_glm(new_orient);
+		new_transform[3] = glm::vec4(vm_vec_to_glm(new_pos), 1.0f);
+		
+		Current_transform = Current_transform * new_transform;
 		Stack.push_back(Current_transform);
 	}
 	
@@ -732,7 +731,7 @@ typedef struct screen {
 	void (*gf_update_texture)(int bitmap_handle, int bpp, const ubyte* data, int width, int height);
 	void (*gf_get_bitmap_from_texture)(void* data_out, int bitmap_num);
 
-	void (*gf_shadow_map_start)(matrix4 *shadow_view_matrix, const matrix *light_matrix);
+	void (*gf_shadow_map_start)(glm::mat4& shadow_view_matrix, const matrix *light_matrix);
 	void (*gf_shadow_map_end)();
 
 	// new drawing functions

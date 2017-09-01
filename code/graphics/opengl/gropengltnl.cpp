@@ -32,6 +32,9 @@
 #include "graphics/shadows.h"
 #include "graphics/material.h"
 
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
+
 extern int GLOWMAP;
 extern int CLOAKMAP;
 extern int SPECMAP;
@@ -74,11 +77,11 @@ bool Rendering_to_shadow_map = false;
 int Transform_buffer_handle = -1;
 
 transform_stack GL_model_matrix_stack;
-matrix4 GL_view_matrix;
-matrix4 GL_model_view_matrix;
-matrix4 GL_projection_matrix;
-matrix4 GL_last_projection_matrix;
-matrix4 GL_last_view_matrix;
+glm::mat4 GL_view_matrix;
+glm::mat4 GL_model_view_matrix;
+glm::mat4 GL_projection_matrix;
+glm::mat4 GL_last_projection_matrix;
+glm::mat4 GL_last_view_matrix;
 
 struct opengl_buffer_object {
 	GLuint buffer_id;
@@ -436,33 +439,8 @@ extern GLuint Scene_depth_texture;
 extern GLuint Scene_position_texture;
 extern GLuint Distortion_texture[2];
 extern int Distortion_switch;
-void opengl_create_perspective_projection_matrix(matrix4 *out, float left, float right, float bottom, float top, float near_dist, float far_dist)
-{
-	memset(out, 0, sizeof(matrix4));
 
-	out->a1d[0] = 2.0f * near_dist / (right - left);
-	out->a1d[5] = 2.0f * near_dist / (top - bottom);
-	out->a1d[8] = (right + left) / (right - left);
-	out->a1d[9] = (top + bottom) / (top - bottom);
-	out->a1d[10] = -(far_dist + near_dist) / (far_dist - near_dist);
-	out->a1d[11] = -1.0f;
-	out->a1d[14] = -2.0f * far_dist * near_dist / (far_dist - near_dist);
-}
-
-void opengl_create_orthographic_projection_matrix(matrix4* out, float left, float right, float bottom, float top, float near_dist, float far_dist)
-{
-	memset(out, 0, sizeof(matrix4));
-
-	out->a1d[0] = 2.0f / (right - left);
-	out->a1d[5] = 2.0f / (top - bottom);
-	out->a1d[10] = -2.0f / (far_dist - near_dist);
-	out->a1d[12] = -(right + left) / (right - left);
-	out->a1d[13] = -(top + bottom) / (top - bottom);
-	out->a1d[14] = -(far_dist + near_dist) / (far_dist - near_dist);
-	out->a1d[15] = 1.0f;
-}
-
-void opengl_create_view_matrix(matrix4 *out, const vec3d *pos, const matrix *orient)
+glm::mat4 opengl_create_view_matrix(const vec3d *pos, const matrix *orient)
 {
 	vec3d scaled_pos;
 	vec3d inv_pos;
@@ -475,7 +453,10 @@ void opengl_create_view_matrix(matrix4 *out, const vec3d *pos, const matrix *ori
 	vm_copy_transpose(&inv_orient, &scaled_orient);
 	vm_vec_rotate(&inv_pos, &scaled_pos, &scaled_orient);
 
-	vm_matrix4_set_transform(out, &inv_orient, &inv_pos);
+	glm::mat4 out = vm_mat_to_glm(inv_orient);
+	out[3] = glm::vec4(vm_vec_to_glm(inv_pos), 1.0f);
+
+	return out;
 }
 
 void gr_opengl_start_instance_matrix(const vec3d *offset, const matrix *rotation)
@@ -499,8 +480,8 @@ void gr_opengl_start_instance_matrix(const vec3d *offset, const matrix *rotation
 
 	GL_model_matrix_stack.push(offset, rotation);
 
-	matrix4 model_matrix = GL_model_matrix_stack.get_transform();
-	vm_matrix4_x_matrix4(&GL_model_view_matrix, &GL_view_matrix, &model_matrix);
+	auto model_matrix = GL_model_matrix_stack.get_transform();
+	GL_model_view_matrix = GL_view_matrix * model_matrix;
 
 	GL_CHECK_FOR_ERRORS("end of start_instance_matrix()");
 
@@ -525,8 +506,8 @@ void gr_opengl_end_instance_matrix()
 
 	GL_model_matrix_stack.pop();
 
-	matrix4 model_matrix = GL_model_matrix_stack.get_transform();
-	vm_matrix4_x_matrix4(&GL_model_view_matrix, &GL_view_matrix, &model_matrix);
+	auto model_matrix = GL_model_matrix_stack.get_transform();
+	GL_model_view_matrix = GL_view_matrix * model_matrix;
 
 	GL_modelview_matrix_depth--;
 }
@@ -542,19 +523,9 @@ void gr_opengl_set_projection_matrix(float fov, float aspect, float z_near, floa
 		glViewport(gr_screen.offset_x, (gr_screen.max_h - gr_screen.offset_y - gr_screen.clip_height), gr_screen.clip_width, gr_screen.clip_height);
 	}
 	
-	float clip_width, clip_height;
-
-	clip_height = tan( fov * 0.5f ) * z_near;
-	clip_width = clip_height * aspect;
-
 	GL_last_projection_matrix = GL_projection_matrix;
-
-	if (GL_rendering_to_texture) {
-		opengl_create_perspective_projection_matrix(&GL_projection_matrix, -clip_width, clip_width, clip_height, -clip_height, z_near, z_far);
-	} else {
-		opengl_create_perspective_projection_matrix(&GL_projection_matrix, -clip_width, clip_width, -clip_height, clip_height, z_near, z_far);
-	}
-
+	GL_projection_matrix = glm::perspective(fov, aspect, z_near, z_far);
+	
 	GL_CHECK_FOR_ERRORS("end of set_projection_matrix()()");
 
 	GL_htl_projection_matrix_set = 1;
@@ -570,9 +541,9 @@ void gr_opengl_end_projection_matrix()
 
 	// the top and bottom positions are reversed on purpose, but RTT needs them the other way
 	if (GL_rendering_to_texture) {
-		opengl_create_orthographic_projection_matrix(&GL_projection_matrix, 0, i2fl(gr_screen.max_w), 0, i2fl(gr_screen.max_h), -1.0, 1.0);
+		GL_projection_matrix = glm::ortho(0.f, i2fl(gr_screen.max_w), 0.0f, i2fl(gr_screen.max_h), -1.0f, 1.0f);
 	} else {
-		opengl_create_orthographic_projection_matrix(&GL_projection_matrix, 0, i2fl(gr_screen.max_w), i2fl(gr_screen.max_h), 0, -1.0, 1.0);
+		GL_projection_matrix = glm::ortho(0.f, i2fl(gr_screen.max_w), i2fl(gr_screen.max_h), 0.f, -1.0f, 1.0f);
 	}
 
 	GL_CHECK_FOR_ERRORS("end of end_projection_matrix()");
@@ -587,7 +558,7 @@ void gr_opengl_set_view_matrix(const vec3d *pos, const matrix *orient)
 
 	GL_CHECK_FOR_ERRORS("start of set_view_matrix()");
 
-	opengl_create_view_matrix(&GL_view_matrix, pos, orient);
+	GL_view_matrix = opengl_create_view_matrix(pos, orient);
 	
 	GL_model_matrix_stack.clear();
 	GL_model_view_matrix = GL_view_matrix;
@@ -599,17 +570,17 @@ void gr_opengl_set_view_matrix(const vec3d *pos, const matrix *orient)
 		// up properly with the environment
 
 		// r.xyz  <--  r.x, u.x, f.x
-		GL_env_texture_matrix[0] = GL_model_view_matrix.a1d[0];
-		GL_env_texture_matrix[1] = GL_model_view_matrix.a1d[4];
-		GL_env_texture_matrix[2] = GL_model_view_matrix.a1d[8];
+		GL_env_texture_matrix[0] = GL_model_view_matrix[0][0];
+		GL_env_texture_matrix[1] = GL_model_view_matrix[1][0];
+		GL_env_texture_matrix[2] = GL_model_view_matrix[2][0];
 		// u.xyz  <--  r.y, u.y, f.y
-		GL_env_texture_matrix[4] = GL_model_view_matrix.a1d[1];
-		GL_env_texture_matrix[5] = GL_model_view_matrix.a1d[5];
-		GL_env_texture_matrix[6] = GL_model_view_matrix.a1d[9];
+		GL_env_texture_matrix[4] = GL_model_view_matrix[0][1];
+		GL_env_texture_matrix[5] = GL_model_view_matrix[1][2];
+		GL_env_texture_matrix[6] = GL_model_view_matrix[2][3];
 		// f.xyz  <--  r.z, u.z, f.z
-		GL_env_texture_matrix[8] = GL_model_view_matrix.a1d[2];
-		GL_env_texture_matrix[9] = GL_model_view_matrix.a1d[6];
-		GL_env_texture_matrix[10] = GL_model_view_matrix.a1d[10];
+		GL_env_texture_matrix[8] = GL_model_view_matrix[0][2];
+		GL_env_texture_matrix[9] = GL_model_view_matrix[1][2];
+		GL_env_texture_matrix[10] = GL_model_view_matrix[2][2];
 
 		GL_env_texture_matrix[15] = 1.0f;
 	}
@@ -625,8 +596,8 @@ void gr_opengl_end_view_matrix()
 	Assert(GL_modelview_matrix_depth == 2);
 
 	GL_model_matrix_stack.clear();
-	vm_matrix4_set_identity(&GL_view_matrix);
-	vm_matrix4_set_identity(&GL_model_view_matrix);
+	GL_view_matrix = glm::mat4();
+	GL_model_view_matrix = glm::mat4();
 
 	GL_modelview_matrix_depth = 1;
 	GL_htl_view_matrix_set = 0;
@@ -652,20 +623,16 @@ void gr_opengl_set_2d_matrix(/*int x, int y, int w, int h*/)
 
 	// the top and bottom positions are reversed on purpose, but RTT needs them the other way
 	if (GL_rendering_to_texture) {
-		opengl_create_orthographic_projection_matrix(&GL_projection_matrix, 0, i2fl(gr_screen.max_w), 0, i2fl(gr_screen.max_h), -1, 1);
+		GL_projection_matrix = glm::ortho(0.f, i2fl(gr_screen.max_w), 0.f, i2fl(gr_screen.max_h), -1.f, 1.f);
 	} else {
-		opengl_create_orthographic_projection_matrix(&GL_projection_matrix, 0, i2fl(gr_screen.max_w), i2fl(gr_screen.max_h), 0, -1, 1);
+		GL_projection_matrix = glm::ortho(0.f, i2fl(gr_screen.max_w), i2fl(gr_screen.max_h), 0.f, -1.f, 1.f);
 	}
 
-	matrix4 identity_mat;
-	vm_matrix4_set_identity(&identity_mat);
-
-	GL_model_matrix_stack.push_and_replace(identity_mat);
+	GL_model_matrix_stack.push_and_replace(glm::mat4());
 
 	GL_last_view_matrix = GL_view_matrix;
-	GL_view_matrix = identity_mat;
-
-	vm_matrix4_x_matrix4(&GL_model_view_matrix, &GL_view_matrix, &identity_mat);
+	GL_view_matrix = glm::mat4();
+	GL_model_view_matrix = glm::mat4();
 
 	GL_htl_2d_matrix_set++;
 	GL_htl_2d_matrix_depth++;
@@ -688,8 +655,8 @@ void gr_opengl_end_2d_matrix()
 
 	GL_view_matrix = GL_last_view_matrix;
 
-	matrix4 model_matrix = GL_model_matrix_stack.get_transform();
-	vm_matrix4_x_matrix4(&GL_model_view_matrix, &GL_view_matrix, &model_matrix);
+	auto model_matrix = GL_model_matrix_stack.get_transform();
+	GL_model_view_matrix = GL_view_matrix * model_matrix;
 
 	GL_htl_2d_matrix_set = 0;
 	GL_htl_2d_matrix_depth = 0;
@@ -708,8 +675,8 @@ void gr_opengl_push_scale_matrix(const vec3d *scale_factor)
 
 	GL_model_matrix_stack.push(NULL, NULL, scale_factor);
 
-	matrix4 model_matrix = GL_model_matrix_stack.get_transform();
-	vm_matrix4_x_matrix4(&GL_model_view_matrix, &GL_view_matrix, &model_matrix);
+	auto model_matrix = GL_model_matrix_stack.get_transform();
+	GL_model_view_matrix = GL_view_matrix * model_matrix;
 }
 
 void gr_opengl_pop_scale_matrix()
@@ -719,8 +686,8 @@ void gr_opengl_pop_scale_matrix()
 
 	GL_model_matrix_stack.pop();
 
-	matrix4 model_matrix = GL_model_matrix_stack.get_transform();
-	vm_matrix4_x_matrix4(&GL_model_view_matrix, &GL_view_matrix, &model_matrix);
+	auto model_matrix = GL_model_matrix_stack.get_transform();
+	GL_model_view_matrix = GL_view_matrix * model_matrix;
 
 	GL_modelview_matrix_depth--;
 	GL_scale_matrix_set = false;
@@ -752,7 +719,7 @@ void gr_opengl_set_clip_plane(vec3d *clip_normal, vec3d *clip_point)
 extern bool Glowpoint_override;
 bool Glowpoint_override_save;
 
-void gr_opengl_shadow_map_start(matrix4 *shadow_view_matrix, const matrix *light_orient)
+void gr_opengl_shadow_map_start(glm::mat4& shadow_view_matrix, const matrix *light_orient)
 {
 	if ( !Cmdline_shadow_quality )
 		return;
@@ -776,7 +743,7 @@ void gr_opengl_shadow_map_start(matrix4 *shadow_view_matrix, const matrix *light
 	GL_htl_projection_matrix_set = 1;
 	gr_set_view_matrix(&Eye_position, light_orient);
 
-	*shadow_view_matrix = GL_view_matrix;
+	shadow_view_matrix = GL_view_matrix;
 
 	int size = (Cmdline_shadow_quality == 2 ? 1024 : 512);
 	glViewport(0, 0, size, size);
@@ -804,7 +771,7 @@ void opengl_tnl_set_material(material* material_info, bool set_base_map)
 {
 	int shader_handle = material_info->get_shader_handle();
 	int base_map = material_info->get_texture_map(TM_BASE_TYPE);
-	vec4 clr = material_info->get_color();
+	auto clr = material_info->get_color();
 
 	Assert(shader_handle >= 0);
 
@@ -880,7 +847,7 @@ void opengl_tnl_set_model_material(model_material *material_info)
 	Current_shader->program->Uniforms.setUniformMatrix4f("projMatrix", GL_projection_matrix);
 	Current_shader->program->Uniforms.setUniformMatrix4f("textureMatrix", GL_texture_matrix);
 
-	vec4 clr = material_info->get_color();
+	auto clr = material_info->get_color();
 	Current_shader->program->Uniforms.setUniform4f("color", clr);
 
 	if ( Current_shader->flags & SDR_FLAG_MODEL_ANIMATED ) {
@@ -896,11 +863,11 @@ void opengl_tnl_set_model_material(model_material *material_info)
 			
 			Current_shader->program->Uniforms.setUniformi("use_clip_plane", 1);
 
-			vec4 clip_equation;
-			clip_equation.xyzw.x = clip_info.normal.xyz.x;
-			clip_equation.xyzw.y = clip_info.normal.xyz.y;
-			clip_equation.xyzw.z = clip_info.normal.xyz.z;
-			clip_equation.xyzw.w = -vm_vec_dot(&clip_info.normal, &clip_info.position);
+			glm::vec4 clip_equation;
+			clip_equation.x = clip_info.normal.xyz.x;
+			clip_equation.y = clip_info.normal.xyz.y;
+			clip_equation.z = clip_info.normal.xyz.z;
+			clip_equation.w = -vm_vec_dot(&clip_info.normal, &clip_info.position);
 
 			Current_shader->program->Uniforms.setUniform4f("clip_equation", clip_equation);
 		} else {
@@ -1028,19 +995,13 @@ void opengl_tnl_set_model_material(model_material *material_info)
 		++render_pass;
 
 		if ( Current_shader->flags & SDR_FLAG_MODEL_ENV_MAP ) {
-			matrix4 texture_mat;
-
-			for ( int i = 0; i < 16; ++i ) {
-				texture_mat.a1d[i] = GL_env_texture_matrix[i];
-			}
-
 			if ( material_info->get_texture_map(TM_SPEC_GLOSS_TYPE) > 0 || Gloss_override_set ) {
 				Current_shader->program->Uniforms.setUniformi("envGloss", 1);
 			} else {
 				Current_shader->program->Uniforms.setUniformi("envGloss", 0);
 			}
 
-			Current_shader->program->Uniforms.setUniformMatrix4f("envMatrix", texture_mat);
+			Current_shader->program->Uniforms.setUniformMatrix4f("envMatrix", glm::make_mat4(GL_env_texture_matrix));
 			Current_shader->program->Uniforms.setUniformi("sEnvmap", render_pass);
 
 			gr_opengl_tcache_set(ENVMAP, TCACHE_TYPE_CUBEMAP, &u_scale, &v_scale, &array_index, render_pass);

@@ -1078,8 +1078,6 @@ void gr_opengl_deferred_lighting_finish()
 
 void gr_opengl_render_shield_impact(shield_material *material_info, primitive_type prim_type, vertex_layout *layout, int buffer_handle, int n_verts)
 {
-	matrix4 impact_transform;
-	matrix4 impact_projection;
 	vec3d min;
 	vec3d max;
 	
@@ -1089,12 +1087,13 @@ void gr_opengl_render_shield_impact(shield_material *material_info, primitive_ty
 	min.xyz.x = min.xyz.y = min.xyz.z = -radius;
 	max.xyz.x = max.xyz.y = max.xyz.z = radius;
 
-	vm_matrix4_set_orthographic(&impact_projection, &max, &min);
+	auto impact_projection = glm::ortho(-radius, radius, -radius, radius, -radius, radius);
 
 	matrix impact_orient = material_info->get_impact_orient();
 	vec3d impact_pos = material_info->get_impact_pos();
 
-	vm_matrix4_set_inverse_transform(&impact_transform, &impact_orient, &impact_pos);
+	glm::mat4 impact_transform(vm_mat_to_glm(impact_orient));
+	impact_transform[3] = glm::vec4(vm_vec_to_glm(impact_pos), 1.0f);
 
 	uint32_t array_index = 0;
 	if ( material_info->get_texture_map(TM_BASE_TYPE) >= 0 ) {

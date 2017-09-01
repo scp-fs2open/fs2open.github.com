@@ -33,14 +33,14 @@ GLuint Framebuffer_fallback_texture_id = 0;
 
 opengl_vert_attrib GL_vertex_attrib_info[] =
 	{
-		{ opengl_vert_attrib::POSITION,		"vertPosition",		{{{ 0.0f, 0.0f, 0.0f, 1.0f }}} },
-		{ opengl_vert_attrib::COLOR,		"vertColor",		{{{ 1.0f, 1.0f, 1.0f, 1.0f }}} },
-		{ opengl_vert_attrib::TEXCOORD,		"vertTexCoord",		{{{ 1.0f, 1.0f, 1.0f, 1.0f }}} },
-		{ opengl_vert_attrib::NORMAL,		"vertNormal",		{{{ 0.0f, 0.0f, 1.0f, 0.0f }}} },
-		{ opengl_vert_attrib::TANGENT,		"vertTangent",		{{{ 1.0f, 0.0f, 0.0f, 0.0f }}} },
-		{ opengl_vert_attrib::MODEL_ID,		"vertModelID",		{{{ 0.0f, 0.0f, 0.0f, 0.0f }}} },
-		{ opengl_vert_attrib::RADIUS,		"vertRadius",		{{{ 1.0f, 0.0f, 0.0f, 0.0f }}} },
-		{ opengl_vert_attrib::UVEC,			"vertUvec",			{{{ 0.0f, 1.0f, 0.0f, 0.0f }}} },
+		{ opengl_vert_attrib::POSITION,		"vertPosition",		glm::vec4(0.0f, 0.0f, 0.0f, 1.0f) },
+		{ opengl_vert_attrib::COLOR,		"vertColor",		glm::vec4(1.0f, 1.0f, 1.0f, 1.0f) },
+		{ opengl_vert_attrib::TEXCOORD,		"vertTexCoord",		glm::vec4(1.0f, 1.0f, 1.0f, 1.0f) },
+		{ opengl_vert_attrib::NORMAL,		"vertNormal",		glm::vec4(0.0f, 0.0f, 1.0f, 0.0f) },
+		{ opengl_vert_attrib::TANGENT,		"vertTangent",		glm::vec4(1.0f, 0.0f, 0.0f, 0.0f) },
+		{ opengl_vert_attrib::MODEL_ID,		"vertModelID",		glm::vec4(0.0f, 0.0f, 0.0f, 0.0f) },
+		{ opengl_vert_attrib::RADIUS,		"vertRadius",		glm::vec4(1.0f, 0.0f, 0.0f, 0.0f) },
+		{ opengl_vert_attrib::UVEC,			"vertUvec",			glm::vec4(0.0f, 1.0f, 0.0f, 0.0f) },
 	};
 
 /**
@@ -772,7 +772,7 @@ void opengl_shader_set_passthrough(bool textured)
 	Current_shader->program->Uniforms.setUniformMatrix4f("projMatrix", GL_projection_matrix);
 }
 
-void opengl_shader_set_default_material(bool textured, bool alpha, vec4 *clr, float color_scale, uint32_t array_index, const material::clip_plane& clip_plane)
+void opengl_shader_set_default_material(bool textured, bool alpha, const glm::vec4 *clr, float color_scale, uint32_t array_index, const material::clip_plane& clip_plane)
 {
 	Current_shader->program->Uniforms.setUniformi("baseMap", 0);
 
@@ -810,11 +810,11 @@ void opengl_shader_set_default_material(bool textured, bool alpha, vec4 *clr, fl
 	if (clip_plane.enabled) {
 		Current_shader->program->Uniforms.setUniformi("clipEnabled", 1);
 
-		vec4 clip_equation;
-		clip_equation.xyzw.x = clip_plane.normal.xyz.x;
-		clip_equation.xyzw.y = clip_plane.normal.xyz.y;
-		clip_equation.xyzw.z = clip_plane.normal.xyz.z;
-		clip_equation.xyzw.w = -vm_vec_dot(&clip_plane.normal, &clip_plane.position);
+		glm::vec4 clip_equation;
+		clip_equation.x = clip_plane.normal.xyz.x;
+		clip_equation.y = clip_plane.normal.xyz.y;
+		clip_equation.z = clip_plane.normal.xyz.z;
+		clip_equation.w = -vm_vec_dot(&clip_plane.normal, &clip_plane.position);
 
 		Current_shader->program->Uniforms.setUniform4f("clipEquation", clip_equation);
 		Current_shader->program->Uniforms.setUniformMatrix4f("modelMatrix", GL_model_matrix_stack.get_transform());

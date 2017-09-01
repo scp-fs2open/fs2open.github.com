@@ -15,6 +15,7 @@
 #include "globalincs/pstypes.h"
 #include "math/floating.h"
 
+#include <glm/glm.hpp>
 
 #define vm_is_vec_nan(v) (fl_is_nan((v)->xyz.x) || fl_is_nan((v)->xyz.y) || fl_is_nan((v)->xyz.z))
 
@@ -115,9 +116,6 @@ vec3d *vm_vec_avg4(vec3d *dest, const vec3d *src0, const vec3d *src1, const vec3
 //scales a vector in place.  returns ptr to vector
 void vm_vec_scale(vec3d *dest, float s);
 
-//scales a 4-component vector in place. returns ptr to vector
-void vm_vec_scale(vec4 *dest, float s);
-
 //scales and copies a vector.  returns ptr to dest
 void vm_vec_copy_scale(vec3d *dest, const vec3d *src, float s);
 
@@ -139,11 +137,11 @@ bool vm_vec_equal(const vec2d &self, const vec2d &other);
 
 bool vm_vec_equal(const vec3d &self, const vec3d &other);
 
-bool vm_vec_equal(const vec4 &self, const vec4 &other);
+bool vm_vec_equal(const glm::vec4& self, const glm::vec4& other);
 
 bool vm_matrix_equal(const matrix &self, const matrix &other);
 
-bool vm_matrix_equal(const matrix4 &self, const matrix4 &other);
+bool vm_matrix_equal(const glm::mat4& self, const glm::mat4& other);
 
 // finds the projection of source vector along a unit vector
 // returns the magnitude of the component
@@ -459,26 +457,15 @@ void vm_vec_dist_squared_to_line(const vec3d *p, const vec3d *l0, const vec3d *l
 //SUSHI: 2D vector "box" scaling
 void vm_vec_boxscale(vec2d *vec, float scale);
 
-bool vm_inverse_matrix4(const matrix4 *m, matrix4 *invOut);
+glm::vec3 vm_vec_to_glm(const vec3d& vec);
 
-void vm_matrix4_set_orthographic(matrix4* out, vec3d *max, vec3d *min);
+vec3d vm_glm_to_vec(const glm::vec3& vec);
 
-void vm_matrix4_set_inverse_transform(matrix4 *out, matrix *m, vec3d *v);
+glm::mat3 vm_mat_to_glm(const matrix& mat);
 
-void vm_matrix4_set_identity(matrix4 *out);
+matrix vm_glm_to_mat(const glm::mat3& mat);
 
-void vm_matrix4_set_transform(matrix4 *out, matrix *m, vec3d *v);
-
-void vm_matrix4_get_orientation(matrix *out, matrix4 *m);
-
-void vm_matrix4_get_offset(vec3d *out, matrix4 *m);
-
-void vm_vec_transform(vec4 *dest, vec4 *src, matrix4 *m);
-void vm_vec_transform(vec3d *dest, vec3d *src, matrix4 *m, bool pos = true);
-
-void vm_matrix4_x_matrix4(matrix4 *dest, const matrix4 *src0, const matrix4 *src1);
-
-float vm_vec4_dot4(float x, float y, float z, float w, const vec4 *v);
+void vm_matrix4_get_transform(const glm::mat4& mat, vec3d* pos_out = nullptr, matrix* orient_out = nullptr);
 
 #endif
 

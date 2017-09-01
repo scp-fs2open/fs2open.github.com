@@ -17,7 +17,7 @@
 
 struct light_frustum_info
 {
-	matrix4 proj_matrix;
+	glm::mat4 proj_matrix;
 
 	vec3d min;
 	vec3d max;
@@ -25,8 +25,8 @@ struct light_frustum_info
 	float start_dist;
 };
 
-extern matrix4 Shadow_view_matrix;
-extern matrix4 Shadow_proj_matrix[MAX_SHADOW_CASCADES];
+extern glm::mat4 Shadow_view_matrix;
+extern glm::mat4 Shadow_proj_matrix[MAX_SHADOW_CASCADES];
 extern float Shadow_cascade_distances[MAX_SHADOW_CASCADES];
 
 void shadows_construct_light_frustum(vec3d *min_out, vec3d *max_out, vec3d light_vec, matrix *orient, vec3d *pos, float fov, float aspect, float z_near, float z_far);

@@ -353,9 +353,7 @@ void model_batch_buffer::reset()
 
 void model_batch_buffer::set_num_models(int n_models)
 {
-	matrix4 init_mat;
-
-	vm_matrix4_set_identity(&init_mat);
+	glm::mat4 init_mat;
 
 	Current_offset = Submodel_matrices.size();
 
@@ -364,12 +362,12 @@ void model_batch_buffer::set_num_models(int n_models)
 	}
 }
 
-void model_batch_buffer::set_model_transform(matrix4 &transform, int model_id)
+void model_batch_buffer::set_model_transform(const glm::mat4 &transform, int model_id)
 {
 	Submodel_matrices[Current_offset + model_id] = transform;
 }
 
-void model_batch_buffer::add_matrix(matrix4 &mat)
+void model_batch_buffer::add_matrix(const glm::mat4 &mat)
 {
 	Submodel_matrices.push_back(mat);
 }
@@ -379,31 +377,13 @@ size_t model_batch_buffer::get_buffer_offset()
 	return Current_offset;
 }
 
-void model_batch_buffer::allocate_memory()
-{
-	auto size = Submodel_matrices.size() * sizeof(matrix4);
-
-	if ( Mem_alloc == NULL || Mem_alloc_size < size ) {
-		if ( Mem_alloc != NULL ) {
-			vm_free(Mem_alloc);
-		}
-
-		Mem_alloc = vm_malloc(size);
-	}
-
-	Mem_alloc_size = size;
-	memcpy(Mem_alloc, &Submodel_matrices[0], size);
-}
-
 void model_batch_buffer::submit_buffer_data()
 {
 	if ( Submodel_matrices.empty() ) {
 		return;
 	}
 
-	allocate_memory();
-
-	gr_update_transform_buffer(Mem_alloc, Mem_alloc_size);
+	gr_update_transform_buffer(Submodel_matrices.data(), Submodel_matrices.size() * sizeof(Submodel_matrices[0]));
 }
 
 model_draw_list::model_draw_list():
@@ -437,17 +417,11 @@ void model_draw_list::start_model_batch(int n_models)
 
 void model_draw_list::add_submodel_to_batch(int model_num)
 {
-	matrix4 transform;
-
-	transform = Transformations.get_transform();
-
 	// set scale
-	vm_vec_scale(&transform.vec.rvec, Current_scale.xyz.x);
-	vm_vec_scale(&transform.vec.uvec, Current_scale.xyz.y);
-	vm_vec_scale(&transform.vec.fvec, Current_scale.xyz.z);
+	auto transform = glm::scale(Transformations.get_transform(), vm_vec_to_glm(Current_scale));
 
 	// set visibility
-	transform.a1d[15] = 0.0f;
+	transform[3][3] = 0.0f;
 
 	TransformBufferHandler.set_model_transform(transform, model_num);
 }
@@ -482,7 +456,7 @@ void model_draw_list::add_buffer_draw(model_material *render_material, indexed_v
 	render_material->set_shadow_casting(Rendering_to_shadow_map ? true : false);
 
 	if (tmap_flags & TMAP_FLAG_BATCH_TRANSFORMS && buffer->flags & VB_FLAG_MODEL_ID) {
-		vm_matrix4_set_identity(&draw_data.transform);
+		draw_data.transform = glm::mat4();
 
 		draw_data.scale.xyz.x = 1.0f;
 		draw_data.scale.xyz.y = 1.0f;
@@ -526,11 +500,8 @@ void model_draw_list::render_buffer(queued_buffer_draw &render_elements)
 		Scene_light_handler.resetLightState();
 	}
 
-	matrix orient;
-	vec3d pos;
-
-	vm_matrix4_get_offset(&pos, &render_elements.transform);
-	vm_matrix4_get_orientation(&orient, &render_elements.transform);
+	matrix orient = vm_glm_to_mat(glm::mat3(render_elements.transform));
+	vec3d pos = vm_glm_to_vec(glm::vec3(render_elements.transform[3]));
 
 	g3_start_instance_matrix(&pos, &orient);
 
@@ -546,12 +517,10 @@ void model_draw_list::render_buffer(queued_buffer_draw &render_elements)
 vec3d model_draw_list::get_view_position()
 {
 	matrix basis_world;
-	matrix4 transform_mat = Transformations.get_transform();
-	matrix orient;
-	vec3d pos;
+	auto transform_mat = Transformations.get_transform();
 
-	vm_matrix4_get_orientation(&orient, &transform_mat);
-	vm_matrix4_get_offset(&pos, &transform_mat);
+	matrix orient = vm_glm_to_mat(glm::mat3(transform_mat));
+	vec3d pos = vm_glm_to_vec(glm::vec3(transform_mat[3]));
 
 	// get the world basis of our current local space.
 	vm_matrix_x_matrix(&basis_world, &Object_matrix, &orient);
@@ -629,7 +598,7 @@ void model_draw_list::render_all(gr_zbuffer_type depth_mode)
 
 void model_draw_list::render_arc(arc_effect &arc)
 {
-	g3_start_instance_matrix(&arc.transform);	
+	g3_start_instance_matrix(arc.transform);
 
 	model_render_arc(&arc.v1, &arc.v2, &arc.primary, &arc.secondary, arc.width);
 
@@ -667,9 +636,8 @@ void model_draw_list::render_insignia(insignia_draw_data &insignia_info)
 {
 	if ( insignia_info.clip ) {
 		vec3d tmp;
-		vec3d pos;
+		vec3d pos = vm_glm_to_vec(glm::vec3(insignia_info.transform[3]));
 
-		vm_matrix4_get_offset(&pos, &insignia_info.transform);
 		vm_vec_sub(&tmp, &pos, &insignia_info.clip_position);
 		vm_vec_normalize(&tmp);
 
@@ -678,7 +646,7 @@ void model_draw_list::render_insignia(insignia_draw_data &insignia_info)
 		}
 	}
 
-	g3_start_instance_matrix(&insignia_info.transform);	
+	g3_start_instance_matrix(insignia_info.transform);
 
 	model_render_insignias(&insignia_info);
 
@@ -715,7 +683,7 @@ void model_draw_list::render_outlines()
 
 void model_draw_list::render_outline(outline_draw &outline_info)
 {
-	g3_start_instance_matrix(&outline_info.transform);
+	g3_start_instance_matrix(outline_info.transform);
 
 	material material_instance;
 

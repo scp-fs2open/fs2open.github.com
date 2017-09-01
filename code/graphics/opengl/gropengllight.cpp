@@ -153,19 +153,19 @@ void opengl_set_light(int light_num, opengl_light *ltp)
 {
 	Assert(light_num < GL_max_lights);
 		
-	vec4 light_pos_world;
-	light_pos_world.xyzw.x = ltp->Position[0];
-	light_pos_world.xyzw.y = ltp->Position[1];
-	light_pos_world.xyzw.z = ltp->Position[2];
-	light_pos_world.xyzw.w = ltp->Position[3];
+	glm::vec4 light_pos_world;
+	light_pos_world.x = ltp->Position[0];
+	light_pos_world.y = ltp->Position[1];
+	light_pos_world.z = ltp->Position[2];
+	light_pos_world.w = ltp->Position[3];
 
 	vec3d light_dir_world;
 	light_dir_world.xyz.x = ltp->SpotDir[0];
 	light_dir_world.xyz.y = ltp->SpotDir[1];
 	light_dir_world.xyz.z = ltp->SpotDir[2];
 
-	vm_vec_transform(&opengl_light_uniforms.Position[light_num], &light_pos_world, &GL_view_matrix);
-	vm_vec_transform(&opengl_light_uniforms.Direction[light_num], &light_dir_world, &GL_view_matrix, false);
+	opengl_light_uniforms.Position[light_num] = GL_view_matrix * light_pos_world;
+	opengl_light_uniforms.Direction[light_num] = vm_glm_to_vec(glm::vec3(GL_view_matrix * glm::vec4(vm_vec_to_glm(light_dir_world), 0.0f)));
 
 	opengl_light_uniforms.Diffuse_color[light_num].xyz.x = ltp->Diffuse[0];
 	opengl_light_uniforms.Diffuse_color[light_num].xyz.y = ltp->Diffuse[1];
@@ -385,7 +385,7 @@ void opengl_light_init()
 
 	memset( opengl_lights, 0, MAX_LIGHTS * sizeof(opengl_light) );
 
-	opengl_light_uniforms.Position = (vec4 *)vm_malloc(GL_max_lights * sizeof(vec4));
+	opengl_light_uniforms.Position = (glm::vec4 *)vm_malloc(GL_max_lights * sizeof(glm::vec4));
 	opengl_light_uniforms.Diffuse_color = (vec3d *)vm_malloc(GL_max_lights * sizeof(vec3d));
 	opengl_light_uniforms.Spec_color = (vec3d *)vm_malloc(GL_max_lights * sizeof(vec3d));
 	opengl_light_uniforms.Direction = (vec3d *)vm_malloc(GL_max_lights * sizeof(vec3d));

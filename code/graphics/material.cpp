@@ -155,10 +155,10 @@ Fill_mode(GR_FILL_MODE_SOLID),
 Clr_scale(1.0f),
 Depth_bias(0)
 {
-	Clr.xyzw.x = 1.0f;
-	Clr.xyzw.y = 1.0f; 
-	Clr.xyzw.z = 1.0f; 
-	Clr.xyzw.w = 1.0f;
+	Clr.x = 1.0f;
+	Clr.y = 1.0f; 
+	Clr.z = 1.0f; 
+	Clr.w = 1.0f;
 	
 	Texture_maps[TM_BASE_TYPE]		= -1;
 	Texture_maps[TM_GLOW_TYPE]		= -1;
@@ -350,10 +350,10 @@ int material::get_depth_bias()
 
 void material::set_color(float red, float green, float blue, float alpha)
 {
-	Clr.xyzw.x = red;
-	Clr.xyzw.y = green;
-	Clr.xyzw.z = blue;
-	Clr.xyzw.w = alpha;
+	Clr.x = red;
+	Clr.y = green;
+	Clr.z = blue;
+	Clr.w = alpha;
 }
 
 void material::set_color(int r, int g, int b, int a)
@@ -363,28 +363,28 @@ void material::set_color(int r, int g, int b, int a)
 	CLAMP(g, 0, 255);
 	CLAMP(a, 0, 255);
 
-	Clr.xyzw.x = i2fl(r) / 255.0f;
-	Clr.xyzw.y = i2fl(g) / 255.0f;
-	Clr.xyzw.z = i2fl(b) / 255.0f;
-	Clr.xyzw.w = i2fl(a) / 255.0f;
+	Clr.x = i2fl(r) / 255.0f;
+	Clr.y = i2fl(g) / 255.0f;
+	Clr.z = i2fl(b) / 255.0f;
+	Clr.w = i2fl(a) / 255.0f;
 }
 
 void material::set_color(color &clr_in)
 {
 	if ( clr_in.is_alphacolor ) {
-		Clr.xyzw.x = i2fl(clr_in.red) / 255.0f;
-		Clr.xyzw.y = i2fl(clr_in.green) / 255.0f;
-		Clr.xyzw.z = i2fl(clr_in.blue) / 255.0f;
-		Clr.xyzw.w = i2fl(clr_in.alpha) / 255.0f;
+		Clr.x = i2fl(clr_in.red) / 255.0f;
+		Clr.y = i2fl(clr_in.green) / 255.0f;
+		Clr.z = i2fl(clr_in.blue) / 255.0f;
+		Clr.w = i2fl(clr_in.alpha) / 255.0f;
 	} else {
-		Clr.xyzw.x = i2fl(clr_in.red) / 255.0f;
-		Clr.xyzw.y = i2fl(clr_in.green) / 255.0f;
-		Clr.xyzw.z = i2fl(clr_in.blue) / 255.0f;
-		Clr.xyzw.w = 1.0f;
+		Clr.x = i2fl(clr_in.red) / 255.0f;
+		Clr.y = i2fl(clr_in.green) / 255.0f;
+		Clr.z = i2fl(clr_in.blue) / 255.0f;
+		Clr.w = 1.0f;
 	}
 }
 
-const vec4& material::get_color()
+const glm::vec4& material::get_color()
 {
 	return Clr;
 }

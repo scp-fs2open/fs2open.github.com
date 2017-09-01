@@ -44,7 +44,7 @@ private:
 	gr_alpha_blend Blend_mode;
 	bool Cull_mode;
 	int Fill_mode;
-	vec4 Clr;
+	glm::vec4 Clr;
 	float Clr_scale;
 	int Depth_bias;
 
@@ -94,7 +94,7 @@ public:
 	void set_color(float red, float green, float blue, float alpha);
 	void set_color(int r, int g, int b, int a);
 	void set_color(color &clr_in);
-	const vec4& get_color();
+	const glm::vec4& get_color();
 
 	void set_color_scale(float scale);
 	float get_color_scale();

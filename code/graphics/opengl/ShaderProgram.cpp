@@ -193,7 +193,7 @@ void opengl::ShaderProgram::linkProgram() {
 	freeCompiledShaders();
 }
 
-void opengl::ShaderProgram::initAttribute(const SCP_string& name, const vec4& default_value)
+void opengl::ShaderProgram::initAttribute(const SCP_string& name, const glm::vec4& default_value)
 {
 	auto attrib_loc = glGetAttribLocation(_program_id, name.c_str());
 
@@ -209,10 +209,10 @@ void opengl::ShaderProgram::initAttribute(const SCP_string& name, const vec4& de
 	use();
 	glVertexAttrib4f(
 		attrib_loc,
-		default_value.xyzw.x,
-		default_value.xyzw.y,
-		default_value.xyzw.z,
-		default_value.xyzw.w
+		default_value.x,
+		default_value.y,
+		default_value.z,
+		default_value.w
 	);
 }
 GLint opengl::ShaderProgram::getAttributeLocation(const SCP_string& name) {
@@ -481,17 +481,10 @@ void opengl::ShaderUniforms::setUniform3f(const SCP_string &name, const vec3d &v
 
 void opengl::ShaderUniforms::setUniform4f(const SCP_string &name, const float x, const float y, const float z, const float w)
 {
-	vec4 temp;
-
-	temp.xyzw.x = x;
-	temp.xyzw.y = y;
-	temp.xyzw.z = z;
-	temp.xyzw.w = w;
-
-	setUniform4f(name, temp);
+	setUniform4f(name, glm::vec4(x, y, z, w));
 }
 
-void opengl::ShaderUniforms::setUniform4f(const SCP_string &name, const vec4 &val)
+void opengl::ShaderUniforms::setUniform4f(const SCP_string &name, const glm::vec4 &val)
 {
 	Assertion(GL_state.IsCurrentProgram(_program->getShaderHandle()), "The program must be current before setting uniforms!");
 
@@ -530,7 +523,7 @@ void opengl::ShaderUniforms::setUniform4f(const SCP_string &name, const vec4 &va
 		_uniform_lookup[name] = _uniforms.size() - 1;
 	}
 
-	glUniform4f(findUniformLocation(name.c_str()), val.a1d[0], val.a1d[1], val.a1d[2], val.a1d[3]);
+	glUniform4f(findUniformLocation(name.c_str()), val[0], val[1], val[2], val[3]);
 }
 
 void opengl::ShaderUniforms::setUniform1fv(const SCP_string &name, const int count, const float *val)
@@ -643,7 +636,7 @@ void opengl::ShaderUniforms::setUniform3fv(const SCP_string &name, const int cou
 	glUniform3fv(findUniformLocation(name.c_str()), count, (const GLfloat*)val);
 }
 
-void opengl::ShaderUniforms::setUniform4fv(const SCP_string &name, const int count, const vec4 *val)
+void opengl::ShaderUniforms::setUniform4fv(const SCP_string &name, const int count, const glm::vec4 *val)
 {
 	Assertion(GL_state.IsCurrentProgram(_program->getShaderHandle()), "The program must be current before setting uniforms!");
 
@@ -698,7 +691,7 @@ void opengl::ShaderUniforms::setUniform4fv(const SCP_string &name, const int cou
 	glUniform4fv(findUniformLocation(name.c_str()), count, (const GLfloat*)val);
 }
 
-void opengl::ShaderUniforms::setUniformMatrix4f(const SCP_string &name, const matrix4 &val)
+void opengl::ShaderUniforms::setUniformMatrix4f(const SCP_string &name, const glm::mat4 &val)
 {
 	Assertion(GL_state.IsCurrentProgram(_program->getShaderHandle()), "The program must be current before setting uniforms!");
 
@@ -742,7 +735,7 @@ void opengl::ShaderUniforms::setUniformMatrix4f(const SCP_string &name, const ma
 	glUniformMatrix4fv(findUniformLocation(name.c_str()), 1, GL_FALSE, (const GLfloat*)&val);
 }
 
-void opengl::ShaderUniforms::setUniformMatrix4fv(const SCP_string &name, const int count, const matrix4 *val)
+void opengl::ShaderUniforms::setUniformMatrix4fv(const SCP_string &name, const int count, const glm::mat4 *val)
 {
 	Assertion(GL_state.IsCurrentProgram(_program->getShaderHandle()), "The program must be current before setting uniforms!");
 

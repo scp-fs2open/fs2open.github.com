@@ -155,7 +155,7 @@ public:
 
 struct arc_effect
 {
-	matrix4 transform;
+	glm::mat4 transform;
 	vec3d v1;
 	vec3d v2;
 	color primary;
@@ -165,7 +165,7 @@ struct arc_effect
 
 struct insignia_draw_data
 {
-	matrix4 transform;
+	glm::mat4 transform;
 	polymodel *pm;
 	int detail_level;
 	int bitmap_num;
@@ -182,7 +182,7 @@ struct queued_buffer_draw
 
 	model_material render_material;
 
-	matrix4 transform;
+	glm::mat4 transform;
 	vec3d scale;
 
 	indexed_vertex_source *vert_src;
@@ -203,31 +203,27 @@ struct outline_draw
 	vertex* vert_array;
 	int n_verts;
 
-	matrix4 transform;
+	glm::mat4 transform;
 	color clr;
 };
 
 class model_batch_buffer
 {
-	SCP_vector<matrix4> Submodel_matrices;
-	void* Mem_alloc;
-	size_t Mem_alloc_size;
+	SCP_vector<glm::mat4> Submodel_matrices;
 
 	size_t Current_offset;
-
-	void allocate_memory();
 public:
-	model_batch_buffer() : Mem_alloc(NULL), Mem_alloc_size(0), Current_offset(0) {};
+	model_batch_buffer() : Current_offset(0) {};
 
 	void reset();
 
 	size_t get_buffer_offset();
 	void set_num_models(int n_models);
-	void set_model_transform(matrix4 &transform, int model_id);
+	void set_model_transform(const glm::mat4 &transform, int model_id);
 
 	void submit_buffer_data();
 
-	void add_matrix(matrix4 &mat);
+	void add_matrix(const glm::mat4 &mat);
 };
 
 class model_draw_list

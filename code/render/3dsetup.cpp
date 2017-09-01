@@ -287,13 +287,12 @@ void g3_start_instance_matrix(const vec3d *pos, const matrix *orient, bool set_a
 
 }
 
-void g3_start_instance_matrix(const matrix4 *transform, bool set_api)
+void g3_start_instance_matrix(const glm::mat4& transform, bool set_api)
 {
 	matrix orient;
 	vec3d pos;
 
-	vm_matrix4_get_orientation(&orient, (matrix4*)transform);
-	vm_matrix4_get_offset(&pos, (matrix4*)transform);
+	vm_matrix4_get_transform(transform, &pos, &orient);
 
 	g3_start_instance_matrix(&pos, &orient, set_api);
 }

@@ -24,7 +24,7 @@
 
 static tcache_slot_opengl *Textures = NULL;
 
-matrix4 GL_texture_matrix;
+glm::mat4 GL_texture_matrix;
 
 int GL_texture_ram = 0;
 int GL_min_texture_width = 0;
@@ -161,7 +161,7 @@ void opengl_tcache_init()
 
 	GL_textures_in_frame = 0;
 
-	vm_matrix4_set_identity(&GL_texture_matrix);
+	GL_texture_matrix = glm::mat4();
 }
 
 void opengl_tcache_flush()
@@ -1165,15 +1165,13 @@ static int GL_texture_panning_enabled = 0;
 void gr_opengl_set_texture_panning(float u, float v, bool enable)
 {
 	if (enable) {
-		vm_matrix4_set_identity(&GL_texture_matrix);
-		GL_texture_matrix.vec.pos.xyzw.x = u;
-		GL_texture_matrix.vec.pos.xyzw.y = v;
-
+		GL_texture_matrix = glm::mat4();
+		GL_texture_matrix[3].x = u;
+		GL_texture_matrix[3].y = v;
 
 		GL_texture_panning_enabled = 1;
 	} else if (GL_texture_panning_enabled) {
-		vm_matrix4_set_identity(&GL_texture_matrix);
-
+		GL_texture_matrix = glm::mat4();
 	
 		GL_texture_panning_enabled = 0;
 	}
