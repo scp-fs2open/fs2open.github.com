@@ -1633,7 +1633,7 @@ bool gr_opengl_is_capable(gr_capability capability)
 	case CAPABILITY_POINT_PARTICLES:
 		return !Cmdline_no_geo_sdr_effects;
 	case CAPABILITY_TIMESTAMP_QUERY:
-		return GL_version >= 33; // Timestamp queries are available from 3.3 onwards
+		return GLAD_GL_ARB_timer_query != 0; // Timestamp queries are available from 3.3 onwards
 	}
 
 	return false;

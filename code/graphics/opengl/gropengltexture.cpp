@@ -813,7 +813,7 @@ void opengl_tex_array_storage(GLenum target, GLint levels, GLenum format, GLint 
 	if (target == GL_TEXTURE_CUBE_MAP) {
 		Assertion(frames == 1, "Cube map texture arrays aren't supported yet!");
 
-		if (GL_version >= 42) {
+		if (GLAD_GL_ARB_texture_storage) {
 			// This version has a better way of specifying the texture storage
 			glTexStorage2D(target, levels, format, width, height);
 		} else {
@@ -829,7 +829,7 @@ void opengl_tex_array_storage(GLenum target, GLint levels, GLenum format, GLint 
 			}
 		}
 	} else {
-		if (GL_version >= 42) {
+		if (GLAD_GL_ARB_texture_storage) {
 			// This version has a better way of specifying the texture storage
 			glTexStorage3D(target, levels, format, width, height, frames);
 		} else {
