@@ -86,7 +86,7 @@ int joy_ff_init()
 
 	ff_enabled = os_config_read_uint(NULL, "EnableJoystickFF", 1);
 
-	if ( !ff_enabled ) {
+	if ( !ff_enabled || io::joystick::getCurrentJoystick() == nullptr) {
 		return 0;
 	}
 
