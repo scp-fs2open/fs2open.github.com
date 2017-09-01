@@ -23069,6 +23069,7 @@ int sexp_get_container_size(int node)
 	
 	int type = Sexp_containers[index].type;
 	Error(LOCATION, "Unknown container type. Container is not a valid type", type);
+	return 0;
 }
 
 void sexp_clear_container (int node)
