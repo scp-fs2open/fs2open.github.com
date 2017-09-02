@@ -713,9 +713,6 @@ typedef struct screen {
 
 	void (*gf_lighting)(bool,bool);
 
-	void (*gf_start_clip_plane)();
-	void (*gf_end_clip_plane)();
-
 	void (*gf_zbias)(int zbias);
 
 	void (*gf_set_fill_mode)(int);
@@ -965,9 +962,6 @@ inline void gr_post_process_restore_zbuffer() {
 #define gr_deferred_lighting_finish		GR_CALL(*gr_screen.gf_deferred_lighting_finish)
 
 #define	gr_set_lighting					GR_CALL(*gr_screen.gf_lighting)
-
-#define	gr_start_clip					GR_CALL(*gr_screen.gf_start_clip_plane)
-#define	gr_end_clip						GR_CALL(*gr_screen.gf_end_clip_plane)
 
 #define	gr_zbias						GR_CALL(*gr_screen.gf_zbias)
 #define	gr_set_fill_mode				GR_CALL(*gr_screen.gf_set_fill_mode)

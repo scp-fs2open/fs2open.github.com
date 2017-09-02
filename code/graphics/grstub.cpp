@@ -75,10 +75,6 @@ void gr_stub_clear()
 {
 }
 
-void gr_stub_end_clip_plane()
-{
-}
-
 void gr_stub_end_instance_matrix()
 {
 }
@@ -212,10 +208,6 @@ void gr_stub_set_texture_addressing(int mode)
 }
 
 void gr_stub_set_view_matrix(const vec3d *pos, const matrix* orient)
-{
-}
-
-void gr_stub_start_clip_plane()
 {
 }
 
@@ -571,9 +563,6 @@ bool gr_stub_init()
 	gr_screen.gf_deferred_lighting_begin = gr_stub_deferred_lighting_begin;
 	gr_screen.gf_deferred_lighting_end = gr_stub_deferred_lighting_end;
 	gr_screen.gf_deferred_lighting_finish = gr_stub_deferred_lighting_finish;
-
-	gr_screen.gf_start_clip_plane	= gr_stub_start_clip_plane;
-	gr_screen.gf_end_clip_plane		= gr_stub_end_clip_plane;
 
 	gr_screen.gf_lighting			= gr_stub_set_lighting;
 
