@@ -55,9 +55,6 @@ void opengl_create_perspective_projection_matrix(matrix4 *out, float left, float
 void opengl_create_orthographic_projection_matrix(matrix4* out, float left, float right, float bottom, float top, float near_dist, float far_dist);
 void opengl_create_view_matrix(matrix4 *out, const vec3d *pos, const matrix *orient);
 
-void gr_opengl_start_clip_plane();
-void gr_opengl_end_clip_plane();
-
 int gr_opengl_create_vertex_buffer(bool static_buffer);
 int gr_opengl_create_index_buffer(bool static_buffer);
 

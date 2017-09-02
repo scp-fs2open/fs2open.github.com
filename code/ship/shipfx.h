@@ -179,7 +179,6 @@ public:
 
 	virtual int warpStart();
 	virtual int warpFrame(float frametime);
-	virtual int warpShipClip();
 	virtual int warpShipClip(model_render_params *render_info);
 	virtual int warpShipRender();
 	virtual int warpShipQueueRender(model_draw_list *scene);
@@ -218,7 +217,6 @@ public:
 
 	int warpStart();
 	int warpFrame(float frametime);
-	int warpShipClip();
 	int warpShipClip(model_render_params *render_info);
 	int warpShipRender();
 
@@ -275,7 +273,6 @@ public:
 
 	virtual int warpStart();
 	virtual int warpFrame(float frametime);
-	virtual int warpShipClip();
 	virtual int warpShipClip(model_render_params *render_info);
 	virtual int warpShipRender();
 	virtual int warpEnd();
@@ -325,7 +322,6 @@ public:
 
 	virtual int warpStart();
 	virtual int warpFrame(float frametime);
-	virtual int warpShipClip();
 	virtual int warpShipClip(model_render_params *render_info);
 	virtual int warpShipRender();
 	virtual int warpEnd();

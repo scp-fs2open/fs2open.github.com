@@ -726,16 +726,6 @@ void gr_opengl_pop_scale_matrix()
 	GL_scale_matrix_set = false;
 }
 
-void gr_opengl_end_clip_plane()
-{
-	// The shaders handle this now
-}
-
-void gr_opengl_start_clip_plane()
-{
-	// The shaders handle this now
-}
-
 void gr_opengl_set_clip_plane(vec3d *clip_normal, vec3d *clip_point)
 {
 	if ( clip_normal == NULL || clip_point == NULL ) {

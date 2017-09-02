@@ -1213,9 +1213,6 @@ void opengl_setup_function_pointers()
 	gr_screen.gf_deferred_lighting_end = gr_opengl_deferred_lighting_end;
 	gr_screen.gf_deferred_lighting_finish = gr_opengl_deferred_lighting_finish;
 
-	gr_screen.gf_start_clip_plane	= gr_opengl_start_clip_plane;
-	gr_screen.gf_end_clip_plane		= gr_opengl_end_clip_plane;
-
 	gr_screen.gf_lighting			= gr_opengl_set_lighting;
 
 	gr_screen.gf_set_proj_matrix	= gr_opengl_set_projection_matrix;

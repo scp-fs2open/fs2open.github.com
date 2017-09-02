@@ -3374,11 +3374,6 @@ int WarpEffect::warpFrame(float frametime)
 	return 0;
 }
 
-int WarpEffect::warpShipClip()
-{
-	return 0;
-}
-
 int WarpEffect::warpShipClip(model_render_params *render_info)
 {
 	return 0;
@@ -3659,15 +3654,6 @@ int WE_Default::warpFrame(float frametime)
 	return 1;
 }
 
-int WE_Default::warpShipClip()
-{
-	if(!this->isValid())
-		return 0;
-
-	g3_start_user_clip_plane( &pos, &fvec );
-	return 1;
-}
-
 int WE_Default::warpShipClip(model_render_params *render_info)
 {
 	if(!this->isValid())
@@ -3939,20 +3925,6 @@ int WE_BSG::warpFrame(float frametime)
 	if(snd_start > -1)
 		snd_update_3d_pos(snd_start, snd_start_gs, &objp->pos, 0.0f, snd_range_factor);
 
-	return 1;
-}
-
-int WE_BSG::warpShipClip()
-{
-	if(!this->isValid())
-		return 0;
-
-	if(direction == WD_WARP_OUT && stage > 0)
-	{
-		vec3d position;
-		vm_vec_scale_add(&position, &objp->pos, &objp->orient.vec.fvec, objp->radius);
-		g3_start_user_clip_plane( &position, &objp->orient.vec.fvec );
-	}
 	return 1;
 }
 
@@ -4264,15 +4236,6 @@ int WE_Homeworld::warpFrame(float frametime)
 	if(snd > -1)
 		snd_update_3d_pos(snd, snd_gs, &pos, 0.0f, snd_range_factor);
 		
-	return 1;
-}
-
-int WE_Homeworld::warpShipClip()
-{
-	if(!this->isValid())
-		return 0;
-
-	g3_start_user_clip_plane( &pos, &fvec );
 	return 1;
 }
 
