@@ -196,14 +196,10 @@ struct vertex_format_data
 
 	vertex_format format_type;
 	size_t stride;
-	void *data_src;
-	int offset;
+	size_t offset;
 
-	vertex_format_data(vertex_format i_format_type, size_t i_stride, void *i_data_src) : 
-	format_type(i_format_type), stride(i_stride), data_src(i_data_src), offset(-1) {}
-
-	vertex_format_data(vertex_format i_format_type, size_t i_stride, int i_offset) : 
-	format_type(i_format_type), stride(i_stride), data_src(NULL), offset(i_offset) {}
+	vertex_format_data(vertex_format i_format_type, size_t i_stride, size_t i_offset) :
+	format_type(i_format_type), stride(i_stride), offset(i_offset) {}
 
 	static inline uint mask(vertex_format v_format) { return 1 << v_format; }
 };
@@ -216,34 +212,16 @@ class vertex_layout
 public:
 	vertex_layout(): Vertex_mask(0) {}
 
-	vertex_layout(void* init_ptr): Vertex_mask(0) {}
+	size_t get_num_vertex_components() const { return Vertex_components.size(); }
 
-	size_t get_num_vertex_components() { return Vertex_components.size(); }
-
-	vertex_format_data* get_vertex_component(size_t index) { return &Vertex_components[index]; }
+	const vertex_format_data* get_vertex_component(size_t index) const { return &Vertex_components[index]; }
 	
-	bool resident_vertex_format(vertex_format_data::vertex_format format_type)
+	bool resident_vertex_format(vertex_format_data::vertex_format format_type) const
 	{ 
 		return ( Vertex_mask & vertex_format_data::mask(format_type) ) ? true : false; 
 	} 
 
-	void add_vertex_component(vertex_format_data::vertex_format format_type, void* src)
-	{
-		add_vertex_component(format_type, 0, src);
-	}
-
-	void add_vertex_component(vertex_format_data::vertex_format format_type, size_t stride, void* src) 
-	{
-		if ( resident_vertex_format(format_type) ) {
-			// we already have a vertex component of this format type
-			return;
-		}
-
-		Vertex_mask |= (1 << format_type);
-		Vertex_components.push_back(vertex_format_data(format_type, stride, src));
-	}
-
-	void add_vertex_component(vertex_format_data::vertex_format format_type, size_t stride, int offset) 
+	void add_vertex_component(vertex_format_data::vertex_format format_type, size_t stride, size_t offset)
 	{
 		if ( resident_vertex_format(format_type) ) {
 			// we already have a vertex component of this format type
@@ -694,6 +672,7 @@ typedef struct screen {
 	void (*gf_delete_buffer)(int handle);
 
 	void (*gf_update_buffer_data)(int handle, size_t size, void* data);
+	void (*gf_update_buffer_data_offset)(int handle, size_t offset, size_t size, void* data);
 	void (*gf_update_transform_buffer)(void* data, size_t size);
 	void (*gf_set_transform_buffer_offset)(size_t offset);
 
@@ -734,9 +713,6 @@ typedef struct screen {
 
 	void (*gf_lighting)(bool,bool);
 
-	void (*gf_start_clip_plane)();
-	void (*gf_end_clip_plane)();
-
 	void (*gf_zbias)(int zbias);
 
 	void (*gf_set_fill_mode)(int);
@@ -760,11 +736,9 @@ typedef struct screen {
 	void (*gf_render_model)(model_material* material_info, indexed_vertex_source *vert_source, vertex_buffer* bufferp, size_t texi);
 	void (*gf_render_shield_impact)(shield_material *material_info, primitive_type prim_type, vertex_layout *layout, int buffer_handle, int n_verts);
 	void (*gf_render_primitives)(material* material_info, primitive_type prim_type, vertex_layout* layout, int offset, int n_verts, int buffer_handle);
-	void (*gf_render_primitives_immediate)(material* material_info, primitive_type prim_type, vertex_layout* layout, int n_verts, void* data, int size);
 	void (*gf_render_primitives_particle)(particle_material* material_info, primitive_type prim_type, vertex_layout* layout, int offset, int n_verts, int buffer_handle);
 	void (*gf_render_primitives_distortion)(distortion_material* material_info, primitive_type prim_type, vertex_layout* layout, int offset, int n_verts, int buffer_handle);
 	void (*gf_render_primitives_2d)(material* material_info, primitive_type prim_type, vertex_layout* layout, int offset, int n_verts, int buffer_handle);
-	void (*gf_render_primitives_2d_immediate)(material* material_info, primitive_type prim_type, vertex_layout* layout, int n_verts, void* data, int size);
 	void (*gf_render_movie)(movie_material* material_info, primitive_type prim_type, vertex_layout* layout, int n_verts, int buffer);
 	void (*gf_render_primitives_batched)(batched_bitmap_material* material_info, primitive_type prim_type, vertex_layout* layout, int offset, int n_verts, int buffer_handle);
 
@@ -952,6 +926,7 @@ __inline int gr_create_index_buffer(bool static_buffer = false)
 
 #define gr_delete_buffer				GR_CALL(*gr_screen.gf_delete_buffer)
 #define gr_update_buffer_data			GR_CALL(*gr_screen.gf_update_buffer_data)
+#define gr_update_buffer_data_offset	GR_CALL(*gr_screen.gf_update_buffer_data_offset)
 #define gr_update_transform_buffer		GR_CALL(*gr_screen.gf_update_transform_buffer)
 #define gr_set_transform_buffer_offset	GR_CALL(*gr_screen.gf_set_transform_buffer_offset)
 
@@ -988,9 +963,6 @@ inline void gr_post_process_restore_zbuffer() {
 
 #define	gr_set_lighting					GR_CALL(*gr_screen.gf_lighting)
 
-#define	gr_start_clip					GR_CALL(*gr_screen.gf_start_clip_plane)
-#define	gr_end_clip						GR_CALL(*gr_screen.gf_end_clip_plane)
-
 #define	gr_zbias						GR_CALL(*gr_screen.gf_zbias)
 #define	gr_set_fill_mode				GR_CALL(*gr_screen.gf_set_fill_mode)
 #define	gr_set_texture_panning			GR_CALL(*gr_screen.gf_set_texture_panning)
@@ -1016,11 +988,6 @@ __inline void gr_render_primitives(material* material_info, primitive_type prim_
 	(*gr_screen.gf_render_primitives)(material_info, prim_type, layout, offset, n_verts, buffer_handle);
 }
 
-__inline void gr_render_primitives_immediate(material* material_info, primitive_type prim_type, vertex_layout* layout, int n_verts, void* data, int size)
-{
-	(*gr_screen.gf_render_primitives_immediate)(material_info, prim_type, layout, n_verts, data, size);
-}
-
 __inline void gr_render_primitives_particle(particle_material* material_info, primitive_type prim_type, vertex_layout* layout, int offset, int n_verts, int buffer_handle = -1)
 {
 	(*gr_screen.gf_render_primitives_particle)(material_info, prim_type, layout, offset, n_verts, buffer_handle);
@@ -1039,11 +1006,6 @@ __inline void gr_render_primitives_distortion(distortion_material* material_info
 __inline void gr_render_primitives_2d(material* material_info, primitive_type prim_type, vertex_layout* layout, int offset, int n_verts, int buffer_handle = -1)
 {
 	(*gr_screen.gf_render_primitives_2d)(material_info, prim_type, layout, offset, n_verts, buffer_handle);
-}
-
-__inline void gr_render_primitives_2d_immediate(material* material_info, primitive_type prim_type, vertex_layout* layout, int n_verts, void* data, int size)
-{
-	(*gr_screen.gf_render_primitives_2d_immediate)(material_info, prim_type, layout, n_verts, data, size);
 }
 
 inline void gr_render_movie(movie_material* material_info, primitive_type prim_type, vertex_layout* layout, int n_verts, int buffer)

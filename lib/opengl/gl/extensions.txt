@@ -3,3 +3,6 @@ GL_EXT_texture_filter_anisotropic
 GL_ARB_shader_texture_lod
 GL_ARB_debug_output
 GL_KHR_debug
+GL_ARB_timer_query
+GL_ARB_get_program_binary
+GL_ARB_texture_storage

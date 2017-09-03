@@ -5889,30 +5889,19 @@ int sexp_time_wing_destroyed(int n)
 	return f2i(time);
 }
 
-int sexp_time_docked(int n)
+int sexp_time_docked_or_undocked(int n, bool docked)
 {
 	fix time;
 	char *docker = CTEXT(n);
 	char *dockee = CTEXT(CDR(n));
 	int count = eval_num(CDR(CDR(n)));
 
-	Assert ( count > 0 );
-	if ( !mission_log_get_time_indexed(LOG_SHIP_DOCKED, docker, dockee, count, &time) ){
-		return SEXP_NAN;
+	if (count <= 0) {
+		Warning(LOCATION, "Time-%sdocked count should be at least 1!  This has been automatically adjusted.", docked ? "" : "un");
+		count = 1;
 	}
 
-	return f2i(time);
-}
-
-int sexp_time_undocked(int n)
-{
-	fix time;
-	char *docker = CTEXT(n);
-	char *dockee = CTEXT(CDR(n));
-	int count = eval_num(CDR(CDR(n)));
-
-	Assert ( count > 0 );
-	if ( !mission_log_get_time_indexed(LOG_SHIP_UNDOCKED, docker, dockee, count, &time) ){
+	if ( !mission_log_get_time_indexed(docked ? LOG_SHIP_DOCKED : LOG_SHIP_UNDOCKED, docker, dockee, count, &time) ){
 		return SEXP_NAN;
 	}
 
@@ -24165,11 +24154,8 @@ int eval_sexp(int cur_node, int referenced_node)
 				break;
 
 			case OP_TIME_DOCKED:
-				sexp_val = sexp_time_docked(node);
-				break;
-
 			case OP_TIME_UNDOCKED:
-				sexp_val = sexp_time_undocked(node);
+				sexp_val = sexp_time_docked_or_undocked(node, op_num == OP_TIME_DOCKED);
 				break;
 
 			case OP_AFTERBURNER_LEFT:

@@ -208,31 +208,6 @@ int g3_draw_sphere(vertex *pnt, float rad);
  */
 int g3_draw_sphere_ez(const vec3d *pnt, float rad);
 
-
-/**
- * Enables clipping with an arbritary plane.   
- *
- * This will be on until g3_stop_clip_plane is called or until next frame.
- * The points passed should be relative to the instance. Probably
- * that means world coordinates.
- * 
- * This works like any other clip plane... if this is enabled and you
- * rotate a point, the CC_OFF_USER bit will be set in the clipping codes.
- * It is completely handled by most g3_draw primitives, except maybe lines.
- *
- * As far as performance, when enabled, it will slow down each point
- * rotation (or g3_code_vertex call) by a vec3d subtraction and dot
- * product.   It won't slow anything down for polys that are completely
- * clipped on or off by the plane, and will slow each clipped polygon by
- * not much more than any other clipping we do.
- */
-void g3_start_user_clip_plane(const vec3d *plane_point, const vec3d *plane_normal);
-
-/**
- * Stops arbritary plane clipping
- */
-void g3_stop_user_clip_plane();
-
 ubyte g3_transfer_vertex(vertex *dest, const vec3d *src);
 
 /**

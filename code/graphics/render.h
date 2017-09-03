@@ -165,3 +165,46 @@ void gr_arc(int xc, int yc, float r, float angle_start, float angle_end, bool fi
  * @param resize_mode The mode for translating the screen positions
  */
 void gr_curve(int x, int y, int r, int direction, int resize_mode);
+
+/**
+ * @brief The buffer object holding the data for immediate draws
+ */
+extern int gr_immediate_buffer_handle;
+
+/**
+ * @brief Adds data to the immediate buffer for use by draw operations
+ *
+ * @warning The data is only available in the buffer for one frame.
+ *
+ * @param size The size of the data buffer
+ * @param data The pointer to the data
+ * @return The offset into the immediate buffer where this data starts at
+ */
+size_t gr_add_to_immediate_buffer(size_t size, void *data);
+
+/**
+ * @brief Resets the immediate buffer for reuse
+ */
+void gr_reset_immediate_buffer();
+
+/**
+ * @brief Renders some vertex data from an immediate memory buffer
+ * @param material_info The material information for rendering the data
+ * @param prim_type The primitive type of the data
+ * @param layout The vertex layout of the data
+ * @param n_verts How many vertices are in the data
+ * @param data The pointer to the data to render
+ * @param size The size of the data
+ */
+void gr_render_primitives_immediate(material* material_info, primitive_type prim_type, vertex_layout* layout, int n_verts, void* data, size_t size);
+
+/**
+ * @brief Renders some vertex data from an immediate memory buffer with a 2D projection matrix
+ * @param material_info The material information for rendering the data
+ * @param prim_type The primitive type of the data
+ * @param layout The vertex layout of the data
+ * @param n_verts How many vertices are in the data
+ * @param data The pointer to the data to render
+ * @param size The size of the data
+ */
+void gr_render_primitives_2d_immediate(material* material_info, primitive_type prim_type, vertex_layout* layout, int n_verts, void* data, size_t size);

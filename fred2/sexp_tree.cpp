@@ -2594,7 +2594,7 @@ int sexp_tree::get_default_value(sexp_list_item *item, char *text_buf, int op, i
 			{
 				item->set_data("89", (SEXPT_NUMBER | SEXPT_VALID));
 			}
-			else if (((Operators[op].value == OP_HAS_DOCKED_DELAY) || (Operators[op].value == OP_HAS_UNDOCKED_DELAY)) && (i == 2))
+			else if (((Operators[op].value == OP_HAS_DOCKED_DELAY) || (Operators[op].value == OP_HAS_UNDOCKED_DELAY) || (Operators[op].value == OP_TIME_DOCKED) || (Operators[op].value == OP_TIME_UNDOCKED)) && (i == 2))
 			{
 				item->set_data("1", (SEXPT_NUMBER | SEXPT_VALID));
 			}

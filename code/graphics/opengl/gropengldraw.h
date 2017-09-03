@@ -57,9 +57,7 @@ void opengl_render_primitives(primitive_type prim_type, vertex_layout* layout, i
 void opengl_render_primitives_immediate(primitive_type prim_type, vertex_layout* layout, int n_verts, void* data, int size);
 
 void gr_opengl_render_primitives(material* material_info, primitive_type prim_type, vertex_layout* layout, int offset, int n_verts, int buffer_handle);
-void gr_opengl_render_primitives_immediate(material* material_info, primitive_type prim_type, vertex_layout* layout, int n_verts, void* data, int size);
 void gr_opengl_render_primitives_2d(material* material_info, primitive_type prim_type, vertex_layout* layout, int offset, int n_verts, int buffer_handle);
-void gr_opengl_render_primitives_2d_immediate(material* material_info, primitive_type prim_type, vertex_layout* layout, int n_verts, void* data, int size);
 void gr_opengl_render_primitives_particle(particle_material* material_info, primitive_type prim_type, vertex_layout* layout, int offset, int n_verts, int buffer_handle);
 void gr_opengl_render_primitives_batched(batched_bitmap_material* material_info, primitive_type prim_type, vertex_layout* layout, int offset, int n_verts, int buffer_handle);
 void gr_opengl_render_primitives_distortion(distortion_material* material_info, primitive_type prim_type, vertex_layout* layout, int offset, int n_verts, int buffer_handle);
@@ -67,91 +65,8 @@ void gr_opengl_render_movie(movie_material* material_info, primitive_type prim_t
 
 void opengl_bind_vertex_layout(vertex_layout &layout, uint base_vertex = 0, ubyte* base_ptr = NULL);
 
-inline void opengl_draw_textured_quad_instanced(
-	GLfloat x1, GLfloat y1, GLfloat u1, GLfloat v1,
-	GLfloat x2, GLfloat y2, GLfloat u2, GLfloat v2, 
-	int count )
-{
-	GLfloat glVertices[4][4] = {
-		{ x1, y1, u1, v1 },
-		{ x1, y2, u1, v2 },
-		{ x2, y1, u2, v1 },
-		{ x2, y2, u2, v2 }
-	};
-
-	GL_state.Array.BindArrayBuffer(0);
-
-	vertex_layout vert_def;
-
-	vert_def.add_vertex_component(vertex_format_data::POSITION2, sizeof(glVertices[0]), glVertices);
-	vert_def.add_vertex_component(vertex_format_data::TEX_COORD2, sizeof(glVertices[0]), &(glVertices[0][2]));
-
-	opengl_bind_vertex_layout(vert_def);
-
-	//glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-	glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, count);
-}
-
-inline void opengl_draw_textured_quad(
-	GLfloat x1, GLfloat y1, GLfloat u1, GLfloat v1,
-	GLfloat x2, GLfloat y2, GLfloat u2, GLfloat v2 )
-{
-	GR_DEBUG_SCOPE("Draw textured quad");
-
-	GLfloat glVertices[4][4] = {
-		{ x1, y1, u1, v1 },
-		{ x1, y2, u1, v2 },
-		{ x2, y1, u2, v1 },
-		{ x2, y2, u2, v2 }
-	};
-
-	vertex_layout vert_def;
-
-	vert_def.add_vertex_component(vertex_format_data::POSITION2, sizeof(GLfloat) * 4, 0);
-	vert_def.add_vertex_component(vertex_format_data::TEX_COORD2, sizeof(GLfloat) * 4, sizeof(GLfloat) * 2);
-
-	opengl_render_primitives_immediate(PRIM_TYPE_TRISTRIP, &vert_def, 4, glVertices, sizeof(GLfloat) * 4 * 4);
-}
-
-inline void opengl_draw_coloured_quad(
-	GLint x1, GLint y1,
-	GLint x2, GLint y2)
-{
-	GLint glVertices[8] = {
-		x1, y1,
-		x1, y2,
-		x2, y1,
-		x2, y2
-	};
-
-	vertex_layout vert_def;
-
-	vert_def.add_vertex_component(vertex_format_data::SCREEN_POS, 0, 0);
-
-	opengl_bind_vertex_layout(vert_def);
-
-	opengl_render_primitives_immediate(PRIM_TYPE_TRISTRIP, &vert_def, 4, glVertices, sizeof(GLint) * 8);
-}
-
-inline void opengl_draw_coloured_quad(
-	GLfloat x1, GLfloat y1,
-	GLfloat x2, GLfloat y2 )
-{
-	GLfloat glVertices[8] = {
-		x1, y1,
-		x1, y2,
-		x2, y1,
-		x2, y2
-	};
-
-	vertex_layout vert_def;
-
-	vert_def.add_vertex_component(vertex_format_data::POSITION2, 0, 0);
-
-	opengl_bind_vertex_layout(vert_def);
-
-	opengl_render_primitives_immediate(PRIM_TYPE_TRISTRIP, &vert_def, 4, glVertices, sizeof(GLfloat) * 8);
-}
+void opengl_draw_textured_quad(GLfloat x1, GLfloat y1, GLfloat u1, GLfloat v1,
+							   GLfloat x2, GLfloat y2, GLfloat u2, GLfloat v2 );
 
 inline GLenum opengl_primitive_type(primitive_type prim_type);
 
