@@ -153,6 +153,23 @@ class opengl_array_state
 		void BindUniformBufferBindingIndex(GLuint id, GLuint index);
 };
 
+class opengl_constant_state {
+	GLint _uniform_buffer_offset_alignment;
+	GLint _max_uniform_block_size;
+	GLint _max_uniform_block_bindings;
+
+ public:
+	opengl_constant_state();
+
+	void init();
+
+	GLint GetUniformBufferOffsetAlignment();
+
+	GLint GetMaxUniformBlockSize();
+
+	GLint GetMaxUniformBlockBindings();
+};
+
 class opengl_state
 {
 	friend class opengl_texture_state;
@@ -199,6 +216,7 @@ class opengl_state
 
 		opengl_texture_state Texture;
 		opengl_array_state Array;
+		opengl_constant_state Constants;
 
 		void SetAlphaBlendMode(gr_alpha_blend ab);
 		void SetZbufferType(gr_zbuffer_type zt);

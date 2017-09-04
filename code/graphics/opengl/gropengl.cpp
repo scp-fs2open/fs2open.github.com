@@ -17,10 +17,12 @@
 #include "gropengllight.h"
 #include "gropenglpostprocessing.h"
 #include "gropenglquery.h"
+#include "gropenglsync.h"
 #include "gropenglshader.h"
 #include "gropenglstate.h"
 #include "gropengltexture.h"
 #include "gropengltnl.h"
+#include "gropengldeferred.h"
 #include "graphics/line.h"
 #include "io/mouse.h"
 #include "io/timer.h"
@@ -301,7 +303,7 @@ void gr_opengl_print_screen(const char *filename)
 
 	// save to a "screenshots" directory and tack on the filename
 	snprintf(tmp, MAX_PATH_LEN-1, "screenshots/%s.tga", filename);
-    
+
     _mkdir(os_get_config_path("screenshots").c_str());
 
 	FILE *fout = fopen(os_get_config_path(tmp).c_str(), "wb");
@@ -404,7 +406,7 @@ void gr_opengl_shutdown()
 
 	glDeleteVertexArrays(1, &GL_vao);
 	GL_vao = 0;
-	
+
 	if (GL_original_gamma_ramp != NULL && os::getSDLMainWindow() != nullptr) {
 		SDL_SetWindowGammaRamp( os::getSDLMainWindow(), GL_original_gamma_ramp, (GL_original_gamma_ramp+256), (GL_original_gamma_ramp+512) );
 	}
@@ -1180,11 +1182,11 @@ void opengl_setup_function_pointers()
 	gr_screen.gf_set_fill_mode			= gr_opengl_set_fill_mode;
 	gr_screen.gf_set_texture_panning	= gr_opengl_set_texture_panning;
 
-	gr_screen.gf_create_vertex_buffer		= gr_opengl_create_vertex_buffer;
-	gr_screen.gf_create_index_buffer		= gr_opengl_create_index_buffer;
-	gr_screen.gf_delete_buffer				= gr_opengl_delete_buffer;
-	gr_screen.gf_update_buffer_data			= gr_opengl_update_buffer_data;
+	gr_screen.gf_create_buffer	= gr_opengl_create_buffer;
+	gr_screen.gf_delete_buffer		= gr_opengl_delete_buffer;
+	gr_screen.gf_update_buffer_data		= gr_opengl_update_buffer_data;
 	gr_screen.gf_update_buffer_data_offset	= gr_opengl_update_buffer_data_offset;
+	gr_screen.gf_bind_uniform_buffer = gr_opengl_bind_uniform_buffer;
 
 	gr_screen.gf_update_transform_buffer	= gr_opengl_update_transform_buffer;
 	gr_screen.gf_set_transform_buffer_offset	= gr_opengl_set_transform_buffer_offset;
@@ -1223,11 +1225,11 @@ void opengl_setup_function_pointers()
 
 	gr_screen.gf_push_scale_matrix	= gr_opengl_push_scale_matrix;
 	gr_screen.gf_pop_scale_matrix	= gr_opengl_pop_scale_matrix;
-	
+
 	gr_screen.gf_set_line_width		= gr_opengl_set_line_width;
 
 	gr_screen.gf_sphere				= gr_opengl_sphere;
-	
+
 	gr_screen.gf_maybe_create_shader = gr_opengl_maybe_create_shader;
 	gr_screen.gf_shadow_map_start	= gr_opengl_shadow_map_start;
 	gr_screen.gf_shadow_map_end		= gr_opengl_shadow_map_end;
@@ -1248,6 +1250,7 @@ void opengl_setup_function_pointers()
 	gr_screen.gf_render_movie = gr_opengl_render_movie;
 
 	gr_screen.gf_is_capable = gr_opengl_is_capable;
+	gr_screen.gf_get_property = gr_opengl_get_property;
 
 	gr_screen.gf_push_debug_group = gr_opengl_push_debug_group;
 	gr_screen.gf_pop_debug_group = gr_opengl_pop_debug_group;
@@ -1260,6 +1263,10 @@ void opengl_setup_function_pointers()
 
 	gr_screen.gf_create_viewport = gr_opengl_create_viewport;
 	gr_screen.gf_use_viewport = gr_opengl_use_viewport;
+
+	gr_screen.gf_sync_fence = gr_opengl_sync_fence;
+	gr_screen.gf_sync_wait = gr_opengl_sync_wait;
+	gr_screen.gf_sync_delete = gr_opengl_sync_delete;
 
 	// NOTE: All function pointers here should have a Cmdline_nohtl check at the top
 	//       if they shouldn't be run in non-HTL mode, Don't keep separate entries.
@@ -1398,11 +1405,11 @@ static void init_extensions() {
 	Texture_compression_available = true;
 	// Swifty put this in, but it's not doing anything. Once he uses it, he can uncomment it.
 	//int use_base_vertex = Is_Extension_Enabled(OGL_ARB_DRAW_ELEMENTS_BASE_VERTEX);
-	
+
 	if ( !Cmdline_no_pbo ) {
 		Use_PBOs = 1;
 	}
-	
+
 	int ver = 0, major = 0, minor = 0;
 	const char *glsl_ver = (const char*)glGetString(GL_SHADING_LANGUAGE_VERSION);
 
@@ -1527,6 +1534,7 @@ bool gr_opengl_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 
 	GL_state.Texture.init(max_texture_units);
 	GL_state.Array.init(max_texture_coords);
+	GL_state.Constants.init();
 
 	opengl_set_texture_target();
 	GL_state.Texture.SetActiveUnit(0);
@@ -1595,7 +1603,11 @@ bool gr_opengl_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 	mprintf(( "  Using %s texture filter.\n", (GL_mipmap_filter) ? NOX("trilinear") : NOX("bilinear") ));
 
 	mprintf(( "  OpenGL Shader Version: %s\n", glGetString(GL_SHADING_LANGUAGE_VERSION) ));
-	
+
+	mprintf(("  Max uniform block size: %d\n", GL_state.Constants.GetMaxUniformBlockSize()));
+	mprintf(("  Max uniform buffer bindings: %d\n", GL_state.Constants.GetMaxUniformBlockBindings()));
+	mprintf(("  Uniform buffer byte offset alignment: %d\n", GL_state.Constants.GetUniformBufferOffsetAlignment()));
+
 	// This stops fred crashing if no textures are set
 	gr_screen.current_bitmap = -1;
 
@@ -1634,6 +1646,16 @@ bool gr_opengl_is_capable(gr_capability capability)
 	}
 
 	return false;
+}
+
+bool gr_opengl_get_property(gr_property prop, void* dest) {
+	switch(prop) {
+		case gr_property::UNIFORM_BUFFER_OFFSET_ALIGNMENT:
+			*((int*)dest) = GL_state.Constants.GetUniformBufferOffsetAlignment();
+			return true;
+		default:
+			return false;
+	}
 }
 
 void gr_opengl_push_debug_group(const char* name) {

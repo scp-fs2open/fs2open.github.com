@@ -23,6 +23,7 @@
 #include "gropenglshader.h"
 #include "gropenglstate.h"
 #include "gropengltexture.h"
+#include "gropengldeferred.h"
 #include "gropengltnl.h"
 #include "lighting/lighting.h"
 #include "math/vecmat.h"
@@ -92,6 +93,34 @@ struct opengl_buffer_object {
 static SCP_vector<opengl_buffer_object> GL_buffer_objects;
 static int GL_vertex_buffers_in_use = 0;
 
+static GLenum convertBufferType(BufferType type) {
+	switch (type) {
+		case BufferType::Vertex:
+			return GL_ARRAY_BUFFER;
+		case BufferType::Index:
+			return GL_ELEMENT_ARRAY_BUFFER;
+		case BufferType::Uniform:
+			return GL_UNIFORM_BUFFER;
+		default:
+			Assertion(false, "Unhandled enum value!");
+			return GL_INVALID_ENUM;
+	}
+}
+
+static GLenum convertUsageHint(BufferUsageHint usage) {
+	switch(usage) {
+		case BufferUsageHint::Static:
+			return GL_STATIC_DRAW;
+		case BufferUsageHint::Dynamic:
+			return GL_DYNAMIC_DRAW;
+		case BufferUsageHint::Streaming:
+			return GL_STREAM_DRAW;
+		default:
+			Assertion(false, "Unhandled enum value!");
+			return GL_INVALID_ENUM;
+	}
+}
+
 int opengl_create_buffer_object(GLenum type, GLenum usage)
 {
 	GR_DEBUG_SCOPE("Create buffer object");
@@ -140,6 +169,9 @@ void opengl_bind_buffer_object(int handle)
 
 void gr_opengl_update_buffer_data(int handle, size_t size, void* data)
 {
+	// This has to be verified by the caller or else we will run into OPenGL errors
+	Assertion(size > 0, "Buffer updates must include some data!");
+
 	GR_DEBUG_SCOPE("Update buffer data");
 
 	Assert(handle >= 0);
@@ -149,11 +181,28 @@ void gr_opengl_update_buffer_data(int handle, size_t size, void* data)
 
 	opengl_bind_buffer_object(handle);
 
-	GL_vertex_data_in -= buffer_obj.size;
-	buffer_obj.size = size;
-	GL_vertex_data_in += buffer_obj.size;
+	if (size <= buffer_obj.size && buffer_obj.type == GL_UNIFORM_BUFFER) {
+		// Uniform buffer can use unsychronized buffer mapping since those are always synchronized by us
+		// We also don't care about the previous data and tell OpenGL to map the buffer unsynchronized.
+		auto ptr = glMapBufferRange(buffer_obj.type,
+									0,
+									size,
+									GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT | GL_MAP_UNSYNCHRONIZED_BIT);
+		if (ptr == nullptr) {
+			// Something went wrong, try subdata instead
+			glBufferSubData(buffer_obj.type, 0, size, data);
+		} else {
+			memcpy(ptr, data, size);
 
-	glBufferData(buffer_obj.type, size, data, buffer_obj.usage);
+			glUnmapBuffer(buffer_obj.type);
+		}
+	} else {
+		GL_vertex_data_in -= buffer_obj.size;
+		buffer_obj.size = size;
+		GL_vertex_data_in += buffer_obj.size;
+
+		glBufferData(buffer_obj.type, size, data, buffer_obj.usage);
+	}
 }
 
 void gr_opengl_update_buffer_data_offset(int handle, size_t offset, size_t size, void* data)
@@ -208,14 +257,28 @@ void gr_opengl_delete_buffer(int handle)
 	glDeleteBuffers(1, &buffer_obj.buffer_id);
 }
 
-int gr_opengl_create_vertex_buffer(bool static_buffer)
+int gr_opengl_create_buffer(BufferType type, BufferUsageHint usage)
 {
-	return opengl_create_buffer_object(GL_ARRAY_BUFFER, static_buffer ? GL_STATIC_DRAW : GL_STREAM_DRAW);
+	return opengl_create_buffer_object(convertBufferType(type), convertUsageHint(usage));
 }
 
-int gr_opengl_create_index_buffer(bool static_buffer)
-{
-	return opengl_create_buffer_object(GL_ELEMENT_ARRAY_BUFFER, static_buffer ? GL_STATIC_DRAW : GL_STREAM_DRAW);
+void gr_opengl_bind_uniform_buffer(uniform_block_type bind_point, size_t offset, size_t size, int buffer) {
+	GR_DEBUG_SCOPE("Bind uniform buffer range");
+
+	GLuint buffer_handle = 0;
+
+	if (buffer != -1) {
+		Assert(buffer >= 0);
+		Assert((size_t)buffer < GL_buffer_objects.size());
+
+		opengl_buffer_object &buffer_obj = GL_buffer_objects[buffer];
+
+		Assertion(buffer_obj.type == GL_UNIFORM_BUFFER, "Only uniform buffers are valid for this function!");
+		buffer_handle = buffer_obj.buffer_id;
+	}
+
+	glBindBufferRange(GL_UNIFORM_BUFFER, static_cast<GLuint>(bind_point), buffer_handle, static_cast<GLintptr>(offset),
+					  static_cast<GLsizeiptr>(size));
 }
 
 int opengl_create_texture_buffer_object()
@@ -281,9 +344,6 @@ void opengl_destroy_all_buffers()
 
 void opengl_tnl_init()
 {
-	gr_opengl_deferred_light_cylinder_init(16);
-	gr_opengl_deferred_light_sphere_init(16, 16);
-
 	Transform_buffer_handle = opengl_create_texture_buffer_object();
 
 	if ( Transform_buffer_handle < 0 ) {
@@ -349,10 +409,14 @@ void opengl_tnl_init()
 
 		opengl_check_for_errors("post_init_framebuffer()");
 	}
+
+	gr_opengl_deferred_init();
 }
 
 void opengl_tnl_shutdown()
 {
+	gr_opengl_deferred_shutdown();
+
 	if ( Shadow_map_depth_texture ) {
 		glDeleteTextures(1, &Shadow_map_depth_texture);
 		Shadow_map_depth_texture = 0;

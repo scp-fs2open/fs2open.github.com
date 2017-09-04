@@ -43,6 +43,15 @@ opengl_vert_attrib GL_vertex_attrib_info[] =
 		{ opengl_vert_attrib::UVEC,			"vertUvec",			{{{ 0.0f, 1.0f, 0.0f, 0.0f }}} },
 	};
 
+struct opengl_uniform_block_binding {
+	uniform_block_type block_type;
+	const char* name;
+};
+
+opengl_uniform_block_binding GL_uniform_blocks[] = {
+	{ uniform_block_type::Lights, "lightData" }
+};
+
 /**
  * Static lookup reference for shader uniforms
  * When adding a new shader, list all associated uniforms and attributes here
@@ -602,6 +611,14 @@ int opengl_compile_shader(shader_type sdr, uint flags)
 	// initialize the attributes
 	for (auto& attr : sdr_info->attributes) {
 		new_shader.program->initAttribute(GL_vertex_attrib_info[attr].name, GL_vertex_attrib_info[attr].default_value);
+	}
+
+	for (auto& uniform_block : GL_uniform_blocks) {
+		auto blockIndex = glGetUniformBlockIndex(new_shader.program->getShaderHandle(), uniform_block.name);
+
+		if (blockIndex != GL_INVALID_INDEX) {
+			glUniformBlockBinding(new_shader.program->getShaderHandle(), blockIndex, static_cast<GLuint>(uniform_block.block_type));
+		}
 	}
 
 	mprintf(("Shader Variant Features:\n"));

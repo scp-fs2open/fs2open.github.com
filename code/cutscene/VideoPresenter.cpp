@@ -9,7 +9,7 @@ namespace player {
 VideoPresenter::VideoPresenter(const MovieProperties& props) : _scaleVideo(false) {
 	GR_DEBUG_SCOPE("Init video");
 
-	_vertexBuffer = gr_create_vertex_buffer(true);
+	_vertexBuffer = gr_create_buffer(BufferType::Vertex, BufferUsageHint::Static);
 
 	auto w = static_cast<int>(props.size.width);
 	auto h = static_cast<int>(props.size.height);
