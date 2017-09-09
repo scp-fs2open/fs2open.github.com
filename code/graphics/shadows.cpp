@@ -11,6 +11,7 @@
 #include "cmdline/cmdline.h"
 #include "debris/debris.h"
 #include "graphics/shadows.h"
+#include "graphics/matrix.h"
 #include "lighting/lighting.h"
 #include "math/vecmat.h"
 #include "model/model.h"

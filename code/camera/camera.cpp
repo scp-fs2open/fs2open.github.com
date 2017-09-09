@@ -2,7 +2,7 @@
 #include "globalincs/alphacolors.h"
 #include "globalincs/linklist.h"
 #include "globalincs/systemvars.h" //VM_FREECAMERA etc
-#include "graphics/font.h"
+#include "graphics/matrix.h"
 #include "hud/hud.h" //hud_get_draw
 #include "math/vecmat.h"
 #include "mod_table/mod_table.h"

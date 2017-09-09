@@ -12,6 +12,7 @@
 #include "globalincs/alphacolors.h"
 #include "globalincs/systemvars.h"
 #include "graphics/font.h"
+#include "graphics/matrix.h"
 #include "hud/hudwingmanstatus.h"
 #include "iff_defs/iff_defs.h"
 #include "io/timer.h"

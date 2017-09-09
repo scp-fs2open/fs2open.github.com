@@ -24,6 +24,7 @@
 #include "debugconsole/console.h"
 #include "globalincs/systemvars.h"
 #include "graphics/2d.h"
+#include "graphics/matrix.h"
 #include "graphics/grinternal.h"
 #include "io/key.h"
 #include "io/timer.h"
@@ -3109,10 +3110,7 @@ bool bm_set_render_target(int handle, int face) {
 
 		gr_reset_clip();
 
-		if (gr_screen.mode == GR_OPENGL) {
-			extern void opengl_setup_viewport();
-			opengl_setup_viewport();
-		}
+		gr_setup_viewport();
 
 		return true;
 	}

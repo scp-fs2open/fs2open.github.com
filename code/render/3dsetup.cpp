@@ -11,6 +11,7 @@
 
 
 #include "graphics/2d.h"			// Needed for w,h,aspect of canvas
+#include "graphics/matrix.h"
 #include "graphics/tmapper.h"
 #include "lighting/lighting.h"
 #include "render/3dinternal.h"

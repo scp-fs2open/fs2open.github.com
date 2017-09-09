@@ -10,6 +10,7 @@
 #include "debugconsole/console.h"
 #include "globalincs/systemvars.h"
 #include "graphics/2d.h"
+#include "graphics/matrix.h"
 #include "graphics/paths/PathRenderer.h"
 #include "gropengl.h"
 #include "gropenglbmpman.h"
@@ -911,20 +912,6 @@ void opengl_set_vsync(int status)
 	GL_CHECK_FOR_ERRORS("end of set_vsync()");
 }
 
-void opengl_setup_viewport()
-{
-	glViewport(0, 0, gr_screen.max_w, gr_screen.max_h);
-
-	GL_last_projection_matrix = GL_projection_matrix;
-
-	// the top and bottom positions are reversed on purpose, but RTT needs them the other way
-	if (GL_rendering_to_texture) {
-		opengl_create_orthographic_projection_matrix(&GL_projection_matrix, 0, i2fl(gr_screen.max_w), 0, i2fl(gr_screen.max_h), -1.0, 1.0);
-	} else {
-		opengl_create_orthographic_projection_matrix(&GL_projection_matrix, 0, i2fl(gr_screen.max_w), i2fl(gr_screen.max_h), 0, -1.0, 1.0);
-	}
-}
-
 std::unique_ptr<os::Viewport> gr_opengl_create_viewport(const os::ViewPortProperties& props) {
 	os::ViewPortProperties attrs = props;
 	attrs.pixel_format.red_size = Gr_red.bits;
@@ -1191,10 +1178,6 @@ void opengl_setup_function_pointers()
 	gr_screen.gf_update_transform_buffer	= gr_opengl_update_transform_buffer;
 	gr_screen.gf_set_transform_buffer_offset	= gr_opengl_set_transform_buffer_offset;
 
-	gr_screen.gf_start_instance_matrix			= gr_opengl_start_instance_matrix;
-	gr_screen.gf_end_instance_matrix			= gr_opengl_end_instance_matrix;
-	gr_screen.gf_start_angles_instance_matrix	= gr_opengl_start_instance_angles;
-
 	gr_screen.gf_set_light			= gr_opengl_set_light;
 	gr_screen.gf_reset_lighting		= gr_opengl_reset_lighting;
 	gr_screen.gf_set_ambient_light	= gr_opengl_set_ambient_light;
@@ -1216,15 +1199,6 @@ void opengl_setup_function_pointers()
 	gr_screen.gf_deferred_lighting_finish = gr_opengl_deferred_lighting_finish;
 
 	gr_screen.gf_lighting			= gr_opengl_set_lighting;
-
-	gr_screen.gf_set_proj_matrix	= gr_opengl_set_projection_matrix;
-	gr_screen.gf_end_proj_matrix	= gr_opengl_end_projection_matrix;
-
-	gr_screen.gf_set_view_matrix	= gr_opengl_set_view_matrix;
-	gr_screen.gf_end_view_matrix	= gr_opengl_end_view_matrix;
-
-	gr_screen.gf_push_scale_matrix	= gr_opengl_push_scale_matrix;
-	gr_screen.gf_pop_scale_matrix	= gr_opengl_pop_scale_matrix;
 
 	gr_screen.gf_set_line_width		= gr_opengl_set_line_width;
 
@@ -1267,6 +1241,8 @@ void opengl_setup_function_pointers()
 	gr_screen.gf_sync_fence = gr_opengl_sync_fence;
 	gr_screen.gf_sync_wait = gr_opengl_sync_wait;
 	gr_screen.gf_sync_delete = gr_opengl_sync_delete;
+
+	gr_screen.gf_set_viewport = gr_opengl_set_viewport;
 
 	// NOTE: All function pointers here should have a Cmdline_nohtl check at the top
 	//       if they shouldn't be run in non-HTL mode, Don't keep separate entries.
@@ -1556,9 +1532,8 @@ bool gr_opengl_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 	// must be called after extensions are setup
 	opengl_set_vsync( !Cmdline_no_vsync );
 
-	opengl_setup_viewport();
-	vm_matrix4_set_identity(&GL_view_matrix);
-	vm_matrix4_set_identity(&GL_model_view_matrix);
+	gr_reset_matrices();
+	gr_setup_viewport();
 
 	glClear(GL_DEPTH_BUFFER_BIT);
 	glClear(GL_STENCIL_BUFFER_BIT);

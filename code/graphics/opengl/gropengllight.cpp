@@ -20,6 +20,7 @@
 #include "globalincs/pstypes.h"
 #include <globalincs/systemvars.h>
 #include "graphics/2d.h"
+#include "graphics/matrix.h"
 #include "gropengllight.h"
 #include "gropenglstate.h"
 #include "gropengltnl.h"
@@ -164,8 +165,8 @@ void opengl_set_light(int light_num, opengl_light *ltp)
 	light_dir_world.xyz.y = ltp->SpotDir[1];
 	light_dir_world.xyz.z = ltp->SpotDir[2];
 
-	vm_vec_transform(&opengl_light_uniforms.Position[light_num], &light_pos_world, &GL_view_matrix);
-	vm_vec_transform(&opengl_light_uniforms.Direction[light_num], &light_dir_world, &GL_view_matrix, false);
+	vm_vec_transform(&opengl_light_uniforms.Position[light_num], &light_pos_world, &gr_view_matrix);
+	vm_vec_transform(&opengl_light_uniforms.Direction[light_num], &light_dir_world, &gr_view_matrix, false);
 
 	opengl_light_uniforms.Diffuse_color[light_num].xyz.x = ltp->Diffuse[0];
 	opengl_light_uniforms.Diffuse_color[light_num].xyz.y = ltp->Diffuse[1];

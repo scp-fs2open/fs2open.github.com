@@ -4,6 +4,7 @@
 #include <graphics/2d.h>
 #include <camera/camera.h>
 #include <graphics/opengl/gropenglpostprocessing.h>
+#include <graphics/matrix.h>
 #include <globalincs/systemvars.h>
 #include <freespace.h>
 #include <render/3d.h>

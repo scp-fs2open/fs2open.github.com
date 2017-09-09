@@ -1,5 +1,6 @@
 #include "VideoPresenter.h"
 
+#include "graphics/matrix.h"
 
 using namespace cutscene;
 using namespace cutscene::player;

@@ -24,6 +24,7 @@
 #include "render/3d.h"	//For g3_start_frame
 #include "ship/ship.h"
 #include "weapon/emp.h"
+#include "graphics/matrix.h"
 
 
 

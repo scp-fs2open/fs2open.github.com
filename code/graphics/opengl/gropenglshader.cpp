@@ -11,6 +11,7 @@
 #include "cmdline/cmdline.h"
 #include "def_files/def_files.h"
 #include "graphics/2d.h"
+#include "graphics/matrix.h"
 #include "graphics/grinternal.h"
 #include "graphics/opengl/gropengldraw.h"
 #include "graphics/opengl/gropengllight.h"
@@ -785,8 +786,8 @@ void opengl_shader_set_passthrough(bool textured)
 
 	Current_shader->program->Uniforms.setUniform4f("color", 1.0f, 1.0f, 1.0f, 1.0f);
 
-	Current_shader->program->Uniforms.setUniformMatrix4f("modelViewMatrix", GL_model_view_matrix);
-	Current_shader->program->Uniforms.setUniformMatrix4f("projMatrix", GL_projection_matrix);
+	Current_shader->program->Uniforms.setUniformMatrix4f("modelViewMatrix", gr_model_view_matrix);
+	Current_shader->program->Uniforms.setUniformMatrix4f("projMatrix", gr_projection_matrix);
 }
 
 void opengl_shader_set_default_material(bool textured, bool alpha, vec4 *clr, float color_scale, uint32_t array_index, const material::clip_plane& clip_plane)
@@ -834,11 +835,11 @@ void opengl_shader_set_default_material(bool textured, bool alpha, vec4 *clr, fl
 		clip_equation.xyzw.w = -vm_vec_dot(&clip_plane.normal, &clip_plane.position);
 
 		Current_shader->program->Uniforms.setUniform4f("clipEquation", clip_equation);
-		Current_shader->program->Uniforms.setUniformMatrix4f("modelMatrix", GL_model_matrix_stack.get_transform());
+		Current_shader->program->Uniforms.setUniformMatrix4f("modelMatrix", gr_model_matrix_stack.get_transform());
 	} else {
 		Current_shader->program->Uniforms.setUniformi("clipEnabled", 0);
 	}
 
-	Current_shader->program->Uniforms.setUniformMatrix4f("modelViewMatrix", GL_model_view_matrix);
-	Current_shader->program->Uniforms.setUniformMatrix4f("projMatrix", GL_projection_matrix);
+	Current_shader->program->Uniforms.setUniformMatrix4f("modelViewMatrix", gr_model_view_matrix);
+	Current_shader->program->Uniforms.setUniformMatrix4f("projMatrix", gr_projection_matrix);
 }

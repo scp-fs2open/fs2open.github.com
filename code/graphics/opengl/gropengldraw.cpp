@@ -10,6 +10,7 @@
 #include "globalincs/pstypes.h"
 #include "cmdline/cmdline.h"
 #include "freespace.h"
+#include "graphics/matrix.h"
 #include "gropengl.h"
 #include "gropengldraw.h"
 #include "gropengllight.h"
@@ -663,8 +664,8 @@ void gr_opengl_render_shield_impact(shield_material *material_info, primitive_ty
 	Current_shader->program->Uniforms.setUniformi("shieldMapIndex", array_index);
 	Current_shader->program->Uniforms.setUniformi("srgb", High_dynamic_range ? 1 : 0);
 	Current_shader->program->Uniforms.setUniform4f("color", material_info->get_color());
-	Current_shader->program->Uniforms.setUniformMatrix4f("modelViewMatrix", GL_model_view_matrix);
-	Current_shader->program->Uniforms.setUniformMatrix4f("projMatrix", GL_projection_matrix);
+	Current_shader->program->Uniforms.setUniformMatrix4f("modelViewMatrix", gr_model_view_matrix);
+	Current_shader->program->Uniforms.setUniformMatrix4f("projMatrix", gr_projection_matrix);
 	
 	opengl_render_primitives(prim_type, layout, n_verts, buffer_handle, 0, 0);
 }
@@ -802,11 +803,11 @@ void gr_opengl_render_primitives_2d(material* material_info, primitive_type prim
 	//glPushMatrix();
 	//glTranslatef((float)gr_screen.offset_x, (float)gr_screen.offset_y, -0.99f);
 
-	gr_opengl_set_2d_matrix();
+	gr_set_2d_matrix();
 
 	gr_opengl_render_primitives(material_info, prim_type, layout, offset, n_verts, buffer_handle);
 
-	gr_opengl_end_2d_matrix();
+	gr_end_2d_matrix();
 
 	//glPopMatrix();
 
@@ -847,13 +848,13 @@ void gr_opengl_render_movie(movie_material* material_info,
 							int buffer) {
 	GR_DEBUG_SCOPE("Render movie frame");
 
-	gr_opengl_set_2d_matrix();
+	gr_set_2d_matrix();
 
 	opengl_tnl_set_material_movie(material_info);
 
 	opengl_render_primitives(prim_type, layout, n_verts, buffer, 0, 0);
 
-	gr_opengl_end_2d_matrix();
+	gr_end_2d_matrix();
 }
 
 void gr_opengl_render_primitives_batched(batched_bitmap_material* material_info,

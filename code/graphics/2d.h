@@ -709,20 +709,6 @@ typedef struct screen {
 	void (*gf_update_transform_buffer)(void* data, size_t size);
 	void (*gf_set_transform_buffer_offset)(size_t offset);
 
-	//the projection matrix; fov, aspect ratio, near, far
- 	void (*gf_set_proj_matrix)(float, float, float, float);
-  	void (*gf_end_proj_matrix)();
-	//the view matrix
- 	void (*gf_set_view_matrix)(const vec3d*, const matrix*);
-  	void (*gf_end_view_matrix)();
-	//object scaleing
-	void (*gf_push_scale_matrix)(const vec3d*);
- 	void (*gf_pop_scale_matrix)();
-	//object position and orientation
-	void (*gf_start_instance_matrix)(const vec3d*, const matrix*);
-	void (*gf_start_angles_instance_matrix)(const vec3d*, const angles*);
-	void (*gf_end_instance_matrix)();
-
 	void (*gf_set_light)(light*);
 	void (*gf_reset_lighting)();
 	void (*gf_set_ambient_light)(int,int,int);
@@ -795,6 +781,8 @@ typedef struct screen {
 	gr_sync (*gf_sync_fence)();
 	bool (*gf_sync_wait)(gr_sync sync, uint64_t timeoutns);
 	void (*gf_sync_delete)(gr_sync sync);
+
+	void (*gf_set_viewport)(int x, int y, int width, int height);
 } screen;
 
 // handy macro
@@ -965,16 +953,6 @@ inline int gr_create_buffer(BufferType type, BufferUsageHint usage)
 #define gr_update_transform_buffer		GR_CALL(*gr_screen.gf_update_transform_buffer)
 #define gr_set_transform_buffer_offset	GR_CALL(*gr_screen.gf_set_transform_buffer_offset)
 
-#define gr_set_proj_matrix					GR_CALL(*gr_screen.gf_set_proj_matrix)
-#define gr_end_proj_matrix					GR_CALL(*gr_screen.gf_end_proj_matrix)
-#define gr_set_view_matrix					GR_CALL(*gr_screen.gf_set_view_matrix)
-#define gr_end_view_matrix					GR_CALL(*gr_screen.gf_end_view_matrix)
-#define gr_push_scale_matrix				GR_CALL(*gr_screen.gf_push_scale_matrix)
-#define gr_pop_scale_matrix					GR_CALL(*gr_screen.gf_pop_scale_matrix)
-#define gr_start_instance_matrix			GR_CALL(*gr_screen.gf_start_instance_matrix)
-#define gr_start_angles_instance_matrix		GR_CALL(*gr_screen.gf_start_angles_instance_matrix)
-#define gr_end_instance_matrix				GR_CALL(*gr_screen.gf_end_instance_matrix)
-
 #define	gr_set_light					GR_CALL(*gr_screen.gf_set_light)
 #define gr_reset_lighting				GR_CALL(*gr_screen.gf_reset_lighting)
 #define gr_set_ambient_light			GR_CALL(*gr_screen.gf_set_ambient_light)
@@ -1103,6 +1081,9 @@ inline std::unique_ptr<os::Viewport> gr_create_viewport(const os::ViewPortProper
 }
 inline void gr_use_viewport(os::Viewport* view) {
 	(*gr_screen.gf_use_viewport)(view);
+}
+inline void gr_set_viewport(int x, int y, int width, int height) {
+	(*gr_screen.gf_set_viewport)(x, y, width, height);
 }
 
 inline void gr_bind_uniform_buffer(uniform_block_type bind_point, size_t offset, size_t size, int buffer) {
