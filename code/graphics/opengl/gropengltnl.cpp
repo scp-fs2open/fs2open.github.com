@@ -462,18 +462,28 @@ void opengl_render_model_program(model_material* material_info, indexed_vertex_s
 
 	opengl_bind_buffer_object(vert_source->Ibuffer_handle);
 
-	if ( Rendering_to_shadow_map ) {
+	// If GL_ARB_gpu_shader5 is supprted then the instancing is handled by the geometry shader
+	if ( !GLAD_GL_ARB_gpu_shader5 && Rendering_to_shadow_map ) {
 		glDrawElementsInstancedBaseVertex(GL_TRIANGLES, (GLsizei) count, element_type,
 										  ibuffer + (datap->index_offset + start), 4, (GLint)bufferp->vertex_num_offset);
 	} else {
-		if ( Cmdline_drawelements ) {
-			glDrawElementsBaseVertex(GL_TRIANGLES, (GLsizei) count,
-									 element_type, ibuffer + (datap->index_offset + start), (GLint)bufferp->vertex_num_offset);
+		if (Cmdline_drawelements) {
+			glDrawElementsBaseVertex(GL_TRIANGLES,
+									 (GLsizei) count,
+									 element_type,
+									 ibuffer + (datap->index_offset + start),
+									 (GLint) bufferp->vertex_num_offset);
 		} else {
-			glDrawRangeElementsBaseVertex(GL_TRIANGLES, datap->i_first, datap->i_last, (GLsizei) count,
-										  element_type, ibuffer + (datap->index_offset + start), (GLint)bufferp->vertex_num_offset);
+			glDrawRangeElementsBaseVertex(GL_TRIANGLES,
+										  datap->i_first,
+										  datap->i_last,
+										  (GLsizei) count,
+										  element_type,
+										  ibuffer + (datap->index_offset + start),
+										  (GLint) bufferp->vertex_num_offset);
 		}
 	}
+
 
 	GL_state.Texture.SetShaderMode(GL_FALSE);
 }

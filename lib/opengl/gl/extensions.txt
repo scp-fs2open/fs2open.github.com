@@ -6,3 +6,4 @@ GL_KHR_debug
 GL_ARB_timer_query
 GL_ARB_get_program_binary
 GL_ARB_texture_storage
+GL_ARB_gpu_shader5

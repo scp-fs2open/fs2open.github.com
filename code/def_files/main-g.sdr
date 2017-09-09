@@ -1,7 +1,15 @@
+#extension GL_ARB_gpu_shader5: enable
+
 layout (triangles) in;
 layout (triangle_strip, max_vertices = 3) out;
+#ifdef GL_ARB_gpu_shader5
+layout(invocations = 4) in;
+#endif
+
 uniform mat4 shadow_proj_matrix[4];
+#if !defined(GL_ARB_gpu_shader5)
 in float geoInstance[];
+#endif
 in vec3 geoNormal[];
 in vec4 geoTexCoord[];
 out vec4 fragPosition;
@@ -13,15 +21,20 @@ out float fragNotVisible;
 #endif
 void main(void)
 {
+#ifdef GL_ARB_gpu_shader5
+	int instanceID = gl_InvocationID;
+#else
 	int instanceID = int(geoInstance[0]);
-   for(int vert = 0; vert < gl_in.length(); vert++)
+#endif
+	for(int vert = 0; vert < gl_in.length(); vert++)
 	{
 		gl_Position = shadow_proj_matrix[instanceID] * gl_in[vert].gl_Position;
 		if(gl_Position.z < -1.0)
 			gl_Position.z = -1.0;
-       fragPosition = gl_in[vert].gl_Position;
+		fragPosition = gl_in[vert].gl_Position;
 		fragNormal = geoNormal[vert];
 		fragTexCoord = geoTexCoord[vert];
+
 		gl_Layer = instanceID;
 #ifdef FLAG_TRANSFORM
 		fragNotVisible = geoNotVisible[0];
