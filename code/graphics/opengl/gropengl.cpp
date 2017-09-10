@@ -35,6 +35,7 @@
 #include "render/3d.h"
 #include "popup/popup.h"
 #include "tracing/tracing.h"
+#include "pngutils/pngutils.h"
 
 #if defined(_WIN32)
 #include <windows.h>
@@ -296,22 +297,13 @@ void gr_opengl_reset_clip()
 void gr_opengl_print_screen(const char *filename)
 {
 	char tmp[MAX_PATH_LEN];
-	ubyte tga_hdr[18];
-	int i;
-	ushort width, height;
 	GLubyte *pixels = NULL;
 	GLuint pbo = 0;
 
 	// save to a "screenshots" directory and tack on the filename
-	snprintf(tmp, MAX_PATH_LEN-1, "screenshots/%s.tga", filename);
+	snprintf(tmp, MAX_PATH_LEN-1, "screenshots/%s.png", filename);
 
     _mkdir(os_get_config_path("screenshots").c_str());
-
-	FILE *fout = fopen(os_get_config_path(tmp).c_str(), "wb");
-
-	if (fout == NULL) {
-		return;
-	}
 
 //	glReadBuffer(GL_FRONT);
 
@@ -321,9 +313,6 @@ void gr_opengl_print_screen(const char *filename)
 		glGenBuffers(1, &pbo);
 
 		if ( !pbo ) {
-			if (fout != NULL)
-				fclose(fout);
-
 			return;
 		}
 
@@ -331,7 +320,7 @@ void gr_opengl_print_screen(const char *filename)
 		glBufferData(GL_PIXEL_PACK_BUFFER, (gr_screen.max_w * gr_screen.max_h * 4), NULL, GL_STATIC_READ);
 
 		glReadBuffer(GL_FRONT);
-		glReadPixels(0, 0, gr_screen.max_w, gr_screen.max_h, GL_read_format, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
+		glReadPixels(0, 0, gr_screen.max_w, gr_screen.max_h, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
 
 		// map the image data so that we can save it to file
 		pixels = (GLubyte*) glMapBuffer(GL_PIXEL_PACK_BUFFER, GL_READ_ONLY);
@@ -339,53 +328,23 @@ void gr_opengl_print_screen(const char *filename)
 		pixels = (GLubyte*) vm_malloc(gr_screen.max_w * gr_screen.max_h * 4, memory::quiet_alloc);
 
 		if (pixels == NULL) {
-			if (fout != NULL) {
-				fclose(fout);
-			}
-
 			return;
 		}
 
-		glReadPixels(0, 0, gr_screen.max_w, gr_screen.max_h, GL_read_format, GL_UNSIGNED_INT_8_8_8_8_REV, pixels);
+		glReadPixels(0, 0, gr_screen.max_w, gr_screen.max_h, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, pixels);
 		glFlush();
 	}
 
-	// Write the TGA header
-	width = INTEL_SHORT((ushort)gr_screen.max_w);
-	height = INTEL_SHORT((ushort)gr_screen.max_h);
-
-	memset( tga_hdr, 0, sizeof(tga_hdr) );
-
-	tga_hdr[2] = 2;		// ImageType    2 = 24bpp, uncompressed
-	memcpy( tga_hdr + 12, &width, sizeof(ushort) );		// Width
-	memcpy( tga_hdr + 14, &height, sizeof(ushort) );	// Height
-	tga_hdr[16] = 24;	// PixelDepth
-
-	fwrite( tga_hdr, sizeof(tga_hdr), 1, fout );
-
-	// now for the data, we convert it from 32-bit to 24-bit
-	for (i = 0; i < (gr_screen.max_w * gr_screen.max_h * 4); i += 4) {
-#if BYTE_ORDER == BIG_ENDIAN
-		int pix, *pix_tmp;
-
-		pix_tmp = (int*)(pixels + i);
-		pix = INTEL_INT(*pix_tmp);
-
-		fwrite( &pix, 1, 3, fout );
-#else
-		fwrite( pixels + i, 1, 3, fout );
-#endif
+	if (!png_write_bitmap(os_get_config_path(tmp).c_str(), gr_screen.max_w, gr_screen.max_h, true, pixels)) {
+		ReleaseWarning(LOCATION, "Failed to write screenshot to \"%s\".", os_get_config_path(tmp).c_str());
 	}
-
+	
 	if (pbo) {
 		glUnmapBuffer(GL_PIXEL_PACK_BUFFER);
 		pixels = NULL;
 		glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
 		glDeleteBuffers(1, &pbo);
 	}
-
-	// done!
-	fclose(fout);
 
 	if (pixels != NULL) {
 		vm_free(pixels);
