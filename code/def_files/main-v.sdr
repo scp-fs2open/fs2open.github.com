@@ -1,3 +1,5 @@
+#extension GL_ARB_gpu_shader5: enable
+
 in vec4 vertPosition;
 in vec4 vertTexCoord;
 in vec3 vertNormal;
@@ -34,7 +36,9 @@ out float fragNotVisible;
 #endif
 #endif
 #ifdef FLAG_SHADOW_MAP
+#if !defined(GL_ARB_gpu_shader5)
 out float geoInstance;
+#endif
 uniform mat4 shadow_proj_matrix[4];
 out vec3 geoNormal;
 out vec4 geoTexCoord;
@@ -108,11 +112,15 @@ void main()
 	position = modelViewMatrix * orient * vertex;
  #ifdef FLAG_SHADOW_MAP
 	gl_Position = position;
+
+ #if !defined(GL_ARB_gpu_shader5)
   #ifdef APPLE
-	 geoInstance = float(gl_InstanceIDARB);
+	geoInstance = float(gl_InstanceIDARB);
   #else
-	 geoInstance = float(gl_InstanceID);
+	geoInstance = float(gl_InstanceID);
   #endif
+ #endif
+
  #else
 	gl_Position = projMatrix * position;
  #endif
