@@ -8,7 +8,6 @@
 */
 
 
-#include "gropengllight.h"
 #include "gropenglshader.h"
 #include "graphics/material.h"
 #include "gropenglstate.h"
@@ -736,8 +735,6 @@ void gr_opengl_clear_states()
 	gr_zbuffer_set(ZBUFFER_TYPE_READ);
 	gr_set_cull(0);
 	gr_set_fill_mode(GR_FILL_MODE_SOLID);
-	gr_reset_lighting();
-	gr_set_lighting(false, false);
 
 	opengl_shader_set_current();
 }

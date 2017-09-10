@@ -297,6 +297,8 @@ set (file_root_graphics
 	graphics/grbatch.cpp
 	graphics/grbatch.h
 	graphics/grinternal.h
+	graphics/light.cpp
+	graphics/light.h
 	graphics/material.cpp
 	graphics/material.h
 	graphics/matrix.cpp
@@ -318,7 +320,6 @@ set (file_root_graphics_openglgr_opengl_cpps
 	graphics/opengl/gropenglbmpman.cpp
 	graphics/opengl/gropengldeferred.cpp
 	graphics/opengl/gropengldraw.cpp
-	graphics/opengl/gropengllight.cpp
 	graphics/opengl/gropenglpostprocessing.cpp
 	graphics/opengl/gropenglquery.cpp
 	graphics/opengl/gropenglshader.cpp
@@ -335,7 +336,6 @@ set (file_root_graphics_openglgr_opengl_headers
 	graphics/opengl/gropenglbmpman.h
 	graphics/opengl/gropengldeferred.h
 	graphics/opengl/gropengldraw.h
-	graphics/opengl/gropengllight.h
 	graphics/opengl/gropenglpostprocessing.h
 	graphics/opengl/gropenglquery.h
 	graphics/opengl/gropenglshader.h

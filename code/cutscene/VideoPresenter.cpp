@@ -27,8 +27,6 @@ VideoPresenter::VideoPresenter(const MovieProperties& props) : _scaleVideo(false
 
 	material_set_movie(&_render_material, _ytex, _utex, _vtex);
 
-	gr_set_lighting(false, false);
-
 	float screen_ratio = (float) gr_screen.center_w / (float) gr_screen.center_h;
 	float movie_ratio = (float) props.size.width / (float) props.size.height;
 
