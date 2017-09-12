@@ -11,6 +11,8 @@ matrix4 gr_last_view_matrix;
 matrix4 gr_env_texture_matrix;
 static bool gr_env_texture_matrix_set = false;
 
+bool gr_htl_projection_matrix_set = false;
+
 static int modelview_matrix_depth = 1;
 static bool htl_view_matrix_set = false;
 static int htl_2d_matrix_depth = 0;
@@ -125,6 +127,8 @@ void gr_set_proj_matrix(float fov, float aspect, float z_near, float z_far) {
 	} else {
 		create_perspective_projection_matrix(&gr_projection_matrix, -clip_width, clip_width, -clip_height, clip_height, z_near, z_far);
 	}
+
+	gr_htl_projection_matrix_set = true;
 }
 
 void gr_end_proj_matrix() {
@@ -138,6 +142,8 @@ void gr_end_proj_matrix() {
 	} else {
 		create_orthographic_projection_matrix(&gr_projection_matrix, 0.0f, i2fl(gr_screen.max_w), i2fl(gr_screen.max_h), 0.0f, -1.0f, 1.0f);
 	}
+
+	gr_htl_projection_matrix_set = false;
 }
 
 void gr_set_view_matrix(const vec3d *pos, const matrix *orient)
@@ -192,6 +198,11 @@ void gr_end_view_matrix()
 // TODO: this probably needs to accept values
 void gr_set_2d_matrix(/*int x, int y, int w, int h*/)
 {
+	// don't bother with this if we aren't even going to need it
+	if (!gr_htl_projection_matrix_set) {
+		return;
+	}
+
 	Assert( htl_2d_matrix_set == 0 );
 	Assert( htl_2d_matrix_depth == 0 );
 

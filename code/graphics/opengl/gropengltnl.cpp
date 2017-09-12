@@ -534,6 +534,8 @@ void gr_opengl_set_clip_plane(vec3d *clip_normal, vec3d *clip_point)
 extern bool Glowpoint_override;
 bool Glowpoint_override_save;
 
+extern bool gr_htl_projection_matrix_set;
+
 void gr_opengl_shadow_map_start(matrix4 *shadow_view_matrix, const matrix *light_orient)
 {
 	if ( !Cmdline_shadow_quality )
@@ -555,6 +557,7 @@ void gr_opengl_shadow_map_start(matrix4 *shadow_view_matrix, const matrix *light
 	Glowpoint_override_save = Glowpoint_override;
 	Glowpoint_override = true;
 
+	gr_htl_projection_matrix_set = true;
 	gr_set_view_matrix(&Eye_position, light_orient);
 
 	*shadow_view_matrix = gr_view_matrix;
@@ -575,6 +578,7 @@ void gr_opengl_shadow_map_end()
 	GL_state.PopFramebufferState();
 
 	Glowpoint_override = Glowpoint_override_save;
+	gr_htl_projection_matrix_set = false;
 
 	glViewport(gr_screen.offset_x, (gr_screen.max_h - gr_screen.offset_y - gr_screen.clip_height), gr_screen.clip_width, gr_screen.clip_height);
 	glScissor(gr_screen.offset_x, (gr_screen.max_h - gr_screen.offset_y - gr_screen.clip_height), gr_screen.clip_width, gr_screen.clip_height);
