@@ -97,7 +97,7 @@ class sexp_list_item
 public:
 	int type;
 	int op;
-	const char *text;
+	SCP_string text;
 	int flags;
 	sexp_list_item *next;
 
@@ -175,7 +175,7 @@ public:
 	void add_sub_tree(int node, HTREEITEM root);
 	int load_sub_tree(int index, bool valid, const char *text);
 	void hilite_item(int node);
-	const char *match_closest_operator(const char *str, int node);
+	SCP_string match_closest_operator(const char *str, int node);
 	void delete_sexp_tree_variable(const char *var_name);
 	void modify_sexp_tree_variable(const char *old_name, int sexp_var_index);
 	int get_item_index_to_var_index();
