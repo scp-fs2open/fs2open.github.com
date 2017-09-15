@@ -12,11 +12,6 @@ namespace cutscene {
 namespace player {
 
 class VideoPresenter {
-	int _vertexBuffer = -1;
-	vertex_layout _vertexLayout;
-
-	bool _scaleVideo = false;
-
 	int _ytex = -1;
 	std::unique_ptr<uint8_t[]> _yTexBuffer;
 
@@ -38,7 +33,7 @@ class VideoPresenter {
 
 	void uploadVideoFrame(const VideoFramePtr& frame);
 
-	void displayFrame();
+	void displayFrame(float x1, float y1, float x2, float y2);
 };
 }
 }
