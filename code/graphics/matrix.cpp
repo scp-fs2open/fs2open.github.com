@@ -287,7 +287,12 @@ void gr_pop_scale_matrix()
 	scale_matrix_set = false;
 }
 void gr_setup_viewport() {
-	gr_set_viewport(0, 0, gr_screen.max_w, gr_screen.max_h);
+	if (Gr_inited) {
+		// This may be called by FRED before the gr system is actually initialized so we need to make sure that
+		// this function call is actually valid at this point.
+		gr_set_viewport(0, 0, gr_screen.max_w, gr_screen.max_h);
+	}
+
 
 	gr_last_projection_matrix = gr_projection_matrix;
 
