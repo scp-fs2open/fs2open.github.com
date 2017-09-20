@@ -520,8 +520,8 @@ public:
 };
 
 struct indexed_vertex_source {
-	float *Vertex_list;	// interleaved array
-	ubyte *Index_list;
+	void *Vertex_list;
+	void *Index_list;
 
 	int Vbuffer_handle;
 	int Ibuffer_handle;
