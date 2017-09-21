@@ -1194,6 +1194,8 @@ void opengl_setup_function_pointers()
 
 	gr_screen.gf_set_viewport = gr_opengl_set_viewport;
 
+	gr_screen.gf_get_texture_handle = gr_opengl_get_texture_handle;
+
 	// NOTE: All function pointers here should have a Cmdline_nohtl check at the top
 	//       if they shouldn't be run in non-HTL mode, Don't keep separate entries.
 	// *****************************************************************************
@@ -1581,6 +1583,8 @@ bool gr_opengl_is_capable(gr_capability capability)
 		return GLAD_GL_ARB_timer_query != 0; // Timestamp queries are available from 3.3 onwards
 	case CAPABILITY_SEPARATE_BLEND_FUNCTIONS:
 		return GLAD_GL_ARB_draw_buffers_blend != 0; // We need an OpenGL extension for this
+	case CAPABILITY_BINDLESS_TEXTURING:
+		return GLAD_GL_ARB_bindless_texture != 0 && !Cmdline_no_bindless_textures;
 	}
 
 	return false;

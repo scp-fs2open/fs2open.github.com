@@ -183,6 +183,7 @@ struct queued_buffer_draw
 {
 	size_t transform_buffer_offset = 0;
 	size_t uniform_buffer_offset = 0;
+	size_t uniform_data_size = 0;
 
 	model_material render_material;
 

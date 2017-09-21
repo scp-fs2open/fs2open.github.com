@@ -143,6 +143,22 @@ struct model_uniform_data {
 	int sMiscmapIndex;
 };
 
+struct model_uniform_data_bindless {
+	model_uniform_data model_data;
+
+	uint64_t sBasemap;
+	uint64_t sGlowmap;
+
+	uint64_t sSpecmap;
+	uint64_t sEnvmap;
+
+	uint64_t sNormalmap;
+	uint64_t sAmbientmap;
+
+	uint64_t sMiscmap;
+	uint64_t sHeightmap;
+};
+
 enum class NanoVGShaderType: int32_t {
 	FillGradient = 0, FillImage = 1, Simple = 2, Image = 3
 };

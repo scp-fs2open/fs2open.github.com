@@ -1903,6 +1903,39 @@ void gr_opengl_bm_generate_mip_maps(int slot)
 
 	glGenerateMipmap(ts->texture_target);
 }
+uint64_t gr_opengl_get_texture_handle(int bitmap, int bitmap_type) {
+	Assertion(gr_opengl_is_capable(CAPABILITY_BINDLESS_TEXTURING),
+			  "Bindless texturing is not supported! Support must be checked before calling gr_get_texture_handle().");
+
+	int n = bm_get_cache_slot (bitmap, 1);
+	tcache_slot_opengl *t = &Textures[n];
+
+	if (t->texture_handle != 0) {
+		// We already have a texture handle for this texture
+		return t->texture_handle;
+	}
+
+	if (!bm_is_render_target(bitmap) && t->bitmap_handle < 0)
+	{
+		GL_state.Texture.SetActiveUnit(0);
+
+		auto ret_val = opengl_create_texture( bitmap, bitmap_type, t );
+
+		if (!ret_val) {
+			return 0;
+		}
+	}
+
+	// everything went ok
+	if (t->texture_id) {
+		t->texture_handle = glGetTextureHandleARB(t->texture_id);
+
+		// Always make the handles resident. Could be replaced by more sophisticated handling later
+		glMakeTextureHandleResidentARB(t->texture_handle);
+	}
+
+	return t->texture_handle;
+}
 
 //
 // End of GL_EXT_framebuffer_object stuff

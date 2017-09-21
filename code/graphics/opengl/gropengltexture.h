@@ -18,6 +18,7 @@
 
 typedef struct tcache_slot_opengl {
 	GLuint texture_id;
+	GLuint64 texture_handle; // Handle for bindless texturing
 	GLenum texture_target;
 	GLenum wrap_mode;
 	float u_scale, v_scale;
@@ -39,6 +40,7 @@ typedef struct tcache_slot_opengl {
 	void reset()
 	{
 		texture_id = 0;
+		texture_handle = 0;
 		texture_target = GL_TEXTURE_2D;
 		wrap_mode = GL_REPEAT;
 		u_scale = 1.0f;
@@ -92,5 +94,7 @@ void gr_opengl_set_texture_addressing(int mode);
 GLuint opengl_get_rtt_framebuffer();
 void gr_opengl_bm_generate_mip_maps(int slot);
 void gr_opengl_get_texture_scale(int bitmap_handle, float *u_scale, float *v_scale);
+
+uint64_t gr_opengl_get_texture_handle(int bitmap, int bitmap_type);
 
 #endif	//_GROPENGLTEXTURE_H

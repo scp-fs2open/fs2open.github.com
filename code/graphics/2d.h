@@ -286,6 +286,7 @@ typedef enum gr_capability {
 	CAPABILITY_POINT_PARTICLES,
 	CAPABILITY_TIMESTAMP_QUERY,
 	CAPABILITY_SEPARATE_BLEND_FUNCTIONS,
+	CAPABILITY_BINDLESS_TEXTURING, //!< This is the ability to encode textures in uniform buffers
 } gr_capability;
 
 enum class gr_property {
@@ -803,6 +804,8 @@ typedef struct screen {
 	void (*gf_sync_delete)(gr_sync sync);
 
 	void (*gf_set_viewport)(int x, int y, int width, int height);
+
+	uint64_t (*gf_get_texture_handle)(int bitmap_handle, int bitmap_type);
 } screen;
 
 // handy macro
@@ -1106,6 +1109,10 @@ inline bool gr_sync_wait(gr_sync sync, uint64_t timeoutns) {
 }
 inline void gr_sync_delete(gr_sync sync) {
 	(*gr_screen.gf_sync_delete)(sync);
+}
+
+inline uint64_t gr_get_texture_handle(int bitmap, int bitmap_type) {
+	return (*gr_screen.gf_get_texture_handle)(bitmap, bitmap_type);
 }
 
 // color functions

@@ -773,73 +773,80 @@ void opengl_tnl_set_model_material(model_material *material_info)
 	}
 
 	uint32_t array_index;
-	if ( Current_shader->flags & SDR_FLAG_MODEL_DIFFUSE_MAP ) {
-		Current_shader->program->Uniforms.setUniformi("sBasemap", render_pass);
+	if (!gr_opengl_is_capable(CAPABILITY_BINDLESS_TEXTURING)) {
+		// If we don't have bindless texturing support then we have to pass the texture the old-fashioned way
+		if ( Current_shader->flags & SDR_FLAG_MODEL_DIFFUSE_MAP ) {
+			Current_shader->program->Uniforms.setUniformi("sBasemap", render_pass);
 
-		gr_opengl_tcache_set(material_info->get_texture_map(TM_BASE_TYPE), TCACHE_TYPE_NORMAL, &u_scale, &v_scale, &array_index, render_pass);
-		++render_pass;
-	}
+			gr_opengl_tcache_set(material_info->get_texture_map(TM_BASE_TYPE), TCACHE_TYPE_NORMAL, &u_scale, &v_scale, &array_index, render_pass);
 
-	if ( Current_shader->flags & SDR_FLAG_MODEL_GLOW_MAP ) {
-		Current_shader->program->Uniforms.setUniformi("sGlowmap", render_pass);
-
-		gr_opengl_tcache_set(material_info->get_texture_map(TM_GLOW_TYPE), TCACHE_TYPE_NORMAL, &u_scale, &v_scale, &array_index, render_pass);
-
-		++render_pass;
-	}
-
-	if ( Current_shader->flags & SDR_FLAG_MODEL_SPEC_MAP ) {
-		Current_shader->program->Uniforms.setUniformi("sSpecmap", render_pass);
-
-		if ( material_info->get_texture_map(TM_SPEC_GLOSS_TYPE) > 0 ) {
-			gr_opengl_tcache_set(material_info->get_texture_map(TM_SPEC_GLOSS_TYPE), TCACHE_TYPE_NORMAL, &u_scale, &v_scale, &array_index, render_pass);
-		} else {
-			gr_opengl_tcache_set(material_info->get_texture_map(TM_SPECULAR_TYPE), TCACHE_TYPE_NORMAL, &u_scale, &v_scale, &array_index, render_pass);
+			++render_pass;
 		}
-		++render_pass;
 
-		if ( Current_shader->flags & SDR_FLAG_MODEL_ENV_MAP ) {
-			Current_shader->program->Uniforms.setUniformi("sEnvmap", render_pass);
+		if ( Current_shader->flags & SDR_FLAG_MODEL_GLOW_MAP ) {
+			Current_shader->program->Uniforms.setUniformi("sGlowmap", render_pass);
 
-			gr_opengl_tcache_set(ENVMAP, TCACHE_TYPE_CUBEMAP, &u_scale, &v_scale, &array_index, render_pass);
-			Assertion(array_index == 0, "Cube map arrays are not supported yet!");
+			gr_opengl_tcache_set(material_info->get_texture_map(TM_GLOW_TYPE), TCACHE_TYPE_NORMAL, &u_scale, &v_scale, &array_index, render_pass);
+
+			++render_pass;
+		}
+
+		if ( Current_shader->flags & SDR_FLAG_MODEL_SPEC_MAP ) {
+			Current_shader->program->Uniforms.setUniformi("sSpecmap", render_pass);
+
+			if ( material_info->get_texture_map(TM_SPEC_GLOSS_TYPE) > 0 ) {
+				gr_opengl_tcache_set(material_info->get_texture_map(TM_SPEC_GLOSS_TYPE), TCACHE_TYPE_NORMAL, &u_scale, &v_scale, &array_index, render_pass);
+			} else {
+				gr_opengl_tcache_set(material_info->get_texture_map(TM_SPECULAR_TYPE), TCACHE_TYPE_NORMAL, &u_scale, &v_scale, &array_index, render_pass);
+			}
+
+			++render_pass;
+
+			if ( Current_shader->flags & SDR_FLAG_MODEL_ENV_MAP ) {
+				Current_shader->program->Uniforms.setUniformi("sEnvmap", render_pass);
+
+				gr_opengl_tcache_set(ENVMAP, TCACHE_TYPE_CUBEMAP, &u_scale, &v_scale, &array_index, render_pass);
+				Assertion(array_index == 0, "Cube map arrays are not supported yet!");
+
+				++render_pass;
+			}
+		}
+
+		if ( Current_shader->flags & SDR_FLAG_MODEL_NORMAL_MAP ) {
+			Current_shader->program->Uniforms.setUniformi("sNormalmap", render_pass);
+
+			gr_opengl_tcache_set(material_info->get_texture_map(TM_NORMAL_TYPE), TCACHE_TYPE_NORMAL, &u_scale, &v_scale, &array_index, render_pass);
+
+			++render_pass;
+		}
+
+		if ( Current_shader->flags & SDR_FLAG_MODEL_HEIGHT_MAP ) {
+			Current_shader->program->Uniforms.setUniformi("sHeightmap", render_pass);
+
+			gr_opengl_tcache_set(material_info->get_texture_map(TM_HEIGHT_TYPE), TCACHE_TYPE_NORMAL, &u_scale, &v_scale, &array_index, render_pass);
+
+			++render_pass;
+		}
+
+		if ( Current_shader->flags & SDR_FLAG_MODEL_AMBIENT_MAP ) {
+			Current_shader->program->Uniforms.setUniformi("sAmbientmap", render_pass);
+
+			gr_opengl_tcache_set(material_info->get_texture_map(TM_AMBIENT_TYPE), TCACHE_TYPE_NORMAL, &u_scale, &v_scale, &array_index, render_pass);
+
+			++render_pass;
+		}
+
+		if ( Current_shader->flags & SDR_FLAG_MODEL_MISC_MAP ) {
+			Current_shader->program->Uniforms.setUniformi("sMiscmap", render_pass);
+
+			gr_opengl_tcache_set(material_info->get_texture_map(TM_MISC_TYPE), TCACHE_TYPE_NORMAL, &u_scale, &v_scale, &array_index, render_pass);
 
 			++render_pass;
 		}
 	}
 
-	if ( Current_shader->flags & SDR_FLAG_MODEL_NORMAL_MAP ) {
-		Current_shader->program->Uniforms.setUniformi("sNormalmap", render_pass);
-
-		gr_opengl_tcache_set(material_info->get_texture_map(TM_NORMAL_TYPE), TCACHE_TYPE_NORMAL, &u_scale, &v_scale, &array_index, render_pass);
-
-		++render_pass;
-	}
-
-	if ( Current_shader->flags & SDR_FLAG_MODEL_HEIGHT_MAP ) {
-		Current_shader->program->Uniforms.setUniformi("sHeightmap", render_pass);
-
-		gr_opengl_tcache_set(material_info->get_texture_map(TM_HEIGHT_TYPE), TCACHE_TYPE_NORMAL, &u_scale, &v_scale, &array_index, render_pass);
-
-		++render_pass;
-	}
-
-	if ( Current_shader->flags & SDR_FLAG_MODEL_AMBIENT_MAP ) {
-		Current_shader->program->Uniforms.setUniformi("sAmbientmap", render_pass);
-
-		gr_opengl_tcache_set(material_info->get_texture_map(TM_AMBIENT_TYPE), TCACHE_TYPE_NORMAL, &u_scale, &v_scale, &array_index, render_pass);
-
-		++render_pass;
-	}
-
-	if ( Current_shader->flags & SDR_FLAG_MODEL_MISC_MAP ) {
-		Current_shader->program->Uniforms.setUniformi("sMiscmap", render_pass);
-
-		gr_opengl_tcache_set(material_info->get_texture_map(TM_MISC_TYPE), TCACHE_TYPE_NORMAL, &u_scale, &v_scale, &array_index, render_pass);
-
-		++render_pass;
-	}
-
+	// The rest of the textures are mostly static so bindless texturing doesn't matter too much here (and it would be
+	// hard to expose the handles to the outside without some serious refactoring)
 	if ( Current_shader->flags & SDR_FLAG_MODEL_SHADOWS ) {
 		Current_shader->program->Uniforms.setUniformi("shadow_map", render_pass);
 

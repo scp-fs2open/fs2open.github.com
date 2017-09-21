@@ -385,6 +385,10 @@ void gr_stub_delete_query_object(int obj)
 {
 }
 
+uint64_t gr_stub_get_texture_handle(int bitmap_handle, int bitmap_type) {
+	return 0;
+}
+
 bool gr_stub_init() 
 {
 	if (gr_screen.res != GR_640) {
@@ -531,6 +535,8 @@ bool gr_stub_init()
 	};
 
 	gr_screen.gf_bind_uniform_buffer = [](uniform_block_type, size_t, size_t, int) {};
+
+	gr_screen.gf_get_texture_handle = gr_stub_get_texture_handle;
 
 	return true;
 }

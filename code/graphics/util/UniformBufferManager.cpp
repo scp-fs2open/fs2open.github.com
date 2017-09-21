@@ -10,7 +10,11 @@ size_t getElementSize(uniform_block_type type) {
 	case uniform_block_type::Lights:
 		return sizeof(graphics::deferred_light_data);
 	case uniform_block_type::ModelData:
-		return sizeof(graphics::model_uniform_data);
+		if (gr_is_capable(CAPABILITY_BINDLESS_TEXTURING)) {
+			return sizeof(graphics::model_uniform_data_bindless);
+		} else {
+			return sizeof(graphics::model_uniform_data);
+		}
 	case uniform_block_type::NanoVGData:
 		return sizeof(graphics::nanovg_draw_data);
 	case uniform_block_type::DecalInfo:

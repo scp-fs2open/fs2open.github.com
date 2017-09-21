@@ -1125,6 +1125,9 @@ bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, int d_mode, 
 
 	gpu_heap_init();
 
+	mprintf(("Checking graphics capabilities:\n"));
+	mprintf(("  Bindless texturing: %s\n", gr_is_capable(CAPABILITY_BINDLESS_TEXTURING) ? "Enabled" : "Disabled"));
+
 	bool missing_installation = false;
 	if (!running_unittests && Web_cursor == nullptr) {
 		if (Is_standalone) {

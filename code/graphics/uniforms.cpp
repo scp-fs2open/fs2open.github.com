@@ -72,7 +72,7 @@ void convert_model_material(model_uniform_data* data_out,
 	}
 
 	if (shader_flags & SDR_FLAG_MODEL_LIGHT) {
-		int num_lights = MIN(Num_active_gr_lights, (int)graphics::MAX_UNIFORM_LIGHTS);
+		int num_lights = MIN(Num_active_gr_lights, (int) graphics::MAX_UNIFORM_LIGHTS);
 		data_out->n_lights = num_lights;
 
 		std::copy(std::begin(gr_light_uniforms), std::end(gr_light_uniforms), std::begin(data_out->lights));
@@ -187,15 +187,15 @@ void convert_model_material(model_uniform_data* data_out,
 		}
 	}
 
-	if ( shader_flags & SDR_FLAG_MODEL_NORMAL_MAP ) {
+	if (shader_flags & SDR_FLAG_MODEL_NORMAL_MAP) {
 		data_out->sNormalmapIndex = bm_get_array_index(material.get_texture_map(TM_NORMAL_TYPE));
 	}
 
-	if ( shader_flags & SDR_FLAG_MODEL_AMBIENT_MAP ) {
+	if (shader_flags & SDR_FLAG_MODEL_AMBIENT_MAP) {
 		data_out->sAmbientmapIndex = bm_get_array_index(material.get_texture_map(TM_AMBIENT_TYPE));
 	}
 
-	if ( shader_flags & SDR_FLAG_MODEL_MISC_MAP ) {
+	if (shader_flags & SDR_FLAG_MODEL_MISC_MAP) {
 		data_out->sMiscmapIndex = bm_get_array_index(material.get_texture_map(TM_MISC_TYPE));
 	}
 
@@ -267,6 +267,53 @@ void convert_model_material(model_uniform_data* data_out,
 
 	if (shader_flags & SDR_FLAG_MODEL_NORMAL_EXTRUDE) {
 		data_out->extrudeWidth = material.get_normal_extrude_width();
+	}
+}
+
+void convert_bindless_model_material(model_uniform_data_bindless* data_out,
+									 const model_material& material,
+									 const matrix4& model_transform,
+									 const vec3d& scale,
+									 size_t transform_buffer_offset) {
+	// Convert the normal data with the existing function
+	convert_model_material(&data_out->model_data, material, model_transform, scale, transform_buffer_offset);
+
+	auto shader_flags = material.get_shader_flags();
+
+	if ( shader_flags & SDR_FLAG_MODEL_DIFFUSE_MAP ) {
+		data_out->sBasemap = gr_get_texture_handle(material.get_texture_map(TM_BASE_TYPE), TCACHE_TYPE_NORMAL);
+	}
+
+	if ( shader_flags & SDR_FLAG_MODEL_GLOW_MAP ) {
+		data_out->sGlowmap = gr_get_texture_handle(material.get_texture_map(TM_GLOW_TYPE), TCACHE_TYPE_NORMAL);
+	}
+
+	if ( shader_flags & SDR_FLAG_MODEL_SPEC_MAP ) {
+		if ( material.get_texture_map(TM_SPEC_GLOSS_TYPE) > 0 ) {
+			data_out->sSpecmap = gr_get_texture_handle(material.get_texture_map(TM_SPEC_GLOSS_TYPE), TCACHE_TYPE_NORMAL);
+		} else {
+			data_out->sSpecmap = gr_get_texture_handle(material.get_texture_map(TM_SPECULAR_TYPE), TCACHE_TYPE_NORMAL);
+		}
+
+		if ( shader_flags & SDR_FLAG_MODEL_ENV_MAP ) {
+			data_out->sEnvmap = gr_get_texture_handle(ENVMAP, TCACHE_TYPE_CUBEMAP);
+		}
+	}
+
+	if ( shader_flags & SDR_FLAG_MODEL_NORMAL_MAP ) {
+		data_out->sNormalmap = gr_get_texture_handle(material.get_texture_map(TM_NORMAL_TYPE), TCACHE_TYPE_NORMAL);
+	}
+
+	if ( shader_flags & SDR_FLAG_MODEL_HEIGHT_MAP ) {
+		data_out->sHeightmap = gr_get_texture_handle(material.get_texture_map(TM_HEIGHT_TYPE), TCACHE_TYPE_NORMAL);
+	}
+
+	if ( shader_flags & SDR_FLAG_MODEL_AMBIENT_MAP ) {
+		data_out->sAmbientmap = gr_get_texture_handle(material.get_texture_map(TM_AMBIENT_TYPE), TCACHE_TYPE_NORMAL);
+	}
+
+	if ( shader_flags & SDR_FLAG_MODEL_MISC_MAP ) {
+		data_out->sMiscmap = gr_get_texture_handle(material.get_texture_map(TM_MISC_TYPE), TCACHE_TYPE_NORMAL);
 	}
 }
 
