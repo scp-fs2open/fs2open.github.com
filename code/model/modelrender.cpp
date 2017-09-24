@@ -430,6 +430,8 @@ void model_draw_list::reset()
 		_dataBuffer->finished();
 		_dataBuffer = nullptr;
 	}
+
+	Render_initialized = false;
 }
 
 void model_draw_list::sort_draws()
@@ -598,12 +600,16 @@ void model_draw_list::init_render(bool sort)
 	TransformBufferHandler.submit_buffer_data();
 
 	build_uniform_buffer();
+
+	Render_initialized = true;
 }
 
 void model_draw_list::render_all(gr_zbuffer_type depth_mode)
 {
 	GR_DEBUG_SCOPE("Render draw list");
 	TRACE_SCOPE(tracing::SubmitDraws);
+
+	Assertion(Render_initialized, "init_render must be called before any render_all call!");
 
 	Scene_light_handler.resetLightState();
 
@@ -1480,7 +1486,8 @@ void submodel_render_immediate(model_render_params *render_info, int model_num, 
 	model_list.init();
 
 	submodel_render_queue(render_info, &model_list, model_num, submodel_num, orient, pos);
-	
+
+	model_list.init_render();
 	model_list.render_all();
 
 	gr_zbias(0);
