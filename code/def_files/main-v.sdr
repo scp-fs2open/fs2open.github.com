@@ -107,11 +107,6 @@ out float fragFogDist;
 #endif
 #ifdef FLAG_TRANSFORM
 uniform samplerBuffer transform_tex;
-#ifdef FLAG_SHADOW_MAP
-out float geoNotVisible;
-#else
-out float fragNotVisible;
-#endif
 #endif
 #ifdef FLAG_SHADOW_MAP
 #if !defined(GL_ARB_gpu_shader5)
@@ -130,13 +125,13 @@ out vec4 fragShadowPos;
 #endif
 #ifdef FLAG_TRANSFORM
 #define TEXELS_PER_MATRIX 4
-void getModelTransform(inout mat4 transform, out float invisible, int id, int matrix_offset)
+void getModelTransform(inout mat4 transform, out bool invisible, int id, int matrix_offset)
 {
 	transform[0] = texelFetch(transform_tex, (matrix_offset + id) * TEXELS_PER_MATRIX);
 	transform[1] = texelFetch(transform_tex, (matrix_offset + id) * TEXELS_PER_MATRIX + 1);
 	transform[2] = texelFetch(transform_tex, (matrix_offset + id) * TEXELS_PER_MATRIX + 2);
 	transform[3] = texelFetch(transform_tex, (matrix_offset + id) * TEXELS_PER_MATRIX + 3);
-	invisible = transform[3].w;
+	invisible = transform[3].w >= 0.9;
 	transform[3].w = 1.0;
 }
 #endif
@@ -160,13 +155,10 @@ void main()
 	mat4 orient = mat4(1.0);
 	mat4 scale = mat4(1.0);
  #ifdef FLAG_TRANSFORM
-	float invisible;
-	getModelTransform(orient, invisible, int(vertModelID), buffer_matrix_offset);
-  #ifdef FLAG_SHADOW_MAP
-	geoNotVisible = invisible;
-  #else
-	fragNotVisible = invisible;
-  #endif
+	bool clipModel;
+	getModelTransform(orient, clipModel, int(vertModelID), buffer_matrix_offset);
+ #else
+	bool clipModel = false;
  #endif
 	texCoord = textureMatrix * vertTexCoord;
 	vec4 vertex = vertPosition;
@@ -217,11 +209,15 @@ void main()
 	fragFogDist = clamp((gl_Position.z - fogStart) * 0.75 * fogScale, 0.0, 1.0);
  #endif
  #ifdef FLAG_CLIP
-	if(use_clip_plane) {
+	if (clipModel) {
+		gl_ClipDistance[0] = -1.0;
+	} else if(use_clip_plane) {
 		gl_ClipDistance[0] = dot(clip_equation, modelMatrix * orient * vertex);
 	} else {
-		gl_ClipDistance[0] = -1.0f;
+		gl_ClipDistance[0] = 1.0;
 	}
+ #elif defined(FLAG_TRANSFORM)
+	gl_ClipDistance[0] = clipModel ? -1.0 : 1.0;
  #endif
  #ifndef FLAG_SHADOW_MAP
 	fragPosition = position;
