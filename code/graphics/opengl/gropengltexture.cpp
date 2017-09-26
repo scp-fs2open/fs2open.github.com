@@ -1837,6 +1837,8 @@ int opengl_make_render_target( int handle, int slot, int *w, int *h, int *bpp, i
 
 	glTexParameteri(GL_texture_target, GL_TEXTURE_MAX_LEVEL, ts->mipmap_levels - 1);
 
+	GL_state.Texture.Enable(0);
+
 	// render buffer
 //	glGenRenderbuffers(1, &new_fbo.renderbuffer_id);
 //	glBindRenderbuffer(GL_RENDERBUFFER, new_fbo.renderbuffer_id);
@@ -1851,7 +1853,7 @@ int opengl_make_render_target( int handle, int slot, int *w, int *h, int *bpp, i
 		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X, ts->texture_id, 0);
 	} else {
 		// Since we use texture arrays for all bitmaps we use a single image array here
-		glFramebufferTexture3D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_state.Texture.GetTarget(), ts->texture_id, 0, 0);
+		glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, ts->texture_id, 0, 0);
 	}
 
 //	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, new_fbo.renderbuffer_id);
