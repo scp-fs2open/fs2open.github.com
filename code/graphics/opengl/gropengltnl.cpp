@@ -33,6 +33,7 @@
 #include "graphics/shadows.h"
 #include "graphics/material.h"
 #include "graphics/light.h"
+#include "ShaderProgram.h"
 
 extern int GLOWMAP;
 extern int CLOAKMAP;
@@ -63,6 +64,25 @@ GLuint shadow_fbo = 0;
 bool Rendering_to_shadow_map = false;
 
 int Transform_buffer_handle = -1;
+
+SCP_unordered_map<vertex_layout, GLuint> Stored_vertex_arrays;
+
+static opengl_vertex_bind GL_array_binding_data[] =
+	{
+		{ vertex_format_data::POSITION4,	4, GL_FLOAT,			GL_FALSE, opengl_vert_attrib::POSITION	},
+		{ vertex_format_data::POSITION3,	3, GL_FLOAT,			GL_FALSE, opengl_vert_attrib::POSITION	},
+		{ vertex_format_data::POSITION2,	2, GL_FLOAT,			GL_FALSE, opengl_vert_attrib::POSITION	},
+		{ vertex_format_data::SCREEN_POS,	2, GL_INT,				GL_FALSE, opengl_vert_attrib::POSITION	},
+		{ vertex_format_data::COLOR3,		3, GL_UNSIGNED_BYTE,	GL_TRUE,opengl_vert_attrib::COLOR		},
+		{ vertex_format_data::COLOR4,		4, GL_UNSIGNED_BYTE,	GL_TRUE, opengl_vert_attrib::COLOR		},
+		{ vertex_format_data::TEX_COORD2,	2, GL_FLOAT,			GL_FALSE, opengl_vert_attrib::TEXCOORD	},
+		{ vertex_format_data::TEX_COORD3,	3, GL_FLOAT,			GL_FALSE, opengl_vert_attrib::TEXCOORD	},
+		{ vertex_format_data::NORMAL,		3, GL_FLOAT,			GL_FALSE, opengl_vert_attrib::NORMAL	},
+		{ vertex_format_data::TANGENT,		4, GL_FLOAT,			GL_FALSE, opengl_vert_attrib::TANGENT	},
+		{ vertex_format_data::MODEL_ID,		1, GL_FLOAT,			GL_FALSE, opengl_vert_attrib::MODEL_ID	},
+		{ vertex_format_data::RADIUS,		1, GL_FLOAT,			GL_FALSE, opengl_vert_attrib::RADIUS	},
+		{ vertex_format_data::UVEC,			3, GL_FLOAT,			GL_FALSE, opengl_vert_attrib::UVEC		},
+	};
 
 struct opengl_buffer_object {
 	GLuint buffer_id;
@@ -148,6 +168,16 @@ void opengl_bind_buffer_object(int handle)
 		return;
 		break;
 	}
+}
+GLuint opengl_buffer_get_id(GLenum expected_type, int handle) {
+	Assert(handle >= 0);
+	Assert((size_t)handle < GL_buffer_objects.size());
+
+	opengl_buffer_object &buffer_obj = GL_buffer_objects[handle];
+
+	Assertion(expected_type == buffer_obj.type, "Expected buffer type did not match the actual buffer type!");
+
+	return buffer_obj.buffer_id;
 }
 
 void gr_opengl_update_buffer_data(int handle, size_t size, void* data)
@@ -393,6 +423,11 @@ void opengl_tnl_init()
 
 void opengl_tnl_shutdown()
 {
+	for (auto& vao_entry : Stored_vertex_arrays) {
+		glDeleteVertexArrays(1, &vao_entry.second);
+	}
+	Stored_vertex_arrays.clear();
+
 	gr_opengl_deferred_shutdown();
 
 	if ( Shadow_map_depth_texture ) {
@@ -406,15 +441,6 @@ void opengl_tnl_shutdown()
 	}
 
 	opengl_destroy_all_buffers();
-}
-
-static void opengl_init_arrays(indexed_vertex_source *vert_src, vertex_buffer *bufferp)
-{
-	Assertion(vert_src->Vbuffer_handle >= 0, "Vertex buffers require a valid buffer handle!");
-
-	opengl_bind_buffer_object(vert_src->Vbuffer_handle);
-	
-	opengl_bind_vertex_layout(bufferp->layout);
 }
 
 void opengl_render_model_program(model_material* material_info, indexed_vertex_source *vert_source, vertex_buffer* bufferp, buffer_data *datap)
@@ -432,13 +458,13 @@ void opengl_render_model_program(model_material* material_info, indexed_vertex_s
 	GLenum element_type = (datap->flags & VB_FLAG_LARGE_INDEX) ? GL_UNSIGNED_INT : GL_UNSIGNED_SHORT;
 
 	Assert(vert_source);
-
-	// basic setup of all data
-	opengl_init_arrays(vert_source, bufferp);
-
+	Assertion(vert_source->Vbuffer_handle >= 0, "The vertex data must be located in a GPU buffer!");
 	Assertion(vert_source->Ibuffer_handle >= 0, "The index values must be located in a GPU buffer!");
 
-	opengl_bind_buffer_object(vert_source->Ibuffer_handle);
+	// basic setup of all data
+	opengl_bind_vertex_layout(bufferp->layout,
+							  opengl_buffer_get_id(GL_ARRAY_BUFFER, vert_source->Vbuffer_handle),
+							  opengl_buffer_get_id(GL_ELEMENT_ARRAY_BUFFER, vert_source->Ibuffer_handle));
 
 	// If GL_ARB_gpu_shader5 is supprted then the instancing is handled by the geometry shader
 	if ( !GLAD_GL_ARB_gpu_shader5 && Rendering_to_shadow_map ) {
@@ -860,4 +886,94 @@ void opengl_tnl_set_material_movie(movie_material* material_info) {
 }
 void gr_opengl_set_viewport(int x, int y, int width, int height) {
 	glViewport(x, y, width, height);
+}
+
+void opengl_bind_vertex_component(const vertex_format_data &vert_component, size_t base_offset)
+{
+	opengl_vertex_bind &bind_info = GL_array_binding_data[vert_component.format_type];
+	opengl_vert_attrib &attrib_info = GL_vertex_attrib_info[bind_info.attribute_id];
+
+	Assert(bind_info.attribute_id == attrib_info.attribute_id);
+
+	GLubyte *data_src = reinterpret_cast<GLubyte*>(base_offset) + vert_component.offset;
+
+	if ( Current_shader != NULL ) {
+		// grabbing a vertex attribute is dependent on what current shader has been set. i hope no one calls opengl_bind_vertex_layout before opengl_set_current_shader
+		GLint index = opengl_shader_get_attribute(attrib_info.attribute_id);
+
+		if ( index >= 0 ) {
+			GL_state.Array.EnableVertexAttrib(index);
+			GL_state.Array.VertexAttribPointer(index, bind_info.size, bind_info.data_type, bind_info.normalized, (GLsizei)vert_component.stride, data_src);
+		}
+	}
+}
+
+void opengl_bind_dynamic_layout(vertex_layout& layout, size_t base_offset) {
+	GL_state.BindVertexArray(GL_vao);
+	GL_state.Array.BindPointersBegin();
+
+	size_t num_vertex_bindings = layout.get_num_vertex_components();
+
+	for ( size_t i = 0; i < num_vertex_bindings; ++i ) {
+		opengl_bind_vertex_component(*layout.get_vertex_component(i), base_offset);
+	}
+
+	GL_state.Array.BindPointersEnd();
+}
+
+void opengl_bind_vertex_array(const vertex_layout& layout) {
+	auto iter = Stored_vertex_arrays.find(layout);
+	if (iter != Stored_vertex_arrays.end()) {
+		// Found existing vertex array!
+		GL_state.BindVertexArray(iter->second);
+		return;
+	}
+
+	GR_DEBUG_SCOPE("Create Vertex array");
+
+	GLuint vao;
+	glGenVertexArrays(1, &vao);
+	GL_state.BindVertexArray(vao);
+
+	for (size_t i = 0; i < layout.get_num_vertex_components(); ++i) {
+		auto component = layout.get_vertex_component(i);
+
+		auto& bind_info = GL_array_binding_data[component->format_type];
+		auto& attrib_info = GL_vertex_attrib_info[bind_info.attribute_id];
+
+		auto attribIndex = attrib_info.attribute_id;
+
+		glEnableVertexAttribArray(attribIndex);
+		glVertexAttribFormat(attribIndex,
+							 bind_info.size,
+							 bind_info.data_type,
+							 bind_info.normalized,
+							 static_cast<GLuint>(component->offset));
+
+		// Currently, all vertex data comes from one buffer.
+		glVertexAttribBinding(attribIndex, 0);
+	}
+
+	Stored_vertex_arrays.insert(std::make_pair(layout, vao));
+}
+void opengl_bind_vertex_layout(vertex_layout &layout, GLuint vertexBuffer, GLuint indexBuffer, size_t base_offset)
+{
+	GR_DEBUG_SCOPE("Bind vertex layout");
+
+	if (!GLAD_GL_ARB_vertex_attrib_binding) {
+		// We don't have support for the new vertex binding functions so fall back to the single VAO implementation
+		GL_state.Array.BindArrayBuffer(vertexBuffer);
+		GL_state.Array.BindElementBuffer(indexBuffer);
+
+		opengl_bind_dynamic_layout(layout, base_offset);
+		return;
+	}
+
+	opengl_bind_vertex_array(layout);
+
+	GL_state.Array.BindVertexBuffer(0,
+									vertexBuffer,
+									static_cast<GLintptr>(base_offset),
+									static_cast<GLsizei>(layout.get_vertex_stride()));
+	GL_state.Array.BindElementBuffer(indexBuffer);
 }

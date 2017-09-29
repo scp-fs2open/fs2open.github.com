@@ -14,6 +14,7 @@
 #include "parse/parselo.h"
 #include "ship/ship.h"
 #include "tracing/tracing.h"
+#include "ShaderProgram.h"
 
 
 extern bool PostProcessing_override;

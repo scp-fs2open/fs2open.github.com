@@ -523,6 +523,16 @@ void opengl_state::PopFramebufferState() {
 
 	BindFrameBuffer(restoreBuffer);
 }
+void opengl_state::BindVertexArray(GLuint vao) {
+	if (current_vao == vao) {
+		return;
+	}
+
+	glBindVertexArray(vao);
+	current_vao = vao;
+
+	Array.VertexArrayChanged();
+}
 
 opengl_array_state::~opengl_array_state()
 {
@@ -648,13 +658,14 @@ void opengl_array_state::BindPointersEnd()
 
 void opengl_array_state::BindArrayBuffer(GLuint id)
 {
-	if ( array_buffer == id ) {
+	if ( array_buffer_valid && array_buffer == id ) {
 		return;
 	}
 
 	glBindBuffer(GL_ARRAY_BUFFER, id);
 
 	array_buffer = id;
+	array_buffer_valid = true;
 
 	for (unsigned int i = 0; i < num_client_texture_units; i++) {
 		client_texture_units[i].reset_ptr = true;
@@ -669,13 +680,14 @@ void opengl_array_state::BindArrayBuffer(GLuint id)
 
 void opengl_array_state::BindElementBuffer(GLuint id)
 {
-	if ( element_array_buffer == id ) {
+	if ( element_array_buffer_valid && element_array_buffer == id ) {
 		return;
 	}
 
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, id);
 
 	element_array_buffer = id;
+	element_array_buffer_valid = true;
 }
 
 void opengl_array_state::BindTextureBuffer(GLuint id)
@@ -710,6 +722,34 @@ void opengl_array_state::BindUniformBuffer(GLuint id)
 
 	uniform_buffer = id;
 }
+void opengl_array_state::VertexArrayChanged() {
+	array_buffer_valid = false;
+	element_array_buffer_valid = false;
+
+	for (auto& bindingInfo : vertex_buffer_bindings) {
+		bindingInfo.valid_data = false;
+	}
+}
+void opengl_array_state::BindVertexBuffer(GLuint bindingindex, GLuint buffer, GLintptr offset, GLsizei stride) {
+	if (bindingindex >= vertex_buffer_bindings.size()) {
+		// Make sure that we have the place for this information
+		vertex_buffer_bindings.resize(bindingindex + 1);
+	}
+
+	auto& bindingInfo = vertex_buffer_bindings[bindingindex];
+
+	if (bindingInfo.valid_data && bindingInfo.buffer == buffer && bindingInfo.offset == offset
+		&& bindingInfo.stride == stride) {
+		return;
+	}
+
+	glBindVertexBuffer(bindingindex, buffer, offset, stride);
+
+	bindingInfo.valid_data = true;
+	bindingInfo.buffer = buffer;
+	bindingInfo.stride = stride;
+	bindingInfo.offset = offset;
+}
 opengl_constant_state::opengl_constant_state() {
 }
 void opengl_constant_state::init() {
@@ -729,8 +769,6 @@ GLint opengl_constant_state::GetMaxUniformBlockBindings() {
 
 void gr_opengl_clear_states()
 {
-	glBindVertexArray(GL_vao);
-
 	gr_zbias(0);
 	gr_zbuffer_set(ZBUFFER_TYPE_READ);
 	gr_set_cull(0);

@@ -1170,7 +1170,6 @@ void opengl_setup_function_pointers()
 
 	gr_screen.gf_render_model = gr_opengl_render_model;
 	gr_screen.gf_render_primitives= gr_opengl_render_primitives;
-	gr_screen.gf_render_primitives_2d = gr_opengl_render_primitives_2d;
 	gr_screen.gf_render_primitives_particle	= gr_opengl_render_primitives_particle;
 	gr_screen.gf_render_primitives_batched	= gr_opengl_render_primitives_batched;
 	gr_screen.gf_render_primitives_distortion = gr_opengl_render_primitives_distortion;
@@ -1456,7 +1455,7 @@ bool gr_opengl_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 
 	// create vertex array object to make OpenGL Core happy
 	glGenVertexArrays(1, &GL_vao);
-	glBindVertexArray(GL_vao);
+	GL_state.BindVertexArray(GL_vao);
 
 	GL_state.Texture.init(max_texture_units);
 	GL_state.Array.init(max_texture_coords);

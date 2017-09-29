@@ -1181,6 +1181,7 @@ set(file_root_utils
 
 # Utils files
 set (file_root_utils_boost
+	utils/boost/hash_combine.h
 	utils/boost/syncboundedqueue.h
 )
 

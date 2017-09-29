@@ -7,6 +7,7 @@
 #include "graphics/paths/PathRenderer.h"
 
 #include "localization/localize.h"
+#include "matrix.h"
 
 static void gr_flash_internal(int r, int g, int b, int a, bool alpha_flash) {
 	CLAMP(r, 0, 255);
@@ -35,7 +36,7 @@ static void gr_flash_internal(int r, int g, int b, int a, bool alpha_flash) {
 
 	vertex_layout vert_def;
 
-	vert_def.add_vertex_component(vertex_format_data::SCREEN_POS, 0, 0);
+	vert_def.add_vertex_component(vertex_format_data::SCREEN_POS, sizeof(int) * 2, 0);
 
 	gr_render_primitives_2d_immediate(&render_material, PRIM_TYPE_TRISTRIP, &vert_def, 4, glVertices, sizeof(int) * 8);
 }
@@ -1100,24 +1101,6 @@ void gr_reset_immediate_buffer() {
 	immediate_buffer_offset = 0;
 }
 
-/**
- * @brief Adjusts the offset in a vertex layout to adjust for the immediate buffer offset
- * @param layout
- * @param immediate_offset
- * @return
- */
-static vertex_layout adjust_immediate_vertex_layout(const vertex_layout* layout, size_t immediate_offset) {
-	vertex_layout adjusted;
-
-	for (size_t i = 0; i < layout->get_num_vertex_components(); ++i) {
-		auto component = layout->get_vertex_component(i);
-
-		adjusted.add_vertex_component(component->format_type, component->stride, component->offset + immediate_offset);
-	}
-
-	return adjusted;
-}
-
 void gr_render_primitives_immediate(material* material_info,
 									primitive_type prim_type,
 									vertex_layout* layout,
@@ -1126,9 +1109,7 @@ void gr_render_primitives_immediate(material* material_info,
 									size_t size) {
 	auto offset = gr_add_to_immediate_buffer(size, data);
 
-	vertex_layout immediate_layout = adjust_immediate_vertex_layout(layout, offset);
-
-	gr_render_primitives(material_info, prim_type, &immediate_layout, 0, n_verts, gr_immediate_buffer_handle);
+	gr_render_primitives(material_info, prim_type, layout, 0, n_verts, gr_immediate_buffer_handle, offset);
 }
 
 void gr_render_primitives_2d_immediate(material* material_info,
@@ -1137,9 +1118,9 @@ void gr_render_primitives_2d_immediate(material* material_info,
 									   int n_verts,
 									   void* data,
 									   size_t size) {
-	auto offset = gr_add_to_immediate_buffer(size, data);
+	gr_set_2d_matrix();
 
-	vertex_layout immediate_layout = adjust_immediate_vertex_layout(layout, offset);
+	gr_render_primitives_immediate(material_info, prim_type, layout, n_verts, data, size);
 
-	gr_render_primitives_2d(material_info, prim_type, &immediate_layout, 0, n_verts, gr_immediate_buffer_handle);
+	gr_end_2d_matrix();
 }
