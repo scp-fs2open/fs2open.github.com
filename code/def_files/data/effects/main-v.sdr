@@ -2,6 +2,12 @@
 
 #include "shadows.sdr"
 
+in vec4 vertPosition;
+in vec4 vertTexCoord;
+in vec3 vertNormal;
+in vec4 vertTangent;
+in float vertModelID;
+
 #define MAX_LIGHTS 8
 
 struct model_light {
@@ -93,47 +99,40 @@ layout (std140) uniform modelData {
 	int sMiscmapIndex;
 };
 
-in vec4 vertPosition;
-in vec4 vertTexCoord;
-in vec3 vertNormal;
-in vec4 vertTangent;
-in float vertModelID;
-#ifdef FLAG_ENV_MAP
-out vec3 fragEnvReflect;
-#endif
-#ifdef FLAG_NORMAL_MAP
-out mat3 fragTangentMatrix;
-#endif
-#ifdef FLAG_FOG
-out float fragFogDist;
-#endif
 #ifdef FLAG_TRANSFORM
 uniform samplerBuffer transform_tex;
+#endif
 
+out VertexOutput {
+#ifdef FLAG_ENV_MAP
+	vec3 envReflect;
+#endif
+#ifdef FLAG_NORMAL_MAP
+	mat3 tangentMatrix;
+#endif
+#ifdef FLAG_FOG
+	float fogDist;
+#endif
 #ifdef WORKAROUND_CLIPPING_PLANES
- #ifdef FLAG_SHADOW_MAP
-out float geoNotVisible;
- #else
-out float fragNotVisible;
+ #ifdef FLAG_TRANSFORM
+	float notVisible;
  #endif
 #endif
-
-#endif
 #ifdef FLAG_SHADOW_MAP
-#if !defined(GL_ARB_gpu_shader5)
-out float geoInstance;
-#endif
-out vec3 geoNormal;
-out vec4 geoTexCoord;
+ #if !defined(GL_ARB_gpu_shader5)
+	float instance;
+ #endif
 #else
-out vec4 fragPosition;
-out vec3 fragNormal;
-out vec4 fragTexCoord;
+	vec4 position;
 #endif
+	vec3 normal;
+	vec4 texCoord;
 #ifdef FLAG_SHADOWS
-out vec4 fragShadowUV[4];
-out vec4 fragShadowPos;
+	vec4 shadowUV[4];
+	vec4 shadowPos;
 #endif
+} vertOut;
+
 #ifdef FLAG_TRANSFORM
 #define TEXELS_PER_MATRIX 4
 void getModelTransform(inout mat4 transform, out bool invisible, int id, int matrix_offset)
@@ -157,11 +156,7 @@ void main()
  #ifdef FLAG_TRANSFORM
 	bool clipModel;
 	getModelTransform(orient, clipModel, int(vertModelID), buffer_matrix_offset);
-   #ifdef FLAG_SHADOW_MAP
-	geoNotVisible = clipModel ? 1.0 : 0.0;
-   #else
-	fragNotVisible = clipModel ? 1.0 : 0.0;
-   #endif
+	vertOut.notVisible = clipModel ? 1.0 : 0.0;
  #endif
 #else
  #ifdef FLAG_TRANSFORM
@@ -183,15 +178,13 @@ void main()
 	position = modelViewMatrix * orient * vertex;
  #ifdef FLAG_SHADOW_MAP
 	gl_Position = position;
-
- #if !defined(GL_ARB_gpu_shader5)
-  #ifdef APPLE
-	geoInstance = float(gl_InstanceIDARB);
-  #else
-	geoInstance = float(gl_InstanceID);
+  #if !defined(GL_ARB_gpu_shader5)
+   #ifdef APPLE
+	vertOut.instance = float(gl_InstanceIDARB);
+   #else
+	vertOut.instance = float(gl_InstanceID);
+   #endif
   #endif
- #endif
-
  #else
 	gl_Position = projMatrix * position;
  #endif
@@ -199,25 +192,26 @@ void main()
 	gl_Position.xy += (mat3(projMatrix) * normal.xyz).xy * gl_Position.z * extrudeWidth;
  #endif
  #ifdef FLAG_SHADOWS
-	fragShadowPos = shadow_mv_matrix * modelMatrix * orient * vertPosition;
-	fragShadowUV[0] = transformToShadowMap(shadow_proj_matrix[0], 0, fragShadowPos);
-	fragShadowUV[1] = transformToShadowMap(shadow_proj_matrix[1], 1, fragShadowPos);
-	fragShadowUV[2] = transformToShadowMap(shadow_proj_matrix[2], 2, fragShadowPos);
-	fragShadowUV[3] = transformToShadowMap(shadow_proj_matrix[3], 3, fragShadowPos);
+	vec4 shadowPos = shadow_mv_matrix * modelMatrix * orient * vertPosition;
+	vertOut.shadowPos = shadow_mv_matrix * modelMatrix * orient * vertPosition;
+	vertOut.shadowUV[0] = transformToShadowMap(shadow_proj_matrix[0], 0, shadowPos);
+	vertOut.shadowUV[1] = transformToShadowMap(shadow_proj_matrix[1], 1, shadowPos);
+	vertOut.shadowUV[2] = transformToShadowMap(shadow_proj_matrix[2], 2, shadowPos);
+	vertOut.shadowUV[3] = transformToShadowMap(shadow_proj_matrix[3], 3, shadowPos);
  #endif
  #ifdef FLAG_NORMAL_MAP
  // Setup stuff for normal maps
 	vec3 t = normalize(mat3(modelViewMatrix) * mat3(orient) * vertTangent.xyz);
 	vec3 b = cross(normal, t) * vertTangent.w;
-	fragTangentMatrix = mat3(t, b, normal);
+	vertOut.tangentMatrix = mat3(t, b, normal);
  #endif
  #ifdef FLAG_ENV_MAP
  // Environment mapping reflection vector.
-	fragEnvReflect = reflect(normalize(position.xyz), normal);
-	fragEnvReflect = vec3(envMatrix * vec4(fragEnvReflect, 0.0));
+	vec3 envReflect = reflect(normalize(position.xyz), normal);
+	vertOut.envReflect = vec3(envMatrix * vec4(envReflect, 0.0));
  #endif
  #ifdef FLAG_FOG
-	fragFogDist = clamp((gl_Position.z - fogStart) * 0.75 * fogScale, 0.0, 1.0);
+	vertOut.fogDist = clamp((gl_Position.z - fogStart) * 0.75 * fogScale, 0.0, 1.0);
  #endif
 #ifdef WORKAROUND_CLIPPING_PLANES
 	if(use_clip_plane) {
@@ -239,11 +233,11 @@ void main()
  #endif
 #endif
  #ifndef FLAG_SHADOW_MAP
-	fragPosition = position;
-	fragNormal = normal;
-	fragTexCoord = texCoord;
+	vertOut.position = position;
+	vertOut.normal = normal;
+	vertOut.texCoord = texCoord;
  #else
-	geoNormal = normal;
-	geoTexCoord = texCoord;
+	vertOut.normal = normal;
+	vertOut.texCoord = texCoord;
  #endif
 }
