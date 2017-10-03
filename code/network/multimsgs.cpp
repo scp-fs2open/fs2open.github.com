@@ -8223,7 +8223,7 @@ void process_player_pain_packet(ubyte *data, header *hinfo)
 	}
 	
 	//Assume the weapon is armed -WMC
-	weapon_hit_do_sound(Player_obj, wip, &Player_obj->pos, true);
+	weapon_hit_do_sound(Player_obj, wip, &Player_obj->pos, true, quadrant_num);
 
 	// we need to do 3 things here. player pain (game flash), weapon hit sound, ship_apply_whack()
 	ship_hit_pain((float)udamage, quadrant_num);

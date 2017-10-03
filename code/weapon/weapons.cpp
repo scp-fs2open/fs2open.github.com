@@ -5650,9 +5650,8 @@ void weapon_play_impact_sound(weapon_info *wip, vec3d *hitpos, bool is_armed)
  *
  * @note Uses Weapon_impact_timer global for timer variable
  */
-void weapon_hit_do_sound(object *hit_obj, weapon_info *wip, vec3d *hitpos, bool is_armed)
+void weapon_hit_do_sound(object *hit_obj, weapon_info *wip, vec3d *hitpos, bool is_armed, int quadrant)
 {
-	int	is_hull_hit;
 	float shield_str;
 
 	// If non-missiles (namely lasers) expire without hitting a ship, don't play impact sound
@@ -5691,19 +5690,14 @@ void weapon_hit_do_sound(object *hit_obj, weapon_info *wip, vec3d *hitpos, bool 
 
 	if ( timestamp_elapsed(Weapon_impact_timer) ) {
 
-		is_hull_hit = 1;
-		if ( hit_obj->type == OBJ_SHIP ) {
-			shield_str = ship_quadrant_shield_strength(hit_obj, hitpos);
+		if ( hit_obj->type == OBJ_SHIP && quadrant >= 0 ) {
+			shield_str = ship_quadrant_shield_strength(hit_obj, quadrant);
 		} else {
 			shield_str = 0.0f;
 		}
 
 		// play a shield hit if shields are above 10% max in this quadrant
 		if ( shield_str > 0.1f ) {
-			is_hull_hit = 0;
-		}
-
-		if ( !is_hull_hit ) {
 			// Play a shield impact sound effect
 			if ( hit_obj == Player_obj ) {
 				snd_play_3d( &Snds[SND_SHIELD_HIT_YOU], hitpos, &Eye_position );
@@ -6109,7 +6103,7 @@ void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos, int qu
 
 	// if this is the player ship, and is a laser hit, skip it. wait for player "pain" to take care of it
 	if ((other_obj != Player_obj) || (wip->subtype != WP_LASER) || !MULTIPLAYER_CLIENT) {
-		weapon_hit_do_sound(other_obj, wip, hitpos, armed_weapon);
+		weapon_hit_do_sound(other_obj, wip, hitpos, armed_weapon, quadrant);
 	}
 
 	if ( wip->impact_weapon_expl_effect >= 0 && armed_weapon)
