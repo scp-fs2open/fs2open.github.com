@@ -14836,47 +14836,32 @@ void ship_subsys_set_name(ship_subsys *ss, char* n_name)
 	strncpy(ss->sub_name, n_name, NAME_LENGTH-1);
 }
 
-// Return the shield strength in the quadrant hit on hit_objp, based on global hitpos
-//
-// input:	hit_objp	=>	object pointer to ship getting hit
-//				hitpos	=> global position of impact
-//
-// exit:		strength of shields in the quadrant that was hit as a percentage, between 0 and 1.0
-//
-// Assumes: that hitpos is a valid global hit position
-float ship_quadrant_shield_strength(object *hit_objp, vec3d *hitpos)
+/**
+ * Return the shield strength of the specified quadrant on hit_objp
+ *
+ * @param hit_objp object pointer to ship getting hit
+ * @param quadrant_num shield quadrant that was hit
+ * @return strength of shields in the quadrant that was hit as a percentage, between 0 and 1.0
+ */
+float ship_quadrant_shield_strength(object *hit_objp, int quadrant_num)
 {
-	int			quadrant_num, i;
 	float			max_quadrant;
-	vec3d		tmpv1, tmpv2;
 
 	// If ship doesn't have shield mesh, then return
 	if ( hit_objp->flags[Object::Object_Flags::No_shields] ) {
 		return 0.0f;
 	}
 
-	// Check if all the shield quadrants are all already 0, if so return 0
-	for ( i = 0; i < 4; i++ ) {
-		if ( hit_objp->shield_quadrant[i] > 0 )
-			break;
-	}
-
-	if ( i == 4 ) {
-		return 0.0f;
-	}
-
-	// convert hitpos to position in model coordinates
-	vm_vec_sub(&tmpv1, hitpos, &hit_objp->pos);
-	vm_vec_rotate(&tmpv2, &tmpv1, &hit_objp->orient);
-	quadrant_num = get_quadrant(&tmpv2, hit_objp);
-
+	// If shields weren't hit, return 0
 	if ( quadrant_num < 0 )
-		quadrant_num = 0;
+		return 0.0f;
 
 	max_quadrant = shield_get_max_quad(hit_objp);
 	if ( max_quadrant <= 0 ) {
 		return 0.0f;
 	}
+
+	Assertion(quadrant_num < hit_objp->n_quadrants, "ship_quadrant_shield_strength() called with a quadrant of %d on a ship with %d quadrants; get a coder!\n", quadrant_num, hit_objp->n_quadrants);
 
 	if(hit_objp->shield_quadrant[quadrant_num] > max_quadrant)
 		mprintf(("Warning: \"%s\" has shield quadrant strength of %f out of %f\n",
