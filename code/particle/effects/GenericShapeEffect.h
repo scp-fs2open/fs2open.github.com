@@ -34,6 +34,8 @@ class GenericShapeEffect : public ParticleEffect {
 
 	ParticleEffectIndex m_particleTrail = -1;
 
+	util::EffectTiming m_timing;
+
 	TShape m_shape;
 
 	vec3d getNewDirection(const ParticleSource* source) const {
@@ -83,6 +85,10 @@ class GenericShapeEffect : public ParticleEffect {
 	}
 
 	virtual bool processSource(const ParticleSource* source) override {
+		if (!m_timing.continueProcessing(source)) {
+			return false;
+		}
+
 		auto num = m_particleNum.next();
 
 		vec3d dir = getNewDirection(source);
@@ -118,7 +124,7 @@ class GenericShapeEffect : public ParticleEffect {
 			}
 		}
 
-		return false;
+		return true;
 	}
 
 	virtual void parseValues(bool nocreate) override {
@@ -158,6 +164,12 @@ class GenericShapeEffect : public ParticleEffect {
 		if (optional_string("+Trail effect:")) {
 			m_particleTrail = internal::parseEffectElement();
 		}
+
+		m_timing = util::EffectTiming::parseTiming();
+	}
+
+	void initializeSource(ParticleSource& source) override {
+		m_timing.applyToSource(&source);
 	}
 
 	virtual EffectType getType() const override { return m_shape.getType(); }
