@@ -20,9 +20,6 @@ struct sound_entry_h
 	game_snd *Get();
 
 	bool IsValid();
-
-	int getId();
-
 };
 
 //**********HANDLE: SoundEntry

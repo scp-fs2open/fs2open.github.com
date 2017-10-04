@@ -3,10 +3,17 @@
 #pragma once
 
 #include "particle/ParticleSource.h"
-#include "RandomRange.h"
+#include "utils/RandomRange.h"
 
 namespace particle {
 namespace util {
+
+/**
+ * @defgroup particleUtils Particle Effect utilities
+ *
+ * @ingroup particleSystems
+ */
+
 /**
  * @brief The possible duration modes
  *
@@ -28,8 +35,8 @@ enum class Duration {
 class EffectTiming {
  private:
 	Duration m_duration;
-	util::UniformFloatRange m_delayRange;
-	util::UniformFloatRange m_durationRange;
+	::util::UniformFloatRange m_delayRange;
+	::util::UniformFloatRange m_durationRange;
  public:
 	EffectTiming();
 

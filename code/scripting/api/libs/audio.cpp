@@ -61,9 +61,9 @@ ADE_FUNC(loadSoundfile, l_Audio, "string filename", "Loads the specified sound f
 	if (!ade_get_args(L, "s", &fileName))
 		return ade_set_error(L, "o", l_Soundfile.Set(-1));
 
-	game_snd tmp_gs;
+	game_snd_entry tmp_gs;
 	strcpy_s( tmp_gs.filename, fileName );
-	int n = snd_load( &tmp_gs, 0 );
+	int n = snd_load( &tmp_gs, 0, 0 );
 
 	return ade_set_error(L, "o", l_Soundfile.Set(n));
 }

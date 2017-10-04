@@ -19,7 +19,7 @@
 class object;
 class ship;
 class ship_info;
-class game_snd;
+struct game_snd;
 class ship_subsys;
 struct shockwave_create_info;
 struct vec3d;

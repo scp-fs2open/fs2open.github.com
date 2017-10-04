@@ -6006,6 +6006,8 @@ sexp_list_item *sexp_tree::get_listing_opf_nebula_patterns()
 	return head.next;
 }
 
+extern SCP_vector<game_snd>	Snds;
+
 sexp_list_item *sexp_tree::get_listing_opf_game_snds()
 {
 	sexp_list_item head;

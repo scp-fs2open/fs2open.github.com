@@ -831,7 +831,6 @@ set(file_root_particle_effects
 set(file_root_particle_util
 	particle/util/EffectTiming.cpp
 	particle/util/EffectTiming.h
-	particle/util/RandomRange.h
 	particle/util/ParticleProperties.cpp
 	particle/util/ParticleProperties.h
 )
@@ -1174,6 +1173,7 @@ set (file_root_ui
 )
 
 set(file_root_utils
+	utils/RandomRange.h
 	utils/strings.h
 )
 

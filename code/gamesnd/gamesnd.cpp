@@ -310,16 +310,22 @@ int gamesnd_get_by_name(const char* name)
 		int i = 0;
 		for(SCP_vector<game_snd>::iterator snd = Snds.begin(); snd != Snds.end(); ++snd)
 		{
-			char *p = strrchr( snd->filename, '.' );
+			if (snd->sound_entries.size() != 1) {
+				// Ignore game sounds with more than one sound entry
+				continue;
+			}
+
+			auto& entry = snd->sound_entries.front();
+			char *p = strrchr( entry.filename, '.' );
 			if(p == NULL)
 			{
-				if(!stricmp(snd->filename, name))
+				if(!stricmp(entry.filename, name))
 				{
 					index = i;
 					break;
 				}
 			}
-			else if(!strnicmp(snd->filename, name, p-snd->filename))
+			else if(!strnicmp(entry.filename, name, p - entry.filename))
 			{
 				index = i;
 				break;
@@ -344,16 +350,22 @@ int gamesnd_get_by_iface_name(const char* name)
 		int i = 0;
 		for(SCP_vector<game_snd>::iterator snd = Snds_iface.begin(); snd != Snds_iface.end(); ++snd)
 		{
-			char *p = strrchr( snd->filename, '.' );
+			if (snd->sound_entries.size() != 1) {
+				// Ignore game sounds with more than one sound entry
+				continue;
+			}
+
+			auto& entry = snd->sound_entries.front();
+			char *p = strrchr( entry.filename, '.' );
 			if(p == NULL)
 			{
-				if(!stricmp(snd->filename, name))
+				if(!stricmp(entry.filename, name))
 				{
 					index = i;
 					break;
 				}
 			}
-			else if(!strnicmp(snd->filename, name, p-snd->filename))
+			else if(!strnicmp(entry.filename, name, p - entry.filename))
 			{
 				index = i;
 				break;
@@ -515,10 +527,12 @@ void gamesnd_preload_common_sounds()
 
 	Assert( Snds.size() <= INT_MAX );
 	for (SCP_vector<game_snd>::iterator gs = Snds.begin(); gs != Snds.end(); ++gs) {
-		if ( gs->filename[0] != 0 && strnicmp(gs->filename, NOX("none.wav"), 4) ) {
-			if ( gs->preload ) {
-				game_busy( NOX("** preloading common game sounds **") );	// Animate loading cursor... does nothing if loading screen not active.
-				gs->id = snd_load(&(*gs));
+		if ( gs->preload ) {
+			for (auto& entry : gs->sound_entries) {
+				if ( entry.filename[0] != 0 && strnicmp(entry.filename, NOX("none.wav"), 4) ) {
+					game_busy( NOX("** preloading common game sounds **") );	// Animate loading cursor... does nothing if loading screen not active.
+					entry.id = snd_load(&entry, gs->flags);
+				}
 			}
 		}
 	}
@@ -534,10 +548,12 @@ void gamesnd_load_gameplay_sounds()
 
 	Assert( Snds.size() <= INT_MAX );
 	for (SCP_vector<game_snd>::iterator gs = Snds.begin(); gs != Snds.end(); ++gs) {
-		if ( gs->filename[0] != 0 && strnicmp(gs->filename, NOX("none.wav"), 4) ) {
-			if ( !gs->preload ) { // don't try to load anything that's already preloaded
-				game_busy( NOX("** preloading gameplay sounds **") );		// Animate loading cursor... does nothing if loading screen not active.
-				gs->id = snd_load(&(*gs));
+		if ( !gs->preload ) { // don't try to load anything that's already preloaded
+			for (auto& entry : gs->sound_entries) {
+				if (entry.filename[0] != 0 && strnicmp(entry.filename, NOX("none.wav"), 4)) {
+					game_busy(NOX("** preloading gameplay sounds **"));        // Animate loading cursor... does nothing if loading screen not active.
+					entry.id = snd_load(&entry, gs->flags);
+				}
 			}
 		}
 	}
@@ -550,9 +566,11 @@ void gamesnd_unload_gameplay_sounds()
 {
 	Assert( Snds.size() <= INT_MAX );
 	for (SCP_vector<game_snd>::iterator gs = Snds.begin(); gs != Snds.end(); ++gs) {
-		if ( gs->id != -1 ) {
-			snd_unload( gs->id );
-			gs->id = -1;
+		for (auto& entry : gs->sound_entries) {
+			if (entry.id != -1) {
+				snd_unload(entry.id);
+				entry.id = -1;
+			}
 		}
 	}
 }
@@ -567,8 +585,10 @@ void gamesnd_load_interface_sounds()
 
 	Assert( Snds_iface.size() < INT_MAX );
 	for (SCP_vector<game_snd>::iterator si = Snds_iface.begin(); si != Snds_iface.end(); ++si) {
-		if ( si->filename[0] != 0 && strnicmp(si->filename, NOX("none.wav"), 4) ) {
-			si->id = snd_load(&(*si));
+		for (auto& entry : si->sound_entries) {
+			if ( entry.filename[0] != 0 && strnicmp(entry.filename, NOX("none.wav"), 4) ) {
+				entry.id = snd_load(&entry, si->flags);
+			}
 		}
 	}
 }
@@ -580,10 +600,12 @@ void gamesnd_unload_interface_sounds()
 {
 	Assert( Snds_iface.size() < INT_MAX );
 	for (SCP_vector<game_snd>::iterator si = Snds_iface.begin(); si != Snds_iface.end(); ++si) {
-		if ( si->id != -1 ) {
-			snd_unload( si->id );
-			si->id = -1;
-			si->id_sig = -1;
+		for (auto& entry : si->sound_entries) {
+			if ( entry.id != -1 ) {
+				snd_unload( entry.id );
+				entry.id = -1;
+				entry.id_sig = -1;
+			}
 		}
 	}
 }
@@ -593,11 +615,15 @@ void parse_gamesnd_old(game_snd* gs)
 	int is_3d;
 	int temp;
 
-	stuff_string(gs->filename, F_NAME, MAX_FILENAME_LEN, ",");
+	// An old sound is just a single entry sound set
+	gs->sound_entries.resize(1);
+	auto& entry = gs->sound_entries.back();
 
-	if (!stricmp(gs->filename, NOX("empty")))
+	stuff_string(entry.filename, F_NAME, MAX_FILENAME_LEN, ",");
+
+	if (!stricmp(entry.filename, NOX("empty")))
 	{
-		gs->filename[0] = 0;
+		entry.filename[0] = 0;
 		advance_to_eoln(NULL);
 		return;
 	}
@@ -610,7 +636,9 @@ void parse_gamesnd_old(game_snd* gs)
 		gs->preload = true;
 	}
 
-	stuff_float(&gs->default_volume);
+	float default_volume;
+	stuff_float(&default_volume);
+	gs->volume_range = util::UniformFloatRange(default_volume);
 
 	stuff_int(&is_3d);
 
@@ -626,7 +654,7 @@ void parse_gamesnd_old(game_snd* gs)
 		gs->max = 0;
 
 		// silly retail, not abiding by its own format...
-		if (!stricmp(gs->filename, "l_hit.wav") || !stricmp(gs->filename, "m_hit.wav"))
+		if (!stricmp(entry.filename, "l_hit.wav") || !stricmp(entry.filename, "m_hit.wav"))
 		{
 			int temp_min, temp_max;
 
@@ -636,7 +664,7 @@ void parse_gamesnd_old(game_snd* gs)
 				ignore_gray_space();
 				if (stuff_int_optional(&temp_max, true) == 2)
 				{
-					mprintf(("Dutifully converting retail sound %s, '%s' to a 3D sound...\n", gs->name.c_str(), gs->filename));
+					mprintf(("Dutifully converting retail sound %s, '%s' to a 3D sound...\n", gs->name.c_str(), entry.filename));
 					is_3d = 1;
 
 					gs->flags |= GAME_SND_USE_DS3D;
@@ -647,11 +675,14 @@ void parse_gamesnd_old(game_snd* gs)
 		}
 	}
 
+	// Default pitch is 1.0
+	gs->pitch_range = util::UniformFloatRange(1.0f);
+
 	// check for extra values per Mantis #2408
 	ignore_gray_space();
 	if (stuff_int_optional(&temp, true) == 2)
 	{
-		Warning(LOCATION, "Unexpected extra value %d found for sound '%s' (filename '%s')!  Check the format of the sounds.tbl (or .tbm) entry.", temp, gs->name.c_str(), gs->filename);
+		Warning(LOCATION, "Unexpected extra value %d found for sound '%s' (filename '%s')!  Check the format of the sounds.tbl (or .tbm) entry.", temp, gs->name.c_str(), entry.filename);
 	}
 
 	advance_to_eoln(NULL);
@@ -703,28 +734,32 @@ bool required_string_no_create(const char* token, bool no_create)
     return true;
 }
 
-void parse_gamesnd_new(game_snd* gs, bool no_create)
-{
-	char name[MAX_FILENAME_LEN];
-	// New extended format found
-	stuff_string(name, F_NAME, MAX_FILENAME_LEN);
-
-	if (!stricmp(name, NOX("empty")))
-	{
-		gs->filename[0] = 0;
-		return;
+static GameSoundCycleType parse_cycle_type() {
+	if (optional_string("Sequential")) {
+		return GameSoundCycleType::Sequential;
+	} else if (optional_string("Random")) {
+		return GameSoundCycleType::Random;
+	} else {
+		error_display(0, "Failed to parse sound cycle type. Expected 'sequential' or 'random'. Got [%.32s]", next_tokens());
+		// Ignore everything until the end of the line. That should hopefully skip the bad token.
+		advance_to_eoln(nullptr);
+		return GameSoundCycleType::Sequential;
 	}
+}
 
-	// If the name _doesn't_ match <same> put it into gs->filename;
-	if (stricmp(name, "<same>"))
-	{
-		strcpy_s(gs->filename, name);
-	}
-	else if (!no_create)
-	{
-		// Throw an error if <same> was specified but we are creating a new entry
-		error_display(1, "'<same>' is only allowed if +nocreate was specified!");
-		return;
+void parse_gamesnd_soundset(game_snd* gs, bool no_create) {
+	// If this gets called then we just saw "+Entry:" so we can begin processing the first entry immediately
+
+	do {
+		// For now there is no way to change an existing entry so ever +Entry statement creates a new sound entry
+		gs->sound_entries.resize(gs->sound_entries.size() + 1);
+		auto& entry = gs->sound_entries.back();
+
+		stuff_string(entry.filename, F_NAME, MAX_FILENAME_LEN);
+	} while (optional_string("+Entry:"));
+
+	if (required_string_no_create("+Cycle type:", no_create)) {
+		gs->cycle_type = parse_cycle_type();
 	}
 
 	if (required_string_no_create("+Preload:", no_create))
@@ -734,7 +769,7 @@ void parse_gamesnd_new(game_snd* gs, bool no_create)
 
 	if (required_string_no_create("+Volume:", no_create))
 	{
-		stuff_float(&gs->default_volume);
+		gs->volume_range = util::parseUniformRange(0.0f, 1.0f);
 	}
 
 	if (optional_string("+3D Sound:"))
@@ -781,6 +816,109 @@ void parse_gamesnd_new(game_snd* gs, bool no_create)
 			error_display(1, "Invalid enhanced sound limit: %d\n", temp_limit);
 		}
 	}
+
+	if (optional_string("+Pitch:")) {
+		gs->pitch_range = util::parseUniformRange(0.0001f);
+	} else if (!no_create) {
+		// Default pitch is 1.0
+		gs->pitch_range = util::UniformFloatRange(1.0f);
+	}
+}
+
+void parse_gamesnd_new(game_snd* gs, bool no_create)
+{
+	game_snd_entry* entry = nullptr;
+	if (!no_create) {
+		gs->sound_entries.resize(1);
+		entry = &gs->sound_entries.back();
+	} else {
+		if (gs->sound_entries.size() != 1) {
+			error_display(1, "The SCP syntax cannot be used to modify an existing sound that has more than one entry! Use the soundset syntax for adding new entries.");
+		}
+		entry = &gs->sound_entries.back();
+	}
+
+	char name[MAX_FILENAME_LEN];
+	// New extended format found
+	stuff_string(name, F_NAME, MAX_FILENAME_LEN);
+
+	if (!stricmp(name, NOX("empty")))
+	{
+		entry->filename[0] = 0;
+		return;
+	}
+
+	// If the name _doesn't_ match <same> put it into gs->filename;
+	if (stricmp(name, "<same>"))
+	{
+		strcpy_s(entry->filename, name);
+	}
+	else if (!no_create)
+	{
+		// Throw an error if <same> was specified but we are creating a new entry
+		error_display(1, "'<same>' is only allowed if +nocreate was specified!");
+		return;
+	}
+
+	if (required_string_no_create("+Preload:", no_create))
+	{
+		stuff_boolean(&gs->preload);
+	}
+
+	if (required_string_no_create("+Volume:", no_create))
+	{
+		float default_volume;
+		stuff_float(&default_volume);
+		gs->volume_range = util::UniformFloatRange(default_volume);
+	}
+
+	if (optional_string("+3D Sound:"))
+	{
+		gs->flags |= GAME_SND_USE_DS3D;
+		required_string("+Attenuation start:");
+
+		stuff_int(&gs->min);
+
+		required_string("+Attenuation end:");
+
+		stuff_int(&gs->max);
+	}
+	else
+	{
+		gs->min = 0;
+		gs->max = 0;
+	}
+
+	// jg18 - enhanced sound parameters
+	if (optional_string("+Priority:"))
+	{
+		SCP_string priority_string;
+		stuff_string(priority_string, F_NAME);
+		EnhancedSoundPriority priority = convert_to_enhanced_priority(priority_string.c_str());
+		if (priority != SND_ENHANCED_PRIORITY_INVALID)
+		{
+			gs->enhanced_sound_data.priority= priority;
+		}
+		// else case not needed since conversion function displays message on error
+	}
+
+	if (optional_string("+Limit:"))
+	{
+		int temp_limit;
+		stuff_int(&temp_limit);
+
+		if ((temp_limit > 0) && (static_cast<uint>(temp_limit) <= SND_ENHANCED_MAX_LIMIT))
+		{
+			gs->enhanced_sound_data.limit = (unsigned int)temp_limit;
+		}
+		else
+		{
+			error_display(1, "Invalid enhanced sound limit: %d\n", temp_limit);
+		}
+	}
+
+	// Default pitch is 1.0
+	gs->pitch_range = util::UniformFloatRange(1.0f);
 }
 
 void gamesnd_parse_entry(game_snd *gs, bool no_create, SCP_vector<game_snd> *lookupVector)
@@ -820,6 +958,8 @@ void gamesnd_parse_entry(game_snd *gs, bool no_create, SCP_vector<game_snd> *loo
 	if (optional_string("+Filename:"))
 	{
 		parse_gamesnd_new(gs, no_create);
+	} else if (optional_string("+Entry:")) {
+		parse_gamesnd_soundset(gs, no_create);
 	}
 	else
 	{
@@ -1176,4 +1316,41 @@ bool gamesnd_game_sound_valid(int sound) {
 }
 bool gamesnd_interface_sound_valid(int sound) {
 	return sound >= 0 && sound < (int) Snds_iface.size();
+}
+
+float gamesnd_get_max_duration(game_snd* gs) {
+	int max_length = 0;
+
+	for (auto& entry : gs->sound_entries) {
+		Assertion(entry.id != -1, "Game sound must be loaded to determine maximum duration!");
+
+		max_length = std::max(max_length, snd_get_duration(entry.id));
+	}
+
+	return max_length / gs->pitch_range.max();
+}
+game_snd_entry* gamesnd_choose_entry(game_snd* gs) {
+	Assertion(!gs->sound_entries.empty(), "No sound entries found in game sound! This may not happen!");
+
+	size_t index = 0;
+	switch(gs->cycle_type) {
+	case GameSoundCycleType::Random:
+		if (gs->sound_entries.size() == 1) {
+			index = 0;
+		} else {
+			index = util::UniformRange<size_t>(0, gs->sound_entries.size() - 1).next();
+		}
+		break;
+	case GameSoundCycleType::Sequential:
+		if (gs->last_entry_index == std::numeric_limits<size_t>::max()) {
+			// If this is the first time we must return the first sound to keep everything consistent
+			index = 0;
+		} else {
+			index = (gs->last_entry_index + 1) % gs->sound_entries.size();
+		}
+		break;
+	}
+
+	gs->last_entry_index = index;
+	return &gs->sound_entries[index];
 }

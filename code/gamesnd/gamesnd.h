@@ -353,8 +353,18 @@ enum InterfaceSoundsIndex {
 	MIN_INTERFACE_SOUNDS        =70 //!< MIN_INTERFACE_SOUNDS
 };
 
+/**
+ * @brief Gets a pointer to the game sound with the specified handle
+ * @param handle The sound handle
+ * @return The game sound handle
+ */
 game_snd* gamesnd_get_game_sound(int handle);
 
+/**
+ * @brief Gets a pointer to the interface sound with the specified handle
+ * @param handle The sound handle
+ * @return The interface sound handle
+ */
 game_snd* gamesnd_get_interface_sound(int handle);
 
 /**
@@ -371,5 +381,25 @@ bool gamesnd_game_sound_valid(int sound);
  */
 bool gamesnd_interface_sound_valid(int sound);
 
+/**
+ * @brief Determines the maximum time this game sound may take to be played.
+ *
+ * @details Use this instead of snd_get_duration since a game sound may have multiple sounds with different durations.
+ * This function also accounts for pitch changes which also changes the length of a sound.
+ *
+ * @param gs The game sound to check
+ * @return The length of the sound in milliseconds
+ */
+float gamesnd_get_max_duration(game_snd* gs);
+
+/**
+ * @brief Chooses a sound entry for the specified game sound according to the rules specified by the game data
+ *
+ * @warning The returned pointer is temporary and may not be valid forever. Do no store this pointer anywhere!
+ *
+ * @param gs The game sound to choose the entry from
+ * @return The chosen entry
+ */
+game_snd_entry* gamesnd_choose_entry(game_snd* gs);
 
 #endif

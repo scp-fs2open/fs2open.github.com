@@ -60,8 +60,18 @@ void ds_stop_channel(int channel);
 void ds_stop_channel_all();
 void ds_set_volume( int channel, float vol );
 void ds_set_pan( int channel, float pan );
-int ds_get_pitch(int channel);
-void ds_set_pitch(int channel, int pitch);
+/**
+ * @brief Get the pitch of a channel
+ *
+ * @details A pitch value of 1.0 means that the original sound is not changed.
+ */
+float ds_get_pitch(int channel);
+/**
+ * @brief Set the pitch of a channel
+ *
+ * @details A pitch value of 1.0 means that the original sound is not changed.
+ */
+void ds_set_pitch(int channel, float pitch);
 void ds_chg_loop_status(int channel, int loop);
 void ds_set_position(int channel, unsigned int offset);
 unsigned int ds_get_play_position(int channel);
@@ -76,6 +86,7 @@ void ds_stop_easy(int sid);
 int ds_get_channel_size(int channel);
 
 int ds_get_sound_id(int channel);
+int ds_get_sound_index(int channel_id);
 
 // Returns the number of channels that are actually playing
 int ds_get_number_channels();
