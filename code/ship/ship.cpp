@@ -13692,7 +13692,7 @@ int ship_do_rearm_frame( object *objp, float frametime )
 				{
 					// Goober5000
 					int sound_index;
-					if (Snds[SND_BALLISTIC_START_LOAD].id >= 0)
+					if (Snds.size() > SND_BALLISTIC_START_LOAD)
 						sound_index = SND_BALLISTIC_START_LOAD;
 					else
 						sound_index = SND_MISSILE_START_LOAD;
@@ -13746,7 +13746,7 @@ int ship_do_rearm_frame( object *objp, float frametime )
 				if (primary_banks_full != swp->num_primary_banks) {
 					// Goober5000
 					int sound_index;
-					if (Snds[SND_BALLISTIC_START_LOAD].id >= 0)
+					if (Snds.size() > SND_BALLISTIC_START_LOAD)
 						sound_index = SND_BALLISTIC_START_LOAD;
 					else
 						sound_index = SND_MISSILE_START_LOAD;
