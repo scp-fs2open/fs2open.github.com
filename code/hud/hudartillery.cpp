@@ -332,7 +332,7 @@ void ssm_create(object *target, vec3d *start, size_t ssm_index, ssm_firing_info 
 			HUD_printf("%s", Ssm_info[ssm_index].message);
 	}
 	if (Ssm_info[ssm_index].sound_index >= 0) {
-		snd_play(&Snds[Ssm_info[ssm_index].sound_index]);
+		snd_play(gamesnd_get_game_sound(Ssm_info[ssm_index].sound_index));
 	}
 
 	Ssm_strikes.push_back(ssm);

@@ -1569,7 +1569,7 @@ void message_queue_process()
 	// debug only -- if the message is a builtin message, put in parens whether or not the voice played
 	if ( Sound_enabled && (Playing_messages[Num_messages_playing].wave == -1) ) {
 		strcat_s( buf, NOX("..(no wavefile for voice)"));
-		snd_play(&Snds[SND_CUE_VOICE]);
+		snd_play(gamesnd_get_game_sound(SND_CUE_VOICE));
 	}
 #endif
 	

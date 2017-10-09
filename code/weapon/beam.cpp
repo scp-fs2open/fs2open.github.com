@@ -1871,7 +1871,7 @@ void beam_start_warmup(beam *b)
 
 	// start playing warmup sound
 	if(!(Game_mode & GM_STANDALONE_SERVER) && (Weapon_info[b->weapon_info_index].b_info.beam_warmup_sound >= 0)){		
-		snd_play_3d(&Snds[Weapon_info[b->weapon_info_index].b_info.beam_warmup_sound], &b->last_start, &View_position);
+		snd_play_3d(gamesnd_get_game_sound(Weapon_info[b->weapon_info_index].b_info.beam_warmup_sound), &b->last_start, &View_position);
 	}
 }
 
@@ -1914,11 +1914,11 @@ int beam_start_firing(beam *b)
 
 	// start the beam firing sound now, if we haven't already		
 	if((b->beam_sound_loop == -1) && (Weapon_info[b->weapon_info_index].b_info.beam_loop_sound >= 0)){				
-		b->beam_sound_loop = snd_play_3d(&Snds[Weapon_info[b->weapon_info_index].b_info.beam_loop_sound], &b->last_start, &View_position, 0.0f, NULL, 1, 1.0, SND_PRIORITY_SINGLE_INSTANCE, NULL, 1.0f, 1);
+		b->beam_sound_loop = snd_play_3d(gamesnd_get_game_sound(Weapon_info[b->weapon_info_index].b_info.beam_loop_sound), &b->last_start, &View_position, 0.0f, NULL, 1, 1.0, SND_PRIORITY_SINGLE_INSTANCE, NULL, 1.0f, 1);
 
 		// "shot" sound
 		if (Weapon_info[b->weapon_info_index].launch_snd >= 0)
-			snd_play_3d(&Snds[Weapon_info[b->weapon_info_index].launch_snd], &b->last_start, &View_position);
+			snd_play_3d(gamesnd_get_game_sound(Weapon_info[b->weapon_info_index].launch_snd), &b->last_start, &View_position);
 		// niffwan - if launch_snd < 0, don't play any sound
 	}	
 
@@ -1938,7 +1938,7 @@ void beam_start_warmdown(beam *b)
 
 	// start the warmdown sound
 	if(Weapon_info[b->weapon_info_index].b_info.beam_warmdown_sound >= 0){				
-		snd_play_3d(&Snds[Weapon_info[b->weapon_info_index].b_info.beam_warmdown_sound], &b->last_start, &View_position);
+		snd_play_3d(gamesnd_get_game_sound(Weapon_info[b->weapon_info_index].b_info.beam_warmdown_sound), &b->last_start, &View_position);
 	}
 
 	// kill the beam looping sound 
@@ -1980,7 +1980,7 @@ void beam_recalc_sounds(beam *b)
 			break;
 		}
 
-		snd_update_3d_pos(b->beam_sound_loop, &Snds[bwi->beam_loop_sound], &pos);
+		snd_update_3d_pos(b->beam_sound_loop, gamesnd_get_game_sound(bwi->beam_loop_sound), &pos);
 	}
 }
 
@@ -3070,7 +3070,7 @@ void beam_handle_collisions(beam *b)
 
 		// play the impact sound
 		if ( first_hit && (wi->impact_snd >= 0) ) {
-			snd_play_3d( &Snds[wi->impact_snd], &b->f_collisions[idx].cinfo.hit_point_world, &Eye_position );
+			snd_play_3d( gamesnd_get_game_sound(wi->impact_snd), &b->f_collisions[idx].cinfo.hit_point_world, &Eye_position );
 		}
 
 		// KOMET_EXT -->

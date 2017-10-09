@@ -1695,7 +1695,7 @@ static void split_ship_init( ship* shipp, split_ship* split_shipp )
 	}
 
 	// play 3d sound for shockwave explosion
-	snd_play_3d( &Snds[SND_SHOCKWAVE_EXPLODE], &parent_ship_obj->pos, &View_position, 0.0f, NULL, 0, 1.0f, SND_PRIORITY_SINGLE_INSTANCE, NULL, 3.0f );
+	snd_play_3d( gamesnd_get_game_sound(SND_SHOCKWAVE_EXPLODE), &parent_ship_obj->pos, &View_position, 0.0f, NULL, 0, 1.0f, SND_PRIORITY_SINGLE_INSTANCE, NULL, 3.0f );
 
 	// initialize both ships
 	split_shipp->front_ship.parent_obj = parent_ship_obj;
@@ -2110,16 +2110,16 @@ void do_sub_expl_sound(float radius, vec3d* sound_pos, int* sound_handle)
 
 	if (handle == -1) {
 		// if no handle, get one
-		sound_handle[handle_index] = snd_play_3d( &Snds[sound_index], sound_pos, &View_position, 0.0f, NULL, 0, 0.6f, SND_PRIORITY_MUST_PLAY, NULL, sound_range );
+		sound_handle[handle_index] = snd_play_3d( gamesnd_get_game_sound(sound_index), sound_pos, &View_position, 0.0f, NULL, 0, 0.6f, SND_PRIORITY_MUST_PLAY, NULL, sound_range );
 	} else if (!snd_is_playing(handle)) {
 		// if sound not playing and old, get new one
 		// I don't think will happen with SND_PRIORITY_MUST_PLAY
 		if (get_sound_time_played(Snds[sound_index].id, handle) > 400) {
 			snd_stop(sound_handle[handle_index]);
-			sound_handle[handle_index] = snd_play_3d( &Snds[sound_index], sound_pos, &View_position, 0.0f, NULL, 0, 0.6f, SND_PRIORITY_MUST_PLAY, NULL, sound_range );
+			sound_handle[handle_index] = snd_play_3d( gamesnd_get_game_sound(sound_index), sound_pos, &View_position, 0.0f, NULL, 0, 0.6f, SND_PRIORITY_MUST_PLAY, NULL, sound_range );
 		}
 	} else if (get_sound_time_played(Snds[sound_index].id, handle) > 750) {
-		sound_handle[handle_index] = snd_play_3d( &Snds[sound_index], sound_pos, &View_position, 0.0f, NULL, 0, 0.6f, SND_PRIORITY_MUST_PLAY, NULL, sound_range );
+		sound_handle[handle_index] = snd_play_3d( gamesnd_get_game_sound(sound_index), sound_pos, &View_position, 0.0f, NULL, 0, 0.6f, SND_PRIORITY_MUST_PLAY, NULL, sound_range );
 	}
 }
 
@@ -2471,19 +2471,19 @@ void shipfx_do_damaged_arcs_frame( ship *shipp )
 			//Play a sound effect
 			if ( lifetime > 750 )	{
 				// 1.00 second effect
-				snd_play_3d( &Snds[SND_DEBRIS_ARC_05], &snd_pos, &View_position, obj->radius );
+				snd_play_3d( gamesnd_get_game_sound(SND_DEBRIS_ARC_05), &snd_pos, &View_position, obj->radius );
 			} else if ( lifetime >  500 )	{
 				// 0.75 second effect
-				snd_play_3d( &Snds[SND_DEBRIS_ARC_04], &snd_pos, &View_position, obj->radius );
+				snd_play_3d( gamesnd_get_game_sound(SND_DEBRIS_ARC_04), &snd_pos, &View_position, obj->radius );
 			} else if ( lifetime >  250 )	{
 				// 0.50 second effect
-				snd_play_3d( &Snds[SND_DEBRIS_ARC_03], &snd_pos, &View_position, obj->radius );
+				snd_play_3d( gamesnd_get_game_sound(SND_DEBRIS_ARC_03), &snd_pos, &View_position, obj->radius );
 			} else if ( lifetime >  100 )	{
 				// 0.25 second effect
-				snd_play_3d( &Snds[SND_DEBRIS_ARC_02], &snd_pos, &View_position, obj->radius );
+				snd_play_3d( gamesnd_get_game_sound(SND_DEBRIS_ARC_02), &snd_pos, &View_position, obj->radius );
 			} else {
 				// 0.10 second effect
-				snd_play_3d( &Snds[SND_DEBRIS_ARC_01], &snd_pos, &View_position, obj->radius );
+				snd_play_3d( gamesnd_get_game_sound(SND_DEBRIS_ARC_01), &snd_pos, &View_position, obj->radius );
 			}
 		}
 	}
@@ -2976,7 +2976,7 @@ void engine_wash_ship_process(ship *shipp)
 			if(shipp != Player_ship){
 				obj_snd_assign(shipp->objnum, SND_ENGINE_WASH, &vmd_zero_vector, 1);
 			} else {				
-				Player_engine_wash_loop = snd_play_looping( &Snds[SND_ENGINE_WASH], 0.0f , -1, -1, 1.0f);
+				Player_engine_wash_loop = snd_play_looping( gamesnd_get_game_sound(SND_ENGINE_WASH), 0.0f , -1, -1, 1.0f);
 			}
 		}
 	} 
@@ -3859,12 +3859,12 @@ int WE_BSG::warpStart()
 
 	if(gs_start_index > -1)
 	{
-		snd_start_gs = &Snds[gs_start_index];
+		snd_start_gs = gamesnd_get_game_sound(gs_start_index);
 		snd_start = snd_play_3d(snd_start_gs, &objp->pos, &View_position, 0.0f, NULL, 0, 1, SND_PRIORITY_SINGLE_INSTANCE, NULL, snd_range_factor);
 	}
 	if(gs_end_index > -1)
 	{
-		snd_end_gs = &Snds[gs_end_index];
+		snd_end_gs = gamesnd_get_game_sound(gs_end_index);
 		snd_end = -1;
 	}
 
@@ -4166,7 +4166,7 @@ int WE_Homeworld::warpStart()
 
 	if(gs_index > -1)
 	{
-		snd_gs = &Snds[gs_index];
+		snd_gs = gamesnd_get_game_sound(gs_index);
 		snd = snd_play_3d(snd_gs, &pos, &View_position, 0.0f, NULL, 0, 1, SND_PRIORITY_SINGLE_INSTANCE, NULL, snd_range_factor);
 	}
 

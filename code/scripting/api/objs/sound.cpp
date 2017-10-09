@@ -19,7 +19,7 @@ game_snd* sound_entry_h::Get() {
 	if (!this->IsValid())
 		return NULL;
 
-	return &Snds[idx];
+	return gamesnd_get_game_sound(idx);
 }
 bool sound_entry_h::IsValid() {
 	if (idx < 0 || idx >= (int) Snds.size())

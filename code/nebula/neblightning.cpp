@@ -440,9 +440,9 @@ void nebl_render_all()
 							bang = 1.0f - (Nebl_bang / 400.0f);
 						}
 						if(frand_range(0.0f, 1.0f) < 0.5f){
-							snd_play(&Snds[SND_LIGHTNING_2], 0.0f, bang, SND_PRIORITY_DOUBLE_INSTANCE);
+							snd_play(gamesnd_get_game_sound(SND_LIGHTNING_2), 0.0f, bang, SND_PRIORITY_DOUBLE_INSTANCE);
 						} else {
-							snd_play(&Snds[SND_LIGHTNING_1], 0.0f, bang, SND_PRIORITY_DOUBLE_INSTANCE);
+							snd_play(gamesnd_get_game_sound(SND_LIGHTNING_1), 0.0f, bang, SND_PRIORITY_DOUBLE_INSTANCE);
 						}
 
 						// apply em pulse

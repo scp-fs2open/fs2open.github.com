@@ -546,7 +546,7 @@ void HudGaugeRadarDradis::render(float frametime)
 			drawBlipsSorted(1);	// passing 1 means to draw distorted
 
 			if (Radar_static_looping == -1)
-				Radar_static_looping = snd_play_looping(&Snds[SND_STATIC]);
+				Radar_static_looping = snd_play_looping(gamesnd_get_game_sound(SND_STATIC));
 		}
 		else
 		{
@@ -600,7 +600,7 @@ void HudGaugeRadarDradis::doLoopSnd()
 	}
 	else if (this->loop_sound_handle < 0 || !snd_is_playing(this->loop_sound_handle))
 	{
-		loop_sound_handle = snd_play(&Snds[m_loop_snd], 0.0f, loop_sound_volume);
+		loop_sound_handle = snd_play(gamesnd_get_game_sound(m_loop_snd), 0.0f, loop_sound_volume);
 	}
 }
 
@@ -669,13 +669,13 @@ void HudGaugeRadarDradis::doBeeps()
 	{
 		if (arrival_beep_snd >= 0 && arrival_happened)
 		{
-			snd_play(&Snds[arrival_beep_snd]);
+			snd_play(gamesnd_get_game_sound(arrival_beep_snd));
 
 			arrival_beep_next_check = timestamp(arrival_beep_delay);
 		}
 		else if (m_stealth_arrival_snd >= 0 && stealth_arrival_happened)
 		{
-			snd_play(&Snds[m_stealth_arrival_snd]);
+			snd_play(gamesnd_get_game_sound(m_stealth_arrival_snd));
 
 			arrival_beep_next_check = timestamp(arrival_beep_delay);
 		}
@@ -686,13 +686,13 @@ void HudGaugeRadarDradis::doBeeps()
 	{
 		if (departure_beep_snd >= 0 && departure_happened)
 		{
-			snd_play(&Snds[departure_beep_snd]);
+			snd_play(gamesnd_get_game_sound(departure_beep_snd));
 
 			departure_beep_next_check = timestamp(departure_beep_delay);
 		}
 		else if (stealth_departure_snd >= 0 && stealth_departure_happened)
 		{
-			snd_play(&Snds[stealth_departure_snd]);
+			snd_play(gamesnd_get_game_sound(stealth_departure_snd));
 
 			departure_beep_next_check = timestamp(departure_beep_delay);
 		}

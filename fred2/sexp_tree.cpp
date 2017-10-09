@@ -2437,7 +2437,7 @@ int sexp_tree::get_default_value(sexp_list_item *item, char *text_buf, int op, i
 
 			if (sound_index >= 0)
 			{
-				game_snd *snd = &Snds[sound_index];
+				game_snd *snd = gamesnd_get_game_sound(sound_index);
 				if (can_construe_as_integer(snd->name.c_str()))
 					item->set_data(snd->name.c_str(), (SEXPT_NUMBER | SEXPT_VALID));
 				else

@@ -1277,7 +1277,7 @@ void main_hall_render_misc_anims(float frametime, bool over_doors)
 						if (sound >= 0)
 						{
 							// play the sound
-							snd_play(&Snds_iface[sound],Main_hall->misc_anim_sound_pan.at(idx));
+							snd_play(gamesnd_get_interface_sound(sound),Main_hall->misc_anim_sound_pan.at(idx));
 						}
 						break;
 					}
@@ -1409,11 +1409,11 @@ void main_hall_mouse_release_region(int region)
 
 		if (sound >= 0)
 		{
-			Main_hall_door_sound_handles.at(region) = snd_play(&Snds_iface[sound], Main_hall->door_sound_pan.at(region));
+			Main_hall_door_sound_handles.at(region) = snd_play(gamesnd_get_interface_sound(sound), Main_hall->door_sound_pan.at(region));
 		}
 
 		// TODO: track current frame
-		snd_set_pos(Main_hall_door_sound_handles.at(region), &Snds_iface[SND_MAIN_HALL_DOOR_CLOSE], 
+		snd_set_pos(Main_hall_door_sound_handles.at(region), gamesnd_get_interface_sound(SND_MAIN_HALL_DOOR_CLOSE),
 			(float)((Main_hall_door_anim.at(region).keyframe) ? Main_hall_door_anim.at(region).keyframe : 
 				Main_hall_door_anim.at(region).num_frames - Main_hall_door_anim.at(region).current_frame) / 
 					(float)Main_hall_door_anim.at(region).num_frames, 1);
@@ -1452,12 +1452,12 @@ void main_hall_mouse_grab_region(int region)
 
 	if (sound >= 0)
 	{
-		Main_hall_door_sound_handles.at(region) = snd_play(&Snds_iface[sound],Main_hall->door_sound_pan.at(region));
+		Main_hall_door_sound_handles.at(region) = snd_play(gamesnd_get_interface_sound(sound),Main_hall->door_sound_pan.at(region));
 	}
 
 	// start the sound playing at the right spot relative to the completion of the animation
 	if ( (Main_hall_door_anim.at(region).num_frames > 0) && (Main_hall_door_anim.at(region).current_frame != -1) ) {
-		snd_set_pos(Main_hall_door_sound_handles.at(region),&Snds_iface[SND_MAIN_HALL_DOOR_OPEN], 
+		snd_set_pos(Main_hall_door_sound_handles.at(region),gamesnd_get_interface_sound(SND_MAIN_HALL_DOOR_OPEN),
 			(float)Main_hall_door_anim.at(region).current_frame / (float)Main_hall_door_anim.at(region).num_frames,1);
 	}
 }
@@ -1649,7 +1649,7 @@ void main_hall_start_ambient()
 	}
 
 	if (play_ambient_loop) {
-		Main_hall_ambient_loop = snd_play_looping(&Snds_iface[SND_MAIN_HALL_AMBIENT]);
+		Main_hall_ambient_loop = snd_play_looping(gamesnd_get_interface_sound(SND_MAIN_HALL_AMBIENT));
 	}
 }
 

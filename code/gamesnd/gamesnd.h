@@ -356,4 +356,8 @@ enum InterfaceSoundsIndex {
 	MIN_INTERFACE_SOUNDS        =70 //!< MIN_INTERFACE_SOUNDS
 };
 
+game_snd* gamesnd_get_game_sound(int handle);
+
+game_snd* gamesnd_get_interface_sound(int handle);
+
 #endif

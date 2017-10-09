@@ -1976,7 +1976,7 @@ int multi_eval_join_request(join_request *jr,net_addr *addr)
 					if( MULTIPLAYER_STANDALONE ) {
 						send_game_chat_packet(&Net_players[MY_NET_PLAYER_NUM],knock_message,MULTI_MSG_TARGET, Netgame.host, NULL, 1);
 					} else {
-						snd_play(&Snds[SND_CUE_VOICE]);
+						snd_play(gamesnd_get_game_sound(SND_CUE_VOICE));
 						HUD_sourced_printf(HUD_SOURCE_HIDDEN, "%s", knock_message);
 					}
 					break;

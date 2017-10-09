@@ -158,7 +158,7 @@ ADE_FUNC(playGameSound, l_Audio, "Sound index, [Panning (-1.0 left to 1.0 right)
 	gamesnd_idx = gamesnd_get_by_tbl_index(idx);
 
 	if (gamesnd_idx >= 0) {
-		int sound_handle = snd_play(&Snds[gamesnd_idx], pan, vol*0.01f, pri, voice_msg);
+		int sound_handle = snd_play(gamesnd_get_game_sound(gamesnd_idx), pan, vol*0.01f, pri, voice_msg);
 		return ade_set_args(L, "b", sound_handle >= 0);
 	} else {
 		LuaError(L, "Invalid sound index %i (Snds[%i]) in playGameSound()", idx, gamesnd_idx);

@@ -263,7 +263,7 @@ void gamesnd_play_iface(int n)
 	if (Snds_iface_handle[n] >= 0)
 		snd_stop(Snds_iface_handle[n]);
 
-	Snds_iface_handle[n] = snd_play(&Snds_iface[n]);
+	Snds_iface_handle[n] = snd_play(gamesnd_get_interface_sound(n));
 }
 
 /**
@@ -1160,4 +1160,13 @@ void common_play_highlight_sound()
 void gamesnd_play_error_beep()
 {
 	gamesnd_play_iface(SND_GENERAL_FAIL);
+}
+
+game_snd* gamesnd_get_game_sound(int handle) {
+	Assertion(handle >= 0 && handle < (int) Snds.size(), "Invalid game sound handle %d detected!", handle);
+	return &Snds[handle];
+}
+game_snd* gamesnd_get_interface_sound(int handle) {
+	Assertion(handle >= 0 && handle < (int) Snds_iface.size(), "Invalid interface sound handle %d detected!", handle);
+	return &Snds_iface[handle];
 }

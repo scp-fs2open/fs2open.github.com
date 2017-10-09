@@ -193,11 +193,11 @@ void supernova_process()
 		// sound stuff
 		if((Supernova_time <= SUPERNOVA_SOUND_1_TIME) && !Supernova_sound_1_played) {
 			Supernova_sound_1_played = 1;
-			snd_play(&Snds[SND_SUPERNOVA_1], 0.0f, 1.0f, SND_PRIORITY_MUST_PLAY);
+			snd_play(gamesnd_get_game_sound(SND_SUPERNOVA_1), 0.0f, 1.0f, SND_PRIORITY_MUST_PLAY);
 		}
 		if((Supernova_time <= SUPERNOVA_SOUND_2_TIME) && !Supernova_sound_2_played) {
 			Supernova_sound_2_played = 1;
-			snd_play(&Snds[SND_SUPERNOVA_2], 0.0f, 1.0f, SND_PRIORITY_MUST_PLAY);
+			snd_play(gamesnd_get_game_sound(SND_SUPERNOVA_2), 0.0f, 1.0f, SND_PRIORITY_MUST_PLAY);
 		}
 
 		// if we've crossed from stage 1 to stage 2 kill all particles and stick a bunch on the player ship
