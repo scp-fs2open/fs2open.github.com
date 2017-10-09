@@ -204,6 +204,10 @@ DCF(show_sounds, "Toggles display of sound debug info")
 	Sound_spew = !Sound_spew;
 	dc_printf("Sound debug info is %s", (Sound_spew ? "ON" : "OFF"));
 }
+
+extern SCP_vector<game_snd>	Snds;
+extern SCP_vector<game_snd>	Snds_iface;
+
 void snd_spew_debug_info()
 {
 	int game_sounds = 0;

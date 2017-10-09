@@ -22,10 +22,7 @@ game_snd* sound_entry_h::Get() {
 	return gamesnd_get_game_sound(idx);
 }
 bool sound_entry_h::IsValid() {
-	if (idx < 0 || idx >= (int) Snds.size())
-		return false;
-
-	return true;
+	return gamesnd_game_sound_valid(idx);
 }
 int sound_entry_h::getId() {
 	if (!IsValid())

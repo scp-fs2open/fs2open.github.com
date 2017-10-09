@@ -1562,7 +1562,7 @@ void main_hall_handle_random_intercom_sounds()
 			if (sound >= 0)
 			{
 				// play the sound
-				Main_hall_intercom_sound_handle = snd_play(&Snds_iface.at(sound));
+				Main_hall_intercom_sound_handle = snd_play(gamesnd_get_interface_sound(sound));
 
 				// unset the timestamp
 				Main_hall_next_intercom_sound_stamp = -1;
@@ -1672,7 +1672,7 @@ void main_hall_stop_ambient()
 void main_hall_reset_ambient_vol()
 {
 	if (Main_hall_ambient_loop >= 0) {
-		snd_set_volume(Main_hall_ambient_loop, Snds_iface[SND_MAIN_HALL_AMBIENT].default_volume);
+		snd_set_volume(Main_hall_ambient_loop, gamesnd_get_interface_sound(SND_MAIN_HALL_AMBIENT)->default_volume);
 	}
 }
 

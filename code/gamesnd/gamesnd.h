@@ -49,9 +49,6 @@ void parse_sound_list(const char* tag, SCP_vector<int>& destination, const char*
 // this is a callback, so it needs to be a real function
 void common_play_highlight_sound();
 
-extern SCP_vector<game_snd> Snds;
-extern SCP_vector<game_snd> Snds_iface;
-
 /**
  * symbolic names for misc. game sounds.
  *
@@ -359,5 +356,20 @@ enum InterfaceSoundsIndex {
 game_snd* gamesnd_get_game_sound(int handle);
 
 game_snd* gamesnd_get_interface_sound(int handle);
+
+/**
+ * @brief Checks if the given sound handle is a valid game sound handle
+ * @param sound The handle to check
+ * @return @c true if the handle is valid
+ */
+bool gamesnd_game_sound_valid(int sound);
+
+/**
+ * @brief Checks if the given sound handle is a valid interface sound handle
+ * @param sound The handle to check
+ * @return @c true if the handle is valid
+ */
+bool gamesnd_interface_sound_valid(int sound);
+
 
 #endif

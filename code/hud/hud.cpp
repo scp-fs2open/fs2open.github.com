@@ -3556,7 +3556,7 @@ void hud_stop_objective_notify()
 
 void hud_start_objective_notify()
 {
-	snd_play(&(Snds[SND_DIRECTIVE_COMPLETE]));
+	snd_play(gamesnd_get_game_sound(SND_DIRECTIVE_COMPLETE));
 	Objective_notify_active = 1;
 }
 

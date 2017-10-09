@@ -2114,11 +2114,11 @@ void do_sub_expl_sound(float radius, vec3d* sound_pos, int* sound_handle)
 	} else if (!snd_is_playing(handle)) {
 		// if sound not playing and old, get new one
 		// I don't think will happen with SND_PRIORITY_MUST_PLAY
-		if (get_sound_time_played(Snds[sound_index].id, handle) > 400) {
+		if (get_sound_time_played(gamesnd_get_game_sound(sound_index)->id, handle) > 400) {
 			snd_stop(sound_handle[handle_index]);
 			sound_handle[handle_index] = snd_play_3d( gamesnd_get_game_sound(sound_index), sound_pos, &View_position, 0.0f, NULL, 0, 0.6f, SND_PRIORITY_MUST_PLAY, NULL, sound_range );
 		}
-	} else if (get_sound_time_played(Snds[sound_index].id, handle) > 750) {
+	} else if (get_sound_time_played(gamesnd_get_game_sound(sound_index)->id, handle) > 750) {
 		sound_handle[handle_index] = snd_play_3d( gamesnd_get_game_sound(sound_index), sound_pos, &View_position, 0.0f, NULL, 0, 0.6f, SND_PRIORITY_MUST_PLAY, NULL, sound_range );
 	}
 }

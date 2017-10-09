@@ -495,7 +495,7 @@ void obj_snd_do_frame()
 			// we don't play the engine sound if the view is from the player
 			continue;
 		}
-		
+
 		gs = gamesnd_get_game_sound(osp->id);
 
 		obj_snd_source_pos(&source_pos, osp);
@@ -505,7 +505,7 @@ void obj_snd_do_frame()
 		add_distance = 0.0f;
 		if(osp->flags & OS_MAIN){
 			add_distance = objp->radius;
-		} 
+		}
 
 		distance -= add_distance;
 		if ( distance < 0.0f ) {
@@ -586,7 +586,7 @@ void obj_snd_do_frame()
 						alive_vol_mult = 0.0f;
 					}
 				}
-				if (osp->flags & OS_SUBSYS_DAMAGED) 
+				if (osp->flags & OS_SUBSYS_DAMAGED)
 				{
 					alive_vol_mult = osp->ss->current_hits / osp->ss->max_hits;
 					CLAMP(alive_vol_mult, 0.0f, 1.0f);
@@ -594,17 +594,18 @@ void obj_snd_do_frame()
 
 			}
 		}
-	
+
 		go_ahead_flag = TRUE;
 		float max_vol,new_vol;
 		if ( osp->instance == -1 ) {
-			if ( distance < Snds[osp->id].max ) {
-				max_vol = Snds[osp->id].default_volume;
-				if ( distance <= Snds[osp->id].min ) {
+			if ( distance < gs->max ) {
+				max_vol = gs->default_volume;
+				if ( distance <= gs->min ) {
 					new_vol = max_vol;
 				}
 				else {
-					new_vol = max_vol - (distance - Snds[osp->id].min) * max_vol / (Snds[osp->id].max - Snds[osp->id].min);
+					new_vol = max_vol - (distance - gs->min) * max_vol
+						/ (gs->max - gs->min);
 				}
 
 				if ( new_vol < 0.1f ) {
@@ -636,7 +637,7 @@ void obj_snd_do_frame()
 			} // 		end if ( distance < Snds[osp->id].max )
 		} // 		if ( osp->instance == -1 )
 		else {
-			if ( distance > Snds[osp->id].max ) {
+			if ( distance > gamesnd_get_game_sound(osp->id)->max ) {
 				int sound_index = -1;
 				int idx = 0;
 

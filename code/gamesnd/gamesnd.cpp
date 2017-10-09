@@ -1170,3 +1170,10 @@ game_snd* gamesnd_get_interface_sound(int handle) {
 	Assertion(handle >= 0 && handle < (int) Snds_iface.size(), "Invalid interface sound handle %d detected!", handle);
 	return &Snds_iface[handle];
 }
+
+bool gamesnd_game_sound_valid(int sound) {
+	return sound >= 0 && sound < (int) Snds.size();
+}
+bool gamesnd_interface_sound_valid(int sound) {
+	return sound >= 0 && sound < (int) Snds_iface.size();
+}

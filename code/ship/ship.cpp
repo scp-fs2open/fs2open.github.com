@@ -13429,7 +13429,7 @@ float ship_calculate_rearm_duration( object *objp )
 			if (!found_first_empty && (swp->primary_bank_start_ammo[i] - swp->primary_bank_ammo[i]))
 			{
 				found_first_empty = true;
-				prim_rearm_time += (float)snd_get_duration(Snds[SND_MISSILE_START_LOAD].id) / 1000.0f;
+				prim_rearm_time += (float)snd_get_duration(gamesnd_get_game_sound(SND_MISSILE_START_LOAD)->id) / 1000.0f;
 			}
 
 			prim_rearm_time += num_reloads * wip->rearm_rate;
@@ -13459,7 +13459,7 @@ float ship_calculate_rearm_duration( object *objp )
 			if (!found_first_empty && (swp->secondary_bank_start_ammo[i] - swp->secondary_bank_ammo[i]))
 			{
 				found_first_empty = true;
-				sec_rearm_time += (float)snd_get_duration(Snds[SND_MISSILE_START_LOAD].id) / 1000.0f;
+				sec_rearm_time += (float)snd_get_duration(gamesnd_get_game_sound(SND_MISSILE_START_LOAD)->id) / 1000.0f;
 			}
 
 			sec_rearm_time += num_reloads * wip->rearm_rate;
@@ -13627,7 +13627,7 @@ int ship_do_rearm_frame( object *objp, float frametime )
 			// loading equipment moving into place
 			if ( aip->rearm_first_missile == TRUE )
 			{
-				swp->secondary_bank_rearm_time[i] = timestamp(snd_get_duration(Snds[SND_MISSILE_START_LOAD].id));
+				swp->secondary_bank_rearm_time[i] = timestamp(snd_get_duration(gamesnd_get_game_sound(SND_MISSILE_START_LOAD)->id));
 			}
 			
 			if ( swp->secondary_bank_ammo[i] < swp->secondary_bank_start_ammo[i] )
@@ -13692,12 +13692,12 @@ int ship_do_rearm_frame( object *objp, float frametime )
 				{
 					// Goober5000
 					int sound_index;
-					if (Snds.size() > SND_BALLISTIC_START_LOAD)
+					if (gamesnd_game_sound_valid(SND_BALLISTIC_START_LOAD))
 						sound_index = SND_BALLISTIC_START_LOAD;
 					else
 						sound_index = SND_MISSILE_START_LOAD;
 
-					swp->primary_bank_rearm_time[i] = timestamp(snd_get_duration(Snds[sound_index].id));
+					swp->primary_bank_rearm_time[i] = timestamp(snd_get_duration(gamesnd_get_game_sound(sound_index)->id));
 				}
 
 				if ( swp->primary_bank_ammo[i] < swp->primary_bank_start_ammo[i] )
@@ -13716,7 +13716,7 @@ int ship_do_rearm_frame( object *objp, float frametime )
 	
 						// Goober5000
 						int sound_index;
-						if (Snds[SND_BALLISTIC_LOAD].id >= 0)
+						if (gamesnd_game_sound_valid(SND_BALLISTIC_LOAD))
 							sound_index = SND_BALLISTIC_LOAD;
 						else
 							sound_index = SND_MISSILE_LOAD;
@@ -13746,7 +13746,7 @@ int ship_do_rearm_frame( object *objp, float frametime )
 				if (primary_banks_full != swp->num_primary_banks) {
 					// Goober5000
 					int sound_index;
-					if (Snds.size() > SND_BALLISTIC_START_LOAD)
+					if (gamesnd_game_sound_valid(SND_BALLISTIC_START_LOAD))
 						sound_index = SND_BALLISTIC_START_LOAD;
 					else
 						sound_index = SND_MISSILE_START_LOAD;
@@ -18403,7 +18403,7 @@ void init_path_metadata(path_metadata& metadata)
 int ship_get_sound(object *objp, GameSoundsIndex id)
 {
 	Assert( objp != NULL );
-	Assert( id >= 0 && id < (int) Snds.size() );
+	Assert( gamesnd_game_sound_valid(id) );
 
 	// ugh, it's possible that we're an observer at this point
 	if (objp->type == OBJ_OBSERVER)
@@ -18425,7 +18425,7 @@ int ship_get_sound(object *objp, GameSoundsIndex id)
 bool ship_has_sound(object *objp, GameSoundsIndex id)
 {
 	Assert( objp != NULL );
-	Assert( id >= 0 && id < (int) Snds.size() );
+	Assert( gamesnd_game_sound_valid(id) );
 
 	Assert( objp->type == OBJ_SHIP );
 
@@ -18576,7 +18576,7 @@ void ship_render_batch_thrusters(object *obj)
 			if (!Cmdline_freespace_no_sound) {
 				if(mtp->loop_snd >= 0
 					&& shipp->thrusters_sounds[i] < 0
-					&& (mtp->start_snd < 0 || (snd_get_duration(mtp->start_snd) < timestamp() - shipp->thrusters_start[i])) 
+					&& (mtp->start_snd < 0 || (snd_get_duration(gamesnd_get_game_sound(mtp->start_snd)->id) < timestamp() - shipp->thrusters_start[i]))
 					)
 				{
 					shipp->thrusters_sounds[i] = obj_snd_assign(OBJ_INDEX(obj), mtp->loop_snd, &mtp->pos, 1);
