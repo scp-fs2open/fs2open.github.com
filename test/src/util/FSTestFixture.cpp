@@ -10,6 +10,11 @@
 #include <io/timer.h>
 #include <localization/localize.h>
 
+#ifdef WIN32
+#include "globalincs/mspdb_callstack.h"
+#include <objbase.h>
+#endif
+
 test::FSTestFixture::FSTestFixture(uint64_t init_flags) : testing::Test(), _initFlags(init_flags) {
 	addCommandlineArg("-parse_cmdline_only");
 	addCommandlineArg("-standalone");
@@ -18,6 +23,12 @@ test::FSTestFixture::FSTestFixture(uint64_t init_flags) : testing::Test(), _init
 void test::FSTestFixture::SetUp() {
 	auto currentTest = ::testing::UnitTest::GetInstance()->current_test_info();
 	pushModDir(currentTest->name());
+
+#ifdef WIN32
+	::CoInitialize(NULL);
+
+	SCP_mspdbcs_Initialise();
+#endif
 
 	init_cmdline();
 
@@ -41,7 +52,6 @@ void test::FSTestFixture::SetUp() {
 
 		lcl_init(-1);
 		lcl_xstr_init();
-
 		if (_initFlags & INIT_GRAPHICS) {
 			if (!gr_init(nullptr, GR_STUB, 1024, 768)) {
 				FAIL() << "Graphics init failed!";
@@ -86,6 +96,12 @@ void test::FSTestFixture::TearDown() {
 		delete[] Cmdline_mod;
 		Cmdline_mod = NULL;
 	}
+
+#ifdef WIN32
+	SCP_mspdbcs_Cleanup();
+
+	::CoUninitialize();
+#endif
 }
 void test::FSTestFixture::addCommandlineArg(const SCP_string& arg) {
 	_cmdlineArgs.push_back(arg);

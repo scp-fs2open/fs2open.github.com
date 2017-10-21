@@ -30,8 +30,8 @@ add_file_folder(menuui "menuui"
     menuui/test_intel_parse.cpp
 )
 
-add_file_folder(mod "mod"
-    mod/test_mod_table.cpp
+add_file_folder(mod_table "mod_table"
+    mod_table/test_mod_table.cpp
 )
 
 add_file_folder(graphics "Parse"

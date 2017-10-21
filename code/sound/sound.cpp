@@ -353,7 +353,10 @@ int snd_load( game_snd *gs, int allow_hardware_load )
 			}
 
 			if (show_warning) {
-				Warning(LOCATION, "Sound '%s' has more than one channel but is used as a 3D sound! 3D sounds may only have one channel.", gs->filename);
+				CategoryWarning(LOCATION,
+								"3DSoundChannelDownsampling",
+								"Sound '%s' has more than one channel but is used as a 3D sound! 3D sounds may only have one channel.",
+								gs->filename);
 			}
 #endif
 		}

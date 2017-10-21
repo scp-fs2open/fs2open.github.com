@@ -103,6 +103,19 @@ namespace os
 		void WarningEx(const char* filename, int line, SCP_FORMAT_STRING const char* format, ...) SCP_FORMAT_STRING_ARGS(3, 4);
 
 		/**
+		 * @brief Displays a warning but combined with a category
+		 *
+		 * This category can be used to selectively silence a specific warning.
+		 *
+		 * @param filename The source code filename where this function was called
+		 * @param line The source code line number where this function was called
+		 * @param category The category name
+		 * @param format The message to display
+		 * @param ... The format parameters
+		 */
+		void CategoryWarning(const char* filename, int line, const char* category, SCP_FORMAT_STRING const char* format, ...) SCP_FORMAT_STRING_ARGS(4, 5);
+
+		/**
 		 * @brief Shows a warning dialog.
 		 * Same as #Warning but also appears in release builds.
 		 *
@@ -122,5 +135,6 @@ using os::dialogs::Error;
 using os::dialogs::Warning;
 using os::dialogs::ReleaseWarning;
 using os::dialogs::WarningEx;
+using os::dialogs::CategoryWarning;
 
 #endif // _OSAPI_DIALOGS_H

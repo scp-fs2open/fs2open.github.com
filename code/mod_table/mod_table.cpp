@@ -37,6 +37,7 @@ bool Beams_use_damage_factors = false;
 float Generic_pain_flash_factor = 1.0f;
 float Shield_pain_flash_factor = 0.0f;
 gameversion::version Targetted_version(2, 0, 0, 0); // Defaults to retail
+SCP_unordered_set<SCP_string> Suppressed_warning_categories;
 
 void parse_mod_table(const char *filename)
 {
@@ -311,6 +312,15 @@ void parse_mod_table(const char *filename)
 					Default_fiction_viewer_ui = ui_index;
 				else
 					Warning(LOCATION, "Unrecognized fiction viewer UI: %s", ui_name);
+			}
+		}
+
+		if (optional_string("$Suppressed Warnings:")) {
+			while(optional_string("+Suppress:")) {
+				SCP_string suppressed;
+				stuff_string(suppressed, F_NAME);
+
+				Suppressed_warning_categories.insert(suppressed);
 			}
 		}
 
