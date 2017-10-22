@@ -284,6 +284,7 @@ void swarm_update_direction(object *objp, float frametime)
 		// If homing swarm missile is close to target, let missile home in on original target
 		if ((target_dist / pi->speed) <= ((swarmp->change_time / 1000.0f) * SWARM_FRAME_STOP_SWARMING)) {
 			swarmp->new_target = swarmp->original_target;
+			vm_vec_zero(&swarmp->last_offset);
 			goto swarm_new_target_calced;
 		}
 
@@ -354,18 +355,15 @@ void swarm_update_direction(object *objp, float frametime)
 
 	} else {
 		// Not time to zig-zag.
-		if ( hobjp != &obj_used_list && f2fl(Missiontime - wp->creation_time) > 0.5f ) {
+		if (hobjp != &obj_used_list &&
+			f2fl(Missiontime - wp->creation_time) > 0.5f &&
+			f2fl(Missiontime - wp->creation_time) > wip->free_flight_time) {
 			// Still homing
 			swarmp->new_target = swarmp->original_target;
 
-			if ((target_dist / pi->speed) <= ((swarmp->change_time / 1000.0f) * SWARM_FRAME_STOP_SWARMING)) {
-				swarmp->new_target = wp->homing_pos;
-				goto swarm_new_target_calced;
-			}
-
 			// Continue homing in on our last offset around the target
 			vm_vec_add2(&swarmp->new_target, &swarmp->last_offset);
-		}
+		}	// Else, lost homing, maintain current trajectory
 	}
 
 	swarm_new_target_calced:
