@@ -1418,14 +1418,22 @@ void beam_render_muzzle_glow(beam *b)
 		vertex h1[4];
 		vertex *verts[4] = { &h1[0], &h1[1], &h1[2], &h1[3] };
 		vec3d fvec, top1, top2, bottom1, bottom2, sub1, sub2, start, end;
+		int idx;
+		float g_length = bwi->glow_length * pct * rand_val;
 
 		vm_vec_sub(&fvec, &b->last_shot, &b->last_start);
 		vm_vec_normalize_quick(&fvec);
-
-		vm_vec_copy_scale(&sub1, &fvec, rad);
-		vm_vec_sub(&start, &b->last_start, &sub1);
-		vm_vec_copy_scale(&sub2, &fvec, bwi->glow_length);
-		vm_vec_add(&end, &start, &sub2);
+		
+		if (bwi->glow_length >= 2.0f*rad) {
+			vm_vec_copy_scale(&sub1, &fvec, rad);
+			vm_vec_sub(&start, &b->last_start, &sub1);
+			vm_vec_copy_scale(&sub2, &fvec, g_length);
+			vm_vec_add(&end, &start, &sub2);
+		} else {
+			vm_vec_copy_scale(&sub1, &fvec, 0.5f*g_length);
+			vm_vec_sub(&start, &b->last_start, &sub1);
+			vm_vec_add(&end, &b->last_start, &sub1);
+		}
 
 		beam_calc_facing_pts(&top1, &bottom1, &fvec, &start, rad, 1.0f);
 		beam_calc_facing_pts(&top2, &bottom2, &fvec, &end, rad, 1.0f);
@@ -1435,18 +1443,8 @@ void beam_render_muzzle_glow(beam *b)
 		g3_transfer_vertex(verts[2], &top2);
 		g3_transfer_vertex(verts[3], &top1);
 
-		for (int idx = 0; idx < 4; idx++) {
-			g3_project_vertex(verts[idx]);
-		}
-
-		verts[0]->texture_position.u = 1.0f;
-		verts[0]->texture_position.v = 0.0f;
-		verts[1]->texture_position.u = 0.0f;
-		verts[1]->texture_position.v = 0.0f;
-		verts[2]->texture_position.u = 0.0f;
-		verts[2]->texture_position.v = 1.0f;
-		verts[3]->texture_position.u = 1.0f;
-		verts[3]->texture_position.v = 1.0f;
+		P_VERTICES();
+		STUFF_VERTICES();
 
 		verts[0]->r = 255;
 		verts[1]->r = 255;
