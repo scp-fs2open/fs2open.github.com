@@ -166,7 +166,7 @@ void HudGaugeRadarDradis::drawContact(vec3d *pnt, int idx, int clr_idx, float di
         //gr_set_bitmap(clr_idx, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, alpha);
         //g3_draw_polygon(&p, &vmd_identity_matrix, sizef/35.0f, aspect_mp*sizef/35.0f, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT);
 		material mat_params;
-		material_set_unlit_color(&mat_params, clr_idx, &Color_bright_white, true, false);
+		material_set_unlit_color(&mat_params, clr_idx, &Color_bright_white, alpha, true, false);
 		g3_render_rect_oriented(&mat_params, &p, &vmd_identity_matrix, sizef/35.0f, aspect_mp*sizef/35.0f);
     }
     
@@ -182,7 +182,7 @@ void HudGaugeRadarDradis::drawContact(vec3d *pnt, int idx, int clr_idx, float di
         //gr_set_bitmap(idx, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, alpha);
         //g3_draw_polygon(&p, &vmd_identity_matrix, sizef/35.0f, aspect_mp*sizef/35.0f, TMAP_FLAG_TEXTURED | TMAP_FLAG_BW_TEXTURE | TMAP_HTL_3D_UNLIT);
 		material mat_params;
-		material_set_unlit_color(&mat_params, idx, &gr_screen.current_color, true, false);
+		material_set_unlit_color(&mat_params, idx, &gr_screen.current_color, alpha, true, false);
 		g3_render_rect_oriented(&mat_params, &p, &vmd_identity_matrix, sizef/35.0f, aspect_mp*sizef/35.0f);
     }
 }
