@@ -131,6 +131,7 @@ void HudGaugeRadarDradis::plotBlip(blip* b, vec3d *pos, float *alpha)
 	}
 	
 	b->time_since_update += flFrametime;
+	// If the blip has been pinged by the local x-axis sweep, update
 	if (abs(vm_vec_dot(&sweep_normal_x, pos)) < 0.01f) {
 		b->time_since_update = 0.0f;
 	}
