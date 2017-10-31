@@ -129,8 +129,13 @@ void HudGaugeRadarDradis::plotBlip(blip* b, vec3d *pos, float *alpha)
 			fade_multi *= 2.0f;
 		}
 	}
+	
+	b->time_since_update += flFrametime;
+	if (abs(vm_vec_dot(&sweep_normal_x, pos)) < 0.01f) {
+		b->time_since_update = 0.0f;
+	}
 
-	*alpha = 1.0f - (sweep_percent /(PI*2))*fade_multi/2.0f;
+	*alpha = ((sweep_duration - b->time_since_update)/sweep_duration)*fade_multi/2.0f;
 	
 	if (*alpha < 0.0f) {
 		*alpha = 0.0f;

@@ -40,6 +40,7 @@ typedef struct blip	{
 	int radar_color_image_2d;
 	int radar_image_size;
 	float radar_projection_size;
+	float time_since_update;
 
 	float   dist;
 	object* objp;
