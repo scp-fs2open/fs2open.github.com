@@ -129,8 +129,14 @@ void HudGaugeRadarDradis::plotBlip(blip* b, vec3d *pos, float *alpha)
 			fade_multi *= 2.0f;
 		}
 	}
+	
+	b->time_since_update += flFrametime;
+	// If the blip has been pinged by the local x-axis sweep, update
+	if (std::abs(vm_vec_dot(&sweep_normal_x, pos)) < 0.01f) {
+		b->time_since_update = 0.0f;
+	}
 
-	*alpha = 1.0f - (sweep_percent /(PI*2))*fade_multi/2.0f;
+	*alpha = ((sweep_duration - b->time_since_update)/sweep_duration)*fade_multi/2.0f;
 	
 	if (*alpha < 0.0f) {
 		*alpha = 0.0f;
@@ -166,7 +172,7 @@ void HudGaugeRadarDradis::drawContact(vec3d *pnt, int idx, int clr_idx, float di
         //gr_set_bitmap(clr_idx, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, alpha);
         //g3_draw_polygon(&p, &vmd_identity_matrix, sizef/35.0f, aspect_mp*sizef/35.0f, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT);
 		material mat_params;
-		material_set_unlit_color(&mat_params, clr_idx, &Color_bright_white, true, false);
+		material_set_unlit_color(&mat_params, clr_idx, &Color_bright_white, alpha, true, false);
 		g3_render_rect_oriented(&mat_params, &p, &vmd_identity_matrix, sizef/35.0f, aspect_mp*sizef/35.0f);
     }
     
@@ -182,7 +188,7 @@ void HudGaugeRadarDradis::drawContact(vec3d *pnt, int idx, int clr_idx, float di
         //gr_set_bitmap(idx, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, alpha);
         //g3_draw_polygon(&p, &vmd_identity_matrix, sizef/35.0f, aspect_mp*sizef/35.0f, TMAP_FLAG_TEXTURED | TMAP_FLAG_BW_TEXTURE | TMAP_HTL_3D_UNLIT);
 		material mat_params;
-		material_set_unlit_color(&mat_params, idx, &gr_screen.current_color, true, false);
+		material_set_unlit_color(&mat_params, idx, &gr_screen.current_color, alpha, true, false);
 		g3_render_rect_oriented(&mat_params, &p, &vmd_identity_matrix, sizef/35.0f, aspect_mp*sizef/35.0f);
     }
 }
