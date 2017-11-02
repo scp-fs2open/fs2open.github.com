@@ -30,6 +30,7 @@ extern bool Red_alert_applies_to_delayed_ships;
 extern bool Beams_use_damage_factors;
 extern float Generic_pain_flash_factor;
 extern float Shield_pain_flash_factor;
+extern int MAX_BITMAPS;
 
 void mod_table_init();
 

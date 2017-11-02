@@ -33,7 +33,7 @@
  */
 
 /**
- * @brief How many bitmaps the game can handle
+ * @brief How many bitmaps the game can handle by default
  *
  * @attention  MAX_BITMAPS shouldn't need to be bumped again.  With the fixed bm_release() and it's proper use even the
  *   largest missions should stay under this number.  With the largest retail missions and wasteful content we should
@@ -45,7 +45,9 @@
  *   If anything we could/should reduce MAX_BITMAPS in the future.  Where it's at now should accomidate even the
  *   largest mods.  --  Taylor
  */
-#define MAX_BITMAPS 4750
+#define DEFAULT_MAX_BITMAPS 4750
+
+extern int MAX_BITMAPS;
 
 // Flag positions for bitmap.flags
 // ***** NOTE:  bitmap.flags is an 8-bit value, no more BMP_TEX_* flags can be added unless the type is changed!! ******

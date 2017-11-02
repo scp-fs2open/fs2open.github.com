@@ -37,6 +37,7 @@ bool Beams_use_damage_factors = false;
 float Generic_pain_flash_factor = 1.0f;
 float Shield_pain_flash_factor = 0.0f;
 gameversion::version Targetted_version(2, 0, 0, 0); // Defaults to retail
+int MAX_BITMAPS = DEFAULT_MAX_BITMAPS;
 
 void parse_mod_table(const char *filename)
 {
@@ -209,6 +210,17 @@ void parse_mod_table(const char *filename)
 			stuff_float(&Shield_pain_flash_factor);
 			if (Shield_pain_flash_factor != 0.0f)
 				 mprintf(("Game Settings Table: Setting shield pain flash factor to %.2f\n", Shield_pain_flash_factor));
+		}
+
+		if (optional_string("$BMPMAN Slot Limit:")) {
+			int slots;
+			stuff_int(&slots);
+			if (slots < 3500) {
+				Warning(LOCATION, "Invalid BMPMAN slot limit [%d]; must be at least 3500.\n", slots);
+			} else {
+				mprintf(("Game Settings Table: Setting BMPMAN slot limit to %d\n", slots));
+				MAX_BITMAPS = slots;
+			}
 		}
 
 		optional_string("#NETWORK SETTINGS");

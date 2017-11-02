@@ -90,7 +90,7 @@ extern int Cmdline_cache_bitmaps;
 
 // --------------------------------------------------------------------------------------------------------------------
 // Definition of public variables (declared as extern in bm_internal.h).
-bitmap_entry bm_bitmaps[MAX_BITMAPS];
+bitmap_entry* bm_bitmaps;
 
 // --------------------------------------------------------------------------------------------------------------------
 // Definition of private variables at file scope (static).
@@ -481,6 +481,7 @@ void bm_close() {
 		for (i = 0; i<MAX_BITMAPS; i++) {
 			bm_free_data(i);			// clears flags, bbp, data, etc
 		}
+		delete bm_bitmaps;
 		bm_inited = 0;
 	}
 }
@@ -992,13 +993,15 @@ bool bm_has_alpha_channel(int handle) {
 void bm_init() {
 	int i;
 
-	mprintf(("Size of bitmap info = " SIZE_T_ARG " KB\n", sizeof(bm_bitmaps) / 1024));
-	mprintf(("Size of bitmap extra info = " SIZE_T_ARG " bytes\n", sizeof(bm_extra_info)));
-
 	if (!bm_inited) {
 		bm_inited = 1;
 		atexit(bm_close);
 	}
+
+	bm_bitmaps = new bitmap_entry[MAX_BITMAPS];
+
+	mprintf(("Size of bitmap info = " SIZE_T_ARG " KB\n", sizeof(bm_bitmaps) / 1024));
+	mprintf(("Size of bitmap extra info = " SIZE_T_ARG " bytes\n", sizeof(bm_extra_info)));
 
 	for (i = 0; i<MAX_BITMAPS; i++) {
 		bm_bitmaps[i].filename[0] = '\0';
