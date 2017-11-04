@@ -84,6 +84,8 @@ const int BM_ANI_NUM_TYPES = sizeof(bm_ani_type_list) / sizeof(bm_ani_type_list[
 void(*bm_set_components)(ubyte *pixel, ubyte *r, ubyte *g, ubyte *b, ubyte *a) = NULL;
 void(*bm_set_components_32)(ubyte *pixel, ubyte *r, ubyte *g, ubyte *b, ubyte *a) = NULL;
 
+int MAX_BITMAPS = DEFAULT_MAX_BITMAPS;
+
 // --------------------------------------------------------------------------------------------------------------------
 // Declaration of protected variables (defined in cmdline.cpp).
 extern int Cmdline_cache_bitmaps;
@@ -481,7 +483,7 @@ void bm_close() {
 		for (i = 0; i<MAX_BITMAPS; i++) {
 			bm_free_data(i);			// clears flags, bbp, data, etc
 		}
-		delete bm_bitmaps;
+		delete[] bm_bitmaps;
 		bm_inited = 0;
 	}
 }
@@ -1000,7 +1002,7 @@ void bm_init() {
 
 	bm_bitmaps = new bitmap_entry[MAX_BITMAPS];
 
-	mprintf(("Size of bitmap info = " SIZE_T_ARG " KB\n", sizeof(bm_bitmaps) / 1024));
+	mprintf(("Size of bitmap info = " SIZE_T_ARG " KB\n", (sizeof(bm_bitmaps[0]) * MAX_BITMAPS) / 1024));
 	mprintf(("Size of bitmap extra info = " SIZE_T_ARG " bytes\n", sizeof(bm_extra_info)));
 
 	for (i = 0; i<MAX_BITMAPS; i++) {
