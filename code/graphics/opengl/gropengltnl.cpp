@@ -523,9 +523,9 @@ void gr_opengl_set_clip_plane(vec3d *clip_normal, vec3d *clip_point)
 	if ( clip_normal == NULL || clip_point == NULL ) {
 		GL_state.ClipDistance(0, false);
 	} else {
-		Assertion(Current_shader != NULL &&
-				  (Current_shader->shader == SDR_TYPE_MODEL || Current_shader->shader == SDR_TYPE_PASSTHROUGH_RENDER),
-				  "Clip planes are not supported by this shader!");
+		Assertion(Current_shader != NULL && (Current_shader->shader == SDR_TYPE_MODEL
+			|| Current_shader->shader == SDR_TYPE_PASSTHROUGH_RENDER
+			|| Current_shader->shader == SDR_TYPE_DEFAULT_MATERIAL), "Clip planes are not supported by this shader!");
 
 		GL_state.ClipDistance(0, true);
 	}
