@@ -92,7 +92,7 @@ extern int Cmdline_cache_bitmaps;
 
 // --------------------------------------------------------------------------------------------------------------------
 // Definition of public variables (declared as extern in bm_internal.h).
-bitmap_entry* bm_bitmaps;
+bitmap_entry* bm_bitmaps = nullptr;
 
 // --------------------------------------------------------------------------------------------------------------------
 // Definition of private variables at file scope (static).
@@ -483,7 +483,10 @@ void bm_close() {
 		for (i = 0; i<MAX_BITMAPS; i++) {
 			bm_free_data(i);			// clears flags, bbp, data, etc
 		}
-		delete[] bm_bitmaps;
+		if (bm_bitmaps != nullptr) {
+			delete[] bm_bitmaps;
+			bm_bitmaps = nullptr;
+		}
 		bm_inited = 0;
 	}
 }
@@ -1000,7 +1003,9 @@ void bm_init() {
 		atexit(bm_close);
 	}
 
-	bm_bitmaps = new bitmap_entry[MAX_BITMAPS];
+	if (bm_bitmaps == nullptr) {
+		bm_bitmaps = new bitmap_entry[MAX_BITMAPS];
+	}
 
 	mprintf(("Size of bitmap info = " SIZE_T_ARG " KB\n", (sizeof(bm_bitmaps[0]) * MAX_BITMAPS) / 1024));
 	mprintf(("Size of bitmap extra info = " SIZE_T_ARG " bytes\n", sizeof(bm_extra_info)));
