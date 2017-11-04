@@ -32,23 +32,6 @@
  * @{
  */
 
-/**
- * @brief How many bitmaps the game can handle by default
- *
- * @attention  MAX_BITMAPS shouldn't need to be bumped again.  With the fixed bm_release() and it's proper use even the
- *   largest missions should stay under this number.  With the largest retail missions and wasteful content we should
- *   still have about 20% of the slots free.  If it still goes over then it's something the artists need to fix.
- *   For instance the Terran Mara fighter, with -spec and -glow and using the Shinepack, needs 117 bitmap slots alone.
- *   111 of those is just for the glowmaps.  This number can be greatly reduced if the number of ani frames for another
- *   LOD than LOD0 has fewer or no ani frames.  A 37 frame glow ani for LOD2 is little more than a waste of resources.
- *   Future reports of texture corruption should be initially approached with content as the cause and not code.
- *   If anything we could/should reduce MAX_BITMAPS in the future.  Where it's at now should accomidate even the
- *   largest mods.  --  Taylor
- */
-#define DEFAULT_MAX_BITMAPS 4750
-
-extern int MAX_BITMAPS;
-
 // Flag positions for bitmap.flags
 // ***** NOTE:  bitmap.flags is an 8-bit value, no more BMP_TEX_* flags can be added unless the type is changed!! ******
 #define	BMP_AABITMAP        (1<<0)      //!< antialiased bitmap
@@ -115,6 +98,10 @@ struct bitmap
 	                     */
 };
 
+// Forward definition for the graphics API
+struct bitmap_entry;
+struct bitmap_slot;
+
 extern size_t bm_texture_ram;  //!< how many bytes of textures are used.
 
 extern int Bm_paging;   //!< Bool type that indicates if BMPMAN is currently paging.
@@ -142,22 +129,6 @@ void bm_init();
  * @brief Closes the bitmap manager, freeing any allocated memory used by bitmaps. Is called at program close.
  */
 void bm_close();
-
-/**
- * Gets the cache slot of the bitmap indexed by handle.
- *
- * @details if the bitmap is an ani, gets the first frame
- *
- * @returns The cache slot index of the bitmap if handle is valid
- *
- * @note If the handle is invalid, an Assert() fails
- */
-int bm_get_cache_slot(int bitmap_id, int separate_ani_frames);
-
-/**
- * @brief Gets the next available bitmap slot.
- */
-int bm_get_next_handle();
 
 #define BMP_FLAG_RENDER_TARGET_STATIC		(1<<0)
 #define BMP_FLAG_RENDER_TARGET_DYNAMIC		(1<<1)
@@ -413,13 +384,6 @@ void bm_get_filename(int bitmapnum, char *filename);
 const char *bm_get_filename(int handle);
 
 /**
- * @brief Loads all data for all bitmaps that have been requested to be loaded
- *
- * @note This function is not defined.
- */
-void bm_gfx_load_all();
-
-/**
  * @brief Unloads all used bitmaps, should only ever be called by game_shutdown()
  *
  * @todo Maybe move this declaration into bmpman.cpp and then extern this function within game_shutdown() to
@@ -436,15 +400,6 @@ void bm_unload_all();
  * @todo Maybe get rid of the optional filename and have the callers call bm_get_filename. Less efficient, however.
  */
 void bm_get_palette(int handle, ubyte *pal, char *name);
-
-/**
- * @brief Hack to get a pixel from a bitmap
- *
- * @details only works good in 8bpp mode
- *
- * @note This function is not defined.
- */
-void bm_gfx_get_pixel(int bitmap, float u, float v, ubyte *r, ubyte *g, ubyte *b);
 
 /**
  * @brief (DEBUG) Gets memory size, in bytes, of the locked bitmaps
@@ -740,6 +695,18 @@ int bm_get_array_index(const int handle);
  * @return The number of used slots
  */
 int bmpman_count_bitmaps();
+
+/**
+ * @brief Counts how many slots are available to the bmpman system
+ *
+ * Since the number of slots is dynamic now, this should be used for determining the total amount of available slots at
+ * the moment.
+ *
+ * @warning This is entirely for debugging and logging purposes. It should not be used in actual engine code.
+ *
+ * @return The number of available slots
+ */
+int bmpman_count_available_slots();
 
 /**
  * @brief Checks if the given filename is a valid effect or texture file name

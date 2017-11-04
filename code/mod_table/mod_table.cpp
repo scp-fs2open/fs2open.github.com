@@ -231,14 +231,10 @@ void parse_mod_table(const char *filename)
 		}
 
 		if (optional_string("$BMPMAN Slot Limit:")) {
-			int slots;
-			stuff_int(&slots);
-			if (slots < 3500) {
-				error_display(0, "Invalid BMPMAN slot limit [%d]; must be at least 3500.", slots);
-			} else {
-				mprintf(("Game Settings Table: Setting BMPMAN slot limit to %d\n", slots));
-				MAX_BITMAPS = slots;
-			}
+			int tmp;
+			stuff_int(&tmp);
+
+			mprintf(("Game Settings Table: $BMPMAN Slot Limit is deprecated and should be removed. It is not needed anymore.\n"));
 		}
 
 		optional_string("#NETWORK SETTINGS");

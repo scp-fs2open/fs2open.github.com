@@ -709,14 +709,14 @@ typedef struct screen {
 	void (*gf_set_clear_color)(int r, int g, int b);
 
 	// Here be the bitmap functions
-	void (*gf_bm_free_data)(int n, bool release);
-	void (*gf_bm_create)(int n);
-	void (*gf_bm_init)(int n);
+	void (*gf_bm_free_data)(bitmap_slot* slot, bool release);
+	void (*gf_bm_create)(bitmap_slot* slot);
+	void (*gf_bm_init)(bitmap_slot* slot);
 	void (*gf_bm_page_in_start)();
-	bool (*gf_bm_data)(int n, bitmap* bm);
+	bool (*gf_bm_data)(int handle, bitmap* bm);
 
-	int (*gf_bm_make_render_target)(int n, int *width, int *height, int *bpp, int *mm_lvl, int flags );
-	int (*gf_bm_set_render_target)(int n, int face);
+	int (*gf_bm_make_render_target)(int handle, int *width, int *height, int *bpp, int *mm_lvl, int flags );
+	int (*gf_bm_set_render_target)(int handle, int face);
 
 	void (*gf_translate_texture_matrix)(int unit, const vec3d *shift);
 	void (*gf_push_texture_matrix)(int unit);

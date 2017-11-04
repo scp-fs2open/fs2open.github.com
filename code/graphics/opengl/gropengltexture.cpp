@@ -11,6 +11,8 @@
 #include <windows.h>
 #endif
 
+#define BMPMAN_INTERNAL
+#include "bmpman/bm_internal.h"
 #include "bmpman/bmpman.h"
 #include "cmdline/cmdline.h"
 #include "ddsutils/ddsutils.h"
@@ -20,9 +22,6 @@
 #include "gropengltexture.h"
 #include "math/vecmat.h"
 #include "osapi/osregistry.h"
-
-
-static tcache_slot_opengl *Textures = NULL;
 
 matrix4 GL_texture_matrix;
 
@@ -96,8 +95,6 @@ void opengl_set_texture_target( GLenum target )
 
 void opengl_tcache_init()
 {
-	int i;
-
 	GL_should_preload = 1;
 
 	GL_min_texture_width = 16;
@@ -111,18 +108,6 @@ void opengl_tcache_init()
 	// 1024 is what we need with the standard resolutions - taylor
 	if (GL_max_texture_width < 1024) {
 		Error(LOCATION, "A minimum texture size of \"1024x1024\" is required for FS2_Open but only \"%ix%i\" was found.  Can not continue.", GL_max_texture_width, GL_max_texture_height);
-	}
-
-	if (Textures == NULL) {
-		Textures = (tcache_slot_opengl *) vm_malloc(MAX_BITMAPS * sizeof(tcache_slot_opengl), memory::quiet_alloc);
-	}
-
-	if ( !Textures )
-		Error(LOCATION, "Unable to allocate memory for OpenGL texture slots!");
-
-	// Init the texture structures
-	for (i = 0; i < MAX_BITMAPS; i++) {
-		Textures[i].reset();
 	}
 
 	// check what mipmap filter we should be using
@@ -166,13 +151,11 @@ void opengl_tcache_init()
 
 void opengl_tcache_flush()
 {
-	int i;
-
-	if ( Textures == NULL )
-		return;
-
-	for (i = 0; i < MAX_BITMAPS; i++)
-		opengl_free_texture( &Textures[i] );
+	for (auto& block : bm_blocks) {
+		for (auto& slot : block) {
+			opengl_free_texture(static_cast<tcache_slot_opengl*>(slot.gr_info));
+		}
+	}
 }
 
 extern void opengl_kill_all_render_targets();
@@ -185,11 +168,6 @@ void opengl_tcache_shutdown()
 	opengl_tcache_flush();
 
 	GL_textures_in_frame = 0;
-
-	if (Textures != NULL) {
-		vm_free(Textures);
-		Textures = NULL;
-	}
 }
 
 void opengl_tcache_frame()
@@ -199,22 +177,29 @@ void opengl_tcache_frame()
 
 extern bool GL_initted;
 
-void opengl_free_texture_slot( int n )
+void opengl_free_texture_slot(bitmap_slot* slot)
 {
 	if ( !GL_initted ) {
 		return;
 	}
 
-	opengl_free_texture( &Textures[n] );
+	auto tcache_slot = static_cast<tcache_slot_opengl*>(slot->gr_info);
+
+	if (tcache_slot == nullptr) {
+		// This slot hasn't been initialized yet and can be skipped safely
+		return;
+	}
+
+	opengl_free_texture(tcache_slot);
 }
 
 /**
  * Determine if a bitmap is in API memory, so that we can just reuse it rather
  * that having to load it from disk again
  */
-bool opengl_texture_slot_valid(int n, int handle)
+bool opengl_texture_slot_valid(int handle)
 {
-	tcache_slot_opengl *t = &Textures[n];
+	auto t = bm_get_gr_info<tcache_slot_opengl>(handle);
 
 	if (t->bitmap_handle < 0) {
 		return false;
@@ -253,12 +238,11 @@ int opengl_free_texture(tcache_slot_opengl *t)
 		}
 
 		// Get the index of the first slot and then check every slot of the animation
-		auto begin_slot_idx = bm_get_cache_slot(animation_begin, 0);
-		auto end_slot_idx = begin_slot_idx + num_frames - 1; // Slots are contiguous for the same animation. Since num_frames is 1-base we need to substract 1
+		auto end_slot_handle = animation_begin + num_frames - 1; // Slots are contiguous for the same animation. Since num_frames is 1-base we need to substract 1
 
 		bool something_in_use = false; // Will be used to check if there is still a frame left in use
-		for (int slot_idx = begin_slot_idx; slot_idx <= end_slot_idx; ++slot_idx) {
-			auto current_slot = &Textures[slot_idx];
+		for (int slot_handle = animation_begin; slot_handle <= end_slot_handle; ++slot_handle) {
+			auto current_slot = bm_get_gr_info<tcache_slot_opengl>(slot_handle);
 			something_in_use = something_in_use || current_slot->used; // We use or here since only one slot needs to be in use
 
 			if (something_in_use) {
@@ -831,11 +815,9 @@ int opengl_create_texture(int bitmap_handle, int bitmap_type, tcache_slot_opengl
 	int width, height;
 	bm_get_info(animation_begin, &width, &height, nullptr, nullptr);
 
-	auto array_begin_slot = bm_get_cache_slot(animation_begin, 1);
-	if (Textures[array_begin_slot].bitmap_handle != -1) {
-		Assertion(Textures[array_begin_slot].bitmap_handle != animation_begin, "opengl_create_texture was called for the same bitmap again!");
-
-		auto start_slot = &Textures[array_begin_slot];
+	auto start_slot = bm_get_gr_info<tcache_slot_opengl>(animation_begin, true);
+	if (start_slot->bitmap_handle != -1) {
+		Assertion(start_slot->bitmap_handle != animation_begin, "opengl_create_texture was called for the same bitmap again!");
 
 		if (start_slot->texture_id != 0) {
 			// Delete the previous texture that was stored in this slot
@@ -965,9 +947,8 @@ int opengl_create_texture(int bitmap_handle, int bitmap_type, tcache_slot_opengl
 		}
 
 		auto index = frame - animation_begin;
-		auto frame_slot_idx = bm_get_cache_slot(frame, 1);
 
-		auto frame_slot = &Textures[frame_slot_idx];
+		auto frame_slot = bm_get_gr_info<tcache_slot_opengl>(frame, true);
 		*frame_slot = *tslot; // Copy the existing properties to the slot of this texture
 		frame_slot->array_index = (uint32_t) index;
 
@@ -1033,8 +1014,7 @@ int gr_opengl_tcache_set_internal(int bitmap_handle, int bitmap_type, float *u_s
 		opengl_tcache_flush();
 	}
 
-	int n = bm_get_cache_slot (bitmap_handle, 1);
-	tcache_slot_opengl *t = &Textures[n];
+	auto t = bm_get_gr_info<tcache_slot_opengl>(bitmap_handle, true);
 
 	if (!bm_is_render_target(bitmap_handle) && t->bitmap_handle < 0)
 	{
@@ -1082,7 +1062,7 @@ int gr_opengl_tcache_set(int bitmap_handle, int bitmap_type, float *u_scale, flo
 
 	int rc = 0;
 
-	if (bitmap_handle <= 0) {
+	if (bitmap_handle < 0) {
 		return 0;
 	}
 
@@ -1288,8 +1268,7 @@ void gr_opengl_get_bitmap_from_texture(void* data_out, int bitmap_num)
 	uint32_t array_index = 0;
 	gr_opengl_tcache_set(bitmap_num, TCACHE_TYPE_NORMAL, &u, &v, &array_index);
 
-	int n = bm_get_cache_slot(bitmap_num, 1);
-	tcache_slot_opengl *ts = &Textures[n];
+	auto *ts = bm_get_gr_info<tcache_slot_opengl>(bitmap_num, true);
 	
 	GLenum pixel_format = GL_RGB;
 	GLenum data_format = GL_UNSIGNED_BYTE;
@@ -1322,8 +1301,7 @@ void gr_opengl_get_bitmap_from_texture(void* data_out, int bitmap_num)
 
 void gr_opengl_get_texture_scale(int bitmap_handle, float *u_scale, float *v_scale)
 {
-	int n = bm_get_cache_slot (bitmap_handle, 1);
-	tcache_slot_opengl *t = &Textures[n];
+	auto t = bm_get_gr_info<tcache_slot_opengl>(bitmap_handle, true);
 
 	*u_scale = t->u_scale;
 	*v_scale = t->v_scale;
@@ -1340,7 +1318,7 @@ void gr_opengl_get_texture_scale(int bitmap_handle, float *u_scale, float *v_sca
  */
 size_t opengl_export_render_target( int slot, int width, int height, int alpha, int num_mipmaps, ubyte *image_data )
 {
-	tcache_slot_opengl *ts = &Textures[slot];
+	auto ts = bm_get_gr_info<tcache_slot_opengl>(slot);
 
 	GL_CHECK_FOR_ERRORS("start of export_image()");
 
@@ -1405,8 +1383,7 @@ size_t opengl_export_render_target( int slot, int width, int height, int alpha, 
 void gr_opengl_update_texture(int bitmap_handle, int bpp, const ubyte* data, int width, int height)
 {
 	GLenum texFormat, glFormat;
-	int n = bm_get_cache_slot (bitmap_handle, 1);
-	tcache_slot_opengl *t = &Textures[n];
+	auto t = bm_get_gr_info<tcache_slot_opengl>(bitmap_handle);
 	if(!t->texture_id)
 		return;
 	int byte_mult = (bpp >> 3);
@@ -1478,20 +1455,14 @@ void gr_opengl_update_texture(int bitmap_handle, int bpp, const ubyte* data, int
 
 struct fbo_t {
 	// these first vars should only be modified in opengl_make_render_target()
-	GLuint renderbuffer_id;
-	GLuint framebuffer_id;
-	int width;
-	int height;
+	GLuint renderbuffer_id = 0;
+	GLuint framebuffer_id = 0;
+	int width = 0;
+	int height = 0;
 	// these next 2 should only be modifed in opengl_set_render_target()
-	int working_slot;
-	int is_static;
-	int fbo_id;
-
-	fbo_t() :
-		renderbuffer_id(0), framebuffer_id(0), width(0), height(0),
-		working_slot(-1), is_static(0), fbo_id(-1)
-	{
-	}
+	int working_handle = -1;
+	int is_static = 0;
+	int fbo_id = -1;
 };
 
 static SCP_vector<fbo_t> RenderTarget;
@@ -1580,19 +1551,14 @@ int opengl_check_framebuffer()
 	return 0;
 }
 
-void opengl_kill_render_target(int slot)
+void opengl_kill_render_target(bitmap_slot* slot)
 {
-	if ( (slot < 0) || (slot >= MAX_BITMAPS) ) {
-		Int3();
-		return;
-	}
-
 	// this will happen when opengl_kill_all_render_targets() gets called first on exit
 	if ( RenderTarget.empty() ) {
 		return;
 	}
 
-	tcache_slot_opengl *ts = &Textures[slot];
+	auto ts = static_cast<tcache_slot_opengl*>(slot->gr_info);
 
 	auto fbo = opengl_get_fbo(ts->fbo_id);
 
@@ -1641,14 +1607,14 @@ int opengl_set_render_target( int slot, int face, int is_static )
 	GL_CHECK_FOR_ERRORS("start of set_render_target()");
 
 	if (slot < 0) {
-		if ( (render_target != NULL) && (render_target->working_slot >= 0) ) {
-			if (Textures[render_target->working_slot].mipmap_levels > 1) {
-				gr_opengl_bm_generate_mip_maps(render_target->working_slot);
+		if ( (render_target != nullptr) && (render_target->working_handle >= 0) ) {
+			if (bm_get_gr_info<tcache_slot_opengl>(render_target->working_handle)->mipmap_levels > 1) {
+				gr_opengl_bm_generate_mip_maps(render_target->working_handle);
 			}
 
 			if (render_target->is_static && Cmdline_save_render_targets) {
 				extern void gr_opengl_bm_save_render_target(int slot);
-				gr_opengl_bm_save_render_target(render_target->working_slot);
+				gr_opengl_bm_save_render_target(render_target->working_handle);
 			}
 		}
 
@@ -1665,7 +1631,7 @@ int opengl_set_render_target( int slot, int face, int is_static )
 		return 1;
 	}
 
-	ts = &Textures[slot];
+	ts = bm_get_gr_info<tcache_slot_opengl>(slot);
 	Assert( ts != NULL );
 
 	if (!ts->texture_id) {
@@ -1699,7 +1665,7 @@ int opengl_set_render_target( int slot, int face, int is_static )
 
 //	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, fbo->renderbuffer_id);
 
-	fbo->working_slot = slot;
+	fbo->working_handle = slot;
 	fbo->is_static = is_static;
 
 	// save current fbo for later use
@@ -1712,16 +1678,11 @@ int opengl_set_render_target( int slot, int face, int is_static )
 	return 1;
 }
 
-int opengl_make_render_target( int  /*handle*/, int slot, int *w, int *h, int *bpp, int *mm_lvl, int flags )
+int opengl_make_render_target( int handle, int *w, int *h, int *bpp, int *mm_lvl, int flags )
 {
 	GR_DEBUG_SCOPE("Make OpenGL render target");
 
 	Assert( !GL_rendering_to_texture );
-
-	if (slot < 0) {
-		Int3();
-		return 0;
-	}
 
 	// got to have at least width and height!
 	if (!w || !h) {
@@ -1738,7 +1699,7 @@ int opengl_make_render_target( int  /*handle*/, int slot, int *w, int *h, int *b
 		*h = GL_max_renderbuffer_size;
 	}
 
-	tcache_slot_opengl *ts = &Textures[slot];
+	auto ts = bm_get_gr_info<tcache_slot_opengl>(handle);
 	// now on to the good parts...
 
 	fbo_t* new_fbo = opengl_get_free_fbo();
@@ -1880,22 +1841,17 @@ int opengl_make_render_target( int  /*handle*/, int slot, int *w, int *h, int *b
 
 GLuint opengl_get_rtt_framebuffer()
 {
-	if (render_target == NULL || render_target->working_slot < 0)
+	if (render_target == nullptr || render_target->working_handle < 0)
 		return 0;
 	else
 		return render_target->framebuffer_id;
 }
 
-void gr_opengl_bm_generate_mip_maps(int slot)
+void gr_opengl_bm_generate_mip_maps(int handle)
 {
-	if ( slot < 0 ) {
-		Int3();
-		return;
-	}
-
 	tcache_slot_opengl *ts = NULL;
 
-	ts = &Textures[slot];
+	ts = bm_get_gr_info<tcache_slot_opengl>(handle);
 
 	GL_state.Texture.SetActiveUnit(0);
 	GL_state.Texture.SetTarget(ts->texture_target);
