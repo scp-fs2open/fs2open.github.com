@@ -67,6 +67,8 @@ class SourceOrigin {
 	 */
 	void getGlobalPosition(vec3d* posOut) const;
 
+	void getHostOrientation(matrix* matOut) const;
+
 	inline SourceOriginType getType() const { return m_originType; }
 
 	inline object* getObjectHost() const { return m_origin.m_object.objp; }
@@ -129,6 +131,9 @@ class SourceOrigin {
  *
  * Currently only the forward direction vector is useful because the other vectors of the matrix are chosen pretty
  * arbitrarily. This also contains a normal vector if it was specified when creating the source.
+ *
+ * An orientation can be either relative or global. In relative mode all transforms should be relative to the host
+ * object while in global mode all directions are in world-space. Normals are always in world-space.
  */
 class SourceOrientation {
  private:
@@ -136,6 +141,9 @@ class SourceOrientation {
 
 	bool m_hasNormal = false;
 	vec3d m_normal;
+
+	// By default the orientation of a source is relative to the host
+	bool m_isRelative = true;
 
  public:
 	SourceOrientation();
@@ -151,6 +159,7 @@ class SourceOrientation {
 
 	/**
 	 * @brief Sets the direction from an already normalized vector
+	 *
 	 * @param vec The normalized vector
 	 */
 	void setFromNormalizedVector(const vec3d& vec);
@@ -159,7 +168,9 @@ class SourceOrientation {
 
 	void setFromMatrix(const matrix& mat);
 
-	vec3d getDirectionVector() const;
+	vec3d getDirectionVector(const SourceOrigin* origin) const;
+
+	bool isRelative() const { return m_isRelative; }
 
 	/**
 	 * @brief Gets the normal of this orientation

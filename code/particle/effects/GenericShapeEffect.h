@@ -34,23 +34,25 @@ class GenericShapeEffect : public ParticleEffect {
 
 	ParticleEffectIndex m_particleTrail = -1;
 
+	util::EffectTiming m_timing;
+
 	TShape m_shape;
 
 	vec3d getNewDirection(const ParticleSource* source) const {
 		switch (m_direction) {
 			case ConeDirection::Incoming:
-				return source->getOrientation()->getDirectionVector();
+				return source->getOrientation()->getDirectionVector(source->getOrigin());
 			case ConeDirection::Normal: {
 				vec3d normal;
 				if (!source->getOrientation()->getNormal(&normal)) {
 					mprintf(("Effect '%s' tried to use normal direction for source without a normal!\n", m_name.c_str()));
-					return source->getOrientation()->getDirectionVector();
+					return source->getOrientation()->getDirectionVector(source->getOrigin());
 				}
 
 				return normal;
 			}
 			case ConeDirection::Reflected: {
-				vec3d out = source->getOrientation()->getDirectionVector();
+				vec3d out = source->getOrientation()->getDirectionVector(source->getOrigin());
 				vec3d normal;
 				if (!source->getOrientation()->getNormal(&normal)) {
 					mprintf(("Effect '%s' tried to use normal direction for source without a normal!\n", m_name.c_str()));
@@ -68,7 +70,7 @@ class GenericShapeEffect : public ParticleEffect {
 				return out;
 			}
 			case ConeDirection::Reverse: {
-				vec3d out = source->getOrientation()->getDirectionVector();
+				vec3d out = source->getOrientation()->getDirectionVector(source->getOrigin());
 				vm_vec_scale(&out, -1.0f);
 				return out;
 			}
@@ -83,6 +85,10 @@ class GenericShapeEffect : public ParticleEffect {
 	}
 
 	virtual bool processSource(const ParticleSource* source) override {
+		if (!m_timing.continueProcessing(source)) {
+			return false;
+		}
+
 		auto num = m_particleNum.next();
 
 		vec3d dir = getNewDirection(source);
@@ -118,7 +124,7 @@ class GenericShapeEffect : public ParticleEffect {
 			}
 		}
 
-		return false;
+		return true;
 	}
 
 	virtual void parseValues(bool nocreate) override {
@@ -158,6 +164,12 @@ class GenericShapeEffect : public ParticleEffect {
 		if (optional_string("+Trail effect:")) {
 			m_particleTrail = internal::parseEffectElement();
 		}
+
+		m_timing = util::EffectTiming::parseTiming();
+	}
+
+	void initializeSource(ParticleSource& source) override {
+		m_timing.applyToSource(&source);
 	}
 
 	virtual EffectType getType() const override { return m_shape.getType(); }

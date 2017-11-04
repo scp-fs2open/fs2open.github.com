@@ -3086,10 +3086,31 @@ void beam_handle_collisions(beam *b)
 				
 			vm_vec_sub(&temp_pos, &b->f_collisions[idx].cinfo.hit_point_world, &Objects[target].pos);
 			vm_vec_rotate(&temp_local_pos, &temp_pos, &Objects[target].orient);
-						
+
+			vec3d worldNormal;
+			if (Objects[target].type == OBJ_SHIP) {
+				auto shipp = &Ships[Objects[target].instance];
+				model_instance_find_world_dir(&worldNormal,
+											  &b->f_collisions[idx].cinfo.hit_normal,
+											  shipp->model_instance_num,
+											  b->f_collisions[idx].cinfo.submodel_num,
+											  &Objects[target].orient);
+			} else {
+				// Just assume that we don't need to handle model subobjects here
+				vm_vec_unrotate(&worldNormal, &b->f_collisions[idx].cinfo.hit_normal, &Objects[target].orient);
+			}
+
 			if (wi->flash_impact_weapon_expl_effect >= 0) {
 				auto particleSource = particle::ParticleManager::get()->createSource(wi->flash_impact_weapon_expl_effect);
 				particleSource.moveToObject(&Objects[target], &temp_local_pos);
+				particleSource.setOrientationNormal(&worldNormal);
+
+				vec3d fvec;
+				vm_vec_sub(&fvec, &b->last_shot, &b->last_start);
+
+				if (!IS_VEC_NULL(&fvec)) {
+					particleSource.setOrientationFromVec(&fvec);
+				}
 
 				particleSource.finish();
 			}
@@ -3097,6 +3118,14 @@ void beam_handle_collisions(beam *b)
 			if(do_expl){
 				auto particleSource = particle::ParticleManager::get()->createSource(wi->impact_weapon_expl_effect);
 				particleSource.moveToObject(&Objects[target], &temp_local_pos);
+				particleSource.setOrientationNormal(&worldNormal);
+
+				vec3d fvec;
+				vm_vec_sub(&fvec, &b->last_shot, &b->last_start);
+
+				if (!IS_VEC_NULL(&fvec)) {
+					particleSource.setOrientationFromVec(&fvec);
+				}
 
 				particleSource.finish();
 			}
@@ -3157,6 +3186,7 @@ void beam_handle_collisions(beam *b)
 							auto particleSource = particle::ParticleManager::get()->createSource(wi->piercing_impact_effect);
 							particleSource.moveTo(&b->f_collisions[idx].cinfo.hit_point_world);
 							particleSource.setOrientationFromNormalizedVec(&fvec);
+							particleSource.setOrientationNormal(&worldNormal);
 
 							particleSource.finish();
 						}
@@ -3168,8 +3198,29 @@ void beam_handle_collisions(beam *b)
 			if(draw_effects && do_damage && !physics_paused){
 				// maybe draw an explosion, if we aren't hitting shields
 				if ( (wi->impact_weapon_expl_effect >= 0) && (b->f_collisions[idx].quadrant < 0) ) {
+					vec3d worldNormal;
+					if (Objects[target].type == OBJ_SHIP) {
+						auto shipp = &Ships[Objects[target].instance];
+						model_instance_find_world_dir(&worldNormal,
+													  &b->f_collisions[idx].cinfo.hit_normal,
+													  shipp->model_instance_num,
+													  b->f_collisions[idx].cinfo.submodel_num,
+													  &Objects[target].orient);
+					} else {
+						// Just assume that we don't need to handle model subobjects here
+						vm_vec_unrotate(&worldNormal, &b->f_collisions[idx].cinfo.hit_normal, &Objects[target].orient);
+					}
+
 					auto particleSource = particle::ParticleManager::get()->createSource(wi->impact_weapon_expl_effect);
 					particleSource.moveTo(&b->f_collisions[idx].cinfo.hit_point_world);
+					particleSource.setOrientationNormal(&worldNormal);
+
+					vec3d fvec;
+					vm_vec_sub(&fvec, &b->last_shot, &b->last_start);
+
+					if (!IS_VEC_NULL(&fvec)) {
+						particleSource.setOrientationFromVec(&fvec);
+					}
 
 					particleSource.finish();
 				}
