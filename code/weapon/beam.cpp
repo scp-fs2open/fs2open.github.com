@@ -1424,6 +1424,13 @@ void beam_render_muzzle_glow(beam *b)
 		vm_vec_sub(&fvec, &b->last_shot, &b->last_start);
 		vm_vec_normalize_quick(&fvec);
 		
+		/* (DahBlount)
+		If the glow_length is less than the diameter of the muzzle glow
+		we need to account for that by placing the start and end distances
+		such that the glow is centered on the firing point of the turret.
+		There was actually some oversight here when developing the directional glow feature
+		and any refactoring of it will require some more complex parameters for glow placement.
+		*/
 		if (bwi->glow_length >= 2.0f*rad) {
 			vm_vec_copy_scale(&sub1, &fvec, rad);
 			vm_vec_sub(&start, &b->last_start, &sub1);
