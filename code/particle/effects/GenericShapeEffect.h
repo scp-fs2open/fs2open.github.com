@@ -5,8 +5,8 @@
 #include "globalincs/pstypes.h"
 #include "particle/ParticleEffect.h"
 #include "particle/ParticleManager.h"
-#include "particle/util/RandomRange.h"
 #include "particle/util/ParticleProperties.h"
+#include "utils/RandomRange.h"
 
 namespace particle {
 namespace effects {
@@ -29,8 +29,8 @@ class GenericShapeEffect : public ParticleEffect {
 	util::ParticleProperties m_particleProperties;
 
 	ConeDirection m_direction = ConeDirection::Incoming;
-	util::UniformFloatRange m_velocity;
-	util::UniformUIntRange m_particleNum;
+	::util::UniformFloatRange m_velocity;
+	::util::UniformUIntRange m_particleNum;
 
 	ParticleEffectIndex m_particleTrail = -1;
 
@@ -133,11 +133,11 @@ class GenericShapeEffect : public ParticleEffect {
 		m_shape.parse(nocreate);
 
 		if (internal::required_string_if_new("+Velocity:", nocreate)) {
-			m_velocity = util::parseUniformRange<float>();
+			m_velocity = ::util::parseUniformRange<float>();
 		}
 
 		if (internal::required_string_if_new("+Number:", nocreate)) {
-			m_particleNum = util::parseUniformRange<uint>();
+			m_particleNum = ::util::parseUniformRange<uint>();
 		}
 
 		if (optional_string("+Direction:")) {

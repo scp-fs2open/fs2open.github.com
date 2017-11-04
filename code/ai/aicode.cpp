@@ -10833,7 +10833,7 @@ void ai_dock()
 
 				if (aip->submode == AIS_DOCK_3) {
 					// Play a ship docking attach sound
-					snd_play_3d( &Snds[SND_DOCK_ATTACH], &Pl_objp->pos, &View_position );
+					snd_play_3d( gamesnd_get_game_sound(SND_DOCK_ATTACH), &Pl_objp->pos, &View_position );
 
 					// start the dock animation
 					model_anim_start_type(shipp, TRIGGER_TYPE_DOCKED, docker_index, 1);
@@ -10960,7 +10960,7 @@ void ai_dock()
 		ai_find_path(Pl_objp, OBJ_INDEX(goal_objp), path_num, 0);
 
 		// Play a ship docking detach sound
-		snd_play_3d( &Snds[SND_DOCK_DETACH], &Pl_objp->pos, &View_position );
+		snd_play_3d( gamesnd_get_game_sound(SND_DOCK_DETACH), &Pl_objp->pos, &View_position );
 
 		aip->submode = AIS_UNDOCK_1;
 		aip->submode_start_time = Missiontime;
@@ -10980,7 +10980,7 @@ void ai_dock()
 		// play the depart sound, but only once, since this mode is called multiple times per frame
 		if ( !(aigp->flags[AI::Goal_Flags::Depart_sound_played]))
 		{
-			snd_play_3d( &Snds[SND_DOCK_DEPART], &Pl_objp->pos, &View_position );
+			snd_play_3d( gamesnd_get_game_sound(SND_DOCK_DEPART), &Pl_objp->pos, &View_position );
 			aigp->flags.set(AI::Goal_Flags::Depart_sound_played);
 		}
 

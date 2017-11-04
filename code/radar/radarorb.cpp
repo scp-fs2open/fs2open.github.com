@@ -500,7 +500,7 @@ void HudGaugeRadarOrb::render(float frametime)
 		if ( Radar_static_playing ) {
 			drawBlipsSorted(1);	// passing 1 means to draw distorted
 			if ( Radar_static_looping == -1 ) {
-				Radar_static_looping = snd_play_looping(&Snds[SND_STATIC]);
+				Radar_static_looping = snd_play_looping(gamesnd_get_game_sound(SND_STATIC));
 			}
 		} else {
 			drawBlipsSorted(0);

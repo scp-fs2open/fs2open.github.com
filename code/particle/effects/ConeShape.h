@@ -3,7 +3,7 @@
 #pragma once
 
 #include "globalincs/pstypes.h"
-#include "particle/util/RandomRange.h"
+#include "utils/RandomRange.h"
 
 namespace particle {
 namespace effects {
@@ -12,7 +12,7 @@ namespace effects {
  * @ingroup particleEffects
  */
 class ConeShape {
-	util::NormalFloatRange m_normalDeviation;
+	::util::NormalFloatRange m_normalDeviation;
  public:
 	ConeShape() {}
 
@@ -36,7 +36,7 @@ class ConeShape {
 			float deviation;
 			stuff_float(&deviation);
 
-			m_normalDeviation = util::NormalFloatRange(0.0, fl_radians(deviation));
+			m_normalDeviation = ::util::NormalFloatRange(0.0, fl_radians(deviation));
 		}
 	}
 

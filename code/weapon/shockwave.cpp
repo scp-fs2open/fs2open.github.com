@@ -351,7 +351,7 @@ void shockwave_move(object *shockwave_objp, float frametime)
 			} else {
 				vol_scale = 1.0f;
 			}
-			snd_play( &Snds[SND_SHOCKWAVE_IMPACT], 0.0f, vol_scale );
+			snd_play( gamesnd_get_game_sound(SND_SHOCKWAVE_IMPACT), 0.0f, vol_scale );
 		}
 
 	}	// end for

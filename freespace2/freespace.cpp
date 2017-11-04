@@ -2594,7 +2594,7 @@ void game_tst_frame()
 		// tst y
 		tst_y = frand_range(0.0f, (float)gr_screen.max_h - h);
 
-		snd_play(&Snds[SND_VASUDAN_BUP]);
+		snd_play(gamesnd_get_game_sound(SND_VASUDAN_BUP));
 
 		// tst x and direction
 		tst_mode = 0;
@@ -2738,7 +2738,7 @@ void do_timing_test(float frame_time)
 
 		// start looping digital sounds
 		for ( i = 0; i < NUM_MIXED_SOUNDS; i++ )
-			snds[i] = snd_play_looping( &Snds[i], 0.0f, -1, -1);
+			snds[i] = snd_play_looping( gamesnd_get_game_sound(i), 0.0f, -1, -1);
 	}
 	
 
@@ -5020,7 +5020,7 @@ void game_process_event( int current_state, int event )
 			// Same code as in GS_EVENT_PLAYER_WARPOUT_START only ignores current mode
 			Player->saved_viewer_mode = Viewer_mode;
 			Player->control_mode = PCM_WARPOUT_STAGE1;
-			Warpout_sound = snd_play(&Snds[SND_PLAYER_WARP_OUT]);
+			Warpout_sound = snd_play(gamesnd_get_game_sound(SND_PLAYER_WARP_OUT));
 			Warpout_time = 0.0f;			// Start timer!
 			break;
 
@@ -5030,7 +5030,7 @@ void game_process_event( int current_state, int event )
 			} else {
 				Player->saved_viewer_mode = Viewer_mode;
 				Player->control_mode = PCM_WARPOUT_STAGE1;
-				Warpout_sound = snd_play(&Snds[SND_PLAYER_WARP_OUT]);
+				Warpout_sound = snd_play(gamesnd_get_game_sound(SND_PLAYER_WARP_OUT));
 				Warpout_time = 0.0f;			// Start timer!
 				Warpout_forced = 0;				// If non-zero, bash the player to speed and go through effect
 			}
@@ -6951,7 +6951,7 @@ void game_do_training_checks()
 					Training_context_at_waypoint = i;
 					if (Training_context_goal_waypoint == i) {
 						Training_context_goal_waypoint++;
-						snd_play(&Snds[SND_CARGO_REVEAL], 0.0f);
+						snd_play(gamesnd_get_game_sound(SND_CARGO_REVEAL), 0.0f);
 					}
 
 					break;
@@ -7400,11 +7400,11 @@ static int Subspace_ambient_right_channel = -1;
 void game_start_subspace_ambient_sound()
 {
 	if ( Subspace_ambient_left_channel < 0 ) {
-		Subspace_ambient_left_channel = snd_play_looping(&Snds[SND_SUBSPACE_LEFT_CHANNEL], -1.0f);
+		Subspace_ambient_left_channel = snd_play_looping(gamesnd_get_game_sound(SND_SUBSPACE_LEFT_CHANNEL), -1.0f);
 	}
 
 	if ( Subspace_ambient_right_channel < 0 ) {
-		Subspace_ambient_right_channel = snd_play_looping(&Snds[SND_SUBSPACE_RIGHT_CHANNEL], 1.0f);
+		Subspace_ambient_right_channel = snd_play_looping(gamesnd_get_game_sound(SND_SUBSPACE_RIGHT_CHANNEL), 1.0f);
 	}
 }
 

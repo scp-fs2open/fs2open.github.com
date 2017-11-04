@@ -1005,9 +1005,9 @@ void message_load_wave(int index, const char *filename)
 		return;
 	}
 
-	game_snd tmp_gs;
+	game_snd_entry tmp_gs;
 	strcpy_s( tmp_gs.filename, filename );
-	Message_waves[index].num = snd_load( &tmp_gs, 0 );
+	Message_waves[index].num = snd_load( &tmp_gs, 0, 0 );
 
 	if (Message_waves[index].num == -1)
 		nprintf(("messaging", "Cannot load message wave: %s.  Will not play\n", Message_waves[index].name));
@@ -1569,7 +1569,7 @@ void message_queue_process()
 	// debug only -- if the message is a builtin message, put in parens whether or not the voice played
 	if ( Sound_enabled && (Playing_messages[Num_messages_playing].wave == -1) ) {
 		strcat_s( buf, NOX("..(no wavefile for voice)"));
-		snd_play(&Snds[SND_CUE_VOICE]);
+		snd_play(gamesnd_get_game_sound(SND_CUE_VOICE));
 	}
 #endif
 	

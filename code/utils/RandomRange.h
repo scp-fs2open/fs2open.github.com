@@ -1,18 +1,18 @@
-#ifndef RANDOM_RANGE_H
-#define RANDOM_RANGE_H
-
-#include <random>
-#include <type_traits>
+#pragma once
 
 #include "globalincs/pstypes.h"
 #include "parse/parselo.h"
 
-namespace particle {
+#include <random>
+#include <type_traits>
+#include <limits>
+
 namespace util {
+
 /**
- * @defgroup particleUtils Particle Effect utilities
+ * @defgroup randomUtils Random Utilities
  *
- * @ingroup particleSystems
+ * Utility functions for handling random values
  */
 
 namespace {
@@ -22,7 +22,7 @@ namespace {
  * @param list The array where the numbers should be stored.
  * @return The amount of parsed numbers
  *
- * @ingroup particleUtils
+ * @ingroup randomUtils
  */
 template<typename T, size_t N>
 size_t parse_number_list(T (& list)[N]) {
@@ -43,7 +43,7 @@ size_t parse_number_list(T (& list)[N]) {
  * This allows to use a generic value, distribution and generator type. It's valid to only use one value for the range
  * in which case the returned value is constant.
  *
- * @ingroup particleUtils
+ * @ingroup randomUtils
  */
 template<typename Value, typename Distribution, typename Generator>
 class RandomRange {
@@ -57,26 +57,30 @@ class RandomRange {
 	DistributionType m_distribution;
 
 	bool m_constant;
-	ValueType m_constantValue;
+	ValueType m_minValue;
+	ValueType m_maxValue;
 
  public:
 	template<typename... Ts>
 	RandomRange(ValueType param1, ValueType param2, Ts&& ... distributionParameters) :
 		m_generator(std::random_device()()),
 		m_distribution(param1, param2, distributionParameters...) {
-		m_constantValue = static_cast<ValueType>(0.0);
+		m_minValue = static_cast<ValueType>(0.0);
+		m_maxValue = static_cast<ValueType>(0.0);
 		m_constant = false;
 	}
 
 	explicit RandomRange(const ValueType& val) : RandomRange() {
-		m_constantValue = val;
+		m_minValue = val;
+		m_maxValue = val;
 		m_constant = true;
 	}
 
 	RandomRange() :
 		m_generator(std::random_device()()),
 		m_distribution() {
-		m_constantValue = static_cast<ValueType>(0.0);
+		m_minValue = static_cast<ValueType>(0.0);
+		m_maxValue = static_cast<ValueType>(0.0);
 		m_constant = true;
 	}
 
@@ -86,10 +90,18 @@ class RandomRange {
 	 */
 	ValueType next() {
 		if (m_constant) {
-			return m_constantValue;
+			return m_minValue;
 		}
 
 		return m_distribution(m_generator);
+	}
+
+	ValueType min() {
+		return m_minValue;
+	}
+
+	ValueType max() {
+		return m_minValue;
 	}
 };
 
@@ -98,7 +110,7 @@ class RandomRange {
  *
  * The range parameters are passed directly to std::normal_distribution
  *
- * @ingroup particleUtils
+ * @ingroup randomUtils
  */
 template<typename Value>
 using NormalRange = RandomRange<Value,
@@ -108,7 +120,7 @@ using NormalRange = RandomRange<Value,
 /**
  * @brief A normal range which uses floats
  *
- * @ingroup particleUtils
+ * @ingroup randomUtils
  */
 typedef NormalRange<float> NormalFloatRange;
 
@@ -116,7 +128,7 @@ typedef NormalRange<float> NormalFloatRange;
  * @brief A function for parsing a normal range
  * @return The parsed normal range
  *
- * @ingroup particleUtils
+ * @ingroup randomUtils
  */
 template<typename Value>
 NormalRange<Value> parseNormalRange() {
@@ -137,7 +149,7 @@ NormalRange<Value> parseNormalRange() {
 /**
  * @brief A generic random range which uses a uniform distribution
  *
- * @ingroup particleUtils
+ * @ingroup randomUtils
  */
 template<typename Value>
 using UniformRange = RandomRange<Value,
@@ -149,33 +161,39 @@ using UniformRange = RandomRange<Value,
 /**
  * @brief A uniform range which uses floats
  *
- * @ingroup particleUtils
+ * @ingroup randomUtils
  */
 typedef UniformRange<float> UniformFloatRange;
 
 /**
  * @brief A uniform range which uses ints
  *
- * @ingroup particleUtils
+ * @ingroup randomUtils
  */
 typedef UniformRange<int> UniformIntRange;
 
 /**
  * @brief A uniform range which uses uints
  *
- * @ingroup particleUtils
+ * @ingroup randomUtils
  */
 typedef UniformRange<uint> UniformUIntRange;
 
 /**
  * @brief Parses a generic uniform range
  * @param allowNegativ If @c true, negative values will be allowed
+ * @param min The minimum value the random range may return
+ * @param max The maximum value the random range may return
+ *
  * @return The parsed uniform range
  *
- * @ingroup particleUtils
+ * @ingroup randomUtils
  */
 template<typename Value>
-UniformRange<Value> parseUniformRange(bool allowNegativ = false) {
+UniformRange<Value> parseUniformRange(Value min = std::numeric_limits<Value>::min(),
+									  Value max = std::numeric_limits<Value>::max()) {
+	Assertion(min <= max, "Invalid min-max values specified!");
+
 	Value valueList[2];
 	auto num = parse_number_list(valueList);
 
@@ -192,14 +210,29 @@ UniformRange<Value> parseUniformRange(bool allowNegativ = false) {
 		std::swap(valueList[0], valueList[1]);
 	}
 
-	if (!allowNegativ && valueList[0] < 0.0) {
-		error_display(0, "Minimum value may not be less than zero, got %f", (float) valueList[0]);
-		valueList[0] = static_cast<Value>(0.0);
+	if (valueList[0] < min) {
+		error_display(0, "First value (%f) is less than the minimum %f!", (float) valueList[0], (float) min);
+		valueList[0] = min;
+	}
+	if (valueList[0] > max) {
+		error_display(0, "First value (%f) is greater than the maximum %f!", (float) valueList[0], (float) max);
+		valueList[0] = max;
 	}
 
-	return UniformRange<Value>(valueList[0], valueList[1]);
-}
-}
-}
+	if (valueList[1] < min) {
+		error_display(0, "Second value (%f) is less than the minimum %f!", (float) valueList[1], (float) min);
+		valueList[1] = min;
+	}
+	if (valueList[1] > max) {
+		error_display(0, "Second value (%f) is greater than the maximum %f!", (float) valueList[1], (float) max);
+		valueList[1] = max;
+	}
 
-#endif // RANDOM_RANGE_H
+	if (valueList[0] == valueList[1]) {
+		// If the two values are equal then this is slightly more efficient
+		return UniformRange<Value>(valueList[0]);
+	} else {
+		return UniformRange<Value>(valueList[0], valueList[1]);
+	}
+}
+}

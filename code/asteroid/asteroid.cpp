@@ -1312,7 +1312,7 @@ void asteriod_explode_sound(object *objp, int type, int play_loud)
 		range_factor = 1.0f;
 	}
 
-	snd_play_3d( &Snds[sound_index], &objp->pos, &Eye_position, objp->radius, NULL, 0, 1.0f, SND_PRIORITY_MUST_PLAY, NULL, range_factor );
+	snd_play_3d( gamesnd_get_game_sound(sound_index), &objp->pos, &Eye_position, objp->radius, NULL, 0, 1.0f, SND_PRIORITY_MUST_PLAY, NULL, range_factor );
 }
 
 /**

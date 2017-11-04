@@ -1075,12 +1075,12 @@ void hud_target_subobject_common(int next_flag)
 {
 	if (Player_ai->target_objnum == -1) {
 		HUD_sourced_printf(HUD_SOURCE_HIDDEN, "%s", XSTR( "No target selected.", 322));
-		snd_play( &Snds[SND_TARGET_FAIL] );
+		snd_play( gamesnd_get_game_sound(SND_TARGET_FAIL) );
 		return;
 	}
 
 	if (Objects[Player_ai->target_objnum].type != OBJ_SHIP) {
-		snd_play( &Snds[SND_TARGET_FAIL]);
+		snd_play( gamesnd_get_game_sound(SND_TARGET_FAIL));
 		return;
 	}
 
@@ -1119,7 +1119,7 @@ void hud_target_subobject_common(int next_flag)
 	} // end for
 
 	if ( subsys_to_target == NULL ) {
-		snd_play( &Snds[SND_TARGET_FAIL]);
+		snd_play( gamesnd_get_game_sound(SND_TARGET_FAIL));
 	} else {
 		set_targeted_subsys(Player_ai, subsys_to_target, Player_ai->target_objnum);
 		target_shipp->last_targeted_subobject[Player_num] =  Player_ai->targeted_subsys;
@@ -1240,7 +1240,7 @@ void hud_target_common(int team_mask, int next_flag)
 	}
 
 	if ( target_found == FALSE ) {
-		snd_play( &Snds[SND_TARGET_FAIL] );
+		snd_play( gamesnd_get_game_sound(SND_TARGET_FAIL) );
 	}
 }
 
@@ -1549,7 +1549,7 @@ void hud_target_missile(object *source_obj, int next_flag)
 	}
 
 	if ( !target_found ) {
-		snd_play( &Snds[SND_TARGET_FAIL], 0.0f );
+		snd_play( gamesnd_get_game_sound(SND_TARGET_FAIL), 0.0f );
 	}
 }
 
@@ -1623,7 +1623,7 @@ void hud_target_uninspected_cargo(int next_flag)
 	}
 
 	if ( target_found == FALSE ) {
-		snd_play( &Snds[SND_TARGET_FAIL]);
+		snd_play( gamesnd_get_game_sound(SND_TARGET_FAIL));
 	}
 }
 
@@ -1686,7 +1686,7 @@ void hud_target_newest_ship()
 		hud_restore_subsystem_target(&Ships[newest_obj->instance]);
 	}
 	else {
-		snd_play( &Snds[SND_TARGET_FAIL]);
+		snd_play( gamesnd_get_game_sound(SND_TARGET_FAIL));
 	}
 }
 
@@ -1744,13 +1744,13 @@ void hud_target_live_turret(int next_flag, int auto_advance, int only_player_tar
 
 	// make sure we're targeting a ship
 	if (Player_ai->target_objnum == -1 && !auto_advance) {
-		snd_play(&Snds[SND_TARGET_FAIL]);
+		snd_play(gamesnd_get_game_sound(SND_TARGET_FAIL));
 		return;
 	}
 
 	// only targeting subsystems on ship
 	if ((Objects[Player_ai->target_objnum].type != OBJ_SHIP) && (!auto_advance)) {
-		snd_play( &Snds[SND_TARGET_FAIL]);
+		snd_play( gamesnd_get_game_sound(SND_TARGET_FAIL));
 		return;
 	}
 
@@ -1903,7 +1903,7 @@ void hud_target_live_turret(int next_flag, int auto_advance, int only_player_tar
 		target_shipp->last_targeted_subobject[Player_num] = Player_ai->targeted_subsys;
 	} else {
 		if (!auto_advance) {
-			snd_play( &Snds[SND_TARGET_FAIL]);
+			snd_play( gamesnd_get_game_sound(SND_TARGET_FAIL));
 		}
 	}
 }
@@ -1975,7 +1975,7 @@ void hud_target_closest_locked_missile(object *locked_obj)
 	}
 
 	if ( !target_found ){
-		snd_play( &Snds[SND_TARGET_FAIL], 0.0f );
+		snd_play( gamesnd_get_game_sound(SND_TARGET_FAIL), 0.0f );
 	}
 }
 
@@ -2322,7 +2322,7 @@ int hud_target_closest(int team_mask, int attacked_objnum, int play_fail_snd, in
 	} else {
 		// no target found, maybe play fail sound
 		if (play_fail_snd == TRUE) {
-			snd_play(&Snds[SND_TARGET_FAIL]);
+			snd_play(gamesnd_get_game_sound(SND_TARGET_FAIL));
 		}
 	}
 
@@ -2445,7 +2445,7 @@ void hud_target_targets_target()
 	return;
 
 	ttt_fail:
-	snd_play( &Snds[SND_TARGET_FAIL], 0.0f );
+	snd_play( gamesnd_get_game_sound(SND_TARGET_FAIL), 0.0f );
 }
 
 // Return !0 if target_objp is a valid object type for targeting in reticle, otherwise return 0
@@ -2667,7 +2667,7 @@ void hud_target_in_reticle_old()
 		}
 	}
 	else {
-			snd_play( &Snds[SND_TARGET_FAIL], 0.0f );
+			snd_play( gamesnd_get_game_sound(SND_TARGET_FAIL), 0.0f );
 	}
 }
 
@@ -2698,7 +2698,7 @@ void hud_target_subsystem_in_reticle()
 	}
 
 	if ( Player_ai->target_objnum == -1) { //-V581
-		snd_play( &Snds[SND_TARGET_FAIL]);
+		snd_play( gamesnd_get_game_sound(SND_TARGET_FAIL));
 		return;
 	}
 
@@ -2747,7 +2747,7 @@ void hud_target_subsystem_in_reticle()
 		Ships[shipnum].last_targeted_subobject[Player_num] =  Player_ai->targeted_subsys;
 	}
 	else {
-		snd_play( &Snds[SND_TARGET_FAIL]);
+		snd_play( gamesnd_get_game_sound(SND_TARGET_FAIL));
 	}
 }
 
@@ -3159,9 +3159,9 @@ void hud_process_homing_missiles()
 			}
 
 			if ( closest_is_aspect ) {
-				Homing_beep.snd_handle = snd_play(&Snds[ship_get_sound(Player_obj, SND_PROXIMITY_ASPECT_WARNING)]);
+				Homing_beep.snd_handle = snd_play(gamesnd_get_game_sound(ship_get_sound(Player_obj, SND_PROXIMITY_ASPECT_WARNING)));
 			} else {
-				Homing_beep.snd_handle = snd_play(&Snds[ship_get_sound(Player_obj, SND_PROXIMITY_WARNING)]);
+				Homing_beep.snd_handle = snd_play(gamesnd_get_game_sound(ship_get_sound(Player_obj, SND_PROXIMITY_WARNING)));
 			}
 		}
 	}
@@ -4437,7 +4437,7 @@ void hud_target_change_check()
 	if (Player_ai->last_target != Player_ai->target_objnum) {
 
 		if ( Player_ai->target_objnum != -1){
-			snd_play( &Snds[ship_get_sound(Player_obj, SND_TARGET_ACQUIRE)], 0.0f );
+			snd_play( gamesnd_get_game_sound(ship_get_sound(Player_obj, SND_TARGET_ACQUIRE)), 0.0f );
 		}
 
 		// if we have a hotkey set active, see if new target is in set.  If not in
@@ -4616,7 +4616,7 @@ int hud_sensors_ok(ship *sp, int show_msg)
 	if ( (sensors_str < MIN_SENSOR_STR_TO_TARGET) || (ship_subsys_disrupted(sp, SUBSYSTEM_SENSORS)) ) {
 		if ( show_msg ) {
 			HUD_sourced_printf(HUD_SOURCE_HIDDEN, "%s", XSTR( "Targeting is disabled due to sensors damage", 330));
-			snd_play(&Snds[SND_TARGET_FAIL]);
+			snd_play(gamesnd_get_game_sound(SND_TARGET_FAIL));
 		}
 		return 0;
 	} else {
@@ -4669,7 +4669,7 @@ void hud_target_next_list(int hostile, int next_flag, int team_mask, int attacke
 	} else {
 		// everyone hates a traitor including other traitors so the friendly target option shouldn't work for them
 		if (Player_ship->team == Iff_traitor) {
-			snd_play( &Snds[SND_TARGET_FAIL], 0.0f );
+			snd_play( gamesnd_get_game_sound(SND_TARGET_FAIL), 0.0f );
 			return;
 		}
 
@@ -4696,7 +4696,7 @@ void hud_target_next_list(int hostile, int next_flag, int team_mask, int attacke
 		hud_restore_subsystem_target(&Ships[nearest_object->instance]);
 	}
 	else {
-		snd_play( &Snds[SND_TARGET_FAIL], 0.0f );
+		snd_play( gamesnd_get_game_sound(SND_TARGET_FAIL), 0.0f );
 	}
 }
 
@@ -4989,7 +4989,7 @@ void hud_target_closest_uninspected_object()
 		hud_restore_subsystem_target(&Ships[nearest_obj->instance]);
 	}
 	else {
-		snd_play( &Snds[SND_TARGET_FAIL] );
+		snd_play( gamesnd_get_game_sound(SND_TARGET_FAIL) );
 	}
 }
 
@@ -5092,7 +5092,7 @@ void hud_target_uninspected_object(int next_flag)
 		hud_restore_subsystem_target(&Ships[nearest_obj->instance]);
 	}
 	else {
-		snd_play( &Snds[SND_TARGET_FAIL] );
+		snd_play( gamesnd_get_game_sound(SND_TARGET_FAIL) );
 	}
 }
 
@@ -5189,7 +5189,7 @@ void hud_target_last_transmit()
 
 	if ( i == MAX_TRANSMIT_TARGETS ) {
 		if ( play_fail_sound ) {
-			snd_play( &Snds[SND_TARGET_FAIL] );
+			snd_play( gamesnd_get_game_sound(SND_TARGET_FAIL) );
 		}
 		Transmit_target_current_slot = -1;
 		return;

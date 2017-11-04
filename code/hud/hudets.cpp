@@ -426,7 +426,7 @@ void increase_recharge_rate(object* obj, SYSTEM_TYPE ship_system)
 	{
 		if ( obj == Player_obj )
 		{
-			snd_play( &Snds[SND_ENERGY_TRANS_FAIL], 0.0f );
+			snd_play( gamesnd_get_game_sound(SND_ENERGY_TRANS_FAIL), 0.0f );
 		}
 		return;
 	}
@@ -464,7 +464,7 @@ void increase_recharge_rate(object* obj, SYSTEM_TYPE ship_system)
 	}
 
 	if ( obj == Player_obj )
-		snd_play( &Snds[SND_ENERGY_TRANS], 0.0f );
+		snd_play( gamesnd_get_game_sound(SND_ENERGY_TRANS), 0.0f );
 }
 
 // -------------------------------------------------------------------------------------------------
@@ -545,7 +545,7 @@ void decrease_recharge_rate(object* obj, SYSTEM_TYPE ship_system)
 	count = MIN(2, *lose_index);
 	if ( count <= 0 ) {
 		if ( obj == Player_obj ) {
-			snd_play( &Snds[SND_ENERGY_TRANS_FAIL], 0.0f );
+			snd_play( gamesnd_get_game_sound(SND_ENERGY_TRANS_FAIL), 0.0f );
 		}
 		return;
 	}
@@ -583,7 +583,7 @@ void decrease_recharge_rate(object* obj, SYSTEM_TYPE ship_system)
 	}
 
 	if ( obj == Player_obj )
-		snd_play( &Snds[SND_ENERGY_TRANS], 0.0f );
+		snd_play( gamesnd_get_game_sound(SND_ENERGY_TRANS), 0.0f );
 }
 
 void transfer_energy_weapon_common(object *objp, float from_field, float to_field, float *from_delta, float *to_delta, float max, float scale)
@@ -597,7 +597,7 @@ void transfer_energy_weapon_common(object *objp, float from_field, float to_fiel
 
 	if ( delta > 0 ) {
 		if ( objp == Player_obj )
-			snd_play( &Snds[SND_ENERGY_TRANS], 0.0f );
+			snd_play( gamesnd_get_game_sound(SND_ENERGY_TRANS), 0.0f );
 
 		if (delta > from_field)
 			delta = from_field;
@@ -606,7 +606,7 @@ void transfer_energy_weapon_common(object *objp, float from_field, float to_fiel
 		*from_delta -= delta;
 	} else
 		if ( objp == Player_obj )
-			snd_play( &Snds[SND_ENERGY_TRANS_FAIL], 0.0f );
+			snd_play( gamesnd_get_game_sound(SND_ENERGY_TRANS_FAIL), 0.0f );
 }
 
 // -------------------------------------------------------------------------------------------------
