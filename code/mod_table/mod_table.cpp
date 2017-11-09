@@ -81,7 +81,7 @@ void parse_mod_table(const char *filename)
 			size_t maxlen = (MAX_FILENAME_LEN - 4);
 			auto len = strlen(temp);
 			if (len > maxlen) {
-				Warning(LOCATION, "Token too long: [%s].  Length = " SIZE_T_ARG ".  Max is " SIZE_T_ARG ".\n", temp, len, maxlen);
+				error_display(0, "Token too long: [%s].  Length = " SIZE_T_ARG ".  Max is " SIZE_T_ARG ".", temp, len, maxlen);
 				temp[maxlen] = 0;
 			}
 
@@ -182,7 +182,7 @@ void parse_mod_table(const char *filename)
 			mprintf(("Game Settings Table: Setting default detail level to %i of %i-%i\n", detail_level, 0, NUM_DEFAULT_DETAIL_LEVELS - 1));
 
 			if (detail_level < 0 || detail_level > NUM_DEFAULT_DETAIL_LEVELS - 1) {
-				Warning(LOCATION, "Invalid detail level: %i, setting to %i\n", detail_level, Default_detail_level);
+				error_display(0, "Invalid detail level: %i, setting to %i", detail_level, Default_detail_level);
 			}
 			else {
 				Default_detail_level = detail_level;
@@ -209,6 +209,17 @@ void parse_mod_table(const char *filename)
 			stuff_float(&Shield_pain_flash_factor);
 			if (Shield_pain_flash_factor != 0.0f)
 				 mprintf(("Game Settings Table: Setting shield pain flash factor to %.2f\n", Shield_pain_flash_factor));
+		}
+
+		if (optional_string("$BMPMAN Slot Limit:")) {
+			int slots;
+			stuff_int(&slots);
+			if (slots < 3500) {
+				error_display(0, "Invalid BMPMAN slot limit [%d]; must be at least 3500.", slots);
+			} else {
+				mprintf(("Game Settings Table: Setting BMPMAN slot limit to %d\n", slots));
+				MAX_BITMAPS = slots;
+			}
 		}
 
 		optional_string("#NETWORK SETTINGS");
@@ -310,7 +321,7 @@ void parse_mod_table(const char *filename)
 				if (ui_index >= 0)
 					Default_fiction_viewer_ui = ui_index;
 				else
-					Warning(LOCATION, "Unrecognized fiction viewer UI: %s", ui_name);
+					error_display(0, "Unrecognized fiction viewer UI: %s", ui_name);
 			}
 		}
 

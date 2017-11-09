@@ -663,6 +663,8 @@ void gr_close()
 			Int3();		// Invalid graphics mode
 	}
 
+	bm_close();
+
 	Gr_inited = 0;
 }
 
