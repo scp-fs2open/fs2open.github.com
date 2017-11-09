@@ -1460,6 +1460,7 @@ extern int Training_message_method;
 DCF_BOOL( training_msg_method, Training_message_method )
 DCF_BOOL( show_player_pos, Show_player_pos )
 DCF_BOOL(i_framerate, Interface_framerate )
+DCF_BOOL( show_bmpman_usage, Cmdline_bmpman_usage )
 
 DCF(warp, "Tests warpin effect")
 {
@@ -2087,7 +2088,7 @@ void game_show_framerate()
 #endif
 
 
-	if (Show_framerate || Cmdline_frame_profile) {
+	if (Show_framerate || Cmdline_frame_profile || Cmdline_bmpman_usage) {
 		gr_set_color_fast(&HUD_color_debug);
 
 		if (Cmdline_frame_profile) {
@@ -2100,6 +2101,10 @@ void game_show_framerate()
 				gr_printf_no_resize( gr_screen.center_offset_x + 20, gr_screen.center_offset_y + 100, "FPS: %0.1f", Framerate );
 			else
 				gr_string( gr_screen.center_offset_x + 20, gr_screen.center_offset_y + 100, "FPS: ?", GR_RESIZE_NONE );
+		}
+
+		if (Cmdline_bmpman_usage) {
+			gr_printf_no_resize( gr_screen.center_offset_x + 20, gr_screen.center_offset_y + 100 - line_height, "BMPMAN: %d/%d", bmpman_count_bitmaps(), MAX_BITMAPS );
 		}
 	}
 

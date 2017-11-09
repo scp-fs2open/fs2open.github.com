@@ -731,4 +731,13 @@ int bm_get_base_frame(const int handle, int* num_frames = nullptr);
  */
 int bm_get_array_index(const int handle);
 
+/**
+ * @brief Counts how many slots are used in bm_bitmaps
+ *
+ * This needs to iterate through all the slots in order to determine whether or not they're used, so shouldn't be used frivolously.
+ *
+ * @return The number of used slots
+ */
+int bmpman_count_bitmaps();
+
 #endif

@@ -3337,3 +3337,17 @@ int bm_get_base_frame(const int handle, int* num_frames) {
 int bm_get_array_index(const int handle) {
 	return handle - bm_get_base_frame(handle, nullptr);
 }
+
+int bmpman_count_bitmaps() {
+	if (!bm_inited)
+		return -1;
+
+	int total_bitmaps = 0;
+	for (int i = 0; i < MAX_BITMAPS; i++) {
+		if (bm_bitmaps[i].type != BM_TYPE_NONE) {
+			total_bitmaps++;
+		}
+	}
+
+	return total_bitmaps;
+}

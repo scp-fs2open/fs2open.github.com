@@ -218,6 +218,7 @@ Flag exe_params[] =
 	{ "-voicer",			"Enable voice recognition",					true,	0,					EASY_DEFAULT,		"Experimental",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-voicer", },
 
 	{ "-fps",				"Show frames per second on HUD",			false,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-fps", },
+	{ "-bmpmanusage",		"Show how many BMPMAN slots are in use",	false,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-bmpmanusage", },
 	{ "-pos",				"Show position of camera",					false,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-pos", },
 	{ "-window",			"Run in window",							true,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-window", },
 	{ "-fullscreen_window",	"Run in fullscreen window",					false,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-fullscreen_window", },
@@ -472,6 +473,7 @@ cmdline_parm dis_weapons("-dis_weapons", NULL, AT_NONE);		// Cmdline_dis_weapons
 cmdline_parm noparseerrors_arg("-noparseerrors", NULL, AT_NONE);	// Cmdline_noparseerrors  -- turns off parsing errors -C
 cmdline_parm extra_warn_arg("-extra_warn", "Enable 'extra' warnings", AT_NONE);	// Cmdline_extra_warn
 cmdline_parm fps_arg("-fps", NULL, AT_NONE);					// Cmdline_show_fps
+cmdline_parm bmpmanusage_arg("-bmpmanusage", NULL, AT_NONE);	// Cmdline_bmpman_usage
 cmdline_parm pos_arg("-pos", NULL, AT_NONE);					// Cmdline_show_pos
 cmdline_parm stats_arg("-stats", NULL, AT_NONE);				// Cmdline_show_stats
 cmdline_parm save_render_targets_arg("-save_render_target", NULL, AT_NONE);	// Cmdline_save_render_targets
@@ -502,6 +504,7 @@ int Cmdline_noparseerrors = 0;
 int Cmdline_nowarn = 0; // turn warnings off in FRED
 #endif
 int Cmdline_extra_warn = 0;
+int Cmdline_bmpman_usage = 0;
 int Cmdline_show_pos = 0;
 int Cmdline_show_stats = 0;
 int Cmdline_save_render_targets = 0;
@@ -1539,6 +1542,11 @@ bool SetCmdlineParams()
 	if (fps_arg.found())
 	{
 		Show_framerate = 1;
+	}
+
+	if (bmpmanusage_arg.found())
+	{
+		Cmdline_bmpman_usage = 1;
 	}
 
 	if(pos_arg.found())
