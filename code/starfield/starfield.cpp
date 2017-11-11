@@ -2490,16 +2490,20 @@ void stars_set_nebula(bool activate)
 		} else {
 			Neb2_render_mode = NEB2_RENDER_HTL;
 		}
-		Debris_vclips = Debris_vclips_nebula;
 		neb2_eye_changed();
 	}
 	else
 	{
 		Toggle_text_alpha = TOGGLE_TEXT_NORMAL_ALPHA;
 		Neb2_render_mode = NEB2_RENDER_NONE;
-		Debris_vclips = Debris_vclips_normal;
 		HUD_contrast = 0;
 	}
+
+	// (DahBlount)
+	// This needs to be done regardless of whether we're in nebula or not
+	// Should ensure that we're actually loading the needed anims into BMPMan
+	stars_load_debris(static_cast<int>(activate));
+
 	// We need to reload the environment map now
 	stars_invalidate_environment_map();
 }
