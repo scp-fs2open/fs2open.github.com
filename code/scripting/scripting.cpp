@@ -260,6 +260,7 @@ bool ConditionedHook::ConditionsValid(int action, object *objp, int more_data)
 					return false;
 				if(stricmp(Ship_types[sip->class_type].name, scp->data.name))
 					return false;
+				break;
 			case CHC_SHIPCLASS:
 				if(objp == NULL || objp->type != OBJ_SHIP)
 					return false;

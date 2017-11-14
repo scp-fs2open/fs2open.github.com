@@ -63,3 +63,9 @@
 #define __STDC_FORMAT_MACROS 1
 
 #define USED_VARIABLE __attribute__((used))
+
+#if SCP_COMPILER_VERSION_MAJOR >= 7
+#define FALLTHROUGH [[fallthough]]
+#else
+#define FALLTHROUGH
+#endif

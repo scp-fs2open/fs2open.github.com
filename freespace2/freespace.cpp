@@ -5354,6 +5354,7 @@ void game_leave_state( int old_state, int new_state )
 		case GS_STATE_TRAINING_PAUSED:
 			Training_num_lines = 0;
 			// fall through to GS_STATE_GAME_PAUSED
+			FALLTHROUGH;
 
 		case GS_STATE_GAME_PAUSED:
 			game_start_time();

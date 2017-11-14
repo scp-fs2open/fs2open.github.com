@@ -880,6 +880,7 @@ void hotkey_button_pressed(int n)
 		case ACCEPT_BUTTON:
 			save_hotkeys();
 			// fall through to CANCEL_BUTTON
+			FALLTHROUGH;
 
 		case CANCEL_BUTTON:			
 			mission_hotkey_exit();
@@ -1052,6 +1053,7 @@ void mission_hotkey_do_frame(float frametime)
 		case KEY_CTRLED | KEY_ENTER:
 			save_hotkeys();
 			// fall through to next state -- allender changed this behavior since ESC should always cancel, no?
+			FALLTHROUGH;
 
 		case KEY_ESC:			
 			mission_hotkey_exit();

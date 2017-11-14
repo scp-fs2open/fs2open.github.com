@@ -85,3 +85,5 @@
 #define unlikely(x)
 
 #define USED_VARIABLE
+
+#define FALLTHROUGH
