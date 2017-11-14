@@ -115,7 +115,7 @@
 #define FALSE	0
 
 
-sexp_oper Operators[] = {
+SCP_vector<sexp_oper> Operators = {
 //   Operator, Identity, Min / Max arguments
 	//Arithmetic Category
 	{ "+",								OP_PLUS,								2,	INT_MAX,	SEXP_ARITHMETIC_OPERATOR,	},
@@ -1569,12 +1569,11 @@ int find_argnum(int parent_node, int arg_node)
  */
 int get_operator_index(const char *token)
 {
-	int	i;
 	Assertion(token != NULL, "get_operator_index(char*) called with a null token; get a coder!\n");
 
-	for (i=0; i<Num_operators; i++){
-		if (!stricmp(token, Operators[i].text)){
-			return i;
+	for (size_t i=0; i < Operators.size(); i++){
+		if (Operators[i].text == token){
+			return (int)i;
 		}
 	}
 
@@ -25611,7 +25610,7 @@ int query_operator_return_type(int op)
 {
 	if (op < FIRST_OP)
 	{
-		Assert(op >= 0 && op < Num_operators);
+		Assert(op >= 0 && op < (int)Operators.size());
 		op = Operators[op].value;
 	}
 
@@ -26197,17 +26196,17 @@ int query_operator_argument_type(int op, int argnum)
 
 	if (op < FIRST_OP)
 	{
-		Assert(index >= 0 && index < Num_operators);
+		Assert(index >= 0 && index < (int)Operators.size());
 		op = Operators[index].value;
 
 	} else {
 		Warning(LOCATION, "Possible unnecessary search for operator index.  Trace out and see if this is necessary.\n");
 
-		for (index=0; index<Num_operators; index++)
+		for (index=0; index<(int)Operators.size(); index++)
 			if (Operators[index].value == op)
 				break;
 
-		Assert(index < Num_operators);
+		Assert(index < (int)Operators.size());
 	}
 
 	if (argnum >= Operators[index].max)
@@ -28813,11 +28812,11 @@ int query_sexp_ai_goal_valid(int sexp_ai_goal, int ship_num)
 {
 	int i, op;
 
-	for (op=0; op<Num_operators; op++)
+	for (op=0; op<(int)Operators.size(); op++)
 		if (Operators[op].value == sexp_ai_goal)
 			break;
 
-	Assert(op < Num_operators);
+	Assert(op < (int)Operators.size());
 	for (i=0; i<Num_sexp_ai_goal_links; i++)
 		if (Sexp_ai_goal_links[i].op_code == sexp_ai_goal)
 			break;
@@ -29640,9 +29639,9 @@ int eval_num(int n)
 // Goober5000
 int get_sexp_id(char *sexp_name)
 {
-	for (int i = 0; i < Num_operators; i++)
+	for (size_t i=0; i < Operators.size(); i++)
 	{
-		if (!stricmp(sexp_name, Operators[i].text))
+		if (!stricmp(sexp_name, Operators[i].text.c_str()))
 			return Operators[i].value;
 	}
 	return -1;
@@ -30124,7 +30123,7 @@ int get_subcategory(int sexp_id)
 	}
 }
 
-sexp_help_struct Sexp_help[] = {
+SCP_vector<sexp_help_struct> Sexp_help = {
 	{ OP_PLUS, "Plus (Arithmetic operator)\r\n"
 		"\tAdds numbers and returns results.\r\n\r\n"
 		"Returns a number.  Takes 2 or more numeric arguments." },
@@ -33878,28 +33877,28 @@ sexp_help_struct Sexp_help[] = {
 
 
 
-op_menu_struct op_menu[] =
+SCP_vector<op_menu_struct> op_menu =
 {
-	{ "Objectives",		OP_CATEGORY_OBJECTIVE },
-	{ "Time",			OP_CATEGORY_TIME },
-	{ "Logical",		OP_CATEGORY_LOGICAL },
-	{ "Arithmetic",		OP_CATEGORY_ARITHMETIC },
-	{ "Status",			OP_CATEGORY_STATUS },
-	{ "Change",			OP_CATEGORY_CHANGE },
-	{ "Conditionals",	OP_CATEGORY_CONDITIONAL },
-	{ "Ai goals",		OP_CATEGORY_AI },
-	{ "Event/Goals",	OP_CATEGORY_GOAL_EVENT },
-	{ "Training",		OP_CATEGORY_TRAINING },
+	{ "Objectives",		OP_CATEGORY_OBJECTIVE	},
+	{ "Time",			OP_CATEGORY_TIME		},
+	{ "Logical",		OP_CATEGORY_LOGICAL		},
+	{ "Arithmetic",		OP_CATEGORY_ARITHMETIC	},
+	{ "Status",			OP_CATEGORY_STATUS		},
+	{ "Change",			OP_CATEGORY_CHANGE		},
+	{ "Conditionals",	OP_CATEGORY_CONDITIONAL	},
+	{ "Ai goals",		OP_CATEGORY_AI			},
+	{ "Event/Goals",	OP_CATEGORY_GOAL_EVENT	},
+	{ "Training",		OP_CATEGORY_TRAINING	},
 };
 
 // Goober5000's subcategorization of the Change menu (and possibly other menus in the future,
 // if people so choose - see sexp.h)
-op_menu_struct op_submenu[] =
+SCP_vector<op_menu_struct> op_submenu =
 {
 	{	"Messages and Personas",		CHANGE_SUBCATEGORY_MESSAGING						},
 	{	"AI Control",					CHANGE_SUBCATEGORY_AI_CONTROL						},
 	{	"Ship Status",					CHANGE_SUBCATEGORY_SHIP_STATUS						},
-	{	"Weapons, Shields, and Engines",	CHANGE_SUBCATEGORY_SHIELDS_ENGINES_AND_WEAPONS		},
+	{	"Weapons, Shields, and Engines",CHANGE_SUBCATEGORY_SHIELDS_ENGINES_AND_WEAPONS		},
 	{	"Subsystems and Health",		CHANGE_SUBCATEGORY_SUBSYSTEMS						},
 	{	"Cargo",						CHANGE_SUBCATEGORY_CARGO							},
 	{	"Armor and Damage Types",		CHANGE_SUBCATEGORY_ARMOR_AND_DAMAGE_TYPES			},
@@ -33918,39 +33917,34 @@ op_menu_struct op_submenu[] =
 	{	"Other",						CHANGE_SUBCATEGORY_OTHER							},
 	{	"Mission",						STATUS_SUBCATEGORY_MISSION							},
 	{	"Player",						STATUS_SUBCATEGORY_PLAYER							},
-	{	"Multiplayer",						STATUS_SUBCATEGORY_MULTIPLAYER					},
+	{	"Multiplayer",					STATUS_SUBCATEGORY_MULTIPLAYER						},
 	{	"Ship Status",					STATUS_SUBCATEGORY_SHIP_STATUS						},
-	{	"Weapons, Shields, and Engines",	STATUS_SUBCATEGORY_SHIELDS_ENGINES_AND_WEAPONS	},
+	{	"Weapons, Shields, and Engines",STATUS_SUBCATEGORY_SHIELDS_ENGINES_AND_WEAPONS		},
 	{	"Cargo",						STATUS_SUBCATEGORY_CARGO							},
 	{	"Damage",						STATUS_SUBCATEGORY_DAMAGE							},
 	{	"Distance and Coordinates",		STATUS_SUBCATEGORY_DISTANCE_AND_COORDINATES			},
 	{	"Variables",					STATUS_SUBCATEGORY_VARIABLES						},
 	{	"Other",						STATUS_SUBCATEGORY_OTHER							},
-
-
 };
-int Num_sexp_help = sizeof(Sexp_help) / sizeof(sexp_help_struct);
-int Num_op_menus = sizeof(op_menu) / sizeof(op_menu_struct);
-int Num_submenus = sizeof(op_submenu) / sizeof(op_menu_struct);
 
 /**
  * Internal file used by output_sexps, should not be called from output_sexps
  */
 static void output_sexp_html(int sexp_idx, FILE *fp)
 {
-	if(sexp_idx < 0 || sexp_idx > Num_operators)
+	if(sexp_idx < 0 || sexp_idx > (int)Operators.size())
 		return;
 
 	bool printed=false;
 
-	for(int i = 0; i < Num_sexp_help; i++)
+	for(auto& help : Sexp_help)
 	{
-		if(Sexp_help[i].id == Operators[sexp_idx].value)
+		if(help.id == Operators[sexp_idx].value)
 		{
-			char* new_buf = new char[2*strlen(Sexp_help[i].help)];
+			char* new_buf = new char[2 * help.help.size()];
 			char* dest_ptr = new_buf;
-			const char* curr_ptr = Sexp_help[i].help;
-			const char* end_ptr = curr_ptr + strlen(Sexp_help[i].help);
+			const char* curr_ptr = help.help.c_str();
+			const char* end_ptr = curr_ptr + help.help.size();
 			while(curr_ptr < end_ptr)
 			{
 				if(*curr_ptr == '\n')
@@ -33966,7 +33960,7 @@ static void output_sexp_html(int sexp_idx, FILE *fp)
 			}
 			*dest_ptr = '\0';
 
-			fprintf(fp, "<dt><b>%s</b></dt>\n<dd>%s</dd>\n", Operators[sexp_idx].text, new_buf);
+			fprintf(fp, "<dt><b>%s</b></dt>\n<dd>%s</dd>\n", Operators[sexp_idx].text.c_str(), new_buf);
 			delete[] new_buf;
 
 			printed = true;
@@ -33974,7 +33968,7 @@ static void output_sexp_html(int sexp_idx, FILE *fp)
 	}
 
 	if(!printed)
-		fprintf(fp, "<dt><b>%s</b></dt>\n<dd>Min arguments: %d, Max arguments: %d</dd>\n", Operators[sexp_idx].text, Operators[sexp_idx].min, Operators[sexp_idx].max);
+		fprintf(fp, "<dt><b>%s</b></dt>\n<dd>Min arguments: %d, Max arguments: %d</dd>\n", Operators[sexp_idx].text.c_str(), Operators[sexp_idx].min, Operators[sexp_idx].max);
 }
 
 /**
@@ -34000,14 +33994,14 @@ bool output_sexps(const char *filepath)
 
 	//Output an overview
 	fputs("<dl>", fp);
-	for(x = 0; x < Num_op_menus; x++)
+	for(x = 0; x < (int)op_menu.size(); x++)
 	{
-		fprintf(fp, "<dt><a href=\"#%d\">%s</a></dt>", (op_menu[x].id & OP_CATEGORY_MASK), op_menu[x].name);
-		for(y = 0; y < Num_submenus; y++)
+		fprintf(fp, "<dt><a href=\"#%d\">%s</a></dt>", (op_menu[x].id & OP_CATEGORY_MASK), op_menu[x].name.c_str());
+		for(y = 0; y < (int)op_submenu.size(); y++)
 		{
 			if(((op_submenu[y].id & OP_CATEGORY_MASK) == op_menu[x].id))
 			{
-				fprintf(fp, "<dd><a href=\"#%d\">%s</a></dd>", op_submenu[y].id & (OP_CATEGORY_MASK | SUBCATEGORY_MASK), op_submenu[y].name);
+				fprintf(fp, "<dd><a href=\"#%d\">%s</a></dd>", op_submenu[y].id & (OP_CATEGORY_MASK | SUBCATEGORY_MASK), op_submenu[y].name.c_str());
 			}
 		}
 	}
@@ -34015,19 +34009,19 @@ bool output_sexps(const char *filepath)
 
 	//Output the full descriptions
 	fputs("<dl>", fp);
-	for(x = 0; x < Num_op_menus; x++)
+	for(x = 0; x < (int)op_menu.size(); x++)
 	{
-		fprintf(fp, "<dt id=\"%d\"><h2>%s</h2></dt>\n", (op_menu[x].id & OP_CATEGORY_MASK), op_menu[x].name);
+		fprintf(fp, "<dt id=\"%d\"><h2>%s</h2></dt>\n", (op_menu[x].id & OP_CATEGORY_MASK), op_menu[x].name.c_str());
 		fputs("<dd>", fp);
 		fputs("<dl>", fp);
-		for(y = 0; y < Num_submenus; y++)
+		for(y = 0; y < (int)op_submenu.size(); y++)
 		{
 			if(((op_submenu[y].id & OP_CATEGORY_MASK) == op_menu[x].id))
 			{
-				fprintf(fp, "<dt id=\"%d\"><h3>%s</h3></dt>\n", op_submenu[y].id & (OP_CATEGORY_MASK | SUBCATEGORY_MASK), op_submenu[y].name);
+				fprintf(fp, "<dt id=\"%d\"><h3>%s</h3></dt>\n", op_submenu[y].id & (OP_CATEGORY_MASK | SUBCATEGORY_MASK), op_submenu[y].name.c_str());
 				fputs("<dd>", fp);
 				fputs("<dl>", fp);
-				for(z = 0; z < Num_operators; z++)
+				for(z = 0; z < (int)Operators.size(); z++)
 				{
 					if((get_category(Operators[z].value) == op_menu[x].id)
 						&& (get_subcategory(Operators[z].value) != -1)
@@ -34040,7 +34034,7 @@ bool output_sexps(const char *filepath)
 				fputs("</dd>", fp);
 			}
 		}
-		for(z = 0; z < Num_operators; z++)
+		for(z = 0; z < (int)Operators.size(); z++)
 		{
 			if((get_category(Operators[z].value) == op_menu[x].id)
 				&& (get_subcategory(Operators[z].value) == -1))
@@ -34051,7 +34045,7 @@ bool output_sexps(const char *filepath)
 		fputs("</dl>", fp);
 		fputs("</dd>", fp);
 	}
-	for(z = 0; z < Num_operators; z++)
+	for(z = 0; z < (int)Operators.size(); z++)
 	{
 		if(!get_category(Operators[z].value))
 		{
