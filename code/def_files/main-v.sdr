@@ -1,34 +1,112 @@
 #extension GL_ARB_gpu_shader5: enable
 
+#define MAX_LIGHTS 8
+
+struct model_light {
+	vec4 position;
+
+	vec3 diffuse_color;
+	int light_type;
+
+	vec3 spec_color;
+	float attenuation;
+
+	vec3 direction;
+};
+
+layout (std140) uniform modelData {
+	mat4 modelViewMatrix;
+	mat4 modelMatrix;
+	mat4 viewMatrix;
+	mat4 projMatrix;
+	mat4 textureMatrix;
+	mat4 shadow_mv_matrix;
+	mat4 shadow_proj_matrix[4];
+	mat4 envMatrix;
+
+	vec4 color;
+
+	model_light lights[MAX_LIGHTS];
+
+	float extrudeWidth;
+	float fogStart;
+	float fogScale;
+	int buffer_matrix_offset;
+
+	vec4 clip_equation;
+
+	float thruster_scale;
+	bool use_clip_plane;
+	int n_lights;
+	float defaultGloss;
+
+	vec3 ambientFactor;
+	int desaturate;
+
+	vec3 diffuseFactor;
+	int blend_alpha;
+
+	vec3 emissionFactor;
+	bool overrideDiffuse;
+
+	vec3 diffuseClr;
+	bool overrideGlow;
+
+	vec3 glowClr;
+	bool overrideSpec;
+
+	vec3 specClr;
+	bool alphaGloss;
+
+	bool gammaSpec;
+	bool envGloss;
+	bool alpha_spec;
+	int effect_num;
+
+	vec4 fogColor;
+
+	vec3 base_color;
+	float anim_timer;
+
+	vec3 stripe_color;
+	float vpwidth;
+
+	float vpheight;
+	bool team_glow_enabled;
+	float znear;
+	float zfar;
+
+	float veryneardist;
+	float neardist;
+	float middist;
+	float fardist;
+
+	vec2 normalAlphaMinMax;
+	int sBasemapIndex;
+	int sGlowmapIndex;
+
+	int sSpecmapIndex;
+	int sNormalmapIndex;
+	int sAmbientmapIndex;
+	int sMiscmapIndex;
+};
+
 in vec4 vertPosition;
 in vec4 vertTexCoord;
 in vec3 vertNormal;
 in vec4 vertTangent;
 in float vertModelID;
-uniform mat4 modelViewMatrix;
-uniform mat4 modelMatrix;
-uniform mat4 viewMatrix;
-uniform mat4 projMatrix;
-uniform mat4 textureMatrix;
-uniform vec4 color;
-#ifdef FLAG_NORMAL_EXTRUDE
-uniform float extrudeWidth;
-#endif
 #ifdef FLAG_ENV_MAP
-uniform mat4 envMatrix;
 out vec3 fragEnvReflect;
 #endif
 #ifdef FLAG_NORMAL_MAP
 out mat3 fragTangentMatrix;
 #endif
 #ifdef FLAG_FOG
-uniform float fogStart;
-uniform float fogScale;
 out float fragFogDist;
 #endif
 #ifdef FLAG_TRANSFORM
 uniform samplerBuffer transform_tex;
-uniform int buffer_matrix_offset;
 #ifdef FLAG_SHADOW_MAP
 out float geoNotVisible;
 #else
@@ -39,7 +117,6 @@ out float fragNotVisible;
 #if !defined(GL_ARB_gpu_shader5)
 out float geoInstance;
 #endif
-uniform mat4 shadow_proj_matrix[4];
 out vec3 geoNormal;
 out vec4 geoTexCoord;
 #else
@@ -48,17 +125,8 @@ out vec3 fragNormal;
 out vec4 fragTexCoord;
 #endif
 #ifdef FLAG_SHADOWS
-uniform mat4 shadow_mv_matrix;
-uniform mat4 shadow_proj_matrix[4];
 out vec4 fragShadowUV[4];
 out vec4 fragShadowPos;
-#endif
-#ifdef FLAG_THRUSTER
-uniform float thruster_scale;
-#endif
-#ifdef FLAG_CLIP
-uniform int use_clip_plane;
-uniform vec4 clip_equation;
 #endif
 #ifdef FLAG_TRANSFORM
 #define TEXELS_PER_MATRIX 4
@@ -149,7 +217,7 @@ void main()
 	fragFogDist = clamp((gl_Position.z - fogStart) * 0.75 * fogScale, 0.0, 1.0);
  #endif
  #ifdef FLAG_CLIP
-	if(use_clip_plane == 1) {
+	if(use_clip_plane) {
 		gl_ClipDistance[0] = dot(clip_equation, modelMatrix * orient * vertex);
 	} else {
 		gl_ClipDistance[0] = -1.0f;

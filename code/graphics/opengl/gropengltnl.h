@@ -42,7 +42,6 @@ void gr_opengl_delete_buffer(int handle);
 void gr_opengl_bind_uniform_buffer(uniform_block_type bind_point, size_t offset, size_t size, int buffer);
 
 void gr_opengl_update_transform_buffer(void* data, size_t size);
-void gr_opengl_set_transform_buffer_offset(size_t offset);
 
 void opengl_tnl_init();
 void opengl_tnl_shutdown();

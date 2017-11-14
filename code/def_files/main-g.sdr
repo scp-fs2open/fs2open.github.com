@@ -6,7 +6,96 @@ layout (triangle_strip, max_vertices = 3) out;
 layout(invocations = 4) in;
 #endif
 
-uniform mat4 shadow_proj_matrix[4];
+#define MAX_LIGHTS 8
+struct model_light {
+	vec4 position;
+
+	vec3 diffuse_color;
+	int light_type;
+
+	vec3 spec_color;
+	float attenuation;
+
+	vec3 direction;
+};
+
+layout (std140) uniform modelData {
+	mat4 modelViewMatrix;
+	mat4 modelMatrix;
+	mat4 viewMatrix;
+	mat4 projMatrix;
+	mat4 textureMatrix;
+	mat4 shadow_mv_matrix;
+	mat4 shadow_proj_matrix[4];
+	mat4 envMatrix;
+
+	vec4 color;
+
+	model_light lights[MAX_LIGHTS];
+
+	float extrudeWidth;
+	float fogStart;
+	float fogScale;
+	int buffer_matrix_offset;
+
+	vec4 clip_equation;
+
+	float thruster_scale;
+	bool use_clip_plane;
+	int n_lights;
+	float defaultGloss;
+
+	vec3 ambientFactor;
+	int desaturate;
+
+	vec3 diffuseFactor;
+	int blend_alpha;
+
+	vec3 emissionFactor;
+	bool overrideDiffuse;
+
+	vec3 diffuseClr;
+	bool overrideGlow;
+
+	vec3 glowClr;
+	bool overrideSpec;
+
+	vec3 specClr;
+	bool alphaGloss;
+
+	bool gammaSpec;
+	bool envGloss;
+	bool alpha_spec;
+	int effect_num;
+
+	vec4 fogColor;
+
+	vec3 base_color;
+	float anim_timer;
+
+	vec3 stripe_color;
+	float vpwidth;
+
+	float vpheight;
+	bool team_glow_enabled;
+	float znear;
+	float zfar;
+
+	float veryneardist;
+	float neardist;
+	float middist;
+	float fardist;
+
+	vec2 normalAlphaMinMax;
+	int sBasemapIndex;
+	int sGlowmapIndex;
+
+	int sSpecmapIndex;
+	int sNormalmapIndex;
+	int sAmbientmapIndex;
+	int sMiscmapIndex;
+};
+
 #if !defined(GL_ARB_gpu_shader5)
 in float geoInstance[];
 #endif

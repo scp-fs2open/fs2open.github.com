@@ -40,11 +40,9 @@ struct gr_light
 
 // Variables
 gr_light* gr_lights = NULL;
-gr_light_uniform_data gr_light_uniforms;
+graphics::model_light gr_light_uniforms[graphics::MAX_UNIFORM_LIGHTS];
 
 int Num_active_gr_lights = 0;
-
-const int gr_max_lights = 8;
 
 // OGL defaults
 const float gr_light_color[4] = { 0.8f, 0.8f, 0.8f, 1.0f };
@@ -150,22 +148,18 @@ void FSLight2GLLight(light* FSLight, gr_light* GLLight) {
 }
 
 static void set_light(int light_num, gr_light* ltp) {
-	Assert(light_num < gr_max_lights);
+	Assert(light_num < (int)graphics::MAX_UNIFORM_LIGHTS);
 
-	vm_vec_transform(&gr_light_uniforms.Position[light_num], &ltp->Position, &gr_view_matrix);
-	vm_vec_transform(&gr_light_uniforms.Direction[light_num], &ltp->SpotDir, &gr_view_matrix, false);
+	vm_vec_transform(&gr_light_uniforms[light_num].position, &ltp->Position, &gr_view_matrix);
+	vm_vec_transform(&gr_light_uniforms[light_num].direction, &ltp->SpotDir, &gr_view_matrix, false);
 
-	gr_light_uniforms.Diffuse_color[light_num].xyz.x = ltp->Diffuse.xyzw.x;
-	gr_light_uniforms.Diffuse_color[light_num].xyz.y = ltp->Diffuse.xyzw.y;
-	gr_light_uniforms.Diffuse_color[light_num].xyz.z = ltp->Diffuse.xyzw.z;
+	gr_light_uniforms[light_num].diffuse_color = vm_vec4_to_vec3(ltp->Diffuse);
 
-	gr_light_uniforms.Spec_color[light_num].xyz.x = ltp->Specular.xyzw.x;
-	gr_light_uniforms.Spec_color[light_num].xyz.y = ltp->Specular.xyzw.y;
-	gr_light_uniforms.Spec_color[light_num].xyz.z = ltp->Specular.xyzw.z;
+	gr_light_uniforms[light_num].spec_color = vm_vec4_to_vec3(ltp->Specular);
 
-	gr_light_uniforms.Light_type[light_num] = ltp->type;
+	gr_light_uniforms[light_num].light_type = ltp->type;
 
-	gr_light_uniforms.Attenuation[light_num] = ltp->LinearAtten;
+	gr_light_uniforms[light_num].attenuation = ltp->LinearAtten;
 }
 
 static bool sort_active_lights(const gr_light& la, const gr_light& lb) {
@@ -295,7 +289,7 @@ void gr_set_center_alpha(int type) {
 void gr_reset_lighting() {
 	int i;
 
-	for (i = 0; i < gr_max_lights; i++) {
+	for (i = 0; i < (int)graphics::MAX_UNIFORM_LIGHTS; i++) {
 		gr_lights[i].occupied = false;
 	}
 
@@ -329,36 +323,6 @@ void gr_light_shutdown() {
 		vm_free(gr_lights);
 		gr_lights = NULL;
 	}
-
-	if (gr_light_uniforms.Position != NULL) {
-		vm_free(gr_light_uniforms.Position);
-		gr_light_uniforms.Position = NULL;
-	}
-
-	if (gr_light_uniforms.Diffuse_color != NULL) {
-		vm_free(gr_light_uniforms.Diffuse_color);
-		gr_light_uniforms.Diffuse_color = NULL;
-	}
-
-	if (gr_light_uniforms.Spec_color != NULL) {
-		vm_free(gr_light_uniforms.Spec_color);
-		gr_light_uniforms.Spec_color = NULL;
-	}
-
-	if (gr_light_uniforms.Direction != NULL) {
-		vm_free(gr_light_uniforms.Direction);
-		gr_light_uniforms.Direction = NULL;
-	}
-
-	if (gr_light_uniforms.Light_type != NULL) {
-		vm_free(gr_light_uniforms.Light_type);
-		gr_light_uniforms.Light_type = NULL;
-	}
-
-	if (gr_light_uniforms.Attenuation != NULL) {
-		vm_free(gr_light_uniforms.Attenuation);
-		gr_light_uniforms.Attenuation = NULL;
-	}
 }
 
 void gr_light_init() {
@@ -374,13 +338,6 @@ void gr_light_init() {
 	}
 
 	memset(gr_lights, 0, MAX_LIGHTS * sizeof(gr_light));
-
-	gr_light_uniforms.Position = (vec4*) vm_malloc(gr_max_lights * sizeof(vec4));
-	gr_light_uniforms.Diffuse_color = (vec3d*) vm_malloc(gr_max_lights * sizeof(vec3d));
-	gr_light_uniforms.Spec_color = (vec3d*) vm_malloc(gr_max_lights * sizeof(vec3d));
-	gr_light_uniforms.Direction = (vec3d*) vm_malloc(gr_max_lights * sizeof(vec3d));
-	gr_light_uniforms.Light_type = (int*) vm_malloc(gr_max_lights * sizeof(int));
-	gr_light_uniforms.Attenuation = (float*) vm_malloc(gr_max_lights * sizeof(float));
 }
 
 void gr_set_lighting(bool set, bool state) {
@@ -396,7 +353,7 @@ void gr_set_lighting(bool set, bool state) {
 
 	int i = 0;
 
-	for (i = 0; i < gr_max_lights; i++) {
+	for (i = 0; i < (int)graphics::MAX_UNIFORM_LIGHTS; i++) {
 		if (i >= Num_active_gr_lights) {
 			break;
 		}
@@ -411,7 +368,7 @@ void gr_set_lighting(bool set, bool state) {
 	zero.Position.xyzw.x = 1.0f;
 
 	// make sure that we turn off any lights that we aren't using right now
-	for (; i < gr_max_lights; i++) {
+	for (; i < (int)graphics::MAX_UNIFORM_LIGHTS; i++) {
 		set_light(i, &zero);
 	}
 }

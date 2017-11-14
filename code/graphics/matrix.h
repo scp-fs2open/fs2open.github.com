@@ -28,3 +28,7 @@ void gr_pop_scale_matrix();
 void gr_setup_viewport();
 
 void gr_reset_matrices();
+
+extern matrix4 gr_texture_matrix;
+
+void gr_set_texture_panning(float u, float v, bool enable);

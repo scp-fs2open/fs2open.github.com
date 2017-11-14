@@ -2,94 +2,134 @@
 #define LT_DIRECTIONAL		0
 #define LT_POINT			1
 #define LT_TUBE			2
-uniform vec4 color;
-#ifdef FLAG_LIGHT
-uniform vec4 lightPosition[MAX_LIGHTS];
-uniform vec3 lightDirection[MAX_LIGHTS];
-uniform vec3 lightDiffuseColor[MAX_LIGHTS];
-uniform vec3 lightSpecColor[MAX_LIGHTS];
-uniform int lightType[MAX_LIGHTS];
-uniform float lightAttenuation[MAX_LIGHTS];
-uniform int n_lights;
-uniform float defaultGloss;
-uniform vec3 ambientFactor;
-uniform vec3 diffuseFactor;
-uniform vec3 emissionFactor;
-#endif
+struct model_light {
+	vec4 position;
+
+	vec3 diffuse_color;
+	int light_type;
+
+	vec3 spec_color;
+	float attenuation;
+
+	vec3 direction;
+};
+
+layout (std140) uniform modelData {
+	mat4 modelViewMatrix;
+	mat4 modelMatrix;
+	mat4 viewMatrix;
+	mat4 projMatrix;
+	mat4 textureMatrix;
+	mat4 shadow_mv_matrix;
+	mat4 shadow_proj_matrix[4];
+	mat4 envMatrix;
+
+	vec4 color;
+
+	model_light lights[MAX_LIGHTS];
+
+	float extrudeWidth;
+	float fogStart;
+	float fogScale;
+	int buffer_matrix_offset;
+
+	vec4 clip_equation;
+
+	float thruster_scale;
+	bool use_clip_plane;
+	int n_lights;
+	float defaultGloss;
+
+	vec3 ambientFactor;
+	int desaturate;
+
+	vec3 diffuseFactor;
+	int blend_alpha;
+
+	vec3 emissionFactor;
+	bool overrideDiffuse;
+
+	vec3 diffuseClr;
+	bool overrideGlow;
+
+	vec3 glowClr;
+	bool overrideSpec;
+
+	vec3 specClr;
+	bool alphaGloss;
+
+	bool gammaSpec;
+	bool envGloss;
+	bool alpha_spec;
+	int effect_num;
+
+	vec4 fogColor;
+
+	vec3 base_color;
+	float anim_timer;
+
+	vec3 stripe_color;
+	float vpwidth;
+
+	float vpheight;
+	bool team_glow_enabled;
+	float znear;
+	float zfar;
+
+	float veryneardist;
+	float neardist;
+	float middist;
+	float fardist;
+
+	vec2 normalAlphaMinMax;
+	int sBasemapIndex;
+	int sGlowmapIndex;
+
+	int sSpecmapIndex;
+	int sNormalmapIndex;
+	int sAmbientmapIndex;
+	int sMiscmapIndex;
+};
+
 #ifdef FLAG_DIFFUSE_MAP
 uniform sampler2DArray sBasemap;
-uniform int sBasemapIndex;
-uniform int desaturate;
-uniform int blend_alpha;
-uniform bool overrideDiffuse;
-uniform vec3 diffuseClr;
 #endif
 #ifdef FLAG_GLOW_MAP
 uniform sampler2DArray sGlowmap;
-uniform int sGlowmapIndex;
-uniform bool overrideGlow;
-uniform vec3 glowClr;
 #endif
 #ifdef FLAG_SPEC_MAP
 uniform sampler2DArray sSpecmap;
-uniform int sSpecmapIndex;
-uniform bool overrideSpec;
-uniform vec3 specClr;
-uniform bool alphaGloss;
-uniform bool gammaSpec;
 #endif
 #ifdef FLAG_ENV_MAP
 uniform samplerCube sEnvmap;
-uniform bool envGloss;
-uniform bool alpha_spec;
 in vec3 fragEnvReflect;
 #endif
 #ifdef FLAG_NORMAL_MAP
 uniform sampler2DArray sNormalmap;
-uniform int sNormalmapIndex;
 in mat3 fragTangentMatrix;
 #endif
 #ifdef FLAG_AMBIENT_MAP
 uniform sampler2DArray sAmbientmap;
-uniform int sAmbientmapIndex;
 #endif
 #ifdef FLAG_FOG
-uniform vec4 fogColor;
 in float fragFogDist;
 #endif
 #ifdef FLAG_ANIMATED
 uniform sampler2D sFramebuffer;
-uniform int effect_num;
-uniform float anim_timer;
-uniform float vpwidth;
-uniform float vpheight;
 #endif
 #ifdef FLAG_TRANSFORM
 in float fragNotVisible;
 #endif
 #ifdef FLAG_TEAMCOLOR
-uniform vec3 base_color;
-uniform vec3 stripe_color;
-uniform bool team_glow_enabled;
 vec2 teamMask = vec2(0.0, 0.0);
 #endif
 #ifdef FLAG_MISC_MAP
 uniform sampler2DArray sMiscmap;
-uniform int sMiscmapIndex;
 #endif
 #ifdef FLAG_SHADOWS
 in vec4 fragShadowUV[4];
 in vec4 fragShadowPos;
 uniform sampler2DArray shadow_map;
-uniform float znear;
-uniform float zfar;
-uniform float veryneardist;
-uniform float neardist;
-uniform float middist;
-uniform float fardist;
-#endif
-#ifdef FLAG_NORMAL_ALPHA
-uniform vec2 normalAlphaMinMax;
 #endif
 #define SPEC_INTENSITY_POINT      5.3 // Point light
 #define SPEC_INTENSITY_DIRECTIONAL   3.0 // Directional light
@@ -216,26 +256,26 @@ vec3 SpecularBlinnPhong(vec3 specColor, vec3 light, vec3 normal, vec3 halfVec, f
 #ifdef FLAG_LIGHT
 void GetLightInfo(int i, out vec3 lightDir, out float attenuation)
 {
-	lightDir = normalize(lightPosition[i].xyz);
+	lightDir = normalize(lights[i].position.xyz);
 	attenuation = 1.0;
-	if (lightType[i] != LT_DIRECTIONAL) {
+	if (lights[i].light_type != LT_DIRECTIONAL) {
 		// Positional light source
-		float dist = distance(lightPosition[i].xyz, fragPosition.xyz);
-		lightDir = (lightPosition[i].xyz - fragPosition.xyz);
+		float dist = distance(lights[i].position.xyz, fragPosition.xyz);
+		lightDir = (lights[i].position.xyz - fragPosition.xyz);
 
-		if (lightType[i] == LT_TUBE) {  // Tube light
-			float beamlength = length(lightDirection[i]);
-			vec3 beamDir = normalize(lightDirection[i]);
+		if (lights[i].light_type == LT_TUBE) {  // Tube light
+			float beamlength = length(lights[i].direction);
+			vec3 beamDir = normalize(lights[i].direction);
 			// Get nearest point on line
-			float neardist = dot(fragPosition.xyz - lightPosition[i].xyz, beamDir);
+			float neardist = dot(fragPosition.xyz - lights[i].position.xyz, beamDir);
 			// Move back from the endpoint of the beam along the beam by the distance we calculated
-			vec3 nearest = lightPosition[i].xyz - beamDir * abs(neardist);
+			vec3 nearest = lights[i].position.xyz - beamDir * abs(neardist);
 			lightDir = nearest - fragPosition.xyz;
 			dist = length(lightDir);
 		}
 
 		lightDir = normalize(lightDir);
-		attenuation = 1.0 / (1.0 + lightAttenuation[i] * dist);
+		attenuation = 1.0 / (1.0 + lights[i].attenuation * dist);
 	}
 }
 vec3 CalculateLighting(vec3 normal, vec3 diffuseMaterial, vec3 specularMaterial, float gloss, float fresnel, float shadow, float aoFactor)
@@ -245,10 +285,7 @@ vec3 CalculateLighting(vec3 normal, vec3 diffuseMaterial, vec3 specularMaterial,
 	vec3 lightDiffuse = vec3(0.0, 0.0, 0.0);
 	vec3 lightSpecular = vec3(0.0, 0.0, 0.0);
 	#pragma optionNV unroll all
-	for (int i = 0; i < MAX_LIGHTS; ++i) {
-		if (i > n_lights)
-			break;
-
+	for (int i = 0; i < n_lights; ++i) {
         if(i > 0) {
             shadow = 1.0;
         }
@@ -260,8 +297,8 @@ vec3 CalculateLighting(vec3 normal, vec3 diffuseMaterial, vec3 specularMaterial,
 		vec3 halfVec = normalize(lightDir + eyeDir);
 		float NdotL = max(dot(normal, lightDir), 0.0);
 		// Ambient, Diffuse, and Specular
-		lightDiffuse += (lightDiffuseColor[i].rgb * diffuseFactor * NdotL * attenuation) * shadow;
-		lightSpecular += lightSpecColor[i] * SpecularBlinnPhong(specularMaterial, lightDir, normal, halfVec, exp2(10.0 * gloss + 1.0), fresnel, NdotL) * attenuation * shadow;
+		lightDiffuse += (lights[i].diffuse_color.rgb * diffuseFactor * NdotL * attenuation) * shadow;
+		lightSpecular += lights[i].spec_color * SpecularBlinnPhong(specularMaterial, lightDir, normal, halfVec, exp2(10.0 * gloss + 1.0), fresnel, NdotL) * attenuation * shadow;
 	}
 	return diffuseMaterial * (lightAmbient + lightDiffuse) + lightSpecular;
 }

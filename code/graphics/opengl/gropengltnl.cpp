@@ -57,8 +57,6 @@ size_t GL_vertex_data_in = 0;
 GLint GL_max_elements_vertices = 4096;
 GLint GL_max_elements_indices = 4096;
 
-size_t GL_transform_buffer_offset = INVALID_SIZE;
-
 GLuint Shadow_map_texture = 0;
 GLuint Shadow_map_depth_texture = 0;
 GLuint shadow_fbo = 0;
@@ -313,11 +311,6 @@ GLuint opengl_get_transform_buffer_texture()
 	return GL_buffer_objects[Transform_buffer_handle].texture;
 }
 
-void gr_opengl_set_transform_buffer_offset(size_t offset)
-{
-	GL_transform_buffer_offset = offset;
-}
-
 void opengl_destroy_all_buffers()
 {
 	for ( uint i = 0; i < GL_buffer_objects.size(); i++ ) {
@@ -518,7 +511,7 @@ void opengl_create_orthographic_projection_matrix(matrix4* out, float left, floa
 	out->a1d[15] = 1.0f;
 }
 
-void gr_opengl_set_clip_plane(vec3d *clip_normal, vec3d *clip_point)
+void gr_opengl_set_clip_plane(const vec3d *clip_normal, const vec3d *clip_point)
 {
 	if ( clip_normal == NULL || clip_point == NULL ) {
 		GL_state.ClipDistance(0, false);
@@ -603,7 +596,7 @@ void opengl_tnl_set_material(material* material_info, bool set_base_map)
 
 	gr_set_fill_mode(material_info->get_fill_mode());
 
-	material::fog &fog_params = material_info->get_fog();
+	auto& fog_params = material_info->get_fog();
 
 	if ( fog_params.enabled ) {
 		gr_fog_set(GR_FOGMODE_FOG, fog_params.r, fog_params.g, fog_params.b, fog_params.dist_near, fog_params.dist_far);
@@ -613,7 +606,7 @@ void opengl_tnl_set_material(material* material_info, bool set_base_map)
 
 	gr_set_texture_addressing(material_info->get_texture_addressing());
 
-	material::clip_plane &clip_params = material_info->get_clip_plane();
+	auto& clip_params = material_info->get_clip_plane();
 
 	if ( material_info->is_clipped() ) {
 		gr_opengl_set_clip_plane(&clip_params.normal, &clip_params.position);
@@ -657,108 +650,12 @@ void opengl_tnl_set_model_material(model_material *material_info)
 	Assert( Current_shader->shader == SDR_TYPE_MODEL );
 
 	GL_state.Texture.SetShaderMode(GL_TRUE);
-	
-	Current_shader->program->Uniforms.setUniformMatrix4f("modelViewMatrix", gr_model_view_matrix);
-	Current_shader->program->Uniforms.setUniformMatrix4f("modelMatrix", gr_model_matrix_stack.get_transform());
-	Current_shader->program->Uniforms.setUniformMatrix4f("viewMatrix", gr_view_matrix);
-	Current_shader->program->Uniforms.setUniformMatrix4f("projMatrix", gr_projection_matrix);
-	Current_shader->program->Uniforms.setUniformMatrix4f("textureMatrix", GL_texture_matrix);
 
-	vec4 clr = material_info->get_color();
-	Current_shader->program->Uniforms.setUniform4f("color", clr);
-
-	if ( Current_shader->flags & SDR_FLAG_MODEL_ANIMATED ) {
-		Current_shader->program->Uniforms.setUniformf("anim_timer", material_info->get_animated_effect_time());
-		Current_shader->program->Uniforms.setUniformi("effect_num", material_info->get_animated_effect());
-		Current_shader->program->Uniforms.setUniformf("vpwidth", 1.0f / gr_screen.max_w);
-		Current_shader->program->Uniforms.setUniformf("vpheight", 1.0f / gr_screen.max_h);
-	}
-
-	if ( Current_shader->flags & SDR_FLAG_MODEL_CLIP ) {
-		if (material_info->is_clipped()) {
-			material::clip_plane &clip_info = material_info->get_clip_plane();
-			
-			Current_shader->program->Uniforms.setUniformi("use_clip_plane", 1);
-
-			vec4 clip_equation;
-			clip_equation.xyzw.x = clip_info.normal.xyz.x;
-			clip_equation.xyzw.y = clip_info.normal.xyz.y;
-			clip_equation.xyzw.z = clip_info.normal.xyz.z;
-			clip_equation.xyzw.w = -vm_vec_dot(&clip_info.normal, &clip_info.position);
-
-			Current_shader->program->Uniforms.setUniform4f("clip_equation", clip_equation);
-		} else {
-			Current_shader->program->Uniforms.setUniformi("use_clip_plane", 0);
-		}
-	}
-
-	if ( Current_shader->flags & SDR_FLAG_MODEL_LIGHT ) {
-		int num_lights = MIN(Num_active_gr_lights, gr_max_lights) - 1;
-		float light_factor = material_info->get_light_factor();
-		Current_shader->program->Uniforms.setUniformi("n_lights", num_lights);
-		Current_shader->program->Uniforms.setUniform4fv("lightPosition", gr_max_lights, gr_light_uniforms.Position);
-		Current_shader->program->Uniforms.setUniform3fv("lightDirection", gr_max_lights, gr_light_uniforms.Direction);
-		Current_shader->program->Uniforms.setUniform3fv("lightDiffuseColor", gr_max_lights, gr_light_uniforms.Diffuse_color);
-		Current_shader->program->Uniforms.setUniform3fv("lightSpecColor", gr_max_lights, gr_light_uniforms.Spec_color);
-		Current_shader->program->Uniforms.setUniform1iv("lightType", gr_max_lights, gr_light_uniforms.Light_type);
-		Current_shader->program->Uniforms.setUniform1fv("lightAttenuation", gr_max_lights, gr_light_uniforms.Attenuation);
-
-		if ( !material_info->get_center_alpha() ) {
-			Current_shader->program->Uniforms.setUniform3f("diffuseFactor", gr_light_color[0] * light_factor, gr_light_color[1] * light_factor, gr_light_color[2] * light_factor);
-			Current_shader->program->Uniforms.setUniform3f("ambientFactor", gr_light_ambient[0], gr_light_ambient[1], gr_light_ambient[2]);
-		} else {
-			//Current_shader->program->Uniforms.setUniform3f("diffuseFactor", GL_light_true_zero[0], GL_light_true_zero[1], GL_light_true_zero[2]);
-			//Current_shader->program->Uniforms.setUniform3f("ambientFactor", GL_light_true_zero[0], GL_light_true_zero[1], GL_light_true_zero[2]);
-			Current_shader->program->Uniforms.setUniform3f("diffuseFactor", gr_light_color[0] * light_factor, gr_light_color[1] * light_factor, gr_light_color[2] * light_factor);
-			Current_shader->program->Uniforms.setUniform3f("ambientFactor", gr_light_ambient[0], gr_light_ambient[1], gr_light_ambient[2]);
-		}
-
-		if ( material_info->get_light_factor() > 0.25f && !Cmdline_no_emissive ) {
-			Current_shader->program->Uniforms.setUniform3f("emissionFactor", gr_light_emission[0], gr_light_emission[1], gr_light_emission[2]);
-		} else {
-			Current_shader->program->Uniforms.setUniform3f("emissionFactor", gr_light_zero[0], gr_light_zero[1], gr_light_zero[2]);
-		}
-
-		Current_shader->program->Uniforms.setUniformf("specPower", Cmdline_ogl_spec);
-
-		if ( Gloss_override_set ) {
-			Current_shader->program->Uniforms.setUniformf("defaultGloss", Gloss_override);
-		} else {
-			Current_shader->program->Uniforms.setUniformf("defaultGloss", 0.6f); // add user configurable default gloss in the command line later
-		}
-	}
-
+	uint32_t array_index;
 	if ( Current_shader->flags & SDR_FLAG_MODEL_DIFFUSE_MAP ) {
 		Current_shader->program->Uniforms.setUniformi("sBasemap", render_pass);
 
-		if ( material_info->is_desaturated() ) {
-			Current_shader->program->Uniforms.setUniformi("desaturate", 1);
-		} else {
-			Current_shader->program->Uniforms.setUniformi("desaturate", 0);
-		}
-
-		if ( Basemap_color_override_set ) {
-			Current_shader->program->Uniforms.setUniformi("overrideDiffuse", 1);
-			Current_shader->program->Uniforms.setUniform3f("diffuseClr", Basemap_color_override[0], Basemap_color_override[1], Basemap_color_override[2]);
-		} else {
-			Current_shader->program->Uniforms.setUniformi("overrideDiffuse", 0);
-		}
-
-		switch ( material_info->get_blend_mode() ) {
-		case ALPHA_BLEND_PREMULTIPLIED:
-			Current_shader->program->Uniforms.setUniformi("blend_alpha", 1);
-			break;
-		case ALPHA_BLEND_ADDITIVE:
-			Current_shader->program->Uniforms.setUniformi("blend_alpha", 2);
-			break;
-		default:
-			Current_shader->program->Uniforms.setUniformi("blend_alpha", 0);
-			break;
-		}
-
-		uint32_t array_index = 0;
 		gr_opengl_tcache_set(material_info->get_texture_map(TM_BASE_TYPE), TCACHE_TYPE_NORMAL, &u_scale, &v_scale, &array_index, render_pass);
-		Current_shader->program->Uniforms.setUniformi("sBasemapIndex", array_index);
 		
 		++render_pass;
 	}
@@ -766,16 +663,7 @@ void opengl_tnl_set_model_material(model_material *material_info)
 	if ( Current_shader->flags & SDR_FLAG_MODEL_GLOW_MAP ) {
 		Current_shader->program->Uniforms.setUniformi("sGlowmap", render_pass);
 
-		if ( Glowmap_color_override_set ) {
-			Current_shader->program->Uniforms.setUniformi("overrideGlow", 1);
-			Current_shader->program->Uniforms.setUniform3f("glowClr", Glowmap_color_override[0], Glowmap_color_override[1], Glowmap_color_override[2]);
-		} else {
-			Current_shader->program->Uniforms.setUniformi("overrideGlow", 0);
-		}
-
-		uint32_t array_index = 0;
 		gr_opengl_tcache_set(material_info->get_texture_map(TM_GLOW_TYPE), TCACHE_TYPE_NORMAL, &u_scale, &v_scale, &array_index, render_pass);
-		Current_shader->program->Uniforms.setUniformi("sGlowmapIndex", array_index);
 
 		++render_pass;
 	}
@@ -783,42 +671,15 @@ void opengl_tnl_set_model_material(model_material *material_info)
 	if ( Current_shader->flags & SDR_FLAG_MODEL_SPEC_MAP ) {
 		Current_shader->program->Uniforms.setUniformi("sSpecmap", render_pass);
 
-		if ( Specmap_color_override_set ) {
-			Current_shader->program->Uniforms.setUniformi("overrideSpec", 1);
-			Current_shader->program->Uniforms.setUniform3f("specClr", Specmap_color_override[0], Specmap_color_override[1], Specmap_color_override[2]);
-		} else {
-			Current_shader->program->Uniforms.setUniformi("overrideSpec", 0);
-		}
-
-		uint32_t array_index = 0;
 		if ( material_info->get_texture_map(TM_SPEC_GLOSS_TYPE) > 0 ) {
 			gr_opengl_tcache_set(material_info->get_texture_map(TM_SPEC_GLOSS_TYPE), TCACHE_TYPE_NORMAL, &u_scale, &v_scale, &array_index, render_pass);
-
-			Current_shader->program->Uniforms.setUniformi("gammaSpec", 1);
-
-			if ( Gloss_override_set ) {
-				Current_shader->program->Uniforms.setUniformi("alphaGloss", 0);
-			} else {
-				Current_shader->program->Uniforms.setUniformi("alphaGloss", 1);
-			}
 		} else {
 			gr_opengl_tcache_set(material_info->get_texture_map(TM_SPECULAR_TYPE), TCACHE_TYPE_NORMAL, &u_scale, &v_scale, &array_index, render_pass);
-
-			Current_shader->program->Uniforms.setUniformi("gammaSpec", 0);
-			Current_shader->program->Uniforms.setUniformi("alphaGloss", 0);
 		}
-		Current_shader->program->Uniforms.setUniformi("sSpecmapIndex", array_index);
 		
 		++render_pass;
 
 		if ( Current_shader->flags & SDR_FLAG_MODEL_ENV_MAP ) {
-			if ( material_info->get_texture_map(TM_SPEC_GLOSS_TYPE) > 0 || Gloss_override_set ) {
-				Current_shader->program->Uniforms.setUniformi("envGloss", 1);
-			} else {
-				Current_shader->program->Uniforms.setUniformi("envGloss", 0);
-			}
-
-			Current_shader->program->Uniforms.setUniformMatrix4f("envMatrix", gr_env_texture_matrix);
 			Current_shader->program->Uniforms.setUniformi("sEnvmap", render_pass);
 
 			gr_opengl_tcache_set(ENVMAP, TCACHE_TYPE_CUBEMAP, &u_scale, &v_scale, &array_index, render_pass);
@@ -831,9 +692,7 @@ void opengl_tnl_set_model_material(model_material *material_info)
 	if ( Current_shader->flags & SDR_FLAG_MODEL_NORMAL_MAP ) {
 		Current_shader->program->Uniforms.setUniformi("sNormalmap", render_pass);
 
-		uint32_t array_index = 0;
 		gr_opengl_tcache_set(material_info->get_texture_map(TM_NORMAL_TYPE), TCACHE_TYPE_NORMAL, &u_scale, &v_scale, &array_index, render_pass);
-		Current_shader->program->Uniforms.setUniformi("sNormalmapIndex", array_index);
 
 		++render_pass;
 	}
@@ -841,9 +700,7 @@ void opengl_tnl_set_model_material(model_material *material_info)
 	if ( Current_shader->flags & SDR_FLAG_MODEL_HEIGHT_MAP ) {
 		Current_shader->program->Uniforms.setUniformi("sHeightmap", render_pass);
 
-		uint32_t array_index = 0;
 		gr_opengl_tcache_set(material_info->get_texture_map(TM_HEIGHT_TYPE), TCACHE_TYPE_NORMAL, &u_scale, &v_scale, &array_index, render_pass);
-		Current_shader->program->Uniforms.setUniformi("sHeightmapIndex", array_index);
 
 		++render_pass;
 	}
@@ -851,9 +708,7 @@ void opengl_tnl_set_model_material(model_material *material_info)
 	if ( Current_shader->flags & SDR_FLAG_MODEL_AMBIENT_MAP ) {
 		Current_shader->program->Uniforms.setUniformi("sAmbientmap", render_pass);
 
-		uint32_t array_index = 0;
 		gr_opengl_tcache_set(material_info->get_texture_map(TM_AMBIENT_TYPE), TCACHE_TYPE_NORMAL, &u_scale, &v_scale, &array_index, render_pass);
-		Current_shader->program->Uniforms.setUniformi("sAmbientmapIndex", array_index);
 
 		++render_pass;
 	}
@@ -861,29 +716,17 @@ void opengl_tnl_set_model_material(model_material *material_info)
 	if ( Current_shader->flags & SDR_FLAG_MODEL_MISC_MAP ) {
 		Current_shader->program->Uniforms.setUniformi("sMiscmap", render_pass);
 
-		uint32_t array_index = 0;
 		gr_opengl_tcache_set(material_info->get_texture_map(TM_MISC_TYPE), TCACHE_TYPE_NORMAL, &u_scale, &v_scale, &array_index, render_pass);
-		Current_shader->program->Uniforms.setUniformi("sMiscmapIndex", array_index);
 
 		++render_pass;
 	}
 
 	if ( Current_shader->flags & SDR_FLAG_MODEL_SHADOWS ) {
-		Current_shader->program->Uniforms.setUniformMatrix4f("shadow_mv_matrix", Shadow_view_matrix);
-		Current_shader->program->Uniforms.setUniformMatrix4fv("shadow_proj_matrix", MAX_SHADOW_CASCADES, Shadow_proj_matrix);
-		Current_shader->program->Uniforms.setUniformf("veryneardist", Shadow_cascade_distances[0]);
-		Current_shader->program->Uniforms.setUniformf("neardist", Shadow_cascade_distances[1]);
-		Current_shader->program->Uniforms.setUniformf("middist", Shadow_cascade_distances[2]);
-		Current_shader->program->Uniforms.setUniformf("fardist", Shadow_cascade_distances[3]);
 		Current_shader->program->Uniforms.setUniformi("shadow_map", render_pass);
 
 		GL_state.Texture.Enable(render_pass, GL_TEXTURE_2D_ARRAY, Shadow_map_texture);
 
 		++render_pass; // bump!
-	}
-
-	if ( Current_shader->flags & SDR_FLAG_MODEL_SHADOW_MAP ) {
-		Current_shader->program->Uniforms.setUniformMatrix4fv("shadow_proj_matrix", MAX_SHADOW_CASCADES, Shadow_proj_matrix);
 	}
 
 	if ( Current_shader->flags & SDR_FLAG_MODEL_ANIMATED ) {
@@ -901,60 +744,9 @@ void opengl_tnl_set_model_material(model_material *material_info)
 
 	if ( Current_shader->flags & SDR_FLAG_MODEL_TRANSFORM ) {
 		Current_shader->program->Uniforms.setUniformi("transform_tex", render_pass);
-		Current_shader->program->Uniforms.setUniformi("buffer_matrix_offset", (int)GL_transform_buffer_offset);
-
 		GL_state.Texture.Enable(render_pass, GL_TEXTURE_BUFFER, opengl_get_transform_buffer_texture());
 
 		++render_pass;
-	}
-
-	// Team colors are passed to the shader here, but the shader needs to handle their application.
-	// By default, this is handled through the r and g channels of the misc map, but this can be changed
-	// in the shader; test versions of this used the normal map r and b channels
-	if ( Current_shader->flags & SDR_FLAG_MODEL_TEAMCOLOR ) {
-		team_color &tm_clr = material_info->get_team_color();
-		vec3d stripe_color;
-		vec3d base_color;
-
-		stripe_color.xyz.x = tm_clr.stripe.r;
-		stripe_color.xyz.y = tm_clr.stripe.g;
-		stripe_color.xyz.z = tm_clr.stripe.b;
-
-		base_color.xyz.x = tm_clr.base.r;
-		base_color.xyz.y = tm_clr.base.g;
-		base_color.xyz.z = tm_clr.base.b;
-
-		Current_shader->program->Uniforms.setUniform3f("stripe_color", stripe_color);
-		Current_shader->program->Uniforms.setUniform3f("base_color", base_color);
-
-		if ( bm_has_alpha_channel(material_info->get_texture_map(TM_MISC_TYPE)) ) {
-			Current_shader->program->Uniforms.setUniformi("team_glow_enabled", 1);
-		} else {
-			Current_shader->program->Uniforms.setUniformi("team_glow_enabled", 0);
-		}
-	}
-
-	if ( Current_shader->flags & SDR_FLAG_MODEL_THRUSTER ) {
-		Current_shader->program->Uniforms.setUniformf("thruster_scale", material_info->get_thrust_scale());
-	}
-
-	
-	if ( Current_shader->flags & SDR_FLAG_MODEL_FOG ) {
-		material::fog fog_params = material_info->get_fog();
-
-		if ( fog_params.enabled ) {
-			Current_shader->program->Uniforms.setUniformf("fogStart", fog_params.dist_near);
-			Current_shader->program->Uniforms.setUniformf("fogScale", 1.0f / (fog_params.dist_far - fog_params.dist_near));
-			Current_shader->program->Uniforms.setUniform4f("fogColor", i2fl(fog_params.r) / 255.0f, i2fl(fog_params.g) / 255.0f, i2fl(fog_params.b) / 255.0f, 1.0f);
-		}
-	}
-
-	if ( Current_shader->flags & SDR_FLAG_MODEL_NORMAL_ALPHA ) {
-		Current_shader->program->Uniforms.setUniform2f("normalAlphaMinMax", material_info->get_normal_alpha_min(), material_info->get_normal_alpha_max());
-	}
-
-	if ( Current_shader->flags & SDR_FLAG_MODEL_NORMAL_EXTRUDE ) {
-		Current_shader->program->Uniforms.setUniformf("extrudeWidth", material_info->get_normal_extrude_width());
 	}
 
 	if ( Deferred_lighting ) {

@@ -17,6 +17,7 @@
 #include "graphics/tmapper.h"
 #include "graphics/matrix.h"
 #include "graphics/light.h"
+#include "graphics/uniforms.h"
 #include "io/timer.h"
 #include "math/staticrand.h"
 #include "model/modelrender.h"
@@ -424,6 +425,13 @@ void model_draw_list::reset()
 	Current_scale.xyz.x = 1.0f;
 	Current_scale.xyz.y = 1.0f;
 	Current_scale.xyz.z = 1.0f;
+
+	if (_dataBuffer) {
+		_dataBuffer->finished();
+		_dataBuffer = nullptr;
+	}
+
+	Render_initialized = false;
 }
 
 void model_draw_list::sort_draws()
@@ -518,31 +526,12 @@ void model_draw_list::render_buffer(queued_buffer_draw &render_elements)
 	GR_DEBUG_SCOPE("Render buffer");
 	TRACE_SCOPE(tracing::RenderBuffer);
 
-	gr_set_transform_buffer_offset(render_elements.transform_buffer_offset);
-
-	if ( render_elements.render_material.is_lit() ) {
-		Scene_light_handler.setLights(&render_elements.lights);
-	} else {
-		gr_set_lighting(false, false);
-
-		Scene_light_handler.resetLightState();
-	}
-
-	matrix orient;
-	vec3d pos;
-
-	vm_matrix4_get_offset(&pos, &render_elements.transform);
-	vm_matrix4_get_orientation(&orient, &render_elements.transform);
-
-	g3_start_instance_matrix(&pos, &orient);
-
-	gr_push_scale_matrix(&render_elements.scale);
+	gr_bind_uniform_buffer(uniform_block_type::ModelData,
+						   render_elements.uniform_buffer_offset,
+						   sizeof(graphics::model_uniform_data),
+						   _dataBuffer->bufferHandle());
 
 	gr_render_model(&render_elements.render_material, render_elements.vert_src, render_elements.buffer, render_elements.texi);
-
-	gr_pop_scale_matrix();
-
-	g3_done_instance(true);
 }
 
 vec3d model_draw_list::get_view_position()
@@ -609,12 +598,18 @@ void model_draw_list::init_render(bool sort)
 	}
 
 	TransformBufferHandler.submit_buffer_data();
+
+	build_uniform_buffer();
+
+	Render_initialized = true;
 }
 
 void model_draw_list::render_all(gr_zbuffer_type depth_mode)
 {
 	GR_DEBUG_SCOPE("Render draw list");
 	TRACE_SCOPE(tracing::SubmitDraws);
+
+	Assertion(Render_initialized, "init_render must be called before any render_all call!");
 
 	Scene_light_handler.resetLightState();
 
@@ -780,6 +775,41 @@ bool model_draw_list::sort_draw_pair(model_draw_list* target, const int a, const
 	}
 
 	return draw_call_a->lights.index_start < draw_call_b->lights.index_start;
+}
+void model_draw_list::build_uniform_buffer() {
+	GR_DEBUG_SCOPE("Build model uniform buffer");
+
+	TRACE_SCOPE(tracing::BuildModelUniforms);
+
+	_dataBuffer = gr_get_uniform_buffer(uniform_block_type::ModelData);
+
+	for (auto render_index : Render_keys) {
+		auto& queued_draw = Render_elements[render_index];
+
+		// Set lighting here so that it can be captured by the uniform conversion below
+		if ( queued_draw.render_material.is_lit() ) {
+			Scene_light_handler.setLights(&queued_draw.lights);
+		} else {
+			gr_set_lighting(false, false);
+
+			Scene_light_handler.resetLightState();
+		}
+
+		auto element = _dataBuffer->aligner().addTypedElement<graphics::model_uniform_data>();
+		graphics::uniforms::convert_model_material(element,
+												   queued_draw.render_material,
+												   queued_draw.transform,
+												   queued_draw.scale,
+												   queued_draw.transform_buffer_offset);
+		queued_draw.uniform_buffer_offset = _dataBuffer->aligner().getCurrentOffset();
+	}
+
+	TRACE_SCOPE(tracing::UploadModelUniforms);
+
+	_dataBuffer->submitData();
+}
+model_draw_list::~model_draw_list() {
+	reset();
 }
 
 void model_render_add_lightning( model_draw_list *scene, model_render_params* interp, polymodel *pm, bsp_info * sm )
@@ -1456,7 +1486,8 @@ void submodel_render_immediate(model_render_params *render_info, int model_num, 
 	model_list.init();
 
 	submodel_render_queue(render_info, &model_list, model_num, submodel_num, orient, pos);
-	
+
+	model_list.init_render();
 	model_list.render_all();
 
 	gr_zbias(0);

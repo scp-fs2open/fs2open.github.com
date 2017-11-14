@@ -2255,7 +2255,7 @@ static void uniform_buffer_managers_deinit() {
 	}
 }
 static void uniform_buffer_managers_retire_buffers() {
-	GR_DEBUG_SCOPE("Retiring uniform buffers");
+	GR_DEBUG_SCOPE("Retiring unused uniform buffers");
 
 	for (auto& manager: uniform_buffer_managers) {
 		manager->retireBuffers();

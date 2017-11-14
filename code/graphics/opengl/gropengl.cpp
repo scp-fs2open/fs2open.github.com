@@ -1124,7 +1124,6 @@ void opengl_setup_function_pointers()
 	gr_screen.gf_set_texture_addressing	= gr_opengl_set_texture_addressing;
 	gr_screen.gf_zbias					= gr_opengl_zbias;
 	gr_screen.gf_set_fill_mode			= gr_opengl_set_fill_mode;
-	gr_screen.gf_set_texture_panning	= gr_opengl_set_texture_panning;
 
 	gr_screen.gf_create_buffer	= gr_opengl_create_buffer;
 	gr_screen.gf_delete_buffer		= gr_opengl_delete_buffer;
@@ -1133,7 +1132,6 @@ void opengl_setup_function_pointers()
 	gr_screen.gf_bind_uniform_buffer = gr_opengl_bind_uniform_buffer;
 
 	gr_screen.gf_update_transform_buffer	= gr_opengl_update_transform_buffer;
-	gr_screen.gf_set_transform_buffer_offset	= gr_opengl_set_transform_buffer_offset;
 
 	gr_screen.gf_post_process_set_effect	= gr_opengl_post_process_set_effect;
 	gr_screen.gf_post_process_set_defaults	= gr_opengl_post_process_set_defaults;
