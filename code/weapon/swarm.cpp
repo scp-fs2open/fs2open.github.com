@@ -30,7 +30,7 @@
 
 #define SWARM_TIME_VARIANCE		100		// max time variance when deciding when to change swarm missile course
 
-#define SWARM_DIST_STOP_SWARMING	300
+#define SWARM_FRAME_STOP_SWARMING	4			// Estimated number of zigzag frames BEFORE impact to stop zig-zagging and instead home in straight to the target
 
 #define TURRET_SWARM_VALIDITY_CHECKTIME	5000	// number of ms between checks on turret_swam_info checks
 
@@ -187,8 +187,8 @@ void swarm_update_direction(object *objp, float frametime)
 	weapon		*wp;
 	object		*hobjp;
 	swarm_info	*swarmp;
-	vec3d		obj_to_target;
-	float			vel, target_dist, radius, missile_speed, missile_dist;
+	vec3d		obj_to_target;	// Vector pointing from the swarm missile to its target
+	float			vel, target_dist, radius;
 	physics_info	*pi;
 
 	Assert(objp->instance >= 0 && objp->instance < MAX_WEAPONS);
@@ -216,72 +216,81 @@ void swarm_update_direction(object *objp, float frametime)
 	}
 
 	if ( timestamp_elapsed(swarmp->change_timestamp) ) {
+		// Time to (maybe) zig-zag!
+		swarmp->change_timestamp = timestamp(swarmp->change_time);
 
-		if ( swarmp->path_num == -1 ) {
-			if ( Objects[objp->parent].type != OBJ_SHIP ) {
+		if (swarmp->path_num == -1) {
+			// Swarm missile was just created, or just lost homing
+			if (Objects[objp->parent].type != OBJ_SHIP) {
 				//AL: parent ship died... so just pick some random paths
-				swarmp->path_num	= myrand()%4;
+				swarmp->path_num = myrand() % 4;
+
 			} else {
+				// Parent ship is alive, try to get a new path from them
 				ship *parent_shipp;
 				parent_shipp = &Ships[Objects[objp->parent].instance];
-				swarmp->path_num = (parent_shipp->next_swarm_path++)%4;
+				swarmp->path_num = (parent_shipp->next_swarm_path++) % 4;
 
-				if ( parent_shipp->next_swarm_path%4 == 0 ) {
+				if (parent_shipp->next_swarm_path % 4 == 0) {
 					swarmp->flags ^= SWARM_POSITIVE_PATH;
 				}
 			}
 
-			vm_vec_scale_add(&swarmp->original_target, &objp->pos, &objp->orient.vec.fvec, SWARM_CONE_LENGTH);
-			swarmp->circle_rvec = objp->orient.vec.rvec;
-			swarmp->circle_uvec = objp->orient.vec.uvec;
-
-			swarmp->change_count = 1;
+			// Set the change time. This is here because it's common to both swarm_create() and turret_swarm_create()
 			swarmp->change_time = fl2i(SWARM_CHANGE_DIR_TIME + SWARM_TIME_VARIANCE*(frand() - 0.5f) * 2);
+
+			// Set target to straight ahead
+			vm_vec_scale_add(&swarmp->original_target, &objp->pos, &objp->orient.vec.fvec, SWARM_CONE_LENGTH);
+
+			// Reset zigzag index
+			swarmp->change_count = 1;
 
 			vm_vec_zero(&swarmp->last_offset);
 
-			missile_speed = pi->speed;
-			missile_dist	= missile_speed * swarmp->change_time/1000.0f;
-			if ( missile_dist < SWARM_DIST_OFFSET ) {
-				missile_dist = SWARM_DIST_OFFSET;
-			}
-			swarmp->angle_offset = asinf(SWARM_DIST_OFFSET / missile_dist);
-			Assert(!fl_is_nan(swarmp->angle_offset) );
+		} else if (hobjp != &obj_used_list &&
+				   f2fl(Missiontime - wp->creation_time) > 0.5f &&
+				   f2fl(Missiontime - wp->creation_time) > wip->free_flight_time) {
+			// swarm missile is homing in on homing_pos
+			swarmp->original_target = wp->homing_pos;
 		}
 
-		swarmp->change_timestamp = timestamp(swarmp->change_time);
+		// Calculate a rvec and uvec that will determine the displacement from the
+		// intended target.  Use crossprod to generate a right vector, from the missile
+		// up vector and the vector connecting missile to the homing object.
+		// Faster missiles have a tighter grouping than slower missiles, They should expand at sharp turns
+		{
+			float missile_dist;     // straight-line distance the missile will travel between now and next check
+			float missile_speed;    // current speed of the missile
 
-		// check if swarm missile is homing, if so need to calculate a new target pos to turn towards
-		if ( hobjp != &obj_used_list && f2fl(Missiontime - wp->creation_time) > 0.5f && ( f2fl(Missiontime - wp->creation_time) > wip->free_flight_time ) ) {
-			swarmp->original_target = wp->homing_pos;
-
-			// Calculate a rvec and uvec that will determine the displacement from the
-			// intended target.  Use crossprod to generate a right vector, from the missile
-			// up vector and the vector connecting missile to the homing object.
 			swarmp->circle_uvec = objp->orient.vec.uvec;
 			swarmp->circle_rvec = objp->orient.vec.rvec;
 
 			missile_speed = pi->speed;
-			missile_dist = missile_speed * swarmp->change_time/1000.0f;
-			if ( missile_dist < SWARM_DIST_OFFSET ) {
+			missile_dist = missile_speed * swarmp->change_time / 1000.0f;
+			if (missile_dist < SWARM_DIST_OFFSET) {
 				missile_dist = SWARM_DIST_OFFSET;
 			}
 			swarmp->angle_offset = asinf(SWARM_DIST_OFFSET / missile_dist);
-			Assert(!fl_is_nan(swarmp->angle_offset) );
+			Assert(!fl_is_nan(swarmp->angle_offset));
 		}
 
 		vm_vec_sub(&obj_to_target, &swarmp->original_target, &objp->pos);
 		target_dist = vm_vec_mag_quick(&obj_to_target);
 		swarmp->last_dist = target_dist;
 
+		// Radius around the target pos. Shortens as the missiles get closer to the target.
+		radius = tanf(swarmp->angle_offset) * target_dist;
+
 		// If homing swarm missile is close to target, let missile home in on original target
-		if ( target_dist < SWARM_DIST_STOP_SWARMING ) {
+		if ((target_dist / pi->speed) <= ((swarmp->change_time / 1000.0f) * SWARM_FRAME_STOP_SWARMING)) {
 			swarmp->new_target = swarmp->original_target;
+			vm_vec_zero(&swarmp->last_offset);
 			goto swarm_new_target_calced;
 		}
 
-		radius = tanf(swarmp->angle_offset) * target_dist;
 		vec3d rvec_component, uvec_component;
+		vm_vec_zero(&rvec_component);
+		vm_vec_zero(&uvec_component);
 
 		swarmp->change_count++;
 		if ( swarmp->change_count > 2 ) {
@@ -296,9 +305,6 @@ void swarm_update_direction(object *objp, float frametime)
 				swarmp->path_num = 0;
 			}
 		}
-
-		vm_vec_zero(&rvec_component);
-		vm_vec_zero(&uvec_component);
 
 		switch ( swarmp->path_num ) {
 			case 0:	// straight up and down
@@ -336,6 +342,7 @@ void swarm_update_direction(object *objp, float frametime)
 					vm_vec_copy_scale( &uvec_component, &swarmp->circle_uvec, -radius);
 				}
 				break;
+
 			default:
 				Int3();
 				break;
@@ -345,18 +352,18 @@ void swarm_update_direction(object *objp, float frametime)
 		vm_vec_zero(&swarmp->last_offset);
 		vm_vec_add(&swarmp->last_offset, &uvec_component, &rvec_component);
 		vm_vec_add2(&swarmp->new_target, &swarmp->last_offset);
-	}
-	else {
-		if ( hobjp != &obj_used_list && f2fl(Missiontime - wp->creation_time) > 0.5f ) {
 
+	} else {
+		// Not time to zig-zag.
+		if (hobjp != &obj_used_list &&
+			f2fl(Missiontime - wp->creation_time) > 0.5f &&
+			f2fl(Missiontime - wp->creation_time) > wip->free_flight_time) {
+			// Still homing
 			swarmp->new_target = swarmp->original_target;
-			if ( swarmp->last_dist < SWARM_DIST_STOP_SWARMING ) {
-				swarmp->new_target = wp->homing_pos;
-				goto swarm_new_target_calced;
-			}
 
+			// Continue homing in on our last offset around the target
 			vm_vec_add2(&swarmp->new_target, &swarmp->last_offset);
-		}
+		}	// Else, lost homing, maintain current trajectory
 	}
 
 	swarm_new_target_calced:
