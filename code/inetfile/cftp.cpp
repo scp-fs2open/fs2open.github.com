@@ -269,7 +269,10 @@ uint CFtpGet::GetFile()
 		return 0;
 	if(m_szDir[0])
 	{
-		sprintf(szCommandString,"CWD %s\r\n",m_szDir);
+		if (snprintf(szCommandString, sizeof(szCommandString), "CWD %s\r\n",m_szDir) >= (int)sizeof(szCommandString)) {
+			// Make sure the string is null terminated
+			szCommandString[sizeof(szCommandString) - 1] = '\0';
+		}
 		rcode = SendFTPCommand(szCommandString);
 		if(rcode >=400)
 		{

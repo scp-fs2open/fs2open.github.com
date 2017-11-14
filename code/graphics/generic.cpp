@@ -251,13 +251,19 @@ int generic_anim_stream(generic_anim *ga, const bool cache)
 		if ( p )
 			*p = 0;
 		char frame_name[MAX_FILENAME_LEN];
-		snprintf(frame_name, MAX_FILENAME_LEN, "%s_0000", ga->filename);
+		if (snprintf(frame_name, MAX_FILENAME_LEN, "%s_0000", ga->filename) >= MAX_FILENAME_LEN) {
+			// Make sure the string is null terminated
+			frame_name[MAX_FILENAME_LEN - 1] = '\0';
+		}
 		ga->bitmap_id = bm_load(frame_name);
 		if(ga->bitmap_id < 0) {
 			mprintf(("Cannot find first frame for eff streaming. eff Filename: %s", ga->filename));
 			return -1;
 		}
-		snprintf(frame_name, MAX_FILENAME_LEN, "%s_0001", ga->filename);
+		if (snprintf(frame_name, MAX_FILENAME_LEN, "%s_0001", ga->filename) >= MAX_FILENAME_LEN) {
+			// Make sure the string is null terminated
+			frame_name[MAX_FILENAME_LEN - 1] = '\0';
+		}
 		ga->eff.next_frame = bm_load(frame_name);
 		bm_get_info(ga->bitmap_id, &ga->width, &ga->height);
 		ga->previous_frame = 0;
@@ -369,7 +375,10 @@ void generic_render_eff_stream(generic_anim *ga)
 		mprintf(("frame: %d\n", ga->current_frame));
 	#endif
 		char frame_name[MAX_FILENAME_LEN];
-		snprintf(frame_name, MAX_FILENAME_LEN, "%s_%.4d", ga->filename, ga->current_frame);
+		if (snprintf(frame_name, MAX_FILENAME_LEN, "%s_%.4d", ga->filename, ga->current_frame) >= MAX_FILENAME_LEN) {
+			// Make sure the string is null terminated
+			frame_name[MAX_FILENAME_LEN - 1] = '\0';
+		}
 		if(bm_reload(ga->eff.next_frame, frame_name) == ga->eff.next_frame)
 		{
 			bitmap* next_frame_bmp = bm_lock(ga->eff.next_frame, bpp, (bpp==8)?BMP_AABITMAP:BMP_TEX_NONCOMP, true);
@@ -379,7 +388,10 @@ void generic_render_eff_stream(generic_anim *ga)
 			bm_unload(ga->eff.next_frame, 0, true);
 			if (ga->current_frame == ga->num_frames-1)
 			{
-				snprintf(frame_name, MAX_FILENAME_LEN, "%s_0001", ga->filename);
+				if (snprintf(frame_name, MAX_FILENAME_LEN, "%s_0001", ga->filename) >= MAX_FILENAME_LEN) {
+					// Make sure the string is null terminated
+					frame_name[MAX_FILENAME_LEN - 1] = '\0';
+				}
 				bm_reload(ga->eff.next_frame, frame_name);
 			}
 		}

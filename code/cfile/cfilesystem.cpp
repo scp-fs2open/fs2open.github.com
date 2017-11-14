@@ -1567,8 +1567,10 @@ int cf_get_file_list( SCP_vector<SCP_string> &list, int pathtype, const char *fi
 				continue;
 
 			char fn[MAX_PATH];
-			snprintf(fn, MAX_PATH-1, "%s/%s", filespec, dir->d_name);
-			fn[MAX_PATH-1] = 0;
+			if (snprintf(fn, MAX_PATH, "%s/%s", filespec, dir->d_name) >= MAX_PATH) {
+				// Make sure the string is null terminated
+				fn[MAX_PATH-1] = 0;
+			}
 
 			struct stat buf;
 			if (stat(fn, &buf) == -1) {
@@ -1776,8 +1778,10 @@ int cf_get_file_list( int max, char **list, int pathtype, const char *filter, in
 				continue;
 
 			char fn[MAX_PATH];
-			snprintf(fn, MAX_PATH-1, "%s/%s", filespec, dir->d_name);
-			fn[MAX_PATH-1] = 0;
+			if (snprintf(fn, MAX_PATH, "%s/%s", filespec, dir->d_name) >= MAX_PATH) {
+				// Make sure the string is null terminated
+				fn[MAX_PATH-1] = 0;
+			}
 
 			struct stat buf;
 			if (stat(fn, &buf) == -1) {
@@ -1991,8 +1995,10 @@ int cf_get_file_list_preallocated( int max, char arr[][MAX_FILENAME_LEN], char *
 				continue;
 
 			char fn[MAX_PATH];
-			snprintf(fn, MAX_PATH-1, "%s/%s", filespec, dir->d_name);
-			fn[MAX_PATH-1] = 0;
+			if (snprintf(fn, MAX_PATH, "%s/%s", filespec, dir->d_name) >= MAX_PATH) {
+				// Make sure the string is null terminated
+				fn[MAX_PATH-1] = 0;
+			}
 
 			struct stat buf;
 			if (stat(fn, &buf) == -1) {
