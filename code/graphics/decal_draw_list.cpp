@@ -96,9 +96,9 @@ void decal_draw_list::globalShutdown() {
 	gr_delete_buffer(box_index_buffer);
 }
 
-decal_draw_list::decal_draw_list() {
-	_buffer = gr_get_uniform_buffer(uniform_block_type::DecalInfo);
-	auto& aligner = _buffer->aligner();
+decal_draw_list::decal_draw_list(size_t num_decals) {
+	_buffer = gr_get_uniform_buffer(uniform_block_type::DecalInfo, num_decals);
+	auto& aligner = _buffer.aligner();
 
 	// Initialize header data
 	auto header = aligner.getHeader<graphics::decal_globals>();
@@ -131,13 +131,12 @@ decal_draw_list::decal_draw_list() {
 	header->ambientLight.xyz.z += gr_light_emission[2];
 }
 decal_draw_list::~decal_draw_list() {
-	_buffer->finished();
 }
 void decal_draw_list::render() {
 	GR_DEBUG_SCOPE("Render decals");
 	TRACE_SCOPE(tracing::RenderDecals);
 
-	_buffer->submitData();
+	_buffer.submitData();
 
 	std::sort(_draws.begin(), _draws.end(), decal_draw_list::sort_draws);
 
@@ -152,7 +151,7 @@ void decal_draw_list::render() {
 	gr_bind_uniform_buffer(uniform_block_type::DecalGlobals,
 						   0,
 						   sizeof(graphics::decal_globals),
-						   _buffer->bufferHandle());
+						   _buffer.bufferHandle());
 	gr_screen.gf_start_decal_pass();
 
 	for (auto& draw : _draws) {
@@ -162,7 +161,7 @@ void decal_draw_list::render() {
 		gr_bind_uniform_buffer(uniform_block_type::DecalInfo,
 							   draw.uniform_offset,
 							   sizeof(graphics::decal_info),
-							   _buffer->bufferHandle());
+							   _buffer.bufferHandle());
 
 		gr_screen.gf_render_decals(&draw.draw_mat, PRIM_TYPE_TRIS, &layout, BOX_NUM_FACES, source);
 	}
@@ -180,7 +179,7 @@ void decal_draw_list::add_decal(int diffuse_bitmap,
 		return;
 	}
 
-	auto& aligner = _buffer->aligner();
+	auto& aligner = _buffer.aligner();
 
 	auto info = aligner.addTypedElement<graphics::decal_info>();
 	info->model_matrix = transform;
@@ -202,7 +201,7 @@ void decal_draw_list::add_decal(int diffuse_bitmap,
 	info->normal_index = normal_bitmap < 0 ? -1 : bm_get_array_index(normal_bitmap);
 
 	decal_draw_info current_draw;
-	current_draw.uniform_offset = aligner.getCurrentOffset();
+	current_draw.uniform_offset = _buffer.getBufferOffset(aligner.getCurrentOffset());
 
 	material_set_decal(&current_draw.draw_mat,
 					   bm_get_base_frame(diffuse_bitmap),

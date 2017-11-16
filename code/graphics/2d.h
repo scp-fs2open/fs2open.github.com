@@ -1208,7 +1208,13 @@ enum AnimatedShader {
 	ANIMATED_SHADER_CLOAK = 2,
 };
 
-graphics::util::UniformBuffer* gr_get_uniform_buffer(uniform_block_type type);
+/**
+ * @brief Retreives a uniform buffer for storing uniform block data
+ * @param type The type of uniform data that will be stored in the buffer
+ * @param num_elements The number of elements that will be used in the buffer
+ * @return A structure which gives access to a memory buffer where the uniform data can be stored
+ */
+graphics::util::UniformBuffer gr_get_uniform_buffer(uniform_block_type type, size_t num_elements);
 
 struct VideoModeData {
 	uint32_t width = 0;

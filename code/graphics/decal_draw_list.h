@@ -15,12 +15,12 @@ class decal_draw_list {
 	};
 	SCP_vector<decal_draw_info> _draws;
 
-	util::UniformBuffer* _buffer = nullptr;
+	util::UniformBuffer _buffer;
 
 	static bool sort_draws(const decal_draw_info& left, const decal_draw_info& right);
 
  public:
-	decal_draw_list();
+	explicit decal_draw_list(size_t num_decals);
 	~decal_draw_list();
 
 	decal_draw_list(const decal_draw_list&) = delete;

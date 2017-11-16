@@ -7,55 +7,77 @@
 namespace graphics {
 namespace util {
 
+class UniformBufferManager;
+
 /**
- * @brief Manages a single uniform buffer
+ * @brief Manages a uniform buffer memory range
  *
- * This is a wrapper around a buffer handle from the graphics system which also provides access to a uniform data
- * aligner. It also manages the fence object which detects if this buffer is still in use or can be reused by other
- * rendering operations.
+ * This class will be used by the uniform buffer manager for allowing user code direct access to uniform buffer memory.
+ * This also contains a UniformAligner which can be used for making sure that the data is aligned properly for GPU
+ * access.
  */
 class UniformBuffer {
-	int _buffer_obj = -1;
+	UniformBufferManager* _parent = nullptr;
+	size_t _parent_offset = 0;
+
+	int _buffer_handle = -1;
 
 	UniformAligner _aligner;
-
-	gr_sync _sync_obj = nullptr;
  public:
-	UniformBuffer(size_t element_size, size_t header_size = 0);
+	UniformBuffer();
+	UniformBuffer(UniformBufferManager* parent,
+				  size_t parent_offset,
+				  void* data_buffer,
+				  size_t buffer_size,
+				  size_t element_size,
+				  size_t header_size,
+				  size_t element_alignment);
 	~UniformBuffer();
-
-	UniformBuffer(const UniformBuffer&) = delete;
-	UniformBuffer& operator=(const UniformBuffer&) = delete;
-
-	UniformBuffer(UniformBuffer&& other) SCP_NOEXCEPT;
-	UniformBuffer& operator=(UniformBuffer&& other) SCP_NOEXCEPT;
 
 	inline UniformAligner& aligner() {
 		return _aligner;
 	}
 
-	inline int bufferHandle() {
-		return _buffer_obj;
-	}
+	/**
+	 * @brief Gets the buffer handle for use with gr_bind_uniform_buffer.
+	 * @return The buffer handle
+	 */
+	int bufferHandle();
 
 	/**
 	 * @brief Submits the data from the uniform aligner to the underlying buffer object.
+	 *
+	 * This should be called when you are done building the uniform data.
 	 */
 	void submitData();
 
 	/**
-	 * @brief Signal that the code is done using this uniform buffer
+	 * @brief Given the offset into the memory buffer, returns the total offset in the buffer object
 	 *
-	 * This is used for synchronizing access to this buffer. After this call is finished and until the data has been
-	 * consumed by the GPU, this buffer is considered to the "in use".
+	 * This should be used for retrieving the correct offset for gr_bind_uniform_buffer.
+	 *
+	 * @param localOffset The offset into the local memory buffer (e.g. the return value of
+	 * 	UniformAligner::getCurrentOffset)
+	 * @return The absolute offset in the uniform buffer object.
 	 */
-	void finished();
+	size_t getBufferOffset(size_t localOffset);
 
 	/**
-	 * @brief Determines if the buffer is still in use by the GPU
-	 * @return @c true if the GPU may still be using this buffer, @c false if not
+	 * @brief Gets the absolute offset to the specified element in the aligner
+	 * This should be used for retrieving the correct offset for gr_bind_uniform_buffer.
+	 *
+	 * @param index The element index to be retrieved
+	 * @return The absolute offset in the uniform buffer object.
 	 */
-	bool isInUse();
+	size_t getAlignerElementOffset(size_t index);
+
+	/**
+	 * @brief Gets the absolute offset of the current element in the aligner
+	 * This should be used for retrieving the correct offset for gr_bind_uniform_buffer.
+	 *
+	 * @return The absolute offset in the uniform buffer object.
+	 */
+	size_t getCurrentAlignerOffset();
 };
 
 }

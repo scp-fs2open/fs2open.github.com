@@ -427,13 +427,13 @@ void NanoVGRenderer::renderFlush() {
 
 	gr_set_viewport(0, 0, gr_screen.max_w, gr_screen.max_h);
 
-	_uniformBuffer = gr_get_uniform_buffer(uniform_block_type::NanoVGData);
+	_uniformBuffer = gr_get_uniform_buffer(uniform_block_type::NanoVGData, _uniformData.size());
 	// This copies the uniform data from our vector into the uniform buffer aligner
 	for (auto& uniform : _uniformData) {
-		memcpy(_uniformBuffer->aligner().addTypedElement<nanovg_draw_data>(), &uniform, sizeof(uniform));
+		memcpy(_uniformBuffer.aligner().addTypedElement<nanovg_draw_data>(), &uniform, sizeof(uniform));
 	}
 
-	_uniformBuffer->submitData();
+	_uniformBuffer.submitData();
 	gr_update_buffer_data(_vertexBuffer, sizeof(NVGvertex) * _vertices.size(), _vertices.data());
 
 	for (auto& drawCall : _drawCalls) {
@@ -452,8 +452,6 @@ void NanoVGRenderer::renderFlush() {
 			break;
 		}
 	}
-
-	_uniformBuffer->finished();
 
 	// Reset all data again
 	renderCancel();
@@ -662,9 +660,9 @@ void NanoVGRenderer::drawTriangles(const DrawCall& call) {
 	materialSetTexture(mat, call.image);
 
 	gr_bind_uniform_buffer(uniform_block_type::NanoVGData,
-						   _uniformBuffer->aligner().getOffset(call.uniformIndex),
+						   _uniformBuffer.getAlignerElementOffset(call.uniformIndex),
 						   sizeof(nanovg_draw_data),
-						   _uniformBuffer->bufferHandle());
+						   _uniformBuffer.bufferHandle());
 
 	gr_render_nanovg(&mat, PRIM_TYPE_TRIS, &_vertexLayout, call.triangleOffset, call.triangleCount, _vertexBuffer);
 }
@@ -676,9 +674,9 @@ void NanoVGRenderer::drawFill(const DrawCall& call) {
 	mat.set_texture_map(TM_BASE_TYPE, -1);
 
 	gr_bind_uniform_buffer(uniform_block_type::NanoVGData,
-						   _uniformBuffer->aligner().getOffset(call.uniformIndex),
+						   _uniformBuffer.getAlignerElementOffset(call.uniformIndex),
 						   sizeof(nanovg_draw_data),
-						   _uniformBuffer->bufferHandle());
+						   _uniformBuffer.bufferHandle());
 
 	auto pathOffset = call.pathOffset;
 	for (size_t i = 0; i < call.pathCount; ++i) {
@@ -693,9 +691,9 @@ void NanoVGRenderer::drawFill(const DrawCall& call) {
 	mat = _fillAntiAliasMaterial;
 	materialSetTexture(mat, call.image);
 	gr_bind_uniform_buffer(uniform_block_type::NanoVGData,
-						   _uniformBuffer->aligner().getOffset(call.uniformIndex + 1),
+						   _uniformBuffer.getAlignerElementOffset(call.uniformIndex + 1),
 						   sizeof(nanovg_draw_data),
-						   _uniformBuffer->bufferHandle());
+						   _uniformBuffer.bufferHandle());
 
 	// Draw fringes
 	for (size_t i = 0; i < call.pathCount; ++i) {
@@ -719,9 +717,9 @@ void NanoVGRenderer::drawConvexFill(const DrawCall& call) {
 	auto mat = _triangleFillMaterial;
 	materialSetTexture(mat, call.image);
 	gr_bind_uniform_buffer(uniform_block_type::NanoVGData,
-						   _uniformBuffer->aligner().getOffset(call.uniformIndex),
+						   _uniformBuffer.getAlignerElementOffset(call.uniformIndex),
 						   sizeof(nanovg_draw_data),
-						   _uniformBuffer->bufferHandle());
+						   _uniformBuffer.bufferHandle());
 
 	auto pathOffset = call.pathOffset;
 	for (size_t i = 0; i < call.pathCount; ++i) {
@@ -752,9 +750,9 @@ void NanoVGRenderer::drawStroke(const DrawCall& call) {
 	auto mat = _strokeFillMaterial;
 	materialSetTexture(mat, call.image);
 	gr_bind_uniform_buffer(uniform_block_type::NanoVGData,
-						   _uniformBuffer->aligner().getOffset(call.uniformIndex + 1),
+						   _uniformBuffer.getAlignerElementOffset(call.uniformIndex + 1),
 						   sizeof(nanovg_draw_data),
-						   _uniformBuffer->bufferHandle());
+						   _uniformBuffer.bufferHandle());
 
 	auto pathOffset = call.pathOffset;
 
@@ -770,9 +768,9 @@ void NanoVGRenderer::drawStroke(const DrawCall& call) {
 
 	// Draw anti-aliased pixels.
 	gr_bind_uniform_buffer(uniform_block_type::NanoVGData,
-						   _uniformBuffer->aligner().getOffset(call.uniformIndex),
+						   _uniformBuffer.getAlignerElementOffset(call.uniformIndex),
 						   sizeof(nanovg_draw_data),
-						   _uniformBuffer->bufferHandle());
+						   _uniformBuffer.bufferHandle());
 	mat = _strokeAntiaiasMaterial;
 	materialSetTexture(mat, call.image);
 	for (size_t i = 0; i < call.pathCount; ++i) {

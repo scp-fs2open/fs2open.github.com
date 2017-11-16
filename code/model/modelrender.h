@@ -253,7 +253,7 @@ class model_draw_list
 	SCP_vector<insignia_draw_data> Insignias;
 	SCP_vector<outline_draw> Outlines;
 
-	graphics::util::UniformBuffer* _dataBuffer = nullptr;
+	graphics::util::UniformBuffer _dataBuffer;
 	
 	bool Render_initialized = false; //!< A flag for checking if init_render has been called before a render_all call
 	

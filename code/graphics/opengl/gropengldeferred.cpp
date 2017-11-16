@@ -125,9 +125,18 @@ void gr_opengl_deferred_lighting_finish()
 	std::stable_sort(Lights.begin(), Lights.end(), light_compare_by_type);
 	using namespace graphics;
 
-	// Get a uniform buffer for out data
-	auto buffer = gr_get_uniform_buffer(uniform_block_type::Lights);
-	auto& uniformAligner = buffer->aligner();
+	// We need to precompute how many elements we are going to need
+	size_t num_data_elements = 0;
+	for (auto& l : Lights) {
+		++num_data_elements;
+		if (l.type == Light_Type::Tube) {
+			++num_data_elements;
+		}
+	}
+
+	// Get a uniform buffer for our data
+	auto buffer = gr_get_uniform_buffer(uniform_block_type::Lights, num_data_elements);
+	auto& uniformAligner = buffer.aligner();
 
 	{
 		GR_DEBUG_SCOPE("Build buffer data");
@@ -243,14 +252,14 @@ void gr_opengl_deferred_lighting_finish()
 		}
 
 		// Uniform data has been assembled, upload it to the GPU and issue the draw calls
-		buffer->submitData();
+		buffer.submitData();
 	}
 	{
 		GR_DEBUG_SCOPE("Render light geometry");
 		gr_bind_uniform_buffer(uniform_block_type::DeferredGlobals,
-							   0,
+							   buffer.getBufferOffset(0),
 							   sizeof(graphics::deferred_global_data),
-							   buffer->bufferHandle());
+							   buffer.bufferHandle());
 
 		size_t element_index = 0;
 		for (auto& l : Lights) {
@@ -259,26 +268,26 @@ void gr_opengl_deferred_lighting_finish()
 			switch (l.type) {
 			case Light_Type::Directional:
 				gr_bind_uniform_buffer(uniform_block_type::Lights,
-									   uniformAligner.getOffset(element_index),
+									   buffer.getAlignerElementOffset(element_index),
 									   sizeof(graphics::deferred_light_data),
-									   buffer->bufferHandle());
+									   buffer.bufferHandle());
 				opengl_draw_full_screen_textured(0.0f, 0.0f, 1.0f, 1.0f);
 				++element_index;
 				break;
 			case Light_Type::Cone:
 			case Light_Type::Point:
 				gr_bind_uniform_buffer(uniform_block_type::Lights,
-									   uniformAligner.getOffset(element_index),
+									   buffer.getAlignerElementOffset(element_index),
 									   sizeof(graphics::deferred_light_data),
-									   buffer->bufferHandle());
+									   buffer.bufferHandle());
 				gr_opengl_draw_deferred_light_sphere(&l.vec);
 				++element_index;
 				break;
 			case Light_Type::Tube:
 				gr_bind_uniform_buffer(uniform_block_type::Lights,
-									   uniformAligner.getOffset(element_index),
+									   buffer.getAlignerElementOffset(element_index),
 									   sizeof(graphics::deferred_light_data),
-									   buffer->bufferHandle());
+									   buffer.bufferHandle());
 
 				vec3d a;
 				matrix orient;
@@ -290,9 +299,9 @@ void gr_opengl_deferred_lighting_finish()
 
 				// The next two draws use the same uniform block element
 				gr_bind_uniform_buffer(uniform_block_type::Lights,
-									   uniformAligner.getOffset(element_index),
+									   buffer.getAlignerElementOffset(element_index),
 									   sizeof(graphics::deferred_light_data),
-									   buffer->bufferHandle());
+									   buffer.bufferHandle());
 
 				gr_opengl_draw_deferred_light_sphere(&l.vec);
 				gr_opengl_draw_deferred_light_sphere(&l.vec2);
@@ -302,9 +311,6 @@ void gr_opengl_deferred_lighting_finish()
 				continue;
 			}
 		}
-
-		// We don't need the buffer anymore
-		buffer->finished();
 	}
 
 	gr_end_view_matrix();

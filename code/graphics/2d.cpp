@@ -2414,31 +2414,20 @@ void gr_print_timestamp(int x, int y, fix timestamp, int resize_mode)
 	gr_string(x, y, time.c_str(), resize_mode);
 }
 
-static std::unique_ptr<graphics::util::UniformBufferManager>
-	uniform_buffer_managers[static_cast<size_t>(uniform_block_type::NUM_BLOCK_TYPES)];
+static std::unique_ptr<graphics::util::UniformBufferManager> UniformBufferManager;
 
 static void uniform_buffer_managers_init() {
-	for (size_t i = 0; i < static_cast<size_t>(uniform_block_type::NUM_BLOCK_TYPES); ++i) {
-		auto enumVal = static_cast<uniform_block_type>(i);
-
-		uniform_buffer_managers[i].reset(new graphics::util::UniformBufferManager(enumVal));
-	}
+	UniformBufferManager.reset(new graphics::util::UniformBufferManager());
 }
 static void uniform_buffer_managers_deinit() {
-	for (auto& manager: uniform_buffer_managers) {
-		manager.reset();
-	}
+	UniformBufferManager.reset();
 }
 static void uniform_buffer_managers_retire_buffers() {
-	GR_DEBUG_SCOPE("Retiring unused uniform buffers");
-
-	for (auto& manager: uniform_buffer_managers) {
-		manager->retireBuffers();
-	}
+	UniformBufferManager->onFrameEnd();
 }
 
-graphics::util::UniformBuffer* gr_get_uniform_buffer(uniform_block_type type) {
-	return uniform_buffer_managers[static_cast<size_t>(type)]->getBuffer();
+graphics::util::UniformBuffer gr_get_uniform_buffer(uniform_block_type type, size_t num_elements) {
+	return UniformBufferManager->getUniformBuffer(type, num_elements);
 }
 
 SCP_vector<DisplayData> gr_enumerate_displays()
