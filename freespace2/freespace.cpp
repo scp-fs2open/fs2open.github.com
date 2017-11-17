@@ -3698,6 +3698,8 @@ void game_simulation_frame()
 		// move all the objects now
 		obj_move_all(flFrametime);
 
+		game_do_training_checks();
+
 		mission_eval_goals();
 	}
 
@@ -4207,7 +4209,6 @@ void game_frame(bool paused)
 		}
 	}
 
-	game_do_training_checks();
 	asteroid_frame();
 
 	// process lightning (nebula only)
