@@ -766,7 +766,7 @@ static void profile_save(Profile *profile, const char *file)
 // os registry functions -------------------------------------------------------------
 
 // initialize the registry. setup default keys to use
-void os_init_registry_stuff(const char *company, const char *app, const char *version)
+void os_init_registry_stuff(const char *company, const char *app)
 {
 	if (company) {
 		strcpy_s(szCompanyName, company);
