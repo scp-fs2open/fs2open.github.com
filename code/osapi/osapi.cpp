@@ -218,9 +218,16 @@ void os_deinit();
 
 // If app_name is NULL or ommited, then TITLE is used
 // for the app name, which is where registry keys are stored.
-void os_init(const char * wclass, const char * title, const char *app_name, const char *version_string )
+void os_init(const char * wclass, const char * title, const char * app_name)
 {
-	os_init_registry_stuff(Osreg_company_name, title, version_string);
+	if (app_name == nullptr || !app_name[0])
+	{
+		os_init_registry_stuff(Osreg_company_name, title);
+	}
+	else
+	{
+		os_init_registry_stuff(Osreg_company_name, app_name);
+	}
 
 	strcpy_s( szWinTitle, title );
 	strcpy_s( szWinClass, wclass );

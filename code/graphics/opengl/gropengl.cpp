@@ -72,6 +72,7 @@ static GLuint GL_screen_pbo = 0;
 float GL_alpha_threshold = 0.0f;
 
 extern const char *Osreg_title;
+extern SCP_string Window_title;
 
 extern GLfloat GL_anisotropy;
 
@@ -1020,6 +1021,9 @@ int opengl_init_display_device()
 	attrs.height = (uint32_t) gr_screen.max_h;
 
 	attrs.title = Osreg_title;
+	if (!Window_title.empty()) {
+		attrs.title = Window_title;
+	}
 
 	if (!Cmdline_window && ! Cmdline_fullscreen_window) {
 		attrs.flags.set(os::ViewPortFlags::Fullscreen);

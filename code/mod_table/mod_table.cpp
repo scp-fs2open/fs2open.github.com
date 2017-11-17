@@ -37,6 +37,7 @@ bool Beams_use_damage_factors = false;
 float Generic_pain_flash_factor = 1.0f;
 float Shield_pain_flash_factor = 0.0f;
 gameversion::version Targetted_version(2, 0, 0, 0); // Defaults to retail
+SCP_string Window_title = "";
 
 void parse_mod_table(const char *filename)
 {
@@ -64,6 +65,10 @@ void parse_mod_table(const char *filename)
 					gameversion::format_version(Targetted_version).c_str(),
 					gameversion::format_version(gameversion::get_executable_version()).c_str());
 			}
+		}
+
+		if (optional_string("$Window title:")) {
+			stuff_string(Window_title, F_NAME);
 		}
 
 		optional_string("#CAMPAIGN SETTINGS");
