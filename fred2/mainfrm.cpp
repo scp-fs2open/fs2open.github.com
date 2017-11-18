@@ -239,19 +239,18 @@ void CMainFrame::OnFileMissionnotes() {
 void CMainFrame::OnFredHelp() {
 	char buffer[_MAX_PATH];
 
-	// get exe path
-	strcpy_s(buffer, Fred_exe_dir);
-
-	// strip exe name
-	char *last_slash = strrchr(buffer, '\\');
-	if (last_slash == NULL) {
+	size_t size;
+	size_t offset;
+	if (!cf_find_file_location("index.html", CF_TYPE_FREDDOCS, _MAX_PATH, buffer, &size, &offset)) {
+		ReleaseWarning(LOCATION, "Could not find FRED help files!");
 		return;
-	} else {
-		*last_slash = 0;
 	}
 
-	// add rest of path
-	strcat_s(buffer, FRED_HELP_URL);
+	if (offset != 0) {
+		// We need an actual file location so VP files are not valid
+		Error(LOCATION, "The FRED documentation was found in a pack (VP) file. This is not valid!");
+		return;
+	}
 
 	// shell_open url
 	url_launch(buffer);
