@@ -19,6 +19,18 @@ bool openal_init_device(SCP_string *playback, SCP_string *capture);
 
 ALenum openal_get_format(ALint bits, ALint n_channels);
 
+struct OpenALInformation {
+	uint32_t version_major = 0;
+	uint32_t version_minor = 0;
+
+	SCP_string default_playback_device{};
+	SCP_string default_capture_device{};
+
+	SCP_vector<SCP_string> playback_devices;
+	SCP_vector<SCP_string> capture_devices;
+};
+
+OpenALInformation openal_get_platform_information();
 
 // if an error occurs after executing 'x' then do 'y'
 #define OpenAL_ErrorCheck( x, y )	do {	\

@@ -2263,3 +2263,68 @@ static void uniform_buffer_managers_retire_buffers() {
 graphics::util::UniformBuffer* gr_get_uniform_buffer(uniform_block_type type) {
 	return uniform_buffer_managers[static_cast<size_t>(type)]->getBuffer();
 }
+
+SCP_vector<DisplayData> gr_enumerate_displays()
+{
+	// It seems that linux cannot handle having the video subsystem inited
+	// too late
+	if (SDL_InitSubSystem(SDL_INIT_VIDEO) < 0) {
+		return SCP_vector<DisplayData>();
+	}
+
+	SCP_vector<DisplayData> data;
+
+	auto num_displays = SDL_GetNumVideoDisplays();
+	for (auto i = 0; i < num_displays; ++i) {
+		DisplayData display;
+		display.index = i;
+
+		SDL_Rect bounds;
+		if (SDL_GetDisplayBounds(i, &bounds) == 0) {
+			display.x = bounds.x;
+			display.y = bounds.y;
+			display.width = bounds.w;
+			display.height = bounds.h;
+		}
+
+		auto name = SDL_GetDisplayName(i);
+		if (name != nullptr) {
+			display.name = name;
+		}
+
+		auto num_mods = SDL_GetNumDisplayModes(i);
+		for (auto j = 0; j < num_mods; ++j) {
+			SDL_DisplayMode mode;
+			if (SDL_GetDisplayMode(i, j, &mode) != 0) {
+				continue;
+			}
+			
+			VideoModeData videoMode;
+			videoMode.width = mode.w;
+			videoMode.height = mode.h;
+
+			int sdlBits = SDL_BITSPERPIXEL(mode.format);
+
+			if (SDL_ISPIXELFORMAT_ALPHA(mode.format)) {
+				videoMode.bit_depth = sdlBits;
+			} else {
+				// Fix a few values
+				if (sdlBits == 24) {
+					videoMode.bit_depth = 32;
+				} else if (sdlBits == 15) {
+					videoMode.bit_depth = 16;
+				} else {
+					videoMode.bit_depth = sdlBits;
+				}
+			}
+
+			display.video_modes.push_back(videoMode);
+		}
+
+		data.push_back(display);
+	}
+	
+	SDL_QuitSubSystem(SDL_INIT_VIDEO);
+
+	return data;
+}

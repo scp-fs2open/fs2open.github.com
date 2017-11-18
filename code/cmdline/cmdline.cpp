@@ -23,6 +23,9 @@
 #include "globalincs/pstypes.h"
 #include "osapi/osapi.h"
 #include "cfile/cfilesystem.h"
+#include "sound/speech.h"
+#include "sound/openal.h"
+#include "io/joy.h"
 
 #ifdef _WIN32
 #include <io.h>
@@ -1307,6 +1310,109 @@ static json_t* json_get_v1() {
 		json_array_append_new(caps_array, json_string("SDL"));
 
 		json_object_set_new(root, "caps", caps_array);
+	}
+	{
+		auto voices_array = json_array();
+
+		auto voices = speech_enumerate_voices();
+
+		for (auto& voice : voices) {
+			json_array_append_new(voices_array, json_string(voice.c_str()));
+		}
+
+		json_object_set_new(root, "voices", voices_array);
+	}
+	{
+		auto resolution_array = json_array();
+
+		auto displays = gr_enumerate_displays();
+
+		for (auto& display : displays) {
+			auto display_obj = json_object();
+
+			json_object_set_new(display_obj, "index", json_integer(display.index));
+			json_object_set_new(display_obj, "name", json_string(display.name.c_str()));
+
+			json_object_set_new(display_obj, "x", json_integer(display.x));
+			json_object_set_new(display_obj, "y", json_integer(display.y));
+			json_object_set_new(display_obj, "width", json_integer(display.width));
+			json_object_set_new(display_obj, "height", json_integer(display.height));
+
+			auto modes_array = json_array();
+
+			for (auto& mode : display.video_modes) {
+				auto mode_obj = json_object();
+
+				json_object_set_new(mode_obj, "x", json_integer(mode.width));
+				json_object_set_new(mode_obj, "y", json_integer(mode.height));
+				json_object_set_new(mode_obj, "bits", json_integer(mode.bit_depth));
+
+				json_array_append_new(modes_array, mode_obj);
+			}
+
+			json_object_set_new(display_obj, "modes", modes_array);
+
+			json_array_append_new(resolution_array, display_obj);
+		}
+
+		json_object_set_new(root, "displays", resolution_array);
+	}
+	{
+		auto openal_obj = json_object();
+
+		auto openal_info = openal_get_platform_information();
+
+		json_object_set_new(openal_obj, "version_major", json_integer(openal_info.version_major));
+		json_object_set_new(openal_obj, "version_minor", json_integer(openal_info.version_minor));
+
+		json_object_set(openal_obj, "default_playback", json_string(openal_info.default_playback_device.c_str()));
+		json_object_set(openal_obj, "default_capture", json_string(openal_info.default_capture_device.c_str()));
+
+		{
+			auto playback_array = json_array();
+
+			for (auto& device : openal_info.playback_devices) {
+				json_array_append_new(playback_array, json_string(device.c_str()));
+			}
+
+			json_object_set_new(openal_obj, "playback_devices", playback_array);
+		}
+		{
+			auto capture_array = json_array();
+
+			for (auto& device : openal_info.capture_devices) {
+				json_array_append_new(capture_array, json_string(device.c_str()));
+			}
+
+			json_object_set_new(openal_obj, "capture_devices", capture_array);
+		}
+
+		json_object_set_new(root, "openal", openal_obj);
+	}
+	{
+		auto joystick_array = json_array();
+
+		auto joysticks = io::joystick::getJoystickInformations();
+		for (auto& info : joysticks) {
+			auto joystick_obj = json_object();
+
+			json_object_set_new(joystick_obj, "name", json_string(info.name.c_str()));
+			json_object_set_new(joystick_obj, "guid", json_string(info.guid.c_str()));
+
+			json_object_set_new(joystick_obj, "num_axes", json_integer(info.num_axes));
+			json_object_set_new(joystick_obj, "num_balls", json_integer(info.num_balls));
+			json_object_set_new(joystick_obj, "num_buttons", json_integer(info.num_buttons));
+			json_object_set_new(joystick_obj, "num_hats", json_integer(info.num_hats));
+
+			json_object_set_new(joystick_obj, "is_haptic", json_boolean(info.is_haptic));
+
+			json_array_append_new(joystick_array, joystick_obj);
+		}
+
+		json_object_set_new(root, "joysticks", joystick_array);
+	}
+	{
+		json_object_set_new(root, "pref_path", json_string(os_get_config_path().c_str()));
 	}
 
 	return root;

@@ -1184,6 +1184,26 @@ enum AnimatedShader {
 
 graphics::util::UniformBuffer* gr_get_uniform_buffer(uniform_block_type type);
 
+struct VideoModeData {
+	uint32_t width = 0;
+	uint32_t height = 0;
+	uint32_t bit_depth = 0;
+};
+
+struct DisplayData {
+	uint32_t index;
+	SCP_string name;
+
+	int32_t x = 0;
+	int32_t y = 0;
+	int32_t width = 0;
+	int32_t height = 0;
+
+	SCP_vector<VideoModeData> video_modes;
+};
+
+SCP_vector<DisplayData> gr_enumerate_displays();
+
 // Include this last to make the 2D rendering function available everywhere
 #include "graphics/render.h"
 
