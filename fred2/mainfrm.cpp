@@ -148,6 +148,7 @@ void CMainFrame::OnClose() {
 	theApp.write_ini_file();
 	SaveBarState("Tools state");
 	CFrameWnd::OnClose();
+	gr_close();
 }
 
 int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct) {
