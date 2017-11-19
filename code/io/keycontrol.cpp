@@ -1278,6 +1278,11 @@ void process_debug_keys(int k)
 				Show_cpu = !Show_cpu;
 			}
 			break;
+		case KEY_DEBUGGED + KEY_B:
+		case KEY_DEBUGGED1 + KEY_B:
+			{
+				Cmdline_bmpman_usage = !Cmdline_bmpman_usage;
+			}
 
 	}	// end switch
 }
