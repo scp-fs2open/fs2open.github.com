@@ -2340,7 +2340,7 @@ void bm_lock_pcx(int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, int b
 	// this will populate filename[] whether it's EFF or not
 	EFF_FILENAME_CHECK;
 
-	pcx_error = pcx_read_bitmap(filename, data, NULL, (bpp >> 3), (flags & BMP_AABITMAP), 0, be->dir_type);
+	pcx_error = pcx_read_bitmap(filename, data, NULL, (bpp >> 3), (flags & BMP_AABITMAP), (flags & BMP_MASK_BITMAP) != 0, be->dir_type);
 
 	if (pcx_error != PCX_ERROR_NONE) {
 		mprintf(("Couldn't load PCX!!! (%s)\n", filename));

@@ -37,7 +37,7 @@ extern int pcx_read_header(const char *filename, CFILE *img_cfp = NULL, int *w =
 //extern int pcx_read_bitmap_16bpp_aabitmap( const char *filename, ubyte *org_data );
 //extern int pcx_read_bitmap_16bpp_nondark( const char *filename, ubyte *org_data );
 //extern int pcx_read_bitmap_32(const char *real_filename, ubyte *data );
-extern int pcx_read_bitmap(const char *filename, ubyte *org_data, ubyte *pal, int byte_size, int aabitmap = 0, int nondark = 0, int cf_type = CF_TYPE_ANY);
+extern int pcx_read_bitmap(const char *filename, ubyte *org_data, ubyte *pal, int byte_size, int aabitmap = 0, bool mask_bitmap = false, int cf_type = CF_TYPE_ANY);
 
 // Dumps a 8bpp bitmap to a file.
 // Set rowoff to -w for upside down bitmaps.

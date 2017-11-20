@@ -58,6 +58,7 @@ extern int MAX_BITMAPS;
 #define BMP_TEX_DXT3        (1<<4)      //!< dxt3 compressed 8r8g8b4a (32bit)
 #define BMP_TEX_DXT5        (1<<5)      //!< dxt5 compressed 8r8g8b8a (32bit)
 #define BMP_TEX_CUBEMAP     (1<<6)      //!< a texture made for cubic environment map
+#define BMP_MASK_BITMAP     (1<<7)      //!< a bitmap that will be used for masking mouse interaction. Typically not used in render operations
 
 // Combined flags
 #define BMP_TEX_COMP        ( BMP_TEX_DXT1 | BMP_TEX_DXT3 | BMP_TEX_DXT5 )  //!< Compressed textures
