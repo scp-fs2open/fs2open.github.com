@@ -9250,6 +9250,7 @@ int sexp_is_iff(int n)
 					// it's probably an exited wing, which we don't store information about
 					return SEXP_NAN_FOREVER;
 				}
+				FALLTHROUGH;
 			}
 
 			// we don't handle the other cases
@@ -13036,7 +13037,8 @@ void sexp_alter_ship_flag_helper(object_ship_wing_point_team &oswpt, bool future
 				Ai_info[oswpt.shipp->ai_index].ai_flags.set(ai_flag, set_flag);
 			}
 			
-			// no break statement. We want to fall through. 
+			// no break statement. We want to fall through.
+			FALLTHROUGH;
 			
 		case OSWPT_TYPE_PARSE_OBJECT:
 			if (!future_ships) {
@@ -26281,6 +26283,9 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_STRING;
 			} else if (argnum == 2) {
 				return OPF_VARIABLE_NAME;
+			} else {
+				// This shouldn't happen
+				return OPF_NONE;
 			}
 
 		case OP_STRING_CONCATENATE_BLOCK:
@@ -26295,6 +26300,9 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_NUMBER;
 			} else if (argnum == 1) {
 				return OPF_VARIABLE_NAME;
+			} else {
+				// This shouldn't happen
+				return OPF_NONE;
 			}
 
 		case OP_STRING_GET_SUBSTRING:
@@ -26304,6 +26312,9 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_POSITIVE;
 			} else if (argnum == 3) {
 				return OPF_VARIABLE_NAME;
+			} else {
+				// This shouldn't happen
+				return OPF_NONE;
 			}
 
 		case OP_STRING_SET_SUBSTRING:
@@ -26315,6 +26326,9 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_STRING;
 			} else if (argnum == 4) {
 				return OPF_VARIABLE_NAME;
+			} else {
+				// This shouldn't happen
+				return OPF_NONE;
 			}
 
 		case OP_DEBUG:
@@ -26723,6 +26737,9 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_SHIP;
 			else if (argnum == 1)
 				return OPF_SUBSYSTEM;
+			else
+				// This shouldn't happen
+				return OPF_NONE;
 
 		case OP_DISTANCE_SUBSYSTEM:
 			if (argnum == 0)
@@ -26732,7 +26749,8 @@ int query_operator_argument_type(int op, int argnum)
 			else if (argnum == 2)
 				return OPF_SUBSYSTEM;
 			else
-				Int3();		// shouldn't happen
+				// This shouldn't happen
+				return OPF_NONE;
 
 		case OP_NUM_WITHIN_BOX:
 			if(argnum < 3)
@@ -26778,6 +26796,8 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_JUMP_NODE_NAME;
 			else if (argnum == 1)
 				return OPF_POSITIVE;
+			else
+				return OPF_NONE;
 
 		case OP_IS_SUBSYSTEM_DESTROYED_DELAY:
 			if ( argnum == 0 )
@@ -27007,6 +27027,7 @@ int query_operator_argument_type(int op, int argnum)
 
 			// fall through
 			argnum--;
+			FALLTHROUGH;
 
 		case OP_UPDATE_SOUND_ENVIRONMENT:
 		{
@@ -27110,6 +27131,9 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_MESSAGE;
 			else if(a_mod == 3)
 				return OPF_POSITIVE;
+			else
+				// This can't happen
+				return OPF_NONE;
 		}
 
 		case OP_TRAINING_MSG:
@@ -27256,6 +27280,8 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_POSITIVE;
 			else if (argnum == 2)
 				return OPF_BOOL;
+			else
+				return OPF_NONE;
 
 		case OP_GOAL_INCOMPLETE:
 		case OP_GOAL_TRUE_DELAY:
@@ -27566,6 +27592,8 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_WEAPON_NAME;
 			} else if(argnum > 2) {
 				return OPF_POSITIVE;
+			} else {
+				return OPF_NONE;
 			}
 
 		case OP_TURRET_SET_DIRECTION_PREFERENCE:
@@ -27700,6 +27728,8 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_BOOL;
 			else if (argnum == 5)
 				return OPF_SUBSYSTEM;
+			else
+				return OPF_NONE;
 
 		case OP_BEAM_FREE_ALL:
 		case OP_BEAM_LOCK_ALL:
@@ -28129,6 +28159,8 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_POSITIVE;
 			else if (argnum == 12 )
 				return OPF_BOOL;
+			else
+				return OPF_NONE;
 
 		case OP_CUTSCENES_SHOW_SUBTITLE_TEXT:
 			if (argnum == 0)
@@ -28143,6 +28175,8 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_FONT;
 			else if (argnum == 12)
 				return OPF_BOOL;
+			else
+				return OPF_NONE;
 
 		case OP_CUTSCENES_SHOW_SUBTITLE_IMAGE:
 			if (argnum == 0)
@@ -28155,6 +28189,8 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_POSITIVE;
 			else if (argnum == 9)
 				return OPF_BOOL;
+			else
+				return OPF_NONE;
 
 		//</Cutscenes>
 
@@ -28163,6 +28199,8 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_JUMP_NODE_NAME;
 			else if (argnum==1)
 				return OPF_STRING;
+			else
+				return OPF_NONE;
 
 		case OP_JUMP_NODE_SET_JUMPNODE_COLOR:
 			if(argnum==0)

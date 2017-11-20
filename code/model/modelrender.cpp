@@ -1776,6 +1776,7 @@ void model_render_glowpoint(int point_num, vec3d *pos, matrix *orient, glow_poin
 					} else {
 						x %= gpo->pulse_period;
 					}
+					FALLTHROUGH;
 
 				case PULSE_TRI:
 					float inv;

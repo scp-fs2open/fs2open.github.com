@@ -299,6 +299,7 @@ ADE_VIRTVAR(Target, l_Order, "object", "Target of the order. Value may also be a
 				objnum = Ships[shipnum].objnum;
 				break;
 			}
+			break;
 		case AI_GOAL_CHASE_WING:
 		case AI_GOAL_GUARD_WING:
 			int wingnum = wing_name_lookup(ohp->aigp->target_name);
