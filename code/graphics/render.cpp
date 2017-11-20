@@ -147,6 +147,7 @@ static void bitmap_ex_internal(int x,
 }
 
 void gr_aabitmap(int x, int y, int resize_mode, bool mirror) {
+	GR_DEBUG_SCOPE("Draw AA-bitmap");
 
 	int w, h, do_resize;
 

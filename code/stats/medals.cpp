@@ -586,7 +586,7 @@ void medal_main_init(player *pl, int mode)
 		Warning(LOCATION, "Error loading medal mask file %s", bitmap_buf);
 	} else {
 		Init_flags |= MASK_BITMAP_INIT;
-		Medals_mask = bm_lock(Medals_bitmap_mask, 8, BMP_AABITMAP);
+		Medals_mask = bm_lock(Medals_bitmap_mask, 8, BMP_AABITMAP | BMP_MASK_BITMAP);
 		bm_get_info(Medals_bitmap_mask, &Medals_mask_w, &Medals_mask_h);
 
 		init_medal_bitmaps();

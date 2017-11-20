@@ -510,7 +510,7 @@ void main_hall_init(const SCP_string &main_hall_name)
 		}
 	} else {
 		// get a pointer to bitmap by using bm_lock(), so we can feed it to he snazzy menu system
-		Main_hall_mask_bitmap = bm_lock(Main_hall_mask, 8, BMP_AABITMAP);
+		Main_hall_mask_bitmap = bm_lock(Main_hall_mask, 8, BMP_AABITMAP | BMP_MASK_BITMAP);
 		Main_hall_mask_data = (ubyte*)Main_hall_mask_bitmap->data;
 		bm_get_info(Main_hall_mask, &Main_hall_mask_w, &Main_hall_mask_h);
 	}

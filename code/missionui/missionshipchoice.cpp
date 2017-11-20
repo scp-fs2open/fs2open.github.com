@@ -689,7 +689,7 @@ void ship_select_init()
 	Shipselect_mask_h = -1;
 
 	// get a pointer to bitmap by using bm_lock()
-	ShipSelectMaskPtr = bm_lock(ShipSelectMaskBitmap, 8, BMP_AABITMAP);
+	ShipSelectMaskPtr = bm_lock(ShipSelectMaskBitmap, 8, BMP_AABITMAP | BMP_MASK_BITMAP);
 	ShipSelectMaskData = (ubyte*)ShipSelectMaskPtr->data;	
 	bm_get_info(ShipSelectMaskBitmap, &Shipselect_mask_w, &Shipselect_mask_h);
 

@@ -2018,7 +2018,7 @@ void weapon_select_init()
 	Weaponselect_mask_h = -1;
 
 	// get a pointer to bitmap by using bm_lock()
-	WeaponSelectMaskPtr = bm_lock(WeaponSelectMaskBitmap, 8, BMP_AABITMAP);
+	WeaponSelectMaskPtr = bm_lock(WeaponSelectMaskBitmap, 8, BMP_AABITMAP | BMP_MASK_BITMAP);
 	WeaponSelectMaskData = (ubyte*)WeaponSelectMaskPtr->data;
 	Assert(WeaponSelectMaskData != NULL);
 	bm_get_info(WeaponSelectMaskBitmap, &Weaponselect_mask_w, &Weaponselect_mask_h);
