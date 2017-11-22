@@ -14,6 +14,8 @@
 
 #include "globalincs/pstypes.h"
 
+#include "utils/RandomRange.h"
+
 // Used for keeping track which low-level sound library is being used
 #define SOUND_LIB_DIRECTSOUND		0
 #define SOUND_LIB_RSX				1
@@ -42,21 +44,11 @@ enum EnhancedSoundPriority
 
 struct EnhancedSoundData
 {
-	int priority;
-	unsigned int limit;		// limit on how many instances of the sound can play concurrently
+	int priority = SND_ENHANCED_PRIORITY_INVALID;
+	unsigned int limit = 0;		// limit on how many instances of the sound can play concurrently
 
-	EnhancedSoundData() :
-		priority(SND_ENHANCED_PRIORITY_INVALID), limit(0)
-	{
-	}
-
-	EnhancedSoundData(const int new_priority, const unsigned int new_limit) :
-		priority(new_priority), limit(new_limit)
-	{
-		Assertion(priority >= SND_ENHANCED_PRIORITY_MUST_PLAY && priority <= SND_ENHANCED_PRIORITY_LOW,
-			"EnhancedSoundData ctor given invalid priority %d", priority);
-		Assertion(limit > 0, "EnhancedSoundData ctor given invalid limit %d", limit);
-	}
+	EnhancedSoundData();
+	EnhancedSoundData(const int new_priority, const unsigned int new_limit);
 };
 
 extern const unsigned int SND_ENHANCED_MAX_LIMIT;
@@ -66,22 +58,39 @@ extern const unsigned int SND_ENHANCED_MAX_LIMIT;
 #define AAV_VOICE		1
 #define AAV_EFFECTS		2
 
+struct game_snd_entry {
+	char filename[MAX_FILENAME_LEN];
+	int	id = -1;					//!< index into Sounds[], where sound data is stored
+	int	id_sig = -1;				//!< signature of Sounds[] element
+
+	game_snd_entry();
+};
+
+enum class GameSoundCycleType {
+	Random,
+	Sequential
+};
+
 /**
  * Game level sound entities
  */
-class game_snd
+struct game_snd
 {
-public:
 	SCP_string name;				//!< The name of the sound
-	char filename[MAX_FILENAME_LEN];
-	uint signature;					//!< Unique signature of this sound
-	float default_volume;			//!<range: 0.0 -> 1.0
-	int	min;						//!<distance at which sound will stop getting louder
-	int max;						//!<distance at which sound is inaudible
-	bool preload;					//!< preload sound (ie read from disk before mission starts)
-	int	id;							//!< index into Sounds[], where sound data is stored
-	int	id_sig;						//!< signature of Sounds[] element
-	int	flags;
+
+	SCP_vector<game_snd_entry> sound_entries; //!< A game sound consists of one or more distinct entries
+
+	int	min = 0;					//!<distance at which sound will stop getting louder
+	int max = 0;					//!<distance at which sound is inaudible
+	int	flags = 0;
+
+	GameSoundCycleType cycle_type = GameSoundCycleType::Sequential;
+	size_t last_entry_index; //!< The last sound entry used by this sound.
+
+	util::UniformFloatRange pitch_range; //!< The range of possible pitch values used randomly for this sound
+	util::UniformFloatRange volume_range; //!< The possible range of the default volume (range is (0, 1]).
+
+	bool preload = false;			//!< preload sound (ie read from disk before mission starts)
 	EnhancedSoundData enhanced_sound_data;
 
 	game_snd( );
@@ -104,7 +113,7 @@ extern float aav_music_volume;
 extern float aav_effect_volume;
 
 //int	snd_load( char *filename, int hardware=0, int three_d=0, int *sig=NULL );
-int	snd_load( game_snd *gs, int allow_hardware_load = 0);
+int	snd_load( game_snd_entry *entry, int flags, int allow_hardware_load = 0);
 
 int	snd_unload( int sndnum );
 void	snd_unload_all();
@@ -144,8 +153,8 @@ void snd_set_pan( int snd_handle, float pan );
 
 // Sets the pitch (frequency) of a sound that is already playing
 // Valid values for pitch are between 100 and 100000
-void	snd_set_pitch( int snd_handle, int pitch );
-int	snd_get_pitch( int snd_handle );
+void	snd_set_pitch( int snd_handle, float pitch );
+float	snd_get_pitch( int snd_handle );
 
 // Stops all sounds from playing, even looping ones.
 void	snd_stop_all();
@@ -183,12 +192,19 @@ void snd_do_frame();
 void snd_adjust_audio_volume(int type, float percent, int time);
 
 // repositioning of the sound buffer pointer
-void snd_rewind(int snd_handle, game_snd *sg, float seconds);					// rewind N seconds from the current position
-void snd_ffwd(int snd_handle, game_snd *sg, float seconds);						// fast forward N seconds from the current position
-void snd_set_pos(int snd_handle, game_snd *sg, float val,int as_pct);		// set the position val as either a percentage (if as_pct) or as a # of seconds into the sound
+void snd_rewind(int snd_handle, float seconds);					// rewind N seconds from the current position
+void snd_ffwd(int snd_handle, float seconds);						// fast forward N seconds from the current position
+void snd_set_pos(int snd_handle, float val,int as_pct);		// set the position val as either a percentage (if as_pct) or as a # of seconds into the sound
 
 void snd_get_format(int handle, int *bits_per_sample, int *frequency);
 int snd_time_remaining(int handle);
+
+/**
+ * @brief Get the sound id that was used to start the sound with the specified handle
+ * @param snd_handle The sound handle to query the id from
+ * @return The loaded sound handle or -1 on error
+ */
+int snd_get_sound_id(int snd_handle);
 
 // sound environment
 extern unsigned int SND_ENV_DEFAULT;

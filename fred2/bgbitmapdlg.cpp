@@ -16,6 +16,7 @@
 #include "backgroundchooser.h"
 #include "starfield/starfield.h"
 #include "bmpman/bmpman.h"
+#include "graphics/light.h"
 #include "FREDView.h"
 #include "FREDDoc.h"
 #include "starfield/nebula.h"

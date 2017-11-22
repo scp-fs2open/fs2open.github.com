@@ -5,7 +5,7 @@
 #include "globalincs/pstypes.h"
 #include "particle/ParticleEffect.h"
 #include "particle/ParticleManager.h"
-#include "particle/util/RandomRange.h"
+#include "utils/RandomRange.h"
 
 namespace particle {
 namespace effects {

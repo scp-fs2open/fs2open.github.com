@@ -81,9 +81,6 @@ END_MESSAGE_MAP()
 static int Add_count, Replace_count;
 static int Modify_variable;
 
-extern sexp_help_struct Sexp_help[];
-extern op_menu_struct op_menu[];
-extern op_menu_struct op_submenu[];
 
 // constructor
 sexp_tree::sexp_tree()
@@ -621,9 +618,9 @@ void sexp_tree::right_clicked(int mode)
 
 	m_mode = mode;
 	add_instance = replace_instance = -1;
-	Assert(Num_operators <= MAX_OPERATORS);
-	Assert(Num_op_menus < MAX_OP_MENUS);
-	Assert(Num_submenus < MAX_SUBMENUS);
+	Assert(Operators.size() <= MAX_OPERATORS);
+	Assert((int)op_menu.size() < MAX_OP_MENUS);
+	Assert((int)op_submenu.size() < MAX_SUBMENUS);
 
 	GetCursorPos(&mouse);
 	click_point = mouse;
@@ -670,15 +667,15 @@ void sexp_tree::right_clicked(int mode)
 		}
 
 		// add popup menus for all the operator categories
-		for (i=0; i<Num_op_menus; i++)
+		for (i=0; i<(int)op_menu.size(); i++)
 		{
 			add_op_submenu[i].CreatePopupMenu();
 			replace_op_submenu[i].CreatePopupMenu();
 			insert_op_submenu[i].CreatePopupMenu();
 
-			add_op_menu->AppendMenu(MF_POPUP, (UINT) add_op_submenu[i].m_hMenu, op_menu[i].name);
-			replace_op_menu->AppendMenu(MF_POPUP, (UINT) replace_op_submenu[i].m_hMenu, op_menu[i].name);
-			insert_op_menu->AppendMenu(MF_POPUP, (UINT) insert_op_submenu[i].m_hMenu, op_menu[i].name);
+			add_op_menu->AppendMenu(MF_POPUP, (UINT) add_op_submenu[i].m_hMenu, op_menu[i].name.c_str());
+			replace_op_menu->AppendMenu(MF_POPUP, (UINT) replace_op_submenu[i].m_hMenu, op_menu[i].name.c_str());
+			insert_op_menu->AppendMenu(MF_POPUP, (UINT) insert_op_submenu[i].m_hMenu, op_menu[i].name.c_str());
 		}
 
 		// get rid of the placeholders we needed to ensure popup menus stayed popup menus,
@@ -846,33 +843,33 @@ void sexp_tree::right_clicked(int mode)
 		
 
 		// add all the submenu items first
-		for (i=0; i<Num_submenus; i++)
+		for (i=0; i<(int)op_submenu.size(); i++)
 		{
 			add_op_subcategory_menu[i].CreatePopupMenu();
 			replace_op_subcategory_menu[i].CreatePopupMenu();
 			insert_op_subcategory_menu[i].CreatePopupMenu();
 			
-			for (j=0; j<Num_op_menus; j++)
+			for (j=0; j<(int)op_menu.size(); j++)
 			{
 				if (op_menu[j].id == category_of_subcategory(op_submenu[i].id))
 				{
-					add_op_submenu[j].AppendMenu(MF_POPUP, (UINT) add_op_subcategory_menu[i].m_hMenu, op_submenu[i].name);
-					replace_op_submenu[j].AppendMenu(MF_POPUP, (UINT) replace_op_subcategory_menu[i].m_hMenu, op_submenu[i].name);
-					insert_op_submenu[j].AppendMenu(MF_POPUP, (UINT) insert_op_subcategory_menu[i].m_hMenu, op_submenu[i].name);
+					add_op_submenu[j].AppendMenu(MF_POPUP, (UINT) add_op_subcategory_menu[i].m_hMenu, op_submenu[i].name.c_str());
+					replace_op_submenu[j].AppendMenu(MF_POPUP, (UINT) replace_op_subcategory_menu[i].m_hMenu, op_submenu[i].name.c_str());
+					insert_op_submenu[j].AppendMenu(MF_POPUP, (UINT) insert_op_subcategory_menu[i].m_hMenu, op_submenu[i].name.c_str());
 					break;	// only 1 category valid
 				}
 			}
 		}
 
 		// add operator menu items to the various CATEGORY submenus they belong in
-		for (i=0; i<Num_operators; i++)
+		for (i=0; i<(int)Operators.size(); i++)
 		{
 			// add only if it is not in a subcategory
 			subcategory_id = get_subcategory(Operators[i].value);
 			if (subcategory_id == -1)
 			{
 				// put it in the appropriate menu
-				for (j=0; j<Num_op_menus; j++)
+				for (j=0; j<(int)op_menu.size(); j++)
 				{
 					if (op_menu[j].id == get_category(Operators[i].value))
 					{
@@ -898,14 +895,14 @@ void sexp_tree::right_clicked(int mode)
 							case OP_HUD_ACTIVATE_GAUGE_TYPE:
 							case OP_JETTISON_CARGO_DELAY:
 							case OP_STRING_CONCATENATE:
-								j = Num_op_menus;	// don't allow these operators to be visible
+								j = (int)op_menu.size();	// don't allow these operators to be visible
 								break;
 						}
 
-						if (j < Num_op_menus) {
-							add_op_submenu[j].AppendMenu(MF_STRING | MF_GRAYED, Operators[i].value, Operators[i].text);
-							replace_op_submenu[j].AppendMenu(MF_STRING | MF_GRAYED, Operators[i].value | OP_REPLACE_FLAG, Operators[i].text);
-							insert_op_submenu[j].AppendMenu(MF_STRING, Operators[i].value | OP_INSERT_FLAG, Operators[i].text);
+						if (j < (int)op_menu.size()) {
+							add_op_submenu[j].AppendMenu(MF_STRING | MF_GRAYED, Operators[i].value, Operators[i].text.c_str());
+							replace_op_submenu[j].AppendMenu(MF_STRING | MF_GRAYED, Operators[i].value | OP_REPLACE_FLAG, Operators[i].text.c_str());
+							insert_op_submenu[j].AppendMenu(MF_STRING, Operators[i].value | OP_INSERT_FLAG, Operators[i].text.c_str());
 						}
 
 						break;	// only 1 category valid
@@ -916,7 +913,7 @@ void sexp_tree::right_clicked(int mode)
 			else
 			{
 				// put it in the appropriate submenu
-				for (j=0; j<Num_submenus; j++)
+				for (j=0; j<(int)op_submenu.size(); j++)
 				{
 					if (op_submenu[j].id == subcategory_id)
 					{
@@ -942,14 +939,14 @@ void sexp_tree::right_clicked(int mode)
 							case OP_HUD_ACTIVATE_GAUGE_TYPE:
 							case OP_JETTISON_CARGO_DELAY:
 							case OP_STRING_CONCATENATE:
-								j = Num_submenus;	// don't allow these operators to be visible
+								j = (int)op_submenu.size();	// don't allow these operators to be visible
 								break;
 						}
 
-						if (j < Num_submenus) {
-							add_op_subcategory_menu[j].AppendMenu(MF_STRING | MF_GRAYED, Operators[i].value, Operators[i].text);
-							replace_op_subcategory_menu[j].AppendMenu(MF_STRING | MF_GRAYED, Operators[i].value | OP_REPLACE_FLAG, Operators[i].text);
-							insert_op_subcategory_menu[j].AppendMenu(MF_STRING, Operators[i].value | OP_INSERT_FLAG, Operators[i].text);
+						if (j < (int)op_submenu.size()) {
+							add_op_subcategory_menu[j].AppendMenu(MF_STRING | MF_GRAYED, Operators[i].value, Operators[i].text.c_str());
+							replace_op_subcategory_menu[j].AppendMenu(MF_STRING | MF_GRAYED, Operators[i].value | OP_REPLACE_FLAG, Operators[i].text.c_str());
+							insert_op_subcategory_menu[j].AppendMenu(MF_STRING, Operators[i].value | OP_INSERT_FLAG, Operators[i].text.c_str());
 						}
 
 						break;	// only 1 subcategory valid
@@ -976,7 +973,7 @@ void sexp_tree::right_clicked(int mode)
 
 			// disable copy, insert op
 			menu.EnableMenuItem(ID_EDIT_COPY, MF_GRAYED);
-			for (j=0; j<Num_operators; j++) {
+			for (j=0; j<(int)Operators.size(); j++) {
 				menu.EnableMenuItem(Operators[j].value | OP_INSERT_FLAG, MF_GRAYED);
 			}
 
@@ -1065,9 +1062,9 @@ void sexp_tree::right_clicked(int mode)
 					} else {
 						// add data
 						if ( (data_idx + 3) % 30) {
-							add_data_menu->AppendMenu(MF_STRING | MF_ENABLED, ID_ADD_MENU + data_idx, ptr->text);
+							add_data_menu->AppendMenu(MF_STRING | MF_ENABLED, ID_ADD_MENU + data_idx, ptr->text.c_str());
 						} else {
-							add_data_menu->AppendMenu(MF_MENUBARBREAK | MF_STRING | MF_ENABLED, ID_ADD_MENU + data_idx, ptr->text);
+							add_data_menu->AppendMenu(MF_MENUBARBREAK | MF_STRING | MF_ENABLED, ID_ADD_MENU + data_idx, ptr->text.c_str());
 						}
 					}
 
@@ -1111,7 +1108,7 @@ void sexp_tree::right_clicked(int mode)
 		}
 
 		// disable operators that do not have arguments available
-		for (j=0; j<Num_operators; j++) {
+		for (j=0; j<(int)Operators.size(); j++) {
 			if (!query_default_argument_available(j)) {
 				menu.EnableMenuItem(Operators[j].value, MF_GRAYED);
 			}
@@ -1195,9 +1192,9 @@ void sexp_tree::right_clicked(int mode)
 
 					} else {
 						if ( (data_idx + 3) % 30)
-							replace_data_menu->AppendMenu(MF_STRING | MF_ENABLED, ID_REPLACE_MENU + data_idx, ptr->text);
+							replace_data_menu->AppendMenu(MF_STRING | MF_ENABLED, ID_REPLACE_MENU + data_idx, ptr->text.c_str());
 						else
-							replace_data_menu->AppendMenu(MF_MENUBARBREAK | MF_STRING | MF_ENABLED, ID_REPLACE_MENU + data_idx, ptr->text);
+							replace_data_menu->AppendMenu(MF_MENUBARBREAK | MF_STRING | MF_ENABLED, ID_REPLACE_MENU + data_idx, ptr->text.c_str());
 					}
 
 					data_idx++;
@@ -1276,20 +1273,20 @@ void sexp_tree::right_clicked(int mode)
 		} else {  // top node, so should be a Boolean type.
 			if (m_mode == MODE_EVENTS) {  // return type should be null
 				replace_type = OPR_NULL;
-				for (j=0; j<Num_operators; j++)
+				for (j=0; j<(int)Operators.size(); j++)
 					if (query_operator_return_type(j) == OPR_NULL)
 						menu.EnableMenuItem(Operators[j].value | OP_REPLACE_FLAG, MF_ENABLED);
 
 			} else {
 				replace_type = OPR_BOOL;
-				for (j=0; j<Num_operators; j++)
+				for (j=0; j<(int)Operators.size(); j++)
 					if (query_operator_return_type(j) == OPR_BOOL)
 						menu.EnableMenuItem(Operators[j].value | OP_REPLACE_FLAG, MF_ENABLED);
 			}
 		}
 
 		// disable operators that do not have arguments available
-		for (j=0; j<Num_operators; j++) {
+		for (j=0; j<(int)Operators.size(); j++) {
 			if (!query_default_argument_available(j)) {
 				menu.EnableMenuItem(Operators[j].value | OP_REPLACE_FLAG, MF_GRAYED);
 			}
@@ -1327,7 +1324,7 @@ void sexp_tree::right_clicked(int mode)
 				type = OPF_BOOL;
 		}
 
-		for (j=0; j<Num_operators; j++) {
+		for (j=0; j<(int)Operators.size(); j++) {
 			z = query_operator_return_type(j);
 			if (!sexp_query_type_match(type, z) || (Operators[j].min < 1))
 				menu.EnableMenuItem(Operators[j].value | OP_INSERT_FLAG, MF_GRAYED);
@@ -1345,7 +1342,7 @@ void sexp_tree::right_clicked(int mode)
 		}
 
 		// disable operators that do not have arguments available
-		for (j=0; j<Num_operators; j++) {
+		for (j=0; j<(int)Operators.size(); j++) {
 			if (!query_default_argument_available(j)) {
 				menu.EnableMenuItem(Operators[j].value | OP_INSERT_FLAG, MF_GRAYED);
 			}
@@ -1353,7 +1350,7 @@ void sexp_tree::right_clicked(int mode)
 
 
 		// disable non campaign operators if in campaign mode
-		for (j=0; j<Num_operators; j++) {
+		for (j=0; j<(int)Operators.size(); j++) {
 			z = 0;
 			if (m_mode == MODE_CAMPAIGN) {
 				if (Operators[j].value & OP_NONCAMPAIGN_FLAG)
@@ -1578,12 +1575,12 @@ int sexp_tree::end_label_edit(TVITEMA &item)
 
 	Assert(node < tree_nodes.size());
 	if (tree_nodes[node].type & SEXPT_OPERATOR) {
-		const char *op = match_closest_operator(str, node);
-		if (!op) return 0;	// Goober5000 - avoids crashing
+		auto op = match_closest_operator(str, node);
+		if (op.empty()) return 0;	// Goober5000 - avoids crashing
 
-		SetItemText(h, op);
+		SetItemText(h, op.c_str());
 		item_index = node;
-		int op_num = get_operator_index(op); 
+		int op_num = get_operator_index(op.c_str()); 
 		if (op_num >= 0 ) {
 			add_or_replace_operator(op_num, 1);
 		}
@@ -1637,10 +1634,11 @@ int sexp_tree::end_label_edit(TVITEMA &item)
 // number of it.  What operators are valid is determined by 'node', and an operator is valid
 // if it is allowed to fit at position 'node'
 //
-const char *sexp_tree::match_closest_operator(const char *str, int node)
+SCP_string sexp_tree::match_closest_operator(const char *str, int node)
 {
 	int z, i, op, arg_num, opf, opr;
-	const char *sub_best = NULL, *best = NULL;
+	SCP_string sub_best;
+	SCP_string best;
 
 	z = tree_nodes[node].parent;
 	if (z < 0) {
@@ -1656,20 +1654,20 @@ const char *sexp_tree::match_closest_operator(const char *str, int node)
 
 	opf = query_operator_argument_type(op, arg_num); // check argument type at this position
 	opr = query_operator_return_type(op);
-	for (i=0; i<Num_operators; i++) {
+	for (i=0; i<(int)Operators.size(); i++) {
 		if (sexp_query_type_match(opf, opr)) {
-			if ( (stricmp(str, Operators[i].text) <= 0) && (!best || (stricmp(str, best) < 0)) )
+			if ( (stricmp(str, Operators[i].text.c_str()) <= 0) && (stricmp(str, best.c_str()) < 0) )
 				best = Operators[i].text;
 			
-			if ( !sub_best || (stricmp(Operators[i].text, sub_best) > 0) )
+			if ( stricmp(Operators[i].text.c_str(), sub_best.c_str()) > 0 )
 				sub_best = Operators[i].text;
 		}
 	}
 
-	if (!best)
+	if (best.empty())
 		best = sub_best;  // no best found, use our plan #2 best found.
 
-	Assert(best);  // we better have some valid operator at this point.
+	Assert(!best.empty());  // we better have some valid operator at this point.
 	return best;
 
 /*	char buf[256];
@@ -1936,7 +1934,7 @@ BOOL sexp_tree::OnCommand(WPARAM wParam, LPARAM lParam)
 
 		Assert((SEXPT_TYPE(ptr->type) != SEXPT_OPERATOR) && (ptr->op < 0));
 		expand_operator(item_index);
-		add_data(ptr->text, ptr->type);
+		add_data(ptr->text.c_str(), ptr->type);
 		list->destroy();
 		return 1;
 	}
@@ -1967,11 +1965,12 @@ BOOL sexp_tree::OnCommand(WPARAM wParam, LPARAM lParam)
 
 		Assert((SEXPT_TYPE(ptr->type) != SEXPT_OPERATOR) && (ptr->op < 0));
 		expand_operator(item_index);
-		replace_data(ptr->text, ptr->type);
+		replace_data(ptr->text.c_str(), ptr->type);
 		list->destroy();
 		return 1;
 	}
 
+	for (op=0; op<(int)Operators.size(); op++) {
 	if ((id >= ID_CONTAINER_MENU) && (id < ID_CONTAINER_MENU + 511)) {
 		Assert(item_index >= 0);
 
@@ -2005,7 +2004,7 @@ BOOL sexp_tree::OnCommand(WPARAM wParam, LPARAM lParam)
 			z = tree_nodes[item_index].parent;
 			flags = tree_nodes[item_index].flags;
 			node = allocate_node(z, item_index);
-			set_node(node, (SEXPT_OPERATOR | SEXPT_VALID), Operators[op].text);
+			set_node(node, (SEXPT_OPERATOR | SEXPT_VALID), Operators[op].text.c_str());
 			tree_nodes[node].flags = flags;
 			if (z >= 0)
 				h = tree_nodes[z].handle;
@@ -2032,7 +2031,7 @@ BOOL sexp_tree::OnCommand(WPARAM wParam, LPARAM lParam)
 				}
 			}
 
-			item_handle = tree_nodes[node].handle = insert(Operators[op].text, BITMAP_OPERATOR, BITMAP_OPERATOR, h, tree_nodes[item_index].handle);
+			item_handle = tree_nodes[node].handle = insert(Operators[op].text.c_str(), BITMAP_OPERATOR, BITMAP_OPERATOR, h, tree_nodes[item_index].handle);
 			move_branch(item_index, node);
 
 			item_index = node;
@@ -2341,18 +2340,18 @@ void sexp_tree::add_or_replace_operator(int op, int replace_flag)
 						break;
 
 				if (i < 0) {  // everything is ok, so we can keep old arguments with new operator
-					set_node(item_index, (SEXPT_OPERATOR | SEXPT_VALID), Operators[op].text);
-					SetItemText(tree_nodes[item_index].handle, Operators[op].text);
+					set_node(item_index, (SEXPT_OPERATOR | SEXPT_VALID), Operators[op].text.c_str());
+					SetItemText(tree_nodes[item_index].handle, Operators[op].text.c_str());
 					tree_nodes[item_index].flags = OPERAND;
 					return;
 				}
 			}
 		}
 
-		replace_operator(Operators[op].text);
+		replace_operator(Operators[op].text.c_str());
 
 	} else
-		add_operator(Operators[op].text);
+		add_operator(Operators[op].text.c_str());
 
 	// fill in all the required (minimum) arguments with default values
 	for (i=0; i<Operators[op].min; i++)
@@ -2368,7 +2367,7 @@ void sexp_list_item::set_op(int op_num)
 	int i;
 
 	if (op_num >= FIRST_OP) {  // do we have an op value instead of an op number (index)?
-		for (i=0; i<Num_operators; i++)
+		for (i=0; i<(int)Operators.size(); i++)
 			if (op_num == Operators[i].value)
 				op_num = i;  // convert op value to op number
 	}
@@ -2469,8 +2468,6 @@ void sexp_list_item::destroy()
 	ptr = this;
 	while (ptr) {
 		ptr2 = ptr->next;
-		if (ptr->flags & SEXP_ITEM_F_DUP)
-			free((void *) ptr->text);
 
 		delete ptr;
 		ptr = ptr2;
@@ -2506,7 +2503,7 @@ int sexp_tree::add_default_operator(int op_index, int argnum)
 		return -1;
 
 	if (item.type & SEXPT_OPERATOR) {
-		Assert((item.op >= 0) && (item.op < Num_operators));
+		Assert((item.op >= 0) && (item.op < (int)Operators.size()));
 		add_or_replace_operator(item.op);
 		item_index = index;
 		item_handle = h;
@@ -2526,7 +2523,7 @@ int sexp_tree::add_default_operator(int op_index, int argnum)
 			}
 
 			char node_text[2*TOKEN_LENGTH + 2];
-			sprintf(node_text, "%s(%s)", item.text, Sexp_variables[sexp_var_index].text);
+			sprintf(node_text, "%s(%s)", item.text.c_str(), Sexp_variables[sexp_var_index].text);
 			add_variable_data(node_text, type);
 		}
 		// modify-variable data type depends on type of variable being modified
@@ -2550,11 +2547,11 @@ int sexp_tree::add_default_operator(int op_index, int argnum)
 			} else {
 				Int3();
 			}
-			add_data(item.text, type);
+			add_data(item.text.c_str(), type);
 		}
 		// all other sexps and parameters
 		else {
-			add_data(item.text, item.type);
+			add_data(item.text.c_str(), item.type);
 		}
 	}
 
@@ -2741,7 +2738,7 @@ int sexp_tree::get_default_value(sexp_list_item *item, char *text_buf, int op, i
 
 			if (sound_index >= 0)
 			{
-				game_snd *snd = &Snds[sound_index];
+				game_snd *snd = gamesnd_get_game_sound(sound_index);
 				if (can_construe_as_integer(snd->name.c_str()))
 					item->set_data(snd->name.c_str(), (SEXPT_NUMBER | SEXPT_VALID));
 				else
@@ -2757,15 +2754,12 @@ int sexp_tree::get_default_value(sexp_list_item *item, char *text_buf, int op, i
 
 	// Goober5000 - the way this is done is really stupid, so stupid hacks are needed to deal with it
 	// this particular hack is necessary because the argument string should never be a default
-	if (list && !strcmp(list->text, SEXP_ARGUMENT_STRING))
+	if (list && list->text == SEXP_ARGUMENT_STRING)
 	{
 		sexp_list_item *first_ptr;
 
 		first_ptr = list;
 		list = list->next;
-
-		if (first_ptr->flags & SEXP_ITEM_F_DUP)
-			free((void *) first_ptr->text);
 
 		delete first_ptr;
 	}
@@ -2776,7 +2770,7 @@ int sexp_tree::get_default_value(sexp_list_item *item, char *text_buf, int op, i
 		*item = *list;
 
 		// but use the provided text buffer
-		strcpy(text_buf, list->text);
+		strcpy(text_buf, list->text.c_str());
 		item->text = text_buf;
 
 		// get rid of the list, since we're done with it
@@ -3665,25 +3659,19 @@ void sexp_tree::verify_and_fix_arguments(int node)
 
 				ptr = list;
 				while (ptr) {
+					// make sure text is not NULL
+					// check that proposed text is valid for operator
+					if ( !stricmp(ptr->text.c_str(), text_ptr) )
+						break;
 
-					if (ptr->text != NULL) {
-						// make sure text is not NULL
-						// check that proposed text is valid for operator
-						if ( !stricmp(ptr->text, text_ptr) )
-							break;
-
-						ptr = ptr->next;
-					} else {
-						// text is NULL, so set ptr to NULL to end loop
-						ptr = NULL;
-					}
+					ptr = ptr->next;
 				}
 
 				if (!ptr) {  // argument isn't in list of valid choices, 
 					if (list->op >= 0) {
-						replace_operator(list->text);
+						replace_operator(list->text.c_str());
 					} else {
-						replace_data(list->text, list->type);
+						replace_data(list->text.c_str(), list->type);
 					}
 				}
 
@@ -4255,14 +4243,14 @@ const char *sexp_tree::help(int code)
 {
 	int i;
 
-	i = Num_sexp_help;
+	i = (int)Sexp_help.size();
 	while (i--) {
 		if (Sexp_help[i].id == code)
 			break;
 	}
 
 	if (i >= 0)
-		return Sexp_help[i].help;
+		return Sexp_help[i].help.c_str();
 
 	return NULL;
 }
@@ -4292,8 +4280,8 @@ void sexp_tree::update_help(HTREEITEM h)
 	int i, j, z, c, code, index, sibling_place;
 	CString text;
 
-	for (i=0; i<Num_operators; i++) {
-		for (j=0; j<Num_op_menus; j++) {
+	for (i=0; i<(int)Operators.size(); i++) {
+		for (j=0; j<(int)op_menu.size(); j++) {
 			if (get_category(Operators[i].value) == op_menu[j].id) {
 				if (!help(Operators[i].value)) {
 					mprintf(("Allender!  If you add new sexp operators, add help for them too! :)\n"));
@@ -5057,7 +5045,7 @@ sexp_list_item *sexp_tree::get_listing_opf_null()
 	int i;
 	sexp_list_item head;
 
-	for (i=0; i<Num_operators; i++)
+	for (i=0; i<(int)Operators.size(); i++)
 		if (query_operator_return_type(i) == OPR_NULL)
 			head.add_op(i);
 
@@ -5069,7 +5057,7 @@ sexp_list_item *sexp_tree::get_listing_opf_flexible_argument()
 	int i;
 	sexp_list_item head;
 
-	for (i=0; i<Num_operators; i++)
+	for (i=0; i<(int)Operators.size(); i++)
 		if (query_operator_return_type(i) == OPR_FLEXIBLE_ARGUMENT)
 			head.add_op(i);
 
@@ -5093,7 +5081,7 @@ sexp_list_item *sexp_tree::get_listing_opf_bool(int parent_node)
 
 	}
 
-	for (i=0; i<Num_operators; i++) {
+	for (i=0; i<(int)Operators.size(); i++) {
 		if (query_operator_return_type(i) == OPR_BOOL) {
 			if ( !only_basic || (only_basic && ((Operators[i].value == OP_TRUE) || (Operators[i].value == OP_FALSE))) ) {
 				head.add_op(i);
@@ -5109,7 +5097,7 @@ sexp_list_item *sexp_tree::get_listing_opf_positive()
 	int i, z;
 	sexp_list_item head;
 
-	for (i=0; i<Num_operators; i++) {
+	for (i=0; i<(int)Operators.size(); i++) {
 		z = query_operator_return_type(i);
 		// Goober5000's number hack
 		if ((z == OPR_NUMBER) || (z == OPR_POSITIVE))
@@ -5124,7 +5112,7 @@ sexp_list_item *sexp_tree::get_listing_opf_number()
 	int i, z;
 	sexp_list_item head;
 
-	for (i=0; i<Num_operators; i++) {
+	for (i=0; i<(int)Operators.size(); i++) {
 		z = query_operator_return_type(i);
 		if ((z == OPR_NUMBER) || (z == OPR_POSITIVE))
 			head.add_op(i);
@@ -5603,7 +5591,7 @@ sexp_list_item *sexp_tree::get_listing_opf_ai_goal(int parent_node)
 	n = ship_name_lookup(tree_nodes[child].text, 1);
 	if (n >= 0) {
 		// add operators if it's an ai-goal and ai-goal is allowed for that ship
-		for (i=0; i<Num_operators; i++) {
+		for (i=0; i<(int)Operators.size(); i++) {
 			if ( (query_operator_return_type(i) == OPR_AI_GOAL) && query_sexp_ai_goal_valid(Operators[i].value, n) )
 				head.add_op(i);
 		}
@@ -5614,14 +5602,14 @@ sexp_list_item *sexp_tree::get_listing_opf_ai_goal(int parent_node)
 			for (w=0; w<Wings[z].wave_count; w++) {
 				n = Wings[z].ship_index[w];
 				// add operators if it's an ai-goal and ai-goal is allowed for that ship
-				for (i=0; i<Num_operators; i++) {
+				for (i=0; i<(int)Operators.size(); i++) {
 					if ( (query_operator_return_type(i) == OPR_AI_GOAL) && query_sexp_ai_goal_valid(Operators[i].value, n) )
 						head.add_op(i);
 				}
 			}
 		// when dealing with the special argument add them all. It's up to the FREDder to ensure invalid orders aren't given
 		} else if (!strcmp(tree_nodes[child].text, SEXP_ARGUMENT_STRING)) {
-			for (i=0; i<Num_operators; i++) {
+			for (i=0; i<(int)Operators.size(); i++) {
 				if (query_operator_return_type(i) == OPR_AI_GOAL) {
 					head.add_op(i);
 				}
@@ -6455,6 +6443,8 @@ sexp_list_item *sexp_tree::get_listing_opf_nebula_patterns()
 
 	return head.next;
 }
+
+extern SCP_vector<game_snd>	Snds;
 
 sexp_list_item *sexp_tree::get_listing_opf_game_snds()
 {

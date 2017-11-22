@@ -759,17 +759,27 @@ void opengl_determine_bpp_and_flags(int bitmap_handle, int bitmap_type, ubyte& f
 		case TCACHE_TYPE_CUBEMAP:
 		case TCACHE_TYPE_NORMAL:
 			flags |= BMP_TEX_OTHER;
-			if (bm_has_alpha_channel(bitmap_handle)) {
-				bpp = 32; // Since this bitmap has an alpha channel we need to respect that
+			if (bm_get_type(bitmap_handle) == BM_TYPE_PCX) {
+				// PCX is special since the locking code only works with bpp = 16 for some reason
+				bpp = 16;
 			} else {
-				bpp = 24; // RGB, 8-bits per channel
+				if (bm_has_alpha_channel(bitmap_handle)) {
+					bpp = 32; // Since this bitmap has an alpha channel we need to respect that
+				} else {
+					bpp = 24; // RGB, 8-bits per channel
+				}
 			}
 			break;
 
 		case TCACHE_TYPE_INTERFACE:
 		case TCACHE_TYPE_XPARENT:
 			flags |= BMP_TEX_XPARENT;
-			bpp = 32; // RGBA, 8-bits per channel
+			if (bm_get_type(bitmap_handle) == BM_TYPE_PCX) {
+				// PCX is special since the locking code only works with bpp = 16 for some reason
+				bpp = 16;
+			} else {
+				bpp = 32; // RGBA, 8-bits per channel
+			}
 			break;
 
 		case TCACHE_TYPE_COMPRESSED:
@@ -1159,24 +1169,6 @@ int gr_opengl_preload(int bitmap_num, int is_aabitmap)
 	}
 
 	return retval;
-}
-
-static int GL_texture_panning_enabled = 0;
-void gr_opengl_set_texture_panning(float u, float v, bool enable)
-{
-	if (enable) {
-		vm_matrix4_set_identity(&GL_texture_matrix);
-		GL_texture_matrix.vec.pos.xyzw.x = u;
-		GL_texture_matrix.vec.pos.xyzw.y = v;
-
-
-		GL_texture_panning_enabled = 1;
-	} else if (GL_texture_panning_enabled) {
-		vm_matrix4_set_identity(&GL_texture_matrix);
-
-	
-		GL_texture_panning_enabled = 0;
-	}
 }
 
 void gr_opengl_set_texture_addressing(int mode)
@@ -1827,6 +1819,8 @@ int opengl_make_render_target( int handle, int slot, int *w, int *h, int *bpp, i
 
 	glTexParameteri(GL_texture_target, GL_TEXTURE_MAX_LEVEL, ts->mipmap_levels - 1);
 
+	GL_state.Texture.Enable(0);
+
 	// render buffer
 //	glGenRenderbuffers(1, &new_fbo.renderbuffer_id);
 //	glBindRenderbuffer(GL_RENDERBUFFER, new_fbo.renderbuffer_id);
@@ -1841,7 +1835,7 @@ int opengl_make_render_target( int handle, int slot, int *w, int *h, int *bpp, i
 		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X, ts->texture_id, 0);
 	} else {
 		// Since we use texture arrays for all bitmaps we use a single image array here
-		glFramebufferTexture3D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_state.Texture.GetTarget(), ts->texture_id, 0, 0);
+		glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, ts->texture_id, 0, 0);
 	}
 
 //	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, new_fbo.renderbuffer_id);

@@ -148,6 +148,7 @@ extern int Cmdline_dis_collisions;
 extern int Cmdline_dis_weapons;
 extern int Cmdline_noparseerrors;
 extern int Cmdline_extra_warn;
+extern int Cmdline_bmpman_usage;
 extern int Cmdline_show_pos;
 extern int Cmdline_show_stats;
 extern int Cmdline_save_render_targets;

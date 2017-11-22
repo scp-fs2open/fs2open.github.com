@@ -51,3 +51,10 @@
  * This can be used to ensure that a static variable is present even if it isn't referenced in the translation unit
  */
 #define USED_VARIABLE
+
+/**
+ * @brief For use in a case statement which falls through
+ *
+ * Some compilers issue a warning if a fallthrough is detected. This define can be used to suppress that warning.
+ */
+#define FALLTHROUGH

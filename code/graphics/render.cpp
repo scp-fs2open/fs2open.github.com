@@ -147,6 +147,7 @@ static void bitmap_ex_internal(int x,
 }
 
 void gr_aabitmap(int x, int y, int resize_mode, bool mirror) {
+	GR_DEBUG_SCOPE("Draw AA-bitmap");
 
 	int w, h, do_resize;
 
@@ -1064,7 +1065,7 @@ size_t gr_add_to_immediate_buffer(size_t size, void* data) {
 	GR_DEBUG_SCOPE("Add data to immediate buffer");
 
 	if ( gr_immediate_buffer_handle < 0 ) {
-		gr_immediate_buffer_handle = gr_create_vertex_buffer(false);
+		gr_immediate_buffer_handle = gr_create_buffer(BufferType::Vertex, BufferUsageHint::Dynamic);
 	}
 
 	Assert(size > 0 && data != NULL);

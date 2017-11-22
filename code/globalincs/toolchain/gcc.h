@@ -66,3 +66,9 @@
 #define unlikely(x)  __builtin_expect((long) !!(x), 0L)
 
 #define USED_VARIABLE __attribute__((used))
+
+#if SCP_COMPILER_VERSION_MAJOR >= 7
+#define FALLTHROUGH [[fallthrough]]
+#else
+#define FALLTHROUGH
+#endif

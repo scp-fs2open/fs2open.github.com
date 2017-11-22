@@ -415,7 +415,7 @@ void shield_transfer(object *objp, int quadrant, float rate) {
 		return;
 	
 	} else if (objp == Player_obj) {
-		snd_play(&Snds[SND_SHIELD_XFER_OK]);
+		snd_play(gamesnd_get_game_sound(SND_SHIELD_XFER_OK));
 	}
 
 	float energy_avail = 0.0f;	// Energy available from the other quadrants that we can transfer

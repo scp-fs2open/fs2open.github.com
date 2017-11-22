@@ -693,6 +693,7 @@ void credits_do_frame(float frametime)
 			break;
 		}
 		// else, react like tab key.
+		FALLTHROUGH;
 
 	case KEY_CTRLED | KEY_DOWN:
 	case KEY_TAB:

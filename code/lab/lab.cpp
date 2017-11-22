@@ -12,6 +12,7 @@
 #include "cmdline/cmdline.h"
 #include "freespace.h"
 #include "gamesequence/gamesequence.h"
+#include "graphics/matrix.h"
 #include "graphics/shadows.h"
 #include "hud/hudshield.h"
 #include "io/key.h"

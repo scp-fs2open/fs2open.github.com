@@ -22,6 +22,8 @@
 #include "gamesequence/gamesequence.h"	//WMC - for scripting hooks in gr_flip()
 #include "globalincs/systemvars.h"
 #include "graphics/2d.h"
+#include "graphics/matrix.h"
+#include "graphics/light.h"
 #include "graphics/font.h"
 #include "graphics/grbatch.h"
 #include "graphics/grinternal.h"
@@ -29,6 +31,8 @@
 #include "graphics/opengl/gropengldraw.h"
 #include "graphics/grstub.h"
 #include "graphics/paths/PathRenderer.h"
+#include "graphics/util/UniformBuffer.h"
+#include "graphics/util/UniformBufferManager.h"
 #include "io/keycontrol.h" // m!m
 #include "io/timer.h"
 #include "osapi/osapi.h"
@@ -95,6 +99,11 @@ float Gr_save_menu_offset_X = 0.0f, Gr_save_menu_offset_Y = 0.0f;
 float Gr_save_menu_zoomed_offset_X = 0.0f, Gr_save_menu_zoomed_offset_Y = 0.0f;
 
 bool Save_custom_screen_size;
+
+// Forward definitions
+static void uniform_buffer_managers_init();
+static void uniform_buffer_managers_deinit();
+static void uniform_buffer_managers_retire_buffers();
 
 void gr_set_screen_scale(int w, int h, int zoom_w, int zoom_h, int max_w, int max_h, int center_w, int center_h, bool force_stretch)
 {
@@ -634,8 +643,13 @@ void gr_close()
 	if ( !Gr_inited ) {
 		return;
 	}
+
+	// Cleanup uniform buffer managers
+	uniform_buffer_managers_deinit();
 	
 	font::close();
+
+	gr_light_shutdown();
 
 	switch (gr_screen.mode) {
 		case GR_OPENGL:
@@ -648,6 +662,8 @@ void gr_close()
 		default:
 			Int3();		// Invalid graphics mode
 	}
+
+	bm_close();
 
 	Gr_inited = 0;
 }
@@ -742,10 +758,7 @@ void gr_screen_resize(int width, int height)
 	gr_screen.save_max_w_unscaled_zoomed = gr_screen.max_w_unscaled_zoomed;
 	gr_screen.save_max_h_unscaled_zoomed = gr_screen.max_h_unscaled_zoomed;
 
-	if (gr_screen.mode == GR_OPENGL) {
-		extern void opengl_setup_viewport();
-		opengl_setup_viewport();
-	}
+	gr_setup_viewport();
 }
 
 int gr_get_resolution_class(int width, int height)
@@ -1051,6 +1064,8 @@ bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, int d_mode, 
 		return false;
 	}
 
+	gr_light_init();
+
 	mprintf(("Initializing path renderer...\n"));
 	graphics::paths::PathRenderer::init();
 
@@ -1058,6 +1073,9 @@ bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, int d_mode, 
 
 	bm_init();
 	io::mouse::CursorManager::init();
+
+	// Initialize uniform buffer managers
+	uniform_buffer_managers_init();
 
 	bool missing_installation = false;
 	if (!running_unittests && Web_cursor == nullptr) {
@@ -2098,6 +2116,9 @@ void gr_flip(bool execute_scripting)
 
 	gr_reset_immediate_buffer();
 
+	// Use this opportunity for retiring the uniform buffers
+	uniform_buffer_managers_retire_buffers();
+
 	gr_screen.gf_flip();
 }
 
@@ -2216,4 +2237,96 @@ void gr_print_timestamp(int x, int y, fix timestamp, int resize_mode)
 	time[7] = '\0';
 
 	gr_string(x, y, time, resize_mode);
+}
+
+static std::unique_ptr<graphics::util::UniformBufferManager>
+	uniform_buffer_managers[static_cast<size_t>(uniform_block_type::NUM_BLOCK_TYPES)];
+
+static void uniform_buffer_managers_init() {
+	for (size_t i = 0; i < static_cast<size_t>(uniform_block_type::NUM_BLOCK_TYPES); ++i) {
+		auto enumVal = static_cast<uniform_block_type>(i);
+
+		uniform_buffer_managers[i].reset(new graphics::util::UniformBufferManager(enumVal));
+	}
+}
+static void uniform_buffer_managers_deinit() {
+	for (auto& manager: uniform_buffer_managers) {
+		manager.reset();
+	}
+}
+static void uniform_buffer_managers_retire_buffers() {
+	GR_DEBUG_SCOPE("Retiring unused uniform buffers");
+
+	for (auto& manager: uniform_buffer_managers) {
+		manager->retireBuffers();
+	}
+}
+
+graphics::util::UniformBuffer* gr_get_uniform_buffer(uniform_block_type type) {
+	return uniform_buffer_managers[static_cast<size_t>(type)]->getBuffer();
+}
+
+SCP_vector<DisplayData> gr_enumerate_displays()
+{
+	// It seems that linux cannot handle having the video subsystem inited
+	// too late
+	if (SDL_InitSubSystem(SDL_INIT_VIDEO) < 0) {
+		return SCP_vector<DisplayData>();
+	}
+
+	SCP_vector<DisplayData> data;
+
+	auto num_displays = SDL_GetNumVideoDisplays();
+	for (auto i = 0; i < num_displays; ++i) {
+		DisplayData display;
+		display.index = i;
+
+		SDL_Rect bounds;
+		if (SDL_GetDisplayBounds(i, &bounds) == 0) {
+			display.x = bounds.x;
+			display.y = bounds.y;
+			display.width = bounds.w;
+			display.height = bounds.h;
+		}
+
+		auto name = SDL_GetDisplayName(i);
+		if (name != nullptr) {
+			display.name = name;
+		}
+
+		auto num_mods = SDL_GetNumDisplayModes(i);
+		for (auto j = 0; j < num_mods; ++j) {
+			SDL_DisplayMode mode;
+			if (SDL_GetDisplayMode(i, j, &mode) != 0) {
+				continue;
+			}
+			
+			VideoModeData videoMode;
+			videoMode.width = mode.w;
+			videoMode.height = mode.h;
+
+			int sdlBits = SDL_BITSPERPIXEL(mode.format);
+
+			if (SDL_ISPIXELFORMAT_ALPHA(mode.format)) {
+				videoMode.bit_depth = sdlBits;
+			} else {
+				// Fix a few values
+				if (sdlBits == 24) {
+					videoMode.bit_depth = 32;
+				} else if (sdlBits == 15) {
+					videoMode.bit_depth = 16;
+				} else {
+					videoMode.bit_depth = sdlBits;
+				}
+			}
+
+			display.video_modes.push_back(videoMode);
+		}
+
+		data.push_back(display);
+	}
+	
+	SDL_QuitSubSystem(SDL_INIT_VIDEO);
+
+	return data;
 }

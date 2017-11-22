@@ -1,3 +1,4 @@
+#include <math/bitarray.h>
 #include "particle/ParticleSource.h"
 #include "weapon/weapon.h"
 #include "ParticleSource.h"
@@ -45,6 +46,20 @@ void SourceOrigin::getGlobalPosition(vec3d* posOut) const {
 	}
 
 	vm_vec_add2(posOut, &offset);
+}
+void SourceOrigin::getHostOrientation(matrix* matOut) const {
+	switch (m_originType) {
+	case SourceOriginType::OBJECT:
+		*matOut = m_origin.m_object.objp->orient;
+		break;
+	case SourceOriginType::PARTICLE:
+		vm_vector_2_matrix(matOut, &m_origin.m_particle.lock()->velocity, nullptr, nullptr);
+		break;
+	case SourceOriginType::VECTOR: // Intentional fall-through, plain vectors have no orientation
+	default:
+		*matOut = vmd_identity_matrix;
+		break;
+	}
 }
 
 void SourceOrigin::applyToParticleInfo(particle_info& info, bool allowRelative) const {
@@ -160,10 +175,12 @@ void SourceOrientation::setFromVector(const vec3d& vec) {
 
 void SourceOrientation::setFromNormalizedVector(const vec3d& vec) {
 	vm_vector_2_matrix_norm(&m_orientation, &vec);
+	m_isRelative = false;
 }
 
 void SourceOrientation::setFromMatrix(const matrix& mat) {
 	m_orientation = mat;
+	m_isRelative = false;
 }
 
 void SourceOrientation::setNormal(const vec3d& normal) {
@@ -171,8 +188,19 @@ void SourceOrientation::setNormal(const vec3d& normal) {
 	m_normal = normal;
 }
 
-vec3d SourceOrientation::getDirectionVector() const {
-	return m_orientation.vec.fvec;
+vec3d SourceOrientation::getDirectionVector(const SourceOrigin* origin) const {
+	if (!m_isRelative) {
+		return m_orientation.vec.fvec;
+	}
+
+	matrix finalOrient;
+
+	matrix hostOrient;
+	origin->getHostOrientation(&hostOrient);
+
+	vm_matrix_x_matrix(&finalOrient, &hostOrient, &m_orientation);
+
+	return finalOrient.vec.fvec;
 }
 
 bool SourceOrientation::getNormal(vec3d* outNormal) const {

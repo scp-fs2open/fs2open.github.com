@@ -260,6 +260,7 @@ bool ConditionedHook::ConditionsValid(int action, object *objp, int more_data)
 					return false;
 				if(stricmp(Ship_types[sip->class_type].name, scp->data.name))
 					return false;
+				break;
 			case CHC_SHIPCLASS:
 				if(objp == NULL || objp->type != OBJ_SHIP)
 					return false;
@@ -1127,6 +1128,11 @@ void script_state::ParseChunkSub(script_function& script_func, const char* debug
 	else if(check_for_string("["))
 	{
 		//Lua string
+
+		// Determine the current line in the file so that the Lua source can begin at the same line as in the table
+		// This will make sure that the line in the error message matches the line number in the table.
+		auto line = get_line_num();
+
 		//Allocate raw script
 		char* raw_lua = alloc_block("[", "]", 1);
 		//WMC - minor hack to make sure that the last line gets
@@ -1134,7 +1140,10 @@ void script_state::ParseChunkSub(script_function& script_func, const char* debug
 		//crash, so this is here just to be on the safe side.
 		strcat(raw_lua, "\n");
 
-		source = raw_lua;
+		for (auto i = 0; i <= line; ++i) {
+			source += "\n";
+		}
+		source += raw_lua;
 		vm_free(raw_lua);
 	}
 	else

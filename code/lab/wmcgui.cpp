@@ -1450,8 +1450,8 @@ void Window::DoDraw(float frametime)
 	gr_init_alphacolor(&clr, WindowShade.r, WindowShade.g, WindowShade.b, WindowShade.c);
 	gr_set_color_fast(&clr);
 
-	w = Coords[3] - Coords[1];
-	h = Coords[2] - Coords[0];
+	w = Coords[2] - Coords[0];
+	h = Coords[3] - Coords[1];
 	gr_rect(Coords[0], Coords[1], w, h, GR_RESIZE_NONE);
 
 	gr_set_color_fast(&Color_text_normal);

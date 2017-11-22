@@ -26,8 +26,8 @@ if [[ ! "$(curl -V)" == *"sftp"* ]]; then
         cd ..
         dpkg -l | grep curl
         ls -al
-        sudo dpkg -i curl*.deb
         sudo dpkg -i libcurl3*.deb
+        sudo dpkg -i curl*.deb
     elif [ "$TRAVIS_OS_NAME" = "osx" ]; then
         brew install curl --with-libssh2
         export PATH="/usr/local/opt/curl/bin:$PATH"

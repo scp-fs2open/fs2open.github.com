@@ -20,6 +20,7 @@
 #include "globalincs/alphacolors.h"
 #include "globalincs/linklist.h"
 #include "graphics/font.h"
+#include "graphics/matrix.h"
 #include "hud/hud.h"
 #include "io/key.h"
 #include "io/mouse.h"

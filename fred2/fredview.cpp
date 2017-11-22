@@ -4594,7 +4594,6 @@ void CFREDView::OnDestroy()
 {
 	audiostream_close();
 	snd_close();
- 	gr_close();
 
 	CView::OnDestroy();
 }

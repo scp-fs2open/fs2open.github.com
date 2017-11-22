@@ -10,17 +10,19 @@
 #include "debugconsole/console.h"
 #include "globalincs/systemvars.h"
 #include "graphics/2d.h"
+#include "graphics/matrix.h"
 #include "graphics/paths/PathRenderer.h"
 #include "gropengl.h"
 #include "gropenglbmpman.h"
 #include "gropengldraw.h"
-#include "gropengllight.h"
 #include "gropenglpostprocessing.h"
 #include "gropenglquery.h"
+#include "gropenglsync.h"
 #include "gropenglshader.h"
 #include "gropenglstate.h"
 #include "gropengltexture.h"
 #include "gropengltnl.h"
+#include "gropengldeferred.h"
 #include "graphics/line.h"
 #include "io/mouse.h"
 #include "io/timer.h"
@@ -32,6 +34,7 @@
 #include "render/3d.h"
 #include "popup/popup.h"
 #include "tracing/tracing.h"
+#include "pngutils/pngutils.h"
 
 #if defined(_WIN32)
 #include <windows.h>
@@ -69,6 +72,7 @@ static GLuint GL_screen_pbo = 0;
 float GL_alpha_threshold = 0.0f;
 
 extern const char *Osreg_title;
+extern SCP_string Window_title;
 
 extern GLfloat GL_anisotropy;
 
@@ -293,22 +297,13 @@ void gr_opengl_reset_clip()
 void gr_opengl_print_screen(const char *filename)
 {
 	char tmp[MAX_PATH_LEN];
-	ubyte tga_hdr[18];
-	int i;
-	ushort width, height;
 	GLubyte *pixels = NULL;
 	GLuint pbo = 0;
 
 	// save to a "screenshots" directory and tack on the filename
-	snprintf(tmp, MAX_PATH_LEN-1, "screenshots/%s.tga", filename);
-    
+	snprintf(tmp, MAX_PATH_LEN-1, "screenshots/%s.png", filename);
+
     _mkdir(os_get_config_path("screenshots").c_str());
-
-	FILE *fout = fopen(os_get_config_path(tmp).c_str(), "wb");
-
-	if (fout == NULL) {
-		return;
-	}
 
 //	glReadBuffer(GL_FRONT);
 
@@ -318,9 +313,6 @@ void gr_opengl_print_screen(const char *filename)
 		glGenBuffers(1, &pbo);
 
 		if ( !pbo ) {
-			if (fout != NULL)
-				fclose(fout);
-
 			return;
 		}
 
@@ -328,7 +320,7 @@ void gr_opengl_print_screen(const char *filename)
 		glBufferData(GL_PIXEL_PACK_BUFFER, (gr_screen.max_w * gr_screen.max_h * 4), NULL, GL_STATIC_READ);
 
 		glReadBuffer(GL_FRONT);
-		glReadPixels(0, 0, gr_screen.max_w, gr_screen.max_h, GL_read_format, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
+		glReadPixels(0, 0, gr_screen.max_w, gr_screen.max_h, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
 
 		// map the image data so that we can save it to file
 		pixels = (GLubyte*) glMapBuffer(GL_PIXEL_PACK_BUFFER, GL_READ_ONLY);
@@ -336,53 +328,23 @@ void gr_opengl_print_screen(const char *filename)
 		pixels = (GLubyte*) vm_malloc(gr_screen.max_w * gr_screen.max_h * 4, memory::quiet_alloc);
 
 		if (pixels == NULL) {
-			if (fout != NULL) {
-				fclose(fout);
-			}
-
 			return;
 		}
 
-		glReadPixels(0, 0, gr_screen.max_w, gr_screen.max_h, GL_read_format, GL_UNSIGNED_INT_8_8_8_8_REV, pixels);
+		glReadPixels(0, 0, gr_screen.max_w, gr_screen.max_h, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, pixels);
 		glFlush();
 	}
 
-	// Write the TGA header
-	width = INTEL_SHORT((ushort)gr_screen.max_w);
-	height = INTEL_SHORT((ushort)gr_screen.max_h);
-
-	memset( tga_hdr, 0, sizeof(tga_hdr) );
-
-	tga_hdr[2] = 2;		// ImageType    2 = 24bpp, uncompressed
-	memcpy( tga_hdr + 12, &width, sizeof(ushort) );		// Width
-	memcpy( tga_hdr + 14, &height, sizeof(ushort) );	// Height
-	tga_hdr[16] = 24;	// PixelDepth
-
-	fwrite( tga_hdr, sizeof(tga_hdr), 1, fout );
-
-	// now for the data, we convert it from 32-bit to 24-bit
-	for (i = 0; i < (gr_screen.max_w * gr_screen.max_h * 4); i += 4) {
-#if BYTE_ORDER == BIG_ENDIAN
-		int pix, *pix_tmp;
-
-		pix_tmp = (int*)(pixels + i);
-		pix = INTEL_INT(*pix_tmp);
-
-		fwrite( &pix, 1, 3, fout );
-#else
-		fwrite( pixels + i, 1, 3, fout );
-#endif
+	if (!png_write_bitmap(os_get_config_path(tmp).c_str(), gr_screen.max_w, gr_screen.max_h, true, pixels)) {
+		ReleaseWarning(LOCATION, "Failed to write screenshot to \"%s\".", os_get_config_path(tmp).c_str());
 	}
-
+	
 	if (pbo) {
 		glUnmapBuffer(GL_PIXEL_PACK_BUFFER);
 		pixels = NULL;
 		glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
 		glDeleteBuffers(1, &pbo);
 	}
-
-	// done!
-	fclose(fout);
 
 	if (pixels != NULL) {
 		vm_free(pixels);
@@ -394,7 +356,6 @@ void gr_opengl_shutdown()
 	graphics::paths::PathRenderer::shutdown();
 
 	opengl_tcache_shutdown();
-	opengl_light_shutdown();
 	opengl_tnl_shutdown();
 	opengl_scene_texture_shutdown();
 	opengl_post_process_shutdown();
@@ -404,7 +365,7 @@ void gr_opengl_shutdown()
 
 	glDeleteVertexArrays(1, &GL_vao);
 	GL_vao = 0;
-	
+
 	if (GL_original_gamma_ramp != NULL && os::getSDLMainWindow() != nullptr) {
 		SDL_SetWindowGammaRamp( os::getSDLMainWindow(), GL_original_gamma_ramp, (GL_original_gamma_ramp+256), (GL_original_gamma_ramp+512) );
 	}
@@ -909,20 +870,6 @@ void opengl_set_vsync(int status)
 	GL_CHECK_FOR_ERRORS("end of set_vsync()");
 }
 
-void opengl_setup_viewport()
-{
-	glViewport(0, 0, gr_screen.max_w, gr_screen.max_h);
-
-	GL_last_projection_matrix = GL_projection_matrix;
-
-	// the top and bottom positions are reversed on purpose, but RTT needs them the other way
-	if (GL_rendering_to_texture) {
-		opengl_create_orthographic_projection_matrix(&GL_projection_matrix, 0, i2fl(gr_screen.max_w), 0, i2fl(gr_screen.max_h), -1.0, 1.0);
-	} else {
-		opengl_create_orthographic_projection_matrix(&GL_projection_matrix, 0, i2fl(gr_screen.max_w), i2fl(gr_screen.max_h), 0, -1.0, 1.0);
-	}
-}
-
 std::unique_ptr<os::Viewport> gr_opengl_create_viewport(const os::ViewPortProperties& props) {
 	os::ViewPortProperties attrs = props;
 	attrs.pixel_format.red_size = Gr_red.bits;
@@ -1074,6 +1021,9 @@ int opengl_init_display_device()
 	attrs.height = (uint32_t) gr_screen.max_h;
 
 	attrs.title = Osreg_title;
+	if (!Window_title.empty()) {
+		attrs.title = Window_title;
+	}
 
 	if (!Cmdline_window && ! Cmdline_fullscreen_window) {
 		attrs.flags.set(os::ViewPortFlags::Fullscreen);
@@ -1178,24 +1128,14 @@ void opengl_setup_function_pointers()
 	gr_screen.gf_set_texture_addressing	= gr_opengl_set_texture_addressing;
 	gr_screen.gf_zbias					= gr_opengl_zbias;
 	gr_screen.gf_set_fill_mode			= gr_opengl_set_fill_mode;
-	gr_screen.gf_set_texture_panning	= gr_opengl_set_texture_panning;
 
-	gr_screen.gf_create_vertex_buffer		= gr_opengl_create_vertex_buffer;
-	gr_screen.gf_create_index_buffer		= gr_opengl_create_index_buffer;
-	gr_screen.gf_delete_buffer				= gr_opengl_delete_buffer;
-	gr_screen.gf_update_buffer_data			= gr_opengl_update_buffer_data;
+	gr_screen.gf_create_buffer	= gr_opengl_create_buffer;
+	gr_screen.gf_delete_buffer		= gr_opengl_delete_buffer;
+	gr_screen.gf_update_buffer_data		= gr_opengl_update_buffer_data;
 	gr_screen.gf_update_buffer_data_offset	= gr_opengl_update_buffer_data_offset;
+	gr_screen.gf_bind_uniform_buffer = gr_opengl_bind_uniform_buffer;
 
 	gr_screen.gf_update_transform_buffer	= gr_opengl_update_transform_buffer;
-	gr_screen.gf_set_transform_buffer_offset	= gr_opengl_set_transform_buffer_offset;
-
-	gr_screen.gf_start_instance_matrix			= gr_opengl_start_instance_matrix;
-	gr_screen.gf_end_instance_matrix			= gr_opengl_end_instance_matrix;
-	gr_screen.gf_start_angles_instance_matrix	= gr_opengl_start_instance_angles;
-
-	gr_screen.gf_set_light			= gr_opengl_set_light;
-	gr_screen.gf_reset_lighting		= gr_opengl_reset_lighting;
-	gr_screen.gf_set_ambient_light	= gr_opengl_set_ambient_light;
 
 	gr_screen.gf_post_process_set_effect	= gr_opengl_post_process_set_effect;
 	gr_screen.gf_post_process_set_defaults	= gr_opengl_post_process_set_defaults;
@@ -1213,21 +1153,10 @@ void opengl_setup_function_pointers()
 	gr_screen.gf_deferred_lighting_end = gr_opengl_deferred_lighting_end;
 	gr_screen.gf_deferred_lighting_finish = gr_opengl_deferred_lighting_finish;
 
-	gr_screen.gf_lighting			= gr_opengl_set_lighting;
-
-	gr_screen.gf_set_proj_matrix	= gr_opengl_set_projection_matrix;
-	gr_screen.gf_end_proj_matrix	= gr_opengl_end_projection_matrix;
-
-	gr_screen.gf_set_view_matrix	= gr_opengl_set_view_matrix;
-	gr_screen.gf_end_view_matrix	= gr_opengl_end_view_matrix;
-
-	gr_screen.gf_push_scale_matrix	= gr_opengl_push_scale_matrix;
-	gr_screen.gf_pop_scale_matrix	= gr_opengl_pop_scale_matrix;
-	
 	gr_screen.gf_set_line_width		= gr_opengl_set_line_width;
 
 	gr_screen.gf_sphere				= gr_opengl_sphere;
-	
+
 	gr_screen.gf_maybe_create_shader = gr_opengl_maybe_create_shader;
 	gr_screen.gf_shadow_map_start	= gr_opengl_shadow_map_start;
 	gr_screen.gf_shadow_map_end		= gr_opengl_shadow_map_end;
@@ -1248,6 +1177,7 @@ void opengl_setup_function_pointers()
 	gr_screen.gf_render_movie = gr_opengl_render_movie;
 
 	gr_screen.gf_is_capable = gr_opengl_is_capable;
+	gr_screen.gf_get_property = gr_opengl_get_property;
 
 	gr_screen.gf_push_debug_group = gr_opengl_push_debug_group;
 	gr_screen.gf_pop_debug_group = gr_opengl_pop_debug_group;
@@ -1260,6 +1190,12 @@ void opengl_setup_function_pointers()
 
 	gr_screen.gf_create_viewport = gr_opengl_create_viewport;
 	gr_screen.gf_use_viewport = gr_opengl_use_viewport;
+
+	gr_screen.gf_sync_fence = gr_opengl_sync_fence;
+	gr_screen.gf_sync_wait = gr_opengl_sync_wait;
+	gr_screen.gf_sync_delete = gr_opengl_sync_delete;
+
+	gr_screen.gf_set_viewport = gr_opengl_set_viewport;
 
 	// NOTE: All function pointers here should have a Cmdline_nohtl check at the top
 	//       if they shouldn't be run in non-HTL mode, Don't keep separate entries.
@@ -1398,11 +1334,11 @@ static void init_extensions() {
 	Texture_compression_available = true;
 	// Swifty put this in, but it's not doing anything. Once he uses it, he can uncomment it.
 	//int use_base_vertex = Is_Extension_Enabled(OGL_ARB_DRAW_ELEMENTS_BASE_VERTEX);
-	
+
 	if ( !Cmdline_no_pbo ) {
 		Use_PBOs = 1;
 	}
-	
+
 	int ver = 0, major = 0, minor = 0;
 	const char *glsl_ver = (const char*)glGetString(GL_SHADING_LANGUAGE_VERSION);
 
@@ -1509,9 +1445,6 @@ bool gr_opengl_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 
 	init_extensions();
 
-	// setup the lighting stuff that will get used later
-	opengl_light_init();
-
 	// init state system (must come AFTER light is set up)
 	GL_state.init();
 
@@ -1527,6 +1460,7 @@ bool gr_opengl_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 
 	GL_state.Texture.init(max_texture_units);
 	GL_state.Array.init(max_texture_coords);
+	GL_state.Constants.init();
 
 	opengl_set_texture_target();
 	GL_state.Texture.SetActiveUnit(0);
@@ -1548,9 +1482,8 @@ bool gr_opengl_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 	// must be called after extensions are setup
 	opengl_set_vsync( !Cmdline_no_vsync );
 
-	opengl_setup_viewport();
-	vm_matrix4_set_identity(&GL_view_matrix);
-	vm_matrix4_set_identity(&GL_model_view_matrix);
+	gr_reset_matrices();
+	gr_setup_viewport();
 
 	glClear(GL_DEPTH_BUFFER_BIT);
 	glClear(GL_STENCIL_BUFFER_BIT);
@@ -1595,7 +1528,11 @@ bool gr_opengl_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 	mprintf(( "  Using %s texture filter.\n", (GL_mipmap_filter) ? NOX("trilinear") : NOX("bilinear") ));
 
 	mprintf(( "  OpenGL Shader Version: %s\n", glGetString(GL_SHADING_LANGUAGE_VERSION) ));
-	
+
+	mprintf(("  Max uniform block size: %d\n", GL_state.Constants.GetMaxUniformBlockSize()));
+	mprintf(("  Max uniform buffer bindings: %d\n", GL_state.Constants.GetMaxUniformBlockBindings()));
+	mprintf(("  Uniform buffer byte offset alignment: %d\n", GL_state.Constants.GetUniformBufferOffsetAlignment()));
+
 	// This stops fred crashing if no textures are set
 	gr_screen.current_bitmap = -1;
 
@@ -1634,6 +1571,16 @@ bool gr_opengl_is_capable(gr_capability capability)
 	}
 
 	return false;
+}
+
+bool gr_opengl_get_property(gr_property prop, void* dest) {
+	switch(prop) {
+		case gr_property::UNIFORM_BUFFER_OFFSET_ALIGNMENT:
+			*((int*)dest) = GL_state.Constants.GetUniformBufferOffsetAlignment();
+			return true;
+		default:
+			return false;
+	}
 }
 
 void gr_opengl_push_debug_group(const char* name) {

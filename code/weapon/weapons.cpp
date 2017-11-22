@@ -3639,10 +3639,10 @@ void weapon_maybe_play_warning(weapon *wp)
 			// Possibly add an additional third sound later
 			if ( (Weapon_info[wp->weapon_info_index].wi_flags[Weapon::Info_Flags::Homing_heat]) ||
 				 (Weapon_info[wp->weapon_info_index].wi_flags[Weapon::Info_Flags::Homing_javelin]) ) {
-				snd_play(&Snds[ship_get_sound(Player_obj, SND_HEATLOCK_WARN)]);
+				snd_play(gamesnd_get_game_sound(ship_get_sound(Player_obj, SND_HEATLOCK_WARN)));
 			} else {
 				Assert(Weapon_info[wp->weapon_info_index].wi_flags[Weapon::Info_Flags::Homing_aspect]);
-				snd_play(&Snds[ship_get_sound(Player_obj, SND_ASPECTLOCK_WARN)]);
+				snd_play(gamesnd_get_game_sound(ship_get_sound(Player_obj, SND_ASPECTLOCK_WARN)));
 			}
 		}
 	}
@@ -4473,10 +4473,10 @@ void weapon_maybe_play_flyby_sound(object *weapon_objp, weapon *wp)
 			
 			if ( (dot < -0.80) && (dot > -0.98) ) {
 				if(Weapon_info[wp->weapon_info_index].flyby_snd != -1) {
-					snd_play_3d( &Snds[Weapon_info[wp->weapon_info_index].flyby_snd], &weapon_objp->pos, &Eye_position );
+					snd_play_3d( gamesnd_get_game_sound(Weapon_info[wp->weapon_info_index].flyby_snd), &weapon_objp->pos, &Eye_position );
 				} else {
 					if ( Weapon_info[wp->weapon_info_index].subtype == WP_LASER ) {
-						snd_play_3d( &Snds[SND_WEAPON_FLYBY], &weapon_objp->pos, &Eye_position );
+						snd_play_3d( gamesnd_get_game_sound(SND_WEAPON_FLYBY), &weapon_objp->pos, &Eye_position );
 					}
 				}
 				Weapon_flyby_sound_timer = timestamp(200);
@@ -4886,7 +4886,7 @@ void weapon_process_post(object * obj, float frame_time)
 		{
 			if (wp->hud_in_flight_snd_sig < 0 || !snd_is_playing(wp->hud_in_flight_snd_sig))
 			{
-				wp->hud_in_flight_snd_sig = snd_play_looping(&Snds[wip->hud_in_flight_snd]);
+				wp->hud_in_flight_snd_sig = snd_play_looping(gamesnd_get_game_sound(wip->hud_in_flight_snd));
 			}
 		}
 	}
@@ -5630,13 +5630,13 @@ void weapon_play_impact_sound(weapon_info *wip, vec3d *hitpos, bool is_armed)
 	if(is_armed)
 	{
 		if(wip->impact_snd != -1) {
-			snd_play_3d( &Snds[wip->impact_snd], hitpos, &Eye_position );
+			snd_play_3d( gamesnd_get_game_sound(wip->impact_snd), hitpos, &Eye_position );
 		}
 	}
 	else
 	{
 		if(wip->disarmed_impact_snd != -1) {
-			snd_play_3d(&Snds[wip->disarmed_impact_snd], hitpos, &Eye_position);
+			snd_play_3d(gamesnd_get_game_sound(wip->disarmed_impact_snd), hitpos, &Eye_position);
 		}
 	}
 }
@@ -5650,9 +5650,8 @@ void weapon_play_impact_sound(weapon_info *wip, vec3d *hitpos, bool is_armed)
  *
  * @note Uses Weapon_impact_timer global for timer variable
  */
-void weapon_hit_do_sound(object *hit_obj, weapon_info *wip, vec3d *hitpos, bool is_armed)
+void weapon_hit_do_sound(object *hit_obj, weapon_info *wip, vec3d *hitpos, bool is_armed, int quadrant)
 {
-	int	is_hull_hit;
 	float shield_str;
 
 	// If non-missiles (namely lasers) expire without hitting a ship, don't play impact sound
@@ -5691,42 +5690,37 @@ void weapon_hit_do_sound(object *hit_obj, weapon_info *wip, vec3d *hitpos, bool 
 
 	if ( timestamp_elapsed(Weapon_impact_timer) ) {
 
-		is_hull_hit = 1;
-		if ( hit_obj->type == OBJ_SHIP ) {
-			shield_str = ship_quadrant_shield_strength(hit_obj, hitpos);
+		if ( hit_obj->type == OBJ_SHIP && quadrant >= 0 ) {
+			shield_str = ship_quadrant_shield_strength(hit_obj, quadrant);
 		} else {
 			shield_str = 0.0f;
 		}
 
 		// play a shield hit if shields are above 10% max in this quadrant
 		if ( shield_str > 0.1f ) {
-			is_hull_hit = 0;
-		}
-
-		if ( !is_hull_hit ) {
 			// Play a shield impact sound effect
 			if ( hit_obj == Player_obj ) {
-				snd_play_3d( &Snds[SND_SHIELD_HIT_YOU], hitpos, &Eye_position );
+				snd_play_3d( gamesnd_get_game_sound(SND_SHIELD_HIT_YOU), hitpos, &Eye_position );
 				// AL 12-15-97: Add missile impact sound even when shield is hit
 				if ( wip->subtype == WP_MISSILE ) {
-					snd_play_3d( &Snds[SND_PLAYER_HIT_MISSILE], hitpos, &Eye_position);
+					snd_play_3d( gamesnd_get_game_sound(SND_PLAYER_HIT_MISSILE), hitpos, &Eye_position);
 				}
 			} else {
-				snd_play_3d( &Snds[SND_SHIELD_HIT], hitpos, &Eye_position );
+				snd_play_3d( gamesnd_get_game_sound(SND_SHIELD_HIT), hitpos, &Eye_position );
 			}
 		} else {
 			// Play a hull impact sound effect
 			switch ( wip->subtype ) {
 				case WP_LASER:
 					if ( hit_obj == Player_obj )
-						snd_play_3d( &Snds[SND_PLAYER_HIT_LASER], hitpos, &Eye_position );
+						snd_play_3d( gamesnd_get_game_sound(SND_PLAYER_HIT_LASER), hitpos, &Eye_position );
 					else {
 						weapon_play_impact_sound(wip, hitpos, is_armed);
 					}
 					break;
 				case WP_MISSILE:
 					if ( hit_obj == Player_obj ) 
-						snd_play_3d( &Snds[SND_PLAYER_HIT_MISSILE], hitpos, &Eye_position);
+						snd_play_3d( gamesnd_get_game_sound(SND_PLAYER_HIT_MISSILE), hitpos, &Eye_position);
 					else {
 						weapon_play_impact_sound(wip, hitpos, is_armed);
 					}
@@ -6109,7 +6103,7 @@ void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos, int qu
 
 	// if this is the player ship, and is a laser hit, skip it. wait for player "pain" to take care of it
 	if ((other_obj != Player_obj) || (wip->subtype != WP_LASER) || !MULTIPLAYER_CLIENT) {
-		weapon_hit_do_sound(other_obj, wip, hitpos, armed_weapon);
+		weapon_hit_do_sound(other_obj, wip, hitpos, armed_weapon, quadrant);
 	}
 
 	if ( wip->impact_weapon_expl_effect >= 0 && armed_weapon)

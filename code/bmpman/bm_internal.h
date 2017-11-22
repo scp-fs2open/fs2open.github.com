@@ -90,7 +90,7 @@ struct bitmap_entry {
 #endif
 };
 
-extern bitmap_entry bm_bitmaps[MAX_BITMAPS];
+extern bitmap_entry* bm_bitmaps;
 
 // image specific lock functions
 void bm_lock_ani( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, int bpp, ubyte flags );

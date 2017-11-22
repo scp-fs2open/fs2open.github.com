@@ -1856,7 +1856,7 @@ void update_throttle_sound()
 			}
 			else {
 				if ( Player_engine_snd_loop == -1 ){
-					Player_engine_snd_loop = snd_play_looping( &Snds[ship_get_sound(Player_obj, SND_ENGINE)], 0.0f , -1, -1, percent_throttle * ENGINE_MAX_VOL, FALSE);
+					Player_engine_snd_loop = snd_play_looping( gamesnd_get_game_sound(ship_get_sound(Player_obj, SND_ENGINE)), 0.0f , -1, -1, percent_throttle * ENGINE_MAX_VOL, FALSE);
 				} else {
 					// The sound may have been trashed at the low-level if sound channel overflow.
 					// TODO: implement system where certain sounds cannot be interrupted (priority?)
@@ -3556,7 +3556,7 @@ void hud_stop_objective_notify()
 
 void hud_start_objective_notify()
 {
-	snd_play(&(Snds[SND_DIRECTIVE_COMPLETE]));
+	snd_play(gamesnd_get_game_sound(SND_DIRECTIVE_COMPLETE));
 	Objective_notify_active = 1;
 }
 

@@ -23,12 +23,7 @@ uint gr_stub_lock()
 	return 1;
 }
 
-int gr_stub_create_vertex_buffer(bool static_buffer)
-{
-	return -1;
-}
-
-int gr_stub_create_index_buffer(bool static_buffer)
+int gr_stub_create_buffer(BufferType, BufferUsageHint)
 {
 	return -1;
 }
@@ -75,18 +70,6 @@ void gr_stub_clear()
 {
 }
 
-void gr_stub_end_instance_matrix()
-{
-}
-
-void gr_stub_end_projection_matrix()
-{
-}
-
-void gr_stub_end_view_matrix()
-{
-}
-
 void gr_stub_flip()
 {
 }
@@ -103,10 +86,6 @@ void gr_stub_get_region(int front, int w, int h, ubyte *data)
 {
 }
 
-void gr_stub_pop_scale_matrix()
-{
-}
-
 void gr_stub_pop_texture_matrix(int unit)
 {
 }
@@ -119,10 +98,6 @@ void gr_stub_print_screen(const char *filename)
 {
 }
 
-void gr_stub_push_scale_matrix(const vec3d *scale_factor)
-{
-}
-
 void gr_stub_push_texture_matrix(int unit)
 {
 }
@@ -132,10 +107,6 @@ void gr_stub_rect(int x, int y, int w, int h, int resize_mode)
 }
 
 void gr_stub_reset_clip()
-{
-}
-
-void gr_stub_reset_lighting()
 {
 }
 
@@ -156,11 +127,6 @@ void gr_stub_update_buffer_data_offset(int handle, size_t offset, size_t size, v
 }
 
 void gr_stub_update_transform_buffer(void* data, size_t size)
-{
-
-}
-
-void gr_stub_set_transform_buffer_offset(size_t offset)
 {
 
 }
@@ -187,35 +153,11 @@ void gr_stub_set_gamma(float gamma)
 {
 }
 
-void gr_stub_set_lighting(bool set, bool state)
-{
-}
-
-void gr_stub_set_light(light *light)
-{
-}
-
-void gr_stub_set_projection_matrix(float fov, float aspect, float z_near, float z_far)
-{
-}
-
 void gr_stub_set_tex_env_scale(float scale)
 {
 }
 
 void gr_stub_set_texture_addressing(int mode)
-{
-}
-
-void gr_stub_set_view_matrix(const vec3d *pos, const matrix* orient)
-{
-}
-
-void gr_stub_start_instance_angles(const vec3d *pos, const angles *rotation)
-{
-}
-
-void gr_stub_start_instance_matrix(const vec3d *offset, const matrix *rotation)
 {
 }
 
@@ -302,14 +244,6 @@ void gr_stub_deferred_lighting_end()
 }
 
 void gr_stub_deferred_lighting_finish()
-{
-}
-
-void gr_stub_set_ambient_light(int red, int green, int blue)
-{
-}
-
-void gr_stub_set_texture_panning(float u, float v, bool enable)
 {
 }
 
@@ -529,24 +463,13 @@ bool gr_stub_init()
 	gr_screen.gf_set_texture_addressing	= gr_stub_set_texture_addressing;
 	gr_screen.gf_zbias					= gr_stub_zbias_stub;
 	gr_screen.gf_set_fill_mode			= gr_set_fill_mode_stub;
-	gr_screen.gf_set_texture_panning	= gr_stub_set_texture_panning;
 
-	gr_screen.gf_create_vertex_buffer	= gr_stub_create_vertex_buffer;
-	gr_screen.gf_create_index_buffer	= gr_stub_create_index_buffer;
+	gr_screen.gf_create_buffer	= gr_stub_create_buffer;
 	gr_screen.gf_delete_buffer		= gr_stub_delete_buffer;
 
 	gr_screen.gf_update_transform_buffer	= gr_stub_update_transform_buffer;
 	gr_screen.gf_update_buffer_data		= gr_stub_update_buffer_data;
 	gr_screen.gf_update_buffer_data_offset = gr_stub_update_buffer_data_offset;
-	gr_screen.gf_set_transform_buffer_offset	= gr_stub_set_transform_buffer_offset;
-
-	gr_screen.gf_start_instance_matrix			= gr_stub_start_instance_matrix;
-	gr_screen.gf_end_instance_matrix			= gr_stub_end_instance_matrix;
-	gr_screen.gf_start_angles_instance_matrix	= gr_stub_start_instance_angles;
-
-	gr_screen.gf_set_light			= gr_stub_set_light;
-	gr_screen.gf_reset_lighting		= gr_stub_reset_lighting;
-	gr_screen.gf_set_ambient_light	= gr_stub_set_ambient_light;
 
 	gr_screen.gf_post_process_set_effect	= gr_stub_post_process_set_effect;
 	gr_screen.gf_post_process_set_defaults	= gr_stub_post_process_set_defaults;
@@ -564,17 +487,6 @@ bool gr_stub_init()
 	gr_screen.gf_deferred_lighting_end = gr_stub_deferred_lighting_end;
 	gr_screen.gf_deferred_lighting_finish = gr_stub_deferred_lighting_finish;
 
-	gr_screen.gf_lighting			= gr_stub_set_lighting;
-
-	gr_screen.gf_set_proj_matrix	= gr_stub_set_projection_matrix;
-	gr_screen.gf_end_proj_matrix	= gr_stub_end_projection_matrix;
-
-	gr_screen.gf_set_view_matrix	= gr_stub_set_view_matrix;
-	gr_screen.gf_end_view_matrix	= gr_stub_end_view_matrix;
-
-	gr_screen.gf_push_scale_matrix	= gr_stub_push_scale_matrix;
-	gr_screen.gf_pop_scale_matrix	= gr_stub_pop_scale_matrix;
-	
 	gr_screen.gf_set_line_width		= gr_stub_set_line_width;
 
 	gr_screen.gf_sphere				= gr_stub_draw_sphere;
@@ -600,6 +512,7 @@ bool gr_stub_init()
 	gr_screen.gf_render_primitives_batched = gr_stub_render_primitives_batched;
 
 	gr_screen.gf_is_capable = gr_stub_is_capable;
+	gr_screen.gf_get_property = [](gr_property,void*) { return false; };
 
 	gr_screen.gf_push_debug_group = gr_stub_push_debug_group;
 	gr_screen.gf_pop_debug_group = gr_stub_pop_debug_group;
@@ -615,6 +528,8 @@ bool gr_stub_init()
 	};
 	gr_screen.gf_use_viewport = [](os::Viewport*) {
 	};
+
+	gr_screen.gf_bind_uniform_buffer = [](uniform_block_type, size_t, size_t, int) {};
 
 	return true;
 }

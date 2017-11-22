@@ -15,6 +15,7 @@
 #include "math/vecmat.h"
 #include "model/model.h"
 #include "mission/missionparse.h"
+#include "graphics/util/UniformBuffer.h"
 
 extern light Lights[MAX_LIGHTS];
 extern int Num_lights;
@@ -178,7 +179,8 @@ struct insignia_draw_data
 
 struct queued_buffer_draw
 {
-	size_t transform_buffer_offset;
+	size_t transform_buffer_offset = 0;
+	size_t uniform_buffer_offset = 0;
 
 	model_material render_material;
 
@@ -250,10 +252,21 @@ class model_draw_list
 	SCP_vector<insignia_draw_data> Insignias;
 	SCP_vector<outline_draw> Outlines;
 
+	graphics::util::UniformBuffer* _dataBuffer = nullptr;
+	
+	bool Render_initialized = false; //!< A flag for checking if init_render has been called before a render_all call
+	
 	static bool sort_draw_pair(model_draw_list* target, const int a, const int b);
 	void sort_draws();
+
+	void build_uniform_buffer();
 public:
 	model_draw_list();
+	~model_draw_list();
+
+	model_draw_list(const model_draw_list&) = delete;
+	model_draw_list& operator=(const model_draw_list&) = delete;
+
 	void init();
 
 	void add_submodel_to_batch(int model_num);

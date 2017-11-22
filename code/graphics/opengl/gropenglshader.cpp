@@ -11,9 +11,9 @@
 #include "cmdline/cmdline.h"
 #include "def_files/def_files.h"
 #include "graphics/2d.h"
+#include "graphics/matrix.h"
 #include "graphics/grinternal.h"
 #include "graphics/opengl/gropengldraw.h"
-#include "graphics/opengl/gropengllight.h"
 #include "graphics/opengl/gropenglpostprocessing.h"
 #include "graphics/opengl/gropenglshader.h"
 #include "graphics/opengl/gropenglstate.h"
@@ -42,6 +42,16 @@ opengl_vert_attrib GL_vertex_attrib_info[] =
 		{ opengl_vert_attrib::RADIUS,		"vertRadius",		{{{ 1.0f, 0.0f, 0.0f, 0.0f }}} },
 		{ opengl_vert_attrib::UVEC,			"vertUvec",			{{{ 0.0f, 1.0f, 0.0f, 0.0f }}} },
 	};
+
+struct opengl_uniform_block_binding {
+	uniform_block_type block_type;
+	const char* name;
+};
+
+opengl_uniform_block_binding GL_uniform_blocks[] = {
+	{ uniform_block_type::Lights, "lightData" },
+	{ uniform_block_type::ModelData, "modelData" },
+};
 
 /**
  * Static lookup reference for shader uniforms
@@ -604,6 +614,14 @@ int opengl_compile_shader(shader_type sdr, uint flags)
 		new_shader.program->initAttribute(GL_vertex_attrib_info[attr].name, GL_vertex_attrib_info[attr].default_value);
 	}
 
+	for (auto& uniform_block : GL_uniform_blocks) {
+		auto blockIndex = glGetUniformBlockIndex(new_shader.program->getShaderHandle(), uniform_block.name);
+
+		if (blockIndex != GL_INVALID_INDEX) {
+			glUniformBlockBinding(new_shader.program->getShaderHandle(), blockIndex, static_cast<GLuint>(uniform_block.block_type));
+		}
+	}
+
 	mprintf(("Shader Variant Features:\n"));
 
 	// initialize all uniforms and attributes that are specific to this variant
@@ -768,8 +786,8 @@ void opengl_shader_set_passthrough(bool textured)
 
 	Current_shader->program->Uniforms.setUniform4f("color", 1.0f, 1.0f, 1.0f, 1.0f);
 
-	Current_shader->program->Uniforms.setUniformMatrix4f("modelViewMatrix", GL_model_view_matrix);
-	Current_shader->program->Uniforms.setUniformMatrix4f("projMatrix", GL_projection_matrix);
+	Current_shader->program->Uniforms.setUniformMatrix4f("modelViewMatrix", gr_model_view_matrix);
+	Current_shader->program->Uniforms.setUniformMatrix4f("projMatrix", gr_projection_matrix);
 }
 
 void opengl_shader_set_default_material(bool textured, bool alpha, vec4 *clr, float color_scale, uint32_t array_index, const material::clip_plane& clip_plane)
@@ -817,11 +835,11 @@ void opengl_shader_set_default_material(bool textured, bool alpha, vec4 *clr, fl
 		clip_equation.xyzw.w = -vm_vec_dot(&clip_plane.normal, &clip_plane.position);
 
 		Current_shader->program->Uniforms.setUniform4f("clipEquation", clip_equation);
-		Current_shader->program->Uniforms.setUniformMatrix4f("modelMatrix", GL_model_matrix_stack.get_transform());
+		Current_shader->program->Uniforms.setUniformMatrix4f("modelMatrix", gr_model_matrix_stack.get_transform());
 	} else {
 		Current_shader->program->Uniforms.setUniformi("clipEnabled", 0);
 	}
 
-	Current_shader->program->Uniforms.setUniformMatrix4f("modelViewMatrix", GL_model_view_matrix);
-	Current_shader->program->Uniforms.setUniformMatrix4f("projMatrix", GL_projection_matrix);
+	Current_shader->program->Uniforms.setUniformMatrix4f("modelViewMatrix", gr_model_view_matrix);
+	Current_shader->program->Uniforms.setUniformMatrix4f("projMatrix", gr_projection_matrix);
 }

@@ -14,6 +14,7 @@
 #include "debris/debris.h"
 #include "freespace.h"
 #include "gamesnd/gamesnd.h"
+#include "graphics/matrix.h"
 #include "hud/hudbrackets.h"
 #include "hud/hudtargetbox.h"
 #include "iff_defs/iff_defs.h"
@@ -2220,7 +2221,7 @@ void hud_update_target_static()
 
 	if ( Target_static_playing ) {
 		if ( Target_static_looping == -1 ) {
-			Target_static_looping = snd_play_looping(&Snds[SND_STATIC]);
+			Target_static_looping = snd_play_looping(gamesnd_get_game_sound(SND_STATIC));
 		}
 	} else {
 		if ( Target_static_looping != -1 ) {

@@ -24,6 +24,7 @@
 #include "debugconsole/console.h"
 #include "globalincs/systemvars.h"
 #include "graphics/2d.h"
+#include "graphics/matrix.h"
 #include "graphics/grinternal.h"
 #include "io/key.h"
 #include "io/timer.h"
@@ -83,17 +84,19 @@ const int BM_ANI_NUM_TYPES = sizeof(bm_ani_type_list) / sizeof(bm_ani_type_list[
 void(*bm_set_components)(ubyte *pixel, ubyte *r, ubyte *g, ubyte *b, ubyte *a) = NULL;
 void(*bm_set_components_32)(ubyte *pixel, ubyte *r, ubyte *g, ubyte *b, ubyte *a) = NULL;
 
+int MAX_BITMAPS = DEFAULT_MAX_BITMAPS;
+
 // --------------------------------------------------------------------------------------------------------------------
 // Declaration of protected variables (defined in cmdline.cpp).
 extern int Cmdline_cache_bitmaps;
 
 // --------------------------------------------------------------------------------------------------------------------
 // Definition of public variables (declared as extern in bm_internal.h).
-bitmap_entry bm_bitmaps[MAX_BITMAPS];
+bitmap_entry* bm_bitmaps = nullptr;
 
 // --------------------------------------------------------------------------------------------------------------------
 // Definition of private variables at file scope (static).
-static int bm_inited = 0;
+static bool bm_inited = false;
 static uint Bm_next_signature = 0x1234;
 static int  bm_next_handle = 1;
 static int Bm_low_mem = 0;
@@ -480,7 +483,11 @@ void bm_close() {
 		for (i = 0; i<MAX_BITMAPS; i++) {
 			bm_free_data(i);			// clears flags, bbp, data, etc
 		}
-		bm_inited = 0;
+		if (bm_bitmaps != nullptr) {
+			delete[] bm_bitmaps;
+			bm_bitmaps = nullptr;
+		}
+		bm_inited = false;
 	}
 }
 
@@ -491,7 +498,7 @@ int bm_create(int bpp, int w, int h, void *data, int flags) {
 		Assert((bpp == 16) || (bpp == 24) || (bpp == 32));
 	}
 
-	if (!bm_inited) bm_init();
+	Assertion(bm_inited, "bmpman must be initialized before this function can be called!");
 
 	int n = -1;
 
@@ -942,7 +949,7 @@ void bm_get_palette(int handle, ubyte *pal, char *name) {
 }
 
 uint bm_get_signature(int handle) {
-	if (!bm_inited) bm_init();
+	Assertion(bm_inited, "bmpman must be initialized before this function can be called!");
 
 	int bitmapnum = handle % MAX_BITMAPS;
 	Assertion(bm_bitmaps[bitmapnum].handle == handle, "Invalid bitmap handle %d passed to bm_get_signature().\nThis might be due to an invalid animation somewhere else.\n", handle);		// INVALID BITMAP HANDLE!
@@ -967,7 +974,7 @@ int bm_get_tcache_type(int num) {
 }
 
 BM_TYPE bm_get_type(int handle) {
-	if (!bm_inited) bm_init();
+	Assertion(bm_inited, "bmpman must be initialized before this function can be called!");
 
 	int bitmapnum = handle % MAX_BITMAPS;
 	Assertion(bm_bitmaps[bitmapnum].handle == handle, "Invalid bitmap handle %d passed to bm_get_type().\nThis might be due to an invalid animation somewhere else.\n", handle);		// INVALID BITMAP HANDLE!
@@ -989,15 +996,16 @@ bool bm_has_alpha_channel(int handle) {
 }
 
 void bm_init() {
+	Assertion(!bm_inited, "bmpman cannot be initialized more than once!");
+
 	int i;
 
-	mprintf(("Size of bitmap info = " SIZE_T_ARG " KB\n", sizeof(bm_bitmaps) / 1024));
-	mprintf(("Size of bitmap extra info = " SIZE_T_ARG " bytes\n", sizeof(bm_extra_info)));
-
-	if (!bm_inited) {
-		bm_inited = 1;
-		atexit(bm_close);
+	if (bm_bitmaps == nullptr) {
+		bm_bitmaps = new bitmap_entry[MAX_BITMAPS];
 	}
+
+	mprintf(("Size of bitmap info = " SIZE_T_ARG " KB\n", (sizeof(bm_bitmaps[0]) * MAX_BITMAPS) / 1024));
+	mprintf(("Size of bitmap extra info = " SIZE_T_ARG " bytes\n", sizeof(bm_extra_info)));
 
 	for (i = 0; i<MAX_BITMAPS; i++) {
 		bm_bitmaps[i].filename[0] = '\0';
@@ -1022,6 +1030,8 @@ void bm_init() {
 
 		bm_free_data(i);  	// clears flags, bbp, data, etc
 	}
+
+	bm_inited = true;
 }
 
 int bm_is_compressed(int num) {
@@ -1203,8 +1213,7 @@ int bm_load(const char *real_filename) {
 	CFILE *img_cfp = NULL;
 	int handle = -1;
 
-	if (!bm_inited)
-		bm_init();
+	Assertion(bm_inited, "bmpman must be initialized before this function can be called!");
 
 	// if no file was passed then get out now
 	if ((real_filename == NULL) || (strlen(real_filename) <= 0))
@@ -1509,8 +1518,7 @@ int bm_load_animation(const char *real_filename, int *nframes, int *fps, int *ke
 	size_t img_size = 0;
 	char clean_name[MAX_FILENAME_LEN];
 
-	if (!bm_inited)
-		bm_init();
+	Assertion(bm_inited, "bmpman must be initialized before this function can be called!");
 
 	// set output param defaults before going any further
 	if (nframes != nullptr)
@@ -1930,7 +1938,7 @@ bitmap * bm_lock(int handle, int bpp, ubyte flags, bool nodebug) {
 	bitmap			*bmp;
 	bitmap_entry	*be;
 
-	if (!bm_inited) bm_init();
+	Assertion(bm_inited, "bmpman must be initialized before this function can be called!");
 
 	int bitmapnum = handle % MAX_BITMAPS;
 
@@ -2332,7 +2340,7 @@ void bm_lock_pcx(int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, int b
 	// this will populate filename[] whether it's EFF or not
 	EFF_FILENAME_CHECK;
 
-	pcx_error = pcx_read_bitmap(filename, data, NULL, (bpp >> 3), (flags & BMP_AABITMAP), 0, be->dir_type);
+	pcx_error = pcx_read_bitmap(filename, data, NULL, (bpp >> 3), (flags & BMP_AABITMAP), (flags & BMP_MASK_BITMAP) != 0, be->dir_type);
 
 	if (pcx_error != PCX_ERROR_NONE) {
 		mprintf(("Couldn't load PCX!!! (%s)\n", filename));
@@ -2496,8 +2504,7 @@ int bm_make_render_target(int width, int height, int flags) {
 	int bpp = 32;
 	int size = 0;
 
-	if (!bm_inited)
-		bm_init();
+	Assertion(bm_inited, "bmpman must be initialized before this function can be called!");
 
 	// Find an open slot (starting from the end)
 	for (n = -1, i = MAX_BITMAPS - 1; i >= 0; i--) {
@@ -2928,8 +2935,7 @@ int bm_release(int handle, int clear_render_targets) {
 }
 
 int bm_reload(int bitmap_handle, const char* filename) {
-	if (!bm_inited)
-		bm_init();
+	Assertion(bm_inited, "bmpman must be initialized before this function can be called!");
 
 	// if no file was passed then get out now
 	if ((filename == NULL) || (strlen(filename) <= 0))
@@ -3109,10 +3115,7 @@ bool bm_set_render_target(int handle, int face) {
 
 		gr_reset_clip();
 
-		if (gr_screen.mode == GR_OPENGL) {
-			extern void opengl_setup_viewport();
-			opengl_setup_viewport();
-		}
+		gr_setup_viewport();
 
 		return true;
 	}
@@ -3242,7 +3245,7 @@ int bm_unload_fast(int handle, int clear_render_targets) {
 void bm_unlock(int handle) {
 	bitmap_entry	*be;
 
-	if (!bm_inited) bm_init();
+	Assertion(bm_inited, "bmpman must be initialized before this function can be called!");
 
 	int bitmapnum = handle % MAX_BITMAPS;
 
@@ -3330,4 +3333,21 @@ int bm_get_base_frame(const int handle, int* num_frames) {
 		}
 	}
 	return animation_begin;
+}
+int bm_get_array_index(const int handle) {
+	return handle - bm_get_base_frame(handle, nullptr);
+}
+
+int bmpman_count_bitmaps() {
+	if (!bm_inited)
+		return -1;
+
+	int total_bitmaps = 0;
+	for (int i = 0; i < MAX_BITMAPS; i++) {
+		if (bm_bitmaps[i].type != BM_TYPE_NONE) {
+			total_bitmaps++;
+		}
+	}
+
+	return total_bitmaps;
 }

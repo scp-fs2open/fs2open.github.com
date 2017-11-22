@@ -33,7 +33,7 @@
  */
 
 /**
- * @brief How many bitmaps the game can handle
+ * @brief How many bitmaps the game can handle by default
  *
  * @attention  MAX_BITMAPS shouldn't need to be bumped again.  With the fixed bm_release() and it's proper use even the
  *   largest missions should stay under this number.  With the largest retail missions and wasteful content we should
@@ -45,7 +45,9 @@
  *   If anything we could/should reduce MAX_BITMAPS in the future.  Where it's at now should accomidate even the
  *   largest mods.  --  Taylor
  */
-#define MAX_BITMAPS 4750
+#define DEFAULT_MAX_BITMAPS 4750
+
+extern int MAX_BITMAPS;
 
 // Flag positions for bitmap.flags
 // ***** NOTE:  bitmap.flags is an 8-bit value, no more BMP_TEX_* flags can be added unless the type is changed!! ******
@@ -56,6 +58,7 @@
 #define BMP_TEX_DXT3        (1<<4)      //!< dxt3 compressed 8r8g8b4a (32bit)
 #define BMP_TEX_DXT5        (1<<5)      //!< dxt5 compressed 8r8g8b8a (32bit)
 #define BMP_TEX_CUBEMAP     (1<<6)      //!< a texture made for cubic environment map
+#define BMP_MASK_BITMAP     (1<<7)      //!< a bitmap that will be used for masking mouse interaction. Typically not used in render operations
 
 // Combined flags
 #define BMP_TEX_COMP        ( BMP_TEX_DXT1 | BMP_TEX_DXT3 | BMP_TEX_DXT5 )  //!< Compressed textures
@@ -717,5 +720,25 @@ bool bm_is_texture_array(const int handle);
  * @return The bitmap handle of the base frame or -1 on error
  */
 int bm_get_base_frame(const int handle, int* num_frames = nullptr);
+
+/**
+ * @brief Get the array index of the specified bitmap
+ *
+ * This should be used when passing the array index to the GPU (e.g. when building uniform structs or streaming particle
+ * data)
+ *
+ * @param handle The handle of the bitmap
+ * @return The index into the array
+ */
+int bm_get_array_index(const int handle);
+
+/**
+ * @brief Counts how many slots are used in bm_bitmaps
+ *
+ * This needs to iterate through all the slots in order to determine whether or not they're used, so shouldn't be used frivolously.
+ *
+ * @return The number of used slots
+ */
+int bmpman_count_bitmaps();
 
 #endif

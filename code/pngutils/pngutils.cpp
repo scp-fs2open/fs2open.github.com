@@ -7,10 +7,11 @@
 #include "graphics/2d.h"
 #include "pngutils/pngutils.h"
 
-struct png_read_status {
+struct png_status {
 	CFILE* cfp = nullptr;
 	const char* filename = nullptr;
 	bool reading_header = false;
+	bool writing = false;
 };
 
 /*
@@ -23,7 +24,7 @@ static void png_scp_read_data(png_structp png_ptr, png_bytep data, png_size_t le
 	if (png_ptr == NULL)
 		return;
 
-	png_read_status* status = reinterpret_cast<png_read_status*>(png_get_io_ptr(png_ptr));
+	png_status* status = reinterpret_cast<png_status*>(png_get_io_ptr(png_ptr));
 
 	/* fread() returns 0 on error, so it is OK to store this in a png_size_t
 	* instead of an int, which is what fread() actually returns.
@@ -31,6 +32,23 @@ static void png_scp_read_data(png_structp png_ptr, png_bytep data, png_size_t le
 	check = (png_size_t)cfread(data, (png_size_t)1, (int)length, status->cfp);
 	if (check != length)
 		png_error(png_ptr, "Read Error");
+}
+
+static void png_scp_write_data(png_structp  png_ptr, png_bytep data, png_size_t length) {
+	auto status = static_cast<png_status*>(png_get_io_ptr(png_ptr));
+
+	Assertion(status != nullptr, "Invalid file pointer in PNG writing function.");
+
+	auto check = (png_size_t)cfwrite(data, (png_size_t)1, (int)length, status->cfp);
+	if (check != length)
+		png_error(png_ptr, "Write Error");
+}
+static void png_scp_flush(png_structp png_ptr) {
+	auto status = static_cast<png_status*>(png_get_io_ptr(png_ptr));
+
+	Assertion(status != nullptr, "Invalid file pointer in PNG writing function.");
+
+	cflush(status->cfp);
 }
 
 static png_voidp png_malloc_fn(png_structp, png_size_t size)
@@ -45,18 +63,26 @@ static void png_free_fn(png_structp, png_voidp ptr)
 
 static void png_error_fn(png_structp png_ptr, png_const_charp message)
 {
-	png_read_status* status = reinterpret_cast<png_read_status*>(png_get_error_ptr(png_ptr));
+	png_status* status = reinterpret_cast<png_status*>(png_get_error_ptr(png_ptr));
 
-	mprintf(("PNG error while reading %s of %s: %s\n", status->reading_header ? "header" : "pixel data", status->filename, message));
+	if (status->writing) {
+		mprintf(("PNG error while writing %s: %s\n", status->filename, message));
+	} else {
+		mprintf(("PNG error while reading %s of %s: %s\n", status->reading_header ? "header" : "pixel data", status->filename, message));
+	}
 
 	longjmp(png_jmpbuf(png_ptr), 1);
 }
 
 static void png_warning_fn(png_structp png_ptr, png_const_charp message)
 {
-	png_read_status* status = reinterpret_cast<png_read_status*>(png_get_error_ptr(png_ptr));
+	png_status* status = reinterpret_cast<png_status*>(png_get_error_ptr(png_ptr));
 
-	mprintf(("PNG warning while reading %s of %s: %s\n", status->reading_header ? "header" : "pixel data", status->filename, message));
+	if (status->writing) {
+		mprintf(("PNG warning while writing %s: %s\n", status->filename, message));
+	} else {
+		mprintf(("PNG warning while reading %s of %s: %s\n", status->reading_header ? "header" : "pixel data", status->filename, message));
+	}
 }
 
 /*
@@ -76,7 +102,7 @@ int png_read_header(const char *real_filename, CFILE *img_cfp, int *w, int *h, i
 	png_infop info_ptr;
 	png_structp png_ptr;
 
-	png_read_status status;
+	png_status status;
 	status.reading_header = true;
 	status.filename = real_filename;
 
@@ -180,7 +206,7 @@ int png_read_bitmap(const char *real_filename, ubyte *image_data, int *bpp, int 
 	png_bytepp row_pointers;
 	unsigned int i;
 
-	png_read_status status;
+	png_status status;
 	status.reading_header = false;
 	status.filename = real_filename;
 
@@ -249,6 +275,44 @@ int png_read_bitmap(const char *real_filename, ubyte *image_data, int *bpp, int 
 	cfclose(status.cfp);
 
 	return PNG_ERROR_NONE;
+}
+
+bool png_write_bitmap(const char* filename, size_t width, size_t height, bool y_flip, const uint8_t* data) {
+	png_status status;
+
+	status.writing = true;
+	status.filename = filename;
+	status.cfp = cfopen(filename, "wb");
+
+	if (!status.cfp) {
+		return false;
+	}
+
+	auto png_ptr = png_create_write_struct_2(PNG_LIBPNG_VER_STRING, &status, png_error_fn, png_warning_fn, &status, png_malloc_fn, png_free_fn);
+
+	auto info_ptr = png_create_info_struct(png_ptr);
+	png_set_IHDR(png_ptr, info_ptr, (png_uint_32)width, (png_uint_32)height, 8, PNG_COLOR_TYPE_RGBA,
+		PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_DEFAULT, PNG_FILTER_TYPE_DEFAULT);
+
+	std::vector<uint8_t*> rows(height);
+	for (size_t y = 0; y < height; ++y) {
+		auto index = y_flip ? height - y - 1 : y;
+
+		rows[index] = (uint8_t*)data + y * width * 4;
+	}
+
+	png_set_rows(png_ptr, info_ptr, rows.data());
+#ifdef PNG_WRITE_CUSTOMIZE_COMPRESSION_SUPPORTED
+	// According to the documentation level 6 should perform reasonably well for us
+	png_set_compression_level(png_ptr, 6);
+#endif
+	png_set_write_fn(png_ptr, &status, png_scp_write_data, png_scp_flush);
+	png_write_png(png_ptr, info_ptr, PNG_TRANSFORM_IDENTITY, nullptr);
+
+	png_destroy_write_struct(&png_ptr, &info_ptr);
+	cfclose(status.cfp);
+
+	return true;
 }
 
 /*

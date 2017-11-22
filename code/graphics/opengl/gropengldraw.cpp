@@ -10,11 +10,16 @@
 #include "globalincs/pstypes.h"
 #include "cmdline/cmdline.h"
 #include "freespace.h"
+#include "graphics/matrix.h"
 #include "gropengl.h"
 #include "gropengldraw.h"
-#include "gropengllight.h"
+#include "gropenglpostprocessing.h"
+#include "gropenglshader.h"
+#include "gropengltexture.h"
+#include "gropengldeferred.h"
 #include "gropengltnl.h"
 #include "graphics/paths/PathRenderer.h"
+#include "graphics/light.h"
 #include "tracing/tracing.h"
 #include "render/3d.h"
 
@@ -47,16 +52,6 @@ int Scene_texture_height;
 
 GLfloat Scene_texture_u_scale = 1.0f;
 GLfloat Scene_texture_v_scale = 1.0f;
-
-GLuint deferred_light_sphere_vbo = 0;
-GLuint deferred_light_sphere_ibo = 0;
-GLushort deferred_light_sphere_vcount = 0;
-GLuint deferred_light_sphere_icount = 0;
-
-GLuint deferred_light_cylinder_vbo = 0;
-GLuint deferred_light_cylinder_ibo = 0;
-GLushort deferred_light_cylinder_vcount = 0;
-GLuint deferred_light_cylinder_icount = 0;
 
 static opengl_vertex_bind GL_array_binding_data[] =
 {
@@ -146,250 +141,6 @@ void gr_opengl_sphere(material* material_def, float rad)
 	opengl_tnl_set_material(material_def, true);
 
 	opengl_draw_sphere();
-}
-
-void gr_opengl_deferred_light_sphere_init(int rings, int segments) // Generate a VBO of a sphere of radius 1.0f, based on code at http://www.ogre3d.org/tikiwiki/ManualSphereMeshes
-{
-	unsigned int nVertex = (rings + 1) * (segments+1) * 3;
-	unsigned int nIndex = deferred_light_sphere_icount = 6 * rings * (segments + 1);
-	float *Vertices = (float*)vm_malloc(sizeof(float) * nVertex);
-	float *pVertex = Vertices;
-	ushort *Indices = (ushort*)vm_malloc(sizeof(ushort) * nIndex);
-	ushort *pIndex = Indices;
-
-	float fDeltaRingAngle = (PI / rings);
-	float fDeltaSegAngle = (2.0f * PI / segments);
-	unsigned short wVerticeIndex = 0 ;
-
-	// Generate the group of rings for the sphere
-	for( int ring = 0; ring <= rings; ring++ ) {
-		float r0 = sinf (ring * fDeltaRingAngle);
-		float y0 = cosf (ring * fDeltaRingAngle);
-
-		// Generate the group of segments for the current ring
-		for(int seg = 0; seg <= segments; seg++) {
-			float x0 = r0 * sinf(seg * fDeltaSegAngle);
-			float z0 = r0 * cosf(seg * fDeltaSegAngle);
-
-			// Add one vertex to the strip which makes up the sphere
-			*pVertex++ = x0;
-			*pVertex++ = y0;
-			*pVertex++ = z0;
-
-			if (ring != rings) {
-				// each vertex (except the last) has six indices pointing to it
-				*pIndex++ = wVerticeIndex + (ushort)segments + 1;
-				*pIndex++ = wVerticeIndex;
-				*pIndex++ = wVerticeIndex + (ushort)segments;
-				*pIndex++ = wVerticeIndex + (ushort)segments + 1;
-				*pIndex++ = wVerticeIndex + 1;
-				*pIndex++ = wVerticeIndex;
-				wVerticeIndex ++;
-			}
-		}; // end for seg
-	} // end for ring
-
-	deferred_light_sphere_vcount = wVerticeIndex;
-
-	glGetError();
-
-	glGenBuffers(1, &deferred_light_sphere_vbo);
-
-	// make sure we have one
-	if (deferred_light_sphere_vbo) {
-		glBindBuffer(GL_ARRAY_BUFFER, deferred_light_sphere_vbo);
-		glBufferData(GL_ARRAY_BUFFER, nVertex * sizeof(float), Vertices, GL_STATIC_DRAW);
-
-		// just in case
-		if ( opengl_check_for_errors() ) {
-			glDeleteBuffers(1, &deferred_light_sphere_vbo);
-			deferred_light_sphere_vbo = 0;
-			return;
-		}
-
-		glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-		vm_free(Vertices);
-		Vertices = NULL;
-	}
-
-	glGenBuffers(1, &deferred_light_sphere_ibo);
-
-	// make sure we have one
-	if (deferred_light_sphere_ibo) {
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, deferred_light_sphere_ibo);
-		glBufferData(GL_ELEMENT_ARRAY_BUFFER, nIndex * sizeof(ushort), Indices, GL_STATIC_DRAW);
-
-		// just in case
-		if ( opengl_check_for_errors() ) {
-			glDeleteBuffers(1, &deferred_light_sphere_ibo);
-			deferred_light_sphere_ibo = 0;
-			return;
-		}
-
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-
-		vm_free(Indices);
-		Indices = NULL;
-	}
-
-}
-
-void opengl_draw_sphere()
-{
-	GL_state.Array.BindArrayBuffer(deferred_light_sphere_vbo);
-	GL_state.Array.BindElementBuffer(deferred_light_sphere_ibo);
-
-	vertex_layout vertex_declare;
-
-	vertex_declare.add_vertex_component(vertex_format_data::POSITION3, 0, 0);
-
-	opengl_bind_vertex_layout(vertex_declare);
-
-	glDrawRangeElements(GL_TRIANGLES, 0, deferred_light_sphere_vcount, deferred_light_sphere_icount, GL_UNSIGNED_SHORT, 0);
-}
-
-void gr_opengl_draw_deferred_light_sphere(vec3d *position, float rad, bool clearStencil = true)
-{
-	g3_start_instance_matrix(position, &vmd_identity_matrix, true);
-	
-	Current_shader->program->Uniforms.setUniform3f("scale", rad, rad, rad);
-	Current_shader->program->Uniforms.setUniformMatrix4f("modelViewMatrix", GL_model_view_matrix);
-	Current_shader->program->Uniforms.setUniformMatrix4f("projMatrix", GL_projection_matrix);
-
-	opengl_draw_sphere();
-
-	g3_done_instance(true);
-}
-
-void gr_opengl_deferred_light_cylinder_init(int segments) // Generate a VBO of a cylinder of radius and height 1.0f, based on code at http://www.ogre3d.org/tikiwiki/ManualSphereMeshes
-{
-	unsigned int nVertex = (segments + 1) * 2 * 3 + 6; // Can someone verify this?
-	unsigned int nIndex = deferred_light_cylinder_icount = 12 * (segments + 1) - 6; //This too
-	float *Vertices = (float*)vm_malloc(sizeof(float) * nVertex);
-	float *pVertex = Vertices;
-	ushort *Indices = (ushort*)vm_malloc(sizeof(ushort) * nIndex);
-	ushort *pIndex = Indices;
-
-	float fDeltaSegAngle = (2.0f * PI / segments);
-	unsigned short wVerticeIndex = 0 ;
-
-	*pVertex++ = 0.0f;
-	*pVertex++ = 0.0f;
-	*pVertex++ = 0.0f;
-	wVerticeIndex ++;
-	*pVertex++ = 0.0f;
-	*pVertex++ = 0.0f;
-	*pVertex++ = 1.0f;
-	wVerticeIndex ++;
-
-	for( int ring = 0; ring <= 1; ring++ ) {
-		float z0 = (float)ring;
-
-		// Generate the group of segments for the current ring
-		for(int seg = 0; seg <= segments; seg++) {
-			float x0 = sinf(seg * fDeltaSegAngle);
-			float y0 = cosf(seg * fDeltaSegAngle);
-
-			// Add one vertex to the strip which makes up the cylinder
-			*pVertex++ = x0;
-			*pVertex++ = y0;
-			*pVertex++ = z0;
-
-			if (!ring) {
-				*pIndex++ = wVerticeIndex + (ushort)segments + 1;
-				*pIndex++ = wVerticeIndex;
-				*pIndex++ = wVerticeIndex + (ushort)segments;
-				*pIndex++ = wVerticeIndex + (ushort)segments + 1;
-				*pIndex++ = wVerticeIndex + 1;
-				*pIndex++ = wVerticeIndex;
-				if(seg != segments)
-				{
-					*pIndex++ = wVerticeIndex + 1;
-					*pIndex++ = wVerticeIndex;
-					*pIndex++ = 0;
-				}
-				wVerticeIndex ++;
-			}
-			else
-			{
-				if(seg != segments)
-				{
-					*pIndex++ = wVerticeIndex + 1;
-					*pIndex++ = wVerticeIndex;
-					*pIndex++ = 1;
-					wVerticeIndex ++;
-				}
-			}
-		}; // end for seg
-	} // end for ring
-
-	deferred_light_cylinder_vcount = wVerticeIndex;
-
-	glGetError();
-
-	glGenBuffers(1, &deferred_light_cylinder_vbo);
-
-	// make sure we have one
-	if (deferred_light_cylinder_vbo) {
-		glBindBuffer(GL_ARRAY_BUFFER, deferred_light_cylinder_vbo);
-		glBufferData(GL_ARRAY_BUFFER, nVertex * sizeof(float), Vertices, GL_STATIC_DRAW);
-
-		// just in case
-		if ( opengl_check_for_errors() ) {
-			glDeleteBuffers(1, &deferred_light_cylinder_vbo);
-			deferred_light_cylinder_vbo = 0;
-			return;
-		}
-
-		glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-		vm_free(Vertices);
-		Vertices = NULL;
-	}
-
-	glGenBuffers(1, &deferred_light_cylinder_ibo);
-
-	// make sure we have one
-	if (deferred_light_cylinder_ibo) {
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, deferred_light_cylinder_ibo);
-		glBufferData(GL_ELEMENT_ARRAY_BUFFER, nIndex * sizeof(ushort), Indices, GL_STATIC_DRAW);
-
-		// just in case
-		if ( opengl_check_for_errors() ) {
-			glDeleteBuffers(1, &deferred_light_cylinder_ibo);
-			deferred_light_cylinder_ibo = 0;
-			return;
-		}
-
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-
-		vm_free(Indices);
-		Indices = NULL;
-	}
-
-}
-
-void gr_opengl_draw_deferred_light_cylinder(vec3d *position,matrix *orient, float rad, float length, bool clearStencil = true)
-{
-	g3_start_instance_matrix(position, orient, true);
-
-	Current_shader->program->Uniforms.setUniform3f("scale", rad, rad, length);
-	Current_shader->program->Uniforms.setUniformMatrix4f("modelViewMatrix", GL_model_view_matrix);
-	Current_shader->program->Uniforms.setUniformMatrix4f("projMatrix", GL_projection_matrix);
-
-	GL_state.Array.BindArrayBuffer(deferred_light_cylinder_vbo);
-	GL_state.Array.BindElementBuffer(deferred_light_cylinder_ibo);
-
-	vertex_layout vertex_declare;
-
-	vertex_declare.add_vertex_component(vertex_format_data::POSITION3, 0, 0);
-
-	opengl_bind_vertex_layout(vertex_declare);
-
-	glDrawRangeElements(GL_TRIANGLES, 0, deferred_light_cylinder_vcount, deferred_light_cylinder_icount, GL_UNSIGNED_SHORT, 0);
-
-	g3_done_instance(true);
 }
 
 extern int opengl_check_framebuffer();
@@ -877,205 +628,6 @@ void gr_opengl_copy_effect_texture()
 	glDrawBuffer(GL_COLOR_ATTACHMENT0);
 }
 
-void opengl_clear_deferred_buffers()
-{
-	GR_DEBUG_SCOPE("Clear deferred buffers");
-
-	GLboolean depth = GL_state.DepthTest(GL_FALSE);
-	GLboolean depth_mask = GL_state.DepthMask(GL_FALSE);
-	GLboolean blend = GL_state.Blend(GL_FALSE);
-	GLboolean cull = GL_state.CullFace(GL_FALSE);
-
-	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-
-	opengl_shader_set_current( gr_opengl_maybe_create_shader(SDR_TYPE_DEFERRED_CLEAR, 0) );
-
-	opengl_draw_textured_quad(-1.0f, -1.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f, 1.0f);
-
-	opengl_shader_set_current();
-
-	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_FALSE);
-
-	GL_state.DepthTest(depth);
-	GL_state.DepthMask(depth_mask);
-	GL_state.Blend(blend);
-	GL_state.CullFace(cull);
-}
-
-void gr_opengl_deferred_lighting_begin()
-{
-	if ( Cmdline_no_deferred_lighting)
-		return;
-
-	GR_DEBUG_SCOPE("Deferred lighting begin");
-
-	Deferred_lighting = true;
-	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-
-	GLenum buffers[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3 };
-	glDrawBuffers(4, buffers);
-}
-
-void gr_opengl_deferred_lighting_end()
-{
-	if(!Deferred_lighting)
-		return;
-
-	GR_DEBUG_SCOPE("Deferred lighting end");
-
-	Deferred_lighting = false;
-	glDrawBuffer(GL_COLOR_ATTACHMENT0);
-
-	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_FALSE);
-}
-
-extern light Lights[MAX_LIGHTS];
-extern int Num_lights;
-extern float static_point_factor;
-extern float static_light_factor;
-extern float static_tube_factor;
-
-void gr_opengl_deferred_lighting_finish()
-{
-	GR_DEBUG_SCOPE("Deferred lighting finish");
-	TRACE_SCOPE(tracing::ApplyLights);
-
-	if ( Cmdline_no_deferred_lighting ) {
-		return;
-	}
-
-	GL_state.SetAlphaBlendMode( ALPHA_BLEND_ADDITIVE);
-	gr_zbuffer_set(GR_ZBUFF_NONE);
-
-	//GL_state.DepthFunc(GL_GREATER);
-	//GL_state.DepthMask(GL_FALSE);
-
-	opengl_shader_set_current( gr_opengl_maybe_create_shader(SDR_TYPE_DEFERRED_LIGHTING, 0) );
-
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, Scene_luminance_texture, 0);
-	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, Scene_stencil_buffer);
-	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_RENDERBUFFER, Scene_stencil_buffer);
-
-	GL_state.Texture.SetShaderMode(GL_TRUE);
-
-	GL_state.Texture.Enable(0, GL_TEXTURE_2D, Scene_color_texture);
-
-	GL_state.Texture.Enable(1, GL_TEXTURE_2D, Scene_normal_texture);
-
-	GL_state.Texture.Enable(2, GL_TEXTURE_2D, Scene_position_texture);
-
-	GL_state.Texture.Enable(3, GL_TEXTURE_2D, Scene_specular_texture);
-
-	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-	glClear(GL_COLOR_BUFFER_BIT);
-
-	light lights_copy[MAX_LIGHTS];
-	memcpy(lights_copy, Lights, MAX_LIGHTS * sizeof(light));
-
-	std::sort(lights_copy, lights_copy+Num_lights, light_compare_by_type);
-
-	for(int i = 0; i < Num_lights; ++i)
-	{
-		GR_DEBUG_SCOPE("Deferred apply single light");
-
-		light *l = &lights_copy[i];
-		Current_shader->program->Uniforms.setUniformi( "lightType", 0 );
-		switch(l->type)
-		{
-			case LT_CONE:
-				Current_shader->program->Uniforms.setUniformi( "lightType", 2 );
-				Current_shader->program->Uniforms.setUniformi( "dualCone", l->dual_cone );
-				Current_shader->program->Uniforms.setUniformf( "coneAngle", l->cone_angle );
-				Current_shader->program->Uniforms.setUniformf( "coneInnerAngle", l->cone_inner_angle );
-				Current_shader->program->Uniforms.setUniform3f( "coneDir", l->vec2.xyz.x, l->vec2.xyz.y, l->vec2.xyz.z);
-			case LT_POINT:
-				Current_shader->program->Uniforms.setUniform3f( "diffuseLightColor", l->r * l->intensity, l->g * l->intensity, l->b * l->intensity );
-				Current_shader->program->Uniforms.setUniform3f( "specLightColor", l->spec_r * l->intensity * static_point_factor, l->spec_g * l->intensity * static_point_factor, l->spec_b * l->intensity * static_point_factor );
-				Current_shader->program->Uniforms.setUniformf( "lightRadius", MAX(l->rada, l->radb) * 1.25f );
-
-				/*float dist;
-				vec3d a;
-
-				vm_vec_sub(&a, &Eye_position, &l->vec);
-				dist = vm_vec_mag(&a);*/
-
-				gr_opengl_draw_deferred_light_sphere(&l->vec, MAX(l->rada, l->radb) * 1.28f);
-				break;
-			case LT_TUBE:
-				Current_shader->program->Uniforms.setUniform3f( "diffuseLightColor", l->r * l->intensity, l->g * l->intensity, l->b * l->intensity );
-				Current_shader->program->Uniforms.setUniform3f( "specLightColor", l->spec_r * l->intensity * static_tube_factor, l->spec_g * l->intensity * static_tube_factor, l->spec_b * l->intensity * static_tube_factor );
-				Current_shader->program->Uniforms.setUniformf( "lightRadius", l->radb * 1.5f );
-				Current_shader->program->Uniforms.setUniformi( "lightType", 1 );
-			
-				vec3d a, b;
-				matrix orient;
-				float length, dist;
-
-				vm_vec_sub(&a, &l->vec, &l->vec2);
-				vm_vector_2_matrix(&orient, &a, NULL, NULL);
-				length = vm_vec_mag(&a);
-				int pos = vm_vec_dist_to_line(&Eye_position, &l->vec, &l->vec2, &b, &dist);
-				if(pos == -1)
-				{
-					vm_vec_sub(&a, &Eye_position, &l->vec);
-					dist = vm_vec_mag(&a);
-				}
-				else if (pos == 1)
-				{
-					vm_vec_sub(&a, &Eye_position, &l->vec2);
-					dist = vm_vec_mag(&a);
-				}
-
-				gr_opengl_draw_deferred_light_cylinder(&l->vec2, &orient, l->radb * 1.53f, length);
-				Current_shader->program->Uniforms.setUniformi( "lightType", 0 );
-				gr_opengl_draw_deferred_light_sphere(&l->vec, l->radb * 1.53f, false);
-				gr_opengl_draw_deferred_light_sphere(&l->vec2, l->radb * 1.53f, false);
-				break;
-		}
-	}
-
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, Scene_color_texture, 0);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_TEXTURE_2D, 0, 0);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, Scene_depth_texture, 0);
-
-	gr_end_view_matrix();
-	gr_end_proj_matrix();
-
-	GLboolean depth = GL_state.DepthTest(GL_FALSE);
-	GLboolean depth_mask = GL_state.DepthMask(GL_FALSE);
-	GLboolean blend = GL_state.Blend(GL_FALSE);
-	GLboolean cull = GL_state.CullFace(GL_FALSE);
-	
-	if ( High_dynamic_range ) {
-		High_dynamic_range = false;
-		opengl_shader_set_passthrough(true);
-		High_dynamic_range = true;
-	} else {
-		opengl_shader_set_passthrough(true);
-	}
-
-	GL_state.Texture.Enable(0, GL_TEXTURE_2D, Scene_luminance_texture);
-
-	GL_state.SetAlphaBlendMode( ALPHA_BLEND_ADDITIVE );
-	GL_state.DepthMask(GL_FALSE);
-
-	opengl_draw_textured_quad(0.0f, 0.0f, 0.0f, Scene_texture_v_scale, (float)gr_screen.max_w, (float)gr_screen.max_h, Scene_texture_u_scale, 0.0f);
-
-	gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
-	gr_set_view_matrix(&Eye_position, &Eye_matrix);
-
-	// reset state
-	GL_state.DepthTest(depth);
-	GL_state.DepthMask(depth_mask);
-	GL_state.Blend(blend);
-	GL_state.CullFace(cull);
-
-	GL_state.SetAlphaBlendMode( ALPHA_BLEND_NONE );
-	GL_state.Texture.SetShaderMode(GL_FALSE);
-
-	gr_clear_states();
-}
-
 void gr_opengl_render_shield_impact(shield_material *material_info, primitive_type prim_type, vertex_layout *layout, int buffer_handle, int n_verts)
 {
 	matrix4 impact_transform;
@@ -1112,8 +664,8 @@ void gr_opengl_render_shield_impact(shield_material *material_info, primitive_ty
 	Current_shader->program->Uniforms.setUniformi("shieldMapIndex", array_index);
 	Current_shader->program->Uniforms.setUniformi("srgb", High_dynamic_range ? 1 : 0);
 	Current_shader->program->Uniforms.setUniform4f("color", material_info->get_color());
-	Current_shader->program->Uniforms.setUniformMatrix4f("modelViewMatrix", GL_model_view_matrix);
-	Current_shader->program->Uniforms.setUniformMatrix4f("projMatrix", GL_projection_matrix);
+	Current_shader->program->Uniforms.setUniformMatrix4f("modelViewMatrix", gr_model_view_matrix);
+	Current_shader->program->Uniforms.setUniformMatrix4f("projMatrix", gr_projection_matrix);
 	
 	opengl_render_primitives(prim_type, layout, n_verts, buffer_handle, 0, 0);
 }
@@ -1251,11 +803,11 @@ void gr_opengl_render_primitives_2d(material* material_info, primitive_type prim
 	//glPushMatrix();
 	//glTranslatef((float)gr_screen.offset_x, (float)gr_screen.offset_y, -0.99f);
 
-	gr_opengl_set_2d_matrix();
+	gr_set_2d_matrix();
 
 	gr_opengl_render_primitives(material_info, prim_type, layout, offset, n_verts, buffer_handle);
 
-	gr_opengl_end_2d_matrix();
+	gr_end_2d_matrix();
 
 	//glPopMatrix();
 
@@ -1296,13 +848,13 @@ void gr_opengl_render_movie(movie_material* material_info,
 							int buffer) {
 	GR_DEBUG_SCOPE("Render movie frame");
 
-	gr_opengl_set_2d_matrix();
+	gr_set_2d_matrix();
 
 	opengl_tnl_set_material_movie(material_info);
 
 	opengl_render_primitives(prim_type, layout, n_verts, buffer, 0, 0);
 
-	gr_opengl_end_2d_matrix();
+	gr_end_2d_matrix();
 }
 
 void gr_opengl_render_primitives_batched(batched_bitmap_material* material_info,

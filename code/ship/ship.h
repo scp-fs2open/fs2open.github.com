@@ -1579,7 +1579,7 @@ extern int Ship_auto_repair;	// flag to indicate auto-repair of subsystem should
 
 void ship_subsystem_delete(ship *shipp);
 void ship_set_default_weapons(ship *shipp, ship_info *sip);
-float ship_quadrant_shield_strength(object *hit_objp, vec3d *hitpos);
+float ship_quadrant_shield_strength(object *hit_objp, int quadrant_num);
 
 int ship_dumbfire_threat(ship *sp);
 int ship_lock_threat(ship *sp);

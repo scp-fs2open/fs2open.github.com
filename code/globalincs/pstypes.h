@@ -426,10 +426,8 @@ public:
 SCP_string dump_stacktrace();
 
 // DEBUG compile time catch for dangerous uses of memset/memcpy/memmove
-// would prefer std::is_trivially_copyable but it's not supported by gcc yet
-// ref: http://gcc.gnu.org/onlinedocs/libstdc++/manual/status.html
 #ifndef NDEBUG
-	#if SCP_COMPILER_CXX_STATIC_ASSERT && SCP_COMPILER_CXX_AUTO_TYPE
+	#if SCP_COMPILER_CXX_AUTO_TYPE && SCP_COMPILER_CXX_STATIC_ASSERT && defined(HAVE_STD_IS_TRIVIALLY_COPYABLE)
 	// feature support seems to be: gcc   clang   msvc
 	// auto                         4.4   2.9     2010
 	// std::is_trivial              4.5   ?       2012 (2010 only duplicates std::is_pod)
@@ -444,10 +442,20 @@ SCP_string dump_stacktrace();
 // Put into std to be compatible with code that uses std::mem*
 namespace std
 {
+
+// This is a separate check which also checks if arrays are trivially copyable since Visual Studio 2013 thinks they are not
+#if SCP_COMPILER_IS_MSVC && _MSC_VER <= 1800
+template<typename T>
+using trivial_check = std::is_trivial<T>;
+#else
+template<typename T>
+using trivial_check = std::is_trivially_copyable<T>;
+#endif
+
 	template<typename T>
 	void *memset_if_trivial_else_error(T *memset_data, int ch, size_t count)
 	{
-		static_assert(std::is_trivial<T>::value, "memset on non-trivial object");
+		static_assert(trivial_check<T>::value, "memset on non-trivial object");
 		return ptr_memset(memset_data, ch, count);
 	}
 
@@ -465,8 +473,8 @@ namespace std
 	template<typename T, typename U>
 	void *memcpy_if_trivial_else_error(T *memcpy_dest, U *src, size_t count)
 	{
-		static_assert(std::is_trivial<T>::value, "memcpy on non-trivial object T");
-		static_assert(std::is_trivial<U>::value, "memcpy on non-trivial object U");
+		static_assert(trivial_check<T>::value, "memcpy on non-trivial object T");
+		static_assert(trivial_check<U>::value, "memcpy on non-trivial object U");
 		return ptr_memcpy(memcpy_dest, src, count);
 	}
 
@@ -481,20 +489,20 @@ namespace std
 	template<typename U>
 	void *memcpy_if_trivial_else_error(void *memcpy_dest, U *memcpy_src, size_t count)
 	{
-		static_assert(std::is_trivial<U>::value, "memcpy on non-trivial object U");
+		static_assert(trivial_check<U>::value, "memcpy on non-trivial object U");
 		return ptr_memcpy(memcpy_dest, memcpy_src, count);
 	}
 
 	template<typename T>
 	void *memcpy_if_trivial_else_error(T *memcpy_dest, void *memcpy_src, size_t count)
 	{
-		static_assert(std::is_trivial<T>::value, "memcpy on non-trivial object T");
+		static_assert(trivial_check<T>::value, "memcpy on non-trivial object T");
 		return ptr_memcpy(memcpy_dest, memcpy_src, count);
 	}
 	template<typename T>
 	void *memcpy_if_trivial_else_error(T *memcpy_dest, const void *memcpy_src, size_t count)
 	{
-		static_assert(std::is_trivial<T>::value, "memcpy on non-trivial object T");
+		static_assert(trivial_check<T>::value, "memcpy on non-trivial object T");
 		return ptr_memcpy(memcpy_dest, memcpy_src, count);
 	}
 
@@ -510,8 +518,8 @@ namespace std
 	template<typename T, typename U>
 	void *memmove_if_trivial_else_error(T *memmove_dest, U *memmove_src, size_t count)
 	{
-		static_assert(std::is_trivial<T>::value, "memmove on non-trivial object T");
-		static_assert(std::is_trivial<U>::value, "memmove on non-trivial object U");
+		static_assert(trivial_check<T>::value, "memmove on non-trivial object T");
+		static_assert(trivial_check<U>::value, "memmove on non-trivial object U");
 		return ptr_memmove(memmove_dest, memmove_src, count);
 	}
 }

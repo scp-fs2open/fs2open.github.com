@@ -25,6 +25,8 @@
 #include "cmdline/cmdline.h"
 #include "globalincs/linklist.h"
 #include "graphics/2d.h"
+#include "graphics/matrix.h"
+#include "graphics/light.h"
 #include "graphics/font.h"
 #include "graphics/tmapper.h"
 #include "iff_defs/iff_defs.h"

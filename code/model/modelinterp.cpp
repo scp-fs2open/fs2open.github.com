@@ -113,6 +113,17 @@ public:
 	void generate_lines(int texture, vertex *vert_ptr);
 };
 
+/**
+ * @brief Vertex structure for passing data to the GPU
+ */
+struct interp_vertex {
+	uv_pair uv;
+	vec3d normal;
+	vec4 tangent;
+	float modelId;
+	vec3d pos;
+};
+
 // -----------------------
 // Local variables
 //
@@ -1995,8 +2006,7 @@ void model_interp_submit_buffers(indexed_vertex_source *vert_src)
 		return;
 	}
 
-	bool static_buffer = true;
-	vert_src->Vbuffer_handle = gr_create_vertex_buffer(static_buffer);
+	vert_src->Vbuffer_handle = gr_create_buffer(BufferType::Vertex, BufferUsageHint::Static);
 
 	if ( vert_src->Vbuffer_handle > -1 && vert_src->Vertex_list != NULL ) {
 		gr_update_buffer_data(vert_src->Vbuffer_handle, vert_src->Vertex_list_size, vert_src->Vertex_list);
@@ -2005,7 +2015,7 @@ void model_interp_submit_buffers(indexed_vertex_source *vert_src)
 		vert_src->Vertex_list = NULL;
 	}
 
-	vert_src->Ibuffer_handle = gr_create_index_buffer(static_buffer);
+	vert_src->Ibuffer_handle = gr_create_buffer(BufferType::Index, BufferUsageHint::Static);
 
 	if ( vert_src->Ibuffer_handle > -1 && vert_src->Index_list != NULL ) {
 		gr_update_buffer_data(vert_src->Ibuffer_handle, vert_src->Index_list_size, vert_src->Index_list);
@@ -2030,10 +2040,8 @@ bool model_interp_pack_buffer(indexed_vertex_source *vert_src, vertex_buffer *vb
 
 	int i, n_verts = 0;
 	size_t j;
-	uint arsize = 0;
-
 	if ( vert_src->Vertex_list == NULL ) {
-		vert_src->Vertex_list = (float*)vm_malloc(vert_src->Vertex_list_size);
+		vert_src->Vertex_list = vm_malloc(vert_src->Vertex_list_size);
 
 		// return invalid if we don't have the memory
 		if ( vert_src->Vertex_list == NULL ) {
@@ -2044,7 +2052,7 @@ bool model_interp_pack_buffer(indexed_vertex_source *vert_src, vertex_buffer *vb
 	}
 
 	if ( vert_src->Index_list == NULL ) {
-		vert_src->Index_list = (ubyte*)vm_malloc(vert_src->Index_list_size);
+		vert_src->Index_list = vm_malloc(vert_src->Index_list_size);
 
 		// return invalid if we don't have the memory
 		if ( vert_src->Index_list == NULL ) {
@@ -2055,66 +2063,62 @@ bool model_interp_pack_buffer(indexed_vertex_source *vert_src, vertex_buffer *vb
 	}
 
 	// bump to our index in the array
-	float *array = vert_src->Vertex_list + (vb->vertex_offset / sizeof(float));
+	auto array = reinterpret_cast<interp_vertex*>(static_cast<uint8_t*>(vert_src->Vertex_list) + (vb->vertex_offset));
 
 	// generate the vertex array
 	n_verts = vb->model_list->n_verts;
 	for ( i = 0; i < n_verts; i++ ) {
 		vertex *vl = &vb->model_list->vert[i];
+		auto outVert = &array[i];
 
 		// don't try to generate more data than what's available
-		Assert(((arsize * sizeof(float)) + vb->stride) <= (vert_src->Vertex_list_size - vb->vertex_offset));
+		Assert(((i * sizeof(interp_vertex)) + sizeof(interp_vertex)) <= (vert_src->Vertex_list_size - vb->vertex_offset));
 
 		// NOTE: UV->NORM->TSB->MODEL_ID->VERT, This array order *must* be preserved!!
 
 		// tex coords
 		if ( vb->flags & VB_FLAG_UV1 ) {
-			array[arsize++] = vl->texture_position.u;
-			array[arsize++] = vl->texture_position.v;
+			outVert->uv = vl->texture_position;
 		} else {
-			array[arsize++] = 1.0f;
-			array[arsize++] = 1.0f;
+			outVert->uv.u = 1.0f;
+			outVert->uv.v = 1.0f;
 		}
 
 		// normals
 		if ( vb->flags & VB_FLAG_NORMAL ) {
 			Assert(vb->model_list->norm != NULL);
-			vec3d *nl = &vb->model_list->norm[i];
-			array[arsize++] = nl->xyz.x;
-			array[arsize++] = nl->xyz.y;
-			array[arsize++] = nl->xyz.z;
+			outVert->normal = vb->model_list->norm[i];
 		} else {
-			array[arsize++] = 0.0f;
-			array[arsize++] = 0.0f;
-			array[arsize++] = 1.0f;
+			outVert->normal.xyz.x = 0.0f;
+			outVert->normal.xyz.y = 0.0f;
+			outVert->normal.xyz.z = 1.0f;
 		}
 
 		// tangent space data
 		if ( vb->flags & VB_FLAG_TANGENT ) {
 			Assert(vb->model_list->tsb != NULL);
 			tsb_t *tsb = &vb->model_list->tsb[i];
-			array[arsize++] = tsb->tangent.xyz.x;
-			array[arsize++] = tsb->tangent.xyz.y;
-			array[arsize++] = tsb->tangent.xyz.z;
-			array[arsize++] = tsb->scaler;
+
+			outVert->tangent.xyzw.x = tsb->tangent.xyz.x;
+			outVert->tangent.xyzw.y = tsb->tangent.xyz.y;
+			outVert->tangent.xyzw.z = tsb->tangent.xyz.z;
+			outVert->tangent.xyzw.w = tsb->scaler;
 		} else {
-			array[arsize++] = 1.0f;
-			array[arsize++] = 0.0f;
-			array[arsize++] = 0.0f;
-			array[arsize++] = 0.0f;
+			outVert->tangent.xyzw.x = 1.0f;
+			outVert->tangent.xyzw.y = 0.0f;
+			outVert->tangent.xyzw.z = 0.0f;
+			outVert->tangent.xyzw.w = 0.0f;
 		}
 
 		if ( vb->flags & VB_FLAG_MODEL_ID ) {
 			Assert(vb->model_list->submodels != NULL);
-			array[arsize++] = (float)vb->model_list->submodels[i];
+			outVert->modelId = (float)vb->model_list->submodels[i];
 		} else {
-			array[arsize++] = 0.0f;
+			outVert->modelId = 0.0f;
 		}
 
 		// verts
-		array[arsize++] = vl->world.xyz.x;
-		array[arsize++] = vl->world.xyz.y;
-		array[arsize++] = vl->world.xyz.z;
+		outVert->pos = vl->world;
 	}
 
 	// generate the index array
@@ -2125,7 +2129,7 @@ bool model_interp_pack_buffer(indexed_vertex_source *vert_src, vertex_buffer *vb
 		const uint *index = tex_buf->get_index();
 
 		// bump to our spot in the buffer
-		ubyte *ibuf = vert_src->Index_list + offset;
+		auto ibuf = static_cast<uint8_t*>(vert_src->Index_list) + offset;
 
 		if ( vb->tex_buf[j].flags & VB_FLAG_LARGE_INDEX ) {
 			memcpy(ibuf, index, n_verts * sizeof(uint));
@@ -2162,42 +2166,23 @@ void interp_pack_vertex_buffers(polymodel *pm, int mn)
 	}
 }
 
-void model_interp_set_buffer_layout(vertex_layout *layout, uint stride, int flags)
+void model_interp_set_buffer_layout(vertex_layout *layout)
 {
 	Assert(layout != NULL);
-	
-	uint offset = 0;
 
-	// NOTE: UV->NORM->TSB->MODEL_ID->VERT, This array order *must* be preserved!!
+	// Similarly to model_interp_config_buffer, we add all vectex components even if they aren't used
+	// This reduces the amount of vertex format respecification and since the data contains valid data there is no risk
+	// of reading garbage data on the GPU
 
-	if ( flags & VB_FLAG_UV1 ) {
-		layout->add_vertex_component(vertex_format_data::TEX_COORD2, stride, offset);
-	}
+	layout->add_vertex_component(vertex_format_data::TEX_COORD2, sizeof(interp_vertex), offsetof(interp_vertex, uv));
 
-	offset += (2 * sizeof(float));
+	layout->add_vertex_component(vertex_format_data::NORMAL, sizeof(interp_vertex), offsetof(interp_vertex, normal));
 
-	if ( flags & VB_FLAG_NORMAL ) {
-		layout->add_vertex_component(vertex_format_data::NORMAL, stride, offset);
-	}
+	layout->add_vertex_component(vertex_format_data::TANGENT, sizeof(interp_vertex), offsetof(interp_vertex, tangent));
 
-	offset += (3 * sizeof(float));
+	layout->add_vertex_component(vertex_format_data::MODEL_ID, sizeof(interp_vertex), offsetof(interp_vertex, modelId));
 
-	if ( flags & VB_FLAG_TANGENT ) {
-		layout->add_vertex_component(vertex_format_data::TANGENT, stride, offset);
-	}
-
-	offset += (4 * sizeof(float));
-
-	if ( flags & VB_FLAG_MODEL_ID ) {
-		layout->add_vertex_component(vertex_format_data::MODEL_ID, stride, offset);
-	}
-
-	offset += (1 * sizeof(float));
-
-	Assert(flags & VB_FLAG_POSITION);
-	layout->add_vertex_component(vertex_format_data::POSITION3, stride, offset);
-
-	offset += (3 * sizeof(float));
+	layout->add_vertex_component(vertex_format_data::POSITION3, sizeof(interp_vertex), offsetof(interp_vertex, pos));
 }
 
 bool model_interp_config_buffer(indexed_vertex_source *vert_src, vertex_buffer *vb, bool update_ibuffer_only)
@@ -2211,27 +2196,11 @@ bool model_interp_config_buffer(indexed_vertex_source *vert_src, vertex_buffer *
 		return false;
 	}
 
-	vb->stride = 0;
-
 	// pad out the vertex buffer even if it doesn't use certain attributes
 	// we require consistent stride across vertex buffers so we can use base vertex offsetting for performance reasons
+	vb->stride = sizeof(interp_vertex);
 
-	// uv coords
-	vb->stride += (2 * sizeof(float));
-
-	// normals
-	vb->stride += (3 * sizeof(float));
-
-	// tangent space data for normal maps (shaders only)
-	vb->stride += (4 * sizeof(float));
-
-	// model ID for batched submodel rendering (shaders only)
-	vb->stride += (1 * sizeof(float));
-
-	// position
-	vb->stride += (3 * sizeof(float));
-
-	model_interp_set_buffer_layout(&vb->layout, (uint) vb->stride, vb->flags);
+	model_interp_set_buffer_layout(&vb->layout);
 
 	// offsets for this chunk
 	if ( !update_ibuffer_only ) {
@@ -2675,7 +2644,7 @@ void model_interp_process_shield_mesh(polymodel * pm)
 	}
 	
 	if ( !buffer.empty() ) {
-		pm->shield.buffer_id = gr_create_vertex_buffer(true);
+		pm->shield.buffer_id = gr_create_buffer(BufferType::Vertex, BufferUsageHint::Static);
 		pm->shield.buffer_n_verts = n_verts;
 		gr_update_buffer_data(pm->shield.buffer_id, buffer.size() * sizeof(vec3d), &buffer[0]);
 

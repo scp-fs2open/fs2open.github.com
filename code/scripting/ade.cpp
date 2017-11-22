@@ -679,6 +679,7 @@ void ade_table_entry::OutputMeta(FILE *fp)
 				break;
 			default:
 				Warning(LOCATION, "Unknown type '%c' passed to ade_table_entry::OutputMeta", Type);
+				FALLTHROUGH;
 			case 'b':
 			case 'd':
 			case 'f':

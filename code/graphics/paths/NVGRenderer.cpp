@@ -1,5 +1,6 @@
 
 #include "globalincs/pstypes.h"
+#include "graphics/matrix.h"
 
 #if SCP_COMPILER_IS_GNU
 // Disable warnings inside the NanoVG implementation
@@ -105,11 +106,11 @@ namespace graphics
 
 			glBindVertexArray(0);
 
-			gr_opengl_set_2d_matrix();
+			gr_set_2d_matrix();
 
 			nvgEndFrame(m_context);
 
-			gr_opengl_end_2d_matrix();
+			gr_end_2d_matrix();
 
 			resetGLState();
 			m_inFrame = false;

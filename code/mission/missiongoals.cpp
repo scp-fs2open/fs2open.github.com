@@ -1029,7 +1029,7 @@ void mission_maybe_play_directive_success_sound()
 {
 	if ( timestamp_elapsed(Mission_directive_sound_timestamp) ) {
 		Mission_directive_sound_timestamp=0;
-		snd_play( &Snds[SND_DIRECTIVE_COMPLETE] );
+		snd_play( gamesnd_get_game_sound(SND_DIRECTIVE_COMPLETE) );
 	}
 }
 
@@ -1485,6 +1485,6 @@ int mission_goals_incomplete(int desired_type, int team)
 
 void mission_goal_exit()
 {
-	snd_play( &Snds_iface[SND_USER_SELECT] );
+	snd_play( gamesnd_get_interface_sound(SND_USER_SELECT) );
 	gameseq_post_event(GS_EVENT_PREVIOUS_STATE);
 }

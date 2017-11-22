@@ -1091,7 +1091,7 @@ typedef struct sexp_ai_goal_link {
 #define SEXP_TRIGGER_OPERATOR		( SEXP_ARITHMETIC_OPERATOR | SEXP_BOOLEAN_OPERATOR | SEXP_INTEGER_OPERATOR ) 
 
 typedef struct sexp_oper {
-	const char	*text;
+	SCP_string text;
 	int	value;
 	int	min, max;
 	int type;
@@ -1164,12 +1164,13 @@ extern sexp_node *Sexp_nodes;
 extern sexp_variable Sexp_variables[MAX_SEXP_VARIABLES];
 extern sexp_variable Block_variables[MAX_SEXP_VARIABLES];
 
+extern SCP_vector<sexp_oper> Operators;
+
 extern SCP_vector<sexp_container> Sexp_containers;
 
 #define MAX_CONTAINER_MODIFIERS		7
 extern container_modifier Container_modifiers[MAX_CONTAINER_MODIFIERS];
 
-extern sexp_oper Operators[];
 extern int Num_operators;
 extern int Locked_sexp_true, Locked_sexp_false;
 extern int Directive_count;
@@ -1222,6 +1223,7 @@ extern int stuff_sexp_variable_list();
 extern void stuff_sexp_list_container();
 extern void stuff_sexp_map_container();
 extern int eval_sexp(int cur_node, int referenced_node = -1);
+extern int eval_num(int n);
 extern bool is_sexp_true(int cur_node, int referenced_node = -1);
 extern int query_operator_return_type(int op);
 extern int query_operator_argument_type(int op, int argnum);
@@ -1298,22 +1300,18 @@ extern int Knossos_warp_ani_used;
 //WMC - moved here from FRED
 typedef struct sexp_help_struct {
 	int id;
-	const char *help;
+	SCP_string help;
 } sexp_help_struct;
 
-extern sexp_help_struct Sexp_help[];
+extern SCP_vector<sexp_help_struct> Sexp_help;
 
 typedef struct op_menu_struct {
-	const char *name;
+	SCP_string name;
 	int id;
 } op_menu_struct;
 
-extern op_menu_struct op_menu[];
-extern op_menu_struct op_submenu[];
-
-extern int Num_sexp_help;
-extern int Num_op_menus;
-extern int Num_submenus;
+extern SCP_vector<op_menu_struct> op_menu;
+extern SCP_vector<op_menu_struct> op_submenu;
 
 //WMC
 //Outputs sexp.html file

@@ -893,7 +893,7 @@ void mcp_1(object *player_objp, object *planet_objp)
 	if ((Missiontime - Last_planet_damage_time > F1_0) || (Missiontime < Last_planet_damage_time)) {
 		HUD_sourced_printf(HUD_SOURCE_HIDDEN, "%s", XSTR( "Too close to planet.  Taking damage!", 465));
 		Last_planet_damage_time = Missiontime;
-		snd_play_3d( &Snds[ship_get_sound(player_objp, SND_ABURN_ENGAGE)], &player_objp->pos, &View_position );
+		snd_play_3d( gamesnd_get_game_sound(ship_get_sound(player_objp, SND_ABURN_ENGAGE)), &player_objp->pos, &View_position );
 	}
 
 }
@@ -969,15 +969,15 @@ void collide_ship_ship_do_sound(vec3d *world_hit_pos, object *A, object *B, int 
 	rel_speed = vm_vec_mag_quick(&rel_vel);
 
 	if ( rel_speed > MIN_REL_SPEED_FOR_LOUD_COLLISION ) {
-		snd_play_3d( &Snds[SND_SHIP_SHIP_HEAVY], world_hit_pos, &View_position );
+		snd_play_3d( gamesnd_get_game_sound(SND_SHIP_SHIP_HEAVY), world_hit_pos, &View_position );
 	} else {
 		if ( player_involved ) {
 			if ( !snd_is_playing(Player_collide_sound) ) {
-				Player_collide_sound = snd_play_3d( &Snds[SND_SHIP_SHIP_LIGHT], world_hit_pos, &View_position );
+				Player_collide_sound = snd_play_3d( gamesnd_get_game_sound(SND_SHIP_SHIP_LIGHT), world_hit_pos, &View_position );
 			}
 		} else {
 			if ( !snd_is_playing(AI_collide_sound) ) {
-				AI_collide_sound = snd_play_3d( &Snds[SND_SHIP_SHIP_LIGHT], world_hit_pos, &View_position );
+				AI_collide_sound = snd_play_3d( gamesnd_get_game_sound(SND_SHIP_SHIP_LIGHT), world_hit_pos, &View_position );
 			}
 		}
 	}
@@ -986,11 +986,11 @@ void collide_ship_ship_do_sound(vec3d *world_hit_pos, object *A, object *B, int 
 	if ( (shield_get_strength(A) > 5) || (shield_get_strength(B) > 5) ) {
 		if ( player_involved ) {
 			if ( !snd_is_playing(Player_collide_sound) ) {
-				Player_collide_shield_sound = snd_play_3d( &Snds[SND_SHIP_SHIP_SHIELD], world_hit_pos, &View_position );
+				Player_collide_shield_sound = snd_play_3d( gamesnd_get_game_sound(SND_SHIP_SHIP_SHIELD), world_hit_pos, &View_position );
 			}
 		} else {
 			if ( !snd_is_playing(Player_collide_sound) ) {
-				AI_collide_shield_sound = snd_play_3d( &Snds[SND_SHIP_SHIP_SHIELD], world_hit_pos, &View_position );
+				AI_collide_shield_sound = snd_play_3d( gamesnd_get_game_sound(SND_SHIP_SHIP_SHIELD), world_hit_pos, &View_position );
 			}
 		}
 	}
@@ -1175,11 +1175,11 @@ int collide_ship_ship( obj_pair * pair )
 					if (vm_vec_mag(&ship_ship_hit_info.light_rel_vel) > MIN_LANDING_SOUND_VEL) {
 						if ( player_involved ) {
 							if ( !snd_is_playing(Player_collide_sound) ) {
-								Player_collide_sound = snd_play_3d( &Snds[light_sip->collision_physics.landing_sound_idx], &world_hit_pos, &View_position );
+								Player_collide_sound = snd_play_3d( gamesnd_get_game_sound(light_sip->collision_physics.landing_sound_idx), &world_hit_pos, &View_position );
 							}
 						} else {
 							if ( !snd_is_playing(AI_collide_sound) ) {
-								AI_collide_sound = snd_play_3d( &Snds[light_sip->collision_physics.landing_sound_idx], &world_hit_pos, &View_position );
+								AI_collide_sound = snd_play_3d( gamesnd_get_game_sound(light_sip->collision_physics.landing_sound_idx), &world_hit_pos, &View_position );
 							}
 						}
 					}

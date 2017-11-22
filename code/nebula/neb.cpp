@@ -25,6 +25,7 @@
 #include "starfield/starfield.h"
 #include "tgautils/tgautils.h"
 #include "tracing/tracing.h"
+#include "graphics/light.h"
 
 
 // --------------------------------------------------------------------------------------------------------

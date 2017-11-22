@@ -1,5 +1,6 @@
 #include "VideoPresenter.h"
 
+#include "graphics/matrix.h"
 
 using namespace cutscene;
 using namespace cutscene::player;
@@ -9,7 +10,7 @@ namespace player {
 VideoPresenter::VideoPresenter(const MovieProperties& props) : _scaleVideo(false) {
 	GR_DEBUG_SCOPE("Init video");
 
-	_vertexBuffer = gr_create_vertex_buffer(true);
+	_vertexBuffer = gr_create_buffer(BufferType::Vertex, BufferUsageHint::Static);
 
 	auto w = static_cast<int>(props.size.width);
 	auto h = static_cast<int>(props.size.height);
@@ -25,8 +26,6 @@ VideoPresenter::VideoPresenter(const MovieProperties& props) : _scaleVideo(false
 	_vtex = bm_create(8, w / 2, h / 2, _vTexBuffer.get(), BMP_AABITMAP);
 
 	material_set_movie(&_render_material, _ytex, _utex, _vtex);
-
-	gr_set_lighting(false, false);
 
 	float screen_ratio = (float) gr_screen.center_w / (float) gr_screen.center_h;
 	float movie_ratio = (float) props.size.width / (float) props.size.height;

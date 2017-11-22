@@ -17,6 +17,18 @@
 #include "graphics/shadows.h"
 #include <glad/glad.h>
 
+extern GLuint Scene_framebuffer;
+extern GLuint Scene_ldr_texture;
+extern GLuint Scene_color_texture;
+extern GLuint Scene_position_texture;
+extern GLuint Scene_normal_texture;
+extern GLuint Scene_specular_texture;
+extern GLuint Scene_luminance_texture;
+extern GLuint Scene_effect_texture;
+extern GLuint Scene_depth_texture;
+extern GLuint Cockpit_depth_texture;
+extern GLuint Scene_stencil_buffer;
+
 struct opengl_vertex_bind {
 	vertex_format_data::vertex_format format;
 	GLint size;
@@ -30,12 +42,7 @@ void gr_opengl_update_distortion();
 void opengl_set_spec_mapping(int tmap_type, float *u_scale, float *v_scale, int stage = 0);
 void opengl_reset_spec_mapping();
 
-void opengl_draw_sphere();
 void gr_opengl_sphere(material *material_def, float rad);
-void gr_opengl_deferred_light_sphere_init(int rings, int segments);
-void gr_opengl_draw_deferred_light_sphere(const vec3d *position, float rad, bool clearStencil);
-void gr_opengl_deferred_light_cylinder_init(int segments);
-void gr_opengl_draw_deferred_light_cylinder(const vec3d *position, const matrix *orient, float rad, float length, bool clearStencil);
 
 void gr_opengl_shadow_map_start(matrix4 *shadow_view_matrix, const matrix *light_orient);
 void gr_opengl_shadow_map_end();
@@ -47,11 +54,6 @@ void opengl_scene_texture_shutdown();
 void gr_opengl_scene_texture_begin();
 void gr_opengl_scene_texture_end();
 void gr_opengl_copy_effect_texture();
-
-void opengl_clear_deferred_buffers();
-void gr_opengl_deferred_lighting_begin();
-void gr_opengl_deferred_lighting_end();
-void gr_opengl_deferred_lighting_finish();
 
 void opengl_render_primitives(primitive_type prim_type, vertex_layout* layout, int n_verts, int buffer_handle, size_t vert_offset, size_t byte_offset);
 void opengl_render_primitives_immediate(primitive_type prim_type, vertex_layout* layout, int n_verts, void* data, int size);

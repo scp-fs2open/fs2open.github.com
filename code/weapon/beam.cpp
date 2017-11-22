@@ -1418,14 +1418,29 @@ void beam_render_muzzle_glow(beam *b)
 		vertex h1[4];
 		vertex *verts[4] = { &h1[0], &h1[1], &h1[2], &h1[3] };
 		vec3d fvec, top1, top2, bottom1, bottom2, sub1, sub2, start, end;
+		int idx;
+		float g_length = bwi->glow_length * pct * rand_val;
 
 		vm_vec_sub(&fvec, &b->last_shot, &b->last_start);
 		vm_vec_normalize_quick(&fvec);
-
-		vm_vec_copy_scale(&sub1, &fvec, rad);
-		vm_vec_sub(&start, &b->last_start, &sub1);
-		vm_vec_copy_scale(&sub2, &fvec, bwi->glow_length);
-		vm_vec_add(&end, &start, &sub2);
+		
+		/* (DahBlount)
+		If the glow_length is less than the diameter of the muzzle glow
+		we need to account for that by placing the start and end distances
+		such that the glow is centered on the firing point of the turret.
+		There was actually some oversight here when developing the directional glow feature
+		and any refactoring of it will require some more complex parameters for glow placement.
+		*/
+		if (bwi->glow_length >= 2.0f*rad) {
+			vm_vec_copy_scale(&sub1, &fvec, rad);
+			vm_vec_sub(&start, &b->last_start, &sub1);
+			vm_vec_copy_scale(&sub2, &fvec, g_length);
+			vm_vec_add(&end, &start, &sub2);
+		} else {
+			vm_vec_copy_scale(&sub1, &fvec, 0.5f*g_length);
+			vm_vec_sub(&start, &b->last_start, &sub1);
+			vm_vec_add(&end, &b->last_start, &sub1);
+		}
 
 		beam_calc_facing_pts(&top1, &bottom1, &fvec, &start, rad, 1.0f);
 		beam_calc_facing_pts(&top2, &bottom2, &fvec, &end, rad, 1.0f);
@@ -1435,18 +1450,8 @@ void beam_render_muzzle_glow(beam *b)
 		g3_transfer_vertex(verts[2], &top2);
 		g3_transfer_vertex(verts[3], &top1);
 
-		for (int idx = 0; idx < 4; idx++) {
-			g3_project_vertex(verts[idx]);
-		}
-
-		verts[0]->texture_position.u = 1.0f;
-		verts[0]->texture_position.v = 0.0f;
-		verts[1]->texture_position.u = 0.0f;
-		verts[1]->texture_position.v = 0.0f;
-		verts[2]->texture_position.u = 0.0f;
-		verts[2]->texture_position.v = 1.0f;
-		verts[3]->texture_position.u = 1.0f;
-		verts[3]->texture_position.v = 1.0f;
+		P_VERTICES();
+		STUFF_VERTICES();
 
 		verts[0]->r = 255;
 		verts[1]->r = 255;
@@ -1871,7 +1876,7 @@ void beam_start_warmup(beam *b)
 
 	// start playing warmup sound
 	if(!(Game_mode & GM_STANDALONE_SERVER) && (Weapon_info[b->weapon_info_index].b_info.beam_warmup_sound >= 0)){		
-		snd_play_3d(&Snds[Weapon_info[b->weapon_info_index].b_info.beam_warmup_sound], &b->last_start, &View_position);
+		snd_play_3d(gamesnd_get_game_sound(Weapon_info[b->weapon_info_index].b_info.beam_warmup_sound), &b->last_start, &View_position);
 	}
 }
 
@@ -1914,11 +1919,11 @@ int beam_start_firing(beam *b)
 
 	// start the beam firing sound now, if we haven't already		
 	if((b->beam_sound_loop == -1) && (Weapon_info[b->weapon_info_index].b_info.beam_loop_sound >= 0)){				
-		b->beam_sound_loop = snd_play_3d(&Snds[Weapon_info[b->weapon_info_index].b_info.beam_loop_sound], &b->last_start, &View_position, 0.0f, NULL, 1, 1.0, SND_PRIORITY_SINGLE_INSTANCE, NULL, 1.0f, 1);
+		b->beam_sound_loop = snd_play_3d(gamesnd_get_game_sound(Weapon_info[b->weapon_info_index].b_info.beam_loop_sound), &b->last_start, &View_position, 0.0f, NULL, 1, 1.0, SND_PRIORITY_SINGLE_INSTANCE, NULL, 1.0f, 1);
 
 		// "shot" sound
 		if (Weapon_info[b->weapon_info_index].launch_snd >= 0)
-			snd_play_3d(&Snds[Weapon_info[b->weapon_info_index].launch_snd], &b->last_start, &View_position);
+			snd_play_3d(gamesnd_get_game_sound(Weapon_info[b->weapon_info_index].launch_snd), &b->last_start, &View_position);
 		// niffwan - if launch_snd < 0, don't play any sound
 	}	
 
@@ -1938,7 +1943,7 @@ void beam_start_warmdown(beam *b)
 
 	// start the warmdown sound
 	if(Weapon_info[b->weapon_info_index].b_info.beam_warmdown_sound >= 0){				
-		snd_play_3d(&Snds[Weapon_info[b->weapon_info_index].b_info.beam_warmdown_sound], &b->last_start, &View_position);
+		snd_play_3d(gamesnd_get_game_sound(Weapon_info[b->weapon_info_index].b_info.beam_warmdown_sound), &b->last_start, &View_position);
 	}
 
 	// kill the beam looping sound 
@@ -1980,7 +1985,7 @@ void beam_recalc_sounds(beam *b)
 			break;
 		}
 
-		snd_update_3d_pos(b->beam_sound_loop, &Snds[bwi->beam_loop_sound], &pos);
+		snd_update_3d_pos(b->beam_sound_loop, gamesnd_get_game_sound(bwi->beam_loop_sound), &pos);
 	}
 }
 
@@ -3070,7 +3075,7 @@ void beam_handle_collisions(beam *b)
 
 		// play the impact sound
 		if ( first_hit && (wi->impact_snd >= 0) ) {
-			snd_play_3d( &Snds[wi->impact_snd], &b->f_collisions[idx].cinfo.hit_point_world, &Eye_position );
+			snd_play_3d( gamesnd_get_game_sound(wi->impact_snd), &b->f_collisions[idx].cinfo.hit_point_world, &Eye_position );
 		}
 
 		// KOMET_EXT -->
@@ -3086,10 +3091,31 @@ void beam_handle_collisions(beam *b)
 				
 			vm_vec_sub(&temp_pos, &b->f_collisions[idx].cinfo.hit_point_world, &Objects[target].pos);
 			vm_vec_rotate(&temp_local_pos, &temp_pos, &Objects[target].orient);
-						
+
+			vec3d worldNormal;
+			if (Objects[target].type == OBJ_SHIP) {
+				auto shipp = &Ships[Objects[target].instance];
+				model_instance_find_world_dir(&worldNormal,
+											  &b->f_collisions[idx].cinfo.hit_normal,
+											  shipp->model_instance_num,
+											  b->f_collisions[idx].cinfo.submodel_num,
+											  &Objects[target].orient);
+			} else {
+				// Just assume that we don't need to handle model subobjects here
+				vm_vec_unrotate(&worldNormal, &b->f_collisions[idx].cinfo.hit_normal, &Objects[target].orient);
+			}
+
 			if (wi->flash_impact_weapon_expl_effect >= 0) {
 				auto particleSource = particle::ParticleManager::get()->createSource(wi->flash_impact_weapon_expl_effect);
 				particleSource.moveToObject(&Objects[target], &temp_local_pos);
+				particleSource.setOrientationNormal(&worldNormal);
+
+				vec3d fvec;
+				vm_vec_sub(&fvec, &b->last_shot, &b->last_start);
+
+				if (!IS_VEC_NULL(&fvec)) {
+					particleSource.setOrientationFromVec(&fvec);
+				}
 
 				particleSource.finish();
 			}
@@ -3097,6 +3123,14 @@ void beam_handle_collisions(beam *b)
 			if(do_expl){
 				auto particleSource = particle::ParticleManager::get()->createSource(wi->impact_weapon_expl_effect);
 				particleSource.moveToObject(&Objects[target], &temp_local_pos);
+				particleSource.setOrientationNormal(&worldNormal);
+
+				vec3d fvec;
+				vm_vec_sub(&fvec, &b->last_shot, &b->last_start);
+
+				if (!IS_VEC_NULL(&fvec)) {
+					particleSource.setOrientationFromVec(&fvec);
+				}
 
 				particleSource.finish();
 			}
@@ -3157,6 +3191,7 @@ void beam_handle_collisions(beam *b)
 							auto particleSource = particle::ParticleManager::get()->createSource(wi->piercing_impact_effect);
 							particleSource.moveTo(&b->f_collisions[idx].cinfo.hit_point_world);
 							particleSource.setOrientationFromNormalizedVec(&fvec);
+							particleSource.setOrientationNormal(&worldNormal);
 
 							particleSource.finish();
 						}
@@ -3168,8 +3203,29 @@ void beam_handle_collisions(beam *b)
 			if(draw_effects && do_damage && !physics_paused){
 				// maybe draw an explosion, if we aren't hitting shields
 				if ( (wi->impact_weapon_expl_effect >= 0) && (b->f_collisions[idx].quadrant < 0) ) {
+					vec3d worldNormal;
+					if (Objects[target].type == OBJ_SHIP) {
+						auto shipp = &Ships[Objects[target].instance];
+						model_instance_find_world_dir(&worldNormal,
+													  &b->f_collisions[idx].cinfo.hit_normal,
+													  shipp->model_instance_num,
+													  b->f_collisions[idx].cinfo.submodel_num,
+													  &Objects[target].orient);
+					} else {
+						// Just assume that we don't need to handle model subobjects here
+						vm_vec_unrotate(&worldNormal, &b->f_collisions[idx].cinfo.hit_normal, &Objects[target].orient);
+					}
+
 					auto particleSource = particle::ParticleManager::get()->createSource(wi->impact_weapon_expl_effect);
 					particleSource.moveTo(&b->f_collisions[idx].cinfo.hit_point_world);
+					particleSource.setOrientationNormal(&worldNormal);
+
+					vec3d fvec;
+					vm_vec_sub(&fvec, &b->last_shot, &b->last_start);
+
+					if (!IS_VEC_NULL(&fvec)) {
+						particleSource.setOrientationFromVec(&fvec);
+					}
 
 					particleSource.finish();
 				}

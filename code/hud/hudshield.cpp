@@ -24,6 +24,7 @@
 #include "render/3d.h"	//For g3_start_frame
 #include "ship/ship.h"
 #include "weapon/emp.h"
+#include "graphics/matrix.h"
 
 
 
@@ -240,7 +241,7 @@ void hud_shield_equalize(object *objp, player *pl)
 
 	// beep
 	if (objp == Player_obj) {
-		snd_play(&Snds[SND_SHIELD_XFER_OK]);
+		snd_play(gamesnd_get_game_sound(SND_SHIELD_XFER_OK));
 	}
 }
 

@@ -296,6 +296,7 @@ void CJumpNode::Render(vec3d *pos, vec3d *view_pos)
 
 	Render(&scene, pos, view_pos);
 
+	scene.init_render();
 	scene.render_all();
 	scene.render_outlines();
 

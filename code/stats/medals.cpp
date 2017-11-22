@@ -586,7 +586,7 @@ void medal_main_init(player *pl, int mode)
 		Warning(LOCATION, "Error loading medal mask file %s", bitmap_buf);
 	} else {
 		Init_flags |= MASK_BITMAP_INIT;
-		Medals_mask = bm_lock(Medals_bitmap_mask, 8, BMP_AABITMAP);
+		Medals_mask = bm_lock(Medals_bitmap_mask, 8, BMP_AABITMAP | BMP_MASK_BITMAP);
 		bm_get_info(Medals_bitmap_mask, &Medals_mask_w, &Medals_mask_h);
 
 		init_medal_bitmaps();
@@ -830,7 +830,10 @@ void init_medal_bitmaps()
 	// load up rank insignia
 	if (gr_screen.res == GR_1024) {
 		char filename[NAME_LENGTH];
-		sprintf(filename, "2_%s", Ranks[Player_score->rank].bitmap);
+		if (snprintf(filename, NAME_LENGTH, "2_%s", Ranks[Player_score->rank].bitmap) >= NAME_LENGTH) {
+			// Make sure the string is null terminated
+			filename[NAME_LENGTH - 1] = '\0';
+		}
 		Rank_bm = bm_load(filename);
 	} else {
 		Rank_bm = bm_load(Ranks[Player_score->rank].bitmap);

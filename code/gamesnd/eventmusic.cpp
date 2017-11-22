@@ -1186,7 +1186,9 @@ void parse_soundtrack()
 		}
 
 		//Track doesn't exist and has nocreate, so don't create it
-		Assertion(skip_to_start_of_string_either("#SoundTrack Start", "#Menu Music Start") || skip_to_string("#SoundTrack End"), "Couldn't find #Soundtrack Start, #Menu Music Start or #Soundtrack End. Music.tbl or -mus.tbm is invalid.\n");
+		if ( !skip_to_start_of_string_either("#SoundTrack Start", "#Menu Music Start") && !skip_to_string("#SoundTrack End")) {
+			error_display(1, "Couldn't find #Soundtrack Start, #Menu Music Start or #Soundtrack End.");
+		}
 
 		return;
 	}
@@ -1281,7 +1283,7 @@ void parse_soundtrack()
 	}
 
 	//We're done here.
-	//required_string("#SoundTrack End");
+	required_string("#SoundTrack End");
 
 
 	// Goober5000 - set the valid flag according to whether we can load all our patterns
@@ -1370,12 +1372,11 @@ void event_music_parse_musictbl(const char *filename)
 		read_file_text(filename, CF_TYPE_TABLES);
 		reset_parse();
 
-		while ( skip_to_start_of_string_either("#Soundtrack Start", "#Menu Music Start", NULL ) )
+		while ( check_for_string("#Soundtrack Start") || check_for_string("#Menu Music Start") )
 		{
 			if ( optional_string("#Soundtrack Start") )
 			{
 				parse_soundtrack( );
-				required_string("#Soundtrack End");
 			}
 			if ( optional_string("#Menu Music Start") )
 			{

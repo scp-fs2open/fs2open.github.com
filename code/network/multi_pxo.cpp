@@ -1827,7 +1827,10 @@ int multi_pxo_connect_do()
 
 		// build the ip string
 		memset(ip_string, 0, MAX_PXO_TEXT_LEN);
-		sprintf(ip_string, "%s:%d", Multi_options_g.pxo_ip, PXO_CHAT_PORT);
+		if (snprintf(ip_string, MAX_PXO_TEXT_LEN, "%s:%d", Multi_options_g.pxo_ip, PXO_CHAT_PORT) >= MAX_PXO_TEXT_LEN) {
+			// Make sure the string is null terminated
+			ip_string[MAX_PXO_TEXT_LEN - 1] = '\0';
+		}
 
 		// connect to the server
 		ret_code = ConnectToChatServer(ip_string, Multi_pxo_nick, id_string);		
