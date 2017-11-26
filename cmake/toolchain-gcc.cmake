@@ -125,6 +125,49 @@ IF(${CMAKE_SYSTEM_NAME} MATCHES "SunOS")
 	SET(CMAKE_EXE_LINKER_FLAGS "-Wl,-zignore")
 ENDIF(${CMAKE_SYSTEM_NAME} MATCHES "SunOS")
 
+# GCC supports compiling for multiple SIMD instruction sets
+SET(POSSIBLE_SIMD_OPTIONS "" sse sse2 sse3 ssse3 sse4.1 sse4.2 avx avx2)
+
+if (NOT DEFINED GCC_SIMD_OPTIONS)
+	detect_simd_instructions(GCC_DETECTED_SIMD_OPTIONS)
+
+	SET(GCC_SIMD_OPTIONS "${GCC_DETECTED_SIMD_OPTIONS}" CACHE FILEPATH "Possible SIMD options are: ${POSSIBLE_SIMD_OPTIONS}")
+
+	MARK_AS_ADVANCED(FORCE GCC_SIMD_OPTIONS)
+endif()
+
+set(FSO_INSTRUCTION_SET ${GCC_SIMD_OPTIONS})
+
+LIST(FIND POSSIBLE_SIMD_OPTIONS "${GCC_SIMD_OPTIONS}" SET_INDEX)
+
+if (SET_INDEX LESS 0)
+	MESSAGE(STATUS "An unknown SIMD compiler option was specified (${GCC_SIMD_OPTIONS}); defaulting to no special compiler options.")
+else()
+	IF (NOT SET_INDEX EQUAL 0)
+		SET(FOUND)
+
+		# If the compiler does not support the level of SIMD instructions that
+		# host processor says it does, then step down until a SIMD instruction
+		# set that the compiler supports is found.
+		FOREACH(list_index RANGE ${SET_INDEX} 1)
+			list(GET POSSIBLE_SIMD_OPTIONS ${list_index} _simd_set)
+			CHECK_CXX_COMPILER_FLAG("-m${_simd_set}" COMPILER_SUPPORTS_${_simd_set})
+
+			IF(COMPILER_SUPPORTS_${_simd_set})
+				set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -m${_simd_set}")
+				set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -m${_simd_set}")
+				SET(FOUND TRUE)
+				BREAK()
+			ENDIF()
+		ENDFOREACH(list_index)
+
+		IF(NOT FOUND)
+			# Don't set anything, it will likely not work
+			MESSAGE(STATUS "Your compiler does not support any of the SIMD instruction sets; defaulting to none")
+		ENDIF(NOT FOUND)
+	ENDIF()
+endif()
+
 if (FSO_FATAL_WARNINGS)
 	# Make warnings fatal if the right variable is set
 	target_compile_options(compiler INTERFACE "-Werror")
