@@ -1,4 +1,4 @@
 #!/bin/sh
 HERE=$(dirname $(readlink -f "${0}"))
-export LD_LIBRARY_PATH="${HERE}"/lib:$PATH
+export LD_LIBRARY_PATH="${HERE}"/lib:"$LD_LIBRARY_PATH"
 "${HERE}"/bin/$<TARGET_FILE_NAME:Freespace2> $@

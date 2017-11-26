@@ -101,7 +101,7 @@ class RandomRange {
 	}
 
 	ValueType max() {
-		return m_minValue;
+		return m_maxValue;
 	}
 };
 
