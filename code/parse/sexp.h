@@ -1171,7 +1171,6 @@ extern SCP_vector<sexp_container> Sexp_containers;
 #define MAX_CONTAINER_MODIFIERS		7
 extern container_modifier Container_modifiers[MAX_CONTAINER_MODIFIERS];
 
-extern int Num_operators;
 extern int Locked_sexp_true, Locked_sexp_false;
 extern int Directive_count;
 extern int Sexp_useful_number;  // a variable to pass useful info in from external modules
