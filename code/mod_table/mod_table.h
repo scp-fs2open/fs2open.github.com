@@ -32,6 +32,7 @@ extern float Generic_pain_flash_factor;
 extern float Shield_pain_flash_factor;
 extern SCP_string Window_title;
 extern bool Unicode_text_mode;
+extern SCP_string Movie_subtitle_font;
 
 void mod_table_init();
 

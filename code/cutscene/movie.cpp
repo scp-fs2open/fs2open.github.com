@@ -26,6 +26,7 @@
 #include "tracing/tracing.h"
 #include "io/timer.h"
 #include "io/key.h"
+#include "mod_table/mod_table.h"
 
 extern int Game_mode;
 extern int Is_standalone;
@@ -39,6 +40,8 @@ struct PlaybackState {
 
 	vec2d posTopLeft;
 	vec2d posBottomRight;
+
+	int subtitle_font = -1;
 };
 
 void processEvents(PlaybackState* state) {
@@ -70,6 +73,7 @@ float print_string(float x, float y, const char* fmt, Args... params) {
 
 void showVideoInfo(const PlayerState& state) {
 	gr_set_color_fast(&Color_white);
+	font::set_font(font::FONT1);
 
 	float y = 200.f;
 	float x = 100.f;
@@ -97,9 +101,30 @@ void showVideoInfo(const PlayerState& state) {
 
 void displayVideo(Player* player, PlaybackState* state) {
 	TRACE_SCOPE(tracing::CutsceneDrawVideoFrame);
+	GR_DEBUG_SCOPE("Display Video");
 
 	gr_clear();
 	player->draw(state->posTopLeft.x, state->posTopLeft.y, state->posBottomRight.x, state->posBottomRight.y);
+
+	auto subtitle = player->getCurrentSubtitle();
+	if (!subtitle.empty() && state->subtitle_font >= 0) {
+		gr_set_color_fast(&Color_bright_white);
+		font::set_font(state->subtitle_font);
+
+		int width;
+		int height;
+		gr_get_string_size(&width, &height, subtitle.c_str());
+
+		// Offset the subtitle by 20% of the viewport size from the bottom
+		auto y_offset = static_cast<int>((state->posBottomRight.y - state->posTopLeft.y) * 0.1);
+
+		auto center_x = (state->posBottomRight.x - state->posTopLeft.x) / 2;
+
+		auto text_x = center_x - width / 2;
+		auto text_y = state->posBottomRight.y - y_offset - height;
+
+		gr_string(text_x, text_y, subtitle.c_str(), GR_RESIZE_NONE);
+	}
 
 	if (Cmdline_show_video_info) {
 		showVideoInfo(player->getInternalState());
@@ -107,7 +132,6 @@ void displayVideo(Player* player, PlaybackState* state) {
 
 	gr_flip();
 }
-
 void determine_display_positions(Player* player, PlaybackState* state) {
 	auto& props = player->getMovieProperties();
 
@@ -151,6 +175,16 @@ void determine_display_positions(Player* player, PlaybackState* state) {
 
 	state->posBottomRight.x = screenXW;
 	state->posBottomRight.y = screenYH;
+}
+
+void initialize_player_state(Player* player, PlaybackState* state) {
+	determine_display_positions(player, state);
+
+	state->subtitle_font = font::FontManager::getFontIndex(Movie_subtitle_font);
+
+	if (state->subtitle_font < 0) {
+		Warning(LOCATION, "Failed to load subtitle font '%s'! Subtitles will be disabled.", Movie_subtitle_font.c_str());
+	}
 }
 
 void movie_display_loop(Player* player, PlaybackState* state) {
@@ -218,7 +252,7 @@ bool play(const char* name) {
 	auto player = cutscene::Player::newPlayer(name);
 	if (player) {
 		PlaybackState state;
-		determine_display_positions(player.get(), &state);
+		initialize_player_state(player.get(), &state);
 
 		movie_display_loop(player.get(), &state);
 

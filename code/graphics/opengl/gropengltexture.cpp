@@ -1499,7 +1499,7 @@ void gr_opengl_update_texture(int bitmap_handle, int bpp, const ubyte* data, int
 		}
 	}
 	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-	glBindTexture(t->texture_target, t->texture_id);
+	GL_state.Texture.Enable(0, t->texture_target, t->texture_id);
 	glTexSubImage3D(t->texture_target, 0, 0, 0, t->array_index, width, height, 1, glFormat, texFormat, (texmem)?texmem:data);
 
 	if (texmem != NULL)

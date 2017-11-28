@@ -58,6 +58,9 @@ extern int Lcl_gr;
 extern int Lcl_pl;
 extern int Lcl_english;
 
+// The currently active language. Index into Lcl_languages.
+extern int Lcl_current_lang;
+
 
 // ------------------------------------------------------------------------------------------------------------
 // LOCALIZE FUNCTIONS

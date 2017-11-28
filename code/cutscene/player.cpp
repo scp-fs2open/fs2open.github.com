@@ -120,7 +120,7 @@ void processVideoData(PlayerState* state) {
 		return;
 	}
 
-	while(currentTime >= state->nextFrame->frameTime) {
+	while (currentTime >= state->nextFrame->frameTime) {
 		// Move the next frame to the current frame slot
 		state->currentFrame = std::move(state->nextFrame);
 
@@ -141,6 +141,34 @@ void processVideoData(PlayerState* state) {
 	}
 }
 
+void processSubtitleData(PlayerState* state) {
+	SubtitleFramePtr ptr;
+	while (state->decoder->tryPopSubtitleData(ptr)) {
+		// Take all subtitle frames from our queue
+		state->queued_subtitles.push(std::move(ptr));
+	}
+
+	if (state->currentSubtitle && playbackGetTime(state) <= state->currentSubtitle->displayEndTime) {
+		// We currently have a frame and it it still being displayed so there is nothing for us to do here
+		return;
+	}
+
+	// Subtitle has expired so we don't need it anymore
+	state->currentSubtitle = nullptr;
+
+	while(!state->queued_subtitles.empty()) {
+		// Take a look at the first entry and check if it's time to display it yet
+		auto& nextSubtitle = state->queued_subtitles.front();
+		if (playbackGetTime(state) >= nextSubtitle->displayStartTime) {
+			state->currentSubtitle = std::move(nextSubtitle);
+			state->queued_subtitles.pop();
+		} else {
+			// The next subtitle should not be displayed yet so we are done here
+			break;
+		}
+	}
+}
+
 bool processAudioData(PlayerState* state) {
 	TRACE_SCOPE(tracing::CutsceneProcessAudioData);
 
@@ -148,7 +176,7 @@ bool processAudioData(PlayerState* state) {
 		if (state->decoder->hasAudio()) {
 			// Even if we don't play the sound we still need to remove it from the queue
 			AudioFramePtr audioData;
-			while(state->decoder->tryPopAudioData(audioData)) {
+			while (state->decoder->tryPopAudioData(audioData)) {
 				// Intentionally left empty
 			}
 		}
@@ -173,7 +201,9 @@ bool processAudioData(PlayerState* state) {
 
 		ALenum format = (audioData->channels == 2) ? AL_FORMAT_STEREO16 : AL_FORMAT_MONO16;
 
-		OpenAL_ErrorCheck(alBufferData(buffer, format, audioData->audioData.data(),
+		OpenAL_ErrorCheck(alBufferData(buffer,
+									   format,
+									   audioData->audioData.data(),
 									   static_cast<ALsizei>(audioData->audioData.size() * sizeof(short)),
 									   static_cast<ALsizei>(audioData->rate)), return false);
 
@@ -229,6 +259,7 @@ void videoPlaybackClose(PlayerState* state) {
 bool shouldBeginPlayback(Decoder* decoder) {
 	auto video = decoder->isVideoQueueFull();
 	auto audio = decoder->isAudioQueueFull();
+	auto subtitles = decoder->isSubtitleQueueFull();
 
 	// Wait until one of the queues is full, that should make sure
 	// that we have enough frames at the beginning of playback and that
@@ -236,7 +267,7 @@ bool shouldBeginPlayback(Decoder* decoder) {
 	// or video at the beginning
 	// Also only wait while the decoder is still working. Otherwise we will wait indefinitely if the video
 	// is very short.
-	return (audio || video) || !decoder->isDecoding();
+	return (audio || video || subtitles) || !decoder->isDecoding();
 }
 }
 
@@ -271,12 +302,14 @@ bool Player::processDecoderData() {
 
 	processVideoData(&m_state);
 
+	processSubtitleData(&m_state);
+
 	auto audioPlaying = processAudioData(&m_state);
 
 	// Set the playing flag if the decoder is still active or there is still data available
 	auto decoding = m_decoder->isDecoding();
 
-	// Audio is pending if there is data left in the queue or of OpenAL is still playing audio
+	// Audio is pending if there is data left in the queue or if OpenAL is still playing audio
 	auto pendingAudio = (m_decoder->isAudioFrameAvailable() && m_decoder->hasAudio()) || audioPlaying;
 	auto pendingVideo = m_decoder->isVideoFrameAvailable();
 
@@ -344,6 +377,13 @@ void Player::draw(float x1, float y1, float x2, float y2) {
 
 	if (m_state.videoPresenter) {
 		m_state.videoPresenter->displayFrame(x1, y1, x2, y2);
+	}
+}
+SCP_string Player::getCurrentSubtitle() {
+	if (!m_state.currentSubtitle) {
+		return "";
+	} else {
+		return m_state.currentSubtitle->text;
 	}
 }
 }

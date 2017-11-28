@@ -104,6 +104,8 @@ set (file_root_cutscene_ffmpeg
 	cutscene/ffmpeg/FFMPEGDecoder.h
 	cutscene/ffmpeg/internal.cpp
 	cutscene/ffmpeg/internal.h
+	cutscene/ffmpeg/SubtitleDecoder.cpp
+	cutscene/ffmpeg/SubtitleDecoder.h
 	cutscene/ffmpeg/VideoDecoder.cpp
 	cutscene/ffmpeg/VideoDecoder.h
 )

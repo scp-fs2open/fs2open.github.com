@@ -16,6 +16,8 @@ struct CodecContextParameters {
 	uint64_t channel_layout = 0;
 	int sample_rate = -1;
 	AVSampleFormat audio_format = AV_SAMPLE_FMT_NONE;
+
+	AVCodecID codec_id = AV_CODEC_ID_NONE;
 };
 
 struct DecoderStatus {
@@ -30,6 +32,12 @@ struct DecoderStatus {
 	CodecContextParameters audioCodecPars;
 	AVCodec* audioCodec = nullptr;
 	AVCodecContext* audioCodecCtx = nullptr;
+
+	int subtitleStreamIndex = -1;
+	AVStream* subtitleStream = nullptr;
+	CodecContextParameters subtitleCodecPars;
+	AVCodec* subtitleCodec = nullptr;
+	AVCodecContext* subtitleCodecCtx = nullptr;
 
 	DecoderStatus();
 

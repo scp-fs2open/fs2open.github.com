@@ -38,6 +38,9 @@ struct PlayerState {
 
 	std::unique_ptr<player::VideoPresenter> videoPresenter;
 
+	SCP_queue<SubtitleFramePtr> queued_subtitles;
+	SubtitleFramePtr currentSubtitle;
+
 	PlayerState() {
 	}
 
@@ -105,6 +108,8 @@ class Player {
 	 * @param y2 The Y coordinate of the bottom right corner
 	 */
 	void draw(float x1, float y1, float x2, float y2);
+
+	SCP_string getCurrentSubtitle();
 
 	/**
 	 * @brief Stops playback
