@@ -1221,7 +1221,7 @@ void g3_render_line_3d(color *clr, bool depth_testing, const vec3d *start, const
 
 	vertex_layout vert_def;
 
-	vert_def.add_vertex_component(vertex_format_data::POSITION3, 0, 0);
+	vert_def.add_vertex_component(vertex_format_data::POSITION3, sizeof(float) * 3, 0);
 
 	gr_render_primitives_immediate(&mat, PRIM_TYPE_LINES, &vert_def, 2, line, sizeof(float) * 6);
 }

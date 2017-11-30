@@ -40,6 +40,7 @@
 #include "parse/parselo.h"
 #include "render/3d.h"
 #include "tracing/tracing.h"
+#include "utils/boost/hash_combine.h"
 
 #if ( SDL_VERSION_ATLEAST(1, 2, 7) )
 #include "SDL_cpuinfo.h"
@@ -2329,4 +2330,64 @@ SCP_vector<DisplayData> gr_enumerate_displays()
 	SDL_QuitSubSystem(SDL_INIT_VIDEO);
 
 	return data;
+}
+
+namespace std {
+
+size_t hash<vertex_format_data>::operator()(const vertex_format_data& data) const {
+	size_t seed = 0;
+	boost::hash_combine(seed, (size_t)data.format_type);
+	boost::hash_combine(seed, data.offset);
+	boost::hash_combine(seed, data.stride);
+	return seed;
+}
+size_t hash<vertex_layout>::operator()(const vertex_layout& data) const {
+	return data.hash();
+}
+
+}
+bool vertex_layout::resident_vertex_format(vertex_format_data::vertex_format format_type) const {
+	return ( Vertex_mask & vertex_format_data::mask(format_type) ) ? true : false;
+}
+void vertex_layout::add_vertex_component(vertex_format_data::vertex_format format_type, size_t stride, size_t offset) {
+	// A stride value of 0 is not handled consistently by the graphics API so we must enforce that that does not happen
+	Assertion(stride != 0, "The stride of a vertex component may not be zero!");
+
+	if ( resident_vertex_format(format_type) ) {
+		// we already have a vertex component of this format type
+		return;
+	}
+
+	if (Vertex_mask == 0) {
+		// This is the first element so we need to initialize the global stride here
+		Vertex_stride = stride;
+	}
+
+	Assertion(Vertex_stride == stride, "The strides of all elements must be the same in a vertex layout!");
+
+	Vertex_mask |= (1 << format_type);
+	Vertex_components.push_back(vertex_format_data(format_type, stride, offset));
+}
+bool vertex_layout::operator==(const vertex_layout& other) const {
+	if (Vertex_mask != other.Vertex_mask) {
+		return false;
+	}
+
+	if (Vertex_components.size() != other.Vertex_components.size()) {
+		return false;
+	}
+
+	return std::equal(Vertex_components.cbegin(),
+					  Vertex_components.cend(),
+					  other.Vertex_components.cbegin());
+}
+size_t vertex_layout::hash() const {
+	size_t seed = 0;
+	boost::hash_combine(seed, Vertex_mask);
+
+	for (auto& comp : Vertex_components) {
+		boost::hash_combine(seed, comp);
+	}
+
+	return seed;
 }

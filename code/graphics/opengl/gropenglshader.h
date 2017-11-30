@@ -15,10 +15,14 @@
 #include "graphics/2d.h"
 #include "graphics/opengl/gropengl.h"
 #include "graphics/material.h"
-#include "ShaderProgram.h"
 
 #include <string>
 #include <glad/glad.h>
+
+namespace opengl {
+// Forward definition to avoid cyclic dependency
+class ShaderProgram;
+}
 
 enum shader_stage {
 	SDR_STAGE_VERTEX,
@@ -35,16 +39,22 @@ struct opengl_vert_attrib {
 		TANGENT,
 		MODEL_ID,
 		RADIUS,
-		UVEC,
-		NUM_ATTRIBS
+		UVEC
 	};
 
 	attrib_id attribute_id;
 	SCP_string name;
 	vec4 default_value;
 };
+namespace std {
+template<> struct hash<opengl_vert_attrib::attrib_id> {
+	size_t operator()(const opengl_vert_attrib::attrib_id& data) const {
+		return std::hash<size_t>()(static_cast<size_t>(data));
+	}
+};
+}
 
-extern opengl_vert_attrib GL_vertex_attrib_info[];
+extern SCP_vector<opengl_vert_attrib> GL_vertex_attrib_info;
 
 struct geometry_sdr_params
 {
@@ -118,23 +128,10 @@ typedef struct opengl_shader_t {
 	unsigned int flags;
 	int flags2;
 
-	opengl_shader_t() : shader(SDR_TYPE_NONE), flags(0), flags2(0)
-	{
-	}
+	opengl_shader_t();
 
-	opengl_shader_t(opengl_shader_t&& other) {
-		*this = std::move(other);
-	}
-	opengl_shader_t& operator=(opengl_shader_t&& other) {
-		// VS2013 doesn't support implicit move constructors so we need to explicitly declare it
-		shader = other.shader;
-		flags = other.flags;
-		flags2 = other.flags2;
-
-		program = std::move(other.program);
-
-		return *this;
-	}
+	opengl_shader_t(opengl_shader_t&& other);
+	opengl_shader_t& operator=(opengl_shader_t&& other);
 
 	opengl_shader_t(const opengl_shader_t&) = delete;
 	opengl_shader_t& operator=(const opengl_shader_t&) = delete;
@@ -154,7 +151,7 @@ void opengl_shader_shutdown();
 
 int opengl_compile_shader(shader_type sdr, uint flags);
 
-GLint opengl_shader_get_attribute(const char *attribute_text);
+GLint opengl_shader_get_attribute(opengl_vert_attrib::attrib_id attribute);
 
 void opengl_program_check_info_log(GLuint program_object);
 void opengl_shader_check_info_log(GLuint shader_object);

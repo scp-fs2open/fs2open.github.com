@@ -1,6 +1,5 @@
 
 
-#include <math/bitarray.h>
 #include "graphics/2d.h"
 #include "gropenglstate.h"
 #include "gropengldraw.h"
@@ -13,6 +12,7 @@
 #include "tracing/tracing.h"
 #include "lighting/lighting.h"
 #include "render/3d.h"
+#include "ShaderProgram.h"
 
 void gr_opengl_deferred_init() {
 	gr_opengl_deferred_light_cylinder_init(16);
@@ -508,14 +508,11 @@ void gr_opengl_deferred_light_sphere_init(int rings, int segments) // Generate a
 
 void opengl_draw_sphere()
 {
-	GL_state.Array.BindArrayBuffer(deferred_light_sphere_vbo);
-	GL_state.Array.BindElementBuffer(deferred_light_sphere_ibo);
-
 	vertex_layout vertex_declare;
 
-	vertex_declare.add_vertex_component(vertex_format_data::POSITION3, 0, 0);
+	vertex_declare.add_vertex_component(vertex_format_data::POSITION3, sizeof(float) * 3, 0);
 
-	opengl_bind_vertex_layout(vertex_declare);
+	opengl_bind_vertex_layout(vertex_declare, deferred_light_cylinder_vbo, deferred_light_cylinder_ibo);
 
 	glDrawRangeElements(GL_TRIANGLES, 0, deferred_light_sphere_vcount, deferred_light_sphere_icount, GL_UNSIGNED_SHORT, 0);
 }
@@ -527,14 +524,11 @@ void gr_opengl_draw_deferred_light_cylinder(const vec3d *position, const matrix 
 	Current_shader->program->Uniforms.setUniformMatrix4f("modelViewMatrix", gr_model_view_matrix);
 	Current_shader->program->Uniforms.setUniformMatrix4f("projMatrix", gr_projection_matrix);
 
-	GL_state.Array.BindArrayBuffer(deferred_light_cylinder_vbo);
-	GL_state.Array.BindElementBuffer(deferred_light_cylinder_ibo);
-
 	vertex_layout vertex_declare;
 
-	vertex_declare.add_vertex_component(vertex_format_data::POSITION3, 0, 0);
+	vertex_declare.add_vertex_component(vertex_format_data::POSITION3, sizeof(float) * 3, 0);
 
-	opengl_bind_vertex_layout(vertex_declare);
+	opengl_bind_vertex_layout(vertex_declare, deferred_light_cylinder_vbo, deferred_light_cylinder_ibo);
 
 	glDrawRangeElements(GL_TRIANGLES, 0, deferred_light_cylinder_vcount, deferred_light_cylinder_icount, GL_UNSIGNED_SHORT, 0);
 

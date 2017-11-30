@@ -4,6 +4,7 @@
 #pragma once
 
 #include "globalincs/pstypes.h"
+#include "gropenglshader.h"
 
 #include <glad/glad.h>
 
@@ -78,7 +79,7 @@ class ShaderProgram {
 
 	SCP_vector<GLuint> _compiled_shaders;
 
-	SCP_unordered_map<SCP_string, GLint> _attribute_locations;
+	SCP_unordered_map<opengl_vert_attrib::attrib_id, GLint> _attribute_locations;
 
 	void freeCompiledShaders();
  public:
@@ -99,9 +100,9 @@ class ShaderProgram {
 
 	void linkProgram();
 
-	void initAttribute(const SCP_string& name, const vec4& default_value);
+	void initAttribute(const SCP_string& name, opengl_vert_attrib::attrib_id attr_id, const vec4& default_value);
 
-	GLint getAttributeLocation(const SCP_string& name);
+	GLint getAttributeLocation(opengl_vert_attrib::attrib_id attribute);
 
 	GLuint getShaderHandle();
 };

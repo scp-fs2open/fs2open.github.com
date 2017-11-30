@@ -123,11 +123,28 @@ class opengl_array_state
 		SCP_map<GLuint, opengl_vertex_attrib_unit> vertex_attrib_units;
 
 		GLuint array_buffer;
+		bool array_buffer_valid = false;
+
 		GLuint element_array_buffer;
+		bool element_array_buffer_valid = false;
+
 		GLuint texture_array_buffer;
 		GLuint uniform_buffer;
 
 		GLuint uniform_buffer_index_bindings[MAX_UNIFORM_BUFFERS];
+
+		struct vertex_buffer_binding {
+			GLuint buffer = 0;
+			GLintptr offset = 0;
+			GLsizei stride = 0;
+			bool valid_data = false;
+		};
+		SCP_vector<vertex_buffer_binding> vertex_buffer_bindings; //!< Use for keeping track of glBindVertexBuffer calls
+
+		/**
+		 * @brief Signals that the VAO binding changed which invalidates the state of our array and element buffer state
+		 */
+		void VertexArrayChanged();
 	public:
 		opengl_array_state(): active_client_texture_unit(0), client_texture_units(NULL) {
 			for ( int i = 0; i < MAX_UNIFORM_BUFFERS; ++i ) {
@@ -151,6 +168,10 @@ class opengl_array_state
 		void BindTextureBuffer(GLuint id);
 		void BindUniformBuffer(GLuint id);
 		void BindUniformBufferBindingIndex(GLuint id, GLuint index);
+
+		void BindVertexBuffer(GLuint bindingindex, GLuint buffer, GLintptr offset, GLsizei stride);
+
+		friend class opengl_state;
 };
 
 class opengl_constant_state {
@@ -208,6 +229,8 @@ class opengl_state
 		// The framebuffer state actually consists of draw and read buffers but we only use both at the same time
 		GLuint current_framebuffer;
 		SCP_vector<GLuint> framebuffer_stack;
+
+		GLuint current_vao = 0;
 	public:
 		opengl_state() {}
 		~opengl_state() {}
@@ -253,6 +276,8 @@ class opengl_state
 
 		void PushFramebufferState();
 		void PopFramebufferState();
+
+		void BindVertexArray(GLuint vao);
 };
 
 inline GLenum opengl_state::FrontFaceValue(GLenum new_val)

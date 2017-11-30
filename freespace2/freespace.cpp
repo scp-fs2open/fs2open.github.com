@@ -3892,6 +3892,8 @@ void game_shade_frame(float frametime)
 		return;
 	}
 
+	GR_DEBUG_SCOPE("Shade frame");
+
 	if (Fade_type != FI_NONE) {
 		Assert(Fade_start_timestamp > 0);
 		Assert(Fade_end_timestamp > 0);
