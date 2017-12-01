@@ -83,7 +83,8 @@ flag_def_list Script_actions[] =
 	{ "On Afterburner Engage",	CHA_AFTERBURNSTART, 0 },
 	{ "On Afterburner Stop",	CHA_AFTERBURNEND,	0 },
 	{ "On Beam Fire",			CHA_BEAMFIRE,		0 },
-	{ "On Simulation",			CHA_SIMULATION,		0 }
+	{ "On Simulation",			CHA_SIMULATION,		0 },
+	{ "On Load Screen",			CHA_LOADSCREEN,		0 },
 };
 
 int Num_script_actions = sizeof(Script_actions)/sizeof(flag_def_list);
@@ -670,6 +671,9 @@ void script_state::SetHookVar(const char *name, char format, const void *data)
 						break;
 					case 'b':
 						ade_set_args(LuaState, fmt, *(bool*)data);
+						break;
+					case 'f':
+						ade_set_args(LuaState, fmt, *(float*)data);
 						break;
 					default:
 						ade_set_args(LuaState, fmt, *(ade_odata*)data);
