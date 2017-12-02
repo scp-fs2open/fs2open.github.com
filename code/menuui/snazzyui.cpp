@@ -58,6 +58,8 @@ void snazzy_menu_init()
 
 int snazzy_menu_do(ubyte *data, int mask_w, int mask_h, int num_regions, MENU_REGION *regions, int *action, int poll_key, int *key)
 {
+	GR_DEBUG_SCOPE("Snazzy Menu");
+
 	int i, k, x, y, offset;
 	int choice = -1, mouse_on_choice = -1;
 	ubyte pixel_value = 0;
