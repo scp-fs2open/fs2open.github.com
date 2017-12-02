@@ -52,6 +52,7 @@ struct opengl_uniform_block_binding {
 opengl_uniform_block_binding GL_uniform_blocks[] = {
 	{ uniform_block_type::Lights, "lightData" },
 	{ uniform_block_type::ModelData, "modelData" },
+	{ uniform_block_type::NanoVGData, "NanoVGUniformData" },
 };
 
 /**
@@ -110,8 +111,11 @@ static opengl_shader_type_t GL_shader_types[] = {
 	{ SDR_TYPE_BATCHED_BITMAP, "batched-v.sdr", "batched-f.sdr", nullptr,
 		{ opengl_vert_attrib::POSITION, opengl_vert_attrib::TEXCOORD, opengl_vert_attrib::COLOR }, "Batched bitmaps" },
 
-	{ SDR_TYPE_DEFAULT_MATERIAL, "passthrough-v.sdr", "default-material-f.sdr", 0,
+	{ SDR_TYPE_DEFAULT_MATERIAL, "passthrough-v.sdr", "default-material-f.sdr", nullptr,
 		{ opengl_vert_attrib::POSITION, opengl_vert_attrib::TEXCOORD, opengl_vert_attrib::COLOR }, "Default material" },
+
+	{ SDR_TYPE_NANOVG, "nanovg-v.sdr", "nanovg-f.sdr", nullptr,
+		{ opengl_vert_attrib::POSITION, opengl_vert_attrib::TEXCOORD }, "NanoVG shader" },
 
 };
 
@@ -214,7 +218,11 @@ static opengl_shader_variant_t GL_shader_variants[] = {
 	
 	{ SDR_TYPE_POST_PROCESS_BLUR, false, SDR_FLAG_BLUR_VERTICAL, "PASS_1", 
 		{  },
-		"Vertical blur pass" }
+		"Vertical blur pass" },
+
+	{ SDR_TYPE_NANOVG, false, SDR_FLAG_NANOVG_EDGE_AA, "EDGE_AA",
+		{  },
+		"NanoVG edge anti-alias" }
 };
 
 static const int GL_num_shader_variants = sizeof(GL_shader_variants) / sizeof(opengl_shader_variant_t);

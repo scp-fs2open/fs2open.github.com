@@ -775,6 +775,19 @@ void gr_opengl_render_movie(movie_material* material_info,
 	gr_end_2d_matrix();
 }
 
+void gr_opengl_render_nanovg(nanovg_material* material_info,
+							 primitive_type prim_type,
+							 vertex_layout* layout,
+							 int offset,
+							 int n_verts,
+							 int buffer_handle) {
+	GR_DEBUG_SCOPE("Render NanoVG primitives");
+
+	opengl_tnl_set_material_nanovg(material_info);
+
+	opengl_render_primitives(prim_type, layout, n_verts, buffer_handle, offset, 0);
+}
+
 void gr_opengl_render_primitives_batched(batched_bitmap_material* material_info,
 										 primitive_type prim_type,
 										 vertex_layout* layout,

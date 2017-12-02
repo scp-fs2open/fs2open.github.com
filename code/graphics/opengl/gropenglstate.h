@@ -206,7 +206,7 @@ class opengl_state
 		GLboolean clipplane_Status[6];
 		bool clipdistance_Status[6];
 		GLboolean depthmask_Status;
-        GLboolean colormask_Status;
+        bvec4 colormask_Status;
 
 		GLenum frontface_Value;
 		GLenum cullface_Value;
@@ -222,7 +222,20 @@ class opengl_state
 		GLfloat line_width_Value;
 
 		gr_alpha_blend Current_alpha_blend_mode;
-        gr_stencil_type Current_stencil_type;
+
+		GLenum stencilFunc;
+		GLint stencilFuncRef;
+		GLuint stencilFuncMask;
+
+		GLuint stencilMask;
+
+		GLenum stencilOpFrontStencilFail;
+		GLenum stencilOpFrontDepthFail;
+		GLenum stencilOpFrontPass;
+
+		GLenum stencilOpBackStencilFail;
+		GLenum stencilOpBackDepthFail;
+		GLenum stencilOpBackPass;
 
 		GLuint current_program;
 
@@ -243,10 +256,13 @@ class opengl_state
 
 		void SetAlphaBlendMode(gr_alpha_blend ab);
 		void SetZbufferType(gr_zbuffer_type zt);
-        void SetStencilType(gr_stencil_type st);
 		void SetPolygonOffset(GLfloat factor, GLfloat units);
 		void SetPolygonMode(GLenum face, GLenum mode);
 		void SetLineWidth(GLfloat width);
+
+		void StencilFunc(GLenum func, GLint ref, GLuint mask);
+		void StencilOpSeparate(GLenum face, GLenum sfail, GLenum dpfail, GLenum dppass);
+		void StencilMask(GLuint mask);
 
 		// the GLboolean functions will return the current state if no argument
 		// and the previous state if an argument is passed
@@ -259,7 +275,7 @@ class opengl_state
 		GLboolean PolygonOffsetFill(GLint state = -1);
 		GLboolean ClipDistance(GLint num, bool state = false);
 		GLboolean DepthMask(GLint state = -1);
-        GLboolean ColorMask(GLint state = -1);
+        bvec4 ColorMask(bool red, bool green, bool blue, bool alpha);
 
 		inline GLenum FrontFaceValue(GLenum new_val = GL_INVALID_ENUM);
 		inline GLenum CullFaceValue(GLenum new_val = GL_INVALID_ENUM);

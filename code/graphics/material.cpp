@@ -143,6 +143,18 @@ void material_set_batched_bitmap(batched_bitmap_material* mat_info, int base_tex
 
 	mat_info->set_color_scale(color_scale);
 }
+void material_set_nanovg(nanovg_material* mat_info, int base_tex) {
+	material_set_unlit(mat_info, base_tex, 1.0f, true, false);
+
+	mat_info->set_cull_mode(false);
+
+	mat_info->set_color_mask(true, true, true, true);
+
+	mat_info->set_stencil_mask(0xFFFFFFFF);
+	mat_info->set_stencil_func(ComparisionFunction::Always, 0, 0xFFFFFFFF);
+	mat_info->set_front_stencil_op(StencilOperation::Keep, StencilOperation::Keep, StencilOperation::Keep);
+	mat_info->set_back_stencil_op(StencilOperation::Keep, StencilOperation::Keep, StencilOperation::Keep);
+}
 
 material::material():
 Sdr_type(SDR_TYPE_DEFAULT_MATERIAL),
@@ -178,7 +190,10 @@ Depth_bias(0)
 
 	Clip_params.enabled = false;
 
-
+	Color_mask.x = true;
+	Color_mask.y = true;
+	Color_mask.z = true;
+	Color_mask.w = true;
 };
 
 void material::set_shader_type(shader_type init_sdr_type)
@@ -397,6 +412,55 @@ void material::set_color_scale(float scale)
 float material::get_color_scale() const
 {
 	return Clr_scale;
+}
+void material::set_stencil_test(bool stencil) {
+	Stencil_test = stencil;
+}
+bool material::is_stencil_enabled() const {
+	return Stencil_test;
+}
+void material::set_stencil_mask(uint32_t mask) {
+	Stencil_mask = mask;
+}
+uint32_t material::get_stencil_mask() const {
+	return Stencil_mask;
+}
+void material::set_stencil_func(ComparisionFunction compare, int ref, uint32_t mask) {
+	Stencil_func.compare = compare;
+	Stencil_func.ref = ref;
+	Stencil_func.mask = mask;
+}
+const material::StencilFunc& material::get_stencil_func() const {
+	return Stencil_func;
+}
+void material::set_front_stencil_op(StencilOperation stencilFailOperation,
+									StencilOperation depthFailOperation,
+									StencilOperation successOperation) {
+	Front_stencil_op.stencilFailOperation = stencilFailOperation;
+	Front_stencil_op.depthFailOperation = depthFailOperation;
+	Front_stencil_op.successOperation = successOperation;
+}
+const material::StencilOp& material::get_front_stencil_op() const {
+	return Front_stencil_op;
+}
+void material::set_back_stencil_op(StencilOperation stencilFailOperation,
+								   StencilOperation depthFailOperation,
+								   StencilOperation successOperation) {
+	Back_stencil_op.stencilFailOperation = stencilFailOperation;
+	Back_stencil_op.depthFailOperation = depthFailOperation;
+	Back_stencil_op.successOperation = successOperation;
+}
+const material::StencilOp& material::get_back_stencil_op() const {
+	return Back_stencil_op;
+}
+void material::set_color_mask(bool red, bool green, bool blue, bool alpha) {
+	Color_mask.x = red;
+	Color_mask.y = green;
+	Color_mask.z = blue;
+	Color_mask.w = alpha;
+}
+const bvec4& material::get_color_mask() const {
+	return Color_mask;
 }
 
 model_material::model_material() : material() {
@@ -765,4 +829,8 @@ void movie_material::setVtex(int _Vtex) {
 
 batched_bitmap_material::batched_bitmap_material() {
 	set_shader_type(SDR_TYPE_BATCHED_BITMAP);
+}
+
+nanovg_material::nanovg_material() {
+	set_shader_type(SDR_TYPE_NANOVG);
 }

@@ -122,4 +122,34 @@ struct model_uniform_data {
 	int sMiscmapIndex;
 };
 
+enum class NanoVGShaderType: int32_t {
+	FillGradient = 0, FillImage = 1, Simple = 2, Image = 3
+};
+struct nanovg_draw_data {
+	float scissorMat[12]; // matrices are actually 3 vec4s
+
+	float paintMat[12];
+
+	vec4 innerCol;
+
+	vec4 outerCol;
+
+	vec2d scissorExt;
+	vec2d scissorScale;
+
+	vec2d extent;
+	float radius;
+	float feather;
+
+	float strokeMult;
+	float strokeThr;
+	int texType;
+	NanoVGShaderType type;
+
+	vec2d viewSize;
+	int texArrayIndex;
+
+	float pad3;
+};
+
 }

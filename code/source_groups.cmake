@@ -174,6 +174,8 @@ SET(file_root_def_files_files
 	def_files/main-f.sdr
 	def_files/main-g.sdr
 	def_files/main-v.sdr
+	def_files/nanovg-f.sdr
+	def_files/nanovg-v.sdr
 	def_files/objecttypes.tbl
 	def_files/passthrough-f.sdr
 	def_files/passthrough-v.sdr
@@ -350,11 +352,10 @@ set (file_root_graphics_openglgr_opengl_headers
 
 # Graphics -> Paths
 set (file_root_graphics_paths
-	graphics/paths/NVGRenderer.cpp
-	graphics/paths/NVGRenderer.h
+	graphics/paths/NanoVGRenderer.cpp
+	graphics/paths/NanoVGRenderer.h
 	graphics/paths/PathRenderer.cpp
 	graphics/paths/PathRenderer.h
-	graphics/paths/StubRenderer.h
 )
 
 # Graphics -> Paths
@@ -362,8 +363,6 @@ set (file_root_graphics_paths_nanovg
 	graphics/paths/nanovg/fontstash.h
 	graphics/paths/nanovg/nanovg.c
 	graphics/paths/nanovg/nanovg.h
-	graphics/paths/nanovg/nanovg_gl.h
-	graphics/paths/nanovg/nanovg_gl_utils.h
 	graphics/paths/nanovg/stb_image.h
 	graphics/paths/nanovg/stb_truetype.h
 )

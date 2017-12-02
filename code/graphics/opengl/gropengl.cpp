@@ -353,8 +353,6 @@ void gr_opengl_print_screen(const char *filename)
 
 void gr_opengl_shutdown()
 {
-	graphics::paths::PathRenderer::shutdown();
-
 	opengl_tcache_shutdown();
 	opengl_tnl_shutdown();
 	opengl_scene_texture_shutdown();
@@ -443,17 +441,18 @@ void gr_opengl_set_clear_color(int r, int g, int b)
 
 int gr_opengl_set_color_buffer(int mode)
 {
-	GLboolean enabled = GL_FALSE;
+	bvec4 enabled;
 
 	if ( mode ) {
-		enabled = GL_state.ColorMask(GL_TRUE);
+		enabled = GL_state.ColorMask(true, true, true, true);
 	} else {
-		enabled = GL_state.ColorMask(GL_FALSE);
+		enabled = GL_state.ColorMask(false, false, false, false);
 	}
 
 	GL_state.SetAlphaBlendMode(ALPHA_BLEND_ALPHA_BLEND_ALPHA);
 
-	return (enabled) ? 1 : 0;
+	// Check if all channels are active
+	return enabled.x && enabled.y && enabled.z && enabled.w;
 }
 
 int gr_opengl_zbuffer_get()
@@ -513,13 +512,16 @@ int gr_opengl_stencil_set(int mode)
 
 	if ( mode == GR_STENCIL_READ ) {
 		GL_state.StencilTest(1);
-		GL_state.SetStencilType(STENCIL_TYPE_READ);
+		GL_state.StencilFunc(GL_NEVER, 1, 0xFFFF);
+		GL_state.StencilOpSeparate(GL_FRONT_AND_BACK, GL_KEEP, GL_KEEP, GL_KEEP);
 	} else if ( mode == GR_STENCIL_WRITE ) {
 		GL_state.StencilTest(1);
-		GL_state.SetStencilType(STENCIL_TYPE_WRITE);
+		GL_state.StencilFunc(GL_NOTEQUAL, 1, 0XFFFF);
+		GL_state.StencilOpSeparate(GL_FRONT_AND_BACK, GL_KEEP, GL_KEEP, GL_KEEP);
 	} else {
 		GL_state.StencilTest(0);
-		GL_state.SetStencilType(STENCIL_TYPE_NONE);
+		GL_state.StencilFunc(GL_ALWAYS, 1, 0xFFFF);
+		GL_state.StencilOpSeparate(GL_FRONT_AND_BACK, GL_KEEP, GL_KEEP, GL_REPLACE);
 	}
 
 	return tmp;
@@ -1174,6 +1176,7 @@ void opengl_setup_function_pointers()
 	gr_screen.gf_render_primitives_batched	= gr_opengl_render_primitives_batched;
 	gr_screen.gf_render_primitives_distortion = gr_opengl_render_primitives_distortion;
 	gr_screen.gf_render_movie = gr_opengl_render_movie;
+	gr_screen.gf_render_nanovg = gr_opengl_render_nanovg;
 
 	gr_screen.gf_is_capable = gr_opengl_is_capable;
 	gr_screen.gf_get_property = gr_opengl_get_property;
