@@ -39,6 +39,10 @@ void test::FSTestFixture::SetUp() {
 			FAIL() << "Cfile init failed!";
 		}
 
+		if (_initFlags & INIT_MOD_TABLE) {
+			mod_table_init();        // load in all the mod dependent settings
+		}
+
 		lcl_init(-1);
 		lcl_xstr_init();
 
@@ -65,6 +69,11 @@ void test::FSTestFixture::TearDown() {
 			bm_unload_all();
 
 			gr_close();
+		}
+
+		if (_initFlags & INIT_MOD_TABLE) {
+			// Reset mod settings again so that subsequent tests don't get broken
+			mod_table_reset();
 		}
 
 		cfile_close();

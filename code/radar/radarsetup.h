@@ -119,13 +119,6 @@ protected:
 	int		Radar_flicker_timer[NUM_FLICKER_TIMERS];					// timestamp used to flicker blips on and off
 	int		Radar_flicker_on[NUM_FLICKER_TIMERS];	
 
-	int Small_blip_offset_x;
-	int Small_blip_offset_y;
-	int Large_blip_offset_x;
-	int Large_blip_offset_y;
-
-	char Small_blip_string[2];
-	char Large_blip_string[2];
 	ubyte Radar_infinity_icon;
 public:
 	HudGaugeRadar();

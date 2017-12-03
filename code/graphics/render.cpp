@@ -1,3 +1,4 @@
+
 #include "graphics/render.h"
 #include "graphics/material.h"
 #include "graphics/software/font_internal.h"
@@ -6,6 +7,7 @@
 #include "graphics/software/VFNTFont.h"
 #include "graphics/paths/PathRenderer.h"
 
+#include "mod_table/mod_table.h"
 #include "localization/localize.h"
 #include "matrix.h"
 
@@ -814,11 +816,15 @@ void gr_string(float sx, float sy, const char* s, int resize_mode, int in_length
 							doRender = false;
 							break;
 						default:
-							if (*text >= Lcl_special_chars || *text < 0) {
-								specialChar = true;
-								twoPassRequired = true;
-							} else {
-								doRender = true;
+							// Only do special character handling if we are not in unicode mode. Otherwise this is just a normal character for us
+							if (!Unicode_text_mode) {
+								if (*text >= Lcl_special_chars || *text < 0) {
+									specialChar = true;
+									twoPassRequired = true;
+								}
+								else {
+									doRender = true;
+								}
 							}
 
 							break;

@@ -21,6 +21,8 @@
 
 #include "graphics/2d.h"
 
+#include "mod_table/mod_table.h"
+
 #include "def_files/def_files.h"
 #include "bmpman/bmpman.h"
 #include "cfile/cfile.h"
@@ -169,34 +171,37 @@ namespace
 			}
 		}
 
-		if (optional_string("+Special Character Font:"))
-		{
-			SCP_string fontName;
-			stuff_string(fontName, F_NAME);
-
-			fo::font* fontData = FontManager::loadFontOld(fontName.c_str());
-
-			if (fontData == NULL)
+		if (!Unicode_text_mode) {
+			// Special characters only exist in non-Unicode mode
+			if (optional_string("+Special Character Font:"))
 			{
-				error_display(0, "Failed to load font \"%s\" for special characters of font \"%s\"!", fontName.c_str(), fontFilename.c_str());
+				SCP_string fontName;
+				stuff_string(fontName, F_NAME);
+
+				fo::font* fontData = FontManager::loadFontOld(fontName.c_str());
+
+				if (fontData == NULL)
+				{
+					error_display(0, "Failed to load font \"%s\" for special characters of font \"%s\"!", fontName.c_str(), fontFilename.c_str());
+				}
+				else
+				{
+					nvgFont->setSpecialCharacterFont(fontData);
+				}
 			}
 			else
 			{
-				nvgFont->setSpecialCharacterFont(fontData);
-			}
-		}
-		else
-		{
-			fo::font* fontData = FontManager::loadFontOld("font01.vf");
+				fo::font* fontData = FontManager::loadFontOld("font01.vf");
 
-			if (fontData == nullptr) {
-				error_display(0,
-							  "Failed to load default font \"%s\" for special characters of font \"%s\"! "
-								  "This font is required for rendering special characters and will cause an error later.",
-							  "font01.vf",
-							  fontFilename.c_str());
-			} else {
-				nvgFont->setSpecialCharacterFont(fontData);
+				if (fontData == nullptr) {
+					error_display(0,
+								  "Failed to load default font \"%s\" for special characters of font \"%s\"! "
+									  "This font is required for rendering special characters and will cause an error later.",
+								  "font01.vf",
+								  fontFilename.c_str());
+				} else {
+					nvgFont->setSpecialCharacterFont(fontData);
+				}
 			}
 		}
 
@@ -343,6 +348,9 @@ namespace
 				switch (type)
 				{
 				case VFNT_FONT:
+					if (Unicode_text_mode) {
+						error_display(1, "Bitmap fonts are not supported in Unicode text mode!");
+					}
 					parse_vfnt_font(fontName);
 					break;
 				case NVG_FONT:

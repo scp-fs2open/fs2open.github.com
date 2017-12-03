@@ -22,4 +22,7 @@
 
 #cmakedefine01 HAVE_STRINGS_H
 
+#cmakedefine01 HAVE_CHAR32_T
+#cmakedefine01 HAVE_UNICODE_CHAR_LITERAL
+
 #endif // __PLATFORM_CHECKS_H__

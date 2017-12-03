@@ -6,6 +6,10 @@
 #include "scripting/lua/LuaFunction.h"
 #include "scripting/lua/LuaConvert.h"
 
+#include "mod_table/mod_table.h"
+
+#include <utf8.h>
+
 namespace {
 using namespace scripting;
 
@@ -145,7 +149,35 @@ int ade_get_args(lua_State *L, const char *fmt, ...)
 				break;
 			case 's':
 				if(lua_isstring(L, nargs)) {
-					*va_arg(vl, const char **) = lua_tostring(L, nargs);
+					auto value = lua_tostring(L, nargs);
+
+					if (Unicode_text_mode) {
+						// Validate the string when we are in unicode mode to ensure that FSO doesn't just crash when a script
+						// passes an invalid UTF-8 sequence to the API
+						auto end = value + strlen(value);
+						auto invalid = utf8::find_invalid(value, end);
+
+						if (invalid != end) {
+							if (invalid == value) {
+								// The first character is the invalid sequence
+								LuaError(L, "An invalid UTF-8 encoding sequence was detected! The first invalid character was as the start of the string.");
+							} else {
+								// If the invalid sequence is inside the string then we try to give some context to make
+								// finding the bug easier
+								auto display_text_start = std::max(value, invalid - 32);
+								SCP_string context_text(display_text_start, invalid);
+
+								LuaError(L,
+										 "An invalid UTF-8 encoding sequence was detected! The error was detected directly after this string \"%s\".",
+										 context_text.c_str());
+							}
+
+							// Finally, assign a default value so that we can continue
+							value = "Invalid UTF-8 sequence detected!";
+						}
+					}
+
+					*va_arg(vl, const char **) = value;
 				} else {
 					LuaError(L, "%s: Argument %d is an invalid type '%s'; string expected", funcname, nargs, ade_get_type_string(L, nargs));
 					if(!optional_args) {

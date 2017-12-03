@@ -942,6 +942,8 @@ set(file_root_scripting_api_libs
 	scripting/api/libs/tables.h
 	scripting/api/libs/testing.cpp
 	scripting/api/libs/testing.h
+	scripting/api/libs/utf8.cpp
+	scripting/api/libs/utf8.h
 )
 
 set(file_root_scripting_api_objs
@@ -1174,8 +1176,12 @@ set (file_root_ui
 )
 
 set(file_root_utils
+	utils/encoding.cpp
+    utils/encoding.h
 	utils/RandomRange.h
 	utils/strings.h
+    utils/unicode.cpp
+    utils/unicode.h
 )
 
 # Utils files
