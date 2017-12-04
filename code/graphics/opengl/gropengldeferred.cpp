@@ -512,7 +512,7 @@ void opengl_draw_sphere()
 
 	vertex_declare.add_vertex_component(vertex_format_data::POSITION3, sizeof(float) * 3, 0);
 
-	opengl_bind_vertex_layout(vertex_declare, deferred_light_cylinder_vbo, deferred_light_cylinder_ibo);
+	opengl_bind_vertex_layout(vertex_declare, deferred_light_sphere_vbo, deferred_light_sphere_ibo);
 
 	glDrawRangeElements(GL_TRIANGLES, 0, deferred_light_sphere_vcount, deferred_light_sphere_icount, GL_UNSIGNED_SHORT, 0);
 }
