@@ -151,6 +151,9 @@ void gr_opengl_clear()
 		blue = pow(blue, SRGB_GAMMA);
 	}
 
+	// Make sure that all channels are enabled before doing this.
+	GL_state.ColorMask(true, true, true, true);
+
 	glClearColor(red, green, blue, alpha);
 
 	glClear ( GL_COLOR_BUFFER_BIT );
