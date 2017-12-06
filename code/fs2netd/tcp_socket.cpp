@@ -27,6 +27,7 @@
 #include <unistd.h>
 #include <cerrno>
 #include <sys/ioctl.h>
+#include <signal.h>
 #ifdef SCP_SOLARIS
 #include <sys/filio.h>
 #endif
@@ -108,6 +109,18 @@ int FS2NetD_ConnectToServer(const char *host, const char *port)
 		// set to non-blocking mode
 		ulong arg = 1;
 		ioctlsocket(mySocket, FIONBIO, &arg);
+
+		// Where SO_NOSIGPIPE is defined (currently OS X):
+		// prevent SIGPIPE, which is generated when sending after receiver disconnected
+		// on other *nix use MSG_NOSIGNAL flag when sending data, or, failing that, use signal masking
+		// see FS2NetD_SendData()
+#if defined(SCP_UNIX) && defined(SO_NOSIGPIPE)
+		int nosigpipe = 1;
+		if (setsockopt(mySocket, SOL_SOCKET, SO_NOSIGPIPE, (void*)&nosigpipe, sizeof(nosigpipe)) == -1) {
+			my_error = errno;
+			ml_printf("FS2NetD ERROR: Couldn't set SO_NOSIGPIPE on socket (\"%s\")!", strerror(my_error));
+		}
+#endif // SCP_UNIX && SO_NOSIGPIPE
 
 		// blasted MS, probably need to use getaddrinfo() here for Win32, but I
 		// want to keep this as clean and simple as possible and that means
@@ -237,9 +250,59 @@ int FS2NetD_SendData(char *buffer, int blen)
 {
 	int flags = 0;
 
+	// on Unix with MSG_NOSIGNAL, prevent SIGPIPE, which is generated if receiver has disconnected
+	// the MSG_NOSIGNAL flag doesn't work on OS X or Solaris
+	// on OS X, use setsockopt() with SO_NOSIGPIPE instead, see above
+#if defined(SCP_UNIX) && defined(MSG_NOSIGNAL)
+	flags |= MSG_NOSIGNAL;
+#endif // SCP_UNIX && MSG_NOSIGNAL
+
 	socklen_t to_len = sizeof(sockaddr);
 
-	return sendto(mySocket, buffer, blen, flags, (sockaddr*)&FS2NetD_addr, to_len);
+#if defined(SCP_UNIX) && !defined(SO_NOSIGPIPE) && !defined(MSG_NOSIGNAL) && _POSIX_REALTIME_SIGNALS > 0
+		// Unix platforms do not ignore SIGPIPE like Windows does.  This results in the standalone crashing eventually.
+		// Failing to use MSG_NOSIGNAL or SO_NOSIGPIPE, both of which are only on some platforms, we'll use this.
+		// Borrowed from:
+		// http://www.microhowto.info/howto/ignore_sigpipe_without_affecting_other_threads_in_a_process.html
+
+		// Step 1: Add SIGPIPE to the signal mask using pthread_sigmask.
+		sigset_t sigpipe_mask;
+		sigemptyset(&sigpipe_mask);
+		sigaddset(&sigpipe_mask, SIGPIPE);
+		sigset_t saved_mask;
+		if (pthread_sigmask(SIG_BLOCK, &sigpipe_mask, &saved_mask) == -1) {
+			ml_printf("Could not set mask with pthread_sigmask in FS2NetD_SendData");
+			exit(1);
+		}
+#endif // SCP_UNIX && !SO_NOSIGPIPE && !MSG_NOSIGNAL && _POSIX_REALTIME_SIGNALS > 0
+
+		// Step 2: Execute the library code which might raise SIGPIPE.
+		auto sent_chars = sendto(mySocket, buffer, blen, flags, (sockaddr*)&FS2NetD_addr, to_len);
+
+#if defined(SCP_UNIX) && !defined(SO_NOSIGPIPE) && !defined(MSG_NOSIGNAL) && _POSIX_REALTIME_SIGNALS > 0
+		// Step 3: Accept any pending SIGPIPE using sigtimedwait.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wmissing-field-initializers"
+		// Some older GCC versions seem to incorrectly warn on this initialization.
+		// The pragmas should be removable once GCC 5+ is in use everywhere.
+		// Reference: https://gcc.gnu.org/bugzilla/show_bug.cgi?id=61489
+		struct timespec zerotime = {};
+#pragma GCC diagnostic pop
+		int my_error = 0;
+		my_error = errno;
+		if (sent_chars == -1 && my_error == EPIPE && sigtimedwait(&sigpipe_mask, 0, &zerotime) == -1) {
+			ml_printf("Could not accept possible pending SIGPIPE with sigtimedwait in FS2NetD_SendData");
+			exit(1);
+		}
+
+		// Step 4: Restore the signal mask to its original state.
+		if (pthread_sigmask(SIG_SETMASK, &saved_mask, 0) == -1) {
+			ml_printf("Could not restore mask with pthread_sigmask in FS2NetD_SendData");
+			exit(1);
+		}
+#endif // SCP_UNIX && !SO_NOSIGPIPE && !MSG_NOSIGNAL && _POSIX_REALTIME_SIGNALS > 0
+
+	return sent_chars;
 }
 
 bool FS2NetD_DataReady()
