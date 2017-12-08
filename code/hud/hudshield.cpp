@@ -262,6 +262,21 @@ void hud_shield_equalize(object *objp, player *pl)
 //
 void hud_augment_shield_quadrant(object *objp, int direction)
 {
+	Assertion((direction >= 0) && (direction < 4), "Invalid quadrant index %i!", direction);
+
+	ship *shipp = &Ships[objp->instance];
+	ship_info *sip = &Ship_info[shipp->ship_info_index];
+
+	if (sip->flags[Ship::Info_Flags::Model_point_shields]) {
+		// Using model point shields, so map to the correct quadrant
+		direction = sip->shield_point_augment_ctrls[direction];
+
+		if (direction < 0) {
+			// This quadrant cannot be augmented, ignore request and bail
+			return;
+		}
+	}	// Else, using standard shields.
+
 	shield_transfer(objp, direction, SHIELD_TRANSFER_PERCENT);
 }
 
