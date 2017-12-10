@@ -3314,7 +3314,7 @@ int get_sexp()
 	ignore_white_space();
 	while (*Mp != ')') {
 		// end of string or end of file
-		if (*Mp == '\0' || *Mp == EOF_CHAR) {
+		if (*Mp == '\0') {
 			Error(LOCATION, "Unexpected end of sexp!");
 			return -1;
 		}
@@ -3381,7 +3381,7 @@ int get_sexp()
 				}
 
 				// end of string or end of file?
-				if (*Mp == '\0' || *Mp == EOF_CHAR) {
+				if (*Mp == '\0') {
 					Error(LOCATION, "Unexpected end of sexp!");
 					return -1;
 				}

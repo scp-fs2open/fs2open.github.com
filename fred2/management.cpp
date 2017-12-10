@@ -896,7 +896,7 @@ void clear_mission()
 		Team_data[i].num_weapon_choices = count; 
 	}
 
-	*Mission_text = *Mission_text_raw = EOF_CHAR;
+	*Mission_text = *Mission_text_raw = '\0';
 	Mission_text[1] = Mission_text_raw[1] = 0;
 
 	waypoint_parse_init();

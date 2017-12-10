@@ -89,13 +89,13 @@ int is_parenthesis(char ch)
 //	Leaves Mp pointing at first non white space character.
 void ignore_white_space()
 {
-	while ((*Mp != EOF_CHAR) && is_white_space(*Mp))
+	while ((*Mp != '\0') && is_white_space(*Mp))
 		Mp++;
 }
 
 void ignore_gray_space()
 {
-	while ((*Mp != EOF_CHAR) && is_gray_space(*Mp))
+	while ((*Mp != '\0') && is_gray_space(*Mp))
 		Mp++;
 }
 
@@ -192,7 +192,7 @@ void skip_token()
 {
 	ignore_white_space();
 
-	while ((*Mp != EOF_CHAR) && !is_white_space(*Mp))
+	while ((*Mp != '\0') && !is_white_space(*Mp))
 		Mp++;
 }
 
@@ -220,7 +220,7 @@ char *next_tokens()
 	char	*pstr = Mp;
 	char	ch;
 
-	while (((ch = *pstr++) != EOLN) && (ch != EOF_CHAR) && (count < ERROR_LENGTH-1))
+	while (((ch = *pstr++) != EOLN) && (ch != '\0') && (count < ERROR_LENGTH-1))
 		Error_str[count++] = ch;
 
 	Error_str[count] = 0;
@@ -243,7 +243,7 @@ int get_line_num()
 
 	while (p < stoploc)
 	{
-		if (*p == EOF_CHAR)
+		if (*p == '\0')
 			Assert(0);
 
 		if ( !incomment && (*p == COMMENT_CHAR) )
@@ -311,12 +311,11 @@ void advance_to_eoln(const char *more_terminators)
 	Assert((more_terminators == NULL) || (strlen(more_terminators) < 125));
 
 	terminators[0] = EOLN;
-	terminators[1] = EOF_CHAR;
-	terminators[2] = 0;
+	terminators[1] = 0;
 	if (more_terminators != NULL)
 		strcat_s(terminators, more_terminators);
 	else
-		terminators[2] = 0;
+		terminators[1] = 0;
 
 	while (strchr(terminators, *Mp) == NULL)
 		Mp++;
@@ -327,7 +326,7 @@ void advance_to_next_white()
 {
 	int in_quotes = 0;
 
-	while ((*Mp != EOLN) && (*Mp != EOF_CHAR)) {
+	while ((*Mp != EOLN) && (*Mp != '\0')) {
 		if (*Mp == '\"')
 			in_quotes = !in_quotes;
 
@@ -353,7 +352,7 @@ int skip_to_string(const char *pstr, const char *end)
 	if (end)
 		len2 = strlen(end);
 
-	while ((*Mp != EOF_CHAR) && strnicmp(pstr, Mp, len)) {
+	while ((*Mp != '\0') && strnicmp(pstr, Mp, len)) {
 		if (end && *Mp == '#')
 			return 0;
 
@@ -364,7 +363,7 @@ int skip_to_string(const char *pstr, const char *end)
 		ignore_white_space();
 	}
 
-	if (!Mp || (*Mp == EOF_CHAR))
+	if (*Mp == '\0')
 		return 0;
 
 	Mp += strlen(pstr);
@@ -383,7 +382,7 @@ int skip_to_start_of_string(const char *pstr, const char *end)
 	else
 		endlen = 0;
 
-	while ( (*Mp != EOF_CHAR) && strnicmp(pstr, Mp, len) ) {
+	while ( (*Mp != '\0') && strnicmp(pstr, Mp, len) ) {
 		if (end && *Mp == '#')
 			return 0;
 
@@ -394,7 +393,7 @@ int skip_to_start_of_string(const char *pstr, const char *end)
 		ignore_white_space();
 	}
 
-	if (!Mp || (*Mp == EOF_CHAR))
+	if (*Mp == '\0')
 		return 0;
 
 	return 1;
@@ -413,7 +412,7 @@ int skip_to_start_of_string_either(const char *pstr1, const char *pstr2, const c
 	else
 		endlen = 0;
 
-	while ( (*Mp != EOF_CHAR) && strnicmp(pstr1, Mp, len1) && strnicmp(pstr2, Mp, len2) ) {
+	while ( (*Mp != '\0') && strnicmp(pstr1, Mp, len1) && strnicmp(pstr2, Mp, len2) ) {
 		if (end && *Mp == '#')
 			return 0;
 
@@ -424,7 +423,7 @@ int skip_to_start_of_string_either(const char *pstr1, const char *pstr2, const c
 		ignore_white_space();
 	}
 
-	if (!Mp || (*Mp == EOF_CHAR))
+	if (*Mp == '\0')
 		return 0;
 
 	return 1;
@@ -462,7 +461,7 @@ int required_string(const char *pstr)
 
 int check_for_eof_raw()
 {
-	if (*Mp == EOF_CHAR)
+	if (*Mp == '\0')
 		return 1;
 
 	return 0;
@@ -575,7 +574,7 @@ int required_string_fred(char *pstr, char *end)
 		return 0;
 
 	ignore_white_space();
-	while (*Mp != EOF_CHAR && strnicmp(pstr, Mp, strlen(pstr))) {
+	while (*Mp != '\0' && strnicmp(pstr, Mp, strlen(pstr))) {
 		if ((*Mp == '#') || (end && !strnicmp(end, Mp, strlen(end)))) {
 			Mp = NULL;
 			break;
@@ -585,7 +584,7 @@ int required_string_fred(char *pstr, char *end)
 		ignore_white_space();
 	}
 
-	if (!Mp || (*Mp == EOF_CHAR)) {
+	if (*Mp == '\0') {
 		diag_printf("Required string [%s] not found\n", pstr);
 		Mp = backup;
 		Token_found_flag = 0;
@@ -612,7 +611,7 @@ int optional_string_fred(char *pstr, char *end, char *end2)
 		return 0;
 
 	ignore_white_space();
-	while ((*Mp != EOF_CHAR) && strnicmp(pstr, Mp, strlen(pstr))) {
+	while ((*Mp != '\0') && strnicmp(pstr, Mp, strlen(pstr))) {
 		if ((*Mp == '#') || (end && !strnicmp(end, Mp, strlen(end))) ||
 			(end2 && !strnicmp(end2, Mp, strlen(end2)))) {
 			Mp = NULL;
@@ -623,7 +622,7 @@ int optional_string_fred(char *pstr, char *end, char *end2)
 		ignore_white_space();
 	}
 
-	if (!Mp || (*Mp == EOF_CHAR)) {
+	if (*Mp == '\0') {
 		diag_printf("Optional string [%s] not found\n", pstr);
 		Mp = mp_save;
 		Token_found_flag = 0;
@@ -734,7 +733,7 @@ int required_string_either_fred(const char *str1, const char *str2)
 {
 	ignore_white_space();
 
-	while (*Mp != EOF_CHAR) {
+	while (*Mp != '\0') {
 		if (!strnicmp(str1, Mp, strlen(str1))) {
 			// Mp += strlen(str1);
 			diag_printf("Found required string [%s]\n", token_found = str1);
@@ -750,7 +749,7 @@ int required_string_either_fred(const char *str1, const char *str2)
 		ignore_white_space();
 	}
 
-	if (*Mp == EOF_CHAR)
+	if (*Mp == '\0')
 		diag_printf("Unable to find either required token [%s] or [%s]\n", str1, str2);
 
 	return -1;
@@ -767,12 +766,11 @@ void copy_to_eoln(char *outstr, const char *more_terminators, const char *instr,
 	Assert((more_terminators == NULL) || (strlen(more_terminators) < 125));
 
 	terminators[0] = EOLN;
-	terminators[1] = EOF_CHAR;
-	terminators[2] = 0;
+	terminators[1] = 0;
 	if (more_terminators != NULL)
 		strcat_s(terminators, more_terminators);
 	else
-		terminators[2] = 0;
+		terminators[1] = 0;
 
 	while (((ch = *instr++) != 0) && (strchr(terminators, ch) == NULL)  && (count < max)) {
 		*outstr++ = ch;
@@ -794,12 +792,11 @@ void copy_to_eoln(SCP_string &outstr, const char *more_terminators, const char *
 	Assert((more_terminators == NULL) || (strlen(more_terminators) < 125));
 
 	terminators[0] = EOLN;
-	terminators[1] = EOF_CHAR;
-	terminators[2] = 0;
+	terminators[1] = 0;
 	if (more_terminators != NULL)
 		strcat_s(terminators, more_terminators);
 	else
-		terminators[2] = 0;
+		terminators[1] = 0;
 
 	outstr = "";
 	while (((ch = *instr++) != 0) && (strchr(terminators, ch) == NULL)) {
@@ -815,7 +812,7 @@ void copy_to_next_white(char *outstr, char *instr, int max)
 	int	in_quotes = 0;
 	char	ch;
 
-	while (((ch = *instr++)>0) && (ch != EOLN) && (ch != EOF_CHAR) && (count < max)) {
+	while (((ch = *instr++)>0) && (ch != EOLN) && (ch != '\0') && (count < max)) {
 		if ( ch == '\"' ) {
 			in_quotes = !in_quotes;
 			continue;
@@ -844,7 +841,7 @@ void copy_to_next_white(SCP_string &outstr, char *instr)
 	char	ch;
 
 	outstr = "";
-	while (((ch = *instr++)>0) && (ch != EOLN) && (ch != EOF_CHAR)) {
+	while (((ch = *instr++)>0) && (ch != EOLN) && (ch != '\0')) {
 		if ( ch == '\"' ) {
 			in_quotes = !in_quotes;
 			continue;
@@ -1005,7 +1002,7 @@ char* alloc_block(const char* startstr, const char* endstr, int extra_chars)
 
 	//Depth checking
 	int level = 1;
-	while(*pos != EOF_CHAR)
+	while(*pos != '\0')
 	{
 		if(!strnicmp(pos, startstr, slen))
 		{
@@ -2310,38 +2307,6 @@ void process_raw_file_text(char *processed_text, char *raw_text)
 			outbuf[181] = '\'';
 		}
 
-		auto eof_location = strchr(outbuf, EOF_CHAR);
-		if (eof_location != nullptr) {
-			// EOF chars should _never_ be in a file since that causes a lot of issues.
-			if (eof_location == &outbuf[0]) {
-				// Error is at the start of the string
-				Error(LOCATION,
-					  "The special character value %d was found in the line\n\"%s\"\n"
-						  "This may not happen since FreeSpace Open cannot read the file properly in this case. In case this is"
-						  " a UTF-8 encoded file you need to find another way for encoding this character.\n\n"
-						  "The error was found at the start of the line.",
-					  EOF_CHAR,
-					  outbuf);
-			} else {
-				// Somewhere in the string. We try to supply some context to make it easier to find the error
-				// If the invalid sequence is inside the string then we try to give some context to make
-				// finding the bug easier
-				auto display_text_start = std::max(&outbuf[0], eof_location - 32);
-				SCP_string context_text(display_text_start, eof_location);
-
-				Error(LOCATION,
-					  "The special character value %d was found in the line\n\"%s\"\n"
-						  "This may not happen since FreeSpace Open cannot read the file properly in this case. In case this is"
-						  " a UTF-8 encoded file you need to find another way for encoding this character.\n\n"
-						  "The error was found at position " PTRDIFF_T_ARG " after this text: %s",
-					  EOF_CHAR,
-					  outbuf,
-					  eof_location - &outbuf[0],
-					  context_text.c_str());
-			}
-
-		}
-
 		strip_comments(outbuf, in_quote, in_multiline_comment_a, in_multiline_comment_b);
 
 		if (Unicode_text_mode) {
@@ -2355,7 +2320,8 @@ void process_raw_file_text(char *processed_text, char *raw_text)
 		}
 	}
 
-	*mp = *mp_raw = EOF_CHAR;
+	// Make sure the string is terminated properly
+	*mp = *mp_raw = '\0';
 /*
 	while (cfgets(outbuf, PARSE_BUF_SIZE, mf) != NULL) {
 		if (strlen(outbuf) >= PARSE_BUF_SIZE-1)
@@ -2382,7 +2348,7 @@ void debug_show_mission_text()
 	char	*mp = Mission_text;
 	char	ch;
 
-	while ((ch = *mp++) != EOF_CHAR)
+	while ((ch = *mp++) != '\0')
 		printf("%c", ch);
 }
 
