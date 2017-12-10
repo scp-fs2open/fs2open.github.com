@@ -189,7 +189,6 @@ Flag exe_params[] =
 	{ "-no_ap_interrupt",	"Disable interrupting autopilot",			true,	0,					EASY_DEFAULT,		"Gameplay",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-no_ap_interrupt", },
 	{ "-stretch_menu",		"Stretch interface to fill screen",			true,	0,					EASY_DEFAULT,		"Gameplay",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-stretch_menu", },
 
-	{ "-snd_preload",		"Preload mission game sounds",				true,	EASY_MEM_ALL_ON,	EASY_DEFAULT_MEM,	"Audio",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-snd_preload", },
 	{ "-nosound",			"Disable all sound",						false,	0,					EASY_DEFAULT,		"Audio",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-nosound", },
 	{ "-nomusic",			"Disable music",							false,	0,					EASY_DEFAULT,		"Audio",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-nomusic", },
 	{ "-no_enhanced_sound",	"Disable enhanced sound",					false,	0,					EASY_DEFAULT,		"Audio",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-no_enhanced_sound", },
@@ -406,11 +405,9 @@ int Cmdline_stretch_menu = 0;
 
 // Audio related
 cmdline_parm query_speech_arg("-query_speech", NULL, AT_NONE);	// Cmdline_query_speech
-cmdline_parm snd_preload_arg("-snd_preload", NULL, AT_NONE);		// Cmdline_snd_preload
 cmdline_parm voice_recognition_arg("-voicer", NULL, AT_NONE);	// Cmdline_voice_recognition
 
 int Cmdline_query_speech = 0;
-int Cmdline_snd_preload = 0; // preload game sounds during mission load
 int Cmdline_voice_recognition = 0;
 int Cmdline_no_enhanced_sound = 0;
 
@@ -550,6 +547,7 @@ cmdline_parm deprecated_tbp_arg("-tbp", "Deprecated", AT_NONE);
 cmdline_parm deprecated_jpgtga_arg("-jpgtga", "Deprecated", AT_NONE);
 cmdline_parm deprecated_htl_arg("-nohtl", "Deprecated", AT_NONE);
 cmdline_parm deprecated_brieflighting_arg("-brief_lighting", "Deprecated", AT_NONE);
+cmdline_parm deprecated_sndpreload_arg("-snd_preload", "Deprecated", AT_NONE);
 
 int Cmdline_deprecated_spec = 0;
 int Cmdline_deprecated_glow = 0;
@@ -1945,11 +1943,6 @@ bool SetCmdlineParams()
 		Cmdline_alternate_registry_path = true;
 	}
 #endif
-
-	if ( snd_preload_arg.found() )
-	{
-		Cmdline_snd_preload = 1;
-	}
 
 	if ( env.found() ) {
 		Cmdline_env = 0;

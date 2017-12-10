@@ -1280,10 +1280,8 @@ void freespace_mission_load_stuff()
 			game_busy( NOX("** preloading common game sounds **") );
 			gamesnd_preload_common_sounds();			// load in sounds that are expected to play
 
-			if (Cmdline_snd_preload) {
-				game_busy( NOX("** preloading gameplay sounds **") );
-				gamesnd_load_gameplay_sounds();			// preload in gameplay sounds if wanted
-			}
+			game_busy( NOX("** preloading gameplay sounds **") );
+			gamesnd_load_gameplay_sounds();			// preload in gameplay sounds if wanted
 
 			game_busy( NOX("** assigning sound environment for mission **") );
 			ship_assign_sound_all();	// assign engine sounds to ships
