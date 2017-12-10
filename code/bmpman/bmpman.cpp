@@ -2280,6 +2280,9 @@ void bm_lock_jpg(int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, int b
 	// Unload any existing data
 	bm_free_data(bitmapnum);
 
+	// JPEG actually only support 24 bits per pixel so we enforce that here
+	bpp = 24;
+
 	d_size = (bpp >> 3);
 
 	// allocate bitmap data
