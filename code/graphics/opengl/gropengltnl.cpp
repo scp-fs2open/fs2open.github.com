@@ -596,19 +596,6 @@ void opengl_create_orthographic_projection_matrix(matrix4* out, float left, floa
 	out->a1d[15] = 1.0f;
 }
 
-void gr_opengl_set_clip_plane(const vec3d *clip_normal, const vec3d *clip_point)
-{
-	if ( clip_normal == NULL || clip_point == NULL ) {
-		GL_state.ClipDistance(0, false);
-	} else {
-		Assertion(Current_shader != NULL && (Current_shader->shader == SDR_TYPE_MODEL
-			|| Current_shader->shader == SDR_TYPE_PASSTHROUGH_RENDER
-			|| Current_shader->shader == SDR_TYPE_DEFAULT_MATERIAL), "Clip planes are not supported by this shader!");
-
-		GL_state.ClipDistance(0, true);
-	}
-}
-
 extern bool Glowpoint_override;
 bool Glowpoint_override_save;
 
@@ -662,7 +649,7 @@ void gr_opengl_shadow_map_end()
 	glScissor(gr_screen.offset_x, (gr_screen.max_h - gr_screen.offset_y - gr_screen.clip_height), gr_screen.clip_width, gr_screen.clip_height);
 }
 
-void opengl_tnl_set_material(material* material_info, bool set_base_map)
+void opengl_tnl_set_material(material* material_info, bool set_base_map, bool set_clipping)
 {
 	int shader_handle = material_info->get_shader_handle();
 	int base_map = material_info->get_texture_map(TM_BASE_TYPE);
@@ -691,12 +678,19 @@ void opengl_tnl_set_material(material* material_info, bool set_base_map)
 
 	gr_set_texture_addressing(material_info->get_texture_addressing());
 
-	auto& clip_params = material_info->get_clip_plane();
+	if (set_clipping) {
+		// Only set the clipping state if explicitly requested by the caller to avoid unnecessary state changes
+		auto& clip_params = material_info->get_clip_plane();
+		if (!clip_params.enabled) {
+			GL_state.ClipDistance(0, false);
+		} else {
+			Assertion(Current_shader != NULL && (Current_shader->shader == SDR_TYPE_MODEL
+				|| Current_shader->shader == SDR_TYPE_PASSTHROUGH_RENDER
+				|| Current_shader->shader == SDR_TYPE_DEFAULT_MATERIAL),
+					  "Clip planes are not supported by this shader!");
 
-	if ( material_info->is_clipped() ) {
-		gr_opengl_set_clip_plane(&clip_params.normal, &clip_params.position);
-	} else {
-		gr_opengl_set_clip_plane(NULL, NULL);
+			GL_state.ClipDistance(0, true);
+		}
 	}
 
 	GL_state.StencilMask(material_info->get_stencil_mask());
@@ -736,7 +730,7 @@ void opengl_tnl_set_material(material* material_info, bool set_base_map)
 										   &clr,
 										   material_info->get_color_scale(),
 										   array_index,
-										   clip_params);
+										   material_info->get_clip_plane());
 	}
 }
 
@@ -745,7 +739,7 @@ void opengl_tnl_set_model_material(model_material *material_info)
 	float u_scale, v_scale;
 	int render_pass = 0;
 
-	opengl_tnl_set_material(material_info, false);
+	opengl_tnl_set_material(material_info, false, false);
 
 	if ( GL_state.CullFace() ) {
 		GL_state.FrontFaceValue(GL_CW);
@@ -756,6 +750,12 @@ void opengl_tnl_set_model_material(model_material *material_info)
 	Assert( Current_shader->shader == SDR_TYPE_MODEL );
 
 	GL_state.Texture.SetShaderMode(GL_TRUE);
+
+	if (Current_shader->flags & SDR_FLAG_MODEL_CLIP || Current_shader->flags & SDR_FLAG_MODEL_TRANSFORM) {
+		GL_state.ClipDistance(0, true);
+	} else {
+		GL_state.ClipDistance(0, false);
+	}
 
 	uint32_t array_index;
 	if ( Current_shader->flags & SDR_FLAG_MODEL_DIFFUSE_MAP ) {

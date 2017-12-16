@@ -65,7 +65,7 @@ void opengl_tnl_shutdown();
 void gr_opengl_render_model(model_material* material_info, indexed_vertex_source *vert_source, vertex_buffer* bufferp, size_t texi);
 void opengl_render_model_program(model_material* material_info, indexed_vertex_source *vert_source, vertex_buffer* bufferp, buffer_data *datap);
 
-void opengl_tnl_set_material(material* material_info, bool set_base_map);
+void opengl_tnl_set_material(material* material_info, bool set_base_map, bool set_clipping = true);
 void opengl_tnl_set_material_distortion(distortion_material* material_info);
 void opengl_tnl_set_material_particle(particle_material * material_info);
 void opengl_tnl_set_material_movie(movie_material* material_info);
