@@ -39,6 +39,7 @@ float Shield_pain_flash_factor;
 gameversion::version Targetted_version; // Defaults to retail
 SCP_string Window_title;
 bool Unicode_text_mode;
+SCP_string Movie_subtitle_font;
 
 void parse_mod_table(const char *filename)
 {
@@ -337,6 +338,11 @@ void parse_mod_table(const char *filename)
 			}
 		}
 
+		if (optional_string("$Movie subtitle font:")) {
+			// Fonts have not been parsed at this point so we can't validate the font name here
+			stuff_string(Movie_subtitle_font, F_NAME);
+		}
+
 		required_string("#END");
 	}
 	catch (const parse::ParseException& e)
@@ -390,4 +396,5 @@ void mod_table_reset() {
 	Targetted_version = gameversion::version(2, 0, 0, 0); // Defaults to retail
 	Window_title = "";
 	Unicode_text_mode = false;
+	Movie_subtitle_font = "font01.vf";
 }

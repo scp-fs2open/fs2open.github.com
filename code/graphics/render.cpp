@@ -1,6 +1,7 @@
 
 #include "graphics/render.h"
 #include "graphics/material.h"
+#include "graphics/matrix.h"
 #include "graphics/software/font_internal.h"
 #include "graphics/software/FSFont.h"
 #include "graphics/software/NVGFont.h"
@@ -534,6 +535,8 @@ static void gr_string_old(float sx,
 	vert_def.add_vertex_component(vertex_format_data::POSITION2, sizeof(v4), (int) offsetof(v4, x));
 	vert_def.add_vertex_component(vertex_format_data::TEX_COORD2, sizeof(v4), (int) offsetof(v4, u));
 
+	gr_set_2d_matrix();
+
 	// pick out letter coords, draw it, goto next letter and do the same
 	while (s < end) {
 		x += spacing;
@@ -678,6 +681,8 @@ static void gr_string_old(float sx,
 									   String_render_buff,
 									   sizeof(v4) * buffer_offset);
 	}
+
+	gr_end_2d_matrix();
 }
 
 namespace {

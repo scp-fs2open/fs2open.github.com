@@ -21,58 +21,17 @@
 
 using namespace cutscene::player;
 
-namespace cutscene {
-struct PlayerState {
-	MovieProperties props;
-	Decoder* decoder = nullptr;
-
-	bool playing = true;
-
-	bool playbackHasBegun = false;
-
-	// Timing state
-	std::uint64_t playback_time = 0;
-
-	// Audio state
-	bool audioInited = false;
-	bool hasAudio = false;
-	ALuint audioSid = 0;
-	SCP_vector<ALuint> audioBuffers;
-	SCP_queue<ALuint> unqueuedAudioBuffers;
-
-	// Graphics state following
-	bool videoInited = false;
-
-	VideoFramePtr currentFrame;
-	VideoFramePtr nextFrame;
-	bool newFrameAdded = false;
-
-	std::unique_ptr<VideoPresenter> videoPresenter;
-
-	PlayerState() : decoder(nullptr), playing(true), playbackHasBegun(false),
-					playback_time(0),
-					audioInited(0), hasAudio(false), audioSid(0),
-					videoInited(false), newFrameAdded(false) {}
-
- private:
-	PlayerState(const PlayerState&) SCP_DELETED_FUNCTION;
-
-	PlayerState& operator=(const PlayerState&) SCP_DELETED_FUNCTION;
-};
-}
-
 namespace {
 using namespace cutscene;
 
 const int MAX_AUDIO_BUFFERS = 15;
 
-Decoder* findDecoder(const SCP_string& name) {
+std::unique_ptr<Decoder> findDecoder(const SCP_string& name) {
 	{
-		auto ffmpeg = new ffmpeg::FFMPEGDecoder();
+		std::unique_ptr<Decoder> ffmpeg(new ffmpeg::FFMPEGDecoder());
 		if (ffmpeg->initialize(name)) {
 			return ffmpeg;
 		}
-		delete ffmpeg;
 	}
 
 	return nullptr;
@@ -161,7 +120,7 @@ void processVideoData(PlayerState* state) {
 		return;
 	}
 
-	while(currentTime >= state->nextFrame->frameTime) {
+	while (currentTime >= state->nextFrame->frameTime) {
 		// Move the next frame to the current frame slot
 		state->currentFrame = std::move(state->nextFrame);
 
@@ -182,6 +141,34 @@ void processVideoData(PlayerState* state) {
 	}
 }
 
+void processSubtitleData(PlayerState* state) {
+	SubtitleFramePtr ptr;
+	while (state->decoder->tryPopSubtitleData(ptr)) {
+		// Take all subtitle frames from our queue
+		state->queued_subtitles.push(std::move(ptr));
+	}
+
+	if (state->currentSubtitle && playbackGetTime(state) <= state->currentSubtitle->displayEndTime) {
+		// We currently have a frame and it it still being displayed so there is nothing for us to do here
+		return;
+	}
+
+	// Subtitle has expired so we don't need it anymore
+	state->currentSubtitle = nullptr;
+
+	while(!state->queued_subtitles.empty()) {
+		// Take a look at the first entry and check if it's time to display it yet
+		auto& nextSubtitle = state->queued_subtitles.front();
+		if (playbackGetTime(state) >= nextSubtitle->displayStartTime) {
+			state->currentSubtitle = std::move(nextSubtitle);
+			state->queued_subtitles.pop();
+		} else {
+			// The next subtitle should not be displayed yet so we are done here
+			break;
+		}
+	}
+}
+
 bool processAudioData(PlayerState* state) {
 	TRACE_SCOPE(tracing::CutsceneProcessAudioData);
 
@@ -189,7 +176,7 @@ bool processAudioData(PlayerState* state) {
 		if (state->decoder->hasAudio()) {
 			// Even if we don't play the sound we still need to remove it from the queue
 			AudioFramePtr audioData;
-			while(state->decoder->tryPopAudioData(audioData)) {
+			while (state->decoder->tryPopAudioData(audioData)) {
 				// Intentionally left empty
 			}
 		}
@@ -214,7 +201,9 @@ bool processAudioData(PlayerState* state) {
 
 		ALenum format = (audioData->channels == 2) ? AL_FORMAT_STEREO16 : AL_FORMAT_MONO16;
 
-		OpenAL_ErrorCheck(alBufferData(buffer, format, audioData->audioData.data(),
+		OpenAL_ErrorCheck(alBufferData(buffer,
+									   format,
+									   audioData->audioData.data(),
 									   static_cast<ALsizei>(audioData->audioData.size() * sizeof(short)),
 									   static_cast<ALsizei>(audioData->rate)), return false);
 
@@ -267,82 +256,10 @@ void videoPlaybackClose(PlayerState* state) {
 	state->videoInited = false;
 }
 
-template<typename... Args>
-float print_string(float x, float y, const char* fmt, Args... params) {
-	SCP_string text;
-	sprintf(text, fmt, params...);
-
-	gr_string(x, y, text.c_str(), GR_RESIZE_NONE);
-
-	return y + font::get_current_font()->getHeight();
-}
-
-void showVideoInfo(PlayerState* state) {
-	gr_set_color_fast(&Color_white);
-
-	float y = 200.f;
-	float x = 100.f;
-	y = print_string(x, y, "Movie FPS: %f", state->props.fps);
-	y = print_string(x, y, "Size: %dx%d", state->props.size.width, state->props.size.height);
-
-	y = gr_screen.max_h - 200.f;
-
-	size_t audio_queue_size = state->decoder->getAudioQueueSize();
-	if (state->hasAudio) {
-		ALint queued;
-		OpenAL_ErrorPrint(alGetSourcei(state->audioSid, AL_BUFFERS_QUEUED, &queued));
-		audio_queue_size += queued;
-	}
-
-	y = print_string(x, y, "Audio Queue size: " SIZE_T_ARG, audio_queue_size);
-	y = print_string(x, y, "Video Queue size: " SIZE_T_ARG, state->decoder->getVideoQueueSize());
-	y += font::get_current_font()->getHeight();
-	// Estimate the size of the video buffer
-	// We use YUV420p frames so one pixel uses 1.5 bytes of storage
-	size_t single_frame_size = (size_t) (state->props.size.width * state->props.size.height * 1.5);
-	size_t total_size = single_frame_size * state->decoder->getVideoQueueSize();
-	print_string(x, y, "Video buffer size: " SIZE_T_ARG "B", total_size);
-}
-
-void displayVideo(PlayerState* state) {
-	if (!state->currentFrame) {
-		return;
-	}
-
-	TRACE_SCOPE(tracing::CutsceneDrawVideoFrame);
-
-	gr_clear();
-	if (state->videoPresenter) {
-		state->videoPresenter->displayFrame();
-	}
-
-	if (Cmdline_show_video_info) {
-		showVideoInfo(state);
-	}
-
-	gr_flip();
-}
-
-void processEvents(PlayerState* state) {
-	io::mouse::CursorManager::get()->showCursor(false);
-
-	os_poll();
-
-	int k = key_inkey();
-	switch (k) {
-		case KEY_ESC:
-		case KEY_ENTER:
-		case KEY_SPACEBAR:
-			state->playing = false;
-			break;
-		default:
-			break;
-	}
-}
-
 bool shouldBeginPlayback(Decoder* decoder) {
 	auto video = decoder->isVideoQueueFull();
 	auto audio = decoder->isAudioQueueFull();
+	auto subtitles = decoder->isSubtitleQueueFull();
 
 	// Wait until one of the queues is full, that should make sure
 	// that we have enough frames at the beginning of playback and that
@@ -350,92 +267,79 @@ bool shouldBeginPlayback(Decoder* decoder) {
 	// or video at the beginning
 	// Also only wait while the decoder is still working. Otherwise we will wait indefinitely if the video
 	// is very short.
-	return (audio || video) || !decoder->isDecoding();
+	return (audio || video || subtitles) || !decoder->isDecoding();
 }
 }
 
 namespace cutscene {
-Player::Player() {
+Player::Player(std::unique_ptr<Decoder>&& decoder) : m_decoder(std::move(decoder)) {
+	initPlayback();
 }
 
 Player::~Player() {
+	// If video is initialized it means that stopPlayback has not been called yet
+	if (m_state.videoInited) {
+		stopPlayback();
+	}
+
 	if (m_decoder) {
 		m_decoder->close();
 	}
 }
 
-void Player::processDecoderData(PlayerState* state) {
-	if (!state->playbackHasBegun) {
+bool Player::processDecoderData() {
+	if (!m_state.playbackHasBegun) {
 		// Wait until video and audio are available
 		// If we don't have audio, don't wait for it (obviously...)
-		if (!shouldBeginPlayback(state->decoder)) {
-			return;
+		if (!shouldBeginPlayback(m_state.decoder)) {
+			return true;
 		}
 
-		state->playbackHasBegun = true;
+		m_state.playbackHasBegun = true;
 	}
 
 	TRACE_SCOPE(tracing::CutsceneProcessDecoder);
 
-	processVideoData(state);
+	processVideoData(&m_state);
 
-	auto audioPlaying = processAudioData(state);
+	processSubtitleData(&m_state);
+
+	auto audioPlaying = processAudioData(&m_state);
 
 	// Set the playing flag if the decoder is still active or there is still data available
 	auto decoding = m_decoder->isDecoding();
 
-	// Audio is pending if there is data left in the queue or of OpenAL is still playing audio
+	// Audio is pending if there is data left in the queue or if OpenAL is still playing audio
 	auto pendingAudio = (m_decoder->isAudioFrameAvailable() && m_decoder->hasAudio()) || audioPlaying;
 	auto pendingVideo = m_decoder->isVideoFrameAvailable();
 
-	state->playing = decoding || pendingAudio || pendingVideo;
+	return decoding || pendingAudio || pendingVideo;
 }
 
-void Player::startPlayback() {
+void Player::initPlayback() {
+	Assertion(!m_state.videoInited, "Internal State has been initialized before! Create a new player for replaying a movie.");
+
 	m_decoderThread.reset(new std::thread(std::bind(&Player::decoderThread, this)));
 
-	PlayerState state;
-	state.props = m_decoder->getProperties();
-	state.decoder = m_decoder.get();
+	m_state.props = m_decoder->getProperties();
+	m_state.decoder = m_decoder.get();
 
-	// Compute the maximum time we will sleep to make sure we can still maintain the movie FPS
-	// and not waste too much CPU time
-	// We will sleep at most half the time a frame would be displayed
-	auto sleepTime = static_cast<std::uint64_t>((1. / (4. * state.props.fps)) * 1000.);
+	videoPlaybackInit(&m_state);
 
-	videoPlaybackInit(&state);
-
-	audioPlaybackInit(&state);
-
-	auto lastDisplayTimestamp = timer_get_microseconds();
-	while (state.playing) {
-		TRACE_SCOPE(tracing::CutsceneStep);
-
-		processDecoderData(&state);
-
-		displayVideo(&state);
-
-		processEvents(&state);
-
-		auto timestamp = timer_get_microseconds();
-
-		auto passed = timestamp - lastDisplayTimestamp;
-		lastDisplayTimestamp = timestamp;
-
-		if (state.playbackHasBegun) {
-			state.playback_time += passed;
-		}
-
-		if (passed < sleepTime) {
-			auto sleep = sleepTime - passed;
-
-			os_sleep(static_cast<uint>(sleep));
-		}
+	audioPlaybackInit(&m_state);
+}
+bool Player::update(uint64_t diff_time_micro) {
+	if (m_state.playbackHasBegun) {
+		m_state.playback_time += diff_time_micro;
 	}
+
+	return processDecoderData();
+}
+void Player::stopPlayback() {
 	m_decoder->stopDecoder();
 
-	audioPlaybackClose(&state);
-	videoPlaybackClose(&state);
+	audioPlaybackClose(&m_state);
+	videoPlaybackClose(&m_state);
 
 	m_decoderThread->join();
 }
@@ -458,10 +362,28 @@ std::unique_ptr<Player> Player::newPlayer(const SCP_string& name) {
 	if (decoder == nullptr) {
 		return nullptr;
 	}
+	return std::unique_ptr<Player>(new Player(std::move(decoder)));
+}
+const PlayerState& Player::getInternalState() const {
+	return m_state;
+}
+const MovieProperties& Player::getMovieProperties() const {
+	return m_state.props;
+}
+void Player::draw(float x1, float y1, float x2, float y2) {
+	if (!m_state.currentFrame) {
+		return;
+	}
 
-	std::unique_ptr<Player> player(new Player());
-	player->m_decoder.reset(decoder);
-
-	return player;
+	if (m_state.videoPresenter) {
+		m_state.videoPresenter->displayFrame(x1, y1, x2, y2);
+	}
+}
+SCP_string Player::getCurrentSubtitle() {
+	if (!m_state.currentSubtitle) {
+		return "";
+	} else {
+		return m_state.currentSubtitle->text;
+	}
 }
 }
