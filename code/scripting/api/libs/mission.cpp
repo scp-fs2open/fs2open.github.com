@@ -1026,6 +1026,10 @@ ADE_FUNC(isInCampaign, l_Mission, NULL, "Get whether or not the current mission 
 	return ade_set_args(L, "b", b);
 }
 
+ADE_FUNC(getMissionTitle, l_Mission, NULL, "Get the title of the current mission", "string", "The mission title or an empty string if currently not in mission") {
+	return ade_set_args(L, "s", The_mission.name);
+}
+
 //****LIBRARY: Campaign
 ADE_LIB(l_Campaign, "Campaign", "ca", "Campaign Library");
 

@@ -5,6 +5,7 @@
 #include <gamesequence/gamesequence.h>
 #include <network/multi.h>
 #include <playerman/player.h>
+#include <parse/parselo.h>
 
 #include "base.h"
 
@@ -233,6 +234,29 @@ ADE_FUNC(postGameEvent, l_Base, "gameevent Event", "Sets current game event. Not
 	gameseq_post_event(gh->Get());
 
 	return ADE_RETURN_TRUE;
+}
+
+ADE_FUNC(XSTR,
+		 l_Base,
+		 "string text, number id",
+		 "Gets the translated version of text with the given id. "
+			 "The uses the tstrings table for performing the translation. Passing -1 as the id will always return the given text.",
+		 "string",
+		 "The translated text") {
+	const char* text = nullptr;
+	int id = -1;
+
+	if (!ade_get_args(L, "si", &text, &id)) {
+		return ADE_RETURN_NIL;
+	}
+
+	SCP_string xstr;
+	sprintf(xstr, "XSTR(\"%s\", %d)", text, id);
+
+	SCP_string translated;
+	lcl_ext_localize(xstr, translated);
+
+	return ade_set_args(L, "s", translated.c_str());
 }
 
 //**********SUBLIBRARY: Base/Events

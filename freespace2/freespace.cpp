@@ -1123,7 +1123,7 @@ static int framenum;
  * called since the current callback function was set.
  */
 void game_loading_callback(int count)
-{	
+{
 	game_do_networking();
 
 	Assert( Game_loading_callback_inited==1 );
@@ -1175,6 +1175,17 @@ void game_loading_callback(int count)
 		memset( Processing_filename, 0, MAX_PATH_LEN );
 	}
 #endif
+
+	auto progress = static_cast<float>(count) / static_cast<float>(COUNT_ESTIMATE);
+	CLAMP(progress, 0.0f, 1.0f);
+	Script_system.SetHookVar("Progress", 'f', &progress);
+
+	if (Script_system.RunCondition(CHA_LOADSCREEN)) {
+		// At least one script exeuted so we probably need to do a flip now
+		do_flip = 1;
+	}
+
+	Script_system.RemHookVar("Progress");
 
 	os_ignore_events();
 
