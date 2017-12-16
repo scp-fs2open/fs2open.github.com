@@ -92,6 +92,7 @@
 #include "sound/audiostr.h"
 #include "sound/ds.h"
 #include "sound/sound.h"
+#include "utils/unicode.h"
 #include "starfield/starfield.h"
 #include "starfield/supernova.h"
 #include "stats/medals.h"
@@ -682,7 +683,8 @@ SCP_vector<sexp_oper> Operators = {
 	{ "string-concatenate",				OP_STRING_CONCATENATE,					3,	3,			SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "string-concatenate-block",		OP_STRING_CONCATENATE_BLOCK,			3,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "string-get-substring",			OP_STRING_GET_SUBSTRING,				4,	4,			SEXP_ACTION_OPERATOR,	},	// Goober5000
-	{ "string-set-substring",			OP_STRING_SET_SUBSTRING,				5,	5,			SEXP_ACTION_OPERATOR,	},	// Goober5000  
+	{ "string-set-substring",			OP_STRING_SET_SUBSTRING,				5,	5,			SEXP_ACTION_OPERATOR,	},	// Goober5000
+	{ "modify-variable-xstr",			OP_MODIFY_VARIABLE_XSTR,				3,	3,			SEXP_ACTION_OPERATOR,	},	// m!m
 
 	//Other Sub-Category
 	{ "damaged-escort-priority",		OP_DAMAGED_ESCORT_LIST,					3,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	//phreak
@@ -3571,6 +3573,18 @@ int get_sexp()
 					n = CDDR(n);
 				}
 				break;
+
+			case OP_MODIFY_VARIABLE_XSTR: {
+				n = CDDR(start); // First parameter is the variable name so we need to the second parameter
+
+				int id = atoi(Sexp_nodes[CDR(n)].text);
+				Assert(id < 10000000);
+				SCP_string xstr;
+				sprintf(xstr, "XSTR(\"%s\", %d)", Sexp_nodes[n].text, id);
+
+				memset(Sexp_nodes[n].text, 0, NAME_LENGTH*sizeof(char));
+				lcl_ext_localize(xstr.c_str(), Sexp_nodes[n].text, TOKEN_LENGTH - 1);
+			}
 		}
 	}
 
@@ -20381,7 +20395,8 @@ void sexp_string_concatenate_block(int n)
 // Goober5000
 int sexp_string_get_length(int node)
 {
-	return (int)strlen(CTEXT(node));
+	auto text = CTEXT(node);
+	return (int)unicode::num_codepoints(text, text + strlen(text));
 }
 
 // Goober5000
@@ -20416,7 +20431,9 @@ void sexp_string_get_substring(int node)
 		return;
 	}
 
-	int parent_len = (int)strlen(parent);
+	auto parent_byte_len = strlen(parent);
+	auto parent_end = parent + parent_byte_len;
+	int parent_len = (int)unicode::num_codepoints(parent, parent_end);
 
 	// sanity
 	if (pos >= parent_len)
@@ -20431,7 +20448,16 @@ void sexp_string_get_substring(int node)
 
 	// copy substring
 	memset(new_text, 0, TOKEN_LENGTH);
-	strncpy(new_text, &parent[pos], len);
+	auto start_ptr = parent;
+	// Advance the pointer by n codepoints to the start of our substring
+	unicode::advance(start_ptr, static_cast<size_t>(pos), parent_end);
+
+	auto end_ptr = start_ptr;
+	unicode::advance(end_ptr, static_cast<size_t>(len), parent_end);
+
+	auto byte_diff = end_ptr - start_ptr;
+	
+	strncpy(new_text, start_ptr, byte_diff);
 
 	// assign to variable
 	sexp_modify_variable(new_text, sexp_variable_index);
@@ -20442,7 +20468,6 @@ void sexp_string_set_substring(int node)
 {
 	int n = node;
 	int sexp_variable_index;
-	char new_text[TOKEN_LENGTH * 2];
 
 	// Only do single player or multi host
 	if ( MULTIPLAYER_CLIENT )
@@ -20471,8 +20496,9 @@ void sexp_string_set_substring(int node)
 		return;
 	}
 
-	int parent_len = (int)strlen(parent);
-	int new_len = (int)strlen(new_substring);
+	int parent_byte_len = (int)strlen(parent);
+
+	auto parent_len = (int)unicode::num_codepoints(parent, parent + parent_byte_len);
 
 	// sanity
 	if (pos >= parent_len)
@@ -20481,34 +20507,73 @@ void sexp_string_set_substring(int node)
 		return;
 	}
 
-	// make the common case fast
-	if (len == 1 && new_len == 1)
-	{
-		strcpy_s(new_text, parent);
-		new_text[pos] = new_substring[0];
-	}
-	else
-	{
-		// sanity
-		if (pos + len > parent_len)
-			len = parent_len - pos;
+	SCP_string new_text = parent;
 
-		// copy parent string up to the substring pos
-		strncpy(new_text, parent, pos);
+	auto range = unicode::codepoint_range(parent);
+	auto end_iter = range.end();
 
-		// add new substring
-		strcpy(&new_text[pos], new_substring);
-
-		// add rest of parent string
-		strcat_s(new_text, &parent[pos + len]);
-
-		// check length
-		if (strlen(new_text) >= TOKEN_LENGTH)
-		{
-			Warning(LOCATION, "Concatenated string is too long and will be truncated.");
-			new_text[TOKEN_LENGTH] = 0;
+	size_t substring_begin_byte = 0;
+	size_t substring_end_byte = 0;
+	auto i = 0;
+	for (auto iter = range.begin(); iter != end_iter; ++iter, ++i) {
+		if (i == pos) {
+			substring_begin_byte = iter.pos() - parent;
+		} else if (i == pos + len) {
+			substring_end_byte = iter.pos() - parent;
+			// We have reached the end byte so we have done everything we need to
+			break;
 		}
 	}
+
+	// This shouldn't happen
+	Assertion(substring_begin_byte < substring_end_byte,
+			  "The begin position of the substring must be less than the end position!");
+
+	new_text.replace(substring_begin_byte, substring_end_byte - substring_begin_byte, new_substring);
+
+	if (new_text.size() >= TOKEN_LENGTH) {
+		Warning(LOCATION, "Concatenated string is too long and will be truncated.");
+
+		new_text.resize(TOKEN_LENGTH - 1);
+
+		// This might have broken the UTF-8 sequence so that needs to be fixed in Unicode mode
+		if (Unicode_text_mode) {
+			auto invalid = utf8::find_invalid(new_text.begin(), new_text.end());
+
+			if (invalid != new_text.end()) {
+				// Found an invalid sequence. End the string right before that to make sure the string is still valid
+				new_text.erase(invalid, new_text.end());
+			}
+		}
+	}
+
+	// assign to variable
+	sexp_modify_variable(new_text.c_str(), sexp_variable_index);
+}
+
+void sexp_modify_variable_xstr(int n)
+{
+	Assert(n >= 0);
+
+	// Only do single player or multi host
+	if ( MULTIPLAYER_CLIENT )
+		return;
+
+	// get sexp_variable index
+	Assert(Sexp_nodes[n].first == -1);
+	auto sexp_variable_index = atoi(Sexp_nodes[n].text);
+	n = CDR(n);
+
+	// verify variable set
+	Assert(Sexp_variables[sexp_variable_index].type & SEXP_VARIABLE_SET);
+
+	if (!(Sexp_variables[sexp_variable_index].type & SEXP_VARIABLE_STRING)) {
+		Warning(LOCATION, "Variable for modify-variable-xstr has to be a string variable!");
+		return;
+	}
+
+	// get new string
+	const char* new_text = Sexp_nodes[n].text;
 
 	// assign to variable
 	sexp_modify_variable(new_text, sexp_variable_index);
@@ -23191,6 +23256,11 @@ int eval_sexp(int cur_node, int referenced_node)
 
 			case OP_MODIFY_VARIABLE:
 				sexp_modify_variable(node);
+				sexp_val = SEXP_TRUE;	// SEXP_TRUE means only do once.
+				break;
+
+			case OP_MODIFY_VARIABLE_XSTR:
+				sexp_modify_variable_xstr(node);
 				sexp_val = SEXP_TRUE;	// SEXP_TRUE means only do once.
 				break;
 
@@ -25922,6 +25992,7 @@ int query_operator_return_type(int op)
 		case OP_SHIP_SUBSYS_UNTARGETABLE:
 		case OP_RED_ALERT:
 		case OP_MODIFY_VARIABLE:
+		case OP_MODIFY_VARIABLE_XSTR:
 		case OP_SET_VARIABLE_BY_INDEX:
 		case OP_BEAM_FIRE:
 		case OP_BEAM_FIRE_COORDS:
@@ -26673,6 +26744,17 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_VARIABLE_NAME;
 			} else {
 				return OPF_AMBIGUOUS; 
+			}
+
+		case OP_MODIFY_VARIABLE_XSTR:
+			if (argnum == 0) {
+				return OPF_VARIABLE_NAME;
+			} else if (argnum == 1) {
+				return OPF_STRING;
+			} else if (argnum == 2) {
+				return OPF_NUMBER;
+			} else {
+				return OPF_NONE;
 			}
 
 		case OP_GET_VARIABLE_BY_INDEX:
@@ -30045,6 +30127,7 @@ int get_subcategory(int sexp_id)
 		case OP_STRING_CONCATENATE_BLOCK:
 		case OP_STRING_GET_SUBSTRING:
 		case OP_STRING_SET_SUBSTRING:
+		case OP_MODIFY_VARIABLE_XSTR:
 			return CHANGE_SUBCATEGORY_VARIABLES;
 
 		case OP_DAMAGED_ESCORT_LIST:
@@ -33910,7 +33993,15 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\tThis overrides any choice made by the user through the -nomotiondebris commandline flag."
 		"Takes 1 argument...\r\n"
 		"\t1:\tBoolean: True will disable motion debris, False reenable it.\r\n"
-	}
+	},
+
+	{ OP_MODIFY_VARIABLE_XSTR, "modify-variable-xstr\r\n"
+		"\tSets a variable to a localized string.\r\n\r\n"
+		"Takes 2 arguments...\r\n"
+		"\t1:\tName of Variable.\r\n"
+		"\t2:\tThe default text if no localized version is available.\r\n"
+		"\t3:\tThe XSTR index. If set to -1 then the default value will be used\r\n"
+	},
 };
 
 

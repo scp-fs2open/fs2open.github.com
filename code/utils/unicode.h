@@ -153,4 +153,13 @@ size_t num_codepoints(octet_iterator start, octet_iterator end) {
 	}
 }
 
+template<typename octet_iterator>
+void advance(octet_iterator& start, size_t n, octet_iterator end) {
+	if (Unicode_text_mode) {
+		utf8::advance(start, n, end);
+	} else {
+		start = std::min(start + n, end);
+	}
+}
+
 }
