@@ -150,6 +150,8 @@ void material_set_nanovg(nanovg_material* mat_info, int base_tex) {
 
 	mat_info->set_color_mask(true, true, true, true);
 
+	mat_info->set_blend_mode(ALPHA_BLEND_PREMULTIPLIED);
+
 	mat_info->set_stencil_mask(0xFFFFFFFF);
 	mat_info->set_stencil_func(ComparisionFunction::Always, 0, 0xFFFFFFFF);
 	mat_info->set_front_stencil_op(StencilOperation::Keep, StencilOperation::Keep, StencilOperation::Keep);
