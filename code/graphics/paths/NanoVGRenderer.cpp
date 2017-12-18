@@ -48,6 +48,10 @@ void nvgRenderTriangles(void* userptr, NVGpaint* paint, NVGscissor* scissor, con
 	auto renderer = static_cast<NanoVGRenderer*>(userptr);
 	renderer->renderTriangles(paint, scissor, verts, nverts);
 }
+void nvgRenderText(void* userptr, NVGpaint* paint, NVGscissor* scissor, const NVGvertex* verts, int nverts) {
+	auto renderer = static_cast<NanoVGRenderer*>(userptr);
+	renderer->renderText(paint, scissor, verts, nverts);
+}
 void nvgRenderFill(void* userptr,
 				   NVGpaint* paint,
 				   NVGscissor* scissor,
@@ -162,6 +166,7 @@ NVGcontext* createNanoVGContext() {
 	params.renderViewport = nvgViewport;
 
 	params.renderTriangles = nvgRenderTriangles;
+	params.renderText = nvgRenderText;
 	params.renderFill = nvgRenderFill;
 	params.renderStroke = nvgRenderStroke;
 	params.renderFlush = nvgRenderFlush;
@@ -346,6 +351,24 @@ void NanoVGRenderer::renderTriangles(NVGpaint* paint, NVGscissor* scissor, const
 	Assertion(succcess, "Failed to convert paint, probably caused by an invalid texture handle.");
 
 	uniformData->type = NanoVGShaderType::Image;
+}
+void NanoVGRenderer::renderText(NVGpaint* paint, NVGscissor* scissor, const NVGvertex* verts, int nverts) {
+	_vertices.insert(_vertices.end(), verts, verts + nverts);
+
+	auto call = addDrawCall();
+	call->type = CallType::Triangles;
+	call->triangleCount = static_cast<uint32_t>(nverts);
+	call->triangleOffset = static_cast<uint32_t>(addVertices(verts, static_cast<size_t>(nverts)));
+	call->image = paint->image;
+
+	call->uniformIndex = addUniformData(1);
+
+	auto uniformData = &_uniformData[call->uniformIndex];
+	auto succcess = convertPaint(uniformData, paint, scissor, 1.0f, 1.0f, -1.0f);
+
+	Assertion(succcess, "Failed to convert paint, probably caused by an invalid texture handle.");
+
+	uniformData->type = NanoVGShaderType::Text;
 }
 void NanoVGRenderer::renderStroke(NVGpaint* paint,
 								  NVGscissor* scissor,

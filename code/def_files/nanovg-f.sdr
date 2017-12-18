@@ -52,6 +52,9 @@ float strokeMask() {
 }
 #endif
 
+// The value the distance field has when the pixel is exactly on the edge. This needs to match the values in fontstash.h!
+const float ON_EDGE_DISTANCE = 180.0 / 255.0;
+
 void main(void) {
    vec4 result;
 	float scissor = scissorMask(fpos);
@@ -90,6 +93,16 @@ void main(void) {
 		vec4 color = texture(nvg_tex, vec3(ftcoord, float(texArrayIndex)));
 		if (texType == 1) color = vec4(color.xyz*color.w,color.w);		if (texType == 2) color = vec4(color.x);		color *= scissor;
 		result = color * innerCol;
+	} else if (type == 4) {		// Distance vector text
+		vec4 color = texture(nvg_tex, vec3(ftcoord, float(texArrayIndex)));
+		float dist = color.r;
+
+		float width = fwidth(dist) / 2.0;
+		float alpha = smoothstep(ON_EDGE_DISTANCE - width, ON_EDGE_DISTANCE + width, dist);
+
+		color = innerCol * alpha;
+
+		result = color * scissor;
 	}
 	outColor = result;
 }

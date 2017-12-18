@@ -123,7 +123,7 @@ struct model_uniform_data {
 };
 
 enum class NanoVGShaderType: int32_t {
-	FillGradient = 0, FillImage = 1, Simple = 2, Image = 3
+	FillGradient = 0, FillImage = 1, Simple = 2, Image = 3, Text = 4
 };
 struct nanovg_draw_data {
 	float scissorMat[12]; // matrices are actually 3 vec4s

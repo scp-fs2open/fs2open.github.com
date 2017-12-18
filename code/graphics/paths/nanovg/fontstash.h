@@ -292,10 +292,40 @@ int fons__tt_buildGlyphBitmap(FONSttFontImpl *font, int glyph, float size, float
 	return 1;
 }
 
-void fons__tt_renderGlyphBitmap(FONSttFontImpl *font, unsigned char *output, int outWidth, int outHeight, int outStride,
-								float scaleX, float scaleY, int glyph)
+void fons__tt_renderGlyphBitmap(FONSttFontImpl *font, unsigned char *output, int padding, int outWidth, int outHeight, int outStride,
+								float scale, int glyph)
 {
-	stbtt_MakeGlyphBitmap(&font->font, output, outWidth, outHeight, outStride, scaleX, scaleY, glyph);
+	unsigned char onedge_value = 180;
+	float pixel_dist_scale = onedge_value / (float)padding;
+
+	int width, height;
+	unsigned char* sdf = stbtt_GetGlyphSDF(&font->font,
+										   scale,
+										   glyph,
+										   padding,
+										   onedge_value,
+										   pixel_dist_scale,
+										   &width,
+										   &height,
+										   NULL,
+										   NULL);
+
+	if (sdf == NULL) {
+		// There is no glyph available here
+		return;
+	}
+
+	unsigned char* data = output;
+	unsigned char* input = sdf;
+
+	for (int y = 0; y < height; ++y) {
+		memcpy(data, input, width);
+
+		data += outStride;
+		input += width;
+	}
+
+	stbtt_FreeSDF(sdf, font->font.userdata);
 }
 
 int fons__tt_getGlyphKernAdvance(FONSttFontImpl *font, int glyph1, int glyph2)
@@ -988,26 +1018,6 @@ static void fons__blurRows(unsigned char* dst, int w, int h, int dstStride, int 
 	}
 }
 
-
-static void fons__blur(FONScontext* stash, unsigned char* dst, int w, int h, int dstStride, int blur)
-{
-	int alpha;
-	float sigma;
-	(void)stash;
-
-	if (blur < 1)
-		return;
-	// Calculate the alpha such that 90% of the kernel is within the radius. (Kernel extends to infinity)
-	sigma = (float)blur * 0.57735f; // 1 / sqrt(3)
-	alpha = (int)((1<<APREC) * (1.0f - expf(-2.3f / (sigma+1.0f))));
-	fons__blurRows(dst, w, h, dstStride, alpha);
-	fons__blurCols(dst, w, h, dstStride, alpha);
-	fons__blurRows(dst, w, h, dstStride, alpha);
-	fons__blurCols(dst, w, h, dstStride, alpha);
-//	fons__blurrows(dst, w, h, dstStride, alpha);
-//	fons__blurcols(dst, w, h, dstStride, alpha);
-}
-
 static FONSglyph* fons__getGlyph(FONScontext* stash, FONSfont* font, unsigned int codepoint,
 								 short isize, short iblur)
 {
@@ -1017,12 +1027,12 @@ static FONSglyph* fons__getGlyph(FONScontext* stash, FONSfont* font, unsigned in
 	unsigned int h;
 	float size = isize/10.0f;
 	int pad, added;
-	unsigned char* bdst;
 	unsigned char* dst;
 
 	if (isize < 2) return NULL;
+	if (iblur < 2) iblur = 2;
 	if (iblur > 20) iblur = 20;
-	pad = iblur+2;
+	pad = iblur + 2;
 
 	// Reset allocator.
 	stash->nscratch = 0;
@@ -1050,7 +1060,9 @@ static FONSglyph* fons__getGlyph(FONScontext* stash, FONSfont* font, unsigned in
 		stash->handleError(stash->errorUptr, FONS_ATLAS_FULL, 0);
 		added = fons__atlasAddRect(stash->atlas, gw, gh, &gx, &gy);
 	}
-	if (added == 0) return NULL;
+	if (added == 0) {
+		return NULL;
+	}
 
 	// Init glyph.
 	glyph = fons__allocGlyph(font);
@@ -1072,8 +1084,8 @@ static FONSglyph* fons__getGlyph(FONScontext* stash, FONSfont* font, unsigned in
 	font->lut[h] = font->nglyphs-1;
 
 	// Rasterize
-	dst = &stash->texData[(glyph->x0+pad) + (glyph->y0+pad) * stash->params.width];
-	fons__tt_renderGlyphBitmap(&font->font, dst, gw-pad*2,gh-pad*2, stash->params.width, scale,scale, g);
+	dst = &stash->texData[(glyph->x0 + pad - iblur) + (glyph->y0 + pad - iblur) * stash->params.width];
+	fons__tt_renderGlyphBitmap(&font->font, dst, iblur, gw, gh, stash->params.width, scale, g);
 
 	// Make sure there is one pixel empty border.
 	dst = &stash->texData[glyph->x0 + glyph->y0 * stash->params.width];
@@ -1095,13 +1107,6 @@ static FONSglyph* fons__getGlyph(FONScontext* stash, FONSfont* font, unsigned in
 			fdst[x+y*stash->params.width] = a;
 		}
 	}*/
-
-	// Blur
-	if (iblur > 0) {
-		stash->nscratch = 0;
-		bdst = &stash->texData[glyph->x0 + glyph->y0 * stash->params.width];
-		fons__blur(stash, bdst, gw,gh, stash->params.width, iblur);
-	}
 
 	stash->dirtyRect[0] = fons__mini(stash->dirtyRect[0], glyph->x0);
 	stash->dirtyRect[1] = fons__mini(stash->dirtyRect[1], glyph->y0);

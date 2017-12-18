@@ -140,6 +140,8 @@ class NanoVGRenderer {
 
 	void renderTriangles(NVGpaint* paint, NVGscissor* scissor, const NVGvertex* verts, int nverts);
 
+	void renderText(NVGpaint* paint, NVGscissor* scissor, const NVGvertex* verts, int nverts);
+
 	void renderFlush();
 
 	void renderCancel();

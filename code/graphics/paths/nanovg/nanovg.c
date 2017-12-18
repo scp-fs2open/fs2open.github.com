@@ -2289,7 +2289,7 @@ static void nvg__renderText(NVGcontext* ctx, NVGvertex* verts, int nverts)
 	paint.innerColor.a *= state->alpha;
 	paint.outerColor.a *= state->alpha;
 
-	ctx->params.renderTriangles(ctx->params.userPtr, &paint, &state->scissor, verts, nverts);
+	ctx->params.renderText(ctx->params.userPtr, &paint, &state->scissor, verts, nverts);
 
 	ctx->drawCallCount++;
 	ctx->textTriCount += nverts/3;
@@ -2345,12 +2345,12 @@ float nvgText(NVGcontext* ctx, float x, float y, const char* string, const char*
 		nvgTransformPoint(&c[6],&c[7], state->xform, q.x0*invscale, q.y1*invscale);
 		// Create triangles
 		if (nverts+6 <= cverts) {
-			nvg__vset(&verts[nverts], roundf(c[0]), roundf(c[1]), q.s0, q.t0); nverts++;
-			nvg__vset(&verts[nverts], roundf(c[4]), roundf(c[5]), q.s1, q.t1); nverts++;
-			nvg__vset(&verts[nverts], roundf(c[2]), roundf(c[3]), q.s1, q.t0); nverts++;
-			nvg__vset(&verts[nverts], roundf(c[0]), roundf(c[1]), q.s0, q.t0); nverts++;
-			nvg__vset(&verts[nverts], roundf(c[6]), roundf(c[7]), q.s0, q.t1); nverts++;
-			nvg__vset(&verts[nverts], roundf(c[4]), roundf(c[5]), q.s1, q.t1); nverts++;
+			nvg__vset(&verts[nverts], c[0], c[1], q.s0, q.t0); nverts++;
+			nvg__vset(&verts[nverts], c[4], c[5], q.s1, q.t1); nverts++;
+			nvg__vset(&verts[nverts], c[2], c[3], q.s1, q.t0); nverts++;
+			nvg__vset(&verts[nverts], c[0], c[1], q.s0, q.t0); nverts++;
+			nvg__vset(&verts[nverts], c[6], c[7], q.s0, q.t1); nverts++;
+			nvg__vset(&verts[nverts], c[4], c[5], q.s1, q.t1); nverts++;
 		}
 	}
 
