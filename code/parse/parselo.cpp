@@ -363,7 +363,7 @@ int skip_to_string(const char *pstr, const char *end)
 		ignore_white_space();
 	}
 
-	if (*Mp == '\0')
+	if (!Mp || *Mp == '\0')
 		return 0;
 
 	Mp += strlen(pstr);
@@ -393,7 +393,7 @@ int skip_to_start_of_string(const char *pstr, const char *end)
 		ignore_white_space();
 	}
 
-	if (*Mp == '\0')
+	if (!Mp || *Mp == '\0')
 		return 0;
 
 	return 1;
@@ -423,7 +423,7 @@ int skip_to_start_of_string_either(const char *pstr1, const char *pstr2, const c
 		ignore_white_space();
 	}
 
-	if (*Mp == '\0')
+	if (!Mp || *Mp == '\0')
 		return 0;
 
 	return 1;
@@ -584,7 +584,7 @@ int required_string_fred(char *pstr, char *end)
 		ignore_white_space();
 	}
 
-	if (*Mp == '\0') {
+	if (!Mp || *Mp == '\0') {
 		diag_printf("Required string [%s] not found\n", pstr);
 		Mp = backup;
 		Token_found_flag = 0;
@@ -622,7 +622,7 @@ int optional_string_fred(char *pstr, char *end, char *end2)
 		ignore_white_space();
 	}
 
-	if (*Mp == '\0') {
+	if (!Mp || *Mp == '\0') {
 		diag_printf("Optional string [%s] not found\n", pstr);
 		Mp = mp_save;
 		Token_found_flag = 0;

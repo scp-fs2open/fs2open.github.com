@@ -1442,6 +1442,8 @@ void render_compass(void) {
 }
 
 void render_frame() {
+	GR_DEBUG_SCOPE("Fred render frame");
+
 	char buf[256];
 	int x, y, w, h, inst;
 	vec3d pos;
@@ -1552,6 +1554,7 @@ void render_frame() {
 		g3_rotate_vertex(&v, &pos);
 		if (!(v.codes & CC_BEHIND))
 			if (!(g3_project_vertex(&v) & PF_OVERFLOW)) {
+				GR_DEBUG_SCOPE("Draw tooltip");
 
 				gr_get_string_size(&w, &h, buf);
 
@@ -1594,6 +1597,8 @@ void render_frame() {
 }
 
 void render_models(void) {
+	GR_DEBUG_SCOPE("Render models");
+
 	gr_set_color_fast(&colour_white);
 
 	render_count = 0;
