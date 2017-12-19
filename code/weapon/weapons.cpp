@@ -1880,7 +1880,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 
 	// This is an optional modifier for a weapon that uses the "apply recoil" flag. recoil_force in ship.cpp line 10445 is multiplied by this if defined.
 	if (optional_string("$Recoil Modifier:")){
-		if (!(wip->wi_flags[Weapon::Info_Flags::Apply_recoil])){
+		if (!(wip->wi_flags[Weapon::Info_Flags::Apply_Recoil])){
 			Warning(LOCATION, "$Recoil Modifier specified for weapon %s but this weapon does not have the \"apply recoil\" weapon flag set. Automatically setting the flag", wip->name);
             wip->wi_flags.set(Weapon::Info_Flags::Apply_Recoil);
 		}
