@@ -145,6 +145,7 @@ extern char *Cmdline_start_mission;
 extern int Cmdline_old_collision_sys;
 extern int Cmdline_dis_collisions;
 extern int Cmdline_dis_weapons;
+extern bool Cmdline_output_sexp_info;
 extern int Cmdline_noparseerrors;
 extern int Cmdline_extra_warn;
 extern int Cmdline_bmpman_usage;

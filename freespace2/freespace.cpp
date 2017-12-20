@@ -134,6 +134,7 @@
 #include "parse/parselo.h"
 #include "scripting/scripting.h"
 #include "parse/sexp.h"
+#include "parse/sexp/sexp_lookup.h"
 #include "particle/particle.h"
 #include "particle/ParticleManager.h"
 #include "pilotfile/pilotfile.h"
@@ -1988,6 +1989,14 @@ void game_init()
 	if(!Cmdline_reparse_mainhall)
 	{
 		main_hall_table_init();
+	}
+
+	// Initialize dynamic SEXPs
+	sexp::dynamic_sexp_init();
+
+	// This needs to be done after the dynamic SEXP init so that our documentation contains the dynamic sexps
+	if (Cmdline_output_sexp_info) {
+		output_sexps("sexps.html");
 	}
 
 	Viewer_mode = 0;
@@ -6860,6 +6869,9 @@ void game_shutdown(void)
 	multi_lag_close();
 #endif
 	fs2netd_close();
+
+	// Free SEXP resources
+	sexp_shutdown();
 
 	if ( Cmdline_old_collision_sys ) {
 		obj_pairs_close();		// free memory from object collision pairs

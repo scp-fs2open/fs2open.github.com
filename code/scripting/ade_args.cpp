@@ -202,42 +202,12 @@ int ade_get_args(lua_State *L, const char *fmt, ...)
 				ade_odata od = va_arg(vl, ade_odata);
 				if(lua_isuserdata(L, nargs))
 				{
-					//WMC - Get metatable
-					lua_getmetatable(L, nargs);
-					int mtb_ldx = lua_gettop(L);
-					Assert(!lua_isnil(L, -1));
-
-					//Get ID
-					lua_pushstring(L, "__adeid");
-					lua_rawget(L, mtb_ldx);
-
-					if(lua_tonumber(L, -1) != od.idx)
-					{
-						lua_pushstring(L, "__adederivid");
-						lua_rawget(L, mtb_ldx);
-						if((uint)lua_tonumber(L, -1) != od.idx)
-						{
-							LuaError(L, "%s: Argument %d is the wrong type of userdata; '%s' given, but '%s' expected", funcname, nargs, getTableEntry((uint)lua_tonumber(L, -2)).Name, getTableEntry(od.idx).GetName());
-							if(!optional_args) {
-								va_end(vl);
-								return 0;
-							}
+					// Use the helper function
+					if (!luacpp::convert::popValue(L, od, nargs, false)) {
+						if (!optional_args) {
+							va_end(vl);
+							return 0;
 						}
-						lua_pop(L, 1);
-					}
-					lua_pop(L, 2);
-					if(od.size != ODATA_PTR_SIZE)
-					{
-						memcpy(od.buf, lua_touserdata(L, nargs), od.size);
-						if(od.sig != NULL) {
-							//WMC - char must be 1
-							Assert(sizeof(char) == 1);
-							//WMC - Yuck. Copy sig data.
-							//Maybe in the future I'll do a packet userdata thing.
-							(*od.sig) = *(ODATA_SIG_TYPE*)(*(char **)od.buf + od.size);
-						}
-					} else {
-						(*(void**)od.buf) = lua_touserdata(L, nargs);
 					}
 				}
 				else if(lua_isnil(L, nargs) && optional_args)
@@ -257,9 +227,8 @@ int ade_get_args(lua_State *L, const char *fmt, ...)
 			case 't':
 			{
 				// Get a table
-				try {
-					*va_arg(vl, luacpp::LuaTable*) = luacpp::convert::popValue<luacpp::LuaTable>(L, nargs, false);
-				} catch (const luacpp::LuaException&) {
+				auto target = va_arg(vl, luacpp::LuaTable*);
+				if (!luacpp::convert::popValue(L, *target, nargs, false)) {
 					LuaError(L, "%s: Argument %d is an invalid type '%s'; table expected.", funcname, nargs, ade_get_type_string(L, nargs));
 					if(!optional_args) {
 						va_end(vl);
@@ -271,15 +240,16 @@ int ade_get_args(lua_State *L, const char *fmt, ...)
 			case 'u':
 			{
 				// Get a function
-				try {
-					*va_arg(vl, luacpp::LuaFunction*) = luacpp::convert::popValue<luacpp::LuaFunction>(L, nargs, false);
-				} catch (const luacpp::LuaException&) {
+				auto target = va_arg(vl, luacpp::LuaFunction*);
+				if (!luacpp::convert::popValue(L, *target, nargs, false)) {
 					LuaError(L, "%s: Argument %d is an invalid type '%s'; function expected.", funcname, nargs, ade_get_type_string(L, nargs));
 					if(!optional_args) {
 						va_end(vl);
 						return 0;
 					}
 				}
+				// Automatically assign our error function to function values retrieved from the API
+				target->setErrorFunction(luacpp::LuaFunction::createFromCFunction(L, ade_friendly_error));
 				break;
 			}
 			case '|':
@@ -352,30 +322,11 @@ int ade_set_args(lua_State *L, const char *fmt, ...)
 				break;
 			case 'o':
 			{
-				//WMC - char must be 1 byte, foo.
-				Assert(sizeof(char)==1);
-				//WMC - step by step
 				//Copy over objectdata
 				ade_odata od = (ade_odata) va_arg(vl, ade_odata);
 
-				//Create new LUA object and get handle
-				char *newod = (char*)lua_newuserdata(L, od.size + sizeof(ODATA_SIG_TYPE));
-				//Create or get object metatable
-				luaL_getmetatable(L, getTableEntry(od.idx).Name);
-				//Set the metatable for the object
-				lua_setmetatable(L, -2);
-
-				//Copy the actual object data to the Lua object
-				memcpy(newod, od.buf, od.size);
-
-				//Also copy in the unique sig
-				if(od.sig != NULL)
-					memcpy(newod + od.size, od.sig, sizeof(ODATA_SIG_TYPE));
-				else
-				{
-					ODATA_SIG_TYPE tempsig = ODATA_SIG_DEFAULT;
-					memcpy(newod + od.size, &tempsig, sizeof(ODATA_SIG_TYPE));
-				}
+				// Use the common helper method
+				luacpp::convert::pushValue(L, od);
 				break;
 			}
 			case 't':

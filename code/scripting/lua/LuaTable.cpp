@@ -132,4 +132,23 @@ void LuaTableIterator::toNextElement() {
 std::pair<LuaValue, LuaValue> LuaTableIterator::getElement() {
 	return _currentVal;
 }
+
+bool convert::popValue(lua_State* luaState, LuaTable& target, int stackposition, bool remove) {
+	if (!internal::isValidIndex(luaState, stackposition)) {
+		return false;
+	}
+
+	if (!lua_istable(luaState, stackposition)) {
+		return false;
+	} else {
+		target.setReference(UniqueLuaReference::create(luaState, stackposition));
+
+		if (remove) {
+			lua_remove(luaState, stackposition);
+		}
+
+		return true;
+	}
+}
+
 }

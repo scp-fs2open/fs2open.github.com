@@ -95,4 +95,31 @@ bool LuaValue::pushValue() const {
 lua_State* LuaValue::getLuaState() const {
 	return _luaState;
 }
+
+namespace convert {
+
+void pushValue(lua_State* luaState, const LuaValue& value) {
+	if (luaState != value.getLuaState()) {
+		throw LuaException("Lua state mismatch!");
+	}
+
+	value.pushValue();
+}
+
+bool popValue(lua_State* luaState, LuaValue& target, int stackposition, bool remove) {
+	if (!internal::isValidIndex(luaState, stackposition)) {
+		return false;
+	}
+
+	target.setReference(UniqueLuaReference::create(luaState, stackposition));
+
+	if (remove) {
+		lua_remove(luaState, stackposition);
+	}
+
+	return true;
+}
+
+}
+
 }

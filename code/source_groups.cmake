@@ -804,6 +804,15 @@ set (file_root_parse
 	parse/sexp.h
 )
 
+set (file_root_parse_sexp
+	parse/sexp/DynamicSEXP.cpp
+	parse/sexp/DynamicSEXP.h
+	parse/sexp/LuaSEXP.cpp
+	parse/sexp/LuaSEXP.h
+	parse/sexp/sexp_lookup.cpp
+	parse/sexp/sexp_lookup.h
+)
+
 # Particle files
 set (file_root_particle
 	particle/particle.cpp
@@ -981,6 +990,8 @@ set(file_root_scripting_api_objs
 	scripting/api/objs/graphics.h
 	scripting/api/objs/hudgauge.cpp
 	scripting/api/objs/hudgauge.h
+	scripting/api/objs/LuaSEXP.cpp
+	scripting/api/objs/LuaSEXP.h
 	scripting/api/objs/mc_info.cpp
 	scripting/api/objs/mc_info.h
 	scripting/api/objs/message.cpp
@@ -1038,6 +1049,7 @@ set(file_root_scripting_api_objs
 set(file_root_scripting_lua
 	scripting/lua/LuaArgs.cpp
 	scripting/lua/LuaArgs.h
+	scripting/lua/LuaConvert.cpp
 	scripting/lua/LuaConvert.h
 	scripting/lua/LuaException.h
 	scripting/lua/LuaFunction.cpp
@@ -1291,6 +1303,7 @@ source_group("Object"                             FILES ${file_root_object})
 source_group("Observer"                           FILES ${file_root_observer})
 source_group("OsApi"                              FILES ${file_root_osapi})
 source_group("Parse"                              FILES ${file_root_parse})
+source_group("Parse\\SEXP"                        FILES ${file_root_parse_sexp})
 source_group("Particle"                           FILES ${file_root_particle})
 source_group("Particle\\Effects"                  FILES ${file_root_particle_effects})
 source_group("Particle\\Util"                     FILES ${file_root_particle_util})
@@ -1385,6 +1398,7 @@ set (file_root
 	${file_root_observer}
 	${file_root_osapi}
 	${file_root_parse}
+	${file_root_parse_sexp}
 	${file_root_particle}
 	${file_root_particle_effects}
 	${file_root_particle_util}

@@ -121,25 +121,7 @@ class LuaFunction: public LuaValue {
 
 namespace convert {
 
-template<>
-inline LuaFunction popValue<LuaFunction>(lua_State* luaState, int stackposition, bool remove) {
-	if (!isValidIndex(luaState, stackposition)) {
-		throw LuaException("Specified stack position is not valid!");
-	}
-
-	if (!lua_isfunction(luaState, stackposition)) {
-		throw LuaException("Specified index is no function!");
-	} else {
-		LuaFunction target;
-		target.setReference(UniqueLuaReference::create(luaState, stackposition));
-
-		if (remove) {
-			lua_remove(luaState, stackposition);
-		}
-
-		return target;
-	}
-}
+bool popValue(lua_State* luaState, LuaFunction& target, int stackposition = -1, bool remove = true);
 
 }
 }

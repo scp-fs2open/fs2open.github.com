@@ -508,6 +508,7 @@ char *Cmdline_start_mission = NULL;
 int Cmdline_old_collision_sys = 0;
 int Cmdline_dis_collisions = 0;
 int Cmdline_dis_weapons = 0;
+bool Cmdline_output_sexp_info = false;
 int Cmdline_noparseerrors = 0;
 #ifdef Allow_NoWarn
 int Cmdline_nowarn = 0; // turn warnings off in FRED
@@ -1890,7 +1891,7 @@ bool SetCmdlineParams()
 		Output_scripting_meta = true;
 
 	if (output_sexp_arg.found() ) {
-		output_sexps("sexps.html");
+		Cmdline_output_sexp_info = true;
 	}
 
 	if ( no_pbo_arg.found() )
