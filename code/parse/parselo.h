@@ -354,6 +354,20 @@ namespace parse
 		ParseException(const std::string& msg) : std::runtime_error(msg) {}
 		~ParseException() throw() {}
 	};
+
+	/**
+	* @brief Parsing checkpoint
+	*
+	* @details Keeps track of the information it needs to be able to resume parsing a file at this location.
+	*/
+	class Bookmark
+	{
+	public:
+		SCP_string filename;
+		char* Mp;
+		int Warning_count;
+		int Error_count;
+	};
 }
 
 #endif
