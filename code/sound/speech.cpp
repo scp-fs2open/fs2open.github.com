@@ -49,6 +49,7 @@
 #pragma warning(pop)
 
 #include "globalincs/pstypes.h"
+#include "utils/unicode.h"
 #include "speech.h"
 
 
@@ -106,28 +107,41 @@ bool speech_play(const char *text)
 	}
 
 #ifdef _WIN32
-	size_t len = strlen(text);
-	wchar_t Conversion_buffer[MAX_SPEECH_CHAR_LEN];
+	SCP_string work_buffer;
 
-	if(len > (MAX_SPEECH_CHAR_LEN - 1)) {
-		len = MAX_SPEECH_CHAR_LEN - 1;
-	}
-
-	size_t count = 0;
-	for(size_t i = 0; i < len; i++) {
-		if(text[i] == '$') {
-			i++;
+	bool saw_dollar = false;
+	for (auto ch : unicode::codepoint_range(text)) {
+		if (ch == UNICODE_CHAR('$')) {
+			// Skip $ escape sequences which appear in briefing text
+			saw_dollar = true;
+			continue;
+		} else if (saw_dollar) {
+			saw_dollar = false;
 			continue;
 		}
 
-		Conversion_buffer[count] = (unsigned short) text[i];
-		count++;
+		unicode::encode(ch, std::back_inserter(work_buffer));
 	}
 
-	Conversion_buffer[count] = '\0';
+	// Determine the needed amount of data
+	auto num_chars = MultiByteToWideChar(CP_UTF8, 0, work_buffer.c_str(), (int) work_buffer.size(), nullptr, 0);
+
+	if (num_chars <= 0) {
+		// Error
+		return false;
+	}
+
+	std::wstring wide_string;
+	wide_string.resize(num_chars);
+
+	auto err = MultiByteToWideChar(CP_UTF8, 0, work_buffer.c_str(), (int)work_buffer.size(), &wide_string[0], num_chars);
+
+	if (err <= 0) {
+		return false;
+	}
 
 	speech_stop();
-	return SUCCEEDED(Voice_device->Speak(Conversion_buffer, SPF_ASYNC, NULL));
+	return SUCCEEDED(Voice_device->Speak(wide_string.c_str(), SPF_ASYNC, NULL));
 #else
 	int len = strlen(text);
 	char Conversion_buffer[MAX_SPEECH_CHAR_LEN];
