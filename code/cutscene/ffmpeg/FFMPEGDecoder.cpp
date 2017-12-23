@@ -184,11 +184,13 @@ std::unique_ptr<DecoderStatus> initializeStatus(std::unique_ptr<InputStream>& st
 	for (uint32_t i = 0; i < ctx->nb_streams; ++i) {
 		auto test_stream = ctx->streams[i];
 
+#if LIBAVCODEC_VERSION_INT > AV_VERSION_INT(57, 24, 255)
 		auto& pars = test_stream->codecpar;
 
 		if (!(pars->codec_type == AVMEDIA_TYPE_SUBTITLE)) {
 			continue;
 		}
+#endif
 		AVDictionaryEntry* tag = nullptr;
 		if ((tag = av_dict_get(test_stream->metadata, "language", nullptr, 0)) == nullptr) {
 			continue;
