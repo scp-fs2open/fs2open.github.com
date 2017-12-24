@@ -13,8 +13,6 @@
 
 #if FS2_SPEECH
 
-const size_t MAX_SPEECH_CHAR_LEN = 10000;
-
 bool speech_init();
 void speech_deinit();
 bool speech_play(const char *text);
