@@ -2231,15 +2231,13 @@ uint gr_determine_model_shader_flags(
 
 void gr_print_timestamp(int x, int y, fix timestamp, int resize_mode)
 {
-	char time[8];
-
 	int seconds = fl2i(f2fl(timestamp));
 
 	// format the time information into strings
+	SCP_string time;
 	sprintf(time, "%.1d:%.2d:%.2d", (seconds / 3600) % 10, (seconds / 60) % 60, seconds % 60);
-	time[7] = '\0';
 
-	gr_string(x, y, time, resize_mode);
+	gr_string(x, y, time.c_str(), resize_mode);
 }
 
 static std::unique_ptr<graphics::util::UniformBufferManager>
