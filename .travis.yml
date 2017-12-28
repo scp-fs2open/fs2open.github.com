@@ -4,6 +4,7 @@ dist: trusty
 cache:
     directories:
     - $HOME/cmake
+    - $HOME/.ccache
 addons:
     apt:
         packages: &global_deps
