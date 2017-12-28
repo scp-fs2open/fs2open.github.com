@@ -150,7 +150,11 @@ bool WaveFile::Open(const char* pszFilename, bool keep_ext) {
 				throw FFmpegException("Unknown file extension.");
 			}
 
-			cf_find_file_location(pszFilename, CF_TYPE_ANY, sizeof(fullpath) - 1, fullpath, &FileSize, &FileOffset);
+			rc = cf_find_file_location(pszFilename, CF_TYPE_ANY, sizeof(fullpath) - 1, fullpath, &FileSize, &FileOffset);
+
+			if(rc == 0) {
+				throw FFmpegException("File not found.");
+			}
 		}
 		else {
 			// ... otherwise we just find the best match
