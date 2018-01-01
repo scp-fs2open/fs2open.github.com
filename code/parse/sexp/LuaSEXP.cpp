@@ -8,11 +8,13 @@
 #include "object/waypoint.h"
 #include "iff_defs/iff_defs.h"
 #include "ship/ship.h"
+#include "mission/missionmessage.h"
 
 #include "scripting/api/objs/sexpvar.h"
 #include "scripting/api/objs/team.h"
 #include "scripting/api/objs/waypoint.h"
 #include "scripting/api/objs/ship.h"
+#include "scripting/api/objs/message.h"
 
 using namespace luacpp;
 
@@ -24,7 +26,8 @@ SCP_unordered_map<SCP_string, int> parameter_type_mapping{{ "boolean",      OPF_
 														  { "string",       OPF_STRING },
 														  { "team",         OPF_IFF },
 														  { "waypointpath", OPF_WAYPOINT_PATH },
-														  { "variable",     OPF_VARIABLE_NAME }, };
+														  { "variable",     OPF_VARIABLE_NAME },
+														  { "message",      OPF_MESSAGE }, };
 int get_parameter_type(const SCP_string& name) {
 	SCP_string copy = name;
 	std::transform(copy.begin(), copy.end(), copy.begin(), ::tolower);
@@ -105,6 +108,7 @@ int LuaSEXP::getArgumentType(int argnum) const {
 	return _varargs_type_pattern[varargs_index];
 }
 luacpp::LuaValue LuaSEXP::sexpToLua(int node, int argnum) const {
+	using namespace scripting::api;
 	auto argtype = getArgumentType(argnum);
 
 	switch (argtype) {
@@ -123,8 +127,6 @@ luacpp::LuaValue LuaSEXP::sexpToLua(int node, int argnum) const {
 		return LuaValue::createValue(_action.getLuaState(), value);
 	}
 	case OPF_VARIABLE_NAME: {
-		using namespace scripting::api;
-
 		// Variable names work by getting the variable index from the text node
 		auto sexp_variable_index = atoi(Sexp_nodes[node].text);
 
@@ -135,23 +137,17 @@ luacpp::LuaValue LuaSEXP::sexpToLua(int node, int argnum) const {
 		return LuaValue::createValue(_action.getLuaState(), l_SEXPVariable.Set(sexpvar_h(sexp_variable_index)));
 	}
 	case OPF_IFF: {
-		using namespace scripting::api;
-
 		auto team_idx = iff_lookup(CTEXT(node));
 
 		return LuaValue::createValue(_action.getLuaState(), l_Team.Set(team_idx));
 	}
 	case OPF_WAYPOINT_PATH: {
-		using namespace scripting::api;
-
 		waypoint_list *wp_list = find_matching_waypoint_list(CTEXT(node));
 
 		return LuaValue::createValue(_action.getLuaState(), l_WaypointList.Set(waypointlist_h(wp_list)));
 	}
 		// The following argument types are all strings
 	case OPF_SHIP: {
-		using namespace scripting::api;
-
 		auto ship_id = ship_name_lookup(CTEXT(node));
 
 		if (ship_id < 0) {
@@ -167,6 +163,21 @@ luacpp::LuaValue LuaSEXP::sexpToLua(int node, int argnum) const {
 				  CTEXT(node));
 
 		return LuaValue::createValue(_action.getLuaState(), l_Ship.Set(object_h(objp)));
+	}
+	case OPF_MESSAGE: {
+		auto name = CTEXT(node);
+
+		auto idx = -1;
+		for (int i = Num_builtin_messages; i < (int) Messages.size(); i++)
+		{
+			if (!stricmp(Messages[i].name, name))
+			{
+				idx = i;
+				break;
+			}
+		}
+
+		return LuaValue::createValue(_action.getLuaState(), l_Message.Set(idx));
 	}
 	case OPF_STRING: {
 		auto text = CTEXT(node);
