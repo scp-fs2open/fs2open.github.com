@@ -40,6 +40,14 @@ set(CMAKE_CONFIGURATION_TYPES Debug Release FastDebug CACHE STRING "Available co
 
 PROJECT(FS2_Open)
 
+find_program(CCACHE_PROGRAM ccache)
+# Currently only GCC support ccache properly without generating additional warnings
+if(CCACHE_PROGRAM AND "${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+	message(STATUS "Using ccache for compilation: ${CCACHE_PROGRAM}")
+	set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE "${CCACHE_PROGRAM}")
+	set_property(GLOBAL PROPERTY RULE_LAUNCH_LINK "${CCACHE_PROGRAM}")
+endif()
+
 IF(CMAKE_CROSSCOMPILING)
 	SET(IMPORT_EXE_DIR "IMPORT_EXE_DIR-NOTFOUND" CACHE FILEPATH "Required for a cross compiling build, point to binary directory of a cmake build for the real OS")
 	INCLUDE(${IMPORT_EXE_DIR}/ImportExecutables.cmake)
