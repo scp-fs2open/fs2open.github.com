@@ -4169,6 +4169,7 @@ void game_frame(bool paused)
 
 			if(Scripting_didnt_draw_hud) {
 				GR_DEBUG_SCOPE("Render HUD");
+				TRACE_SCOPE(tracing::RenderHUD);
 
 				game_render_hud(cid);
 			}
@@ -4180,6 +4181,8 @@ void game_frame(bool paused)
 
 			if (!(Viewer_mode & (VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY))) 
 			{
+				TRACE_SCOPE(tracing::RenderHUDHook);
+
 				Script_system.RunCondition(CHA_HUDDRAW, '\0', NULL, Viewer_obj);
 			}
 			Script_system.RemHookVar("Self");

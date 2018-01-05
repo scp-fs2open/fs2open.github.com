@@ -43,6 +43,7 @@
 #include "network/multi_pmsg.h"
 #include "network/multi_voice.h"
 #include "network/multiutil.h"
+#include "tracing/tracing.h"
 #include "object/object.h"
 #include "object/objectdock.h"
 #include "playerman/player.h"
@@ -1764,6 +1765,8 @@ void hud_render_gauges(int cockpit_display_num)
 				continue;
 			}
 
+			TRACE_SCOPE(tracing::RenderHUDGauge);
+
 			sip->hud_gauges[j]->resetClip();
 			sip->hud_gauges[j]->setFont();
 			sip->hud_gauges[j]->render(flFrametime);
@@ -1781,6 +1784,8 @@ void hud_render_gauges(int cockpit_display_num)
 			if ( !default_hud_gauges[j]->canRender() ) {
 				continue;
 			}
+
+			TRACE_SCOPE(tracing::RenderHUDGauge);
 
 			default_hud_gauges[j]->resetClip();
 			default_hud_gauges[j]->setFont();
