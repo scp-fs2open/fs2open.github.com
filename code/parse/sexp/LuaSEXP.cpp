@@ -230,6 +230,12 @@ int LuaSEXP::getSexpReturnValue(const LuaValueList& retVals) const {
 	}
 }
 int LuaSEXP::execute(int node) {
+	if (!_action.isValid()) {
+		Error(LOCATION,
+			  "Lua SEXP called without a valid action function! A script probably failed to set the action for some reason.");
+		return SEXP_CANT_EVAL;
+	}
+
 	LuaValueList luaParameters;
 
 	// We need to adapt how we handle parameters based on their type. We use this variable to keep track of which parameter

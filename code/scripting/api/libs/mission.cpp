@@ -1057,6 +1057,7 @@ ADE_INDEXER(l_Mission_LuaSEXPs, "string Name", "Gets a handle of a Lua SEXP", "L
 	auto op = get_operator_const(name);
 
 	if (op == 0) {
+		LuaError(L, "SEXP '%s' is not known to the SEXP system!", name);
 		return ade_set_args(L, "o", l_LuaSEXP.Set(lua_sexp_h()));
 	}
 
