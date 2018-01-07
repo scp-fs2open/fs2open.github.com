@@ -14,6 +14,7 @@
 #include "scripting/api/objs/team.h"
 #include "scripting/api/objs/waypoint.h"
 #include "scripting/api/objs/ship.h"
+#include "scripting/api/objs/shipclass.h"
 #include "scripting/api/objs/wing.h"
 #include "scripting/api/objs/message.h"
 
@@ -29,7 +30,8 @@ SCP_unordered_map<SCP_string, int> parameter_type_mapping{{ "boolean",      OPF_
 														  { "waypointpath", OPF_WAYPOINT_PATH },
 														  { "variable",     OPF_VARIABLE_NAME },
 														  { "message",      OPF_MESSAGE },
-														  { "wing",         OPF_WING }, };
+														  { "wing",         OPF_WING },
+														  { "shipclass",    OPF_SHIP_CLASS_NAME }, };
 int get_parameter_type(const SCP_string& name) {
 	SCP_string copy = name;
 	std::transform(copy.begin(), copy.end(), copy.begin(), ::tolower);
@@ -185,6 +187,11 @@ luacpp::LuaValue LuaSEXP::sexpToLua(int node, int argnum) const {
 		auto name = CTEXT(node);
 
 		return LuaValue::createValue(_action.getLuaState(), l_Wing.Set(wing_name_lookup(name)));
+	}
+	case OPF_SHIP_CLASS_NAME: {
+		auto name = CTEXT(node);
+
+		return LuaValue::createValue(_action.getLuaState(), l_Shipclass.Set(ship_info_lookup(name)));
 	}
 	case OPF_STRING: {
 		auto text = CTEXT(node);
