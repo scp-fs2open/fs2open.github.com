@@ -1728,6 +1728,11 @@ void campaign_room_close()
 	if (Background_bitmap >= 0)
 		bm_release(Background_bitmap);
 
+	// Reset info text pointers and size since they may contain pointers into the campaign description which will be
+	// freed soon.
+	memset(Info_text_line_size, 0, sizeof(Info_text_line_size));
+	memset(Info_text_ptrs, 0, sizeof(Info_text_ptrs));
+
 	// free the global Campaign_* list stuff
 	mission_campaign_free_list();
 
