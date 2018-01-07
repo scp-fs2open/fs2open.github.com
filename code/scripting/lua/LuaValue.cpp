@@ -45,9 +45,7 @@ LuaValue LuaValue::createNil(lua_State* L) {
 }
 
 LuaValue::LuaValue(lua_State* state) : _luaState(state), _luaType(ValueType::NONE) {
-	if (state == nullptr) {
-		throw LuaException("Lua state pointer is not valid!");
-	}
+	Assertion(state != nullptr, "Lua state pointer is not valid!");
 }
 
 LuaValue::LuaValue(const LuaValue& other) : _luaState(other._luaState) {
