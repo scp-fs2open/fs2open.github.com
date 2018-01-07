@@ -2748,6 +2748,11 @@ void lab_close()
 		Lab_ship_subsys = NULL;
 	}
 
+	if (Lab_selected_object != -1) {
+		obj_delete(Lab_selected_object);
+		Lab_selected_object = -1;
+	}
+
 	memset( Lab_model_filename, 0, sizeof(Lab_model_filename) );
 
 	Basemap_override = false;
