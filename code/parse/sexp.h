@@ -748,13 +748,14 @@ class waypoint_list;
 #define OP_TURRET_SET_SECONDARY_AMMO		(0x002d | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// DahBlount, part of the turret ammo changes
 #define OP_JETTISON_CARGO_NEW				(0x002e | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Goober5000
 #define OP_STRING_CONCATENATE_BLOCK			(0x002f | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Goober5000
-#define OP_CONTAINER_ADD_TO_LIST			(0x0030 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Karajorma
-#define OP_CONTAINER_ADD_TO_MAP				(0x0031 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Karajorma
+#define OP_MODIFY_VARIABLE_XSTR				(0X0030 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// m!m
+#define OP_CONTAINER_ADD_TO_LIST			(0x0031 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Karajorma
+#define OP_CONTAINER_ADD_TO_MAP				(0x0032 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Karajorma
 
-#define OP_CLEAR_CONTAINER					(0x0032 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Karajorma
-#define OP_GET_MAP_KEYS						(0x0033 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Karajorma
-#define OP_CONTAINER_REMOVE_FROM_LIST		(0x0034 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Karajorma
-#define OP_CONTAINER_REMOVE_FROM_MAP		(0x0035 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Karajorma
+#define OP_CLEAR_CONTAINER					(0x0033 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Karajorma
+#define OP_GET_MAP_KEYS						(0x0034 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Karajorma
+#define OP_CONTAINER_REMOVE_FROM_LIST		(0x0035 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Karajorma
+#define OP_CONTAINER_REMOVE_FROM_MAP		(0x0036 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Karajorma
 
 // defined for AI goals
 #define OP_AI_CHASE							(0x0000 | OP_CATEGORY_AI | OP_NONCAMPAIGN_FLAG)
@@ -1200,6 +1201,7 @@ extern SCP_vector<SCP_string> *Current_event_log_argument_buffer;
 extern SCP_vector<SCP_string> *Current_event_log_container_buffer;
 
 extern void init_sexp();
+extern void sexp_shutdown();
 extern int alloc_sexp(const char *text, int type, int subtype, int first, int rest);
 extern int find_free_sexp();
 extern int free_one_sexp(int num);

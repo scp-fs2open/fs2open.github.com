@@ -354,7 +354,7 @@ void CFred_mission_save::parse_comments(int newlines) {
 	if (newlines)
 		same_line = 1;
 
-	if (fred_parse_flag || !Token_found_flag || !token_found || (token_found && (*Mission_text_raw == EOF_CHAR))) {
+	if (fred_parse_flag || !Token_found_flag || !token_found || (token_found && (*Mission_text_raw == '\0'))) {
 		while (newlines-- > 0)
 			fout("\n");
 
@@ -368,7 +368,7 @@ void CFred_mission_save::parse_comments(int newlines) {
 		return;
 	}
 
-	while (*raw_ptr != EOF_CHAR) {
+	while (*raw_ptr != '\0') {
 		// state values (as far as I could figure out):
 		// 0 - raw_ptr not inside comment
 		// 1 - raw_ptr inside /**/ comment

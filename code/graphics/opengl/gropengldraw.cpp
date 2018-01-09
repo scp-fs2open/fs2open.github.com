@@ -22,6 +22,7 @@
 #include "graphics/light.h"
 #include "tracing/tracing.h"
 #include "render/3d.h"
+#include "ShaderProgram.h"
 
 #include <algorithm>
 
@@ -53,23 +54,6 @@ int Scene_texture_height;
 GLfloat Scene_texture_u_scale = 1.0f;
 GLfloat Scene_texture_v_scale = 1.0f;
 
-static opengl_vertex_bind GL_array_binding_data[] =
-{
-	{ vertex_format_data::POSITION4,	4, GL_FLOAT,			GL_FALSE, opengl_vert_attrib::POSITION	},
-	{ vertex_format_data::POSITION3,	3, GL_FLOAT,			GL_FALSE, opengl_vert_attrib::POSITION	},
-	{ vertex_format_data::POSITION2,	2, GL_FLOAT,			GL_FALSE, opengl_vert_attrib::POSITION	},
-	{ vertex_format_data::SCREEN_POS,	2, GL_INT,				GL_FALSE, opengl_vert_attrib::POSITION	},
-	{ vertex_format_data::COLOR3,		3, GL_UNSIGNED_BYTE,	GL_TRUE,opengl_vert_attrib::COLOR		},
-	{ vertex_format_data::COLOR4,		4, GL_UNSIGNED_BYTE,	GL_TRUE, opengl_vert_attrib::COLOR		},
-	{ vertex_format_data::TEX_COORD2,	2, GL_FLOAT,			GL_FALSE, opengl_vert_attrib::TEXCOORD	},
-	{ vertex_format_data::TEX_COORD3,	3, GL_FLOAT,			GL_FALSE, opengl_vert_attrib::TEXCOORD	},
-	{ vertex_format_data::NORMAL,		3, GL_FLOAT,			GL_FALSE, opengl_vert_attrib::NORMAL	},
-	{ vertex_format_data::TANGENT,		4, GL_FLOAT,			GL_FALSE, opengl_vert_attrib::TANGENT	},
-	{ vertex_format_data::MODEL_ID,		1, GL_FLOAT,			GL_FALSE, opengl_vert_attrib::MODEL_ID	},
-	{ vertex_format_data::RADIUS,		1, GL_FLOAT,			GL_FALSE, opengl_vert_attrib::RADIUS	},
-	{ vertex_format_data::UVEC,			3, GL_FLOAT,			GL_FALSE, opengl_vert_attrib::UVEC		},
-};
-
 inline GLenum opengl_primitive_type(primitive_type prim_type)
 {
 	switch ( prim_type ) {
@@ -88,52 +72,6 @@ inline GLenum opengl_primitive_type(primitive_type prim_type)
 	default:
 		return GL_TRIANGLE_FAN;
 	}
-}
-
-void opengl_bind_vertex_component(const vertex_format_data &vert_component, uint base_vertex, ubyte* base_ptr)
-{
-	opengl_vertex_bind &bind_info = GL_array_binding_data[vert_component.format_type];
-	opengl_vert_attrib &attrib_info = GL_vertex_attrib_info[bind_info.attribute_id];
-
-	Assert(bind_info.attribute_id == attrib_info.attribute_id);
-
-	size_t byte_offset = 0;
-
-	// determine if we need to offset into this vertex buffer by # of base_vertex vertices
-	if ( base_vertex > 0 ) {
-		if ( vert_component.stride > 0 ) {
-			// we have a stride so it's just number of bytes per stride times number of verts
-			byte_offset = vert_component.stride * base_vertex;
-		} else {
-			// no stride so that means verts are tightly packed so offset based off of the data type and width.
-			byte_offset = bind_info.size * opengl_data_type_size(bind_info.data_type) * base_vertex;
-		}
-	}
-
-	GLubyte *data_src = (GLubyte*)base_ptr + vert_component.offset + byte_offset;
-
-	if ( Current_shader != NULL ) {
-		// grabbing a vertex attribute is dependent on what current shader has been set. i hope no one calls opengl_bind_vertex_layout before opengl_set_current_shader
-		GLint index = opengl_shader_get_attribute(attrib_info.name.c_str());
-
-		if ( index >= 0 ) {
-			GL_state.Array.EnableVertexAttrib(index);
-			GL_state.Array.VertexAttribPointer(index, bind_info.size, bind_info.data_type, bind_info.normalized, (GLsizei)vert_component.stride, data_src);
-		}
-	}
-}
-
-void opengl_bind_vertex_layout(vertex_layout &layout, uint base_vertex, ubyte* base_ptr)
-{
-	GL_state.Array.BindPointersBegin();
-
-	size_t num_vertex_bindings = layout.get_num_vertex_components();
-
-	for ( size_t i = 0; i < num_vertex_bindings; ++i ) {
-		opengl_bind_vertex_component(*layout.get_vertex_component(i), base_vertex, base_ptr);
-	}
-
-	GL_state.Array.BindPointersEnd();
 }
 
 void gr_opengl_sphere(material* material_def, float rad)
@@ -771,9 +709,7 @@ void opengl_render_primitives(primitive_type prim_type, vertex_layout* layout, i
 
 	Assertion(buffer_handle >= 0, "A valid buffer handle is required! Use the immediate buffer if data is not in GPU buffer yet.");
 
-	opengl_bind_buffer_object(buffer_handle);
-
-	opengl_bind_vertex_layout(*layout, 0, (ubyte*)byte_offset);
+	opengl_bind_vertex_layout(*layout, opengl_buffer_get_id(GL_ARRAY_BUFFER, buffer_handle), 0, byte_offset);
 
 	glDrawArrays(opengl_primitive_type(prim_type), (GLint)vert_offset, n_verts);
 }
@@ -785,33 +721,15 @@ void opengl_render_primitives_immediate(primitive_type prim_type, vertex_layout*
 	opengl_render_primitives(prim_type, layout, n_verts, gr_immediate_buffer_handle, 0, offset);
 }
 
-void gr_opengl_render_primitives(material* material_info, primitive_type prim_type, vertex_layout* layout, int offset, int n_verts, int buffer_handle)
+void gr_opengl_render_primitives(material* material_info, primitive_type prim_type, vertex_layout* layout, int offset, int n_verts, int buffer_handle, size_t buffer_offset)
 {
 	GL_CHECK_FOR_ERRORS("start of gr_opengl_render_primitives()");
 
 	opengl_tnl_set_material(material_info, true);
 
-	opengl_render_primitives(prim_type, layout, n_verts, buffer_handle, offset, 0);
+	opengl_render_primitives(prim_type, layout, n_verts, buffer_handle, offset, buffer_offset);
 
 	GL_CHECK_FOR_ERRORS("end of gr_opengl_render_primitives()");
-}
-
-void gr_opengl_render_primitives_2d(material* material_info, primitive_type prim_type, vertex_layout* layout, int offset, int n_verts, int buffer_handle)
-{
-	GL_CHECK_FOR_ERRORS("start of gr_opengl_render_primitives_2d()");
-
-	//glPushMatrix();
-	//glTranslatef((float)gr_screen.offset_x, (float)gr_screen.offset_y, -0.99f);
-
-	gr_set_2d_matrix();
-
-	gr_opengl_render_primitives(material_info, prim_type, layout, offset, n_verts, buffer_handle);
-
-	gr_end_2d_matrix();
-
-	//glPopMatrix();
-
-	GL_CHECK_FOR_ERRORS("end of gr_opengl_render_primitives_2d()");
 }
 
 void gr_opengl_render_primitives_particle(particle_material* material_info, primitive_type prim_type, vertex_layout* layout, int offset, int n_verts, int buffer_handle)
@@ -855,6 +773,19 @@ void gr_opengl_render_movie(movie_material* material_info,
 	opengl_render_primitives(prim_type, layout, n_verts, buffer, 0, 0);
 
 	gr_end_2d_matrix();
+}
+
+void gr_opengl_render_nanovg(nanovg_material* material_info,
+							 primitive_type prim_type,
+							 vertex_layout* layout,
+							 int offset,
+							 int n_verts,
+							 int buffer_handle) {
+	GR_DEBUG_SCOPE("Render NanoVG primitives");
+
+	opengl_tnl_set_material_nanovg(material_info);
+
+	opengl_render_primitives(prim_type, layout, n_verts, buffer_handle, offset, 0);
 }
 
 void gr_opengl_render_primitives_batched(batched_bitmap_material* material_info,

@@ -198,6 +198,30 @@ void opengl_state::init()
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 	framebuffer_stack.clear();
+
+	stencilFunc = GL_ALWAYS;
+	stencilFuncRef = 0;
+	stencilFuncMask = 0xFFFFFFFF;
+	glStencilFunc(stencilFunc, stencilFuncRef, stencilFuncMask);
+
+	stencilMask = 0xFFFFFFFF;
+	glStencilMask(stencilMask);
+
+	stencilOpFrontStencilFail = GL_KEEP;
+	stencilOpFrontDepthFail = GL_KEEP;
+	stencilOpFrontPass = GL_KEEP;
+
+	stencilOpBackStencilFail = GL_KEEP;
+	stencilOpBackDepthFail = GL_KEEP;
+	stencilOpBackPass = GL_KEEP;
+
+	glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+
+	colormask_Status.x = true;
+	colormask_Status.y = true;
+	colormask_Status.z = true;
+	colormask_Status.w = true;
+	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 }
 
 GLboolean opengl_state::Blend(GLint state)
@@ -366,19 +390,17 @@ GLboolean opengl_state::DepthMask(GLint state)
 	return save_state;
 }
 
-GLboolean opengl_state::ColorMask(GLint state)
+bvec4 opengl_state::ColorMask(bool red, bool green, bool blue, bool alpha)
 {
-    GLboolean save_state = colormask_Status;
+    auto save_state = colormask_Status;
 
-    if ( !((state == -1) || (state == colormask_Status)) ) {
-        if (state) {
-            Assert( state == GL_TRUE );
-            glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-            colormask_Status = GL_TRUE;
-        } else {
-            glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
-            colormask_Status = GL_FALSE;
-        }
+	if (colormask_Status.x != red || colormask_Status.y != green || colormask_Status.z != blue
+		|| colormask_Status.w != alpha) {
+		glColorMask(red ? GL_TRUE : GL_FALSE,
+					green ? GL_TRUE : GL_FALSE,
+					blue ? GL_TRUE : GL_FALSE,
+					alpha ? GL_TRUE : GL_FALSE);
+		colormask_Status = { red, green, blue, alpha };
     }
 
     return save_state;
@@ -454,37 +476,6 @@ void opengl_state::SetZbufferType(gr_zbuffer_type zt)
 	GL_state.DepthTest( (zt == ZBUFFER_TYPE_NONE) ? GL_FALSE : GL_TRUE );
 }
 
-void opengl_state::SetStencilType(gr_stencil_type st)
-{
-    if (st == Current_stencil_type) {
-        return;
-    }
-    
-    switch (st) {
-        case STENCIL_TYPE_NONE:
-            glStencilFunc( GL_NEVER, 1, 0xFFFF );
-            glStencilOp( GL_KEEP, GL_KEEP, GL_KEEP );
-            break;
-            
-        case STENCIL_TYPE_READ:
-            glStencilFunc( GL_NOTEQUAL, 1, 0XFFFF );
-            glStencilOp( GL_KEEP, GL_KEEP, GL_KEEP );
-            break;
-            
-        case STENCIL_TYPE_WRITE:
-            glStencilFunc( GL_ALWAYS, 1, 0xFFFF );
-            glStencilOp( GL_KEEP, GL_KEEP, GL_REPLACE );
-            break;
-                     
-        default:
-            break;
-    }
-           
-    GL_state.StencilTest( (st == STENCIL_TYPE_NONE) ? GL_FALSE : GL_TRUE );
-         
-    Current_stencil_type = st;
-}
-
 void opengl_state::SetLineWidth(GLfloat width)
 {
 	if ( width == line_width_Value ) {
@@ -522,6 +513,64 @@ void opengl_state::PopFramebufferState() {
 	framebuffer_stack.pop_back();
 
 	BindFrameBuffer(restoreBuffer);
+}
+void opengl_state::BindVertexArray(GLuint vao) {
+	if (current_vao == vao) {
+		return;
+	}
+
+	glBindVertexArray(vao);
+	current_vao = vao;
+
+	Array.VertexArrayChanged();
+}
+void opengl_state::StencilFunc(GLenum func, GLint ref, GLuint mask) {
+	if (stencilFunc == func && stencilFuncRef == ref && stencilFuncMask == mask) {
+		return;
+	}
+
+	glStencilFunc(func, ref, mask);
+
+	stencilFunc = func;
+	stencilFuncRef = ref;
+	stencilFuncMask = mask;
+}
+void opengl_state::StencilOpSeparate(GLenum face, GLenum sfail, GLenum dpfail, GLenum dppass) {
+	if (face == GL_FRONT_AND_BACK) {
+		StencilOpSeparate(GL_FRONT, sfail, dpfail, dppass);
+		StencilOpSeparate(GL_BACK, sfail, dpfail, dppass);
+		return;
+	}
+
+	if (face == GL_FRONT) {
+		if (stencilOpFrontStencilFail == sfail && stencilOpFrontDepthFail == dpfail && stencilOpFrontPass == dppass) {
+			return;
+		}
+
+		glStencilOpSeparate(GL_FRONT, sfail, dpfail, dppass);
+
+		stencilOpFrontStencilFail = sfail;
+		stencilOpFrontDepthFail = dpfail;
+		stencilOpFrontPass = dppass;
+	} else {
+		if (stencilOpBackStencilFail == sfail && stencilOpBackDepthFail == dpfail && stencilOpBackPass == dppass) {
+			return;
+		}
+
+		glStencilOpSeparate(GL_BACK, sfail, dpfail, dppass);
+
+		stencilOpBackStencilFail = sfail;
+		stencilOpBackDepthFail = dpfail;
+		stencilOpBackPass = dppass;
+	}
+}
+void opengl_state::StencilMask(GLuint mask) {
+	if (stencilMask == mask) {
+		return;
+	}
+
+	glStencilMask(mask);
+	stencilMask = mask;
 }
 
 opengl_array_state::~opengl_array_state()
@@ -648,13 +697,14 @@ void opengl_array_state::BindPointersEnd()
 
 void opengl_array_state::BindArrayBuffer(GLuint id)
 {
-	if ( array_buffer == id ) {
+	if ( array_buffer_valid && array_buffer == id ) {
 		return;
 	}
 
 	glBindBuffer(GL_ARRAY_BUFFER, id);
 
 	array_buffer = id;
+	array_buffer_valid = true;
 
 	for (unsigned int i = 0; i < num_client_texture_units; i++) {
 		client_texture_units[i].reset_ptr = true;
@@ -669,13 +719,14 @@ void opengl_array_state::BindArrayBuffer(GLuint id)
 
 void opengl_array_state::BindElementBuffer(GLuint id)
 {
-	if ( element_array_buffer == id ) {
+	if ( element_array_buffer_valid && element_array_buffer == id ) {
 		return;
 	}
 
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, id);
 
 	element_array_buffer = id;
+	element_array_buffer_valid = true;
 }
 
 void opengl_array_state::BindTextureBuffer(GLuint id)
@@ -710,6 +761,34 @@ void opengl_array_state::BindUniformBuffer(GLuint id)
 
 	uniform_buffer = id;
 }
+void opengl_array_state::VertexArrayChanged() {
+	array_buffer_valid = false;
+	element_array_buffer_valid = false;
+
+	for (auto& bindingInfo : vertex_buffer_bindings) {
+		bindingInfo.valid_data = false;
+	}
+}
+void opengl_array_state::BindVertexBuffer(GLuint bindingindex, GLuint buffer, GLintptr offset, GLsizei stride) {
+	if (bindingindex >= vertex_buffer_bindings.size()) {
+		// Make sure that we have the place for this information
+		vertex_buffer_bindings.resize(bindingindex + 1);
+	}
+
+	auto& bindingInfo = vertex_buffer_bindings[bindingindex];
+
+	if (bindingInfo.valid_data && bindingInfo.buffer == buffer && bindingInfo.offset == offset
+		&& bindingInfo.stride == stride) {
+		return;
+	}
+
+	glBindVertexBuffer(bindingindex, buffer, offset, stride);
+
+	bindingInfo.valid_data = true;
+	bindingInfo.buffer = buffer;
+	bindingInfo.stride = stride;
+	bindingInfo.offset = offset;
+}
 opengl_constant_state::opengl_constant_state() {
 }
 void opengl_constant_state::init() {
@@ -729,8 +808,6 @@ GLint opengl_constant_state::GetMaxUniformBlockBindings() {
 
 void gr_opengl_clear_states()
 {
-	glBindVertexArray(GL_vao);
-
 	gr_zbias(0);
 	gr_zbuffer_set(ZBUFFER_TYPE_READ);
 	gr_set_cull(0);

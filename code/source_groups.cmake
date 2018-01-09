@@ -104,6 +104,8 @@ set (file_root_cutscene_ffmpeg
 	cutscene/ffmpeg/FFMPEGDecoder.h
 	cutscene/ffmpeg/internal.cpp
 	cutscene/ffmpeg/internal.h
+	cutscene/ffmpeg/SubtitleDecoder.cpp
+	cutscene/ffmpeg/SubtitleDecoder.h
 	cutscene/ffmpeg/VideoDecoder.cpp
 	cutscene/ffmpeg/VideoDecoder.h
 )
@@ -174,6 +176,8 @@ SET(file_root_def_files_files
 	def_files/main-f.sdr
 	def_files/main-g.sdr
 	def_files/main-v.sdr
+	def_files/nanovg-f.sdr
+	def_files/nanovg-v.sdr
 	def_files/objecttypes.tbl
 	def_files/passthrough-f.sdr
 	def_files/passthrough-v.sdr
@@ -350,11 +354,10 @@ set (file_root_graphics_openglgr_opengl_headers
 
 # Graphics -> Paths
 set (file_root_graphics_paths
-	graphics/paths/NVGRenderer.cpp
-	graphics/paths/NVGRenderer.h
+	graphics/paths/NanoVGRenderer.cpp
+	graphics/paths/NanoVGRenderer.h
 	graphics/paths/PathRenderer.cpp
 	graphics/paths/PathRenderer.h
-	graphics/paths/StubRenderer.h
 )
 
 # Graphics -> Paths
@@ -362,8 +365,6 @@ set (file_root_graphics_paths_nanovg
 	graphics/paths/nanovg/fontstash.h
 	graphics/paths/nanovg/nanovg.c
 	graphics/paths/nanovg/nanovg.h
-	graphics/paths/nanovg/nanovg_gl.h
-	graphics/paths/nanovg/nanovg_gl_utils.h
 	graphics/paths/nanovg/stb_image.h
 	graphics/paths/nanovg/stb_truetype.h
 )
@@ -803,6 +804,15 @@ set (file_root_parse
 	parse/sexp.h
 )
 
+set (file_root_parse_sexp
+	parse/sexp/DynamicSEXP.cpp
+	parse/sexp/DynamicSEXP.h
+	parse/sexp/LuaSEXP.cpp
+	parse/sexp/LuaSEXP.h
+	parse/sexp/sexp_lookup.cpp
+	parse/sexp/sexp_lookup.h
+)
+
 # Particle files
 set (file_root_particle
 	particle/particle.cpp
@@ -943,6 +953,8 @@ set(file_root_scripting_api_libs
 	scripting/api/libs/tables.h
 	scripting/api/libs/testing.cpp
 	scripting/api/libs/testing.h
+	scripting/api/libs/utf8.cpp
+	scripting/api/libs/utf8.h
 )
 
 set(file_root_scripting_api_objs
@@ -978,6 +990,8 @@ set(file_root_scripting_api_objs
 	scripting/api/objs/graphics.h
 	scripting/api/objs/hudgauge.cpp
 	scripting/api/objs/hudgauge.h
+	scripting/api/objs/LuaSEXP.cpp
+	scripting/api/objs/LuaSEXP.h
 	scripting/api/objs/mc_info.cpp
 	scripting/api/objs/mc_info.h
 	scripting/api/objs/message.cpp
@@ -1035,6 +1049,7 @@ set(file_root_scripting_api_objs
 set(file_root_scripting_lua
 	scripting/lua/LuaArgs.cpp
 	scripting/lua/LuaArgs.h
+	scripting/lua/LuaConvert.cpp
 	scripting/lua/LuaConvert.h
 	scripting/lua/LuaException.h
 	scripting/lua/LuaFunction.cpp
@@ -1175,12 +1190,17 @@ set (file_root_ui
 )
 
 set(file_root_utils
+	utils/encoding.cpp
+    utils/encoding.h
 	utils/RandomRange.h
 	utils/strings.h
+    utils/unicode.cpp
+    utils/unicode.h
 )
 
 # Utils files
 set (file_root_utils_boost
+	utils/boost/hash_combine.h
 	utils/boost/syncboundedqueue.h
 )
 
@@ -1283,6 +1303,7 @@ source_group("Object"                             FILES ${file_root_object})
 source_group("Observer"                           FILES ${file_root_observer})
 source_group("OsApi"                              FILES ${file_root_osapi})
 source_group("Parse"                              FILES ${file_root_parse})
+source_group("Parse\\SEXP"                        FILES ${file_root_parse_sexp})
 source_group("Particle"                           FILES ${file_root_particle})
 source_group("Particle\\Effects"                  FILES ${file_root_particle_effects})
 source_group("Particle\\Util"                     FILES ${file_root_particle_util})
@@ -1377,6 +1398,7 @@ set (file_root
 	${file_root_observer}
 	${file_root_osapi}
 	${file_root_parse}
+	${file_root_parse_sexp}
 	${file_root_particle}
 	${file_root_particle_effects}
 	${file_root_particle_util}

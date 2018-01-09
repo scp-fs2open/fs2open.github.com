@@ -24,7 +24,12 @@
 #include "parse/sexp.h"
 #include "ship/ship.h"
 #include "weapon/weapon.h"
+#include "mod_table/mod_table.h"
 
+#include "utils/encoding.h"
+#include "utils/unicode.h"
+
+#include <utf8.h>
 
 
 #define	ERROR_LENGTH	64
@@ -60,11 +65,19 @@ int is_white_space(char ch)
 {
 	return ((ch == ' ') || (ch == '\t') || (ch == EOLN));
 }
+int is_white_space(unicode::codepoint_t cp)
+{
+	return ((cp == UNICODE_CHAR(' ')) || (cp == UNICODE_CHAR('\t')) || (cp == (unicode::codepoint_t)EOLN));
+}
 
 // Returns true if this character is gray space, else false (gray space is white space except for EOLN).
 int is_gray_space(char ch)
 {
 	return ((ch == ' ') || (ch == '\t'));
+}
+
+bool is_gray_space(unicode::codepoint_t cp) {
+	return cp == UNICODE_CHAR(' ') || cp == UNICODE_CHAR('\t');
 }
 
 int is_parenthesis(char ch)
@@ -76,13 +89,13 @@ int is_parenthesis(char ch)
 //	Leaves Mp pointing at first non white space character.
 void ignore_white_space()
 {
-	while ((*Mp != EOF_CHAR) && is_white_space(*Mp))
+	while ((*Mp != '\0') && is_white_space(*Mp))
 		Mp++;
 }
 
 void ignore_gray_space()
 {
-	while ((*Mp != EOF_CHAR) && is_gray_space(*Mp))
+	while ((*Mp != '\0') && is_gray_space(*Mp))
 		Mp++;
 }
 
@@ -179,7 +192,7 @@ void skip_token()
 {
 	ignore_white_space();
 
-	while ((*Mp != EOF_CHAR) && !is_white_space(*Mp))
+	while ((*Mp != '\0') && !is_white_space(*Mp))
 		Mp++;
 }
 
@@ -207,7 +220,7 @@ char *next_tokens()
 	char	*pstr = Mp;
 	char	ch;
 
-	while (((ch = *pstr++) != EOLN) && (ch != EOF_CHAR) && (count < ERROR_LENGTH-1))
+	while (((ch = *pstr++) != EOLN) && (ch != '\0') && (count < ERROR_LENGTH-1))
 		Error_str[count++] = ch;
 
 	Error_str[count] = 0;
@@ -230,7 +243,7 @@ int get_line_num()
 
 	while (p < stoploc)
 	{
-		if (*p == EOF_CHAR)
+		if (*p == '\0')
 			Assert(0);
 
 		if ( !incomment && (*p == COMMENT_CHAR) )
@@ -298,12 +311,11 @@ void advance_to_eoln(const char *more_terminators)
 	Assert((more_terminators == NULL) || (strlen(more_terminators) < 125));
 
 	terminators[0] = EOLN;
-	terminators[1] = EOF_CHAR;
-	terminators[2] = 0;
+	terminators[1] = 0;
 	if (more_terminators != NULL)
 		strcat_s(terminators, more_terminators);
 	else
-		terminators[2] = 0;
+		terminators[1] = 0;
 
 	while (strchr(terminators, *Mp) == NULL)
 		Mp++;
@@ -314,7 +326,7 @@ void advance_to_next_white()
 {
 	int in_quotes = 0;
 
-	while ((*Mp != EOLN) && (*Mp != EOF_CHAR)) {
+	while ((*Mp != EOLN) && (*Mp != '\0')) {
 		if (*Mp == '\"')
 			in_quotes = !in_quotes;
 
@@ -340,7 +352,7 @@ int skip_to_string(const char *pstr, const char *end)
 	if (end)
 		len2 = strlen(end);
 
-	while ((*Mp != EOF_CHAR) && strnicmp(pstr, Mp, len)) {
+	while ((*Mp != '\0') && strnicmp(pstr, Mp, len)) {
 		if (end && *Mp == '#')
 			return 0;
 
@@ -351,7 +363,7 @@ int skip_to_string(const char *pstr, const char *end)
 		ignore_white_space();
 	}
 
-	if (!Mp || (*Mp == EOF_CHAR))
+	if (!Mp || *Mp == '\0')
 		return 0;
 
 	Mp += strlen(pstr);
@@ -370,7 +382,7 @@ int skip_to_start_of_string(const char *pstr, const char *end)
 	else
 		endlen = 0;
 
-	while ( (*Mp != EOF_CHAR) && strnicmp(pstr, Mp, len) ) {
+	while ( (*Mp != '\0') && strnicmp(pstr, Mp, len) ) {
 		if (end && *Mp == '#')
 			return 0;
 
@@ -381,7 +393,7 @@ int skip_to_start_of_string(const char *pstr, const char *end)
 		ignore_white_space();
 	}
 
-	if (!Mp || (*Mp == EOF_CHAR))
+	if (!Mp || *Mp == '\0')
 		return 0;
 
 	return 1;
@@ -400,7 +412,7 @@ int skip_to_start_of_string_either(const char *pstr1, const char *pstr2, const c
 	else
 		endlen = 0;
 
-	while ( (*Mp != EOF_CHAR) && strnicmp(pstr1, Mp, len1) && strnicmp(pstr2, Mp, len2) ) {
+	while ( (*Mp != '\0') && strnicmp(pstr1, Mp, len1) && strnicmp(pstr2, Mp, len2) ) {
 		if (end && *Mp == '#')
 			return 0;
 
@@ -411,7 +423,7 @@ int skip_to_start_of_string_either(const char *pstr1, const char *pstr2, const c
 		ignore_white_space();
 	}
 
-	if (!Mp || (*Mp == EOF_CHAR))
+	if (!Mp || *Mp == '\0')
 		return 0;
 
 	return 1;
@@ -449,7 +461,7 @@ int required_string(const char *pstr)
 
 int check_for_eof_raw()
 {
-	if (*Mp == EOF_CHAR)
+	if (*Mp == '\0')
 		return 1;
 
 	return 0;
@@ -562,7 +574,7 @@ int required_string_fred(char *pstr, char *end)
 		return 0;
 
 	ignore_white_space();
-	while (*Mp != EOF_CHAR && strnicmp(pstr, Mp, strlen(pstr))) {
+	while (*Mp != '\0' && strnicmp(pstr, Mp, strlen(pstr))) {
 		if ((*Mp == '#') || (end && !strnicmp(end, Mp, strlen(end)))) {
 			Mp = NULL;
 			break;
@@ -572,7 +584,7 @@ int required_string_fred(char *pstr, char *end)
 		ignore_white_space();
 	}
 
-	if (!Mp || (*Mp == EOF_CHAR)) {
+	if (!Mp || *Mp == '\0') {
 		diag_printf("Required string [%s] not found\n", pstr);
 		Mp = backup;
 		Token_found_flag = 0;
@@ -599,7 +611,7 @@ int optional_string_fred(char *pstr, char *end, char *end2)
 		return 0;
 
 	ignore_white_space();
-	while ((*Mp != EOF_CHAR) && strnicmp(pstr, Mp, strlen(pstr))) {
+	while ((*Mp != '\0') && strnicmp(pstr, Mp, strlen(pstr))) {
 		if ((*Mp == '#') || (end && !strnicmp(end, Mp, strlen(end))) ||
 			(end2 && !strnicmp(end2, Mp, strlen(end2)))) {
 			Mp = NULL;
@@ -610,7 +622,7 @@ int optional_string_fred(char *pstr, char *end, char *end2)
 		ignore_white_space();
 	}
 
-	if (!Mp || (*Mp == EOF_CHAR)) {
+	if (!Mp || *Mp == '\0') {
 		diag_printf("Optional string [%s] not found\n", pstr);
 		Mp = mp_save;
 		Token_found_flag = 0;
@@ -721,7 +733,7 @@ int required_string_either_fred(const char *str1, const char *str2)
 {
 	ignore_white_space();
 
-	while (*Mp != EOF_CHAR) {
+	while (*Mp != '\0') {
 		if (!strnicmp(str1, Mp, strlen(str1))) {
 			// Mp += strlen(str1);
 			diag_printf("Found required string [%s]\n", token_found = str1);
@@ -737,7 +749,7 @@ int required_string_either_fred(const char *str1, const char *str2)
 		ignore_white_space();
 	}
 
-	if (*Mp == EOF_CHAR)
+	if (*Mp == '\0')
 		diag_printf("Unable to find either required token [%s] or [%s]\n", str1, str2);
 
 	return -1;
@@ -754,12 +766,11 @@ void copy_to_eoln(char *outstr, const char *more_terminators, const char *instr,
 	Assert((more_terminators == NULL) || (strlen(more_terminators) < 125));
 
 	terminators[0] = EOLN;
-	terminators[1] = EOF_CHAR;
-	terminators[2] = 0;
+	terminators[1] = 0;
 	if (more_terminators != NULL)
 		strcat_s(terminators, more_terminators);
 	else
-		terminators[2] = 0;
+		terminators[1] = 0;
 
 	while (((ch = *instr++) != 0) && (strchr(terminators, ch) == NULL)  && (count < max)) {
 		*outstr++ = ch;
@@ -781,12 +792,11 @@ void copy_to_eoln(SCP_string &outstr, const char *more_terminators, const char *
 	Assert((more_terminators == NULL) || (strlen(more_terminators) < 125));
 
 	terminators[0] = EOLN;
-	terminators[1] = EOF_CHAR;
-	terminators[2] = 0;
+	terminators[1] = 0;
 	if (more_terminators != NULL)
 		strcat_s(terminators, more_terminators);
 	else
-		terminators[2] = 0;
+		terminators[1] = 0;
 
 	outstr = "";
 	while (((ch = *instr++) != 0) && (strchr(terminators, ch) == NULL)) {
@@ -802,7 +812,7 @@ void copy_to_next_white(char *outstr, char *instr, int max)
 	int	in_quotes = 0;
 	char	ch;
 
-	while (((ch = *instr++)>0) && (ch != EOLN) && (ch != EOF_CHAR) && (count < max)) {
+	while (((ch = *instr++)>0) && (ch != EOLN) && (ch != '\0') && (count < max)) {
 		if ( ch == '\"' ) {
 			in_quotes = !in_quotes;
 			continue;
@@ -831,7 +841,7 @@ void copy_to_next_white(SCP_string &outstr, char *instr)
 	char	ch;
 
 	outstr = "";
-	while (((ch = *instr++)>0) && (ch != EOLN) && (ch != EOF_CHAR)) {
+	while (((ch = *instr++)>0) && (ch != EOLN) && (ch != '\0')) {
 		if ( ch == '\"' ) {
 			in_quotes = !in_quotes;
 			continue;
@@ -992,7 +1002,7 @@ char* alloc_block(const char* startstr, const char* endstr, int extra_chars)
 
 	//Depth checking
 	int level = 1;
-	while(*pos != EOF_CHAR)
+	while(*pos != '\0')
 	{
 		if(!strnicmp(pos, startstr, slen))
 		{
@@ -1199,7 +1209,7 @@ void stuff_string(char *outstr, int type, int len, const char *terminators)
 		default:
 			Error(LOCATION, "Unhandled string type %d in stuff_string!", type);
 	}
-	
+
 	if (type == F_FILESPEC) {
 		// Make sure that the passed string looks like a good filename
 		if (strlen(read_str) == 0) {
@@ -1281,7 +1291,7 @@ void stuff_string(SCP_string &outstr, int type, const char *terminators)
 		default:
 			Error(LOCATION, "Unhandled string type %d in stuff_string!", type);
 	}
-	
+
 	if (type == F_FILESPEC) {
 		// Make sure that the passed string looks like a good filename
 		if (read_str.empty()) {
@@ -2076,27 +2086,6 @@ void read_file_text_from_default(const default_file& file, char *processed_text,
 	process_raw_file_text(processed_text, raw_text);
 }
 
-// Goober5000
-int is_unicode(char *text)
-{
-	if (!strncmp(text, "\xEF\xBB\xBF", 3))		// UTF-8
-		return 1;
-
-	if (!strncmp(text, "\xFE\xFF", 2))			// UTF-16 big-endian
-		return 1;
-
-	if (!strncmp(text, "\xFF\xFE", 2))			// UTF-16 little-endian
-		return 1;
-
-	if (!strncmp(text, "\x00\x00\xFE\xFF", 4))	// UTF-32 big-endian
-		return 1;
-
-	if (!strncmp(text, "\xFF\xFE\x00\x00", 4))	// UTF-32 little-endian
-		return 1;
-
-	return 0;
-}
-
 void stop_parse()
 {
 	Assert( !Parsing_paused );
@@ -2163,7 +2152,6 @@ void read_raw_file_text(const char *filename, int mode, char *raw_text)
 {
 	CFILE	*mf;
 	int	file_is_encrypted;
-	int file_is_unicode;
 
 	Assert(filename);
 
@@ -2182,6 +2170,9 @@ void read_raw_file_text(const char *filename, int mode, char *raw_text)
         throw parse::ParseException("Failed to open file");
 	}
 
+	// For the possible Latin1 -> UTF-8 conversion we need to reallocate the raw_text at some point and we can only do
+	// that if we have control over the raw_text pointer which is only the case if it's null.
+	auto can_reallocate = raw_text == nullptr;
 	if (raw_text == nullptr) {
 		// allocate, or reallocate, memory for Mission_text and Mission_text_raw based on size we need now
 		allocate_mission_text((size_t) (file_len + 1));
@@ -2194,13 +2185,7 @@ void read_raw_file_text(const char *filename, int mode, char *raw_text)
 	file_is_encrypted = is_encrypted(raw_text);
 	cfseek(mf, 0, CF_SEEK_SET);
 
-	// Goober5000 - also determine if file is Unicode
-	file_is_unicode = is_unicode(raw_text);
-	if ( file_is_unicode )
-	{
-		//This is probably fatal, so let's abort right here and now.
-		Error(LOCATION, "%s is in Unicode/UTF format and cannot be read by FreeSpace Open. Please convert it to ASCII/ANSI\n", filename);
-	}
+	file_len = util::check_encoding_and_skip_bom(mf, filename);
 
 	if ( file_is_encrypted )
 	{
@@ -2221,6 +2206,58 @@ void read_raw_file_text(const char *filename, int mode, char *raw_text)
 
 	//WMC - Slap a NULL character on here for the odd error where we forgot a #End
 	raw_text[file_len] = '\0';
+
+	if (Unicode_text_mode) {
+		// Validate the UTF-8 encoding
+		auto invalid = utf8::find_invalid(raw_text, raw_text + file_len);
+		if (invalid != raw_text + file_len) {
+			auto isLatin1 = util::guessLatin1Encoding(raw_text, (size_t) file_len);
+
+			// We do the additional can_reallocate check here since we need control over raw_text to reencode the file
+			if (isLatin1 && can_reallocate) {
+				// Latin1 is the encoding of retail data and for legacy reasons we convert that to UTF-8.
+				// We still output a warning though...
+				Warning(LOCATION, "Found Latin-1 encoded file %s. This file will be automatically converted to UTF-8 but "
+						"it may cause parsing issues with retail FS2 files since those contained invalid data.\n"
+						"To silence this warning you must convert the files to UTF-8, e.g. by using a program like iconv.",
+						filename);
+
+				// SDL2 has iconv functionality so we use that to convert from Latin1 to UTF-8
+
+				// We need the raw_text as the output buffer so we first need to copy the current
+				SCP_string input_str = raw_text;
+
+				do {
+					auto in_str = input_str.c_str();
+					auto in_size = input_str.size();
+					auto out_str = Mission_text_raw;
+					auto out_size = Mission_text_size;
+
+					auto iconv = SDL_iconv_open("UTF-8", "ISO-8859-1");
+					auto err = SDL_iconv(iconv, &in_str, &in_size, &out_str, &out_size);
+					SDL_iconv_close(iconv);
+
+					if (err == 0) {
+						break;
+					} else if (err == SDL_ICONV_E2BIG) {
+						// buffer is not big enough, try again with a bigger buffer. Use a rather conservative size
+						// increment since the additional size required is probably pretty small
+						allocate_mission_text(Mission_text_size + 300);
+					} else {
+						Warning(LOCATION, "File reencoding failed (error code " SIZE_T_ARG ")!\n"
+							"You will probably encounter encoding issues.", err);
+
+						// Copy the original data back to the mission text pointer so that we don't loose any data here
+						strcpy(Mission_text_raw, input_str.c_str());
+						break;
+					}
+				} while(true);
+			} else {
+				Warning(LOCATION, "Found invalid UTF-8 encoding in file %s at position " PTRDIFF_T_ARG "!\n"
+					"This may cause parsing errors and should be fixed!", filename, invalid - raw_text);
+			}
+		}
+	}
 
 	cfclose(mf);
 }
@@ -2272,13 +2309,19 @@ void process_raw_file_text(char *processed_text, char *raw_text)
 
 		strip_comments(outbuf, in_quote, in_multiline_comment_a, in_multiline_comment_b);
 
-		mp += maybe_convert_foreign_characters(outbuf, mp, false);
-
-//		strcpy_s(mp, outbuf);
-//		mp += strlen(outbuf);
+		if (Unicode_text_mode) {
+			// In unicode mode we simply assume that the text is already properly encoded in UTF-8
+			// Also, since we don't know how big mp actually is since we get the pointer from the outside we can't use one of
+			// the "safe" strcpy variants here...
+			strcpy(mp, outbuf);
+			mp += strlen(outbuf);
+		} else {
+			mp += maybe_convert_foreign_characters(outbuf, mp, false);
+		}
 	}
 
-	*mp = *mp_raw = EOF_CHAR;
+	// Make sure the string is terminated properly
+	*mp = *mp_raw = '\0';
 /*
 	while (cfgets(outbuf, PARSE_BUF_SIZE, mf) != NULL) {
 		if (strlen(outbuf) >= PARSE_BUF_SIZE-1)
@@ -2305,7 +2348,7 @@ void debug_show_mission_text()
 	char	*mp = Mission_text;
 	char	ch;
 
-	while ((ch = *mp++) != EOF_CHAR)
+	while ((ch = *mp++) != '\0')
 		printf("%c", ch);
 }
 
@@ -3438,7 +3481,7 @@ char *split_str_once(char *src, int max_pixel_w)
 //	returns:			number of lines src is broken into
 //						-1 is returned when an error occurs
 //
-int split_str(const char *src, int max_pixel_w, int *n_chars, const char **p_str, int max_lines, char ignore_char, bool strip_leading_whitespace)
+int split_str(const char *src, int max_pixel_w, int *n_chars, const char **p_str, int max_lines, unicode::codepoint_t ignore_char, bool strip_leading_whitespace)
 {
 	char buffer[SPLIT_STR_BUFFER_SIZE];
 	const char *breakpoint = NULL;
@@ -3452,7 +3495,7 @@ int split_str(const char *src, int max_pixel_w, int *n_chars, const char **p_str
 	Assert(max_lines > 0);
 	Assert(max_pixel_w > 0);
 
-	memset(buffer, 0, SPLIT_STR_BUFFER_SIZE);
+	memset(buffer, 0, sizeof(buffer));
 	buf_index = 0;
 	ignore_until_whitespace = 0;
 
@@ -3465,32 +3508,37 @@ int split_str(const char *src, int max_pixel_w, int *n_chars, const char **p_str
 
 	// iterate through chars in line, keeping track of most recent "white space" location that can be used
 	// as a line splitting point if necessary
-	for (; *src; src++) {
+	unicode::codepoint_range range(src);
+	auto end_iter = std::end(range);
+	unicode::text_iterator iter = std::begin(range);
+	for (; iter != end_iter; ++iter) {
+		auto cp = *iter;
+
 		if (line_num >= max_lines)
 			return line_num;  // time to bail out
 
 		// starting a new line of text, init stuff for that
 		if (new_line) {
 			p_str[line_num] = NULL;
-			if (strip_leading_whitespace && is_gray_space(*src))
+			if (strip_leading_whitespace && is_gray_space(cp))
 				continue;
 
-			p_str[line_num] = src;
+			p_str[line_num] = iter.pos();
 			breakpoint = NULL;
 			new_line = 0;
 		}
 
 		// maybe skip leading whitespace
 		if (ignore_until_whitespace) {
-			if ( is_white_space(*src) )
+			if ( is_white_space(cp) )
 				ignore_until_whitespace = 0;
 
 			continue;
 		}
 
 		// if we have a newline, split the line here
-		if (*src == '\n') {
-			n_chars[line_num] = (int)(src - p_str[line_num]);  // track length of line
+		if (cp == UNICODE_CHAR('\n')) {
+			n_chars[line_num] = (int)(iter.pos() - p_str[line_num]);  // track length of line
 			line_num++;
 			if (line_num < max_lines) {
 				p_str[line_num] = NULL;
@@ -3502,14 +3550,14 @@ int split_str(const char *src, int max_pixel_w, int *n_chars, const char **p_str
 			continue;
 		}
 
-		if (*src == ignore_char) {
+		if (cp == ignore_char) {
 			ignore_until_whitespace = 1;
 			continue;
 		}
 
-		if (is_gray_space(*src)) {
+		if (is_gray_space(cp)) {
 			if (!last_was_white)  // track at first whitespace in a series of whitespace
-				breakpoint = src;
+				breakpoint = iter.pos();
 
 			last_was_white = 1;
 
@@ -3518,11 +3566,14 @@ int split_str(const char *src, int max_pixel_w, int *n_chars, const char **p_str
 			last_was_white = 0;
 		}
 
-		Assertion(buf_index < SPLIT_STR_BUFFER_SIZE - 1, "buffer overflow in split_str: screen width causes this text to be longer than %d characters!", SPLIT_STR_BUFFER_SIZE - 1);
+		auto encoded_width = unicode::encoded_size(cp);
+		Assertion(buf_index + encoded_width < SPLIT_STR_BUFFER_SIZE,
+				  "buffer overflow in split_str: screen width causes this text to be longer than %d characters!",
+				  SPLIT_STR_BUFFER_SIZE - 1);
 
 		// throw it in our buffer
-		buffer[buf_index] = *src;
-		buf_index++;
+		unicode::encode(cp, &buffer[buf_index]);
+		buf_index += (int)encoded_width;
 		buffer[buf_index] = 0;  // null terminate it
 
 		gr_get_string_size(&sw, NULL, buffer);
@@ -3530,11 +3581,12 @@ int split_str(const char *src, int max_pixel_w, int *n_chars, const char **p_str
 			const char *end;
 
 			if (breakpoint) {
-				end = src = breakpoint;
+				end = breakpoint;
+				iter = unicode::text_iterator(breakpoint, src);
 
 			} else {
-				end = src;  // force a split here since to whitespace
-				src--;  // reuse this character in next line
+				end = iter.pos();  // force a split here since to whitespace
+				--iter;  // reuse this character in next line
 			}
 
 			n_chars[line_num] = (int)(end - p_str[line_num]);  // track length of line
@@ -3545,14 +3597,14 @@ int split_str(const char *src, int max_pixel_w, int *n_chars, const char **p_str
 			}
 			new_line = 1;
 
-			memset(buffer, 0, SPLIT_STR_BUFFER_SIZE);
+			memset(buffer, 0, sizeof(buffer));
 			buf_index = 0;
 			continue;
 		}
 	}	// end for
 
 	if (!new_line && p_str[line_num]) {
-		n_chars[line_num] = (int)(src - p_str[line_num]);  // track length of line
+		n_chars[line_num] = (int)(iter.pos() - p_str[line_num]);  // track length of line
 		Assert(n_chars[line_num]);
 		line_num++;
 	}
@@ -3560,7 +3612,7 @@ int split_str(const char *src, int max_pixel_w, int *n_chars, const char **p_str
 	return line_num;
 }
 
-int split_str(const char *src, int max_pixel_w, SCP_vector<int> &n_chars, SCP_vector<const char*> &p_str, char ignore_char, bool strip_leading_whitespace)
+int split_str(const char *src, int max_pixel_w, SCP_vector<int> &n_chars, SCP_vector<const char*> &p_str, unicode::codepoint_t ignore_char, bool strip_leading_whitespace)
 {
 	char buffer[SPLIT_STR_BUFFER_SIZE];
 	const char *breakpoint = NULL;
@@ -3571,7 +3623,7 @@ int split_str(const char *src, int max_pixel_w, SCP_vector<int> &n_chars, SCP_ve
 	Assert(src != NULL);
 	Assert(max_pixel_w > 0);
 
-	memset(buffer, 0, SPLIT_STR_BUFFER_SIZE);
+	memset(buffer, 0, sizeof(buffer));
 
 	// get rid of any leading whitespace
 	while (strip_leading_whitespace && is_white_space(*src))
@@ -3581,34 +3633,38 @@ int split_str(const char *src, int max_pixel_w, SCP_vector<int> &n_chars, SCP_ve
 
 	// iterate through chars in line, keeping track of most recent "white space" location that can be used
 	// as a line splitting point if necessary
-	for (; *src; src++) {
+	unicode::codepoint_range range(src);
+	auto end_iter = std::end(range);
+	unicode::text_iterator iter = std::begin(range);
+	for (; iter != end_iter; ++iter) {
+		auto cp = *iter;
 
 		// starting a new line of text, init stuff for that
 		if (new_line) {
-			if (strip_leading_whitespace && is_gray_space(*src))
+			if (strip_leading_whitespace && is_gray_space(cp))
 				continue;
 
-			p_str.push_back(src);
+			p_str.push_back(iter.pos());
 			breakpoint = NULL;
 			new_line = 0;
 		}
 
 		// maybe skip leading whitespace
 		if (ignore_until_whitespace) {
-			if ( is_white_space(*src) ) {
+			if ( is_white_space(cp) ) {
 				ignore_until_whitespace = 0;
 
 				// don't eat the newline
-				if (*src == EOLN)
-					src--;
+				if (cp == EOLN)
+					--iter;
 			}
 
 			continue;
 		}
 
 		// if we have a newline, split the line here
-		if (*src == '\n') {
-			n_chars.push_back((int)(src - p_str.at(line_num)));  // track length of line
+		if (cp == UNICODE_CHAR('\n')) {
+			n_chars.push_back((int)(iter.pos() - p_str[line_num]));  // track length of line
 			line_num++;
 			new_line = 1;
 
@@ -3617,14 +3673,14 @@ int split_str(const char *src, int max_pixel_w, SCP_vector<int> &n_chars, SCP_ve
 			continue;
 		}
 
-		if (*src == ignore_char) {
+		if (cp == ignore_char) {
 			ignore_until_whitespace = 1;
 			continue;
 		}
 
-		if (is_gray_space(*src)) {
+		if (is_gray_space(cp)) {
 			if (!last_was_white)  // track at first whitespace in a series of whitespace
-				breakpoint = src;
+				breakpoint = iter.pos();
 
 			last_was_white = 1;
 
@@ -3633,11 +3689,14 @@ int split_str(const char *src, int max_pixel_w, SCP_vector<int> &n_chars, SCP_ve
 			last_was_white = 0;
 		}
 
-		Assertion(buf_index < SPLIT_STR_BUFFER_SIZE - 1, "buffer overflow in split_str: screen width causes this text to be longer than %d characters!", SPLIT_STR_BUFFER_SIZE - 1);
+		auto encoded_width = unicode::encoded_size(cp);
+		Assertion(buf_index + encoded_width < SPLIT_STR_BUFFER_SIZE,
+				  "buffer overflow in split_str: screen width causes this text to be longer than %d characters!",
+				  SPLIT_STR_BUFFER_SIZE - 1);
 
 		// throw it in our buffer
-		buffer[buf_index] = *src;
-		buf_index++;
+		unicode::encode(cp, &buffer[buf_index]);
+		buf_index += (int)encoded_width;
 		buffer[buf_index] = 0;  // null terminate it
 
 		gr_get_string_size(&sw, NULL, buffer);
@@ -3645,27 +3704,28 @@ int split_str(const char *src, int max_pixel_w, SCP_vector<int> &n_chars, SCP_ve
 			const char *end;
 
 			if (breakpoint) {
-				end = src = breakpoint;
+				end = breakpoint;
+				iter = unicode::text_iterator(breakpoint, src);
 
 			} else {
-				end = src;  // force a split here since to whitespace
-				src--;  // reuse this character in next line
+				end = iter.pos();  // force a split here since to whitespace
+				--iter;  // reuse this character in next line
 			}
 
-			n_chars.push_back((int)(end - p_str.at(line_num)));  // track length of line
-			Assert(n_chars.at(line_num));
+			n_chars.push_back((int)(end - p_str[line_num]));  // track length of line
+			Assert(n_chars[line_num]);
 			line_num++;
 			new_line = 1;
 
-			memset(buffer, 0, SPLIT_STR_BUFFER_SIZE);
+			memset(buffer, 0, sizeof(buffer));
 			buf_index = 0;
 			continue;
 		}
 	}	// end for
 
-	if (!new_line && p_str.at(line_num)) {
-		n_chars.push_back((int)(src - p_str.at(line_num)));  // track length of line
-		Assert(n_chars.at(line_num));
+	if (!new_line && p_str[line_num]) {
+		n_chars.push_back((int)(iter.pos() - p_str[line_num]));  // track length of line
+		Assert(n_chars[line_num]);
 		line_num++;
 	}
 
@@ -3829,7 +3889,7 @@ bool can_construe_as_integer(const char *text)
 void vsprintf(SCP_string &dest, const char *format, va_list ap)
 {
 	va_list copy;
-	
+
 #if defined(_MSC_VER) && _MSC_VER < 1800
 	// Only Visual Studio >= 2013 supports va_copy
 	// This isn't portable but should work for Visual Studio

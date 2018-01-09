@@ -3,8 +3,6 @@
 
 #include "FFmpegHeaders.h"
 
-#include "parse/parselo.h"
-
 namespace {
 const int MIN_LOG_LEVEL = AV_LOG_WARNING;
 
@@ -24,6 +22,10 @@ void log_callback_report(void* ptr, int level, const char* fmt, va_list vl) {
 
 void check_version(const char* libname, uint32_t current, uint32_t compiled)
 {
+	mprintf(("FFmpeg: Using %s with version %d.%d.%d. Compiled with version %d.%d.%d\n", libname,
+		AV_VERSION_MAJOR(current), AV_VERSION_MINOR(current), AV_VERSION_MICRO(current),
+		AV_VERSION_MAJOR(compiled), AV_VERSION_MINOR(compiled), AV_VERSION_MICRO(compiled)));
+
 	auto current_major = AV_VERSION_MAJOR(current);
 	auto current_minor = AV_VERSION_MINOR(current);
 
@@ -34,14 +36,14 @@ void check_version(const char* libname, uint32_t current, uint32_t compiled)
 	{
 		Error(LOCATION, "The major version of the %s library is not the same as the one this executable was compiled with!\n"
 			"Current major version is %" PRIu32 " but this executable was compiled with major version %" PRIu32 ".\n"
-			"This may be caused by using outdated DLLs, if you downloaded these builds then try reextracing the zip file.", libname, current_major, compiled_major);
+			"This may be caused by using outdated DLLs, if you downloaded these builds then try reextracting the zip file.", libname, current_major, compiled_major);
 	}
 
 	if (current_minor < compiled_minor)
 	{
 		Error(LOCATION, "The minor version of the %s library is not the same as the one this executable was compiled with!\n"
 			"Current minor version is %" PRIu32 " but this executable was compiled with minor version %" PRIu32 ".\n"
-			"This may be caused by using outdated DLLs, if you downloaded these builds then try reextracing the zip file.", libname, current_minor, compiled_minor);
+			"This may be caused by using outdated DLLs, if you downloaded these builds then try reextracting the zip file.", libname, current_minor, compiled_minor);
 	}
 }
 }

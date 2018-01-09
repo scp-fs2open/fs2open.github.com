@@ -93,6 +93,9 @@ extern Category ProcessParticleEffects;
 extern Category TrailsMoveAll;
 extern Category Simulation;
 extern Category RenderMainFrame;
+extern Category RenderHUD;
+extern Category RenderHUDHook;
+extern Category RenderHUDGauge;
 extern Category MainFrame;
 extern Category PageFlip;
 

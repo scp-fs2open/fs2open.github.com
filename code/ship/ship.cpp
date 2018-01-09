@@ -483,7 +483,7 @@ flag_def_list_new<Weapon::Info_Flags> ai_tgt_weapon_flags[] = {
     { "turret interceptable",		Weapon::Info_Flags::Turret_Interceptable,				true, false },
     { "fighter interceptable",		Weapon::Info_Flags::Fighter_Interceptable,				true, false },
     { "aoe electronics",			Weapon::Info_Flags::Aoe_Electronics,					true, false },
-    { "apply recoil",				Weapon::Info_Flags::Apply_recoil,						true, false },
+    { "apply recoil",				Weapon::Info_Flags::Apply_Recoil,						true, false },
     { "don't spawn if shot",		Weapon::Info_Flags::Dont_spawn_if_shot,				    true, false },
     { "die on lost lock",			Weapon::Info_Flags::Die_on_lost_lock,					true, false },
 };
@@ -11106,7 +11106,7 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 				vec3d *firepoint_list;
 				size_t current_firepoint = 0;
 
-				if (winfo_p->wi_flags[Weapon::Info_Flags::Apply_recoil]){
+				if (winfo_p->wi_flags[Weapon::Info_Flags::Apply_Recoil]){
 					firepoint_list = new vec3d[numtimes * points];
 					vm_vec_zero(&total_impulse);
 				} else {
@@ -11206,7 +11206,7 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 								firing_orient = obj->orient;
 							}
 							
-							if (winfo_p->wi_flags[Weapon::Info_Flags::Apply_recoil]){	// Function to add recoil functionality - DahBlount
+							if (winfo_p->wi_flags[Weapon::Info_Flags::Apply_Recoil]){	// Function to add recoil functionality - DahBlount
 								vec3d local_impulse = firing_orient.vec.fvec;
 								
 								float recoil_force = (winfo_p->mass * winfo_p->max_speed * winfo_p->recoil_modifier * sip->ship_recoil_modifier);
@@ -11280,7 +11280,7 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 					}
 					swp->external_model_fp_counter[bank_to_fire]++;
 				}
-				if (winfo_p->wi_flags[Weapon::Info_Flags::Apply_recoil]){
+				if (winfo_p->wi_flags[Weapon::Info_Flags::Apply_Recoil]){
 					vec3d avg_firepoint;
 
 					vm_vec_avg_n(&avg_firepoint, (int)current_firepoint, firepoint_list);

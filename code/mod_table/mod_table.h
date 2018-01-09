@@ -31,8 +31,18 @@ extern bool Beams_use_damage_factors;
 extern float Generic_pain_flash_factor;
 extern float Shield_pain_flash_factor;
 extern SCP_string Window_title;
+extern bool Unicode_text_mode;
+extern SCP_string Movie_subtitle_font;
+extern bool Enable_scripts_in_fred;
 
 void mod_table_init();
+
+/**
+ * @brief Resets the mod values back to their default values
+ *
+ * This is mostly useful for the unit tests where mod value changes can interfere with other tests
+ */
+void mod_table_reset();
 
 /**
  * @brief Checks if the mod specified support for the given engine version

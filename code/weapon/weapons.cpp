@@ -1880,7 +1880,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 
 	// This is an optional modifier for a weapon that uses the "apply recoil" flag. recoil_force in ship.cpp line 10445 is multiplied by this if defined.
 	if (optional_string("$Recoil Modifier:")){
-		if (!(wip->wi_flags[Weapon::Info_Flags::Apply_recoil])){
+		if (!(wip->wi_flags[Weapon::Info_Flags::Apply_Recoil])){
 			Warning(LOCATION, "$Recoil Modifier specified for weapon %s but this weapon does not have the \"apply recoil\" weapon flag set. Automatically setting the flag", wip->name);
             wip->wi_flags.set(Weapon::Info_Flags::Apply_Recoil);
 		}
@@ -3369,7 +3369,9 @@ void weapon_generate_indexes_for_substitution() {
 						Warning(LOCATION, "Weapon '%s' requests substitution with '%s' which is of a different subtype.",
 							wip->name, wip->weapon_substitution_pattern_names[j]);
 						wip->num_substitution_patterns = 0;
-						memset(wip->weapon_substitution_pattern, -1, MAX_SUBSTITUTION_PATTERNS);
+						std::fill(std::begin(wip->weapon_substitution_pattern),
+								  std::end(wip->weapon_substitution_pattern),
+								  -1);
 						break;
 					}
 				}

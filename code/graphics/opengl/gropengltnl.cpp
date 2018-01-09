@@ -33,6 +33,7 @@
 #include "graphics/shadows.h"
 #include "graphics/material.h"
 #include "graphics/light.h"
+#include "ShaderProgram.h"
 
 extern int GLOWMAP;
 extern int CLOAKMAP;
@@ -63,6 +64,25 @@ GLuint shadow_fbo = 0;
 bool Rendering_to_shadow_map = false;
 
 int Transform_buffer_handle = -1;
+
+SCP_unordered_map<vertex_layout, GLuint> Stored_vertex_arrays;
+
+static opengl_vertex_bind GL_array_binding_data[] =
+	{
+		{ vertex_format_data::POSITION4,	4, GL_FLOAT,			GL_FALSE, opengl_vert_attrib::POSITION	},
+		{ vertex_format_data::POSITION3,	3, GL_FLOAT,			GL_FALSE, opengl_vert_attrib::POSITION	},
+		{ vertex_format_data::POSITION2,	2, GL_FLOAT,			GL_FALSE, opengl_vert_attrib::POSITION	},
+		{ vertex_format_data::SCREEN_POS,	2, GL_INT,				GL_FALSE, opengl_vert_attrib::POSITION	},
+		{ vertex_format_data::COLOR3,		3, GL_UNSIGNED_BYTE,	GL_TRUE,opengl_vert_attrib::COLOR		},
+		{ vertex_format_data::COLOR4,		4, GL_UNSIGNED_BYTE,	GL_TRUE, opengl_vert_attrib::COLOR		},
+		{ vertex_format_data::TEX_COORD2,	2, GL_FLOAT,			GL_FALSE, opengl_vert_attrib::TEXCOORD	},
+		{ vertex_format_data::TEX_COORD3,	3, GL_FLOAT,			GL_FALSE, opengl_vert_attrib::TEXCOORD	},
+		{ vertex_format_data::NORMAL,		3, GL_FLOAT,			GL_FALSE, opengl_vert_attrib::NORMAL	},
+		{ vertex_format_data::TANGENT,		4, GL_FLOAT,			GL_FALSE, opengl_vert_attrib::TANGENT	},
+		{ vertex_format_data::MODEL_ID,		1, GL_FLOAT,			GL_FALSE, opengl_vert_attrib::MODEL_ID	},
+		{ vertex_format_data::RADIUS,		1, GL_FLOAT,			GL_FALSE, opengl_vert_attrib::RADIUS	},
+		{ vertex_format_data::UVEC,			3, GL_FLOAT,			GL_FALSE, opengl_vert_attrib::UVEC		},
+	};
 
 struct opengl_buffer_object {
 	GLuint buffer_id;
@@ -102,6 +122,65 @@ static GLenum convertUsageHint(BufferUsageHint usage) {
 			Assertion(false, "Unhandled enum value!");
 			return GL_INVALID_ENUM;
 	}
+}
+
+static GLenum convertStencilOp(const StencilOperation stencil_op) {
+	switch (stencil_op) {
+	case StencilOperation::Keep:
+		return GL_KEEP;
+	case StencilOperation::Zero:
+		return GL_ZERO;
+	case StencilOperation::Replace:
+		return GL_REPLACE;
+	case StencilOperation::Increment:
+		return GL_INCR;
+	case StencilOperation::IncrementWrap:
+		return GL_INCR_WRAP;
+	case StencilOperation::Decrement:
+		return GL_DECR;
+	case StencilOperation::DecrementWrap:
+		return GL_DECR_WRAP;
+	case StencilOperation::Invert:
+		return GL_INVERT;
+	default:
+		Assertion(false, "Unhandled enum value encountered!");
+		return GL_NONE;
+	}
+}
+
+static GLenum convertComparisionFunction(ComparisionFunction func) {
+	GLenum mode;
+	switch (func) {
+	case ComparisionFunction::Always:
+		mode = GL_ALWAYS;
+		break;
+	case ComparisionFunction::Equal:
+		mode = GL_EQUAL;
+		break;
+	case ComparisionFunction::Greater:
+		mode = GL_GREATER;
+		break;
+	case ComparisionFunction::GreaterOrEqual:
+		mode = GL_GEQUAL;
+		break;
+	case ComparisionFunction::Less:
+		mode = GL_LESS;
+		break;
+	case ComparisionFunction::LessOrEqual:
+		mode = GL_LEQUAL;
+		break;
+	case ComparisionFunction::Never:
+		mode = GL_NEVER;
+		break;
+	case ComparisionFunction::NotEqual:
+		mode = GL_NOTEQUAL;
+		break;
+	default:
+		Assertion(false, "Unhandled comparision function value!");
+		mode = GL_ALWAYS;
+		break;
+	}
+	return mode;
 }
 
 int opengl_create_buffer_object(GLenum type, GLenum usage)
@@ -148,6 +227,16 @@ void opengl_bind_buffer_object(int handle)
 		return;
 		break;
 	}
+}
+GLuint opengl_buffer_get_id(GLenum expected_type, int handle) {
+	Assert(handle >= 0);
+	Assert((size_t)handle < GL_buffer_objects.size());
+
+	opengl_buffer_object &buffer_obj = GL_buffer_objects[handle];
+
+	Assertion(expected_type == buffer_obj.type, "Expected buffer type did not match the actual buffer type!");
+
+	return buffer_obj.buffer_id;
 }
 
 void gr_opengl_update_buffer_data(int handle, size_t size, void* data)
@@ -393,6 +482,11 @@ void opengl_tnl_init()
 
 void opengl_tnl_shutdown()
 {
+	for (auto& vao_entry : Stored_vertex_arrays) {
+		glDeleteVertexArrays(1, &vao_entry.second);
+	}
+	Stored_vertex_arrays.clear();
+
 	gr_opengl_deferred_shutdown();
 
 	if ( Shadow_map_depth_texture ) {
@@ -406,15 +500,6 @@ void opengl_tnl_shutdown()
 	}
 
 	opengl_destroy_all_buffers();
-}
-
-static void opengl_init_arrays(indexed_vertex_source *vert_src, vertex_buffer *bufferp)
-{
-	Assertion(vert_src->Vbuffer_handle >= 0, "Vertex buffers require a valid buffer handle!");
-
-	opengl_bind_buffer_object(vert_src->Vbuffer_handle);
-	
-	opengl_bind_vertex_layout(bufferp->layout);
 }
 
 void opengl_render_model_program(model_material* material_info, indexed_vertex_source *vert_source, vertex_buffer* bufferp, buffer_data *datap)
@@ -432,13 +517,13 @@ void opengl_render_model_program(model_material* material_info, indexed_vertex_s
 	GLenum element_type = (datap->flags & VB_FLAG_LARGE_INDEX) ? GL_UNSIGNED_INT : GL_UNSIGNED_SHORT;
 
 	Assert(vert_source);
-
-	// basic setup of all data
-	opengl_init_arrays(vert_source, bufferp);
-
+	Assertion(vert_source->Vbuffer_handle >= 0, "The vertex data must be located in a GPU buffer!");
 	Assertion(vert_source->Ibuffer_handle >= 0, "The index values must be located in a GPU buffer!");
 
-	opengl_bind_buffer_object(vert_source->Ibuffer_handle);
+	// basic setup of all data
+	opengl_bind_vertex_layout(bufferp->layout,
+							  opengl_buffer_get_id(GL_ARRAY_BUFFER, vert_source->Vbuffer_handle),
+							  opengl_buffer_get_id(GL_ELEMENT_ARRAY_BUFFER, vert_source->Ibuffer_handle));
 
 	// If GL_ARB_gpu_shader5 is supprted then the instancing is handled by the geometry shader
 	if ( !GLAD_GL_ARB_gpu_shader5 && Rendering_to_shadow_map ) {
@@ -511,19 +596,6 @@ void opengl_create_orthographic_projection_matrix(matrix4* out, float left, floa
 	out->a1d[15] = 1.0f;
 }
 
-void gr_opengl_set_clip_plane(const vec3d *clip_normal, const vec3d *clip_point)
-{
-	if ( clip_normal == NULL || clip_point == NULL ) {
-		GL_state.ClipDistance(0, false);
-	} else {
-		Assertion(Current_shader != NULL && (Current_shader->shader == SDR_TYPE_MODEL
-			|| Current_shader->shader == SDR_TYPE_PASSTHROUGH_RENDER
-			|| Current_shader->shader == SDR_TYPE_DEFAULT_MATERIAL), "Clip planes are not supported by this shader!");
-
-		GL_state.ClipDistance(0, true);
-	}
-}
-
 extern bool Glowpoint_override;
 bool Glowpoint_override_save;
 
@@ -577,7 +649,7 @@ void gr_opengl_shadow_map_end()
 	glScissor(gr_screen.offset_x, (gr_screen.max_h - gr_screen.offset_y - gr_screen.clip_height), gr_screen.clip_width, gr_screen.clip_height);
 }
 
-void opengl_tnl_set_material(material* material_info, bool set_base_map)
+void opengl_tnl_set_material(material* material_info, bool set_base_map, bool set_clipping)
 {
 	int shader_handle = material_info->get_shader_handle();
 	int base_map = material_info->get_texture_map(TM_BASE_TYPE);
@@ -606,13 +678,41 @@ void opengl_tnl_set_material(material* material_info, bool set_base_map)
 
 	gr_set_texture_addressing(material_info->get_texture_addressing());
 
-	auto& clip_params = material_info->get_clip_plane();
+	if (set_clipping) {
+		// Only set the clipping state if explicitly requested by the caller to avoid unnecessary state changes
+		auto& clip_params = material_info->get_clip_plane();
+		if (!clip_params.enabled) {
+			GL_state.ClipDistance(0, false);
+		} else {
+			Assertion(Current_shader != NULL && (Current_shader->shader == SDR_TYPE_MODEL
+				|| Current_shader->shader == SDR_TYPE_PASSTHROUGH_RENDER
+				|| Current_shader->shader == SDR_TYPE_DEFAULT_MATERIAL),
+					  "Clip planes are not supported by this shader!");
 
-	if ( material_info->is_clipped() ) {
-		gr_opengl_set_clip_plane(&clip_params.normal, &clip_params.position);
-	} else {
-		gr_opengl_set_clip_plane(NULL, NULL);
+			GL_state.ClipDistance(0, true);
+		}
 	}
+
+	GL_state.StencilMask(material_info->get_stencil_mask());
+
+	auto& stencilFunc = material_info->get_stencil_func();
+	GL_state.StencilFunc(convertComparisionFunction(stencilFunc.compare), stencilFunc.ref, stencilFunc.mask);
+
+	auto& frontStencilOp = material_info->get_front_stencil_op();
+	GL_state.StencilOpSeparate(GL_FRONT,
+							   convertStencilOp(frontStencilOp.stencilFailOperation),
+							   convertStencilOp(frontStencilOp.depthFailOperation),
+							   convertStencilOp(frontStencilOp.successOperation));
+	auto& backStencilOp = material_info->get_back_stencil_op();
+	GL_state.StencilOpSeparate(GL_BACK,
+							   convertStencilOp(backStencilOp.stencilFailOperation),
+							   convertStencilOp(backStencilOp.depthFailOperation),
+							   convertStencilOp(backStencilOp.successOperation));
+
+	GL_state.StencilTest(material_info->is_stencil_enabled() ? GL_TRUE : GL_FALSE);
+
+	auto& color_mask = material_info->get_color_mask();
+	GL_state.ColorMask(color_mask.x, color_mask.y, color_mask.z, color_mask.w);
 
 	// This is only needed for the passthrough shader
 	uint32_t array_index = 0;
@@ -630,7 +730,7 @@ void opengl_tnl_set_material(material* material_info, bool set_base_map)
 										   &clr,
 										   material_info->get_color_scale(),
 										   array_index,
-										   clip_params);
+										   material_info->get_clip_plane());
 	}
 }
 
@@ -639,7 +739,7 @@ void opengl_tnl_set_model_material(model_material *material_info)
 	float u_scale, v_scale;
 	int render_pass = 0;
 
-	opengl_tnl_set_material(material_info, false);
+	opengl_tnl_set_material(material_info, false, false);
 
 	if ( GL_state.CullFace() ) {
 		GL_state.FrontFaceValue(GL_CW);
@@ -650,6 +750,12 @@ void opengl_tnl_set_model_material(model_material *material_info)
 	Assert( Current_shader->shader == SDR_TYPE_MODEL );
 
 	GL_state.Texture.SetShaderMode(GL_TRUE);
+
+	if (Current_shader->flags & SDR_FLAG_MODEL_CLIP || Current_shader->flags & SDR_FLAG_MODEL_TRANSFORM) {
+		GL_state.ClipDistance(0, true);
+	} else {
+		GL_state.ClipDistance(0, false);
+	}
 
 	uint32_t array_index;
 	if ( Current_shader->flags & SDR_FLAG_MODEL_DIFFUSE_MAP ) {
@@ -858,6 +964,102 @@ void opengl_tnl_set_material_movie(movie_material* material_info) {
 		mprintf(("WARNING: Error setting bitmap texture (%i)!\n", material_info->getVtex()));
 	}
 }
+void opengl_tnl_set_material_nanovg(nanovg_material* material_info) {
+	opengl_tnl_set_material(material_info, true);
+
+	Current_shader->program->Uniforms.setUniformi("nvg_tex", 0);
+}
+
 void gr_opengl_set_viewport(int x, int y, int width, int height) {
 	glViewport(x, y, width, height);
+}
+
+void opengl_bind_vertex_component(const vertex_format_data &vert_component, size_t base_offset)
+{
+	opengl_vertex_bind &bind_info = GL_array_binding_data[vert_component.format_type];
+	opengl_vert_attrib &attrib_info = GL_vertex_attrib_info[bind_info.attribute_id];
+
+	Assert(bind_info.attribute_id == attrib_info.attribute_id);
+
+	GLubyte *data_src = reinterpret_cast<GLubyte*>(base_offset) + vert_component.offset;
+
+	if ( Current_shader != NULL ) {
+		// grabbing a vertex attribute is dependent on what current shader has been set. i hope no one calls opengl_bind_vertex_layout before opengl_set_current_shader
+		GLint index = opengl_shader_get_attribute(attrib_info.attribute_id);
+
+		if ( index >= 0 ) {
+			GL_state.Array.EnableVertexAttrib(index);
+			GL_state.Array.VertexAttribPointer(index, bind_info.size, bind_info.data_type, bind_info.normalized, (GLsizei)vert_component.stride, data_src);
+		}
+	}
+}
+
+void opengl_bind_dynamic_layout(vertex_layout& layout, size_t base_offset) {
+	GL_state.BindVertexArray(GL_vao);
+	GL_state.Array.BindPointersBegin();
+
+	size_t num_vertex_bindings = layout.get_num_vertex_components();
+
+	for ( size_t i = 0; i < num_vertex_bindings; ++i ) {
+		opengl_bind_vertex_component(*layout.get_vertex_component(i), base_offset);
+	}
+
+	GL_state.Array.BindPointersEnd();
+}
+
+void opengl_bind_vertex_array(const vertex_layout& layout) {
+	auto iter = Stored_vertex_arrays.find(layout);
+	if (iter != Stored_vertex_arrays.end()) {
+		// Found existing vertex array!
+		GL_state.BindVertexArray(iter->second);
+		return;
+	}
+
+	GR_DEBUG_SCOPE("Create Vertex array");
+
+	GLuint vao;
+	glGenVertexArrays(1, &vao);
+	GL_state.BindVertexArray(vao);
+
+	for (size_t i = 0; i < layout.get_num_vertex_components(); ++i) {
+		auto component = layout.get_vertex_component(i);
+
+		auto& bind_info = GL_array_binding_data[component->format_type];
+		auto& attrib_info = GL_vertex_attrib_info[bind_info.attribute_id];
+
+		auto attribIndex = attrib_info.attribute_id;
+
+		glEnableVertexAttribArray(attribIndex);
+		glVertexAttribFormat(attribIndex,
+							 bind_info.size,
+							 bind_info.data_type,
+							 bind_info.normalized,
+							 static_cast<GLuint>(component->offset));
+
+		// Currently, all vertex data comes from one buffer.
+		glVertexAttribBinding(attribIndex, 0);
+	}
+
+	Stored_vertex_arrays.insert(std::make_pair(layout, vao));
+}
+void opengl_bind_vertex_layout(vertex_layout &layout, GLuint vertexBuffer, GLuint indexBuffer, size_t base_offset)
+{
+	GR_DEBUG_SCOPE("Bind vertex layout");
+
+	if (!GLAD_GL_ARB_vertex_attrib_binding) {
+		// We don't have support for the new vertex binding functions so fall back to the single VAO implementation
+		GL_state.Array.BindArrayBuffer(vertexBuffer);
+		GL_state.Array.BindElementBuffer(indexBuffer);
+
+		opengl_bind_dynamic_layout(layout, base_offset);
+		return;
+	}
+
+	opengl_bind_vertex_array(layout);
+
+	GL_state.Array.BindVertexBuffer(0,
+									vertexBuffer,
+									static_cast<GLintptr>(base_offset),
+									static_cast<GLsizei>(layout.get_vertex_stride()));
+	GL_state.Array.BindElementBuffer(indexBuffer);
 }

@@ -81,6 +81,9 @@ Category ProcessParticleEffects("Process particle effects", false);
 Category TrailsMoveAll("Trails move all", false);
 Category Simulation("Simulation", false);
 Category RenderMainFrame("Render frame", true);
+Category RenderHUD("Render HUD", true);
+Category RenderHUDHook("Render HUD Scripting Hook", true);
+Category RenderHUDGauge("Render HUD Gauge", true);
 Category MainFrame("Main Frame", true);
 Category PageFlip("Page flip", true);
 

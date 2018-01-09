@@ -27,12 +27,21 @@
 #include <unistd.h>
 #include <cerrno>
 #include <sys/ioctl.h>
+#include <signal.h>
 #ifdef SCP_SOLARIS
 #include <sys/filio.h>
 #endif
 #include <ctype.h>
 
 #define WSAGetLastError()  (errno)
+#define RESTART(syscall)                        \
+  ({                                            \
+    __typeof__(syscall) _res;                   \
+    do                                          \
+      _res = syscall;                           \
+    while (_res == -1 && errno == EINTR);       \
+    _res;                                       \
+})
 #else
 #include <windows.h>
 #include <process.h>
@@ -108,6 +117,18 @@ int FS2NetD_ConnectToServer(const char *host, const char *port)
 		// set to non-blocking mode
 		ulong arg = 1;
 		ioctlsocket(mySocket, FIONBIO, &arg);
+
+		// Where SO_NOSIGPIPE is defined (currently OS X):
+		// prevent SIGPIPE, which is generated when sending after receiver disconnected
+		// on other *nix use MSG_NOSIGNAL flag when sending data, or, failing that, use signal masking
+		// see FS2NetD_SendData()
+#if defined(SCP_UNIX) && defined(SO_NOSIGPIPE)
+		int nosigpipe = 1;
+		if (setsockopt(mySocket, SOL_SOCKET, SO_NOSIGPIPE, (void*)&nosigpipe, sizeof(nosigpipe)) == -1) {
+			my_error = errno;
+			ml_printf("FS2NetD ERROR: Couldn't set SO_NOSIGPIPE on socket (\"%s\")!", strerror(my_error));
+		}
+#endif // SCP_UNIX && SO_NOSIGPIPE
 
 		// blasted MS, probably need to use getaddrinfo() here for Win32, but I
 		// want to keep this as clean and simple as possible and that means
@@ -237,9 +258,74 @@ int FS2NetD_SendData(char *buffer, int blen)
 {
 	int flags = 0;
 
+	// on Unix with MSG_NOSIGNAL, prevent SIGPIPE, which is generated if receiver has disconnected
+	// the MSG_NOSIGNAL flag doesn't work on OS X or Solaris
+	// on OS X, use setsockopt() with SO_NOSIGPIPE instead, see above
+#if defined(SCP_UNIX) && defined(MSG_NOSIGNAL)
+	flags |= MSG_NOSIGNAL;
+#endif // SCP_UNIX && MSG_NOSIGNAL
+
 	socklen_t to_len = sizeof(sockaddr);
 
-	return sendto(mySocket, buffer, blen, flags, (sockaddr*)&FS2NetD_addr, to_len);
+	// Borrowed from Kroki:
+	// https://github.com/kroki/XProbes/blob/1447f3d93b6dbf273919af15e59f35cca58fcc23/src/libxprobes.c#L156
+#if defined(SCP_UNIX) && !defined(MSG_NOSIGNAL) && !defined(SO_NOSIGPIPE)
+	/*
+		We want to ignore possible SIGPIPE that we can generate on write.
+		SIGPIPE is delivered *synchronously* and *only* to the thread
+		doing the write.  So if it is reported as already pending (which
+		means the thread blocks it), then we do nothing: if we generate
+		SIGPIPE, it will be merged with the pending one (there's no
+		queuing), and that suits us well.  If it is not pending, we block
+		it in this thread (and we avoid changing signal action, because it
+		is per-process).
+	*/
+	sigset_t pending;
+	sigset_t sigpipe_mask;
+	bool sigpipe_pending;
+	bool sigpipe_unblock;
+	sigemptyset(&pending);
+	sigpending(&pending);
+	sigpipe_pending = sigismember(&pending, SIGPIPE);
+	if (!sigpipe_pending) {
+		sigset_t blocked;
+		sigemptyset(&blocked);
+		pthread_sigmask(SIG_BLOCK, &sigpipe_mask, &blocked);
+
+		/* Maybe is was blocked already?  */
+		sigpipe_unblock = ! sigismember(&blocked, SIGPIPE);
+	}
+#endif  /* defined(SCP_UNIX) && ! defined(MSG_NOSIGNAL) && ! defined(SO_NOSIGPIPE) */
+
+	auto sent_chars = sendto(mySocket, buffer, blen, flags, (sockaddr*)&FS2NetD_addr, to_len);
+
+#if defined(SCP_UNIX) && !defined(MSG_NOSIGNAL) && !defined(SO_NOSIGPIPE)
+	/*
+		If SIGPIPE was pending already we do nothing.  Otherwise, if it
+		become pending (i.e., we generated it), then we sigwait() it (thus
+		clearing pending status).  Then we unblock SIGPIPE, but only if it
+		were us who blocked it.
+	*/
+	if (!sigpipe_pending) {
+		sigemptyset(&pending);
+		sigpending(&pending);
+		if (sigismember(&pending, SIGPIPE)) {
+			/*
+				Protect ourselves from a situation when SIGPIPE was sent
+				by the user to the whole process, and was delivered to
+				other thread before we had a chance to wait for it.
+			*/
+			static const struct timespec nowait = { 0, 0 };
+			RESTART(sigtimedwait(&sigpipe_mask, NULL, &nowait));
+		}
+
+		if (sigpipe_unblock) {
+			pthread_sigmask(SIG_UNBLOCK, &sigpipe_mask, NULL);
+		}
+	}
+#endif  /* defined(SCP_UNIX) && ! defined(MSG_NOSIGNAL) && ! defined(SO_NOSIGPIPE) */
+
+	return sent_chars;
 }
 
 bool FS2NetD_DataReady()

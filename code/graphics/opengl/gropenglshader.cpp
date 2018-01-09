@@ -23,6 +23,7 @@
 #include "math/vecmat.h"
 #include "mod_table/mod_table.h"
 #include "render/3d.h"
+#include "ShaderProgram.h"
 
 #include <md5.h>
 #include <jansson.h>
@@ -31,7 +32,7 @@ SCP_vector<opengl_shader_t> GL_shader;
 
 GLuint Framebuffer_fallback_texture_id = 0;
 
-opengl_vert_attrib GL_vertex_attrib_info[] =
+SCP_vector<opengl_vert_attrib> GL_vertex_attrib_info =
 	{
 		{ opengl_vert_attrib::POSITION,		"vertPosition",		{{{ 0.0f, 0.0f, 0.0f, 1.0f }}} },
 		{ opengl_vert_attrib::COLOR,		"vertColor",		{{{ 1.0f, 1.0f, 1.0f, 1.0f }}} },
@@ -51,6 +52,7 @@ struct opengl_uniform_block_binding {
 opengl_uniform_block_binding GL_uniform_blocks[] = {
 	{ uniform_block_type::Lights, "lightData" },
 	{ uniform_block_type::ModelData, "modelData" },
+	{ uniform_block_type::NanoVGData, "NanoVGUniformData" },
 };
 
 /**
@@ -109,8 +111,11 @@ static opengl_shader_type_t GL_shader_types[] = {
 	{ SDR_TYPE_BATCHED_BITMAP, "batched-v.sdr", "batched-f.sdr", nullptr,
 		{ opengl_vert_attrib::POSITION, opengl_vert_attrib::TEXCOORD, opengl_vert_attrib::COLOR }, "Batched bitmaps" },
 
-	{ SDR_TYPE_DEFAULT_MATERIAL, "passthrough-v.sdr", "default-material-f.sdr", 0,
+	{ SDR_TYPE_DEFAULT_MATERIAL, "passthrough-v.sdr", "default-material-f.sdr", nullptr,
 		{ opengl_vert_attrib::POSITION, opengl_vert_attrib::TEXCOORD, opengl_vert_attrib::COLOR }, "Default material" },
+
+	{ SDR_TYPE_NANOVG, "nanovg-v.sdr", "nanovg-f.sdr", nullptr,
+		{ opengl_vert_attrib::POSITION, opengl_vert_attrib::TEXCOORD }, "NanoVG shader" },
 
 };
 
@@ -213,12 +218,33 @@ static opengl_shader_variant_t GL_shader_variants[] = {
 	
 	{ SDR_TYPE_POST_PROCESS_BLUR, false, SDR_FLAG_BLUR_VERTICAL, "PASS_1", 
 		{  },
-		"Vertical blur pass" }
+		"Vertical blur pass" },
+
+	{ SDR_TYPE_NANOVG, false, SDR_FLAG_NANOVG_EDGE_AA, "EDGE_AA",
+		{  },
+		"NanoVG edge anti-alias" }
 };
 
 static const int GL_num_shader_variants = sizeof(GL_shader_variants) / sizeof(opengl_shader_variant_t);
 
 opengl_shader_t *Current_shader = NULL;
+
+opengl_shader_t::opengl_shader_t() : shader(SDR_TYPE_NONE), flags(0), flags2(0)
+{
+}
+opengl_shader_t::opengl_shader_t(opengl_shader_t&& other) {
+	*this = std::move(other);
+}
+opengl_shader_t& opengl_shader_t::operator=(opengl_shader_t&& other) {
+	// VS2013 doesn't support implicit move constructors so we need to explicitly declare it
+	shader = other.shader;
+	flags = other.flags;
+	flags2 = other.flags2;
+
+	program = std::move(other.program);
+
+	return *this;
+}
 
 /**
  * Set the currently active shader
@@ -372,7 +398,7 @@ static SCP_string get_shader_hash(const SCP_vector<SCP_string>& vert,
 	add_shader_parts(md5, frag);
 
 	// Add the attribute locations so that changes get detected
-	for (int i = 0; i < opengl_vert_attrib::NUM_ATTRIBS; ++i) {
+	for (uint32_t i = 0; i < (uint32_t)GL_vertex_attrib_info.size(); ++i) {
 		md5.update(GL_vertex_attrib_info[i].name.c_str(), (MD5::size_type) GL_vertex_attrib_info[i].name.size());
 		md5.update(reinterpret_cast<const char*>(&i), sizeof(i));
 	}
@@ -577,9 +603,12 @@ int opengl_compile_shader(shader_type sdr, uint flags)
 				program->addShaderCode(opengl::STAGE_GEOMETRY, sdr_info->geo, geom_content);
 			}
 
-			for (int i = 0; i < opengl_vert_attrib::NUM_ATTRIBS; ++i) {
+			for (size_t i = 0; i < GL_vertex_attrib_info.size(); ++i) {
+				// Check that the enum values match the position in the vector to make accessing that information more efficient
+				Assertion(GL_vertex_attrib_info[i].attribute_id == (int) i, "Mistmatch between enum values and attribute vector detected!");
+
 				// assign vert attribute binding locations before we link the shader
-				glBindAttribLocation(program->getShaderHandle(), i, GL_vertex_attrib_info[i].name.c_str());
+				glBindAttribLocation(program->getShaderHandle(), (GLint) i, GL_vertex_attrib_info[i].name.c_str());
 			}
 
 			// bind fragment data locations before we link the shader
@@ -611,7 +640,7 @@ int opengl_compile_shader(shader_type sdr, uint flags)
 
 	// initialize the attributes
 	for (auto& attr : sdr_info->attributes) {
-		new_shader.program->initAttribute(GL_vertex_attrib_info[attr].name, GL_vertex_attrib_info[attr].default_value);
+		new_shader.program->initAttribute(GL_vertex_attrib_info[attr].name, GL_vertex_attrib_info[attr].attribute_id, GL_vertex_attrib_info[attr].default_value);
 	}
 
 	for (auto& uniform_block : GL_uniform_blocks) {
@@ -631,7 +660,7 @@ int opengl_compile_shader(shader_type sdr, uint flags)
 		if ( sdr_info->type_id == variant.type_id && variant.flag & flags ) {
 			for (auto& attr : variant.attributes) {
 				auto& attr_info = GL_vertex_attrib_info[attr];
-				new_shader.program->initAttribute(attr_info.name, attr_info.default_value);
+				new_shader.program->initAttribute(attr_info.name, attr_info.attribute_id, attr_info.default_value);
 			}
 
 			mprintf(("	%s\n", variant.description));
@@ -708,12 +737,11 @@ void opengl_shader_init()
  * @param attribute_text	Name of the attribute
  * @return					Internal OpenGL location for the attribute
  */
-GLint opengl_shader_get_attribute(const char *attribute_text)
+GLint opengl_shader_get_attribute(opengl_vert_attrib::attrib_id attribute)
 {
 	Assertion(Current_shader != nullptr, "Current shader may not be null!");
-	Assertion(attribute_text != nullptr, "Attribute name must be valid!");
 
-	return Current_shader->program->getAttributeLocation(attribute_text);
+	return Current_shader->program->getAttributeLocation(attribute);
 }
 
 /**
@@ -843,3 +871,4 @@ void opengl_shader_set_default_material(bool textured, bool alpha, vec4 *clr, fl
 	Current_shader->program->Uniforms.setUniformMatrix4f("modelViewMatrix", gr_model_view_matrix);
 	Current_shader->program->Uniforms.setUniformMatrix4f("projMatrix", gr_projection_matrix);
 }
+

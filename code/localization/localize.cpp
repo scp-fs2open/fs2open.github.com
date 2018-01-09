@@ -17,8 +17,7 @@
 #include "parse/encrypt.h"
 #include "parse/parselo.h"
 #include "playerman/player.h"
-
-
+#include "mod_table/mod_table.h"
 
 
 // ------------------------------------------------------------------------------------------------------------
@@ -197,14 +196,22 @@ void parse_stringstbl_quick(const char *filename)
 				stuff_string(language.lang_name, F_RAW, LCL_LANG_NAME_LEN + 1);
 				required_string("+Extension:");
 				stuff_string(language.lang_ext, F_RAW, LCL_LANG_NAME_LEN + 1);
-				required_string("+Special Character Index:");
-				stuff_ubyte(&language.special_char_indexes[0]);
-				for (i = 1; i < LCL_MAX_FONTS; ++i) {
-					// default to "none"/0 except for font03 which defaults to 176
-					// NOTE: fonts.tbl may override these values
-					if (i == font::FONT3) {
-						language.special_char_indexes[i] = 176;
-					} else {
+
+				if (!Unicode_text_mode) {
+					required_string("+Special Character Index:");
+					stuff_ubyte(&language.special_char_indexes[0]);
+					for (i = 1; i < LCL_MAX_FONTS; ++i) {
+						// default to "none"/0 except for font03 which defaults to 176
+						// NOTE: fonts.tbl may override these values
+						if (i == font::FONT3) {
+							language.special_char_indexes[i] = 176;
+						} else {
+							language.special_char_indexes[i] = 0;
+						}
+					}
+				} else {
+					// Set all indices to valid values
+					for (i = 0; i < LCL_MAX_FONTS; ++i) {
 						language.special_char_indexes[i] = 0;
 					}
 				}
@@ -284,6 +291,7 @@ void parse_stringstbl_common(const char *filename, const bool external)
 			}
 
 			if (!external) {
+
 				size_t i = strlen(buf);
 
 				while (i--) {
@@ -325,7 +333,7 @@ void parse_stringstbl_common(const char *filename, const bool external)
 					p_offset = &buf[i+1];			// get ptr to string section with offset in it
 
 					if (buf[i] != '"')
-						Error(LOCATION, "%s is corrupt", filename);		// now its an error
+						error_display(1, "%s is corrupt", filename);		// now its an error
 				}
 
 				buf[i] = 0;
@@ -507,10 +515,16 @@ void lcl_set_language(int lang)
 
 ubyte lcl_get_font_index(int font_num)
 {
-	Assertion((font_num >= 0) && (font_num < LCL_MAX_FONTS), "Passed an invalid font index");
-	Assertion((Lcl_current_lang >= 0) && (Lcl_current_lang < (int)Lcl_languages.size()), "Current language is not valid, can't get font indexes");
+	if (Unicode_text_mode) {
+		// In Unicode mode there are no special characters. Some of the code still uses this function in that mode so
+		// we just return 0 to signify that there are no special characters in this font
+		return 0;
+	} else {
+		Assertion((font_num >= 0) && (font_num < LCL_MAX_FONTS), "Passed an invalid font index");
+		Assertion((Lcl_current_lang >= 0) && (Lcl_current_lang < (int)Lcl_languages.size()), "Current language is not valid, can't get font indexes");
 
-	return Lcl_languages[Lcl_current_lang].special_char_indexes[font_num];
+		return Lcl_languages[Lcl_current_lang].special_char_indexes[font_num];
+	}
 }
 
 // maybe add on an appropriate subdirectory when opening a localized file

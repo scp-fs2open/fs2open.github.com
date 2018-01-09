@@ -182,10 +182,10 @@ void HudGaugeRadarStd::drawContactCircle( int x, int y, int rad )
 			if (Missiontime & 8192)
 				return;
 		}
-		renderString( Large_blip_offset_x+x, Large_blip_offset_y+y, Large_blip_string );
+		renderCircle(x, y, 6);
 	} else {
 		// rad = RADAR_BLIP_RADIUS_NORMAL;
-		renderString( Small_blip_offset_x+x, Small_blip_offset_y+y, Small_blip_string );
+		renderCircle(x, y, 4);
 	}
 }
 void HudGaugeRadarStd::drawContactImage( int x, int y, int rad, int idx, int clr_idx, int size )

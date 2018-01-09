@@ -217,7 +217,7 @@ namespace os
 			mprintf(("Lua Error: %s\n", msgStream.str().c_str()));
 
 			if (Cmdline_noninteractive) {
-				exit(1);
+				abort();
 				return;
 			}
 

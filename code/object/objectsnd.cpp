@@ -431,6 +431,9 @@ void maybe_play_flyby_snd(float closest_dist, object *closest_objp, object *list
 				else
 					snd = &Species_info[sip->species].snd_flyby_fighter;
 
+				if (snd->sound_entries.empty())
+					return; //This species does not define any relevant flyby sounds
+
 				// play da sound
 				snd_play_3d(snd, &closest_objp->pos, &View_position);
 

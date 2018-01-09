@@ -17,6 +17,7 @@
 #include "globalincs/alphacolors.h"
 #include "globalincs/pstypes.h"
 #include "globalincs/vmallocator.h"
+#include "mod_table/mod_table.h"
 #include "osapi/osapi.h"
 #include "render/3d.h"
 #include "sound/ffmpeg/WaveFile.h"
@@ -361,7 +362,14 @@ int snd_load( game_snd_entry *entry, int flags, int allow_hardware_load )
 			}
 
 			if (show_warning) {
-				Warning(LOCATION, "Sound '%s' has more than one channel but is used as a 3D sound! 3D sounds may only have one channel.", entry->filename);
+				if (mod_supports_version(3, 8, 0)) {
+					// This warning was introduced in 3.8.0 and caused a few issues since a lot of mods use 3D sounds
+					// with more than one channel. This will silence the warnings for any mod that does not support
+					// 3.8.0.
+					Warning(LOCATION, "Sound '%s' has more than one channel but is used as a 3D sound! 3D sounds may only have one channel.", entry->filename);
+				} else {
+					mprintf(("Warning: Sound '%s' has more than one channel but is used as a 3D sound! 3D sounds may only have one channel.\n", entry->filename));
+				}
 			}
 #endif
 		}

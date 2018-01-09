@@ -81,7 +81,6 @@ END_MESSAGE_MAP()
 static int Add_count, Replace_count;
 static int Modify_variable;
 
-
 // constructor
 sexp_tree::sexp_tree()
 {
@@ -2675,6 +2674,10 @@ int sexp_tree::get_default_value(sexp_list_item *item, char *text_buf, int op, i
 			else if (Operators[op].value == OP_JETTISON_CARGO_NEW)
 			{
 				item->set_data("25", (SEXPT_NUMBER | SEXPT_VALID));
+			}
+			else if (Operators[op].value == OP_MODIFY_VARIABLE_XSTR)
+			{
+				item->set_data("-1", (SEXPT_NUMBER | SEXPT_VALID));
 			}
 			else
 			{

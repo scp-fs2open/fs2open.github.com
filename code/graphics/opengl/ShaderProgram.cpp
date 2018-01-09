@@ -193,7 +193,7 @@ void opengl::ShaderProgram::linkProgram() {
 	freeCompiledShaders();
 }
 
-void opengl::ShaderProgram::initAttribute(const SCP_string& name, const vec4& default_value)
+void opengl::ShaderProgram::initAttribute(const SCP_string& name, opengl_vert_attrib::attrib_id attr_id, const vec4& default_value)
 {
 	auto attrib_loc = glGetAttribLocation(_program_id, name.c_str());
 
@@ -203,7 +203,7 @@ void opengl::ShaderProgram::initAttribute(const SCP_string& name, const vec4& de
 		return;
 	}
 
-	_attribute_locations.insert(std::make_pair(name, attrib_loc));
+	_attribute_locations.insert(std::make_pair(attr_id, attrib_loc));
 
 	// The shader needs to be in use before glVertexAttrib can be used
 	use();
@@ -215,8 +215,8 @@ void opengl::ShaderProgram::initAttribute(const SCP_string& name, const vec4& de
 		default_value.xyzw.w
 	);
 }
-GLint opengl::ShaderProgram::getAttributeLocation(const SCP_string& name) {
-	auto iter = _attribute_locations.find(name);
+GLint opengl::ShaderProgram::getAttributeLocation(opengl_vert_attrib::attrib_id attribute) {
+	auto iter = _attribute_locations.find(attribute);
 	if (iter == _attribute_locations.end()) {
 		return -1;
 	} else {

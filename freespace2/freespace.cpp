@@ -19,6 +19,10 @@
  #include <crtdbg.h>
 #endif // !_MINGW
 #else
+#ifdef APPLE_APP
+ #include <sys/types.h>
+ #include <libproc.h>
+#endif
  #include <unistd.h>
  #include <sys/stat.h>
 #endif
@@ -134,6 +138,7 @@
 #include "parse/parselo.h"
 #include "scripting/scripting.h"
 #include "parse/sexp.h"
+#include "parse/sexp/sexp_lookup.h"
 #include "particle/particle.h"
 #include "particle/ParticleManager.h"
 #include "pilotfile/pilotfile.h"
@@ -1123,7 +1128,7 @@ static int framenum;
  * called since the current callback function was set.
  */
 void game_loading_callback(int count)
-{	
+{
 	game_do_networking();
 
 	Assert( Game_loading_callback_inited==1 );
@@ -1175,6 +1180,17 @@ void game_loading_callback(int count)
 		memset( Processing_filename, 0, MAX_PATH_LEN );
 	}
 #endif
+
+	auto progress = static_cast<float>(count) / static_cast<float>(COUNT_ESTIMATE);
+	CLAMP(progress, 0.0f, 1.0f);
+	Script_system.SetHookVar("Progress", 'f', &progress);
+
+	if (Script_system.RunCondition(CHA_LOADSCREEN)) {
+		// At least one script exeuted so we probably need to do a flip now
+		do_flip = 1;
+	}
+
+	Script_system.RemHookVar("Progress");
 
 	os_ignore_events();
 
@@ -1280,10 +1296,8 @@ void freespace_mission_load_stuff()
 			game_busy( NOX("** preloading common game sounds **") );
 			gamesnd_preload_common_sounds();			// load in sounds that are expected to play
 
-			if (Cmdline_snd_preload) {
-				game_busy( NOX("** preloading gameplay sounds **") );
-				gamesnd_load_gameplay_sounds();			// preload in gameplay sounds if wanted
-			}
+			game_busy( NOX("** preloading gameplay sounds **") );
+			gamesnd_load_gameplay_sounds();			// preload in gameplay sounds if wanted
 
 			game_busy( NOX("** assigning sound environment for mission **") );
 			ship_assign_sound_all();	// assign engine sounds to ships
@@ -1714,11 +1728,12 @@ void game_init()
 
 	e1 = timer_get_milliseconds();
 
+	mod_table_init();		// load in all the mod dependent settings
+
 	// initialize localization module. Make sure this is done AFTER initialzing OS.
 	lcl_init( detect_lang() );	
 	lcl_xstr_init();
 
-	mod_table_init();		// load in all the mod dependent settings
 
 	if (Is_standalone) {
 		// force off some cmdlines if they are on
@@ -1978,6 +1993,14 @@ void game_init()
 	if(!Cmdline_reparse_mainhall)
 	{
 		main_hall_table_init();
+	}
+
+	// Initialize dynamic SEXPs
+	sexp::dynamic_sexp_init();
+
+	// This needs to be done after the dynamic SEXP init so that our documentation contains the dynamic sexps
+	if (Cmdline_output_sexp_info) {
+		output_sexps("sexps.html");
 	}
 
 	Viewer_mode = 0;
@@ -3892,6 +3915,8 @@ void game_shade_frame(float frametime)
 		return;
 	}
 
+	GR_DEBUG_SCOPE("Shade frame");
+
 	if (Fade_type != FI_NONE) {
 		Assert(Fade_start_timestamp > 0);
 		Assert(Fade_end_timestamp > 0);
@@ -4144,6 +4169,7 @@ void game_frame(bool paused)
 
 			if(Scripting_didnt_draw_hud) {
 				GR_DEBUG_SCOPE("Render HUD");
+				TRACE_SCOPE(tracing::RenderHUD);
 
 				game_render_hud(cid);
 			}
@@ -4155,6 +4181,8 @@ void game_frame(bool paused)
 
 			if (!(Viewer_mode & (VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY))) 
 			{
+				TRACE_SCOPE(tracing::RenderHUDHook);
+
 				Script_system.RunCondition(CHA_HUDDRAW, '\0', NULL, Viewer_obj);
 			}
 			Script_system.RemHookVar("Self");
@@ -6849,6 +6877,9 @@ void game_shutdown(void)
 #endif
 	fs2netd_close();
 
+	// Free SEXP resources
+	sexp_shutdown();
+
 	if ( Cmdline_old_collision_sys ) {
 		obj_pairs_close();		// free memory from object collision pairs
 	} else {
@@ -7915,11 +7946,17 @@ int actual_main(int argc, char *argv[])
 	SCP_mspdbcs_Initialise();
 #else
 #ifdef APPLE_APP
-	// Finder sets the working directory to the root of the drive so we have to get a little creative
-	// to find out where on the disk we should be running from for CFILE's sake.
-	char *path_name = SDL_GetBasePath();
-	chdir(path_name);
-	SDL_free(path_name);
+    char pathbuf[PROC_PIDPATHINFO_MAXSIZE];
+    if (proc_pidpath(getppid(), pathbuf, sizeof(pathbuf)) <= 0) {
+        Warning(LOCATION, "Could not retrieve parent pidpath!");
+    }
+    if (strcmp("/sbin/launchd", pathbuf) == 0) {
+        // Finder sets the working directory to the root of the drive so we have to get a little creative
+        // to find out where on the disk we should be running from for CFILE's sake.
+        char *path_name = SDL_GetBasePath();
+        chdir(path_name);
+        SDL_free(path_name);
+    }
 #endif
 
 	// create user's directory	

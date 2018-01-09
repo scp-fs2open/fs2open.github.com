@@ -15,6 +15,7 @@
 #include "globalincs/pstypes.h"
 #include "globalincs/flagset.h"
 #include "def_files/def_files.h"
+#include "utils/unicode.h"
 
 #include <cinttypes>
 #include <exception>
@@ -31,7 +32,6 @@ extern int Token_found_flag;
 
 
 #define	COMMENT_CHAR	(char)';'
-#define	EOF_CHAR			(char)-128
 #define	EOLN				(char)0x0a
 
 #define	F_NAME					1
@@ -75,6 +75,7 @@ extern int get_index_of_first_hash_symbol(SCP_string &src);
 
 // white space
 extern int is_white_space(char ch);
+extern int is_white_space(unicode::codepoint_t cp);
 extern void ignore_white_space();
 extern void drop_trailing_white_space(char *str);
 extern void drop_leading_white_space(char *str);
@@ -87,6 +88,7 @@ extern void drop_white_space(SCP_string &str);
 
 // gray space
 extern int is_gray_space(char ch);
+extern bool is_gray_space(unicode::codepoint_t cp);
 extern void ignore_gray_space();
 
 // error
@@ -268,8 +270,19 @@ extern void maybe_convert_foreign_characters(SCP_string &text);
 extern size_t get_converted_string_length(const char *text);
 extern size_t get_converted_string_length(const SCP_string &text);
 char *split_str_once(char *src, int max_pixel_w);
-int split_str(const char *src, int max_pixel_w, int *n_chars, const char **p_str, int max_lines, char ignore_char = -1, bool strip_leading_whitespace = true);
-int split_str(const char *src, int max_pixel_w, SCP_vector<int> &n_chars, SCP_vector<const char*> &p_str, char ignore_char = -1, bool strip_leading_whitespace = true);
+int split_str(const char* src,
+			  int max_pixel_w,
+			  int* n_chars,
+			  const char** p_str,
+			  int max_lines,
+			  unicode::codepoint_t ignore_char = (unicode::codepoint_t) -1,
+			  bool strip_leading_whitespace = true);
+int split_str(const char* src,
+			  int max_pixel_w,
+			  SCP_vector<int>& n_chars,
+			  SCP_vector<const char*>& p_str,
+			  unicode::codepoint_t ignore_char = (unicode::codepoint_t) -1,
+			  bool strip_leading_whitespace = true);
 
 // fred
 extern int required_string_fred(char *pstr, char *end = NULL);

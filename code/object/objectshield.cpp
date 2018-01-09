@@ -383,19 +383,6 @@ void shield_transfer(object *objp, int quadrant, float rate) {
 	Assert(objp);
 	Assert(objp->type == OBJ_SHIP);
 
-	ship *shipp = &Ships[objp->instance];
-	ship_info *sip = &Ship_info[shipp->ship_info_index];
-
-	if (sip->flags[Ship::Info_Flags::Model_point_shields]) {
-		// Using model point shields, so map to the correct quadrant
-		quadrant = sip->shield_point_augment_ctrls[quadrant];
-
-		if (quadrant < 0) {
-			// This quadrant cannot be augmented, bail
-			return;
-		}
-	}
-
 	Assert(quadrant >= 0 && quadrant < objp->n_quadrants);
 	Assert((0.0f < rate) && (rate <= 1.0f));
 

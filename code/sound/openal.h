@@ -3,13 +3,13 @@
 #define _AL_H
 
 
-#if !(defined(__APPLE__) || defined(_WIN32))
-	#include <AL/al.h>
-	#include <AL/alc.h>
+#if defined(__APPLE__)
+#include "al.h"
+#include "alc.h"
 #else
-	#include "al.h"
-	#include "alc.h"
-#endif // !__APPLE__ && !_WIN32
+#include <AL/al.h>
+#include <AL/alc.h>
+#endif // defined(__APPLE__)
 
 #include <string>
 

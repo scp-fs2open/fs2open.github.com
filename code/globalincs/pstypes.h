@@ -75,10 +75,21 @@ typedef struct vec4 {
 	};
 } vec4;
 
+struct bvec4 {
+	bool x;
+	bool y;
+	bool z;
+	bool w;
+};
+
 // sometimes, you just need some integers
 typedef struct ivec3 {
 	int x, y, z;
 } ivec3;
+
+struct ivec2 {
+	int x, y;
+};
 
 /** Represents a point in 3d space.
 

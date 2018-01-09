@@ -256,3 +256,7 @@ CMakeSettings.json
 
 # Weird files created by Linux
 .fuse_hidden*
+
+# This gets ignored by one of the rules above for some reason...
+!/code/scripting/lua/LuaConvert.h
+!/code/debugconsole/
