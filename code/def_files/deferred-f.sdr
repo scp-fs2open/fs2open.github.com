@@ -43,6 +43,29 @@ vec3 SpecularBlinnPhong(vec3 specColor, vec3 light, vec3 normal, vec3 halfVec, f
 {
 	return mix(specColor, FresnelSchlick(specColor, light, halfVec), fresnel) * ((specPower + 2.0) / 8.0 ) * pow(clamp(dot(normal, halfVec), 0.0, 1.0), specPower) * dotNL;
 }
+vec3 SpecularGGX(vec3 specColor, vec3 light, vec3 normal, vec3 halfVec, vec3 view, float gloss, float dotNL)
+{
+	float roughness = clamp(1.0f - gloss, 0.0f, 1.0f);
+	float alpha = roughness * roughness;
+
+	float dotNH = clamp(dot(normal, halfVec), 0.0f, 1.0f);
+	float dotNV = clamp(dot(normal, view), 0.0f, 1.0f);
+
+	float alphaSqr = alpha * alpha;
+	float pi = 3.14159f;
+	float denom = dotNH * dotNH * (alphaSqr - 1.0f) + 1.0f;
+	float distribution = alphaSqr / (pi * denom * denom);
+
+	vec3 fresnel = FresnelSchlick(specColor, light, halfVec);
+	
+	float alphaPrime = roughness + 1.0f;
+	float k = alphaPrime * alphaPrime / 8.0f;
+	float g1vNL = 1.0f / (dotNL * (1.0f - k) + k);
+	float g1vNV = 1.0f / (dotNV * (1.0f - k) + k);
+	float visibility = g1vNL * g1vNV;
+
+	return distribution * fresnel * visibility * dotNL;
+}
 vec4 SpecularLegacy(vec4 specColor, vec3 normal, vec3 halfVec, float specPower)
 {
 	return specColor * pow(clamp(dot(normal, halfVec), 0.0, 1.0), specPower);
@@ -101,6 +124,6 @@ void main()
 	vec3 halfVec = normalize(lightDir + eyeDir);
 	float NdotL = clamp(dot(normal.xyz, lightDir), 0.0, 1.0);
 	vec4 fragmentColor = vec4(color * (diffuseLightColor * NdotL * attenuation), 1.0);
-	fragmentColor.rgb += SpecularBlinnPhong(specColor.rgb, lightDir, normal.xyz, halfVec, exp2(10.0 * gloss + 1.0), fresnel, NdotL).rgb * specLightColor * attenuation;
+	fragmentColor.rgb += SpecularGGX(specColor.rgb, lightDir, normal.xyz, halfVec, eyeDir, gloss, NdotL).rgb * specLightColor * attenuation;
 	fragOut0 = max(fragmentColor, vec4(0.0));
 }
