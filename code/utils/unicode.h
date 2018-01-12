@@ -149,7 +149,7 @@ size_t num_codepoints(octet_iterator start, octet_iterator end) {
 			return 0;
 		}
 	} else {
-		return static_cast<size_t>(std::distance(end, start));
+		return static_cast<size_t>(std::distance(start, end));
 	}
 }
 
