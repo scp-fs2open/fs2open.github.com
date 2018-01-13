@@ -307,7 +307,16 @@ class nanovg_material : public material {
 	nanovg_material();
 };
 
+class decal_material : public material
+{
+ public:
+	decal_material();
+
+	uint get_shader_flags() const override;
+};
+
 gr_alpha_blend material_determine_blend_mode(int base_bitmap, bool is_transparent);
+
 gr_zbuffer_type material_determine_depth_mode(bool depth_testing, bool is_transparent);
 
 void material_set_interface(material* mat_info, int texture, bool blended, float alpha);
@@ -320,5 +329,6 @@ void material_set_distortion(distortion_material *mat_info, int texture, bool th
 void material_set_movie(movie_material *mat_info, int y_bm, int u_bm, int v_bm);
 void material_set_batched_bitmap(batched_bitmap_material* mat_info, int base_tex, float alpha, float color_scale);
 void material_set_nanovg(nanovg_material* mat_info, int base_tex);
+void material_set_decal(material* mat_info, int diffuse_tex, int normal_tex);
 
 #endif

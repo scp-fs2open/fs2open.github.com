@@ -119,6 +119,13 @@ void ship_weapon_do_hit_stuff(object *pship_obj, object *weapon_obj, vec3d *worl
 		ship_apply_whack( &force, hitpos, pship_obj );
 	}
 
+	// Add impact decal
+	if (quadrant_num == -1 && wip->impact_decal.definition_handle >= 0) {
+		matrix decal_orient;
+		vm_vector_2_matrix_norm(&decal_orient, &hit_dir); // hit_dir is already normalized so we can use the more efficient function
+
+		decals::addDecal(wip->impact_decal, pship_obj, submodel_num, *hitpos, decal_orient);
+	}
 }
 
 extern int Framecount;

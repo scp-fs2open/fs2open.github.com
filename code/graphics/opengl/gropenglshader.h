@@ -39,7 +39,9 @@ struct opengl_vert_attrib {
 		TANGENT,
 		MODEL_ID,
 		RADIUS,
-		UVEC
+		UVEC,
+		WORLD_MATRIX,
+		NUM_ATTRIBS,
 	};
 
 	attrib_id attribute_id;

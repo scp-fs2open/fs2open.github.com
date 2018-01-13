@@ -503,7 +503,6 @@ void gr_opengl_deferred_light_sphere_init(int rings, int segments) // Generate a
 		vm_free(Indices);
 		Indices = NULL;
 	}
-
 }
 
 void opengl_draw_sphere()

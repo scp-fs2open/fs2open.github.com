@@ -2753,7 +2753,7 @@ void vm_matrix4_set_transform(matrix4 *out, matrix *m, vec3d *v)
 	out->a2d[3][2] = v->a1d[2];
 }
 
-void vm_matrix4_get_orientation(matrix *out, matrix4 *m)
+void vm_matrix4_get_orientation(matrix *out, const matrix4 *m)
 {
 	out->a2d[0][0] = m->a2d[0][0];
 	out->a2d[0][1] = m->a2d[0][1];
@@ -2803,7 +2803,7 @@ float vm_vec4_dot4(float x, float y, float z, float w, const vec4 *v)
 	return (x * v->xyzw.x) + (y * v->xyzw.y) + (z * v->xyzw.z) + (w * v->xyzw.w);
 }
 
-void vm_vec_transform(vec4 *dest, vec4 *src, matrix4 *m)
+void vm_vec_transform(vec4 *dest, const vec4 *src, const matrix4 *m)
 {
 	dest->xyzw.x = (m->vec.rvec.xyzw.x * src->xyzw.x) + (m->vec.uvec.xyzw.x * src->xyzw.y) + (m->vec.fvec.xyzw.x * src->xyzw.z) + (m->vec.pos.xyzw.x * src->xyzw.w);
 	dest->xyzw.y = (m->vec.rvec.xyzw.y * src->xyzw.x) + (m->vec.uvec.xyzw.y * src->xyzw.y) + (m->vec.fvec.xyzw.y * src->xyzw.z) + (m->vec.pos.xyzw.y * src->xyzw.w);
@@ -2811,7 +2811,7 @@ void vm_vec_transform(vec4 *dest, vec4 *src, matrix4 *m)
 	dest->xyzw.w = (m->vec.rvec.xyzw.w * src->xyzw.x) + (m->vec.uvec.xyzw.w * src->xyzw.y) + (m->vec.fvec.xyzw.w * src->xyzw.z) + (m->vec.pos.xyzw.w * src->xyzw.w);
 }
 
-void vm_vec_transform(vec3d *dest, vec3d *src, matrix4 *m, bool pos)
+void vm_vec_transform(vec3d *dest, const vec3d *src, const matrix4 *m, bool pos)
 {
 	vec4 temp_src, temp_dest;
 

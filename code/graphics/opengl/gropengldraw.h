@@ -56,11 +56,15 @@ void gr_opengl_render_primitives_batched(batched_bitmap_material* material_info,
 void gr_opengl_render_primitives_distortion(distortion_material* material_info, primitive_type prim_type, vertex_layout* layout, int offset, int n_verts, int buffer_handle);
 void gr_opengl_render_movie(movie_material* material_info, primitive_type prim_type, vertex_layout* layout, int n_verts, int buffer);
 void gr_opengl_render_nanovg(nanovg_material* material_info, primitive_type prim_type, vertex_layout* layout, int offset, int n_verts, int buffer_handle);
+void gr_opengl_render_decals(decal_material* material_info, primitive_type prim_type, vertex_layout* layout, int num_elements, const indexed_vertex_source& binding);
 
 void opengl_draw_textured_quad(GLfloat x1, GLfloat y1, GLfloat u1, GLfloat v1,
 							   GLfloat x2, GLfloat y2, GLfloat u2, GLfloat v2 );
 
 inline GLenum opengl_primitive_type(primitive_type prim_type);
+
+void gr_opengl_start_decal_pass();
+void gr_opengl_stop_decal_pass();
 
 extern int Scene_texture_initialized;
 

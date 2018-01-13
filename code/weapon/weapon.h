@@ -21,6 +21,7 @@
 #include "weapon/trails.h"
 #include "particle/ParticleManager.h"
 #include "weapon/weapon_flags.h"
+#include "decals/decals.h"
 
 class object;
 class ship_subsys;
@@ -457,6 +458,8 @@ typedef struct weapon_info {
 	int hud_locked_snd; // Sound played when this weapon locked onto a target
 	int hud_in_flight_snd; // Sound played while the weapon is in flight
 	InFlightSoundType in_flight_play_type; // The status when the sound should be played
+
+	decals::creation_info impact_decal;
 
 public:
 	weapon_info();

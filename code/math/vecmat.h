@@ -254,7 +254,7 @@ matrix *vm_vec_ang_2_matrix(matrix *m, const vec3d *v, float a);
  *
  * @sa vm_vector_2_matrix_norm
  */
-matrix *vm_vector_2_matrix(matrix *m, const vec3d *fvec, const vec3d *uvec, const vec3d *rvec);
+matrix *vm_vector_2_matrix(matrix *m, const vec3d *fvec, const vec3d *uvec = nullptr, const vec3d *rvec = nullptr);
 
 
 /**
@@ -469,12 +469,12 @@ void vm_matrix4_set_identity(matrix4 *out);
 
 void vm_matrix4_set_transform(matrix4 *out, matrix *m, vec3d *v);
 
-void vm_matrix4_get_orientation(matrix *out, matrix4 *m);
+void vm_matrix4_get_orientation(matrix *out, const matrix4 *m);
 
 void vm_matrix4_get_offset(vec3d *out, matrix4 *m);
 
-void vm_vec_transform(vec4 *dest, vec4 *src, matrix4 *m);
-void vm_vec_transform(vec3d *dest, vec3d *src, matrix4 *m, bool pos = true);
+void vm_vec_transform(vec4 *dest, const vec4 *src, const matrix4 *m);
+void vm_vec_transform(vec3d *dest, const vec3d *src, const matrix4 *m, bool pos = true);
 
 void vm_matrix4_x_matrix4(matrix4 *dest, const matrix4 *src0, const matrix4 *src1);
 

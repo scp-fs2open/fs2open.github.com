@@ -130,6 +130,8 @@ extern Category PageInSingleBitmap;
 extern Category ShipPageIn;
 extern Category WeaponPageIn;
 
+extern Category RenderDecals;
+extern Category RenderSingleDecal;
 }
 
 #endif // _TRACING_CATEGORIES_H

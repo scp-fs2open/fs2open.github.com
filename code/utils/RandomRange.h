@@ -96,7 +96,7 @@ class RandomRange {
 		return m_distribution(m_generator);
 	}
 
-	ValueType min() {
+	ValueType min() const {
 		return m_minValue;
 	}
 

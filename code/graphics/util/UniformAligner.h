@@ -44,7 +44,7 @@ class UniformAligner {
 
 	template<typename THeader>
 	THeader* getHeader() {
-		static_assert(sizeof(THeader) == _headerSize, "Header size does not match requested header type!");
+		Assertion(sizeof(THeader) == _headerSize, "Header size does not match requested header type!");
 
 		return reinterpret_cast<THeader*>(_buffer.data());
 	}
