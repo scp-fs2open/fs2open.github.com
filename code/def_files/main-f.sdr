@@ -255,7 +255,7 @@ vec3 SpecularBlinnPhong(vec3 specColor, vec3 light, vec3 normal, vec3 halfVec, f
 	return mix(specColor, FresnelSchlick(specColor, light, halfVec), fresnel) * ((specPower + 2.0) / 8.0 ) * pow(clamp(dot(normal, halfVec), 0.0, 1.0), specPower) * dotNL;
 }
 
-vec3 SpecularGGX(vec3 specColor, vec3 light, vec3 normal, vec3 halfVec, vec3 view, float gloss, float dotNL)
+vec3 SpecularGGX(vec3 specColor, vec3 light, vec3 normal, vec3 halfVec, vec3 view, float gloss, float fresnelFactor, float dotNL)
 {
 	float roughness = clamp(1.0f - gloss, 0.0f, 1.0f);
 	float alpha = roughness * roughness;
@@ -268,7 +268,7 @@ vec3 SpecularGGX(vec3 specColor, vec3 light, vec3 normal, vec3 halfVec, vec3 vie
 	float denom = dotNH * dotNH * (alphaSqr - 1.0f) + 1.0f;
 	float distribution = alphaSqr / (pi * denom * denom);
 
-	vec3 fresnel = FresnelSchlick(specColor, light, halfVec);
+	vec3 fresnel = mix(specColor, FresnelSchlick(specColor, light, halfVec), fresnelFactor);
 	
 	float alphaPrime = roughness + 1.0f;
 	float k = alphaPrime * alphaPrime / 8.0f;
@@ -321,10 +321,10 @@ vec3 CalculateLighting(vec3 normal, vec3 diffuseMaterial, vec3 specularMaterial,
 		// gather light params
 		GetLightInfo(i, lightDir, attenuation);
 		vec3 halfVec = normalize(lightDir + eyeDir);
-		float NdotL = max(dot(normal, lightDir), 0.0);
+		float NdotL = clamp(dot(normal, lightDir), 0.0f, 1.0f);
 		// Ambient, Diffuse, and Specular
 		lightDiffuse += (lights[i].diffuse_color.rgb * diffuseFactor * NdotL * attenuation) * shadow;
-		lightSpecular += lights[i].spec_color * SpecularGGX(specularMaterial, lightDir, normal, halfVec, eyeDir, gloss, NdotL) * attenuation * shadow;
+		lightSpecular += lights[i].spec_color * SpecularGGX(specularMaterial, lightDir, normal, halfVec, eyeDir, gloss, fresnel, NdotL) * attenuation * shadow;
 	}
 	return diffuseMaterial * (lightAmbient + lightDiffuse) + lightSpecular;
 }
@@ -397,10 +397,10 @@ void main()
 		fresnelFactor = 1.0;
 	}
 	if(gammaSpec) {
+		specColor.rgb = max(specColor.rgb, vec3(0.03f)); // hardcoded minimum specular value. read John Hable's blog post titled 'Everything Is Shiny'. 
  #ifdef FLAG_HDR
 		specColor.rgb = pow(specColor.rgb, vec3(SRGB_GAMMA));
  #endif
-		specColor.rgb = max(specColor.rgb, vec3(0.04)); // hardcoded minimum specular value. read John Hable's blog post titled 'Everything Is Shiny'. 
 		fresnelFactor = 1.0;
 	}
 #endif
