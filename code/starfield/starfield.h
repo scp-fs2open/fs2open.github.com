@@ -100,7 +100,7 @@ void stars_draw_background();
 
 // This *must* be called to initialize the lighting.
 // You can turn off all the stars and suns and nebulas, though.
-void stars_draw(int show_stars, int show_suns, int show_nebulas, int show_subspace, int env);
+void stars_draw(int show_stars, int show_suns, int show_nebulas, int show_subspace, int env, bool in_mission = true);
 // void calculate_bitmap_matrix(starfield_bitmaps *bm, vec3d *v);
 // void calculate_bitmap_points(starfield_bitmaps *bm, float bank = 0.0f);
 
