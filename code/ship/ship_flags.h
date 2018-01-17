@@ -105,6 +105,18 @@ namespace Ship {
 		Scramble_messages,			// Goober5000 - all messages sent from this ship appear scrambled
         No_secondary_lockon,        // zookeeper - secondary lock-on disabled
         No_disabled_self_destruct,  // Goober5000 - ship will not self-destruct after 90 seconds if engines or weapons destroyed (c.f. ai_maybe_self_destruct)
+		Draw_as_wireframe,			// The_E -- Ship will be rendered in wireframe mode
+		Render_without_diffuse,		// The_E -- Ship will be rendered without diffuse map (needed for the lab)
+		Render_without_specmap,
+		Render_without_normalmap,
+		Render_without_envmap,
+		Render_show_dockpaths,
+		Render_show_paths,
+		Render_show_pivots,
+		Render_show_radius,
+		Render_show_shields,
+		Render_full_detail, 
+		Render_without_light,
 
 		NUM_VALUES
 
