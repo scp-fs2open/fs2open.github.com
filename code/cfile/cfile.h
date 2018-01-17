@@ -326,7 +326,7 @@ void cf_sort_filenames( SCP_vector<SCP_string> &list, int sort, SCP_vector<file_
 //         size        - File size
 //         offset      - Offset into pack file.  0 if not a packfile.
 // Returns: If not found returns 0.
-int cf_find_file_location( const char *filespec, int pathtype, int max_out, char *pack_filename, size_t *size, size_t *offset, bool localize = false);
+int cf_find_file_location( const char *filespec, int pathtype, int max_out, char *pack_filename, size_t *size = NULL, size_t *offset = NULL, bool localize = false);
 
 // Searches for a file.   Follows all rules and precedence and searches
 // CD's and pack files.  Searches all locations in order for first filename using ext filter list.
