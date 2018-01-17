@@ -8874,7 +8874,7 @@ void ship_process_post(object * obj, float frametime)
 
 	if(!(Game_mode & GM_STANDALONE_SERVER)) {
 		// Plot ship on the radar.  What about multiplayer ships?
-		if ( obj != Player_obj )			// don't plot myself.
+		if ( obj != Player_obj && Game_mode & GM_IN_MISSION )			// don't plot myself.
 			radar_plot_object( obj );
 
 		// MWA -- move the spark code to before the check for multiplayer master
@@ -18915,7 +18915,59 @@ void ship_render(object* obj, model_draw_list* scene)
 		render_flags |= MR_NO_GLOWMAPS;
 	}
 
+	if (shipp->flags[Ship_Flags::Draw_as_wireframe]) {
+		render_flags |= MR_SHOW_OUTLINE_HTL | MR_NO_POLYS | MR_NO_TEXTURING;
+		render_info.set_color(Wireframe_color);
+	}
+
+	if (shipp->flags[Ship_Flags::Render_full_detail]) {
+		render_flags |= MR_FULL_DETAIL;
+	}
+
+	if (shipp->flags[Ship_Flags::Render_without_light]) {
+		render_flags |= MR_NO_LIGHTING;
+	}
+
+	uint debug_flags = render_info.get_debug_flags();
+
+	if (shipp->flags[Ship_Flags::Render_without_diffuse]) {
+		debug_flags |= MR_DEBUG_NO_DIFFUSE;
+	}
+
+	if (shipp->flags[Ship_Flags::Render_without_envmap]) {
+		debug_flags |= MR_DEBUG_NO_ENV;
+	}
+
+	if (shipp->flags[Ship_Flags::Render_without_normalmap]) {
+		debug_flags |= MR_DEBUG_NO_NORMAL;
+	}
+
+	if (shipp->flags[Ship_Flags::Render_without_specmap]) {
+		debug_flags |= MR_DEBUG_NO_SPEC;
+	}
+
+	if (shipp->flags[Ship_Flags::Render_show_pivots]) {
+		debug_flags |= MR_DEBUG_PIVOTS;
+	}
+
+	if (shipp->flags[Ship_Flags::Render_show_paths]) {
+		debug_flags |= MR_DEBUG_PATHS;
+	}
+
+	if (shipp->flags[Ship_Flags::Render_show_dockpaths]) {
+		debug_flags |= MR_DEBUG_BAY_PATHS;
+	}
+
+	if (shipp->flags[Ship_Flags::Render_show_radius]) {
+		debug_flags |= MR_DEBUG_RADIUS;
+	}
+
+	if (shipp->flags[Ship_Flags::Render_show_shields]) {
+		debug_flags |= MR_DEBUG_SHIELDS;
+	}
+
 	render_info.set_flags(render_flags);
+	render_info.set_debug_flags(debug_flags);
 
 	//draw weapon models
 	ship_render_weapon_models(&render_info, scene, obj, render_flags);

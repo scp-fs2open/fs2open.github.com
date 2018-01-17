@@ -131,6 +131,8 @@ void stars_preload_background_bitmap(char *fname);
 
 void stars_set_nebula(bool activate);
 
+void stars_load_debris(int fullneb = 0);
+
 // Starfield functions that should be used only by FRED ...
 
 // get a name based on the index into starfield_bitmap, only FRED should ever need this

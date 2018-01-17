@@ -860,6 +860,10 @@ void model_set_detail_level(int n);
 #define MR_DEBUG_RADIUS				(1<<2)		// Show the radius around the object
 #define MR_DEBUG_SHIELDS			(1<<3)		// Show the shield mesh
 #define MR_DEBUG_BAY_PATHS			(1<<4)		// draw bay paths
+#define MR_DEBUG_NO_DIFFUSE			(1<<5)
+#define MR_DEBUG_NO_SPEC			(1<<6)
+#define MR_DEBUG_NO_NORMAL			(1<<7)
+#define MR_DEBUG_NO_ENV				(1<<8)
 
 //Defines for the render parameter of model_render, model_really_render and model_render_buffers
 #define MODEL_RENDER_OPAQUE 1

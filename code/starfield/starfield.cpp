@@ -221,7 +221,7 @@ void stars_load_debris_vclips(debris_vclip *vclips)
 	}
 }
 
-void stars_load_debris(int fullneb = 0)
+void stars_load_debris(int fullneb)
 {
 	if (Cmdline_nomotiondebris) {
 		return;
