@@ -116,4 +116,7 @@ Category PageInStop("Finish page in", false);
 Category PageInSingleBitmap("Page in single bitmap", false);
 Category ShipPageIn("Ship page in", false);
 Category WeaponPageIn("Weapon page in", false);
+
+Category RenderDecals("Render all decals", true);
+Category RenderSingleDecal("Render single decal", true);
 }

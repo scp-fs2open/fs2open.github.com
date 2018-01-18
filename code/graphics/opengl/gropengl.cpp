@@ -1173,6 +1173,9 @@ void opengl_setup_function_pointers()
 
 	gr_screen.gf_clear_states	= gr_opengl_clear_states;
 
+	gr_screen.gf_start_decal_pass = gr_opengl_start_decal_pass;
+	gr_screen.gf_stop_decal_pass = gr_opengl_stop_decal_pass;
+
 	gr_screen.gf_render_model = gr_opengl_render_model;
 	gr_screen.gf_render_primitives= gr_opengl_render_primitives;
 	gr_screen.gf_render_primitives_particle	= gr_opengl_render_primitives_particle;
@@ -1180,6 +1183,7 @@ void opengl_setup_function_pointers()
 	gr_screen.gf_render_primitives_distortion = gr_opengl_render_primitives_distortion;
 	gr_screen.gf_render_movie = gr_opengl_render_movie;
 	gr_screen.gf_render_nanovg = gr_opengl_render_nanovg;
+	gr_screen.gf_render_decals = gr_opengl_render_decals;
 
 	gr_screen.gf_is_capable = gr_opengl_is_capable;
 	gr_screen.gf_get_property = gr_opengl_get_property;
@@ -1582,6 +1586,9 @@ bool gr_opengl_get_property(gr_property prop, void* dest) {
 	switch(prop) {
 		case gr_property::UNIFORM_BUFFER_OFFSET_ALIGNMENT:
 			*((int*)dest) = GL_state.Constants.GetUniformBufferOffsetAlignment();
+			return true;
+		case gr_property::UNIFORM_BUFFER_MAX_SIZE:
+			*((int*)dest) = GL_state.Constants.GetMaxUniformBlockSize();
 			return true;
 		default:
 			return false;

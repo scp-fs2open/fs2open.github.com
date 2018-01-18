@@ -25030,6 +25030,7 @@ int eval_sexp(int cur_node, int referenced_node)
 			// Goober5000
 			case OP_SET_SUBSPACE_DRIVE:
 				sexp_set_subspace_drive(node);
+				sexp_val = SEXP_TRUE;
 				break;
 
 			case OP_GOOD_SECONDARY_TIME:
@@ -26130,7 +26131,7 @@ int eval_sexp(int cur_node, int referenced_node)
 		Assert(!Current_sexp_operator.empty()); 
 		Current_sexp_operator.pop_back();
 
-		Assert(sexp_val != UNINITIALIZED);		
+		Assertion(sexp_val != UNINITIALIZED, "SEXP %s didn't return a value!", CTEXT(cur_node));
 
 		// if we haven't returned, check the sexp value of the sexpression evaluation.  A special
 		// value of known true or known false means that we should set the sexp.value field for

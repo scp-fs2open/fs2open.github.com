@@ -158,6 +158,18 @@ void material_set_nanovg(nanovg_material* mat_info, int base_tex) {
 	mat_info->set_back_stencil_op(StencilOperation::Keep, StencilOperation::Keep, StencilOperation::Keep);
 }
 
+void material_set_decal(material* mat_info, int diffuse_tex, int normal_tex) {
+	mat_info->set_depth_mode(ZBUFFER_TYPE_READ);
+
+	// TODO: This blend mode is not correct for normal blending!! If decal normal mapping is added then the normal buffer
+	// needs to use a different blending equation.
+	mat_info->set_blend_mode(material_determine_blend_mode(diffuse_tex, true));
+
+	mat_info->set_texture_map(TM_BASE_TYPE, diffuse_tex);
+	mat_info->set_texture_map(TM_NORMAL_TYPE, normal_tex);
+	mat_info->set_cull_mode(false);
+}
+
 material::material():
 Sdr_type(SDR_TYPE_DEFAULT_MATERIAL),
 Tex_type(TEX_TYPE_NORMAL),
@@ -835,4 +847,18 @@ batched_bitmap_material::batched_bitmap_material() {
 
 nanovg_material::nanovg_material() {
 	set_shader_type(SDR_TYPE_NANOVG);
+}
+
+decal_material::decal_material() {
+	set_shader_type(SDR_TYPE_DECAL);
+}
+uint decal_material::get_shader_flags() const {
+	uint flags = 0;
+
+	if (get_texture_map(TM_NORMAL_TYPE) == -1) {
+		// If we don't write to the normal map then we can use the existing normal map for better normal accuracy
+		flags |= SDR_FLAG_DECAL_USE_NORMAL_MAP;
+	}
+
+	return flags;
 }

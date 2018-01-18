@@ -71,6 +71,7 @@ void opengl_tnl_set_material_particle(particle_material * material_info);
 void opengl_tnl_set_material_movie(movie_material* material_info);
 void opengl_tnl_set_material_batched(batched_bitmap_material * material_info);
 void opengl_tnl_set_material_nanovg(nanovg_material * material_info);
+void opengl_tnl_set_material_decal(decal_material * material_info);
 
 void opengl_tnl_set_model_material(model_material *material_info);
 

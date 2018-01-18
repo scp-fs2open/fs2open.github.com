@@ -825,6 +825,13 @@ void opengl_tex_array_storage(GLenum target, GLint levels, GLenum format, GLint 
 
 		if (GLAD_GL_ARB_texture_storage) {
 			// This version has a better way of specifying the texture storage
+
+			if ( levels == 1 ) {
+				// looks like we only have one mipmap for this cube map
+				// allocate additional storage for the mip maps we're going to later generate using glGenerateMipMap
+				levels = get_num_mipmap_levels(width, height);
+			}
+
 			glTexStorage2D(target, levels, format, width, height);
 		} else {
 			for (auto i = 0; i < 6; ++i) {

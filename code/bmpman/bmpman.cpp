@@ -3320,6 +3320,13 @@ bool bm_is_texture_array(const int handle) {
 }
 
 int bm_get_base_frame(const int handle, int* num_frames) {
+	if (handle == -1) {
+		if (num_frames != nullptr) {
+			*num_frames = 0;
+		}
+		return -1;
+	}
+
 	// If the bitmap is no animation then num_frames will still be at least 1
 	auto animation_begin = bm_get_info(handle, nullptr, nullptr, nullptr, num_frames);
 
@@ -3353,4 +3360,27 @@ int bmpman_count_bitmaps() {
 	}
 
 	return total_bitmaps;
+}
+
+bool bm_validate_filename(const SCP_string& file, bool single_frame, bool animation) {
+	Assertion(single_frame || animation, "At least one of single_frame or animation must be true!");
+
+	if (!VALID_FNAME(file.c_str())) {
+		return false;
+	}
+
+	int handle = -1;
+	if (single_frame && animation) {
+		// Caller has indicated that single frames and animations are valid
+		handle = bm_load_either(file.c_str());
+	} else if (single_frame) {
+		handle = bm_load(file);
+	} else {
+		handle = bm_load_animation(file.c_str());
+	}
+	if (handle != -1) {
+		bm_release(handle);
+		return true;
+	}
+	return false;
 }

@@ -47,6 +47,7 @@ class shield_material;
 class movie_material;
 class batched_bitmap_material;
 class nanovg_material;
+class decal_material;
 
 class transform_stack {
 
@@ -157,6 +158,7 @@ enum shader_type {
 	SDR_TYPE_BATCHED_BITMAP,
 	SDR_TYPE_DEFAULT_MATERIAL,
 	SDR_TYPE_NANOVG,
+	SDR_TYPE_DECAL,
 	NUM_SHADER_TYPES
 };
 
@@ -191,10 +193,14 @@ enum shader_type {
 
 #define SDR_FLAG_NANOVG_EDGE_AA		(1<<0)
 
+#define SDR_FLAG_DECAL_USE_NORMAL_MAP (1<<0)
+
 enum class uniform_block_type {
 	Lights = 0,
 	ModelData = 1,
 	NanoVGData = 2,
+	DecalInfo = 3,
+	DecalGlobals = 4,
 
 	NUM_BLOCK_TYPES
 };
@@ -215,6 +221,7 @@ struct vertex_format_data
 		MODEL_ID,
 		RADIUS,
 		UVEC,
+		WORLD_MATRIX,
 	};
 
 	vertex_format format_type;
@@ -277,7 +284,8 @@ typedef enum gr_capability {
 } gr_capability;
 
 enum class gr_property {
-	UNIFORM_BUFFER_OFFSET_ALIGNMENT
+	UNIFORM_BUFFER_OFFSET_ALIGNMENT,
+	UNIFORM_BUFFER_MAX_SIZE,
 };
 
 // stencil buffering stuff
@@ -759,6 +767,9 @@ typedef struct screen {
 	void (*gf_shadow_map_start)(matrix4 *shadow_view_matrix, const matrix *light_matrix);
 	void (*gf_shadow_map_end)();
 
+	void (*gf_start_decal_pass)();
+	void (*gf_stop_decal_pass)();
+
 	// new drawing functions
 	void (*gf_render_model)(model_material* material_info, indexed_vertex_source *vert_source, vertex_buffer* bufferp, size_t texi);
 	void (*gf_render_shield_impact)(shield_material *material_info, primitive_type prim_type, vertex_layout *layout, int buffer_handle, int n_verts);
@@ -768,6 +779,7 @@ typedef struct screen {
 	void (*gf_render_movie)(movie_material* material_info, primitive_type prim_type, vertex_layout* layout, int n_verts, int buffer);
 	void (*gf_render_primitives_batched)(batched_bitmap_material* material_info, primitive_type prim_type, vertex_layout* layout, int offset, int n_verts, int buffer_handle);
 	void (*gf_render_nanovg)(nanovg_material* material_info, primitive_type prim_type, vertex_layout* layout, int offset, int n_verts, int buffer_handle);
+	void (*gf_render_decals)(decal_material* material_info, primitive_type prim_type, vertex_layout* layout, int num_elements, const indexed_vertex_source& buffers);
 
 	bool (*gf_is_capable)(gr_capability capability);
 	bool (*gf_get_property)(gr_property property, void* destination);

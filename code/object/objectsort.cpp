@@ -28,6 +28,7 @@
 #include "ship/ship.h"
 #include "tracing/tracing.h"
 #include "weapon/weapon.h"
+#include "decals/decals.h"
 
 
 class sorted_obj
@@ -387,6 +388,8 @@ void obj_render_queue_all()
 
 	gr_clear_states();
 	gr_set_fill_mode(GR_FILL_MODE_SOLID);
+
+	decals::renderAll();
 
  	gr_deferred_lighting_end();
 	gr_deferred_lighting_finish();

@@ -825,3 +825,34 @@ void opengl_draw_textured_quad(GLfloat x1,
 
 	opengl_render_primitives_immediate(PRIM_TYPE_TRISTRIP, &vert_def, 4, glVertices, sizeof(GLfloat) * 4 * 4);
 }
+
+void gr_opengl_render_decals(decal_material* material_info,
+							 primitive_type prim_type,
+							 vertex_layout* layout,
+							 int num_elements,
+							 const indexed_vertex_source& binding) {
+	opengl_tnl_set_material_decal(material_info);
+
+	opengl_bind_vertex_layout(*layout,
+							  opengl_buffer_get_id(GL_ARRAY_BUFFER, binding.Vbuffer_handle),
+							  opengl_buffer_get_id(GL_ELEMENT_ARRAY_BUFFER, binding.Ibuffer_handle));
+
+	glDrawElements(opengl_primitive_type(prim_type), num_elements, GL_UNSIGNED_INT, nullptr);
+}
+
+void gr_opengl_start_decal_pass() {
+	// For now we only render into the diffuse channel of the framebuffer
+	GLenum buffers[] = {
+		GL_COLOR_ATTACHMENT0
+	};
+	glDrawBuffers(1, buffers);
+}
+void gr_opengl_stop_decal_pass() {
+	GLenum buffers2[] = {
+		GL_COLOR_ATTACHMENT0,
+		GL_COLOR_ATTACHMENT1,
+		GL_COLOR_ATTACHMENT2,
+		GL_COLOR_ATTACHMENT3
+	};
+	glDrawBuffers(4, buffers2);
+}

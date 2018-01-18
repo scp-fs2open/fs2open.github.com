@@ -741,4 +741,20 @@ int bm_get_array_index(const int handle);
  */
 int bmpman_count_bitmaps();
 
+/**
+ * @brief Checks if the given filename is a valid effect or texture file name
+ *
+ * @note At least one of @c single_frame or @c animation must be true since the result would make no sense otherwise. It
+ * is also valid to set both parmeters to @c true.
+ *
+ * @todo This currently just tries to load the file but could be improved by not actually loading the file in the future.
+ *
+ * @param file The file name to check
+ * @param single_frame If set to @c true then single frames are valid files
+ * @param animation If set to @c true then animations are valid files
+ * @return @c true if the file name is valid, @c false otherwise
+ */
+bool bm_validate_filename(const SCP_string& file, bool single_frame, bool animation);
+
+
 #endif

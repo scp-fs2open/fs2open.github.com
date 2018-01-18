@@ -42,6 +42,7 @@ SCP_vector<opengl_vert_attrib> GL_vertex_attrib_info =
 		{ opengl_vert_attrib::MODEL_ID,		"vertModelID",		{{{ 0.0f, 0.0f, 0.0f, 0.0f }}} },
 		{ opengl_vert_attrib::RADIUS,		"vertRadius",		{{{ 1.0f, 0.0f, 0.0f, 0.0f }}} },
 		{ opengl_vert_attrib::UVEC,			"vertUvec",			{{{ 0.0f, 1.0f, 0.0f, 0.0f }}} },
+		{ opengl_vert_attrib::WORLD_MATRIX,	"vertWorldMatrix",	{{{ 1.0f, 0.0f, 0.0f, 0.0f }}} },
 	};
 
 struct opengl_uniform_block_binding {
@@ -53,6 +54,8 @@ opengl_uniform_block_binding GL_uniform_blocks[] = {
 	{ uniform_block_type::Lights, "lightData" },
 	{ uniform_block_type::ModelData, "modelData" },
 	{ uniform_block_type::NanoVGData, "NanoVGUniformData" },
+	{ uniform_block_type::DecalInfo, "decalInfoData" },
+	{ uniform_block_type::DecalGlobals, "decalGlobalData" },
 };
 
 /**
@@ -117,6 +120,8 @@ static opengl_shader_type_t GL_shader_types[] = {
 	{ SDR_TYPE_NANOVG, "nanovg-v.sdr", "nanovg-f.sdr", nullptr,
 		{ opengl_vert_attrib::POSITION, opengl_vert_attrib::TEXCOORD }, "NanoVG shader" },
 
+	{ SDR_TYPE_DECAL, "decal-v.sdr", "decal-f.sdr", nullptr,
+		{ opengl_vert_attrib::POSITION, opengl_vert_attrib::WORLD_MATRIX }, "Decal rendering" },
 };
 
 /**
@@ -222,7 +227,11 @@ static opengl_shader_variant_t GL_shader_variants[] = {
 
 	{ SDR_TYPE_NANOVG, false, SDR_FLAG_NANOVG_EDGE_AA, "EDGE_AA",
 		{  },
-		"NanoVG edge anti-alias" }
+		"NanoVG edge anti-alias" },
+
+	{ SDR_TYPE_DECAL, false, SDR_FLAG_DECAL_USE_NORMAL_MAP, "USE_NORMAL_MAP",
+		{  },
+		"Decal use scene normal map" },
 };
 
 static const int GL_num_shader_variants = sizeof(GL_shader_variants) / sizeof(opengl_shader_variant_t);

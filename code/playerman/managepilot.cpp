@@ -102,6 +102,10 @@ void init_new_pilot(player *p, int reset)
 		Joy_sensitivity = 9;
 		Joy_dead_zone_size = 10;
 
+		Master_sound_volume = Default_sound_volume;
+		Master_event_music_volume = Default_music_volume;
+		Master_voice_volume = Default_voice_volume;
+
 		p->variables.clear();
 	}
 

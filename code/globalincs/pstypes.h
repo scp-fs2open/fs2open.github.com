@@ -363,15 +363,6 @@ typedef struct lod_checker {
 } lod_checker;
 
 
-// check to see that a passed sting is valid, ie:
-//  - has >0 length
-//  - is not "none"
-//  - is not "<none>"
-inline bool VALID_FNAME(const char* x) {
-	return strlen((x)) && stricmp((x), "none") && stricmp((x), "<none>");
-}
-
-
 // Callback Loading function.
 // If you pass a function to this, that function will get called
 // around 10x per second, so you can update the screen.
@@ -432,6 +423,35 @@ public:
 
 #include "globalincs/vmallocator.h"
 #include "globalincs/safe_strings.h"
+
+// check to see that a passed sting is valid, ie:
+//  - has >0 length
+//  - is not "none"
+//  - is not "<none>"
+inline bool VALID_FNAME(const char* x) {
+	return strlen((x)) && stricmp((x), "none") && stricmp((x), "<none>");
+}
+/**
+ * @brief Checks if the specified string may be a valid file name
+ *
+ * @warning This only does a quick check against an empty string and a few known invalid names. It does not check if the
+ * file actually exists.
+ *
+ * @param x The file name to check
+ * @return @c true if the name is valid, @c false otherwise
+ */
+inline bool VALID_FNAME(const SCP_string& x) {
+	if (x.empty()) {
+		return false;
+	}
+	if (!stricmp(x.c_str(), "none")) {
+		return false;
+	}
+	if (!stricmp(x.c_str(), "<none>")) {
+		return false;
+	}
+	return true;
+}
 
 // Function to generate a stacktrace
 SCP_string dump_stacktrace();
