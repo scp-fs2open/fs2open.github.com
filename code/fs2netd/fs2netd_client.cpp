@@ -615,6 +615,10 @@ static void fs2netd_handle_ping()
 
 static void fs2netd_handle_messages()
 {
+	if (!Is_connected) {
+		return;
+	}
+
 	int buffer_size = 0, buffer_offset = 0;
 	int bytes_read = 0;
 	char tbuf[256];
@@ -808,6 +812,12 @@ void fs2netd_do_frame()
 
 	// do ping/pong and ident
 	fs2netd_handle_ping();
+
+	if (!Is_connected) {
+		// The ping handling above made us realize that we are disconnected. We will reconnect in some time so we can
+		// just return here
+		return;
+	}
 
 	// handle gameserver updates
 	fs2netd_gameserver_update();
