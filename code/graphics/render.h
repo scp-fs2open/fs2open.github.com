@@ -167,6 +167,24 @@ void gr_arc(int xc, int yc, float r, float angle_start, float angle_end, bool fi
 void gr_curve(int x, int y, int r, int direction, int resize_mode);
 
 /**
+ * @brief Start buffering 2D rendering operations
+ *
+ * This will defer rendering 2D interface elements until gr_2d_stop_buffer is called. This can improve performance when
+ * doing a lot of 2D operations since the actual drawing will only be done once.
+ *
+ * @warning This will only affect a few rendering operations and might change the drawing order if incompatible rendering
+ * commands are executed while the buffering mechanism is active.
+ */
+void gr_2d_start_buffer();
+
+/**
+ * @brief Stop buffering 2D rendering operations
+ *
+ * This will stop the 2D buffering mechanism and also flush all previous render commands.
+ */
+void gr_2d_stop_buffer();
+
+/**
  * @brief The buffer object holding the data for immediate draws
  */
 extern int gr_immediate_buffer_handle;

@@ -686,6 +686,8 @@ static void gr_string_old(float sx,
 }
 
 namespace {
+bool buffering_nanovg = false; //!< flag for when NanoVG buffering is enabled
+
 void setupDrawingState(graphics::paths::PathRenderer* path) {
 	path->resetState();
 }
@@ -723,7 +725,10 @@ graphics::paths::PathRenderer* beginDrawing(int resize_mode) {
 	path->saveState();
 	setupDrawingState(path);
 
-	path->beginFrame();
+	if (!buffering_nanovg) {
+		// If buffering is enabled then this has already been called
+		path->beginFrame();
+	}
 	setupTransforms(path, resize_mode);
 
 	path->beginPath();
@@ -734,7 +739,10 @@ graphics::paths::PathRenderer* beginDrawing(int resize_mode) {
 }
 
 void endDrawing(graphics::paths::PathRenderer* path) {
-	path->endFrame();
+	if (!buffering_nanovg) {
+		// If buffering is enabled then this will be called later
+		path->endFrame();
+	}
 	path->restoreState();
 }
 }
@@ -1066,6 +1074,24 @@ void gr_shade(int x, int y, int w, int h, int resize_mode) {
 	path->fill();
 
 	endDrawing(path);
+}
+
+void gr_2d_start_buffer() {
+	Assertion(!buffering_nanovg, "Tried to enable 2D buffering but it was already enabled!");
+
+	buffering_nanovg = true;
+	auto path = graphics::paths::PathRenderer::instance();
+
+	path->beginFrame();
+}
+
+void gr_2d_stop_buffer() {
+	Assertion(buffering_nanovg, "Tried to stop 2D buffering but it was not enabled!");
+
+	buffering_nanovg = false;
+	auto path = graphics::paths::PathRenderer::instance();
+
+	path->endFrame();
 }
 
 int gr_immediate_buffer_handle = -1;
