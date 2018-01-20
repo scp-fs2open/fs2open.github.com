@@ -734,6 +734,8 @@ void HudGaugeBrackets::render(float frametime)
 	if(!in_frame)
 		g3_start_frame(0);
 
+	gr_2d_start_buffer();
+
 	for(size_t i = 0; i < target_display_list.size(); i++) {
 		// make sure this point is projected. Otherwise, skip.
 		if( !(target_display_list[i].target_point.flags & PF_OVERFLOW) ) {
@@ -747,6 +749,8 @@ void HudGaugeBrackets::render(float frametime)
 			}
 		}
 	}
+
+	gr_2d_stop_buffer();
 
 	if(!in_frame)
 		g3_end_frame();
