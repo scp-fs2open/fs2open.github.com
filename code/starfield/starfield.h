@@ -40,6 +40,42 @@ typedef struct background_t {
 	SCP_vector<starfield_list_entry> suns;
 } background_t;
 
+#define MAX_FLARE_COUNT 10
+#define MAX_FLARE_BMP 6
+
+typedef struct flare_info {
+	float pos;
+	float scale;
+	int tex_num;
+} flare_info;
+
+typedef struct flare_bitmap {
+	char filename[MAX_FILENAME_LEN];
+	int bitmap_id;
+} flare_bitmap;
+
+// global info (not individual instances)
+typedef struct starfield_bitmap {
+	char filename[MAX_FILENAME_LEN];				// bitmap filename
+	char glow_filename[MAX_FILENAME_LEN];			// only for suns
+	int bitmap_id;									// bitmap handle
+	int n_frames;
+	int fps;
+	int glow_bitmap;								// only for suns
+	int glow_n_frames;
+	int glow_fps;
+	int xparent;
+	float r, g, b, i, spec_r, spec_g, spec_b;		// only for suns
+	int glare;										// only for suns
+	int flare;										// Is there a lens-flare for this sun?
+	flare_info flare_infos[MAX_FLARE_COUNT];		// each flare can use a texture in flare_bmp, with different scale
+	flare_bitmap flare_bitmaps[MAX_FLARE_BMP];		// bitmaps for different lens flares (can be re-used)
+	int n_flares;									// number of flares actually used
+	int n_flare_bitmaps;							// number of flare bitmaps available
+	int used_this_level;
+	int preload;
+} starfield_bitmap;
+
 #define MAX_BACKGROUNDS	2
 
 extern int Num_backgrounds;
@@ -120,6 +156,8 @@ int stars_find_bitmap(char *name);
 
 // lookup a sun by bitmap filename, return index or -1 on fail
 int stars_find_sun(char *name);
+
+starfield_bitmap *stars_get_bitmap_entry(int index, bool is_a_sun);
 
 // get the world coords of the sun pos on the unit sphere.
 void stars_get_sun_pos(int sun_n, vec3d *pos);

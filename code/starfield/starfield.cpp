@@ -61,43 +61,6 @@ static int Rendering_to_env = 0;
 int Num_stars = 500;
 fix starfield_timestamp = 0;
 
-#define MAX_FLARE_COUNT 10
-#define MAX_FLARE_BMP 6
-
-typedef struct flare_info {
-	float pos;
-	float scale;
-	int tex_num;
-} flare_info;
-
-typedef struct flare_bitmap {
-	char filename[MAX_FILENAME_LEN];
-	int bitmap_id;
-} flare_bitmap;
-
-
-// global info (not individual instances)
-typedef struct starfield_bitmap {
-	char filename[MAX_FILENAME_LEN];				// bitmap filename
-	char glow_filename[MAX_FILENAME_LEN];			// only for suns
-	int bitmap_id;									// bitmap handle
-	int n_frames;
-	int fps;
-	int glow_bitmap;								// only for suns
-	int glow_n_frames;
-	int glow_fps;
-	int xparent;
-	float r, g, b, i, spec_r, spec_g, spec_b;		// only for suns
-	int glare;										// only for suns
-	int flare;										// Is there a lens-flare for this sun?
-	flare_info flare_infos[MAX_FLARE_COUNT];		// each flare can use a texture in flare_bmp, with different scale
-	flare_bitmap flare_bitmaps[MAX_FLARE_BMP];		// bitmaps for different lens flares (can be re-used)
-	int n_flares;									// number of flares actually used
-	int n_flare_bitmaps;							// number of flare bitmaps available
-	int used_this_level;
-	int preload;
-} starfield_bitmap;
-
 // starfield bitmap instance
 typedef struct starfield_bitmap_instance {
 	float scale_x, scale_y;							// x and y scale
