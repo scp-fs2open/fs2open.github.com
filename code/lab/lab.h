@@ -10,5 +10,6 @@
 
 
 void lab_init();
+ void parse_mission_background(matrix &skybox_orientation);
 void lab_close();
 void lab_do_frame(float frametime);

@@ -1086,7 +1086,7 @@ void model_render_buffers(model_draw_list* scene, model_material *rendering_mate
 				}
 			}
 
-			if (!debug_flags & MR_DEBUG_NO_SPEC) {
+			if (!(debug_flags & MR_DEBUG_NO_SPEC)) {
 				if (replacement_textures != NULL && replacement_textures[rt_begin_index + TM_SPECULAR_TYPE] >= 0) {
 					tex_replace[TM_SPECULAR_TYPE] = texture_info(replacement_textures[rt_begin_index + TM_SPECULAR_TYPE]);
 					texture_maps[TM_SPECULAR_TYPE] = model_interp_get_texture(&tex_replace[TM_SPECULAR_TYPE], base_frametime);
@@ -1132,7 +1132,7 @@ void model_render_buffers(model_draw_list* scene, model_material *rendering_mate
 					}
 				}
 
-				if (!debug_flags & MR_DEBUG_NO_NORMAL) texture_maps[TM_NORMAL_TYPE] = model_interp_get_texture(norm_map, base_frametime);
+				if (!(debug_flags & MR_DEBUG_NO_NORMAL)) texture_maps[TM_NORMAL_TYPE] = model_interp_get_texture(norm_map, base_frametime);
 				texture_maps[TM_HEIGHT_TYPE] = model_interp_get_texture(height_map, base_frametime);
 				texture_maps[TM_AMBIENT_TYPE] = model_interp_get_texture(ambient_map, base_frametime);
 				texture_maps[TM_MISC_TYPE] = model_interp_get_texture(misc_map, base_frametime);
