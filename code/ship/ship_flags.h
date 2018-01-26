@@ -107,9 +107,13 @@ namespace Ship {
         No_disabled_self_destruct,  // Goober5000 - ship will not self-destruct after 90 seconds if engines or weapons destroyed (c.f. ai_maybe_self_destruct)
 		Draw_as_wireframe,			// The_E -- Ship will be rendered in wireframe mode
 		Render_without_diffuse,		// The_E -- Ship will be rendered without diffuse map (needed for the lab)
+		Render_without_glowmap,
 		Render_without_specmap,
 		Render_without_normalmap,
 		Render_without_envmap,
+		Render_without_heightmap,
+		Render_without_ambientmap,
+		Render_without_miscmap,
 		Render_show_dockpaths,
 		Render_show_paths,
 		Render_show_pivots,

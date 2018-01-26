@@ -136,6 +136,13 @@ bool Lab_render_show_dockpaths = false;
 bool Lab_render_show_radius = false;
 bool Lab_render_show_shields = false;
 
+bool Lab_Basemap_override    = false;
+bool Lab_Glowmap_override	 = false;
+bool Lab_Specmap_override	 = false;
+bool Lab_Envmap_override	 = false;
+bool Lab_Normalmap_override	 = false;
+bool Lab_Heightmap_override	 = false;
+
 // functions
 void labviewer_change_ship_lod(Tree *caller);
 void labviewer_change_ship(Tree *caller);
@@ -498,6 +505,12 @@ void labviewer_render_model_new(float frametime)
 		Ships[obj->instance].flags.set(Ship::Ship_Flags::Render_show_shields, Lab_render_show_shields);
 		Ships[obj->instance].flags.set(Ship::Ship_Flags::Render_full_detail, Lab_render_show_detail);
 		Ships[obj->instance].flags.set(Ship::Ship_Flags::Render_without_light, Lab_render_without_light);
+		Ships[obj->instance].flags.set(Ship::Ship_Flags::Render_without_diffuse, Lab_Basemap_override);
+		Ships[obj->instance].flags.set(Ship::Ship_Flags::Render_without_glowmap, Lab_Glowmap_override);
+		Ships[obj->instance].flags.set(Ship::Ship_Flags::Render_without_normalmap, Lab_Normalmap_override);
+		Ships[obj->instance].flags.set(Ship::Ship_Flags::Render_without_specmap, Lab_Specmap_override);
+		Ships[obj->instance].flags.set(Ship::Ship_Flags::Render_without_envmap, Lab_Envmap_override);
+		Ships[obj->instance].flags.set(Ship::Ship_Flags::Render_without_heightmap, Lab_Heightmap_override);
 
 		if (Lab_render_wireframe)
 			model_render_set_wireframe_color(&Color_white);
@@ -515,11 +528,6 @@ void labviewer_render_model_new(float frametime)
 			obj->phys_info.forward_thrust = 0.0f;
 			Ships[obj->instance].flags.set(Ship::Ship_Flags::No_thrusters);
 		}
-
-		/*Ships[obj->instance].flags.set(Ship::Ship_Flags::Render_without_diffuse, Basemap_override);
-		Ships[obj->instance].flags.set(Ship::Ship_Flags::Render_without_envmap, Envmap_override);
-		Ships[obj->instance].flags.set(Ship::Ship_Flags::Render_without_normalmap, Normalmap_override);
-		Ships[obj->instance].flags.set(Ship::Ship_Flags::Render_without_specmap, Specmap_override);*/
 
 		game_render_frame(Lab_cam);
 
@@ -1322,21 +1330,21 @@ void labviewer_make_render_options_window(Button *caller)
 	}
 
 	// map related flags
-	ADD_RENDER_BOOL("No Diffuse Map", Basemap_override);
+	ADD_RENDER_BOOL("No Diffuse Map", Lab_Basemap_override);
 	if (Cmdline_glow) {
-		ADD_RENDER_FLAG("No Glow Map", Lab_model_flags, MR_NO_GLOWMAPS);
+		ADD_RENDER_BOOL("No Glow Map", Lab_Glowmap_override);
 	}
 	if (Cmdline_spec) {
-		ADD_RENDER_BOOL("No Specular Map", Specmap_override);
+		ADD_RENDER_BOOL("No Specular Map", Lab_Specmap_override);
 	}
 	if (Cmdline_env) {
-		ADD_RENDER_BOOL("No Environment Map", Envmap_override);
+		ADD_RENDER_BOOL("No Environment Map", Lab_Envmap_override);
 	}
 	if (Cmdline_normal) {
-		ADD_RENDER_BOOL("No Normal Map", Normalmap_override);
+		ADD_RENDER_BOOL("No Normal Map", Lab_Normalmap_override);
 	}
 	if (Cmdline_height) {
-		ADD_RENDER_BOOL("No Height Map", Heightmap_override);
+		ADD_RENDER_BOOL("No Height Map", Lab_Heightmap_override);
 	}
 	ADD_RENDER_BOOL("No Team Colors", Teamcolor_override);
 	ADD_RENDER_BOOL("No Glow Points", Glowpoint_override);
@@ -1711,6 +1719,7 @@ void labviewer_change_ship_lod(Tree* caller)
 
 	Lab_selected_object = ship_create(&vmd_identity_matrix, &Lab_model_pos, ship_index);
 	Objects[Lab_selected_object].flags.set(Object::Object_Flags::Player_ship);
+
 	lab_cam_distance = Objects[Lab_selected_object].radius * 2.5f;
 
 	Lab_last_selected_ship = Lab_selected_index;
@@ -1736,10 +1745,6 @@ void labviewer_change_ship(Tree *caller)
 	if (!Lab_in_mission) {
 		return;
 	}
-	Lab_selected_index = (int)(caller->GetSelectedItem()->GetParentItem()->GetData());
-
-	Lab_selected_index = (int)(caller->GetSelectedItem()->GetParentItem()->GetData());
-
 	Lab_selected_index = (int)(caller->GetSelectedItem()->GetParentItem()->GetData());
 
 	labviewer_update_desc_window();
@@ -2512,6 +2517,13 @@ void lab_close()
 	Heightmap_override = false;
 	Glowpoint_override = false;
 	PostProcessing_override = false;
+
+	Lab_Basemap_override = false;
+	Lab_Glowmap_override = false;
+	Lab_Specmap_override = false;
+	Lab_Envmap_override = false;
+	Lab_Normalmap_override = false;
+	Lab_Heightmap_override = false;
 
 	// reset detail levels to default
 	Detail.hardware_textures = Lab_detail_texture_save;
