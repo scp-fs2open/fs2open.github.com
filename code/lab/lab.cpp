@@ -474,6 +474,10 @@ void labviewer_render_model_new(float frametime)
 
 	if (Lab_selected_object != -1)
 	{
+		bool lab_render_light_save = Lab_render_without_light;
+		if (Lab_selected_mission.compare("None") == 0)
+			Lab_render_without_light = true;
+
 		object* obj = &Objects[Lab_selected_object];
 
 		Player_obj->radius = obj->radius / 10;
@@ -518,6 +522,8 @@ void labviewer_render_model_new(float frametime)
 		Ships[obj->instance].flags.set(Ship::Ship_Flags::Render_without_specmap, Specmap_override);*/
 
 		game_render_frame(Lab_cam);
+
+		Lab_render_without_light = lab_render_light_save;
 	}
 }
 
@@ -1937,170 +1943,6 @@ SCP_string get_directory_or_vp(char* path)
 	return result;
 }
 
-void parse_mission_background(matrix &skybox_orientation)
-{
-	read_file_text((Lab_selected_mission + ".fs2").c_str(), CF_TYPE_MISSIONS);
-	reset_parse();
-
-	flagset<Mission::Mission_Flags> flags;
-	skip_to_start_of_string("+Flags");
-	if (optional_string("+Flags:"))
-		stuff_flagset(&flags);
-
-	// Are we using a skybox?
-	skip_to_start_of_string_either("$Skybox Model:", "#Background bitmaps");
-
-	strcpy_s(skybox_model, "");
-	if (optional_string("$Skybox Model:"))
-	{
-		stuff_string(skybox_model, F_NAME, MAX_FILENAME_LEN);
-
-		if (optional_string("+Skybox Orientation:"))
-		{
-			stuff_matrix(&skybox_orientation);
-		}
-
-		if (optional_string("+Skybox Flags:")) {
-			skybox_flags = 0;
-			stuff_int(&skybox_flags);
-		}
-		else {
-			skybox_flags = DEFAULT_NMODEL_FLAGS;
-		}
-
-		stars_set_background_model(skybox_model, NULL, skybox_flags);
-		stars_set_background_orientation(&skybox_orientation);
-
-		skip_to_start_of_string("#Background bitmaps");
-	}
-
-	if (optional_string("#Background bitmaps"))
-	{
-		required_string("$Num stars:");
-		stuff_int(&Num_stars);
-		if (Num_stars >= MAX_STARS)
-			Num_stars = MAX_STARS;
-
-		required_string("$Ambient light level:");
-		stuff_int(&ambient_light_level);
-
-		if (ambient_light_level == 0)
-		{
-			ambient_light_level = DEFAULT_AMBIENT_LIGHT_LEVEL;
-		}
-
-		strcpy_s(Neb2_texture_name, "Eraseme3");
-		Neb2_poof_flags = ((1 << 0) | (1 << 1) | (1 << 2) | (1 << 3) | (1 << 4) | (1 << 5));
-		if (optional_string("+Neb2:")) {
-			stuff_string(Neb2_texture_name, F_NAME, MAX_FILENAME_LEN);
-
-			required_string("+Neb2Flags:");
-			stuff_int(&Neb2_poof_flags);
-
-			if (flags[Mission::Mission_Flags::Fullneb]) {
-				neb2_post_level_init();
-			}
-		}
-
-		if (flags[Mission::Mission_Flags::Fullneb]) {
-			// no regular nebula stuff
-			nebula_close();
-		}
-		else
-		{
-			Nebula_index = -1;
-			if (optional_string("+Nebula:")) {
-				char str[MAX_FILENAME_LEN];
-				int z;
-				stuff_string(str, F_NAME, MAX_FILENAME_LEN);
-
-				// parse the proper nebula type (full or not)	
-				for (z = 0; z < NUM_NEBULAS; z++) {
-					if (flags[Mission::Mission_Flags::Fullneb]) {
-						if (!stricmp(str, Neb2_filenames[z])) {
-							Nebula_index = z;
-							break;
-						}
-					}
-					else {
-						if (!stricmp(str, Nebula_filenames[z])) {
-							Nebula_index = z;
-							break;
-						}
-					}
-				}
-
-				if (z == NUM_NEBULAS)
-					WarningEx(LOCATION, "Unknown nebula %s!", str);
-
-				if (optional_string("+Color:")) {
-					stuff_string(str, F_NAME, MAX_FILENAME_LEN);
-					for (z = 0; z < NUM_NEBULA_COLORS; z++) {
-						if (!stricmp(str, Nebula_colors[z])) {
-							Mission_palette = z;
-							break;
-						}
-					}
-				}
-
-				if (z == NUM_NEBULA_COLORS)
-					WarningEx(LOCATION, "Unknown nebula color %s!", str);
-
-				if (optional_string("+Pitch:")) {
-					stuff_int(&Nebula_pitch);
-				}
-				else {
-					Nebula_pitch = 0;
-				}
-
-				if (optional_string("+Bank:")) {
-					stuff_int(&Nebula_bank);
-				}
-				else {
-					Nebula_bank = 0;
-				}
-
-				if (optional_string("+Heading:")) {
-					stuff_int(&Nebula_heading);
-				}
-				else {
-					Nebula_heading = 0;
-				}
-			}
-
-			if (Nebula_index >= 0) {
-				nebula_init(Nebula_filenames[Nebula_index], Nebula_pitch, Nebula_bank, Nebula_heading);
-			}
-			else {
-				nebula_close();
-			}
-		}
-
-		// (DahBlount) - Remember to load the debris anims
-		stars_load_debris(flags[Mission::Mission_Flags::Fullneb]);
-		Num_backgrounds = 0;
-		extern void parse_one_background(background_t* background);
-		while (optional_string("$Bitmap List:") || check_for_string("$Sun:") || check_for_string("$Starbitmap:"))
-		{
-			// don't allow overflow; just make sure the last background is the last read
-			if (Num_backgrounds >= MAX_BACKGROUNDS)
-			{
-				Warning(LOCATION, "Too many backgrounds in mission!  Max is %d.", MAX_BACKGROUNDS);
-				Num_backgrounds = MAX_BACKGROUNDS - 1;
-			}
-
-			parse_one_background(&Backgrounds[Num_backgrounds]);
-			Num_backgrounds++;
-		}
-
-		stars_load_first_valid_background();
-
-		if (optional_string("$Environment Map:")) {
-			stuff_string(envmap_name, F_NAME, MAX_FILENAME_LEN);
-		}
-	}
-}
-
 void labviewer_change_background_actual()
 {
 	matrix skybox_orientation;
@@ -2111,22 +1953,168 @@ void labviewer_change_background_actual()
 
 	if (Lab_selected_mission.compare("None") != 0)
 	{
-		parse_mission_background(skybox_orientation);
+		read_file_text((Lab_selected_mission + ".fs2").c_str(), CF_TYPE_MISSIONS);
+		reset_parse();
+
+		flagset<Mission::Mission_Flags> flags;
+		skip_to_start_of_string("+Flags");
+		if (optional_string("+Flags:"))
+			stuff_flagset(&flags);
+
+		// Are we using a skybox?
+		skip_to_start_of_string_either("$Skybox Model:", "#Background bitmaps");
+
+		strcpy_s(skybox_model, "");
+		if (optional_string("$Skybox Model:"))
+		{
+			stuff_string(skybox_model, F_NAME, MAX_FILENAME_LEN);
+
+			if (optional_string("+Skybox Orientation:"))
+			{
+				stuff_matrix(&skybox_orientation);
+			}
+
+			if (optional_string("+Skybox Flags:")) {
+				skybox_flags = 0;
+				stuff_int(&skybox_flags);
+			}
+			else {
+				skybox_flags = DEFAULT_NMODEL_FLAGS;
+			}
+
+			stars_set_background_model(skybox_model, NULL, skybox_flags);
+			stars_set_background_orientation(&skybox_orientation);
+
+			skip_to_start_of_string("#Background bitmaps");
+		}
+
+		if (optional_string("#Background bitmaps"))
+		{
+			required_string("$Num stars:");
+			stuff_int(&Num_stars);
+			if (Num_stars >= MAX_STARS)
+				Num_stars = MAX_STARS;
+
+			required_string("$Ambient light level:");
+			stuff_int(&ambient_light_level);
+
+			if (ambient_light_level == 0)
+			{
+				ambient_light_level = DEFAULT_AMBIENT_LIGHT_LEVEL;
+			}
+
+			strcpy_s(Neb2_texture_name, "Eraseme3");
+			Neb2_poof_flags = ((1 << 0) | (1 << 1) | (1 << 2) | (1 << 3) | (1 << 4) | (1 << 5));
+			if (optional_string("+Neb2:")) {
+				stuff_string(Neb2_texture_name, F_NAME, MAX_FILENAME_LEN);
+
+				required_string("+Neb2Flags:");
+				stuff_int(&Neb2_poof_flags);
+
+				if (flags[Mission::Mission_Flags::Fullneb]) {
+					neb2_post_level_init();
+				}
+			}
+
+			if (flags[Mission::Mission_Flags::Fullneb]) {
+				// no regular nebula stuff
+				nebula_close();
+			}
+			else
+			{
+				Nebula_index = -1;
+				if (optional_string("+Nebula:")) {
+					char str[MAX_FILENAME_LEN];
+					int z;
+					stuff_string(str, F_NAME, MAX_FILENAME_LEN);
+
+					// parse the proper nebula type (full or not)	
+					for (z = 0; z < NUM_NEBULAS; z++) {
+						if (flags[Mission::Mission_Flags::Fullneb]) {
+							if (!stricmp(str, Neb2_filenames[z])) {
+								Nebula_index = z;
+								break;
+							}
+						}
+						else {
+							if (!stricmp(str, Nebula_filenames[z])) {
+								Nebula_index = z;
+								break;
+							}
+						}
+					}
+
+					if (z == NUM_NEBULAS)
+						WarningEx(LOCATION, "Unknown nebula %s!", str);
+
+					if (optional_string("+Color:")) {
+						stuff_string(str, F_NAME, MAX_FILENAME_LEN);
+						for (z = 0; z < NUM_NEBULA_COLORS; z++) {
+							if (!stricmp(str, Nebula_colors[z])) {
+								Mission_palette = z;
+								break;
+							}
+						}
+					}
+
+					if (z == NUM_NEBULA_COLORS)
+						WarningEx(LOCATION, "Unknown nebula color %s!", str);
+
+					if (optional_string("+Pitch:")) {
+						stuff_int(&Nebula_pitch);
+					}
+					else {
+						Nebula_pitch = 0;
+					}
+
+					if (optional_string("+Bank:")) {
+						stuff_int(&Nebula_bank);
+					}
+					else {
+						Nebula_bank = 0;
+					}
+
+					if (optional_string("+Heading:")) {
+						stuff_int(&Nebula_heading);
+					}
+					else {
+						Nebula_heading = 0;
+					}
+				}
+
+				if (Nebula_index >= 0) {
+					nebula_init(Nebula_filenames[Nebula_index], Nebula_pitch, Nebula_bank, Nebula_heading);
+				}
+				else {
+					nebula_close();
+				}
+			}
+
+			// (DahBlount) - Remember to load the debris anims
+			stars_load_debris(flags[Mission::Mission_Flags::Fullneb]);
+			Num_backgrounds = 0;
+			extern void parse_one_background(background_t* background);
+			while (optional_string("$Bitmap List:") || check_for_string("$Sun:") || check_for_string("$Starbitmap:"))
+			{
+				// don't allow overflow; just make sure the last background is the last read
+				if (Num_backgrounds >= MAX_BACKGROUNDS)
+				{
+					Warning(LOCATION, "Too many backgrounds in mission!  Max is %d.", MAX_BACKGROUNDS);
+					Num_backgrounds = MAX_BACKGROUNDS - 1;
+				}
+
+				parse_one_background(&Backgrounds[Num_backgrounds]);
+				Num_backgrounds++;
+			}
+
+			stars_load_first_valid_background();
+
+			if (optional_string("$Environment Map:")) {
+				stuff_string(envmap_name, F_NAME, MAX_FILENAME_LEN);
+			}
+		}
 	}
-	else 
-	{
-		Num_backgrounds = 1;
-		Backgrounds[0].bitmaps.clear();
-		Backgrounds[0].suns.clear();
-
-		auto star = stars_get_bitmap_entry(0, true);
-		starfield_list_entry sle;
-		strcpy_s(sle.filename, star->filename);
-		sle.ang.p = sle.ang.b = sle.ang.h = 0.0f;
-		sle.scale_x = sle.scale_y = 1.0f;
-		sle.div_x = sle.div_y = 1;
-		Backgrounds[0].suns.push_back(sle);
-
+	else {
 		// (DahBlount) - This spot should be used to disable rendering features that only apply to missions.
 		Motion_debris_override = true;
 	}
@@ -2272,8 +2260,6 @@ void lab_init()
 
 	if (!Lab_cam.isValid())
 		Lab_cam = cam_create("Lab camera");
-
-	labviewer_change_background_actual();
 }
 
 #include "controlconfig/controlsconfig.h"
