@@ -18934,6 +18934,10 @@ void ship_render(object* obj, model_draw_list* scene)
 		debug_flags |= MR_DEBUG_NO_DIFFUSE;
 	}
 
+	if (shipp->flags[Ship_Flags::Render_without_glowmap]) {
+		debug_flags |= MR_DEBUG_NO_GLOW;
+	}
+
 	if (shipp->flags[Ship_Flags::Render_without_envmap]) {
 		debug_flags |= MR_DEBUG_NO_ENV;
 	}
