@@ -124,8 +124,8 @@ SCP_string Lab_team_color = "<none>";
 
 camid Lab_cam;
 float lab_cam_distance = 100.0f;
-float lab_cam_phi = 0.74f; // Values chosen to approximate the initial rotation used previously
-float lab_cam_theta = 2.7f;
+float lab_cam_phi = 1.24f; // Values chosen to approximate the initial rotation used previously
+float lab_cam_theta = 2.25f;
 bool Lab_render_wireframe = false;
 bool Lab_render_without_light = false;
 bool Lab_render_show_thrusters = false;
@@ -142,6 +142,8 @@ bool Lab_Specmap_override	 = false;
 bool Lab_Envmap_override	 = false;
 bool Lab_Normalmap_override	 = false;
 bool Lab_Heightmap_override	 = false;
+
+fix Lab_Save_Missiontime;
 
 // functions
 void labviewer_change_ship_lod(Tree *caller);
@@ -410,7 +412,7 @@ void labviewer_recalc_camera()
 	}
 }
 
-void labviewer_render_model_new(float frametime)
+void labviewer_render_model(float frametime)
 {
 	angles rot_angles;
 	float rev_rate;
@@ -490,11 +492,7 @@ void labviewer_render_model_new(float frametime)
 		Player_obj->radius = obj->radius / 10;
 		obj->pos = Lab_model_pos;
 		obj->orient = Lab_model_orient;
-
-		auto specmap_override = Specmap_color_override_set;
-		auto basemap_override = Basemap_color_override_set;
-		auto glowmap_override = Glowmap_color_override_set;
-
+		
 		ship_process_post(obj, frametime);
 
 		Ships[obj->instance].flags.set(Ship::Ship_Flags::Draw_as_wireframe, Lab_render_wireframe);
@@ -529,180 +527,13 @@ void labviewer_render_model_new(float frametime)
 			Ships[obj->instance].flags.set(Ship::Ship_Flags::No_thrusters);
 		}
 
+		Trail_render_override = true;
 		game_render_frame(Lab_cam);
+		Trail_render_override = false;
 
 		Lab_render_without_light = lab_render_light_save;
 	}
 }
-
-/*
-void labviewer_render_bitmap(float frametime)
-{
-static float current_frame = 0.0f;
-static float current_glow_frame = 0.0f;
-int framenum = 0;
-
-// if not valid then bail
-if ( (Lab_selected_index < 0) || (Lab_mode != LAB_MODE_WEAPON) || (Lab_bitmap_id < 0) ) {
-return;
-}
-
-
-weapon_info *wip = &Weapon_info[Lab_selected_index];
-
-if (wip->laser_bitmap.first_frame < 0) {
-return;
-}
-
-
-float rev_rate = REVOLUTION_RATE;
-angles rot_angles, view_angles;
-
-if (Trackball_active) {
-int dx, dy;
-matrix mat1, mat2;
-
-mouse_get_delta(&dx, &dy);
-
-if (dx || dy) {
-// rotation mode
-if (Trackball_mode == 1) {
-vm_trackball(-dx, -dy, &mat1);
-vm_matrix_x_matrix(&mat2, &mat1, &Lab_viewer_orient);
-Lab_viewer_orient = mat2;
-}
-// pan mode
-else if (Trackball_mode == 2) {
-double scale_x = dx * (double)wip->laser_length * 0.005;
-double scale_y = dy * (double)wip->laser_length * 0.005;
-
-Lab_model_pos.xyz.x -= (float)scale_x;
-Lab_model_pos.xyz.y += (float)scale_y;
-}
-// zoom mode
-else if ( dy && (Trackball_mode == 3) ) {
-float scale_y = dy / 100.0f;
-
-Lab_viewer_zoom += scale_y;
-}
-}
-}
-// otherwise do orient/rotation calculation, if we are supposed to
-else if ( !(Lab_viewer_flags & LAB_FLAG_NO_ROTATION) ) {
-Lab_model_rotation += PI2 * frametime / rev_rate;
-
-while (Lab_model_rotation > PI2) {
-Lab_model_rotation -= PI2;
-}
-
-// setup stuff needed to render the ship
-view_angles.p = -0.6f;
-view_angles.b = 0.0f;
-view_angles.h = 0.0f;
-vm_angles_2_matrix(&Lab_viewer_orient, &view_angles);
-
-rot_angles.p = 0.0f;
-rot_angles.b = 0.0f;
-rot_angles.h = Lab_model_rotation;
-vm_rotate_matrix_by_angles(&Lab_viewer_orient, &rot_angles);
-}
-
-g3_start_frame(1);
-
-Lab_model_pos.xyz.z = -(wip->laser_length * 2.0f);
-
-CLAMP(Lab_viewer_zoom, 0.08f, 1.8f);
-
-g3_set_view_matrix(&Lab_model_pos, &vmd_identity_matrix, Lab_viewer_zoom * 1.3f);
-
-gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, 1.0f, Max_draw_distance);
-gr_set_view_matrix(&Eye_position, &Eye_matrix);
-
-
-// draw the primary laser bitmap
-//gr_set_color_fast(&wip->laser_color_1);
-
-if (wip->laser_bitmap.num_frames > 1) {
-current_frame += frametime;
-
-framenum = bm_get_anim_frame(wip->laser_bitmap.first_frame, current_frame, wip->laser_bitmap.total_time, true);
-}
-
-vec3d headp;
-vm_vec_scale_add(&headp, &vmd_zero_vector, &Lab_viewer_orient.vec.fvec, wip->laser_length);
-
-//gr_set_bitmap(wip->laser_bitmap.first_frame + framenum, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.99999f);
-if(wip->laser_length > 0.0001f) {
-//g3_draw_laser(&headp, wip->laser_head_radius, &vmd_zero_vector, wip->laser_tail_radius, TMAP_FLAG_TEXTURED | TMAP_FLAG_XPARENT | TMAP_HTL_3D_UNLIT);
-material mat_params;
-material_set_unlit_color(&mat_params, wip->laser_bitmap.first_frame + framenum, &wip->laser_color_1, true, true);
-g3_render_laser(&mat_params, &headp, wip->laser_head_radius, &vmd_zero_vector, wip->laser_tail_radius);
-}
-
-// now draw the laser glow bitmap, if there is one, and if we are supposed to
-if ( !(Lab_model_flags & MR_NO_GLOWMAPS) && (wip->laser_glow_bitmap.first_frame >= 0) ) {
-vec3d headp2, tailp;
-color c;
-
-float weapon_glow_scale_f = 2.3f;
-float weapon_glow_scale_r = 2.3f;
-float weapon_glow_scale_l = 1.5f;
-float weapon_glow_alpha = 0.85f;
-
-// get the laser color
-if ( (wip->laser_color_2.red == 0) && (wip->laser_color_2.green == 0) && (wip->laser_color_2.blue == 0) ) {
-c = wip->laser_color_1;
-} else {
-// lifetime pct
-float pct = 1.0f;
-
-// otherwise interpolate between the colors
-gr_init_color( &c, (int)((float)wip->laser_color_1.red + (((float)wip->laser_color_2.red - (float)wip->laser_color_1.red) * pct)),
-(int)((float)wip->laser_color_1.green + (((float)wip->laser_color_2.green - (float)wip->laser_color_1.green) * pct)),
-(int)((float)wip->laser_color_1.blue + (((float)wip->laser_color_2.blue - (float)wip->laser_color_1.blue) * pct)) );
-}
-
-vm_vec_scale_add(&headp2, &vmd_zero_vector, &Lab_viewer_orient.vec.fvec, wip->laser_length * weapon_glow_scale_l);
-vm_vec_scale_add(&tailp, &vmd_zero_vector, &Lab_viewer_orient.vec.fvec, wip->laser_length * (1 -  weapon_glow_scale_l) );
-
-framenum = 0;
-
-if (wip->laser_glow_bitmap.num_frames > 1) {
-current_glow_frame += frametime;
-
-// Sanity checks
-if (current_glow_frame < 0.0f) {
-current_glow_frame = 0.0f;
-} else if (current_glow_frame > 100.0f) {
-current_glow_frame = 0.0f;
-}
-
-while (current_glow_frame > wip->laser_glow_bitmap.total_time) {
-current_glow_frame -= wip->laser_glow_bitmap.total_time;
-}
-
-framenum = fl2i( (current_glow_frame * wip->laser_glow_bitmap.num_frames) / wip->laser_glow_bitmap.total_time );
-
-CLAMP(framenum, 0, wip->laser_glow_bitmap.num_frames-1);
-}
-
-//gr_set_bitmap(wip->laser_glow_bitmap.first_frame + framenum, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, weapon_glow_alpha);
-if(wip->laser_length > 0.0001f) {
-//g3_draw_laser_rgb(&headp2, wip->laser_head_radius * weapon_glow_scale_f, &tailp, wip->laser_tail_radius * weapon_glow_scale_r, c.red, c.green, c.blue,  TMAP_FLAG_TEXTURED | TMAP_FLAG_XPARENT  | TMAP_FLAG_RGB | TMAP_HTL_3D_UNLIT);
-material mat_params;
-material_set_unlit_color(&mat_params, wip->laser_glow_bitmap.first_frame + framenum, &c, weapon_glow_alpha, true, false);
-g3_render_laser(&mat_params, &headp2, wip->laser_head_radius * weapon_glow_scale_f, &tailp, wip->laser_tail_radius * weapon_glow_scale_r);
-}
-}
-
-// clean up and move on ...
-
-gr_end_view_matrix();
-gr_end_proj_matrix();
-
-g3_end_frame();
-}
-*/
 
 void labviewer_do_render(float frametime)
 {
@@ -720,7 +551,7 @@ void labviewer_do_render(float frametime)
 
 	// render our particular thing
 	if (Lab_model_num >= 0) {
-		labviewer_render_model_new(frametime);
+		labviewer_render_model(frametime);
 
 		// print out the current pof filename, to help with... something
 		if (strlen(Lab_model_filename)) {
@@ -729,24 +560,6 @@ void labviewer_do_render(float frametime)
 			gr_string(gr_screen.center_offset_x + gr_screen.center_w - w, gr_screen.center_offset_y + gr_screen.center_h - h, Lab_model_filename, GR_RESIZE_NONE);
 		}
 	}
-	/*
-	else if (Lab_bitmap_id >= 0) {
-	GR_DEBUG_SCOPE("Lab Render bitmap");
-
-	gr_scene_texture_begin();
-
-	labviewer_render_bitmap(frametime);
-
-	gr_scene_texture_end();
-
-	// print out the current bitmap filename, to help with... something
-	if ( strlen(Lab_bitmap_filename) ) {
-	gr_get_string_size(&w, &h, Lab_bitmap_filename);
-	gr_set_color_fast(&Color_white);
-	gr_string(gr_screen.center_offset_x + gr_screen.center_w - w, gr_screen.center_offset_y + gr_screen.center_h - h, Lab_bitmap_filename, GR_RESIZE_NONE);
-	}
-	}
-	*/
 
 	// print FPS at bottom left, might be helpful
 	extern void game_get_framerate();
@@ -1720,12 +1533,10 @@ void labviewer_change_ship_lod(Tree* caller)
 	Lab_selected_object = ship_create(&vmd_identity_matrix, &Lab_model_pos, ship_index);
 	Objects[Lab_selected_object].flags.set(Object::Object_Flags::Player_ship);
 
-	lab_cam_distance = Objects[Lab_selected_object].radius * 2.5f;
+	lab_cam_distance = Objects[Lab_selected_object].radius * 1.6f;
 
 	Lab_last_selected_ship = Lab_selected_index;
-
 	labviewer_change_model(Ship_info[ship_index].pof_file, caller->GetSelectedItem()->GetData(), ship_index);
-
 	if (Ship_info[ship_index].uses_team_colors) {
 		Lab_team_color = Ship_info[ship_index].default_team_name;
 	}
@@ -2265,6 +2076,8 @@ void lab_init()
 
 	if (!Lab_cam.isValid())
 		Lab_cam = cam_create("Lab camera");
+
+	Lab_Save_Missiontime = Missiontime;
 }
 
 #include "controlconfig/controlsconfig.h"
@@ -2275,6 +2088,8 @@ void lab_do_frame(float frametime)
 
 	gr_reset_clip();
 	gr_clear();
+
+	Missiontime += Frametime;
 
 	if (Lab_in_mission) {
 		gr_restore_screen(Lab_screen_save_bitmap);
@@ -2533,4 +2348,6 @@ void lab_close()
 	game_flush();
 
 	cam_delete(Lab_cam);
+
+	Missiontime = Lab_Save_Missiontime;
 }
