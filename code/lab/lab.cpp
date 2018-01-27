@@ -34,6 +34,7 @@
 #include "starfield/nebula.h"
 #include "nebula/neb.h"
 #include "model/modelrender.h"
+#include "tracing/tracing.h"
 
 // flags
 #define LAB_FLAG_NORMAL				(0)		// default
@@ -79,13 +80,10 @@ static int Lab_selected_index = -1;
 static int Lab_last_selected_ship = -1;
 static int Lab_selected_object = -1;
 static int Lab_last_selected_weapon = -1;
-static int Lab_object_index = -1;
 
 static int Lab_model_num = -1;
 static int Lab_weaponmodel_num[MAX_SHIP_WEAPONS];
 static int Lab_model_LOD = 0;
-static int Lab_model_flags = MR_AUTOCENTER | MR_NO_FOGGING;
-static int Lab_model_debug_flags = 0;
 static char Lab_model_filename[MAX_FILENAME_LEN];
 static char Lab_weaponmodel_filename[MAX_SHIP_WEAPONS][MAX_FILENAME_LEN];
 
@@ -96,7 +94,6 @@ static float Lab_viewer_zoom = 1.2f;
 static vec3d Lab_model_pos = ZERO_VECTOR;
 
 static matrix Lab_model_orient = vmd_identity_matrix;
-static float Lab_model_rotation = 0.0f;
 static int Lab_viewer_flags = LAB_MODE_NONE;
 static vec3d Lab_viewer_position = vmd_zero_vector;
 
@@ -404,7 +401,11 @@ void labviewer_recalc_camera()
 	auto cam = Lab_cam.getCamera();
 
 	if (Lab_selected_object != -1) {
-		vec3d new_position = { { sinf(lab_cam_phi) * cosf(lab_cam_theta), cosf(lab_cam_phi), sinf(lab_cam_phi) * sinf(lab_cam_theta) } };
+		vec3d new_position;
+		new_position.xyz.x = sinf(lab_cam_phi) * cosf(lab_cam_theta);
+		new_position.xyz.y = cosf(lab_cam_phi);
+		new_position.xyz.z = sinf(lab_cam_phi) * sinf(lab_cam_theta);
+
 		vm_vec_scale(&new_position, lab_cam_distance);
 
 		cam->set_position(&new_position);
@@ -532,6 +533,14 @@ void labviewer_render_model(float frametime)
 		Trail_render_override = false;
 
 		Lab_render_without_light = lab_render_light_save;
+
+		gr_reset_clip();
+		gr_set_color_fast(&HUD_color_debug);
+		if (Cmdline_frame_profile) {
+			tracing::frame_profile_process_frame();
+			gr_string(gr_screen.center_offset_x + 20, gr_screen.center_offset_y + 100 + gr_get_font_height() + 1,
+				tracing::get_frame_profile_output().c_str(), GR_RESIZE_NONE);
+		}
 	}
 }
 
@@ -1976,9 +1985,9 @@ void labviewer_make_background_window(Button* caller)
 		auto directoryItem = Mission_directories[i];
 		directoryItem = missiontree->AddItem(NULL, directory.first);
 
-		for (auto mission : directory.second)
+		for (auto Lab_mission : directory.second)
 		{
-			missiontree->AddItem(directoryItem, mission, 0, true, labviewer_change_background);
+			missiontree->AddItem(directoryItem, Lab_mission, 0, true, labviewer_change_background);
 		}
 	}
 }
@@ -2078,6 +2087,7 @@ void lab_init()
 		Lab_cam = cam_create("Lab camera");
 
 	Lab_Save_Missiontime = Missiontime;
+	gr_init_alphacolor(&HUD_color_debug, 128, 255, 128, HUD_color_alpha * 16);
 }
 
 #include "controlconfig/controlsconfig.h"
