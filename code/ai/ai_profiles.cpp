@@ -498,7 +498,8 @@ void parse_ai_profiles_tbl(const char *filename)
 				}
 
 				// find next valid option
-				skip_to_start_of_string_either("$", "#");
+				if (!skip_to_start_of_string_either("$", "#"))
+					break;
 				saved_Mp = Mp;
 			}
 		}
