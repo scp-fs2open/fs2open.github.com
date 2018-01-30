@@ -751,10 +751,18 @@ void opengl_tnl_set_model_material(model_material *material_info)
 
 	GL_state.Texture.SetShaderMode(GL_TRUE);
 
-	if (Current_shader->flags & SDR_FLAG_MODEL_CLIP || Current_shader->flags & SDR_FLAG_MODEL_TRANSFORM) {
-		GL_state.ClipDistance(0, true);
+	if (GL_workaround_clipping_planes) {
+		if (Current_shader->flags & SDR_FLAG_MODEL_CLIP) {
+			GL_state.ClipDistance(0, true);
+		} else {
+			GL_state.ClipDistance(0, false);
+		}
 	} else {
-		GL_state.ClipDistance(0, false);
+		if (Current_shader->flags & SDR_FLAG_MODEL_CLIP || Current_shader->flags & SDR_FLAG_MODEL_TRANSFORM) {
+			GL_state.ClipDistance(0, true);
+		} else {
+			GL_state.ClipDistance(0, false);
+		}
 	}
 
 	uint32_t array_index;

@@ -331,6 +331,10 @@ static SCP_string opengl_shader_get_header(shader_type type_id, int flags, shade
 
 	sflags << "#version " << GLSL_version << " core\n";
 
+	if (GL_workaround_clipping_planes) {
+		sflags << "#define WORKAROUND_CLIPPING_PLANES\n";
+	}
+
 	if (type_id == SDR_TYPE_POST_PROCESS_MAIN || type_id == SDR_TYPE_POST_PROCESS_LIGHTSHAFTS || type_id == SDR_TYPE_POST_PROCESS_FXAA) {
 		// ignore looking for variants. main post process, lightshafts, and FXAA shaders need special headers to be hacked in
 		opengl_post_shader_header(sflags, type_id, flags);
