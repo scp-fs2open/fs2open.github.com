@@ -190,7 +190,7 @@ void outwnd_print(const char *id, const char *tmp)
 		outwnd_print( "general", "==========================================================================\n" );
 	}
 
-	auto filter = std::find_if(OutwndFilter.begin(), OutwndFilter.end(), [&id] (const outwnd_filter_struct& filter) { return stricmp(filter.name, id) == 0; });
+	auto filter = std::find_if(OutwndFilter.begin(), OutwndFilter.end(), [&id] (const outwnd_filter_struct& f) { return stricmp(f.name, id) == 0; });
 
 	// id found that isn't in the filter list yet
 	if ( filter == OutwndFilter.end() ) {
