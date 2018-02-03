@@ -396,9 +396,6 @@ void main()
 	if(overrideDiffuse) baseColor.rgb = diffuseClr;
 #endif
 	specColor = vec4(baseColor.rgb * SPEC_FACTOR_NO_SPEC_MAP, glossData);
-#ifdef FLAG_HDR
-	baseColor.rgb = pow(baseColor.rgb, vec3(SRGB_GAMMA));
-#endif
 #ifdef FLAG_SPEC_MAP
 	specColor = texture(sSpecmap, vec3(texCoord, float(sSpecmapIndex)));
 	if(alphaGloss) glossData = specColor.a;
@@ -408,9 +405,6 @@ void main()
 	}
 	if(gammaSpec) {
 		specColor.rgb = max(specColor.rgb, vec3(0.03f)); // hardcoded minimum specular value. read John Hable's blog post titled 'Everything Is Shiny'. 
- #ifdef FLAG_HDR
-		specColor.rgb = pow(specColor.rgb, vec3(SRGB_GAMMA));
- #endif
 		fresnelFactor = 1.0;
 	}
 #endif
@@ -422,10 +416,16 @@ void main()
 	teamMask = texture(sMiscmap, vec3(texCoord, float(sMiscmapIndex)));
 	vec3 base = max(base_color - vec3(0.5), vec3(0.0));
 	vec3 stripe = max(stripe_color - vec3(0.5), vec3(0.0));
-	baseColor.rgb += (base * teamMask.x) + (stripe * teamMask.y);
+	vec3 team_color = (base * teamMask.x) + (stripe * teamMask.y);
+	baseColor.rgb += team_color;
 	baseColor.rgb = max(baseColor.rgb, vec3(0.0));
+	specColor.rgb += team_color;
  #endif
 #endif
+#ifdef FLAG_HDR
+	baseColor.rgb = pow(baseColor.rgb, vec3(SRGB_GAMMA));
+	specColor.rgb = pow(specColor.rgb, vec3(SRGB_GAMMA));
+ #endif
 	float shadow = 1.0;
 #ifdef FLAG_SHADOWS
 	shadow = getShadowValue();
