@@ -238,12 +238,6 @@ void rotate_view(int dx, int dy)
 {
 	if (dx == 0 && dy == 0) return;
 
-	auto cam = Lab_cam.getCamera();
-
-	vec3d pos = vmd_zero_vector;
-
-	cam->get_info(&pos, nullptr);
-
 	lab_cam_theta += dx / 100.0f;
 	lab_cam_phi += dy / 100.0f;
 
@@ -394,8 +388,6 @@ void labviewer_change_model(char *model_fname, int lod = 0, int sel_index = -1)
 	labviewer_update_flags_window();
 }
 
-void light_set_all_relevent();
-
 void labviewer_recalc_camera()
 {
 	auto cam = Lab_cam.getCamera();
@@ -510,6 +502,8 @@ void labviewer_render_model(float frametime)
 		Ships[obj->instance].flags.set(Ship::Ship_Flags::Render_without_specmap, Lab_Specmap_override);
 		Ships[obj->instance].flags.set(Ship::Ship_Flags::Render_without_envmap, Lab_Envmap_override);
 		Ships[obj->instance].flags.set(Ship::Ship_Flags::Render_without_heightmap, Lab_Heightmap_override);
+
+		Ships[obj->instance].team_name = Lab_team_color;
 
 		if (Lab_render_wireframe)
 			model_render_set_wireframe_color(&Color_white);
