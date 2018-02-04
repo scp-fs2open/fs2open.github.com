@@ -107,6 +107,15 @@ out float fragFogDist;
 #endif
 #ifdef FLAG_TRANSFORM
 uniform samplerBuffer transform_tex;
+
+#ifdef WORKAROUND_CLIPPING_PLANES
+ #ifdef FLAG_SHADOW_MAP
+out float geoNotVisible;
+ #else
+out float fragNotVisible;
+ #endif
+#endif
+
 #endif
 #ifdef FLAG_SHADOW_MAP
 #if !defined(GL_ARB_gpu_shader5)
@@ -154,12 +163,24 @@ void main()
 	vec4 texCoord;
 	mat4 orient = mat4(1.0);
 	mat4 scale = mat4(1.0);
+#ifdef WORKAROUND_CLIPPING_PLANES
+ #ifdef FLAG_TRANSFORM
+	bool clipModel;
+	getModelTransform(orient, clipModel, int(vertModelID), buffer_matrix_offset);
+   #ifdef FLAG_SHADOW_MAP
+	geoNotVisible = clipModel ? 1.0 : 0.0;
+   #else
+	fragNotVisible = clipModel ? 1.0 : 0.0;
+   #endif
+ #endif
+#else
  #ifdef FLAG_TRANSFORM
 	bool clipModel;
 	getModelTransform(orient, clipModel, int(vertModelID), buffer_matrix_offset);
  #else
 	bool clipModel = false;
  #endif
+#endif
 	texCoord = textureMatrix * vertTexCoord;
 	vec4 vertex = vertPosition;
  #ifdef FLAG_THRUSTER
@@ -208,6 +229,13 @@ void main()
  #ifdef FLAG_FOG
 	fragFogDist = clamp((gl_Position.z - fogStart) * 0.75 * fogScale, 0.0, 1.0);
  #endif
+#ifdef WORKAROUND_CLIPPING_PLANES
+	if(use_clip_plane) {
+ 		gl_ClipDistance[0] = dot(clip_equation, modelMatrix * orient * vertex);
+ 	} else {
+		gl_ClipDistance[0] = 1.0;
+ 	}
+#else
  #ifdef FLAG_CLIP
 	if (clipModel) {
 		gl_ClipDistance[0] = -1.0;
@@ -219,6 +247,7 @@ void main()
  #elif defined(FLAG_TRANSFORM)
 	gl_ClipDistance[0] = clipModel ? -1.0 : 1.0;
  #endif
+#endif
  #ifndef FLAG_SHADOW_MAP
 	fragPosition = position;
 	fragNormal = normal;

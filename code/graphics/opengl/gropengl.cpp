@@ -90,6 +90,8 @@ static GLenum GL_read_format = GL_BGRA;
 
 GLuint GL_vao = 0;
 
+bool GL_workaround_clipping_planes = false;
+
 static std::unique_ptr<os::OpenGLContext> GL_context = nullptr;
 
 static std::unique_ptr<os::GraphicsOperations> graphic_operations = nullptr;
@@ -1378,6 +1380,19 @@ static void init_extensions() {
 	}
 }
 
+static void opengl_do_workaround_checks() {
+	auto vendor = glGetString(GL_VENDOR);
+
+	if (strstr((const char*) vendor, "NVIDIA")) {
+		// Nvidia has some weird issues with clipping planes. Check #1579 for more information.
+		GL_workaround_clipping_planes = true;
+		mprintf(("  Applying clipping plane workaround for NVIDIA hardware.\n"));
+	} else {
+		// Assume everone else has proper support for this
+		GL_workaround_clipping_planes = false;
+	}
+}
+
 bool gr_opengl_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 {
 	if (GL_initted) {
@@ -1445,6 +1460,8 @@ bool gr_opengl_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 	mprintf(( "  OpenGL Renderer  : %s\n", glGetString(GL_RENDERER) ));
 	mprintf(( "  OpenGL Version   : %s\n", glGetString(GL_VERSION) ));
 	mprintf(( "\n" ));
+
+	opengl_do_workaround_checks();
 
 	if (Cmdline_fullscreen_window || Cmdline_window) {
 		opengl_go_windowed();

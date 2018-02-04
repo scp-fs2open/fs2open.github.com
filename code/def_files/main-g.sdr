@@ -104,6 +104,14 @@ in vec4 geoTexCoord[];
 out vec4 fragPosition;
 out vec3 fragNormal;
 out vec4 fragTexCoord;
+
+#ifdef WORKAROUND_CLIPPING_PLANES
+#ifdef FLAG_TRANSFORM
+in float geoNotVisible[];
+out float fragNotVisible;
+#endif
+#endif
+
 void main(void)
 {
 #ifdef GL_ARB_gpu_shader5
@@ -121,8 +129,17 @@ void main(void)
 		fragTexCoord = geoTexCoord[vert];
 
 		gl_Layer = instanceID;
-#if defined(FLAG_CLIP) || defined(FLAG_TRANSFORM)
+#ifdef WORKAROUND_CLIPPING_PLANES
+ #ifdef FLAG_TRANSFORM
+		fragNotVisible = geoNotVisible[0];
+ #endif
+ #ifdef FLAG_CLIP
 		gl_ClipDistance[0] = gl_in[vert].gl_ClipDistance[0];
+ #endif
+#else
+ #if defined(FLAG_CLIP) || defined(FLAG_TRANSFORM)
+		gl_ClipDistance[0] = gl_in[vert].gl_ClipDistance[0];
+ #endif
 #endif
 		EmitVertex();
 	}
