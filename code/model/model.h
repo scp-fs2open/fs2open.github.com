@@ -1313,6 +1313,7 @@ void model_draw_bay_paths_htl(int model_num);
 
 bool model_interp_config_buffer(indexed_vertex_source *vert_src, vertex_buffer *vb, bool update_ibuffer_only);
 bool model_interp_pack_buffer(indexed_vertex_source *vert_src, vertex_buffer *vb);
+void model_interp_submit_buffers(indexed_vertex_source *vert_src, size_t vertex_stride);
 void model_allocate_interp_data(int n_verts = 0, int n_norms = 0);
 
 void glowpoint_init();

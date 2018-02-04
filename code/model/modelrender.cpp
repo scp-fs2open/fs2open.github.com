@@ -2736,7 +2736,7 @@ void model_render_queue(model_render_params *interp, model_draw_list *scene, int
 		rendering_material.set_depth_bias(0);
 	}
 
-	if ( !Cmdline_no_batching && !(model_flags & MR_NO_BATCH) && pm->flags & PM_FLAG_BATCHED 
+	if ( !(model_flags & MR_NO_BATCH) && pm->flags & PM_FLAG_BATCHED
 		&& !(is_outlines_only || is_outlines_only_htl) ) {
 		// always set batched rendering on if supported
 		tmap_flags |= TMAP_FLAG_BATCH_TRANSFORMS;

@@ -61,10 +61,14 @@ add_file_folder(scripting_api "Scripting\\\\Lua"
     scripting/lua/Value.cpp
 )
 
-add_file_folder(util "Util"
+add_file_folder(util "Test Util"
     util/FSTestFixture.cpp
     util/FSTestFixture.h
     util/test_util.h
+)
+
+add_file_folder(utils "Utils"
+    utils/HeapAllocatorTest.cpp
 )
 
 add_file_folder(weapon "Weapon"

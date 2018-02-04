@@ -26,6 +26,7 @@
 namespace graphics {
 namespace util {
 class UniformBuffer;
+class GPUMemoryHeap;
 }
 }
 
@@ -544,20 +545,18 @@ public:
 };
 
 struct indexed_vertex_source {
-	void *Vertex_list;
-	void *Index_list;
+	void *Vertex_list = nullptr;
+	void *Index_list = nullptr;
 
-	int Vbuffer_handle;
-	int Ibuffer_handle;
+	int Vbuffer_handle = -1;
+	size_t Vertex_offset = 0;
+	size_t Base_vertex_offset = 0;
 
-	uint Vertex_list_size;
-	uint Index_list_size;
+	int Ibuffer_handle = -1;
+	size_t Index_offset = 0;
 
-	indexed_vertex_source() :
-		Vertex_list(NULL), Index_list(NULL),
-		Vbuffer_handle(-1), Ibuffer_handle(-1), Vertex_list_size(0), Index_list_size(0)
-	{
-	}
+	uint Vertex_list_size = 0;
+	uint Index_list_size = 0;
 };
 
 struct light;
@@ -1227,6 +1226,30 @@ struct DisplayData {
 };
 
 SCP_vector<DisplayData> gr_enumerate_displays();
+
+enum class GpuHeap {
+	ModelVertex = 0,
+	ModelIndex,
+
+	NUM_VALUES
+};
+
+/**
+ * @brief Allocates storage on the specified GPU heap and stores data in that storage
+ * @param heap_type The heap type to store this memory on
+ * @param size The size of the data
+ * @param data A pointer to the data
+ * @param[out] offset_out The offset at which the data is stored in the buffer
+ * @param[out] handle_out The handle of the buffer object this data is stored in
+ */
+void gr_heap_allocate(GpuHeap heap_type, size_t size, void* data, size_t& offset_out, int& handle_out);
+
+/**
+ * @brief Deallocates memory previously allocated with gr_heap_allocate.
+ * @param heap_type The heap type to deallocate this memory from
+ * @param data_offset The offset at which the data is stored.
+ */
+void gr_heap_deallocate(GpuHeap heap_type, size_t data_offset);
 
 // Include this last to make the 2D rendering function available everywhere
 #include "graphics/render.h"
