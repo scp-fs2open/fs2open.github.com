@@ -309,7 +309,6 @@ int Cmdline_use_last_pilot = 0;
 cmdline_parm fov_arg("-fov", "Vertical field-of-view factor", AT_FLOAT);					// Cmdline_fov  -- comand line FOV -Bobboau
 cmdline_parm clip_dist_arg("-clipdist", "Changes the distance from the viewpoint for the near-clipping plane", AT_FLOAT);		// Cmdline_clip_dist
 cmdline_parm spec_exp_arg("-spec_exp", "Adjusts the size of shiny spots on ships", AT_FLOAT);
-cmdline_parm ogl_spec_arg("-ogl_spec", "Shininess of specular light", AT_FLOAT);		// Cmdline_ogl_spec
 cmdline_parm spec_static_arg("-spec_static", "Adjusts suns contribution to specular highlights", AT_FLOAT);
 cmdline_parm spec_point_arg("-spec_point", "Adjusts laser weapons contribution to specular highlights", AT_FLOAT);
 cmdline_parm spec_tube_arg("-spec_tube", "Adjusts beam weapons contribution to specular highlights", AT_FLOAT);
@@ -338,7 +337,6 @@ cmdline_parm no_deferred_lighting_arg("-no_deferred", NULL, AT_NONE);	// Cmdline
 
 float Cmdline_clip_dist = Default_min_draw_distance;
 float Cmdline_fov = 0.75f;
-float Cmdline_ogl_spec = 80.0f;
 int Cmdline_ambient_factor = 128;
 int Cmdline_env = 1;
 int Cmdline_mipmap = 0;
@@ -1969,12 +1967,6 @@ bool SetCmdlineParams()
 
 	if ( noemissive_arg.found() ) {
 		Cmdline_no_emissive = 1;
-	}
-
-	if ( ogl_spec_arg.found() ) {
-		Cmdline_ogl_spec = ogl_spec_arg.get_float();
-
-		CLAMP(Cmdline_ogl_spec, 0.0f, 128.0f);
 	}
 
 	if ( rearm_timer_arg.found() )

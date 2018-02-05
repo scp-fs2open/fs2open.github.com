@@ -7,7 +7,6 @@ uniform sampler2D NormalBuffer;
 uniform sampler2D PositionBuffer;
 uniform sampler2D SpecBuffer;
 
-uniform float specFactor;
 uniform float invScreenWidth;
 uniform float invScreenHeight;
 

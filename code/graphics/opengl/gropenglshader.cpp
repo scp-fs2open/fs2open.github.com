@@ -775,7 +775,6 @@ void opengl_shader_compile_deferred_light_shader()
 		Current_shader->program->Uniforms.setUniformi("SpecBuffer", 3);
 		Current_shader->program->Uniforms.setUniformf("invScreenWidth", 1.0f / gr_screen.max_w);
 		Current_shader->program->Uniforms.setUniformf("invScreenHeight", 1.0f / gr_screen.max_h);
-		Current_shader->program->Uniforms.setUniformf("specFactor", Cmdline_ogl_spec);
 	} else {
 		opengl_shader_set_current();
 		mprintf(("Failed to compile deferred lighting shader!\n"));

@@ -56,7 +56,6 @@ extern char *Cmdline_center_res;
 extern double specular_exponent_value;
 extern float Cmdline_clip_dist;
 extern float Cmdline_fov;
-extern float Cmdline_ogl_spec;
 extern float static_light_factor;
 extern float static_point_factor;
 extern float static_tube_factor;
