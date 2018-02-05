@@ -53,7 +53,6 @@ extern char *Cmdline_center_res;
 // FSO OPTIONS -------------------------------------------------
 
 // Graphics related
-extern double specular_exponent_value;
 extern float Cmdline_clip_dist;
 extern float Cmdline_fov;
 extern float static_light_factor;
