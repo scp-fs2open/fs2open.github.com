@@ -477,11 +477,11 @@ void labviewer_render_model(float frametime)
 	if (Lab_selected_object != -1)
 	{
 		bool lab_render_light_save = Lab_render_without_light;
-		bool lab_debris_override_save = Cmdline_nomotiondebris;
+		int lab_debris_override_save = Cmdline_nomotiondebris;
 
 		if (Lab_selected_mission.compare("None") == 0) {
 			Lab_render_without_light = true;
-			Cmdline_nomotiondebris = true;
+			Cmdline_nomotiondebris = 1;
 		}
 
 		object* obj = &Objects[Lab_selected_object];
@@ -491,6 +491,7 @@ void labviewer_render_model(float frametime)
 		obj->orient = Lab_model_orient;
 		
 		ship_process_post(obj, frametime);
+
 
 		Ships[obj->instance].flags.set(Ship::Ship_Flags::Draw_as_wireframe, Lab_render_wireframe);
 		Ships[obj->instance].flags.set(Ship::Ship_Flags::Render_show_dockpaths, Lab_render_show_dockpaths);
