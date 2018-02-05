@@ -7344,10 +7344,10 @@ void weapon_render(object* obj, model_draw_list *scene)
 		{
 			model_render_params render_info;
 
-			uint render_flags = MR_NORMAL|MR_IS_MISSILE|MR_NO_LIGHTING|MR_NO_BATCH;
+			uint render_flags = MR_NORMAL|MR_IS_MISSILE|MR_NO_BATCH;
 
-			if (Cmdline_missile_lighting && !(wip->wi_flags[Weapon::Info_Flags::Mr_no_lighting]))
-				render_flags &= ~MR_NO_LIGHTING;
+			if (wip->wi_flags[Weapon::Info_Flags::Mr_no_lighting])
+				render_flags &= MR_NO_LIGHTING;
 
 			if (wip->wi_flags[Weapon::Info_Flags::Transparent]) {
 				render_info.set_alpha(wp->alpha_current);
