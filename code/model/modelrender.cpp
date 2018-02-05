@@ -1158,7 +1158,7 @@ void model_render_buffers(model_draw_list* scene, model_material *rendering_mate
 			}
 		}
 
-		if ( (texture_maps[TM_BASE_TYPE] == -1) && !no_texturing ) {
+		if ( (texture_maps[TM_BASE_TYPE] == -1) && !no_texturing && !(debug_flags & MR_DEBUG_NO_DIFFUSE) ) {
 			continue;
 		}
 

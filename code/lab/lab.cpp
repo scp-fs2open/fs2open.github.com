@@ -477,8 +477,12 @@ void labviewer_render_model(float frametime)
 	if (Lab_selected_object != -1)
 	{
 		bool lab_render_light_save = Lab_render_without_light;
-		if (Lab_selected_mission.compare("None") == 0)
+		bool lab_debris_override_save = Cmdline_nomotiondebris;
+
+		if (Lab_selected_mission.compare("None") == 0) {
 			Lab_render_without_light = true;
+			Cmdline_nomotiondebris = true;
+		}
 
 		object* obj = &Objects[Lab_selected_object];
 
@@ -527,6 +531,7 @@ void labviewer_render_model(float frametime)
 		Trail_render_override = false;
 
 		Lab_render_without_light = lab_render_light_save;
+		Cmdline_nomotiondebris = lab_debris_override_save;
 
 		gr_reset_clip();
 		gr_set_color_fast(&HUD_color_debug);
@@ -1770,6 +1775,9 @@ void labviewer_change_background_actual()
 	light_reset();
 	vm_set_identity(&skybox_orientation);
 
+	// (DahBlount) - Remember to load the debris anims
+	stars_load_debris(false);
+
 	if (Lab_selected_mission.compare("None") != 0)
 	{
 		read_file_text((Lab_selected_mission + ".fs2").c_str(), CF_TYPE_MISSIONS);
@@ -1909,8 +1917,8 @@ void labviewer_change_background_actual()
 				}
 			}
 
-			// (DahBlount) - Remember to load the debris anims
 			stars_load_debris(flags[Mission::Mission_Flags::Fullneb]);
+
 			Num_backgrounds = 0;
 			extern void parse_one_background(background_t* background);
 			while (optional_string("$Bitmap List:") || check_for_string("$Sun:") || check_for_string("$Starbitmap:"))
