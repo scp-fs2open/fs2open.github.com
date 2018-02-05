@@ -314,7 +314,6 @@ cmdline_parm spec_static_arg("-spec_static", "Adjusts suns contribution to specu
 cmdline_parm spec_point_arg("-spec_point", "Adjusts laser weapons contribution to specular highlights", AT_FLOAT);
 cmdline_parm spec_tube_arg("-spec_tube", "Adjusts beam weapons contribution to specular highlights", AT_FLOAT);
 cmdline_parm ambient_factor_arg("-ambient_factor", "Adjusts ambient light applied to all parts of a ship", AT_INT);		// Cmdline_ambient_factor
-cmdline_parm missile_lighting_arg("-missile_lighting", NULL, AT_NONE);	// Cmdline_missile_lighting
 cmdline_parm env("-noenv", NULL, AT_NONE);								// Cmdline_env
 cmdline_parm glow_arg("-noglow", NULL, AT_NONE); 						// Cmdline_glow  -- use Bobs glow code
 cmdline_parm nomotiondebris_arg("-nomotiondebris", NULL, AT_NONE);		// Cmdline_nomotiondebris  -- Removes those ugly floating rocks -C
@@ -342,7 +341,6 @@ float Cmdline_ogl_spec = 80.0f;
 int Cmdline_ambient_factor = 128;
 int Cmdline_env = 1;
 int Cmdline_mipmap = 0;
-int Cmdline_missile_lighting = 0;
 int Cmdline_glow = 1;
 int Cmdline_nomotiondebris = 0;
 int Cmdline_noscalevid = 0;
@@ -1979,9 +1977,6 @@ bool SetCmdlineParams()
 
 	if ( rearm_timer_arg.found() )
 		Cmdline_rearm_timer = 1;
-
-	if ( missile_lighting_arg.found() )
-		Cmdline_missile_lighting = 1;
 
 	if ( save_render_targets_arg.found() )
 		Cmdline_save_render_targets = 1;
