@@ -174,7 +174,7 @@ static void convert_binary_pilot_files() {
 	cf_get_file_list(binary_pilots, CF_TYPE_PLAYERS, "*.plr");
 
 	// get list of existing json pilot files
-	cf_get_file_list(binary_pilots, CF_TYPE_PLAYERS, "*.json");
+	cf_get_file_list(json_pilots, CF_TYPE_PLAYERS, "*.json");
 
 	for (auto binary_it = binary_pilots.begin(); binary_it != binary_pilots.end(); ++binary_it) {
 		for (auto json_it = json_pilots.begin(); json_it != json_pilots.end(); ++json_it) {
