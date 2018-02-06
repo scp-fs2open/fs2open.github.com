@@ -396,6 +396,9 @@ void main()
 	if(overrideDiffuse) baseColor.rgb = diffuseClr;
 #endif
 	specColor = vec4(baseColor.rgb * SPEC_FACTOR_NO_SPEC_MAP, glossData);
+ #ifdef FLAG_HDR		
+ 	baseColor.rgb = pow(baseColor.rgb, vec3(SRGB_GAMMA));		
+ #endif
 #ifdef FLAG_SPEC_MAP
 	specColor = texture(sSpecmap, vec3(texCoord, float(sSpecmapIndex)));
 	if(alphaGloss) glossData = specColor.a;
@@ -404,7 +407,10 @@ void main()
 		fresnelFactor = 1.0;
 	}
 	if(gammaSpec) {
-		specColor.rgb = max(specColor.rgb, vec3(0.03f)); // hardcoded minimum specular value. read John Hable's blog post titled 'Everything Is Shiny'. 
+		specColor.rgb = max(specColor.rgb, vec3(0.03f)); // hardcoded minimum specular value. read John Hable's blog post titled 'Everything Is Shiny'.
+      #ifdef FLAG_HDR		
+ 		specColor.rgb = pow(specColor.rgb, vec3(SRGB_GAMMA));		
+      #endif
 		fresnelFactor = 1.0;
 	}
 #endif
@@ -414,18 +420,16 @@ void main()
  #ifdef FLAG_TEAMCOLOR
 	vec4 teamMask = vec4(0.0, 0.0, 0.0, 0.0);
 	teamMask = texture(sMiscmap, vec3(texCoord, float(sMiscmapIndex)));
-	vec3 base = max(base_color - vec3(0.5), vec3(0.0));
-	vec3 stripe = max(stripe_color - vec3(0.5), vec3(0.0));
-	vec3 team_color = (base * teamMask.x) + (stripe * teamMask.y);
+	vec3 team_color = (base_color * teamMask.x) + (stripe_color * teamMask.y);
+  #ifdef FLAG_HDR
+    team_color = pow(team_color, vec3(SRGB_GAMMA));
+  #endif
 	baseColor.rgb += team_color;
 	baseColor.rgb = max(baseColor.rgb, vec3(0.0));
 	specColor.rgb += team_color;
+	specColor.rgb = max(specColor.rgb, vec3(0.03f));
  #endif
 #endif
-#ifdef FLAG_HDR
-	baseColor.rgb = pow(baseColor.rgb, vec3(SRGB_GAMMA));
-	specColor.rgb = pow(specColor.rgb, vec3(SRGB_GAMMA));
- #endif
 	float shadow = 1.0;
 #ifdef FLAG_SHADOWS
 	shadow = getShadowValue();
@@ -460,7 +464,7 @@ void main()
  #ifdef FLAG_MISC_MAP
   #ifdef FLAG_TEAMCOLOR
 	float glowColorLuminance = dot(glowColor, vec3(0.299, 0.587, 0.114));
-	glowColor = team_glow_enabled ? mix((base * teamMask.b) + (stripe * teamMask.a), glowColor, clamp(glowColorLuminance - teamMask.b - teamMask.a, 0.0, 1.0)) : glowColor;
+	glowColor = team_glow_enabled ? mix((base_color * teamMask.b) + (stripe_color * teamMask.a), glowColor, clamp(glowColorLuminance - teamMask.b - teamMask.a, 0.0, 1.0)) : glowColor;
   #endif
  #endif
    baseColor.rgb += glowColor * GLOW_MAP_INTENSITY;
