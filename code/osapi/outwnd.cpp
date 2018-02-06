@@ -14,6 +14,7 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <string.h>
+#include <algorithm>
 
 #include "osapi/DebugWindow.h"
 #include "osapi/osapi.h"
@@ -169,8 +170,6 @@ void outwnd_printf(const char *id, const char *format, ...)
 
 void outwnd_print(const char *id, const char *tmp)
 {
-	size_t i;
-
 	if ( running_unittests ) {
 		// Ignore all messages when running unit tests
 		return;
@@ -191,15 +190,10 @@ void outwnd_print(const char *id, const char *tmp)
 		outwnd_print( "general", "==========================================================================\n" );
 	}
 
-	auto outwnd_size = OutwndFilter.size();
-
-	for (i = 0; i < OutwndFilter.size(); i++) {
-		if ( !stricmp(id, OutwndFilter[i].name) )
-			break;
-	}
+	auto filter = std::find_if(OutwndFilter.begin(), OutwndFilter.end(), [&id] (const outwnd_filter_struct& f) { return stricmp(f.name, id) == 0; });
 
 	// id found that isn't in the filter list yet
-	if ( i == outwnd_size ) {
+	if ( filter == OutwndFilter.end() ) {
 		// Only create new filters if there was a filter file
 		if (Outwnd_no_filter_file)
 			return;
@@ -213,9 +207,8 @@ void outwnd_print(const char *id, const char *tmp)
 		OutwndFilter.push_back( new_filter );
 		save_filter_info();
 	}
-
-	if ( !OutwndFilter[i].enabled )
-		return;
+	else if (!filter->enabled)
+			return;
 
 	if (Log_debug_output_to_file) {
 		if (Log_fp != NULL) {
