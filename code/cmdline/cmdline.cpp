@@ -544,6 +544,7 @@ cmdline_parm deprecated_jpgtga_arg("-jpgtga", "Deprecated", AT_NONE);
 cmdline_parm deprecated_htl_arg("-nohtl", "Deprecated", AT_NONE);
 cmdline_parm deprecated_brieflighting_arg("-brief_lighting", "Deprecated", AT_NONE);
 cmdline_parm deprecated_sndpreload_arg("-snd_preload", "Deprecated", AT_NONE);
+cmdline_parm deprecated_missile_lighting_arg("-missile_lighting", "Deprecated", AT_NONE);
 
 int Cmdline_deprecated_spec = 0;
 int Cmdline_deprecated_glow = 0;
@@ -553,6 +554,7 @@ int Cmdline_deprecated_tbp = 0;
 int Cmdline_deprecated_jpgtga = 0;
 int Cmdline_deprecated_nohtl = 0;
 bool Cmdline_deprecated_brief_lighting = 0;
+bool Cmdline_deprecated_missile_lighting = false;
 
 #ifndef NDEBUG
 // NOTE: this assumes that os_init() has already been called but isn't a fatal error if it hasn't
@@ -617,6 +619,11 @@ void cmdline_debug_print_cmdline()
 	if(Cmdline_deprecated_brief_lighting == 1)
 	{
 		mprintf(("Deprecated flag '-brief_lighting' found. Please remove from your cmdline.\n"));
+	}
+
+	if (Cmdline_deprecated_missile_lighting) 
+	{
+		mprintf(("Deprecated flag '-missile_lighting' found. Please remove from your cmdline.\n"));
 	}
 }
 #endif
@@ -2130,6 +2137,11 @@ bool SetCmdlineParams()
 	if ( deprecated_brieflighting_arg.found() )
 	{
 		Cmdline_deprecated_brief_lighting = 1;
+	}
+
+	if (deprecated_missile_lighting_arg.found())
+	{
+		Cmdline_deprecated_missile_lighting = true;
 	}
 
 	return true; 
