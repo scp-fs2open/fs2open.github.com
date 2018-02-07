@@ -128,6 +128,7 @@ bool Lab_render_without_light = false;
 bool Lab_render_show_thrusters = false;
 bool Lab_render_show_detail = false;
 bool Lab_render_show_shields = false;
+bool Lab_rotate_subobjects = true;
 
 bool Lab_Basemap_override    = false;
 bool Lab_Glowmap_override	 = false;
@@ -420,10 +421,6 @@ void labviewer_render_model(float frametime)
 		else if (sip->is_huge_ship()) {
 			rev_rate *= 3.0f;
 		}
-
-		//if (sip->uses_team_colors && !Teamcolor_override) {
-		//	render_info.set_team_color(Lab_team_color, "none", 0, 0);
-		//}
 	}
 
 	// rotate/pan/zoom the model as much as required for this frame
@@ -484,10 +481,9 @@ void labviewer_render_model(float frametime)
 
 		obj->pos = Lab_model_pos;
 		obj->orient = Lab_model_orient;
-		
-		ship_process_post(obj, frametime);
 
 		Envmap_override = Lab_Envmap_override;
+		Ships[obj->instance].flags.set(Ship::Ship_Flags::Rotators_locked, !Lab_rotate_subobjects);
 		Ships[obj->instance].flags.set(Ship::Ship_Flags::Draw_as_wireframe, Lab_render_wireframe);
 		Ships[obj->instance].flags.set(Ship::Ship_Flags::Render_full_detail, Lab_render_show_detail);
 		Ships[obj->instance].flags.set(Ship::Ship_Flags::Render_without_light, Lab_render_without_light);
@@ -496,6 +492,9 @@ void labviewer_render_model(float frametime)
 		Ships[obj->instance].flags.set(Ship::Ship_Flags::Render_without_normalmap, Lab_Normalmap_override);
 		Ships[obj->instance].flags.set(Ship::Ship_Flags::Render_without_specmap, Lab_Specmap_override);
 		Ships[obj->instance].flags.set(Ship::Ship_Flags::Render_without_heightmap, Lab_Heightmap_override);
+
+		ship_process_post(obj, frametime);
+		ship_model_update_instance(obj);
 
 		Ships[obj->instance].team_name = Lab_team_color;
 
@@ -1147,7 +1146,7 @@ void labviewer_make_render_options_window(Button *caller)
 	ADD_RENDER_FLAG("Disable Model Rotation", Lab_viewer_flags, LAB_FLAG_NO_ROTATION);
 	ADD_RENDER_FLAG("Show Insignia", Lab_viewer_flags, LAB_FLAG_SHOW_INSIGNIA);
 	ADD_RENDER_FLAG("Show Damage Lightning", Lab_viewer_flags, LAB_FLAG_LIGHTNING_ARCS);
-	ADD_RENDER_FLAG("Rotate Subsystems", Lab_viewer_flags, LAB_FLAG_SUBMODEL_ROTATE);
+	ADD_RENDER_BOOL("Rotate Subsystems", Lab_rotate_subobjects);
 
 	if (Cmdline_postprocess) {
 		ADD_RENDER_BOOL("Hide Post Processing", PostProcessing_override);

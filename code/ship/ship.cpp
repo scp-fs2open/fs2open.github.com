@@ -8968,7 +8968,7 @@ void ship_process_post(object * obj, float frametime)
 		//rotate player subobjects since its processed by the ai functions
 		// AL 2-19-98: Fire turret for player if it exists
 		//WMC - changed this to call process_subobjects
-		if ( (obj->flags[Object::Object_Flags::Player_ship]) && !Player_use_ai )
+		if ((obj->flags[Object::Object_Flags::Player_ship]) && !Player_use_ai)
 		{
 			ai_info *aip = &Ai_info[Ships[obj->instance].ai_index];
 			if (aip->ai_flags[AI::AI_Flags::Being_repaired, AI::AI_Flags::Awaiting_repair])
@@ -8979,7 +8979,8 @@ void ship_process_post(object * obj, float frametime)
 						return;
 				}
 			}
-			process_subobjects(OBJ_INDEX(obj));
+			if (!shipp->flags[Ship::Ship_Flags::Rotators_locked])
+				process_subobjects(OBJ_INDEX(obj));
 		}
 
 		if (obj == Player_obj) {
