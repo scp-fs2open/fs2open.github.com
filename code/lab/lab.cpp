@@ -69,7 +69,6 @@ static Window *Lab_background_window = NULL;
 static Text *Lab_description_text = NULL;
 static TreeItem **Lab_species_nodes = NULL;
 
-static bool Lab_in_mission = false;
 static int Lab_screen_save_bitmap = -1;
 static shader Lab_shader;
 
@@ -202,23 +201,21 @@ void labviewer_change_bitmap(int ship_index = -1, int weapon_index = -1)
 		return;
 	}
 
-	if (!Lab_in_mission) {
-		if (ship_index >= 0) {
-			// TODO:  Ship stuff!!
-		}
-		else if (weapon_index >= 0) {
-			// release old bitmap if required
-			if ((Lab_last_selected_weapon >= 0) && (Lab_last_selected_weapon != weapon_index)) {
-				Weapon_info[Lab_last_selected_weapon].laser_bitmap.first_frame = -1;
-				if (Lab_bitmap_id >= 0) {
-					bm_release(Lab_bitmap_id);
-				}
+	if (ship_index >= 0) {
+		// TODO:  Ship stuff!!
+	}
+	else if (weapon_index >= 0) {
+		// release old bitmap if required
+		if ((Lab_last_selected_weapon >= 0) && (Lab_last_selected_weapon != weapon_index)) {
+			Weapon_info[Lab_last_selected_weapon].laser_bitmap.first_frame = -1;
+			if (Lab_bitmap_id >= 0) {
+				bm_release(Lab_bitmap_id);
 			}
-			// load up the weapon bitmaps
-			extern void weapon_load_bitmaps(int);
-			weapon_load_bitmaps(weapon_index);
-			Lab_bitmap_id = Weapon_info[weapon_index].laser_bitmap.first_frame;
 		}
+		// load up the weapon bitmaps
+		extern void weapon_load_bitmaps(int);
+		weapon_load_bitmaps(weapon_index);
+		Lab_bitmap_id = Weapon_info[weapon_index].laser_bitmap.first_frame;
 	}
 
 	if (Lab_bitmap_id >= 0) {
@@ -1460,9 +1457,6 @@ void labviewer_make_ship_window(Button *caller)
 	Lab_species_nodes[Species_info.size()] = cmp->AddItem(NULL, "Other", 0, false);
 
 	// Now add the ships
-	SCP_string lod_name;
-	char buf[33];
-
 	for (auto it = Ship_info.cbegin(); it != Ship_info.cend(); ++it) {
 		if ((it->species >= 0) && (it->species < (int)Species_info.size())) {
 			stip = Lab_species_nodes[it->species];
@@ -1472,18 +1466,8 @@ void labviewer_make_ship_window(Button *caller)
 		}
 
 		ctip = cmp->AddItem(stip, it->name, (int)std::distance(Ship_info.cbegin(), it), false, labviewer_change_ship);
-
-		if (!Lab_in_mission) {
-			for (int j = 0; j < it->num_detail_levels; j++) {
-				sprintf(buf, "%d", j);
-				lod_name = "LOD ";
-				lod_name += buf;
-
-				cmp->AddItem(ctip, lod_name, j, false, labviewer_change_ship_lod);
-			}
-
-			cmp->AddItem(ctip, "Debris", 99, false, labviewer_change_ship_lod);
-		}
+		cmp->AddItem(ctip, "Model", 0, false, labviewer_change_ship_lod);
+		cmp->AddItem(ctip, "Debris", 1, false, labviewer_change_ship_lod);
 	}
 
 	// if any nodes are empty, just add a single "<none>" entry so we know that species doesn't have anything yet
@@ -1498,8 +1482,7 @@ void labviewer_make_ship_window(Button *caller)
 	if (!Lab_species_nodes[Species_info.size()]->HasChildren()) {
 		delete Lab_species_nodes[Species_info.size()];
 	}
-
-
+	
 	// and... we're done!
 	Lab_mode = LAB_MODE_SHIP;
 
@@ -1569,11 +1552,7 @@ void labviewer_change_ship_lod(Tree* caller)
 
 void labviewer_change_ship(Tree *caller)
 {
-	// this is really only for when we are in a mission
-	if (!Lab_in_mission) {
-		return;
-	}
-	Lab_selected_index = (int)(caller->GetSelectedItem()->GetParentItem()->GetData());
+	Lab_selected_index = (int)(caller->GetSelectedItem()->GetData());
 
 	labviewer_update_desc_window();
 	labviewer_update_flags_window();
@@ -2016,20 +1995,7 @@ void lab_init()
 
 	weapon_pause_sounds();
 
-	if (gameseq_get_pushed_state() == GS_STATE_GAME_PLAY) {
-		Lab_in_mission = true;
-	}
-	else {
-		Lab_in_mission = false;
-	}
-
-	if (Lab_in_mission) {
-		Lab_screen_save_bitmap = gr_save_screen();
-		gr_create_shader(&Lab_shader, 0, 0, 0, 127);
-	}
-	else {
-		gr_set_clear_color(0, 0, 0);
-	}
+	gr_set_clear_color(0, 0, 0);
 
 
 	//We start by creating the screen/toolbar
@@ -2045,16 +2011,14 @@ void lab_init()
 	//x += cbp->GetWidth() + 10;
 	//cbp = Lab_toolbar->AddChild(new Button("Weapons", x, 0, labviewer_make_weap_window));
 
-	if (!Lab_in_mission) {
-		x += cbp->GetWidth() + 10;
-		cbp = Lab_toolbar->AddChild(new Button("Render Options", x, 0, labviewer_make_render_options_window));
+	x += cbp->GetWidth() + 10;
+	cbp = Lab_toolbar->AddChild(new Button("Render Options", x, 0, labviewer_make_render_options_window));
 
-		x += cbp->GetWidth() + 10;
-		cbp = Lab_toolbar->AddChild(new Button("Material Overrides", x, 0, labviewer_make_material_override_window));
+	x += cbp->GetWidth() + 10;
+	cbp = Lab_toolbar->AddChild(new Button("Material Overrides", x, 0, labviewer_make_material_override_window));
 
-		x += cbp->GetWidth() + 10;
-		cbp = Lab_toolbar->AddChild(new Button("Backgrounds", x, 0, labviewer_make_background_window));
-	}
+	x += cbp->GetWidth() + 10;
+	cbp = Lab_toolbar->AddChild(new Button("Backgrounds", x, 0, labviewer_make_background_window));
 
 	x += cbp->GetWidth() + 20;
 	cbp = Lab_toolbar->AddChild(new Button("Exit", x, 0, labviewer_exit));
@@ -2072,16 +2036,14 @@ void lab_init()
 
 	// save detail options
 	Lab_detail_texture_save = Detail.hardware_textures;
-	if (!Lab_in_mission) {
-		// load up the list of insignia that we might use on the ships
-		pilot_load_squad_pic_list();
+	// load up the list of insignia that we might use on the ships
+	pilot_load_squad_pic_list();
 
-		// the default insignia bitmap
-		Lab_insignia_index = 0;
-		Assert((Lab_insignia_index < Num_pilot_squad_images));
+	// the default insignia bitmap
+	Lab_insignia_index = 0;
+	Assert((Lab_insignia_index < Num_pilot_squad_images));
 
-		Lab_insignia_bitmap = bm_load_duplicate(Pilot_squad_image_names[Lab_insignia_index]);
-	}
+	Lab_insignia_bitmap = bm_load_duplicate(Pilot_squad_image_names[Lab_insignia_index]);
 
 	// enable post-processing by default in the lab
 	PostProcessing_override = false;
@@ -2116,15 +2078,7 @@ void lab_do_frame(float frametime)
 
 	Missiontime += Frametime;
 
-	if (Lab_in_mission) {
-		gr_restore_screen(Lab_screen_save_bitmap);
-		gr_set_shader(&Lab_shader);
-		gr_shade(0, 0, gr_screen.max_w, gr_screen.max_h, GR_RESIZE_NONE);
-	}
-	else {
-		labviewer_do_render(frametime);
-	}
-
+	labviewer_do_render(frametime);
 
 	bool test1 = (GUI_system.OnFrame(frametime, !(Trackball_active) ? true : false, false) == GSOF_NOTHINGPRESSED);
 
