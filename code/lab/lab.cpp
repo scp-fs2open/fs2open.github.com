@@ -14,6 +14,7 @@
 #include "gamesequence/gamesequence.h"
 #include "graphics/matrix.h"
 #include "graphics/shadows.h"
+#include "graphics/light.h"
 #include "hud/hudshield.h"
 #include "io/key.h"
 #include "io/timer.h"
@@ -486,7 +487,6 @@ void labviewer_render_model(float frametime)
 
 		object* obj = &Objects[Lab_selected_object];
 
-		Player_obj->radius = obj->radius / 10;
 		obj->pos = Lab_model_pos;
 		obj->orient = Lab_model_orient;
 		
@@ -600,7 +600,7 @@ void labviewer_do_render(float frametime)
 
 	//Display helpful text
 	if (!PostProcessing_override)
-		gr_printf_no_resize(gr_screen.center_offset_x + 70, gr_screen.center_offset_y + gr_screen.center_h - gr_get_font_height(), "Use number keys to switch between FXAA presets. B and N can be used to adjust bloom.");
+		gr_printf_no_resize(gr_screen.center_offset_x + 70, gr_screen.center_offset_y + gr_screen.center_h - gr_get_font_height(), "Use number keys to switch between FXAA presets.");
 }
 
 void labviewer_exit(Button *caller)
@@ -1125,6 +1125,18 @@ void labviewer_close_render_options_window(GUIObject *caller)
 	y += cbp->GetHeight() + 1;	\
 }
 
+void labviewer_render_options_set_ambient_factor(Slider *caller) {
+	gr_calculate_ambient_factor(fl2i( caller->GetSliderValue()));
+}
+
+void labviewer_render_options_set_static_light_factor(Slider *caller) {
+	static_light_factor = caller->GetSliderValue();
+}
+
+void labviewer_render_options_set_bloom(Slider *caller) {
+	Cmdline_bloom_intensity = fl2i(caller->GetSliderValue());
+}
+
 void labviewer_make_render_options_window(Button *caller)
 {
 	Checkbox *cbp;
@@ -1185,6 +1197,14 @@ void labviewer_make_render_options_window(Button *caller)
 	ADD_RENDER_FLAG("Show Ship Weapons", Lab_viewer_flags, LAB_FLAG_SHOW_WEAPONS);
 	ADD_RENDER_FLAG("Initial Rotation", Lab_viewer_flags, LAB_FLAG_INITIAL_ROTATION);
 	ADD_RENDER_FLAG("Show Destroyed Subsystems", Lab_viewer_flags, LAB_FLAG_DESTROYED_SUBSYSTEMS);
+
+
+	Slider* sldr = (Slider*)Lab_render_options_window->AddChild(new Slider("Ambient Factor", 0, 128, 0, y + 2, labviewer_render_options_set_ambient_factor, Lab_render_options_window->GetWidth()));
+	y += sldr->GetHeight() + 1;
+	sldr = (Slider*)Lab_render_options_window->AddChild(new Slider("Direct. Lights", 0.0f, 2.0f, 0, y + 2, labviewer_render_options_set_static_light_factor, Lab_render_options_window->GetWidth()));
+	y += sldr->GetHeight() + 1;
+	sldr = (Slider*)Lab_render_options_window->AddChild(new Slider("Bloom", 0, 200, 0, y + 2, labviewer_render_options_set_bloom, Lab_render_options_window->GetWidth()));
+	y += sldr->GetHeight() + 1;
 
 	// start tree
 	cmp = (Tree*)Lab_render_options_window->AddChild(new Tree("Detail Options Tree", 0, y + 2, NULL, Lab_render_options_window->GetWidth()));
@@ -2214,22 +2234,6 @@ void lab_do_frame(float frametime)
 				Cmdline_fxaa_preset = 9;
 			break;
 
-			//adjust bloom intensity
-		case KEY_B:
-			if (!PostProcessing_override) {
-				Cmdline_bloom_intensity++;
-				if (Cmdline_bloom_intensity > 200)
-					Cmdline_bloom_intensity = 200;
-			}
-			break;
-		case KEY_N:
-			if (!PostProcessing_override) {
-				Cmdline_bloom_intensity--;
-				if (Cmdline_bloom_intensity < 0)
-					Cmdline_bloom_intensity = 0;
-			}
-			break;
-
 		case KEY_T:
 			if (color_itr == Team_Colors.begin()) {
 				color_itr = --Team_Colors.end();
@@ -2355,6 +2359,9 @@ void lab_close()
 
 	// reset detail levels to default
 	Detail.hardware_textures = Lab_detail_texture_save;
+
+	//Reset ambient factor
+	gr_calculate_ambient_factor(Cmdline_ambient_factor);
 
 	weapon_unpause_sounds();
 	//audiostream_unpause_all();

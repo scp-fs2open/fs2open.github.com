@@ -49,6 +49,7 @@ const float gr_light_color[4] = { 0.8f, 0.8f, 0.8f, 1.0f };
 const float gr_light_zero[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
 const float gr_light_emission[4] = { 0.09f, 0.09f, 0.09f, 1.0f };
 float gr_light_ambient[4] = { 0.47f, 0.47f, 0.47f, 1.0f };
+float gr_user_ambient = 0.0f;
 
 void FSLight2GLLight(light* FSLight, gr_light* GLLight) {
 	GLLight->Ambient.xyzw.x = 0.0f;
@@ -296,26 +297,8 @@ void gr_reset_lighting() {
 	Num_active_gr_lights = 0;
 }
 
-static void calculate_ambient_factor() {
-	float amb_user = 0.0f;
-
-	// assuming that the default is "128", just skip this if not a user setting
-	if (Cmdline_ambient_factor == 128) {
-		return;
-	}
-
-	amb_user = (float) ((Cmdline_ambient_factor * 2) - 255) / 255.0f;
-
-	// set the ambient light
-	gr_light_ambient[0] += amb_user;
-	gr_light_ambient[1] += amb_user;
-	gr_light_ambient[2] += amb_user;
-
-	CLAMP(gr_light_ambient[0], 0.02f, 1.0f);
-	CLAMP(gr_light_ambient[1], 0.02f, 1.0f);
-	CLAMP(gr_light_ambient[2], 0.02f, 1.0f);
-
-	gr_light_ambient[3] = 1.0f;
+void gr_calculate_ambient_factor(int ambient_factor) {
+	gr_user_ambient = (float) ((ambient_factor * 2) - 255) / 255.0f;
 }
 
 void gr_light_shutdown() {
@@ -326,7 +309,7 @@ void gr_light_shutdown() {
 }
 
 void gr_light_init() {
-	calculate_ambient_factor();
+	gr_calculate_ambient_factor();
 
 	// allocate memory for enabled lights
 	if (gr_lights == NULL) {
@@ -379,5 +362,5 @@ void gr_set_ambient_light(int red, int green, int blue) {
 	gr_light_ambient[2] = i2fl(blue) / 255.0f;
 	gr_light_ambient[3] = 1.0f;
 
-	calculate_ambient_factor();
+	gr_calculate_ambient_factor();
 }
