@@ -128,10 +128,6 @@ bool Lab_render_wireframe = false;
 bool Lab_render_without_light = false;
 bool Lab_render_show_thrusters = false;
 bool Lab_render_show_detail = false;
-bool Lab_render_show_pivots = false;
-bool Lab_render_show_paths = false;
-bool Lab_render_show_dockpaths = false;
-bool Lab_render_show_radius = false;
 bool Lab_render_show_shields = false;
 
 bool Lab_Basemap_override    = false;
@@ -477,12 +473,14 @@ void labviewer_render_model(float frametime)
 
 	if (Lab_selected_object != -1)
 	{
-		bool lab_render_light_save = Lab_render_without_light;
-		int lab_debris_override_save = Cmdline_nomotiondebris;
+		auto lab_render_light_save = Lab_render_without_light;
+		auto lab_debris_override_save = Cmdline_nomotiondebris;
+		auto lab_envmap_override_save = Envmap_override;
 
 		if (Lab_selected_mission.compare("None") == 0) {
 			Lab_render_without_light = true;
 			Cmdline_nomotiondebris = 1;
+			
 		}
 
 		object* obj = &Objects[Lab_selected_object];
@@ -492,20 +490,14 @@ void labviewer_render_model(float frametime)
 		
 		ship_process_post(obj, frametime);
 
-
+		Envmap_override = Lab_Envmap_override;
 		Ships[obj->instance].flags.set(Ship::Ship_Flags::Draw_as_wireframe, Lab_render_wireframe);
-		Ships[obj->instance].flags.set(Ship::Ship_Flags::Render_show_dockpaths, Lab_render_show_dockpaths);
-		Ships[obj->instance].flags.set(Ship::Ship_Flags::Render_show_paths, Lab_render_show_paths);
-		Ships[obj->instance].flags.set(Ship::Ship_Flags::Render_show_pivots, Lab_render_show_pivots);
-		Ships[obj->instance].flags.set(Ship::Ship_Flags::Render_show_radius, Lab_render_show_radius);
-		Ships[obj->instance].flags.set(Ship::Ship_Flags::Render_show_shields, Lab_render_show_shields);
 		Ships[obj->instance].flags.set(Ship::Ship_Flags::Render_full_detail, Lab_render_show_detail);
 		Ships[obj->instance].flags.set(Ship::Ship_Flags::Render_without_light, Lab_render_without_light);
 		Ships[obj->instance].flags.set(Ship::Ship_Flags::Render_without_diffuse, Lab_Basemap_override);
 		Ships[obj->instance].flags.set(Ship::Ship_Flags::Render_without_glowmap, Lab_Glowmap_override);
 		Ships[obj->instance].flags.set(Ship::Ship_Flags::Render_without_normalmap, Lab_Normalmap_override);
 		Ships[obj->instance].flags.set(Ship::Ship_Flags::Render_without_specmap, Lab_Specmap_override);
-		Ships[obj->instance].flags.set(Ship::Ship_Flags::Render_without_envmap, Lab_Envmap_override);
 		Ships[obj->instance].flags.set(Ship::Ship_Flags::Render_without_heightmap, Lab_Heightmap_override);
 
 		Ships[obj->instance].team_name = Lab_team_color;
@@ -533,6 +525,7 @@ void labviewer_render_model(float frametime)
 
 		Lab_render_without_light = lab_render_light_save;
 		Cmdline_nomotiondebris = lab_debris_override_save;
+		Envmap_override = lab_envmap_override_save;
 
 		gr_reset_clip();
 		gr_set_color_fast(&HUD_color_debug);
@@ -1188,11 +1181,6 @@ void labviewer_make_render_options_window(Button *caller)
 	//ADD_RENDER_FLAG("Transparent", Lab_model_flags, MR_ALL_XPARENT);
 	ADD_RENDER_BOOL("No Lighting", Lab_render_without_light);
 	ADD_RENDER_BOOL("Show Full Detail", Lab_render_show_detail);
-	ADD_RENDER_BOOL("Show Pivots", Lab_render_show_pivots);
-	ADD_RENDER_BOOL("Show Paths", Lab_render_show_paths);
-	ADD_RENDER_BOOL("Show Bay Paths", Lab_render_show_dockpaths);
-	ADD_RENDER_BOOL("Show Radius", Lab_render_show_radius);
-	ADD_RENDER_BOOL("Show Shields", Lab_render_show_shields);
 	ADD_RENDER_BOOL("Show Thrusters", Lab_render_show_thrusters);
 	ADD_RENDER_FLAG("Show Ship Weapons", Lab_viewer_flags, LAB_FLAG_SHOW_WEAPONS);
 	ADD_RENDER_FLAG("Initial Rotation", Lab_viewer_flags, LAB_FLAG_INITIAL_ROTATION);
@@ -1850,6 +1838,10 @@ void labviewer_change_background_actual()
 			{
 				ambient_light_level = DEFAULT_AMBIENT_LIGHT_LEVEL;
 			}
+
+			gr_set_ambient_light(ambient_light_level & 0xff,
+				(ambient_light_level >> 8) & 0xff,
+				(ambient_light_level >> 16) & 0xff);
 
 			strcpy_s(Neb2_texture_name, "Eraseme3");
 			Neb2_poof_flags = ((1 << 0) | (1 << 1) | (1 << 2) | (1 << 3) | (1 << 4) | (1 << 5));

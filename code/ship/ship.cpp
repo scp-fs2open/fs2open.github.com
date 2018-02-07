@@ -18937,37 +18937,13 @@ void ship_render(object* obj, model_draw_list* scene)
 	if (shipp->flags[Ship_Flags::Render_without_glowmap]) {
 		debug_flags |= MR_DEBUG_NO_GLOW;
 	}
-
-	if (shipp->flags[Ship_Flags::Render_without_envmap]) {
-		debug_flags |= MR_DEBUG_NO_ENV;
-	}
-
+	
 	if (shipp->flags[Ship_Flags::Render_without_normalmap]) {
 		debug_flags |= MR_DEBUG_NO_NORMAL;
 	}
 
 	if (shipp->flags[Ship_Flags::Render_without_specmap]) {
 		debug_flags |= MR_DEBUG_NO_SPEC;
-	}
-
-	if (shipp->flags[Ship_Flags::Render_show_pivots]) {
-		debug_flags |= MR_DEBUG_PIVOTS;
-	}
-
-	if (shipp->flags[Ship_Flags::Render_show_paths]) {
-		debug_flags |= MR_DEBUG_PATHS;
-	}
-
-	if (shipp->flags[Ship_Flags::Render_show_dockpaths]) {
-		debug_flags |= MR_DEBUG_BAY_PATHS;
-	}
-
-	if (shipp->flags[Ship_Flags::Render_show_radius]) {
-		debug_flags |= MR_DEBUG_RADIUS;
-	}
-
-	if (shipp->flags[Ship_Flags::Render_show_shields]) {
-		debug_flags |= MR_DEBUG_SHIELDS;
 	}
 
 	render_info.set_flags(render_flags);
