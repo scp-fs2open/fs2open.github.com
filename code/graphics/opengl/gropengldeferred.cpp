@@ -30,7 +30,7 @@ void opengl_clear_deferred_buffers()
 	GLboolean blend = GL_state.Blend(GL_FALSE);
 	GLboolean cull = GL_state.CullFace(GL_FALSE);
 
-	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+	GL_state.ColorMask(true, true, true, true);
 
 	opengl_shader_set_current( gr_opengl_maybe_create_shader(SDR_TYPE_DEFERRED_CLEAR, 0) );
 
@@ -38,7 +38,7 @@ void opengl_clear_deferred_buffers()
 
 	opengl_shader_set_current();
 
-	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_FALSE);
+	GL_state.ColorMask(true, true, true, false);
 
 	GL_state.DepthTest(depth);
 	GL_state.DepthMask(depth_mask);
@@ -54,10 +54,19 @@ void gr_opengl_deferred_lighting_begin()
 	GR_DEBUG_SCOPE("Deferred lighting begin");
 
 	Deferred_lighting = true;
-	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+	GL_state.ColorMask(true, true, true, true);
 
-	GLenum buffers[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3 };
-	glDrawBuffers(4, buffers);
+	// Copy the existing color data into the emissive part of the G-buffer since everything that already existed is
+	// treated as emissive
+	glDrawBuffer(GL_COLOR_ATTACHMENT4);
+	glReadBuffer(GL_COLOR_ATTACHMENT0);
+	glBlitFramebuffer(0, 0, gr_screen.max_w, gr_screen.max_h, 0, 0, gr_screen.max_w, gr_screen.max_h, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+
+	GLenum buffers[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3, GL_COLOR_ATTACHMENT4 };
+	glDrawBuffers(5, buffers);
+
+	static const float black[] = { 0, 0, 0, 1.0f };
+	glClearBufferfv(GL_COLOR, 0, black);
 }
 
 void gr_opengl_deferred_lighting_end()
@@ -70,7 +79,7 @@ void gr_opengl_deferred_lighting_end()
 	Deferred_lighting = false;
 	glDrawBuffer(GL_COLOR_ATTACHMENT0);
 
-	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_FALSE);
+	GL_state.ColorMask(true, true, true, false);
 }
 
 extern SCP_vector<light> Lights;
@@ -84,39 +93,39 @@ void gr_opengl_deferred_lighting_finish()
 	GR_DEBUG_SCOPE("Deferred lighting finish");
 	TRACE_SCOPE(tracing::ApplyLights);
 
-	if ( Cmdline_no_deferred_lighting ) {
+	if (Cmdline_no_deferred_lighting) {
 		return;
 	}
 
-	GL_state.SetAlphaBlendMode( ALPHA_BLEND_ADDITIVE);
+	GL_state.Blend(GL_TRUE);
+	GL_state.SetAlphaBlendMode(ALPHA_BLEND_ADDITIVE);
 	gr_zbuffer_set(GR_ZBUFF_NONE);
 
 	//GL_state.DepthFunc(GL_GREATER);
 	//GL_state.DepthMask(GL_FALSE);
 
-	opengl_shader_set_current( gr_opengl_maybe_create_shader(SDR_TYPE_DEFERRED_LIGHTING, 0) );
+	opengl_shader_set_current(gr_opengl_maybe_create_shader(SDR_TYPE_DEFERRED_LIGHTING, 0));
 
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, Scene_luminance_texture, 0);
-	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, Scene_stencil_buffer);
-	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_RENDERBUFFER, Scene_stencil_buffer);
-
-	GL_state.Texture.SetShaderMode(GL_TRUE);
+	// Render on top of the emissive buffer texture
+	glDrawBuffer(GL_COLOR_ATTACHMENT4);
 
 	GL_state.Texture.Enable(0, GL_TEXTURE_2D, Scene_color_texture);
-
 	GL_state.Texture.Enable(1, GL_TEXTURE_2D, Scene_normal_texture);
-
 	GL_state.Texture.Enable(2, GL_TEXTURE_2D, Scene_position_texture);
-
 	GL_state.Texture.Enable(3, GL_TEXTURE_2D, Scene_specular_texture);
-
-	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-	glClear(GL_COLOR_BUFFER_BIT);
+	if (Cmdline_shadow_quality) {
+		GL_state.Texture.Enable(4, GL_TEXTURE_2D_ARRAY, Shadow_map_texture);
+	}
 
 	SCP_vector<light> lights_copy(Lights);
 
-	std::sort(lights_copy.begin(), lights_copy.end(), light_compare_by_type);
-	lights_copy.resize(MAX_LIGHTS);
+	// We need to use stable sorting here to make sure that the relative ordering of the same light types is the same as
+	// the rest of the code. Otherwise the shadow mapping would be applied while rendering the wrong light which would
+	// lead to flickering lights in some circumstances
+	std::stable_sort(lights_copy.begin(), lights_copy.end(), light_compare_by_type);
+	if (lights_copy.size() > MAX_LIGHTS) {
+		lights_copy.resize(MAX_LIGHTS);
+	}
 
 	using namespace graphics;
 
@@ -127,15 +136,31 @@ void gr_opengl_deferred_lighting_finish()
 	{
 		GR_DEBUG_SCOPE("Build buffer data");
 
-		for (auto& l : lights_copy) {
-
-			if (l.type == Light_Type::Directional) {
-				continue;
+		auto header = uniformAligner.getHeader<deferred_global_data>();
+		if (Cmdline_shadow_quality) {
+			// Avoid this overhead when we are not going to use these values
+			header->shadow_mv_matrix = Shadow_view_matrix;
+			for (size_t i = 0; i < MAX_SHADOW_CASCADES; ++i) {
+				header->shadow_proj_matrix[i] = Shadow_proj_matrix[i];
 			}
-			float length = 0.0f;
+			header->veryneardist = Shadow_cascade_distances[0];
+			header->neardist = Shadow_cascade_distances[1];
+			header->middist = Shadow_cascade_distances[2];
+			header->fardist = Shadow_cascade_distances[3];
+
+			vm_inverse_matrix4(&gr_view_matrix, &header->inv_view_matrix);
+		}
+
+		header->invScreenWidth = 1.0f / gr_screen.max_w;
+		header->invScreenHeight = 1.0f / gr_screen.max_h;
+		header->specFactor = Cmdline_ogl_spec;
+
+		// Only the first directional light uses shaders so we need to know when we already saw that light
+		bool first_directional = true;
+		for (auto& l : lights_copy) {
 			auto light_data = uniformAligner.addTypedElement<deferred_light_data>();
 
-			light_data->lightType = 0;
+			light_data->lightType = static_cast<int>(l.type);
 
 			vec3d diffuse;
 			diffuse.xyz.x = l.r * l.intensity;
@@ -147,9 +172,29 @@ void gr_opengl_deferred_lighting_finish()
 			spec.xyz.y = l.spec_g * l.intensity;
 			spec.xyz.z = l.spec_b * l.intensity;
 
+			light_data->diffuseLightColor = diffuse;
+			light_data->specLightColor = spec;
+
 			switch (l.type) {
+			case Light_Type::Directional:
+				if (Cmdline_shadow_quality) {
+					light_data->enable_shadows = first_directional ? 1 : 0;
+				}
+				vec4 light_dir;
+				light_dir.xyzw.x = -l.vec.xyz.x;
+				light_dir.xyzw.y = -l.vec.xyz.y;
+				light_dir.xyzw.z = -l.vec.xyz.z;
+				light_dir.xyzw.w = 0.0f;
+				vec4 view_dir;
+
+				vm_vec_transform(&view_dir, &light_dir, &gr_view_matrix);
+
+				light_data->lightDir.xyz.x = view_dir.xyzw.x;
+				light_data->lightDir.xyz.y = view_dir.xyzw.y;
+				light_data->lightDir.xyz.z = view_dir.xyzw.z;
+				first_directional = false;
+				break;
 			case Light_Type::Cone:
-				light_data->lightType = 2;
 				light_data->dualCone = l.dual_cone ? 1.0f : 0.0f;
 				light_data->coneAngle = l.cone_angle;
 				light_data->coneInnerAngle = l.cone_inner_angle;
@@ -159,20 +204,18 @@ void gr_opengl_deferred_lighting_finish()
 				light_data->diffuseLightColor = diffuse;
 				light_data->specLightColor = spec;
 				light_data->lightRadius = MAX(l.rada, l.radb) * 1.25f;
-
 				light_data->scale.xyz.x = MAX(l.rada, l.radb) * 1.28f;
 				light_data->scale.xyz.y = MAX(l.rada, l.radb) * 1.28f;
 				light_data->scale.xyz.z = MAX(l.rada, l.radb) * 1.28f;
 				break;
-			case Light_Type::Tube:
+			case Light_Type::Tube: {
 				light_data->diffuseLightColor = diffuse;
-				light_data->specLightColor = spec;
 				light_data->lightRadius = l.radb * 1.5f;
-				light_data->lightType = 1;
+				light_data->lightType = LT_TUBE;
 
 				vec3d a;
 				vm_vec_sub(&a, &l.vec, &l.vec2);
-				length = vm_vec_mag(&a);
+				auto length = vm_vec_mag(&a);
 
 				light_data->scale.xyz.x = l.radb * 1.53f;
 				light_data->scale.xyz.y = l.radb * 1.53f;
@@ -183,29 +226,39 @@ void gr_opengl_deferred_lighting_finish()
 				light_data->diffuseLightColor = diffuse;
 				light_data->specLightColor = spec;
 				light_data->lightRadius = l.radb * 1.5f;
-				light_data->lightType = 0;
+				light_data->lightType = LT_POINT;
 
 				light_data->scale.xyz.x = l.radb * 1.53f;
 				light_data->scale.xyz.y = l.radb * 1.53f;
 				light_data->scale.xyz.z = l.radb * 1.53f;
 				break;
-			case Light_Type::Directional: //We need to "handle" this here as well to make the compilers happy; 
-				break;					  //The code will never actually get here.
+			}
 			}
 		}
 
 		// Uniform data has been assembled, upload it to the GPU and issue the draw calls
 		buffer->submitData();
 	}
-
 	{
 		GR_DEBUG_SCOPE("Render light geometry");
+		gr_bind_uniform_buffer(uniform_block_type::DeferredGlobals,
+							   0,
+							   sizeof(graphics::deferred_global_data),
+							   buffer->bufferHandle());
 
 		size_t element_index = 0;
 		for (auto& l : lights_copy) {
 			GR_DEBUG_SCOPE("Deferred apply single light");
 
 			switch (l.type) {
+			case Light_Type::Directional:
+				gr_bind_uniform_buffer(uniform_block_type::Lights,
+									   uniformAligner.getOffset(element_index),
+									   sizeof(graphics::deferred_light_data),
+									   buffer->bufferHandle());
+				opengl_draw_textured_quad(-1.0f, -1.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f, 1.0f);
+				++element_index;
+				break;
 			case Light_Type::Cone:
 			case Light_Type::Point:
 				gr_bind_uniform_buffer(uniform_block_type::Lights,
@@ -248,45 +301,31 @@ void gr_opengl_deferred_lighting_finish()
 		buffer->finished();
 	}
 
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, Scene_color_texture, 0);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, Scene_depth_texture, 0);
-	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_RENDERBUFFER, 0);
-
 	gr_end_view_matrix();
 	gr_end_proj_matrix();
 
-	GLboolean depth = GL_state.DepthTest(GL_FALSE);
-	GLboolean depth_mask = GL_state.DepthMask(GL_FALSE);
-	GLboolean blend = GL_state.Blend(GL_FALSE);
-	GLboolean cull = GL_state.CullFace(GL_FALSE);
+	// Now reset back to drawing into the color buffer
+	glDrawBuffer(GL_COLOR_ATTACHMENT0);
 
-	if ( High_dynamic_range ) {
-		High_dynamic_range = false;
-		opengl_shader_set_passthrough(true);
-		High_dynamic_range = true;
-	} else {
-		opengl_shader_set_passthrough(true);
-	}
-
-	GL_state.Texture.Enable(0, GL_TEXTURE_2D, Scene_luminance_texture);
-
-	GL_state.SetAlphaBlendMode( ALPHA_BLEND_ADDITIVE );
-	GL_state.DepthMask(GL_FALSE);
-
-	opengl_draw_textured_quad(0.0f, 0.0f, 0.0f, Scene_texture_v_scale, (float)gr_screen.max_w, (float)gr_screen.max_h, Scene_texture_u_scale, 0.0f);
+	// Transfer the resolved lighting back to the color texture
+	// TODO: Maybe this could be improved so that it doesn't require the copy back operation?
+	glReadBuffer(GL_COLOR_ATTACHMENT4);
+	glBlitFramebuffer(0,
+					  0,
+					  gr_screen.max_w,
+					  gr_screen.max_h,
+					  0,
+					  0,
+					  gr_screen.max_w,
+					  gr_screen.max_h,
+					  GL_COLOR_BUFFER_BIT,
+					  GL_NEAREST);
+	glReadBuffer(GL_COLOR_ATTACHMENT0);
 
 	gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
 	gr_set_view_matrix(&Eye_position, &Eye_matrix);
 
 	// reset state
-	GL_state.DepthTest(depth);
-	GL_state.DepthMask(depth_mask);
-	GL_state.Blend(blend);
-	GL_state.CullFace(cull);
-
-	GL_state.SetAlphaBlendMode( ALPHA_BLEND_NONE );
-	GL_state.Texture.SetShaderMode(GL_FALSE);
-
 	gr_clear_states();
 }
 

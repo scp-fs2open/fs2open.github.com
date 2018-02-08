@@ -56,6 +56,7 @@ opengl_uniform_block_binding GL_uniform_blocks[] = {
 	{ uniform_block_type::NanoVGData, "NanoVGUniformData" },
 	{ uniform_block_type::DecalInfo, "decalInfoData" },
 	{ uniform_block_type::DecalGlobals, "decalGlobalData" },
+	{ uniform_block_type::DeferredGlobals, "globalDeferredData" },
 };
 
 /**
@@ -847,9 +848,7 @@ void opengl_shader_compile_deferred_light_shader()
 		Current_shader->program->Uniforms.setUniformi("NormalBuffer", 1);
 		Current_shader->program->Uniforms.setUniformi("PositionBuffer", 2);
 		Current_shader->program->Uniforms.setUniformi("SpecBuffer", 3);
-		Current_shader->program->Uniforms.setUniformf("invScreenWidth", 1.0f / gr_screen.max_w);
-		Current_shader->program->Uniforms.setUniformf("invScreenHeight", 1.0f / gr_screen.max_h);
-		Current_shader->program->Uniforms.setUniformf("specFactor", Cmdline_ogl_spec);
+		Current_shader->program->Uniforms.setUniformi("shadow_map", 4);
 	} else {
 		opengl_shader_set_current();
 		mprintf(("Failed to compile deferred lighting shader!\n"));
