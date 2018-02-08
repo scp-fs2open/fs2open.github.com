@@ -75,7 +75,6 @@ bool Heightmap_override = false;
 bool Glowpoint_override = false;
 bool Glowpoint_use_depth_buffer = true;
 bool PostProcessing_override = false;
-bool Teamcolor_override = false;
 bool Shadow_override = false;
 bool Trail_render_override = false;
 

@@ -18894,7 +18894,7 @@ void ship_render(object* obj, model_draw_list* scene)
 	// Valathil - maybe do a scripting hook here to do some scriptable effects?
 	ship_render_set_animated_effect(&render_info, shipp, &render_flags);
 
-	if ( sip->uses_team_colors ) {
+	if ( sip->uses_team_colors && !shipp->flags[Ship_Flags::Render_without_miscmap] ) {
 		team_color model_team_color;
 
 		bool team_color_set = model_get_team_color(&model_team_color, shipp->team_name, shipp->secondary_team_name, shipp->team_change_timestamp, shipp->team_change_time);

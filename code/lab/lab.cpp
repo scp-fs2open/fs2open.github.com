@@ -69,9 +69,6 @@ static Window *Lab_background_window = NULL;
 static Text *Lab_description_text = NULL;
 static TreeItem **Lab_species_nodes = NULL;
 
-static int Lab_screen_save_bitmap = -1;
-static shader Lab_shader;
-
 static int Lab_insignia_bitmap = -1;
 static int Lab_insignia_index = -1;
 
@@ -90,15 +87,10 @@ static char Lab_weaponmodel_filename[MAX_SHIP_WEAPONS][MAX_FILENAME_LEN];
 static int Lab_bitmap_id = -1;
 static char Lab_bitmap_filename[MAX_FILENAME_LEN];
 
-static float Lab_viewer_zoom = 1.2f;
 static vec3d Lab_model_pos = ZERO_VECTOR;
 
 static matrix Lab_model_orient = vmd_identity_matrix;
 static int Lab_viewer_flags = LAB_MODE_NONE;
-static vec3d Lab_viewer_position = vmd_zero_vector;
-
-static ship_subsys *Lab_ship_subsys = NULL;
-static SCP_vector<model_subsystem> Lab_ship_model_subsys;
 
 static int Lab_detail_texture_save = 0;
 
@@ -136,6 +128,7 @@ bool Lab_Specmap_override	 = false;
 bool Lab_Envmap_override	 = false;
 bool Lab_Normalmap_override	 = false;
 bool Lab_Heightmap_override	 = false;
+bool Lab_Miscmap_override    = false;
 
 fix Lab_Save_Missiontime;
 
@@ -147,46 +140,6 @@ void labviewer_update_flags_window();
 
 
 // ---------------------- General/Utility Functions ----------------------------
-void labviewer_setup_subsys_rotation()
-{
-	if (Lab_ship_subsys != NULL) {
-		delete[] Lab_ship_subsys;
-		Lab_ship_subsys = NULL;
-	}
-
-	Lab_ship_model_subsys.clear();
-
-	// whole lot of of get-outs
-	if (Lab_mode != LAB_MODE_SHIP) {
-		return;
-	}
-
-	if (Lab_selected_index < 0) {
-		return;
-	}
-
-	if (Lab_selected_index >= static_cast<int>(Ship_info.size())) {
-		Int3();
-		return;
-	}
-
-	if (Ship_info[Lab_selected_index].n_subsystems <= 0) {
-		return;
-	}
-
-
-	uint n_subsystems = Ship_info[Lab_selected_index].n_subsystems;
-
-	Lab_ship_subsys = new ship_subsys[n_subsystems];
-	for (uint i = 0; i < n_subsystems; i++)
-		Lab_ship_subsys[i].clear();
-
-	Lab_ship_model_subsys.reserve(n_subsystems);
-	for (uint idx = 0; idx < n_subsystems; idx++) {
-		Lab_ship_model_subsys.push_back(Ship_info[Lab_selected_index].subsystems[idx]);
-	}
-}
-
 void labviewer_change_bitmap(int ship_index = -1, int weapon_index = -1)
 {
 	if ((ship_index < 0) && (weapon_index < 0)) {
@@ -279,25 +232,10 @@ void labviewer_change_model(char *model_fname, int lod = 0, int sel_index = -1)
 			}
 		}
 
-		labviewer_setup_subsys_rotation();
-
-		Lab_viewer_zoom = 1.2f;
-
-		if (valid_ship) {
-			memcpy(&Lab_viewer_position, &Ship_info[sel_index].closeup_pos, sizeof(vec3d));
-		}
-		else {
-			Lab_viewer_position.xyz.x = Lab_viewer_position.xyz.y = 0.0f;
-		}
-
 		// only load a new model if we are supposed to (so that we can use this function to reset states)
 		if (model_fname != NULL) {
 			model_subsystem *subsystems = NULL;
-
-			if (!Lab_ship_model_subsys.empty()) {
-				subsystems = &Lab_ship_model_subsys[0];
-			}
-
+			
 			Lab_model_num = model_load(model_fname, (valid_ship) ? Ship_info[sel_index].n_subsystems : 0, subsystems, 0);
 
 			if (Lab_model_num >= 0) {
@@ -310,10 +248,6 @@ void labviewer_change_model(char *model_fname, int lod = 0, int sel_index = -1)
 			if (valid_ship) {
 				if (Lab_model_num >= 0) {
 					model_page_in_textures(Lab_model_num, sel_index);
-				}
-
-				for (int idx = 0; idx < Ship_info[sel_index].n_subsystems; idx++) {
-					model_set_instance_info(&Lab_ship_subsys[idx].submodel_info_1, Lab_ship_model_subsys[idx].turn_rate, 0.5f);
 				}
 			}
 
@@ -492,6 +426,7 @@ void labviewer_render_model(float frametime)
 		Ships[obj->instance].flags.set(Ship::Ship_Flags::Render_without_normalmap, Lab_Normalmap_override);
 		Ships[obj->instance].flags.set(Ship::Ship_Flags::Render_without_specmap, Lab_Specmap_override);
 		Ships[obj->instance].flags.set(Ship::Ship_Flags::Render_without_heightmap, Lab_Heightmap_override);
+		Ships[obj->instance].flags.set(Ship::Ship_Flags::Render_without_miscmap, Lab_Miscmap_override);
 
 		ship_process_post(obj, frametime);
 		ship_model_update_instance(obj);
@@ -1169,12 +1104,10 @@ void labviewer_make_render_options_window(Button *caller)
 	if (Cmdline_height) {
 		ADD_RENDER_BOOL("No Height Map", Lab_Heightmap_override);
 	}
-	ADD_RENDER_BOOL("No Team Colors", Teamcolor_override);
+	ADD_RENDER_BOOL("No Team Colors", Lab_Miscmap_override);
 	ADD_RENDER_BOOL("No Glow Points", Glowpoint_override);
 	// model flags
 	ADD_RENDER_BOOL("Wireframe", Lab_render_wireframe);
-	//ADD_RENDER_FLAG("No Z-Buffer", Lab_model_flags, MR_NO_ZBUFFER);
-	//ADD_RENDER_FLAG("Transparent", Lab_model_flags, MR_ALL_XPARENT);
 	ADD_RENDER_BOOL("No Lighting", Lab_render_without_light);
 	ADD_RENDER_BOOL("Show Full Detail", Lab_render_show_detail);
 	ADD_RENDER_BOOL("Show Thrusters", Lab_render_show_thrusters);
@@ -1466,7 +1399,7 @@ void labviewer_make_ship_window(Button *caller)
 
 		ctip = cmp->AddItem(stip, it->name, (int)std::distance(Ship_info.cbegin(), it), false, labviewer_change_ship);
 		cmp->AddItem(ctip, "Model", 0, false, labviewer_change_ship_lod);
-		cmp->AddItem(ctip, "Debris", 1, false, labviewer_change_ship_lod);
+		cmp->AddItem(ctip, "Debris", 99, false, labviewer_change_ship_lod);
 	}
 
 	// if any nodes are empty, just add a single "<none>" entry so we know that species doesn't have anything yet
@@ -2024,7 +1957,6 @@ void lab_init()
 
 
 	// reset some defaults, just to be sure
-	Lab_viewer_zoom = 1.2f;
 	Lab_model_pos = vmd_zero_vector;
 	Lab_mode = LAB_MODE_NONE;
 	Lab_thrust_len = 1.0f;
@@ -2086,12 +2018,7 @@ void lab_do_frame(float frametime)
 		int status = GUI_system.GetStatus();
 
 		// set trackball modes
-		if (mouse_down(MOUSE_LEFT_BUTTON) && mouse_down(MOUSE_RIGHT_BUTTON))
-		{
-			Trackball_active = 1;
-			Trackball_mode = 4; // Currently unused
-		}
-		else if (status & GST_MOUSE_LEFT_BUTTON) {
+		if (status & GST_MOUSE_LEFT_BUTTON) {
 			Trackball_active = 1;
 			Trackball_mode = 1;	// rotate viewed object
 
@@ -2268,18 +2195,6 @@ void lab_close()
 			model_unload(Lab_weaponmodel_num[i]);
 			Lab_weaponmodel_num[i] = -1;
 		}
-	}
-
-	if (Lab_screen_save_bitmap != 1) {
-		gr_free_screen(Lab_screen_save_bitmap);
-		Lab_screen_save_bitmap = -1;
-	}
-
-	Lab_ship_model_subsys.clear();
-
-	if (Lab_ship_subsys != NULL) {
-		delete[] Lab_ship_subsys;
-		Lab_ship_subsys = NULL;
 	}
 
 	Lab_selected_mission = "None";

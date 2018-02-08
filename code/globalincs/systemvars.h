@@ -146,7 +146,6 @@ extern bool Glowpoint_override;
 extern bool Glowpoint_use_depth_buffer;
 extern bool GLSL_override;
 extern bool PostProcessing_override;
-extern bool Teamcolor_override;
 extern bool Shadow_override;
 extern bool Trail_render_override;
 
