@@ -349,6 +349,9 @@ void multi_options_set_netgame_defaults(multi_server_options *options)
 
 	// set the default max voice record time
 	options->voice_record_time = 5000;
+
+	// Set default skill level to medium
+	options->skill_level = NUM_SKILL_LEVELS / 2;
 }
 
 // set local netplayer defaults
