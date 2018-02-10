@@ -17,7 +17,7 @@
 #include "mission/missionparse.h"
 #include "graphics/util/UniformBuffer.h"
 
-extern light Lights[MAX_LIGHTS];
+extern SCP_vector<light> Lights;
 extern int Num_lights;
 
 extern bool Rendering_to_shadow_map;

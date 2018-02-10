@@ -73,7 +73,7 @@ void gr_opengl_deferred_lighting_end()
 	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_FALSE);
 }
 
-extern light Lights[MAX_LIGHTS];
+extern SCP_vector<light> Lights;
 extern int Num_lights;
 extern float static_point_factor;
 extern float static_light_factor;
@@ -113,10 +113,10 @@ void gr_opengl_deferred_lighting_finish()
 	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT);
 
-	light lights_copy[MAX_LIGHTS];
-	memcpy(lights_copy, Lights, MAX_LIGHTS * sizeof(light));
+	SCP_vector<light> lights_copy(Lights);
 
-	std::sort(lights_copy, lights_copy+Num_lights, light_compare_by_type);
+	std::sort(lights_copy.begin(), lights_copy.end(), light_compare_by_type);
+	lights_copy.resize(MAX_LIGHTS);
 
 	using namespace graphics;
 
@@ -127,9 +127,9 @@ void gr_opengl_deferred_lighting_finish()
 	{
 		GR_DEBUG_SCOPE("Build buffer data");
 
-		for (int i = 0; i < Num_lights; ++i) {
-			light* l = &lights_copy[i];
-			if (l->type != LT_CONE && l->type != LT_POINT && l->type != LT_TUBE) {
+		for (auto l : lights_copy) {
+
+			if (l.type != LT_CONE && l.type != LT_POINT && l.type != LT_TUBE) {
 				continue;
 			}
 
@@ -138,56 +138,56 @@ void gr_opengl_deferred_lighting_finish()
 			light_data->lightType = 0;
 
 			vec3d diffuse;
-			diffuse.xyz.x = l->r * l->intensity;
-			diffuse.xyz.y = l->g * l->intensity;
-			diffuse.xyz.z = l->b * l->intensity;
+			diffuse.xyz.x = l.r * l.intensity;
+			diffuse.xyz.y = l.g * l.intensity;
+			diffuse.xyz.z = l.b * l.intensity;
 
 			vec3d spec;
-			spec.xyz.x = l->spec_r * l->intensity;
-			spec.xyz.y = l->spec_g * l->intensity;
-			spec.xyz.z = l->spec_b * l->intensity;
+			spec.xyz.x = l.spec_r * l.intensity;
+			spec.xyz.y = l.spec_g * l.intensity;
+			spec.xyz.z = l.spec_b * l.intensity;
 
-			switch (l->type) {
+			switch (l.type) {
 			case LT_CONE:
 				light_data->lightType = 2;
-				light_data->dualCone = l->dual_cone ? 1.0f : 0.0f;
-				light_data->coneAngle = l->cone_angle;
-				light_data->coneInnerAngle = l->cone_inner_angle;
-				light_data->coneDir = l->vec2;
+				light_data->dualCone = l.dual_cone ? 1.0f : 0.0f;
+				light_data->coneAngle = l.cone_angle;
+				light_data->coneInnerAngle = l.cone_inner_angle;
+				light_data->coneDir = l.vec2;
 				FALLTHROUGH;
 			case LT_POINT:
 				light_data->diffuseLightColor = diffuse;
 				light_data->specLightColor = spec;
-				light_data->lightRadius = MAX(l->rada, l->radb) * 1.25f;
+				light_data->lightRadius = MAX(l.rada, l.radb) * 1.25f;
 
-				light_data->scale.xyz.x = MAX(l->rada, l->radb) * 1.28f;
-				light_data->scale.xyz.y = MAX(l->rada, l->radb) * 1.28f;
-				light_data->scale.xyz.z = MAX(l->rada, l->radb) * 1.28f;
+				light_data->scale.xyz.x = MAX(l.rada, l.radb) * 1.28f;
+				light_data->scale.xyz.y = MAX(l.rada, l.radb) * 1.28f;
+				light_data->scale.xyz.z = MAX(l.rada, l.radb) * 1.28f;
 				break;
 			case LT_TUBE:
 				light_data->diffuseLightColor = diffuse;
 				light_data->specLightColor = spec;
-				light_data->lightRadius = l->radb * 1.5f;
+				light_data->lightRadius = l.radb * 1.5f;
 				light_data->lightType = 1;
 
 				vec3d a;
-				vm_vec_sub(&a, &l->vec, &l->vec2);
+				vm_vec_sub(&a, &l.vec, &l.vec2);
 				auto length = vm_vec_mag(&a);
 
-				light_data->scale.xyz.x = l->radb * 1.53f;
-				light_data->scale.xyz.y = l->radb * 1.53f;
+				light_data->scale.xyz.x = l.radb * 1.53f;
+				light_data->scale.xyz.y = l.radb * 1.53f;
 				light_data->scale.xyz.z = length;
 
 				// Tube lights consist of two different types of lights with almost the same properties
 				light_data = uniformAligner.addTypedElement<deferred_light_data>();
 				light_data->diffuseLightColor = diffuse;
 				light_data->specLightColor = spec;
-				light_data->lightRadius = l->radb * 1.5f;
+				light_data->lightRadius = l.radb * 1.5f;
 				light_data->lightType = 0;
 
-				light_data->scale.xyz.x = l->radb * 1.53f;
-				light_data->scale.xyz.y = l->radb * 1.53f;
-				light_data->scale.xyz.z = l->radb * 1.53f;
+				light_data->scale.xyz.x = l.radb * 1.53f;
+				light_data->scale.xyz.y = l.radb * 1.53f;
+				light_data->scale.xyz.z = l.radb * 1.53f;
 				break;
 			}
 		}
@@ -200,18 +200,17 @@ void gr_opengl_deferred_lighting_finish()
 		GR_DEBUG_SCOPE("Render light geometry");
 
 		size_t element_index = 0;
-		for (int i = 0; i < Num_lights; ++i) {
+		for (auto l : lights_copy) {
 			GR_DEBUG_SCOPE("Deferred apply single light");
 
-			light* l = &lights_copy[i];
-			switch (l->type) {
+			switch (l.type) {
 			case LT_CONE:
 			case LT_POINT:
 				gr_bind_uniform_buffer(uniform_block_type::Lights,
 									   uniformAligner.getOffset(element_index),
 									   sizeof(graphics::deferred_light_data),
 									   buffer->bufferHandle());
-				gr_opengl_draw_deferred_light_sphere(&l->vec);
+				gr_opengl_draw_deferred_light_sphere(&l.vec);
 				++element_index;
 				break;
 			case LT_TUBE:
@@ -222,10 +221,10 @@ void gr_opengl_deferred_lighting_finish()
 
 				vec3d a;
 				matrix orient;
-				vm_vec_sub(&a, &l->vec, &l->vec2);
+				vm_vec_sub(&a, &l.vec, &l.vec2);
 				vm_vector_2_matrix(&orient, &a, NULL, NULL);
 
-				gr_opengl_draw_deferred_light_cylinder(&l->vec2, &orient);
+				gr_opengl_draw_deferred_light_cylinder(&l.vec2, &orient);
 				++element_index;
 
 				// The next two draws use the same uniform block element
@@ -234,10 +233,12 @@ void gr_opengl_deferred_lighting_finish()
 									   sizeof(graphics::deferred_light_data),
 									   buffer->bufferHandle());
 
-				gr_opengl_draw_deferred_light_sphere(&l->vec);
-				gr_opengl_draw_deferred_light_sphere(&l->vec2);
+				gr_opengl_draw_deferred_light_sphere(&l.vec);
+				gr_opengl_draw_deferred_light_sphere(&l.vec2);
 				++element_index;
 				break;
+			default:
+				continue;
 			}
 		}
 

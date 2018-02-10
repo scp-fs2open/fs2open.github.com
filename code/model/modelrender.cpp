@@ -582,9 +582,9 @@ void model_draw_list::init()
 {
 	reset();
 
-	for ( int i = 0; i < Num_lights; ++i ) {
-		if ( Lights[i].type == LT_DIRECTIONAL || !Deferred_lighting ) {
-			Scene_light_handler.addLight(&Lights[i]);
+	for ( auto l : Lights) {
+		if ( l.type == LT_DIRECTIONAL || !Deferred_lighting ) {
+			Scene_light_handler.addLight(&l);
 		}	
 	}
 

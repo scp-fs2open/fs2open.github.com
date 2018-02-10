@@ -48,7 +48,7 @@ typedef struct light {
 	int instance;
 } light;
 
-extern SCP_vector<light*> Static_light;
+extern SCP_vector<light> Static_light;
 
 struct light_indexing_info
 {
