@@ -20,9 +20,6 @@
 #include "render/3d.h"
 
 
-
-#define MAX_LIGHT_LEVELS 16
-
 SCP_vector<light> Lights;
 SCP_vector<light> Static_light;
 

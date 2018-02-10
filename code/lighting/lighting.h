@@ -27,8 +27,6 @@
 #define LT_TUBE			2		// A tube light, like a fluorescent light
 #define LT_CONE			3		// A cone light, like a flood light
 
-#define MAX_LIGHT_LEVELS 16
-
 typedef struct light {
 	int		type;							// What type of light this is
 	vec3d	vec;							// location in world space of a point light or the direction of a directional light or the first point on the tube for a tube light
