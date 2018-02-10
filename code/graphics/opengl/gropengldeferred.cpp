@@ -179,6 +179,9 @@ void gr_opengl_deferred_lighting_finish()
 			light_data->diffuseLightColor = diffuse;
 			light_data->specLightColor = spec;
 
+			// Set a default value for all lights. Only the first directional light will change this.
+			light_data->enable_shadows = false;
+
 			switch (l.type) {
 			case Light_Type::Directional:
 				if (Shadow_quality != ShadowQuality::Disabled) {
@@ -208,9 +211,6 @@ void gr_opengl_deferred_lighting_finish()
 				light_data->coneDir = l.vec2;
 				FALLTHROUGH;
 			case Light_Type::Point:
-				light_data->diffuseLightColor = diffuse;
-				light_data->specLightColor = spec;
-
 				vm_vec_scale(&light_data->specLightColor, static_point_factor);
 
 				light_data->lightRadius = MAX(l.rada, l.radb) * 1.25f;
@@ -219,7 +219,6 @@ void gr_opengl_deferred_lighting_finish()
 				light_data->scale.xyz.z = MAX(l.rada, l.radb) * 1.28f;
 				break;
 			case Light_Type::Tube: {
-				light_data->diffuseLightColor = diffuse;
 				light_data->lightRadius = l.radb * 1.5f;
 				light_data->lightType = LT_TUBE;
 

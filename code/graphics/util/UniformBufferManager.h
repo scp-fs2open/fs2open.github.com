@@ -4,6 +4,8 @@
 
 #include "UniformBuffer.h"
 
+#include <array>
+
 namespace graphics {
 namespace util {
 
@@ -33,10 +35,22 @@ class UniformBufferManager {
 	size_t _segment_offset = 0; // Offset of the next element to be added to the buffer
 
 	int _offset_alignment = -1;
+	bool _use_persistent_mapping = false;
 
-	SCP_vector<std::pair<int, gr_sync>> _retired_buffers;
+	/**
+	 * @brief A list of retired uniform buffers that might still be in use by the GPU
+	 * Once the sync fence is signaled it means that the buffer is not in use anymore by the GPU and can be deleted.
+	 * The byte array is the associated shadow buffer which will ensure that the pointer stays valid until the buffer is
+	 * deleted at which point any reference to it will surely be removed.
+	 */
+	SCP_vector<std::tuple<gr_sync, int, std::unique_ptr<uint8_t[]>>> _retired_buffers;
 
-	SCP_vector<uint8_t> _temp_buffer; // Buffer for building uniform data in case persistent mapping isn't supported
+	/**
+	 * @brief This is a pointer to an array which is a shadow of the uniform buffer
+	 * This is needed for building the uniform buffer on the CPU side even if persistent mapping is active since small
+	 * writes to the GPU take a lot of time.
+	 */
+	std::unique_ptr<uint8_t[]> _shadow_uniform_buffer;
 
 	void changeSegmentSize(size_t new_size);
 public:

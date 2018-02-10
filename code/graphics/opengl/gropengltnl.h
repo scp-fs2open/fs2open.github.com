@@ -46,10 +46,12 @@ struct opengl_vertex_bind {
 int gr_opengl_create_buffer(BufferType type, BufferUsageHint usage);
 
 void opengl_bind_buffer_object(int handle);
-void gr_opengl_update_buffer_data(int handle, size_t size, void* data);
-void gr_opengl_update_buffer_data_offset(int handle, size_t offset, size_t size, void* data);
+void gr_opengl_update_buffer_data(int handle, size_t size, const void* data);
+void gr_opengl_update_buffer_data_offset(int handle, size_t offset, size_t size, const void* data);
 void gr_opengl_delete_buffer(int handle);
 void gr_opengl_bind_uniform_buffer(uniform_block_type bind_point, size_t offset, size_t size, int buffer);
+void* gr_opengl_map_buffer(int handle);
+void gr_opengl_flush_mapped_buffer(int handle, size_t offset, size_t size);
 
 /**
  * @brief Retrieves the OpenGL handle of a generic buffer handle

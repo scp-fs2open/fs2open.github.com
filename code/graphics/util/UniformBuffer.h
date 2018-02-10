@@ -34,6 +34,12 @@ class UniformBuffer {
 				  size_t element_alignment);
 	~UniformBuffer();
 
+	UniformBuffer(const UniformBuffer&) = delete;
+	UniformBuffer& operator=(const UniformBuffer&) = delete;
+
+	UniformBuffer(UniformBuffer&&) = default;
+	UniformBuffer& operator=(UniformBuffer&&) = default;
+
 	inline UniformAligner& aligner() {
 		return _aligner;
 	}

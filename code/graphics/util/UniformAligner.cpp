@@ -31,7 +31,7 @@ UniformAligner::UniformAligner(uint8_t* buffer,
 	_numElements(0),
 	_dataSize(dataSize),
 	_headerSize(headerSize) {
-	_buffer_offset = getOffset(0); // Set the initial offset to the first data element
+	_buffer_offset = alignSize(_headerSize, _requiredAlignment); // Set the initial offset to the first data element
 }
 void* UniformAligner::addElement() {
 	Assertion(_buffer_offset + _dataSize <= _buffer_size, "Not enough space in the buffer for adding another element! "
