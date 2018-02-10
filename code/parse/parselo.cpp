@@ -2936,11 +2936,11 @@ int stuff_int_list(int *ilp, int max_ints, int lookup_type)
 
 	Mp++;
 
-	if (count >= max_ints) {
+	if (count > max_ints) {
 		error_display(0,
 					  "Too many entries in integer list. Expected %d, found %d.\nList type was %s",
 					  max_ints,
-					  count + 1,
+					  count,
 					  get_lookup_type_name(lookup_type));
 	}
 
