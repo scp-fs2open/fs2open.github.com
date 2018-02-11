@@ -776,7 +776,12 @@ bool pilotfile::load_player(const char* callsign, player* _p, bool force_binary)
 	if (force_binary) {
 		handler.reset(new pilot::BinaryFileHandler(fp));
 	} else {
-		handler.reset(new pilot::JSONFileHandler(fp, true));
+		try {
+			handler.reset(new pilot::JSONFileHandler(fp, true));
+		} catch (const std::exception& e) {
+			mprintf(("PLR => Failed to parse JSON: %s\n", e.what()));
+			return false;
+		}
 	}
 
 	unsigned int plr_id = handler->readUInt("signature");
@@ -795,8 +800,9 @@ bool pilotfile::load_player(const char* callsign, player* _p, bool force_binary)
 	plr_reset_data();
 
 	// the point of all this: read in the PLR contents
-	for (auto section_id = handler->beginSectionRead(); handler->hasMoreSections();
-	     section_id      = handler->nextSection()) {
+	handler->beginSectionRead();
+	while (handler->hasMoreSections()) {
+		auto section_id = handler->nextSection();
 		try {
 			switch (section_id) {
 				case Section::Flags:
@@ -919,7 +925,12 @@ bool pilotfile::save_player(player *_p)
 		return false;
 	}
 
-	handler.reset(new pilot::JSONFileHandler(fp, false));
+	try {
+		handler.reset(new pilot::JSONFileHandler(fp, false));
+	} catch (const std::exception& e) {
+		mprintf(("PLR => Failed to parse JSON: %s\n", e.what()));
+		return false;
+	}
 
 	// header and version
 	handler->writeInt("signature", PLR_FILE_ID);
@@ -985,7 +996,12 @@ bool pilotfile::verify(const char *fname, int *rank, char *valid_language)
 		return false;
 	}
 
-	handler.reset(new pilot::JSONFileHandler(fp, true));
+	try {
+		handler.reset(new pilot::JSONFileHandler(fp, true));
+	} catch (const std::exception& e) {
+		mprintf(("PLR => Failed to parse JSON: %s\n", e.what()));
+		return false;
+	}
 
 	unsigned int plr_id = handler->readUInt("signature");
 
@@ -1005,8 +1021,9 @@ bool pilotfile::verify(const char *fname, int *rank, char *valid_language)
 	bool have_flags = false;
 	bool have_info = false;
 	// the point of all this: read in the PLR contents
-	for (auto section_id = handler->beginSectionRead(); !(have_flags && have_info) && handler->hasMoreSections();
-	     section_id      = handler->nextSection()) {
+	handler->beginSectionRead();
+	while (!(have_flags && have_info) && handler->hasMoreSections()) {
+		auto section_id = handler->nextSection();
 		try {
 			switch (section_id) {
 				case Section::Flags:

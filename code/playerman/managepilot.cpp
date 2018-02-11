@@ -438,8 +438,8 @@ void player::reset()
 
 	objnum = -1;
 
-	memset(&bi, 0, sizeof(button_info));
-	memset(&ci, 0, sizeof(control_info));
+	memset(&bi, 0, sizeof(bi));
+	memset(&ci, 0, sizeof(ci));
 
 	stats.init();
 	// only reset Pilotfile stats if we're resetting Player
@@ -524,9 +524,9 @@ void player::reset()
 
 	death_message = "";
 
-	memset(&lua_ci, 0, sizeof(control_info));
-	memset(&lua_bi, 0, sizeof(button_info));
-	memset(&lua_bi_full, 0, sizeof(button_info));
+	memset(&lua_ci, 0, sizeof(lua_ci));
+	memset(&lua_bi, 0, sizeof(lua_bi));
+	memset(&lua_bi_full, 0, sizeof(lua_bi_full));
 
 	player_was_multi = 0;
 	memset(language, 0, sizeof(language));
@@ -689,12 +689,29 @@ void player::assign(const player *other)
 	Assertion(*this == *other, "Equality comparison failed after pilot assignment!");
 }
 
+template<typename T, size_t N>
+bool array_compare(const T (&left)[N], const T (&right)[N]) {
+	auto left_el = std::begin(left);
+	auto right_el = std::begin(right);
+
+	auto left_end = std::end(left);
+	auto right_end = std::end(right);
+
+	for (; left_el != left_end && right_el != right_end; ++left_el, ++right_el) {
+		if (!(*left_el == *right_el)) {
+			return false;
+		}
+	}
+
+	return true;
+}
+
 bool operator==(const htarget_list& left, const htarget_list& right) {
 	return left.how_added == right.how_added && obj_compare(left.objp, right.objp);
 }
 
 bool operator==(const button_info& left, const button_info& right) {
-	return memcmp(left.status, right.status, sizeof(left.status)) == 0;
+	return array_compare(left.status, right.status);
 }
 
 bool operator==(const control_info& left, const control_info& right) {
@@ -723,23 +740,6 @@ bool operator==(const multi_server_options& left, const multi_server_options& ri
 bool operator==(const sexp_variable& left, const sexp_variable& right) {
 	return left.type == right.type && !strcmp(left.text, right.text)
 		&& !strcmp(left.variable_name, right.variable_name);
-}
-
-template<typename T, size_t N>
-bool array_compare(const T (&left)[N], const T (&right)[N]) {
-	auto left_el = std::begin(left);
-	auto right_el = std::begin(right);
-
-	auto left_end = std::end(left);
-	auto right_end = std::end(right);
-
-	for (; left_el != left_end && right_el != right_end; ++left_el, ++right_el) {
-		if (!(*left_el == *right_el)) {
-			return false;
-		}
-	}
-
-	return true;
 }
 
 bool operator==(const player& lhs, const player& rhs) {

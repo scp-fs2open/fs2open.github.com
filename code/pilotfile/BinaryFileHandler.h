@@ -73,7 +73,7 @@ class BinaryFileHandler: public FileHandler {
 
 	void readString(const char* name, char* dest, size_t max_size) override;
 
-	Section beginSectionRead() override;
+	void beginSectionRead() override;
 
 	bool hasMoreSections() override;
 

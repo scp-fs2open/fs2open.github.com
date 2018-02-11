@@ -23,6 +23,7 @@ class JSONFileHandler: public FileHandler {
 	void popElement();
 
 	void* _sectionIterator = nullptr;
+	bool _startingSectionIteration = false;
 	size_t _arrayIndex = INVALID_SIZE;
 
 	void ensureNotExists(const char* name);
@@ -31,7 +32,6 @@ class JSONFileHandler: public FileHandler {
 	json_int_t readInteger(const char* name);
 	void ensureExists(const char* name);
 
-	Section nextSection(bool in_section);
 	void nextArraySection(bool in_section);
  public:
 	JSONFileHandler(CFILE* cfp, bool reading);
@@ -79,7 +79,7 @@ class JSONFileHandler: public FileHandler {
 
 	SCP_string readString(const char* name) override;
 
-	Section beginSectionRead() override;
+	void beginSectionRead() override;
 
 	bool hasMoreSections() override;
 

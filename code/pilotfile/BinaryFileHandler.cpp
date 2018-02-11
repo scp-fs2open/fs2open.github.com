@@ -116,8 +116,8 @@ SCP_string pilot::BinaryFileHandler::readString(const char*) {
 void pilot::BinaryFileHandler::readString(const char*, char* dest, size_t max_size) {
 	cfread_string_len(dest, (int) max_size, _cfp);
 }
-Section pilot::BinaryFileHandler::beginSectionRead() {
-	return nextSection();
+void pilot::BinaryFileHandler::beginSectionRead() {
+	// Everything is handled in nextSection
 }
 bool pilot::BinaryFileHandler::hasMoreSections() {
 	return !cfeof(_cfp);

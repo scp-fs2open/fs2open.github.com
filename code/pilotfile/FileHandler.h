@@ -90,7 +90,7 @@ class FileHandler {
 		strcpy_s(dest, max_size, string.c_str());
 	}
 
-	virtual Section beginSectionRead() = 0;
+	virtual void beginSectionRead() = 0;
 
 	virtual bool hasMoreSections() = 0;
 

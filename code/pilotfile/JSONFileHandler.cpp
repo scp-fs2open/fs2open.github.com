@@ -229,37 +229,36 @@ SCP_string pilot::JSONFileHandler::readString(const char* name) {
 
 	return val;
 }
-Section pilot::JSONFileHandler::beginSectionRead() {
+void pilot::JSONFileHandler::beginSectionRead() {
 	ensureExists("sections");
 
 	auto sections = json_object_get(_currentEl, "sections");
 	if (json_typeof(sections) != JSON_OBJECT) {
 		Error(LOCATION, "Sections must be a JSON object!");
-		return Section::Invalid;
 	}
 
 	pushElement(sections);
 
 	Assertion(_sectionIterator == nullptr, "Section nesting is not yet supported!");
 	_sectionIterator = json_object_iter(_currentEl);
-
-	if (_sectionIterator != nullptr) {
-		return nextSection(false);
-	} else {
-		return Section::Invalid;
-	}
+	// Signals to nextSection that we just started iterating though the sections since it needs to do something special in that case
+	_startingSectionIteration = true;
 }
 bool pilot::JSONFileHandler::hasMoreSections() {
 	return _sectionIterator != nullptr;
 }
-Section pilot::JSONFileHandler::nextSection(bool in_section) {
+Section pilot::JSONFileHandler::nextSection() {
 	Assertion(_sectionIterator != nullptr, "Section iterator must be valid for this function!");
 
-	if (in_section) {
+	// If we just started our iteration then there is no previous element we need to pop from the stack
+	if (!_startingSectionIteration) {
 		// We have to pop the previous section first
 		popElement();
 
 		Assertion(json_typeof(_currentEl) == JSON_OBJECT, "The previous element should have been an object!");
+	} else {
+		// We are now in normal operations so we can reset this flag
+		_startingSectionIteration = false;
 	}
 
 	auto key = json_object_iter_key(_sectionIterator);
@@ -278,9 +277,6 @@ Section pilot::JSONFileHandler::nextSection(bool in_section) {
 	pushElement(el);
 
 	return section;
-}
-Section pilot::JSONFileHandler::nextSection() {
-	return nextSection(true);
 }
 void pilot::JSONFileHandler::endSectionRead() {
 	// First, remove the element we are currently in, if there is one
