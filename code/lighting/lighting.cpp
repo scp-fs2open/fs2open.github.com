@@ -304,14 +304,12 @@ void light_add_tube(const vec3d *p0, const vec3d *p1, float r1, float r2, float 
 	Lights.push_back(l);
 }
 
-static int l_num_points=0, l_num_lights=0;
-
 
 void light_rotate_all()
 {
 	if ( Lighting_off ) return;
 	
-	for (auto l : Lights)
+	for (auto& l : Lights)
 		light_rotate(&l);
 }
 
@@ -401,8 +399,6 @@ void light_apply_rgb( ubyte *param_r, ubyte *param_g, ubyte *param_b, const vec3
 	rval *= static_light_level;
 	gval *= static_light_level;
 	bval *= static_light_level;
-
-	l_num_points++;
 
 	vec3d to_light;
 	float dot, dist;
@@ -552,7 +548,7 @@ void scene_lights::setLightFilter(int objnum, const vec3d *pos, float rad)
 	// clear out current filtered lights
 	FilteredLights.clear();
 
-	for ( auto l : AllLights ) {
+	for ( auto& l : AllLights ) {
 		switch ( l.type ) {
 			case LT_DIRECTIONAL:
 				continue;
