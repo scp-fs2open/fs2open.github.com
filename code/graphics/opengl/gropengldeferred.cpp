@@ -127,7 +127,7 @@ void gr_opengl_deferred_lighting_finish()
 	{
 		GR_DEBUG_SCOPE("Build buffer data");
 
-		for (auto l : lights_copy) {
+		for (auto& l : lights_copy) {
 
 			if (l.type != LT_CONE && l.type != LT_POINT && l.type != LT_TUBE) {
 				continue;
@@ -200,7 +200,7 @@ void gr_opengl_deferred_lighting_finish()
 		GR_DEBUG_SCOPE("Render light geometry");
 
 		size_t element_index = 0;
-		for (auto l : lights_copy) {
+		for (auto& l : lights_copy) {
 			GR_DEBUG_SCOPE("Deferred apply single light");
 
 			switch (l.type) {

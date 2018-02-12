@@ -360,7 +360,7 @@ matrix shadows_start_render(matrix *eye_orient, vec3d *eye_pos, float fov, float
 	if(Static_light.empty())
 		return vmd_identity_matrix; 
 	
-	auto lp = *(Static_light.begin());
+	auto& lp = Static_light.front();
 
 	vec3d light_dir;
 	matrix light_matrix;
@@ -405,8 +405,6 @@ void shadows_render_all(float fov, matrix *eye_orient, vec3d *eye_pos)
 	if (!Cmdline_shadow_quality) {
 		return;
 	}
-
-	auto lp = *(Static_light.begin());
 
 	//shadows_debug_show_frustum(&Player_obj->orient, &Player_obj->pos, fov, gr_screen.clip_aspect, Min_draw_distance, 3000.0f);
 
