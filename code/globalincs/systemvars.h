@@ -209,7 +209,6 @@ void detail_level_set(int level);
 int current_detail_level();
 
 #define MAX_LIGHTS 256
-#define MAX_LIGHT_LEVELS 16
 
 #define safe_kill(a) if(a)vm_free(a)
 
