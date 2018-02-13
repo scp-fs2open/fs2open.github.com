@@ -129,6 +129,7 @@ bool Lab_Envmap_override	 = false;
 bool Lab_Normalmap_override	 = false;
 bool Lab_Heightmap_override	 = false;
 bool Lab_Miscmap_override    = false;
+bool Lab_emissive_light_override = !Cmdline_no_emissive;
 
 fix Lab_Save_Missiontime;
 
@@ -404,12 +405,14 @@ void labviewer_render_model(float frametime)
 		auto lab_render_light_save = Lab_render_without_light;
 		auto lab_debris_override_save = Cmdline_nomotiondebris;
 		auto lab_envmap_override_save = Envmap_override;
+		auto lab_emissive_light_save = Cmdline_no_emissive;
 
 		if (Lab_selected_mission.compare("None") == 0) {
 			Lab_render_without_light = true;
 			Cmdline_nomotiondebris = 1;
-			
 		}
+
+		Cmdline_no_emissive = !Lab_emissive_light_override;
 
 		object* obj = &Objects[Lab_selected_object];
 
@@ -457,6 +460,7 @@ void labviewer_render_model(float frametime)
 		Lab_render_without_light = lab_render_light_save;
 		Cmdline_nomotiondebris = lab_debris_override_save;
 		Envmap_override = lab_envmap_override_save;
+		Cmdline_no_emissive = lab_emissive_light_save;
 
 		gr_reset_clip();
 		gr_set_color_fast(&HUD_color_debug);
@@ -1115,7 +1119,7 @@ void labviewer_make_render_options_window(Button *caller)
 	ADD_RENDER_FLAG("Initial Rotation", Lab_viewer_flags, LAB_FLAG_INITIAL_ROTATION);
 	ADD_RENDER_FLAG("Show Destroyed Subsystems", Lab_viewer_flags, LAB_FLAG_DESTROYED_SUBSYSTEMS);
 
-
+	ADD_RENDER_BOOL("Emissive Lighting", Lab_emissive_light_override);
 	Slider* sldr = (Slider*)Lab_render_options_window->AddChild(new Slider("Ambient Factor", 0, 128, 0, y + 2, labviewer_render_options_set_ambient_factor, Lab_render_options_window->GetWidth()));
 	y += sldr->GetHeight() + 1;
 	sldr = (Slider*)Lab_render_options_window->AddChild(new Slider("Direct. Lights", 0.0f, 2.0f, 0, y + 2, labviewer_render_options_set_static_light_factor, Lab_render_options_window->GetWidth()));
