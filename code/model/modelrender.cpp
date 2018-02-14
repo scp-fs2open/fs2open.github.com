@@ -41,6 +41,7 @@ extern int Num_arc_segment_points;
 extern vec3d Arc_segment_points[];
 
 extern bool Scene_framebuffer_in_frame;
+color Wireframe_color;
 
 extern void interp_render_arc_segment( vec3d *v1, vec3d *v2, int depth );
 
@@ -961,6 +962,7 @@ void model_render_buffers(model_draw_list* scene, model_material *rendering_mate
 {
 	bsp_info *model = NULL;
 	const uint model_flags = interp->get_model_flags();
+	const uint debug_flags = interp->get_debug_flags();
 	const int obj_num = interp->get_object_number();
 
 	Assert(buffer != NULL);
@@ -1084,11 +1086,14 @@ void model_render_buffers(model_draw_list* scene, model_material *rendering_mate
 				}
 			}
 
-			if ( replacement_textures != NULL && replacement_textures[rt_begin_index + TM_SPECULAR_TYPE] >= 0 ) {
-				tex_replace[TM_SPECULAR_TYPE] = texture_info(replacement_textures[rt_begin_index + TM_SPECULAR_TYPE]);
-				texture_maps[TM_SPECULAR_TYPE] = model_interp_get_texture(&tex_replace[TM_SPECULAR_TYPE], base_frametime);
-			} else {
-				texture_maps[TM_SPECULAR_TYPE] = model_interp_get_texture(&tmap->textures[TM_SPECULAR_TYPE], base_frametime);
+			if (!(debug_flags & MR_DEBUG_NO_SPEC)) {
+				if (replacement_textures != NULL && replacement_textures[rt_begin_index + TM_SPECULAR_TYPE] >= 0) {
+					tex_replace[TM_SPECULAR_TYPE] = texture_info(replacement_textures[rt_begin_index + TM_SPECULAR_TYPE]);
+					texture_maps[TM_SPECULAR_TYPE] = model_interp_get_texture(&tex_replace[TM_SPECULAR_TYPE], base_frametime);
+				}
+				else {
+					texture_maps[TM_SPECULAR_TYPE] = model_interp_get_texture(&tmap->textures[TM_SPECULAR_TYPE], base_frametime);
+				}
 			}
 
 			if ( replacement_textures != NULL && replacement_textures[rt_begin_index + TM_SPEC_GLOSS_TYPE] >= 0 ) {
@@ -1098,7 +1103,7 @@ void model_render_buffers(model_draw_list* scene, model_material *rendering_mate
 				texture_maps[TM_SPEC_GLOSS_TYPE] = model_interp_get_texture(&tmap->textures[TM_SPEC_GLOSS_TYPE], base_frametime);
 			}
 
-			if ( (Detail.lighting > 2)  && (detail_level < 2) ) {
+			if ((Detail.lighting > 2) && (detail_level < 2)) {
 				// likewise, etc.
 				texture_info *norm_map = &tmap->textures[TM_NORMAL_TYPE];
 				texture_info *height_map = &tmap->textures[TM_HEIGHT_TYPE];
@@ -1116,7 +1121,7 @@ void model_render_buffers(model_draw_list* scene, model_material *rendering_mate
 						height_map = &tex_replace[TM_HEIGHT_TYPE];
 					}
 
-					if ( replacement_textures[rt_begin_index + TM_AMBIENT_TYPE] >= 0 ) {
+					if (replacement_textures[rt_begin_index + TM_AMBIENT_TYPE] >= 0) {
 						tex_replace[TM_AMBIENT_TYPE] = texture_info(replacement_textures[rt_begin_index + TM_AMBIENT_TYPE]);
 						ambient_map = &tex_replace[TM_AMBIENT_TYPE];
 					}
@@ -1127,10 +1132,13 @@ void model_render_buffers(model_draw_list* scene, model_material *rendering_mate
 					}
 				}
 
-				texture_maps[TM_NORMAL_TYPE] = model_interp_get_texture(norm_map, base_frametime);
-				texture_maps[TM_HEIGHT_TYPE] = model_interp_get_texture(height_map, base_frametime);
-				texture_maps[TM_AMBIENT_TYPE] = model_interp_get_texture(ambient_map, base_frametime);
-				texture_maps[TM_MISC_TYPE] = model_interp_get_texture(misc_map, base_frametime);
+				if (debug_flags & MR_DEBUG_NO_DIFFUSE)  texture_maps[TM_BASE_TYPE] = -1;
+				if (debug_flags & MR_DEBUG_NO_GLOW)		  texture_maps[TM_GLOW_TYPE] = -1;
+				if (debug_flags & MR_DEBUG_NO_SPEC)		  texture_maps[TM_SPECULAR_TYPE] = -1;
+				if (!(debug_flags & MR_DEBUG_NO_NORMAL))  texture_maps[TM_NORMAL_TYPE] = model_interp_get_texture(norm_map, base_frametime);
+				if (!(debug_flags & MR_DEBUG_NO_HEIGHT))  texture_maps[TM_HEIGHT_TYPE] = model_interp_get_texture(height_map, base_frametime);
+				if (!(debug_flags & MR_DEBUG_NO_AMBIENT)) texture_maps[TM_AMBIENT_TYPE] = model_interp_get_texture(ambient_map, base_frametime);
+				if (!(debug_flags & MR_DEBUG_NO_MISC))    texture_maps[TM_MISC_TYPE] = model_interp_get_texture(misc_map, base_frametime);
 			}
 		} else {
 			alpha = forced_alpha;
@@ -1150,7 +1158,7 @@ void model_render_buffers(model_draw_list* scene, model_material *rendering_mate
 			}
 		}
 
-		if ( (texture_maps[TM_BASE_TYPE] == -1) && !no_texturing ) {
+		if ( (texture_maps[TM_BASE_TYPE] == -1) && !no_texturing && !(debug_flags & MR_DEBUG_NO_DIFFUSE) ) {
 			continue;
 		}
 
@@ -2846,4 +2854,9 @@ void model_render_queue(model_render_params *interp, model_draw_list *scene, int
 			model_queue_render_thrusters( interp, pm, objnum, shipp, orient, pos );
 		}
 	}
+}
+
+void model_render_set_wireframe_color(color* clr)
+{
+	Wireframe_color = *clr;
 }

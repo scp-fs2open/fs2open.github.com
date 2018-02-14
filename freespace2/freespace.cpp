@@ -3463,7 +3463,7 @@ void game_render_frame( camid cid )
 
 	render_shields();
 
-	trail_render_all();						// render missilie trails after everything else.
+	if (!Trail_render_override) trail_render_all();						// render missilie trails after everything else.
 	particle::render_all();					// render particles after everything else.
 	
 #ifdef DYN_CLIP_DIST
@@ -4662,14 +4662,6 @@ int game_poll()
 //	if ( k ) nprintf(( "General", "Key = %x\n", k ));
 
 	switch (k) {
-		case KEY_DEBUGGED + KEY_BACKSP:
-			if(!(Game_mode & GM_MULTIPLAYER))
-			{
-				gameseq_post_event(GS_EVENT_LAB);
-				k = 0;
-			}
-			break;
-
 		case KEY_F1:
 			launch_context_help();
 			k = 0;
