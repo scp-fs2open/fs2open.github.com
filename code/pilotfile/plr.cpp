@@ -139,9 +139,10 @@ void pilotfile::plr_read_hud()
 
 	HUD_config.rp_flags = cfread_int(cfp);
 	HUD_config.rp_dist = cfread_int(cfp);
-	if (HUD_config.rp_dist < 0 || HUD_config.rp_dist >= RR_MAX_RANGES)
-		Error(LOCATION, "Player file has invalid radar range %d\n", HUD_config.rp_dist);
-
+	if (HUD_config.rp_dist < 0 || HUD_config.rp_dist >= RR_MAX_RANGES) {
+		Warning(LOCATION, "Player file has invalid radar range %d, setting to default.\n", HUD_config.rp_dist);
+		HUD_config.rp_dist = RR_INFINITY;
+	}
 	// basic colors
 	HUD_config.main_color = cfread_int(cfp);
 	HUD_color_alpha = cfread_int(cfp);
