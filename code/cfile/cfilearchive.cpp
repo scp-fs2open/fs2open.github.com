@@ -74,18 +74,13 @@ int cfeof(CFILE *cfile)
 	Assert(cfile->id >= 0 && cfile->id < MAX_CFILE_BLOCKS);
 	cb = &Cfile_block_list[cfile->id];	
 
-	int result;
-
-	result = 0;
-
-	// cfeof() not supported for memory-mapped files
-	Assert( !cb->data );
-
-	Assert(cb->fp != NULL);
+	int result = 0;
 
 	#if defined(CHECK_POSITION) && !defined(NDEBUG)
-	auto raw_position = ftell(cb->fp) - cb->lib_offset;
-	Assert(raw_position == cb->raw_position);
+    if (cb->fp) {
+		auto raw_position = ftell(cb->fp) - cb->lib_offset;
+		Assert(raw_position == cb->raw_position);
+	}
 	#endif
 		
 	if (cb->raw_position >= cb->size ) {
@@ -109,14 +104,11 @@ int cftell( CFILE * cfile )
 	Assert(cfile->id >= 0 && cfile->id < MAX_CFILE_BLOCKS);
 	cb = &Cfile_block_list[cfile->id];	
 
-	// Doesn't work for memory mapped files
-	Assert( !cb->data );
-
-	Assert(cb->fp != NULL);
-
 	#if defined(CHECK_POSITION) && !defined(NDEBUG)
-	auto raw_position = ftell(cb->fp) - cb->lib_offset;
-	Assert(raw_position == cb->raw_position);
+    if (cb->fp) {
+		auto raw_position = ftell(cb->fp) - cb->lib_offset;
+		Assert(raw_position == cb->raw_position);
+	}
 	#endif
 
 	// The rest of the code still uses ints, do an overflow check to detect cases where this fails
@@ -141,8 +133,7 @@ int cfseek( CFILE *cfile, int offset, int where )
 
 
 	// TODO: seek to offset in memory mapped file
-	Assert( !cb->data );
-	Assert( cb->fp != NULL );
+	Assert( !cb->mem_mapped );
 	
 	size_t goal_position;
 
@@ -166,14 +157,22 @@ int cfseek( CFILE *cfile, int offset, int where )
 	// Make sure we don't seek beyond the end of the file
 	CAP(goal_position, cb->lib_offset, cb->lib_offset + cb->size);
 
-	int result = fseek(cb->fp, (long)goal_position, SEEK_SET );
-	Assertion(goal_position >= cb->lib_offset, "Invalid offset values detected while seeking! Goal was " SIZE_T_ARG ", lib_offset is " SIZE_T_ARG ".", goal_position, cb->lib_offset);
+	int result = 0;
+
+	if (cb->fp) {
+		// If we have a file pointer we can also seek in that file
+		result = fseek(cb->fp, (long)goal_position, SEEK_SET );
+		Assertion(goal_position >= cb->lib_offset, "Invalid offset values detected while seeking! Goal was " SIZE_T_ARG ", lib_offset is " SIZE_T_ARG ".", goal_position, cb->lib_offset);
+	}
+	// If we only have a data pointer this will do all the work
 	cb->raw_position = goal_position - cb->lib_offset;
 	Assertion(cb->raw_position <= cb->size, "Invalid raw_position value detected!");
 
 	#if defined(CHECK_POSITION) && !defined(NDEBUG)
-	auto tmp_offset = ftell(cb->fp) - cb->lib_offset;
-	Assert(tmp_offset==cb->raw_position);
+	if (cb->fp) {
+		auto tmp_offset = ftell(cb->fp) - cb->lib_offset;
+		Assert(tmp_offset == cb->raw_position);
+	}
 	#endif
 
 	return result;	
@@ -197,13 +196,6 @@ int cfread(void *buf, int elsize, int nelem, CFILE *cfile)
 
 	Cfile_block *cb = &Cfile_block_list[cfile->id];	
 
-	// cfread() not supported for memory-mapped files
-	if(cb->data != NULL)
-	{
-		Warning(LOCATION, "Writing is not supported for mem-mapped files");
-		return 0;
-	}
-
 	if ( (cb->raw_position+size) > cb->size ) {
 		Assertion(cb->raw_position <= cb->size, "Invalid raw_position value detected!");
 		size = cb->size - cb->raw_position;
@@ -222,15 +214,24 @@ int cfread(void *buf, int elsize, int nelem, CFILE *cfile)
 		}
 	}
 
-	size_t bytes_read = fread( buf, 1, size, cb->fp );
+	size_t bytes_read;
+	if (cb->data != nullptr) {
+		// This is a file from memory
+		bytes_read = size;
+		memcpy(buf, reinterpret_cast<const char*>(cb->data) + cb->raw_position, size);
+	} else {
+		bytes_read = fread( buf, 1, size, cb->fp );
+	}
 	if ( bytes_read > 0 )	{
 		cb->raw_position += bytes_read;
 		Assertion(cb->raw_position <= cb->size, "Invalid raw_position value detected!");
 	}		
 
 	#if defined(CHECK_POSITION) && !defined(NDEBUG)
-	auto tmp_offset = ftell(cb->fp) - cb->lib_offset;
-	Assert(tmp_offset==cb->raw_position);
+    if (cb->fp) {
+		auto tmp_offset = ftell(cb->fp) - cb->lib_offset;
+		Assert(tmp_offset==cb->raw_position);
+	}
 	#endif
 
 	return (int)(bytes_read / elsize);
@@ -254,14 +255,31 @@ int cfread_lua_number(double *buf, CFILE *cfile)
 		return 0;
 	}
 
-	long orig_pos = ftell(cb->fp);
-	int items_read = fscanf(cb->fp, LUA_NUMBER_SCAN, buf);
-	cb->raw_position += ftell(cb->fp)-orig_pos;
+	size_t advance = 0;
+	int items_read;
+	if (cb->fp) {
+		long orig_pos = ftell(cb->fp);
+		items_read = fscanf(cb->fp, LUA_NUMBER_SCAN, buf);
+		advance = (size_t) (ftell(cb->fp)-orig_pos);
+	} else {
+		int read;
+		// %n returns the number of bytes currently read so we append that to the scan format at the end so it will return
+		// how many bytes we have consumed
+		items_read = sscanf(reinterpret_cast<const char*>(cb->data), LUA_NUMBER_SCAN "%n", buf, &read);
+		if (items_read == 2) {
+			// We need to correct the items read counter since we read one additional item
+			items_read = 1;
+		}
+		advance = (size_t) read;
+	}
+	cb->raw_position += advance;
 	Assertion(cb->raw_position <= cb->size, "Invalid raw_position value detected!");
 
 	#if defined(CHECK_POSITION) && !defined(NDEBUG)
-	auto tmp_offset = ftell(cb->fp) - cb->lib_offset;
-	Assert(tmp_offset==cb->raw_position);
+    if (cb->fp) {
+		auto tmp_offset = ftell(cb->fp) - cb->lib_offset;
+		Assert(tmp_offset==cb->raw_position);
+	}
 	#endif
 
 	return items_read;
