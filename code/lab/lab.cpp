@@ -141,47 +141,6 @@ void labviewer_update_flags_window();
 
 
 // ---------------------- General/Utility Functions ----------------------------
-void labviewer_change_bitmap(int ship_index = -1, int weapon_index = -1)
-{
-	if ((ship_index < 0) && (weapon_index < 0)) {
-		if (Lab_bitmap_id >= 0) {
-			bm_release(Lab_bitmap_id);
-			if (Lab_last_selected_weapon >= 0) {
-				Weapon_info[Lab_last_selected_weapon].laser_bitmap.first_frame = -1;
-			}
-			Lab_bitmap_id = -1;
-			Lab_last_selected_weapon = -1;
-		}
-
-		return;
-	}
-
-	if (ship_index >= 0) {
-		// TODO:  Ship stuff!!
-	}
-	else if (weapon_index >= 0) {
-		// release old bitmap if required
-		if ((Lab_last_selected_weapon >= 0) && (Lab_last_selected_weapon != weapon_index)) {
-			Weapon_info[Lab_last_selected_weapon].laser_bitmap.first_frame = -1;
-			if (Lab_bitmap_id >= 0) {
-				bm_release(Lab_bitmap_id);
-			}
-		}
-		// load up the weapon bitmaps
-		extern void weapon_load_bitmaps(int);
-		weapon_load_bitmaps(weapon_index);
-		Lab_bitmap_id = Weapon_info[weapon_index].laser_bitmap.first_frame;
-	}
-
-	if (Lab_bitmap_id >= 0) {
-		bm_get_filename(Lab_bitmap_id, Lab_bitmap_filename);
-	}
-	else {
-		memset(Lab_bitmap_filename, 0, sizeof(Lab_bitmap_filename));
-	}
-
-	labviewer_update_flags_window();
-}
 
 void rotate_view(int dx, int dy)
 {
@@ -420,26 +379,32 @@ void labviewer_render_model(float frametime)
 		obj->orient = Lab_model_orient;
 
 		Envmap_override = Lab_Envmap_override;
-		Ships[obj->instance].flags.set(Ship::Ship_Flags::Rotators_locked, !Lab_rotate_subobjects);
-		Ships[obj->instance].flags.set(Ship::Ship_Flags::Draw_as_wireframe, Lab_render_wireframe);
-		Ships[obj->instance].flags.set(Ship::Ship_Flags::Render_full_detail, Lab_render_show_detail);
-		Ships[obj->instance].flags.set(Ship::Ship_Flags::Render_without_light, Lab_render_without_light);
-		Ships[obj->instance].flags.set(Ship::Ship_Flags::Render_without_diffuse, Lab_Basemap_override);
-		Ships[obj->instance].flags.set(Ship::Ship_Flags::Render_without_glowmap, Lab_Glowmap_override);
-		Ships[obj->instance].flags.set(Ship::Ship_Flags::Render_without_normalmap, Lab_Normalmap_override);
-		Ships[obj->instance].flags.set(Ship::Ship_Flags::Render_without_specmap, Lab_Specmap_override);
-		Ships[obj->instance].flags.set(Ship::Ship_Flags::Render_without_heightmap, Lab_Heightmap_override);
-		Ships[obj->instance].flags.set(Ship::Ship_Flags::Render_without_miscmap, Lab_Miscmap_override);
 
-		ship_process_post(obj, frametime);
-		ship_model_update_instance(obj);
+		if (Lab_mode == LAB_MODE_SHIP) {
+			Ships[obj->instance].flags.set(Ship::Ship_Flags::Rotators_locked, !Lab_rotate_subobjects);
+			Ships[obj->instance].flags.set(Ship::Ship_Flags::Draw_as_wireframe, Lab_render_wireframe);
+			Ships[obj->instance].flags.set(Ship::Ship_Flags::Render_full_detail, Lab_render_show_detail);
+			Ships[obj->instance].flags.set(Ship::Ship_Flags::Render_without_light, Lab_render_without_light);
+			Ships[obj->instance].flags.set(Ship::Ship_Flags::Render_without_diffuse, Lab_Basemap_override);
+			Ships[obj->instance].flags.set(Ship::Ship_Flags::Render_without_glowmap, Lab_Glowmap_override);
+			Ships[obj->instance].flags.set(Ship::Ship_Flags::Render_without_normalmap, Lab_Normalmap_override);
+			Ships[obj->instance].flags.set(Ship::Ship_Flags::Render_without_specmap, Lab_Specmap_override);
+			Ships[obj->instance].flags.set(Ship::Ship_Flags::Render_without_heightmap, Lab_Heightmap_override);
+			Ships[obj->instance].flags.set(Ship::Ship_Flags::Render_without_miscmap, Lab_Miscmap_override);
 
-		Ships[obj->instance].team_name = Lab_team_color;
+			ship_process_post(obj, frametime);
+			ship_model_update_instance(obj);
+
+			Ships[obj->instance].team_name = Lab_team_color;
+		}
+		else if (Lab_mode == LAB_MODE_WEAPON) 
+		{
+		}
 
 		if (Lab_render_wireframe)
 			model_render_set_wireframe_color(&Color_white);
 
-		if (Lab_render_show_thrusters) {
+		if (Lab_render_show_thrusters && Lab_mode == LAB_MODE_SHIP) {
 			obj->phys_info.forward_thrust = 1.0f;
 			Ships[obj->instance].flags.remove(Ship::Ship_Flags::No_thrusters);
 
@@ -450,7 +415,9 @@ void labviewer_render_model(float frametime)
 		}
 		else {
 			obj->phys_info.forward_thrust = 0.0f;
-			Ships[obj->instance].flags.set(Ship::Ship_Flags::No_thrusters);
+
+			if (Lab_mode == LAB_MODE_SHIP)
+				Ships[obj->instance].flags.set(Ship::Ship_Flags::No_thrusters);
 		}
 
 		Trail_render_override = true;
@@ -478,16 +445,8 @@ void labviewer_do_render(float frametime)
 
 	int w, h;
 
-	if ((Lab_model_num < 0) && (Lab_bitmap_id < 0)) {
-		gr_get_string_size(&w, &h, "Viewer off");
-		gr_set_color_fast(&Color_white);
-		gr_string(gr_screen.center_offset_x + gr_screen.center_w - w, gr_screen.center_offset_y + gr_screen.center_h - h, "Viewer off", GR_RESIZE_NONE);
-
-		return;
-	}
-
 	// render our particular thing
-	if (Lab_model_num >= 0) {
+	if (Lab_selected_object >= 0) {
 		labviewer_render_model(frametime);
 
 		// print out the current pof filename, to help with... something
@@ -552,7 +511,6 @@ void labviewer_close_class_window(GUIObject *caller)
 
 	// reset any existing model/bitmap that is showing
 	labviewer_change_model(NULL);
-	labviewer_change_bitmap(-1, -1);
 }
 
 void labviewer_set_class_window(int mode)
@@ -580,7 +538,6 @@ void labviewer_set_class_window(int mode)
 
 	// reset any existing model/bitmap that is showing
 	labviewer_change_model(NULL);
-	labviewer_change_bitmap(-1, -1);
 }
 
 
@@ -1457,9 +1414,6 @@ void labviewer_change_ship_lod(Tree* caller)
 
 		// reset any existing model/bitmap that is showing
 		labviewer_change_model(NULL);
-		labviewer_change_bitmap(-1, -1);
-
-		The_mission.ai_profile = &Ai_profiles[Default_ai_profile];
 	}
 	else
 	{
@@ -1518,25 +1472,14 @@ void labviewer_change_weapon(Tree *caller)
 	int weap_index = (int)(caller->GetSelectedItem()->GetData());
 	Assert(weap_index >= 0);
 
+	if (Lab_selected_object != -1)
+		obj_delete(Lab_selected_object);
+
 	if (!(Weapon_info[weap_index].wi_flags[Weapon::Info_Flags::Beam])) {
-		switch (Weapon_info[weap_index].render_type) {
-		case WRT_POF:
-			labviewer_change_bitmap(-1, -1);
-			labviewer_change_model(Weapon_info[weap_index].pofbitmap_name, 0, weap_index);
-			weapon_load_bitmaps(weap_index);
-			break;
-
-		case WRT_LASER:
-			labviewer_change_model(NULL);
-			labviewer_change_bitmap(-1, weap_index);
-			break;
-
-		default:
-			labviewer_change_model(NULL);
-			labviewer_change_bitmap(-1, -1);
-			break;
-		}
+		Lab_selected_object = weapon_create(&vmd_zero_vector, &vmd_identity_matrix, weap_index, -1);
 	}
+
+	lab_cam_distance = Objects[Lab_selected_object].radius * 20.0f;
 
 	Lab_selected_index = weap_index;
 	Lab_last_selected_weapon = Lab_selected_index;
@@ -1544,6 +1487,7 @@ void labviewer_change_weapon(Tree *caller)
 	labviewer_update_desc_window();
 	labviewer_update_flags_window();
 	labviewer_update_variables_window();
+	labviewer_recalc_camera();
 }
 
 // weapon window create function
@@ -1942,10 +1886,9 @@ void lab_init()
 	// start filling the main toolbar
 	x = 0;
 	cbp = Lab_toolbar->AddChild(new Button("Ships", x, 0, labviewer_make_ship_window));
-
-	// Weapon renderer disabled for now
-	//x += cbp->GetWidth() + 10;
-	//cbp = Lab_toolbar->AddChild(new Button("Weapons", x, 0, labviewer_make_weap_window));
+	
+	x += cbp->GetWidth() + 10;
+	cbp = Lab_toolbar->AddChild(new Button("Weapons", x, 0, labviewer_make_weap_window));
 
 	x += cbp->GetWidth() + 10;
 	cbp = Lab_toolbar->AddChild(new Button("Render Options", x, 0, labviewer_make_render_options_window));
@@ -2000,6 +1943,9 @@ void lab_init()
 
 	Lab_Save_Missiontime = Missiontime;
 	gr_init_alphacolor(&HUD_color_debug, 128, 255, 128, HUD_color_alpha * 16);
+
+	if (The_mission.ai_profile == nullptr)
+		The_mission.ai_profile = &Ai_profiles[Default_ai_profile];
 }
 
 #include "controlconfig/controlsconfig.h"
