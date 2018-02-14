@@ -17907,7 +17907,7 @@ float ArmorType::GetDamage(float damage_applied, int in_damage_type_idx, float d
 
 		// Face: negative damages should not heal you!!!
 		if (damage_applied < 0.0f)
-			damage_applied = 0;
+			damage_applied = 0.0f;
 
 		return damage_applied;
 	}
