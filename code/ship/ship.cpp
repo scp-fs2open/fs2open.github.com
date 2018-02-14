@@ -18406,11 +18406,11 @@ int ship_get_sound(object *objp, GameSoundsIndex id)
 	Assert( objp != NULL );
 	Assert( gamesnd_game_sound_valid(id) );
 
-	// ugh, it's possible that we're an observer at this point
-	if (objp->type == OBJ_OBSERVER)
+	// It's possible that this gets called when an object (in most cases the player) is dead or an observer
+	if (objp->type == OBJ_OBSERVER || objp->type == OBJ_GHOST)
 		return id;
 
-	Assert( objp->type == OBJ_SHIP );
+	Assertion(objp->type == OBJ_SHIP, "Expected a ship, got '%s'.", Object_type_names[objp->type]);
 
 	ship *shipp = &Ships[objp->instance];
 	ship_info *sip = &Ship_info[shipp->ship_info_index];
@@ -18428,7 +18428,11 @@ bool ship_has_sound(object *objp, GameSoundsIndex id)
 	Assert( objp != NULL );
 	Assert( gamesnd_game_sound_valid(id) );
 
-	Assert( objp->type == OBJ_SHIP );
+	// It's possible that this gets called when an object (in most cases the player) is dead or an observer
+	if (objp->type == OBJ_OBSERVER || objp->type == OBJ_GHOST)
+		return false;
+
+	Assertion(objp->type == OBJ_SHIP, "Expected a ship, got '%s'.", Object_type_names[objp->type]);
 
 	ship *shipp = &Ships[objp->instance];
 	ship_info *sip = &Ship_info[shipp->ship_info_index];

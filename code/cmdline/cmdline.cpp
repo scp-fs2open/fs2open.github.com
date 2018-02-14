@@ -314,7 +314,6 @@ cmdline_parm spec_static_arg("-spec_static", "Adjusts suns contribution to specu
 cmdline_parm spec_point_arg("-spec_point", "Adjusts laser weapons contribution to specular highlights", AT_FLOAT);
 cmdline_parm spec_tube_arg("-spec_tube", "Adjusts beam weapons contribution to specular highlights", AT_FLOAT);
 cmdline_parm ambient_factor_arg("-ambient_factor", "Adjusts ambient light applied to all parts of a ship", AT_INT);		// Cmdline_ambient_factor
-cmdline_parm missile_lighting_arg("-missile_lighting", NULL, AT_NONE);	// Cmdline_missile_lighting
 cmdline_parm env("-noenv", NULL, AT_NONE);								// Cmdline_env
 cmdline_parm glow_arg("-noglow", NULL, AT_NONE); 						// Cmdline_glow  -- use Bobs glow code
 cmdline_parm nomotiondebris_arg("-nomotiondebris", NULL, AT_NONE);		// Cmdline_nomotiondebris  -- Removes those ugly floating rocks -C
@@ -342,7 +341,6 @@ float Cmdline_ogl_spec = 80.0f;
 int Cmdline_ambient_factor = 128;
 int Cmdline_env = 1;
 int Cmdline_mipmap = 0;
-int Cmdline_missile_lighting = 0;
 int Cmdline_glow = 1;
 int Cmdline_nomotiondebris = 0;
 int Cmdline_noscalevid = 0;
@@ -546,6 +544,7 @@ cmdline_parm deprecated_jpgtga_arg("-jpgtga", "Deprecated", AT_NONE);
 cmdline_parm deprecated_htl_arg("-nohtl", "Deprecated", AT_NONE);
 cmdline_parm deprecated_brieflighting_arg("-brief_lighting", "Deprecated", AT_NONE);
 cmdline_parm deprecated_sndpreload_arg("-snd_preload", "Deprecated", AT_NONE);
+cmdline_parm deprecated_missile_lighting_arg("-missile_lighting", "Deprecated", AT_NONE);
 
 int Cmdline_deprecated_spec = 0;
 int Cmdline_deprecated_glow = 0;
@@ -555,6 +554,7 @@ int Cmdline_deprecated_tbp = 0;
 int Cmdline_deprecated_jpgtga = 0;
 int Cmdline_deprecated_nohtl = 0;
 bool Cmdline_deprecated_brief_lighting = 0;
+bool Cmdline_deprecated_missile_lighting = false;
 
 #ifndef NDEBUG
 // NOTE: this assumes that os_init() has already been called but isn't a fatal error if it hasn't
@@ -619,6 +619,11 @@ void cmdline_debug_print_cmdline()
 	if(Cmdline_deprecated_brief_lighting == 1)
 	{
 		mprintf(("Deprecated flag '-brief_lighting' found. Please remove from your cmdline.\n"));
+	}
+
+	if (Cmdline_deprecated_missile_lighting) 
+	{
+		mprintf(("Deprecated flag '-missile_lighting' found. Please remove from your cmdline.\n"));
 	}
 }
 #endif
@@ -1980,9 +1985,6 @@ bool SetCmdlineParams()
 	if ( rearm_timer_arg.found() )
 		Cmdline_rearm_timer = 1;
 
-	if ( missile_lighting_arg.found() )
-		Cmdline_missile_lighting = 1;
-
 	if ( save_render_targets_arg.found() )
 		Cmdline_save_render_targets = 1;
 	
@@ -2135,6 +2137,11 @@ bool SetCmdlineParams()
 	if ( deprecated_brieflighting_arg.found() )
 	{
 		Cmdline_deprecated_brief_lighting = 1;
+	}
+
+	if (deprecated_missile_lighting_arg.found())
+	{
+		Cmdline_deprecated_missile_lighting = true;
 	}
 
 	return true; 

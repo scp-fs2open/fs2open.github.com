@@ -7,9 +7,6 @@
  *
 */
 
-
-
-
 #include <math/bitarray.h>
 #include "cmdline/cmdline.h"
 #include "globalincs/pstypes.h"
@@ -34,12 +31,11 @@ struct gr_light
 	float SpotExp, SpotCutOff;
 	float ConstantAtten, LinearAtten, QuadraticAtten;
 
-	bool occupied;
 	int type;
 };
 
 // Variables
-gr_light* gr_lights = NULL;
+SCP_vector<gr_light> gr_lights;
 graphics::model_light gr_light_uniforms[graphics::MAX_UNIFORM_LIGHTS];
 
 int Num_active_gr_lights = 0;
@@ -203,20 +199,15 @@ static bool sort_active_lights(const gr_light& la, const gr_light& lb) {
 
 static void pre_render_init_lights() {
 	// sort the lights to try and get the most visible lights on the first pass
-	std::sort(gr_lights, gr_lights + Num_active_gr_lights, sort_active_lights);
+	std::sort(gr_lights.begin(), gr_lights.end(), sort_active_lights);
 }
 
 void gr_set_light(light* fs_light) {
-	if (Num_active_gr_lights >= MAX_LIGHTS) {
-		return;
-	}
-
-//if (fs_light->type == LT_POINT)
-//	return;
-
 	// init the light
-	FSLight2GLLight(fs_light, &gr_lights[Num_active_gr_lights]);
-	gr_lights[Num_active_gr_lights++].occupied = true;
+	gr_light grl;
+	FSLight2GLLight(fs_light, &grl);
+	gr_lights.push_back(grl);
+	Num_active_gr_lights++;
 }
 
 void gr_set_center_alpha(int type) {
@@ -240,7 +231,8 @@ void gr_set_center_alpha(int type) {
 		glight.Ambient.xyzw.x = gr_screen.current_alpha;
 		glight.Ambient.xyzw.y = gr_screen.current_alpha;
 		glight.Ambient.xyzw.z = gr_screen.current_alpha;
-	} else {
+	}
+	else {
 		glight.Diffuse.xyzw.x = gr_screen.current_alpha;
 		glight.Diffuse.xyzw.y = gr_screen.current_alpha;
 		glight.Diffuse.xyzw.z = gr_screen.current_alpha;
@@ -272,28 +264,20 @@ void gr_set_center_alpha(int type) {
 	glight.ConstantAtten = 1.0f;
 	glight.LinearAtten = 0.0f;
 	glight.QuadraticAtten = 0.0f;
-	glight.occupied = false;
 
 	// first light
-	memcpy(&gr_lights[Num_active_gr_lights], &glight, sizeof(gr_light));
-	gr_lights[Num_active_gr_lights++].occupied = true;
+	gr_lights.push_back(glight);
 
 	// second light
 	glight.Position.xyzw.x = dir.xyz.x;
 	glight.Position.xyzw.y = dir.xyz.y;
 	glight.Position.xyzw.z = dir.xyz.z;
 
-	memcpy(&gr_lights[Num_active_gr_lights], &glight, sizeof(gr_light));
-	gr_lights[Num_active_gr_lights++].occupied = true;
+	gr_lights.push_back(glight);
 }
 
 void gr_reset_lighting() {
-	int i;
-
-	for (i = 0; i < (int)graphics::MAX_UNIFORM_LIGHTS; i++) {
-		gr_lights[i].occupied = false;
-	}
-
+	gr_lights.clear();
 	Num_active_gr_lights = 0;
 }
 
@@ -302,25 +286,14 @@ void gr_calculate_ambient_factor(int ambient_factor) {
 }
 
 void gr_light_shutdown() {
-	if (gr_lights != NULL) {
-		vm_free(gr_lights);
-		gr_lights = NULL;
-	}
+	gr_lights.clear();
 }
 
 void gr_light_init() {
 	gr_calculate_ambient_factor();
 
 	// allocate memory for enabled lights
-	if (gr_lights == NULL) {
-		gr_lights = (gr_light*) vm_malloc(MAX_LIGHTS * sizeof(gr_light), memory::quiet_alloc);
-	}
-
-	if (gr_lights == NULL) {
-		Error(LOCATION, "Unable to allocate memory for lights!\n");
-	}
-
-	memset(gr_lights, 0, MAX_LIGHTS * sizeof(gr_light));
+	gr_lights.reserve(MAX_LIGHTS);
 }
 
 void gr_set_lighting(bool set, bool state) {
@@ -341,9 +314,10 @@ void gr_set_lighting(bool set, bool state) {
 			break;
 		}
 
-		if (gr_lights[i].occupied) {
-			set_light(i, &gr_lights[i]);
-		}
+		if (gr_lights[i].type != LT_DIRECTIONAL)
+			continue;
+
+		set_light(i, &gr_lights[i]);
 	}
 
 	gr_light zero;

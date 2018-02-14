@@ -1914,14 +1914,15 @@ int bm_load_sub_slow(const char *real_filename, const int num_ext, const char **
 	char full_path[MAX_PATH];
 	size_t size = 0, offset = 0;
 	int rval = -1;
+	const void* file_data = nullptr;
 
-	rval = cf_find_file_location_ext(real_filename, num_ext, ext_list, dir_type, sizeof(full_path) - 1, full_path, &size, &offset, 0);
+	rval = cf_find_file_location_ext(real_filename, num_ext, ext_list, dir_type, sizeof(full_path) - 1, full_path, &size, &offset, 0, &file_data);
 
 	// could not be found, or is invalid for some reason
 	if ((rval < 0) || (rval >= num_ext))
 		return -1;
 
-	CFILE *test = cfopen_special(full_path, "rb", size, offset, dir_type);
+	CFILE *test = cfopen_special(full_path, "rb", size, offset, file_data, dir_type);
 
 	if (test != NULL) {
 		if (img_cfp != NULL)

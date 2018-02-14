@@ -2852,6 +2852,8 @@ const char* get_lookup_type_name(int lookup_type)
 // For example, (1) () (1 2 3) ( 1 ) are legal integer lists.
 int stuff_int_list(int *ilp, int max_ints, int lookup_type)
 {
+	Assertion(max_ints > 0, "Requested to parse an integer list with a maximum of 0 entries!");
+
 	int	count = 0, ok_flag = 1, dummy;
 	ignore_white_space();
 
@@ -2864,7 +2866,6 @@ int stuff_int_list(int *ilp, int max_ints, int lookup_type)
 	ignore_white_space();
 
 	while (*Mp != ')') {
-		Assertion(count < max_ints, "Too many entries in integer list. Expected %d, found %d.\nList type was %s", max_ints, count+1, get_lookup_type_name(lookup_type));
 		if (*Mp == '"') {
 			int num = 0;
 			char str[128];
@@ -2906,10 +2907,10 @@ int stuff_int_list(int *ilp, int max_ints, int lookup_type)
 
 			if (ok_flag) {
 				if (num == -1) {
-					Error(LOCATION, "Unable to find string \"%s\" in stuff_int_list\n\nMany possible sources for this error.  Get a programmer!\n", str);
+					error_display(1, "Unable to find string \"%s\" in stuff_int_list\n\nMany possible sources for this error.  Get a programmer!\n", str);
 				} else if (num == -2) {
 					if (str[0] != '\0') {
-						Warning(LOCATION, "Unable to find WEAPON_LIST_TYPE string \"%s\" in stuff_int_list\n\nMany possible sources for this error.  Get a programmer!\n", str);
+						error_display(0, "Unable to find WEAPON_LIST_TYPE string \"%s\" in stuff_int_list\n\nMany possible sources for this error.  Get a programmer!\n", str);
 					}
 				}
 
@@ -2917,21 +2918,31 @@ int stuff_int_list(int *ilp, int max_ints, int lookup_type)
 					num = -1;
 
 				if (count < max_ints) {
-					ilp[count++] = num;
+					ilp[count] = num;
 				}
+				++count;
 			}
 
 		} else {
 			if (ok_flag && (count < max_ints))
-				stuff_int(&ilp[count++]);
+				stuff_int(&ilp[count]);
 			else
 				stuff_int(&dummy);
+			++count;
 		}
 
 		ignore_white_space();
 	}
 
 	Mp++;
+
+	if (count > max_ints) {
+		error_display(0,
+					  "Too many entries in integer list. Expected %d, found %d.\nList type was %s",
+					  max_ints,
+					  count,
+					  get_lookup_type_name(lookup_type));
+	}
 
 	return count;
 }
