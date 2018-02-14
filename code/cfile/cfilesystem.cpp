@@ -852,6 +852,12 @@ void cf_search_memory_root(int root_index) {
 
 	auto default_files = defaults_get_all();
 	for (auto& default_file : default_files) {
+		// Pure built in files have an empty path_type string
+		if (strlen(default_file.path_type) <= 0) {
+			// Ignore pure builtin files. They should only be accessible with defaults_get_file
+			continue;
+		}
+
 		int pathtype = -1;
 		for (int i = 0; i < CF_MAX_PATH_TYPES; ++i) {
 			if (Pathtypes[i].path == nullptr) {
