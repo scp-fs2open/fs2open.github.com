@@ -112,13 +112,13 @@ extern vec3d Object_position;
 static void light_rotate(light * l)
 {
 	switch( l->type )	{
-	case LT_DIRECTIONAL:
+	case Light_Type::Directional:
 		// Rotate the light direction into local coodinates
 		
 		vm_vec_rotate(&l->local_vec, &l->vec, &Light_matrix );
 		break;
 	
-	case LT_POINT:	{
+	case Light_Type::Point:	{
 			vec3d tempv;
 			// Rotate the point into local coordinates
 	
@@ -127,7 +127,7 @@ static void light_rotate(light * l)
 		}
 		break;
 	
-	case LT_TUBE:{
+	case Light_Type::Tube:{
 			vec3d tempv;
 
 			// Rotate the point into local coordinates
@@ -140,7 +140,7 @@ static void light_rotate(light * l)
 		}
 		break;
 
-	case LT_CONE:
+	case Light_Type::Cone:
 			break;
 
 	default:
@@ -162,7 +162,7 @@ void light_add_directional(const vec3d *dir, float intensity, float r, float g, 
 
 	light l;
 
-	l.type = LT_DIRECTIONAL;
+	l.type = Light_Type::Directional;
 
 	vm_vec_copy_scale( &l.vec, dir, -1.0f );
 
@@ -205,7 +205,7 @@ void light_add_point(const vec3d *pos, float r1, float r2, float intensity, floa
 	
 	Num_lights++;
 
-	l.type = LT_POINT;
+	l.type = Light_Type::Point;
 	l.vec = *pos;
 	l.r = r;
 	l.g = g;
@@ -243,7 +243,7 @@ void light_add_point_unique(const vec3d *pos, float r1, float r2, float intensit
 
 	Num_lights++;
 
-	l.type = LT_POINT;
+	l.type = Light_Type::Point;
 	l.vec = *pos;
 	l.r = r;
 	l.g = g;
@@ -283,7 +283,7 @@ void light_add_tube(const vec3d *p0, const vec3d *p1, float r1, float r2, float 
 
 	Num_lights++;
 
-	l.type = LT_TUBE;
+	l.type = Light_Type::Tube;
 	l.vec = *p0;
 	l.vec2 = *p1;
 	l.r = r;
@@ -408,12 +408,12 @@ void light_apply_rgb( ubyte *param_r, ubyte *param_g, ubyte *param_b, const vec3
 		dist = -1.0f;
 		switch(l.type){
 		// point lights
-		case LT_POINT:			
+		case Light_Type::Point:
 			vm_vec_sub( &to_light, &l.local_vec, pos );
 			break;
 
 		// tube lights
-		case LT_TUBE:						
+		case Light_Type::Tube:
 			if(vm_vec_dist_to_line(pos, &l.local_vec, &l.local_vec2, &temp, &dist) != 0){
 				continue;
 			}
@@ -421,10 +421,10 @@ void light_apply_rgb( ubyte *param_r, ubyte *param_g, ubyte *param_b, const vec3
 			dist *= dist;	// since we use radius squared
 			break;
 
-		case LT_DIRECTIONAL:
+		case Light_Type::Directional:
 			continue;
 
-		case LT_CONE:
+		case Light_Type::Cone:
 			continue;
 
 		// others. BAD
@@ -501,7 +501,7 @@ void light_add_cone(const vec3d *pos, const vec3d *dir, float angle, float inner
 
 	Num_lights++;
 
-	l.type = LT_CONE;
+	l.type = Light_Type::Cone;
 	l.vec = *pos;
 	l.vec2= *dir;
 	l.cone_angle = angle;
@@ -536,7 +536,7 @@ void scene_lights::addLight(const light *light_ptr)
 
 	AllLights.push_back(*light_ptr);
 
-	if ( light_ptr->type == LT_DIRECTIONAL ) {
+	if ( light_ptr->type == Light_Type::Directional ) {
 		StaticLightIndices.push_back(AllLights.size() - 1);
 	}
 }
@@ -550,9 +550,9 @@ void scene_lights::setLightFilter(int objnum, const vec3d *pos, float rad)
 
 	for ( auto& l : AllLights ) {
 		switch ( l.type ) {
-			case LT_DIRECTIONAL:
+			case Light_Type::Directional:
 				continue;
-			case LT_POINT: {
+			case Light_Type::Point: {
 				// if this is a "unique" light source, it only affects one guy
 				if ( l.affected_objnum >= 0 ) {
 					if ( objnum == l.affected_objnum ) {
@@ -583,7 +583,7 @@ void scene_lights::setLightFilter(int objnum, const vec3d *pos, float rad)
 				}
 			}
 			break;
-			case LT_TUBE: {
+			case Light_Type::Tube: {
 				if ( l.light_ignore_objnum != objnum ) {
 					vec3d nearest;
 					float dist_squared, max_dist_squared;
@@ -599,7 +599,7 @@ void scene_lights::setLightFilter(int objnum, const vec3d *pos, float rad)
 			}
 			break;
 
-			case LT_CONE:
+			case Light_Type::Cone:
 				break;
 
 			default:

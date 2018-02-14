@@ -62,7 +62,7 @@ void FSLight2GLLight(light* FSLight, gr_light* GLLight) {
 	GLLight->Specular.xyzw.z = FSLight->spec_b * FSLight->intensity;
 	GLLight->Specular.xyzw.w = 1.0f;
 
-	GLLight->type = FSLight->type;
+	GLLight->type = static_cast<int>(FSLight->type);
 
 	// GL default values...
 	// spot direction
@@ -85,7 +85,7 @@ void FSLight2GLLight(light* FSLight, gr_light* GLLight) {
 
 
 	switch (FSLight->type) {
-	case LT_POINT: {
+	case Light_Type::Point: {
 		// this crap still needs work...
 		GLLight->ConstantAtten = 1.0f;
 		GLLight->LinearAtten = (1.0f / MAX(FSLight->rada, FSLight->radb)) * 1.25f;
@@ -97,7 +97,7 @@ void FSLight2GLLight(light* FSLight, gr_light* GLLight) {
 		break;
 	}
 
-	case LT_TUBE: {
+	case Light_Type::Tube: {
 		GLLight->ConstantAtten = 1.0f;
 		GLLight->LinearAtten = (1.0f / MAX(FSLight->rada, FSLight->radb)) * 1.25f;
 		GLLight->QuadraticAtten = (1.0f / MAX(FSLight->rada_squared, FSLight->radb_squared)) * 1.25f;
@@ -121,7 +121,7 @@ void FSLight2GLLight(light* FSLight, gr_light* GLLight) {
 		break;
 	}
 
-	case LT_DIRECTIONAL: {
+	case Light_Type::Directional: {
 		GLLight->Position.xyzw.x = -FSLight->vec.xyz.x;
 		GLLight->Position.xyzw.y = -FSLight->vec.xyz.y;
 		GLLight->Position.xyzw.z = -FSLight->vec.xyz.z;
@@ -134,11 +134,11 @@ void FSLight2GLLight(light* FSLight, gr_light* GLLight) {
 		break;
 	}
 
-	case LT_CONE:
+	case Light_Type::Cone:
 		break;
 
 	default:
-		Int3();
+		Error(LOCATION, "Unknown light type in FSLight2GLLight. Expected was 0, 1, 2 or 3, we got %i", FSLight->type);
 		break;
 	}
 }
