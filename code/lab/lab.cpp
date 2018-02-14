@@ -84,9 +84,6 @@ static int Lab_model_LOD = 0;
 static char Lab_model_filename[MAX_FILENAME_LEN];
 static char Lab_weaponmodel_filename[MAX_SHIP_WEAPONS][MAX_FILENAME_LEN];
 
-static int Lab_bitmap_id = -1;
-static char Lab_bitmap_filename[MAX_FILENAME_LEN];
-
 static vec3d Lab_model_pos = ZERO_VECTOR;
 
 static matrix Lab_model_orient = vmd_identity_matrix;
