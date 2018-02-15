@@ -686,6 +686,7 @@ extern bool ls_on;
 extern bool ls_force_off;
 void game_sunspot_process(float frametime)
 {
+	TRACE_SCOPE(tracing::SunspotProcess);
 	int n_lights, idx;
 	int sn_stage;
 	float Sun_spot_goal = 0.0f;

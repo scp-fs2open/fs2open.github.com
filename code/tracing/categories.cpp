@@ -63,6 +63,7 @@ Category DrawMotionDebris("Draw Motion debris", true);
 Category DrawBackground("Draw Background", true);
 Category DrawSuns("Draw Suns", true);
 Category DrawBitmaps("Draw Bitmaps", true);
+Category SunspotProcess("Process Sunspots", true);
 
 Category RepeatingEvents("Repeating events", false);
 Category NonrepeatingEvents("Nonrepeating events", false);

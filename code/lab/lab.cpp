@@ -302,6 +302,8 @@ void labviewer_render_model(float frametime)
 		sip = &Ship_info[Lab_selected_index];
 	}
 
+	light_reset();
+
 	// get correct revolution rate
 	rev_rate = REVOLUTION_RATE;
 
@@ -1637,7 +1639,6 @@ void labviewer_change_background_actual()
 	matrix skybox_orientation;
 
 	stars_pre_level_init(true);
-	light_reset();
 	vm_set_identity(&skybox_orientation);
 
 	// (DahBlount) - Remember to load the debris anims
