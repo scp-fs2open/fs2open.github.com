@@ -550,6 +550,7 @@ void scene_lights::setLightFilter(int objnum, const vec3d *pos, float rad)
 	for ( auto& l : AllLights ) {
 		switch ( l.type ) {
 			case Light_Type::Directional:
+				++i;
 				continue;
 			case Light_Type::Point: {
 				// if this is a "unique" light source, it only affects one guy
