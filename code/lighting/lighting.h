@@ -28,7 +28,7 @@
 #define LT_CONE			3		// A cone light, like a flood light
 
 enum class Light_Type : int {
-	Directional,// A light like a sun
+	Directional = 0,// A light like a sun
 	Point,		// A point light, like an explosion
 	Tube,		// A tube light, like a fluorescent light
 	Cone		// A cone light, like a flood light
