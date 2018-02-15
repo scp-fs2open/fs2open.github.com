@@ -1359,7 +1359,7 @@ void labviewer_make_ship_window(Button *caller)
 
 		ctip = cmp->AddItem(stip, it->name, (int)std::distance(Ship_info.cbegin(), it), false, labviewer_change_ship);
 		cmp->AddItem(ctip, "Model", 0, false, labviewer_change_ship_lod);
-		cmp->AddItem(ctip, "Debris", 99, false, labviewer_change_ship_lod);
+		//cmp->AddItem(ctip, "Debris", 99, false, labviewer_change_ship_lod);
 	}
 
 	// if any nodes are empty, just add a single "<none>" entry so we know that species doesn't have anything yet
