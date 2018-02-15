@@ -1823,12 +1823,17 @@ void labviewer_change_background(Tree* caller)
 	labviewer_change_background_actual();
 }
 
+void lab_background_window_close(GUIObject* caller) 
+{
+	Lab_background_window = NULL;
+}
+
 void labviewer_make_background_window(Button* caller)
 {
 	if (Lab_background_window != NULL) return;
 
 	Lab_background_window = (Window*)Lab_screen->Add(new Window("Mission Backgrounds", gr_screen.center_offset_x + 250, gr_screen.center_offset_y + 50));
-
+	Lab_background_window->SetCloseFunction(lab_background_window_close);
 	SCP_vector<SCP_string> missions;
 
 	cf_get_file_list(missions, CF_TYPE_MISSIONS, NOX("*.fs2"));
