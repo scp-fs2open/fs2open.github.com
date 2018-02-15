@@ -189,6 +189,8 @@ void gr_opengl_deferred_lighting_finish()
 				light_data->scale.xyz.y = l.radb * 1.53f;
 				light_data->scale.xyz.z = l.radb * 1.53f;
 				break;
+			case Light_Type::Directional:
+				break;
 			}
 		}
 
