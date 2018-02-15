@@ -1551,12 +1551,12 @@ void labviewer_make_weap_window(Button* caller)
 
 		cwip = cmp->AddItem(stip, Weapon_info[i].name, i, false, labviewer_change_weapon);
 
-		if (Weapon_info[i].tech_model[0] != '\0') {
-			cmp->AddItem(cwip, "Tech Model", 0, false, labviewer_show_tech_model);
-		}
-		if (Weapon_info[i].external_model_name[0] != '\0') {
-			cmp->AddItem(cwip, "External Model", 0, false, labviewer_show_external_model);
-		}
+		//if (Weapon_info[i].tech_model[0] != '\0') {
+		//	cmp->AddItem(cwip, "Tech Model", 0, false, labviewer_show_tech_model);
+		//}
+		//if (Weapon_info[i].external_model_name[0] != '\0') {
+		//	cmp->AddItem(cwip, "External Model", 0, false, labviewer_show_external_model);
+		//}
 	}
 
 	// Get rid of any empty nodes
