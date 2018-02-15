@@ -298,7 +298,7 @@ void labviewer_render_model(float frametime)
 
 	ship_info *sip = NULL;
 
-	if ((Lab_mode == LAB_MODE_SHIP) && (Lab_selected_index >= 0)) {
+	if (Lab_selected_object != -1 && (Objects[Lab_selected_object].type == OBJ_SHIP) && (Lab_selected_index >= 0)) {
 		sip = &Ship_info[Lab_selected_index];
 	}
 
@@ -377,7 +377,7 @@ void labviewer_render_model(float frametime)
 
 		Envmap_override = Lab_Envmap_override;
 
-		if (Lab_mode == LAB_MODE_SHIP) {
+		if (obj->type == OBJ_SHIP) {
 			Ships[obj->instance].flags.set(Ship::Ship_Flags::Rotators_locked, !Lab_rotate_subobjects);
 			Ships[obj->instance].flags.set(Ship::Ship_Flags::Draw_as_wireframe, Lab_render_wireframe);
 			Ships[obj->instance].flags.set(Ship::Ship_Flags::Render_full_detail, Lab_render_show_detail);
@@ -394,14 +394,14 @@ void labviewer_render_model(float frametime)
 
 			Ships[obj->instance].team_name = Lab_team_color;
 		}
-		else if (Lab_mode == LAB_MODE_WEAPON) 
+		else if (obj->type == OBJ_WEAPON) 
 		{
 		}
 
 		if (Lab_render_wireframe)
 			model_render_set_wireframe_color(&Color_white);
 
-		if (Lab_render_show_thrusters && Lab_mode == LAB_MODE_SHIP) {
+		if (Lab_render_show_thrusters && obj->type == OBJ_SHIP) {
 			obj->phys_info.forward_thrust = 1.0f;
 			Ships[obj->instance].flags.remove(Ship::Ship_Flags::No_thrusters);
 
@@ -413,7 +413,7 @@ void labviewer_render_model(float frametime)
 		else {
 			obj->phys_info.forward_thrust = 0.0f;
 
-			if (Lab_mode == LAB_MODE_SHIP)
+			if (obj->type == OBJ_SHIP)
 				Ships[obj->instance].flags.set(Ship::Ship_Flags::No_thrusters);
 		}
 
