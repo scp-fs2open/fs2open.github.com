@@ -1493,7 +1493,7 @@ void labviewer_change_weapon(Tree *caller)
 void labviewer_make_weap_window(Button* caller)
 {
 	GUIObject *cbp;
-	TreeItem *cwip, *stip;
+	TreeItem *stip;
 	int x;
 
 	if (Lab_mode == LAB_MODE_WEAPON) {
@@ -1551,7 +1551,7 @@ void labviewer_make_weap_window(Button* caller)
 			stip = type_nodes[Weapon_info[i].subtype];
 		}
 
-		cwip = cmp->AddItem(stip, Weapon_info[i].name, i, false, labviewer_change_weapon);
+		cmp->AddItem(stip, Weapon_info[i].name, i, false, labviewer_change_weapon);
 
 		//if (Weapon_info[i].tech_model[0] != '\0') {
 		//	cmp->AddItem(cwip, "Tech Model", 0, false, labviewer_show_tech_model);
