@@ -41,6 +41,7 @@ SCP_string Window_title;
 bool Unicode_text_mode;
 SCP_string Movie_subtitle_font;
 bool Enable_scripts_in_fred; // By default FRED does not initialize the scripting system
+SCP_string Window_icon_path;
 
 void parse_mod_table(const char *filename)
 {
@@ -72,6 +73,10 @@ void parse_mod_table(const char *filename)
 
 		if (optional_string("$Window title:")) {
 			stuff_string(Window_title, F_NAME);
+		}
+
+		if (optional_string("$Window icon:")) {
+			stuff_string(Window_icon_path, F_NAME);
 		}
 		
 		if (optional_string("$Unicode mode:")) {
@@ -409,4 +414,5 @@ void mod_table_reset() {
 	Unicode_text_mode = false;
 	Movie_subtitle_font = "font01.vf";
 	Enable_scripts_in_fred = false;
+	Window_icon_path = "app_icon_sse";
 }

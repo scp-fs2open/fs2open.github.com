@@ -756,5 +756,6 @@ int bmpman_count_bitmaps();
  */
 bool bm_validate_filename(const SCP_string& file, bool single_frame, bool animation);
 
+SDL_Surface* bm_to_sdl_surface(int handle);
 
 #endif
