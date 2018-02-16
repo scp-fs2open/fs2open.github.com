@@ -75,6 +75,7 @@ extern Category DrawMotionDebris;
 extern Category DrawBackground;
 extern Category DrawSuns;
 extern Category DrawBitmaps;
+extern Category SunspotProcess;
 
 extern Category RepeatingEvents;
 extern Category NonrepeatingEvents;

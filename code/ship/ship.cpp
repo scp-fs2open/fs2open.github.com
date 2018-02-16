@@ -8874,7 +8874,7 @@ void ship_process_post(object * obj, float frametime)
 
 	if(!(Game_mode & GM_STANDALONE_SERVER)) {
 		// Plot ship on the radar.  What about multiplayer ships?
-		if ( obj != Player_obj )			// don't plot myself.
+		if ( obj != Player_obj && Game_mode & GM_IN_MISSION )			// don't plot myself.
 			radar_plot_object( obj );
 
 		// MWA -- move the spark code to before the check for multiplayer master
@@ -8968,7 +8968,7 @@ void ship_process_post(object * obj, float frametime)
 		//rotate player subobjects since its processed by the ai functions
 		// AL 2-19-98: Fire turret for player if it exists
 		//WMC - changed this to call process_subobjects
-		if ( (obj->flags[Object::Object_Flags::Player_ship]) && !Player_use_ai )
+		if ((obj->flags[Object::Object_Flags::Player_ship]) && !Player_use_ai)
 		{
 			ai_info *aip = &Ai_info[Ships[obj->instance].ai_index];
 			if (aip->ai_flags[AI::AI_Flags::Being_repaired, AI::AI_Flags::Awaiting_repair])
@@ -8979,7 +8979,8 @@ void ship_process_post(object * obj, float frametime)
 						return;
 				}
 			}
-			process_subobjects(OBJ_INDEX(obj));
+			if (!shipp->flags[Ship::Ship_Flags::Rotators_locked])
+				process_subobjects(OBJ_INDEX(obj));
 		}
 
 		if (obj == Player_obj) {
@@ -18910,7 +18911,7 @@ void ship_render(object* obj, model_draw_list* scene)
 	// Valathil - maybe do a scripting hook here to do some scriptable effects?
 	ship_render_set_animated_effect(&render_info, shipp, &render_flags);
 
-	if ( sip->uses_team_colors ) {
+	if ( sip->uses_team_colors && !shipp->flags[Ship_Flags::Render_without_miscmap] ) {
 		team_color model_team_color;
 
 		bool team_color_set = model_get_team_color(&model_team_color, shipp->team_name, shipp->secondary_team_name, shipp->team_change_timestamp, shipp->team_change_time);
@@ -18932,7 +18933,39 @@ void ship_render(object* obj, model_draw_list* scene)
 		render_flags |= MR_NO_GLOWMAPS;
 	}
 
+	if (shipp->flags[Ship_Flags::Draw_as_wireframe]) {
+		render_flags |= MR_SHOW_OUTLINE_HTL | MR_NO_POLYS | MR_NO_TEXTURING;
+		render_info.set_color(Wireframe_color);
+	}
+
+	if (shipp->flags[Ship_Flags::Render_full_detail]) {
+		render_flags |= MR_FULL_DETAIL;
+	}
+
+	if (shipp->flags[Ship_Flags::Render_without_light]) {
+		render_flags |= MR_NO_LIGHTING;
+	}
+
+	uint debug_flags = render_info.get_debug_flags();
+
+	if (shipp->flags[Ship_Flags::Render_without_diffuse]) {
+		debug_flags |= MR_DEBUG_NO_DIFFUSE;
+	}
+
+	if (shipp->flags[Ship_Flags::Render_without_glowmap]) {
+		debug_flags |= MR_DEBUG_NO_GLOW;
+	}
+	
+	if (shipp->flags[Ship_Flags::Render_without_normalmap]) {
+		debug_flags |= MR_DEBUG_NO_NORMAL;
+	}
+
+	if (shipp->flags[Ship_Flags::Render_without_specmap]) {
+		debug_flags |= MR_DEBUG_NO_SPEC;
+	}
+
 	render_info.set_flags(render_flags);
+	render_info.set_debug_flags(debug_flags);
 
 	//draw weapon models
 	ship_render_weapon_models(&render_info, scene, obj, render_flags);
