@@ -53,7 +53,6 @@
 // randomness factor - all beam weapon aiming is adjusted by +/- some factor within this range
 #define BEAM_RANDOM_FACTOR			0.4f
 
-#define BEAM_DAMAGE_TIME			170			// apply damage 
 #define MAX_SHOT_POINTS				30
 #define SHOT_POINT_TIME				200			// 5 arcs a second
 

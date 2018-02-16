@@ -17724,8 +17724,7 @@ int calculation_type_get(char *str)
 }
 
 //STEP 4: Add the calculation to the switch statement.
-float ArmorType::GetDamage(float damage_applied, int in_damage_type_idx, float diff_dmg_scale)
-{
+float ArmorType::GetDamage(float damage_applied, int in_damage_type_idx, float diff_dmg_scale, int is_beam) {
 	// Nuke: If the weapon has no damage type, just return damage
 	if (in_damage_type_idx < 0) {
 		// multiply by difficulty scaler now, since it is no longer done where this is called
@@ -17811,6 +17810,20 @@ float ArmorType::GetDamage(float damage_applied, int in_damage_type_idx, float d
 				constant_val = 0.0f;
 				curr_arg = constant_val;
 			}
+
+			//face: terrible hack to work consistently with beams and additive damages
+			if (is_beam && ( adtp->Calculations[i] == AT_TYPE_ADDITIVE
+				|| adtp->Calculations[i] == AT_TYPE_CUTOFF
+				|| adtp->Calculations[i] == AT_TYPE_REVERSE_CUTOFF
+				|| adtp->Calculations[i] == AT_TYPE_INSTANT_CUTOFF
+				|| adtp->Calculations[i] == AT_TYPE_INSTANT_REVERSE_CUTOFF
+				|| adtp->Calculations[i] == AT_TYPE_CAP
+				|| adtp->Calculations[i] == AT_TYPE_INSTANT_CAP
+				|| adtp->Calculations[i] == AT_TYPE_SET
+				|| adtp->Calculations[i] == AT_TYPE_RANDOM)) {
+				curr_arg = curr_arg * (flFrametime * 1000.0f) / i2fl(BEAM_DAMAGE_TIME);
+			}
+
 			// new calcs go here
 			switch(adtp->Calculations[i])
 			{

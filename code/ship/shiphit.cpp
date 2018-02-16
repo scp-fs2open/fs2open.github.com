@@ -2087,7 +2087,8 @@ static void ship_do_damage(object *ship_objp, object *other_obj, vec3d *hitpos, 
 			if(shipp->shield_armor_type_idx != -1)
 			{
 				// Nuke: this call will decide when to use the damage factor, but it will get used, unless the modder is dumb (like setting +Difficulty Scale Type: to 'manual' and not manually applying it in their calculations)
-				damage = Armor_types[shipp->shield_armor_type_idx].GetDamage(damage, dmg_type_idx, difficulty_scale_factor);
+				damage = Armor_types[shipp->shield_armor_type_idx].GetDamage(damage, dmg_type_idx, difficulty_scale_factor, other_obj_is_beam);
+
 			} else { // Nuke: if that didn't get called, difficulty would not be applied to damage so apply it here
 				damage *= difficulty_scale_factor;
 			}
@@ -2149,7 +2150,7 @@ static void ship_do_damage(object *ship_objp, object *other_obj, vec3d *hitpos, 
 			
 			if(shipp->armor_type_idx != -1)
 			{
-				damage = Armor_types[shipp->armor_type_idx].GetDamage(damage, dmg_type_idx, difficulty_scale_factor);
+				damage = Armor_types[shipp->armor_type_idx].GetDamage(damage, dmg_type_idx, difficulty_scale_factor, other_obj_is_beam);
 				apply_diff_scale = false;
 			}
 		}
