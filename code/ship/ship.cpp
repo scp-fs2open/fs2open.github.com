@@ -17812,12 +17812,16 @@ float ArmorType::GetDamage(float damage_applied, int in_damage_type_idx, float d
 			}
 
 			//face: terrible hack to work consistently with beams and additive damages
-			if (is_beam && adtp->Calculations[i] != AT_TYPE_MULTIPLICATIVE
-				&& adtp->Calculations[i] != AT_TYPE_EXPONENTIAL
-				&& adtp->Calculations[i] != AT_TYPE_EXPONENTIAL_BASE
-				&& adtp->Calculations[i] != AT_TYPE_STORE
-				&& adtp->Calculations[i] != AT_TYPE_LOAD) {
-				curr_arg = curr_arg * (flFrametime * 1000.0f) / i2fl(170);
+			if (is_beam && ( adtp->Calculations[i] == AT_TYPE_ADDITIVE
+				|| adtp->Calculations[i] == AT_TYPE_CUTOFF
+				|| adtp->Calculations[i] == AT_TYPE_REVERSE_CUTOFF
+				|| adtp->Calculations[i] == AT_TYPE_INSTANT_CUTOFF
+				|| adtp->Calculations[i] == AT_TYPE_INSTANT_REVERSE_CUTOFF
+				|| adtp->Calculations[i] == AT_TYPE_CAP
+				|| adtp->Calculations[i] == AT_TYPE_INSTANT_CAP
+				|| adtp->Calculations[i] == AT_TYPE_SET
+				|| adtp->Calculations[i] == AT_TYPE_RANDOM)) {
+				curr_arg = curr_arg * (flFrametime * 1000.0f) / i2fl(BEAM_DAMAGE_TIME);
 			}
 
 			// new calcs go here
