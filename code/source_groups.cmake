@@ -187,6 +187,7 @@ set(file_root_def_files_data_effects
 	def_files/data/effects/post-v.sdr
 	def_files/data/effects/shadowdebug-f.sdr
 	def_files/data/effects/shadowdebug-v.sdr
+	def_files/data/effects/shadows.sdr
 	def_files/data/effects/tonemapping-f.sdr
 	def_files/data/effects/video-f.sdr
 	def_files/data/effects/video-v.sdr

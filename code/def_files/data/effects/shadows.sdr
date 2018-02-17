@@ -1,0 +1,94 @@
+
+const float VARIANCE_SHADOW_SCALE = 1000000.0;
+const float VARIANCE_SHADOW_SCALE_INV = 1.0/VARIANCE_SHADOW_SCALE;
+
+vec2 sampleShadowMap(sampler2DArray shadow_map, vec2 uv, vec2 offset_uv, int cascade, float shadowMapSizeInv)
+{
+	return texture(shadow_map, vec3(uv + offset_uv * shadowMapSizeInv, float(cascade))).xy;
+}
+
+float computeShadowFactor(float shadowDepth, vec2 moments, float bias)
+{
+	float shadow = 1.0;
+	if((moments.x - bias) > shadowDepth)
+	{
+		// variance shadow mapping using Chebychev's Formula
+		float variance = moments.y * VARIANCE_SHADOW_SCALE - moments.x * moments.x;
+		float mD = moments.x - bias - shadowDepth;
+		shadow = variance / (variance + mD * mD);
+		shadow = clamp(shadow, 0.0, 1.0);
+	}
+	return shadow;
+}
+
+float sampleNoPCF(sampler2DArray shadow_map, float shadowDepth, int cascade, vec4 shadowUV[4])
+{
+	return computeShadowFactor(shadowDepth, sampleShadowMap(shadow_map, shadowUV[cascade].xy, vec2(0.0, 0.0), cascade, 1.0/1024.0), 0.05);
+}
+
+float samplePoissonPCF(sampler2DArray shadow_map, float shadowDepth, int cascade, vec4 shadowUV[4])
+{
+	if(cascade > 3 || cascade < 0) return 1.0;
+	vec2 poissonDisc[16];
+	poissonDisc[0] = vec2(-0.76275, -0.3432573);
+	poissonDisc[1] = vec2(-0.5226235, -0.8277544);
+	poissonDisc[2] = vec2(-0.3780261, 0.01528688);
+	poissonDisc[3] = vec2(-0.7742821, 0.4245702);
+	poissonDisc[4] = vec2(0.04196143, -0.02622231);
+	poissonDisc[5] = vec2(-0.2974772, -0.4722782);
+	poissonDisc[6] = vec2(-0.516093, 0.71495);
+	poissonDisc[7] = vec2(-0.3257416, 0.3910343);
+	poissonDisc[8] = vec2(0.2705966, 0.6670476);
+	poissonDisc[9] = vec2(0.4918377, 0.1853267);
+	poissonDisc[10] = vec2(0.4428544, -0.6251478);
+	poissonDisc[11] = vec2(-0.09204347, 0.9267113);
+	poissonDisc[12] = vec2(0.391505, -0.2558275);
+	poissonDisc[13] = vec2(0.05605913, -0.7570801);
+	poissonDisc[14] = vec2(0.81772, -0.02475523);
+	poissonDisc[15] = vec2(0.6890262, 0.5191521);
+	float maxUVOffset[4];
+	maxUVOffset[0] = 1.0/300.0;
+	maxUVOffset[1] = 1.0/250.0;
+	maxUVOffset[2] = 1.0/200.0;
+	maxUVOffset[3] = 1.0/200.0;
+	vec2 sum = sampleShadowMap(shadow_map, shadowUV[cascade].xy, poissonDisc[0], cascade, maxUVOffset[cascade])*(1.0/16.0);
+	sum += sampleShadowMap(shadow_map, shadowUV[cascade].xy, poissonDisc[1], cascade, maxUVOffset[cascade])*(1.0/16.0);
+	sum += sampleShadowMap(shadow_map, shadowUV[cascade].xy, poissonDisc[2], cascade, maxUVOffset[cascade])*(1.0/16.0);
+	sum += sampleShadowMap(shadow_map, shadowUV[cascade].xy, poissonDisc[3], cascade, maxUVOffset[cascade])*(1.0/16.0);
+	sum += sampleShadowMap(shadow_map, shadowUV[cascade].xy, poissonDisc[4], cascade, maxUVOffset[cascade])*(1.0/16.0);
+	sum += sampleShadowMap(shadow_map, shadowUV[cascade].xy, poissonDisc[5], cascade, maxUVOffset[cascade])*(1.0/16.0);
+	sum += sampleShadowMap(shadow_map, shadowUV[cascade].xy, poissonDisc[6], cascade, maxUVOffset[cascade])*(1.0/16.0);
+	sum += sampleShadowMap(shadow_map, shadowUV[cascade].xy, poissonDisc[7], cascade, maxUVOffset[cascade])*(1.0/16.0);
+	sum += sampleShadowMap(shadow_map, shadowUV[cascade].xy, poissonDisc[8], cascade, maxUVOffset[cascade])*(1.0/16.0);
+	sum += sampleShadowMap(shadow_map, shadowUV[cascade].xy, poissonDisc[9], cascade, maxUVOffset[cascade])*(1.0/16.0);
+	sum += sampleShadowMap(shadow_map, shadowUV[cascade].xy, poissonDisc[10], cascade, maxUVOffset[cascade])*(1.0/16.0);
+	sum += sampleShadowMap(shadow_map, shadowUV[cascade].xy, poissonDisc[11], cascade, maxUVOffset[cascade])*(1.0/16.0);
+	sum += sampleShadowMap(shadow_map, shadowUV[cascade].xy, poissonDisc[12], cascade, maxUVOffset[cascade])*(1.0/16.0);
+	sum += sampleShadowMap(shadow_map, shadowUV[cascade].xy, poissonDisc[13], cascade, maxUVOffset[cascade])*(1.0/16.0);
+	sum += sampleShadowMap(shadow_map, shadowUV[cascade].xy, poissonDisc[14], cascade, maxUVOffset[cascade])*(1.0/16.0);
+	sum += sampleShadowMap(shadow_map, shadowUV[cascade].xy, poissonDisc[15], cascade, maxUVOffset[cascade])*(1.0/16.0);
+	return computeShadowFactor(shadowDepth, sum, 0.1);
+}
+
+float getShadowValue(sampler2DArray shadow_map, float depth, float shadowDepth, vec4 shadowUV[4], float fardist,
+					 float middist, float neardist, float veryneardist)
+{
+	// Valathil's Shadows
+	int cascade = 4;
+	cascade -= int(step(depth, fardist));
+	cascade -= int(step(depth, middist));
+	cascade -= int(step(depth, neardist));
+	cascade -= int(step(depth, veryneardist));
+	float cascade_start_dist[5];
+	cascade_start_dist[0] = 0.0;
+	cascade_start_dist[1] = veryneardist;
+	cascade_start_dist[2] = neardist;
+	cascade_start_dist[3] = middist;
+	cascade_start_dist[4] = fardist;
+	if(cascade > 3 || cascade < 0) return 1.0;
+	float dist_threshold = (cascade_start_dist[cascade+1] - cascade_start_dist[cascade])*0.2;
+	if(cascade_start_dist[cascade+1] - dist_threshold > depth)
+		return samplePoissonPCF(shadow_map, shadowDepth, cascade, shadowUV);
+	return mix(samplePoissonPCF(shadow_map, shadowDepth, cascade, shadowUV), samplePoissonPCF(shadow_map, shadowDepth, cascade+1, shadowUV),
+			smoothstep(cascade_start_dist[cascade+1] - dist_threshold, cascade_start_dist[cascade+1], depth));
+}
