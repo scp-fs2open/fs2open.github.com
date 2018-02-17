@@ -584,7 +584,7 @@ void model_draw_list::init()
 	reset();
 
 	for (auto& l : Lights) {
-		if ( l.type == LT_DIRECTIONAL || !Deferred_lighting ) {
+		if ( l.type == Light_Type::Directional || !Deferred_lighting ) {
 			Scene_light_handler.addLight(&l);
 		}	
 	}

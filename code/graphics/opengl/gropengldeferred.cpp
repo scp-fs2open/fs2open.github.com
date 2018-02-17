@@ -129,10 +129,10 @@ void gr_opengl_deferred_lighting_finish()
 
 		for (auto& l : lights_copy) {
 
-			if (l.type != LT_CONE && l.type != LT_POINT && l.type != LT_TUBE) {
+			if (l.type == Light_Type::Directional) {
 				continue;
 			}
-
+			float length = 0.0f;
 			auto light_data = uniformAligner.addTypedElement<deferred_light_data>();
 
 			light_data->lightType = 0;
@@ -148,14 +148,14 @@ void gr_opengl_deferred_lighting_finish()
 			spec.xyz.z = l.spec_b * l.intensity;
 
 			switch (l.type) {
-			case LT_CONE:
+			case Light_Type::Cone:
 				light_data->lightType = 2;
 				light_data->dualCone = l.dual_cone ? 1.0f : 0.0f;
 				light_data->coneAngle = l.cone_angle;
 				light_data->coneInnerAngle = l.cone_inner_angle;
 				light_data->coneDir = l.vec2;
 				FALLTHROUGH;
-			case LT_POINT:
+			case Light_Type::Point:
 				light_data->diffuseLightColor = diffuse;
 				light_data->specLightColor = spec;
 				light_data->lightRadius = MAX(l.rada, l.radb) * 1.25f;
@@ -164,7 +164,7 @@ void gr_opengl_deferred_lighting_finish()
 				light_data->scale.xyz.y = MAX(l.rada, l.radb) * 1.28f;
 				light_data->scale.xyz.z = MAX(l.rada, l.radb) * 1.28f;
 				break;
-			case LT_TUBE:
+			case Light_Type::Tube:
 				light_data->diffuseLightColor = diffuse;
 				light_data->specLightColor = spec;
 				light_data->lightRadius = l.radb * 1.5f;
@@ -172,7 +172,7 @@ void gr_opengl_deferred_lighting_finish()
 
 				vec3d a;
 				vm_vec_sub(&a, &l.vec, &l.vec2);
-				auto length = vm_vec_mag(&a);
+				length = vm_vec_mag(&a);
 
 				light_data->scale.xyz.x = l.radb * 1.53f;
 				light_data->scale.xyz.y = l.radb * 1.53f;
@@ -189,6 +189,8 @@ void gr_opengl_deferred_lighting_finish()
 				light_data->scale.xyz.y = l.radb * 1.53f;
 				light_data->scale.xyz.z = l.radb * 1.53f;
 				break;
+			case Light_Type::Directional: //We need to "handle" this here as well to make the compilers happy; 
+				break;					  //The code will never actually get here.
 			}
 		}
 
@@ -204,8 +206,8 @@ void gr_opengl_deferred_lighting_finish()
 			GR_DEBUG_SCOPE("Deferred apply single light");
 
 			switch (l.type) {
-			case LT_CONE:
-			case LT_POINT:
+			case Light_Type::Cone:
+			case Light_Type::Point:
 				gr_bind_uniform_buffer(uniform_block_type::Lights,
 									   uniformAligner.getOffset(element_index),
 									   sizeof(graphics::deferred_light_data),
@@ -213,7 +215,7 @@ void gr_opengl_deferred_lighting_finish()
 				gr_opengl_draw_deferred_light_sphere(&l.vec);
 				++element_index;
 				break;
-			case LT_TUBE:
+			case Light_Type::Tube:
 				gr_bind_uniform_buffer(uniform_block_type::Lights,
 									   uniformAligner.getOffset(element_index),
 									   sizeof(graphics::deferred_light_data),
