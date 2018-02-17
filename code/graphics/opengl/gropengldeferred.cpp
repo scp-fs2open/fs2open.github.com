@@ -132,7 +132,7 @@ void gr_opengl_deferred_lighting_finish()
 			if (l.type == Light_Type::Directional) {
 				continue;
 			}
-
+			float length = 0.0f;
 			auto light_data = uniformAligner.addTypedElement<deferred_light_data>();
 
 			light_data->lightType = 0;
@@ -172,7 +172,7 @@ void gr_opengl_deferred_lighting_finish()
 
 				vec3d a;
 				vm_vec_sub(&a, &l.vec, &l.vec2);
-				auto length = vm_vec_mag(&a);
+				length = vm_vec_mag(&a);
 
 				light_data->scale.xyz.x = l.radb * 1.53f;
 				light_data->scale.xyz.y = l.radb * 1.53f;
@@ -189,8 +189,8 @@ void gr_opengl_deferred_lighting_finish()
 				light_data->scale.xyz.y = l.radb * 1.53f;
 				light_data->scale.xyz.z = l.radb * 1.53f;
 				break;
-			case Light_Type::Directional:
-				break;
+			case Light_Type::Directional: //We need to "handle" this here as well to make the compilers happy; 
+				break;					  //The code will never actually get here.
 			}
 		}
 
