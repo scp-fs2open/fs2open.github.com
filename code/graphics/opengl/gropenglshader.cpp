@@ -362,11 +362,10 @@ static SCP_string opengl_shader_get_header(shader_type type_id, int flags, shade
  * @param flags		integer variable holding a combination of SDR_* flags
  * @return			C-string holding the complete shader source code
  */
-static SCP_string opengl_load_shader(const char *filename)
-{
+static SCP_string opengl_load_shader(const char* filename) {
 	SCP_string content;
 	if (Enable_external_shaders) {
-		CFILE *cf_shader = cfopen(filename, "rt", CFILE_NORMAL, CF_TYPE_EFFECTS);
+		CFILE* cf_shader = cfopen(filename, "rt", CFILE_NORMAL, CF_TYPE_EFFECTS);
 
 		if (cf_shader != NULL) {
 			int len = cfilelength(cf_shader);
@@ -387,11 +386,86 @@ static SCP_string opengl_load_shader(const char *filename)
 	return content;
 }
 
+static void handle_includes_impl(SCP_vector<SCP_string>& include_stack,
+								 SCP_stringstream& output,
+								 int& include_counter,
+								 const SCP_string& filename,
+								 const SCP_string& original) {
+	include_stack.emplace_back(filename);
+	auto current_source_number = include_counter + 1;
+
+	const char* INCLUDE_STRING = "#include";
+	SCP_stringstream input(original);
+
+	int line_num = 1;
+	for (SCP_string line; std::getline(input, line);) {
+		auto include_start = line.find(INCLUDE_STRING);
+		if (include_start != SCP_string::npos) {
+			auto first_quote = line.find('"', include_start + strlen(INCLUDE_STRING));
+			auto second_quote = line.find('"', first_quote + 1);
+
+			if (first_quote == SCP_string::npos || second_quote == SCP_string::npos) {
+				Error(LOCATION,
+					  "Shader %s:%d: Malformed include line. Could not find both quote charaters.",
+					  filename.c_str(),
+					  line_num);
+			}
+
+			auto file_name = line.substr(first_quote + 1, second_quote - first_quote - 1);
+			auto existing_name = std::find_if(include_stack.begin(), include_stack.end(), [&file_name](const SCP_string& str) {
+				return str == file_name;
+			});
+			if (existing_name != include_stack.end()) {
+				SCP_stringstream stack_string;
+				for (auto& name : include_stack) {
+					stack_string << "\t" << name << "\n";
+				}
+
+				Error(LOCATION,
+					  "Shader %s:%d: Detected cyclic include! Previous includes (top level file first):\n%s",
+					  filename.c_str(),
+					  line_num,
+					  stack_string.str().c_str());
+			}
+
+			++include_counter;
+			// The second parameter defines which source string we are currently working with. We keep track of how many
+			// excludes have been in the file so far to specify this
+			output << "#line 1 " << include_counter + 1 << "\n";
+
+			handle_includes_impl(include_stack,
+								 output,
+								 include_counter,
+								 file_name,
+								 opengl_load_shader(file_name.c_str()));
+
+			// We are done with the include file so now we can return to the original file
+			output << "#line " << line_num + 1 << " " << current_source_number << "\n";
+		} else {
+			output << line << "\n";
+		}
+
+		++line_num;
+	}
+
+	include_stack.pop_back();
+}
+
+static SCP_string handle_includes(const char* filename, const SCP_string& original) {
+	SCP_stringstream output;
+	SCP_vector<SCP_string> include_stack;
+	auto include_counter = 0;
+
+	handle_includes_impl(include_stack, output, include_counter, filename, original);
+
+	return output.str();
+}
+
 static SCP_vector<SCP_string> opengl_get_shader_content(shader_type type_id, const char* filename, int flags, shader_stage stage) {
 	SCP_vector<SCP_string> parts;
 	parts.push_back(opengl_shader_get_header(type_id, flags, stage));
 
-	parts.push_back(opengl_load_shader(filename));
+	parts.push_back(handle_includes(filename, opengl_load_shader(filename)));
 
 	return parts;
 }
