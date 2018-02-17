@@ -466,7 +466,7 @@ void labviewer_do_render(float frametime)
 	gr_set_color_fast(&Color_white);
 
 	if (frametotal != 0.0f) {
-		gr_printf_no_resize(gr_screen.center_offset_x + 2, gr_screen.center_offset_y + gr_screen.center_h - gr_get_font_height(), "FPS: %i", fl2i(Framerate + 0.5f));
+		gr_printf_no_resize(gr_screen.center_offset_x + 2, gr_screen.center_offset_y + gr_screen.center_h - gr_get_font_height(), "FPS: %3i Camera Distance: %4f", fl2i(Framerate + 0.5f), lab_cam_distance);
 	}
 	else {
 		gr_string(gr_screen.center_offset_x + 10, gr_screen.center_offset_y + gr_screen.center_h - gr_get_font_height(), "FPS: ?", GR_RESIZE_NONE);
@@ -475,18 +475,13 @@ void labviewer_do_render(float frametime)
 	//Print FXAA preset
 	if (Cmdline_fxaa && !PostProcessing_override)
 		gr_printf_no_resize(gr_screen.center_offset_x + 2, gr_screen.center_offset_y + gr_screen.center_h - (gr_get_font_height() * 2) - 3, "FXAA Preset: %i", Cmdline_fxaa_preset);
-
-	//Print bloom intensity
-	if (Cmdline_bloom_intensity && !PostProcessing_override)
-		gr_printf_no_resize(gr_screen.center_offset_x + 2, gr_screen.center_offset_y + gr_screen.center_h - (gr_get_font_height() * 3) - 3, "Bloom intensity: %i", Cmdline_bloom_intensity);
-
+	
 	//Print current Team Color setting, if any
 	if (Lab_team_color != "<none>")
-		gr_printf_no_resize(gr_screen.center_offset_x + 2, gr_screen.center_offset_y + gr_screen.center_h - (gr_get_font_height() * 4) - 3, "Use T and Y to cycle through available Team Color settings. Current: %s", Lab_team_color.c_str());
+		gr_printf_no_resize(gr_screen.center_offset_x + 2, gr_screen.center_offset_y + gr_screen.center_h - (gr_get_font_height() * 3) - 3, "Use T and Y to cycle through available Team Color settings. Current: %s", Lab_team_color.c_str());
 
-	//Display helpful text
-	if (!PostProcessing_override)
-		gr_printf_no_resize(gr_screen.center_offset_x + 70, gr_screen.center_offset_y + gr_screen.center_h - gr_get_font_height(), "Use number keys to switch between FXAA presets.");
+	//Camera usage info
+	gr_printf_no_resize(gr_screen.center_offset_x + 2, gr_screen.center_offset_y + gr_screen.center_h - (gr_get_font_height() * 4) - 3, "Hold LMB to rotate the ship or weapon. Hold RMB to rotate the Camera. Hold Shift + LMB to zoom in or out. Use number keys to switch between FXAA presets.");
 }
 
 void labviewer_exit(Button *caller)
