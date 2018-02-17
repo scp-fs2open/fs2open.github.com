@@ -484,6 +484,9 @@ void labviewer_do_render(float frametime)
 	if (Lab_team_color != "<none>")
 		gr_printf_no_resize(gr_screen.center_offset_x + 2, gr_screen.center_offset_y + gr_screen.center_h - (gr_get_font_height() * 4) - 3, "Use T and Y to cycle through available Team Color settings. Current: %s", Lab_team_color.c_str());
 
+	//Camera usage info
+	gr_printf_no_resize(gr_screen.center_offset_x + 2, gr_screen.center_offset_y + gr_screen.center_h - (gr_get_font_height() * 5) - 3, "Hold LMB to rotate the ship or weapon. Hold RMB to rotate the Camera. Hold Shift + LMB to zoom in or out.");
+
 	//Display helpful text
 	if (!PostProcessing_override)
 		gr_printf_no_resize(gr_screen.center_offset_x + 70, gr_screen.center_offset_y + gr_screen.center_h - gr_get_font_height(), "Use number keys to switch between FXAA presets.");
