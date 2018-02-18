@@ -145,11 +145,8 @@ void rotate_view(int dx, int dy)
 
 	lab_cam_theta += dx / 100.0f;
 	lab_cam_phi += dy / 100.0f;
-
-	if (lab_cam_phi > PI)
-		lab_cam_phi = 0.0f;
-	if (lab_cam_phi < 0.0f)
-		lab_cam_phi = PI;
+	
+	CLAMP(lab_cam_phi, 0.01f, PI - 0.01f);
 }
 
 void labviewer_change_model(char *model_fname, int lod = 0, int sel_index = -1)
