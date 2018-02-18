@@ -17918,7 +17918,11 @@ float ArmorType::GetDamage(float damage_applied, int in_damage_type_idx, float d
 		// Nuke: check to see if we need to difficulty scale damage last
 		if (adtp->difficulty_scale_type == ADT_DIFF_SCALE_LAST)
 			damage_applied *= diff_dmg_scale;
-	
+
+		// Face: negative damages should not heal you!!!
+		if (damage_applied < 0.0f)
+			damage_applied = 0.0f;
+
 		return damage_applied;
 	}
 	// fail return is fail
