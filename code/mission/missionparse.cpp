@@ -1708,7 +1708,11 @@ void parse_dock_one_docked_object(p_object *pobjp, p_object *parent_pobjp)
 	// check valid
 	if ((dockpoint < 0) || (parent_dockpoint < 0))
 	{
-		Int3();
+		if (dockpoint < 0)
+			ReleaseWarning(LOCATION, "Dockpoint %s could not be found on model %s", dockpoint_name, model_get(Ship_info[Ships[objp->instance].ship_info_index].model_num)->filename);
+		if (parent_dockpoint < 0)
+			ReleaseWarning(LOCATION, "Dockpoint %s could not be found on model %s", parent_dockpoint_name, model_get(Ship_info[Ships[parent_objp->instance].ship_info_index].model_num)->filename);
+
 		return;
 	}
 
