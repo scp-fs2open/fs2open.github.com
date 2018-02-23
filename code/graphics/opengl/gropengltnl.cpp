@@ -293,6 +293,8 @@ void gr_opengl_update_buffer_data_offset(int handle, size_t offset, size_t size,
 
 void gr_opengl_delete_buffer(int handle)
 {
+	if (GL_buffer_objects.size() == 0) return;
+
 	GR_DEBUG_SCOPE("Deleting buffer");
 
 	Assert(handle >= 0);
