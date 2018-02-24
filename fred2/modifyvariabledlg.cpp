@@ -57,6 +57,7 @@ BEGIN_MESSAGE_MAP(CModifyVariableDlg, CDialog)
 	ON_BN_CLICKED(IDC_TYPE_PLAYER_PERSISTENT, OnTypePlayerPersistent)
 	ON_BN_CLICKED(IDC_TYPE_CAMPAIGN_PERSISTENT, OnTypeCampaignPersistent)
 	ON_BN_CLICKED(IDC_TYPE_NETWORK_VARIABLE, OnTypeNetworkVariable)
+	ON_BN_CLICKED(IDC_TYPE_ETERNAL, OnTypeEternal)
 	ON_CBN_SELCHANGE(IDC_MODIFY_VARIABLE_NAME, OnSelchangeModifyVariableName)
 	ON_CBN_EDITCHANGE(IDC_MODIFY_VARIABLE_NAME, OnEditchangeModifyVariableName)
 	ON_EN_KILLFOCUS(IDC_MODIFY_DEFAULT_VALUE, OnKillfocusModifyDefaultValue)
@@ -186,6 +187,11 @@ void CModifyVariableDlg::OnTypePlayerPersistent()
 	if (m_type_player_persistent)
 		m_type_campaign_persistent = false;
 
+	// if the variable isn't persistent, it can't be eternal
+	if (!m_type_player_persistent && !m_type_campaign_persistent) {
+		m_type_eternal = false;
+	}
+
 	set_variable_type();
 }
 
@@ -199,6 +205,27 @@ void CModifyVariableDlg::OnTypeCampaignPersistent()
 
 	if (m_type_campaign_persistent)
 		m_type_player_persistent = false;
+	
+	// if the variable isn't persistent, it can't be eternal
+	if (!m_type_player_persistent && !m_type_campaign_persistent) {
+		m_type_eternal = false;
+	}
+
+	set_variable_type();
+}
+
+// set eternal persistence
+void CModifyVariableDlg::OnTypeEternal()
+{
+	m_type_eternal = ((CButton *)GetDlgItem(IDC_TYPE_ETERNAL))->GetCheck() ? true : false;
+
+	m_modified_persistence = true;
+
+	// if the variable isn't persistent, it can't be eternal
+	if (!m_type_player_persistent && !m_type_campaign_persistent) {
+		m_type_eternal = false;
+		MessageBox("Eternal variables must have a different persistence type set first!");
+	}
 
 	set_variable_type();
 }
@@ -244,9 +271,10 @@ void CModifyVariableDlg::OnSelchangeModifyVariableName()
 	
 	// Set new type for selection
 	m_type_number = ((Sexp_variables[sexp_variable_index].type & SEXP_VARIABLE_NUMBER) != 0) ? true : false;
-	m_type_campaign_persistent = ((Sexp_variables[sexp_variable_index].type & SEXP_VARIABLE_CAMPAIGN_PERSISTENT) != 0) ? true : false;
-	m_type_player_persistent = ((Sexp_variables[sexp_variable_index].type & SEXP_VARIABLE_PLAYER_PERSISTENT) != 0) ? true : false;
+	m_type_campaign_persistent = ((Sexp_variables[sexp_variable_index].type & SEXP_VARIABLE_SAVE_ON_MISSION_PROGRESS) != 0) ? true : false;
+	m_type_player_persistent = ((Sexp_variables[sexp_variable_index].type & SEXP_VARIABLE_SAVE_ON_MISSION_CLOSE) != 0) ? true : false;
 	m_type_network_variable = ((Sexp_variables[sexp_variable_index].type & SEXP_VARIABLE_NETWORK) != 0) ? true : false;
+	m_type_eternal = ((Sexp_variables[sexp_variable_index].type & SEXP_VARIABLE_SAVE_TO_PLAYER_FILE) != 0) ? true : false;
 	set_variable_type();
 
 	// Set new default value for selection
@@ -330,9 +358,10 @@ BOOL CModifyVariableDlg::OnInitDialog()
 	
 	// Set type
 	m_type_number = ((Sexp_variables[last_modified].type & SEXP_VARIABLE_NUMBER) != 0) ? true : false;
-	m_type_campaign_persistent = ((Sexp_variables[last_modified].type & SEXP_VARIABLE_CAMPAIGN_PERSISTENT) != 0) ? true : false;
-	m_type_player_persistent = ((Sexp_variables[last_modified].type & SEXP_VARIABLE_PLAYER_PERSISTENT) != 0) ? true : false;
+	m_type_campaign_persistent = ((Sexp_variables[last_modified].type & SEXP_VARIABLE_SAVE_ON_MISSION_PROGRESS) != 0) ? true : false;
+	m_type_player_persistent = ((Sexp_variables[last_modified].type & SEXP_VARIABLE_SAVE_ON_MISSION_CLOSE) != 0) ? true : false;
 	m_type_network_variable = ((Sexp_variables[last_modified].type & SEXP_VARIABLE_NETWORK) != 0) ? true : false;
+	m_type_eternal = ((Sexp_variables[last_modified].type & SEXP_VARIABLE_SAVE_TO_PLAYER_FILE) != 0) ? true : false;
 	set_variable_type();
 
 	// keep track of changes
@@ -345,10 +374,38 @@ BOOL CModifyVariableDlg::OnInitDialog()
 
 	m_data_validated		= false;
 	m_var_name_validated = false;
+	
+	//create tool tip controls
+	m_ProgressToolTip = new CToolTipCtrl();
+	m_ProgressToolTip->Create(this);
+	m_CloseToolTip = new CToolTipCtrl();
+	m_CloseToolTip->Create(this);
+	m_EternalToolTip = new CToolTipCtrl();
+	m_EternalToolTip->Create(this);
 
+	CWnd* pWnd = GetDlgItem(IDC_TYPE_CAMPAIGN_PERSISTENT);
+	m_ProgressToolTip->AddTool(pWnd, "This type of variable will save when the player clicks Accept to go to the next mission");
+	m_ProgressToolTip->Activate(TRUE);
 
+	pWnd = GetDlgItem(IDC_TYPE_PLAYER_PERSISTENT);
+	m_CloseToolTip->AddTool(pWnd, "This type of variable will save when the player leaves the mission");
+	m_CloseToolTip->Activate(TRUE);
+
+	pWnd = GetDlgItem(IDC_TYPE_ETERNAL);
+	m_EternalToolTip->AddTool(pWnd, "This type of variable is saved to the player file. So it can be referred to by other campaigns");
+	m_EternalToolTip->Activate(TRUE);
+	
 	return TRUE;  // return TRUE unless you set the focus to a control
 	              // EXCEPTION: OCX Property Pages should return FALSE
+}
+
+BOOL CModifyVariableDlg::PreTranslateMessage(MSG* pMsg) {
+
+	m_ProgressToolTip->RelayEvent(pMsg);
+	m_CloseToolTip->RelayEvent(pMsg);
+	m_EternalToolTip->RelayEvent(pMsg);
+
+	return CDialog::PreTranslateMessage(pMsg);
 }
 
 void CModifyVariableDlg::set_variable_type()
@@ -364,6 +421,7 @@ void CModifyVariableDlg::set_variable_type()
 	((CButton *) GetDlgItem(IDC_TYPE_CAMPAIGN_PERSISTENT))->SetCheck(m_type_campaign_persistent);
 	((CButton *) GetDlgItem(IDC_TYPE_PLAYER_PERSISTENT))->SetCheck(m_type_player_persistent);
 	((CButton *) GetDlgItem(IDC_TYPE_NETWORK_VARIABLE))->SetCheck(m_type_network_variable);
+	((CButton *) GetDlgItem(IDC_TYPE_ETERNAL))->SetCheck(m_type_eternal);
 }
 
 void CModifyVariableDlg::OnOK() 

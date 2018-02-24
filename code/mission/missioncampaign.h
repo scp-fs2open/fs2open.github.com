@@ -13,6 +13,7 @@
 #define _MISSION_CAMPAIGN_H
 
 #include "stats/scoring.h"
+#include "parse/sexp.h"
 
 struct sexp_variable;
 
@@ -124,13 +125,15 @@ public:
 	ubyte	ships_allowed[MAX_SHIP_CLASSES];		// which ships the player can use
 	ubyte	weapons_allowed[MAX_WEAPON_TYPES];		// which weapons the player can use
 	cmission	missions[MAX_CAMPAIGN_MISSIONS];	// decription of the missions
-	int				num_variables;					// number of variables this campaign had - Goober5000
-	sexp_variable	*variables;						// malloced array of sexp_variables (of num_variables size) containing campaign-persistent variables - Goober5000
-	int				redalert_num_variables;			// These two variables hold the previous state of the above for restoration
-	sexp_variable	*redalert_variables;			// if you replay the previous mission in a Red Alert scenario. -MageKing17
+	//int				num_variables;					// number of variables this campaign had - Goober5000
+	//sexp_variable	*variables;						// malloced array of sexp_variables (of num_variables size) containing variables which are saved - Goober5000
+	//int				redalert_num_variables;			// These two variables hold the previous state of the above for restoration
+	//sexp_variable	*redalert_variables;			// if you replay the previous mission in a Red Alert scenario. -MageKing17
+	SCP_vector<sexp_variable> persistent_variables;
+	SCP_vector<sexp_variable> red_alert_data;
 
 	campaign()
-		: desc(NULL), num_missions(0), variables(NULL)
+		: desc(NULL), num_missions(0)
 	{
 		name[0] = 0;
 		filename[0] = 0;
@@ -246,8 +249,8 @@ int mission_load_up_campaign( player *p = NULL );
 // stores mission goals and events in Campaign struct
 void mission_campaign_store_goals_and_events();
 
-// stores campaign-persistent variables
-void mission_campaign_store_variables();
+// stores variables which will be saved only on mission progression
+void mission_campaign_store_variables(int persistence_type, bool store_red_alert = true);
 
 // does both of the above
 void mission_campaign_store_goals_and_events_and_variables();
@@ -272,8 +275,8 @@ void mission_campaign_end_init();
 void mission_campaign_end_close();
 void mission_campaign_end_do();
 
-// Goober5000 - save persistent variables
-extern void mission_campaign_save_player_persistent_variables();
+// save eternal variables
+extern void mission_campaign_save_on_close_variables();
 
 extern void mission_campaign_load_failure_popup();
 

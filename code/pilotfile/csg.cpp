@@ -1018,40 +1018,36 @@ void pilotfile::csg_read_variables()
 {
 	int idx;
 
-	Campaign.num_variables = cfread_int(cfp);
+	int num_variables = cfread_int(cfp);
 
-	if (Campaign.num_variables > 0) {
-		Campaign.variables = (sexp_variable *) vm_malloc( Campaign.num_variables * sizeof(sexp_variable) );
-		Verify( Campaign.variables != NULL );
+	if (num_variables > 0) {
 
-		memset( Campaign.variables, 0, Campaign.num_variables * sizeof(sexp_variable) );
-
-		for (idx = 0; idx < Campaign.num_variables; idx++) {
-			Campaign.variables[idx].type = cfread_int(cfp);
-			cfread_string_len(Campaign.variables[idx].text, TOKEN_LENGTH, cfp);
-			cfread_string_len(Campaign.variables[idx].variable_name, TOKEN_LENGTH, cfp);
+		for (idx = 0; idx < num_variables; idx++) {
+			sexp_variable temp_var;
+			memset(&temp_var, 0, sizeof(sexp_variable));
+			temp_var.type = cfread_int(cfp);
+			cfread_string_len(temp_var.text, TOKEN_LENGTH, cfp);
+			cfread_string_len(temp_var.variable_name, TOKEN_LENGTH, cfp);
+			Campaign.persistent_variables.push_back(temp_var);
 		}
 	}
 
 	if (csg_ver < 4) { // CSG files before version 4 don't have a Red Alert set of CPVs to load, so just copy the regular set.
-		Campaign.redalert_num_variables = Campaign.num_variables;
-		Campaign.redalert_variables = (sexp_variable *) vm_malloc( Campaign.redalert_num_variables * sizeof(sexp_variable) );
-		Verify( Campaign.redalert_variables != NULL);
-
-		memcpy( Campaign.redalert_variables, Campaign.variables, Campaign.num_variables * sizeof(sexp_variable));
+		Campaign.persistent_variables.clear();
+		for (int i = 0; i < Campaign.persistent_variables.size(); i++) {
+			Campaign.red_alert_data.push_back(Campaign.persistent_variables[i]);
+		}
 	} else {
-		Campaign.redalert_num_variables = cfread_int(cfp);
+		int redalert_num_variables = cfread_int(cfp);
 
-		if (Campaign.redalert_num_variables > 0) {
-			Campaign.redalert_variables = (sexp_variable *) vm_malloc( Campaign.redalert_num_variables * sizeof(sexp_variable) );
-			Verify( Campaign.redalert_variables != NULL );
-
-			memset( Campaign.redalert_variables, 0, Campaign.redalert_num_variables * sizeof(sexp_variable) );
-
-			for (idx = 0; idx < Campaign.redalert_num_variables; idx++) {
-				Campaign.redalert_variables[idx].type = cfread_int(cfp);
-				cfread_string_len(Campaign.redalert_variables[idx].text, TOKEN_LENGTH, cfp);
-				cfread_string_len(Campaign.redalert_variables[idx].variable_name, TOKEN_LENGTH, cfp);
+		if (redalert_num_variables > 0) {
+			for (idx = 0; idx < redalert_num_variables; idx++) {
+				sexp_variable temp_var;
+				memset(&temp_var, 0, sizeof(sexp_variable));
+				temp_var.type = cfread_int(cfp);
+				cfread_string_len(temp_var.text, TOKEN_LENGTH, cfp);
+				cfread_string_len(temp_var.variable_name, TOKEN_LENGTH, cfp);
+				Campaign.red_alert_data.push_back(temp_var);
 			}
 		}
 	}
@@ -1063,20 +1059,22 @@ void pilotfile::csg_write_variables()
 
 	startSection(Section::Variables);
 
-	cfwrite_int(Campaign.num_variables, cfp);
+	cfwrite_int((int)Campaign.persistent_variables.size(), cfp);
 
-	for (idx = 0; idx < Campaign.num_variables; idx++) {
-		cfwrite_int(Campaign.variables[idx].type, cfp);
-		cfwrite_string_len(Campaign.variables[idx].text, cfp);
-		cfwrite_string_len(Campaign.variables[idx].variable_name, cfp);
+	for (idx = 0; idx < (int)Campaign.persistent_variables.size(); idx++) {
+		if (!(Campaign.persistent_variables[idx].type & SEXP_VARIABLE_SAVE_TO_PLAYER_FILE)) {
+			cfwrite_int(Campaign.persistent_variables[idx].type, cfp);
+			cfwrite_string_len(Campaign.persistent_variables[idx].text, cfp);
+			cfwrite_string_len(Campaign.persistent_variables[idx].variable_name, cfp);
+		}
 	}
 
-	cfwrite_int(Campaign.redalert_num_variables, cfp);
+	cfwrite_int((int)Campaign.red_alert_data.size(), cfp);
 
-	for (idx = 0; idx < Campaign.redalert_num_variables; idx++) {
-		cfwrite_int(Campaign.redalert_variables[idx].type, cfp);
-		cfwrite_string_len(Campaign.redalert_variables[idx].text, cfp);
-		cfwrite_string_len(Campaign.redalert_variables[idx].variable_name, cfp);
+	for (idx = 0; idx < (int)Campaign.red_alert_data.size(); idx++) {
+		cfwrite_int(Campaign.red_alert_data[idx].type, cfp);
+		cfwrite_string_len(Campaign.red_alert_data[idx].text, cfp);
+		cfwrite_string_len(Campaign.red_alert_data[idx].variable_name, cfp);
 	}
 
 	endSection();
@@ -1288,17 +1286,8 @@ void pilotfile::csg_reset_data()
 	tech_reset_to_default();
 
 	// clear out variables
-	if (Campaign.variables) {
-		Campaign.num_variables = 0;
-		vm_free(Campaign.variables);
-		Campaign.variables = NULL;
-	}
-
-	if (Campaign.redalert_variables) {
-		Campaign.redalert_num_variables = 0;
-		vm_free(Campaign.redalert_variables);
-		Campaign.redalert_variables = NULL;
-	}
+	Campaign.persistent_variables.clear();
+	Campaign.red_alert_data.clear();
 
 	// clear red alert data
 	Red_alert_wingman_status.clear();

@@ -3664,22 +3664,31 @@ int stuff_sexp_variable_list()
 			type |= SEXP_VARIABLE_NETWORK;
 		}
 
-		// possibly get player-persistent
-		if (check_for_string("\"player-persistent\"")) {
+		// maybe this is an eternal persistent variable of some type
+		if (check_for_string("\"eternal\"")) {
 			// eat it
 			get_string(persistent);
 			ignore_white_space();
 
 			// set type
-			type |= SEXP_VARIABLE_PLAYER_PERSISTENT;
-		// possibly get campaign-persistent
-		} else if (check_for_string("\"campaign-persistent\"")) {
+			type |= SEXP_VARIABLE_SAVE_TO_PLAYER_FILE;
+		}
+		
+		// maybe this is a persistent variable of some type
+		if (check_for_string("\"player-persistent\"") || check_for_string("\"save-on-mission-close\"")) {
 			// eat it
 			get_string(persistent);
 			ignore_white_space();
 
 			// set type
-			type |= SEXP_VARIABLE_CAMPAIGN_PERSISTENT;
+			type |= SEXP_VARIABLE_SAVE_ON_MISSION_CLOSE;
+		} else if (check_for_string("\"campaign-persistent\"") || check_for_string("\"save-on-mission-progress\"")) {
+			// eat it
+			get_string(persistent);
+			ignore_white_space();
+
+			// set type
+			type |= SEXP_VARIABLE_SAVE_ON_MISSION_PROGRESS;
 		// trap error
 		} else if (check_for_string("\"")) {
 			// eat garbage
@@ -29680,14 +29689,14 @@ int sexp_variable_count()
 }
 
 /**
- * Count number of campaign-persistent sexp_variables that are set
+ * Count number of persistent sexp_variables that are set
  */
-int sexp_campaign_persistent_variable_count()
+int sexp_campaign_file_variable_count()
 {
 	int count = 0;
 
 	for (int i=0; i<MAX_SEXP_VARIABLES; i++) {
-		if ( (Sexp_variables[i].type & SEXP_VARIABLE_SET) && (Sexp_variables[i].type & SEXP_VARIABLE_CAMPAIGN_PERSISTENT) ) {
+		if ( (Sexp_variables[i].type & SEXP_VARIABLE_SET) && (Sexp_variables[i].type & SEXP_VARIABLE_IS_PERSISTENT) && !(Sexp_variables[i].type & SEXP_VARIABLE_SAVE_TO_PLAYER_FILE) ) {
 			count++;
 		}
 	}

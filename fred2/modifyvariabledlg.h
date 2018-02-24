@@ -36,6 +36,7 @@ public:
 	bool			m_type_number;
 	bool			m_type_player_persistent;
 	bool			m_type_campaign_persistent;
+	bool			m_type_eternal;
 	bool			m_type_network_variable;
 	bool			m_modified_name;
 	bool			m_modified_value;
@@ -66,6 +67,11 @@ private:
 
 protected:
 
+	// tooltips
+	CToolTipCtrl* m_ProgressToolTip;
+	CToolTipCtrl* m_CloseToolTip;
+	CToolTipCtrl* m_EternalToolTip;
+
 	// Generated message map functions
 	//{{AFX_MSG(CModifyVariableDlg)
 	afx_msg void OnDeleteVariable();
@@ -73,10 +79,12 @@ protected:
 	afx_msg void OnTypeNumber();
 	afx_msg void OnTypePlayerPersistent();
 	afx_msg void OnTypeCampaignPersistent();
+	afx_msg void OnTypeEternal();
 	afx_msg void OnTypeNetworkVariable();
 	afx_msg void OnSelchangeModifyVariableName();
 	afx_msg void OnEditchangeModifyVariableName();
 	virtual BOOL OnInitDialog();
+	BOOL PreTranslateMessage(MSG * pMsg);
 	virtual void OnOK();
 	afx_msg void OnKillfocusModifyDefaultValue();
 	afx_msg void set_variable_type();

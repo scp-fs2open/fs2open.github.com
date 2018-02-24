@@ -40,9 +40,10 @@ public:
 	bool m_type_number;     //!< True if the type is a number, false if the type is a string
 
 	// Checkbox group
-	bool m_type_campaign_persistent;    //!< True if the variable is campaign persistant
-	bool m_type_player_persistent;      //!< True if the variable is player persistant
-	bool m_type_network_variable;       //!< True if the variable is a network variable (multiplayer)
+	bool m_type_campaign_persistent;		//!< True if the variable is saved whenever the mission is complete
+	bool m_type_player_persistent;			//!< True if the variable is saved whenever the mission ends
+	bool m_type_network_variable;		    //!< True if the variable is a network variable (multiplayer)
+	bool m_type_eternal;						//!< True if the variable is saved to the player file instead
 
 	bool m_create;  //!< True if the variable should be created upon the dialog's closure
 
@@ -52,6 +53,12 @@ public:
 	// ClassWizard generated virtual function overrides
 	//{{AFX_VIRTUAL(CAddVariableDlg)
 protected:
+	
+	// tooltips
+	CToolTipCtrl* m_ProgressToolTip;
+	CToolTipCtrl* m_CloseToolTip;
+	CToolTipCtrl* m_EternalToolTip;
+
 	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV support
 	//}}AFX_VIRTUAL
 
@@ -66,6 +73,8 @@ protected:
 	 * @brief Handler for dialog initialization.
 	 */
 	virtual BOOL OnInitDialog();
+
+	BOOL PreTranslateMessage(MSG * pMsg);
 
 	/**
 	 * @brief Validates the new variable name
@@ -108,6 +117,13 @@ protected:
 	 * @details A variable may be player persistent, campaign persitent, or not persetent.
 	 */
 	afx_msg void OnTypeCampaignPersistent();
+
+	/**
+	* @brief Handler for the Eternal Persistent radio checkbox
+	*
+	* @details Any persistent variable may be eternal.
+	*/
+	afx_msg void OnTypeEternal();
 
 	/**
 	 * @brief Handler for the Network Variable checkbox

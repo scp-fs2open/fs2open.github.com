@@ -900,12 +900,15 @@ char *CTEXT(int n);
 #define SEXP_VARIABLE_BLOCK_EXP				(1<<1)	//	(0x0002)
 #define SEXP_VARIABLE_BLOCK_HIT				(1<<2)	//	(0x0004)
 */
-#define SEXP_VARIABLE_PLAYER_PERSISTENT		(1<<3)	//	(0x0008)
+#define SEXP_VARIABLE_SAVE_ON_MISSION_CLOSE		(1<<3)	//	(0x0008)
 
 // Goober5000 - hopefully this should work and not conflict with anything
-#define SEXP_VARIABLE_CAMPAIGN_PERSISTENT	(1<<29)	//	(0x0100)
+#define SEXP_VARIABLE_SAVE_ON_MISSION_PROGRESS	(1<<29)	//	(0x0100)
 //Karajorma
 #define SEXP_VARIABLE_NETWORK				(1<<28)
+#define SEXP_VARIABLE_SAVE_TO_PLAYER_FILE	(1<<27)
+
+#define SEXP_VARIABLE_IS_PERSISTENT (SEXP_VARIABLE_SAVE_ON_MISSION_PROGRESS|SEXP_VARIABLE_SAVE_ON_MISSION_CLOSE)
 
 #define BLOCK_EXP_SIZE					6
 #define INNER_RAD							0
@@ -1191,7 +1194,7 @@ bool sexp_replace_variable_names_with_values(char *text, int max_len);	// Goober
 bool sexp_replace_variable_names_with_values(SCP_string &text);	// Goober5000
 int get_nth_variable_index(int nth, int variable_type);	// Karajorma
 int sexp_variable_count();
-int sexp_campaign_persistent_variable_count();	// Goober5000
+int sexp_campaign_file_variable_count();	// Goober5000
 int sexp_variable_typed_count(int sexp_variables_index, int variable_type); // Karajorma
 void sexp_variable_delete(int index);
 void sexp_variable_sort();

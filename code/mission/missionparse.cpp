@@ -5473,41 +5473,55 @@ void parse_variables()
 		return;
 	}
 
-	// Goober5000 - now set the default value, if it's a campaign-persistent variable
+	// Goober5000 - now set the default value, if it's a variable saved on mission progress
 	// loop through the current mission's variables
 	for (j = 0; j < num_variables; j++) {
 		// check against existing variables
-		for (i = 0; i < Campaign.num_variables; i++) {
-			// if the active mission has a variable with the same name as a campaign
-			// variable AND it is not a block variable, override its initial value
-			// with the previous mission's value
-			if ( !stricmp(Sexp_variables[j].variable_name, Campaign.variables[i].variable_name) ) {
-				if (Sexp_variables[j].type  & SEXP_VARIABLE_CAMPAIGN_PERSISTENT) {
-					Sexp_variables[j].type = Campaign.variables[i].type;
-					strcpy_s(Sexp_variables[j].text, Campaign.variables[i].text);
+		for (i = 0; i < Campaign.persistent_variables.size(); i++) {
+			// if the active mission has a variable with the same name as a variable saved to the campaign file override its initial value with the previous mission's value
+			if ( !stricmp(Sexp_variables[j].variable_name, Campaign.persistent_variables[i].variable_name) ) {
+				// if this is an eternal that shares the same name as a non-eternal warn but do nothing
+				if (Sexp_variables[j].type & SEXP_VARIABLE_SAVE_TO_PLAYER_FILE) {
+					Warning(LOCATION, "Variable %s is marked eternal but has the same name as another persistent variable. One of these should be renamed to avoid confusion", Sexp_variables[j].text);
+				}
+				else if (Sexp_variables[j].type  & SEXP_VARIABLE_IS_PERSISTENT) {
+					Sexp_variables[j].type = Campaign.persistent_variables[i].type;
+					strcpy_s(Sexp_variables[j].text, Campaign.persistent_variables[i].text);
 					break;
 				} else {
-					WarningEx(LOCATION, "Variable %s has the same name as a campaign persistent variable. One of these should be renamed to avoid confusion", Sexp_variables[j].text);
+					WarningEx(LOCATION, "Variable %s has the same name as another persistent variable. One of these should be renamed to avoid confusion", Sexp_variables[j].text);
 				}
 			}
 		}
 	}
 
-	// Goober5000 - next, see if any player-persistent variables are set
-	// loop through the current mission's variables
+	// next, see if any eternal variables are set loop through the current mission's variables
 	for (j = 0; j < num_variables; j++) {
 		// check against existing variables
 		for (i = 0; i < (int)Player->variables.size(); i++) {
-			// if the active mission has a variable with the same name as a player
-			// variable AND it is not a block variable, override its initial value
-			// with the previous mission's value
+			// if the active mission has a variable with the same name as a variable saved to the player file override its initial value with the previous mission's value
 			if ( !stricmp(Sexp_variables[j].variable_name, Player->variables[i].variable_name) ) {
-				if (Sexp_variables[j].type & SEXP_VARIABLE_PLAYER_PERSISTENT) {
+				if (Sexp_variables[j].type & SEXP_VARIABLE_IS_PERSISTENT) {
+					// if the variable in the player file is marked as eternal but the version in the mission file is not, we assume that the player file one is rogue
+					// and use the one in the mission file instead.
+					if ((Player->variables[i].type & SEXP_VARIABLE_SAVE_TO_PLAYER_FILE) && !(Sexp_variables[j].type & SEXP_VARIABLE_SAVE_TO_PLAYER_FILE)) {
+						break;
+					}
+					// replace the default values with the ones saved to the player file
 					Sexp_variables[j].type = Player->variables[i].type;
 					strcpy_s(Sexp_variables[j].text, Player->variables[i].text);
+
+					/*
+					// check that the eternal flag has been set. Players using a player file from before the eternal flag was added may have old player-persistent variables
+					// these should be converted to non-eternals
+					if (!(Player->variables[i].type & SEXP_VARIABLE_SAVE_TO_PLAYER_FILE)) {
+						Sexp_variables[j].type &= ~SEXP_VARIABLE_SAVE_TO_PLAYER_FILE;
+					}
+					*/
+
 					break;
 				} else {
-					WarningEx(LOCATION, "Variable %s has the same name as a player persistent variable. One of these should be renamed to avoid confusion", Sexp_variables[j].text);
+					WarningEx(LOCATION, "Variable %s has the same name as an eternal variable. One of these should be renamed to avoid confusion", Sexp_variables[j].text);
 				}
 			}
 		}

@@ -853,22 +853,22 @@ void mission_campaign_savefile_delete( char *cfilename )
 
 void campaign_delete_save( char *cfn, char *pname)
 {
-	strcpy_s(Player->callsign, pname);
-	mission_campaign_savefile_delete(cfn);
+strcpy_s(Player->callsign, pname);
+mission_campaign_savefile_delete(cfn);
 }
 
 /**
- * Deletes all the save files for this particular pilot.  
+ * Deletes all the save files for this particular pilot.
  * Just call cfile function which will delete multiple files
  *
  * @param pilot_name Name of pilot
  */
-void mission_campaign_delete_all_savefiles( char *pilot_name )
+void mission_campaign_delete_all_savefiles(char *pilot_name)
 {
 	int dir_type, num_files, i;
 	char file_spec[MAX_FILENAME_LEN + 2];
 	char filename[1024];
-	int (*filter_save)(const char *filename);
+	int(*filter_save)(const char *filename);
 	SCP_vector<SCP_string> names;
 
 	auto ext = NOX(".csg");
@@ -883,7 +883,7 @@ void mission_campaign_delete_all_savefiles( char *pilot_name )
 	num_files = cf_get_file_list(names, dir_type, file_spec);
 	Get_file_list_filter = filter_save;
 
-	for (i=0; i<num_files; i++) {
+	for (i = 0; i < num_files; i++) {
 		strcpy_s(filename, names[i].c_str());
 		strcat_s(filename, ext);
 		cf_delete(filename, dir_type);
@@ -895,7 +895,7 @@ void mission_campaign_delete_all_savefiles( char *pilot_name )
  */
 void campaign_savefile_load(char *fname, char *pname)
 {
-	if (Campaign.type==CAMPAIGN_TYPE_SINGLE) {
+	if (Campaign.type == CAMPAIGN_TYPE_SINGLE) {
 		Game_mode &= ~GM_MULTIPLAYER;
 		Game_mode &= GM_NORMAL;
 	}
@@ -914,14 +914,14 @@ void campaign_savefile_load(char *fname, char *pname)
  */
 int mission_campaign_next_mission()
 {
-	if ( (Campaign.next_mission == -1) || (Campaign.name[0] == '\0')) // will be set to -1 when there is no next mission
+	if ((Campaign.next_mission == -1) || (Campaign.name[0] == '\0')) // will be set to -1 when there is no next mission
 		return -1;
 
-	if(Campaign.num_missions < 1)
+	if (Campaign.num_missions < 1)
 		return -2;
 
-	Campaign.current_mission = Campaign.next_mission;	
-	strcpy_s( Game_current_mission_filename, Campaign.missions[Campaign.current_mission].name );
+	Campaign.current_mission = Campaign.next_mission;
+	strcpy_s(Game_current_mission_filename, Campaign.missions[Campaign.current_mission].name);
 
 	// check for end of loop.
 	if (Campaign.current_mission == Campaign.loop_reentry) {
@@ -939,10 +939,10 @@ int mission_campaign_next_mission()
  */
 int mission_campaign_previous_mission()
 {
-	if ( !(Game_mode & GM_CAMPAIGN_MODE) )
+	if (!(Game_mode & GM_CAMPAIGN_MODE))
 		return 0;
 
-	if ( Campaign.prev_mission == -1 )
+	if (Campaign.prev_mission == -1)
 		return 0;
 
 	Campaign.current_mission = Campaign.prev_mission;
@@ -951,20 +951,12 @@ int mission_campaign_previous_mission()
 	Campaign.num_missions_completed--;
 	Campaign.missions[Campaign.next_mission].completed = 0;
 
-	if (Campaign.num_variables > 0) {
-		vm_free( Campaign.variables );
-	}
-
-	Campaign.num_variables = Campaign.redalert_num_variables;
-
 	// copy backed up variables over
-	if (Campaign.redalert_num_variables > 0) {
-		Assert( Campaign.redalert_variables );
-
-		Campaign.variables = (sexp_variable *) vm_malloc(Campaign.num_variables * sizeof(sexp_variable));
-		memcpy(Campaign.variables, Campaign.redalert_variables, Campaign.redalert_num_variables * sizeof(sexp_variable));
+	Campaign.persistent_variables.clear();
+	for (int i = 0; i < Campaign.red_alert_data.size(); i++) {
+		Campaign.persistent_variables.push_back(Campaign.red_alert_data[i]);
 	}
-
+	
 	Pilot.save_savefile();
 
 	// reset the player stats to be the stats from this level
@@ -1093,7 +1085,7 @@ void mission_campaign_store_goals_and_events()
 	}
 }
 
-void mission_campaign_store_variables()
+void mission_campaign_store_variables(int persistence_type, bool store_red_alert)
 {
 	int cur, i, j;
 	cmission *mission_obj;
@@ -1101,103 +1093,69 @@ void mission_campaign_store_variables()
 	cur = Campaign.current_mission;
 	mission_obj = &Campaign.missions[cur];
 
-	// Goober5000 - handle campaign-persistent variables -------------------------------------
+	// handle variables that are saved on mission victory -------------------------------------
 	if (mission_obj->variables != NULL) {
 		vm_free( mission_obj->variables );
 		mission_obj->variables = NULL;
 	}
 
-	int num_mission_variables = sexp_campaign_persistent_variable_count();
+	int num_mission_variables = sexp_campaign_file_variable_count();
 
 	if (num_mission_variables > 0) {
-		int variable_count = 0;
-		int total_variables = Campaign.num_variables;
-		int matching_variables = 0;
-		int persistent_variables_in_mission = 0;
+		
+		if (store_red_alert) {
+			for (i = 0; i < Campaign.red_alert_data.size(); i++) {
+				Campaign.persistent_variables.push_back(Campaign.red_alert_data[i]);
+			}
+		}
 
-		// get count of new variables
 		for (i = 0; i < sexp_variable_count(); i++) {
-			if ( Sexp_variables[i].type & SEXP_VARIABLE_CAMPAIGN_PERSISTENT ) {
-				persistent_variables_in_mission++;
+			if (!(Sexp_variables[i].type & SEXP_VARIABLE_SAVE_TO_PLAYER_FILE)) {
+				if (Sexp_variables[i].type & persistence_type) {
+					bool add_it = true;
 
-				// see if we already have a variable with this name
-				for (j = 0; j < Campaign.num_variables; j++) {
-					if (!(stricmp(Sexp_variables[i].variable_name, Campaign.variables[j].variable_name) )) {
-						matching_variables++;
-						break;
+					// see if we already have a variable with this name
+					for (j = 0; j < (int)Campaign.persistent_variables.size(); j++) {
+						if (!(stricmp(Sexp_variables[i].variable_name, Campaign.persistent_variables[j].variable_name))) {
+							add_it = false;
+							Campaign.persistent_variables[j].type = Sexp_variables[i].type;
+							strcpy_s(Campaign.persistent_variables[j].text, Sexp_variables[i].text);
+							break;
+						}
+					}
+
+					// new variable
+					if (add_it) {
+						Campaign.persistent_variables.push_back(Sexp_variables[i]);
 					}
 				}
 			}
-		}
-		
-		Assert(persistent_variables_in_mission >= matching_variables); 
-		total_variables += (persistent_variables_in_mission - matching_variables);
+			// we might need to save some eternal variables
+			else if ((persistence_type & SEXP_VARIABLE_SAVE_ON_MISSION_PROGRESS) && (Sexp_variables[i].type & persistence_type) && (Sexp_variables[i].type & SEXP_VARIABLE_SAVE_TO_PLAYER_FILE)) {
+				bool add_it = true;
 
-		// allocate new storage
-		sexp_variable *n_variables = (sexp_variable *) vm_malloc(total_variables * sizeof(sexp_variable));
-		Assert( n_variables );
+				for (j = 0; j < (int)Player->variables.size(); j++) {
+					if (!(stricmp(Sexp_variables[i].variable_name, Player->variables[j].variable_name))) {
+						Player->variables[j] = Sexp_variables[i];
 
-		if (Campaign.redalert_num_variables > 0) {
-			vm_free( Campaign.redalert_variables );
-		}
+						add_it = false;
+						break;
+					}
+				}
 
-		Campaign.redalert_num_variables = Campaign.num_variables;
-
-		// copy existing variables over
-		if (Campaign.num_variables > 0) {
-			Assert( Campaign.variables );
-
-			Campaign.redalert_variables = (sexp_variable *) vm_malloc(Campaign.num_variables * sizeof(sexp_variable));
-			memcpy(Campaign.redalert_variables, Campaign.variables, Campaign.num_variables * sizeof(sexp_variable));
-			memcpy(n_variables, Campaign.variables, Campaign.num_variables * sizeof(sexp_variable));
-
-			variable_count = Campaign.num_variables;
-
-			vm_free(Campaign.variables);
-			Campaign.variables = NULL;
-		}
-
-		// update/add variables
-		for (i = 0; i < sexp_variable_count(); i++) {
-			if ( !(Sexp_variables[i].type & SEXP_VARIABLE_CAMPAIGN_PERSISTENT) ) {
-				continue;
-			}
-
-			bool add_it = true;
-
-			// maybe update...
-			for (j = 0; j < Campaign.num_variables; j++) {
-				if ( !stricmp(Sexp_variables[i].variable_name, n_variables[j].variable_name) ) {
-					n_variables[j].type = Sexp_variables[i].type;
-					strcpy_s(n_variables[j].text, Sexp_variables[i].text);
-					add_it = false;
-					break;
+				// if not found then add new entry
+				if (add_it) {
+					Player->variables.push_back(Sexp_variables[i]);
 				}
 			}
-
-			// otherwise add...
-			if (add_it) {
-				n_variables[variable_count].type = Sexp_variables[i].type;
-				strcpy_s(n_variables[variable_count].text, Sexp_variables[i].text);
-				strcpy_s(n_variables[variable_count].variable_name, Sexp_variables[i].variable_name);
-				variable_count++;
-			}
 		}
-
-		Assert( variable_count == total_variables );
-		Assert( Campaign.variables == NULL );
-
-		// update with new data/count
-		Campaign.variables = n_variables;
-		Campaign.num_variables = total_variables;
 	}
-	// --------------------------------------------------------------------------
 }
 
 void mission_campaign_store_goals_and_events_and_variables()
 {
 	mission_campaign_store_goals_and_events();
-	mission_campaign_store_variables();
+	mission_campaign_store_variables(SEXP_VARIABLE_SAVE_ON_MISSION_PROGRESS);
 }
 
 /**
@@ -1384,16 +1342,8 @@ void mission_campaign_clear()
 	Campaign.num_players = 0;
 	memset( Campaign.ships_allowed, 0, sizeof(Campaign.ships_allowed) );
 	memset( Campaign.weapons_allowed, 0, sizeof(Campaign.weapons_allowed) );
-	Campaign.num_variables = 0;
-	if (Campaign.variables != NULL) {
-		vm_free(Campaign.variables);
-		Campaign.variables = NULL;
-	}
-	Campaign.redalert_num_variables = 0;
-	if (Campaign.redalert_variables != NULL) {
-		vm_free(Campaign.redalert_variables);
-		Campaign.redalert_variables = NULL;
-	}
+	Campaign.persistent_variables.clear(); 
+	Campaign.red_alert_data.clear();
 }
 
 /**
@@ -1916,7 +1866,7 @@ void mission_campaign_jump_to_mission(char *name, bool no_skip)
 }
 
 // Goober5000
-void mission_campaign_save_player_persistent_variables()
+void mission_campaign_save_on_close_variables()
 {
 	int i;
 
@@ -1930,28 +1880,35 @@ void mission_campaign_save_player_persistent_variables()
 
 	// now save variables
 	for (i = 0; i < sexp_variable_count(); i++) {
-		// we only want the player persistent ones
-		if ( !(Sexp_variables[i].type & SEXP_VARIABLE_PLAYER_PERSISTENT) ) {
+		// we only want the on mission close type. On campaign progress type are dealt with elsewhere
+		if ( !(Sexp_variables[i].type & SEXP_VARIABLE_SAVE_ON_MISSION_CLOSE) ) {
 			continue;
 		}
 
 		bool found = false;
 
-		// check if variable already exists and updated it
-		for (size_t j = 0; j < Player->variables.size(); j++) {
-			if ( !(stricmp(Sexp_variables[i].variable_name, Player->variables[j].variable_name)) ) {
-				Player->variables[j] = Sexp_variables[i];
+		// deal with eternals 
+		if ((Sexp_variables[i].type & SEXP_VARIABLE_SAVE_TO_PLAYER_FILE)) {
+			// check if variable already exists and updated it
+			for (size_t j = 0; j < Player->variables.size(); j++) {
+				if (!(stricmp(Sexp_variables[i].variable_name, Player->variables[j].variable_name))) {
+					Player->variables[j] = Sexp_variables[i];
 
-				found = true;
-				break;
+					found = true;
+					break;
+				}
+			}
+
+			// if not found then add new entry
+			if (!found) {
+				Player->variables.push_back(Sexp_variables[i]);
 			}
 		}
 
-		// if not found then add new entry
-		if ( !found ) {
-			Player->variables.push_back( Sexp_variables[i] );
-		}
 	}
+
+	// store any non-eternal on mission close variables
+	mission_campaign_store_variables(SEXP_VARIABLE_SAVE_ON_MISSION_CLOSE, false);
 }
 
 void mission_campaign_load_failure_popup()

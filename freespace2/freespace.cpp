@@ -888,7 +888,7 @@ void game_level_close()
 	if(!Script_system.IsConditionOverride(CHA_MISSIONEND))
 	{
 		// save player-persistent variables
-		mission_campaign_save_player_persistent_variables();	// Goober5000
+		mission_campaign_save_on_close_variables();	// Goober5000
 
 		// De-Initialize the game subsystems
 		sexp_music_close();	// Goober5000
