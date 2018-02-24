@@ -248,7 +248,7 @@ void convert_model_material(model_uniform_data* data_out,
 
 
 	if (shader_flags & SDR_FLAG_MODEL_FOG) {
-		material::fog fog_params = material.get_fog();
+		auto& fog_params = material.get_fog();
 
 		if (fog_params.enabled) {
 			data_out->fogStart = fog_params.dist_near;

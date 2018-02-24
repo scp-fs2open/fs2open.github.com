@@ -30,16 +30,6 @@ enum class StencilOperation {
 class material
 {
 public:
-	struct fog 
-	{
-		bool enabled;
-		int r;
-		int g;
-		int b;
-		float dist_near;
-		float dist_far;
-	};
-
 	struct clip_plane
 	{
 		bool enabled;
@@ -74,7 +64,6 @@ private:
 
 	clip_plane Clip_params;
 	int Texture_addressing;
-	fog Fog_params;
 	gr_zbuffer_type Depth_mode;
 	gr_alpha_blend Blend_mode;
 	bool Cull_mode;
@@ -111,11 +100,6 @@ public:
 
 	void set_texture_addressing(int addressing);
 	int get_texture_addressing() const;
-
-	void set_fog(int r, int g, int b, float near, float far);
-	void set_fog();
-	bool is_fogged() const;
-	const fog& get_fog() const;
 
 	void set_depth_mode(gr_zbuffer_type mode);
 	gr_zbuffer_type get_depth_mode() const;
@@ -165,6 +149,18 @@ public:
 
 class model_material : public material
 {
+ public:
+	struct fog
+	{
+		bool enabled = false;
+		int r = 0;
+		int g = 0;
+		int b = 0;
+		float dist_near = -1.0f;
+		float dist_far = -1.0f;
+	};
+
+ private:
 	bool Desaturate = false;
 
 	bool Shadow_casting = false;
@@ -192,6 +188,7 @@ class model_material : public material
 	bool Normal_extrude = false;
 	float Normal_extrude_width = -1.0f;
 
+	fog Fog_params;
 public:
 	model_material();
 
@@ -240,6 +237,11 @@ public:
 	bool is_batched() const;
 
 	virtual uint get_shader_flags() const override;
+
+	void set_fog(int r, int g, int b, float near, float far);
+	void set_fog();
+	bool is_fogged() const;
+	const fog& get_fog() const;
 };
 
 class particle_material : public material

@@ -630,7 +630,6 @@ typedef struct screen {
 
 	int		current_alphablend_mode;		// See GR_ALPHABLEND defines above
 	int		current_bitblt_mode;				// See GR_BITBLT_MODE defines above
-	int		current_fog_mode;					// See GR_FOGMODE_* defines above
 	int		current_bitmap;
 	color		current_color;
 	color		current_fog_color;				// current fog color
@@ -692,9 +691,6 @@ typedef struct screen {
 
 	// grab a region of the screen. assumes data is large enough
 	void (*gf_get_region)(int front, int w, int h, ubyte *data);
-
-	// set fog attributes
-	void (*gf_fog_set)(int fog_mode, int r, int g, int b, float fog_near, float fog_far);
 
 	// poly culling
 	int (*gf_set_cull)(int cull);
@@ -926,11 +922,6 @@ void gr_shield_icon(coord2d coords[6], const int resize_mode = GR_RESIZE_FULL);
 #define gr_set_gamma			GR_CALL(gr_screen.gf_set_gamma)
 
 #define gr_get_region		GR_CALL(gr_screen.gf_get_region)
-
-__inline void gr_fog_set(int fog_mode, int r, int g, int b, float fog_near = -1.0f, float fog_far = -1.0f)
-{
-	(*gr_screen.gf_fog_set)(fog_mode, r, g, b, fog_near, fog_far);
-}
 
 #define gr_set_cull			GR_CALL(gr_screen.gf_set_cull)
 #define gr_set_color_buffer	GR_CALL(gr_screen.gf_set_color_buffer)

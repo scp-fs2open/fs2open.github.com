@@ -195,13 +195,6 @@ Depth_bias(0)
 	Texture_maps[TM_SPEC_GLOSS_TYPE] = -1;
 	Texture_maps[TM_AMBIENT_TYPE] = -1;
 
-	Fog_params.dist_near = -1.0f;
-	Fog_params.dist_far = -1.0f;
-	Fog_params.r = 0;
-	Fog_params.g = 0;
-	Fog_params.b = 0;
-	Fog_params.enabled = false;
-
 	Clip_params.enabled = false;
 
 	Color_mask.x = true;
@@ -300,31 +293,6 @@ void material::set_texture_addressing(int addressing)
 int material::get_texture_addressing() const
 {
 	return Texture_addressing;
-}
-
-void material::set_fog(int r, int g, int b, float _near, float _far)
-{
-	Fog_params.enabled = true;
-	Fog_params.r = r;
-	Fog_params.g = g;
-	Fog_params.b = b;
-	Fog_params.dist_near = _near;
-	Fog_params.dist_far = _far;
-}
-
-void material::set_fog()
-{
-	Fog_params.enabled = false;
-}
-
-bool material::is_fogged() const
-{
-	return Fog_params.enabled;
-}
-
-const material::fog& material::get_fog() const
-{
-	return Fog_params; 
 }
 
 void material::set_depth_mode(gr_zbuffer_type mode)
@@ -640,6 +608,31 @@ bool model_material::is_normal_extrude_active() const
 float model_material::get_normal_extrude_width() const
 {
 	return Normal_extrude_width;
+}
+
+void model_material::set_fog(int r, int g, int b, float _near, float _far)
+{
+	Fog_params.enabled = true;
+	Fog_params.r = r;
+	Fog_params.g = g;
+	Fog_params.b = b;
+	Fog_params.dist_near = _near;
+	Fog_params.dist_far = _far;
+}
+
+void model_material::set_fog()
+{
+	Fog_params.enabled = false;
+}
+
+bool model_material::is_fogged() const
+{
+	return Fog_params.enabled;
+}
+
+const model_material::fog& model_material::get_fog() const
+{
+	return Fog_params;
 }
 
 uint model_material::get_shader_flags() const

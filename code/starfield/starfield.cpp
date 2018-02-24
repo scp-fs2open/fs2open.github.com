@@ -1694,11 +1694,6 @@ void stars_draw_debris()
 
 	gr_set_color( 0, 0, 0 );
 
-	// turn off fogging
-	if (The_mission.flags[Mission::Mission_Flags::Fullneb]) {
-		gr_fog_set(GR_FOGMODE_NONE, 0, 0, 0);
-	}
-
 	old_debris * d = odebris; 
 
 	for (i=0; i<MAX_DEBRIS; i++, d++ ) {
