@@ -896,7 +896,9 @@ ADE_FUNC(drawTargetingBrackets, l_Graphics, "object Object, [boolean draw=true, 
 	y1 -= padding;
 	y2 += padding;
 	if ( draw_box ) {
-		draw_brackets_square(x1, y1, x2, y2, GR_RESIZE_NONE);
+		graphics::line_draw_list line_draw_list;
+		draw_brackets_square(&line_draw_list, x1, y1, x2, y2, GR_RESIZE_NONE);
+		line_draw_list.flush();
 	}
 
 	if ( entered_frame )
@@ -937,7 +939,9 @@ ADE_FUNC(drawSubsystemTargetingBrackets, l_Graphics, "subsystem subsys, [boolean
 
 	int coords[4];
 
-	int in_sight = draw_subsys_brackets(sshp->ss, 24, 24, draw, set_color, coords);
+	graphics::line_draw_list line_draw_list;
+	int in_sight = draw_subsys_brackets(&line_draw_list, sshp->ss, 24, 24, draw, set_color, coords);
+	line_draw_list.flush();
 
 	if ( entered_frame )
 		g3_end_frame( );

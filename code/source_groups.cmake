@@ -331,6 +331,8 @@ set (file_root_graphics
 	graphics/grinternal.h
 	graphics/light.cpp
 	graphics/light.h
+	graphics/line_draw_list.cpp
+	graphics/line_draw_list.h
 	graphics/material.cpp
 	graphics/material.h
 	graphics/matrix.cpp

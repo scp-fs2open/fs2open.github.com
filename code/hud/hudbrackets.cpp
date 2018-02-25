@@ -22,6 +22,7 @@
 #include "playerman/player.h"
 #include "render/3d.h"
 #include "ship/ship.h"
+#include "tracing/tracing.h"
 #include "weapon/emp.h"
 #include "weapon/weapon.h"
 
@@ -46,7 +47,7 @@ void hud_init_brackets()
 }
 
 //	Called by draw_bounding_brackets.  
-void draw_brackets_square(int x1, int y1, int x2, int y2, int resize_mode)
+void draw_brackets_square(graphics::line_draw_list* draw_list, int x1, int y1, int x2, int y2, int resize_mode)
 {
 	int	width, height;
 
@@ -67,29 +68,29 @@ void draw_brackets_square(int x1, int y1, int x2, int y2, int resize_mode)
 
 	// horizontal lines
 	if ( (x1 + bracket_width > 0) && (x1 < gr_screen.clip_width) ){
-		gr_gradient(x1,y1,x1+bracket_width-1,y1,GR_RESIZE_NONE);	// top left
-		gr_gradient(x1,y2,x1+bracket_width-1,y2,GR_RESIZE_NONE);	// bottom left
+		draw_list->add_gradient(x1,y1,x1+bracket_width-1,y1,GR_RESIZE_NONE);	// top left
+		draw_list->add_gradient(x1,y2,x1+bracket_width-1,y2,GR_RESIZE_NONE);	// bottom left
 	}
 
 	if ( (x2 - bracket_width < gr_screen.clip_width) && (x2 > 0) )	{
-		gr_gradient(x2, y1, x2-bracket_width+1,y1,GR_RESIZE_NONE);	// top right
-		gr_gradient(x2, y2, x2-bracket_width+1,y2,GR_RESIZE_NONE);	// bottom right
+		draw_list->add_gradient(x2, y1, x2-bracket_width+1,y1,GR_RESIZE_NONE);	// top right
+		draw_list->add_gradient(x2, y2, x2-bracket_width+1,y2,GR_RESIZE_NONE);	// bottom right
 	}
 
 	// vertical lines
 	if ( (y1 + bracket_height > 0) && (y1 < gr_screen.clip_height) ) {
-		gr_gradient(x1,y1,x1,y1+bracket_height-1,GR_RESIZE_NONE);		// top left
-		gr_gradient(x2,y1,x2,y1+bracket_height-1,GR_RESIZE_NONE);		// top right
+		draw_list->add_gradient(x1,y1,x1,y1+bracket_height-1,GR_RESIZE_NONE);		// top left
+		draw_list->add_gradient(x2,y1,x2,y1+bracket_height-1,GR_RESIZE_NONE);		// top right
 	}
 
 	if ( (y2 - bracket_height < gr_screen.clip_height) && (y2 > 0) )	{
-		gr_gradient(x1,y2,x1,y2-bracket_height+1,GR_RESIZE_NONE);	// bottom left
-		gr_gradient(x2,y2,x2,y2-bracket_height+1,GR_RESIZE_NONE);	// bottom right
+		draw_list->add_gradient(x1,y2,x1,y2-bracket_height+1,GR_RESIZE_NONE);	// bottom left
+		draw_list->add_gradient(x2,y2,x2,y2-bracket_height+1,GR_RESIZE_NONE);	// bottom right
 	}
 }
 
 // NOTE: all values should be in unscaled range
-void draw_brackets_square_quick(int x1, int y1, int x2, int y2, int thick)
+void draw_brackets_square_quick(graphics::line_draw_list* draw_list, int x1, int y1, int x2, int y2, int thick)
 {
 	int	width, height;
 
@@ -101,47 +102,47 @@ void draw_brackets_square_quick(int x1, int y1, int x2, int y2, int thick)
 	int bracket_height = height/4;
 
 	// top line
-	gr_line(x1,y1,x1+bracket_width,y1);
-	gr_line(x2,y1,x2-bracket_width,y1);
+	draw_list->add_line(x1,y1,x1+bracket_width,y1);
+	draw_list->add_line(x2,y1,x2-bracket_width,y1);
 	if ( thick ) {
-		gr_line(x1,y1+1,x1+bracket_width,y1+1);
-		gr_line(x2,y1+1,x2-bracket_width,y1+1);
+		draw_list->add_line(x1,y1+1,x1+bracket_width,y1+1);
+		draw_list->add_line(x2,y1+1,x2-bracket_width,y1+1);
 	}
 
 	// bottom line
-	gr_line(x1,y2,x1+bracket_width,y2);
-	gr_line(x2,y2,x2-bracket_width,y2);
+	draw_list->add_line(x1,y2,x1+bracket_width,y2);
+	draw_list->add_line(x2,y2,x2-bracket_width,y2);
 	if ( thick ) {
-		gr_line(x1,y2-1,x1+bracket_width,y2-1);
-		gr_line(x2,y2-1,x2-bracket_width,y2-1);
+		draw_list->add_line(x1,y2-1,x1+bracket_width,y2-1);
+		draw_list->add_line(x2,y2-1,x2-bracket_width,y2-1);
 	}
 
 	// left line
 	if ( thick ) {
-		gr_line(x1,y1+2,x1,y1+bracket_height);
-		gr_line(x1,y2-2,x1,y2-bracket_height);
-		gr_line(x1+1,y1+2,x1+1,y1+bracket_height);
-		gr_line(x1+1,y2-2,x1+1,y2-bracket_height);
+		draw_list->add_line(x1,y1+2,x1,y1+bracket_height);
+		draw_list->add_line(x1,y2-2,x1,y2-bracket_height);
+		draw_list->add_line(x1+1,y1+2,x1+1,y1+bracket_height);
+		draw_list->add_line(x1+1,y2-2,x1+1,y2-bracket_height);
 	} else {
-		gr_line(x1,y1+1,x1,y1+bracket_height);
-		gr_line(x1,y2-1,x1,y2-bracket_height);
+		draw_list->add_line(x1,y1+1,x1,y1+bracket_height);
+		draw_list->add_line(x1,y2-1,x1,y2-bracket_height);
 	}
 
 	// right line
 	if ( thick ) {
-		gr_line(x2,y1+2,x2,y1+bracket_height);
-		gr_line(x2,y2-2,x2,y2-bracket_height);
-		gr_line(x2-1,y1+2,x2-1,y1+bracket_height);
-		gr_line(x2-1,y2-2,x2-1,y2-bracket_height);
+		draw_list->add_line(x2,y1+2,x2,y1+bracket_height);
+		draw_list->add_line(x2,y2-2,x2,y2-bracket_height);
+		draw_list->add_line(x2-1,y1+2,x2-1,y1+bracket_height);
+		draw_list->add_line(x2-1,y2-2,x2-1,y2-bracket_height);
 	} else {
-		gr_line(x2,y1+1,x2,y1+bracket_height);
-		gr_line(x2,y2-1,x2,y2-bracket_height);
+		draw_list->add_line(x2,y1+1,x2,y1+bracket_height);
+		draw_list->add_line(x2,y2-1,x2,y2-bracket_height);
 	}
 }
 
 
 #define NUM_DASHES	2
-void draw_brackets_dashed_square_quick(int x1, int y1, int x2, int y2)
+void draw_brackets_dashed_square_quick(graphics::line_draw_list* draw_list, int x1, int y1, int x2, int y2)
 {
 	int	width, height, i;
 
@@ -156,7 +157,7 @@ void draw_brackets_dashed_square_quick(int x1, int y1, int x2, int y2)
 	dash_width = fl2i(bracket_width / ( NUM_DASHES*2 - 1 ) + 0.5f);
 
 	if ( dash_width < 1 ) {
-		draw_brackets_square_quick(x1, y1, x2, y2);
+		draw_brackets_square_quick(draw_list, x1, y1, x2, y2);
 		return;
 	}
 
@@ -164,7 +165,7 @@ void draw_brackets_dashed_square_quick(int x1, int y1, int x2, int y2)
 	dash_height = fl2i(bracket_height / ( NUM_DASHES*2 - 1 ) + 0.5f);
 
 	if ( dash_height < 1 ) {
-		draw_brackets_square_quick(x1, y1, x2, y2);
+		draw_brackets_square_quick(draw_list, x1, y1, x2, y2);
 		return;
 	}
 	
@@ -177,23 +178,23 @@ void draw_brackets_dashed_square_quick(int x1, int y1, int x2, int y2)
 
 	for ( i = 0; i < NUM_DASHES; i++ ) {
 		// top line
-		gr_line(dash_x1, y1, dash_x1+(dash_width-1), y1);
-		gr_line(dash_x2, y1, dash_x2-(dash_width-1), y1);
+		draw_list->add_line(dash_x1, y1, dash_x1+(dash_width-1), y1);
+		draw_list->add_line(dash_x2, y1, dash_x2-(dash_width-1), y1);
 
 		// bottom line
-		gr_line(dash_x1, y2, dash_x1+(dash_width-1), y2);
-		gr_line(dash_x2, y2, dash_x2-(dash_width-1), y2);
+		draw_list->add_line(dash_x1, y2, dash_x1+(dash_width-1), y2);
+		draw_list->add_line(dash_x2, y2, dash_x2-(dash_width-1), y2);
 		
 		dash_x1 += dash_width*2;
 		dash_x2 -= dash_width*2;
 
 		// left line
-		gr_line(x1, dash_y1, x1, dash_y1+(dash_height-1));
-		gr_line(x1, dash_y2, x1, dash_y2-(dash_height-1));
+		draw_list->add_line(x1, dash_y1, x1, dash_y1+(dash_height-1));
+		draw_list->add_line(x1, dash_y2, x1, dash_y2-(dash_height-1));
 
 		// right line
-		gr_line(x2, dash_y1, x2, dash_y1+(dash_height-1));
-		gr_line(x2, dash_y2, x2, dash_y2-(dash_height-1));
+		draw_list->add_line(x2, dash_y1, x2, dash_y1+(dash_height-1));
+		draw_list->add_line(x2, dash_y2, x2, dash_y2-(dash_height-1));
 
 		dash_y1 += dash_height*2;
 		dash_y2 -= dash_height*2;
@@ -206,7 +207,7 @@ void draw_brackets_dashed_square_quick(int x1, int y1, int x2, int y2)
 // draw_brackets_diamond()
 //	Called by draw_bounding_brackets.  
 
-void draw_brackets_diamond(int x1, int y1, int x2, int y2)
+void draw_brackets_diamond(graphics::line_draw_list* draw_list, int x1, int y1, int x2, int y2)
 {
 	int width, height, half_width, half_height;
 	int center_x, center_y;
@@ -231,23 +232,23 @@ void draw_brackets_diamond(int x1, int y1, int x2, int y2)
 	center_y = y1 + half_height;
 
 	// top left line
-	gr_gradient(center_x - x_delta, y1 + y_delta,center_x, y1);
-	gr_gradient(x1 + x_delta, center_y - y_delta, x1, center_y);
+	draw_list->add_gradient(center_x - x_delta, y1 + y_delta,center_x, y1);
+	draw_list->add_gradient(x1 + x_delta, center_y - y_delta, x1, center_y);
 
 	// top right line
-	gr_gradient(center_x + x_delta, y1 + y_delta,center_x, y1);
-	gr_gradient(x2 - x_delta, center_y - y_delta, x2, center_y);
+	draw_list->add_gradient(center_x + x_delta, y1 + y_delta,center_x, y1);
+	draw_list->add_gradient(x2 - x_delta, center_y - y_delta, x2, center_y);
 
 	// bottom left line
-	gr_gradient(x1 + x_delta, center_y + y_delta, x1, center_y);
-	gr_gradient(center_x - x_delta, y2 - y_delta, center_x, y2);
+	draw_list->add_gradient(x1 + x_delta, center_y + y_delta, x1, center_y);
+	draw_list->add_gradient(center_x - x_delta, y2 - y_delta, center_x, y2);
 
 	// bottom right line
-	gr_gradient(x2 - x_delta, center_y + y_delta, x2, center_y);
-	gr_gradient(center_x + x_delta, y2 - y_delta, center_x, y2);
+	draw_list->add_gradient(x2 - x_delta, center_y + y_delta, x2, center_y);
+	draw_list->add_gradient(center_x + x_delta, y2 - y_delta, center_x, y2);
 }
 
-void draw_brackets_diamond_quick(int x1, int y1, int x2, int y2)
+void draw_brackets_diamond_quick(graphics::line_draw_list* draw_list, int x1, int y1, int x2, int y2)
 {
 	int width, height, half_width, half_height;
 	int center_x, center_y;
@@ -271,24 +272,24 @@ void draw_brackets_diamond_quick(int x1, int y1, int x2, int y2)
 	center_y = y1 + half_height;
 
 	// top left line
-	gr_line(center_x - x_delta, y1 + y_delta,center_x, y1);
-	gr_line(x1 + x_delta, center_y - y_delta, x1, center_y);
+	draw_list->add_line(center_x - x_delta, y1 + y_delta,center_x, y1);
+	draw_list->add_line(x1 + x_delta, center_y - y_delta, x1, center_y);
 
 	// top right line
-	gr_line(center_x + x_delta, y1 + y_delta,center_x, y1);
-	gr_line(x2 - x_delta, center_y - y_delta, x2, center_y);
+	draw_list->add_line(center_x + x_delta, y1 + y_delta,center_x, y1);
+	draw_list->add_line(x2 - x_delta, center_y - y_delta, x2, center_y);
 
 	// bottom left line
-	gr_line(x1 + x_delta, center_y + y_delta, x1, center_y);
-	gr_line(center_x - x_delta, y2 - y_delta, center_x, y2);
+	draw_list->add_line(x1 + x_delta, center_y + y_delta, x1, center_y);
+	draw_list->add_line(center_x - x_delta, y2 - y_delta, center_x, y2);
 
 	// bottom right line
-	gr_line(x2 - x_delta, center_y + y_delta, x2, center_y);
-	gr_line(center_x + x_delta, y2 - y_delta, center_x, y2);
+	draw_list->add_line(x2 - x_delta, center_y + y_delta, x2, center_y);
+	draw_list->add_line(center_x + x_delta, y2 - y_delta, center_x, y2);
 
 	// draw an 'X' in the middle of the brackets
-	gr_line(center_x-x_delta, center_y-y_delta, center_x+x_delta, center_y+y_delta);
-	gr_line(center_x-x_delta, center_y+y_delta, center_x+x_delta, center_y-y_delta);
+	draw_list->add_line(center_x-x_delta, center_y-y_delta, center_x+x_delta, center_y+y_delta);
+	draw_list->add_line(center_x-x_delta, center_y+y_delta, center_x+x_delta, center_y-y_delta);
 }
 
 //	Draw bounding brackets for a subobject.
@@ -590,7 +591,7 @@ void draw_bounding_brackets(int x1, int y1, int x2, int y2, int w_correction, in
 }
 #endif
 
-int draw_subsys_brackets(ship_subsys* subsys, int min_width, int min_height, bool draw, bool set_color, int* draw_coords)
+int draw_subsys_brackets(graphics::line_draw_list* draw_list, ship_subsys* subsys, int min_width, int min_height, bool draw, bool set_color, int* draw_coords)
 {
 	Assertion(subsys != NULL, "Invalid subsystem pointer passed to draw_subsys_brackets!");
 
@@ -676,9 +677,9 @@ int draw_subsys_brackets(ship_subsys* subsys, int min_width, int min_height, boo
 		}
 
 		if ( in_sight ) {
-			draw_brackets_square_quick(x1, y1, x2, y2);
+			draw_brackets_square_quick(draw_list, x1, y1, x2, y2);
 		} else {
-			draw_brackets_diamond_quick(x1, y1, x2, y2);
+			draw_brackets_diamond_quick(draw_list, x1, y1, x2, y2);
 		}
 	}
 	
@@ -734,8 +735,6 @@ void HudGaugeBrackets::render(float frametime)
 	if(!in_frame)
 		g3_start_frame(0);
 
-	gr_2d_start_buffer();
-
 	for(size_t i = 0; i < target_display_list.size(); i++) {
 		// make sure this point is projected. Otherwise, skip.
 		if( !(target_display_list[i].target_point.flags & PF_OVERFLOW) ) {
@@ -750,7 +749,7 @@ void HudGaugeBrackets::render(float frametime)
 		}
 	}
 
-	gr_2d_stop_buffer();
+	line_draw_list.flush();
 
 	if(!in_frame)
 		g3_end_frame();
@@ -758,6 +757,8 @@ void HudGaugeBrackets::render(float frametime)
 
 void HudGaugeBrackets::renderObjectBrackets(object *targetp, color *clr, int w_correction, int h_correction, int flags)
 {
+	TRACE_SCOPE(tracing::RenderTargettingBracket);
+
 	int x1,x2,y1,y2;
 	bool draw_box = true;
 	int bound_rc;
@@ -861,6 +862,8 @@ void HudGaugeBrackets::renderObjectBrackets(object *targetp, color *clr, int w_c
 
 void HudGaugeBrackets::renderNavBrackets(vec3d* nav_pos, vertex* nav_point, color* clr, char* string)
 {
+	TRACE_SCOPE(tracing::RenderNavBracket);
+
 	float dist;
 	int box_scale = 15;
 	int x, y;
@@ -881,7 +884,7 @@ void HudGaugeBrackets::renderNavBrackets(vec3d* nav_pos, vertex* nav_point, colo
 		box_scale=4;
 
 	gr_set_color_fast(clr);
-	draw_brackets_square(x-box_scale, y-box_scale, x+box_scale, y+box_scale);
+	draw_brackets_square(&line_draw_list, x-box_scale, y-box_scale, x+box_scale, y+box_scale);
 
 	// draw the nav name
 	if(string) {
@@ -933,7 +936,7 @@ void HudGaugeBrackets::renderBoundingBrackets(int x1, int y1, int x2, int y2, in
 		y2 = y2 + (Min_target_box_height-height)/2;
 	}
 	
-	draw_brackets_square(x1-w_correction, y1-h_correction, x2+w_correction, y2+h_correction);
+	draw_brackets_square(&line_draw_list, x1-w_correction, y1-h_correction, x2+w_correction, y2+h_correction);
 
 	// draw distance to target in lower right corner of box
 	if ( distance > 0 ) {
@@ -1135,9 +1138,9 @@ void HudGaugeBrackets::renderBoundingBracketsSubobject()
 			}
 
 			if ( Player->subsys_in_view ) {
-				draw_brackets_square_quick(x1, y1, x2, y2);
+				draw_brackets_square_quick(&line_draw_list, x1, y1, x2, y2);
 			} else {
-				draw_brackets_diamond_quick(x1, y1, x2, y2);
+				draw_brackets_diamond_quick(&line_draw_list, x1, y1, x2, y2);
 			}
 			// mprintf(("Drawing subobject brackets at %4i, %4i\n", sx, sy));
 
