@@ -202,6 +202,7 @@ enum class uniform_block_type {
 	NanoVGData = 2,
 	DecalInfo = 3,
 	DecalGlobals = 4,
+	DeferredGlobals = 5,
 
 	NUM_BLOCK_TYPES
 };

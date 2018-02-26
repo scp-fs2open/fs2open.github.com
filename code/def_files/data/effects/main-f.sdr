@@ -146,6 +146,7 @@ out vec4 fragOut0;
 out vec4 fragOut1;
 out vec4 fragOut2;
 out vec4 fragOut3;
+out vec4 fragOut4;
 
 vec3 FresnelLazarovEnv(vec3 specColor, vec3 view, vec3 normal, float gloss)
 {
@@ -213,12 +214,15 @@ void main()
 #ifdef FLAG_SHADOW_MAP
 	// need depth and depth squared for variance shadow maps
 	fragOut0 = vec4(fragPosition.z, fragPosition.z * fragPosition.z * VARIANCE_SHADOW_SCALE_INV, 0.0, 1.0);
-	return;
+	if (true) {
+		return;
+	}
 #endif
 	vec3 eyeDir = vec3(normalize(-fragPosition).xyz);
 	vec2 texCoord = fragTexCoord.xy;
 	vec4 baseColor = color;
 	vec4 specColor = vec4(0.0, 0.0, 0.0, 1.0);
+	vec4 emissiveColor = vec4(0.0, 0.0, 0.0, 1.0);
 	float fresnelFactor = 0.0;
 	float glossData = 0.6;
 #ifdef FLAG_LIGHT
@@ -295,30 +299,45 @@ void main()
 	baseColor.rgb = max(baseColor.rgb, vec3(0.0));
  #endif
 #endif
-	float shadow = 1.0;
-#ifdef FLAG_SHADOWS
-	shadow = getShadowValue(shadow_map, -fragPosition.z, fragShadowPos.z, fragShadowUV, fardist, middist, neardist, veryneardist);
-#endif
-#ifdef FLAG_LIGHT
-	baseColor.rgb = CalculateLighting(normal, baseColor.rgb, specColor.rgb, glossData, fresnelFactor, shadow, aoFactors.x);
-#else
- #ifdef FLAG_SPEC_MAP
+	// Lights aren't applied when we are rendering to the G-buffers since that gets handled later
+#ifdef FLAG_DEFERRED
+ #ifdef FLAG_LIGHT
+	// Ambient lighting still needs to be done since that counts as an "emissive" color
+	vec3 lightAmbient = (emissionFactor + ambientFactor * ambientFactor) * aoFactors.x; // ambientFactor^2 due to legacy OpenGL compatibility behavior
+	emissiveColor.rgb += baseColor.rgb * lightAmbient;
+ #else
+  #ifdef FLAG_SPEC_MAP
 	baseColor.rgb += pow(1.0 - clamp(dot(eyeDir, normal), 0.0, 1.0), 5.0 * clamp(glossData, 0.01, 1.0)) * specColor.rgb;
+  #endif
+	// If there is no lighting then we copy the color data so far into the
+	emissiveColor.rgb += baseColor.rgb;
+ #endif
+#else
+ #ifdef FLAG_LIGHT
+	float shadow = 1.0;
+  #ifdef FLAG_SHADOWS
+	shadow = getShadowValue(shadow_map, -fragPosition.z, fragShadowPos.z, fragShadowUV, fardist, middist, neardist, veryneardist);
+  #endif
+	baseColor.rgb = CalculateLighting(normal, baseColor.rgb, specColor.rgb, glossData, fresnelFactor, shadow, aoFactors.x);
+ #else
+  #ifdef FLAG_SPEC_MAP
+	baseColor.rgb += pow(1.0 - clamp(dot(eyeDir, normal), 0.0, 1.0), 5.0 * clamp(glossData, 0.01, 1.0)) * specColor.rgb;
+  #endif
  #endif
 #endif
 #ifdef FLAG_ENV_MAP
-   vec3 envReflectNM = fragEnvReflect;
+	vec3 envReflectNM = fragEnvReflect;
  #ifdef FLAG_NORMAL_MAP
-   envReflectNM += vec3(normalSample, 0.0);
+	envReflectNM += vec3(normalSample, 0.0);
 	envReflectNM = normalize(envReflectNM);
  #endif
 	float mip = (envGloss) ? (1.0 - glossData) * 7.0 : 0.0;
-   vec4 envColour = textureLod(sEnvmap, envReflectNM, mip);
+	vec4 envColour = textureLod(sEnvmap, envReflectNM, mip);
  #ifdef FLAG_HDR
 	envColour.rgb = pow(envColour.rgb, vec3(SRGB_GAMMA));
  #endif
 	envColour.rgb *= (envGloss) ? 1.0 : specColor.a;
-	baseColor.rgb += envColour.rgb * FresnelLazarovEnv(specColor.rgb, eyeDir, normal, glossData);
+	emissiveColor.rgb += envColour.rgb * FresnelLazarovEnv(specColor.rgb, eyeDir, normal, glossData);
 #endif
 #ifdef FLAG_GLOW_MAP
 	vec3 glowColor = texture(sGlowmap, vec3(texCoord, float(sGlowmapIndex))).rgb;
@@ -332,7 +351,7 @@ void main()
 	glowColor = team_glow_enabled ? mix((base * teamMask.b) + (stripe * teamMask.a), glowColor, clamp(glowColorLuminance - teamMask.b - teamMask.a, 0.0, 1.0)) : glowColor;
   #endif
  #endif
-   baseColor.rgb += glowColor * GLOW_MAP_INTENSITY;
+   emissiveColor.rgb += glowColor * GLOW_MAP_INTENSITY;
 #endif
 
 #ifdef FLAG_FOG
@@ -355,15 +374,13 @@ void main()
 #ifdef FLAG_ANIMATED
    if (effect_num == 0) {
       float shinefactor = 1.0/(1.0 + pow(abs((fract(abs(texCoord.x))-anim_timer) * 1000.0), 2.0)) * 1000.0;
-      baseColor.rgb = baseColor.rgb + vec3(shinefactor);
+      emissiveColor.rgb += vec3(shinefactor);
       baseColor.a = baseColor.a * clamp(shinefactor * (fract(abs(texCoord.x))-anim_timer) * -10000.0,0.0,1.0);
    }
    if (effect_num == 1) {
       float shinefactor = 1.0/(1.0 + pow(abs(fragPosition.y-anim_timer), 2.0));
-      baseColor.rgb = baseColor.rgb + vec3(shinefactor);
- #ifdef FLAG_LIGHT
-      baseColor.a = baseColor.a;
- #else
+      emissiveColor.rgb += vec3(shinefactor);
+ #ifndef FLAG_LIGHT
       // ATI Wireframe fix *grumble*
       baseColor.a = clamp((fragPosition.y-anim_timer) * 10000.0,0.0,1.0);
  #endif
@@ -383,10 +400,15 @@ void main()
 	float normViewOffset = dot(vec3(0.0, 0.0, 1.0), normal);
 	baseColor.a = smoothstep(min(normalAlphaMinMax.x, normalAlphaMinMax.y), max(normalAlphaMinMax.x, normalAlphaMinMax.y), clamp(normalAlphaMinMax.x > normalAlphaMinMax.y ? normViewOffset : 1.0 - normViewOffset, 0.0, 1.0));
 #endif
+#ifndef FLAG_DEFERRED
+	// emissive colors won't be added later when we are using forward rendering so we need to do that here
+	baseColor.rgb += emissiveColor.rgb;
+#endif
 	fragOut0 = baseColor;
 #ifdef FLAG_DEFERRED
 	fragOut1 = vec4(fragPosition.xyz, 1.0);
 	fragOut2 = vec4(normal, glossData);
 	fragOut3 = vec4(specColor.rgb, fresnelFactor);
+	fragOut4 = emissiveColor;
 #endif
 }

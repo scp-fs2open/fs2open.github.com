@@ -92,3 +92,14 @@ float getShadowValue(sampler2DArray shadow_map, float depth, float shadowDepth, 
 	return mix(samplePoissonPCF(shadow_map, shadowDepth, cascade, shadowUV), samplePoissonPCF(shadow_map, shadowDepth, cascade+1, shadowUV),
 			smoothstep(cascade_start_dist[cascade+1] - dist_threshold, cascade_start_dist[cascade+1], depth));
 }
+
+vec4 transformToShadowMap(mat4 shadow_proj_matrix, int i, vec4 pos)
+{
+	vec4 shadow_proj;
+	shadow_proj = shadow_proj_matrix * pos;
+	shadow_proj += 1.0;
+	shadow_proj *= 0.5;
+	shadow_proj.w = shadow_proj.z;
+	shadow_proj.z = float(i);
+	return shadow_proj;
+}

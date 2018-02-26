@@ -1,4 +1,9 @@
 
+const int LT_DIRECTIONAL	= 0;		// A light like a sun
+const int LT_POINT			= 1;		// A point light, like an explosion
+const int LT_TUBE			= 2;		// A tube light, like a fluorescent light
+const int LT_CONE			= 3;		// A cone light, like a flood light
+
 const float SPEC_INTENSITY_POINT		= 5.3 ;// Point light
 const float SPEC_INTENSITY_DIRECTIONAL	= 3.0 ;// Directional light
 const float SPECULAR_FACTOR				= 1.75;

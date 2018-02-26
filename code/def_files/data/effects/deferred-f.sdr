@@ -1,6 +1,8 @@
 
 #include "lighting.sdr"
 
+#include "shadows.sdr"
+
 in vec3 beamVec;
 in vec3 lightPosition;
 out vec4 fragOut0;
@@ -9,10 +11,23 @@ uniform sampler2D ColorBuffer;
 uniform sampler2D NormalBuffer;
 uniform sampler2D PositionBuffer;
 uniform sampler2D SpecBuffer;
+uniform sampler2DArray shadow_map;
 
-uniform float specFactor;
-uniform float invScreenWidth;
-uniform float invScreenHeight;
+layout (std140) uniform globalDeferredData {
+	mat4 shadow_mv_matrix;
+	mat4 shadow_proj_matrix[4];
+
+	mat4 inv_view_matrix;
+
+	float veryneardist;
+	float neardist;
+	float middist;
+	float fardist;
+
+	float specFactor;
+	float invScreenWidth;
+	float invScreenHeight;
+};
 
 layout (std140) uniform lightData {
 	vec3 diffuseLightColor;
@@ -27,8 +42,59 @@ layout (std140) uniform lightData {
 	vec3 scale;
 	float lightRadius;
 
+	vec3 lightDir;
 	int lightType;
+
+	bool enable_shadows;
 };
+
+void GetLightInfo(vec3 position, out vec3 lightDir, out float attenuation)
+{
+	if (lightType == LT_DIRECTIONAL) {
+		lightDir = normalize(lightPosition);
+		attenuation = 1.0;
+	} else {
+		// Positional light source
+		lightDir = lightPosition - position.xyz;
+		float dist = length(lightDir);
+		attenuation = 1.0 - clamp(dist / lightRadius, 0.0, 1.0);
+
+		if(dist > lightRadius && lightType != LT_TUBE) {
+			discard;
+		}
+
+		if (lightType == LT_TUBE) {  // Tube light
+			float beamLength = length(beamVec);
+			vec3 beamDir = beamVec / beamLength;
+			// Get nearest point on line
+			float neardist = clamp(dot(lightDir, beamDir), 0.0, beamLength);
+			// Move back from the endpoint of the beam along the beam by the distance we calculated
+			vec3 nearest = lightPosition - beamDir * neardist;
+			lightDir = nearest - position.xyz;
+			dist = length(lightDir);
+			if(dist > lightRadius) {
+				discard;
+			}
+		} else if (lightType == LT_CONE) {
+			float coneDot = dot(normalize(-lightDir), coneDir);
+			if(dualCone) {
+				if(abs(coneDot) < coneAngle) {
+					discard;
+				} else {
+					attenuation *= smoothstep(coneAngle, coneInnerAngle, abs(coneDot));
+				}
+			} else {
+				if (coneDot < coneAngle) {
+					discard;
+				} else {
+					attenuation *= smoothstep(coneAngle, coneInnerAngle, coneDot);
+				}
+			}
+		}
+
+		lightDir = normalize(lightDir);
+	}
+}
 
 void main()
 {
@@ -37,10 +103,7 @@ void main()
 
 	if(abs(dot(position, position)) < 0.1)
 		discard;
-	vec3 lightDir = lightPosition - position.xyz;
-	float dist = length(lightDir);
-	if(dist > lightRadius && lightType != 1)
-		discard;
+
 	vec3 color = texture(ColorBuffer, screenPos).rgb;
 	vec4 normal = texture(NormalBuffer, screenPos);
 	vec4 specColor = texture(SpecBuffer, screenPos);
@@ -48,39 +111,23 @@ void main()
 	float fresnel = specColor.a;
 	vec3 eyeDir = normalize(-position);
 
-	if(lightType == 1)
-	{
-		float beamLength = length(beamVec);
-		vec3 beamDir = beamVec / beamLength;
-		// Get nearest point on line
-		float neardist = clamp(dot(lightDir, beamDir), 0.0, beamLength);
-		// Move back from the endpoint of the beam along the beam by the distance we calculated
-		vec3 nearest = lightPosition - beamDir * neardist;
-		lightDir = nearest - position.xyz;
-		dist = length(lightDir);
-		if(dist > lightRadius)
-			discard;
+	vec3 lightDir;
+	float attenuation;
+
+	GetLightInfo(position, lightDir, attenuation);
+
+	if (enable_shadows) {
+		vec4 fragShadowPos = shadow_mv_matrix * inv_view_matrix * vec4(position, 1.0);
+		vec4 fragShadowUV[4];
+		fragShadowUV[0] = transformToShadowMap(shadow_proj_matrix[0], 0, fragShadowPos);
+		fragShadowUV[1] = transformToShadowMap(shadow_proj_matrix[1], 1, fragShadowPos);
+		fragShadowUV[2] = transformToShadowMap(shadow_proj_matrix[2], 2, fragShadowPos);
+		fragShadowUV[3] = transformToShadowMap(shadow_proj_matrix[3], 3, fragShadowPos);
+
+		attenuation *= getShadowValue(shadow_map, -position.z, fragShadowPos.z, fragShadowUV, fardist, middist,
+								neardist, veryneardist);
 	}
 
-	float attenuation = 1.0 - clamp(dist / lightRadius, 0.0, 1.0);
-
-	if(lightType == 2)
-	{
-		float coneDot = dot(normalize(-lightDir), coneDir);
-		if(dualCone) {
-			if(abs(coneDot) < coneAngle)
-				discard;
-			else
-				attenuation *= smoothstep(coneAngle, coneInnerAngle, abs(coneDot));
-		} else {
-			if(coneDot < coneAngle)
-				discard;
-			else
-				attenuation *= smoothstep(coneAngle, coneInnerAngle, coneDot);
-		}
-	}
-
-	lightDir /= dist;
 	vec3 halfVec = normalize(lightDir + eyeDir);
 	float NdotL = clamp(dot(normal.xyz, lightDir), 0.0, 1.0);
 	vec4 fragmentColor = vec4(color * (diffuseLightColor * NdotL * attenuation), 1.0);
