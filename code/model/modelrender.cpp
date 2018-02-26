@@ -1654,7 +1654,7 @@ void model_render_glowpoint(int point_num, vec3d *pos, matrix *orient, glow_poin
 	vec3d submodel_static_offset; // The associated submodel's static offset in the ship's frame of reference
 	bool submodel_rotation = false;
 
-	if ( bank->submodel_parent > 0 && pm->submodel[bank->submodel_parent].can_move && (gameseq_get_state_idx(GS_STATE_LAB) == -1) && shipp != NULL ) {
+	if ( bank->submodel_parent > 0 && pm->submodel[bank->submodel_parent].can_move && shipp != NULL ) {
 		model_find_submodel_offset(&submodel_static_offset, Ship_info[shipp->ship_info_index].model_num, bank->submodel_parent);
 
 		submodel_rotation = true;
