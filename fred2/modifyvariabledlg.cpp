@@ -54,8 +54,8 @@ BEGIN_MESSAGE_MAP(CModifyVariableDlg, CDialog)
 	ON_BN_CLICKED(ID_DELETE_VARIABLE, OnDeleteVariable)
 	ON_BN_CLICKED(IDC_TYPE_STRING, OnTypeString)
 	ON_BN_CLICKED(IDC_TYPE_NUMBER, OnTypeNumber)
-	ON_BN_CLICKED(IDC_TYPE_PLAYER_PERSISTENT, OnTypePlayerPersistent)
-	ON_BN_CLICKED(IDC_TYPE_CAMPAIGN_PERSISTENT, OnTypeCampaignPersistent)
+	ON_BN_CLICKED(IDC_TYPE_PLAYER_PERSISTENT, OnTypeMissionClose)
+	ON_BN_CLICKED(IDC_TYPE_CAMPAIGN_PERSISTENT, OnTypeMissionProgress)
 	ON_BN_CLICKED(IDC_TYPE_NETWORK_VARIABLE, OnTypeNetworkVariable)
 	ON_BN_CLICKED(IDC_TYPE_ETERNAL, OnTypeEternal)
 	ON_CBN_SELCHANGE(IDC_MODIFY_VARIABLE_NAME, OnSelchangeModifyVariableName)
@@ -177,18 +177,18 @@ void CModifyVariableDlg::OnTypeNumber()
 }
 
 // set player persistence
-void CModifyVariableDlg::OnTypePlayerPersistent()
+void CModifyVariableDlg::OnTypeMissionClose()
 {
-	m_type_player_persistent = ((CButton *) GetDlgItem(IDC_TYPE_PLAYER_PERSISTENT))->GetCheck() ? true : false;
+	m_type_on_mission_close = ((CButton *) GetDlgItem(IDC_TYPE_PLAYER_PERSISTENT))->GetCheck() ? true : false;
 
 	// keep track if type is really changed (ugh - just force it to be always changed)
 	m_modified_persistence = true;
 
-	if (m_type_player_persistent)
-		m_type_campaign_persistent = false;
+	if (m_type_on_mission_close)
+		m_type_on_mission_progress = false;
 
 	// if the variable isn't persistent, it can't be eternal
-	if (!m_type_player_persistent && !m_type_campaign_persistent) {
+	if (!m_type_on_mission_close && !m_type_on_mission_progress) {
 		m_type_eternal = false;
 	}
 
@@ -196,18 +196,18 @@ void CModifyVariableDlg::OnTypePlayerPersistent()
 }
 
 // set campaign persistence
-void CModifyVariableDlg::OnTypeCampaignPersistent()
+void CModifyVariableDlg::OnTypeMissionProgress()
 {
-	m_type_campaign_persistent = ((CButton *) GetDlgItem(IDC_TYPE_CAMPAIGN_PERSISTENT))->GetCheck() ? true : false;
+	m_type_on_mission_progress = ((CButton *) GetDlgItem(IDC_TYPE_CAMPAIGN_PERSISTENT))->GetCheck() ? true : false;
 
 	// keep track if type is really changed (ugh - just force it to be always changed)
 	m_modified_persistence = true;
 
-	if (m_type_campaign_persistent)
-		m_type_player_persistent = false;
+	if (m_type_on_mission_progress)
+		m_type_on_mission_close = false;
 	
 	// if the variable isn't persistent, it can't be eternal
-	if (!m_type_player_persistent && !m_type_campaign_persistent) {
+	if (!m_type_on_mission_close && !m_type_on_mission_progress) {
 		m_type_eternal = false;
 	}
 
@@ -222,7 +222,7 @@ void CModifyVariableDlg::OnTypeEternal()
 	m_modified_persistence = true;
 
 	// if the variable isn't persistent, it can't be eternal
-	if (!m_type_player_persistent && !m_type_campaign_persistent) {
+	if (!m_type_on_mission_close && !m_type_on_mission_progress) {
 		m_type_eternal = false;
 		MessageBox("Eternal variables must have a different persistence type set first!");
 	}
@@ -271,8 +271,8 @@ void CModifyVariableDlg::OnSelchangeModifyVariableName()
 	
 	// Set new type for selection
 	m_type_number = ((Sexp_variables[sexp_variable_index].type & SEXP_VARIABLE_NUMBER) != 0) ? true : false;
-	m_type_campaign_persistent = ((Sexp_variables[sexp_variable_index].type & SEXP_VARIABLE_SAVE_ON_MISSION_PROGRESS) != 0) ? true : false;
-	m_type_player_persistent = ((Sexp_variables[sexp_variable_index].type & SEXP_VARIABLE_SAVE_ON_MISSION_CLOSE) != 0) ? true : false;
+	m_type_on_mission_progress = ((Sexp_variables[sexp_variable_index].type & SEXP_VARIABLE_SAVE_ON_MISSION_PROGRESS) != 0) ? true : false;
+	m_type_on_mission_close = ((Sexp_variables[sexp_variable_index].type & SEXP_VARIABLE_SAVE_ON_MISSION_CLOSE) != 0) ? true : false;
 	m_type_network_variable = ((Sexp_variables[sexp_variable_index].type & SEXP_VARIABLE_NETWORK) != 0) ? true : false;
 	m_type_eternal = ((Sexp_variables[sexp_variable_index].type & SEXP_VARIABLE_SAVE_TO_PLAYER_FILE) != 0) ? true : false;
 	set_variable_type();
@@ -358,8 +358,8 @@ BOOL CModifyVariableDlg::OnInitDialog()
 	
 	// Set type
 	m_type_number = ((Sexp_variables[last_modified].type & SEXP_VARIABLE_NUMBER) != 0) ? true : false;
-	m_type_campaign_persistent = ((Sexp_variables[last_modified].type & SEXP_VARIABLE_SAVE_ON_MISSION_PROGRESS) != 0) ? true : false;
-	m_type_player_persistent = ((Sexp_variables[last_modified].type & SEXP_VARIABLE_SAVE_ON_MISSION_CLOSE) != 0) ? true : false;
+	m_type_on_mission_progress = ((Sexp_variables[last_modified].type & SEXP_VARIABLE_SAVE_ON_MISSION_PROGRESS) != 0) ? true : false;
+	m_type_on_mission_close = ((Sexp_variables[last_modified].type & SEXP_VARIABLE_SAVE_ON_MISSION_CLOSE) != 0) ? true : false;
 	m_type_network_variable = ((Sexp_variables[last_modified].type & SEXP_VARIABLE_NETWORK) != 0) ? true : false;
 	m_type_eternal = ((Sexp_variables[last_modified].type & SEXP_VARIABLE_SAVE_TO_PLAYER_FILE) != 0) ? true : false;
 	set_variable_type();
@@ -418,8 +418,8 @@ void CModifyVariableDlg::set_variable_type()
 	button_number->SetCheck( m_type_number);
 	button_string->SetCheck(!m_type_number);
 
-	((CButton *) GetDlgItem(IDC_TYPE_CAMPAIGN_PERSISTENT))->SetCheck(m_type_campaign_persistent);
-	((CButton *) GetDlgItem(IDC_TYPE_PLAYER_PERSISTENT))->SetCheck(m_type_player_persistent);
+	((CButton *) GetDlgItem(IDC_TYPE_CAMPAIGN_PERSISTENT))->SetCheck(m_type_on_mission_progress);
+	((CButton *) GetDlgItem(IDC_TYPE_PLAYER_PERSISTENT))->SetCheck(m_type_on_mission_close);
 	((CButton *) GetDlgItem(IDC_TYPE_NETWORK_VARIABLE))->SetCheck(m_type_network_variable);
 	((CButton *) GetDlgItem(IDC_TYPE_ETERNAL))->SetCheck(m_type_eternal);
 }

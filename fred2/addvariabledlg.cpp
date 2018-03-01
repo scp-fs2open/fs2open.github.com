@@ -25,8 +25,8 @@ BEGIN_MESSAGE_MAP(CAddVariableDlg, CDialog)
 	//{{AFX_MSG_MAP(CAddVariableDlg)
 	ON_BN_CLICKED(IDC_TYPE_NUMBER, OnTypeNumber)
 	ON_BN_CLICKED(IDC_TYPE_STRING, OnTypeString)
-	ON_BN_CLICKED(IDC_TYPE_CAMPAIGN_PERSISTENT, OnTypeCampaignPersistent)
-	ON_BN_CLICKED(IDC_TYPE_PLAYER_PERSISTENT, OnTypePlayerPersistent)
+	ON_BN_CLICKED(IDC_TYPE_CAMPAIGN_PERSISTENT, OnTypeMissionProgress)
+	ON_BN_CLICKED(IDC_TYPE_PLAYER_PERSISTENT, OnTypeMissionClose)
 	ON_BN_CLICKED(IDC_TYPE_NETWORK_VARIABLE, OnTypeNetworkVariable)
 	ON_BN_CLICKED(IDC_TYPE_ETERNAL, OnTypeEternal)
 	//}}AFX_MSG_MAP
@@ -59,8 +59,8 @@ BOOL CAddVariableDlg::OnInitDialog() {
 
 	// Set variable type to number
 	m_type_number = true;
-	m_type_campaign_persistent = false;
-	m_type_player_persistent = false;
+	m_type_on_mission_progress = false;
+	m_type_on_mission_close = false;
 	m_type_eternal = false;
 	m_type_network_variable = false;
 	set_variable_type();
@@ -145,14 +145,14 @@ void CAddVariableDlg::OnOK() {
 	}
 }
 
-void CAddVariableDlg::OnTypeCampaignPersistent() {
-	m_type_campaign_persistent = ((CButton *) GetDlgItem(IDC_TYPE_CAMPAIGN_PERSISTENT))->GetCheck() ? true : false;
+void CAddVariableDlg::OnTypeMissionProgress() {
+	m_type_on_mission_progress = ((CButton *) GetDlgItem(IDC_TYPE_CAMPAIGN_PERSISTENT))->GetCheck() ? true : false;
 
-	if (m_type_campaign_persistent)
-		m_type_player_persistent = false;
+	if (m_type_on_mission_progress)
+		m_type_on_mission_close = false;
 
 	// if the variable isn't persistent, it can't be eternal
-	if (!m_type_campaign_persistent && !m_type_player_persistent)
+	if (!m_type_on_mission_progress && !m_type_on_mission_close)
 		m_type_eternal = false;
 
 	set_variable_type();
@@ -168,18 +168,18 @@ void CAddVariableDlg::OnTypeNumber() {
 	set_variable_type();
 }
 
-void CAddVariableDlg::OnTypePlayerPersistent() {
-	m_type_player_persistent = ((CButton *) GetDlgItem(IDC_TYPE_PLAYER_PERSISTENT))->GetCheck() ? true : false;
+void CAddVariableDlg::OnTypeMissionClose() {
+	m_type_on_mission_close = ((CButton *) GetDlgItem(IDC_TYPE_PLAYER_PERSISTENT))->GetCheck() ? true : false;
 
-	if (m_type_player_persistent)
-		m_type_campaign_persistent = false;
+	if (m_type_on_mission_close)
+		m_type_on_mission_progress = false;
 
 	// if the variable isn't persistent, it can't be eternal
-	if (!m_type_campaign_persistent && !m_type_player_persistent)
+	if (!m_type_on_mission_progress && !m_type_on_mission_close)
 		m_type_eternal = false;
 
 	// if the variable isn't persistent, it can't be eternal
-	if (!m_type_player_persistent && !m_type_campaign_persistent) {
+	if (!m_type_on_mission_close && !m_type_on_mission_progress) {
 		m_type_eternal = false;
 	}
 
@@ -191,7 +191,7 @@ void CAddVariableDlg::OnTypeEternal() {
 
 
 	// if the variable isn't persistent, it can't be eternal
-	if (!m_type_player_persistent && !m_type_campaign_persistent) {
+	if (!m_type_on_mission_close && !m_type_on_mission_progress) {
 		m_type_eternal = false;
 		MessageBox("Eternal variables must have a different persistence type set first!");
 	}
@@ -212,8 +212,8 @@ void CAddVariableDlg::set_variable_type() {
 	button_number->SetCheck(m_type_number);
 	button_string->SetCheck(!m_type_number);
 
-	((CButton *) GetDlgItem(IDC_TYPE_CAMPAIGN_PERSISTENT))->SetCheck(m_type_campaign_persistent);
-	((CButton *) GetDlgItem(IDC_TYPE_PLAYER_PERSISTENT))->SetCheck(m_type_player_persistent);
+	((CButton *) GetDlgItem(IDC_TYPE_CAMPAIGN_PERSISTENT))->SetCheck(m_type_on_mission_progress);
+	((CButton *) GetDlgItem(IDC_TYPE_PLAYER_PERSISTENT))->SetCheck(m_type_on_mission_close);
 	((CButton *) GetDlgItem(IDC_TYPE_NETWORK_VARIABLE))->SetCheck(m_type_network_variable);
 	((CButton *) GetDlgItem(IDC_TYPE_ETERNAL))->SetCheck(m_type_eternal);
 }

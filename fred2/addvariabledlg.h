@@ -40,8 +40,8 @@ public:
 	bool m_type_number;     //!< True if the type is a number, false if the type is a string
 
 	// Checkbox group
-	bool m_type_campaign_persistent;		//!< True if the variable is saved whenever the mission is complete
-	bool m_type_player_persistent;			//!< True if the variable is saved whenever the mission ends
+	bool m_type_on_mission_progress;		//!< True if the variable is saved whenever the mission is complete
+	bool m_type_on_mission_close;			//!< True if the variable is saved whenever the mission ends
 	bool m_type_network_variable;		    //!< True if the variable is a network variable (multiplayer)
 	bool m_type_eternal;						//!< True if the variable is saved to the player file instead
 
@@ -105,18 +105,18 @@ protected:
 	afx_msg void OnTypeString();
 
 	/**
-	 * @brief Handler for the Player Persistent radio checkbox
+	 * @brief Handler for the On Mission Close radio checkbox
 	 *
-	 * @details A variable may be player persistent, campaign persitent, or not persetent.
+	 * @details A variable may be single mission or may update when the mission closes or only when the mission is complete.
 	 */
-	afx_msg void OnTypePlayerPersistent();
+	afx_msg void OnTypeMissionClose();
 
 	/**
-	 * @brief Handler for the Campaign Persistent radio checkbox
+	 * @brief Handler for the On Mission Progress radio checkbox
 	 *
-	 * @details A variable may be player persistent, campaign persitent, or not persetent.
+	 * @details A variable may be single mission or may update when the mission closes or only when the mission is complete.
 	 */
-	afx_msg void OnTypeCampaignPersistent();
+	afx_msg void OnTypeMissionProgress();
 
 	/**
 	* @brief Handler for the Eternal Persistent radio checkbox

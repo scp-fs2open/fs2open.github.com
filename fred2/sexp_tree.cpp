@@ -1586,9 +1586,9 @@ BOOL sexp_tree::OnCommand(WPARAM wParam, LPARAM lParam)
 				type |= SEXP_VARIABLE_NETWORK;
 			}
 
-			if ( dlg.m_type_campaign_persistent ) {
+			if ( dlg.m_type_on_mission_progress) {
 				type |= SEXP_VARIABLE_SAVE_ON_MISSION_PROGRESS;
-			} else if ( dlg.m_type_player_persistent ) {
+			} else if ( dlg.m_type_on_mission_close) {
 				type |= SEXP_VARIABLE_SAVE_ON_MISSION_CLOSE;
 			}
 
@@ -1659,9 +1659,9 @@ BOOL sexp_tree::OnCommand(WPARAM wParam, LPARAM lParam)
 				type |= SEXP_VARIABLE_NETWORK;
 			}
 
-			if ( dlg.m_type_campaign_persistent ) {
+			if ( dlg.m_type_on_mission_progress) {
 				type |= SEXP_VARIABLE_SAVE_ON_MISSION_PROGRESS;
-			} else if ( dlg.m_type_player_persistent ) {
+			} else if ( dlg.m_type_on_mission_close) {
 				type |= SEXP_VARIABLE_SAVE_ON_MISSION_CLOSE;
 			}
 
