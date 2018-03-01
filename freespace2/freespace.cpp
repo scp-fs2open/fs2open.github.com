@@ -932,6 +932,8 @@ void game_level_close()
 		gr_set_ambient_light(120, 120, 120);
 
 		stars_level_close();
+
+		Pilot.save_savefile();
 	}
 	else
 	{
