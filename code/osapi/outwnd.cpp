@@ -202,7 +202,7 @@ void outwnd_print(const char *id, const char *tmp)
 		outwnd_filter_struct new_filter;
 
 		strcpy_s(new_filter.name, id);
-		new_filter.enabled = true;
+		new_filter.enabled = stricmp(new_filter.name, "general") == 0 || stricmp(new_filter.name, "error") == 0 || stricmp(new_filter.name, "warning") == 0;
 
 		OutwndFilter.push_back( new_filter );
 		save_filter_info();

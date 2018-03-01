@@ -1,5 +1,7 @@
 #extension GL_ARB_gpu_shader5: enable
 
+#include "shadows.sdr"
+
 #define MAX_LIGHTS 8
 
 struct model_light {
@@ -144,18 +146,6 @@ void getModelTransform(inout mat4 transform, out bool invisible, int id, int mat
 	transform[3].w = 1.0;
 }
 #endif
-#ifdef FLAG_SHADOWS
-vec4 transformToShadowMap(int i, vec4 pos)
-{
-	vec4 shadow_proj;
-	shadow_proj = shadow_proj_matrix[i] * pos;
-	shadow_proj += 1.0;
-	shadow_proj *= 0.5;
-	shadow_proj.w = shadow_proj.z;
-	shadow_proj.z = float(i);
-	return shadow_proj;
-}
-#endif
 void main()
 {
 	vec4 position;
@@ -210,10 +200,10 @@ void main()
  #endif
  #ifdef FLAG_SHADOWS
 	fragShadowPos = shadow_mv_matrix * modelMatrix * orient * vertPosition;
-	fragShadowUV[0] = transformToShadowMap(0, fragShadowPos);
-	fragShadowUV[1] = transformToShadowMap(1, fragShadowPos);
-	fragShadowUV[2] = transformToShadowMap(2, fragShadowPos);
-	fragShadowUV[3] = transformToShadowMap(3, fragShadowPos);
+	fragShadowUV[0] = transformToShadowMap(shadow_proj_matrix[0], 0, fragShadowPos);
+	fragShadowUV[1] = transformToShadowMap(shadow_proj_matrix[1], 1, fragShadowPos);
+	fragShadowUV[2] = transformToShadowMap(shadow_proj_matrix[2], 2, fragShadowPos);
+	fragShadowUV[3] = transformToShadowMap(shadow_proj_matrix[3], 3, fragShadowPos);
  #endif
  #ifdef FLAG_NORMAL_MAP
  // Setup stuff for normal maps

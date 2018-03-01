@@ -168,6 +168,7 @@ class model_material : public material
 	bool Desaturate = false;
 
 	bool Shadow_casting = false;
+	bool Shadow_receiving = false;
 	bool Batched = false;
 
 	bool Deferred = false;
@@ -200,6 +201,9 @@ public:
 
 	void set_shadow_casting(bool enabled);
 	bool is_shadow_casting() const;
+
+	void set_shadow_receiving(bool enabled);
+	bool is_shadow_receiving() const;
 
 	void set_light_factor(float factor);
 	float get_light_factor() const;

@@ -23,6 +23,7 @@ extern GLuint Scene_color_texture;
 extern GLuint Scene_position_texture;
 extern GLuint Scene_normal_texture;
 extern GLuint Scene_specular_texture;
+extern GLuint Scene_emissive_texture;
 extern GLuint Scene_luminance_texture;
 extern GLuint Scene_effect_texture;
 extern GLuint Scene_depth_texture;

@@ -488,9 +488,17 @@ void model_draw_list::add_buffer_draw(model_material *render_material, indexed_v
 {
 	queued_buffer_draw draw_data;
 
-	render_material->set_deferred_lighting(Deferred_lighting);
-	render_material->set_high_dynamic_range(High_dynamic_range);
-	render_material->set_shadow_casting(Rendering_to_shadow_map ? true : false);
+	if (Rendering_to_shadow_map) {
+		render_material->set_shadow_casting(true);
+	} else {
+		// If the zbuffer type is FULL then this buffer may be drawn in the deferred lighting part otehrwise we need to
+		// make sure that the deferred flag is disabled or else some parts of the rendered colors go missing
+		// TODO: This should really be handled somewhere else. This feels like a crude hack...
+		auto possibly_deferred = render_material->get_depth_mode() == ZBUFFER_TYPE_FULL;
+		render_material->set_deferred_lighting(possibly_deferred ? Deferred_lighting : false);
+		render_material->set_high_dynamic_range(High_dynamic_range);
+		render_material->set_shadow_receiving(Cmdline_shadow_quality != 0);
+	}
 
 	if (tmap_flags & TMAP_FLAG_BATCH_TRANSFORMS && buffer->flags & VB_FLAG_MODEL_ID) {
 		vm_matrix4_set_identity(&draw_data.transform);
@@ -1646,7 +1654,7 @@ void model_render_glowpoint(int point_num, vec3d *pos, matrix *orient, glow_poin
 	vec3d submodel_static_offset; // The associated submodel's static offset in the ship's frame of reference
 	bool submodel_rotation = false;
 
-	if ( bank->submodel_parent > 0 && pm->submodel[bank->submodel_parent].can_move && (gameseq_get_state_idx(GS_STATE_LAB) == -1) && shipp != NULL ) {
+	if ( bank->submodel_parent > 0 && pm->submodel[bank->submodel_parent].can_move && shipp != NULL ) {
 		model_find_submodel_offset(&submodel_static_offset, Ship_info[shipp->ship_info_index].model_num, bank->submodel_parent);
 
 		submodel_rotation = true;

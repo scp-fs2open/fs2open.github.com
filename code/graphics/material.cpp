@@ -496,6 +496,18 @@ void model_material::set_shadow_casting(bool enabled)
 	Shadow_casting = enabled;
 }
 
+bool model_material::is_shadow_casting() const {
+	return Shadow_casting;
+}
+
+void model_material::set_shadow_receiving(bool enabled) {
+	Shadow_receiving = enabled;
+}
+
+bool model_material::is_shadow_receiving() const {
+	return Shadow_receiving;
+}
+
 void model_material::set_light_factor(float factor)
 {
 	Light_factor = factor;
@@ -700,7 +712,7 @@ uint model_material::get_shader_flags() const
 	if ( lighting ) {
 		Shader_flags |= SDR_FLAG_MODEL_LIGHT;
 		
-		if ( Cmdline_shadow_quality && !Shadow_casting && !Shadow_override ) {
+		if ( Shadow_receiving && !Shadow_override ) {
 			Shader_flags |= SDR_FLAG_MODEL_SHADOWS;
 		}
 	}
