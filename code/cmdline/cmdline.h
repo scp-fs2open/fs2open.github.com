@@ -62,7 +62,6 @@ extern float static_point_factor;
 extern float static_tube_factor;
 extern int Cmdline_ambient_factor;
 extern int Cmdline_env;
-extern int Cmdline_missile_lighting;
 extern int Cmdline_glow;
 extern int Cmdline_nomotiondebris;
 extern int Cmdline_noscalevid;	// disables fit-to-window for movies - taylor
@@ -77,7 +76,6 @@ extern bool Cmdline_fxaa;
 extern int Cmdline_fxaa_preset;
 extern bool Cmdline_fb_explosions;
 extern bool Cmdline_fb_thrusters;
-extern bool Cmdline_no_batching;
 extern int Cmdline_shadow_quality;
 extern int Cmdline_no_deferred_lighting;
 extern int Cmdline_no_emissive;

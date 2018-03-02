@@ -160,6 +160,7 @@ int generic_anim_stream(generic_anim *ga, const bool cache)
 	int anim_fps = 0;
 	char full_path[MAX_PATH];
 	size_t size = 0, offset = 0;
+	const void* file_data = nullptr;
 	const int NUM_TYPES = 3;
 	const ubyte type_list[NUM_TYPES] = {BM_TYPE_EFF, BM_TYPE_ANI, BM_TYPE_PNG};
 	const char *ext_list[NUM_TYPES] = {".eff", ".ani", ".png"};
@@ -168,14 +169,14 @@ int generic_anim_stream(generic_anim *ga, const bool cache)
 
 	ga->type = BM_TYPE_NONE;
 
-	rval = cf_find_file_location_ext(ga->filename, NUM_TYPES, ext_list, CF_TYPE_ANY, sizeof(full_path) - 1, full_path, &size, &offset, 0);
+	rval = cf_find_file_location_ext(ga->filename, NUM_TYPES, ext_list, CF_TYPE_ANY, sizeof(full_path) - 1, full_path, &size, &offset, 0, &file_data);
 
 	// could not be found, or is invalid for some reason
 	if ( (rval < 0) || (rval >= NUM_TYPES) )
 		return -1;
 
 	//make sure we can open it
-	img_cfp = cfopen_special(full_path, "rb", size, offset, CF_TYPE_ANY);
+	img_cfp = cfopen_special(full_path, "rb", size, offset, file_data, CF_TYPE_ANY);
 
 	if (img_cfp == NULL) {
 		return -1;

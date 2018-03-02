@@ -1277,11 +1277,10 @@ static void APIENTRY debug_callback(GLenum source, GLenum type, GLuint id, GLenu
 	switch(severity) {
 		case GL_DEBUG_SEVERITY_HIGH_ARB:
 			severityStr = "High";
-			print_to_general_log = true; // High and medium messages are sent to the normal log for later troubleshooting
+			print_to_general_log = true; // High priority messages are sent to the normal log for later troubleshooting
 			break;
 		case GL_DEBUG_SEVERITY_MEDIUM_ARB:
 			severityStr = "Medium";
-			print_to_general_log = true;
 			break;
 		case GL_DEBUG_SEVERITY_LOW_ARB:
 			severityStr = "Low";

@@ -17,13 +17,15 @@
 #include "mission/missionparse.h"
 #include "graphics/util/UniformBuffer.h"
 
-extern light Lights[MAX_LIGHTS];
+extern SCP_vector<light> Lights;
 extern int Num_lights;
 
 extern bool Rendering_to_shadow_map;
 
 extern matrix Object_matrix;
 extern vec3d Object_position;
+
+extern color Wireframe_color;
 
 inline int in_box(vec3d *min, vec3d *max, vec3d *pos, vec3d *view_position)
 {
@@ -306,6 +308,7 @@ fix model_render_determine_base_frametime(int objnum, uint flags);
 bool model_render_check_detail_box(vec3d *view_pos, polymodel *pm, int submodel_num, uint flags);
 void model_render_arc(vec3d *v1, vec3d *v2, color *primary, color *secondary, float arc_width);
 void model_render_insignias(insignia_draw_data *insignia);
+void model_render_set_wireframe_color(color* clr);
 
 void model_render_determine_color(color *clr, float alpha, gr_alpha_blend blend_mode, bool no_texturing, bool desaturate);
 gr_alpha_blend model_render_determine_blend_mode(int base_bitmap, bool blending);

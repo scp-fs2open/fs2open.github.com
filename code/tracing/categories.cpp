@@ -63,6 +63,7 @@ Category DrawMotionDebris("Draw Motion debris", true);
 Category DrawBackground("Draw Background", true);
 Category DrawSuns("Draw Suns", true);
 Category DrawBitmaps("Draw Bitmaps", true);
+Category SunspotProcess("Process Sunspots", true);
 
 Category RepeatingEvents("Repeating events", false);
 Category NonrepeatingEvents("Nonrepeating events", false);
@@ -119,4 +120,6 @@ Category WeaponPageIn("Weapon page in", false);
 
 Category RenderDecals("Render all decals", true);
 Category RenderSingleDecal("Render single decal", true);
+Category GpuHeapAllocate("GPU heap allocate", false);
+Category GpuHeapDeallocate("GPU heap deallocate", false);
 }

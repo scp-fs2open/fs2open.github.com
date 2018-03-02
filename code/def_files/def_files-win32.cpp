@@ -13,6 +13,7 @@
 
 struct def_file
 {
+	const char* path_type;
 	const char* filename;
 	const TCHAR* resource_name;
 };
@@ -45,6 +46,8 @@ default_file defaults_get_file(const char *filename)
 				continue;
 			}
 
+			def.path_type = iter->path_type;
+			def.filename = iter->filename;
 			def.data = LockResource(resHandle);
 			def.size = SizeofResource(nullptr, resource);
 
@@ -58,4 +61,35 @@ default_file defaults_get_file(const char *filename)
 	def.data = nullptr;
 	def.data = 0;
 	return def;
+}
+
+SCP_vector<default_file> defaults_get_all() {
+	SCP_vector<default_file> files;
+
+	for (auto& file : Default_files) {
+		default_file def;
+
+		HRSRC resource = FindResource(nullptr, file.resource_name, RT_RCDATA);
+
+		if (resource == nullptr)
+		{
+			continue;
+		}
+
+		HGLOBAL resHandle = LoadResource(nullptr, resource);
+
+		if (resHandle == nullptr)
+		{
+			continue;
+		}
+
+		def.path_type = file.path_type;
+		def.filename = file.filename;
+		def.data = LockResource(resHandle);
+		def.size = SizeofResource(nullptr, resource);
+
+		files.push_back(def);
+	}
+
+	return files;
 }

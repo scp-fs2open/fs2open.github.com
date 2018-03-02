@@ -6007,12 +6007,7 @@ void weapon_do_area_effect(object *wobjp, shockwave_create_info *sci, vec3d *pos
 
 	}	// end for
 
-	// if this weapon has the "Electronics" flag set, then disrupt subsystems in sphere
-	if ( (other_obj != NULL) && (wip->wi_flags[Weapon::Info_Flags::Electronics]) ) {
-		if ( other_obj->type == OBJ_SHIP ) {
-			weapon_do_electronics_effect(other_obj, pos, Weapons[wobjp->instance].weapon_info_index);
-		}
-	}
+
 }
 
 //	----------------------------------------------------------------------
@@ -6262,6 +6257,13 @@ void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos, int qu
 	if(wip->wi_flags[Weapon::Info_Flags::Emp]){
 		emp_apply(&weapon_obj->pos, wip->shockwave.inner_rad, wip->shockwave.outer_rad, wip->emp_intensity, wip->emp_time, (wip->wi_flags[Weapon::Info_Flags::Use_emp_time_for_capship_turrets]) != 0);
 	}	
+
+	// if this weapon has the "Electronics" flag set, then disrupt subsystems in sphere
+	if ((other_obj != NULL) && (wip->wi_flags[Weapon::Info_Flags::Electronics])) {
+		if (other_obj->type == OBJ_SHIP) {
+			weapon_do_electronics_effect(other_obj, &weapon_obj->pos, Weapons[weapon_obj->instance].weapon_info_index);
+		}
+	}
 
 	// spawn weapons - note the change from FS 1 multiplayer.
 	if (wip->wi_flags[Weapon::Info_Flags::Spawn]){
@@ -7344,10 +7346,10 @@ void weapon_render(object* obj, model_draw_list *scene)
 		{
 			model_render_params render_info;
 
-			uint render_flags = MR_NORMAL|MR_IS_MISSILE|MR_NO_LIGHTING|MR_NO_BATCH;
+			uint render_flags = MR_NORMAL|MR_IS_MISSILE|MR_NO_BATCH;
 
-			if (Cmdline_missile_lighting && !(wip->wi_flags[Weapon::Info_Flags::Mr_no_lighting]))
-				render_flags &= ~MR_NO_LIGHTING;
+			if (wip->wi_flags[Weapon::Info_Flags::Mr_no_lighting])
+				render_flags |= MR_NO_LIGHTING;
 
 			if (wip->wi_flags[Weapon::Info_Flags::Transparent]) {
 				render_info.set_alpha(wp->alpha_current);

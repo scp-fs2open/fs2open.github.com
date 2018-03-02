@@ -7,9 +7,6 @@
  *
 */
 
-
-
-
 #include <math/bitarray.h>
 #include "cmdline/cmdline.h"
 #include "globalincs/pstypes.h"
@@ -34,12 +31,11 @@ struct gr_light
 	float SpotExp, SpotCutOff;
 	float ConstantAtten, LinearAtten, QuadraticAtten;
 
-	bool occupied;
 	int type;
 };
 
 // Variables
-gr_light* gr_lights = NULL;
+SCP_vector<gr_light> gr_lights;
 graphics::model_light gr_light_uniforms[graphics::MAX_UNIFORM_LIGHTS];
 
 int Num_active_gr_lights = 0;
@@ -49,6 +45,7 @@ const float gr_light_color[4] = { 0.8f, 0.8f, 0.8f, 1.0f };
 const float gr_light_zero[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
 const float gr_light_emission[4] = { 0.09f, 0.09f, 0.09f, 1.0f };
 float gr_light_ambient[4] = { 0.47f, 0.47f, 0.47f, 1.0f };
+float gr_user_ambient = 0.0f;
 
 void FSLight2GLLight(light* FSLight, gr_light* GLLight) {
 	GLLight->Ambient.xyzw.x = 0.0f;
@@ -66,7 +63,7 @@ void FSLight2GLLight(light* FSLight, gr_light* GLLight) {
 	GLLight->Specular.xyzw.z = FSLight->spec_b * FSLight->intensity;
 	GLLight->Specular.xyzw.w = 1.0f;
 
-	GLLight->type = FSLight->type;
+	GLLight->type = static_cast<int>(FSLight->type);
 
 	// GL default values...
 	// spot direction
@@ -89,7 +86,7 @@ void FSLight2GLLight(light* FSLight, gr_light* GLLight) {
 
 
 	switch (FSLight->type) {
-	case LT_POINT: {
+	case Light_Type::Point: {
 		// this crap still needs work...
 		GLLight->ConstantAtten = 1.0f;
 		GLLight->LinearAtten = (1.0f / MAX(FSLight->rada, FSLight->radb)) * 1.25f;
@@ -101,7 +98,7 @@ void FSLight2GLLight(light* FSLight, gr_light* GLLight) {
 		break;
 	}
 
-	case LT_TUBE: {
+	case Light_Type::Tube: {
 		GLLight->ConstantAtten = 1.0f;
 		GLLight->LinearAtten = (1.0f / MAX(FSLight->rada, FSLight->radb)) * 1.25f;
 		GLLight->QuadraticAtten = (1.0f / MAX(FSLight->rada_squared, FSLight->radb_squared)) * 1.25f;
@@ -125,7 +122,7 @@ void FSLight2GLLight(light* FSLight, gr_light* GLLight) {
 		break;
 	}
 
-	case LT_DIRECTIONAL: {
+	case Light_Type::Directional: {
 		GLLight->Position.xyzw.x = -FSLight->vec.xyz.x;
 		GLLight->Position.xyzw.y = -FSLight->vec.xyz.y;
 		GLLight->Position.xyzw.z = -FSLight->vec.xyz.z;
@@ -138,11 +135,11 @@ void FSLight2GLLight(light* FSLight, gr_light* GLLight) {
 		break;
 	}
 
-	case LT_CONE:
+	case Light_Type::Cone:
 		break;
 
 	default:
-		Int3();
+		Error(LOCATION, "Unknown light type in FSLight2GLLight. Expected was 0, 1, 2 or 3, we got %i", static_cast<int>(FSLight->type));
 		break;
 	}
 }
@@ -202,20 +199,15 @@ static bool sort_active_lights(const gr_light& la, const gr_light& lb) {
 
 static void pre_render_init_lights() {
 	// sort the lights to try and get the most visible lights on the first pass
-	std::sort(gr_lights, gr_lights + Num_active_gr_lights, sort_active_lights);
+	std::sort(gr_lights.begin(), gr_lights.end(), sort_active_lights);
 }
 
 void gr_set_light(light* fs_light) {
-	if (Num_active_gr_lights >= MAX_LIGHTS) {
-		return;
-	}
-
-//if (fs_light->type == LT_POINT)
-//	return;
-
 	// init the light
-	FSLight2GLLight(fs_light, &gr_lights[Num_active_gr_lights]);
-	gr_lights[Num_active_gr_lights++].occupied = true;
+	gr_light grl;
+	FSLight2GLLight(fs_light, &grl);
+	gr_lights.push_back(grl);
+	Num_active_gr_lights++;
 }
 
 void gr_set_center_alpha(int type) {
@@ -239,7 +231,8 @@ void gr_set_center_alpha(int type) {
 		glight.Ambient.xyzw.x = gr_screen.current_alpha;
 		glight.Ambient.xyzw.y = gr_screen.current_alpha;
 		glight.Ambient.xyzw.z = gr_screen.current_alpha;
-	} else {
+	}
+	else {
 		glight.Diffuse.xyzw.x = gr_screen.current_alpha;
 		glight.Diffuse.xyzw.y = gr_screen.current_alpha;
 		glight.Diffuse.xyzw.z = gr_screen.current_alpha;
@@ -271,73 +264,36 @@ void gr_set_center_alpha(int type) {
 	glight.ConstantAtten = 1.0f;
 	glight.LinearAtten = 0.0f;
 	glight.QuadraticAtten = 0.0f;
-	glight.occupied = false;
 
 	// first light
-	memcpy(&gr_lights[Num_active_gr_lights], &glight, sizeof(gr_light));
-	gr_lights[Num_active_gr_lights++].occupied = true;
+	gr_lights.push_back(glight);
 
 	// second light
 	glight.Position.xyzw.x = dir.xyz.x;
 	glight.Position.xyzw.y = dir.xyz.y;
 	glight.Position.xyzw.z = dir.xyz.z;
 
-	memcpy(&gr_lights[Num_active_gr_lights], &glight, sizeof(gr_light));
-	gr_lights[Num_active_gr_lights++].occupied = true;
+	gr_lights.push_back(glight);
 }
 
 void gr_reset_lighting() {
-	int i;
-
-	for (i = 0; i < (int)graphics::MAX_UNIFORM_LIGHTS; i++) {
-		gr_lights[i].occupied = false;
-	}
-
+	gr_lights.clear();
 	Num_active_gr_lights = 0;
 }
 
-static void calculate_ambient_factor() {
-	float amb_user = 0.0f;
-
-	// assuming that the default is "128", just skip this if not a user setting
-	if (Cmdline_ambient_factor == 128) {
-		return;
-	}
-
-	amb_user = (float) ((Cmdline_ambient_factor * 2) - 255) / 255.0f;
-
-	// set the ambient light
-	gr_light_ambient[0] += amb_user;
-	gr_light_ambient[1] += amb_user;
-	gr_light_ambient[2] += amb_user;
-
-	CLAMP(gr_light_ambient[0], 0.02f, 1.0f);
-	CLAMP(gr_light_ambient[1], 0.02f, 1.0f);
-	CLAMP(gr_light_ambient[2], 0.02f, 1.0f);
-
-	gr_light_ambient[3] = 1.0f;
+void gr_calculate_ambient_factor(int ambient_factor) {
+	gr_user_ambient = (float) ((ambient_factor * 2) - 255) / 255.0f;
 }
 
 void gr_light_shutdown() {
-	if (gr_lights != NULL) {
-		vm_free(gr_lights);
-		gr_lights = NULL;
-	}
+	gr_lights.clear();
 }
 
 void gr_light_init() {
-	calculate_ambient_factor();
+	gr_calculate_ambient_factor();
 
 	// allocate memory for enabled lights
-	if (gr_lights == NULL) {
-		gr_lights = (gr_light*) vm_malloc(MAX_LIGHTS * sizeof(gr_light), memory::quiet_alloc);
-	}
-
-	if (gr_lights == NULL) {
-		Error(LOCATION, "Unable to allocate memory for lights!\n");
-	}
-
-	memset(gr_lights, 0, MAX_LIGHTS * sizeof(gr_light));
+	gr_lights.reserve(MAX_LIGHTS);
 }
 
 void gr_set_lighting(bool set, bool state) {
@@ -358,9 +314,10 @@ void gr_set_lighting(bool set, bool state) {
 			break;
 		}
 
-		if (gr_lights[i].occupied) {
-			set_light(i, &gr_lights[i]);
-		}
+		if (gr_lights[i].type != LT_DIRECTIONAL)
+			continue;
+
+		set_light(i, &gr_lights[i]);
 	}
 
 	gr_light zero;
@@ -379,5 +336,5 @@ void gr_set_ambient_light(int red, int green, int blue) {
 	gr_light_ambient[2] = i2fl(blue) / 255.0f;
 	gr_light_ambient[3] = 1.0f;
 
-	calculate_ambient_factor();
+	gr_calculate_ambient_factor();
 }

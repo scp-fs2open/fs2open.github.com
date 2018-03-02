@@ -8874,7 +8874,7 @@ void ship_process_post(object * obj, float frametime)
 
 	if(!(Game_mode & GM_STANDALONE_SERVER)) {
 		// Plot ship on the radar.  What about multiplayer ships?
-		if ( obj != Player_obj )			// don't plot myself.
+		if ( obj != Player_obj && Game_mode & GM_IN_MISSION )			// don't plot myself.
 			radar_plot_object( obj );
 
 		// MWA -- move the spark code to before the check for multiplayer master
@@ -8968,7 +8968,7 @@ void ship_process_post(object * obj, float frametime)
 		//rotate player subobjects since its processed by the ai functions
 		// AL 2-19-98: Fire turret for player if it exists
 		//WMC - changed this to call process_subobjects
-		if ( (obj->flags[Object::Object_Flags::Player_ship]) && !Player_use_ai )
+		if ((obj->flags[Object::Object_Flags::Player_ship]) && !Player_use_ai)
 		{
 			ai_info *aip = &Ai_info[Ships[obj->instance].ai_index];
 			if (aip->ai_flags[AI::AI_Flags::Being_repaired, AI::AI_Flags::Awaiting_repair])
@@ -8979,7 +8979,8 @@ void ship_process_post(object * obj, float frametime)
 						return;
 				}
 			}
-			process_subobjects(OBJ_INDEX(obj));
+			if (!shipp->flags[Ship::Ship_Flags::Rotators_locked])
+				process_subobjects(OBJ_INDEX(obj));
 		}
 
 		if (obj == Player_obj) {
@@ -17724,8 +17725,7 @@ int calculation_type_get(char *str)
 }
 
 //STEP 4: Add the calculation to the switch statement.
-float ArmorType::GetDamage(float damage_applied, int in_damage_type_idx, float diff_dmg_scale)
-{
+float ArmorType::GetDamage(float damage_applied, int in_damage_type_idx, float diff_dmg_scale, int is_beam) {
 	// Nuke: If the weapon has no damage type, just return damage
 	if (in_damage_type_idx < 0) {
 		// multiply by difficulty scaler now, since it is no longer done where this is called
@@ -17811,6 +17811,20 @@ float ArmorType::GetDamage(float damage_applied, int in_damage_type_idx, float d
 				constant_val = 0.0f;
 				curr_arg = constant_val;
 			}
+
+			//face: terrible hack to work consistently with beams and additive damages
+			if (is_beam && ( adtp->Calculations[i] == AT_TYPE_ADDITIVE
+				|| adtp->Calculations[i] == AT_TYPE_CUTOFF
+				|| adtp->Calculations[i] == AT_TYPE_REVERSE_CUTOFF
+				|| adtp->Calculations[i] == AT_TYPE_INSTANT_CUTOFF
+				|| adtp->Calculations[i] == AT_TYPE_INSTANT_REVERSE_CUTOFF
+				|| adtp->Calculations[i] == AT_TYPE_CAP
+				|| adtp->Calculations[i] == AT_TYPE_INSTANT_CAP
+				|| adtp->Calculations[i] == AT_TYPE_SET
+				|| adtp->Calculations[i] == AT_TYPE_RANDOM)) {
+				curr_arg = curr_arg * (flFrametime * 1000.0f) / i2fl(BEAM_DAMAGE_TIME);
+			}
+
 			// new calcs go here
 			switch(adtp->Calculations[i])
 			{
@@ -17904,7 +17918,11 @@ float ArmorType::GetDamage(float damage_applied, int in_damage_type_idx, float d
 		// Nuke: check to see if we need to difficulty scale damage last
 		if (adtp->difficulty_scale_type == ADT_DIFF_SCALE_LAST)
 			damage_applied *= diff_dmg_scale;
-	
+
+		// Face: negative damages should not heal you!!!
+		if (damage_applied < 0.0f)
+			damage_applied = 0.0f;
+
 		return damage_applied;
 	}
 	// fail return is fail
@@ -18405,11 +18423,11 @@ int ship_get_sound(object *objp, GameSoundsIndex id)
 	Assert( objp != NULL );
 	Assert( gamesnd_game_sound_valid(id) );
 
-	// ugh, it's possible that we're an observer at this point
-	if (objp->type == OBJ_OBSERVER)
+	// It's possible that this gets called when an object (in most cases the player) is dead or an observer
+	if (objp->type == OBJ_OBSERVER || objp->type == OBJ_GHOST)
 		return id;
 
-	Assert( objp->type == OBJ_SHIP );
+	Assertion(objp->type == OBJ_SHIP, "Expected a ship, got '%s'.", Object_type_names[objp->type]);
 
 	ship *shipp = &Ships[objp->instance];
 	ship_info *sip = &Ship_info[shipp->ship_info_index];
@@ -18427,7 +18445,11 @@ bool ship_has_sound(object *objp, GameSoundsIndex id)
 	Assert( objp != NULL );
 	Assert( gamesnd_game_sound_valid(id) );
 
-	Assert( objp->type == OBJ_SHIP );
+	// It's possible that this gets called when an object (in most cases the player) is dead or an observer
+	if (objp->type == OBJ_OBSERVER || objp->type == OBJ_GHOST)
+		return false;
+
+	Assertion(objp->type == OBJ_SHIP, "Expected a ship, got '%s'.", Object_type_names[objp->type]);
 
 	ship *shipp = &Ships[objp->instance];
 	ship_info *sip = &Ship_info[shipp->ship_info_index];
@@ -18893,7 +18915,7 @@ void ship_render(object* obj, model_draw_list* scene)
 	// Valathil - maybe do a scripting hook here to do some scriptable effects?
 	ship_render_set_animated_effect(&render_info, shipp, &render_flags);
 
-	if ( sip->uses_team_colors ) {
+	if ( sip->uses_team_colors && !shipp->flags[Ship_Flags::Render_without_miscmap] ) {
 		team_color model_team_color;
 
 		bool team_color_set = model_get_team_color(&model_team_color, shipp->team_name, shipp->secondary_team_name, shipp->team_change_timestamp, shipp->team_change_time);
@@ -18915,7 +18937,39 @@ void ship_render(object* obj, model_draw_list* scene)
 		render_flags |= MR_NO_GLOWMAPS;
 	}
 
+	if (shipp->flags[Ship_Flags::Draw_as_wireframe]) {
+		render_flags |= MR_SHOW_OUTLINE_HTL | MR_NO_POLYS | MR_NO_TEXTURING;
+		render_info.set_color(Wireframe_color);
+	}
+
+	if (shipp->flags[Ship_Flags::Render_full_detail]) {
+		render_flags |= MR_FULL_DETAIL;
+	}
+
+	if (shipp->flags[Ship_Flags::Render_without_light]) {
+		render_flags |= MR_NO_LIGHTING;
+	}
+
+	uint debug_flags = render_info.get_debug_flags();
+
+	if (shipp->flags[Ship_Flags::Render_without_diffuse]) {
+		debug_flags |= MR_DEBUG_NO_DIFFUSE;
+	}
+
+	if (shipp->flags[Ship_Flags::Render_without_glowmap]) {
+		debug_flags |= MR_DEBUG_NO_GLOW;
+	}
+	
+	if (shipp->flags[Ship_Flags::Render_without_normalmap]) {
+		debug_flags |= MR_DEBUG_NO_NORMAL;
+	}
+
+	if (shipp->flags[Ship_Flags::Render_without_specmap]) {
+		debug_flags |= MR_DEBUG_NO_SPEC;
+	}
+
 	render_info.set_flags(render_flags);
+	render_info.set_debug_flags(debug_flags);
 
 	//draw weapon models
 	ship_render_weapon_models(&render_info, scene, obj, render_flags);

@@ -74,6 +74,15 @@ matrix:
                       - g++-5
                       - *global_deps
         - os: linux
+          env: CONFIGURATION="Debug" CC=gcc-7 CXX=g++-7
+          addons:
+              apt:
+                  sources:
+                      - ubuntu-toolchain-r-test
+                  packages:
+                      - g++-7
+                      - *global_deps
+        - os: linux
           env: CONFIGURATION="Debug" CC=clang-3.6 CXX=clang++-3.6
           addons:
               apt:
@@ -94,6 +103,15 @@ matrix:
                       - ubuntu-toolchain-r-test
                   packages:
                       - g++-5
+                      - *global_deps
+        - os: linux
+          env: CONFIGURATION="Release" CC=gcc-7 CXX=g++-7
+          addons:
+              apt:
+                  sources:
+                      - ubuntu-toolchain-r-test
+                  packages:
+                      - g++-7
                       - *global_deps
         - os: linux
           env: CONFIGURATION="Release" CC=clang-3.6 CXX=clang++-3.6

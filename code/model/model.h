@@ -860,6 +860,14 @@ void model_set_detail_level(int n);
 #define MR_DEBUG_RADIUS				(1<<2)		// Show the radius around the object
 #define MR_DEBUG_SHIELDS			(1<<3)		// Show the shield mesh
 #define MR_DEBUG_BAY_PATHS			(1<<4)		// draw bay paths
+#define MR_DEBUG_NO_DIFFUSE			(1<<5)
+#define MR_DEBUG_NO_SPEC			(1<<6)
+#define MR_DEBUG_NO_NORMAL			(1<<7)
+#define MR_DEBUG_NO_ENV				(1<<8)
+#define MR_DEBUG_NO_GLOW			(1<<9)
+#define MR_DEBUG_NO_HEIGHT			(1<<10)
+#define MR_DEBUG_NO_AMBIENT			(1<<11)
+#define MR_DEBUG_NO_MISC			(1<<12)
 
 //Defines for the render parameter of model_render, model_really_render and model_render_buffers
 #define MODEL_RENDER_OPAQUE 1
@@ -1313,6 +1321,7 @@ void model_draw_bay_paths_htl(int model_num);
 
 bool model_interp_config_buffer(indexed_vertex_source *vert_src, vertex_buffer *vb, bool update_ibuffer_only);
 bool model_interp_pack_buffer(indexed_vertex_source *vert_src, vertex_buffer *vb);
+void model_interp_submit_buffers(indexed_vertex_source *vert_src, size_t vertex_stride);
 void model_allocate_interp_data(int n_verts = 0, int n_norms = 0);
 
 void glowpoint_init();

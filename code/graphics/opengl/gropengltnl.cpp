@@ -293,6 +293,8 @@ void gr_opengl_update_buffer_data_offset(int handle, size_t offset, size_t size,
 
 void gr_opengl_delete_buffer(int handle)
 {
+	if (GL_buffer_objects.size() == 0) return;
+
 	GR_DEBUG_SCOPE("Deleting buffer");
 
 	Assert(handle >= 0);
@@ -413,10 +415,6 @@ void opengl_tnl_init()
 {
 	Transform_buffer_handle = opengl_create_texture_buffer_object();
 
-	if ( Transform_buffer_handle < 0 ) {
-		Cmdline_no_batching = true;
-	}
-
 	if(Cmdline_shadow_quality)
 	{
 		//Setup shadow map framebuffer
@@ -428,6 +426,7 @@ void opengl_tnl_init()
 		GL_state.Texture.SetActiveUnit(0);
 		GL_state.Texture.SetTarget(GL_TEXTURE_2D_ARRAY);
 		GL_state.Texture.Enable(Shadow_map_depth_texture);
+		opengl_set_object_label(GL_TEXTURE, Shadow_map_depth_texture, "Scene shadow depth map");
 
 		glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 		glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -455,6 +454,7 @@ void opengl_tnl_init()
 		GL_state.Texture.SetActiveUnit(0);
 		GL_state.Texture.SetTarget(GL_TEXTURE_2D_ARRAY);
 		GL_state.Texture.Enable(Shadow_map_texture);
+		opengl_set_object_label(GL_TEXTURE, Shadow_map_texture, "Scene shadow map");
 
 		glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 		glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -508,11 +508,7 @@ void opengl_render_model_program(model_material* material_info, indexed_vertex_s
 
 	opengl_tnl_set_model_material(material_info);
 
-	GLubyte *ibuffer = NULL;
-
-	size_t start = 0;
-	size_t end = (datap->n_verts - 1);
-	size_t count = (end - (start * 3) + 1);
+	GLubyte *ibuffer = reinterpret_cast<GLubyte*>(vert_source->Index_offset);
 
 	GLenum element_type = (datap->flags & VB_FLAG_LARGE_INDEX) ? GL_UNSIGNED_INT : GL_UNSIGNED_SHORT;
 
@@ -527,23 +523,27 @@ void opengl_render_model_program(model_material* material_info, indexed_vertex_s
 
 	// If GL_ARB_gpu_shader5 is supprted then the instancing is handled by the geometry shader
 	if ( !GLAD_GL_ARB_gpu_shader5 && Rendering_to_shadow_map ) {
-		glDrawElementsInstancedBaseVertex(GL_TRIANGLES, (GLsizei) count, element_type,
-										  ibuffer + (datap->index_offset + start), 4, (GLint)bufferp->vertex_num_offset);
+		glDrawElementsInstancedBaseVertex(GL_TRIANGLES,
+										  (GLsizei) datap->n_verts,
+										  element_type,
+										  ibuffer + datap->index_offset,
+										  4,
+										  (GLint) (vert_source->Base_vertex_offset + bufferp->vertex_num_offset));
 	} else {
 		if (Cmdline_drawelements) {
 			glDrawElementsBaseVertex(GL_TRIANGLES,
-									 (GLsizei) count,
+									 (GLsizei) datap->n_verts,
 									 element_type,
-									 ibuffer + (datap->index_offset + start),
-									 (GLint) bufferp->vertex_num_offset);
+									 ibuffer + datap->index_offset,
+									 (GLint) (vert_source->Base_vertex_offset + bufferp->vertex_num_offset));
 		} else {
 			glDrawRangeElementsBaseVertex(GL_TRIANGLES,
 										  datap->i_first,
 										  datap->i_last,
-										  (GLsizei) count,
+										  (GLsizei) datap->n_verts,
 										  element_type,
-										  ibuffer + (datap->index_offset + start),
-										  (GLint) bufferp->vertex_num_offset);
+										  ibuffer + datap->index_offset,
+										  (GLint) (vert_source->Base_vertex_offset + bufferp->vertex_num_offset));
 		}
 	}
 

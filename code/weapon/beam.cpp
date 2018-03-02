@@ -53,7 +53,6 @@
 // randomness factor - all beam weapon aiming is adjusted by +/- some factor within this range
 #define BEAM_RANDOM_FACTOR			0.4f
 
-#define BEAM_DAMAGE_TIME			170			// apply damage 
 #define MAX_SHOT_POINTS				30
 #define SHOT_POINT_TIME				200			// 5 arcs a second
 
@@ -3009,10 +3008,13 @@ void beam_handle_collisions(beam *b)
 	// the first thing we need to do is sort the collisions, from closest to farthest
 	std::sort(b->f_collisions, b->f_collisions + b->f_collision_count, beam_sort_collisions_func);
 
+	float damage_time_mod = (flFrametime * 1000.0f) / i2fl(BEAM_DAMAGE_TIME);
+	float real_damage = wi->damage * damage_time_mod;
+
 	// now apply all collisions until we reach a ship which "stops" the beam or we reach the end of the list
 	for(idx=0; idx<b->f_collision_count; idx++){	
 		int model_num = -1;
-		int do_damage = 0;
+		int apply_beam_physics = 0;
 		int draw_effects = 1;
 		int first_hit = 1;
 		int target = b->f_collisions[idx].c_objnum;
@@ -3061,12 +3063,12 @@ void beam_handle_collisions(beam *b)
 			}
 		}
 
-		// if the damage timestamp has expired or is not set yet, apply damage
+		// if the physics timestamp has expired or is not set yet, apply physics
 		if((r_coll[r_coll_count].c_stamp == -1) || timestamp_elapsed(r_coll[r_coll_count].c_stamp))
         {
             float time_compression = f2fl(Game_time_compression);
             float delay_time = i2fl(BEAM_DAMAGE_TIME) / time_compression;
-            do_damage = 1;
+            apply_beam_physics = 1;
             r_coll[r_coll_count].c_stamp = timestamp(fl2i(delay_time));
 		}
 
@@ -3084,7 +3086,7 @@ void beam_handle_collisions(beam *b)
 		if (draw_effects && ((wi->piercing_impact_effect >= 0) || (wi->flash_impact_weapon_expl_effect >= 0))) {
 			float rnd = frand();
 			int do_expl = 0;
-			if((rnd < 0.2f || do_damage) && wi->impact_weapon_expl_effect >= 0){
+			if((rnd < 0.2f || apply_beam_physics) && wi->impact_weapon_expl_effect >= 0){
 				do_expl = 1;
 			}
 			vec3d temp_pos, temp_local_pos;
@@ -3200,7 +3202,7 @@ void beam_handle_collisions(beam *b)
 			}
 			// <-- KOMET_EXT
 		} else {
-			if(draw_effects && do_damage && !physics_paused){
+			if(draw_effects && apply_beam_physics && !physics_paused){
 				// maybe draw an explosion, if we aren't hitting shields
 				if ( (wi->impact_weapon_expl_effect >= 0) && (b->f_collisions[idx].quadrant < 0) ) {
 					vec3d worldNormal;
@@ -3232,7 +3234,7 @@ void beam_handle_collisions(beam *b)
 			}
 		}
 
-		if(do_damage && !physics_paused){
+		if(!physics_paused){
 
 			switch(Objects[target].type){
 			case OBJ_DEBRIS:
@@ -3256,7 +3258,7 @@ void beam_handle_collisions(beam *b)
 								}
 							}
 
-							float damage = wi->damage * attenuation;
+							float damage = real_damage * attenuation;
 
 							trgt->hull_strength -= damage;
 
@@ -3294,11 +3296,12 @@ void beam_handle_collisions(beam *b)
 				// hit the ship - again, the innards of this code handle multiplayer cases
 				// maybe vaporize ship.
 				//only apply damage if the collision is not an exit collision.  this prevents twice the damage from being done, although it probably be more realistic since two holes are being punched in the ship instead of one.
-				if (!b->f_collisions[idx].is_exit_collision)
-					ship_apply_local_damage(&Objects[target], &Objects[b->objnum], &b->f_collisions[idx].cinfo.hit_point_world, beam_get_ship_damage(b, &Objects[target]), b->f_collisions[idx].quadrant);
-
+				if (!b->f_collisions[idx].is_exit_collision) {
+					real_damage = beam_get_ship_damage(b, &Objects[target]) * damage_time_mod;
+					ship_apply_local_damage(&Objects[target], &Objects[b->objnum], &b->f_collisions[idx].cinfo.hit_point_world, real_damage, b->f_collisions[idx].quadrant);
+				}
 				// if this is the first hit on the player ship. whack him
-				if(do_damage)
+				if(apply_beam_physics)
 				{
 					// Goober5000 - AGH!  BAD BAD BAD BAD BAD BAD BAD BAD bug!  The whack's hit point is in *local*
 					// coordinates, NOT world coordinates!

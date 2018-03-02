@@ -151,53 +151,73 @@ else()
 	)
 endif()
 
-SET(file_root_def_files_files
+set(file_root_def_files_data
+)
+
+set(file_root_def_files_data_effects
+	def_files/data/effects/batched-f.sdr
+	def_files/data/effects/batched-v.sdr
+	def_files/data/effects/bloom-comp-f.sdr
+	def_files/data/effects/blur-f.sdr
+	def_files/data/effects/brightpass-f.sdr
+	def_files/data/effects/decal-f.sdr
+	def_files/data/effects/decal-v.sdr
+	def_files/data/effects/default-material-f.sdr
+	def_files/data/effects/deferred-clear-f.sdr
+	def_files/data/effects/deferred-clear-v.sdr
+	def_files/data/effects/deferred-f.sdr
+	def_files/data/effects/deferred-v.sdr
+	def_files/data/effects/effect-distort-f.sdr
+	def_files/data/effects/effect-distort-v.sdr
+	def_files/data/effects/effect-particle-f.sdr
+	def_files/data/effects/effect-screen-g.sdr
+	def_files/data/effects/effect-v.sdr
+	def_files/data/effects/fxaa-f.sdr
+	def_files/data/effects/fxaa-v.sdr
+	def_files/data/effects/fxaapre-f.sdr
+	def_files/data/effects/lighting.sdr
+	def_files/data/effects/ls-f.sdr
+	def_files/data/effects/main-f.sdr
+	def_files/data/effects/main-g.sdr
+	def_files/data/effects/main-v.sdr
+	def_files/data/effects/nanovg-f.sdr
+	def_files/data/effects/nanovg-v.sdr
+	def_files/data/effects/passthrough-f.sdr
+	def_files/data/effects/passthrough-v.sdr
+	def_files/data/effects/post-f.sdr
+	def_files/data/effects/post-v.sdr
+	def_files/data/effects/shadowdebug-f.sdr
+	def_files/data/effects/shadowdebug-v.sdr
+	def_files/data/effects/shadows.sdr
+	def_files/data/effects/tonemapping-f.sdr
+	def_files/data/effects/video-f.sdr
+	def_files/data/effects/video-v.sdr
+	def_files/data/effects/shield-impact-v.sdr
+	def_files/data/effects/shield-impact-f.sdr
+)
+
+set(file_root_def_files_data_tables
+	def_files/data/tables/autopilot.tbl
+	def_files/data/tables/controlconfigdefaults.tbl
+	def_files/data/tables/fonts.tbl
+	def_files/data/tables/game_settings.tbl
+	def_files/data/tables/iff_defs.tbl
+	def_files/data/tables/objecttypes.tbl
+	def_files/data/tables/post_processing.tbl
+	def_files/data/tables/species_defs.tbl
+)
+
+# These files will be included in the executable but not in CFile
+set(files_root_def_files_builtin
 	def_files/ai_profiles.tbl
-	def_files/autopilot.tbl
-	def_files/batched-f.sdr
-	def_files/batched-v.sdr
-	def_files/bloom-comp-f.sdr
-	def_files/blur-f.sdr
-	def_files/brightpass-f.sdr
-	def_files/controlconfigdefaults.tbl
-	def_files/decal-f.sdr
-	def_files/decal-v.sdr
-	def_files/default-material-f.sdr
-	def_files/deferred-clear-f.sdr
-	def_files/deferred-clear-v.sdr
-	def_files/deferred-f.sdr
-	def_files/deferred-v.sdr
-	def_files/effect-distort-f.sdr
-	def_files/effect-distort-v.sdr
-	def_files/effect-particle-f.sdr
-	def_files/effect-screen-g.sdr
-	def_files/effect-v.sdr
-	def_files/fonts.tbl
-	def_files/fxaa-f.sdr
-	def_files/fxaa-v.sdr
-	def_files/fxaapre-f.sdr
-	def_files/game_settings.tbl
-	def_files/iff_defs.tbl
-	def_files/ls-f.sdr
-	def_files/main-f.sdr
-	def_files/main-g.sdr
-	def_files/main-v.sdr
-	def_files/nanovg-f.sdr
-	def_files/nanovg-v.sdr
-	def_files/objecttypes.tbl
-	def_files/passthrough-f.sdr
-	def_files/passthrough-v.sdr
-	def_files/post-f.sdr
-	def_files/post-v.sdr
-	def_files/post_processing.tbl
-	def_files/shadowdebug-f.sdr
-	def_files/shadowdebug-v.sdr
-	def_files/species_defs.tbl
-	def_files/tonemapping-f.sdr
-	def_files/video-f.sdr
-	def_files/video-v.sdr
-	def_files/shield-impact-v.sdr
-	def_files/shield-impact-f.sdr
+)
+
+# Variable for all embedded files
+set(file_root_def_files_files
+	${files_root_def_files_builtin}
+	${file_root_def_files_data}
+	${file_root_def_files_data_effects}
+	${file_root_def_files_data_tables}
 )
 
 # ExceptionHandler files
@@ -403,6 +423,8 @@ set (file_root_graphics_softwaregr_font
 )
 
 set(file_root_graphics_util
+	graphics/util/GPUMemoryHeap.cpp
+	graphics/util/GPUMemoryHeap.h
 	graphics/util/uniform_structs.h
 	graphics/util/UniformAligner.h
 	graphics/util/UniformAligner.cpp
@@ -1200,6 +1222,8 @@ set (file_root_ui
 set(file_root_utils
 	utils/encoding.cpp
     utils/encoding.h
+	utils/HeapAllocator.cpp
+	utils/HeapAllocator.h
 	utils/RandomRange.h
 	utils/strings.h
     utils/unicode.cpp
@@ -1267,7 +1291,10 @@ source_group("Debris"                             FILES ${file_root_debris})
 source_group("DebugConsole"                       FILES ${file_root_debugconsole})
 source_group("Decals"                             FILES ${file_root_decals})
 source_group("Default files"                      FILES ${file_root_def_files})
-source_group("Default files\\Files"               FILES ${file_root_def_files_files})
+source_group("Default files\\data"                FILES ${file_root_def_files_data})
+source_group("Default files\\data\\effects"       FILES ${file_root_def_files_data_effects})
+source_group("Default files\\data\\tables"        FILES ${file_root_def_files_data_tables})
+source_group("Default files\\builtin"             FILES ${files_root_def_files_builtin})
 source_group("ExceptionHandler"                   FILES ${file_root_exceptionhandler})
 source_group("ExternalDLL"                        FILES ${file_root_externaldll})
 source_group("Fireball"                           FILES ${file_root_fireball})
@@ -1363,7 +1390,10 @@ set (file_root
 	${file_root_debugconsole}
 	${file_root_decals}
 	${file_root_def_files}
-	${file_root_def_files_files}
+	${file_root_def_files_data}
+	${file_root_def_files_data_effects}
+	${file_root_def_files_data_tables}
+	${files_root_def_files_builtin}
 	${file_root_exceptionhandler}
 	${file_root_externaldll}
 	${file_root_fireball}

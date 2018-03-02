@@ -128,6 +128,7 @@ bool WaveFile::Open(const char* pszFilename, bool keep_ext) {
 	using namespace libs::ffmpeg;
 
 	size_t FileSize, FileOffset;
+	const void* file_data = nullptr;
 	char fullpath[MAX_PATH_LEN];
 	char filename[MAX_FILENAME_LEN];
 
@@ -150,7 +151,14 @@ bool WaveFile::Open(const char* pszFilename, bool keep_ext) {
 				throw FFmpegException("Unknown file extension.");
 			}
 
-			rc = cf_find_file_location(pszFilename, CF_TYPE_ANY, sizeof(fullpath) - 1, fullpath, &FileSize, &FileOffset);
+			rc = cf_find_file_location(pszFilename,
+									   CF_TYPE_ANY,
+									   sizeof(fullpath) - 1,
+									   fullpath,
+									   &FileSize,
+									   &FileOffset,
+									   false,
+									   &file_data);
 
 			if(rc == 0) {
 				throw FFmpegException("File not found.");
@@ -165,7 +173,9 @@ bool WaveFile::Open(const char* pszFilename, bool keep_ext) {
 										   sizeof(fullpath) - 1,
 										   fullpath,
 										   &FileSize,
-										   &FileOffset);
+										   &FileOffset,
+										   false,
+										   &file_data);
 
 			if (rc < 0) {
 				throw FFmpegException("File not found with any known extension.");
@@ -181,7 +191,7 @@ bool WaveFile::Open(const char* pszFilename, bool keep_ext) {
 			strcat_s(filename, audio_ext_list[rc]);
 		}
 
-		auto cfp = cfopen_special(fullpath, "rb", FileSize, FileOffset, CF_TYPE_ANY);
+		auto cfp = cfopen_special(fullpath, "rb", FileSize, FileOffset, file_data, CF_TYPE_ANY);
 
 		if (cfp == NULL) {
 			throw FFmpegException("Failed to open file.");

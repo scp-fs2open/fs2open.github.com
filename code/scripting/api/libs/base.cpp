@@ -284,6 +284,26 @@ ADE_FUNC(isEngineVersionAtLeast,
 	return ade_set_args(L, "b", gameversion::check_at_least(version));
 }
 
+ADE_FUNC(getCurrentLanguage,
+		 l_Base,
+		 nullptr,
+		 "Determines the language that is being used by the engine. This returns the full name of the language (e.g. \"English\").",
+		 "string",
+		 "The current game language") {
+	return ade_set_args(L, "s", Lcl_languages[Lcl_current_lang].lang_name);
+}
+
+ADE_FUNC(getCurrentLanguageExtension,
+		 l_Base,
+		 nullptr,
+		 "Determines the file extension of the language that is being used by the engine. "
+			 "This returns a short code for the current language that can be used for creating language specific file names (e.g. \"gr\" when the current language is German). "
+			 "This will return an empty string for the default language.",
+		 "string",
+		 "The current game language") {
+	return ade_set_args(L, "s", Lcl_languages[Lcl_current_lang].lang_ext);
+}
+
 //**********SUBLIBRARY: Base/Events
 ADE_LIB_DERIV(l_Base_Events, "GameEvents", NULL, "Freespace 2 game events", l_Base);
 
