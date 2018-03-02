@@ -4,6 +4,8 @@
 #include "graphics/grinternal.h"
 #include "model/model.h"
 
+#include <array>
+
 enum class ComparisionFunction
 {
 	Never,
@@ -56,7 +58,9 @@ public:
 		StencilOperation successOperation = StencilOperation::Keep;
 	};
 
-private:
+	static const size_t NUM_BUFFER_BLENDS = 8;
+
+ private:
 	shader_type Sdr_type;
 
 	int Texture_maps[TM_NUM_TYPES];
@@ -65,7 +69,11 @@ private:
 	clip_plane Clip_params;
 	int Texture_addressing;
 	gr_zbuffer_type Depth_mode;
+
 	gr_alpha_blend Blend_mode;
+	bool Has_buffer_blends = false;
+	std::array<gr_alpha_blend, NUM_BUFFER_BLENDS> Buffer_blend_mode;
+
 	bool Cull_mode;
 	int Fill_mode;
 	vec4 Clr;
@@ -114,7 +122,9 @@ public:
 	const bvec4& get_color_mask() const;
 
 	void set_blend_mode(gr_alpha_blend mode);
-	gr_alpha_blend get_blend_mode() const;
+	void set_blend_mode(int buffer, gr_alpha_blend mode);
+	bool has_buffer_blend_modes() const;
+	gr_alpha_blend get_blend_mode(int buffer = 0) const;
 
 	void set_depth_bias(int bias);
 	int get_depth_bias() const;
@@ -339,6 +349,6 @@ void material_set_distortion(distortion_material *mat_info, int texture, bool th
 void material_set_movie(movie_material *mat_info, int y_bm, int u_bm, int v_bm);
 void material_set_batched_bitmap(batched_bitmap_material* mat_info, int base_tex, float alpha, float color_scale);
 void material_set_nanovg(nanovg_material* mat_info, int base_tex);
-void material_set_decal(material* mat_info, int diffuse_tex, int normal_tex);
+void material_set_decal(material* mat_info, int diffuse_tex, int glow_tex, int normal_tex);
 
 #endif

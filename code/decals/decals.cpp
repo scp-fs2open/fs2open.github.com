@@ -1,4 +1,5 @@
 #include <nebula/neb.h>
+#include <utility>
 #include "decals/decals.h"
 
 #include "graphics/2d.h"
@@ -14,20 +15,28 @@ class DecalDefinition {
 	SCP_string _name;
 
 	SCP_string _diffuseFilename;
-	SCP_string _normalMapFilename;
+	bool _loopDiffuse = true;
 
-	bool _loop = true;
+	SCP_string _glowFilename;
+	bool _loopGlow = true;
+
+	SCP_string _normalMapFilename;
+	bool _loopNormal = true;
 
 	int _diffuseBitmap = -1;
+	int _glowBitmap = -1;
 	int _normalBitmap = -1;
 
  public:
-	DecalDefinition(const SCP_string& name) : _name(name) {
+	explicit DecalDefinition(SCP_string name) : _name(std::move(name)) {
 	}
 
 	~DecalDefinition() {
 		if (_diffuseBitmap >= 0) {
 			bm_release(_diffuseBitmap);
+		}
+		if (_glowBitmap >= 0) {
+			bm_release(_glowBitmap);
 		}
 		if (_normalBitmap >= 0) {
 			bm_release(_normalBitmap);
@@ -46,12 +55,16 @@ class DecalDefinition {
 		std::swap(_name, other._name);
 
 		std::swap(_diffuseFilename, other._diffuseFilename);
+		std::swap(_glowFilename, other._glowFilename);
 		std::swap(_normalMapFilename, other._normalMapFilename);
 
 		std::swap(_diffuseBitmap, other._diffuseBitmap);
+		std::swap(_glowBitmap, other._glowBitmap);
 		std::swap(_normalBitmap, other._normalBitmap);
 
-		std::swap(_loop, other._loop);
+		std::swap(_loopDiffuse, other._loopDiffuse);
+		std::swap(_loopGlow, other._loopGlow);
+		std::swap(_loopNormal, other._loopNormal);
 
 		return *this;
 	}
@@ -64,10 +77,34 @@ class DecalDefinition {
 				error_display(0, "Animation '%s' is not valid!", _diffuseFilename.c_str());
 				_diffuseFilename = "";
 			}
-		}
 
-		if (optional_string("+Loop:")) {
-			stuff_boolean(&_loop);
+			if (optional_string("+Loop:")) {
+				stuff_boolean(&_loopDiffuse);
+			}
+		}
+		if (optional_string("+Glow:")) {
+			stuff_string(_glowFilename, F_FILESPEC);
+
+			if (!bm_validate_filename(_glowFilename, true, true)) {
+				error_display(0, "Animation '%s' is not valid!", _glowFilename.c_str());
+				_glowFilename = "";
+			}
+
+			if (optional_string("+Loop:")) {
+				stuff_boolean(&_loopGlow);
+			}
+		}
+		if (optional_string("+Normal:")) {
+			stuff_string(_normalMapFilename, F_FILESPEC);
+
+			if (!bm_validate_filename(_normalMapFilename, true, true)) {
+				error_display(0, "Animation '%s' is not valid!", _normalMapFilename.c_str());
+				_normalMapFilename = "";
+			}
+
+			if (optional_string("+Loop:")) {
+				stuff_boolean(&_loopNormal);
+			}
 		}
 	}
 
@@ -78,6 +115,15 @@ class DecalDefinition {
 				Warning(LOCATION,
 						"Bitmap '%s' failed to load for decal definition %s!",
 						_diffuseFilename.c_str(),
+						_name.c_str());
+			}
+		}
+		if (_glowBitmap == -1 && VALID_FNAME(_glowFilename)) {
+			_glowBitmap = bm_load_either(_glowFilename.c_str());
+			if (_glowBitmap == -1) {
+				Warning(LOCATION,
+						"Bitmap '%s' failed to load for decal definition %s!",
+						_glowFilename.c_str(),
 						_name.c_str());
 			}
 		}
@@ -96,6 +142,9 @@ class DecalDefinition {
 		if (_diffuseBitmap >= 0) {
 			bm_page_in_texture(_diffuseBitmap);
 		}
+		if (_glowBitmap >= 0) {
+			bm_page_in_texture(_glowBitmap);
+		}
 		if (_normalBitmap >= 0) {
 			bm_page_in_texture(_normalBitmap);
 		}
@@ -103,7 +152,7 @@ class DecalDefinition {
 
 	bool bitmapsLoaded() {
 		// Since both bitmap types are optional we need to check if either is loaded to determine if any bitmap is loaded
-		return _diffuseBitmap >= 0 || _normalBitmap >= 0;
+		return _diffuseBitmap >= 0 || _glowBitmap >= 0 || _normalBitmap >= 0;
 	}
 
 	const SCP_string& getName() const {
@@ -112,11 +161,20 @@ class DecalDefinition {
 	int getDiffuseBitmap() const {
 		return _diffuseBitmap;
 	}
+	int getGlowBitmap() const {
+		return _glowBitmap;
+	}
 	int getNormalBitmap() const {
 		return _normalBitmap;
 	}
-	bool isLooping() const {
-		return _loop;
+	bool isDiffuseLooping() const {
+		return _loopDiffuse;
+	}
+	bool isGlowLooping() const {
+		return _loopGlow;
+	}
+	bool isNormalLooping() const {
+		return _loopNormal;
 	}
 };
 
@@ -153,14 +211,16 @@ void parse_decals_table(const char* filename) {
 		decal_system_active = false;
 		mprintf(("Note: Decal system has been disabled due to lack of deferred lighting.\n"));
 	}
-	/*
-	Normal mapping isn't used at the moment. This check needs to be reenabled once support for that is added
 	if (!gr_is_capable(CAPABILITY_NORMAL_MAP)) {
 		// We need normal mapping for the full feature range
 		decal_system_active = false;
 		mprintf(("Note: Decal system has been disabled due to lack of normal mapping.\n"));
 	}
-	 */
+	if (!gr_is_capable(CAPABILITY_SEPARATE_BLEND_FUNCTIONS)) {
+		// WWe need separate blending functions for different color buffers
+		decal_system_active = false;
+		mprintf(("Note: Decal system has been disabled due to lack of separate color buffer blend functions.\n"));
+	}
 }
 
 struct Decal {
@@ -417,6 +477,7 @@ void renderAll() {
 
 	for (auto& decal : active_decals) {
 		int diffuse_bm = -1;
+		int glow_bm = -1;
 		int normal_bm = -1;
 
 		Assertion(decal.definition_handle >= 0 && decal.definition_handle < (int) decalDefinitions.size(),
@@ -434,15 +495,20 @@ void renderAll() {
 
 		if (decalDef.getDiffuseBitmap() >= 0) {
 			diffuse_bm = decalDef.getDiffuseBitmap()
-				+ bm_get_anim_frame(decalDef.getDiffuseBitmap(), decal_time, 0.0f, decalDef.isLooping());
+				+ bm_get_anim_frame(decalDef.getDiffuseBitmap(), decal_time, 0.0f, decalDef.isDiffuseLooping());
+		}
+
+		if (decalDef.getGlowBitmap() >= 0) {
+			glow_bm = decalDef.getGlowBitmap()
+				+ bm_get_anim_frame(decalDef.getGlowBitmap(), decal_time, 0.0f, decalDef.isGlowLooping());
 		}
 
 		if (decalDef.getNormalBitmap() >= 0) {
 			normal_bm = decalDef.getNormalBitmap()
-				+ bm_get_anim_frame(decalDef.getNormalBitmap(), decal_time, 0.0f, decalDef.isLooping());
+				+ bm_get_anim_frame(decalDef.getNormalBitmap(), decal_time, 0.0f, decalDef.isNormalLooping());
 		}
 
-		draw_list.add_decal(diffuse_bm, normal_bm, decal_time, getDecalTransform(decal), alpha);
+		draw_list.add_decal(diffuse_bm, glow_bm, normal_bm, decal_time, getDecalTransform(decal), alpha);
 	}
 
 	draw_list.render();

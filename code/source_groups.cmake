@@ -184,6 +184,7 @@ set(file_root_def_files_data_effects
 	def_files/data/effects/main-v.sdr
 	def_files/data/effects/nanovg-f.sdr
 	def_files/data/effects/nanovg-v.sdr
+	def_files/data/effects/normals.sdr
 	def_files/data/effects/passthrough-f.sdr
 	def_files/data/effects/passthrough-v.sdr
 	def_files/data/effects/post-f.sdr
