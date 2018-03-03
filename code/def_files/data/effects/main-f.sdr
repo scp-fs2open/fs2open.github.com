@@ -293,17 +293,17 @@ void main()
  #ifdef FLAG_TEAMCOLOR
 	vec4 teamMask = vec4(0.0, 0.0, 0.0, 0.0);
 	teamMask = texture(sMiscmap, vec3(texCoord, float(sMiscmapIndex)));
-	vec3 team_color = (base_color * teamMask.x) + (stripe_color * teamMask.y);
-	vec3 team_color_glow = (base_color * teamMask.b) + (stripe_color * teamMask.a);
+	vec3 team_color = ((base_color - vec3(0.5)) * teamMask.x) + ((stripe_color - vec3(0.5)) * teamMask.y);
+	vec3 team_color_glow = ((base_color - vec3(0.5)) * teamMask.b) + ((stripe_color - vec3(0.5)) * teamMask.a);
 	#ifdef FLAG_HDR
 	team_color = pow(team_color, vec3(SRGB_GAMMA));
-	team_color_glow = pow(team_color_glow, vec3(SRGB_GAMMA)) * 3.0f;
+	team_color_glow = pow(team_color_glow, vec3(SRGB_GAMMA)) * GLOW_MAP_SRGB_MULTIPLIER;
 	#endif
 
 	baseColor.rgb += team_color;
 	baseColor.rgb = max(baseColor.rgb, vec3(0.0));
 	specColor.rgb += team_color;
-	specColor.rgb = max(specColor.rgb, vec3(0.03f));
+	specColor.rgb = max(specColor.rgb, vec3(0.03));
  #endif
 #endif
 	// Lights aren't applied when we are rendering to the G-buffers since that gets handled later
@@ -350,7 +350,7 @@ void main()
 	vec3 glowColor = texture(sGlowmap, vec3(texCoord, float(sGlowmapIndex))).rgb;
 	if(overrideGlow) glowColor = glowClr;
  #ifdef FLAG_HDR
-	glowColor = pow(glowColor, vec3(SRGB_GAMMA)) * 3.0f;
+	glowColor = pow(glowColor, vec3(SRGB_GAMMA)) * GLOW_MAP_SRGB_MULTIPLIER;
  #endif
  #ifdef FLAG_MISC_MAP
   #ifdef FLAG_TEAMCOLOR
