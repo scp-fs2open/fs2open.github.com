@@ -293,17 +293,18 @@ void main()
  #ifdef FLAG_TEAMCOLOR
 	vec4 teamMask = vec4(0.0, 0.0, 0.0, 0.0);
 	teamMask = texture(sMiscmap, vec3(texCoord, float(sMiscmapIndex)));
-	vec3 base = base_color - vec3(0.5);
-	vec3 stripe = stripe_color - vec3(0.5);
-	vec3 team_color = (base * teamMask.x) + (stripe * teamMask.y);
-	vec3 team_color_glow = (base * teamMask.b) + (stripe * teamMask.a);
+	//For team colors applied to a diffuse or spec map, we assume that the base color of the diffuse 
+	//at this point is vec3(0.5). To get accurate results, we subtract 0.5 from the team colors
+	vec3 team_color = ((base_color - vec3(0.5)) * teamMask.x) + ((stripe_color - vec3(0.5)) * teamMask.y);
+	vec3 team_color_glow = (base_color * teamMask.b) + (stripe_color * teamMask.a);
+
 	#ifdef FLAG_HDR
 	team_color = pow(team_color, vec3(SRGB_GAMMA));
 	team_color_glow = pow(team_color_glow, vec3(SRGB_GAMMA)) * GLOW_MAP_SRGB_MULTIPLIER;
 	#endif
 
-	baseColor.rgb += team_color;
-	baseColor.rgb = max(baseColor.rgb, vec3(0.0));
+	baseColor.rgb += team_color;					
+	baseColor.rgb = max(baseColor.rgb, vec3(0.0));	// We need to make sure that nothing here ever goes negative
 	specColor.rgb += team_color;
 	specColor.rgb = max(specColor.rgb, vec3(0.03));
  #endif
@@ -357,7 +358,7 @@ void main()
  #ifdef FLAG_MISC_MAP
   #ifdef FLAG_TEAMCOLOR
 	float glowColorLuminance = dot(glowColor, vec3(0.299, 0.587, 0.114));
-	glowColor = team_glow_enabled ? mix(team_color_glow, glowColor, clamp(glowColorLuminance - teamMask.b - teamMask.a, 0.0, 1.0)) : glowColor;
+	glowColor = team_glow_enabled ? mix(max(team_color_glow, vec3(0.0)), glowColor, clamp(glowColorLuminance - teamMask.b - teamMask.a, 0.0, 1.0)) : glowColor;
   #endif
  #endif
    emissiveColor.rgb += glowColor * GLOW_MAP_INTENSITY;
