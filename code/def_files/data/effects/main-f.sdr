@@ -293,8 +293,10 @@ void main()
  #ifdef FLAG_TEAMCOLOR
 	vec4 teamMask = vec4(0.0, 0.0, 0.0, 0.0);
 	teamMask = texture(sMiscmap, vec3(texCoord, float(sMiscmapIndex)));
-	vec3 team_color = ((base_color - vec3(0.5)) * teamMask.x) + ((stripe_color - vec3(0.5)) * teamMask.y);
-	vec3 team_color_glow = ((base_color - vec3(0.5)) * teamMask.b) + ((stripe_color - vec3(0.5)) * teamMask.a);
+	vec3 base = base_color - vec3(0.5);
+	vec3 stripe = stripe_color - vec3(0.5);
+	vec3 team_color = (base * teamMask.x) + (stripe * teamMask.y);
+	vec3 team_color_glow = (base * teamMask.b) + (stripe * teamMask.a);
 	#ifdef FLAG_HDR
 	team_color = pow(team_color, vec3(SRGB_GAMMA));
 	team_color_glow = pow(team_color_glow, vec3(SRGB_GAMMA)) * GLOW_MAP_SRGB_MULTIPLIER;
