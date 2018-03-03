@@ -262,7 +262,6 @@ void main()
    }
  #endif
 	baseColor = texture(sBasemap, vec3(diffuseTexCoord, float(sBasemapIndex)));
-	if ( blend_alpha == 0 && baseColor.a < 0.95 ) discard; // if alpha blending is not on, discard transparent pixels
 	// premultiply alpha if blend_alpha is 1. assume that our blend function is srcColor + (1-Alpha)*destColor.
 	// if blend_alpha is 2, assume blend func is additive and don't modify color
 	if(blend_alpha == 1) baseColor.rgb = baseColor.rgb * baseColor.a;
