@@ -97,8 +97,18 @@ extern Category RenderMainFrame;
 extern Category RenderHUD;
 extern Category RenderHUDHook;
 extern Category RenderHUDGauge;
+extern Category RenderTargettingBracket;
+extern Category RenderNavBracket;
 extern Category MainFrame;
 extern Category PageFlip;
+
+extern Category NanoVGFlushFrame;
+extern Category NanoVGDrawFill;
+extern Category NanoVGDrawConvexFill;
+extern Category NanoVGDrawStroke;
+extern Category NanoVGDrawTriangles;
+
+extern Category LineDrawListFlush;
 
 extern Category CutsceneStep;
 extern Category CutsceneDrawVideoFrame;

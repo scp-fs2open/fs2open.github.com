@@ -663,11 +663,13 @@ void HudGaugeTargetBox::renderTargetShip(object *target_objp)
 					hud_set_iff_color( target_objp, 1 );
 				}
 
+				graphics::line_draw_list line_draw_list;
 				if ( subsys_in_view ) {
-					draw_brackets_square_quick(sx - 10, sy - 10, sx + 10, sy + 10);
+					draw_brackets_square_quick(&line_draw_list, sx - 10, sy - 10, sx + 10, sy + 10);
 				} else {
-					draw_brackets_diamond_quick(sx - 10, sy - 10, sx + 10, sy + 10);
+					draw_brackets_diamond_quick(&line_draw_list, sx - 10, sy - 10, sx + 10, sy + 10);
 				}
+				line_draw_list.flush();
 			}
 		}
 		renderTargetClose();

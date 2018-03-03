@@ -216,6 +216,7 @@ struct vertex_format_data
 		SCREEN_POS,
 		COLOR3,
 		COLOR4,
+		COLOR4F,
 		TEX_COORD2,
 		TEX_COORD3,
 		NORMAL,
