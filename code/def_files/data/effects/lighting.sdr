@@ -12,6 +12,7 @@ const float SPEC_FACTOR_NO_SPEC_MAP		= 0.6;
 const float ENV_ALPHA_FACTOR			= 0.3;
 const float GLOW_MAP_INTENSITY			= 1.5;
 const float AMBIENT_LIGHT_BOOST			= 1.0;
+const float GLOW_MAP_SRGB_MULTIPLIER	= 3.0;
 
 vec3 FresnelSchlick(vec3 specColor, vec3 light, vec3 halfVec)
 {
