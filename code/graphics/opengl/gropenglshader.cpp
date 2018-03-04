@@ -646,6 +646,27 @@ static void cache_program_binary(GLuint program, const SCP_string& hash) {
 	cfclose(binary_fp);
 }
 
+static void opengl_set_default_uniforms(const opengl_shader_t& sdr) {
+	switch (sdr.shader) {
+	case SDR_TYPE_DEFERRED_LIGHTING:
+		Current_shader->program->Uniforms.setUniformi("ColorBuffer", 0);
+		Current_shader->program->Uniforms.setUniformi("NormalBuffer", 1);
+		Current_shader->program->Uniforms.setUniformi("PositionBuffer", 2);
+		Current_shader->program->Uniforms.setUniformi("SpecBuffer", 3);
+		Current_shader->program->Uniforms.setUniformi("shadow_map", 4);
+		break;
+
+	case SDR_TYPE_PASSTHROUGH_RENDER:
+		Current_shader->program->Uniforms.setUniformi("baseMap", 0);
+		Current_shader->program->Uniforms.setUniformi("clipEnabled", 0);
+		break;
+
+	default:
+		// No default values for this shader type.
+		break;
+	}
+}
+
 void opengl_compile_shader_actual(shader_type sdr, const uint &flags, opengl_shader_t &new_shader)
 {
 	opengl_shader_type_t *sdr_info = &GL_shader_types[sdr];
@@ -754,6 +775,8 @@ void opengl_compile_shader_actual(shader_type sdr, const uint &flags, opengl_sha
 			mprintf(("	%s\n", variant.description));
 		}
 	}
+
+	opengl_set_default_uniforms(new_shader);
 }
 
 /**
@@ -844,10 +867,12 @@ void opengl_shader_init()
 	gr_opengl_maybe_create_shader(SDR_TYPE_SHIELD_DECAL, 0);
 
 	// compile deferred lighting shaders
-	opengl_shader_compile_deferred_light_shader();
+	gr_opengl_maybe_create_shader(SDR_TYPE_DEFERRED_LIGHTING, 0);
+	gr_opengl_maybe_create_shader(SDR_TYPE_DEFERRED_CLEAR, 0);
 
 	// compile passthrough shader
-	opengl_shader_compile_passthrough_shader();
+	mprintf(("Compiling passthrough shader...\n"));
+	gr_opengl_maybe_create_shader(SDR_TYPE_PASSTHROUGH_RENDER, 0);
 
 	mprintf(("\n"));
 }
@@ -863,55 +888,6 @@ GLint opengl_shader_get_attribute(opengl_vert_attrib::attrib_id attribute)
 	Assertion(Current_shader != nullptr, "Current shader may not be null!");
 
 	return Current_shader->program->getAttributeLocation(attribute);
-}
-
-/**
- * Compile the deferred light shader and the clear shader.
- */
-void opengl_shader_compile_deferred_light_shader()
-{
-	bool in_error = false;
-
-	int sdr_handle = gr_opengl_maybe_create_shader(SDR_TYPE_DEFERRED_LIGHTING, 0);
-
-	if ( sdr_handle >= 0 ) {
-		opengl_shader_set_current(sdr_handle);
-
-		Current_shader->program->Uniforms.setUniformi("ColorBuffer", 0);
-		Current_shader->program->Uniforms.setUniformi("NormalBuffer", 1);
-		Current_shader->program->Uniforms.setUniformi("PositionBuffer", 2);
-		Current_shader->program->Uniforms.setUniformi("SpecBuffer", 3);
-		Current_shader->program->Uniforms.setUniformi("shadow_map", 4);
-	} else {
-		opengl_shader_set_current();
-		mprintf(("Failed to compile deferred lighting shader!\n"));
-		in_error = true;
-	}
-
-	if ( gr_opengl_maybe_create_shader(SDR_TYPE_DEFERRED_CLEAR, 0) < 0 ) {
-		mprintf(("Failed to compile deferred lighting buffer clear shader!\n"));
-		in_error = true;
-	}
-
-	if ( in_error ) {
-		mprintf(("  Shader in_error! Disabling deferred lighting!\n"));
-		Cmdline_no_deferred_lighting = 1;
-	}
-}
-
-void opengl_shader_compile_passthrough_shader()
-{
-	mprintf(("Compiling passthrough shader...\n"));
-
-	int sdr_handle = gr_opengl_maybe_create_shader(SDR_TYPE_PASSTHROUGH_RENDER, 0);
-
-	opengl_shader_set_current(sdr_handle);
-
-	//Hardcoded Uniforms
-	Current_shader->program->Uniforms.setUniformi("baseMap", 0);
-	Current_shader->program->Uniforms.setUniformi("clipEnabled", 0);
-
-	opengl_shader_set_current();
 }
 
 void opengl_shader_set_passthrough(bool textured)
