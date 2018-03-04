@@ -208,8 +208,6 @@ void detail_level_set(int level);
 // Returns the current detail level or -1 if custom.
 int current_detail_level();
 
-#define MAX_LIGHTS 256
-
 #define safe_kill(a) if(a)vm_free(a)
 
 

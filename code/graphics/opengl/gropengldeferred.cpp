@@ -116,17 +116,11 @@ void gr_opengl_deferred_lighting_finish()
 	if (Cmdline_shadow_quality) {
 		GL_state.Texture.Enable(4, GL_TEXTURE_2D_ARRAY, Shadow_map_texture);
 	}
-
-	SCP_vector<light> lights_copy(Lights);
-
+	
 	// We need to use stable sorting here to make sure that the relative ordering of the same light types is the same as
 	// the rest of the code. Otherwise the shadow mapping would be applied while rendering the wrong light which would
 	// lead to flickering lights in some circumstances
-	std::stable_sort(lights_copy.begin(), lights_copy.end(), light_compare_by_type);
-	if (lights_copy.size() > MAX_LIGHTS) {
-		lights_copy.resize(MAX_LIGHTS);
-	}
-
+	std::stable_sort(Lights.begin(), Lights.end(), light_compare_by_type);
 	using namespace graphics;
 
 	// Get a uniform buffer for out data
@@ -157,7 +151,7 @@ void gr_opengl_deferred_lighting_finish()
 
 		// Only the first directional light uses shaders so we need to know when we already saw that light
 		bool first_directional = true;
-		for (auto& l : lights_copy) {
+		for (auto& l : Lights) {
 			auto light_data = uniformAligner.addTypedElement<deferred_light_data>();
 
 			light_data->lightType = static_cast<int>(l.type);
@@ -247,7 +241,7 @@ void gr_opengl_deferred_lighting_finish()
 							   buffer->bufferHandle());
 
 		size_t element_index = 0;
-		for (auto& l : lights_copy) {
+		for (auto& l : Lights) {
 			GR_DEBUG_SCOPE("Deferred apply single light");
 
 			switch (l.type) {
