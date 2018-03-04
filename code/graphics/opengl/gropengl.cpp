@@ -1148,6 +1148,7 @@ void opengl_setup_function_pointers()
 	gr_screen.gf_sphere				= gr_opengl_sphere;
 
 	gr_screen.gf_maybe_create_shader = gr_opengl_maybe_create_shader;
+	gr_screen.gf_recompile_all_shaders = gr_opengl_recompile_all_shaders;
 	gr_screen.gf_shadow_map_start	= gr_opengl_shadow_map_start;
 	gr_screen.gf_shadow_map_end		= gr_opengl_shadow_map_end;
 
