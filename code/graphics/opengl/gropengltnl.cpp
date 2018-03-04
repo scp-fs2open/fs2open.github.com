@@ -669,14 +669,6 @@ void opengl_tnl_set_material(material* material_info, bool set_base_map, bool se
 
 	gr_set_fill_mode(material_info->get_fill_mode());
 
-	auto& fog_params = material_info->get_fog();
-
-	if ( fog_params.enabled ) {
-		gr_fog_set(GR_FOGMODE_FOG, fog_params.r, fog_params.g, fog_params.b, fog_params.dist_near, fog_params.dist_far);
-	} else {
-		gr_fog_set(GR_FOGMODE_NONE, 0, 0, 0);
-	}
-
 	gr_set_texture_addressing(material_info->get_texture_addressing());
 
 	if (set_clipping) {

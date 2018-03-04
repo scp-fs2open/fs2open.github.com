@@ -409,21 +409,6 @@ void gr_opengl_cleanup(bool closing, int minimize)
 	graphic_operations.reset();
 }
 
-void gr_opengl_fog_set(int fog_mode, int r, int g, int b, float fog_near, float fog_far)
-{
-//	mprintf(("gr_opengl_fog_set(%d,%d,%d,%d,%f,%f)\n",fog_mode,r,g,b,fog_near,fog_far));
-
-	Assert((r >= 0) && (r < 256));
-	Assert((g >= 0) && (g < 256));
-	Assert((b >= 0) && (b < 256));
-
-	if (fog_mode == GR_FOGMODE_NONE) {
-		gr_screen.current_fog_mode = fog_mode;
-
-		return;
-	}
-}
-
 int gr_opengl_set_cull(int cull)
 {
 	GLboolean enabled = GL_FALSE;
@@ -1106,8 +1091,6 @@ void opengl_setup_function_pointers()
 	gr_screen.gf_free_screen		= gr_opengl_free_screen;
 
 	gr_screen.gf_set_gamma			= gr_opengl_set_gamma;
-
-	gr_screen.gf_fog_set			= gr_opengl_fog_set;
 
 	// UnknownPlayer : Don't recognize this - MAY NEED DEBUGGING
 	gr_screen.gf_get_region			= gr_opengl_get_region;
