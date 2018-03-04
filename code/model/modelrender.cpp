@@ -1111,7 +1111,7 @@ void model_render_buffers(model_draw_list* scene, model_material *rendering_mate
 				texture_maps[TM_SPEC_GLOSS_TYPE] = model_interp_get_texture(&tmap->textures[TM_SPEC_GLOSS_TYPE], base_frametime);
 			}
 
-			if ((Detail.lighting > 2) && (detail_level < 2)) {
+			if (detail_level < 2) {
 				// likewise, etc.
 				texture_info *norm_map = &tmap->textures[TM_NORMAL_TYPE];
 				texture_info *height_map = &tmap->textures[TM_HEIGHT_TYPE];
@@ -1143,10 +1143,10 @@ void model_render_buffers(model_draw_list* scene, model_material *rendering_mate
 				if (debug_flags & MR_DEBUG_NO_DIFFUSE)  texture_maps[TM_BASE_TYPE] = -1;
 				if (debug_flags & MR_DEBUG_NO_GLOW)		  texture_maps[TM_GLOW_TYPE] = -1;
 				if (debug_flags & MR_DEBUG_NO_SPEC)		  texture_maps[TM_SPECULAR_TYPE] = -1;
-				if (!(debug_flags & MR_DEBUG_NO_NORMAL))  texture_maps[TM_NORMAL_TYPE] = model_interp_get_texture(norm_map, base_frametime);
-				if (!(debug_flags & MR_DEBUG_NO_HEIGHT))  texture_maps[TM_HEIGHT_TYPE] = model_interp_get_texture(height_map, base_frametime);
-				if (!(debug_flags & MR_DEBUG_NO_AMBIENT)) texture_maps[TM_AMBIENT_TYPE] = model_interp_get_texture(ambient_map, base_frametime);
 				if (!(debug_flags & MR_DEBUG_NO_MISC))    texture_maps[TM_MISC_TYPE] = model_interp_get_texture(misc_map, base_frametime);
+				if (!(debug_flags & MR_DEBUG_NO_NORMAL) && Detail.lighting > 0)  texture_maps[TM_NORMAL_TYPE] = model_interp_get_texture(norm_map, base_frametime);
+				if (!(debug_flags & MR_DEBUG_NO_AMBIENT) && Detail.lighting > 0) texture_maps[TM_AMBIENT_TYPE] = model_interp_get_texture(ambient_map, base_frametime);
+				if (!(debug_flags & MR_DEBUG_NO_HEIGHT) && Detail.lighting > 1)  texture_maps[TM_HEIGHT_TYPE] = model_interp_get_texture(height_map, base_frametime);
 			}
 		} else {
 			alpha = forced_alpha;
@@ -1810,7 +1810,7 @@ void model_render_glowpoint(int point_num, vec3d *pos, matrix *orient, glow_poin
 				}
 			}
 
-			if ( Deferred_lighting && gpo && gpo->is_lightsource ) {
+			if ( Detail.lighting > 3 && Deferred_lighting && gpo && gpo->is_lightsource ) {
 				if ( gpo->lightcone ) {
 					vec3d cone_dir_rot;
 					vec3d cone_dir_model;
