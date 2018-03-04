@@ -123,6 +123,9 @@ static opengl_shader_type_t GL_shader_types[] = {
 
 	{ SDR_TYPE_DECAL, "decal-v.sdr", "decal-f.sdr", nullptr,
 		{ opengl_vert_attrib::POSITION, opengl_vert_attrib::WORLD_MATRIX }, "Decal rendering" },
+
+	{ SDR_TYPE_SCENE_FOG, "post-v.sdr", "fog-f.sdr", nullptr,
+		{ opengl_vert_attrib::POSITION, opengl_vert_attrib::TEXCOORD }, "Scene fogging" },
 };
 
 /**

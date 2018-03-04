@@ -494,7 +494,14 @@ void model_draw_list::add_buffer_draw(model_material *render_material, indexed_v
 		// If the zbuffer type is FULL then this buffer may be drawn in the deferred lighting part otehrwise we need to
 		// make sure that the deferred flag is disabled or else some parts of the rendered colors go missing
 		// TODO: This should really be handled somewhere else. This feels like a crude hack...
-		auto possibly_deferred = render_material->get_depth_mode() == ZBUFFER_TYPE_FULL;
+		auto possibly_deferred = render_material->get_depth_mode() == ZBUFFER_TYPE_FULL
+			&& render_material->get_blend_mode() == ALPHA_BLEND_ALPHA_BLEND_ALPHA;
+
+		if (possibly_deferred) {
+			// Fog is handled differently in deferred shader situations
+			render_material->set_fog();
+		}
+
 		render_material->set_deferred_lighting(possibly_deferred ? Deferred_lighting : false);
 		render_material->set_high_dynamic_range(High_dynamic_range);
 		render_material->set_shadow_receiving(Cmdline_shadow_quality != 0);

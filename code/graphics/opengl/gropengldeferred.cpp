@@ -13,6 +13,9 @@
 #include "lighting/lighting.h"
 #include "render/3d.h"
 #include "ShaderProgram.h"
+#include "nebula/neb.h"
+#include "mission/missionparse.h"
+#include "mission/mission_flags.h"
 
 void gr_opengl_deferred_init() {
 	gr_opengl_deferred_light_cylinder_init(16);
@@ -97,7 +100,6 @@ void gr_opengl_deferred_lighting_finish()
 		return;
 	}
 
-	GL_state.Blend(GL_TRUE);
 	GL_state.SetAlphaBlendMode(ALPHA_BLEND_ADDITIVE);
 	gr_zbuffer_set(GR_ZBUFF_NONE);
 
@@ -301,20 +303,44 @@ void gr_opengl_deferred_lighting_finish()
 	// Now reset back to drawing into the color buffer
 	glDrawBuffer(GL_COLOR_ATTACHMENT0);
 
-	// Transfer the resolved lighting back to the color texture
-	// TODO: Maybe this could be improved so that it doesn't require the copy back operation?
-	glReadBuffer(GL_COLOR_ATTACHMENT4);
-	glBlitFramebuffer(0,
-					  0,
-					  gr_screen.max_w,
-					  gr_screen.max_h,
-					  0,
-					  0,
-					  gr_screen.max_w,
-					  gr_screen.max_h,
-					  GL_COLOR_BUFFER_BIT,
-					  GL_NEAREST);
-	glReadBuffer(GL_COLOR_ATTACHMENT0);
+	if (The_mission.flags[Mission::Mission_Flags::Fullneb] && Neb2_render_mode != NEB2_RENDER_NONE) {
+		GL_state.SetAlphaBlendMode(ALPHA_BLEND_NONE);
+		gr_zbuffer_set(GR_ZBUFF_NONE);
+		opengl_shader_set_current(gr_opengl_maybe_create_shader(SDR_TYPE_SCENE_FOG, 0));
+
+		GL_state.Texture.Enable(0, GL_TEXTURE_2D, Scene_emissive_texture);
+		GL_state.Texture.Enable(1, GL_TEXTURE_2D, Scene_depth_texture);
+
+		float fog_near, fog_far;
+		neb2_get_adjusted_fog_values(&fog_near, &fog_far, nullptr);
+		unsigned char r, g, b;
+		neb2_get_fog_color(&r, &g, &b);
+
+		Current_shader->program->Uniforms.setUniformi("tex", 0);
+		Current_shader->program->Uniforms.setUniformi("depth_tex", 1);
+		Current_shader->program->Uniforms.setUniformf("fog_start", fog_near);
+		Current_shader->program->Uniforms.setUniformf("fog_scale", 1.0f / (fog_far - fog_near));
+		Current_shader->program->Uniforms.setUniform3f("fog_color", r / 255.f, g / 255.f, b / 255.f);
+		Current_shader->program->Uniforms.setUniformf("zNear", Min_draw_distance);
+		Current_shader->program->Uniforms.setUniformf("zFar", Max_draw_distance);
+
+		opengl_draw_textured_quad(-1.0f, -1.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f, 1.0f);
+	} else {
+		// Transfer the resolved lighting back to the color texture
+		// TODO: Maybe this could be improved so that it doesn't require the copy back operation?
+		glReadBuffer(GL_COLOR_ATTACHMENT4);
+		glBlitFramebuffer(0,
+						  0,
+						  gr_screen.max_w,
+						  gr_screen.max_h,
+						  0,
+						  0,
+						  gr_screen.max_w,
+						  gr_screen.max_h,
+						  GL_COLOR_BUFFER_BIT,
+						  GL_NEAREST);
+		glReadBuffer(GL_COLOR_ATTACHMENT0);
+	}
 
 	gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
 	gr_set_view_matrix(&Eye_position, &Eye_matrix);
