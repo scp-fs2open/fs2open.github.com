@@ -7204,7 +7204,6 @@ void HudGaugeHardpoints::render(float frametime)
 	ship_weapon *swp = &sp->weapons;
 	vertex draw_point;
 	vec3d subobj_pos;
-	g3_start_instance_matrix(&vmd_zero_vector, &object_orient, true);
 
 	int render_flags = MR_NO_LIGHTING | MR_AUTOCENTER | MR_NO_FOGGING | MR_NO_TEXTURING | MR_NO_ZBUFFER;
 
@@ -7230,7 +7229,7 @@ void HudGaugeHardpoints::render(float frametime)
 					weapon_render_info.set_detail_level_lock(detail_level_lock);
 					weapon_render_info.set_flags(render_flags);
 
-					model_render_immediate(&weapon_render_info, Weapon_info[swp->secondary_bank_weapons[i]].external_model_num, &vmd_identity_matrix, &bank->pnt[k]);
+					model_render_immediate(&weapon_render_info, Weapon_info[swp->secondary_bank_weapons[i]].external_model_num, &object_orient, &bank->pnt[k]);
 				}
 			} else {
 				num_secondaries_rendered = 0;
@@ -7260,12 +7259,12 @@ void HudGaugeHardpoints::render(float frametime)
 					weapon_render_info.set_detail_level_lock(detail_level_lock);
 					weapon_render_info.set_flags(render_flags);
 
-					model_render_immediate(&weapon_render_info, Weapon_info[swp->secondary_bank_weapons[i]].external_model_num, &vmd_identity_matrix, &secondary_weapon_pos);
+					model_render_immediate(&weapon_render_info, Weapon_info[swp->secondary_bank_weapons[i]].external_model_num, &object_orient, &secondary_weapon_pos);
 				}
 			}
 		}
 	}
-	g3_done_instance(true);
+
 	resetClip();
 
 	setGaugeColor(HUD_C_BRIGHT);
