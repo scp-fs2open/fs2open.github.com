@@ -1604,7 +1604,7 @@ void beam_add_light_small(beam *bm, object *objp, vec3d *pt_override = NULL)
 	float noise;
 
 	// no lighting 
-	if(Detail.lighting < 1){
+	if(Detail.lighting < 2){
 		return;
 	}
 
