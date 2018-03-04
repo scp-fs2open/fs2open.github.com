@@ -756,7 +756,8 @@ typedef struct screen {
 
 	void (*gf_sphere)(material *material_def, float rad);
 
-	int (*gf_maybe_create_shader)(shader_type type, unsigned int flags);
+	int  (*gf_maybe_create_shader)(shader_type type, unsigned int flags);
+	void (*gf_recompile_all_shaders)(std::function<void(size_t, size_t)>progress_callback);
 
 	void (*gf_clear_states)();
 
@@ -991,6 +992,7 @@ inline void gr_post_process_restore_zbuffer() {
 #define gr_sphere						GR_CALL(*gr_screen.gf_sphere)
 
 #define gr_maybe_create_shader			GR_CALL(*gr_screen.gf_maybe_create_shader)
+#define gr_recompile_all_shaders		GR_CALL(*gr_screen.gf_recompile_all_shaders)
 #define gr_set_animated_effect			GR_CALL(*gr_screen.gf_set_animated_effect)
 
 #define gr_clear_states					GR_CALL(*gr_screen.gf_clear_states)

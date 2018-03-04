@@ -1356,12 +1356,26 @@ void options_detail_init()
 	options_detail_synch_sliders();
 }
 
+void shader_recompile_callback(size_t current, size_t total) 
+{
+	SCP_string msg = "";
+	msg += "Recompiling shader ";
+	msg += std::to_string(current);
+	msg += "/";
+	msg += std::to_string(total);
+
+	//popup_change_text(msg.c_str());
+
+	//if (current == total)
+	//	popup_kill_any_active();
+}
+
 void options_detail_sliders_update()
 {
 	int i;
 
-	for ( i = 0; i < NUM_DETAIL_SLIDERS; i++ ) {
-		if ( Detail_sliders[gr_screen.res][i].slider.pos != Detail_slider_pos[i] ) {
+	for (i = 0; i < NUM_DETAIL_SLIDERS; i++) {
+		if (Detail_sliders[gr_screen.res][i].slider.pos != Detail_slider_pos[i]) {
 			Detail_slider_pos[i] = Detail_sliders[gr_screen.res][i].slider.pos;
 			gamesnd_play_iface(SND_USER_SELECT);
 		}
@@ -1374,12 +1388,21 @@ void options_detail_sliders_update()
 	Detail.nebula_detail = Detail_sliders[gr_screen.res][NEBULA_DETAIL_SLIDER].slider.pos;
 	neb2_set_detail_level(Detail.nebula_detail);
 
-	Detail.hardware_textures = Detail_sliders[gr_screen.res][HARDWARE_TEXTURES_SLIDER].slider.pos;	
+	Detail.hardware_textures = Detail_sliders[gr_screen.res][HARDWARE_TEXTURES_SLIDER].slider.pos;
 	Detail.num_small_debris = Detail_sliders[gr_screen.res][SHARD_CULLING_SLIDER].slider.pos;
 	Detail.shield_effects = Detail_sliders[gr_screen.res][SHIELD_DETAIL_SLIDER].slider.pos;
 	Detail.num_stars = Detail_sliders[gr_screen.res][NUM_STARS_SLIDER].slider.pos;
 	Detail.num_particles = Detail_sliders[gr_screen.res][NUM_PARTICLES_SLIDER].slider.pos;
-	Detail.lighting = Detail_sliders[gr_screen.res][LIGHTING_SLIDER].slider.pos;
+
+	// If the new lighting setting is above 3 and the old one was below or the reverse,
+	// we need to recompile all shaders we have to account for the changed lighting model.
+	
+	if (Detail.lighting != Detail_sliders[gr_screen.res][LIGHTING_SLIDER].slider.pos) {
+		Detail.lighting = Detail_sliders[gr_screen.res][LIGHTING_SLIDER].slider.pos;
+		//if (!popup_active())
+		//	popup(PF_BODY_BIG | PF_RUN_STATE, 1, POPUP_OK, "Recompiling shaders...");
+		gr_recompile_all_shaders(shader_recompile_callback);
+	}
 }
 
 void options_detail_hide_stuff()

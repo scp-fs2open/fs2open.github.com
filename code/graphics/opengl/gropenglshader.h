@@ -144,6 +144,7 @@ extern SCP_vector<opengl_shader_t> GL_shader;
 extern opengl_shader_t *Current_shader;
 
 int gr_opengl_maybe_create_shader(shader_type shader_t, unsigned int flags);
+void gr_opengl_recompile_all_shaders(std::function<void(size_t, size_t)> progress_callback = nullptr);
 void opengl_delete_shader(int sdr_handle);
 void opengl_shader_set_current(opengl_shader_t *shader_obj = NULL);
 void opengl_shader_set_current(int handle);
