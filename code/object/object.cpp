@@ -1183,7 +1183,7 @@ void obj_move_all_post(object *objp, float frametime)
 				weapon_process_post( objp, frametime );
 
 			// Cast light
-			if ( Detail.lighting > 2 ) {
+			if ( Detail.lighting > 3 ) {
 				// Weapons cast light
 
 				int group_id = Weapons[objp->instance].group_id;
@@ -1233,7 +1233,7 @@ void obj_move_all_post(object *objp, float frametime)
 
 			// Make any electrical arcs on ships cast light
 			if (Arc_light)	{
-				if ( (Detail.lighting > 2) && (objp != Viewer_obj) ) {
+				if ( (Detail.lighting > 3) && (objp != Viewer_obj) ) {
 					int i;
 					ship		*shipp;
 					shipp = &Ships[objp->instance];
@@ -1276,7 +1276,7 @@ void obj_move_all_post(object *objp, float frametime)
 			if ( !physics_paused )
 				fireball_process_post(objp,frametime);
 
-			if (Detail.lighting > 3) {
+			if (Detail.lighting > 2) {
 				float r = 0.0f, g = 0.0f, b = 0.0f;
 
 				fireball_get_color(Fireballs[objp->instance].fireball_info_index, &r, &g, &b);
@@ -1323,7 +1323,7 @@ void obj_move_all_post(object *objp, float frametime)
 
 			// Make any electrical arcs on debris cast light
 			if (Arc_light)	{
-				if ( Detail.lighting > 2 ) {
+				if ( Detail.lighting > 3 ) {
 					int i;
 					debris		*db;
 					db = &Debris[objp->instance];

@@ -133,6 +133,6 @@ void main()
 	vec3 halfVec = normalize(lightDir + eyeDir);
 	float NdotL = clamp(dot(normal, lightDir), 0.0, 1.0);
 	vec4 fragmentColor = vec4(color * (diffuseLightColor * NdotL * attenuation), 1.0);
-	fragmentColor.rgb += SpecularGGX(specColor.rgb, lightDir, normal, halfVec, eyeDir, gloss, fresnel, NdotL).rgb * specLightColor * attenuation;
+	fragmentColor.rgb += computeLighting(specColor.rgb, lightDir, normal.xyz, halfVec, eyeDir, gloss, fresnel, NdotL).rgb * specLightColor * attenuation;
 	fragOut0 = max(fragmentColor, vec4(0.0));
 }
