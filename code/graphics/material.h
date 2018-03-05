@@ -136,6 +136,10 @@ public:
 	void set_stencil_func(ComparisionFunction compare, int ref, uint32_t mask);
 	const StencilFunc& get_stencil_func() const;
 
+	void set_stencil_op(StencilOperation stencilFailOperation,
+						StencilOperation depthFailOperation,
+						StencilOperation successOperation);
+
 	void set_front_stencil_op(StencilOperation stencilFailOperation,
 							  StencilOperation depthFailOperation,
 							  StencilOperation successOperation);

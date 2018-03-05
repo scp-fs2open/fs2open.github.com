@@ -415,6 +415,12 @@ void material::set_stencil_func(ComparisionFunction compare, int ref, uint32_t m
 const material::StencilFunc& material::get_stencil_func() const {
 	return Stencil_func;
 }
+void material::set_stencil_op(StencilOperation stencilFailOperation,
+							  StencilOperation depthFailOperation,
+							  StencilOperation successOperation) {
+	set_front_stencil_op(stencilFailOperation, depthFailOperation, successOperation);
+	set_back_stencil_op(stencilFailOperation, depthFailOperation, successOperation);
+}
 void material::set_front_stencil_op(StencilOperation stencilFailOperation,
 									StencilOperation depthFailOperation,
 									StencilOperation successOperation) {

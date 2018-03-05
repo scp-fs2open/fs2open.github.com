@@ -825,10 +825,10 @@ void model_set_detail_level(int n);
 #define MR_SHOW_OUTLINE				(1<<0)		// Draw the object in outline mode. Color specified by model_set_outline_color
 #define MR_SKYBOX					(1<<1)		// Draw as a skybox
 #define MR_DESATURATED				(1<<2)		// Draw model in monochrome using outline color
-#define MR_EMPTY_SLOT0				(1<<3)		// Show the radius around the object
-#define MR_EMPTY_SLOT1				(1<<4)		// Show the shield mesh
+#define MR_STENCIL_WRITE			(1<<3)		// Write stencil buffere where the model was rendered
+#define MR_STENCIL_READ				(1<<4)		// Only draw pixels of the model where the stencil buffer has the right value (see MR_STENCIL_WRITE)
 #define MR_SHOW_THRUSTERS			(1<<5)		// Show the engine thrusters. See model_set_thrust for how long it draws.
-#define MR_EMPTY_SLOT2				(1<<6)		// Only draw the detail level defined in model_set_detail_level
+#define MR_NO_COLOR_WRITES			(1<<6)		// Don't write anything to the color buffers (used when setting the stencil buffer)
 #define MR_NO_POLYS					(1<<7)		// Don't draw the polygons.
 #define MR_NO_LIGHTING				(1<<8)		// Don't perform any lighting on the model.
 #define MR_NO_TEXTURING				(1<<9)		// Draw textures as flat-shaded polygons.

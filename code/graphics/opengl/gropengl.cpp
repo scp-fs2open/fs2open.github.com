@@ -502,16 +502,16 @@ int gr_opengl_stencil_set(int mode)
 
 	if ( mode == GR_STENCIL_READ ) {
 		GL_state.StencilTest(1);
-		GL_state.StencilFunc(GL_NEVER, 1, 0xFFFF);
+		GL_state.StencilFunc(GL_NOTEQUAL, 1, 0xFFFF);
 		GL_state.StencilOpSeparate(GL_FRONT_AND_BACK, GL_KEEP, GL_KEEP, GL_KEEP);
 	} else if ( mode == GR_STENCIL_WRITE ) {
 		GL_state.StencilTest(1);
-		GL_state.StencilFunc(GL_NOTEQUAL, 1, 0XFFFF);
-		GL_state.StencilOpSeparate(GL_FRONT_AND_BACK, GL_KEEP, GL_KEEP, GL_KEEP);
-	} else {
-		GL_state.StencilTest(0);
 		GL_state.StencilFunc(GL_ALWAYS, 1, 0xFFFF);
 		GL_state.StencilOpSeparate(GL_FRONT_AND_BACK, GL_KEEP, GL_KEEP, GL_REPLACE);
+	} else {
+		GL_state.StencilTest(0);
+		GL_state.StencilFunc(GL_NEVER, 1, 0xFFFF);
+		GL_state.StencilOpSeparate(GL_FRONT_AND_BACK, GL_KEEP, GL_KEEP, GL_KEEP);
 	}
 
 	return tmp;

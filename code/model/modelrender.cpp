@@ -2746,6 +2746,29 @@ void model_render_queue(model_render_params *interp, model_draw_list *scene, int
 		rendering_material.set_lighting(false);
 	}
 
+	Assertion(!(model_flags & MR_STENCIL_READ && model_flags & MR_STENCIL_WRITE),
+			  "Enabling stencil read and write at the same time is not supported!");
+
+	if (model_flags & MR_STENCIL_READ) {
+		rendering_material.set_stencil_test(true);
+		rendering_material.set_stencil_func(ComparisionFunction::NotEqual, 1, 0xFFFF);
+		rendering_material.set_stencil_op(StencilOperation::Keep, StencilOperation::Keep, StencilOperation::Keep);
+	} else if (model_flags & MR_STENCIL_WRITE) {
+		rendering_material.set_stencil_test(true);
+		rendering_material.set_stencil_func(ComparisionFunction::Always, 1, 0xFFFF);
+		rendering_material.set_stencil_op(StencilOperation::Keep, StencilOperation::Keep, StencilOperation::Replace);
+	} else {
+		rendering_material.set_stencil_test(false);
+		rendering_material.set_stencil_func(ComparisionFunction::Never, 1, 0xFFFF);
+		rendering_material.set_stencil_op(StencilOperation::Keep, StencilOperation::Keep, StencilOperation::Keep);
+	}
+
+	if (model_flags & MR_NO_COLOR_WRITES) {
+		rendering_material.set_color_mask(false, false, false, false);
+	} else {
+		rendering_material.set_color_mask(true, true, true, true);
+	}
+
 	if ( Rendering_to_shadow_map ) {
 		rendering_material.set_depth_bias(-1024);
 	} else {
