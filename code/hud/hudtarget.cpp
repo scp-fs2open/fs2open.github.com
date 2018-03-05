@@ -7168,25 +7168,20 @@ void HudGaugeHardpoints::render(float frametime)
 	//We're ready to show stuff
 	model_render_params render_info;
 
-	int detail_level_lock = 1;
-	int cull = gr_set_cull(0);
 	gr_stencil_clear();
-	gr_stencil_set(GR_STENCIL_WRITE);
-	int zbuffer = gr_zbuffer_set(GR_ZBUFF_NONE);
-	gr_set_color_buffer(0);
 
-	render_info.set_color(gauge_color);
+	const int detail_level_lock = 1;
+
 	render_info.set_detail_level_lock(detail_level_lock);
-	render_info.set_flags(MR_NO_LIGHTING | MR_AUTOCENTER | MR_NO_FOGGING | MR_NO_TEXTURING | MR_NO_CULL);
+	render_info.set_flags(
+		MR_NO_LIGHTING | MR_AUTOCENTER | MR_NO_FOGGING | MR_NO_TEXTURING | MR_NO_CULL | MR_NO_ZBUFFER | MR_STENCIL_WRITE
+			| MR_NO_COLOR_WRITES);
 	render_info.set_object_number(OBJ_INDEX(objp));
 
 	model_render_immediate( &render_info, sip->model_num, &object_orient, &vmd_zero_vector);
 
-	gr_set_color_buffer(1);
-	gr_stencil_set(GR_STENCIL_READ);
-	gr_set_cull(cull);
-
-	render_info.set_flags(MR_NO_LIGHTING | MR_AUTOCENTER | MR_NO_FOGGING | MR_NO_TEXTURING | MR_NO_ZBUFFER | MR_NO_CULL);
+	render_info.set_color(gauge_color);
+	render_info.set_flags(MR_NO_LIGHTING | MR_AUTOCENTER | MR_NO_FOGGING | MR_NO_TEXTURING | MR_NO_ZBUFFER | MR_NO_CULL | MR_STENCIL_READ);
 	render_info.set_normal_extrude_width(_line_width * 0.01f);
 
 	model_render_immediate(
@@ -7197,7 +7192,6 @@ void HudGaugeHardpoints::render(float frametime)
 	);
 
 	gr_stencil_set(GR_STENCIL_NONE);
-	gr_zbuffer_set(zbuffer);
 
 	// draw weapon models
 	int i, k;
