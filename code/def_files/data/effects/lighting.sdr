@@ -51,7 +51,7 @@ vec3 SpecularGGX(vec3 specColor, vec3 light, vec3 normal, vec3 halfVec, vec3 vie
 vec3 computeLighting(vec3 specColor, vec3 light, vec3 normal, vec3 halfVec, vec3 view, float gloss, float fresnelFactor, float dotNL) 
 {
 	#ifdef FLAG_LIGHT_MODEL_BLINN_PHONG
-	return SpecularBlinnPhong(specColor, light, normal, halfVec, 1.0, fresnelFactor, dotNL);
+	return SpecularBlinnPhong(specColor, light, normal, halfVec, 32, fresnelFactor, dotNL);
 	#else
 	return SpecularGGX(specColor, light, normal, halfVec, view, gloss, fresnelFactor, dotNL);
 	#endif
