@@ -1322,7 +1322,10 @@ float gamesnd_get_max_duration(game_snd* gs) {
 	int max_length = 0;
 
 	for (auto& entry : gs->sound_entries) {
-		Assertion(entry.id != -1, "Game sound must be loaded to determine maximum duration!");
+		if (entry.id < 0) {
+			// Lazily load unloaded sound entries when required
+			entry.id = snd_load(&entry, gs->flags);
+		}
 
 		max_length = std::max(max_length, snd_get_duration(entry.id));
 	}
