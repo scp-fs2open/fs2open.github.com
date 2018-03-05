@@ -1,3 +1,6 @@
+
+#include "gamma.sdr"
+
 uniform sampler2DArray baseMap;
 uniform sampler2D depthMap;
 uniform float window_width;
@@ -12,12 +15,12 @@ in vec4 fragPosition;
 in vec4 fragTexCoord;
 in vec4 fragColor;
 out vec4 fragOut0;
-#define SRGB_GAMMA 2.2
+
 void main()
 {
 	vec4 fragmentColor = texture(baseMap, fragTexCoord.xyz);
-	fragmentColor.rgb = mix(fragmentColor.rgb, pow(fragmentColor.rgb, vec3(SRGB_GAMMA)), float(srgb));
-	fragmentColor *= mix(fragColor, vec4(pow(fragColor.rgb, vec3(SRGB_GAMMA)), fragColor.a), float(srgb));
+	fragmentColor.rgb = mix(fragmentColor.rgb, srgb_to_linear(fragmentColor.rgb), float(srgb));
+	fragmentColor *= mix(fragColor, vec4(srgb_to_linear(fragColor.rgb), fragColor.a), float(srgb));
 	vec2 offset = vec2(fragRadius * abs(0.5 - fragTexCoord.x) * 2.0, fragRadius * abs(0.5 - fragTexCoord.y) * 2.0);
 	float offset_len = length(offset);
 	if ( offset_len > fragRadius ) {

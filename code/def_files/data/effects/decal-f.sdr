@@ -2,12 +2,12 @@
 // NOTE: The technique and some of this code is based on this tutorial:
 // http://martindevans.me/game-development/2015/02/27/Drawing-Stuff-On-Other-Stuff-With-Deferred-Screenspace-Decals/
 
+#include "gamma.sdr"
+
 out vec4 fragOut0;
 out vec4 fragOut1;
 out vec4 fragOut2;
 out vec4 fragOut3;
-
-#define SRGB_GAMMA 2.2
 
 uniform sampler2D gDepthBuffer;
 uniform sampler2D gNormalBuffer;
@@ -107,7 +107,7 @@ void main() {
 		vec4 color = texture(diffuseMap, vec3(tex_coord, float(diffuse_index)));
 		//color = vec4(0.6, 0.1, 0.1, 0.7);
 
-		color.rgb = pow(color.rgb, vec3(SRGB_GAMMA));
+		color.rgb = srgb_to_linear(color.rgb);
 
 		if (blend_mode == 0) {
 			// Normal alpha blending

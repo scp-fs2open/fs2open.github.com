@@ -175,6 +175,7 @@ set(file_root_def_files_data_effects
 	def_files/data/effects/fxaa-f.sdr
 	def_files/data/effects/fxaa-v.sdr
 	def_files/data/effects/fxaapre-f.sdr
+	def_files/data/effects/gamma.sdr
 	def_files/data/effects/lighting.sdr
 	def_files/data/effects/ls-f.sdr
 	def_files/data/effects/main-f.sdr
