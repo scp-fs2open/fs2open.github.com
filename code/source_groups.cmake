@@ -172,6 +172,7 @@ set(file_root_def_files_data_effects
 	def_files/data/effects/effect-particle-f.sdr
 	def_files/data/effects/effect-screen-g.sdr
 	def_files/data/effects/effect-v.sdr
+	def_files/data/effects/fog-f.sdr
 	def_files/data/effects/fxaa-f.sdr
 	def_files/data/effects/fxaa-v.sdr
 	def_files/data/effects/fxaapre-f.sdr
