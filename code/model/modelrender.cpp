@@ -487,24 +487,24 @@ void model_draw_list::set_light_filter(int objnum, vec3d *pos, float rad)
 void model_draw_list::add_buffer_draw(model_material *render_material, indexed_vertex_source *vert_src, vertex_buffer *buffer, size_t texi, uint tmap_flags)
 {
 	queued_buffer_draw draw_data;
+	draw_data.render_material = *render_material;
 
 	if (Rendering_to_shadow_map) {
-		render_material->set_shadow_casting(true);
+		draw_data.render_material.set_shadow_casting(true);
 	} else {
-		// If the zbuffer type is FULL then this buffer may be drawn in the deferred lighting part otehrwise we need to
+		// If the zbuffer type is FULL then this buffer may be drawn in the deferred lighting part otherwise we need to
 		// make sure that the deferred flag is disabled or else some parts of the rendered colors go missing
 		// TODO: This should really be handled somewhere else. This feels like a crude hack...
-		auto possibly_deferred = render_material->get_depth_mode() == ZBUFFER_TYPE_FULL
-			&& render_material->get_blend_mode() == ALPHA_BLEND_ALPHA_BLEND_ALPHA;
+		auto possibly_deferred = draw_data.render_material.get_depth_mode() == ZBUFFER_TYPE_FULL;
 
 		if (possibly_deferred) {
 			// Fog is handled differently in deferred shader situations
-			render_material->set_fog();
+			draw_data.render_material.set_fog();
 		}
 
-		render_material->set_deferred_lighting(possibly_deferred ? Deferred_lighting : false);
-		render_material->set_high_dynamic_range(High_dynamic_range);
-		render_material->set_shadow_receiving(Cmdline_shadow_quality != 0);
+		draw_data.render_material.set_deferred_lighting(possibly_deferred ? Deferred_lighting : false);
+		draw_data.render_material.set_high_dynamic_range(High_dynamic_range);
+		draw_data.render_material.set_shadow_receiving(Cmdline_shadow_quality != 0);
 	}
 
 	if (tmap_flags & TMAP_FLAG_BATCH_TRANSFORMS && buffer->flags & VB_FLAG_MODEL_ID) {
@@ -516,21 +516,20 @@ void model_draw_list::add_buffer_draw(model_material *render_material, indexed_v
 
 		draw_data.transform_buffer_offset = TransformBufferHandler.get_buffer_offset();
 
-		render_material->set_batching(true);
+		draw_data.render_material.set_batching(true);
 	} else {
 		draw_data.transform = Transformations.get_transform();
 		draw_data.scale = Current_scale;
 		draw_data.transform_buffer_offset = INVALID_SIZE;
-		render_material->set_batching(false);
+		draw_data.render_material.set_batching(false);
 	}
 
-	draw_data.sdr_flags = render_material->get_shader_flags();
+	draw_data.sdr_flags = draw_data.render_material.get_shader_flags();
 
 	draw_data.vert_src = vert_src;
 	draw_data.buffer = buffer;
 	draw_data.texi = texi;
 	draw_data.flags = tmap_flags;
-	draw_data.render_material = *render_material;
 	draw_data.lights = Current_lights_set;
 
 	Render_elements.push_back(draw_data);
