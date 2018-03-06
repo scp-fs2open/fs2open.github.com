@@ -465,16 +465,6 @@ void renderAll() {
 	graphics::decal_draw_list draw_list;
 	auto mission_time = f2fl(Missiontime);
 
-	bool full_neb = ((The_mission.flags[Mission::Mission_Flags::Fullneb]) && (Neb2_render_mode != NEB2_RENDER_NONE)
-		&& !Fred_running);
-
-	if (full_neb) {
-		// Rendering decals is not supported when the fog effect is active (since the two effects do not work well
-		// together) so we skip rendering the decals in this case
-		// The active decals are still processed as usual though in case the nebula type of the mission is switched
-		return;
-	}
-
 	for (auto& decal : active_decals) {
 		int diffuse_bm = -1;
 		int glow_bm = -1;
