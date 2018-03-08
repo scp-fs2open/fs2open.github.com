@@ -45,23 +45,6 @@ class Editor;
 #define EDITABLE        0x02
 #define COMBINED        0x04
 
-// Bitmaps
-#define BITMAP_OPERATOR            0
-#define BITMAP_DATA                1
-#define BITMAP_VARIABLE            2
-#define BITMAP_ROOT                3
-#define BITMAP_ROOT_DIRECTIVE    4
-#define BITMAP_CHAIN            5
-#define BITMAP_CHAIN_DIRECTIVE    6
-#define BITMAP_GREEN_DOT        7
-#define BITMAP_BLACK_DOT        8
-#define BITMAP_BLUE_DOT            BITMAP_ROOT
-#define BITMAP_RED_DOT            BITMAP_ROOT_DIRECTIVE
-#define BITMAP_NUMBERED_DATA        9
-//Therefore NEXT DEFINE should be 9+12 or 21
-
-
-
 // tree behavior modes (or tree subtype)
 #define ST_LABELED_ROOT        0x10000
 #define ST_ROOT_DELETABLE    0x20000
@@ -72,6 +55,38 @@ class Editor;
 #define ROOT_RENAMED    2
 
 #define SEXP_ITEM_F_DUP    (1<<0)
+
+enum class NodeImage {
+	OPERATOR = 0,
+	DATA,
+	VARIABLE,
+	ROOT,
+	ROOT_DIRECTIVE,
+	CHAIN,
+	CHAIN_DIRECTIVE,
+	GREEN_DOT,
+	BLACK_DOT,
+	DATA_00,
+	DATA_05,
+	DATA_10,
+	DATA_15,
+	DATA_20,
+	DATA_25,
+	DATA_30,
+	DATA_35,
+	DATA_40,
+	DATA_45,
+	DATA_50,
+	DATA_55,
+	DATA_60,
+	DATA_65,
+	DATA_70,
+	DATA_75,
+	DATA_80,
+	DATA_85,
+	DATA_90,
+	DATA_95,
+};
 
 /**
  * @brief Generic interface for operations that may depend on the context of the SEXP tree
@@ -140,6 +155,8 @@ class sexp_tree: public QTreeWidget {
 
  Q_OBJECT
  public:
+	static const int FormulaDataRole = Qt::UserRole;
+
 	explicit sexp_tree(QWidget* parent = nullptr);
 
 	int find_text(const char* text, int* find, int max_depth);
@@ -149,7 +166,7 @@ class sexp_tree: public QTreeWidget {
 	void update_help(QTreeWidgetItem* h);
 	const char* help(int code);
 	QTreeWidgetItem* insert(const QString& lpszItem,
-							const QIcon& image = QIcon(),
+							NodeImage image = NodeImage::ROOT,
 							QTreeWidgetItem* hParent = nullptr,
 							QTreeWidgetItem* hInsertAfter = nullptr);
 	QTreeWidgetItem* handle(int node);
@@ -210,7 +227,7 @@ class sexp_tree: public QTreeWidget {
 
 	//WMC
 	int get_sibling_place(int node);
-	QIcon get_data_image(int node);
+	NodeImage get_data_image(int node);
 
 
 	sexp_list_item* get_listing_opf(int opf, int parent_node, int arg_index);
@@ -307,6 +324,16 @@ class sexp_tree: public QTreeWidget {
 
 	// Generated message map functions
  protected:
+	QTreeWidgetItem* insertWithIcon(const QString& lpszItem,
+									const QIcon& image,
+									QTreeWidgetItem* hParent = nullptr,
+									QTreeWidgetItem* hInsertAfter = nullptr);
+
+	void customMenuHandler(const QPoint& pos);
+
+	QAction* createAction(const QString& name, const QKeySequence& shortcut = QKeySequence());
+	std::unique_ptr<QMenu> buildContextMenu();
+
 	int load_branch(int index, int parent);
 	int save_branch(int cur, int at_root = 0);
 	void free_node2(int node);

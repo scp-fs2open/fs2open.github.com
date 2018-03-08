@@ -44,6 +44,7 @@
 #include "mission/object.h"
 
 #include <QtWidgets/QMessageBox>
+#include <QtWidgets/QMenu>
 
 #define TREE_NODE_INCREMENT    100
 
@@ -55,12 +56,82 @@
 #define ID_REPLACE_MENU        0xde00
 // note: stay below 0xe000 so we don't collide with MFC defines..
 
-extern SCP_vector<game_snd>	Snds;
+extern SCP_vector<game_snd> Snds;
 
 //********************sexp_tree********************
 
 namespace fso {
 namespace fred {
+
+namespace {
+QString node_image_to_resource_name(NodeImage image) {
+	switch (image) {
+	case NodeImage::OPERATOR:
+		return ":/images/bitmap1.png";
+	case NodeImage::DATA:
+		return ":/images/data.png";
+	case NodeImage::VARIABLE:
+		return ":/images/variable.png";
+	case NodeImage::ROOT:
+		return ":/images/root.png";
+	case NodeImage::ROOT_DIRECTIVE:
+		return ":/images/root_directive.png";
+	case NodeImage::CHAIN:
+		return ":/images/chained.png";
+	case NodeImage::CHAIN_DIRECTIVE:
+		return ":/images/chained_directive.png";
+	case NodeImage::GREEN_DOT:
+		return ":/images/green_do.png";
+	case NodeImage::BLACK_DOT:
+		return ":/images/black_do.png";
+	case NodeImage::DATA_00:
+		return ":/images/data00.png";
+	case NodeImage::DATA_05:
+		return ":/images/data05.png";
+	case NodeImage::DATA_10:
+		return ":/images/data10.png";
+	case NodeImage::DATA_15:
+		return ":/images/data15.png";
+	case NodeImage::DATA_20:
+		return ":/images/data20.png";
+	case NodeImage::DATA_25:
+		return ":/images/data25.png";
+	case NodeImage::DATA_30:
+		return ":/images/data30.png";
+	case NodeImage::DATA_35:
+		return ":/images/data35.png";
+	case NodeImage::DATA_40:
+		return ":/images/data40.png";
+	case NodeImage::DATA_45:
+		return ":/images/data45.png";
+	case NodeImage::DATA_50:
+		return ":/images/data50.png";
+	case NodeImage::DATA_55:
+		return ":/images/data55.png";
+	case NodeImage::DATA_60:
+		return ":/images/data60.png";
+	case NodeImage::DATA_65:
+		return ":/images/data65.png";
+	case NodeImage::DATA_70:
+		return ":/images/data70.png";
+	case NodeImage::DATA_75:
+		return ":/images/data75.png";
+	case NodeImage::DATA_80:
+		return ":/images/data80.png";
+	case NodeImage::DATA_85:
+		return ":/images/data85.png";
+	case NodeImage::DATA_90:
+		return ":/images/data90.png";
+	case NodeImage::DATA_95:
+		return ":/images/data95.png";
+	}
+	return ":/images/bitmap1.png";
+}
+
+QIcon nodeimage_to_icon(NodeImage image) {
+	return QIcon(node_image_to_resource_name(image));
+}
+}
 
 SexpTreeEditorInterface::SexpTreeEditorInterface(Editor* editor) : _editor(editor) {
 }
@@ -113,10 +184,13 @@ bool SexpTreeEditorInterface::hasDefaultEvent(int operator_value) {
 // constructor
 sexp_tree::sexp_tree(QWidget* parent) : QTreeWidget(parent) {
 	setSelectionMode(QTreeWidget::SingleSelection);
+	setContextMenuPolicy(Qt::CustomContextMenu);
 
 	select_sexp_node = -1;
 	root_item = -1;
 	clear_tree();
+
+	connect(this, &QWidget::customContextMenuRequested, this, &sexp_tree::customMenuHandler);
 }
 
 // clears out the tree, so all the nodes are unused.
@@ -510,15 +584,15 @@ void sexp_tree::add_sub_tree(int node, QTreeWidgetItem* root) {
 	}*/
 
 	// bitmap to draw in tree
-	QIcon bitmap;
+	NodeImage bitmap;
 
 	if (tree_nodes[node].type & SEXPT_OPERATOR) {
 		tree_nodes[node].flags = OPERAND;
-		bitmap = QIcon(":/images/bitmap1.png");
+		bitmap = NodeImage::OPERATOR;
 	} else {
 		if (tree_nodes[node].type & SEXPT_VARIABLE) {
 			tree_nodes[node].flags = NOT_EDITABLE;
-			bitmap = QIcon(":/images/variable.png");
+			bitmap = NodeImage::VARIABLE;
 		} else {
 			tree_nodes[node].flags = EDITABLE;
 			bitmap = get_data_image(node);
@@ -537,7 +611,7 @@ void sexp_tree::add_sub_tree(int node, QTreeWidgetItem* root) {
 		} else {
 			Assert(tree_nodes[node].child == -1);
 			if (tree_nodes[node].type & SEXPT_VARIABLE) {
-				tree_nodes[node].handle = insert(tree_nodes[node].text, QIcon(":/images/variable.png"), root);
+				tree_nodes[node].handle = insert(tree_nodes[node].text, NodeImage::VARIABLE, root);
 				tree_nodes[node].flags = NOT_EDITABLE;
 			} else {
 				auto bmap = get_data_image(node);
@@ -1388,7 +1462,7 @@ int sexp_tree::query_default_argument_available(int op, int i) {
 	}
 
 	case OPF_EVENT_NAME: {
-		return _interface->hasDefaultGoal(Operators[op].value) ? 1 : 0;
+		return _interface->hasDefaultEvent(Operators[op].value) ? 1 : 0;
 
 		// The original code is kept until the campaign editor is implemented
 		/*
@@ -1503,7 +1577,7 @@ int sexp_tree::add_variable_data(const char* new_data, int type) {
 	expand_operator(item_index);
 	node = allocate_node(item_index);
 	set_node(node, type, new_data);
-	tree_nodes[node].handle = insert(new_data, QIcon(":/images/variable.png"), tree_nodes[item_index].handle);
+	tree_nodes[node].handle = insert(new_data, NodeImage::VARIABLE, tree_nodes[item_index].handle);
 	tree_nodes[node].flags = NOT_EDITABLE;
 	modified = true;
 	return node;
@@ -1517,12 +1591,12 @@ void sexp_tree::add_operator(const char* op, QTreeWidgetItem* h) {
 	if (item_index == -1) {
 		node = allocate_node(-1);
 		set_node(node, (SEXPT_OPERATOR | SEXPT_VALID), op);
-		tree_nodes[node].handle = insert(op, QIcon(":/images/bitmap1.png"), h);
+		tree_nodes[node].handle = insert(op, NodeImage::OPERATOR, h);
 	} else {
 		expand_operator(item_index);
 		node = allocate_node(item_index);
 		set_node(node, (SEXPT_OPERATOR | SEXPT_VALID), op);
-		tree_nodes[node].handle = insert(op, QIcon(":/images/bitmap1.png"), tree_nodes[item_index].handle);
+		tree_nodes[node].handle = insert(op, NodeImage::OPERATOR, tree_nodes[item_index].handle);
 	}
 
 	tree_nodes[node].flags = OPERAND;
@@ -1997,7 +2071,7 @@ void sexp_tree::replace_data(const char* new_data, int type) {
 	set_node(item_index, type, new_data);
 	h->setText(0, new_data);
 	auto bmap = get_data_image(item_index);
-	h->setIcon(0, bmap);
+	h->setIcon(0, nodeimage_to_icon(bmap));
 	tree_nodes[item_index].flags = EDITABLE;
 
 	// check remaining data beyond replaced data for validity (in case any of it is dependent on data just replaced)
@@ -2030,7 +2104,7 @@ void sexp_tree::replace_variable_data(int var_idx, int type) {
 
 	set_node(item_index, type, buf);
 	h->setText(0, QString::fromUtf8(buf));
-	h->setIcon(0, QIcon(":/images/variable.png"));
+	h->setIcon(0, nodeimage_to_icon(NodeImage::VARIABLE));
 	tree_nodes[item_index].flags = NOT_EDITABLE;
 
 	// check remaining data beyond replaced data for validity (in case any of it is dependent on data just replaced)
@@ -2146,13 +2220,14 @@ QTreeWidgetItem* sexp_tree::move_branch(QTreeWidgetItem* source, QTreeWidgetItem
 
 		if (i < tree_nodes.size()) {
 			auto icon = source->icon(0);
-			h = insert(source->text(0), icon, parent, after);
+			h = insertWithIcon(source->text(0), icon, parent, after);
 			tree_nodes[i].handle = h;
 		} else {
 			auto icon = source->icon(0);
-			h = insert(source->text(0), icon, parent, after);
+			h = insertWithIcon(source->text(0), icon, parent, after);
 		}
 
+		h->setData(0, FormulaDataRole, source->data(0, FormulaDataRole));
 		for (auto childIdx = 0; childIdx < source->childCount(); ++i) {
 			auto child = source->child(childIdx);
 
@@ -2180,13 +2255,14 @@ void sexp_tree::copy_branch(QTreeWidgetItem* source, QTreeWidgetItem* parent, QT
 
 		if (i < tree_nodes.size()) {
 			auto icon = source->icon(0);
-			h = insert(source->text(0), icon, parent, after);
+			h = insertWithIcon(source->text(0), icon, parent, after);
 			tree_nodes[i].handle = h;
 		} else {
 			auto icon = source->icon(0);
-			h = insert(source->text(0), icon, parent, after);
+			h = insertWithIcon(source->text(0), icon, parent, after);
 		}
 
+		h->setData(0, FormulaDataRole, source->data(0, FormulaDataRole));
 		for (auto childIdx = 0; childIdx < source->childCount(); ++i) {
 			auto child = source->child(childIdx);
 
@@ -2206,10 +2282,15 @@ void sexp_tree::swap_roots(QTreeWidgetItem* one, QTreeWidgetItem* two) {
 	modified = true;
 }
 
-QTreeWidgetItem* sexp_tree::insert(const QString& lpszItem,
-								   const QIcon& image,
-								   QTreeWidgetItem* hParent,
-								   QTreeWidgetItem* hInsertAfter) {
+QTreeWidgetItem*
+sexp_tree::insert(const QString& lpszItem, NodeImage image, QTreeWidgetItem* hParent, QTreeWidgetItem* hInsertAfter) {
+	return insertWithIcon(lpszItem, nodeimage_to_icon(image), hParent, hInsertAfter);
+}
+
+QTreeWidgetItem* sexp_tree::insertWithIcon(const QString& lpszItem,
+										   const QIcon& image,
+										   QTreeWidgetItem* hParent,
+										   QTreeWidgetItem* hInsertAfter) {
 	QTreeWidgetItem* item = nullptr;
 	if (hParent == nullptr) {
 		if (hInsertAfter == nullptr) {
@@ -2905,18 +2986,20 @@ int sexp_tree::find_ancestral_argument_number(int parent_op, int child_node) {
 * Gets the proper data image for the tree item's place
 * in its parent hierarchy.
 */
-QIcon sexp_tree::get_data_image(int node) {
+NodeImage sexp_tree::get_data_image(int node) {
 	int count = get_sibling_place(node) + 1;
 
 	if (count <= 0) {
-		return QIcon(":/images/data.png");
+		return NodeImage::DATA;
 	}
 
 	if (count % 5 != 0) {
-		return QIcon(":/images/data.png");
+		return NodeImage::DATA;
 	}
 
-	return QIcon(QString(":/images/data_%1.png").arg(count % 100));
+	int idx = (count % 100) / 5;
+
+	return static_cast<NodeImage>(static_cast<int>(NodeImage::DATA_00) + idx);
 }
 
 int sexp_tree::get_sibling_place(int node) {
@@ -4491,6 +4574,45 @@ void sexp_tree::initializeEditor(Editor* editor, SexpTreeEditorInterface* interf
 
 	_editor = editor;
 	_interface = interface;
+}
+void sexp_tree::customMenuHandler(const QPoint& pos) {
+	QTreeWidgetItem* h = this->itemAt(pos);
+
+	if (h == nullptr) {
+		return;
+	}
+
+	auto menu = buildContextMenu();
+
+	menu->exec(mapToGlobal(pos));
+}
+std::unique_ptr<QMenu> sexp_tree::buildContextMenu() {
+	std::unique_ptr<QMenu> menu_ptr(new QMenu(tr("Edit SEXP tree")));
+
+	menu_ptr->addAction(createAction(tr("&Delete Item"), QKeySequence::Delete));
+	menu_ptr->addAction(createAction(tr("&Edit Data")));
+	menu_ptr->addAction(createAction(tr("Expand All")));
+
+	menu_ptr->addSection(tr("Copy operations"));
+	menu_ptr->addAction(createAction(tr("Cut"), QKeySequence::Cut));
+	menu_ptr->addAction(createAction(tr("Copy"), QKeySequence::Copy));
+	menu_ptr->addAction(createAction(tr("Paste"), QKeySequence::Paste));
+
+	menu_ptr->addSection(tr("Add"));
+	auto add_ops = menu_ptr->addMenu(tr("Add Operator"));
+	add_ops->addAction(createAction("<Nothing here yet>"));
+
+	auto add_data = menu_ptr->addMenu(tr("Add Data"));
+	add_data->addAction(createAction(tr("Number")));
+	add_data->addAction(createAction(tr("String")));
+
+	return menu_ptr;
+}
+QAction* sexp_tree::createAction(const QString& name, const QKeySequence& shortcut) {
+	auto action = new QAction(name, this);
+	action->setShortcut(shortcut);
+
+	return action;
 }
 
 }
