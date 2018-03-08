@@ -6,6 +6,11 @@ mkdir -p build
 cd build
 
 if [ "$TRAVIS_OS_NAME" = "linux" ]; then
+    if [ "$RELEASE_BUILD" = true ]; then
+        PARENT_DIR="$(basename $PWD)"
+        (cd .. && tar -czvf /tmp/builds/$PACKAGE_NAME-source-Unix.tar.gz --exclude-vcs "$PARENT_DIR")
+    fi
+    
     CXXFLAGS="-m64 -mtune=generic -mfpmath=sse -msse -msse2 -pipe -Wno-unknown-pragmas"
     CFLAGS="-m64 -mtune=generic -mfpmath=sse -msse -msse2 -pipe -Wno-unknown-pragmas"
 

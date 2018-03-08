@@ -19,31 +19,16 @@ game_snd* sound_entry_h::Get() {
 	if (!this->IsValid())
 		return NULL;
 
-	return &Snds[idx];
+	return gamesnd_get_game_sound(idx);
 }
 bool sound_entry_h::IsValid() {
-	if (idx < 0 || idx >= (int) Snds.size())
-		return false;
-
-	return true;
+	return gamesnd_game_sound_valid(idx);
 }
-int sound_entry_h::getId() {
-	if (!IsValid())
-		return -1;
-
-	game_snd *snd = Get();
-
-	if (snd == NULL)
-		return -1;
-
-	return snd->id;
-}
-
 
 //**********HANDLE: SoundEntry
 ADE_OBJ(l_SoundEntry, sound_entry_h, "soundentry", "sounds.tbl table entry handle");
 
-ADE_VIRTVAR(DefaultVolume, l_SoundEntry, "number", "The default volume of this game sound", "number", "Volume in the range from 1 to 0 or -1 on error")
+ADE_VIRTVAR(DefaultVolume, l_SoundEntry, "number", "The default volume of this game sound. If the sound entry has a volume range then the maximum volume will be returned by this.", "number", "Volume in the range from 1 to 0 or -1 on error")
 {
 	sound_entry_h *seh = NULL;
 	float newVal = -1.0f;
@@ -60,14 +45,14 @@ ADE_VIRTVAR(DefaultVolume, l_SoundEntry, "number", "The default volume of this g
 		{
 			CAP(newVal, 0.0f, 1.0f);
 
-			seh->Get()->default_volume = newVal;
+			seh->Get()->volume_range = ::util::UniformFloatRange(newVal);
 		}
 	}
 
-	return ade_set_args(L, "f", seh->Get()->default_volume);
+	return ade_set_args(L, "f", seh->Get()->volume_range.max());
 }
 
-ADE_FUNC(getFilename, l_SoundEntry, NULL, "Returns the filename of this sound", "string", "filename or empty string on error")
+ADE_FUNC(getFilename, l_SoundEntry, NULL, "Returns the filename of this sound. If the sound has multiple entries then the filename of the first entry will be returned.", "string", "filename or empty string on error")
 {
 	sound_entry_h *seh = NULL;
 
@@ -77,10 +62,14 @@ ADE_FUNC(getFilename, l_SoundEntry, NULL, "Returns the filename of this sound", 
 	if (seh == NULL || !seh->IsValid())
 		return ade_set_error(L, "s", "");
 
-	return ade_set_args(L, "s", seh->Get()->filename);
+	Assertion(!seh->Get()->sound_entries.empty(),
+			  "Sound entry vector of sound %s is empty! This should not happen. Get a coder!",
+			  seh->Get()->name.c_str());
+
+	return ade_set_args(L, "s", seh->Get()->sound_entries[0].filename);
 }
 
-ADE_FUNC(getDuration, l_SoundEntry, NULL, "Gives the length of the sound in seconds.", "number", "the length, or -1 on error")
+ADE_FUNC(getDuration, l_SoundEntry, NULL, "Gives the length of the sound in seconds. If the sound has multiple entries or a pitch range then the maximum duration of the sound will be returned.", "number", "the length, or -1 on error")
 {
 	sound_entry_h *seh = NULL;
 
@@ -90,7 +79,7 @@ ADE_FUNC(getDuration, l_SoundEntry, NULL, "Gives the length of the sound in seco
 	if (seh == NULL || !seh->IsValid())
 		return ade_set_error(L, "f", -1.0f);
 
-	return ade_set_args(L, "f", (i2fl(snd_get_duration(seh->getId())) / 1000.0f));
+	return ade_set_args(L, "f", (i2fl(gamesnd_get_max_duration(seh->Get())) / 1000.0f));
 }
 
 ADE_FUNC(get3DValues, l_SoundEntry, "vector Postion[, number radius=0.0]", "Computes the volume and the panning of the sound when it would be played from the specified position.<br>"
@@ -182,10 +171,10 @@ ADE_VIRTVAR(Pitch, l_Sound, "number", "Pitch of sound, from 100 to 100000", "num
 		if(newpitch > 100000)
 			newpitch = 100000;
 
-		snd_set_pitch(sh->sig, newpitch);
+		snd_set_pitch(sh->sig, log10f(i2fl(newpitch)) - 2.0f);
 	}
 
-	return ade_set_args(L, "f", snd_get_pitch(sh->sig));
+	return ade_set_args(L, "f", (float) pow(10.0, snd_get_pitch(sh->sig) + 2.0));
 }
 
 ADE_FUNC(getRemainingTime, l_Sound, NULL, "The remaining time of this sound handle", "number", "Remaining time, or -1 on error")
@@ -254,7 +243,7 @@ ADE_FUNC(setPosition, l_Sound, "number[,boolean = true]",
 	if (val <= 0.0f)
 		return ADE_RETURN_FALSE;
 
-	snd_set_pos(sh->getSignature(), sh->Get(), val, percent);
+	snd_set_pos(sh->getSignature(), val, percent);
 
 	return ADE_RETURN_TRUE;
 }
@@ -273,7 +262,7 @@ ADE_FUNC(rewind, l_Sound, "number", "Rewinds the sound by the given number of se
 	if (val <= 0.0f)
 		return ADE_RETURN_FALSE;
 
-	snd_rewind(sh->getSignature(), sh->Get(), val);
+	snd_rewind(sh->getSignature(), val);
 
 	return ADE_RETURN_TRUE;
 }
@@ -292,7 +281,7 @@ ADE_FUNC(skip, l_Sound, "number", "Skips the given number of seconds of the soun
 	if (val <= 0.0f)
 		return ADE_RETURN_FALSE;
 
-	snd_ffwd(sh->getSignature(), sh->Get(), val);
+	snd_ffwd(sh->getSignature(), val);
 
 	return ADE_RETURN_TRUE;
 }

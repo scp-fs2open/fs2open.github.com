@@ -86,7 +86,7 @@ int joy_ff_init()
 
 	ff_enabled = os_config_read_uint(NULL, "EnableJoystickFF", 1);
 
-	if ( !ff_enabled ) {
+	if ( !ff_enabled || io::joystick::getCurrentJoystick() == nullptr) {
 		return 0;
 	}
 
@@ -114,11 +114,8 @@ int joy_ff_init()
 		}
 	}
 #endif
-	
-	// This should be how we do it, but it's currently bugged in SDL so it fails to re-enumerate haptic axes.
-	//haptic = SDL_HapticOpenFromJoystick(joy_get_device());
 
-	haptic = SDL_HapticOpen(0);
+	haptic = SDL_HapticOpenFromJoystick(io::joystick::getCurrentJoystick()->getDevice());
 
 	if (haptic == NULL) {
 		mprintf(("    ERROR: Unable to open haptic joystick: %s\n", SDL_GetError()));
@@ -141,6 +138,19 @@ int joy_ff_init()
 	}
 
 	Joy_ff_directional_hit_effect_enabled = os_config_read_uint(NULL, "EnableHitEffect", 1);
+	// ForceFeedback.Strength lets the user specify how strong the effects should be. This uses SDL_HapticSetGain which
+	// needs to be supported by the haptic device
+	int ff_strength = os_config_read_uint("ForceFeedback", "Strength", 100);
+	CLAMP(ff_strength, 0, 100);
+	if (SDL_HapticQuery(haptic) & SDL_HAPTIC_GAIN) {
+		SDL_HapticSetGain(haptic, ff_strength);
+	} else {
+		if (ff_strength != 100) {
+			ReleaseWarning(LOCATION, "The configuration file is configured with a force feedback strength value of %d%% "
+				"but your haptic device does not support setting the global strength of the effects. All effects will be"
+				"played with full strength.", ff_strength);
+		}
+	}
 
 	mprintf(("\n"));
 	mprintf(("    Number of haptic axes: %d\n", SDL_HapticNumAxes(haptic)));
@@ -326,7 +336,7 @@ static int joy_ff_create_effects()
 	pAfterburn1.eff.periodic.direction.dir[0] = 0;
 	pAfterburn1.eff.periodic.length = SDL_HAPTIC_INFINITY;
 	pAfterburn1.eff.periodic.period = 20;
-	pAfterburn1.eff.periodic.magnitude = 0x6665;
+	pAfterburn1.eff.periodic.magnitude = 0x3332;
 
 	pAfterburn1.id = SDL_HapticNewEffect(haptic, &pAfterburn1.eff);
 
@@ -344,7 +354,7 @@ static int joy_ff_create_effects()
 	pAfterburn2.eff.periodic.direction.dir[0] = 9000;
 	pAfterburn2.eff.periodic.length = 125;
 	pAfterburn2.eff.periodic.period = 100;
-	pAfterburn2.eff.periodic.magnitude = 0x3332;
+	pAfterburn2.eff.periodic.magnitude = 0x1999;
 
 	pAfterburn2.id = SDL_HapticNewEffect(haptic, &pAfterburn2.eff);
 
@@ -674,7 +684,7 @@ void joy_ff_docked()
 
 	SDL_HapticStopEffect(haptic, pDock.id);
 
-	pDock.eff.periodic.magnitude = 0x7fff;
+	pDock.eff.periodic.magnitude = 0x3332;
 
 	if ( SDL_HapticUpdateEffect(haptic, pDock.id, &pDock.eff) < 0 ) {
 		mprintf(("HapticERROR:  Unable to update pDock:\n  %s\n", SDL_GetError()));
@@ -695,7 +705,7 @@ void joy_ff_play_reload_effect()
 
 	SDL_HapticStopEffect(haptic, pDock.id);
 
-	pDock.eff.periodic.magnitude = 0x3fff;
+	pDock.eff.periodic.magnitude = 0x1999;
 
 	if ( SDL_HapticUpdateEffect(haptic, pDock.id, &pDock.eff) < 0 ) {
 		mprintf(("HapticERROR:  Unable to update pDock:\n  %s\n", SDL_GetError()));
@@ -716,7 +726,7 @@ void joy_ff_afterburn_on()
 		SDL_HapticStopEffect(haptic, pAfterburn1.id);
 
 		pAfterburn1.eff.periodic.length = SDL_HAPTIC_INFINITY;
-		pAfterburn1.eff.periodic.magnitude = 0x3fff;
+		pAfterburn1.eff.periodic.magnitude = 0x3332;
 
 		if ( SDL_HapticUpdateEffect(haptic, pAfterburn1.id, &pAfterburn1.eff) < 0 ) {
 			mprintf(("HapticERROR:  Unable to update pAfterburn1:\n  %s\n", SDL_GetError()));
@@ -727,7 +737,7 @@ void joy_ff_afterburn_on()
 		SDL_HapticStopEffect(haptic, pAfterburn2.id);
 
 		pAfterburn2.eff.periodic.length = SDL_HAPTIC_INFINITY;
-		pAfterburn2.eff.periodic.magnitude = 0x3fff;
+		pAfterburn2.eff.periodic.magnitude = 0x1999;
 
 		if ( SDL_HapticUpdateEffect(haptic, pAfterburn2.id, &pAfterburn2.eff) < 0 ) {
 			mprintf(("HapticERROR:  Unable to update pAfterburn2:\n  %s\n", SDL_GetError()));

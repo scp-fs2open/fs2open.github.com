@@ -78,10 +78,9 @@ namespace Weapon {
 		Turret_Interceptable,				// These two flags mark a weapon as being interceptable by the AI
 		Fighter_Interceptable,				// (like WIF_BOMB), without forcing it to be tagetable -MageKing17
 		Aoe_Electronics,					// Apply electronics effect across the weapon's entire area of effect instead of just on the impacted ship -MageKing17
-		Apply_Recoil,						// Apply Recoil
+		Apply_Recoil,						// Apply Recoil using weapon and ship info
         Dont_spawn_if_shot,                 // Prevent shot down parent weapons from spawning children (DahBlount)
         Die_on_lost_lock,                   // WIF_LOCKED_HOMING missiles will die if they lose their lock
-        Apply_recoil,                       // Apply recoil using weapon and ship info
 		
         NUM_VALUES
 	};

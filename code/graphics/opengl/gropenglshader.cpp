@@ -11,9 +11,9 @@
 #include "cmdline/cmdline.h"
 #include "def_files/def_files.h"
 #include "graphics/2d.h"
+#include "graphics/matrix.h"
 #include "graphics/grinternal.h"
 #include "graphics/opengl/gropengldraw.h"
-#include "graphics/opengl/gropengllight.h"
 #include "graphics/opengl/gropenglpostprocessing.h"
 #include "graphics/opengl/gropenglshader.h"
 #include "graphics/opengl/gropenglstate.h"
@@ -23,6 +23,7 @@
 #include "math/vecmat.h"
 #include "mod_table/mod_table.h"
 #include "render/3d.h"
+#include "ShaderProgram.h"
 
 #include <md5.h>
 #include <jansson.h>
@@ -31,7 +32,7 @@ SCP_vector<opengl_shader_t> GL_shader;
 
 GLuint Framebuffer_fallback_texture_id = 0;
 
-opengl_vert_attrib GL_vertex_attrib_info[] =
+SCP_vector<opengl_vert_attrib> GL_vertex_attrib_info =
 	{
 		{ opengl_vert_attrib::POSITION,		"vertPosition",		{{{ 0.0f, 0.0f, 0.0f, 1.0f }}} },
 		{ opengl_vert_attrib::COLOR,		"vertColor",		{{{ 1.0f, 1.0f, 1.0f, 1.0f }}} },
@@ -40,78 +41,91 @@ opengl_vert_attrib GL_vertex_attrib_info[] =
 		{ opengl_vert_attrib::TANGENT,		"vertTangent",		{{{ 1.0f, 0.0f, 0.0f, 0.0f }}} },
 		{ opengl_vert_attrib::MODEL_ID,		"vertModelID",		{{{ 0.0f, 0.0f, 0.0f, 0.0f }}} },
 		{ opengl_vert_attrib::RADIUS,		"vertRadius",		{{{ 1.0f, 0.0f, 0.0f, 0.0f }}} },
-		{ opengl_vert_attrib::UVEC,			"vertUvec",			{{{ 0.0f, 1.0f, 0.0f, 0.0f }}} }
+		{ opengl_vert_attrib::UVEC,			"vertUvec",			{{{ 0.0f, 1.0f, 0.0f, 0.0f }}} },
+		{ opengl_vert_attrib::WORLD_MATRIX,	"vertWorldMatrix",	{{{ 1.0f, 0.0f, 0.0f, 0.0f }}} },
 	};
+
+struct opengl_uniform_block_binding {
+	uniform_block_type block_type;
+	const char* name;
+};
+
+opengl_uniform_block_binding GL_uniform_blocks[] = {
+	{ uniform_block_type::Lights, "lightData" },
+	{ uniform_block_type::ModelData, "modelData" },
+	{ uniform_block_type::NanoVGData, "NanoVGUniformData" },
+	{ uniform_block_type::DecalInfo, "decalInfoData" },
+	{ uniform_block_type::DecalGlobals, "decalGlobalData" },
+	{ uniform_block_type::DeferredGlobals, "globalDeferredData" },
+};
 
 /**
  * Static lookup reference for shader uniforms
  * When adding a new shader, list all associated uniforms and attributes here
  */
 static opengl_shader_type_t GL_shader_types[] = {
-	{ SDR_TYPE_MODEL, "main-v.sdr", "main-f.sdr", "main-g.sdr", 
-		{ "modelViewMatrix", "modelMatrix", "viewMatrix", "projMatrix", "textureMatrix", "color" },
+	{ SDR_TYPE_MODEL, "main-v.sdr", "main-f.sdr", "main-g.sdr",
 		{ opengl_vert_attrib::POSITION, opengl_vert_attrib::TEXCOORD, opengl_vert_attrib::NORMAL, opengl_vert_attrib::TANGENT, opengl_vert_attrib::MODEL_ID }, "Model Rendering" },
 
-	{ SDR_TYPE_EFFECT_PARTICLE, "effect-v.sdr", "effect-particle-f.sdr", "effect-screen-g.sdr", 
-		{ "modelViewMatrix", "projMatrix", "baseMap", "depthMap", "window_width", "window_height", "nearZ", "farZ", "linear_depth", "srgb", "blend_alpha" },
+	{ SDR_TYPE_EFFECT_PARTICLE, "effect-v.sdr", "effect-particle-f.sdr", "effect-screen-g.sdr",
 		{ opengl_vert_attrib::POSITION, opengl_vert_attrib::TEXCOORD, opengl_vert_attrib::RADIUS, opengl_vert_attrib::COLOR }, "Particle Effects" },
 
-	{ SDR_TYPE_EFFECT_DISTORTION, "effect-distort-v.sdr", "effect-distort-f.sdr", 0, 
-		{ "modelViewMatrix", "projMatrix", "baseMap", "window_width", "window_height", "distMap", "frameBuffer", "use_offset" },
+	{ SDR_TYPE_EFFECT_DISTORTION, "effect-distort-v.sdr", "effect-distort-f.sdr", 0,
 		{ opengl_vert_attrib::POSITION, opengl_vert_attrib::TEXCOORD, opengl_vert_attrib::RADIUS, opengl_vert_attrib::COLOR }, "Distortion Effects" },
 
-	{ SDR_TYPE_POST_PROCESS_MAIN, "post-v.sdr", "post-f.sdr", 0, 
-		{ "tex", "depth_tex", "timer" },
+	{ SDR_TYPE_POST_PROCESS_MAIN, "post-v.sdr", "post-f.sdr", 0,
 		{ opengl_vert_attrib::POSITION, opengl_vert_attrib::TEXCOORD }, "Post Processing" },
 
-	{ SDR_TYPE_POST_PROCESS_BLUR, "post-v.sdr", "blur-f.sdr", 0, 
-		{ "tex", "texSize", "level", "tapSize", "debug" },
+	{ SDR_TYPE_POST_PROCESS_BLUR, "post-v.sdr", "blur-f.sdr", 0,
 		{ opengl_vert_attrib::POSITION, opengl_vert_attrib::TEXCOORD }, "Gaussian Blur" },
 
-	{ SDR_TYPE_POST_PROCESS_BLOOM_COMP, "post-v.sdr", "bloom-comp-f.sdr", 0, 
-		{ "bloomed", "bloom_intensity", "levels" },
+	{ SDR_TYPE_POST_PROCESS_BLOOM_COMP, "post-v.sdr", "bloom-comp-f.sdr", 0,
 		{ opengl_vert_attrib::POSITION, opengl_vert_attrib::TEXCOORD }, "Bloom Compositing" },
 
-	{ SDR_TYPE_POST_PROCESS_BRIGHTPASS, "post-v.sdr", "brightpass-f.sdr", 0, 
-		{ "tex" },
+	{ SDR_TYPE_POST_PROCESS_BRIGHTPASS, "post-v.sdr", "brightpass-f.sdr", 0,
 		{ opengl_vert_attrib::POSITION, opengl_vert_attrib::TEXCOORD }, "Bloom Brightpass" },
 
-	{ SDR_TYPE_POST_PROCESS_FXAA, "fxaa-v.sdr", "fxaa-f.sdr", 0, 
-		{ "tex0", "rt_w", "rt_h" },
+	{ SDR_TYPE_POST_PROCESS_FXAA, "fxaa-v.sdr", "fxaa-f.sdr", 0,
 		{ opengl_vert_attrib::POSITION }, "FXAA" },
 
-	{ SDR_TYPE_POST_PROCESS_FXAA_PREPASS, "post-v.sdr", "fxaapre-f.sdr", 0, 
-		{ "tex" },
+	{ SDR_TYPE_POST_PROCESS_FXAA_PREPASS, "post-v.sdr", "fxaapre-f.sdr", 0,
 		{ opengl_vert_attrib::POSITION, opengl_vert_attrib::TEXCOORD }, "FXAA Prepass" },
 
-	{ SDR_TYPE_POST_PROCESS_LIGHTSHAFTS, "post-v.sdr", "ls-f.sdr", 0, 
-		{ "scene", "cockpit", "sun_pos", "weight", "intensity", "falloff", "density", "cp_intensity" },
+	{ SDR_TYPE_POST_PROCESS_LIGHTSHAFTS, "post-v.sdr", "ls-f.sdr", 0,
 		{ opengl_vert_attrib::POSITION, opengl_vert_attrib::TEXCOORD }, "Lightshafts" },
 
-	{ SDR_TYPE_POST_PROCESS_TONEMAPPING, "post-v.sdr", "tonemapping-f.sdr", 0, 
-		{ "tex", "exposure" },
+	{ SDR_TYPE_POST_PROCESS_TONEMAPPING, "post-v.sdr", "tonemapping-f.sdr", 0,
 		{ opengl_vert_attrib::POSITION, opengl_vert_attrib::TEXCOORD }, "Tonemapping" },
 
-	{ SDR_TYPE_DEFERRED_LIGHTING, "deferred-v.sdr", "deferred-f.sdr", 0, 
-		{ "modelViewMatrix", "projMatrix", "scale", "ColorBuffer", "NormalBuffer", "PositionBuffer", "SpecBuffer", "invScreenWidth", "invScreenHeight", "lightType", "lightRadius",
-		"diffuseLightColor", "specLightColor", "dualCone", "coneDir", "coneAngle", "coneInnerAngle", "specFactor" }, 
+	{ SDR_TYPE_DEFERRED_LIGHTING, "deferred-v.sdr", "deferred-f.sdr", 0,
 		{ opengl_vert_attrib::POSITION }, "Deferred Lighting" },
 	
-	{ SDR_TYPE_DEFERRED_CLEAR, "deferred-clear-v.sdr", "deferred-clear-f.sdr", 0, 
-		{  },
+	{ SDR_TYPE_DEFERRED_CLEAR, "deferred-clear-v.sdr", "deferred-clear-f.sdr", 0,
 		{ opengl_vert_attrib::POSITION }, "Clear Deferred Lighting Buffer" },
 
-	{ SDR_TYPE_VIDEO_PROCESS, "video-v.sdr", "video-f.sdr", 0, 
-		{ "modelViewMatrix", "projMatrix", "ytex", "utex", "vtex" },
+	{ SDR_TYPE_VIDEO_PROCESS, "video-v.sdr", "video-f.sdr", 0,
 		{ opengl_vert_attrib::POSITION, opengl_vert_attrib::TEXCOORD }, "Video Playback" },
 
 	{ SDR_TYPE_PASSTHROUGH_RENDER, "passthrough-v.sdr", "passthrough-f.sdr", 0,
-		{ "modelViewMatrix", "projMatrix", "baseMap", "noTexturing", "alphaTexture", "srgb", "intensity", "color", "alphaThreshold", "clipEnabled", "clipEquation", "modelMatrix" },
 		{ opengl_vert_attrib::POSITION, opengl_vert_attrib::TEXCOORD, opengl_vert_attrib::COLOR }, "Passthrough" },
 
 	{ SDR_TYPE_SHIELD_DECAL, "shield-impact-v.sdr",	"shield-impact-f.sdr", 0,
-		{ "modelViewMatrix", "projMatrix", "shieldMap", "shieldModelViewMatrix", "shieldProjMatrix", "hitNormal", "srgb", "color" }, 
-		{ opengl_vert_attrib::POSITION, opengl_vert_attrib::NORMAL }, "Shield Decals" }
+		{ opengl_vert_attrib::POSITION, opengl_vert_attrib::NORMAL }, "Shield Decals" },
+
+	{ SDR_TYPE_BATCHED_BITMAP, "batched-v.sdr", "batched-f.sdr", nullptr,
+		{ opengl_vert_attrib::POSITION, opengl_vert_attrib::TEXCOORD, opengl_vert_attrib::COLOR }, "Batched bitmaps" },
+
+	{ SDR_TYPE_DEFAULT_MATERIAL, "passthrough-v.sdr", "default-material-f.sdr", nullptr,
+		{ opengl_vert_attrib::POSITION, opengl_vert_attrib::TEXCOORD, opengl_vert_attrib::COLOR }, "Default material" },
+
+	{ SDR_TYPE_NANOVG, "nanovg-v.sdr", "nanovg-f.sdr", nullptr,
+		{ opengl_vert_attrib::POSITION, opengl_vert_attrib::TEXCOORD }, "NanoVG shader" },
+
+	{ SDR_TYPE_DECAL, "decal-v.sdr", "decal-f.sdr", nullptr,
+		{ opengl_vert_attrib::POSITION, opengl_vert_attrib::WORLD_MATRIX }, "Decal rendering" },
+
+	{ SDR_TYPE_SCENE_FOG, "post-v.sdr", "fog-f.sdr", nullptr,
+		{ opengl_vert_attrib::POSITION, opengl_vert_attrib::TEXCOORD }, "Scene fogging" },
 };
 
 /**
@@ -119,106 +133,131 @@ static opengl_shader_type_t GL_shader_types[] = {
  * When adding a new shader variant for a shader, list all associated uniforms and attributes here
  */
 static opengl_shader_variant_t GL_shader_variants[] = {
-	{ SDR_TYPE_MODEL, false, SDR_FLAG_MODEL_LIGHT, "FLAG_LIGHT", 
-		{ "n_lights", "lightPosition", "lightDirection", "lightDiffuseColor", "lightSpecColor", "lightType", "lightAttenuation", "ambientFactor", "diffuseFactor", "emissionFactor", "defaultGloss" }, {  },
+	{ SDR_TYPE_MODEL, false, SDR_FLAG_MODEL_LIGHT, "FLAG_LIGHT",
+		{  },
 		"Lighting" },
 
 	{ SDR_TYPE_MODEL, false, SDR_FLAG_MODEL_FOG, "FLAG_FOG", 
-		{ "fogStart", "fogScale", "fogColor" }, {  },
+		{  },
 		"Fog Effect" },
 
 	{ SDR_TYPE_MODEL, false, SDR_FLAG_MODEL_DIFFUSE_MAP, "FLAG_DIFFUSE_MAP", 
-		{ "sBasemap", "desaturate", "blend_alpha", "overrideDiffuse", "diffuseClr" }, {  },
+		{  },
 		"Diffuse Mapping" },
 	
 	{ SDR_TYPE_MODEL, false, SDR_FLAG_MODEL_GLOW_MAP, "FLAG_GLOW_MAP", 
-		{ "sGlowmap", "overrideGlow", "glowClr" }, {  },
+		{  },
 		"Glow Mapping" },
 	
 	{ SDR_TYPE_MODEL, false, SDR_FLAG_MODEL_SPEC_MAP, "FLAG_SPEC_MAP", 
-		{ "sSpecmap", "overrideSpec", "specClr", "gammaSpec", "alphaGloss" }, {  },
+		{  },
 		"Specular Mapping" },
 	
 	{ SDR_TYPE_MODEL, false, SDR_FLAG_MODEL_NORMAL_MAP, "FLAG_NORMAL_MAP", 
-		{ "sNormalmap" }, {  },
+		{  },
 		"Normal Mapping" },
 	
 	{ SDR_TYPE_MODEL, false, SDR_FLAG_MODEL_HEIGHT_MAP, "FLAG_HEIGHT_MAP", 
-		{ "sHeightmap" }, {  },
+		{  },
 		"Parallax Mapping" },
 	
 	{ SDR_TYPE_MODEL, false, SDR_FLAG_MODEL_ENV_MAP, "FLAG_ENV_MAP", 
-		{ "sEnvmap", "envGloss", "envMatrix" }, {  },
+		{  },
 		"Environment Mapping" },
 	
 	{ SDR_TYPE_MODEL, false, SDR_FLAG_MODEL_ANIMATED, "FLAG_ANIMATED", 
-		{ "sFramebuffer", "effect_num", "anim_timer", "vpwidth", "vpheight" }, {  },
+		{  },
 		"Animated Effects" },
 	
 	{ SDR_TYPE_MODEL, false, SDR_FLAG_MODEL_MISC_MAP, "FLAG_MISC_MAP", 
-		{ "sMiscmap" }, {  },
+		{  },
 		"Utility mapping" },
 	
 	{ SDR_TYPE_MODEL, false, SDR_FLAG_MODEL_TEAMCOLOR, "FLAG_TEAMCOLOR", 
-		{ "stripe_color", "base_color", "team_glow_enabled" }, {  },
+		{  },
 		"Team Colors" },
 	
 	{ SDR_TYPE_MODEL, false, SDR_FLAG_MODEL_DEFERRED, "FLAG_DEFERRED", 
-		{ }, {  },
+		{  },
 		"Deferred lighting" },
 	
 	{ SDR_TYPE_MODEL, true, SDR_FLAG_MODEL_SHADOW_MAP, "FLAG_SHADOW_MAP", 
-		{ "shadow_proj_matrix" }, {  },
+		{  },
 		"Shadow Mapping" },
 	
 	{ SDR_TYPE_MODEL, false, SDR_FLAG_MODEL_SHADOWS, "FLAG_SHADOWS", 
-		{ "shadow_map", "shadow_mv_matrix", "shadow_proj_matrix", "veryneardist", "neardist", "middist", "fardist" }, { },
+		{ },
 		"Shadows" },
 	
 	{ SDR_TYPE_MODEL, false, SDR_FLAG_MODEL_THRUSTER, "FLAG_THRUSTER", 
-		{ "thruster_scale" }, {  },
+		{  },
 		"Thruster scaling" },
 	
 	{ SDR_TYPE_MODEL, false, SDR_FLAG_MODEL_TRANSFORM, "FLAG_TRANSFORM", 
-		{ "transform_tex", "buffer_matrix_offset" }, {  },
+		{  },
 		"Submodel Transforms" },
 	
-	{ SDR_TYPE_MODEL, false, SDR_FLAG_MODEL_CLIP, "FLAG_CLIP", 
-		{ "use_clip_plane", "clip_equation" }, {  },
+	{ SDR_TYPE_MODEL, false, SDR_FLAG_MODEL_CLIP, "FLAG_CLIP",
+		{  },
 		"Clip Plane" },
 
 	{ SDR_TYPE_MODEL, false, SDR_FLAG_MODEL_HDR, "FLAG_HDR",
-		{ }, {  },
+		{  },
 		"High Dynamic Range" },
 
 	{ SDR_TYPE_MODEL, false, SDR_FLAG_MODEL_AMBIENT_MAP, "FLAG_AMBIENT_MAP",
-		{ "sAmbientmap" }, {  },
+		{  },
 		"Ambient Occlusion Map" },
 
 	{ SDR_TYPE_MODEL, false, SDR_FLAG_MODEL_NORMAL_ALPHA, "FLAG_NORMAL_ALPHA",
-		{ "normalAlphaMinMax" }, { },
+		{ },
 		"Normal Alpha" },
 
 	{ SDR_TYPE_MODEL, false, SDR_FLAG_MODEL_NORMAL_EXTRUDE, "FLAG_NORMAL_EXTRUDE",
-		{ "extrudeWidth" }, { },
+		{ },
 		"Normal Extrusion" },
 
 	{ SDR_TYPE_EFFECT_PARTICLE, true, SDR_FLAG_PARTICLE_POINT_GEN, "FLAG_EFFECT_GEOMETRY", 
-		{ }, { opengl_vert_attrib::UVEC },
+		{ opengl_vert_attrib::UVEC },
 		"Geometry shader point-based particles" },
 	
 	{ SDR_TYPE_POST_PROCESS_BLUR, false, SDR_FLAG_BLUR_HORIZONTAL, "PASS_0", 
-		{ }, {  },
+		{  },
 		"Horizontal blur pass" },
 	
 	{ SDR_TYPE_POST_PROCESS_BLUR, false, SDR_FLAG_BLUR_VERTICAL, "PASS_1", 
-		{ }, {  },
-		"Vertical blur pass" }
+		{  },
+		"Vertical blur pass" },
+
+	{ SDR_TYPE_NANOVG, false, SDR_FLAG_NANOVG_EDGE_AA, "EDGE_AA",
+		{  },
+		"NanoVG edge anti-alias" },
+
+	{ SDR_TYPE_DECAL, false, SDR_FLAG_DECAL_USE_NORMAL_MAP, "USE_NORMAL_MAP",
+		{  },
+		"Decal use scene normal map" },
 };
 
 static const int GL_num_shader_variants = sizeof(GL_shader_variants) / sizeof(opengl_shader_variant_t);
 
 opengl_shader_t *Current_shader = NULL;
+
+opengl_shader_t::opengl_shader_t() : shader(SDR_TYPE_NONE), flags(0), flags2(0)
+{
+}
+opengl_shader_t::opengl_shader_t(opengl_shader_t&& other) {
+	*this = std::move(other);
+}
+opengl_shader_t& opengl_shader_t::operator=(opengl_shader_t&& other) {
+	// VS2013 doesn't support implicit move constructors so we need to explicitly declare it
+	shader = other.shader;
+	flags = other.flags;
+	flags2 = other.flags2;
+
+	program = std::move(other.program);
+
+	return *this;
+}
 
 /**
  * Set the currently active shader
@@ -296,6 +335,10 @@ static SCP_string opengl_shader_get_header(shader_type type_id, int flags, shade
 
 	sflags << "#version " << GLSL_version << " core\n";
 
+	if (GL_workaround_clipping_planes) {
+		sflags << "#define WORKAROUND_CLIPPING_PLANES\n";
+	}
+
 	if (type_id == SDR_TYPE_POST_PROCESS_MAIN || type_id == SDR_TYPE_POST_PROCESS_LIGHTSHAFTS || type_id == SDR_TYPE_POST_PROCESS_FXAA) {
 		// ignore looking for variants. main post process, lightshafts, and FXAA shaders need special headers to be hacked in
 		opengl_post_shader_header(sflags, type_id, flags);
@@ -323,11 +366,10 @@ static SCP_string opengl_shader_get_header(shader_type type_id, int flags, shade
  * @param flags		integer variable holding a combination of SDR_* flags
  * @return			C-string holding the complete shader source code
  */
-static SCP_string opengl_load_shader(const char *filename)
-{
+static SCP_string opengl_load_shader(const char* filename) {
 	SCP_string content;
 	if (Enable_external_shaders) {
-		CFILE *cf_shader = cfopen(filename, "rt", CFILE_NORMAL, CF_TYPE_EFFECTS);
+		CFILE* cf_shader = cfopen(filename, "rt", CFILE_NORMAL, CF_TYPE_EFFECTS);
 
 		if (cf_shader != NULL) {
 			int len = cfilelength(cf_shader);
@@ -348,11 +390,86 @@ static SCP_string opengl_load_shader(const char *filename)
 	return content;
 }
 
+static void handle_includes_impl(SCP_vector<SCP_string>& include_stack,
+								 SCP_stringstream& output,
+								 int& include_counter,
+								 const SCP_string& filename,
+								 const SCP_string& original) {
+	include_stack.emplace_back(filename);
+	auto current_source_number = include_counter + 1;
+
+	const char* INCLUDE_STRING = "#include";
+	SCP_stringstream input(original);
+
+	int line_num = 1;
+	for (SCP_string line; std::getline(input, line);) {
+		auto include_start = line.find(INCLUDE_STRING);
+		if (include_start != SCP_string::npos) {
+			auto first_quote = line.find('"', include_start + strlen(INCLUDE_STRING));
+			auto second_quote = line.find('"', first_quote + 1);
+
+			if (first_quote == SCP_string::npos || second_quote == SCP_string::npos) {
+				Error(LOCATION,
+					  "Shader %s:%d: Malformed include line. Could not find both quote charaters.",
+					  filename.c_str(),
+					  line_num);
+			}
+
+			auto file_name = line.substr(first_quote + 1, second_quote - first_quote - 1);
+			auto existing_name = std::find_if(include_stack.begin(), include_stack.end(), [&file_name](const SCP_string& str) {
+				return str == file_name;
+			});
+			if (existing_name != include_stack.end()) {
+				SCP_stringstream stack_string;
+				for (auto& name : include_stack) {
+					stack_string << "\t" << name << "\n";
+				}
+
+				Error(LOCATION,
+					  "Shader %s:%d: Detected cyclic include! Previous includes (top level file first):\n%s",
+					  filename.c_str(),
+					  line_num,
+					  stack_string.str().c_str());
+			}
+
+			++include_counter;
+			// The second parameter defines which source string we are currently working with. We keep track of how many
+			// excludes have been in the file so far to specify this
+			output << "#line 1 " << include_counter + 1 << "\n";
+
+			handle_includes_impl(include_stack,
+								 output,
+								 include_counter,
+								 file_name,
+								 opengl_load_shader(file_name.c_str()));
+
+			// We are done with the include file so now we can return to the original file
+			output << "#line " << line_num + 1 << " " << current_source_number << "\n";
+		} else {
+			output << line << "\n";
+		}
+
+		++line_num;
+	}
+
+	include_stack.pop_back();
+}
+
+static SCP_string handle_includes(const char* filename, const SCP_string& original) {
+	SCP_stringstream output;
+	SCP_vector<SCP_string> include_stack;
+	auto include_counter = 0;
+
+	handle_includes_impl(include_stack, output, include_counter, filename, original);
+
+	return output.str();
+}
+
 static SCP_vector<SCP_string> opengl_get_shader_content(shader_type type_id, const char* filename, int flags, shader_stage stage) {
 	SCP_vector<SCP_string> parts;
 	parts.push_back(opengl_shader_get_header(type_id, flags, stage));
 
-	parts.push_back(opengl_load_shader(filename));
+	parts.push_back(handle_includes(filename, opengl_load_shader(filename)));
 
 	return parts;
 }
@@ -372,7 +489,7 @@ static SCP_string get_shader_hash(const SCP_vector<SCP_string>& vert,
 	add_shader_parts(md5, frag);
 
 	// Add the attribute locations so that changes get detected
-	for (int i = 0; i < opengl_vert_attrib::NUM_ATTRIBS; ++i) {
+	for (uint32_t i = 0; i < (uint32_t)GL_vertex_attrib_info.size(); ++i) {
 		md5.update(GL_vertex_attrib_info[i].name.c_str(), (MD5::size_type) GL_vertex_attrib_info[i].name.size());
 		md5.update(reinterpret_cast<const char*>(&i), sizeof(i));
 	}
@@ -383,7 +500,7 @@ static SCP_string get_shader_hash(const SCP_vector<SCP_string>& vert,
 }
 
 static bool do_shader_caching() {
-	if (GL_version < 41) {
+	if (!GLAD_GL_ARB_get_program_binary) {
 		// Not supported until OpenGL 4.1
 		return false;
 	}
@@ -577,9 +694,12 @@ int opengl_compile_shader(shader_type sdr, uint flags)
 				program->addShaderCode(opengl::STAGE_GEOMETRY, sdr_info->geo, geom_content);
 			}
 
-			for (int i = 0; i < opengl_vert_attrib::NUM_ATTRIBS; ++i) {
+			for (size_t i = 0; i < GL_vertex_attrib_info.size(); ++i) {
+				// Check that the enum values match the position in the vector to make accessing that information more efficient
+				Assertion(GL_vertex_attrib_info[i].attribute_id == (int) i, "Mistmatch between enum values and attribute vector detected!");
+
 				// assign vert attribute binding locations before we link the shader
-				glBindAttribLocation(program->getShaderHandle(), i, GL_vertex_attrib_info[i].name.c_str());
+				glBindAttribLocation(program->getShaderHandle(), (GLint) i, GL_vertex_attrib_info[i].name.c_str());
 			}
 
 			// bind fragment data locations before we link the shader
@@ -609,18 +729,17 @@ int opengl_compile_shader(shader_type sdr, uint flags)
 
 	opengl_shader_set_current(&new_shader);
 
-	// initialize uniforms and attributes
-	for (auto& unif : sdr_info->uniforms) {
-		new_shader.program->Uniforms.initUniform(unif);
-	}
-
+	// initialize the attributes
 	for (auto& attr : sdr_info->attributes) {
-		new_shader.program->initAttribute(GL_vertex_attrib_info[attr].name, GL_vertex_attrib_info[attr].default_value);
+		new_shader.program->initAttribute(GL_vertex_attrib_info[attr].name, GL_vertex_attrib_info[attr].attribute_id, GL_vertex_attrib_info[attr].default_value);
 	}
 
-	// if this shader is POST_PROCESS_MAIN, hack in the user-defined flags
-	if ( sdr_info->type_id == SDR_TYPE_POST_PROCESS_MAIN ) {
-		opengl_post_init_uniforms(flags);
+	for (auto& uniform_block : GL_uniform_blocks) {
+		auto blockIndex = glGetUniformBlockIndex(new_shader.program->getShaderHandle(), uniform_block.name);
+
+		if (blockIndex != GL_INVALID_INDEX) {
+			glUniformBlockBinding(new_shader.program->getShaderHandle(), blockIndex, static_cast<GLuint>(uniform_block.block_type));
+		}
 	}
 
 	mprintf(("Shader Variant Features:\n"));
@@ -630,13 +749,9 @@ int opengl_compile_shader(shader_type sdr, uint flags)
 		opengl_shader_variant_t &variant = GL_shader_variants[i];
 
 		if ( sdr_info->type_id == variant.type_id && variant.flag & flags ) {
-			for (auto& unif : variant.uniforms) {
-				new_shader.program->Uniforms.initUniform(unif);
-			}
-
 			for (auto& attr : variant.attributes) {
 				auto& attr_info = GL_vertex_attrib_info[attr];
-				new_shader.program->initAttribute(attr_info.name, attr_info.default_value);
+				new_shader.program->initAttribute(attr_info.name, attr_info.attribute_id, attr_info.default_value);
 			}
 
 			mprintf(("	%s\n", variant.description));
@@ -705,8 +820,6 @@ void opengl_shader_init()
 	opengl_shader_compile_passthrough_shader();
 
 	mprintf(("\n"));
-
-	opengl_shader_compile_passthrough_shader();
 }
 
 /**
@@ -715,12 +828,11 @@ void opengl_shader_init()
  * @param attribute_text	Name of the attribute
  * @return					Internal OpenGL location for the attribute
  */
-GLint opengl_shader_get_attribute(const char *attribute_text)
+GLint opengl_shader_get_attribute(opengl_vert_attrib::attrib_id attribute)
 {
 	Assertion(Current_shader != nullptr, "Current shader may not be null!");
-	Assertion(attribute_text != nullptr, "Attribute name must be valid!");
 
-	return Current_shader->program->getAttributeLocation(attribute_text);
+	return Current_shader->program->getAttributeLocation(attribute);
 }
 
 /**
@@ -739,9 +851,7 @@ void opengl_shader_compile_deferred_light_shader()
 		Current_shader->program->Uniforms.setUniformi("NormalBuffer", 1);
 		Current_shader->program->Uniforms.setUniformi("PositionBuffer", 2);
 		Current_shader->program->Uniforms.setUniformi("SpecBuffer", 3);
-		Current_shader->program->Uniforms.setUniformf("invScreenWidth", 1.0f / gr_screen.max_w);
-		Current_shader->program->Uniforms.setUniformf("invScreenHeight", 1.0f / gr_screen.max_h);
-		Current_shader->program->Uniforms.setUniformf("specFactor", Cmdline_ogl_spec);
+		Current_shader->program->Uniforms.setUniformi("shadow_map", 4);
 	} else {
 		opengl_shader_set_current();
 		mprintf(("Failed to compile deferred lighting shader!\n"));
@@ -761,34 +871,20 @@ void opengl_shader_compile_deferred_light_shader()
 
 void opengl_shader_compile_passthrough_shader()
 {
-	bool in_error = false;
-
 	mprintf(("Compiling passthrough shader...\n"));
 
 	int sdr_handle = gr_opengl_maybe_create_shader(SDR_TYPE_PASSTHROUGH_RENDER, 0);
 
-	if ( sdr_handle >= 0 ) {
-		opengl_shader_set_current(sdr_handle);
+	opengl_shader_set_current(sdr_handle);
 
-		//Hardcoded Uniforms
-		Current_shader->program->Uniforms.setUniformi("baseMap", 0);
-		Current_shader->program->Uniforms.setUniformi("noTexturing", 0);
-		Current_shader->program->Uniforms.setUniformi("alphaTexture", 0);
-		Current_shader->program->Uniforms.setUniformi("srgb", 0);
-	} else {
-		opengl_shader_set_current();
-		mprintf(("Failed to compile passthrough shader!\n"));
-		in_error = true;
-	}
-
-	if ( in_error ) {
-		mprintf(("  Shader in_error! Passthrough shader unavailable!\n"));
-	}
+	//Hardcoded Uniforms
+	Current_shader->program->Uniforms.setUniformi("baseMap", 0);
+	Current_shader->program->Uniforms.setUniformi("clipEnabled", 0);
 
 	opengl_shader_set_current();
 }
 
-void opengl_shader_set_passthrough(bool textured, bool alpha, vec4 *clr, float color_scale, const material::clip_plane& clip_plane)
+void opengl_shader_set_passthrough(bool textured)
 {
 	opengl_shader_set_current(gr_opengl_maybe_create_shader(SDR_TYPE_PASSTHROUGH_RENDER, 0));
 
@@ -796,6 +892,32 @@ void opengl_shader_set_passthrough(bool textured, bool alpha, vec4 *clr, float c
 		Current_shader->program->Uniforms.setUniformi("noTexturing", 0);
 	} else {
 		Current_shader->program->Uniforms.setUniformi("noTexturing", 1);
+	}
+
+	Current_shader->program->Uniforms.setUniformi("alphaTexture", 0);
+
+	Current_shader->program->Uniforms.setUniformi("srgb", High_dynamic_range ? 1 : 0);
+	Current_shader->program->Uniforms.setUniformf("intensity", 1.0f);
+
+	Current_shader->program->Uniforms.setUniformf("alphaThreshold", GL_alpha_threshold);
+
+	Current_shader->program->Uniforms.setUniform4f("color", 1.0f, 1.0f, 1.0f, 1.0f);
+
+	Current_shader->program->Uniforms.setUniformMatrix4f("modelViewMatrix", gr_model_view_matrix);
+	Current_shader->program->Uniforms.setUniformMatrix4f("projMatrix", gr_projection_matrix);
+}
+
+void opengl_shader_set_default_material(bool textured, bool alpha, vec4 *clr, float color_scale, uint32_t array_index, const material::clip_plane& clip_plane)
+{
+	Current_shader->program->Uniforms.setUniformi("baseMap", 0);
+
+	if ( textured ) {
+		Current_shader->program->Uniforms.setUniformi("noTexturing", 0);
+		Current_shader->program->Uniforms.setUniformi("baseMapIndex", array_index);
+	} else {
+		Current_shader->program->Uniforms.setUniformi("noTexturing", 1);
+		// array_index is probably not valid here
+		Current_shader->program->Uniforms.setUniformi("baseMapIndex", 0);
 	}
 
 	if ( alpha ) {
@@ -830,21 +952,12 @@ void opengl_shader_set_passthrough(bool textured, bool alpha, vec4 *clr, float c
 		clip_equation.xyzw.w = -vm_vec_dot(&clip_plane.normal, &clip_plane.position);
 
 		Current_shader->program->Uniforms.setUniform4f("clipEquation", clip_equation);
-		Current_shader->program->Uniforms.setUniformMatrix4f("modelMatrix", GL_model_matrix_stack.get_transform());
+		Current_shader->program->Uniforms.setUniformMatrix4f("modelMatrix", gr_model_matrix_stack.get_transform());
 	} else {
 		Current_shader->program->Uniforms.setUniformi("clipEnabled", 0);
 	}
 
-	Current_shader->program->Uniforms.setUniformMatrix4f("modelViewMatrix", GL_model_view_matrix);
-	Current_shader->program->Uniforms.setUniformMatrix4f("projMatrix", GL_projection_matrix);
+	Current_shader->program->Uniforms.setUniformMatrix4f("modelViewMatrix", gr_model_view_matrix);
+	Current_shader->program->Uniforms.setUniformMatrix4f("projMatrix", gr_projection_matrix);
 }
 
-void opengl_shader_set_passthrough(bool textured, bool alpha, color *clr)
-{
-	vec4 normalized_clr = {{{ i2fl(clr->red) / 255.0f,
-		i2fl(clr->green) / 255.0f,
-		i2fl(clr->blue) / 255.0f,
-		clr->is_alphacolor ? i2fl(clr->alpha) / 255.0f : 1.0f }}};
-
-	opengl_shader_set_passthrough(textured, alpha, &normalized_clr, 1.0f);
-}

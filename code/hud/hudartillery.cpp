@@ -144,6 +144,7 @@ void parse_ssm(const char *filename)
 					break;
 				case 1:
 					required_string("Circle");
+					FALLTHROUGH;
 				case -1:	// If we're ignoring parse errors and can't identify the shape, go with a circle.
 					s.shape = SSM_SHAPE_CIRCLE;
 					break;
@@ -332,7 +333,7 @@ void ssm_create(object *target, vec3d *start, size_t ssm_index, ssm_firing_info 
 			HUD_printf("%s", Ssm_info[ssm_index].message);
 	}
 	if (Ssm_info[ssm_index].sound_index >= 0) {
-		snd_play(&Snds[Ssm_info[ssm_index].sound_index]);
+		snd_play(gamesnd_get_game_sound(Ssm_info[ssm_index].sound_index));
 	}
 
 	Ssm_strikes.push_back(ssm);

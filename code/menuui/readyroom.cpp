@@ -1546,16 +1546,8 @@ void campaign_room_commit()
 		return;
 	}
 
-	if (stricmp(Campaign_file_names[Selected_campaign_index], Campaign.filename)) {  // new campaign selected
-		/* This is all that's stopping us from switching campaigns without restarting - taylor
-		if ((Active_campaign_index >= 0) && campaign_room_reset_campaign(Active_campaign_index)) {
-			gamesnd_play_iface(SND_GENERAL_FAIL);
-			return;
-		}
-
-		mission_campaign_savefile_delete(Campaign_file_names[Selected_campaign_index]);
-		*/
-
+	// new campaign selected?
+	if (stricmp(Campaign_file_names[Selected_campaign_index], Campaign.filename)) {
 		// Goober5000 - reinitialize tech database if needed
 		if ( (Campaign.flags & CF_CUSTOM_TECH_DATABASE) || !stricmp(Campaign.filename, "freespace2") )
 		{
@@ -1563,8 +1555,20 @@ void campaign_room_commit()
 			tech_reset_to_default();
 		}
 
-		mission_campaign_load(Campaign_file_names[Selected_campaign_index]);
-		strcpy_s(Player->current_campaign, Campaign.filename);  // track new campaign for player
+		int load_status = mission_campaign_load(Campaign_file_names[Selected_campaign_index]);
+
+		if (load_status == 0) {
+			strcpy_s(Player->current_campaign, Campaign.filename);  // track new campaign for player
+
+			// sanity check: if we just loaded a savefile, but we have no next mission,
+			// then we are switching back to an old campaign that we previously completed,
+			// and we want to clear it to start afresh
+			if (Campaign.next_mission == -1) {
+				mission_campaign_savefile_delete(Campaign_file_names[Selected_campaign_index]);
+				Campaign.next_mission = 0;
+			}
+		}
+		// TODO: other return values were never checked previously; do we need to check them???
 	}
 
 	if (mission_campaign_next_mission()) {  // is campaign and next mission valid?
@@ -1723,6 +1727,11 @@ void campaign_room_close()
 {
 	if (Background_bitmap >= 0)
 		bm_release(Background_bitmap);
+
+	// Reset info text pointers and size since they may contain pointers into the campaign description which will be
+	// freed soon.
+	memset(Info_text_line_size, 0, sizeof(Info_text_line_size));
+	memset(Info_text_ptrs, 0, sizeof(Info_text_ptrs));
 
 	// free the global Campaign_* list stuff
 	mission_campaign_free_list();

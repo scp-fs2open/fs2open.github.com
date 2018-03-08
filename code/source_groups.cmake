@@ -92,6 +92,8 @@ set (file_root_cutscene
 	cutscene/movie.h
 	cutscene/player.cpp
 	cutscene/player.h
+	cutscene/VideoPresenter.cpp
+	cutscene/VideoPresenter.h
 )
 
 # Cutscene\ffmpeg files
@@ -102,14 +104,10 @@ set (file_root_cutscene_ffmpeg
 	cutscene/ffmpeg/FFMPEGDecoder.h
 	cutscene/ffmpeg/internal.cpp
 	cutscene/ffmpeg/internal.h
+	cutscene/ffmpeg/SubtitleDecoder.cpp
+	cutscene/ffmpeg/SubtitleDecoder.h
 	cutscene/ffmpeg/VideoDecoder.cpp
 	cutscene/ffmpeg/VideoDecoder.h
-)
-
-set(file_root_cutscene_player
-	cutscene/player/VideoPresenter.h
-	cutscene/player/OpenGLVideoPresenter.cpp
-	cutscene/player/OpenGLVideoPresenter.h
 )
 
 # ddsutils files
@@ -133,6 +131,10 @@ set (file_root_debugconsole
 	debugconsole/consoleparse.h
 )
 
+set(file_root_decals
+	decals/decals.cpp
+	decals/decals.h
+)
 
 SET(file_root_def_files
 	def_files/def_files.h
@@ -149,47 +151,75 @@ else()
 	)
 endif()
 
-SET(file_root_def_files_files
+set(file_root_def_files_data
+)
+
+set(file_root_def_files_data_effects
+	def_files/data/effects/batched-f.sdr
+	def_files/data/effects/batched-v.sdr
+	def_files/data/effects/bloom-comp-f.sdr
+	def_files/data/effects/blur-f.sdr
+	def_files/data/effects/brightpass-f.sdr
+	def_files/data/effects/decal-f.sdr
+	def_files/data/effects/decal-v.sdr
+	def_files/data/effects/default-material-f.sdr
+	def_files/data/effects/deferred-clear-f.sdr
+	def_files/data/effects/deferred-clear-v.sdr
+	def_files/data/effects/deferred-f.sdr
+	def_files/data/effects/deferred-v.sdr
+	def_files/data/effects/effect-distort-f.sdr
+	def_files/data/effects/effect-distort-v.sdr
+	def_files/data/effects/effect-particle-f.sdr
+	def_files/data/effects/effect-screen-g.sdr
+	def_files/data/effects/effect-v.sdr
+	def_files/data/effects/fog-f.sdr
+	def_files/data/effects/fxaa-f.sdr
+	def_files/data/effects/fxaa-v.sdr
+	def_files/data/effects/fxaapre-f.sdr
+	def_files/data/effects/gamma.sdr
+	def_files/data/effects/lighting.sdr
+	def_files/data/effects/ls-f.sdr
+	def_files/data/effects/main-f.sdr
+	def_files/data/effects/main-g.sdr
+	def_files/data/effects/main-v.sdr
+	def_files/data/effects/nanovg-f.sdr
+	def_files/data/effects/nanovg-v.sdr
+	def_files/data/effects/passthrough-f.sdr
+	def_files/data/effects/passthrough-v.sdr
+	def_files/data/effects/post-f.sdr
+	def_files/data/effects/post-v.sdr
+	def_files/data/effects/shadowdebug-f.sdr
+	def_files/data/effects/shadowdebug-v.sdr
+	def_files/data/effects/shadows.sdr
+	def_files/data/effects/tonemapping-f.sdr
+	def_files/data/effects/video-f.sdr
+	def_files/data/effects/video-v.sdr
+	def_files/data/effects/shield-impact-v.sdr
+	def_files/data/effects/shield-impact-f.sdr
+)
+
+set(file_root_def_files_data_tables
+	def_files/data/tables/autopilot.tbl
+	def_files/data/tables/controlconfigdefaults.tbl
+	def_files/data/tables/fonts.tbl
+	def_files/data/tables/game_settings.tbl
+	def_files/data/tables/iff_defs.tbl
+	def_files/data/tables/objecttypes.tbl
+	def_files/data/tables/post_processing.tbl
+	def_files/data/tables/species_defs.tbl
+)
+
+# These files will be included in the executable but not in CFile
+set(files_root_def_files_builtin
 	def_files/ai_profiles.tbl
-	def_files/autopilot.tbl
-	def_files/bloom-comp-f.sdr
-	def_files/blur-f.sdr
-	def_files/brightpass-f.sdr
-	def_files/controlconfigdefaults.tbl
-	def_files/deferred-clear-f.sdr
-	def_files/deferred-clear-v.sdr
-	def_files/deferred-f.sdr
-	def_files/deferred-v.sdr
-	def_files/effect-distort-f.sdr
-	def_files/effect-distort-v.sdr
-	def_files/effect-f.sdr
-	def_files/effect-particle-f.sdr
-	def_files/effect-screen-g.sdr
-	def_files/effect-v.sdr
-	def_files/fonts.tbl
-	def_files/fxaa-f.sdr
-	def_files/fxaa-v.sdr
-	def_files/fxaapre-f.sdr
-	def_files/game_settings.tbl
-	def_files/iff_defs.tbl
-	def_files/ls-f.sdr
-	def_files/main-f.sdr
-	def_files/main-g.sdr
-	def_files/main-v.sdr
-	def_files/objecttypes.tbl
-	def_files/passthrough-f.sdr
-	def_files/passthrough-v.sdr
-	def_files/post-f.sdr
-	def_files/post-v.sdr
-	def_files/post_processing.tbl
-	def_files/shadowdebug-f.sdr
-	def_files/shadowdebug-v.sdr
-	def_files/species_defs.tbl
-	def_files/tonemapping-f.sdr
-	def_files/video-f.sdr
-	def_files/video-v.sdr
-	def_files/shield-impact-v.sdr
-	def_files/shield-impact-f.sdr
+)
+
+# Variable for all embedded files
+set(file_root_def_files_files
+	${files_root_def_files_builtin}
+	${file_root_def_files_data}
+	${file_root_def_files_data_effects}
+	${file_root_def_files_data_tables}
 )
 
 # ExceptionHandler files
@@ -296,14 +326,26 @@ set(file_root_globalincs_toolchain
 set (file_root_graphics
 	graphics/2d.cpp
 	graphics/2d.h
+	graphics/decal_draw_list.cpp
+	graphics/decal_draw_list.h
 	graphics/grbatch.cpp
 	graphics/grbatch.h
 	graphics/grinternal.h
-	graphics/tmapper.h
-	graphics/shadows.cpp
-	graphics/shadows.h
+	graphics/light.cpp
+	graphics/light.h
+	graphics/line_draw_list.cpp
+	graphics/line_draw_list.h
 	graphics/material.cpp
 	graphics/material.h
+	graphics/matrix.cpp
+	graphics/matrix.h
+	graphics/render.cpp
+	graphics/render.h
+	graphics/shadows.cpp
+	graphics/shadows.h
+	graphics/tmapper.h
+	graphics/uniforms.cpp
+	graphics/uniforms.h
 )
 
 # Graphics -> OpenGLGr files
@@ -314,12 +356,13 @@ set (file_root_graphics_openglgr
 set (file_root_graphics_openglgr_opengl_cpps
 	graphics/opengl/gropengl.cpp
 	graphics/opengl/gropenglbmpman.cpp
+	graphics/opengl/gropengldeferred.cpp
 	graphics/opengl/gropengldraw.cpp
-	graphics/opengl/gropengllight.cpp
 	graphics/opengl/gropenglpostprocessing.cpp
 	graphics/opengl/gropenglquery.cpp
 	graphics/opengl/gropenglshader.cpp
 	graphics/opengl/gropenglstate.cpp
+	graphics/opengl/gropenglsync.cpp
 	graphics/opengl/gropengltexture.cpp
 	graphics/opengl/gropengltnl.cpp
 	graphics/opengl/ShaderProgram.cpp
@@ -329,12 +372,13 @@ set (file_root_graphics_openglgr_opengl_cpps
 set (file_root_graphics_openglgr_opengl_headers
 	graphics/opengl/gropengl.h
 	graphics/opengl/gropenglbmpman.h
+	graphics/opengl/gropengldeferred.h
 	graphics/opengl/gropengldraw.h
-	graphics/opengl/gropengllight.h
 	graphics/opengl/gropenglpostprocessing.h
 	graphics/opengl/gropenglquery.h
 	graphics/opengl/gropenglshader.h
 	graphics/opengl/gropenglstate.h
+	graphics/opengl/gropenglsync.h
 	graphics/opengl/gropengltexture.h
 	graphics/opengl/gropengltnl.h
 	graphics/opengl/ShaderProgram.h
@@ -342,11 +386,10 @@ set (file_root_graphics_openglgr_opengl_headers
 
 # Graphics -> Paths
 set (file_root_graphics_paths
-	graphics/paths/NVGRenderer.cpp
-	graphics/paths/NVGRenderer.h
+	graphics/paths/NanoVGRenderer.cpp
+	graphics/paths/NanoVGRenderer.h
 	graphics/paths/PathRenderer.cpp
 	graphics/paths/PathRenderer.h
-	graphics/paths/StubRenderer.h
 )
 
 # Graphics -> Paths
@@ -354,8 +397,6 @@ set (file_root_graphics_paths_nanovg
 	graphics/paths/nanovg/fontstash.h
 	graphics/paths/nanovg/nanovg.c
 	graphics/paths/nanovg/nanovg.h
-	graphics/paths/nanovg/nanovg_gl.h
-	graphics/paths/nanovg/nanovg_gl_utils.h
 	graphics/paths/nanovg/stb_image.h
 	graphics/paths/nanovg/stb_truetype.h
 )
@@ -383,6 +424,18 @@ set (file_root_graphics_softwaregr_font
 	graphics/software/NVGFont.cpp
 	graphics/software/VFNTFont.h
 	graphics/software/VFNTFont.cpp
+)
+
+set(file_root_graphics_util
+	graphics/util/GPUMemoryHeap.cpp
+	graphics/util/GPUMemoryHeap.h
+	graphics/util/uniform_structs.h
+	graphics/util/UniformAligner.h
+	graphics/util/UniformAligner.cpp
+	graphics/util/UniformBuffer.h
+	graphics/util/UniformBuffer.cpp
+	graphics/util/UniformBufferManager.h
+	graphics/util/UniformBufferManager.cpp
 )
 
 # HeadTracking files
@@ -785,6 +838,15 @@ set (file_root_parse
 	parse/sexp.h
 )
 
+set (file_root_parse_sexp
+	parse/sexp/DynamicSEXP.cpp
+	parse/sexp/DynamicSEXP.h
+	parse/sexp/LuaSEXP.cpp
+	parse/sexp/LuaSEXP.h
+	parse/sexp/sexp_lookup.cpp
+	parse/sexp/sexp_lookup.h
+)
+
 # Particle files
 set (file_root_particle
 	particle/particle.cpp
@@ -815,7 +877,6 @@ set(file_root_particle_effects
 set(file_root_particle_util
 	particle/util/EffectTiming.cpp
 	particle/util/EffectTiming.h
-	particle/util/RandomRange.h
 	particle/util/ParticleProperties.cpp
 	particle/util/ParticleProperties.h
 )
@@ -926,6 +987,8 @@ set(file_root_scripting_api_libs
 	scripting/api/libs/tables.h
 	scripting/api/libs/testing.cpp
 	scripting/api/libs/testing.h
+	scripting/api/libs/utf8.cpp
+	scripting/api/libs/utf8.h
 )
 
 set(file_root_scripting_api_objs
@@ -961,6 +1024,8 @@ set(file_root_scripting_api_objs
 	scripting/api/objs/graphics.h
 	scripting/api/objs/hudgauge.cpp
 	scripting/api/objs/hudgauge.h
+	scripting/api/objs/LuaSEXP.cpp
+	scripting/api/objs/LuaSEXP.h
 	scripting/api/objs/mc_info.cpp
 	scripting/api/objs/mc_info.h
 	scripting/api/objs/message.cpp
@@ -1018,6 +1083,7 @@ set(file_root_scripting_api_objs
 set(file_root_scripting_lua
 	scripting/lua/LuaArgs.cpp
 	scripting/lua/LuaArgs.h
+	scripting/lua/LuaConvert.cpp
 	scripting/lua/LuaConvert.h
 	scripting/lua/LuaException.h
 	scripting/lua/LuaFunction.cpp
@@ -1158,11 +1224,19 @@ set (file_root_ui
 )
 
 set(file_root_utils
+	utils/encoding.cpp
+    utils/encoding.h
+	utils/HeapAllocator.cpp
+	utils/HeapAllocator.h
+	utils/RandomRange.h
 	utils/strings.h
+    utils/unicode.cpp
+    utils/unicode.h
 )
 
 # Utils files
 set (file_root_utils_boost
+	utils/boost/hash_combine.h
 	utils/boost/syncboundedqueue.h
 )
 
@@ -1219,8 +1293,12 @@ source_group("Cutscene\\Player"                   FILES ${file_root_cutscene_pla
 source_group("ddsutils"                           FILES ${file_root_ddsutils})
 source_group("Debris"                             FILES ${file_root_debris})
 source_group("DebugConsole"                       FILES ${file_root_debugconsole})
+source_group("Decals"                             FILES ${file_root_decals})
 source_group("Default files"                      FILES ${file_root_def_files})
-source_group("Default files\\Files"               FILES ${file_root_def_files_files})
+source_group("Default files\\data"                FILES ${file_root_def_files_data})
+source_group("Default files\\data\\effects"       FILES ${file_root_def_files_data_effects})
+source_group("Default files\\data\\tables"        FILES ${file_root_def_files_data_tables})
+source_group("Default files\\builtin"             FILES ${files_root_def_files_builtin})
 source_group("ExceptionHandler"                   FILES ${file_root_exceptionhandler})
 source_group("ExternalDLL"                        FILES ${file_root_externaldll})
 source_group("Fireball"                           FILES ${file_root_fireball})
@@ -1240,6 +1318,7 @@ source_group("Graphics\\Paths"                    FILES ${file_root_graphics_pat
 source_group("Graphics\\Paths\\nanovg"            FILES ${file_root_graphics_paths_nanovg})
 source_group("Graphics\\SoftwareGr"               FILES ${file_root_graphics_softwaregr})
 source_group("Graphics\\SoftwareGr\\Font"         FILES ${file_root_graphics_softwaregr_font})
+source_group("Graphics\\Util"                     FILES ${file_root_graphics_util})
 source_group("HeadTracking"                       FILES ${file_root_headtracking})
 source_group("Hud"                                FILES ${file_root_hud})
 source_group("iff_defs"                           FILES ${file_root_iff_defs})
@@ -1264,6 +1343,7 @@ source_group("Object"                             FILES ${file_root_object})
 source_group("Observer"                           FILES ${file_root_observer})
 source_group("OsApi"                              FILES ${file_root_osapi})
 source_group("Parse"                              FILES ${file_root_parse})
+source_group("Parse\\SEXP"                        FILES ${file_root_parse_sexp})
 source_group("Particle"                           FILES ${file_root_particle})
 source_group("Particle\\Effects"                  FILES ${file_root_particle_effects})
 source_group("Particle\\Util"                     FILES ${file_root_particle_util})
@@ -1312,8 +1392,12 @@ set (file_root
 	${file_root_ddsutils}
 	${file_root_debris}
 	${file_root_debugconsole}
+	${file_root_decals}
 	${file_root_def_files}
-	${file_root_def_files_files}
+	${file_root_def_files_data}
+	${file_root_def_files_data_effects}
+	${file_root_def_files_data_tables}
+	${files_root_def_files_builtin}
 	${file_root_exceptionhandler}
 	${file_root_externaldll}
 	${file_root_fireball}
@@ -1333,6 +1417,7 @@ set (file_root
 	${file_root_graphics_paths_nanovg}
 	${file_root_graphics_softwaregr}
 	${file_root_graphics_softwaregr_font}
+	${file_root_graphics_util}
 	${file_root_headtracking}
 	${file_root_hud}
 	${file_root_iff_defs}
@@ -1357,6 +1442,7 @@ set (file_root
 	${file_root_observer}
 	${file_root_osapi}
 	${file_root_parse}
+	${file_root_parse_sexp}
 	${file_root_particle}
 	${file_root_particle_effects}
 	${file_root_particle_util}

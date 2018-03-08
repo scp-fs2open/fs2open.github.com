@@ -51,7 +51,7 @@ void training_menu_init()
 	}
 	else {
 		// get a pointer to bitmap by using bm_lock()
-		trainingMenuMaskPtr = bm_lock(trainingMenuMask, 8, BMP_AABITMAP);
+		trainingMenuMaskPtr = bm_lock(trainingMenuMask, 8, BMP_AABITMAP | BMP_MASK_BITMAP);
 		mask_data = (ubyte*)trainingMenuMaskPtr->data;		
 		bm_get_info(trainingMenuMask, &Training_mask_w, &Training_mask_h);
 	}

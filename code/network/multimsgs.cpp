@@ -942,7 +942,7 @@ void process_join_packet(ubyte* data, header* hinfo)
 		case JOIN_QUERY_RESTRICTED :		
 			if(!(Game_mode & GM_STANDALONE_SERVER)){			
 				// notify the host of the event
-				snd_play(&Snds[SND_CUE_VOICE]);
+				snd_play(gamesnd_get_game_sound(SND_CUE_VOICE));
 			}
 
 			// set the query timestamp
@@ -3336,7 +3336,7 @@ void process_turret_fired_packet( ubyte *data, header *hinfo )
 	if (weapon_objnum != -1) {
 		wid = Weapons[Objects[weapon_objnum].instance].weapon_info_index;
 		if ( Weapon_info[wid].launch_snd != -1 ) {
-			snd_play_3d( &Snds[Weapon_info[wid].launch_snd], &pos, &View_position );
+			snd_play_3d( gamesnd_get_game_sound(Weapon_info[wid].launch_snd), &pos, &View_position );
 		}		
 	}
 }
@@ -4902,7 +4902,7 @@ void process_repair_info_packet(ubyte *data, header *hinfo)
 			ai_info *aip = &Ai_info[Ships[repair_objp->instance].ai_index];
 			Assert(aip->active_goal >= 0);
 			ai_goal *aigp = &aip->goals[aip->active_goal];
-			Assert(aigp->flags[AI::Goal_Flags::Dockee_index_valid, AI::Goal_Flags::Docker_index_valid]);
+			Assert(aigp->flags[AI::Goal_Flags::Dockee_index_valid] && aigp->flags[AI::Goal_Flags::Docker_index_valid]);
 
 			int docker_index = aigp->docker.index;
 			int dockee_index = aigp->dockee.index;
@@ -5020,7 +5020,7 @@ void send_ai_info_update_packet( object *objp, char what, object * other_objp )
 
 		// for docking, add the dock and dockee index
 		if (aigp->ai_mode & (AI_GOAL_DOCK | AI_GOAL_REARM_REPAIR)) {
-			Assert(aigp->flags[AI::Goal_Flags::Dockee_index_valid] || aigp->flags[AI::Goal_Flags::Docker_index_valid]);
+			Assert(aigp->flags[AI::Goal_Flags::Dockee_index_valid] && aigp->flags[AI::Goal_Flags::Docker_index_valid]);
 			Assert( (aigp->docker.index >= 0) && (aigp->docker.index < UCHAR_MAX) );
 			Assert( (aigp->dockee.index >= 0) && (aigp->dockee.index < UCHAR_MAX) );
 			docker_index = (ubyte) aigp->docker.index;
@@ -6950,7 +6950,7 @@ void process_countermeasure_success_packet( ubyte *data, header *hinfo )
 	//Player_obj is necessary...infinitely recursive function calls != FTW
 	cmeasure_maybe_alert_success(Player_obj);
 	/*hud_start_text_flash(XSTR("Evaded", 1430), 800);
-	snd_play(&Snds[SND_MISSILE_EVADED_POPUP]);*/
+	snd_play(gamesnd_get_game_sound(SND_MISSILE_EVADED_POPUP));*/
 }
 
 #define UPDATE_IS_PAUSED		(1<<0)
@@ -8141,7 +8141,7 @@ void process_flak_fired_packet(ubyte *data, header *hinfo)
 	if (weapon_objnum != -1) {
 		wid = Weapons[Objects[weapon_objnum].instance].weapon_info_index;
 		if ( Weapon_info[wid].launch_snd != -1 ) {
-			snd_play_3d( &Snds[Weapon_info[wid].launch_snd], &pos, &View_position );
+			snd_play_3d( gamesnd_get_game_sound(Weapon_info[wid].launch_snd), &pos, &View_position );
 		}
 
 		// create a muzzle flash from a flak gun based upon firing position and weapon type
@@ -8223,7 +8223,7 @@ void process_player_pain_packet(ubyte *data, header *hinfo)
 	}
 	
 	//Assume the weapon is armed -WMC
-	weapon_hit_do_sound(Player_obj, wip, &Player_obj->pos, true);
+	weapon_hit_do_sound(Player_obj, wip, &Player_obj->pos, true, quadrant_num);
 
 	// we need to do 3 things here. player pain (game flash), weapon hit sound, ship_apply_whack()
 	ship_hit_pain((float)udamage, quadrant_num);

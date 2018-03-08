@@ -303,7 +303,7 @@ void multi_msg_display_mission_text(const char *msg, int player_index)
 {
 	// play a cue voice sound and text to speech if not from this player
 	if(Net_players[player_index].player_id != MY_NET_PLAYER_NUM) {
-		snd_play(&Snds[MULTI_MSG_TEXT_SOUND]);
+		snd_play(gamesnd_get_game_sound(MULTI_MSG_TEXT_SOUND));
 		fsspeech_play(FSSPEECH_FROM_MULTI, msg);
 	}
 

@@ -31,6 +31,7 @@ union bm_extra_info {
 		int keyframe;       //!< used for animations -- keyframe info
 		float total_time;   //!< used for animations -- total animation time (not always derived from num_frames/fps)
 		ubyte fps;          //!< used for animations -- frames per second
+		bool is_array;      //!< Flag for if all frames of an animation have the same size which means that it can be put into a texture array
 
 		struct {
 			// stuff for static animations
@@ -89,7 +90,7 @@ struct bitmap_entry {
 #endif
 };
 
-extern bitmap_entry bm_bitmaps[MAX_BITMAPS];
+extern bitmap_entry* bm_bitmaps;
 
 // image specific lock functions
 void bm_lock_ani( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, int bpp, ubyte flags );

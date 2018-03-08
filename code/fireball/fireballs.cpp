@@ -87,7 +87,7 @@ void fireball_play_warphole_open_sound(int ship_class, fireball *fb)
 		}
 	}
 
-	snd_play_3d(&Snds[sound_index], &fireball_objp->pos, &Eye_position, fireball_objp->radius, NULL, 0, 1.0f, SND_PRIORITY_DOUBLE_INSTANCE, NULL, range_multiplier); // play warp sound effect
+	snd_play_3d(gamesnd_get_game_sound(sound_index), &fireball_objp->pos, &Eye_position, fireball_objp->radius, NULL, 0, 1.0f, SND_PRIORITY_DOUBLE_INSTANCE, NULL, range_multiplier); // play warp sound effect
 }
 
 /**
@@ -111,7 +111,7 @@ void fireball_play_warphole_close_sound(fireball *fb)
 		return;
 	}
 
-	snd_play_3d(&Snds[sound_index], &fireball_objp->pos, &Eye_position, fireball_objp->radius); // play warp sound effect
+	snd_play_3d(gamesnd_get_game_sound(sound_index), &fireball_objp->pos, &Eye_position, fireball_objp->radius); // play warp sound effect
 }
 
 /**

@@ -41,7 +41,7 @@ void initialize(const std::string& cfilepath, int argc, char* argv[], Editor* ed
 	std::setlocale(LC_ALL, "C");
 
 	std::vector<std::pair<std::function<void(void)>, SubSystem>> initializers =
-		{{ std::bind(os_init, Osreg_company_name, Osreg_app_name, nullptr, nullptr), SubSystem::OS },
+		{{ std::bind(os_init, Osreg_company_name, Osreg_app_name, nullptr),          SubSystem::OS },
 		 { timer_init,                                                               SubSystem::Timer },
 		 { [&]() {
 			 // this should enable mods - Kazan

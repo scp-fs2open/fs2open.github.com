@@ -1,0 +1,40 @@
+
+#include "lighting.sdr"
+
+in vec4 vertPosition;
+uniform mat4 modelViewMatrix;
+uniform mat4 projMatrix;
+
+layout (std140) uniform lightData {
+	vec3 diffuseLightColor;
+	float coneAngle;
+
+	vec3 specLightColor;
+	float coneInnerAngle;
+
+	vec3 coneDir;
+	bool dualCone;
+
+	vec3 scale;
+	float lightRadius;
+
+	vec3 lightDir;
+	int lightType;
+
+	bool enable_shadows;
+};
+
+out vec3 lightPosition;
+out vec3 beamVec;
+void main()
+{
+	if (lightType == LT_DIRECTIONAL) {
+		gl_Position = vec4(vertPosition.xyz, 1.0);
+		lightPosition = lightDir;
+	} else {
+		gl_Position = projMatrix * modelViewMatrix * vec4(vertPosition.xyz * scale, 1.0);
+		lightPosition = modelViewMatrix[3].xyz;
+		if(lightType == LT_TUBE)
+			beamVec = vec3(modelViewMatrix * vec4(0.0, 0.0, -scale.z, 0.0));
+	}
+}

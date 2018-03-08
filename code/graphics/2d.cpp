@@ -22,6 +22,8 @@
 #include "gamesequence/gamesequence.h"	//WMC - for scripting hooks in gr_flip()
 #include "globalincs/systemvars.h"
 #include "graphics/2d.h"
+#include "graphics/matrix.h"
+#include "graphics/light.h"
 #include "graphics/font.h"
 #include "graphics/grbatch.h"
 #include "graphics/grinternal.h"
@@ -29,6 +31,9 @@
 #include "graphics/opengl/gropengldraw.h"
 #include "graphics/grstub.h"
 #include "graphics/paths/PathRenderer.h"
+#include "graphics/util/GPUMemoryHeap.h"
+#include "graphics/util/UniformBuffer.h"
+#include "graphics/util/UniformBufferManager.h"
 #include "io/keycontrol.h" // m!m
 #include "io/timer.h"
 #include "osapi/osapi.h"
@@ -36,6 +41,7 @@
 #include "parse/parselo.h"
 #include "render/3d.h"
 #include "tracing/tracing.h"
+#include "utils/boost/hash_combine.h"
 
 #if ( SDL_VERSION_ATLEAST(1, 2, 7) )
 #include "SDL_cpuinfo.h"
@@ -95,6 +101,14 @@ float Gr_save_menu_offset_X = 0.0f, Gr_save_menu_offset_Y = 0.0f;
 float Gr_save_menu_zoomed_offset_X = 0.0f, Gr_save_menu_zoomed_offset_Y = 0.0f;
 
 bool Save_custom_screen_size;
+
+// Forward definitions
+static void uniform_buffer_managers_init();
+static void uniform_buffer_managers_deinit();
+static void uniform_buffer_managers_retire_buffers();
+
+static void gpu_heap_init();
+static void gpu_heap_deinit();
 
 void gr_set_screen_scale(int w, int h, int zoom_w, int zoom_h, int max_w, int max_h, int center_w, int center_h, bool force_stretch)
 {
@@ -634,8 +648,17 @@ void gr_close()
 	if ( !Gr_inited ) {
 		return;
 	}
+
+	gpu_heap_deinit();
+
+	// Cleanup uniform buffer managers
+	uniform_buffer_managers_deinit();
 	
 	font::close();
+
+	gr_light_shutdown();
+
+	graphics::paths::PathRenderer::shutdown();
 
 	switch (gr_screen.mode) {
 		case GR_OPENGL:
@@ -648,6 +671,8 @@ void gr_close()
 		default:
 			Int3();		// Invalid graphics mode
 	}
+
+	bm_close();
 
 	Gr_inited = 0;
 }
@@ -742,10 +767,7 @@ void gr_screen_resize(int width, int height)
 	gr_screen.save_max_w_unscaled_zoomed = gr_screen.max_w_unscaled_zoomed;
 	gr_screen.save_max_h_unscaled_zoomed = gr_screen.max_h_unscaled_zoomed;
 
-	if (gr_screen.mode == GR_OPENGL) {
-		extern void opengl_setup_viewport();
-		opengl_setup_viewport();
-	}
+	gr_setup_viewport();
 }
 
 int gr_get_resolution_class(int width, int height)
@@ -828,6 +850,7 @@ static bool gr_init_sub(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, i
 	gr_screen.bytes_per_pixel= depth / 8;
 	gr_screen.rendering_to_texture = -1;
 	gr_screen.envmap_render_target = -1;
+	gr_screen.line_width = 1.0f;
 	gr_screen.mode = mode;
 	gr_screen.res = res;
 	gr_screen.aspect = 1.0f;			// Normal PC screen
@@ -1050,13 +1073,20 @@ bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, int d_mode, 
 		return false;
 	}
 
-	mprintf(("Initializing path renderer...\n"));
-	graphics::paths::PathRenderer::init();
+	gr_light_init();
 
 	gr_set_palette_internal(Gr_current_palette_name, NULL, 0);
 
 	bm_init();
 	io::mouse::CursorManager::init();
+
+	mprintf(("Initializing path renderer...\n"));
+	graphics::paths::PathRenderer::init();
+
+	// Initialize uniform buffer managers
+	uniform_buffer_managers_init();
+
+	gpu_heap_init();
 
 	bool missing_installation = false;
 	if (!running_unittests && Web_cursor == nullptr) {
@@ -2074,34 +2104,6 @@ void gr_shield_icon(coord2d coords[6], int resize_mode)
 	g3_render_shield_icon(&gr_screen.current_color, coords, resize_mode);
 }
 
-void gr_rect(int x, int y, int w, int h, int resize_mode)
-{
-	if (gr_screen.mode == GR_STUB) {
-		return;
-	}
-
-	g3_render_colored_rect(&gr_screen.current_color, x, y, w, h, resize_mode);
-}
-
-void gr_shade(int x, int y, int w, int h, int resize_mode)
-{
-	int r, g, b, a;
-
-	if (gr_screen.mode == GR_STUB) {
-		return;
-	}
-	
-	r = (int)gr_screen.current_shader.r;
-	g = (int)gr_screen.current_shader.g;
-	b = (int)gr_screen.current_shader.b;
-	a = (int)gr_screen.current_shader.c;
-	
-	color clr;
-	gr_init_alphacolor(&clr, r, g, b, a);
-
-	g3_render_colored_rect(&clr, x, y, w, h, resize_mode);
-}
-
 void gr_set_bitmap(int bitmap_num, int alphablend_mode, int bitblt_mode, float alpha)
 {
 	gr_screen.current_alpha = alpha;
@@ -2123,122 +2125,212 @@ void gr_flip(bool execute_scripting)
 		Script_system.EndFrame();
 	}
 
+	gr_reset_immediate_buffer();
+
+	// Use this opportunity for retiring the uniform buffers
+	uniform_buffer_managers_retire_buffers();
+
 	gr_screen.gf_flip();
-}
-
-uint gr_determine_model_shader_flags(
-	bool lighting, 
-	bool fog, 
-	bool textured, 
-	bool in_shadow_map, 
-	bool thruster_scale, 
-	bool transform,
-	bool team_color_set,
-	int tmap_flags, 
-	int spec_map, 
-	int glow_map, 
-	int normal_map, 
-	int height_map,
-	int ambient_map,
-	int env_map,
-	int misc_map
-) {
-	uint shader_flags = 0;
-
-	shader_flags |= SDR_FLAG_MODEL_CLIP;
-
-	if ( transform ) {
-		shader_flags |= SDR_FLAG_MODEL_TRANSFORM;
-	}
-
-	if ( in_shadow_map ) {
-		// if we're building the shadow map, we likely only need the flags here and above so bail
-		shader_flags |= SDR_FLAG_MODEL_SHADOW_MAP;
-
-		return shader_flags;
-	}
-
-	// setup shader flags for the things that we want/need
-	if ( lighting ) {
-		shader_flags |= SDR_FLAG_MODEL_LIGHT;
-	}
-
-	if ( fog ) {
-		shader_flags |= SDR_FLAG_MODEL_FOG;
-	}
-
-	if ( tmap_flags & TMAP_ANIMATED_SHADER ) {
-		shader_flags |= SDR_FLAG_MODEL_ANIMATED;
-	}
-
-	if ( textured ) {
-		if ( !Basemap_override ) {
-			shader_flags |= SDR_FLAG_MODEL_DIFFUSE_MAP;
-		}
-
-		if ( glow_map > 0 ) {
-			shader_flags |= SDR_FLAG_MODEL_GLOW_MAP;
-		}
-
-		if ( lighting ) {
-			if ( ( spec_map > 0 ) && !Specmap_override ) {
-				shader_flags |= SDR_FLAG_MODEL_SPEC_MAP;
-
-				if ( ( env_map > 0 ) && !Envmap_override ) {
-					shader_flags |= SDR_FLAG_MODEL_ENV_MAP;
-				}
-			}
-
-			if ( ( normal_map > 0) && !Normalmap_override ) {
-				shader_flags |= SDR_FLAG_MODEL_NORMAL_MAP;
-			}
-
-			if ( ( height_map > 0) && !Heightmap_override ) {
-				shader_flags |= SDR_FLAG_MODEL_HEIGHT_MAP;
-			}
-
-			if ( ambient_map > 0 ) {
-				shader_flags |= SDR_FLAG_MODEL_AMBIENT_MAP;
-			}
-
-			if ( Cmdline_shadow_quality && !in_shadow_map && !Shadow_override) {
-				shader_flags |= SDR_FLAG_MODEL_SHADOWS;
-			}
-		}
-
-		if ( misc_map > 0 ) {
-			shader_flags |= SDR_FLAG_MODEL_MISC_MAP;
-		}
-
-		if ( team_color_set ) {
-			shader_flags |= SDR_FLAG_MODEL_TEAMCOLOR;
-		}
-	}
-
-	if ( Deferred_lighting ) {
-		shader_flags |= SDR_FLAG_MODEL_DEFERRED;
-	}
-
-	if ( thruster_scale ) {
-		shader_flags |= SDR_FLAG_MODEL_THRUSTER;
-	}
-
-	if ( High_dynamic_range ) {
-		shader_flags |= SDR_FLAG_MODEL_HDR;
-	}
-
-	return shader_flags;
 }
 
 void gr_print_timestamp(int x, int y, fix timestamp, int resize_mode)
 {
-	char time[8];
-
 	int seconds = fl2i(f2fl(timestamp));
 
 	// format the time information into strings
+	SCP_string time;
 	sprintf(time, "%.1d:%.2d:%.2d", (seconds / 3600) % 10, (seconds / 60) % 60, seconds % 60);
-	time[7] = '\0';
 
-	gr_string(x, y, time, resize_mode);
+	gr_string(x, y, time.c_str(), resize_mode);
+}
+
+static std::unique_ptr<graphics::util::UniformBufferManager>
+	uniform_buffer_managers[static_cast<size_t>(uniform_block_type::NUM_BLOCK_TYPES)];
+
+static void uniform_buffer_managers_init() {
+	for (size_t i = 0; i < static_cast<size_t>(uniform_block_type::NUM_BLOCK_TYPES); ++i) {
+		auto enumVal = static_cast<uniform_block_type>(i);
+
+		uniform_buffer_managers[i].reset(new graphics::util::UniformBufferManager(enumVal));
+	}
+}
+static void uniform_buffer_managers_deinit() {
+	for (auto& manager: uniform_buffer_managers) {
+		manager.reset();
+	}
+}
+static void uniform_buffer_managers_retire_buffers() {
+	GR_DEBUG_SCOPE("Retiring unused uniform buffers");
+
+	for (auto& manager: uniform_buffer_managers) {
+		manager->retireBuffers();
+	}
+}
+
+graphics::util::UniformBuffer* gr_get_uniform_buffer(uniform_block_type type) {
+	return uniform_buffer_managers[static_cast<size_t>(type)]->getBuffer();
+}
+
+SCP_vector<DisplayData> gr_enumerate_displays()
+{
+	// It seems that linux cannot handle having the video subsystem inited
+	// too late
+	if (SDL_InitSubSystem(SDL_INIT_VIDEO) < 0) {
+		return SCP_vector<DisplayData>();
+	}
+
+	SCP_vector<DisplayData> data;
+
+	auto num_displays = SDL_GetNumVideoDisplays();
+	for (auto i = 0; i < num_displays; ++i) {
+		DisplayData display;
+		display.index = i;
+
+		SDL_Rect bounds;
+		if (SDL_GetDisplayBounds(i, &bounds) == 0) {
+			display.x = bounds.x;
+			display.y = bounds.y;
+			display.width = bounds.w;
+			display.height = bounds.h;
+		}
+
+		auto name = SDL_GetDisplayName(i);
+		if (name != nullptr) {
+			display.name = name;
+		}
+
+		auto num_mods = SDL_GetNumDisplayModes(i);
+		for (auto j = 0; j < num_mods; ++j) {
+			SDL_DisplayMode mode;
+			if (SDL_GetDisplayMode(i, j, &mode) != 0) {
+				continue;
+			}
+			
+			VideoModeData videoMode;
+			videoMode.width = mode.w;
+			videoMode.height = mode.h;
+
+			int sdlBits = SDL_BITSPERPIXEL(mode.format);
+
+			if (SDL_ISPIXELFORMAT_ALPHA(mode.format)) {
+				videoMode.bit_depth = sdlBits;
+			} else {
+				// Fix a few values
+				if (sdlBits == 24) {
+					videoMode.bit_depth = 32;
+				} else if (sdlBits == 15) {
+					videoMode.bit_depth = 16;
+				} else {
+					videoMode.bit_depth = sdlBits;
+				}
+			}
+
+			display.video_modes.push_back(videoMode);
+		}
+
+		data.push_back(display);
+	}
+	
+	SDL_QuitSubSystem(SDL_INIT_VIDEO);
+
+	return data;
+}
+
+namespace std {
+
+size_t hash<vertex_format_data>::operator()(const vertex_format_data& data) const {
+	size_t seed = 0;
+	boost::hash_combine(seed, (size_t)data.format_type);
+	boost::hash_combine(seed, data.offset);
+	boost::hash_combine(seed, data.stride);
+	return seed;
+}
+size_t hash<vertex_layout>::operator()(const vertex_layout& data) const {
+	return data.hash();
+}
+
+}
+bool vertex_layout::resident_vertex_format(vertex_format_data::vertex_format format_type) const {
+	return ( Vertex_mask & vertex_format_data::mask(format_type) ) ? true : false;
+}
+void vertex_layout::add_vertex_component(vertex_format_data::vertex_format format_type, size_t stride, size_t offset) {
+	// A stride value of 0 is not handled consistently by the graphics API so we must enforce that that does not happen
+	Assertion(stride != 0, "The stride of a vertex component may not be zero!");
+
+	if ( resident_vertex_format(format_type) ) {
+		// we already have a vertex component of this format type
+		return;
+	}
+
+	if (Vertex_mask == 0) {
+		// This is the first element so we need to initialize the global stride here
+		Vertex_stride = stride;
+	}
+
+	Assertion(Vertex_stride == stride, "The strides of all elements must be the same in a vertex layout!");
+
+	Vertex_mask |= (1 << format_type);
+	Vertex_components.push_back(vertex_format_data(format_type, stride, offset));
+}
+bool vertex_layout::operator==(const vertex_layout& other) const {
+	if (Vertex_mask != other.Vertex_mask) {
+		return false;
+	}
+
+	if (Vertex_components.size() != other.Vertex_components.size()) {
+		return false;
+	}
+
+	return std::equal(Vertex_components.cbegin(),
+					  Vertex_components.cend(),
+					  other.Vertex_components.cbegin());
+}
+size_t vertex_layout::hash() const {
+	size_t seed = 0;
+	boost::hash_combine(seed, Vertex_mask);
+
+	for (auto& comp : Vertex_components) {
+		boost::hash_combine(seed, comp);
+	}
+
+	return seed;
+}
+
+static std::unique_ptr<graphics::util::GPUMemoryHeap> gpu_heaps [static_cast<size_t>(GpuHeap::NUM_VALUES)];
+
+static void gpu_heap_init() {
+	for (size_t i = 0; i < static_cast<size_t>(GpuHeap::NUM_VALUES); ++i) {
+		auto enumVal = static_cast<GpuHeap>(i);
+
+		gpu_heaps[i].reset(new graphics::util::GPUMemoryHeap(enumVal));
+	}
+}
+
+static void gpu_heap_deinit() {
+	for (auto& heap : gpu_heaps) {
+		heap.reset();
+	}
+}
+
+static graphics::util::GPUMemoryHeap* get_gpu_heap(GpuHeap heap_type) {
+	Assertion(heap_type != GpuHeap::NUM_VALUES, "Invalid heap type value detected.");
+
+	return gpu_heaps[static_cast<size_t>(heap_type)].get();
+}
+
+void gr_heap_allocate(GpuHeap heap_type, size_t size, void* data, size_t& offset_out, int& handle_out) {
+	TRACE_SCOPE(tracing::GpuHeapAllocate);
+
+	auto gpuHeap = get_gpu_heap(heap_type);
+
+	offset_out = gpuHeap->allocateGpuData(size, data);
+	handle_out = gpuHeap->bufferHandle();
+}
+
+void gr_heap_deallocate(GpuHeap heap_type, size_t data_offset) {
+	TRACE_SCOPE(tracing::GpuHeapDeallocate);
+
+	auto gpuHeap = get_gpu_heap(heap_type);
+
+	gpuHeap->freeGpuData(data_offset);
 }

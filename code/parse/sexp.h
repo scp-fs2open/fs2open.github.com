@@ -387,6 +387,7 @@ class waypoint_list;
 #define OP_TURRET_GET_PRIMARY_AMMO			(0x004f | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// DahBlount, part of the turret ammo code
 
 #define OP_TURRET_GET_SECONDARY_AMMO		(0x0050 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// DahBlount, part of the turret ammo code
+#define OP_IS_DOCKED						(0x0051 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// Goober5000
 
 // conditional sexpressions
 #define OP_WHEN								(0x0000 | OP_CATEGORY_CONDITIONAL)
@@ -733,6 +734,8 @@ class waypoint_list;
 #define OP_TURRET_SET_PRIMARY_AMMO			(0x002c | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// DahBlount, part of the turret ammo changes
 #define OP_TURRET_SET_SECONDARY_AMMO		(0x002d | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// DahBlount, part of the turret ammo changes
 #define OP_JETTISON_CARGO_NEW				(0x002e | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Goober5000
+#define OP_STRING_CONCATENATE_BLOCK			(0x002f | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Goober5000
+#define OP_MODIFY_VARIABLE_XSTR				(0X0030 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// m!m
 
 // defined for AI goals
 #define OP_AI_CHASE							(0x0000 | OP_CATEGORY_AI | OP_NONCAMPAIGN_FLAG)
@@ -1034,7 +1037,7 @@ typedef struct sexp_ai_goal_link {
 #define SEXP_TRIGGER_OPERATOR		( SEXP_ARITHMETIC_OPERATOR | SEXP_BOOLEAN_OPERATOR | SEXP_INTEGER_OPERATOR ) 
 
 typedef struct sexp_oper {
-	const char	*text;
+	SCP_string text;
 	int	value;
 	int	min, max;
 	int type;
@@ -1098,8 +1101,8 @@ extern sexp_node *Sexp_nodes;
 extern sexp_variable Sexp_variables[MAX_SEXP_VARIABLES];
 extern sexp_variable Block_variables[MAX_SEXP_VARIABLES];
 
-extern sexp_oper Operators[];
-extern int Num_operators;
+extern SCP_vector<sexp_oper> Operators;
+
 extern int Locked_sexp_true, Locked_sexp_false;
 extern int Directive_count;
 extern int Sexp_useful_number;  // a variable to pass useful info in from external modules
@@ -1128,6 +1131,7 @@ extern SCP_vector<SCP_string> *Current_event_log_variable_buffer;
 extern SCP_vector<SCP_string> *Current_event_log_argument_buffer;
 
 extern void init_sexp();
+extern void sexp_shutdown();
 extern int alloc_sexp(const char *text, int type, int subtype, int first, int rest);
 extern int find_free_sexp();
 extern int free_one_sexp(int num);
@@ -1148,7 +1152,8 @@ extern int get_sexp_main(void);	//	Returns start node
 extern int run_sexp(const char* sexpression); // debug and lua sexps
 extern int stuff_sexp_variable_list();
 extern int eval_sexp(int cur_node, int referenced_node = -1);
-extern int is_sexp_true(int cur_node, int referenced_node = -1);
+extern int eval_num(int n);
+extern bool is_sexp_true(int cur_node, int referenced_node = -1);
 extern int query_operator_return_type(int op);
 extern int query_operator_argument_type(int op, int argnum);
 extern void update_sexp_references(const char *old_name, const char *new_name);
@@ -1219,22 +1224,18 @@ extern int Knossos_warp_ani_used;
 //WMC - moved here from FRED
 typedef struct sexp_help_struct {
 	int id;
-	const char *help;
+	SCP_string help;
 } sexp_help_struct;
 
-extern sexp_help_struct Sexp_help[];
+extern SCP_vector<sexp_help_struct> Sexp_help;
 
 typedef struct op_menu_struct {
-	const char *name;
+	SCP_string name;
 	int id;
 } op_menu_struct;
 
-extern op_menu_struct op_menu[];
-extern op_menu_struct op_submenu[];
-
-extern int Num_sexp_help;
-extern int Num_op_menus;
-extern int Num_submenus;
+extern SCP_vector<op_menu_struct> op_menu;
+extern SCP_vector<op_menu_struct> op_submenu;
 
 //WMC
 //Outputs sexp.html file

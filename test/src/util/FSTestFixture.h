@@ -10,8 +10,9 @@ namespace test {
 enum InitFlags {
 	INIT_NONE = 0,
 	INIT_CFILE = 1 << 0,
-	INIT_GRAPHICS = 1 << 1 | INIT_CFILE,
-	INIT_SHIPS = 1 << 2 | INIT_CFILE,
+	INIT_GRAPHICS = 1 << 1,
+	INIT_SHIPS = 1 << 2,
+	INIT_MOD_TABLE = 1 << 3,
 };
 
 class FSTestFixture: public ::testing::Test {

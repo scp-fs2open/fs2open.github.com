@@ -26,7 +26,8 @@ typedef struct Cfile_block {
 	int		type;				// CFILE_BLOCK_UNUSED, CFILE_BLOCK_USED
 	int		dir_type;		// directory location
 	FILE		*fp;				// File pointer if opening an individual file
-	void		*data;			// Pointer for memory-mapped file access.  NULL if not mem-mapped.
+	const void	*data;			// Pointer for memory-mapped file access.  NULL if not mem-mapped.
+	bool 	mem_mapped;		// Flag for memory mapped files (if data is not null and this is false it means that it's an embedded file)
 #ifdef _WIN32
 	HANDLE	hInFile;			// Handle from CreateFile()
 	HANDLE	hMapFile;		// Handle from CreateFileMapping()

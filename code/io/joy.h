@@ -308,6 +308,20 @@ namespace io
 		 * @brief Frees resources of the joystick subsystem
 		 */
 		void shutdown();
+
+		struct JoystickInformation {
+			SCP_string name;
+			SCP_string guid;
+
+			uint32_t num_axes;
+			uint32_t num_balls;
+			uint32_t num_buttons;
+			uint32_t num_hats;
+
+			bool is_haptic;
+		};
+
+		SCP_vector<JoystickInformation> getJoystickInformations();
 	}
 }
 

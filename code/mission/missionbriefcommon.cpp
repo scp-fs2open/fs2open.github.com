@@ -136,7 +136,7 @@ int			Briefing_voice_enabled=1;		// flag which turn on/off voice playback of bri
 static int Last_new_stage;
 int	Cur_brief_id;
 
-const char BRIEF_META_CHAR = '$';
+const unicode::codepoint_t BRIEF_META_CHAR = UNICODE_CHAR('$');
 
 const int HIGHEST_COLOR_STACK_INDEX = 9;
 
@@ -177,12 +177,12 @@ static int Brief_stage_highlight_sound_handle = -1;
 int		Num_brief_text_lines[MAX_TEXT_STREAMS];
 int		Top_brief_text_line;
 
-// Used to support drawing colored text for the briefing.  Gets complicates since we
+// Used to support drawing colored text for the briefing.  Gets complicated since we
 // need to be able to draw one character at a time as well when the briefing text
 // first appears.
 typedef struct colored_char
 {
-	char	letter;
+	unicode::codepoint_t	letter;
 	char	color;		// tag to look up in Tagged_Colors
 } colored_char;
 
@@ -972,7 +972,7 @@ void brief_render_icon(int stage_num, int icon_num, float frametime, int selecte
 
 				if ( Brief_stage_highlight_sound_handle < 0 ) {
 					if ( !Fred_running) {
-						Brief_stage_highlight_sound_handle = snd_play(&Snds_iface[SND_ICON_HIGHLIGHT]);					
+						Brief_stage_highlight_sound_handle = snd_play(gamesnd_get_interface_sound(SND_ICON_HIGHLIGHT));
 					}
 				}
 			}
@@ -1164,20 +1164,20 @@ void brief_blit_stage_num(int stage_num, int stage_max)
  * @param y vertical position where the text is drawn
  * @param instance index of Colored_stream of the text page to display
  */
-void brief_render_line(int line_num, int x, int y, int instance)
-{
-	Assert( 0<=instance && instance < (int)(sizeof(Colored_stream)/sizeof(*Colored_stream)) );
+void brief_render_line(int line_num, int x, int y, int instance) {
+	Assert(0 <= instance && instance < (int) (sizeof(Colored_stream) / sizeof(*Colored_stream)));
 
-	SCP_vector<colored_char> *src = &Colored_stream[instance].at(line_num);
+	SCP_vector<colored_char>* src = &Colored_stream[instance].at(line_num);
 
 	// empty strings do not have to be drawn
 	size_t src_len = src->size();
-	if (src_len == 0){
+	if (src_len == 0) {
 		return;
 	}
+
 	// truncate_len is the number of characters currently displayed including the bright white characters
 	size_t truncate_len = fl2i(Brief_text_wipe_time_elapsed / BRIEF_TEXT_WIPE_TIME * Max_briefing_line_len);
-	if (truncate_len > src_len){
+	if (truncate_len > src_len) {
 		truncate_len = src_len;
 	}
 	// truncate_len is going to be the number of characters displayed with normal intensity
@@ -1190,11 +1190,11 @@ void brief_render_line(int line_num, int x, int y, int instance)
 			truncate_len = 0;
 		} else {
 			bright_len = BRIGHTEN_LEAD;
-			truncate_len -= BRIGHTEN_LEAD; 
+			truncate_len -= BRIGHTEN_LEAD;
 		}
 	}
-	size_t char_seq_pos=0; //Cursor position into the following character sequence
-	char char_seq[MAX_BRIEF_LINE_LEN];	
+	size_t char_seq_pos = 0; //Cursor position into the following character sequence
+	char char_seq[MAX_BRIEF_LINE_LEN];
 	int offset = 0; //offset is the horizontal position of the screen where strings are drawn
 	gr_set_color_fast(&Color_white);
 
@@ -1203,16 +1203,17 @@ void brief_render_line(int line_num, int x, int y, int instance)
 	// When the color changes, the buffer is drawn and reset.
 	{
 		char last_color = src->at(0).color;
-		for (size_t current_pos=0; current_pos<truncate_len; current_pos++) {
-			colored_char &current_char=src->at(current_pos);		
+		for (size_t current_pos = 0; current_pos < truncate_len; current_pos++) {
+			colored_char& current_char = src->at(current_pos);
 			//when the current color changes, the accumulated character sequence is drawn.
-			if (current_char.color != last_color){
+			if (current_char.color != last_color) {
 				//add a 0 terminal character to make line a valid C string
 				Assert(char_seq_pos < sizeof(char_seq));
-				char_seq[char_seq_pos] = 0;         
-				{	// Draw coloured text, and increment cariage position
-					int w=0,h=0;
-					brief_set_text_color(last_color);        
+				char_seq[char_seq_pos] = 0;
+				{
+					// Draw coloured text, and increment cariage position
+					int w = 0, h = 0;
+					brief_set_text_color(last_color);
 					gr_string(x + offset, y, char_seq, GR_RESIZE_MENU);
 					gr_get_string_size(&w, &h, char_seq);
 					offset += w;
@@ -1221,32 +1222,40 @@ void brief_render_line(int line_num, int x, int y, int instance)
 				char_seq_pos = 0;
 				last_color = current_char.color;
 			}
-			Assert(char_seq_pos < sizeof(char_seq));
-			char_seq[char_seq_pos++] = current_char.letter;		
+			auto encoded_size = unicode::encoded_size(current_char.letter);
+			Assert(char_seq_pos + encoded_size - 1 < sizeof(char_seq));
+			unicode::encode(current_char.letter, &char_seq[char_seq_pos]);
+			char_seq_pos += encoded_size;
 		}
+
 		// Draw the final chunk of acumulated characters
 		// Add a 0 terminal character to make line a valid C string
 		Assert(char_seq_pos < sizeof(char_seq));
 		char_seq[char_seq_pos] = 0;
-        {	// Draw coloured text, and increment cariage position
-			int w=0,h=0;
-			brief_set_text_color(last_color);        
+		{
+			// Draw coloured text, and increment cariage position
+			int w = 0, h = 0;
+			brief_set_text_color(last_color);
 			gr_string(x + offset, y, char_seq, GR_RESIZE_MENU);
 			gr_get_string_size(&w, &h, char_seq);
 			offset += w;
 		}
 	}
 
-	{	// PART2: Draw leading bright white characters
+	{
+		// PART2: Draw leading bright white characters
 		char_seq_pos = 0;
-		for( size_t current_pos = truncate_len; current_pos<truncate_len + bright_len; current_pos++){		
-			Assert(char_seq_pos < sizeof(char_seq));
-			char_seq[char_seq_pos++] = src->at(current_pos).letter;
+		for (size_t current_pos = truncate_len; current_pos < truncate_len + bright_len; current_pos++) {
+			auto encoded_size = unicode::encoded_size(src->at(current_pos).letter);
+			Assert(char_seq_pos + encoded_size - 1 < sizeof(char_seq));
+			unicode::encode(src->at(current_pos).letter, &char_seq[char_seq_pos]);
+			char_seq_pos += encoded_size;
 		}
-		Assert(char_seq_pos < (int)sizeof(char_seq));
+
+		Assert(char_seq_pos < (int) sizeof(char_seq));
 		char_seq[char_seq_pos] = 0;
 		gr_set_color_fast(&Color_bright_white);
-		gr_string(x + offset, y, char_seq, GR_RESIZE_MENU);    
+		gr_string(x + offset, y, char_seq, GR_RESIZE_MENU);
 	}
 }
 
@@ -1414,10 +1423,21 @@ void brief_set_camera_target(vec3d *pos, matrix *orient, int time)
 }
 
 
-bool brief_verify_color_tag(char color_tag)
+bool brief_verify_color_tag(unicode::codepoint_t color_tag)
 {
-	if ( Tagged_Colors.find(color_tag) == Tagged_Colors.end() ) {
-		Warning(LOCATION, "Invalid text color tag '$%c' used in mission: '%s'.\n", color_tag, Mission_filename);
+	if (color_tag > 127) {
+		// The tag will always be out of range. This is done to be sure that the case below does not accidentally
+		// produce a valid tag character.
+		SCP_string tag_str;
+		unicode::encode(color_tag, std::back_inserter(tag_str));
+
+		Warning(LOCATION, "Invalid text color tag '$%s' used in mission: '%s'.\n", tag_str.c_str(), Mission_filename);
+		return false;
+	}
+	char char_tag = (char)color_tag;
+
+	if ( Tagged_Colors.find(char_tag) == Tagged_Colors.end() ) {
+		Warning(LOCATION, "Invalid text color tag '$%c' used in mission: '%s'.\n", char_tag, Mission_filename);
 		return false;
 	}
 	return true;
@@ -1433,9 +1453,9 @@ void brief_set_text_color(char color_tag)
  * @param character the character to be analysed.
  * @return true when the given character is a word separator, and false when the character is part of a word.
  */
-bool is_a_word_separator(char character)
+bool is_a_word_separator(unicode::codepoint_t character)
 {
-	return ((character >= 0) && (character <= 32)); // all control characters including space, newline, and tab
+	return character <= 32; // all control characters including space, newline, and tab
 }
 
 /**
@@ -1462,66 +1482,70 @@ int brief_text_colorize(char *src, int instance, char default_color_stack[], int
 
 	active_color_index = default_color_stack[color_stack_index];
 
-	auto src_len = strlen(src);
-	for (size_t i = 0; i < src_len; i++)
+	unicode::codepoint_range range(src);
+	auto end_iter = std::end(range);
+	for (auto iter = std::begin(range); iter != end_iter; ++iter)
 	{
 		// Is the character a color markup?
 		// text markup consists of a '$' plus a character plus an optional space
-		if ( (i < src_len - 1)  && (src[i] == BRIEF_META_CHAR) )
+		if (iter + 1 != end_iter  && *iter == BRIEF_META_CHAR)
 		{
-			i++;   // Consume the $ character
+			++iter;   // Consume the $ character
 
 			// it's possible that there's a closing brace here
-			if (src[i] == '}')
+			if (*iter == UNICODE_CHAR('}'))
 			{
 				if (color_stack_index > 0)
 				{
 					color_stack_index--;
 					active_color_index = default_color_stack[color_stack_index];
 				}
-				i++;	// consume the }
+				++iter;	// consume the }
 			}
 			// breaking character
-			else if (src[i] == '|')
+			else if (*iter == UNICODE_CHAR('|'))
 			{
 				active_color_index = default_color_stack[color_stack_index];
-				i++;	// consume the |
+				++iter;	// consume the |
 			}
 			// normal $c or $c{
 			else
 			{
-				if (brief_verify_color_tag(src[i])) active_color_index = src[i];
-				i++; // Consume the color identifier and focus on the white character (if any)
+				if (brief_verify_color_tag(*iter)) {
+					active_color_index = (char)*iter;
+				}
+				++iter; // Consume the color identifier and focus on the white character (if any)
 
 				// special case: color spans (different default color within braces)
 				// (there's a slim chance that src[i] could be the null-terminator, but that's okay here)
-				if (src[i] == '{')
+				if (*iter == UNICODE_CHAR('{'))
 				{
 					if (color_stack_index < HIGHEST_COLOR_STACK_INDEX)
 					{
 						color_stack_index++;
 						default_color_stack[color_stack_index] = active_color_index;
 					}
-					i++;	// consume the {
+					++iter;	// consume the {
 				}
 			}
 
 			// Skip every whitespace until the next word is reached
-			while ( (i < src_len) && is_white_space(src[i]) )
-				i++;
+			while ( (iter != end_iter) && is_white_space(*iter) )
+				++iter;
+
 			//The next character is not a whitespace, let's process it as usual
 			//(subtract 1 because the for loop will add it again)
-			i--;
+			--iter;
 			continue;
  		}
 
 		// When the word is terminated, reset color to default
-		if ( (is_white_space(src[i]) ) || ( is_a_word_separator(src[i]) ))
+		if ( (is_white_space(*iter) ) || ( is_a_word_separator(*iter) ))
 			active_color_index = default_color_stack[color_stack_index];
 
 		// Append the character to the result structure
 		colored_char dest;
-		dest.letter = src[i];
+		dest.letter = *iter;
 		dest.color = active_color_index;
 		dest_line.push_back(dest);
 	} 

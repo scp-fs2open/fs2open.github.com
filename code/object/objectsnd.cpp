@@ -431,6 +431,9 @@ void maybe_play_flyby_snd(float closest_dist, object *closest_objp, object *list
 				else
 					snd = &Species_info[sip->species].snd_flyby_fighter;
 
+				if (snd->sound_entries.empty())
+					return; //This species does not define any relevant flyby sounds
+
 				// play da sound
 				snd_play_3d(snd, &closest_objp->pos, &View_position);
 
@@ -495,8 +498,8 @@ void obj_snd_do_frame()
 			// we don't play the engine sound if the view is from the player
 			continue;
 		}
-		
-		gs = &Snds[osp->id];
+
+		gs = gamesnd_get_game_sound(osp->id);
 
 		obj_snd_source_pos(&source_pos, osp);
 		distance = vm_vec_dist_quick( &source_pos, &View_position );
@@ -505,7 +508,7 @@ void obj_snd_do_frame()
 		add_distance = 0.0f;
 		if(osp->flags & OS_MAIN){
 			add_distance = objp->radius;
-		} 
+		}
 
 		distance -= add_distance;
 		if ( distance < 0.0f ) {
@@ -586,7 +589,7 @@ void obj_snd_do_frame()
 						alive_vol_mult = 0.0f;
 					}
 				}
-				if (osp->flags & OS_SUBSYS_DAMAGED) 
+				if (osp->flags & OS_SUBSYS_DAMAGED)
 				{
 					alive_vol_mult = osp->ss->current_hits / osp->ss->max_hits;
 					CLAMP(alive_vol_mult, 0.0f, 1.0f);
@@ -594,17 +597,18 @@ void obj_snd_do_frame()
 
 			}
 		}
-	
+
 		go_ahead_flag = TRUE;
 		float max_vol,new_vol;
 		if ( osp->instance == -1 ) {
-			if ( distance < Snds[osp->id].max ) {
-				max_vol = Snds[osp->id].default_volume;
-				if ( distance <= Snds[osp->id].min ) {
+			if ( distance < gs->max ) {
+				max_vol = gs->volume_range.max();
+				if ( distance <= gs->min ) {
 					new_vol = max_vol;
 				}
 				else {
-					new_vol = max_vol - (distance - Snds[osp->id].min) * max_vol / (Snds[osp->id].max - Snds[osp->id].min);
+					new_vol = max_vol - (distance - gs->min) * max_vol
+						/ (gs->max - gs->min);
 				}
 
 				if ( new_vol < 0.1f ) {
@@ -636,7 +640,7 @@ void obj_snd_do_frame()
 			} // 		end if ( distance < Snds[osp->id].max )
 		} // 		if ( osp->instance == -1 )
 		else {
-			if ( distance > Snds[osp->id].max ) {
+			if ( distance > gamesnd_get_game_sound(osp->id)->max ) {
 				int sound_index = -1;
 				int idx = 0;
 
@@ -665,7 +669,7 @@ void obj_snd_do_frame()
 		// for DirectSound3D sounds, re-establish the maximum speed based on the
 		//	speed_vol_multiplier
 		if ( sp == NULL || ( (sp != NULL) && (sp->flags[Ship::Ship_Flags::Engines_on]) ) ) {
-			snd_set_volume( osp->instance, gs->default_volume*speed_vol_multiplier*rot_vol_mult*alive_vol_mult );
+			snd_set_volume( osp->instance, gs->volume_range.next() *speed_vol_multiplier*rot_vol_mult*alive_vol_mult );
 		}
 		else {
 			// engine sound is disabled

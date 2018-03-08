@@ -24,7 +24,7 @@ bool BeamPiercingEffect::processSource(const ParticleSource* source) {
 
 	info.rad = m_radius * frand_range(0.5f, 2.0f);
 
-	vec3d fvec = source->getOrientation()->getDirectionVector();
+	vec3d fvec = source->getOrientation()->getDirectionVector(source->getOrigin());
 
 	float base_v, back_v;
 	vec3d rnd_vec;

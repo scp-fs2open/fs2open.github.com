@@ -1436,8 +1436,6 @@ void draw_open_rect(int x1, int y1, int x2, int y2, int resize_mode = GR_RESIZE_
 	gr_line(x1, y2, x1, y1, resize_mode);
 }
 
-extern void gr_opengl_shade(int x, int y, int w, int h, int resize_mode);
-
 void Window::DoDraw(float frametime)
 {
 	int w, h;
@@ -1448,8 +1446,13 @@ void Window::DoDraw(float frametime)
 	}
 
 	// shade the background of the window so that it's just slightly transparent
-	gr_set_shader(&WindowShade);
-	gr_opengl_shade(Coords[0], Coords[1], Coords[2], Coords[3], GR_RESIZE_NONE);
+	color clr;
+	gr_init_alphacolor(&clr, WindowShade.r, WindowShade.g, WindowShade.b, WindowShade.c);
+	gr_set_color_fast(&clr);
+
+	w = Coords[2] - Coords[0];
+	h = Coords[3] - Coords[1];
+	gr_rect(Coords[0], Coords[1], w, h, GR_RESIZE_NONE);
 
 	gr_set_color_fast(&Color_text_normal);
 
@@ -2732,8 +2735,10 @@ void Slider::DoDraw(float frametime)
 
 	auto sliderX = GetSliderOffset();
 
-	gr_set_shader(&SliderShade);
-	gr_opengl_shade(sliderX, BarCoords[1], sliderX + SliderWidth, BarCoords[3], false);
+	color clr;
+	gr_init_alphacolor(&clr, SliderShade.r, SliderShade.g, SliderShade.b, SliderShade.c);
+	gr_set_color_fast(&clr);
+	gr_rect(sliderX, BarCoords[1], SliderWidth, BarCoords[3] - BarCoords[1], false);
 }
 
 int Slider::DoMouseDown(float frametime)

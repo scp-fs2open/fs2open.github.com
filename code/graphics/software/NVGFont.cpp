@@ -2,6 +2,8 @@
 #include "graphics/software/NVGFont.h"
 #include "graphics/paths/PathRenderer.h"
 
+#include "mod_table/mod_table.h"
+
 #include "localization/localize.h"
 
 #include <limits>
@@ -22,8 +24,12 @@ namespace font
 		if (maxLength <= 0)
 			return 0;
 
-		if (*string >= Lcl_special_chars || *string < 0)
-			return 1;
+		if (!Unicode_text_mode) {
+			// If we are not in unicode mode then we need to handle special characters
+			// Otherwise we just assume that the text is UTF-8 encoded
+			if (*string >= Lcl_special_chars || *string < 0)
+				return 1;
+		}
 
 		const char *nullPtr = strchr(const_cast<char*>(string), '\0');
 		const char *nextToken = strpbrk(const_cast<char*>(string), TOKEN_SEPARATORS);
@@ -54,12 +60,15 @@ namespace font
 			length = maxLength;
 		}
 
-		for (size_t i = 0; i < length; i++)
-		{
-			if (string[i] >= Lcl_special_chars || string[i] < 0)
+		if (!Unicode_text_mode) {
+			// Same as above
+			for (size_t i = 0; i < length; i++)
 			{
-				// Special character needs to be handled seperately
-				return i;
+				if (string[i] >= Lcl_special_chars || string[i] < 0)
+				{
+					// Special character needs to be handled seperately
+					return i;
+				}
 			}
 		}
 
@@ -154,7 +163,7 @@ namespace font
 
 			if (tokenLength == 1)
 			{
-				// We may have encoutered a special character
+				// We may have encountered a special character
 				switch (*s)
 				{
 				case '\n':
@@ -169,22 +178,25 @@ namespace font
 					lineWidth += this->getTabWidth();
 					break;
 				default:
-					if (*s >= Lcl_special_chars || *s < 0)
-					{
-						specialChar = true;
+					if (!Unicode_text_mode) {
+						// Same as before, this code is only needed in non-unicode mode	
+						if (*s >= Lcl_special_chars || *s < 0)
+						{
+							specialChar = true;
 
-						int charWidth;
-						int spacing;
+							int charWidth;
+							int spacing;
 
-						if (m_specialCharacters == nullptr) {
-							Error(LOCATION,
-								  "Font %s has no special characters font! This is usually caused by ignoring a font table parsing warning.",
-								  getName().c_str());
+							if (m_specialCharacters == nullptr) {
+								Error(LOCATION,
+									  "Font %s has no special characters font! This is usually caused by ignoring a font table parsing warning.",
+									  getName().c_str());
+							}
+
+							get_char_width_old(m_specialCharacters, static_cast<ubyte>(*s), '\0', &charWidth, &spacing);
+
+							lineWidth += i2fl(spacing);
 						}
-
-						get_char_width_old(m_specialCharacters, static_cast<ubyte>(*s), '\0', &charWidth, &spacing);
-
-						lineWidth += i2fl(spacing);
 					}
 					break;
 				}

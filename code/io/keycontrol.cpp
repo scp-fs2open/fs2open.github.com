@@ -1278,6 +1278,11 @@ void process_debug_keys(int k)
 				Show_cpu = !Show_cpu;
 			}
 			break;
+		case KEY_DEBUGGED + KEY_B:
+		case KEY_DEBUGGED1 + KEY_B:
+			{
+				Cmdline_bmpman_usage = !Cmdline_bmpman_usage;
+			}
 
 	}	// end switch
 }
@@ -1860,14 +1865,14 @@ int button_function_critical(int n, net_player *p = NULL)
                 Ships[objp->instance].flags.remove(Ship::Ship_Flags::Secondary_dual_fire);
 				if(at_self) {
 					HUD_sourced_printf(HUD_SOURCE_HIDDEN, "%s", XSTR( "Secondary weapon set to normal fire mode", 34));
-					snd_play( &Snds[ship_get_sound(Player_obj, SND_SECONDARY_CYCLE)] );
+					snd_play( gamesnd_get_game_sound(ship_get_sound(Player_obj, SND_SECONDARY_CYCLE)) );
 					hud_gauge_popup_start(HUD_WEAPONS_GAUGE);
 				}
 			} else {
                 Ships[objp->instance].flags.set(Ship::Ship_Flags::Secondary_dual_fire);
 				if(at_self) {
 					HUD_sourced_printf(HUD_SOURCE_HIDDEN, "%s", XSTR( "Secondary weapon set to dual fire mode", 35));
-					snd_play( &Snds[ship_get_sound(Player_obj, SND_SECONDARY_CYCLE)] );
+					snd_play( gamesnd_get_game_sound(ship_get_sound(Player_obj, SND_SECONDARY_CYCLE)) );
 					hud_gauge_popup_start(HUD_WEAPONS_GAUGE);
 				}
 			}
@@ -1965,7 +1970,7 @@ int button_function_critical(int n, net_player *p = NULL)
 			}
 
 			set_default_recharge_rates(objp);
-			snd_play( &Snds[SND_ENERGY_TRANS] );
+			snd_play( gamesnd_get_game_sound(SND_ENERGY_TRANS) );
 
 			// multiplayer server should maintain bank/link status here
 			if( MULTIPLAYER_MASTER ){
@@ -2074,7 +2079,7 @@ int button_function_demo_valid(int n)
 		}
 		else
 		{
-			snd_play( &Snds[SND_TARGET_FAIL] );
+			snd_play( gamesnd_get_game_sound(SND_TARGET_FAIL) );
 		}
 		ret = 1;
 		break;
@@ -2088,7 +2093,7 @@ int button_function_demo_valid(int n)
 			}
 			Viewer_mode ^= VM_TRACK;
 		} else {
-			snd_play( &Snds[SND_TARGET_FAIL] );
+			snd_play( gamesnd_get_game_sound(SND_TARGET_FAIL) );
 		}
 		ret = 1;
 		break;
@@ -2102,7 +2107,7 @@ int button_function_demo_valid(int n)
 		}
 		else
 		{
-			snd_play( &Snds[SND_TARGET_FAIL] );
+			snd_play( gamesnd_get_game_sound(SND_TARGET_FAIL) );
 		}
 		ret = 1;
 		break;
@@ -2115,7 +2120,7 @@ int button_function_demo_valid(int n)
 		}
 		else
 		{
-			snd_play( &Snds[SND_TARGET_FAIL] );
+			snd_play( gamesnd_get_game_sound(SND_TARGET_FAIL) );
 		}
 		ret = 1;
 		break;
@@ -2136,10 +2141,10 @@ int button_function_demo_valid(int n)
 	case VIEW_OTHER_SHIP:
 		control_used(VIEW_OTHER_SHIP);
 		if ( Player_ai->target_objnum < 0 || Perspective_locked) {
-			snd_play( &Snds[SND_TARGET_FAIL] );
+			snd_play( gamesnd_get_game_sound(SND_TARGET_FAIL) );
 		} else {
 			if ( Objects[Player_ai->target_objnum].type != OBJ_SHIP )  {
-				snd_play( &Snds[SND_TARGET_FAIL] );
+				snd_play( gamesnd_get_game_sound(SND_TARGET_FAIL) );
 			} else {
 				Viewer_mode ^= VM_OTHER_SHIP;
 			}
@@ -2370,14 +2375,14 @@ int button_function(int n)
 			control_used(TOGGLE_AUTO_MATCH_TARGET_SPEED);
 			hud_gauge_popup_start(HUD_AUTO_SPEED);
 			if ( Players[Player_num].flags & PLAYER_FLAGS_AUTO_MATCH_SPEED ) {
-				snd_play(&Snds[SND_SHIELD_XFER_OK], 1.0f);
+				snd_play(gamesnd_get_game_sound(SND_SHIELD_XFER_OK), 1.0f);
 				if ( !(Player->flags & PLAYER_FLAGS_MATCH_TARGET) ) {
 					player_match_target_speed();
 				}
 			}
 			else
 			{
-				snd_play(&Snds[SND_SHIELD_XFER_OK], 1.0f);
+				snd_play(gamesnd_get_game_sound(SND_SHIELD_XFER_OK), 1.0f);
 				player_match_target_speed();
 			}
 			break;
@@ -2576,7 +2581,7 @@ int button_function(int n)
 			// target the closest ship attacking current target
 			case TARGET_CLOSEST_SHIP_ATTACKING_TARGET:
 				if (Player_ai->target_objnum < 0) {
-					snd_play(&Snds[SND_TARGET_FAIL]);
+					snd_play(gamesnd_get_game_sound(SND_TARGET_FAIL));
 					break;
 				}
 
@@ -2642,13 +2647,13 @@ int button_function(int n)
 			if ( Players[Player_num].flags & PLAYER_FLAGS_AUTO_TARGETING ) {
 				if (hud_sensors_ok(Player_ship)) {
 					hud_target_closest(iff_get_attackee_mask(Player_ship->team), -1, FALSE, TRUE );
-					snd_play(&Snds[SND_SHIELD_XFER_OK], 1.0f);
+					snd_play(gamesnd_get_game_sound(SND_SHIELD_XFER_OK), 1.0f);
 					//HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Auto targeting activated", -1));
 				} else {
 					Players[Player_num].flags ^= PLAYER_FLAGS_AUTO_TARGETING;
 				}
 			} else {
-				snd_play(&Snds[SND_SHIELD_XFER_OK], 1.0f);
+				snd_play(gamesnd_get_game_sound(SND_SHIELD_XFER_OK), 1.0f);
 				//HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Auto targeting deactivated", -1));
 			}
 			break;
@@ -2659,7 +2664,7 @@ int button_function(int n)
 			//		 ships are coming to rearm the player, just try for the closest repair ship
 			if ( hud_target_closest_repair_ship(OBJ_INDEX(Player_obj)) == 0 ) {
 				if ( hud_target_closest_repair_ship() == 0 ) {
-					snd_play(&Snds[SND_TARGET_FAIL]);
+					snd_play(gamesnd_get_game_sound(SND_TARGET_FAIL));
 				}
 			}
 			break;

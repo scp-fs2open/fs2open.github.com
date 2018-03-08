@@ -23,12 +23,7 @@ uint gr_stub_lock()
 	return 1;
 }
 
-int gr_stub_create_vertex_buffer(bool static_buffer)
-{
-	return -1;
-}
-
-int gr_stub_create_index_buffer(bool static_buffer)
+int gr_stub_create_buffer(BufferType, BufferUsageHint)
 {
 	return -1;
 }
@@ -62,71 +57,16 @@ void gr_set_fill_mode_stub(int mode)
 {
 }
 
-void gr_stub_aabitmap_ex(int x,int y,int w,int h,int sx,int sy,int resize_mode,bool mirror)
-{
-}
-
-void gr_stub_aabitmap(int x, int y,int resize_mode, bool mirror)
-{
-}
-
-void gr_stub_aaline(vertex *v1, vertex *v2)
-{
-}
-
 void gr_stub_activate(int active)
 {
 }
 
-void gr_stub_bitmap_ex(int x, int y, int w, int h, int sx, int sy, int resize_mode)
-{
-}
-
-void gr_stub_bitmap(int x, int y)
-{
-}
-
-void gr_stub_circle( int xc, int yc, int d, int resize_mode )
-{
-}
-
-void gr_stub_unfilled_circle( int xc, int yc, int d, int resize_mode )
-{
-}
 
 void gr_stub_cleanup(int minimize)
 {
 }
 
 void gr_stub_clear()
-{
-}
-
-void gr_stub_curve(int xc, int yc, int r, int direction, int resize_mode)
-{
-}
-
-void gr_stub_end_clip_plane()
-{
-}
-
-void gr_stub_end_instance_matrix()
-{
-}
-
-void gr_stub_end_projection_matrix()
-{
-}
-
-void gr_stub_end_view_matrix()
-{
-}
-
-void gr_stub_flash_alpha(int r, int g, int b, int a)
-{
-}
-
-void gr_stub_flash(int r, int g, int b)
 {
 }
 
@@ -146,22 +86,6 @@ void gr_stub_get_region(int front, int w, int h, ubyte *data)
 {
 }
 
-void gr_stub_gradient(int x1,int y1,int x2,int y2, int resize_mode)
-{
-}
-
-void gr_stub_line(int x1,int y1,int x2,int y2, int resize_mode = GR_RESIZE_NONE)
-{
-}
-
-void gr_stub_pixel(int x, int y, int resize_mode)
-{
-}
-
-void gr_stub_pop_scale_matrix()
-{
-}
-
 void gr_stub_pop_texture_matrix(int unit)
 {
 }
@@ -171,10 +95,6 @@ void gr_stub_preload_init()
 }
 
 void gr_stub_print_screen(const char *filename)
-{
-}
-
-void gr_stub_push_scale_matrix(const vec3d *scale_factor)
 {
 }
 
@@ -190,10 +110,6 @@ void gr_stub_reset_clip()
 {
 }
 
-void gr_stub_reset_lighting()
-{
-}
-
 void gr_stub_restore_screen(int id)
 {
 }
@@ -204,21 +120,15 @@ void gr_stub_save_mouse_area(int x, int y, int w, int h)
 
 void gr_stub_update_buffer_data(int handle, size_t size, void* data)
 {
+}
 
+void gr_stub_update_buffer_data_offset(int handle, size_t offset, size_t size, void* data)
+{
 }
 
 void gr_stub_update_transform_buffer(void* data, size_t size)
 {
 
-}
-
-void gr_stub_set_transform_buffer_offset(size_t offset)
-{
-
-}
-
-void gr_stub_render_stream_buffer(int buffer_handle, size_t offset, size_t n_verts, int flags)
-{
 }
 
 void gr_stub_set_clear_color(int r, int g, int b)
@@ -243,43 +153,11 @@ void gr_stub_set_gamma(float gamma)
 {
 }
 
-void gr_stub_set_lighting(bool set, bool state)
-{
-}
-
-void gr_stub_set_light(light *light)
-{
-}
-
-void gr_stub_set_projection_matrix(float fov, float aspect, float z_near, float z_far)
-{
-}
-
 void gr_stub_set_tex_env_scale(float scale)
 {
 }
 
 void gr_stub_set_texture_addressing(int mode)
-{
-}
-
-void gr_stub_set_view_matrix(const vec3d *pos, const matrix* orient)
-{
-}
-
-void gr_stub_start_clip_plane()
-{
-}
-
-void gr_stub_start_instance_angles(const vec3d *pos, const angles *rotation)
-{
-}
-
-void gr_stub_start_instance_matrix(const vec3d *offset, const matrix *rotation)
-{
-}
-
-void gr_stub_string( float sx, float sy, const char *s, int resize_mode = GR_RESIZE_NONE, int length = -1)
 {
 }
 
@@ -321,7 +199,7 @@ int gr_stub_alpha_mask_set(int mode, float alpha)
 {
 }*/
 
-void gr_stub_post_process_set_effect(const char *name, int x)
+void gr_stub_post_process_set_effect(const char *name, int x, const vec3d *rgb)
 {
 }
 
@@ -366,14 +244,6 @@ void gr_stub_deferred_lighting_end()
 }
 
 void gr_stub_deferred_lighting_finish()
-{
-}
-
-void gr_stub_set_ambient_light(int red, int green, int blue)
-{
-}
-
-void gr_stub_set_texture_panning(float u, float v, bool enable)
 {
 }
 
@@ -451,22 +321,7 @@ void gr_stub_render_model(model_material* material_info, indexed_vertex_source *
 
 }
 
-void gr_stub_render_primitives(material* material_info, primitive_type prim_type, vertex_layout* layout, int offset, int n_verts, int buffer_handle)
-{
-
-}
-
-void gr_stub_render_primitives_immediate(material* material_info, primitive_type prim_type, vertex_layout* layout, int n_verts, void* data, int size)
-{
-
-}
-
-void gr_stub_render_primitives_2d(material* material_info, primitive_type prim_type, vertex_layout* layout, int offset, int n_verts, int buffer_handle)
-{
-
-}
-
-void gr_stub_render_primitives_2d_immediate(material* material_info, primitive_type prim_type, vertex_layout* layout, int n_verts, void* data, int size)
+void gr_stub_render_primitives(material* material_info, primitive_type prim_type, vertex_layout* layout, int offset, int n_verts, int buffer_handle, size_t buffer_offset)
 {
 
 }
@@ -479,6 +334,21 @@ void gr_stub_render_primitives_particle(particle_material* material_info, primit
 void gr_stub_render_primitives_distortion(distortion_material* material_info, primitive_type prim_type, vertex_layout* layout, int offset, int n_verts, int buffer_handle)
 {
 
+}
+void gr_stub_render_movie(movie_material* material_info, primitive_type prim_type, vertex_layout* layout, int n_verts, int buffer)
+{
+}
+
+void gr_stub_render_nanovg(nanovg_material* material_info,
+							  primitive_type prim_type,
+							  vertex_layout* layout,
+							  int offset,
+							  int n_verts,
+							  int buffer_handle) {
+}
+
+void gr_stub_render_primitives_batched(batched_bitmap_material* material_info, primitive_type prim_type, vertex_layout* layout, int offset, int n_verts, int buffer_handle)
+{
 }
 
 bool gr_stub_is_capable(gr_capability capability)
@@ -547,29 +417,12 @@ bool gr_stub_init()
 	gr_screen.gf_reset_clip			= gr_stub_reset_clip;
 	
 	gr_screen.gf_clear				= gr_stub_clear;
-//	gr_screen.gf_bitmap				= gr_stub_bitmap;
-	gr_screen.gf_bitmap_ex			= gr_stub_bitmap_ex;
-	gr_screen.gf_aabitmap			= gr_stub_aabitmap;
-	gr_screen.gf_aabitmap_ex		= gr_stub_aabitmap_ex;
-	
+
 //	gr_screen.gf_rect				= gr_stub_rect;
 //	gr_screen.gf_shade				= gr_stub_shade;
-	gr_screen.gf_string				= gr_stub_string;
-	gr_screen.gf_circle				= gr_stub_circle;
-	gr_screen.gf_unfilled_circle	= gr_stub_unfilled_circle;
-	gr_screen.gf_curve				= gr_stub_curve;
-
-	gr_screen.gf_line				= gr_stub_line;
-	gr_screen.gf_aaline				= gr_stub_aaline;
-	gr_screen.gf_pixel				= gr_stub_pixel;
-
-	gr_screen.gf_gradient			= gr_stub_gradient;
 
 	gr_screen.gf_print_screen		= gr_stub_print_screen;
 
-	gr_screen.gf_flash				= gr_stub_flash;
-	gr_screen.gf_flash_alpha		= gr_stub_flash_alpha;
-	
 	gr_screen.gf_zbuffer_get		= gr_stub_zbuffer_get;
 	gr_screen.gf_zbuffer_set		= gr_stub_zbuffer_set;
 	gr_screen.gf_zbuffer_clear		= gr_stub_zbuffer_clear;
@@ -584,8 +437,6 @@ bool gr_stub_init()
 	gr_screen.gf_free_screen		= gr_stub_free_screen;
 	
 	gr_screen.gf_set_gamma			= gr_stub_set_gamma;
-
-	gr_screen.gf_fog_set			= gr_stub_fog_set;	
 
 	// UnknownPlayer : Don't recognize this - MAY NEED DEBUGGING
 	gr_screen.gf_get_region			= gr_stub_get_region;
@@ -613,25 +464,13 @@ bool gr_stub_init()
 	gr_screen.gf_set_texture_addressing	= gr_stub_set_texture_addressing;
 	gr_screen.gf_zbias					= gr_stub_zbias_stub;
 	gr_screen.gf_set_fill_mode			= gr_set_fill_mode_stub;
-	gr_screen.gf_set_texture_panning	= gr_stub_set_texture_panning;
 
-	gr_screen.gf_create_vertex_buffer	= gr_stub_create_vertex_buffer;
-	gr_screen.gf_create_index_buffer	= gr_stub_create_index_buffer;
+	gr_screen.gf_create_buffer	= gr_stub_create_buffer;
 	gr_screen.gf_delete_buffer		= gr_stub_delete_buffer;
 
 	gr_screen.gf_update_transform_buffer	= gr_stub_update_transform_buffer;
 	gr_screen.gf_update_buffer_data		= gr_stub_update_buffer_data;
-	gr_screen.gf_set_transform_buffer_offset	= gr_stub_set_transform_buffer_offset;
-
-	gr_screen.gf_render_stream_buffer		= gr_stub_render_stream_buffer;
-
-	gr_screen.gf_start_instance_matrix			= gr_stub_start_instance_matrix;
-	gr_screen.gf_end_instance_matrix			= gr_stub_end_instance_matrix;
-	gr_screen.gf_start_angles_instance_matrix	= gr_stub_start_instance_angles;
-
-	gr_screen.gf_set_light			= gr_stub_set_light;
-	gr_screen.gf_reset_lighting		= gr_stub_reset_lighting;
-	gr_screen.gf_set_ambient_light	= gr_stub_set_ambient_light;
+	gr_screen.gf_update_buffer_data_offset = gr_stub_update_buffer_data_offset;
 
 	gr_screen.gf_post_process_set_effect	= gr_stub_post_process_set_effect;
 	gr_screen.gf_post_process_set_defaults	= gr_stub_post_process_set_defaults;
@@ -649,20 +488,6 @@ bool gr_stub_init()
 	gr_screen.gf_deferred_lighting_end = gr_stub_deferred_lighting_end;
 	gr_screen.gf_deferred_lighting_finish = gr_stub_deferred_lighting_finish;
 
-	gr_screen.gf_start_clip_plane	= gr_stub_start_clip_plane;
-	gr_screen.gf_end_clip_plane		= gr_stub_end_clip_plane;
-
-	gr_screen.gf_lighting			= gr_stub_set_lighting;
-
-	gr_screen.gf_set_proj_matrix	= gr_stub_set_projection_matrix;
-	gr_screen.gf_end_proj_matrix	= gr_stub_end_projection_matrix;
-
-	gr_screen.gf_set_view_matrix	= gr_stub_set_view_matrix;
-	gr_screen.gf_end_view_matrix	= gr_stub_end_view_matrix;
-
-	gr_screen.gf_push_scale_matrix	= gr_stub_push_scale_matrix;
-	gr_screen.gf_pop_scale_matrix	= gr_stub_pop_scale_matrix;
-	
 	gr_screen.gf_set_line_width		= gr_stub_set_line_width;
 
 	gr_screen.gf_sphere				= gr_stub_draw_sphere;
@@ -681,13 +506,14 @@ bool gr_stub_init()
 
 	gr_screen.gf_render_model = gr_stub_render_model;
 	gr_screen.gf_render_primitives	= gr_stub_render_primitives;
-	gr_screen.gf_render_primitives_immediate = gr_stub_render_primitives_immediate;
-	gr_screen.gf_render_primitives_2d	= gr_stub_render_primitives_2d;
-	gr_screen.gf_render_primitives_2d_immediate = gr_stub_render_primitives_2d_immediate;
 	gr_screen.gf_render_primitives_particle	= gr_stub_render_primitives_particle;
 	gr_screen.gf_render_primitives_distortion = gr_stub_render_primitives_distortion;
+	gr_screen.gf_render_movie = gr_stub_render_movie;
+	gr_screen.gf_render_nanovg = gr_stub_render_nanovg;
+	gr_screen.gf_render_primitives_batched = gr_stub_render_primitives_batched;
 
 	gr_screen.gf_is_capable = gr_stub_is_capable;
+	gr_screen.gf_get_property = [](gr_property,void*) { return false; };
 
 	gr_screen.gf_push_debug_group = gr_stub_push_debug_group;
 	gr_screen.gf_pop_debug_group = gr_stub_pop_debug_group;
@@ -703,6 +529,8 @@ bool gr_stub_init()
 	};
 	gr_screen.gf_use_viewport = [](os::Viewport*) {
 	};
+
+	gr_screen.gf_bind_uniform_buffer = [](uniform_block_type, size_t, size_t, int) {};
 
 	return true;
 }

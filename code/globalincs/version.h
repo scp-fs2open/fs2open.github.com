@@ -5,7 +5,7 @@
  * or otherwise commercially exploit the source or things you created based on the 
  * source.
  *
-*/ 
+*/
 
 
 
@@ -36,29 +36,55 @@
 
 #include "project.h"
 
-namespace gameversion
-{
-	/**
-	 * @brief Checks if the current version is at least the given version
-	 * 
-	 * @param major The major version to check
-	 * @param minor The minor version to check
-	 * @param build The build version to check
-	 * @param revision The revision version to check
-	 *
-	 * @returns @c true when we are at least the given version, @c false otherwise
-	 */
-	bool check_at_least(int major, int minor, int build, int revision);
-	
-	/**
-	 * @brief Returns the string representation of the passed version
-	 * @param major The major version to format
-	 * @param minor The minor version to format
-	 * @param build The build version to format
-	 * @param revision The revision version to format
-	 * @returns A string representation of the version number
-	 */
-	SCP_string format_version(int major, int minor, int build, int revision);
+// The GCC POSIX headers seem to think defining a common word like "major" is a good idea...
+// FYI, no it isn't.
+#ifdef major
+#undef major
+#endif
+#ifdef minor
+#undef minor
+#endif
+
+namespace gameversion {
+
+struct version {
+	int major = 0;
+	int minor = 0;
+	int build = 0;
+	int revision = 0;
+
+	version() {}
+
+	version(int major, int minor, int build, int revision);
+
+	bool operator<(const version& other) const;
+	bool operator==(const version& other) const;
+	bool operator!=(const version& other) const;
+	bool operator>(const version& rhs) const;
+	bool operator<=(const version& rhs) const;
+	bool operator>=(const version& rhs) const;
+};
+
+version parse_version();
+
+version get_executable_version();
+
+/**
+ * @brief Checks if the current version is at least the given version
+ *
+ * @param v The version to check
+ *
+ * @returns @c true when we are at least the given version, @c false otherwise
+ */
+bool check_at_least(const version& v);
+
+/**
+ * @brief Returns the string representation of the passed version
+ * @param major The version to format
+ * @returns A string representation of the version number
+ */
+SCP_string format_version(const version& v);
+
 }
 
 #endif

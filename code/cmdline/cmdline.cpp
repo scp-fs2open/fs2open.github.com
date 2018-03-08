@@ -23,6 +23,9 @@
 #include "globalincs/pstypes.h"
 #include "osapi/osapi.h"
 #include "cfile/cfilesystem.h"
+#include "sound/speech.h"
+#include "sound/openal.h"
+#include "io/joy.h"
 
 #ifdef _WIN32
 #include <io.h>
@@ -38,6 +41,9 @@
 
 #include <string.h>
 #include <stdlib.h>
+#include <cstdio>
+
+#include <jansson.h>
 
 // Stupid windows workaround...
 #ifdef MessageBox
@@ -60,6 +66,11 @@ const char *cmdline_arg_types[] =
 	"STRING",
 };
 
+enum class flag_output_type {
+	Binary,
+	Json_V1,
+};
+
 // variables
 class cmdline_parm {
 public:
@@ -78,6 +89,7 @@ public:
 	float get_float();
 	char *str();
 	bool check_if_args_is_valid();
+	bool has_param();
 };
 
 static cmdline_parm Parm_list(NULL, NULL, AT_NONE);
@@ -148,7 +160,6 @@ Flag exe_params[] =
 	{ "-noenv",				"Disable environment maps",					true,	EASY_DEFAULT_MEM,	EASY_MEM_ALL_ON,	"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-env", },
 	{ "-nomotiondebris",	"Disable motion debris",					true,	EASY_ALL_ON,		EASY_DEFAULT,		"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-nomotiondebris",},
 	{ "-noscalevid",		"Disable scale-to-window for movies",		true,	0,					EASY_DEFAULT,		"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-noscalevid", },
-	{ "-missile_lighting",	"Apply lighting to missiles"	,			true,	EASY_ALL_ON,		EASY_DEFAULT,		"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-missile_lighting", },
 	{ "-nonormal",			"Disable normal maps",						true,	EASY_DEFAULT_MEM,	EASY_MEM_ALL_ON,	"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-normal" },
 	{ "-no_emissive_light",	"Disable emissive light from ships",		true,	0,					EASY_DEFAULT,		"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-no_emissive_light" },
 	{ "-noheight",			"Disable height/parallax maps",				true,	EASY_DEFAULT_MEM,	EASY_MEM_ALL_ON,	"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-height" },
@@ -177,7 +188,6 @@ Flag exe_params[] =
 	{ "-no_ap_interrupt",	"Disable interrupting autopilot",			true,	0,					EASY_DEFAULT,		"Gameplay",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-no_ap_interrupt", },
 	{ "-stretch_menu",		"Stretch interface to fill screen",			true,	0,					EASY_DEFAULT,		"Gameplay",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-stretch_menu", },
 
-	{ "-snd_preload",		"Preload mission game sounds",				true,	EASY_MEM_ALL_ON,	EASY_DEFAULT_MEM,	"Audio",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-snd_preload", },
 	{ "-nosound",			"Disable all sound",						false,	0,					EASY_DEFAULT,		"Audio",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-nosound", },
 	{ "-nomusic",			"Disable music",							false,	0,					EASY_DEFAULT,		"Audio",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-nomusic", },
 	{ "-no_enhanced_sound",	"Disable enhanced sound",					false,	0,					EASY_DEFAULT,		"Audio",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-no_enhanced_sound", },
@@ -205,7 +215,6 @@ Flag exe_params[] =
 	{ "-use_gldrawelements","Don't use glDrawRangeElements",			true,	0,					EASY_DEFAULT,		"Troubleshoot",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-use_gldrawelements", },
 	{ "-old_collision",		"Use old collision detection system",		true,	EASY_DEFAULT,		EASY_ALL_ON,		"Troubleshoot",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-old_collision", },
 	{ "-gl_finish",			"Fix input lag on some ATI+Linux systems",	true,	0,					EASY_DEFAULT,		"Troubleshoot", "http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-gl_finish", },
-	{ "-no_batching",		"Disable batched model rendering",			true,	0,					EASY_DEFAULT,		"Troubleshoot", "", },
 	{ "-no_geo_effects",	"Disable geometry shader for effects",		true,	0,					EASY_DEFAULT,		"Troubleshoot", "", },
 	{ "-set_cpu_affinity",	"Sets processor affinity to config value",	true,	0,					EASY_DEFAULT,		"Troubleshoot", "", },
 	{ "-nograb",			"Disables mouse grabbing",					true,	0,					EASY_DEFAULT,		"Troubleshoot", "http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-nograb", },
@@ -218,6 +227,7 @@ Flag exe_params[] =
 	{ "-voicer",			"Enable voice recognition",					true,	0,					EASY_DEFAULT,		"Experimental",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-voicer", },
 
 	{ "-fps",				"Show frames per second on HUD",			false,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-fps", },
+	{ "-bmpmanusage",		"Show how many BMPMAN slots are in use",	false,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-bmpmanusage", },
 	{ "-pos",				"Show position of camera",					false,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-pos", },
 	{ "-window",			"Run in window",							true,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-window", },
 	{ "-fullscreen_window",	"Run in fullscreen window",					false,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-fullscreen_window", },
@@ -303,7 +313,6 @@ cmdline_parm spec_static_arg("-spec_static", "Adjusts suns contribution to specu
 cmdline_parm spec_point_arg("-spec_point", "Adjusts laser weapons contribution to specular highlights", AT_FLOAT);
 cmdline_parm spec_tube_arg("-spec_tube", "Adjusts beam weapons contribution to specular highlights", AT_FLOAT);
 cmdline_parm ambient_factor_arg("-ambient_factor", "Adjusts ambient light applied to all parts of a ship", AT_INT);		// Cmdline_ambient_factor
-cmdline_parm missile_lighting_arg("-missile_lighting", NULL, AT_NONE);	// Cmdline_missile_lighting
 cmdline_parm env("-noenv", NULL, AT_NONE);								// Cmdline_env
 cmdline_parm glow_arg("-noglow", NULL, AT_NONE); 						// Cmdline_glow  -- use Bobs glow code
 cmdline_parm nomotiondebris_arg("-nomotiondebris", NULL, AT_NONE);		// Cmdline_nomotiondebris  -- Removes those ugly floating rocks -C
@@ -321,7 +330,6 @@ cmdline_parm fxaa_preset_arg("-fxaa_preset", "FXAA quality (0-9), requires -post
 cmdline_parm fb_explosions_arg("-fb_explosions", NULL, AT_NONE);
 cmdline_parm fb_thrusters_arg("-fb_thrusters", NULL, AT_NONE);
 cmdline_parm flightshaftsoff_arg("-nolightshafts", NULL, AT_NONE);
-cmdline_parm no_batching("-no_batching", NULL, AT_NONE);
 cmdline_parm shadow_quality_arg("-shadow_quality", NULL, AT_INT);
 cmdline_parm enable_shadows_arg("-enable_shadows", NULL, AT_NONE);
 cmdline_parm no_deferred_lighting_arg("-no_deferred", NULL, AT_NONE);	// Cmdline_no_deferred
@@ -332,7 +340,6 @@ float Cmdline_ogl_spec = 80.0f;
 int Cmdline_ambient_factor = 128;
 int Cmdline_env = 1;
 int Cmdline_mipmap = 0;
-int Cmdline_missile_lighting = 0;
 int Cmdline_glow = 1;
 int Cmdline_nomotiondebris = 0;
 int Cmdline_noscalevid = 0;
@@ -349,7 +356,6 @@ int Cmdline_fxaa_preset = 6;
 extern int Fxaa_preset_last_frame;
 bool Cmdline_fb_explosions = 0;
 bool Cmdline_fb_thrusters = false;
-bool Cmdline_no_batching = false;
 extern bool ls_force_off;
 int Cmdline_shadow_quality = 0;
 int Cmdline_no_deferred_lighting = 0;
@@ -393,11 +399,9 @@ int Cmdline_stretch_menu = 0;
 
 // Audio related
 cmdline_parm query_speech_arg("-query_speech", NULL, AT_NONE);	// Cmdline_query_speech
-cmdline_parm snd_preload_arg("-snd_preload", NULL, AT_NONE);		// Cmdline_snd_preload
 cmdline_parm voice_recognition_arg("-voicer", NULL, AT_NONE);	// Cmdline_voice_recognition
 
 int Cmdline_query_speech = 0;
-int Cmdline_snd_preload = 0; // preload game sounds during mission load
 int Cmdline_voice_recognition = 0;
 int Cmdline_no_enhanced_sound = 0;
 
@@ -472,6 +476,7 @@ cmdline_parm dis_weapons("-dis_weapons", NULL, AT_NONE);		// Cmdline_dis_weapons
 cmdline_parm noparseerrors_arg("-noparseerrors", NULL, AT_NONE);	// Cmdline_noparseerrors  -- turns off parsing errors -C
 cmdline_parm extra_warn_arg("-extra_warn", "Enable 'extra' warnings", AT_NONE);	// Cmdline_extra_warn
 cmdline_parm fps_arg("-fps", NULL, AT_NONE);					// Cmdline_show_fps
+cmdline_parm bmpmanusage_arg("-bmpmanusage", NULL, AT_NONE);	// Cmdline_bmpman_usage
 cmdline_parm pos_arg("-pos", NULL, AT_NONE);					// Cmdline_show_pos
 cmdline_parm stats_arg("-stats", NULL, AT_NONE);				// Cmdline_show_stats
 cmdline_parm save_render_targets_arg("-save_render_target", NULL, AT_NONE);	// Cmdline_save_render_targets
@@ -497,11 +502,13 @@ char *Cmdline_start_mission = NULL;
 int Cmdline_old_collision_sys = 0;
 int Cmdline_dis_collisions = 0;
 int Cmdline_dis_weapons = 0;
+bool Cmdline_output_sexp_info = false;
 int Cmdline_noparseerrors = 0;
 #ifdef Allow_NoWarn
 int Cmdline_nowarn = 0; // turn warnings off in FRED
 #endif
 int Cmdline_extra_warn = 0;
+int Cmdline_bmpman_usage = 0;
 int Cmdline_show_pos = 0;
 int Cmdline_show_stats = 0;
 int Cmdline_save_render_targets = 0;
@@ -522,7 +529,7 @@ bool Cmdline_show_video_info = false;
 bool Cmdline_debug_window = false;
 
 // Other
-cmdline_parm get_flags_arg("-get_flags", "Output the launcher flags file", AT_NONE);
+cmdline_parm get_flags_arg("-get_flags", "Output the launcher flags file", AT_STRING);
 cmdline_parm output_sexp_arg("-output_sexps", NULL, AT_NONE); //WMC - outputs all SEXPs to sexps.html
 cmdline_parm output_scripting_arg("-output_scripting", NULL, AT_NONE);	//WMC
 
@@ -535,6 +542,8 @@ cmdline_parm deprecated_tbp_arg("-tbp", "Deprecated", AT_NONE);
 cmdline_parm deprecated_jpgtga_arg("-jpgtga", "Deprecated", AT_NONE);
 cmdline_parm deprecated_htl_arg("-nohtl", "Deprecated", AT_NONE);
 cmdline_parm deprecated_brieflighting_arg("-brief_lighting", "Deprecated", AT_NONE);
+cmdline_parm deprecated_sndpreload_arg("-snd_preload", "Deprecated", AT_NONE);
+cmdline_parm deprecated_missile_lighting_arg("-missile_lighting", "Deprecated", AT_NONE);
 
 int Cmdline_deprecated_spec = 0;
 int Cmdline_deprecated_glow = 0;
@@ -544,6 +553,7 @@ int Cmdline_deprecated_tbp = 0;
 int Cmdline_deprecated_jpgtga = 0;
 int Cmdline_deprecated_nohtl = 0;
 bool Cmdline_deprecated_brief_lighting = 0;
+bool Cmdline_deprecated_missile_lighting = false;
 
 #ifndef NDEBUG
 // NOTE: this assumes that os_init() has already been called but isn't a fatal error if it hasn't
@@ -608,6 +618,11 @@ void cmdline_debug_print_cmdline()
 	if(Cmdline_deprecated_brief_lighting == 1)
 	{
 		mprintf(("Deprecated flag '-brief_lighting' found. Please remove from your cmdline.\n"));
+	}
+
+	if (Cmdline_deprecated_missile_lighting) 
+	{
+		mprintf(("Deprecated flag '-missile_lighting' found. Please remove from your cmdline.\n"));
 	}
 }
 #endif
@@ -1143,6 +1158,9 @@ char *cmdline_parm::str()
 
 	return args;
 }
+bool cmdline_parm::has_param() {
+	return args != nullptr;
+}
 
 #ifdef SCP_UNIX
 // Return a vector with all filesystem names of "parent/dir" relative to parent.
@@ -1241,6 +1259,248 @@ static void handle_unix_modlist(char **modlist, size_t *len)
 
 // external entry point into this modules
 
+static json_t* json_get_v1() {
+	auto root = json_object();
+
+	{
+		auto version_obj = json_object();
+
+		json_object_set_new(version_obj, "full", json_string(FS_VERSION_FULL));
+		json_object_set_new(version_obj, "major", json_integer(FS_VERSION_MAJOR));
+		json_object_set_new(version_obj, "minor", json_integer(FS_VERSION_MINOR));
+		json_object_set_new(version_obj, "build", json_integer(FS_VERSION_BUILD));
+
+		json_object_set_new(version_obj, "has_revision", json_boolean(FS_VERSION_HAS_REVIS));
+		json_object_set_new(version_obj, "revision", json_integer(FS_VERSION_REVIS));
+		json_object_set_new(version_obj, "revision_str", json_string(FS_VERSION_REVIS_STR));
+
+		json_object_set_new(root, "version", version_obj);
+	}
+	{
+		auto easy_array = json_array();
+
+		for (auto& easy_flag : easy_flags) {
+			json_array_append_new(easy_array, json_string(easy_flag.name));
+		}
+
+		json_object_set_new(root, "easy_flags", easy_array);
+	}
+	{
+		auto flags_array = json_array();
+
+		for (auto& flag : exe_params) {
+			auto flag_obj = json_object();
+
+			json_object_set_new(flag_obj, "name", json_string(flag.name));
+			json_object_set_new(flag_obj, "description", json_string(flag.desc));
+			json_object_set_new(flag_obj, "fso_only", json_boolean(flag.fso_only));
+			json_object_set_new(flag_obj, "on_flags", json_integer(flag.on_flags));
+			json_object_set_new(flag_obj, "off_flags", json_integer(flag.off_flags));
+			json_object_set_new(flag_obj, "type", json_string(flag.type));
+			json_object_set_new(flag_obj, "web_url", json_string(flag.web_url));
+
+			json_array_append_new(flags_array, flag_obj);
+		}
+
+		json_object_set_new(root, "flags", flags_array);
+	}
+	{
+		auto caps_array = json_array();
+
+		json_array_append_new(caps_array, json_string("OpenAL"));
+		json_array_append_new(caps_array, json_string("No D3D"));
+		json_array_append_new(caps_array, json_string("New Sound"));
+		json_array_append_new(caps_array, json_string("SDL"));
+
+		json_object_set_new(root, "caps", caps_array);
+	}
+	{
+		auto voices_array = json_array();
+
+		auto voices = speech_enumerate_voices();
+
+		for (auto& voice : voices) {
+			json_array_append_new(voices_array, json_string(voice.c_str()));
+		}
+
+		json_object_set_new(root, "voices", voices_array);
+	}
+	{
+		auto resolution_array = json_array();
+
+		auto displays = gr_enumerate_displays();
+
+		for (auto& display : displays) {
+			auto display_obj = json_object();
+
+			json_object_set_new(display_obj, "index", json_integer(display.index));
+			json_object_set_new(display_obj, "name", json_string(display.name.c_str()));
+
+			json_object_set_new(display_obj, "x", json_integer(display.x));
+			json_object_set_new(display_obj, "y", json_integer(display.y));
+			json_object_set_new(display_obj, "width", json_integer(display.width));
+			json_object_set_new(display_obj, "height", json_integer(display.height));
+
+			auto modes_array = json_array();
+
+			for (auto& mode : display.video_modes) {
+				auto mode_obj = json_object();
+
+				json_object_set_new(mode_obj, "x", json_integer(mode.width));
+				json_object_set_new(mode_obj, "y", json_integer(mode.height));
+				json_object_set_new(mode_obj, "bits", json_integer(mode.bit_depth));
+
+				json_array_append_new(modes_array, mode_obj);
+			}
+
+			json_object_set_new(display_obj, "modes", modes_array);
+
+			json_array_append_new(resolution_array, display_obj);
+		}
+
+		json_object_set_new(root, "displays", resolution_array);
+	}
+	{
+		auto openal_obj = json_object();
+
+		auto openal_info = openal_get_platform_information();
+
+		json_object_set_new(openal_obj, "version_major", json_integer(openal_info.version_major));
+		json_object_set_new(openal_obj, "version_minor", json_integer(openal_info.version_minor));
+
+		json_object_set(openal_obj, "default_playback", json_string(openal_info.default_playback_device.c_str()));
+		json_object_set(openal_obj, "default_capture", json_string(openal_info.default_capture_device.c_str()));
+
+		{
+			auto playback_array = json_array();
+
+			for (auto& device : openal_info.playback_devices) {
+				json_array_append_new(playback_array, json_string(device.c_str()));
+			}
+
+			json_object_set_new(openal_obj, "playback_devices", playback_array);
+		}
+		{
+			auto capture_array = json_array();
+
+			for (auto& device : openal_info.capture_devices) {
+				json_array_append_new(capture_array, json_string(device.c_str()));
+			}
+
+			json_object_set_new(openal_obj, "capture_devices", capture_array);
+		}
+
+		json_object_set_new(root, "openal", openal_obj);
+	}
+	{
+		auto joystick_array = json_array();
+
+		auto joysticks = io::joystick::getJoystickInformations();
+		for (auto& info : joysticks) {
+			auto joystick_obj = json_object();
+
+			json_object_set_new(joystick_obj, "name", json_string(info.name.c_str()));
+			json_object_set_new(joystick_obj, "guid", json_string(info.guid.c_str()));
+
+			json_object_set_new(joystick_obj, "num_axes", json_integer(info.num_axes));
+			json_object_set_new(joystick_obj, "num_balls", json_integer(info.num_balls));
+			json_object_set_new(joystick_obj, "num_buttons", json_integer(info.num_buttons));
+			json_object_set_new(joystick_obj, "num_hats", json_integer(info.num_hats));
+
+			json_object_set_new(joystick_obj, "is_haptic", json_boolean(info.is_haptic));
+
+			json_array_append_new(joystick_array, joystick_obj);
+		}
+
+		json_object_set_new(root, "joysticks", joystick_array);
+	}
+	{
+		json_object_set_new(root, "pref_path", json_string(os_get_config_path().c_str()));
+	}
+
+	return root;
+}
+
+static void write_flags_file() {
+	FILE *fp = fopen("flags.lch","w");
+
+	if (fp == NULL) {
+		os::dialogs::Message(os::dialogs::MESSAGEBOX_ERROR, "Error creating flag list for launcher");
+		return;
+	}
+
+	int easy_flag_size	= sizeof(EasyFlag);
+	int flag_size		= sizeof(Flag);
+
+	int num_easy_flags	= sizeof(easy_flags) / easy_flag_size;
+	int num_flags		= sizeof(exe_params) / flag_size;
+
+	// Launcher will check its using structures of the same size
+	fwrite(&easy_flag_size, sizeof(int), 1, fp);
+	fwrite(&flag_size, sizeof(int), 1, fp);
+
+	fwrite(&num_easy_flags, sizeof(int), 1, fp);
+	fwrite(&easy_flags, sizeof(easy_flags), 1, fp);
+
+	fwrite(&num_flags, sizeof(int), 1, fp);
+	fwrite(&exe_params, sizeof(exe_params), 1, fp);
+
+	{
+		// cheap and bastardly cap check for builds
+		// (needs to be compatible with older Launchers, which means having
+		//  this implies an OpenAL build for old Launchers)
+		ubyte build_caps = 0;
+
+		/* portej05 defined this always */
+		build_caps |= BUILD_CAPS_OPENAL;
+		build_caps |= BUILD_CAPS_NO_D3D;
+		build_caps |= BUILD_CAPS_NEW_SND;
+		build_caps |= BUILD_CAPS_SDL;
+
+		fwrite(&build_caps, 1, 1, fp);
+	}
+
+	fflush(fp);
+	fclose(fp);
+}
+
+static flag_output_type get_flags_output_type() {
+	Assertion(get_flags_arg.found(), "This function is only valid if -get_flags is present!");
+
+	if (!get_flags_arg.has_param()) {
+		// Default to binary mode
+		return flag_output_type::Binary;
+	}
+
+	SCP_string type(get_flags_arg.str());
+
+	if (type == "binary") {
+		return flag_output_type::Binary;
+	} else if (type == "json_v1") {
+		return flag_output_type::Json_V1;
+	} else {
+		// This is supposed to make it easy for the launcher to recognize an unsupported type
+		printf("OUTPUT TYPE NOT SUPPORTED!\n");
+		// Default to json in this case so that no flags.lch file is created
+		return flag_output_type::Json_V1;
+	}
+}
+
+static void write_flags() {
+	auto type = get_flags_output_type();
+	switch(type) {
+	case flag_output_type::Binary:
+		write_flags_file();
+		break;
+	case flag_output_type::Json_V1:
+		json_t* root = json_get_v1();
+
+		json_dumpf(root, stdout, JSON_INDENT(4));
+		json_decref(root);
+		break;
+	}
+}
+
 bool SetCmdlineParams()
 // Sets externed variables used for communication cmdline information
 {
@@ -1248,47 +1508,7 @@ bool SetCmdlineParams()
 
 	// DO THIS FIRST to avoid unrecognized flag warnings when just getting flag file
 	if ( get_flags_arg.found() ) {
-		FILE *fp = fopen("flags.lch","w");
-		
-		if (fp == NULL) {
-			os::dialogs::Message(os::dialogs::MESSAGEBOX_ERROR, "Error creating flag list for launcher");
-			return false; 
-		}
-		
-		int easy_flag_size	= sizeof(EasyFlag);
-		int flag_size		= sizeof(Flag);
-		
-		int num_easy_flags	= sizeof(easy_flags) / easy_flag_size;
-		int num_flags		= sizeof(exe_params) / flag_size;
-		
-		// Launcher will check its using structures of the same size
-		fwrite(&easy_flag_size, sizeof(int), 1, fp);
-		fwrite(&flag_size, sizeof(int), 1, fp);
-		
-		fwrite(&num_easy_flags, sizeof(int), 1, fp);
-		fwrite(&easy_flags, sizeof(easy_flags), 1, fp);
-		
-		fwrite(&num_flags, sizeof(int), 1, fp);
-		fwrite(&exe_params, sizeof(exe_params), 1, fp);
-		
-		{
-			// cheap and bastardly cap check for builds
-			// (needs to be compatible with older Launchers, which means having
-			//  this implies an OpenAL build for old Launchers)
-			ubyte build_caps = 0;
-			
-			/* portej05 defined this always */
-			build_caps |= BUILD_CAPS_OPENAL;
-			build_caps |= BUILD_CAPS_NO_D3D;
-			build_caps |= BUILD_CAPS_NEW_SND;
-			build_caps |= BUILD_CAPS_SDL;
-			
-			
-			fwrite(&build_caps, 1, 1, fp);
-		}
-		
-		fflush(fp);
-		fclose(fp);
+		write_flags();
 		
 		return false; 
 	}
@@ -1541,6 +1761,11 @@ bool SetCmdlineParams()
 		Show_framerate = 1;
 	}
 
+	if (bmpmanusage_arg.found())
+	{
+		Cmdline_bmpman_usage = 1;
+	}
+
 	if(pos_arg.found())
 	{
 		Cmdline_show_pos = 1;
@@ -1667,7 +1892,7 @@ bool SetCmdlineParams()
 		Output_scripting_meta = true;
 
 	if (output_sexp_arg.found() ) {
-		output_sexps("sexps.html");
+		Cmdline_output_sexp_info = true;
 	}
 
 	if ( no_pbo_arg.found() )
@@ -1721,11 +1946,6 @@ bool SetCmdlineParams()
 	}
 #endif
 
-	if ( snd_preload_arg.found() )
-	{
-		Cmdline_snd_preload = 1;
-	}
-
 	if ( env.found() ) {
 		Cmdline_env = 0;
 	}
@@ -1764,9 +1984,6 @@ bool SetCmdlineParams()
 	if ( rearm_timer_arg.found() )
 		Cmdline_rearm_timer = 1;
 
-	if ( missile_lighting_arg.found() )
-		Cmdline_missile_lighting = 1;
-
 	if ( save_render_targets_arg.found() )
 		Cmdline_save_render_targets = 1;
 	
@@ -1800,11 +2017,6 @@ bool SetCmdlineParams()
     {
         Cmdline_fb_thrusters = true;
     }
-
-	if ( no_batching.found() ) 
-	{
-		Cmdline_no_batching = true;
-	}
 
 	if ( postprocess_arg.found() )
 	{
@@ -1924,6 +2136,11 @@ bool SetCmdlineParams()
 	if ( deprecated_brieflighting_arg.found() )
 	{
 		Cmdline_deprecated_brief_lighting = 1;
+	}
+
+	if (deprecated_missile_lighting_arg.found())
+	{
+		Cmdline_deprecated_missile_lighting = true;
 	}
 
 	return true; 

@@ -75,10 +75,21 @@ typedef struct vec4 {
 	};
 } vec4;
 
+struct bvec4 {
+	bool x;
+	bool y;
+	bool z;
+	bool w;
+};
+
 // sometimes, you just need some integers
 typedef struct ivec3 {
 	int x, y, z;
 } ivec3;
+
+struct ivec2 {
+	int x, y;
+};
 
 /** Represents a point in 3d space.
 
@@ -357,15 +368,6 @@ typedef struct lod_checker {
 } lod_checker;
 
 
-// check to see that a passed sting is valid, ie:
-//  - has >0 length
-//  - is not "none"
-//  - is not "<none>"
-inline bool VALID_FNAME(const char* x) {
-	return strlen((x)) && stricmp((x), "none") && stricmp((x), "<none>");
-}
-
-
 // Callback Loading function.
 // If you pass a function to this, that function will get called
 // around 10x per second, so you can update the screen.
@@ -427,6 +429,35 @@ public:
 #include "globalincs/vmallocator.h"
 #include "globalincs/safe_strings.h"
 
+// check to see that a passed sting is valid, ie:
+//  - has >0 length
+//  - is not "none"
+//  - is not "<none>"
+inline bool VALID_FNAME(const char* x) {
+	return strlen((x)) && stricmp((x), "none") && stricmp((x), "<none>");
+}
+/**
+ * @brief Checks if the specified string may be a valid file name
+ *
+ * @warning This only does a quick check against an empty string and a few known invalid names. It does not check if the
+ * file actually exists.
+ *
+ * @param x The file name to check
+ * @return @c true if the name is valid, @c false otherwise
+ */
+inline bool VALID_FNAME(const SCP_string& x) {
+	if (x.empty()) {
+		return false;
+	}
+	if (!stricmp(x.c_str(), "none")) {
+		return false;
+	}
+	if (!stricmp(x.c_str(), "<none>")) {
+		return false;
+	}
+	return true;
+}
+
 // Function to generate a stacktrace
 SCP_string dump_stacktrace();
 
@@ -434,7 +465,7 @@ SCP_string dump_stacktrace();
 // would prefer std::is_trivially_copyable but it's not supported by gcc yet
 // ref: http://gcc.gnu.org/onlinedocs/libstdc++/manual/status.html
 #if !defined(NDEBUG) && !defined(USING_THIRD_PARTY_LIBS)
-	#if SCP_COMPILER_CXX_STATIC_ASSERT && SCP_COMPILER_CXX_AUTO_TYPE
+	#if SCP_COMPILER_CXX_AUTO_TYPE && SCP_COMPILER_CXX_STATIC_ASSERT && defined(HAVE_STD_IS_TRIVIALLY_COPYABLE)
 	// feature support seems to be: gcc   clang   msvc
 	// auto                         4.4   2.9     2010
 	// std::is_trivial              4.5   ?       2012 (2010 only duplicates std::is_pod)
@@ -449,10 +480,20 @@ SCP_string dump_stacktrace();
 // Put into std to be compatible with code that uses std::mem*
 namespace std
 {
+
+// This is a separate check which also checks if arrays are trivially copyable since Visual Studio 2013 thinks they are not
+#if SCP_COMPILER_IS_MSVC && _MSC_VER <= 1800
+template<typename T>
+using trivial_check = std::is_trivial<T>;
+#else
+template<typename T>
+using trivial_check = std::is_trivially_copyable<T>;
+#endif
+
 	template<typename T>
 	void *memset_if_trivial_else_error(T *memset_data, int ch, size_t count)
 	{
-		static_assert(std::is_trivial<T>::value, "memset on non-trivial object");
+		static_assert(trivial_check<T>::value, "memset on non-trivial object");
 		return ptr_memset(memset_data, ch, count);
 	}
 
@@ -470,8 +511,8 @@ namespace std
 	template<typename T, typename U>
 	void *memcpy_if_trivial_else_error(T *memcpy_dest, U *src, size_t count)
 	{
-		static_assert(std::is_trivial<T>::value, "memcpy on non-trivial object T");
-		static_assert(std::is_trivial<U>::value, "memcpy on non-trivial object U");
+		static_assert(trivial_check<T>::value, "memcpy on non-trivial object T");
+		static_assert(trivial_check<U>::value, "memcpy on non-trivial object U");
 		return ptr_memcpy(memcpy_dest, src, count);
 	}
 
@@ -486,20 +527,20 @@ namespace std
 	template<typename U>
 	void *memcpy_if_trivial_else_error(void *memcpy_dest, U *memcpy_src, size_t count)
 	{
-		static_assert(std::is_trivial<U>::value, "memcpy on non-trivial object U");
+		static_assert(trivial_check<U>::value, "memcpy on non-trivial object U");
 		return ptr_memcpy(memcpy_dest, memcpy_src, count);
 	}
 
 	template<typename T>
 	void *memcpy_if_trivial_else_error(T *memcpy_dest, void *memcpy_src, size_t count)
 	{
-		static_assert(std::is_trivial<T>::value, "memcpy on non-trivial object T");
+		static_assert(trivial_check<T>::value, "memcpy on non-trivial object T");
 		return ptr_memcpy(memcpy_dest, memcpy_src, count);
 	}
 	template<typename T>
 	void *memcpy_if_trivial_else_error(T *memcpy_dest, const void *memcpy_src, size_t count)
 	{
-		static_assert(std::is_trivial<T>::value, "memcpy on non-trivial object T");
+		static_assert(trivial_check<T>::value, "memcpy on non-trivial object T");
 		return ptr_memcpy(memcpy_dest, memcpy_src, count);
 	}
 
@@ -515,8 +556,8 @@ namespace std
 	template<typename T, typename U>
 	void *memmove_if_trivial_else_error(T *memmove_dest, U *memmove_src, size_t count)
 	{
-		static_assert(std::is_trivial<T>::value, "memmove on non-trivial object T");
-		static_assert(std::is_trivial<U>::value, "memmove on non-trivial object U");
+		static_assert(trivial_check<T>::value, "memmove on non-trivial object T");
+		static_assert(trivial_check<U>::value, "memmove on non-trivial object U");
 		return ptr_memmove(memmove_dest, memmove_src, count);
 	}
 }

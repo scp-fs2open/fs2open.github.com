@@ -4,6 +4,7 @@
 #include <graphics/2d.h>
 #include <camera/camera.h>
 #include <graphics/opengl/gropenglpostprocessing.h>
+#include <graphics/matrix.h>
 #include <globalincs/systemvars.h>
 #include <freespace.h>
 #include <render/3d.h>
@@ -164,18 +165,23 @@ ADE_FUNC(__len, l_Graphics_Posteffects, NULL, "Gets the number or available post
 	return ade_set_args(L, "i", ((int) names.size()) + 1);
 }
 
-ADE_FUNC(setPostEffect, l_Graphics, "string name, [number value=0]", "Sets the intensity of the specified post processing effect", "boolean", "true when successful, false otherwise")
+ADE_FUNC(setPostEffect, l_Graphics, "string name, [number value=0, number red=0.0, number green=0.0, number blue=0.0]", "Sets the intensity of the specified post processing effect. Optionally sets RGB values for post effects that use them (valid values are 0.0 to 1.0)", "boolean", "true when successful, false otherwise")
 {
 	char* name = NULL;
 	int intensity = 0;
+	vec3d rgb; rgb.xyz.x = 0.0f; rgb.xyz.y = 0.0f; rgb.xyz.z = 0.0f; // clang you are a PITA
 
-	if (!ade_get_args(L, "s|i", &name, &intensity))
+	if (!ade_get_args(L, "s|ifff", &name, &intensity, &rgb.xyz.x, &rgb.xyz.y, &rgb.xyz.z))
 		return ADE_RETURN_FALSE;
 
 	if (name == NULL || intensity < 0)
 		return ADE_RETURN_FALSE;
 
-	gr_post_process_set_effect(name, intensity);
+	CAP(rgb.xyz.x, 0.0f, 1.0f);
+	CAP(rgb.xyz.y, 0.0f, 1.0f);
+	CAP(rgb.xyz.z, 0.0f, 1.0f);
+
+	gr_post_process_set_effect(name, intensity, &rgb);
 
 	return ADE_RETURN_TRUE;
 }
@@ -890,7 +896,9 @@ ADE_FUNC(drawTargetingBrackets, l_Graphics, "object Object, [boolean draw=true, 
 	y1 -= padding;
 	y2 += padding;
 	if ( draw_box ) {
-		draw_brackets_square(x1, y1, x2, y2, GR_RESIZE_NONE);
+		graphics::line_draw_list line_draw_list;
+		draw_brackets_square(&line_draw_list, x1, y1, x2, y2, GR_RESIZE_NONE);
+		line_draw_list.flush();
 	}
 
 	if ( entered_frame )
@@ -931,7 +939,9 @@ ADE_FUNC(drawSubsystemTargetingBrackets, l_Graphics, "subsystem subsys, [boolean
 
 	int coords[4];
 
-	int in_sight = draw_subsys_brackets(sshp->ss, 24, 24, draw, set_color, coords);
+	graphics::line_draw_list line_draw_list;
+	int in_sight = draw_subsys_brackets(&line_draw_list, sshp->ss, 24, 24, draw, set_color, coords);
+	line_draw_list.flush();
 
 	if ( entered_frame )
 		g3_end_frame( );
@@ -992,7 +1002,7 @@ ADE_FUNC(drawOffscreenIndicator, l_Graphics, "object Object, [boolean draw=true,
 
 	for(j = 0; j < num_gauges; j++) {
 		if (default_hud_gauges[j]->getObjectType() == HUD_OBJECT_OFFSCREEN) {
-			HudGaugeOffscreen *offscreengauge = static_cast<HudGaugeOffscreen*>(default_hud_gauges[j]);
+			HudGaugeOffscreen *offscreengauge = static_cast<HudGaugeOffscreen*>(default_hud_gauges[j].get());
 
 			offscreengauge->preprocess();
 			offscreengauge->onFrame(flFrametime);
@@ -1097,7 +1107,7 @@ ADE_FUNC(drawString, l_Graphics, "string Message, [number X1, number Y1, number 
 			y2 = temp;
 		}
 
-		num_lines = split_str(s, x2-x, linelengths, linestarts, -1, false);
+		num_lines = split_str(s, x2-x, linelengths, linestarts, (unicode::codepoint_t)-1, false);
 
 		//Make sure we don't go over size
 		int line_ht = gr_get_font_height();

@@ -142,12 +142,12 @@ class LuaValue {
 	Type getValue() const {
 		_reference->pushValue();
 
-		try {
-			return convert::popValue<Type>(_luaState);
-		}
-		catch (...) {
+		Type target;
+		if (!convert::popValue(_luaState, target)) {
 			lua_pop(_luaState, 1);
-			throw;
+			throw LuaException("Failed to pop value");
+		} else {
+			return target;
 		}
 	}
 
@@ -231,30 +231,9 @@ bool operator>=(const LuaValue& lhs, const Type& rhs) {
 
 namespace convert {
 
-template<>
-inline void pushValue<LuaValue>(lua_State* luaState, const LuaValue& value) {
-	if (luaState != value.getLuaState()) {
-		throw LuaException("Lua state mismatch!");
-	}
+void pushValue(lua_State* luaState, const LuaValue& value);
 
-	value.pushValue();
-}
-
-template<>
-inline LuaValue popValue<LuaValue>(lua_State* luaState, int stackposition, bool remove) {
-	if (!isValidIndex(luaState, stackposition)) {
-		throw LuaException("Specified stack position is not valid!");
-	}
-
-	LuaValue target;
-	target.setReference(UniqueLuaReference::create(luaState, stackposition));
-
-	if (remove) {
-		lua_remove(luaState, stackposition);
-	}
-
-	return target;
-}
+bool popValue(lua_State* luaState, LuaValue& target, int stackposition = -1, bool remove = true);
 
 }
 }

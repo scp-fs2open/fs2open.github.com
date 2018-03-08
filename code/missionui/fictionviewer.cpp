@@ -20,7 +20,7 @@
 #include "mod_table/mod_table.h"
 #include "parse/parselo.h"
 #include "sound/audiostr.h"
-
+#include "utils/encoding.h"
 
 
 // ---------------------------------------------------------------------------------------------------------------------------------------
@@ -566,7 +566,8 @@ void fiction_viewer_load(int stage)
 	else
 	{
 		// allocate space for raw text
-		int file_length = cfilelength(fp);
+		int file_length = util::check_encoding_and_skip_bom(fp, stagep->story_filename);
+
 		char *Fiction_viewer_text_raw = (char *) vm_malloc(file_length + 1);
 		Fiction_viewer_text_raw[file_length] = '\0';
 
@@ -576,12 +577,19 @@ void fiction_viewer_load(int stage)
 		// we're done with the file, close it out
 		cfclose(fp);
 
-		// allocate space for converted text, then perform the character conversion
-		auto length = get_converted_string_length(Fiction_viewer_text_raw) + 1;
-		Fiction_viewer_text = (char *) vm_malloc(length);
-		maybe_convert_foreign_characters(Fiction_viewer_text_raw, Fiction_viewer_text);
+		if (Unicode_text_mode) {
+			// Copy the pointer since we assume that we don't need to adjust the text anymore
+			Fiction_viewer_text = Fiction_viewer_text_raw;
+			Fiction_viewer_text_raw = nullptr; // Zero out the pointer so there are no accidental accesses anymore
+		} else {
+			// allocate space for converted text, then perform the character conversion
+			auto length = get_converted_string_length(Fiction_viewer_text_raw) + 1;
+			Fiction_viewer_text = (char *) vm_malloc(length);
 
-		// deallocate space for raw text
-		vm_free(Fiction_viewer_text_raw);
+			maybe_convert_foreign_characters(Fiction_viewer_text_raw, Fiction_viewer_text);
+
+			// deallocate space for raw text
+			vm_free(Fiction_viewer_text_raw);
+		}
 	}
 }

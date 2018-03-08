@@ -49,6 +49,8 @@ Category CollisionDetection("Collision Detection", false);
 Category RenderBuffer("Render Buffer", true);
 
 Category QueueRender("Queue Render", false);
+Category BuildModelUniforms("Build Model Uniforms", false);
+Category UploadModelUniforms("Upload Model Uniforms", true);
 Category SubmitDraws("Submit Draws", true);
 Category ApplyLights("Apply Lights", true);
 Category DrawEffects("Draw Effects", true);
@@ -61,6 +63,7 @@ Category DrawMotionDebris("Draw Motion debris", true);
 Category DrawBackground("Draw Background", true);
 Category DrawSuns("Draw Suns", true);
 Category DrawBitmaps("Draw Bitmaps", true);
+Category SunspotProcess("Process Sunspots", true);
 
 Category RepeatingEvents("Repeating events", false);
 Category NonrepeatingEvents("Nonrepeating events", false);
@@ -79,8 +82,21 @@ Category ProcessParticleEffects("Process particle effects", false);
 Category TrailsMoveAll("Trails move all", false);
 Category Simulation("Simulation", false);
 Category RenderMainFrame("Render frame", true);
+Category RenderHUD("Render HUD", true);
+Category RenderHUDHook("Render HUD Scripting Hook", true);
+Category RenderHUDGauge("Render HUD Gauge", true);
+Category RenderTargettingBracket("Render Target bracket", true);
+Category RenderNavBracket("Render Nav bracket", true);
 Category MainFrame("Main Frame", true);
 Category PageFlip("Page flip", true);
+
+Category NanoVGFlushFrame("NanoVG flush frame", true);
+Category NanoVGDrawFill("NanoVG Draw fill", true);
+Category NanoVGDrawConvexFill("NanoVG Draw convex fill", true);
+Category NanoVGDrawStroke("NanoVG Draw stroke", true);
+Category NanoVGDrawTriangles("NanoVG Draw Triangles", true);
+
+Category LineDrawListFlush("Line draw list flush", true);
 
 Category CutsceneStep("Cutscene step", true);
 Category CutsceneDrawVideoFrame("Draw cutscene frame", true);
@@ -111,4 +127,9 @@ Category PageInStop("Finish page in", false);
 Category PageInSingleBitmap("Page in single bitmap", false);
 Category ShipPageIn("Ship page in", false);
 Category WeaponPageIn("Weapon page in", false);
+
+Category RenderDecals("Render all decals", true);
+Category RenderSingleDecal("Render single decal", true);
+Category GpuHeapAllocate("GPU heap allocate", false);
+Category GpuHeapDeallocate("GPU heap deallocate", false);
 }

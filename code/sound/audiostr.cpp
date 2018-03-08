@@ -927,7 +927,7 @@ int audiostream_open( const char *filename, int type )
 	}
 }
 
-void audiostream_close_file(int i, int fade)
+void audiostream_close_file(int i, bool fade)
 {
 	if (!Audiostream_inited)
 		return;
@@ -946,7 +946,7 @@ void audiostream_close_file(int i, int fade)
 
 }
 
-void audiostream_close_all(int fade)
+void audiostream_close_all(bool fade)
 {
 	int i;
 

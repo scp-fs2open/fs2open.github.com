@@ -193,7 +193,7 @@ void opengl::ShaderProgram::linkProgram() {
 	freeCompiledShaders();
 }
 
-void opengl::ShaderProgram::initAttribute(const SCP_string& name, const vec4& default_value)
+void opengl::ShaderProgram::initAttribute(const SCP_string& name, opengl_vert_attrib::attrib_id attr_id, const vec4& default_value)
 {
 	auto attrib_loc = glGetAttribLocation(_program_id, name.c_str());
 
@@ -203,7 +203,7 @@ void opengl::ShaderProgram::initAttribute(const SCP_string& name, const vec4& de
 		return;
 	}
 
-	_attribute_locations.insert(std::make_pair(name, attrib_loc));
+	_attribute_locations.insert(std::make_pair(attr_id, attrib_loc));
 
 	// The shader needs to be in use before glVertexAttrib can be used
 	use();
@@ -215,8 +215,8 @@ void opengl::ShaderProgram::initAttribute(const SCP_string& name, const vec4& de
 		default_value.xyzw.w
 	);
 }
-GLint opengl::ShaderProgram::getAttributeLocation(const SCP_string& name) {
-	auto iter = _attribute_locations.find(name);
+GLint opengl::ShaderProgram::getAttributeLocation(opengl_vert_attrib::attrib_id attribute) {
+	auto iter = _attribute_locations.find(attribute);
 	if (iter == _attribute_locations.end()) {
 		return -1;
 	} else {
@@ -226,20 +226,6 @@ GLint opengl::ShaderProgram::getAttributeLocation(const SCP_string& name) {
 
 opengl::ShaderUniforms::ShaderUniforms(ShaderProgram* shaderProgram) : _program(shaderProgram) {
 	Assertion(shaderProgram != nullptr, "Shader program may not be null!");
-}
-
-void opengl::ShaderUniforms::initUniform(const SCP_string& name)
-{
-	auto location = glGetUniformLocation(_program->getShaderHandle(), name.c_str());
-
-	if (location == -1)
-	{
-		// This can happen if the uniform has been optimized out by the driver
-		mprintf(("WARNING: Failed to find uniform '%s'.\n", name.c_str()));
-		return;
-	}
-
-	_uniform_locations.insert(std::make_pair(name, location));
 }
 
 size_t opengl::ShaderUniforms::findUniform(const SCP_string& name)
@@ -814,7 +800,17 @@ GLint opengl::ShaderUniforms::findUniformLocation(const SCP_string& name) {
 	auto iter = _uniform_locations.find(name);
 
 	if (iter == _uniform_locations.end()) {
-		return -1;
+		// Lazily initialize the uniform locations when required. This avoids keeping a list of all uniforms in the code
+		auto location = glGetUniformLocation(_program->getShaderHandle(), name.c_str());
+
+		if (location == -1)
+		{
+			// This can happen if the uniform has been optimized out by the driver
+			mprintf(("WARNING: Failed to find uniform '%s'.\n", name.c_str()));
+		}
+
+		_uniform_locations.insert(std::make_pair(name, location));
+		return location;
 	}
 	else {
 		return iter->second;

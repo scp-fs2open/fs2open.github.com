@@ -14,7 +14,7 @@
 #include "debris/debris.h"
 #include "freespace.h"
 #include "gamesnd/gamesnd.h"
-#include "graphics/opengl/gropenglshader.h"
+#include "graphics/matrix.h"
 #include "hud/hudbrackets.h"
 #include "hud/hudtargetbox.h"
 #include "iff_defs/iff_defs.h"
@@ -663,11 +663,13 @@ void HudGaugeTargetBox::renderTargetShip(object *target_objp)
 					hud_set_iff_color( target_objp, 1 );
 				}
 
+				graphics::line_draw_list line_draw_list;
 				if ( subsys_in_view ) {
-					draw_brackets_square_quick(sx - 10, sy - 10, sx + 10, sy + 10);
+					draw_brackets_square_quick(&line_draw_list, sx - 10, sy - 10, sx + 10, sy + 10);
 				} else {
-					draw_brackets_diamond_quick(sx - 10, sy - 10, sx + 10, sy + 10);
+					draw_brackets_diamond_quick(&line_draw_list, sx - 10, sy - 10, sx + 10, sy + 10);
 				}
+				line_draw_list.flush();
 			}
 		}
 		renderTargetClose();
@@ -2221,7 +2223,7 @@ void hud_update_target_static()
 
 	if ( Target_static_playing ) {
 		if ( Target_static_looping == -1 ) {
-			Target_static_looping = snd_play_looping(&Snds[SND_STATIC]);
+			Target_static_looping = snd_play_looping(gamesnd_get_game_sound(SND_STATIC));
 		}
 	} else {
 		if ( Target_static_looping != -1 ) {

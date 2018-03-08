@@ -13,7 +13,7 @@ ParticleEmitterEffect::ParticleEmitterEffect() : ParticleEffect("") {
 bool ParticleEmitterEffect::processSource(const ParticleSource* source) {
 	particle_emitter emitter = m_emitter;
 	source->getOrigin()->getGlobalPosition(&emitter.pos);
-	emitter.normal = source->getOrientation()->getDirectionVector();
+	emitter.normal = source->getOrientation()->getDirectionVector(source->getOrigin());
 
 	emit(&emitter, PARTICLE_BITMAP, m_particleBitmap, m_range);
 

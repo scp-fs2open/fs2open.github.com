@@ -226,7 +226,11 @@ namespace font
 				for (x1 = 0; x1<fnt->char_data[i].byte_width; x1++)	{
 					uint c = *ubp++;
 					if (c > 14) c = 14;
-					fnt->bm_data[(x + x1) + (y + y1)*fnt->bm_w] = (unsigned char)(c);
+					// The font pixels only have ~4 bits of information in them (since the value is at maximum 14) but
+					// the bmpman code expects 8 bits of pixel information. To fix that we simply rescale this value to
+					// fit into the [0, 255] range (15 * 17 is 255). This was adapted from the previous version where
+					// the graphics code used an internal array for converting these values
+					fnt->bm_data[(x + x1) + (y + y1)*fnt->bm_w] = (unsigned char)(c * 17);
 				}
 			}
 			x += fnt->char_data[i].byte_width + 2;

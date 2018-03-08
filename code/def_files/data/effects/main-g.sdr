@@ -1,0 +1,201 @@
+#extension GL_ARB_gpu_shader5: enable
+
+layout (triangles) in;
+layout (triangle_strip, max_vertices = 3) out;
+#ifdef GL_ARB_gpu_shader5
+layout(invocations = 4) in;
+#endif
+
+#define MAX_LIGHTS 8
+struct model_light {
+	vec4 position;
+
+	vec3 diffuse_color;
+	int light_type;
+
+	vec3 spec_color;
+	float attenuation;
+
+	vec3 direction;
+};
+
+layout (std140) uniform modelData {
+	mat4 modelViewMatrix;
+	mat4 modelMatrix;
+	mat4 viewMatrix;
+	mat4 projMatrix;
+	mat4 textureMatrix;
+	mat4 shadow_mv_matrix;
+	mat4 shadow_proj_matrix[4];
+	mat4 envMatrix;
+
+	vec4 color;
+
+	model_light lights[MAX_LIGHTS];
+
+	float extrudeWidth;
+	float fogStart;
+	float fogScale;
+	int buffer_matrix_offset;
+
+	vec4 clip_equation;
+
+	float thruster_scale;
+	bool use_clip_plane;
+	int n_lights;
+	float defaultGloss;
+
+	vec3 ambientFactor;
+	int desaturate;
+
+	vec3 diffuseFactor;
+	int blend_alpha;
+
+	vec3 emissionFactor;
+	bool overrideDiffuse;
+
+	vec3 diffuseClr;
+	bool overrideGlow;
+
+	vec3 glowClr;
+	bool overrideSpec;
+
+	vec3 specClr;
+	bool alphaGloss;
+
+	bool gammaSpec;
+	bool envGloss;
+	bool alpha_spec;
+	int effect_num;
+
+	vec4 fogColor;
+
+	vec3 base_color;
+	float anim_timer;
+
+	vec3 stripe_color;
+	float vpwidth;
+
+	float vpheight;
+	bool team_glow_enabled;
+	float znear;
+	float zfar;
+
+	float veryneardist;
+	float neardist;
+	float middist;
+	float fardist;
+
+	vec2 normalAlphaMinMax;
+	int sBasemapIndex;
+	int sGlowmapIndex;
+
+	int sSpecmapIndex;
+	int sNormalmapIndex;
+	int sAmbientmapIndex;
+	int sMiscmapIndex;
+};
+
+in VertexOutput {
+#ifdef FLAG_ENV_MAP
+	vec3 envReflect;
+#endif
+#ifdef FLAG_NORMAL_MAP
+	mat3 tangentMatrix;
+#endif
+#ifdef FLAG_FOG
+	float fogDist;
+#endif
+#ifdef WORKAROUND_CLIPPING_PLANES
+ #ifdef FLAG_TRANSFORM
+	float notVisible;
+ #endif
+#endif
+#ifdef FLAG_SHADOW_MAP
+ #if !defined(GL_ARB_gpu_shader5)
+	float instance;
+ #endif
+#else
+	vec4 position;
+#endif
+	vec3 normal;
+	vec4 texCoord;
+#ifdef FLAG_SHADOWS
+	vec4 shadowUV[4];
+	vec4 shadowPos;
+#endif
+} vertIn[];
+
+out VertexOutput {
+#ifdef FLAG_ENV_MAP
+	vec3 envReflect;
+#endif
+#ifdef FLAG_NORMAL_MAP
+	mat3 tangentMatrix;
+#endif
+#ifdef FLAG_FOG
+	float fogDist;
+#endif
+#ifdef WORKAROUND_CLIPPING_PLANES
+ #ifdef FLAG_TRANSFORM
+	float notVisible;
+ #endif
+#endif
+	vec4 position;
+	vec3 normal;
+	vec4 texCoord;
+#ifdef FLAG_SHADOWS
+	vec4 shadowUV[4];
+	vec4 shadowPos;
+#endif
+} vertOut;
+
+void main(void)
+{
+#ifdef GL_ARB_gpu_shader5
+	int instanceID = gl_InvocationID;
+#else
+	int instanceID = int(vertIn[0].instance);
+#endif
+	for(int vert = 0; vert < gl_in.length(); vert++)
+	{
+		gl_Position = shadow_proj_matrix[instanceID] * gl_in[vert].gl_Position;
+		if(gl_Position.z < -1.0)
+			gl_Position.z = -1.0;
+		vertOut.position = gl_in[vert].gl_Position;
+		vertOut.normal = vertIn[vert].normal;
+		vertOut.texCoord = vertIn[vert].texCoord;
+
+		gl_Layer = instanceID;
+#ifdef FLAG_ENV_MAP
+		vertOut.envReflect = vertIn[vert].envReflect;
+#endif
+#ifdef FLAG_NORMAL_MAP
+		vertOut.tangentMatrix = vertIn[vert].tangentMatrix;
+#endif
+#ifdef FLAG_FOG
+		vertOut.fogDist = vertIn[vert].fogDist;
+#endif
+#ifdef FLAG_SHADOWS
+		vertOut.shadowUV[0] = vertIn[vert].shadowUV[0];
+		vertOut.shadowUV[1] = vertIn[vert].shadowUV[1];
+		vertOut.shadowUV[2] = vertIn[vert].shadowUV[2];
+		vertOut.shadowUV[3] = vertIn[vert].shadowUV[3];
+		vertOut.shadowPos = vertIn[vert].shadowPos;
+#endif
+#ifdef WORKAROUND_CLIPPING_PLANES
+ #ifdef FLAG_TRANSFORM
+		vertOut.notVisible = vertIn[vert].notVisible;
+ #endif
+ #ifdef FLAG_CLIP
+		gl_ClipDistance[0] = gl_in[vert].gl_ClipDistance[0];
+ #endif
+#else
+ #if defined(FLAG_CLIP) || defined(FLAG_TRANSFORM)
+		gl_ClipDistance[0] = gl_in[vert].gl_ClipDistance[0];
+ #endif
+#endif
+		EmitVertex();
+	}
+	EndPrimitive();
+}

@@ -11,6 +11,7 @@
 
 
 #include "graphics/2d.h"			// Needed for w,h,aspect of canvas
+#include "graphics/matrix.h"
 #include "graphics/tmapper.h"
 #include "lighting/lighting.h"
 #include "render/3dinternal.h"
@@ -79,9 +80,6 @@ void g3_start_frame_func(int zbuffer_flag, const char *filename, int lineno)
 
  	Assert( G3_count == 0 );
 	G3_count++;
-
-	// Clear any user-defined clip planes
-	g3_stop_user_clip_plane();
 
 	// Get the values from the 2d...
 	width = gr_screen.clip_width;
@@ -348,54 +346,6 @@ void g3_done_instance(bool use_api)
 int G3_user_clip = 0;
 vec3d G3_user_clip_normal;
 vec3d G3_user_clip_point;
-
-/**
- * Enables clipping with an arbritary plane.   
- *
- * This will be on until g3_stop_clip_plane is called or until next frame.
- * The points passed should be relative to the instance. Probably
- * that means world coordinates.
- * 
- * This works like any other clip plane... if this is enabled and you
- * rotate a point, the CC_OFF_USER bit will be set in the clipping codes.
- * It is completely handled by most g3_draw primitives, except maybe lines.
- *
- * As far as performance, when enabled, it will slow down each point
- * rotation (or g3_code_vertex call) by a vec3d subtraction and dot
- * product.   It won't slow anything down for polys that are completely
- * clipped on or off by the plane, and will slow each clipped polygon by
- * not much more than any other clipping we do.
- */
-void g3_start_user_clip_plane(const vec3d *plane_point, const vec3d *plane_normal )
-{
-	float mag = vm_vec_mag( plane_normal );
-	if ( (mag < 0.1f) || (mag > 1.5f ) )	{
-		// Invalid plane_normal passed in.  Get Allender (since it is
-		// probably a ship warp in bug:) or John.   
-		Int3();			
-		return;
-	}
-
-	G3_user_clip = 1;
-	G3_user_clip_normal = *plane_normal;
-	G3_user_clip_point = *plane_point;
-	gr_start_clip();
-	vm_vec_rotate(&G3_user_clip_normal, plane_normal, &Eye_matrix );
-	vm_vec_normalize(&G3_user_clip_normal);
-
-	vec3d tempv;
-	vm_vec_sub(&tempv,plane_point,&Eye_position);
-	vm_vec_rotate(&G3_user_clip_point,&tempv,&Eye_matrix );
-}
-
-/**
- * Stops arbritary plane clipping
- */
-void g3_stop_user_clip_plane()
-{
-	G3_user_clip = 0;
-	gr_end_clip();
-}
 
 /**
  * Returns TRUE if point is behind user plane

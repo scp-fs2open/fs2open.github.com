@@ -15,14 +15,17 @@
 #include "math/vecmat.h"
 #include "model/model.h"
 #include "mission/missionparse.h"
+#include "graphics/util/UniformBuffer.h"
 
-extern light Lights[MAX_LIGHTS];
+extern SCP_vector<light> Lights;
 extern int Num_lights;
 
 extern bool Rendering_to_shadow_map;
 
 extern matrix Object_matrix;
 extern vec3d Object_position;
+
+extern color Wireframe_color;
 
 inline int in_box(vec3d *min, vec3d *max, vec3d *pos, vec3d *view_position)
 {
@@ -178,7 +181,8 @@ struct insignia_draw_data
 
 struct queued_buffer_draw
 {
-	size_t transform_buffer_offset;
+	size_t transform_buffer_offset = 0;
+	size_t uniform_buffer_offset = 0;
 
 	model_material render_material;
 
@@ -250,10 +254,21 @@ class model_draw_list
 	SCP_vector<insignia_draw_data> Insignias;
 	SCP_vector<outline_draw> Outlines;
 
+	graphics::util::UniformBuffer* _dataBuffer = nullptr;
+	
+	bool Render_initialized = false; //!< A flag for checking if init_render has been called before a render_all call
+	
 	static bool sort_draw_pair(model_draw_list* target, const int a, const int b);
 	void sort_draws();
+
+	void build_uniform_buffer();
 public:
 	model_draw_list();
+	~model_draw_list();
+
+	model_draw_list(const model_draw_list&) = delete;
+	model_draw_list& operator=(const model_draw_list&) = delete;
+
 	void init();
 
 	void add_submodel_to_batch(int model_num);
@@ -293,6 +308,7 @@ fix model_render_determine_base_frametime(int objnum, uint flags);
 bool model_render_check_detail_box(vec3d *view_pos, polymodel *pm, int submodel_num, uint flags);
 void model_render_arc(vec3d *v1, vec3d *v2, color *primary, color *secondary, float arc_width);
 void model_render_insignias(insignia_draw_data *insignia);
+void model_render_set_wireframe_color(color* clr);
 
 void model_render_determine_color(color *clr, float alpha, gr_alpha_blend blend_mode, bool no_texturing, bool desaturate);
 gr_alpha_blend model_render_determine_blend_mode(int base_bitmap, bool blending);

@@ -235,7 +235,7 @@ void do_subobj_destroyed_stuff( ship *ship_p, ship_subsys *subsys, vec3d* hitpos
 		if ( ship_objp == Player_obj )
 		{
 			if (!no_explosion) {
-				snd_play( &Snds[SND_SUBSYS_DIE_1], 0.0f );
+				snd_play( gamesnd_get_game_sound(SND_SUBSYS_DIE_1), 0.0f );
 			}
 			if (strlen(psub->alt_dmg_sub_name))
 				HUD_printf(XSTR( "Your %s subsystem has been destroyed", 499), psub->alt_dmg_sub_name);
@@ -287,7 +287,7 @@ void do_subobj_destroyed_stuff( ship *ship_p, ship_subsys *subsys, vec3d* hitpos
 			sound_index=SND_SUBSYS_EXPLODE;
 		}
 		if ( sound_index >= 0 ) {
-			snd_play_3d( &Snds[sound_index], &g_subobj_pos, &View_position );
+			snd_play_3d( gamesnd_get_game_sound(sound_index), &g_subobj_pos, &View_position );
 		}
 	}
 
@@ -1464,7 +1464,7 @@ void ship_generic_kill_stuff( object *objp, float percent_killed )
 	ai_deathroll_start(objp);
 
 	// play death roll begin sound
-	sp->death_roll_snd = snd_play_3d( &Snds[SND_DEATH_ROLL], &objp->pos, &View_position, objp->radius );
+	sp->death_roll_snd = snd_play_3d( gamesnd_get_game_sound(SND_DEATH_ROLL), &objp->pos, &View_position, objp->radius );
 	if (objp == Player_obj)
 		joy_ff_deathroll();
 
@@ -2087,7 +2087,8 @@ static void ship_do_damage(object *ship_objp, object *other_obj, vec3d *hitpos, 
 			if(shipp->shield_armor_type_idx != -1)
 			{
 				// Nuke: this call will decide when to use the damage factor, but it will get used, unless the modder is dumb (like setting +Difficulty Scale Type: to 'manual' and not manually applying it in their calculations)
-				damage = Armor_types[shipp->shield_armor_type_idx].GetDamage(damage, dmg_type_idx, difficulty_scale_factor);
+				damage = Armor_types[shipp->shield_armor_type_idx].GetDamage(damage, dmg_type_idx, difficulty_scale_factor, other_obj_is_beam);
+
 			} else { // Nuke: if that didn't get called, difficulty would not be applied to damage so apply it here
 				damage *= difficulty_scale_factor;
 			}
@@ -2149,7 +2150,7 @@ static void ship_do_damage(object *ship_objp, object *other_obj, vec3d *hitpos, 
 			
 			if(shipp->armor_type_idx != -1)
 			{
-				damage = Armor_types[shipp->armor_type_idx].GetDamage(damage, dmg_type_idx, difficulty_scale_factor);
+				damage = Armor_types[shipp->armor_type_idx].GetDamage(damage, dmg_type_idx, difficulty_scale_factor, other_obj_is_beam);
 				apply_diff_scale = false;
 			}
 		}

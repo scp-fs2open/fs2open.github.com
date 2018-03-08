@@ -41,6 +41,7 @@
 
 extern int Event_Music_battle_started;	// flag that will tell us if we've started a battle in the current mission
 extern int Event_music_enabled;
+extern float Default_music_volume;				// range is 0->1
 extern float Master_event_music_volume;			// range is 0->1
 
 

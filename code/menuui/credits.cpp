@@ -381,7 +381,7 @@ void credits_parse_table(const char* filename)
 				charNum.clear();
 
 				// Split the string into multiple lines if it's too long
-				numLines = split_str(line.c_str(), Credits_text_coords[gr_screen.res][2], charNum, lines, -1);
+				numLines = split_str(line.c_str(), Credits_text_coords[gr_screen.res][2], charNum, lines);
 
 				// Make sure that we have valid data
 				Assertion(lines.size() == (size_t)numLines, "split_str reported %d lines but vector contains " SIZE_T_ARG " entries!", numLines, lines.size());
@@ -693,6 +693,7 @@ void credits_do_frame(float frametime)
 			break;
 		}
 		// else, react like tab key.
+		FALLTHROUGH;
 
 	case KEY_CTRLED | KEY_DOWN:
 	case KEY_TAB:

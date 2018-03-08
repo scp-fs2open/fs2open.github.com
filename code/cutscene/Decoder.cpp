@@ -14,6 +14,11 @@ bool Decoder::tryPopAudioData(AudioFramePtr& out) {
 	return res == queue_op_status::success;
 }
 
+bool Decoder::tryPopSubtitleData(SubtitleFramePtr& out) {
+	auto res = m_subtitleQueue->try_pull_front(out);
+	return res == queue_op_status::success;
+}
+
 bool Decoder::tryPopVideoFrame(VideoFramePtr& out) {
 	auto res = m_videoQueue->try_pull_front(out);
 	return res == queue_op_status::success;
@@ -24,6 +29,7 @@ void Decoder::initializeQueues(size_t queueSize) {
 
 	m_videoQueue.reset(new sync_bounded_queue<VideoFramePtr>(m_queueSize));
 	m_audioQueue.reset(new sync_bounded_queue<AudioFramePtr>(m_queueSize));
+	m_subtitleQueue.reset(new sync_bounded_queue<SubtitleFramePtr>(m_queueSize));
 }
 
 void Decoder::stopDecoder() {
@@ -31,6 +37,7 @@ void Decoder::stopDecoder() {
 
 	m_videoQueue->close();
 	m_audioQueue->close();
+	m_subtitleQueue->close();
 }
 
 bool Decoder::canPushAudioData() {
@@ -42,6 +49,20 @@ void Decoder::pushAudioData(AudioFramePtr&& data) {
 
 	try {
 		m_audioQueue->push_back(std::move(data));
+	}
+	catch (sync_queue_is_closed&) {
+		// Ignore
+	}
+}
+
+bool Decoder::canPushSubtitleData() {
+	return !isSubtitleQueueFull();
+}
+void Decoder::pushSubtitleData(SubtitleFramePtr&& data) {
+	Assertion(data, "Invalid audio data passed!");
+
+	try {
+		m_subtitleQueue->push_back(std::move(data));
 	}
 	catch (sync_queue_is_closed&) {
 		// Ignore

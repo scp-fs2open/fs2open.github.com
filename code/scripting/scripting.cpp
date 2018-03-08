@@ -83,7 +83,8 @@ flag_def_list Script_actions[] =
 	{ "On Afterburner Engage",	CHA_AFTERBURNSTART, 0 },
 	{ "On Afterburner Stop",	CHA_AFTERBURNEND,	0 },
 	{ "On Beam Fire",			CHA_BEAMFIRE,		0 },
-	{ "On Simulation",			CHA_SIMULATION,		0 }
+	{ "On Simulation",			CHA_SIMULATION,		0 },
+	{ "On Load Screen",			CHA_LOADSCREEN,		0 },
 };
 
 int Num_script_actions = sizeof(Script_actions)/sizeof(flag_def_list);
@@ -260,6 +261,7 @@ bool ConditionedHook::ConditionsValid(int action, object *objp, int more_data)
 					return false;
 				if(stricmp(Ship_types[sip->class_type].name, scp->data.name))
 					return false;
+				break;
 			case CHC_SHIPCLASS:
 				if(objp == NULL || objp->type != OBJ_SHIP)
 					return false;
@@ -669,6 +671,9 @@ void script_state::SetHookVar(const char *name, char format, const void *data)
 						break;
 					case 'b':
 						ade_set_args(LuaState, fmt, *(bool*)data);
+						break;
+					case 'f':
+						ade_set_args(LuaState, fmt, *(float*)data);
 						break;
 					default:
 						ade_set_args(LuaState, fmt, *(ade_odata*)data);
@@ -1127,6 +1132,11 @@ void script_state::ParseChunkSub(script_function& script_func, const char* debug
 	else if(check_for_string("["))
 	{
 		//Lua string
+
+		// Determine the current line in the file so that the Lua source can begin at the same line as in the table
+		// This will make sure that the line in the error message matches the line number in the table.
+		auto line = get_line_num();
+
 		//Allocate raw script
 		char* raw_lua = alloc_block("[", "]", 1);
 		//WMC - minor hack to make sure that the last line gets
@@ -1134,7 +1144,10 @@ void script_state::ParseChunkSub(script_function& script_func, const char* debug
 		//crash, so this is here just to be on the safe side.
 		strcat(raw_lua, "\n");
 
-		source = raw_lua;
+		for (auto i = 0; i <= line; ++i) {
+			source += "\n";
+		}
+		source += raw_lua;
 		vm_free(raw_lua);
 	}
 	else

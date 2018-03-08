@@ -62,7 +62,6 @@ extern float static_point_factor;
 extern float static_tube_factor;
 extern int Cmdline_ambient_factor;
 extern int Cmdline_env;
-extern int Cmdline_missile_lighting;
 extern int Cmdline_glow;
 extern int Cmdline_nomotiondebris;
 extern int Cmdline_noscalevid;	// disables fit-to-window for movies - taylor
@@ -77,7 +76,6 @@ extern bool Cmdline_fxaa;
 extern int Cmdline_fxaa_preset;
 extern bool Cmdline_fb_explosions;
 extern bool Cmdline_fb_thrusters;
-extern bool Cmdline_no_batching;
 extern int Cmdline_shadow_quality;
 extern int Cmdline_no_deferred_lighting;
 extern int Cmdline_no_emissive;
@@ -104,7 +102,6 @@ extern int Cmdline_stretch_menu;
 
 // Audio related
 extern int Cmdline_query_speech;
-extern int Cmdline_snd_preload;
 extern int Cmdline_voice_recognition;
 extern int Cmdline_no_enhanced_sound;
 
@@ -146,8 +143,10 @@ extern char *Cmdline_start_mission;
 extern int Cmdline_old_collision_sys;
 extern int Cmdline_dis_collisions;
 extern int Cmdline_dis_weapons;
+extern bool Cmdline_output_sexp_info;
 extern int Cmdline_noparseerrors;
 extern int Cmdline_extra_warn;
+extern int Cmdline_bmpman_usage;
 extern int Cmdline_show_pos;
 extern int Cmdline_show_stats;
 extern int Cmdline_save_render_targets;

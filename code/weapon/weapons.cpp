@@ -1880,7 +1880,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 
 	// This is an optional modifier for a weapon that uses the "apply recoil" flag. recoil_force in ship.cpp line 10445 is multiplied by this if defined.
 	if (optional_string("$Recoil Modifier:")){
-		if (!(wip->wi_flags[Weapon::Info_Flags::Apply_recoil])){
+		if (!(wip->wi_flags[Weapon::Info_Flags::Apply_Recoil])){
 			Warning(LOCATION, "$Recoil Modifier specified for weapon %s but this weapon does not have the \"apply recoil\" weapon flag set. Automatically setting the flag", wip->name);
             wip->wi_flags.set(Weapon::Info_Flags::Apply_Recoil);
 		}
@@ -2035,6 +2035,10 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 
 		if (optional_string("+Single Missile Kill:"))
 			stuff_boolean(&wip->cm_kill_single);
+
+		if (optional_string("+Pulse Interval:")) {
+			stuff_int(&wip->cmeasure_timer_interval);
+		}
 	}
 
 	// beam weapon optional stuff
@@ -2596,6 +2600,10 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		}
 	}
 
+	// New decal system parsing
+	if (optional_string("$Impact Decal:")) {
+		decals::parseDecalReference(wip->impact_decal, create_if_not_found);
+	}
 
 	if (optional_string("$Transparent:")) {
         wip->wi_flags.set(Weapon::Info_Flags::Transparent);
@@ -3335,6 +3343,8 @@ void weapon_load_bitmaps(int weapon_index)
 		}
 	}
 
+	decals::loadBitmaps(wip->impact_decal);
+
 	// if this weapon isn't already marked as used, then mark it as such now
 	// (this should really only happen if the player is cheating)
 	if ( !used_weapons[weapon_index] )
@@ -3365,7 +3375,9 @@ void weapon_generate_indexes_for_substitution() {
 						Warning(LOCATION, "Weapon '%s' requests substitution with '%s' which is of a different subtype.",
 							wip->name, wip->weapon_substitution_pattern_names[j]);
 						wip->num_substitution_patterns = 0;
-						memset(wip->weapon_substitution_pattern, -1, MAX_SUBSTITUTION_PATTERNS);
+						std::fill(std::begin(wip->weapon_substitution_pattern),
+								  std::end(wip->weapon_substitution_pattern),
+								  -1);
 						break;
 					}
 				}
@@ -3635,10 +3647,10 @@ void weapon_maybe_play_warning(weapon *wp)
 			// Possibly add an additional third sound later
 			if ( (Weapon_info[wp->weapon_info_index].wi_flags[Weapon::Info_Flags::Homing_heat]) ||
 				 (Weapon_info[wp->weapon_info_index].wi_flags[Weapon::Info_Flags::Homing_javelin]) ) {
-				snd_play(&Snds[ship_get_sound(Player_obj, SND_HEATLOCK_WARN)]);
+				snd_play(gamesnd_get_game_sound(ship_get_sound(Player_obj, SND_HEATLOCK_WARN)));
 			} else {
 				Assert(Weapon_info[wp->weapon_info_index].wi_flags[Weapon::Info_Flags::Homing_aspect]);
-				snd_play(&Snds[ship_get_sound(Player_obj, SND_ASPECTLOCK_WARN)]);
+				snd_play(gamesnd_get_game_sound(ship_get_sound(Player_obj, SND_ASPECTLOCK_WARN)));
 			}
 		}
 	}
@@ -3822,124 +3834,88 @@ void find_homing_object(object *weapon_objp, int num)
 }
 
 /**
- * Scan all countermeasures.  Maybe make weapon_objp home on it.
+ * For all homing weapons, see if they should be decoyed by a countermeasure.
  */
-void find_homing_object_cmeasures_1(object *weapon_objp)
+void find_homing_object_cmeasures(const SCP_vector<object*> &cmeasure_list)
 {
-	object	*objp;
-	weapon	*wp, *cm_wp;
-	weapon_info	*wip, *cm_wip;
-	float		best_dot, dist, dot;
+	for (object *weapon_objp = GET_FIRST(&obj_used_list); weapon_objp != END_OF_LIST(&obj_used_list); weapon_objp = GET_NEXT(weapon_objp) ) {
+		if (weapon_objp->type == OBJ_WEAPON) {
+			weapon *wp = &Weapons[weapon_objp->instance];
+			weapon_info	*wip = &Weapon_info[wp->weapon_info_index];
 
-	wp = &Weapons[weapon_objp->instance];
-	wip = &Weapon_info[wp->weapon_info_index];
+			if (wip->is_homing()) {
+				float best_dot = wip->fov;
+				for (auto cit = cmeasure_list.cbegin(); cit != cmeasure_list.cend(); ++cit) {
+					//don't have a weapon try to home in on itself
+					if (*cit == weapon_objp)
+						continue;
 
-	best_dot = wip->fov;			//	Note, setting to this avoids comparison below.
+					weapon *cm_wp = &Weapons[(*cit)->instance];
+					weapon_info *cm_wip = &Weapon_info[cm_wp->weapon_info_index];
 
-	for ( objp = GET_FIRST(&obj_used_list); objp !=END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) )
-	{
-		//first check if its a weapon, then setup the pointers
-		if (objp->type == OBJ_WEAPON)
-		{
-			cm_wp = &Weapons[objp->instance];
-			cm_wip = &Weapon_info[cm_wp->weapon_info_index];
+					//don't have a weapon try to home in on missiles fired by the same team, unless its the traitor team.
+					if ((wp->team == cm_wp->team) && (wp->team != Iff_traitor))
+						continue;
 
-			if (cm_wip->wi_flags[Weapon::Info_Flags::Cmeasure])
-			{
-				//don't have a weapon try to home in on itself
-				if (objp==weapon_objp)
-					continue;
+					vec3d	vec_to_object;
+					float dist = vm_vec_normalized_dir(&vec_to_object, &(*cit)->pos, &weapon_objp->pos);
 
-				//don't have a weapon try to home in on missiles fired by the same team, unless its the traitor team.
-				if ((wp->team == cm_wp->team) && (wp->team != Iff_traitor))
-					continue;
+					if (dist < cm_wip->cm_effective_rad)
+					{
+						float chance;
 
-				vec3d	vec_to_object;
-				dist = vm_vec_normalized_dir(&vec_to_object, &objp->pos, &weapon_objp->pos);
-
-				if (dist < cm_wip->cm_effective_rad)
-				{
-					float chance;
-
-					if (wp->cmeasure_ignore_list == nullptr) {
-						wp->cmeasure_ignore_list = new SCP_vector<int>;
-					}
-					else {
-						bool found = false;
-						for (auto ii = wp->cmeasure_ignore_list->cbegin(); ii != wp->cmeasure_ignore_list->cend(); ++ii) {
-							if (objp->signature == *ii) {
-								nprintf(("CounterMeasures", "Weapon (%s-%04i) already seen CounterMeasure (%s-%04i) Frame: %i\n",
-											wip->name, weapon_objp->instance, cm_wip->name, objp->signature, Framecount));
-								found = true;
-								break;
+						if (wp->cmeasure_ignore_list == nullptr) {
+							wp->cmeasure_ignore_list = new SCP_vector<int>;
+						}
+						else {
+							bool found = false;
+							for (auto ii = wp->cmeasure_ignore_list->cbegin(); ii != wp->cmeasure_ignore_list->cend(); ++ii) {
+								if ((*cit)->signature == *ii) {
+									nprintf(("CounterMeasures", "Weapon (%s-%04i) already seen CounterMeasure (%s-%04i) Frame: %i\n",
+												wip->name, weapon_objp->instance, cm_wip->name, (*cit)->signature, Framecount));
+									found = true;
+									break;
+								}
+							}
+							if (found) {
+								continue;
 							}
 						}
-						if (found) {
-							continue;
+
+						if (wip->wi_flags[Weapon::Info_Flags::Homing_aspect]) {
+							// aspect seeker this likely to chase a countermeasure
+							chance = cm_wip->cm_aspect_effectiveness/wip->seeker_strength;
+						} else {
+							// heat seeker and javelin HS this likely to chase a countermeasure
+							chance = cm_wip->cm_heat_effectiveness/wip->seeker_strength;
 						}
-					}
 
-					if (wip->wi_flags[Weapon::Info_Flags::Homing_aspect]) {
-						// aspect seeker this likely to chase a countermeasure
-						chance = cm_wip->cm_aspect_effectiveness/wip->seeker_strength;
-					} else {
-						// heat seeker and javelin HS this likely to chase a countermeasure
-						chance = cm_wip->cm_heat_effectiveness/wip->seeker_strength;
-					}
+						// remember this cmeasure so it can be ignored in future
+						wp->cmeasure_ignore_list->push_back((*cit)->signature);
 
-					// remember this cmeasure so it can be ignored in future
-					wp->cmeasure_ignore_list->push_back(objp->signature);
+						if (frand() >= chance) {
+							// failed to decoy
+							nprintf(("CounterMeasures", "Weapon (%s-%04i) ignoring CounterMeasure (%s-%04i) Frame: %i\n",
+										wip->name, weapon_objp->instance, cm_wip->name, (*cit)->signature, Framecount));
+						}
+						else {
+							// successful decoy, maybe chase the new cm
+							float dot = vm_vec_dot(&vec_to_object, &weapon_objp->orient.vec.fvec);
 
-					if (frand() >= chance) {
-						// failed to decoy
-						nprintf(("CounterMeasures", "Weapon (%s-%04i) ignoring CounterMeasure (%s-%04i) Frame: %i\n",
-									wip->name, weapon_objp->instance, cm_wip->name, objp->signature, Framecount));
-					}
-					else {
-						// successful decoy, maybe chase the new cm
-						dot = vm_vec_dot(&vec_to_object, &weapon_objp->orient.vec.fvec);
-
-						if (dot > best_dot)
-						{
-							best_dot = dot;
-							wp->homing_object = objp;
-							cmeasure_maybe_alert_success(objp);
-							nprintf(("CounterMeasures", "Weapon (%s-%04i) chasing CounterMeasure (%s-%04i) Frame: %i\n",
-										wip->name, weapon_objp->instance, cm_wip->name, objp->signature, Framecount));
+							if (dot > best_dot)
+							{
+								best_dot = dot;
+								wp->homing_object = (*cit);
+								cmeasure_maybe_alert_success((*cit));
+								nprintf(("CounterMeasures", "Weapon (%s-%04i) chasing CounterMeasure (%s-%04i) Frame: %i\n",
+											wip->name, weapon_objp->instance, cm_wip->name, (*cit)->signature, Framecount));
+							}
 						}
 					}
 				}
 			}
 		}
 	}
-}
-
-
-/**
- * Someone launched countermeasures.
- * For all heat-seeking homing objects, see if should favor tracking a countermeasure instead.
- */
-void find_homing_object_cmeasures()
-{
-	object	*weapon_objp;
-
-	if (Cmeasures_homing_check == 0)
-		return;
-
-	if (Cmeasures_homing_check <= 0)
-		Cmeasures_homing_check = 1;
-
-	Cmeasures_homing_check--;
-
-	for (weapon_objp = GET_FIRST(&obj_used_list); weapon_objp != END_OF_LIST(&obj_used_list); weapon_objp = GET_NEXT(weapon_objp) ) {
-		if (weapon_objp->type == OBJ_WEAPON) {
-			weapon_info	*wip = &Weapon_info[Weapons[weapon_objp->instance].weapon_info_index];
-
-			if (wip->is_homing())
-				find_homing_object_cmeasures_1(weapon_objp);
-		}
-	}
-
 }
 
 /**
@@ -4505,10 +4481,10 @@ void weapon_maybe_play_flyby_sound(object *weapon_objp, weapon *wp)
 			
 			if ( (dot < -0.80) && (dot > -0.98) ) {
 				if(Weapon_info[wp->weapon_info_index].flyby_snd != -1) {
-					snd_play_3d( &Snds[Weapon_info[wp->weapon_info_index].flyby_snd], &weapon_objp->pos, &Eye_position );
+					snd_play_3d( gamesnd_get_game_sound(Weapon_info[wp->weapon_info_index].flyby_snd), &weapon_objp->pos, &Eye_position );
 				} else {
 					if ( Weapon_info[wp->weapon_info_index].subtype == WP_LASER ) {
-						snd_play_3d( &Snds[SND_WEAPON_FLYBY], &weapon_objp->pos, &Eye_position );
+						snd_play_3d( gamesnd_get_game_sound(SND_WEAPON_FLYBY), &weapon_objp->pos, &Eye_position );
 					}
 				}
 				Weapon_flyby_sound_timer = timestamp(200);
@@ -4918,7 +4894,7 @@ void weapon_process_post(object * obj, float frame_time)
 		{
 			if (wp->hud_in_flight_snd_sig < 0 || !snd_is_playing(wp->hud_in_flight_snd_sig))
 			{
-				wp->hud_in_flight_snd_sig = snd_play_looping(&Snds[wip->hud_in_flight_snd]);
+				wp->hud_in_flight_snd_sig = snd_play_looping(gamesnd_get_game_sound(wip->hud_in_flight_snd));
 			}
 		}
 	}
@@ -5323,8 +5299,12 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 	}
 
 	if(wip->wi_flags[Weapon::Info_Flags::Cmeasure]) {
-		//2-frame homing check, to fend off sync errors
+		// For the next two frames, any non-timer-based countermeasures will pulse each frame.
 		Cmeasures_homing_check = 2;
+		if (wip->cmeasure_timer_interval > 0) {
+			// Timer-based countermeasures spawn pulsing as well.
+			wp->cmeasure_timer = timestamp();	// Could also use timestamp(0), but it doesn't really matter either way.
+		}
 	}
 
 	//	Make remote detonate missiles look like they're getting detonated by firer simply by giving them variable lifetimes.
@@ -5658,13 +5638,13 @@ void weapon_play_impact_sound(weapon_info *wip, vec3d *hitpos, bool is_armed)
 	if(is_armed)
 	{
 		if(wip->impact_snd != -1) {
-			snd_play_3d( &Snds[wip->impact_snd], hitpos, &Eye_position );
+			snd_play_3d( gamesnd_get_game_sound(wip->impact_snd), hitpos, &Eye_position );
 		}
 	}
 	else
 	{
 		if(wip->disarmed_impact_snd != -1) {
-			snd_play_3d(&Snds[wip->disarmed_impact_snd], hitpos, &Eye_position);
+			snd_play_3d(gamesnd_get_game_sound(wip->disarmed_impact_snd), hitpos, &Eye_position);
 		}
 	}
 }
@@ -5678,9 +5658,8 @@ void weapon_play_impact_sound(weapon_info *wip, vec3d *hitpos, bool is_armed)
  *
  * @note Uses Weapon_impact_timer global for timer variable
  */
-void weapon_hit_do_sound(object *hit_obj, weapon_info *wip, vec3d *hitpos, bool is_armed)
+void weapon_hit_do_sound(object *hit_obj, weapon_info *wip, vec3d *hitpos, bool is_armed, int quadrant)
 {
-	int	is_hull_hit;
 	float shield_str;
 
 	// If non-missiles (namely lasers) expire without hitting a ship, don't play impact sound
@@ -5719,42 +5698,37 @@ void weapon_hit_do_sound(object *hit_obj, weapon_info *wip, vec3d *hitpos, bool 
 
 	if ( timestamp_elapsed(Weapon_impact_timer) ) {
 
-		is_hull_hit = 1;
-		if ( hit_obj->type == OBJ_SHIP ) {
-			shield_str = ship_quadrant_shield_strength(hit_obj, hitpos);
+		if ( hit_obj->type == OBJ_SHIP && quadrant >= 0 ) {
+			shield_str = ship_quadrant_shield_strength(hit_obj, quadrant);
 		} else {
 			shield_str = 0.0f;
 		}
 
 		// play a shield hit if shields are above 10% max in this quadrant
 		if ( shield_str > 0.1f ) {
-			is_hull_hit = 0;
-		}
-
-		if ( !is_hull_hit ) {
 			// Play a shield impact sound effect
 			if ( hit_obj == Player_obj ) {
-				snd_play_3d( &Snds[SND_SHIELD_HIT_YOU], hitpos, &Eye_position );
+				snd_play_3d( gamesnd_get_game_sound(SND_SHIELD_HIT_YOU), hitpos, &Eye_position );
 				// AL 12-15-97: Add missile impact sound even when shield is hit
 				if ( wip->subtype == WP_MISSILE ) {
-					snd_play_3d( &Snds[SND_PLAYER_HIT_MISSILE], hitpos, &Eye_position);
+					snd_play_3d( gamesnd_get_game_sound(SND_PLAYER_HIT_MISSILE), hitpos, &Eye_position);
 				}
 			} else {
-				snd_play_3d( &Snds[SND_SHIELD_HIT], hitpos, &Eye_position );
+				snd_play_3d( gamesnd_get_game_sound(SND_SHIELD_HIT), hitpos, &Eye_position );
 			}
 		} else {
 			// Play a hull impact sound effect
 			switch ( wip->subtype ) {
 				case WP_LASER:
 					if ( hit_obj == Player_obj )
-						snd_play_3d( &Snds[SND_PLAYER_HIT_LASER], hitpos, &Eye_position );
+						snd_play_3d( gamesnd_get_game_sound(SND_PLAYER_HIT_LASER), hitpos, &Eye_position );
 					else {
 						weapon_play_impact_sound(wip, hitpos, is_armed);
 					}
 					break;
 				case WP_MISSILE:
 					if ( hit_obj == Player_obj ) 
-						snd_play_3d( &Snds[SND_PLAYER_HIT_MISSILE], hitpos, &Eye_position);
+						snd_play_3d( gamesnd_get_game_sound(SND_PLAYER_HIT_MISSILE), hitpos, &Eye_position);
 					else {
 						weapon_play_impact_sound(wip, hitpos, is_armed);
 					}
@@ -6033,12 +6007,7 @@ void weapon_do_area_effect(object *wobjp, shockwave_create_info *sci, vec3d *pos
 
 	}	// end for
 
-	// if this weapon has the "Electronics" flag set, then disrupt subsystems in sphere
-	if ( (other_obj != NULL) && (wip->wi_flags[Weapon::Info_Flags::Electronics]) ) {
-		if ( other_obj->type == OBJ_SHIP ) {
-			weapon_do_electronics_effect(other_obj, pos, Weapons[wobjp->instance].weapon_info_index);
-		}
-	}
+
 }
 
 //	----------------------------------------------------------------------
@@ -6137,7 +6106,7 @@ void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos, int qu
 
 	// if this is the player ship, and is a laser hit, skip it. wait for player "pain" to take care of it
 	if ((other_obj != Player_obj) || (wip->subtype != WP_LASER) || !MULTIPLAYER_CLIENT) {
-		weapon_hit_do_sound(other_obj, wip, hitpos, armed_weapon);
+		weapon_hit_do_sound(other_obj, wip, hitpos, armed_weapon, quadrant);
 	}
 
 	if ( wip->impact_weapon_expl_effect >= 0 && armed_weapon)
@@ -6288,6 +6257,13 @@ void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos, int qu
 	if(wip->wi_flags[Weapon::Info_Flags::Emp]){
 		emp_apply(&weapon_obj->pos, wip->shockwave.inner_rad, wip->shockwave.outer_rad, wip->emp_intensity, wip->emp_time, (wip->wi_flags[Weapon::Info_Flags::Use_emp_time_for_capship_turrets]) != 0);
 	}	
+
+	// if this weapon has the "Electronics" flag set, then disrupt subsystems in sphere
+	if ((other_obj != NULL) && (wip->wi_flags[Weapon::Info_Flags::Electronics])) {
+		if (other_obj->type == OBJ_SHIP) {
+			weapon_do_electronics_effect(other_obj, &weapon_obj->pos, Weapons[weapon_obj->instance].weapon_info_index);
+		}
+	}
 
 	// spawn weapons - note the change from FS 1 multiplayer.
 	if (wip->wi_flags[Weapon::Info_Flags::Spawn]){
@@ -6488,6 +6464,8 @@ void weapons_page_in()
 
 		bm_page_in_texture(wip->thruster_flame.first_frame);
 		bm_page_in_texture(wip->thruster_glow.first_frame);
+
+		decals::pageInDecal(wip->impact_decal);
 	}
 }
 
@@ -6673,6 +6651,9 @@ bool weapon_page_in(int weapon_type)
 
 		bm_page_in_texture(wip->thruster_flame.first_frame);
 		bm_page_in_texture(wip->thruster_glow.first_frame);
+
+		// Page in decal bitmaps
+		decals::pageInDecal(wip->impact_decal);
 
 		used_weapons[page_in_weapons.at(k)]++;	// Ensures weapon can be counted as used
 	}
@@ -7365,10 +7346,10 @@ void weapon_render(object* obj, model_draw_list *scene)
 		{
 			model_render_params render_info;
 
-			uint render_flags = MR_NORMAL|MR_IS_MISSILE|MR_NO_LIGHTING|MR_NO_BATCH;
+			uint render_flags = MR_NORMAL|MR_IS_MISSILE|MR_NO_BATCH;
 
-			if (Cmdline_missile_lighting && !(wip->wi_flags[Weapon::Info_Flags::Mr_no_lighting]))
-				render_flags &= ~MR_NO_LIGHTING;
+			if (wip->wi_flags[Weapon::Info_Flags::Mr_no_lighting])
+				render_flags |= MR_NO_LIGHTING;
 
 			if (wip->wi_flags[Weapon::Info_Flags::Transparent]) {
 				render_info.set_alpha(wp->alpha_current);
@@ -7653,6 +7634,7 @@ void weapon_info::reset()
 	this->cm_effective_rad = MAX_CMEASURE_TRACK_DIST;
 	this->cm_detonation_rad = CMEASURE_DETONATE_DISTANCE;
 	this->cm_kill_single = false;
+	this->cmeasure_timer_interval = 0;
 
 	this->b_info.beam_type = -1;
 	this->b_info.beam_life = -1.0f;
@@ -7748,4 +7730,7 @@ void weapon_info::reset()
 	this->hud_locked_snd = -1;
 	this->hud_tracking_snd = -1;
 	this->hud_in_flight_snd = -1;
+
+	// Reset using default constructor
+	this->impact_decal = decals::creation_info();
 }

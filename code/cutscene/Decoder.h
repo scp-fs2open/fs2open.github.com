@@ -58,6 +58,14 @@ struct AudioFrame {
 };
 typedef std::unique_ptr<AudioFrame> AudioFramePtr;
 
+struct SubtitleFrame {
+    double displayStartTime = -1.0;
+    double displayEndTime = -1.0;
+
+	SCP_string text;
+};
+typedef std::unique_ptr<SubtitleFrame> SubtitleFramePtr;
+
 /**
  * @brief Abstract class for decoding a video or audio stream
  *
@@ -68,6 +76,7 @@ class Decoder {
  private:
 	std::unique_ptr<sync_bounded_queue<VideoFramePtr>> m_videoQueue;
 	std::unique_ptr<sync_bounded_queue<AudioFramePtr>> m_audioQueue;
+	std::unique_ptr<sync_bounded_queue<SubtitleFramePtr>> m_subtitleQueue;
 
 	bool m_decoding;
 	size_t m_queueSize = 0;
@@ -109,6 +118,8 @@ class Decoder {
 	 */
 	virtual bool hasAudio() = 0;
 
+	virtual bool hasSubtitles() = 0;
+
 	/**
 	 * @brief Ends decoding of the video file
 	 */
@@ -121,6 +132,14 @@ class Decoder {
 	size_t getAudioQueueSize() { return m_audioQueue->size(); }
 
 	bool tryPopAudioData(AudioFramePtr&);
+
+	bool isSubtitleQueueFull() { return m_subtitleQueue->size() == m_queueSize; }
+
+	bool isSubtitleFrameAvailable() { return !m_subtitleQueue->empty(); }
+
+	size_t getSubtitleQueueSize() { return m_subtitleQueue->size(); }
+
+	bool tryPopSubtitleData(SubtitleFramePtr&);
 
 	bool isVideoQueueFull() { return m_videoQueue->size() == m_queueSize; }
 
@@ -140,6 +159,10 @@ class Decoder {
 	bool canPushAudioData();
 
 	void pushAudioData(AudioFramePtr&& data);
+
+	bool canPushSubtitleData();
+
+	void pushSubtitleData(SubtitleFramePtr&& data);
 
 	bool canPushVideoData();
 

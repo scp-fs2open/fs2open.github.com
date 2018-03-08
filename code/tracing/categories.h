@@ -61,6 +61,8 @@ extern Category CollisionDetection;
 extern Category RenderBuffer;
 
 extern Category QueueRender;
+extern Category BuildModelUniforms;
+extern Category UploadModelUniforms;
 extern Category SubmitDraws;
 extern Category ApplyLights;
 extern Category DrawEffects;
@@ -73,6 +75,7 @@ extern Category DrawMotionDebris;
 extern Category DrawBackground;
 extern Category DrawSuns;
 extern Category DrawBitmaps;
+extern Category SunspotProcess;
 
 extern Category RepeatingEvents;
 extern Category NonrepeatingEvents;
@@ -91,8 +94,21 @@ extern Category ProcessParticleEffects;
 extern Category TrailsMoveAll;
 extern Category Simulation;
 extern Category RenderMainFrame;
+extern Category RenderHUD;
+extern Category RenderHUDHook;
+extern Category RenderHUDGauge;
+extern Category RenderTargettingBracket;
+extern Category RenderNavBracket;
 extern Category MainFrame;
 extern Category PageFlip;
+
+extern Category NanoVGFlushFrame;
+extern Category NanoVGDrawFill;
+extern Category NanoVGDrawConvexFill;
+extern Category NanoVGDrawStroke;
+extern Category NanoVGDrawTriangles;
+
+extern Category LineDrawListFlush;
 
 extern Category CutsceneStep;
 extern Category CutsceneDrawVideoFrame;
@@ -124,6 +140,12 @@ extern Category PageInStop;
 extern Category PageInSingleBitmap;
 extern Category ShipPageIn;
 extern Category WeaponPageIn;
+
+extern Category RenderDecals;
+extern Category RenderSingleDecal;
+
+extern Category GpuHeapAllocate;
+extern Category GpuHeapDeallocate;
 
 }
 

@@ -58,6 +58,8 @@ void snazzy_menu_init()
 
 int snazzy_menu_do(ubyte *data, int mask_w, int mask_h, int num_regions, MENU_REGION *regions, int *action, int poll_key, int *key)
 {
+	GR_DEBUG_SCOPE("Snazzy Menu");
+
 	int i, k, x, y, offset;
 	int choice = -1, mouse_on_choice = -1;
 	ubyte pixel_value = 0;
@@ -94,7 +96,7 @@ int snazzy_menu_do(ubyte *data, int mask_w, int mask_h, int num_regions, MENU_RE
 			if (pixel_value == regions[i].mask) {
 				choice = regions[i].mask;
 				if ( regions[i].click_sound != -1 ) {
-					snd_play( &Snds_iface[regions[i].click_sound], 0.0f );
+					snd_play( gamesnd_get_interface_sound(regions[i].click_sound), 0.0f );
 				}
 			}
 		}	// end for
@@ -113,7 +115,7 @@ int snazzy_menu_do(ubyte *data, int mask_w, int mask_h, int num_regions, MENU_RE
 					if (ascii_table[k] == regions[i].key || shifted_ascii_table[k] == regions[i].key) {
 						choice = regions[i].mask;
 						if ( regions[i].click_sound != -1 ) {
-							snd_play( &Snds_iface[regions[i].click_sound], 0.0f );
+							snd_play( gamesnd_get_interface_sound(regions[i].click_sound), 0.0f );
 						}
 					}
 			}	// end for

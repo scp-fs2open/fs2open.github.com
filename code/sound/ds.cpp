@@ -1257,14 +1257,10 @@ void ds_set_pan( int channel_id, float pan )
 	}
 }
 
-/**
- * Get the pitch of a channel
- */
-int ds_get_pitch(int channel_id)
+float ds_get_pitch(int channel_id)
 {
 	ALint status;
-	ALfloat alpitch = 0;
-	int pitch;
+	ALfloat alpitch = 1.0;
 
 	if ( (channel_id < 0) || (channel_id >= MAX_CHANNELS) ) {
 		return -1;
@@ -1276,36 +1272,23 @@ int ds_get_pitch(int channel_id)
 		OpenAL_ErrorPrint( alGetSourcef(Channels[channel_id].source_id, AL_PITCH, &alpitch) );
 	}
 
-	// convert OpenAL values to DirectSound values and return
-	pitch = fl2i( pow(10.0, (alpitch + 2.0)) );
-
-	return pitch;
+	return alpitch;
 }
 
-/**
- * Set the pitch of a channel
- */
-void ds_set_pitch(int channel_id, int pitch)
+void ds_set_pitch(int channel_id, float pitch)
 {
+	Assertion(pitch > 0.0f, "Pitch may not be less than zero!");
+
 	ALint status;
 
 	if ( (channel_id < 0) || (channel_id >= MAX_CHANNELS) ) {
 		return;
 	}
 
-	if ( pitch < MIN_PITCH ) {
-		pitch = MIN_PITCH;
-	}
-
-	if ( pitch > MAX_PITCH ) {
-		pitch = MAX_PITCH;
-	}
-
 	OpenAL_ErrorCheck( alGetSourcei(Channels[channel_id].source_id, AL_SOURCE_STATE, &status), return );
 
 	if (status == AL_PLAYING) {
-		ALfloat alpitch = log10f((float)pitch) - 2.0f;
-		OpenAL_ErrorPrint( alSourcef(Channels[channel_id].source_id, AL_PITCH, alpitch) );
+		OpenAL_ErrorPrint( alSourcef(Channels[channel_id].source_id, AL_PITCH, pitch) );
 	}
 }
 
@@ -1940,4 +1923,15 @@ int ds_get_sound_id(int channel_id)
 	Assert( channel_id >= 0 );
 
 	return Channels[channel_id].snd_id;
+}
+
+/**
+ * @brief Given a valid channel, returns the sound signature (typically the sound index)
+ * @param channel_id
+ * @return
+ */
+int ds_get_sound_index(int channel_id) {
+	Assert( channel_id >= 0 );
+
+	return Channels[channel_id].sid;
 }

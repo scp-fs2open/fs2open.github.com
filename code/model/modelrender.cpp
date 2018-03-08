@@ -15,6 +15,9 @@
 #include "graphics/opengl/gropengldraw.h"
 #include "graphics/opengl/gropenglshader.h"
 #include "graphics/tmapper.h"
+#include "graphics/matrix.h"
+#include "graphics/light.h"
+#include "graphics/uniforms.h"
 #include "io/timer.h"
 #include "math/staticrand.h"
 #include "model/modelrender.h"
@@ -38,6 +41,7 @@ extern int Num_arc_segment_points;
 extern vec3d Arc_segment_points[];
 
 extern bool Scene_framebuffer_in_frame;
+color Wireframe_color;
 
 extern void interp_render_arc_segment( vec3d *v1, vec3d *v2, int depth );
 
@@ -422,6 +426,13 @@ void model_draw_list::reset()
 	Current_scale.xyz.x = 1.0f;
 	Current_scale.xyz.y = 1.0f;
 	Current_scale.xyz.z = 1.0f;
+
+	if (_dataBuffer) {
+		_dataBuffer->finished();
+		_dataBuffer = nullptr;
+	}
+
+	Render_initialized = false;
 }
 
 void model_draw_list::sort_draws()
@@ -476,10 +487,25 @@ void model_draw_list::set_light_filter(int objnum, vec3d *pos, float rad)
 void model_draw_list::add_buffer_draw(model_material *render_material, indexed_vertex_source *vert_src, vertex_buffer *buffer, size_t texi, uint tmap_flags)
 {
 	queued_buffer_draw draw_data;
+	draw_data.render_material = *render_material;
 
-	render_material->set_deferred_lighting(Deferred_lighting);
-	render_material->set_high_dynamic_range(High_dynamic_range);
-	render_material->set_shadow_casting(Rendering_to_shadow_map ? true : false);
+	if (Rendering_to_shadow_map) {
+		draw_data.render_material.set_shadow_casting(true);
+	} else {
+		// If the zbuffer type is FULL then this buffer may be drawn in the deferred lighting part otherwise we need to
+		// make sure that the deferred flag is disabled or else some parts of the rendered colors go missing
+		// TODO: This should really be handled somewhere else. This feels like a crude hack...
+		auto possibly_deferred = draw_data.render_material.get_depth_mode() == ZBUFFER_TYPE_FULL;
+
+		if (possibly_deferred) {
+			// Fog is handled differently in deferred shader situations
+			draw_data.render_material.set_fog();
+		}
+
+		draw_data.render_material.set_deferred_lighting(possibly_deferred ? Deferred_lighting : false);
+		draw_data.render_material.set_high_dynamic_range(High_dynamic_range);
+		draw_data.render_material.set_shadow_receiving(Cmdline_shadow_quality != 0);
+	}
 
 	if (tmap_flags & TMAP_FLAG_BATCH_TRANSFORMS && buffer->flags & VB_FLAG_MODEL_ID) {
 		vm_matrix4_set_identity(&draw_data.transform);
@@ -490,21 +516,20 @@ void model_draw_list::add_buffer_draw(model_material *render_material, indexed_v
 
 		draw_data.transform_buffer_offset = TransformBufferHandler.get_buffer_offset();
 
-		render_material->set_batching(true);
+		draw_data.render_material.set_batching(true);
 	} else {
 		draw_data.transform = Transformations.get_transform();
 		draw_data.scale = Current_scale;
 		draw_data.transform_buffer_offset = INVALID_SIZE;
-		render_material->set_batching(false);
+		draw_data.render_material.set_batching(false);
 	}
 
-	draw_data.sdr_flags = render_material->get_shader_flags();
+	draw_data.sdr_flags = draw_data.render_material.get_shader_flags();
 
 	draw_data.vert_src = vert_src;
 	draw_data.buffer = buffer;
 	draw_data.texi = texi;
 	draw_data.flags = tmap_flags;
-	draw_data.render_material = *render_material;
 	draw_data.lights = Current_lights_set;
 
 	Render_elements.push_back(draw_data);
@@ -516,31 +541,12 @@ void model_draw_list::render_buffer(queued_buffer_draw &render_elements)
 	GR_DEBUG_SCOPE("Render buffer");
 	TRACE_SCOPE(tracing::RenderBuffer);
 
-	gr_set_transform_buffer_offset(render_elements.transform_buffer_offset);
-
-	if ( render_elements.render_material.is_lit() ) {
-		Scene_light_handler.setLights(&render_elements.lights);
-	} else {
-		gr_set_lighting(false, false);
-
-		Scene_light_handler.resetLightState();
-	}
-
-	matrix orient;
-	vec3d pos;
-
-	vm_matrix4_get_offset(&pos, &render_elements.transform);
-	vm_matrix4_get_orientation(&orient, &render_elements.transform);
-
-	g3_start_instance_matrix(&pos, &orient);
-
-	gr_push_scale_matrix(&render_elements.scale);
+	gr_bind_uniform_buffer(uniform_block_type::ModelData,
+						   render_elements.uniform_buffer_offset,
+						   sizeof(graphics::model_uniform_data),
+						   _dataBuffer->bufferHandle());
 
 	gr_render_model(&render_elements.render_material, render_elements.vert_src, render_elements.buffer, render_elements.texi);
-
-	gr_pop_scale_matrix();
-
-	g3_done_instance(true);
 }
 
 vec3d model_draw_list::get_view_position()
@@ -591,9 +597,9 @@ void model_draw_list::init()
 {
 	reset();
 
-	for ( int i = 0; i < Num_lights; ++i ) {
-		if ( Lights[i].type == LT_DIRECTIONAL || !Deferred_lighting ) {
-			Scene_light_handler.addLight(&Lights[i]);
+	for (auto& l : Lights) {
+		if ( l.type == Light_Type::Directional || !Deferred_lighting ) {
+			Scene_light_handler.addLight(&l);
 		}	
 	}
 
@@ -607,12 +613,18 @@ void model_draw_list::init_render(bool sort)
 	}
 
 	TransformBufferHandler.submit_buffer_data();
+
+	build_uniform_buffer();
+
+	Render_initialized = true;
 }
 
 void model_draw_list::render_all(gr_zbuffer_type depth_mode)
 {
 	GR_DEBUG_SCOPE("Render draw list");
 	TRACE_SCOPE(tracing::SubmitDraws);
+
+	Assertion(Render_initialized, "init_render must be called before any render_all call!");
 
 	Scene_light_handler.resetLightState();
 
@@ -779,6 +791,41 @@ bool model_draw_list::sort_draw_pair(model_draw_list* target, const int a, const
 
 	return draw_call_a->lights.index_start < draw_call_b->lights.index_start;
 }
+void model_draw_list::build_uniform_buffer() {
+	GR_DEBUG_SCOPE("Build model uniform buffer");
+
+	TRACE_SCOPE(tracing::BuildModelUniforms);
+
+	_dataBuffer = gr_get_uniform_buffer(uniform_block_type::ModelData);
+
+	for (auto render_index : Render_keys) {
+		auto& queued_draw = Render_elements[render_index];
+
+		// Set lighting here so that it can be captured by the uniform conversion below
+		if ( queued_draw.render_material.is_lit() ) {
+			Scene_light_handler.setLights(&queued_draw.lights);
+		} else {
+			gr_set_lighting(false, false);
+
+			Scene_light_handler.resetLightState();
+		}
+
+		auto element = _dataBuffer->aligner().addTypedElement<graphics::model_uniform_data>();
+		graphics::uniforms::convert_model_material(element,
+												   queued_draw.render_material,
+												   queued_draw.transform,
+												   queued_draw.scale,
+												   queued_draw.transform_buffer_offset);
+		queued_draw.uniform_buffer_offset = _dataBuffer->aligner().getCurrentOffset();
+	}
+
+	TRACE_SCOPE(tracing::UploadModelUniforms);
+
+	_dataBuffer->submitData();
+}
+model_draw_list::~model_draw_list() {
+	reset();
+}
 
 void model_render_add_lightning( model_draw_list *scene, model_render_params* interp, polymodel *pm, bsp_info * sm )
 {
@@ -929,6 +976,7 @@ void model_render_buffers(model_draw_list* scene, model_material *rendering_mate
 {
 	bsp_info *model = NULL;
 	const uint model_flags = interp->get_model_flags();
+	const uint debug_flags = interp->get_debug_flags();
 	const int obj_num = interp->get_object_number();
 
 	Assert(buffer != NULL);
@@ -1052,11 +1100,14 @@ void model_render_buffers(model_draw_list* scene, model_material *rendering_mate
 				}
 			}
 
-			if ( replacement_textures != NULL && replacement_textures[rt_begin_index + TM_SPECULAR_TYPE] >= 0 ) {
-				tex_replace[TM_SPECULAR_TYPE] = texture_info(replacement_textures[rt_begin_index + TM_SPECULAR_TYPE]);
-				texture_maps[TM_SPECULAR_TYPE] = model_interp_get_texture(&tex_replace[TM_SPECULAR_TYPE], base_frametime);
-			} else {
-				texture_maps[TM_SPECULAR_TYPE] = model_interp_get_texture(&tmap->textures[TM_SPECULAR_TYPE], base_frametime);
+			if (!(debug_flags & MR_DEBUG_NO_SPEC)) {
+				if (replacement_textures != NULL && replacement_textures[rt_begin_index + TM_SPECULAR_TYPE] >= 0) {
+					tex_replace[TM_SPECULAR_TYPE] = texture_info(replacement_textures[rt_begin_index + TM_SPECULAR_TYPE]);
+					texture_maps[TM_SPECULAR_TYPE] = model_interp_get_texture(&tex_replace[TM_SPECULAR_TYPE], base_frametime);
+				}
+				else {
+					texture_maps[TM_SPECULAR_TYPE] = model_interp_get_texture(&tmap->textures[TM_SPECULAR_TYPE], base_frametime);
+				}
 			}
 
 			if ( replacement_textures != NULL && replacement_textures[rt_begin_index + TM_SPEC_GLOSS_TYPE] >= 0 ) {
@@ -1066,7 +1117,7 @@ void model_render_buffers(model_draw_list* scene, model_material *rendering_mate
 				texture_maps[TM_SPEC_GLOSS_TYPE] = model_interp_get_texture(&tmap->textures[TM_SPEC_GLOSS_TYPE], base_frametime);
 			}
 
-			if ( (Detail.lighting > 2)  && (detail_level < 2) ) {
+			if ((Detail.lighting > 2) && (detail_level < 2)) {
 				// likewise, etc.
 				texture_info *norm_map = &tmap->textures[TM_NORMAL_TYPE];
 				texture_info *height_map = &tmap->textures[TM_HEIGHT_TYPE];
@@ -1084,7 +1135,7 @@ void model_render_buffers(model_draw_list* scene, model_material *rendering_mate
 						height_map = &tex_replace[TM_HEIGHT_TYPE];
 					}
 
-					if ( replacement_textures[rt_begin_index + TM_AMBIENT_TYPE] >= 0 ) {
+					if (replacement_textures[rt_begin_index + TM_AMBIENT_TYPE] >= 0) {
 						tex_replace[TM_AMBIENT_TYPE] = texture_info(replacement_textures[rt_begin_index + TM_AMBIENT_TYPE]);
 						ambient_map = &tex_replace[TM_AMBIENT_TYPE];
 					}
@@ -1095,10 +1146,13 @@ void model_render_buffers(model_draw_list* scene, model_material *rendering_mate
 					}
 				}
 
-				texture_maps[TM_NORMAL_TYPE] = model_interp_get_texture(norm_map, base_frametime);
-				texture_maps[TM_HEIGHT_TYPE] = model_interp_get_texture(height_map, base_frametime);
-				texture_maps[TM_AMBIENT_TYPE] = model_interp_get_texture(ambient_map, base_frametime);
-				texture_maps[TM_MISC_TYPE] = model_interp_get_texture(misc_map, base_frametime);
+				if (debug_flags & MR_DEBUG_NO_DIFFUSE)  texture_maps[TM_BASE_TYPE] = -1;
+				if (debug_flags & MR_DEBUG_NO_GLOW)		  texture_maps[TM_GLOW_TYPE] = -1;
+				if (debug_flags & MR_DEBUG_NO_SPEC)		  texture_maps[TM_SPECULAR_TYPE] = -1;
+				if (!(debug_flags & MR_DEBUG_NO_NORMAL))  texture_maps[TM_NORMAL_TYPE] = model_interp_get_texture(norm_map, base_frametime);
+				if (!(debug_flags & MR_DEBUG_NO_HEIGHT))  texture_maps[TM_HEIGHT_TYPE] = model_interp_get_texture(height_map, base_frametime);
+				if (!(debug_flags & MR_DEBUG_NO_AMBIENT)) texture_maps[TM_AMBIENT_TYPE] = model_interp_get_texture(ambient_map, base_frametime);
+				if (!(debug_flags & MR_DEBUG_NO_MISC))    texture_maps[TM_MISC_TYPE] = model_interp_get_texture(misc_map, base_frametime);
 			}
 		} else {
 			alpha = forced_alpha;
@@ -1118,7 +1172,7 @@ void model_render_buffers(model_draw_list* scene, model_material *rendering_mate
 			}
 		}
 
-		if ( (texture_maps[TM_BASE_TYPE] == -1) && !no_texturing ) {
+		if ( (texture_maps[TM_BASE_TYPE] == -1) && !no_texturing && !(debug_flags & MR_DEBUG_NO_DIFFUSE) ) {
 			continue;
 		}
 
@@ -1454,7 +1508,8 @@ void submodel_render_immediate(model_render_params *render_info, int model_num, 
 	model_list.init();
 
 	submodel_render_queue(render_info, &model_list, model_num, submodel_num, orient, pos);
-	
+
+	model_list.init_render();
 	model_list.render_all();
 
 	gr_zbias(0);
@@ -1605,7 +1660,7 @@ void model_render_glowpoint(int point_num, vec3d *pos, matrix *orient, glow_poin
 	vec3d submodel_static_offset; // The associated submodel's static offset in the ship's frame of reference
 	bool submodel_rotation = false;
 
-	if ( bank->submodel_parent > 0 && pm->submodel[bank->submodel_parent].can_move && (gameseq_get_state_idx(GS_STATE_LAB) == -1) && shipp != NULL ) {
+	if ( bank->submodel_parent > 0 && pm->submodel[bank->submodel_parent].can_move && shipp != NULL ) {
 		model_find_submodel_offset(&submodel_static_offset, Ship_info[shipp->ship_info_index].model_num, bank->submodel_parent);
 
 		submodel_rotation = true;
@@ -1743,6 +1798,7 @@ void model_render_glowpoint(int point_num, vec3d *pos, matrix *orient, glow_poin
 					} else {
 						x %= gpo->pulse_period;
 					}
+					FALLTHROUGH;
 
 				case PULSE_TRI:
 					float inv;
@@ -2696,13 +2752,36 @@ void model_render_queue(model_render_params *interp, model_draw_list *scene, int
 		rendering_material.set_lighting(false);
 	}
 
+	Assertion(!(model_flags & MR_STENCIL_READ && model_flags & MR_STENCIL_WRITE),
+			  "Enabling stencil read and write at the same time is not supported!");
+
+	if (model_flags & MR_STENCIL_READ) {
+		rendering_material.set_stencil_test(true);
+		rendering_material.set_stencil_func(ComparisionFunction::NotEqual, 1, 0xFFFF);
+		rendering_material.set_stencil_op(StencilOperation::Keep, StencilOperation::Keep, StencilOperation::Keep);
+	} else if (model_flags & MR_STENCIL_WRITE) {
+		rendering_material.set_stencil_test(true);
+		rendering_material.set_stencil_func(ComparisionFunction::Always, 1, 0xFFFF);
+		rendering_material.set_stencil_op(StencilOperation::Keep, StencilOperation::Keep, StencilOperation::Replace);
+	} else {
+		rendering_material.set_stencil_test(false);
+		rendering_material.set_stencil_func(ComparisionFunction::Never, 1, 0xFFFF);
+		rendering_material.set_stencil_op(StencilOperation::Keep, StencilOperation::Keep, StencilOperation::Keep);
+	}
+
+	if (model_flags & MR_NO_COLOR_WRITES) {
+		rendering_material.set_color_mask(false, false, false, false);
+	} else {
+		rendering_material.set_color_mask(true, true, true, true);
+	}
+
 	if ( Rendering_to_shadow_map ) {
 		rendering_material.set_depth_bias(-1024);
 	} else {
 		rendering_material.set_depth_bias(0);
 	}
 
-	if ( !Cmdline_no_batching && !(model_flags & MR_NO_BATCH) && pm->flags & PM_FLAG_BATCHED 
+	if ( !(model_flags & MR_NO_BATCH) && pm->flags & PM_FLAG_BATCHED
 		&& !(is_outlines_only || is_outlines_only_htl) ) {
 		// always set batched rendering on if supported
 		tmap_flags |= TMAP_FLAG_BATCH_TRANSFORMS;
@@ -2812,4 +2891,9 @@ void model_render_queue(model_render_params *interp, model_draw_list *scene, int
 			model_queue_render_thrusters( interp, pm, objnum, shipp, orient, pos );
 		}
 	}
+}
+
+void model_render_set_wireframe_color(color* clr)
+{
+	Wireframe_color = *clr;
 }

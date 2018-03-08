@@ -15,6 +15,7 @@
 #include "debugconsole/console.h"
 #include "freespace.h"
 #include "graphics/paths/PathRenderer.h"
+#include "graphics/matrix.h"
 #include "hud/hud.h"
 #include "hud/hudtarget.h"
 #include "io/timer.h"
@@ -220,7 +221,7 @@ void stars_load_debris_vclips(debris_vclip *vclips)
 	}
 }
 
-void stars_load_debris(int fullneb = 0)
+void stars_load_debris(int fullneb)
 {
 	if (Cmdline_nomotiondebris) {
 		return;
@@ -1693,11 +1694,6 @@ void stars_draw_debris()
 
 	gr_set_color( 0, 0, 0 );
 
-	// turn off fogging
-	if (The_mission.flags[Mission::Mission_Flags::Fullneb]) {
-		gr_fog_set(GR_FOGMODE_NONE, 0, 0, 0);
-	}
-
 	old_debris * d = odebris; 
 
 	for (i=0; i<MAX_DEBRIS; i++, d++ ) {
@@ -1759,7 +1755,7 @@ void stars_draw_debris()
 	reload_old_debris = 0;
 }
 
-void stars_draw(int show_stars, int show_suns, int show_nebulas, int show_subspace, int env)
+void stars_draw(int show_stars, int show_suns, int show_nebulas, int show_subspace, int env, bool in_mission)
 {
 	GR_DEBUG_SCOPE("Draw Stars");
 	TRACE_SCOPE(tracing::DrawStars);
@@ -1804,7 +1800,7 @@ void stars_draw(int show_stars, int show_suns, int show_nebulas, int show_subspa
 	mprintf(( "Stars: %d\n", xt2-xt1 ));
 #endif
 
-	if ( !Rendering_to_env && (Game_detail_flags & DETAIL_FLAG_MOTION) && (!Fred_running) && (supernova_active() < 3) && (!Cmdline_nomotiondebris) )	{
+	if ( !Rendering_to_env && (Game_detail_flags & DETAIL_FLAG_MOTION) && (!Fred_running) && (supernova_active() < 3) && (!Cmdline_nomotiondebris) && in_mission)	{
 		stars_draw_debris();
 	}
 
@@ -2489,16 +2485,20 @@ void stars_set_nebula(bool activate)
 		} else {
 			Neb2_render_mode = NEB2_RENDER_HTL;
 		}
-		Debris_vclips = Debris_vclips_nebula;
 		neb2_eye_changed();
 	}
 	else
 	{
 		Toggle_text_alpha = TOGGLE_TEXT_NORMAL_ALPHA;
 		Neb2_render_mode = NEB2_RENDER_NONE;
-		Debris_vclips = Debris_vclips_normal;
 		HUD_contrast = 0;
 	}
+
+	// (DahBlount)
+	// This needs to be done regardless of whether we're in nebula or not
+	// Should ensure that we're actually loading the needed anims into BMPMan
+	stars_load_debris(static_cast<int>(activate));
+
 	// We need to reload the environment map now
 	stars_invalidate_environment_map();
 }

@@ -50,6 +50,20 @@ class opengl_texture_state
 		void SetTarget(GLenum tex_target);
 		void SetActiveUnit(GLuint id = 0);
 		void Enable(GLuint tex_id = 0);
+		/**
+		 * @brief Directly enables a texture on the specified unit
+		 *
+		 * This is a more efficient version of the standard activeTexture -> Enable since it does not cause an
+		 * OpenGL call if the texture is already set correctly
+		 *
+		 * @warning This may not actually set the active texture unit to the specified value! If you require that then
+		 * you need to call SetActiveUnit!
+		 *
+		 * @param unit The texture unit to use
+		 * @param tex_target The texture target of the texture id
+		 * @param tex_id The ID of the texture to enable
+		 */
+		void Enable(GLuint unit, GLenum tex_target, GLuint tex_id);
 		void Delete(GLuint tex_id);
 		
 		inline GLenum GetTarget();
@@ -109,11 +123,28 @@ class opengl_array_state
 		SCP_map<GLuint, opengl_vertex_attrib_unit> vertex_attrib_units;
 
 		GLuint array_buffer;
+		bool array_buffer_valid = false;
+
 		GLuint element_array_buffer;
+		bool element_array_buffer_valid = false;
+
 		GLuint texture_array_buffer;
 		GLuint uniform_buffer;
 
 		GLuint uniform_buffer_index_bindings[MAX_UNIFORM_BUFFERS];
+
+		struct vertex_buffer_binding {
+			GLuint buffer = 0;
+			GLintptr offset = 0;
+			GLsizei stride = 0;
+			bool valid_data = false;
+		};
+		SCP_vector<vertex_buffer_binding> vertex_buffer_bindings; //!< Use for keeping track of glBindVertexBuffer calls
+
+		/**
+		 * @brief Signals that the VAO binding changed which invalidates the state of our array and element buffer state
+		 */
+		void VertexArrayChanged();
 	public:
 		opengl_array_state(): active_client_texture_unit(0), client_texture_units(NULL) {
 			for ( int i = 0; i < MAX_UNIFORM_BUFFERS; ++i ) {
@@ -137,6 +168,27 @@ class opengl_array_state
 		void BindTextureBuffer(GLuint id);
 		void BindUniformBuffer(GLuint id);
 		void BindUniformBufferBindingIndex(GLuint id, GLuint index);
+
+		void BindVertexBuffer(GLuint bindingindex, GLuint buffer, GLintptr offset, GLsizei stride);
+
+		friend class opengl_state;
+};
+
+class opengl_constant_state {
+	GLint _uniform_buffer_offset_alignment;
+	GLint _max_uniform_block_size;
+	GLint _max_uniform_block_bindings;
+
+ public:
+	opengl_constant_state();
+
+	void init();
+
+	GLint GetUniformBufferOffsetAlignment();
+
+	GLint GetMaxUniformBlockSize();
+
+	GLint GetMaxUniformBlockBindings();
 };
 
 class opengl_state
@@ -154,7 +206,7 @@ class opengl_state
 		GLboolean clipplane_Status[6];
 		bool clipdistance_Status[6];
 		GLboolean depthmask_Status;
-        GLboolean colormask_Status;
+        bvec4 colormask_Status;
 
 		GLenum frontface_Value;
 		GLenum cullface_Value;
@@ -170,13 +222,28 @@ class opengl_state
 		GLfloat line_width_Value;
 
 		gr_alpha_blend Current_alpha_blend_mode;
-        gr_stencil_type Current_stencil_type;
+
+		GLenum stencilFunc;
+		GLint stencilFuncRef;
+		GLuint stencilFuncMask;
+
+		GLuint stencilMask;
+
+		GLenum stencilOpFrontStencilFail;
+		GLenum stencilOpFrontDepthFail;
+		GLenum stencilOpFrontPass;
+
+		GLenum stencilOpBackStencilFail;
+		GLenum stencilOpBackDepthFail;
+		GLenum stencilOpBackPass;
 
 		GLuint current_program;
 
 		// The framebuffer state actually consists of draw and read buffers but we only use both at the same time
 		GLuint current_framebuffer;
 		SCP_vector<GLuint> framebuffer_stack;
+
+		GLuint current_vao = 0;
 	public:
 		opengl_state() {}
 		~opengl_state() {}
@@ -185,13 +252,17 @@ class opengl_state
 
 		opengl_texture_state Texture;
 		opengl_array_state Array;
+		opengl_constant_state Constants;
 
 		void SetAlphaBlendMode(gr_alpha_blend ab);
 		void SetZbufferType(gr_zbuffer_type zt);
-        void SetStencilType(gr_stencil_type st);
 		void SetPolygonOffset(GLfloat factor, GLfloat units);
 		void SetPolygonMode(GLenum face, GLenum mode);
 		void SetLineWidth(GLfloat width);
+
+		void StencilFunc(GLenum func, GLint ref, GLuint mask);
+		void StencilOpSeparate(GLenum face, GLenum sfail, GLenum dpfail, GLenum dppass);
+		void StencilMask(GLuint mask);
 
 		// the GLboolean functions will return the current state if no argument
 		// and the previous state if an argument is passed
@@ -204,7 +275,7 @@ class opengl_state
 		GLboolean PolygonOffsetFill(GLint state = -1);
 		GLboolean ClipDistance(GLint num, bool state = false);
 		GLboolean DepthMask(GLint state = -1);
-        GLboolean ColorMask(GLint state = -1);
+        bvec4 ColorMask(bool red, bool green, bool blue, bool alpha);
 
 		inline GLenum FrontFaceValue(GLenum new_val = GL_INVALID_ENUM);
 		inline GLenum CullFaceValue(GLenum new_val = GL_INVALID_ENUM);
@@ -221,6 +292,8 @@ class opengl_state
 
 		void PushFramebufferState();
 		void PopFramebufferState();
+
+		void BindVertexArray(GLuint vao);
 };
 
 inline GLenum opengl_state::FrontFaceValue(GLenum new_val)

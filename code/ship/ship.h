@@ -227,7 +227,7 @@ public:
 	//Get
 	char *GetNamePtr(){return Name;}
 	bool IsName(char *in_name){return (stricmp(in_name,Name)==0);}
-	float GetDamage(float damage_applied, int in_damage_type_idx, float diff_dmg_scale);
+	float GetDamage(float damage_applied, int in_damage_type_idx, float diff_dmg_scale, int is_beam = 0);
 	float GetShieldPiercePCT(int damage_type_idx);
 	int GetPiercingType(int damage_type_idx);
 	float GetPiercingLimit(int damage_type_idx);
@@ -1204,7 +1204,7 @@ public:
 
 	int damage_lightning_type;
 
-	SCP_vector<HudGauge*> hud_gauges;
+	SCP_vector<std::unique_ptr<HudGauge>> hud_gauges;
 	bool hud_enabled;
 	bool hud_retail;
 
@@ -1579,7 +1579,7 @@ extern int Ship_auto_repair;	// flag to indicate auto-repair of subsystem should
 
 void ship_subsystem_delete(ship *shipp);
 void ship_set_default_weapons(ship *shipp, ship_info *sip);
-float ship_quadrant_shield_strength(object *hit_objp, vec3d *hitpos);
+float ship_quadrant_shield_strength(object *hit_objp, int quadrant_num);
 
 int ship_dumbfire_threat(ship *sp);
 int ship_lock_threat(ship *sp);

@@ -219,6 +219,9 @@ int jpeg_read_bitmap(const char *real_filename, ubyte *image_data, ubyte *palett
 		jpeg_info.output_components = dest_size;
 		jpeg_info.out_color_components = dest_size;	// may need/have to match above
 
+		// Actually check the precondition specified in the comment above
+		Assertion(dest_size == 3, "JPEG decompression currently only support 24-bit bitmap locking!");
+
 		// multiplying by rec_outbuf_height isn't required but is more efficient
 		int size = jpeg_info.output_width * jpeg_info.output_components * jpeg_info.rec_outbuf_height;
 		// a standard malloc doesn't appear to work properly here (debug vm_malloc??), crashes in lib

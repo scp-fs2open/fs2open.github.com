@@ -21,7 +21,7 @@ TARGET_INCLUDE_DIRECTORIES(code PUBLIC ${GENERATED_SOURCE_DIR}/code)
 
 target_link_libraries(code PUBLIC OpenGL)
 
-TARGET_LINK_LIBRARIES(code PUBLIC ${OPENAL_LIBS})
+TARGET_LINK_LIBRARIES(code PUBLIC openal)
 TARGET_LINK_LIBRARIES(code PUBLIC ${LUA_LIBS})
 TARGET_LINK_LIBRARIES(code PUBLIC ${PNG_LIBS})
 TARGET_LINK_LIBRARIES(code PUBLIC ${JPEG_LIBS})
@@ -29,6 +29,8 @@ TARGET_LINK_LIBRARIES(code PUBLIC ${JPEG_LIBS})
 TARGET_LINK_LIBRARIES(code PUBLIC sdl2)
 
 TARGET_LINK_LIBRARIES(code PUBLIC ffmpeg)
+
+TARGET_LINK_LIBRARIES(code PUBLIC utfcpp)
 
 TARGET_LINK_LIBRARIES(code PUBLIC platform)
 TARGET_LINK_LIBRARIES(code PUBLIC compiler)
@@ -57,8 +59,6 @@ set_target_properties(code PROPERTIES COTIRE_CXX_PREFIX_HEADER_INIT "prefix_head
 
 include(util)
 configure_cotire(code)
-
-include(../cmake/Cxx11.cmake)
 
 # Ensure that Xcode generates debug symbols on macOS for Debug builds
 set_target_properties(code PROPERTIES XCODE_ATTRIBUTE_GCC_GENERATE_DEBUGGING_SYMBOLS[variant=Debug] "YES")

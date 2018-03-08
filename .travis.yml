@@ -4,6 +4,7 @@ dist: trusty
 cache:
     directories:
     - $HOME/cmake
+    - $HOME/.ccache
 addons:
     apt:
         packages: &global_deps
@@ -75,6 +76,16 @@ matrix:
                       - *global_deps
                       - g++-5
         - os: linux
+          env: CONFIGURATION="Debug" CC=gcc-7 CXX=g++-7
+          addons:
+              apt:
+                  sources:
+                      - ubuntu-toolchain-r-test
+                      - sourceline: 'ppa:beineri/opt-qt571-trusty'
+                  packages:
+                      - g++-7
+                      - *global_deps
+        - os: linux
           env: CONFIGURATION="Debug" CC=clang-3.6 CXX=clang++-3.6
           addons:
               apt:
@@ -98,6 +109,16 @@ matrix:
                   packages:
                       - *global_deps
                       - g++-5
+        - os: linux
+          env: CONFIGURATION="Release" CC=gcc-7 CXX=g++-7
+          addons:
+              apt:
+                  sources:
+                      - ubuntu-toolchain-r-test
+                      - sourceline: 'ppa:beineri/opt-qt571-trusty'
+                  packages:
+                      - g++-7
+                      - *global_deps
         - os: linux
           env: CONFIGURATION="Release" CC=clang-3.6 CXX=clang++-3.6
           addons:

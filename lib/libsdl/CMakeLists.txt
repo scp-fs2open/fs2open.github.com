@@ -20,7 +20,7 @@ IF(WIN32)
 	ELSE(MSVC) #MINGW
 		add_library(sdl2 INTERFACE)
 		target_link_libraries(sdl2 INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/lib/${ARCH}/SDL2.dll")
-		target_link_libraries(sdlmain INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/lib/${ARCH}/SDL2main.a")
+		target_link_libraries(sdlmain INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/lib/${ARCH}/libSDL2main.a")
 	ENDIF(MSVC)
 	set_target_properties(sdl2 PROPERTIES INTERFACE_INCLUDE_DIRECTORIES "${CMAKE_CURRENT_SOURCE_DIR}/include")
 
