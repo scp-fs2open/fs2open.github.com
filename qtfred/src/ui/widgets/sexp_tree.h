@@ -7,11 +7,7 @@
  *
 */
 
-#ifndef _SEXP_TREE_H
-#define _SEXP_TREE_H
-
-// 4786 is identifier truncated to 255 characters (happens all the time in Microsoft #includes) -- Goober5000
-#pragma warning(disable: 4786)
+#pragma once
 
 #include "parse/sexp.h"
 #include "parse/parselo.h"
@@ -21,6 +17,8 @@
 
 namespace fso {
 namespace fred {
+
+class Editor;
 
 // Goober5000 - it's dynamic now
 //#define MAX_SEXP_TREE_SIZE 500
@@ -69,15 +67,32 @@ namespace fred {
 #define ST_ROOT_DELETABLE    0x20000
 #define ST_ROOT_EDITABLE    0x40000
 
-#define MODE_GOALS        (1 | ST_LABELED_ROOT | ST_ROOT_DELETABLE)
-#define MODE_EVENTS        (2 | ST_LABELED_ROOT | ST_ROOT_DELETABLE | ST_ROOT_EDITABLE)
-#define MODE_CAMPAIGN    (3 | ST_LABELED_ROOT | ST_ROOT_DELETABLE)
-
 // various tree operations notification codes (to be handled by derived class)
 #define ROOT_DELETED    1
 #define ROOT_RENAMED    2
 
 #define SEXP_ITEM_F_DUP    (1<<0)
+
+/**
+ * @brief Generic interface for operations that may depend on the context of the SEXP tree
+ */
+class SexpTreeEditorInterface {
+	Editor* _editor = nullptr;
+ public:
+	explicit SexpTreeEditorInterface(Editor* editor);
+
+	virtual bool hasDefaultMessageParamter();
+	virtual SCP_vector<SCP_string> getMessages();
+
+	virtual SCP_vector<SCP_string> getMissionGoals(const SCP_string& reference_name);
+	virtual bool hasDefaultGoal(int operator_value);
+
+	virtual SCP_vector<SCP_string> getMissionEvents(const SCP_string& reference_name);
+	virtual bool hasDefaultEvent(int operator_value);
+
+	virtual SCP_vector<SCP_string> getMissionNames();
+	virtual bool hasDefaultMissionName();
+};
 
 /*
  * Notes: An sexp_tree_item is basically a node in a tree.  The sexp_tree is an array of
@@ -122,18 +137,19 @@ class sexp_list_item {
 };
 
 class sexp_tree: public QTreeWidget {
- public:
-	sexp_tree();
 
-	int find_text(const char* text, int* find);
+ Q_OBJECT
+ public:
+	explicit sexp_tree(QWidget* parent = nullptr);
+
+	int find_text(const char* text, int* find, int max_depth);
 	int query_restricted_opf_range(int opf);
 	void verify_and_fix_arguments(int node);
 	void post_load();
 	void update_help(QTreeWidgetItem* h);
 	const char* help(int code);
 	QTreeWidgetItem* insert(const QString& lpszItem,
-							int image = BITMAP_ROOT,
-							int sel_image = BITMAP_ROOT,
+							const QIcon& image = QIcon(),
 							QTreeWidgetItem* hParent = nullptr,
 							QTreeWidgetItem* hInsertAfter = nullptr);
 	QTreeWidgetItem* handle(int node);
@@ -148,11 +164,10 @@ class sexp_tree: public QTreeWidget {
 	QTreeWidgetItem*
 	move_branch(QTreeWidgetItem* source, QTreeWidgetItem* parent = nullptr, QTreeWidgetItem* after = nullptr);
 	void copy_branch(QTreeWidgetItem* source, QTreeWidgetItem* parent = nullptr, QTreeWidgetItem* after = nullptr);
-	void setup_selected(QTreeWidgetItem* h = NULL);
 	void add_or_replace_operator(int op, int replace_flag = 0);
 //	void replace_one_arg_operator(const char *op, const char *data, int type);
 	void replace_operator(const char* op);
-	void replace_data(const char* data, int type);
+	void replace_data(const char* new_data, int type);
 	void replace_variable_data(int var_idx, int type);
 	void link_modified(int* ptr);
 	void ensure_visible(int node);
@@ -160,11 +175,8 @@ class sexp_tree: public QTreeWidget {
 	void expand_branch(QTreeWidgetItem* h);
 	void expand_operator(int node);
 	void merge_operator(int node);
-	int end_label_edit(TVITEMA& item);
-	int edit_label(QTreeWidgetItem* h);
 	int identify_arg_type(int node);
 	int count_args(int node);
-	void right_clicked(int mode = 0);
 	int ctree_size;
 	virtual void build_tree();
 	void set_node(int index, int type, const char* text);
@@ -177,8 +189,8 @@ class sexp_tree: public QTreeWidget {
 	int save_tree(int node = -1);
 	void load_tree(int index, const char* deflt = "true");
 	void add_operator(const char* op, QTreeWidgetItem* h = nullptr);
-	int add_data(const char* data, int type);
-	int add_variable_data(const char* data, int type);
+	int add_data(const char* new_data, int type);
+	int add_variable_data(const char* new_data, int type);
 	void add_sub_tree(int node, QTreeWidgetItem* root);
 	int load_sub_tree(int index, bool valid, const char* text);
 	void hilite_item(int node);
@@ -198,7 +210,7 @@ class sexp_tree: public QTreeWidget {
 
 	//WMC
 	int get_sibling_place(int node);
-	int get_data_image(int node);
+	QIcon get_data_image(int node);
 
 
 	sexp_list_item* get_listing_opf(int opf, int parent_node, int arg_index);
@@ -284,56 +296,35 @@ class sexp_tree: public QTreeWidget {
 	sexp_list_item* get_listing_opf_nebula_patterns();
 	sexp_list_item* get_listing_opf_game_snds();
 
-	int m_mode;
 	int item_index;
 	int select_sexp_node;  // used to select an sexp item on dialog box open.
-	bool m_dragging;
-	QTreeWidgetItem* m_h_drag = nullptr;
-	QTreeWidgetItem* m_h_drop = nullptr;
-	CImageList* m_p_image_list;
-	CEdit* help_box;
-	CEdit* mini_help_box;
-	CPoint m_pt;
 
-	// ClassWizard generated virtual function overrides
-	//{{AFX_VIRTUAL(sexp_tree)
- public:
-	virtual bool OnCommand(WPARAM wParam, LPARAM lParam);
-	//}}AFX_VIRTUAL
+	void initializeEditor(Editor* editor, SexpTreeEditorInterface* interface = nullptr);
+
+ signals:
+	void miniHelpChanged(const QString& text);
+	void helpChanged(const QString& text);
 
 	// Generated message map functions
  protected:
-	//{{AFX_MSG(sexp_tree)
-	void OnBegindrag(NMHDR* pNMHDR, LRESULT* pResult);
-	void OnMouseMove(UINT nFlags, CPoint point);
-	void OnLButtonUp(UINT nFlags, CPoint point);
-	void OnDestroy();
-	void OnLButtonDown(UINT nFlags, CPoint point);
-	void OnKeydown(NMHDR* pNMHDR, LRESULT* pResult);
-	//}}AFX_MSG
-
 	int load_branch(int index, int parent);
 	int save_branch(int cur, int at_root = 0);
 	void free_node2(int node);
 
 	int flag;
-	int* modified;
+	bool modified = false;
 
 	SCP_vector<sexp_tree_item> tree_nodes;
 	int total_nodes;
 
-	QTreeWidgetItem* item_handle = nullptr;
 	int root_item;
-	// these 2 variables are used to help location data sources.  Sometimes looking up
-	// valid data can require complex code just to get to an index that is required to
-	// locate data.  These are set up in right_clicked() to try and short circuit having
-	// to do the lookup again in the code that actually does the adding or replacing of
-	// the data if it's selected.
-	int add_instance;  // a source reference index indicator for adding data
-	int replace_instance;  // a source reference index indicator for replacing data
+
+	Editor* _editor = nullptr;
+	SexpTreeEditorInterface* _interface = nullptr;
+
+	// If there is no special interface then we supply a default one which needs to be stored somewhere
+	std::unique_ptr<SexpTreeEditorInterface> _owned_interface;
 };
 
 }
 }
-
-#endif

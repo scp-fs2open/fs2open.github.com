@@ -17,8 +17,6 @@
 namespace fso {
 namespace fred {
 
-const size_t MAX_DOCKS = 1000;
-
 /*! Game editor.
  * Handles everything needed to edit the game,
  * without any knowledge of the actual GUI framework stack.
@@ -170,6 +168,8 @@ class Editor: public QObject {
 
 	bool global_error_check();
 
+	SCP_vector<SCP_string> get_docking_list(int model_index);
+
  private:
 	void clearMission();
 
@@ -196,8 +196,6 @@ class Editor: public QObject {
 	char err_flags[MAX_OBJECTS];
 	int obj_count = 0;
 	int g_err = 0;
-
-	char *Docking_bay_list[MAX_DOCKS];
 
 	int common_object_delete(int obj);
 
@@ -270,8 +268,6 @@ class Editor: public QObject {
 	int global_error_check_player_wings(int multi);
 
 	const char *get_order_name(int order);
-
-	int get_docking_list(int model_index);
 };
 
 } // namespace fred
