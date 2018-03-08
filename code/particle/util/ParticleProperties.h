@@ -1,7 +1,7 @@
 #pragma once
 
 #include "particle/particle.h"
-#include "particle/util/RandomRange.h"
+#include "utils/RandomRange.h"
 
 namespace particle {
 namespace util {
@@ -15,10 +15,10 @@ namespace util {
 class ParticleProperties {
  public:
 	int m_bitmap = -1;
-	UniformFloatRange m_radius;
+	::util::UniformFloatRange m_radius;
 
 	bool m_hasLifetime = false;
-	UniformFloatRange m_lifetime;
+	::util::UniformFloatRange m_lifetime;
 
 	ParticleProperties();
 

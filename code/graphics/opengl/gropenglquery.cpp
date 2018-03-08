@@ -46,7 +46,7 @@ void gr_opengl_query_value(int obj, QueryType type) {
 
 	switch(type) {
 		case QueryType::Timestamp:
-			Assertion(GL_version >= 33, "Timestamp queries are only available from OpenGL 3.3 onwards.");
+			Assertion(GLAD_GL_ARB_timer_query, "Timestamp queries are not available! Availability must be checked before calling this function!");
 			glQueryCounter(slot.name, GL_TIMESTAMP);
 			break;
 		default:

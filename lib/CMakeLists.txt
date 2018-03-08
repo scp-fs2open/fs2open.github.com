@@ -9,7 +9,7 @@ ADD_SUBDIRECTORY(libpng)
 
 ADD_SUBDIRECTORY(lua)
 
-ADD_SUBDIRECTORY(openal)
+include(OpenAL.cmake)
 
 add_subdirectory(opengl)
 
@@ -22,5 +22,7 @@ IF(UNIX)
 ENDIF(UNIX)
 
 add_subdirectory(md5)
+
+add_subdirectory(utfcpp)
 
 include(FFmpeg.cmake)

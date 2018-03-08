@@ -9,6 +9,9 @@
 
 #include "cutscene/ffmpeg/AudioDecoder.h"
 #include "cutscene/ffmpeg/VideoDecoder.h"
+#include "cutscene/ffmpeg/SubtitleDecoder.h"
+
+#include "localization/localize.h"
 
 using namespace libs::ffmpeg;
 
@@ -62,6 +65,8 @@ CodecContextParameters getCodecParameters(AVStream* stream) {
 	paras.channel_layout = stream->codecpar->channel_layout;
 	paras.sample_rate = stream->codecpar->sample_rate;
 	paras.audio_format = (AVSampleFormat)stream->codecpar->format;
+
+    paras.codec_id = stream->codecpar->codec_id;
 #else
     paras.width = stream->codec->width;
 	paras.height = stream->codec->height;
@@ -70,8 +75,28 @@ CodecContextParameters getCodecParameters(AVStream* stream) {
 	paras.channel_layout = stream->codec->channel_layout;
 	paras.sample_rate = stream->codec->sample_rate;
 	paras.audio_format = stream->codec->sample_fmt;
+
+    paras.codec_id = stream->codec->codec_id;
 #endif
     return paras;
+}
+
+SCP_string normalizeLanguage(const char* langauge_name) {
+    if (!stricmp(langauge_name, "eng")) {
+        return "English";
+    }
+    if (!stricmp(langauge_name, "ger")) {
+        return "German";
+    }
+    if (!stricmp(langauge_name, "spa")) {
+        return "Spanish";
+    }
+
+    // Print to log so that we can find the actual value more easily later
+    mprintf(("FFmpeg log: Found unknown language value '%s'!\n", langauge_name));
+
+    // Default to english for everything else
+    return "English";
 }
 }
 
@@ -155,7 +180,32 @@ std::unique_ptr<DecoderStatus> initializeStatus(std::unique_ptr<InputStream>& st
 		status->audioStream = ctx->streams[audioStream];
 	}
 
-	status->videoCodecPars = getCodecParameters(status->videoStream);
+	auto& current_language = Lcl_languages[Lcl_current_lang];
+	for (uint32_t i = 0; i < ctx->nb_streams; ++i) {
+		auto test_stream = ctx->streams[i];
+
+#if LIBAVCODEC_VERSION_INT > AV_VERSION_INT(57, 24, 255)
+		auto& pars = test_stream->codecpar;
+
+		if (!(pars->codec_type == AVMEDIA_TYPE_SUBTITLE)) {
+			continue;
+		}
+#endif
+		AVDictionaryEntry* tag = nullptr;
+		if ((tag = av_dict_get(test_stream->metadata, "language", nullptr, 0)) == nullptr) {
+			continue;
+		}
+
+		auto normalized_language = normalizeLanguage(tag->value);
+
+		if (!stricmp(normalized_language.c_str(), current_language.lang_name)) {
+			status->subtitleStreamIndex = i;
+			status->subtitleStream = test_stream;
+			break;
+		}
+	}
+
+    status->videoCodecPars = getCodecParameters(status->videoStream);
 
 	int err;
 #if LIBAVCODEC_VERSION_INT > AV_VERSION_INT(57, 24, 255)
@@ -212,6 +262,37 @@ std::unique_ptr<DecoderStatus> initializeStatus(std::unique_ptr<InputStream>& st
 		mprintf(("FFmpeg: Using audio codec %s (%s).\n", status->audioCodec->long_name ? status->audioCodec->long_name : "<Unknown>",
 			status->audioCodec->name ? status->audioCodec->name : "<Unknown>"));
 	}
+
+    if (status->subtitleStreamIndex >= 0) {
+        // Not really sure if this makes sense for subtitles but it shouldn't break anything...
+        status->subtitleCodecPars = getCodecParameters(status->subtitleStream);
+
+        status->subtitleCodec = avcodec_find_decoder(status->subtitleCodecPars.codec_id);
+
+#if LIBAVCODEC_VERSION_INT > AV_VERSION_INT(57, 24, 255)
+        status->subtitleCodecCtx = avcodec_alloc_context3(status->subtitleCodec);
+
+        err = avcodec_parameters_to_context(status->subtitleCodecCtx, status->subtitleStream->codecpar);
+        if (err < 0) {
+            char errorStr[512];
+            av_strerror(err, errorStr, sizeof(errorStr));
+            mprintf(("FFMPEG: Failed to copy context parameters! Error: %s\n", errorStr));
+            return nullptr;
+        }
+#else
+        status->subtitleCodecCtx = status->subtitleStream->codec;
+#endif
+
+        err = avcodec_open2(status->subtitleCodecCtx, status->subtitleCodec, nullptr);
+        if (err < 0) {
+            char errorStr[512];
+            av_strerror(err, errorStr, sizeof(errorStr));
+            mprintf(("FFMPEG: Failed to open subtitle codec! Error: %s\n", errorStr));
+        }
+
+        mprintf(("FFmpeg: Using subtitle codec %s (%s).\n", status->subtitleCodec->long_name ? status->subtitleCodec->long_name : "<Unknown>",
+            status->subtitleCodec->name ? status->subtitleCodec->name : "<Unknown>"));
+    }
 
 	return status;
 }
@@ -279,10 +360,14 @@ void FFMPEGDecoder::startDecoding() {
 	std::unique_ptr<VideoDecoder> videoDecoder(new VideoDecoder(m_status.get()));
 
 	std::unique_ptr<AudioDecoder> audioDecoder;
+    std::unique_ptr<SubtitleDecoder> subtitleDecoder;
 
 	if (hasAudio()) {
 		audioDecoder.reset(new AudioDecoder(m_status.get()));
 	}
+    if (hasSubtitles()) {
+        subtitleDecoder.reset(new SubtitleDecoder(m_status.get()));
+    }
 
 	auto ctx = m_input->m_ctx->ctx();
 	AVPacket packet;
@@ -322,7 +407,14 @@ void FFMPEGDecoder::startDecoding() {
 			while ((ptr = audioDecoder->getFrame()) != nullptr) {
 				pushAudioData(std::move(ptr));
 			}
-		}
+		} else if (subtitleDecoder && packet.stream_index == m_status->subtitleStreamIndex) {
+            subtitleDecoder->decodePacket(&packet);
+
+            SubtitleFramePtr ptr;
+            while((ptr = subtitleDecoder->getFrame()) != nullptr) {
+                pushSubtitleData(std::move(ptr));
+            }
+        }
 	}
 
 	if (isDecoding()) {
@@ -347,6 +439,10 @@ void FFMPEGDecoder::startDecoding() {
 
 bool FFMPEGDecoder::hasAudio() {
 	return m_status->audioStreamIndex >= 0;
+}
+
+bool FFMPEGDecoder::hasSubtitles() {
+	return m_status->subtitleStreamIndex >= 0;
 }
 
 void FFMPEGDecoder::close() {

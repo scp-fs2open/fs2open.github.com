@@ -19,6 +19,7 @@
 #include "scripting/api/objs/shipclass.h"
 #include "scripting/api/objs/vecmath.h"
 #include "scripting/api/objs/weaponclass.h"
+#include "scripting/api/objs/LuaSEXP.h"
 
 #include "parse/sexp.h"
 #include "parse/parselo.h"
@@ -38,6 +39,12 @@
 #include "mission/missionload.h"
 #include "gamesequence/gamesequence.h"
 
+#include "scripting/lua/LuaTable.h"
+#include "scripting/lua/LuaFunction.h"
+
+#include "parse/sexp/DynamicSEXP.h"
+#include "parse/sexp/LuaSEXP.h"
+#include "parse/sexp/sexp_lookup.h"
 
 extern int ships_inited;
 
@@ -1024,6 +1031,48 @@ ADE_FUNC(isInCampaign, l_Mission, NULL, "Get whether or not the current mission 
 	}
 
 	return ade_set_args(L, "b", b);
+}
+
+ADE_FUNC(getMissionTitle, l_Mission, NULL, "Get the title of the current mission", "string", "The mission title or an empty string if currently not in mission") {
+	return ade_set_args(L, "s", The_mission.name);
+}
+
+ADE_LIB_DERIV(l_Mission_LuaSEXPs, "LuaSEXPs", NULL, "Lua SEXPs", l_Mission);
+
+ADE_INDEXER(l_Mission_LuaSEXPs, "string Name", "Gets a handle of a Lua SEXP", "LuaSEXP", "Lua SEXP handle or invalid handle on error")
+{
+	const char* name = nullptr;
+	if( !ade_get_args(L, "*s", &name) ) {
+		return ade_set_error( L, "o", l_LuaSEXP.Set( lua_sexp_h() ) );
+	}
+
+	if (name == nullptr) {
+		return ade_set_error(L, "o", l_LuaSEXP.Set(lua_sexp_h()));
+	}
+
+	if (ADE_SETTING_VAR) {
+		LuaError(L, "Setting of Lua SEXPs is not supported!");
+	}
+
+	auto op = get_operator_const(name);
+
+	if (op == 0) {
+		LuaError(L, "SEXP '%s' is not known to the SEXP system!", name);
+		return ade_set_args(L, "o", l_LuaSEXP.Set(lua_sexp_h()));
+	}
+
+	auto dynamicSEXP = sexp::get_dynamic_sexp(op);
+
+	if (dynamicSEXP == nullptr) {
+		return ade_set_args(L, "o", l_LuaSEXP.Set(lua_sexp_h()));
+	}
+
+	if (typeid(*dynamicSEXP) != typeid(sexp::LuaSEXP)) {
+		LuaError(L, "Specified dynamic SEXP name does not refer to a Lua SEXP!");
+		return ade_set_error(L, "o", l_LuaSEXP.Set(lua_sexp_h()));
+	}
+
+	return ade_set_args(L, "o", l_LuaSEXP.Set(lua_sexp_h(static_cast<sexp::LuaSEXP*>(dynamicSEXP))));
 }
 
 //****LIBRARY: Campaign

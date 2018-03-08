@@ -67,3 +67,11 @@
 #define unlikely(x)  __builtin_expect((long) !!(x), 0L)
 
 #define USED_VARIABLE __attribute__((used))
+
+#if __has_cpp_attribute(fallthough)
+#define FALLTHROUGH [[fallthrough]]
+#elif __has_cpp_attribute(clang::fallthough)
+#define FALLTHROUGH [[clang::fallthrough]]
+#else
+#define FALLTHROUGH
+#endif

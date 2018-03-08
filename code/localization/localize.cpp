@@ -17,8 +17,7 @@
 #include "parse/encrypt.h"
 #include "parse/parselo.h"
 #include "playerman/player.h"
-
-
+#include "mod_table/mod_table.h"
 
 
 // ------------------------------------------------------------------------------------------------------------
@@ -76,8 +75,8 @@ int Xstr_inited = 0;
 // table/mission externalization stuff --------------------
 #define PARSE_TEXT_BUF_SIZE			PARSE_BUF_SIZE
 #define PARSE_ID_BUF_SIZE			5
-#define LCL_MAX_STRINGS					4500
-char *Lcl_ext_str[LCL_MAX_STRINGS];
+
+SCP_unordered_map<int, char*> Lcl_ext_str;
 
 
 // ------------------------------------------------------------------------------------------------------------
@@ -197,14 +196,22 @@ void parse_stringstbl_quick(const char *filename)
 				stuff_string(language.lang_name, F_RAW, LCL_LANG_NAME_LEN + 1);
 				required_string("+Extension:");
 				stuff_string(language.lang_ext, F_RAW, LCL_LANG_NAME_LEN + 1);
-				required_string("+Special Character Index:");
-				stuff_ubyte(&language.special_char_indexes[0]);
-				for (i = 1; i < LCL_MAX_FONTS; ++i) {
-					// default to "none"/0 except for font03 which defaults to 176
-					// NOTE: fonts.tbl may override these values
-					if (i == font::FONT3) {
-						language.special_char_indexes[i] = 176;
-					} else {
+
+				if (!Unicode_text_mode) {
+					required_string("+Special Character Index:");
+					stuff_ubyte(&language.special_char_indexes[0]);
+					for (i = 1; i < LCL_MAX_FONTS; ++i) {
+						// default to "none"/0 except for font03 which defaults to 176
+						// NOTE: fonts.tbl may override these values
+						if (i == font::FONT3) {
+							language.special_char_indexes[i] = 176;
+						} else {
+							language.special_char_indexes[i] = 0;
+						}
+					}
+				} else {
+					// Set all indices to valid values
+					for (i = 0; i < LCL_MAX_FONTS; ++i) {
 						language.special_char_indexes[i] = 0;
 					}
 				}
@@ -276,14 +283,15 @@ void parse_stringstbl_common(const char *filename, const bool external)
 				stuff_string(buf, F_RAW, sizeof(buf));
 			}
 
-			if (external && (index < 0 || index >= LCL_MAX_STRINGS)) {
-				error_display(0, "Invalid tstrings table index specified (%i). Please increment LCL_MAX_STRINGS in localize.cpp.", index);
+			if (external && index < 0) {
+				error_display(0, "Invalid tstrings table index specified (%i). The index must be positive.", index);
 				return;
 			} else if (!external && (index < 0 || index >= XSTR_SIZE)) {
 				Error(LOCATION, "Invalid strings table index specified (%i)", index);
 			}
 
 			if (!external) {
+
 				size_t i = strlen(buf);
 
 				while (i--) {
@@ -325,7 +333,7 @@ void parse_stringstbl_common(const char *filename, const bool external)
 					p_offset = &buf[i+1];			// get ptr to string section with offset in it
 
 					if (buf[i] != '"')
-						Error(LOCATION, "%s is corrupt", filename);		// now its an error
+						error_display(1, "%s is corrupt", filename);		// now its an error
 				}
 
 				buf[i] = 0;
@@ -353,23 +361,23 @@ void parse_stringstbl_common(const char *filename, const bool external)
 
 			// write into Xstr_table (for strings.tbl) or Lcl_ext_str (for tstrings.tbl)
 			if (Parsing_modular_table) {
-				if ( external && (Lcl_ext_str[index] != NULL) ) {
+				if ( external && (Lcl_ext_str.find(index) != Lcl_ext_str.end()) ) {
 					vm_free((void *) Lcl_ext_str[index]);
-					Lcl_ext_str[index] = NULL;
+					Lcl_ext_str.erase(Lcl_ext_str.find(index));
 				} else if ( !external && (Xstr_table[index].str != NULL) ) {
 					vm_free((void *) Xstr_table[index].str);
 					Xstr_table[index].str = NULL;
 				}
 			}
 
-			if (external && (Lcl_ext_str[index] != NULL)) {
+			if (external && (Lcl_ext_str.find(index) != Lcl_ext_str.end())) {
 				Warning(LOCATION, "Tstrings table index %d used more than once", index);
 			} else if (!external && (Xstr_table[index].str != NULL)) {
 				Warning(LOCATION, "Strings table index %d used more than once", index);
 			}
 
 			if (external) {
-				Lcl_ext_str[index] = vm_strdup(buf);
+				Lcl_ext_str.insert(std::make_pair(index, vm_strdup(buf)));
 			} else {
 				Xstr_table[index].str = vm_strdup(buf);
 			}
@@ -427,9 +435,8 @@ void lcl_xstr_init()
 	for (i = 0; i < XSTR_SIZE; i++)
 		Xstr_table[i].str = NULL;
 
-	for (i = 0; i < LCL_MAX_STRINGS; i++)
-		Lcl_ext_str[i] = NULL;
-
+	Assertion(Lcl_ext_str.size() == 0, "Localize system was not shut down properly!");
+	Lcl_ext_str.clear();
 
 	try
 	{
@@ -471,12 +478,12 @@ void lcl_xstr_close()
 		}
 	}
 
-	for (i=0; i<LCL_MAX_STRINGS; i++){
-		if (Lcl_ext_str[i] != NULL) {
-			vm_free((void *) Lcl_ext_str[i]);
-			Lcl_ext_str[i] = NULL;
+	for (const auto& entry : Lcl_ext_str) {
+		if (entry.second != nullptr) {
+			vm_free(entry.second);
 		}
 	}
+	Lcl_ext_str.clear();
 }
 
 
@@ -508,10 +515,16 @@ void lcl_set_language(int lang)
 
 ubyte lcl_get_font_index(int font_num)
 {
-	Assertion((font_num >= 0) && (font_num < LCL_MAX_FONTS), "Passed an invalid font index");
-	Assertion((Lcl_current_lang >= 0) && (Lcl_current_lang < (int)Lcl_languages.size()), "Current language is not valid, can't get font indexes");
+	if (Unicode_text_mode) {
+		// In Unicode mode there are no special characters. Some of the code still uses this function in that mode so
+		// we just return 0 to signify that there are no special characters in this font
+		return 0;
+	} else {
+		Assertion((font_num >= 0) && (font_num < LCL_MAX_FONTS), "Passed an invalid font index");
+		Assertion((Lcl_current_lang >= 0) && (Lcl_current_lang < (int)Lcl_languages.size()), "Current language is not valid, can't get font indexes");
 
-	return Lcl_languages[Lcl_current_lang].special_char_indexes[font_num];
+		return Lcl_languages[Lcl_current_lang].special_char_indexes[font_num];
+	}
 }
 
 // maybe add on an appropriate subdirectory when opening a localized file
@@ -736,7 +749,7 @@ void lcl_ext_localize_sub(const char *in, char *out, size_t max_len, int *id)
 	}
 
 	// get the string if it exists
-	if ((str_id < LCL_MAX_STRINGS) && (Lcl_ext_str[str_id] != NULL)) {
+	if (Lcl_ext_str.find(str_id) != Lcl_ext_str.end()) {
 		// copy to the outgoing string
 		if ( strlen(Lcl_ext_str[str_id]) > max_len )
 			error_display(0, "Token too long: [%s].  Length = " SIZE_T_ARG ".  Max is " SIZE_T_ARG ".\n", Lcl_ext_str[str_id], strlen(Lcl_ext_str[str_id]), max_len);
@@ -747,9 +760,6 @@ void lcl_ext_localize_sub(const char *in, char *out, size_t max_len, int *id)
 	else {
 		if ( strlen(text_str) > max_len )
 			error_display(0, "Token too long: [%s].  Length = " SIZE_T_ARG ".  Max is " SIZE_T_ARG ".\n", text_str, strlen(text_str), max_len);
-
-		if (str_id >= LCL_MAX_STRINGS)
-			error_display(0, "Invalid XSTR ID: [%d]. (Must be less than %d.)\n", str_id, LCL_MAX_STRINGS);
 
 		strncpy(out, text_str, max_len);
 	}
@@ -821,15 +831,12 @@ void lcl_ext_localize_sub(const SCP_string &in, SCP_string &out, int *id)
 	}
 
 	// get the string if it exists
-	if ((str_id < LCL_MAX_STRINGS) && (Lcl_ext_str[str_id] != NULL)) {
+	if (Lcl_ext_str.find(str_id) != Lcl_ext_str.end()) {
 		// copy to the outgoing string
 		out = Lcl_ext_str[str_id];
 	}
 	// otherwise use what we have - probably should Int3() or assert here
 	else {
-		if (str_id >= LCL_MAX_STRINGS)
-			error_display(0, "Invalid XSTR ID: [%d]. (Must be less than %d.)\n", str_id, LCL_MAX_STRINGS);
-
 		out = text_str;
 	}
 

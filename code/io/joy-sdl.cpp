@@ -800,6 +800,42 @@ namespace joystick
 
 		SDL_QuitSubSystem(SDL_INIT_JOYSTICK);
 	}
+
+	SCP_vector<JoystickInformation> getJoystickInformations() {
+		SCP_vector<JoystickInformation> joystickInfo;
+
+		if (SDL_InitSubSystem(SDL_INIT_JOYSTICK) < 0) {
+			return SCP_vector<JoystickInformation>();
+		}
+
+		auto num_joysticks = SDL_NumJoysticks();
+		for (auto i = 0; i < num_joysticks; ++i) {
+			auto joystick = SDL_JoystickOpen(i);
+
+			JoystickInformation info{};
+
+			auto name = SDL_JoystickName(joystick);
+			if (name != nullptr) {
+				info.name = name;
+			}
+			info.guid = getJoystickGUID(joystick);
+
+			info.num_axes = static_cast<uint32_t>(SDL_JoystickNumAxes(joystick));
+			info.num_balls = static_cast<uint32_t>(SDL_JoystickNumBalls(joystick));
+			info.num_buttons = static_cast<uint32_t>(SDL_JoystickNumButtons(joystick));
+			info.num_hats = static_cast<uint32_t>(SDL_JoystickNumHats(joystick));
+
+			info.is_haptic = SDL_JoystickIsHaptic(joystick) == SDL_TRUE;
+
+			joystickInfo.push_back(info);
+
+			SDL_JoystickClose(joystick);
+		}
+
+		SDL_QuitSubSystem(SDL_INIT_JOYSTICK);
+
+		return joystickInfo;
+	}
 }
 }
 

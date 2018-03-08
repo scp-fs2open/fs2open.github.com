@@ -11,12 +11,12 @@ uint32_t get_debug_display() {
 	// be shown on the same monitor that the game is running on
 	// If there is only then then we'll just display it on that one
 	auto numDisplays = SDL_GetNumVideoDisplays();
-	
+
 	if (numDisplays < 1) {
 		// Some kind of error
 		return 0;
 	}
-	
+
 	if (numDisplays == 1) {
 		// We only have one display
 		return 0;
@@ -52,6 +52,13 @@ DebugWindow::DebugWindow() {
 	auto debugView = gr_create_viewport(attrs);
 	if (debugView) {
 		debug_view = os::addViewport(std::move(debugView));
+		debug_sdl_window = debug_view->toSDLWindow();
+
+		if (debug_sdl_window != nullptr) {
+			os::events::addEventListener(SDL_KEYUP,
+										 os::events::DEFAULT_LISTENER_WEIGHT - 5,
+										 [this](const SDL_Event& e) { return this->debug_key_handler(e); });
+		}
 	}
 	if (debug_view->toSDLWindow() != nullptr && os::getSDLMainWindow() != nullptr) {
 		SDL_RaiseWindow(os::getSDLMainWindow());
@@ -81,16 +88,20 @@ void DebugWindow::doFrame(float) {
 
 	// Print the saved debug log lines from the bottom up
 	float current_y = i2fl(gr_screen.max_h - 10);
-	if (!current_line.empty()) {
-		LineInfo info;
-		info.text = current_line;
-		info.category = current_category;
 
-		current_y = print_line(current_y, info);
+	// If the current view offset is at the end of the list then we also need to display the line that is currently being constructed
+	if (log_view_offset == lines.size() - 1) {
+		if (!current_line.empty()) {
+			LineInfo info;
+			info.text = current_line;
+			info.category = current_category;
+
+			current_y = print_line(current_y, info);
+		}
 	}
 	// Now print all the stored lines
 	// Backwards iteration of the vector comes from here: http://stackoverflow.com/a/4206815
-	for (auto i = lines.size(); i-- > 0; ) {
+	for (auto i = log_view_offset + 1; i-- > 0;) {
 		auto& line = lines[i];
 
 		current_y = print_line(current_y, line);
@@ -142,6 +153,49 @@ float DebugWindow::print_line(float bottom_y, const LineInfo& line) {
 	return bottom_y - text_height;
 }
 
+bool DebugWindow::debug_key_handler(const SDL_Event& evt) {
+	if (!os::events::isWindowEvent(evt, debug_sdl_window)) {
+		// Event belongs to another window
+		return false;
+	}
+
+	ptrdiff_t diff = 0;
+	switch(evt.key.keysym.sym) {
+		case SDLK_DOWN:
+			diff = 1;
+			break;
+		case SDLK_UP:
+			diff = -1;
+			break;
+		case SDLK_PAGEDOWN:
+			diff = 60; // It's not actually a page but this should still work
+			break;
+		case SDLK_PAGEUP:
+			diff = -60;
+			break;
+		case SDLK_END:
+			log_view_offset = lines.size() - 1;
+			return true;
+		case SDLK_HOME:
+			log_view_offset = 0;
+			return true;
+		default:
+			return true;
+	}
+
+	auto prev = log_view_offset;
+
+	log_view_offset += diff;
+
+	if (diff < 0 && log_view_offset > prev) {
+		// We had an overflow of the counter
+		log_view_offset = 0;
+	}
+	log_view_offset = std::min(log_view_offset, lines.size() - 1);
+
+	return true;
+}
+
 void DebugWindow::addDebugMessage(const char* category, const char* text) {
 	if (!debug_view) {
 		// Failed to create debug window, nothing to do here
@@ -172,7 +226,7 @@ void DebugWindow::addDebugMessage(const char* category, const char* text) {
 }
 void DebugWindow::split_current_and_add_to_log(const SCP_string& category) {
 	size_t pos;
-	while((pos = current_line.find('\n')) != SCP_string::npos) {
+	while ((pos = current_line.find('\n')) != SCP_string::npos) {
 		LineInfo info;
 		info.text = current_line.substr(0, pos);
 		info.category = category;
@@ -189,7 +243,11 @@ void DebugWindow::addToLog(LineInfo&& line) {
 
 	max_category_width = std::max(cat_width, max_category_width);
 
+	if (log_view_offset == lines.size() - 1) {
+		// We are currently showing the last line so we need to follow new entries
+		++log_view_offset;
+	}
+
 	lines.push_back(std::move(line));
 }
-
 }

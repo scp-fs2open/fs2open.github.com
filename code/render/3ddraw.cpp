@@ -14,6 +14,7 @@
 #include "globalincs/alphacolors.h"
 #include "graphics/grbatch.h"
 #include "graphics/tmapper.h"
+#include "graphics/matrix.h"
 #include "io/key.h"
 #include "physics/physics.h"		// For Physics_viewer_bank for g3_draw_rotated_bitmap
 #include "render/3dinternal.h"
@@ -396,7 +397,7 @@ void g3_render_primitives_textured(material* mat, vertex* verts, int n_verts, pr
 		layout.add_vertex_component(vertex_format_data::POSITION3, sizeof(vertex), (int)offsetof(vertex, world));
 	}
 
-	layout.add_vertex_component(vertex_format_data::TEX_COORD, sizeof(vertex), (int)offsetof(vertex, texture_position));
+	layout.add_vertex_component(vertex_format_data::TEX_COORD2, sizeof(vertex), (int)offsetof(vertex, texture_position));
 
 	if ( orthographic ) {
 		gr_render_primitives_2d_immediate(mat, prim_type, &layout, n_verts, verts, n_verts * sizeof(vertex));
@@ -434,7 +435,7 @@ void g3_render_primitives_colored_textured(material* mat, vertex* verts, int n_v
 		layout.add_vertex_component(vertex_format_data::POSITION3, sizeof(vertex), (int)offsetof(vertex, world));
 	}
 
-	layout.add_vertex_component(vertex_format_data::TEX_COORD, sizeof(vertex), (int)offsetof(vertex, texture_position));
+	layout.add_vertex_component(vertex_format_data::TEX_COORD2, sizeof(vertex), (int)offsetof(vertex, texture_position));
 	layout.add_vertex_component(vertex_format_data::COLOR4, sizeof(vertex), (int)offsetof(vertex, r));
 
 	if ( orthographic ) {
@@ -1220,7 +1221,7 @@ void g3_render_line_3d(color *clr, bool depth_testing, const vec3d *start, const
 
 	vertex_layout vert_def;
 
-	vert_def.add_vertex_component(vertex_format_data::POSITION3, 0, 0);
+	vert_def.add_vertex_component(vertex_format_data::POSITION3, sizeof(float) * 3, 0);
 
 	gr_render_primitives_immediate(&mat, PRIM_TYPE_LINES, &vert_def, 2, line, sizeof(float) * 6);
 }

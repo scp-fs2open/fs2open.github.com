@@ -229,7 +229,7 @@ void CJumpNode::SetName(const char *new_name)
     
 	#ifndef NDEBUG
 	CJumpNode* check = jumpnode_get_by_name(new_name);
-	Assert((check == this || !check));
+	Assertion((check == this || !check), "Jumpnode %s is being renamed to %s, but a jump node with that name already exists in the mission!\n", m_name, new_name);
 	#endif
     
 	strcpy_s(m_name, new_name);
@@ -296,6 +296,7 @@ void CJumpNode::Render(vec3d *pos, vec3d *view_pos)
 
 	Render(&scene, pos, view_pos);
 
+	scene.init_render();
 	scene.render_all();
 	scene.render_outlines();
 

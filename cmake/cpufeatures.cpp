@@ -27,6 +27,7 @@ int main( int argc, char* argv[] )
 	int SSE     = false;
 	int SSE2    = false;
 	int AVX     = false;
+	int AVX2    = false;
 
 	int info[4];
 	cpuid(info, 0);
@@ -40,8 +41,14 @@ int main( int argc, char* argv[] )
 
 		AVX   = (info[2] & ((int)1 << 28)) != 0;
 	}
+	if (nIds >= 7){
+		cpuid(info,0x00000007);
+		AVX2  = (info[1] & ((int)1 <<  5)) != 0;
+	}
 
-	if(AVX)
+	if (AVX2)
+		std::cout << "AVX2";
+	else if(AVX)
 		std::cout << "AVX";
 	else if(SSE2)
 		std::cout << "SSE2";

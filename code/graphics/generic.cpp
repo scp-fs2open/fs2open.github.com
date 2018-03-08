@@ -160,6 +160,7 @@ int generic_anim_stream(generic_anim *ga, const bool cache)
 	int anim_fps = 0;
 	char full_path[MAX_PATH];
 	size_t size = 0, offset = 0;
+	const void* file_data = nullptr;
 	const int NUM_TYPES = 3;
 	const ubyte type_list[NUM_TYPES] = {BM_TYPE_EFF, BM_TYPE_ANI, BM_TYPE_PNG};
 	const char *ext_list[NUM_TYPES] = {".eff", ".ani", ".png"};
@@ -168,14 +169,14 @@ int generic_anim_stream(generic_anim *ga, const bool cache)
 
 	ga->type = BM_TYPE_NONE;
 
-	rval = cf_find_file_location_ext(ga->filename, NUM_TYPES, ext_list, CF_TYPE_ANY, sizeof(full_path) - 1, full_path, &size, &offset, 0);
+	rval = cf_find_file_location_ext(ga->filename, NUM_TYPES, ext_list, CF_TYPE_ANY, sizeof(full_path) - 1, full_path, &size, &offset, 0, &file_data);
 
 	// could not be found, or is invalid for some reason
 	if ( (rval < 0) || (rval >= NUM_TYPES) )
 		return -1;
 
 	//make sure we can open it
-	img_cfp = cfopen_special(full_path, "rb", size, offset, CF_TYPE_ANY);
+	img_cfp = cfopen_special(full_path, "rb", size, offset, file_data, CF_TYPE_ANY);
 
 	if (img_cfp == NULL) {
 		return -1;
@@ -251,13 +252,19 @@ int generic_anim_stream(generic_anim *ga, const bool cache)
 		if ( p )
 			*p = 0;
 		char frame_name[MAX_FILENAME_LEN];
-		snprintf(frame_name, MAX_FILENAME_LEN, "%s_0000", ga->filename);
+		if (snprintf(frame_name, MAX_FILENAME_LEN, "%s_0000", ga->filename) >= MAX_FILENAME_LEN) {
+			// Make sure the string is null terminated
+			frame_name[MAX_FILENAME_LEN - 1] = '\0';
+		}
 		ga->bitmap_id = bm_load(frame_name);
 		if(ga->bitmap_id < 0) {
 			mprintf(("Cannot find first frame for eff streaming. eff Filename: %s", ga->filename));
 			return -1;
 		}
-		snprintf(frame_name, MAX_FILENAME_LEN, "%s_0001", ga->filename);
+		if (snprintf(frame_name, MAX_FILENAME_LEN, "%s_0001", ga->filename) >= MAX_FILENAME_LEN) {
+			// Make sure the string is null terminated
+			frame_name[MAX_FILENAME_LEN - 1] = '\0';
+		}
 		ga->eff.next_frame = bm_load(frame_name);
 		bm_get_info(ga->bitmap_id, &ga->width, &ga->height);
 		ga->previous_frame = 0;
@@ -369,7 +376,10 @@ void generic_render_eff_stream(generic_anim *ga)
 		mprintf(("frame: %d\n", ga->current_frame));
 	#endif
 		char frame_name[MAX_FILENAME_LEN];
-		snprintf(frame_name, MAX_FILENAME_LEN, "%s_%.4d", ga->filename, ga->current_frame);
+		if (snprintf(frame_name, MAX_FILENAME_LEN, "%s_%.4d", ga->filename, ga->current_frame) >= MAX_FILENAME_LEN) {
+			// Make sure the string is null terminated
+			frame_name[MAX_FILENAME_LEN - 1] = '\0';
+		}
 		if(bm_reload(ga->eff.next_frame, frame_name) == ga->eff.next_frame)
 		{
 			bitmap* next_frame_bmp = bm_lock(ga->eff.next_frame, bpp, (bpp==8)?BMP_AABITMAP:BMP_TEX_NONCOMP, true);
@@ -379,7 +389,10 @@ void generic_render_eff_stream(generic_anim *ga)
 			bm_unload(ga->eff.next_frame, 0, true);
 			if (ga->current_frame == ga->num_frames-1)
 			{
-				snprintf(frame_name, MAX_FILENAME_LEN, "%s_0001", ga->filename);
+				if (snprintf(frame_name, MAX_FILENAME_LEN, "%s_0001", ga->filename) >= MAX_FILENAME_LEN) {
+					// Make sure the string is null terminated
+					frame_name[MAX_FILENAME_LEN - 1] = '\0';
+				}
 				bm_reload(ga->eff.next_frame, frame_name);
 			}
 		}

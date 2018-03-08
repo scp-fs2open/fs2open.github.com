@@ -490,7 +490,6 @@ struct TreeItem : public LinkedList
 {
 	friend class Tree;
 private:
-	SCP_string Name;
 	void (*Function)(Tree *caller);
 	int Data;
 
@@ -503,6 +502,7 @@ private:
 	TreeItem *Parent;
 	LinkedList Children;
 public:
+	SCP_string Name;
 	//Get
 	TreeItem * GetParentItem(){return Parent;}
 	int GetData(){return Data;}

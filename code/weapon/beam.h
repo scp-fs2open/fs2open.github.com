@@ -39,6 +39,9 @@ struct vec3d;
 #define MAX_BEAM_SHOTS				5
 #define MAX_BEAMS					500
 
+// apply damage
+#define BEAM_DAMAGE_TIME			170
+
 // uses to define beam behavior ahead of time - needed for multiplayer
 typedef struct beam_info {
 	vec3d			dir_a, dir_b;						// direction vectors for beams	

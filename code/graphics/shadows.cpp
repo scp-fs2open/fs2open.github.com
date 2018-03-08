@@ -10,9 +10,8 @@
 #include "asteroid/asteroid.h"
 #include "cmdline/cmdline.h"
 #include "debris/debris.h"
-#include "graphics/opengl/gropengldraw.h"
-#include "graphics/opengl/gropengltnl.h"
 #include "graphics/shadows.h"
+#include "graphics/matrix.h"
 #include "lighting/lighting.h"
 #include "math/vecmat.h"
 #include "model/model.h"
@@ -361,16 +360,12 @@ matrix shadows_start_render(matrix *eye_orient, vec3d *eye_pos, float fov, float
 	if(Static_light.empty())
 		return vmd_identity_matrix; 
 	
-	light *lp = *(Static_light.begin());
-
-	if ( lp == NULL ) {
-		return vmd_identity_matrix;
-	}
+	auto& lp = Static_light.front();
 
 	vec3d light_dir;
 	matrix light_matrix;
 
-	vm_vec_copy_normalize(&light_dir, &lp->vec);
+	vm_vec_copy_normalize(&light_dir, &lp.vec);
 	vm_vector_2_matrix(&light_matrix, &light_dir, &eye_orient->vec.uvec, NULL);
 
 	shadows_construct_light_frustum(&Shadow_frustums[0], &light_matrix, eye_orient, eye_pos, fov, aspect, 0.0f, veryneardist);
@@ -407,9 +402,7 @@ void shadows_render_all(float fov, matrix *eye_orient, vec3d *eye_pos)
 		return;
 	}
 
-	light *lp = *(Static_light.begin());
-
-	if( !Cmdline_shadow_quality || !lp ) {
+	if (!Cmdline_shadow_quality) {
 		return;
 	}
 

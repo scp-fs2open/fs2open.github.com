@@ -49,7 +49,7 @@ if ([ "$RELEASE_BUILD" = true ] || [ "$NIGHTLY_BUILD" = true ] || [ "$TEST_BUILD
 fi
 
 if [ "$BUILD_DEPLOYMENT" = true ]; then
-    if ([ "$TRAVIS_OS_NAME" = "linux" ] && (! [[ "$CC" =~ ^gcc.*$ ]])); then
+    if ([ "$TRAVIS_OS_NAME" = "linux" ] && (! [[ "$CC" =~ ^gcc-5.*$ ]])); then
         echo "Skipping non-release compiler";
         exit 0;
     fi

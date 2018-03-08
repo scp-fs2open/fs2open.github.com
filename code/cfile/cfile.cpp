@@ -88,6 +88,7 @@ cf_pathtype Pathtypes[CF_MAX_PATH_TYPES]  = {
 	{ CF_TYPE_INTEL_ANIMS,			"data" DIR_SEPARATOR_STR "intelanims",										".pcx .ani .eff .tga .jpg .png .dds",	CF_TYPE_DATA	},
 	{ CF_TYPE_SCRIPTS,				"data" DIR_SEPARATOR_STR "scripts",											".lua .lc",							CF_TYPE_DATA	},
 	{ CF_TYPE_FICTION,				"data" DIR_SEPARATOR_STR "fiction",											".txt",								CF_TYPE_DATA	}, 
+	{ CF_TYPE_FREDDOCS,				"data" DIR_SEPARATOR_STR "freddocs",										".html",							CF_TYPE_DATA	},
 };
 
 
@@ -109,6 +110,7 @@ static const char *Cfile_cdrom_dir = NULL;
 static int cfget_cfile_block();
 static CFILE *cf_open_fill_cfblock(const char* source, int line, FILE * fp, int type);
 static CFILE *cf_open_packed_cfblock(const char* source, int line, FILE *fp, int type, size_t offset, size_t size);
+static CFILE *cf_open_memory_fill_cfblock(const char* source, int line, const void* data, size_t size, int dir_type);
 
 #if defined _WIN32
 static CFILE *cf_open_mapped_fill_cfblock(const char* source, int line, HANDLE hFile, int type);
@@ -763,16 +765,16 @@ CFILE *_cfopen(const char* source, int line, const char *file_path, const char *
 	char copy_file_path[MAX_PATH_LEN];  // FIX change in memory from cf_find_file_location
 	strcpy_s(copy_file_path, file_path);
 
-
-	if ( cf_find_file_location( copy_file_path, dir_type, sizeof(longname) - 1, longname, &size, &offset, localize ) )	{
+	const void* file_data = nullptr;
+	if ( cf_find_file_location( copy_file_path, dir_type, sizeof(longname) - 1, longname, &size, &offset, localize, &file_data ) )	{
 
 		// Fount it, now create a cfile out of it
 		nprintf(("CFileDebug", "Requested file %s found at: %s\n", file_path, longname));
 		
 		if ( type & CFILE_MEMORY_MAPPED ) {
 		
-			// Can't open memory mapped files out of pack files
-			if ( offset == 0 )	{
+			// Can't open memory mapped files out of pack or memory files
+			if ( offset == 0 && file_data != nullptr )	{
 #if defined _WIN32
 				HANDLE hFile;
 
@@ -790,18 +792,8 @@ CFILE *_cfopen(const char* source, int line, const char *file_path, const char *
 			} 
 
 		} else {
-
-			FILE *fp = fopen( longname, "rb" );
-
-			if ( fp )	{
-				if ( offset )	{
-					// Found it in a pack file
-					return cf_open_packed_cfblock(source, line, fp, dir_type, offset, size );
-				} else {
-					// Found it in a normal file
-					return cf_open_fill_cfblock(source, line, fp, dir_type);
-				} 
-			}
+			// since cfopen_special already has all the code to handle the opening we can just use that here
+			return _cfopen_special(source, line, longname, mode, size, offset, file_data, dir_type);
 		}
 
 	}
@@ -820,7 +812,7 @@ CFILE *_cfopen(const char* source, int line, const char *file_path, const char *
 // returns:		success	==> address of CFILE structure
 //				error	==> NULL
 //
-CFILE *_cfopen_special(const char* source, int line, const char *file_path, const char *mode, const size_t size, const size_t offset, int dir_type)
+CFILE *_cfopen_special(const char* source, int line, const char *file_path, const char *mode, const size_t size, const size_t offset, const void* data, int dir_type)
 {
 	if ( !cfile_inited) {
 		Int3();
@@ -836,19 +828,27 @@ CFILE *_cfopen_special(const char* source, int line, const char *file_path, cons
 		return NULL;
 	}
 
-	// "file_path" should already be a fully qualified path, so just try to open it
-	FILE *fp = fopen( file_path, "rb" );
-
-	if ( !fp )
-		return NULL;
-
-	if ( offset ) {
-		// it's in a pack file
-		return cf_open_packed_cfblock(source, line, fp, dir_type, offset, size);
-	} else {
-		// it's a normal file
-		return cf_open_fill_cfblock(source, line, fp, dir_type);
+	// In-Memory files are a bit different from normal files so we need to handle them separately
+	if (data != nullptr) {
+		return cf_open_memory_fill_cfblock(source, line, data, size, dir_type);
 	}
+	else {
+		// "file_path" should already be a fully qualified path, so just try to open it
+		FILE *fp = fopen(file_path, "rb");
+
+		if (fp) {
+			if (offset) {
+				// Found it in a pack file
+				return cf_open_packed_cfblock(source, line, fp, dir_type, offset, size);
+			}
+			else {
+				// Found it in a normal file
+				return cf_open_fill_cfblock(source, line, fp, dir_type);
+			}
+		}
+	}
+
+	return NULL;
 }
 
 
@@ -922,7 +922,7 @@ int cfclose( CFILE * cfile )
 	cb = &Cfile_block_list[cfile->id];	
 
 	result = 0;
-	if ( cb->data ) {
+	if ( cb->data && cb->mem_mapped ) {
 		// close memory mapped file
 #if defined _WIN32
 		result = UnmapViewOfFile((void*)cb->data);
@@ -936,7 +936,8 @@ int cfclose( CFILE * cfile )
 		// FIXME: result is wrong after munmap() but it is successful
 		//result = munmap(cb->data, cb->data_length);
 		//Assert(result);
-		munmap(cb->data, cb->data_length);
+		// This const_cast is safe since the pointer returned by mmap was also non-const
+		munmap(const_cast<void*>(cb->data), cb->data_length);
 		if ( cb->fp != NULL)
 			result = fclose(cb->fp);
 #endif
@@ -996,6 +997,7 @@ static CFILE *cf_open_fill_cfblock(const char* source, int line, FILE *fp, int t
 		cfp->id = cfile_block_index;
 		cfp->version = 0;
 		cfbp->data = NULL;
+		cfbp->mem_mapped = false;
 		cfbp->fp = fp;
 		cfbp->dir_type = type;
 		cfbp->max_read_len = 0;
@@ -1038,6 +1040,7 @@ static CFILE *cf_open_packed_cfblock(const char* source, int line, FILE *fp, int
 		cfp->version = 0;
 		cfbp->data = NULL;
 		cfbp->fp = fp;
+		cfbp->mem_mapped = false;
 		cfbp->dir_type = type;
 		cfbp->max_read_len = 0;
 
@@ -1083,6 +1086,7 @@ static CFILE *cf_open_mapped_fill_cfblock(const char* source, int line, FILE *fp
 		cfp->version = 0;
 		cfbp->max_read_len = 0;
 		cfbp->fp = NULL;
+		cfbp->mem_mapped = true;
 #if defined _WIN32
 		cfbp->hInFile = hFile;
 #endif
@@ -1117,6 +1121,37 @@ static CFILE *cf_open_mapped_fill_cfblock(const char* source, int line, FILE *fp
 	}
 }
 
+static CFILE *cf_open_memory_fill_cfblock(const char* source, int line, const void* data, size_t size, int dir_type)
+{
+	int cfile_block_index;
+
+	cfile_block_index = cfget_cfile_block();
+	if ( cfile_block_index == -1 ) {
+		return NULL;
+	}
+	else {
+		CFILE *cfp;
+		Cfile_block *cfbp;
+		cfbp = &Cfile_block_list[cfile_block_index];
+
+		cfp = &Cfile_list[cfile_block_index];
+		cfp->id = cfile_block_index;
+		cfp->version = 0;
+		cfbp->max_read_len = 0;
+		cfbp->fp = NULL;
+		cfbp->mem_mapped = false;
+		cfbp->dir_type = dir_type;
+
+		cfbp->source_file = source;
+		cfbp->line_num = line;
+
+		cf_init_lowlevel_read_code(cfp, 0, size, 0 );
+		cfbp->data = data;
+
+		return cfp;
+	}
+}
+
 int cf_get_dir_type(CFILE *cfile)
 {
 	return Cfile_block_list[cfile->id].dir_type;
@@ -1127,7 +1162,7 @@ int cf_get_dir_type(CFILE *cfile)
 //
 // 
 
-void *cf_returndata(CFILE *cfile)
+const void *cf_returndata(CFILE *cfile)
 {
 	Assert(cfile != NULL);
 	Cfile_block *cb;
@@ -1418,9 +1453,7 @@ int cfilelength( CFILE * cfile )
 	cb = &Cfile_block_list[cfile->id];	
 
 	// TODO: return length of memory mapped file
-	Assert( !cb->data );
-
-	Assert(cb->fp != NULL);
+	Assert( !cb->mem_mapped );
 
 	// cb->size gets set at cfopen
 	
@@ -1518,7 +1551,6 @@ int cfputc(int c, CFILE *cfile)
 
 	return result;	
 }
-
 
 // cfputs() writes a string to a file
 //

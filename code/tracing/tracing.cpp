@@ -74,6 +74,8 @@ int get_query_object() {
 }
 
 int get_gpu_timestamp_query() {
+	GR_DEBUG_SCOPE("Query tracing timestamp");
+
 	auto query = get_query_object();
 	gr_query_value(query, QueryType::Timestamp);
 
@@ -139,6 +141,8 @@ void process_gpu_events() {
 			return;
 		}
 	}
+
+	GR_DEBUG_SCOPE("Query GPU timestamps");
 
 	while (!gpu_events.empty()) {
 		auto& first = gpu_events.front();

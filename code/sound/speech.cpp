@@ -49,6 +49,7 @@
 #pragma warning(pop)
 
 #include "globalincs/pstypes.h"
+#include "utils/unicode.h"
 #include "speech.h"
 
 
@@ -106,28 +107,41 @@ bool speech_play(const char *text)
 	}
 
 #ifdef _WIN32
-	size_t len = strlen(text);
-	wchar_t Conversion_buffer[MAX_SPEECH_CHAR_LEN];
+	SCP_string work_buffer;
 
-	if(len > (MAX_SPEECH_CHAR_LEN - 1)) {
-		len = MAX_SPEECH_CHAR_LEN - 1;
-	}
-
-	size_t count = 0;
-	for(size_t i = 0; i < len; i++) {
-		if(text[i] == '$') {
-			i++;
+	bool saw_dollar = false;
+	for (auto ch : unicode::codepoint_range(text)) {
+		if (ch == UNICODE_CHAR('$')) {
+			// Skip $ escape sequences which appear in briefing text
+			saw_dollar = true;
+			continue;
+		} else if (saw_dollar) {
+			saw_dollar = false;
 			continue;
 		}
 
-		Conversion_buffer[count] = (unsigned short) text[i];
-		count++;
+		unicode::encode(ch, std::back_inserter(work_buffer));
 	}
 
-	Conversion_buffer[count] = '\0';
+	// Determine the needed amount of data
+	auto num_chars = MultiByteToWideChar(CP_UTF8, 0, work_buffer.c_str(), (int) work_buffer.size(), nullptr, 0);
+
+	if (num_chars <= 0) {
+		// Error
+		return false;
+	}
+
+	std::wstring wide_string;
+	wide_string.resize(num_chars);
+
+	auto err = MultiByteToWideChar(CP_UTF8, 0, work_buffer.c_str(), (int)work_buffer.size(), &wide_string[0], num_chars);
+
+	if (err <= 0) {
+		return false;
+	}
 
 	speech_stop();
-	return SUCCEEDED(Voice_device->Speak(Conversion_buffer, SPF_ASYNC, NULL));
+	return SUCCEEDED(Voice_device->Speak(wide_string.c_str(), SPF_ASYNC, NULL));
 #else
 	int len = strlen(text);
 	char Conversion_buffer[MAX_SPEECH_CHAR_LEN];
@@ -265,6 +279,84 @@ bool speech_is_speaking()
 	STUB_FUNCTION;
 
 	return false;
+#endif
+}
+
+SCP_vector<SCP_string> speech_enumerate_voices()
+{
+#ifdef _WIN32
+	HRESULT hr = CoCreateInstance(
+		CLSID_SpVoice,
+		NULL,
+		CLSCTX_ALL,
+		IID_ISpVoice,
+		(void **)&Voice_device);
+
+	if (FAILED(hr)) {
+		return SCP_vector<SCP_string>();
+	}
+
+	// This code is mostly copied from wxLauncher
+	ISpObjectTokenCategory * comTokenCategory = NULL;
+	IEnumSpObjectTokens * comVoices = NULL;
+	ULONG comVoicesCount = 0;
+
+	// Generate enumeration of voices
+	hr = ::CoCreateInstance(CLSID_SpObjectTokenCategory, NULL,
+		CLSCTX_INPROC_SERVER, IID_ISpObjectTokenCategory, (LPVOID*)&comTokenCategory);
+	if (FAILED(hr)) {
+		return SCP_vector<SCP_string>();
+	}
+
+	hr = comTokenCategory->SetId(SPCAT_VOICES, false);
+	if (FAILED(hr)) {
+		return SCP_vector<SCP_string>();
+	}
+
+	hr = comTokenCategory->EnumTokens(NULL, NULL, &comVoices);
+	if (FAILED(hr)) {
+		return SCP_vector<SCP_string>();
+	}
+
+	hr = comVoices->GetCount(&comVoicesCount);
+	if (FAILED(hr)) {
+		return SCP_vector<SCP_string>();
+	}
+
+	SCP_vector<SCP_string> voices;
+	while (comVoicesCount > 0) {
+		ISpObjectToken * comAVoice = NULL;
+
+		comVoices->Next(1, &comAVoice, NULL); // retrieve just one
+
+		LPWSTR id = NULL;
+		comAVoice->GetStringValue(NULL, &id);
+
+		auto idlength = wcslen(id);
+		auto buffer_size = WideCharToMultiByte(CP_UTF8, 0, id, (int)idlength, nullptr, 0, nullptr, nullptr);
+
+		if (buffer_size > 0) {
+			SCP_string voiceName;
+			voiceName.resize(buffer_size);
+			buffer_size = WideCharToMultiByte(CP_UTF8, 0, id, (int)idlength, &voiceName[0], buffer_size, nullptr, nullptr);
+
+			voices.push_back(voiceName);
+		}
+
+		CoTaskMemFree(id);
+		comAVoice->Release();
+		comVoicesCount--;
+	}
+
+	comTokenCategory->Release();
+
+	Voice_device->Release();
+
+	return voices;
+#else
+	STUB_FUNCTION;
+
+	return SCP_vector<SCP_string>();
 #endif
 }
 

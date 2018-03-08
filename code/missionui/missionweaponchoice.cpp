@@ -17,6 +17,7 @@
 #include "gamesnd/gamesnd.h"
 #include "globalincs/alphacolors.h"
 #include "graphics/shadows.h"
+#include "graphics/matrix.h"
 #include "hud/hudbrackets.h"
 #include "io/mouse.h"
 #include "io/timer.h"
@@ -2017,7 +2018,7 @@ void weapon_select_init()
 	Weaponselect_mask_h = -1;
 
 	// get a pointer to bitmap by using bm_lock()
-	WeaponSelectMaskPtr = bm_lock(WeaponSelectMaskBitmap, 8, BMP_AABITMAP);
+	WeaponSelectMaskPtr = bm_lock(WeaponSelectMaskBitmap, 8, BMP_AABITMAP | BMP_MASK_BITMAP);
 	WeaponSelectMaskData = (ubyte*)WeaponSelectMaskPtr->data;
 	Assert(WeaponSelectMaskData != NULL);
 	bm_get_info(WeaponSelectMaskBitmap, &Weaponselect_mask_w, &Weaponselect_mask_h);
@@ -2736,7 +2737,11 @@ void weapon_select_do(float frametime)
 				gr_set_color_fast(&Icon_colors[ICON_FRAME_SELECTED]);
 				int w = 56;
 				int h = 24;
-				draw_brackets_square(sx, sy, sx+w, sy+h, GR_RESIZE_MENU);
+
+				graphics::line_draw_list line_draw_list;
+				draw_brackets_square(&line_draw_list, sx, sy, sx+w, sy+h, GR_RESIZE_MENU);
+				line_draw_list.flush();
+
 				if(icon->model_index != -1)
 				{
 					//Draw the model
@@ -2976,7 +2981,10 @@ void wl_render_icon(int index, int x, int y, int num, int draw_num_flag, int hot
 	else
 	{
 		gr_set_color_fast(color_to_draw);
-		draw_brackets_square(x, y, x + 56, y + 24, GR_RESIZE_MENU);
+
+		graphics::line_draw_list line_draw_list;
+		draw_brackets_square(&line_draw_list, x, y, x + 56, y + 24, GR_RESIZE_MENU);
+		line_draw_list.flush();
 
 		if(icon->model_index != -1)
 		{
@@ -3044,7 +3052,9 @@ void wl_draw_ship_weapons(int index)
 			else
 			{
 				gr_set_color_fast(&Icon_colors[WEAPON_ICON_FRAME_NORMAL]);
-				draw_brackets_square( Wl_bank_coords[gr_screen.res][i][0],  Wl_bank_coords[gr_screen.res][i][1],  Wl_bank_coords[gr_screen.res][i][0] + 56,  Wl_bank_coords[gr_screen.res][i][1] + 24, GR_RESIZE_MENU);
+				graphics::line_draw_list line_draw_list;
+				draw_brackets_square( &line_draw_list, Wl_bank_coords[gr_screen.res][i][0],  Wl_bank_coords[gr_screen.res][i][1],  Wl_bank_coords[gr_screen.res][i][0] + 56,  Wl_bank_coords[gr_screen.res][i][1] + 24, GR_RESIZE_MENU);
+				line_draw_list.flush();
 			}
 		}
 

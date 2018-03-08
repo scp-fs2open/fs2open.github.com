@@ -9,6 +9,7 @@
 #include "vecmath.h"
 #include "ship/ship.h"
 #include "playerman/player.h"
+#include "graphics/matrix.h"
 
 namespace scripting {
 namespace api {

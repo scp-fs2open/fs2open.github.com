@@ -27,6 +27,8 @@ class FFMPEGDecoder: public Decoder {
 
 	bool hasAudio() SCP_OVERRIDE;
 
+	bool hasSubtitles() SCP_OVERRIDE;
+
 	void close() SCP_OVERRIDE;
 };
 }

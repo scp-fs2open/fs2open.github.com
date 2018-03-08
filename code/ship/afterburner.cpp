@@ -93,7 +93,7 @@ void afterburners_start(object *objp)
 		now = timer_get_milliseconds();
 
 		if ( (now - Player_afterburner_start_time) < 1300 ) {
-			snd_play( &Snds[ship_get_sound(objp, SND_ABURN_FAIL)] );
+			snd_play( gamesnd_get_game_sound(ship_get_sound(objp, SND_ABURN_FAIL)) );
 			return;
 		}
 
@@ -117,7 +117,7 @@ void afterburners_start(object *objp)
 	// Check if there is enough afterburner fuel
 	if ( (shipp->afterburner_fuel < MIN_AFTERBURNER_FUEL_TO_ENGAGE) && !MULTIPLAYER_CLIENT ) {
 		if ( objp == Player_obj ) {
-			snd_play( &Snds[ship_get_sound(objp, SND_ABURN_FAIL)] );
+			snd_play( gamesnd_get_game_sound(ship_get_sound(objp, SND_ABURN_FAIL)) );
 		}
 		return;
 	}
@@ -143,10 +143,10 @@ void afterburners_start(object *objp)
 			Player_afterburner_loop_delay = 0;
 		}
 
-		snd_play( &Snds[ship_get_sound(objp, SND_ABURN_ENGAGE)], 0.0f, 1.0f, SND_PRIORITY_MUST_PLAY );
+		snd_play( gamesnd_get_game_sound(ship_get_sound(objp, SND_ABURN_ENGAGE)), 0.0f, 1.0f, SND_PRIORITY_MUST_PLAY );
 		joy_ff_afterburn_on();
 	} else {
-		snd_play_3d( &Snds[ship_get_sound(objp, SND_ABURN_ENGAGE)], &objp->pos, &View_position, objp->radius );
+		snd_play_3d( gamesnd_get_game_sound(ship_get_sound(objp, SND_ABURN_ENGAGE)), &objp->pos, &View_position, objp->radius );
 	}
 
 	Script_system.SetHookObjects(1, "Ship", objp);
@@ -252,7 +252,7 @@ void afterburners_update(object *objp, float fl_frametime)
 			Player_afterburner_vol = AFTERBURNER_DEFAULT_VOL;
 			Player_afterburner_loop_delay = 0;
 			if ( Player_afterburner_loop_id == -1 ) {
-				Player_afterburner_loop_id = snd_play_looping( &Snds[ship_get_sound(objp, SND_ABURN_LOOP)], 0.0f , -1, -1);
+				Player_afterburner_loop_id = snd_play_looping( gamesnd_get_game_sound(ship_get_sound(objp, SND_ABURN_LOOP)), 0.0f , -1, -1);
 				snd_set_volume(Player_afterburner_loop_id, Player_afterburner_vol);
 			}
 		}
@@ -314,7 +314,7 @@ void afterburners_stop(object *objp, int key_released)
 	if ( objp == Player_obj ) {
 
 		if ( !key_released ) {
-			snd_play( &Snds[ship_get_sound(objp, SND_ABURN_FAIL)] );
+			snd_play( gamesnd_get_game_sound(ship_get_sound(objp, SND_ABURN_FAIL)) );
 		}
 
 		if ( Player_afterburner_loop_id > -1 )	{

@@ -35,6 +35,7 @@
 #include "math/fvi.h"
 #include "starfield/starfield.h"
 #include "parse/sexp.h"
+#include "parse/sexp/sexp_lookup.h"
 #include "io/mouse.h"
 #include "mission/missioncampaign.h"
 #include "wing.h"
@@ -65,6 +66,7 @@
 #include "missionui/fictionviewer.h"
 #include "mod_table/mod_table.h"
 #include "libs/ffmpeg/FFmpeg.h"
+#include "scripting/scripting.h"
 
 #include <direct.h>
 #include "cmdline/cmdline.h"
@@ -344,6 +346,12 @@ bool fred_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 
 	io::mouse::CursorManager::get()->showCursor(false);
 
+	// To avoid breaking current mods which do not support scripts in FRED we only initialize the scripting
+	// system if a special mod_table option is set
+	if (Enable_scripts_in_fred) {
+		script_init();			//WMC
+	}
+
 	font::init();					// loads up all fonts  
 
 	gr_set_gamma(3.0f);
@@ -418,6 +426,8 @@ bool fred_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 
 	libs::ffmpeg::initialize();
 
+	sexp::dynamic_sexp_init();
+
 	gr_reset_clip();
 	g3_start_frame(0);
 	g3_set_view_matrix(&eye_pos, &eye_orient, 0.5f);
@@ -428,7 +438,10 @@ bool fred_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 	Id_select_type_start = (int)(Ship_info.size() + 2);
 	Id_select_type_jump_node = (int)(Ship_info.size() + 1);
 	Id_select_type_waypoint = (int)(Ship_info.size());
-	Fred_main_wnd -> init_tools();	
+	Fred_main_wnd -> init_tools();
+
+	Script_system.RunCondition(CHA_GAMEINIT);
+
 	return true;
 }
 
@@ -896,7 +909,7 @@ void clear_mission()
 		Team_data[i].num_weapon_choices = count; 
 	}
 
-	*Mission_text = *Mission_text_raw = EOF_CHAR;
+	*Mission_text = *Mission_text_raw = '\0';
 	Mission_text[1] = Mission_text_raw[1] = 0;
 
 	waypoint_parse_init();

@@ -36,10 +36,17 @@ void tableListPairs(LuaTable& table, Container& keyValueList) {
 
 	for (auto val : table) {
 		val.first.pushValue();
-		key_type key = convert::popValue<key_type>(L);
+		key_type key;
+		if (!convert::popValue(L, key)) {
+			throw LuaException("Failed to pop key!");
+		}
 
 		val.second.pushValue();
-		value_type value = convert::popValue<value_type>(L);
+		value_type value;
+
+		if (!convert::popValue(L, value)) {
+			throw LuaException("Failed to pop value!");
+		}
 
 		keyValueList.push_back(std::make_pair(key, value));
 	}

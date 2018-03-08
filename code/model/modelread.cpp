@@ -303,8 +303,11 @@ void model_unload(int modelnum, int force)
 	}
 
 	if ( pm->vert_source.Vbuffer_handle > -1 ) {
-		gr_delete_buffer(pm->vert_source.Vbuffer_handle);
+		gr_heap_deallocate(GpuHeap::ModelVertex, pm->vert_source.Vertex_offset);
 		pm->vert_source.Vbuffer_handle = -1;
+
+		pm->vert_source.Vertex_offset = 0;
+		pm->vert_source.Base_vertex_offset = 0;
 	}
 
 	if ( pm->vert_source.Vertex_list != NULL ) {
@@ -313,8 +316,10 @@ void model_unload(int modelnum, int force)
 	}
 
 	if ( pm->vert_source.Ibuffer_handle > -1 ) {
-		gr_delete_buffer(pm->vert_source.Ibuffer_handle);
+		gr_heap_deallocate(GpuHeap::ModelIndex, pm->vert_source.Index_offset);
+
 		pm->vert_source.Ibuffer_handle = -1;
+		pm->vert_source.Index_offset = 0;
 	}
 
 	if ( pm->vert_source.Index_list != NULL ) {
@@ -895,31 +900,23 @@ void create_vertex_buffer(polymodel *pm)
 		}
 	}
 
-	bool use_batched_rendering = true;
+	size_t stride = 0;
+	// Determine the global stride of this model (should be the same for every submodel)
+	for ( i = 0; i < pm->n_models; ++i ) {
+		if (pm->submodel[i].buffer.model_list != nullptr && pm->submodel[i].buffer.stride != stride) {
+			Assertion(stride == 0, "Submodel %d of model %s has a stride of "
+				SIZE_T_ARG
+				" while the rest of the model has a vertex stride of "
+				SIZE_T_ARG
+				"!", i, pm->filename, pm->submodel[i].buffer.stride, stride);
 
-	if ( !Cmdline_no_batching ) {
-		size_t stride = 0;
-
-		// figure out if the vertex stride of this entire model matches. if not, turn off batched rendering for this model
-		for ( i = 0; i < pm->n_models; ++i ) {
-			if ( pm->submodel[i].buffer.model_list != NULL && pm->submodel[i].buffer.stride != stride) {
-				if ( stride == 0 ) {
-					stride = pm->submodel[i].buffer.stride;
-				} else {
-					use_batched_rendering = false;
-					break;
-				}
-			}
+			stride = pm->submodel[i].buffer.stride;
 		}
-	} else {
-		use_batched_rendering = false;
 	}
 
 	// create another set of indexes for the detail buffers
-	if ( use_batched_rendering ) {
-		for ( i = 0; i < pm->n_detail_levels; i++ )	{
-			interp_create_detail_index_buffer(pm, i);
-		}
+	for ( i = 0; i < pm->n_detail_levels; i++ )	{
+		interp_create_detail_index_buffer(pm, i);
 	}
 
 	// now actually fill the buffer with our info ...
@@ -931,22 +928,20 @@ void create_vertex_buffer(polymodel *pm)
 		pm->submodel[i].trans_buffer.release();
 	}
 
-	if ( use_batched_rendering ) {
-		// pack the merged index buffers to the vbo.
-		for ( i = 0; i < pm->n_detail_levels; ++i ) {
-			if ( pm->detail_buffers[i].model_list == NULL ) {
-				continue;
-			}
-
-			model_interp_pack_buffer(&pm->vert_source, &pm->detail_buffers[i]);
-			pm->detail_buffers[i].release();
+	// pack the merged index buffers to the vbo.
+	for ( i = 0; i < pm->n_detail_levels; ++i ) {
+		if ( pm->detail_buffers[i].model_list == NULL ) {
+			continue;
 		}
 
-		pm->flags |= PM_FLAG_BATCHED;
+		model_interp_pack_buffer(&pm->vert_source, &pm->detail_buffers[i]);
+		pm->detail_buffers[i].release();
 	}
 
+	pm->flags |= PM_FLAG_BATCHED;
+
 	// ... and then finalize buffer
-	model_interp_pack_buffer(&pm->vert_source, NULL);
+	model_interp_submit_buffers(&pm->vert_source, stride);
 
 	model_interp_process_shield_mesh(pm);
 }
@@ -1154,6 +1149,7 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 				pm->n_models = cfread_int(fp);
 //				mprintf(( "Num models = %d\n", pm->n_models ));
 #endif
+                Assertion(pm->n_models >= 1, "Models without any submodels are not supported!");
 
 				// Check for unrealistic radii
 				if ( pm->rad <= 0.1f )
@@ -2594,25 +2590,23 @@ void model_load_texture(polymodel *pm, int i, char *file)
 
 	gr_maybe_create_shader(SDR_TYPE_MODEL, shader_flags | SDR_FLAG_MODEL_LIGHT);
 	gr_maybe_create_shader(SDR_TYPE_MODEL, shader_flags | SDR_FLAG_MODEL_LIGHT | SDR_FLAG_MODEL_FOG);
-	
-	if( !Cmdline_no_batching ) {
-		shader_flags &= ~SDR_FLAG_MODEL_DEFERRED;
-		shader_flags |= SDR_FLAG_MODEL_TRANSFORM;
 
-		gr_maybe_create_shader(SDR_TYPE_MODEL, shader_flags | SDR_FLAG_MODEL_LIGHT | SDR_FLAG_MODEL_ANIMATED);
-		gr_maybe_create_shader(SDR_TYPE_MODEL, shader_flags | SDR_FLAG_MODEL_LIGHT | SDR_FLAG_MODEL_ANIMATED | SDR_FLAG_MODEL_FOG);
+	shader_flags &= ~SDR_FLAG_MODEL_DEFERRED;
+	shader_flags |= SDR_FLAG_MODEL_TRANSFORM;
 
-		gr_maybe_create_shader(SDR_TYPE_MODEL, shader_flags | SDR_FLAG_MODEL_LIGHT);
-		gr_maybe_create_shader(SDR_TYPE_MODEL, shader_flags | SDR_FLAG_MODEL_LIGHT | SDR_FLAG_MODEL_FOG);
+	gr_maybe_create_shader(SDR_TYPE_MODEL, shader_flags | SDR_FLAG_MODEL_LIGHT | SDR_FLAG_MODEL_ANIMATED);
+	gr_maybe_create_shader(SDR_TYPE_MODEL, shader_flags | SDR_FLAG_MODEL_LIGHT | SDR_FLAG_MODEL_ANIMATED | SDR_FLAG_MODEL_FOG);
 
-		shader_flags |= SDR_FLAG_MODEL_DEFERRED;
+	gr_maybe_create_shader(SDR_TYPE_MODEL, shader_flags | SDR_FLAG_MODEL_LIGHT);
+	gr_maybe_create_shader(SDR_TYPE_MODEL, shader_flags | SDR_FLAG_MODEL_LIGHT | SDR_FLAG_MODEL_FOG);
 
-		gr_maybe_create_shader(SDR_TYPE_MODEL, shader_flags | SDR_FLAG_MODEL_LIGHT | SDR_FLAG_MODEL_ANIMATED);
-		gr_maybe_create_shader(SDR_TYPE_MODEL, shader_flags | SDR_FLAG_MODEL_LIGHT | SDR_FLAG_MODEL_ANIMATED | SDR_FLAG_MODEL_FOG);
+	shader_flags |= SDR_FLAG_MODEL_DEFERRED;
 
-		gr_maybe_create_shader(SDR_TYPE_MODEL, shader_flags | SDR_FLAG_MODEL_LIGHT);
-		gr_maybe_create_shader(SDR_TYPE_MODEL, shader_flags | SDR_FLAG_MODEL_LIGHT | SDR_FLAG_MODEL_FOG);
-	}
+	gr_maybe_create_shader(SDR_TYPE_MODEL, shader_flags | SDR_FLAG_MODEL_LIGHT | SDR_FLAG_MODEL_ANIMATED);
+	gr_maybe_create_shader(SDR_TYPE_MODEL, shader_flags | SDR_FLAG_MODEL_LIGHT | SDR_FLAG_MODEL_ANIMATED | SDR_FLAG_MODEL_FOG);
+
+	gr_maybe_create_shader(SDR_TYPE_MODEL, shader_flags | SDR_FLAG_MODEL_LIGHT);
+	gr_maybe_create_shader(SDR_TYPE_MODEL, shader_flags | SDR_FLAG_MODEL_LIGHT | SDR_FLAG_MODEL_FOG);
 }
 
 //returns the number of this model
@@ -2857,10 +2851,11 @@ int model_load(const  char *filename, int n_subsystems, model_subsystem *subsyst
 		TRACE_SCOPE(tracing::ModelParseAllBSPTrees);
 
 		for ( i = 0; i < pm->n_models; ++i ) {
-			pm->submodel[i].collision_tree_index = model_create_bsp_collision_tree();
-			bsp_collision_tree *tree = model_get_bsp_collision_tree(pm->submodel[i].collision_tree_index);
-
-			model_collide_parse_bsp(tree, pm->submodel[i].bsp_data, pm->version);
+			if ( !(pm->submodel[i].nocollide_this_only || pm->submodel[i].no_collisions) ) {
+				pm->submodel[i].collision_tree_index = model_create_bsp_collision_tree();
+				bsp_collision_tree *tree = model_get_bsp_collision_tree(pm->submodel[i].collision_tree_index);
+				model_collide_parse_bsp(tree, pm->submodel[i].bsp_data, pm->version);
+			}
 		}
 	}
 

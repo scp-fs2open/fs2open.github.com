@@ -43,6 +43,7 @@
 #include "network/multi_pmsg.h"
 #include "network/multi_voice.h"
 #include "network/multiutil.h"
+#include "tracing/tracing.h"
 #include "object/object.h"
 #include "object/objectdock.h"
 #include "playerman/player.h"
@@ -54,7 +55,7 @@
 #include "weapon/emp.h"
 #include "weapon/weapon.h"
 
-SCP_vector<HudGauge*> default_hud_gauges;
+SCP_vector<std::unique_ptr<HudGauge>> default_hud_gauges;
 
 // new values for HUD alpha
 #define HUD_NEW_ALPHA_DIM				80	
@@ -1246,24 +1247,10 @@ void hud_level_close()
  */
 void hud_close()
 {
-	size_t j, num_gauges = 0;
-
 	for (auto it = Ship_info.begin(); it != Ship_info.end(); ++it) {
-		num_gauges = it->hud_gauges.size();
-
-		for(j = 0; j < num_gauges; j++) {
-			delete it->hud_gauges[j];
-			it->hud_gauges[j] = NULL;
-		}
 		it->hud_gauges.clear();
 	}
 
-	num_gauges = default_hud_gauges.size();
-
-	for(j = 0; j < num_gauges; j++) {
-		delete default_hud_gauges[j];
-		default_hud_gauges[j] = NULL;
-	}
 	default_hud_gauges.clear();
 }
 
@@ -1778,6 +1765,8 @@ void hud_render_gauges(int cockpit_display_num)
 				continue;
 			}
 
+			TRACE_SCOPE(tracing::RenderHUDGauge);
+
 			sip->hud_gauges[j]->resetClip();
 			sip->hud_gauges[j]->setFont();
 			sip->hud_gauges[j]->render(flFrametime);
@@ -1795,6 +1784,8 @@ void hud_render_gauges(int cockpit_display_num)
 			if ( !default_hud_gauges[j]->canRender() ) {
 				continue;
 			}
+
+			TRACE_SCOPE(tracing::RenderHUDGauge);
 
 			default_hud_gauges[j]->resetClip();
 			default_hud_gauges[j]->setFont();
@@ -1870,7 +1861,7 @@ void update_throttle_sound()
 			}
 			else {
 				if ( Player_engine_snd_loop == -1 ){
-					Player_engine_snd_loop = snd_play_looping( &Snds[ship_get_sound(Player_obj, SND_ENGINE)], 0.0f , -1, -1, percent_throttle * ENGINE_MAX_VOL, FALSE);
+					Player_engine_snd_loop = snd_play_looping( gamesnd_get_game_sound(ship_get_sound(Player_obj, SND_ENGINE)), 0.0f , -1, -1, percent_throttle * ENGINE_MAX_VOL, FALSE);
 				} else {
 					// The sound may have been trashed at the low-level if sound channel overflow.
 					// TODO: implement system where certain sounds cannot be interrupted (priority?)
@@ -3570,7 +3561,7 @@ void hud_stop_objective_notify()
 
 void hud_start_objective_notify()
 {
-	snd_play(&(Snds[SND_DIRECTIVE_COMPLETE]));
+	snd_play(gamesnd_get_game_sound(SND_DIRECTIVE_COMPLETE));
 	Objective_notify_active = 1;
 }
 
@@ -3785,7 +3776,7 @@ HudGauge* hud_get_gauge(const char* name)
 
 			gauge_name = Ship_info[Player_ship->ship_info_index].hud_gauges[j]->getCustomGaugeName();
 			if(!strcmp(name, gauge_name)) {
-				return Ship_info[Player_ship->ship_info_index].hud_gauges[j];
+				return Ship_info[Player_ship->ship_info_index].hud_gauges[j].get();
 			}
 		}
 	} else {
@@ -3793,7 +3784,7 @@ HudGauge* hud_get_gauge(const char* name)
 
 			gauge_name = default_hud_gauges[j]->getCustomGaugeName();
 			if(!strcmp(name, gauge_name)) {
-				return default_hud_gauges[j];
+				return default_hud_gauges[j].get();
 			}
 		}
 	}

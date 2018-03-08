@@ -1,0 +1,110 @@
+in vec4 fragTexCoord;
+out vec4 fragOut0;
+uniform sampler2D tex;
+uniform float timer;
+#ifdef FLAG_DISTORT_NOISE
+uniform float noise_amount;
+#endif
+#ifdef FLAG_SATURATION
+uniform float saturation;
+#endif
+#ifdef FLAG_BRIGHTNESS
+uniform float brightness;
+#endif
+#ifdef FLAG_CONTRAST
+uniform float contrast;
+#endif
+#ifdef FLAG_GRAIN
+uniform float film_grain;
+#endif
+#ifdef FLAG_STRIPES
+uniform float tv_stripes;
+#endif
+#ifdef FLAG_CUTOFF
+uniform float cutoff;
+#endif
+#ifdef FLAG_DITH
+uniform float dither;
+#endif
+#ifdef FLAG_TINT
+uniform vec3 tint;
+#endif
+uniform sampler2D blurred_tex;
+uniform sampler2D depth_tex;
+void main()
+{
+ #ifdef FLAG_DISTORT_NOISE
+ // Distort noise
+	float distort_factor = timer * sin(fragTexCoord.x * fragTexCoord.y * 100.0 + timer);
+	distort_factor = mod(distort_factor, 8.0) * mod(distort_factor, 4.0);
+	vec2 distort;
+	distort = vec2(mod(distort_factor, noise_amount), mod(distort_factor, noise_amount + 0.002));
+ #else
+	vec2 distort = vec2(0, 0);
+ #endif
+ // Global constant
+	vec4 color_in = texture(tex, fragTexCoord.xy + distort);
+	vec4 color_out;
+ #ifdef FLAG_SATURATION
+ // Saturation
+	vec4 color_grayscale = color_in;
+	color_grayscale.rgb = vec3(dot(color_in.rgb, vec3(0.299, 0.587, 0.184)));
+	color_out = mix(color_in, color_grayscale, 1.0 - saturation);
+ #else
+	color_out = color_in;
+ #endif
+ #ifdef FLAG_BRIGHTNESS
+ // Brightness
+	vec3 Afactor = vec3(brightness);
+	color_out.rgb = color_out.rgb * Afactor;
+ #endif
+ #ifdef FLAG_CONTRAST
+ // Contrast
+	vec3 Bfactor = vec3(0.5 - 0.5 * contrast);
+	color_out.rgb = color_out.rgb + Bfactor;
+ #endif
+ #ifdef FLAG_GRAIN
+ // Film Grain
+	float x = fragTexCoord.x * fragTexCoord.y * timer * 1000.0;
+	x = mod(x, 13.0) * mod(x, 123.0);
+	float dx = mod(x, 0.01);
+	vec3 result = color_out.rgb + color_out.rgb * clamp(0.1 + dx * 100.0, 0.0, 1.0);
+	color_out.rgb = mix(color_out.rgb, result, film_grain);
+ #endif
+ #ifdef FLAG_STRIPES
+ // TV-Stripes (Old School)
+	vec2 sc;
+	sc.x = sin(fragTexCoord.y * 2048.0);
+	sc.y = cos(fragTexCoord.y * 2048.0);
+	vec3 stripes = color_out.rgb + color_out.rgb * vec3(sc.x, sc.y, sc.x) * 0.8;
+	color_out.rgb = mix(color_out.rgb, stripes, tv_stripes);
+ #endif
+ #ifdef FLAG_CUTOFF
+	// Experimental cutoff shader
+	if (cutoff > 0.0) {
+		vec4 color_greyscale;
+		color_greyscale.rgb = vec3(dot(color_in.rgb, vec3(0.299, 0.587, 0.184)));
+		vec4 normalized_col;
+		float col_length = (length(color_out.rgb));
+		if (col_length > 1.0) {
+			normalized_col = ((color_out)/col_length);
+		} else {
+			normalized_col = color_out;
+		}
+		vec3 unit_grey = vec3(0.5773);
+		float sat = dot(normalized_col.rgb, unit_grey);
+		color_out = mix(color_greyscale, color_out, sat * cutoff);
+	}
+ #endif
+ #ifdef FLAG_DITH
+ // Dithering
+	float downsampling_factor = 4;
+	float bias = 0.5;
+	color_out.rgb = floor(color_out.rgb * downsampling_factor + bias) / downsampling_factor;
+ #endif
+ #ifdef FLAG_TINT
+	color_out.rgb += tint;
+ #endif
+	color_out.a = 1.0;
+	fragOut0 = color_out;
+}

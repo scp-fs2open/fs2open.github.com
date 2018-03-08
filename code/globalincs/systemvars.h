@@ -146,8 +146,8 @@ extern bool Glowpoint_override;
 extern bool Glowpoint_use_depth_buffer;
 extern bool GLSL_override;
 extern bool PostProcessing_override;
-extern bool Teamcolor_override;
 extern bool Shadow_override;
+extern bool Trail_render_override;
 
 extern bool Basemap_color_override_set;
 extern float Basemap_color_override[4];
@@ -207,9 +207,6 @@ void detail_level_set(int level);
 
 // Returns the current detail level or -1 if custom.
 int current_detail_level();
-
-#define MAX_LIGHTS 256
-#define MAX_LIGHT_LEVELS 16
 
 #define safe_kill(a) if(a)vm_free(a)
 

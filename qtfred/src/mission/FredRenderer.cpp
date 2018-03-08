@@ -13,6 +13,8 @@
 #include <globalincs/linklist.h>
 #include <render/3d.h>
 #include <graphics/font.h>
+#include <graphics/matrix.h>
+#include <graphics/light.h>
 #include <lighting/lighting.h>
 #include <starfield/starfield.h>
 #include <ship/ship.h>

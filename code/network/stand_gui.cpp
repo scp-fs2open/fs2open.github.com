@@ -2403,7 +2403,7 @@ DWORD standalone_process(WORD lparam)
 
 void std_init_os()
 {
-	os_init_registry_stuff(Osreg_company_name, Osreg_app_name,NULL);
+	os_init_registry_stuff(Osreg_company_name, Osreg_app_name);
 }
 
 

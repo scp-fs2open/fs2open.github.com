@@ -653,10 +653,10 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 			control_used(ONE_THIRD_THROTTLE);
 			player_clear_speed_matching();
 			if ( Player->ci.forward_cruise_percent < 33.3f ) {
-				snd_play( &Snds[ship_get_sound(Player_obj, SND_THROTTLE_UP)], 0.0f );
+				snd_play( gamesnd_get_game_sound(ship_get_sound(Player_obj, SND_THROTTLE_UP)), 0.0f );
 
 			} else if ( Player->ci.forward_cruise_percent > 33.3f ) {
-				snd_play( &Snds[ship_get_sound(Player_obj, SND_THROTTLE_DOWN)], 0.0f );
+				snd_play( gamesnd_get_game_sound(ship_get_sound(Player_obj, SND_THROTTLE_DOWN)), 0.0f );
 			}
 
 			Player->ci.forward_cruise_percent = 33.3f;
@@ -667,10 +667,10 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 			control_used(TWO_THIRDS_THROTTLE);
 			player_clear_speed_matching();
 			if ( Player->ci.forward_cruise_percent < 66.6f ) {
-				snd_play( &Snds[ship_get_sound(Player_obj, SND_THROTTLE_UP)], 0.0f );
+				snd_play( gamesnd_get_game_sound(ship_get_sound(Player_obj, SND_THROTTLE_UP)), 0.0f );
 
 			} else if (Player->ci.forward_cruise_percent > 66.6f) {
-				snd_play( &Snds[ship_get_sound(Player_obj, SND_THROTTLE_DOWN)], 0.0f );
+				snd_play( gamesnd_get_game_sound(ship_get_sound(Player_obj, SND_THROTTLE_DOWN)), 0.0f );
 			}
 
 			Player->ci.forward_cruise_percent = 66.6f;
@@ -695,7 +695,7 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 			control_used(ZERO_THROTTLE);
 			player_clear_speed_matching();
 			if ( ci->forward_cruise_percent > 0.0f && Player_obj->phys_info.fspeed > 0.5) {
-				snd_play( &Snds[ship_get_sound(Player_obj, SND_ZERO_THROTTLE)], 0.0f );
+				snd_play( gamesnd_get_game_sound(ship_get_sound(Player_obj, SND_ZERO_THROTTLE)), 0.0f );
 			}
 
 			ci->forward_cruise_percent = 0.0f;
@@ -706,7 +706,7 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 			control_used(MAX_THROTTLE);
 			player_clear_speed_matching();
 			if ( ci->forward_cruise_percent < 100.0f ) {
-				snd_play( &Snds[ship_get_sound(Player_obj, SND_FULL_THROTTLE)], 0.0f );
+				snd_play( gamesnd_get_game_sound(ship_get_sound(Player_obj, SND_FULL_THROTTLE)), 0.0f );
 			}
 
 			ci->forward_cruise_percent = 100.0f;
@@ -917,7 +917,7 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 						object_set_gliding(Player_obj, false);
 						ci->forward_cruise_percent = savedspeed;
 						press_glide = !press_glide;
-						snd_play( &Snds[ship_get_sound(Player_obj, SND_THROTTLE_UP)], 0.0f );
+						snd_play( gamesnd_get_game_sound(ship_get_sound(Player_obj, SND_THROTTLE_UP)), 0.0f );
 					}
 				} else if ( !object_get_gliding(Player_obj) ) {
 					object_set_gliding(Player_obj, true);
@@ -926,10 +926,10 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 					override_analog_throttle = 1;
 					if (Ship_info[Player_ship->ship_info_index].glide_start_snd > 0) {
 						//If a custom glide start sound was specified, play it
-						snd_play( &Snds[Ship_info[Player_ship->ship_info_index].glide_start_snd], 0.0f );
+						snd_play( gamesnd_get_game_sound(Ship_info[Player_ship->ship_info_index].glide_start_snd), 0.0f );
 					} else {
 						//If glide_start_snd wasn't set (probably == 0), use the default throttle down sound
-						snd_play( &Snds[ship_get_sound(Player_obj, SND_THROTTLE_DOWN)], 0.0f );
+						snd_play( gamesnd_get_game_sound(ship_get_sound(Player_obj, SND_THROTTLE_DOWN)), 0.0f );
 					}
 				}
 			}
@@ -942,10 +942,10 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 					ci->forward_cruise_percent = savedspeed;
 					if (Ship_info[Player_ship->ship_info_index].glide_end_snd > 0) {
 						//If a custom glide end sound was specified, play it
-						snd_play( &Snds[Ship_info[Player_ship->ship_info_index].glide_end_snd], 0.0f );
+						snd_play( gamesnd_get_game_sound(Ship_info[Player_ship->ship_info_index].glide_end_snd), 0.0f );
 					} else {
 						//If glide_end_snd wasn't set (probably == 0), use the default throttle up sound
-						snd_play( &Snds[ship_get_sound(Player_obj, SND_THROTTLE_UP)], 0.0f );
+						snd_play( gamesnd_get_game_sound(ship_get_sound(Player_obj, SND_THROTTLE_UP)), 0.0f );
 					}
 				}
 			}
@@ -1035,7 +1035,7 @@ void read_player_controls(object *objp, float frametime)
 				// check if warp ability has been disabled
 				if (!(Warpout_forced) && (Ships[objp->instance].flags[Ship::Ship_Flags::Warp_broken] || Ships[objp->instance].flags[Ship::Ship_Flags::Warp_never]) ) {
 					HUD_sourced_printf(HUD_SOURCE_HIDDEN, "%s", XSTR( "Cannot warp out at this time.", 81));
-					snd_play(&Snds[SND_PLAYER_WARP_FAIL]);
+					snd_play(gamesnd_get_game_sound(SND_PLAYER_WARP_FAIL));
 					gameseq_post_event( GS_EVENT_PLAYER_WARPOUT_STOP );
 				} else {
 					if ( Warpout_forced ) {
@@ -1442,7 +1442,7 @@ void player_maybe_start_repair_sound()
 {
 	Assert(Player);
 	if ( Player->repair_sound_loop == -1 ) {
-		Player->repair_sound_loop = snd_play_looping( &Snds[SND_SHIP_REPAIR] );
+		Player->repair_sound_loop = snd_play_looping( gamesnd_get_game_sound(SND_SHIP_REPAIR) );
 	}
 }
 
@@ -1465,7 +1465,7 @@ void player_maybe_start_cargo_scan_sound()
 {
 	Assert(Player);
 	if ( Player->cargo_scan_loop == -1 ) {
-		Player->cargo_scan_loop = snd_play_looping( &Snds[ship_get_sound(Player_obj, SND_CARGO_SCAN)] );
+		Player->cargo_scan_loop = snd_play_looping( gamesnd_get_game_sound(ship_get_sound(Player_obj, SND_CARGO_SCAN)) );
 	}
 }
 
@@ -1624,7 +1624,7 @@ int player_inspect_cargo(float frametime, char *outstr)
 
 		if ( Player->cargo_inspect_time > cargo_sip->scan_time ) {
 			ship_do_cargo_revealed( cargo_sp );
-			snd_play( &Snds[SND_CARGO_REVEAL], 0.0f );
+			snd_play( gamesnd_get_game_sound(SND_CARGO_REVEAL), 0.0f );
 			Player->cargo_inspect_time = 0;
 		}
 	} else {
@@ -1734,7 +1734,7 @@ int player_inspect_cap_subsys_cargo(float frametime, char *outstr)
 
 		if ( Player->cargo_inspect_time > cargo_sip->scan_time ) {
 			ship_do_cap_subsys_cargo_revealed( cargo_sp, subsys, 0);
-			snd_play( &Snds[SND_CARGO_REVEAL], 0.0f );
+			snd_play( gamesnd_get_game_sound(SND_CARGO_REVEAL), 0.0f );
 			Player->cargo_inspect_time = 0;
 		}
 	} else {

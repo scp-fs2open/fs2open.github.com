@@ -6,7 +6,7 @@
 
 class FontTest : public test::FSTestFixture {
  public:
-	FontTest() : test::FSTestFixture(INIT_SHIPS | INIT_GRAPHICS) {
+	FontTest() : test::FSTestFixture(INIT_SHIPS | INIT_GRAPHICS | INIT_CFILE) {
 		pushModDir("graphics");
 		pushModDir("fonts");
 	}

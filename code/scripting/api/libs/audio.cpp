@@ -61,9 +61,9 @@ ADE_FUNC(loadSoundfile, l_Audio, "string filename", "Loads the specified sound f
 	if (!ade_get_args(L, "s", &fileName))
 		return ade_set_error(L, "o", l_Soundfile.Set(-1));
 
-	game_snd tmp_gs;
+	game_snd_entry tmp_gs;
 	strcpy_s( tmp_gs.filename, fileName );
-	int n = snd_load( &tmp_gs, 0 );
+	int n = snd_load( &tmp_gs, 0, 0 );
 
 	return ade_set_error(L, "o", l_Soundfile.Set(n));
 }
@@ -158,7 +158,7 @@ ADE_FUNC(playGameSound, l_Audio, "Sound index, [Panning (-1.0 left to 1.0 right)
 	gamesnd_idx = gamesnd_get_by_tbl_index(idx);
 
 	if (gamesnd_idx >= 0) {
-		int sound_handle = snd_play(&Snds[gamesnd_idx], pan, vol*0.01f, pri, voice_msg);
+		int sound_handle = snd_play(gamesnd_get_game_sound(gamesnd_idx), pan, vol*0.01f, pri, voice_msg);
 		return ade_set_args(L, "b", sound_handle >= 0);
 	} else {
 		LuaError(L, "Invalid sound index %i (Snds[%i]) in playGameSound()", idx, gamesnd_idx);

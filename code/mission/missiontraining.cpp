@@ -783,9 +783,9 @@ int message_play_training_voice(int index)
 			return Training_voice;
 
 		} else {
-			game_snd tmp_gs;
+			game_snd_entry tmp_gs;
 			strcpy_s(tmp_gs.filename, Message_waves[index].name);
-			Message_waves[index].num = snd_load(&tmp_gs, 0);
+			Message_waves[index].num = snd_load(&tmp_gs, 0, 0);
 			if (Message_waves[index].num < 0) {
 				nprintf(("Warning", "Cannot load message wave: %s.  Will not play\n", Message_waves[index].name));
 				return -1;

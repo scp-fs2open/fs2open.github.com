@@ -58,7 +58,7 @@ void sexp_network_packet::ensure_space_remains(size_t data_size)
 
     // At very least must include OP, COUNT, TERMINATOR 
     if (packet_end < 9 && !packet_flagged_invalid) {
-        Warning(LOCATION, "Sexp %s has attempted to write too much data to a single packet. It is advised that you split this SEXP up into smaller ones", Operators[Current_sexp_operator.back()].text);
+        Warning(LOCATION, "Sexp %s has attempted to write too much data to a single packet. It is advised that you split this SEXP up into smaller ones", Operators[Current_sexp_operator.back()].text.c_str());
         packet_flagged_invalid = true;
         return;
     }
@@ -109,7 +109,7 @@ bool sexp_network_packet::argument_count_is_valid()
             sexp_bytes_left--;
 
             if (possible_terminator == CALLBACK_TERMINATOR) {
-                Warning(LOCATION, "%s has returned to multi_sexp_eval() claiming %d arguments left. %d actually found. Trace out and fix this!", Operators[op_num].text, current_argument_count, i);
+                Warning(LOCATION, "%s has returned to multi_sexp_eval() claiming %d arguments left. %d actually found. Trace out and fix this!", Operators[op_num].text.c_str(), current_argument_count, i);
                 terminator_found = true;
                 break;
             }
@@ -122,13 +122,13 @@ bool sexp_network_packet::argument_count_is_valid()
 
             if (possible_terminator != CALLBACK_TERMINATOR) {
                 // discard remainder of packet if we still haven't found the terminator as it is hopelessly corrupt
-                Warning(LOCATION, "%s has returned to multi_sexp_eval() without finding the terminator. Discarding packet! Trace out and fix this!", Operators[op_num].text);
+                Warning(LOCATION, "%s has returned to multi_sexp_eval() without finding the terminator. Discarding packet! Trace out and fix this!", Operators[op_num].text.c_str());
                 sexp_bytes_left = 0;
                 return false;
             }
             else {
                 // the previous SEXP hasn't removed all it's data from the packet correctly but it appears we've managed to fix it
-                Warning(LOCATION, "%s has returned to multi_sexp_eval() without removing all the data the server wrote during its callback. Trace out and fix this!", Operators[op_num].text);
+                Warning(LOCATION, "%s has returned to multi_sexp_eval() without removing all the data the server wrote during its callback. Trace out and fix this!", Operators[op_num].text.c_str());
                 op_num = -1;
             }
         }

@@ -60,6 +60,7 @@
 #include "scripting/api/libs/mission.h"
 #include "scripting/api/libs/tables.h"
 #include "scripting/api/libs/testing.h"
+#include "scripting/api/libs/utf8.h"
 
 // End of definitions includes
 

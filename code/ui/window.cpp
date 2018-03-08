@@ -101,7 +101,7 @@ void UI_WINDOW::set_mask_bmap(int bmap, const char *name)
 		mask_h = -1;
 
 		mask_bmap_id = bmap;
-		mask_bmap_ptr = bm_lock(mask_bmap_id, 8, BMP_AABITMAP);
+		mask_bmap_ptr = bm_lock(mask_bmap_id, 8, BMP_AABITMAP | BMP_MASK_BITMAP);
 		mask_data = (ubyte *) mask_bmap_ptr->data;		
 		bm_get_info( bmap, &mask_w, &mask_h );
 		tt_group = -1;

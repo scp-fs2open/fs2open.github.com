@@ -15,7 +15,7 @@ void ParticleProperties::parse(bool nocreate) {
 	}
 
 	if (internal::required_string_if_new("+Size:", nocreate)) {
-		m_radius = util::parseUniformRange<float>();
+		m_radius = ::util::parseUniformRange<float>();
 	}
 
 	if (optional_string("+Lifetime:")) {
@@ -25,7 +25,7 @@ void ParticleProperties::parse(bool nocreate) {
 		}
 		else {
 			m_hasLifetime = true;
-			m_lifetime = util::parseUniformRange<float>();
+			m_lifetime = ::util::parseUniformRange<float>();
 		}
 	}
 }

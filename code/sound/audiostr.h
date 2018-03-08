@@ -41,9 +41,9 @@ int audiostream_open( const char * filename, int type );
 // Closes the opened wave file.  This doesn't have to be
 // called between songs, because when you open the next
 // song, it will call this internally.
-void audiostream_close_file(int i, int fade = 1);
+void audiostream_close_file(int i, bool fade = true);
 
-void audiostream_close_all(int fade);
+void audiostream_close_all(bool fade);
 
 // Plays the currently opened wave file
 void audiostream_play(int i, float volume = -1.0f, int looping = 1);

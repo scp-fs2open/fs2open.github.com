@@ -21,6 +21,7 @@
 #include "weapon/trails.h"
 #include "particle/ParticleManager.h"
 #include "weapon/weapon_flags.h"
+#include "decals/decals.h"
 
 class object;
 class ship_subsys;
@@ -110,6 +111,7 @@ typedef struct weapon {
 	vec3d	big_attack_point;				//	Target-relative location of attack point.
 
 	SCP_vector<int>* cmeasure_ignore_list;
+	int		cmeasure_timer;
 
 	// corkscrew info (taken out for now)
 	short	cscrew_index;						// corkscrew info index
@@ -407,6 +409,7 @@ typedef struct weapon_info {
 	float cm_effective_rad;
 	float cm_detonation_rad;
 	bool  cm_kill_single;       // should the countermeasure kill just the single decoyed missile within CMEASURE_DETONATE_DISTANCE?
+	int   cmeasure_timer_interval;	// how many milliseconds between pulses
 
     // *
                
@@ -455,6 +458,8 @@ typedef struct weapon_info {
 	int hud_locked_snd; // Sound played when this weapon locked onto a target
 	int hud_in_flight_snd; // Sound played while the weapon is in flight
 	InFlightSoundType in_flight_play_type; // The status when the sound should be played
+
+	decals::creation_info impact_decal;
 
 public:
 	weapon_info();
@@ -576,7 +581,7 @@ int	weapon_area_calc_damage(object *objp, vec3d *pos, float inner_rad, float out
 
 void	missile_obj_list_rebuild();	// called by save/restore code only
 missile_obj *missile_obj_return_address(int index);
-void find_homing_object_cmeasures();
+void find_homing_object_cmeasures(const SCP_vector<object*> &cmeasure_list);
 
 // THE FOLLOWING FUNCTION IS IN SHIP.CPP!!!!
 // JAS - figure out which thruster bitmap will get rendered next
@@ -591,7 +596,7 @@ void ship_do_weapon_thruster_frame( weapon *weaponp, object *objp, float frameti
 // call to get the "color" of the laser at the given moment (since glowing lasers can cycle colors)
 void weapon_get_laser_color(color *c, object *objp);
 
-void weapon_hit_do_sound(object *hit_obj, weapon_info *wip, vec3d *hitpos, bool is_armed);
+void weapon_hit_do_sound(object *hit_obj, weapon_info *wip, vec3d *hitpos, bool is_armed, int quadrant);
 
 void weapon_do_electronics_effect(object *ship_objp, vec3d *blast_pos, int wi_index);
 

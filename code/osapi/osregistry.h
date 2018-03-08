@@ -31,7 +31,7 @@ extern const char *Osreg_config_file_name;
 
 
 // initialize the registry. setup default keys to use
-void os_init_registry_stuff( const char *company, const char *app, const char *version );
+void os_init_registry_stuff( const char *company, const char *app);
 
 // Writes a string to the registry
 void os_config_write_string( const char *section, const char *name, const char *value );

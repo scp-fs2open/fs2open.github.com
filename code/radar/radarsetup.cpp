@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright (C) Volition, Inc. 1999.  All rights reserved.
  *
  * All source code herein is the property of Volition, Inc. You may not sell 
@@ -30,6 +30,7 @@
 #include "ship/subsysdamage.h"
 #include "weapon/emp.h"
 #include "weapon/weapon.h"
+#include "mod_table/mod_table.h"
 
 int Radar_static_looping = -1;
 
@@ -442,25 +443,6 @@ void HudGaugeRadar::initialize()
 		Radar_flicker_on[i]=0;
 	}
 
-	int w,h;
-	font::set_font(font::FONT1);
-	ubyte sc = lcl_get_font_index(font::FONT1);
-	if (sc == 0) {
-		Warning(LOCATION, "1st font doesn't have a special characters index, radar may not work");
-	}
-
-	Small_blip_string[0] = sc + 5;
-	Small_blip_string[1] = 0;
-	gr_get_string_size( &w, &h, Small_blip_string );
-	Small_blip_offset_x = -w/2;
-	Small_blip_offset_y = -h/2;
-
-	Large_blip_string[0] = sc + 6;
-	Large_blip_string[1] = 0;
-	gr_get_string_size( &w, &h, Large_blip_string );
-	Large_blip_offset_x = -w/2;
-	Large_blip_offset_y = -h/2;
-
 	HudGauge::initialize();
 }
 
@@ -480,7 +462,12 @@ void HudGaugeRadar::drawRange()
 		break;
 
 	case RR_INFINITY:
-		renderPrintf(position[0] + Radar_dist_offsets[RR_INFINITY][0], position[1] + Radar_dist_offsets[RR_INFINITY][1], "%c", Radar_infinity_icon);
+		if (Unicode_text_mode) {
+			// This escape sequence is the UTF-8 encoding of the infinity symbol. We can't use u8 yet since VS2013 doesn't support it
+			renderPrintf(position[0] + Radar_dist_offsets[RR_INFINITY][0], position[1] + Radar_dist_offsets[RR_INFINITY][1], "\xE2\x88\x9E");
+		} else {
+			renderPrintf(position[0] + Radar_dist_offsets[RR_INFINITY][0], position[1] + Radar_dist_offsets[RR_INFINITY][1], "%c", Radar_infinity_icon);
+		}
 		break;
 
 	default:

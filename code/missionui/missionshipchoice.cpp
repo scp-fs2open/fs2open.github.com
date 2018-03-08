@@ -689,7 +689,7 @@ void ship_select_init()
 	Shipselect_mask_h = -1;
 
 	// get a pointer to bitmap by using bm_lock()
-	ShipSelectMaskPtr = bm_lock(ShipSelectMaskBitmap, 8, BMP_AABITMAP);
+	ShipSelectMaskPtr = bm_lock(ShipSelectMaskBitmap, 8, BMP_AABITMAP | BMP_MASK_BITMAP);
 	ShipSelectMaskData = (ubyte*)ShipSelectMaskPtr->data;	
 	bm_get_info(ShipSelectMaskBitmap, &Shipselect_mask_w, &Shipselect_mask_h);
 
@@ -1264,6 +1264,8 @@ extern int Tech_ship_display_coords[GR_NUM_RESOLUTIONS][4];
 
 void ship_select_do(float frametime)
 {
+	GR_DEBUG_SCOPE("Ship select");
+
 	int k, ship_select_choice, snazzy_action;
 
 	ship_select_choice = snazzy_menu_do(ShipSelectMaskData, Shipselect_mask_w, Shipselect_mask_h, Num_mask_regions, Region, &snazzy_action, 0);
@@ -1442,8 +1444,11 @@ void ship_select_do(float frametime)
 	}
 	if(!Cmdline_ship_choice_3d && ((Selected_ss_class >= 0) && (Ss_icons[Selected_ss_class].ss_anim.num_frames > 0)))
 	{
+		GR_DEBUG_SCOPE("Render ship animation");
+
 		generic_anim_render(&Ss_icons[Selected_ss_class].ss_anim, (help_overlay_active(Ship_select_overlay_id)) ? 0 : frametime, Ship_anim_coords[gr_screen.res][0], Ship_anim_coords[gr_screen.res][1], true);
 	} else {
+		GR_DEBUG_SCOPE("Render ship models");
 		// The new rendering code for 3D ships courtesy your friendly UnknownPlayer :)
 
 		// check we have a valid ship class selected
@@ -1488,6 +1493,8 @@ void ship_select_do(float frametime)
 
 	// The background transition plays once. Display ship icons after Background done playing
 	if ( !Background_playing ) {
+		GR_DEBUG_SCOPE("Draw icons");
+
 		draw_ship_icons();
 		for ( int i = 0; i < MAX_WING_BLOCKS; i++ ) {
 			draw_wing_block(i, Hot_ss_slot, -1, Selected_ss_class);
@@ -1516,7 +1523,9 @@ void ship_select_do(float frametime)
 			int w = 32;
 			int h = 28;
 
-			draw_brackets_square(sx, sy, sx + w, sy + h, GR_RESIZE_MENU);
+			graphics::line_draw_list line_draw_list;
+			draw_brackets_square(&line_draw_list, sx, sy, sx + w, sy + h, GR_RESIZE_MENU);
+			line_draw_list.flush();
 
 			if(Ss_icons[Carried_ss_icon.ship_class].model_index != -1)
 			{
@@ -1639,6 +1648,8 @@ void draw_ship_icons()
 //
 void draw_ship_icon_with_number(int screen_offset, int ship_class)
 {
+	GR_DEBUG_SCOPE("Draw single ship icon");
+
 	char	buf[32];
 	int	num_x,num_y;
 	ss_icon_info *ss_icon;
@@ -1701,7 +1712,11 @@ void draw_ship_icon_with_number(int screen_offset, int ship_class)
 			mprintf(("SL WARNING: Had to attempt to page in model for %s paged in manually! Result: %d\n", sip->name, ss_icon->model_index));
 		}
 		gr_set_color_fast(color_to_draw);
-		draw_brackets_square(Ship_list_coords[gr_screen.res][screen_offset][0], Ship_list_coords[gr_screen.res][screen_offset][1], Ship_list_coords[gr_screen.res][screen_offset][0] + 32, Ship_list_coords[gr_screen.res][screen_offset][1] + 28, GR_RESIZE_MENU);
+
+		graphics::line_draw_list line_draw_list;
+		draw_brackets_square(&line_draw_list, Ship_list_coords[gr_screen.res][screen_offset][0], Ship_list_coords[gr_screen.res][screen_offset][1], Ship_list_coords[gr_screen.res][screen_offset][0] + 32, Ship_list_coords[gr_screen.res][screen_offset][1] + 28, GR_RESIZE_MENU);
+		line_draw_list.flush();
+
 		if(ss_icon->model_index != -1)
 		{
 			draw_model_icon(ss_icon->model_index, MR_AUTOCENTER | MR_NO_FOGGING | MR_NO_LIGHTING, sip->closeup_zoom / 1.25f, Ship_list_coords[gr_screen.res][screen_offset][0],Ship_list_coords[gr_screen.res][screen_offset][1], 32, 28, sip, GR_RESIZE_MENU);
@@ -2064,6 +2079,8 @@ void pick_from_wing(int wb_num, int ws_num)
 //				class_select	=>	all ships of this class are drawn selected (send -1 to not use)
 void draw_wing_block(int wb_num, int hot_slot, int selected_slot, int class_select, bool ship_selection )
 {
+	GR_DEBUG_SCOPE("Wing block");
+
 	ss_wing_info	*wb;
 	ss_slot_info	*ws;
 	ss_icon_info	*icon;
@@ -2090,6 +2107,8 @@ void draw_wing_block(int wb_num, int hot_slot, int selected_slot, int class_sele
 	gr_string(sx, sy, wp->name, GR_RESIZE_MENU);
 
 	for ( i = 0; i < MAX_WING_SLOTS; i++ ) {
+		GR_DEBUG_SCOPE("Single ship");
+
 		bitmap_to_draw = -1;
 		ws = &wb->ss_slots[i];
 		slot_index = wb_num*MAX_WING_SLOTS + i;
@@ -2207,7 +2226,11 @@ void draw_wing_block(int wb_num, int hot_slot, int selected_slot, int class_sele
 		{
 			ship_info *sip = &Ship_info[Wss_slots[slot_index].ship_class];
 			gr_set_color_fast(color_to_draw);
-			draw_brackets_square(Wing_icon_coords[gr_screen.res][slot_index][0], Wing_icon_coords[gr_screen.res][slot_index][1], Wing_icon_coords[gr_screen.res][slot_index][0] + 32, Wing_icon_coords[gr_screen.res][slot_index][1] + 28, GR_RESIZE_MENU);
+
+			graphics::line_draw_list line_draw_list;
+			draw_brackets_square(&line_draw_list, Wing_icon_coords[gr_screen.res][slot_index][0], Wing_icon_coords[gr_screen.res][slot_index][1], Wing_icon_coords[gr_screen.res][slot_index][0] + 32, Wing_icon_coords[gr_screen.res][slot_index][1] + 28, GR_RESIZE_MENU);
+			line_draw_list.flush();
+
 			draw_model_icon(icon->model_index, MR_AUTOCENTER | MR_NO_FOGGING | MR_NO_LIGHTING, sip->closeup_zoom / 1.25f, Wing_icon_coords[gr_screen.res][slot_index][0], Wing_icon_coords[gr_screen.res][slot_index][1], 32, 28, sip, GR_RESIZE_MENU);
 		}
 	}
@@ -2286,7 +2309,11 @@ void ss_blit_ship_icon(int x,int y,int ship_class,int bmap_num)
 			if(icon->model_index != -1)
 			{
 				gr_set_color_fast(&Icon_colors[bmap_num]);
-				draw_brackets_square(x, y, x + 32, y + 28, GR_RESIZE_MENU);
+
+				graphics::line_draw_list line_draw_list;
+				draw_brackets_square(&line_draw_list, x, y, x + 32, y + 28, GR_RESIZE_MENU);
+				line_draw_list.flush();
+
 				draw_model_icon(icon->model_index, MR_AUTOCENTER | MR_NO_FOGGING | MR_NO_LIGHTING, sip->closeup_zoom / 1.25f, x, y, 32, 28, sip, GR_RESIZE_MENU);
 			}
 		}

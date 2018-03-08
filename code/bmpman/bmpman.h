@@ -33,7 +33,7 @@
  */
 
 /**
- * @brief How many bitmaps the game can handle
+ * @brief How many bitmaps the game can handle by default
  *
  * @attention  MAX_BITMAPS shouldn't need to be bumped again.  With the fixed bm_release() and it's proper use even the
  *   largest missions should stay under this number.  With the largest retail missions and wasteful content we should
@@ -45,7 +45,9 @@
  *   If anything we could/should reduce MAX_BITMAPS in the future.  Where it's at now should accomidate even the
  *   largest mods.  --  Taylor
  */
-#define MAX_BITMAPS 4750
+#define DEFAULT_MAX_BITMAPS 4750
+
+extern int MAX_BITMAPS;
 
 // Flag positions for bitmap.flags
 // ***** NOTE:  bitmap.flags is an 8-bit value, no more BMP_TEX_* flags can be added unless the type is changed!! ******
@@ -56,6 +58,7 @@
 #define BMP_TEX_DXT3        (1<<4)      //!< dxt3 compressed 8r8g8b4a (32bit)
 #define BMP_TEX_DXT5        (1<<5)      //!< dxt5 compressed 8r8g8b8a (32bit)
 #define BMP_TEX_CUBEMAP     (1<<6)      //!< a texture made for cubic environment map
+#define BMP_MASK_BITMAP     (1<<7)      //!< a bitmap that will be used for masking mouse interaction. Typically not used in render operations
 
 // Combined flags
 #define BMP_TEX_COMP        ( BMP_TEX_DXT1 | BMP_TEX_DXT3 | BMP_TEX_DXT5 )  //!< Compressed textures
@@ -697,5 +700,61 @@ bool bm_load_and_parse_eff(const char *filename, int dir_type, int *nframes, int
  * @returns current frame of the animation (range is zero to the number of frames minus one)
  */
 int bm_get_anim_frame(const int frame1_handle, float elapsed_time, const float divisor = 0.0f, const bool loop = false);
+
+/**
+ * @brief Determines if the given handle could be used in a texture array
+ *
+ * @param handle The handle to query the value for
+ * @return @c true if all frames have the same size, @c false otherwise. Always returns @c true for single images
+ */
+bool bm_is_texture_array(const int handle);
+
+/**
+ * @brief Gets the base frame of the specified animation
+ *
+ * @details The base frame is the frame of the animation that should be used to determine if two animation frames can be
+ * used in the same draw call. Use this if you want to optimize your draw calls to make use of texture arrays.
+ *
+ * @param handle The handle of the animation to check. This may also be a single frame bitmap
+ * @param num_frames Optionally return the number of frames in the animation
+ * @return The bitmap handle of the base frame or -1 on error
+ */
+int bm_get_base_frame(const int handle, int* num_frames = nullptr);
+
+/**
+ * @brief Get the array index of the specified bitmap
+ *
+ * This should be used when passing the array index to the GPU (e.g. when building uniform structs or streaming particle
+ * data)
+ *
+ * @param handle The handle of the bitmap
+ * @return The index into the array
+ */
+int bm_get_array_index(const int handle);
+
+/**
+ * @brief Counts how many slots are used in bm_bitmaps
+ *
+ * This needs to iterate through all the slots in order to determine whether or not they're used, so shouldn't be used frivolously.
+ *
+ * @return The number of used slots
+ */
+int bmpman_count_bitmaps();
+
+/**
+ * @brief Checks if the given filename is a valid effect or texture file name
+ *
+ * @note At least one of @c single_frame or @c animation must be true since the result would make no sense otherwise. It
+ * is also valid to set both parmeters to @c true.
+ *
+ * @todo This currently just tries to load the file but could be improved by not actually loading the file in the future.
+ *
+ * @param file The file name to check
+ * @param single_frame If set to @c true then single frames are valid files
+ * @param animation If set to @c true then animations are valid files
+ * @return @c true if the file name is valid, @c false otherwise
+ */
+bool bm_validate_filename(const SCP_string& file, bool single_frame, bool animation);
+
 
 #endif

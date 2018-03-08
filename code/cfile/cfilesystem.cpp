@@ -37,12 +37,16 @@
 #include "cfile/cfilesystem.h"
 #include "cmdline/cmdline.h"
 #include "globalincs/pstypes.h"
+#include "def_files/def_files.h"
 #include "localization/localize.h"
 #include "osapi/osapi.h"
 #include "parse/parselo.h"
 
-#define CF_ROOTTYPE_PATH 0
-#define CF_ROOTTYPE_PACK 1
+enum CfileRootType {
+	CF_ROOTTYPE_PATH = 0,
+	CF_ROOTTYPE_PACK = 1,
+	CF_ROOTTYPE_MEMORY = 2,
+};
 
 // for a defined and specifically set location to get/send pilot/campaign files
 SCP_string Pilot_file_path;
@@ -53,8 +57,8 @@ SCP_string Pilot_file_path;
 //    specifying cd-rom tree
 //    searching for pack files on CD-rom tree
 typedef struct cf_root {
-	char				path[CF_MAX_PATHNAME_LENGTH];		// Contains something like c:\projects\freespace or c:\projects\freespace\freespace.vp
-	int				roottype;								// CF_ROOTTYPE_PATH  = Path, CF_ROOTTYPE_PACK =Pack file
+	char	path[CF_MAX_PATHNAME_LENGTH];	// Contains something like c:\projects\freespace or c:\projects\freespace\freespace.vp
+	int		roottype;						// CF_ROOTTYPE_PATH  = Path, CF_ROOTTYPE_PACK =Pack file, CF_ROOTTYPE_MEMORY=In memory
 } cf_root;
 
 // convenient type for sorting (see cf_build_pack_list())
@@ -79,13 +83,14 @@ static int Num_path_roots = 0;
 
 // Created by searching all roots in order.   This means Files is then sorted by precedence.
 typedef struct cf_file {
-	char	name_ext[CF_MAX_FILENAME_LENGTH];	// Filename and extension
-	int		root_index;							// Where in Roots this is located
-	int		pathtype_index;						// Where in Paths this is located
-	time_t	write_time;							// When it was last written
-	int		size;								// How big it is in bytes
-	int		pack_offset;						// For pack files, where it is at.   0 if not in a pack file.  This can be used to tell if in a pack file.
-	char*	real_name;							// For real files, the full path
+	char		name_ext[CF_MAX_FILENAME_LENGTH];	// Filename and extension
+	int			root_index;							// Where in Roots this is located
+	int			pathtype_index;						// Where in Paths this is located
+	time_t		write_time;							// When it was last written
+	int			size;								// How big it is in bytes
+	int			pack_offset;						// For pack files, where it is at.   0 if not in a pack file.  This can be used to tell if in a pack file.
+	char*		real_name;							// For real files, the full path
+	const void*	data;								// For in-memory files, the data pointer
 } cf_file;
 
 #define CF_NUM_FILES_PER_BLOCK   512
@@ -510,6 +515,11 @@ void cf_build_root_list(const char *cdrom_dir)
 
 	}
 
+	// The final root is the in-memory root
+	root = cf_create_root();
+	memset(root->path, 0, sizeof(root->path));
+	root->roottype = CF_ROOTTYPE_MEMORY;
+
 }
 
 // Given a lower case list of file extensions 
@@ -836,7 +846,48 @@ void cf_search_root_pack(int root_index)
 	mprintf(( "%i files\n", num_files ));
 }
 
+void cf_search_memory_root(int root_index) {
+	int num_files = 0;
+	mprintf(( "Searching memory root ... " ));
 
+	auto default_files = defaults_get_all();
+	for (auto& default_file : default_files) {
+		// Pure built in files have an empty path_type string
+		if (strlen(default_file.path_type) <= 0) {
+			// Ignore pure builtin files. They should only be accessible with defaults_get_file
+			continue;
+		}
+
+		int pathtype = -1;
+		for (int i = 0; i < CF_MAX_PATH_TYPES; ++i) {
+			if (Pathtypes[i].path == nullptr) {
+				continue;
+			}
+
+			if (!strcmp(Pathtypes[i].path, default_file.path_type)) {
+				pathtype = i;
+				break;
+			}
+		}
+		Assertion(pathtype != -1, "Default file '%s%s%s' does not use a valid path type!",
+				  default_file.path_type,
+				  DIR_SEPARATOR_STR,
+				  default_file.filename);
+
+		cf_file *file = cf_create_file();
+
+		strcpy_s( file->name_ext, default_file.filename );
+		file->root_index = root_index;
+		file->pathtype_index = pathtype;
+		file->write_time = time(nullptr); // Just assume that memory files were last written to just now
+		file->size = (int)default_file.size;
+		file->data = default_file.data;
+
+		num_files++;
+	}
+
+	mprintf(( "%i files\n", num_files ));
+}
 
 void cf_build_file_list()
 {
@@ -851,6 +902,8 @@ void cf_build_file_list()
 			cf_search_root_path(i);
 		} else if ( root->roottype == CF_ROOTTYPE_PACK )	{
 			cf_search_root_pack(i);
+		} else if (root->roottype == CF_ROOTTYPE_MEMORY) {
+			cf_search_memory_root(i);
 		}
 	}
 
@@ -932,7 +985,7 @@ void cf_free_secondary_filelist()
  *
  * @return If not found returns 0.
  */
-int cf_find_file_location( const char *filespec, int pathtype, int max_out, char *pack_filename, size_t *size, size_t *offset, bool localize )
+int cf_find_file_location( const char *filespec, int pathtype, int max_out, char *pack_filename, size_t *size, size_t *offset, bool localize, const void** data_out )
 {
 	int i;
     uint ui;
@@ -1067,8 +1120,16 @@ int cf_find_file_location( const char *filespec, int pathtype, int max_out, char
 					if (offset)
 						*offset = (size_t)f->pack_offset;
 
+					if (data_out)
+						*data_out = f->data;
+
 					if (pack_filename) {
-						if (f->pack_offset < 1) {
+						if (f->data != nullptr) {
+							// This is an in-memory file so we just copy the pathtype name + file name
+							strncpy(pack_filename, Pathtypes[f->pathtype_index].path, max_out);
+							strncat(pack_filename, DIR_SEPARATOR_STR, max_out);
+							strncat(pack_filename, f->name_ext, max_out);
+						} else if (f->pack_offset < 1) {
 							// This is a real file, return the actual file path
 							strncpy( pack_filename, f->real_name, max_out );
 						} else {
@@ -1092,8 +1153,16 @@ int cf_find_file_location( const char *filespec, int pathtype, int max_out, char
 			if (offset)
 				*offset = (size_t)f->pack_offset;
 
+			if (data_out)
+				*data_out = f->data;
+
 			if (pack_filename) {
-				if (f->pack_offset < 1) {
+				if (f->data != nullptr) {
+					// This is an in-memory file so we just copy the pathtype name + file name
+					strncpy(pack_filename, Pathtypes[f->pathtype_index].path, max_out);
+					strncat(pack_filename, DIR_SEPARATOR_STR, max_out);
+					strncat(pack_filename, f->name_ext, max_out);
+				} else if (f->pack_offset < 1) {
 					// This is a real file, return the actual file path
 					strncpy( pack_filename, f->real_name, max_out );
 				} else {
@@ -1132,7 +1201,7 @@ extern char *stristr(char *str, const char *substr);
  *
  * @return If not found returns -1, else returns offset into ext_list.
  */
-int cf_find_file_location_ext( const char *filename, const int ext_num, const char **ext_list, int pathtype, int max_out, char *pack_filename, size_t *size, size_t *offset, bool localize )
+int cf_find_file_location_ext( const char *filename, const int ext_num, const char **ext_list, int pathtype, int max_out, char *pack_filename, size_t *size, size_t *offset, bool localize, const void** data_out)
 {
 	int cur_ext, i;
     uint ui;
@@ -1217,6 +1286,9 @@ int cf_find_file_location_ext( const char *filename, const int ext_num, const ch
 				if (size)
 					*size = findstruct.size;
 
+				if (data_out)
+					*data_out = nullptr;
+
 				_findclose(findhandle);
 
 				if (offset)
@@ -1234,6 +1306,9 @@ int cf_find_file_location_ext( const char *filename, const int ext_num, const ch
 				if (fp) {
 					if (size)
 						*size = filelength( fileno(fp) );
+
+					if (data_out)
+						*data_out = nullptr;
 
 					fclose(fp);
 
@@ -1334,15 +1409,25 @@ int cf_find_file_location_ext( const char *filename, const int ext_num, const ch
 						if (offset)
 							*offset = f->pack_offset;
 
+						if (data_out)
+							*data_out = f->data;
+
 						if (pack_filename) {
-							if (f->pack_offset < 1) {
+							if (f->data != nullptr) {
+								// This is an in-memory file so we just copy the pathtype name + file name
+								strncpy(pack_filename, Pathtypes[f->pathtype_index].path, max_out);
+								strncat(pack_filename, DIR_SEPARATOR_STR, max_out);
+								strncat(pack_filename, f->name_ext, max_out);
+							}
+							else if (f->pack_offset < 1) {
 								// This is a real file, return the actual file path
-								strncpy( pack_filename, f->real_name, max_out );
-							} else {
+								strncpy(pack_filename, f->real_name, max_out);
+							}
+							else {
 								// File is in a pack file
 								cf_root *r = cf_get_root(f->root_index);
 
-								strncpy( pack_filename, r->path, max_out );
+								strncpy(pack_filename, r->path, max_out);
 							}
 						}
 
@@ -1362,15 +1447,25 @@ int cf_find_file_location_ext( const char *filename, const int ext_num, const ch
 				if (offset)
 					*offset = f->pack_offset;
 
+				if (data_out)
+					*data_out = f->data;
+
 				if (pack_filename) {
-					if (f->pack_offset < 1) {
+					if (f->data != nullptr) {
+						// This is an in-memory file so we just copy the pathtype name + file name
+						strncpy(pack_filename, Pathtypes[f->pathtype_index].path, max_out);
+						strncat(pack_filename, DIR_SEPARATOR_STR, max_out);
+						strncat(pack_filename, f->name_ext, max_out);
+					}
+					else if (f->pack_offset < 1) {
 						// This is a real file, return the actual file path
-						strncpy( pack_filename, f->real_name, max_out );
-					} else {
+						strncpy(pack_filename, f->real_name, max_out);
+					}
+					else {
 						// File is in a pack file
 						cf_root *r = cf_get_root(f->root_index);
 
-						strncpy( pack_filename, r->path, max_out );
+						strncpy(pack_filename, r->path, max_out);
 					}
 				}
 
@@ -1432,6 +1527,7 @@ int cf_matches_spec(const char *filespec, const char *filename)
 int (*Get_file_list_filter)(const char *filename) = NULL;
 const char *Get_file_list_child = NULL;
 int Skip_packfile_search = 0;
+bool Skip_memory_files = false;
 
 static bool verify_file_list_child()
 {
@@ -1567,8 +1663,10 @@ int cf_get_file_list( SCP_vector<SCP_string> &list, int pathtype, const char *fi
 				continue;
 
 			char fn[MAX_PATH];
-			snprintf(fn, MAX_PATH-1, "%s/%s", filespec, dir->d_name);
-			fn[MAX_PATH-1] = 0;
+			if (snprintf(fn, MAX_PATH, "%s/%s", filespec, dir->d_name) >= MAX_PATH) {
+				// Make sure the string is null terminated
+				fn[MAX_PATH-1] = 0;
+			}
 
 			struct stat buf;
 			if (stat(fn, &buf) == -1) {
@@ -1630,6 +1728,11 @@ int cf_get_file_list( SCP_vector<SCP_string> &list, int pathtype, const char *fi
 
 			if (Skip_packfile_search && f->pack_offset != 0) {
 				// If the packfile skip flag is set we skip files in VPs but still search in directories
+				continue;
+			}
+
+			if (Skip_memory_files && f->data != nullptr) {
+				// If we want to skip memory files and this is a memory file then ignore it
 				continue;
 			}
 
@@ -1776,8 +1879,10 @@ int cf_get_file_list( int max, char **list, int pathtype, const char *filter, in
 				continue;
 
 			char fn[MAX_PATH];
-			snprintf(fn, MAX_PATH-1, "%s/%s", filespec, dir->d_name);
-			fn[MAX_PATH-1] = 0;
+			if (snprintf(fn, MAX_PATH, "%s/%s", filespec, dir->d_name) >= MAX_PATH) {
+				// Make sure the string is null terminated
+				fn[MAX_PATH-1] = 0;
+			}
 
 			struct stat buf;
 			if (stat(fn, &buf) == -1) {
@@ -1840,6 +1945,11 @@ int cf_get_file_list( int max, char **list, int pathtype, const char *filter, in
 
 			if (Skip_packfile_search && f->pack_offset != 0) {
 				// If the packfile skip flag is set we skip files in VPs but still search in directories
+				continue;
+			}
+
+			if (Skip_memory_files && f->data != nullptr) {
+				// If we want to skip memory files and this is a memory file then ignore it
 				continue;
 			}
 
@@ -1991,8 +2101,10 @@ int cf_get_file_list_preallocated( int max, char arr[][MAX_FILENAME_LEN], char *
 				continue;
 
 			char fn[MAX_PATH];
-			snprintf(fn, MAX_PATH-1, "%s/%s", filespec, dir->d_name);
-			fn[MAX_PATH-1] = 0;
+			if (snprintf(fn, MAX_PATH, "%s/%s", filespec, dir->d_name) >= MAX_PATH) {
+				// Make sure the string is null terminated
+				fn[MAX_PATH-1] = 0;
+			}
 
 			struct stat buf;
 			if (stat(fn, &buf) == -1) {
@@ -2058,6 +2170,11 @@ int cf_get_file_list_preallocated( int max, char arr[][MAX_FILENAME_LEN], char *
 
 			if (Skip_packfile_search && f->pack_offset != 0) {
 				// If the packfile skip flag is set we skip files in VPs but still search in directories
+				continue;
+			}
+
+			if (Skip_memory_files && f->data != nullptr) {
+				// If we want to skip memory files and this is a memory file then ignore it
 				continue;
 			}
 

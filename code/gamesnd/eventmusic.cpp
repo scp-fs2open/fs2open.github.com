@@ -29,15 +29,14 @@
 #pragma optimize("", off)
 #endif
 
-#define DEFAULT_MASTER_EVENT_MUSIC_VOLUME	0.5f
-
 #define HULL_VALUE_TO_PLAY_INTENSE_BATTLE_MUSIC 0.75f
 
 ////////////////////////////
 // Globals
 ////////////////////////////
 int Event_Music_battle_started = 0;
-float Master_event_music_volume = DEFAULT_MASTER_EVENT_MUSIC_VOLUME;			// range is 0->1
+float Default_music_volume = 0.5f;							// range is 0->1
+float Master_event_music_volume = Default_music_volume;
 
 typedef struct tagSNDPATTERN {
 	int default_next_pattern;	// Needed so the next_pattern member can be reset
@@ -1186,7 +1185,9 @@ void parse_soundtrack()
 		}
 
 		//Track doesn't exist and has nocreate, so don't create it
-		Assertion(skip_to_start_of_string_either("#SoundTrack Start", "#Menu Music Start") || skip_to_string("#SoundTrack End"), "Couldn't find #Soundtrack Start, #Menu Music Start or #Soundtrack End. Music.tbl or -mus.tbm is invalid.\n");
+		if ( !skip_to_start_of_string_either("#SoundTrack Start", "#Menu Music Start") && !skip_to_string("#SoundTrack End")) {
+			error_display(1, "Couldn't find #Soundtrack Start, #Menu Music Start or #Soundtrack End.");
+		}
 
 		return;
 	}
@@ -1281,7 +1282,7 @@ void parse_soundtrack()
 	}
 
 	//We're done here.
-	//required_string("#SoundTrack End");
+	required_string("#SoundTrack End");
 
 
 	// Goober5000 - set the valid flag according to whether we can load all our patterns
@@ -1370,12 +1371,11 @@ void event_music_parse_musictbl(const char *filename)
 		read_file_text(filename, CF_TYPE_TABLES);
 		reset_parse();
 
-		while ( skip_to_start_of_string_either("#Soundtrack Start", "#Menu Music Start", NULL ) )
+		while ( check_for_string("#Soundtrack Start") || check_for_string("#Menu Music Start") )
 		{
 			if ( optional_string("#Soundtrack Start") )
 			{
 				parse_soundtrack( );
-				required_string("#Soundtrack End");
 			}
 			if ( optional_string("#Menu Music Start") )
 			{

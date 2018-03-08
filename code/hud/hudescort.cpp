@@ -905,7 +905,7 @@ void hud_add_ship_to_escort(int objnum, int supress_feedback)
 
 		if (!found) {
 			HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Escort list is full with %d ships", 288), Num_escort_ships);
-			snd_play( &Snds[SND_TARGET_FAIL]);
+			snd_play( gamesnd_get_game_sound(SND_TARGET_FAIL));
 		}
 	}
 
@@ -932,7 +932,7 @@ void hud_add_remove_ship_escort(int objnum, int supress_feedback)
 
 	if ( Objects[objnum].type != OBJ_SHIP ) {
 		if ( !supress_feedback ) {
-			snd_play( &Snds[SND_TARGET_FAIL]);
+			snd_play( gamesnd_get_game_sound(SND_TARGET_FAIL));
 		}
 		return;
 	}
@@ -1010,7 +1010,7 @@ void hud_escort_target_next()
 	int objnum;
 
 	if ( Num_escort_ships == 0 ) {
-		snd_play( &Snds[SND_TARGET_FAIL], 0.0f );
+		snd_play( gamesnd_get_game_sound(SND_TARGET_FAIL), 0.0f );
 		return;
 	}
 

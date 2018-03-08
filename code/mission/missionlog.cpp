@@ -431,6 +431,7 @@ int mission_log_get_time_indexed( int type, const char *pname, const char *sname
 {
 	int i, found;
 	log_entry *entry;
+	Assertion(count > 0, "The count parameter is %d; it should be greater than 0!", count);
 
 	entry = &log_entries[0];
 

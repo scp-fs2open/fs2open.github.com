@@ -1063,7 +1063,7 @@ void red_alert_start_mission()
 
 			// throw down a sound here to make the warning seem ultra-important
 			// gamesnd_play_iface(SND_USER_SELECT);
-			snd_play(&(Snds[SND_DIRECTIVE_COMPLETE]));
+			snd_play(gamesnd_get_game_sound(SND_DIRECTIVE_COMPLETE));
 		}
 	}
 }

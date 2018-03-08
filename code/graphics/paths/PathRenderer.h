@@ -52,12 +52,11 @@ namespace graphics
 		private:
 			static std::unique_ptr<PathRenderer> s_instance;
 
-		protected:
-			PathRenderer()
-			{}
+			NVGcontext* m_context;
+			bool m_inFrame;
 		public:
-			virtual ~PathRenderer()
-			{}
+			PathRenderer();
+			~PathRenderer();
 
 			static bool init();
 
@@ -68,107 +67,107 @@ namespace graphics
 
 			static void shutdown();
 
-			virtual void beginFrame() = 0;
+			void beginFrame();
 
-			virtual void cancelFrame() = 0;
+			void cancelFrame();
 
-			virtual void endFrame() = 0;
+			void endFrame();
 
-			virtual void scissor(float x, float y, float w, float h) = 0;
+			void scissor(float x, float y, float w, float h);
 
-			virtual void resetScissor() = 0;
+			void resetScissor();
 
 			/* begin transforms */
 
-			virtual void resetTransform() = 0;
+			void resetTransform();
 
-			virtual void translate(float x, float y) = 0;
+			void translate(float x, float y);
 
-			virtual void rotate(float rad) = 0;
+			void rotate(float rad);
 
-			virtual void skewX(float rad) = 0;
+			void skewX(float rad);
 
-			virtual void skewY(float rad) = 0;
+			void skewY(float rad);
 
-			virtual void scale(float x, float y) = 0;
+			void scale(float x, float y);
 
 			/* end transforms */
 
 			/* begin paint creation */
 
-			virtual DrawPaint createLinearGradient(float sx, float sy, float ex,
-				float ey, color* icol, color* ocol) = 0;
+			DrawPaint createLinearGradient(float sx, float sy, float ex,
+				float ey, color* icol, color* ocol);
 
 			/* end paint creation */
 
 			/* begin color handling */
-			virtual void setAlpha(float alpha) = 0;
+			void setAlpha(float alpha);
 
-			virtual void setFillColor(color* color) = 0;
+			void setFillColor(color* color);
 
-			virtual void setFillPaint(const DrawPaint& paint) = 0;
+			void setFillPaint(const DrawPaint& paint);
 
-			virtual void setStrokeColor(color* color) = 0;
+			void setStrokeColor(color* color);
 
-			virtual void setStrokePaint(const DrawPaint& paint) = 0;
+			void setStrokePaint(const DrawPaint& paint);
 
-			virtual void setStrokeWidth(float witdh) = 0;
+			void setStrokeWidth(float witdh);
 			/* end color handling */
 
-			virtual void beginPath() = 0;
+			void beginPath();
 
-			virtual void moveTo(float x, float y) = 0;
+			void moveTo(float x, float y);
 
-			virtual void setSolidity(Solidity solid) = 0;
+			void setSolidity(Solidity solid);
 
 			/* begin shapes
 			   TODO: Replace this with doxygen */
 
-			virtual void lineTo(float x, float y) = 0;
+			void lineTo(float x, float y);
 
-			virtual void rectangle(float x, float y, float w, float h) = 0;
+			void rectangle(float x, float y, float w, float h);
 
-			virtual void roundedRectangle(float x, float y, float w, float h, float radius) = 0;
+			void roundedRectangle(float x, float y, float w, float h, float radius);
 
-			virtual void circle(float x, float y, float r) = 0;
+			void circle(float x, float y, float r);
 
-			virtual void ellipse(float x, float y, float rx, float ry) = 0;
+			void ellipse(float x, float y, float rx, float ry);
 
-			virtual void arc(float cx, float cy, float r, float a0, float a1, Direction dir) = 0;
+			void arc(float cx, float cy, float r, float a0, float a1, Direction dir);
 
 			/* end shapes */
 
 			/* begin font and text */
 
-			virtual int createFontMem(const char* name, unsigned char* data, int ndata, int freeData) = 0;
+			int createFontMem(const char* name, unsigned char* data, int ndata, int freeData);
 
-			virtual void fontSize(float size) = 0;
+			void fontSize(float size);
 
-			virtual void textLetterSpacing(float spacing) = 0;
+			void textLetterSpacing(float spacing);
 
-			virtual void fontFaceId(int font) = 0;
+			void fontFaceId(int font);
 
-			virtual float text(float x, float y, const char* string, const char* end) = 0;
+			float text(float x, float y, const char* string, const char* end);
 
-			virtual float textBounds(float x, float y, const char* string, const char* end, float* bounds) = 0;
+			float textBounds(float x, float y, const char* string, const char* end, float* bounds);
 
-			virtual void textMetrics(float* ascender, float* descender, float* lineh) = 0;
+			void textMetrics(float* ascender, float* descender, float* lineh);
 
-			virtual void textAlign(TextAlign align) = 0;
+			void textAlign(TextAlign align);
 
 			/* end font and text */
 
-			virtual void closePath() = 0;
+			void closePath();
 
-			virtual void fill() = 0;
+			void fill();
 
-			virtual void stroke() = 0;
+			void stroke();
 
-			virtual void saveState() = 0;
+			void saveState();
 
-			virtual void resetState() = 0;
+			void resetState();
 
-			virtual void restoreState() = 0;
+			void restoreState();
 		};
 	}
 }

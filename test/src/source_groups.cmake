@@ -19,6 +19,7 @@ add_file_folder(cfile "CFile"
 add_file_folder(graphics "Globalincs"
     globalincs/test_flagset.cpp
     globalincs/test_safe_strings.cpp
+    globalincs/test_version.cpp
 )
 
 add_file_folder(graphics "Graphics"
@@ -27,6 +28,10 @@ add_file_folder(graphics "Graphics"
 
 add_file_folder(menuui "menuui"
     menuui/test_intel_parse.cpp
+)
+
+add_file_folder(mod "mod"
+    mod/test_mod_table.cpp
 )
 
 add_file_folder(graphics "Parse"
@@ -56,10 +61,14 @@ add_file_folder(scripting_api "Scripting\\\\Lua"
     scripting/lua/Value.cpp
 )
 
-add_file_folder(util "Util"
+add_file_folder(util "Test Util"
     util/FSTestFixture.cpp
     util/FSTestFixture.h
     util/test_util.h
+)
+
+add_file_folder(utils "Utils"
+    utils/HeapAllocatorTest.cpp
 )
 
 add_file_folder(weapon "Weapon"

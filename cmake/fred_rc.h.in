@@ -1,0 +1,9 @@
+
+
+#ifndef __FREDRC_H
+#define __FREDRC_H
+
+#define ABOUT_LINE_1 "FRED2_OPEN - FreeSpace Editor, Version @FSO_PRODUCT_VERSION_STRING@ OpenGL"
+#define MAINFRAME_CONTENTS "FRED2_OPEN @FSO_PRODUCT_VERSION_STRING@ - FreeSpace2 Mission Editor\nUntitled\nFRED2\nFreeSpace2 Missions (*.fs2)\n.fs2\nFreeSpace2Mission\nFreeSpace2 Mission"
+
+#endif // __FREDRC_H

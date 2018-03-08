@@ -15,6 +15,8 @@
 
 struct default_file
 {
+	const char* path_type;
+	const char* filename;
 	const void* data;
 	size_t size;
 };
@@ -22,11 +24,6 @@ struct default_file
 //Used to retrieve pointer to file data from def_files.cpp
 default_file defaults_get_file(const char *filename);
 
-//WMC -
-//There are three parts to adding a file
-//:PART 1: Add variable declaration for new file
-//:PART 2: Add filename of default file to Default_files[] array, along with content variable
-//:PART 3: Define the content using the variable declared in part 1.
-//Do a search in def_files.cpp for the individual part labels for examples and locations.
+SCP_vector<default_file> defaults_get_all();
 
 #endif

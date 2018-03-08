@@ -470,7 +470,7 @@ void Editor::clearMission() {
 		Team_data[i].num_weapon_choices = count;
 	}
 
-	*Mission_text = *Mission_text_raw = EOF_CHAR;
+	*Mission_text = *Mission_text_raw = '\0';
 	Mission_text[1] = Mission_text_raw[1] = 0;
 
 	waypoint_parse_init();
@@ -2637,7 +2637,7 @@ const char* Editor::error_check_initial_orders(ai_goal* goals, int ship, int win
 		case AI_GOAL_DOCK:
 			if (ship < 0)
 				return "Wings can't dock";
-			// fall through..
+			FALLTHROUGH;
 
 		case AI_GOAL_DESTROY_SUBSYSTEM:
 		case AI_GOAL_CHASE:

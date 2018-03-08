@@ -44,7 +44,7 @@ extern int Os_debugger_running;
 
 // If app_name is NULL or ommited, then TITLE is used
 // for the app name, which is where registry keys are stored.
-void os_init(const char * wclass, const char * title, const char *app_name=NULL, const char *version_string=NULL );
+void os_init(const char * wclass, const char * title, const char * app_name = nullptr);
 
 // set the main window title
 void os_set_title( const char * title );

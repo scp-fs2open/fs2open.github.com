@@ -18,6 +18,7 @@
 #include "globalincs/alphacolors.h"
 #include "graphics/font.h"
 #include "graphics/shadows.h"
+#include "graphics/matrix.h"
 #include "io/key.h"
 #include "io/mouse.h"
 #include "lighting/lighting.h"

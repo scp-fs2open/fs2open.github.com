@@ -5,6 +5,8 @@
 #include <gamesequence/gamesequence.h>
 #include <network/multi.h>
 #include <playerman/player.h>
+#include <parse/parselo.h>
+#include <globalincs/version.h>
 
 #include "base.h"
 
@@ -233,6 +235,73 @@ ADE_FUNC(postGameEvent, l_Base, "gameevent Event", "Sets current game event. Not
 	gameseq_post_event(gh->Get());
 
 	return ADE_RETURN_TRUE;
+}
+
+ADE_FUNC(XSTR,
+		 l_Base,
+		 "string text, number id",
+		 "Gets the translated version of text with the given id. "
+			 "The uses the tstrings table for performing the translation. Passing -1 as the id will always return the given text.",
+		 "string",
+		 "The translated text") {
+	const char* text = nullptr;
+	int id = -1;
+
+	if (!ade_get_args(L, "si", &text, &id)) {
+		return ADE_RETURN_NIL;
+	}
+
+	SCP_string xstr;
+	sprintf(xstr, "XSTR(\"%s\", %d)", text, id);
+
+	SCP_string translated;
+	lcl_ext_localize(xstr, translated);
+
+	return ade_set_args(L, "s", translated.c_str());
+}
+
+ADE_FUNC(inMissionEditor, l_Base, nullptr, "Determine if the current script is running in the mission editor (e.g. FRED2). This should be used to control which code paths will be executed even if running in the editor.", "boolean", "true when we are in the mission editor, false otherwise") {
+	return ade_set_args(L, "b", Fred_running != 0);
+}
+
+ADE_FUNC(isEngineVersionAtLeast,
+		 l_Base,
+		 "number major, number minor, number build[, number revision = 0]",
+		 "Checks if the current version of the engine is at least the specified version. This can be used to check if a feature introduced in a later version of the engine is available.",
+		 "boolean",
+		 "true if the version is at least the specified version. false otherwise.") {
+	int major = 0;
+	int minor = 0;
+	int build = 0;
+	int revision = 0;
+
+	if (!ade_get_args(L, "iii|i", &major, &minor, &build, &revision)) {
+		return ade_set_error(L, "b", false);
+	}
+
+	auto version = gameversion::version(major, minor, build, revision);
+
+	return ade_set_args(L, "b", gameversion::check_at_least(version));
+}
+
+ADE_FUNC(getCurrentLanguage,
+		 l_Base,
+		 nullptr,
+		 "Determines the language that is being used by the engine. This returns the full name of the language (e.g. \"English\").",
+		 "string",
+		 "The current game language") {
+	return ade_set_args(L, "s", Lcl_languages[Lcl_current_lang].lang_name);
+}
+
+ADE_FUNC(getCurrentLanguageExtension,
+		 l_Base,
+		 nullptr,
+		 "Determines the file extension of the language that is being used by the engine. "
+			 "This returns a short code for the current language that can be used for creating language specific file names (e.g. \"gr\" when the current language is German). "
+			 "This will return an empty string for the default language.",
+		 "string",
+		 "The current game language") {
+	return ade_set_args(L, "s", Lcl_languages[Lcl_current_lang].lang_ext);
 }
 
 //**********SUBLIBRARY: Base/Events
