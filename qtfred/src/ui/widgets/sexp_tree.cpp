@@ -9,6 +9,11 @@
 
 
 
+#include "sexp_tree.h"
+#include "mission/util.h"
+#include "mission/Editor.h"
+#include "mission/object.h"
+
 #include "parse/sexp.h"
 #include "globalincs/linklist.h"
 #include "ai/aigoals.h"
@@ -37,11 +42,6 @@
 #include "localization/localize.h"
 #include "mission/missiongoals.h"
 #include "ship/ship.h"
-
-#include "sexp_tree.h"
-#include "mission/util.h"
-#include "mission/Editor.h"
-#include "mission/object.h"
 
 #include <QtWidgets/QMessageBox>
 #include <QtWidgets/QMenu>
@@ -133,7 +133,7 @@ QIcon nodeimage_to_icon(NodeImage image) {
 }
 }
 
-SexpTreeEditorInterface::SexpTreeEditorInterface(Editor* editor) : _editor(editor) {
+SexpTreeEditorInterface::SexpTreeEditorInterface() {
 }
 bool SexpTreeEditorInterface::hasDefaultMessageParamter() {
 	return Num_messages > Num_builtin_messages;
@@ -1002,12 +1002,12 @@ int sexp_tree::get_default_value(sexp_list_item* item, char* text_buf, int op, i
 			item->set_data("1", (SEXPT_NUMBER | SEXPT_VALID));
 		} else if ((Operators[op].value == OP_SHIP_TYPE_DESTROYED) || (Operators[op].value == OP_GOOD_SECONDARY_TIME)) {
 			item->set_data("100", (SEXPT_NUMBER | SEXPT_VALID));
-		} else if ((Operators[op].value == OP_SET_SUPPORT_SHIP)) {
+		} else if (Operators[op].value == OP_SET_SUPPORT_SHIP) {
 			item->set_data("-1", (SEXPT_NUMBER | SEXPT_VALID));
 		} else if (((Operators[op].value == OP_SHIP_TAG) && (i == 1))
 			|| ((Operators[op].value == OP_TRIGGER_SUBMODEL_ANIMATION) && (i == 3))) {
 			item->set_data("1", (SEXPT_NUMBER | SEXPT_VALID));
-		} else if ((Operators[op].value == OP_EXPLOSION_EFFECT)) {
+		} else if (Operators[op].value == OP_EXPLOSION_EFFECT) {
 			int temp;
 			char sexp_str_token[TOKEN_LENGTH];
 
@@ -1041,7 +1041,7 @@ int sexp_tree::get_default_value(sexp_list_item* item, char* text_buf, int op, i
 			// Goober5000 - set_data_dup is required if we're passing a variable
 			sprintf(sexp_str_token, "%d", temp);
 			item->set_data_dup(sexp_str_token, (SEXPT_NUMBER | SEXPT_VALID));
-		} else if ((Operators[op].value == OP_WARP_EFFECT)) {
+		} else if (Operators[op].value == OP_WARP_EFFECT) {
 			int temp;
 			char sexp_str_token[TOKEN_LENGTH];
 
@@ -1060,7 +1060,7 @@ int sexp_tree::get_default_value(sexp_list_item* item, char* text_buf, int op, i
 			// Goober5000 - set_data_dup is required if we're passing a variable
 			sprintf(sexp_str_token, "%d", temp);
 			item->set_data_dup(sexp_str_token, (SEXPT_NUMBER | SEXPT_VALID));
-		} else if ((Operators[op].value == OP_ADD_BACKGROUND_BITMAP)) {
+		} else if (Operators[op].value == OP_ADD_BACKGROUND_BITMAP) {
 			int temp = 0;
 			char sexp_str_token[TOKEN_LENGTH];
 
@@ -1078,7 +1078,7 @@ int sexp_tree::get_default_value(sexp_list_item* item, char* text_buf, int op, i
 
 			sprintf(sexp_str_token, "%d", temp);
 			item->set_data_dup(sexp_str_token, (SEXPT_NUMBER | SEXPT_VALID));
-		} else if ((Operators[op].value == OP_ADD_SUN_BITMAP)) {
+		} else if (Operators[op].value == OP_ADD_SUN_BITMAP) {
 			int temp = 0;
 			char sexp_str_token[TOKEN_LENGTH];
 
@@ -1088,13 +1088,13 @@ int sexp_tree::get_default_value(sexp_list_item* item, char* text_buf, int op, i
 
 			sprintf(sexp_str_token, "%d", temp);
 			item->set_data_dup(sexp_str_token, (SEXPT_NUMBER | SEXPT_VALID));
-		} else if ((Operators[op].value == OP_MODIFY_VARIABLE)) {
+		} else if (Operators[op].value == OP_MODIFY_VARIABLE) {
 			if (get_modify_variable_type(index) == OPF_NUMBER) {
 				item->set_data("0", (SEXPT_NUMBER | SEXPT_VALID));
 			} else {
 				item->set_data("<any data>", (SEXPT_STRING | SEXPT_VALID));
 			}
-		} else if ((Operators[op].value == OP_SET_VARIABLE_BY_INDEX)) {
+		} else if (Operators[op].value == OP_SET_VARIABLE_BY_INDEX) {
 			if (i == 0) {
 				item->set_data("0", (SEXPT_NUMBER | SEXPT_VALID));
 			} else {
@@ -1114,9 +1114,9 @@ int sexp_tree::get_default_value(sexp_list_item* item, char* text_buf, int op, i
 	case OPF_GAME_SND:
 		int sound_index = -1;
 
-		if ((Operators[op].value == OP_EXPLOSION_EFFECT)) {
+		if (Operators[op].value == OP_EXPLOSION_EFFECT) {
 			sound_index = SND_SHIP_EXPLODE_1;
-		} else if ((Operators[op].value == OP_WARP_EFFECT)) {
+		} else if (Operators[op].value == OP_WARP_EFFECT) {
 			sound_index = (i == 8) ? SND_CAPITAL_WARP_IN : SND_CAPITAL_WARP_OUT;
 		}
 
@@ -2507,7 +2507,7 @@ int sexp_tree::find_text(const char* text, int* find, int max_depth) {
 		if ((tree_nodes[i].flags & EDITABLE && (tree_nodes[i].type != SEXPT_UNUSED))) {
 			// find the text
 			if (!stricmp(tree_nodes[i].text, text)) {
-				find[find_count++] = i;
+				find[find_count++] = static_cast<int>(i);
 
 				// don't exceed max count - array bounds
 				if (find_count == max_depth) {
@@ -4565,15 +4565,15 @@ int sexp_tree::get_loadout_variable_count(int var_index) {
 
 	return count;
 }
-void sexp_tree::initializeEditor(Editor* editor, SexpTreeEditorInterface* interface) {
-	if (interface == nullptr) {
+void sexp_tree::initializeEditor(::fso::fred::Editor* edit, SexpTreeEditorInterface* editorInterface) {
+	if (editorInterface == nullptr) {
 		// If there is no special interface then we supply the default implementation
-		_owned_interface.reset(new SexpTreeEditorInterface(editor));
-		interface = _owned_interface.get();
+		_owned_interface.reset(new SexpTreeEditorInterface());
+		editorInterface = _owned_interface.get();
 	}
 
-	_editor = editor;
-	_interface = interface;
+	_editor = edit;
+	_interface = editorInterface;
 }
 void sexp_tree::customMenuHandler(const QPoint& pos) {
 	QTreeWidgetItem* h = this->itemAt(pos);

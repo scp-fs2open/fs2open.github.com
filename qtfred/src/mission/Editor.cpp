@@ -2771,8 +2771,8 @@ const char* Editor::error_check_initial_orders(ai_goal* goals, int ship, int win
 
 			model1 = Ship_info[Ships[ship].ship_info_index].model_num;
 			auto model1Docks = get_docking_list(model1);
-			for (auto& dock : model1Docks) {
-				if (!stricmp(goals[i].docker.name, dock.c_str())) {
+			for (j = 0; j < (int)model1Docks.size(); ++j) {
+				if (!stricmp(goals[i].docker.name, model1Docks[j].c_str())) {
 					dock1 = j;
 					break;
 				}
@@ -2780,8 +2780,8 @@ const char* Editor::error_check_initial_orders(ai_goal* goals, int ship, int win
 
 			model2 = Ship_info[Ships[inst].ship_info_index].model_num;
 			auto model2Docks = get_docking_list(model2);
-			for (auto& dock : model2Docks) {
-				if (!stricmp(goals[i].dockee.name, dock.c_str())) {
+			for (j = 0; j < (int)model2Docks.size(); ++j) {
+				if (!stricmp(goals[i].dockee.name, model2Docks[j].c_str())) {
 					dock2 = j;
 					break;
 				}

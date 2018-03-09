@@ -12,13 +12,13 @@
 #include "parse/sexp.h"
 #include "parse/parselo.h"
 
+#include "mission/Editor.h"
+
 #include <QTreeView>
 #include <QTreeWidgetItem>
 
 namespace fso {
 namespace fred {
-
-class Editor;
 
 // Goober5000 - it's dynamic now
 //#define MAX_SEXP_TREE_SIZE 500
@@ -92,9 +92,8 @@ enum class NodeImage {
  * @brief Generic interface for operations that may depend on the context of the SEXP tree
  */
 class SexpTreeEditorInterface {
-	Editor* _editor = nullptr;
  public:
-	explicit SexpTreeEditorInterface(Editor* editor);
+	SexpTreeEditorInterface();
 
 	virtual bool hasDefaultMessageParamter();
 	virtual SCP_vector<SCP_string> getMessages();
@@ -316,7 +315,7 @@ class sexp_tree: public QTreeWidget {
 	int item_index;
 	int select_sexp_node;  // used to select an sexp item on dialog box open.
 
-	void initializeEditor(Editor* editor, SexpTreeEditorInterface* interface = nullptr);
+	void initializeEditor(Editor* edit, SexpTreeEditorInterface* editorInterface = nullptr);
 
  signals:
 	void miniHelpChanged(const QString& text);
