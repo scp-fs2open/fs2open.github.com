@@ -1363,7 +1363,7 @@ void shader_recompile_callback(size_t current, size_t total)
 {
 	recompile_state = "";
 	recompile_state += "Recompiling shader ";
-	recompile_state += std::to_string(current);
+	recompile_state += std::to_string(current + 1);
 	recompile_state += "/";
 	recompile_state += std::to_string(total);
 
