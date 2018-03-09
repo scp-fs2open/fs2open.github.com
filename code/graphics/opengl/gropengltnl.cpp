@@ -660,7 +660,21 @@ void opengl_tnl_set_material(material* material_info, bool set_base_map, bool se
 
 	opengl_shader_set_current(shader_handle);
 
-	GL_state.SetAlphaBlendMode(material_info->get_blend_mode());
+	if (material_info->has_buffer_blend_modes()) {
+		Assertion(GLAD_GL_ARB_draw_buffers_blend != 0,
+				  "Buffer blend modes are not supported at the moment! Query the capability before using this feature.");
+
+		auto enable_blend = false;
+		for (auto i = 0; i < (int) material::NUM_BUFFER_BLENDS; ++i) {
+			auto mode = material_info->get_blend_mode(i);
+
+			GL_state.SetAlphaBlendModei(i, mode);
+			enable_blend = enable_blend || mode != ALPHA_BLEND_NONE;
+		}
+		GL_state.Blend(enable_blend ? GL_TRUE : GL_FALSE);
+	} else {
+		GL_state.SetAlphaBlendMode(material_info->get_blend_mode());
+	}
 	GL_state.SetZbufferType(material_info->get_depth_mode());
 
 	gr_set_cull(material_info->get_cull_mode() ? 1 : 0);
@@ -974,18 +988,39 @@ void opengl_tnl_set_material_decal(decal_material* material_info) {
 	float u_scale, v_scale;
 	uint32_t array_index;
 
-	gr_opengl_tcache_set(material_info->get_texture_map(TM_BASE_TYPE), material_info->get_texture_type(), &u_scale, &v_scale, &array_index, 0);
-	Current_shader->program->Uniforms.setUniformi("diffuseMap", 0);
+	if (gr_opengl_tcache_set(material_info->get_texture_map(TM_BASE_TYPE),
+							 material_info->get_texture_type(),
+							 &u_scale,
+							 &v_scale,
+							 &array_index,
+							 0)) {
+		Current_shader->program->Uniforms.setUniformi("diffuseMap", 0);
+	}
 
-	gr_opengl_tcache_set(material_info->get_texture_map(TM_NORMAL_TYPE), material_info->get_texture_type(), &u_scale, &v_scale, &array_index, 1);
-	Current_shader->program->Uniforms.setUniformi("normalMap", 1);
+	if (gr_opengl_tcache_set(material_info->get_texture_map(TM_GLOW_TYPE),
+							 material_info->get_texture_type(),
+							 &u_scale,
+							 &v_scale,
+							 &array_index,
+							 1)) {
+		Current_shader->program->Uniforms.setUniformi("glowMap", 1);
+	}
 
-	GL_state.Texture.Enable(2, GL_TEXTURE_2D, Scene_depth_texture);
-	Current_shader->program->Uniforms.setUniformi("gDepthBuffer", 2);
+	if (gr_opengl_tcache_set(material_info->get_texture_map(TM_NORMAL_TYPE),
+							 material_info->get_texture_type(),
+							 &u_scale,
+							 &v_scale,
+							 &array_index,
+							 2)) {
+		Current_shader->program->Uniforms.setUniformi("normalMap", 2);
+	}
+
+	GL_state.Texture.Enable(3, GL_TEXTURE_2D, Scene_depth_texture);
+	Current_shader->program->Uniforms.setUniformi("gDepthBuffer", 3);
 
 	if (Current_shader->flags & SDR_FLAG_DECAL_USE_NORMAL_MAP) {
-		GL_state.Texture.Enable(3, GL_TEXTURE_2D, Scene_normal_texture);
-		Current_shader->program->Uniforms.setUniformi("gNormalBuffer", 3);
+		GL_state.Texture.Enable(4, GL_TEXTURE_2D, Scene_normal_texture);
+		Current_shader->program->Uniforms.setUniformi("gNormalBuffer", 4);
 	}
 }
 

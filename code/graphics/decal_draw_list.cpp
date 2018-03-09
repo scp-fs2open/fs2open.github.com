@@ -5,6 +5,7 @@
 
 #include "render/3d.h"
 #include "tracing/tracing.h"
+#include "light.h"
 
 namespace {
 
@@ -72,6 +73,12 @@ bool decal_draw_list::sort_draws(const decal_draw_info& left, const decal_draw_i
 	if (left_diffuse_base != right_diffuse_base) {
 		return left_diffuse_base < right_diffuse_base;
 	}
+	auto left_glow_base = bm_get_base_frame(left.draw_mat.get_texture_map(TM_GLOW_TYPE));
+	auto right_glow_base = bm_get_base_frame(right.draw_mat.get_texture_map(TM_GLOW_TYPE));
+
+	if (left_glow_base != right_glow_base) {
+		return left_glow_base < right_glow_base;
+	}
 
 	auto left_normal_base = bm_get_base_frame(left.draw_mat.get_texture_map(TM_NORMAL_TYPE));
 	auto right_normal_base = bm_get_base_frame(left.draw_mat.get_texture_map(TM_NORMAL_TYPE));
@@ -105,6 +112,23 @@ decal_draw_list::decal_draw_list() {
 
 	header->viewportSize.x = (float) gr_screen.max_w;
 	header->viewportSize.y = (float) gr_screen.max_h;
+
+	header->ambientLight.xyz.x = gr_light_ambient[0] + gr_user_ambient;
+	header->ambientLight.xyz.y = gr_light_ambient[1] + gr_user_ambient;
+	header->ambientLight.xyz.z = gr_light_ambient[2] + gr_user_ambient;
+
+	CLAMP(header->ambientLight.xyz.x, 0.02f, 1.0f);
+	CLAMP(header->ambientLight.xyz.y, 0.02f, 1.0f);
+	CLAMP(header->ambientLight.xyz.z, 0.02f, 1.0f);
+
+	// Square the ambient part of the light to match the formula used in the main model shader
+	header->ambientLight.xyz.x *= header->ambientLight.xyz.x;
+	header->ambientLight.xyz.y *= header->ambientLight.xyz.y;
+	header->ambientLight.xyz.z *= header->ambientLight.xyz.z;
+
+	header->ambientLight.xyz.x += gr_light_emission[0];
+	header->ambientLight.xyz.y += gr_light_emission[1];
+	header->ambientLight.xyz.z += gr_light_emission[2];
 }
 decal_draw_list::~decal_draw_list() {
 	_buffer->finished();
@@ -146,6 +170,7 @@ void decal_draw_list::render() {
 	gr_screen.gf_stop_decal_pass();
 }
 void decal_draw_list::add_decal(int diffuse_bitmap,
+								int glow_bitmap,
 								int normal_bitmap,
 								float decal_timer,
 								const matrix4& transform,
@@ -172,14 +197,19 @@ void decal_draw_list::add_decal(int diffuse_bitmap,
 
 	vm_inverse_matrix4(&info->model_matrix, &info->inv_model_matrix);
 
-	info->diffuse_index = bm_get_array_index(diffuse_bitmap);
-	info->normal_index = bm_get_array_index(normal_bitmap);
+	info->diffuse_index = diffuse_bitmap < 0 ? -1 : bm_get_array_index(diffuse_bitmap);
+	info->glow_index = glow_bitmap < 0 ? -1 : bm_get_array_index(glow_bitmap);
+	info->normal_index = normal_bitmap < 0 ? -1 : bm_get_array_index(normal_bitmap);
 
 	decal_draw_info current_draw;
 	current_draw.uniform_offset = aligner.getCurrentOffset();
 
-	material_set_decal(&current_draw.draw_mat, bm_get_base_frame(diffuse_bitmap), bm_get_base_frame(normal_bitmap));
-	info->blend_mode = current_draw.draw_mat.get_blend_mode() == ALPHA_BLEND_ADDITIVE ? 1 : 0;
+	material_set_decal(&current_draw.draw_mat,
+					   bm_get_base_frame(diffuse_bitmap),
+					   bm_get_base_frame(glow_bitmap),
+					   bm_get_base_frame(normal_bitmap));
+	info->diffuse_blend_mode = current_draw.draw_mat.get_blend_mode(0) == ALPHA_BLEND_ADDITIVE ? 1 : 0;
+	info->glow_blend_mode = current_draw.draw_mat.get_blend_mode(2) == ALPHA_BLEND_ADDITIVE ? 1 : 0;
 
 	_draws.push_back(current_draw);
 }

@@ -1576,6 +1576,8 @@ bool gr_opengl_is_capable(gr_capability capability)
 		return !Cmdline_no_geo_sdr_effects;
 	case CAPABILITY_TIMESTAMP_QUERY:
 		return GLAD_GL_ARB_timer_query != 0; // Timestamp queries are available from 3.3 onwards
+	case CAPABILITY_SEPARATE_BLEND_FUNCTIONS:
+		return GLAD_GL_ARB_draw_buffers_blend != 0; // We need an OpenGL extension for this
 	}
 
 	return false;

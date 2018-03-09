@@ -181,15 +181,14 @@ void opengl_state::init()
 	cullface_Value = GL_BACK;
 
 	glBlendFunc(GL_ONE, GL_ZERO);
-	blendfunc_Value[0] = GL_ONE;
-	blendfunc_Value[1] = GL_ZERO;
+	blendfunc_Value.first = GL_ONE;
+	blendfunc_Value.first = GL_ZERO;
+	buffer_blendfunc_Value.fill(blendfunc_Value);
 
 	glDepthFunc(GL_LESS);
 	depthfunc_Value = GL_LESS;
 
 	glGetFloatv(GL_LINE_WIDTH, &line_width_Value);
-
-	Current_alpha_blend_mode = ALPHA_BLEND_NONE;
 
 	current_program = 0;
 	glUseProgram(0);
@@ -237,8 +236,6 @@ GLboolean opengl_state::Blend(GLint state)
 			glDisable(GL_BLEND);
 			blend_Status = GL_FALSE;
 		}
-
-		Current_alpha_blend_mode = (gr_alpha_blend)(-1);
 	}
 
 	return save_state;
@@ -406,12 +403,39 @@ bvec4 opengl_state::ColorMask(bool red, bool green, bool blue, bool alpha)
     return save_state;
 }
 
-void opengl_state::SetAlphaBlendMode(gr_alpha_blend ab)
+void opengl_state::BlendFunc(GLenum s_val, GLenum d_val)
 {
-	if (ab == Current_alpha_blend_mode) {
+	if (s_val != blendfunc_Value.first || d_val != blendfunc_Value.second) {
+		glBlendFunc(s_val, d_val);
+		blendfunc_Value.first = s_val;
+		blendfunc_Value.second = d_val;
+
+		// This has set all the buffer blend modes as well
+		buffer_blendfunc_Value.fill(blendfunc_Value);
+	}
+}
+void opengl_state::BlendFunci(int buffer, GLenum s_val, GLenum d_val) {
+	Assertion(GLAD_GL_ARB_draw_buffers_blend != 0, "Buffer blend modes are not supported by this OpenGL implementation!");
+	Assertion(buffer >= 0 && buffer < (int) buffer_blendfunc_Value.size(), "Unsupported index %d specified for buffer blend mode!", buffer);
+
+	auto& state = buffer_blendfunc_Value[buffer];
+	if (state.first == s_val && state.second == d_val) {
+		// Already uses the correct blend mode
 		return;
 	}
 
+	glBlendFunciARB(buffer, s_val, d_val);
+
+	// Update the saved state
+	state.first = s_val;
+	state.second = d_val;
+	// Set the non-buffer values to an invalid value to make sure that the next call to BlendFunc resets the state.
+	blendfunc_Value.first = GL_INVALID_ENUM;
+	blendfunc_Value.second = GL_INVALID_ENUM;
+}
+
+void opengl_state::SetAlphaBlendMode(gr_alpha_blend ab)
+{
 	switch (ab) {
 		case ALPHA_BLEND_ALPHA_BLEND_ALPHA:
 			GL_state.BlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -442,8 +466,38 @@ void opengl_state::SetAlphaBlendMode(gr_alpha_blend ab)
 	}
 
 	GL_state.Blend( (ab == ALPHA_BLEND_NONE) ? GL_FALSE : GL_TRUE );
+}
 
-	Current_alpha_blend_mode = ab;
+void opengl_state::SetAlphaBlendModei(int buffer, gr_alpha_blend ab)
+{
+	switch (ab) {
+	case ALPHA_BLEND_ALPHA_BLEND_ALPHA:
+		GL_state.BlendFunci(buffer, GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+		break;
+
+	case ALPHA_BLEND_NONE:
+		GL_state.BlendFunci(buffer, GL_ONE, GL_ZERO);
+		break;
+
+	case ALPHA_BLEND_ADDITIVE:
+		GL_state.BlendFunci(buffer, GL_ONE, GL_ONE);
+		break;
+
+	case ALPHA_BLEND_ALPHA_ADDITIVE:
+		GL_state.BlendFunci(buffer, GL_SRC_ALPHA, GL_ONE);
+		break;
+
+	case ALPHA_BLEND_ALPHA_BLEND_SRC_COLOR:
+		GL_state.BlendFunci(buffer, /*GL_SRC_COLOR*/GL_SRC_ALPHA, GL_ONE_MINUS_SRC_COLOR);
+		break;
+
+	case ALPHA_BLEND_PREMULTIPLIED:
+		GL_state.BlendFunci(buffer, GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+		break;
+
+	default:
+		break;
+	}
 }
 
 void opengl_state::SetZbufferType(gr_zbuffer_type zt)

@@ -158,16 +158,22 @@ void material_set_nanovg(nanovg_material* mat_info, int base_tex) {
 	mat_info->set_back_stencil_op(StencilOperation::Keep, StencilOperation::Keep, StencilOperation::Keep);
 }
 
-void material_set_decal(material* mat_info, int diffuse_tex, int normal_tex) {
+void material_set_decal(material* mat_info, int diffuse_tex, int glow_tex, int normal_tex) {
 	mat_info->set_depth_mode(ZBUFFER_TYPE_READ);
 
-	// TODO: This blend mode is not correct for normal blending!! If decal normal mapping is added then the normal buffer
-	// needs to use a different blending equation.
-	mat_info->set_blend_mode(material_determine_blend_mode(diffuse_tex, true));
+	mat_info->set_blend_mode(0, material_determine_blend_mode(diffuse_tex, true));
+	mat_info->set_blend_mode(1, ALPHA_BLEND_ADDITIVE); // Normal blending must always be additive
+	mat_info->set_blend_mode(2, material_determine_blend_mode(glow_tex, true));
 
 	mat_info->set_texture_map(TM_BASE_TYPE, diffuse_tex);
+	mat_info->set_texture_map(TM_GLOW_TYPE, glow_tex);
 	mat_info->set_texture_map(TM_NORMAL_TYPE, normal_tex);
 	mat_info->set_cull_mode(false);
+
+	// Done't write the alpha channel in any case since that will cause changes to other material properties
+	// TODO: If decals should be able to change more than just the material diffuse color then a solution with separate
+	// blending equations must be used
+	mat_info->set_color_mask(true, true, true, false);
 }
 
 material::material():
@@ -201,6 +207,8 @@ Depth_bias(0)
 	Color_mask.y = true;
 	Color_mask.z = true;
 	Color_mask.w = true;
+
+	Buffer_blend_mode.fill(Blend_mode);
 };
 
 void material::set_shader_type(shader_type init_sdr_type)
@@ -328,11 +336,31 @@ int material::get_fill_mode() const
 void material::set_blend_mode(gr_alpha_blend mode)
 {
 	Blend_mode = mode;
+	Has_buffer_blends = false;
+	Buffer_blend_mode.fill(mode);
 }
 
-gr_alpha_blend material::get_blend_mode() const
+void material::set_blend_mode(int buffer, gr_alpha_blend mode)
 {
-	return Blend_mode;
+	Assertion(buffer >= 0 && buffer < (int) Buffer_blend_mode.size(), "Invalid buffer index %d found!", buffer);
+
+	Has_buffer_blends = true;
+	Buffer_blend_mode[buffer] = mode;
+}
+
+bool material::has_buffer_blend_modes() const {
+	return Has_buffer_blends;
+}
+
+gr_alpha_blend material::get_blend_mode(int buffer) const
+{
+	if (!Has_buffer_blends) {
+		return Blend_mode;
+	}
+
+	Assertion(buffer >= 0 && buffer < (int) Buffer_blend_mode.size(), "Invalid buffer index %d found!", buffer);
+
+	return Buffer_blend_mode[buffer];
 }
 
 void material::set_depth_bias(int bias)
