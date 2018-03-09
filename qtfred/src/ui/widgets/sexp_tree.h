@@ -321,6 +321,7 @@ class sexp_tree: public QTreeWidget {
  signals:
 	void miniHelpChanged(const QString& text);
 	void helpChanged(const QString& text);
+	void modified();
 
 	// Generated message map functions
  protected:
@@ -339,7 +340,6 @@ class sexp_tree: public QTreeWidget {
 	void free_node2(int node);
 
 	int flag;
-	bool modified = false;
 
 	SCP_vector<sexp_tree_item> tree_nodes;
 	int total_nodes;

@@ -522,7 +522,7 @@ void sexp_tree::free_node2(int node) {
 	Assert(node != -1);
 	Assert(tree_nodes[node].type != SEXPT_UNUSED);
 	Assert(total_nodes > 0);
-	modified = true;
+	modified();
 	tree_nodes[node].type = SEXPT_UNUSED;
 	total_nodes--;
 	if (tree_nodes[node].child != -1) {
@@ -1564,7 +1564,7 @@ int sexp_tree::add_data(const char* new_data, int type) {
 	auto bmap = get_data_image(node);
 	tree_nodes[node].handle = insert(new_data, bmap, tree_nodes[item_index].handle);
 	tree_nodes[node].flags = EDITABLE;
-	modified = true;
+	modified();
 	return node;
 }
 
@@ -1579,7 +1579,7 @@ int sexp_tree::add_variable_data(const char* new_data, int type) {
 	set_node(node, type, new_data);
 	tree_nodes[node].handle = insert(new_data, NodeImage::VARIABLE, tree_nodes[item_index].handle);
 	tree_nodes[node].flags = NOT_EDITABLE;
-	modified = true;
+	modified();
 	return node;
 }
 
@@ -1601,7 +1601,7 @@ void sexp_tree::add_operator(const char* op, QTreeWidgetItem* h) {
 
 	tree_nodes[node].flags = OPERAND;
 	item_index = node;
-	modified = true;
+	modified();
 }
 
 // add an operator with one argument under operator pointed to by item_index.  This function
@@ -1836,7 +1836,7 @@ void sexp_tree::ensure_visible(int node) {
 }
 
 void sexp_tree::link_modified(int* ptr) {
-	modified = ptr;
+	modified();
 }
 
 void get_variable_default_text_from_variable_text(char* text, char* default_text) {
@@ -2077,7 +2077,7 @@ void sexp_tree::replace_data(const char* new_data, int type) {
 	// check remaining data beyond replaced data for validity (in case any of it is dependent on data just replaced)
 	verify_and_fix_arguments(tree_nodes[item_index].parent);
 
-	modified = true;
+	modified();
 	update_help(currentItem());
 }
 
@@ -2110,7 +2110,7 @@ void sexp_tree::replace_variable_data(int var_idx, int type) {
 	// check remaining data beyond replaced data for validity (in case any of it is dependent on data just replaced)
 	verify_and_fix_arguments(tree_nodes[item_index].parent);
 
-	modified = true;
+	modified();
 	update_help(currentItem());
 }
 
@@ -2130,7 +2130,7 @@ void sexp_tree::replace_operator(const char* op) {
 	set_node(item_index, (SEXPT_OPERATOR | SEXPT_VALID), op);
 	h->setText(0, op);
 	tree_nodes[item_index].flags = OPERAND;
-	modified = true;
+	modified();
 	update_help(currentItem());
 
 	// hack added at Allender's request.  If changing ship in an ai-dock operator, re-default
@@ -2279,7 +2279,7 @@ void sexp_tree::swap_roots(QTreeWidgetItem* one, QTreeWidgetItem* two) {
 //	DeleteItem(one);
 	auto h = move_branch(one, itemFromIndex(rootIndex()), two);
 	h->setSelected(true);
-	modified = true;
+	modified();
 }
 
 QTreeWidgetItem*
