@@ -199,6 +199,13 @@ set(file_root_def_files_data_effects
 	def_files/data/effects/shield-impact-f.sdr
 )
 
+set(file_root_def_files_data_maps
+	def_files/data/maps/app_icon.png
+	def_files/data/maps/app_icon_d.png
+	def_files/data/maps/app_icon_sse.png
+	def_files/data/maps/app_icon_sse_d.png
+)
+
 set(file_root_def_files_data_tables
 	def_files/data/tables/autopilot.tbl
 	def_files/data/tables/controlconfigdefaults.tbl
@@ -220,6 +227,7 @@ set(file_root_def_files_files
 	${files_root_def_files_builtin}
 	${file_root_def_files_data}
 	${file_root_def_files_data_effects}
+	${file_root_def_files_data_maps}
 	${file_root_def_files_data_tables}
 )
 
@@ -1298,6 +1306,7 @@ source_group("Decals"                             FILES ${file_root_decals})
 source_group("Default files"                      FILES ${file_root_def_files})
 source_group("Default files\\data"                FILES ${file_root_def_files_data})
 source_group("Default files\\data\\effects"       FILES ${file_root_def_files_data_effects})
+source_group("Default files\\data\\maps"          FILES ${file_root_def_files_data_maps})
 source_group("Default files\\data\\tables"        FILES ${file_root_def_files_data_tables})
 source_group("Default files\\builtin"             FILES ${files_root_def_files_builtin})
 source_group("ExceptionHandler"                   FILES ${file_root_exceptionhandler})
@@ -1397,6 +1406,7 @@ set (file_root
 	${file_root_def_files}
 	${file_root_def_files_data}
 	${file_root_def_files_data_effects}
+	${file_root_def_files_data_maps}
 	${file_root_def_files_data_tables}
 	${files_root_def_files_builtin}
 	${file_root_exceptionhandler}

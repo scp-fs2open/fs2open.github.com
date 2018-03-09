@@ -3385,3 +3385,38 @@ bool bm_validate_filename(const SCP_string& file, bool single_frame, bool animat
 	}
 	return false;
 }
+SDL_Surface* bm_to_sdl_surface(int handle) {
+	Assertion(bm_is_valid(handle), "%d is no valid bitmap handle!", handle);
+
+	int w;
+	int h;
+
+	bm_get_info(handle, &w, &h, nullptr, nullptr);
+	Uint32 rmask, gmask, bmask, amask;
+
+#if SDL_BYTEORDER == SDL_BIG_ENDIAN
+	rmask = 0x0000ff00;
+		gmask = 0x00ff0000;
+		bmask = 0xff000000;
+		amask = 0x000000ff;
+#else
+	rmask = 0x00ff0000;
+	gmask = 0x0000ff00;
+	bmask = 0x000000ff;
+	amask = 0xff000000;
+#endif
+
+	SDL_Surface* bitmapSurface = SDL_CreateRGBSurface(0, w, h, 32, rmask, gmask, bmask, amask);
+	if (SDL_LockSurface(bitmapSurface) < 0) {
+		return nullptr;
+	}
+	bitmap* bmp = bm_lock(handle, 32, BMP_TEX_XPARENT);
+
+	memcpy(bitmapSurface->pixels, reinterpret_cast<void*>(bmp->data), static_cast<size_t>(w * h * 4));
+
+	bm_unlock(handle);
+	SDL_UnlockSurface(bitmapSurface);
+
+	return bitmapSurface;
+
+}

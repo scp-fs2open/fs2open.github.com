@@ -34,6 +34,7 @@ extern SCP_string Window_title;
 extern bool Unicode_text_mode;
 extern SCP_string Movie_subtitle_font;
 extern bool Enable_scripts_in_fred;
+extern SCP_string Window_icon_path;
 
 void mod_table_init();
 
