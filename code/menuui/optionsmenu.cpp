@@ -1356,18 +1356,28 @@ void options_detail_init()
 	options_detail_synch_sliders();
 }
 
+bool shader_compile_status = false;
+bool shader_compile_started = false;
+SCP_string recompile_state = "";
 void shader_recompile_callback(size_t current, size_t total) 
 {
-	SCP_string msg = "";
-	msg += "Recompiling shader ";
-	msg += std::to_string(current);
-	msg += "/";
-	msg += std::to_string(total);
+	recompile_state = "";
+	recompile_state += "Recompiling shader ";
+	recompile_state += std::to_string(current);
+	recompile_state += "/";
+	recompile_state += std::to_string(total);
 
-	//popup_change_text(msg.c_str());
+	shader_compile_status = (current + 1) == total;
+}
 
-	//if (current == total)
-	//	popup_kill_any_active();
+int recompile_shaders() 
+{
+	if (!shader_compile_started) {
+		gr_recompile_all_shaders(shader_recompile_callback);
+		shader_compile_started = true;
+	}
+	popup_change_text(recompile_state.c_str());
+	return shader_compile_status;
 }
 
 void options_detail_sliders_update()
@@ -1399,9 +1409,9 @@ void options_detail_sliders_update()
 	
 	if (Detail.lighting != Detail_sliders[gr_screen.res][LIGHTING_SLIDER].slider.pos) {
 		Detail.lighting = Detail_sliders[gr_screen.res][LIGHTING_SLIDER].slider.pos;
-		//if (!popup_active())
-		//	popup(PF_BODY_BIG | PF_RUN_STATE, 1, POPUP_OK, "Recompiling shaders...");
-		gr_recompile_all_shaders(shader_recompile_callback);
+		shader_compile_status = false;
+		shader_compile_started = false;
+		popup_till_condition(recompile_shaders, POPUP_CANCEL, "Recompiling shaders");
 	}
 }
 
