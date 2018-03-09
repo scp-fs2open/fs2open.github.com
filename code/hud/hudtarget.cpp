@@ -7206,15 +7206,12 @@ void HudGaugeHardpoints::render(float frametime)
 
 	//secondary weapons
 	int num_secondaries_rendered = 0;
-	vec3d secondary_weapon_pos;
-	w_bank* bank;
-
 	if ( draw_secondary_models ) {
 		for (i = 0; i < swp->num_secondary_banks; i++) {
 			if (Weapon_info[swp->secondary_bank_weapons[i]].external_model_num == -1 || !sip->draw_secondary_models[i])
 				continue;
 
-			bank = &(model_get(sip->model_num))->missile_banks[i];
+			auto bank = &(model_get(sip->model_num))->missile_banks[i];
 
 			if (Weapon_info[swp->secondary_bank_weapons[i]].wi_flags[Weapon::Info_Flags::External_weapon_lnch]) {
 				for(k = 0; k < bank->num_slots; k++) {
@@ -7223,6 +7220,10 @@ void HudGaugeHardpoints::render(float frametime)
 					weapon_render_info.set_detail_level_lock(detail_level_lock);
 					weapon_render_info.set_flags(render_flags);
 
+					// We need to transform the position local to the model to be in "world" space relative to the rendered outline
+					vec3d world_position;
+					vm_vec_unrotate(&world_position, &bank->pnt[k], &object_orient);
+
 					model_render_immediate(&weapon_render_info, Weapon_info[swp->secondary_bank_weapons[i]].external_model_num, &object_orient, &bank->pnt[k]);
 				}
 			} else {
@@ -7230,7 +7231,7 @@ void HudGaugeHardpoints::render(float frametime)
 
 				for(k = 0; k < bank->num_slots; k++)
 				{
-					secondary_weapon_pos = bank->pnt[k];
+					auto secondary_weapon_pos = bank->pnt[k];
 
 					if (num_secondaries_rendered >= sp->weapons.secondary_bank_ammo[i])
 						break;
@@ -7253,7 +7254,11 @@ void HudGaugeHardpoints::render(float frametime)
 					weapon_render_info.set_detail_level_lock(detail_level_lock);
 					weapon_render_info.set_flags(render_flags);
 
-					model_render_immediate(&weapon_render_info, Weapon_info[swp->secondary_bank_weapons[i]].external_model_num, &object_orient, &secondary_weapon_pos);
+					// We need to transform the position local to the model to be in "world" space relative to the rendered outline
+					vec3d world_position;
+					vm_vec_unrotate(&world_position, &secondary_weapon_pos, &object_orient);
+
+					model_render_immediate(&weapon_render_info, Weapon_info[swp->secondary_bank_weapons[i]].external_model_num, &object_orient, &world_position);
 				}
 			}
 		}
@@ -7266,7 +7271,7 @@ void HudGaugeHardpoints::render(float frametime)
 	//primary weapons
 	if ( draw_primary_models ) {
 		for ( i = 0; i < swp->num_primary_banks; i++ ) {
-			bank = &model_get(sip->model_num)->gun_banks[i];
+			auto bank = &model_get(sip->model_num)->gun_banks[i];
 
 			for ( k = 0; k < bank->num_slots; k++ ) {
 				if ( ( Weapon_info[swp->primary_bank_weapons[i]].external_model_num == -1 || !sip->draw_primary_models[i] ) ) {
@@ -7293,8 +7298,12 @@ void HudGaugeHardpoints::render(float frametime)
 					weapon_render_info.set_flags(render_flags);
 					weapon_render_info.set_alpha(alpha);
 
+					// We need to transform the position local to the model to be in "world" space relative to the rendered outline
+					vec3d world_position;
+					vm_vec_unrotate(&world_position, &bank->pnt[k], &object_orient);
+
 					pm->gun_submodel_rotation = sp->primary_rotate_ang[i];
-					model_render_immediate(&weapon_render_info, Weapon_info[swp->primary_bank_weapons[i]].external_model_num, &vmd_identity_matrix, &bank->pnt[k]);
+					model_render_immediate(&weapon_render_info, Weapon_info[swp->primary_bank_weapons[i]].external_model_num, &object_orient, &world_position);
 					pm->gun_submodel_rotation = 0.0f;
 				}
 			}
