@@ -405,8 +405,6 @@ void model_anim_submodel_trigger_rotate(model_subsystem *psub, ship_subsys *ss)
 	Assert( psub != NULL );
 	Assert( ss != NULL );
 	Assert( psub->flags[Model::Subsystem_Flags::Triggered] );
-	if (!psub || !ss || !psub->flags[Model::Subsystem_Flags::Triggered])
-		return;
 	
 	if (ss->triggered_rotation_index < 0) {
 		mprintf(("Invalid rotation index for triggered rotation in subsystem %s in model %s!"), psub->name, model_get(Ship_info[shipp->ship_info_index].model_num)->filename);
