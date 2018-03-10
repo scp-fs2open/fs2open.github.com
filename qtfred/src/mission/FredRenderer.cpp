@@ -22,6 +22,7 @@
 #include <asteroid/asteroid.h>
 #include <iff_defs/iff_defs.h>
 #include <math/fvi.h>
+#include <graphics/light.h>
 
 #include "mission/object.h"
 

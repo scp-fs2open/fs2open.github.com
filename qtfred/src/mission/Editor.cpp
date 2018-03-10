@@ -2127,17 +2127,17 @@ int Editor::global_error_check_impl() {
 										  Ships[ship].ship_name);
 				}
 
-				z = get_docking_list(Ship_info[Ships[i].ship_info_index].model_num);
+				auto dock_list = get_docking_list(Ship_info[Ships[i].ship_info_index].model_num);
 				point = dock_ptr->dockpoint_used;
-				if (point < 0 || point >= z) {
+				if (point < 0 || point >= (int)dock_list.size()) {
 					internal_error("Invalid docker point (\"%s\" initially docked with \"%s\")",
 								   Ships[i].ship_name,
 								   Ships[ship].ship_name);
 				}
 
-				z = get_docking_list(Ship_info[Ships[ship].ship_info_index].model_num);
+				dock_list = get_docking_list(Ship_info[Ships[ship].ship_info_index].model_num);
 				point = dock_find_dockpoint_used_by_object(dock_ptr->docked_objp, &Objects[Ships[i].objnum]);
-				if (point < 0 || point >= z) {
+				if (point < 0 || point >= (int)dock_list.size()) {
 					internal_error("Invalid dockee point (\"%s\" initially docked with \"%s\")",
 								   Ships[i].ship_name,
 								   Ships[ship].ship_name);
@@ -2591,7 +2591,7 @@ int Editor::fred_check_sexp(int sexp, int type, const char* msg, ...) {
 }
 const char* Editor::error_check_initial_orders(ai_goal* goals, int ship, int wing) {
 	char *source;
-	int i, j, num, flag, found, inst, team, team2;
+	int i, j, flag, found, inst, team, team2;
 	object *ptr;
 
 	if (ship >= 0) {
@@ -2770,20 +2770,18 @@ const char* Editor::error_check_initial_orders(ai_goal* goals, int ship, int win
 				return "Docking illegal between given ship types";
 
 			model1 = Ship_info[Ships[ship].ship_info_index].model_num;
-			num = get_docking_list(model1);
-			for (j=0; j<num; j++) {
-				Assert(Docking_bay_list[j]);
-				if (!stricmp(goals[i].docker.name, Docking_bay_list[j])) {
+			auto model1Docks = get_docking_list(model1);
+			for (j = 0; j < (int)model1Docks.size(); ++j) {
+				if (!stricmp(goals[i].docker.name, model1Docks[j].c_str())) {
 					dock1 = j;
 					break;
 				}
 			}
 
 			model2 = Ship_info[Ships[inst].ship_info_index].model_num;
-			num = get_docking_list(model2);
-			for (j=0; j<num; j++) {
-				Assert(Docking_bay_list[j]);
-				if (!stricmp(goals[i].dockee.name, Docking_bay_list[j])) {
+			auto model2Docks = get_docking_list(model2);
+			for (j = 0; j < (int)model2Docks.size(); ++j) {
+				if (!stricmp(goals[i].dockee.name, model2Docks[j].c_str())) {
 					dock2 = j;
 					break;
 				}
@@ -2844,16 +2842,18 @@ const char* Editor::get_order_name(int order) {
 
 	return "???";
 }
-int Editor::get_docking_list(int model_index) {
+SCP_vector<SCP_string> Editor::get_docking_list(int model_index) {
 	int i;
 	polymodel *pm;
+	SCP_vector<SCP_string> out;
 
 	pm = model_get(model_index);
-	Assert((size_t)pm->n_docks <= MAX_DOCKS);
-	for (i=0; i<pm->n_docks; i++)
-		Docking_bay_list[i] = pm->docking_bays[i].name;
+	out.reserve(pm->n_docks);
 
-	return pm->n_docks;
+	for (i=0; i<pm->n_docks; i++)
+		out.push_back(pm->docking_bays[i].name);
+
+	return out;
 }
 int Editor::global_error_check_player_wings(int multi) {
 	int i, z, err;

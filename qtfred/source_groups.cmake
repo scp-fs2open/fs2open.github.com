@@ -39,6 +39,8 @@ add_file_folder("Source/Mission"
     src/mission/management.h
     src/mission/object.cpp
     src/mission/object.h
+    src/mission/util.cpp
+    src/mission/util.h
 )
 
 add_file_folder("Source/Mission/Dialogs"
@@ -97,6 +99,8 @@ add_file_folder("Source/UI/Widgets"
     src/ui/widgets/ColorComboBox.h
     src/ui/widgets/renderwidget.cpp
     src/ui/widgets/renderwidget.h
+	src/ui/widgets/sexp_tree.cpp
+	src/ui/widgets/sexp_tree.h
 )
 
 add_file_folder("UI"

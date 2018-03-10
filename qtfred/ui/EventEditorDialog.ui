@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Dialog</string>
+   <string>Mission Event Edit</string>
   </property>
   <layout class="QGridLayout" name="gridLayout_3">
    <item row="0" column="0">
@@ -19,7 +19,7 @@
      <item>
       <layout class="QVBoxLayout" name="verticalLayout">
        <item>
-        <widget class="QTreeView" name="treeView">
+        <widget class="fso::fred::sexp_tree" name="eventTree">
          <attribute name="headerVisible">
           <bool>false</bool>
          </attribute>
@@ -321,7 +321,7 @@
              <item row="3" column="0" alignment="Qt::AlignRight">
               <widget class="QLabel" name="label_13">
                <property name="text">
-                <string>Team</string>
+                <string>&amp;Team</string>
                </property>
                <property name="buddy">
                 <cstring>comboBox_5</cstring>
@@ -446,6 +446,13 @@
    </item>
   </layout>
  </widget>
+ <customwidgets>
+  <customwidget>
+   <class>fso::fred::sexp_tree</class>
+   <extends>QTreeView</extends>
+   <header>ui/widgets/sexp_tree.h</header>
+  </customwidget>
+ </customwidgets>
  <resources>
   <include location="../resources/resources.qrc"/>
  </resources>
