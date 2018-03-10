@@ -405,7 +405,13 @@ void model_anim_submodel_trigger_rotate(model_subsystem *psub, ship_subsys *ss)
 	Assert( psub != NULL );
 	Assert( ss != NULL );
 	Assert( psub->flags[Model::Subsystem_Flags::Triggered] );
-	Assert( ss->triggered_rotation_index >= 0 );
+	if (!psub || !ss || !psub->flags[Model::Subsystem_Flags::Triggered])
+		return;
+	
+	if (ss->triggered_rotation_index < 0) {
+		mprintf(("Invalid rotation index for triggered rotation in subsystem %s in model %s!"), psub->name, model_get(Ship_info[shipp->ship_info_index].model_num)->filename);
+		return;
+	}
 
 	triggered_rotation *trigger = &Triggered_rotations[ss->triggered_rotation_index];
 	submodel_instance_info *sii = &ss->submodel_info_1;	
@@ -575,7 +581,10 @@ bool model_anim_start_type(ship_subsys *pss, int animation_type, int subtype, in
 
 	if ( !(psub->flags[Model::Subsystem_Flags::Triggered]) )
 		return false;
-	Assert(pss->triggered_rotation_index >= 0);
+	if (pss->triggered_rotation_index < 0) {
+		mprintf(("Invalid rotation index for triggered rotation in subsystem %s in model %s!"), psub->name, model_get(Ship_info[shipp->ship_info_index].model_num)->filename);
+		return false;
+	}
 	triggered_rotation *trigger = &Triggered_rotations[pss->triggered_rotation_index];
 
 	for (int i = 0; i < psub->n_triggers; i++) {
@@ -749,7 +758,10 @@ int model_anim_get_time_type(ship_subsys *pss, int animation_type, int subtype)
 
 	if ( !(psub->flags[Model::Subsystem_Flags::Triggered]) )
 		return timestamp();
-	Assert(pss->triggered_rotation_index >= 0);
+	if (pss->triggered_rotation_index < 0) {
+		mprintf(("Invalid rotation index for triggered rotation in subsystem %s in model %s!"), psub->name, model_get(Ship_info[shipp->ship_info_index].model_num)->filename);
+		return timestamp();
+	}
 	triggered_rotation *tr = &Triggered_rotations[pss->triggered_rotation_index];
 
 	for (i = 0; i < psub->n_triggers; i++) {
@@ -846,7 +858,10 @@ void model_anim_set_initial_states(ship *shipp)
 					pss->submodel_info_2.angs.p = psub->triggers[i].angle.xyz.x;
 					pss->submodel_info_1.angs.h = psub->triggers[i].angle.xyz.y;
 				} else {
-					Assertion(pss->triggered_rotation_index >= 0, "Unable to find triggered rotation for ship %s.", shipp->ship_name);
+					if (pss->triggered_rotation_index < 0) {
+						mprintf(("Invalid rotation index for triggered rotation in subsystem %s in model %s!"), psub->name, model_get(Ship_info[shipp->ship_info_index].model_num)->filename);
+						continue;
+					}
 					triggered_rotation *tr = &Triggered_rotations[pss->triggered_rotation_index];
 
 					tr->set_to_initial(&psub->triggers[i]);
@@ -885,8 +900,12 @@ void model_anim_handle_multiplayer(ship *shipp)
 		// not a triggered animation, skip it
 		if ( !(psub->flags[Model::Subsystem_Flags::Triggered]) )
 			continue;
-		Assert(pss->triggered_rotation_index >= 0);
 
+		if (pss->triggered_rotation_index < 0) {
+			mprintf(("Invalid rotation index for triggered rotation in subsystem %s in model %s!"), pss->system_info->name, model_get(Ship_info[shipp->ship_info_index].model_num)->filename);
+			continue;
+		}
+		
 		for (int i = 0; i < psub->n_triggers; i++) {
 			switch (psub->triggers[i].type)
 			{
