@@ -86,9 +86,6 @@ int Beam_good_shot_octants[BEAM_NUM_GOOD_OCTANTS][4] = {
 	{ 4, 0, 1, 0 },
 };
 
-// beam lighting effects
-int Beam_lighting = 1;
-
 // debug stuff - keep track of how many collision tests we perform a second and how many we toss a second
 #define BEAM_TEST_STAMP_TIME		4000	// every 4 seconds
 int Beam_test_stamp = -1;
@@ -1607,7 +1604,7 @@ void beam_add_light_small(beam *bm, object *objp, vec3d *pt_override = NULL)
 	float noise;
 
 	// no lighting 
-	if(!Beam_lighting){
+	if(Detail.lighting < 2){
 		return;
 	}
 
@@ -1677,7 +1674,7 @@ void beam_add_light_large(beam *bm, object *objp, vec3d *pt0, vec3d *pt1)
 	float noise;
 
 	// no lighting 
-	if(!Beam_lighting){
+	if(Detail.lighting < 2){
 		return;
 	}
 
