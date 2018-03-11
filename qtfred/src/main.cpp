@@ -74,6 +74,11 @@ void handler(int signal) {
 	exit( signal );
 }
 
+// Our callback to keep the window responsive while loading
+void game_busy_callback(int count) {
+	qGuiApp->processEvents();
+}
+
 int main(int argc, char* argv[]) {
 	signal( SIGSEGV, handler );
 
@@ -147,6 +152,9 @@ int main(int argc, char* argv[]) {
 
 	splash.showMessage(app.tr("Showing editor window"), Qt::AlignHCenter | Qt::AlignBottom, Qt::white);
 	splash.finish(qApp->activeWindow());
+
+	// Use this to keep the app responsive
+	game_busy_callback(game_busy_callback);
 
 	for (auto& window : qApp->topLevelWidgets()) {
 		// Show all top level windows that are our window
