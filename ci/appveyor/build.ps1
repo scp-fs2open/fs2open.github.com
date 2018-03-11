@@ -132,8 +132,7 @@ if ($DeployBuild) {
 	}
 	
 	cmake -DCMAKE_INSTALL_PREFIX="$env:APPVEYOR_BUILD_FOLDER/../install" -DFSO_USE_SPEECH="ON" `
-		-DFSO_USE_VOICEREC="ON" -DMSVC_SIMD_INSTRUCTIONS="$($buildConfig.SimdType)" -DFSO_BUILD_FRED2="OFF" `
-		-DFSO_BUILD_QTFRED=ON -DQT5_INSTALL_ROOT="$($buildConfig.QtDir)" -DMSVC_USE_RUNTIME_DLL="ON" `
+		-DFSO_USE_VOICEREC="ON" -DMSVC_SIMD_INSTRUCTIONS="$($buildConfig.SimdType)" -DMSVC_USE_RUNTIME_DLL="ON" `
 		-G "$($buildConfig.Generator)" -T "$($buildConfig.Toolset)" ..
 
 	$Configs = @("Release", "FastDebug")
