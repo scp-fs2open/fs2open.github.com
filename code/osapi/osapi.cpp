@@ -375,7 +375,7 @@ bool os_is_legacy_mode()
 void os_deinit()
 {
 	// Free the view ports 
-	viewports.clear();
+	os::closeAllViewports();
 
 	if (preferencesPath) {
 		SDL_free(preferencesPath);
@@ -416,6 +416,9 @@ namespace os
 	}
 	Viewport* getMainViewport() {
 		return mainViewPort;
+	}
+	void closeAllViewports() {
+		viewports.clear();
 	}
 
 	namespace events

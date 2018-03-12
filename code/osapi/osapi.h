@@ -360,6 +360,8 @@ namespace os
 	 */
 	SDL_Window* getSDLMainWindow();
 
+	void closeAllViewports();
+
 	/**
 	 * @defgroup eventhandling API for consuming OS events
 	 * @ingroup osapi

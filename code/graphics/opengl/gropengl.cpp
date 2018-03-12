@@ -401,11 +401,13 @@ void gr_opengl_cleanup(bool closing, int minimize)
 
 	opengl_tcache_flush();
 
-	opengl_minimize();
+	current_viewport = nullptr;
+
+	// All windows have to be closed before we destroy the OpenGL context
+	os::closeAllViewports();
 
 	gr_opengl_shutdown();
 
-	current_viewport = nullptr;
 	graphic_operations.reset();
 }
 
