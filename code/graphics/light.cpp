@@ -215,9 +215,6 @@ void gr_set_center_alpha(int type) {
 		return;
 	}
 
-	if (Num_active_gr_lights == MAX_LIGHTS) {
-		return;
-	}
 	gr_light glight;
 
 	vec3d dir;
@@ -293,7 +290,7 @@ void gr_light_init() {
 	gr_calculate_ambient_factor();
 
 	// allocate memory for enabled lights
-	gr_lights.reserve(MAX_LIGHTS);
+	gr_lights.reserve(1024);
 }
 
 void gr_set_lighting(bool set, bool state) {

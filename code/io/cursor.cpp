@@ -18,36 +18,7 @@ namespace
 {
 	SDL_Cursor* bitmapToCursor(int bitmapNum)
 	{
-		Assertion(bm_is_valid(bitmapNum), "%d is no valid bitmap handle!", bitmapNum);
-
-		int w;
-		int h;
-
-		bm_get_info(bitmapNum, &w, &h, nullptr, nullptr);
-		Uint32 rmask, gmask, bmask, amask;
-
-#if SDL_BYTEORDER == SDL_BIG_ENDIAN
-		rmask = 0x0000ff00;
-		gmask = 0x00ff0000;
-		bmask = 0xff000000;
-		amask = 0x000000ff;
-#else
-		rmask = 0x00ff0000;
-		gmask = 0x0000ff00;
-		bmask = 0x000000ff;
-		amask = 0xff000000;
-#endif
-
-		SDL_Surface* bitmapSurface = SDL_CreateRGBSurface(0, w, h, 32, rmask, gmask, bmask, amask);
-		if (SDL_LockSurface(bitmapSurface) < 0) {
-			return nullptr;
-		}
-		bitmap* bmp = bm_lock(bitmapNum, 32, BMP_TEX_XPARENT);
-
-		memcpy(bitmapSurface->pixels, reinterpret_cast<void*>(bmp->data), w * h * 4);
-
-		bm_unlock(bitmapNum);
-		SDL_UnlockSurface(bitmapSurface);
+		auto bitmapSurface = bm_to_sdl_surface(bitmapNum);
 
 		// For now set the hot coordinates to the upper left corner
 		SDL_Cursor* cursorHandle = SDL_CreateColorCursor(bitmapSurface, 0, 0);

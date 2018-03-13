@@ -19,6 +19,7 @@
 // This code was adapted from the original NanoVG OpenGL renderer to work with the FreeSpace Open graphics API
 
 #include "NanoVGRenderer.h"
+#include "tracing/tracing.h"
 
 namespace {
 using namespace graphics::paths;
@@ -386,7 +387,9 @@ void NanoVGRenderer::renderFlush() {
 		return;
 	}
 
+	TRACE_SCOPE(tracing::NanoVGFlushFrame);
 	GR_DEBUG_SCOPE("NanoVG flush");
+
 	gr_set_viewport(0, 0, gr_screen.max_w, gr_screen.max_h);
 
 	_uniformBuffer = gr_get_uniform_buffer(uniform_block_type::NanoVGData);
@@ -616,6 +619,7 @@ NanoVGRenderer::Image* NanoVGRenderer::getTexture(int id) {
 
 void NanoVGRenderer::drawTriangles(const DrawCall& call) {
 	GR_DEBUG_SCOPE("Draw triangles");
+	TRACE_SCOPE(tracing::NanoVGDrawTriangles);
 
 	auto mat = _trianglesMaterial;
 	materialSetTexture(mat, call.image);
@@ -629,6 +633,7 @@ void NanoVGRenderer::drawTriangles(const DrawCall& call) {
 }
 void NanoVGRenderer::drawFill(const DrawCall& call) {
 	GR_DEBUG_SCOPE("Draw fill");
+	TRACE_SCOPE(tracing::NanoVGDrawFill);
 
 	auto mat = _fillShapeMaterial;
 	mat.set_texture_map(TM_BASE_TYPE, -1);
@@ -672,6 +677,7 @@ void NanoVGRenderer::drawFill(const DrawCall& call) {
 }
 void NanoVGRenderer::drawConvexFill(const DrawCall& call) {
 	GR_DEBUG_SCOPE("Draw convex fill");
+	TRACE_SCOPE(tracing::NanoVGDrawConvexFill);
 
 	auto mat = _triangleFillMaterial;
 	materialSetTexture(mat, call.image);
@@ -704,6 +710,7 @@ void NanoVGRenderer::drawConvexFill(const DrawCall& call) {
 }
 void NanoVGRenderer::drawStroke(const DrawCall& call) {
 	GR_DEBUG_SCOPE("Draw stroke");
+	TRACE_SCOPE(tracing::NanoVGDrawStroke);
 
 	auto mat = _strokeFillMaterial;
 	materialSetTexture(mat, call.image);

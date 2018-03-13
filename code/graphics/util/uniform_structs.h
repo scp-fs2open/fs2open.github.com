@@ -179,9 +179,11 @@ struct decal_globals {
 	matrix4 invViewMatrix;
 	matrix4 invProjMatrix;
 
-	vec2d viewportSize;
+	vec3d ambientLight;
+	float pad0;
 
-	float pad[2];
+	vec2d viewportSize;
+	float pad1[2];
 };
 
 struct decal_info {
@@ -192,13 +194,15 @@ struct decal_info {
 	float normal_angle_cutoff;
 
 	int diffuse_index;
+	int glow_index;
 	int normal_index;
 	float angle_fade_start;
+
 	float alpha_scale;
+	int diffuse_blend_mode;
+	int glow_blend_mode;
 
-	int blend_mode;
-
-	float pad[3];
+	float pad;
 };
 
 }

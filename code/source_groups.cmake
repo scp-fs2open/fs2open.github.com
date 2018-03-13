@@ -172,9 +172,11 @@ set(file_root_def_files_data_effects
 	def_files/data/effects/effect-particle-f.sdr
 	def_files/data/effects/effect-screen-g.sdr
 	def_files/data/effects/effect-v.sdr
+	def_files/data/effects/fog-f.sdr
 	def_files/data/effects/fxaa-f.sdr
 	def_files/data/effects/fxaa-v.sdr
 	def_files/data/effects/fxaapre-f.sdr
+	def_files/data/effects/gamma.sdr
 	def_files/data/effects/lighting.sdr
 	def_files/data/effects/ls-f.sdr
 	def_files/data/effects/main-f.sdr
@@ -182,6 +184,7 @@ set(file_root_def_files_data_effects
 	def_files/data/effects/main-v.sdr
 	def_files/data/effects/nanovg-f.sdr
 	def_files/data/effects/nanovg-v.sdr
+	def_files/data/effects/normals.sdr
 	def_files/data/effects/passthrough-f.sdr
 	def_files/data/effects/passthrough-v.sdr
 	def_files/data/effects/post-f.sdr
@@ -194,6 +197,13 @@ set(file_root_def_files_data_effects
 	def_files/data/effects/video-v.sdr
 	def_files/data/effects/shield-impact-v.sdr
 	def_files/data/effects/shield-impact-f.sdr
+)
+
+set(file_root_def_files_data_maps
+	def_files/data/maps/app_icon.png
+	def_files/data/maps/app_icon_d.png
+	def_files/data/maps/app_icon_sse.png
+	def_files/data/maps/app_icon_sse_d.png
 )
 
 set(file_root_def_files_data_tables
@@ -217,6 +227,7 @@ set(file_root_def_files_files
 	${files_root_def_files_builtin}
 	${file_root_def_files_data}
 	${file_root_def_files_data_effects}
+	${file_root_def_files_data_maps}
 	${file_root_def_files_data_tables}
 )
 
@@ -331,6 +342,8 @@ set (file_root_graphics
 	graphics/grinternal.h
 	graphics/light.cpp
 	graphics/light.h
+	graphics/line_draw_list.cpp
+	graphics/line_draw_list.h
 	graphics/material.cpp
 	graphics/material.h
 	graphics/matrix.cpp
@@ -1293,6 +1306,7 @@ source_group("Decals"                             FILES ${file_root_decals})
 source_group("Default files"                      FILES ${file_root_def_files})
 source_group("Default files\\data"                FILES ${file_root_def_files_data})
 source_group("Default files\\data\\effects"       FILES ${file_root_def_files_data_effects})
+source_group("Default files\\data\\maps"          FILES ${file_root_def_files_data_maps})
 source_group("Default files\\data\\tables"        FILES ${file_root_def_files_data_tables})
 source_group("Default files\\builtin"             FILES ${files_root_def_files_builtin})
 source_group("ExceptionHandler"                   FILES ${file_root_exceptionhandler})
@@ -1392,6 +1406,7 @@ set (file_root
 	${file_root_def_files}
 	${file_root_def_files_data}
 	${file_root_def_files_data_effects}
+	${file_root_def_files_data_maps}
 	${file_root_def_files_data_tables}
 	${files_root_def_files_builtin}
 	${file_root_exceptionhandler}

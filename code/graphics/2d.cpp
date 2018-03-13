@@ -898,6 +898,40 @@ static bool gr_init_sub(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, i
 	return true;
 }
 
+static void init_window_icon() {
+	auto view = os::getMainViewport();
+
+	if (view == nullptr) {
+		// Graphics backend has no viewport
+		return;
+	}
+
+	auto sdl_wnd = view->toSDLWindow();
+
+	if (sdl_wnd == nullptr) {
+		// No support for changing the icon
+		return;
+	}
+
+	auto icon_handle = bm_load(Window_icon_path);
+	if (icon_handle < 0) {
+		Warning(LOCATION, "Failed to load window icon '%s'!", Window_icon_path.c_str());
+		return;
+	}
+
+	auto surface = bm_to_sdl_surface(icon_handle);
+	if (surface == nullptr) {
+		Warning(LOCATION, "Convert icon '%s' to a SDL surface!", Window_icon_path.c_str());
+		bm_release(icon_handle);
+		return;
+	}
+
+	SDL_SetWindowIcon(sdl_wnd, surface);
+
+	SDL_FreeSurface(surface);
+	bm_release(icon_handle);
+}
+
 bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, int d_mode, int d_width, int d_height, int d_depth)
 {
 	int width = 1024, height = 768, depth = 32, mode = GR_OPENGL;
@@ -1078,6 +1112,9 @@ bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, int d_mode, 
 	gr_set_palette_internal(Gr_current_palette_name, NULL, 0);
 
 	bm_init();
+
+	init_window_icon();
+
 	io::mouse::CursorManager::init();
 
 	mprintf(("Initializing path renderer...\n"));

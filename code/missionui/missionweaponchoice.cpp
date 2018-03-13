@@ -2737,7 +2737,11 @@ void weapon_select_do(float frametime)
 				gr_set_color_fast(&Icon_colors[ICON_FRAME_SELECTED]);
 				int w = 56;
 				int h = 24;
-				draw_brackets_square(sx, sy, sx+w, sy+h, GR_RESIZE_MENU);
+
+				graphics::line_draw_list line_draw_list;
+				draw_brackets_square(&line_draw_list, sx, sy, sx+w, sy+h, GR_RESIZE_MENU);
+				line_draw_list.flush();
+
 				if(icon->model_index != -1)
 				{
 					//Draw the model
@@ -2977,7 +2981,10 @@ void wl_render_icon(int index, int x, int y, int num, int draw_num_flag, int hot
 	else
 	{
 		gr_set_color_fast(color_to_draw);
-		draw_brackets_square(x, y, x + 56, y + 24, GR_RESIZE_MENU);
+
+		graphics::line_draw_list line_draw_list;
+		draw_brackets_square(&line_draw_list, x, y, x + 56, y + 24, GR_RESIZE_MENU);
+		line_draw_list.flush();
 
 		if(icon->model_index != -1)
 		{
@@ -3045,7 +3052,9 @@ void wl_draw_ship_weapons(int index)
 			else
 			{
 				gr_set_color_fast(&Icon_colors[WEAPON_ICON_FRAME_NORMAL]);
-				draw_brackets_square( Wl_bank_coords[gr_screen.res][i][0],  Wl_bank_coords[gr_screen.res][i][1],  Wl_bank_coords[gr_screen.res][i][0] + 56,  Wl_bank_coords[gr_screen.res][i][1] + 24, GR_RESIZE_MENU);
+				graphics::line_draw_list line_draw_list;
+				draw_brackets_square( &line_draw_list, Wl_bank_coords[gr_screen.res][i][0],  Wl_bank_coords[gr_screen.res][i][1],  Wl_bank_coords[gr_screen.res][i][0] + 56,  Wl_bank_coords[gr_screen.res][i][1] + 24, GR_RESIZE_MENU);
+				line_draw_list.flush();
 			}
 		}
 

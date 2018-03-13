@@ -195,3 +195,31 @@ function(suppress_warnings _target)
 		target_compile_options(${_target} PRIVATE "-w")
     endif()
 endfunction(suppress_warnings)
+
+
+function(list_target_dependencies _target _out_var)
+	set(out_list)
+	set(work_libs ${_target})
+	list(LENGTH work_libs libs_length)
+
+	while(libs_length GREATER 0)
+		list(GET work_libs 0 current)
+		list(REMOVE_AT work_libs 0)
+		list(APPEND out_list ${current})
+
+		get_target_property(current_libs ${current} INTERFACE_LINK_LIBRARIES)
+
+		if(current_libs)
+			foreach(lib ${current_libs})
+				if (TARGET ${lib})
+					list(APPEND work_libs ${lib})
+				endif (TARGET ${lib})
+			endforeach(lib)
+		endif(current_libs)
+
+		list(LENGTH work_libs libs_length)
+	endwhile(libs_length GREATER 0)
+
+	list(REMOVE_DUPLICATES out_list)
+	set(${_out_var} ${out_list} PARENT_SCOPE)
+endfunction(list_target_dependencies)

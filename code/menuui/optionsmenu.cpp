@@ -1356,12 +1356,36 @@ void options_detail_init()
 	options_detail_synch_sliders();
 }
 
+bool shader_compile_status = false;
+bool shader_compile_started = false;
+SCP_string recompile_state = "";
+void shader_recompile_callback(size_t current, size_t total) 
+{
+	recompile_state = "";
+	recompile_state += "Recompiling shader ";
+	recompile_state += std::to_string(current + 1);
+	recompile_state += "/";
+	recompile_state += std::to_string(total);
+
+	shader_compile_status = (current + 1) == total;
+}
+
+int recompile_shaders() 
+{
+	if (!shader_compile_started) {
+		gr_recompile_all_shaders(shader_recompile_callback);
+		shader_compile_started = true;
+	}
+	popup_change_text(recompile_state.c_str());
+	return shader_compile_status;
+}
+
 void options_detail_sliders_update()
 {
 	int i;
 
-	for ( i = 0; i < NUM_DETAIL_SLIDERS; i++ ) {
-		if ( Detail_sliders[gr_screen.res][i].slider.pos != Detail_slider_pos[i] ) {
+	for (i = 0; i < NUM_DETAIL_SLIDERS; i++) {
+		if (Detail_sliders[gr_screen.res][i].slider.pos != Detail_slider_pos[i]) {
 			Detail_slider_pos[i] = Detail_sliders[gr_screen.res][i].slider.pos;
 			gamesnd_play_iface(SND_USER_SELECT);
 		}
@@ -1374,12 +1398,21 @@ void options_detail_sliders_update()
 	Detail.nebula_detail = Detail_sliders[gr_screen.res][NEBULA_DETAIL_SLIDER].slider.pos;
 	neb2_set_detail_level(Detail.nebula_detail);
 
-	Detail.hardware_textures = Detail_sliders[gr_screen.res][HARDWARE_TEXTURES_SLIDER].slider.pos;	
+	Detail.hardware_textures = Detail_sliders[gr_screen.res][HARDWARE_TEXTURES_SLIDER].slider.pos;
 	Detail.num_small_debris = Detail_sliders[gr_screen.res][SHARD_CULLING_SLIDER].slider.pos;
 	Detail.shield_effects = Detail_sliders[gr_screen.res][SHIELD_DETAIL_SLIDER].slider.pos;
 	Detail.num_stars = Detail_sliders[gr_screen.res][NUM_STARS_SLIDER].slider.pos;
 	Detail.num_particles = Detail_sliders[gr_screen.res][NUM_PARTICLES_SLIDER].slider.pos;
-	Detail.lighting = Detail_sliders[gr_screen.res][LIGHTING_SLIDER].slider.pos;
+
+	// If the new lighting setting is above 3 and the old one was below or the reverse,
+	// we need to recompile all shaders we have to account for the changed lighting model.
+	
+	if (Detail.lighting != Detail_sliders[gr_screen.res][LIGHTING_SLIDER].slider.pos) {
+		Detail.lighting = Detail_sliders[gr_screen.res][LIGHTING_SLIDER].slider.pos;
+		shader_compile_status = false;
+		shader_compile_started = false;
+		popup_till_condition(recompile_shaders, POPUP_CANCEL, "Recompiling shaders");
+	}
 }
 
 void options_detail_hide_stuff()

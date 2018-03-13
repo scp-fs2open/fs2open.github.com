@@ -169,7 +169,7 @@ inline bool obj_render_is_model(object *obj)
 }
 
 // Sorts all the objects by Z and renders them
-void obj_render_all(void (*render_function)(object *objp), bool *draw_viewer_last )
+void obj_render_all(std::function<void(object*)> render_function, bool *draw_viewer_last )
 {
 	object *objp;
 	int i;
@@ -265,12 +265,6 @@ void obj_render_all(void (*render_function)(object *objp), bool *draw_viewer_las
 			// get the fog values
 			neb2_get_adjusted_fog_values(&fog_near, &fog_far, obj);
 
-			// only reset fog if the fog mode has changed - since regenerating a fog table takes
-			// a bit of time
-			if((fog_near != gr_screen.fog_near) || (fog_far != gr_screen.fog_far)){
-		 		gr_fog_set(GR_FOGMODE_FOG, gr_screen.current_fog_color.red, gr_screen.current_fog_color.green, gr_screen.current_fog_color.blue, fog_near, fog_far);
-			}
-
 			// maybe skip rendering an object because its obscured by the nebula
 			if(neb2_skip_render(obj, os->z)){
 				continue;
@@ -281,7 +275,7 @@ void obj_render_all(void (*render_function)(object *objp), bool *draw_viewer_las
 			if( ((obj->type == OBJ_SHIP) && Ships[obj->instance].shader_effect_active) || (obj->type == OBJ_FIREBALL) )
 				effect_ships.push_back(obj);
 			else 
-				(*render_function)(obj);
+				render_function(obj);
 		}
 		if(object_had_transparency)
 		{
@@ -308,30 +302,19 @@ void obj_render_all(void (*render_function)(object *objp), bool *draw_viewer_las
 			// get the fog values
 			neb2_get_adjusted_fog_values(&fog_near, &fog_far, obj);
 
-			// only reset fog if the fog mode has changed - since regenerating a fog table takes
-			// a bit of time
-			if((GR_FOGMODE_FOG != gr_screen.current_fog_mode) || (fog_near != gr_screen.fog_near) || (fog_far != gr_screen.fog_far)) {
-				gr_fog_set(GR_FOGMODE_FOG, gr_screen.current_fog_color.red, gr_screen.current_fog_color.green, gr_screen.current_fog_color.blue, fog_near, fog_far);
-			}
-
 			// maybe skip rendering an object because its obscured by the nebula
 			if(neb2_skip_render(obj, os->z)){
 				continue;
 			}
 		}
 
-		(*render_function)(obj);
+		render_function(obj);
 	}
 
 	Sorted_objects.clear();
 	
 	batching_render_all();
 	batching_render_all(true);
-
-	// if we're fullneb, switch off the fog effet
-	if((The_mission.flags[Mission::Mission_Flags::Fullneb]) && (Neb2_render_mode != NEB2_RENDER_NONE)){
-		gr_fog_set(GR_FOGMODE_NONE, 0, 0, 0);
-	}
 }
 
 void obj_render_queue_all()
@@ -417,11 +400,6 @@ void obj_render_queue_all()
 
 	gr_reset_lighting();
 	gr_set_lighting(false, false);
-	
-	// if we're fullneb, switch off the fog effet
-	if((The_mission.flags[Mission::Mission_Flags::Fullneb]) && (Neb2_render_mode != NEB2_RENDER_NONE)){
-		gr_fog_set(GR_FOGMODE_NONE, 0, 0, 0);
-	}
 
 	batching_render_all();
 

@@ -96,42 +96,96 @@ layout (std140) uniform modelData {
 	int sMiscmapIndex;
 };
 
-#if !defined(GL_ARB_gpu_shader5)
-in float geoInstance[];
+in VertexOutput {
+#ifdef FLAG_ENV_MAP
+	vec3 envReflect;
 #endif
-in vec3 geoNormal[];
-in vec4 geoTexCoord[];
-out vec4 fragPosition;
-out vec3 fragNormal;
-out vec4 fragTexCoord;
-
+#ifdef FLAG_NORMAL_MAP
+	mat3 tangentMatrix;
+#endif
+#ifdef FLAG_FOG
+	float fogDist;
+#endif
 #ifdef WORKAROUND_CLIPPING_PLANES
-#ifdef FLAG_TRANSFORM
-in float geoNotVisible[];
-out float fragNotVisible;
+ #ifdef FLAG_TRANSFORM
+	float notVisible;
+ #endif
 #endif
+#ifdef FLAG_SHADOW_MAP
+ #if !defined(GL_ARB_gpu_shader5)
+	float instance;
+ #endif
+#else
+	vec4 position;
 #endif
+	vec3 normal;
+	vec4 texCoord;
+#ifdef FLAG_SHADOWS
+	vec4 shadowUV[4];
+	vec4 shadowPos;
+#endif
+} vertIn[];
+
+out VertexOutput {
+#ifdef FLAG_ENV_MAP
+	vec3 envReflect;
+#endif
+#ifdef FLAG_NORMAL_MAP
+	mat3 tangentMatrix;
+#endif
+#ifdef FLAG_FOG
+	float fogDist;
+#endif
+#ifdef WORKAROUND_CLIPPING_PLANES
+ #ifdef FLAG_TRANSFORM
+	float notVisible;
+ #endif
+#endif
+	vec4 position;
+	vec3 normal;
+	vec4 texCoord;
+#ifdef FLAG_SHADOWS
+	vec4 shadowUV[4];
+	vec4 shadowPos;
+#endif
+} vertOut;
 
 void main(void)
 {
 #ifdef GL_ARB_gpu_shader5
 	int instanceID = gl_InvocationID;
 #else
-	int instanceID = int(geoInstance[0]);
+	int instanceID = int(vertIn[0].instance);
 #endif
 	for(int vert = 0; vert < gl_in.length(); vert++)
 	{
 		gl_Position = shadow_proj_matrix[instanceID] * gl_in[vert].gl_Position;
 		if(gl_Position.z < -1.0)
 			gl_Position.z = -1.0;
-		fragPosition = gl_in[vert].gl_Position;
-		fragNormal = geoNormal[vert];
-		fragTexCoord = geoTexCoord[vert];
+		vertOut.position = gl_in[vert].gl_Position;
+		vertOut.normal = vertIn[vert].normal;
+		vertOut.texCoord = vertIn[vert].texCoord;
 
 		gl_Layer = instanceID;
+#ifdef FLAG_ENV_MAP
+		vertOut.envReflect = vertIn[vert].envReflect;
+#endif
+#ifdef FLAG_NORMAL_MAP
+		vertOut.tangentMatrix = vertIn[vert].tangentMatrix;
+#endif
+#ifdef FLAG_FOG
+		vertOut.fogDist = vertIn[vert].fogDist;
+#endif
+#ifdef FLAG_SHADOWS
+		vertOut.shadowUV[0] = vertIn[vert].shadowUV[0];
+		vertOut.shadowUV[1] = vertIn[vert].shadowUV[1];
+		vertOut.shadowUV[2] = vertIn[vert].shadowUV[2];
+		vertOut.shadowUV[3] = vertIn[vert].shadowUV[3];
+		vertOut.shadowPos = vertIn[vert].shadowPos;
+#endif
 #ifdef WORKAROUND_CLIPPING_PLANES
  #ifdef FLAG_TRANSFORM
-		fragNotVisible = geoNotVisible[0];
+		vertOut.notVisible = vertIn[vert].notVisible;
  #endif
  #ifdef FLAG_CLIP
 		gl_ClipDistance[0] = gl_in[vert].gl_ClipDistance[0];

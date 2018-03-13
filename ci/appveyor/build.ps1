@@ -4,6 +4,7 @@ class BuildConfig {
 	[string]$PackageType
 	[string]$Toolset
 	[string]$SimdType
+	[string]$QtDir
 	[Bool]$SourcePackage
 }
 
@@ -13,6 +14,7 @@ $NightlyConfigurations = @(
 		PackageType="Win64";
 		Toolset="v140_xp";
 		SimdType="SSE2";
+		QtDir="C:\Qt\5.7\msvc2015_64";
 		SourcePackage=$false;
 	},
 	[BuildConfig]@{ 
@@ -20,6 +22,7 @@ $NightlyConfigurations = @(
 		PackageType="Win32";
 		Toolset="v140_xp";
 		SimdType="SSE2";
+		QtDir="C:\Qt\5.7\msvc2015";
 		SourcePackage=$false;
 	}
 )
@@ -29,6 +32,7 @@ $ReleaseConfigurations = @(
 		PackageType="Win32";
 		Toolset="v140_xp";
 		SimdType="SSE2";
+		QtDir="C:\Qt\5.7\msvc2015";
 		SourcePackage=$true;
 	}
 	[BuildConfig]@{
@@ -36,6 +40,7 @@ $ReleaseConfigurations = @(
 		PackageType="Win32-AVX";
 		Toolset="v140_xp";
 		SimdType="AVX";
+		QtDir="C:\Qt\5.7\msvc2015";
 		SourcePackage=$false;
 	}
 	[BuildConfig]@{
@@ -43,6 +48,7 @@ $ReleaseConfigurations = @(
 		PackageType="Win64";
 		Toolset="v140_xp";
 		SimdType="SSE2";
+		QtDir="C:\Qt\5.7\msvc2015_64";
 		SourcePackage=$false;
 	}
 	[BuildConfig]@{
@@ -50,6 +56,7 @@ $ReleaseConfigurations = @(
 		PackageType="Win64-AVX";
 		Toolset="v140_xp";
 		SimdType="AVX";
+		QtDir="C:\Qt\5.7\msvc2015_64";
 		SourcePackage=$false;
 	}
 )
@@ -125,7 +132,7 @@ if ($DeployBuild) {
 	}
 	
 	cmake -DCMAKE_INSTALL_PREFIX="$env:APPVEYOR_BUILD_FOLDER/../install" -DFSO_USE_SPEECH="ON" `
-		-DFSO_USE_VOICEREC="ON" -DMSVC_SIMD_INSTRUCTIONS="$($buildConfig.SimdType)" `
+		-DFSO_USE_VOICEREC="ON" -DMSVC_SIMD_INSTRUCTIONS="$($buildConfig.SimdType)" -DMSVC_USE_RUNTIME_DLL="ON" `
 		-G "$($buildConfig.Generator)" -T "$($buildConfig.Toolset)" ..
 
 	$Configs = @("Release", "FastDebug")
@@ -141,6 +148,7 @@ if ($DeployBuild) {
     Push-AppveyorArtifact "$($PackageName)-builds-$($buildConfig.PackageType).zip"
 } else {
 	cmake -DFSO_USE_SPEECH="ON" -DFSO_FATAL_WARNINGS="ON" -DFSO_USE_VOICEREC="ON" -DFSO_BUILD_TESTS="ON" -DMSVC_SIMD_INSTRUCTIONS=SSE2 `
+	-DFSO_BUILD_QTFRED=ON -DQT5_INSTALL_ROOT="$env:QT_DIR" -DMSVC_USE_RUNTIME_DLL="ON" -DFSO_BUILD_FRED2="OFF" `
 	-G "$Env:CMAKE_GENERATOR" -T "$Env:PlatformToolset" ..
 
     cmake --build . --config "$Env:CONFIGURATION" -- /verbosity:minimal
