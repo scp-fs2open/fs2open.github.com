@@ -45,16 +45,20 @@ namespace fred {
 #define EDITABLE        0x02
 #define COMBINED        0x04
 
-// tree behavior modes (or tree subtype)
-#define ST_LABELED_ROOT        0x10000
-#define ST_ROOT_DELETABLE    0x20000
-#define ST_ROOT_EDITABLE    0x40000
-
 // various tree operations notification codes (to be handled by derived class)
 #define ROOT_DELETED    1
 #define ROOT_RENAMED    2
 
 #define SEXP_ITEM_F_DUP    (1<<0)
+
+// tree behavior modes (or tree subtype)
+FLAG_LIST(TreeFlags) {
+	LabeledRoot = 0,
+	RootDeletable,
+	RootEditable,
+
+	NUM_VALUES
+};
 
 enum class NodeImage {
 	OPERATOR = 0,
@@ -92,8 +96,10 @@ enum class NodeImage {
  * @brief Generic interface for operations that may depend on the context of the SEXP tree
  */
 class SexpTreeEditorInterface {
+	flagset<TreeFlags> _flags;
  public:
 	SexpTreeEditorInterface();
+	explicit SexpTreeEditorInterface(const flagset<TreeFlags>& flags);
 
 	virtual bool hasDefaultMessageParamter();
 	virtual SCP_vector<SCP_string> getMessages();
@@ -106,6 +112,12 @@ class SexpTreeEditorInterface {
 
 	virtual SCP_vector<SCP_string> getMissionNames();
 	virtual bool hasDefaultMissionName();
+
+	virtual int getRootReturnType() const;
+
+	const flagset<TreeFlags>& getFlags() const;
+
+	bool requireCampaignOperators() const;
 };
 
 /*
@@ -331,8 +343,7 @@ class sexp_tree: public QTreeWidget {
 
 	void customMenuHandler(const QPoint& pos);
 
-	QAction* createAction(const QString& name, const QKeySequence& shortcut = QKeySequence());
-	std::unique_ptr<QMenu> buildContextMenu();
+	std::unique_ptr<QMenu> buildContextMenu(QTreeWidgetItem* h);
 
 	int load_branch(int index, int parent);
 	int save_branch(int cur, int at_root = 0);
@@ -344,12 +355,22 @@ class sexp_tree: public QTreeWidget {
 	int total_nodes;
 
 	int root_item;
+	// these 2 variables are used to help location data sources.  Sometimes looking up
+	// valid data can require complex code just to get to an index that is required to
+	// locate data.  These are set up in right_clicked() to try and short circuit having
+	// to do the lookup again in the code that actually does the adding or replacing of
+	// the data if it's selected.
+	int add_instance;  // a source reference index indicator for adding data
+	int replace_instance;  // a source reference index indicator for replacing data
 
 	Editor* _editor = nullptr;
 	SexpTreeEditorInterface* _interface = nullptr;
 
 	// If there is no special interface then we supply a default one which needs to be stored somewhere
 	std::unique_ptr<SexpTreeEditorInterface> _owned_interface;
+
+	int Add_count, Replace_count;
+	int Modify_variable;
 };
 
 }

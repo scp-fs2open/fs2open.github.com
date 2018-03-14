@@ -133,7 +133,11 @@ QIcon nodeimage_to_icon(NodeImage image) {
 }
 }
 
-SexpTreeEditorInterface::SexpTreeEditorInterface() {
+SexpTreeEditorInterface::SexpTreeEditorInterface() :
+	SexpTreeEditorInterface(flagset<TreeFlags>{ TreeFlags::LabeledRoot, TreeFlags::RootDeletable }) {
+}
+SexpTreeEditorInterface::SexpTreeEditorInterface(const flagset<TreeFlags>& flags) : _flags(flags) {
+
 }
 bool SexpTreeEditorInterface::hasDefaultMessageParamter() {
 	return Num_messages > Num_builtin_messages;
@@ -179,6 +183,15 @@ bool SexpTreeEditorInterface::hasDefaultEvent(int operator_value) {
 	return (operator_value == OP_PREVIOUS_EVENT_TRUE) || (operator_value == OP_PREVIOUS_EVENT_FALSE)
 		|| (operator_value == OP_PREVIOUS_EVENT_INCOMPLETE) || Num_mission_events;
 
+}
+const flagset<TreeFlags>& SexpTreeEditorInterface::getFlags() const {
+	return _flags;
+}
+int SexpTreeEditorInterface::getRootReturnType() const {
+	return OPR_BOOL;
+}
+bool SexpTreeEditorInterface::requireCampaignOperators() const {
+	return false;
 }
 
 // constructor
@@ -4582,37 +4595,749 @@ void sexp_tree::customMenuHandler(const QPoint& pos) {
 		return;
 	}
 
-	auto menu = buildContextMenu();
+	auto menu = buildContextMenu(h);
 
 	menu->exec(mapToGlobal(pos));
 }
-std::unique_ptr<QMenu> sexp_tree::buildContextMenu() {
-	std::unique_ptr<QMenu> menu_ptr(new QMenu(tr("Edit SEXP tree")));
+std::unique_ptr<QMenu> sexp_tree::buildContextMenu(QTreeWidgetItem* h) {
+	int i, j, z, count, op, add_type, replace_type, type, subcategory_id;
+	sexp_list_item* list;
 
-	menu_ptr->addAction(createAction(tr("&Delete Item"), QKeySequence::Delete));
-	menu_ptr->addAction(createAction(tr("&Edit Data")));
-	menu_ptr->addAction(createAction(tr("Expand All")));
+	add_instance = replace_instance = -1;
+	Assert(Operators.size() <= MAX_OPERATORS);
+	Assert((int) op_menu.size() < MAX_OP_MENUS);
+	Assert((int) op_submenu.size() < MAX_SUBMENUS);
 
-	menu_ptr->addSection(tr("Copy operations"));
-	menu_ptr->addAction(createAction(tr("Cut"), QKeySequence::Cut));
-	menu_ptr->addAction(createAction(tr("Copy"), QKeySequence::Copy));
-	menu_ptr->addAction(createAction(tr("Paste"), QKeySequence::Paste));
+	std::unique_ptr<QMenu> popup_menu(new QMenu(tr("Edit SEXP tree")));
 
-	menu_ptr->addSection(tr("Add"));
-	auto add_ops = menu_ptr->addMenu(tr("Add Operator"));
-	add_ops->addAction(createAction("<Nothing here yet>"));
+	auto delete_act = popup_menu->addAction(tr("&Delete Item"), this, []() {}, QKeySequence::Delete);
+	auto edit_data_act = popup_menu->addAction(tr("&Edit Data"), this, []() {});
+	popup_menu->addAction(tr("Expand All"), this, []() {});
 
-	auto add_data = menu_ptr->addMenu(tr("Add Data"));
-	add_data->addAction(createAction(tr("Number")));
-	add_data->addAction(createAction(tr("String")));
+	popup_menu->addSection(tr("Copy operations"));
+	auto cut_act = popup_menu->addAction(tr("Cut"), this, []() {}, QKeySequence::Cut);
+	cut_act->setEnabled(false);
+	auto copy_act = popup_menu->addAction(tr("Copy"), this, []() {}, QKeySequence::Copy);
+	auto paste_act = popup_menu->addAction(tr("Paste"), this, []() {}, QKeySequence::Paste);
+	paste_act->setEnabled(false);
 
-	return menu_ptr;
-}
-QAction* sexp_tree::createAction(const QString& name, const QKeySequence& shortcut) {
-	auto action = new QAction(name, this);
-	action->setShortcut(shortcut);
+	popup_menu->addSection(tr("Add"));
+	auto add_op_menu = popup_menu->addMenu(tr("Add Operator"));
 
-	return action;
+	auto add_data_menu = popup_menu->addMenu(tr("Add Data"));
+	auto add_number_act = add_data_menu->addAction(tr("Number"), this, []() {});
+	add_number_act->setEnabled(false);
+	auto add_string_act = add_data_menu->addAction(tr("String"), this, []() {});
+	add_string_act->setEnabled(false);
+	add_data_menu->addSeparator();
+
+	popup_menu->addSeparator();
+	auto add_paste_act = popup_menu->addAction(tr("Add Paste"), this, []() {});
+	add_paste_act->setEnabled(false);
+	popup_menu->addSeparator();
+
+	auto insert_op_menu = popup_menu->addMenu(tr("Insert Operator"));
+	popup_menu->addSeparator();
+
+	auto replace_op_menu = popup_menu->addMenu(tr("Replace Operator"));
+
+	auto replace_data_menu = popup_menu->addMenu(tr("Replace Data"));
+	auto replace_number_act = replace_data_menu->addAction(tr("Number"), this, []() {});
+	replace_number_act->setEnabled(false);
+	auto replace_string_act = replace_data_menu->addAction(tr("String"), this, []() {});
+	replace_string_act->setEnabled(false);
+	replace_data_menu->addSeparator();
+
+	popup_menu->addSection("Variables");
+
+	popup_menu->addAction(tr("Add Variable"), this, []() {});
+	auto modify_variable_act = popup_menu->addAction(tr("Modify Variable"), this, []() {});
+
+	auto replace_variable_menu = popup_menu->addMenu(tr("Replace Variable"));
+
+	update_help(h);
+	//SelectDropTarget(h);  // WTF: Why was this here???
+
+	// get item_index
+	item_index = -1;
+	for (i = 0; i < (int) tree_nodes.size(); i++) {
+		if (tree_nodes[i].handle == h) {
+			item_index = i;
+			break;
+		}
+	}
+
+	// check not root (-1)
+	if (item_index >= 0) {
+		// get type of sexp_tree item clicked on
+		type = get_type(h);
+
+		int parent = tree_nodes[item_index].parent;
+		if (parent >= 0) {
+			op = get_operator_index(tree_nodes[parent].text);
+			Assert(op >= 0);
+			int first_arg = tree_nodes[parent].child;
+
+			// get arg count of item to replace
+			Replace_count = 0;
+			int temp = first_arg;
+			while (temp != item_index) {
+				Replace_count++;
+				temp = tree_nodes[temp].next;
+
+				// DB - added 3/4/99
+				if (temp == -1) {
+					break;
+				}
+			}
+
+			int op_type = query_operator_argument_type(op, Replace_count); // check argument type at this position
+
+			// special case don't allow replace data for variable names
+			// Goober5000 - why?  the only place this happens is when replacing the ambiguous argument in
+			// modify-variable with a variable, which seems legal enough.
+			//if (op_type != OPF_AMBIGUOUS) {
+
+			// Goober5000 - given the above, we have to figure out what type this stands for
+			if (op_type == OPF_AMBIGUOUS) {
+				int modify_type = get_modify_variable_type(parent);
+				if (modify_type == OPF_NUMBER) {
+					type = SEXPT_NUMBER;
+				} else if (modify_type == OPF_AMBIGUOUS) {
+					type = SEXPT_STRING;
+				} else {
+					Int3();
+					type = tree_nodes[first_arg].type;
+				}
+			}
+
+			// Goober5000 - certain types accept both integers and a list of strings
+			if (op_type == OPF_GAME_SND || op_type == OPF_WEAPON_BANK_NUMBER) {
+				type = SEXPT_NUMBER | SEXPT_STRING;
+			}
+
+			if ((type & SEXPT_STRING) || (type & SEXPT_NUMBER)) {
+
+				int max_sexp_vars = MAX_SEXP_VARIABLES;
+				// prevent collisions in id numbers: ID_VARIABLE_MENU + 512 = ID_ADD_MENU
+				Assert(max_sexp_vars < 512);
+
+				for (int idx = 0; idx < max_sexp_vars; idx++) {
+					if (Sexp_variables[idx].type & SEXP_VARIABLE_SET) {
+						// skip block variables
+						if (Sexp_variables[idx].type & SEXP_VARIABLE_BLOCK) {
+							continue;
+						}
+
+						auto disabled = true;
+						// maybe gray flag MF_GRAYED
+
+						// get type -- gray "string" or number accordingly
+						if (type & SEXPT_STRING) {
+							if (Sexp_variables[idx].type & SEXP_VARIABLE_STRING) {
+								disabled = false;
+							}
+						}
+						if (type & SEXPT_NUMBER) {
+							if (Sexp_variables[idx].type & SEXP_VARIABLE_NUMBER) {
+								disabled = false;
+							}
+						}
+
+						// if modify-variable and changing variable, enable all variables
+						if (op_type == OPF_VARIABLE_NAME) {
+							Modify_variable = 1;
+							disabled = false;
+						} else {
+							Modify_variable = 0;
+						}
+
+						// enable navsystem always
+						if (op_type == OPF_NAV_POINT) {
+							disabled = false;
+						}
+
+						char buf[128];
+						// append list of variable names and values
+						// set id as ID_VARIABLE_MENU + idx
+						sprintf(buf, "%s (%s)", Sexp_variables[idx].variable_name, Sexp_variables[idx].text);
+
+						auto action = replace_variable_menu->addAction(QString::fromUtf8(buf), this, []() {});
+						action->setEnabled(!disabled);
+					}
+				}
+			}
+			//}
+		}
+	}
+
+	// can't modify if no variables
+	modify_variable_act->setEnabled(sexp_variable_count() > 0);
+
+	// add popup menus for all the operator categories
+	QMenu* add_op_submenu[MAX_OP_MENUS];
+	QMenu* replace_op_submenu[MAX_OP_MENUS];
+	QMenu* insert_op_submenu[MAX_OP_MENUS];
+	for (i = 0; i < (int) op_menu.size(); i++) {
+		add_op_submenu[i] = add_op_menu->addMenu(QString::fromStdString(op_menu[i].name.c_str()));
+		replace_op_submenu[i] = replace_op_menu->addMenu(QString::fromStdString(op_menu[i].name.c_str()));
+		insert_op_submenu[i] = insert_op_menu->addMenu(QString::fromStdString(op_menu[i].name));
+	}
+
+	// add all the submenu items first
+	QMenu* add_op_subcategory_menu[MAX_SUBMENUS];
+	QMenu* replace_op_subcategory_menu[MAX_SUBMENUS];
+	QMenu* insert_op_subcategory_menu[MAX_SUBMENUS];
+	for (i = 0; i < (int) op_submenu.size(); i++) {
+		for (j = 0; j < (int) op_menu.size(); j++) {
+			if (op_menu[j].id == category_of_subcategory(op_submenu[i].id)) {
+				add_op_subcategory_menu[i] = add_op_submenu[j]->addMenu(QString::fromStdString(op_submenu[i].name));
+				replace_op_subcategory_menu[i] =
+					replace_op_submenu[j]->addMenu(QString::fromStdString(op_submenu[i].name));
+				insert_op_subcategory_menu[i] =
+					insert_op_submenu[j]->addMenu(QString::fromStdString(op_submenu[i].name));
+				break;    // only 1 category valid
+			}
+		}
+	}
+
+	// The MFC code could use some internal WinAPI IDs for keeping this mapping but that is not available in Qt so we
+	// need to do this ourself. This could be improved by applying the actions for the operator actions when the action
+	// is added.
+	std::unordered_map<int, QAction*> operator_action_mapping;
+
+	// add operator menu items to the various CATEGORY submenus they belong in
+	for (i = 0; i < (int) Operators.size(); i++) {
+		// add only if it is not in a subcategory
+		subcategory_id = get_subcategory(Operators[i].value);
+		if (subcategory_id == -1) {
+			// put it in the appropriate menu
+			for (j = 0; j < (int) op_menu.size(); j++) {
+				if (op_menu[j].id == get_category(Operators[i].value)) {
+					switch (Operators[i].value) {
+// Commented out by Goober5000 to allow these operators to be selectable
+/*#ifdef NDEBUG
+						// various campaign operators
+						case OP_WAS_PROMOTION_GRANTED:
+						case OP_WAS_MEDAL_GRANTED:
+						case OP_GRANT_PROMOTION:
+						case OP_GRANT_MEDAL:
+						case OP_TECH_ADD_SHIP:
+						case OP_TECH_ADD_WEAPON:
+						case OP_TECH_ADD_INTEL_XSTR:
+						case OP_TECH_RESET_TO_DEFAULT:
+#endif*/
+						// unlike the above operators, these are deprecated
+					case OP_HITS_LEFT_SUBSYSTEM:
+					case OP_CUTSCENES_SHOW_SUBTITLE:
+					case OP_ORDER:
+					case OP_TECH_ADD_INTEL:
+					case OP_HUD_GAUGE_SET_ACTIVE:
+					case OP_HUD_ACTIVATE_GAUGE_TYPE:
+					case OP_JETTISON_CARGO_DELAY:
+					case OP_STRING_CONCATENATE:
+						j = (int) op_menu.size();    // don't allow these operators to be visible
+						break;
+					}
+
+					if (j < (int) op_menu.size()) {
+						auto add_act =
+							add_op_submenu[j]->addAction(QString::fromStdString(Operators[i].text), this, []() {});
+						add_act->setEnabled(false);
+						operator_action_mapping.insert(std::make_pair(Operators[i].value, add_act));
+
+						auto replace_act =
+							replace_op_submenu[j]->addAction(QString::fromStdString(Operators[i].text), this, []() {});
+						replace_act->setEnabled(false);
+						operator_action_mapping.insert(std::make_pair(Operators[i].value | OP_REPLACE_FLAG,
+																	  replace_act));
+
+						auto insert_act =
+							insert_op_submenu[j]->addAction(QString::fromStdString(Operators[i].text), this, []() {});
+						insert_act->setEnabled(true);
+						operator_action_mapping.insert(std::make_pair(Operators[i].value | OP_INSERT_FLAG, insert_act));
+					}
+
+					break;    // only 1 category valid
+				}
+			}
+		}
+			// if it is in a subcategory, handle it
+		else {
+			// put it in the appropriate submenu
+			for (j = 0; j < (int) op_submenu.size(); j++) {
+				if (op_submenu[j].id == subcategory_id) {
+					switch (Operators[i].value) {
+// Commented out by Goober5000 to allow these operators to be selectable
+/*#ifdef NDEBUG
+						// various campaign operators
+						case OP_WAS_PROMOTION_GRANTED:
+						case OP_WAS_MEDAL_GRANTED:
+						case OP_GRANT_PROMOTION:
+						case OP_GRANT_MEDAL:
+						case OP_TECH_ADD_SHIP:
+						case OP_TECH_ADD_WEAPON:
+						case OP_TECH_ADD_INTEL_XSTR:
+						case OP_TECH_RESET_TO_DEFAULT:
+#endif*/
+						// unlike the above operators, these are deprecated
+					case OP_HITS_LEFT_SUBSYSTEM:
+					case OP_CUTSCENES_SHOW_SUBTITLE:
+					case OP_ORDER:
+					case OP_TECH_ADD_INTEL:
+					case OP_HUD_GAUGE_SET_ACTIVE:
+					case OP_HUD_ACTIVATE_GAUGE_TYPE:
+					case OP_JETTISON_CARGO_DELAY:
+					case OP_STRING_CONCATENATE:
+						j = (int) op_submenu.size();    // don't allow these operators to be visible
+						break;
+					}
+
+					if (j < (int) op_submenu.size()) {
+						auto add_act =
+							add_op_subcategory_menu[j]->addAction(QString::fromStdString(Operators[i].text), this, []() {});
+						add_act->setEnabled(false);
+						operator_action_mapping.insert(std::make_pair(Operators[i].value, add_act));
+
+						auto replace_act =
+							replace_op_subcategory_menu[j]->addAction(QString::fromStdString(Operators[i].text), this, []() {});
+						replace_act->setEnabled(false);
+						operator_action_mapping.insert(std::make_pair(Operators[i].value | OP_REPLACE_FLAG,
+																	  replace_act));
+
+						auto insert_act =
+							insert_op_subcategory_menu[j]->addAction(QString::fromStdString(Operators[i].text), this, []() {});
+						insert_act->setEnabled(true);
+						operator_action_mapping.insert(std::make_pair(Operators[i].value | OP_INSERT_FLAG, insert_act));
+					}
+
+					break;    // only 1 subcategory valid
+				}
+			}
+		}
+	}
+
+	// find local index (i) of current item (from its handle)
+	for (i = 0; i < (int) tree_nodes.size(); i++) {
+		if (tree_nodes[i].handle == h) {
+			break;
+		}
+	}
+
+	// special case: item is a ROOT node, and a label that can be edited (not an item in the sexp tree)
+	if ((item_index == -1) && _interface->getFlags()[TreeFlags::LabeledRoot]) {
+		edit_data_act->setEnabled(_interface->getFlags()[TreeFlags::RootEditable]);
+
+		// disable copy, insert op
+		copy_act->setEnabled(false);
+		insert_op_menu->setEnabled(false);
+		/*
+		for (j = 0; j < (int) Operators.size(); j++) {
+			menu.EnableMenuItem(Operators[j].value | OP_INSERT_FLAG, MF_GRAYED);
+		}
+		*/
+
+		popup_menu->setEnabled(false);
+		return popup_menu;
+	}
+
+	Assert(item_index != -1);  // handle not found, which should be impossible.
+	if (!(tree_nodes[item_index].flags & EDITABLE)) {
+		edit_data_act->setEnabled(false);
+	}
+
+	if (tree_nodes[item_index].parent == -1) {  // root node
+		delete_act->setEnabled(false); // can't delete the root item.
+	}
+
+/*		if ((tree_nodes[item_index].flags & OPERAND) && (tree_nodes[item_index].flags & EDITABLE))  // expandable?
+		menu.EnableMenuItem(ID_SPLIT_LINE, MF_ENABLED);
+
+	z = tree_nodes[item_index].child;
+	if (z != -1 && tree_nodes[z].next == -1 && tree_nodes[z].child == -1)
+		menu.EnableMenuItem(ID_SPLIT_LINE, MF_ENABLED);
+
+	z = tree_nodes[tree_nodes[item_index].parent].child;
+	if (z != -1 && tree_nodes[z].next == -1 && tree_nodes[z].child == -1)
+		menu.EnableMenuItem(ID_SPLIT_LINE, MF_ENABLED);*/
+
+	// change enabled status of 'add' type menu options.
+	add_type = 0;
+	if (tree_nodes[item_index].flags & OPERAND) {
+		add_type = OPR_STRING;
+		int child = tree_nodes[item_index].child;
+		Add_count = count_args(child);
+		op = get_operator_index(tree_nodes[item_index].text);
+		Assert(op >= 0);
+
+		// get listing of valid argument values and add to menus
+		type = query_operator_argument_type(op, Add_count);
+		list = get_listing_opf(type, item_index, Add_count);
+		if (list) {
+			sexp_list_item* ptr;
+
+			int data_idx = 0;
+			ptr = list;
+			while (ptr) {
+				if (ptr->op >= 0) {
+					// enable operators with correct return type
+					auto iter = operator_action_mapping.find(Operators[ptr->op].value);
+					if (iter != operator_action_mapping.end()) {
+						iter->second->setEnabled(true);
+					}
+				} else {
+					// add data
+					add_data_menu->addAction(QString::fromStdString(ptr->text), this, []() {});
+				}
+
+				data_idx++;
+				ptr = ptr->next;
+			}
+		}
+
+		// special handling for the non-string formats
+		if (type == OPF_NONE) {  // an argument can't be added
+			add_type = 0;
+
+		} else if (type == OPF_NULL) {  // arguments with no return values
+			add_type = OPR_NULL;
+
+			// Goober5000
+		} else if (type == OPF_FLEXIBLE_ARGUMENT) {
+			add_type = OPR_FLEXIBLE_ARGUMENT;
+
+		} else if (type == OPF_NUMBER) {  // takes numbers
+			add_type = OPR_NUMBER;
+			add_number_act->setEnabled(true);
+		} else if (type == OPF_POSITIVE) {  // takes non-negative numbers
+			add_type = OPR_POSITIVE;
+			add_number_act->setEnabled(true);
+		} else if (type == OPF_BOOL) {  // takes true/false bool values
+			add_type = OPR_BOOL;
+
+		} else if (type == OPF_AI_GOAL) {
+			add_type = OPR_AI_GOAL;
+		}
+
+		// add_type unchanged from above
+		if (add_type == OPR_STRING) {
+			add_string_act->setEnabled(true);
+		}
+
+		list->destroy();
+	}
+
+	// disable operators that do not have arguments available
+	for (j = 0; j < (int) Operators.size(); j++) {
+		if (!query_default_argument_available(j)) {
+			auto iter = operator_action_mapping.find(Operators[j].value);
+			if (iter != operator_action_mapping.end()) {
+				iter->second->setEnabled(false);
+			}
+		}
+	}
+
+
+	// change enabled status of 'replace' type menu options.
+	replace_type = 0;
+	int parent = tree_nodes[item_index].parent;
+	if (parent >= 0) {
+		replace_type = OPR_STRING;
+		op = get_operator_index(tree_nodes[parent].text);
+		Assert(op >= 0);
+		int first_arg = tree_nodes[parent].child;
+		count = count_args(tree_nodes[parent].child);
+
+		// already at minimum number of arguments?
+		if (count <= Operators[op].min) {
+			delete_act->setEnabled(false);
+		}
+
+		// get arg count of item to replace
+		Replace_count = 0;
+		int temp = first_arg;
+		while (temp != item_index) {
+			Replace_count++;
+			temp = tree_nodes[temp].next;
+
+			// DB - added 3/4/99
+			if (temp == -1) {
+				break;
+			}
+		}
+
+		// maybe gray delete
+		for (i = Replace_count + 1; i < count; i++) {
+			if (query_operator_argument_type(op, i - 1) != query_operator_argument_type(op, i)) {
+				delete_act->setEnabled(false);
+				break;
+			}
+		}
+
+		type = query_operator_argument_type(op, Replace_count); // check argument type at this position
+
+		// special case reset type for ambiguous
+		if (type == OPF_AMBIGUOUS) {
+			type = get_modify_variable_type(parent);
+		}
+
+		list = get_listing_opf(type, parent, Replace_count);
+
+		// special case don't allow replace data for variable names
+		if ((type != OPF_VARIABLE_NAME) && list) {
+			sexp_list_item* ptr;
+
+			int data_idx = 0;
+			ptr = list;
+			while (ptr) {
+				if (ptr->op >= 0) {
+					auto iter = operator_action_mapping.find(Operators[ptr->op].value | OP_REPLACE_FLAG);
+					if (iter != operator_action_mapping.end()) {
+						iter->second->setEnabled(true);
+					}
+				} else {
+					replace_data_menu->addAction(QString::fromStdString(ptr->text), this, []() {});
+				}
+
+				data_idx++;
+				ptr = ptr->next;
+			}
+		}
+
+		if (type == OPF_NONE) {  // takes no arguments
+			replace_type = 0;
+
+		} else if (type == OPF_NUMBER) {  // takes numbers
+			replace_type = OPR_NUMBER;
+			replace_number_act->setEnabled(true);
+		} else if (type == OPF_POSITIVE) {  // takes non-negative numbers
+			replace_type = OPR_POSITIVE;
+			replace_number_act->setEnabled(true);
+		} else if (type == OPF_BOOL) {  // takes true/false bool values
+			replace_type = OPR_BOOL;
+
+		} else if (type == OPF_NULL) {  // takes operator that doesn't return a value
+			replace_type = OPR_NULL;
+		} else if (type == OPF_AI_GOAL) {
+			replace_type = OPR_AI_GOAL;
+		}
+
+			// Goober5000
+		else if (type == OPF_FLEXIBLE_ARGUMENT) {
+			replace_type = OPR_FLEXIBLE_ARGUMENT;
+		}
+			// Goober5000
+		else if (type == OPF_GAME_SND || type == OPF_WEAPON_BANK_NUMBER) {
+			// enable number even though we are also going to default to string
+			replace_number_act->setEnabled(true);
+		}
+
+		// default to string
+		if (replace_type == OPR_STRING) {
+			replace_string_act->setEnabled(true);
+		}
+
+		// modify string or number if (modify_variable)
+		if (Operators[op].value == OP_MODIFY_VARIABLE) {
+			int modify_type = get_modify_variable_type(parent);
+
+			if (modify_type == OPF_NUMBER) {
+				replace_number_act->setEnabled(true);
+				replace_string_act->setEnabled(false);
+			}
+			// no change for string type
+		} else if (Operators[op].value == OP_SET_VARIABLE_BY_INDEX) {
+			// it depends on which argument we are modifying
+			// first argument is always a number
+			if (Replace_count == 0) {
+				replace_number_act->setEnabled(true);
+				replace_string_act->setEnabled(false);
+			}
+				// second argument could be anything
+			else {
+				int modify_type = get_modify_variable_type(parent);
+
+				if (modify_type == OPF_NUMBER) {
+					replace_number_act->setEnabled(true);
+					replace_string_act->setEnabled(false);
+				}
+				// no change for string type
+			}
+		}
+
+		list->destroy();
+
+	} else {  // top node, so should be a Boolean type.
+		replace_type = _interface->getRootReturnType();
+		for (j = 0; j < (int) Operators.size(); j++) {
+			if (query_operator_return_type(j) == replace_type) {
+				auto iter = operator_action_mapping.find(Operators[j].value | OP_REPLACE_FLAG);
+				if (iter != operator_action_mapping.end()) {
+					iter->second->setEnabled(true);
+				}
+			}
+		}
+	}
+
+	// disable operators that do not have arguments available
+	for (j = 0; j < (int) Operators.size(); j++) {
+		if (!query_default_argument_available(j)) {
+			auto iter = operator_action_mapping.find(Operators[j].value | OP_REPLACE_FLAG);
+			if (iter != operator_action_mapping.end()) {
+				iter->second->setEnabled(false);
+			}
+		}
+	}
+
+
+	// change enabled status of 'insert' type menu options.
+	z = tree_nodes[item_index].parent;
+	Assert(z >= -1);
+	if (z != -1) {
+		op = get_operator_index(tree_nodes[z].text);
+		Assert(op != -1);
+		j = tree_nodes[z].child;
+		count = 0;
+		while (j != item_index) {
+			count++;
+			j = tree_nodes[j].next;
+		}
+
+		type = query_operator_argument_type(op, count); // check argument type at this position
+
+	} else {
+		type = _interface->getRootReturnType();
+	}
+
+	for (j = 0; j < (int) Operators.size(); j++) {
+		z = query_operator_return_type(j);
+		if (!sexp_query_type_match(type, z) || (Operators[j].min < 1)) {
+			auto iter = operator_action_mapping.find(Operators[j].value | OP_INSERT_FLAG);
+			if (iter != operator_action_mapping.end()) {
+				iter->second->setEnabled(false);
+			}
+		}
+
+		z = query_operator_argument_type(j, 0);
+		if ((type == OPF_NUMBER) && (z == OPF_POSITIVE)) {
+			z = OPF_NUMBER;
+		}
+
+		// Goober5000's number hack
+		if ((type == OPF_POSITIVE) && (z == OPF_NUMBER)) {
+			z = OPF_POSITIVE;
+		}
+
+		if (z != type) {
+			auto iter = operator_action_mapping.find(Operators[j].value | OP_INSERT_FLAG);
+			if (iter != operator_action_mapping.end()) {
+				iter->second->setEnabled(false);
+			}
+		}
+	}
+
+	// disable operators that do not have arguments available
+	for (j = 0; j < (int) Operators.size(); j++) {
+		if (!query_default_argument_available(j)) {
+			auto iter = operator_action_mapping.find(Operators[j].value | OP_INSERT_FLAG);
+			if (iter != operator_action_mapping.end()) {
+				iter->second->setEnabled(false);
+			}
+		}
+	}
+
+
+	// disable non campaign operators if in campaign mode
+	for (j = 0; j < (int) Operators.size(); j++) {
+		z = 0;
+		if (_interface->requireCampaignOperators()) {
+			if (Operators[j].value & OP_NONCAMPAIGN_FLAG) {
+				z = 1;
+			}
+
+		} else {
+			if (Operators[j].value & OP_CAMPAIGN_ONLY_FLAG) {
+				z = 1;
+			}
+		}
+
+		if (z) {
+			auto iter = operator_action_mapping.find(Operators[j].value);
+			if (iter != operator_action_mapping.end()) {
+				iter->second->setEnabled(false);
+			}
+			iter = operator_action_mapping.find(Operators[j].value | OP_REPLACE_FLAG);
+			if (iter != operator_action_mapping.end()) {
+				iter->second->setEnabled(false);
+			}
+			iter = operator_action_mapping.find(Operators[j].value | OP_INSERT_FLAG);
+			if (iter != operator_action_mapping.end()) {
+				iter->second->setEnabled(false);
+			}
+		}
+	}
+
+	if ((Sexp_clipboard > -1) && (Sexp_nodes[Sexp_clipboard].type != SEXP_NOT_USED)) {
+		Assert(Sexp_nodes[Sexp_clipboard].subtype != SEXP_ATOM_LIST);
+
+		if (Sexp_nodes[Sexp_clipboard].subtype == SEXP_ATOM_OPERATOR) {
+			j = get_operator_const(CTEXT(Sexp_clipboard));
+			Assert(j);
+			z = query_operator_return_type(j);
+
+			if ((z == OPR_POSITIVE) && (replace_type == OPR_NUMBER)) {
+				z = OPR_NUMBER;
+			}
+
+			// Goober5000's number hack
+			if ((z == OPR_NUMBER) && (replace_type == OPR_POSITIVE)) {
+				z = OPR_POSITIVE;
+			}
+
+			if (replace_type == z) {
+				paste_act->setEnabled(true);
+			}
+
+			z = query_operator_return_type(j);
+			if ((z == OPR_POSITIVE) && (add_type == OPR_NUMBER)) {
+				z = OPR_NUMBER;
+			}
+
+			if (add_type == z) {
+				add_paste_act->setEnabled(true);
+			}
+
+		} else if (Sexp_nodes[Sexp_clipboard].subtype == SEXP_ATOM_NUMBER) {
+			if ((replace_type == OPR_POSITIVE) && (atoi(CTEXT(Sexp_clipboard)) > -1)) {
+				edit_data_act->setEnabled(true);
+			} else if (replace_type == OPR_NUMBER) {
+				edit_data_act->setEnabled(true);
+			}
+
+			if ((add_type == OPR_POSITIVE) && (atoi(CTEXT(Sexp_clipboard)) > -1)) {
+				add_paste_act->setEnabled(true);
+			} else if (add_type == OPR_NUMBER) {
+				add_paste_act->setEnabled(true);
+			}
+
+		} else if (Sexp_nodes[Sexp_clipboard].subtype == SEXP_ATOM_STRING) {
+			if (replace_type == OPR_STRING) {
+				edit_data_act->setEnabled(true);
+			}
+
+			if (add_type == OPR_STRING) {
+				add_paste_act->setEnabled(true);
+			}
+
+		} else
+			Int3();  // unknown and/or invalid sexp type
+	}
+
+	if (delete_act->isEnabled()) {
+		cut_act->setEnabled(true);
+	}
+
+	return popup_menu;
 }
 
 }
