@@ -371,6 +371,8 @@ class sexp_tree: public QTreeWidget {
 
 	int Add_count, Replace_count;
 	int Modify_variable;
+
+	void deleteActionHandler();
 };
 
 }
