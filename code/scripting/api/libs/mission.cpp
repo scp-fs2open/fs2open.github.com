@@ -365,7 +365,7 @@ ADE_INDEXER(l_Mission_Waypoints, "number Index", "Array of waypoints in the curr
 		ptr = GET_NEXT(ptr);
 	}
 
-	return ade_set_error(L, "o", l_Weapon.Set(object_h()));
+	return ade_set_error(L, "o", l_Waypoint.Set(object_h()));
 }
 
 ADE_FUNC(__len, l_Mission_Waypoints, NULL, "Gets number of waypoints in mission. Note that this is only accurate for one frame.", "number", "Number of waypoints in the mission")
