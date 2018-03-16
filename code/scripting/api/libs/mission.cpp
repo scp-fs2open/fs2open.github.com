@@ -393,8 +393,12 @@ ADE_INDEXER(l_Mission_WaypointLists, "number Index/string WaypointListName", "Ar
 	wpl = waypointlist_h(name);
 
 	if (!wpl.IsValid()) {
-		int idx = atoi(name) - 1;
-		wpl = waypointlist_h(find_waypoint_list_at_index(idx));
+		char* end_ptr;
+		auto idx = (int)strtol(name, &end_ptr, 10);
+		if (end_ptr != name && idx >= 1) {
+			// The string is a valid number and the number has a valid value
+			wpl = waypointlist_h(find_waypoint_list_at_index(idx - 1));
+		}
 	}
 
 	if (wpl.IsValid()) {
