@@ -149,8 +149,7 @@ void opengl_tcache_init()
 		opengl_get_max_anisotropy();
 
 		// now for the user setting
-		const char *plevel = os_config_read_string( NULL, NOX("OGL_AnisotropicFilter"), NOX("1.0") );
-		GL_anisotropy = (GLfloat) strtod(plevel, (char**)NULL);
+		GL_anisotropy = (GLfloat) Cmdline_aniso_level;
 
 		CLAMP(GL_anisotropy, 1.0f, GL_max_anisotropy);
 	}

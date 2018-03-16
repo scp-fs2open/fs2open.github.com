@@ -333,6 +333,7 @@ cmdline_parm flightshaftsoff_arg("-nolightshafts", NULL, AT_NONE);
 cmdline_parm shadow_quality_arg("-shadow_quality", NULL, AT_INT);
 cmdline_parm enable_shadows_arg("-enable_shadows", NULL, AT_NONE);
 cmdline_parm no_deferred_lighting_arg("-no_deferred", NULL, AT_NONE);	// Cmdline_no_deferred
+cmdline_parm anisotropy_level_arg("-anisotropic_filter", NULL, AT_INT);
 
 float Cmdline_clip_dist = Default_min_draw_distance;
 float Cmdline_fov = 0.75f;
@@ -359,6 +360,7 @@ bool Cmdline_fb_thrusters = false;
 extern bool ls_force_off;
 int Cmdline_shadow_quality = 0;
 int Cmdline_no_deferred_lighting = 0;
+int Cmdline_aniso_level = 0;
 
 // Game Speed related
 cmdline_parm cache_bitmaps_arg("-cache_bitmaps", NULL, AT_NONE);	// Cmdline_cache_bitmaps
@@ -2051,6 +2053,11 @@ bool SetCmdlineParams()
 	if( no_deferred_lighting_arg.found() )
 	{
 		Cmdline_no_deferred_lighting = 1;
+	}
+
+	if (anisotropy_level_arg.found()) 
+	{
+		Cmdline_aniso_level = anisotropy_level_arg.get_int();
 	}
 
 	if (frame_profile_write_file.found())
