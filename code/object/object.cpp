@@ -516,6 +516,20 @@ int obj_create(ubyte type,int parent_obj,int instance, matrix * orient,
 	return objnum;
 }
 
+void obj_delete_all() 
+{
+	size_t counter = 0;
+	for (size_t i = 0; i < MAX_OBJECTS; ++i) 
+	{
+		if (Objects[i].type == OBJ_NONE)
+			continue;
+		++counter;
+		obj_delete(i);
+	}
+
+	mprintf(("Cleanup: Deleted %i objects\n", counter));
+}
+
 /**
  * Remove object from the world
  * If Player_obj, don't remove it!
@@ -574,7 +588,7 @@ void obj_delete(int objnum)
 	case OBJ_START:
 	case OBJ_WAYPOINT:
 	case OBJ_POINT:
-		Assert(Fred_running);
+		//Assert(Fred_running);
 		break;  // requires no action, handled by the Fred code.
 	case OBJ_JUMP_NODE:
 		break;  // requires no further action, handled by jumpnode deconstructor.
