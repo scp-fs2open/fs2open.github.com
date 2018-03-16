@@ -518,7 +518,7 @@ int obj_create(ubyte type,int parent_obj,int instance, matrix * orient,
 
 void obj_delete_all() 
 {
-	size_t counter = 0;
+	int counter = 0;
 	for (size_t i = 0; i < MAX_OBJECTS; ++i) 
 	{
 		if (Objects[i].type == OBJ_NONE)
