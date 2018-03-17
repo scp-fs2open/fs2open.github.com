@@ -193,7 +193,10 @@ int SexpTreeEditorInterface::getRootReturnType() const {
 bool SexpTreeEditorInterface::requireCampaignOperators() const {
 	return false;
 }
-void SexpTreeEditorInterface::rootNodeDeleted(int node) const {
+void SexpTreeEditorInterface::rootNodeDeleted(int node) {
+
+}
+void SexpTreeEditorInterface::rootNodeRenamed(int node) {
 
 }
 
@@ -207,6 +210,7 @@ sexp_tree::sexp_tree(QWidget* parent) : QTreeWidget(parent) {
 	clear_tree();
 
 	connect(this, &QWidget::customContextMenuRequested, this, &sexp_tree::customMenuHandler);
+	connect(this, &QTreeWidget::itemChanged, this, &sexp_tree::handleItemChange);
 }
 
 // clears out the tree, so all the nodes are unused.
@@ -2307,6 +2311,9 @@ QTreeWidgetItem* sexp_tree::insertWithIcon(const QString& lpszItem,
 										   const QIcon& image,
 										   QTreeWidgetItem* hParent,
 										   QTreeWidgetItem* hInsertAfter) {
+	// We block the signals in this function since it would otherwise trigger the "item was edited" code
+	QSignalBlocker dataChangedBlocker(this);
+
 	QTreeWidgetItem* item = nullptr;
 	if (hParent == nullptr) {
 		if (hInsertAfter == nullptr) {
@@ -2323,6 +2330,7 @@ QTreeWidgetItem* sexp_tree::insertWithIcon(const QString& lpszItem,
 	}
 	item->setText(0, lpszItem);
 	item->setIcon(0, image);
+	item->setFlags(item->flags() | Qt::ItemIsEditable);
 
 	return item;
 }
@@ -4615,7 +4623,7 @@ std::unique_ptr<QMenu> sexp_tree::buildContextMenu(QTreeWidgetItem* h) {
 
 	auto delete_act =
 		popup_menu->addAction(tr("&Delete Item"), this, [this]() { deleteActionHandler(); }, QKeySequence::Delete);
-	auto edit_data_act = popup_menu->addAction(tr("&Edit Data"), this, []() {});
+	auto edit_data_act = popup_menu->addAction(tr("&Edit Data"), this, [this]() { editDataActionHandler(); });
 	popup_menu->addAction(tr("Expand All"), this, []() {});
 
 	popup_menu->addSection(tr("Copy operations"));
@@ -5369,6 +5377,80 @@ void sexp_tree::deleteActionHandler() {
 	delete currentItem();
 
 	modified();
+}
+void sexp_tree::editDataActionHandler() {
+	auto item = currentItem();
+
+	_currently_editing = true;
+	editItem(item);
+}
+void sexp_tree::handleItemChange(QTreeWidgetItem* item, int column) {
+	if (!_currently_editing) {
+		return;
+	}
+	_currently_editing = false;
+
+	auto str = item->text(0);
+	bool update_node = true;
+	uint node;
+
+	modified();
+	if (str.isEmpty())
+		return;
+
+	// let's make sure we aren't introducing any invalid characters, per Mantis #2893
+	SCP_string replaced_str = str.toStdString();
+	lcl_fred_replace_stuff(replaced_str);
+
+	for (node=0; node<tree_nodes.size(); node++)
+		if (tree_nodes[node].handle == item)
+			break;
+
+	if (node == tree_nodes.size()) {
+		item_index = qvariant_cast<int>(item->data(FormulaDataRole, 0));
+		_interface->rootNodeRenamed(item_index);
+		return;
+	}
+
+	Assert(node < tree_nodes.size());
+	if (tree_nodes[node].type & SEXPT_OPERATOR) {
+		auto op = match_closest_operator(replaced_str.c_str(), node);
+		if (op.empty()) return;	// Goober5000 - avoids crashing
+
+		item->setText(0, QString::fromStdString(op));
+		item_index = node;
+		int op_num = get_operator_index(op.c_str());
+		if (op_num >= 0 ) {
+			add_or_replace_operator(op_num, 1);
+		}
+		else {
+			update_node = false;
+		}
+	}
+
+		// gotta sidestep Goober5000's number hack and check entries are actually positive.
+	else if (tree_nodes[node].type & SEXPT_NUMBER) {
+		if (query_node_argument_type(node) == OPF_POSITIVE) {
+			int val = str.toInt();
+			if (val < 0) {
+				QMessageBox::critical(this, "Invalid Number", "Can not enter a negative value");
+				update_node = false;
+			}
+		}
+	}
+
+	// Error checking would not hurt here
+	auto len = str.size();
+	if (len >= TOKEN_LENGTH)
+		len = TOKEN_LENGTH - 1;
+
+	if (update_node) {
+		strncpy(tree_nodes[node].text, str.toStdString().c_str(), len);
+		tree_nodes[node].text[len] = 0;
+	}
+	else {
+		item->setText(0, QString::fromUtf8(tree_nodes[node].text, len));
+	}
 }
 
 }

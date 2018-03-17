@@ -119,7 +119,9 @@ class SexpTreeEditorInterface {
 
 	virtual bool requireCampaignOperators() const;
 
-	virtual void rootNodeDeleted(int node) const;
+	virtual void rootNodeDeleted(int node);
+
+	virtual void rootNodeRenamed(int node);
 };
 
 /*
@@ -356,6 +358,9 @@ class sexp_tree: public QTreeWidget {
 	SCP_vector<sexp_tree_item> tree_nodes;
 	int total_nodes;
 
+	// This flag is used for keeping track if we are currently editing a tree node
+	bool _currently_editing = false;
+
 	int root_item;
 	// these 2 variables are used to help location data sources.  Sometimes looking up
 	// valid data can require complex code just to get to an index that is required to
@@ -374,7 +379,10 @@ class sexp_tree: public QTreeWidget {
 	int Add_count, Replace_count;
 	int Modify_variable;
 
+	void handleItemChange(QTreeWidgetItem* item, int column);
+
 	void deleteActionHandler();
+	void editDataActionHandler();
 };
 
 }
