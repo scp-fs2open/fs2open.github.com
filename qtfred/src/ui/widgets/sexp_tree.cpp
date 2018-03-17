@@ -193,6 +193,9 @@ int SexpTreeEditorInterface::getRootReturnType() const {
 bool SexpTreeEditorInterface::requireCampaignOperators() const {
 	return false;
 }
+void SexpTreeEditorInterface::rootNodeDeleted(int node) const {
+
+}
 
 // constructor
 sexp_tree::sexp_tree(QWidget* parent) : QTreeWidget(parent) {
@@ -5346,49 +5349,24 @@ std::unique_ptr<QMenu> sexp_tree::buildContextMenu(QTreeWidgetItem* h) {
 	return popup_menu;
 }
 void sexp_tree::deleteActionHandler() {
-	int parent, theNode;
-	QTreeWidgetItem* h_parent;
-
 	if (_interface->getFlags()[TreeFlags::RootDeletable] && (item_index == -1)) {
-		item_index = currentItem()->data(FormulaDataRole, 0);
-		if (m_mode == MODE_GOALS) {
-			Assert(Goal_editor_dlg);
-			theNode = Goal_editor_dlg->handler(ROOT_DELETED, item_index);
+		auto item = currentItem();
+		item_index = item->data(FormulaDataRole, 0).toInt();
+		_interface->rootNodeDeleted(item_index);
 
-		} else if (m_mode == MODE_EVENTS) {
-			Assert(Event_editor_dlg);
-			theNode = Event_editor_dlg->handler(ROOT_DELETED, item_index);
-
-		} else {
-			Assert(m_mode == MODE_CAMPAIGN);
-			theNode = Campaign_tree_formp->handler(ROOT_DELETED, item_index);
-		}
-
-		Assert(theNode >= 0);
-		free_node2(theNode);
-		DeleteItem(item_handle);
-		*modified = 1;
-		return 1;
+		free_node2(item_index);
+		delete item;
+		modified();
+		return;
 	}
 
 	Assert(item_index >= 0);
-	h_parent = GetParentItem(item_handle);
-	parent = tree_nodes[item_index].parent;
-	if ((parent == -1) && (m_mode == MODE_EVENTS))
-		Int3();  // no longer used, temporary to check if called still.
+	auto h_parent = currentItem()->parent();
+	auto parent = tree_nodes[item_index].parent;
 
 	Assert(parent != -1 && tree_nodes[parent].handle == h_parent);
 	free_node(item_index);
-	DeleteItem(item_handle);
-
-	theNode = tree_nodes[parent].child;
-/*			if (node != -1 && tree_nodes[node].next == -1 && tree_nodes[node].child == -1) {
-				sprintf(buf, "%s %s", tree_nodes[parent].text, tree_nodes[node].text);
-				SetItem(h_parent, TVIF_TEXT, buf, 0, 0, 0, 0, 0);
-				tree_nodes[parent].flags = OPERAND | EDITABLE;
-				tree_nodes[node].flags = COMBINED;
-				DeleteItem(tree_nodes[node].handle);
-			}*/
+	delete currentItem();
 
 	modified();
 }

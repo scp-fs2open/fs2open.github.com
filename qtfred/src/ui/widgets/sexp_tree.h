@@ -117,7 +117,9 @@ class SexpTreeEditorInterface {
 
 	const flagset<TreeFlags>& getFlags() const;
 
-	bool requireCampaignOperators() const;
+	virtual bool requireCampaignOperators() const;
+
+	virtual void rootNodeDeleted(int node) const;
 };
 
 /*
