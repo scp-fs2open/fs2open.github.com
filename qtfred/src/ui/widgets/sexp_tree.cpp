@@ -43,6 +43,8 @@
 #include "mission/missiongoals.h"
 #include "ship/ship.h"
 
+#include <ui/util/menu.h>
+
 #include <QtWidgets/QMessageBox>
 #include <QtWidgets/QMenu>
 
@@ -194,10 +196,10 @@ bool SexpTreeEditorInterface::requireCampaignOperators() const {
 	return false;
 }
 void SexpTreeEditorInterface::rootNodeDeleted(int node) {
-
 }
 void SexpTreeEditorInterface::rootNodeRenamed(int node) {
-
+}
+void SexpTreeEditorInterface::rootNodeFormulaChanged(int old, int node) {
 }
 
 // constructor
@@ -4637,9 +4639,9 @@ std::unique_ptr<QMenu> sexp_tree::buildContextMenu(QTreeWidgetItem* h) {
 	auto add_op_menu = popup_menu->addMenu(tr("Add Operator"));
 
 	auto add_data_menu = popup_menu->addMenu(tr("Add Data"));
-	auto add_number_act = add_data_menu->addAction(tr("Number"), this, []() {});
+	auto add_number_act = add_data_menu->addAction(tr("Number"), this, [this]() { addNumberDataHandler(); });
 	add_number_act->setEnabled(false);
-	auto add_string_act = add_data_menu->addAction(tr("String"), this, []() {});
+	auto add_string_act = add_data_menu->addAction(tr("String"), this, [this]() { addStringDataHandler(); });
 	add_string_act->setEnabled(false);
 	add_data_menu->addSeparator();
 
@@ -4854,24 +4856,26 @@ std::unique_ptr<QMenu> sexp_tree::buildContextMenu(QTreeWidgetItem* h) {
 
 					if (j < (int) op_menu.size()) {
 						auto add_act =
-							add_op_submenu[j]->addAction(QString::fromStdString(Operators[i].text), this, [this]() {
-								add_or_replace_operator(Operators[i].value, 0);
+							add_op_submenu[j]->addAction(QString::fromStdString(Operators[i].text), this, [this, i]() {
+								add_or_replace_operator(i, 0);
 							});
 						add_act->setEnabled(false);
 						operator_action_mapping.insert(std::make_pair(Operators[i].value, add_act));
 
-						auto replace_act =
-							replace_op_submenu[j]->addAction(QString::fromStdString(Operators[i].text), this, [this]() {
-								add_or_replace_operator(Operators[i].value, 1);
-							});
+						auto replace_act = replace_op_submenu[j]->addAction(QString::fromStdString(Operators[i].text),
+																			this,
+																			[this, i]() {
+																				add_or_replace_operator(i, 1);
+																			});
 						replace_act->setEnabled(false);
 						operator_action_mapping.insert(std::make_pair(Operators[i].value | OP_REPLACE_FLAG,
 																	  replace_act));
 
-						auto insert_act =
-							insert_op_submenu[j]->addAction(QString::fromStdString(Operators[i].text), this, [this]() {
-								insertOperatorAction(Operators[i].value);
-							});
+						auto insert_act = insert_op_submenu[j]->addAction(QString::fromStdString(Operators[i].text),
+																		  this,
+																		  [this, i]() {
+																			  insertOperatorAction(i);
+																		  });
 						insert_act->setEnabled(true);
 						operator_action_mapping.insert(std::make_pair(Operators[i].value | OP_INSERT_FLAG, insert_act));
 					}
@@ -4914,14 +4918,18 @@ std::unique_ptr<QMenu> sexp_tree::buildContextMenu(QTreeWidgetItem* h) {
 					if (j < (int) op_submenu.size()) {
 						auto add_act = add_op_subcategory_menu[j]->addAction(QString::fromStdString(Operators[i].text),
 																			 this,
-																			 []() {});
+																			 [this, i]() {
+																				 add_or_replace_operator(i, 0);
+																			 });
 						add_act->setEnabled(false);
 						operator_action_mapping.insert(std::make_pair(Operators[i].value, add_act));
 
 						auto replace_act =
 							replace_op_subcategory_menu[j]->addAction(QString::fromStdString(Operators[i].text),
 																	  this,
-																	  []() {});
+																	  [this, i]() {
+																		  add_or_replace_operator(i, 1);
+																	  });
 						replace_act->setEnabled(false);
 						operator_action_mapping.insert(std::make_pair(Operators[i].value | OP_REPLACE_FLAG,
 																	  replace_act));
@@ -4929,7 +4937,9 @@ std::unique_ptr<QMenu> sexp_tree::buildContextMenu(QTreeWidgetItem* h) {
 						auto insert_act =
 							insert_op_subcategory_menu[j]->addAction(QString::fromStdString(Operators[i].text),
 																	 this,
-																	 []() {});
+																	 [this, i]() {
+																		 insertOperatorAction(i);
+																	 });
 						insert_act->setEnabled(true);
 						operator_action_mapping.insert(std::make_pair(Operators[i].value | OP_INSERT_FLAG, insert_act));
 					}
@@ -4960,7 +4970,7 @@ std::unique_ptr<QMenu> sexp_tree::buildContextMenu(QTreeWidgetItem* h) {
 		}
 		*/
 
-		popup_menu->setEnabled(false);
+		util::propagate_disabled_status(popup_menu.get());
 		return popup_menu;
 	}
 
@@ -5360,6 +5370,7 @@ std::unique_ptr<QMenu> sexp_tree::buildContextMenu(QTreeWidgetItem* h) {
 		cut_act->setEnabled(true);
 	}
 
+	util::propagate_disabled_status(popup_menu.get());
 	return popup_menu;
 }
 void sexp_tree::cutActionHandler() {
@@ -5397,10 +5408,7 @@ void sexp_tree::deleteActionHandler() {
 	modified();
 }
 void sexp_tree::editDataActionHandler() {
-	auto item = currentItem();
-
-	_currently_editing = true;
-	editItem(item);
+	beginItemEdit(currentItem());
 }
 void sexp_tree::handleItemChange(QTreeWidgetItem* item, int column) {
 	if (!_currently_editing) {
@@ -5543,18 +5551,12 @@ void sexp_tree::insertOperatorAction(int op) {
 		h = tree_nodes[z].handle;
 	} else {
 		h = tree_nodes[item_index].handle->parent();
-		if (m_mode == MODE_GOALS) {
-			Goal_editor_dlg->insert_handler(item_index, node);
-			SetItemData(h, node);
-		} else if (m_mode == MODE_EVENTS) {
-			Event_editor_dlg->insert_handler(item_index, node);
-			SetItemData(h, node);
-		} else if (m_mode == MODE_CAMPAIGN) {
-			Campaign_tree_formp->insert_handler(item_index, node);
-			SetItemData(h, node);
-		} else {
+		if (!_interface->getFlags()[TreeFlags::LabeledRoot]) {
 			h = nullptr;
 			root_item = node;
+		} else {
+			_interface->rootNodeFormulaChanged(item_index, node);
+			h->setData(0, FormulaDataRole, node);
 		}
 	}
 
@@ -5569,6 +5571,22 @@ void sexp_tree::insertOperatorAction(int op) {
 
 	item_handle->setExpanded(true);
 	modified();
+}
+void sexp_tree::addNumberDataHandler() {
+	int theNode;
+
+	theNode = add_data("number", (SEXPT_NUMBER | SEXPT_VALID));
+	beginItemEdit(tree_nodes[theNode].handle);
+}
+void sexp_tree::addStringDataHandler() {
+	int theNode;
+
+	theNode = add_data("string", (SEXPT_STRING | SEXPT_VALID));
+	beginItemEdit(tree_nodes[theNode].handle);
+}
+void sexp_tree::beginItemEdit(QTreeWidgetItem* item) {
+	_currently_editing = true;
+	editItem(item);
 }
 
 }

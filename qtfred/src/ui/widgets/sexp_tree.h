@@ -123,6 +123,8 @@ class SexpTreeEditorInterface {
 	virtual void rootNodeDeleted(int node);
 
 	virtual void rootNodeRenamed(int node);
+
+	virtual void rootNodeFormulaChanged(int old, int node);
 };
 
 /*
@@ -382,11 +384,15 @@ class sexp_tree: public QTreeWidget {
 
 	void handleItemChange(QTreeWidgetItem* item, int column);
 
+	void beginItemEdit(QTreeWidgetItem* item);
+
 	void deleteActionHandler();
 	void cutActionHandler();
 	void copyActionHandler();
 	void pasteActionHandler();
 	void editDataActionHandler();
+	void addNumberDataHandler();
+	void addStringDataHandler();
 
 	void insertOperatorAction(int op);
 };
