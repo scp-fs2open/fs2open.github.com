@@ -1391,6 +1391,13 @@ void parse_briefing(mission *pm, int flags)
 		while (required_string_either("$end_briefing", "$start_stage")) {
 			required_string("$start_stage");
 			Assert(stage_num < MAX_BRIEF_STAGES);
+
+			if (stage_num >= bp->num_stages) {
+				error_display(1,
+							  "$num_stages did not match the number of specified stages! %d stages were specified but there is at least one more.",
+							  bp->num_stages);
+			}
+
 			bs = &bp->stages[stage_num++];
 			required_string("$multi_text");
 			stuff_string(bs->text, F_MULTITEXT, NULL);
@@ -1459,6 +1466,12 @@ void parse_briefing(mission *pm, int flags)
 			{
 				required_string("$start_icon");
 				Assert(icon_num < MAX_STAGE_ICONS);
+				// Make sure we don't cause a buffer overflow if $num_icons is wrong
+				if (icon_num >= bs->num_icons) {
+					error_display(1,
+								  "$num_icons did not match the number of specified icons! %d icons were specified but there is at least one more.",
+								  bs->num_icons);
+				}
 				bi = &bs->icons[icon_num++];
 
 				required_string("$type:");
@@ -1561,12 +1574,21 @@ void parse_briefing(mission *pm, int flags)
 				stuff_string(not_used_text, F_MULTITEXT, MAX_ICON_TEXT_LEN);
 				required_string("$end_icon");
 			} // end while
-			Assert(bs->num_icons == icon_num);
+			if (icon_num != bs->num_icons) {
+				error_display(1,
+							  "$num_icons did not match the number of specified icons! %d icons were specified but only %d were parsed.",
+							  bs->num_icons,
+							  icon_num);
+			}
 			icon_num = 0;
 			required_string("$end_stage");
 		}	// end while
-
-		Assert(bp->num_stages == stage_num);
+		if (stage_num != bp->num_stages) {
+			error_display(1,
+						  "$num_stages did not match the number of specified icons! %d stages were specified but only %d were parsed.",
+						  bp->num_stages,
+						  stage_num);
+		}
 		required_string("$end_briefing");
 	}
 
