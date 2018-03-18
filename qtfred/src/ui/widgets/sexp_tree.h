@@ -379,6 +379,8 @@ class sexp_tree: public QTreeWidget {
 	// If there is no special interface then we supply a default one which needs to be stored somewhere
 	std::unique_ptr<SexpTreeEditorInterface> _owned_interface;
 
+	void setCurrentItemIndex(int index);
+
 	int Add_count, Replace_count;
 	int Modify_variable;
 
@@ -390,6 +392,7 @@ class sexp_tree: public QTreeWidget {
 	void cutActionHandler();
 	void copyActionHandler();
 	void pasteActionHandler();
+	void addPasteActionHandler();
 	void editDataActionHandler();
 	void addNumberDataHandler();
 	void addStringDataHandler();

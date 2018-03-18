@@ -1622,7 +1622,7 @@ void sexp_tree::add_operator(const char* op, QTreeWidgetItem* h) {
 	}
 
 	tree_nodes[node].flags = OPERAND;
-	item_index = node;
+	setCurrentItemIndex(node);
 	modified();
 }
 
@@ -1942,7 +1942,7 @@ void sexp_tree::verify_and_fix_arguments(int node) {
 	tmp = item_index;
 
 	arg_num = 0;
-	item_index = tree_nodes[node].child;
+	setCurrentItemIndex(tree_nodes[node].child);
 	while (item_index >= 0) {
 		// get listing of valid argument values for node item_index
 		type = query_operator_argument_type(op_index, arg_num);
@@ -1955,7 +1955,7 @@ void sexp_tree::verify_and_fix_arguments(int node) {
 			list = get_listing_opf(type, node, arg_num);
 			if (!list && (arg_num >= Operators[op_index].min)) {
 				free_node(item_index, 1);
-				item_index = tmp;
+				setCurrentItemIndex(tmp);
 				flag--;
 				return;
 			}
@@ -1994,7 +1994,7 @@ void sexp_tree::verify_and_fix_arguments(int node) {
 
 						if (types_match) {
 							// on to the next argument
-							item_index = tree_nodes[item_index].next;
+							setCurrentItemIndex(tree_nodes[item_index].next);
 							arg_num++;
 							continue;
 						} else {
@@ -2070,11 +2070,11 @@ void sexp_tree::verify_and_fix_arguments(int node) {
 			}
 		}
 
-		item_index = tree_nodes[item_index].next;
+		setCurrentItemIndex(tree_nodes[item_index].next);
 		arg_num++;
 	}
 
-	item_index = tmp;
+	setCurrentItemIndex(tmp);
 	flag--;
 }
 
@@ -4464,14 +4464,14 @@ void sexp_tree::delete_sexp_tree_variable(const char* var_name) {
 				}
 
 				// set item_index and replace data
-				item_index = idx;
+				setCurrentItemIndex(idx);
 				replace_data(replace_text, type);
 			}
 		}
 	}
 
 	// restore item_index
-	item_index = old_item_index;
+	setCurrentItemIndex(old_item_index);
 }
 
 
@@ -4646,7 +4646,7 @@ std::unique_ptr<QMenu> sexp_tree::buildContextMenu(QTreeWidgetItem* h) {
 	add_data_menu->addSeparator();
 
 	popup_menu->addSeparator();
-	auto add_paste_act = popup_menu->addAction(tr("Add Paste"), this, []() {});
+	auto add_paste_act = popup_menu->addAction(tr("Add Paste"), this, [this]() { addPasteActionHandler(); });
 	add_paste_act->setEnabled(false);
 	popup_menu->addSeparator();
 
@@ -4676,7 +4676,7 @@ std::unique_ptr<QMenu> sexp_tree::buildContextMenu(QTreeWidgetItem* h) {
 	item_index = -1;
 	for (i = 0; i < (int) tree_nodes.size(); i++) {
 		if (tree_nodes[i].handle == h) {
-			item_index = i;
+			setCurrentItemIndex(i);
 			break;
 		}
 	}
@@ -5392,7 +5392,7 @@ void sexp_tree::cutActionHandler() {
 void sexp_tree::deleteActionHandler() {
 	if (_interface->getFlags()[TreeFlags::RootDeletable] && (item_index == -1)) {
 		auto item = currentItem();
-		item_index = item->data(FormulaDataRole, 0).toInt();
+		setCurrentItemIndex(item->data(FormulaDataRole, 0).toInt());
 		_interface->rootNodeDeleted(item_index);
 
 		free_node2(item_index);
@@ -5440,7 +5440,7 @@ void sexp_tree::handleItemChange(QTreeWidgetItem* item, int column) {
 	}
 
 	if (node == tree_nodes.size()) {
-		item_index = qvariant_cast<int>(item->data(FormulaDataRole, 0));
+		setCurrentItemIndex(qvariant_cast<int>(item->data(FormulaDataRole, 0)));
 		_interface->rootNodeRenamed(item_index);
 		return;
 	}
@@ -5453,7 +5453,7 @@ void sexp_tree::handleItemChange(QTreeWidgetItem* item, int column) {
 		}    // Goober5000 - avoids crashing
 
 		item->setText(0, QString::fromStdString(op));
-		item_index = node;
+		setCurrentItemIndex(node);
 		int op_num = get_operator_index(op.c_str());
 		if (op_num >= 0) {
 			add_or_replace_operator(op_num, 1);
@@ -5568,7 +5568,7 @@ void sexp_tree::insertOperatorAction(int op) {
 						   insert(Operators[op].text.c_str(), NodeImage::OPERATOR, h, tree_nodes[item_index].handle);
 	move_branch(item_index, node);
 
-	item_index = node;
+	setCurrentItemIndex(node);
 	for (auto i = 1; i < Operators[op].min; i++) {
 		add_default_operator(op, i);
 	}
@@ -5621,6 +5621,43 @@ void sexp_tree::addReplaceTypedDataHandler(int data_idx, bool replace) {
 		add_data(ptr->text.c_str(), ptr->type);
 	}
 	list->destroy();
+}
+void sexp_tree::addPasteActionHandler() {
+	// add paste, instead of replace.
+	// the following assumptions are made..
+	Assert((Sexp_clipboard > -1) && (Sexp_nodes[Sexp_clipboard].type != SEXP_NOT_USED));
+	Assert(Sexp_nodes[Sexp_clipboard].subtype != SEXP_ATOM_LIST);
+
+	if (Sexp_nodes[Sexp_clipboard].subtype == SEXP_ATOM_OPERATOR) {
+		expand_operator(item_index);
+		add_operator(CTEXT(Sexp_clipboard));
+		if (Sexp_nodes[Sexp_clipboard].rest != -1) {
+			load_branch(Sexp_nodes[Sexp_clipboard].rest, item_index);
+			auto i = tree_nodes[item_index].child;
+			while (i != -1) {
+				add_sub_tree(i, tree_nodes[item_index].handle);
+				i = tree_nodes[i].next;
+			}
+		}
+
+	} else if (Sexp_nodes[Sexp_clipboard].subtype == SEXP_ATOM_NUMBER) {
+		Assert(Sexp_nodes[Sexp_clipboard].rest == -1);
+		expand_operator(item_index);
+		add_data(CTEXT(Sexp_clipboard), (SEXPT_NUMBER | SEXPT_VALID));
+
+	} else if (Sexp_nodes[Sexp_clipboard].subtype == SEXP_ATOM_STRING) {
+		Assert(Sexp_nodes[Sexp_clipboard].rest == -1);
+		expand_operator(item_index);
+		add_data(CTEXT(Sexp_clipboard), (SEXPT_STRING | SEXPT_VALID));
+
+	} else
+		Assert(0);  // unknown and/or invalid sexp type
+
+	expand_branch(currentItem());
+}
+void sexp_tree::setCurrentItemIndex(int node) {
+	item_index = node;
+	setCurrentItem(tree_nodes[node].handle);
 }
 
 }
