@@ -382,6 +382,9 @@ class sexp_tree: public QTreeWidget {
 	void handleItemChange(QTreeWidgetItem* item, int column);
 
 	void deleteActionHandler();
+	void cutActionHandler();
+	void copyActionHandler();
+	void pasteActionHandler();
 	void editDataActionHandler();
 };
 

@@ -4627,10 +4627,10 @@ std::unique_ptr<QMenu> sexp_tree::buildContextMenu(QTreeWidgetItem* h) {
 	popup_menu->addAction(tr("Expand All"), this, [this]() { expand_branch(currentItem()); });
 
 	popup_menu->addSection(tr("Copy operations"));
-	auto cut_act = popup_menu->addAction(tr("Cut"), this, []() {}, QKeySequence::Cut);
+	auto cut_act = popup_menu->addAction(tr("Cut"), this, [this]() { cutActionHandler(); }, QKeySequence::Cut);
 	cut_act->setEnabled(false);
-	auto copy_act = popup_menu->addAction(tr("Copy"), this, []() {}, QKeySequence::Copy);
-	auto paste_act = popup_menu->addAction(tr("Paste"), this, []() {}, QKeySequence::Paste);
+	auto copy_act = popup_menu->addAction(tr("Copy"), this, [this]() { copyActionHandler(); }, QKeySequence::Copy);
+	auto paste_act = popup_menu->addAction(tr("Paste"), this, [this]() { pasteActionHandler(); }, QKeySequence::Paste);
 	paste_act->setEnabled(false);
 
 	popup_menu->addSection(tr("Add"));
@@ -5356,6 +5356,18 @@ std::unique_ptr<QMenu> sexp_tree::buildContextMenu(QTreeWidgetItem* h) {
 
 	return popup_menu;
 }
+void sexp_tree::cutActionHandler() {
+	if (Sexp_clipboard != -1) {
+		sexp_unmark_persistent(Sexp_clipboard);
+		free_sexp2(Sexp_clipboard);
+	}
+
+	Sexp_clipboard = save_branch(item_index, 1);
+	sexp_mark_persistent(Sexp_clipboard);
+
+	// fall through to ID_DELETE case.
+	deleteActionHandler();
+}
 void sexp_tree::deleteActionHandler() {
 	if (_interface->getFlags()[TreeFlags::RootDeletable] && (item_index == -1)) {
 		auto item = currentItem();
@@ -5451,6 +5463,64 @@ void sexp_tree::handleItemChange(QTreeWidgetItem* item, int column) {
 	else {
 		item->setText(0, QString::fromUtf8(tree_nodes[node].text, len));
 	}
+}
+void sexp_tree::copyActionHandler() {
+	// If a clipboard already exist, unmark it as persistent and free old clipboard
+	if (Sexp_clipboard != -1) {
+		sexp_unmark_persistent(Sexp_clipboard);
+		free_sexp2(Sexp_clipboard);
+	}
+
+	// Allocate new clipboard and mark persistent
+	Sexp_clipboard = save_branch(item_index, 1);
+	sexp_mark_persistent(Sexp_clipboard);
+}
+void sexp_tree::pasteActionHandler() {
+	// the following assumptions are made..
+	Assert((Sexp_clipboard > -1) && (Sexp_nodes[Sexp_clipboard].type != SEXP_NOT_USED));
+	Assert(Sexp_nodes[Sexp_clipboard].subtype != SEXP_ATOM_LIST);
+
+	if (Sexp_nodes[Sexp_clipboard].subtype == SEXP_ATOM_OPERATOR) {
+		expand_operator(item_index);
+		replace_operator(CTEXT(Sexp_clipboard));
+		if (Sexp_nodes[Sexp_clipboard].rest != -1) {
+			load_branch(Sexp_nodes[Sexp_clipboard].rest, item_index);
+			auto i = tree_nodes[item_index].child;
+			while (i != -1) {
+				add_sub_tree(i, tree_nodes[item_index].handle);
+				i = tree_nodes[i].next;
+			}
+		}
+
+	} else if (Sexp_nodes[Sexp_clipboard].subtype == SEXP_ATOM_NUMBER) {
+		Assert(Sexp_nodes[Sexp_clipboard].rest == -1);
+		if (Sexp_nodes[Sexp_clipboard].type & SEXP_FLAG_VARIABLE) {
+			int var_idx = get_index_sexp_variable_name(Sexp_nodes[Sexp_clipboard].text);
+			Assert(var_idx > -1);
+			replace_variable_data(var_idx, (SEXPT_VARIABLE | SEXPT_NUMBER | SEXPT_VALID));
+		}
+		else {
+			expand_operator(item_index);
+			replace_data(CTEXT(Sexp_clipboard), (SEXPT_NUMBER | SEXPT_VALID));
+		}
+
+	} else if (Sexp_nodes[Sexp_clipboard].subtype == SEXP_ATOM_STRING) {
+		Assert(Sexp_nodes[Sexp_clipboard].rest == -1);
+		if (Sexp_nodes[Sexp_clipboard].type & SEXP_FLAG_VARIABLE) {
+			int var_idx = get_index_sexp_variable_name(Sexp_nodes[Sexp_clipboard].text);
+			Assert(var_idx > -1);
+			replace_variable_data(var_idx, (SEXPT_VARIABLE | SEXPT_STRING | SEXPT_VALID));
+		}
+		else {
+			expand_operator(item_index);
+			replace_data(CTEXT(Sexp_clipboard), (SEXPT_STRING | SEXPT_VALID));
+		}
+
+	} else
+		Assert(0);  // unknown and/or invalid sexp type
+
+	expand_branch(currentItem());
+
 }
 
 }
