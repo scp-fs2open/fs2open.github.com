@@ -4854,18 +4854,24 @@ std::unique_ptr<QMenu> sexp_tree::buildContextMenu(QTreeWidgetItem* h) {
 
 					if (j < (int) op_menu.size()) {
 						auto add_act =
-							add_op_submenu[j]->addAction(QString::fromStdString(Operators[i].text), this, []() {});
+							add_op_submenu[j]->addAction(QString::fromStdString(Operators[i].text), this, [this]() {
+								add_or_replace_operator(Operators[i].value, 0);
+							});
 						add_act->setEnabled(false);
 						operator_action_mapping.insert(std::make_pair(Operators[i].value, add_act));
 
 						auto replace_act =
-							replace_op_submenu[j]->addAction(QString::fromStdString(Operators[i].text), this, []() {});
+							replace_op_submenu[j]->addAction(QString::fromStdString(Operators[i].text), this, [this]() {
+								add_or_replace_operator(Operators[i].value, 1);
+							});
 						replace_act->setEnabled(false);
 						operator_action_mapping.insert(std::make_pair(Operators[i].value | OP_REPLACE_FLAG,
 																	  replace_act));
 
 						auto insert_act =
-							insert_op_submenu[j]->addAction(QString::fromStdString(Operators[i].text), this, []() {});
+							insert_op_submenu[j]->addAction(QString::fromStdString(Operators[i].text), this, [this]() {
+								insertOperatorAction(Operators[i].value);
+							});
 						insert_act->setEnabled(true);
 						operator_action_mapping.insert(std::make_pair(Operators[i].value | OP_INSERT_FLAG, insert_act));
 					}
@@ -5407,16 +5413,19 @@ void sexp_tree::handleItemChange(QTreeWidgetItem* item, int column) {
 	uint node;
 
 	modified();
-	if (str.isEmpty())
+	if (str.isEmpty()) {
 		return;
+	}
 
 	// let's make sure we aren't introducing any invalid characters, per Mantis #2893
 	SCP_string replaced_str = str.toStdString();
 	lcl_fred_replace_stuff(replaced_str);
 
-	for (node=0; node<tree_nodes.size(); node++)
-		if (tree_nodes[node].handle == item)
+	for (node = 0; node < tree_nodes.size(); node++) {
+		if (tree_nodes[node].handle == item) {
 			break;
+		}
+	}
 
 	if (node == tree_nodes.size()) {
 		item_index = qvariant_cast<int>(item->data(FormulaDataRole, 0));
@@ -5427,15 +5436,16 @@ void sexp_tree::handleItemChange(QTreeWidgetItem* item, int column) {
 	Assert(node < tree_nodes.size());
 	if (tree_nodes[node].type & SEXPT_OPERATOR) {
 		auto op = match_closest_operator(replaced_str.c_str(), node);
-		if (op.empty()) return;	// Goober5000 - avoids crashing
+		if (op.empty()) {
+			return;
+		}    // Goober5000 - avoids crashing
 
 		item->setText(0, QString::fromStdString(op));
 		item_index = node;
 		int op_num = get_operator_index(op.c_str());
-		if (op_num >= 0 ) {
+		if (op_num >= 0) {
 			add_or_replace_operator(op_num, 1);
-		}
-		else {
+		} else {
 			update_node = false;
 		}
 	}
@@ -5453,14 +5463,14 @@ void sexp_tree::handleItemChange(QTreeWidgetItem* item, int column) {
 
 	// Error checking would not hurt here
 	auto len = str.size();
-	if (len >= TOKEN_LENGTH)
+	if (len >= TOKEN_LENGTH) {
 		len = TOKEN_LENGTH - 1;
+	}
 
 	if (update_node) {
 		strncpy(tree_nodes[node].text, str.toStdString().c_str(), len);
 		tree_nodes[node].text[len] = 0;
-	}
-	else {
+	} else {
 		item->setText(0, QString::fromUtf8(tree_nodes[node].text, len));
 	}
 }
@@ -5498,8 +5508,7 @@ void sexp_tree::pasteActionHandler() {
 			int var_idx = get_index_sexp_variable_name(Sexp_nodes[Sexp_clipboard].text);
 			Assert(var_idx > -1);
 			replace_variable_data(var_idx, (SEXPT_VARIABLE | SEXPT_NUMBER | SEXPT_VALID));
-		}
-		else {
+		} else {
 			expand_operator(item_index);
 			replace_data(CTEXT(Sexp_clipboard), (SEXPT_NUMBER | SEXPT_VALID));
 		}
@@ -5510,8 +5519,7 @@ void sexp_tree::pasteActionHandler() {
 			int var_idx = get_index_sexp_variable_name(Sexp_nodes[Sexp_clipboard].text);
 			Assert(var_idx > -1);
 			replace_variable_data(var_idx, (SEXPT_VARIABLE | SEXPT_STRING | SEXPT_VALID));
-		}
-		else {
+		} else {
 			expand_operator(item_index);
 			replace_data(CTEXT(Sexp_clipboard), (SEXPT_STRING | SEXPT_VALID));
 		}
@@ -5521,6 +5529,46 @@ void sexp_tree::pasteActionHandler() {
 
 	expand_branch(currentItem());
 
+}
+void sexp_tree::insertOperatorAction(int op) {
+	int flags;
+
+	auto z = tree_nodes[item_index].parent;
+	flags = tree_nodes[item_index].flags;
+	auto node = allocate_node(z, item_index);
+	set_node(node, (SEXPT_OPERATOR | SEXPT_VALID), Operators[op].text.c_str());
+	tree_nodes[node].flags = flags;
+	QTreeWidgetItem* h;
+	if (z >= 0) {
+		h = tree_nodes[z].handle;
+	} else {
+		h = tree_nodes[item_index].handle->parent();
+		if (m_mode == MODE_GOALS) {
+			Goal_editor_dlg->insert_handler(item_index, node);
+			SetItemData(h, node);
+		} else if (m_mode == MODE_EVENTS) {
+			Event_editor_dlg->insert_handler(item_index, node);
+			SetItemData(h, node);
+		} else if (m_mode == MODE_CAMPAIGN) {
+			Campaign_tree_formp->insert_handler(item_index, node);
+			SetItemData(h, node);
+		} else {
+			h = nullptr;
+			root_item = node;
+		}
+	}
+
+	auto item_handle = tree_nodes[node].handle =
+						   insert(Operators[op].text.c_str(), NodeImage::OPERATOR, h, tree_nodes[item_index].handle);
+	move_branch(item_index, node);
+
+	item_index = node;
+	for (auto i = 1; i < Operators[op].min; i++) {
+		add_default_operator(op, i);
+	}
+
+	item_handle->setExpanded(true);
+	modified();
 }
 
 }

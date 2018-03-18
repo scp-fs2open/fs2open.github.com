@@ -119,6 +119,7 @@ class SexpTreeEditorInterface {
 
 	virtual bool requireCampaignOperators() const;
 
+	// TODO: These callbacks could be replaced with Qt signals
 	virtual void rootNodeDeleted(int node);
 
 	virtual void rootNodeRenamed(int node);
@@ -386,6 +387,8 @@ class sexp_tree: public QTreeWidget {
 	void copyActionHandler();
 	void pasteActionHandler();
 	void editDataActionHandler();
+
+	void insertOperatorAction(int op);
 };
 
 }
