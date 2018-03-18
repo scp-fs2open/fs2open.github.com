@@ -4624,7 +4624,7 @@ std::unique_ptr<QMenu> sexp_tree::buildContextMenu(QTreeWidgetItem* h) {
 	auto delete_act =
 		popup_menu->addAction(tr("&Delete Item"), this, [this]() { deleteActionHandler(); }, QKeySequence::Delete);
 	auto edit_data_act = popup_menu->addAction(tr("&Edit Data"), this, [this]() { editDataActionHandler(); });
-	popup_menu->addAction(tr("Expand All"), this, []() {});
+	popup_menu->addAction(tr("Expand All"), this, [this]() { expand_branch(currentItem()); });
 
 	popup_menu->addSection(tr("Copy operations"));
 	auto cut_act = popup_menu->addAction(tr("Cut"), this, []() {}, QKeySequence::Cut);
