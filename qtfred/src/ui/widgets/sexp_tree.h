@@ -397,6 +397,7 @@ class sexp_tree: public QTreeWidget {
 	void addNumberDataHandler();
 	void addStringDataHandler();
 	void addReplaceTypedDataHandler(int data_idx, bool replace);
+	void handleReplaceVariableAction(int idx);
 
 	void insertOperatorAction(int op);
 };

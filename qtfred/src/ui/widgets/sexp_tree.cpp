@@ -53,11 +53,6 @@
 #define MAX_OP_MENUS    30
 #define MAX_SUBMENUS    (MAX_OP_MENUS * MAX_OP_MENUS)
 
-#define ID_VARIABLE_MENU    0xda00
-#define ID_ADD_MENU            0xdc00
-#define ID_REPLACE_MENU        0xde00
-// note: stay below 0xe000 so we don't collide with MFC defines..
-
 extern SCP_vector<game_snd> Snds;
 
 //********************sexp_tree********************
@@ -613,9 +608,11 @@ void sexp_tree::add_sub_tree(int node, QTreeWidgetItem* root) {
 		bitmap = NodeImage::OPERATOR;
 	} else {
 		if (tree_nodes[node].type & SEXPT_VARIABLE) {
+			tree_nodes[node].handle->setFlags(tree_nodes[node].handle->flags().setFlag(Qt::ItemIsEditable, false));
 			tree_nodes[node].flags = NOT_EDITABLE;
 			bitmap = NodeImage::VARIABLE;
 		} else {
+			tree_nodes[node].handle->setFlags(tree_nodes[node].handle->flags().setFlag(Qt::ItemIsEditable, true));
 			tree_nodes[node].flags = EDITABLE;
 			bitmap = get_data_image(node);
 		}
@@ -634,6 +631,7 @@ void sexp_tree::add_sub_tree(int node, QTreeWidgetItem* root) {
 			Assert(tree_nodes[node].child == -1);
 			if (tree_nodes[node].type & SEXPT_VARIABLE) {
 				tree_nodes[node].handle = insert(tree_nodes[node].text, NodeImage::VARIABLE, root);
+				tree_nodes[node].handle->setFlags(tree_nodes[node].handle->flags().setFlag(Qt::ItemIsEditable, false));
 				tree_nodes[node].flags = NOT_EDITABLE;
 			} else {
 				auto bmap = get_data_image(node);
@@ -1600,6 +1598,7 @@ int sexp_tree::add_variable_data(const char* new_data, int type) {
 	node = allocate_node(item_index);
 	set_node(node, type, new_data);
 	tree_nodes[node].handle = insert(new_data, NodeImage::VARIABLE, tree_nodes[item_index].handle);
+	tree_nodes[node].handle->setFlags(tree_nodes[node].handle->flags().setFlag(Qt::ItemIsEditable, false));
 	tree_nodes[node].flags = NOT_EDITABLE;
 	modified();
 	return node;
@@ -2094,6 +2093,7 @@ void sexp_tree::replace_data(const char* new_data, int type) {
 	h->setText(0, new_data);
 	auto bmap = get_data_image(item_index);
 	h->setIcon(0, nodeimage_to_icon(bmap));
+	tree_nodes[item_index].handle->setFlags(tree_nodes[node].handle->flags().setFlag(Qt::ItemIsEditable, true));
 	tree_nodes[item_index].flags = EDITABLE;
 
 	// check remaining data beyond replaced data for validity (in case any of it is dependent on data just replaced)
@@ -2127,6 +2127,7 @@ void sexp_tree::replace_variable_data(int var_idx, int type) {
 	set_node(item_index, type, buf);
 	h->setText(0, QString::fromUtf8(buf));
 	h->setIcon(0, nodeimage_to_icon(NodeImage::VARIABLE));
+	h->setFlags(h->flags().setFlag(Qt::ItemIsEditable, false));
 	tree_nodes[item_index].flags = NOT_EDITABLE;
 
 	// check remaining data beyond replaced data for validity (in case any of it is dependent on data just replaced)
@@ -4776,7 +4777,9 @@ std::unique_ptr<QMenu> sexp_tree::buildContextMenu(QTreeWidgetItem* h) {
 						// set id as ID_VARIABLE_MENU + idx
 						sprintf(buf, "%s (%s)", Sexp_variables[idx].variable_name, Sexp_variables[idx].text);
 
-						auto action = replace_variable_menu->addAction(QString::fromUtf8(buf), this, []() {});
+						auto action = replace_variable_menu->addAction(QString::fromUtf8(buf),
+																	   this,
+																	   [this, idx]() { handleReplaceVariableAction(idx); });
 						action->setEnabled(!disabled);
 					}
 				}
@@ -5657,7 +5660,45 @@ void sexp_tree::addPasteActionHandler() {
 }
 void sexp_tree::setCurrentItemIndex(int node) {
 	item_index = node;
-	setCurrentItem(tree_nodes[node].handle);
+	if (node < 0) {
+		setCurrentItem(nullptr);
+	} else {
+		setCurrentItem(tree_nodes[node].handle);
+	}
+}
+void sexp_tree::handleReplaceVariableAction(int id) {
+	Assert(item_index >= 0);
+
+	// get index into list of type valid variables
+	Assert( (id >= 0) && (id < MAX_SEXP_VARIABLES) );
+
+	int type = get_type(currentItem());
+	Assert( (type & SEXPT_NUMBER) || (type & SEXPT_STRING) );
+
+	// don't do type check for modify-variable
+	if (Modify_variable) {
+		if (Sexp_variables[id].type & SEXP_VARIABLE_NUMBER) {
+			type = SEXPT_NUMBER;
+		} else if (Sexp_variables[id].type & SEXP_VARIABLE_STRING) {
+			type = SEXPT_STRING;
+		} else {
+			Int3();	// unknown type
+		}
+
+	} else {
+		// verify type in tree is same as type in Sexp_variables array
+		if (type & SEXPT_NUMBER) {
+			Assert(Sexp_variables[id].type & SEXP_VARIABLE_NUMBER);
+		}
+
+		if (type & SEXPT_STRING) {
+			Assert( (Sexp_variables[id].type & SEXP_VARIABLE_STRING) );
+		}
+	}
+
+	// Replace data
+	replace_variable_data(id, (type | SEXPT_VARIABLE));
+
 }
 
 }
