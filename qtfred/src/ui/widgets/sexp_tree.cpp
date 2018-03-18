@@ -5020,7 +5020,9 @@ std::unique_ptr<QMenu> sexp_tree::buildContextMenu(QTreeWidgetItem* h) {
 					}
 				} else {
 					// add data
-					add_data_menu->addAction(QString::fromStdString(ptr->text), this, []() {});
+					add_data_menu->addAction(QString::fromStdString(ptr->text),
+											 this,
+											 [this, data_idx]() { addReplaceTypedDataHandler(data_idx, false); });
 				}
 
 				data_idx++;
@@ -5129,7 +5131,9 @@ std::unique_ptr<QMenu> sexp_tree::buildContextMenu(QTreeWidgetItem* h) {
 						iter->second->setEnabled(true);
 					}
 				} else {
-					replace_data_menu->addAction(QString::fromStdString(ptr->text), this, []() {});
+					replace_data_menu->addAction(QString::fromStdString(ptr->text),
+											 this,
+											 [this, data_idx]() { addReplaceTypedDataHandler(data_idx, true); });
 				}
 
 				data_idx++;
@@ -5587,6 +5591,36 @@ void sexp_tree::addStringDataHandler() {
 void sexp_tree::beginItemEdit(QTreeWidgetItem* item) {
 	_currently_editing = true;
 	editItem(item);
+}
+void sexp_tree::addReplaceTypedDataHandler(int data_idx, bool replace) {
+	Assert(item_index >= 0);
+	int op;
+	if (replace) {
+		op = get_operator_index(tree_nodes[tree_nodes[item_index].parent].text);
+	} else {
+		op = get_operator_index(tree_nodes[item_index].text);
+	}
+	Assert(op >= 0);
+
+	auto type = query_operator_argument_type(op, Add_count);
+	auto list = get_listing_opf(type, item_index, Add_count);
+	Assert(list);
+
+	auto ptr = list;
+	while (data_idx) {
+		data_idx--;
+		ptr = ptr->next;
+		Assert(ptr);
+	}
+
+	Assert((SEXPT_TYPE(ptr->type) != SEXPT_OPERATOR) && (ptr->op < 0));
+	expand_operator(item_index);
+	if (replace) {
+		replace_data(ptr->text.c_str(), ptr->type);
+	} else {
+		add_data(ptr->text.c_str(), ptr->type);
+	}
+	list->destroy();
 }
 
 }
