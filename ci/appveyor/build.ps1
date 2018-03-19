@@ -132,6 +132,7 @@ if ($DeployBuild) {
 	}
 	
 	cmake -DCMAKE_INSTALL_PREFIX="$env:APPVEYOR_BUILD_FOLDER/../install" -DFSO_USE_SPEECH="ON" `
+		-DFSO_BUILD_QTFRED=ON -DQT5_INSTALL_ROOT="$($buildConfig.QtDir)" `
 		-DFSO_USE_VOICEREC="ON" -DMSVC_SIMD_INSTRUCTIONS="$($buildConfig.SimdType)" `
 		-G "$($buildConfig.Generator)" -T "$($buildConfig.Toolset)" ..
 
