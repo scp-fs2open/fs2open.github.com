@@ -1841,24 +1841,20 @@ int sexp_tree::node_error(int node, const char* msg, int* bypass) {
 }
 
 void sexp_tree::hilite_item(int node) {
+
 	ensure_visible(node);
+	clearSelection();
 	tree_nodes[node].handle->setSelected(true);
 }
 
 // because the MFC function EnsureVisible() doesn't do what it says it does, I wrote this.
 void sexp_tree::ensure_visible(int node) {
-	Assert(node != -1);
-	if (tree_nodes[node].parent != -1) {
-		ensure_visible(tree_nodes[node].parent);
-	}  // expand all parents first
+	auto handle = tree_nodes[node].handle->parent();
 
-	if (tree_nodes[node].child != -1) {  // expandable?
-		expandItem(tree_nodes[node].handle);
-	}  // expand this item
-}
-
-void sexp_tree::link_modified(int* ptr) {
-	modified();
+	while (handle != nullptr) {
+		handle->setExpanded(true);
+		handle = handle->parent();
+	}
 }
 
 void get_variable_default_text_from_variable_text(char* text, char* default_text) {
@@ -2094,7 +2090,7 @@ void sexp_tree::replace_data(const char* new_data, int type) {
 	h->setText(0, new_data);
 	auto bmap = get_data_image(item_index);
 	h->setIcon(0, nodeimage_to_icon(bmap));
-	tree_nodes[item_index].handle->setFlags(tree_nodes[node].handle->flags().setFlag(Qt::ItemIsEditable, true));
+	h->setFlags(h->flags().setFlag(Qt::ItemIsEditable, true));
 	tree_nodes[item_index].flags = EDITABLE;
 
 	// check remaining data beyond replaced data for validity (in case any of it is dependent on data just replaced)
@@ -5605,8 +5601,10 @@ void sexp_tree::addReplaceTypedDataHandler(int data_idx, bool replace) {
 	}
 	Assert(op >= 0);
 
-	auto type = query_operator_argument_type(op, Add_count);
-	auto list = get_listing_opf(type, item_index, Add_count);
+	auto argcount = replace ? Replace_count : Add_count;
+
+	auto type = query_operator_argument_type(op, argcount);
+	auto list = get_listing_opf(type, item_index, argcount);
 	Assert(list);
 
 	auto ptr = list;

@@ -128,7 +128,7 @@ void Editor::update() {
 	}
 }
 
-bool Editor::loadMission(const std::string& filepath, int flags) {
+bool Editor::loadMission(const std::string& mission_name, int flags) {
 	char name[512], * old_name;
 	int i, j, k, ob;
 	int used_pool[MAX_WEAPON_TYPES];
@@ -138,6 +138,18 @@ bool Editor::loadMission(const std::string& filepath, int flags) {
 	fhash_flush();
 
 	clearMission();
+
+	std::string filepath = mission_name;
+	char fullpath[MAX_PATH_LEN];
+	size_t pack_offset;
+	if (cf_find_file_location(filepath.c_str(), CF_TYPE_MISSIONS, sizeof(fullpath) - 1, fullpath, nullptr, &pack_offset)) {
+		// We found this file in the CFile system
+		if (pack_offset == 0) {
+			// This is a "real" file. Since we now have an absolute path we can use that to make sure we only deal with
+			// absolute paths which makes sure that the "recent mission" menu has correct file names
+			filepath = fullpath;
+		}
+	}
 
 	if (parse_main(filepath.c_str(), flags)) {
 		if (flags & MPF_IMPORT_FSM) {

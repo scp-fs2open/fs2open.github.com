@@ -204,7 +204,6 @@ class sexp_tree: public QTreeWidget {
 	void replace_operator(const char* op);
 	void replace_data(const char* new_data, int type);
 	void replace_variable_data(int var_idx, int type);
-	void link_modified(int* ptr);
 	void ensure_visible(int node);
 	int node_error(int node, const char* msg, int* bypass);
 	void expand_branch(QTreeWidgetItem* h);
