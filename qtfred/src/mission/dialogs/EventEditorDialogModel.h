@@ -2,6 +2,9 @@
 
 #include "AbstractDialogModel.h"
 
+#include <mission/missionmessage.h>
+#include <mission/missiongoals.h>
+
 namespace fso {
 namespace fred {
 namespace dialogs {
