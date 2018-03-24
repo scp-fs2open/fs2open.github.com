@@ -71,8 +71,8 @@
 #	endif
 #endif
 
-#define PTRDIFF_T_ARG "%Iu"
-#define SIZE_T_ARG    "%Id"
+#define SIZE_T_ARG    "%Iu"
+#define PTRDIFF_T_ARG "%Id"
 
 /* The 'noexcept' keyword is not defined in versions before VS 2015. */
 #if _MSC_VER < 1900

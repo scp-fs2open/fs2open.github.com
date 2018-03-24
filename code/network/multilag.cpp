@@ -398,7 +398,7 @@ void multi_lagloss_dcf()
 		// display lag settings
 		dc_printf("Lag : \n");
 		dc_printf("Base  \t\tMin   \t\tMax   \t\tStreak\n");
-		dc_printf("%f\t\t%f\t\t%f\t\t%f\n\n", Multi_lag_base, Multi_lag_min, Multi_lag_max, Multi_streak_time);
+		dc_printf("%d\t\t%d\t\t%d\t\t%d\n\n", Multi_lag_base, Multi_lag_min, Multi_lag_max, Multi_streak_time);
 
 		// display loss settings
 		dc_printf("Loss : \n");
@@ -574,7 +574,7 @@ DCF(loss, "Sets the loss base value (Multiplayer)")
 	}
 
 	if (dc_optional_string_either("status", "--status") || dc_optional_string_either("?", "--?")) {
-		dc_printf("Loss value is currently %i percent", Multi_loss_base);
+		dc_printf("Loss value is currently %f percent", Multi_loss_base);
 		return;
 	}
 

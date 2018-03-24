@@ -51,7 +51,7 @@ namespace
 		HANDLE hToken = NULL;
 		if (OpenProcessToken(GetCurrentProcess(), TOKEN_QUERY, &hToken) == FALSE)
 		{
-			mprintf(("Failed to get process token! Error Code: %d", GetLastError()));
+			mprintf(("Failed to get process token! Error Code: %d", (int)GetLastError()));
 
 			return false;
 		}
@@ -77,7 +77,7 @@ namespace
 		LPTSTR sidName = NULL;
 		if (ConvertSidToStringSid(ptkUser->User.Sid, &sidName) == 0)
 		{
-			mprintf(("Failed to convert SID structure to string! Error Code: %d", GetLastError()));
+			mprintf(("Failed to convert SID structure to string! Error Code: %d", (int)GetLastError()));
 
 			delete[] ptkUser;
 			return false;
@@ -185,8 +185,8 @@ namespace
 
 		lResult = RegCreateKeyEx(useHKey,						// Where to add it
 			keyname,					// name of key
-			NULL,						// DWORD reserved
-			"",							// Object class
+			0,						// DWORD reserved
+			NULL,						// Object class
 			REG_OPTION_NON_VOLATILE,	// Save to disk
 			KEY_ALL_ACCESS,				// Allows all changes
 			NULL,						// Default security attributes
@@ -203,7 +203,7 @@ namespace
 
 		lResult = RegSetValueEx(hKey,					// Handle to key
 			name,					// The values name
-			NULL,					// DWORD reserved
+			0,						// DWORD reserved
 			REG_SZ,					// null terminated string
 			(CONST BYTE *)value,	// value to set
 			(DWORD)(strlen(value) + 1));	// How many bytes to set
@@ -233,8 +233,8 @@ namespace
 
 		lResult = RegCreateKeyEx(useHKey,						// Where to add it
 			keyname,					// name of key
-			NULL,						// DWORD reserved
-			"",							// Object class
+			0,							// DWORD reserved
+			NULL,						// Object class
 			REG_OPTION_NON_VOLATILE,	// Save to disk
 			KEY_ALL_ACCESS,				// Allows all changes
 			NULL,						// Default security attributes
@@ -251,10 +251,10 @@ namespace
 
 		lResult = RegSetValueEx(hKey,					// Handle to key
 			name,					// The values name
-			NULL,					// DWORD reserved
+			0,						// DWORD reserved
 			REG_DWORD,				// null terminated string
 			(CONST BYTE *)&value,	// value to set
-			4);					// How many bytes to set
+			4);						// How many bytes to set
 
 		if (lResult != ERROR_SUCCESS) {
 			goto Cleanup;
@@ -287,7 +287,7 @@ namespace
 
 		lResult = RegOpenKeyEx(useHKey,			// Where it is
 			keyname,			// name of key
-			NULL,				// DWORD reserved
+			0,					// DWORD reserved
 			KEY_QUERY_VALUE,	// Allows all changes
 			&hKey);			// Location to store key
 
@@ -338,7 +338,7 @@ namespace
 
 		lResult = RegOpenKeyEx(useHKey,			// Where it is
 			keyname,			// name of key
-			NULL,				// DWORD reserved
+			0,					// DWORD reserved
 			KEY_QUERY_VALUE,	// Allows all changes
 			&hKey);			// Location to store key
 

@@ -16,6 +16,10 @@
 #include <string.h>
 #include <algorithm>
 
+#ifdef WIN32
+#include <direct.h>
+#endif
+
 #include "osapi/DebugWindow.h"
 #include "osapi/osapi.h"
 #include "osapi/outwnd.h"
