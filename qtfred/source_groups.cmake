@@ -50,6 +50,8 @@ add_file_folder("Source/Mission/Dialogs"
 	src/mission/dialogs/CustomWingNamesDialogModel.h
     src/mission/dialogs/EventEditorDialogModel.cpp
     src/mission/dialogs/EventEditorDialogModel.h
+    src/mission/dialogs/FictionViewerDialogModel.cpp
+    src/mission/dialogs/FictionViewerDialogModel.h
 	src/mission/dialogs/FormWingDialogModel.cpp
 	src/mission/dialogs/FormWingDialogModel.h
 	src/mission/dialogs/MissionSpecDialogModel.cpp
@@ -80,6 +82,8 @@ add_file_folder("Source/UI/Dialogs"
 	src/ui/dialogs/CustomWingNamesDialog.h
     src/ui/dialogs/EventEditorDialog.cpp
     src/ui/dialogs/EventEditorDialog.h
+	src/ui/dialogs/FictionViewerDialog.cpp
+	src/ui/dialogs/FictionViewerDialog.h
 	src/ui/dialogs/FormWingDialog.cpp
 	src/ui/dialogs/FormWingDialog.h
 	src/ui/dialogs/MissionGoalsDialog.cpp
@@ -122,6 +126,7 @@ add_file_folder("UI"
 	ui/BriefingEditorDialog.ui
 	ui/CustomWingNamesDialog.ui
     ui/EventEditorDialog.ui
+	ui/FictionViewerDialog.ui
 	ui/FormWingDialog.ui
     ui/FredView.ui
 	ui/MissionGoalsDialog.ui

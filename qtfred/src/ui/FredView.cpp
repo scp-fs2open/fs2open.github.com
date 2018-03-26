@@ -24,6 +24,7 @@
 #include <ui/dialogs/VoiceActingManager.h>
 #include <globalincs/linklist.h>
 #include <ui/dialogs/SelectionDialog.h>
+#include <ui/dialogs/FictionViewerDialog.h>
 #include <iff_defs/iff_defs.h>
 
 #include "mission/Editor.h"

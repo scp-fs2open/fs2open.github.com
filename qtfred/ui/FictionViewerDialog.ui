@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>fso::fred::dialogs::FictionViewerDialog</class>
+ <widget class="QDialog" name="fso::fred::dialogs::FictionViewerDialog">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>229</width>
+    <height>157</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Fiction Viewer Editor</string>
+  </property>
+  <layout class="QGridLayout" name="gridLayout">
+   <item row="0" column="0">
+    <widget class="QLabel" name="label_2">
+     <property name="text">
+      <string>&amp;Story File</string>
+     </property>
+     <property name="buddy">
+      <cstring>storyFileEdit</cstring>
+     </property>
+    </widget>
+   </item>
+   <item row="0" column="1">
+    <widget class="QLineEdit" name="storyFileEdit">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+    </widget>
+   </item>
+   <item row="1" column="0">
+    <widget class="QLabel" name="label">
+     <property name="text">
+      <string>&amp;Font File</string>
+     </property>
+     <property name="buddy">
+      <cstring>fontFileEdit</cstring>
+     </property>
+    </widget>
+   </item>
+   <item row="1" column="1">
+    <widget class="QLineEdit" name="fontFileEdit"/>
+   </item>
+   <item row="2" column="0">
+    <widget class="QLabel" name="voiceFileLabel">
+     <property name="text">
+      <string>&amp;Voice File</string>
+     </property>
+     <property name="buddy">
+      <cstring>voiceFileEdit</cstring>
+     </property>
+    </widget>
+   </item>
+   <item row="2" column="1">
+    <widget class="QLineEdit" name="voiceFileEdit"/>
+   </item>
+   <item row="3" column="0">
+    <widget class="QLabel" name="musicLabel">
+     <property name="text">
+      <string>&amp;Music</string>
+     </property>
+     <property name="buddy">
+      <cstring>musicComboBox</cstring>
+     </property>
+    </widget>
+   </item>
+   <item row="3" column="1">
+    <widget class="QComboBox" name="musicComboBox"/>
+   </item>
+   <item row="4" column="1">
+    <widget class="QDialogButtonBox" name="dialogButtonBox">
+     <property name="standardButtons">
+      <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
+     </property>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>
