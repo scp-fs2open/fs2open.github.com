@@ -154,7 +154,7 @@ bool popValue(lua_State* luaState, bool& target, int stackposition, bool remove)
 			lua_remove(luaState, stackposition);
 		}
 
-		return target;
+		return true;
 	}
 }
 

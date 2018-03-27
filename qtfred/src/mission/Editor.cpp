@@ -114,7 +114,7 @@ Editor::Editor() : currentObject{ -1 } {
 	connect(this, &Editor::missionChanged, this, &Editor::updateAllViewports);
 
 	// When a mission was loaded we need to notify everyone that the mission has changed
-	connect(this, &Editor::missionLoaded, [this](const std::string&) { missionChanged(); });
+	connect(this, &Editor::missionLoaded, this, [this](const std::string&) { missionChanged(); });
 
 	fredApp->runAfterInit([this]() { initialSetup(); });
 }
@@ -2516,7 +2516,10 @@ int Editor::error(const char* msg, ...) {
 	buf[sizeof(buf) - 1] = '\0';
 
 	g_err = 1;
-	if (_lastActiveViewport->dialogProvider->showButtonDialog(DialogType::Error, "Error", buf, { DialogButton::Ok })
+	if (_lastActiveViewport->dialogProvider->showButtonDialog(DialogType::Error,
+															  "Error",
+															  buf,
+															  { DialogButton::Ok, DialogButton::Cancel })
 		== DialogButton::Ok) {
 		return 0;
 	}

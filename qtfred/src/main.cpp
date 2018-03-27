@@ -8,6 +8,7 @@
 #include <QApplication>
 #include <QDir>
 #include <QSplashScreen>
+#include <QTimer>
 #include <QtCore/QLoggingCategory>
 
 #ifdef _WIN32
@@ -165,6 +166,13 @@ int main(int argc, char* argv[]) {
 
 	// Allow other parts of the code to execute code that needs to run after everything has been set up
 	fredApp->initializeComplete();
+
+	if (Cmdline_start_mission) {
+		// Automatically load a mission if specified on the command line
+		QTimer::singleShot(500, [&]() {
+			fred->loadMission(Cmdline_start_mission);
+		});
+	}
 
 	return QGuiApplication::exec();
 }

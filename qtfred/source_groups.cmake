@@ -94,6 +94,11 @@ add_file_folder("Source/UI/Dialogs"
 	src/ui/dialogs/WaypointEditorDialog.h
 )
 
+add_file_folder("Source/UI/Util"
+	src/ui/util/menu.cpp
+	src/ui/util/menu.h
+)
+
 add_file_folder("Source/UI/Widgets"
     src/ui/widgets/ColorComboBox.cpp
     src/ui/widgets/ColorComboBox.h

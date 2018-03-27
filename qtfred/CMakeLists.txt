@@ -12,6 +12,9 @@ find_package(Qt5 COMPONENTS Widgets OpenGL REQUIRED)
 
 include(source_groups.cmake)
 
+# When building qtFRED we need to install the runtime libraries since the Qt DLLs need them
+INCLUDE(InstallRequiredSystemLibraries)
+
 qt5_wrap_ui(QTFRED_UI_GENERATED ${files_UI})
 
 source_group("UI\\Generated"            FILES ${QTFRED_UI_GENERATED})
