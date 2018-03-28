@@ -118,13 +118,6 @@ class SexpTreeEditorInterface {
 	const flagset<TreeFlags>& getFlags() const;
 
 	virtual bool requireCampaignOperators() const;
-
-	// TODO: These callbacks could be replaced with Qt signals
-	virtual void rootNodeDeleted(int node);
-
-	virtual void rootNodeRenamed(int node);
-
-	virtual void rootNodeFormulaChanged(int old, int node);
 };
 
 /*
@@ -339,6 +332,10 @@ class sexp_tree: public QTreeWidget {
 	void miniHelpChanged(const QString& text);
 	void helpChanged(const QString& text);
 	void modified();
+
+	void rootNodeDeleted(int node);
+	void rootNodeRenamed(int node);
+	void rootNodeFormulaChanged(int old, int node);
 
 	// Generated message map functions
  protected:

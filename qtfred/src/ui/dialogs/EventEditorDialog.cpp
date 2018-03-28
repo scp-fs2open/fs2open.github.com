@@ -54,6 +54,9 @@ EventEditorDialog::EventEditorDialog(QWidget* parent, EditorViewport* viewport) 
 	connect(this, &QDialog::rejected, this, &EventEditorDialog::rejectChanges);
 
 	connect(ui->eventTree, &sexp_tree::modified, this, [this]() { modified = true; });
+	connect(ui->eventTree, &sexp_tree::rootNodeDeleted, this, &EventEditorDialog::rootNodeDeleted);
+	connect(ui->eventTree, &sexp_tree::rootNodeRenamed, this, &EventEditorDialog::rootNodeRenamed);
+	connect(ui->eventTree, &sexp_tree::rootNodeFormulaChanged, this, &EventEditorDialog::rootNodeFormulaChanged);
 
 	connect(ui->aniCombo,
 			QOverload<const QString&>::of(&QComboBox::currentTextChanged),
@@ -168,6 +171,15 @@ EventEditorDialog::EventEditorDialog(QWidget* parent, EditorViewport* viewport) 
 	connect(ui->btnWavePlay, &QPushButton::clicked, this, [this](bool){ playWave(); });
 
 	connect(ui->btnUpdateStuff, &QPushButton::clicked, this, [this](bool) { updateStuff(); });
+
+	connectCheckBox(ui->checkLogTrue, &m_log_true);
+	connectCheckBox(ui->checkLogFalse, &m_log_false);
+	connectCheckBox(ui->checkLogAlwaysFalse, &m_log_always_false);
+	connectCheckBox(ui->checkLogFirstRepeat, &m_log_1st_repeat);
+	connectCheckBox(ui->checkLogLastRepeat, &m_log_last_repeat);
+	connectCheckBox(ui->checkLogFirstTrigger, &m_log_1st_trigger);
+	connectCheckBox(ui->checkLogLastTrigger, &m_log_last_trigger);
+	connectCheckBox(ui->checkLogPrevious, &m_log_state_change);
 }
 EventEditorDialog::~EventEditorDialog() {
 }
@@ -258,7 +270,6 @@ void EventEditorDialog::rootNodeDeleted(int node) {
 	set_current_event(index);
 }
 void EventEditorDialog::rootNodeRenamed(int node) {
-	SexpTreeEditorInterface::rootNodeRenamed(node);
 }
 void EventEditorDialog::rootNodeFormulaChanged(int old, int node) {
 	int i;
@@ -674,6 +685,9 @@ void EventEditorDialog::playWave() {
 void EventEditorDialog::updateStuff() {
 	updatePersona();
 	set_current_message(m_cur_msg);
+}
+void EventEditorDialog::connectCheckBox(QCheckBox* box, bool* var) {
+	connect(box, &QCheckBox::clicked, this, [=](bool checked) { *var = checked; });
 }
 
 }
