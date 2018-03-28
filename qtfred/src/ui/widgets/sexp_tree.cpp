@@ -191,12 +191,6 @@ int SexpTreeEditorInterface::getRootReturnType() const {
 bool SexpTreeEditorInterface::requireCampaignOperators() const {
 	return false;
 }
-void SexpTreeEditorInterface::rootNodeDeleted(int node) {
-}
-void SexpTreeEditorInterface::rootNodeRenamed(int node) {
-}
-void SexpTreeEditorInterface::rootNodeFormulaChanged(int old, int node) {
-}
 
 // constructor
 sexp_tree::sexp_tree(QWidget* parent) : QTreeWidget(parent) {
@@ -5392,7 +5386,8 @@ void sexp_tree::deleteActionHandler() {
 	if (_interface->getFlags()[TreeFlags::RootDeletable] && (item_index == -1)) {
 		auto item = currentItem();
 		setCurrentItemIndex(item->data(FormulaDataRole, 0).toInt());
-		_interface->rootNodeDeleted(item_index);
+
+		rootNodeDeleted(item_index);
 
 		free_node2(item_index);
 		delete item;
@@ -5440,7 +5435,9 @@ void sexp_tree::handleItemChange(QTreeWidgetItem* item, int column) {
 
 	if (node == tree_nodes.size()) {
 		setCurrentItemIndex(qvariant_cast<int>(item->data(FormulaDataRole, 0)));
-		_interface->rootNodeRenamed(item_index);
+
+		rootNodeRenamed(item_index);
+
 		return;
 	}
 
@@ -5558,7 +5555,7 @@ void sexp_tree::insertOperatorAction(int op) {
 			h = nullptr;
 			root_item = node;
 		} else {
-			_interface->rootNodeFormulaChanged(item_index, node);
+			rootNodeFormulaChanged(item_index, node);
 			h->setData(0, FormulaDataRole, node);
 		}
 	}

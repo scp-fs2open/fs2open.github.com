@@ -11,6 +11,8 @@
 
 #include <memory>
 
+class QCheckBox;
+
 namespace fso {
 namespace fred {
 namespace dialogs {
@@ -63,6 +65,7 @@ class EventEditorDialog: public QDialog, public SexpTreeEditorInterface {
 	bool m_log_last_trigger = false;
 	bool m_log_state_change = false;
 
+	void connectCheckBox(QCheckBox* box, bool* var);
 
 	bool modified = false;
 
@@ -96,9 +99,10 @@ class EventEditorDialog: public QDialog, public SexpTreeEditorInterface {
 	EventEditorDialog(QWidget* parent, EditorViewport* viewport);
 	~EventEditorDialog() override;
 
-	void rootNodeDeleted(int node) override;
-	void rootNodeRenamed(int node) override;
-	void rootNodeFormulaChanged(int old, int node) override;
+	void rootNodeDeleted(int node);
+	void rootNodeRenamed(int node);
+	void rootNodeFormulaChanged(int old, int node);
+
 	bool hasDefaultMessageParamter() override;
 	SCP_vector<SCP_string> getMessages() override;
 	int getRootReturnType() const override;
