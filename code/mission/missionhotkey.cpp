@@ -705,10 +705,10 @@ void hotkey_scroll_screen_up()
 		while (!hotkey_line_query_visible(Selected_line) || (Hotkey_lines[Selected_line].type == HOTKEY_LINE_HEADING))
 			Selected_line--;
 
-		gamesnd_play_iface(SND_SCROLL);
+		gamesnd_play_iface(InterfaceSounds::SCROLL);
 
 	} else
-		gamesnd_play_iface(SND_GENERAL_FAIL);
+		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 }
 
 void hotkey_scroll_line_up()
@@ -721,10 +721,10 @@ void hotkey_scroll_line_up()
 		if (Selected_line < Scroll_offset)
 			Scroll_offset = Selected_line;
 
-		gamesnd_play_iface(SND_SCROLL);
+		gamesnd_play_iface(InterfaceSounds::SCROLL);
 
 	} else
-		gamesnd_play_iface(SND_GENERAL_FAIL);
+		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 }
 
 void hotkey_scroll_screen_down()
@@ -736,10 +736,10 @@ void hotkey_scroll_screen_down()
 			Assert(Selected_line < Num_lines);
 		}
 
-		gamesnd_play_iface(SND_SCROLL);
+		gamesnd_play_iface(InterfaceSounds::SCROLL);
 
 	} else
-		gamesnd_play_iface(SND_GENERAL_FAIL);
+		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 }
 
 void hotkey_scroll_line_down()
@@ -753,10 +753,10 @@ void hotkey_scroll_line_down()
 		while (!hotkey_line_query_visible(Selected_line))
 			Scroll_offset++;
 
-		gamesnd_play_iface(SND_SCROLL);
+		gamesnd_play_iface(InterfaceSounds::SCROLL);
 
 	} else
-		gamesnd_play_iface(SND_GENERAL_FAIL);
+		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 }
 
 void expand_wing()
@@ -869,12 +869,12 @@ void hotkey_button_pressed(int n)
 
 		case ADD_HOTKEY_BUTTON:
 			add_hotkey(Cur_hotkey);
-			gamesnd_play_iface(SND_USER_SELECT);
+			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			break;
 
 		case REMOVE_HOTKEY_BUTTON:
 			remove_hotkey();
-			gamesnd_play_iface(SND_USER_SELECT);
+			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			break;
 
 		case ACCEPT_BUTTON:
@@ -884,27 +884,27 @@ void hotkey_button_pressed(int n)
 
 		case CANCEL_BUTTON:			
 			mission_hotkey_exit();
-			gamesnd_play_iface(SND_USER_SELECT);
+			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			break;
 
 		case HELP_BUTTON:
 			launch_context_help();
-			gamesnd_play_iface(SND_HELP_PRESSED);
+			gamesnd_play_iface(InterfaceSounds::HELP_PRESSED);
 			break;
 
 		case OPTIONS_BUTTON:			
 			gameseq_post_event(GS_EVENT_OPTIONS_MENU);
-			gamesnd_play_iface(SND_USER_SELECT);
+			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			break;
 
 		case CLEAR_BUTTON:
 			clear_hotkeys();
-			gamesnd_play_iface(SND_USER_SELECT);
+			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			break;
 
 		case RESET_BUTTON:
 			reset_hotkeys();
-			gamesnd_play_iface(SND_USER_SELECT);
+			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			break;
 	}
 }

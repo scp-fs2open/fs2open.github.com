@@ -571,33 +571,33 @@ void weapon_button_do(int i)
 	switch ( i ) {
 			case WL_BUTTON_SCROLL_PRIMARY_UP:
 				if ( common_scroll_up_pressed(&Plist_start, Plist_size, 4) ) {
-					gamesnd_play_iface(SND_SCROLL);
+					gamesnd_play_iface(InterfaceSounds::SCROLL);
 				} else {
-					gamesnd_play_iface(SND_GENERAL_FAIL);
+					gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 				}
 			break;
 
 			case WL_BUTTON_SCROLL_PRIMARY_DOWN:
 				if ( common_scroll_down_pressed(&Plist_start, Plist_size, 4) ) {
-					gamesnd_play_iface(SND_SCROLL);
+					gamesnd_play_iface(InterfaceSounds::SCROLL);
 				} else {
-					gamesnd_play_iface(SND_GENERAL_FAIL);
+					gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 				}
 			break;
 
 			case WL_BUTTON_SCROLL_SECONDARY_UP:
 				if ( common_scroll_up_pressed(&Slist_start, Slist_size, 4) ) {
-					gamesnd_play_iface(SND_SCROLL);
+					gamesnd_play_iface(InterfaceSounds::SCROLL);
 				} else {
-					gamesnd_play_iface(SND_GENERAL_FAIL);
+					gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 				}
 			break;
 
 			case WL_BUTTON_SCROLL_SECONDARY_DOWN:
 				if ( common_scroll_down_pressed(&Slist_start, Slist_size, 4) ) {
-					gamesnd_play_iface(SND_SCROLL);
+					gamesnd_play_iface(InterfaceSounds::SCROLL);
 				} else {
-					gamesnd_play_iface(SND_GENERAL_FAIL);
+					gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 				}
 			break;
 
@@ -739,7 +739,7 @@ void wl_render_overhead_view(float frametime)
 	// check if ship class has changed and maybe play sound
 	if (Last_wl_ship_class != ship_class) {
 		if (Last_wl_ship_class != -1) {
-			gamesnd_play_iface(SND_ICON_DROP);
+			gamesnd_play_iface(InterfaceSounds::ICON_DROP);
 		}
 		Last_wl_ship_class = ship_class;
 		new_ship = 1;
@@ -2097,7 +2097,7 @@ void wl_dump_carried_icon()
 			wl_drop(Carried_wl_icon.from_bank, -1, -1, Carried_wl_icon.weapon_class, Carried_wl_icon.from_slot);
 		} else {
 			if ( wl_carried_icon_moved() ) {
-				gamesnd_play_iface(SND_ICON_DROP);
+				gamesnd_play_iface(InterfaceSounds::ICON_DROP);
 			}			
 		}
 
@@ -3336,7 +3336,7 @@ void start_weapon_animation(int weapon_class)
 	if ( weapon_class == Weapon_anim_class ) 
 		return;
 
-	gamesnd_play_iface(SND_WEAPON_ANIM_START);
+	gamesnd_play_iface(InterfaceSounds::WEAPON_ANIM_START);
 
 	//load a new animation if it's different to what's already playing
 	if(strcmp(Cur_Anim.filename, Weapon_info[weapon_class].anim_filename) != 0) {
@@ -3502,7 +3502,7 @@ void wl_saturate_bank(int ship_slot, int bank)
 //			1 -> data changed
 //       sound => gets filled with sound id to play
 // updated for specific bank by Goober5000
-int wl_swap_slot_slot(int from_bank, int to_bank, int ship_slot, int *sound, net_player *pl)
+int wl_swap_slot_slot(int from_bank, int to_bank, int ship_slot, interface_snd_id *sound, net_player *pl)
 {
 	wss_unit	*slot;
 	int class_mismatch_flag, forced_update;
@@ -3521,7 +3521,7 @@ int wl_swap_slot_slot(int from_bank, int to_bank, int ship_slot, int *sound, net
 	
 	// do nothing if swapping with self
 	if ( from_bank == to_bank ) {
-		*sound=SND_ICON_DROP_ON_WING;
+		*sound=InterfaceSounds::ICON_DROP_ON_WING;
 		return forced_update;	// no update
 	}
 
@@ -3579,7 +3579,7 @@ int wl_swap_slot_slot(int from_bank, int to_bank, int ship_slot, int *sound, net
 				Wl_pool[slot->wep[to_bank]] += slot->wep_count[to_bank];			// return to list
 				slot->wep[to_bank] = -1;											// remove from slot
 				slot->wep_count[to_bank] = 0;
-				*sound=SND_ICON_DROP;				// unless it changes later
+				*sound=InterfaceSounds::ICON_DROP;				// unless it changes later
 				forced_update = 1;					// because we can't return right away
 			}
 		}
@@ -3590,14 +3590,14 @@ int wl_swap_slot_slot(int from_bank, int to_bank, int ship_slot, int *sound, net
 		Wl_pool[slot->wep[from_bank]] += slot->wep_count[from_bank];		// return to list
 		slot->wep[from_bank] = -1;														// remove from slot
 		slot->wep_count[from_bank] = 0;
-		*sound=SND_ICON_DROP;
+		*sound=InterfaceSounds::ICON_DROP;
 		return 1;
 	}
 
 	// case 1: primaries (easy, even with ballistics, because ammo is always maximized)
 	if ( IS_BANK_PRIMARY(from_bank) && IS_BANK_PRIMARY(to_bank) ) {
 		wl_swap_weapons(ship_slot, from_bank, to_bank);
-		*sound=SND_ICON_DROP_ON_WING;
+		*sound=InterfaceSounds::ICON_DROP_ON_WING;
 		return 1;
 	}
 
@@ -3621,7 +3621,7 @@ int wl_swap_slot_slot(int from_bank, int to_bank, int ship_slot, int *sound, net
 			if ( source_can_give > 0 ) {			
 				slot->wep_count[to_bank] += source_can_give;		// add to dest
 				slot->wep_count[from_bank] -= source_can_give;	// take from source
-				*sound=SND_ICON_DROP_ON_WING;
+				*sound=InterfaceSounds::ICON_DROP_ON_WING;
 				return 1;
 			} else {
 				return forced_update;
@@ -3636,7 +3636,7 @@ int wl_swap_slot_slot(int from_bank, int to_bank, int ship_slot, int *sound, net
 			// put back some on list if required
 			wl_saturate_bank(ship_slot, from_bank);
 			wl_saturate_bank(ship_slot, to_bank);
-			*sound=SND_ICON_DROP_ON_WING;
+			*sound=InterfaceSounds::ICON_DROP_ON_WING;
 			return 1;
 		}
 	}
@@ -3648,7 +3648,7 @@ int wl_swap_slot_slot(int from_bank, int to_bank, int ship_slot, int *sound, net
 // exit: 0 -> no data changed
 //			1 -> data changed
 //       sound => gets filled with sound id to play
-int wl_dump_to_list(int from_bank, int to_list, int ship_slot, int *sound)
+int wl_dump_to_list(int from_bank, int to_list, int ship_slot, interface_snd_id *sound)
 {
 	wss_unit	*slot;
 
@@ -3665,7 +3665,7 @@ int wl_dump_to_list(int from_bank, int to_list, int ship_slot, int *sound)
 	Wl_pool[to_list] += slot->wep_count[from_bank];			// return to list
 	slot->wep[from_bank] = -1;										// remove from slot
 	slot->wep_count[from_bank] = 0;
-	*sound=SND_ICON_DROP;
+	*sound=InterfaceSounds::ICON_DROP;
 
 	return 1;
 }
@@ -3673,7 +3673,7 @@ int wl_dump_to_list(int from_bank, int to_list, int ship_slot, int *sound)
 // exit: 0 -> no data changed
 //			1 -> data changed
 //       sound => gets filled with sound id to play
-int wl_grab_from_list(int from_list, int to_bank, int ship_slot, int *sound, net_player *pl)
+int wl_grab_from_list(int from_list, int to_bank, int ship_slot, interface_snd_id *sound, net_player *pl)
 {
 	int update=0;
 	wss_unit	*slot;
@@ -3687,13 +3687,13 @@ int wl_grab_from_list(int from_list, int to_bank, int ship_slot, int *sound, net
 	if ( (IS_LIST_PRIMARY(from_list) && IS_BANK_SECONDARY(to_bank)) || (IS_LIST_SECONDARY(from_list) && IS_BANK_PRIMARY(to_bank)) )
 	{
 		// do nothing
-		*sound=SND_ICON_DROP;
+		*sound=InterfaceSounds::ICON_DROP;
 		return 0;
 	}
 
 	// ensure that dest bank exists
 	if ( slot->wep_count[to_bank] < 0 ) {
-		*sound=SND_ICON_DROP;
+		*sound=InterfaceSounds::ICON_DROP;
 		return 0;
 	}
 
@@ -3754,7 +3754,7 @@ int wl_grab_from_list(int from_list, int to_bank, int ship_slot, int *sound, net
 	slot->wep[to_bank] = from_list;
 	slot->wep_count[to_bank] = max_fit;
 
-	*sound=SND_ICON_DROP_ON_WING;
+	*sound=InterfaceSounds::ICON_DROP_ON_WING;
 
 	return update;
 }
@@ -3762,7 +3762,7 @@ int wl_grab_from_list(int from_list, int to_bank, int ship_slot, int *sound, net
 // exit: 0 -> no data changed
 //			1 -> data changed
 //       sound => gets filled with sound id to play
-int wl_swap_list_slot(int from_list, int to_bank, int ship_slot, int *sound, net_player *pl)
+int wl_swap_list_slot(int from_list, int to_bank, int ship_slot, interface_snd_id *sound, net_player *pl)
 {
 	wss_unit	*slot;
 
@@ -3774,7 +3774,7 @@ int wl_swap_list_slot(int from_list, int to_bank, int ship_slot, int *sound, net
 	// ensure that the banks are both of the same class
 	if ( (IS_LIST_PRIMARY(from_list) && IS_BANK_SECONDARY(to_bank)) || (IS_LIST_SECONDARY(from_list) && IS_BANK_PRIMARY(to_bank)) ) {
 		// do nothing
-		*sound=SND_ICON_DROP;
+		*sound=InterfaceSounds::ICON_DROP;
 		return 0;
 	}
 
@@ -3843,7 +3843,7 @@ int wl_swap_list_slot(int from_list, int to_bank, int ship_slot, int *sound, net
 	slot->wep[to_bank] = from_list;
 	slot->wep_count[to_bank] = max_fit;
 
-	*sound=SND_ICON_DROP_ON_WING;
+	*sound=InterfaceSounds::ICON_DROP_ON_WING;
 	return 1;
 }
 
@@ -3858,7 +3858,7 @@ void wl_synch_interface()
 int wl_apply(int mode,int from_bank,int from_list,int to_bank,int to_list,int ship_slot,int player_index, bool dont_play_sound)
 {
 	int update=0;
-	int sound=-1;
+	interface_snd_id sound;
 	net_player *pl;
 
 	// get the appropriate net player
@@ -3888,7 +3888,7 @@ int wl_apply(int mode,int from_bank,int from_list,int to_bank,int to_list,int sh
 	}
 
 	// only play this sound if the move was done locally (by the host in other words)
-	if ( (sound >= 0) && (player_index == -1) && !dont_play_sound) {	
+	if ( (sound.isValid()) && (player_index == -1) && !dont_play_sound) {
 		gamesnd_play_iface(sound);	
 	}	
 
@@ -4092,7 +4092,7 @@ void wl_apply_current_loadout_to_all_ships_in_current_wing()
 	}
 
 	// play sound
-	gamesnd_play_iface(SND_ICON_DROP_ON_WING);
+	gamesnd_play_iface(InterfaceSounds::ICON_DROP_ON_WING);
 
 	// display error messages
 	if (error_flag)

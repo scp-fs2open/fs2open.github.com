@@ -246,13 +246,13 @@ void red_alert_button_pressed(int n)
 			// TODO: make call to campaign code to set correct mission for loading
 			// mission_campaign_play_previous_mission(Red_alert_precursor_mission);
 			if ( !mission_campaign_previous_mission() ) {
-				gamesnd_play_iface(SND_GENERAL_FAIL);
+				gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 				break;
 			}
 
 			gameseq_post_event(GS_EVENT_START_GAME);
 		} else {
-			gamesnd_play_iface(SND_GENERAL_FAIL);
+			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		}
 		break;
 	}
@@ -1063,7 +1063,7 @@ void red_alert_start_mission()
 
 			// throw down a sound here to make the warning seem ultra-important
 			// gamesnd_play_iface(SND_USER_SELECT);
-			snd_play(gamesnd_get_game_sound(SND_DIRECTIVE_COMPLETE));
+			snd_play(gamesnd_get_game_sound(GameSounds::DIRECTIVE_COMPLETE));
 		}
 	}
 }

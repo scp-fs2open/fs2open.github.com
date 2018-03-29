@@ -3171,14 +3171,14 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 			case OPF_GAME_SND:
 				if (type2 == SEXP_ATOM_NUMBER)
 				{
-					if (gamesnd_get_by_tbl_index(atoi(CTEXT(node))) < 0)
+					if (!gamesnd_get_by_tbl_index(atoi(CTEXT(node))).isValid())
 					{
 						return SEXP_CHECK_NUM_RANGE_INVALID;
 					}
 				}
 				else if (type2 == SEXP_ATOM_STRING)
 				{
-					if (stricmp(CTEXT(node), SEXP_NONE_STRING) && gamesnd_get_by_name(CTEXT(node)) < 0)
+					if (stricmp(CTEXT(node), SEXP_NONE_STRING) && !gamesnd_get_by_name(CTEXT(node)).isValid())
 					{
 						return SEXP_CHECK_INVALID_GAME_SND;
 					}
@@ -10302,10 +10302,10 @@ void sexp_start_music(int loop)
 	}
 }
 
-int sexp_get_sound_index(int node)
+gamesnd_id sexp_get_sound_index(int node)
 {
 	Assert(node >= 0);
-	int sound_index = -1;
+	gamesnd_id sound_index;
 
 	// this node is another SEXP operator or a plain number
 	if (CAR(node) != -1 || Sexp_nodes[node].subtype == SEXP_ATOM_NUMBER)
@@ -10322,7 +10322,7 @@ int sexp_get_sound_index(int node)
 		{
 			sound_index = gamesnd_get_by_name(sound_name);
 
-			if (sound_index < 0)
+			if (!sound_index.isValid())
 				Warning(LOCATION, "unrecognized sound name \"%s\"!", sound_name);
 		}
 	}
@@ -10334,7 +10334,6 @@ int sexp_get_sound_index(int node)
 void sexp_play_sound_from_table(int n)
 {
 	vec3d origin;
-	int sound_index;
 
 	Assert( n >= 0 );
 
@@ -10345,11 +10344,11 @@ void sexp_play_sound_from_table(int n)
 	n = CDR(n);
 	origin.xyz.z = (float)eval_num(n);
 	n = CDR(n);
-	sound_index = sexp_get_sound_index(n);
+	auto sound_index = sexp_get_sound_index(n);
 
 
 	// play sound effect ---------------------------
-	if (sound_index >= 0) {
+	if (sound_index.isValid()) {
 		game_snd *snd = gamesnd_get_game_sound(sound_index);
 		if (snd->min == 0 && snd->max == 0) {
 			// if sound doesn't specify 3d range, don't play in 3d
@@ -10364,7 +10363,7 @@ void sexp_play_sound_from_table(int n)
 		Current_sexp_network_packet.send_float(origin.xyz.x);
 		Current_sexp_network_packet.send_float(origin.xyz.y);
 		Current_sexp_network_packet.send_float(origin.xyz.z);
-		Current_sexp_network_packet.send_int(sound_index);
+		Current_sexp_network_packet.send_int(sound_index.value());
 		Current_sexp_network_packet.end_callback();
 	}
 }
@@ -10379,10 +10378,11 @@ void multi_sexp_play_sound_from_table()
 	Current_sexp_network_packet.get_float(origin.xyz.z);
 	Current_sexp_network_packet.get_int(sound_index);
 
+	auto sound = gamesnd_id(sound_index);
 
 	// play sound effect ---------------------------
-	if (sound_index >= 0) {
-		game_snd *snd = gamesnd_get_game_sound(sound_index);
+	if (sound.isValid()) {
+		game_snd *snd = gamesnd_get_game_sound(sound);
 		if (snd->min == 0 && snd->max == 0) {
 			// if sound doesn't specify 3d range, don't play in 3d
 			snd_play( snd, 0.0f, 1.0f, SND_PRIORITY_MUST_PLAY );
@@ -10761,7 +10761,7 @@ void sexp_explosion_effect(int n)
 // code often expects a parent object when in fact there is none. <.<  >.>
 {
 	vec3d origin;
-	int max_damage, max_blast, explosion_size, inner_radius, outer_radius, shockwave_speed, num, fireball_type, sound_index;
+	int max_damage, max_blast, explosion_size, inner_radius, outer_radius, shockwave_speed, num, fireball_type;
 	int emp_intensity, emp_duration;
 	bool use_emp_time_for_capship_turrets;
 
@@ -10815,7 +10815,7 @@ void sexp_explosion_effect(int n)
 	}
 	n = CDR(n);
 
-	sound_index = sexp_get_sound_index(n);
+	auto sound_index = sexp_get_sound_index(n);
 	n = CDR(n);
 
 	// optional EMP
@@ -10840,7 +10840,7 @@ void sexp_explosion_effect(int n)
 
 
 	// play sound effect ---------------------------
-	if (sound_index >= 0)
+	if (sound_index.isValid())
 	{
 		snd_play_3d( gamesnd_get_game_sound(sound_index), &origin, &View_position, 0.0f, NULL, 0, 1.0f, SND_PRIORITY_MUST_PLAY  );
 	}
@@ -10954,7 +10954,7 @@ void sexp_warp_effect(int n)
 {
 	vec3d origin, location, v_orient;
 	matrix m_orient;
-	int radius, duration, warp_open_sound_index, warp_close_sound_index, fireball_type, extra_flags;
+	int radius, duration, fireball_type, extra_flags;
 	extra_flags = FBF_WARP_VIA_SEXP;
 
 	// read in data --------------------------------
@@ -10978,9 +10978,9 @@ void sexp_warp_effect(int n)
 	if (duration < 4) duration = 4;
 	n = CDR(n);
 
-	warp_open_sound_index = sexp_get_sound_index(n);
+	auto warp_open_sound_index = sexp_get_sound_index(n);
 	n = CDR(n);
-	warp_close_sound_index = sexp_get_sound_index(n);
+	auto warp_close_sound_index = sexp_get_sound_index(n);
 	n = CDR(n);
 
 	// fireball type
@@ -18314,7 +18314,7 @@ void sexp_set_subsys_rotation_lock_free(int node, bool locked)
 		}
 		else
 		{
-			if (rotate->system_info->rotation_snd >= 0)
+			if (rotate->system_info->rotation_snd.isValid())
 			{
 				obj_snd_assign(Ships[ship_num].objnum, rotate->system_info->rotation_snd, &rotate->system_info->pnt, 0, OS_SUBSYS_ROTATION, rotate);
                 rotate->subsys_snd_flags.set(Ship::Subsys_Sound_Flags::Rotate);

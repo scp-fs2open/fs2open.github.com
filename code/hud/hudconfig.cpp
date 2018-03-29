@@ -954,7 +954,7 @@ void hud_config_check_regions()
 		}
 
 		if ( b->pressed() ) {
-			gamesnd_play_iface(SND_USER_SELECT);
+			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			HC_gauge_selected = i;
 
 			// turn off select all
@@ -1053,7 +1053,7 @@ void hud_config_cancel()
 // leave hud config with accepting changes
 void hud_config_commit()
 {
-	gamesnd_play_iface(SND_COMMIT_PRESSED);
+	gamesnd_play_iface(InterfaceSounds::COMMIT_PRESSED);
 	gameseq_post_event(GS_EVENT_PREVIOUS_STATE);
 }
 
@@ -1095,7 +1095,7 @@ void hud_config_handle_keypresses(int k)
 		hud_config_commit();
 		break;
 	case KEY_TAB:
-		gamesnd_play_iface(SND_USER_SELECT);
+		gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 		hud_cycle_gauge_status();
 		break;
 	}
@@ -1110,39 +1110,39 @@ void hud_config_button_do(int n)
 	switch (n) {
 	case HCB_AMBER:
 		hud_config_set_color(HUD_COLOR_AMBER);
-		gamesnd_play_iface(SND_USER_SELECT);
+		gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 		break;
 	case HCB_BLUE:
 		hud_config_set_color(HUD_COLOR_BLUE);
-		gamesnd_play_iface(SND_USER_SELECT);
+		gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 		break;
 	case HCB_GREEN:
 		hud_config_set_color(HUD_COLOR_GREEN);
-		gamesnd_play_iface(SND_USER_SELECT);
+		gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 		break;
 	case HCB_ON:
 		if ( HC_gauge_selected < 0 ) {
 			break;
 		}
-		gamesnd_play_iface(SND_USER_SELECT);
+		gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 		hud_config_set_gauge_flags(HC_gauge_selected,1,0);
 		break;
 	case HCB_OFF:
 		if ( HC_gauge_selected < 0 ) {
 			break;
 		}
-		gamesnd_play_iface(SND_USER_SELECT);
+		gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 		hud_config_set_gauge_flags(HC_gauge_selected,0,0);
 		break;
 	case HCB_POPUP:
 		if ( HC_gauge_selected < 0 ) {
 			break;
 		}
-		gamesnd_play_iface(SND_USER_SELECT);
+		gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 		hud_config_set_gauge_flags(HC_gauge_selected,1,1);
 		break;
 	case HCB_RESET:
-		gamesnd_play_iface(SND_RESET_PRESSED);
+		gamesnd_play_iface(InterfaceSounds::RESET_PRESSED);
 		hud_config_select_all_toggle(0);
 		hud_set_default_hud_config(Player);
 		hud_config_synch_ui();
@@ -1154,9 +1154,9 @@ void hud_config_button_do(int n)
 	// new stuff
 	case HCB_RED_UP:
 		if( HCS_CONV(HC_color_sliders[HCS_RED].get_currentItem()) >= 255){
-			gamesnd_play_iface(SND_GENERAL_FAIL);
+			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		} else {
-			gamesnd_play_iface(SND_USER_SELECT);
+			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			HC_color_sliders[HCS_RED].force_currentItem( HCS_CONV( HCS_CONV(HC_color_sliders[HCS_RED].get_currentItem()) + 1)  );
 			hud_config_red_slider();			
 		}		
@@ -1164,9 +1164,9 @@ void hud_config_button_do(int n)
 
 	case HCB_GREEN_UP:
 		if( HCS_CONV(HC_color_sliders[HCS_GREEN].get_currentItem()) >= 255){
-			gamesnd_play_iface(SND_GENERAL_FAIL);
+			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		} else {
-			gamesnd_play_iface(SND_USER_SELECT);
+			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			HC_color_sliders[HCS_GREEN].force_currentItem( HCS_CONV( HCS_CONV(HC_color_sliders[HCS_GREEN].get_currentItem()) + 1) );
 			hud_config_green_slider();
 		}		
@@ -1174,9 +1174,9 @@ void hud_config_button_do(int n)
 
 	case HCB_BLUE_UP:
 		if( HCS_CONV(HC_color_sliders[HCS_BLUE].get_currentItem()) >= 255){
-			gamesnd_play_iface(SND_GENERAL_FAIL);
+			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		} else {
-			gamesnd_play_iface(SND_USER_SELECT);
+			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			HC_color_sliders[HCS_BLUE].force_currentItem( HCS_CONV( HCS_CONV(HC_color_sliders[HCS_BLUE].get_currentItem()) + 1) );
 			hud_config_blue_slider();
 		}		
@@ -1184,9 +1184,9 @@ void hud_config_button_do(int n)
 
 	case HCB_I_UP:
 		if( HCS_CONV(HC_color_sliders[HCS_ALPHA].get_currentItem()) >= 255){
-			gamesnd_play_iface(SND_GENERAL_FAIL);
+			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		} else {
-			gamesnd_play_iface(SND_USER_SELECT);
+			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			HC_color_sliders[HCS_ALPHA].force_currentItem( HCS_CONV( HCS_CONV(HC_color_sliders[HCS_ALPHA].get_currentItem()) + 1) );
 			hud_config_alpha_slider_up();
 		}		
@@ -1194,9 +1194,9 @@ void hud_config_button_do(int n)
 
 	case HCB_RED_DOWN:
 		if( HCS_CONV(HC_color_sliders[HCS_RED].get_currentItem()) <= 0){
-			gamesnd_play_iface(SND_GENERAL_FAIL);
+			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		} else {
-			gamesnd_play_iface(SND_USER_SELECT);
+			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			HC_color_sliders[HCS_RED].force_currentItem( HCS_CONV( HCS_CONV(HC_color_sliders[HCS_RED].get_currentItem()) - 1) );
 			hud_config_red_slider();
 		}		
@@ -1204,9 +1204,9 @@ void hud_config_button_do(int n)
 
 	case HCB_GREEN_DOWN:
 		if( HCS_CONV(HC_color_sliders[HCS_GREEN].get_currentItem()) <= 0){
-			gamesnd_play_iface(SND_GENERAL_FAIL);
+			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		} else {
-			gamesnd_play_iface(SND_USER_SELECT);
+			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			HC_color_sliders[HCS_GREEN].force_currentItem( HCS_CONV( HCS_CONV(HC_color_sliders[HCS_GREEN].get_currentItem()) - 1) );
 			hud_config_green_slider();
 		}		
@@ -1214,9 +1214,9 @@ void hud_config_button_do(int n)
 
 	case HCB_BLUE_DOWN:
 		if( HCS_CONV(HC_color_sliders[HCS_BLUE].get_currentItem()) <= 0){
-			gamesnd_play_iface(SND_GENERAL_FAIL);
+			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		} else {
-			gamesnd_play_iface(SND_USER_SELECT);
+			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			HC_color_sliders[HCS_BLUE].force_currentItem( HCS_CONV( HCS_CONV(HC_color_sliders[HCS_BLUE].get_currentItem()) - 1) );
 			hud_config_blue_slider();
 		}		
@@ -1224,9 +1224,9 @@ void hud_config_button_do(int n)
 
 	case HCB_I_DOWN:
 		if( HCS_CONV(HC_color_sliders[HCS_ALPHA].get_currentItem()) <= 0){
-			gamesnd_play_iface(SND_GENERAL_FAIL);
+			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		} else {
-			gamesnd_play_iface(SND_USER_SELECT);
+			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			HC_color_sliders[HCS_ALPHA].force_currentItem( HCS_CONV( HCS_CONV(HC_color_sliders[HCS_ALPHA].get_currentItem()) - 1) );
 			hud_config_alpha_slider_down();
 		}		

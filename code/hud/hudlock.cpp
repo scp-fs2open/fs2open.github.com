@@ -610,13 +610,13 @@ void hud_do_lock_indicator(float frametime)
 			snd_stop(Missile_track_loop);
 			Missile_track_loop = -1;
 
-			if (wip->hud_locked_snd >= 0)
+			if (wip->hud_locked_snd.isValid())
 			{
 				Missile_lock_loop = snd_play(gamesnd_get_game_sound(wip->hud_locked_snd));
 			}
 			else
 			{
-				Missile_lock_loop = snd_play(gamesnd_get_game_sound(ship_get_sound(Player_obj, SND_MISSILE_LOCK)));
+				Missile_lock_loop = snd_play(gamesnd_get_game_sound(ship_get_sound(Player_obj, GameSounds::MISSILE_LOCK)));
 			}
 		}
 	}
@@ -841,13 +841,13 @@ void hud_calculate_lock_position(float frametime)
 		}
 
 		if ( Missile_track_loop == -1 ) {
-			if (wip->hud_tracking_snd >= 0)
+			if (wip->hud_tracking_snd.isValid())
 			{
 				Missile_track_loop = snd_play_looping( gamesnd_get_game_sound(wip->hud_tracking_snd), 0.0f , -1, -1);
 			}
 			else
 			{
-				Missile_track_loop = snd_play_looping( gamesnd_get_game_sound(ship_get_sound(Player_obj, SND_MISSILE_TRACKING)), 0.0f , -1, -1);
+				Missile_track_loop = snd_play_looping( gamesnd_get_game_sound(ship_get_sound(Player_obj, GameSounds::MISSILE_TRACKING)), 0.0f , -1, -1);
 			}
 		}
 

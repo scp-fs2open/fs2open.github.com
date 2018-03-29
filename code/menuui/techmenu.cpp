@@ -632,7 +632,7 @@ void tech_prev_entry()
 	}
 
 	techroom_select_new_entry();
-	gamesnd_play_iface(SND_SCROLL);
+	gamesnd_play_iface(InterfaceSounds::SCROLL);
 }
 
 // select next entry in current list
@@ -657,16 +657,16 @@ void tech_next_entry()
 	}
 
 	techroom_select_new_entry();
-	gamesnd_play_iface(SND_SCROLL);
+	gamesnd_play_iface(InterfaceSounds::SCROLL);
 }
 
 void tech_scroll_info_up()
 {
 	if (Text_offset) {
 		Text_offset--;
-		gamesnd_play_iface(SND_SCROLL);
+		gamesnd_play_iface(InterfaceSounds::SCROLL);
 	} else {
-		gamesnd_play_iface(SND_GENERAL_FAIL);
+		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 	}
 }
 
@@ -678,9 +678,9 @@ void tech_scroll_info_down()
 
 	if (Text_offset + h / gr_get_font_height() < Text_size) {
 		Text_offset++;
-		gamesnd_play_iface(SND_SCROLL);
+		gamesnd_play_iface(InterfaceSounds::SCROLL);
 	} else { //-V523
-		gamesnd_play_iface(SND_GENERAL_FAIL);
+		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 	}
 }
 
@@ -690,9 +690,9 @@ void tech_scroll_list_up()
 
 	if (List_offset > 0) {
 		List_offset--;
-		gamesnd_play_iface(SND_SCROLL);
+		gamesnd_play_iface(InterfaceSounds::SCROLL);
 	} else {
-		gamesnd_play_iface(SND_GENERAL_FAIL);
+		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 	}
 }
 
@@ -700,9 +700,9 @@ void tech_scroll_list_down()
 {
 	if (List_offset + Tech_list_coords[gr_screen.res][SHIP_H_COORD] / gr_get_font_height() < Current_list_size) {
 		List_offset++;
-		gamesnd_play_iface(SND_SCROLL);
+		gamesnd_play_iface(InterfaceSounds::SCROLL);
 	} else {
-		gamesnd_play_iface(SND_GENERAL_FAIL);
+		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 	}
 }
 
@@ -966,19 +966,19 @@ int techroom_button_pressed(int num)
 
 		case SIMULATOR_TAB:
 			fsspeech_stop();
-			gamesnd_play_iface(SND_SWITCH_SCREENS);
+			gamesnd_play_iface(InterfaceSounds::SWITCH_SCREENS);
 			gameseq_post_event(GS_EVENT_SIMULATOR_ROOM);
 			return 1;
 
 		case CUTSCENES_TAB:
 			fsspeech_stop();
-			gamesnd_play_iface(SND_SWITCH_SCREENS);
+			gamesnd_play_iface(InterfaceSounds::SWITCH_SCREENS);
 			gameseq_post_event(GS_EVENT_GOTO_VIEW_CUTSCENES_SCREEN);
 			return 1;
 
 		case CREDITS_TAB:
 			fsspeech_stop();
-			gamesnd_play_iface(SND_SWITCH_SCREENS);
+			gamesnd_play_iface(InterfaceSounds::SWITCH_SCREENS);
 			gameseq_post_event(GS_EVENT_CREDITS);
 			return 1;
 
@@ -1010,17 +1010,17 @@ int techroom_button_pressed(int num)
 
 		case HELP_BUTTON:
 			launch_context_help();
-			gamesnd_play_iface(SND_HELP_PRESSED);
+			gamesnd_play_iface(InterfaceSounds::HELP_PRESSED);
 			break;
 
 		case OPTIONS_BUTTON:
-			gamesnd_play_iface(SND_SWITCH_SCREENS);
+			gamesnd_play_iface(InterfaceSounds::SWITCH_SCREENS);
 			gameseq_post_event(GS_EVENT_OPTIONS_MENU);
 			break;
 
 		case EXIT_BUTTON:
 			fsspeech_stop();
-			gamesnd_play_iface(SND_COMMIT_PRESSED);
+			gamesnd_play_iface(InterfaceSounds::COMMIT_PRESSED);
 			gameseq_post_event(GS_EVENT_MAIN_MENU);
 			break;
 	}
@@ -1397,7 +1397,7 @@ void techroom_do_frame(float frametime)
 	
 		if (List_buttons[i].pressed()) {
 			Cur_entry = i + List_offset;
-			gamesnd_play_iface(SND_USER_SELECT);
+			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			techroom_select_new_entry();
 		}
 	}

@@ -21,6 +21,7 @@
 #include "sound/rtvoice.h"
 #include "menuui/optionsmenumulti.h"
 #include "network/multi.h"
+#include "object/object.h"
 #include "playerman/player.h"
 #include "debugconsole/console.h"
 
@@ -57,8 +58,8 @@ int Multi_voice_send_mode = MULTI_MSG_NONE;							// gotten from the multi_msg s
 int Multi_voice_qos;															// default quality of sound
 
 // sounds added to the front and end of a playing voice stream (set to -1 if none are wanted)
-#define MULTI_VOICE_PRE_SOUND							SND_CUE_VOICE
-#define MULTI_VOICE_POST_SOUND						SND_END_VOICE
+#define MULTI_VOICE_PRE_SOUND							GameSounds::CUE_VOICE
+#define MULTI_VOICE_POST_SOUND						GameSounds::END_VOICE
 int Multi_voice_pre_sound_size = 0;
 
 // sound data
@@ -1400,26 +1401,22 @@ int multi_voice_stream_playing(int stream_index)
 
 // tack on pre and post sounds to a sound stream (pass -1 for either if no sound is wanted)
 // return final buffer size
-int multi_voice_mix(int post_sound,char *data,int cur_size,int max_size)
+int multi_voice_mix(gamesnd_id post_sound,char *data,int cur_size,int max_size)
 {
 	int post_size;
 	
 	// if the user passed -1 for both pre and post sounds, don't do a thing
-	if(post_sound == -1){
+	if(!post_sound.isValid()){
 		return cur_size;
 	}
 
 	// get the sizes of the additional sounds
 	
 	// post sound
-	if(post_sound >= 0){
-		auto gs = gamesnd_get_game_sound(post_sound);
-		post_sound = snd_load(gamesnd_choose_entry(gs), gs->flags, 0);
-		if(post_sound >= 0){
-			if(snd_size(post_sound,&post_size) == -1){
-				post_size = 0;
-			}
-		} else {
+	auto gs = gamesnd_get_game_sound(post_sound);
+	auto post_sound_handle = snd_load(gamesnd_choose_entry(gs), gs->flags, 0);
+	if(post_sound_handle >= 0){
+		if(snd_size(post_sound_handle, &post_size) == -1){
 			post_size = 0;
 		}
 	} else {
@@ -1430,7 +1427,7 @@ int multi_voice_mix(int post_sound,char *data,int cur_size,int max_size)
 	if(post_size > 0){
 		if((max_size - cur_size) > post_size){
 			// copy in the sound
-			snd_get_data(post_sound,data + cur_size);
+			snd_get_data(post_sound_handle, data + cur_size);
 
 			// increment the cur_size
 			cur_size += post_size;

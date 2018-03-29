@@ -1695,7 +1695,7 @@ static void split_ship_init( ship* shipp, split_ship* split_shipp )
 	}
 
 	// play 3d sound for shockwave explosion
-	snd_play_3d( gamesnd_get_game_sound(SND_SHOCKWAVE_EXPLODE), &parent_ship_obj->pos, &View_position, 0.0f, NULL, 0, 1.0f, SND_PRIORITY_SINGLE_INSTANCE, NULL, 3.0f );
+	snd_play_3d( gamesnd_get_game_sound(GameSounds::SHOCKWAVE_EXPLODE), &parent_ship_obj->pos, &View_position, 0.0f, NULL, 0, 1.0f, SND_PRIORITY_SINGLE_INSTANCE, NULL, 3.0f );
 
 	// initialize both ships
 	split_shipp->front_ship.parent_obj = parent_ship_obj;
@@ -2099,13 +2099,13 @@ static int get_sound_time_played(int snd_id, int handle)
  */
 void do_sub_expl_sound(float radius, vec3d* sound_pos, int* sound_handle)
 {
-	int sound_index, handle;
+	int handle;
 	// multiplier for range (near and far distances) to apply attenuation
 	float sound_range = 1.0f + 0.0043f*radius;
 
 	int handle_index = rand()%NUM_SUB_EXPL_HANDLES;
 
-	sound_index = SND_SHIP_EXPLODE_1;
+	auto sound_index = GameSounds::SHIP_EXPLODE_1;
 	handle = sound_handle[handle_index];
 
 	if (handle == -1) {
@@ -2471,19 +2471,19 @@ void shipfx_do_damaged_arcs_frame( ship *shipp )
 			//Play a sound effect
 			if ( lifetime > 750 )	{
 				// 1.00 second effect
-				snd_play_3d( gamesnd_get_game_sound(SND_DEBRIS_ARC_05), &snd_pos, &View_position, obj->radius );
+				snd_play_3d( gamesnd_get_game_sound(GameSounds::DEBRIS_ARC_05), &snd_pos, &View_position, obj->radius );
 			} else if ( lifetime >  500 )	{
 				// 0.75 second effect
-				snd_play_3d( gamesnd_get_game_sound(SND_DEBRIS_ARC_04), &snd_pos, &View_position, obj->radius );
+				snd_play_3d( gamesnd_get_game_sound(GameSounds::DEBRIS_ARC_04), &snd_pos, &View_position, obj->radius );
 			} else if ( lifetime >  250 )	{
 				// 0.50 second effect
-				snd_play_3d( gamesnd_get_game_sound(SND_DEBRIS_ARC_03), &snd_pos, &View_position, obj->radius );
+				snd_play_3d( gamesnd_get_game_sound(GameSounds::DEBRIS_ARC_03), &snd_pos, &View_position, obj->radius );
 			} else if ( lifetime >  100 )	{
 				// 0.25 second effect
-				snd_play_3d( gamesnd_get_game_sound(SND_DEBRIS_ARC_02), &snd_pos, &View_position, obj->radius );
+				snd_play_3d( gamesnd_get_game_sound(GameSounds::DEBRIS_ARC_02), &snd_pos, &View_position, obj->radius );
 			} else {
 				// 0.10 second effect
-				snd_play_3d( gamesnd_get_game_sound(SND_DEBRIS_ARC_01), &snd_pos, &View_position, obj->radius );
+				snd_play_3d( gamesnd_get_game_sound(GameSounds::DEBRIS_ARC_01), &snd_pos, &View_position, obj->radius );
 			}
 		}
 	}
@@ -2974,16 +2974,16 @@ void engine_wash_ship_process(ship *shipp)
 		// if we had no wash before now, add the wash object sound
 		if(started_with_no_wash){
 			if(shipp != Player_ship){
-				obj_snd_assign(shipp->objnum, SND_ENGINE_WASH, &vmd_zero_vector, 1);
+				obj_snd_assign(shipp->objnum, GameSounds::ENGINE_WASH, &vmd_zero_vector, 1);
 			} else {				
-				Player_engine_wash_loop = snd_play_looping( gamesnd_get_game_sound(SND_ENGINE_WASH), 0.0f , -1, -1, 1.0f);
+				Player_engine_wash_loop = snd_play_looping( gamesnd_get_game_sound(GameSounds::ENGINE_WASH), 0.0f , -1, -1, 1.0f);
 			}
 		}
 	} 
 	// if we've got no wash, kill any wash object sounds from this guy
 	else {
 		if(shipp != Player_ship){
-			obj_snd_delete_type(shipp->objnum, SND_ENGINE_WASH);
+			obj_snd_delete_type(shipp->objnum, GameSounds::ENGINE_WASH);
 		} else {
 			snd_stop(Player_engine_wash_loop);
 			Player_engine_wash_loop = -1;
@@ -3021,14 +3021,11 @@ public:
 	static const int TYPE_STRING;
 private:
 	int Type;
-	union StorageUnion
-	{
-		float	su_Float;
-		int		su_Image;
-		int		su_Int;
-		int		su_Sound;
-		char	*su_String;
-	} StorageUnion;
+	float	su_Float;
+	int		su_Image;
+	int		su_Int;
+	gamesnd_id su_Sound;
+	char	*su_String;
 public:
 	//TYPE_NONE
 	CombinedVariable();
@@ -3036,8 +3033,10 @@ public:
 	CombinedVariable(float n_Float);
 	//TYPE_INT
 	CombinedVariable(int n_Int);
-	//TYPE_IMAGE, TYPE_SOUND
+	//TYPE_IMAGE
 	CombinedVariable(int n_Int, ubyte type_override);
+	//TYPE_SOUND
+	CombinedVariable(gamesnd_id n_snd);
 	//TYPE_STRING
 	CombinedVariable(char *n_String);
 	//All types
@@ -3052,7 +3051,7 @@ public:
 	//Returns 1 if buffer was successfully written to
 	int getInt(int *output);
 	//Returns handle, or < 0 on failure/wrong type
-	int getSound();
+	gamesnd_id getSound();
 	//Returns 1 if buffer was successfully written to
 	int getString(char *output, size_t output_max);
 
@@ -3077,13 +3076,13 @@ CombinedVariable::CombinedVariable()
 CombinedVariable::CombinedVariable(float n_Float)
 {
 	Type = TYPE_FLOAT;
-	StorageUnion.su_Float = n_Float;
+	su_Float = n_Float;
 }
 
 CombinedVariable::CombinedVariable(int n_Int)
 {
 	Type = TYPE_INT;
-	StorageUnion.su_Int = n_Int;
+	su_Int = n_Int;
 }
 
 CombinedVariable::CombinedVariable(int n_Int, ubyte type_override)
@@ -3091,32 +3090,31 @@ CombinedVariable::CombinedVariable(int n_Int, ubyte type_override)
 	if(type_override == TYPE_IMAGE)
 	{
 		Type = TYPE_IMAGE;
-		StorageUnion.su_Image = n_Int;
-	}
-	else if(type_override == TYPE_SOUND)
-	{
-		Type = TYPE_SOUND;
-		StorageUnion.su_Sound = n_Int;
+		su_Image = n_Int;
 	}
 	else
 	{
 		Type = TYPE_INT;
-		StorageUnion.su_Int = n_Int;
+		su_Int = n_Int;
 	}
+}
+CombinedVariable::CombinedVariable(gamesnd_id n_snd) {
+	Type = TYPE_SOUND;
+	su_Sound = n_snd;
 }
 
 CombinedVariable::CombinedVariable(char *n_String)
 {
 	Type = TYPE_STRING;
-	StorageUnion.su_String = (char *)vm_malloc(strlen(n_String)+1);
-	strcpy(StorageUnion.su_String, n_String);
+	su_String = (char *)vm_malloc(strlen(n_String)+1);
+	strcpy(su_String, n_String);
 }
 
 CombinedVariable::~CombinedVariable()
 {
 	if(Type == TYPE_STRING)
 	{
-		vm_free(StorageUnion.su_String);
+		vm_free(su_String);
 	}
 }
 
@@ -3124,27 +3122,22 @@ int CombinedVariable::getFloat(float *output)
 {
 	if(Type == TYPE_FLOAT)
 	{
-		*output  = StorageUnion.su_Float;
+		*output  = su_Float;
 		return 1;
 	}
 	if(Type == TYPE_IMAGE)
 	{
-		*output = i2fl(StorageUnion.su_Image);
+		*output = i2fl(su_Image);
 		return 1;
 	}
 	if(Type == TYPE_INT)
 	{
-		*output = i2fl(StorageUnion.su_Int);
-		return 1;
-	}
-	if(Type == TYPE_SOUND)
-	{
-		*output = i2fl(StorageUnion.su_Sound);
+		*output = i2fl(su_Int);
 		return 1;
 	}
 	if(Type == TYPE_STRING)
 	{
-		*output = (float)atof(StorageUnion.su_String);
+		*output = (float)atof(su_String);
 		return 1;
 	}
 	return 0;
@@ -3171,38 +3164,33 @@ int CombinedVariable::getInt(int *output)
 
 	if(Type == TYPE_FLOAT)
 	{
-		*output  = fl2i(StorageUnion.su_Float);
+		*output  = fl2i(su_Float);
 		return 1;
 	}
 	if(Type == TYPE_IMAGE)
 	{
-		*output = StorageUnion.su_Image;
+		*output = su_Image;
 		return 1;
 	}
 	if(Type == TYPE_INT)
 	{
-		*output = StorageUnion.su_Int;
-		return 1;
-	}
-	if(Type == TYPE_SOUND)
-	{
-		*output = StorageUnion.su_Sound;
+		*output = su_Int;
 		return 1;
 	}
 	if(Type == TYPE_STRING)
 	{
-		*output = atoi(StorageUnion.su_String);
+		*output = atoi(su_String);
 		return 1;
 	}
 
 	return 0;
 }
-int CombinedVariable::getSound()
+gamesnd_id CombinedVariable::getSound()
 {
 	if(Type == TYPE_SOUND)
-		return this->getHandle();
+		return su_Sound;
 	else
-		return -1;
+		return {};
 }
 int CombinedVariable::getString(char *output, size_t output_max)
 {
@@ -3211,30 +3199,30 @@ int CombinedVariable::getString(char *output, size_t output_max)
 
 	if(Type == TYPE_FLOAT)
 	{
-		snprintf(output, output_max, "%f", StorageUnion.su_Float);
+		snprintf(output, output_max, "%f", su_Float);
 		return 1;
 	}
 	if(Type == TYPE_IMAGE)
 	{
-		if(bm_is_valid(StorageUnion.su_Image))
-			snprintf(output, output_max, "%s", bm_get_filename(StorageUnion.su_Image));
+		if(bm_is_valid(su_Image))
+			snprintf(output, output_max, "%s", bm_get_filename(su_Image));
 		return 1;
 	}
 	if(Type == TYPE_INT)
 	{
-		snprintf(output, output_max, "%i", StorageUnion.su_Int);
+		snprintf(output, output_max, "%i", su_Int);
 		return 1;
 	}
 	if(Type == TYPE_SOUND)
 	{
 		Error(LOCATION, "Sound CombinedVariables are not supported yet.");
-		/*if(snd_is_valid(StorageUnion.su_Sound))
-			snprintf(output, output_max, "%s", snd_get_filename(StorageUnion.su_Sound));*/
+		/*if(snd_is_valid(su_Sound))
+			snprintf(output, output_max, "%s", snd_get_filename(su_Sound));*/
 		return 1;
 	}
 	if(Type == TYPE_STRING)
 	{
-		strncpy(output, StorageUnion.su_String, output_max);
+		strncpy(output, su_String, output_max);
 		return 1;
 	}
 	return 0;
@@ -3290,8 +3278,8 @@ void parse_combined_variable_list(CombinedVariable *dest, flag_def_list *src, si
 				{
 					char buf2[MAX_FILENAME_LEN];
 					stuff_string(buf2, F_NAME, MAX_FILENAME_LEN);
-					int idx = gamesnd_get_by_name(buf);
-					*dp = CombinedVariable(idx, CombinedVariable::TYPE_SOUND);
+					auto idx = gamesnd_get_by_name(buf);
+					*dp = CombinedVariable(idx);
 					break;
 				}
 				case CombinedVariable::TYPE_STRING:
@@ -3839,8 +3827,8 @@ int WE_BSG::warpStart()
         shipp->flags.set(Ship::Ship_Flags::Depart_warp);
 
 	//*****Sound
-	int gs_start_index = -1;
-	int gs_end_index = -1;
+	gamesnd_id gs_start_index;
+	gamesnd_id gs_end_index;
 	if(direction == WD_WARP_IN)
 	{
 		gs_start_index = sip->warpin_snd_start;
@@ -3857,12 +3845,12 @@ int WE_BSG::warpStart()
 		return 0;
 	}
 
-	if(gs_start_index > -1)
+	if(gs_start_index.isValid())
 	{
 		snd_start_gs = gamesnd_get_game_sound(gs_start_index);
 		snd_start = snd_play_3d(snd_start_gs, &objp->pos, &View_position, 0.0f, NULL, 0, 1, SND_PRIORITY_SINGLE_INSTANCE, NULL, snd_range_factor);
 	}
-	if(gs_end_index > -1)
+	if(gs_end_index.isValid())
 	{
 		snd_end_gs = gamesnd_get_game_sound(gs_end_index);
 		snd_end = -1;
@@ -4147,7 +4135,7 @@ int WE_Homeworld::warpStart()
 	width = width_full;
 	height = 0.0f;
 
-	int gs_index = -1;
+	gamesnd_id gs_index;
 	if(direction == WD_WARP_IN)
 	{
         shipp->flags.set(Ship::Ship_Flags::Arriving_stage_1);
@@ -4164,7 +4152,7 @@ int WE_Homeworld::warpStart()
 		return 0;
 	}
 
-	if(gs_index > -1)
+	if(gs_index.isValid())
 	{
 		snd_gs = gamesnd_get_game_sound(gs_index);
 		snd = snd_play_3d(snd_gs, &pos, &View_position, 0.0f, NULL, 0, 1, SND_PRIORITY_SINGLE_INSTANCE, NULL, snd_range_factor);

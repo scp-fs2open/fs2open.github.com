@@ -1133,15 +1133,15 @@ int sexp_tree::get_default_value(sexp_list_item* item, char* text_buf, int op, i
 
 		// Goober5000 - special cases that used to be numbers but are now hybrids
 	case OPF_GAME_SND:
-		int sound_index = -1;
+		gamesnd_id sound_index;
 
 		if (Operators[op].value == OP_EXPLOSION_EFFECT) {
-			sound_index = SND_SHIP_EXPLODE_1;
+			sound_index = GameSounds::SHIP_EXPLODE_1;
 		} else if (Operators[op].value == OP_WARP_EFFECT) {
-			sound_index = (i == 8) ? SND_CAPITAL_WARP_IN : SND_CAPITAL_WARP_OUT;
+			sound_index = (i == 8) ? GameSounds::CAPITAL_WARP_IN : GameSounds::CAPITAL_WARP_OUT;
 		}
 
-		if (sound_index >= 0) {
+		if (sound_index.isValid()) {
 			game_snd* snd = gamesnd_get_game_sound(sound_index);
 			if (can_construe_as_integer(snd->name.c_str())) {
 				item->set_data(snd->name.c_str(), (SEXPT_NUMBER | SEXPT_VALID));

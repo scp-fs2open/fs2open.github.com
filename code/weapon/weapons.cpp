@@ -1429,7 +1429,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		nprintf(("Warning", "Ignoring free flight speed for weapon '%s'\n", wip->name));
 	}
 	//Optional one-shot sound to play at the beginning of firing
-	parse_sound("$PreLaunchSnd:", &wip->pre_launch_snd, wip->name);
+	parse_game_sound("$PreLaunchSnd:", &wip->pre_launch_snd, wip->name);
 
 	//Optional delay for Pre-Launch sound
 	if(optional_string("+PreLaunchSnd Min Interval:"))
@@ -1438,21 +1438,21 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 	}
 
 	//Launch sound
-	parse_sound("$LaunchSnd:", &wip->launch_snd, wip->name);
+	parse_game_sound("$LaunchSnd:", &wip->launch_snd, wip->name);
 
 	//Impact sound
-	parse_sound("$ImpactSnd:", &wip->impact_snd, wip->name);
+	parse_game_sound("$ImpactSnd:", &wip->impact_snd, wip->name);
 
 	//Disarmed impact sound
-	parse_sound("$Disarmed ImpactSnd:", &wip->impact_snd, wip->name);
+	parse_game_sound("$Disarmed ImpactSnd:", &wip->impact_snd, wip->name);
 
-	parse_sound("$FlyBySnd:", &wip->flyby_snd, wip->name);
+	parse_game_sound("$FlyBySnd:", &wip->flyby_snd, wip->name);
 
-	parse_sound("$TrackingSnd:", &wip->hud_tracking_snd, wip->name);
+	parse_game_sound("$TrackingSnd:", &wip->hud_tracking_snd, wip->name);
 	
-	parse_sound("$LockedSnd:", &wip->hud_locked_snd, wip->name);
+	parse_game_sound("$LockedSnd:", &wip->hud_locked_snd, wip->name);
 
-	parse_sound("$InFlightSnd:", &wip->hud_in_flight_snd, wip->name);
+	parse_game_sound("$InFlightSnd:", &wip->hud_in_flight_snd, wip->name);
 
 	if (optional_string("+Inflight sound type:"))
 	{
@@ -2117,13 +2117,13 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		}
 
 		// beam fire sound
-		parse_sound("+BeamSound:", &wip->b_info.beam_loop_sound, wip->name);
+		parse_game_sound("+BeamSound:", &wip->b_info.beam_loop_sound, wip->name);
 
 		// warmup sound
-		parse_sound("+WarmupSound:", &wip->b_info.beam_warmup_sound, wip->name);
+		parse_game_sound("+WarmupSound:", &wip->b_info.beam_warmup_sound, wip->name);
 
 		// warmdown sound
-		parse_sound("+WarmdownSound:", &wip->b_info.beam_warmdown_sound, wip->name);
+		parse_game_sound("+WarmdownSound:", &wip->b_info.beam_warmdown_sound, wip->name);
 
 		// glow bitmap
 		if (optional_string("+Muzzleglow:") ) {
@@ -3647,10 +3647,10 @@ void weapon_maybe_play_warning(weapon *wp)
 			// Possibly add an additional third sound later
 			if ( (Weapon_info[wp->weapon_info_index].wi_flags[Weapon::Info_Flags::Homing_heat]) ||
 				 (Weapon_info[wp->weapon_info_index].wi_flags[Weapon::Info_Flags::Homing_javelin]) ) {
-				snd_play(gamesnd_get_game_sound(ship_get_sound(Player_obj, SND_HEATLOCK_WARN)));
+				snd_play(gamesnd_get_game_sound(ship_get_sound(Player_obj, GameSounds::HEATLOCK_WARN)));
 			} else {
 				Assert(Weapon_info[wp->weapon_info_index].wi_flags[Weapon::Info_Flags::Homing_aspect]);
-				snd_play(gamesnd_get_game_sound(ship_get_sound(Player_obj, SND_ASPECTLOCK_WARN)));
+				snd_play(gamesnd_get_game_sound(ship_get_sound(Player_obj, GameSounds::ASPECTLOCK_WARN)));
 			}
 		}
 	}
@@ -4480,11 +4480,11 @@ void weapon_maybe_play_flyby_sound(object *weapon_objp, weapon *wp)
 			dot = vm_vec_dot(&vec_to_weapon, &weapon_objp->orient.vec.fvec);
 			
 			if ( (dot < -0.80) && (dot > -0.98) ) {
-				if(Weapon_info[wp->weapon_info_index].flyby_snd != -1) {
+				if(Weapon_info[wp->weapon_info_index].flyby_snd.isValid()) {
 					snd_play_3d( gamesnd_get_game_sound(Weapon_info[wp->weapon_info_index].flyby_snd), &weapon_objp->pos, &Eye_position );
 				} else {
 					if ( Weapon_info[wp->weapon_info_index].subtype == WP_LASER ) {
-						snd_play_3d( gamesnd_get_game_sound(SND_WEAPON_FLYBY), &weapon_objp->pos, &Eye_position );
+						snd_play_3d( gamesnd_get_game_sound(GameSounds::WEAPON_FLYBY), &weapon_objp->pos, &Eye_position );
 					}
 				}
 				Weapon_flyby_sound_timer = timestamp(200);
@@ -4871,7 +4871,7 @@ void weapon_process_post(object * obj, float frame_time)
 		}
 	}
 
-	if (wip->hud_in_flight_snd >= 0 && obj->parent_sig == Player_obj->signature)
+	if (wip->hud_in_flight_snd.isValid() && obj->parent_sig == Player_obj->signature)
 	{
 		bool play_sound = false;
 		switch (wip->in_flight_play_type)
@@ -5637,13 +5637,13 @@ void weapon_play_impact_sound(weapon_info *wip, vec3d *hitpos, bool is_armed)
 {
 	if(is_armed)
 	{
-		if(wip->impact_snd != -1) {
+		if(wip->impact_snd.isValid()) {
 			snd_play_3d( gamesnd_get_game_sound(wip->impact_snd), hitpos, &Eye_position );
 		}
 	}
 	else
 	{
-		if(wip->disarmed_impact_snd != -1) {
+		if(wip->disarmed_impact_snd.isValid()) {
 			snd_play_3d(gamesnd_get_game_sound(wip->disarmed_impact_snd), hitpos, &Eye_position);
 		}
 	}
@@ -5708,27 +5708,27 @@ void weapon_hit_do_sound(object *hit_obj, weapon_info *wip, vec3d *hitpos, bool 
 		if ( shield_str > 0.1f ) {
 			// Play a shield impact sound effect
 			if ( hit_obj == Player_obj ) {
-				snd_play_3d( gamesnd_get_game_sound(SND_SHIELD_HIT_YOU), hitpos, &Eye_position );
+				snd_play_3d( gamesnd_get_game_sound(GameSounds::SHIELD_HIT_YOU), hitpos, &Eye_position );
 				// AL 12-15-97: Add missile impact sound even when shield is hit
 				if ( wip->subtype == WP_MISSILE ) {
-					snd_play_3d( gamesnd_get_game_sound(SND_PLAYER_HIT_MISSILE), hitpos, &Eye_position);
+					snd_play_3d( gamesnd_get_game_sound(GameSounds::PLAYER_HIT_MISSILE), hitpos, &Eye_position);
 				}
 			} else {
-				snd_play_3d( gamesnd_get_game_sound(SND_SHIELD_HIT), hitpos, &Eye_position );
+				snd_play_3d( gamesnd_get_game_sound(GameSounds::SHIELD_HIT), hitpos, &Eye_position );
 			}
 		} else {
 			// Play a hull impact sound effect
 			switch ( wip->subtype ) {
 				case WP_LASER:
 					if ( hit_obj == Player_obj )
-						snd_play_3d( gamesnd_get_game_sound(SND_PLAYER_HIT_LASER), hitpos, &Eye_position );
+						snd_play_3d( gamesnd_get_game_sound(GameSounds::PLAYER_HIT_LASER), hitpos, &Eye_position );
 					else {
 						weapon_play_impact_sound(wip, hitpos, is_armed);
 					}
 					break;
 				case WP_MISSILE:
 					if ( hit_obj == Player_obj ) 
-						snd_play_3d( gamesnd_get_game_sound(SND_PLAYER_HIT_MISSILE), hitpos, &Eye_position);
+						snd_play_3d( gamesnd_get_game_sound(GameSounds::PLAYER_HIT_MISSILE), hitpos, &Eye_position);
 					else {
 						weapon_play_impact_sound(wip, hitpos, is_armed);
 					}
@@ -7551,13 +7551,13 @@ void weapon_info::reset()
 	// *Default is 150  -Et1
 	this->SwarmWait = SWARM_MISSILE_DELAY;
 
-	this->pre_launch_snd = -1;
+	this->pre_launch_snd = gamesnd_id();
 	this->pre_launch_snd_min_interval = 0;
 
-	this->launch_snd = -1;
-	this->impact_snd = -1;
-	this->disarmed_impact_snd = -1;
-	this->flyby_snd = -1;
+	this->launch_snd = gamesnd_id();
+	this->impact_snd = gamesnd_id();
+	this->disarmed_impact_snd = gamesnd_id();
+	this->flyby_snd = gamesnd_id();
 
 	this->rearm_rate = 1.0f;
 
@@ -7644,9 +7644,9 @@ void weapon_info::reset()
 	this->b_info.beam_particle_count = -1;
 	this->b_info.beam_particle_radius = 0.0f;
 	this->b_info.beam_particle_angle = 0.0f;
-	this->b_info.beam_loop_sound = -1;
-	this->b_info.beam_warmup_sound = -1;
-	this->b_info.beam_warmdown_sound = -1;
+	this->b_info.beam_loop_sound = gamesnd_id();
+	this->b_info.beam_warmup_sound = gamesnd_id();
+	this->b_info.beam_warmdown_sound = gamesnd_id();
 	this->b_info.beam_num_sections = 0;
 	this->b_info.glow_length = 0;
 	this->b_info.directional_glow = false;
@@ -7727,9 +7727,9 @@ void weapon_info::reset()
 
 	this->selection_effect = Default_weapon_select_effect;
 
-	this->hud_locked_snd = -1;
-	this->hud_tracking_snd = -1;
-	this->hud_in_flight_snd = -1;
+	this->hud_locked_snd = gamesnd_id();
+	this->hud_tracking_snd = gamesnd_id();
+	this->hud_in_flight_snd = gamesnd_id();
 
 	// Reset using default constructor
 	this->impact_decal = decals::creation_info();

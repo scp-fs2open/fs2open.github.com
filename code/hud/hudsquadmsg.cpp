@@ -267,7 +267,7 @@ void hud_squadmsg_start()
 	Msg_enemies = 0;														// tells us if we are messaging enemy ships
 #endif
 
-	snd_play( gamesnd_get_game_sound(SND_SQUADMSGING_ON) );
+	snd_play( gamesnd_get_game_sound(GameSounds::SQUADMSGING_ON) );
 }
 
 // functions which will restore all of the key binding stuff when messaging mode is done
@@ -285,7 +285,7 @@ void hud_squadmsg_end()
 */
 
 	if ( message_is_playing() == FALSE )
-		snd_play( gamesnd_get_game_sound(SND_SQUADMSGING_OFF) );
+		snd_play( gamesnd_get_game_sound(GameSounds::SQUADMSGING_OFF) );
 }
 
 // function which returns true if there are fighters/bombers on the players team in the mission
@@ -637,7 +637,7 @@ int hud_squadmsg_get_key()
 
 			// play general fail sound if inactive item hit.
 			else if ( (i < Num_menu_items) && !(MsgItems[i].active) )
-				gamesnd_play_iface(SND_GENERAL_FAIL);
+				gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 
 			else if ( (i < Num_menu_items) && (MsgItems[i].active) )	// only return keys that are associated with menu items
 				return i;

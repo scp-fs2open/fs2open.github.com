@@ -2223,7 +2223,7 @@ void hud_update_target_static()
 
 	if ( Target_static_playing ) {
 		if ( Target_static_looping == -1 ) {
-			Target_static_looping = snd_play_looping(gamesnd_get_game_sound(SND_STATIC));
+			Target_static_looping = snd_play_looping(gamesnd_get_game_sound(GameSounds::STATIC));
 		}
 	} else {
 		if ( Target_static_looping != -1 ) {

@@ -74,7 +74,7 @@ static void debris_start_death_roll(object *debris_obj, debris *debris_p)
 
 		// only play debris destroy sound if hull piece and it has been around for at least 2 seconds
 		if ( Missiontime > debris_p->time_started + 2*F1_0 ) {
-			snd_play_3d( gamesnd_get_game_sound(SND_MISSILE_IMPACT1), &debris_obj->pos, &View_position, debris_obj->radius );
+			snd_play_3d( gamesnd_get_game_sound(gamesnd_id(GameSounds::MISSILE_IMPACT1)), &debris_obj->pos, &View_position, debris_obj->radius );
 			
 		}
 	}
@@ -238,7 +238,7 @@ void debris_process_post(object * obj, float frame_time)
 		radar_plot_object( obj );
 
 		if ( timestamp_elapsed(db->sound_delay) ) {
-			obj_snd_assign(objnum, SND_DEBRIS, &vmd_zero_vector, 0);
+			obj_snd_assign(objnum, GameSounds::DEBRIS, &vmd_zero_vector, 0);
 			db->sound_delay = 0;
 		}
 	} else {
@@ -324,19 +324,19 @@ void debris_process_post(object * obj, float frame_time)
 			//Play a sound effect
 			if ( lifetime > 750 )	{
 				// 1.00 second effect
-				snd_play_3d( gamesnd_get_game_sound(SND_DEBRIS_ARC_05), &snd_pos, &View_position, obj->radius );
+				snd_play_3d( gamesnd_get_game_sound(GameSounds::DEBRIS_ARC_05), &snd_pos, &View_position, obj->radius );
 			} else if ( lifetime >  500 )	{
 				// 0.75 second effect
-				snd_play_3d( gamesnd_get_game_sound(SND_DEBRIS_ARC_04), &snd_pos, &View_position, obj->radius );
+				snd_play_3d( gamesnd_get_game_sound(GameSounds::DEBRIS_ARC_04), &snd_pos, &View_position, obj->radius );
 			} else if ( lifetime >  250 )	{
 				// 0.50 second effect
-				snd_play_3d( gamesnd_get_game_sound(SND_DEBRIS_ARC_03), &snd_pos, &View_position, obj->radius );
+				snd_play_3d( gamesnd_get_game_sound(GameSounds::DEBRIS_ARC_03), &snd_pos, &View_position, obj->radius );
 			} else if ( lifetime >  100 )	{
 				// 0.25 second effect
-				snd_play_3d( gamesnd_get_game_sound(SND_DEBRIS_ARC_02), &snd_pos, &View_position, obj->radius );
+				snd_play_3d( gamesnd_get_game_sound(GameSounds::DEBRIS_ARC_02), &snd_pos, &View_position, obj->radius );
 			} else {
 				// 0.10 second effect
-				snd_play_3d( gamesnd_get_game_sound(SND_DEBRIS_ARC_01), &snd_pos, &View_position, obj->radius );
+				snd_play_3d( gamesnd_get_game_sound(GameSounds::DEBRIS_ARC_01), &snd_pos, &View_position, obj->radius );
 			}
 		}
 	}

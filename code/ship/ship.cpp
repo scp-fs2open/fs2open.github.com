@@ -1493,8 +1493,8 @@ ship_info::ship_info()
 
 	warpin_anim[0] = '\0';
 	warpin_radius = 0.0f;
-	warpin_snd_start = -1;
-	warpin_snd_end = -1;
+	warpin_snd_start = gamesnd_id();
+	warpin_snd_end = gamesnd_id();
 	warpin_speed = 0.0f;
 	warpin_time = 0;
 	warpin_decel_exp = 1;
@@ -1502,8 +1502,8 @@ ship_info::ship_info()
 
 	warpout_anim[0] = '\0';
 	warpout_radius = 0.0f;
-	warpout_snd_start = -1;
-	warpout_snd_end = -1;
+	warpout_snd_start = gamesnd_id();
+	warpout_snd_end = gamesnd_id();
 	warpout_engage_time = -1;
 	warpout_speed = 0.0f;
 	warpout_time = 0;
@@ -1526,7 +1526,7 @@ ship_info::ship_info()
 	collision_physics.friction = COLLISION_FRICTION_FACTOR;
 	collision_physics.rotation_factor = COLLISION_ROTATION_FACTOR;
 	collision_physics.reorient_mult = 1.0f;
-	collision_physics.landing_sound_idx = -1;
+	collision_physics.landing_sound_idx = gamesnd_id();
 
 	shockwave_create_info_init(&shockwave);
 	explosion_propagates = 0;
@@ -1758,10 +1758,10 @@ ship_info::ship_info()
 	topdown_offset_def = false;
 	vm_vec_zero(&topdown_offset);
 
-	engine_snd = -1;
+	engine_snd = gamesnd_id();
 	min_engine_vol = -1.0f;
-	glide_start_snd = -1;
-	glide_end_snd = -1;
+	glide_start_snd = gamesnd_id();
+	glide_end_snd = gamesnd_id();
 
 	ship_sounds.clear();
 
@@ -1981,45 +1981,45 @@ static int parse_ship_template()
 	return rtn;
 }
 
-static void parse_ship_sound(const char *name, GameSoundsIndex id, ship_info *sip)
+static void parse_ship_sound(const char *name, GameSounds id, ship_info *sip)
 {
 	Assert( name != NULL );
 
-	int temp_index = -1;
+	gamesnd_id temp_index;
 
-	parse_sound(name, &temp_index, sip->name);
+	parse_game_sound(name, &temp_index, sip->name);
 
-	if (temp_index >= 0)
-		sip->ship_sounds.insert(std::pair<GameSoundsIndex, int>(id, temp_index));
+	if (temp_index.isValid())
+		sip->ship_sounds.insert(std::make_pair(id, temp_index));
 }
 
 static void parse_ship_sounds(ship_info *sip)
 {
-	parse_ship_sound("$CockpitEngineSnd:",                SND_ENGINE, sip);
-	parse_ship_sound("$FullThrottleSnd:",                 SND_FULL_THROTTLE, sip);
-	parse_ship_sound("$ZeroThrottleSnd:",                 SND_ZERO_THROTTLE, sip);
-	parse_ship_sound("$ThrottleUpSnd:",                   SND_THROTTLE_UP, sip);
-	parse_ship_sound("$ThrottleDownSnd:",                 SND_THROTTLE_DOWN, sip);
-	parse_ship_sound("$AfterburnerSnd:",                  SND_ABURN_LOOP, sip);
-	parse_ship_sound("$AfterburnerEngageSnd:",            SND_ABURN_ENGAGE, sip);
-	parse_ship_sound("$AfterburnerFailedSnd:",            SND_ABURN_FAIL, sip);
-	parse_ship_sound("$MissileTrackingSnd:",              SND_MISSILE_TRACKING, sip);
-	parse_ship_sound("$MissileLockedSnd:",                SND_MISSILE_LOCK, sip);
-	parse_ship_sound("$PrimaryCycleSnd:",                 SND_PRIMARY_CYCLE, sip);
-	parse_ship_sound("$SecondaryCycleSnd:",               SND_SECONDARY_CYCLE, sip);
-	parse_ship_sound("$TargetAcquiredSnd:",               SND_TARGET_ACQUIRE, sip);
-	parse_ship_sound("$PrimaryFireFailedSnd:",            SND_OUT_OF_WEAPON_ENERGY, sip);
-	parse_ship_sound("$SecondaryFireFailedSnd:",          SND_OUT_OF_MISSLES, sip);
-	parse_ship_sound("$HeatSeekerLaunchWarningSnd:",      SND_HEATLOCK_WARN, sip);
-	parse_ship_sound("$AspectSeekerLaunchWarningSnd:",    SND_ASPECTLOCK_WARN, sip);
-	parse_ship_sound("$MissileLockWarningSnd:",           SND_THREAT_FLASH, sip);
-	parse_ship_sound("$HeatSeekerProximityWarningSnd:",   SND_PROXIMITY_WARNING, sip);
-	parse_ship_sound("$AspectSeekerProximityWarningSnd:", SND_PROXIMITY_ASPECT_WARNING, sip);
-	parse_ship_sound("$MissileEvadedSnd:",                SND_MISSILE_EVADED_POPUP, sip);
-	parse_ship_sound("$CargoScanningSnd:",                SND_CARGO_SCAN, sip);
+	parse_ship_sound("$CockpitEngineSnd:",                GameSounds::ENGINE, sip);
+	parse_ship_sound("$FullThrottleSnd:",                 GameSounds::FULL_THROTTLE, sip);
+	parse_ship_sound("$ZeroThrottleSnd:",                 GameSounds::ZERO_THROTTLE, sip);
+	parse_ship_sound("$ThrottleUpSnd:",                   GameSounds::THROTTLE_UP, sip);
+	parse_ship_sound("$ThrottleDownSnd:",                 GameSounds::THROTTLE_DOWN, sip);
+	parse_ship_sound("$AfterburnerSnd:",                  GameSounds::ABURN_LOOP, sip);
+	parse_ship_sound("$AfterburnerEngageSnd:",            GameSounds::ABURN_ENGAGE, sip);
+	parse_ship_sound("$AfterburnerFailedSnd:",            GameSounds::ABURN_FAIL, sip);
+	parse_ship_sound("$MissileTrackingSnd:",              GameSounds::MISSILE_TRACKING, sip);
+	parse_ship_sound("$MissileLockedSnd:",                GameSounds::MISSILE_LOCK, sip);
+	parse_ship_sound("$PrimaryCycleSnd:",                 GameSounds::PRIMARY_CYCLE, sip);
+	parse_ship_sound("$SecondaryCycleSnd:",               GameSounds::SECONDARY_CYCLE, sip);
+	parse_ship_sound("$TargetAcquiredSnd:",               GameSounds::TARGET_ACQUIRE, sip);
+	parse_ship_sound("$PrimaryFireFailedSnd:",            GameSounds::OUT_OF_WEAPON_ENERGY, sip);
+	parse_ship_sound("$SecondaryFireFailedSnd:",          GameSounds::OUT_OF_MISSLES, sip);
+	parse_ship_sound("$HeatSeekerLaunchWarningSnd:",      GameSounds::HEATLOCK_WARN, sip);
+	parse_ship_sound("$AspectSeekerLaunchWarningSnd:",    GameSounds::ASPECTLOCK_WARN, sip);
+	parse_ship_sound("$MissileLockWarningSnd:",           GameSounds::THREAT_FLASH, sip);
+	parse_ship_sound("$HeatSeekerProximityWarningSnd:",   GameSounds::PROXIMITY_WARNING, sip);
+	parse_ship_sound("$AspectSeekerProximityWarningSnd:", GameSounds::PROXIMITY_ASPECT_WARNING, sip);
+	parse_ship_sound("$MissileEvadedSnd:",                GameSounds::MISSILE_EVADED_POPUP, sip);
+	parse_ship_sound("$CargoScanningSnd:",                GameSounds::CARGO_SCAN, sip);
 
 	// Use SND_SHIP_EXPLODE_1 for custom explosion sounds
-	parse_ship_sound("$ExplosionSnd:",                    SND_SHIP_EXPLODE_1, sip);
+	parse_ship_sound("$ExplosionSnd:",                    GameSounds::SHIP_EXPLODE_1, sip);
 } 
 
 static void parse_ship_particle_effect(ship_info* sip, particle_effect* pe, const char *id_string)
@@ -2728,7 +2728,7 @@ static int parse_ship_values(ship_info* sip, const bool is_template, const bool 
 			stuff_float(&degrees);
 			sip->collision_physics.landing_rest_angle = cosf(fl_radians(90.0f - degrees));
 		}
-		parse_sound("+Landing Sound:", &sip->collision_physics.landing_sound_idx, sip->name);
+		parse_game_sound("+Landing Sound:", &sip->collision_physics.landing_sound_idx, sip->name);
 	}
 
 
@@ -2950,8 +2950,8 @@ static int parse_ship_values(ship_info* sip, const bool is_template, const bool 
 		}
 	}
 
-	parse_sound("$Warpin Start Sound:", &sip->warpin_snd_start, sip->name);
-	parse_sound("$Warpin End Sound:", &sip->warpin_snd_end, sip->name);
+	parse_game_sound("$Warpin Start Sound:", &sip->warpin_snd_start, sip->name);
+	parse_game_sound("$Warpin End Sound:", &sip->warpin_snd_end, sip->name);
 
 	if(optional_string("$Warpin speed:"))
 	{
@@ -3002,8 +3002,8 @@ static int parse_ship_values(ship_info* sip, const bool is_template, const bool 
 		}
 	}
 
-	parse_sound("$Warpout Start Sound:", &sip->warpout_snd_start, sip->name);
-	parse_sound("$Warpout End Sound:", &sip->warpout_snd_end, sip->name);
+	parse_game_sound("$Warpout Start Sound:", &sip->warpout_snd_start, sip->name);
+	parse_game_sound("$Warpout End Sound:", &sip->warpout_snd_end, sip->name);
 
 	if(optional_string("$Warpout engage time:"))
 	{
@@ -3592,16 +3592,16 @@ static int parse_ship_values(ship_info* sip, const bool is_template, const bool 
 		stuff_int(&sip->scan_time);
 
 	//Parse the engine sound
-	parse_sound("$EngineSnd:", &sip->engine_snd, sip->name);
+	parse_game_sound("$EngineSnd:", &sip->engine_snd, sip->name);
 
 	if(optional_string("$Minimum Engine Volume:"))
 		stuff_float(&sip->min_engine_vol);
 
 	//Parse optional sound to be used for beginning of a glide
-	parse_sound("$GlideStartSnd:", &sip->glide_start_snd, sip->name);
+	parse_game_sound("$GlideStartSnd:", &sip->glide_start_snd, sip->name);
 
 	//Parse optional sound to be used for end of a glide
-	parse_sound("$GlideEndSnd:", &sip->glide_end_snd, sip->name);
+	parse_game_sound("$GlideEndSnd:", &sip->glide_end_snd, sip->name);
 
 	parse_ship_sounds(sip);
 	
@@ -3993,9 +3993,9 @@ static int parse_ship_values(ship_info* sip, const bool is_template, const bool 
 			stuff_float(&mtp->length);
 		}
 
-		parse_sound("+StartSnd:", &mtp->start_snd, sip->name);
-		parse_sound("+LoopSnd:", &mtp->loop_snd, sip->name);
-		parse_sound("+StopSnd:", &mtp->stop_snd, sip->name);
+		parse_game_sound("+StartSnd:", &mtp->start_snd, sip->name);
+		parse_game_sound("+LoopSnd:", &mtp->loop_snd, sip->name);
+		parse_game_sound("+StopSnd:", &mtp->stop_snd, sip->name);
 	}
 
 	if (optional_string("$Glowpoint overrides:")) {
@@ -4237,12 +4237,12 @@ static int parse_ship_values(ship_info* sip, const bool is_template, const bool 
 
 				sp->engine_wash_pointer = NULL;
 				
-				sp->alive_snd = -1;
-				sp->dead_snd = -1;
-				sp->rotation_snd = -1;
-				sp->turret_gun_rotation_snd = -1;
+				sp->alive_snd = gamesnd_id();
+				sp->dead_snd = gamesnd_id();
+				sp->rotation_snd = gamesnd_id();
+				sp->turret_gun_rotation_snd = gamesnd_id();
 				sp->turret_gun_rotation_snd_mult = 1.0f;
-				sp->turret_base_rotation_snd = -1;
+				sp->turret_base_rotation_snd = gamesnd_id();
 				sp->turret_base_rotation_snd_mult = 1.0f;
 				
                 sp->flags.reset();
@@ -4329,11 +4329,11 @@ static int parse_ship_values(ship_info* sip, const bool is_template, const bool 
 					WarningEx(LOCATION,"Invalid engine wash name %s specified for subsystem %s in %s '%s'", name_tmp, sp->subobj_name, info_type_name, sip->name);
 			}
 
-			parse_sound("$AliveSnd:", &sp->alive_snd, sp->subobj_name);
-			parse_sound("$DeadSnd:", &sp->dead_snd, sp->subobj_name);
-			parse_sound("$RotationSnd:", &sp->rotation_snd, sp->subobj_name);
-			parse_sound("$Turret Base RotationSnd:", &sp->turret_base_rotation_snd, sp->subobj_name);
-			parse_sound("$Turret Gun RotationSnd:", &sp->turret_gun_rotation_snd, sp->subobj_name);
+			parse_game_sound("$AliveSnd:", &sp->alive_snd, sp->subobj_name);
+			parse_game_sound("$DeadSnd:", &sp->dead_snd, sp->subobj_name);
+			parse_game_sound("$RotationSnd:", &sp->rotation_snd, sp->subobj_name);
+			parse_game_sound("$Turret Base RotationSnd:", &sp->turret_base_rotation_snd, sp->subobj_name);
+			parse_game_sound("$Turret Gun RotationSnd:", &sp->turret_gun_rotation_snd, sp->subobj_name);
 
 			if (optional_string("$Turret BaseSnd Volume:"))
 				stuff_float(&sp->turret_base_rotation_snd_mult);
@@ -4649,18 +4649,18 @@ static int parse_ship_values(ship_info* sip, const bool is_template, const bool 
 							current_trigger->end = 0;
 
 						if(optional_string("$Sound:")){
-							parse_sound("+Start:", &current_trigger->start_sound, sip->name);
+							parse_game_sound("+Start:", &current_trigger->start_sound, sip->name);
 
-							parse_sound("+Loop:", &current_trigger->loop_sound, sip->name);
+							parse_game_sound("+Loop:", &current_trigger->loop_sound, sip->name);
 
-							parse_sound("+End:", &current_trigger->end_sound, sip->name);
+							parse_game_sound("+End:", &current_trigger->end_sound, sip->name);
 
 							required_string("+Radius:");
 							stuff_float(&current_trigger->snd_rad );
 						}else{
-							current_trigger->start_sound = -1;
-							current_trigger->loop_sound = -1;
-							current_trigger->end_sound = -1;
+							current_trigger->start_sound = gamesnd_id();
+							current_trigger->loop_sound = gamesnd_id();
+							current_trigger->end_sound = gamesnd_id();
 							current_trigger->snd_rad = 0;
 						}
 					}
@@ -6281,25 +6281,25 @@ void ship_recalc_subsys_strength( ship *shipp )
                 obj_snd_delete_type(shipp->objnum, ship_system->system_info->dead_snd, ship_system);
                 ship_system->subsys_snd_flags.set(Ship::Subsys_Sound_Flags::Dead, false);
             }
-            if ((ship_system->system_info->alive_snd != -1) && !(ship_system->subsys_snd_flags[Ship::Subsys_Sound_Flags::Alive]))
+            if ((ship_system->system_info->alive_snd.isValid()) && !(ship_system->subsys_snd_flags[Ship::Subsys_Sound_Flags::Alive]))
             {
                 obj_snd_assign(shipp->objnum, ship_system->system_info->alive_snd, &ship_system->system_info->pnt, 0, OS_SUBSYS_ALIVE, ship_system);
                 ship_system->subsys_snd_flags.set(Ship::Subsys_Sound_Flags::Alive);
             }
             if (!(ship_system->subsys_snd_flags[Ship::Subsys_Sound_Flags::Turret_rotation]))
             {
-                if (ship_system->system_info->turret_base_rotation_snd != -1)
+                if (ship_system->system_info->turret_base_rotation_snd.isValid())
                 {
                     obj_snd_assign(shipp->objnum, ship_system->system_info->turret_base_rotation_snd, &ship_system->system_info->pnt, 0, OS_TURRET_BASE_ROTATION, ship_system);
                     ship_system->subsys_snd_flags.set(Ship::Subsys_Sound_Flags::Turret_rotation);
                 }
-                if (ship_system->system_info->turret_gun_rotation_snd != -1)
+                if (ship_system->system_info->turret_gun_rotation_snd.isValid())
                 {
                     obj_snd_assign(shipp->objnum, ship_system->system_info->turret_gun_rotation_snd, &ship_system->system_info->pnt, 0, OS_TURRET_GUN_ROTATION, ship_system);
                     ship_system->subsys_snd_flags.set(Ship::Subsys_Sound_Flags::Turret_rotation);
                 }
             }
-            if ((ship_system->flags[Subsystem_Flags::Rotates]) && (ship_system->system_info->rotation_snd != -1) && !(ship_system->subsys_snd_flags[Ship::Subsys_Sound_Flags::Rotate]))
+            if ((ship_system->flags[Subsystem_Flags::Rotates]) && (ship_system->system_info->rotation_snd.isValid()) && !(ship_system->subsys_snd_flags[Ship::Subsys_Sound_Flags::Rotate]))
             {
                 obj_snd_assign(shipp->objnum, ship_system->system_info->rotation_snd, &ship_system->system_info->pnt, 0, OS_SUBSYS_ROTATION, ship_system);
                 ship_system->subsys_snd_flags.set(Ship::Subsys_Sound_Flags::Rotate);
@@ -6323,7 +6323,7 @@ void ship_recalc_subsys_strength( ship *shipp )
                 obj_snd_delete_type(shipp->objnum, ship_system->system_info->rotation_snd, ship_system);
                 ship_system->subsys_snd_flags.set(Ship::Subsys_Sound_Flags::Rotate, false);
             }
-            if ((ship_system->system_info->dead_snd != -1) && !(ship_system->subsys_snd_flags[Ship::Subsys_Sound_Flags::Dead]))
+            if ((ship_system->system_info->dead_snd.isValid()) && !(ship_system->subsys_snd_flags[Ship::Subsys_Sound_Flags::Dead]))
             {
                 obj_snd_assign(shipp->objnum, ship_system->system_info->dead_snd, &ship_system->system_info->pnt, 0, OS_SUBSYS_DEAD, ship_system);
                 ship_system->subsys_snd_flags.set(Ship::Subsys_Sound_Flags::Dead, false);
@@ -7785,7 +7785,7 @@ static void ship_dying_frame(object *objp, int ship_num)
 		if (shipp->flags[Ship_Flags::Vaporize]) {
 			if (timestamp_elapsed(shipp->final_death_time)) {
 				// play death sound
-				snd_play_3d( gamesnd_get_game_sound(SND_VAPORIZED), &objp->pos, &View_position, objp->radius, NULL, 0, 1.0f, SND_PRIORITY_MUST_PLAY  );
+				snd_play_3d( gamesnd_get_game_sound(GameSounds::VAPORIZED), &objp->pos, &View_position, objp->radius, NULL, 0, 1.0f, SND_PRIORITY_MUST_PLAY  );
 
 				// do joystick effect
 				if (objp == Player_obj) {
@@ -7964,21 +7964,21 @@ static void ship_dying_frame(object *objp, int ship_num)
 			shipp->final_death_time = timestamp(-1);	// never time out again
 			
 			// play ship explosion sound effect, pick appropriate explosion sound
-			int sound_index;
+			gamesnd_id sound_index;
 
-			if (ship_has_sound(objp, SND_SHIP_EXPLODE_1))
+			if (ship_has_sound(objp, GameSounds::SHIP_EXPLODE_1))
 			{
-				sound_index = ship_get_sound(objp, SND_SHIP_EXPLODE_1);
+				sound_index = ship_get_sound(objp, GameSounds::SHIP_EXPLODE_1);
 			}
 			else
 			{
 				if (sip->flags[Info_Flags::Capital] || sip->flags[Info_Flags::Knossos_device]) {
-					sound_index=SND_CAPSHIP_EXPLODE;
+					sound_index=GameSounds::CAPSHIP_EXPLODE;
 				} else {
 					 if ( OBJ_INDEX(objp) & 1 ) {
-						sound_index=SND_SHIP_EXPLODE_1;
+						sound_index=GameSounds::SHIP_EXPLODE_1;
 					} else {
-						sound_index=SND_SHIP_EXPLODE_2;
+						sound_index=GameSounds::SHIP_EXPLODE_2;
 					}
 				}
 			}
@@ -10360,7 +10360,7 @@ int ship_launch_countermeasure(object *objp, int rand_val)
 			} else if(shipp->cmeasure_count <= 0) {
 				HUD_sourced_printf(HUD_SOURCE_HIDDEN, "%s", XSTR( "No more countermeasure charges.", 485));
 			}
-			snd_play( gamesnd_get_game_sound(ship_get_sound(Player_obj, SND_OUT_OF_MISSLES)), 0.0f );
+			snd_play( gamesnd_get_game_sound(ship_get_sound(Player_obj, GameSounds::OUT_OF_MISSLES)), 0.0f );
 		}
 
 		// if we have a player ship, then send the fired packet anyway so that the player
@@ -10390,7 +10390,7 @@ int ship_launch_countermeasure(object *objp, int rand_val)
 
 		// Play sound effect for counter measure launch
 		Assert(shipp->current_cmeasure < Num_weapon_types);
-		if ( Weapon_info[shipp->current_cmeasure].launch_snd >= 0 ) {
+		if ( Weapon_info[shipp->current_cmeasure].launch_snd.isValid() ) {
 			snd_play_3d( gamesnd_get_game_sound(Weapon_info[shipp->current_cmeasure].launch_snd), &pos, &View_position );
 		}
 
@@ -10425,7 +10425,7 @@ void ship_maybe_play_primary_fail_sound()
 			stampval = 50;
 		}
 		Laser_energy_out_snd_timer = timestamp(stampval);
-		snd_play( gamesnd_get_game_sound(ship_get_sound(Player_obj, SND_OUT_OF_WEAPON_ENERGY)));
+		snd_play( gamesnd_get_game_sound(ship_get_sound(Player_obj, GameSounds::OUT_OF_WEAPON_ENERGY)));
 	}
 }
 
@@ -10443,7 +10443,7 @@ static int ship_maybe_play_secondary_fail_sound(weapon_info *wip)
 		} else {
 			Missile_out_snd_timer = timestamp(50);
 		}
-		snd_play( gamesnd_get_game_sound(ship_get_sound(Player_obj, SND_OUT_OF_MISSLES)) );
+		snd_play( gamesnd_get_game_sound(ship_get_sound(Player_obj, GameSounds::OUT_OF_MISSLES)) );
 		return 1;
 	}
 	return 0;
@@ -10639,7 +10639,7 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 	float autoaim_fov = 0;			// autoaim limit
 	float dist_to_target = 0;		// distance to target, for autoaim & automatic convergence
 
-	int			sound_played;	// used to track what sound is played.  If the player is firing two banks
+	gamesnd_id		sound_played;	// used to track what sound is played.  If the player is firing two banks
 										// of the same laser, we only want to play one sound
 	Assert( obj != NULL );
 
@@ -10686,7 +10686,7 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 		return 0;
 	}
 
-	sound_played = -1;
+	sound_played = gamesnd_id();
 
 	// Fire the correct primary bank.  If primaries are linked (SF_PRIMARY_LINKED set), then fire 
 	// both primary banks.
@@ -11317,7 +11317,7 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 			if ( sound_played != winfo_p->launch_snd ) {
 				sound_played = winfo_p->launch_snd;
 				if ( obj == Player_obj ) {
-					if ( winfo_p->launch_snd != -1 ) {
+					if ( winfo_p->launch_snd.isValid() ) {
 						weapon_info *wip;
 						ship_weapon *sw_pl;
 
@@ -11327,14 +11327,14 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 						}
 
 						//Check for pre-launch sound and play if relevant
-						if( (winfo_p->pre_launch_snd != -1)									//If this weapon type has a pre-fire sound
+						if( (winfo_p->pre_launch_snd.isValid())									//If this weapon type has a pre-fire sound
 							&& ((timestamp() - swp->last_primary_fire_sound_stamp[bank_to_fire]) >= winfo_p->pre_launch_snd_min_interval)	//and if we're past our minimum delay from the last cease-fire
 							&& (shipp->was_firing_last_frame[bank_to_fire] == 0)				//and if we are at the beginning of a firing stream
 						){ 
 							snd_play( gamesnd_get_game_sound(winfo_p->pre_launch_snd), 0.0f, 1.0f, SND_PRIORITY_MUST_PLAY); //play it
 						} else { //Otherwise, play normal firing sounds
 							// HACK
-							if(winfo_p->launch_snd == SND_AUTOCANNON_SHOT){
+							if(winfo_p->launch_snd == gamesnd_id(GameSounds::AUTOCANNON_SHOT)){
 								snd_play( gamesnd_get_game_sound(winfo_p->launch_snd), 0.0f, 1.0f, SND_PRIORITY_TRIPLE_INSTANCE );
 							} else {
 								snd_play( gamesnd_get_game_sound(winfo_p->launch_snd), 0.0f, 1.0f, SND_PRIORITY_MUST_PLAY );
@@ -11356,7 +11356,7 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 						}
 					}
 				}else {
-					if ( winfo_p->launch_snd != -1 ) {
+					if ( winfo_p->launch_snd.isValid() ) {
 						snd_play_3d( gamesnd_get_game_sound(winfo_p->launch_snd), &obj->pos, &View_position );
 					}	
 				}
@@ -11758,7 +11758,7 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 						HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Cannot fire %s without a lock", 488), missile_name);
 					}
 
-					snd_play( gamesnd_get_game_sound(ship_get_sound(Player_obj, SND_OUT_OF_MISSLES)) );
+					snd_play( gamesnd_get_game_sound(ship_get_sound(Player_obj, GameSounds::OUT_OF_MISSLES)) );
 					swp->next_secondary_fire_stamp[bank] = timestamp(800);	// to avoid repeating messages
 					return 0;
 				}
@@ -11781,7 +11781,7 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 				if ( !Weapon_energy_cheat )
 				{
 					HUD_sourced_printf(HUD_SOURCE_HIDDEN, NOX("Cannot fire %s if target is not tagged"),wip->name);
-					snd_play( gamesnd_get_game_sound(ship_get_sound(Player_obj, SND_OUT_OF_MISSLES)) );
+					snd_play( gamesnd_get_game_sound(ship_get_sound(Player_obj, GameSounds::OUT_OF_MISSLES)) );
 					swp->next_secondary_fire_stamp[bank] = timestamp(800);	// to avoid repeating messages
 					return 0;
 				}
@@ -11984,7 +11984,7 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 	}
 
 	if ( obj == Player_obj ) {
-		if ( Weapon_info[weapon_idx].launch_snd != -1 ) {
+		if ( Weapon_info[weapon_idx].launch_snd.isValid() ) {
 			snd_play( gamesnd_get_game_sound(Weapon_info[weapon_idx].launch_snd), 0.0f, 1.0f, SND_PRIORITY_MUST_PLAY );
 			swp = &Player_ship->weapons;
 			if (bank >= 0) {
@@ -11998,7 +11998,7 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 		}
 
 	} else {
-		if ( Weapon_info[weapon_idx].launch_snd != -1 ) {
+		if ( Weapon_info[weapon_idx].launch_snd.isValid() ) {
 			snd_play_3d( gamesnd_get_game_sound(Weapon_info[weapon_idx].launch_snd), &obj->pos, &View_position );
 		}
 	}
@@ -12093,7 +12093,7 @@ done_secondary:
 			}
 						
 			if ( obj == Player_obj ) {
-				snd_play( gamesnd_get_game_sound(ship_get_sound(Player_obj, SND_SECONDARY_CYCLE)) );
+				snd_play( gamesnd_get_game_sound(ship_get_sound(Player_obj, GameSounds::SECONDARY_CYCLE)) );
 			}
 		}
 	}
@@ -12311,7 +12311,7 @@ int ship_select_next_primary(object *objp, int direction)
 	{
 		if ( objp == Player_obj )
 		{
-			snd_play( gamesnd_get_game_sound(ship_get_sound(objp, SND_PRIMARY_CYCLE)), 0.0f );
+			snd_play( gamesnd_get_game_sound(ship_get_sound(objp, GameSounds::PRIMARY_CYCLE)), 0.0f );
 		}
 		ship_primary_changed(shipp);
 		objp = &Objects[shipp->objnum];
@@ -12404,7 +12404,7 @@ int ship_select_next_secondary(object *objp)
 			swp->previous_secondary_bank = original_bank;
 			if ( objp == Player_obj )
 			{
-				snd_play( gamesnd_get_game_sound(ship_get_sound(Player_obj, SND_SECONDARY_CYCLE)), 0.0f );
+				snd_play( gamesnd_get_game_sound(ship_get_sound(Player_obj, GameSounds::SECONDARY_CYCLE)), 0.0f );
 			}
 			ship_secondary_changed(shipp);
 
@@ -13408,7 +13408,7 @@ float ship_calculate_rearm_duration( object *objp )
 			if (!found_first_empty && (swp->primary_bank_start_ammo[i] - swp->primary_bank_ammo[i]))
 			{
 				found_first_empty = true;
-				prim_rearm_time += gamesnd_get_max_duration(gamesnd_get_game_sound(SND_MISSILE_START_LOAD)) / 1000.0f;
+				prim_rearm_time += gamesnd_get_max_duration(gamesnd_get_game_sound(GameSounds::MISSILE_START_LOAD)) / 1000.0f;
 			}
 
 			prim_rearm_time += num_reloads * wip->rearm_rate;
@@ -13438,7 +13438,7 @@ float ship_calculate_rearm_duration( object *objp )
 			if (!found_first_empty && (swp->secondary_bank_start_ammo[i] - swp->secondary_bank_ammo[i]))
 			{
 				found_first_empty = true;
-				sec_rearm_time += gamesnd_get_max_duration(gamesnd_get_game_sound(SND_MISSILE_START_LOAD)) / 1000.0f;
+				sec_rearm_time += gamesnd_get_max_duration(gamesnd_get_game_sound(GameSounds::MISSILE_START_LOAD)) / 1000.0f;
 			}
 
 			sec_rearm_time += num_reloads * wip->rearm_rate;
@@ -13606,7 +13606,7 @@ int ship_do_rearm_frame( object *objp, float frametime )
 			// loading equipment moving into place
 			if ( aip->rearm_first_missile == TRUE )
 			{
-				swp->secondary_bank_rearm_time[i] = timestamp((int)gamesnd_get_max_duration(gamesnd_get_game_sound(SND_MISSILE_START_LOAD)));
+				swp->secondary_bank_rearm_time[i] = timestamp((int)gamesnd_get_max_duration(gamesnd_get_game_sound(GameSounds::MISSILE_START_LOAD)));
 			}
 			
 			if ( swp->secondary_bank_ammo[i] < swp->secondary_bank_start_ammo[i] )
@@ -13623,7 +13623,7 @@ int ship_do_rearm_frame( object *objp, float frametime )
 					rearm_time = Weapon_info[swp->secondary_bank_weapons[i]].rearm_rate;
 					swp->secondary_bank_rearm_time[i] = timestamp((int)(rearm_time * 1000.0f));
 					
-					snd_play_3d( gamesnd_get_game_sound(SND_MISSILE_LOAD), &objp->pos, &View_position );
+					snd_play_3d( gamesnd_get_game_sound(GameSounds::MISSILE_LOAD), &objp->pos, &View_position );
 					if (objp == Player_obj)
 						joy_ff_play_reload_effect();
 
@@ -13645,7 +13645,7 @@ int ship_do_rearm_frame( object *objp, float frametime )
 			if ((aip->rearm_first_missile == TRUE) && (i == swp->num_secondary_banks - 1))
 			{
 				if ((banks_full != swp->num_secondary_banks))
-					snd_play_3d( gamesnd_get_game_sound(SND_MISSILE_START_LOAD), &objp->pos, &View_position );
+					snd_play_3d( gamesnd_get_game_sound(GameSounds::MISSILE_START_LOAD), &objp->pos, &View_position );
 
 				aip->rearm_first_missile = FALSE;
 			}
@@ -13670,11 +13670,11 @@ int ship_do_rearm_frame( object *objp, float frametime )
 				if ( aip->rearm_first_ballistic_primary == TRUE )
 				{
 					// Goober5000
-					int sound_index;
-					if (gamesnd_game_sound_valid(SND_BALLISTIC_START_LOAD))
-						sound_index = SND_BALLISTIC_START_LOAD;
+					gamesnd_id sound_index;
+					if (gamesnd_game_sound_valid(GameSounds::BALLISTIC_START_LOAD))
+						sound_index = GameSounds::BALLISTIC_START_LOAD;
 					else
-						sound_index = SND_MISSILE_START_LOAD;
+						sound_index = GameSounds::MISSILE_START_LOAD;
 
 					swp->primary_bank_rearm_time[i] = timestamp((int)gamesnd_get_max_duration(gamesnd_get_game_sound(sound_index)));
 				}
@@ -13694,11 +13694,11 @@ int ship_do_rearm_frame( object *objp, float frametime )
 						swp->primary_bank_rearm_time[i] = timestamp( (int)(rearm_time * 1000.f) );
 	
 						// Goober5000
-						int sound_index;
-						if (gamesnd_game_sound_valid(SND_BALLISTIC_LOAD))
-							sound_index = SND_BALLISTIC_LOAD;
+						gamesnd_id sound_index;
+						if (gamesnd_game_sound_valid(GameSounds::BALLISTIC_LOAD))
+							sound_index = GameSounds::BALLISTIC_LOAD;
 						else
-							sound_index = SND_MISSILE_LOAD;
+							sound_index = GameSounds::MISSILE_LOAD;
 
 						snd_play_3d( gamesnd_get_game_sound(sound_index), &objp->pos, &View_position );
 	
@@ -13724,11 +13724,11 @@ int ship_do_rearm_frame( object *objp, float frametime )
 			{
 				if (primary_banks_full != swp->num_primary_banks) {
 					// Goober5000
-					int sound_index;
-					if (gamesnd_game_sound_valid(SND_BALLISTIC_START_LOAD))
-						sound_index = SND_BALLISTIC_START_LOAD;
+					gamesnd_id sound_index;
+					if (gamesnd_game_sound_valid(GameSounds::BALLISTIC_START_LOAD))
+						sound_index = GameSounds::BALLISTIC_START_LOAD;
 					else
-						sound_index = SND_MISSILE_START_LOAD;
+						sound_index = GameSounds::MISSILE_START_LOAD;
 
 					snd_play_3d( gamesnd_get_game_sound(sound_index), &objp->pos, &View_position );
 				}
@@ -13999,7 +13999,7 @@ void ship_assign_sound(ship *sp)
 	objp = &Objects[sp->objnum];
 	sip = &Ship_info[sp->ship_info_index];
 
-	if ( sip->engine_snd != -1 ) {
+	if ( sip->engine_snd.isValid() ) {
 		vm_vec_copy_scale(&engine_pos, &objp->orient.vec.fvec, -objp->radius/2.0f);		
 		
 		obj_snd_assign(sp->objnum, sip->engine_snd, &engine_pos, 1);
@@ -14010,30 +14010,30 @@ void ship_assign_sound(ship *sp)
 	while(moveup != END_OF_LIST(&sp->subsys_list)){
 		// Check for any engine sounds		
 		if(strstr(moveup->system_info->name, "enginelarge")){
-			obj_snd_assign(sp->objnum, SND_ENGINE_LOOP_LARGE, &moveup->system_info->pnt, 0);
+			obj_snd_assign(sp->objnum, GameSounds::ENGINE_LOOP_LARGE, &moveup->system_info->pnt, 0);
 		} else if(strstr(moveup->system_info->name, "enginehuge")){
-			obj_snd_assign(sp->objnum, SND_ENGINE_LOOP_HUGE, &moveup->system_info->pnt, 0);
+			obj_snd_assign(sp->objnum, GameSounds::ENGINE_LOOP_HUGE, &moveup->system_info->pnt, 0);
 		}
 
 		//Do any normal subsystem sounds
 		if(moveup->current_hits > 0.0f)
 		{
-			if(moveup->system_info->alive_snd != -1)
+			if(moveup->system_info->alive_snd.isValid())
 			{
 				obj_snd_assign(sp->objnum, moveup->system_info->alive_snd, &moveup->system_info->pnt, 0, OS_SUBSYS_ALIVE, moveup);
                 moveup->subsys_snd_flags.set(Ship::Subsys_Sound_Flags::Alive);
 			}
-			if(moveup->system_info->turret_base_rotation_snd != -1)
+			if(moveup->system_info->turret_base_rotation_snd.isValid())
 			{
 				obj_snd_assign(sp->objnum, moveup->system_info->turret_base_rotation_snd, &moveup->system_info->pnt, 0, OS_TURRET_BASE_ROTATION, moveup);
 				moveup->subsys_snd_flags.set(Ship::Subsys_Sound_Flags::Turret_rotation);
 			}
-			if(moveup->system_info->turret_gun_rotation_snd != -1)
+			if(moveup->system_info->turret_gun_rotation_snd.isValid())
 			{
 				obj_snd_assign(sp->objnum, moveup->system_info->turret_gun_rotation_snd, &moveup->system_info->pnt, 0, OS_TURRET_GUN_ROTATION, moveup);
 				moveup->subsys_snd_flags.set(Ship::Subsys_Sound_Flags::Turret_rotation);
 			}
-			if((moveup->system_info->rotation_snd != -1) && (moveup->flags[Ship::Subsystem_Flags::Rotates]))
+			if((moveup->system_info->rotation_snd.isValid()) && (moveup->flags[Ship::Subsystem_Flags::Rotates]))
 			{
 				obj_snd_assign(sp->objnum, moveup->system_info->rotation_snd, &moveup->system_info->pnt, 0, OS_SUBSYS_ROTATION, moveup);
 				moveup->subsys_snd_flags.set(Ship::Subsys_Sound_Flags::Rotate);
@@ -14041,7 +14041,7 @@ void ship_assign_sound(ship *sp)
 		} 
 		else 
 		{
-			if(moveup->system_info->dead_snd != -1)
+			if(moveup->system_info->dead_snd.isValid())
 			{
 				obj_snd_assign(sp->objnum, moveup->system_info->dead_snd, &moveup->system_info->pnt, 0, OS_SUBSYS_DEAD, moveup);
 				moveup->subsys_snd_flags.set(Ship::Subsys_Sound_Flags::Dead);
@@ -18396,29 +18396,29 @@ void init_path_metadata(path_metadata& metadata)
 	metadata.depart_speed_mult = FLT_MIN;
 }
 
-int ship_get_sound(object *objp, GameSoundsIndex id)
+gamesnd_id ship_get_sound(object *objp, GameSounds id)
 {
 	Assert( objp != NULL );
-	Assert( gamesnd_game_sound_valid(id) );
+	Assert( gamesnd_game_sound_valid(gamesnd_id(id)) );
 
 	// It's possible that this gets called when an object (in most cases the player) is dead or an observer
 	if (objp->type == OBJ_OBSERVER || objp->type == OBJ_GHOST)
-		return id;
+		return gamesnd_id(id);
 
 	Assertion(objp->type == OBJ_SHIP, "Expected a ship, got '%s'.", Object_type_names[objp->type]);
 
 	ship *shipp = &Ships[objp->instance];
 	ship_info *sip = &Ship_info[shipp->ship_info_index];
 
-	SCP_map<GameSoundsIndex, int>::iterator element = sip->ship_sounds.find(id);
+	SCP_map<GameSounds, gamesnd_id>::iterator element = sip->ship_sounds.find(id);
 
 	if (element == sip->ship_sounds.end())
-		return id;
+		return gamesnd_id(id);
 	else
 		return (*element).second;
 }
 
-bool ship_has_sound(object *objp, GameSoundsIndex id)
+bool ship_has_sound(object *objp, GameSounds id)
 {
 	Assert( objp != NULL );
 	Assert( gamesnd_game_sound_valid(id) );
@@ -18432,7 +18432,7 @@ bool ship_has_sound(object *objp, GameSoundsIndex id)
 	ship *shipp = &Ships[objp->instance];
 	ship_info *sip = &Ship_info[shipp->ship_info_index];
 
-	SCP_map<GameSoundsIndex, int>::iterator element = sip->ship_sounds.find(id);
+	auto element = sip->ship_sounds.find(id);
 
 	if (element == sip->ship_sounds.end())
 		return false;
@@ -18565,7 +18565,7 @@ void ship_render_batch_thrusters(object *obj)
 			//Handle sounds and stuff
 			if ( shipp->thrusters_start[i] <= 0 ) {
 				shipp->thrusters_start[i] = timestamp();
-				if(mtp->start_snd >= 0)
+				if(mtp->start_snd.isValid())
 					snd_play_3d( gamesnd_get_game_sound(mtp->start_snd), &mtp->pos, &Eye_position, 0.0f, &obj->phys_info.vel );
 			}
 
@@ -18574,9 +18574,9 @@ void ship_render_batch_thrusters(object *obj)
 			//it isn't assigned already
 			//start sound doesn't exist or has finished
 			if (!Cmdline_freespace_no_sound) {
-				if(mtp->loop_snd >= 0
+				if(mtp->loop_snd.isValid()
 					&& shipp->thrusters_sounds[i] < 0
-					&& (mtp->start_snd < 0 || (gamesnd_get_max_duration(gamesnd_get_game_sound(mtp->start_snd)) < timestamp() - shipp->thrusters_start[i]))
+					&& (!mtp->start_snd.isValid() || (gamesnd_get_max_duration(gamesnd_get_game_sound(mtp->start_snd)) < timestamp() - shipp->thrusters_start[i]))
 					)
 				{
 					shipp->thrusters_sounds[i] = obj_snd_assign(OBJ_INDEX(obj), mtp->loop_snd, &mtp->pos, 1);
@@ -18623,7 +18623,7 @@ void ship_render_batch_thrusters(object *obj)
 				shipp->thrusters_sounds[i] = -1;
 			}
 
-			if ( mtp->stop_snd >= 0 ) {
+			if ( mtp->stop_snd.isValid() ) {
 				//Get world pos
 				vec3d start;
 				vm_vec_unrotate(&start, &mtp->pos, &obj->orient);

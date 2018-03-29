@@ -21,6 +21,7 @@
 #include "graphics/2d.h"
 #include "graphics/font.h"
 #include "io/timer.h"
+#include "mission/missionparse.h"
 #include "mod_table/mod_table.h"
 #include "network/multi.h"
 #include "network/multi_log.h"
@@ -545,7 +546,7 @@ static void fs2netd_handle_ping()
 		// make sure that we are good to go
 		if ( !Is_connected ) {
 			if (!Is_standalone) {
-				gamesnd_play_iface(SND_GENERAL_FAIL);
+				gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 				popup(PF_USE_AFFIRMATIVE_ICON | PF_TITLE_BIG | PF_TITLE_RED, 1, POPUP_OK, "ERROR:\nLost connection to the FS2NetD server!");
 			}
 
@@ -587,7 +588,7 @@ static void fs2netd_handle_ping()
 			// make sure that we are good to go
 			if ( !Is_connected ) {
 				if (!Is_standalone) {
-					gamesnd_play_iface(SND_GENERAL_FAIL);
+					gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 					popup(PF_USE_AFFIRMATIVE_ICON | PF_TITLE_BIG | PF_TITLE_RED, 1, POPUP_OK, "ERROR:\nLost connection to the FS2NetD server!");
 				}
 

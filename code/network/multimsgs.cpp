@@ -942,7 +942,7 @@ void process_join_packet(ubyte* data, header* hinfo)
 		case JOIN_QUERY_RESTRICTED :		
 			if(!(Game_mode & GM_STANDALONE_SERVER)){			
 				// notify the host of the event
-				snd_play(gamesnd_get_game_sound(SND_CUE_VOICE));
+				snd_play(gamesnd_get_game_sound(GameSounds::CUE_VOICE));
 			}
 
 			// set the query timestamp
@@ -3335,7 +3335,7 @@ void process_turret_fired_packet( ubyte *data, header *hinfo )
 
 	if (weapon_objnum != -1) {
 		wid = Weapons[Objects[weapon_objnum].instance].weapon_info_index;
-		if ( Weapon_info[wid].launch_snd != -1 ) {
+		if ( Weapon_info[wid].launch_snd.isValid() ) {
 			snd_play_3d( gamesnd_get_game_sound(Weapon_info[wid].launch_snd), &pos, &View_position );
 		}		
 	}
@@ -6865,7 +6865,7 @@ void process_host_restr_packet(ubyte *data, header *hinfo)
 			Multi_restr_query_timestamp = timestamp(MULTI_QUERY_RESTR_STAMP);
 
 			// notify the host of the event
-			gamesnd_play_iface(SND_BRIEF_STAGE_CHG_FAIL);
+			gamesnd_play_iface(InterfaceSounds::BRIEF_STAGE_CHG_FAIL);
 			HUD_printf(XSTR("Player %s has tried to join - allow (y/n) ?",736),callsign);
 			break;
 			
@@ -8140,7 +8140,7 @@ void process_flak_fired_packet(ubyte *data, header *hinfo)
 	weapon_objnum = weapon_create( &pos, &orient, wid, OBJ_INDEX(objp), -1, 1, 0, 0.0f, ssp);
 	if (weapon_objnum != -1) {
 		wid = Weapons[Objects[weapon_objnum].instance].weapon_info_index;
-		if ( Weapon_info[wid].launch_snd != -1 ) {
+		if ( Weapon_info[wid].launch_snd.isValid() ) {
 			snd_play_3d( gamesnd_get_game_sound(Weapon_info[wid].launch_snd), &pos, &View_position );
 		}
 

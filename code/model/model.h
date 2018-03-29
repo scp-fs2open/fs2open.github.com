@@ -15,6 +15,7 @@
 #include "globalincs/globals.h"	// for NAME_LENGTH
 #include "globalincs/pstypes.h"
 #include "graphics/2d.h"
+#include "gamesnd/gamesnd.h"
 #include "object/object.h"
 #include "ship/ship_flags.h"
 #include "model/model_flags.h"
@@ -145,16 +146,16 @@ public:
 	vec3d	turret_firing_point[MAX_TFP];		//	in parent object's reference frame, point from which to fire.
 	int		turret_gun_sobj;					// Which subobject in this model the firing points are linked to.
 	float	turret_turning_rate;				// How fast the turret turns. Read from ships.tbl
-	int		turret_base_rotation_snd;				// Sound to make when the turret moves
+	gamesnd_id	turret_base_rotation_snd;				// Sound to make when the turret moves
 	float	turret_base_rotation_snd_mult;			// Volume multiplier for the turret sounds
-	int		turret_gun_rotation_snd;				// Sound to make when the turret moves
+	gamesnd_id		turret_gun_rotation_snd;				// Sound to make when the turret moves
 	float	turret_gun_rotation_snd_mult;			// Volume multiplier for the turret sounds
 
 
 	//Sound stuff
-	int		alive_snd;		//Sound to make while the subsystem is not-dead
-	int		dead_snd;		//Sound to make when the subsystem is dead.
-	int		rotation_snd;	//Sound to make when the subsystem is rotating. (ie turrets)
+	gamesnd_id	alive_snd;		//Sound to make while the subsystem is not-dead
+	gamesnd_id	dead_snd;		//Sound to make when the subsystem is dead.
+	gamesnd_id	rotation_snd;	//Sound to make when the subsystem is rotating. (ie turrets)
 
 	// engine wash info
 	struct engine_wash_info		*engine_wash_pointer;					// index into Engine_wash_info

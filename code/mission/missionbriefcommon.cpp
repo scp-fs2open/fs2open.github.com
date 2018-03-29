@@ -972,7 +972,7 @@ void brief_render_icon(int stage_num, int icon_num, float frametime, int selecte
 
 				if ( Brief_stage_highlight_sound_handle < 0 ) {
 					if ( !Fred_running) {
-						Brief_stage_highlight_sound_handle = snd_play(gamesnd_get_interface_sound(SND_ICON_HIGHLIGHT));
+						Brief_stage_highlight_sound_handle = snd_play(gamesnd_get_interface_sound(InterfaceSounds::ICON_HIGHLIGHT));
 					}
 				}
 			}
@@ -1289,7 +1289,7 @@ int brief_render_text(int line_offset, int x, int y, int h, float frametime, int
 		if (snd_is_playing(Brief_text_wipe_snd)) {
 			snd_stop(Brief_text_wipe_snd);
 		}
-		gamesnd_play_iface(SND_BRIEF_TEXT_WIPE);
+		gamesnd_play_iface(InterfaceSounds::BRIEF_TEXT_WIPE);
 		Play_brief_voice = 1;
 	}
 

@@ -702,7 +702,7 @@ int medal_main_do()
 
 	// check to see if a button was pressed
 	if ( (k == (KEY_CTRLED|KEY_ENTER)) || (Medals_buttons[gr_screen.res][MEDALS_EXIT].button.pressed()) ) {
-		gamesnd_play_iface(SND_COMMIT_PRESSED);
+		gamesnd_play_iface(InterfaceSounds::COMMIT_PRESSED);
 		if (Medals_mode == MM_NORMAL) {
 			gameseq_post_event(GS_EVENT_PREVIOUS_STATE);
 		} else {

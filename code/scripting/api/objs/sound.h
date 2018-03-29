@@ -2,7 +2,7 @@
 
 #include <sound/ds.h>
 #include "scripting/ade_api.h"
-
+#include "gamesnd/gamesnd.h"
 #include "sound/sound.h"
 
 namespace scripting {
@@ -11,11 +11,11 @@ namespace api {
 
 struct sound_entry_h
 {
-	int idx;
+	gamesnd_id idx;
 
 	sound_entry_h();
 
-	explicit sound_entry_h(int n_idx);
+	explicit sound_entry_h(gamesnd_id n_idx);
 
 	game_snd *Get();
 
@@ -31,7 +31,7 @@ struct sound_h : public sound_entry_h
 
 	sound_h();
 
-	sound_h(int n_gs_idx, int n_sig);
+	sound_h(gamesnd_id n_gs_idx, int n_sig);
 
 	int getSignature();
 

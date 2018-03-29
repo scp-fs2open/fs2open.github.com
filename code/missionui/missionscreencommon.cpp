@@ -752,7 +752,7 @@ void common_button_do(int i)
 
 	case COMMON_BRIEFING_BUTTON:
 		if ( Current_screen != ON_BRIEFING_SELECT ) {
-			gamesnd_play_iface(SND_SCREEN_MODE_PRESSED);
+			gamesnd_play_iface(InterfaceSounds::SCREEN_MODE_PRESSED);
 			Next_screen = ON_BRIEFING_SELECT;
 		}
 		break;
@@ -760,7 +760,7 @@ void common_button_do(int i)
 	case COMMON_WEAPON_BUTTON:
 		if ( Current_screen != ON_WEAPON_SELECT ) {
 			if ( !wss_slots_all_empty() ) {
-				gamesnd_play_iface(SND_SCREEN_MODE_PRESSED);
+				gamesnd_play_iface(InterfaceSounds::SCREEN_MODE_PRESSED);
 				Next_screen = ON_WEAPON_SELECT;
 			} else {
 				common_show_no_ship_error();
@@ -770,18 +770,18 @@ void common_button_do(int i)
 
 	case COMMON_SS_BUTTON:
 		if ( Current_screen != ON_SHIP_SELECT ) {
-			gamesnd_play_iface(SND_SCREEN_MODE_PRESSED);
+			gamesnd_play_iface(InterfaceSounds::SCREEN_MODE_PRESSED);
 			Next_screen = ON_SHIP_SELECT;
 		}
 		break;
 
 	case COMMON_OPTIONS_BUTTON:
-		gamesnd_play_iface(SND_SWITCH_SCREENS);
+		gamesnd_play_iface(InterfaceSounds::SWITCH_SCREENS);
 		gameseq_post_event( GS_EVENT_OPTIONS_MENU );
 		break;
 
 	case COMMON_HELP_BUTTON:
-		gamesnd_play_iface(SND_HELP_PRESSED);
+		gamesnd_play_iface(InterfaceSounds::HELP_PRESSED);
 		launch_context_help();
 		break;
 
@@ -833,7 +833,7 @@ void common_check_keys(int k)
 
 		case KEY_W:
 			if ( brief_only_allow_briefing() ) {
-				gamesnd_play_iface(SND_GENERAL_FAIL);
+				gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 				break;
 			}
 
@@ -850,7 +850,7 @@ void common_check_keys(int k)
 		case KEY_S:
 
 			if ( brief_only_allow_briefing() ) {
-				gamesnd_play_iface(SND_GENERAL_FAIL);
+				gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 				break;
 			}
 
@@ -863,7 +863,7 @@ void common_check_keys(int k)
 		case KEY_SHIFTED+KEY_TAB:
 
 			if ( brief_only_allow_briefing() ) {
-				gamesnd_play_iface(SND_GENERAL_FAIL);
+				gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 				break;
 			}
 
@@ -895,7 +895,7 @@ void common_check_keys(int k)
 		case KEY_TAB:
 
 			if ( brief_only_allow_briefing() ) {
-				gamesnd_play_iface(SND_GENERAL_FAIL);
+				gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 				break;
 			}
 
@@ -1319,7 +1319,7 @@ int wss_get_mode(int from_slot, int from_list, int to_slot, int to_list, int wl_
 }
 
 // store all the unit data and pool data 
-int store_wss_data(ubyte *block, int max_size, int sound,int player_index)
+int store_wss_data(ubyte *block, int max_size, interface_snd_id sound,int player_index)
 {
 	int j, i,offset=0;	
 	short player_id;	
@@ -1394,10 +1394,10 @@ int store_wss_data(ubyte *block, int max_size, int sound,int player_index)
 	}
 
 	// any sound index
-	if(sound == -1){
+	if(!sound.isValid()){
 		block[offset++] = 0xff;
 	} else {
-		block[offset++] = (ubyte)sound;
+		block[offset++] = (ubyte)sound.value();
 	}
 
 	// add a netplayer address to identify who should play the sound
@@ -1511,7 +1511,7 @@ int restore_wss_data(ubyte *block)
 	if((Net_player != NULL) && (Net_player->player_id == player_id)){
 		// play the sound
 		if(sound != 0xff){
-			gamesnd_play_iface((int)sound);
+			gamesnd_play_iface(static_cast<InterfaceSounds>(sound));
 		}
 	}
 

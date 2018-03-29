@@ -97,7 +97,7 @@ void triggered_rotation::start(queued_animation *q)
 
 	nprintf(("ModelAnim", "Starting animation type %i at %i ...\n", q->type, timestamp()));
 
-	current_snd = -2;
+	current_snd = gamesnd_id();
 	current_snd_index = start_sound = q->start_sound;
 	loop_sound = q->loop_sound;
 	end_sound = q->end_sound;
@@ -194,11 +194,11 @@ void triggered_rotation::clear()
 	n_queue = 0;
 	instance = -1;
 	has_started = false;
-	start_sound = -1;
-	loop_sound = -1;
-	end_sound = -1;
-	current_snd = -1;
-	current_snd_index = -1;
+	start_sound = gamesnd_id();
+	loop_sound = gamesnd_id();
+	end_sound = gamesnd_id();
+	current_snd = gamesnd_id();
+	current_snd_index = gamesnd_id();
 	snd_rad = 0.0;
 	obj_num = -1;
 }
@@ -363,9 +363,9 @@ void queued_animation_init(queued_animation *qa)
 	qa->instance = -1;
 	qa->real_end_time = 0;
 
-	qa->start_sound = -1;
-	qa->loop_sound = -1;
-	qa->end_sound = -1;
+	qa->start_sound = gamesnd_id();
+	qa->loop_sound = gamesnd_id();
+	qa->end_sound = gamesnd_id();
 	qa->snd_rad = 0.0f;
 }
 

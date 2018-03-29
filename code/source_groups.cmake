@@ -1236,6 +1236,7 @@ set(file_root_utils
     utils/encoding.h
 	utils/HeapAllocator.cpp
 	utils/HeapAllocator.h
+	utils/id.h
 	utils/RandomRange.h
 	utils/strings.h
     utils/unicode.cpp
