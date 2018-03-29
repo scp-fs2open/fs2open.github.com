@@ -65,8 +65,8 @@ class RandomRange {
 	RandomRange(ValueType param1, ValueType param2, Ts&& ... distributionParameters) :
 		m_generator(std::random_device()()),
 		m_distribution(param1, param2, distributionParameters...) {
-		m_minValue = static_cast<ValueType>(0.0);
-		m_maxValue = static_cast<ValueType>(0.0);
+		m_minValue = static_cast<ValueType>(param1);
+		m_maxValue = static_cast<ValueType>(param2);
 		m_constant = false;
 	}
 
@@ -96,10 +96,24 @@ class RandomRange {
 		return m_distribution(m_generator);
 	}
 
+	/**
+	 * @brief Gets the minimum value that may be returned by this random range
+	 *
+	 * @warning This is not valid for normal distribution ranges since those do not have a definite minimum value.
+	 *
+	 * @return The minimum value
+	 */
 	ValueType min() const {
 		return m_minValue;
 	}
 
+	/**
+	 * @brief Gets the maximum value that may be returned by this random range
+	 *
+	 * @warning This is not valid for normal distribution ranges since those do not have a definite maximum value.
+	 *
+	 * @return The maximum value
+	 */
 	ValueType max() {
 		return m_maxValue;
 	}
