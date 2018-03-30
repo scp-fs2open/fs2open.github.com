@@ -224,7 +224,7 @@ BOOL CFREDApp::InitInstance() {
 	Hide_ship_cues = GetProfileInt("Preferences", "Hide ship cues", Hide_ship_cues);
 	Hide_wing_cues = GetProfileInt("Preferences", "Hide wing cues", Hide_wing_cues);
 	Autosave_disabled = GetProfileInt("Preferences", "Autosave disabled", Autosave_disabled);
-	double_fine_gridlines = GetProfileInt("Preferences", "Double fine gridlines", double_fine_gridlines);
+	double_fine_gridlines = GetProfileInt("Preferences", "Double fine gridlines", double_fine_gridlines ? 1 : 0) != 0;
 	Aa_gridlines = GetProfileInt("Preferences", "Anti aliased gridlines", Aa_gridlines);
 	Show_dock_points = GetProfileInt("Preferences", "Show dock points", Show_dock_points);
 	Show_paths_fred = GetProfileInt("Preferences", "Show paths", Show_paths_fred);
