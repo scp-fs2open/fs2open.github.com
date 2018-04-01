@@ -110,6 +110,7 @@ add_file_folder("Source/UI/Widgets"
 
 add_file_folder("UI"
 	ui/AboutDialog.ui
+	ui/BackgroundEditor.ui
 	ui/BriefingEditorDialog.ui
 	ui/CustomWingNamesDialog.ui
     ui/EventEditorDialog.ui
@@ -119,7 +120,9 @@ add_file_folder("UI"
 	ui/MissionSpecDialog.ui
 	ui/ObjectOrientationDialog.ui
 	ui/SelectionDialog.ui
+	ui/ShieldSystemDialog.ui
 	ui/TeamLoadoutDialog.ui
+	ui/VoiceActingManager.ui
     ui/WaypointEditorDialog.ui
 )
 
