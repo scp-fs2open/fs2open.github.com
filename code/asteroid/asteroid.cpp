@@ -488,20 +488,6 @@ static void asteroid_load(int asteroid_info_index, int asteroid_subtype)
 }
 
 /**
- * Randomly choose a debris model within the current group
- */
-int get_debris_from_same_group(int index) {
-	int group_base, group_offset;
-
-	group_base = (index / NUM_DEBRIS_SIZES) * NUM_DEBRIS_SIZES;
-	group_offset = index - group_base;
-
-	// group base + offset
-	// offset is formed by adding 1 or 2 (since 3 in model group) and mapping back in the 0-2 range
-	return group_base + ((group_offset + rand()%(NUM_DEBRIS_SIZES-1) + 1) % NUM_DEBRIS_SIZES);
-}
-
-/**
  * Returns a weight that depends on asteroid size.
  *
  * The weight is then used to determine the frequencty of different sizes of ship debris
@@ -1593,25 +1579,6 @@ static void asteroid_maybe_break_up(object *pasteroid_obj)
 		Script_system.RunCondition(CHA_DEATH, '\0', NULL, pasteroid_obj);
 		Script_system.RemHookVar("Self");
 	}
-}
-
-int asteroid_get_random_in_cone(vec3d *pos, vec3d *dir, float ang, int danger)
-{
-	int idx;
-	vec3d asteroid_dir;
-
-	// just pick the first asteroid which satisfies our condition
-	for(idx=0; idx<Num_asteroids; idx++){
-		vm_vec_sub(&asteroid_dir, &Objects[Asteroids[idx].objnum].pos, pos);
-		vm_vec_normalize_quick(&asteroid_dir);
-
-		// if it satisfies the condition
-		if(vm_vec_dot(dir, &asteroid_dir) >= ang){
-			return idx;
-		}
-	}
-
-	return -1;
 }
 
 static void asteroid_test_collide(object *pasteroid_obj, object *pship_obj, mc_info *mc, bool lazy = false)

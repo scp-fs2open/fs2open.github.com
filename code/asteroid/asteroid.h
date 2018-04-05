@@ -163,7 +163,6 @@ int	asteroid_collide_objnum(object *asteroid_objp);
 float asteroid_time_to_impact(object *asteroid_objp);
 void	asteroid_show_brackets();
 void	asteroid_target_closest_danger();
-int	asteroid_get_random_in_cone(vec3d *pos, vec3d *dir, float ang, int danger = 0);
 
 // need to extern for multiplayer
 void asteroid_sub_create(object *parent_objp, int asteroid_type, vec3d *relvec);
