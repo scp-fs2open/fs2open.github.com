@@ -613,7 +613,6 @@ void debug_change_song(int delta)
 	}
 }
 
-extern void hud_target_asteroid();
 extern int Framerate_delay;
 
 extern void snd_stop_any_sound();
