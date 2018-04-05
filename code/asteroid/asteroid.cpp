@@ -626,7 +626,7 @@ void asteroid_create_all()
 }
 
 /**
- * Init asteriod system for the level, called from ::game_level_init()
+ * Init asteroid system for the level, called from ::game_level_init()
  */
 void asteroid_level_init()
 {
@@ -1290,7 +1290,7 @@ static float asteroid_create_explosion(object *objp)
 /**
  * Play sound when asteroid explodes
  */
-static void asteriod_explode_sound(object *objp, int type, int play_loud)
+static void asteroid_explode_sound(object *objp, int type, int play_loud)
 {
 	int	sound_index = -1;
 	float range_factor = 1.0f;		// how many times sound should traver farther than normal
@@ -1318,7 +1318,7 @@ static void asteriod_explode_sound(object *objp, int type, int play_loud)
 /**
  * Do the area effect for an asteroid exploding
  *
- * @param asteroid_objp	object pointer to asteriod causing explosion
+ * @param asteroid_objp	object pointer to asteroid causing explosion
  */
 static void asteroid_do_area_effect(object *asteroid_objp)
 {
@@ -1382,7 +1382,7 @@ void asteroid_hit( object * pasteroid_obj, object * other_obj, vec3d * hitpos, f
 
 			explosion_life = asteroid_create_explosion(pasteroid_obj);
 
-			asteriod_explode_sound(pasteroid_obj, asp->asteroid_type, play_loud_collision);
+			asteroid_explode_sound(pasteroid_obj, asp->asteroid_type, play_loud_collision);
 			asteroid_do_area_effect(pasteroid_obj);
 
 			asp->final_death_time = timestamp( fl2i(explosion_life*1000.0f)/5 );	// Wait till 30% of vclip time before breaking the asteroid up.
