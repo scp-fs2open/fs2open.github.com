@@ -18,7 +18,7 @@ bool FictionViewerDialogModel::apply() {
 	if (_storyFile.empty()) {
 		Fiction_viewer_stages.erase(Fiction_viewer_stages.begin());
 		stagep = nullptr;
-		Mission_music[SCORE_FICTION_VIEWER] = -1; // TODO right?
+		Mission_music[SCORE_FICTION_VIEWER] = -1;
 	} else {
 		strcpy_s(stagep->story_filename, _storyFile.c_str());
 		strcpy_s(stagep->font_filename, _fontFile.c_str());
@@ -64,8 +64,14 @@ void FictionViewerDialogModel::initializeData() {
 	modelChanged();
 }
 
+void FictionViewerDialogModel::setFictionMusic(int fictionMusic) {
+	Assert(fictionMusic >= 0);
+	Assert(fictionMusic <= Num_music_files);
+	modify<int>(_fictionMusic, fictionMusic);
+}
+
 bool FictionViewerDialogModel::query_modified() const {
-	// TODO assert !Fiction_viewer_stages.empty() ?
+	Assert(!Fiction_viewer_stages.empty());
 
 	const fiction_viewer_stage *stagep = &Fiction_viewer_stages.at(0);
 	

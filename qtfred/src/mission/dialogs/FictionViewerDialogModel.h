@@ -35,7 +35,7 @@ class FictionViewerDialogModel: public AbstractDialogModel {
 	void setFontFile(const SCP_string& fontFile) { modify<SCP_string>(_fontFile, fontFile); }
 	void setVoiceFile(const SCP_string& voiceFile) { modify<SCP_string>(_voiceFile, voiceFile); }
 	// TODO input validation on passed in fictionMusic?
-	void setFictionMusic(int fictionMusic) { modify<int>(_fictionMusic, fictionMusic); }
+	void setFictionMusic(int fictionMusic);
 
 	int getMaxStoryFileLength() const { return _maxStoryFileLength; }
 	int getMaxFontFileLength() const { return _maxFontFileLength; }
