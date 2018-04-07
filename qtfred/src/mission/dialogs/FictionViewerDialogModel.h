@@ -42,6 +42,8 @@ class FictionViewerDialogModel: public AbstractDialogModel {
 	int getMaxVoiceFileLength() const { return _maxVoiceFileLength; }
 
 	bool query_modified() const;
+
+	bool hasMultipleStages() const;
  private:
 	void initializeData();
 

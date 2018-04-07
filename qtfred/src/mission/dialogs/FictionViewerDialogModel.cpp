@@ -41,11 +41,6 @@ void FictionViewerDialogModel::initializeData() {
 
 		Fiction_viewer_stages.push_back(stage);
 	}
-	// FIXME TODO figure out what to do here
-	// else if (Fiction_viewer_stages.size() > 1)
-	// {
-		// MessageBox("You have multiple fiction viewer stages defined for this mission.  At present, FRED will only allow you to edit the first stage.");
-	// }
 	
 	_musicOptions.emplace_back("None", 0);
 	for (int i = 0; i < Num_music_files; ++i) {
@@ -80,6 +75,9 @@ bool FictionViewerDialogModel::query_modified() const {
 		|| _fictionMusic != (Mission_music[SCORE_FICTION_VIEWER] + 1);
 }
 
+bool FictionViewerDialogModel::hasMultipleStages() const {
+	return Fiction_viewer_stages.size() > 1;
+}
 
 }
 }

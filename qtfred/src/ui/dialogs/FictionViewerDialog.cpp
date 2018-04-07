@@ -38,6 +38,12 @@ FictionViewerDialog::FictionViewerDialog(FredView* parent, EditorViewport* viewp
 
 	// Resize the dialog to the minimum size
 	resize(QDialog::sizeHint());
+
+	if (_model->hasMultipleStages()) {
+		auto button = _viewport->dialogProvider->showButtonDialog(DialogType::Information, "Multiple stages detected",
+			"This mission has multiple fiction viewer stages defined.  Currently, qtFRED will only allow you to edit the first stage.",
+			{ DialogButton::Ok});
+	}
 }
 FictionViewerDialog::~FictionViewerDialog() {
 }
