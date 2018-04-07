@@ -15,7 +15,7 @@ FictionViewerDialogModel::FictionViewerDialogModel(QObject* parent, EditorViewpo
 bool FictionViewerDialogModel::apply() {
 	// store the fields in the data structure
 	fiction_viewer_stage *stagep = &Fiction_viewer_stages.at(0);
-	if (strlen(stagep->story_filename) == 0) {
+	if (_storyFile.empty()) {
 		Fiction_viewer_stages.erase(Fiction_viewer_stages.begin());
 		stagep = nullptr;
 		Mission_music[SCORE_FICTION_VIEWER] = -1; // TODO right?
@@ -29,25 +29,9 @@ bool FictionViewerDialogModel::apply() {
 }
 
 void FictionViewerDialogModel::reject() {
-	// TODO what to do here depends on whether dialog is created each time the user opens it or just created once
-	// currently assuming it's just once
-	if (!Fiction_viewer_stages.empty()) {
-		// init fields based on first fiction viewer stage
-		const fiction_viewer_stage *stagep = &Fiction_viewer_stages.at(0);
-		_storyFile = stagep->story_filename;
-		_fontFile = stagep->font_filename;
-		_voiceFile = stagep->voice_filename;
-
-		_fictionMusic = Mission_music[SCORE_FICTION_VIEWER] + 1;
-	} else {
-		_storyFile = "";
-		_fontFile = "";
-		_voiceFile = "";
-		_fictionMusic = 0;
-	}
+	// nothing to do if the dialog is created each time it's opened
 }
 
-// TODO!
 void FictionViewerDialogModel::initializeData() {
 	// make sure we have at least one stage
 	if (Fiction_viewer_stages.empty()) {
@@ -75,15 +59,17 @@ void FictionViewerDialogModel::initializeData() {
 	_voiceFile = stagep->voice_filename;
 
 	// initialize file name length limits
-	_maxStoryFileLength = sizeof(stagep->story_filename);
-	_maxFontFileLength = sizeof(stagep->font_filename);
-	_maxVoiceFileLength = sizeof(stagep->voice_filename);
+	_maxStoryFileLength = sizeof(stagep->story_filename) - 1;
+	_maxFontFileLength = sizeof(stagep->font_filename) - 1;
+	_maxVoiceFileLength = sizeof(stagep->voice_filename) - 1;
 
 	// music is managed through the mission
 	_fictionMusic = Mission_music[SCORE_FICTION_VIEWER] + 1;
+
+	modelChanged();
 }
 
-bool FictionViewerDialogModel::hasUnsavedChanges() const {
+bool FictionViewerDialogModel::query_modified() const {
 	// TODO assert !Fiction_viewer_stages.empty() ?
 
 	const fiction_viewer_stage *stagep = &Fiction_viewer_stages.at(0);

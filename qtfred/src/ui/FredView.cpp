@@ -1043,5 +1043,10 @@ void FredView::on_actionVoice_Acting_Manager_triggered(bool) {
 	dialog.exec();
 }
 
+void FredView::on_actionFiction_Viewer_triggered(bool) {
+	dialogs::FictionViewerDialog dialog(this, _viewport);
+	dialog.exec();
+}
+
 } // namespace fred
 } // namespace fso

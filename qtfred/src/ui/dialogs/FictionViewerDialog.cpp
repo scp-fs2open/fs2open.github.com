@@ -1,6 +1,5 @@
 
-// TODO sort out includes
-#include <QtWidgets/QTextEdit>
+#include <QCloseEvent>
 #include "ui/dialogs/FictionViewerDialog.h"
 
 #include "ui_FictionViewerDialog.h"
@@ -43,16 +42,9 @@ FictionViewerDialog::FictionViewerDialog(FredView* parent, EditorViewport* viewp
 FictionViewerDialog::~FictionViewerDialog() {
 }
 
-void FictionViewerDialog::reject() {
-	// TODO
-	// reset model to match contents of Fiction_viewer data structure?
-	_model->reject();
-}
-
 void FictionViewerDialog::updateMusicComboBox() {
 	QSignalBlocker blocker(ui->musicComboBox);
 
-	// Remove all previous entries
 	ui->musicComboBox->clear();
 
 	for (const auto& el : _model->getMusicOptions()) {
@@ -65,12 +57,15 @@ void FictionViewerDialog::updateUI() {
 	// We need to block signals here or else updating the combobox would lead to and update of the model
 	// which would call this function again
 	QSignalBlocker blocker(this);
+	QSignalBlocker storyBlocker(ui->storyFileEdit);
+	QSignalBlocker fontBlocker(ui->fontFileEdit);
+	QSignalBlocker voiceBlocker(ui->voiceFileEdit);
 
 	updateMusicComboBox();
 
-	// TODO you need something like this for the text controls
-	//ui->nameEdit->setText(QString::fromStdString(_model->getCurrentName()));
-	// ui->nameEdit->setEnabled(_model->isEnabled());
+	ui->storyFileEdit->setText(QString::fromStdString(_model->getStoryFile()));
+	ui->fontFileEdit->setText(QString::fromStdString(_model->getFontFile()));
+	ui->voiceFileEdit->setText(QString::fromStdString(_model->getVoiceFile()));
 }
 
 void FictionViewerDialog::musicSelectionChanged(int index) {
@@ -90,16 +85,23 @@ void FictionViewerDialog::voiceFileTextChanged() {
 	_model->setVoiceFile(ui->voiceFileEdit->text().toStdString());
 }
 
-// TODO figure out what to do here
-bool FictionViewerDialog::event(QEvent* event) {
-	switch(event->type()) {
-	case QEvent::WindowDeactivate:
-		// _model->apply();
-		// event->accept();
-		return true;
-	default:
-		return QDialog::event(event);
+void FictionViewerDialog::closeEvent(QCloseEvent* event) {
+	if (_model->query_modified()) {
+		auto button = _viewport->dialogProvider->showButtonDialog(DialogType::Question, "Changes detected", "Do you want to keep your changes?",
+			{ DialogButton::Yes, DialogButton::No, DialogButton::Cancel });
+
+		if (button == DialogButton::Cancel) {
+			event->ignore();
+			return;
+		}
+
+		if (button == DialogButton::Yes) {
+			accept();
+			return;
+		}
 	}
+
+	QDialog::closeEvent(event);
 }
 
 }

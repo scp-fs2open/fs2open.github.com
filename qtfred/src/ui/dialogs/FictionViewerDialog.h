@@ -1,6 +1,6 @@
 #pragma once
 
-#include <QDialog>
+#include <QtWidgets/QDialog>
 
 #include <mission/dialogs/FictionViewerDialogModel.h>
 #include <ui/FredView.h>
@@ -21,16 +21,13 @@ public:
 	FictionViewerDialog(FredView* parent, EditorViewport* viewport);
 	~FictionViewerDialog();
 
-	void reject() override;
-
 	void musicSelectionChanged(int index);
 	void storyFileTextChanged();
 	void fontFileTextChanged();
 	void voiceFileTextChanged();
 
  protected:
-	bool event(QEvent* event) override;
-
+	void closeEvent(QCloseEvent*) override;
  private:
 
 	void updateMusicComboBox();
@@ -43,7 +40,6 @@ public:
 	Editor* _editor = nullptr;
 	
 	std::unique_ptr<Ui::FictionViewerDialog> ui;
-
 	std::unique_ptr<FictionViewerDialogModel> _model;
 };
 

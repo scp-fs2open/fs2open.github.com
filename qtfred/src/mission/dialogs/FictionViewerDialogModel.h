@@ -20,7 +20,7 @@ class FictionViewerDialogModel: public AbstractDialogModel {
 	 };
 
 	FictionViewerDialogModel(QObject* parent, EditorViewport* viewport);
-
+	~FictionViewerDialogModel() = default;
 	bool apply() override;
 
 	void reject() override;
@@ -31,18 +31,22 @@ class FictionViewerDialogModel: public AbstractDialogModel {
 	int getFictionMusic() const { return _fictionMusic; }
 	const SCP_vector<MusicOptionElement>& getMusicOptions() const { return _musicOptions; }
 
-	void setStoryFile(const SCP_string& storyFile) { _storyFile = storyFile; }
-	void setFontFile(const SCP_string& fontFile) { _fontFile = fontFile; }
-	void setVoiceFile(const SCP_string& voiceFile) { _voiceFile = voiceFile; }
+	void setStoryFile(const SCP_string& storyFile) { modify<SCP_string>(_storyFile, storyFile); }
+	void setFontFile(const SCP_string& fontFile) { modify<SCP_string>(_fontFile, fontFile); }
+	void setVoiceFile(const SCP_string& voiceFile) { modify<SCP_string>(_voiceFile, voiceFile); }
 	// TODO input validation on passed in fictionMusic?
-	void setFictionMusic(int fictionMusic) { _fictionMusic = fictionMusic; }
+	void setFictionMusic(int fictionMusic) { modify<int>(_fictionMusic, fictionMusic); }
 
 	int getMaxStoryFileLength() const { return _maxStoryFileLength; }
 	int getMaxFontFileLength() const { return _maxFontFileLength; }
 	int getMaxVoiceFileLength() const { return _maxVoiceFileLength; }
+
+	bool query_modified() const;
  private:
 	void initializeData();
-	bool hasUnsavedChanges() const;
+
+	template<typename T>
+	void modify(T &a, const T &b);
 
 	SCP_string _storyFile;
 	SCP_string _fontFile;
@@ -51,10 +55,16 @@ class FictionViewerDialogModel: public AbstractDialogModel {
 	SCP_vector<MusicOptionElement> _musicOptions;
 
 	int _maxStoryFileLength, _maxFontFileLength, _maxVoiceFileLength;
-
-	// TODO do I need this?
-	// bool _enabled = false;
 };
+
+
+template<typename T>
+inline void FictionViewerDialogModel::modify(T &a, const T &b) {
+	if (a != b) {
+		a = b;
+		modelChanged();
+	}
+}
 
 }
 }
