@@ -3,7 +3,6 @@
 #include <QDialog>
 #include <QListWidget>
 
-#include "mission/dialogs/EventEditorDialogModel.h"
 #include "ui/widgets/sexp_tree.h"
 
 #include <mission/missiongoals.h>
@@ -26,7 +25,7 @@ const int MAX_SEARCH_MESSAGE_DEPTH = 5;		// maximum search number of event nodes
 class EventEditorDialog: public QDialog, public SexpTreeEditorInterface {
 	std::unique_ptr<Ui::EventEditorDialog> ui;
 
-	std::unique_ptr<EventEditorDialogModel> _model;
+	Editor* _editor = nullptr;
 
 	int m_num_events = 0;
 	int m_sig[MAX_MISSION_EVENTS];
@@ -41,29 +40,8 @@ class EventEditorDialog: public QDialog, public SexpTreeEditorInterface {
 
 	int m_wave_id = -1;
 
-	// Event data
-	uint32_t m_repeat_count = 0;
-	uint32_t m_trigger_count = 0;
-	uint32_t m_interval = 0;
-	int m_event_score = 0;
-	int m_chain_delay = 0;
-	int m_team = -1;
-	bool m_chained = false;
-	QString m_obj_text = "";
-	QString m_obj_key_text = "";
-
 	// Message data
 	int m_last_message_node = -1;
-
-	// Event log data
-	bool m_log_true = false;
-	bool m_log_false = false;
-	bool m_log_always_false = false;
-	bool m_log_1st_repeat = false;
-	bool m_log_last_repeat = false;
-	bool m_log_1st_trigger = false;
-	bool m_log_last_trigger = false;
-	bool m_log_state_change = false;
 
 	void connectCheckBox(QCheckBox* box, bool* var);
 
@@ -94,7 +72,26 @@ class EventEditorDialog: public QDialog, public SexpTreeEditorInterface {
 
 	void updatePersona();
 
+	void rebuildMessageList();
+
+	void initMessageWidgets();
+
+	void initEventWidgets();
+
+	void updateEventBitmap();
+
+	void connectLogState(QCheckBox* box, uint32_t flag);
+
+	void newEventHandler();
+	void insertEventHandler();
+	void deleteEventHandler();
+	QTreeWidgetItem* get_event_handle(int num);
+	void reset_event(int num, QTreeWidgetItem* after);
+
+	bool query_modified();
  Q_OBJECT
+ protected:
+	void closeEvent(QCloseEvent* event) override;
  public:
 	EventEditorDialog(QWidget* parent, EditorViewport* viewport);
 	~EventEditorDialog() override;
@@ -106,8 +103,6 @@ class EventEditorDialog: public QDialog, public SexpTreeEditorInterface {
 	bool hasDefaultMessageParamter() override;
 	SCP_vector<SCP_string> getMessages() override;
 	int getRootReturnType() const override;
-
-	void rebuildMessageList();
 };
 
 }

@@ -48,6 +48,7 @@
 
 #include <QtWidgets/QMessageBox>
 #include <QtWidgets/QMenu>
+#include <QDebug>
 
 #define TREE_NODE_INCREMENT    100
 
@@ -125,10 +126,6 @@ QString node_image_to_resource_name(NodeImage image) {
 	}
 	return ":/images/bitmap1.png";
 }
-
-QIcon nodeimage_to_icon(NodeImage image) {
-	return QIcon(node_image_to_resource_name(image));
-}
 }
 
 SexpTreeEditorInterface::SexpTreeEditorInterface() :
@@ -192,9 +189,15 @@ bool SexpTreeEditorInterface::requireCampaignOperators() const {
 	return false;
 }
 
+QIcon sexp_tree::convertNodeImageToIcon(NodeImage image) {
+	return QIcon(node_image_to_resource_name(image));
+}
+
 // constructor
 sexp_tree::sexp_tree(QWidget* parent) : QTreeWidget(parent) {
 	setSelectionMode(QTreeWidget::SingleSelection);
+	setSelectionBehavior(QTreeWidget::SelectItems);
+
 	setContextMenuPolicy(Qt::CustomContextMenu);
 
 	select_sexp_node = -1;
@@ -203,6 +206,7 @@ sexp_tree::sexp_tree(QWidget* parent) : QTreeWidget(parent) {
 
 	connect(this, &QWidget::customContextMenuRequested, this, &sexp_tree::customMenuHandler);
 	connect(this, &QTreeWidget::itemChanged, this, &sexp_tree::handleItemChange);
+	connect(this, &QTreeWidget::itemSelectionChanged, this, &sexp_tree::handleNewItemSelected);
 }
 
 // clears out the tree, so all the nodes are unused.
@@ -1601,7 +1605,7 @@ int sexp_tree::add_variable_data(const char* new_data, int type) {
 
 // add an operator under operator pointed to by item_index.  Updates item_index to point
 // to this new operator.
-void sexp_tree::add_operator(const char* op, QTreeWidgetItem* h) {
+int sexp_tree::add_operator(const char* op, QTreeWidgetItem* h) {
 	int node;
 
 	if (item_index == -1) {
@@ -1618,6 +1622,8 @@ void sexp_tree::add_operator(const char* op, QTreeWidgetItem* h) {
 	tree_nodes[node].flags = OPERAND;
 	setCurrentItemIndex(node);
 	modified();
+
+	return node;
 }
 
 // add an operator with one argument under operator pointed to by item_index.  This function
@@ -1838,7 +1844,7 @@ void sexp_tree::hilite_item(int node) {
 
 	ensure_visible(node);
 	clearSelection();
-	tree_nodes[node].handle->setSelected(true);
+	setCurrentItem(tree_nodes[node].handle);
 }
 
 // because the MFC function EnsureVisible() doesn't do what it says it does, I wrote this.
@@ -2083,7 +2089,7 @@ void sexp_tree::replace_data(const char* new_data, int type) {
 	set_node(item_index, type, new_data);
 	h->setText(0, new_data);
 	auto bmap = get_data_image(item_index);
-	h->setIcon(0, nodeimage_to_icon(bmap));
+	h->setIcon(0, convertNodeImageToIcon(bmap));
 	h->setFlags(h->flags().setFlag(Qt::ItemIsEditable, true));
 	tree_nodes[item_index].flags = EDITABLE;
 
@@ -2117,7 +2123,7 @@ void sexp_tree::replace_variable_data(int var_idx, int type) {
 
 	set_node(item_index, type, buf);
 	h->setText(0, QString::fromUtf8(buf));
-	h->setIcon(0, nodeimage_to_icon(NodeImage::VARIABLE));
+	h->setIcon(0, convertNodeImageToIcon(NodeImage::VARIABLE));
 	h->setFlags(h->flags().setFlag(Qt::ItemIsEditable, false));
 	tree_nodes[item_index].flags = NOT_EDITABLE;
 
@@ -2292,13 +2298,13 @@ void sexp_tree::swap_roots(QTreeWidgetItem* one, QTreeWidgetItem* two) {
 //	move_branch(two, TVI_ROOT, one);
 //	DeleteItem(one);
 	auto h = move_branch(one, itemFromIndex(rootIndex()), two);
-	h->setSelected(true);
+	setCurrentItem(h);
 	modified();
 }
 
 QTreeWidgetItem*
 sexp_tree::insert(const QString& lpszItem, NodeImage image, QTreeWidgetItem* hParent, QTreeWidgetItem* hInsertAfter) {
-	return insertWithIcon(lpszItem, nodeimage_to_icon(image), hParent, hInsertAfter);
+	return insertWithIcon(lpszItem, convertNodeImageToIcon(image), hParent, hInsertAfter);
 }
 
 QTreeWidgetItem* sexp_tree::insertWithIcon(const QString& lpszItem,
@@ -2368,8 +2374,31 @@ int sexp_tree::get_type(QTreeWidgetItem* h) {
 	return tree_nodes[i].type;
 }
 
+// get node of item clicked on
+int sexp_tree::get_node(QTreeWidgetItem* h) {
+	uint i;
+
+	// get index into sexp_tree
+	for (i = 0; i < tree_nodes.size(); i++) {
+		if (tree_nodes[i].handle == h) {
+			break;
+		}
+	}
+
+	if ((i >= tree_nodes.size())) {
+		// Int3();	// This would be the root of the tree  -- ie, event name
+		return -1;
+	}
+
+	return i;
+}
 
 void sexp_tree::update_help(QTreeWidgetItem* h) {
+	if (h == nullptr) {
+		helpChanged("");
+		miniHelpChanged("");
+	}
+
 	int i, j, z, c, code, index, sibling_place;
 
 	for (i = 0; i < (int) Operators.size(); i++) {
@@ -5383,9 +5412,13 @@ void sexp_tree::cutActionHandler() {
 	deleteActionHandler();
 }
 void sexp_tree::deleteActionHandler() {
+	if (currentItem() == nullptr) {
+		return;
+	}
+
 	if (_interface->getFlags()[TreeFlags::RootDeletable] && (item_index == -1)) {
 		auto item = currentItem();
-		setCurrentItemIndex(item->data(FormulaDataRole, 0).toInt());
+		item_index = item->data(0, FormulaDataRole).toInt();
 
 		rootNodeDeleted(item_index);
 
@@ -5434,7 +5467,7 @@ void sexp_tree::handleItemChange(QTreeWidgetItem* item, int column) {
 	}
 
 	if (node == tree_nodes.size()) {
-		setCurrentItemIndex(qvariant_cast<int>(item->data(FormulaDataRole, 0)));
+		setCurrentItemIndex(qvariant_cast<int>(item->data(0, FormulaDataRole)));
 
 		rootNodeRenamed(item_index);
 
@@ -5694,6 +5727,30 @@ void sexp_tree::handleReplaceVariableAction(int id) {
 	// Replace data
 	replace_variable_data(id, (type | SEXPT_VARIABLE));
 
+}
+void sexp_tree::handleNewItemSelected() {
+	auto selectedItem = currentItem();
+
+	update_help(selectedItem);
+
+	if (selectedItem == nullptr) {
+		selectedRootChanged(-1);
+		setCurrentItemIndex(-1);
+		return;
+	}
+
+	// Set the item index so that it is always up to date
+	item_index = get_node(selectedItem);
+
+	auto item = selectedItem;
+	while (item->parent() != nullptr) {
+		item = item->parent();
+	}
+
+	selectedRootChanged(item->data(0, FormulaDataRole).toInt());
+}
+void sexp_tree::deleteCurrentItem() {
+	deleteActionHandler();
 }
 
 }
