@@ -1,9 +1,6 @@
 #include <unordered_map>
 #include <memory>
-#include <utility>
 #include <functional>
-
-#include <stdlib.h>
 
 #include <QApplication>
 #include <QDir>
@@ -15,13 +12,10 @@
 #include "globalincs/mspdb_callstack.h"
 #endif
 
-#include "globalincs/globals.h" // MAX_SHIPS, NAME_LENGTH
-
 #include "mission/Editor.h"
 #include "mission/management.h"
 
 #include "ui/FredView.h"
-#include "FredApplication.h"
 #include "FredApplication.h"
 
 #include <signal.h>
@@ -119,37 +113,59 @@ int main(int argc, char* argv[]) {
 
 	auto baseDir = QDir::toNativeSeparators(QDir::current().absolutePath());
 
-	std::unordered_map<SubSystem, QString> initializers = {{ SubSystem::OS,           app.tr("Initializing OS interface") },
-														   { SubSystem::CommandLine,  app.tr("Parsing command line") },
-														   { SubSystem::Timer,        app.tr("Initializing Timer") },
-														   { SubSystem::CFile,        app.tr("Initializing CFile") },
-														   { SubSystem::Locale,       app.tr("Initialization locale") },
-														   { SubSystem::Graphics,     app.tr("Initializing graphics") },
-														   { SubSystem::Fonts,        app.tr("Initializing Fonts") },
-														   { SubSystem::Keyboard,     app.tr("Initializing keyboard") },
-														   { SubSystem::Mouse,        app.tr("Initializing mouse") },
-														   { SubSystem::Particles,    app.tr("Initializing particles") },
-														   { SubSystem::Iff,          app.tr("Initializing IFF") },
-														   { SubSystem::Objects,      app.tr("Initializing objects") },
-														   { SubSystem::Species,      app.tr("Initializing species") },
-														   { SubSystem::MissionBrief, app.tr("Initializing briefings") },
-														   { SubSystem::AI,           app.tr("Initializing AI") },
-														   { SubSystem::AIProfiles,   app.tr("Initializing AI profiles") },
-														   { SubSystem::Armor,        app.tr("Initializing armors") },
-														   { SubSystem::Weapon,       app.tr("Initializing weaponry") },
-														   { SubSystem::Medals,       app.tr("Initializing medals") },
-														   { SubSystem::Ships,        app.tr("Initializing ships") },
-														   { SubSystem::Parse,        app.tr("Initializing parser") },
-														   { SubSystem::Nebulas,      app.tr("Initializing nebulas") },
-														   { SubSystem::Stars,        app.tr("Initializing stars") },
-														   { SubSystem::View,         app.tr("Setting view") }};
+	typedef std::unordered_map<SubSystem, QString> SubsystemMap;
+	SubsystemMap initializers = {{ SubSystem::OS,                app.tr("Initializing OS interface") },
+								 { SubSystem::CommandLine,       app.tr("Parsing command line") },
+								 { SubSystem::Timer,             app.tr("Initializing Timer") },
+								 { SubSystem::CFile,             app.tr("Initializing CFile") },
+								 { SubSystem::Locale,            app.tr("Initializing locale") },
+								 { SubSystem::Sound,             app.tr("Initializing sound") },
+								 { SubSystem::Graphics,          app.tr("Initializing graphics") },
+								 { SubSystem::Scripting,         app.tr("Initializing scripting") },
+								 { SubSystem::Fonts,             app.tr("Initializing Fonts") },
+								 { SubSystem::Keyboard,          app.tr("Initializing keyboard") },
+								 { SubSystem::Mouse,             app.tr("Initializing mouse") },
+								 { SubSystem::Particles,         app.tr("Initializing particles") },
+								 { SubSystem::Iff,               app.tr("Initializing IFF") },
+								 { SubSystem::Objects,           app.tr("Initializing objects") },
+								 { SubSystem::Models,            app.tr("Initializing model system") },
+								 { SubSystem::Species,           app.tr("Initializing species") },
+								 { SubSystem::BriefingIcons,     app.tr("Initializing briefing icons") },
+								 { SubSystem::HudCommOrders,     app.tr("Initializing HUD comm orders") },
+								 { SubSystem::AlphaColors,       app.tr("Initializing alpha colors") },
+								 { SubSystem::GameSound,         app.tr("Initializing briefing icons") },
+								 { SubSystem::MissionBrief,      app.tr("Initializing briefings") },
+								 { SubSystem::AI,                app.tr("Initializing AI") },
+								 { SubSystem::AIProfiles,        app.tr("Initializing AI profiles") },
+								 { SubSystem::Armor,             app.tr("Initializing armors") },
+								 { SubSystem::Weapon,            app.tr("Initializing weaponry") },
+								 { SubSystem::Medals,            app.tr("Initializing medals") },
+								 { SubSystem::Glowpoints,        app.tr("Initializing glow points") },
+								 { SubSystem::Ships,             app.tr("Initializing ships") },
+								 { SubSystem::Parse,             app.tr("Initializing parser") },
+								 { SubSystem::TechroomIntel,     app.tr("Initializing techroom intel") },
+								 { SubSystem::Nebulas,           app.tr("Initializing nebulas") },
+								 { SubSystem::Stars,             app.tr("Initializing stars") },
+								 { SubSystem::Ssm,               app.tr("Initializing SSMs") },
+								 { SubSystem::EventMusic,        app.tr("Initializing event music") },
+								 { SubSystem::FictionViewer,     app.tr("Initializing fiction viewer") },
+								 { SubSystem::CommandBriefing,   app.tr("Initializing command briefing") },
+								 { SubSystem::Campaign,          app.tr("Initializing campaign system") },
+								 { SubSystem::NebulaLightning,   app.tr("Initializing nebula lightning") },
+								 { SubSystem::FFmpeg,            app.tr("Initializing FFmpeg") },
+								 { SubSystem::DynamicSEXPs,      app.tr("Initializing dynamic SEXP system") },
+								 { SubSystem::ScriptingInitHook, app.tr("Running game init scripting hook") }, };
 
-	fso::fred::initialize(baseDir.toStdString(), argc, argv, fred.get(), [&](const SubSystem& which) {
+	auto initSuccess = fso::fred::initialize(baseDir.toStdString(), argc, argv, fred.get(), [&](const SubSystem& which) {
 		if (initializers.count(which)) {
 			splash.showMessage(initializers.at(which), Qt::AlignHCenter | Qt::AlignBottom, Qt::white);
 		}
 		qGuiApp->processEvents();
 	});
+
+	if (!initSuccess) {
+		return -1;
+	}
 
 	splash.showMessage(app.tr("Showing editor window"), Qt::AlignHCenter | Qt::AlignBottom, Qt::white);
 	splash.finish(qApp->activeWindow());
