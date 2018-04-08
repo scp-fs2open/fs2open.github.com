@@ -44,6 +44,7 @@
 #include "ship/ship.h"
 
 #include <ui/util/menu.h>
+#include <ui/util/SignalBlockers.h>
 
 #include <QtWidgets/QMessageBox>
 #include <QtWidgets/QMenu>
@@ -2314,8 +2315,7 @@ QTreeWidgetItem* sexp_tree::insertWithIcon(const QString& lpszItem,
 										   const QIcon& image,
 										   QTreeWidgetItem* hParent,
 										   QTreeWidgetItem* hInsertAfter) {
-	// We block the signals in this function since it would otherwise trigger the "item was edited" code
-	QSignalBlocker dataChangedBlocker(this);
+	util::SignalBlockers blockers(this);
 
 	QTreeWidgetItem* item = nullptr;
 	if (hParent == nullptr) {

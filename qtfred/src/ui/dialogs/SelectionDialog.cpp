@@ -7,6 +7,8 @@
 
 #include "ui_SelectionDialog.h"
 
+#include <ui/util/SignalBlockers.h>
+
 #include <QtDebug>
 
 namespace fso {
@@ -67,6 +69,7 @@ SelectionDialog::~SelectionDialog() {
 
 }
 void SelectionDialog::updateUI() {
+	util::SignalBlockers blockers(this);
 	// Update check boxes
 	ui->checkPlayerStarts->setChecked(_model->isFilterStarts());
 	ui->checkWaypoints->setChecked(_model->isFilterWaypoints());
@@ -77,7 +80,6 @@ void SelectionDialog::updateUI() {
 	}
 
 	// Update ship list
-	QSignalBlocker shipBlocker(ui->shipSelectionList);
 	ui->shipSelectionList->clear();
 	for (auto& entry : _model->getObjectList()) {
 		auto item = new QListWidgetItem(QString::fromStdString(entry.name));
@@ -86,7 +88,6 @@ void SelectionDialog::updateUI() {
 	}
 
 	// Update wing and waypoint list
-	QSignalBlocker wingBlocker(ui->wingSelectionList);
 	ui->wingSelectionList->clear();
 	for (auto& entry : _model->getWingList()) {
 		auto item = new QListWidgetItem(QString::fromStdString(entry.name));
