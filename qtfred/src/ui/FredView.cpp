@@ -19,6 +19,9 @@
 #include <ui/dialogs/MissionSpecDialog.h>
 #include <ui/dialogs/FormWingDialog.h>
 #include <ui/dialogs/AboutDialog.h>
+#include <ui/dialogs/BackgroundEditorDialog.h>
+#include <ui/dialogs/ShieldSystemDialog.h>
+#include <ui/dialogs/VoiceActingManager.h>
 #include <globalincs/linklist.h>
 #include <ui/dialogs/SelectionDialog.h>
 #include <iff_defs/iff_defs.h>
@@ -1021,6 +1024,21 @@ void FredView::on_actionError_Checker_triggered(bool) {
 }
 void FredView::on_actionAbout_triggered(bool) {
 	dialogs::AboutDialog dialog(this);
+	dialog.exec();
+}
+
+void FredView::on_actionBackground_triggered(bool) {
+	dialogs::BackgroundEditorDialog dialog(this, _viewport);
+	dialog.exec();
+}
+
+void FredView::on_actionShield_System_triggered(bool) {
+	dialogs::ShieldSystemDialog dialog(this, _viewport);
+	dialog.exec();
+}
+
+void FredView::on_actionVoice_Acting_Manager_triggered(bool) {
+	dialogs::VoiceActingManager dialog(this, _viewport);
 	dialog.exec();
 }
 

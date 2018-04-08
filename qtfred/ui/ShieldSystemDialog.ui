@@ -34,6 +34,9 @@
         <property name="text">
          <string>Has shield system</string>
         </property>
+        <attribute name="buttonGroup">
+         <string notr="true">typeShieldOptionsButtonGroup</string>
+        </attribute>
        </widget>
       </item>
       <item>
@@ -41,6 +44,9 @@
         <property name="text">
          <string>No shield system</string>
         </property>
+        <attribute name="buttonGroup">
+         <string notr="true">typeShieldOptionsButtonGroup</string>
+        </attribute>
        </widget>
       </item>
      </layout>
@@ -66,6 +72,9 @@
         <property name="text">
          <string>Has shield system</string>
         </property>
+        <attribute name="buttonGroup">
+         <string notr="true">teamShieldOptionsButtonGroup</string>
+        </attribute>
        </widget>
       </item>
       <item>
@@ -73,6 +82,9 @@
         <property name="text">
          <string>No shield system</string>
         </property>
+        <attribute name="buttonGroup">
+         <string notr="true">teamShieldOptionsButtonGroup</string>
+        </attribute>
        </widget>
       </item>
      </layout>
@@ -135,4 +147,8 @@
    </hints>
   </connection>
  </connections>
+ <buttongroups>
+  <buttongroup name="typeShieldOptionsButtonGroup"/>
+  <buttongroup name="teamShieldOptionsButtonGroup"/>
+ </buttongroups>
 </ui>
