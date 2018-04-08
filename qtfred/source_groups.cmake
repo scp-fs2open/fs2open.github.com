@@ -97,6 +97,8 @@ add_file_folder("Source/UI/Dialogs"
 add_file_folder("Source/UI/Util"
 	src/ui/util/menu.cpp
 	src/ui/util/menu.h
+	src/ui/util/SignalBlockers.cpp
+	src/ui/util/SignalBlockers.h
 )
 
 add_file_folder("Source/UI/Widgets"
