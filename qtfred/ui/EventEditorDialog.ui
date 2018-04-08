@@ -130,7 +130,7 @@
      <item>
       <layout class="QGridLayout" name="gridLayout">
        <item row="7" column="0">
-        <widget class="QSpinBox" name="spinBox_2"/>
+        <widget class="QSpinBox" name="triggerCountBox"/>
        </item>
        <item row="16" column="0" colspan="2">
         <widget class="QDialogButtonBox" name="buttonBox">
@@ -143,17 +143,33 @@
         </widget>
        </item>
        <item row="17" column="0" colspan="2">
-        <widget class="QLineEdit" name="lineEdit">
+        <widget class="QLineEdit" name="miniHelpBox">
          <property name="readOnly">
           <bool>true</bool>
          </property>
         </widget>
        </item>
        <item row="12" column="0">
-        <widget class="QComboBox" name="teamCombo"/>
+        <widget class="QComboBox" name="teamCombo">
+         <item>
+          <property name="text">
+           <string>Team 1</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>Team 2</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>none</string>
+          </property>
+         </item>
+        </widget>
        </item>
        <item row="3" column="0">
-        <widget class="QPushButton" name="pushButton_3">
+        <widget class="QPushButton" name="btnDeleteEvent">
          <property name="sizePolicy">
           <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
            <horstretch>0</horstretch>
@@ -166,7 +182,7 @@
         </widget>
        </item>
        <item row="11" column="0">
-        <widget class="QSpinBox" name="spinBox_4"/>
+        <widget class="QSpinBox" name="scoreBox"/>
        </item>
        <item row="2" column="0">
         <widget class="QPushButton" name="btnInsertEvent">
@@ -187,7 +203,7 @@
           <string>Repeat Co&amp;unt</string>
          </property>
          <property name="buddy">
-          <cstring>spinBox</cstring>
+          <cstring>repeatCountBox</cstring>
          </property>
         </widget>
        </item>
@@ -197,7 +213,7 @@
           <string>Score</string>
          </property>
          <property name="buddy">
-          <cstring>spinBox_4</cstring>
+          <cstring>scoreBox</cstring>
          </property>
         </widget>
        </item>
@@ -207,12 +223,12 @@
           <string>Chain Dela&amp;y</string>
          </property>
          <property name="buddy">
-          <cstring>spinBox_5</cstring>
+          <cstring>chainDelayBox</cstring>
          </property>
         </widget>
        </item>
        <item row="18" column="0" colspan="2">
-        <widget class="QTextEdit" name="textEdit">
+        <widget class="QTextEdit" name="helpBox">
          <property name="verticalScrollBarPolicy">
           <enum>Qt::ScrollBarAlwaysOff</enum>
          </property>
@@ -222,14 +238,14 @@
         </widget>
        </item>
        <item row="13" column="0">
-        <widget class="QCheckBox" name="checkBox_9">
+        <widget class="QCheckBox" name="chainedCheckBox">
          <property name="text">
           <string>Chained</string>
          </property>
         </widget>
        </item>
        <item row="9" column="0">
-        <widget class="QSpinBox" name="spinBox_3"/>
+        <widget class="QSpinBox" name="intervalTimeBox"/>
        </item>
        <item row="6" column="0">
         <widget class="QLabel" name="label_5">
@@ -237,7 +253,7 @@
           <string>Tri&amp;gger Count</string>
          </property>
          <property name="buddy">
-          <cstring>spinBox_2</cstring>
+          <cstring>triggerCountBox</cstring>
          </property>
         </widget>
        </item>
@@ -247,7 +263,7 @@
           <string>Interval time</string>
          </property>
          <property name="buddy">
-          <cstring>spinBox_3</cstring>
+          <cstring>intervalTimeBox</cstring>
          </property>
         </widget>
        </item>
@@ -327,7 +343,23 @@
               <widget class="QComboBox" name="personaCombo"/>
              </item>
              <item row="3" column="1">
-              <widget class="QComboBox" name="messageTeamCombo"/>
+              <widget class="QComboBox" name="messageTeamCombo">
+               <item>
+                <property name="text">
+                 <string>Team 1</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>Team 2</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>none</string>
+                </property>
+               </item>
+              </widget>
              </item>
              <item row="2" column="0" alignment="Qt::AlignRight">
               <widget class="QLabel" name="label_12">
@@ -450,7 +482,7 @@
         </widget>
        </item>
        <item row="5" column="0">
-        <widget class="QSpinBox" name="spinBox"/>
+        <widget class="QSpinBox" name="repeatCountBox"/>
        </item>
        <item row="1" column="0">
         <widget class="QPushButton" name="btnNewEvent">
@@ -466,7 +498,7 @@
         </widget>
        </item>
        <item row="15" column="0">
-        <widget class="QSpinBox" name="spinBox_5"/>
+        <widget class="QSpinBox" name="chainDelayBox"/>
        </item>
       </layout>
      </item>
