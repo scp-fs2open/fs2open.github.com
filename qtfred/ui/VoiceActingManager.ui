@@ -34,7 +34,7 @@
           </widget>
          </item>
          <item row="0" column="1">
-          <widget class="QLineEdit" name="bampaignLineEdit"/>
+          <widget class="QLineEdit" name="campaignAbbrevEdit"/>
          </item>
          <item row="1" column="0">
           <widget class="QLabel" name="missionLabel">
@@ -44,7 +44,7 @@
           </widget>
          </item>
          <item row="1" column="1">
-          <widget class="QLineEdit" name="missionLineEdit"/>
+          <widget class="QLineEdit" name="missionAbbrevEdit"/>
          </item>
          <item row="3" column="0">
           <widget class="QLabel" name="cmdBriefingStageLabel">
@@ -54,7 +54,7 @@
           </widget>
          </item>
          <item row="3" column="1">
-          <widget class="QLineEdit" name="cmdBriefingStageLineEdit"/>
+          <widget class="QLineEdit" name="cmdBriefingAbbrevEdit"/>
          </item>
          <item row="4" column="0">
           <widget class="QLabel" name="briefingStageLabel">
@@ -64,7 +64,7 @@
           </widget>
          </item>
          <item row="4" column="1">
-          <widget class="QLineEdit" name="briefingStageLineEdit"/>
+          <widget class="QLineEdit" name="briefingAbbrevEdit"/>
          </item>
          <item row="5" column="0">
           <widget class="QLabel" name="debriefingStageLabel">
@@ -74,7 +74,7 @@
           </widget>
          </item>
          <item row="5" column="1">
-          <widget class="QLineEdit" name="debriefingStageLineEdit"/>
+          <widget class="QLineEdit" name="debriefingAbbrevEdit"/>
          </item>
          <item row="6" column="0">
           <widget class="QLabel" name="messageLabel">
@@ -84,7 +84,7 @@
           </widget>
          </item>
          <item row="6" column="1">
-          <widget class="QLineEdit" name="messageLineEdit"/>
+          <widget class="QLineEdit" name="messageAbbrevEdit"/>
          </item>
         </layout>
        </widget>
@@ -103,7 +103,7 @@
           </widget>
          </item>
          <item row="0" column="1">
-          <widget class="QComboBox" name="extensionComboBox"/>
+          <widget class="QComboBox" name="extensionCombo"/>
          </item>
         </layout>
        </widget>
@@ -118,19 +118,19 @@
          </widget>
         </item>
         <item>
-         <widget class="QLineEdit" name="exampleLineEdit_2"/>
+         <widget class="QLineEdit" name="exampleEdit"/>
         </item>
        </layout>
       </item>
       <item>
-       <widget class="QCheckBox" name="checkBox">
+       <widget class="QCheckBox" name="includeSenderCheckBox">
         <property name="text">
          <string>Include sender name in filename</string>
         </property>
        </widget>
       </item>
       <item>
-       <widget class="QCheckBox" name="checkBox_2">
+       <widget class="QCheckBox" name="replaceFileNamesCheckBox">
         <property name="text">
          <string>Replace existing file names</string>
         </property>
@@ -159,7 +159,7 @@
         </property>
         <layout class="QHBoxLayout" name="horizontalLayout">
          <item>
-          <widget class="QPlainTextEdit" name="plainTextEdit">
+          <widget class="QPlainTextEdit" name="scriptTextEdit">
            <property name="plainText">
             <string>Sender: $sender
 Persona: $persona
@@ -169,19 +169,15 @@ Message: $message</string>
           </widget>
          </item>
          <item>
-          <widget class="QTextBrowser" name="textBrowser">
-           <property name="html">
-            <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
-&lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
-p, li { white-space: pre-wrap; }
-&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'MS Shell Dlg 2'; font-size:8.25pt; font-weight:400; font-style:normal;&quot;&gt;
-&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; font-size:8pt;&quot;&gt;$filename - name of the message file&lt;/span&gt;&lt;/p&gt;
-&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; font-size:8pt;&quot;&gt;$message - text of the message&lt;/span&gt;&lt;/p&gt;
-&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; font-size:8pt;&quot;&gt;$persona - persona of the sender&lt;/span&gt;&lt;/p&gt;
-&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; font-size:8pt;&quot;&gt;$sender - name of the sender&lt;/span&gt;&lt;/p&gt;
-&lt;p style=&quot;-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; font-size:8pt;&quot;&gt;&lt;br /&gt;&lt;/p&gt;
-&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; font-size:8pt;&quot;&gt;Note that $persona and $sender will&lt;/span&gt;&lt;/p&gt;
-&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; font-size:8pt;&quot;&gt;only appear for the Message section.&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+          <widget class="QLabel" name="scriptLegendLabel">
+           <property name="text">
+            <string>$filename - name of the message file
+$message - text of the message
+$persona - persona of the sender
+$sender - name of the sender
+
+Note that $persona and $sender will
+only appear for the Message section.</string>
            </property>
           </widget>
          </item>
@@ -195,38 +191,53 @@ p, li { white-space: pre-wrap; }
         </property>
         <layout class="QVBoxLayout" name="verticalLayout_3">
          <item>
-          <widget class="QRadioButton" name="exportAll">
+          <widget class="QRadioButton" name="exportAllRadio">
            <property name="text">
             <string>Everything</string>
            </property>
+           <attribute name="buttonGroup">
+            <string notr="true">exportOptionsButtonGroup</string>
+           </attribute>
           </widget>
          </item>
          <item>
-          <widget class="QRadioButton" name="radioButton_2">
+          <widget class="QRadioButton" name="exportCmdBriefingRadio">
            <property name="text">
             <string>Command briefings only</string>
            </property>
+           <attribute name="buttonGroup">
+            <string notr="true">exportOptionsButtonGroup</string>
+           </attribute>
           </widget>
          </item>
          <item>
-          <widget class="QRadioButton" name="radioButton_3">
+          <widget class="QRadioButton" name="exportBriefingRadio">
            <property name="text">
             <string>Briefings only</string>
            </property>
+           <attribute name="buttonGroup">
+            <string notr="true">exportOptionsButtonGroup</string>
+           </attribute>
           </widget>
          </item>
          <item>
-          <widget class="QRadioButton" name="radioButton_4">
+          <widget class="QRadioButton" name="exportDebriefingRadio">
            <property name="text">
             <string>Debriefings only</string>
            </property>
+           <attribute name="buttonGroup">
+            <string notr="true">exportOptionsButtonGroup</string>
+           </attribute>
           </widget>
          </item>
          <item>
-          <widget class="QRadioButton" name="radioButton_5">
+          <widget class="QRadioButton" name="exportMessageRadio">
            <property name="text">
             <string>Messages only</string>
            </property>
+           <attribute name="buttonGroup">
+            <string notr="true">exportOptionsButtonGroup</string>
+           </attribute>
           </widget>
          </item>
          <item>
@@ -245,7 +256,7 @@ p, li { white-space: pre-wrap; }
             </spacer>
            </item>
            <item>
-            <widget class="QCheckBox" name="checkBox_3">
+            <widget class="QCheckBox" name="groupSendMsgListCheckBox">
              <property name="text">
               <string>Group send-message-list messages before others</string>
              </property>
@@ -270,7 +281,7 @@ p, li { white-space: pre-wrap; }
        </widget>
       </item>
       <item>
-       <widget class="QPushButton" name="pushButton_2">
+       <widget class="QPushButton" name="generateScriptButton">
         <property name="text">
          <string>Generate Script</string>
         </property>
@@ -283,4 +294,7 @@ p, li { white-space: pre-wrap; }
  </widget>
  <resources/>
  <connections/>
+ <buttongroups>
+  <buttongroup name="exportOptionsButtonGroup"/>
+ </buttongroups>
 </ui>

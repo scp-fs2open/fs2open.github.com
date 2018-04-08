@@ -20,7 +20,7 @@
      <x>0</x>
      <y>0</y>
      <width>926</width>
-     <height>28</height>
+     <height>21</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -172,7 +172,7 @@
     <addaction name="actionFiction_Viewer"/>
     <addaction name="actionShield_System"/>
     <addaction name="actionSet_Global_Ship_Flags"/>
-    <addaction name="actionVoice_Manager"/>
+    <addaction name="actionVoice_Acting_Manager"/>
     <addaction name="separator"/>
     <addaction name="actionCampaign"/>
    </widget>
@@ -1132,9 +1132,9 @@
     <string>Set &amp;Global Ship Flags</string>
    </property>
   </action>
-  <action name="actionVoice_Manager">
+  <action name="actionVoice_Acting_Manager">
    <property name="text">
-    <string>&amp;Voice Manager</string>
+    <string>&amp;Voice Acting Manager</string>
    </property>
   </action>
   <action name="actionCampaign">

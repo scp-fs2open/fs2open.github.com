@@ -19,10 +19,10 @@
      <item>
       <layout class="QHBoxLayout" name="topLeftLayout">
        <item>
-        <widget class="QComboBox" name="comboBox"/>
+        <widget class="QComboBox" name="backgroundSelectionCombo"/>
        </item>
        <item>
-        <widget class="QPushButton" name="pushButton">
+        <widget class="QPushButton" name="importButton">
          <property name="text">
           <string>Import...</string>
          </property>
@@ -52,12 +52,12 @@
         <item>
          <layout class="QVBoxLayout" name="bitmapLeftLayout_2">
           <item>
-           <widget class="QListView" name="bitmapListView_2"/>
+           <widget class="QListView" name="bitmapListView"/>
           </item>
           <item>
            <layout class="QHBoxLayout" name="horizontalLayout_11">
             <item>
-             <widget class="QPushButton" name="addBitmapButton_2">
+             <widget class="QPushButton" name="addBitmapButton">
               <property name="text">
                <string>Add</string>
               </property>
@@ -77,7 +77,7 @@
              </spacer>
             </item>
             <item>
-             <widget class="QPushButton" name="deleteBitmapButton_2">
+             <widget class="QPushButton" name="deleteBitmapButton">
               <property name="text">
                <string>Delete</string>
               </property>
@@ -90,7 +90,7 @@
         <item>
          <layout class="QVBoxLayout" name="bitmapRightLayout_2">
           <item>
-           <widget class="QComboBox" name="comboBox_4"/>
+           <widget class="QComboBox" name="bitmapSelectionCombo"/>
           </item>
           <item>
            <layout class="QGridLayout" name="gridLayout_2">
@@ -102,7 +102,7 @@
              </widget>
             </item>
             <item row="2" column="1">
-             <widget class="QSpinBox" name="spinBox_6"/>
+             <widget class="QSpinBox" name="bitmapHeadingSpin"/>
             </item>
             <item row="0" column="0">
              <widget class="QLabel" name="label_4">
@@ -119,10 +119,10 @@
              </widget>
             </item>
             <item row="0" column="1">
-             <widget class="QSpinBox" name="spinBox_4"/>
+             <widget class="QSpinBox" name="bitmapPitchSpin"/>
             </item>
             <item row="1" column="1">
-             <widget class="QSpinBox" name="spinBox_5"/>
+             <widget class="QSpinBox" name="bitmapBankSpin"/>
             </item>
             <item row="0" column="2">
              <spacer name="horizontalSpacer_12">
@@ -205,10 +205,10 @@
           <item>
            <layout class="QHBoxLayout" name="horizontalLayout_8">
             <item>
-             <widget class="QLineEdit" name="lineEdit_5"/>
+             <widget class="QLineEdit" name="bitmapScaleXEdit"/>
             </item>
             <item>
-             <widget class="QLineEdit" name="lineEdit_6"/>
+             <widget class="QLineEdit" name="bitmapScaleYEdit"/>
             </item>
            </layout>
           </item>
@@ -252,10 +252,10 @@
           <item>
            <layout class="QHBoxLayout" name="horizontalLayout_10">
             <item>
-             <widget class="QLineEdit" name="lineEdit_7"/>
+             <widget class="QLineEdit" name="bitmapDivisionsXEdit"/>
             </item>
             <item>
-             <widget class="QLineEdit" name="lineEdit_8"/>
+             <widget class="QLineEdit" name="bitmapDivisionsYEdit"/>
             </item>
            </layout>
           </item>
@@ -273,7 +273,7 @@
         <item>
          <layout class="QVBoxLayout" name="nebulaLeftLayout">
           <item>
-           <widget class="QCheckBox" name="checkBox">
+           <widget class="QCheckBox" name="fullNebulaCheckBox">
             <property name="text">
              <string>Full Nebula</string>
             </property>
@@ -289,7 +289,7 @@
              </widget>
             </item>
             <item row="0" column="1">
-             <widget class="QLineEdit" name="lineEdit_9"/>
+             <widget class="QLineEdit" name="nebulaRangeEdit"/>
             </item>
             <item row="1" column="0">
              <widget class="QLabel" name="label_13">
@@ -299,7 +299,7 @@
              </widget>
             </item>
             <item row="1" column="1">
-             <widget class="QComboBox" name="comboBox_5"/>
+             <widget class="QComboBox" name="nebulaPatternCombo"/>
             </item>
             <item row="2" column="0">
              <widget class="QLabel" name="label_14">
@@ -309,12 +309,12 @@
              </widget>
             </item>
             <item row="2" column="1">
-             <widget class="QComboBox" name="comboBox_6"/>
+             <widget class="QComboBox" name="nebulaLightningCombo"/>
             </item>
            </layout>
           </item>
           <item>
-           <widget class="QCheckBox" name="checkBox_2">
+           <widget class="QCheckBox" name="shipTrailsCheckBox">
             <property name="text">
              <string>Toggle ship trails</string>
             </property>
@@ -330,17 +330,17 @@
              </widget>
             </item>
             <item row="0" column="1">
-             <widget class="QLineEdit" name="lineEdit_10"/>
+             <widget class="QLineEdit" name="fogNearEdit"/>
             </item>
             <item row="1" column="0">
-             <widget class="QLabel" name="label_16">
+             <widget class="QLabel" name="label_35">
               <property name="text">
                <string>Fog Far Multiplier</string>
               </property>
              </widget>
             </item>
             <item row="1" column="1">
-             <widget class="QLineEdit" name="lineEdit_11"/>
+             <widget class="QLineEdit" name="fogFarMultiplierEdit"/>
             </item>
            </layout>
           </item>
@@ -356,42 +356,42 @@
            </widget>
           </item>
           <item>
-           <widget class="QCheckBox" name="checkBox_3">
+           <widget class="QCheckBox" name="poofGreen1CheckBox">
             <property name="text">
              <string>PoofGreen01</string>
             </property>
            </widget>
           </item>
           <item>
-           <widget class="QCheckBox" name="checkBox_7">
+           <widget class="QCheckBox" name="poofGreen2CheckBox">
             <property name="text">
              <string>PoofGreen02</string>
             </property>
            </widget>
           </item>
           <item>
-           <widget class="QCheckBox" name="checkBox_4">
+           <widget class="QCheckBox" name="poofRed1CheckBox">
             <property name="text">
              <string>PoofRed01</string>
             </property>
            </widget>
           </item>
           <item>
-           <widget class="QCheckBox" name="checkBox_6">
+           <widget class="QCheckBox" name="poofRed2CheckBox">
             <property name="text">
              <string>PoofRed02</string>
             </property>
            </widget>
           </item>
           <item>
-           <widget class="QCheckBox" name="checkBox_5">
+           <widget class="QCheckBox" name="poofPurple1CheckBox">
             <property name="text">
              <string>PoofPurp01</string>
             </property>
            </widget>
           </item>
           <item>
-           <widget class="QCheckBox" name="checkBox_8">
+           <widget class="QCheckBox" name="poofPurple2CheckBox">
             <property name="text">
              <string>PoofPurp02</string>
             </property>
@@ -431,7 +431,7 @@
            </widget>
           </item>
           <item row="1" column="1">
-           <widget class="QComboBox" name="comboBox_7"/>
+           <widget class="QComboBox" name="oldNebulaPatternCombo"/>
           </item>
           <item row="3" column="0">
            <widget class="QLabel" name="label_18">
@@ -441,7 +441,7 @@
            </widget>
           </item>
           <item row="3" column="1">
-           <widget class="QComboBox" name="comboBox_8"/>
+           <widget class="QComboBox" name="oldNebulaColorCombo"/>
           </item>
           <item row="0" column="1">
            <spacer name="verticalSpacer_2">
@@ -468,7 +468,7 @@
            </widget>
           </item>
           <item row="0" column="1">
-           <widget class="QLineEdit" name="lineEdit_12"/>
+           <widget class="QLineEdit" name="oldNebulaPitchEdit"/>
           </item>
           <item row="1" column="0">
            <widget class="QLabel" name="label_20">
@@ -478,7 +478,7 @@
            </widget>
           </item>
           <item row="1" column="1">
-           <widget class="QLineEdit" name="lineEdit_13"/>
+           <widget class="QLineEdit" name="oldNebulaBankEdit"/>
           </item>
           <item row="2" column="0">
            <widget class="QLabel" name="label_21">
@@ -488,7 +488,7 @@
            </widget>
           </item>
           <item row="2" column="1">
-           <widget class="QLineEdit" name="lineEdit_14"/>
+           <widget class="QLineEdit" name="oldNebulaHeadingEdit"/>
           </item>
          </layout>
         </item>
@@ -515,14 +515,14 @@
         </spacer>
        </item>
        <item>
-        <widget class="QPushButton" name="pushButton_2">
+        <widget class="QPushButton" name="swapWithButton">
          <property name="text">
           <string>Swap With</string>
          </property>
         </widget>
        </item>
        <item>
-        <widget class="QComboBox" name="comboBox_2"/>
+        <widget class="QComboBox" name="swapWithCombo"/>
        </item>
       </layout>
      </item>
@@ -535,12 +535,12 @@
         <item>
          <layout class="QVBoxLayout" name="sunLeftLayout">
           <item>
-           <widget class="QListView" name="bitmapListView_3"/>
+           <widget class="QListView" name="sunListView"/>
           </item>
           <item>
            <layout class="QHBoxLayout" name="horizontalLayout_15">
             <item>
-             <widget class="QPushButton" name="addBitmapButton_3">
+             <widget class="QPushButton" name="addSunButton">
               <property name="text">
                <string>Add</string>
               </property>
@@ -560,7 +560,7 @@
              </spacer>
             </item>
             <item>
-             <widget class="QPushButton" name="deleteBitmapButton_3">
+             <widget class="QPushButton" name="deleteSunButton">
               <property name="text">
                <string>Delete</string>
               </property>
@@ -573,7 +573,7 @@
         <item>
          <layout class="QVBoxLayout" name="sunRightLayout">
           <item>
-           <widget class="QComboBox" name="comboBox_9"/>
+           <widget class="QComboBox" name="sunSelectionCombo"/>
           </item>
           <item>
            <layout class="QGridLayout" name="gridLayout_3">
@@ -585,7 +585,7 @@
              </widget>
             </item>
             <item row="2" column="1">
-             <widget class="QSpinBox" name="spinBox_7"/>
+             <widget class="QSpinBox" name="sunHeadingSpin"/>
             </item>
             <item row="0" column="0">
              <widget class="QLabel" name="label_23">
@@ -602,10 +602,10 @@
              </widget>
             </item>
             <item row="0" column="1">
-             <widget class="QSpinBox" name="spinBox_8"/>
+             <widget class="QSpinBox" name="sunPitchSpin"/>
             </item>
             <item row="1" column="1">
-             <widget class="QSpinBox" name="spinBox_9"/>
+             <widget class="QSpinBox" name="sunBankSpin"/>
             </item>
             <item row="0" column="2">
              <spacer name="horizontalSpacer_20">
@@ -685,42 +685,42 @@
         <item>
          <layout class="QGridLayout" name="gridLayout_4">
           <item row="0" column="0" colspan="2">
-           <widget class="QSlider" name="horizontalSlider_4">
+           <widget class="QSlider" name="ambientLightRedSlider">
             <property name="orientation">
              <enum>Qt::Horizontal</enum>
             </property>
            </widget>
           </item>
           <item row="0" column="2">
-           <widget class="QLabel" name="label_28">
+           <widget class="QLabel" name="ambientLightRedLabel">
             <property name="text">
              <string>Red: 0</string>
             </property>
            </widget>
           </item>
           <item row="1" column="0" colspan="2">
-           <widget class="QSlider" name="horizontalSlider_5">
+           <widget class="QSlider" name="ambientLightGreenSlider">
             <property name="orientation">
              <enum>Qt::Horizontal</enum>
             </property>
            </widget>
           </item>
           <item row="1" column="2">
-           <widget class="QLabel" name="label_29">
+           <widget class="QLabel" name="ambientLightGreenLabel">
             <property name="text">
              <string>Green: 0</string>
             </property>
            </widget>
           </item>
           <item row="2" column="0" colspan="2">
-           <widget class="QSlider" name="horizontalSlider_6">
+           <widget class="QSlider" name="ambientLightBlueSlider">
             <property name="orientation">
              <enum>Qt::Horizontal</enum>
             </property>
            </widget>
           </item>
           <item row="2" column="2">
-           <widget class="QLabel" name="label_30">
+           <widget class="QLabel" name="ambientLightBlueLabel">
             <property name="text">
              <string>Blue: 0</string>
             </property>
@@ -740,14 +740,14 @@
         <item>
          <layout class="QHBoxLayout" name="horizontalLayout_18">
           <item>
-           <widget class="QPushButton" name="pushButton_3">
+           <widget class="QPushButton" name="skyboxModelButton">
             <property name="text">
              <string>Skybox Model</string>
             </property>
            </widget>
           </item>
           <item>
-           <widget class="QLineEdit" name="lineEdit_15"/>
+           <widget class="QLineEdit" name="skyboxEdit"/>
           </item>
          </layout>
         </item>
@@ -761,7 +761,7 @@
            </widget>
           </item>
           <item>
-           <widget class="QSpinBox" name="spinBox_10"/>
+           <widget class="QSpinBox" name="skyboxPitchSpin"/>
           </item>
           <item>
            <widget class="QLabel" name="label_32">
@@ -771,7 +771,7 @@
            </widget>
           </item>
           <item>
-           <widget class="QSpinBox" name="spinBox_11"/>
+           <widget class="QSpinBox" name="skyboxBankSpin"/>
           </item>
           <item>
            <widget class="QLabel" name="label_33">
@@ -781,49 +781,49 @@
            </widget>
           </item>
           <item>
-           <widget class="QSpinBox" name="spinBox_12"/>
+           <widget class="QSpinBox" name="skyboxHeadingSpin"/>
           </item>
          </layout>
         </item>
         <item>
          <layout class="QGridLayout" name="gridLayout_5">
           <item row="0" column="0">
-           <widget class="QCheckBox" name="checkBox_9">
+           <widget class="QCheckBox" name="noLightingCheckBox">
             <property name="text">
              <string>No lighting</string>
             </property>
            </widget>
           </item>
           <item row="0" column="1">
-           <widget class="QCheckBox" name="checkBox_10">
+           <widget class="QCheckBox" name="transparentCheckBox">
             <property name="text">
              <string>Transparent</string>
             </property>
            </widget>
           </item>
           <item row="0" column="2">
-           <widget class="QCheckBox" name="checkBox_11">
+           <widget class="QCheckBox" name="forceClampCheckBox">
             <property name="text">
              <string>Force clamp</string>
             </property>
            </widget>
           </item>
           <item row="1" column="0">
-           <widget class="QCheckBox" name="checkBox_12">
+           <widget class="QCheckBox" name="noZBufferCheckBox">
             <property name="text">
              <string>No z-buffer</string>
             </property>
            </widget>
           </item>
           <item row="1" column="1">
-           <widget class="QCheckBox" name="checkBox_13">
+           <widget class="QCheckBox" name="NoCullCheckBox">
             <property name="text">
              <string>No cull</string>
             </property>
            </widget>
           </item>
           <item row="1" column="2">
-           <widget class="QCheckBox" name="checkBox_14">
+           <widget class="QCheckBox" name="NoGlowMapsCheckBox">
             <property name="text">
              <string>No glow maps</string>
             </property>
@@ -848,14 +848,14 @@
          </widget>
         </item>
         <item>
-         <widget class="QSlider" name="horizontalSlider_7">
+         <widget class="QSlider" name="numStarsSlider">
           <property name="orientation">
            <enum>Qt::Horizontal</enum>
           </property>
          </widget>
         </item>
         <item>
-         <widget class="QCheckBox" name="checkBox_15">
+         <widget class="QCheckBox" name="subspaceCheckBox">
           <property name="text">
            <string>Takes place inside subspace</string>
           </property>
@@ -864,14 +864,14 @@
         <item>
          <layout class="QHBoxLayout" name="horizontalLayout_20">
           <item>
-           <widget class="QPushButton" name="pushButton_4">
+           <widget class="QPushButton" name="envMapButton">
             <property name="text">
              <string>Environment Map</string>
             </property>
            </widget>
           </item>
           <item>
-           <widget class="QLineEdit" name="lineEdit_16"/>
+           <widget class="QLineEdit" name="envMapEdit"/>
           </item>
          </layout>
         </item>
@@ -881,17 +881,7 @@
     </layout>
    </item>
   </layout>
-  <zorder>comboBox</zorder>
-  <zorder>pushButton</zorder>
-  <zorder>pushButton_2</zorder>
-  <zorder>comboBox_2</zorder>
-  <zorder>groupBox</zorder>
-  <zorder>groupBox_2</zorder>
-  <zorder>groupBox_3</zorder>
-  <zorder>groupBox_4</zorder>
   <zorder></zorder>
-  <zorder>groupBox_6</zorder>
-  <zorder>groupBox_5</zorder>
   <zorder></zorder>
  </widget>
  <resources/>

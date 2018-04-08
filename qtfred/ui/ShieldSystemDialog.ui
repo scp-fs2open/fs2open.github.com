@@ -101,5 +101,38 @@
   </layout>
  </widget>
  <resources/>
- <connections/>
+ <connections>
+  <connection>
+   <sender>dialogButtonBox</sender>
+   <signal>accepted()</signal>
+   <receiver>fso::fred::dialogs::ShieldSystemDialog</receiver>
+   <slot>accept()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>195</x>
+     <y>132</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>154</x>
+     <y>80</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>dialogButtonBox</sender>
+   <signal>rejected()</signal>
+   <receiver>fso::fred::dialogs::ShieldSystemDialog</receiver>
+   <slot>reject()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>195</x>
+     <y>132</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>154</x>
+     <y>80</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
 </ui>
