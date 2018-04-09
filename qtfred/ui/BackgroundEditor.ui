@@ -881,8 +881,6 @@
     </layout>
    </item>
   </layout>
-  <zorder></zorder>
-  <zorder></zorder>
  </widget>
  <resources/>
  <connections/>
