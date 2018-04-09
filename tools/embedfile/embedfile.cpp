@@ -128,38 +128,37 @@ void do_text_content(std::ifstream& file_in, std::ofstream& file_out,
 	while (pos < file_content.length()) {
 		const char* found_ptr = strpbrk(str + pos, escapeCharacters);
 
-		if (!found_ptr) {
+		if (found_ptr == nullptr) {
 			file_out.write(str + pos, file_content.length() - pos);
 			break;
 		}
-		else {
-			size_t found_pos = (size_t) (found_ptr - str);
 
-			size_t delta = found_pos - pos;
+		size_t found_pos = (size_t) (found_ptr - str);
 
-			if (delta != 0) {
-				file_out.write(str + pos, delta);
-			}
+		size_t delta = found_pos - pos;
 
-			switch (str[found_pos]) {
-				case '\\':
-					file_out << "\\\\";
-					break;
-				case '\n':
-					file_out << "\\n\"" << std::endl << "\"";
-					break;
-				case '"':
-					file_out << "\\\"";
-					break;
-				case '\r':
-					// Discard this character, possibly breaks on mac but whatever...
-					break;
-				default:
-					std::cout << "ERROR: Invalid character encountered!" << std::endl;
-			}
-
-			pos = found_pos + 1;
+		if (delta != 0) {
+			file_out.write(str + pos, delta);
 		}
+
+		switch (str[found_pos]) {
+			case '\\':
+				file_out << "\\\\";
+				break;
+			case '\n':
+				file_out << "\\n\"" << std::endl << "\"";
+				break;
+			case '"':
+				file_out << "\\\"";
+				break;
+			case '\r':
+				// Discard this character, possibly breaks on mac but whatever...
+				break;
+			default:
+				std::cout << "ERROR: Invalid character encountered!" << std::endl;
+		}
+
+		pos = found_pos + 1;
 	}
 
 	file_out << "\";" << std::endl;

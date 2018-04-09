@@ -83,7 +83,6 @@ int main(int argc, char* argv[]) {
 	SCP_mspdbcs_Initialise();
 #endif
 
-	Q_INIT_RESOURCE(resources);
 	qInstallMessageHandler(fsoMessageOutput);
 
 	SDL_SetMainReady();

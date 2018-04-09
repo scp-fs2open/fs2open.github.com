@@ -180,6 +180,8 @@ TARGET_LINK_LIBRARIES(FRED2 PUBLIC "$<$<CONFIG:Release>:nafxcw.lib>")
 
 target_link_libraries(FRED2 PUBLIC glad_wgl)
 
+enable_clang_tidy(FRED2)
+
 INSTALL(
 	TARGETS FRED2
 	RUNTIME DESTINATION ${BINARY_DESTINATION}

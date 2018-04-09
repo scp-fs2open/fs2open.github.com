@@ -1,0 +1,10 @@
+---
+Checks:          'bugprone-assert-side-effect'
+WarningsAsErrors: ''
+HeaderFilterRegex: ''
+AnalyzeTemporaryDtors: false
+CheckOptions:    
+  - key:             bugprone-assert-side-effect.AssertMacros
+    value:           'assert,Assert,Assertion'
+...
+

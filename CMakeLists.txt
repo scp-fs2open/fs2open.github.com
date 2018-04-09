@@ -142,6 +142,8 @@ if(FSO_BUILD_APPIMAGE)
 	include(appimage)
 endif()
 
+include(clang-tidy)
+
 # This includes source code for some tools, either used in the build or also for something else
 ADD_SUBDIRECTORY(tools)
 

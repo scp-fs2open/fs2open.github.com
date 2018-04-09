@@ -51,8 +51,9 @@ namespace os
 		 * @param linenum The source code line number where this function was called
 		 * @param format An optional message to display in addition to the specified text
 		 */
-		void AssertMessage(const char* text, const char* filename, int linenum,
-				SCP_FORMAT_STRING const char* format = nullptr, ...) SCP_FORMAT_STRING_ARGS(4, 5);
+		void AssertMessage(const char* text, const char* filename, int linenum, SCP_FORMAT_STRING
+						   const char* format = nullptr, ...)
+		SCP_FORMAT_STRING_ARGS(4, 5) CLANG_ANALYZER_NORETURN;
 
 		/**
 		 * @brief Shows a lua error.
@@ -72,7 +73,8 @@ namespace os
 		 * @param line The source code line number where this function was called
 		 * @param format The error message to display (a format string)
 		 */
-		void Error(const char* filename, int line, SCP_FORMAT_STRING const char* format, ...) SCP_FORMAT_STRING_ARGS(3, 4);
+		void Error(const char* filename, int line, SCP_FORMAT_STRING const char* format, ...)
+		SCP_FORMAT_STRING_ARGS(3, 4) CLANG_ANALYZER_NORETURN;
 
 		/**
 		 * @brief Shows an error dialog.
@@ -80,7 +82,7 @@ namespace os
 		 *
 		 * @param text The text to display
 		 */
-		void Error(const char* text);
+		void Error(const char* text) CLANG_ANALYZER_NORETURN;;
 
 		/**
 		 * @brief Shows a warning dialog.

@@ -72,3 +72,5 @@
 #else
 #define FALLTHROUGH
 #endif
+
+#define CLANG_ANALYZER_NORETURN
