@@ -1124,6 +1124,9 @@
    <property name="text">
     <string>&amp;Fiction Viewer</string>
    </property>
+   <property name="shortcut">
+    <string>Shift+F</string>
+   </property>
   </action>
   <action name="actionShield_System">
    <property name="text">
