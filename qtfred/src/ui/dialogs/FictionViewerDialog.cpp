@@ -1,7 +1,7 @@
 
 #include <QCloseEvent>
 #include "ui/dialogs/FictionViewerDialog.h"
-
+#include "ui/util/SignalBlockers.h"
 #include "ui_FictionViewerDialog.h"
 
 namespace fso {
@@ -49,8 +49,6 @@ FictionViewerDialog::~FictionViewerDialog() {
 }
 
 void FictionViewerDialog::updateMusicComboBox() {
-	QSignalBlocker blocker(ui->musicComboBox);
-
 	ui->musicComboBox->clear();
 
 	for (const auto& el : _model->getMusicOptions()) {
@@ -60,12 +58,7 @@ void FictionViewerDialog::updateMusicComboBox() {
 	ui->musicComboBox->setEnabled(ui->musicComboBox->count() > 0);
 }
 void FictionViewerDialog::updateUI() {
-	// We need to block signals here or else updating the combobox would lead to and update of the model
-	// which would call this function again
-	QSignalBlocker blocker(this);
-	QSignalBlocker storyBlocker(ui->storyFileEdit);
-	QSignalBlocker fontBlocker(ui->fontFileEdit);
-	QSignalBlocker voiceBlocker(ui->voiceFileEdit);
+	util::SignalBlockers blockers(this);
 
 	updateMusicComboBox();
 
