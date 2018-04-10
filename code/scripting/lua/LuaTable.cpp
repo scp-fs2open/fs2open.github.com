@@ -38,7 +38,7 @@ bool LuaTable::setMetatable(const LuaTable& table) {
 	return true;
 }
 
-void LuaTable::setReference(luacpp::LuaReference ref) {
+void LuaTable::setReference(const LuaReference& ref) {
 	ref->pushValue();
 
 	lua_State* L = ref->getState();

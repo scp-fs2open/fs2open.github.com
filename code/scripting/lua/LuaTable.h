@@ -127,7 +127,7 @@ class LuaTable: public LuaValue {
      * @param ref The new reference
      * @return void
      */
-	void setReference(LuaReference ref) override;
+	void setReference(const LuaReference& ref) override;
 
 	/**
      * @brief Adds a value to this lua table.

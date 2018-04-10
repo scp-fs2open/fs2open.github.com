@@ -1,5 +1,5 @@
 ---
-Checks:          '-*,modernize-use-override'
+Checks:          '-*,modernize-use-override,performance-*,-performance-type-promotion-in-math-fn'
 WarningsAsErrors: ''
 HeaderFilterRegex: '.*'
 AnalyzeTemporaryDtors: false

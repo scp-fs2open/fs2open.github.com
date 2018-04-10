@@ -48,7 +48,7 @@ namespace particle
 
 		void setCreationTimestamp(int timestamp);
 
-		void moveToParticle(WeakParticlePtr ptr);
+		void moveToParticle(const WeakParticlePtr& ptr);
 
 		void moveToObject(object* obj, vec3d* localPos);
 

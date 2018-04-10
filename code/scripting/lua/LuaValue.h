@@ -93,7 +93,7 @@ class LuaValue {
      *
      * @param ref The new lua reference.
      */
-	virtual void setReference(LuaReference ref);
+	virtual void setReference(const LuaReference& ref);
 
 	/**
      * @brief Gets the LuaReference.

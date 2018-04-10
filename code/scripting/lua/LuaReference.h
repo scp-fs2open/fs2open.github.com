@@ -24,6 +24,10 @@ typedef std::shared_ptr<UniqueLuaReference> LuaReference;
  */
 class UniqueLuaReference {
  private:
+	lua_State* _luaState;
+	int _reference;
+
+ public:
 	/**
     * @brief Initializes a lua reference.
     *
@@ -31,13 +35,11 @@ class UniqueLuaReference {
     *
     * @param state The lua_State where the reference points to a value.
     * @param reference The reference value, should be >= 0.
+    *
+    * @warning Do not call this directly. Use UniqueLuaReference::create instead.
     */
 	UniqueLuaReference(lua_State* state, int reference);
 
-	lua_State* _luaState;
-	int _reference;
-
- public:
 	/**
     * @brief Creates a lua-reference.
     *

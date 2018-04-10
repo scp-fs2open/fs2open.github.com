@@ -261,11 +261,12 @@ void FrameProfiler::dump_output(SCP_stringstream& out,
 		sprintf(max, "%3.1fms", i2fl(max_micro_seconds) * 0.000001f);
 		sprintf(num, "%3d", samples[i].profile_instances);
 
-		SCP_string indented_name(samples[i].name);
+		SCP_string indented_name;
 
 		for (uint indent = 0; indent < samples[i].num_parents; indent++) {
-			indented_name = ">" + indented_name;
+			indented_name += ">";
 		}
+		indented_name += samples[i].name;
 
 		char line[256];
 		sprintf(line, "%5s : %5s : %5s : %3s : ", avg, min, max, num);

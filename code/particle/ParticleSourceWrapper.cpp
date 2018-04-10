@@ -59,7 +59,7 @@ namespace particle
 		}
 	}
 
-	void ParticleSourceWrapper::moveToParticle(WeakParticlePtr ptr)
+	void ParticleSourceWrapper::moveToParticle(const WeakParticlePtr& ptr)
 	{
 		for (auto& source : m_sources)
 		{

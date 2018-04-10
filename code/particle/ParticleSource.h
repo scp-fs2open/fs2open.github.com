@@ -121,7 +121,7 @@ class SourceOrigin {
 	 * @brief Moves the source to the specified particle
 	 * @param weakParticlePtr The hosting particle
 	 */
-	void moveToParticle(WeakParticlePtr weakParticlePtr);
+	void moveToParticle(const WeakParticlePtr& weakParticlePtr);
 
 	friend class ParticleSource;
 };

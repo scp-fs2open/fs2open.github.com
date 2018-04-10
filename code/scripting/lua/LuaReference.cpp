@@ -12,7 +12,7 @@ LuaReference UniqueLuaReference::create(lua_State* state, int position) {
 
 	lua_pushvalue(state, position);
 
-	LuaReference ref(new UniqueLuaReference(state, luaL_ref(state, LUA_REGISTRYINDEX)));
+	LuaReference ref = std::make_shared<UniqueLuaReference>(state, luaL_ref(state, LUA_REGISTRYINDEX));
 
 	return ref;
 }
