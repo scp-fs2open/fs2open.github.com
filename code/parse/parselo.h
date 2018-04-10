@@ -352,7 +352,7 @@ namespace parse
 	{
 	public:
 		explicit ParseException(const std::string& msg) : std::runtime_error(msg) {}
-		~ParseException() throw() override =default;
+		~ParseException() SCP_NOEXCEPT override {}
 	};
 }
 

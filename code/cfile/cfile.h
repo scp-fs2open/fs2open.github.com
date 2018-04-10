@@ -369,9 +369,9 @@ namespace cfile
 			{
 			}
 
-			~cfile_error() noexcept override = default;
+			~cfile_error() SCP_NOEXCEPT override {}
 
-			const char *what() const noexcept override {
+			const char *what() const SCP_NOEXCEPT override {
 				return m_excuse.c_str();
 			}
 

@@ -33,7 +33,7 @@ class sync_queue_is_closed : public std::runtime_error
 {
 public:
 	sync_queue_is_closed() : std::runtime_error("Sync Bounded Queue is closed") {}
-	~sync_queue_is_closed() throw() override {}
+	~sync_queue_is_closed() SCP_NOEXCEPT override {}
 };
 
 template <typename ValueType>
