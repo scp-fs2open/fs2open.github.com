@@ -987,13 +987,13 @@ void EventEditorDialog::updatePersona() {
 		auto i = wave_name[0] - '1';
 		if ((i < Num_personas) && (Personas[i].flags & PERSONA_FLAG_WINGMAN)) {
 			m_messages[m_cur_msg].persona_index = i;
-			if ((i == 0) || (i == 1)) {
+			if (i == 0 || i == 1) {
 				avi_name = "HEAD-TP1";
-			} else if ((i == 2) || (i == 3)) {
+			} else if (i == 2 || i == 3) {
 				avi_name = "HEAD-TP2";
-			} else if ((i == 4)) {
+			} else if (i == 4) {
 				avi_name = "HEAD-TP3";
-			} else if ((i == 5)) {
+			} else if (i == 5) {
 				avi_name = "HEAD-VP1";
 			}
 		}
