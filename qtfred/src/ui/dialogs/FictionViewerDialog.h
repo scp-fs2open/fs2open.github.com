@@ -19,7 +19,7 @@ class FictionViewerDialog : public QDialog {
 	Q_OBJECT
 public:
 	FictionViewerDialog(FredView* parent, EditorViewport* viewport);
-	~FictionViewerDialog();
+	~FictionViewerDialog() override;
 
 	void musicSelectionChanged(int index);
 	void storyFileTextChanged();

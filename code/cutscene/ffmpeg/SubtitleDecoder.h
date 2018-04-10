@@ -10,11 +10,11 @@ class SubtitleDecoder: public FFMPEGStreamDecoder<SubtitleFrame> {
  public:
     explicit SubtitleDecoder(DecoderStatus* status);
 
-    virtual ~SubtitleDecoder();
+	~SubtitleDecoder() override;
 
-    virtual void decodePacket(AVPacket* packet) SCP_OVERRIDE;
+	void decodePacket(AVPacket* packet) override;
 
-    virtual void finishDecoding() SCP_OVERRIDE;
+	void finishDecoding() override;
     void pushSubtitleFrame(AVPacket* subtitle, AVSubtitle* pSubtitle);
 };
 

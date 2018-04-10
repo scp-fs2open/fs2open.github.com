@@ -13,7 +13,7 @@ class QtOpenGLContext: public os::OpenGLContext {
 	std::unique_ptr<QOpenGLContext> _context;
  public:
 	QtOpenGLContext(std::unique_ptr<QOpenGLContext>&& context);
-	~QtOpenGLContext();
+	~QtOpenGLContext() override;
 
 	os::OpenGLLoadProc getLoaderFunction() override;
 	void setSwapInterval(int status) override;
@@ -26,7 +26,7 @@ class QtViewport: public os::Viewport {
 	os::ViewPortProperties _viewProps;
  public:
 	QtViewport(std::unique_ptr<FredView>&& window, const os::ViewPortProperties& viewProps);
-	~QtViewport();
+	~QtViewport() override;
 
 	SDL_Window* toSDLWindow() override;
 	std::pair<uint32_t, uint32_t> getSize() override;
@@ -45,7 +45,7 @@ class QtGraphicsOperations: public os::GraphicsOperations {
 	QtOpenGLContext* _lastContext = nullptr;
  public:
 	QtGraphicsOperations(Editor* editor);
-	~QtGraphicsOperations();
+	~QtGraphicsOperations() override;
 
 	std::unique_ptr<os::OpenGLContext>
 	createOpenGLContext(os::Viewport* viewport, const os::OpenGLContextAttributes& gl_attrs) override;

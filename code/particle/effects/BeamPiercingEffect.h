@@ -23,11 +23,11 @@ class BeamPiercingEffect: public ParticleEffect {
  public:
 	BeamPiercingEffect() : ParticleEffect("") {}
 
-	virtual bool processSource(const ParticleSource* source) override;
+	bool processSource(const ParticleSource* source) override;
 
-	virtual void parseValues(bool nocreate) override;
+	void parseValues(bool nocreate) override;
 
-	virtual void pageIn() override;
+	void pageIn() override;
 
 	void setValues(int bitmapIndex, float radius, float velocity, float back_velocity, float variance);
 };

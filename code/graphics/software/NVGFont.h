@@ -20,7 +20,7 @@ namespace font
 
 	public:
 		NVGFont();
-		virtual ~NVGFont();
+		~NVGFont() override;
 
 		int getHandle() const { return m_handle; }
 		float getSize() const { return m_size; }
@@ -34,12 +34,12 @@ namespace font
 		void setTabWidth(float tabWidth);
 		void setSpecialCharacterFont(font* fontData);
 
-		virtual FontType getType() const SCP_OVERRIDE { return NVG_FONT; };
+		FontType getType() const override { return NVG_FONT; };
 
-		virtual float getTextHeight() const SCP_OVERRIDE;
+		float getTextHeight() const override;
 
-		virtual void getStringSize(const char *text, size_t textLen, int resize_mode,
-			float *width, float *height) const SCP_OVERRIDE;
+		void getStringSize(const char *text, size_t textLen, int resize_mode,
+			float *width, float *height) const override;
 
 		void computeFontMetrics() override;
 

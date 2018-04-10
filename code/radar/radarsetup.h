@@ -131,9 +131,9 @@ public:
 	void initInfinityIcon();
 
 	void drawRange();
-	virtual void render(float frametime);
-	virtual void initialize();
-	virtual void pageIn();
+	void render(float frametime) override;
+	void initialize() override;
+	void pageIn() override;
 };
 
 #endif //_FS2OPEN_RADARSETUP_H

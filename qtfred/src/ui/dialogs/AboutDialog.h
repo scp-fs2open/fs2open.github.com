@@ -16,7 +16,7 @@ class AboutDialog: public QDialog {
 
  public:
 	explicit AboutDialog(QWidget* parent);
-	~AboutDialog();
+	~AboutDialog() override;
  private:
 	void onBugPressed();
 	void onForumsPressed();

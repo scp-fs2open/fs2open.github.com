@@ -17,7 +17,7 @@ class ArgumentException: public LuaException {
 	ArgumentException(const std::string& message = "Argument Error!") throw() : LuaException(message) {
 	}
 
-	virtual ~ArgumentException() throw() {
+	~ArgumentException() noexcept override {
 	}
 };
 

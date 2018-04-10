@@ -19,7 +19,7 @@ class WaypointEditorDialog : public QDialog {
 	Q_OBJECT
 public:
 	WaypointEditorDialog(FredView* parent, EditorViewport* viewport);
-	~WaypointEditorDialog();
+	~WaypointEditorDialog() override;
 
 	void reject() override;
 

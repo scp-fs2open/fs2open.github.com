@@ -62,8 +62,8 @@ public:
 	void setupView();
 	void setupViewHtl();
 	int calcAlpha(vec3d* pt);
-	void render(float frametime);
-	void pageIn();
+	void render(float frametime) override;
+	void pageIn() override;
 	void plotBlip(blip *b, vec3d *scaled_pos);
 };
 

@@ -19,7 +19,7 @@ class RenderWindow: public QWindow {
  Q_OBJECT
  public:
 	explicit RenderWindow(RenderWidget* parent = nullptr);
-	~RenderWindow();
+	~RenderWindow() override;
 
 	void setEditor(Editor* editor, FredRenderer* renderer);
 

@@ -41,12 +41,12 @@ class BinaryFileHandler: public FileHandler {
 	void endSectionWrite() override;
 
 
-	void startArrayWrite(const char* name, size_t size, bool short_length = false) override;
+	void startArrayWrite(const char* name, size_t size, bool short_length) override;
 
 	void endArrayWrite() override;
 
 
-	virtual void flush() override;
+	void flush() override;
 };
 }
 

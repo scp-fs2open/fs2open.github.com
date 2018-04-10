@@ -254,7 +254,7 @@ public:
 	void set_batching(bool enabled);
 	bool is_batched() const;
 
-	virtual uint get_shader_flags() const override;
+	uint get_shader_flags() const override;
 
 	void set_fog(int r, int g, int b, float near, float far);
 	void set_fog();

@@ -28,7 +28,7 @@ class FredView: public QMainWindow, public IDialogProvider {
 
  public:
 	explicit FredView(QWidget* parent = nullptr);
-	~FredView();
+	~FredView() override;
 	void setEditor(Editor* editor, EditorViewport* viewport);
 
 	void loadMissionFile(const QString& pathName);

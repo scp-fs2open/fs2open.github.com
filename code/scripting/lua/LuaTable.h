@@ -108,7 +108,7 @@ class LuaTable: public LuaValue {
 	/**
      * Dereferences the stored reference to the table if it exists.
      */
-	virtual ~LuaTable();
+	~LuaTable() override;
 
 	/**
      * @brief Sets the metatable.

@@ -1,10 +1,8 @@
 ---
-Checks:          'bugprone-assert-side-effect'
+Checks:          '-*,modernize-use-override'
 WarningsAsErrors: ''
-HeaderFilterRegex: ''
+HeaderFilterRegex: '.*'
 AnalyzeTemporaryDtors: false
-CheckOptions:    
-  - key:             bugprone-assert-side-effect.AssertMacros
-    value:           'assert,Assert,Assertion'
+CheckOptions:
 ...
 

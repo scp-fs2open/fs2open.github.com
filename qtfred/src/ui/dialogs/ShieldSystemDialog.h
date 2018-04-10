@@ -19,7 +19,7 @@ class ShieldSystemDialog : public QDialog
 public:
     explicit ShieldSystemDialog(FredView* parent, EditorViewport* viewport);
 	// TODO shouldn't all QDialog subclasses have a virtual destructor?
-    virtual ~ShieldSystemDialog();
+    ~ShieldSystemDialog() override;
 
 private:
     std::unique_ptr<Ui::ShieldSystemDialog> ui;

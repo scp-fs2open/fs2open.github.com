@@ -64,7 +64,7 @@ class LuaFunction: public LuaValue {
 	/**
      * @brief Frees the reference to the function if it exists.
      */
-	virtual ~LuaFunction();
+	~LuaFunction() override;
 
 	/**
      * @brief Sets the function environment.

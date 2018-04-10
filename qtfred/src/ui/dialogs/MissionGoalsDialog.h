@@ -17,7 +17,7 @@ class MissionGoalsDialog : public QDialog
 
 public:
     explicit MissionGoalsDialog(QWidget *parent = 0);
-    ~MissionGoalsDialog();
+    ~MissionGoalsDialog() override;
 
 private:
     Ui::MissionGoalsDialog *ui;

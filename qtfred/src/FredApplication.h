@@ -15,7 +15,7 @@ class FredApplication: public QObject {
 
  public:
 	FredApplication();
-	~FredApplication();
+	~FredApplication() override;
 
 	bool isInitializeComplete() const;
 

@@ -220,8 +220,8 @@ class UI_BUTTON : public UI_GADGET
 		void (*m_disabled_function)(void);				// callback that gets called when disabled button gets pressed (sound, popup, etc)
 
 		void frame_reset();
-		virtual void process(int focus = 0);
-		virtual void destroy();
+		void process(int focus = 0) override;
+		void destroy() override;
 
 		io::mouse::Cursor* custom_cursor;					// bmap handle of special cursor used on mouseovers
 		io::mouse::Cursor* previous_cursor;				// store old cursor
@@ -229,7 +229,7 @@ class UI_BUTTON : public UI_GADGET
 		void restore_previous_cursor();		// called in frame_reset()
 
 	public:
-		virtual void draw();
+		void draw() override;
 		void set_hotkey_if_focus(int key);
 		int pressed();				// has it been selected (ie clicked on)
 		int double_clicked();	// button was double clicked on
@@ -253,8 +253,8 @@ class UI_BUTTON : public UI_GADGET
 class UI_KEYTRAP : public UI_GADGET
 {
 		int pressed_down;
-		virtual void draw();
-		virtual void process(int focus = 0);
+		void draw() override;
+		void process(int focus = 0) override;
 
 	public:
 		int pressed();
@@ -304,9 +304,9 @@ class UI_INPUTBOX : public UI_GADGET
 		int	validate_input(int chr);
 		void	init_cursor();
 
-		virtual void draw();
-		virtual void process(int focus = 0);
-		virtual void destroy();
+		void draw() override;
+		void process(int focus = 0) override;
+		void destroy() override;
 
 	public:
 		void create(UI_WINDOW *wnd, int _x, int _y, int _w, int _textlen, const char *_text, int _flags = 0, int pixel_lim = -1, color *clr = NULL);
@@ -331,10 +331,10 @@ class UI_ICON : public UI_GADGET
 		enum { ICON_HIGHLIGHT = 1 };
 		enum { ICON_SELECTED = 2 };
 		enum { ICON_DISABLED = 3 };
-			
-		virtual void draw();
-		virtual void process(int focus = 0);
-		virtual void destroy();
+
+		void draw() override;
+		void process(int focus = 0) override;
+		void destroy() override;
 
 	public:
 		void create(UI_WINDOW *wnd, char *_text, int _x, int _y, int _w, int _h);
@@ -346,9 +346,9 @@ class UI_CHECKBOX : public UI_GADGET
 		int position;
 		int pressed_down;
 		int flag;
-		virtual void draw();
-		virtual void process(int focus = 0);
-		virtual void destroy();
+		void draw() override;
+		void process(int focus = 0) override;
+		void destroy() override;
 
 		// Used to index into bmap_ids[] array to locate right bitmap for checkbox
 		enum { CBOX_UP_CLEAR = 0 };
@@ -372,9 +372,9 @@ class UI_RADIO : public UI_GADGET
 		int pressed_down;
 		int flag;
 		int group;
-		virtual void draw();
-		virtual void process(int focus = 0);
-		virtual void destroy();
+		void draw() override;
+		void process(int focus = 0) override;
+		void destroy() override;
 
 		// Used to index into bmap_ids[] array to locate right bitmap for radio button
 		enum { RADIO_UP_CLEAR = 0 };
@@ -410,8 +410,8 @@ class UI_SCROLLBAR : public UI_GADGET
 		int dragging;
 		int moved;
 
-		virtual void draw();
-		virtual void process(int focus = 0);
+		void draw() override;
+		void process(int focus = 0) override;
 
 		// Used to index into bmap_ids[] array to locate right bitmap for scrollbar
 		enum { SB_NORMAL = 0 };
@@ -421,8 +421,8 @@ class UI_SCROLLBAR : public UI_GADGET
 		void create(UI_WINDOW *wnd, int _x, int _y, int _h,int _start, int _stop, int _position, int _window_size  );
 		int getpos();
 		int changed();
-		void hide();
-		void unhide();
+		void hide() override;
+		void unhide() override;
 		void link_hotspot(int up_button_num, int down_button_num);
 		int set_bmaps(char *up_button_fname, char *down_button_fname, char *line_fname);
 };
@@ -445,8 +445,8 @@ class UI_SLIDER2 : public UI_GADGET
 		void (*captureCallback)();	// this is called when the mouse is released
 		UI_BUTTON *upButton, *downButton;
 		int slider_w, slider_h, slider_half_h;		// this is the width and height and half height of the bitmap used for the slider
-		virtual void draw();
-		virtual void process(int focus = 0);
+		void draw() override;
+		void process(int focus = 0) override;
 
 		// Used to index into bmap_ids[] array to locate right bitmap for slider
 		enum { S2_NORMAL = 0 };
@@ -494,10 +494,10 @@ class UI_DOT_SLIDER : public UI_GADGET
 	public:
 		int pos;  // 0 thru 10
 
-		void create(UI_WINDOW *wnd, int _x, int _y, char *bm, int id, int end_buttons = 1, int _num_pos = 10);		
-		virtual void draw();
-		virtual void process(int focus = 0);
-		virtual void destroy();
+		void create(UI_WINDOW *wnd, int _x, int _y, char *bm, int id, int end_buttons = 1, int _num_pos = 10);
+		void draw() override;
+		void process(int focus = 0) override;
+		void destroy() override;
 };
 
 class UI_DOT_SLIDER_NEW : public UI_GADGET
@@ -517,8 +517,8 @@ class UI_DOT_SLIDER_NEW : public UI_GADGET
 					const char *bm_left = NULL, int left_mask = -1, int left_x = -1, int left_y = -1,
 					const char *bm_right = NULL, int right_mask = -1, int right_x = -1, int right_y = -1,
 					int _dot_width = 19);
-		virtual void draw();
-		virtual void process(int focus = 0);		
+		void draw() override;
+		void process(int focus = 0) override;
 };
 
 class UI_LISTBOX : public UI_GADGET
@@ -547,8 +547,8 @@ class UI_LISTBOX : public UI_GADGET
 		// kazan
 		int draw_frame;
 
-		virtual void draw();
-		virtual void process(int focus = 0);
+		void draw() override;
+		void process(int focus = 0) override;
 
 		// Used to index into bmap_ids[] array to locate right bitmap for listbox
 		enum { LBOX_NORMAL = 0 };

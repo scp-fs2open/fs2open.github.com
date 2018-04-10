@@ -68,8 +68,8 @@ public:
 	void initShipNameMaxWidth(int w);
 	void initRightAlignNames(bool align);
 	int setGaugeColorEscort(int index, int team);
-	virtual void render(float frametime);
-	void pageIn();
+	void render(float frametime) override;
+	void pageIn() override;
 	void renderIcon(int x, int y, int index);
 	void renderIconDogfight(int x, int y, int index);
 };
