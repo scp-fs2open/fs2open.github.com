@@ -89,6 +89,8 @@ class EventEditorDialog: public QDialog, public SexpTreeEditorInterface {
 	void reset_event(int num, QTreeWidgetItem* after);
 
 	bool query_modified();
+ protected:
+	void keyPressEvent(QKeyEvent* event) override;
  Q_OBJECT
  protected:
 	void closeEvent(QCloseEvent* event) override;

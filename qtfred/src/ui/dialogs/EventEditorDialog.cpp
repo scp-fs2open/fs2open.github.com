@@ -11,6 +11,7 @@
 #include <QMessageBox>
 #include <QFileDialog>
 #include <QDebug>
+#include <QKeyEvent>
 #include <mission/missionmessage.h>
 
 namespace fso {
@@ -1181,6 +1182,16 @@ void EventEditorDialog::reset_event(int num, QTreeWidgetItem* after) {
 	if (num >= MAX_MISSION_EVENTS) {
 		ui->btnNewEvent->setEnabled(false);
 	}
+}
+void EventEditorDialog::keyPressEvent(QKeyEvent* event) {
+	if (event->key() == Qt::Key_Escape) {
+		// Instead of calling reject when we close a dialog it should try to close the window which will will allow the
+		// user to save unsaved changes
+		event->ignore();
+		this->close();
+		return;
+	}
+	QDialog::keyPressEvent(event);
 }
 
 }
