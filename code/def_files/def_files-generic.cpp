@@ -16,7 +16,7 @@ struct def_file
 	const size_t size;
 };
 
-#include "def_files/generated_def_files-generic.h"
+#include "def_files/generated_def_files-generic.inc"
 
 default_file defaults_get_file(const char *filename)
 {
