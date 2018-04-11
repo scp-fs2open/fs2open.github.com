@@ -470,7 +470,7 @@ void sync_bounded_queue<ValueType>::push_back(ValueType&& elem)
 template <typename ValueType>
 sync_bounded_queue<ValueType>& operator<<(sync_bounded_queue<ValueType>& sbq, ValueType&& elem)
 {
-	sbq.push_back(std::move(elem));
+	sbq.push_back(std::forward<ValueType>(elem));
 	return sbq;
 }
 

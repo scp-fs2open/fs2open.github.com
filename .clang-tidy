@@ -13,6 +13,7 @@ Checks: >-
   misc-inefficient-algorithm,
   misc-macro-repeated-side-effects,
   misc-misplaced-const,
+  misc-move-forwarding-reference,
 WarningsAsErrors: ''
 HeaderFilterRegex: '.*'
 AnalyzeTemporaryDtors: false
