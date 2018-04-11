@@ -15,6 +15,7 @@ Checks: >-
   misc-misplaced-const,
   misc-move-forwarding-reference,
   misc-multiple-statement-macro,
+  misc-noexcept-move-constructor,
 WarningsAsErrors: ''
 HeaderFilterRegex: '.*'
 AnalyzeTemporaryDtors: false

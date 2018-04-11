@@ -40,9 +40,9 @@ namespace particle
 
 		~ParticleSourceWrapper();
 
-		ParticleSourceWrapper(ParticleSourceWrapper&& other);
+		ParticleSourceWrapper(ParticleSourceWrapper&& other) SCP_NOEXCEPT;
 
-		ParticleSourceWrapper& operator=(ParticleSourceWrapper&& other);
+		ParticleSourceWrapper& operator=(ParticleSourceWrapper&& other) SCP_NOEXCEPT;
 
 		void finish();
 

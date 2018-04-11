@@ -48,10 +48,10 @@ class DecalDefinition {
 	DecalDefinition& operator=(const DecalDefinition&) = delete;
 
 	// Move constructor and operator
-	DecalDefinition(DecalDefinition&& other) {
+	DecalDefinition(DecalDefinition&& other) SCP_NOEXCEPT {
 		*this = std::move(other); // Use operator implementation
 	}
-	DecalDefinition& operator=(DecalDefinition&& other) {
+	DecalDefinition& operator=(DecalDefinition&& other) SCP_NOEXCEPT {
 		std::swap(_name, other._name);
 
 		std::swap(_diffuseFilename, other._diffuseFilename);

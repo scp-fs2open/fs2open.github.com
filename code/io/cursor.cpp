@@ -66,12 +66,12 @@ namespace io
 	namespace mouse
 	{
 
-		Cursor::Cursor(Cursor&& other)
+		Cursor::Cursor(Cursor&& other) SCP_NOEXCEPT
 		{
 			*this = std::move(other);
 		}
 		
-		Cursor& Cursor::operator=(Cursor&& other)
+		Cursor& Cursor::operator=(Cursor&& other) SCP_NOEXCEPT
 		{
 			std::swap(this->mAnimationFrames, other.mAnimationFrames);
 			

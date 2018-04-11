@@ -245,10 +245,10 @@ opengl_shader_t *Current_shader = NULL;
 opengl_shader_t::opengl_shader_t() : shader(SDR_TYPE_NONE), flags(0), flags2(0)
 {
 }
-opengl_shader_t::opengl_shader_t(opengl_shader_t&& other) {
+opengl_shader_t::opengl_shader_t(opengl_shader_t&& other) SCP_NOEXCEPT {
 	*this = std::move(other);
 }
-opengl_shader_t& opengl_shader_t::operator=(opengl_shader_t&& other) {
+opengl_shader_t& opengl_shader_t::operator=(opengl_shader_t&& other) SCP_NOEXCEPT {
 	// VS2013 doesn't support implicit move constructors so we need to explicitly declare it
 	shader = other.shader;
 	flags = other.flags;

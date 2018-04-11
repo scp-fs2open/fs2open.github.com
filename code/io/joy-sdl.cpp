@@ -326,7 +326,7 @@ namespace joystick
 		fillValues();
 	}
 
-	Joystick::Joystick(Joystick &&other) :
+	Joystick::Joystick(Joystick &&other) SCP_NOEXCEPT :
 			_joystick(nullptr)
 	{
 		*this = std::move(other);
@@ -341,7 +341,7 @@ namespace joystick
 		}
 	}
 
-	Joystick &Joystick::operator=(Joystick &&other)
+	Joystick &Joystick::operator=(Joystick &&other) SCP_NOEXCEPT
 	{
 		std::swap(_device_id, other._device_id);
 		std::swap(_joystick, other._joystick);

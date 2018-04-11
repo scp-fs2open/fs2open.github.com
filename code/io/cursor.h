@@ -43,14 +43,14 @@ namespace io
 			 *
 			 * Transfers SDL resources to this newly constructed object
 			 */
-			Cursor(Cursor&& other);
+			Cursor(Cursor&& other) SCP_NOEXCEPT;
 			
 			/**
 			 * @brief Move operator
 			 *
 			 * Transfers SDL resources to this object
 			 */
-			Cursor& operator=(Cursor&& other);
+			Cursor& operator=(Cursor&& other) SCP_NOEXCEPT;
 
 			/**
 			 * @brief Cursor destructor
