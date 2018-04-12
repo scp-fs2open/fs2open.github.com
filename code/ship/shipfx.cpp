@@ -57,7 +57,7 @@ int Player_engine_wash_loop = -1;
 
 extern float splode_level;
 
-void shipfx_remove_submodel_ship_sparks(ship *shipp, int submodel_num)
+static void shipfx_remove_submodel_ship_sparks(ship *shipp, int submodel_num)
 {
 	Assert(submodel_num != -1);
 
@@ -80,7 +80,7 @@ void model_get_rotating_submodel_axis(vec3d *model_axis, vec3d *world_axis, int 
  *
  * DKA: 5/26/99 make velocity of debris scale according to size of debris subobject (at least for large subobjects)
  */
-void shipfx_subsystem_maybe_create_live_debris(object *ship_objp, ship *ship_p, ship_subsys *subsys, vec3d *exp_center, float exp_mag)
+static void shipfx_subsystem_maybe_create_live_debris(object *ship_objp, ship *ship_p, ship_subsys *subsys, vec3d *exp_center, float exp_mag)
 {
 	// initializations
 	ship *shipp = &Ships[ship_objp->instance];
@@ -213,7 +213,7 @@ void shipfx_subsystem_maybe_create_live_debris(object *ship_objp, ship *ship_p, 
 	}
 }
 
-void set_ship_submodel_as_blown_off(ship *shipp, const char *name)
+static void set_ship_submodel_as_blown_off(ship *shipp, const char *name)
 {
 	int found =	FALSE;
 
@@ -238,7 +238,7 @@ void set_ship_submodel_as_blown_off(ship *shipp, const char *name)
  * Create debris for ship submodel which has live debris (at ship death)
  * when ship submodel has not already been blown off (and hence liberated live debris)
  */
-void shipfx_maybe_create_live_debris_at_ship_death( object *ship_objp )
+static void shipfx_maybe_create_live_debris_at_ship_death( object *ship_objp )
 {
 	// if ship has live debris, detonate that subsystem now
 	// search for any live debris
@@ -323,7 +323,7 @@ void shipfx_blow_off_subsystem(object *ship_objp, ship *ship_p,ship_subsys *subs
 }
 
 
-void shipfx_blow_up_hull(object *obj, int model, vec3d *exp_center)
+static void shipfx_blow_up_hull(object *obj, int model, vec3d *exp_center)
 {
 	int i;
 	polymodel * pm;
@@ -534,7 +534,7 @@ void shipfx_actually_warpin(ship *shipp, object *objp)
 }
 
 // Validate reference_objnum
-int shipfx_special_warp_objnum_valid(int objnum)
+static int shipfx_special_warp_objnum_valid(int objnum)
 {
 	object *special_objp;
 
@@ -617,14 +617,14 @@ void shipfx_warpin_frame( object *objp, float frametime )
 // This is called to actually warp this object out
 // after all the flashy fx are done, or if the flashy fx
 // don't work for some reason.  OR to skip the flashy fx.
-void shipfx_actually_warpout(int shipnum)
+static void shipfx_actually_warpout(int shipnum)
 {
 	// Once we get through effect, make the ship go away
 	ship_actually_depart(shipnum);
 }
 
 // compute_special_warpout_stuff();
-int compute_special_warpout_stuff(object *objp, float *speed, float *warp_time, vec3d *warp_pos)
+static int compute_special_warpout_stuff(object *objp, float *speed, float *warp_time, vec3d *warp_pos)
 {
 	object	*sp_objp = NULL;
 	ship_info	*sip;
@@ -707,7 +707,7 @@ int compute_special_warpout_stuff(object *objp, float *speed, float *warp_time, 
 }
 
 
-void compute_warpout_stuff(object *objp, float *speed, float *warp_time, vec3d *warp_pos)
+static void compute_warpout_stuff(object *objp, float *speed, float *warp_time, vec3d *warp_pos)
 {
 	Assert(objp);	// Goober5000
 	ship *shipp = &Ships[objp->instance];
@@ -2055,7 +2055,7 @@ void shipfx_debris_limit_speed(debris *db, ship *shipp)
 // ----------------------------------------------------------------------------
 // uses list of model z values with constant increment to find the radius of the 
 // cross section at the current model z value
-float get_model_cross_section_at_z(float z, polymodel* pm)
+static float get_model_cross_section_at_z(float z, polymodel* pm)
 {
 	if (pm->num_xc < 2) {
 		return 0.0f;
@@ -2079,7 +2079,7 @@ float get_model_cross_section_at_z(float z, polymodel* pm)
 /**
  * Returns how long sound has been playing
  */
-int get_sound_time_played(int snd_id, int handle)
+static int get_sound_time_played(int snd_id, int handle)
 {
 	if (handle == -1 || snd_id == -1) {
 		return 100000;
