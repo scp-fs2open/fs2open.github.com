@@ -27,6 +27,7 @@ public:
 	void voiceFileTextChanged();
 
  protected:
+	void keyPressEvent(QKeyEvent* event) override;
 	void closeEvent(QCloseEvent*) override;
  private:
 

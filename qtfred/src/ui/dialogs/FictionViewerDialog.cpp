@@ -25,13 +25,12 @@ FictionViewerDialog::FictionViewerDialog(FredView* parent, EditorViewport* viewp
 	connect(this, &QDialog::accepted, _model.get(), &FictionViewerDialogModel::apply);
 	connect(this, &QDialog::rejected, _model.get(), &FictionViewerDialogModel::reject);
 
-	//connect(parent, &FredView::viewWindowActivated, _model.get(), &FictionViewerDialogModel::apply);
 	connect(_model.get(), &AbstractDialogModel::modelChanged, this, &FictionViewerDialog::updateUI);
-
 
 	connect(ui->storyFileEdit, &QLineEdit::textChanged, this, &FictionViewerDialog::storyFileTextChanged);
 	connect(ui->fontFileEdit, &QLineEdit::textChanged, this, &FictionViewerDialog::fontFileTextChanged);
 	connect(ui->voiceFileEdit, &QLineEdit::textChanged, this, &FictionViewerDialog::voiceFileTextChanged);
+	connect(ui->musicComboBox, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged), this, &FictionViewerDialog::musicSelectionChanged);
 
 	// Initial set up of the UI
 	updateUI();
@@ -55,7 +54,20 @@ void FictionViewerDialog::updateMusicComboBox() {
 		ui->musicComboBox->addItem(QString::fromStdString(el.name), QVariant(el.id));
 	}
 
-	ui->musicComboBox->setEnabled(ui->musicComboBox->count() > 0);
+	if (ui->musicComboBox->count() > 0) {
+		ui->musicComboBox->setEnabled(true);
+		int selectedIndex = -1;
+		for (int i = 0; i < ui->musicComboBox->count(); ++i) {
+			const int itemId = ui->musicComboBox->itemData(i).value<int>();
+			if (itemId == _model->getFictionMusic()) {
+				selectedIndex = i;
+				break;
+			}
+		}
+		ui->musicComboBox->setCurrentIndex(selectedIndex);
+	} else {
+		ui->musicComboBox->setEnabled(false);
+	}
 }
 void FictionViewerDialog::updateUI() {
 	util::SignalBlockers blockers(this);
@@ -68,8 +80,10 @@ void FictionViewerDialog::updateUI() {
 }
 
 void FictionViewerDialog::musicSelectionChanged(int index) {
-	auto itemId = ui->musicComboBox->itemData(index).value<int>();
-	_model->setFictionMusic(itemId);
+	if (index >= 0) {
+		int itemId = ui->musicComboBox->itemData(index).value<int>();
+		_model->setFictionMusic(itemId);
+	}
 }
 
 void FictionViewerDialog::storyFileTextChanged() {
@@ -82,6 +96,17 @@ void FictionViewerDialog::fontFileTextChanged() {
 
 void FictionViewerDialog::voiceFileTextChanged() {
 	_model->setVoiceFile(ui->voiceFileEdit->text().toStdString());
+}
+
+void FictionViewerDialog::keyPressEvent(QKeyEvent* event) {
+	if (event->key() == Qt::Key_Escape) {
+		// Instead of calling reject when we close a dialog it should try to close the window which will will allow the
+		// user to save unsaved changes
+		event->ignore();
+		this->close();
+		return;
+	}
+	QDialog::keyPressEvent(event);
 }
 
 void FictionViewerDialog::closeEvent(QCloseEvent* event) {
