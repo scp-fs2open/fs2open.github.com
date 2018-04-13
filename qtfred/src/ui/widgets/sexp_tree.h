@@ -327,6 +327,7 @@ class sexp_tree: public QTreeWidget {
 	sexp_list_item* get_listing_opf_game_snds();
 
 
+	int getCurrentItemIndex() const;
 	void setCurrentItemIndex(int index);
 	int select_sexp_node;  // used to select an sexp item on dialog box open.
 

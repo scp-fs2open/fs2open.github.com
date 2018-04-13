@@ -122,6 +122,7 @@ class FredView: public QMainWindow, public IDialogProvider {
 	void on_actionShield_System_triggered(bool);
 	void on_actionVoice_Acting_Manager_triggered(bool);
 	void on_actionFiction_Viewer_triggered(bool);
+	void on_actionMission_Objectives_triggered(bool);
  signals:
 	/**
 	 * @brief Special version of FredApplication::onIdle which is limited to the lifetime of this object

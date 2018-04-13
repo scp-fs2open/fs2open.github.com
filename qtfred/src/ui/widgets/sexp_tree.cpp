@@ -200,6 +200,8 @@ sexp_tree::sexp_tree(QWidget* parent) : QTreeWidget(parent) {
 
 	setContextMenuPolicy(Qt::CustomContextMenu);
 
+	setHeaderHidden(true);
+
 	select_sexp_node = -1;
 	root_item = -1;
 	clear_tree();
@@ -1845,6 +1847,7 @@ void sexp_tree::hilite_item(int node) {
 	ensure_visible(node);
 	clearSelection();
 	setCurrentItem(tree_nodes[node].handle);
+	scrollToItem(tree_nodes[node].handle);
 }
 
 // because the MFC function EnsureVisible() doesn't do what it says it does, I wrote this.
@@ -5751,6 +5754,9 @@ void sexp_tree::handleNewItemSelected() {
 }
 void sexp_tree::deleteCurrentItem() {
 	deleteActionHandler();
+}
+int sexp_tree::getCurrentItemIndex() const {
+	return item_index;
 }
 
 }

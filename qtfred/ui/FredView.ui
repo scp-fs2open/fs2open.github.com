@@ -20,7 +20,7 @@
      <x>0</x>
      <y>0</y>
      <width>926</width>
-     <height>21</height>
+     <height>28</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -160,6 +160,7 @@
     <addaction name="actionWings"/>
     <addaction name="actionObjects"/>
     <addaction name="actionWaypoint_Paths"/>
+    <addaction name="actionMission_Objectives"/>
     <addaction name="actionEvents"/>
     <addaction name="actionTeam_Loadout"/>
     <addaction name="actionBackground"/>
@@ -1392,6 +1393,14 @@
   <action name="actionEmpty">
    <property name="text">
     <string>&amp;Empty</string>
+   </property>
+  </action>
+  <action name="actionMission_Objectives">
+   <property name="text">
+    <string>Mission Objectives</string>
+   </property>
+   <property name="shortcut">
+    <string>Shift+G</string>
    </property>
   </action>
  </widget>
