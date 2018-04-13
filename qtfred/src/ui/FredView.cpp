@@ -24,6 +24,7 @@
 #include <ui/dialogs/VoiceActingManager.h>
 #include <globalincs/linklist.h>
 #include <ui/dialogs/SelectionDialog.h>
+#include <ui/dialogs/FictionViewerDialog.h>
 #include <iff_defs/iff_defs.h>
 
 #include "mission/Editor.h"
@@ -1039,6 +1040,11 @@ void FredView::on_actionShield_System_triggered(bool) {
 
 void FredView::on_actionVoice_Acting_Manager_triggered(bool) {
 	dialogs::VoiceActingManager dialog(this, _viewport);
+	dialog.exec();
+}
+
+void FredView::on_actionFiction_Viewer_triggered(bool) {
+	dialogs::FictionViewerDialog dialog(this, _viewport);
 	dialog.exec();
 }
 
