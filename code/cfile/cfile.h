@@ -13,7 +13,7 @@
 #define __CFILE_H__
 
 
-#include <time.h>
+#include <ctime>
 #include "globalincs/pstypes.h"
 
 #include <stdexcept>

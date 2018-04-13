@@ -19,10 +19,10 @@
 #include "globalincs/toolchain.h"
 #include "utils/strings.h"
 
-#include <stdio.h>	// For NULL, etc
-#include <stdlib.h>
+#include <cstdio>    // For NULL, etc
+#include <cstdlib>
 #include <memory.h>
-#include <string.h>
+#include <cstring>
 #include <algorithm>
 #include <cstdint>
 
