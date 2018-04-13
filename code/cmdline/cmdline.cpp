@@ -1391,6 +1391,15 @@ static json_t* json_get_v1() {
 
 			json_object_set_new(openal_obj, "capture_devices", capture_array);
 		}
+		{
+			auto efx_support_obj = json_object();
+
+			for (auto& pair : openal_info.efx_support) {
+				json_object_set_new(efx_support_obj, pair.first.c_str(), json_boolean(pair.second));
+			}
+
+			json_object_set_new(openal_obj, "efx_support", efx_support_obj);
+		}
 
 		json_object_set_new(root, "openal", openal_obj);
 	}

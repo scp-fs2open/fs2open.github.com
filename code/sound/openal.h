@@ -28,6 +28,8 @@ struct OpenALInformation {
 
 	SCP_vector<SCP_string> playback_devices;
 	SCP_vector<SCP_string> capture_devices;
+
+	SCP_vector<std::pair<SCP_string, bool>> efx_support;
 };
 
 OpenALInformation openal_get_platform_information();
