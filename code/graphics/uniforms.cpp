@@ -240,6 +240,8 @@ void convert_model_material(model_uniform_data* data_out,
 
 		data_out->stripe_color = stripe_color;
 		data_out->base_color = base_color;
+
+		data_out->team_glow_enabled = bm_has_alpha_channel(material.get_texture_map(TM_MISC_TYPE)) ? 1 : 0;
 	}
 
 	if (shader_flags & SDR_FLAG_MODEL_THRUSTER) {
