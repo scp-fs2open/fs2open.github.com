@@ -1659,7 +1659,7 @@ void HudGaugeTargetBox::renderTargetShipInfo(object *target_objp)
 	shield_strength *= 100.0f;
 	ship_integrity *= 100.0f;
 
-	screen_integrity = fl2i(ship_integrity+0.5f);
+	screen_integrity = (int)std::lround(ship_integrity);
 	if ( screen_integrity == 0 ) {
 		if ( ship_integrity > 0 ) {
 			screen_integrity = 1;
@@ -1681,7 +1681,7 @@ void HudGaugeTargetBox::renderTargetShipInfo(object *target_objp)
 	// print out the targeted sub-system and % integrity
 	if (Player_ai->targeted_subsys != NULL) {
 		shield_strength = Player_ai->targeted_subsys->current_hits/Player_ai->targeted_subsys->max_hits * 100.0f;
-		screen_integrity = fl2i(shield_strength+0.5f);
+		screen_integrity = (int)std::lround(shield_strength);
 
 		if ( screen_integrity < 0 ) {
 			screen_integrity = 0;

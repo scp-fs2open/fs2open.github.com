@@ -3565,7 +3565,7 @@ void submodel_stepped_rotate(model_subsystem *psub, submodel_instance_info *sii)
 	// step_offset_time is TIME into current step
 	float step_offset_time = (float)fmod(rotation_time, step_time);
 	// subtract off fractional step part, round up  (ie, 1.999999 -> 2)
-	int cur_step = int( ((rotation_time - step_offset_time) / step_time) + 0.5f);
+	int cur_step = (int)std::lround((rotation_time - step_offset_time) / step_time);
 	// mprintf(("cur step %d\n", cur_step));
 	// Assert(step_offset_time >= 0);
 

@@ -26,8 +26,6 @@
 
 #include "mission/object.h"
 
-using std::begin;
-using std::end;
 
 namespace {
 const float CONVERT_DEGREES = 57.29578f; // conversion factor from radians to degrees

@@ -465,7 +465,7 @@ void HudGaugeWingmanStatus::renderDots(int wing_index, int screen_index, int num
 	// Goober5000 - center it (round the offset rather than truncate it)
 	int abbrev_width;
 	gr_get_string_size(&abbrev_width, NULL, abbrev);
-	renderString(sx - (int)((float)abbrev_width/2.0f+0.5f), sy, abbrev);
+	renderString(sx - (int)std::lround((float)abbrev_width/2.0f), sy, abbrev);
 }
 
 int hud_wingman_status_wingmen_exist(int num_wings_to_draw)

@@ -596,7 +596,7 @@ void debug_max_primary_weapons(object *objp)	// Goober5000
 			float capacity, size;
 			capacity = (float) sip->primary_bank_ammo_capacity[index];
 			size = (float) wip->cargo_size;
-			swp->primary_bank_ammo[index] = fl2i((capacity / size)+0.5f);
+			swp->primary_bank_ammo[index] = (int)std::lround(capacity / size);
 		}
 	}
 }

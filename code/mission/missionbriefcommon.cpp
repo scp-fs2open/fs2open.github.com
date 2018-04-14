@@ -960,7 +960,7 @@ void brief_render_icon(int stage_num, int icon_num, float frametime, int selecte
 			if ( ha->first_frame >= 0 ) {
 				ha->sx = bi->hold_x;
 				if (bi->label[0] != '\0') {
-					ha->sy = bi->hold_y - fl2i(gr_get_font_height()/2.0f +0.5) - 2;
+					ha->sy = bi->hold_y - (int)std::lround(gr_get_font_height()/2.0f) - 2;
 				} else {
 					ha->sy = bi->hold_y;
 				}

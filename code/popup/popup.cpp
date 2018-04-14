@@ -637,7 +637,7 @@ void popup_draw_title(int sy, char *line, int flags)
 	}
 
 	gr_get_string_size(&w, &h, line);
-	sx = fl2i(Title_coords[gr_screen.res][4] - w/2.0f + 0.5f);
+	sx = (int)std::lround(Title_coords[gr_screen.res][4] - w/2.0f);
 
 	popup_set_title_color(flags);
 	gr_string(sx,sy,line,GR_RESIZE_MENU);
@@ -678,7 +678,7 @@ int popup_calc_starting_y(popup_info *pi, int flags)
 	}
 
 	total_h += num_lines * gr_get_font_height();
-	sy = fl2i((Popup_text_coords[gr_screen.res][1] + Popup_text_coords[gr_screen.res][3]/2.0f) - total_h/2.0f + 0.5f);
+	sy = (int)std::lround((Popup_text_coords[gr_screen.res][1] + Popup_text_coords[gr_screen.res][3]/2.0f) - total_h/2.0f);
 
 	// if this is an input style box, add in some y
 	if(flags & PF_INPUT){
@@ -723,7 +723,7 @@ void popup_draw_msg_text(popup_info *pi, int flags)
 		}
 
 		gr_get_string_size(&w, &h, pi->msg_lines[i]);
-		sx = fl2i(Title_coords[gr_screen.res][4] - w/2.0f + 0.5f);
+		sx = (int)std::lround(Title_coords[gr_screen.res][4] - w/2.0f);
 		gr_string(sx, sy + line_count * h, pi->msg_lines[i], GR_RESIZE_MENU);
 	}
 

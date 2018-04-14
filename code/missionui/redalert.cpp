@@ -576,7 +576,7 @@ void red_alert_bash_weapons(red_alert_ship_status *ras, p_object *pobjp)
 		if (Weapon_info[sssp->primary_banks[i]].wi_flags[Weapon::Info_Flags::Ballistic])
 		{
 			float max_count = sip->primary_bank_ammo_capacity[i] / Weapon_info[sssp->primary_banks[i]].cargo_size;
-			sssp->primary_ammo[i] = fl2i(100.0f * (ras->primary_weapons[i].count - 2) / max_count + 0.5f);
+			sssp->primary_ammo[i] = (int)std::lround(100.0f * (ras->primary_weapons[i].count - 2) / max_count);
 		}
 		else
 			sssp->primary_ammo[i] = 100;
@@ -591,7 +591,7 @@ void red_alert_bash_weapons(red_alert_ship_status *ras, p_object *pobjp)
 		sssp->secondary_banks[i] = ras->secondary_weapons[i].index;
 
 		float max_count = sip->secondary_bank_ammo_capacity[i] / Weapon_info[sssp->secondary_banks[i]].cargo_size;
-		sssp->secondary_ammo[i] = fl2i(100.0f * ras->secondary_weapons[i].count / max_count + 0.5f);
+		sssp->secondary_ammo[i] = (int)std::lround(100.0f * ras->secondary_weapons[i].count / max_count);
 	}
 }
 

@@ -3592,9 +3592,9 @@ int multi_pack_unpack_position( int write, ubyte *data, vec3d *pos)
 	if ( write )	{
 		// Output pos
 
-		a = fl2i(pos->xyz.x*105.0f+0.5f); 
-		b = fl2i(pos->xyz.y*105.0f+0.5f);
-		c = fl2i(pos->xyz.z*105.0f+0.5f);
+		a = (int)std::lround(pos->xyz.x*105.0f);
+		b = (int)std::lround(pos->xyz.y*105.0f);
+		c = (int)std::lround(pos->xyz.z*105.0f);
 		CAP(a,-8388608,8388607);
 		CAP(b,-8388608,8388607);
 		CAP(c,-8388608,8388607);

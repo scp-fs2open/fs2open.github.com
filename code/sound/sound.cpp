@@ -739,7 +739,7 @@ void snd_update_3d_pos(int soundnum, game_snd *gs, vec3d *new_pos, float radius,
 		}
 
 		float min_range = (float) (fl2i( (gs->min) * range_factor));
-		float max_range = (float) (fl2i( (gs->max) * range_factor + 0.5f));
+		float max_range = (float) ((int)std::lround((gs->max) * range_factor));
 
 		ds3d_update_buffer(channel, min_range, max_range, new_pos, NULL);
 	}
@@ -778,7 +778,7 @@ int snd_get_3d_vol_and_pan(game_snd *gs, vec3d *pos, float* vol, float *pan, flo
 	Assertion( gs != NULL, "*gs was NULL in snd_get_3d_vol_and_pan(); get a coder!\n" );
 
 	float min_range = (float) (fl2i( (gs->min) * range_factor));
-	float max_range = (float) (fl2i( (gs->max) * range_factor + 0.5f));
+	float max_range = (float) ((int)std::lround((gs->max) * range_factor));
 
 	distance = vm_vec_normalized_dir_quick( &vector_to_sound, pos, &View_position );
 	distance -= radius;
@@ -1335,7 +1335,7 @@ int snd_time_remaining(int handle)
 	if ( current_offset < max_offset ) {
 		int bytes_remaining = max_offset - current_offset;
 		int samples_remaining = bytes_remaining / (bits_per_sample/8);
-		time_remaining = fl2i(1000.0f * samples_remaining/frequency + 0.5f);
+		time_remaining = (int)std::lround(1000.0f * samples_remaining/frequency);
 	}
 
 //	mprintf(("time_remaining: %d\n", time_remaining));	

@@ -6204,7 +6204,7 @@ static void ship_set(int ship_index, int objnum, int ship_type)
 			if (Fred_running)
 				swp->primary_bank_ammo[i] = 100;
 			else
-				swp->primary_bank_ammo[i] = fl2i(sip->primary_bank_ammo_capacity[i] / weapon_size + 0.5f );
+				swp->primary_bank_ammo[i] = (int)std::lround(sip->primary_bank_ammo_capacity[i] / weapon_size);
 		}
 	}
 
@@ -6216,7 +6216,7 @@ static void ship_set(int ship_index, int objnum, int ship_type)
 		if (Fred_running)
 			swp->secondary_bank_ammo[i] = 100;
 		else
-			swp->secondary_bank_ammo[i] = fl2i(sip->secondary_bank_ammo_capacity[i] / weapon_size + 0.5f );
+			swp->secondary_bank_ammo[i] = (int)std::lround(sip->secondary_bank_ammo_capacity[i] / weapon_size);
 	}
 
 	shipp->armor_type_idx = sip->armor_type_idx;
@@ -6696,7 +6696,7 @@ static int subsys_set(int objnum, int ignore_subsys_info)
 		for (k=0; k<ship_system->weapons.num_secondary_banks; k++) {
 			float weapon_size = Weapon_info[ship_system->weapons.secondary_bank_weapons[k]].cargo_size;
 			Assertion( weapon_size > 0.0f, "Cargo size for secondary weapon %s is invalid, must be greater than 0.\n", Weapon_info[ship_system->weapons.secondary_bank_weapons[k]].name );
-			ship_system->weapons.secondary_bank_ammo[k] = (Fred_running ? 100 : fl2i(ship_system->weapons.secondary_bank_capacity[k] / weapon_size + 0.5f));
+			ship_system->weapons.secondary_bank_ammo[k] = (Fred_running ? 100 : (int)std::lround(ship_system->weapons.secondary_bank_capacity[k] / weapon_size));
 
 			ship_system->weapons.secondary_next_slot[k] = 0;
 		}
@@ -6707,7 +6707,7 @@ static int subsys_set(int objnum, int ignore_subsys_info)
 			float weapon_size = Weapon_info[ship_system->weapons.primary_bank_weapons[k]].cargo_size;
 
 			if (weapon_size > 0.0f) {	// Non-ballistic primaries are supposed to have a cargo_size of 0
-				ship_system->weapons.primary_bank_ammo[k] = (Fred_running ? 100 : fl2i(ship_system->weapons.primary_bank_capacity[k] / weapon_size + 0.5f));
+				ship_system->weapons.primary_bank_ammo[k] = (Fred_running ? 100 : (int)std::lround(ship_system->weapons.primary_bank_capacity[k] / weapon_size));
 			}
 		}
 
@@ -9111,7 +9111,7 @@ static void ship_set_default_weapons(ship *shipp, ship_info *sip)
 				float capacity, size;
 				capacity = (float) sip->primary_bank_ammo_capacity[i];
 				size = (float) wip->cargo_size;
-				swp->primary_bank_ammo[i] = fl2i((capacity / size)+0.5f);
+				swp->primary_bank_ammo[i] = (int)std::lround(capacity / size);
 				swp->primary_bank_start_ammo[i] = swp->primary_bank_ammo[i];
 			}
 
@@ -9689,7 +9689,7 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 						int sindex = ship_name_lookup(goals[j].target_name);
 						if (sindex > -1 && Ships[sindex].objnum == objnum) {
 							ivec3 temp = {i, j, goals[j].ai_submode};
-							subsystem_matches.push_back(std::move(temp));
+							subsystem_matches.push_back(temp);
 						}
 					}
 				}
@@ -9780,7 +9780,7 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 					ai_info* aip = &Ai_info[*it];
 					if (aip->targeted_subsys == ss) {
 						ivec3 temp = {*it, -1, num_saved_subsystems};	// -1 for the "goal" index means targeted, not actually a goal
-						subsystem_matches.push_back(std::move(temp));
+						subsystem_matches.push_back(temp);
 						aip->targeted_subsys = NULL;	// Clear this so that aip->last_subsys_target won't point to a subsystem from the old list later
 						aip->targeted_subsys_parent = -1;
 						auto erasor = it;
@@ -16049,7 +16049,7 @@ int get_max_ammo_count_for_primary_bank(int ship_class, int bank, int ammo_type)
 	capacity = (float) Ship_info[ship_class].primary_bank_ammo_capacity[bank];
 	size = (float) Weapon_info[ammo_type].cargo_size;
 	Assertion(size > 0.0f, "Weapon cargo size for %s must be greater than 0!", Weapon_info[ammo_type].name);
-	return  fl2i((capacity / size)+0.5f);
+	return  (int)std::lround(capacity / size);
 }
 
 /**

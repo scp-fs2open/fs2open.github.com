@@ -1511,7 +1511,7 @@ int wl_calc_ballistic_fit(int wi_index, int capacity)
 
 	Assert(Weapon_info[wi_index].wi_flags[Weapon::Info_Flags::Ballistic]);
 
-	return fl2i( capacity / Weapon_info[wi_index].cargo_size + 0.5f );
+	return (int)std::lround( capacity / Weapon_info[wi_index].cargo_size );
 }
 
 /**
@@ -1524,7 +1524,7 @@ int wl_calc_missile_fit(int wi_index, int capacity)
 	}
 
 	Assert(Weapon_info[wi_index].subtype == WP_MISSILE);
-	return fl2i( capacity / Weapon_info[wi_index].cargo_size + 0.5f );
+	return (int)std::lround( capacity / Weapon_info[wi_index].cargo_size );
 }
 
 /**
@@ -1628,7 +1628,7 @@ void wl_get_parseobj_weapons(int sa_index, int ship_class, int *wep, int *wep_co
 	{
 		if ( wep[i+MAX_SHIP_PRIMARY_BANKS] >= 0 )
 		{
-			wep_count[i+MAX_SHIP_PRIMARY_BANKS] = wl_calc_missile_fit(wep[i+MAX_SHIP_PRIMARY_BANKS], fl2i(ss->secondary_ammo[i]/100.0f * sip->secondary_bank_ammo_capacity[i] + 0.5f));
+			wep_count[i+MAX_SHIP_PRIMARY_BANKS] = wl_calc_missile_fit(wep[i+MAX_SHIP_PRIMARY_BANKS], (int)std::lround(ss->secondary_ammo[i]/100.0f * sip->secondary_bank_ammo_capacity[i]));
 		}
 	}
 }
@@ -3313,7 +3313,7 @@ void wl_update_parse_object_weapons(p_object *pobjp, wss_unit *slot)
 
 			// Important: the secondary_ammo[] value is a percentage of max capacity!
 			max_count = wl_calc_missile_fit(slot->wep[sidx], Ship_info[slot->ship_class].secondary_bank_ammo_capacity[j]);
-			ss->secondary_ammo[j] = fl2i( i2fl(slot->wep_count[sidx]) / max_count * 100.0f + 0.5f);
+			ss->secondary_ammo[j] = (int)std::lround(i2fl(slot->wep_count[sidx]) / max_count * 100.0f);
 			
 			j++;
 		}

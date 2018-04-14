@@ -1614,7 +1614,7 @@ int player_inspect_cargo(float frametime, char *outstr)
 
 		// player is facing the cargo, and withing range, so proceed with inspection
 		if ( hud_sensors_ok(Player_ship, 0) ) {
-			Player->cargo_inspect_time += fl2i(frametime*1000+0.5f);
+			Player->cargo_inspect_time += (int)std::lround(frametime*1000);
 		}
 
 		if ( !(cargo_sp->flags[Ship::Ship_Flags::Scannable]) )
@@ -1724,7 +1724,7 @@ int player_inspect_cap_subsys_cargo(float frametime, char *outstr)
 
 		// player is facing the cargo, and within range, so proceed with inspection
 		if ( hud_sensors_ok(Player_ship, 0) ) {
-			Player->cargo_inspect_time += fl2i(frametime*1000+0.5f);
+			Player->cargo_inspect_time += (int)std::lround(frametime*1000);
 		}
 
 		if ( !(cargo_sp->flags[Ship::Ship_Flags::Scannable]) )

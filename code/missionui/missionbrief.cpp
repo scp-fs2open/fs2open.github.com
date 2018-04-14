@@ -1194,7 +1194,7 @@ void brief_render(float frametime)
 void brief_set_closeup_pos(brief_icon * /*bi*/)
 {
 	Closeup_y1 = 10;
-	Closeup_x1 = fl2i(320 - Closeup_coords[gr_screen.res][BRIEF_W_COORD]/2.0f + 0.5f);
+	Closeup_x1 = (int)std::lround(320 - Closeup_coords[gr_screen.res][BRIEF_W_COORD]/2.0f);
 }
 
 void brief_get_closeup_ship_modelnum(brief_icon *ci)

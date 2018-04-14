@@ -1435,7 +1435,7 @@ void hud_update_frame(float  /*frametime*/)
 		Player_ai->current_target_distance = vm_vec_dist_quick(&target_pos,&Player_obj->pos);
 
 		float shield_strength = Player_ai->targeted_subsys->current_hits/Player_ai->targeted_subsys->max_hits * 100.0f;
-		int screen_integrity = fl2i(shield_strength+0.5f);
+		int screen_integrity = (int)std::lround(shield_strength);
 
 		if ( screen_integrity < 0 ) {
 			screen_integrity = 0;

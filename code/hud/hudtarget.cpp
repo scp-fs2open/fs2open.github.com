@@ -5468,7 +5468,7 @@ void HudGaugeAfterburner::render(float  /*frametime*/)
 		percent_left = 1.0f;
 	}
 
-	clip_h = fl2i( (1.0f - percent_left) * Energy_h + 0.5f );
+	clip_h = (int)std::lround((1.0f - percent_left) * Energy_h);
 
 	bm_get_info(Energy_bar.first_frame,&w,&h);
 
@@ -5708,7 +5708,7 @@ void HudGaugeWeaponEnergy::render(float  /*frametime*/)
 			}
 		}
 
-		clip_h = fl2i( (1.0f - percent_left) * Wenergy_h + 0.5f );
+		clip_h = (int)std::lround((1.0f - percent_left) * Wenergy_h);
 
 		if ( percent_left <= 0.3 || Show_ballistic || Always_show_text ) {
 			int delta_y = 0, delta_x = 0;
@@ -5722,7 +5722,7 @@ void HudGaugeWeaponEnergy::render(float  /*frametime*/)
 			if ( Show_ballistic ) {
 				sprintf(buf, "%d", ballistic_ammo);
 			} else {
-				sprintf(buf,XSTR( "%d%%", 326), fl2i(percent_left*100+0.5f));
+				sprintf(buf, XSTR( "%d%%", 326), (int)std::lround(percent_left*100));
 			}
 
 			if ( Moving_text ) {
@@ -6149,7 +6149,7 @@ void HudGaugeWeapons::render(float  /*frametime*/)
 			if ( (sw->secondary_bank_ammo[i] > 0) && (sw->current_secondary_bank >= 0) ) {
 				int ms_till_fire = timestamp_until(sw->next_secondary_fire_stamp[sw->current_secondary_bank]);
 				if ( (ms_till_fire >= 500) && ((wip->fire_wait >= 1 ) || (ms_till_fire > wip->fire_wait*1000)) ) {
-					renderPrintf(position[0] + Weapon_sreload_offset_x, name_y, EG_NULL, "%d", fl2i(ms_till_fire/1000.0f +0.5f));
+					renderPrintf(position[0] + Weapon_sreload_offset_x, name_y, EG_NULL, "%d", (int)std::lround(ms_till_fire/1000.0f));
 				}
 			}
 		} else {
@@ -6520,7 +6520,7 @@ void HudGaugeOffscreen::renderOffscreenIndicator(vec2d *coords, int dir, float d
 	gr_set_screen_scale(base_w, base_h);
 
 	if (displayed_distance > 0.0f) {
-		sprintf(buf, "%d", fl2i(displayed_distance + 0.5f));
+		sprintf(buf, "%d", (int)std::lround(displayed_distance));
 		hud_num_make_mono(buf, font_num);
 		gr_get_string_size(&w, &h, buf);
 	} else {
@@ -6541,7 +6541,7 @@ void HudGaugeOffscreen::renderOffscreenIndicator(vec2d *coords, int dir, float d
 		y6 = y5 + Offscreen_tri_base;
 
 		if ( buf[0] ) {
-			gr_string( fl2i(xpos - w - 10), fl2i(ypos - h/2.0f+0.5f), buf);
+			gr_string( fl2i(xpos - w - 10), (int)std::lround(ypos - h/2.0f), buf);
 		}
 	} else if (dir == 1) {
 		x1 = x4 = (xpos-1);
@@ -6554,7 +6554,7 @@ void HudGaugeOffscreen::renderOffscreenIndicator(vec2d *coords, int dir, float d
 		y6 = y5 + Offscreen_tri_base;
 
 		if ( buf[0] ) {
-			gr_string(fl2i(xpos + 10), fl2i(ypos - h/2.0f+0.5f), buf);
+			gr_string(fl2i(xpos + 10), (int)std::lround(ypos - h/2.0f), buf);
 		}
 	} else if (dir == 2) {
 		y1 = y4 = (ypos-1);
@@ -6567,7 +6567,7 @@ void HudGaugeOffscreen::renderOffscreenIndicator(vec2d *coords, int dir, float d
 		x6 = x5 + Offscreen_tri_base;
 
 		if ( buf[0] ) {
-			gr_string(fl2i(xpos - w/2.0f+0.5f), fl2i(ypos+10), buf);
+			gr_string((int)std::lround(xpos - w/2.0f), fl2i(ypos+10), buf);
 		}
 	} else if (dir == 3) {
 		y1 = y4 = (ypos+2);
@@ -6580,7 +6580,7 @@ void HudGaugeOffscreen::renderOffscreenIndicator(vec2d *coords, int dir, float d
 		x6 = x5 + Offscreen_tri_base;
 
 		if ( buf[0] ) {
-			gr_string(fl2i(xpos - w/2.0f+0.5f), fl2i(ypos-h-10), buf);
+			gr_string((int)std::lround(xpos - w/2.0f), fl2i(ypos-h-10), buf);
 		}
 	}
 
@@ -7063,7 +7063,7 @@ void HudGaugeSecondaryWeapons::render(float  /*frametime*/)
 			if ( (sw->secondary_bank_ammo[i] > 0) && (sw->current_secondary_bank >= 0) ) {
 				int ms_till_fire = timestamp_until(sw->next_secondary_fire_stamp[sw->current_secondary_bank]);
 				if ( (ms_till_fire >= 500) && ((wip->fire_wait >= 1 ) || (ms_till_fire > wip->fire_wait*1000)) ) {
-					renderPrintf(position[0] + _sreload_offset_x, position[1] + text_y_offset, EG_NULL, "%d", fl2i(ms_till_fire/1000.0f +0.5f));
+					renderPrintf(position[0] + _sreload_offset_x, position[1] + text_y_offset, EG_NULL, "%d", (int)std::lround(ms_till_fire/1000.0f));
 				}
 			}
 		} else {

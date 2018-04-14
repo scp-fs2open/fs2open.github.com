@@ -1125,10 +1125,10 @@ void message_calc_anim_start_frame(int time, generic_anim *ani, int reverse)
 
 	float fps = ani->num_frames / ani->total_time;
 	if ( reverse ) {
-		start_frame = (ani->num_frames-1) - fl2i(fps * wave_time + 0.5f);
+		start_frame = (ani->num_frames-1) - (int)std::lround(fps * wave_time);
 	} else {
 		int num_frames_extra;
-		num_frames_extra = fl2i(fps * (anim_time - wave_time) + 0.5f);
+		num_frames_extra = (int)std::lround(fps * (anim_time - wave_time));
 		if ( num_frames_extra > 0 ) {
 			start_frame=rand()%num_frames_extra;
 		}

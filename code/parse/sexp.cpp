@@ -5919,7 +5919,7 @@ int sexp_shields_left(int n)
 	}
 
 	// now return the amount of shields left as a percentage of the whole.
-	percent = fl2i((get_shield_pct(&Objects[Ships[shipnum].objnum]) * 100.0f) + 0.5f);
+	percent = (int)std::lround(get_shield_pct(&Objects[Ships[shipnum].objnum]) * 100.0f);
 	return percent;
 }
 
@@ -5949,7 +5949,7 @@ int sexp_hits_left(int n)
 	// since we are working with total hit points taken, not total remaining.
 	ship		*shipp = &Ships[shipnum];
 	object	*objp = &Objects[shipp->objnum];
-	percent = fl2i((100.0f * get_hull_pct(objp)) + 0.5f);
+	percent = (int)std::lround(100.0f * get_hull_pct(objp));
 	return percent;
 }
 
@@ -5974,7 +5974,7 @@ int sexp_sim_hits_left(int n)
 	// since we are working with total hit points taken, not total remaining.
 	ship		*shipp = &Ships[shipnum];
 	object	*objp = &Objects[shipp->objnum];
-	percent = fl2i((100.0f * get_sim_hull_pct(objp)) + 0.5f);
+	percent = (int)std::lround(100.0f * get_sim_hull_pct(objp));
 	return percent;
 }
 
@@ -6151,7 +6151,7 @@ int sexp_hits_left_subsystem(int n)
 		// named subsystem
 		if (single_subsystem || (type == SUBSYSTEM_UNKNOWN)) {
 			if (ss != NULL) {
-				percent = fl2i((ss->current_hits / ss->max_hits * 100.0f) + 0.5f);
+				percent = (int)std::lround(ss->current_hits / ss->max_hits * 100.0f);
 				return percent;
 			}
 
@@ -6164,7 +6164,7 @@ int sexp_hits_left_subsystem(int n)
 		// by default we return as a percentage the hits remaining on the subsystem as a whole (i.e. for 3 engines,
 		// we are returning the sum of the hits on the 3 engines)
 		} else {
-			percent = fl2i((ship_get_subsystem_strength(&Ships[shipnum],type) * 100.0f) + 0.5f);
+			percent = (int)std::lround(ship_get_subsystem_strength(&Ships[shipnum],type) * 100.0f);
 			return percent;
 		}
 	}
@@ -6212,7 +6212,7 @@ int sexp_hits_left_subsystem_generic(int node)
 
 	// return as a percentage the hits remaining on the subsystem as a whole (i.e. for 3 engines,
 	// we are returning the sum of the hits on the 3 engines)
-	return fl2i((ship_get_subsystem_strength(&Ships[ship_num], subsys_type) * 100.0f) + 0.5f);
+	return (int)std::lround(ship_get_subsystem_strength(&Ships[ship_num], subsys_type) * 100.0f);
 }
 
 // Goober5000
@@ -6239,7 +6239,7 @@ int sexp_hits_left_subsystem_specific(int node)
 	ss = ship_get_subsys(&Ships[ship_num], subsys_name);
 	if (ss != NULL) {
 		// return as a percentage the hits remaining on this subsystem only
-		return fl2i((ss->current_hits / ss->max_hits * 100.0f) + 0.5f);
+		return (int)std::lround(ss->current_hits / ss->max_hits * 100.0f);
 	}
 
 	// we reached end of ship subsys list without finding subsys_name
@@ -15921,8 +15921,8 @@ void set_primary_ammo (int ship_index, int requested_bank, int requested_ammo, i
 	}
 
 	// Is the number requested larger than the maximum allowed for that particular bank? 
-	maximum_allowed = fl2i((Ship_info[shipp->ship_info_index].primary_bank_ammo_capacity[requested_bank] 
-		/ Weapon_info[shipp->weapons.primary_bank_weapons[requested_bank]].cargo_size)+0.5);
+	maximum_allowed = (int)std::lround(Ship_info[shipp->ship_info_index].primary_bank_ammo_capacity[requested_bank]
+		/ Weapon_info[shipp->weapons.primary_bank_weapons[requested_bank]].cargo_size);
 	if (maximum_allowed < requested_ammo) 
 	{
 		requested_ammo = maximum_allowed ;

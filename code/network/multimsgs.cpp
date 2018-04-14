@@ -7002,7 +7002,7 @@ void send_client_update_packet(net_player *pl)
 
 		// hull strength and shield mesh information are floats (as a percentage).  Pass the integer
 		// percentage value since that should be close enough
-		percent = (ubyte) ((get_hull_pct(objp) * 100.0f) + 0.5f);
+		percent = (ubyte)std::lround (get_hull_pct(objp) * 100.0f);
 		if ( (percent == 0) && (get_hull_pct(objp) > 0.0f) ) {
 			percent = 1;
 		}
