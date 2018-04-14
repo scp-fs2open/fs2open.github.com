@@ -2195,9 +2195,9 @@ int CFred_mission_save::save_mission_info() {
 		}
 
 		// squadron wings
-		if (strcmp(Squadron_wing_names[0], "Alpha") != 0 || strcmp(Squadron_wing_names[1], "Beta")
-			|| strcmp(Squadron_wing_names[2], "Gamma") || strcmp(Squadron_wing_names[3], "Delta")
-			|| strcmp(Squadron_wing_names[4], "Epsilon")) {
+		if (strcmp(Squadron_wing_names[0], "Alpha") != 0 || strcmp(Squadron_wing_names[1], "Beta") != 0
+			|| strcmp(Squadron_wing_names[2], "Gamma") != 0 || strcmp(Squadron_wing_names[3], "Delta") != 0
+			|| strcmp(Squadron_wing_names[4], "Epsilon") != 0) {
 			fout("\n$Squadron wing names: ( ");
 
 			for (i = 0; i < MAX_SQUADRON_WINGS; i++) {
@@ -2208,7 +2208,7 @@ int CFred_mission_save::save_mission_info() {
 		}
 
 		// tvt wings
-		if (strcmp(TVT_wing_names[0], "Alpha") || strcmp(TVT_wing_names[1], "Zeta")) {
+		if (strcmp(TVT_wing_names[0], "Alpha") != 0 || strcmp(TVT_wing_names[1], "Zeta") != 0) {
 			fout("\n$Team-versus-team wing names: ( ");
 
 			for (i = 0; i < MAX_TVT_WINGS; i++) {
@@ -2407,7 +2407,7 @@ int CFred_mission_save::save_music() {
 	}
 
 	// Goober5000 - save using the special comment prefix
-	if (stricmp(The_mission.substitute_event_music_name, "None")) {
+	if (stricmp(The_mission.substitute_event_music_name, "None") != 0) {
 		fso_comment_push(";;FSO 3.6.9;;");
 		if (optional_string_fred("$Substitute Event Music:")) {
 			parse_comments(1);
@@ -2429,7 +2429,7 @@ int CFred_mission_save::save_music() {
 	}
 
 	// Goober5000 - save using the special comment prefix
-	if (stricmp(The_mission.substitute_briefing_music_name, "None")) {
+	if (stricmp(The_mission.substitute_briefing_music_name, "None") != 0) {
 		fso_comment_push(";;FSO 3.6.9;;");
 		if (optional_string_fred("$Substitute Briefing Music:")) {
 			parse_comments(1);

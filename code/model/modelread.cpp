@@ -773,7 +773,7 @@ void do_new_subsystem( int n_subsystems, model_subsystem *slist, int subobj_num,
 
 #ifndef NDEBUG
 		// Goober5000 - notify if there's a mismatch
-		if ( stricmp(subobj_name, subsystemp->subobj_name) && !subsystem_stricmp(subobj_name, subsystemp->subobj_name) )
+		if ( stricmp(subobj_name, subsystemp->subobj_name) != 0 && !subsystem_stricmp(subobj_name, subsystemp->subobj_name) )
 		{
 			nprintf(("Model", "NOTE: Subsystem \"%s\" in model \"%s\" is represented as \"%s\" in ships.tbl.  This works fine in FSO v3.6 and up, "
 				"but is not compatible with FS2 retail.\n", subobj_name, model_get(model_num)->filename, subsystemp->subobj_name));
@@ -5656,7 +5656,7 @@ void parse_glowpoint_table(const char *filename)
 
 				gpo.glow_bitmap_override = true;
 
-				if (stricmp(glow_texture_name, "none")) {
+				if (stricmp(glow_texture_name, "none") != 0) {
 					gpo.glow_bitmap = bm_load(glow_texture_name);
 
 					if (gpo.glow_bitmap < 0)

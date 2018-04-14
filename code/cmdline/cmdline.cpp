@@ -818,7 +818,7 @@ void os_validate_parms(int argc, char *argv[])
 					size_t sp = 0;
 					for (parmp = GET_FIRST(&Parm_list); parmp !=END_OF_LIST(&Parm_list); parmp = GET_NEXT(parmp) ) {
 						// don't output deprecated flags
-						if (stricmp("deprecated", parmp->help)) {
+						if (stricmp("deprecated", parmp->help) != 0) {
 							sp = strlen(parmp->name);
 							if (parmp->arg_type != AT_NONE) {
 								atp = strlen(cmdline_arg_types[parmp->arg_type]);

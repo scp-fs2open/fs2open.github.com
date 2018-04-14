@@ -458,7 +458,7 @@ int mission_log_get_time_indexed( int type, const char *pname, const char *sname
 					return 0;
 				}
 
-				if ( stricmp(entry->pname, pname) ) {
+				if ( stricmp(entry->pname, pname) != 0 ) {
 					continue;
 				}
 
@@ -533,7 +533,7 @@ int mission_log_get_count( int type, const char *pname, const char *sname )
 					return 0;
 				}
 
-				if ( stricmp(entry->pname, pname) ) {
+				if ( stricmp(entry->pname, pname) != 0 ) {
 					continue;
 				}
 

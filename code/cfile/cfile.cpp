@@ -467,7 +467,7 @@ char *cf_add_ext(const char *filename, const char *ext)
 	size_t elen = strlen(ext);
 	Assert(flen < MAX_PATH_LEN);
 	strcpy_s(path, filename);
-	if ((flen < 4) || stricmp(path + flen - elen, ext)) {
+	if ((flen < 4) || stricmp(path + flen - elen, ext) != 0) {
 		Assert(flen + elen < MAX_PATH_LEN);
 		strcat_s(path, ext);
 	}
@@ -686,7 +686,7 @@ CFILE *_cfopen(const char* source, int line, const char *file_path, const char *
 	Assert( mode != NULL );
 	
 	// Can only open read-only binary files in memory mapped mode.
-	if ( (type & CFILE_MEMORY_MAPPED) && strcmp(mode,"rb") ) {
+	if ( (type & CFILE_MEMORY_MAPPED) && strcmp(mode,"rb") != 0 ) {
 		Int3();				
 		return NULL;
 	}

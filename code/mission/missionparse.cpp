@@ -4767,7 +4767,7 @@ void post_process_ships_wings()
 	// Now set up the wings.  This must be done after both dock stuff and ship stuff.
 
 	// error checking for custom wings
-	if (strcmp(Starting_wing_names[0], TVT_wing_names[0]))
+	if (strcmp(Starting_wing_names[0], TVT_wing_names[0]) != 0)
 	{
 		Error(LOCATION, "The first starting wing and the first team-versus-team wing must have the same wing name.\n");
 	}
@@ -7415,7 +7415,7 @@ int add_path_restriction()
 		for (j = 0; j < temp.num_paths; j++)
 		{
 			// no match, so skip this
-			if (stricmp(temp.path_names[j], Path_restrictions[i].path_names[j]))
+			if (stricmp(temp.path_names[j], Path_restrictions[i].path_names[j]) != 0)
 				goto continue_outer_loop;
 		}
 
@@ -7451,7 +7451,7 @@ int get_special_anchor(char *name)
 	const char *iff_name;
 	int iff_index;
 	
-	if (strnicmp(name, "<any ", 5))
+	if (strnicmp(name, "<any ", 5) != 0)
 		return -1;
 
 	strcpy_s(tmp, name+5);

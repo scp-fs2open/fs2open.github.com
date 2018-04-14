@@ -1076,7 +1076,7 @@ void wss_maybe_restore_loadout()
 	Assert( (Ss_pool != NULL) && (Wl_pool != NULL) && (Wss_slots != NULL) );
 
 	// only restore if mission hasn't changed
-	if ( stricmp(Player_loadout.last_modified, The_mission.modified) ) {
+	if ( stricmp(Player_loadout.last_modified, The_mission.modified) != 0 ) {
 		return;
 	}
 
@@ -1187,7 +1187,7 @@ void wss_direct_restore_loadout()
 	wss_unit			*slot;
 
 	// only restore if mission hasn't changed
-	if ( stricmp(Player_loadout.last_modified, The_mission.modified) ) {
+	if ( stricmp(Player_loadout.last_modified, The_mission.modified) != 0 ) {
 		return;
 	}
 

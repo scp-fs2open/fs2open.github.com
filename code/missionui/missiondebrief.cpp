@@ -551,7 +551,7 @@ void debrief_voice_load_all()
 		if ( strlen(Debrief_stages[i]->voice) <= 0 ) {
 			continue;
 		}
-		if ( strnicmp(Debrief_stages[i]->voice, NOX("none"), 4) ) {
+		if ( strnicmp(Debrief_stages[i]->voice, NOX("none"), 4) != 0 ) {
 			debrief_load_voice_file(i, Debrief_stages[i]->voice);
 //			Debrief_voices[i] = audiostream_open(Debrief_stages[i]->voice, ASF_VOICE);
 		}

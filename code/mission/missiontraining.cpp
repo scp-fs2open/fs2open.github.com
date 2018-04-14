@@ -767,7 +767,7 @@ int message_play_training_voice(int index)
 					}
 				}
 
-				if (strnicmp(Message_waves[index].name, NOX("none.wav"), 4)) {
+				if (strnicmp(Message_waves[index].name, NOX("none.wav"), 4) != 0) {
 					Training_voice_handle = audiostream_open(Message_waves[index].name, ASF_VOICE);
 					if (Training_voice_handle < 0) {
 						nprintf(("Warning", "Unable to load voice file %s\n", Message_waves[index].name));

@@ -1548,7 +1548,7 @@ void campaign_room_commit()
 	}
 
 	// new campaign selected?
-	if (stricmp(Campaign_file_names[Selected_campaign_index], Campaign.filename)) {
+	if (stricmp(Campaign_file_names[Selected_campaign_index], Campaign.filename) != 0) {
 		// Goober5000 - reinitialize tech database if needed
 		if ( (Campaign.flags & CF_CUSTOM_TECH_DATABASE) || !stricmp(Campaign.filename, "freespace2") )
 		{

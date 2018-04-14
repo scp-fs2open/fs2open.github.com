@@ -698,7 +698,7 @@ void lcl_ext_localize_sub(const char *in, char *out, size_t max_len, int *id)
 	}
 
 	// otherwise, check to see if it's an XSTR() tag
-	if (strnicmp(in, "XSTR", 4)) {
+	if (strnicmp(in, "XSTR", 4) != 0) {
 		// NOT an XSTR() tag
 		if (str_len > max_len)
 			error_display(0, "Token too long: [%s].  Length = " SIZE_T_ARG ".  Max is " SIZE_T_ARG ".\n", in, str_len, max_len);

@@ -13,7 +13,7 @@ CustomWingNamesDialogModel::CustomWingNamesDialogModel(QObject * parent, EditorV
 
 bool CustomWingNamesDialogModel::apply() {
 	int i;
-	if (strcmp(_m_starting[0].c_str(), _m_tvt[0].c_str()))
+	if (strcmp(_m_starting[0].c_str(), _m_tvt[0].c_str()) != 0)
 	{
 		auto button = _viewport->dialogProvider->showButtonDialog(DialogType::Error, "Custom Wing Error", "The first starting wing and the first team-versus-team wing must have the same wing name.",
 		{ DialogButton::Ok });
@@ -121,9 +121,9 @@ SCP_string CustomWingNamesDialogModel::getTvTWing(int index) {
 }
 
 bool CustomWingNamesDialogModel::query_modified() {
-	return strcmp(Starting_wing_names[0], _m_starting[0].c_str()) || strcmp(Starting_wing_names[1], _m_starting[1].c_str()) || strcmp(Starting_wing_names[2], _m_starting[2].c_str())
-		|| strcmp(Squadron_wing_names[0], _m_squadron[0].c_str()) || strcmp(Squadron_wing_names[1], _m_squadron[1].c_str()) || strcmp(Squadron_wing_names[2], _m_squadron[2].c_str()) || strcmp(Squadron_wing_names[3], _m_squadron[3].c_str()) || strcmp(Squadron_wing_names[4], _m_squadron[4].c_str())
-		|| strcmp(TVT_wing_names[0], _m_tvt[0].c_str()) || strcmp(TVT_wing_names[1], _m_tvt[1].c_str());;
+	return strcmp(Starting_wing_names[0], _m_starting[0].c_str()) != 0 || strcmp(Starting_wing_names[1], _m_starting[1].c_str()) || strcmp(Starting_wing_names[2], _m_starting[2].c_str()) != 0
+		|| strcmp(Squadron_wing_names[0], _m_squadron[0].c_str()) != 0 || strcmp(Squadron_wing_names[1], _m_squadron[1].c_str()) != 0 || strcmp(Squadron_wing_names[2], _m_squadron[2].c_str()) != 0 || strcmp(Squadron_wing_names[3], _m_squadron[3].c_str()) != 0 || strcmp(Squadron_wing_names[4], _m_squadron[4].c_str()) != 0
+		|| strcmp(TVT_wing_names[0], _m_tvt[0].c_str()) != 0 || strcmp(TVT_wing_names[1], _m_tvt[1].c_str()) != 0;;
 }
 
 }

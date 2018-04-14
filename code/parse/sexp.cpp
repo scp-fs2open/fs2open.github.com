@@ -1423,7 +1423,7 @@ int cmp_sexp_chains(int node1, int node2)
 	}
 
 	// DA: 1/7/99 Need to check the actual Sexp_node.text, not possible variable, which can be equal
-	if (stricmp(Sexp_nodes[node1].text, Sexp_nodes[node2].text)){
+	if (stricmp(Sexp_nodes[node1].text, Sexp_nodes[node2].text) != 0){
 		return 0;
 	}
 
@@ -1908,7 +1908,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 					return SEXP_CHECK_TYPE_MISMATCH;
 				}
 
-				if (stricmp(CTEXT(node), SEXP_NONE_STRING))		// none is okay
+				if (stricmp(CTEXT(node), SEXP_NONE_STRING) != 0)		// none is okay
 				{
 					if (ship_name_lookup(CTEXT(node), 1) < 0)
 					{
@@ -2544,7 +2544,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 							|| (Operators[op].value == OP_PREVIOUS_GOAL_TRUE) || (Operators[op].value == OP_PREVIOUS_GOAL_FALSE) || (Operators[op].value == OP_PREVIOUS_GOAL_INCOMPLETE) )
 							break;
 
-						if (!(*Mission_filename) || stricmp(Mission_filename, CTEXT(node)))
+						if (!(*Mission_filename) || stricmp(Mission_filename, CTEXT(node)) != 0)
 							return SEXP_CHECK_INVALID_MISSION_NAME;
 					}
 				}
@@ -2726,8 +2726,8 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 					return SEXP_CHECK_TYPE_MISMATCH;
 
 				if (*CTEXT(node) != '#') {  // not a manual source?
-					if ( stricmp(CTEXT(node), "<any wingman>"))  
-						if ( stricmp(CTEXT(node), "<none>") ) // not a special token?
+					if ( stricmp(CTEXT(node), "<any wingman>") != 0)  
+						if ( stricmp(CTEXT(node), "<none>") != 0 ) // not a special token?
 							if ((ship_name_lookup(CTEXT(node), TRUE) < 0) && (wing_name_lookup(CTEXT(node), 1) < 0))  // is it in the mission?
 								if (Fred_running || !mission_parse_get_arrival_ship(CTEXT(node)))
 									return SEXP_CHECK_INVALID_MSG_SOURCE;
@@ -2832,7 +2832,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 					return SEXP_CHECK_TYPE_MISMATCH;
 				}
 
-				if (stricmp(CTEXT(node), SEXP_NONE_STRING) && ds_eax_get_preset_id(CTEXT(node)) < 0) {
+				if (stricmp(CTEXT(node), SEXP_NONE_STRING) != 0 && ds_eax_get_preset_id(CTEXT(node)) < 0) {
 					return SEXP_CHECK_INVALID_SOUND_ENVIRONMENT;
 				}
 				break;
@@ -3049,7 +3049,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 				if ( type2 != SEXP_ATOM_STRING )
 					return SEXP_CHECK_TYPE_MISMATCH;
 
-				if ( stricmp(CTEXT(node), NOX("default")) && !strstr(CTEXT(node), NOX(".pof")) )
+				if ( stricmp(CTEXT(node), NOX("default")) != 0 && !strstr(CTEXT(node), NOX(".pof")) )
 					return SEXP_CHECK_INVALID_SKYBOX_NAME;
 
 				break;
@@ -3177,7 +3177,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 				}
 				else if (type2 == SEXP_ATOM_STRING)
 				{
-					if (stricmp(CTEXT(node), SEXP_NONE_STRING) && !gamesnd_get_by_name(CTEXT(node)).isValid())
+					if (stricmp(CTEXT(node), SEXP_NONE_STRING) != 0 && !gamesnd_get_by_name(CTEXT(node)).isValid())
 					{
 						return SEXP_CHECK_INVALID_GAME_SND;
 					}
@@ -6283,7 +6283,7 @@ int sexp_determine_team(char *subj)
 	char team_name[NAME_LENGTH];
 
 	// quick check
-	if (strnicmp(subj, "<any ", 5))
+	if (strnicmp(subj, "<any ", 5) != 0)
 		return -1;
 
 	// grab IFF (rest of string except for closing angle bracket)
@@ -6886,7 +6886,7 @@ int sexp_get_object_coordinate(int n, int axis)
 	// see if we have a subsys
 	if (oswpt.objp->type == OBJ_SHIP)
 	{
-		if ((subsystem_name != NULL) && stricmp(subsystem_name, SEXP_NONE_STRING) && stricmp(subsystem_name, SEXP_HULL_STRING))
+		if ((subsystem_name != NULL) && stricmp(subsystem_name, SEXP_NONE_STRING) != 0 && stricmp(subsystem_name, SEXP_HULL_STRING) != 0)
 		{
 			pos = &subsys_pos_buf;
 			// get the world pos but bail if we can't get one
@@ -10317,7 +10317,7 @@ gamesnd_id sexp_get_sound_index(int node)
 		const char *sound_name = CTEXT(node);
 
 		// if it's not <none>, try looking it up
-		if (stricmp(sound_name, SEXP_NONE_STRING))
+		if (stricmp(sound_name, SEXP_NONE_STRING) != 0)
 		{
 			sound_index = gamesnd_get_by_name(sound_name);
 
@@ -11923,7 +11923,7 @@ void sexp_transfer_cargo(int n)
 #ifndef NDEBUG
 	// Don't give warning for large ships (cruiser on up) 
 	if (! (Ship_info[Ships[shipnum2].ship_info_index].is_big_or_huge()) ) {
-		if ( stricmp(Cargo_names[Ships[shipnum2].cargo1 & CARGO_INDEX_MASK], "nothing") ) {
+		if ( stricmp(Cargo_names[Ships[shipnum2].cargo1 & CARGO_INDEX_MASK], "nothing") != 0 ) {
 			Warning(LOCATION, "Transferring cargo to %s which already\nhas cargo %s.\nCargo will be replaced", Ships[shipnum2].ship_name, Cargo_names[Ships[shipnum2].cargo1 & CARGO_INDEX_MASK] );
 		}
 	}
@@ -14541,7 +14541,7 @@ void sexp_weapon_create(int n)
 	Assert( n >= 0 );
 
 	parent_objnum = -1;
-	if (stricmp(CTEXT(n), SEXP_NONE_STRING))
+	if (stricmp(CTEXT(n), SEXP_NONE_STRING) != 0)
 	{
 		int parent_ship = ship_name_lookup(CTEXT(n));
 
@@ -16964,7 +16964,7 @@ void sexp_beam_floating_fire(int n)
 	}
 
 	fire_info.shooter = NULL;
-	if (stricmp(CTEXT(n), SEXP_NONE_STRING))
+	if (stricmp(CTEXT(n), SEXP_NONE_STRING) != 0)
 	{
 		sindex = ship_name_lookup(CTEXT(n));
 
@@ -16987,7 +16987,7 @@ void sexp_beam_floating_fire(int n)
 	fire_info.target_subsys = NULL;
 
 	sindex = -1;
-	if (stricmp(CTEXT(n), SEXP_NONE_STRING))
+	if (stricmp(CTEXT(n), SEXP_NONE_STRING) != 0)
 	{
 		sindex = ship_name_lookup(CTEXT(n));
 
@@ -17000,7 +17000,7 @@ void sexp_beam_floating_fire(int n)
 
 	if (n >= 0)
 	{
-		if (stricmp(CTEXT(n), SEXP_NONE_STRING)) {
+		if (stricmp(CTEXT(n), SEXP_NONE_STRING) != 0) {
 			if (sindex >= 0)
 				fire_info.target_subsys = ship_get_subsys(&Ships[sindex], CTEXT(n));
 		}
@@ -18705,7 +18705,7 @@ void sexp_set_support_ship(int n)
 	// get ship class
 	n = CDR(n);
 	temp_val = ship_info_lookup(CTEXT(n));
-	if ((temp_val < 0) && ((stricmp(CTEXT(n), "<species support ship class>")) && (stricmp(CTEXT(n), "<any support ship class>"))) )
+	if ((temp_val < 0) && ((stricmp(CTEXT(n), "<species support ship class>") != 0) && (stricmp(CTEXT(n), "<any support ship class>"))) )
 	{
 		Warning(LOCATION, "Support ship class '%s' not found.\n", CTEXT(n));
 		return;
@@ -19516,7 +19516,7 @@ int sexp_missile_locked(int node)
 	if (CDR(node) != -1)
 	{
 		// if we're not targeting the specific ship, it's false
-		if (stricmp(Ships[Objects[Players_target].instance].ship_name, CTEXT(CDR(node))))
+		if (stricmp(Ships[Objects[Players_target].instance].ship_name, CTEXT(CDR(node))) != 0)
 			return SEXP_FALSE;
 
 		// do we have a specific subsystem?
@@ -21276,7 +21276,7 @@ object *sexp_camera_get_objsub(int node, int *o_submodel)
 	//*****Process submodel
 	if(objp != NULL && sub_name != NULL && oswpt.type == OSWPT_TYPE_SHIP)
 	{
-		if(stricmp(sub_name, SEXP_NONE_STRING))
+		if(stricmp(sub_name, SEXP_NONE_STRING) != 0)
 		{
 			ship_subsys *ss = ship_get_subsys(&Ships[objp->instance], sub_name);
 			if (ss != NULL)

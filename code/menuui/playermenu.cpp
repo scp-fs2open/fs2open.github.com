@@ -1198,7 +1198,7 @@ void player_select_eval_very_first_pilot()
 	// if we already have this flag set, check to see if our callsigns match
 	if(Player_select_very_first_pilot) {
 		// if the callsign has changed, unset the flag
-		if(strcmp(Player_select_very_first_pilot_callsign,Pilots[Player_select_pilot])){
+		if(strcmp(Player_select_very_first_pilot_callsign,Pilots[Player_select_pilot]) != 0){
 			Player_select_very_first_pilot = 0;
 		}
 	} else { // otherwise check to see if there is only 1 pilot

@@ -649,7 +649,7 @@ void cf_search_root_path(int root_index)
 					struct dirent *dir = nullptr;
 					while ((dir = readdir (parentDirP)) != nullptr) {
 
-						if (stricmp(search_name, dir->d_name)) {
+						if (stricmp(search_name, dir->d_name) != 0) {
 							continue;
 						}
 
@@ -1359,7 +1359,7 @@ int cf_find_file_location_ext( const char *filename, const int ext_num, const ch
 			continue;
 
 		// ... check that we match the base filename
-		if ( strnicmp(f->name_ext, filespec, filespec_len) )
+		if ( strnicmp(f->name_ext, filespec, filespec_len) != 0 )
 			continue;
 
 		// ... make sure that it's one of our supported types

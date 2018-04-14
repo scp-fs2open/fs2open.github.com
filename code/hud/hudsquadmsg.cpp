@@ -2430,7 +2430,7 @@ int hud_query_order_issued(char *to, char *order_name, char *target_name, int ti
 	int i, order = -1, ship_or_wing = -1, target = -1, source = -1; 
 	
 	// if the desired order was not sent to all fighters 
-	if (strcmp(to, "<all fighters>")) {
+	if (strcmp(to, "<all fighters>") != 0) {
 		ship_or_wing = get_parse_name_index(to);
 	}
 

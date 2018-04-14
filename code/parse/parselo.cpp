@@ -352,7 +352,7 @@ int skip_to_string(const char *pstr, const char *end)
 	if (end)
 		len2 = strlen(end);
 
-	while ((*Mp != '\0') && strnicmp(pstr, Mp, len)) {
+	while ((*Mp != '\0') && strnicmp(pstr, Mp, len) != 0) {
 		if (end && *Mp == '#')
 			return 0;
 
@@ -382,7 +382,7 @@ int skip_to_start_of_string(const char *pstr, const char *end)
 	else
 		endlen = 0;
 
-	while ( (*Mp != '\0') && strnicmp(pstr, Mp, len) ) {
+	while ( (*Mp != '\0') && strnicmp(pstr, Mp, len) != 0 ) {
 		if (end && *Mp == '#')
 			return 0;
 
@@ -412,7 +412,7 @@ int skip_to_start_of_string_either(const char *pstr1, const char *pstr2, const c
 	else
 		endlen = 0;
 
-	while ( (*Mp != '\0') && strnicmp(pstr1, Mp, len1) && strnicmp(pstr2, Mp, len2) ) {
+	while ( (*Mp != '\0') && strnicmp(pstr1, Mp, len1) != 0 && strnicmp(pstr2, Mp, len2) != 0 ) {
 		if (end && *Mp == '#')
 			return 0;
 
@@ -441,7 +441,7 @@ int required_string(const char *pstr)
 
 	ignore_white_space();
 
-	while (strnicmp(pstr, Mp, strlen(pstr)) && (count < RS_MAX_TRIES)) {
+	while (strnicmp(pstr, Mp, strlen(pstr)) != 0 && (count < RS_MAX_TRIES)) {
 		error_display(1, "Missing required token: [%s]. Found [%.32s] instead.\n", pstr, next_tokens());
 		advance_to_eoln(NULL);
 		ignore_white_space();
@@ -574,7 +574,7 @@ int required_string_fred(const char *pstr, const char *end)
 		return 0;
 
 	ignore_white_space();
-	while (*Mp != '\0' && strnicmp(pstr, Mp, strlen(pstr))) {
+	while (*Mp != '\0' && strnicmp(pstr, Mp, strlen(pstr)) != 0) {
 		if ((*Mp == '#') || (end && !strnicmp(end, Mp, strlen(end)))) {
 			Mp = NULL;
 			break;
@@ -611,7 +611,7 @@ int optional_string_fred(const char *pstr, const char *end, const char *end2)
 		return 0;
 
 	ignore_white_space();
-	while ((*Mp != '\0') && strnicmp(pstr, Mp, strlen(pstr))) {
+	while ((*Mp != '\0') && strnicmp(pstr, Mp, strlen(pstr)) != 0) {
 		if ((*Mp == '#') || (end && !strnicmp(end, Mp, strlen(end))) ||
 			(end2 && !strnicmp(end2, Mp, strlen(end2)))) {
 			Mp = NULL;
@@ -1839,7 +1839,7 @@ bool matches_version_specific_tag(const char *line_start, bool &compatible_versi
 	// special version-specific comment
 	// formatted like e.g. ;;FSO 3.7.0;;
 	// Should now support anything from ;;FSO 3;; to ;;FSO 3.7.3.20151106;; -MageKing17
-	if (strnicmp(line_start, ";;FSO ", 6))
+	if (strnicmp(line_start, ";;FSO ", 6) != 0)
 		return false;
 
 	int major, minor, build, revis;

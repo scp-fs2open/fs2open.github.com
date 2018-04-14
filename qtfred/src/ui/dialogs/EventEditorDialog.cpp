@@ -724,7 +724,7 @@ bool EventEditorDialog::query_modified() {
 	}
 
 	for (auto i = 0; i < m_num_events; i++) {
-		if (stricmp(m_events[i].name, Mission_events[i].name)) {
+		if (stricmp(m_events[i].name, Mission_events[i].name) != 0) {
 			return true;
 		}
 		if (m_events[i].repeat_count != Mission_events[i].repeat_count) {
@@ -761,10 +761,10 @@ bool EventEditorDialog::query_modified() {
 		auto& local = m_messages[i];
 		auto& ref = Messages[i];
 
-		if (stricmp(local.name, ref.name)) {
+		if (stricmp(local.name, ref.name) != 0) {
 			return true;
 		}
-		if (stricmp(local.message, ref.message)) {
+		if (stricmp(local.message, ref.message) != 0) {
 			return true;
 		}
 		if (local.persona_index != ref.persona_index) {

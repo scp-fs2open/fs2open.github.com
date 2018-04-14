@@ -15423,7 +15423,7 @@ static void awacs_maybe_ask_for_help(ship *sp, int multi_team_filter)
 {
 	// Goober5000 - bail if not in main fs2 campaign
 	// (stupid coders... it's the FREDder's responsibility to add this message)
-	if (stricmp(Campaign.filename, "freespace2") || !(Game_mode & GM_CAMPAIGN_MODE))
+	if (stricmp(Campaign.filename, "freespace2") != 0 || !(Game_mode & GM_CAMPAIGN_MODE))
 		return;
 
 	object *objp;
@@ -15934,7 +15934,7 @@ void ship_do_cargo_revealed( ship *shipp, int from_network )
 	shipp->time_cargo_revealed = Missiontime;	
 
 	// if the cargo is something other than "nothing", then make a log entry
-	if ( stricmp(Cargo_names[shipp->cargo1 & CARGO_INDEX_MASK], NOX("nothing")) ){
+	if ( stricmp(Cargo_names[shipp->cargo1 & CARGO_INDEX_MASK], NOX("nothing")) != 0 ){
 		mission_log_add_entry(LOG_CARGO_REVEALED, shipp->ship_name, NULL, (shipp->cargo1 & CARGO_INDEX_MASK) );
 	}	
 }
@@ -15958,7 +15958,7 @@ void ship_do_cap_subsys_cargo_revealed( ship *shipp, ship_subsys *subsys, int fr
 	subsys->time_subsys_cargo_revealed = Missiontime;
 
 	// if the cargo is something other than "nothing", then make a log entry
-	if ( stricmp(Cargo_names[subsys->subsys_cargo_name & CARGO_INDEX_MASK], NOX("nothing")) ){
+	if ( stricmp(Cargo_names[subsys->subsys_cargo_name & CARGO_INDEX_MASK], NOX("nothing")) != 0 ){
 		mission_log_add_entry(LOG_CAP_SUBSYS_CARGO_REVEALED, shipp->ship_name, subsys->system_info->subobj_name, (subsys->subsys_cargo_name & CARGO_INDEX_MASK) );
 	}	
 }

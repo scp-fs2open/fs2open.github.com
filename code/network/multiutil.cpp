@@ -2004,7 +2004,7 @@ int multi_eval_join_request(join_request *jr,net_addr *addr)
 			*/
 
 			// if we're password protected		
-			if(std_is_host_passwd() && strcmp(jr->passwd, Multi_options_g.std_passwd)){
+			if(std_is_host_passwd() && strcmp(jr->passwd, Multi_options_g.std_passwd) != 0){
 				return JOIN_DENY_JR_PASSWD;
 			}
 				
@@ -2052,7 +2052,7 @@ int multi_eval_join_request(join_request *jr,net_addr *addr)
 	}	
 
 	// check to see if the player has passed a valid password in a password protected game
-	if((Netgame.mode == NG_MODE_PASSWORD) && strcmp(Netgame.passwd,jr->passwd)){
+	if((Netgame.mode == NG_MODE_PASSWORD) && strcmp(Netgame.passwd,jr->passwd) != 0){
 		return JOIN_DENY_JR_PASSWD;
 	}
 

@@ -1140,7 +1140,7 @@ void HudGauge::setCockpitTarget(const cockpit_display *display)
 		return;
 	}
 
-	if ( strcmp(texture_target_fname, display->name) ) {
+	if ( strcmp(texture_target_fname, display->name) != 0 ) {
 		return;
 	}
 
@@ -1515,7 +1515,7 @@ void hud_update_frame(float frametime)
 
 				// If the target has an AI class of none, it is a Cargo, NavBuoy or other non-aggressive
 				// ship, so don't start the battle music	
-				if (stricmp(Ai_class_names[Ai_info[target_shipp->ai_index].ai_class], NOX("none")))
+				if (stricmp(Ai_class_names[Ai_info[target_shipp->ai_index].ai_class], NOX("none")) != 0)
 					event_music_battle_start();
 			}
 		}

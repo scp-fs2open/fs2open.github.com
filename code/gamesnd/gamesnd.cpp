@@ -529,7 +529,7 @@ void gamesnd_preload_common_sounds()
 	for (SCP_vector<game_snd>::iterator gs = Snds.begin(); gs != Snds.end(); ++gs) {
 		if ( gs->preload ) {
 			for (auto& entry : gs->sound_entries) {
-				if ( entry.filename[0] != 0 && strnicmp(entry.filename, NOX("none.wav"), 4) ) {
+				if ( entry.filename[0] != 0 && strnicmp(entry.filename, NOX("none.wav"), 4) != 0 ) {
 					game_busy( NOX("** preloading common game sounds **") );	// Animate loading cursor... does nothing if loading screen not active.
 					entry.id = snd_load(&entry, gs->flags);
 				}
@@ -550,7 +550,7 @@ void gamesnd_load_gameplay_sounds()
 	for (SCP_vector<game_snd>::iterator gs = Snds.begin(); gs != Snds.end(); ++gs) {
 		if ( !gs->preload ) { // don't try to load anything that's already preloaded
 			for (auto& entry : gs->sound_entries) {
-				if (entry.filename[0] != 0 && strnicmp(entry.filename, NOX("none.wav"), 4)) {
+				if (entry.filename[0] != 0 && strnicmp(entry.filename, NOX("none.wav"), 4) != 0) {
 					game_busy(NOX("** preloading gameplay sounds **"));        // Animate loading cursor... does nothing if loading screen not active.
 					entry.id = snd_load(&entry, gs->flags);
 				}
@@ -586,7 +586,7 @@ void gamesnd_load_interface_sounds()
 	Assert( Snds_iface.size() < INT_MAX );
 	for (SCP_vector<game_snd>::iterator si = Snds_iface.begin(); si != Snds_iface.end(); ++si) {
 		for (auto& entry : si->sound_entries) {
-			if ( entry.filename[0] != 0 && strnicmp(entry.filename, NOX("none.wav"), 4) ) {
+			if ( entry.filename[0] != 0 && strnicmp(entry.filename, NOX("none.wav"), 4) != 0 ) {
 				entry.id = snd_load(&entry, si->flags);
 			}
 		}
@@ -849,7 +849,7 @@ void parse_gamesnd_new(game_snd* gs, bool no_create)
 	}
 
 	// If the name _doesn't_ match <same> put it into gs->filename;
-	if (stricmp(name, "<same>"))
+	if (stricmp(name, "<same>") != 0)
 	{
 		strcpy_s(entry->filename, name);
 	}

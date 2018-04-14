@@ -1340,7 +1340,7 @@ void parse_menumusic()
 	if(optional_string("$Filename:"))
 	{
 		stuff_string(fname, F_LNAME, MAX_FILENAME_LEN);
-		if ( strnicmp(fname, NOX("none.wav"), 4)  ) {
+		if ( strnicmp(fname, NOX("none.wav"), 4) != 0  ) {
 			strcpy_s( Spooled_music[idx].filename, fname );
 		}
 		else

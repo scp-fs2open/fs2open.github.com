@@ -2244,7 +2244,7 @@ void brief_voice_load_all()
 	Assert( Briefing != NULL );
 	for ( i = 0; i < Briefing->num_stages; i++ ) {
 		bs = &Briefing->stages[i];
-		if ( strnicmp(bs->voice, NOX("none"), 4) ) {
+		if ( strnicmp(bs->voice, NOX("none"), 4) != 0 ) {
 			brief_load_voice_file(i, bs->voice);
 		}
 	}
