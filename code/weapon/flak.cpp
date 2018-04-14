@@ -34,7 +34,7 @@ void flak_level_close()
 /**
  * Given a just fired flak shell, pick a detonating distance for it
  */
-void flak_pick_range(object *objp, vec3d *firing_pos, vec3d *predicted_target_pos, float weapon_subsys_strength)
+void flak_pick_range(object *objp, vec3d * /*firing_pos*/, vec3d *predicted_target_pos, float weapon_subsys_strength)
 {
 	float final_range;
 	float det_range;

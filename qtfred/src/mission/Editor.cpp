@@ -658,7 +658,7 @@ void Editor::updateAllViewports() {
 	}
 }
 
-int Editor::create_player(int num, vec3d* pos, matrix* orient, int type, int init) {
+int Editor::create_player(int  /*num*/, vec3d* pos, matrix* orient, int type, int  /*init*/) {
 	int obj;
 
 	if (type == -1) {
@@ -1254,7 +1254,7 @@ int Editor::reference_handler(const char* name, int type, int obj) {
 	return 0;
 }
 
-int Editor::orders_reference_handler(int code, char* msg) {
+int Editor::orders_reference_handler(int  /*code*/, char* msg) {
 	auto r = _lastActiveViewport->dialogProvider->showButtonDialog(DialogType::Warning,
 																   "Warning",
 																   msg,
@@ -1306,7 +1306,7 @@ int Editor::orders_reference_handler(int code, char* msg) {
 	delete_flag = 1;
 	return 2;
 }
-int Editor::sexp_reference_handler(int node, int code, const char* msg) {
+int Editor::sexp_reference_handler(int  /*node*/, int  /*code*/, const char* msg) {
 	auto r = _lastActiveViewport->dialogProvider->showButtonDialog(DialogType::Warning,
 																   "Warning",
 																   msg,

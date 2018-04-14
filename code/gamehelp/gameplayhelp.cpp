@@ -790,7 +790,7 @@ void gameplay_help_draw_text()
 }
 
 // gameplay_help_do_frame() is the function that displays help when acutally playing the game
-void gameplay_help_do_frame(float frametime)
+void gameplay_help_do_frame(float  /*frametime*/)
 {
 	int i, k;	
 

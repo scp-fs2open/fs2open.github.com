@@ -1159,7 +1159,7 @@ void multi_voice_player_send_stream()
 }
 
 // process incoming sound data, return bytes processed
-int multi_voice_process_data(ubyte *data, int player_index,int msg_mode,net_player *target)
+int multi_voice_process_data(ubyte *data, int player_index,int  /*msg_mode*/,net_player * /*target*/)
 {
 	ubyte stream_id,chunk_index;
 	ushort chunk_size,uc_size;	
@@ -1381,7 +1381,7 @@ int multi_voice_get_stream(int stream_id)
 }
 
 // is the given sound stream playing (compares uncompressed sound size with current playback position)
-int multi_voice_stream_playing(int stream_index)
+int multi_voice_stream_playing(int  /*stream_index*/)
 {
 	// if the handle is invalid, it can't be playing
 	/*

@@ -266,7 +266,7 @@ void view_modify(angles *ma, angles *da, float max_p, float max_h, float frame_t
 	CLAMP(ma->h, -max_h, max_h);
 }
 
-void do_view_track_target(float frame_time)
+void do_view_track_target(float  /*frame_time*/)
 {
 	vec3d view_vector;
 	vec3d targetpos_rotated;
@@ -409,7 +409,7 @@ void do_view_slew(float frame_time)
 	}
 }
 
-void do_view_chase(float frame_time)
+void do_view_chase(float  /*frame_time*/)
 {
 	float t;
 

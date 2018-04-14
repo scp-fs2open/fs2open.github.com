@@ -258,17 +258,17 @@ protected:
 
 	//DO FUNCTIONS
 	//Used by individual objects to define actions when that event happens
-	virtual void DoDraw(float frametime){}
-	virtual int DoFrame(float frametime){return OF_FALSE;}
+	virtual void DoDraw(float  /*frametime*/){}
+	virtual int DoFrame(float  /*frametime*/){return OF_FALSE;}
 	virtual int DoRefreshSize(){return OF_FALSE;}
 	virtual void DoRefreshSkin(){}
-	virtual void DoMove(int dx, int dy){}
-	virtual int DoMouseOver(float frametime){return OF_FALSE;}
-	virtual int DoMouseDown(float frametime){return OF_FALSE;}
-	virtual int DoMouseUp(float frametime){return OF_FALSE;}	//In other words, a click
-	virtual int DoMouseOut(float frametime){return OF_FALSE;}
-	virtual int DoKeyState(float frametime){return OF_FALSE;}
-	virtual int DoKeyPress(float frametime){return OF_FALSE;}
+	virtual void DoMove(int  /*dx*/, int  /*dy*/){}
+	virtual int DoMouseOver(float  /*frametime*/){return OF_FALSE;}
+	virtual int DoMouseDown(float  /*frametime*/){return OF_FALSE;}
+	virtual int DoMouseUp(float  /*frametime*/){return OF_FALSE;}	//In other words, a click
+	virtual int DoMouseOut(float  /*frametime*/){return OF_FALSE;}
+	virtual int DoKeyState(float  /*frametime*/){return OF_FALSE;}
+	virtual int DoKeyPress(float  /*frametime*/){return OF_FALSE;}
 
 	//CALCULATESIZE
 	//Sort of an on and do function; if you define your own, the following MUST be included at the end:

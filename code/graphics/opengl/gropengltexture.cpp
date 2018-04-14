@@ -308,7 +308,7 @@ int opengl_texture_set_level(int bitmap_handle,
 							 int tex_h,
 							 ubyte* data,
 							 tcache_slot_opengl* tSlot,
-							 int base_level,
+							 int  /*base_level*/,
 							 bool resize,
 							 GLenum intFormat)
 {
@@ -1712,7 +1712,7 @@ int opengl_set_render_target( int slot, int face, int is_static )
 	return 1;
 }
 
-int opengl_make_render_target( int handle, int slot, int *w, int *h, int *bpp, int *mm_lvl, int flags )
+int opengl_make_render_target( int  /*handle*/, int slot, int *w, int *h, int *bpp, int *mm_lvl, int flags )
 {
 	GR_DEBUG_SCOPE("Make OpenGL render target");
 

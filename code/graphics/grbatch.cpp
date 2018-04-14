@@ -522,7 +522,7 @@ float geometry_batcher::draw_laser(vec3d *p0, float width1, vec3d *p1, float wid
 	return center.xyz.z;
 }
 
-void geometry_batcher::render(int flags, float radius)
+void geometry_batcher::render(int  /*flags*/, float  /*radius*/)
 {
 
 }
@@ -553,12 +553,12 @@ void geometry_batcher::load_buffer(effect_vertex* buffer, int *n_verts)
 	*n_verts = *n_verts + verts_to_render;
 }
 
-void geometry_batcher::render_buffer(int buffer_handle, int flags)
+void geometry_batcher::render_buffer(int  /*buffer_handle*/, int  /*flags*/)
 {
 
 }
 
-void geometry_shader_batcher::render_buffer(int buffer_handle, int flags)
+void geometry_shader_batcher::render_buffer(int  /*buffer_handle*/, int  /*flags*/)
 {
 
 }

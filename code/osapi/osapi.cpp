@@ -100,7 +100,7 @@ namespace
 		return false;
 	}
 	
-	bool quit_handler(const SDL_Event& e) {
+	bool quit_handler(const SDL_Event&  /*e*/) {
 		gameseq_post_event(GS_EVENT_QUIT_GAME);
 		return true;
 	}

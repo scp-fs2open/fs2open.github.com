@@ -1500,7 +1500,7 @@ void multi_pxo_process_common()
 }
 
 // get selected player information
-void multi_pxo_get_data(char *name)
+void multi_pxo_get_data(char * /*name*/)
 {
 }
 
@@ -1552,7 +1552,7 @@ void multi_pxo_strip_space(char *string1,char *string2)
 }
 
 // fire up the given URL
-void multi_pxo_url(char *url)
+void multi_pxo_url(char * /*url*/)
 {
 #if 0
 	// execute the shell command

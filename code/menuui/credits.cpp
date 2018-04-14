@@ -665,7 +665,7 @@ void credits_close()
 	common_free_interface_palette();		// restore game palette
 }
 
-void credits_do_frame(float frametime)
+void credits_do_frame(float  /*frametime*/)
 {
 	GR_DEBUG_SCOPE("Credits do frame");
 

@@ -96,7 +96,7 @@ static void png_warning_fn(png_structp png_ptr, png_const_charp message)
  *
  * @retval PNG_ERROR_NONE if successful, otherwise error code
  */
-int png_read_header(const char *real_filename, CFILE *img_cfp, int *w, int *h, int *bpp, ubyte *palette)
+int png_read_header(const char *real_filename, CFILE *img_cfp, int *w, int *h, int *bpp, ubyte * /*palette*/)
 {
 	char filename[MAX_FILENAME_LEN];
 	png_infop info_ptr;
@@ -198,7 +198,7 @@ int png_read_header(const char *real_filename, CFILE *img_cfp, int *w, int *h, i
  *
  * @retval true if succesful, false otherwise
  */
-int png_read_bitmap(const char *real_filename, ubyte *image_data, int *bpp, int dest_size, int cf_type)
+int png_read_bitmap(const char *real_filename, ubyte *image_data, int *bpp, int  /*dest_size*/, int cf_type)
 {
 	char filename[MAX_FILENAME_LEN];
 	png_infop info_ptr;
@@ -372,7 +372,7 @@ static inline bool not_chunk(ubyte c)
 /*
  * @brief shim for libpng info/IHDR chunk callback
  */
-static inline void info_callback(png_structp png_ptr, png_infop info_ptr)
+static inline void info_callback(png_structp png_ptr, png_infop  /*info_ptr*/)
 {
 	static_cast<apng_ani*>(png_get_progressive_ptr(png_ptr))->info_callback();
 }
@@ -380,7 +380,7 @@ static inline void info_callback(png_structp png_ptr, png_infop info_ptr)
 /*
  * @brief shim for libpng row callback
  */
-static inline void row_callback(png_structp png_ptr, png_bytep new_row, png_uint_32 row_num, int pass)
+static inline void row_callback(png_structp png_ptr, png_bytep new_row, png_uint_32 row_num, int  /*pass*/)
 {
 	static_cast<apng_ani*>(png_get_progressive_ptr(png_ptr))->row_callback(new_row, row_num);
 }

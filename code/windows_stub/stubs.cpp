@@ -187,7 +187,7 @@ int _mkdir(const char *path)
 	return mkdir(path, 0777);
 }
 
-void _splitpath (char *path, char *drive, char *dir, char *fname, char *ext)
+void _splitpath (char *path, char * /*drive*/, char *dir, char *fname, char *ext)
 {
 	if ( (path == NULL) || (fname == NULL) )
 		return;

@@ -3332,7 +3332,7 @@ int submodel_find_2d_bound_min(int model_num,int submodel, matrix *orient, vec3d
  * @return zero if x1,y1,x2,y2 are valid
  * @return 2 for point offscreen
  */
-int model_find_2d_bound(int model_num,matrix *orient, vec3d * pos,int *x1, int *y1, int *x2, int *y2 )
+int model_find_2d_bound(int model_num,matrix * /*orient*/, vec3d * pos,int *x1, int *y1, int *x2, int *y2 )
 {
 	float t,w,h;
 	vertex pnt;
@@ -3376,7 +3376,7 @@ int model_find_2d_bound(int model_num,matrix *orient, vec3d * pos,int *x1, int *
  * @return zero if x1,y1,x2,y2 are valid
  * @return 2 for point offscreen
  */
-int subobj_find_2d_bound(float radius ,matrix *orient, vec3d * pos,int *x1, int *y1, int *x2, int *y2 )
+int subobj_find_2d_bound(float radius ,matrix * /*orient*/, vec3d * pos,int *x1, int *y1, int *x2, int *y2 )
 {
 	float t,w,h;
 	vertex pnt;
@@ -5452,7 +5452,7 @@ void swap_bsp_sortnorms( polymodel * pm, ubyte * p )
 }
 #endif // BIG_ENDIAN
 
-void swap_bsp_data( polymodel * pm, void *model_ptr )
+void swap_bsp_data( polymodel *  /*pm*/, void * /*model_ptr*/ )
 {
 #if BYTE_ORDER == BIG_ENDIAN
 	ubyte *p = (ubyte *)model_ptr;
@@ -5508,7 +5508,7 @@ void swap_bsp_data( polymodel * pm, void *model_ptr )
 #endif
 }
 
-void swap_sldc_data(ubyte *buffer)
+void swap_sldc_data(ubyte * /*buffer*/)
 {
 #if BYTE_ORDER == BIG_ENDIAN
 	char *type_p = (char *)(buffer);

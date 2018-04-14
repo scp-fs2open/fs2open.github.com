@@ -356,7 +356,7 @@ DCF_BOOL(show_controls_info, Show_controls_info);
 
 static int Axes_origin[JOY_NUM_AXES];
 
-static int joy_get_unscaled_reading(int raw, int axn)
+static int joy_get_unscaled_reading(int raw)
 {
 	int rng;
 
@@ -2379,7 +2379,7 @@ void control_get_axes_readings(int *h, int *p, int *b, int *ta, int *tr)
 
 	*ta = 0;
 	if (Axis_map_to[3] >= 0) {
-		*ta = joy_get_unscaled_reading(axes_values[Axis_map_to[3]], Axis_map_to[3]);
+		*ta = joy_get_unscaled_reading(axes_values[Axis_map_to[3]]);
 	}
 
 	*tr = 0;

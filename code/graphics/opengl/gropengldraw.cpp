@@ -75,7 +75,7 @@ inline GLenum opengl_primitive_type(primitive_type prim_type)
 	}
 }
 
-void gr_opengl_sphere(material* material_def, float rad)
+void gr_opengl_sphere(material* material_def, float  /*rad*/)
 {
 	opengl_tnl_set_material(material_def, true);
 

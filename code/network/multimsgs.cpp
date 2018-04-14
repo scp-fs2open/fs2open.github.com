@@ -2275,7 +2275,7 @@ void send_server_query(net_addr *addr)
 }
 
 // process a query from a client looking for active freespace games
-void process_game_query(ubyte* data, header* hinfo)
+void process_game_query(ubyte*  /*data*/, header* hinfo)
 {
 	int offset;	
 	net_addr addr;
@@ -2936,7 +2936,7 @@ void process_cargo_hidden_packet( ubyte *data, header *hinfo )
 #define SFPF_TARGET_LOCKED		(1<<5)
 
 // send a packet indicating a secondary weapon was fired
-void send_secondary_fired_packet( ship *shipp, ushort starting_sig, int starting_count, int num_fired, int allow_swarm )
+void send_secondary_fired_packet( ship *shipp, ushort starting_sig, int  /*starting_count*/, int num_fired, int allow_swarm )
 {
 	int packet_size, net_player_num;
 	ubyte data[MAX_PACKET_SIZE], sinfo, current_bank;
@@ -3460,7 +3460,7 @@ void process_mission_message_packet( ubyte *data, header *hinfo )
 }
 
 // just send them a pong back as fast as possible
-void process_ping_packet(ubyte *data, header *hinfo)
+void process_ping_packet(ubyte * /*data*/, header *hinfo)
 {
    net_addr addr;
 	int offset;
@@ -3477,7 +3477,7 @@ void process_ping_packet(ubyte *data, header *hinfo)
 
 // right now it just routes the pong through to the standalone gui, which is the only
 // system which uses ping and pong right now.
-void process_pong_packet(ubyte *data, header *hinfo)
+void process_pong_packet(ubyte * /*data*/, header *hinfo)
 {
 	net_player *p;
 	net_addr addr;
@@ -3544,7 +3544,7 @@ void send_pong(net_addr *addr)
 
 // sent from host to master. give me the list of missions you have.
 // this will be used only in a standalone mode
-void send_mission_list_request( int what )
+void send_mission_list_request( int  /*what*/ )
 {
 	ubyte data[MAX_PACKET_SIZE];
 	int packet_size;
@@ -3629,7 +3629,7 @@ void send_mission_items( net_player *pl )
 }
 
 // process a request for a list of missions
-void process_mission_request_packet(ubyte *data, header *hinfo)
+void process_mission_request_packet(ubyte * /*data*/, header *hinfo)
 {   
 	int player_num,offset;	
 	
@@ -3831,7 +3831,7 @@ void send_force_end_mission_packet()
 }
 
 // process a packet indicating that we should jump straight to the debrief screen
-void process_force_end_mission_packet(ubyte *data, header *hinfo)
+void process_force_end_mission_packet(ubyte * /*data*/, header *hinfo)
 {
 	int offset;	
 			
@@ -3885,7 +3885,7 @@ void send_endgame_packet(net_player *pl)
 }
 
 // process a packet indicating we should end the current mission
-void process_endgame_packet(ubyte *data, header *hinfo)
+void process_endgame_packet(ubyte * /*data*/, header *hinfo)
 {
 	int offset;	
 	int player_num;
@@ -6281,7 +6281,7 @@ void process_wss_slots_data_packet(ubyte *data, header *hinfo)
 #define OBJ_VISIBILITY_DOT					0.6f	
 
 // send and receive packets for shield explosion information
-void send_shield_explosion_packet( int objnum, int tri_num, vec3d hit_pos )
+void send_shield_explosion_packet( int objnum, int tri_num, vec3d  /*hit_pos*/ )
 {
 	int packet_size, i;
 	ubyte data[MAX_PACKET_SIZE], utri_num;
@@ -6939,7 +6939,7 @@ void send_countermeasure_success_packet( int objnum )
 }
 
 // start the flashing of my hud gauge
-void process_countermeasure_success_packet( ubyte *data, header *hinfo )
+void process_countermeasure_success_packet( ubyte * /*data*/, header *hinfo )
 {
 	int offset;
 
@@ -7890,7 +7890,7 @@ void send_sw_query_packet(ubyte code, char *txt)
 	}
 }
 
-void process_sw_query_packet(ubyte *data, header *hinfo)
+void process_sw_query_packet(ubyte * /*data*/, header * /*hinfo*/)
 {	
 }
 

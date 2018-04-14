@@ -693,7 +693,7 @@ DCF(clear_color, "set clear color r, g, b")
 	gr_set_clear_color(r, g, b);
 }
 
-void gr_set_palette_internal( const char *name, ubyte * palette, int restrict_font_to_128 )
+void gr_set_palette_internal( const char * /*name*/, ubyte * palette, int  /*restrict_font_to_128*/ )
 {
 	if ( palette == NULL ) {
 		// Create a default palette

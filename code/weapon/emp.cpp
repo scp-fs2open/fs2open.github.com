@@ -513,7 +513,7 @@ void emp_hud_printf(int x, int y, int gauge_id, const char *format, ...)
 }
 
 // maybe reformat a string 
-void emp_maybe_reformat_text(char *text, int max_len, int gauge_id)
+void emp_maybe_reformat_text(char *text, int  /*max_len*/, int gauge_id)
 {
 	wacky_text *wt;
 

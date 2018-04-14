@@ -2294,7 +2294,7 @@ int cf_create_default_path_string(char *path, uint path_max, int pathtype, const
 //          filename  - optional, if set, tacks the filename onto end of path.
 // Output:  path      - Fully qualified pathname.
 //Returns 0 if the result would be too long (invalid result)
-int cf_create_default_path_string( SCP_string &path, int pathtype, const char *filename, bool localize )
+int cf_create_default_path_string( SCP_string &path, int pathtype, const char *filename, bool  /*localize*/ )
 {
 #ifdef SCP_UNIX
 	if ( filename && strpbrk(filename,"/")  ) {

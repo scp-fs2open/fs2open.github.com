@@ -1734,7 +1734,7 @@ void debrief_button_pressed(int num)
 	} // end swtich
 }
 
-void debrief_setup_ship_kill_stats(int stage_num)
+void debrief_setup_ship_kill_stats(int  /*stage_num*/)
 {
 	int i;
 	//ushort *kill_arr;

@@ -873,7 +873,7 @@ void shipfx_warpout_frame( object *objp, float frametime )
 /**
  * Given point p0, in object's frame of reference, find if it can see the sun.
  */
-bool shipfx_point_in_shadow( vec3d *p0, matrix *src_orient, vec3d *src_pos, float radius )
+bool shipfx_point_in_shadow( vec3d *p0, matrix *src_orient, vec3d *src_pos, float  /*radius*/ )
 {
 	mc_info mc;
 	object *objp;
@@ -2536,7 +2536,7 @@ int l_cruiser_count = 1;
 int l_big_count = 2;
 int l_huge_count = 3;
 float l_max_radius = 3000.0f;
-void shipfx_do_lightning_frame( ship *shipp )
+void shipfx_do_lightning_frame( ship * /*shipp*/ )
 {
 	/*
 	ship_info *sip;
@@ -3357,12 +3357,12 @@ int WarpEffect::warpStart()
 	return 1;
 }
 
-int WarpEffect::warpFrame(float frametime)
+int WarpEffect::warpFrame(float  /*frametime*/)
 {
 	return 0;
 }
 
-int WarpEffect::warpShipClip(model_render_params *render_info)
+int WarpEffect::warpShipClip(model_render_params * /*render_info*/)
 {
 	return 0;
 }
@@ -3372,7 +3372,7 @@ int WarpEffect::warpShipRender()
 	return 0;
 }
 
-int WarpEffect::warpShipQueueRender(model_draw_list *scene)
+int WarpEffect::warpShipQueueRender(model_draw_list * /*scene*/)
 {
 	return 0;
 }
@@ -3870,7 +3870,7 @@ int WE_BSG::warpStart()
 	return 1;
 }
 
-int WE_BSG::warpFrame(float frametime)
+int WE_BSG::warpFrame(float  /*frametime*/)
 {
 	if(!this->isValid())
 		return 0;
@@ -4161,7 +4161,7 @@ int WE_Homeworld::warpStart()
 	return 1;
 }
 
-int WE_Homeworld::warpFrame(float frametime)
+int WE_Homeworld::warpFrame(float  /*frametime*/)
 {
 	if(!this->isValid())
 		return 0;
@@ -4335,7 +4335,7 @@ int WE_Hyperspace::warpStart()
 	return 1;
 }
 
-int WE_Hyperspace::warpFrame(float frametime)
+int WE_Hyperspace::warpFrame(float  /*frametime*/)
 {
 	if(!this->isValid())
 		return 0;

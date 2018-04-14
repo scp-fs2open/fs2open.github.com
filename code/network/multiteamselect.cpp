@@ -2139,7 +2139,7 @@ int multi_ts_can_perform(int from_type,int from_index,int to_type,int to_index,i
 }
 
 // determine the kind of drag and drop operation this is
-int multi_ts_get_dnd_type(int from_type,int from_index,int to_type,int to_index,int player_index)
+int multi_ts_get_dnd_type(int from_type,int  /*from_index*/,int to_type,int to_index,int player_index)
 {	
 	net_player *pl;
 

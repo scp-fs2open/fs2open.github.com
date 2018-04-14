@@ -693,7 +693,7 @@ object *debris_create(object *source_obj, int model_num, int submodel_num, vec3d
  * Alas, poor debris_obj got whacked.  Fortunately, we know who did it, where and how hard, so we
  * can do something about it.
  */
-void debris_hit(object *debris_obj, object *other_obj, vec3d *hitpos, float damage)
+void debris_hit(object *debris_obj, object * /*other_obj*/, vec3d *hitpos, float damage)
 {
 	debris	*debris_p = &Debris[debris_obj->instance];
 

@@ -246,7 +246,7 @@ void HudGaugeReticle::initFirepointDisplay(bool firepoint, int scaleX, int scale
 	firepoint_size = size;
 }
 
-void HudGaugeReticle::render(float frametime)
+void HudGaugeReticle::render(float  /*frametime*/)
 {
 	setGaugeColor(HUD_C_BRIGHT);
 
@@ -465,7 +465,7 @@ void HudGaugeThrottle::pageIn()
 	bm_page_in_aabitmap( throttle_frames.first_frame, throttle_frames.num_frames);
 }
 
-void HudGaugeThrottle::render(float frametime)
+void HudGaugeThrottle::render(float  /*frametime*/)
 {
 	float	desired_speed, max_speed, current_speed, absolute_speed, absolute_displayed_speed, max_displayed_speed, percent_max, percent_aburn_max;
 	int	desired_y_pos, y_end;
@@ -741,7 +741,7 @@ void HudGaugeThreatIndicator::pageIn()
 	bm_page_in_aabitmap(lock_warn.first_frame, lock_warn.num_frames);
 }
 
-void HudGaugeThreatIndicator::render(float frametime)
+void HudGaugeThreatIndicator::render(float  /*frametime*/)
 {
 	setGaugeColor();
 	renderBitmap(threat_arc.first_frame+1, position[0], position[1]);
@@ -887,7 +887,7 @@ void HudGaugeWeaponLinking::pageIn()
 	}
 }
 
-void HudGaugeWeaponLinking::render(float frametime)
+void HudGaugeWeaponLinking::render(float  /*frametime*/)
 {
 	int			gauge_index=0, frame_offset=0;
 	ship_weapon	*swp;

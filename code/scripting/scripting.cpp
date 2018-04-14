@@ -1343,7 +1343,7 @@ void scripting_state_close()
 	scripting_state_inited = 0;
 }
 
-void scripting_state_do_frame(float frametime)
+void scripting_state_do_frame(float  /*frametime*/)
 {
 	// just incase something is wrong
 	if (!scripting_state_inited)

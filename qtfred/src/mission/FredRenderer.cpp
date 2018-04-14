@@ -712,7 +712,7 @@ void FredRenderer::draw_orient_sphere(object* obj, int r, int g, int b) {
 	}
 }
 
-void FredRenderer::render_model_x(vec3d* pos, grid* gridp, int col_scheme) {
+void FredRenderer::render_model_x(vec3d* pos, grid* gridp, int  /*col_scheme*/) {
 	vec3d gpos; //	Location of point on grid.
 	vec3d tpos;
 	float dxz;
@@ -756,7 +756,7 @@ void FredRenderer::render_model_x(vec3d* pos, grid* gridp, int col_scheme) {
 	rpd_line(&gpos, &tpos);
 }
 
-void FredRenderer::render_model_x_htl(vec3d* pos, grid* gridp, int col_scheme) {
+void FredRenderer::render_model_x_htl(vec3d* pos, grid* gridp, int  /*col_scheme*/) {
 	vec3d gpos; //	Location of point on grid.
 	vec3d tpos;
 	float dxz;

@@ -70,7 +70,7 @@ void handler(int signal) {
 }
 
 // Our callback to keep the window responsive while loading
-void game_busy_callback(int count) {
+void game_busy_callback(int  /*count*/) {
 	qGuiApp->processEvents();
 }
 

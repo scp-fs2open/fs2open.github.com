@@ -222,7 +222,7 @@ void HudGaugeDirectives::pageIn()
 	bm_page_in_aabitmap(directives_bottom.first_frame, directives_bottom.num_frames);
 }
 
-void HudGaugeDirectives::render(float frametime)
+void HudGaugeDirectives::render(float  /*frametime*/)
 {
 	char buf[256], *second_line;
 	int i, t, x, y, z, end, offset, bx, by, y_count;
@@ -1027,7 +1027,7 @@ void HudGaugeTrainingMessages::pageIn()
 /**
  * Displays (renders) the training message to the screen
  */
-void HudGaugeTrainingMessages::render(float frametime)
+void HudGaugeTrainingMessages::render(float  /*frametime*/)
 {
 	const char *str;
 	char buf[256];

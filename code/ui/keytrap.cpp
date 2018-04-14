@@ -29,7 +29,7 @@ void UI_KEYTRAP::draw()
 {
 }
 
-void UI_KEYTRAP::process(int focus)
+void UI_KEYTRAP::process(int  /*focus*/)
 {
 	pressed_down = 0;
 

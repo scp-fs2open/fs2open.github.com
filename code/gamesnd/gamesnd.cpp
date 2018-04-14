@@ -414,11 +414,10 @@ interface_snd_id gamesnd_get_by_iface_tbl_index(int index)
  *
  * @param tag Tag
  * @param idx_dest Sound index destination
- * @param object_name Object name being parsed
  * @param flags See the parse_sound_flags enum
  *
  */
-void parse_game_sound(const char* tag, gamesnd_id* idx_dest, const char* object_name) {
+void parse_game_sound(const char* tag, gamesnd_id* idx_dest) {
 	if(optional_string(tag))
 	{
 		SCP_string buf;
@@ -441,11 +440,10 @@ void parse_game_sound(const char* tag, gamesnd_id* idx_dest, const char* object_
  *
  * @param tag Tag
  * @param idx_dest Sound index destination
- * @param object_name Object name being parsed
  * @param flags See the parse_sound_flags enum
  *
  */
-void parse_iface_sound(const char* tag, interface_snd_id* idx_dest, const char* object_name) {
+void parse_iface_sound(const char* tag, interface_snd_id* idx_dest) {
 	Assert( Snds_iface.size() == Snds_iface_handle.size() );
 
 	if(optional_string(tag))

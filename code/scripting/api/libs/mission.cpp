@@ -978,6 +978,8 @@ ADE_FUNC(loadMission, l_Mission, "Mission name", "Loads a mission", "boolean", "
 
 ADE_FUNC(unloadMission, l_Mission, NULL, "Stops the current mission and unloads it", NULL, NULL)
 {
+	(void)L; // unused parameter
+
 	if(Game_mode & GM_IN_MISSION)
 	{
 		game_level_close();

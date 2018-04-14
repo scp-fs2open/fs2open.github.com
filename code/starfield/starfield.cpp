@@ -1755,7 +1755,7 @@ void stars_draw_debris()
 	reload_old_debris = 0;
 }
 
-void stars_draw(int show_stars, int show_suns, int show_nebulas, int show_subspace, int env, bool in_mission)
+void stars_draw(int show_stars, int show_suns, int  /*show_nebulas*/, int show_subspace, int env, bool in_mission)
 {
 	GR_DEBUG_SCOPE("Draw Stars");
 	TRACE_SCOPE(tracing::DrawStars);

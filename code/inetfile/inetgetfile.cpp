@@ -42,7 +42,7 @@ void InetGetFile::AbortGet()
 #endif
 }
 
-InetGetFile::InetGetFile(char *URL, char *localfile)
+InetGetFile::InetGetFile(char * /*URL*/, char * /*localfile*/)
 {
 #ifdef USE_INETFILE
 	m_HardError = 0;

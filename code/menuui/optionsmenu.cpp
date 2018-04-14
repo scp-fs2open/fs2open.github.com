@@ -511,7 +511,7 @@ void options_set_bmaps(int btn, int bm_index)
 }
 */
 
-void options_tab_setup(int set_palette)
+void options_tab_setup(int  /*set_palette*/)
 {
 	// char *pal;
 	int i;
@@ -1137,7 +1137,7 @@ void draw_gamma_box()
 }
 
 
-void options_menu_do_frame(float frametime)
+void options_menu_do_frame(float  /*frametime*/)
 {
 	int i, k, x, y;	
 

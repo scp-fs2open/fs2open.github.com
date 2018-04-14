@@ -104,7 +104,7 @@ void jpg_output_message(j_common_ptr cinfo)
 //
 // returns - JPEG_ERROR_NONE if successful, otherwise error code
 //
-int jpeg_read_header(const char *real_filename, CFILE *img_cfp, int *w, int *h, int *bpp, ubyte *palette)
+int jpeg_read_header(const char *real_filename, CFILE *img_cfp, int *w, int *h, int *bpp, ubyte * /*palette*/)
 {
 	CFILE *jpeg_file = NULL;
 	char filename[MAX_FILENAME_LEN];
@@ -172,7 +172,7 @@ int jpeg_read_header(const char *real_filename, CFILE *img_cfp, int *w, int *h, 
 //
 // returns - true if succesful, false otherwise
 //
-int jpeg_read_bitmap(const char *real_filename, ubyte *image_data, ubyte *palette, int dest_size, int cf_type)
+int jpeg_read_bitmap(const char *real_filename, ubyte *image_data, ubyte * /*palette*/, int dest_size, int cf_type)
 {
 	char filename[MAX_FILENAME_LEN];
 	CFILE *img_cfp = NULL;
@@ -324,7 +324,7 @@ void jpeg_cf_skip_input_data(j_decompress_ptr cinfo, long num_bytes)
 	}
 }
 
-void jpeg_cf_term_source(j_decompress_ptr cinfo)
+void jpeg_cf_term_source(j_decompress_ptr  /*cinfo*/)
 {
 	// no work necessary here
 }

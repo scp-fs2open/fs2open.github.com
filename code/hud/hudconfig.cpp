@@ -1475,7 +1475,7 @@ void hud_config_redraw_pressed_buttons()
 // hud_config_do_frame() is called from the main freespace loop while the game is in the state
 // GS_STATE_HUD_CONFIG.
 //
-void hud_config_do_frame(float frametime) 
+void hud_config_do_frame(float  /*frametime*/) 
 {
 	int k;
 
@@ -1575,7 +1575,7 @@ void hud_config_close()
 }
 
 // hud_set_default_hud_config() will set the hud configuration to default values
-void hud_set_default_hud_config(player *p)
+void hud_set_default_hud_config(player * /*p*/)
 {
 	int idx;
 

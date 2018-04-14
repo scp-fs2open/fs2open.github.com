@@ -268,7 +268,7 @@ int psnet_buffer_get_next(network_packet_buffer_list *l, ubyte *data, int *lengt
 /**
  * Wrappers around select() and recvfrom() for lagging/losing data
  */
-int RECVFROM(SOCKET s, char *buf, int len, int flags, sockaddr *from, int *fromlen, int psnet_type)
+int RECVFROM(SOCKET  /*s*/, char *buf, int  /*len*/, int  /*flags*/, sockaddr *from, int *fromlen, int psnet_type)
 {
 	network_packet_buffer_list *l;
 	net_addr addr;
@@ -455,7 +455,7 @@ void PSNET_TOP_LAYER_PROCESS()
 /**
  * Initialize psnet to use the specified port
  */
-void psnet_init( int protocol, int port_num )
+void psnet_init( int  /*protocol*/, int port_num )
 {	
 	int idx;
 	Tcp_active = 0;
@@ -935,7 +935,7 @@ void psnet_flush()
 /**
  * If the passed string is a valid IP string
  */
-int psnet_is_valid_ip_string( char *ip_string, int allow_port )
+int psnet_is_valid_ip_string( char *ip_string, int  /*allow_port*/ )
 {
 	in_addr addr;
 	struct hostent *host_ent;
@@ -1149,7 +1149,7 @@ int psnet_rel_send(PSNET_SOCKET_RELIABLE socketid, ubyte *data, int length, int 
 // -1 socket not connected
 // 0 No packet ready to receive
 // >0 Buffer filled with the number of bytes recieved
-int psnet_rel_get(PSNET_SOCKET socketid, ubyte *buffer, int max_len)
+int psnet_rel_get(PSNET_SOCKET socketid, ubyte *buffer, int  /*max_len*/)
 {	
 	int i;
 	
@@ -1774,7 +1774,7 @@ int psnet_get_ip()
 /**
  * Initialize reliable sockets
  */
-int psnet_init_rel_tcp(int port, int should_listen)
+int psnet_init_rel_tcp(int  /*port*/, int  /*should_listen*/)
 {
 	// success
 	return 1;

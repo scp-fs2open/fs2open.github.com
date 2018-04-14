@@ -2219,7 +2219,7 @@ void parse_main_hall_table(const char* filename)
 
 				for (idx = 0; idx < m->num_random_intercom_sounds; idx++) {
 					// intercom sound id
-					parse_iface_sound("+Intercom sound:", &m->intercom_sounds.at(idx), "+Intercom sound:");
+					parse_iface_sound("+Intercom sound:", &m->intercom_sounds.at(idx));
 				}
 
 				for (idx = 0; idx < m->num_random_intercom_sounds; idx++) {

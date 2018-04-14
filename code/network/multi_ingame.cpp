@@ -1157,7 +1157,7 @@ void send_ingame_ships_packet(net_player *player)
 	multi_io_send_reliable(player, data, packet_size);
 }
 
-void process_ingame_wings_packet( ubyte *data, header *hinfo )
+void process_ingame_wings_packet( ubyte * /*data*/, header * /*hinfo*/ )
 {
 	Int3();
 }

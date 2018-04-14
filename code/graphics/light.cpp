@@ -293,7 +293,7 @@ void gr_light_init() {
 	gr_lights.reserve(1024);
 }
 
-void gr_set_lighting(bool set, bool state) {
+void gr_set_lighting(bool  /*set*/, bool state) {
 	if (!state) {
 		return;
 	}

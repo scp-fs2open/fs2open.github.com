@@ -450,7 +450,7 @@ void HudGaugeMessages::preprocess()
  * HudGaugeMessages::render() will display the active HUD messages on the HUD.  It will scroll
  * the messages up when a new message arrives.
  */
-void HudGaugeMessages::render(float frametime)
+void HudGaugeMessages::render(float  /*frametime*/)
 {
 	hud_set_default_color();
 
@@ -1004,7 +1004,7 @@ void hud_scrollback_close()
 
 }
 
-void hud_scrollback_do_frame(float frametime)
+void hud_scrollback_do_frame(float  /*frametime*/)
 {
 	int i, k, x, y;
 	int font_height = gr_get_font_height();
@@ -1355,7 +1355,7 @@ void HudGaugeFixedMessages::initCenterText(bool center) {
 	center_text = center;
 }
 
-void HudGaugeFixedMessages::render(float frametime) {
+void HudGaugeFixedMessages::render(float  /*frametime*/) {
 	HUD_ft	*hp;
 
 	hp = &HUD_fixed_text[0];

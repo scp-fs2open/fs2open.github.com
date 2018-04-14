@@ -170,7 +170,7 @@ void parse_ssm(const char *filename)
 			}
 
 			s.sound_index = gamesnd_id();
-			parse_game_sound("+Alarm Sound:", &s.sound_index, s.name);
+			parse_game_sound("+Alarm Sound:", &s.sound_index);
 
 			// see if we have a valid weapon
 			s.weapon_info_index = weapon_info_lookup(weapon_name);

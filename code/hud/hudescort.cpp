@@ -285,7 +285,7 @@ int HudGaugeEscort::setGaugeColorEscort(int index, int team)
 	return is_flashing;
 }
 
-void HudGaugeEscort::render(float frametime)
+void HudGaugeEscort::render(float  /*frametime*/)
 {
 	int	i = 0;
 
@@ -988,7 +988,7 @@ void hud_remove_ship_from_escort(int objnum)
  * @param objp      The object hit
  * @param quadrant  Shield quadrant on the object that was hit, alternatively -1 if no shield
  */
-void hud_escort_ship_hit(object *objp, int quadrant)
+void hud_escort_ship_hit(object *objp, int  /*quadrant*/)
 {
 	// no ships on the escort list in multiplayer dogfight
 	if(MULTI_DOGFIGHT){

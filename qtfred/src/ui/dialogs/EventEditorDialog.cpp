@@ -382,7 +382,7 @@ void EventEditorDialog::rootNodeDeleted(int node) {
 
 	set_current_event(index);
 }
-void EventEditorDialog::rootNodeRenamed(int node) {
+void EventEditorDialog::rootNodeRenamed(int /*node*/) {
 }
 void EventEditorDialog::rootNodeFormulaChanged(int old, int node) {
 	int i;

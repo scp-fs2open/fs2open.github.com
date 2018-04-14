@@ -481,7 +481,6 @@ static void gr_string_old(float sx,
 						  const char* s,
 						  const char* end,
 						  font::font* fontData,
-						  float top,
 						  float height,
 						  int resize_mode) {
 	GR_DEBUG_SCOPE("Render VFNT string");
@@ -773,7 +772,7 @@ void gr_string(float sx, float sy, const char* s, int resize_mode, int in_length
 		VFNTFont* fnt = static_cast<VFNTFont*>(currentFont);
 		fo::font* fontData = fnt->getFontData();
 
-		gr_string_old(sx, sy, s, s + length, fontData, fnt->getTopOffset(), fnt->getHeight(), resize_mode);
+		gr_string_old(sx, sy, s, s + length, fontData, fnt->getHeight(), resize_mode);
 	} else if (currentFont->getType() == NVG_FONT) {
 		GR_DEBUG_SCOPE("Render TTF string");
 
@@ -857,7 +856,6 @@ void gr_string(float sx, float sy, const char* s, int resize_mode, int in_length
 									  text,
 									  text + 1,
 									  nvgFont->getSpecialCharacterFont(),
-									  nvgFont->getTopOffset(),
 									  nvgFont->getHeight(),
 									  resize_mode);
 					}

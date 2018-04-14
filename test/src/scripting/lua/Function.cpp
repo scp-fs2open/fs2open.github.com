@@ -24,7 +24,7 @@ int testErrorFunctionTwoRetVals(lua_State* L) {
 	return 2;
 }
 
-int testErrorFunctionNoRetVals(lua_State* L) {
+int testErrorFunctionNoRetVals(lua_State*  /*L*/) {
 	return 0;
 }
 

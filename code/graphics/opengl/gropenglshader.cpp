@@ -337,7 +337,7 @@ void opengl_shader_shutdown()
 	GL_shader.clear();
 }
 
-static SCP_string opengl_shader_get_header(shader_type type_id, int flags, shader_stage stage) {
+static SCP_string opengl_shader_get_header(shader_type type_id, int flags) {
 	SCP_stringstream sflags;
 
 	sflags << "#version " << GLSL_version << " core\n";
@@ -476,9 +476,9 @@ static SCP_string handle_includes(const char* filename, const SCP_string& origin
 	return output.str();
 }
 
-static SCP_vector<SCP_string> opengl_get_shader_content(shader_type type_id, const char* filename, int flags, shader_stage stage) {
+static SCP_vector<SCP_string> opengl_get_shader_content(shader_type type_id, const char* filename, int flags, shader_stage) {
 	SCP_vector<SCP_string> parts;
-	parts.push_back(opengl_shader_get_header(type_id, flags, stage));
+	parts.push_back(opengl_shader_get_header(type_id, flags));
 
 	parts.push_back(handle_includes(filename, opengl_load_shader(filename)));
 

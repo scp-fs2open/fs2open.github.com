@@ -1263,7 +1263,7 @@ void ai_add_wing_goal_sexp(int sexp, int type, int wingnum)
 // this name can be a shipname or a wingname)
 // docker_point and dockee_point are used for the AI_GOAL_DOCK command to tell two ships where to dock
 // immediate means to process this order right away
-void ai_add_goal_ship_internal( ai_info *aip, int goal_type, char *name, int docker_point, int dockee_point, int immediate )
+void ai_add_goal_ship_internal( ai_info *aip, int goal_type, char *name, int  /*docker_point*/, int  /*dockee_point*/, int immediate )
 {
 	int gindex;
 	ai_goal *aigp;

@@ -439,7 +439,7 @@ void HudGaugeRadarOrb::drawOutlinesHtl()
     g3_done_instance(true);
 }
 
-void HudGaugeRadarOrb::render(float frametime)
+void HudGaugeRadarOrb::render(float  /*frametime*/)
 {
 	float	sensors_str;
 	int ok_to_blit_radar;

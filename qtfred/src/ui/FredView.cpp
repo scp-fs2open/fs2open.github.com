@@ -502,10 +502,10 @@ void FredView::windowDeactivated() {
 
 	_viewport->Cursor_over = -1;
 }
-void FredView::on_actionHide_Marked_Objects_triggered(bool enabled) {
+void FredView::on_actionHide_Marked_Objects_triggered(bool  /*enabled*/) {
 	fred->hideMarkedObjects();
 }
-void FredView::on_actionShow_All_Hidden_Objects_triggered(bool enabled) {
+void FredView::on_actionShow_All_Hidden_Objects_triggered(bool  /*enabled*/) {
 	fred->showHiddenObjects();
 }
 void FredView::onUpdateViewSpeeds() {
@@ -793,7 +793,7 @@ void FredView::orientEditorTriggered() {
 void FredView::onUpdateEditorActions() {
 	ui->actionObjects->setEnabled(query_valid_object(fred->currentObject));
 }
-void FredView::on_actionWingForm_triggered(bool enabled) {
+void FredView::on_actionWingForm_triggered(bool  /*enabled*/) {
 	object* ptr = GET_FIRST(&obj_used_list);
 	bool found = false;
 	while (ptr != END_OF_LIST(&obj_used_list)) {
@@ -832,7 +832,7 @@ void FredView::on_actionWingForm_triggered(bool enabled) {
 		// TODO: Autosave
 	}
 }
-void FredView::on_actionWingDisband_triggered(bool enabled) {
+void FredView::on_actionWingDisband_triggered(bool  /*enabled*/) {
 	if (fred->query_single_wing_marked()) {
 		fred->remove_wing(fred->cur_wing);
 	} else {

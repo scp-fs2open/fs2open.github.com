@@ -1403,7 +1403,7 @@ void HudGaugeExtraTargetData::pageIn()
 /**
  * @note Formerly hud_targetbox_show_extra_ship_info(target_shipp, target_objp) (Swifty)
  */
-void HudGaugeExtraTargetData::render(float frametime)
+void HudGaugeExtraTargetData::render(float  /*frametime*/)
 {
 	char outstr[256], tmpbuf[256];
 	int has_orders = 0;
@@ -1898,7 +1898,7 @@ void HudGaugeTargetBox::maybeRenderCargoScan(ship_info *target_sip)
 	}
 }
 
-void HudGaugeTargetBox::showTargetData(float frametime)
+void HudGaugeTargetBox::showTargetData(float  /*frametime*/)
 {
 	char outstr[256];						// temp buffer for sprintf'ing hud output
 	int w,h;									// width and height of string about to print

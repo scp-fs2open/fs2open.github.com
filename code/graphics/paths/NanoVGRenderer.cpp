@@ -462,7 +462,7 @@ int NanoVGRenderer::createTexture(int type, int w, int h, int imageFlags, const 
 
 	return id;
 }
-int NanoVGRenderer::updateTexture(int image, int x, int y, int w, int h, const unsigned char* data) {
+int NanoVGRenderer::updateTexture(int image, int  /*x*/, int  /*y*/, int  /*w*/, int  /*h*/, const unsigned char* data) {
 	auto texture = getTexture(image);
 	if (texture == nullptr) {
 		return 0;

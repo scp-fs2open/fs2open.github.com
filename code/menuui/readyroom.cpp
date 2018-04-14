@@ -761,7 +761,7 @@ int sim_room_reset_campaign()
 */
 
 // Decide if we should offer choice to resume this savegame
-int sim_room_can_resume_savegame(char *savegame_filename)
+int sim_room_can_resume_savegame(char * /*savegame_filename*/)
 {
 	#ifdef FREESPACE_SAVERESTORE_SYSTEM
 	char savegame_mission[MAX_FILENAME_LEN];
@@ -1171,7 +1171,7 @@ void sim_room_close()
 //
 // Called once per frame to process user input for the sim_room Assignment Screen
 //
-void sim_room_do_frame(float frametime)
+void sim_room_do_frame(float  /*frametime*/)
 {
 	char buf[256];
 	int i, k, y, line;
@@ -1355,7 +1355,7 @@ void sim_room_do_frame(float frametime)
 	gr_flip();
 }
 
-void sim_room_blit_icons(int line_index, int y_start, fs_builtin_mission *fb, int is_md)
+void sim_room_blit_icons(int line_index, int y_start, fs_builtin_mission *fb, int  /*is_md*/)
 {
 	int is_from_volition = 0;	
 
@@ -1747,7 +1747,7 @@ void campaign_room_close()
 	Pilot.save_player();
 }
 
-void campaign_room_do_frame(float frametime)
+void campaign_room_do_frame(float  /*frametime*/)
 {
 	char buf[256];
 	char line_text[MAX_INFO_LINE_LEN];

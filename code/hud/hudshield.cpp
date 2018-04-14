@@ -536,7 +536,7 @@ HudGauge(_gauge_object, _gauge_config, false, false, (VM_EXTERNAL | VM_DEAD_VIEW
 {
 }
 
-void HudGaugeShield::render(float frametime)
+void HudGaugeShield::render(float  /*frametime*/)
 {
 }
 
@@ -865,7 +865,7 @@ HudGaugeShield(HUD_OBJECT_PLAYER_SHIELD, HUD_PLAYER_SHIELD_ICON)
 {
 }
 
-void HudGaugeShieldPlayer::render(float frametime)
+void HudGaugeShieldPlayer::render(float  /*frametime*/)
 {
 	showShields(Player_obj, SHIELD_HIT_PLAYER);
 }
@@ -876,7 +876,7 @@ HudGaugeShield(HUD_OBJECT_TARGET_SHIELD, HUD_TARGET_SHIELD_ICON)
 
 }
 
-void HudGaugeShieldTarget::render(float frametime)
+void HudGaugeShieldTarget::render(float  /*frametime*/)
 {
 	if (Player_ai->target_objnum == -1)
 		return;
@@ -925,7 +925,7 @@ void HudGaugeShieldMini::initBitmaps(char *fname)
 	}
 }
 
-void HudGaugeShieldMini::render(float frametime)
+void HudGaugeShieldMini::render(float  /*frametime*/)
 {
 	if (Player_ai->target_objnum == -1)
 		return;

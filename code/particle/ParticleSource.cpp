@@ -290,7 +290,7 @@ bool ParticleSource::isValid() const {
 	return true;
 }
 
-void ParticleSource::initializeThrusterOffset(weapon* wp, weapon_info* wip) {
+void ParticleSource::initializeThrusterOffset(weapon*  /*wp*/, weapon_info* wip) {
 	polymodel* pm = model_get(wip->model_num);
 
 	if (pm->n_thrusters < 1) {

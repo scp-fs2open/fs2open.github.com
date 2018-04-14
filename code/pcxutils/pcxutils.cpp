@@ -213,7 +213,7 @@ typedef struct { ubyte b, g, r, a; } COLOR32;
 #endif
 
 //int pcx_read_bitmap_16bpp( char * real_filename, ubyte *org_data, ubyte bpp, int aabitmap, int nondark )
-int pcx_read_bitmap( const char * real_filename, ubyte *org_data, ubyte *pal, int byte_size, int aabitmap, bool mask_bitmap, int cf_type )
+int pcx_read_bitmap( const char * real_filename, ubyte *org_data, ubyte * /*pal*/, int byte_size, int aabitmap, bool mask_bitmap, int cf_type )
 {
 	PCXHeader header;
 	CFILE * PCXfile;

@@ -1798,7 +1798,7 @@ void hud_squadmsg_msg_all_fighters()
 
 // called to actually bring in a reinforcement.  For single player games, always gets called.
 // for multiplayer games, always called on the server side.  Clients should never get here
-void hud_squadmsg_call_reinforcement(int reinforcement_num, int player_num)
+void hud_squadmsg_call_reinforcement(int reinforcement_num, int  /*player_num*/)
 {
 	int i, delay;
 	reinforcements *rp;
@@ -2134,7 +2134,7 @@ void hud_squadmsg_wing_command()
 // mode is entered.
 //
 // do_scroll indicates whether we should save the page up and page down keys
-void hud_squadmsg_save_keys( int do_scroll )
+void hud_squadmsg_save_keys( int  /*do_scroll*/ )
 {
 //	int i, j;
 
@@ -2629,7 +2629,7 @@ bool HudGaugeSquadMessage::canRender()
 	return true;
 }
 
-void HudGaugeSquadMessage::render(float frametime)
+void HudGaugeSquadMessage::render(float  /*frametime*/)
 {
 	char *title;
 	int bx, by, sx, sy, i, nitems, none_valid, messaging_allowed;

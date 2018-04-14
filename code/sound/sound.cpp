@@ -284,7 +284,7 @@ void snd_spew_debug_info()
 //						failure => -1
 //
 //int snd_load( char *filename, int hardware, int use_ds3d, int *sig)
-int snd_load( game_snd_entry *entry, int flags, int allow_hardware_load )
+int snd_load( game_snd_entry *entry, int flags, int  /*allow_hardware_load*/ )
 {
 	int				type;
 	sound_info		*si;
@@ -604,7 +604,7 @@ MONITOR( Num3DSoundsLoaded )
 // returns:		-1		=>		sound could not be played
 //					n		=>		handle for instance of sound
 //
-int snd_play_3d(game_snd *gs, vec3d *source_pos, vec3d *listen_pos, float radius, vec3d *source_vel, int looping, float vol_scale, int priority, vec3d *sound_fvec, float range_factor, int force, bool is_ambient )
+int snd_play_3d(game_snd *gs, vec3d *source_pos, vec3d *listen_pos, float radius, vec3d *source_vel, int looping, float vol_scale, int priority, vec3d * /*sound_fvec*/, float range_factor, int force, bool  /*is_ambient*/ )
 {
 	int		handle;
 	vec3d	vector_to_sound;
@@ -815,7 +815,7 @@ int snd_get_3d_vol_and_pan(game_snd *gs, vec3d *pos, float* vol, float *pan, flo
  * @param scriptingUpdateVolume if true the looping sound value is updated default is TRUE
  * @return -1 on error, else the handle for this playing sound
  */
-int snd_play_looping( game_snd *gs, float pan, int start_loop, int stop_loop, float vol_scale, int scriptingUpdateVolume)
+int snd_play_looping( game_snd *gs, float pan, int  /*start_loop*/, int  /*stop_loop*/, float vol_scale, int scriptingUpdateVolume)
 {	
 	float volume;
 	int	handle = -1;

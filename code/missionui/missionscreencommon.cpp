@@ -236,7 +236,7 @@ void common_redraw_pressed_buttons()
 	}
 }
 
-void common_buttons_maybe_reload(UI_WINDOW *ui_window)
+void common_buttons_maybe_reload(UI_WINDOW * /*ui_window*/)
 {
 	UI_BUTTON	*b;
 	int			i;
@@ -597,7 +597,7 @@ void common_reset_buttons()
 
 // common_select_do() is called once per loop in the interface screens and is used
 // for drawing and changing the common animations and blitting common bitmaps.
-int common_select_do(float frametime)
+int common_select_do(float  /*frametime*/)
 {
 	int	k, new_k;
 

@@ -529,7 +529,7 @@ void debrief_reset()
 /**
  * Set up the screen regions.  A mulitplayer briefing will look different than a single player briefing.
  */
-void brief_init_screen(int multiplayer_flag)
+void brief_init_screen(int  /*multiplayer_flag*/)
 {
 	bscreen.map_x1			= Brief_grid_coords[gr_screen.res][0];
 	bscreen.map_x2			= Brief_grid_coords[gr_screen.res][0] + Brief_grid_coords[gr_screen.res][2];
@@ -1886,7 +1886,7 @@ float brief_camera_get_dist_moved(float elapsed_time)
 /**
  * Update the camera position
  */
-void brief_camera_move(float frametime, int stage_num)
+void brief_camera_move(float frametime, int  /*stage_num*/)
 {
 	vec3d	dist_moved;
 	float		dist;

@@ -146,7 +146,7 @@ SCP_vector<SCP_string> SexpTreeEditorInterface::getMessages() {
 
 	return list;
 }
-SCP_vector<SCP_string> SexpTreeEditorInterface::getMissionGoals(const SCP_string& reference_name) {
+SCP_vector<SCP_string> SexpTreeEditorInterface::getMissionGoals(const SCP_string&  /*reference_name*/) {
 	SCP_vector<SCP_string> list;
 
 	for (auto i = 0; i < Num_goals; i++) {
@@ -155,7 +155,7 @@ SCP_vector<SCP_string> SexpTreeEditorInterface::getMissionGoals(const SCP_string
 
 	return list;
 }
-SCP_vector<SCP_string> SexpTreeEditorInterface::getMissionEvents(const SCP_string& reference_name) {
+SCP_vector<SCP_string> SexpTreeEditorInterface::getMissionEvents(const SCP_string&  /*reference_name*/) {
 	SCP_vector<SCP_string> list;
 
 	for (auto i = 0; i < Num_mission_events; i++) {
@@ -1552,7 +1552,7 @@ void sexp_tree::expand_branch(QTreeWidgetItem* h) {
 	}
 }
 
-void sexp_tree::merge_operator(int node) {
+void sexp_tree::merge_operator(int  /*node*/) {
 /*	char buf[256];
 	int child;
 
@@ -5441,7 +5441,7 @@ void sexp_tree::deleteActionHandler() {
 void sexp_tree::editDataActionHandler() {
 	beginItemEdit(currentItem());
 }
-void sexp_tree::handleItemChange(QTreeWidgetItem* item, int column) {
+void sexp_tree::handleItemChange(QTreeWidgetItem* item, int  /*column*/) {
 	if (!_currently_editing) {
 		return;
 	}

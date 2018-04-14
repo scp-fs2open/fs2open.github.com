@@ -3888,7 +3888,7 @@ int multi_pack_unpack_orient( int write, ubyte *data, matrix *orient)
 // Packs/unpacks velocity
 // Returns number of bytes read or written.
 // #define OO_VEL_RET_SIZE							4
-int multi_pack_unpack_vel( int write, ubyte *data, matrix *orient, vec3d *pos, physics_info *pi)
+int multi_pack_unpack_vel( int write, ubyte *data, matrix *orient, vec3d * /*pos*/, physics_info *pi)
 {
 	bitbuffer buf;
 
@@ -3936,7 +3936,7 @@ int multi_pack_unpack_vel( int write, ubyte *data, matrix *orient, vec3d *pos, p
 // Packs/unpacks desired_velocity
 // Returns number of bytes read or written.
 // #define OO_DESIRED_VEL_RET_SIZE				3
-int multi_pack_unpack_desired_vel( int write, ubyte *data, matrix *orient, vec3d *pos, physics_info *pi, ship_info *sip)
+int multi_pack_unpack_desired_vel( int write, ubyte *data, matrix *orient, vec3d * /*pos*/, physics_info *pi, ship_info *sip)
 {
 	bitbuffer buf;
 
@@ -4036,7 +4036,7 @@ int multi_pack_unpack_desired_vel( int write, ubyte *data, matrix *orient, vec3d
 // Packs/unpacks rotational velocity
 // Returns number of bytes read or written.
 // #define OO_ROTVEL_RET_SIZE						4
-int multi_pack_unpack_rotvel( int write, ubyte *data, matrix *orient, vec3d *pos, physics_info *pi)
+int multi_pack_unpack_rotvel( int write, ubyte *data, matrix * /*orient*/, vec3d * /*pos*/, physics_info *pi)
 {
 	bitbuffer buf;
 
@@ -4076,7 +4076,7 @@ int multi_pack_unpack_rotvel( int write, ubyte *data, matrix *orient, vec3d *pos
 // Packs/unpacks desired rotvel
 // Returns number of bytes read or written.
 // #define OO_DESIRED_ROTVEL_RET_SIZE			3
-int multi_pack_unpack_desired_rotvel( int write, ubyte *data, matrix *orient, vec3d *pos, physics_info *pi, ship_info *sip)
+int multi_pack_unpack_desired_rotvel( int write, ubyte *data, matrix * /*orient*/, vec3d * /*pos*/, physics_info *pi, ship_info *sip)
 {
 	bitbuffer buf;
 	int fields = 0;

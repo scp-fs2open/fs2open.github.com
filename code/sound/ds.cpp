@@ -246,7 +246,7 @@ int ds_get_sid()
 	return (int)(sound_buffers.size() - 1);
 }
 
-int ds_load_buffer(int *sid, int flags, ffmpeg::WaveFile* file)
+int ds_load_buffer(int *sid, int  /*flags*/, ffmpeg::WaveFile* file)
 {
 	Assert(sid != NULL);
 	Assert(file != NULL);
@@ -1447,7 +1447,7 @@ unsigned int ds_get_play_position(int channel_id)
 /**
  * @todo Documentation
  */
-unsigned int ds_get_write_position(int channel_id)
+unsigned int ds_get_write_position(int  /*channel_id*/)
 {
 	return 0;
 }
@@ -1503,7 +1503,7 @@ int ds_get_number_channels()
 /**
  * Retreive raw data from a sound buffer
  */
-int ds_get_data(int sid, char *data)
+int ds_get_data(int  /*sid*/, char * /*data*/)
 {
 	return -1;
 }

@@ -1987,7 +1987,7 @@ static void parse_ship_sound(const char *name, GameSounds id, ship_info *sip)
 
 	gamesnd_id temp_index;
 
-	parse_game_sound(name, &temp_index, sip->name);
+	parse_game_sound(name, &temp_index);
 
 	if (temp_index.isValid())
 		sip->ship_sounds.insert(std::make_pair(id, temp_index));
@@ -2728,7 +2728,7 @@ static int parse_ship_values(ship_info* sip, const bool is_template, const bool 
 			stuff_float(&degrees);
 			sip->collision_physics.landing_rest_angle = cosf(fl_radians(90.0f - degrees));
 		}
-		parse_game_sound("+Landing Sound:", &sip->collision_physics.landing_sound_idx, sip->name);
+		parse_game_sound("+Landing Sound:", &sip->collision_physics.landing_sound_idx);
 	}
 
 
@@ -2950,8 +2950,8 @@ static int parse_ship_values(ship_info* sip, const bool is_template, const bool 
 		}
 	}
 
-	parse_game_sound("$Warpin Start Sound:", &sip->warpin_snd_start, sip->name);
-	parse_game_sound("$Warpin End Sound:", &sip->warpin_snd_end, sip->name);
+	parse_game_sound("$Warpin Start Sound:", &sip->warpin_snd_start);
+	parse_game_sound("$Warpin End Sound:", &sip->warpin_snd_end);
 
 	if(optional_string("$Warpin speed:"))
 	{
@@ -3002,8 +3002,8 @@ static int parse_ship_values(ship_info* sip, const bool is_template, const bool 
 		}
 	}
 
-	parse_game_sound("$Warpout Start Sound:", &sip->warpout_snd_start, sip->name);
-	parse_game_sound("$Warpout End Sound:", &sip->warpout_snd_end, sip->name);
+	parse_game_sound("$Warpout Start Sound:", &sip->warpout_snd_start);
+	parse_game_sound("$Warpout End Sound:", &sip->warpout_snd_end);
 
 	if(optional_string("$Warpout engage time:"))
 	{
@@ -3592,16 +3592,16 @@ static int parse_ship_values(ship_info* sip, const bool is_template, const bool 
 		stuff_int(&sip->scan_time);
 
 	//Parse the engine sound
-	parse_game_sound("$EngineSnd:", &sip->engine_snd, sip->name);
+	parse_game_sound("$EngineSnd:", &sip->engine_snd);
 
 	if(optional_string("$Minimum Engine Volume:"))
 		stuff_float(&sip->min_engine_vol);
 
 	//Parse optional sound to be used for beginning of a glide
-	parse_game_sound("$GlideStartSnd:", &sip->glide_start_snd, sip->name);
+	parse_game_sound("$GlideStartSnd:", &sip->glide_start_snd);
 
 	//Parse optional sound to be used for end of a glide
-	parse_game_sound("$GlideEndSnd:", &sip->glide_end_snd, sip->name);
+	parse_game_sound("$GlideEndSnd:", &sip->glide_end_snd);
 
 	parse_ship_sounds(sip);
 	
@@ -3993,9 +3993,9 @@ static int parse_ship_values(ship_info* sip, const bool is_template, const bool 
 			stuff_float(&mtp->length);
 		}
 
-		parse_game_sound("+StartSnd:", &mtp->start_snd, sip->name);
-		parse_game_sound("+LoopSnd:", &mtp->loop_snd, sip->name);
-		parse_game_sound("+StopSnd:", &mtp->stop_snd, sip->name);
+		parse_game_sound("+StartSnd:", &mtp->start_snd);
+		parse_game_sound("+LoopSnd:", &mtp->loop_snd);
+		parse_game_sound("+StopSnd:", &mtp->stop_snd);
 	}
 
 	if (optional_string("$Glowpoint overrides:")) {
@@ -4329,11 +4329,11 @@ static int parse_ship_values(ship_info* sip, const bool is_template, const bool 
 					WarningEx(LOCATION,"Invalid engine wash name %s specified for subsystem %s in %s '%s'", name_tmp, sp->subobj_name, info_type_name, sip->name);
 			}
 
-			parse_game_sound("$AliveSnd:", &sp->alive_snd, sp->subobj_name);
-			parse_game_sound("$DeadSnd:", &sp->dead_snd, sp->subobj_name);
-			parse_game_sound("$RotationSnd:", &sp->rotation_snd, sp->subobj_name);
-			parse_game_sound("$Turret Base RotationSnd:", &sp->turret_base_rotation_snd, sp->subobj_name);
-			parse_game_sound("$Turret Gun RotationSnd:", &sp->turret_gun_rotation_snd, sp->subobj_name);
+			parse_game_sound("$AliveSnd:", &sp->alive_snd);
+			parse_game_sound("$DeadSnd:", &sp->dead_snd);
+			parse_game_sound("$RotationSnd:", &sp->rotation_snd);
+			parse_game_sound("$Turret Base RotationSnd:", &sp->turret_base_rotation_snd);
+			parse_game_sound("$Turret Gun RotationSnd:", &sp->turret_gun_rotation_snd);
 
 			if (optional_string("$Turret BaseSnd Volume:"))
 				stuff_float(&sp->turret_base_rotation_snd_mult);
@@ -4649,11 +4649,11 @@ static int parse_ship_values(ship_info* sip, const bool is_template, const bool 
 							current_trigger->end = 0;
 
 						if(optional_string("$Sound:")){
-							parse_game_sound("+Start:", &current_trigger->start_sound, sip->name);
+							parse_game_sound("+Start:", &current_trigger->start_sound);
 
-							parse_game_sound("+Loop:", &current_trigger->loop_sound, sip->name);
+							parse_game_sound("+Loop:", &current_trigger->loop_sound);
 
-							parse_game_sound("+End:", &current_trigger->end_sound, sip->name);
+							parse_game_sound("+End:", &current_trigger->end_sound);
 
 							required_string("+Radius:");
 							stuff_float(&current_trigger->snd_rad );
@@ -11525,7 +11525,7 @@ void ship_process_targeting_lasers()
  *	Calls ::weapon_hit(), indirectly via ::weapon_detonate(), to detonate weapon.
  *	If it's a weapon that spawns particles, those will be released.
  */
-static int maybe_detonate_weapon(ship_weapon *swp, object *src)
+static int maybe_detonate_weapon(ship_weapon *swp, object* /*src*/)
 {
 	int			objnum = swp->last_fired_weapon_index;
 	object		*objp;
@@ -14287,7 +14287,7 @@ int ship_class_query_general_type(int ship_class)
 /**
  * Returns true
  */
-int ship_docking_valid(int docker, int dockee)
+int ship_docking_valid(int  /*docker*/, int  /*dockee*/)
 {
 	// Goober5000
 	// So many people have asked for this function to be extended that it's making less
@@ -17228,7 +17228,7 @@ bool ship_has_dock_bay(int shipnum)
 }
 
 // Goober5000
-bool ship_useful_for_departure(int shipnum, int path_mask)
+bool ship_useful_for_departure(int shipnum, int  /*path_mask*/)
 {
 	Assert( shipnum >= 0 && shipnum < MAX_SHIPS );
 
@@ -18753,7 +18753,7 @@ int ship_render_get_insignia(object* obj, ship* shipp)
 	return -1;
 }
 
-void ship_render_set_animated_effect(model_render_params *render_info, ship *shipp, uint *render_flags)
+void ship_render_set_animated_effect(model_render_params *render_info, ship *shipp, uint * /*render_flags*/)
 {
 	if ( !shipp->shader_effect_active || Rendering_to_shadow_map ) {
 		return;

@@ -153,7 +153,7 @@ int gr_opengl_bm_set_render_target(int n, int face)
 	return 0;
 }
 
-bool gr_opengl_bm_data(int n, bitmap* bm)
+bool gr_opengl_bm_data(int  /*n*/, bitmap*  /*bm*/)
 {
 	// Do nothing here
 	return true;

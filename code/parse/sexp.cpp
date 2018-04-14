@@ -7441,7 +7441,7 @@ int sexp_skill_level_at_least(int n)
 	return SEXP_FALSE;
 }
 
-int sexp_was_promotion_granted(int n)
+int sexp_was_promotion_granted(int  /*n*/)
 {
 	if (Player->flags & PLAYER_FLAGS_PROMOTED)
 		return SEXP_TRUE;
@@ -11256,7 +11256,7 @@ void sexp_next_mission(int n)
 /**
  * Deal with the end-of-campaign sexpression. 
  */
-void sexp_end_of_campaign(int n)
+void sexp_end_of_campaign(int  /*n*/)
 {
 	// this is really a do-nothing sexpression.  It is pretty much a placeholder to allow
 	// campaigns to have repeat-mission branches at the end of the campaign.  By not setting
@@ -15392,7 +15392,7 @@ int sexp_query_orders (int n)
 }
 
 // Karajorma
-void sexp_reset_orders (int n)
+void sexp_reset_orders (int  /*n*/)
 {
 	Squadmsg_history.clear();
 }
@@ -19977,7 +19977,7 @@ void sexp_supernova_start(int node)
 	supernova_start(eval_num(node));
 }
 
-void sexp_supernova_stop(int node)
+void sexp_supernova_stop(int  /*node*/)
 {
 	supernova_stop();
 }
@@ -28558,7 +28558,7 @@ void update_sexp_references(const char *old_name, const char *new_name, int form
 	}
 }
 
-int query_referenced_in_sexp(int mode, const char *name, int *node)
+int query_referenced_in_sexp(int  /*mode*/, const char *name, int *node)
 {
 	int i, n, j;
 

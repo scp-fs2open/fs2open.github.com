@@ -1740,7 +1740,7 @@ void draw_ship_icon_with_number(int screen_offset, int ship_class)
 //
 // UPDATE: this code now initializes a 3d model of a ship to spin like it does
 // in the tech room - UnknownPlayer
-void start_ship_animation(int ship_class, int play_sound)
+void start_ship_animation(int ship_class, int  /*play_sound*/)
 {
 	char *p;
 	char animation_filename[CF_MAX_FILENAME_LENGTH+4];

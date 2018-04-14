@@ -5047,7 +5047,7 @@ void multi_create_set_selected_team(int team)
 	}
 }
 
-void multi_create_handle_join(net_player *pl)
+void multi_create_handle_join(net_player * /*pl*/)
 {
 	// for now just play a bloop sound
 	gamesnd_play_iface(InterfaceSounds::ICON_DROP_ON_WING);
@@ -7156,7 +7156,7 @@ void multi_jw_plist_blit_team()
 	}			
 }
 
-void multi_jw_handle_join(net_player *pl)
+void multi_jw_handle_join(net_player * /*pl*/)
 {
 	// for now just play a bloop sound
 	gamesnd_play_iface(InterfaceSounds::ICON_DROP_ON_WING);

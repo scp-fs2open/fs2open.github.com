@@ -55,6 +55,9 @@ int resample_convert(SwrContext* ctx, uint8_t** output,
 #ifdef WITH_LIBAV
 	return avresample_convert(ctx, output, out_plane_size, out_samples, input, in_plane_size, in_samples);
 #else
+	(void)out_plane_size;
+	(void)in_plane_size;
+
 	return swr_convert(ctx, output, out_samples, (const uint8_t**) input, in_samples);
 #endif
 }

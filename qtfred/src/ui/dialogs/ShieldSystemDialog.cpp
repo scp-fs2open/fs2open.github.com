@@ -25,13 +25,13 @@ ShieldSystemDialog::ShieldSystemDialog(FredView* parent, EditorViewport* viewpor
 	connect(ui->shipTypeCombo, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged), this, &ShieldSystemDialog::typeSelectionChanged);
 
 	connect(ui->teamHasShieldRadio, &QRadioButton::toggled, this,
-		[this](bool param) { _model->setCurrentTeamShieldSys(ui->teamHasShieldRadio->isChecked() ? 0 : 1); });
+		[this](bool) { _model->setCurrentTeamShieldSys(ui->teamHasShieldRadio->isChecked() ? 0 : 1); });
 	connect(ui->teamNoShieldRadio, &QRadioButton::toggled, this,
-		[this](bool param) { _model->setCurrentTeamShieldSys(ui->teamNoShieldRadio->isChecked() ? 1 : 0); });
+		[this](bool) { _model->setCurrentTeamShieldSys(ui->teamNoShieldRadio->isChecked() ? 1 : 0); });
 	connect(ui->typeHasShieldRadio, &QRadioButton::toggled, this,
-		[this](bool param) { _model->setCurrentTypeShieldSys(ui->typeHasShieldRadio->isChecked() ? 0 : 1); });
+		[this](bool) { _model->setCurrentTypeShieldSys(ui->typeHasShieldRadio->isChecked() ? 0 : 1); });
 	connect(ui->typeNoShieldRadio, &QRadioButton::toggled, this,
-		[this](bool param) { _model->setCurrentTypeShieldSys(ui->typeNoShieldRadio->isChecked() ? 1 : 0); });
+		[this](bool) { _model->setCurrentTypeShieldSys(ui->typeNoShieldRadio->isChecked() ? 1 : 0); });
 
 	updateUI();
 

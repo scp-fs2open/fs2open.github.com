@@ -2255,7 +2255,7 @@ void wl_maybe_flash_button()
 }
 
 
-void weapon_select_render(float frametime)
+void weapon_select_render(float  /*frametime*/)
 {
 	if ( !Background_playing ) {
 		GR_MAYBE_CLEAR_RES(Weapon_select_background_bitmap);

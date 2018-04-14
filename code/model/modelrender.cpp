@@ -928,7 +928,7 @@ float model_render_determine_depth(int obj_num, int model_num, matrix* orient, v
 	return depth;
 }
 
-int model_render_determine_detail(float depth, int obj_num, int model_num, matrix* orient, vec3d* pos, int flags, int detail_level_locked)
+int model_render_determine_detail(float depth, int  /*obj_num*/, int model_num, matrix*  /*orient*/, vec3d*  /*pos*/, int  /*flags*/, int detail_level_locked)
 {
 	int tmp_detail_level = Game_detail_level;
 

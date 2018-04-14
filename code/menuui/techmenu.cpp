@@ -1028,7 +1028,7 @@ int techroom_button_pressed(int num)
 	return 0;
 }
 
-int techroom_load_ani(anim **animpp, char *name)
+int techroom_load_ani(anim ** /*animpp*/, char *name)
 {
 	int load_attempts = 0;
 	char anim_filename[64] = "2_";
