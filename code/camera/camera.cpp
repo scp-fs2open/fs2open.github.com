@@ -802,7 +802,7 @@ void subtitle::clone(const subtitle &sub)
 	post_shaded = sub.post_shaded;
 }
 
-const subtitle &subtitle::operator=(const subtitle &sub)
+subtitle& subtitle::operator=(const subtitle &sub)
 {
 	if (this != &sub) {
 		if (image_id != -1) {

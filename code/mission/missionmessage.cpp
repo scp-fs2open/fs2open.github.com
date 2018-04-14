@@ -637,7 +637,7 @@ void parse_msgtbl()
 				}
 
 				// test extension
-				if (stricmp(ptr, ".ogg") != 0 && stricmp(ptr, ".wav"))
+				if (stricmp(ptr, ".ogg") != 0 && stricmp(ptr, ".wav") != 0)
 				{
 					Warning(LOCATION, "Simulated speech override file '%s' was provided with an extension other than .wav or .ogg!", filename);
 					continue;
@@ -1023,7 +1023,7 @@ bool message_filename_is_generic(char *filename)
 	char *ptr = strchr(truncated_filename, '.');
 
 	// extension must be a recognized sound file
-	if ((ptr == NULL) || (stricmp(ptr, ".ogg") != 0 && stricmp(ptr, ".wav")))
+	if ((ptr == NULL) || (stricmp(ptr, ".ogg") != 0 && stricmp(ptr, ".wav") != 0))
 		return false;
 
 	// truncate it

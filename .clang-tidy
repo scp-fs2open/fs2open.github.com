@@ -28,6 +28,12 @@ misc-string-literal-with-embedded-nul,\
 misc-suspicious-missing-comma,\
 misc-suspicious-semicolon,\
 misc-suspicious-string-compare,\
+misc-swapped-arguments,\
+misc-throw-by-value-catch-by-reference,\
+misc-unconventional-assign-operator,\
+misc-undelegated-constructor,\
+misc-uniqueptr-reset-release,\
+misc-unused-alias-decls,\
 -misc-static-assert,\
 "
 WarningsAsErrors: ''

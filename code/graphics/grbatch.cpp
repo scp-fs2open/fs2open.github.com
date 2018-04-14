@@ -137,7 +137,7 @@ void geometry_batcher::clone(const geometry_batcher &geo)
 	}
 }
 
-const geometry_batcher &geometry_batcher::operator=(const geometry_batcher &geo)
+geometry_batcher& geometry_batcher::operator=(const geometry_batcher &geo)
 {
 	if (this != &geo) {
 		clone(geo);

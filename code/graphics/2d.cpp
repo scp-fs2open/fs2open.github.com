@@ -2031,7 +2031,7 @@ void poly_list::make_index_buffer(SCP_vector<int> &vertex_list)
 	(*this) = buffer_list_internal;
 }
 
-poly_list& poly_list::operator = (poly_list &other_list)
+poly_list& poly_list::operator = (const poly_list &other_list)
 {
 	allocate(other_list.n_verts);
 

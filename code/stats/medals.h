@@ -44,7 +44,7 @@ public:
 	~medal_stuff();
 
 	medal_stuff(const medal_stuff &m);
-	const medal_stuff &operator=(const medal_stuff &m);
+	medal_stuff& operator=(const medal_stuff &m);
 
 private:
 	void clone(const medal_stuff &m);

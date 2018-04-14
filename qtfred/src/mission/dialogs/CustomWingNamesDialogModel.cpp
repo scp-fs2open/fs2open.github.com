@@ -121,7 +121,7 @@ SCP_string CustomWingNamesDialogModel::getTvTWing(int index) {
 }
 
 bool CustomWingNamesDialogModel::query_modified() {
-	return strcmp(Starting_wing_names[0], _m_starting[0].c_str()) != 0 || strcmp(Starting_wing_names[1], _m_starting[1].c_str()) || strcmp(Starting_wing_names[2], _m_starting[2].c_str()) != 0
+	return strcmp(Starting_wing_names[0], _m_starting[0].c_str()) != 0 || strcmp(Starting_wing_names[1], _m_starting[1].c_str()) != 0 || strcmp(Starting_wing_names[2], _m_starting[2].c_str()) != 0
 		|| strcmp(Squadron_wing_names[0], _m_squadron[0].c_str()) != 0 || strcmp(Squadron_wing_names[1], _m_squadron[1].c_str()) != 0 || strcmp(Squadron_wing_names[2], _m_squadron[2].c_str()) != 0 || strcmp(Squadron_wing_names[3], _m_squadron[3].c_str()) != 0 || strcmp(Squadron_wing_names[4], _m_squadron[4].c_str()) != 0
 		|| strcmp(TVT_wing_names[0], _m_tvt[0].c_str()) != 0 || strcmp(TVT_wing_names[1], _m_tvt[1].c_str()) != 0;;
 }

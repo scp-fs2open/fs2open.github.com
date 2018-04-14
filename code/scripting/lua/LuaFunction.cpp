@@ -145,15 +145,13 @@ LuaValueList LuaFunction::call(const LuaValueList& args) {
 			}
 		}
 
-		// Throw exception with generated message
-		LuaException exception(err_msg);
-
 		if (err_idx != 0) {
 			// Pop the error function
 			lua_pop(_luaState, 1);
 		}
 
-		throw exception;
+		// Throw exception with generated message
+		throw LuaException(err_msg);
 	}
 }
 

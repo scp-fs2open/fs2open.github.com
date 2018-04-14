@@ -18705,7 +18705,7 @@ void sexp_set_support_ship(int n)
 	// get ship class
 	n = CDR(n);
 	temp_val = ship_info_lookup(CTEXT(n));
-	if ((temp_val < 0) && ((stricmp(CTEXT(n), "<species support ship class>") != 0) && (stricmp(CTEXT(n), "<any support ship class>"))) )
+	if ((temp_val < 0) && ((stricmp(CTEXT(n), "<species support ship class>") != 0) && (stricmp(CTEXT(n), "<any support ship class>") != 0)) )
 	{
 		Warning(LOCATION, "Support ship class '%s' not found.\n", CTEXT(n));
 		return;

@@ -216,7 +216,7 @@ void medal_stuff::clone(const medal_stuff &m)
 }
 
 // assignment operator
-const medal_stuff &medal_stuff::operator=(const medal_stuff &m)
+medal_stuff& medal_stuff::operator=(const medal_stuff &m)
 {
 	if (this != &m) {
 		clone(m);

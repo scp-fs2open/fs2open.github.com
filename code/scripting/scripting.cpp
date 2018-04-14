@@ -477,12 +477,12 @@ bool ConditionedHook::ConditionsValid(int action, object *objp, int more_data)
 				{
 					if(Fred_running)
 					{
-						if(stricmp("FRED2_Open", scp->data.name) != 0 && stricmp("FRED2Open", scp->data.name) && stricmp("FRED 2", scp->data.name) != 0 && stricmp("FRED", scp->data.name) != 0)
+						if(stricmp("FRED2_Open", scp->data.name) != 0 && stricmp("FRED2Open", scp->data.name) != 0 && stricmp("FRED 2", scp->data.name) != 0 && stricmp("FRED", scp->data.name) != 0)
 							return false;
 					}
 					else
 					{
-						if(stricmp("FS2_Open", scp->data.name) != 0 && stricmp("FS2Open", scp->data.name) && stricmp("Freespace 2", scp->data.name) != 0 && stricmp("Freespace", scp->data.name) != 0)
+						if(stricmp("FS2_Open", scp->data.name) != 0 && stricmp("FS2Open", scp->data.name) != 0 && stricmp("Freespace 2", scp->data.name) != 0 && stricmp("Freespace", scp->data.name) != 0)
 							return false;
 					}
 				}
