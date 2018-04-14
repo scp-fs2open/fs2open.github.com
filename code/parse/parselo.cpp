@@ -702,7 +702,7 @@ int required_string_one_of(int arg_count, ...)
 		}
 		va_end(vl);
 
-		if (!message.compare("")) {
+		if (message.empty()) {
 			va_start(vl, arg_count);
 			message = "Required token = ";
 			for (idx = 0; idx < arg_count; idx++) {

@@ -438,7 +438,7 @@ void message_parse(bool importing_from_fsm)
 
 		stuff_string(buf, F_NAME); 
 		for (SCP_vector<SCP_string>::iterator iter = Builtin_moods.begin(); iter != Builtin_moods.end(); ++iter) {
-			if (iter->compare(buf) == 0) {
+			if (*iter == buf) {
 				msg.mood = (int)std::distance(Builtin_moods.begin(), iter);
 				found = true;
 				break;

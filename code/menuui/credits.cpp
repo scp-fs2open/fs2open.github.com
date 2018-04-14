@@ -363,7 +363,7 @@ void credits_parse_table(const char* filename)
 			// This is a bit odd but it means if a total conversion uses different credits the 
 			// Volition credit won't happen
 			// Also don't append the default credits anymore when there was already a parsed table
-			if (first_run && !Credits_parsed && !line.compare(mod_check))
+			if (first_run && !Credits_parsed && line == mod_check)
 			{
 				credits_text.append(unmodified_credits);
 			}

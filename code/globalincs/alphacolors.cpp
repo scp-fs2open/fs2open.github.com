@@ -467,7 +467,7 @@ void parse_everything_else(const char *filename)
 						// We have a string; it should be the name of a color to use.
 						stuff_string(temp, F_NAME);
 						for (j = 0; j < TOTAL_COLORS; j++) {
-							if (!temp.compare(COLOR_NAMES[j])) {
+							if (temp == COLOR_NAMES[j]) {
 								break;
 							}
 						}
@@ -549,7 +549,7 @@ void parse_everything_else(const char *filename)
 						// We have a string; it should be the name of a color to use.
 						stuff_string(temp, F_NAME);
 						for (j = 0; j < TOTAL_COLORS; j++) {
-							if (!temp.compare(COLOR_NAMES[j])) {
+							if (temp == COLOR_NAMES[j]) {
 								break;
 							}
 						}

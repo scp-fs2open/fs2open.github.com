@@ -639,7 +639,7 @@ static void fs2netd_handle_messages()
 		os_sleep(20);
 	}
 
-	if ( (bytes_read == 0) || (bytes_read < BASE_PACKET_SIZE) ) {
+	if ( (bytes_read < BASE_PACKET_SIZE) ) {
 		return;
 	}
 

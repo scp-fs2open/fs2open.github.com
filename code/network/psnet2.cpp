@@ -2174,7 +2174,7 @@ float psnet_get_time()
 void psnet_mark_received(PSNET_SOCKET_RELIABLE socket)
 {
 	// valid socket?
-	if((socket == 0xffffffff) || (socket >= MAXRELIABLESOCKETS)){
+	if((socket == 0xffffffff) || (socket >= MAXRELIABLESOCKETS)){ // NOLINT
 		return;
 	}
 

@@ -1686,7 +1686,7 @@ bool campaign_is_ignored(const char *filename)
 	drop_extension(filename_no_ext);
 
 	for (SCP_vector<SCP_string>::iterator ii = Ignored_campaigns.begin(); ii != Ignored_campaigns.end(); ++ii) {
-		if (ii->compare(filename_no_ext) == 0) {
+		if (*ii == filename_no_ext) {
 			return true;
 		}
 	}

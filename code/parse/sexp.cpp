@@ -835,7 +835,6 @@ const char *Skybox_flags[] = {
 int	Directive_count;
 int	Sexp_useful_number;  // a variable to pass useful info in from external modules
 int	Locked_sexp_true, Locked_sexp_false;
-int	Num_operators = sizeof(Operators) / sizeof(sexp_oper);
 int	Num_sexp_ai_goal_links = sizeof(Sexp_ai_goal_links) / sizeof(sexp_ai_goal_link);
 int	Sexp_clipboard = -1;  // used by Fred
 int	Training_context = 0;
@@ -3152,7 +3151,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 				// if we haven't specified all banks we need to check the number of the bank is legal
 				else {
 					int num_banks = atoi(CTEXT(node));
-					if ((num_banks >= MAX_SHIP_PRIMARY_BANKS) && (num_banks >= MAX_SHIP_SECONDARY_BANKS)) {
+					if ((num_banks >= MAX_SHIP_PRIMARY_BANKS) && (num_banks >= MAX_SHIP_SECONDARY_BANKS)) { // NOLINT
 						return SEXP_CHECK_NUM_RANGE_INVALID;
 					}
 				}
@@ -5630,7 +5629,7 @@ int sexp_special_warp_dist( int n)
 	}
 	
 	Assert( (Ships[shipnum].special_warpout_objnum >= 0) && (Ships[shipnum].special_warpout_objnum < MAX_OBJECTS));
-	if ( (Ships[shipnum].special_warpout_objnum < 0) && (Ships[shipnum].special_warpout_objnum >= MAX_OBJECTS) ) {
+	if ( (Ships[shipnum].special_warpout_objnum < 0) || (Ships[shipnum].special_warpout_objnum >= MAX_OBJECTS) ) {
 		return SEXP_NAN;
 	}
 

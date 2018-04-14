@@ -288,7 +288,7 @@ int gamesnd_lookup_name(const char* name, const SCP_vector<game_snd>& sounds)
 
 	for(SCP_vector<game_snd>::const_iterator snd = sounds.begin(); snd != sounds.end(); ++snd)
 	{
-		if (!snd->name.compare(name))
+		if (snd->name == name)
 		{
 			return i;
 		}

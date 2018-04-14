@@ -362,7 +362,7 @@ void labviewer_render_model(float frametime)
 		auto lab_envmap_override_save = Envmap_override;
 		auto lab_emissive_light_save = Cmdline_no_emissive;
 
-		if (Lab_selected_mission.compare("None") == 0) {
+		if (Lab_selected_mission == "None") {
 			Lab_render_without_light = true;
 			Cmdline_nomotiondebris = 1;
 		}
@@ -1636,7 +1636,7 @@ void labviewer_change_background_actual()
 	// (DahBlount) - Remember to load the debris anims
 	stars_load_debris(false);
 
-	if (Lab_selected_mission.compare("None") != 0)
+	if (Lab_selected_mission != "None")
 	{
 		read_file_text((Lab_selected_mission + ".fs2").c_str(), CF_TYPE_MISSIONS);
 		reset_parse();

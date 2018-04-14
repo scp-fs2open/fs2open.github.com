@@ -429,7 +429,7 @@ void parse_weapon_expl_tbl(const char *filename)
 
 			// only bother with this if we have 1 or more lods and less than max lods,
 			// otherwise the stardard level loading will take care of the different effects
-			if ((lod_check.num_lods > 0) || (lod_check.num_lods < MAX_WEAPON_EXPL_LOD)) {
+			if ((lod_check.num_lods > 0) && (lod_check.num_lods < MAX_WEAPON_EXPL_LOD)) {
 				// name check, update lod count if it already exists
 				for (i = 0; i < LOD_checker.size(); i++) {
 					if (!stricmp(LOD_checker[i].filename, lod_check.filename)) {
