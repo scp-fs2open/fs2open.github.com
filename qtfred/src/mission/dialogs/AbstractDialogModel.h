@@ -19,7 +19,7 @@ class AbstractDialogModel: public QObject {
  public:
 	AbstractDialogModel(QObject* parent, EditorViewport* viewport);
 
-	virtual ~AbstractDialogModel() {
+	~AbstractDialogModel() override {
 	}
 
 	virtual bool apply() = 0;

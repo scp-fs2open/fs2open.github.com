@@ -57,10 +57,10 @@ public:
 	bool apply() override;
 	void reject() override;
 
-	void setMissionTitle(SCP_string m_mission_title);
+	void setMissionTitle(const SCP_string& m_mission_title);
 	SCP_string getMissionTitle();
 
-	void setDesigner(SCP_string m_designer_name);
+	void setDesigner(const SCP_string& m_designer_name);
 	SCP_string getDesigner();
 
 	SCP_string getCreatedTime();
@@ -76,14 +76,14 @@ public:
 	void setMaxRespawnDelay(int);
 	int getMaxRespawnDelay();
 
-	void setSquadronName(SCP_string);
+	void setSquadronName(const SCP_string&);
 	SCP_string getSquadronName();
-	void setSquadronLogo(SCP_string);
+	void setSquadronLogo(const SCP_string&);
 	SCP_string getSquadronLogo();
 
-	void setLowResLoadingScreen(SCP_string);
+	void setLowResLoadingScreen(const SCP_string&);
 	SCP_string getLowResLoadingScren();
-	void setHighResLoadingScreen(SCP_string);
+	void setHighResLoadingScreen(const SCP_string&);
 	SCP_string getHighResLoadingScren();
 
 	void setDisallowSupport(bool);
@@ -98,14 +98,14 @@ public:
 	void setTrailDisplaySpeed(int);
 	int getTrailDisplaySpeed();
 
-	void setCommandSender(SCP_string);
+	void setCommandSender(const SCP_string&);
 	SCP_string getCommandSender();
 	void setCommandPersona(int);
 	int getCommandPersona();
 
 	void setEventMusic(int);
 	int getEventMusic();
-	void setSubEventMusic(SCP_string);
+	void setSubEventMusic(const SCP_string&);
 	SCP_string getSubEventMusic();
 
 	void setMissionFlag(Mission::Mission_Flags flag, bool enabled);
@@ -116,10 +116,10 @@ public:
 	void setAIProfileIndex(int m_ai_profile);
 	int getAIProfileIndex() const;
 
-	void setMissionDescText(SCP_string);
+	void setMissionDescText(const SCP_string&);
 	SCP_string getMissionDescText();
 
-	void setDesignerNoteText(SCP_string);
+	void setDesignerNoteText(const SCP_string&);
 	SCP_string getDesignerNoteText();
 
 	bool query_modified();

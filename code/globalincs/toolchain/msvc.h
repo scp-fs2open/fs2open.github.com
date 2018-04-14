@@ -74,16 +74,11 @@
 #define PTRDIFF_T_ARG "%Iu"
 #define SIZE_T_ARG    "%Id"
 
-/* The 'noexcept' keyword is not defined in versions before VS 2015. */
-#if _MSC_VER < 1900
-#	define NOEXCEPT
-#else
-#	define NOEXCEPT  noexcept
-#endif
-
 #define likely(x)
 #define unlikely(x)
 
 #define USED_VARIABLE
 
 #define FALLTHROUGH
+
+#define CLANG_ANALYZER_NORETURN

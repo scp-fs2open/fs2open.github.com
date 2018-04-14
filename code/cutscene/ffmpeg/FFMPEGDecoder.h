@@ -17,19 +17,19 @@ class FFMPEGDecoder: public Decoder {
  public:
 	FFMPEGDecoder();
 
-	virtual ~FFMPEGDecoder();
+	~FFMPEGDecoder() override;
 
-	bool initialize(const SCP_string& fileName) SCP_OVERRIDE;
+	bool initialize(const SCP_string& fileName) override;
 
-	MovieProperties getProperties() SCP_OVERRIDE;
+	MovieProperties getProperties() override;
 
-	void startDecoding() SCP_OVERRIDE;
+	void startDecoding() override;
 
-	bool hasAudio() SCP_OVERRIDE;
+	bool hasAudio() override;
 
-	bool hasSubtitles() SCP_OVERRIDE;
+	bool hasSubtitles() override;
 
-	void close() SCP_OVERRIDE;
+	void close() override;
 };
 }
 }

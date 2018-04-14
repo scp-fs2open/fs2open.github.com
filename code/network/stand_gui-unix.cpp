@@ -228,8 +228,7 @@ public:
 		passwd.assign(newPasswd);
 	}
 
-	virtual void execute()
-	{
+	void execute() override {
 		if (hasName) {
 			strcpy_s(Netgame.name, name.c_str());
 			strcpy_s(Multi_options_g.std_pname, name.c_str());
@@ -258,7 +257,7 @@ public:
             : mPlayerId(playerId) {
     }
 
-    virtual void execute() {
+	void execute() override {
         size_t foundPlayerIndex = MAX_PLAYERS;
         for (size_t idx = 0; idx < MAX_PLAYERS; idx++) {
             if (MULTI_CONNECTED(Net_players[idx])) {
@@ -278,14 +277,14 @@ private:
 
 class ShutdownServerCommand: public WebapiCommand {
 public:
-    virtual void execute() {
+	void execute() override {
         gameseq_post_event(GS_EVENT_QUIT_GAME);
     }
 };
 
 class UpdateMissionsCommand: public WebapiCommand {
 public:
-    virtual void execute() {
+	void execute() override {
         if (MULTI_IS_TRACKER_GAME) {
             // delete mvalid.cfg if it exists
             cf_delete(MULTI_VALID_MISSION_FILE, CF_TYPE_DATA);
@@ -298,14 +297,14 @@ public:
 
 class ResetGameCommand: public WebapiCommand {
 public:
-    virtual void execute() {
+	void execute() override {
         multi_quit_game(PROMPT_NONE);
     }
 };
 
 class ResetFs2NetCommand: public WebapiCommand {
 public:
-    virtual void execute() {
+	void execute() override {
         fs2netd_reset_connection();
     }
 };

@@ -20,7 +20,7 @@ class FictionViewerDialogModel: public AbstractDialogModel {
 	 };
 
 	FictionViewerDialogModel(QObject* parent, EditorViewport* viewport);
-	~FictionViewerDialogModel() = default;
+	~FictionViewerDialogModel() override = default;
 	bool apply() override;
 
 	void reject() override;

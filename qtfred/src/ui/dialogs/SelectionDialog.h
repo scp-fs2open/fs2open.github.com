@@ -19,7 +19,7 @@ class SelectionDialog : public QDialog {
 	Q_OBJECT
 public:
 	SelectionDialog(FredView* parent, EditorViewport* viewport);
-	~SelectionDialog();
+	~SelectionDialog() override;
 
  private:
 	void updateUI();

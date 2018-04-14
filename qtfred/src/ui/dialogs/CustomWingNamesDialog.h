@@ -22,7 +22,7 @@ class CustomWingNamesDialog : public QDialog
 
 public:
     explicit CustomWingNamesDialog(QWidget* parent, EditorViewport* viewport);
-    ~CustomWingNamesDialog();
+    ~CustomWingNamesDialog() override;
 
 protected:
 	void closeEvent(QCloseEvent*) override;

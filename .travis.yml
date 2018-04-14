@@ -3,7 +3,7 @@ sudo: required
 dist: trusty
 cache:
     directories:
-    - $HOME/cmake
+    - $HOME/cmake-3.6
     - $HOME/.ccache
 addons:
     apt:
@@ -86,15 +86,17 @@ matrix:
                       - g++-7
                       - *global_deps
         - os: linux
-          env: CONFIGURATION="Debug" CC=clang-3.6 CXX=clang++-3.6
+          env: CONFIGURATION="Debug" CC=clang-4.0 CXX=clang++-4.0 CMAKE_OPTIONS="-DENABLE_CLANG_TIDY=ON -DCLANG_TIDY_EXE=/usr/bin/clang-tidy-4.0"
           addons:
               apt:
                   sources:
-                      - llvm-toolchain-precise
+                      - ubuntu-toolchain-r-test
+                      - llvm-toolchain-trusty-4.0
                       - sourceline: 'ppa:beineri/opt-qt571-trusty'
                   packages:
                       - *global_deps
-                      - clang-3.6
+                      - clang-4.0
+                      - clang-tidy-4.0
                       - libc++-dev
         - os: osx
           env: CONFIGURATION="Debug"
@@ -120,15 +122,17 @@ matrix:
                       - g++-7
                       - *global_deps
         - os: linux
-          env: CONFIGURATION="Release" CC=clang-3.6 CXX=clang++-3.6
+          env: CONFIGURATION="Release" CC=clang-4.0 CXX=clang++-4.0 CMAKE_OPTIONS="-DENABLE_CLANG_TIDY=ON -DCLANG_TIDY_EXE=/usr/bin/clang-tidy-4.0"
           addons:
               apt:
                   sources:
-                      - llvm-toolchain-precise
+                      - ubuntu-toolchain-r-test
+                      - llvm-toolchain-trusty-4.0
                       - sourceline: 'ppa:beineri/opt-qt571-trusty'
                   packages:
                       - *global_deps
-                      - clang-3.6
+                      - clang-4.0
+                      - clang-tidy-4.0
                       - libc++-dev
         - os: osx
           env: CONFIGURATION="Release"
@@ -143,7 +147,7 @@ before_install:
     - "./ci/travis/before_install.sh"
 install:
     - "./ci/travis/install.sh"
-    - export PATH=$HOME/cmake/bin:$PATH
+    - export PATH=$HOME/cmake-3.6/bin:$PATH
 before_script:
     - if [ "$TRAVIS_OS_NAME" = "linux" ]; then QT_ENV_SCRIPT=$(find /opt -name 'qt*-env.sh'); source $QT_ENV_SCRIPT; fi
     - "./ci/travis/before_script.sh"

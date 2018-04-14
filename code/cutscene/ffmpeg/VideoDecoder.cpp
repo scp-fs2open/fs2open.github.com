@@ -22,14 +22,14 @@ class FFMPEGVideoFrame: public VideoFrame {
 	FFMPEGVideoFrame() : frame(nullptr) {
 	}
 
-	virtual ~FFMPEGVideoFrame() {
+	~FFMPEGVideoFrame() override {
 		if (frame != nullptr) {
 			av_freep(&frame->data[0]);
 			av_frame_free(&frame);
 		}
 	}
 
-	virtual DataPointers getDataPointers() {
+	DataPointers getDataPointers() override {
 		DataPointers ptrs;
 		ptrs.y = frame->data[0];
 		ptrs.u = frame->data[1];

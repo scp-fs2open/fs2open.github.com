@@ -20,7 +20,7 @@ WaypointEditorDialogModel::WaypointEditorDialogModel(QObject* parent, EditorView
 
 	initializeData();
 }
-bool WaypointEditorDialogModel::showErrorDialog(const SCP_string& message, const SCP_string title) {
+bool WaypointEditorDialogModel::showErrorDialog(const SCP_string& message, const SCP_string& title) {
 	if (bypass_errors) {
 		return true;
 	}

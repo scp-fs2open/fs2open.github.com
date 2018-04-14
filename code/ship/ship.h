@@ -1218,9 +1218,9 @@ public:
 	~ship_info();
 	void clone(const ship_info& other);
 
-	ship_info(ship_info&& other) NOEXCEPT;
+	ship_info(ship_info&& other) SCP_NOEXCEPT;
 
-	ship_info &operator=(ship_info&& other) NOEXCEPT;
+	ship_info &operator=(ship_info&& other) SCP_NOEXCEPT;
 
 	void free_strings();
 

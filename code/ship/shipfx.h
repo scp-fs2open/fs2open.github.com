@@ -169,7 +169,7 @@ protected:
 public:
 	WarpEffect();
 	WarpEffect(object *n_objp, int n_direction);
-	virtual ~WarpEffect() {}
+	virtual ~WarpEffect() = default;
 
 	void clear();
 	bool isValid();
@@ -215,13 +215,13 @@ private:
 public:
 	WE_Default(object *n_objp, int n_direction);
 
-	int warpStart();
-	int warpFrame(float frametime);
-	int warpShipClip(model_render_params *render_info);
-	int warpShipRender();
+	int warpStart() override;
+	int warpFrame(float frametime) override;
+	int warpShipClip(model_render_params *render_info) override;
+	int warpShipRender() override;
 
-	int getWarpPosition(vec3d *output);
-    int getWarpOrientation(matrix *output);
+	int getWarpPosition(vec3d *output) override;
+    int getWarpOrientation(matrix *output) override;
 };
 
 //********************-----CLASS: WE_BSG-----********************//
@@ -267,18 +267,18 @@ private:
 
 public:
 	WE_BSG(object *n_objp, int n_direction);
-	~WE_BSG();
+	~WE_BSG() override;
 
-	virtual void pageIn();
+	void pageIn() override;
 
-	virtual int warpStart();
-	virtual int warpFrame(float frametime);
-	virtual int warpShipClip(model_render_params *render_info);
-	virtual int warpShipRender();
-	virtual int warpEnd();
+	int warpStart() override;
+	int warpFrame(float frametime) override;
+	int warpShipClip(model_render_params *render_info) override;
+	int warpShipRender() override;
+	int warpEnd() override;
 
-	virtual int getWarpPosition(vec3d *output);
-    virtual int getWarpOrientation(matrix *output);
+	int getWarpPosition(vec3d *output) override;
+	int getWarpOrientation(matrix *output) override;
 };
 
 //********************-----CLASS: WE_Homeworld-----********************//
@@ -318,16 +318,16 @@ private:
 	float	z_offset_max;
 public:
 	WE_Homeworld(object *n_objp, int n_direction);
-	virtual ~WE_Homeworld();
+	~WE_Homeworld() override;
 
-	virtual int warpStart();
-	virtual int warpFrame(float frametime);
-	virtual int warpShipClip(model_render_params *render_info);
-	virtual int warpShipRender();
-	virtual int warpEnd();
+	int warpStart() override;
+	int warpFrame(float frametime) override;
+	int warpShipClip(model_render_params *render_info) override;
+	int warpShipRender() override;
+	int warpEnd() override;
 
-	int getWarpPosition(vec3d *output);
-    int getWarpOrientation(matrix *output);
+	int getWarpPosition(vec3d *output) override;
+    int getWarpOrientation(matrix *output) override;
 };
 
 //********************-----CLASS: WE_Hyperspace----********************//
@@ -348,8 +348,8 @@ private:
 public:
 	WE_Hyperspace(object *n_objp, int n_direction);
 
-	virtual int warpStart();
-	virtual int warpFrame(float frametime);
+	int warpStart() override;
+	int warpFrame(float frametime) override;
 };
 
 

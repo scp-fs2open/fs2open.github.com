@@ -84,7 +84,7 @@ class GenericShapeEffect : public ParticleEffect {
 	explicit GenericShapeEffect(const SCP_string& name) : ParticleEffect(name) {
 	}
 
-	virtual bool processSource(const ParticleSource* source) override {
+	bool processSource(const ParticleSource* source) override {
 		if (!m_timing.continueProcessing(source)) {
 			return false;
 		}
@@ -127,7 +127,7 @@ class GenericShapeEffect : public ParticleEffect {
 		return true;
 	}
 
-	virtual void parseValues(bool nocreate) override {
+	void parseValues(bool nocreate) override {
 		m_particleProperties.parse(nocreate);
 
 		m_shape.parse(nocreate);
@@ -172,9 +172,9 @@ class GenericShapeEffect : public ParticleEffect {
 		m_timing.applyToSource(&source);
 	}
 
-	virtual EffectType getType() const override { return m_shape.getType(); }
+	EffectType getType() const override { return m_shape.getType(); }
 
-	virtual void pageIn() override {
+	void pageIn() override {
 		m_particleProperties.pageIn();
 	}
 

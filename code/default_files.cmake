@@ -29,7 +29,7 @@ IF(MSVC)
 
 	file(WRITE "${GENERATED_SOURCE_DIR}/code/default_files.rc" "${RES_CONTENT}")
 
-	configure_file("def_files/generated_def_files-win32.h.in" "${GENERATED_SOURCE_DIR}/code/def_files/generated_def_files-win32.h")
+	configure_file("def_files/generated_def_files-win32.inc.in" "${GENERATED_SOURCE_DIR}/code/def_files/generated_def_files-win32.inc")
 
 	target_sources(code INTERFACE "${GENERATED_SOURCE_DIR}/code/default_files.rc")
 else()
@@ -76,7 +76,7 @@ else()
 		LIST(APPEND DEF_OUT_FILES ${ALL_OUTPUTS})
 	ENDFOREACH(file)
 
-	configure_file("def_files/generated_def_files-generic.h.in" "${GENERATED_SOURCE_DIR}/code/def_files/generated_def_files-generic.h")
+	configure_file("def_files/generated_def_files-generic.inc.in" "${GENERATED_SOURCE_DIR}/code/def_files/generated_def_files-generic.inc")
 	target_sources(code PRIVATE ${DEF_OUT_FILES})
 	SOURCE_GROUP("Generated Files\\Default Files" FILES ${DEF_OUT_FILES})
 

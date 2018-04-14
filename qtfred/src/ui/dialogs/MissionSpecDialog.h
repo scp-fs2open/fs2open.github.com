@@ -23,7 +23,7 @@ class MissionSpecDialog : public QDialog
 
 public:
     explicit MissionSpecDialog(FredView* parent, EditorViewport* viewport);
-    ~MissionSpecDialog();
+    ~MissionSpecDialog() override;
 
 protected:
 	void closeEvent(QCloseEvent*) override;

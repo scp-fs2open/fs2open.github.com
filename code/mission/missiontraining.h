@@ -49,9 +49,9 @@ public:
 	void initTextStartOffsets(int x, int y);
 	void initTextHeight(int h);
 	void initMaxLineWidth(int w);
-	void render(float frametime);
-	void pageIn();
-	bool canRender();
+	void render(float frametime) override;
+	void pageIn() override;
+	bool canRender() override;
 };
 
 class HudGaugeTrainingMessages: public HudGauge
@@ -59,9 +59,9 @@ class HudGaugeTrainingMessages: public HudGauge
 protected:
 public:
 	HudGaugeTrainingMessages();
-	void render(float frametime);
-	void pageIn();
-	bool canRender();
+	void render(float frametime) override;
+	void pageIn() override;
+	bool canRender() override;
 };
 
 #endif /* __MISSIONTRAINING_H__ */

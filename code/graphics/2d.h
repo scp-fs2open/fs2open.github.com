@@ -757,7 +757,7 @@ typedef struct screen {
 	void (*gf_sphere)(material *material_def, float rad);
 
 	int  (*gf_maybe_create_shader)(shader_type type, unsigned int flags);
-	void (*gf_recompile_all_shaders)(std::function<void(size_t, size_t)>progress_callback);
+	void (*gf_recompile_all_shaders)(const std::function<void(size_t, size_t)>& progress_callback);
 
 	void (*gf_clear_states)();
 

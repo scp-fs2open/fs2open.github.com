@@ -24,7 +24,7 @@ class EventEditorDialog: public QDialog {
  Q_OBJECT
  public:
 	EventEditorDialog(QWidget* parent, EditorViewport* viewport);
-	~EventEditorDialog();
+	~EventEditorDialog() override;
 
  private:
 	std::unique_ptr<Ui::EventEditorDialog> ui;

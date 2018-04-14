@@ -337,8 +337,8 @@ public:
 	void initBitmaps(const char *fname);
 	void initTextOffsets(int x, int y);
 	void initValueOffsets(int x, int y);
-	void render(float frametime);
-	void pageIn();
+	void render(float frametime) override;
+	void pageIn() override;
 };
 
 class HudGaugeTextWarnings: public HudGauge // HUD_TEXT_FLASH
@@ -347,8 +347,8 @@ class HudGaugeTextWarnings: public HudGauge // HUD_TEXT_FLASH
 	bool flash_flags;
 public:
 	HudGaugeTextWarnings();
-	void render(float frametime);
-	void initialize();
+	void render(float frametime) override;
+	void initialize() override;
 	int maybeTextFlash();
 };
 
@@ -363,8 +363,8 @@ public:
 	void initBitmaps(const char *fname);
 	void initTextOffsets(int x, int y);
 	void initTextValueOffsets(int x, int y);
-	void render(float frametime);
-	void pageIn();
+	void render(float frametime) override;
+	void pageIn() override;
 };
 
 class HudGaugeLag: public HudGauge
@@ -376,8 +376,8 @@ class HudGaugeLag: public HudGauge
 public:
 	HudGaugeLag();
 	void initBitmaps(const char *fname);
-	void render(float frametime);
-	void pageIn();
+	void render(float frametime) override;
+	void pageIn() override;
 
 	void startFlashLag(int duration = 1400);
 	bool maybeFlashLag(bool flash_fast = false);
@@ -407,14 +407,14 @@ public:
 	void initRedAlertTextOffsetY(int y);
 	void initRedAlertValueOffsetY(int y);
 
-	virtual void render(float frametime);
+	void render(float frametime) override;
 	void startFlashNotify(int duration = 1400);
 	bool maybeFlashNotify(bool flash_fast = false);
 	void renderObjective();
 	void renderRedAlert();
 	void renderSubspace();
-	void pageIn();
-	void initialize();
+	void pageIn() override;
+	void initialize() override;
 };
 
 class HudGaugeDamage: public HudGauge
@@ -467,9 +467,9 @@ public:
 	void initSubsysIntegValueOffsetX(int x);
 	void initBottomBgOffset(int offset);
 	void initLineHeight(int h);
-	void render(float frametime);
-	void pageIn();
-	void initialize();
+	void render(float frametime) override;
+	void pageIn() override;
+	void initialize() override;
 };
 
 class HudGaugeSupport: public HudGauge
@@ -488,8 +488,8 @@ public:
 	void initTextValueOffsetY(int y);
 	void initTextDockOffsetX(int x);
 	void initTextDockValueOffsetX(int x);
-	void render(float frametime);
-	void pageIn();
+	void render(float frametime) override;
+	void pageIn() override;
 };
 
 class HudGaugeMultiMsg: public HudGauge
@@ -497,8 +497,8 @@ class HudGaugeMultiMsg: public HudGauge
 protected:
 public:
 	HudGaugeMultiMsg();
-	bool canRender();
-	void render(float frametime);
+	bool canRender() override;
+	void render(float frametime) override;
 };
 
 class HudGaugeVoiceStatus: public HudGauge
@@ -506,7 +506,7 @@ class HudGaugeVoiceStatus: public HudGauge
 protected:
 public:
 	HudGaugeVoiceStatus();
-	void render(float frametime);
+	void render(float frametime) override;
 };
 
 class HudGaugePing: public HudGauge
@@ -514,14 +514,14 @@ class HudGaugePing: public HudGauge
 protected:
 public:
 	HudGaugePing();
-	void render(float frametime);
+	void render(float frametime) override;
 };
 
 class HudGaugeSupernova: public HudGauge
 {
 public:
 	HudGaugeSupernova();
-	void render(float frametime);
+	void render(float frametime) override;
 };
 
 class HudGaugeFlightPath: public HudGauge
@@ -533,7 +533,7 @@ public:
 	HudGaugeFlightPath();
 	void initBitmap(const char *fname);
 	void initHalfSize(int w, int h);
-	void render(float frametime);
+	void render(float frametime) override;
 };
 
 HudGauge* hud_get_gauge(const char* name);

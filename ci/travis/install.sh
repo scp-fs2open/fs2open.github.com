@@ -4,16 +4,14 @@ set -ex
 
 FILENAME=
 if [ "$TRAVIS_OS_NAME" = "linux" ]; then
-    if [ ! -d "$HOME/cmake/bin" ]; then
+    if [ ! -d "$HOME/cmake-3.6/bin" ]; then
         # If the cache does not currently contain CMake then download and install it
-        FILENAME=cmake-3.4.3-Linux-x86_64
+    	mkdir -p $HOME/cmake-3.6/
 
-    	mkdir -p $HOME/cmake/
-
-    	wget -O /tmp/cmake.tar.gz --no-check-certificate https://www.cmake.org/files/v3.4/$FILENAME.tar.gz
-    	tar -xzf /tmp/cmake.tar.gz -C $HOME/cmake/ --strip-components=1
+    	wget -O /tmp/cmake.tar.gz --no-check-certificate https://cmake.org/files/v3.6/cmake-3.6.0-Linux-x86_64.tar.gz
+    	tar -xzf /tmp/cmake.tar.gz -C $HOME/cmake-3.6/ --strip-components=1
     fi
-	export PATH=$HOME/cmake/bin:$PATH
+	export PATH=$HOME/cmake-3.6/bin:$PATH
     
     cd $HOME
     

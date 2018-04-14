@@ -1611,16 +1611,16 @@ SCP_string get_directory_or_vp(char* path)
 		found = result.find(".vp");
 	}
 
-	auto directory_name_pos = result.rfind(DIR_SEPARATOR_STR, found - strlen(DIR_SEPARATOR_STR) - 1);
+	auto directory_name_pos = result.rfind(DIR_SEPARATOR_CHAR, found - strlen(DIR_SEPARATOR_STR) - 1);
 
 	result = result.substr(directory_name_pos, found - directory_name_pos);
 
-	found = result.find(DIR_SEPARATOR_STR);
+	found = result.find(DIR_SEPARATOR_CHAR);
 	//Strip directory separators
 	while (found != std::string::npos)
 	{
 		result.erase(found, strlen(DIR_SEPARATOR_STR));
-		found = result.find(DIR_SEPARATOR_STR);
+		found = result.find(DIR_SEPARATOR_CHAR);
 	}
 
 	return result;
@@ -1834,7 +1834,7 @@ void labviewer_make_background_window(Button* caller)
 	SCP_map<SCP_string, SCP_vector<SCP_string>> directories;
 	char fullpath[MAX_PATH_LEN];
 
-	for (auto filename : missions)
+	for (const auto& filename : missions)
 	{
 		cf_find_file_location((filename + ".fs2").c_str(), CF_TYPE_MISSIONS, sizeof(fullpath) - 1, fullpath, NULL, NULL);
 		auto location = get_directory_or_vp(fullpath);
@@ -1854,7 +1854,7 @@ void labviewer_make_background_window(Button* caller)
 		auto directoryItem = Mission_directories[i];
 		directoryItem = missiontree->AddItem(NULL, directory.first);
 
-		for (auto Lab_mission : directory.second)
+		for (const auto& Lab_mission : directory.second)
 		{
 			missiontree->AddItem(directoryItem, Lab_mission, 0, true, labviewer_change_background);
 		}

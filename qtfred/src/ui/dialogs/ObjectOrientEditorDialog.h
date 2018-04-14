@@ -17,7 +17,7 @@ class ObjectOrientEditorDialog;
 class ObjectOrientEditorDialog : public QDialog {
  public:
 	ObjectOrientEditorDialog(FredView* parent, EditorViewport* viewport);
-	~ObjectOrientEditorDialog();
+	~ObjectOrientEditorDialog() override;
 
 
 protected:

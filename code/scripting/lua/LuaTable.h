@@ -108,7 +108,7 @@ class LuaTable: public LuaValue {
 	/**
      * Dereferences the stored reference to the table if it exists.
      */
-	virtual ~LuaTable();
+	~LuaTable() override;
 
 	/**
      * @brief Sets the metatable.
@@ -127,7 +127,7 @@ class LuaTable: public LuaValue {
      * @param ref The new reference
      * @return void
      */
-	void setReference(LuaReference ref) override;
+	void setReference(const LuaReference& ref) override;
 
 	/**
      * @brief Adds a value to this lua table.

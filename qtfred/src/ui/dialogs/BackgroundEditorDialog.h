@@ -19,7 +19,7 @@ class BackgroundEditorDialog : public QDialog
 public:
     explicit BackgroundEditorDialog(FredView* parent, EditorViewport* viewport);
 	// TODO shouldn't all QDialog subclasses have a virtual destructor?
-    virtual ~BackgroundEditorDialog();
+	~BackgroundEditorDialog() override;
 
 private:
     std::unique_ptr<Ui::BackgroundEditor> ui;

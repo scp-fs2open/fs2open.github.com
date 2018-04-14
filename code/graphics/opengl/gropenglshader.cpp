@@ -245,10 +245,10 @@ opengl_shader_t *Current_shader = NULL;
 opengl_shader_t::opengl_shader_t() : shader(SDR_TYPE_NONE), flags(0), flags2(0)
 {
 }
-opengl_shader_t::opengl_shader_t(opengl_shader_t&& other) {
+opengl_shader_t::opengl_shader_t(opengl_shader_t&& other) SCP_NOEXCEPT {
 	*this = std::move(other);
 }
-opengl_shader_t& opengl_shader_t::operator=(opengl_shader_t&& other) {
+opengl_shader_t& opengl_shader_t::operator=(opengl_shader_t&& other) SCP_NOEXCEPT {
 	// VS2013 doesn't support implicit move constructors so we need to explicitly declare it
 	shader = other.shader;
 	flags = other.flags;
@@ -522,7 +522,7 @@ static bool do_shader_caching() {
 	return true;
 }
 
-static bool load_cached_shader_binary(opengl::ShaderProgram* program, SCP_string hash) {
+static bool load_cached_shader_binary(opengl::ShaderProgram* program, const SCP_string& hash) {
 	if (!do_shader_caching()) {
 		return false;
 	}
@@ -824,7 +824,7 @@ int opengl_compile_shader(shader_type sdr, uint flags)
 	return sdr_index;
 }
 
-void gr_opengl_recompile_all_shaders(std::function<void(size_t, size_t)>progress_callback)
+void gr_opengl_recompile_all_shaders(const std::function<void(size_t, size_t)>& progress_callback)
 {
 	for (auto sdr = GL_shader.begin(); sdr != GL_shader.end(); ++sdr)
 	{

@@ -71,7 +71,7 @@ LuaValueList LuaFunction::operator()(const LuaValueList& args) {
 	return this->call(args);
 }
 
-void LuaFunction::setReference(LuaReference ref) {
+void LuaFunction::setReference(const LuaReference& ref) {
 	ref->pushValue();
 
 	lua_State* L = ref->getState();

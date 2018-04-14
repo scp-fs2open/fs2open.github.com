@@ -351,8 +351,8 @@ namespace parse
 	class ParseException : public std::runtime_error
 	{
 	public:
-		ParseException(const std::string& msg) : std::runtime_error(msg) {}
-		~ParseException() throw() {}
+		explicit ParseException(const std::string& msg) : std::runtime_error(msg) {}
+		~ParseException() SCP_NOEXCEPT override {}
 	};
 }
 

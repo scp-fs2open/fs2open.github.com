@@ -58,3 +58,8 @@
  * Some compilers issue a warning if a fallthrough is detected. This define can be used to suppress that warning.
  */
 #define FALLTHROUGH
+
+/**
+ * @brief Specifies that an analyzer should consider this function as no-return
+ */
+#define CLANG_ANALYZER_NORETURN

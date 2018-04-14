@@ -20,7 +20,7 @@ class IBaseDialog {
 template<typename TModel>
 class IDialog : public IBaseDialog {
  public:
-	virtual ~IDialog() {
+	~IDialog() override {
 	}
 
 	virtual TModel* getModel() = 0;

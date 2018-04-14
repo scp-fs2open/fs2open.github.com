@@ -61,8 +61,6 @@
 #define SIZE_T_ARG    "%zu"
 #define PTRDIFF_T_ARG "%zd"
 
-#define NOEXCEPT  noexcept
-
 #define likely(x)    __builtin_expect((long) !!(x), 1L)
 #define unlikely(x)  __builtin_expect((long) !!(x), 0L)
 
@@ -74,4 +72,12 @@
 #define FALLTHROUGH [[clang::fallthrough]]
 #else
 #define FALLTHROUGH
+#endif
+
+#ifndef CLANG_ANALYZER_NORETURN
+#if __has_feature(attribute_analyzer_noreturn)
+#define CLANG_ANALYZER_NORETURN __attribute__((analyzer_noreturn))
+#else
+#define CLANG_ANALYZER_NORETURN
+#endif
 #endif

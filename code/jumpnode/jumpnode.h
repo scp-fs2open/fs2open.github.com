@@ -47,9 +47,9 @@ public:
     //Constructors
     CJumpNode();
     CJumpNode(vec3d *position);
-	CJumpNode(CJumpNode&& other);
+	CJumpNode(CJumpNode&& other) SCP_NOEXCEPT;
 
-	CJumpNode& operator=(CJumpNode&&);
+	CJumpNode& operator=(CJumpNode&&) SCP_NOEXCEPT;
     
     //Destructor
     ~CJumpNode();

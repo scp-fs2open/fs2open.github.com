@@ -31,7 +31,7 @@ IF (FSO_BUILD_INCLUDED_LIBS OR NOT ZLIB_FOUND)
 
 	ADD_LIBRARY(zlib ${ZLIB_SOURCES})
 
-	target_include_directories(zlib PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
+	target_include_directories(zlib SYSTEM PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
 
 	set_target_properties(zlib
 		PROPERTIES

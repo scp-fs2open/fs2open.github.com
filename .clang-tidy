@@ -1,0 +1,27 @@
+---
+Checks: "-*,\
+modernize-use-override,\
+performance-*,\
+-performance-type-promotion-in-math-fn,\
+misc-assert-side-effect,\
+misc-bool-pointer-implicit-conversion,\
+misc-definitions-in-headers,\
+misc-fold-init-type,\
+misc-forward-declaration-namespace,\
+misc-inaccurate-erase,\
+misc-inefficient-algorithm,\
+misc-macro-repeated-side-effects,\
+misc-misplaced-const,\
+misc-move-forwarding-reference,\
+misc-multiple-statement-macro,\
+misc-new-delete-overloads,\
+misc-noexcept-move-constructor,\
+"
+WarningsAsErrors: ''
+HeaderFilterRegex: '.*'
+AnalyzeTemporaryDtors: false
+CheckOptions:
+  - key:          'misc-assert-side-effect.AssertMacros'
+    value:        'assert,Assert,Assertion'
+...
+

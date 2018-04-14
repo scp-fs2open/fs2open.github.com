@@ -86,12 +86,12 @@ public:
 	void drawOutlinesHtl();
 	void setupViewHtl();
 	int calcAlpha(vec3d* pt);
-	void render(float frametime);
-	void pageIn();
+	void render(float frametime) override;
+	void pageIn() override;
 	void plotBlip(blip* b, vec3d *pos, float *alpha);
 
-	virtual void onFrame(float frametime);
-	virtual void initialize();
+	void onFrame(float frametime) override;
+	void initialize() override;
 
 	// Sound specific functions
 	void doLoopSnd();

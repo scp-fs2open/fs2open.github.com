@@ -19,7 +19,7 @@ class VoiceActingManager : public QDialog
 public:
     explicit VoiceActingManager(FredView* parent, EditorViewport* viewport);
 	// TODO shouldn't all QDialog subclasses have a virtual destructor?
-    virtual ~VoiceActingManager();
+	~VoiceActingManager() override;
 
 private:
     std::unique_ptr<Ui::VoiceActingManager> ui;

@@ -1167,7 +1167,7 @@ bool cmdline_parm::has_param() {
 #ifdef SCP_UNIX
 // Return a vector with all filesystem names of "parent/dir" relative to parent.
 // dir must not contain a slash.
-static SCP_vector<SCP_string> unix_get_single_dir_names(SCP_string parent, SCP_string dir)
+static SCP_vector<SCP_string> unix_get_single_dir_names(const SCP_string& parent, const SCP_string& dir)
 {
 	SCP_vector<SCP_string> ret;
 
@@ -1190,7 +1190,7 @@ static SCP_vector<SCP_string> unix_get_single_dir_names(SCP_string parent, SCP_s
 
 // Return a vector with all filesystem names of "parent/dir" relative to parent.
 // Recurses to deal with slashes in dir.
-static SCP_vector<SCP_string> unix_get_dir_names(SCP_string parent, SCP_string dir)
+static SCP_vector<SCP_string> unix_get_dir_names(const SCP_string& parent, const SCP_string& dir)
 {
 	size_t slash = dir.find_first_of("/\\");
 

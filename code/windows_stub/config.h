@@ -5,7 +5,7 @@
 #ifndef _CONFIG_H
 #define _CONFIG_H
 
-#include <stdio.h>
+#include <cstdio>
 
 
 #include <SDL.h>
