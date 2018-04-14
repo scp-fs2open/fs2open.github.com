@@ -39,8 +39,8 @@
 #include <dirent.h>
 #endif
 
-#include <string.h>
-#include <stdlib.h>
+#include <cstring>
+#include <cstdlib>
 #include <cstdio>
 
 #include <jansson.h>

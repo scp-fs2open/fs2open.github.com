@@ -18,7 +18,7 @@
 #include "ui/FredView.h"
 #include "FredApplication.h"
 
-#include <signal.h>
+#include <csignal>
 #include <project.h>
 
 // Globals needed by the engine when built in 'FRED' mode.

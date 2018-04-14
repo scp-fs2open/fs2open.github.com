@@ -15,8 +15,8 @@
 #include <windows.h>
 #include <direct.h>
 #endif
-#include <stdio.h>
-#include <string.h>
+#include <cstdio>
+#include <cstring>
 
 #include "inetfile/cftp.h"
 #include "inetfile/chttpget.h"

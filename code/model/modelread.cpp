@@ -9,8 +9,8 @@
 
 
 
-#include <string.h>
-#include <ctype.h>
+#include <cstring>
+#include <cctype>
 #ifdef _WIN32
 #include <io.h>
 #include <direct.h>

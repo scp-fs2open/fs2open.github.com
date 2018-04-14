@@ -24,7 +24,7 @@
 #include "weapon/swarm.h"
 #include "weapon/weapon.h"
 
-#include <limits.h>
+#include <climits>
 
 
 // How close a turret has to be point at its target before it

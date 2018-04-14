@@ -37,7 +37,7 @@
 #include "tracing/Monitor.h"
 #include "tracing/tracing.h"
 
-#include <limits.h>
+#include <climits>
 
 
 float model_radius = 0;

@@ -9,7 +9,7 @@
 
 
 
-#include <stdarg.h>
+#include <cstdarg>
 
 #include "anim/animplay.h"
 #include "freespace.h"

@@ -9,9 +9,9 @@
 
 
 
-#include <stdio.h>
-#include <string.h>
-#include <setjmp.h>
+#include <cstdio>
+#include <cstring>
+#include <csetjmp>
 
 #include "globalincs/pstypes.h"
 #include "jpgutils/jpgutils.h"

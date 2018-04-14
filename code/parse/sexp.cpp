@@ -14,12 +14,12 @@
 //	It uses a very baggy format, allocating 16 characters per token, regardless
 //	of how many are used.
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <ctype.h>
-#include <assert.h>
-#include <limits.h>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <cctype>
+#include <cassert>
+#include <climits>
 #include <cstdint>
 
 #include "ai/aigoals.h"

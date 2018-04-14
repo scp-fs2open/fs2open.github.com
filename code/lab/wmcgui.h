@@ -17,7 +17,7 @@
 #include "weapon/weapon.h"
 
 #include <string>
-#include <limits.h>
+#include <climits>
 
 //*****************************Low-level abstraction*******************************
 //Lame attempt to keep things from being exceedingly difficult when switching to ferrium

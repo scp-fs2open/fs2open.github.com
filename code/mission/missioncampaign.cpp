@@ -9,10 +9,10 @@
 
 
 
-#include <stdio.h>
-#include <string.h>
-#include <setjmp.h>
-#include <errno.h>
+#include <cstdio>
+#include <cstring>
+#include <csetjmp>
+#include <cerrno>
 
 #ifdef _WIN32
 #include <direct.h>

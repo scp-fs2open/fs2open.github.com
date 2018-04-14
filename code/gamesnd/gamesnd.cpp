@@ -8,7 +8,7 @@
 */
 
 #include <sstream>
-#include <limits.h>
+#include <climits>
 
 #include "gamesnd/gamesnd.h"
 #include "localization/localize.h"

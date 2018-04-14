@@ -23,15 +23,15 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <netdb.h>
-#include <stdlib.h>
+#include <cstdlib>
 #include <unistd.h>
 #include <cerrno>
 #include <sys/ioctl.h>
-#include <signal.h>
+#include <csignal>
 #ifdef SCP_SOLARIS
 #include <sys/filio.h>
 #endif
-#include <ctype.h>
+#include <cctype>
 
 #define WSAGetLastError()  (errno)
 #define RESTART(syscall)                        \

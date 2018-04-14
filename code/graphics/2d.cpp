@@ -14,7 +14,7 @@
 #include <windowsx.h>
 #endif
 
-#include <limits.h>
+#include <climits>
 #include <algorithm>
 
 #include "cmdline/cmdline.h"

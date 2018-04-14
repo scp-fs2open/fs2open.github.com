@@ -7,8 +7,7 @@
 // Correct the code so that the program will properly output text to a target .h file
 // Correct the code so that the program will properly read bytes in and output as hexidecimal string values.
 
-#include <string.h>
-
+#include <cstring>
 #include <string>
 #include <fstream>
 #include <iostream>
@@ -64,7 +63,12 @@ void write_byte(std::ostream& stream, ubyte byte, size_t i) {
 
 void do_binary_content(std::ifstream& file_in, std::ofstream& file_out,
 					   const std::string& field_name, size_t input_size, bool wxWidgets_image) {
-	file_out << "#include <stddef.h>" << std::endl;
+	file_out << "#ifdef __cplusplus" << std::endl;
+	file_out << "\t#include <cstddef>" << std::endl;
+	file_out << "\tusing std::size_t;" << std::endl;
+	file_out << "#else" << std::endl;
+	file_out << "\t#include <stddef.h>" << std::endl;
+	file_out << "#endif" << std::endl;
 	if (wxWidgets_image) {
 		file_out << "#include <wx/mstream.h>" << std::endl;
 		file_out << "#include <wx/image.h>" << std::endl;
@@ -174,7 +178,12 @@ void write_header(std::ostream& out, const std::string& fieldName, bool text_con
 	out << "#ifndef " << headerDefine << std::endl;
 	out << "#define " << headerDefine << std::endl;
 	out << "#pragma once" << std::endl;
-	out << "#include <stddef.h>" << std::endl;
+	out << "#ifdef __cplusplus" << std::endl;
+	out << "\t#include <cstddef>" << std::endl;
+	out << "\tusing std::size_t;" << std::endl;
+	out << "#else" << std::endl;
+	out << "\t#include <stddef.h>" << std::endl;
+	out << "#endif" << std::endl;
 	if (wxWidgets_image) {
 		out << "#include <wx/bitmap.h>" << std::endl;
 	}

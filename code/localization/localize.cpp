@@ -10,7 +10,7 @@
 
 
 
-#include <ctype.h>
+#include <cctype>
 #include "cfile/cfile.h"
 #include "localization/localize.h"
 #include "osapi/osregistry.h"

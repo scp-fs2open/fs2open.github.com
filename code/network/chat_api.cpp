@@ -20,7 +20,7 @@
 #endif
 #include <netinet/in.h>
 #include <sys/select.h>
-#include <errno.h>
+#include <cerrno>
 #include <arpa/inet.h>
 #include <netdb.h>
 
@@ -30,7 +30,7 @@
 typedef int socklen_t;
 #endif
 
-#include <stdio.h>
+#include <cstdio>
 
 
 #define MAXCHATBUFFER	500

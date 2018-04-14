@@ -23,14 +23,14 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <sys/select.h>
-#include <errno.h>
+#include <cerrno>
 #include <arpa/inet.h>
 #include <netdb.h>
 
 #define WSAGetLastError()  (errno)
 #endif
-#include <stdio.h>
-#include <limits.h>
+#include <cstdio>
+#include <climits>
 #include <algorithm>
 
 #include "globalincs/pstypes.h"

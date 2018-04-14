@@ -10,7 +10,7 @@
 
 
 
-#include <setjmp.h>
+#include <csetjmp>
 
 #include "ai/aigoals.h"
 #include "asteroid/asteroid.h"

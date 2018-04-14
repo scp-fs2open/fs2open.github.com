@@ -14,7 +14,7 @@
 
 #include "globalincs/pstypes.h"
 
-#include <stdio.h>
+#include <cstdio>
 
 #ifdef WIN32
 #include <winsock.h>

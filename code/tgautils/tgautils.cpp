@@ -9,7 +9,7 @@
 
 
 
-#include <string.h>
+#include <cstring>
 
 #include "globalincs/pstypes.h"
 #include "tgautils/tgautils.h"

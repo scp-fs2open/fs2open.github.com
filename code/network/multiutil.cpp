@@ -18,9 +18,9 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <netdb.h>
-#include <errno.h>
+#include <cerrno>
 #endif
-#include <ctype.h>
+#include <cctype>
 
 #include "globalincs/pstypes.h"
 #include "network/multiutil.h"

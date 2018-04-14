@@ -12,7 +12,7 @@
 #ifndef __JUMPNODE_H__
 #define __JUMPNODE_H__
 
-#include <stdlib.h>
+#include <cstdlib>
 
 #include "globalincs/globals.h"
 #include "graphics/2d.h"

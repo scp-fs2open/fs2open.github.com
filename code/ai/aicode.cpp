@@ -68,7 +68,7 @@
 #include "weapon/swarm.h"
 #include "weapon/weapon.h"
 #include <map>
-#include <limits.h>
+#include <climits>
 
 
 #ifdef _MSC_VER

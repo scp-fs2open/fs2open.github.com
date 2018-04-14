@@ -7,8 +7,8 @@
  *
 */ 
 
-#include <stdio.h>
-#include <stdarg.h>
+#include <cstdio>
+#include <cstdarg>
 
 #include "cfile/cfile.h"
 #include "controlconfig/controlsconfig.h"

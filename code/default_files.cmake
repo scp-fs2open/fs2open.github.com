@@ -73,7 +73,8 @@ else()
 		ADD_CUSTOM_COMMAND(
 			OUTPUT ${ALL_OUTPUTS}
 			COMMAND embedfile "${INPUT_NAME}" "${OUTPUT}" "${FIELD_NAME}"
-			DEPENDS "${INPUT_NAME}"
+			MAIN_DEPENDENCY "${INPUT_NAME}"
+			DEPENDS embedfile
 			COMMENT "Generating string file for ${INPUT_NAME}"
 			)
 

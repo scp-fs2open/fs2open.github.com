@@ -7,14 +7,14 @@
  *
 */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <assert.h>
-#include <stdarg.h>
-#include <setjmp.h>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <cassert>
+#include <cstdarg>
+#include <csetjmp>
 
-#include "ctype.h"
+#include <cctype>
 #include "globalincs/version.h"
 #include "localization/fhash.h"
 #include "localization/localize.h"

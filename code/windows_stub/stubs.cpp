@@ -3,10 +3,10 @@
 
 #ifdef SCP_UNIX
 
-#include <ctype.h>
-#include <errno.h>
+#include <cctype>
+#include <cerrno>
 #include <fcntl.h>
-#include <stdarg.h>
+#include <cstdarg>
 #include <sys/stat.h>
 #include <sys/time.h>
 #include <unistd.h>

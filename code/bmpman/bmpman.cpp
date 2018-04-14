@@ -38,8 +38,8 @@
 #include "tracing/Monitor.h"
 #include "tracing/tracing.h"
 
-#include <ctype.h>
-#include <limits.h>
+#include <cctype>
+#include <climits>
 #include <iomanip>
 #include <memory>
 

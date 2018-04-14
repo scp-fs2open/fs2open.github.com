@@ -9,7 +9,7 @@
 
 
 
-#include <stdio.h>
+#include <cstdio>
 #if _M_IX86_FP >= 1
 	#include <xmmintrin.h>
 #endif

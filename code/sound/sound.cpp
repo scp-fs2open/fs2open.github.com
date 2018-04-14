@@ -30,7 +30,7 @@
 
 #include "globalincs/pstypes.h"
 
-#include <limits.h>
+#include <climits>
 
 const unsigned int SND_ENHANCED_MAX_LIMIT = 15; // seems like a good max limit
 

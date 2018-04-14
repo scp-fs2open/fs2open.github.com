@@ -10,7 +10,7 @@
 
 
 
-#include <limits.h>		// this is need even when not building debug!!
+#include <climits>		// this is need even when not building debug!!
 #include <type_traits>
 
 #include "anim/animplay.h"

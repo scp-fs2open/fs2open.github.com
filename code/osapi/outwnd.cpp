@@ -11,9 +11,9 @@
 
 #ifndef NDEBUG
 
-#include <stdio.h>
-#include <stdarg.h>
-#include <string.h>
+#include <cstdio>
+#include <cstdarg>
+#include <cstring>
 #include <algorithm>
 
 #ifdef WIN32

@@ -39,13 +39,13 @@
 
 #ifndef WIN32
 #include <cstdio>
-#include <stdlib.h>
+#include <cstdlib>
 #include <unistd.h>
 #include <cerrno>
 #endif
 
 #include <string>
-#include <limits.h>
+#include <climits>
 
 
 #define FS2NETD_DEFAULT_PORT			"12009"

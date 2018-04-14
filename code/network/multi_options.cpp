@@ -28,7 +28,7 @@
 #include "cfile/cfile.h"
 #include "fs2netd/fs2netd_client.h"
 
-#include <limits.h>
+#include <climits>
 
 
 

@@ -10,10 +10,10 @@
 
 #define _CFILE_INTERNAL 
 
-#include <stdlib.h>
-#include <string.h>
-#include <stdio.h>
-#include <errno.h>
+#include <cstdlib>
+#include <cstring>
+#include <cstdio>
+#include <cerrno>
 #include <sys/stat.h>
 
 #ifdef _WIN32

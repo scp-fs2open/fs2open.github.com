@@ -8,8 +8,8 @@
 */ 
 
 
-#include <string.h>
-#include <setjmp.h>
+#include <cstring>
+#include <csetjmp>
 
 #include "controlconfig/controlsconfig.h"
 #include "debugconsole/console.h"

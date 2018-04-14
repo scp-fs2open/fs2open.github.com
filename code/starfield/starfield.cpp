@@ -9,7 +9,7 @@
 
 
 
-#include <limits.h>
+#include <climits>
 
 #include "cmdline/cmdline.h"
 #include "debugconsole/console.h"

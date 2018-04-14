@@ -10,7 +10,7 @@
 
 
 
-#include <ctype.h>
+#include <cctype>
 
 #include "network/multi_pmsg.h"
 #include "network/multi.h"

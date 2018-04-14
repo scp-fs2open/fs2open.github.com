@@ -8,8 +8,8 @@
 */ 
 
 
-#include <limits.h>
-#include <ctype.h>
+#include <climits>
+#include <cctype>
 
 
 #include "cfile/cfile.h"

@@ -10,7 +10,7 @@
 
 
 
-#include <limits.h>
+#include <climits>
 
 #include "globalincs/pstypes.h"
 #include "network/multimsgs.h"

@@ -11,7 +11,7 @@
 #define _FS2_REGISTRY_HEADER_FILE
 
 
-#include <stdlib.h>
+#include <cstdlib>
 
 // ------------------------------------------------------------------------------------------------------------
 // REGISTRY DEFINES/VARS

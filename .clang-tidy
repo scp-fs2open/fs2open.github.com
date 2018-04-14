@@ -1,6 +1,7 @@
 ---
 Checks: "-*,\
 modernize-use-override,\
+modernize-deprecated-headers,\
 performance-*,\
 -performance-type-promotion-in-math-fn,\
 misc-assert-side-effect,\
@@ -18,7 +19,7 @@ misc-new-delete-overloads,\
 misc-noexcept-move-constructor,\
 "
 WarningsAsErrors: ''
-HeaderFilterRegex: '.*'
+HeaderFilterRegex: 'code/.*$|freespace2/.*$|qtfred/.*'
 AnalyzeTemporaryDtors: false
 CheckOptions:
   - key:          'misc-assert-side-effect.AssertMacros'

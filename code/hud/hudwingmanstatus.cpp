@@ -9,7 +9,7 @@
 
 
 
-#include <ctype.h> // for 'tolower'
+#include <cctype> // for 'tolower'
 
 
 #include "globalincs/alphacolors.h"

@@ -9,7 +9,7 @@
 
 
 
-#include <ctype.h>
+#include <cctype>
 
 #include "cfile/cfile.h"
 #include "freespace.h"

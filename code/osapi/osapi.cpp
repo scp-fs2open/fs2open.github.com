@@ -7,9 +7,9 @@
  *
 */
 
-#include <stdio.h>
+#include <cstdio>
 #include <fcntl.h>
-#include <stdarg.h>
+#include <cstdarg>
 #include <algorithm>
 
 #include "globalincs/pstypes.h"

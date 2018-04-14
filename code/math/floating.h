@@ -12,9 +12,9 @@
 #ifndef _FLOATING_H
 #define _FLOATING_H
 
-#include <math.h>
 #include <cmath>
-#include <float.h>
+#include <cmath>
+#include <cfloat>
 
 #include "globalincs/pstypes.h"
 

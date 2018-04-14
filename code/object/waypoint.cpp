@@ -1,5 +1,5 @@
 
-#include <ctype.h>
+#include <cctype>
 
 #include "globalincs/linklist.h"
 #include "object/object.h"

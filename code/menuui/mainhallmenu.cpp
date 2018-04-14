@@ -7,8 +7,8 @@
  *
  */
 
-#include <stdlib.h>
-#include <limits.h>
+#include <cstdlib>
+#include <climits>
 
 #include "anim/animplay.h"
 #include "anim/packunpack.h"
