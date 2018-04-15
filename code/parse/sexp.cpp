@@ -508,7 +508,7 @@ SCP_vector<sexp_oper> Operators = {
 	{ "turret-set-secondary-ammo",		OP_TURRET_SET_SECONDARY_AMMO,			4,	4,			SEXP_ACTION_OPERATOR,	},	// DahBlount
 	{ "turret-get-primary-ammo",		OP_TURRET_GET_PRIMARY_AMMO,				3,	3,			SEXP_INTEGER_OPERATOR,	},	// DahBlount
 	{ "turret-get-secondary-ammo",		OP_TURRET_GET_SECONDARY_AMMO,			3,	3,			SEXP_INTEGER_OPERATOR,	},	// DahBlount
-	{ "is-in-turret-fov",				OP_IS_IN_TURRET_FOV,					3,	3,			SEXP_BOOLEAN_OPERATOR,	},	// Goober5000
+	{ "is-in-turret-fov",				OP_IS_IN_TURRET_FOV,					3,	4,			SEXP_BOOLEAN_OPERATOR,	},	// Goober5000
 	
 	//Models and Textures Sub-Category
 	{ "change-ship-class",				OP_CHANGE_SHIP_CLASS,					2,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Goober5000
@@ -18286,7 +18286,7 @@ int sexp_is_in_turret_fov(int node)
 	char *target_ship_name;
 	char *turret_ship_name;
 	char *turret_subsys_name;
-	int target_shipnum, turret_shipnum;
+	int target_shipnum, turret_shipnum, range;
 	object *target_objp, *turret_objp;
 	ship_subsys *turret_subsys;
 	vec3d tpos, tvec;
@@ -18294,6 +18294,7 @@ int sexp_is_in_turret_fov(int node)
 	target_ship_name = CTEXT(node);
 	turret_ship_name = CTEXT(CDR(node));
 	turret_subsys_name = CTEXT(CDDR(node));
+	range = CDDDR(node) >= 0 ? eval_num(CDDDR(node)) : -1;
 
 	if (sexp_query_has_yet_to_arrive(target_ship_name) || sexp_query_has_yet_to_arrive(turret_ship_name))
 		return SEXP_CANT_EVAL;
@@ -18325,6 +18326,10 @@ int sexp_is_in_turret_fov(int node)
 
 	// see how far away is the target (this isn't used for a range check, only for vector math)
 	float dist = vm_vec_dist(&target_objp->pos, &tpos);
+
+	// but we can still use it for the range check if we are optionally checking that
+	if (range >= 0 && dist > range)
+		return SEXP_FALSE;
 
 	// perform the check
 	return object_in_turret_fov(target_objp, turret_subsys, &tvec, &tpos, dist) != 0 ? SEXP_TRUE : SEXP_FALSE;
@@ -28012,8 +28017,10 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_IS_IN_TURRET_FOV:
 			if (argnum == 0 || argnum == 1) {
 				return OPF_SHIP;
-			} else {
+			} else if (argnum == 2) {
 				return OPF_SUBSYSTEM;
+			} else {
+				return OPF_POSITIVE;
 			}
 
 		case OP_GET_NUM_COUNTERMEASURES:
@@ -32841,10 +32848,11 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t4: Amount to add" },
 
 	{ OP_IS_IN_TURRET_FOV, "is-in-turret-fov\r\n"
-		"\tChecks whether the given craft is within the field of view of a turret.  Takes 3 arguments...\r\n"
+		"\tChecks whether the given craft is within the field of view of a turret, and optionally within a specified range.  Takes 3 to 4 arguments...\r\n"
 		"\t1: Ship being targeted\r\n"
 		"\t2: Ship which carries a turret\r\n"
-		"\t3: Turret to check\r\n" },
+		"\t3: Turret to check\r\n"
+		"\t4: Range in meters (optional)\r\n" },
 
 	{ OP_SET_ARMOR_TYPE, "set-armor-type\r\n"
 		"\tSets the armor type for a ship or subsystem\r\n"
