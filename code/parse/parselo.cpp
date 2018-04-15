@@ -565,7 +565,7 @@ int optional_string_one_of(int arg_count, ...)
 	return found;
 }
 
-int required_string_fred(char *pstr, char *end)
+int required_string_fred(const char *pstr, const char *end)
 {
 	char *backup = Mp;
 
@@ -602,7 +602,7 @@ int required_string_fred(char *pstr, char *end)
 // further complicate things, we should only search to a certain point, since we don't want
 // a token that belongs to another section which might match the token we want.  Thus, we
 // also pass in an ending token, which marks the point we should stop looking at.
-int optional_string_fred(char *pstr, char *end, char *end2)
+int optional_string_fred(const char *pstr, const char *end, const char *end2)
 {
 	char *mp_save = Mp;
 

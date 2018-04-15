@@ -29,6 +29,7 @@
 
 #include "mission/Editor.h"
 #include "mission/management.h"
+#include "mission/missionsave.h"
 
 #include "widgets/ColorComboBox.h"
 
@@ -170,6 +171,17 @@ void FredView::openLoadMissionDIalog() {
 
 void FredView::on_actionExit_triggered(bool) {
 	close();
+}
+void FredView::on_actionSave_As_triggered(bool) {
+	CFred_mission_save save(_viewport);
+
+	QString saveName = QFileDialog::getSaveFileName(this, tr("Save mission"), QString(), tr("FS2 missions (*.fs2)"));
+
+	if (saveName.isEmpty()) {
+		return;
+	}
+
+	save.save_mission_file(saveName.toUtf8().constData());
 }
 
 void FredView::on_mission_loaded(const std::string& filepath) {
