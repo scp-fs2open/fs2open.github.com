@@ -11602,38 +11602,6 @@ static int ship_fire_secondary_detonate(object *obj, ship_weapon *swp)
 	return 0;
 }
 
-/**
- * Try to switch to a secondary bank that has ammo
- *
- * @note: not currently used - mark for removal?
- */
-static int ship_select_next_valid_secondary_bank(ship_weapon *swp)
-{
-	int cycled=0;
-
-	int ns = swp->num_secondary_banks;
-
-	if ( ns > 1 ) {
-		int i,j=swp->current_secondary_bank+1;
-		for (i=0; i<ns; i++) {
-			if ( j >= ns ) {
-				j=0;
-			}
-
-			if ( swp->secondary_bank_ammo[j] > 0 ) {
-				swp->current_secondary_bank=j;
-				cycled = 1;
-				break;
-			}
-
-			j++;
-		}
-	}
-
-	return cycled;
-}
-
-
 extern void ai_maybe_announce_shockwave_weapon(object *firing_objp, int weapon_index);
 
 //	Object *obj fires its secondary weapon, if it can.
@@ -12117,8 +12085,6 @@ done_secondary:
 	//
 	// niffiwan: only try to switch banks if object has multiple banks, and firing bank is the current bank
 	if ( (obj->flags[Object::Object_Flags::Player_ship]) && (swp->secondary_bank_ammo[bank] <= 0) && (swp->num_secondary_banks >= 2) && (bank == swp->current_secondary_bank) ) {
-		// niffiwan: call ship_select_next_secondary instead of ship_select_next_valid_secondary_bank
-		// ensures all "extras" are dealt with, like animations, scripting hooks, etc
 		if (ship_select_next_secondary(obj) ) {			//DTP here we switch to the next valid bank, but we can't call weapon_info on next fire_wait
 
 			if ( timestamp_elapsed(shipp->weapons.next_secondary_fire_stamp[shipp->weapons.current_secondary_bank]) ) {	//DTP, this is simply a copy of the manual cycle functions
