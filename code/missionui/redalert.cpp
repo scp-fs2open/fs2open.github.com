@@ -612,7 +612,7 @@ void red_alert_bash_subsys_status(red_alert_ship_status *ras, ship *shipp)
 		// probably never happen here
 		try {
 			ss->current_hits = ras->subsys_current_hits.at(count);
-		} catch (const std::out_of_range& range) {
+		} catch (const std::out_of_range&) {
 			break;
 		}
 
