@@ -1418,35 +1418,6 @@ void asteroid_level_close()
 DCF_BOOL2(asteroids, Asteroids_enabled, "enables or disables asteroids", "Usage: asteroids [bool]\nTurns asteroid system on/off.  If nothing passed, then toggles it.\n");
 
 
-static void hud_target_asteroid()
-{
-	int	i;
-	int	start_index = 0, end_index = MAX_ASTEROIDS;
-
-	if (Player_ai->target_objnum != -1) {
-		if (Objects[Player_ai->target_objnum].type == OBJ_ASTEROID) {
-			start_index = Objects[Player_ai->target_objnum].instance+1;
-			end_index = start_index-1;
-			if (end_index < 0)
-				end_index = MAX_ASTEROIDS;
-		}
-	}
-
-	i = start_index;
-	while (i != end_index) {
-		if (i == MAX_ASTEROIDS)
-			i = 0;
-
-		if (Asteroids[i].flags & AF_USED) {
-			Assert(Objects[Asteroids[i].objnum].type == OBJ_ASTEROID);
-			set_target_objnum( Player_ai, Asteroids[i].objnum);
-			break;
-		}
-
-		i++;
-	}
-}
-
 /**
  * Return the number of active asteroids
  */
