@@ -145,12 +145,24 @@ char Squadron_wing_names[MAX_SQUADRON_WINGS][NAME_LENGTH];
 char TVT_wing_names[MAX_TVT_WINGS][NAME_LENGTH];
 
 SCP_vector<engine_wash_info> Engine_wash_info;
-engine_wash_info *get_engine_wash_pointer(char* engine_wash_name);
+
+static engine_wash_info *get_engine_wash_pointer(char* engine_wash_name);
+static int subsys_set(int objnum, int ignore_subsys_info = 0);
+static void ship_add_cockpit_display(cockpit_display_info *display, int cockpit_model_num);
+static void ship_set_hud_cockpit_targets();
+static int thruster_glow_anim_load(generic_anim *ga);
+static int ship_get_exp_propagates(ship *sp);
+static bool ship_subsys_is_fighterbay(ship_subsys *ss);
+static int ship_template_lookup(const char *token);
+static void ship_set_eye(object *obj, int eye_index);
+static void ship_start_targeting_laser(ship *shipp);
+static void ship_add_ship_type_kill_count(int ship_info_index);
+static int ship_info_lookup_sub(const char *token);
 
 void ship_reset_disabled_physics(object *objp, int ship_class);
 
 // forward declaring for parse_ship()
-int ship_info_lookup_sub(const char *token);
+static int parse_ship_values(ship_info* sip, const bool is_template, const bool first_time, const bool replace);
 
 // information for ships which have exited the game
 SCP_vector<exited_ship> Ships_exited;
@@ -528,7 +540,7 @@ static int Ship_cargo_check_timer;
 
 static int Thrust_anim_inited = 0;
 
-int ship_get_subobj_model_num(ship_info* sip, char* subobj_name);
+static int ship_get_subobj_model_num(ship_info* sip, char* subobj_name);
 
 SCP_vector<ship_effect> Ship_effects;
 
@@ -536,7 +548,7 @@ int ship_render_mode = MODEL_RENDER_ALL;
 /**
  * Set the ship_obj struct fields to default values
  */
-void ship_obj_list_reset_slot(int index)
+static void ship_obj_list_reset_slot(int index)
 {
 	Ship_objs[index].flags = 0;
 	Ship_objs[index].next = NULL;
@@ -546,7 +558,7 @@ void ship_obj_list_reset_slot(int index)
 /**
  * If the given ship is in my squadron wings
  */
-int ship_in_my_squadron(ship *shipp)
+static int ship_in_my_squadron(ship *shipp)
 {
 	int i;
 
@@ -569,7 +581,7 @@ int ship_in_my_squadron(ship *shipp)
 /**
  * Initialise Ship_obj_list
  */
-void ship_obj_list_init()
+static void ship_obj_list_init()
 {
 	int i;
 
@@ -583,7 +595,7 @@ void ship_obj_list_init()
  * Function to add a node to the Ship_obj_list.  Only
  * called from ::ship_create()
  */
-int ship_obj_list_add(int objnum)
+static int ship_obj_list_add(int objnum)
 {
 	int i;
 
@@ -608,7 +620,7 @@ int ship_obj_list_add(int objnum)
  * Function to remove a node from the Ship_obj_list.  Only
  * called from ::ship_delete()
  */
-void ship_obj_list_remove(int index)
+static void ship_obj_list_remove(int index)
 {
 	Assert(index >= 0 && index < MAX_SHIP_OBJS);
 	list_remove( Ship_obj_list, &Ship_objs[index]);	
@@ -652,7 +664,7 @@ int ship_get_num_ships()
 	return count;
 }
 
-void engine_wash_info_init(engine_wash_info *ewi)
+static void engine_wash_info_init(engine_wash_info *ewi)
 {
 	ewi->name[0] = '\0';
 	ewi->angle = PI / 10.0f;
@@ -664,7 +676,7 @@ void engine_wash_info_init(engine_wash_info *ewi)
 /**
  * Parse an engine wash info record
  */
-void parse_engine_wash(bool replace)
+static void parse_engine_wash(bool replace)
 {
 	engine_wash_info ewt;
 	engine_wash_info_init(&ewt);
@@ -736,7 +748,7 @@ void parse_engine_wash(bool replace)
 	}
 }
 
-const char *Warp_types[] = {
+static const char *Warp_types[] = {
 	"Default",
 	"Knossos",
 	"Babylon5",
@@ -745,9 +757,9 @@ const char *Warp_types[] = {
 	"Hyperspace",
 };
 
-int Num_warp_types = sizeof(Warp_types)/sizeof(char*);
+static int Num_warp_types = sizeof(Warp_types)/sizeof(char*);
 
-int warptype_match(char *p)
+static int warptype_match(char *p)
 {
 	int i;
 	for(i = 0; i < Num_warp_types; i++)
@@ -759,14 +771,14 @@ int warptype_match(char *p)
 	return -1;
 }
 
-const char *Lightning_types[] = {
+static const char *Lightning_types[] = {
 	"None",
 	"Default",
 };
 
-int Num_lightning_types = sizeof(Lightning_types)/sizeof(char*);
+static int Num_lightning_types = sizeof(Lightning_types)/sizeof(char*);
 
-int lightningtype_match(char *p)
+static int lightningtype_match(char *p)
 {
 	int i;
 	for(i = 0; i < Num_lightning_types; i++)
@@ -1814,7 +1826,7 @@ ship_info::~ship_info()
 /**
  * Parse the information for a specific ship type.
  */
-int parse_ship(const char *filename, bool replace)
+static int parse_ship(const char *filename, bool replace)
 {
 	char buf[SHIP_MULTITEXT_LENGTH];
 	ship_info *sip = nullptr;
@@ -1914,7 +1926,7 @@ int parse_ship(const char *filename, bool replace)
 /**
  * Parse the information for a specific ship type template.
  */
-int parse_ship_template()
+static int parse_ship_template()
 {
 	char buf[SHIP_MULTITEXT_LENGTH];
 	ship_info *sip;
@@ -1969,7 +1981,7 @@ int parse_ship_template()
 	return rtn;
 }
 
-void parse_ship_sound(const char *name, GameSoundsIndex id, ship_info *sip)
+static void parse_ship_sound(const char *name, GameSoundsIndex id, ship_info *sip)
 {
 	Assert( name != NULL );
 
@@ -1981,7 +1993,7 @@ void parse_ship_sound(const char *name, GameSoundsIndex id, ship_info *sip)
 		sip->ship_sounds.insert(std::pair<GameSoundsIndex, int>(id, temp_index));
 }
 
-void parse_ship_sounds(ship_info *sip)
+static void parse_ship_sounds(ship_info *sip)
 {
 	parse_ship_sound("$CockpitEngineSnd:",                SND_ENGINE, sip);
 	parse_ship_sound("$FullThrottleSnd:",                 SND_FULL_THROTTLE, sip);
@@ -2010,7 +2022,7 @@ void parse_ship_sounds(ship_info *sip)
 	parse_ship_sound("$ExplosionSnd:",                    SND_SHIP_EXPLODE_1, sip);
 } 
 
-void parse_ship_particle_effect(ship_info* sip, particle_effect* pe, const char *id_string)
+static void parse_ship_particle_effect(ship_info* sip, particle_effect* pe, const char *id_string)
 {
 	float tempf;
 	int temp;
@@ -2113,7 +2125,7 @@ void parse_ship_particle_effect(ship_info* sip, particle_effect* pe, const char 
 	}
 }
 
-void parse_allowed_weapons(ship_info *sip, const bool is_primary, const bool is_dogfight, const bool first_time)
+static void parse_allowed_weapons(ship_info *sip, const bool is_primary, const bool is_dogfight, const bool first_time)
 {
 	int i, num_allowed;
 	int allowed_weapons[MAX_WEAPON_TYPES];
@@ -2182,7 +2194,7 @@ void parse_allowed_weapons(ship_info *sip, const bool is_primary, const bool is_
  * Common method for parsing ship/subsystem primary/secondary weapons so that the parser doesn't flip out in the event of a problem.
  *
  */
-void parse_weapon_bank(ship_info *sip, bool is_primary, int *num_banks, int *bank_default_weapons, int *bank_capacities)
+static void parse_weapon_bank(ship_info *sip, bool is_primary, int *num_banks, int *bank_default_weapons, int *bank_capacities)
 {
 	Assert(sip != NULL);
 	Assert(bank_default_weapons != NULL);
@@ -2229,7 +2241,7 @@ void parse_weapon_bank(ship_info *sip, bool is_primary, int *num_banks, int *ban
 /**
  * Common method for parsing briefing icon info.
  */
-int parse_and_add_briefing_icon_info()
+static int parse_and_add_briefing_icon_info()
 {
 	int bii_index = -1;
 	size_t icon;
@@ -2274,7 +2286,7 @@ int parse_and_add_briefing_icon_info()
 /**
  * Puts values into a ship_info.
  */
-int parse_ship_values(ship_info* sip, const bool is_template, const bool first_time, const bool replace)
+static int parse_ship_values(ship_info* sip, const bool is_template, const bool first_time, const bool replace)
 {
 	char buf[SHIP_MULTITEXT_LENGTH];
 	const char* info_type_name;
@@ -4705,7 +4717,7 @@ int parse_ship_values(ship_info* sip, const bool is_template, const bool first_t
 	return rtn;	//0 for success
 }
 
-engine_wash_info *get_engine_wash_pointer(char *engine_wash_name)
+static engine_wash_info *get_engine_wash_pointer(char *engine_wash_name)
 {
 	for(int i = 0; i < Num_engine_wash_types; i++)
 	{
@@ -4719,7 +4731,7 @@ engine_wash_info *get_engine_wash_pointer(char *engine_wash_name)
 	return NULL;
 }
 
-void parse_ship_type()
+static void parse_ship_type()
 {
 	char name_buf[NAME_LENGTH];
 	bool nocreate = false;
@@ -4944,7 +4956,7 @@ void parse_ship_type()
 		Ship_types.push_back(stp_buf);
 }
 
-void parse_shiptype_tbl(const char *filename)
+static void parse_shiptype_tbl(const char *filename)
 {
 	try
 	{
@@ -5005,7 +5017,7 @@ int get_default_player_ship_index()
 }
 
 // Goober5000 - this works better in its own function
-void ship_set_default_player_ship()
+static void ship_set_default_player_ship()
 {
 	// already have one
 	if(strlen(default_player_ship))
@@ -5038,7 +5050,7 @@ void ship_set_default_player_ship()
 	}
 }
 
-void parse_shiptbl(const char *filename)
+static void parse_shiptbl(const char *filename)
 {
 	try
 	{
@@ -5108,7 +5120,7 @@ int ship_show_velocity_dot = 0;
 
 DCF_BOOL( show_velocity_dot, ship_show_velocity_dot )
 
-bool ballistic_possible_for_this_ship(const ship_info *sip)
+static bool ballistic_possible_for_this_ship(const ship_info *sip)
 {
 	for (int i = 0; i < MAX_SHIP_PRIMARY_BANKS; i++)
 	{
@@ -5125,7 +5137,7 @@ bool ballistic_possible_for_this_ship(const ship_info *sip)
 /**
  * Clean up ship entries, making sure various flags and settings are correct
  */
-void ship_parse_post_cleanup()
+static void ship_parse_post_cleanup()
 {
 	int j;
 	char name_tmp[NAME_LENGTH];
@@ -5316,7 +5328,7 @@ void ship_init()
 	ship_level_init();	// needed for FRED
 }
 
-int Man_thruster_reset_timestamp = 0;
+static int Man_thruster_reset_timestamp = 0;
 
 static void ship_clear_subsystems()
 {
@@ -5652,7 +5664,7 @@ vec3d get_submodel_offset(int model, int submodel){
 
 }
 
-void ship_set_warp_effects(object *objp, ship_info *sip)
+static void ship_set_warp_effects(object *objp, ship_info *sip)
 {
 	ship *shipp = &Ships[objp->instance];
 
@@ -6078,7 +6090,7 @@ ship_weapon::ship_weapon() {
 }
 
 // NOTE: Now that the clear() member function exists, this function only sets the stuff associated with the object and ship class.
-void ship_set(int ship_index, int objnum, int ship_type)
+static void ship_set(int ship_index, int objnum, int ship_type)
 {
 	int i;
 	ship		*shipp = &Ships[ship_index];
@@ -6333,7 +6345,7 @@ void ship_recalc_subsys_strength( ship *shipp )
  * Fixup the model subsystem information for this ship pointer.
  * Needed when ships share the same model.
  */
-void ship_copy_subsystem_fixup(ship_info *sip)
+static void ship_copy_subsystem_fixup(ship_info *sip)
 {
 	int model_num;
 
@@ -6465,7 +6477,7 @@ void ship_subsys::clear()
  * @param objnum				Object number (used as index into Objects[])
  * @param ignore_subsys_info	Default parameter with value of 0.  This is only set to 1 by the save/restore code
  */
-int subsys_set(int objnum, int ignore_subsys_info)
+static int subsys_set(int objnum, int ignore_subsys_info)
 {	
 	ship	*shipp = &Ships[Objects[objnum].instance];
 	ship_info	*sinfo = &Ship_info[Ships[Objects[objnum].instance].ship_info_index];
@@ -6844,7 +6856,7 @@ DCF_BOOL( show_paths, Show_paths )
 int Show_fpaths = 0;
 DCF_BOOL( show_fpaths, Show_fpaths )
 
-void ship_find_warping_ship_helper(object *objp, dock_function_info *infop)
+static void ship_find_warping_ship_helper(object *objp, dock_function_info *infop)
 {
 	// only check ships
 	if (objp->type != OBJ_SHIP)
@@ -7007,7 +7019,7 @@ void ship_clear_cockpit_displays()
 	}
 }
 
-void ship_add_cockpit_display(cockpit_display_info *display, int cockpit_model_num)
+static void ship_add_cockpit_display(cockpit_display_info *display, int cockpit_model_num)
 {
 	if ( strlen(display->filename) <= 0 ) {
 		return;
@@ -7077,7 +7089,7 @@ void ship_add_cockpit_display(cockpit_display_info *display, int cockpit_model_n
 	Player_displays.push_back(new_display);
 }
 
-void ship_set_hud_cockpit_targets()
+static void ship_set_hud_cockpit_targets()
 {
 	if ( !Ship_info[Player_ship->ship_info_index].hud_enabled ) {
 		return;
@@ -7169,7 +7181,7 @@ void ship_end_render_cockpit_display(size_t cockpit_display_num)
 	gr_pop_debug_group();
 }
 
-void ship_subsystems_delete(ship *shipp)
+static void ship_subsystems_delete(ship *shipp)
 {
 	if ( NOT_EMPTY(&shipp->subsys_list) )
 	{
@@ -7334,7 +7346,7 @@ void ship_wing_cleanup( int shipnum, wing *wingp )
 // functions to do management, like log entries and wing cleanup after a ship has been destroyed
 
 // Goober5000
-void ship_actually_depart_helper(object *objp, dock_function_info *infop)
+static void ship_actually_depart_helper(object *objp, dock_function_info *infop)
 {
 	// do standard departure stuff first
 	objp->flags.set(Object::Object_Flags::Should_be_dead);
@@ -7578,7 +7590,7 @@ static const float MAX_SHOCK_ANGLE_RANGE = 1.99f * PI;
  *
  * @param exp_objp			ship object pointers
  */
-void ship_blow_up_area_apply_blast( object *exp_objp)
+static void ship_blow_up_area_apply_blast( object *exp_objp)
 {
 	ship *shipp;
 	ship_info *sip;
@@ -7689,7 +7701,7 @@ void ship_blow_up_area_apply_blast( object *exp_objp)
  * This function relies on the "dead dock" list, which replaces the dock_objnum_when_dead
  * used in retail.
  */
-void do_dying_undock_physics(object *dying_objp, ship *dying_shipp) 
+static void do_dying_undock_physics(object *dying_objp, ship *dying_shipp) 
 {
 	// this function should only be called for an object that was docked...
 	// no harm in calling it if it wasn't, but we want to enforce this
@@ -7753,7 +7765,7 @@ void do_dying_undock_physics(object *dying_objp, ship *dying_shipp)
 /**
  * Do the stuff we do in a frame for a ship that's in its death throes.
  */
-void ship_dying_frame(object *objp, int ship_num)
+static void ship_dying_frame(object *objp, int ship_num)
 {
 	ship *shipp = &Ships[ship_num];
 
@@ -8125,7 +8137,7 @@ void ship_dying_frame(object *objp, int ship_num)
 	}
 }
 
-void ship_chase_shield_energy_targets(ship *shipp, object *obj, float frametime)
+static void ship_chase_shield_energy_targets(ship *shipp, object *obj, float frametime)
 {
 	float delta;
 	ship_info *sip;
@@ -8170,7 +8182,7 @@ void ship_chase_shield_energy_targets(ship *shipp, object *obj, float frametime)
 
 }
 
-int thruster_glow_anim_load(generic_anim *ga)
+static int thruster_glow_anim_load(generic_anim *ga)
 {
 	if ( !VALID_FNAME(ga->filename) )
 		return -1;
@@ -8194,7 +8206,7 @@ int thruster_glow_anim_load(generic_anim *ga)
 /**
  * Loads the animations for ship's afterburners
  */
-void ship_init_thrusters()
+static void ship_init_thrusters()
 {
 	if ( Thrust_anim_inited == 1 )
 		return;
@@ -8231,7 +8243,7 @@ void ship_init_thrusters()
  * ::ship_render() needs to have shipp->thruster_bitmap set to
  * a valid bitmap number, or -1 if we shouldn't render thrusters.
  */
-void ship_do_thruster_frame( ship *shipp, object *objp, float frametime )
+static void ship_do_thruster_frame( ship *shipp, object *objp, float frametime )
 {
 	float rate;
 	int framenum;
@@ -8385,7 +8397,7 @@ void ship_do_weapon_thruster_frame( weapon *weaponp, object *objp, float frameti
 // element.
 #define SHIP_REPAIR_SUBSYSTEM_RATE	0.01f	// percent repair per second for a subsystem
 #define SUBSYS_REPAIR_THRESHOLD		0.1	// only repair subsystems that have > 10% strength
-void ship_auto_repair_frame(int shipnum, float frametime)
+static void ship_auto_repair_frame(int shipnum, float frametime)
 {
 	ship_subsys		*ssp;
 	ship_subsys_info	*ssip;
@@ -8487,7 +8499,7 @@ void ship_auto_repair_frame(int shipnum, float frametime)
 #define PLAYER_WARN_DELTA_TIME			10000			//ms
 #define PLAYER_DEATH_DELTA_TIME			5000			//ms
 
-void ship_check_player_distance_sub(player *p, int multi_target=-1)
+static void ship_check_player_distance_sub(player *p, int multi_target=-1)
 {
 	// only check distance for ships
 	if ( p->control_mode != PCM_NORMAL )	{
@@ -8548,7 +8560,7 @@ void ship_check_player_distance_sub(player *p, int multi_target=-1)
 	}
 }
 
-void ship_check_player_distance()
+static void ship_check_player_distance()
 {
 	int idx;
 
@@ -8613,7 +8625,7 @@ void ship_reset_disabled_physics(object *objp, int ship_class)
 /**
  * Clear/set the subsystem disrupted flags
  */
-void ship_subsys_disrupted_check(ship *sp)
+static void ship_subsys_disrupted_check(ship *sp)
 {
 	ship_subsys *ss;
 	int engines_disabled=0;
@@ -8644,7 +8656,7 @@ void ship_subsys_disrupted_check(ship *sp)
 /**
  * Maybe check ship subsystems for disruption, and set/clear flags
  */
-void ship_subsys_disrupted_maybe_check(ship *shipp)
+static void ship_subsys_disrupted_maybe_check(ship *shipp)
 {
 	if ( timestamp_elapsed(shipp->subsys_disrupted_check_timestamp) ) {
 		ship_subsys_disrupted_check(shipp);
@@ -8731,7 +8743,7 @@ DCF(lethality_decay, "Sets ship lethality_decay, or the time in sec to go from 1
 
 float min_lethality = 0.0f;
 
-void lethality_decay(ai_info *aip)
+static void lethality_decay(ai_info *aip)
 {
 	float decay_rate = Decay_rate;
 	aip->lethality -= 100.0f * decay_rate * flFrametime;
@@ -8761,7 +8773,7 @@ void ship_process_pre(object *objp, float frametime)
 
 MONITOR( NumShips )
 
-void ship_radar_process( object * obj, ship * shipp, ship_info * sip ) 
+static void ship_radar_process( object * obj, ship * shipp, ship_info * sip ) 
 {
 	Assert( obj != NULL);
 	Assert( shipp != NULL );
@@ -9015,7 +9027,7 @@ void ship_process_post(object * obj, float frametime)
  * Weapon assignments are checked against the model to ensure the models
  * and the ship info weapon data are in synch.
  */
-void ship_set_default_weapons(ship *shipp, ship_info *sip)
+static void ship_set_default_weapons(ship *shipp, ship_info *sip)
 {
 	int			i, j;
 	polymodel	*pm;
@@ -9173,7 +9185,7 @@ int ship_check_collision_fast( object * obj, object * other_obj, vec3d * hitpos)
 /**
  * Ensure create time for ship is unique
  */
-void ship_make_create_time_unique(ship *shipp)
+static void ship_make_create_time_unique(ship *shipp)
 {
 	static int last_smctu_initial_time = -1;
 	static int last_smctu_final_time = -1;
@@ -9229,7 +9241,7 @@ void ship_make_create_time_unique(ship *shipp)
 
 int	Ship_subsys_hwm = 0;
 
-void show_ship_subsys_count()
+static void show_ship_subsys_count()
 {
 	object	*objp;
 	int		count = 0;	
@@ -9247,7 +9259,7 @@ void show_ship_subsys_count()
 	}
 }
 
-void ship_init_afterburners(ship *shipp)
+static void ship_init_afterburners(ship *shipp)
 {
 	Assert( shipp );
 
@@ -9512,7 +9524,7 @@ int ship_create(matrix *orient, vec3d *pos, int ship_type, char *ship_name)
  * @param n			index of ship in ::Ships[] array
  * @param ship_type	ship class (index into ::Ship_info vector)
  */
-void ship_model_change(int n, int ship_type)
+static void ship_model_change(int n, int ship_type)
 {
 	int			i;
 	ship_info	*sip;
@@ -10420,7 +10432,7 @@ void ship_maybe_play_primary_fail_sound()
 /**
  * See if enough time has elapsed to play secondary fail sound again
  */
-int ship_maybe_play_secondary_fail_sound(weapon_info *wip)
+static int ship_maybe_play_secondary_fail_sound(weapon_info *wip)
 {
 	hud_start_flash_weapon(Player_ship->weapons.num_primary_banks + Player_ship->weapons.current_secondary_bank);
 
@@ -10442,7 +10454,7 @@ int ship_maybe_play_secondary_fail_sound(weapon_info *wip)
  *
  * @return 1 if weapon failed to fire, 0 if weapon can fire
  */
-int ship_weapon_maybe_fail(ship *sp)
+static int ship_weapon_maybe_fail(ship *sp)
 {
 	int	rval;
 	float	weapons_subsys_str;
@@ -10521,7 +10533,7 @@ DCF(t_max, "")
 /**
  * Stops a single primary bank
  */
-int ship_stop_fire_primary_bank(object * obj, int bank_to_stop)
+static int ship_stop_fire_primary_bank(object * obj, int bank_to_stop)
 {
 	ship			*shipp;
 	ship_weapon	*swp;
@@ -11401,7 +11413,7 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 	return num_fired;
 }
 
-void ship_start_targeting_laser(ship *shipp)
+static void ship_start_targeting_laser(ship *shipp)
 {	
 	int bank0_laser = 0;
 	int bank1_laser = 0;
@@ -11438,7 +11450,7 @@ void ship_start_targeting_laser(ship *shipp)
 	}
 }
 
-void ship_stop_targeting_laser(ship *shipp)
+static void ship_stop_targeting_laser(ship *shipp)
 {
 	shipp->targeting_laser_bank = -1;
 	shipp->targeting_laser_objnum = -1; // erase old laser obj num if it has any -Bobboau
@@ -11513,7 +11525,7 @@ void ship_process_targeting_lasers()
  *	Calls ::weapon_hit(), indirectly via ::weapon_detonate(), to detonate weapon.
  *	If it's a weapon that spawns particles, those will be released.
  */
-int maybe_detonate_weapon(ship_weapon *swp, object *src)
+static int maybe_detonate_weapon(ship_weapon *swp, object *src)
 {
 	int			objnum = swp->last_fired_weapon_index;
 	object		*objp;
@@ -11562,7 +11574,7 @@ int maybe_detonate_weapon(ship_weapon *swp, object *src)
  * Maybe detonate secondary weapon that's already out.
  * @return Return true if we detonate it, false if not.
  */
-int ship_fire_secondary_detonate(object *obj, ship_weapon *swp)
+static int ship_fire_secondary_detonate(object *obj, ship_weapon *swp)
 {
 	if (swp->last_fired_weapon_index != -1)
 		if (timestamp_elapsed(swp->detonate_weapon_time)) {
@@ -11589,38 +11601,6 @@ int ship_fire_secondary_detonate(object *obj, ship_weapon *swp)
 
 	return 0;
 }
-
-/**
- * Try to switch to a secondary bank that has ammo
- *
- * @note: not currently used - mark for removal?
- */
-int ship_select_next_valid_secondary_bank(ship_weapon *swp)
-{
-	int cycled=0;
-
-	int ns = swp->num_secondary_banks;
-
-	if ( ns > 1 ) {
-		int i,j=swp->current_secondary_bank+1;
-		for (i=0; i<ns; i++) {
-			if ( j >= ns ) {
-				j=0;
-			}
-
-			if ( swp->secondary_bank_ammo[j] > 0 ) {
-				swp->current_secondary_bank=j;
-				cycled = 1;
-				break;
-			}
-
-			j++;
-		}
-	}
-
-	return cycled;
-}
-
 
 extern void ai_maybe_announce_shockwave_weapon(object *firing_objp, int weapon_index);
 
@@ -12105,8 +12085,6 @@ done_secondary:
 	//
 	// niffiwan: only try to switch banks if object has multiple banks, and firing bank is the current bank
 	if ( (obj->flags[Object::Object_Flags::Player_ship]) && (swp->secondary_bank_ammo[bank] <= 0) && (swp->num_secondary_banks >= 2) && (bank == swp->current_secondary_bank) ) {
-		// niffiwan: call ship_select_next_secondary instead of ship_select_next_valid_secondary_bank
-		// ensures all "extras" are dealt with, like animations, scripting hooks, etc
 		if (ship_select_next_secondary(obj) ) {			//DTP here we switch to the next valid bank, but we can't call weapon_info on next fire_wait
 
 			if ( timestamp_elapsed(shipp->weapons.next_secondary_fire_stamp[shipp->weapons.current_secondary_bank]) ) {	//DTP, this is simply a copy of the manual cycle functions
@@ -12124,7 +12102,7 @@ done_secondary:
 }
 
 // Goober5000
-int primary_out_of_ammo(ship_weapon *swp, int bank)
+static int primary_out_of_ammo(ship_weapon *swp, int bank)
 {
 	// true if both ballistic and ammo <= 0,
 	// false if not ballistic or if ballistic and ammo > 0
@@ -12141,7 +12119,7 @@ int primary_out_of_ammo(ship_weapon *swp, int bank)
 	return 0;
 }
 
-bool ship_has_a_ballistic_primary(const ship *shipp)
+static bool ship_has_a_ballistic_primary(const ship *shipp)
 {
 	const ship_weapon *swp = &shipp->weapons;
 
@@ -12566,7 +12544,7 @@ int wing_lookup(const char *name)
 /**
  * Return the index of Ship_info[].name that is *token.
  */
-int ship_info_lookup_sub(const char *token)
+static int ship_info_lookup_sub(const char *token)
 {
 	for (auto it = Ship_info.cbegin(); it != Ship_info.cend(); ++it)
 		if (!stricmp(token, it->name))
@@ -12578,7 +12556,7 @@ int ship_info_lookup_sub(const char *token)
 /**
  * Return the index of Ship_templates[].name that is *token.
  */
-int ship_template_lookup(const char *token)
+static int ship_template_lookup(const char *token)
 {
 	for ( auto it = Ship_templates.cbegin(); it != Ship_templates.cend(); ++it ) {
 		if ( !stricmp(token, it->name) ) {
@@ -13014,7 +12992,7 @@ int ship_find_num_turrets(object *objp)
 }
 
 //WMC
-void ship_set_eye( object *obj, int eye_index)
+static void ship_set_eye( object *obj, int eye_index)
 {
 	if(obj->type != OBJ_SHIP)
 		return;
@@ -14277,7 +14255,7 @@ void ship_add_ship_type_count( int ship_info_index, int num )
 	Ship_type_counts[type].total += num;
 }
 
-void ship_add_ship_type_kill_count( int ship_info_index )
+static void ship_add_ship_type_kill_count( int ship_info_index )
 {
 	int type = ship_class_query_general_type(ship_info_index);
 
@@ -14892,7 +14870,7 @@ int ship_dumbfire_threat(ship *sp)
 }
 
 // Return !0 if there is a missile in the air homing on shipp
-int ship_has_homing_missile_locked(ship *shipp)
+static int ship_has_homing_missile_locked(ship *shipp)
 {
 	object		*locked_objp, *A;
 	weapon		*wp;
@@ -14929,7 +14907,7 @@ int ship_has_homing_missile_locked(ship *shipp)
 }
 
 // Return !0 if there is some ship attempting to lock onto shipp
-int ship_is_getting_locked(ship *shipp)
+static int ship_is_getting_locked(ship *shipp)
 {
 	ship_obj	*so;
 	object	*objp;
@@ -15441,7 +15419,7 @@ void ship_maybe_praise_self(ship *deader_sp, ship *killer_sp)
 #define AWACS_HELP_HULL_LOW				0.25		// percent hull at which ship will ask for help
 
 // -----------------------------------------------------------------------------
-void awacs_maybe_ask_for_help(ship *sp, int multi_team_filter)
+static void awacs_maybe_ask_for_help(ship *sp, int multi_team_filter)
 {
 	// Goober5000 - bail if not in main fs2 campaign
 	// (stupid coders... it's the FREDder's responsibility to add this message)
@@ -16786,7 +16764,7 @@ float ship_get_exp_damage(object* objp)
 	return damage;
 }
 
-int ship_get_exp_propagates(ship *sp)
+static int ship_get_exp_propagates(ship *sp)
 {
 	return Ship_info[sp->ship_info_index].explosion_propagates;
 }
@@ -17335,7 +17313,7 @@ bool ship_fighterbays_all_destroyed(ship *shipp)
 }
 
 // moved here by Goober5000
-bool ship_subsys_is_fighterbay(ship_subsys *ss)
+static bool ship_subsys_is_fighterbay(ship_subsys *ss)
 {
 	Assert(ss);
 
@@ -17474,7 +17452,7 @@ int ship_tvt_wing_lookup(const char *wing_name)
 }
 
 // Goober5000
-int ship_class_get_priority(int ship_class)
+static int ship_class_get_priority(int ship_class)
 {
 	ship_info *sip = &Ship_info[ship_class];
 
@@ -17536,7 +17514,7 @@ int ship_class_compare(int ship_class_1, int ship_class_2)
  * Gives the index into the Damage_types[] vector of a specified damage type name
  * @return -1 if not found
  */
-int damage_type_get_idx(char *name)
+static int damage_type_get_idx(char *name)
 {
 	//This should never be bigger than INT_MAX anyway
 	for(int i = 0; i < (int)Damage_types.size(); i++)
@@ -17591,7 +17569,7 @@ flag_def_list	PiercingTypes[] = {
 
 const int Num_piercing_effect_types = sizeof(PiercingTypes)/sizeof(flag_def_list);
 
-int piercing_type_get(char *str)
+static int piercing_type_get(char *str)
 {
 	int i;
 	for(i = 0; i < Num_piercing_effect_types; i++)
@@ -17613,7 +17591,7 @@ flag_def_list	DifficultyScaleTypes[] = {
 
 const int Num_difficulty_scale_types = sizeof(DifficultyScaleTypes)/sizeof(flag_def_list);
 
-int difficulty_scale_type_get(char *str) {
+static int difficulty_scale_type_get(char *str) {
 	int i;
 	for(i = 0; i < Num_difficulty_scale_types; i++){
 		if (!stricmp(DifficultyScaleTypes[i].name, str))
@@ -17635,7 +17613,7 @@ flag_def_list	ArmorTypeConstants[] = {
 
 const int Num_armor_type_constants = sizeof(ArmorTypeConstants)/sizeof(flag_def_list);
 
-int armor_type_constants_get(char *str){
+static int armor_type_constants_get(char *str){
 	int i;
 	for (i = 0; i < Num_armor_type_constants; i++){
 		if (!stricmp(ArmorTypeConstants[i].name, str))
@@ -18401,7 +18379,7 @@ void parse_weapon_targeting_priorities()
 	}
 }
 
-int ship_get_subobj_model_num(ship_info* sip, char* subobj_name) 
+static int ship_get_subobj_model_num(ship_info* sip, char* subobj_name) 
 {
 	for (int i = 0; i < sip->n_subsystems; i++) {
 		if (!subsystem_stricmp(sip->subsystems[i].subobj_name, subobj_name))

@@ -1367,7 +1367,6 @@ extern void ship_level_init();		// called before the start of each level
 //returns -1 if failed
 extern int ship_create(matrix * orient, vec3d * pos, int ship_type, char *ship_name = NULL);
 extern void change_ship_type(int n, int ship_type, int by_sexp = 0);
-extern void ship_model_change(int n, int ship_type);
 extern void ship_process_pre( object * objp, float frametime );
 extern void ship_process_post( object * objp, float frametime );
 extern void ship_render( object * obj, model_draw_list * scene );
@@ -1410,8 +1409,6 @@ extern int ship_fire_secondary(object * objp, int allow_swarm = 0 );
 extern int ship_launch_countermeasure(object *objp, int rand_val = -1);
 
 // for special targeting lasers
-extern void ship_start_targeting_laser(ship *shipp);
-extern void ship_stop_targeting_laser(ship *shipp);
 extern void ship_process_targeting_lasers();
 
 extern int ship_select_next_primary(object *objp, int direction);
@@ -1422,7 +1419,6 @@ extern int get_available_primary_weapons(object *objp, int *outlist, int *outban
 
 extern int get_available_secondary_weapons(object *objp, int *outlist, int *outbanklist);
 extern void ship_recalc_subsys_strength( ship *shipp );
-extern int subsys_set(int objnum, int ignore_subsys_info = 0);
 extern void physics_ship_init(object *objp);
 
 //	Note: This is not a general purpose routine.
@@ -1431,10 +1427,6 @@ extern void physics_ship_init(object *objp);
 //	Return true/false for subsystem found/not found.
 //	Stuff vector *pos with absolute position.
 extern int get_subsystem_pos(vec3d *pos, object *objp, ship_subsys *subsysp);
-
-int parse_ship_values(ship_info* sip, const bool is_template, const bool first_time, const bool replace);
-int ship_template_lookup(const char *name = NULL);
-void parse_ship_particle_effect(ship_info* sip, particle_effect* pe, char *id_string);
 
 extern int ship_info_lookup(const char *name = NULL);
 extern int ship_name_lookup(const char *name, int inc_players = 0);	// returns the index into Ship array of name
@@ -1495,8 +1487,6 @@ extern int ship_find_num_crewpoints(object *objp);
 extern int ship_find_num_turrets(object *objp);
 
 extern void compute_slew_matrix(matrix *orient, angles *a);
-//extern camid ship_set_eye( object *obj, int eye_index);
-extern void ship_set_eye(object *obj, int eye_index);
 extern void ship_get_eye( vec3d *eye_pos, matrix *eye_orient, object *obj, bool do_slew = true, bool from_origin = false);		// returns in eye the correct viewing position for the given object
 //extern camid ship_get_followtarget_eye(object *obj);
 extern ship_subsys *ship_get_indexed_subsys( ship *sp, int index, vec3d *attacker_pos = NULL );	// returns index'th subsystem of this ship
@@ -1530,7 +1520,6 @@ extern void ship_assign_sound(ship *sp);
 
 extern void ship_clear_ship_type_counts();
 extern void ship_add_ship_type_count( int ship_info_index, int num );
-extern void ship_add_ship_type_kill_count( int ship_info_index );
 
 extern int ship_get_type(char* output, ship_info* sip);
 extern int ship_get_default_orders_accepted( ship_info *sip );
@@ -1578,7 +1567,6 @@ extern int Ship_auto_repair;	// flag to indicate auto-repair of subsystem should
 #endif
 
 void ship_subsystem_delete(ship *shipp);
-void ship_set_default_weapons(ship *shipp, ship_info *sip);
 float ship_quadrant_shield_strength(object *hit_objp, int quadrant_num);
 
 int ship_dumbfire_threat(ship *sp);
@@ -1616,7 +1604,6 @@ extern void ship_do_cap_subsys_cargo_hidden( ship *shipp, ship_subsys *subsys, i
 float ship_get_secondary_weapon_range(ship *shipp);
 
 // Goober5000
-int primary_out_of_ammo(ship_weapon *swp, int bank);
 int get_max_ammo_count_for_primary_bank(int ship_class, int bank, int ammo_type);
 
 int get_max_ammo_count_for_bank(int ship_class, int bank, int ammo_type);
@@ -1656,9 +1643,6 @@ void object_jettison_cargo(object *objp, object *cargo_objp, float jettison_spee
 
 // get damage done by exploding ship, takes into account mods for individual ship
 float ship_get_exp_damage(object* objp);
-
-// get whether ship has shockwave, takes into account mods for individual ship
-int ship_get_exp_propagates(ship *sp);
 
 // get outer radius of damage, takes into account mods for individual ship
 float ship_get_exp_outer_rad(object *ship_objp);
@@ -1720,9 +1704,6 @@ extern bool ship_has_dock_bay(int shipnum);
 extern bool ship_useful_for_departure(int shipnum, int path_mask = 0);
 extern int ship_get_ship_for_departure(int team);
 
-// Goober5000 - moved here from hudbrackets.cpp
-extern bool ship_subsys_is_fighterbay(ship_subsys *ss);
-
 // Goober5000
 extern bool ship_fighterbays_all_destroyed(ship *shipp);
 
@@ -1741,14 +1722,9 @@ extern int ship_has_engine_power(ship *shipp);
 
 // Swifty - Cockpit displays
 void ship_init_cockpit_displays(ship *shipp);
-void ship_add_cockpit_display(cockpit_display_info *display, int cockpit_model_num);
-void ship_set_hud_cockpit_targets();
 void ship_clear_cockpit_displays();
 int ship_start_render_cockpit_display(size_t cockpit_display_num);
 void ship_end_render_cockpit_display(size_t cockpit_display_num);
-
-//WMC - Warptype stuff
-int warptype_match(char *p);
 
 // Goober5000
 int ship_starting_wing_lookup(const char *wing_name);
@@ -1761,8 +1737,6 @@ int ship_class_compare(int ship_class_1, int ship_class_2);
 int armor_type_get_idx(char* name);
 
 void armor_init();
-
-int thruster_glow_anim_load(generic_anim *ga);
 
 // Sushi - Path metadata
 void init_path_metadata(path_metadata& metadata);

@@ -39,10 +39,6 @@ extern void shipfx_blow_off_subsystem(object *ship_obj,ship *ship_p,ship_subsys 
 // ship's model.
 extern void shipfx_blow_up_model(object *obj,int model, int submodel, int ndebris, vec3d *exp_center);
 
-// put here for multiplayer purposes
-void shipfx_blow_up_hull(object *obj,int model, vec3d *exp_center );
-
-
 // =================================================
 //          SHIP WARP IN EFFECT STUFF
 // =================================================
