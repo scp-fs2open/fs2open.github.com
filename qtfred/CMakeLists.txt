@@ -69,6 +69,7 @@ INSTALL(
 COPY_FILES_TO_TARGET(qtfred)
 
 enable_clang_tidy(qtfred)
+enable_clang_format(qtfred)
 
 if (WIN32)
     set(additional_dlls

@@ -12,6 +12,7 @@ IF(NOT CMAKE_CROSSCOMPILING)
 	)
 
 	enable_clang_tidy(embedfile)
+	enable_clang_format(embedfile)
 
 	EXPORT(TARGETS embedfile FILE ${CMAKE_BINARY_DIR}/ImportExecutables.cmake)
 ENDIF(NOT CMAKE_CROSSCOMPILING)

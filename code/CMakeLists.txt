@@ -38,6 +38,7 @@ TARGET_LINK_LIBRARIES(code PUBLIC compiler)
 target_link_libraries(code PUBLIC md5)
 
 enable_clang_tidy(code)
+enable_clang_format(code)
 
 IF (FSO_USE_SPEECH)
 	find_package(Speech REQUIRED)
