@@ -1700,7 +1700,7 @@ void ai_big_strafe()
 //
 // Check if weapon_objnum was fired by Pl_objp's target, and whether Pl_objp's target is a big ship, if
 // so, enter AIM_STRAFE
-int ai_big_maybe_enter_strafe_mode(object *pl_objp, int weapon_objnum, int consider_target_only)
+int ai_big_maybe_enter_strafe_mode(object *pl_objp, int weapon_objnum)
 {
 	ai_info		*aip;
 	ship_info	*sip;
@@ -1745,16 +1745,12 @@ int ai_big_maybe_enter_strafe_mode(object *pl_objp, int weapon_objnum, int consi
 	// Maybe the ship which fired the weapon isn't the current target
 	if ( OBJ_INDEX(parent_objp) != aip->target_objnum ) {
 
-//JAS IMPOSSIBLE		if (1) { // consider_target_only ) {
-//JAS IMPOSSIBLE			return 0;
-//JAS IMPOSSIBLE		} else {
 			// switch targets
 			sip = &Ship_info[Ships[parent_objp->instance].ship_info_index];
 			if ( !(sip->is_big_or_huge()) || (sip->flags[Ship::Info_Flags::Transport]) ) {
 				return 0;
 			}
 			set_target_objnum(aip, OBJ_INDEX(parent_objp));
-//JAS IMPOSSIBLE		}
 	}
 
 	ai_big_strafe_maybe_attack_turret(pl_objp, weapon_objp);
