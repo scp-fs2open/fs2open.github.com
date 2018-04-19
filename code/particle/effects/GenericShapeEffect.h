@@ -102,7 +102,6 @@ class GenericShapeEffect : public ParticleEffect {
 
 			particle_info info;
 
-			memset(&info, 0, sizeof(info));
 			source->getOrigin()->applyToParticleInfo(info);
 
 			info.vel = rotatedVel.vec.fvec;
@@ -114,13 +113,16 @@ class GenericShapeEffect : public ParticleEffect {
 			}
 			vm_vec_scale(&info.vel, m_velocity.next());
 
-			auto part = m_particleProperties.createParticle(info);
-
 			if (m_particleTrail >= 0) {
+				auto part = m_particleProperties.createPersistentParticle(info);
+
 				auto trailSource = ParticleManager::get()->createSource(m_particleTrail);
 				trailSource.moveToParticle(part);
 
 				trailSource.finish();
+			} else {
+				// We don't have a trail so we don't need a persistent particle
+				m_particleProperties.createParticle(info);
 			}
 		}
 

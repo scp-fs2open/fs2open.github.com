@@ -18,40 +18,31 @@
 #include "freespace.h"
 #include "gamesnd/gamesnd.h"
 #include "globalincs/linklist.h"
-#include "graphics/grbatch.h"
 #include "hud/hud.h"
 #include "hud/hudartillery.h"
 #include "iff_defs/iff_defs.h"
 #include "io/joy_ff.h"
 #include "io/timer.h"
-#include "localization/localize.h"
 #include "math/staticrand.h"
-#include "mod_table/mod_table.h"
-#include "model/modelrender.h"
 #include "missionui/missionweaponchoice.h"
 #include "network/multi.h"
 #include "network/multimsgs.h"
 #include "network/multiutil.h"
 #include "object/objcollide.h"
-#include "object/object.h"
-#include "parse/parselo.h"
 #include "scripting/scripting.h"
 #include "particle/particle.h"
 #include "playerman/player.h"
 #include "radar/radar.h"
-#include "radar/radarsetup.h"
 #include "render/3d.h"
 #include "render/batching.h"
 #include "ship/ship.h"
 #include "ship/shiphit.h"
-#include "stats/scoring.h"
 #include "weapon/beam.h"	// for BEAM_TYPE_? definitions
 #include "weapon/corkscrew.h"
 #include "weapon/emp.h"
 #include "weapon/flak.h"
 #include "weapon/muzzleflash.h"
 #include "weapon/swarm.h"
-#include "weapon/weapon.h"
 #include "particle/effects/SingleParticleEffect.h"
 #include "particle/effects/BeamPiercingEffect.h"
 #include "particle/effects/ParticleEmitterEffect.h"
@@ -6817,9 +6808,18 @@ void weapon_maybe_spew_particle(object *obj)
 
 						// emit the particle
 						if (wip->particle_spewers[psi].particle_spew_anim.first_frame < 0) {
-							particle::create(&particle_pos, &vel, wip->particle_spewers[psi].particle_spew_lifetime, wip->particle_spewers[psi].particle_spew_radius, particle::PARTICLE_SMOKE);
+							particle::create(&particle_pos,
+											 &vel,
+											 wip->particle_spewers[psi].particle_spew_lifetime,
+											 wip->particle_spewers[psi].particle_spew_radius,
+											 particle::PARTICLE_SMOKE);
 						} else {
-							particle::create(&particle_pos, &vel, wip->particle_spewers[psi].particle_spew_lifetime, wip->particle_spewers[psi].particle_spew_radius, particle::PARTICLE_BITMAP, wip->particle_spewers[psi].particle_spew_anim.first_frame);
+							particle::create(&particle_pos,
+											 &vel,
+											 wip->particle_spewers[psi].particle_spew_lifetime,
+											 wip->particle_spewers[psi].particle_spew_radius,
+											 particle::PARTICLE_BITMAP,
+											 wip->particle_spewers[psi].particle_spew_anim.first_frame);
 						}
 					}
 				} else if (wip->particle_spewers[psi].particle_spew_type == PSPEW_HELIX) { // helix
@@ -6852,9 +6852,18 @@ void weapon_maybe_spew_particle(object *obj)
 
 						//emit particles
 						if (wip->particle_spewers[psi].particle_spew_anim.first_frame < 0) {
-							particle::create(&output_pos, &output_vel, wip->particle_spewers[psi].particle_spew_lifetime, wip->particle_spewers[psi].particle_spew_radius, particle::PARTICLE_SMOKE);
+							particle::create(&output_pos,
+											 &output_vel,
+											 wip->particle_spewers[psi].particle_spew_lifetime,
+											 wip->particle_spewers[psi].particle_spew_radius,
+											 particle::PARTICLE_SMOKE);
 						} else {
-							particle::create(&output_pos, &output_vel, wip->particle_spewers[psi].particle_spew_lifetime, wip->particle_spewers[psi].particle_spew_radius, particle::PARTICLE_BITMAP, wip->particle_spewers[psi].particle_spew_anim.first_frame);
+							particle::create(&output_pos,
+											 &output_vel,
+											 wip->particle_spewers[psi].particle_spew_lifetime,
+											 wip->particle_spewers[psi].particle_spew_radius,
+											 particle::PARTICLE_BITMAP,
+											 wip->particle_spewers[psi].particle_spew_anim.first_frame);
 						}
 					}
 				} else if (wip->particle_spewers[psi].particle_spew_type == PSPEW_SPARKLER) { // sparkler
@@ -6886,9 +6895,18 @@ void weapon_maybe_spew_particle(object *obj)
 
 						// emit particles
 						if (wip->particle_spewers[psi].particle_spew_anim.first_frame < 0) {
-							particle::create(&output_pos, &output_vel, wip->particle_spewers[psi].particle_spew_lifetime, wip->particle_spewers[psi].particle_spew_radius, particle::PARTICLE_SMOKE);
+							particle::create(&output_pos,
+											 &output_vel,
+											 wip->particle_spewers[psi].particle_spew_lifetime,
+											 wip->particle_spewers[psi].particle_spew_radius,
+											 particle::PARTICLE_SMOKE);
 						} else {
-							particle::create(&output_pos, &output_vel, wip->particle_spewers[psi].particle_spew_lifetime, wip->particle_spewers[psi].particle_spew_radius, particle::PARTICLE_BITMAP, wip->particle_spewers[psi].particle_spew_anim.first_frame);
+							particle::create(&output_pos,
+											 &output_vel,
+											 wip->particle_spewers[psi].particle_spew_lifetime,
+											 wip->particle_spewers[psi].particle_spew_radius,
+											 particle::PARTICLE_BITMAP,
+											 wip->particle_spewers[psi].particle_spew_anim.first_frame);
 						}
 					}
 				} else if (wip->particle_spewers[psi].particle_spew_type == PSPEW_RING) {
@@ -6912,9 +6930,18 @@ void weapon_maybe_spew_particle(object *obj)
 
 						// emit particles
 						if (wip->particle_spewers[psi].particle_spew_anim.first_frame < 0) {
-							particle::create(&output_pos, &output_vel, wip->particle_spewers[psi].particle_spew_lifetime, wip->particle_spewers[psi].particle_spew_radius, particle::PARTICLE_SMOKE);
+							particle::create(&output_pos,
+											 &output_vel,
+											 wip->particle_spewers[psi].particle_spew_lifetime,
+											 wip->particle_spewers[psi].particle_spew_radius,
+											 particle::PARTICLE_SMOKE);
 						} else {
-							particle::create(&output_pos, &output_vel, wip->particle_spewers[psi].particle_spew_lifetime, wip->particle_spewers[psi].particle_spew_radius, particle::PARTICLE_BITMAP, wip->particle_spewers[psi].particle_spew_anim.first_frame);
+							particle::create(&output_pos,
+											 &output_vel,
+											 wip->particle_spewers[psi].particle_spew_lifetime,
+											 wip->particle_spewers[psi].particle_spew_radius,
+											 particle::PARTICLE_BITMAP,
+											 wip->particle_spewers[psi].particle_spew_anim.first_frame);
 						}
 					}
 				} else if (wip->particle_spewers[psi].particle_spew_type == PSPEW_PLUME) {
@@ -6948,9 +6975,18 @@ void weapon_maybe_spew_particle(object *obj)
 
 						//emit particles
 						if (wip->particle_spewers[psi].particle_spew_anim.first_frame < 0) {
-							particle::create(&output_pos, &output_vel, wip->particle_spewers[psi].particle_spew_lifetime, wip->particle_spewers[psi].particle_spew_radius, particle::PARTICLE_SMOKE);
+							particle::create(&output_pos,
+											 &output_vel,
+											 wip->particle_spewers[psi].particle_spew_lifetime,
+											 wip->particle_spewers[psi].particle_spew_radius,
+											 particle::PARTICLE_SMOKE);
 						} else {
-							particle::create(&output_pos, &output_vel, wip->particle_spewers[psi].particle_spew_lifetime, wip->particle_spewers[psi].particle_spew_radius, particle::PARTICLE_BITMAP, wip->particle_spewers[psi].particle_spew_anim.first_frame);
+							particle::create(&output_pos,
+											 &output_vel,
+											 wip->particle_spewers[psi].particle_spew_lifetime,
+											 wip->particle_spewers[psi].particle_spew_radius,
+											 particle::PARTICLE_BITMAP,
+											 wip->particle_spewers[psi].particle_spew_anim.first_frame);
 						}
 					}
 				}
@@ -7226,7 +7262,13 @@ void weapon_unpause_sounds()
 
 void shield_impact_explosion(vec3d *hitpos, object *objp, float radius, int idx) {
 	int expl_ani_handle = Weapon_explosions.GetAnim(idx, hitpos, radius);
-	particle::create( hitpos, &vmd_zero_vector, 0.0f, radius, particle::PARTICLE_BITMAP_PERSISTENT, expl_ani_handle, objp );
+	particle::create(hitpos,
+					 &vmd_zero_vector,
+					 0.0f,
+					 radius,
+					 particle::PARTICLE_BITMAP_PERSISTENT,
+					 expl_ani_handle,
+					 objp);
 }
 
 void weapon_render(object* obj, model_draw_list *scene)

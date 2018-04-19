@@ -30,12 +30,24 @@ void ParticleProperties::parse(bool nocreate) {
 	}
 }
 
-WeakParticlePtr ParticleProperties::createParticle(particle_info& info) {
+void ParticleProperties::createParticle(particle_info& info) {
+	info.optional_data = m_bitmap;
+	info.type = PARTICLE_BITMAP;
+	info.rad = m_radius.next();
+	if (m_hasLifetime) {
+		info.lifetime = m_lifetime.next();
+		info.lifetime_from_animation = false;
+	}
+
+	create(&info);
+}
+
+WeakParticlePtr ParticleProperties::createPersistentParticle(particle_info& info) {
 	info.optional_data = m_bitmap;
 	info.type = PARTICLE_BITMAP;
 	info.rad = m_radius.next();
 
-	auto p = create(&info);
+	auto p = createPersistent(&info);
 
 	if (m_hasLifetime && !p.expired()) {
 		p.lock()->max_life = m_lifetime.next();

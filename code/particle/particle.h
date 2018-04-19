@@ -56,22 +56,24 @@ namespace particle
 		PARTICLE_BITMAP_PERSISTENT, //!< A bitmap, optional data is the bitmap number.  If bitmap is an animation, lifetime is calculated by the number of frames and fps.
 
 		NUM_PARTICLE_TYPES,
+		INVALID_TYPE
 	};
 
 	// particle creation stuff
 	typedef struct particle_info {
 		// old-style particle info
-		vec3d pos;
-		vec3d vel;
-		float lifetime;
-		float rad;
-		ParticleType type;
-		int optional_data;
+		vec3d pos = vmd_zero_vector;
+		vec3d vel = vmd_zero_vector;
+		float lifetime = -1.0f;
+		float rad = -1.0f;
+		ParticleType type = INVALID_TYPE;
+		int optional_data = -1;
 
 		// new-style particle info
-		int attached_objnum;			// if these are set, the pos is relative to the pos of the origin of the attached object
-		int	attached_sig;				// to make sure the object hasn't changed or died. velocity is ignored in this case
-		bool	reverse;						// play any animations in reverse
+		int attached_objnum = -1;				// if these are set, the pos is relative to the pos of the origin of the attached object
+		int attached_sig = -1;					// to make sure the object hasn't changed or died. velocity is ignored in this case
+		bool reverse = false;					// play any animations in reverse
+		bool lifetime_from_animation = true;	// if the particle plays an animation then use the anim length for the particle life
 	} particle_info;
 
 	typedef struct particle {
@@ -95,9 +97,44 @@ namespace particle
 	typedef std::weak_ptr<particle> WeakParticlePtr;
 	typedef std::shared_ptr<particle> ParticlePtr;
 
-	// Creates a single particle. See the PARTICLE_?? defines for types.
-    WeakParticlePtr create(particle_info *pinfo);
-    WeakParticlePtr create(vec3d *pos, vec3d *vel, float lifetime, float rad, ParticleType type, int optional_data = -1, object *objp = NULL, bool reverse = false);
+	/**
+	 * @brief Creates a non-persistent particle
+	 *
+	 * A non-persistent particle will be managed more efficiently than a persistent particle but it will not be possible
+	 * to keep a reference to the particle. This should be used whenever the a particle handle is not required (which
+	 * should be the case for most usages).
+	 *
+	 * @param pinfo A structure containg information about how the particle should be created
+	 */
+	void create(particle_info* pinfo);
+
+	/**
+	 * @brief Convenience function for creating a non-persistent particle without explicitly creating a particle_info
+	 * structure.
+	 * @return The particle handle
+	 *
+	 * @see particle::create(particle_info* pinfo)
+	 */
+	void create(vec3d* pos,
+				vec3d* vel,
+				float lifetime,
+				float rad,
+				ParticleType type,
+				int optional_data = -1,
+				object* objp = NULL,
+				bool reverse = false);
+
+	/**
+	 * @brief Creates a persistent particle
+	 *
+	 * A persistent particle is handled differently from a standard particle. It is possible to hold a weak or strong
+	 * reference to a persistent particle which allows to track where the particle is and also allows to change particle
+	 * properties after it has been created.
+	 *
+	 * @param pinfo A structure containg information about how the particle should be created
+	 * @return A weak reference to the particle
+	 */
+    WeakParticlePtr createPersistent(particle_info* pinfo);
 
 	//============================================================================
 	//============== HIGH-LEVEL PARTICLE SYSTEM CREATION CODE ====================
