@@ -3,7 +3,7 @@ sudo: required
 dist: trusty
 cache:
     directories:
-    - $HOME/cmake-3.6
+    - $HOME/cmake-3.8
     - $HOME/.ccache
 addons:
     apt:
