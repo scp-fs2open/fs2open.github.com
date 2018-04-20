@@ -2,6 +2,7 @@
 
 #include <QtWidgets/QDialog>
 
+#include <mission/dialogs/ShieldSystemDialogModel.h>
 #include <ui/FredView.h>
 
 namespace fso {
@@ -18,13 +19,22 @@ class ShieldSystemDialog : public QDialog
 
 public:
     explicit ShieldSystemDialog(FredView* parent, EditorViewport* viewport);
-	// TODO shouldn't all QDialog subclasses have a virtual destructor?
-    ~ShieldSystemDialog() override;
+	virtual ~ShieldSystemDialog();
 
+protected:
+	void keyPressEvent(QKeyEvent* event) override;
+	void closeEvent(QCloseEvent*) override;
 private:
+	void updateUI();
+	void updateTeam();
+	void updateType();
+
+	void teamSelectionChanged(int index);
+	void typeSelectionChanged(int index);
+
+	EditorViewport * _viewport = nullptr;
     std::unique_ptr<Ui::ShieldSystemDialog> ui;
-	//std::unique_ptr<ShieldSystemDialogModel> _model;
-	EditorViewport* _viewport;	
+	std::unique_ptr<ShieldSystemDialogModel> _model;
 };
 
 }

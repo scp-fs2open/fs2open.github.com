@@ -60,6 +60,8 @@ add_file_folder("Source/Mission/Dialogs"
 	src/mission/dialogs/ObjectOrientEditorDialogModel.h
 	src/mission/dialogs/SelectionDialogModel.cpp
 	src/mission/dialogs/SelectionDialogModel.h
+	src/mission/dialogs/ShieldSystemDialogModel.cpp
+	src/mission/dialogs/ShieldSystemDialogModel.h
 	src/mission/dialogs/WaypointEditorDialogModel.cpp
 	src/mission/dialogs/WaypointEditorDialogModel.h
 )

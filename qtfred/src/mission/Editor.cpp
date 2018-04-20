@@ -98,16 +98,8 @@ extern int Nmodel_bitmap;
 
 namespace fso {
 namespace fred {
-
-Editor::Editor() : currentObject{ -1 } {
-	// We need to do this the hard way since MSVC 2013 is too stupid to support array initializers...
-	for (auto& a : Shield_sys_teams) {
-		a = 0;
-	}
-	for (auto& a : Shield_sys_types) {
-		a = 0;
-	}
-
+	
+Editor::Editor() : currentObject{ -1 }, Shield_sys_teams(MAX_IFFS, 0), Shield_sys_types(MAX_SHIP_CLASSES, 0) {
 	connect(fredApp, &FredApplication::onIdle, this, &Editor::update);
 
 	// When the mission changes we need to update all renderers
@@ -3118,5 +3110,71 @@ int Editor::global_error_check_mixed_player_wing(int w) {
 
 	return 0;
 }
+
+bool Editor::compareShieldSysData(const std::vector<int>& teams, const std::vector<int>& types) const {
+	Assert(Shield_sys_teams.size() == teams.size());
+	Assert(Shield_sys_types.size() == types.size());
+	if (Shield_sys_teams.size() != teams.size() || Shield_sys_types.size() != types.size()) {
+		return false;
+	}
+	return (Shield_sys_teams == teams) && (Shield_sys_types == types);
+}
+
+void Editor::exportShieldSysData(std::vector<int>& teams, std::vector<int>& types) const {
+	teams = Shield_sys_teams;
+	types = Shield_sys_types;
+}
+
+void Editor::importShieldSysData(const std::vector<int>& teams, const std::vector<int>& types) {
+	Assert(Shield_sys_teams.size() == teams.size());
+	Assert(Shield_sys_types.size() == types.size());
+	if (Shield_sys_teams.size() != teams.size() || Shield_sys_types.size() != types.size()) {
+		return;
+	}
+	Shield_sys_teams = teams;
+	Shield_sys_types = types;
+
+	for (int i = 0; i < MAX_SHIPS; i++) {
+		if (Ships[i].objnum >= 0) {
+			int z = Shield_sys_teams[Ships[i].team];
+			if (!Shield_sys_types[Ships[i].ship_info_index])
+				z = 0;
+			else if (Shield_sys_types[Ships[i].ship_info_index] == 1)
+				z = 1;
+
+			if (!z)
+				Objects[Ships[i].objnum].flags.remove(Object::Object_Flags::No_shields);
+			else if (z == 1)
+				Objects[Ships[i].objnum].flags.set(Object::Object_Flags::No_shields);
+		}
+	}
+}
+
+// adapted from shield_sys_dlg OnInitDialog()
+// 0 = has shields, 1 = no shields, 2 = conflict/inconsistent
+void Editor::normalizeShieldSysData() {
+	std::vector<int> teams(MAX_IFFS, 0);
+	std::vector<int> types(MAX_SHIP_CLASSES, 0);
+
+	for (int i = 0; i < MAX_SHIPS; i++) {
+		if (Ships[i].objnum >= 0) {
+			int z = (Objects[Ships[i].objnum].flags[Object::Object_Flags::No_shields]) ? 1 : 0;
+			if (!teams[Ships[i].team])
+				Shield_sys_teams[Ships[i].team] = z;
+			else if (Shield_sys_teams[Ships[i].team] != z)
+				Shield_sys_teams[Ships[i].team] = 2;
+
+			if (!types[Ships[i].ship_info_index])
+				Shield_sys_types[Ships[i].ship_info_index] = z;
+			else if (Shield_sys_types[Ships[i].ship_info_index] != z)
+				Shield_sys_types[Ships[i].ship_info_index] = 2;
+
+			teams[Ships[i].team]++;
+			types[Ships[i].ship_info_index]++;
+		}
+	}
+}
+
+
 } // namespace fred
 } // namespace fso
