@@ -30,7 +30,10 @@ struct outwnd_filter_struct {
 	bool enabled;
 };
 
-SCP_vector<outwnd_filter_struct> OutwndFilter;
+SCP_vector<outwnd_filter_struct>& filter_vector() {
+	static SCP_vector<outwnd_filter_struct> vec;
+	return vec;
+}
 
 void outwnd_print(const char *id = NULL, const char *temp = NULL);
 
@@ -65,15 +68,15 @@ void load_filter_info(void)
 
 		strcpy_s( new_filter.name, "error" );
 		new_filter.enabled = true;
-		OutwndFilter.push_back( new_filter );
+		filter_vector().push_back( new_filter );
 
 		strcpy_s( new_filter.name, "general" );
 		new_filter.enabled = true;
-		OutwndFilter.push_back( new_filter );
+		filter_vector().push_back( new_filter );
 
 		strcpy_s( new_filter.name, "warning" );
 		new_filter.enabled = true;
-		OutwndFilter.push_back( new_filter );
+		filter_vector().push_back( new_filter );
 
 		return;
 	}
@@ -104,7 +107,7 @@ void load_filter_info(void)
 			new_filter.enabled = true;
 		}
 
-		OutwndFilter.push_back( new_filter );
+		filter_vector().push_back( new_filter );
 	}
 
 	if ( ferror(fp) && !feof(fp) )
@@ -131,8 +134,8 @@ void save_filter_info(void)
 	fp = fopen(os_get_config_path(pathname).c_str(), "wt");
 
 	if (fp) {
-		for (size_t i = 0; i < OutwndFilter.size(); i++)
-			fprintf(fp, "%c%s\n", OutwndFilter[i].enabled ? '+' : '-', OutwndFilter[i].name);
+		for (size_t i = 0; i < filter_vector().size(); i++)
+			fprintf(fp, "%c%s\n", filter_vector()[i].enabled ? '+' : '-', filter_vector()[i].name);
 
 		fclose(fp);
 	}
@@ -190,10 +193,10 @@ void outwnd_print(const char *id, const char *tmp)
 		outwnd_print( "general", "==========================================================================\n" );
 	}
 
-	auto filter = std::find_if(OutwndFilter.begin(), OutwndFilter.end(), [&id] (const outwnd_filter_struct& f) { return stricmp(f.name, id) == 0; });
+	auto filter = std::find_if(filter_vector().begin(), filter_vector().end(), [&id] (const outwnd_filter_struct& f) { return stricmp(f.name, id) == 0; });
 
 	// id found that isn't in the filter list yet
-	if ( filter == OutwndFilter.end() ) {
+	if ( filter == filter_vector().end() ) {
 		// Only create new filters if there was a filter file
 		if (Outwnd_no_filter_file)
 			return;
@@ -204,7 +207,7 @@ void outwnd_print(const char *id, const char *tmp)
 		strcpy_s(new_filter.name, id);
 		new_filter.enabled = stricmp(new_filter.name, "general") == 0 || stricmp(new_filter.name, "error") == 0 || stricmp(new_filter.name, "warning") == 0;
 
-		OutwndFilter.push_back( new_filter );
+		filter_vector().push_back( new_filter );
 		save_filter_info();
 	}
 	else if (!filter->enabled)
