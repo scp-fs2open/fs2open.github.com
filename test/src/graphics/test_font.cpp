@@ -12,10 +12,10 @@ class FontTest : public test::FSTestFixture {
 	}
 
  protected:
-	virtual void SetUp() override {
+	void SetUp() override {
 		test::FSTestFixture::SetUp();
 	}
-	virtual void TearDown() override {
+	void TearDown() override {
 		test::FSTestFixture::TearDown();
 	}
 };
