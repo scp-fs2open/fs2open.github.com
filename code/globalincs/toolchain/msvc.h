@@ -71,8 +71,8 @@
 #	endif
 #endif
 
-#define PTRDIFF_T_ARG "%Iu"
-#define SIZE_T_ARG    "%Id"
+#define SIZE_T_ARG    "%Iu"
+#define PTRDIFF_T_ARG "%Id"
 
 #define likely(x)
 #define unlikely(x)

@@ -772,7 +772,6 @@ set (file_root_network
 	network/multiutil.h
 	network/psnet2.cpp
 	network/psnet2.h
-	network/stand_gui.cpp
 	network/stand_gui.h
 )
 

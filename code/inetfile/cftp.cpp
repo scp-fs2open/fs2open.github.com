@@ -361,7 +361,7 @@ uint CFtpGet::IssuePort()
 	}
 				
 	// Format the PORT command with the correct numbers.
-#ifdef WINDOWS
+#ifdef WIN32
 	sprintf(szCommandString, "PORT %d,%d,%d,%d,%d,%d\r\n", 
 				listenaddr.sin_addr.S_un.S_un_b.s_b1, 
 				listenaddr.sin_addr.S_un.S_un_b.s_b2,

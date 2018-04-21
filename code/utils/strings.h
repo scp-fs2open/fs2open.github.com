@@ -54,4 +54,12 @@ inline void strlwr(char *s) {
 }
 #endif
 
+#if !HAVE_SNPRINTF
+#if HAVE__SNPRINTF
+#define snprintf _snprintf
+#else
+#error No support for snprintf detected!
+#endif
+#endif
+
 #endif //FS2_OPEN_CASECMP_H

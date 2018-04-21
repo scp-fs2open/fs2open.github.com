@@ -94,7 +94,7 @@ int FS2NetD_ConnectToServer(const char *host, const char *port)
 
 		mySocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 
-		if (mySocket == SOCKET_ERROR) {
+		if (mySocket == (SOCKET)SOCKET_ERROR) {
 #ifdef SCP_UNIX
 			my_error = errno;
 			ml_printf("FS2NetD ERROR: Couldn't get socket (\"%s\")!", strerror(my_error));

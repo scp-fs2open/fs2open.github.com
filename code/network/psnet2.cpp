@@ -2026,7 +2026,7 @@ unsigned int psnet_ras_status()
 		return INADDR_ANY;
 	}
 
-	ml_printf("Found %d connections", num_connections);
+	ml_printf("Found %lu connections", num_connections);
 
 	for (i = 0; i < num_connections; i++ ) {
 		RASCONNSTATUS status;
@@ -2039,7 +2039,7 @@ unsigned int psnet_ras_status()
 			valid_connections++;
 		}
 
-		ml_printf("Connection %d:", i);
+		ml_printf("Connection %lu:", i);
 		ml_printf("Entry Name: %s", rasbuffer[i].szEntryName);
 		ml_printf("Device Type: %s", rasbuffer[i].szDeviceType);
 		ml_printf("Device Name: %s", rasbuffer[i].szDeviceName);
@@ -2129,7 +2129,7 @@ int psnet_init_tcp()
 	TCP_socket = INVALID_SOCKET;	
 	
 	TCP_socket = socket( AF_INET, SOCK_DGRAM, 0 );
-	if ( TCP_socket == (int)INVALID_SOCKET ) {
+	if ( TCP_socket == (SOCKET)INVALID_SOCKET ) {
 		Tcp_failure_code = WSAGetLastError();
 		ml_printf("Error on TCP startup %d", Tcp_failure_code);
 		return 0;

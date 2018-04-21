@@ -2158,11 +2158,11 @@ void game_show_framerate()
 		process_stats.cb = sizeof(process_stats);
 
 		if (GetProcessMemoryInfo(GetCurrentProcess(), reinterpret_cast<PPROCESS_MEMORY_COUNTERS>(&process_stats), sizeof(process_stats))) {
-			sprintf(mem_buffer, "Private Usage: " SIZE_T_ARG " Meg", process_stats.PrivateUsage / 1024 / 1024);
+			sprintf(mem_buffer, "Private Usage: " SIZE_T_ARG " Meg", static_cast<size_t>(process_stats.PrivateUsage) / 1024 / 1024);
 			gr_string(sx, sy, mem_buffer.c_str(), GR_RESIZE_NONE);
 			sy += line_height;
 
-			sprintf(mem_buffer, "Working set size: " SIZE_T_ARG " Meg", process_stats.WorkingSetSize / 1024 / 1024);
+			sprintf(mem_buffer, "Working set size: " SIZE_T_ARG " Meg", static_cast<size_t>(process_stats.WorkingSetSize) / 1024 / 1024);
 			gr_string(sx, sy, mem_buffer.c_str(), GR_RESIZE_NONE);
 			sy += line_height;
 			sy += line_height;
@@ -7999,7 +7999,7 @@ int actual_main(int argc, char *argv[])
 
 	::CoUninitialize();
 
-#ifndef _MINGW
+#ifndef __MINGW32__
 	_CrtDumpMemoryLeaks();
 #endif
 #endif

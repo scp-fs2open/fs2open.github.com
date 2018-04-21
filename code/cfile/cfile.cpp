@@ -561,7 +561,7 @@ void cf_attrib(const char *filename, int set, int clear, int dir_type)
 		fclose(fp);
 
 		DWORD z = GetFileAttributes(longname);
-		SetFileAttributes(longname, z | set & ~clear);
+		SetFileAttributes(longname, z | (set & ~clear));
 	}
 
 }

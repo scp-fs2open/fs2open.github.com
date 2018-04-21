@@ -624,7 +624,7 @@ void std_multi_setup_goal_tree()
 	char goal_name[NAME_LENGTH+1];
 
 	// clear out the tree control
-	TreeView_DeleteAllItems(Standalone_goals);
+	(void)TreeView_DeleteAllItems(Standalone_goals);
 
    // add the primary goal tag
    new_item.mask = TVIF_TEXT | TVIF_IMAGE | TVIF_SELECTEDIMAGE;
@@ -709,7 +709,7 @@ void std_multi_add_goals()
 
 		// insert the item
 		tree_insert.item = new_item;
-		TreeView_InsertItem(Standalone_goals,&tree_insert);
+		(void)TreeView_InsertItem(Standalone_goals,&tree_insert);
 	}	
 
 	// check to see if there are any of the three types of mission goals. If not, then 
@@ -722,7 +722,7 @@ void std_multi_add_goals()
 		new_item.iImage = 3;
 		new_item.iSelectedImage = 3;
 		tree_insert.item = new_item;
-		TreeView_InsertItem(Standalone_goals,&tree_insert);
+		(void)TreeView_InsertItem(Standalone_goals,&tree_insert);
 	}
 	if(!(perm_goal_flags & (1<<2))){
 		// insert the "none" item
@@ -732,7 +732,7 @@ void std_multi_add_goals()
 		new_item.iImage = 3;
 		new_item.iSelectedImage = 3;
 		tree_insert.item = new_item;
-		TreeView_InsertItem(Standalone_goals,&tree_insert);
+		(void)TreeView_InsertItem(Standalone_goals,&tree_insert);
 	}
 	if(!(perm_goal_flags & (1<<3))){
 		// insert the "none" item
@@ -742,12 +742,12 @@ void std_multi_add_goals()
 		new_item.iImage = 3;
 		new_item.iSelectedImage = 3;
 		tree_insert.item = new_item;
-		TreeView_InsertItem(Standalone_goals,&tree_insert);
+		(void)TreeView_InsertItem(Standalone_goals,&tree_insert);
 	}
 
 	// expand out all the tree roots so all goals are shown
 	for(idx=0;idx<3;idx++){
-		TreeView_Expand(Standalone_goals,Goal_items[idx],TVE_EXPAND);
+		(void)TreeView_Expand(Standalone_goals,Goal_items[idx],TVE_EXPAND);
 	}
 }
 
@@ -814,7 +814,7 @@ void std_multi_update_goals()
 		// set the actual image
 		if(should_update){
 			setting.hItem = update_item;
-			TreeView_SetItem(Standalone_goals,&setting);		
+			(void)TreeView_SetItem(Standalone_goals,&setting);
 		}
 	}
 }
@@ -980,7 +980,7 @@ void std_multi_init_multi_controls(HWND hwndDlg)
         WS_VISIBLE | WS_CHILD | WS_BORDER | TVS_HASLINES, 
         GOALVIEW_X,GOALVIEW_Y,GOALVIEW_W,GOALVIEW_H,
         hwndDlg, NULL, GetModuleHandle(NULL), NULL); 
-	TreeView_SetImageList(Standalone_goals,Goal_bitmaps,TVSIL_NORMAL);
+	(void)TreeView_SetImageList(Standalone_goals,Goal_bitmaps,TVSIL_NORMAL);
 }
 
 // return the handle to the item matching the given parameters
@@ -1003,7 +1003,7 @@ HTREEITEM std_multi_get_goal_item(char *goal_string,int type)
 	moveup = TreeView_GetChild(Standalone_goals,Goal_items[type]);
 	while(!done && moveup!=NULL){
 		lookup.hItem = moveup;
-		TreeView_GetItem(Standalone_goals,&lookup);
+		(void)TreeView_GetItem(Standalone_goals,&lookup);
 		if(strcmp(lookup.pszText,goal_string)==0){
 			ret = moveup;
 			done=1;
