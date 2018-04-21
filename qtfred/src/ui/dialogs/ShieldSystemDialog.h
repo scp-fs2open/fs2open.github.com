@@ -19,7 +19,7 @@ class ShieldSystemDialog : public QDialog
 
 public:
     explicit ShieldSystemDialog(FredView* parent, EditorViewport* viewport);
-	virtual ~ShieldSystemDialog();
+	~ShieldSystemDialog() override;
 
 protected:
 	void keyPressEvent(QKeyEvent* event) override;

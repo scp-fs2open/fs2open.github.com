@@ -3114,9 +3114,7 @@ int Editor::global_error_check_mixed_player_wing(int w) {
 bool Editor::compareShieldSysData(const std::vector<int>& teams, const std::vector<int>& types) const {
 	Assert(Shield_sys_teams.size() == teams.size());
 	Assert(Shield_sys_types.size() == types.size());
-	if (Shield_sys_teams.size() != teams.size() || Shield_sys_types.size() != types.size()) {
-		return false;
-	}
+
 	return (Shield_sys_teams == teams) && (Shield_sys_types == types);
 }
 
@@ -3128,9 +3126,7 @@ void Editor::exportShieldSysData(std::vector<int>& teams, std::vector<int>& type
 void Editor::importShieldSysData(const std::vector<int>& teams, const std::vector<int>& types) {
 	Assert(Shield_sys_teams.size() == teams.size());
 	Assert(Shield_sys_types.size() == types.size());
-	if (Shield_sys_teams.size() != teams.size() || Shield_sys_types.size() != types.size()) {
-		return;
-	}
+
 	Shield_sys_teams = teams;
 	Shield_sys_types = types;
 

@@ -11,7 +11,7 @@ class ShieldSystemDialogModel: public AbstractDialogModel {
 
  public:
 	ShieldSystemDialogModel(QObject* parent, EditorViewport* viewport);
-	~ShieldSystemDialogModel() = default;
+	~ShieldSystemDialogModel() override = default;
 
 	bool apply() override;
 	void reject() override;
