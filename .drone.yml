@@ -1,0 +1,21 @@
+
+build:
+  image: teaci/msys$$arch
+  pull: true
+  shell: mingw$$arch
+  commands:
+    - git submodule update --init --recursive
+    - if [ $$arch = 32 ]; then target=i686; fi
+    - if [ $$arch = 64 ]; then target=x86_64; fi
+    - pacman -S --needed --noconfirm --noprogressbar mingw-w64-${target}-pkg-config mingw-w64-${target}-cmake
+    - mkdir build && cd build
+    - cmake -G"Unix Makefiles" -DCMAKE_BUILD_TYPE=$$CONFIGURATION -DFSO_USE_SPEECH=OFF -DFSO_USE_VOICEREC=OFF -DFSO_FATAL_WARNINGS=ON -DFSO_BUILD_FRED2=OFF ..
+    - make -j$(nproc) all
+
+matrix:
+  arch:
+    - 64
+    - 32
+  CONFIGURATION:
+    - Debug
+    - Release
