@@ -118,13 +118,6 @@ class SexpTreeEditorInterface {
 	const flagset<TreeFlags>& getFlags() const;
 
 	virtual bool requireCampaignOperators() const;
-
-	// TODO: These callbacks could be replaced with Qt signals
-	virtual void rootNodeDeleted(int node);
-
-	virtual void rootNodeRenamed(int node);
-
-	virtual void rootNodeFormulaChanged(int old, int node);
 };
 
 /*
@@ -175,6 +168,8 @@ class sexp_tree: public QTreeWidget {
  public:
 	static const int FormulaDataRole = Qt::UserRole;
 
+ 	static QIcon convertNodeImageToIcon(NodeImage image);
+
 	explicit sexp_tree(QWidget* parent = nullptr);
 
 	int find_text(const char* text, int* find, int max_depth);
@@ -189,6 +184,7 @@ class sexp_tree: public QTreeWidget {
 							QTreeWidgetItem* hInsertAfter = nullptr);
 	QTreeWidgetItem* handle(int node);
 	int get_type(QTreeWidgetItem* h);
+	int get_node(QTreeWidgetItem* h);
 	int query_false(int node = -1);
 	int add_default_operator(int op, int argnum);
 	int get_default_value(sexp_list_item* item, char* text_buf, int op, int i);
@@ -204,7 +200,6 @@ class sexp_tree: public QTreeWidget {
 	void replace_operator(const char* op);
 	void replace_data(const char* new_data, int type);
 	void replace_variable_data(int var_idx, int type);
-	void link_modified(int* ptr);
 	void ensure_visible(int node);
 	int node_error(int node, const char* msg, int* bypass);
 	void expand_branch(QTreeWidgetItem* h);
@@ -223,7 +218,7 @@ class sexp_tree: public QTreeWidget {
 	void reset_handles();
 	int save_tree(int node = -1);
 	void load_tree(int index, const char* deflt = "true");
-	void add_operator(const char* op, QTreeWidgetItem* h = nullptr);
+	int add_operator(const char* op, QTreeWidgetItem* h = nullptr);
 	int add_data(const char* new_data, int type);
 	int add_variable_data(const char* new_data, int type);
 	void add_sub_tree(int node, QTreeWidgetItem* root);
@@ -331,15 +326,23 @@ class sexp_tree: public QTreeWidget {
 	sexp_list_item* get_listing_opf_nebula_patterns();
 	sexp_list_item* get_listing_opf_game_snds();
 
-	int item_index;
+
+	void setCurrentItemIndex(int index);
 	int select_sexp_node;  // used to select an sexp item on dialog box open.
 
 	void initializeEditor(Editor* edit, SexpTreeEditorInterface* editorInterface = nullptr);
 
+	void deleteCurrentItem();
  signals:
 	void miniHelpChanged(const QString& text);
 	void helpChanged(const QString& text);
 	void modified();
+
+	void rootNodeDeleted(int node);
+	void rootNodeRenamed(int node);
+	void rootNodeFormulaChanged(int old, int node);
+
+	void selectedRootChanged(int formula);
 
 	// Generated message map functions
  protected:
@@ -349,6 +352,8 @@ class sexp_tree: public QTreeWidget {
 									QTreeWidgetItem* hInsertAfter = nullptr);
 
 	void customMenuHandler(const QPoint& pos);
+
+	void handleNewItemSelected();
 
 	std::unique_ptr<QMenu> buildContextMenu(QTreeWidgetItem* h);
 
@@ -373,13 +378,13 @@ class sexp_tree: public QTreeWidget {
 	int add_instance;  // a source reference index indicator for adding data
 	int replace_instance;  // a source reference index indicator for replacing data
 
+	int item_index;
+
 	Editor* _editor = nullptr;
 	SexpTreeEditorInterface* _interface = nullptr;
 
 	// If there is no special interface then we supply a default one which needs to be stored somewhere
 	std::unique_ptr<SexpTreeEditorInterface> _owned_interface;
-
-	void setCurrentItemIndex(int index);
 
 	int Add_count, Replace_count;
 	int Modify_variable;
