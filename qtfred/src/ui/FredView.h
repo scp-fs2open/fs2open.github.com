@@ -44,6 +44,7 @@ class FredView: public QMainWindow, public IDialogProvider {
 	void newMission();
 
  private slots:
+	void on_actionSave_As_triggered(bool);
 	void on_actionExit_triggered(bool);
 
 	void on_actionConstrainX_triggered(bool enabled);

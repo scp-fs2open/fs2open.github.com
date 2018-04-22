@@ -37,6 +37,8 @@ add_file_folder("Source/Mission"
     src/mission/IDialogProvider.h
     src/mission/management.cpp
     src/mission/management.h
+	src/mission/missionsave.cpp
+	src/mission/missionsave.h
     src/mission/object.cpp
     src/mission/object.h
     src/mission/util.cpp

@@ -285,9 +285,9 @@ int split_str(const char* src,
 			  bool strip_leading_whitespace = true);
 
 // fred
-extern int required_string_fred(char *pstr, char *end = NULL);
+extern int required_string_fred(const char *pstr, const char *end = NULL);
 extern int required_string_either_fred(const char *str1, const char *str2);
-extern int optional_string_fred(char *pstr, char *end = NULL, char *end2 = NULL);
+extern int optional_string_fred(const char *pstr, const char *end = NULL, const char *end2 = NULL);
 
 // Goober5000 - returns position of replacement or -1 for exceeded length (SCP_string variants return the result)
 extern ptrdiff_t replace_one(char *str, const char *oldstr, const char *newstr, size_t max_len, ptrdiff_t range = 0);
