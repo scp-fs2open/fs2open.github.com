@@ -54,7 +54,7 @@ if [ "$BUILD_DEPLOYMENT" = true ]; then
         exit 0;
     fi
 
-    if ([[ "$CONFIGURATION" == "Debug" ]]); then
+    if ([[ "$CONFIGURATION" != "Release" ]]); then
         echo "Skipping non-release configuration";
         exit 0;
     fi

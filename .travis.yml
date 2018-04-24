@@ -138,6 +138,18 @@ matrix:
                       - libc++-dev
         - os: osx
           env: CONFIGURATION="Release"
+
+        - os: linux
+          env: CMAKE_OPTIONS="-DCMAKE_EXPORT_COMPILE_COMMANDS=ON"
+          addons:
+              apt:
+                  sources:
+                      - llvm-toolchain-trusty-4.0
+                  packages:
+                      - clang-format-4.0
+          before_script:
+            - echo # This stage is not needed for this check
+          script: ./ci/travis/clang_format.sh && exit $? # Call script and exit with same code
 before_install:
     # ugly hack; if running a coverity scan abort all except the 1st build
     # see note re gcc compiler above needing to be 1st
