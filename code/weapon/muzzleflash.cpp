@@ -241,7 +241,6 @@ void mflash_create(vec3d *gun_pos, vec3d *gun_dir, physics_info *pip, int mflash
 	// mflash *mflashp;
 	mflash_info *mi;
 	mflash_blob_info *mbi;
-	particle::particle_info p;
 	uint idx;
 
 	// standalone server should never create trails
@@ -265,7 +264,7 @@ void mflash_create(vec3d *gun_pos, vec3d *gun_dir, physics_info *pip, int mflash
 				continue;
 
 			// fire it up
-			memset(&p, 0, sizeof(particle::particle_info));
+			particle::particle_info p;
 			vm_vec_scale_add(&p.pos, gun_pos, gun_dir, mbi->offset);
 			vm_vec_zero(&p.vel);
 			//vm_vec_scale_add(&p.vel, &pip->rotvel, &pip->vel, 1.0f);
@@ -285,7 +284,7 @@ void mflash_create(vec3d *gun_pos, vec3d *gun_dir, physics_info *pip, int mflash
 				continue;
 
 			// fire it up
-			memset(&p, 0, sizeof(particle::particle_info));
+			particle::particle_info p;
 			vm_vec_scale_add(&p.pos, gun_pos, gun_dir, mbi->offset);
 			vm_vec_scale_add(&p.vel, &pip->rotvel, &pip->vel, 1.0f);
 			p.rad = mbi->radius;

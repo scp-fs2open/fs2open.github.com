@@ -113,7 +113,7 @@ ADE_FUNC(createParticle, l_Testing, "vector Position, vector Velocity, number Li
 		pi.attached_sig = objh->objp->signature;
 	}
 
-	particle::WeakParticlePtr p = particle::create(&pi);
+	particle::WeakParticlePtr p = particle::createPersistent(&pi);
 
 	if (!p.expired())
 		return ade_set_args(L, "o", l_Particle.Set(new particle_h(p)));

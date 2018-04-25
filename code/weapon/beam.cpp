@@ -1278,7 +1278,6 @@ void beam_generate_muzzle_particles(beam *b)
 	weapon_info *wip;
 	vec3d turret_norm, turret_pos, particle_pos, particle_dir;
 	matrix m;
-	particle::particle_info pinfo;
 
 	// if our hack stamp has expired
 	if(!((b->Beam_muzzle_stamp == -1) || timestamp_elapsed(b->Beam_muzzle_stamp))){
@@ -1328,7 +1327,7 @@ void beam_generate_muzzle_particles(beam *b)
 			vm_vec_add2(&particle_dir, &b->objp->phys_info.vel);	//move along with our parent
 		}
 
-		memset(&pinfo, 0, sizeof(particle::particle_info));
+		particle::particle_info pinfo;
 		pinfo.pos = particle_pos;
 		pinfo.vel = particle_dir;
 		pinfo.lifetime = p_life;

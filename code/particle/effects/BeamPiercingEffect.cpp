@@ -10,7 +10,6 @@ namespace particle {
 namespace effects {
 bool BeamPiercingEffect::processSource(const ParticleSource* source) {
 	particle_info info;
-	memset(&info, 0, sizeof(info));
 
 	source->getOrigin()->applyToParticleInfo(info);
 
