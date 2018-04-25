@@ -835,9 +835,9 @@ class man_thruster {
     public:
 	flagset<Ship::Thruster_Flags> use_flags;
 
-	int start_snd;
-	int loop_snd;
-	int stop_snd;
+	gamesnd_id start_snd;
+	gamesnd_id loop_snd;
+	gamesnd_id stop_snd;
 
 	int tex_id;
 	int tex_nframes;
@@ -856,9 +856,9 @@ class man_thruster {
         tex_nframes = 0;
         use_flags.reset();
 
-        start_snd = -1;
-        loop_snd = -1;
-        stop_snd = -1;
+        start_snd = gamesnd_id();
+        loop_snd = gamesnd_id();
+        stop_snd = gamesnd_id();
         tex_id = -1;
     }
 };
@@ -906,7 +906,7 @@ typedef struct ship_collision_physics {
 	// Landing response parameters
 	float reorient_mult;		// How quickly the ship will reorient towards it's resting position
 	float landing_rest_angle;	// The vertical angle where the ship's orientation comes to rest
-	int landing_sound_idx;		//Sound to play on successful landing collisions
+	gamesnd_id landing_sound_idx;		//Sound to play on successful landing collisions
 
 } ship_collision_physics;
 
@@ -968,8 +968,8 @@ public:
 
 	char		warpin_anim[MAX_FILENAME_LEN];
 	float		warpin_radius;
-	int			warpin_snd_start;
-	int			warpin_snd_end;
+	gamesnd_id	warpin_snd_start;
+	gamesnd_id	warpin_snd_end;
 	float		warpin_speed;
 	int			warpin_time;	//in ms
 	float		warpin_decel_exp;
@@ -977,8 +977,8 @@ public:
 
 	char		warpout_anim[MAX_FILENAME_LEN];
 	float		warpout_radius;
-	int			warpout_snd_start;
-	int			warpout_snd_end;
+	gamesnd_id	warpout_snd_start;
+	gamesnd_id	warpout_snd_end;
 	int			warpout_engage_time;	//in ms
 	float		warpout_speed;
 	int			warpout_time;	//in ms
@@ -1175,12 +1175,12 @@ public:
 	bool topdown_offset_def;
 	vec3d topdown_offset;
 
-	int engine_snd;							// handle to engine sound for ship (-1 if no engine sound)
+	gamesnd_id engine_snd;							// handle to engine sound for ship (-1 if no engine sound)
 	float min_engine_vol;					// minimum volume modifier for engine sound when ship is stationary
-	int glide_start_snd;					// handle to sound to play at the beginning of a glide maneuver (default is 0 for regular throttle down sound)
-	int glide_end_snd;						// handle to sound to play at the end of a glide maneuver (default is 0 for regular throttle up sound)
+	gamesnd_id glide_start_snd;					// handle to sound to play at the beginning of a glide maneuver (default is 0 for regular throttle down sound)
+	gamesnd_id glide_end_snd;						// handle to sound to play at the end of a glide maneuver (default is 0 for regular throttle up sound)
 
-	SCP_map<GameSoundsIndex, int> ship_sounds;			// specifies ship-specific sound indexes
+	SCP_map<GameSounds, gamesnd_id> ship_sounds;			// specifies ship-specific sound indexes
 
 	int num_maneuvering;
 	man_thruster maneuvering[MAX_MAN_THRUSTERS];
@@ -1759,7 +1759,7 @@ extern SCP_vector<ship_effect> Ship_effects;
  *  
  *  @return An index into the Snds vector, if the specified index could not be found then the id itself will be returned
  */
-int ship_get_sound(object *objp, GameSoundsIndex id);
+gamesnd_id ship_get_sound(object *objp, GameSounds id);
 
 /**
  *  @brief Specifies if a ship has a custom sound for the specified id
@@ -1769,7 +1769,7 @@ int ship_get_sound(object *objp, GameSoundsIndex id);
  *  
  *  @return True if this object has the specified sound, false otherwise
  */
-bool ship_has_sound(object *objp, GameSoundsIndex id);
+bool ship_has_sound(object *objp, GameSounds id);
 
 /**
  * @brief Returns the index of the default player ship

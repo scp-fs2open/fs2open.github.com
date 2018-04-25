@@ -12,6 +12,7 @@
 
 #include "globalincs/globals.h"
 #include "globalincs/pstypes.h"
+#include "gamesnd/gamesnd.h"
 
 // CommanderDJ - this is now dynamic
 // #define MAIN_HALLS_MAX			10
@@ -74,7 +75,7 @@ public:
 	SCP_vector<SCP_vector<int> > intercom_delay;
 
 	// intercom sounds themselves
-	SCP_vector<int> intercom_sounds;
+	SCP_vector<interface_snd_id> intercom_sounds;
 
 	// intercom sound pan values
 	SCP_vector<float> intercom_sound_pan;
@@ -107,7 +108,7 @@ public:
 	SCP_vector<float> misc_anim_sound_pan;
 
 	//sounds for each of the misc anims
-	SCP_vector<SCP_vector<int> > misc_anim_special_sounds;
+	SCP_vector<SCP_vector<interface_snd_id> > misc_anim_special_sounds;
 
 	//frame number triggers for each of the misc anims
 	SCP_vector<SCP_vector<int> > misc_anim_special_trigger;
@@ -132,7 +133,7 @@ public:
 	SCP_vector<SCP_vector<int> > door_anim_coords;
 
 	// sounds for each region (open/close)
-	SCP_vector<SCP_vector<int> > door_sounds;
+	SCP_vector<SCP_vector<interface_snd_id> > door_sounds;
 
 	// pan values for the door sounds
 	SCP_vector<float> door_sound_pan;

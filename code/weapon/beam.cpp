@@ -1870,7 +1870,7 @@ void beam_start_warmup(beam *b)
 	b->warmup_stamp = timestamp(Weapon_info[b->weapon_info_index].b_info.beam_warmup);
 
 	// start playing warmup sound
-	if(!(Game_mode & GM_STANDALONE_SERVER) && (Weapon_info[b->weapon_info_index].b_info.beam_warmup_sound >= 0)){		
+	if(!(Game_mode & GM_STANDALONE_SERVER) && (Weapon_info[b->weapon_info_index].b_info.beam_warmup_sound.isValid())){
 		snd_play_3d(gamesnd_get_game_sound(Weapon_info[b->weapon_info_index].b_info.beam_warmup_sound), &b->last_start, &View_position);
 	}
 }
@@ -1913,11 +1913,11 @@ int beam_start_firing(beam *b)
 	}				
 
 	// start the beam firing sound now, if we haven't already		
-	if((b->beam_sound_loop == -1) && (Weapon_info[b->weapon_info_index].b_info.beam_loop_sound >= 0)){				
+	if((b->beam_sound_loop == -1) && (Weapon_info[b->weapon_info_index].b_info.beam_loop_sound.isValid())){
 		b->beam_sound_loop = snd_play_3d(gamesnd_get_game_sound(Weapon_info[b->weapon_info_index].b_info.beam_loop_sound), &b->last_start, &View_position, 0.0f, NULL, 1, 1.0, SND_PRIORITY_SINGLE_INSTANCE, NULL, 1.0f, 1);
 
 		// "shot" sound
-		if (Weapon_info[b->weapon_info_index].launch_snd >= 0)
+		if (Weapon_info[b->weapon_info_index].launch_snd.isValid())
 			snd_play_3d(gamesnd_get_game_sound(Weapon_info[b->weapon_info_index].launch_snd), &b->last_start, &View_position);
 		// niffwan - if launch_snd < 0, don't play any sound
 	}	
@@ -1937,7 +1937,7 @@ void beam_start_warmdown(beam *b)
 	b->warmdown_stamp = timestamp(Weapon_info[b->weapon_info_index].b_info.beam_warmdown);			
 
 	// start the warmdown sound
-	if(Weapon_info[b->weapon_info_index].b_info.beam_warmdown_sound >= 0){				
+	if(Weapon_info[b->weapon_info_index].b_info.beam_warmdown_sound.isValid()){
 		snd_play_3d(gamesnd_get_game_sound(Weapon_info[b->weapon_info_index].b_info.beam_warmdown_sound), &b->last_start, &View_position);
 	}
 
@@ -3072,7 +3072,7 @@ void beam_handle_collisions(beam *b)
 		r_coll_count++;		
 
 		// play the impact sound
-		if ( first_hit && (wi->impact_snd >= 0) ) {
+		if ( first_hit && (wi->impact_snd.isValid()) ) {
 			snd_play_3d( gamesnd_get_game_sound(wi->impact_snd), &b->f_collisions[idx].cinfo.hit_point_world, &Eye_position );
 		}
 

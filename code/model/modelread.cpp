@@ -4033,7 +4033,7 @@ int model_rotate_gun(int model_num, model_subsystem *turret, matrix *orient, ang
 	base_delta = vm_interp_angle(&base_angles->h, desired_angles.h, step_size, limited_base_rotation);
 	gun_delta = vm_interp_angle(&gun_angles->p, desired_angles.p, step_size);
 
-	if (turret->turret_base_rotation_snd != -1)	
+	if (turret->turret_base_rotation_snd.isValid())
 	{
 		if (step_size > 0)
 		{
@@ -4044,7 +4044,7 @@ int model_rotate_gun(int model_num, model_subsystem *turret, matrix *orient, ang
 		}
 	}
 
-	if (turret->turret_gun_rotation_snd != -1)
+	if (turret->turret_gun_rotation_snd.isValid())
 	{
 		if (step_size > 0)
 		{
@@ -5853,14 +5853,14 @@ void model_subsystem::reset()
         it->xyz.x = it->xyz.y = it->xyz.z = 0.0f;
     turret_gun_sobj = 0;
     turret_turning_rate = 0;
-    turret_base_rotation_snd = 0;
+    turret_base_rotation_snd = gamesnd_id();
     turret_base_rotation_snd_mult = 0;
-    turret_gun_rotation_snd = 0;
+    turret_gun_rotation_snd = gamesnd_id();
     turret_gun_rotation_snd_mult = 0;
 
-    alive_snd = 0;
-    dead_snd = 0;
-    rotation_snd = 0;
+    alive_snd = gamesnd_id();
+    dead_snd = gamesnd_id();
+    rotation_snd = gamesnd_id();
 
     engine_wash_pointer = NULL;
     turn_rate = 0; 

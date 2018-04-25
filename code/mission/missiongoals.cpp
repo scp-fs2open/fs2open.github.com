@@ -1028,7 +1028,7 @@ void mission_maybe_play_directive_success_sound()
 {
 	if ( timestamp_elapsed(Mission_directive_sound_timestamp) ) {
 		Mission_directive_sound_timestamp=0;
-		snd_play( gamesnd_get_game_sound(SND_DIRECTIVE_COMPLETE) );
+		snd_play( gamesnd_get_game_sound(GameSounds::DIRECTIVE_COMPLETE) );
 	}
 }
 
@@ -1403,9 +1403,9 @@ void goal_screen_scroll_up()
 {
 	if (Scroll_offset) {
 		Scroll_offset--;
-		gamesnd_play_iface(SND_SCROLL);
+		gamesnd_play_iface(InterfaceSounds::SCROLL);
 	} else {
-		gamesnd_play_iface(SND_GENERAL_FAIL);
+		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 	}
 }
 
@@ -1416,9 +1416,9 @@ void goal_screen_scroll_down()
 	max_lines = Goal_screen_text_h / gr_get_font_height();
 	if (Scroll_offset + max_lines < Goal_text.m_num_lines) {
 		Scroll_offset++;
-		gamesnd_play_iface(SND_SCROLL);
+		gamesnd_play_iface(InterfaceSounds::SCROLL);
 	} else {
-		gamesnd_play_iface(SND_GENERAL_FAIL);
+		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 	}
 }
 
@@ -1484,6 +1484,6 @@ int mission_goals_incomplete(int desired_type, int team)
 
 void mission_goal_exit()
 {
-	snd_play( gamesnd_get_interface_sound(SND_USER_SELECT) );
+	snd_play( gamesnd_get_interface_sound(InterfaceSounds::USER_SELECT) );
 	gameseq_post_event(GS_EVENT_PREVIOUS_STATE);
 }

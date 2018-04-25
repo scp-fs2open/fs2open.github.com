@@ -36,7 +36,7 @@
 typedef struct _obj_snd {
 	_obj_snd	*next, *prev;
 	int		objnum;			// object index of object that contains this sound
-	int		id;				// Index into Snds[] array
+	gamesnd_id	id;				// Index into Snds[] array
 	int		instance;		// handle of currently playing sound (a ds3d handle if USES_DS3D flag set)
 	int		next_update;	// timestamp that marks next allowed vol/pan change
 	float		vol;				// volume of sound (range: 0.0 -> 1.0)
@@ -55,7 +55,7 @@ typedef struct _obj_snd {
 static int MAX_OBJ_SOUNDS_PLAYING = -1; // initialized in obj_snd_level_init()
 static int Num_obj_sounds_playing;
 
-#define OBJSND_CHANGE_FREQUENCY_THRESHOLD			10
+#define SND_CHANGE_FREQUENCY_THRESHOLD			10
 
 static	obj_snd	obj_snd_list;						// head of linked list of object sound structs
 static	int		Doppler_enabled = TRUE;
@@ -706,12 +706,12 @@ void obj_snd_do_frame()
 //										sound can be assigned per object).  
 //               >= 0			=> sound was successfully assigned
 //
-int obj_snd_assign(int objnum, int sndnum, vec3d *pos, int main, int flags, ship_subsys *associated_sub)
+int obj_snd_assign(int objnum, gamesnd_id sndnum, vec3d *pos, int main, int flags, ship_subsys *associated_sub)
 {
 	if(objnum < 0 || objnum > MAX_OBJECTS)
 		return -1;
 
-	if(sndnum < 0)
+	if(!sndnum.isValid())
 		return -1;
 
 	if ( Obj_snd_enabled == FALSE )
@@ -813,7 +813,7 @@ void obj_snd_delete(int objnum, int index)
 //								-1 to delete all persistent sounds on ship.
 //
 //
-void	obj_snd_delete_type(int objnum, int sndnum, ship_subsys *ss)
+void	obj_snd_delete_type(int objnum, gamesnd_id sndnum, ship_subsys *ss)
 {
 	object	*objp;
 	obj_snd	*osp;
@@ -836,7 +836,7 @@ void	obj_snd_delete_type(int objnum, int sndnum, ship_subsys *ss)
 		// if we're just deleting a specific sound type
 		// and this is not one of them. skip it.
 		//Also check if this is assigned to the right subsystem, if one has been given.
-		if(((sndnum != -1) && (osp->id != sndnum))
+		if(((sndnum.isValid()) && (osp->id != sndnum))
 			|| ((ss != NULL) && (osp->ss != ss))){
 			continue;
 		}

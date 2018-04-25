@@ -372,12 +372,12 @@ void brief_do_next_pressed(int play_sound)
 	Current_brief_stage++;
 	if ( Current_brief_stage >= Num_brief_stages ) {
 		Current_brief_stage = Num_brief_stages - 1;
-		gamesnd_play_iface(SND_GENERAL_FAIL);
+		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		if ( Quick_transition_stage != -1 )
 			brief_transition_reset();
 	} else {
 		if ( play_sound ) {
-			gamesnd_play_iface(SND_BRIEF_STAGE_CHG);
+			gamesnd_play_iface(InterfaceSounds::BRIEF_STAGE_CHG);
 		}
 	}
 
@@ -397,12 +397,12 @@ void brief_do_prev_pressed()
 			common_maybe_play_cutscene(MOVIE_PRE_BRIEF, true, SCORE_BRIEFING);
 		}
 		else {
-			gamesnd_play_iface(SND_GENERAL_FAIL);
+			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 			if ( Quick_transition_stage != -1 )
 				brief_transition_reset();
 		}
 	} else {
-		gamesnd_play_iface(SND_BRIEF_STAGE_CHG);
+		gamesnd_play_iface(InterfaceSounds::BRIEF_STAGE_CHG);
 	}
 	Assert(Current_brief_stage >= 0);
 }
@@ -419,12 +419,12 @@ void brief_do_start_pressed()
 		Current_brief_stage = 0;
 	}
 	else if ( Current_brief_stage != 0 ) {
-		gamesnd_play_iface(SND_BRIEF_STAGE_CHG);
+		gamesnd_play_iface(InterfaceSounds::BRIEF_STAGE_CHG);
 		Current_brief_stage = 0;
 		if ( Quick_transition_stage != -1 )
 			brief_transition_reset();
 	} else {
-		gamesnd_play_iface(SND_GENERAL_FAIL);
+		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 	}
 	Assert(Current_brief_stage >= 0);
 }
@@ -436,13 +436,13 @@ void brief_do_start_pressed()
 void brief_do_end_pressed()
 {
 	if ( Current_brief_stage != Num_brief_stages - 1 ) {
-		gamesnd_play_iface(SND_BRIEF_STAGE_CHG);
+		gamesnd_play_iface(InterfaceSounds::BRIEF_STAGE_CHG);
 		Current_brief_stage = Num_brief_stages - 1;
 		if ( Quick_transition_stage != -1 )
 			brief_transition_reset();
 
 	} else {
-		gamesnd_play_iface(SND_GENERAL_FAIL);
+		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 	}
 	Assert(Current_brief_stage >= 0);
 }
@@ -453,9 +453,9 @@ void brief_scroll_up_text()
 	Top_brief_text_line--;
 	if ( Top_brief_text_line < 0 ) {
 		Top_brief_text_line = 0;
-		gamesnd_play_iface(SND_GENERAL_FAIL);
+		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 	} else {
-		gamesnd_play_iface(SND_SCROLL);
+		gamesnd_play_iface(InterfaceSounds::SCROLL);
 	}
 }
 
@@ -464,9 +464,9 @@ void brief_scroll_down_text()
 	Top_brief_text_line++;
 	if ( (Num_brief_text_lines[0] - Top_brief_text_line) < Max_brief_Lines) {
 		Top_brief_text_line--;
-		gamesnd_play_iface(SND_GENERAL_FAIL);
+		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 	} else {
-		gamesnd_play_iface(SND_SCROLL);
+		gamesnd_play_iface(InterfaceSounds::SCROLL);
 	}
 }
 
@@ -518,7 +518,7 @@ void brief_button_do(int i)
 			break;
 
 		case BRIEF_BUTTON_PAUSE:
-			gamesnd_play_iface(SND_USER_SELECT);
+			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			fsspeech_pause(Player->auto_advance != 0);
 			Player->auto_advance ^= 1;
 			break;
@@ -708,7 +708,7 @@ void brief_turn_off_closeup_icon()
 {
 	// turn off closup
 	if ( Closeup_icon != NULL ) {
-		gamesnd_play_iface(SND_BRIEF_ICON_SELECT);
+		gamesnd_play_iface(InterfaceSounds::BRIEF_ICON_SELECT);
 		Closeup_icon = NULL;
 		Closeup_close_button.disable();
 		Closeup_close_button.hide();
@@ -1411,9 +1411,9 @@ void brief_check_for_anim()
 	}
 
 	if ( brief_setup_closeup(bi) == 0 ) {
-		gamesnd_play_iface(SND_BRIEF_ICON_SELECT);
+		gamesnd_play_iface(InterfaceSounds::BRIEF_ICON_SELECT);
 	} else {
-		gamesnd_play_iface(SND_GENERAL_FAIL);
+		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 	}
 }
 
@@ -1914,7 +1914,7 @@ void brief_maybe_blit_scene_cut(float frametime)
 		Fade_anim.time_elapsed += frametime;
 
 		if ( !Brief_playing_fade_sound ) {
-			gamesnd_play_iface(SND_BRIEFING_STATIC);					
+			gamesnd_play_iface(InterfaceSounds::BRIEFING_STATIC);
 			Brief_playing_fade_sound = 1;
 		}
 

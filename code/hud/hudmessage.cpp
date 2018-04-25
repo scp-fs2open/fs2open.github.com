@@ -812,18 +812,18 @@ void hud_scroll_list(int dir)
 	if (dir) {
 		if (Scroll_offset) {
 			Scroll_offset--;
-			gamesnd_play_iface(SND_SCROLL);
+			gamesnd_play_iface(InterfaceSounds::SCROLL);
 
 		} else
-			gamesnd_play_iface(SND_GENERAL_FAIL);
+			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 
 	} else {
 		if (Scroll_offset < hud_get_scroll_max_pos()) {
 			Scroll_offset++;
-			gamesnd_play_iface(SND_SCROLL);
+			gamesnd_play_iface(InterfaceSounds::SCROLL);
 
 		} else
-			gamesnd_play_iface(SND_GENERAL_FAIL);
+			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 	}
 }
 
@@ -884,10 +884,10 @@ void hud_page_scroll_list(int dir)
 			if (Scroll_offset < 0)
 				Scroll_offset = 0;
 
-			gamesnd_play_iface(SND_SCROLL);
+			gamesnd_play_iface(InterfaceSounds::SCROLL);
 
 		} else
-			gamesnd_play_iface(SND_GENERAL_FAIL);
+			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 
 	} else {
 		if (Scroll_offset < max) {
@@ -895,10 +895,10 @@ void hud_page_scroll_list(int dir)
 			if (Scroll_offset > max)
 				Scroll_offset = max;
 
-			gamesnd_play_iface(SND_SCROLL);
+			gamesnd_play_iface(InterfaceSounds::SCROLL);
 
 		} else
-			gamesnd_play_iface(SND_GENERAL_FAIL);
+			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 	}
 }
 

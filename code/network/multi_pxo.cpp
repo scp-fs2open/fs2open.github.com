@@ -1367,7 +1367,7 @@ void multi_pxo_do_normal()
 	switch (k)
 	{
 		case KEY_ESC:
-			gamesnd_play_iface(SND_USER_SELECT);
+			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			gameseq_post_event(GS_EVENT_MAIN_MENU);
 			break;	
 	}		
@@ -1685,7 +1685,7 @@ void multi_pxo_button_pressed(int n)
 {
 	switch(n){
 	case MULTI_PXO_EXIT:
-		gamesnd_play_iface(SND_USER_SELECT);
+		gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 		gameseq_post_event(GS_EVENT_MAIN_MENU);
 		break;
 
@@ -1718,18 +1718,18 @@ void multi_pxo_button_pressed(int n)
 	case MULTI_PXO_JOIN:
 		// if there are no channels to join, let the user know
 		if((Multi_pxo_channel_count == 0) || (Multi_pxo_channels == NULL)){
-			gamesnd_play_iface(SND_GENERAL_FAIL);
+			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 			multi_pxo_notify_add(XSTR("No channels!",944));
 			break;
 		}
 
 		// if we're not already trying to join, allow this
 		if(!SWITCHING_CHANNELS() && (Multi_pxo_channel_select != NULL)){
-			gamesnd_play_iface(SND_USER_SELECT);
+			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			multi_pxo_join_channel(Multi_pxo_channel_select);
 		} else {
 			multi_pxo_notify_add(XSTR("Already trying to join a channel!",945));
-			gamesnd_play_iface(SND_GENERAL_FAIL);
+			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		}
 		break;
 
@@ -1741,25 +1741,25 @@ void multi_pxo_button_pressed(int n)
 	case MULTI_PXO_JOIN_PRIV:
 		// if we're not already trying to join, allow this
 		if(!SWITCHING_CHANNELS()){
-			gamesnd_play_iface(SND_USER_SELECT);
+			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 
 			// fire up the private join popup
 			multi_pxo_priv_popup();
 		} else {
 			multi_pxo_notify_add(XSTR("Already trying to join a channel!",945));
-			gamesnd_play_iface(SND_GENERAL_FAIL);
+			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		}		
 		break;
 
 	case MULTI_PXO_FIND:
-		gamesnd_play_iface(SND_USER_SELECT);
+		gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 
 		// fire up the find join popup
 		multi_pxo_find_popup();
 		break;
 
 	case MULTI_PXO_HELP:
-		gamesnd_play_iface(SND_USER_SELECT);
+		gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 		gameseq_post_event(GS_EVENT_PXO_HELP);
 		break;
 
@@ -1780,14 +1780,14 @@ void multi_pxo_button_pressed(int n)
 				popup(PF_USE_AFFIRMATIVE_ICON,1,POPUP_OK,stats);
 			}
 		} else {
-			gamesnd_play_iface(SND_GENERAL_FAIL);
+			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		}
 		break;
 
 	case MULTI_PXO_RANKINGS:		
 		// make sure he doesn't click it too many times
 		if((Multi_pxo_ranking_last < 0.0f) || ((f2fl(timer_get_fixed_seconds()) - Multi_pxo_ranking_last) > MULTI_PXO_RANK_TIME) ){
-			gamesnd_play_iface(SND_USER_SELECT);
+			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			
 			// fire up the url
 			multi_pxo_url(Multi_options_g.pxo_rank_url);
@@ -1795,7 +1795,7 @@ void multi_pxo_button_pressed(int n)
 			// mark the time down
 			Multi_pxo_ranking_last = f2fl(timer_get_fixed_seconds());
 		} else {
-			gamesnd_play_iface(SND_GENERAL_FAIL);
+			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		}
 		break;
 
@@ -2560,14 +2560,14 @@ void multi_pxo_scroll_channels_up()
 {		
 	// if we're already at the head of the list, do nothing
 	if((Multi_pxo_channel_start == NULL) || (Multi_pxo_channel_start == Multi_pxo_channels)){
-		gamesnd_play_iface(SND_GENERAL_FAIL);		
+		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		return;
 	}
 	
 	// otherwise move up one
 	Multi_pxo_channel_start = Multi_pxo_channel_start->prev;
 	Multi_pxo_channel_start_index--;
-	gamesnd_play_iface(SND_USER_SELECT);
+	gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 }
 
 /**
@@ -2577,20 +2577,20 @@ void multi_pxo_scroll_channels_down()
 {
 	// if we're already at the tail of the list, do nothing
 	if((Multi_pxo_channel_start == NULL) || (Multi_pxo_channel_start->next == Multi_pxo_channels)){
-		gamesnd_play_iface(SND_GENERAL_FAIL);
+		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		return;
 	}
 
 	// if we can't scroll further without going past the end of the viewable list, don't
 	if((Multi_pxo_channel_start_index + Multi_pxo_max_chan_display[gr_screen.res]) >= Multi_pxo_channel_count){
-		gamesnd_play_iface(SND_GENERAL_FAIL);
+		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		return;
 	}
 
 	// otherwise move down one
 	Multi_pxo_channel_start = Multi_pxo_channel_start->next;
 	Multi_pxo_channel_start_index++;
-	gamesnd_play_iface(SND_USER_SELECT);
+	gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 }
 
 /**
@@ -2970,14 +2970,14 @@ void multi_pxo_scroll_players_up()
 {
 	// if we're already at the head of the list, do nothing
 	if((Multi_pxo_player_start == NULL) || (Multi_pxo_player_start == Multi_pxo_players)){
-		gamesnd_play_iface(SND_GENERAL_FAIL);		
+		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		return;
 	}
 	
 	// otherwise move up one
 	Multi_pxo_player_start = Multi_pxo_player_start->prev;	
 
-	gamesnd_play_iface(SND_USER_SELECT);
+	gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 }
 
 /**
@@ -2991,7 +2991,7 @@ void multi_pxo_scroll_players_down()
 	// see if its okay to scroll down
 	lookup = Multi_pxo_player_start;
 	if(lookup == NULL ){
-		gamesnd_play_iface(SND_GENERAL_FAIL);
+		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		return;
 	}
 	count = 0;
@@ -3003,9 +3003,9 @@ void multi_pxo_scroll_players_down()
 	// if we can move down
 	if(count >= Multi_pxo_max_player_display[gr_screen.res]){
 		Multi_pxo_player_start = Multi_pxo_player_start->next;
-		gamesnd_play_iface(SND_USER_SELECT);
+		gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 	} else {
-		gamesnd_play_iface(SND_GENERAL_FAIL);
+		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 	}	
 }
 
@@ -3369,7 +3369,7 @@ void multi_pxo_scroll_chat_up()
 {
 	// if we're already at the top of the list, don't do anything	
 	if ((Multi_pxo_chat_start == NULL) || (Multi_pxo_chat_start == Multi_pxo_chat)) {
-		gamesnd_play_iface(SND_GENERAL_FAIL);
+		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		return;
 	}
 
@@ -3378,7 +3378,7 @@ void multi_pxo_scroll_chat_up()
 
 	multi_pxo_chat_adjust_start();	
 	
-	gamesnd_play_iface(SND_USER_SELECT);
+	gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 }
 
 /**
@@ -3417,9 +3417,9 @@ void multi_pxo_scroll_chat_down()
 	if (multi_pxo_can_scroll_down()) {
 		Multi_pxo_chat_start = Multi_pxo_chat_start->next;		
 		multi_pxo_chat_adjust_start();	
-		gamesnd_play_iface(SND_USER_SELECT);
+		gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 	} else {
-		gamesnd_play_iface(SND_GENERAL_FAIL);
+		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 	}
 }
 
@@ -4847,7 +4847,7 @@ void multi_pxo_help_do()
 	// process any keypresses
 	switch(k){
 	case KEY_ESC:
-		gamesnd_play_iface(SND_USER_SELECT);
+		gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 		gameseq_post_event(GS_EVENT_PXO);
 		break;
 	}		
@@ -5001,25 +5001,25 @@ void multi_pxo_help_button_pressed(int n)
 	case MULTI_PXO_HELP_PREV:
 		// if we're already at page 0, do nothing
 		if(Multi_pxo_help_cur == 0){
-			gamesnd_play_iface(SND_GENERAL_FAIL);			
+			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		} else {
 			Multi_pxo_help_cur--;
-			gamesnd_play_iface(SND_USER_SELECT);
+			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 		}
 		break;
 
 	case MULTI_PXO_HELP_NEXT:
 		// if we're already at max pages, do nothing
 		if(Multi_pxo_help_cur == Multi_pxo_help_num_pages){
-			gamesnd_play_iface(SND_GENERAL_FAIL);
+			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		} else {
 			Multi_pxo_help_cur++;
-			gamesnd_play_iface(SND_USER_SELECT);
+			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 		}
 		break;
 
 	case MULTI_PXO_HELP_CONTINUE:
-		gamesnd_play_iface(SND_USER_SELECT);
+		gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 		gameseq_post_event(GS_EVENT_PXO);
 		break;
 	}

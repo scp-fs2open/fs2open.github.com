@@ -70,9 +70,9 @@ struct queued_animation {
 	int instance;
 	int real_end_time;
 
-	int start_sound;
-	int loop_sound;
-	int end_sound;
+	gamesnd_id start_sound;
+	gamesnd_id loop_sound;
+	gamesnd_id end_sound;
 	float snd_rad;
 
 	char sub_name[NAME_LENGTH];
@@ -96,11 +96,11 @@ struct trigger_instance{
 class triggered_rotation
 {
 	private:
-		int start_sound;
-		int loop_sound;
-		int end_sound;
-		int current_snd;
-		int current_snd_index;
+		gamesnd_id start_sound;
+		gamesnd_id loop_sound;
+		gamesnd_id end_sound;
+		gamesnd_id current_snd;
+		gamesnd_id current_snd_index;
 		float snd_rad;
 		int obj_num;
 

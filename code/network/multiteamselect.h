@@ -16,6 +16,7 @@
 // TEAM SELECT DEFINES/VARS
 //
 #include "globalincs/pstypes.h"
+#include "gamesnd/gamesnd.h"
 
 struct header;
 
@@ -92,7 +93,7 @@ void multi_ts_maybe_host_only_popup();
 //
 
 // send a player slot position update
-void send_pslot_update_packet(int team,int code,int sound = -1);
+void send_pslot_update_packet(int team,int code, interface_snd_id sound = interface_snd_id());
 
 // process a player slot position update
 void process_pslot_update_packet(ubyte *data, header *hinfo);

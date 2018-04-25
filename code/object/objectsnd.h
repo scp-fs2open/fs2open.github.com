@@ -9,8 +9,8 @@
 
 
 
-#ifndef __OBJECTSND_H__
-#define __OBJECTSND_H__
+#ifndef __OBJECTSNDS_H__
+#define __OBJECTSNDS_H__
 
 #define	OS_USED					(1<<0)
 #define	OS_DS3D					(1<<1)
@@ -36,13 +36,13 @@ void	obj_snd_do_frame();
 // model coords of the location of the engine
 // by passing vmd_zero_vector here, you get a sound centered directly on the object
 // NOTE : if main is true, the attentuation factors don't apply if you're within the radius of the object
-int	obj_snd_assign(int objnum, int sndnum, vec3d *pos, int main, int flags=0, ship_subsys *associated_sub=NULL);
+int	obj_snd_assign(int objnum, gamesnd_id sndnum, vec3d *pos, int main, int flags=0, ship_subsys *associated_sub=NULL);
 
 //Delete specific persistent sound on object
 void obj_snd_delete(int objnum, int index);
 
 // if sndnum is not -1, deletes all instances of the given sound within the object
-void	obj_snd_delete_type(int objnum, int sndnum = -1, ship_subsys *ss = NULL);
+void	obj_snd_delete_type(int objnum, gamesnd_id sndnum = gamesnd_id(), ship_subsys *ss = NULL);
 
 void	obj_snd_delete_all();
 void	obj_snd_stop_all();

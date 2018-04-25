@@ -256,22 +256,22 @@ int credits_screen_button_pressed(int n)
 {
 	switch (n) {
 	case TECH_DATABASE_BUTTON:
-		gamesnd_play_iface(SND_SWITCH_SCREENS);
+		gamesnd_play_iface(InterfaceSounds::SWITCH_SCREENS);
 		gameseq_post_event(GS_EVENT_TECH_MENU);
 		return 1;
 
 	case SIMULATOR_BUTTON:
-		gamesnd_play_iface(SND_SWITCH_SCREENS);
+		gamesnd_play_iface(InterfaceSounds::SWITCH_SCREENS);
 		gameseq_post_event(GS_EVENT_SIMULATOR_ROOM);
 		return 1;
 
 	case CUTSCENES_BUTTON:
-		gamesnd_play_iface(SND_SWITCH_SCREENS);
+		gamesnd_play_iface(InterfaceSounds::SWITCH_SCREENS);
 		gameseq_post_event(GS_EVENT_GOTO_VIEW_CUTSCENES_SCREEN);
 		return 1;
 
 	case EXIT_BUTTON:
-		gamesnd_play_iface(SND_COMMIT_PRESSED);
+		gamesnd_play_iface(InterfaceSounds::COMMIT_PRESSED);
 		gameseq_post_event(GS_EVENT_MAIN_MENU);
 		game_flush();
 		break;

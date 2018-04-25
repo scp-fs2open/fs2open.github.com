@@ -205,11 +205,11 @@ void UI_BUTTON::process(int focus)
 
 		if (!hidden && !my_wnd->use_hack_to_get_around_stupid_problem_flag) {
 			if (mouse_on_me && B1_JUST_PRESSED){
-				gamesnd_play_iface(SND_GENERAL_FAIL);
+				gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 			}
 
 			if ( (hotkey >= 0) && (my_wnd->keypress == hotkey) ){
-				gamesnd_play_iface(SND_GENERAL_FAIL);
+				gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 			}
 		}
 

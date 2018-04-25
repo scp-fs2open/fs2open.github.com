@@ -692,13 +692,13 @@ void multi_ingame_ship_list_process()
 
 	// if we currently don't have any ships selected, but we've got items on the list, select the first one
 	if((Multi_ingame_ship_selected == -1) && (Multi_ingame_num_avail > 0)){
-		gamesnd_play_iface(SND_USER_SELECT);
+		gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 		Multi_ingame_ship_selected = 0;
 	}
 
 	// if we currently have a ship selected, but it disappears, select the next ship (is possible0
 	if((Multi_ingame_ship_selected >= 0) && (Multi_ingame_ship_selected >= Multi_ingame_num_avail)){
-		gamesnd_play_iface(SND_USER_SELECT);
+		gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 		Multi_ingame_ship_selected = Multi_ingame_num_avail-1;
 	}
 	
@@ -711,7 +711,7 @@ void multi_ingame_ship_list_process()
 		if((select_index >= 0) && (select_index < Multi_ingame_num_avail)){
 			// if we're not selected the same item, play a sound
 			if(Multi_ingame_ship_selected != select_index){
-				gamesnd_play_iface(SND_USER_SELECT);
+				gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			}
 
 			// select the item
@@ -751,7 +751,7 @@ void multi_ingame_join_button_pressed(int n)
 		if(Multi_ingame_join_sig == 0) {
 			// if he has a valid ship selected
 			if(Multi_ingame_ship_selected >= 0) {
-				gamesnd_play_iface(SND_USER_SELECT);
+				gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			
 				// select the sig of this ship and send a request for it
 				Multi_ingame_join_sig = Multi_ingame_ship_sigs[Multi_ingame_ship_selected];
@@ -759,10 +759,10 @@ void multi_ingame_join_button_pressed(int n)
 				// send a request to the
 				send_ingame_ship_request_packet(INGAME_SR_REQUEST,Multi_ingame_join_sig);
 			} else {
-				gamesnd_play_iface(SND_GENERAL_FAIL);
+				gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 			}
 		} else {
-			gamesnd_play_iface(SND_GENERAL_FAIL);
+			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		}
 
 		break;
@@ -918,10 +918,10 @@ void multi_ingame_join_display_avail()
 void multi_ingame_scroll_select_up()
 {
 	if(Multi_ingame_ship_selected > 0){
-		gamesnd_play_iface(SND_USER_SELECT);
+		gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 		Multi_ingame_ship_selected--;
 	} else {
-		gamesnd_play_iface(SND_GENERAL_FAIL);
+		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 	}	
 }
 
@@ -929,10 +929,10 @@ void multi_ingame_scroll_select_up()
 void multi_ingame_scroll_select_down()
 {
 	if(Multi_ingame_ship_selected < (Multi_ingame_num_avail - 1)){
-		gamesnd_play_iface(SND_USER_SELECT);
+		gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 		Multi_ingame_ship_selected++;
 	} else {
-		gamesnd_play_iface(SND_GENERAL_FAIL);
+		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 	}
 }
 

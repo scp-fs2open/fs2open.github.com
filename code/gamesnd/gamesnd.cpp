@@ -258,12 +258,12 @@ void gamesnd_add_retail_default_enhanced_sound_data()
 	}
 }
 
-void gamesnd_play_iface(int n)
+void gamesnd_play_iface(interface_snd_id n)
 {
-	if (Snds_iface_handle[n] >= 0)
-		snd_stop(Snds_iface_handle[n]);
+	if (Snds_iface_handle[n.value()] >= 0)
+		snd_stop(Snds_iface_handle[n.value()]);
 
-	Snds_iface_handle[n] = snd_play(gamesnd_get_interface_sound(n));
+	Snds_iface_handle[n.value()] = snd_play(gamesnd_get_interface_sound(n));
 }
 
 /**
@@ -299,7 +299,7 @@ int gamesnd_lookup_name(const char* name, const SCP_vector<game_snd>& sounds)
 }
 
 // WMC - now ignores file extension.
-int gamesnd_get_by_name(const char* name)
+gamesnd_id gamesnd_get_by_name(const char* name)
 {
 	Assert( Snds.size() <= INT_MAX );
 
@@ -308,14 +308,13 @@ int gamesnd_get_by_name(const char* name)
 	if (index < 0)
 	{
 		int i = 0;
-		for(SCP_vector<game_snd>::iterator snd = Snds.begin(); snd != Snds.end(); ++snd)
-		{
-			if (snd->sound_entries.size() != 1) {
+		for (auto& Snd : Snds) {
+			if (Snd.sound_entries.size() != 1) {
 				// Ignore game sounds with more than one sound entry
 				continue;
 			}
 
-			auto& entry = snd->sound_entries.front();
+			auto& entry = Snd.sound_entries.front();
 			char *p = strrchr( entry.filename, '.' );
 			if(p == NULL)
 			{
@@ -335,27 +334,26 @@ int gamesnd_get_by_name(const char* name)
 		}
 	}
 
-	return index;
+	return gamesnd_id(index);
 }
 
-int gamesnd_get_by_iface_name(const char* name)
+interface_snd_id gamesnd_get_by_iface_name(const char* name)
 {
 	Assert( Snds_iface.size() <= INT_MAX );
 	Assert( Snds_iface.size() == Snds_iface_handle.size() );
 
-	int index = gamesnd_lookup_name(name, Snds_iface);
+	auto index = gamesnd_lookup_name(name, Snds_iface);
 
 	if (index < 0)
 	{
 		int i = 0;
-		for(SCP_vector<game_snd>::iterator snd = Snds_iface.begin(); snd != Snds_iface.end(); ++snd)
-		{
-			if (snd->sound_entries.size() != 1) {
+		for (auto& snd : Snds_iface) {
+			if (snd.sound_entries.size() != 1) {
 				// Ignore game sounds with more than one sound entry
 				continue;
 			}
 
-			auto& entry = snd->sound_entries.front();
+			auto& entry = snd.sound_entries.front();
 			char *p = strrchr( entry.filename, '.' );
 			if(p == NULL)
 			{
@@ -375,71 +373,36 @@ int gamesnd_get_by_iface_name(const char* name)
 		}
 	}
 
-	return index;
+	return interface_snd_id(index);
 }
 
-int gamesnd_get_by_tbl_index(int index)
+gamesnd_id gamesnd_get_by_tbl_index(int index)
 {
 	char temp[11];
 	sprintf(temp, "%i", index);
 
-	return gamesnd_lookup_name(temp, Snds);
+	auto idx = gamesnd_lookup_name(temp, Snds);
+
+	if (idx < 0) {
+		return gamesnd_id();
+	} else {
+		return gamesnd_id(idx);
+	}
 }
 
-int gamesnd_get_by_iface_tbl_index(int index)
+interface_snd_id gamesnd_get_by_iface_tbl_index(int index)
 {
 	Assert( Snds_iface.size() == Snds_iface_handle.size() );
 
 	char temp[11];
 	sprintf(temp, "%i", index);
 
-	return gamesnd_lookup_name(temp, Snds_iface);
-}
+	auto idx = gamesnd_lookup_name(temp, Snds_iface);
 
-/**
- * Helper function for parse_sound and parse_sound_list. Do not use directly.
- *
- * @param tag Tag
- * @param idx_dest Sound index destination
- * @param object_name Object name being parsed
- * @param buf Buffer holding string to be parsed
- * @param flags See the parse_sound_flags enum
- *
- */
-void parse_sound_core(const char* tag, int *idx_dest, const char* object_name, const char* buf, parse_sound_flags flags)
-{
-	int idx;
-
-	if(flags & PARSE_SOUND_INTERFACE_SOUND)
-		idx = gamesnd_get_by_iface_name(buf);
-	else
-		idx = gamesnd_get_by_name(buf);
-
-	if(idx != -1)
-	{
-		(*idx_dest) = idx;
-	}
-
-	size_t size_to_check = 0;
-
-	if(flags & PARSE_SOUND_INTERFACE_SOUND)
-	{
-		size_to_check = Snds_iface.size();
-		Assert( Snds_iface.size() == Snds_iface_handle.size() );
-	}
-	else
-	{
-		size_to_check = Snds.size();
-	}
-
-	Assert( size_to_check <= INT_MAX );
-
-	//Ensure sound is in range
-	if((*idx_dest) < -1 || (*idx_dest) >= (int)size_to_check)
-	{
-		(*idx_dest) = -1;
-		Warning(LOCATION, "%s sound index out of range on '%s'. Must be between 0 and " SIZE_T_ARG ". Forcing to -1 (Nonexistent sound).\n",
-			tag, object_name, size_to_check);
+	if (idx < 0) {
+		return interface_snd_id();
+	} else {
+		return interface_snd_id(idx);
 	}
 }
 
@@ -455,14 +418,47 @@ void parse_sound_core(const char* tag, int *idx_dest, const char* object_name, c
  * @param flags See the parse_sound_flags enum
  *
  */
-void parse_sound(const char* tag, int *idx_dest, const char* object_name, parse_sound_flags flags)
-{
+void parse_game_sound(const char* tag, gamesnd_id* idx_dest, const char* object_name) {
 	if(optional_string(tag))
 	{
-		char buf[MAX_FILENAME_LEN];
-		stuff_string(buf, F_NAME, MAX_FILENAME_LEN);
+		SCP_string buf;
+		stuff_string(buf, F_NAME);
 
-		parse_sound_core(tag, idx_dest, object_name, buf, flags);
+		*idx_dest = gamesnd_get_by_name(buf.c_str());
+
+		// The special case "-1" is needed to silence warnings where sounds are intentionally removed
+		if (!idx_dest->isValid() && buf != "-1") {
+			error_display(0, "Could not find game sound with name '%s'!", buf.c_str());
+		}
+	}
+}
+
+/**
+ * Parse a sound. When using this function for a table entry,
+ * required_string and optional_string aren't needed, as this function deals with
+ * that as its tag parameter, just make sure that the destination sound index can
+ * handle -1 if things don't work out.
+ *
+ * @param tag Tag
+ * @param idx_dest Sound index destination
+ * @param object_name Object name being parsed
+ * @param flags See the parse_sound_flags enum
+ *
+ */
+void parse_iface_sound(const char* tag, interface_snd_id* idx_dest, const char* object_name) {
+	Assert( Snds_iface.size() == Snds_iface_handle.size() );
+
+	if(optional_string(tag))
+	{
+		SCP_string buf;
+		stuff_string(buf, F_NAME);
+
+		*idx_dest = gamesnd_get_by_iface_name(buf.c_str());
+
+		// The special case "-1" is needed to silence warnings where sounds are intentionally removed
+		if (!idx_dest->isValid() && buf != "-1") {
+			error_display(0, "Could not find interface sound with name '%s'!", buf.c_str());
+		}
 	}
 }
 
@@ -478,14 +474,14 @@ void parse_sound(const char* tag, int *idx_dest, const char* object_name, parse_
  * @param flags See the parse_sound_flags enum
  *
  */
-void parse_sound_list(const char* tag, SCP_vector<int>& destination, const char* object_name, parse_sound_flags flags)
+void parse_iface_sound_list(const char* tag, SCP_vector<interface_snd_id>& destination, const char* object_name, bool scp_list)
 {
 	if(optional_string(tag))
 	{
 		int check=0;
 
 		//if we're using the old format, parse the first entry separately
-		if(!(flags & PARSE_SOUND_SCP_SOUND_LIST))
+		if(!scp_list)
 		{
 			stuff_int(&check);
 		}
@@ -493,20 +489,24 @@ void parse_sound_list(const char* tag, SCP_vector<int>& destination, const char*
 		//now read the rest of the entries on the line
 		for(size_t i=0; !check_for_eoln(); i++)
 		{
-			char buf[MAX_FILENAME_LEN];
-			stuff_string_white(buf, MAX_FILENAME_LEN);
+			SCP_string buf;
+			stuff_string_white(buf);
 
 			//we do this conditionally to avoid adding needless entries when reparsing
 			if(destination.size() <= i)
 			{
-				destination.push_back(-1);
+				destination.push_back(interface_snd_id());
 			}
 
-			parse_sound_core(tag, &destination.at(i), object_name, buf, flags);
+			destination[i] = gamesnd_get_by_iface_name(buf.c_str());
+
+			if (!destination[i].isValid()) {
+				error_display(0, "Could not find interface sound with name '%s'!", buf.c_str());
+			}
 		}
 
 		//if we're using the old format, double check the size)
-		if(!(flags & PARSE_SOUND_SCP_SOUND_LIST) && (destination.size() != (unsigned)check))
+		if(!scp_list && (destination.size() != (unsigned)check))
 		{
 			mprintf(("%s in '%s' has " SIZE_T_ARG " entries. This does not match entered size of %i.", tag, object_name, destination.size(), check));
 		}
@@ -1291,7 +1291,7 @@ void gamesnd_close()
  */
 void common_play_highlight_sound()
 {
-	gamesnd_play_iface(SND_USER_OVER);
+	gamesnd_play_iface(InterfaceSounds::USER_OVER);
 }
 
 /**
@@ -1299,23 +1299,25 @@ void common_play_highlight_sound()
  */
 void gamesnd_play_error_beep()
 {
-	gamesnd_play_iface(SND_GENERAL_FAIL);
+	gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 }
 
-game_snd* gamesnd_get_game_sound(int handle) {
-	Assertion(handle >= 0 && handle < (int) Snds.size(), "Invalid game sound handle %d detected!", handle);
-	return &Snds[handle];
+game_snd* gamesnd_get_game_sound(gamesnd_id handle) {
+	Assertion(handle.isValid(), "Invalid game sound handle detected!");
+	Assertion(handle.value() < (int) Snds.size(), "Invalid game sound handle %d detected!", handle.value());
+	return &Snds[handle.value()];
 }
-game_snd* gamesnd_get_interface_sound(int handle) {
-	Assertion(handle >= 0 && handle < (int) Snds_iface.size(), "Invalid interface sound handle %d detected!", handle);
-	return &Snds_iface[handle];
+game_snd* gamesnd_get_interface_sound(interface_snd_id handle) {
+	Assertion(handle.isValid(), "Invalid interface sound handle detected!");
+	Assertion(handle.value() < (int) Snds_iface.size(), "Invalid interface sound handle %d detected!", handle.value());
+	return &Snds_iface[handle.value()];
 }
 
-bool gamesnd_game_sound_valid(int sound) {
-	return sound >= 0 && sound < (int) Snds.size();
+bool gamesnd_game_sound_valid(gamesnd_id sound) {
+	return sound.isValid() && sound.value() < (int) Snds.size();
 }
-bool gamesnd_interface_sound_valid(int sound) {
-	return sound >= 0 && sound < (int) Snds_iface.size();
+bool gamesnd_interface_sound_valid(interface_snd_id sound) {
+	return sound.isValid() && sound.value() < (int) Snds_iface.size();
 }
 
 float gamesnd_get_max_duration(game_snd* gs) {

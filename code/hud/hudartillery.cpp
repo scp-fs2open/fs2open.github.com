@@ -169,8 +169,8 @@ void parse_ssm(const char *filename)
 				s.use_custom_message = true;
 			}
 
-			s.sound_index = -1;
-			parse_sound("+Alarm Sound:", &s.sound_index, s.name);
+			s.sound_index = gamesnd_id();
+			parse_game_sound("+Alarm Sound:", &s.sound_index, s.name);
 
 			// see if we have a valid weapon
 			s.weapon_info_index = weapon_info_lookup(weapon_name);
@@ -332,7 +332,7 @@ void ssm_create(object *target, vec3d *start, size_t ssm_index, ssm_firing_info 
 		else
 			HUD_printf("%s", Ssm_info[ssm_index].message);
 	}
-	if (Ssm_info[ssm_index].sound_index >= 0) {
+	if (Ssm_info[ssm_index].sound_index.isValid()) {
 		snd_play(gamesnd_get_game_sound(Ssm_info[ssm_index].sound_index));
 	}
 
