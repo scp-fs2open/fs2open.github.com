@@ -381,8 +381,10 @@ void main()
  #ifdef FLAG_DIFFUSE_MAP
 	if(blend_alpha == 1) finalFogColor *= baseColor.a;
  #endif
-	baseColor.rgb = mix(baseColor.rgb, finalFogColor, vertIn.fogDist);
-	emissiveColor.rgb = mix(emissiveColor.rgb, finalFogColor, vertIn.fogDist);
+	// This code will only be used by the forward renderer so we apply the fog effect to both the emissive and the base
+	// color.
+	baseColor.rgb = mix(emissiveColor.rgb + baseColor.rgb, finalFogColor, vertIn.fogDist);
+	emissiveColor.rgb = vec3(0.0); // Zero the emissive color since it has already been added by the previous line
 	specColor.rgb *= vertIn.fogDist;
 #endif
 
