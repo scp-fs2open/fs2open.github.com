@@ -2221,26 +2221,40 @@ void message_maybe_distort_text(char *text, int shipnum)
 {
 	int voice_duration;
 
-	if ( comm_between_player_and_ship(shipnum) == COMM_OK ) { 
+	if (comm_between_player_and_ship(shipnum) == COMM_OK) {
 		return;
 	}
 
-	auto len = strlen(text);
-	if ( Message_wave_duration == 0 ) {
-		size_t next_distort = 5+myrand()%5;
-		for ( size_t i = 0; i < len; i++ ) {
-			if ( i == next_distort ) {
-				size_t run = 3+myrand()%5;
-				if ( i+run > len )
-					run = len-i;
-				for ( size_t j = 0; j < run; j++) {
-					text[i++] = '-';
-					if ( i >= len )
-						break;
-				}
-				next_distort = i + (5+myrand()%5);
+	auto buffer_size = strlen(text);
+	auto len         = unicode::num_codepoints(text, text + buffer_size);
+	if (Message_wave_duration == 0) {
+		SCP_string result_str;
+
+		size_t next_distort = 5 + myrand() % 5;
+		size_t i            = 0;
+		size_t run = 0;
+		for (auto cp : unicode::codepoint_range(text)) {
+			if (i == next_distort) {
+				run = 3 + myrand() % 5;
+				if (i + run > len)
+					run = len - i;
 			}
+
+			if (run > 0) {
+				unicode::encode(UNICODE_CHAR('-'), std::back_inserter(result_str));
+				--run;
+
+				if (run <= 0) {
+					next_distort = i + (5+myrand()%5);
+				}
+			} else {
+				unicode::encode(cp, std::back_inserter(result_str));
+			}
+
+			++i;
 		}
+		Assertion(result_str.size() <= buffer_size, "Buffer after scrambling message is bigger than before!");
+		strcpy(text, result_str.c_str());
 		return;
 	}
 
@@ -2249,19 +2263,31 @@ void message_maybe_distort_text(char *text, int shipnum)
 	// distort text
 	Distort_num = myrand()%MAX_DISTORT_PATTERNS;
 	Distort_next = 0;
+	unicode::codepoint_range range(text);
+	auto curr_iter = range.begin();
 	size_t curr_offset = 0;
+	SCP_string result_str;
 	while (voice_duration > 0) {
 		size_t run = fl2i(Distort_patterns[Distort_num][Distort_next] * len);
+		auto upper_limit = std::min(len, curr_offset + run);
+		auto num_chars = upper_limit - curr_offset;
 		if (Distort_next & 1) {
-			size_t i;
-			for ( i = curr_offset; i < MIN(len, curr_offset+run); i++ ) {
-				if ( text[i] != ' ' ) 
-					text[i] = '-';
+			for (size_t i = 0; i < num_chars; ++i, ++curr_iter) {
+				if (*curr_iter != UNICODE_CHAR(' ')) {
+					unicode::encode(UNICODE_CHAR('-'), std::back_inserter(result_str));
+				} else {
+					unicode::encode(UNICODE_CHAR(' '), std::back_inserter(result_str));
+				}
 			}
-			curr_offset = i;
-			if ( i >= len )
+
+			curr_offset += num_chars;
+			if ( upper_limit >= len )
 				break;
 		} else {
+			for (size_t i = 0; i < num_chars; ++i) {
+				unicode::encode(*curr_iter, std::back_inserter(result_str));
+				++curr_iter;
+			}
 			curr_offset += run;
 		}
 
@@ -2269,7 +2295,9 @@ void message_maybe_distort_text(char *text, int shipnum)
 		Distort_next++;
 		if ( Distort_next >= MAX_DISTORT_LEVELS )
 			Distort_next = 0;
-	};
+	}
+	Assertion(result_str.size() <= buffer_size, "Buffer after scrambling message is bigger than before!");
+	strcpy(text, result_str.c_str());
 	
 	Distort_next = 0;
 }
