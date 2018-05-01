@@ -85,9 +85,7 @@ set(COMPILER_FLAGS "${COMPILER_FLAGS} -Wreturn-type")
 
 set(COMPILER_FLAGS "${COMPILER_FLAGS} -Wno-deprecated -Wno-char-subscripts")
 
-set(COMPILER_FLAGS "${COMPILER_FLAGS} -Wno-unused-parameter")
-
-set(COMPILER_FLAGS_RELEASE "-O2 -Wno-unused-variable -Wno-unused-but-set-variable -Wno-array-bounds -Wno-empty-body -Wno-clobbered")
+set(COMPILER_FLAGS_RELEASE "-O2 -Wno-unused-variable -Wno-unused-but-set-variable -Wno-array-bounds -Wno-empty-body -Wno-clobbered  -Wno-unused-parameter")
 
 set(COMPILER_FLAGS_DEBUG "-O0 -g -Wshadow")
 

@@ -246,7 +246,7 @@ void HudGaugeReticle::initFirepointDisplay(bool firepoint, int scaleX, int scale
 	firepoint_size = size;
 }
 
-void HudGaugeReticle::render(float frametime)
+void HudGaugeReticle::render(float  /*frametime*/)
 {
 	setGaugeColor(HUD_C_BRIGHT);
 
@@ -465,7 +465,7 @@ void HudGaugeThrottle::pageIn()
 	bm_page_in_aabitmap( throttle_frames.first_frame, throttle_frames.num_frames);
 }
 
-void HudGaugeThrottle::render(float frametime)
+void HudGaugeThrottle::render(float  /*frametime*/)
 {
 	float	desired_speed, max_speed, current_speed, absolute_speed, absolute_displayed_speed, max_displayed_speed, percent_max, percent_aburn_max;
 	int	desired_y_pos, y_end;
@@ -494,7 +494,7 @@ void HudGaugeThrottle::render(float frametime)
 		desired_speed = 0.0f;
 	}
 
-	desired_y_pos = position[1] + Bottom_offset_y - fl2i(throttle_h*desired_speed/max_speed+0.5f) - 1;
+	desired_y_pos = position[1] + Bottom_offset_y - (int)std::lround(throttle_h*desired_speed/max_speed) - 1;
 
 	if (max_speed <= 0) {
 		percent_max = 0.0f;
@@ -514,9 +514,9 @@ void HudGaugeThrottle::render(float frametime)
 		}
 	}
 
-	y_end = position[1] + Bottom_offset_y - fl2i(throttle_h*percent_max+0.5f);
+	y_end = position[1] + Bottom_offset_y - (int)std::lround(throttle_h*percent_max);
 	if ( percent_aburn_max > 0 ) {
-		y_end -= fl2i(percent_aburn_max * throttle_aburn_h + 0.5f);
+		y_end -= (int)std::lround(percent_aburn_max * throttle_aburn_h);
 	}
 
 	if ( Player_obj->phys_info.flags & PF_AFTERBURNER_ON ) {
@@ -547,10 +547,10 @@ void HudGaugeThrottle::render(float frametime)
 			if ( Player_obj->phys_info.flags & PF_AFTERBURNER_ON ) {
 				strcpy_s(buf, "A/B");
 			} else {
-				sprintf(buf, XSTR( "%d%%", 326), fl2i( (desired_speed/max_speed)*100 + 0.5f ));
+				sprintf(buf, XSTR( "%d%%", 326), (int)std::lround( (desired_speed/max_speed)*100 ));
 			}
 		} else {
-			sprintf(buf, "%d", fl2i(desired_speed * Hud_speed_multiplier + 0.5f));
+			sprintf(buf, "%d", (int)std::lround(desired_speed * Hud_speed_multiplier));
 		}
 
 		hud_num_make_mono(buf, font_num);
@@ -566,7 +566,7 @@ void HudGaugeThrottle::render(float frametime)
 	renderThrottleForeground(y_end);
 
 	if ( Show_max_speed ) {
-		renderPrintf(position[0] + Max_speed_offsets[0], position[1] + Max_speed_offsets[1], "%d",fl2i(max_displayed_speed+0.5f));
+		renderPrintf(position[0] + Max_speed_offsets[0], position[1] + Max_speed_offsets[1], "%d", (int)std::lround(max_displayed_speed));
 	}
 	
 	if ( Show_min_speed ) {
@@ -580,7 +580,7 @@ void HudGaugeThrottle::renderThrottleSpeed(float current_speed, int y_end)
 	int sx, sy, x_pos, y_pos, w, h;
 
 	//setGaugeColor();
-	sprintf(buf, "%d", fl2i(current_speed+0.5f));
+	sprintf(buf, "%d", (int)std::lround(current_speed));
 	hud_num_make_mono(buf, font_num);
 	gr_get_string_size(&w, &h, buf);
 
@@ -741,7 +741,7 @@ void HudGaugeThreatIndicator::pageIn()
 	bm_page_in_aabitmap(lock_warn.first_frame, lock_warn.num_frames);
 }
 
-void HudGaugeThreatIndicator::render(float frametime)
+void HudGaugeThreatIndicator::render(float  /*frametime*/)
 {
 	setGaugeColor();
 	renderBitmap(threat_arc.first_frame+1, position[0], position[1]);
@@ -887,7 +887,7 @@ void HudGaugeWeaponLinking::pageIn()
 	}
 }
 
-void HudGaugeWeaponLinking::render(float frametime)
+void HudGaugeWeaponLinking::render(float  /*frametime*/)
 {
 	int			gauge_index=0, frame_offset=0;
 	ship_weapon	*swp;

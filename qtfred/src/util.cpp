@@ -23,7 +23,7 @@ SCP_string getUsername() {
 	QString username;
 	QObject::connect(&process,
 					 static_cast<void (QProcess::*)(int, QProcess::ExitStatus)>(&QProcess::finished),
-					 [&process, &username](int exitCode, QProcess::ExitStatus exitStatus) {
+					 [&process, &username](int, QProcess::ExitStatus) {
 						 username = process.readAllStandardOutput();
 					 });
 	process.start("whoami");

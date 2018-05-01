@@ -85,7 +85,7 @@ void UI_WINDOW::set_mask_bmap(const char *fname)
 	}
 }
 
-void UI_WINDOW::set_mask_bmap(int bmap, const char *name)
+void UI_WINDOW::set_mask_bmap(int bmap, const char * /*name*/)
 {
 	// int i;
 

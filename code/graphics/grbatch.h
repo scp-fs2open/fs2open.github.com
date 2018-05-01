@@ -31,7 +31,7 @@ public:
 	~geometry_batcher();
 
     geometry_batcher(const geometry_batcher &geo) { clone(geo); }
-    const geometry_batcher &operator=(const geometry_batcher &geo);
+    geometry_batcher& operator=(const geometry_batcher &geo);
 
 	// initial memory space needed
 	// NOTE: This MUST be called BEFORE calling any of the draw_*() functions!!
@@ -68,8 +68,6 @@ public:
 
 	// determine if we even need to try and render this (helpful for particle system)
 	int need_to_render() { return n_to_render; }
-
-	void operator =(int){}
 };
 
 class geometry_shader_batcher

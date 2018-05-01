@@ -143,7 +143,7 @@ public:
 	~subtitle();
 
     subtitle(const subtitle &sub) { clone(sub); }
-    const subtitle &operator=(const subtitle &sub);
+    subtitle& operator=(const subtitle &sub);
 
 	void do_frame(float frametime);
 	bool is_post_shaded( ) { return post_shaded; }

@@ -395,7 +395,7 @@ int ade_table_entry::SetTable(lua_State* L, int p_amt_ldx, int p_mtb_ldx) {
 				}
 			} else {
 				//WMC - Member objects prefixed with __ are assumed to be metatable objects
-				if (strnicmp("__", GetName(), 2) && lua_istable(L, p_amt_ldx)) {
+				if (strnicmp("__", GetName(), 2) != 0 && lua_istable(L, p_amt_ldx)) {
 					desttable_ldx = p_amt_ldx;
 				} else if (lua_istable(L, p_mtb_ldx)) {
 					desttable_ldx = p_mtb_ldx;
@@ -727,7 +727,7 @@ void ade_table_entry::OutputMeta(FILE *fp)
 	for(i = 0; i < Num_subentries; i++)
 	{
 		auto entry = &getTableEntry(Subentries[i]);
-		if(ParentIdx == UINT_MAX || stricmp(entry->Name, "__indexer"))
+		if(ParentIdx == UINT_MAX || stricmp(entry->Name, "__indexer") != 0)
 			entry->OutputMeta(fp);
 	}
 	fputs("</dl></dd>\n", fp);

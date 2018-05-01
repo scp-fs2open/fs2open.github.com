@@ -21,7 +21,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <sys/select.h>
-#include <errno.h>
+#include <cerrno>
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <sys/ioctl.h>
@@ -29,11 +29,11 @@
 #define WSAGetLastError()  (errno)
 #endif
 
-#include <string.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <ctype.h>
-#include <errno.h>
+#include <cstring>
+#include <cstdio>
+#include <cstdlib>
+#include <cctype>
+#include <cerrno>
 
 #include "osapi/osapi.h"
 #include "inetfile/inetgetfile.h"

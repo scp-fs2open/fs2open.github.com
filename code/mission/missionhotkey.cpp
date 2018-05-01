@@ -1006,7 +1006,7 @@ void mission_hotkey_close()
 //
 // Called once per frame to process user input for the Hotkey Assignment Screen
 //
-void mission_hotkey_do_frame(float frametime)
+void mission_hotkey_do_frame(float  /*frametime*/)
 {
 	char buf[256];
 	int i, k, w, h, y, z, line, hotkeys;

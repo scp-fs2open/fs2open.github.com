@@ -122,7 +122,7 @@ void SelectionDialog::objectSelectionChanged() {
 
 	_model->updateObjectSelection(current);
 }
-void SelectionDialog::wingSelectionChanged(QListWidgetItem* current, QListWidgetItem* previous) {
+void SelectionDialog::wingSelectionChanged(QListWidgetItem* current, QListWidgetItem*  /*previous*/) {
 	auto isWing = current->data(Qt::UserRole + 1).value<bool>();
 	auto id = current->data(Qt::UserRole).value<int>();
 

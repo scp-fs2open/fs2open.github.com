@@ -139,7 +139,7 @@ int check_encoding_and_skip_bom(CFILE* file, const char* filename, int* start_of
  *
  * ***** END LICENSE BLOCK ***** */
 
-#include <stdio.h>
+#include <cstdio>
 
 #define UDF    0        // undefined
 #define OTH    1        //other

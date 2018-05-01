@@ -9,8 +9,8 @@
 
 
 
-#include <string.h>
-#include <ctype.h>
+#include <cstring>
+#include <cctype>
 #ifdef _WIN32
 #include <io.h>
 #include <direct.h>
@@ -773,7 +773,7 @@ void do_new_subsystem( int n_subsystems, model_subsystem *slist, int subobj_num,
 
 #ifndef NDEBUG
 		// Goober5000 - notify if there's a mismatch
-		if ( stricmp(subobj_name, subsystemp->subobj_name) && !subsystem_stricmp(subobj_name, subsystemp->subobj_name) )
+		if ( stricmp(subobj_name, subsystemp->subobj_name) != 0 && !subsystem_stricmp(subobj_name, subsystemp->subobj_name) )
 		{
 			nprintf(("Model", "NOTE: Subsystem \"%s\" in model \"%s\" is represented as \"%s\" in ships.tbl.  This works fine in FSO v3.6 and up, "
 				"but is not compatible with FS2 retail.\n", subobj_name, model_get(model_num)->filename, subsystemp->subobj_name));
@@ -3332,7 +3332,7 @@ int submodel_find_2d_bound_min(int model_num,int submodel, matrix *orient, vec3d
  * @return zero if x1,y1,x2,y2 are valid
  * @return 2 for point offscreen
  */
-int model_find_2d_bound(int model_num,matrix *orient, vec3d * pos,int *x1, int *y1, int *x2, int *y2 )
+int model_find_2d_bound(int model_num,matrix * /*orient*/, vec3d * pos,int *x1, int *y1, int *x2, int *y2 )
 {
 	float t,w,h;
 	vertex pnt;
@@ -3376,7 +3376,7 @@ int model_find_2d_bound(int model_num,matrix *orient, vec3d * pos,int *x1, int *
  * @return zero if x1,y1,x2,y2 are valid
  * @return 2 for point offscreen
  */
-int subobj_find_2d_bound(float radius ,matrix *orient, vec3d * pos,int *x1, int *y1, int *x2, int *y2 )
+int subobj_find_2d_bound(float radius ,matrix * /*orient*/, vec3d * pos,int *x1, int *y1, int *x2, int *y2 )
 {
 	float t,w,h;
 	vertex pnt;
@@ -3565,7 +3565,7 @@ void submodel_stepped_rotate(model_subsystem *psub, submodel_instance_info *sii)
 	// step_offset_time is TIME into current step
 	float step_offset_time = (float)fmod(rotation_time, step_time);
 	// subtract off fractional step part, round up  (ie, 1.999999 -> 2)
-	int cur_step = int( ((rotation_time - step_offset_time) / step_time) + 0.5f);
+	int cur_step = (int)std::lround((rotation_time - step_offset_time) / step_time);
 	// mprintf(("cur step %d\n", cur_step));
 	// Assert(step_offset_time >= 0);
 
@@ -5452,7 +5452,7 @@ void swap_bsp_sortnorms( polymodel * pm, ubyte * p )
 }
 #endif // BIG_ENDIAN
 
-void swap_bsp_data( polymodel * pm, void *model_ptr )
+void swap_bsp_data( polymodel *  /*pm*/, void * /*model_ptr*/ )
 {
 #if BYTE_ORDER == BIG_ENDIAN
 	ubyte *p = (ubyte *)model_ptr;
@@ -5508,7 +5508,7 @@ void swap_bsp_data( polymodel * pm, void *model_ptr )
 #endif
 }
 
-void swap_sldc_data(ubyte *buffer)
+void swap_sldc_data(ubyte * /*buffer*/)
 {
 #if BYTE_ORDER == BIG_ENDIAN
 	char *type_p = (char *)(buffer);
@@ -5656,7 +5656,7 @@ void parse_glowpoint_table(const char *filename)
 
 				gpo.glow_bitmap_override = true;
 
-				if (stricmp(glow_texture_name, "none")) {
+				if (stricmp(glow_texture_name, "none") != 0) {
 					gpo.glow_bitmap = bm_load(glow_texture_name);
 
 					if (gpo.glow_bitmap < 0)

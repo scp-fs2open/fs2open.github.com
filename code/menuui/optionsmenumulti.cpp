@@ -2336,7 +2336,7 @@ void options_multi_unselect()
 }
 
 // set voice sound buffer for display 
-void options_multi_set_voice_data(unsigned char *sound_buf, int buf_size, double gain)
+void options_multi_set_voice_data(unsigned char *sound_buf, int buf_size, double  /*gain*/)
 {
 	if ( (sound_buf == NULL) || (buf_size <= 0) ) {
 		return;

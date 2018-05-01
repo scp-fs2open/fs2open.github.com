@@ -14,7 +14,7 @@
 #include <windowsx.h>
 #endif
 
-#include <limits.h>
+#include <climits>
 #include <algorithm>
 
 #include "cmdline/cmdline.h"
@@ -693,7 +693,7 @@ DCF(clear_color, "set clear color r, g, b")
 	gr_set_clear_color(r, g, b);
 }
 
-void gr_set_palette_internal( const char *name, ubyte * palette, int restrict_font_to_128 )
+void gr_set_palette_internal( const char * /*name*/, ubyte * palette, int  /*restrict_font_to_128*/ )
 {
 	if ( palette == NULL ) {
 		// Create a default palette
@@ -2031,7 +2031,7 @@ void poly_list::make_index_buffer(SCP_vector<int> &vertex_list)
 	(*this) = buffer_list_internal;
 }
 
-poly_list& poly_list::operator = (poly_list &other_list)
+poly_list& poly_list::operator = (const poly_list &other_list)
 {
 	allocate(other_list.n_verts);
 

@@ -870,7 +870,7 @@ void multi_ts_assign_players_all()
 	objp = GET_FIRST(&obj_used_list);
 	while(objp != END_OF_LIST(&obj_used_list)){
 		// find a valid player ship - ignoring the ship which was assigned to the host
-		if((objp->flags[Object::Object_Flags::Player_ship]) && stricmp(Ships[objp->instance].ship_name,name_lookup)){
+		if((objp->flags[Object::Object_Flags::Player_ship]) && stricmp(Ships[objp->instance].ship_name,name_lookup) != 0){
 			// determine what team and slot this ship is				
 			multi_ts_get_team_and_slot(Ships[objp->instance].ship_name,&team_index,&slot_index, true);
 			Assert((team_index != -1) && (slot_index != -1));
@@ -2139,7 +2139,7 @@ int multi_ts_can_perform(int from_type,int from_index,int to_type,int to_index,i
 }
 
 // determine the kind of drag and drop operation this is
-int multi_ts_get_dnd_type(int from_type,int from_index,int to_type,int to_index,int player_index)
+int multi_ts_get_dnd_type(int from_type,int  /*from_index*/,int to_type,int to_index,int player_index)
 {	
 	net_player *pl;
 

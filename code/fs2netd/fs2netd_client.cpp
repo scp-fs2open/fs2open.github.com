@@ -39,13 +39,13 @@
 
 #ifndef WIN32
 #include <cstdio>
-#include <stdlib.h>
+#include <cstdlib>
 #include <unistd.h>
 #include <cerrno>
 #endif
 
 #include <string>
-#include <limits.h>
+#include <climits>
 
 
 #define FS2NETD_DEFAULT_PORT			"12009"
@@ -639,7 +639,7 @@ static void fs2netd_handle_messages()
 		os_sleep(20);
 	}
 
-	if ( (bytes_read == 0) || (bytes_read < BASE_PACKET_SIZE) ) {
+	if ( (bytes_read < BASE_PACKET_SIZE) ) {
 		return;
 	}
 

@@ -266,7 +266,7 @@ void view_modify(angles *ma, angles *da, float max_p, float max_h, float frame_t
 	CLAMP(ma->h, -max_h, max_h);
 }
 
-void do_view_track_target(float frame_time)
+void do_view_track_target(float  /*frame_time*/)
 {
 	vec3d view_vector;
 	vec3d targetpos_rotated;
@@ -409,7 +409,7 @@ void do_view_slew(float frame_time)
 	}
 }
 
-void do_view_chase(float frame_time)
+void do_view_chase(float  /*frame_time*/)
 {
 	float t;
 
@@ -1614,7 +1614,7 @@ int player_inspect_cargo(float frametime, char *outstr)
 
 		// player is facing the cargo, and withing range, so proceed with inspection
 		if ( hud_sensors_ok(Player_ship, 0) ) {
-			Player->cargo_inspect_time += fl2i(frametime*1000+0.5f);
+			Player->cargo_inspect_time += (int)std::lround(frametime*1000);
 		}
 
 		if ( !(cargo_sp->flags[Ship::Ship_Flags::Scannable]) )
@@ -1724,7 +1724,7 @@ int player_inspect_cap_subsys_cargo(float frametime, char *outstr)
 
 		// player is facing the cargo, and within range, so proceed with inspection
 		if ( hud_sensors_ok(Player_ship, 0) ) {
-			Player->cargo_inspect_time += fl2i(frametime*1000+0.5f);
+			Player->cargo_inspect_time += (int)std::lround(frametime*1000);
 		}
 
 		if ( !(cargo_sp->flags[Ship::Ship_Flags::Scannable]) )

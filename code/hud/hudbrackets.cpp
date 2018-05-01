@@ -153,16 +153,14 @@ void draw_brackets_dashed_square_quick(graphics::line_draw_list* draw_list, int 
 	float bracket_width = width/4.0f;
 	float bracket_height = height/4.0f;
 
-	int dash_width;
-	dash_width = fl2i(bracket_width / ( NUM_DASHES*2 - 1 ) + 0.5f);
+	int dash_width = (int)std::lround(bracket_width / ( NUM_DASHES*2 - 1 ));
 
 	if ( dash_width < 1 ) {
 		draw_brackets_square_quick(draw_list, x1, y1, x2, y2);
 		return;
 	}
 
-	int dash_height;
-	dash_height = fl2i(bracket_height / ( NUM_DASHES*2 - 1 ) + 0.5f);
+	int dash_height = (int)std::lround(bracket_height / ( NUM_DASHES*2 - 1 ));
 
 	if ( dash_height < 1 ) {
 		draw_brackets_square_quick(draw_list, x1, y1, x2, y2);
@@ -218,14 +216,14 @@ void draw_brackets_diamond(graphics::line_draw_list* draw_list, int x1, int y1, 
 	width = x2 - x1;
 	height = y2 - y1;
 
-	half_width = fl2i( width/2.0f + 0.5f );
-	half_height = fl2i( height/2.0f +0.5f );
+	half_width = (int)std::lround( width/2.0f );
+	half_height = (int)std::lround( height/2.0f );
 
 	side_len = (float)_hypot(half_width, half_height);
 	bracket_len = side_len / 8;
 	
-	x_delta = fl2i(bracket_len * width / side_len + 0.5f);
-	y_delta = fl2i(bracket_len * height / side_len + 0.5f);
+	x_delta = (int)std::lround(bracket_len * width / side_len);
+	y_delta = (int)std::lround(bracket_len * height / side_len);
 
 
 	center_x = x1 + half_width;
@@ -259,14 +257,14 @@ void draw_brackets_diamond_quick(graphics::line_draw_list* draw_list, int x1, in
 	width = x2 - x1;
 	height = y2 - y1;
 
-	half_width = fl2i( width/2.0f + 0.5f);
-	half_height = fl2i( height/2.0f + 0.5f);
+	half_width = (int)std::lround( width/2.0f);
+	half_height = (int)std::lround( height/2.0f);
 
 	side_len = (float)_hypot(half_width, half_height);
 	bracket_len = side_len / 8;
 	
-	x_delta = fl2i(bracket_len * width / side_len + 0.5f);
-	y_delta = fl2i(bracket_len * height / side_len + 0.5f);
+	x_delta = (int)std::lround(bracket_len * width / side_len);
+	y_delta = (int)std::lround(bracket_len * height / side_len);
 
 	center_x = x1 + half_width;
 	center_y = y1 + half_height;
@@ -399,7 +397,7 @@ void hud_target_show_dist_on_bracket(int x, int y, float distance, int font_num)
 	// scale by distance modifier from hud_guages.tbl for display purposes
 	displayed_distance = distance * Hud_unit_multiplier;
 
-	sprintf(text_dist, "%d", fl2i(displayed_distance+0.5f));
+	sprintf(text_dist, "%d", (int)std::lround(displayed_distance));
 	hud_num_make_mono(text_dist, font_num);
 	gr_get_string_size(&w,&h,text_dist);
 
@@ -614,8 +612,8 @@ int draw_subsys_brackets(graphics::line_draw_list* draw_list, ship_subsys* subsy
 	if (subobj_vertex.flags & PF_OVERFLOW)  // if overflow, no point in drawing brackets
 		return -1;
 
-	int subobj_x = fl2i(subobj_vertex.screen.xyw.x + 0.5f);
-	int subobj_y = fl2i(subobj_vertex.screen.xyw.y + 0.5f);
+	int subobj_x = (int)std::lround(subobj_vertex.screen.xyw.x);
+	int subobj_y = (int)std::lround(subobj_vertex.screen.xyw.y);
 	int hud_subtarget_w, hud_subtarget_h, bound_rc;
 
 	bound_rc = subobj_find_2d_bound(subsys->system_info->radius, &targetp->orient, &subobj_pos, &x1,&y1,&x2,&y2);
@@ -724,7 +722,7 @@ void HudGaugeBrackets::initBitmaps(char *fname)
 	}
 }
 
-void HudGaugeBrackets::render(float frametime)
+void HudGaugeBrackets::render(float  /*frametime*/)
 {
 	// don't display brackets if we're warping out.
 	if ( Player->control_mode != PCM_NORMAL ) {
@@ -1081,8 +1079,8 @@ void HudGaugeBrackets::renderBoundingBracketsSubobject()
 			if (subobj_vertex.flags & PF_OVERFLOW)  // if overflow, no point in drawing brackets
 				return;
 
-			int subobj_x = fl2i(subobj_vertex.screen.xyw.x + 0.5f);
-			int subobj_y = fl2i(subobj_vertex.screen.xyw.y + 0.5f);
+			int subobj_x = (int)std::lround(subobj_vertex.screen.xyw.x);
+			int subobj_y = (int)std::lround(subobj_vertex.screen.xyw.y);
 			int hud_subtarget_w, hud_subtarget_h, bound_rc;
 
 			bound_rc = subobj_find_2d_bound(subsys->system_info->radius, &targetp->orient, &subobj_pos, &x1,&y1,&x2,&y2);

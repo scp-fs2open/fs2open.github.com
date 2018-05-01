@@ -13,12 +13,12 @@
 #include <windows.h>
 #endif
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <assert.h>
-#include <stdarg.h>
-#include <setjmp.h>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <cassert>
+#include <cstdarg>
+#include <csetjmp>
 
 
 #include "ai/aigoals.h"
@@ -1006,7 +1006,7 @@ void parse_cutscenes(mission *pm)
 	}
 }
 
-void parse_plot_info(mission *pm)
+void parse_plot_info(mission * /*pm*/)
 {
 	if (optional_string("#Plot Info"))
 	{
@@ -1033,7 +1033,7 @@ void parse_plot_info(mission *pm)
 	}
 }
 
-void parse_briefing_info(mission *pm)
+void parse_briefing_info(mission * /*pm*/)
 {
 	char junk[4096];
 
@@ -1255,7 +1255,7 @@ done_briefing_music:
 /**
  * Parse fiction viewer
  */
-void parse_fiction(mission *pm)
+void parse_fiction(mission * /*pm*/)
 {
 	fiction_viewer_reset();
 
@@ -1310,7 +1310,7 @@ void parse_fiction(mission *pm)
 /**
  * Parse command briefing
  */
-void parse_cmd_brief(mission *pm)
+void parse_cmd_brief(mission * /*pm*/)
 {
 	int stage;
 
@@ -1359,7 +1359,7 @@ void parse_cmd_briefs(mission *pm)
  *
  * NOTE: This updates the global Briefing struct with all the data necessary to drive the briefing
  */
-void parse_briefing(mission *pm, int flags)
+void parse_briefing(mission * /*pm*/, int flags)
 {
 	int nt, i, j, stage_num = 0, icon_num = 0;
 	brief_stage *bs;
@@ -1599,7 +1599,7 @@ void parse_briefing(mission *pm, int flags)
 /**
  * Parse the data required for the mission debriefings
  */
-void parse_debriefing_new(mission *pm)
+void parse_debriefing_new(mission * /*pm*/)
 {
 	int				stage_num, nt;
 	debriefing		*db;
@@ -2196,8 +2196,8 @@ int parse_create_object_sub(p_object *p_objp)
 							"Primary weapon cargo size <= 0. Ship (%s) Subsystem (%s) Bank (%i) Weapon (%s)",
 							shipp->ship_name, sssp->name, j, Weapon_info[wp->primary_bank_weapons[j]].name);
 
-					int capacity = fl2i(sssp->primary_ammo[j]/100.0f * sip->primary_bank_ammo_capacity[j] + 0.5f);
-					wp->primary_bank_ammo[j] = fl2i(capacity / Weapon_info[wp->primary_bank_weapons[j]].cargo_size + 0.5f);
+					int capacity = (int)std::lround(sssp->primary_ammo[j]/100.0f * sip->primary_bank_ammo_capacity[j]);
+					wp->primary_bank_ammo[j] = (int)std::lround(capacity / Weapon_info[wp->primary_bank_weapons[j]].cargo_size);
 				}
 			}
 
@@ -2213,8 +2213,8 @@ int parse_create_object_sub(p_object *p_objp)
 							"Secondary weapon cargo size <= 0. Ship (%s) Subsystem (%s) Bank (%i) Weapon (%s)",
 							shipp->ship_name, sssp->name, j, Weapon_info[wp->secondary_bank_weapons[j]].name);
 
-					int capacity = fl2i(sssp->secondary_ammo[j]/100.0f * sip->secondary_bank_ammo_capacity[j] + 0.5f);
-					wp->secondary_bank_ammo[j] = fl2i(capacity / Weapon_info[wp->secondary_bank_weapons[j]].cargo_size + 0.5f);
+					int capacity = (int)std::lround(sssp->secondary_ammo[j]/100.0f * sip->secondary_bank_ammo_capacity[j]);
+					wp->secondary_bank_ammo[j] = (int)std::lround(capacity / Weapon_info[wp->secondary_bank_weapons[j]].cargo_size);
 				}
 			}
 
@@ -2289,8 +2289,8 @@ int parse_create_object_sub(p_object *p_objp)
 								"Primary weapon cargo size <= 0. Ship (%s) Subsystem (%s) Bank (%i) Weapon (%s)",
 								shipp->ship_name, sssp->name, j, Weapon_info[ptr->weapons.primary_bank_weapons[j]].name);
 
-						int capacity = fl2i(sssp->primary_ammo[j]/100.0f * ptr->weapons.primary_bank_capacity[j] + 0.5f);
-						ptr->weapons.primary_bank_ammo[j] = fl2i(capacity / Weapon_info[ptr->weapons.primary_bank_weapons[j]].cargo_size + 0.5f);
+						int capacity = (int)std::lround(sssp->primary_ammo[j]/100.0f * ptr->weapons.primary_bank_capacity[j]);
+						ptr->weapons.primary_bank_ammo[j] = (int)std::lround(capacity / Weapon_info[ptr->weapons.primary_bank_weapons[j]].cargo_size);
 					}
 				}
 
@@ -2303,8 +2303,8 @@ int parse_create_object_sub(p_object *p_objp)
 								"Secondary weapon cargo size <= 0. Ship (%s) Subsystem (%s) Bank (%i) Weapon (%s)",
 								shipp->ship_name, sssp->name, j, Weapon_info[ptr->weapons.secondary_bank_weapons[j]].name);
 
-						int capacity = fl2i(sssp->secondary_ammo[j]/100.0f * ptr->weapons.secondary_bank_capacity[j] + 0.5f);
-						ptr->weapons.secondary_bank_ammo[j] = fl2i(capacity / Weapon_info[ptr->weapons.secondary_bank_weapons[j]].cargo_size + 0.5f);
+						int capacity = (int)std::lround(sssp->secondary_ammo[j]/100.0f * ptr->weapons.secondary_bank_capacity[j]);
+						ptr->weapons.secondary_bank_ammo[j] = (int)std::lround(capacity / Weapon_info[ptr->weapons.secondary_bank_weapons[j]].cargo_size);
 					}
 				}
 
@@ -2747,7 +2747,7 @@ p_object::~p_object()
  * if we are just getting player starts, then don't create the objects
  * @param p_objp Object
  */
-int parse_object(mission *pm, int flag, p_object *p_objp)
+int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
 {
 	int	i, j, count, delay;
     char name[NAME_LENGTH];
@@ -4767,7 +4767,7 @@ void post_process_ships_wings()
 	// Now set up the wings.  This must be done after both dock stuff and ship stuff.
 
 	// error checking for custom wings
-	if (strcmp(Starting_wing_names[0], TVT_wing_names[0]))
+	if (strcmp(Starting_wing_names[0], TVT_wing_names[0]) != 0)
 	{
 		Error(LOCATION, "The first starting wing and the first team-versus-team wing must have the same wing name.\n");
 	}
@@ -4810,7 +4810,7 @@ void post_process_ships_wings()
 // of other events in a mission.  Essentially scripting the different things that can happen
 // in a mission
 
-void parse_event(mission *pm)
+void parse_event(mission * /*pm*/)
 {
 	char buf[NAME_LENGTH];
 	mission_event *event;
@@ -6251,13 +6251,13 @@ void parse_object_mark_dock_leader_helper(p_object *pobjp, p_dock_function_info 
 }
 
 // Goober5000
-void parse_object_set_handled_flag_helper(p_object *pobjp, p_dock_function_info *infop)
+void parse_object_set_handled_flag_helper(p_object *pobjp, p_dock_function_info * /*infop*/)
 {
     pobjp->flags.set(Mission::Parse_Object_Flags::Already_handled);
 }
 
 // Goober5000
-void parse_object_clear_handled_flag_helper(p_object *pobjp, p_dock_function_info *infop)
+void parse_object_clear_handled_flag_helper(p_object *pobjp, p_dock_function_info * /*infop*/)
 {
     pobjp->flags.remove(Mission::Parse_Object_Flags::Already_handled);
 }
@@ -7415,7 +7415,7 @@ int add_path_restriction()
 		for (j = 0; j < temp.num_paths; j++)
 		{
 			// no match, so skip this
-			if (stricmp(temp.path_names[j], Path_restrictions[i].path_names[j]))
+			if (stricmp(temp.path_names[j], Path_restrictions[i].path_names[j]) != 0)
 				goto continue_outer_loop;
 		}
 
@@ -7451,7 +7451,7 @@ int get_special_anchor(char *name)
 	const char *iff_name;
 	int iff_index;
 	
-	if (strnicmp(name, "<any ", 5))
+	if (strnicmp(name, "<any ", 5) != 0)
 		return -1;
 
 	strcpy_s(tmp, name+5);

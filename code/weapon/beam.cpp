@@ -1570,7 +1570,7 @@ void beam_render_all()
 // fvec == forward vector (eye viewpoint basically. in world coords)
 // pos == world coordinate of the point we're calculating "around"
 // w == width of the diff between top and bottom around pos
-void beam_calc_facing_pts( vec3d *top, vec3d *bot, vec3d *fvec, vec3d *pos, float w, float z_add )
+void beam_calc_facing_pts( vec3d *top, vec3d *bot, vec3d *fvec, vec3d *pos, float w, float  /*z_add*/ )
 {
 	vec3d uvec, rvec;
 	vec3d temp;

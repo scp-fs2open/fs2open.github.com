@@ -438,7 +438,7 @@ void message_parse(bool importing_from_fsm)
 
 		stuff_string(buf, F_NAME); 
 		for (SCP_vector<SCP_string>::iterator iter = Builtin_moods.begin(); iter != Builtin_moods.end(); ++iter) {
-			if (iter->compare(buf) == 0) {
+			if (*iter == buf) {
 				msg.mood = (int)std::distance(Builtin_moods.begin(), iter);
 				found = true;
 				break;
@@ -637,7 +637,7 @@ void parse_msgtbl()
 				}
 
 				// test extension
-				if (stricmp(ptr, ".ogg") && stricmp(ptr, ".wav"))
+				if (stricmp(ptr, ".ogg") != 0 && stricmp(ptr, ".wav") != 0)
 				{
 					Warning(LOCATION, "Simulated speech override file '%s' was provided with an extension other than .wav or .ogg!", filename);
 					continue;
@@ -1023,7 +1023,7 @@ bool message_filename_is_generic(char *filename)
 	char *ptr = strchr(truncated_filename, '.');
 
 	// extension must be a recognized sound file
-	if ((ptr == NULL) || (stricmp(ptr, ".ogg") && stricmp(ptr, ".wav")))
+	if ((ptr == NULL) || (stricmp(ptr, ".ogg") != 0 && stricmp(ptr, ".wav") != 0))
 		return false;
 
 	// truncate it
@@ -1125,10 +1125,10 @@ void message_calc_anim_start_frame(int time, generic_anim *ani, int reverse)
 
 	float fps = ani->num_frames / ani->total_time;
 	if ( reverse ) {
-		start_frame = (ani->num_frames-1) - fl2i(fps * wave_time + 0.5f);
+		start_frame = (ani->num_frames-1) - (int)std::lround(fps * wave_time);
 	} else {
 		int num_frames_extra;
-		num_frames_extra = fl2i(fps * (anim_time - wave_time) + 0.5f);
+		num_frames_extra = (int)std::lround(fps * (anim_time - wave_time));
 		if ( num_frames_extra > 0 ) {
 			start_frame=rand()%num_frames_extra;
 		}

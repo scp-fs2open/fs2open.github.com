@@ -429,7 +429,7 @@ void parse_weapon_expl_tbl(const char *filename)
 
 			// only bother with this if we have 1 or more lods and less than max lods,
 			// otherwise the stardard level loading will take care of the different effects
-			if ((lod_check.num_lods > 0) || (lod_check.num_lods < MAX_WEAPON_EXPL_LOD)) {
+			if ((lod_check.num_lods > 0) && (lod_check.num_lods < MAX_WEAPON_EXPL_LOD)) {
 				// name check, update lod count if it already exists
 				for (i = 0; i < LOD_checker.size(); i++) {
 					if (!stricmp(LOD_checker[i].filename, lod_check.filename)) {
@@ -1420,7 +1420,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		nprintf(("Warning", "Ignoring free flight speed for weapon '%s'\n", wip->name));
 	}
 	//Optional one-shot sound to play at the beginning of firing
-	parse_game_sound("$PreLaunchSnd:", &wip->pre_launch_snd, wip->name);
+	parse_game_sound("$PreLaunchSnd:", &wip->pre_launch_snd);
 
 	//Optional delay for Pre-Launch sound
 	if(optional_string("+PreLaunchSnd Min Interval:"))
@@ -1429,21 +1429,21 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 	}
 
 	//Launch sound
-	parse_game_sound("$LaunchSnd:", &wip->launch_snd, wip->name);
+	parse_game_sound("$LaunchSnd:", &wip->launch_snd);
 
 	//Impact sound
-	parse_game_sound("$ImpactSnd:", &wip->impact_snd, wip->name);
+	parse_game_sound("$ImpactSnd:", &wip->impact_snd);
 
 	//Disarmed impact sound
-	parse_game_sound("$Disarmed ImpactSnd:", &wip->impact_snd, wip->name);
+	parse_game_sound("$Disarmed ImpactSnd:", &wip->impact_snd);
 
-	parse_game_sound("$FlyBySnd:", &wip->flyby_snd, wip->name);
+	parse_game_sound("$FlyBySnd:", &wip->flyby_snd);
 
-	parse_game_sound("$TrackingSnd:", &wip->hud_tracking_snd, wip->name);
+	parse_game_sound("$TrackingSnd:", &wip->hud_tracking_snd);
 	
-	parse_game_sound("$LockedSnd:", &wip->hud_locked_snd, wip->name);
+	parse_game_sound("$LockedSnd:", &wip->hud_locked_snd);
 
-	parse_game_sound("$InFlightSnd:", &wip->hud_in_flight_snd, wip->name);
+	parse_game_sound("$InFlightSnd:", &wip->hud_in_flight_snd);
 
 	if (optional_string("+Inflight sound type:"))
 	{
@@ -2108,13 +2108,13 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		}
 
 		// beam fire sound
-		parse_game_sound("+BeamSound:", &wip->b_info.beam_loop_sound, wip->name);
+		parse_game_sound("+BeamSound:", &wip->b_info.beam_loop_sound);
 
 		// warmup sound
-		parse_game_sound("+WarmupSound:", &wip->b_info.beam_warmup_sound, wip->name);
+		parse_game_sound("+WarmupSound:", &wip->b_info.beam_warmup_sound);
 
 		// warmdown sound
-		parse_game_sound("+WarmdownSound:", &wip->b_info.beam_warmdown_sound, wip->name);
+		parse_game_sound("+WarmdownSound:", &wip->b_info.beam_warmdown_sound);
 
 		// glow bitmap
 		if (optional_string("+Muzzleglow:") ) {
@@ -4383,7 +4383,7 @@ void weapon_home(object *obj, int num, float frame_time)
 // as Mike K did with ships -- break weapon into process_pre and process_post for code to execute
 // before and after physics movement
 
-void weapon_process_pre( object *obj, float frame_time)
+void weapon_process_pre( object *obj, float  /*frame_time*/)
 {
 	if(obj->type != OBJ_WEAPON)
 		return;
@@ -5889,7 +5889,7 @@ int weapon_area_calc_damage(object *objp, vec3d *pos, float inner_rad, float out
  * @param blast				Force of blast
  * @param make_shockwave	Boolean, whether to create a shockwave or not
  */
-void weapon_area_apply_blast(vec3d *force_apply_pos, object *ship_objp, vec3d *blast_pos, float blast, int make_shockwave)
+void weapon_area_apply_blast(vec3d * /*force_apply_pos*/, object *ship_objp, vec3d *blast_pos, float blast, int make_shockwave)
 {
 	#define	SHAKE_CONST 3000
 	vec3d		force, vec_blast_to_ship, vec_ship_to_impact;

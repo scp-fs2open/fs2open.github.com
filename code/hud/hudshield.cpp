@@ -308,7 +308,7 @@ void hud_show_mini_ship_integrity(object *objp, int x_force, int y_force)
 
 	p_target_integrity = get_hull_pct(objp);
 
-	numeric_integrity = fl2i(p_target_integrity*100 + 0.5f);
+	numeric_integrity = (int)std::lround(p_target_integrity * 100);
 	if(numeric_integrity > 100){
 		numeric_integrity = 100;
 	}
@@ -389,7 +389,7 @@ void hud_shield_show_mini(object *objp, int x_force, int y_force, int x_hull_off
 		}
 				
 		range = HUD_color_alpha;
-		hud_color_index = fl2i( (objp->shield_quadrant[Quadrant_xlate[i]] / max_shield) * range + 0.5);
+		hud_color_index = (int)std::lround((objp->shield_quadrant[Quadrant_xlate[i]] / max_shield) * range);
 		Assert(hud_color_index >= 0 && hud_color_index <= range);
 	
 		if ( hud_color_index < 0 ) {
@@ -536,7 +536,7 @@ HudGauge(_gauge_object, _gauge_config, false, false, (VM_EXTERNAL | VM_DEAD_VIEW
 {
 }
 
-void HudGaugeShield::render(float frametime)
+void HudGaugeShield::render(float  /*frametime*/)
 {
 }
 
@@ -865,7 +865,7 @@ HudGaugeShield(HUD_OBJECT_PLAYER_SHIELD, HUD_PLAYER_SHIELD_ICON)
 {
 }
 
-void HudGaugeShieldPlayer::render(float frametime)
+void HudGaugeShieldPlayer::render(float  /*frametime*/)
 {
 	showShields(Player_obj, SHIELD_HIT_PLAYER);
 }
@@ -876,7 +876,7 @@ HudGaugeShield(HUD_OBJECT_TARGET_SHIELD, HUD_TARGET_SHIELD_ICON)
 
 }
 
-void HudGaugeShieldTarget::render(float frametime)
+void HudGaugeShieldTarget::render(float  /*frametime*/)
 {
 	if (Player_ai->target_objnum == -1)
 		return;
@@ -925,7 +925,7 @@ void HudGaugeShieldMini::initBitmaps(char *fname)
 	}
 }
 
-void HudGaugeShieldMini::render(float frametime)
+void HudGaugeShieldMini::render(float  /*frametime*/)
 {
 	if (Player_ai->target_objnum == -1)
 		return;
@@ -986,7 +986,7 @@ void HudGaugeShieldMini::showMiniShields(object *objp)
 		}
 				
 		range = HUD_color_alpha;
-		hud_color_index = fl2i( (objp->shield_quadrant[Quadrant_xlate[i]] / max_shield) * range + 0.5);
+		hud_color_index = (int)std::lround((objp->shield_quadrant[Quadrant_xlate[i]] / max_shield) * range);
 		Assert(hud_color_index >= 0 && hud_color_index <= range);
 	
 		if ( hud_color_index < 0 ) {
@@ -1017,7 +1017,7 @@ void HudGaugeShieldMini::showIntegrity(float p_target_integrity)
 	int	numeric_integrity;
 	int	final_pos[2];
 
-	numeric_integrity = fl2i(p_target_integrity*100 + 0.5f);
+	numeric_integrity = (int)std::lround(p_target_integrity * 100);
 	if(numeric_integrity > 100){
 		numeric_integrity = 100;
 	}

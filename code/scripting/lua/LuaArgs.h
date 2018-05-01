@@ -25,12 +25,12 @@ class opt {};
 
 extern opt optional;
 
-inline int getArgsInternal(lua_State* L, bool, int, int) {
+inline int getArgsInternal(lua_State*  /*L*/, bool, int, int) {
 	return 0;
 }
 
 template<typename T>
-inline int popArgumentValue(lua_State* L, T& target, bool& optionalOut, int& stackIndexOut) {
+inline int popArgumentValue(lua_State* L, T& target, bool&  /*optionalOut*/, int& stackIndexOut) {
 	convert::popValue(L, target, stackIndexOut, false);
 	stackIndexOut = stackIndexOut + 1;
 
@@ -38,7 +38,7 @@ inline int popArgumentValue(lua_State* L, T& target, bool& optionalOut, int& sta
 }
 
 template<>
-inline int popArgumentValue<opt>(lua_State* L, opt& target, bool& optionalOut, int& stackIndexOut) {
+inline int popArgumentValue<opt>(lua_State*  /*L*/, opt&  /*target*/, bool& optionalOut, int&  /*stackIndexOut*/) {
 	optionalOut = true;
 
 	return 0;

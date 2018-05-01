@@ -274,9 +274,9 @@ int anim_show_next_frame(anim_instance *instance, float frametime)
 	percent_through = instance->time_elapsed / time;
 
 	if(instance->direction == ANIM_DIRECT_FORWARD)
-		new_frame_num = instance->start_at - 1 + fl2i(percent_through * n_frames + 0.5f);
+		new_frame_num = instance->start_at - 1 + (int) lround(percent_through * n_frames);
 	else
-		new_frame_num = instance->start_at - 1 - fl2i(percent_through * n_frames + 0.5f);
+		new_frame_num = instance->start_at - 1 - (int) lround(percent_through * n_frames);
 
 	frame_save = instance->frame_num;
 

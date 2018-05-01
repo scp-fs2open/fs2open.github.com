@@ -9,7 +9,7 @@
 
 
 
-#include <string.h>
+#include <cstring>
 
 #include "globalincs/pstypes.h"
 #include "tgautils/tgautils.h"
@@ -351,7 +351,7 @@ static void targa_read_pixel( int num_pixels, ubyte **dst, ubyte **src, int byte
 //
 // returns - TARGA_ERROR_NONE if successful, otherwise error code
 //
-int targa_read_header(const char *real_filename, CFILE *img_cfp, int *w, int *h, int *bpp, ubyte *palette )
+int targa_read_header(const char *real_filename, CFILE *img_cfp, int *w, int *h, int *bpp, ubyte * /*palette*/ )
 {	
 	targa_header header;
 	CFILE *targa_file = NULL;
@@ -696,7 +696,7 @@ int targa_read_bitmap(const char *real_filename, ubyte *image_data, ubyte *palet
 //
 // returns:  0 if successful, otherwise -1
 //
-int targa_write_bitmap(char *real_filename, ubyte *data, ubyte *palette, int w, int h, int bpp)
+int targa_write_bitmap(char *real_filename, ubyte *data, ubyte * /*palette*/, int w, int h, int bpp)
 {
 	Assert(bpp == 24);
 	char filename[MAX_FILENAME_LEN];

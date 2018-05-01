@@ -23,7 +23,7 @@
 #include "ship/ship.h"
 #include "tracing/Monitor.h"
 
-#include <stdlib.h>
+#include <cstdlib>
 
 
 // make use of the LOD checker for tbl/tbm parsing (from weapons.cpp)

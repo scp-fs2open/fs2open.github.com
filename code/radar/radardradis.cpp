@@ -143,7 +143,7 @@ void HudGaugeRadarDradis::plotBlip(blip* b, vec3d *pos, float *alpha)
 	}
 }
 
-void HudGaugeRadarDradis::drawContact(vec3d *pnt, int idx, int clr_idx, float dist, float alpha, float scale_factor)
+void HudGaugeRadarDradis::drawContact(vec3d *pnt, int idx, int clr_idx, float  /*dist*/, float alpha, float scale_factor)
 {
 	vec3d  p;
 	int h, w;
@@ -484,7 +484,7 @@ void HudGaugeRadarDradis::drawBlipsSorted(int distort)
 }
 
 
-void HudGaugeRadarDradis::render(float frametime)
+void HudGaugeRadarDradis::render(float  /*frametime*/)
 {
 	float sensors_str;
 	int   ok_to_blit_radar;
@@ -721,7 +721,7 @@ void HudGaugeRadarDradis::initSound(gamesnd_id loop_snd, float _loop_snd_volume,
 	this->departure_beep_delay = fl2i(departure_delay * 1000.0f);
 }
 
-void HudGaugeRadarDradis::onFrame(float frametime)
+void HudGaugeRadarDradis::onFrame(float  /*frametime*/)
 {
 	// Play the specified radar sound
 	this->doLoopSnd();

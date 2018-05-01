@@ -285,7 +285,7 @@ int HudGaugeEscort::setGaugeColorEscort(int index, int team)
 	return is_flashing;
 }
 
-void HudGaugeEscort::render(float frametime)
+void HudGaugeEscort::render(float  /*frametime*/)
 {
 	int	i = 0;
 
@@ -386,7 +386,7 @@ void HudGaugeEscort::renderIcon(int x, int y, int index)
 
 	// show ship integrity
 	hud_get_target_strength(objp, &shields, &integrity);
-	screen_integrity = fl2i(integrity*100 + 0.5f);
+	screen_integrity = (int)std::lround(integrity * 100);
 	offset = 0;
 	if ( screen_integrity < 100 ) {
 		offset = 2;
@@ -988,7 +988,7 @@ void hud_remove_ship_from_escort(int objnum)
  * @param objp      The object hit
  * @param quadrant  Shield quadrant on the object that was hit, alternatively -1 if no shield
  */
-void hud_escort_ship_hit(object *objp, int quadrant)
+void hud_escort_ship_hit(object *objp, int  /*quadrant*/)
 {
 	// no ships on the escort list in multiplayer dogfight
 	if(MULTI_DOGFIGHT){

@@ -362,7 +362,7 @@ void labviewer_render_model(float frametime)
 		auto lab_envmap_override_save = Envmap_override;
 		auto lab_emissive_light_save = Cmdline_no_emissive;
 
-		if (Lab_selected_mission.compare("None") == 0) {
+		if (Lab_selected_mission == "None") {
 			Lab_render_without_light = true;
 			Cmdline_nomotiondebris = 1;
 		}
@@ -463,7 +463,7 @@ void labviewer_do_render(float frametime)
 	gr_set_color_fast(&Color_white);
 
 	if (frametotal != 0.0f) {
-		gr_printf_no_resize(gr_screen.center_offset_x + 2, gr_screen.center_offset_y + gr_screen.center_h - gr_get_font_height(), "FPS: %3i Camera Distance: %4f", fl2i(Framerate + 0.5f), lab_cam_distance);
+		gr_printf_no_resize(gr_screen.center_offset_x + 2, gr_screen.center_offset_y + gr_screen.center_h - gr_get_font_height(), "FPS: %3i Camera Distance: %4f", (int)std::lround(Framerate), lab_cam_distance);
 	}
 	else {
 		gr_string(gr_screen.center_offset_x + 10, gr_screen.center_offset_y + gr_screen.center_h - gr_get_font_height(), "FPS: ?", GR_RESIZE_NONE);
@@ -481,7 +481,7 @@ void labviewer_do_render(float frametime)
 	gr_printf_no_resize(gr_screen.center_offset_x + 2, gr_screen.center_offset_y + gr_screen.center_h - (gr_get_font_height() * 4) - 3, "Hold LMB to rotate the ship or weapon. Hold RMB to rotate the Camera. Hold Shift + LMB to zoom in or out. Use number keys to switch between FXAA presets.");
 }
 
-void labviewer_exit(Button *caller)
+void labviewer_exit(Button * /*caller*/)
 {
 	if (Lab_selected_object != -1) {
 		obj_delete(Lab_selected_object);
@@ -490,7 +490,7 @@ void labviewer_exit(Button *caller)
 }
 
 // ----------------------------  Class Window ----------------------------------
-void labviewer_close_class_window(GUIObject *caller)
+void labviewer_close_class_window(GUIObject * /*caller*/)
 {
 	if (Lab_class_toolbar) {
 		Lab_class_toolbar->DeleteChildren();
@@ -639,7 +639,7 @@ void labviewer_update_flags_window()
 	}
 }
 
-void labviewer_close_flags_window(GUIObject *caller)
+void labviewer_close_flags_window(GUIObject * /*caller*/)
 {
 	Lab_flags_window = NULL;
 
@@ -647,7 +647,7 @@ void labviewer_close_flags_window(GUIObject *caller)
 	Weapon_Class_Flags.empty();
 }
 
-void labviewer_make_flags_window(Button *caller)
+void labviewer_make_flags_window(Button * /*caller*/)
 {
 	if (Lab_flags_window == NULL) {
 		Lab_flags_window = (Window*)Lab_screen->Add(new Window("Flags Window", gr_screen.center_offset_x + gr_screen.center_w - 205, gr_screen.center_offset_y + 200));
@@ -681,7 +681,7 @@ void labviewer_make_flags_window(Button *caller)
 
 static SCP_vector<Text*> Lab_variables;
 
-void labviewer_close_variables_window(GUIObject *caller)
+void labviewer_close_variables_window(GUIObject * /*caller*/)
 {
 	Lab_variables_window = NULL;
 
@@ -950,7 +950,7 @@ void labviewer_update_variables_window()
 	}
 }
 
-void labviewer_make_variables_window(Button *caller)
+void labviewer_make_variables_window(Button * /*caller*/)
 {
 	if (Lab_variables_window != NULL) {
 		return;
@@ -984,7 +984,7 @@ void labviewer_change_detail_texture(Tree *caller)
 	Detail.hardware_textures = slider_pos;
 }
 
-void labviewer_close_render_options_window(GUIObject *caller)
+void labviewer_close_render_options_window(GUIObject * /*caller*/)
 {
 	Lab_render_options_window = NULL;
 }
@@ -1013,7 +1013,7 @@ void labviewer_render_options_set_bloom(Slider *caller) {
 	Cmdline_bloom_intensity = fl2i(caller->GetSliderValue());
 }
 
-void labviewer_make_render_options_window(Button *caller)
+void labviewer_make_render_options_window(Button * /*caller*/)
 {
 	Checkbox *cbp;
 	Tree *cmp;
@@ -1092,7 +1092,7 @@ void labviewer_make_render_options_window(Button *caller)
 }
 // -------------------------  Material Override Window  ------------------------------
 
-void labviewer_close_material_override_window(GUIObject *caller)
+void labviewer_close_material_override_window(GUIObject * /*caller*/)
 {
 	Lab_material_override_window = NULL;
 
@@ -1162,7 +1162,7 @@ void labviewer_set_material_override_specular_gloss(Slider *caller)
 	Gloss_override = caller->GetSliderValue() / 255.0f;
 }
 
-void labviewer_make_material_override_window(Button *caller)
+void labviewer_make_material_override_window(Button * /*caller*/)
 {
 	Checkbox *cbp;
 	Slider *sldr;
@@ -1233,7 +1233,7 @@ void labviewer_make_material_override_window(Button *caller)
 }
 
 // -------------------------  Description Window  ------------------------------
-void labviewer_close_desc_window(GUIObject *caller)
+void labviewer_close_desc_window(GUIObject * /*caller*/)
 {
 	Lab_description_text = NULL;
 	Lab_description_window = NULL;
@@ -1269,7 +1269,7 @@ void labviewer_update_desc_window()
 	}
 }
 
-void labviewer_make_desc_window(Button *caller)
+void labviewer_make_desc_window(Button * /*caller*/)
 {
 	if (Lab_description_window != NULL) {
 		return;
@@ -1286,7 +1286,7 @@ void labviewer_make_desc_window(Button *caller)
 }
 
 // ------------------------   Ships Window   -----------------------------------
-void labviewer_make_ship_window(Button *caller)
+void labviewer_make_ship_window(Button * /*caller*/)
 {
 	GUIObject *cbp;
 	TreeItem *ctip, *stip;
@@ -1482,7 +1482,7 @@ void labviewer_change_weapon(Tree *caller)
 }
 
 // weapon window create function
-void labviewer_make_weap_window(Button* caller)
+void labviewer_make_weap_window(Button*  /*caller*/)
 {
 	GUIObject *cbp;
 	TreeItem *stip;
@@ -1636,7 +1636,7 @@ void labviewer_change_background_actual()
 	// (DahBlount) - Remember to load the debris anims
 	stars_load_debris(false);
 
-	if (Lab_selected_mission.compare("None") != 0)
+	if (Lab_selected_mission != "None")
 	{
 		read_file_text((Lab_selected_mission + ".fs2").c_str(), CF_TYPE_MISSIONS);
 		reset_parse();
@@ -1816,12 +1816,12 @@ void labviewer_change_background(Tree* caller)
 	labviewer_change_background_actual();
 }
 
-void lab_background_window_close(GUIObject* caller) 
+void lab_background_window_close(GUIObject*  /*caller*/) 
 {
 	Lab_background_window = NULL;
 }
 
-void labviewer_make_background_window(Button* caller)
+void labviewer_make_background_window(Button*  /*caller*/)
 {
 	if (Lab_background_window != NULL) return;
 

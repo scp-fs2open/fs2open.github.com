@@ -121,7 +121,7 @@ int mc_ray_boundingbox( vec3d *min, vec3d *max, vec3d * p0, vec3d *pdir, vec3d *
 // detects whether or not a vector has collided with a polygon.  vector points stored in global
 // Mc_p0 and Mc_p1.  Results stored in global mc_info * Mc.
 
-static void mc_check_face(int nv, vec3d **verts, vec3d *plane_pnt, float face_rad, vec3d *plane_norm, uv_pair *uvl_list, int ntmap, ubyte *poly, bsp_collision_leaf* bsp_leaf)
+static void mc_check_face(int nv, vec3d **verts, vec3d *plane_pnt, vec3d *plane_norm, uv_pair *uvl_list, int ntmap, ubyte *poly, bsp_collision_leaf* bsp_leaf)
 {
 	vec3d	hit_point;
 	float		dist;
@@ -189,7 +189,7 @@ static void mc_check_face(int nv, vec3d **verts, vec3d *plane_pnt, float face_ra
 //				plane_pnt	=>		center point in plane (about which radius is measured)
 //				face_rad		=>		radius of face 
 //				plane_norm	=>		normal of face
-static void mc_check_sphereline_face( int nv, vec3d ** verts, vec3d * plane_pnt, float face_rad, vec3d * plane_norm, uv_pair * uvl_list, int ntmap, ubyte *poly, bsp_collision_leaf *bsp_leaf)
+static void mc_check_sphereline_face( int nv, vec3d ** verts, vec3d * plane_pnt, vec3d * plane_norm, uv_pair * uvl_list, int ntmap, ubyte *poly, bsp_collision_leaf *bsp_leaf)
 {
 	vec3d	hit_point;
 	float		u, v;
@@ -428,9 +428,9 @@ void model_collide_flatpoly(ubyte * p)
 	}
 
 	if ( Mc->flags & MC_CHECK_SPHERELINE )	{
-		mc_check_sphereline_face(nv, points, vp(p+20), fl(p+32), vp(p+8), NULL, -1, p, NULL);
+		mc_check_sphereline_face(nv, points, vp(p+20), vp(p+8), NULL, -1, p, NULL);
 	} else {
-		mc_check_face(nv, points, vp(p+20), fl(p+32), vp(p+8), NULL, -1, p, NULL);
+		mc_check_face(nv, points, vp(p+20), vp(p+8), NULL, -1, p, NULL);
 	}
 }
 
@@ -481,9 +481,9 @@ void model_collide_tmappoly(ubyte * p)
 	}
 
 	if ( Mc->flags & MC_CHECK_SPHERELINE )	{
-		mc_check_sphereline_face(nv, points, vp(p+20), fl(p+32), vp(p+8), uvlist, tmap_num, p, NULL);
+		mc_check_sphereline_face(nv, points, vp(p+20), vp(p+8), uvlist, tmap_num, p, NULL);
 	} else {
-		mc_check_face(nv, points, vp(p+20), fl(p+32), vp(p+8), uvlist, tmap_num, p, NULL);
+		mc_check_face(nv, points, vp(p+20), vp(p+8), uvlist, tmap_num, p, NULL);
 	}
 }
 
@@ -606,15 +606,15 @@ void model_collide_bsp_poly(bsp_collision_tree *tree, int leaf_index)
 
 		if ( flat_poly ) {
 			if ( Mc->flags & MC_CHECK_SPHERELINE ) {
-				mc_check_sphereline_face(nv, points, &leaf->plane_pnt, leaf->face_rad, &leaf->plane_norm, NULL, -1, NULL, leaf);
+				mc_check_sphereline_face(nv, points, &leaf->plane_pnt, &leaf->plane_norm, NULL, -1, NULL, leaf);
 			} else {
-				mc_check_face(nv, points, &leaf->plane_pnt, leaf->face_rad, &leaf->plane_norm, NULL, -1, NULL, leaf);
+				mc_check_face(nv, points, &leaf->plane_pnt, &leaf->plane_norm, NULL, -1, NULL, leaf);
 			}
 		} else {
 			if ( Mc->flags & MC_CHECK_SPHERELINE ) {
-				mc_check_sphereline_face(nv, points, &leaf->plane_pnt, leaf->face_rad, &leaf->plane_norm, uvlist, leaf->tmap_num, NULL, leaf);
+				mc_check_sphereline_face(nv, points, &leaf->plane_pnt, &leaf->plane_norm, uvlist, leaf->tmap_num, NULL, leaf);
 			} else {
-				mc_check_face(nv, points, &leaf->plane_pnt, leaf->face_rad, &leaf->plane_norm, uvlist, leaf->tmap_num, NULL, leaf);
+				mc_check_face(nv, points, &leaf->plane_pnt, &leaf->plane_norm, uvlist, leaf->tmap_num, NULL, leaf);
 			}
 		}
 
@@ -955,7 +955,7 @@ bool mc_shield_check_common(shield_tri	*tri)
 
 		// HACK HACK!! The 10000.0 is the face radius, I didn't know this,
 		// so I'm assume 10000 would be as big as ever.
-		mc_check_sphereline_face(3, points, points[0], 10000.0f, &tri->norm, NULL, 0, NULL, NULL);
+		mc_check_sphereline_face(3, points, points[0], &tri->norm, NULL, 0, NULL, NULL);
 		if (Mc->num_hits && Mc->hit_dist < sphere_check_closest_shield_dist) {
 
 			// same behavior whether face or edge

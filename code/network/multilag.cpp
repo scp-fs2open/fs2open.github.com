@@ -229,7 +229,7 @@ int multi_lag_select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *except
 }
 
 // recvfrom for multilag
-int multi_lag_recvfrom(uint s, char *buf, int len, int flags, struct sockaddr *from, int *fromlen)
+int multi_lag_recvfrom(uint s, char *buf, int len, int /*flags*/, struct sockaddr *from, int * /*fromlen*/)
 {
 	lag_buf *moveup = NULL;
 	lag_buf *item = NULL;

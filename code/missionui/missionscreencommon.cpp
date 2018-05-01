@@ -10,7 +10,7 @@
 
 
 
-#include <limits.h>		// this is need even when not building debug!!
+#include <climits>		// this is need even when not building debug!!
 #include <type_traits>
 
 #include "anim/animplay.h"
@@ -236,7 +236,7 @@ void common_redraw_pressed_buttons()
 	}
 }
 
-void common_buttons_maybe_reload(UI_WINDOW *ui_window)
+void common_buttons_maybe_reload(UI_WINDOW * /*ui_window*/)
 {
 	UI_BUTTON	*b;
 	int			i;
@@ -597,7 +597,7 @@ void common_reset_buttons()
 
 // common_select_do() is called once per loop in the interface screens and is used
 // for drawing and changing the common animations and blitting common bitmaps.
-int common_select_do(float frametime)
+int common_select_do(float  /*frametime*/)
 {
 	int	k, new_k;
 
@@ -1076,7 +1076,7 @@ void wss_maybe_restore_loadout()
 	Assert( (Ss_pool != NULL) && (Wl_pool != NULL) && (Wss_slots != NULL) );
 
 	// only restore if mission hasn't changed
-	if ( stricmp(Player_loadout.last_modified, The_mission.modified) ) {
+	if ( stricmp(Player_loadout.last_modified, The_mission.modified) != 0 ) {
 		return;
 	}
 
@@ -1187,7 +1187,7 @@ void wss_direct_restore_loadout()
 	wss_unit			*slot;
 
 	// only restore if mission hasn't changed
-	if ( stricmp(Player_loadout.last_modified, The_mission.modified) ) {
+	if ( stricmp(Player_loadout.last_modified, The_mission.modified) != 0 ) {
 		return;
 	}
 

@@ -15,7 +15,7 @@
 #include "ship/ship.h"
 #include "ship/subsysdamage.h"
 
-#include <limits.h>
+#include <climits>
 
 // Private variables
 static const float shield_scale_factor = static_cast<float>(1.0 / (log(50.0) - log(1.0)));	// Factor used in Goober5000's scale_quad

@@ -73,14 +73,12 @@ set(COMPILER_FLAGS "${COMPILER_FLAGS} -Wreturn-type")
 
 set(COMPILER_FLAGS "${COMPILER_FLAGS} -Wno-char-subscripts")
 
-set(COMPILER_FLAGS "${COMPILER_FLAGS} -Wno-unused-parameter")
-
 check_cxx_compiler_flag(-Wshift-negative-value SUPPORTS_SHIFT_NEGATIVE_VALUE)
 if(SUPPORTS_SHIFT_NEGATIVE_VALUE)
 	set(COMPILER_FLAGS "${COMPILER_FLAGS} -Wno-shift-negative-value")
 endif()
 
-set(COMPILER_FLAGS_RELEASE "-O2 -Wno-unused-variable")
+set(COMPILER_FLAGS_RELEASE "-O2 -Wno-unused-variable -Wno-unused-parameter")
 
 set(COMPILER_FLAGS_DEBUG "-O0 -g -Wshadow")
 

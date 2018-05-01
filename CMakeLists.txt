@@ -116,6 +116,8 @@ SET(FSO_RUN_ARGUMENTS "" CACHE STRING "Additional arguments passed to a generate
 
 option(FSO_INSTALL_DEBUG_FILES "Install some debug files (currently only PDB files on windows)" OFF)
 
+option(ENABLE_COTIRE "Enable cotire for faster compilation. Enabled by default." ON)
+
 MARK_AS_ADVANCED(FORCE FSO_CMAKE_DEBUG)
 MARK_AS_ADVANCED(FORCE FSO_BUILD_INCLUDED_LIBS)
 MARK_AS_ADVANCED(FORCE FSO_USE_OPENALSOFT)
@@ -123,6 +125,7 @@ MARK_AS_ADVANCED(FORCE FSO_USE_LUAJIT)
 MARK_AS_ADVANCED(FORCE FSO_DEVELOPMENT_MODE)
 MARK_AS_ADVANCED(FORCE FSO_FATAL_WARNINGS)
 mark_as_advanced(FORCE FSO_INSTALL_DEBUG_FILES)
+mark_as_advanced(FORCE ENABLE_COTIRE)
 
 # Include cotire file from https://github.com/sakra/cotire/
 include(cotire)

@@ -219,7 +219,7 @@ bool Editor::loadMission(const std::string& mission_name, int flags) {
 				|| (Objects[wing_objects[i][j]].type == OBJ_START)) {  // don't change player ship names
 				wing_bash_ship_name(name, Wings[i].name, j + 1);
 				old_name = Ships[Wings[i].ship_index[j]].ship_name;
-				if (stricmp(name, old_name)) {  // need to fix name
+				if (stricmp(name, old_name) != 0) {  // need to fix name
 					update_sexp_references(old_name, name);
 					ai_update_goal_references(REF_TYPE_SHIP, old_name, name);
 					update_texture_replacements(old_name, name);
@@ -658,7 +658,7 @@ void Editor::updateAllViewports() {
 	}
 }
 
-int Editor::create_player(int num, vec3d* pos, matrix* orient, int type, int init) {
+int Editor::create_player(int  /*num*/, vec3d* pos, matrix* orient, int type, int  /*init*/) {
 	int obj;
 
 	if (type == -1) {
@@ -1254,7 +1254,7 @@ int Editor::reference_handler(const char* name, int type, int obj) {
 	return 0;
 }
 
-int Editor::orders_reference_handler(int code, char* msg) {
+int Editor::orders_reference_handler(int  /*code*/, char* msg) {
 	auto r = _lastActiveViewport->dialogProvider->showButtonDialog(DialogType::Warning,
 																   "Warning",
 																   msg,
@@ -1306,7 +1306,7 @@ int Editor::orders_reference_handler(int code, char* msg) {
 	delete_flag = 1;
 	return 2;
 }
-int Editor::sexp_reference_handler(int node, int code, const char* msg) {
+int Editor::sexp_reference_handler(int  /*node*/, int  /*code*/, const char* msg) {
 	auto r = _lastActiveViewport->dialogProvider->showButtonDialog(DialogType::Warning,
 																   "Warning",
 																   msg,
@@ -2222,7 +2222,7 @@ int Editor::global_error_check_impl() {
 				if ((Objects[obj].type == OBJ_SHIP) || (Objects[obj].type == OBJ_START)) {
 					ship = Objects[obj].instance;
 					wing_bash_ship_name(buf, Wings[i].name, j + 1);
-					if (stricmp(buf, Ships[ship].ship_name)) {
+					if (stricmp(buf, Ships[ship].ship_name) != 0) {
 						return internal_error("Ship \"%s\" in wing should be called \"%s\"",
 											  Ships[ship].ship_name,
 											  buf);

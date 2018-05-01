@@ -30,7 +30,7 @@
 
 #include <iostream>
 #include <string>
-#include <limits.h>
+#include <climits>
 
 
 extern SCP_vector<crc_valid_status> Table_valid_status;

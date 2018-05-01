@@ -68,7 +68,7 @@
 #include "weapon/swarm.h"
 #include "weapon/weapon.h"
 #include <map>
-#include <limits.h>
+#include <climits>
 
 
 #ifdef _MSC_VER
@@ -1132,7 +1132,7 @@ void ai_update_danger_weapon(int attacked_objnum, int weapon_objnum)
 
 //	If rvec != NULL, use it to match bank by calling vm_matrix_interpolate.
 //	(rvec defaults to NULL)
-void ai_turn_towards_vector(vec3d *dest, object *objp, float frametime, float turn_time, vec3d *slide_vec, vec3d *rel_pos, float bank_override, int flags, vec3d *rvec, int sexp_flags)
+void ai_turn_towards_vector(vec3d *dest, object *objp, float  /*frametime*/, float turn_time, vec3d *slide_vec, vec3d *rel_pos, float bank_override, int flags, vec3d *rvec, int sexp_flags)
 {
 	matrix	curr_orient;
 	vec3d	vel_in, vel_out, desired_fvec, src;
@@ -3453,7 +3453,7 @@ float compute_time_to_enemy(float dist_to_enemy, object *pobjp)
 //	incorrect, not having been divided by distance.
 //	If *dot is > 0.0f, then tts is computed.  This is the time it will take object
 //	*objp to get to *pos, assuming it moves right at it.
-void fds_aux(float *dot, float *tts, vec3d *pos, float dtime, object *objp)
+void fds_aux(float *dot, float *tts, vec3d *pos, float  /*dtime*/, object *objp)
 {
 	vec3d	v2s;
 
@@ -5234,7 +5234,7 @@ vec3d	G_predicted_pos, G_fire_pos;
 //	Else
 //		Select Any ol' weapon.
 //	Returns primary_bank index.
-int ai_select_primary_weapon_OLD(object *objp, object *other_objp, Weapon::Info_Flags flags)
+int ai_select_primary_weapon_OLD(object *objp, object * /*other_objp*/, Weapon::Info_Flags flags)
 {
 	ship	*shipp = &Ships[objp->instance];
 	ship_weapon *swp = &shipp->weapons;
@@ -6052,7 +6052,7 @@ int check_ok_to_fire(int objnum, int target_objnum, weapon_info *wip)
 //	Fire a secondary weapon.
 //	Maybe choose to fire a different one.
 //	priority1 and priority2 are optional parameters with defaults = -1
-int ai_fire_secondary_weapon(object *objp, int priority1, int priority2)
+int ai_fire_secondary_weapon(object *objp, int  /*priority1*/, int  /*priority2*/)
 {
 	ship_weapon *swp;
 	ship	*shipp;
@@ -6546,7 +6546,7 @@ void ai_chase_ct()
 /**
  * ATTACK submode handler for chase mode.
  */
-void ai_chase_eb(ai_info *aip, ship_info *sip, vec3d *predicted_enemy_pos, float dist_to_enemy)
+void ai_chase_eb(ai_info *aip, ship_info *sip, vec3d *predicted_enemy_pos, float  /*dist_to_enemy*/)
 {
 	vec3d	_pep;
 	float		dot_to_enemy, dot_from_enemy;
@@ -6755,7 +6755,7 @@ void attack_set_accel(ai_info *aip, ship_info *sip, float dist_to_enemy, float d
 
 //	Pl_objp (aip) tries to get behind En_objp.
 //	New on 2/21/98: If this ship can move backwards and slide, maybe do that to get behind.
-void get_behind_ship(ai_info *aip, ship_info *sip, float dist_to_enemy)
+void get_behind_ship(ai_info *aip, ship_info *sip, float  /*dist_to_enemy*/)
 {
 	vec3d	new_pos;
 	float	dot;
@@ -11385,7 +11385,7 @@ float gwlr_1(object *objp, ai_info *aip)
 /**
  * Compute the largest radius of a ship forming on *objp's wing.
  */
-float gwlr_object_1(object *objp, ai_info *aip)
+float gwlr_object_1(object *objp, ai_info * /*aip*/)
 {
 	float		max_radius;
 	object	*o;
@@ -12191,7 +12191,7 @@ void ai_maybe_launch_cmeasure(object *objp, ai_info *aip)
 }
 
 //	--------------------------------------------------------------------------
-void ai_preprocess_ignore_objnum(object *objp, ai_info *aip)
+void ai_preprocess_ignore_objnum(object * /*objp*/, ai_info *aip)
 {
 	if (aip->ai_flags[AI::AI_Flags::Temporary_ignore])
 	{
@@ -13024,7 +13024,7 @@ void ai_execute_behavior(ai_info *aip)
 			ship	*shipp = &Ships[aip->shipnum];
 			ship_info	*sip = &Ship_info[shipp->ship_info_index];
 
-			if (strnicmp(shipp->ship_name, INSTRUCTOR_SHIP_NAME, strlen(INSTRUCTOR_SHIP_NAME))) {
+			if (strnicmp(shipp->ship_name, INSTRUCTOR_SHIP_NAME, strlen(INSTRUCTOR_SHIP_NAME)) != 0) {
 				if (sip->is_big_or_huge()) {
 					aip->mode = AIM_NONE;
 				} else {
@@ -13441,7 +13441,7 @@ void ai_warp_out(object *objp)
 
 //	Return object index of weapon that could produce a shockwave that should be known about to *objp.
 //	Return nearest one.
-int ai_find_shockwave_weapon(object *objp, ai_info *aip)
+int ai_find_shockwave_weapon(object *objp, ai_info * /*aip*/)
 {
 	missile_obj	*mo;
 	float	nearest_dist = 999999.9f;
@@ -13507,7 +13507,7 @@ void ai_announce_ship_dying(object *dying_objp)
 
 //	Return object index of weapon that could produce a shockwave that should be known about to *objp.
 //	Return nearest one.
-int ai_find_shockwave_ship(object *objp, ai_info *aip)
+int ai_find_shockwave_ship(object *objp, ai_info * /*aip*/)
 {
 	ship_obj	*so;
 	float	nearest_dist = 999999.9f;
@@ -14158,7 +14158,7 @@ void ai_frame(int objnum)
 	}
 }
 
-void ai_control_info_check( object *obj, ai_info *aip )
+void ai_control_info_check( object * /*obj*/, ai_info *aip )
 {
 	if(aip->ai_override_flags.none_set())
 		return;
@@ -14797,7 +14797,7 @@ int firing_aspect_seeking_bomb(object *objp)
 //	*objp collided with big ship *big_objp at global point *collide_pos
 //	Make it fly away from the collision point.
 // collision_normal is NULL, when a collision is imminent and we just want to bug out.
-void big_ship_collide_recover_start(object *objp, object *big_objp, vec3d *collide_pos, vec3d *collision_normal)
+void big_ship_collide_recover_start(object *objp, object *big_objp, vec3d * /*collide_pos*/, vec3d *collision_normal)
 {
 	ai_info	*aip;
 
@@ -14888,7 +14888,7 @@ void ai_update_lethality(object *pship_obj, object *other_obj, float damage)
 /**
  * Object *objp_ship was hit by either weapon *objp_weapon or collided into by ship hit_objp at point *hitpos.
  */
-void ai_ship_hit(object *objp_ship, object *hit_objp, vec3d *hitpos, int shield_quadrant, vec3d *hit_normal)
+void ai_ship_hit(object *objp_ship, object *hit_objp, vec3d *hitpos, int  /*shield_quadrant*/, vec3d *hit_normal)
 {
 	int		hitter_objnum = -2;
 	object	*objp_hitter = NULL;
@@ -15190,7 +15190,7 @@ void ai_ship_hit(object *objp_ship, object *hit_objp, vec3d *hitpos, int shield_
 // the parameter 'method' is used to tell is this ship was destroyed or it departed normally.
 // This function will get called in either case, and there are things that should be done if
 // the ship actually gets destroyed which shouldn't get done if it departed.
-void ai_ship_destroy(int shipnum, Ship::Exit_Flags method)
+void ai_ship_destroy(int shipnum, Ship::Exit_Flags  /*method*/)
 {
 	int		objnum;
 	object	*other_objp;
@@ -15510,7 +15510,7 @@ int ai_return_path_num_from_dockbay(object *dockee_objp, int dockbay_index)
 /**
  * Actually go ahead and fire the synaptics.
  */
-void cheat_fire_synaptic(object *objp, ship *shipp, ai_info *aip)
+void cheat_fire_synaptic(object *objp, ship *shipp, ai_info * /*aip*/)
 {
 	ship_weapon	*swp;
 	swp = &shipp->weapons;

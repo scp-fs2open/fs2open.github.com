@@ -8,7 +8,7 @@
 */
 
 #include <sstream>
-#include <limits.h>
+#include <climits>
 
 #include "gamesnd/gamesnd.h"
 #include "localization/localize.h"
@@ -288,7 +288,7 @@ int gamesnd_lookup_name(const char* name, const SCP_vector<game_snd>& sounds)
 
 	for(SCP_vector<game_snd>::const_iterator snd = sounds.begin(); snd != sounds.end(); ++snd)
 	{
-		if (!snd->name.compare(name))
+		if (snd->name == name)
 		{
 			return i;
 		}
@@ -414,11 +414,10 @@ interface_snd_id gamesnd_get_by_iface_tbl_index(int index)
  *
  * @param tag Tag
  * @param idx_dest Sound index destination
- * @param object_name Object name being parsed
  * @param flags See the parse_sound_flags enum
  *
  */
-void parse_game_sound(const char* tag, gamesnd_id* idx_dest, const char* object_name) {
+void parse_game_sound(const char* tag, gamesnd_id* idx_dest) {
 	if(optional_string(tag))
 	{
 		SCP_string buf;
@@ -441,11 +440,10 @@ void parse_game_sound(const char* tag, gamesnd_id* idx_dest, const char* object_
  *
  * @param tag Tag
  * @param idx_dest Sound index destination
- * @param object_name Object name being parsed
  * @param flags See the parse_sound_flags enum
  *
  */
-void parse_iface_sound(const char* tag, interface_snd_id* idx_dest, const char* object_name) {
+void parse_iface_sound(const char* tag, interface_snd_id* idx_dest) {
 	Assert( Snds_iface.size() == Snds_iface_handle.size() );
 
 	if(optional_string(tag))
@@ -529,7 +527,7 @@ void gamesnd_preload_common_sounds()
 	for (SCP_vector<game_snd>::iterator gs = Snds.begin(); gs != Snds.end(); ++gs) {
 		if ( gs->preload ) {
 			for (auto& entry : gs->sound_entries) {
-				if ( entry.filename[0] != 0 && strnicmp(entry.filename, NOX("none.wav"), 4) ) {
+				if ( entry.filename[0] != 0 && strnicmp(entry.filename, NOX("none.wav"), 4) != 0 ) {
 					game_busy( NOX("** preloading common game sounds **") );	// Animate loading cursor... does nothing if loading screen not active.
 					entry.id = snd_load(&entry, gs->flags);
 				}
@@ -550,7 +548,7 @@ void gamesnd_load_gameplay_sounds()
 	for (SCP_vector<game_snd>::iterator gs = Snds.begin(); gs != Snds.end(); ++gs) {
 		if ( !gs->preload ) { // don't try to load anything that's already preloaded
 			for (auto& entry : gs->sound_entries) {
-				if (entry.filename[0] != 0 && strnicmp(entry.filename, NOX("none.wav"), 4)) {
+				if (entry.filename[0] != 0 && strnicmp(entry.filename, NOX("none.wav"), 4) != 0) {
 					game_busy(NOX("** preloading gameplay sounds **"));        // Animate loading cursor... does nothing if loading screen not active.
 					entry.id = snd_load(&entry, gs->flags);
 				}
@@ -586,7 +584,7 @@ void gamesnd_load_interface_sounds()
 	Assert( Snds_iface.size() < INT_MAX );
 	for (SCP_vector<game_snd>::iterator si = Snds_iface.begin(); si != Snds_iface.end(); ++si) {
 		for (auto& entry : si->sound_entries) {
-			if ( entry.filename[0] != 0 && strnicmp(entry.filename, NOX("none.wav"), 4) ) {
+			if ( entry.filename[0] != 0 && strnicmp(entry.filename, NOX("none.wav"), 4) != 0 ) {
 				entry.id = snd_load(&entry, si->flags);
 			}
 		}
@@ -849,7 +847,7 @@ void parse_gamesnd_new(game_snd* gs, bool no_create)
 	}
 
 	// If the name _doesn't_ match <same> put it into gs->filename;
-	if (stricmp(name, "<same>"))
+	if (stricmp(name, "<same>") != 0)
 	{
 		strcpy_s(entry->filename, name);
 	}

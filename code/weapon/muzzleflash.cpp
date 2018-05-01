@@ -43,12 +43,14 @@ typedef struct mflash_blob_info {
 		name[ 0 ] = '\0';
 	}
 
-	void operator=( const mflash_blob_info& r )
+	mflash_blob_info& operator=( const mflash_blob_info& r )
 	{
 		strcpy_s( name, r.name );
 		anim_id = r.anim_id;
 		offset = r.offset;
 		radius = r.radius;
+
+		return *this;
 	}
 } mflash_blob_info;
 
@@ -70,11 +72,13 @@ typedef struct mflash_info {
 		blobs = mi.blobs;
 	}
 
-	void operator=( const mflash_info& r )
+	mflash_info& operator=( const mflash_info& r )
 	{
 		strcpy_s( name, r.name );
 		used_this_level = r.used_this_level;
 		blobs = r.blobs;
+
+		return *this;
 	}
 } mflash_info;
 

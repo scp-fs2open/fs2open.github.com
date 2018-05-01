@@ -87,7 +87,7 @@ int load_nebula_sub(char *filename)
 
 	// ID of NEBU
 	cfread( id, 4, 1, fp );	
-	if ( strncmp( id, NEBULA_FILE_ID, 4))	{
+	if ( strncmp( id, NEBULA_FILE_ID, 4) != 0)	{
 		mprintf(( "Not a valid nebula file.\n" ));
 		return 0;
 	} 

@@ -16,7 +16,7 @@
 #ifdef _WIN32
 #include <winsock.h>
 #else
-#include <errno.h>
+#include <cerrno>
 #endif
 
 #include "globalincs/pstypes.h"

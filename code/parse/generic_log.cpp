@@ -10,7 +10,7 @@
 
 
 
-#include <stdarg.h>
+#include <cstdarg>
 
 #include "cfile/cfile.h"
 #include "globalincs/globals.h"

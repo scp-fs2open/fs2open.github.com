@@ -551,7 +551,7 @@ void debrief_voice_load_all()
 		if ( strlen(Debrief_stages[i]->voice) <= 0 ) {
 			continue;
 		}
-		if ( strnicmp(Debrief_stages[i]->voice, NOX("none"), 4) ) {
+		if ( strnicmp(Debrief_stages[i]->voice, NOX("none"), 4) != 0 ) {
 			debrief_load_voice_file(i, Debrief_stages[i]->voice);
 //			Debrief_voices[i] = audiostream_open(Debrief_stages[i]->voice, ASF_VOICE);
 		}
@@ -1734,7 +1734,7 @@ void debrief_button_pressed(int num)
 	} // end swtich
 }
 
-void debrief_setup_ship_kill_stats(int stage_num)
+void debrief_setup_ship_kill_stats(int  /*stage_num*/)
 {
 	int i;
 	//ushort *kill_arr;

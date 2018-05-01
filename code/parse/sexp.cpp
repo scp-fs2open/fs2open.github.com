@@ -14,12 +14,12 @@
 //	It uses a very baggy format, allocating 16 characters per token, regardless
 //	of how many are used.
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <ctype.h>
-#include <assert.h>
-#include <limits.h>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <cctype>
+#include <cassert>
+#include <climits>
 #include <cstdint>
 
 #include "ai/aigoals.h"
@@ -835,7 +835,6 @@ const char *Skybox_flags[] = {
 int	Directive_count;
 int	Sexp_useful_number;  // a variable to pass useful info in from external modules
 int	Locked_sexp_true, Locked_sexp_false;
-int	Num_operators = sizeof(Operators) / sizeof(sexp_oper);
 int	Num_sexp_ai_goal_links = sizeof(Sexp_ai_goal_links) / sizeof(sexp_ai_goal_link);
 int	Sexp_clipboard = -1;  // used by Fred
 int	Training_context = 0;
@@ -1424,7 +1423,7 @@ int cmp_sexp_chains(int node1, int node2)
 	}
 
 	// DA: 1/7/99 Need to check the actual Sexp_node.text, not possible variable, which can be equal
-	if (stricmp(Sexp_nodes[node1].text, Sexp_nodes[node2].text)){
+	if (stricmp(Sexp_nodes[node1].text, Sexp_nodes[node2].text) != 0){
 		return 0;
 	}
 
@@ -1909,7 +1908,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 					return SEXP_CHECK_TYPE_MISMATCH;
 				}
 
-				if (stricmp(CTEXT(node), SEXP_NONE_STRING))		// none is okay
+				if (stricmp(CTEXT(node), SEXP_NONE_STRING) != 0)		// none is okay
 				{
 					if (ship_name_lookup(CTEXT(node), 1) < 0)
 					{
@@ -2545,7 +2544,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 							|| (Operators[op].value == OP_PREVIOUS_GOAL_TRUE) || (Operators[op].value == OP_PREVIOUS_GOAL_FALSE) || (Operators[op].value == OP_PREVIOUS_GOAL_INCOMPLETE) )
 							break;
 
-						if (!(*Mission_filename) || stricmp(Mission_filename, CTEXT(node)))
+						if (!(*Mission_filename) || stricmp(Mission_filename, CTEXT(node)) != 0)
 							return SEXP_CHECK_INVALID_MISSION_NAME;
 					}
 				}
@@ -2727,8 +2726,8 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 					return SEXP_CHECK_TYPE_MISMATCH;
 
 				if (*CTEXT(node) != '#') {  // not a manual source?
-					if ( stricmp(CTEXT(node), "<any wingman>"))  
-						if ( stricmp(CTEXT(node), "<none>") ) // not a special token?
+					if ( stricmp(CTEXT(node), "<any wingman>") != 0)  
+						if ( stricmp(CTEXT(node), "<none>") != 0 ) // not a special token?
 							if ((ship_name_lookup(CTEXT(node), TRUE) < 0) && (wing_name_lookup(CTEXT(node), 1) < 0))  // is it in the mission?
 								if (Fred_running || !mission_parse_get_arrival_ship(CTEXT(node)))
 									return SEXP_CHECK_INVALID_MSG_SOURCE;
@@ -2833,7 +2832,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 					return SEXP_CHECK_TYPE_MISMATCH;
 				}
 
-				if (stricmp(CTEXT(node), SEXP_NONE_STRING) && ds_eax_get_preset_id(CTEXT(node)) < 0) {
+				if (stricmp(CTEXT(node), SEXP_NONE_STRING) != 0 && ds_eax_get_preset_id(CTEXT(node)) < 0) {
 					return SEXP_CHECK_INVALID_SOUND_ENVIRONMENT;
 				}
 				break;
@@ -3050,7 +3049,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 				if ( type2 != SEXP_ATOM_STRING )
 					return SEXP_CHECK_TYPE_MISMATCH;
 
-				if ( stricmp(CTEXT(node), NOX("default")) && !strstr(CTEXT(node), NOX(".pof")) )
+				if ( stricmp(CTEXT(node), NOX("default")) != 0 && !strstr(CTEXT(node), NOX(".pof")) )
 					return SEXP_CHECK_INVALID_SKYBOX_NAME;
 
 				break;
@@ -3152,7 +3151,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 				// if we haven't specified all banks we need to check the number of the bank is legal
 				else {
 					int num_banks = atoi(CTEXT(node));
-					if ((num_banks >= MAX_SHIP_PRIMARY_BANKS) && (num_banks >= MAX_SHIP_SECONDARY_BANKS)) {
+					if ((num_banks >= MAX_SHIP_PRIMARY_BANKS) && (num_banks >= MAX_SHIP_SECONDARY_BANKS)) { // NOLINT
 						return SEXP_CHECK_NUM_RANGE_INVALID;
 					}
 				}
@@ -3178,7 +3177,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 				}
 				else if (type2 == SEXP_ATOM_STRING)
 				{
-					if (stricmp(CTEXT(node), SEXP_NONE_STRING) && !gamesnd_get_by_name(CTEXT(node)).isValid())
+					if (stricmp(CTEXT(node), SEXP_NONE_STRING) != 0 && !gamesnd_get_by_name(CTEXT(node)).isValid())
 					{
 						return SEXP_CHECK_INVALID_GAME_SND;
 					}
@@ -5630,7 +5629,7 @@ int sexp_special_warp_dist( int n)
 	}
 	
 	Assert( (Ships[shipnum].special_warpout_objnum >= 0) && (Ships[shipnum].special_warpout_objnum < MAX_OBJECTS));
-	if ( (Ships[shipnum].special_warpout_objnum < 0) && (Ships[shipnum].special_warpout_objnum >= MAX_OBJECTS) ) {
+	if ( (Ships[shipnum].special_warpout_objnum < 0) || (Ships[shipnum].special_warpout_objnum >= MAX_OBJECTS) ) {
 		return SEXP_NAN;
 	}
 
@@ -5920,7 +5919,7 @@ int sexp_shields_left(int n)
 	}
 
 	// now return the amount of shields left as a percentage of the whole.
-	percent = fl2i((get_shield_pct(&Objects[Ships[shipnum].objnum]) * 100.0f) + 0.5f);
+	percent = (int)std::lround(get_shield_pct(&Objects[Ships[shipnum].objnum]) * 100.0f);
 	return percent;
 }
 
@@ -5950,7 +5949,7 @@ int sexp_hits_left(int n)
 	// since we are working with total hit points taken, not total remaining.
 	ship		*shipp = &Ships[shipnum];
 	object	*objp = &Objects[shipp->objnum];
-	percent = fl2i((100.0f * get_hull_pct(objp)) + 0.5f);
+	percent = (int)std::lround(100.0f * get_hull_pct(objp));
 	return percent;
 }
 
@@ -5975,7 +5974,7 @@ int sexp_sim_hits_left(int n)
 	// since we are working with total hit points taken, not total remaining.
 	ship		*shipp = &Ships[shipnum];
 	object	*objp = &Objects[shipp->objnum];
-	percent = fl2i((100.0f * get_sim_hull_pct(objp)) + 0.5f);
+	percent = (int)std::lround(100.0f * get_sim_hull_pct(objp));
 	return percent;
 }
 
@@ -6152,7 +6151,7 @@ int sexp_hits_left_subsystem(int n)
 		// named subsystem
 		if (single_subsystem || (type == SUBSYSTEM_UNKNOWN)) {
 			if (ss != NULL) {
-				percent = fl2i((ss->current_hits / ss->max_hits * 100.0f) + 0.5f);
+				percent = (int)std::lround(ss->current_hits / ss->max_hits * 100.0f);
 				return percent;
 			}
 
@@ -6165,7 +6164,7 @@ int sexp_hits_left_subsystem(int n)
 		// by default we return as a percentage the hits remaining on the subsystem as a whole (i.e. for 3 engines,
 		// we are returning the sum of the hits on the 3 engines)
 		} else {
-			percent = fl2i((ship_get_subsystem_strength(&Ships[shipnum],type) * 100.0f) + 0.5f);
+			percent = (int)std::lround(ship_get_subsystem_strength(&Ships[shipnum],type) * 100.0f);
 			return percent;
 		}
 	}
@@ -6213,7 +6212,7 @@ int sexp_hits_left_subsystem_generic(int node)
 
 	// return as a percentage the hits remaining on the subsystem as a whole (i.e. for 3 engines,
 	// we are returning the sum of the hits on the 3 engines)
-	return fl2i((ship_get_subsystem_strength(&Ships[ship_num], subsys_type) * 100.0f) + 0.5f);
+	return (int)std::lround(ship_get_subsystem_strength(&Ships[ship_num], subsys_type) * 100.0f);
 }
 
 // Goober5000
@@ -6240,7 +6239,7 @@ int sexp_hits_left_subsystem_specific(int node)
 	ss = ship_get_subsys(&Ships[ship_num], subsys_name);
 	if (ss != NULL) {
 		// return as a percentage the hits remaining on this subsystem only
-		return fl2i((ss->current_hits / ss->max_hits * 100.0f) + 0.5f);
+		return (int)std::lround(ss->current_hits / ss->max_hits * 100.0f);
 	}
 
 	// we reached end of ship subsys list without finding subsys_name
@@ -6284,7 +6283,7 @@ int sexp_determine_team(char *subj)
 	char team_name[NAME_LENGTH];
 
 	// quick check
-	if (strnicmp(subj, "<any ", 5))
+	if (strnicmp(subj, "<any ", 5) != 0)
 		return -1;
 
 	// grab IFF (rest of string except for closing angle bracket)
@@ -6887,7 +6886,7 @@ int sexp_get_object_coordinate(int n, int axis)
 	// see if we have a subsys
 	if (oswpt.objp->type == OBJ_SHIP)
 	{
-		if ((subsystem_name != NULL) && stricmp(subsystem_name, SEXP_NONE_STRING) && stricmp(subsystem_name, SEXP_HULL_STRING))
+		if ((subsystem_name != NULL) && stricmp(subsystem_name, SEXP_NONE_STRING) != 0 && stricmp(subsystem_name, SEXP_HULL_STRING) != 0)
 		{
 			pos = &subsys_pos_buf;
 			// get the world pos but bail if we can't get one
@@ -7442,7 +7441,7 @@ int sexp_skill_level_at_least(int n)
 	return SEXP_FALSE;
 }
 
-int sexp_was_promotion_granted(int n)
+int sexp_was_promotion_granted(int  /*n*/)
 {
 	if (Player->flags & PLAYER_FLAGS_PROMOTED)
 		return SEXP_TRUE;
@@ -10318,7 +10317,7 @@ gamesnd_id sexp_get_sound_index(int node)
 		const char *sound_name = CTEXT(node);
 
 		// if it's not <none>, try looking it up
-		if (stricmp(sound_name, SEXP_NONE_STRING))
+		if (stricmp(sound_name, SEXP_NONE_STRING) != 0)
 		{
 			sound_index = gamesnd_get_by_name(sound_name);
 
@@ -11257,7 +11256,7 @@ void sexp_next_mission(int n)
 /**
  * Deal with the end-of-campaign sexpression. 
  */
-void sexp_end_of_campaign(int n)
+void sexp_end_of_campaign(int  /*n*/)
 {
 	// this is really a do-nothing sexpression.  It is pretty much a placeholder to allow
 	// campaigns to have repeat-mission branches at the end of the campaign.  By not setting
@@ -11924,7 +11923,7 @@ void sexp_transfer_cargo(int n)
 #ifndef NDEBUG
 	// Don't give warning for large ships (cruiser on up) 
 	if (! (Ship_info[Ships[shipnum2].ship_info_index].is_big_or_huge()) ) {
-		if ( stricmp(Cargo_names[Ships[shipnum2].cargo1 & CARGO_INDEX_MASK], "nothing") ) {
+		if ( stricmp(Cargo_names[Ships[shipnum2].cargo1 & CARGO_INDEX_MASK], "nothing") != 0 ) {
 			Warning(LOCATION, "Transferring cargo to %s which already\nhas cargo %s.\nCargo will be replaced", Ships[shipnum2].ship_name, Cargo_names[Ships[shipnum2].cargo1 & CARGO_INDEX_MASK] );
 		}
 	}
@@ -14542,7 +14541,7 @@ void sexp_weapon_create(int n)
 	Assert( n >= 0 );
 
 	parent_objnum = -1;
-	if (stricmp(CTEXT(n), SEXP_NONE_STRING))
+	if (stricmp(CTEXT(n), SEXP_NONE_STRING) != 0)
 	{
 		int parent_ship = ship_name_lookup(CTEXT(n));
 
@@ -15393,7 +15392,7 @@ int sexp_query_orders (int n)
 }
 
 // Karajorma
-void sexp_reset_orders (int n)
+void sexp_reset_orders (int  /*n*/)
 {
 	Squadmsg_history.clear();
 }
@@ -15922,8 +15921,8 @@ void set_primary_ammo (int ship_index, int requested_bank, int requested_ammo, i
 	}
 
 	// Is the number requested larger than the maximum allowed for that particular bank? 
-	maximum_allowed = fl2i((Ship_info[shipp->ship_info_index].primary_bank_ammo_capacity[requested_bank] 
-		/ Weapon_info[shipp->weapons.primary_bank_weapons[requested_bank]].cargo_size)+0.5);
+	maximum_allowed = (int)std::lround(Ship_info[shipp->ship_info_index].primary_bank_ammo_capacity[requested_bank]
+		/ Weapon_info[shipp->weapons.primary_bank_weapons[requested_bank]].cargo_size);
 	if (maximum_allowed < requested_ammo) 
 	{
 		requested_ammo = maximum_allowed ;
@@ -16965,7 +16964,7 @@ void sexp_beam_floating_fire(int n)
 	}
 
 	fire_info.shooter = NULL;
-	if (stricmp(CTEXT(n), SEXP_NONE_STRING))
+	if (stricmp(CTEXT(n), SEXP_NONE_STRING) != 0)
 	{
 		sindex = ship_name_lookup(CTEXT(n));
 
@@ -16988,7 +16987,7 @@ void sexp_beam_floating_fire(int n)
 	fire_info.target_subsys = NULL;
 
 	sindex = -1;
-	if (stricmp(CTEXT(n), SEXP_NONE_STRING))
+	if (stricmp(CTEXT(n), SEXP_NONE_STRING) != 0)
 	{
 		sindex = ship_name_lookup(CTEXT(n));
 
@@ -17001,7 +17000,7 @@ void sexp_beam_floating_fire(int n)
 
 	if (n >= 0)
 	{
-		if (stricmp(CTEXT(n), SEXP_NONE_STRING)) {
+		if (stricmp(CTEXT(n), SEXP_NONE_STRING) != 0) {
 			if (sindex >= 0)
 				fire_info.target_subsys = ship_get_subsys(&Ships[sindex], CTEXT(n));
 		}
@@ -18706,7 +18705,7 @@ void sexp_set_support_ship(int n)
 	// get ship class
 	n = CDR(n);
 	temp_val = ship_info_lookup(CTEXT(n));
-	if ((temp_val < 0) && ((stricmp(CTEXT(n), "<species support ship class>")) && (stricmp(CTEXT(n), "<any support ship class>"))) )
+	if ((temp_val < 0) && ((stricmp(CTEXT(n), "<species support ship class>") != 0) && (stricmp(CTEXT(n), "<any support ship class>") != 0)) )
 	{
 		Warning(LOCATION, "Support ship class '%s' not found.\n", CTEXT(n));
 		return;
@@ -19517,7 +19516,7 @@ int sexp_missile_locked(int node)
 	if (CDR(node) != -1)
 	{
 		// if we're not targeting the specific ship, it's false
-		if (stricmp(Ships[Objects[Players_target].instance].ship_name, CTEXT(CDR(node))))
+		if (stricmp(Ships[Objects[Players_target].instance].ship_name, CTEXT(CDR(node))) != 0)
 			return SEXP_FALSE;
 
 		// do we have a specific subsystem?
@@ -19978,7 +19977,7 @@ void sexp_supernova_start(int node)
 	supernova_start(eval_num(node));
 }
 
-void sexp_supernova_stop(int node)
+void sexp_supernova_stop(int  /*node*/)
 {
 	supernova_stop();
 }
@@ -21277,7 +21276,7 @@ object *sexp_camera_get_objsub(int node, int *o_submodel)
 	//*****Process submodel
 	if(objp != NULL && sub_name != NULL && oswpt.type == OSWPT_TYPE_SHIP)
 	{
-		if(stricmp(sub_name, SEXP_NONE_STRING))
+		if(stricmp(sub_name, SEXP_NONE_STRING) != 0)
 		{
 			ship_subsys *ss = ship_get_subsys(&Ships[objp->instance], sub_name);
 			if (ss != NULL)
@@ -28559,7 +28558,7 @@ void update_sexp_references(const char *old_name, const char *new_name, int form
 	}
 }
 
-int query_referenced_in_sexp(int mode, const char *name, int *node)
+int query_referenced_in_sexp(int  /*mode*/, const char *name, int *node)
 {
 	int i, n, j;
 

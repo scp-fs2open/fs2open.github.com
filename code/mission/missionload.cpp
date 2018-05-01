@@ -63,7 +63,7 @@ void ml_update_recent_missions(char *filename)
 
 	j = 1;
 	for ( i = 0; i < Num_recent_missions; i++ ) {
-		if ( stricmp(Recent_missions[0], tmp[i]) ) {
+		if ( stricmp(Recent_missions[0], tmp[i]) != 0 ) {
 			strcpy_s(Recent_missions[j++], tmp[i]);
 			if ( j >= MAX_RECENT_MISSIONS ) {
 				break;

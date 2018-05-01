@@ -28,6 +28,8 @@ ADE_LIB(l_Testing, "Testing", "ts", "Experimental or testing stuff");
 
 ADE_FUNC(avdTest, l_Testing, NULL, "Test the AVD Physics code", NULL, NULL)
 {
+	(void)L; // unused parameter
+
 	static bool initialized = false;
 	static avd_movement avd;
 

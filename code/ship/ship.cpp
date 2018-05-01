@@ -10,7 +10,7 @@
 
 
 
-#include <setjmp.h>
+#include <csetjmp>
 
 #include "ai/aigoals.h"
 #include "asteroid/asteroid.h"
@@ -1987,7 +1987,7 @@ static void parse_ship_sound(const char *name, GameSounds id, ship_info *sip)
 
 	gamesnd_id temp_index;
 
-	parse_game_sound(name, &temp_index, sip->name);
+	parse_game_sound(name, &temp_index);
 
 	if (temp_index.isValid())
 		sip->ship_sounds.insert(std::make_pair(id, temp_index));
@@ -2728,7 +2728,7 @@ static int parse_ship_values(ship_info* sip, const bool is_template, const bool 
 			stuff_float(&degrees);
 			sip->collision_physics.landing_rest_angle = cosf(fl_radians(90.0f - degrees));
 		}
-		parse_game_sound("+Landing Sound:", &sip->collision_physics.landing_sound_idx, sip->name);
+		parse_game_sound("+Landing Sound:", &sip->collision_physics.landing_sound_idx);
 	}
 
 
@@ -2950,8 +2950,8 @@ static int parse_ship_values(ship_info* sip, const bool is_template, const bool 
 		}
 	}
 
-	parse_game_sound("$Warpin Start Sound:", &sip->warpin_snd_start, sip->name);
-	parse_game_sound("$Warpin End Sound:", &sip->warpin_snd_end, sip->name);
+	parse_game_sound("$Warpin Start Sound:", &sip->warpin_snd_start);
+	parse_game_sound("$Warpin End Sound:", &sip->warpin_snd_end);
 
 	if(optional_string("$Warpin speed:"))
 	{
@@ -3002,8 +3002,8 @@ static int parse_ship_values(ship_info* sip, const bool is_template, const bool 
 		}
 	}
 
-	parse_game_sound("$Warpout Start Sound:", &sip->warpout_snd_start, sip->name);
-	parse_game_sound("$Warpout End Sound:", &sip->warpout_snd_end, sip->name);
+	parse_game_sound("$Warpout Start Sound:", &sip->warpout_snd_start);
+	parse_game_sound("$Warpout End Sound:", &sip->warpout_snd_end);
 
 	if(optional_string("$Warpout engage time:"))
 	{
@@ -3592,16 +3592,16 @@ static int parse_ship_values(ship_info* sip, const bool is_template, const bool 
 		stuff_int(&sip->scan_time);
 
 	//Parse the engine sound
-	parse_game_sound("$EngineSnd:", &sip->engine_snd, sip->name);
+	parse_game_sound("$EngineSnd:", &sip->engine_snd);
 
 	if(optional_string("$Minimum Engine Volume:"))
 		stuff_float(&sip->min_engine_vol);
 
 	//Parse optional sound to be used for beginning of a glide
-	parse_game_sound("$GlideStartSnd:", &sip->glide_start_snd, sip->name);
+	parse_game_sound("$GlideStartSnd:", &sip->glide_start_snd);
 
 	//Parse optional sound to be used for end of a glide
-	parse_game_sound("$GlideEndSnd:", &sip->glide_end_snd, sip->name);
+	parse_game_sound("$GlideEndSnd:", &sip->glide_end_snd);
 
 	parse_ship_sounds(sip);
 	
@@ -3993,9 +3993,9 @@ static int parse_ship_values(ship_info* sip, const bool is_template, const bool 
 			stuff_float(&mtp->length);
 		}
 
-		parse_game_sound("+StartSnd:", &mtp->start_snd, sip->name);
-		parse_game_sound("+LoopSnd:", &mtp->loop_snd, sip->name);
-		parse_game_sound("+StopSnd:", &mtp->stop_snd, sip->name);
+		parse_game_sound("+StartSnd:", &mtp->start_snd);
+		parse_game_sound("+LoopSnd:", &mtp->loop_snd);
+		parse_game_sound("+StopSnd:", &mtp->stop_snd);
 	}
 
 	if (optional_string("$Glowpoint overrides:")) {
@@ -4329,11 +4329,11 @@ static int parse_ship_values(ship_info* sip, const bool is_template, const bool 
 					WarningEx(LOCATION,"Invalid engine wash name %s specified for subsystem %s in %s '%s'", name_tmp, sp->subobj_name, info_type_name, sip->name);
 			}
 
-			parse_game_sound("$AliveSnd:", &sp->alive_snd, sp->subobj_name);
-			parse_game_sound("$DeadSnd:", &sp->dead_snd, sp->subobj_name);
-			parse_game_sound("$RotationSnd:", &sp->rotation_snd, sp->subobj_name);
-			parse_game_sound("$Turret Base RotationSnd:", &sp->turret_base_rotation_snd, sp->subobj_name);
-			parse_game_sound("$Turret Gun RotationSnd:", &sp->turret_gun_rotation_snd, sp->subobj_name);
+			parse_game_sound("$AliveSnd:", &sp->alive_snd);
+			parse_game_sound("$DeadSnd:", &sp->dead_snd);
+			parse_game_sound("$RotationSnd:", &sp->rotation_snd);
+			parse_game_sound("$Turret Base RotationSnd:", &sp->turret_base_rotation_snd);
+			parse_game_sound("$Turret Gun RotationSnd:", &sp->turret_gun_rotation_snd);
 
 			if (optional_string("$Turret BaseSnd Volume:"))
 				stuff_float(&sp->turret_base_rotation_snd_mult);
@@ -4649,11 +4649,11 @@ static int parse_ship_values(ship_info* sip, const bool is_template, const bool 
 							current_trigger->end = 0;
 
 						if(optional_string("$Sound:")){
-							parse_game_sound("+Start:", &current_trigger->start_sound, sip->name);
+							parse_game_sound("+Start:", &current_trigger->start_sound);
 
-							parse_game_sound("+Loop:", &current_trigger->loop_sound, sip->name);
+							parse_game_sound("+Loop:", &current_trigger->loop_sound);
 
-							parse_game_sound("+End:", &current_trigger->end_sound, sip->name);
+							parse_game_sound("+End:", &current_trigger->end_sound);
 
 							required_string("+Radius:");
 							stuff_float(&current_trigger->snd_rad );
@@ -6204,7 +6204,7 @@ static void ship_set(int ship_index, int objnum, int ship_type)
 			if (Fred_running)
 				swp->primary_bank_ammo[i] = 100;
 			else
-				swp->primary_bank_ammo[i] = fl2i(sip->primary_bank_ammo_capacity[i] / weapon_size + 0.5f );
+				swp->primary_bank_ammo[i] = (int)std::lround(sip->primary_bank_ammo_capacity[i] / weapon_size);
 		}
 	}
 
@@ -6216,7 +6216,7 @@ static void ship_set(int ship_index, int objnum, int ship_type)
 		if (Fred_running)
 			swp->secondary_bank_ammo[i] = 100;
 		else
-			swp->secondary_bank_ammo[i] = fl2i(sip->secondary_bank_ammo_capacity[i] / weapon_size + 0.5f );
+			swp->secondary_bank_ammo[i] = (int)std::lround(sip->secondary_bank_ammo_capacity[i] / weapon_size);
 	}
 
 	shipp->armor_type_idx = sip->armor_type_idx;
@@ -6696,7 +6696,7 @@ static int subsys_set(int objnum, int ignore_subsys_info)
 		for (k=0; k<ship_system->weapons.num_secondary_banks; k++) {
 			float weapon_size = Weapon_info[ship_system->weapons.secondary_bank_weapons[k]].cargo_size;
 			Assertion( weapon_size > 0.0f, "Cargo size for secondary weapon %s is invalid, must be greater than 0.\n", Weapon_info[ship_system->weapons.secondary_bank_weapons[k]].name );
-			ship_system->weapons.secondary_bank_ammo[k] = (Fred_running ? 100 : fl2i(ship_system->weapons.secondary_bank_capacity[k] / weapon_size + 0.5f));
+			ship_system->weapons.secondary_bank_ammo[k] = (Fred_running ? 100 : (int)std::lround(ship_system->weapons.secondary_bank_capacity[k] / weapon_size));
 
 			ship_system->weapons.secondary_next_slot[k] = 0;
 		}
@@ -6707,7 +6707,7 @@ static int subsys_set(int objnum, int ignore_subsys_info)
 			float weapon_size = Weapon_info[ship_system->weapons.primary_bank_weapons[k]].cargo_size;
 
 			if (weapon_size > 0.0f) {	// Non-ballistic primaries are supposed to have a cargo_size of 0
-				ship_system->weapons.primary_bank_ammo[k] = (Fred_running ? 100 : fl2i(ship_system->weapons.primary_bank_capacity[k] / weapon_size + 0.5f));
+				ship_system->weapons.primary_bank_ammo[k] = (Fred_running ? 100 : (int)std::lround(ship_system->weapons.primary_bank_capacity[k] / weapon_size));
 			}
 		}
 
@@ -9111,7 +9111,7 @@ static void ship_set_default_weapons(ship *shipp, ship_info *sip)
 				float capacity, size;
 				capacity = (float) sip->primary_bank_ammo_capacity[i];
 				size = (float) wip->cargo_size;
-				swp->primary_bank_ammo[i] = fl2i((capacity / size)+0.5f);
+				swp->primary_bank_ammo[i] = (int)std::lround(capacity / size);
 				swp->primary_bank_start_ammo[i] = swp->primary_bank_ammo[i];
 			}
 
@@ -9689,7 +9689,7 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 						int sindex = ship_name_lookup(goals[j].target_name);
 						if (sindex > -1 && Ships[sindex].objnum == objnum) {
 							ivec3 temp = {i, j, goals[j].ai_submode};
-							subsystem_matches.push_back(std::move(temp));
+							subsystem_matches.push_back(temp);
 						}
 					}
 				}
@@ -9780,7 +9780,7 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 					ai_info* aip = &Ai_info[*it];
 					if (aip->targeted_subsys == ss) {
 						ivec3 temp = {*it, -1, num_saved_subsystems};	// -1 for the "goal" index means targeted, not actually a goal
-						subsystem_matches.push_back(std::move(temp));
+						subsystem_matches.push_back(temp);
 						aip->targeted_subsys = NULL;	// Clear this so that aip->last_subsys_target won't point to a subsystem from the old list later
 						aip->targeted_subsys_parent = -1;
 						auto erasor = it;
@@ -11525,7 +11525,7 @@ void ship_process_targeting_lasers()
  *	Calls ::weapon_hit(), indirectly via ::weapon_detonate(), to detonate weapon.
  *	If it's a weapon that spawns particles, those will be released.
  */
-static int maybe_detonate_weapon(ship_weapon *swp, object *src)
+static int maybe_detonate_weapon(ship_weapon *swp, object* /*src*/)
 {
 	int			objnum = swp->last_fired_weapon_index;
 	object		*objp;
@@ -14287,7 +14287,7 @@ int ship_class_query_general_type(int ship_class)
 /**
  * Returns true
  */
-int ship_docking_valid(int docker, int dockee)
+int ship_docking_valid(int  /*docker*/, int  /*dockee*/)
 {
 	// Goober5000
 	// So many people have asked for this function to be extended that it's making less
@@ -15423,7 +15423,7 @@ static void awacs_maybe_ask_for_help(ship *sp, int multi_team_filter)
 {
 	// Goober5000 - bail if not in main fs2 campaign
 	// (stupid coders... it's the FREDder's responsibility to add this message)
-	if (stricmp(Campaign.filename, "freespace2") || !(Game_mode & GM_CAMPAIGN_MODE))
+	if (stricmp(Campaign.filename, "freespace2") != 0 || !(Game_mode & GM_CAMPAIGN_MODE))
 		return;
 
 	object *objp;
@@ -15934,7 +15934,7 @@ void ship_do_cargo_revealed( ship *shipp, int from_network )
 	shipp->time_cargo_revealed = Missiontime;	
 
 	// if the cargo is something other than "nothing", then make a log entry
-	if ( stricmp(Cargo_names[shipp->cargo1 & CARGO_INDEX_MASK], NOX("nothing")) ){
+	if ( stricmp(Cargo_names[shipp->cargo1 & CARGO_INDEX_MASK], NOX("nothing")) != 0 ){
 		mission_log_add_entry(LOG_CARGO_REVEALED, shipp->ship_name, NULL, (shipp->cargo1 & CARGO_INDEX_MASK) );
 	}	
 }
@@ -15958,7 +15958,7 @@ void ship_do_cap_subsys_cargo_revealed( ship *shipp, ship_subsys *subsys, int fr
 	subsys->time_subsys_cargo_revealed = Missiontime;
 
 	// if the cargo is something other than "nothing", then make a log entry
-	if ( stricmp(Cargo_names[subsys->subsys_cargo_name & CARGO_INDEX_MASK], NOX("nothing")) ){
+	if ( stricmp(Cargo_names[subsys->subsys_cargo_name & CARGO_INDEX_MASK], NOX("nothing")) != 0 ){
 		mission_log_add_entry(LOG_CAP_SUBSYS_CARGO_REVEALED, shipp->ship_name, subsys->system_info->subobj_name, (subsys->subsys_cargo_name & CARGO_INDEX_MASK) );
 	}	
 }
@@ -16049,7 +16049,7 @@ int get_max_ammo_count_for_primary_bank(int ship_class, int bank, int ammo_type)
 	capacity = (float) Ship_info[ship_class].primary_bank_ammo_capacity[bank];
 	size = (float) Weapon_info[ammo_type].cargo_size;
 	Assertion(size > 0.0f, "Weapon cargo size for %s must be greater than 0!", Weapon_info[ammo_type].name);
-	return  fl2i((capacity / size)+0.5f);
+	return  (int)std::lround(capacity / size);
 }
 
 /**
@@ -17228,7 +17228,7 @@ bool ship_has_dock_bay(int shipnum)
 }
 
 // Goober5000
-bool ship_useful_for_departure(int shipnum, int path_mask)
+bool ship_useful_for_departure(int shipnum, int  /*path_mask*/)
 {
 	Assert( shipnum >= 0 && shipnum < MAX_SHIPS );
 
@@ -18753,7 +18753,7 @@ int ship_render_get_insignia(object* obj, ship* shipp)
 	return -1;
 }
 
-void ship_render_set_animated_effect(model_render_params *render_info, ship *shipp, uint *render_flags)
+void ship_render_set_animated_effect(model_render_params *render_info, ship *shipp, uint * /*render_flags*/)
 {
 	if ( !shipp->shader_effect_active || Rendering_to_shadow_map ) {
 		return;

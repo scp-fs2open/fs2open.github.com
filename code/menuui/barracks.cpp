@@ -9,7 +9,7 @@
 
 
 
-#include <ctype.h>
+#include <cctype>
 
 
 #include "cfile/cfile.h"
@@ -1436,7 +1436,7 @@ void barracks_init()
 }
 
 // -----------------------------------------------------------------------------
-void barracks_do_frame(float frametime)
+void barracks_do_frame(float  /*frametime*/)
 {
 	int k = Ui_window.process();
 

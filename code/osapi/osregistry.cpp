@@ -12,10 +12,10 @@
 #include "osapi/osapi.h"
 #include "cmdline/cmdline.h"
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <ctype.h>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <cctype>
 
 #ifdef WIN32
 #include <windows.h>

@@ -434,7 +434,7 @@ public:
 //  - is not "none"
 //  - is not "<none>"
 inline bool VALID_FNAME(const char* x) {
-	return strlen((x)) && stricmp((x), "none") && stricmp((x), "<none>");
+	return strlen((x)) && stricmp((x), "none") != 0 && stricmp((x), "<none>") != 0;
 }
 /**
  * @brief Checks if the specified string may be a valid file name

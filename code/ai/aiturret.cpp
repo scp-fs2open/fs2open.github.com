@@ -24,7 +24,7 @@
 #include "weapon/swarm.h"
 #include "weapon/weapon.h"
 
-#include <limits.h>
+#include <climits>
 
 
 // How close a turret has to be point at its target before it
@@ -243,7 +243,7 @@ int bomb_headed_towards_ship(object *bomb_objp, object *ship_objp)
  * @note All non-negative return values are expressed in what I like to call "widx"s.
  * @return -1 if unable to find a weapon for the target at all.
  */
-int turret_select_best_weapon(ship_subsys *turret, object *target)
+int turret_select_best_weapon(ship_subsys *turret, object * /*target*/)
 {
 	//TODO: Fill this out with extraodinary gun-picking algorithms
 	if(turret->weapons.num_primary_banks > 0)

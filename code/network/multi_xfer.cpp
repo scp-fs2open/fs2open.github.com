@@ -889,7 +889,7 @@ void multi_xfer_process_data(xfer_entry *xe, ubyte *data, int data_size)
 }
 	
 // process a header, return bytes processed
-void multi_xfer_process_header(ubyte *data, PSNET_SOCKET_RELIABLE who, ushort sig, char *filename, int file_size, ushort file_checksum)
+void multi_xfer_process_header(ubyte * /*data*/, PSNET_SOCKET_RELIABLE who, ushort sig, char *filename, int file_size, ushort file_checksum)
 {		
 	xfer_entry *xe;		
 	int handle;	

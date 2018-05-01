@@ -9,10 +9,10 @@
 
 
 
-#include <stdlib.h>
-#include <string.h>
-#include <stdio.h>
-#include <errno.h>
+#include <cstdlib>
+#include <cstring>
+#include <cstdio>
+#include <cerrno>
 #include <sstream>
 #include <algorithm>
 
@@ -649,7 +649,7 @@ void cf_search_root_path(int root_index)
 					struct dirent *dir = nullptr;
 					while ((dir = readdir (parentDirP)) != nullptr) {
 
-						if (stricmp(search_name, dir->d_name)) {
+						if (stricmp(search_name, dir->d_name) != 0) {
 							continue;
 						}
 
@@ -1359,7 +1359,7 @@ int cf_find_file_location_ext( const char *filename, const int ext_num, const ch
 			continue;
 
 		// ... check that we match the base filename
-		if ( strnicmp(f->name_ext, filespec, filespec_len) )
+		if ( strnicmp(f->name_ext, filespec, filespec_len) != 0 )
 			continue;
 
 		// ... make sure that it's one of our supported types
@@ -2294,7 +2294,7 @@ int cf_create_default_path_string(char *path, uint path_max, int pathtype, const
 //          filename  - optional, if set, tacks the filename onto end of path.
 // Output:  path      - Fully qualified pathname.
 //Returns 0 if the result would be too long (invalid result)
-int cf_create_default_path_string( SCP_string &path, int pathtype, const char *filename, bool localize )
+int cf_create_default_path_string( SCP_string &path, int pathtype, const char *filename, bool  /*localize*/ )
 {
 #ifdef SCP_UNIX
 	if ( filename && strpbrk(filename,"/")  ) {

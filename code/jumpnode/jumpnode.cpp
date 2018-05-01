@@ -357,7 +357,7 @@ void CJumpNode::Render(model_draw_list* scene, vec3d *pos, vec3d *view_pos)
 			} else if ( dist > 10000 ) {
 				alpha_index = HUD_COLOR_ALPHA_USER_MIN;
 			} else {
-				alpha_index = fl2i( HUD_COLOR_ALPHA_USER_MAX - 2 + (dist-1000) * (HUD_COLOR_ALPHA_USER_MIN-HUD_COLOR_ALPHA_USER_MAX-2) / (9000) + 0.5f);
+				alpha_index = (int)std::lround( HUD_COLOR_ALPHA_USER_MAX - 2 + (dist-1000) * (HUD_COLOR_ALPHA_USER_MIN-HUD_COLOR_ALPHA_USER_MAX-2) / (9000));
 				if ( alpha_index < HUD_COLOR_ALPHA_USER_MIN ) {
 					alpha_index = HUD_COLOR_ALPHA_USER_MIN;
 				}

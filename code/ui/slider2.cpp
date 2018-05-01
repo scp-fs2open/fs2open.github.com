@@ -80,7 +80,7 @@ void UI_SLIDER2::draw() {
 	}
 }
 
-void UI_SLIDER2::process(int focus)
+void UI_SLIDER2::process(int  /*focus*/)
 {
 	int OnMe, mouse_lock_move;	
 

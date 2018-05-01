@@ -54,7 +54,7 @@ void hud_observer_init(ship *shipp, ai_info *aip)
 	hud_init_target_static();
 }
 
-void hud_obs_render_player(int loc,net_player *pl)
+void hud_obs_render_player(int  /*loc*/,net_player * /*pl*/)
 {
 }
 

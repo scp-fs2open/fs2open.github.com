@@ -222,7 +222,7 @@ void create_low_detail_poly(int global_index, vec3d *tcp, vec3d *rightv, vec3d *
  * For small distances (relative to radius), coordinates can be computed using
  * distance. For larger values, should compute angle.
  */
-void rs_compute_uvs(shield_tri *stp, shield_vertex *verts, vec3d *tcp, float radius, vec3d *rightv, vec3d *upv)
+void rs_compute_uvs(shield_tri *stp, shield_vertex *verts, vec3d *tcp, float  /*radius*/, vec3d *rightv, vec3d *upv)
 {
 	int	i;
 	shield_vertex *sv;
@@ -689,7 +689,7 @@ void copy_shield_to_globals( int objnum, shield_info *shieldp, matrix *hit_orien
  *
  * At lower detail levels, shield hit effects are a single texture, applied to one enlarged triangle.
  */
-void create_shield_low_detail(int objnum, int model_num, matrix *orient, vec3d *centerp, vec3d *tcp, int tr0, shield_info *shieldp)
+void create_shield_low_detail(int objnum, int  /*model_num*/, matrix * /*orient*/, vec3d * /*centerp*/, vec3d *tcp, int tr0, shield_info *shieldp)
 {
 	matrix	tom;
 	int		gi;

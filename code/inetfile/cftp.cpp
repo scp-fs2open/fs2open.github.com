@@ -9,7 +9,7 @@
 
 
 
-#include <stdio.h>
+#include <cstdio>
 
 #include "globalincs/pstypes.h"
 
@@ -22,7 +22,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <sys/select.h>
-#include <errno.h>
+#include <cerrno>
 #include <arpa/inet.h>
 #include <netdb.h>
 

@@ -526,7 +526,7 @@ void mission_show_goals_close()
 }
 	
 // called once a frame during show goals state to process events and render the screen
-void mission_show_goals_do_frame(float frametime)
+void mission_show_goals_do_frame(float  /*frametime*/)
 {
 	int k, i, y, z;
 	int font_height = gr_get_font_height();

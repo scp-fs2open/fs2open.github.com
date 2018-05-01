@@ -172,7 +172,7 @@ void decal_draw_list::render() {
 void decal_draw_list::add_decal(int diffuse_bitmap,
 								int glow_bitmap,
 								int normal_bitmap,
-								float decal_timer,
+								float  /*decal_timer*/,
 								const matrix4& transform,
 								float base_alpha) {
 	if (!check_box_in_view(transform)) {

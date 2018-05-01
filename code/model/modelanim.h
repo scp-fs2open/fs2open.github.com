@@ -12,7 +12,7 @@
 #ifndef _MODELANIM_H
 #define _MODELANIM_H
 
-#include <limits.h>
+#include <climits>
 
 #define MAX_TRIGGERED_ANIMATIONS 15
 

@@ -2470,7 +2470,7 @@ void game_reset_view_clip()
 	Cutscene_bars_progress = 1.0f;
 }
 
-void game_set_view_clip(float frametime)
+void game_set_view_clip(float  /*frametime*/)
 {
 	if ((Game_mode & GM_DEAD) || (supernova_active() >= 2))
 	{
@@ -3915,7 +3915,7 @@ void game_reset_shade_frame()
 	gr_create_shader(&Viewer_shader, 0, 0, 0, 0);
 }
 
-void game_shade_frame(float frametime)
+void game_shade_frame(float  /*frametime*/)
 {
 	// only do frame shade if we are actually in a game play state
 	if ( !game_actually_playing() ) {
@@ -7062,7 +7062,7 @@ void game_event_debug_init()
 	}
 }
 
-void game_show_event_debug(float frametime) 
+void game_show_event_debug(float  /*frametime*/) 
 {
 	char buf[256];
 	int i, k, z;
