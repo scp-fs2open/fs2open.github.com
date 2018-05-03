@@ -3,7 +3,7 @@ sudo: required
 dist: trusty
 cache:
     directories:
-    - $HOME/cmake-3.6
+    - $HOME/cmake-3.8
     - $HOME/.ccache
 addons:
     apt:
@@ -122,7 +122,7 @@ matrix:
                       - g++-7
                       - *global_deps
         - os: linux
-          env: CONFIGURATION="Release" CC=clang-4.0 CXX=clang++-4.0 CMAKE_OPTIONS="-DENABLE_CLANG_TIDY=ON -DCLANG_TIDY_EXE=/usr/bin/clang-tidy-4.0"
+          env: CONFIGURATION="Release" CC=clang-4.0 CXX=clang++-4.0
           addons:
               apt:
                   sources:
@@ -132,7 +132,6 @@ matrix:
                   packages:
                       - *global_deps
                       - clang-4.0
-                      - clang-tidy-4.0
                       - libc++-dev
         - os: osx
           env: CONFIGURATION="Release"

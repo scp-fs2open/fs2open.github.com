@@ -229,8 +229,8 @@ void FrameProfiler::store_profile_in_history(SCP_string& name,
 	history.push_back(new_history);
 }
 void FrameProfiler::dump_output(SCP_stringstream& out,
-								uint64_t start_profile_time,
-								uint64_t end_profile_time,
+								uint64_t  /*start_profile_time*/,
+								uint64_t  /*end_profile_time*/,
 								SCP_vector<profile_sample>& samples) {
 	out << "  Avg :  Min :  Max :   # : Profile Name\n";
 	out << "----------------------------------------\n";

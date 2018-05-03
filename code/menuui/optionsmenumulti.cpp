@@ -841,17 +841,17 @@ void options_multi_protocol_do(int key)
 		// if the tracker login inputbox has focus, lose it
 		if(Om_tracker_login.has_focus()){
 			Om_tracker_login.clear_focus();
-			gamesnd_play_iface(SND_COMMIT_PRESSED);
+			gamesnd_play_iface(InterfaceSounds::COMMIT_PRESSED);
 		}
 		// if the tracker password inputbox has focus, lose it
 		if(Om_tracker_passwd.has_focus()){
 			Om_tracker_passwd.clear_focus();
-			gamesnd_play_iface(SND_COMMIT_PRESSED);
+			gamesnd_play_iface(InterfaceSounds::COMMIT_PRESSED);
 		}
 		// if the tracker squad name inputbox has focus, lose it
 		if(Om_tracker_squad_name.has_focus()){
 			Om_tracker_squad_name.clear_focus();
-			gamesnd_play_iface(SND_COMMIT_PRESSED);
+			gamesnd_play_iface(InterfaceSounds::COMMIT_PRESSED);
 		}
 		break;
 
@@ -906,17 +906,17 @@ void options_multi_protocol_do(int key)
 	if (Om_tracker_login.has_focus()) {
 		if (Om_tracker_focus != TRACKER_FOCUS_LOGIN) {
 			Om_tracker_focus = TRACKER_FOCUS_LOGIN;
-			gamesnd_play_iface(SND_USER_SELECT);
+			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 		}
 	} else if (Om_tracker_passwd.has_focus()) {
 		if (Om_tracker_focus != TRACKER_FOCUS_PASSWORD) {
 			Om_tracker_focus = TRACKER_FOCUS_PASSWORD;
-			gamesnd_play_iface(SND_USER_SELECT);
+			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 		}
 	} else if (Om_tracker_squad_name.has_focus()) {
 		if (Om_tracker_focus != TRACKER_FOCUS_SQUADRON) {
 			Om_tracker_focus = TRACKER_FOCUS_SQUADRON;
-			gamesnd_play_iface(SND_USER_SELECT);
+			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 		}
 	} else {
 		Om_tracker_focus = TRACKER_FOCUS_NONE;
@@ -985,7 +985,7 @@ void options_multi_protocol_button_pressed(int n)
 		Om_ip_input.unhide();
 		Om_ip_input.set_text(IP_EMPTY_STRING);
 		Om_ip_input.set_focus();
-		gamesnd_play_iface(SND_USER_SELECT);
+		gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 		break;
 
 	// delete the currently selected ip
@@ -996,7 +996,7 @@ void options_multi_protocol_button_pressed(int n)
 		}
 
 		options_multi_protocol_delete_ip();
-		gamesnd_play_iface(SND_USER_SELECT);
+		gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 		break;
 
 	// the "local" broadcast button - toggle
@@ -1012,7 +1012,7 @@ void options_multi_protocol_button_pressed(int n)
 			Om_local_broadcast = 0;
 		}
 
-		gamesnd_play_iface(SND_USER_SELECT);
+		gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 		break;
 
 	// scroll ips down
@@ -1058,7 +1058,7 @@ void options_multi_protocol_button_pressed(int n)
 		}
 
 		// play a sound
-		gamesnd_play_iface(SND_USER_SELECT);
+		gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 		break;
 
 	// general tab button 
@@ -1079,7 +1079,7 @@ void options_multi_protocol_button_pressed(int n)
 		}
 
 		// play a sound
-		gamesnd_play_iface(SND_USER_SELECT);
+		gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 
 		break;
 
@@ -1100,19 +1100,19 @@ void options_multi_protocol_button_pressed(int n)
 			Om_window->set_mask_bmap(Om_mask_1, Om_background_1_mask_fname[gr_screen.res]);
 		}
 		// play a sound
-		gamesnd_play_iface(SND_USER_SELECT);
+		gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 
 		break;
 
 	// tcp mode
 	case OM_PRO_TCP:
 		Om_protocol = NET_TCP;
-		gamesnd_play_iface(SND_USER_SELECT);
+		gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 		break;
 
 	// ipx mode, no longer supported
 	case OM_PRO_IPX:
-		gamesnd_play_iface(SND_GENERAL_FAIL);
+		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, "The old IPX protocol is no longer supported.");
 		break;
 	}
@@ -1222,10 +1222,10 @@ void options_multi_protocol_display_ips()
 void options_multi_protocol_scroll_ip_down()
 {
 	if(Om_ip_start >= Ip_list_max_display[gr_screen.res]){
-		gamesnd_play_iface(SND_SCROLL);
+		gamesnd_play_iface(InterfaceSounds::SCROLL);
 		Om_ip_start--;
 	} else {
-		gamesnd_play_iface(SND_GENERAL_FAIL);
+		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 	}	
 }
 
@@ -1233,10 +1233,10 @@ void options_multi_protocol_scroll_ip_down()
 void options_multi_protocol_scroll_ip_up()
 {
 	if(Om_ip_start < Om_num_ips-1){
-		gamesnd_play_iface(SND_SCROLL);
+		gamesnd_play_iface(InterfaceSounds::SCROLL);
 		Om_ip_start++;
 	} else {
-		gamesnd_play_iface(SND_GENERAL_FAIL);
+		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 	}
 }
 
@@ -1523,100 +1523,100 @@ void options_multi_gen_button_pressed(int n)
 	// low object update level
 	case OM_GEN_OBJ_LOW:
 		if(Om_gen_obj_update != OBJ_UPDATE_LOW){
-			gamesnd_play_iface(SND_USER_SELECT);
+			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			Om_gen_obj_update = OBJ_UPDATE_LOW;
 		} else {
-			gamesnd_play_iface(SND_GENERAL_FAIL);
+			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		}
 		break;
 	
 	// medium object update level
 	case OM_GEN_OBJ_MED:
 		if(Om_gen_obj_update != OBJ_UPDATE_MEDIUM){
-			gamesnd_play_iface(SND_USER_SELECT);
+			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			Om_gen_obj_update = OBJ_UPDATE_MEDIUM;
 		} else {
-			gamesnd_play_iface(SND_GENERAL_FAIL);
+			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		}
 		break;
 	
 	// high object update level
 	case OM_GEN_OBJ_HIGH:
 		if(Om_gen_obj_update != OBJ_UPDATE_HIGH){
-			gamesnd_play_iface(SND_USER_SELECT);
+			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			Om_gen_obj_update = OBJ_UPDATE_HIGH;
 		} else {
-			gamesnd_play_iface(SND_GENERAL_FAIL);
+			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		}
 		break;
 
 	// lan object update level
 	case OM_GEN_OBJ_LAN:
 		if(Om_gen_obj_update != OBJ_UPDATE_LAN){
-			gamesnd_play_iface(SND_USER_SELECT);
+			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			Om_gen_obj_update = OBJ_UPDATE_LAN;
 		} else {
-			gamesnd_play_iface(SND_GENERAL_FAIL);
+			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		}
 		break;
 	
 	// accept pix
 	case OM_GEN_PIX_YES:
 		if(!Om_gen_pix){
-			gamesnd_play_iface(SND_USER_SELECT);
+			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			Om_gen_pix = 1;
 		} else {
-			gamesnd_play_iface(SND_GENERAL_FAIL);
+			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		}
 		break;
 	
 	// don't accept pix
 	case OM_GEN_PIX_NO:
 		if(Om_gen_pix){
-			gamesnd_play_iface(SND_USER_SELECT);
+			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			Om_gen_pix = 0;
 		} else {
-			gamesnd_play_iface(SND_GENERAL_FAIL);
+			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		}
 		break;
 	
 	// put missions in the multidate directory
 	case OM_GEN_XFER_MULTIDATA_YES:
 		if(!Om_gen_xfer_multidata){
-			gamesnd_play_iface(SND_USER_SELECT);
+			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			Om_gen_xfer_multidata = 1;
 		} else {
-			gamesnd_play_iface(SND_GENERAL_FAIL);
+			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		}
 		break;
 	
 	// don't put missions in the multidata directory
 	case OM_GEN_XFER_MULTIDATA_NO:
 		if(Om_gen_xfer_multidata){
-			gamesnd_play_iface(SND_USER_SELECT);
+			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			Om_gen_xfer_multidata = 0;
 		} else {
-			gamesnd_play_iface(SND_GENERAL_FAIL);
+			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		}
 		break;
 	
 	// flush the cache before each mission
 	case OM_GEN_FLUSH_YES:
 		if(!Om_gen_flush_cache){
-			gamesnd_play_iface(SND_USER_SELECT);
+			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			Om_gen_flush_cache = 1;
 		} else {
-			gamesnd_play_iface(SND_GENERAL_FAIL);
+			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		}
 		break;
 	
 	// don't flush the cache before each mission
 	case OM_GEN_FLUSH_NO:
 		if(Om_gen_flush_cache){
-			gamesnd_play_iface(SND_USER_SELECT);
+			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			Om_gen_flush_cache = 0;
 		} else {
-			gamesnd_play_iface(SND_GENERAL_FAIL);
+			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		}
 		break;	
 	}
@@ -1890,20 +1890,20 @@ void options_multi_vox_button_pressed(int n)
 	// accept voice button
 	case OM_VOX_VOICE_YES:
 		if(!Om_vox_accept_voice){
-			gamesnd_play_iface(SND_USER_SELECT);
+			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			Om_vox_accept_voice = 1;
 		} else {
-			gamesnd_play_iface(SND_GENERAL_FAIL);
+			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		}
 		break;
 	
 	// don't accept voice button
 	case OM_VOX_VOICE_NO:
 		if(Om_vox_accept_voice){
-			gamesnd_play_iface(SND_USER_SELECT);
+			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			Om_vox_accept_voice = 0;
 		} else {
-			gamesnd_play_iface(SND_GENERAL_FAIL);
+			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		}
 		break;
 
@@ -1911,9 +1911,9 @@ void options_multi_vox_button_pressed(int n)
 	case OM_VOX_VOICE_MUTE:
 		if(Om_vox_player_select != NULL){
 			Om_vox_player_flags[options_multi_vox_plist_get(Om_vox_player_select)] = !Om_vox_player_flags[options_multi_vox_plist_get(Om_vox_player_select)];
-			gamesnd_play_iface(SND_USER_SELECT);
+			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 		} else {
-			gamesnd_play_iface(SND_GENERAL_FAIL);
+			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		}
 		break;
 
@@ -2118,15 +2118,15 @@ int options_multi_vox_plist_get(net_player *pl)
 void options_multi_vox_plist_scroll_down()
 {
 	if(Om_vox_num_players < Om_vox_plist_max_display[gr_screen.res]){
-		gamesnd_play_iface(SND_GENERAL_FAIL);
+		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		return;
 	}
 
 	if((Om_vox_num_players - Om_vox_plist_start) >= Om_vox_plist_max_display[gr_screen.res]){
 		Om_vox_plist_start++;
-		gamesnd_play_iface(SND_USER_SELECT);
+		gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 	} else {
-		gamesnd_play_iface(SND_GENERAL_FAIL);
+		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 	}
 }
 
@@ -2135,9 +2135,9 @@ void options_multi_vox_plist_scroll_up()
 {
 	if(Om_vox_plist_start > 0){
 		Om_vox_plist_start--;
-		gamesnd_play_iface(SND_USER_SELECT);
+		gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 	} else {
-		gamesnd_play_iface(SND_GENERAL_FAIL);
+		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 	}
 }
 
@@ -2336,7 +2336,7 @@ void options_multi_unselect()
 }
 
 // set voice sound buffer for display 
-void options_multi_set_voice_data(unsigned char *sound_buf, int buf_size, double gain)
+void options_multi_set_voice_data(unsigned char *sound_buf, int buf_size, double  /*gain*/)
 {
 	if ( (sound_buf == NULL) || (buf_size <= 0) ) {
 		return;

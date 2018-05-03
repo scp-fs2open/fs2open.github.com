@@ -11,7 +11,7 @@
 
 
 
-#include <limits.h>		// this is need even when not building debug!!
+#include <climits>		// this is need even when not building debug!!
 
 #include "gamesequence/gamesequence.h"
 #include "network/multi.h"

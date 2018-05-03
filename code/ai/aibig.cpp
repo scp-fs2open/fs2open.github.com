@@ -1149,7 +1149,7 @@ void ai_big_chase()
 	}
 }
 
-void ai_big_ship(object *objp)
+void ai_big_ship(object * /*objp*/)
 {
 	// do nothing
 }

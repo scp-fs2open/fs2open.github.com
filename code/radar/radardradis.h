@@ -51,14 +51,14 @@ class HudGaugeRadarDradis: public HudGaugeRadar
 	bool sub_y_clip;
 
 	int loop_sound_handle;
-	int m_loop_snd;
+	gamesnd_id m_loop_snd;
 	float loop_sound_volume;
 
-	int arrival_beep_snd;
-	int departure_beep_snd;
+	gamesnd_id arrival_beep_snd;
+	gamesnd_id departure_beep_snd;
 
-	int m_stealth_arrival_snd;
-	int stealth_departure_snd;
+	gamesnd_id m_stealth_arrival_snd;
+	gamesnd_id stealth_departure_snd;
 
 	int arrival_beep_delay;
 	int departure_beep_delay;
@@ -70,7 +70,7 @@ protected:
 public:
 	HudGaugeRadarDradis();
 	void initBitmaps(char* fname_xy, char* fname_xz_yz, char* fname_sweep, char* fname_target_brackets, char* fname_unknown);
-	void initSound(int loop_snd, float _loop_sound_volume,  int arrival_snd, int departue_snd, int stealth_arrival_snd, int stealth_departue_snd, float arrival_delay, float departure_delay);
+	void initSound(gamesnd_id loop_snd, float _loop_sound_volume,  gamesnd_id arrival_snd, gamesnd_id departue_snd, gamesnd_id stealth_arrival_snd, gamesnd_id stealth_departue_snd, float arrival_delay, float departure_delay);
 
 	void blipDrawDistorted(blip *b, vec3d *pos, float alpha);
 	void blipDrawFlicker(blip *b, vec3d *pos, float alpha);

@@ -1278,21 +1278,21 @@ static float asteroid_create_explosion(object *objp)
  */
 static void asteroid_explode_sound(object *objp, int type, int play_loud)
 {
-	int	sound_index = -1;
+	gamesnd_id sound_index;
 	float range_factor = 1.0f;		// how many times sound should traver farther than normal
 
 	if (type % NUM_DEBRIS_SIZES <= 1)
 	{
-		sound_index = SND_ASTEROID_EXPLODE_SMALL;
+		sound_index = gamesnd_id(GameSounds::ASTEROID_EXPLODE_SMALL);
 		range_factor = 5.0;
 	}
 	else
 	{
-		sound_index = SND_ASTEROID_EXPLODE_LARGE;
+		sound_index = gamesnd_id(GameSounds::ASTEROID_EXPLODE_LARGE);
 		range_factor = 10.0f;
 	}
 
-	Assert(sound_index != -1);
+	Assert(sound_index.isValid());
 
 	if ( !play_loud ) {
 		range_factor = 1.0f;

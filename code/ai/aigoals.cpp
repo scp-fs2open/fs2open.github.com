@@ -414,7 +414,7 @@ void ai_goal_purge_invalid_goals( ai_goal *aigp, ai_goal *goal_list, ai_info *ai
 		if ( purge_ai_mode == AI_GOAL_CHASE_SHIP_CLASS ) {
 			// if the target of the purge goal is the same class of ship we are concerned about, then we have a match;
 			// if it is not, then we can continue (see standard ship check below)
-			if ( stricmp(purge_goal->target_name, Ship_info[Ships[ship_index].ship_info_index].name) )
+			if ( stricmp(purge_goal->target_name, Ship_info[Ships[ship_index].ship_info_index].name) != 0 )
 				continue;
 		}
 		// standard goals operating on either wings or ships
@@ -426,7 +426,7 @@ void ai_goal_purge_invalid_goals( ai_goal *aigp, ai_goal *goal_list, ai_info *ai
 			// don't match, we can continue;  if the wing is valid, don't process if the wing numbers
 			// are different.
 			if ( purge_wing == -1 ) {
-				if ( stricmp(purge_goal->target_name, name ) )
+				if ( stricmp(purge_goal->target_name, name ) != 0 )
 					continue;
 			} else if ( purge_wing != wingnum )
 				continue;
@@ -1263,7 +1263,7 @@ void ai_add_wing_goal_sexp(int sexp, int type, int wingnum)
 // this name can be a shipname or a wingname)
 // docker_point and dockee_point are used for the AI_GOAL_DOCK command to tell two ships where to dock
 // immediate means to process this order right away
-void ai_add_goal_ship_internal( ai_info *aip, int goal_type, char *name, int docker_point, int dockee_point, int immediate )
+void ai_add_goal_ship_internal( ai_info *aip, int goal_type, char *name, int  /*docker_point*/, int  /*dockee_point*/, int immediate )
 {
 	int gindex;
 	ai_goal *aigp;

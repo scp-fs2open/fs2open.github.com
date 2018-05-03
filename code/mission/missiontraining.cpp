@@ -222,7 +222,7 @@ void HudGaugeDirectives::pageIn()
 	bm_page_in_aabitmap(directives_bottom.first_frame, directives_bottom.num_frames);
 }
 
-void HudGaugeDirectives::render(float frametime)
+void HudGaugeDirectives::render(float  /*frametime*/)
 {
 	char buf[256], *second_line;
 	int i, t, x, y, z, end, offset, bx, by, y_count;
@@ -767,7 +767,7 @@ int message_play_training_voice(int index)
 					}
 				}
 
-				if (strnicmp(Message_waves[index].name, NOX("none.wav"), 4)) {
+				if (strnicmp(Message_waves[index].name, NOX("none.wav"), 4) != 0) {
 					Training_voice_handle = audiostream_open(Message_waves[index].name, ASF_VOICE);
 					if (Training_voice_handle < 0) {
 						nprintf(("Warning", "Unable to load voice file %s\n", Message_waves[index].name));
@@ -1027,7 +1027,7 @@ void HudGaugeTrainingMessages::pageIn()
 /**
  * Displays (renders) the training message to the screen
  */
-void HudGaugeTrainingMessages::render(float frametime)
+void HudGaugeTrainingMessages::render(float  /*frametime*/)
 {
 	const char *str;
 	char buf[256];

@@ -122,10 +122,10 @@ void multi_common_scroll_text_up()
 	if ( Multi_common_top_text_line < 0 ) {
 		Multi_common_top_text_line = 0;
 		if ( !mouse_down(MOUSE_LEFT_BUTTON) )
-			gamesnd_play_iface(SND_GENERAL_FAIL);
+			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 
 	} else {
-		gamesnd_play_iface(SND_SCROLL);
+		gamesnd_play_iface(InterfaceSounds::SCROLL);
 	}
 }
 
@@ -135,10 +135,10 @@ void multi_common_scroll_text_down()
 	if ( (Multi_common_num_text_lines - Multi_common_top_text_line) < Multi_common_text_max_display[gr_screen.res] ) {
 		Multi_common_top_text_line--;
 		if ( !mouse_down(MOUSE_LEFT_BUTTON) ){
-			gamesnd_play_iface(SND_GENERAL_FAIL);
+			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		}
 	} else {
-		gamesnd_play_iface(SND_SCROLL);
+		gamesnd_play_iface(InterfaceSounds::SCROLL);
 	}
 }
 
@@ -1046,7 +1046,7 @@ void multi_join_game_do_frame()
 			} else {
 				gameseq_post_event(GS_EVENT_MAIN_MENU);
 			}
-			gamesnd_play_iface(SND_USER_SELECT);
+			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 		}
 		break;
 
@@ -1178,18 +1178,18 @@ void multi_join_button_pressed(int n)
 		} else {
 			gameseq_post_event(GS_EVENT_MAIN_MENU);
 		}
-		gamesnd_play_iface(SND_USER_SELECT);		
+		gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 		break;
 	case MJ_ACCEPT :
 		if(Active_game_count <= 0){
 			multi_common_add_notify(XSTR("No games found!",757));
-			gamesnd_play_iface(SND_GENERAL_FAIL);
+			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		} else if(Multi_join_list_selected == -1){
 			multi_common_add_notify(XSTR("No game selected!",758));
-			gamesnd_play_iface(SND_GENERAL_FAIL);
+			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		} else if((Multi_join_sent_stamp != -1) && !timestamp_elapsed(Multi_join_sent_stamp)){
 			multi_common_add_notify(XSTR("Still waiting on previous join request!",759));
-			gamesnd_play_iface(SND_GENERAL_FAIL);
+			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		} else {			
 			// otherwise, if he's already played PXO games, warn him	
 			
@@ -1206,7 +1206,7 @@ void multi_join_button_pressed(int n)
 			// send a join request packet
 			Multi_join_should_send = 0;			
 			
-			gamesnd_play_iface(SND_COMMIT_PRESSED);
+			gamesnd_play_iface(InterfaceSounds::COMMIT_PRESSED);
 		}
 		break;
 
@@ -1253,7 +1253,7 @@ void multi_join_button_pressed(int n)
 
 	// refresh the game/server list
 	case MJ_REFRESH:	
-		gamesnd_play_iface(SND_USER_SELECT);
+		gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 		broadcast_game_query();
 		break;
 
@@ -1261,26 +1261,26 @@ void multi_join_button_pressed(int n)
 	case MJ_JOIN_OBSERVER:
 		if(Active_game_count <= 0){
 			multi_common_add_notify(XSTR("No games found!",757));
-			gamesnd_play_iface(SND_GENERAL_FAIL);
+			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		} else if(Multi_join_list_selected == -1){
 			multi_common_add_notify(XSTR("No game selected!",758));
-			gamesnd_play_iface(SND_GENERAL_FAIL);
+			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		} else if((Multi_join_sent_stamp != -1) && !timestamp_elapsed(Multi_join_sent_stamp)){
 			multi_common_add_notify(XSTR("Still waiting on previous join request!",759));
-			gamesnd_play_iface(SND_GENERAL_FAIL);
+			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		} else {			
 			// send the join request here
 			Assert(Multi_join_selected_item != NULL);
 
 			Multi_join_should_send = 1;		
 
-			gamesnd_play_iface(SND_COMMIT_PRESSED);
+			gamesnd_play_iface(InterfaceSounds::COMMIT_PRESSED);
 		}
 		break;
 
 	default :
 		multi_common_add_notify(XSTR("Not implemented yet!",760));
-		gamesnd_play_iface(SND_GENERAL_FAIL);
+		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		break;
 	}
 }
@@ -1620,7 +1620,7 @@ void multi_join_process_select()
 		Multi_join_select_button.get_mouse_pos(NULL,&y);
 		item = y / line_height;
 		if(item + Multi_join_list_start < Active_game_count){		
-			gamesnd_play_iface(SND_IFACE_MOUSE_CLICK);
+			gamesnd_play_iface(InterfaceSounds::IFACE_MOUSE_CLICK);
 
 			Multi_join_list_selected = item + Multi_join_list_start;
 			Multi_join_selected_item = multi_join_get_game(Multi_join_list_selected);
@@ -1680,9 +1680,9 @@ void multi_join_list_scroll_up()
 		
 		MJ_LIST_START_DEC();		
 
-		gamesnd_play_iface(SND_SCROLL);
+		gamesnd_play_iface(InterfaceSounds::SCROLL);
 	} else {
-		gamesnd_play_iface(SND_GENERAL_FAIL);
+		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 	}
 }
 
@@ -1694,9 +1694,9 @@ void multi_join_list_scroll_down()
 
 		MJ_LIST_START_INC();		
 
-		gamesnd_play_iface(SND_SCROLL);
+		gamesnd_play_iface(InterfaceSounds::SCROLL);
 	} else {
-		gamesnd_play_iface(SND_GENERAL_FAIL);
+		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 	}
 }
 
@@ -1708,7 +1708,7 @@ void multi_join_list_page_up()
 
 		MJ_LIST_START_SET(0);
 
-		gamesnd_play_iface(SND_SCROLL);		
+		gamesnd_play_iface(InterfaceSounds::SCROLL);
 	} else {
 		// otherwise page the whole thing up
 		int idx;
@@ -1717,7 +1717,7 @@ void multi_join_list_page_up()
 
 			MJ_LIST_START_DEC();			
 		}
-		gamesnd_play_iface(SND_SCROLL);
+		gamesnd_play_iface(InterfaceSounds::SCROLL);
 	}
 }
 
@@ -1733,7 +1733,7 @@ void multi_join_list_page_down()
 		// next 
 		count++;
 	}	
-	gamesnd_play_iface(SND_SCROLL);	 
+	gamesnd_play_iface(InterfaceSounds::SCROLL);
 }
 
 void multi_join_cull_timeouts()
@@ -1975,7 +1975,7 @@ void multi_join_create_game()
 	}
 
 	gameseq_post_event(GS_EVENT_MULTI_START_GAME);
-	gamesnd_play_iface(SND_USER_SELECT);								
+	gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 }
 
 void multi_join_reset_join_stamp()
@@ -2419,7 +2419,7 @@ void multi_start_game_do()
 		if(help_overlay_active(Multi_sg_overlay_id)){
 			help_overlay_set_state(Multi_sg_overlay_id,gr_screen.res,0);
 		} else {
-			gamesnd_play_iface(SND_USER_SELECT);
+			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			multi_quit_game(PROMPT_NONE);
 		}
 		break;
@@ -2427,7 +2427,7 @@ void multi_start_game_do()
 	// same as ACCEPT
 	case KEY_LCTRL + KEY_ENTER :
 	case KEY_RCTRL + KEY_ENTER :		
-		gamesnd_play_iface(SND_COMMIT_PRESSED);
+		gamesnd_play_iface(InterfaceSounds::COMMIT_PRESSED);
 		gameseq_post_event(GS_EVENT_MULTI_HOST_SETUP);
 		break;
 	}	
@@ -2523,14 +2523,14 @@ void multi_sg_button_pressed(int n)
 		if(Multi_sg_netgame->mode != NG_MODE_OPEN){
 			Multi_sg_netgame->mode = NG_MODE_OPEN;
 
-			gamesnd_play_iface(SND_USER_SELECT);
+			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			
 			// release the password control if necessary
 			multi_sg_release_passwd();
 		}
 		// if its already selected
 		else {
-			gamesnd_play_iface(SND_GENERAL_FAIL);
+			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		}
 		break;
 
@@ -2556,7 +2556,7 @@ void multi_sg_button_pressed(int n)
 	case MSG_PASSWD_GAME:		
 		// if we selected it
 		if(Multi_sg_netgame->mode != NG_MODE_PASSWORD){
-			gamesnd_play_iface(SND_USER_SELECT);		
+			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 
 			Multi_sg_game_passwd.enable();			
 			Multi_sg_game_passwd.unhide();
@@ -2567,7 +2567,7 @@ void multi_sg_button_pressed(int n)
 			// copy in the current network password
 			Multi_sg_game_passwd.set_text(Multi_sg_netgame->passwd);
 		} else {
-			gamesnd_play_iface(SND_GENERAL_FAIL);
+			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		}			
 		break;
 
@@ -2589,7 +2589,7 @@ void multi_sg_button_pressed(int n)
 	case MSG_RANK_SET_GAME:		
 		// if either is set, then turn then both off
 		if((Multi_sg_netgame->mode != NG_MODE_RANK_BELOW) && (Multi_sg_netgame->mode != NG_MODE_RANK_ABOVE)){
-			gamesnd_play_iface(SND_USER_SELECT);
+			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 
 			// set it to the default case if we're turning it off
 			multi_sg_select_rank_default();
@@ -2600,7 +2600,7 @@ void multi_sg_button_pressed(int n)
 			// release the password control if necessary
 			multi_sg_release_passwd();
 		} else {
-			gamesnd_play_iface(SND_GENERAL_FAIL);
+			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		}		
 		break;
 
@@ -2614,9 +2614,9 @@ void multi_sg_button_pressed(int n)
 			Multi_sg_rank_start = Multi_sg_rank_select;
 
 			// play a sound
-			gamesnd_play_iface(SND_USER_SELECT);			
+			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 		} else {
-			gamesnd_play_iface(SND_GENERAL_FAIL);
+			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		}
 		break;
 
@@ -2630,9 +2630,9 @@ void multi_sg_button_pressed(int n)
 			Multi_sg_rank_start = Multi_sg_rank_select;			
 
 			// play a sound
-			gamesnd_play_iface(SND_USER_SELECT);			
+			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 		} else {
-			gamesnd_play_iface(SND_GENERAL_FAIL);
+			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		}	
 		break;
 
@@ -2649,11 +2649,11 @@ void multi_sg_button_pressed(int n)
 	// move to the create game screen
 	case MSG_ACCEPT:
 		gameseq_post_event(GS_EVENT_MULTI_HOST_SETUP);
-		gamesnd_play_iface(SND_COMMIT_PRESSED);
+		gamesnd_play_iface(InterfaceSounds::COMMIT_PRESSED);
 		break;
 
 	default :
-		gamesnd_play_iface(SND_GENERAL_FAIL);
+		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		multi_common_add_notify(XSTR("Not implemented yet!",760));		
 		break;
 	}
@@ -2813,9 +2813,9 @@ void multi_sg_rank_scroll_up()
 
 	if(Multi_sg_rank_start > 0){
 		Multi_sg_rank_start--;
-		gamesnd_play_iface(SND_SCROLL);
+		gamesnd_play_iface(InterfaceSounds::SCROLL);
 	} else {
-		gamesnd_play_iface(SND_GENERAL_FAIL);
+		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 	}
 }
 
@@ -2828,9 +2828,9 @@ void multi_sg_rank_scroll_down()
 	
 	if((NUM_RANKS - Multi_sg_rank_start) > Multi_sg_rank_max_display[gr_screen.res]){
 		Multi_sg_rank_start++;
-		gamesnd_play_iface(SND_SCROLL);
+		gamesnd_play_iface(InterfaceSounds::SCROLL);
 	} else {
-		gamesnd_play_iface(SND_GENERAL_FAIL);
+		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 	}	
 }
 
@@ -2893,14 +2893,14 @@ void multi_sg_rank_process_select()
 		if(item + Multi_sg_rank_start < NUM_RANKS){		
 			// evaluate whether this rank is valid for the guy to pick		
 			if(multi_sg_rank_select_valid(item + Multi_sg_rank_start)){
-				gamesnd_play_iface(SND_USER_SELECT);
+				gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 
 				Multi_sg_rank_select = item + Multi_sg_rank_start;						
 
 				// set the Netgame rank
 				Multi_sg_netgame->rank_base = Multi_sg_rank_select;
 			} else {
-				gamesnd_play_iface(SND_GENERAL_FAIL);
+				gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 
 				memset(string,0,255);
 				sprintf(string,XSTR("Illegal value for a host of your rank (%s)\n",784),Ranks[Net_player->m_player->stats.rank].name);
@@ -3680,7 +3680,7 @@ void multi_create_game_do()
 		}
 		else {
 			popup(PF_BODY_BIG | PF_USE_AFFIRMATIVE_ICON,1,POPUP_OK,XSTR(" Not a multi player-mission",9999)); //DTP startgame popup pilot error
-			gamesnd_play_iface(SND_GENERAL_FAIL);
+			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 			Cmdline_almission = NULL; //DTP make sure this gets nullified.
 		
 		}
@@ -3769,7 +3769,7 @@ void multi_create_game_do()
 			if ( help_overlay_active(Multi_create_overlay_id) ) {
 				help_overlay_set_state(Multi_create_overlay_id, gr_screen.res, 0);
 			} else {		
-				gamesnd_play_iface(SND_USER_SELECT);		
+				gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 				multi_quit_game(PROMPT_HOST);		
 			}
 
@@ -3938,7 +3938,7 @@ void multi_create_button_pressed(int n)
 	
 	switch(n){
 	case MC_CANCEL :
-		gamesnd_play_iface(SND_USER_SELECT);		
+		gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 		multi_quit_game(PROMPT_HOST);		
 		break;
 	case MC_ACCEPT :	
@@ -3994,51 +3994,51 @@ void multi_create_button_pressed(int n)
 
 	// go to the options screen
 	case MC_OPTIONS:		
-		gamesnd_play_iface(SND_USER_SELECT);
+		gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 		gameseq_post_event(GS_EVENT_OPTIONS_MENU);
 		break;	
 
 	// show all missions
 	case MC_SHOW_ALL:
 		if(Multi_create_filter != MISSION_TYPE_MULTI){
-			gamesnd_play_iface(SND_USER_SELECT);
+			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			Multi_create_filter = MISSION_TYPE_MULTI;
 			multi_create_setup_list_data(Multi_create_list_mode);						// update the file list
 		} else {
-			gamesnd_play_iface(SND_GENERAL_FAIL);
+			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		}
 		break;
 
 	// show cooperative missions
 	case MC_SHOW_COOP:
 		if(Multi_create_filter != MISSION_TYPE_MULTI_COOP){
-			gamesnd_play_iface(SND_USER_SELECT);
+			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			Multi_create_filter = MISSION_TYPE_MULTI_COOP;			
 			multi_create_setup_list_data(Multi_create_list_mode);						// update the file list
 		} else {
-			gamesnd_play_iface(SND_GENERAL_FAIL);
+			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		}
 		break;
 
 	// show team vs. team missions
 	case MC_SHOW_TEAM:
 		if(Multi_create_filter != MISSION_TYPE_MULTI_TEAMS){
-			gamesnd_play_iface(SND_USER_SELECT);
+			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			Multi_create_filter = MISSION_TYPE_MULTI_TEAMS;	
 			multi_create_setup_list_data(Multi_create_list_mode);						// update the file list
 		} else {
-			gamesnd_play_iface(SND_GENERAL_FAIL);
+			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		}
 		break;	
 
 	// show dogfight missions
 	case MC_SHOW_DOGFIGHT:
 		if (Multi_create_filter != MISSION_TYPE_MULTI_DOGFIGHT){
-			gamesnd_play_iface(SND_USER_SELECT);
+			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			Multi_create_filter = MISSION_TYPE_MULTI_DOGFIGHT;
 			multi_create_setup_list_data(Multi_create_list_mode);						// update the file list
 		} else {
-			gamesnd_play_iface(SND_GENERAL_FAIL);
+			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		}
 		break;
 
@@ -4050,7 +4050,7 @@ void multi_create_button_pressed(int n)
 			Netgame.options.flags |= MLO_FLAG_TEMP_CLOSED;
 			multi_options_update_netgame();
 		}
-		gamesnd_play_iface(SND_USER_SELECT);
+		gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 		break;
 
 	// kick the currently selected player (if possible)
@@ -4070,12 +4070,12 @@ void multi_create_button_pressed(int n)
 		if(Multi_create_list_mode != MULTI_CREATE_SHOW_MISSIONS){
 			Netgame.campaign_mode = MP_SINGLE_MISSION;
 
-			gamesnd_play_iface(SND_USER_SELECT);												
+			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			
 			// update the file list
 			multi_create_setup_list_data(MULTI_CREATE_SHOW_MISSIONS);						
 		} else {
-			gamesnd_play_iface(SND_GENERAL_FAIL);
+			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		}
 		break;
 
@@ -4088,12 +4088,12 @@ void multi_create_button_pressed(int n)
 		if(Multi_create_list_mode != MULTI_CREATE_SHOW_CAMPAIGNS){
 			Netgame.campaign_mode = MP_CAMPAIGN;
 
-			gamesnd_play_iface(SND_USER_SELECT);			
+			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			
 			// update the file list
 			multi_create_setup_list_data(MULTI_CREATE_SHOW_CAMPAIGNS);						
 		} else {
-			gamesnd_play_iface(SND_GENERAL_FAIL);
+			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		}
 		break;
 
@@ -4120,7 +4120,7 @@ void multi_create_button_pressed(int n)
 
 	// go to the host options screen
 	case MC_HOST_OPTIONS:
-		gamesnd_play_iface(SND_USER_SELECT);
+		gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 		gameseq_post_event(GS_EVENT_MULTI_HOST_OPTIONS);
 		break;
 
@@ -4133,7 +4133,7 @@ void multi_create_button_pressed(int n)
 		break;
 
 	default :
-		gamesnd_play_iface(SND_GENERAL_FAIL);
+		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		multi_common_add_notify(XSTR("Not implemented yet!",760));		
 		break;
 	}
@@ -4162,13 +4162,13 @@ void multi_create_init_as_client()
 // scroll up through the player list
 void multi_create_plist_scroll_up()
 {	
-	gamesnd_play_iface(SND_GENERAL_FAIL);
+	gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 }
 
 // scroll down through the player list
 void multi_create_plist_scroll_down()
 {	
-	gamesnd_play_iface(SND_GENERAL_FAIL);
+	gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 }
 
 void multi_create_plist_process()
@@ -4409,9 +4409,9 @@ void multi_create_list_scroll_up()
 	if(Multi_create_list_start > 0){
 		Multi_create_list_start--;		
 
-		gamesnd_play_iface(SND_SCROLL);
+		gamesnd_play_iface(InterfaceSounds::SCROLL);
 	} else {
-		gamesnd_play_iface(SND_GENERAL_FAIL);
+		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 	}
 }
 
@@ -4420,9 +4420,9 @@ void multi_create_list_scroll_down()
 	if((Multi_create_list_count - Multi_create_list_start) > Multi_create_list_max_display[gr_screen.res]){
 		Multi_create_list_start++;		
 
-		gamesnd_play_iface(SND_SCROLL);
+		gamesnd_play_iface(InterfaceSounds::SCROLL);
 	} else {
-		gamesnd_play_iface(SND_GENERAL_FAIL);
+		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 	}
 }
 
@@ -4626,7 +4626,7 @@ void multi_create_list_do()
 
 			if(item < Multi_create_list_count){		
 				multi_create_list_select_item(item);
-				gamesnd_play_iface(SND_IFACE_MOUSE_CLICK);
+				gamesnd_play_iface(InterfaceSounds::IFACE_MOUSE_CLICK);
 			}		
 		}
 	}	
@@ -4916,10 +4916,10 @@ void multi_create_accept_hit()
 	// make sure all players have finished joining
 	if(!multi_netplayer_state_check(NETPLAYER_STATE_JOINED,1)){
 		popup(PF_BODY_BIG | PF_USE_AFFIRMATIVE_ICON,1,POPUP_OK,XSTR("Please wait until all clients have finished joining",788));
-		gamesnd_play_iface(SND_GENERAL_FAIL);
+		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		return;
 	} else {
-		gamesnd_play_iface(SND_COMMIT_PRESSED);
+		gamesnd_play_iface(InterfaceSounds::COMMIT_PRESSED);
 	}	
 	
 	// do single mission stuff
@@ -5035,10 +5035,10 @@ void multi_create_set_selected_team(int team)
 	
 	// if we don't currently have a player selected, don't do anything
 	if(!Multi_create_plist_select_flag){
-		gamesnd_play_iface(SND_GENERAL_FAIL);
+		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		return;
 	}
-	gamesnd_play_iface(SND_USER_SELECT);
+	gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 
 	// otherwise attempt to set the team for this guy	
 	player_index = find_player_id(Multi_create_plist_select_id);
@@ -5047,10 +5047,10 @@ void multi_create_set_selected_team(int team)
 	}
 }
 
-void multi_create_handle_join(net_player *pl)
+void multi_create_handle_join(net_player * /*pl*/)
 {
 	// for now just play a bloop sound
-	gamesnd_play_iface(SND_ICON_DROP_ON_WING);
+	gamesnd_play_iface(InterfaceSounds::ICON_DROP_ON_WING);
 }
 
 // fill in net address of player the mouse is over, return player index (or -1 if none)
@@ -5306,7 +5306,7 @@ int multi_create_ok_to_commit()
 	// check to see if teams are assigned properly in a team vs. team situation
 	if(Netgame.type_flags & NG_TYPE_TEAM){
 		if(!multi_team_ok_to_commit()){
-			gamesnd_play_iface(SND_GENERAL_FAIL);
+			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 			popup(PF_BODY_BIG | PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("Teams and/or team captains are not assigned properly", 793));			
 			return 0;
 		}
@@ -5314,7 +5314,7 @@ int multi_create_ok_to_commit()
 
 	// verify cd's	
 	if(!multi_create_verify_cds()){
-		gamesnd_play_iface(SND_GENERAL_FAIL);
+		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 
 		popup(PF_BODY_BIG | PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("You need 1 CD for every 4 players!", 794));			
 
@@ -5913,7 +5913,7 @@ void multi_ho_update_sliders()
 	if (Game_skill_level != Multi_ho_sliders[gr_screen.res][MULTI_HO_SLIDER_SKILL].slider.pos) {
 		if ( !(Netgame.type_flags & NG_TYPE_TEAM) ){		
 			Game_skill_level = Multi_ho_sliders[gr_screen.res][MULTI_HO_SLIDER_SKILL].slider.pos;
-			gamesnd_play_iface(SND_USER_SELECT);
+			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 		} else {	
 			Game_skill_level = NUM_SKILL_LEVELS / 2;
 		}
@@ -5922,13 +5922,13 @@ void multi_ho_update_sliders()
 	// get the voice qos options
 	if (Netgame.options.voice_qos != (ubyte)(Multi_ho_sliders[gr_screen.res][MULTI_HO_SLIDER_VOICE_QOS].slider.pos + 1)) {
 		Netgame.options.voice_qos = (ubyte)(Multi_ho_sliders[gr_screen.res][MULTI_HO_SLIDER_VOICE_QOS].slider.pos + 1);	
-		gamesnd_play_iface(SND_USER_SELECT);
+		gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 	}
 
 	// get the voice duration options
 	if (Netgame.options.voice_record_time != (int)(0.5f * (float)(Multi_ho_sliders[gr_screen.res][MULTI_HO_SLIDER_VOICE_DUR].slider.pos + 1) * 1000.0f)) {
 		Netgame.options.voice_record_time = (int)(0.5f * (float)(Multi_ho_sliders[gr_screen.res][MULTI_HO_SLIDER_VOICE_DUR].slider.pos + 1) * 1000.0f);
-		gamesnd_play_iface(SND_USER_SELECT);
+		gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 	}
 
 }
@@ -5948,7 +5948,7 @@ void multi_host_options_do()
 		break;
 	// same as ACCEPT
 	case KEY_CTRLED + KEY_ENTER :	
-		gamesnd_play_iface(SND_COMMIT_PRESSED);
+		gamesnd_play_iface(InterfaceSounds::COMMIT_PRESSED);
 		multi_ho_accept_hit();
 		break;
 	}
@@ -6039,7 +6039,7 @@ void multi_ho_button_pressed(int n)
 	switch(n){		
 	// clicked on the accept button
 	case MULTI_HO_ACCEPT:
-		gamesnd_play_iface(SND_COMMIT_PRESSED);
+		gamesnd_play_iface(InterfaceSounds::COMMIT_PRESSED);
 		multi_ho_accept_hit();
 		return;	
 	
@@ -6047,7 +6047,7 @@ void multi_ho_button_pressed(int n)
 	case MULTI_HO_HOST_MODIFIES:
 		// toggle it on or off
 		Multi_ho_host_modifies = !Multi_ho_host_modifies;
-		gamesnd_play_iface(SND_USER_SELECT);
+		gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 		return;
 	}
 
@@ -6065,10 +6065,10 @@ void multi_ho_button_pressed(int n)
 	if(radio_index < MULTI_HO_NUM_RADIO_BUTTONS){
 		// see if this value is already picked for this radio group
 		if(Multi_ho_radio_groups[Multi_ho_radio_info[radio_index][0]] != Multi_ho_radio_info[radio_index][1]){
-			gamesnd_play_iface(SND_USER_SELECT);
+			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			Multi_ho_radio_groups[Multi_ho_radio_info[radio_index][0]] = Multi_ho_radio_info[radio_index][1];
 		} else {
-			gamesnd_play_iface(SND_GENERAL_FAIL);
+			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		}
 	}
 }
@@ -6436,7 +6436,7 @@ void multi_ho_check_focus()
 		Multi_ho_voice_wait.clear_focus();			
 		Multi_ho_kill_limit.clear_focus();
 		Multi_ho_obs.clear_focus();
-		gamesnd_play_iface(SND_COMMIT_PRESSED);
+		gamesnd_play_iface(InterfaceSounds::COMMIT_PRESSED);
 		chatbox_set_focus();
 		Multi_ho_lastframe_input = 0;
 
@@ -6855,7 +6855,7 @@ void multi_game_client_setup_close()
 
 	// play a sound.
 	if(Netgame.game_state == NETGAME_STATE_MISSION_SYNC){
-		gamesnd_play_iface(SND_COMMIT_PRESSED);
+		gamesnd_play_iface(InterfaceSounds::COMMIT_PRESSED);
 	}
 }
 
@@ -6877,7 +6877,7 @@ void multi_jw_button_pressed(int n)
 {
 	switch(n){	
 	case MJW_CANCEL:
-		gamesnd_play_iface(SND_USER_SELECT);		
+		gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 		multi_quit_game(PROMPT_CLIENT);		
 		break;	
 	case MJW_SCROLL_PLAYERS_UP:
@@ -6895,13 +6895,13 @@ void multi_jw_button_pressed(int n)
 	
 	// request to set myself to team 0
 	case MJW_TEAM0:
-		gamesnd_play_iface(SND_USER_SELECT);
+		gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 		multi_team_set_team(Net_player,0);
 		break;
 
 	// request to set myself to team 1
 	case MJW_TEAM1:
-		gamesnd_play_iface(SND_USER_SELECT);
+		gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 		multi_team_set_team(Net_player,1);
 		break;
 
@@ -6923,13 +6923,13 @@ void multi_jw_do_netstuff()
 
 void multi_jw_scroll_players_up()
 {
-	gamesnd_play_iface(SND_GENERAL_FAIL);
+	gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 }
 
 // scroll down through the player list
 void multi_jw_scroll_players_down()
 {	
-	gamesnd_play_iface(SND_GENERAL_FAIL);
+	gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 }
 
 void multi_jw_plist_process()
@@ -7156,10 +7156,10 @@ void multi_jw_plist_blit_team()
 	}			
 }
 
-void multi_jw_handle_join(net_player *pl)
+void multi_jw_handle_join(net_player * /*pl*/)
 {
 	// for now just play a bloop sound
-	gamesnd_play_iface(SND_ICON_DROP_ON_WING);
+	gamesnd_play_iface(InterfaceSounds::ICON_DROP_ON_WING);
 }
 
 short multi_jw_get_mouse_id()
@@ -7614,7 +7614,7 @@ void multi_sync_common_do()
 	switch(k){
 	case KEY_ESC :
 		// Sync_test = 1;
-		gamesnd_play_iface(SND_USER_SELECT);
+		gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 		multi_quit_game(PROMPT_ALL);		
 		break;	
 	}				
@@ -7826,7 +7826,7 @@ void multi_sync_button_pressed(int n)
 	switch(n){	
 	// exit the game
 	case MS_CANCEL:
-		gamesnd_play_iface(SND_USER_SELECT);		
+		gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 		multi_quit_game(PROMPT_ALL);		
 		break;	
 	
@@ -8463,7 +8463,7 @@ void multi_sync_start_countdown()
 
 	// if I'm the server, begin the countdown
 	if(Net_player->flags & NETINFO_FLAG_AM_MASTER){
-		gamesnd_play_iface(SND_COMMIT_PRESSED);
+		gamesnd_play_iface(InterfaceSounds::COMMIT_PRESSED);
 		Multi_sync_countdown_timer = 0.0f;
 		Multi_sync_countdown = MULTI_SYNC_COUNTDOWN_TIME;
 
@@ -8672,7 +8672,7 @@ void multi_debrief_do_frame()
 void multi_debrief_close()
 {	
 	if ( MULTIPLAYER_CLIENT && (Netgame.game_state == NETGAME_STATE_MISSION_SYNC) ){
-		gamesnd_play_iface( SND_COMMIT_PRESSED );
+		gamesnd_play_iface( InterfaceSounds::COMMIT_PRESSED );
 	}
 }
 
@@ -8711,7 +8711,7 @@ void multi_debrief_accept_hit()
 	// mark this so that we don't hit it again
 	Multi_debrief_accept_hit = 1;
 
-	gamesnd_play_iface(SND_COMMIT_PRESSED);
+	gamesnd_play_iface(InterfaceSounds::COMMIT_PRESSED);
 
 	if (MULTI_IS_TRACKER_GAME) {
 		int res = popup(PF_TITLE | PF_BODY_BIG | PF_USE_AFFIRMATIVE_ICON | PF_USE_NEGATIVE_ICON | PF_IGNORE_ESC, 3, XSTR("&Cancel", 779), XSTR("&Accept", 844), XSTR("&Toss", 845), XSTR("(Continue Netgame)\nDo you wish to accept these stats?", 846));
@@ -9183,13 +9183,13 @@ void multi_passwd_process_buttons()
 {
 	// if the accept button was pressed
 	if(Multi_pwd_buttons[gr_screen.res][MPWD_COMMIT].button.pressed()){
-		gamesnd_play_iface(SND_USER_SELECT);
+		gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 		Multi_passwd_done = 1;
 	}
 
 	// if the cancel button was pressed
 	if(Multi_pwd_buttons[gr_screen.res][MPWD_CANCEL].button.pressed()){
-		gamesnd_play_iface(SND_USER_SELECT);
+		gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 		Multi_passwd_done = 0;
 	}
 }

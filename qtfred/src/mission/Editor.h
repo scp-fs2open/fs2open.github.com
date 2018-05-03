@@ -170,6 +170,10 @@ class Editor: public QObject {
 
 	SCP_vector<SCP_string> get_docking_list(int model_index);
 
+	bool compareShieldSysData(const std::vector<int>& teams, const std::vector<int>& types) const;
+	void exportShieldSysData(std::vector<int>& teams, std::vector<int>& types) const;
+	void importShieldSysData(const std::vector<int>& teams, const std::vector<int>& types);
+	void normalizeShieldSysData();
  private:
 	void clearMission();
 
@@ -184,8 +188,8 @@ class Editor: public QObject {
 
 	int Default_player_model = -1;
 
-	int Shield_sys_teams[MAX_IFFS];
-	int Shield_sys_types[MAX_SHIP_CLASSES];
+	std::vector<int> Shield_sys_teams;
+	std::vector<int> Shield_sys_types;
 
 	int delete_flag;
 

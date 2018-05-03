@@ -218,33 +218,33 @@ void mht_button_pressed(int n)
 		} else {			
 			gameseq_post_event(GS_EVENT_NEW_CAMPAIGN);			
 
-			gamesnd_play_iface(SND_USER_SELECT);
+			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 		}
 		break;
 
 	case MHT_CAMPAIGN_ROOM:
 		gameseq_post_event(GS_EVENT_CAMPAIGN_ROOM);			
-		gamesnd_play_iface(SND_USER_SELECT);
+		gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 		break;
 		
 	case MHT_OPTIONS:
 		gameseq_post_event(GS_EVENT_OPTIONS_MENU);
-		gamesnd_play_iface(SND_USER_SELECT);
+		gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 		break;
 
 	case MHT_TECH_ROOM:
 		gameseq_post_event( GS_EVENT_TECH_MENU );
-		gamesnd_play_iface(SND_USER_SELECT);
+		gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 		break;
 	
 	case MHT_BARRACKS:
 		gameseq_post_event( GS_EVENT_BARRACKS_MENU );
-		gamesnd_play_iface(SND_USER_SELECT);
+		gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 		break;
 
 	case MHT_EXIT:
 		mht_exit_game();
-		gamesnd_play_iface(SND_USER_SELECT);
+		gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 		break;
 	}							
 }

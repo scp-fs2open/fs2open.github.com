@@ -67,7 +67,7 @@ class ThreadedEventProcessor {
 
 	void processEvent(const trace_event* event) {
 		try {
-			_event_queue.wait_push_back(std::move(*event));
+			_event_queue.wait_push_back(*event);
 		} catch (const sync_queue_is_closed&) {
 			mprintf(("Stream queue was closed in processEvent! This should not be possible..."));
 		}

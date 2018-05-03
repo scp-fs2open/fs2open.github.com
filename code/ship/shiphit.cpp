@@ -235,7 +235,7 @@ void do_subobj_destroyed_stuff( ship *ship_p, ship_subsys *subsys, vec3d* hitpos
 		if ( ship_objp == Player_obj )
 		{
 			if (!no_explosion) {
-				snd_play( gamesnd_get_game_sound(SND_SUBSYS_DIE_1), 0.0f );
+				snd_play( gamesnd_get_game_sound(GameSounds::SUBSYS_DIE_1), 0.0f );
 			}
 			if (strlen(psub->alt_dmg_sub_name))
 				HUD_printf(XSTR( "Your %s subsystem has been destroyed", 499), psub->alt_dmg_sub_name);
@@ -280,13 +280,13 @@ void do_subobj_destroyed_stuff( ship *ship_p, ship_subsys *subsys, vec3d* hitpos
 
 	if (notify && !no_explosion) {
 		// play sound effect when subsys gets blown up
-		int sound_index=-1;
+		gamesnd_id sound_index;
 		if ( Ship_info[ship_p->ship_info_index].is_huge_ship() ) {
-			sound_index=SND_CAPSHIP_SUBSYS_EXPLODE;
+			sound_index=GameSounds::CAPSHIP_SUBSYS_EXPLODE;
 		} else if ( Ship_info[ship_p->ship_info_index].is_big_ship() ) {
-			sound_index=SND_SUBSYS_EXPLODE;
+			sound_index=GameSounds::SUBSYS_EXPLODE;
 		}
-		if ( sound_index >= 0 ) {
+		if ( sound_index.isValid() ) {
 			snd_play_3d( gamesnd_get_game_sound(sound_index), &g_subobj_pos, &View_position );
 		}
 	}
@@ -308,7 +308,7 @@ void do_subobj_destroyed_stuff( ship *ship_p, ship_subsys *subsys, vec3d* hitpos
 		obj_snd_delete_type(ship_p->objnum, subsys->system_info->rotation_snd, subsys);
 		subsys->subsys_snd_flags.remove(Ship::Subsys_Sound_Flags::Rotate);
 	}
-	if((subsys->system_info->dead_snd != -1) && !(subsys->subsys_snd_flags[Ship::Subsys_Sound_Flags::Dead]))
+	if((subsys->system_info->dead_snd.isValid()) && !(subsys->subsys_snd_flags[Ship::Subsys_Sound_Flags::Dead]))
 	{
 		obj_snd_assign(ship_p->objnum, subsys->system_info->dead_snd, &subsys->system_info->pnt, 0, OS_SUBSYS_DEAD, subsys);
 		subsys->subsys_snd_flags.remove(Ship::Subsys_Sound_Flags::Dead);
@@ -1464,7 +1464,7 @@ void ship_generic_kill_stuff( object *objp, float percent_killed )
 	ai_deathroll_start(objp);
 
 	// play death roll begin sound
-	sp->death_roll_snd = snd_play_3d( gamesnd_get_game_sound(SND_DEATH_ROLL), &objp->pos, &View_position, objp->radius );
+	sp->death_roll_snd = snd_play_3d( gamesnd_get_game_sound(GameSounds::DEATH_ROLL), &objp->pos, &View_position, objp->radius );
 	if (objp == Player_obj)
 		joy_ff_deathroll();
 

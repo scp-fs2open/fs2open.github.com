@@ -38,8 +38,8 @@
 #include "tracing/Monitor.h"
 #include "tracing/tracing.h"
 
-#include <ctype.h>
-#include <limits.h>
+#include <cctype>
+#include <climits>
 #include <iomanip>
 #include <memory>
 
@@ -1110,7 +1110,7 @@ int bm_is_valid(int handle) {
 //			c_type		= output for an updated BM_TYPE_*
 //			mm_lvl		= number of mipmap levels for the image
 //			size		= size of the data contained in the image
-static int bm_load_info(BM_TYPE type, int n, const char *filename, CFILE *img_cfp, int *w, int *h, int *bpp, BM_TYPE *c_type, int *mm_lvl, size_t *size)
+static int bm_load_info(BM_TYPE type, const char *filename, CFILE *img_cfp, int *w, int *h, int *bpp, BM_TYPE *c_type, int *mm_lvl, size_t *size)
 {
 	int dds_ct;
 
@@ -1273,7 +1273,7 @@ int bm_load(const char *real_filename) {
 		goto Done;
 	}
 
-	rc = bm_load_info(type, free_slot, filename, img_cfp, &w, &h, &bpp, &c_type, &mm_lvl, &bm_size);
+	rc = bm_load_info(type, filename, img_cfp, &w, &h, &bpp, &c_type, &mm_lvl, &bm_size);
 
 	if (rc != 0)
 		goto Done;
@@ -1402,7 +1402,7 @@ bool bm_load_and_parse_eff(const char *filename, int dir_type, int *nframes, int
 /**
 * Lock an image files data into memory
 */
-static int bm_load_image_data(const char *filename, int handle, int bitmapnum, int bpp, ubyte flags, bool nodebug)
+static int bm_load_image_data(int handle, int bitmapnum, int bpp, ubyte flags, bool nodebug)
 {
 	BM_TYPE c_type = BM_TYPE_NONE;
 	int true_bpp;
@@ -1720,7 +1720,7 @@ int bm_load_animation(const char *real_filename, int *nframes, int *fps, int *ke
 			sprintf(bm_bitmaps[n + i].info.ani.eff.filename, "%s_%.4d", clean_name, i);
 
 			// bm_load_info() returns non-0 on failure
-			if (bm_load_info(eff_type, n + i, bm_bitmaps[n + i].info.ani.eff.filename, NULL, &anim_width, &anim_height, &bpp, &c_type, &mm_lvl, &img_size)) {
+			if (bm_load_info(eff_type, bm_bitmaps[n + i].info.ani.eff.filename, NULL, &anim_width, &anim_height, &bpp, &c_type, &mm_lvl, &img_size)) {
 				// if we didn't get anything then bail out now
 				if (i == 0) {
 					Warning(LOCATION, "EFF: No frame images were found.  EFF, %s, is invalid.\n", filename);
@@ -1994,7 +1994,7 @@ bitmap * bm_lock(int handle, int bpp, ubyte flags, bool nodebug) {
 #endif
 
 	// read the file data
-	if (bm_load_image_data(be->filename, handle, bitmapnum, bpp, flags, nodebug) == -1) {
+	if (bm_load_image_data(handle, bitmapnum, bpp, flags, nodebug) == -1) {
 		// oops, this isn't good - reset and return NULL
 		bm_unlock( handle );
 		bm_unload( handle );
@@ -2041,7 +2041,7 @@ bitmap * bm_lock(int handle, int bpp, ubyte flags, bool nodebug) {
 	return bmp;
 }
 
-void bm_lock_ani(int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, int bpp, ubyte flags) {
+void bm_lock_ani(int  /*handle*/, int  /*bitmapnum*/, bitmap_entry *be, bitmap * /*bmp*/, int bpp, ubyte flags) {
 	anim				*the_anim;
 	anim_instance	*the_anim_instance;
 	bitmap			*bm;
@@ -2162,7 +2162,7 @@ void bm_lock_ani(int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, int b
 }
 
 
-void bm_lock_apng(int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, int bpp, ubyte flags) {
+void bm_lock_apng(int  /*handle*/, int  /*bitmapnum*/, bitmap_entry *be, bitmap *bmp, int bpp, ubyte  /*flags*/) {
 
 	int first_frame = be->info.ani.first_frame;
 	int nframes = bm_bitmaps[first_frame].info.ani.num_frames;
@@ -2210,7 +2210,7 @@ void bm_lock_apng(int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, int 
 }
 
 
-void bm_lock_dds(int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, int bpp, ubyte flags) {
+void bm_lock_dds(int  /*handle*/, int bitmapnum, bitmap_entry *be, bitmap *bmp, int  /*bpp*/, ubyte  /*flags*/) {
 	ubyte *data = NULL;
 	int error;
 	ubyte dds_bpp = 0;
@@ -2272,7 +2272,7 @@ void bm_lock_dds(int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, int b
 #endif
 }
 
-void bm_lock_jpg(int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, int bpp, ubyte flags) {
+void bm_lock_jpg(int  /*handle*/, int bitmapnum, bitmap_entry *be, bitmap *bmp, int bpp, ubyte  /*flags*/) {
 	ubyte *data = NULL;
 	int d_size = 0;
 	int jpg_error = JPEG_ERROR_INVALID;
@@ -2317,7 +2317,7 @@ void bm_lock_jpg(int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, int b
 #endif
 }
 
-void bm_lock_pcx(int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, int bpp, ubyte flags) {
+void bm_lock_pcx(int  /*handle*/, int bitmapnum, bitmap_entry *be, bitmap *bmp, int bpp, ubyte flags) {
 	ubyte *data;
 	int pcx_error;
 	char filename[MAX_FILENAME_LEN];
@@ -2360,7 +2360,7 @@ void bm_lock_pcx(int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, int b
 	bm_convert_format(bmp, flags);
 }
 
-void bm_lock_png(int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, int bpp, ubyte flags) {
+void bm_lock_png(int  /*handle*/, int bitmapnum, bitmap_entry *be, bitmap *bmp, int  /*bpp*/, ubyte  /*flags*/) {
 	ubyte *data = NULL;
 	//assume 32 bit - libpng should expand everything
 	int d_size;
@@ -2403,7 +2403,7 @@ void bm_lock_png(int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, int b
 #endif
 }
 
-void bm_lock_tga(int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, int bpp, ubyte flags) {
+void bm_lock_tga(int  /*handle*/, int bitmapnum, bitmap_entry *be, bitmap *bmp, int bpp, ubyte flags) {
 	ubyte *data = NULL;
 	int d_size, byte_size;
 	char filename[MAX_FILENAME_LEN];
@@ -2459,7 +2459,7 @@ void bm_lock_tga(int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, int b
 	bm_convert_format(bmp, flags);
 }
 
-void bm_lock_user(int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, int bpp, ubyte flags) {
+void bm_lock_user(int  /*handle*/, int bitmapnum, bitmap_entry *be, bitmap *bmp, int bpp, ubyte flags) {
 	// Unload any existing data
 	bm_free_data(bitmapnum);
 

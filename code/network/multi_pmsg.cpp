@@ -10,7 +10,7 @@
 
 
 
-#include <ctype.h>
+#include <cctype>
 
 #include "network/multi_pmsg.h"
 #include "network/multi.h"
@@ -38,7 +38,7 @@
 #define MULTI_MSG_KEYDOWN_WAIT				325							// in ms
 
 // sound to play before displaying incoming text messages in-mission
-#define MULTI_MSG_TEXT_SOUND					SND_CUE_VOICE
+#define MULTI_MSG_TEXT_SOUND					GameSounds::CUE_VOICE
 
 // max length of a string we'll allow players to send
 #define MULTI_MSG_MAX_LEN						75

@@ -29,6 +29,7 @@
 
 #include "mission/Editor.h"
 #include "mission/management.h"
+#include "mission/missionsave.h"
 
 #include "widgets/ColorComboBox.h"
 
@@ -170,6 +171,17 @@ void FredView::openLoadMissionDIalog() {
 
 void FredView::on_actionExit_triggered(bool) {
 	close();
+}
+void FredView::on_actionSave_As_triggered(bool) {
+	CFred_mission_save save(_viewport);
+
+	QString saveName = QFileDialog::getSaveFileName(this, tr("Save mission"), QString(), tr("FS2 missions (*.fs2)"));
+
+	if (saveName.isEmpty()) {
+		return;
+	}
+
+	save.save_mission_file(saveName.toUtf8().constData());
 }
 
 void FredView::on_mission_loaded(const std::string& filepath) {
@@ -490,10 +502,10 @@ void FredView::windowDeactivated() {
 
 	_viewport->Cursor_over = -1;
 }
-void FredView::on_actionHide_Marked_Objects_triggered(bool enabled) {
+void FredView::on_actionHide_Marked_Objects_triggered(bool  /*enabled*/) {
 	fred->hideMarkedObjects();
 }
-void FredView::on_actionShow_All_Hidden_Objects_triggered(bool enabled) {
+void FredView::on_actionShow_All_Hidden_Objects_triggered(bool  /*enabled*/) {
 	fred->showHiddenObjects();
 }
 void FredView::onUpdateViewSpeeds() {
@@ -781,7 +793,7 @@ void FredView::orientEditorTriggered() {
 void FredView::onUpdateEditorActions() {
 	ui->actionObjects->setEnabled(query_valid_object(fred->currentObject));
 }
-void FredView::on_actionWingForm_triggered(bool enabled) {
+void FredView::on_actionWingForm_triggered(bool  /*enabled*/) {
 	object* ptr = GET_FIRST(&obj_used_list);
 	bool found = false;
 	while (ptr != END_OF_LIST(&obj_used_list)) {
@@ -820,7 +832,7 @@ void FredView::on_actionWingForm_triggered(bool enabled) {
 		// TODO: Autosave
 	}
 }
-void FredView::on_actionWingDisband_triggered(bool enabled) {
+void FredView::on_actionWingDisband_triggered(bool  /*enabled*/) {
 	if (fred->query_single_wing_marked()) {
 		fred->remove_wing(fred->cur_wing);
 	} else {

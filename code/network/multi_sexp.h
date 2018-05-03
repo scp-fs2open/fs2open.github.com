@@ -12,6 +12,12 @@
 
 void sexp_packet_received(ubyte *received_packet, int num_ubytes);
 
+#if SCP_COMPILER_IS_GNU
+#pragma GCC diagnostic push
+// This suppresses a GCC bug where it thinks that some of the enum fields below shadow global declarations even though
+// the enum class names are not visible in the global namespace
+#pragma GCC diagnostic ignored "-Wshadow"
+#endif
 
 enum class packet_data_type {
     NOT_DATA			= 255,
@@ -28,6 +34,10 @@ enum class packet_data_type {
     USHORT				= 10,
     OBJECT				= 11,
 };
+
+#if SCP_COMPILER_IS_GNU
+#pragma GCC diagnostic pop
+#endif
 
 class sexp_network_packet {
 private:

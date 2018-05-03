@@ -72,7 +72,7 @@ int g3_in_frame()
  * Start the frame
  * Pass true for zbuffer_flag to turn on zbuffering
  */
-void g3_start_frame_func(int zbuffer_flag, const char *filename, int lineno)
+void g3_start_frame_func(int zbuffer_flag, const char * /*filename*/, int  /*lineno*/)
 {
 	float s;
 	int width, height;
@@ -113,7 +113,7 @@ void g3_start_frame_func(int zbuffer_flag, const char *filename, int lineno)
 /**
  * This doesn't do anything, but is here for completeness
  */
-void g3_end_frame_func(const char *filename, int lineno)
+void g3_end_frame_func(const char * /*filename*/, int  /*lineno*/)
 {
 	G3_count--;
 	Assert( G3_count == 0 );

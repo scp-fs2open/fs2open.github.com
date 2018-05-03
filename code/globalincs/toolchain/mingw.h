@@ -17,8 +17,10 @@
  * the detected toolchain.
  */
 
+#include <stdio.h>
+
 #define SCP_FORMAT_STRING
-#define SCP_FORMAT_STRING_ARGS(x,y)  __attribute__((format(printf, x, y)))
+#define SCP_FORMAT_STRING_ARGS(x,y)  __attribute__((format(__MINGW_PRINTF_FORMAT, x, y)))
 
 #define __UNUSED __attribute__((__unused__))
 #define __ALIGNED(x)  __attribute__((__aligned__(x)))
@@ -58,12 +60,10 @@
 #define likely(x)    __builtin_expect((long) !!(x), 1L)
 #define unlikely(x)  __builtin_expect((long) !!(x), 0L)
 
-#define __STDC_FORMAT_MACROS 1
-
 #define USED_VARIABLE __attribute__((used))
 
 #if SCP_COMPILER_VERSION_MAJOR >= 7
-#define FALLTHROUGH [[fallthough]]
+#define FALLTHROUGH __attribute__((fallthrough))
 #else
 #define FALLTHROUGH
 #endif

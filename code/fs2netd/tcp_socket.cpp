@@ -23,15 +23,15 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <netdb.h>
-#include <stdlib.h>
+#include <cstdlib>
 #include <unistd.h>
 #include <cerrno>
 #include <sys/ioctl.h>
-#include <signal.h>
+#include <csignal>
 #ifdef SCP_SOLARIS
 #include <sys/filio.h>
 #endif
-#include <ctype.h>
+#include <cctype>
 
 #define WSAGetLastError()  (errno)
 #define RESTART(syscall)                        \
@@ -94,7 +94,7 @@ int FS2NetD_ConnectToServer(const char *host, const char *port)
 
 		mySocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 
-		if (mySocket == SOCKET_ERROR) {
+		if (mySocket == (SOCKET)SOCKET_ERROR) {
 #ifdef SCP_UNIX
 			my_error = errno;
 			ml_printf("FS2NetD ERROR: Couldn't get socket (\"%s\")!", strerror(my_error));

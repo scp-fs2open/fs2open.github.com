@@ -133,7 +133,7 @@ void QtViewport::swapBuffers() {
 		QOpenGLContext::currentContext()->swapBuffers(_viewportWindow->getRenderSurface());
 	}
 }
-void QtViewport::setState(os::ViewportState state) {
+void QtViewport::setState(os::ViewportState  /*state*/) {
 	// Not used in FRED
 }
 void QtViewport::minimize() {

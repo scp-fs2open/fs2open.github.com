@@ -41,15 +41,15 @@ inline bool fsspeech_was_compiled() { return true; }
 
 inline bool fsspeech_init() { return false; }
 inline void fsspeech_deinit() {}
-inline void fsspeech_play(int type, const char *text) { }
+inline void fsspeech_play(int  /*type*/, const char * /*text*/) { }
 inline void fsspeech_stop() {}
-inline void fsspeech_pause(bool playing) { }
+inline void fsspeech_pause(bool  /*playing*/) { }
 
 inline void fsspeech_start_buffer() {}
-inline void fsspeech_stuff_buffer(const char *text) { }
-inline void fsspeech_play_buffer(int type) {}
+inline void fsspeech_stuff_buffer(const char * /*text*/) { }
+inline void fsspeech_play_buffer(int  /*type*/) {}
 
-inline bool fsspeech_play_from(int type) { return false; }
+inline bool fsspeech_play_from(int  /*type*/) { return false; }
 inline bool fsspeech_playing() { return false; }
 inline bool fsspeech_was_compiled( ) { return false; }
 

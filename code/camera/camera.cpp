@@ -245,12 +245,12 @@ void camera::set_rotation_facing(vec3d *in_target, float in_rotation_time, float
 	set_rotation(&temp_matrix, in_rotation_time, in_rotation_acceleration_time, in_rotation_deceleration_time);
 }
 
-void camera::set_rotation_velocity(angles *in_rotation_rate, float in_acceleration_time)
+void camera::set_rotation_velocity(angles * /*in_rotation_rate*/, float  /*in_acceleration_time*/)
 {
 	Error(LOCATION, "This function is disabled until further notice.");
 }
 
-void camera::do_frame(float in_frametime)
+void camera::do_frame(float  /*in_frametime*/)
 {
 
 }
@@ -802,7 +802,7 @@ void subtitle::clone(const subtitle &sub)
 	post_shaded = sub.post_shaded;
 }
 
-const subtitle &subtitle::operator=(const subtitle &sub)
+subtitle& subtitle::operator=(const subtitle &sub)
 {
 	if (this != &sub) {
 		if (image_id != -1) {

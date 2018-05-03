@@ -37,6 +37,8 @@ add_file_folder("Source/Mission"
     src/mission/IDialogProvider.h
     src/mission/management.cpp
     src/mission/management.h
+	src/mission/missionsave.cpp
+	src/mission/missionsave.h
     src/mission/object.cpp
     src/mission/object.h
     src/mission/util.cpp
@@ -48,8 +50,6 @@ add_file_folder("Source/Mission/Dialogs"
     src/mission/dialogs/AbstractDialogModel.h
 	src/mission/dialogs/CustomWingNamesDialogModel.cpp
 	src/mission/dialogs/CustomWingNamesDialogModel.h
-    src/mission/dialogs/EventEditorDialogModel.cpp
-    src/mission/dialogs/EventEditorDialogModel.h
     src/mission/dialogs/FictionViewerDialogModel.cpp
     src/mission/dialogs/FictionViewerDialogModel.h
 	src/mission/dialogs/FormWingDialogModel.cpp
@@ -60,6 +60,8 @@ add_file_folder("Source/Mission/Dialogs"
 	src/mission/dialogs/ObjectOrientEditorDialogModel.h
 	src/mission/dialogs/SelectionDialogModel.cpp
 	src/mission/dialogs/SelectionDialogModel.h
+	src/mission/dialogs/ShieldSystemDialogModel.cpp
+	src/mission/dialogs/ShieldSystemDialogModel.h
 	src/mission/dialogs/WaypointEditorDialogModel.cpp
 	src/mission/dialogs/WaypointEditorDialogModel.h
 )

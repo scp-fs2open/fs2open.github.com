@@ -9,7 +9,7 @@
 
 
 
-#include <ctype.h>
+#include <cctype>
 
 #include "bmpman/bmpman.h"
 #include "globalincs/alphacolors.h"

@@ -8,7 +8,7 @@
 #include "MainFrameTimer.h"
 #include "FrameProfiler.h"
 
-#include <inttypes.h>
+#include <cinttypes>
 #include <fstream>
 #include <future>
 #include <mutex>

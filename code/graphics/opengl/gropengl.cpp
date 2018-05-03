@@ -382,7 +382,7 @@ void gr_opengl_shutdown()
 	GL_context = nullptr;
 }
 
-void gr_opengl_cleanup(bool closing, int minimize)
+void gr_opengl_cleanup(bool closing, int  /*minimize*/)
 {
 	if ( !GL_initted ) {
 		return;
@@ -619,7 +619,7 @@ void gr_opengl_set_gamma(float gamma)
 	}
 }
 
-void gr_opengl_get_region(int front, int w, int h, ubyte *data)
+void gr_opengl_get_region(int  /*front*/, int w, int h, ubyte *data)
 {
 
 //	if (front) {
@@ -807,17 +807,17 @@ void gr_opengl_zbias(int bias)
 	}
 }
 
-void gr_opengl_push_texture_matrix(int unit)
+void gr_opengl_push_texture_matrix(int  /*unit*/)
 {
 
 }
 
-void gr_opengl_pop_texture_matrix(int unit)
+void gr_opengl_pop_texture_matrix(int  /*unit*/)
 {
 
 }
 
-void gr_opengl_translate_texture_matrix(int unit, const vec3d *shift)
+void gr_opengl_translate_texture_matrix(int  /*unit*/, const vec3d * /*shift*/)
 {
 
 }
@@ -1201,7 +1201,7 @@ void opengl_setup_function_pointers()
 
 #ifndef NDEBUG
 static void APIENTRY debug_callback(GLenum source, GLenum type, GLuint id, GLenum severity,
-						   GLsizei length, const GLchar *message, const void *userParam) {
+						   GLsizei  /*length*/, const GLchar *message, const void * /*userParam*/) {
 	if (source == GL_DEBUG_SOURCE_APPLICATION_ARB) {
 		// Ignore application messages
 		return;

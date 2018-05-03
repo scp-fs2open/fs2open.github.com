@@ -12,6 +12,8 @@
 #ifndef __MISSIONSHIPCHOICE_H__
 #define __MISSIONSHIPCHOICE_H__
 
+#include "gamesnd/gamesnd.h"
+
 class p_object;
 
 ///////////////////////////////////////////////////////
@@ -93,10 +95,10 @@ void ss_synch_interface();
 void ss_make_slot_empty(int slot_index);
 void ss_make_slot_full(int slot_index);
 
-int ss_dump_to_list(int from_slot, int to_list, int *sound);
-int ss_swap_slot_slot(int from_slot, int to_slot, int *sound);
-int ss_grab_from_list(int from_list, int to_slot, int *sound);
-int ss_swap_list_slot(int from_list, int to_slot, int *sound);
+int ss_dump_to_list(int from_slot, int to_list, interface_snd_id *sound);
+int ss_swap_slot_slot(int from_slot, int to_slot, interface_snd_id *sound);
+int ss_grab_from_list(int from_list, int to_slot, interface_snd_id *sound);
+int ss_swap_list_slot(int from_list, int to_slot, interface_snd_id *sound);
 
 void ss_apply(int mode, int from_slot,int from_index,int to_slot,int to_index,int player_index = -1);
 void ss_drop(int from_slot,int from_index,int to_slot,int to_index,int player_index = -1);

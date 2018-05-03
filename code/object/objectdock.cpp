@@ -475,7 +475,7 @@ void dock_move_docked_children_tree(object *objp, object *parent_objp)
 // helper functions
 // ----------------
 
-void dock_count_total_docked_objects_helper(object *objp, dock_function_info *infop)
+void dock_count_total_docked_objects_helper(object * /*objp*/, dock_function_info *infop)
 {
 	// increment count
 	infop->maintained_variables.int_value++;

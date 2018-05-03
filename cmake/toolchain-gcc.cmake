@@ -85,9 +85,7 @@ set(COMPILER_FLAGS "${COMPILER_FLAGS} -Wreturn-type")
 
 set(COMPILER_FLAGS "${COMPILER_FLAGS} -Wno-deprecated -Wno-char-subscripts")
 
-set(COMPILER_FLAGS "${COMPILER_FLAGS} -Wno-unused-parameter")
-
-set(COMPILER_FLAGS_RELEASE "-O2 -Wno-unused-variable -Wno-unused-but-set-variable -Wno-array-bounds -Wno-empty-body -Wno-clobbered")
+set(COMPILER_FLAGS_RELEASE "-O2 -Wno-unused-variable -Wno-unused-but-set-variable -Wno-array-bounds -Wno-empty-body -Wno-clobbered  -Wno-unused-parameter")
 
 set(COMPILER_FLAGS_DEBUG "-O0 -g -Wshadow")
 
@@ -105,6 +103,7 @@ set(CMAKE_EXE_LINKER_FLAGS "")
 
 IF (MINGW)
 	SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static -static-libgcc -static-libstdc++ -Wl,--enable-auto-import")
+	target_compile_definitions(compiler INTERFACE __USE_MINGW_ANSI_STDIO=1)
 ENDIF(MINGW)
 
 if (SANITIZE_FLAGS)
@@ -131,4 +130,4 @@ if (FSO_FATAL_WARNINGS)
 endif()
 
 # Always define this to make sure that the fixed width format macros are available
-target_compile_definitions(compiler INTERFACE __STDC_FORMAT_MACROS)
+target_compile_definitions(compiler INTERFACE __STDC_FORMAT_MACROS=1)

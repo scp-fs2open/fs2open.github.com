@@ -9,10 +9,10 @@
 
 
 
-#include <stdio.h>
-#include <string.h>
-#include <setjmp.h>
-#include <errno.h>
+#include <cstdio>
+#include <cstring>
+#include <csetjmp>
+#include <cerrno>
 
 #ifdef _WIN32
 #include <direct.h>
@@ -108,7 +108,7 @@ int mission_campaign_get_info(const char *filename, char *name, int *type, int *
 
 	strncpy(fname, filename, MAX_FILENAME_LEN - 1);
 	auto fname_len = strlen(fname);
-	if ((fname_len < 4) || stricmp(fname + fname_len - 4, FS_CAMPAIGN_FILE_EXT)){
+	if ((fname_len < 4) || stricmp(fname + fname_len - 4, FS_CAMPAIGN_FILE_EXT) != 0){
 		strcat_s(fname, FS_CAMPAIGN_FILE_EXT);
 		fname_len += 4;
 	}
@@ -1686,7 +1686,7 @@ bool campaign_is_ignored(const char *filename)
 	drop_extension(filename_no_ext);
 
 	for (SCP_vector<SCP_string>::iterator ii = Ignored_campaigns.begin(); ii != Ignored_campaigns.end(); ++ii) {
-		if (ii->compare(filename_no_ext) == 0) {
+		if (*ii == filename_no_ext) {
 			return true;
 		}
 	}

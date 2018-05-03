@@ -162,7 +162,7 @@ void dc_do_command(SCP_string *cmd_str)
 	try {
 		dc_commands[i]->func();	// Run the command!
 	
-	} catch (errParseString err) {
+	} catch (const errParseString& err) {
 		dc_printf("Require string(s) not found: \n");
 		for (uint j = 0; j < err.expected_tokens.size(); ++j) {
 			dc_printf("%i: %s\n", j, err.expected_tokens[j].c_str());
@@ -170,7 +170,7 @@ void dc_do_command(SCP_string *cmd_str)
 
 		dc_printf("Found '%s' instead\n", err.found_token.c_str());
 	
-	} catch (errParse err) {
+	} catch (const errParse& err) {
 		dc_printf("Invalid argument. Expected %s, found '%s'\n", token_str[err.expected_type], err.found_token.c_str());
 
 	}

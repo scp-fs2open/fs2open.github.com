@@ -22,7 +22,7 @@ ADE_LIB(l_Audio, "Audio", "ad", "Sound/Music Library");
 
 ADE_FUNC(getSoundentry, l_Audio, "string/number", "Return a sound entry matching the specified index or name. If you are using a number then the first valid index is 1", "soundentry", "soundentry or invalid handle on error")
 {
-	int index = -1;
+	gamesnd_id index;
 
 	if (lua_isnumber(L, 1))
 	{
@@ -44,7 +44,7 @@ ADE_FUNC(getSoundentry, l_Audio, "string/number", "Return a sound entry matching
 		index = gamesnd_get_by_name(s);
 	}
 
-	if (index < 0)
+	if (!index.isValid())
 	{
 		return ade_set_args(L, "o", l_SoundEntry.Set(sound_entry_h()));
 	}
@@ -138,7 +138,7 @@ ADE_FUNC(play3DSound, l_Audio, "soundentry[, vector source[, vector listener]]",
 
 ADE_FUNC(playGameSound, l_Audio, "Sound index, [Panning (-1.0 left to 1.0 right), Volume %, Priority 0-3, Voice Message?]", "Plays a sound from #Game Sounds in sounds.tbl. A priority of 0 indicates that the song must play; 1-3 will specify the maximum number of that sound that can be played", "boolean", "True if sound was played, false if not (Replaced with a sound instance object in the future)")
 {
-	int idx, gamesnd_idx;
+	int idx;
 	float pan=0.0f;
 	float vol=100.0f;
 	int pri=0;
@@ -155,30 +155,30 @@ ADE_FUNC(playGameSound, l_Audio, "Sound index, [Panning (-1.0 left to 1.0 right)
 	CLAMP(pan, -1.0f, 1.0f);
 	CLAMP(vol, 0.0f, 100.0f);
 
-	gamesnd_idx = gamesnd_get_by_tbl_index(idx);
+	auto gamesnd_idx = gamesnd_get_by_tbl_index(idx);
 
-	if (gamesnd_idx >= 0) {
+	if (gamesnd_idx.isValid()) {
 		int sound_handle = snd_play(gamesnd_get_game_sound(gamesnd_idx), pan, vol*0.01f, pri, voice_msg);
 		return ade_set_args(L, "b", sound_handle >= 0);
 	} else {
-		LuaError(L, "Invalid sound index %i (Snds[%i]) in playGameSound()", idx, gamesnd_idx);
+		LuaError(L, "Invalid sound index %i (Snds[%i]) in playGameSound()", idx, gamesnd_idx.value());
 		return ADE_RETURN_FALSE;
 	}
 }
 
 ADE_FUNC(playInterfaceSound, l_Audio, "Sound index", "Plays a sound from #Interface Sounds in sounds.tbl", "boolean", "True if sound was played, false if not")
 {
-	int idx, gamesnd_idx;
+	int idx;
 	if(!ade_get_args(L, "i", &idx))
 		return ade_set_error(L, "b", false);
 
-	gamesnd_idx = gamesnd_get_by_iface_tbl_index(idx);
+	auto gamesnd_idx = gamesnd_get_by_iface_tbl_index(idx);
 
-	if (gamesnd_idx >= 0) {
+	if (gamesnd_idx.isValid()) {
 		gamesnd_play_iface(gamesnd_idx);
 		return ade_set_args(L, "b", true);
 	} else {
-		LuaError(L, "Invalid sound index %i (Snds[%i]) in playInterfaceSound()", idx, gamesnd_idx);
+		LuaError(L, "Invalid sound index %i (Snds[%i]) in playInterfaceSound()", idx, gamesnd_idx.value());
 		return ADE_RETURN_FALSE;
 	}
 }

@@ -28,6 +28,8 @@ ADE_LIB(l_Testing, "Testing", "ts", "Experimental or testing stuff");
 
 ADE_FUNC(avdTest, l_Testing, NULL, "Test the AVD Physics code", NULL, NULL)
 {
+	(void)L; // unused parameter
+
 	static bool initialized = false;
 	static avd_movement avd;
 
@@ -113,7 +115,7 @@ ADE_FUNC(createParticle, l_Testing, "vector Position, vector Velocity, number Li
 		pi.attached_sig = objh->objp->signature;
 	}
 
-	particle::WeakParticlePtr p = particle::create(&pi);
+	particle::WeakParticlePtr p = particle::createPersistent(&pi);
 
 	if (!p.expired())
 		return ade_set_args(L, "o", l_Particle.Set(new particle_h(p)));

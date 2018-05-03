@@ -38,7 +38,7 @@ class SphereShape {
 		return m;
 	}
 
-	void parse(bool nocreate) {
+	void parse(bool  /*nocreate*/) {
 	}
 
 	EffectType getType() const { return EffectType::Sphere; }

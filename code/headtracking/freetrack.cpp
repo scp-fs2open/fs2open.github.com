@@ -20,7 +20,7 @@ namespace
 		HKEY hKey = NULL;
 		LONG lResult = RegOpenKeyEx(HKEY_CURRENT_USER,
 			TEXT("Software\\FreeTrack\\FreeTrackClient"),
-			NULL,
+			0,
 			KEY_QUERY_VALUE,
 			&hKey);
 

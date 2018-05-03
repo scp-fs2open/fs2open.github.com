@@ -94,11 +94,24 @@ if (WIN32)
     foreach(path ${file_paths})
         add_custom_command(TARGET qtfred
             POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy_if_different "${path}"  "$<TARGET_FILE_DIR:qtfred>"
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different "${path}" "$<TARGET_FILE_DIR:qtfred>"
         VERBATIM)
     endforeach(path)
 
     install(FILES ${file_paths}
         DESTINATION ${BINARY_DESTINATION}
+    )
+
+    # Windows requires that the qwindows DLL is copied as well
+    execute_process(COMMAND ${QT_QMAKE_EXECUTABLE} -query QT_INSTALL_PLUGINS OUTPUT_VARIABLE QT_INSTALL_PLUGINS OUTPUT_STRIP_TRAILING_WHITESPACE)
+    set(qwindows_path "${QT_INSTALL_PLUGINS}/platforms/qwindows$<$<CONFIG:Debug>:d>.dll")
+
+    add_custom_command(TARGET qtfred
+        POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different "${qwindows_path}" "$<TARGET_FILE_DIR:qtfred>/platforms/qwindows$<$<CONFIG:Debug>:d>.dll"
+    VERBATIM)
+
+    install(FILES ${qwindows_path}
+        DESTINATION ${BINARY_DESTINATION}/platforms
     )
 endif(WIN32)

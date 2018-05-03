@@ -365,7 +365,7 @@ class poly_list {
 public:
 	poly_list(): n_verts(0), vert(NULL), norm(NULL), tsb(NULL), submodels(NULL), sorted_indices(NULL), currently_allocated(0) {}
 	~poly_list();
-	poly_list& operator = (poly_list&);
+	poly_list& operator=(const poly_list&);
 
 	void allocate(int size);
 	void make_index_buffer(SCP_vector<int> &vertex_list);

@@ -18,7 +18,7 @@
 #include "ui/FredView.h"
 #include "FredApplication.h"
 
-#include <signal.h>
+#include <csignal>
 #include <project.h>
 
 // Globals needed by the engine when built in 'FRED' mode.
@@ -70,7 +70,7 @@ void handler(int signal) {
 }
 
 // Our callback to keep the window responsive while loading
-void game_busy_callback(int count) {
+void game_busy_callback(int  /*count*/) {
 	qGuiApp->processEvents();
 }
 
@@ -90,6 +90,9 @@ int main(int argc, char* argv[]) {
 	QCoreApplication::setOrganizationName("HardLightProductions");
 	QCoreApplication::setOrganizationDomain("hard-light.net");
 	QCoreApplication::setApplicationName("qtFRED");
+
+	// Expect that the platform library is in the same directory
+	QCoreApplication::addLibraryPath(QCoreApplication::applicationDirPath());
 
 	QApplication app(argc, argv);
 
