@@ -425,10 +425,10 @@ void cf_build_root_list(const char *cdrom_dir)
 #ifdef WIN32
 		// Nothing to do here, Windows uses the current directory as the base
 #else
-		cf_add_mod_roots(Cfile_user_dir_legacy);
+		cf_add_mod_roots(os_get_legacy_user_dir());
 
 		root = cf_create_root();
-		strncpy(root->path, Cfile_user_dir_legacy, CF_MAX_PATHNAME_LENGTH - 1);
+		strncpy(root->path, os_get_legacy_user_dir(), CF_MAX_PATHNAME_LENGTH - 1);
 
 		// do we already have a slash? as in the case of a root directory install
 		if ((strlen(root->path) < (CF_MAX_PATHNAME_LENGTH - 1)) && (root->path[strlen(root->path) - 1] != DIR_SEPARATOR_CHAR)) {

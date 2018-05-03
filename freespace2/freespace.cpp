@@ -1703,7 +1703,7 @@ void game_init()
 #endif
 
 	// init os stuff next
-	if ( !Is_standalone ) {		
+	if ( !Is_standalone ) {
 		os_init( Osreg_class_name, Window_title.c_str(), Osreg_app_name );
 	}
 	else {
@@ -7959,9 +7959,6 @@ int actual_main(int argc, char *argv[])
         SDL_free(path_name);
     }
 #endif
-
-	// create user's directory	
-	_mkdir(os_get_config_path().c_str());
 #endif
 
 #if defined(GAME_ERRORLOG_TXT) && defined(_MSC_VER)
