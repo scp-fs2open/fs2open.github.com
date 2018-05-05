@@ -3500,10 +3500,10 @@ void game_render_frame( camid cid )
 	Shadow_override = true;
 	//Draw the viewer 'cause we didn't before.
 	//This is so we can change the minimum clipping distance without messing everything up.
-	if ( Viewer_obj
-		&& (Viewer_obj->type == OBJ_SHIP)
+	if (Viewer_obj && (Viewer_obj->type == OBJ_SHIP)
 		&& (Ship_info[Ships[Viewer_obj->instance].ship_info_index].flags[Ship::Info_Flags::Show_ship_model])
-		&& (!Viewer_mode || (Viewer_mode & VM_PADLOCK_ANY) || (Viewer_mode & VM_OTHER_SHIP) || (Viewer_mode & VM_TRACK)) )
+		&& (!Viewer_mode || (Viewer_mode & VM_PADLOCK_ANY) || (Viewer_mode & VM_OTHER_SHIP) || (Viewer_mode & VM_TRACK)
+			|| !(Viewer_mode & VM_EXTERNAL)))
 	{
 		gr_post_process_save_zbuffer();
 		ship_render_show_ship_cockpit(Viewer_obj);
