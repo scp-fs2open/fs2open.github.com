@@ -631,7 +631,7 @@ void ai_big_chase_attack(ai_info *aip, ship_info *sip, vec3d *enemy_pos, float d
 		else
 			rvec = NULL;
 
-		ai_turn_towards_vector(enemy_pos, Pl_objp, flFrametime, sip->srotation_time, NULL, rel_pos, 0.0f, 0, rvec);
+		ai_turn_towards_vector(enemy_pos, Pl_objp, sip->srotation_time, NULL, rel_pos, 0.0f, 0, rvec);
 
 		// calc range of primary weapon
 		weapon_travel_dist = ai_get_weapon_dist(&Ships[Pl_objp->instance].weapons);
@@ -714,7 +714,7 @@ extern void maybe_cheat_fire_synaptic(object *objp, ai_info *aip);
 // dist_to_enemy	=>		distance (in m) to attack point on current target
 // dot_to_enemy	=>		dot product between fvec of Pl_objp and vector from Pl_objp to attack point
 //
-void ai_big_maybe_fire_weapons(float dist_to_enemy, float dot_to_enemy, vec3d * /*firing_pos*/, vec3d * /*enemy_pos*/, vec3d * /*enemy_vel*/)
+static void ai_big_maybe_fire_weapons(float dist_to_enemy, float dot_to_enemy)
 {
 	ai_info		*aip;
 	ship_weapon	*swp;
@@ -779,9 +779,6 @@ void ai_big_maybe_fire_weapons(float dist_to_enemy, float dot_to_enemy, vec3d * 
 
 									if (dist_to_enemy < firing_range*1.0f) {
 
-
-										//vm_vec_scale_add(&future_enemy_pos, enemy_pos, enemy_vel, dist_to_enemy/swip->max_speed);
-										//if (vm_vec_dist_quick(&future_enemy_pos, firing_pos) < firing_range * 0.8f) {
 											if (ai_fire_secondary_weapon(Pl_objp)) {
 
 												int current_bank_adjusted = MAX_SHIP_PRIMARY_BANKS + current_bank;
@@ -813,7 +810,6 @@ void ai_big_maybe_fire_weapons(float dist_to_enemy, float dot_to_enemy, vec3d * 
 												}
 												swp->next_secondary_fire_stamp[current_bank] = timestamp((int) (t*1000.0f));
 											}
-										//}
 									}
 									swp->next_secondary_fire_stamp[current_bank] = timestamp((int) (t*1000.0f));
 								}
@@ -845,7 +841,7 @@ void ai_big_switch_to_chase_mode(ai_info *aip)
 	aip->submode_start_time = Missiontime;
 }
 
-extern int ai_big_strafe_maybe_retreat(float dist, vec3d *target_pos);
+static int ai_big_strafe_maybe_retreat(vec3d *target_pos);
 
 // Make object Pl_objp chase object En_objp, which is a big ship, not a small ship.
 void ai_big_chase()
@@ -882,7 +878,7 @@ void ai_big_chase()
 	dot_to_enemy = vm_vec_dot(&vec_to_enemy, &Pl_objp->orient.vec.fvec);
 
 	if (aip->ai_flags[AI::AI_Flags::Target_collision]) {
-		if ( ai_big_strafe_maybe_retreat(dist_to_enemy, &enemy_pos) ) {
+		if ( ai_big_strafe_maybe_retreat(&enemy_pos) ) {
 			aip->mode = AIM_STRAFE;
 			aip->submode_parm0 = Missiontime;	// use parm0 as time strafe mode entered (i.e. MODE start time)
 			aip->submode = AIS_STRAFE_AVOID;
@@ -1144,7 +1140,7 @@ void ai_big_chase()
 	//		 TODO: investigate why ships fire (and aren't close to hitting ship) when following a path near
 	//				 a big ship
 	if (aip->mode != AIM_EVADE && aip->path_start == -1 ) {
-		ai_big_maybe_fire_weapons(dist_to_enemy, dot_to_enemy, &player_pos, &predicted_enemy_pos, &En_objp->phys_info.vel);
+		ai_big_maybe_fire_weapons(dist_to_enemy, dot_to_enemy);
 	} else {
 		if (flFrametime < 1.0f)
 			aip->time_enemy_in_range *= (1.0f - flFrametime);
@@ -1228,7 +1224,7 @@ void ai_big_attack_get_data(vec3d *enemy_pos, float *dist_to_enemy, float *dot_t
 
 // check to see if Pl_objp has gotten too close to attacking point.. if so, break off by entering
 // AIS_STRAFE_RETREAT
-int ai_big_strafe_maybe_retreat(float  /*dist*/, vec3d *target_pos)
+static int ai_big_strafe_maybe_retreat(vec3d *target_pos)
 {
 	ai_info	*aip;
 	aip = &Ai_info[Ships[Pl_objp->instance].ai_index];
@@ -1298,12 +1294,12 @@ void ai_big_strafe_attack()
 	}
 
 	ai_big_attack_get_data(&target_pos, &target_dist, &target_dot);
-	if ( ai_big_strafe_maybe_retreat(target_dist, &target_pos) )
+	if ( ai_big_strafe_maybe_retreat(&target_pos) )
 		return;
 
 	if (aip->ai_flags[AI::AI_Flags::Kamikaze]) {
 		if (target_dist < 1200.0f) {
-			ai_turn_towards_vector(&target_pos, Pl_objp, flFrametime, Ship_info[Ships[Pl_objp->instance].ship_info_index].srotation_time, NULL, NULL, 0.0f, 0);
+			ai_turn_towards_vector(&target_pos, Pl_objp, Ship_info[Ships[Pl_objp->instance].ship_info_index].srotation_time, NULL, NULL, 0.0f, 0);
 			accelerate_ship(aip, 1.0f);
 			if ((target_dist < 400.0f) && ai_maybe_fire_afterburner(Pl_objp, aip)) {
 				afterburners_start(Pl_objp);
@@ -1347,7 +1343,7 @@ void ai_big_strafe_attack()
 	}
 
 	// maybe fire weapons at target
-	ai_big_maybe_fire_weapons(target_dist, target_dot, &Pl_objp->pos, &En_objp->pos, &En_objp->phys_info.vel);
+	ai_big_maybe_fire_weapons(target_dist, target_dot);
 	turn_towards_point(Pl_objp, &target_pos, NULL, 0.0f);
 
 	fix last_hit = Missiontime - aip->last_hit_time;
@@ -1493,7 +1489,7 @@ void ai_big_strafe_glide_attack()
 		vm_vec_sub2(&target_pos, &En_objp->pos);
 
 		turn_towards_point(Pl_objp, &target_pos, NULL, 0.0f);
-		ai_big_maybe_fire_weapons(target_dist, target_dot, &Pl_objp->pos, &En_objp->pos, &En_objp->phys_info.vel);
+		ai_big_maybe_fire_weapons(target_dist, target_dot);
 	}
 
 	// if haven't been hit in quite a while, leave strafe mode
@@ -1517,7 +1513,7 @@ void ai_big_strafe_avoid()
 	mode_time = Missiontime - aip->submode_start_time;
 
 	ai_big_attack_get_data(&target_pos, &target_dist, &target_dot);
-	if ( ai_big_strafe_maybe_retreat(target_dist, &target_pos) )
+	if ( ai_big_strafe_maybe_retreat(&target_pos) )
 		return;
 
 	if ( mode_time > fl2f(0.5)) {
@@ -1704,7 +1700,7 @@ void ai_big_strafe()
 //
 // Check if weapon_objnum was fired by Pl_objp's target, and whether Pl_objp's target is a big ship, if
 // so, enter AIM_STRAFE
-int ai_big_maybe_enter_strafe_mode(object *pl_objp, int weapon_objnum, int  /*consider_target_only*/)
+int ai_big_maybe_enter_strafe_mode(object *pl_objp, int weapon_objnum)
 {
 	ai_info		*aip;
 	ship_info	*sip;
@@ -1749,16 +1745,12 @@ int ai_big_maybe_enter_strafe_mode(object *pl_objp, int weapon_objnum, int  /*co
 	// Maybe the ship which fired the weapon isn't the current target
 	if ( OBJ_INDEX(parent_objp) != aip->target_objnum ) {
 
-//JAS IMPOSSIBLE		if (1) { // consider_target_only ) {
-//JAS IMPOSSIBLE			return 0;
-//JAS IMPOSSIBLE		} else {
 			// switch targets
 			sip = &Ship_info[Ships[parent_objp->instance].ship_info_index];
 			if ( !(sip->is_big_or_huge()) || (sip->flags[Ship::Info_Flags::Transport]) ) {
 				return 0;
 			}
 			set_target_objnum(aip, OBJ_INDEX(parent_objp));
-//JAS IMPOSSIBLE		}
 	}
 
 	ai_big_strafe_maybe_attack_turret(pl_objp, weapon_objp);
