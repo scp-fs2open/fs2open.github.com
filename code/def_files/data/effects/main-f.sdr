@@ -106,11 +106,6 @@ in VertexOutput {
 #ifdef FLAG_FOG
 	float fogDist;
 #endif
-#ifdef WORKAROUND_CLIPPING_PLANES
- #ifdef FLAG_TRANSFORM
-	float notVisible;
- #endif
-#endif
 	vec4 position;
 	vec3 normal;
 	vec4 texCoord;
@@ -215,11 +210,6 @@ vec3 CalculateLighting(vec3 normal, vec3 diffuseMaterial, vec3 specularMaterial,
 
 void main()
 {
-#ifdef WORKAROUND_CLIPPING_PLANES
- #ifdef FLAG_TRANSFORM
-	if(vertIn.notVisible >= 0.9) { discard; }
- #endif
-#endif
 #ifdef FLAG_SHADOW_MAP
 	// need depth and depth squared for variance shadow maps
 	fragOut0 = vec4(vertIn.position.z, vertIn.position.z * vertIn.position.z * VARIANCE_SHADOW_SCALE_INV, 0.0, 1.0);

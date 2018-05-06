@@ -342,10 +342,6 @@ static SCP_string opengl_shader_get_header(shader_type type_id, int flags, bool 
 
 	sflags << "#version " << GLSL_version << " core\n";
 
-	if (GL_workaround_clipping_planes) {
-		sflags << "#define WORKAROUND_CLIPPING_PLANES\n";
-	}
-
 	if (Detail.lighting < 3) {
 		sflags << "#define FLAG_LIGHT_MODEL_BLINN_PHONG\n";
 	}

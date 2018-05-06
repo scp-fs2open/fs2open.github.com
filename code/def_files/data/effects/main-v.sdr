@@ -113,14 +113,14 @@ out VertexOutput {
 #ifdef FLAG_FOG
 	float fogDist;
 #endif
-#ifdef WORKAROUND_CLIPPING_PLANES
- #ifdef FLAG_TRANSFORM
-	float notVisible;
- #endif
-#endif
 #ifdef FLAG_SHADOW_MAP
  #if !defined(GL_ARB_gpu_shader5)
 	float instance;
+ #endif
+ #ifdef FLAG_TRANSFORM
+	// This flag is needed to let the geometry shader know that it doesn't need to apply the
+	// shadow projection to gl_Position
+	float clipModel;
  #endif
 #else
 	vec4 position;
@@ -152,19 +152,9 @@ void main()
 	vec4 texCoord;
 	mat4 orient = mat4(1.0);
 	mat4 scale = mat4(1.0);
-#ifdef WORKAROUND_CLIPPING_PLANES
- #ifdef FLAG_TRANSFORM
+#ifdef FLAG_TRANSFORM
 	bool clipModel;
 	getModelTransform(orient, clipModel, int(vertModelID), buffer_matrix_offset);
-	vertOut.notVisible = clipModel ? 1.0 : 0.0;
- #endif
-#else
- #ifdef FLAG_TRANSFORM
-	bool clipModel;
-	getModelTransform(orient, clipModel, int(vertModelID), buffer_matrix_offset);
- #else
-	bool clipModel = false;
- #endif
 #endif
 	texCoord = textureMatrix * vertTexCoord;
 	vec4 vertex = vertPosition;
@@ -210,31 +200,28 @@ void main()
  #ifdef FLAG_FOG
 	vertOut.fogDist = clamp((gl_Position.z - fogStart) * 0.75 * fogScale, 0.0, 1.0);
  #endif
-#ifdef WORKAROUND_CLIPPING_PLANES
-	if(use_clip_plane) {
- 		gl_ClipDistance[0] = dot(clip_equation, modelMatrix * orient * vertex);
- 	} else {
-		gl_ClipDistance[0] = 1.0;
- 	}
-#else
- #ifdef FLAG_CLIP
+#ifdef FLAG_TRANSFORM
 	if (clipModel) {
-		gl_ClipDistance[0] = -1.0;
-	} else if(use_clip_plane) {
+		// Clip this model by moving all vertices outside the clip volume
+		gl_Position = vec4(vec3(-2.0), 1.0);
+	}
+ #ifdef FLAG_SHADOW_MAP
+	vertOut.clipModel = clipModel ? 1.0 : 0.0;
+ #endif
+#endif
+#ifdef FLAG_CLIP
+	if(use_clip_plane) {
 		gl_ClipDistance[0] = dot(clip_equation, modelMatrix * orient * vertex);
 	} else {
 		gl_ClipDistance[0] = 1.0;
 	}
- #elif defined(FLAG_TRANSFORM)
-	gl_ClipDistance[0] = clipModel ? -1.0 : 1.0;
- #endif
 #endif
- #ifndef FLAG_SHADOW_MAP
+#ifndef FLAG_SHADOW_MAP
 	vertOut.position = position;
 	vertOut.normal = normal;
 	vertOut.texCoord = texCoord;
- #else
+#else
 	vertOut.normal = normal;
 	vertOut.texCoord = texCoord;
- #endif
+#endif
 }
