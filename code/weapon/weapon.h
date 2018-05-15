@@ -448,6 +448,11 @@ typedef struct weapon_info {
 	int				targeting_priorities[32];
 	int				num_targeting_priorities;
 
+	// Optional weapon failures
+	float failure_rate;
+	char failure_sub_name[NAME_LENGTH];
+	int failure_sub;
+
 	// the optional pattern of weapons that this weapon will fire
 	size_t			num_substitution_patterns;
 	int				weapon_substitution_pattern[MAX_SUBSTITUTION_PATTERNS]; //weapon_indexes
