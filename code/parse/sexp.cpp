@@ -18319,7 +18319,10 @@ int sexp_is_in_turret_fov(int node)
 
 	// find the turret
 	turret_subsys = ship_get_subsys(&Ships[turret_shipnum], turret_subsys_name);
-	Assertion(turret_subsys != nullptr, "Couldn't find turret subsystem '%s' on ship '%s' in sexp_is_in_turret_fov!", turret_subsys_name, turret_ship_name);
+	if (turret_subsys == nullptr) {
+		Warning(LOCATION, "Couldn't find turret subsystem '%s' on ship '%s' in sexp_is_in_turret_fov!", turret_subsys_name, turret_ship_name);
+		return SEXP_FALSE;
+	}
 
 	// find out where the turret is
 	ship_get_global_turret_info(turret_objp, turret_subsys->system_info, &tpos, &tvec);
