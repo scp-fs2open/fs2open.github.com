@@ -508,6 +508,7 @@ SCP_vector<sexp_oper> Operators = {
 	{ "turret-set-secondary-ammo",		OP_TURRET_SET_SECONDARY_AMMO,			4,	4,			SEXP_ACTION_OPERATOR,	},	// DahBlount
 	{ "turret-get-primary-ammo",		OP_TURRET_GET_PRIMARY_AMMO,				3,	3,			SEXP_INTEGER_OPERATOR,	},	// DahBlount
 	{ "turret-get-secondary-ammo",		OP_TURRET_GET_SECONDARY_AMMO,			3,	3,			SEXP_INTEGER_OPERATOR,	},	// DahBlount
+	{ "is-in-turret-fov",				OP_IS_IN_TURRET_FOV,					3,	4,			SEXP_BOOLEAN_OPERATOR,	},	// Goober5000
 	
 	//Models and Textures Sub-Category
 	{ "change-ship-class",				OP_CHANGE_SHIP_CLASS,					2,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Goober5000
@@ -2048,6 +2049,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 					case OP_IS_AI_CLASS:
 					case OP_MISSILE_LOCKED:
 					case OP_SHIP_SUBSYS_GUARDIAN_THRESHOLD:
+					case OP_IS_IN_TURRET_FOV:
 						ship_index = CDR(CDR(op_node));
 						break;
 
@@ -18280,6 +18282,64 @@ void set_turret_secondary_ammo(ship_subsys *turret, int requested_bank, int requ
 }
 
 // Goober5000
+int sexp_is_in_turret_fov(int node)
+{
+	char *target_ship_name;
+	char *turret_ship_name;
+	char *turret_subsys_name;
+	int target_shipnum, turret_shipnum, range;
+	object *target_objp, *turret_objp;
+	ship_subsys *turret_subsys;
+	vec3d tpos, tvec;
+
+	target_ship_name = CTEXT(node);
+	turret_ship_name = CTEXT(CDR(node));
+	turret_subsys_name = CTEXT(CDDR(node));
+	range = CDDDR(node) >= 0 ? eval_num(CDDDR(node)) : -1;
+
+	if (sexp_query_has_yet_to_arrive(target_ship_name) || sexp_query_has_yet_to_arrive(turret_ship_name))
+		return SEXP_CANT_EVAL;
+
+	// if ship is gone or departed, cannot ever evaluate properly.  Return NAN_FOREVER
+	if (mission_log_get_time(LOG_SHIP_DESTROYED, target_ship_name, NULL, NULL) || mission_log_get_time(LOG_SHIP_DEPARTED, target_ship_name, NULL, NULL) || mission_log_get_time(LOG_SELF_DESTRUCTED, target_ship_name, NULL, NULL)) {
+		return SEXP_NAN_FOREVER;
+	}
+	if (mission_log_get_time(LOG_SHIP_DESTROYED, turret_ship_name, NULL, NULL) || mission_log_get_time(LOG_SHIP_DEPARTED, turret_ship_name, NULL, NULL) || mission_log_get_time(LOG_SELF_DESTRUCTED, turret_ship_name, NULL, NULL)) {
+		return SEXP_NAN_FOREVER;
+	}
+
+	// find the two ships...
+	target_shipnum = ship_name_lookup(target_ship_name);
+	turret_shipnum = ship_name_lookup(turret_ship_name);
+	Assertion(target_shipnum >= 0, "Couldn't find target ship '%s' in sexp_is_in_turret_fov!", target_ship_name);
+	Assertion(turret_shipnum >= 0, "Couldn't find turreted ship '%s' in sexp_is_in_turret_fov!", turret_ship_name);
+
+	// ...and their objects
+	target_objp = &Objects[Ships[target_shipnum].objnum];
+	turret_objp = &Objects[Ships[turret_shipnum].objnum];
+
+	// find the turret
+	turret_subsys = ship_get_subsys(&Ships[turret_shipnum], turret_subsys_name);
+	if (turret_subsys == nullptr) {
+		Warning(LOCATION, "Couldn't find turret subsystem '%s' on ship '%s' in sexp_is_in_turret_fov!", turret_subsys_name, turret_ship_name);
+		return SEXP_FALSE;
+	}
+
+	// find out where the turret is
+	ship_get_global_turret_info(turret_objp, turret_subsys->system_info, &tpos, &tvec);
+
+	// see how far away is the target (this isn't used for a range check, only for vector math)
+	float dist = vm_vec_dist(&target_objp->pos, &tpos);
+
+	// but we can still use it for the range check if we are optionally checking that
+	if (range >= 0 && dist > range)
+		return SEXP_FALSE;
+
+	// perform the check
+	return object_in_turret_fov(target_objp, turret_subsys, &tvec, &tpos, dist) != 0 ? SEXP_TRUE : SEXP_FALSE;
+}
+
+// Goober5000
 void sexp_set_subsys_rotation_lock_free(int node, bool locked)
 {
 	int ship_num;		
@@ -25182,6 +25242,10 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_set_turret_secondary_ammo(node);
 				break;
 
+			case OP_IS_IN_TURRET_FOV:
+				sexp_val = sexp_is_in_turret_fov(node);
+				break;
+
 			default:{
 				// Check if we have a dynamic SEXP with this operator and if there is, execute that
 				auto dynamicSEXP = sexp::get_dynamic_sexp(op_num);
@@ -25807,6 +25871,7 @@ int query_operator_return_type(int op)
 		case OP_IS_DOCKED:
 		case OP_PLAYER_IS_CHEATING_BASTARD:
 		case OP_ARE_SHIP_FLAGS_SET:
+		case OP_IS_IN_TURRET_FOV:
 			return OPR_BOOL;
 
 		case OP_PLUS:
@@ -27950,6 +28015,16 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_SUBSYSTEM;
 			} else {
 				return OPF_NUMBER;
+			}
+
+		// Goober5000
+		case OP_IS_IN_TURRET_FOV:
+			if (argnum == 0 || argnum == 1) {
+				return OPF_SHIP;
+			} else if (argnum == 2) {
+				return OPF_SUBSYSTEM;
+			} else {
+				return OPF_POSITIVE;
 			}
 
 		case OP_GET_NUM_COUNTERMEASURES:
@@ -30219,6 +30294,7 @@ int get_subcategory(int sexp_id)
 		case OP_HAS_PRIMARY_WEAPON:
 		case OP_HAS_SECONDARY_WEAPON:
 		case OP_GET_ETS_VALUE:
+		case OP_IS_IN_TURRET_FOV:
 			return STATUS_SUBCATEGORY_SHIELDS_ENGINES_AND_WEAPONS;
 			
 		case OP_CARGO_KNOWN_DELAY:
@@ -32774,6 +32850,13 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t2: Turret the bank is on\r\n"
 		"\t3: Bank to add ammo to\r\n"
 		"\t4: Amount to add" },
+
+	{ OP_IS_IN_TURRET_FOV, "is-in-turret-fov\r\n"
+		"\tChecks whether the given craft is within the field of view of a turret, and optionally within a specified range.  Takes 3 to 4 arguments...\r\n"
+		"\t1: Ship being targeted\r\n"
+		"\t2: Ship which carries a turret\r\n"
+		"\t3: Turret to check\r\n"
+		"\t4: Range in meters (optional)\r\n" },
 
 	{ OP_SET_ARMOR_TYPE, "set-armor-type\r\n"
 		"\tSets the armor type for a ship or subsystem\r\n"

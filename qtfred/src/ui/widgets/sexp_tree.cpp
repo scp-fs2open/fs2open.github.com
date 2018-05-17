@@ -3325,6 +3325,7 @@ sexp_list_item* sexp_tree::get_listing_opf_subsystem(int parent_node, int arg_in
 	case OP_IS_AI_CLASS:
 	case OP_MISSILE_LOCKED:
 	case OP_SHIP_SUBSYS_GUARDIAN_THRESHOLD:
+	case OP_IS_IN_TURRET_FOV:
 		// iterate to the next field
 		child = tree_nodes[child].next;
 		break;
