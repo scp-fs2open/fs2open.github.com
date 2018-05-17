@@ -4261,8 +4261,9 @@ int sexp_set_bit(int node, bool set_it)
 
 	if (bit_index < 0 || bit_index > 31)
 	{
-		Warning(LOCATION, "Bit index %d out of range!  Must be between 0 and 31.", bit_index);
-		return SEXP_NAN;
+		// out of range, so just return the original value
+		// (we used to warn, but it's more convenient to FREDders to fail gracefully)
+		return val;
 	}
 
 	if (set_it)
@@ -4279,8 +4280,9 @@ int sexp_is_bit_set(int node)
 
 	if (bit_index < 0 || bit_index > 31)
 	{
-		Warning(LOCATION, "Bit index %d out of range!  Must be between 0 and 31.", bit_index);
-		return SEXP_NAN;
+		// out of range, so just return false
+		// (we used to warn, but it's more convenient to FREDders to fail gracefully)
+		return SEXP_FALSE;
 	}
 
 	if (val & (1<<bit_index))
