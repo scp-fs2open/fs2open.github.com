@@ -261,14 +261,14 @@ extern int Global_error_count;
 // Disabling this functionality is dangerous, crazy values can run rampent unchecked and the longer its disabled
 // the more likely you are to have problems getting it working again.
 #if defined(NDEBUG)
-#	define Assert(expr) do { ASSUME(expr); } while (0)
+#	define Assert(expr) do { ASSUME(expr); } while (false)
 #else
 #	define Assert(expr) do {\
 		if (!(expr)) {\
 			os::dialogs::AssertMessage(#expr,__FILE__,__LINE__);\
 		}\
 		ASSUME( expr );\
-	} while (0)
+	} while (false)
 #endif
 /*******************NEVER COMMENT Assert ************************************************/
 
