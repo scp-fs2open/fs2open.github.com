@@ -86,7 +86,7 @@ matrix:
                       - g++-7
                       - *global_deps
         - os: linux
-          env: CONFIGURATION="Debug" CC=clang-4.0 CXX=clang++-4.0 CMAKE_OPTIONS="-DENABLE_CLANG_TIDY=ON -DCLANG_TIDY_EXE=/usr/bin/clang-tidy-4.0"
+          env: CONFIGURATION="Debug" CC=clang-4.0 CXX=clang++-4.0 CMAKE_OPTIONS="-DCMAKE_EXPORT_COMPILE_COMMANDS=ON"
           addons:
               apt:
                   sources:
@@ -98,6 +98,9 @@ matrix:
                       - clang-4.0
                       - clang-tidy-4.0
                       - libc++-dev
+          script:
+            - ./ci/travis/script.sh
+            - ./ci/travis/clang_tidy.sh
         - os: osx
           env: CONFIGURATION="Debug"
 

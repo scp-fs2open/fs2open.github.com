@@ -1,7 +1,8 @@
 ---
 Checks: "-*,\
-modernize-use-override,\
-modernize-deprecated-headers,\
+modernize-*,\
+-modernize-raw-string-literal,\
+-modernize-use-using,\
 performance-*,\
 -performance-type-promotion-in-math-fn,\
 misc-*,\
@@ -15,5 +16,7 @@ AnalyzeTemporaryDtors: false
 CheckOptions:
   - key:          'misc-assert-side-effect.AssertMacros'
     value:        'assert,Assert,Assertion'
+  - key:          'modernize-use-emplace.ContainersWithPushBack'
+    value:        'std::vector;std::deque;std::list;SCP_vector;SCP_deque;SCP_list'
 ...
 
