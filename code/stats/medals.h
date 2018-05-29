@@ -29,6 +29,7 @@ class medal_stuff
 {
 public:
 	char	name[NAME_LENGTH];
+	SCP_string alt_name;
 	char	bitmap[MAX_FILENAME_LEN];
 	char	debrief_bitmap[MAX_FILENAME_LEN];
 	int	num_versions;
@@ -45,6 +46,8 @@ public:
 
 	medal_stuff(const medal_stuff &m);
 	medal_stuff& operator=(const medal_stuff &m);
+
+	const char* get_display_string();
 
 private:
 	void clone(const medal_stuff &m);

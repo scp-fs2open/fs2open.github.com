@@ -224,6 +224,13 @@ medal_stuff& medal_stuff::operator=(const medal_stuff &m)
 
 	return *this;
 }
+const char* medal_stuff::get_display_string() {
+	if (!alt_name.empty()) {
+		return alt_name.c_str();
+	} else {
+		return name;
+	}
+}
 
 void parse_medal_tbl()
 {
@@ -310,6 +317,10 @@ void parse_medal_tbl()
 			// is this rank?  if so, save it
 			if (!stricmp(temp_medal.name, "Rank"))
 				Rank_medal_index = Num_medals;
+
+			if (optional_string("$Alt Name:")) {
+				stuff_string(temp_medal.alt_name, F_NAME);
+			}
 
 			required_string("$Bitmap:");
 			stuff_string(temp_medal.bitmap, F_NAME, MAX_FILENAME_LEN);
@@ -600,7 +611,7 @@ void medal_main_init(player *pl, int mode)
 		Medals_window.set_mask_bmap(bitmap_buf);
 }
 
-void blit_label(char *label, int num)
+void blit_label(const char *label, int num)
 {
 	int x, y, sw;
 	char text[256];
@@ -736,7 +747,7 @@ int medal_main_do()
 
 		default:
 			if (Player_score->medal_counts[region] > 0) {
-				blit_label(Medals[region].name, Player_score->medal_counts[region]);
+				blit_label(Medals[region].get_display_string(), Player_score->medal_counts[region]);
 			}
 			break;
 	} // end switch
