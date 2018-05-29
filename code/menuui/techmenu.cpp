@@ -224,7 +224,7 @@ int Techroom_overlay_id;
 // out entry data struct & vars
 typedef struct {
 	int	index;		// index into the master table that its in (ie Ship_info[])
-	char* name;			// ptr to name string
+	const char* name;			// ptr to name string
 	char* desc;			// ptr to description string
 	char tech_anim_filename[MAX_FILENAME_LEN];	//duh
 	generic_anim animation;	// animation info
@@ -855,7 +855,7 @@ void techroom_change_tab(int num)
 						Weapon_list[Weapon_list_size].index = i;
 						Weapon_list[Weapon_list_size].desc = Weapon_info[i].tech_desc;
 						Weapon_list[Weapon_list_size].has_anim = 1;
-						Weapon_list[Weapon_list_size].name = *Weapon_info[i].tech_title ? Weapon_info[i].tech_title : Weapon_info[i].name;
+						Weapon_list[Weapon_list_size].name = *Weapon_info[i].tech_title ? Weapon_info[i].tech_title : Weapon_info[i].get_display_string();
 						Weapon_list[Weapon_list_size].bitmap = -1;
 						Weapon_list[Weapon_list_size].animation.num_frames = 0;
 						Weapon_list[Weapon_list_size].model_num = -1;

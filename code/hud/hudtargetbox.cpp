@@ -1008,7 +1008,7 @@ void HudGaugeTargetBox::renderTargetWeapon(object *target_objp)
 	setGaugeColor();
 
 	// print out the weapon class name
-	sprintf( outstr,"%s", target_wip->name );
+	sprintf( outstr,"%s", target_wip->get_display_string() );
 	gr_get_string_size(&w,&h,outstr);
 
 	// drop name past the # sign
@@ -2158,7 +2158,7 @@ void HudGaugeTargetBox::showTargetData(float  /*frametime*/)
 		gr_printf_no_resize(sx,sy,"%s", outstr);
 		sy += dy;
 		for ( i = 0; i < swp->num_primary_banks; i++ ) {
-			sprintf(outstr,"%d. %s", i+1, Weapon_info[swp->primary_bank_weapons[i]].name);
+			sprintf(outstr,"%d. %s", i+1, Weapon_info[swp->primary_bank_weapons[i]].get_display_string());
 			gr_printf_no_resize(sx,sy,"%s", outstr);
 			sy += dy;
 		}
@@ -2168,7 +2168,7 @@ void HudGaugeTargetBox::showTargetData(float  /*frametime*/)
 		gr_printf_no_resize(sx,sy,"%s", outstr);
 		sy += dy;
 		for ( i = 0; i < swp->num_secondary_banks; i++ ) {
-			sprintf(outstr,"%d. %s", i+1, Weapon_info[swp->secondary_bank_weapons[i]].name);
+			sprintf(outstr,"%d. %s", i+1, Weapon_info[swp->secondary_bank_weapons[i]].get_display_string());
 			gr_printf_no_resize(sx,sy,"%s", outstr);
 			sy += dy;
 		}

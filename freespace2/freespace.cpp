@@ -2895,7 +2895,7 @@ void say_view_target()
 				}
 				break;
 			case OBJ_WEAPON:
-				strcpy_s(view_target_name, Weapon_info[Weapons[Objects[Player_ai->target_objnum].instance].weapon_info_index].name);
+				strcpy_s(view_target_name, Weapon_info[Weapons[Objects[Player_ai->target_objnum].instance].weapon_info_index].get_display_string());
 				Viewer_mode &= ~VM_OTHER_SHIP;
 				break;
 			case OBJ_JUMP_NODE: {

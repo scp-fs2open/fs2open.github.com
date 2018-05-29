@@ -1898,7 +1898,7 @@ void commit_pressed()
 			num_required_weapons++;
 			if (num_required_weapons > 1)
 				weapon_list.append(1, EOLN);
-			weapon_list.append(Weapon_info[j].name);
+			weapon_list.append(Weapon_info[j].get_display_string());
 
 			// see if it's carried by any ship
 			if (is_weapon_carried(j))

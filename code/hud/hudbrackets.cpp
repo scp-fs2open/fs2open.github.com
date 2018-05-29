@@ -1013,7 +1013,7 @@ void HudGaugeBrackets::renderBoundingBrackets(int x1, int y1, int x2, int y2, in
 				tinfo_name = XSTR("Debris", 348);
 				break;
 			case OBJ_WEAPON:
-				strcpy_s(temp_name, Weapon_info[Weapons[t_objp->instance].weapon_info_index].name);
+				strcpy_s(temp_name, Weapon_info[Weapons[t_objp->instance].weapon_info_index].get_display_name());
 				end_string_at_first_hash_symbol(temp_name);
 				tinfo_name = temp_name;
 				break;

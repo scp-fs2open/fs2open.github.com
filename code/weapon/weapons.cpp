@@ -48,6 +48,8 @@
 #include "particle/effects/ParticleEmitterEffect.h"
 #include "tracing/Monitor.h"
 #include "tracing/tracing.h"
+#include "weapon.h"
+
 
 // Since SSMs are parsed after weapons, if we want to allow SSM strikes to be specified by name, we need to store those names until after SSMs are parsed.
 typedef struct delayed_ssm_data {
@@ -7503,6 +7505,7 @@ void weapon_info::reset()
 	this->render_type = WRT_NONE;
 
 	memset(this->name, 0, sizeof(this->name));
+	memset(this->alt_name, 0, sizeof(this->alt_name));
 	memset(this->title, 0, sizeof(this->title));
 	this->desc = NULL;
 
@@ -7775,4 +7778,11 @@ void weapon_info::reset()
 
 	// Reset using default constructor
 	this->impact_decal = decals::creation_info();
+}
+const char* weapon_info::get_display_name() {
+	if (alt_name[0] != '\0') {
+		return alt_name;
+	} else {
+		return name;
+	}
 }

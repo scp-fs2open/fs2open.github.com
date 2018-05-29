@@ -1780,7 +1780,7 @@ void player_generate_killer_weapon_name(int weapon_info_index, int killer_specie
 #else
 	if (killer_species == Ship_info[Player_ship->ship_info_index].species) {
 #endif
-		strcpy(weapon_name, Weapon_info[weapon_info_index].name);
+		strcpy(weapon_name, Weapon_info[weapon_info_index].get_display_string());
 	} else {
 		if ( Weapon_info[weapon_info_index].subtype == WP_MISSILE ) {
 			strcpy(weapon_name, XSTR( "missile", 90));

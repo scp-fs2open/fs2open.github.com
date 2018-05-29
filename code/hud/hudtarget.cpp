@@ -5626,10 +5626,11 @@ void HudGaugeWeaponEnergy::render(float  /*frametime*/)
 				setGaugeColor(HUD_C_NORMAL);
 			}
 			if(gr_screen.max_w_unscaled == 640) {
+				strcpy_s(shortened_name, Weapon_info[Player_ship->weapons.primary_bank_weapons[x]].get_display_string());
 				font::force_fit_string(shortened_name, NAME_LENGTH, 55);
 				renderString(currentx, currenty, shortened_name);
 			} else {
-				renderString(currentx, currenty, Weapon_info[Player_ship->weapons.primary_bank_weapons[x]].name);
+				renderString(currentx, currenty, Weapon_info[Player_ship->weapons.primary_bank_weapons[x]].get_display_string());
 			}
 
 			//Next 'line'
@@ -5747,7 +5748,7 @@ void HudGaugeWeaponEnergy::render(float  /*frametime*/)
 				// show all primary banks
 				for ( i = 0; i < Player_ship->weapons.num_primary_banks; i++ ) {
 					wip = &Weapon_info[sw->primary_bank_weapons[i]];
-					strcpy_s(buf, (wip->alt_name[0]) ? wip->alt_name : wip->name);
+					strcpy_s(buf, wip->get_display_name());
 
 					if ( Armed_alignment ) {
 						gr_get_string_size(&w, &h, buf);
@@ -5761,7 +5762,7 @@ void HudGaugeWeaponEnergy::render(float  /*frametime*/)
 				// just show the current armed bank
 				i = Player_ship->weapons.current_primary_bank;
 				wip = &Weapon_info[sw->primary_bank_weapons[i]];
-				strcpy_s(buf, (wip->alt_name[0]) ? wip->alt_name : wip->name);
+				strcpy_s(buf, wip->get_display_name());
 
 				if ( Armed_alignment ) {
 					gr_get_string_size(&w, &h, buf);
@@ -6051,7 +6052,7 @@ void HudGaugeWeapons::render(float  /*frametime*/)
 				renderBitmap(primary_last[ballistic_hud_index].first_frame, position[0] + frame_offset_x[ballistic_hud_index], y);
 		}
 
-		strcpy_s(name, (Weapon_info[sw->primary_bank_weapons[i]].alt_name[0]) ? Weapon_info[sw->primary_bank_weapons[i]].alt_name : Weapon_info[sw->primary_bank_weapons[i]].name);
+		strcpy_s(name, Weapon_info[sw->primary_bank_weapons[i]].get_display_name());
 		if (Lcl_gr) {
 			lcl_translate_wep_name_gr(name);
 		}
@@ -6123,7 +6124,7 @@ void HudGaugeWeapons::render(float  /*frametime*/)
 		if(!stricmp(wip->name,"cluster bomb")){
 			strcpy_s(weapon_name, NOX("Cluster"));
 		} else {
-			strcpy_s(weapon_name, (wip->alt_name[0]) ? wip->alt_name : wip->name);
+			strcpy_s(weapon_name, wip->get_display_name());
 		}
 
 		// get rid of #
@@ -6684,7 +6685,7 @@ void HudGaugeWarheadCount::render(float  /*frametime*/)
 	}
 
 	char weapon_name[NAME_LENGTH + 10];
-	strcpy_s(weapon_name, (wip->alt_name[0]) ? wip->alt_name : wip->name);
+	strcpy_s(weapon_name, wip->get_display_name());
 	end_string_at_first_hash_symbol(weapon_name);
 
 	setGaugeColor();
@@ -6921,7 +6922,7 @@ void HudGaugePrimaryWeapons::render(float  /*frametime*/)
 
 		renderBitmap(_background_entry.first_frame, position[0], position[1] + bg_y_offset);
 
-		strcpy_s(name, (Weapon_info[sw->primary_bank_weapons[i]].alt_name[0]) ? Weapon_info[sw->primary_bank_weapons[i]].alt_name : Weapon_info[sw->primary_bank_weapons[i]].name);
+		strcpy_s(name, Weapon_info[sw->primary_bank_weapons[i]].get_display_name());
 
 		if (Lcl_gr) {
 			lcl_translate_wep_name_gr(name);
@@ -7040,7 +7041,7 @@ void HudGaugeSecondaryWeapons::render(float  /*frametime*/)
 
 		maybeFlashWeapon(num_primaries+i);
 
-		strcpy_s(weapon_name, (wip->alt_name[0]) ? wip->alt_name : wip->name);
+		strcpy_s(weapon_name, wip->get_display_name());
 		end_string_at_first_hash_symbol(weapon_name);
 
 		if ( sw->current_secondary_bank == i ) {
