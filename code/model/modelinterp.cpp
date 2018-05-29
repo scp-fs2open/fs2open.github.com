@@ -1333,6 +1333,14 @@ void submodel_get_two_random_points_better(int model_num, int submodel_num, vec3
 			submodel_num = pm->detail[0];
 		}
 
+		// the Shivan Comm Node does not have a collision tree, for one
+		if (pm->submodel[submodel_num].collision_tree_index < 0) {
+			nprintf(("Model", "In submodel_get_two_random_points_better(), model %s does not have a collision tree!  Falling back to submodel_get_two_random_points().\n", pm->filename));
+
+			submodel_get_two_random_points(model_num, submodel_num, v1, v2);
+			return;
+		}
+
 		bsp_collision_tree *tree = model_get_bsp_collision_tree(pm->submodel[submodel_num].collision_tree_index);
 
 		int nv = tree->n_verts;
