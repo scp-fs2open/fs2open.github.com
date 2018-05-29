@@ -2073,7 +2073,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 						ship_index = CDDDDDR(CDDDDR(op_node));
 						break;
 
-					default :
+					default:
 						ship_index = CDR(op_node);
 						break;
 				}

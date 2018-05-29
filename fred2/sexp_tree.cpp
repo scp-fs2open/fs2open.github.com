@@ -4816,6 +4816,7 @@ sexp_list_item *sexp_tree::get_listing_opf_subsystem(int parent_node, int arg_in
 			{
 				special_subsys = OPS_STRENGTH;
 
+				// iterate to the next field two times
 				child = tree_nodes[child].next;
 				Assert(child >= 0);			
 				child = tree_nodes[child].next;			
@@ -4845,6 +4846,23 @@ sexp_list_item *sexp_tree::get_listing_opf_subsystem(int parent_node, int arg_in
 
 		// this sexp checks the subsystem of the *fourth entry* on the list
 		case OP_QUERY_ORDERS:
+			// iterate to the next field three times
+			child = tree_nodes[child].next;
+			Assert(child >= 0);
+			child = tree_nodes[child].next;
+			Assert(child >= 0);
+			child = tree_nodes[child].next;
+			break;
+
+		// this sexp checks the subsystem of the *seventh entry* on the list
+		case OP_BEAM_FLOATING_FIRE:
+			// iterate to the next field six times
+			child = tree_nodes[child].next;
+			Assert(child >= 0);
+			child = tree_nodes[child].next;
+			Assert(child >= 0);
+			child = tree_nodes[child].next;
+			Assert(child >= 0);
 			child = tree_nodes[child].next;
 			Assert(child >= 0);
 			child = tree_nodes[child].next;
