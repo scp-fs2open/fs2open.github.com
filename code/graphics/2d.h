@@ -942,67 +942,67 @@ void gr_shield_icon(coord2d coords[6], const int resize_mode = GR_RESIZE_FULL);
 
 
 // Here be the bitmap functions
-#define gr_bm_free_data				GR_CALL(*gr_screen.gf_bm_free_data)
-#define gr_bm_create				GR_CALL(*gr_screen.gf_bm_create)
-#define gr_bm_init					GR_CALL(*gr_screen.gf_bm_init)
-#define gr_bm_page_in_start			GR_CALL(*gr_screen.gf_bm_page_in_start)
-#define gr_bm_data					GR_CALL(*gr_screen.gf_bm_data)
+#define gr_bm_free_data				GR_CALL(gr_screen.gf_bm_free_data)
+#define gr_bm_create				GR_CALL(gr_screen.gf_bm_create)
+#define gr_bm_init					GR_CALL(gr_screen.gf_bm_init)
+#define gr_bm_page_in_start			GR_CALL(gr_screen.gf_bm_page_in_start)
+#define gr_bm_data					GR_CALL(gr_screen.gf_bm_data)
 
-#define gr_bm_make_render_target					GR_CALL(*gr_screen.gf_bm_make_render_target)
+#define gr_bm_make_render_target					GR_CALL(gr_screen.gf_bm_make_render_target)
 
 __inline int gr_bm_set_render_target(int n, int face = -1)
 {
 	return (*gr_screen.gf_bm_set_render_target)(n, face);
 }
 
-#define gr_set_texture_addressing					 GR_CALL(*gr_screen.gf_set_texture_addressing)
+#define gr_set_texture_addressing					 GR_CALL(gr_screen.gf_set_texture_addressing)
 
 inline int gr_create_buffer(BufferType type, BufferUsageHint usage)
 {
 	return (*gr_screen.gf_create_buffer)(type, usage);
 }
 
-#define gr_delete_buffer				GR_CALL(*gr_screen.gf_delete_buffer)
-#define gr_update_buffer_data			GR_CALL(*gr_screen.gf_update_buffer_data)
-#define gr_update_buffer_data_offset	GR_CALL(*gr_screen.gf_update_buffer_data_offset)
-#define gr_update_transform_buffer		GR_CALL(*gr_screen.gf_update_transform_buffer)
+#define gr_delete_buffer				GR_CALL(gr_screen.gf_delete_buffer)
+#define gr_update_buffer_data			GR_CALL(gr_screen.gf_update_buffer_data)
+#define gr_update_buffer_data_offset	GR_CALL(gr_screen.gf_update_buffer_data_offset)
+#define gr_update_transform_buffer		GR_CALL(gr_screen.gf_update_transform_buffer)
 
-#define gr_scene_texture_begin			GR_CALL(*gr_screen.gf_scene_texture_begin)
-#define gr_scene_texture_end			GR_CALL(*gr_screen.gf_scene_texture_end)
-#define gr_copy_effect_texture			GR_CALL(*gr_screen.gf_copy_effect_texture)
+#define gr_scene_texture_begin			GR_CALL(gr_screen.gf_scene_texture_begin)
+#define gr_scene_texture_end			GR_CALL(gr_screen.gf_scene_texture_end)
+#define gr_copy_effect_texture			GR_CALL(gr_screen.gf_copy_effect_texture)
 
-#define gr_post_process_set_effect		GR_CALL(*gr_screen.gf_post_process_set_effect)
-#define gr_post_process_set_defaults	GR_CALL(*gr_screen.gf_post_process_set_defaults)
-#define gr_post_process_begin			GR_CALL(*gr_screen.gf_post_process_begin)
-#define gr_post_process_end				GR_CALL(*gr_screen.gf_post_process_end)
-#define gr_post_process_save_zbuffer	GR_CALL(*gr_screen.gf_post_process_save_zbuffer)
+#define gr_post_process_set_effect		GR_CALL(gr_screen.gf_post_process_set_effect)
+#define gr_post_process_set_defaults	GR_CALL(gr_screen.gf_post_process_set_defaults)
+#define gr_post_process_begin			GR_CALL(gr_screen.gf_post_process_begin)
+#define gr_post_process_end				GR_CALL(gr_screen.gf_post_process_end)
+#define gr_post_process_save_zbuffer	GR_CALL(gr_screen.gf_post_process_save_zbuffer)
 inline void gr_post_process_restore_zbuffer() {
 	gr_screen.gf_post_process_restore_zbuffer();
 }
 
-#define gr_deferred_lighting_begin		GR_CALL(*gr_screen.gf_deferred_lighting_begin)
-#define gr_deferred_lighting_end		GR_CALL(*gr_screen.gf_deferred_lighting_end)
-#define gr_deferred_lighting_finish		GR_CALL(*gr_screen.gf_deferred_lighting_finish)
+#define gr_deferred_lighting_begin		GR_CALL(gr_screen.gf_deferred_lighting_begin)
+#define gr_deferred_lighting_end		GR_CALL(gr_screen.gf_deferred_lighting_end)
+#define gr_deferred_lighting_finish		GR_CALL(gr_screen.gf_deferred_lighting_finish)
 
-#define	gr_zbias						GR_CALL(*gr_screen.gf_zbias)
-#define	gr_set_fill_mode				GR_CALL(*gr_screen.gf_set_fill_mode)
+#define	gr_zbias						GR_CALL(gr_screen.gf_zbias)
+#define	gr_set_fill_mode				GR_CALL(gr_screen.gf_set_fill_mode)
 
-#define gr_set_line_width				GR_CALL(*gr_screen.gf_set_line_width)
+#define gr_set_line_width				GR_CALL(gr_screen.gf_set_line_width)
 
-#define gr_sphere						GR_CALL(*gr_screen.gf_sphere)
+#define gr_sphere						GR_CALL(gr_screen.gf_sphere)
 
-#define gr_maybe_create_shader			GR_CALL(*gr_screen.gf_maybe_create_shader)
-#define gr_recompile_all_shaders		GR_CALL(*gr_screen.gf_recompile_all_shaders)
-#define gr_set_animated_effect			GR_CALL(*gr_screen.gf_set_animated_effect)
+#define gr_maybe_create_shader			GR_CALL(gr_screen.gf_maybe_create_shader)
+#define gr_recompile_all_shaders		GR_CALL(gr_screen.gf_recompile_all_shaders)
+#define gr_set_animated_effect			GR_CALL(gr_screen.gf_set_animated_effect)
 
-#define gr_clear_states					GR_CALL(*gr_screen.gf_clear_states)
+#define gr_clear_states					GR_CALL(gr_screen.gf_clear_states)
 
-#define gr_update_texture				GR_CALL(*gr_screen.gf_update_texture)
-#define gr_get_bitmap_from_texture		GR_CALL(*gr_screen.gf_get_bitmap_from_texture)
+#define gr_update_texture				GR_CALL(gr_screen.gf_update_texture)
+#define gr_get_bitmap_from_texture		GR_CALL(gr_screen.gf_get_bitmap_from_texture)
 
-#define gr_shadow_map_start				GR_CALL(*gr_screen.gf_shadow_map_start)
-#define gr_shadow_map_end				GR_CALL(*gr_screen.gf_shadow_map_end)
-#define gr_render_shield_impact			GR_CALL(*gr_screen.gf_render_shield_impact)
+#define gr_shadow_map_start				GR_CALL(gr_screen.gf_shadow_map_start)
+#define gr_shadow_map_end				GR_CALL(gr_screen.gf_shadow_map_end)
+#define gr_render_shield_impact			GR_CALL(gr_screen.gf_render_shield_impact)
 
 __inline void gr_render_primitives(material* material_info, primitive_type prim_type, vertex_layout* layout, int vert_offset, int n_verts, int buffer_handle = -1, size_t buffer_offset = 0)
 {
