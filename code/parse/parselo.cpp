@@ -3521,7 +3521,7 @@ int split_str(const char *src, int max_pixel_w, int *n_chars, const char **p_str
 	// as a line splitting point if necessary
 	unicode::codepoint_range range(src);
 	auto end_iter = std::end(range);
-	unicode::text_iterator iter = std::begin(range);
+	auto iter = std::begin(range);
 	for (; iter != end_iter; ++iter) {
 		auto cp = *iter;
 
@@ -3593,7 +3593,7 @@ int split_str(const char *src, int max_pixel_w, int *n_chars, const char **p_str
 
 			if (breakpoint) {
 				end = breakpoint;
-				iter = unicode::text_iterator(breakpoint, src);
+				iter = unicode::text_iterator(breakpoint, src, src + strlen(src));
 
 			} else {
 				end = iter.pos();  // force a split here since to whitespace
@@ -3646,7 +3646,7 @@ int split_str(const char *src, int max_pixel_w, SCP_vector<int> &n_chars, SCP_ve
 	// as a line splitting point if necessary
 	unicode::codepoint_range range(src);
 	auto end_iter = std::end(range);
-	unicode::text_iterator iter = std::begin(range);
+	auto iter = std::begin(range);
 	for (; iter != end_iter; ++iter) {
 		auto cp = *iter;
 
@@ -3716,7 +3716,7 @@ int split_str(const char *src, int max_pixel_w, SCP_vector<int> &n_chars, SCP_ve
 
 			if (breakpoint) {
 				end = breakpoint;
-				iter = unicode::text_iterator(breakpoint, src);
+				iter = unicode::text_iterator(breakpoint, src, src + strlen(src));
 
 			} else {
 				end = iter.pos();  // force a split here since to whitespace

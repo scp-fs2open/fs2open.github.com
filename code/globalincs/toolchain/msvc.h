@@ -38,9 +38,9 @@
 
 #if defined(NDEBUG)
 #	if _MSC_VER >= 1400  /* MSVC 2005 or newer */
-#		define Assertion(expr, msg, ...)  do { ASSUME(expr); } while (0)
+#		define Assertion(expr, msg, ...)  do { ASSUME(expr); } while (false)
 #	else
-#		define Assertion(expr, msg)  do {} while (0)
+#		define Assertion(expr, msg)  do {} while (false)
 #	endif
 #else
 	/*
@@ -53,13 +53,13 @@
 				if (!(expr)) {                                              \
 					os::dialogs::AssertMessage(#expr, __FILE__, __LINE__, msg, __VA_ARGS__); \
 				}                                                           \
-			} while (0)
+			} while (false)
 #	else                 /* Older MSVC compilers */
 #		define Assertion(expr, msg)                        \
 			do {                                           \
 				if (!(expr)) {                             \
 					os::dialogs::AssertMessage(#expr, __FILE__, __LINE__);  \
-			} while (0)
+			} while (false)
 #	endif
 #endif
 

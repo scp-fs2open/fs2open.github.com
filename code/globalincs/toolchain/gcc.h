@@ -32,7 +32,7 @@
 #define ASSUME(x)
 
 #if defined(NDEBUG)
-#	define Assertion(expr, msg, ...)  do {} while (0)
+#	define Assertion(expr, msg, ...)  do {} while (false)
 #else
 /*
  * NOTE: Assertion() can only use its proper functionality in compilers
@@ -43,7 +43,7 @@
 			if (!(expr)) {                                                \
 				os::dialogs::AssertMessage(#expr, __FILE__, __LINE__, msg, ##__VA_ARGS__); \
 			}                                                             \
-		} while (0)
+		} while (false)
 #endif
 
 /* C++11 Standard Detection */
