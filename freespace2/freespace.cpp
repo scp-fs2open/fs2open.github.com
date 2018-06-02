@@ -2134,7 +2134,7 @@ void game_show_framerate()
 		}
 
 		if (Cmdline_bmpman_usage) {
-			gr_printf_no_resize( gr_screen.center_offset_x + 20, gr_screen.center_offset_y + 100 - line_height, "BMPMAN: %d/%d", bmpman_count_bitmaps(), MAX_BITMAPS );
+			gr_printf_no_resize( gr_screen.center_offset_x + 20, gr_screen.center_offset_y + 100 - line_height, "BMPMAN: %d/%d", bmpman_count_bitmaps(), bmpman_count_available_slots() );
 		}
 	}
 

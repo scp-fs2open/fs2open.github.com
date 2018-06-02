@@ -278,15 +278,15 @@ int gr_stub_bm_set_render_target(int  /*n*/, int  /*face*/)
 	return 0;
 }
 
-void gr_stub_bm_create(int  /*n*/)
+void gr_stub_bm_create(bitmap_slot* /*slot*/)
 {
 }
 
-void gr_stub_bm_free_data(int  /*n*/, bool  /*release*/)
+void gr_stub_bm_free_data(bitmap_slot* /*slot*/, bool /*release*/)
 {
 }
 
-void gr_stub_bm_init(int  /*n*/)
+void gr_stub_bm_init(bitmap_slot* /*slot*/)
 {
 }
 
