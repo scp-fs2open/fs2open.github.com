@@ -588,7 +588,6 @@ void obj_delete(int objnum)
 	case OBJ_START:
 	case OBJ_WAYPOINT:
 	case OBJ_POINT:
-		//Assert(Fred_running);
 		break;  // requires no action, handled by the Fred code.
 	case OBJ_JUMP_NODE:
 		break;  // requires no further action, handled by jumpnode deconstructor.

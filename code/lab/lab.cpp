@@ -1806,6 +1806,7 @@ void labviewer_change_background_actual()
 	else {
 		// (DahBlount) - This spot should be used to disable rendering features that only apply to missions.
 		Motion_debris_override = true;
+		Num_stars = 0;
 	}
 }
 
