@@ -33,47 +33,34 @@ static const ubyte CSG_VERSION = 5;
 
 typedef struct index_list_t {
 	SCP_string name;
-	int index;
-	int val;
-
-	index_list_t() :
-		index(-1), val(0)
-	{
-	}
+	int index{ -1 };
+	int val{ 0 };
 } index_list_t;
 
 // special stats struct, since our use here is not content specific
 typedef struct scoring_special_t {
-	int score;
-	int rank;
-	int assists;
-	int kill_count;
-	int kill_count_ok;
-	int bonehead_kills;
+	int score{ 0 };
+	int rank{ RANK_ENSIGN };
+	int assists{ 0 };
+	int kill_count{ 0 };
+	int kill_count_ok{ 0 };
+	int bonehead_kills{ 0 };
 
-	unsigned int p_shots_fired;
-	unsigned int p_shots_hit;
-	unsigned int p_bonehead_hits;
+	unsigned int p_shots_fired{ 0 };
+	unsigned int p_shots_hit{ 0 };
+	unsigned int p_bonehead_hits{ 0 };
 
-	unsigned int s_shots_fired;
-	unsigned int s_shots_hit;
-	unsigned int s_bonehead_hits;
+	unsigned int s_shots_fired{ 0 };
+	unsigned int s_shots_hit{ 0 };
+	unsigned int s_bonehead_hits{ 0 };
 
-	unsigned int missions_flown;
-	unsigned int flight_time;
-	_fs_time_t last_flown;
-	_fs_time_t last_backup;
+	unsigned int missions_flown{ 0 };
+	unsigned int flight_time{ 0 };
+	_fs_time_t last_flown{ 0 };
+	_fs_time_t last_backup{ 0 };
 
 	SCP_vector<index_list_t> ship_kills;
 	SCP_vector<index_list_t> medals_earned;
-
-	scoring_special_t() :
-		score(0), rank(RANK_ENSIGN), assists(0), kill_count(0), kill_count_ok(0),
-		bonehead_kills(0), p_shots_fired(0), p_shots_hit(0), p_bonehead_hits(0),
-		s_shots_fired(0), s_shots_hit(0), s_bonehead_hits(0), missions_flown(0),
-		flight_time(0), last_flown(0), last_backup(0)
-	{
-	}
 } scoring_special_t;
 
 class pilotfile {
@@ -81,10 +68,10 @@ class pilotfile {
 		pilotfile();
 		~pilotfile();
 
-		bool load_player(const char *callsign, player *_p = NULL, bool force_binary = false);
+		bool load_player(const char *callsign, player *_p = nullptr, bool force_binary = false);
 		bool load_savefile(player *_p, const char *campaign);
 
-		bool save_player(player *_p = NULL);
+		bool save_player(player *_p = nullptr);
 		bool save_savefile();
 
 		// updating stats, multi and/or all-time
@@ -93,7 +80,7 @@ class pilotfile {
 		void reset_stats();
 
 		// for checking to see if a PLR file is basically valid
-		bool verify(const char *fname, int *rank = NULL, char *valid_language = NULL);
+		bool verify(const char *fname, int *rank = nullptr, char *valid_language = nullptr);
 
 		// whether current campaign savefile has valid data to work with
 		bool is_invalid()

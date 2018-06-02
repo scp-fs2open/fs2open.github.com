@@ -176,12 +176,12 @@ static void convert_binary_pilot_files() {
 	// get list of existing json pilot files
 	cf_get_file_list(json_pilots, CF_TYPE_PLAYERS, "*.json");
 
-	for (auto binary_it = binary_pilots.begin(); binary_it != binary_pilots.end(); ++binary_it) {
-		for (auto json_it = json_pilots.begin(); json_it != json_pilots.end(); ++json_it) {
+	for (auto& binary_pilot : binary_pilots) {
+		for (auto& json_pilot : json_pilots) {
 			// The file extensions are already removed so we can just compare the iterator values
-			if (*binary_it == *json_it) {
+			if (binary_pilot == json_pilot) {
 				// pilot was already converted. We just set this to the empty string to remove it from the list
-				*binary_it = "";
+				binary_pilot = "";
 			}
 		}
 	}

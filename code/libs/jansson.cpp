@@ -3,7 +3,7 @@
 
 namespace {
 int json_write_callback(const char *buffer, size_t size, void *data) {
-	CFILE* cfp = (CFILE*)data;
+	auto* cfp = (CFILE*)data;
 
 	if ((size_t)cfwrite(buffer, 1, (int)size, cfp) != size) {
 		return -1; // Error
