@@ -6126,11 +6126,16 @@ void HudGaugeWeapons::render(float  /*frametime*/)
 
 		maybeFlashWeapon(np+i);
 
-		// HACK - make Cluster Bomb fit on the HUD.
-		if(!stricmp(wip->name,"cluster bomb")){
-			strcpy_s(weapon_name, NOX("Cluster"));
-		} else {
+		if (wip->has_display_name()) {
+			// Do not apply the cluster bomb hack if we have an alternate name to make translating that name possible
 			strcpy_s(weapon_name, wip->get_display_name());
+		} else {
+			// HACK - make Cluster Bomb fit on the HUD.
+			if(!stricmp(wip->name,"cluster bomb")){
+				strcpy_s(weapon_name, NOX("Cluster"));
+			} else {
+				strcpy_s(weapon_name, wip->get_display_name());
+			}
 		}
 
 		// get rid of #

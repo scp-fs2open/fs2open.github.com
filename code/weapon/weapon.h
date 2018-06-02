@@ -470,7 +470,9 @@ public:
     inline bool hurts_big_ships()  { return wi_flags[Weapon::Info_Flags::Bomb, Weapon::Info_Flags::Beam, Weapon::Info_Flags::Huge, Weapon::Info_Flags::Big_only]; }
     inline bool is_interceptable() { return wi_flags[Weapon::Info_Flags::Fighter_Interceptable, Weapon::Info_Flags::Turret_Interceptable]; }
 
-    const char* get_display_name();
+	const char* get_display_name();
+
+	bool has_display_name();
 
 	void reset();
 } weapon_info;

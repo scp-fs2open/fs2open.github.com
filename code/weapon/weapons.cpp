@@ -7780,9 +7780,12 @@ void weapon_info::reset()
 	this->impact_decal = decals::creation_info();
 }
 const char* weapon_info::get_display_name() {
-	if (alt_name[0] != '\0') {
+	if (has_display_name()) {
 		return alt_name;
 	} else {
 		return name;
 	}
+}
+bool weapon_info::has_display_name() {
+	return alt_name[0] != '\0';
 }
