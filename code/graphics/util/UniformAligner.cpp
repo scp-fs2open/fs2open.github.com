@@ -28,7 +28,6 @@ UniformAligner::UniformAligner(uint8_t* buffer,
 	_requiredAlignment(element_alignment),
 	_buffer(buffer),
 	_buffer_size(buffer_size),
-	_numElements(0),
 	_dataSize(dataSize),
 	_headerSize(headerSize) {
 	_buffer_offset = alignSize(_headerSize, _requiredAlignment); // Set the initial offset to the first data element

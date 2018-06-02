@@ -19,7 +19,7 @@ UniformBuffer::UniformBuffer(UniformBufferManager* parent,
 	// if the buffer needs to be resized
 	_buffer_handle = _parent->getActiveBufferHandle();
 }
-UniformBuffer::~UniformBuffer() {}
+UniformBuffer::~UniformBuffer() = default;
 void UniformBuffer::submitData() {
 	_parent->submitData(_aligner.getData(), _aligner.getSize(), _parent_offset);
 }
