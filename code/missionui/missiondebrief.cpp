@@ -2260,11 +2260,13 @@ void debrief_add_award_text(const char *str)
 	// copy in the line
 	strcpy_s(Debrief_award_text[Debrief_award_text_num_lines], str);	
 
-	// maybe translate for displaying
-	if (Lcl_gr) {
-		lcl_translate_medal_name_gr(Debrief_award_text[Debrief_award_text_num_lines]);
-	} else if (Lcl_pl) {
-		lcl_translate_medal_name_pl(Debrief_award_text[Debrief_award_text_num_lines]);
+	if (!Disable_built_in_translations) {
+		// maybe translate for displaying
+		if (Lcl_gr) {
+			lcl_translate_medal_name_gr(Debrief_award_text[Debrief_award_text_num_lines]);
+		} else if (Lcl_pl) {
+			lcl_translate_medal_name_pl(Debrief_award_text[Debrief_award_text_num_lines]);
+		}
 	}
 
 	Debrief_award_text_num_lines++;

@@ -5297,11 +5297,13 @@ void hud_stuff_ship_name(char *ship_name_text, ship *shipp)
 		// handle hash symbol
 		end_string_at_first_hash_symbol(ship_name_text);
 
-		// handle translation
-		if (Lcl_gr) {
-			lcl_translate_targetbox_name_gr(ship_name_text);
-		} else if (Lcl_pl) {
-			lcl_translate_targetbox_name_pl(ship_name_text);
+		if (!Disable_built_in_translations) {
+			// handle translation
+			if (Lcl_gr) {
+				lcl_translate_targetbox_name_gr(ship_name_text);
+			} else if (Lcl_pl) {
+				lcl_translate_targetbox_name_pl(ship_name_text);
+			}
 		}
 	}
 }
@@ -5333,11 +5335,13 @@ void hud_stuff_ship_callsign(char *ship_callsign_text, ship *shipp)
 	// handle hash symbol
 	end_string_at_first_hash_symbol(ship_callsign_text);
 
-	// handle translation
-	if (Lcl_gr) {
-		lcl_translate_targetbox_name_gr(ship_callsign_text);
-	} else if (Lcl_pl) {
-		lcl_translate_targetbox_name_pl(ship_callsign_text);
+	if (!Disable_built_in_translations) {
+		// handle translation
+		if (Lcl_gr) {
+			lcl_translate_targetbox_name_gr(ship_callsign_text);
+		} else if (Lcl_pl) {
+			lcl_translate_targetbox_name_pl(ship_callsign_text);
+		}
 	}
 }
 
@@ -5362,11 +5366,13 @@ void hud_stuff_ship_class(char *ship_class_text, ship *shipp)
 	// handle hash symbol
 	end_string_at_first_hash_symbol(ship_class_text);
 
-	// handle translation
-	if (Lcl_gr) {
-		lcl_translate_targetbox_name_gr(ship_class_text);
-	} else if (Lcl_pl) {
-		lcl_translate_targetbox_name_pl(ship_class_text);
+	if (!Disable_built_in_translations) {
+		// handle translation
+		if (Lcl_gr) {
+			lcl_translate_targetbox_name_gr(ship_class_text);
+		} else if (Lcl_pl) {
+			lcl_translate_targetbox_name_pl(ship_class_text);
+		}
 	}
 }
 
@@ -6053,7 +6059,7 @@ void HudGaugeWeapons::render(float  /*frametime*/)
 		}
 
 		strcpy_s(name, Weapon_info[sw->primary_bank_weapons[i]].get_display_name());
-		if (Lcl_gr) {
+		if (Lcl_gr && !Disable_built_in_translations) {
 			lcl_translate_wep_name_gr(name);
 		}
 
@@ -6924,7 +6930,7 @@ void HudGaugePrimaryWeapons::render(float  /*frametime*/)
 
 		strcpy_s(name, Weapon_info[sw->primary_bank_weapons[i]].get_display_name());
 
-		if (Lcl_gr) {
+		if (Lcl_gr && !Disable_built_in_translations) {
 			lcl_translate_wep_name_gr(name);
 		}
 

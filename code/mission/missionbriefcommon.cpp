@@ -1004,13 +1004,13 @@ void brief_render_icon(int stage_num, int icon_num, float frametime, int selecte
 				gr_string(bc - fl2i(w/2.0f), by - h, Players[Player_num].callsign, GR_RESIZE_MENU);
 			}
 			else {
-				if (Lcl_gr) {
+				if (Lcl_gr && !Disable_built_in_translations) {
 					char buf[128];
 					strcpy_s(buf, bi->label);
 					lcl_translate_brief_icon_name_gr(buf);
 					gr_get_string_size(&w, &h, buf);
 					gr_string(bc - fl2i(w/2.0f), by - h, buf, GR_RESIZE_MENU);
-				} else if (Lcl_pl) {
+				} else if (Lcl_pl && !Disable_built_in_translations) {
 					char buf[128];
 					strcpy_s(buf, bi->label);
 					lcl_translate_brief_icon_name_pl(buf);

@@ -2790,7 +2790,7 @@ void weapon_select_do(float frametime)
 				int ship_class = Wss_slots[Selected_wl_slot].ship_class;
 
 				// might have to get weapon name translation
-				if (Lcl_gr)
+				if (Lcl_gr && !Disable_built_in_translations)
 				{
 					char display_name[NAME_LENGTH];
 					strcpy_s(display_name, Weapon_info[Carried_wl_icon.weapon_class].get_display_name());
@@ -3553,7 +3553,7 @@ int wl_swap_slot_slot(int from_bank, int to_bank, int ship_slot, interface_snd_i
 				strcpy_s(display_name, Weapon_info[slot->wep[from_bank]].get_display_name());
 
 				// might have to get weapon name translation
-				if (Lcl_gr) {
+				if (Lcl_gr && !Disable_built_in_translations) {
 					lcl_translate_wep_name_gr(display_name);
 				}
 
@@ -3717,7 +3717,7 @@ int wl_grab_from_list(int from_list, int to_bank, int ship_slot, interface_snd_i
 			strcpy_s(display_name, Weapon_info[from_list].get_display_string());
 
 			// might have to get weapon name translation
-			if (Lcl_gr) {
+			if (Lcl_gr && !Disable_built_in_translations) {
 				lcl_translate_wep_name_gr(display_name);
 			}
 
@@ -3803,7 +3803,7 @@ int wl_swap_list_slot(int from_list, int to_bank, int ship_slot, interface_snd_i
 			strcpy_s(display_name, Weapon_info[from_list].get_display_name());
 
 			// might have to get weapon name translation
-			if (Lcl_gr) {
+			if (Lcl_gr && !Disable_built_in_translations) {
 				lcl_translate_wep_name_gr(display_name);
 			}
 
@@ -4036,7 +4036,7 @@ void wl_apply_current_loadout_to_all_ships_in_current_wing()
 
 			// maybe localize
 			const char* wep_display_name;
-			if (Lcl_gr)
+			if (Lcl_gr && !Disable_built_in_translations)
 			{
 				strcpy_s(buf, Weapon_info[weapon_type_to_add].get_display_name());
 				lcl_translate_wep_name_gr(buf);

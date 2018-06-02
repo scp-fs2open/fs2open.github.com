@@ -620,7 +620,8 @@ void blit_label(const char *label, int num)
 
 	// translate medal names before displaying
 	// can't translate in table cuz the names are used in comparisons
-	if (Lcl_gr) {
+	// Medals no have alternate display names so this code can be disabled in the mod table
+	if (Lcl_gr && !Disable_built_in_translations) {
 		char translated_label[256];
 		strcpy_s(translated_label, label);
 		lcl_translate_medal_name_gr(translated_label);
@@ -631,7 +632,7 @@ void blit_label(const char *label, int num)
 		} else {
 			sprintf( text, "%s", translated_label );
 		}
-	} else if (Lcl_pl) {
+	} else if (Lcl_pl && !Disable_built_in_translations) {
 		char translated_label[256];
 		strcpy_s(translated_label, label);
 		lcl_translate_medal_name_pl(translated_label);
