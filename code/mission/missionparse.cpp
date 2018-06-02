@@ -424,11 +424,11 @@ void parse_custom_bitmap(const char *expected_string_640, const char *expected_s
 	// error testing
 	if (Fred_running && (found640) && !(found1024))
 	{
-		Warning(LOCATION, "Mission: found an entry for %s but not a corresponding entry for %s!", expected_string_640, expected_string_1024);
+		nprintf(("General", "Mission: found an entry for %s but not a corresponding entry for %s!", expected_string_640, expected_string_1024));
 	}
 	if (Fred_running && !(found640) && (found1024))
 	{
-		Warning(LOCATION, "Mission: found an entry for %s but not a corresponding entry for %s!", expected_string_1024, expected_string_640);
+		nprintf(("General", "Mission: found an entry for %s but not a corresponding entry for %s!", expected_string_1024, expected_string_640));
 	}
 }
 
