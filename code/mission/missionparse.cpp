@@ -75,6 +75,8 @@
 #include "starfield/starfield.h"
 #include "weapon/weapon.h"
 #include "tracing/Monitor.h"
+#include "missionparse.h"
+
 
 LOCAL struct {
 	char docker[NAME_LENGTH];
@@ -1877,6 +1879,7 @@ int parse_create_object_sub(p_object *p_objp)
 	shipp->group = p_objp->group;
 	shipp->team = p_objp->team;
 	strcpy_s(shipp->ship_name, p_objp->name);
+	shipp->display_name = p_objp->display_name;
 	shipp->escort_priority = p_objp->escort_priority;
 	shipp->use_special_explosion = p_objp->use_special_explosion;
 	shipp->special_exp_damage = p_objp->special_exp_damage;
@@ -2737,6 +2740,16 @@ p_object::~p_object()
 {
 	dock_free_dock_list(this);
 }
+const char* p_object::get_display_string() {
+	if (has_display_string()) {
+		return display_name.c_str();
+	} else {
+		return name;
+	}
+}
+bool p_object::has_display_string() {
+	return !display_name.empty();
+}
 
 /**
  * Mp points at the text of an object, which begins with the "$Name:" field.
@@ -2764,6 +2777,9 @@ int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
 	if (mission_parse_get_parse_object(p_objp->name))
 		error_display(0, NOX("Redundant ship name: %s\n"), p_objp->name);
 
+	if (optional_string("$Display Name:")) {
+		stuff_string(p_objp->display_name, F_NAME);
+	}
 
 	find_and_stuff("$Class:", &p_objp->ship_class, F_NAME, Ship_class_names, Ship_info.size(), "ship class");
 	if (p_objp->ship_class < 0)

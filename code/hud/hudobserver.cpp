@@ -30,6 +30,7 @@ void hud_observer_init(ship *shipp, ai_info *aip)
 	// (we used to do a memcpy here, but that doesn't work any longer, so let's just assign the values we need)
 	Hud_obs_ship.clear();
 	strcpy_s(Hud_obs_ship.ship_name, shipp->ship_name);
+	Hud_obs_ship.display_name = shipp->display_name;
 	Hud_obs_ship.team = shipp->team;
 	Hud_obs_ship.ai_index = shipp->ai_index;
 	Hud_obs_ship.flags = shipp->flags;

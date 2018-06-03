@@ -66,7 +66,7 @@ static int X, P_width;
 static log_text_seg *Log_lines[MAX_LOG_LINES];
 static fix Log_line_timestamps[MAX_LOG_LINES];
 
-log_entry log_entries[MAX_LOG_ENTRIES];	// static array because John says....
+std::array<log_entry, MAX_LOG_ENTRIES> log_entries;	// static array because John says....
 int last_entry;
 
 void mission_log_init()
@@ -74,7 +74,7 @@ void mission_log_init()
 	last_entry = 0;
 
 	// zero out all the memory so we don't get bogus information when playing across missions!
-	memset( log_entries, 0, sizeof(log_entries) );
+	log_entries.fill({});
 }
 
 // returns the number of entries in the mission log
@@ -123,7 +123,7 @@ void mission_log_cull_obsolete_entries()
 
 // function to mark entries as obsolete.  Passed is the type of entry that is getting added
 // to the log.  Some entries might get marked obsolete as a result of this type
-void mission_log_obsolete_entries(int type, const char *pname)
+void mission_log_obsolete_entries(LogType type, const char *pname)
 {
 	int i;
 	log_entry *entry = NULL;
@@ -181,7 +181,7 @@ void mission_log_obsolete_entries(int type, const char *pname)
 // following function adds an entry into the mission log.
 // pass a type and a string which indicates the object
 // that this event is for.  Don't add entries with this function for multiplayer
-void mission_log_add_entry(int type, const char *pname, const char *sname, int info_index)
+void mission_log_add_entry(LogType type, const char *pname, const char *sname, int info_index)
 {
 	int last_entry_save;
 	log_entry *entry;	
@@ -221,6 +221,8 @@ void mission_log_add_entry(int type, const char *pname, const char *sname, int i
 	entry->flags = 0;
 	entry->primary_team = -1;
 	entry->secondary_team = -1;
+	entry->pname_display = entry->pname;
+	entry->sname_display = entry->sname;
 
 	// determine the contents of the flags member based on the type of entry we added.  We need to store things
 	// like team for the primary and (possibly) secondary object for this entry.
@@ -246,6 +248,7 @@ void mission_log_add_entry(int type, const char *pname, const char *sname, int i
 
 		Assert (index >= 0);
 		entry->primary_team = Ships[index].team;
+		entry->pname_display = Ships[index].get_display_string();
 
 		// some of the entries have a secondary component.  Figure out what is up with them.
 		if ( (type == LOG_SHIP_DOCKED) || (type == LOG_SHIP_UNDOCKED)) {
@@ -253,11 +256,10 @@ void mission_log_add_entry(int type, const char *pname, const char *sname, int i
 				index = ship_name_lookup( sname );
 				Assert (index >= 0);
 				entry->secondary_team = Ships[index].team;
+				entry->sname_display = Ships[index].get_display_string();
 			}
 		} else if ( type == LOG_SHIP_DESTROYED ) {
 			if ( sname ) {
-				int team;
-
 				// multiplayer, player name will possibly be sent in
 				if((Game_mode & GM_MULTIPLAYER) && (multi_find_player_by_callsign(sname) >= 0)) {
 					// get the player's ship
@@ -268,11 +270,12 @@ void mission_log_add_entry(int type, const char *pname, const char *sname, int i
 					{
 						// argh. badness
 						Int3();
-						team = Player_ship->team;
+						entry->secondary_team = Player_ship->team;
 					}
 					else
 					{
-						team = Ships[Objects[Net_players[np_index].m_player->objnum].instance].team;
+						entry->secondary_team = Ships[Objects[Net_players[np_index].m_player->objnum].instance].team;
+						entry->sname_display = Ships[Objects[Net_players[np_index].m_player->objnum].instance].get_display_string();
 					}
 				}
 				else 
@@ -284,13 +287,13 @@ void mission_log_add_entry(int type, const char *pname, const char *sname, int i
 						if ( index == -1 ) {
 							break;
 						}
-						team = Ships_exited[index].team;
+						entry->secondary_team = Ships_exited[index].team;
+						entry->sname_display = Ships_exited[index].display_string;
 					} else {
-						team = Ships[index].team;
+						entry->secondary_team = Ships[index].team;
+						entry->sname_display = Ships[index].get_display_string();
 					}
 				}
-
-				entry->secondary_team = team;
  			} else {
 				nprintf(("missionlog", "No secondary name for ship destroyed log entry!\n"));
 			}
@@ -372,7 +375,7 @@ void mission_log_add_entry(int type, const char *pname, const char *sname, int i
 
 	// if in multiplayer and I am the master, send this log entry to everyone
 	if ( MULTIPLAYER_MASTER ){
-		send_mission_log_packet( last_entry );
+		send_mission_log_packet( &log_entries[last_entry] );
 	}
 
 	last_entry++;
@@ -390,7 +393,7 @@ void mission_log_add_entry(int type, const char *pname, const char *sname, int i
 // function, used in multiplayer only, which adds an entry sent by the host of the game, into
 // the mission log.  The index of the log entry is passed as one of the parameters in addition to
 // the normal parameters used for adding an entry to the log
-void mission_log_add_entry_multi( int type, const char *pname, const char *sname, int index, fix timestamp, int flags )
+void mission_log_add_entry_multi( LogType type, const char *pname, const char *sname, int index, fix timestamp, int flags )
 {
 	log_entry *entry;
 
@@ -423,11 +426,14 @@ void mission_log_add_entry_multi( int type, const char *pname, const char *sname
 
 	entry->flags = flags;
 	entry->timestamp = timestamp;
+
+	entry->pname_display = entry->pname;
+	entry->sname_display = entry->sname;
 }
 
 // function to determine is the given event has taken place count number of times.
 
-int mission_log_get_time_indexed( int type, const char *pname, const char *sname, int count, fix *time)
+int mission_log_get_time_indexed( LogType type, const char *pname, const char *sname, int count, fix *time)
 {
 	int i, found;
 	log_entry *entry;
@@ -496,14 +502,14 @@ int mission_log_get_time_indexed( int type, const char *pname, const char *sname
 // this function determines if the given type of event on the specified
 // object has taken place yet.  If not, it returns 0.  If it has, the
 // timestamp that the event happened is returned in the time parameter
-int mission_log_get_time( int type, const char *pname, const char *sname, fix *time )
+int mission_log_get_time( LogType type, const char *pname, const char *sname, fix *time )
 {
 	return mission_log_get_time_indexed( type, pname, sname, 1, time );
 }
 
 // determines the number of times the given type of event takes place
 
-int mission_log_get_count( int type, const char *pname, const char *sname )
+int mission_log_get_count( LogType type, const char *pname, const char *sname )
 {
 	int i;
 	log_entry *entry;
@@ -684,7 +690,7 @@ void message_log_init_scrollback(int pw)
 			// same thing for polish
 			message_log_add_seg(Num_log_lines, OBJECT_X, c, "Cel misji");
 		} else {
-			message_log_add_seg(Num_log_lines, OBJECT_X, c, entry->pname);
+			message_log_add_seg(Num_log_lines, OBJECT_X, c, entry->pname_display.c_str());
 		}
 
 		// now on to the actual message itself
@@ -700,9 +706,9 @@ void message_log_init_scrollback(int pw)
 		switch (entry->type) {
 			case LOG_SHIP_DESTROYED:
 				message_log_add_segs(XSTR( "Destroyed", 404), LOG_COLOR_NORMAL);
-				if (strlen(entry->sname)) {
+				if (!entry->sname_display.empty()) {
 					message_log_add_segs(XSTR( "  Kill: ", 405), LOG_COLOR_NORMAL);
-					message_log_add_segs(entry->sname, c);
+					message_log_add_segs(entry->sname_display.c_str(), c);
 					if (entry->index >= 0) {
 						sprintf(text, NOX(" (%d%%)"), entry->index);
 						message_log_add_segs(text, LOG_COLOR_BRIGHT);
@@ -741,7 +747,7 @@ void message_log_init_scrollback(int pw)
 
 			case LOG_SHIP_DOCKED:
 				message_log_add_segs(XSTR( "Docked with ", 409), LOG_COLOR_NORMAL);
-				message_log_add_segs(entry->sname, c);
+				message_log_add_segs(entry->sname_display.c_str(), c);
 				break;
 
 			case LOG_SHIP_SUBSYS_DESTROYED: {
@@ -763,7 +769,7 @@ void message_log_init_scrollback(int pw)
 
 			case LOG_SHIP_UNDOCKED:
 				message_log_add_segs(XSTR( "Undocked with ", 412), LOG_COLOR_NORMAL);
-				message_log_add_segs(entry->sname, c);
+				message_log_add_segs(entry->sname_display.c_str(), c);
 				break;
 
 			case LOG_SHIP_DISABLED:
@@ -799,7 +805,7 @@ void message_log_init_scrollback(int pw)
 				Assert( entry->index >= 0 );
 				Assert(!(entry->index & CARGO_NO_DEPLETE));
 
-				message_log_add_segs(entry->sname, LOG_COLOR_NORMAL);
+				message_log_add_segs(entry->sname_display.c_str(), LOG_COLOR_NORMAL);
 				message_log_add_segs(XSTR( " subsystem cargo revealed: ", 1488), LOG_COLOR_NORMAL);
 				strncpy(text, Cargo_names[entry->index], sizeof(text) - 1);
 				message_log_add_segs( text, LOG_COLOR_BRIGHT );
@@ -825,6 +831,9 @@ void message_log_init_scrollback(int pw)
 				message_log_add_segs(text, LOG_COLOR_BRIGHT, (entry->type == LOG_GOAL_SATISFIED?LOG_FLAG_GOAL_TRUE:LOG_FLAG_GOAL_FAILED) );
 				break;
 			}	// matches case statement!
+			default:
+				UNREACHABLE("Unhandled enum value!");
+				break;
 		}
 
 		if (kill) {

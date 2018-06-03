@@ -5293,7 +5293,7 @@ void hud_stuff_ship_name(char *ship_name_text, ship *shipp)
 	if ( ((Iff_info[shipp->team].flags & IFFF_WING_NAME_HIDDEN) && (shipp->wingnum != -1)) || (shipp->flags[Ship::Ship_Flags::Hide_ship_name]) ) {
 		*ship_name_text = 0;
 	} else {
-		strcpy(ship_name_text, shipp->ship_name);
+		strcpy(ship_name_text, shipp->get_display_string());
 
 		// handle hash symbol
 		end_string_at_first_hash_symbol(ship_name_text);

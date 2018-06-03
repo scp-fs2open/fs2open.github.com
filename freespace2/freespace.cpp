@@ -2894,7 +2894,7 @@ void say_view_target()
 				if (Ships[Objects[Player_ai->target_objnum].instance].flags[Ship::Ship_Flags::Hide_ship_name]) {
 					strcpy_s(view_target_name, "targeted ship");
 				} else {
-					strcpy_s(view_target_name, Ships[Objects[Player_ai->target_objnum].instance].ship_name);
+					strcpy_s(view_target_name, Ships[Objects[Player_ai->target_objnum].instance].get_display_string());
 				}
 				break;
 			case OBJ_WEAPON:

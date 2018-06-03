@@ -322,6 +322,7 @@ class p_object
 {
 public:
 	char	name[NAME_LENGTH];
+	SCP_string display_name;
 	p_object *next, *prev;
 
 	vec3d	pos;
@@ -413,6 +414,9 @@ public:
 
 	p_object();
 	~p_object();
+
+	const char* get_display_string();
+	bool has_display_string();
 };
 
 // Goober5000 - this is now dynamic

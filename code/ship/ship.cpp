@@ -86,6 +86,8 @@
 #include "weapon/weapon.h"
 #include "tracing/Monitor.h"
 #include "tracing/tracing.h"
+#include "ship.h"
+
 
 using namespace Ship;
 
@@ -5466,6 +5468,7 @@ void ship_add_exited_ship( ship *sp, Ship::Exit_Flags reason )
 	exited_ship entry; 
 
 	strcpy_s(entry.ship_name, sp->ship_name );
+	entry.display_string = sp->get_display_string();
 	entry.obj_signature = Objects[sp->objnum].signature;
 	entry.ship_class = sp->ship_info_index;
 	entry.team = sp->team;
@@ -5784,6 +5787,7 @@ void ship::clear()
 	ship_guardian_threshold = 0;
 
 	ship_name[0] = 0;
+	display_name.clear();
 	team = 0;
 
 	time_cargo_revealed = 0;
@@ -6005,6 +6009,16 @@ void ship::clear()
 	team_change_time = 0;
 
 	autoaim_fov = 0.0f;
+}
+bool ship::has_display_name() {
+	return !display_name.empty();
+}
+const char* ship::get_display_string() {
+	if (has_display_name()) {
+		return display_name.c_str();
+	} else {
+		return ship_name;
+	}
 }
 
 void ship_weapon::clear() 
@@ -14984,6 +14998,39 @@ int bitmask_2_bitnum(int num)
 	return -1;
 }
 
+static const char* ship_get_ai_target_display_name(int goal, const char* name)
+{
+	switch (goal) {
+	// These goals refer to ships so we need to retrieve their display name
+	case AI_GOAL_FORM_ON_WING:
+	case AI_GOAL_CHASE:
+	case AI_GOAL_DOCK:
+	case AI_GOAL_UNDOCK:
+	case AI_GOAL_GUARD:
+	case AI_GOAL_DISABLE_SHIP:
+	case AI_GOAL_DISARM_SHIP:
+	case AI_GOAL_EVADE_SHIP:
+	case AI_GOAL_REARM_REPAIR:
+	case AI_GOAL_FLY_TO_SHIP:
+	case AI_GOAL_DESTROY_SUBSYSTEM: {
+		auto ship = ship_name_lookup(name);
+		if (ship < 0) {
+			return name;
+		}
+		return Ships[ship].get_display_string();
+	}
+
+		// These goals need no special handling
+	case AI_GOAL_CHASE_WING:
+	case AI_GOAL_CHASE_SHIP_CLASS:
+	case AI_GOAL_GUARD_WING:
+	case AI_GOAL_WAYPOINTS:
+	case AI_GOAL_WAYPOINTS_ONCE:
+	default:
+		return name;
+	}
+}
+
 // Get a text description of a ships orders. 
 //
 //	input:	outbuf	=>		buffer to hold orders string
@@ -14996,90 +15043,87 @@ int bitmask_2_bitnum(int num)
 // of what a ship's orders are.  Feel free to use this function if 
 // it suits your needs for something.
 //
-char *ship_return_orders(char *outbuf, ship *sp)
+SCP_string ship_return_orders(ship* sp)
 {
-	ai_info	*aip;
-	ai_goal	*aigp;
-	const char		*order_text;
-	char target_name[NAME_LENGTH];
-	
+	ai_info* aip;
+	ai_goal* aigp;
+
 	Assert(sp->ai_index >= 0);
 	aip = &Ai_info[sp->ai_index];
 
 	// The active goal is always in the first element of aip->goals[]
 	aigp = &aip->goals[0];
 
-	if ( aigp->ai_mode < 0 ) 
-		return NULL;
+	if (aigp->ai_mode < 0)
+		return SCP_string();
 
-	order_text = Ai_goal_text(aigp->ai_mode);
-	if ( order_text == NULL )
-		return NULL;
+	auto order_text = Ai_goal_text(aigp->ai_mode);
+	if (order_text == nullptr)
+		return SCP_string();
 
-	strcpy(outbuf, order_text);
+	SCP_string outbuf = order_text;
 
-	if ( aigp->target_name ) {
-		strcpy_s(target_name, aigp->target_name);
+	SCP_string target_name;
+	if (aigp->target_name) {
+		target_name = ship_get_ai_target_display_name(aigp->ai_mode, aigp->target_name);
 		end_string_at_first_hash_symbol(target_name);
 	}
-	switch ( aigp->ai_mode ) {
-
-		case AI_GOAL_FORM_ON_WING:
-		case AI_GOAL_GUARD_WING:
-		case AI_GOAL_CHASE_WING:
-			if ( aigp->target_name ) {
-				strcat(outbuf, target_name);
-				strcat(outbuf, XSTR("'s wing", 494));
-			} else {
-				strcpy(outbuf, XSTR("no orders", 495));
-			}
-			break;
-
-		case AI_GOAL_CHASE_SHIP_CLASS:
-			if (aigp->target_name) {
-				strcat(outbuf, XSTR("any ", -1));
-				strcat(outbuf, target_name);
-			}
-			else {
-				strcpy(outbuf, XSTR("no orders", 495));
-			}
-			break;
-
-		case AI_GOAL_CHASE:
-		case AI_GOAL_DOCK:
-		case AI_GOAL_UNDOCK:
-		case AI_GOAL_GUARD:
-		case AI_GOAL_DISABLE_SHIP:
-		case AI_GOAL_DISARM_SHIP:
-		case AI_GOAL_EVADE_SHIP:
-		case AI_GOAL_REARM_REPAIR:
-		case AI_GOAL_FLY_TO_SHIP:
-			if (aigp->target_name) {
-				strcat(outbuf, target_name);
-			} else {
-				strcpy(outbuf, XSTR( "no orders", 495));
-			}
-			break;
-
-		case AI_GOAL_DESTROY_SUBSYSTEM: {
-			if ( aip->targeted_subsys != NULL ) {
-				char subsys_name[NAME_LENGTH];
-				strcpy_s(subsys_name, aip->targeted_subsys->system_info->subobj_name);
-				hud_targetbox_truncate_subsys_name(subsys_name);
-				sprintf(outbuf, XSTR("atk %s %s", 496), target_name, subsys_name);
-			} else {
-				strcpy(outbuf, XSTR("no orders", 495));
-			}
-			break;
+	switch (aigp->ai_mode) {
+	case AI_GOAL_FORM_ON_WING:
+	case AI_GOAL_GUARD_WING:
+	case AI_GOAL_CHASE_WING:
+		if (aigp->target_name) {
+			outbuf += target_name;
+			outbuf += XSTR("'s wing", 494);
+		} else {
+			outbuf += XSTR("no orders", 495);
 		}
+		break;
 
-		case AI_GOAL_WAYPOINTS:
-		case AI_GOAL_WAYPOINTS_ONCE:
-			// don't do anything, all info is in order_text
-			break;
+	case AI_GOAL_CHASE_SHIP_CLASS:
+		if (aigp->target_name) {
+			outbuf += XSTR("any ", -1);
+			outbuf += target_name;
+		} else {
+			outbuf += XSTR("no orders", 495);
+		}
+		break;
 
-		default:
-			return NULL;
+	case AI_GOAL_CHASE:
+	case AI_GOAL_DOCK:
+	case AI_GOAL_UNDOCK:
+	case AI_GOAL_GUARD:
+	case AI_GOAL_DISABLE_SHIP:
+	case AI_GOAL_DISARM_SHIP:
+	case AI_GOAL_EVADE_SHIP:
+	case AI_GOAL_REARM_REPAIR:
+	case AI_GOAL_FLY_TO_SHIP:
+		if (aigp->target_name) {
+			outbuf += target_name;
+		} else {
+			outbuf += XSTR("no orders", 495);
+		}
+		break;
+
+	case AI_GOAL_DESTROY_SUBSYSTEM: {
+		if (aip->targeted_subsys != nullptr) {
+			char subsys_name[NAME_LENGTH];
+			strcpy_s(subsys_name, aip->targeted_subsys->system_info->subobj_name);
+			hud_targetbox_truncate_subsys_name(subsys_name);
+			sprintf(outbuf, XSTR("atk %s %s", 496), target_name.c_str(), subsys_name);
+		} else {
+			outbuf += XSTR("no orders", 495);
+		}
+		break;
+	}
+
+	case AI_GOAL_WAYPOINTS:
+	case AI_GOAL_WAYPOINTS_ONCE:
+		// don't do anything, all info is in order_text
+		break;
+
+	default:
+		return SCP_string();
 	}
 
 	return outbuf;

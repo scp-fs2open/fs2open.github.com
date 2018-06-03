@@ -896,7 +896,7 @@ void process_debug_keys(int k)
 				object	*objp = &Objects[Player_ai->target_objnum];
 
 				objp->flags.toggle(Object::Object_Flags::Invulnerable);
-				HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Player's target [%s] is %s", 13), Ships[objp->instance].ship_name, objp->flags[Object::Object_Flags::Invulnerable] ? XSTR( "now INVULNERABLE!", 11) : XSTR( "no longer invulnerable...", 12));
+				HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Player's target [%s] is %s", 13), Ships[objp->instance].get_display_string(), objp->flags[Object::Object_Flags::Invulnerable] ? XSTR( "now INVULNERABLE!", 11) : XSTR( "no longer invulnerable...", 12));
 			}
 			break;
 
@@ -1066,12 +1066,12 @@ void process_debug_keys(int k)
 
 			if (is_support_allowed(obj_to_rearm))
 			{
-				HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR("Issuing rearm request for %s", 1610), Ships[obj_to_rearm->instance].ship_name);
+				HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR("Issuing rearm request for %s", 1610), Ships[obj_to_rearm->instance].get_display_string());
 				ai_issue_rearm_request(obj_to_rearm);
 			}
 			else
 			{
-				HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR("Cannot issue rearm request for %s", 1611), Ships[obj_to_rearm->instance].ship_name);
+				HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR("Cannot issue rearm request for %s", 1611), Ships[obj_to_rearm->instance].get_display_string());
 			}
 
 			break;
@@ -1325,7 +1325,7 @@ void ppsk_hotkeys(int k)
 				HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "No target to add/remove from set %d.", 26), hotkey_set+1);
 			else  {
 				hud_target_hotkey_add_remove( hotkey_set, &Objects[Player_ai->target_objnum], HOTKEY_USER_ADDED);
-				HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "%s added to set %d. (F%d)", 27), Ships[Objects[Player_ai->target_objnum].instance].ship_name, hotkey_set, 4+hotkey_set+1);
+				HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "%s added to set %d. (F%d)", 27), Ships[Objects[Player_ai->target_objnum].instance].get_display_string(), hotkey_set, 4+hotkey_set+1);
 			}
 
 			break;
@@ -1569,6 +1569,7 @@ void game_process_cheats(int k)
 
 		ship *shipp = &Ships[Objects[objnum].instance];
 		shipp->ship_name[0] = '\0';
+		shipp->display_name.clear();
 		shipp->orders_accepted = (1<<NUM_COMM_ORDER_ITEMS)-1;
 
 		// Goober5000 - stolen from support ship creation
