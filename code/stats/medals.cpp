@@ -191,39 +191,6 @@ medal_stuff::medal_stuff()
 	voice_base[0] = '\0';
 }
 
-medal_stuff::~medal_stuff()
-{
-	promotion_text.clear();
-}
-
-medal_stuff::medal_stuff(const medal_stuff &m)
-{
-	clone(m);
-}
-
-void medal_stuff::clone(const medal_stuff &m)
-{
-	memcpy(name, m.name, NAME_LENGTH);
-	memcpy(bitmap, m.bitmap, MAX_FILENAME_LEN);
-	memcpy(debrief_bitmap, m.debrief_bitmap, MAX_FILENAME_LEN);
-	num_versions = m.num_versions;
-	version_starts_at_1 = m.version_starts_at_1;
-	available_from_start = m.available_from_start;
-	kills_needed = m.kills_needed;
-	memcpy(voice_base, m.voice_base, MAX_FILENAME_LEN);
-
-	promotion_text = m.promotion_text;
-}
-
-// assignment operator
-medal_stuff& medal_stuff::operator=(const medal_stuff &m)
-{
-	if (this != &m) {
-		clone(m);
-	}
-
-	return *this;
-}
 const char* medal_stuff::get_display_string() {
 	if (!alt_name.empty()) {
 		return alt_name.c_str();

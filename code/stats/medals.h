@@ -42,15 +42,8 @@ public:
 	SCP_map<int, SCP_string> promotion_text;
 
 	medal_stuff();
-	~medal_stuff();
-
-	medal_stuff(const medal_stuff &m);
-	medal_stuff& operator=(const medal_stuff &m);
 
 	const char* get_display_string();
-
-private:
-	void clone(const medal_stuff &m);
 };
 
 extern SCP_vector<medal_stuff> Medals;
