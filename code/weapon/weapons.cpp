@@ -7779,13 +7779,13 @@ void weapon_info::reset()
 	// Reset using default constructor
 	this->impact_decal = decals::creation_info();
 }
-const char* weapon_info::get_display_name() {
-	if (has_display_name()) {
+const char* weapon_info::get_display_string() {
+	if (has_alternate_name()) {
 		return alt_name;
 	} else {
 		return name;
 	}
 }
-bool weapon_info::has_display_name() {
+bool weapon_info::has_alternate_name() {
 	return alt_name[0] != '\0';
 }

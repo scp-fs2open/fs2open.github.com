@@ -5754,7 +5754,7 @@ void HudGaugeWeaponEnergy::render(float  /*frametime*/)
 				// show all primary banks
 				for ( i = 0; i < Player_ship->weapons.num_primary_banks; i++ ) {
 					wip = &Weapon_info[sw->primary_bank_weapons[i]];
-					strcpy_s(buf, wip->get_display_name());
+					strcpy_s(buf, wip->get_display_string());
 
 					if ( Armed_alignment ) {
 						gr_get_string_size(&w, &h, buf);
@@ -5768,7 +5768,7 @@ void HudGaugeWeaponEnergy::render(float  /*frametime*/)
 				// just show the current armed bank
 				i = Player_ship->weapons.current_primary_bank;
 				wip = &Weapon_info[sw->primary_bank_weapons[i]];
-				strcpy_s(buf, wip->get_display_name());
+				strcpy_s(buf, wip->get_display_string());
 
 				if ( Armed_alignment ) {
 					gr_get_string_size(&w, &h, buf);
@@ -6058,7 +6058,7 @@ void HudGaugeWeapons::render(float  /*frametime*/)
 				renderBitmap(primary_last[ballistic_hud_index].first_frame, position[0] + frame_offset_x[ballistic_hud_index], y);
 		}
 
-		strcpy_s(name, Weapon_info[sw->primary_bank_weapons[i]].get_display_name());
+		strcpy_s(name, Weapon_info[sw->primary_bank_weapons[i]].get_display_string());
 		if (Lcl_gr && !Disable_built_in_translations) {
 			lcl_translate_wep_name_gr(name);
 		}
@@ -6126,15 +6126,15 @@ void HudGaugeWeapons::render(float  /*frametime*/)
 
 		maybeFlashWeapon(np+i);
 
-		if (wip->has_display_name()) {
+		if (wip->has_alternate_name()) {
 			// Do not apply the cluster bomb hack if we have an alternate name to make translating that name possible
-			strcpy_s(weapon_name, wip->get_display_name());
+			strcpy_s(weapon_name, wip->get_display_string());
 		} else {
 			// HACK - make Cluster Bomb fit on the HUD.
 			if(!stricmp(wip->name,"cluster bomb")){
 				strcpy_s(weapon_name, NOX("Cluster"));
 			} else {
-				strcpy_s(weapon_name, wip->get_display_name());
+				strcpy_s(weapon_name, wip->get_display_string());
 			}
 		}
 
@@ -6696,7 +6696,7 @@ void HudGaugeWarheadCount::render(float  /*frametime*/)
 	}
 
 	char weapon_name[NAME_LENGTH + 10];
-	strcpy_s(weapon_name, wip->get_display_name());
+	strcpy_s(weapon_name, wip->get_display_string());
 	end_string_at_first_hash_symbol(weapon_name);
 
 	setGaugeColor();
@@ -6933,7 +6933,7 @@ void HudGaugePrimaryWeapons::render(float  /*frametime*/)
 
 		renderBitmap(_background_entry.first_frame, position[0], position[1] + bg_y_offset);
 
-		strcpy_s(name, Weapon_info[sw->primary_bank_weapons[i]].get_display_name());
+		strcpy_s(name, Weapon_info[sw->primary_bank_weapons[i]].get_display_string());
 
 		if (Lcl_gr && !Disable_built_in_translations) {
 			lcl_translate_wep_name_gr(name);
@@ -7052,7 +7052,7 @@ void HudGaugeSecondaryWeapons::render(float  /*frametime*/)
 
 		maybeFlashWeapon(num_primaries+i);
 
-		strcpy_s(weapon_name, wip->get_display_name());
+		strcpy_s(weapon_name, wip->get_display_string());
 		end_string_at_first_hash_symbol(weapon_name);
 
 		if ( sw->current_secondary_bank == i ) {

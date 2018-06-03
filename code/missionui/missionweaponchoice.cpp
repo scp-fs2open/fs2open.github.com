@@ -2757,7 +2757,7 @@ void weapon_select_do(float frametime)
 				} else {
 					//Draw the weapon name, crappy last-ditch effort to not crash.
 					int half_x, half_y;
-					SCP_string print_name = Weapon_info[Carried_wl_icon.weapon_class].get_display_name();
+					SCP_string print_name = Weapon_info[Carried_wl_icon.weapon_class].get_display_string();
 
 					// Truncate the # and everything to the right. Zacam
 					end_string_at_first_hash_symbol(print_name);
@@ -2793,7 +2793,7 @@ void weapon_select_do(float frametime)
 				if (Lcl_gr && !Disable_built_in_translations)
 				{
 					char display_name[NAME_LENGTH];
-					strcpy_s(display_name, Weapon_info[Carried_wl_icon.weapon_class].get_display_name());
+					strcpy_s(display_name, Weapon_info[Carried_wl_icon.weapon_class].get_display_string());
 					lcl_translate_wep_name_gr(display_name);
 					popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("A %s is unable to carry %s weaponry", 633), (Ship_info[ship_class].alt_name[0] != '\0') ? Ship_info[ship_class].alt_name : Ship_info[ship_class].name, display_name);
 				}
@@ -3002,7 +3002,7 @@ void wl_render_icon(int index, int x, int y, int num, int draw_num_flag, int hot
 		{
 			//Draw the weapon name, crappy last-ditch effort to not crash.
 			int half_x, half_y;
-			SCP_string print_name = Weapon_info[index].get_display_name();
+			SCP_string print_name = Weapon_info[index].get_display_string();
 
 			// Truncate the # and everything to the right. Zacam
 			end_string_at_first_hash_symbol(print_name);
@@ -3550,7 +3550,7 @@ int wl_swap_slot_slot(int from_bank, int to_bank, int ship_slot, interface_snd_i
 				char display_name[NAME_LENGTH];
 				char txt[39 + NAME_LENGTH];
 
-				strcpy_s(display_name, Weapon_info[slot->wep[from_bank]].get_display_name());
+				strcpy_s(display_name, Weapon_info[slot->wep[from_bank]].get_display_string());
 
 				// might have to get weapon name translation
 				if (Lcl_gr && !Disable_built_in_translations) {
@@ -3800,7 +3800,7 @@ int wl_swap_list_slot(int from_list, int to_bank, int ship_slot, interface_snd_i
 			char display_name[NAME_LENGTH];
 			char txt[39 + NAME_LENGTH];
 
-			strcpy_s(display_name, Weapon_info[from_list].get_display_name());
+			strcpy_s(display_name, Weapon_info[from_list].get_display_string());
 
 			// might have to get weapon name translation
 			if (Lcl_gr && !Disable_built_in_translations) {
@@ -4038,13 +4038,13 @@ void wl_apply_current_loadout_to_all_ships_in_current_wing()
 			const char* wep_display_name;
 			if (Lcl_gr && !Disable_built_in_translations)
 			{
-				strcpy_s(buf, Weapon_info[weapon_type_to_add].get_display_name());
+				strcpy_s(buf, Weapon_info[weapon_type_to_add].get_display_string());
 				lcl_translate_wep_name_gr(buf);
 				wep_display_name = buf;
 			}
 			else
 			{
-				wep_display_name = Weapon_info[weapon_type_to_add].get_display_name();
+				wep_display_name = Weapon_info[weapon_type_to_add].get_display_string();
 			}
 
 			// make sure this ship can accept this weapon
@@ -4082,7 +4082,8 @@ void wl_apply_current_loadout_to_all_ships_in_current_wing()
 			if ((result == 0) || (result == 2))
 			{
 				SCP_string temp;
-				sprintf(temp, XSTR("Insufficient %s available to arm %s", 1632), Weapon_info[weapon_type_to_add].get_display_name());
+				sprintf(temp, XSTR("Insufficient %s available to arm %s", 1632),
+						Weapon_info[weapon_type_to_add].get_display_string());
 				error_messages.push_back(temp);
 
 				error_flag = true;
