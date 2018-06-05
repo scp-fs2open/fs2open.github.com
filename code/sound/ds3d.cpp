@@ -87,6 +87,10 @@ int ds3d_update_buffer(int channel_id, float min, float max, vec3d *pos, vec3d *
 //
 int ds3d_update_listener(vec3d *pos, vec3d *vel, matrix *orient)
 {
+	if (!ds_initialized) {
+		return -1;
+	}
+
 	if (Cmdline_no_3d_sound) {
 		nprintf(("Sound", "Aborting ds3d_update_listener due to Cmdline_no_3d_sound..."));
 		return -1;
