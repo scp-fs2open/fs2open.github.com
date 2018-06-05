@@ -83,6 +83,10 @@ int main(int argc, char* argv[]) {
 	SCP_mspdbcs_Initialise();
 #endif
 
+#ifndef NDEBUG
+	outwnd_init();
+#endif
+
 	qInstallMessageHandler(fsoMessageOutput);
 
 	SDL_SetMainReady();
