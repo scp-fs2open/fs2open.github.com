@@ -11911,7 +11911,7 @@ void sexp_transfer_cargo(int n)
 	// we must be sure that these two objects are indeed docked
 	if (!dock_check_find_direct_docked_object(&Objects[Ships[shipnum1].objnum], &Objects[Ships[shipnum2].objnum]))
 	{
-		Error(LOCATION, "Tried to transfer cargo between %s and %s although they aren't docked!", Ships[shipnum1].ship_name, Ships[shipnum2].ship_name);
+		Warning(LOCATION, "Tried to transfer cargo between %s and %s although they aren't docked!", Ships[shipnum1].ship_name, Ships[shipnum2].ship_name);
 		return;
 	}
 
@@ -11964,7 +11964,7 @@ void sexp_exchange_cargo(int n)
 	// we must be sure that these two objects are indeed docked
 	if (!dock_check_find_direct_docked_object(&Objects[Ships[shipnum1].objnum], &Objects[Ships[shipnum2].objnum]))
 	{
-		Error(LOCATION, "Tried to transfer cargo between %s and %s although they aren't docked!", Ships[shipnum1].ship_name, Ships[shipnum2].ship_name);
+		Warning(LOCATION, "Tried to exchange cargo between %s and %s although they aren't docked!", Ships[shipnum1].ship_name, Ships[shipnum2].ship_name);
 		return;
 	}
 
@@ -13845,7 +13845,7 @@ int sexp_event_status( int n, int want_true )
 	int i, result;
 
 	name = CTEXT(n);
-	Assertion(name != NULL, "CTEXT returned NULL for node %d!", n);
+	Assertion(name != nullptr, "CTEXT returned NULL for node %d!", n);
 
 	for (i = 0; i < Num_mission_events; i++ ) {
 		// look for the event name, check it's status.  If formula is gone, we know the state won't ever change.
@@ -13883,7 +13883,7 @@ int sexp_event_delay_status( int n, int want_true, bool use_msecs = false)
 	bool use_as_directive = false;
 
 	name = CTEXT(n);
-	Assertion(name != NULL, "CTEXT returned NULL for node %d!", n);
+	Assertion(name != nullptr, "CTEXT returned NULL for node %d!", n);
 
 	if (use_msecs) {
 		uint64_t tempDelay = eval_num(CDR(n));
@@ -13945,7 +13945,7 @@ int sexp_event_incomplete(int n)
 	int i;
 
 	name = CTEXT(n);
-	Assertion(name != NULL, "CTEXT returned NULL for node %d!", n);
+	Assertion(name != nullptr, "CTEXT returned NULL for node %d!", n);
 	
 	for (i = 0; i < Num_mission_events; i++ ) {
 		if ( !stricmp(Mission_events[i].name, name ) ) {
@@ -20992,7 +20992,7 @@ void sexp_set_camera_position(int n)
 void multi_sexp_set_camera_position()
 {
 	camera *cam = sexp_get_set_camera();
-	Assert(cam != NULL);
+	Assert(cam != nullptr);
 
 	vec3d camera_vec;
 	float camera_time = 0.0f;
@@ -23567,7 +23567,7 @@ int eval_sexp(int cur_node, int referenced_node)
 
 			case OP_DO_FOR_VALID_ARGUMENTS:
 				// do-for-valid-arguments should only ever be called within eval_when()
-				Assertion(false, "do-for-valid-arguments was encountered in eval_sexp()!");
+				Warning(LOCATION, "do-for-valid-arguments was encountered in eval_sexp()!");
 				break;
 
 			case OP_NUM_VALID_ARGUMENTS:
