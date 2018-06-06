@@ -63,3 +63,10 @@
  * @brief Specifies that an analyzer should consider this function as no-return
  */
 #define CLANG_ANALYZER_NORETURN
+
+/**
+ * @brief Specifies that the code at which point this macro appears at is unreachable
+ * @param msg The message to display in debug mode
+ * @param ... Format arguments for the message
+ */
+#define UNREACHABLE(msg, ...)

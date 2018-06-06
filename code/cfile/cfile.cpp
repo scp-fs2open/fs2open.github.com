@@ -902,7 +902,7 @@ static int cfget_cfile_block()
 	mprintf(("Out of cfile blocks! Currently opened files:\n"));
 	dump_opened_files();
 
-	Assertion(false, "There are no more free cfile blocks. This means that there are too many files opened by FSO.\n"
+	UNREACHABLE("There are no more free cfile blocks. This means that there are too many files opened by FSO.\n"
 		"This is probably caused by a programming or scripting error where a file does not get closed."); // out of free cfile blocks
 	return -1;			
 }

@@ -12,7 +12,7 @@ BufferType getBufferType(GpuHeap heap_type) {
 		return BufferType::Index;
 	case GpuHeap::NUM_VALUES:
 	default:
-		Assertion(false, "Invalid heap type detected!");
+		UNREACHABLE("Invalid heap type detected!");
 		return BufferType::Vertex;
 	}
 }

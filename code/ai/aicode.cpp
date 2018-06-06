@@ -15441,7 +15441,7 @@ int ai_issue_rearm_request(object *requester_objp)
 	// we aren't able to do anything!
 	else {
 		Assert(result == 4);
-		Assertion(false, "This case should have already been caught by the is_support_allowed precheck!");
+		UNREACHABLE("This case should have already been caught by the is_support_allowed precheck!");
 		return -1;
 	}
 }

@@ -72,3 +72,12 @@
 #endif
 
 #define CLANG_ANALYZER_NORETURN
+
+#ifndef NDEBUG
+#define UNREACHABLE(msg, ...)                                                                                          \
+	do {                                                                                                               \
+		os::dialogs::Error(__FILE__, __LINE__, msg, ##__VA_ARGS__);                                                    \
+	} while (false)
+#else
+#define UNREACHABLE(msg, ...) __builtin_unreachable()
+#endif

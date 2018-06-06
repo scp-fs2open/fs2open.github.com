@@ -4308,7 +4308,7 @@ int parse_modular_table(const char *name_check, void (*parse_callback)(const cha
 	int i, num_files = 0;
 
 	if ( (name_check == NULL) || (parse_callback == NULL) || ((*name_check) != '*') ) {
-		Assertion(false, "parse_modular_table() called with invalid arguments; get a coder!\n");
+		UNREACHABLE("parse_modular_table() called with invalid arguments; get a coder!\n");
 		return 0;
 	}
 

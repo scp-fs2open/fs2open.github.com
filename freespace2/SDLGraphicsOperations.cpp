@@ -34,7 +34,7 @@ void setOGLProperties(const os::ViewPortProperties& props) {
 			profile = SDL_GL_CONTEXT_PROFILE_COMPATIBILITY;
 			break;
 		default:
-			Assertion(false, "Unhandled profile value!");
+			UNREACHABLE("Unhandled profile value!");
 			return;
 	}
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, profile);
@@ -113,7 +113,7 @@ class SDLWindowViewPort: public os::Viewport {
 				SDL_SetWindowFullscreen(_window, SDL_WINDOW_FULLSCREEN);
 				break;
 			default:
-				Assertion(false, "Invalid window state!");
+				UNREACHABLE("Invalid window state!");
 				break;
 		}
 	}

@@ -204,8 +204,7 @@ luacpp::LuaValue LuaSEXP::sexpToLua(int node, int argnum) const {
 		return LuaValue::createValue(_action.getLuaState(), text);
 	}
 	default:
-		Assertion(false,
-				  "Unhandled argument type! Someone added an argument type but didn't add handling code to execute().");
+		UNREACHABLE("Unhandled argument type! Someone added an argument type but didn't add handling code to execute().");
 		return LuaValue::createNil(_action.getLuaState());
 	}
 }
