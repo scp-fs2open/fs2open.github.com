@@ -865,13 +865,13 @@ void multi_ingame_join_display_ship(object *objp,int y_start)
 	// blit the ship's primary weapons	
 	y_spacing = (Mi_spacing[gr_screen.res] - (wp->num_primary_banks * line_height)) / 2;
 	for(idx=0;idx<wp->num_primary_banks;idx++){
-		gr_string(Mi_primary_field[gr_screen.res][MI_FIELD_X], y_start + y_spacing + (idx * line_height), Weapon_info[wp->primary_bank_weapons[idx]].name, GR_RESIZE_MENU);
+		gr_string(Mi_primary_field[gr_screen.res][MI_FIELD_X], y_start + y_spacing + (idx * line_height), Weapon_info[wp->primary_bank_weapons[idx]].get_display_string(), GR_RESIZE_MENU);
 	}
 
 	// blit the ship's secondary weapons	
 	y_spacing = (Mi_spacing[gr_screen.res] - (wp->num_secondary_banks * line_height)) / 2;
 	for(idx=0;idx<wp->num_secondary_banks;idx++){
-		gr_string(Mi_secondary_field[gr_screen.res][MI_FIELD_X], y_start + y_spacing + (idx * line_height), Weapon_info[wp->secondary_bank_weapons[idx]].name, GR_RESIZE_MENU);
+		gr_string(Mi_secondary_field[gr_screen.res][MI_FIELD_X], y_start + y_spacing + (idx * line_height), Weapon_info[wp->secondary_bank_weapons[idx]].get_display_string(), GR_RESIZE_MENU);
 	}	
 
 	// blit the shield/hull integrity

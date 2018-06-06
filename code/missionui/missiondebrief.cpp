@@ -458,7 +458,7 @@ int Debrief_award_text_num_lines = 0;
 
 
 // prototypes, you know you love 'em
-void debrief_add_award_text(char *str);
+void debrief_add_award_text(const char *str);
 void debrief_award_text_clear();
 
 
@@ -483,7 +483,7 @@ const char *debrief_tooltip_handler(const char *str)
 
 	} else if (!stricmp(str, NOX("@Medal"))) {
 		if (Medal_bitmap >= 0){
-			return Medals[Player->stats.m_medal_earned].name;
+			return Medals[Player->stats.m_medal_earned].get_display_string();
 		}
 
 	} else if (!stricmp(str, NOX("@Rank"))) {
@@ -493,7 +493,7 @@ const char *debrief_tooltip_handler(const char *str)
 
 	} else if (!stricmp(str, NOX("@Badge"))) {
 		if (Badge_bitmap >= 0){
-			return Medals[Player->stats.m_badge_earned.back()].name;
+			return Medals[Player->stats.m_badge_earned.back()].get_display_string();
 		}
 	}
 
@@ -992,7 +992,7 @@ void debrief_award_init()
 		debrief_choose_medal_variant(buf, Player->stats.m_medal_earned, Player->stats.medal_counts[Player->stats.m_medal_earned] - 1);
 		Medal_bitmap = bm_load(buf);
 
-		debrief_add_award_text(Medals[Player->stats.m_medal_earned].name);
+		debrief_add_award_text(Medals[Player->stats.m_medal_earned].get_display_string());
 	}
 	
 	// handle promotions
@@ -1038,7 +1038,7 @@ void debrief_award_init()
 		// choose appropriate badge voice for this mission
 		debrief_choose_voice(Badge_stage.voice, Medals[Player->stats.m_badge_earned.back()].voice_base, persona_index);
 
-		debrief_add_award_text(Medals[Player->stats.m_badge_earned.back()].name);
+		debrief_add_award_text(Medals[Player->stats.m_badge_earned.back()].get_display_string());
 	}
 
 	if ((Rank_bitmap >= 0) || (Medal_bitmap >= 0) || (Badge_bitmap >= 0)) {
@@ -2247,7 +2247,7 @@ void debrief_award_text_clear() {
 }
 
 // this is the nastiest code I have ever written.  if you are modifying this, i feel bad for you.
-void debrief_add_award_text(char *str)
+void debrief_add_award_text(const char *str)
 {
 	Assert(Debrief_award_text_num_lines < AWARD_TEXT_MAX_LINES);
 	if (Debrief_award_text_num_lines >= AWARD_TEXT_MAX_LINES) {
@@ -2260,11 +2260,13 @@ void debrief_add_award_text(char *str)
 	// copy in the line
 	strcpy_s(Debrief_award_text[Debrief_award_text_num_lines], str);	
 
-	// maybe translate for displaying
-	if (Lcl_gr) {
-		lcl_translate_medal_name_gr(Debrief_award_text[Debrief_award_text_num_lines]);
-	} else if (Lcl_pl) {
-		lcl_translate_medal_name_pl(Debrief_award_text[Debrief_award_text_num_lines]);
+	if (!Disable_built_in_translations) {
+		// maybe translate for displaying
+		if (Lcl_gr) {
+			lcl_translate_medal_name_gr(Debrief_award_text[Debrief_award_text_num_lines]);
+		} else if (Lcl_pl) {
+			lcl_translate_medal_name_pl(Debrief_award_text[Debrief_award_text_num_lines]);
+		}
 	}
 
 	Debrief_award_text_num_lines++;

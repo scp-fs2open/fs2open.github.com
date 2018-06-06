@@ -977,7 +977,7 @@ void process_debug_keys(int k)
 			int *weap = &shipp->weapons.secondary_bank_weapons[shipp->weapons.current_secondary_bank];
 			*weap = get_next_weapon_looped(*weap, WP_MISSILE);
 
-			HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Secondary Weapon forced to %s", 18), Weapon_info[*weap].name);
+			HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Secondary Weapon forced to %s", 18), Weapon_info[*weap].get_display_string());
 			break;
 		}
 
@@ -990,7 +990,7 @@ void process_debug_keys(int k)
 			int *weap = &shipp->weapons.secondary_bank_weapons[shipp->weapons.current_secondary_bank];
 			*weap = get_prev_weapon_looped(*weap, WP_MISSILE);
 
-			HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Secondary Weapon forced to %s", 18), Weapon_info[*weap].name);
+			HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Secondary Weapon forced to %s", 18), Weapon_info[*weap].get_display_string());
 			break;
 		}
 		
@@ -1019,7 +1019,7 @@ void process_debug_keys(int k)
 			int *weap = &shipp->weapons.primary_bank_weapons[shipp->weapons.current_primary_bank];
 			*weap = get_next_weapon_looped(*weap, WP_LASER);
 			
-			HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Primary Weapon forced to %s", 19), Weapon_info[*weap].name);
+			HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Primary Weapon forced to %s", 19), Weapon_info[*weap].get_display_string());
 			break;
 		}
 
@@ -1031,7 +1031,7 @@ void process_debug_keys(int k)
 			int *weap = &shipp->weapons.primary_bank_weapons[shipp->weapons.current_primary_bank];
 			*weap = get_prev_weapon_looped(*weap, WP_LASER);
 		
-			HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Primary Weapon forced to %s", 19), Weapon_info[*weap].name);
+			HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Primary Weapon forced to %s", 19), Weapon_info[*weap].get_display_string());
 			break;
 		}
 

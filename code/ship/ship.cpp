@@ -11753,7 +11753,7 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 						HUD_sourced_printf(HUD_SOURCE_HIDDEN, "%s", XSTR( "Too far from target to acquire lock", 487));
 					} else {
 						char missile_name[NAME_LENGTH];
-						strcpy_s(missile_name, wip->name);
+						strcpy_s(missile_name, wip->get_display_string());
 						end_string_at_first_hash_symbol(missile_name);
 						HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Cannot fire %s without a lock", 488), missile_name);
 					}
@@ -11780,7 +11780,7 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 			{
 				if ( !Weapon_energy_cheat )
 				{
-					HUD_sourced_printf(HUD_SOURCE_HIDDEN, NOX("Cannot fire %s if target is not tagged"),wip->name);
+					HUD_sourced_printf(HUD_SOURCE_HIDDEN, NOX("Cannot fire %s if target is not tagged"),wip->get_display_string());
 					snd_play( gamesnd_get_game_sound(ship_get_sound(Player_obj, GameSounds::OUT_OF_MISSLES)) );
 					swp->next_secondary_fire_stamp[bank] = timestamp(800);	// to avoid repeating messages
 					return 0;
@@ -11838,7 +11838,7 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 			if ( obj == Player_obj ) 
 				if ( ship_maybe_play_secondary_fail_sound(wip) ) {
 					char missile_name[NAME_LENGTH];
-					strcpy_s(missile_name, Weapon_info[weapon_idx].name);
+					strcpy_s(missile_name, Weapon_info[weapon_idx].get_display_string());
 					end_string_at_first_hash_symbol(missile_name);
 					HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Cannot fire %s due to weapons system damage", 489), missile_name);
 				}
@@ -12177,7 +12177,7 @@ int ship_select_next_primary(object *objp, int direction)
 	{
 		if ( objp == Player_obj )
 		{
-			HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "This ship has only one primary weapon: %s", 491),Weapon_info[swp->primary_bank_weapons[swp->current_primary_bank]].name, swp->current_primary_bank + 1);
+			HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "This ship has only one primary weapon: %s", 491),Weapon_info[swp->primary_bank_weapons[swp->current_primary_bank]].get_display_string(), swp->current_primary_bank + 1);
 			gamesnd_play_error_beep();
 		}
 		return 0;
@@ -12375,7 +12375,7 @@ int ship_select_next_secondary(object *objp)
 	{
 		if ( objp == Player_obj )
 		{
-			HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "This ship has only one secondary weapon: %s", 493), Weapon_info[swp->secondary_bank_weapons[swp->current_secondary_bank]].name, swp->current_secondary_bank + 1);
+			HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "This ship has only one secondary weapon: %s", 493), Weapon_info[swp->secondary_bank_weapons[swp->current_secondary_bank]].get_display_string(), swp->current_secondary_bank + 1);
 			gamesnd_play_error_beep();
 		}
 		return 0;

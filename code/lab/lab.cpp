@@ -920,7 +920,7 @@ void labviewer_update_variables_window()
 		Assert(Lab_selected_index < Num_weapon_types);
 		weapon_info *wip = &Weapon_info[Lab_selected_index];
 
-		VAR_SET_VALUE(wip->name);
+		VAR_SET_VALUE(wip->get_display_string());
 		VAR_SET_VALUE_SAVE(wip->subtype, Num_weapon_subtypes - 1);
 
 		VAR_SET_VALUE_SAVE(wip->mass, 0);
@@ -1257,7 +1257,7 @@ void labviewer_update_desc_window()
 			}
 		}
 		else if (Lab_mode == LAB_MODE_WEAPON) {
-			Lab_description_window->SetCaption(Weapon_info[Lab_selected_index].name);
+			Lab_description_window->SetCaption(Weapon_info[Lab_selected_index].get_display_string());
 
 			if (Weapon_info[Lab_selected_index].tech_desc != NULL) {
 				Lab_description_text->SetText(Weapon_info[Lab_selected_index].tech_desc);
@@ -1543,7 +1543,7 @@ void labviewer_make_weap_window(Button*  /*caller*/)
 			stip = type_nodes[Weapon_info[i].subtype];
 		}
 
-		cmp->AddItem(stip, Weapon_info[i].name, i, false, labviewer_change_weapon);
+		cmp->AddItem(stip, Weapon_info[i].get_display_string(), i, false, labviewer_change_weapon);
 
 		//if (Weapon_info[i].tech_model[0] != '\0') {
 		//	cmp->AddItem(cwip, "Tech Model", 0, false, labviewer_show_tech_model);

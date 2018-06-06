@@ -191,38 +191,12 @@ medal_stuff::medal_stuff()
 	voice_base[0] = '\0';
 }
 
-medal_stuff::~medal_stuff()
-{
-	promotion_text.clear();
-}
-
-medal_stuff::medal_stuff(const medal_stuff &m)
-{
-	clone(m);
-}
-
-void medal_stuff::clone(const medal_stuff &m)
-{
-	memcpy(name, m.name, NAME_LENGTH);
-	memcpy(bitmap, m.bitmap, MAX_FILENAME_LEN);
-	memcpy(debrief_bitmap, m.debrief_bitmap, MAX_FILENAME_LEN);
-	num_versions = m.num_versions;
-	version_starts_at_1 = m.version_starts_at_1;
-	available_from_start = m.available_from_start;
-	kills_needed = m.kills_needed;
-	memcpy(voice_base, m.voice_base, MAX_FILENAME_LEN);
-
-	promotion_text = m.promotion_text;
-}
-
-// assignment operator
-medal_stuff& medal_stuff::operator=(const medal_stuff &m)
-{
-	if (this != &m) {
-		clone(m);
+const char* medal_stuff::get_display_string() {
+	if (!alt_name.empty()) {
+		return alt_name.c_str();
+	} else {
+		return name;
 	}
-
-	return *this;
 }
 
 void parse_medal_tbl()
@@ -310,6 +284,10 @@ void parse_medal_tbl()
 			// is this rank?  if so, save it
 			if (!stricmp(temp_medal.name, "Rank"))
 				Rank_medal_index = Num_medals;
+
+			if (optional_string("$Alt Name:")) {
+				stuff_string(temp_medal.alt_name, F_NAME);
+			}
 
 			required_string("$Bitmap:");
 			stuff_string(temp_medal.bitmap, F_NAME, MAX_FILENAME_LEN);
@@ -600,7 +578,7 @@ void medal_main_init(player *pl, int mode)
 		Medals_window.set_mask_bmap(bitmap_buf);
 }
 
-void blit_label(char *label, int num)
+void blit_label(const char *label, int num)
 {
 	int x, y, sw;
 	char text[256];
@@ -609,7 +587,8 @@ void blit_label(char *label, int num)
 
 	// translate medal names before displaying
 	// can't translate in table cuz the names are used in comparisons
-	if (Lcl_gr) {
+	// Medals now have alternate display names so this code can be disabled in the mod table
+	if (Lcl_gr && !Disable_built_in_translations) {
 		char translated_label[256];
 		strcpy_s(translated_label, label);
 		lcl_translate_medal_name_gr(translated_label);
@@ -620,7 +599,7 @@ void blit_label(char *label, int num)
 		} else {
 			sprintf( text, "%s", translated_label );
 		}
-	} else if (Lcl_pl) {
+	} else if (Lcl_pl && !Disable_built_in_translations) {
 		char translated_label[256];
 		strcpy_s(translated_label, label);
 		lcl_translate_medal_name_pl(translated_label);
@@ -736,7 +715,7 @@ int medal_main_do()
 
 		default:
 			if (Player_score->medal_counts[region] > 0) {
-				blit_label(Medals[region].name, Player_score->medal_counts[region]);
+				blit_label(Medals[region].get_display_string(), Player_score->medal_counts[region]);
 			}
 			break;
 	} // end switch
