@@ -33,6 +33,8 @@ struct DecoderStatus {
 	AVCodec* audioCodec = nullptr;
 	AVCodecContext* audioCodecCtx = nullptr;
 
+	// Subtitles are a bit different since they max come from a different file
+	bool externalSubtitles   = false;
 	int subtitleStreamIndex = -1;
 	AVStream* subtitleStream = nullptr;
 	CodecContextParameters subtitleCodecPars;
