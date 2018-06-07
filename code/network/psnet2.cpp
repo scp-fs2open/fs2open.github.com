@@ -1035,7 +1035,7 @@ void psnet_rel_close_socket( PSNET_SOCKET_RELIABLE *sockp )
 				vm_free(Reliable_sockets[*sockp].sbuffers[i]);
 			}
 			Reliable_sockets[*sockp].sbuffers[i] = NULL;
-			Reliable_sockets[*sockp].rsequence[i] = 0;
+			Reliable_sockets[*sockp].ssequence[i] = 0;
 		}
 	}
 
