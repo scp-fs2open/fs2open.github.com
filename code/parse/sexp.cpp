@@ -4107,7 +4107,6 @@ int div_sexps(int n)
 			n = Sexp_nodes[n].rest;
 			if (div == 0) {
 				Warning(LOCATION, "Division by zero in sexp. Please check all uses of the / operator for possible causes.\n");
-				Int3();
 				continue;
 			} 
 			sum /= div;
@@ -4335,11 +4334,7 @@ int rand_sexp(int n, bool multiple)
 {
 	int low, high, rand_num, seed;
 
-	if (n < 0)
-	{
-		Int3();
-		return 0;
-	}
+	Assert(n >= 0);
 
 	// when getting a saved value
 	if (Sexp_nodes[n].value == SEXP_NUM_EVAL)
@@ -10920,7 +10915,7 @@ void sexp_explosion_effect(int n)
 						break;
 	
 					default:
-						Int3();
+						Assertion(false, "Object magically changed type after exploding!");
 						break;
 				}
 			}	// end for
@@ -11056,7 +11051,7 @@ void sexp_send_one_message( char *name, char *who_from, char *priority, int grou
 	else if ( !stricmp(priority, "high") )
 		ipriority = MESSAGE_PRIORITY_HIGH;
 	else {
-		Int3();
+		Warning(LOCATION, "Encountered invalid priority \"%s\" in send-message", priority);
 		ipriority = MESSAGE_PRIORITY_NORMAL;
 	}
 
@@ -11916,6 +11911,7 @@ void sexp_transfer_cargo(int n)
 	// we must be sure that these two objects are indeed docked
 	if (!dock_check_find_direct_docked_object(&Objects[Ships[shipnum1].objnum], &Objects[Ships[shipnum2].objnum]))
 	{
+		Warning(LOCATION, "Tried to transfer cargo between %s and %s although they aren't docked!", Ships[shipnum1].ship_name, Ships[shipnum2].ship_name);
 		return;
 	}
 
@@ -11968,7 +11964,7 @@ void sexp_exchange_cargo(int n)
 	// we must be sure that these two objects are indeed docked
 	if (!dock_check_find_direct_docked_object(&Objects[Ships[shipnum1].objnum], &Objects[Ships[shipnum2].objnum]))
 	{
-		Int3();			// you are trying to transfer cargo between two ships not docked
+		Warning(LOCATION, "Tried to exchange cargo between %s and %s although they aren't docked!", Ships[shipnum1].ship_name, Ships[shipnum2].ship_name);
 		return;
 	}
 
@@ -13849,11 +13845,7 @@ int sexp_event_status( int n, int want_true )
 	int i, result;
 
 	name = CTEXT(n);
-
-	if (name == NULL) {
-		Int3();
-		return SEXP_FALSE;
-	}
+	Assertion(name != nullptr, "CTEXT returned NULL for node %d!", n);
 
 	for (i = 0; i < Num_mission_events; i++ ) {
 		// look for the event name, check it's status.  If formula is gone, we know the state won't ever change.
@@ -13891,11 +13883,7 @@ int sexp_event_delay_status( int n, int want_true, bool use_msecs = false)
 	bool use_as_directive = false;
 
 	name = CTEXT(n);
-
-	if (name == NULL) {
-		Int3();
-		return SEXP_FALSE;
-	}
+	Assertion(name != nullptr, "CTEXT returned NULL for node %d!", n);
 
 	if (use_msecs) {
 		uint64_t tempDelay = eval_num(CDR(n));
@@ -13957,11 +13945,7 @@ int sexp_event_incomplete(int n)
 	int i;
 
 	name = CTEXT(n);
-
-	if (name == NULL) {
-		Int3();
-		return SEXP_FALSE;
-	}
+	Assertion(name != nullptr, "CTEXT returned NULL for node %d!", n);
 	
 	for (i = 0; i < Num_mission_events; i++ ) {
 		if ( !stricmp(Mission_events[i].name, name ) ) {
@@ -19836,7 +19820,7 @@ int sexp_return_player_data(int node, int type)
 				break;
 
 			default:
-				Int3();
+				Error(LOCATION, "return-player-data was called with invalid type %d on node %d!", type, node);
 		}
 	}	
 	// AI ships also have a respawn count so we can return valid data for that at least
@@ -19856,8 +19840,9 @@ int sexp_return_player_data(int node, int type)
 				case OP_RESPAWNS_LEFT:
 					return Netgame.respawn - p_objp->respawn_count; 
 
-				default: 
-					Int3();
+				default:
+					// We should never reach this.
+					Assert(false);
 			}
 		}
 	}
@@ -19998,7 +19983,7 @@ void sexp_subsys_set_random(int node)
 	}
 
 	if (low > high) {
-		Int3();
+		Error(LOCATION, "subsys-set-random was passed an invalid range (%d ... %d)!", low, high);
 		return;
 	}
 
@@ -20296,7 +20281,7 @@ int process_special_sexps(int index)
 			return SEXP_FALSE;
 
 	default:
-		Int3();	//	Unsupported node type.
+		Assertion(false, "Special sexp processing code was called for an unsupported node type!");
 	}
 
 	return SEXP_FALSE;
@@ -21007,11 +20992,7 @@ void sexp_set_camera_position(int n)
 void multi_sexp_set_camera_position()
 {
 	camera *cam = sexp_get_set_camera();
-	
-	if(cam == NULL) {
-		Int3();
-		return;
-	}
+	Assert(cam != nullptr);
 
 	vec3d camera_vec;
 	float camera_time = 0.0f;
@@ -23586,7 +23567,7 @@ int eval_sexp(int cur_node, int referenced_node)
 
 			case OP_DO_FOR_VALID_ARGUMENTS:
 				// do-for-valid-arguments should only ever be called within eval_when()
-				Int3();
+				Warning(LOCATION, "do-for-valid-arguments was encountered in eval_sexp()!");
 				break;
 
 			case OP_NUM_VALID_ARGUMENTS:
@@ -25346,7 +25327,6 @@ void multi_sexp_eval()
 
 		if (op_num < 0) {
 			Warning(LOCATION, "Received invalid operator number from host in multi_sexp_eval(). Entire packet may be corrupt. Discarding packet"); 
-			Int3(); 
 			return; 	
 		}
 
@@ -25642,7 +25622,6 @@ void multi_sexp_eval()
 				// a more major problem
 				else {
 					Warning(LOCATION, "Received invalid SEXP packet from host. Function involving operator %d lacks termination. Entire packet may be corrupt. Discarding remaining packet", op_num); 
-					Int3(); 
 					return; 
 				}			
 		}
@@ -26330,7 +26309,7 @@ int query_operator_return_type(int op)
 				return dynamicSEXP->getReturnType();
 			}
 
-			Int3();
+			Assertion(false, "query_operator_return_type() called for unsupported operator type %d!", op);
 		}
 	}
 
@@ -28544,7 +28523,8 @@ int query_operator_argument_type(int op, int argnum)
 			if (dynamicSEXP != nullptr) {
 				return dynamicSEXP->getArgumentType(argnum);
 			}
-			Int3();
+
+			Assertion(false, "query_operator_argument_type(%d, %d) called for unsupported operator type!", op, argnum);
 		}
 	}
 
@@ -29790,7 +29770,7 @@ int sexp_variable_typed_count(int sexp_variables_index, int variable_type)
 		count++;
 	}
 	// shouldn't ever get here
-	Int3();
+	Assert(false);
 	return -1;
 }
 
@@ -29839,11 +29819,7 @@ void sexp_variable_sort()
  */
 int eval_num(int n)
 {
-	if (n < 0)
-	{
-		Int3();
-		return 0;
-	}
+	Assert(n >= 0);
 
 	if (CAR(n) != -1)				// if argument is a sexp
 		return eval_sexp(CAR(n));
