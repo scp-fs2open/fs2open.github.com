@@ -465,8 +465,6 @@ UI_XSTR Options_text[GR_NUM_RESOLUTIONS][OPTIONS_NUM_TEXT] = {
 
 void options_play_voice_clip()
 {
-	int snd_id;
-
 	if ( snd_is_playing(Voice_vol_handle) ) {
 		snd_stop(Voice_vol_handle);
 		Voice_vol_handle=-1;
@@ -474,7 +472,7 @@ void options_play_voice_clip()
 	auto gs = gamesnd_get_interface_sound(InterfaceSounds::VOICE_SLIDER_CLIP);
 	auto entry = gamesnd_choose_entry(gs);
 
-	snd_id = snd_load(entry, gs->flags, 0);
+	auto snd_id = snd_load(entry, gs->flags, 0);
 
 	Voice_vol_handle = snd_play_raw( snd_id, 0.0f, 1.0f, SND_PRIORITY_SINGLE_INSTANCE );
 }

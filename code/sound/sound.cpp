@@ -284,7 +284,7 @@ void snd_spew_debug_info()
 //						failure => -1
 //
 //int snd_load( char *filename, int hardware, int use_ds3d, int *sig)
-int snd_load( game_snd_entry *entry, int flags, int  /*allow_hardware_load*/ )
+sound_load_id snd_load(game_snd_entry* entry, int flags, int /*allow_hardware_load*/)
 {
 	int				type;
 	sound_info		*si;
@@ -293,10 +293,10 @@ int snd_load( game_snd_entry *entry, int flags, int  /*allow_hardware_load*/ )
 
 
 	if ( !ds_initialized )
-		return -1;
+		return sound_load_id::invalid();
 
 	if ( !VALID_FNAME(entry->filename) )
-		return -1;
+		return sound_load_id::invalid();
 
 	for (n = 0; n < Sounds.size(); n++) {
 		if ( !(Sounds[n].flags & SND_F_USED) ) {
@@ -308,7 +308,7 @@ int snd_load( game_snd_entry *entry, int flags, int  /*allow_hardware_load*/ )
 			//       but will not load a duplicate 2D entry to get stereo if 3D
 			//       version already loaded
 			if ( (Sounds[n].info.n_channels == 1) || !(flags & GAME_SND_USE_DS3D) ) {
-				return (int)n;
+				return sound_load_id(static_cast<int>(n));
 			}
 		}
 	}
@@ -332,7 +332,7 @@ int snd_load( game_snd_entry *entry, int flags, int  /*allow_hardware_load*/ )
 	nprintf(("Sound", "SOUND ==> Loading '%s'\n", entry->filename));
 
 	if (!audio_file->Open(entry->filename, false)) {
-		return -1;
+		return sound_load_id::invalid();
 	}
 
 	type = 0;
@@ -389,7 +389,7 @@ int snd_load( game_snd_entry *entry, int flags, int  /*allow_hardware_load*/ )
 	auto rc = ds_load_buffer(&snd->sid, type, audio_file.get());
 	if (rc == -1) {
 		nprintf(("Sound", "SOUND ==> Failed to load '%s'\n", entry->filename));
-		return -1;
+		return sound_load_id::invalid();
 	}
 
 	// NOTE: "si" values can change once loaded in the buffer
@@ -401,11 +401,11 @@ int snd_load( game_snd_entry *entry, int flags, int  /*allow_hardware_load*/ )
 	snd->sig = snd_next_sig++;
 	if (snd_next_sig < 0 ) snd_next_sig = 1;
 	entry->id_sig = snd->sig;
-	entry->id = (int)n;
+	entry->id     = sound_load_id(static_cast<int>(n));
 
 	nprintf(("Sound", "SOUND ==> Finished loading '%s'\n", entry->filename));
 
-	return (int)n;
+	return sound_load_id(static_cast<int>(n));
 }
 
 // ---------------------------------------------------------------------------------------
@@ -414,27 +414,33 @@ int snd_load( game_snd_entry *entry, int flags, int  /*allow_hardware_load*/ )
 // Unload a sound from memory.  This will release the storage, and the sound must be re-loaded via
 // sound_load() before it can be played again.
 //
-int snd_unload( int n )
+int snd_unload(sound_load_id n)
 {
 	if (!ds_initialized)
 		return 0;
 
-	if ( (n < 0) || ((size_t)n >= Sounds.size()) ) {
+	if (!n.isValid()) {
 		return 0;
 	}
 
-	ds_unload_buffer(Sounds[n].sid);
+	if ((size_t)n.value() >= Sounds.size()) {
+		return 0;
+	}
 
-	if (Sounds[n].sid != -1) {
-		Snd_sram -= Sounds[n].uncompressed_size;
+	auto& snd = Sounds[n.value()];
+
+	ds_unload_buffer(snd.sid);
+
+	if (snd.sid != -1) {
+		Snd_sram -= snd.uncompressed_size;
 	}
 
 	//If this sound is at the end of the array, we might as well get rid of it
-	if ( (size_t)n == Sounds.size()-1 ) {
+	if ((size_t)n.value() == Sounds.size() - 1) {
 		Sounds.pop_back();
 	} else {
-		Sounds[n].sid = -1;
-		Sounds[n].flags &= ~SND_F_USED;
+		snd.sid = -1;
+		snd.flags &= ~SND_F_USED;
 	}
 
 	return 1;
@@ -449,7 +455,7 @@ int snd_unload( int n )
 void snd_unload_all()
 {
 	while ( !Sounds.empty() ) {
-		snd_unload( (int)(Sounds.size()-1) );
+		snd_unload(sound_load_id((int)(Sounds.size() - 1)));
 	}
 }
 
@@ -476,12 +482,12 @@ void snd_close(void)
 // returns:		-1		=>		sound could not be played
 //					n		=>		handle for instance of sound
 //
-int snd_play_raw( int soundnum, float pan, float vol_scale, int priority )
+int snd_play_raw(sound_load_id soundnum, float pan, float vol_scale, int priority)
 {
 	game_snd gs;
 	int		rval;
 
-	if ( (soundnum < 0) || ((size_t)soundnum >= Sounds.size() ) ) {
+	if (!soundnum.isValid()) {
 		return -1;
 	}
 
@@ -489,7 +495,7 @@ int snd_play_raw( int soundnum, float pan, float vol_scale, int priority )
 	auto& entry = gs.sound_entries.back();
 
 	entry.id = soundnum;
-	entry.id_sig = Sounds[soundnum].sig;
+	entry.id_sig      = Sounds[soundnum.value()].sig;
 	entry.filename[0] = 0;
 //	entry.flags = GAME_SND_VOICE | GAME_SND_USE_DS3D;
 	gs.flags = GAME_SND_VOICE;
@@ -540,14 +546,14 @@ int snd_play( game_snd *gs, float pan, float vol_scale, int priority, bool is_vo
 	
 	auto entry = gamesnd_choose_entry(gs);
 
-	if ( entry->id == -1 ) {
+	if (!entry->id.isValid()) {
 		entry->id = snd_load(entry, gs->flags);
 		MONITOR_INC( NumSoundsLoaded, 1);
-	} else if ( entry->id_sig != Sounds[entry->id].sig ) {
+	} else if (entry->id_sig != Sounds[entry->id.value()].sig) {
 		entry->id = snd_load(entry, gs->flags);
 	}
 
-	if ( entry->id == -1 )
+	if (!entry->id.isValid())
 		return -1;
 
 	volume = gs->volume_range.next() * vol_scale;
@@ -559,7 +565,7 @@ int snd_play( game_snd *gs, float pan, float vol_scale, int priority, bool is_vo
 	if ( volume > 1.0f )
 		volume = 1.0f;
 
-	snd = &Sounds[entry->id];
+	snd = &Sounds[entry->id.value()];
 
 	if ( !(snd->flags & SND_F_USED) )
 		return -1;
@@ -625,17 +631,17 @@ int snd_play_3d(game_snd *gs, vec3d *source_pos, vec3d *listen_pos, float radius
 	
 	auto entry = gamesnd_choose_entry(gs);
 
-	if ( entry->id < 0 ) {
+	if (!entry->id.isValid()) {
 		entry->id = snd_load(entry, gs->flags);
 		MONITOR_INC( Num3DSoundsLoaded, 1 );
-	}else if ( entry->id_sig != Sounds[entry->id].sig ) {
+	} else if (entry->id_sig != Sounds[entry->id.value()].sig) {
 		entry->id = snd_load(entry, gs->flags);
 	}
 
-	if ( entry->id == -1 )
+	if (!entry->id.isValid())
 		return -1;
 
-	snd = &Sounds[entry->id];
+	snd = &Sounds[entry->id.value()];
 
 	if ( !(snd->flags & SND_F_USED) )
 		return -1;
@@ -834,17 +840,16 @@ int snd_play_looping( game_snd *gs, float pan, int  /*start_loop*/, int  /*stop_
 
 	auto entry = gamesnd_choose_entry(gs);
 
-	if ( entry->id == -1 ) {
+	if (!entry->id.isValid()) {
 		entry->id = snd_load(entry, gs->flags);
-	}
-	else if ( entry->id_sig != Sounds[entry->id].sig ) {
+	} else if (entry->id_sig != Sounds[entry->id.value()].sig) {
 		entry->id = snd_load(entry, gs->flags);
 	}
 
-	if ( entry->id == -1 )
+	if (!entry->id.isValid())
 		return -1;
 
-	snd = &Sounds[entry->id];
+	snd = &Sounds[entry->id.value()];
 
 	if ( !(snd->flags & SND_F_USED) )
 		return -1;
@@ -1080,9 +1085,9 @@ int snd_is_inited()
 }
 
 // return the time in ms for the duration of the sound
-int snd_get_duration(int snd_id)
+int snd_get_duration(sound_load_id snd_id)
 {
-	if ( snd_id < 0 )
+	if (!snd_id.isValid())
 		return 0;
 
 	Assertion( !Sounds.empty(), "Sounds vector is empty. Why are we trying to look up an index?\n" );
@@ -1090,20 +1095,21 @@ int snd_get_duration(int snd_id)
 	if ( Sounds.empty() )
 		return 0;
 
-	Assertion(Sounds[snd_id].duration > 0, "Sound duration for sound %s is bogus (%d)\n", Sounds[snd_id].filename, Sounds[snd_id].duration);
+	Assertion(Sounds[snd_id.value()].duration > 0, "Sound duration for sound %s is bogus (%d)\n",
+	          Sounds[snd_id.value()].filename, Sounds[snd_id.value()].duration);
 
-	if (Sounds[snd_id].duration > 0)
-		return Sounds[snd_id].duration;
+	if (Sounds[snd_id.value()].duration > 0)
+		return Sounds[snd_id.value()].duration;
 	else
 		return 0;
 }
 
 // return the time in ms for the duration of the sound
-const char *snd_get_filename(int snd_id)
+const char* snd_get_filename(sound_load_id snd_id)
 {
-	Assertion(snd_id >= 0 && snd_id < (int) Sounds.size(), "Invalid sound id %d!", snd_id);
+	Assertion(snd_id.isValid(), "Invalid sound id %d!", snd_id.value());
 
-	return Sounds[snd_id].filename;
+	return Sounds[snd_id.value()].filename;
 }
 
 
@@ -1227,11 +1233,11 @@ void snd_stop_any_sound()
 //
 // exit:		0	=>	success
 //				!0	=>	fail
-int snd_get_data(int handle, char *data)
+int snd_get_data(sound_load_id handle, char* data)
 {
-	Assert( (handle >= 0) && ((size_t)handle < Sounds.size()) );
+	Assert(handle.isValid());
 
-	if ( ds_get_data(Sounds[handle].sid, data) ) {
+	if (ds_get_data(Sounds[handle.value()].sid, data)) {
 		return -1;
 	}
 
@@ -1239,11 +1245,11 @@ int snd_get_data(int handle, char *data)
 }
 
 // return the size of the sound data associated with the sound handle
-int snd_size(int handle, int *size)
+int snd_size(sound_load_id handle, int* size)
 {
-	Assert( (handle >= 0) && ((size_t)handle < Sounds.size()) );
+	Assert(handle.isValid());
 
-	if ( ds_get_size(Sounds[handle].sid, size) ) {
+	if (ds_get_size(Sounds[handle.value()].sid, size)) {
 		return -1;
 	}
 
@@ -1251,38 +1257,15 @@ int snd_size(int handle, int *size)
 }
 
 // retrieve the bits per sample and frequency for a given sound
-void snd_get_format(int handle, int *bits_per_sample, int *frequency)
+void snd_get_format(sound_load_id handle, int* bits_per_sample, int* frequency)
 {
-	Assert( (handle >= 0) && ((size_t)handle < Sounds.size()) );
+	Assert((handle.isValid()) && ((size_t)handle.value() < Sounds.size()));
 
 	if (bits_per_sample)
-		*bits_per_sample = Sounds[handle].info.bits;
+		*bits_per_sample = Sounds[handle.value()].info.bits;
 
 	if (frequency)
-		*frequency = Sounds[handle].info.sample_rate;
-}
-
-// given a sound sig (handle) return the index in Sounds[] for that sound
-int snd_get_index(int sig)
-{
-	int channel, channel_id;
-	size_t i;
-
-	channel = ds_get_channel(sig);
-
-	if (channel < 0) {
-		return -1;
-	}
-
-	channel_id = ds_get_sound_id(channel);
-
-	for (i = 0; i < Sounds.size(); i++) {
-		if ( (Sounds[i].flags & SND_F_USED) && (Sounds[i].sig == channel_id) ) {
-			return (int)i;
-		}
-	}
-
-	return -1;
+		*frequency = Sounds[handle.value()].info.sample_rate;
 }
 
 // return the time for the sound to play in milliseconds
@@ -1305,12 +1288,12 @@ int snd_time_remaining(int handle)
 		return 0;
 	}
 
-	int current_offset, max_offset, sdx;
+	int current_offset, max_offset;
 	int bits_per_sample = 0, frequency = 0;
 
-	sdx = snd_get_index(handle);
+	auto sdx = snd_get_sound_id(handle);
 
-	if (sdx < 0) {
+	if (sdx.isValid()) {
 		Int3();
 		return 0;
 	}
@@ -1341,20 +1324,27 @@ int snd_time_remaining(int handle)
 //	mprintf(("time_remaining: %d\n", time_remaining));	
 	return time_remaining;
 }
-int snd_get_sound_id(int snd_handle) {
-	if (!ds_initialized)
-		return -1;
-
-	if ( snd_handle < 0 )
-		return -1;
+sound_load_id snd_get_sound_id(int snd_handle)
+{
+	if (!ds_initialized) {
+		return sound_load_id::invalid();
+	}
 
 	auto channel = ds_get_channel(snd_handle);
 
-	if (channel == -1) {
-		return -1;
+	if (channel < 0) {
+		return sound_load_id::invalid();
 	}
 
-	return ds_get_sound_index(channel);
+	auto channel_id = ds_get_sound_id(channel);
+
+	for (size_t i = 0; i < Sounds.size(); i++) {
+		if ((Sounds[i].flags & SND_F_USED) && (Sounds[i].sig == channel_id)) {
+			return sound_load_id((int)i);
+		}
+	}
+
+	return sound_load_id::invalid();
 }
 
 

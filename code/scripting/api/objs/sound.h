@@ -48,8 +48,7 @@ DECLARE_ADE_OBJ(l_Sound3D, sound_h);
 
 
 //**********HANDLE: Soundfile
-DECLARE_ADE_OBJ(l_Soundfile, int);
-
+DECLARE_ADE_OBJ(l_Soundfile, sound_load_id);
 }
 }
 

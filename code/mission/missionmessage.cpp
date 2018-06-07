@@ -322,7 +322,7 @@ int add_avi( char *avi_name )
 	// would have returned if a slot existed.
 	generic_anim_init( &extra.anim_data, avi_name );
 	strcpy_s( extra.name, avi_name );
-	extra.num = -1;
+	extra.num    = sound_load_id::invalid();
 	extra.exists = (generic_anim_load(&extra.anim_data) == 0); // load only to validate the anim
 	generic_anim_unload(&extra.anim_data); // unload to not waste bmpman slots
 	Message_avis.push_back(extra); 
@@ -345,7 +345,7 @@ int add_wave( const char *wave_name )
 
 	generic_anim_init( &extra.anim_data );
 	strcpy_s( extra.name, wave_name );
-	extra.num = -1;
+	extra.num = sound_load_id::invalid();
 	Message_waves.push_back(extra);
 	Num_message_waves++;
 	return ((int)Message_waves.size() - 1);
@@ -710,7 +710,7 @@ void messages_init()
 	}
 
 	for (i = 0; i < Num_builtin_waves; i++ ){
-		Message_waves[i].num = -1;
+		Message_waves[i].num = sound_load_id::invalid();
 	}
 
 	Message_shipnum = -1;
@@ -767,7 +767,7 @@ void message_mission_shutdown()
 
 	// remove the wave sounds from memory
 	for (i = 0; i < Num_message_waves; i++ ) {
-		if ( Message_waves[i].num != -1 ){
+		if (Message_waves[i].num.isValid()) {
 			snd_unload( Message_waves[i].num );
 		}
 	}
@@ -996,12 +996,12 @@ void message_load_wave(int index, const char *filename)
 {
 	Assertion(index >= 0, "Invalid index passed!");
 
-	if ( Message_waves[index].num >= 0) {
+	if (Message_waves[index].num.isValid()) {
 		return;
 	}
 
 	if ( !Sound_enabled ) {
-		Message_waves[index].num = -1;
+		Message_waves[index].num = sound_load_id::invalid();
 		return;
 	}
 
@@ -1009,7 +1009,7 @@ void message_load_wave(int index, const char *filename)
 	strcpy_s( tmp_gs.filename, filename );
 	Message_waves[index].num = snd_load( &tmp_gs, 0, 0 );
 
-	if (Message_waves[index].num == -1)
+	if (!Message_waves[index].num.isValid())
 		nprintf(("messaging", "Cannot load message wave: %s.  Will not play\n", Message_waves[index].name));
 }
 
@@ -1063,7 +1063,7 @@ bool message_play_wave( message_q *q )
 		if ( q->flags & MQF_CONVERT_TO_COMMAND ) {
 			char *p, new_filename[MAX_FILENAME_LEN];
 
-			Message_waves[index].num = -1;					// forces us to reload the message
+			Message_waves[index].num = sound_load_id::invalid(); // forces us to reload the message
 
 			// bash the filename here. Look for "[1-6]_" at the front of the message.  If found, then
 			// convert to TC_*
@@ -1082,7 +1082,7 @@ bool message_play_wave( message_q *q )
 
 		// load the sound file into memory
 		message_load_wave(index, filename);
-		if ( Message_waves[index].num == -1 ) {
+		if (!Message_waves[index].num.isValid()) {
 			m->wave_info.index = -1;
 		}
 
