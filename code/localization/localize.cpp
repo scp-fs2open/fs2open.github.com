@@ -278,7 +278,6 @@ void parse_stringstbl_common(const char *filename, const bool external)
 			if (external) {
 				ignore_white_space();
 				get_string(buf, sizeof(buf));
-				drop_trailing_white_space(buf);
 			} else {
 				stuff_string(buf, F_RAW, sizeof(buf));
 			}
