@@ -4682,7 +4682,7 @@ static int parse_ship_values(ship_info* sip, const bool is_template, const bool 
 		case -1:	// Possible return value if -noparseerrors is used
 			break;
 		default:
-			Assertion(false, "This should never happen.\n");	// Impossible return value from required_string_one_of.
+			UNREACHABLE("This should never happen.\n");	// Impossible return value from required_string_one_of.
 		}
 	}	
 
@@ -7429,7 +7429,7 @@ void ship_cleanup(int shipnum, int cleanup_mode)
 		break;
 	default:
 		// Can't Happen
-		Assertion(false, "Unknown cleanup_mode '%i' passed to ship_cleanup!", cleanup_mode);
+		UNREACHABLE("Unknown cleanup_mode '%i' passed to ship_cleanup!", cleanup_mode);
 		break;
 	}
 
@@ -7479,7 +7479,7 @@ void ship_cleanup(int shipnum, int cleanup_mode)
 		break;
 	default:
 		// Can't Happen, but we should've already caught this
-		Assertion(false, "Unknown cleanup_mode '%i' passed to ship_cleanup!", cleanup_mode);
+		UNREACHABLE("Unknown cleanup_mode '%i' passed to ship_cleanup!", cleanup_mode);
 		break;
 	}
 #endif
@@ -7502,7 +7502,7 @@ void ship_cleanup(int shipnum, int cleanup_mode)
 			break;
 		default:
 			// Can't Happen, but we should've already caught this
-			Assertion(false, "Unknown cleanup_mode '%i' passed to ship_cleanup!", cleanup_mode);
+			UNREACHABLE("Unknown cleanup_mode '%i' passed to ship_cleanup!", cleanup_mode);
 			break;
 		}
 	}
@@ -7527,7 +7527,7 @@ void ship_cleanup(int shipnum, int cleanup_mode)
 			break;
 		default:
 			// Can't Happen, but we should've already caught this
-			Assertion(false, "Unknown cleanup_mode '%i' passed to ship_cleanup!", cleanup_mode);
+			UNREACHABLE("Unknown cleanup_mode '%i' passed to ship_cleanup!", cleanup_mode);
 			break;
 		}
 		ship_wing_cleanup(shipnum, wingp);

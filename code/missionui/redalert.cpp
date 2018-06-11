@@ -794,7 +794,7 @@ void red_alert_delete_ship(int shipnum, int ship_state)
 		cleanup_mode = SHIP_DEPARTED_REDALERT;
 		break;
 	default:
-		Assertion(false, "Red-alert: Unknown delete state '%i'\n", ship_state);
+		UNREACHABLE("Red-alert: Unknown delete state '%i'\n", ship_state);
 		cleanup_mode = SHIP_VANISHED;
 		break;
 	}

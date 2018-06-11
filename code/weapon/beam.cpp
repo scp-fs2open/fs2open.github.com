@@ -306,14 +306,14 @@ int beam_fire(beam_fire_info *fire_info)
 
 	// make sure the beam_info_index is valid
 	if ((fire_info->beam_info_index < 0) || (fire_info->beam_info_index >= Num_weapon_types) || !(Weapon_info[fire_info->beam_info_index].wi_flags[Weapon::Info_Flags::Beam])) {
-		Assertion(false, "beam_info_index (%d) invalid (either <0, >= %d, or not actually a beam)!\n", fire_info->beam_info_index, Num_weapon_types);
+		UNREACHABLE("beam_info_index (%d) invalid (either <0, >= %d, or not actually a beam)!\n", fire_info->beam_info_index, Num_weapon_types);
 		return -1;
 	}
 
 	wip = &Weapon_info[fire_info->beam_info_index];	
 	// make sure a ship is firing this
 	if (!(fire_info->bfi_flags & BFIF_FLOATING_BEAM) && ((fire_info->shooter->type != OBJ_SHIP) || (fire_info->shooter->instance < 0) || (fire_info->shooter->instance >= MAX_SHIPS)) ) {
-		Assertion(false, "Fixed beam fired without a valid ship!\n");
+		UNREACHABLE("Fixed beam fired without a valid ship!\n");
 		return -1;
 	}
 	if (fire_info->shooter != NULL) {
@@ -2270,7 +2270,7 @@ void beam_aim(beam *b)
 		break;
 
 	default:
-		Assertion(false, "Impossible beam type (%d); get a coder!\n", b->type);
+		UNREACHABLE("Impossible beam type (%d); get a coder!\n", b->type);
 	}
 
 	// recalculate object pairs

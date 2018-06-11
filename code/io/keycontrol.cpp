@@ -140,7 +140,7 @@ size_t factor_table::getNext(size_t n, size_t current)
 		}
 	}
 
-	Assertion(false, "For some reason, factor_table::getNext() was unable to locate the current factor. This should never happen; get a coder!\n");
+	UNREACHABLE("For some reason, factor_table::getNext() was unable to locate the current factor. This should never happen; get a coder!\n");
 	return 1;
 }
 

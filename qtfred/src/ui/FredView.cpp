@@ -770,7 +770,7 @@ void FredView::handleObjectEditor(int objNum) {
 		} else if (Objects[objNum].type == OBJ_POINT) {
 			return;
 		} else {
-			Assertion(false, "Unhandled object type!");
+			UNREACHABLE("Unhandled object type!");
 		}
 	}
 }

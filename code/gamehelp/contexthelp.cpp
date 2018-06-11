@@ -483,7 +483,7 @@ void parse_helptbl(const char *filename)
 					break;
 				case 4: // $end
 				default:
-					Assertion(false, "This should never happen.\n");
+					UNREACHABLE("This should never happen.\n");
 					break;
 				}
 			}		// end while
