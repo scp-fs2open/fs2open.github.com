@@ -253,12 +253,14 @@ void outwnd_init()
 		memset( pathname, 0, sizeof(pathname) );
 		snprintf( pathname, MAX_PATH_LEN, "%s/%s", Pathtypes[CF_TYPE_DATA].path, FreeSpace_logfilename);
 
-		Log_fp = fopen(os_get_config_path(pathname).c_str(), "wb");
+		auto logpath = os_get_config_path(pathname);
+
+		Log_fp = fopen(logpath.c_str(), "wb");
 
 		outwnd_inited = Log_fp != nullptr;
 
 		if (Log_fp == NULL) {
-			fprintf(stderr, "Error opening %s\n", pathname);
+			fprintf(stderr, "Error opening %s\n", logpath.c_str());
 		} else {
 			time_t timedate = time(NULL);
 			char datestr[50];
@@ -266,7 +268,7 @@ void outwnd_init()
 			memset(datestr, 0, sizeof(datestr));
 			strftime(datestr, sizeof(datestr) - 1, "%a %b %d %H:%M:%S %Y", localtime(&timedate));
 
-			outwnd_printf("General", "Opened log '%s', %s ...\n", pathname, datestr);
+			outwnd_printf("General", "Opened log '%s', %s ...\n", logpath.c_str(), datestr);
 		}
 	}
 }
