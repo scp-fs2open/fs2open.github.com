@@ -12,17 +12,11 @@
 #include "osapi/osapi.h"
 #include "cmdline/cmdline.h"
 
-#include <cstdio>
-#include <cstdlib>
-#include <cstring>
-#include <cctype>
-
 #ifdef WIN32
 #include <windows.h>
 // Stupid Microsoft is not able to fix a simple compile warning: https://connect.microsoft.com/VisualStudio/feedback/details/1342304/level-1-compiler-warnings-in-windows-sdk-shipped-with-visual-studio
 #pragma warning(push)
 #pragma warning(disable: 4091) // ignored on left of '' when no variable is declared
-#include <shlobj.h>
 #pragma warning(pop)
 #include <sddl.h>
 #endif
@@ -33,8 +27,8 @@ namespace
 	// REGISTRY FUNCTIONS
 	//
 
-	char szCompanyName[128];
-	char szAppName[128];
+	char szCompanyName[128] = "Volition";
+	char szAppName[128] = "FreeSpace2";
 
 	int Os_reg_inited = 0;
 
@@ -42,9 +36,9 @@ namespace
 	// os registry functions -------------------------------------------------------------
 
 	// This code is needed for compatibility with the old windows registry
-
-	static bool userSIDValid = false;
-	static SCP_string userSID;
+	bool userSIDInitialized = false;
+	bool userSIDValid = false;
+	SCP_string userSID;
 
 	bool get_user_sid(SCP_string& outStr)
 	{
@@ -108,9 +102,8 @@ namespace
 #endif
 	}
 
-	HKEY get_registry_keyname(char* out_keyname, const char* section)
-	{
-		if (!Cmdline_alternate_registry_path) {
+	HKEY get_registry_keyname(char* out_keyname, const char* section, bool alternate_path) {
+		if (!alternate_path) {
 			// Use the original registry path, sometimes breaks for no reason which can be fixed by the code below
 			if (section) {
 				sprintf(out_keyname, "Software\\%s\\%s\\%s", szCompanyName, szAppName, section);
@@ -122,6 +115,19 @@ namespace
 		}
 		
 		// Every compiler from Visual Studio 2008 onward should have support for UAC
+		if (!userSIDInitialized)
+		{
+			OSVERSIONINFO versionInfo;
+			versionInfo.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
+			GetVersionEx(&versionInfo);
+
+			// Windows Vista is 6.0 which is the first version requiring this
+			if (versionInfo.dwMajorVersion >= 6)
+			{
+				userSIDValid = get_user_sid(userSID);
+			}
+			userSIDInitialized = true;
+		}
 #if _MSC_VER >= 1400
 		if (userSIDValid)
 		{
@@ -181,7 +187,7 @@ namespace
 			return;
 		}
 
-		HKEY useHKey = get_registry_keyname(keyname, section);
+		HKEY useHKey = get_registry_keyname(keyname, section, Cmdline_alternate_registry_path);
 
 		lResult = RegCreateKeyEx(useHKey,						// Where to add it
 			keyname,					// name of key
@@ -229,7 +235,7 @@ namespace
 			return;
 		}
 
-		HKEY useHKey = get_registry_keyname(keyname, section);
+		HKEY useHKey = get_registry_keyname(keyname, section, Cmdline_alternate_registry_path);
 
 		lResult = RegCreateKeyEx(useHKey,						// Where to add it
 			keyname,					// name of key
@@ -283,7 +289,7 @@ namespace
 			return NULL;
 		}
 
-		HKEY useHKey = get_registry_keyname(keyname, section);
+		HKEY useHKey = get_registry_keyname(keyname, section, Cmdline_alternate_registry_path);
 
 		lResult = RegOpenKeyEx(useHKey,			// Where it is
 			keyname,			// name of key
@@ -334,7 +340,7 @@ namespace
 			return default_value;
 		}
 
-		HKEY useHKey = get_registry_keyname(keyname, section);
+		HKEY useHKey = get_registry_keyname(keyname, section, Cmdline_alternate_registry_path);
 
 		lResult = RegOpenKeyEx(useHKey,			// Where it is
 			keyname,			// name of key
@@ -372,6 +378,63 @@ namespace
 	}
 #endif
 }
+
+#ifdef WIN32
+
+static time_t filetime_to_timet(const FILETIME& ft)
+{
+	ULARGE_INTEGER ull;
+	ull.LowPart = ft.dwLowDateTime;
+	ull.HighPart = ft.dwHighDateTime;
+	return ull.QuadPart / 10000000ULL - 11644473600ULL;
+}
+
+static time_t key_mod_time(bool alternate_path) {
+	char keyname[1024];
+
+	HKEY useHKey = get_registry_keyname(keyname, nullptr, alternate_path);
+
+	HKEY hKey = nullptr;
+	auto lResult = RegOpenKeyEx(useHKey,            // Where it is
+								keyname,            // name of key
+								0,                    // DWORD reserved
+								KEY_QUERY_VALUE,    // Allows all changes
+								&hKey);            // Location to store key
+
+	if (lResult != ERROR_SUCCESS) {
+		::RegCloseKey(hKey);
+		return 0;
+	}
+
+	FILETIME time;
+	lResult = RegQueryInfoKey(hKey,
+		nullptr,
+		nullptr,
+		nullptr,
+		nullptr,
+		nullptr,
+		nullptr,
+		nullptr,
+		nullptr,
+		nullptr,
+		nullptr,
+		&time);
+	::RegCloseKey(hKey);
+
+	if (lResult != ERROR_SUCCESS) {
+		return 0;
+	}
+	return filetime_to_timet(time);
+}
+
+time_t os_registry_get_last_modification_time() {
+	auto standard_time = key_mod_time(false);
+	auto alternate_time = key_mod_time(true);
+
+	return std::max(standard_time, alternate_time);
+}
+
+#endif
 
 // ------------------------------------------------------------------------------------------------------------
 // REGISTRY DEFINES/VARS
@@ -781,18 +844,6 @@ void os_init_registry_stuff(const char *company, const char *app)
 	else {
 		strcpy_s(szAppName, Osreg_app_name);
 	}
-
-#ifdef WIN32
-	OSVERSIONINFO versionInfo;
-	versionInfo.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
-	GetVersionEx(&versionInfo);
-
-	// Windows Vista is 6.0 which is the first version requiring this
-	if (versionInfo.dwMajorVersion >= 6)
-	{
-		userSIDValid = get_user_sid(userSID);
-	}
-#endif
 
 	Os_reg_inited = 1;
 }
