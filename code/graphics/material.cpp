@@ -635,27 +635,6 @@ float model_material::get_normal_alpha_max() const
 	return Normal_alpha_max;
 }
 
-void model_material::set_normal_extrude(float width)
-{
-	Normal_extrude = true;
-	Normal_extrude_width = width;
-}
-
-void model_material::set_normal_extrude()
-{
-	Normal_extrude = false;
-}
-
-bool model_material::is_normal_extrude_active() const
-{
-	return Normal_extrude;
-}
-
-float model_material::get_normal_extrude_width() const
-{
-	return Normal_extrude_width;
-}
-
 void model_material::set_fog(int r, int g, int b, float _near, float _far)
 {
 	Fog_params.enabled = true;
@@ -679,6 +658,16 @@ bool model_material::is_fogged() const
 const model_material::fog& model_material::get_fog() const
 {
 	return Fog_params;
+}
+
+void model_material::set_outline_thickness(float thickness) {
+	Outline_thickness = thickness;
+}
+float model_material::get_outline_thickness() const {
+	return Outline_thickness;
+}
+bool model_material::uses_thick_outlines() const {
+	return Outline_thickness > 0.0f;
 }
 
 uint model_material::get_shader_flags() const
@@ -768,8 +757,8 @@ uint model_material::get_shader_flags() const
 		Shader_flags |= SDR_FLAG_MODEL_NORMAL_ALPHA;
 	}
 
-	if ( Normal_extrude ) {
-		Shader_flags |= SDR_FLAG_MODEL_NORMAL_EXTRUDE;
+	if ( uses_thick_outlines() ) {
+		Shader_flags |= SDR_FLAG_MODEL_THICK_OUTLINES;
 	}
 
 	return Shader_flags;

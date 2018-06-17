@@ -29,6 +29,7 @@
 #include "math/floating.h"
 #include "model/model.h"
 #include "nebula/neb.h"
+#include "libs/renderdoc/renderdoc.h"
 #include "osapi/osapi.h"
 #include "osapi/osregistry.h"
 #include "render/3d.h"
@@ -1389,6 +1390,9 @@ bool gr_opengl_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 		  gr_screen.max_w,
 		  gr_screen.max_h,
 		  gr_screen.bits_per_pixel ));
+
+	// Load the RenderDoc API if available before doing anything with OpenGL
+	renderdoc::loadApi();
 
 	graphic_operations = std::move(graphicsOps);
 

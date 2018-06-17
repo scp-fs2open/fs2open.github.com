@@ -213,9 +213,9 @@ static opengl_shader_variant_t GL_shader_variants[] = {
 		{ },
 		"Normal Alpha" },
 
-	{ SDR_TYPE_MODEL, false, SDR_FLAG_MODEL_NORMAL_EXTRUDE, "FLAG_NORMAL_EXTRUDE",
+	{ SDR_TYPE_MODEL, true, SDR_FLAG_MODEL_THICK_OUTLINES, "FLAG_THICK_OUTLINE",
 		{ },
-		"Normal Extrusion" },
+		"Thick outlines" },
 
 	{ SDR_TYPE_EFFECT_PARTICLE, true, SDR_FLAG_PARTICLE_POINT_GEN, "FLAG_EFFECT_GEOMETRY", 
 		{ opengl_vert_attrib::UVEC },
@@ -337,7 +337,7 @@ void opengl_shader_shutdown()
 	GL_shader.clear();
 }
 
-static SCP_string opengl_shader_get_header(shader_type type_id, int flags) {
+static SCP_string opengl_shader_get_header(shader_type type_id, int flags, bool has_geo_shader) {
 	SCP_stringstream sflags;
 
 	sflags << "#version " << GLSL_version << " core\n";
@@ -348,6 +348,11 @@ static SCP_string opengl_shader_get_header(shader_type type_id, int flags) {
 
 	if (Detail.lighting < 3) {
 		sflags << "#define FLAG_LIGHT_MODEL_BLINN_PHONG\n";
+	}
+
+	if (has_geo_shader) {
+		// If there is a geometry shader then we define a special preprocessor symbol to make writing shaders easier
+		sflags << "#define HAS_GEOMETRY_SHADER\n";
 	}
 
 	if (type_id == SDR_TYPE_POST_PROCESS_MAIN || type_id == SDR_TYPE_POST_PROCESS_LIGHTSHAFTS || type_id == SDR_TYPE_POST_PROCESS_FXAA) {
@@ -476,9 +481,9 @@ static SCP_string handle_includes(const char* filename, const SCP_string& origin
 	return output.str();
 }
 
-static SCP_vector<SCP_string> opengl_get_shader_content(shader_type type_id, const char* filename, int flags, shader_stage) {
+static SCP_vector<SCP_string> opengl_get_shader_content(shader_type type_id, const char* filename, int flags, bool has_geo_shader) {
 	SCP_vector<SCP_string> parts;
-	parts.push_back(opengl_shader_get_header(type_id, flags));
+	parts.push_back(opengl_shader_get_header(type_id, flags, has_geo_shader));
 
 	parts.push_back(handle_includes(filename, opengl_load_shader(filename)));
 
@@ -690,13 +695,13 @@ void opengl_compile_shader_actual(shader_type sdr, const uint &flags, opengl_sha
 		}
 	}
 
-	auto vert_content = opengl_get_shader_content(sdr_info->type_id, sdr_info->vert, flags, SDR_STAGE_VERTEX);
-	auto frag_content = opengl_get_shader_content(sdr_info->type_id, sdr_info->frag, flags, SDR_STAGE_FRAGMENT);
+	auto vert_content = opengl_get_shader_content(sdr_info->type_id, sdr_info->vert, flags, use_geo_sdr);
+	auto frag_content = opengl_get_shader_content(sdr_info->type_id, sdr_info->frag, flags, use_geo_sdr);
 	SCP_vector<SCP_string> geom_content;
 
 	if (use_geo_sdr) {
 		// read geometry shader
-		geom_content = opengl_get_shader_content(sdr_info->type_id, sdr_info->geo, flags, SDR_STAGE_GEOMETRY);
+		geom_content = opengl_get_shader_content(sdr_info->type_id, sdr_info->geo, flags, use_geo_sdr);
 	}
 
 	auto shader_hash = get_shader_hash(vert_content, geom_content, frag_content);

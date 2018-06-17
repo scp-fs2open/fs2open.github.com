@@ -200,10 +200,10 @@ class model_material : public material
 	float Normal_alpha_min = 0.0f;
 	float Normal_alpha_max = 1.0f;
 
-	bool Normal_extrude = false;
-	float Normal_extrude_width = -1.0f;
-
 	fog Fog_params;
+
+	float Outline_thickness = -1.0f;
+
 public:
 	model_material();
 
@@ -246,10 +246,9 @@ public:
 	float get_normal_alpha_min() const;
 	float get_normal_alpha_max() const;
 
-	void set_normal_extrude(float width);
-	void set_normal_extrude();
-	bool is_normal_extrude_active() const;
-	float get_normal_extrude_width() const;
+	void set_outline_thickness(float thickness = -1.0f);
+	float get_outline_thickness() const;
+	bool uses_thick_outlines() const;
 
 	void set_batching(bool enabled);
 	bool is_batched() const;

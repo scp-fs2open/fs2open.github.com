@@ -33,7 +33,7 @@ layout (std140) uniform modelData {
 
 	model_light lights[MAX_LIGHTS];
 
-	float extrudeWidth;
+	float outlineWidth;
 	float fogStart;
 	float fogScale;
 	int buffer_matrix_offset;
@@ -426,6 +426,7 @@ void main()
 	// emissive colors won't be added later when we are using forward rendering so we need to do that here
 	baseColor.rgb += emissiveColor.rgb;
 #endif
+
 	fragOut0 = baseColor;
 #ifdef FLAG_DEFERRED
 	fragOut1 = vec4(vertIn.position.xyz, 1.0);

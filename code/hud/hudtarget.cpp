@@ -37,6 +37,7 @@
 #include "network/multi.h"
 #include "network/multiutil.h"
 #include "object/object.h"
+#include "libs/renderdoc/renderdoc.h"
 #include "parse/parselo.h"
 #include "playerman/player.h"
 #include "render/3dinternal.h"
@@ -7194,7 +7195,8 @@ void HudGaugeHardpoints::render(float  /*frametime*/)
 
 	render_info.set_color(gauge_color);
 	render_info.set_flags(MR_NO_LIGHTING | MR_AUTOCENTER | MR_NO_FOGGING | MR_NO_TEXTURING | MR_NO_ZBUFFER | MR_NO_CULL | MR_STENCIL_READ);
-	render_info.set_normal_extrude_width(_line_width * 0.01f);
+	// Factor was chosen pretty arbitrarily to make outline feature work with existing data
+	render_info.set_outline_thickness(15.f * _line_width);
 
 	model_render_immediate(
 		&render_info,
