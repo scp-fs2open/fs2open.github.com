@@ -15,6 +15,7 @@
 #include <ui/dialogs/EventEditorDialog.h>
 #include <ui/dialogs/BriefingEditorDialog.h>
 #include <ui/dialogs/WaypointEditorDialog.h>
+#include <ui/dialogs/MissionGoalsDialog.h>
 #include <ui/dialogs/ObjectOrientEditorDialog.h>
 #include <ui/dialogs/MissionSpecDialog.h>
 #include <ui/dialogs/FormWingDialog.h>
@@ -1052,6 +1053,10 @@ void FredView::on_actionShield_System_triggered(bool) {
 
 void FredView::on_actionVoice_Acting_Manager_triggered(bool) {
 	dialogs::VoiceActingManager dialog(this, _viewport);
+	dialog.exec();
+}
+void FredView::on_actionMission_Objectives_triggered(bool) {
+	dialogs::MissionGoalsDialog dialog(this, _viewport);
 	dialog.exec();
 }
 
