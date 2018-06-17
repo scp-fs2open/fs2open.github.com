@@ -349,6 +349,8 @@ static time_t get_file_modification_time(const SCP_string& path) {
 #endif
 }
 
+const char* Osapi_legacy_mode_reason = nullptr;
+
 bool os_is_legacy_mode()
 {
 	// Make this check a little faster by caching the result
@@ -361,6 +363,8 @@ bool os_is_legacy_mode()
 		// When the portable mode option is given, non-legacy is implied
 		legacyMode = false;
 		checkedLegacyMode = true;
+
+		Osapi_legacy_mode_reason = "Legacy mode disabled since portable mode was enabled.";
 	}
 	else {
 		SCP_stringstream path_stream;
@@ -407,15 +411,27 @@ bool os_is_legacy_mode()
 			// if the old config was modified more recently than the new config then we use the legacy mode since the
 			// user probably used an outdated launcher after using a more recent one
 			legacyMode = old_config_time > new_config_time;
+
+			if (legacyMode) {
+				Osapi_legacy_mode_reason = "Legacy mode enabled since the old config location was used more recently than the new location.";
+			} else {
+				Osapi_legacy_mode_reason = "Legacy mode disabled since the new config location was used more recently than the old location.";
+			}
 		} else if (new_config_exists) {
 			// If the new config exists and the old one doesn't then we can safely disable the legacy mode
 			legacyMode = false;
+
+			Osapi_legacy_mode_reason = "Legacy mode disabled since the old config does not exist while the new config exists.";
 		} else if (old_config_exists) {
 			// Old config exists but new doesn't -> use legacy mode
 			legacyMode = true;
+
+			Osapi_legacy_mode_reason = "Legacy mode enabled since the old config exists while the new config does not exist.";
 		} else {
 			// Neither old nor new config exists -> this is a new install
 			legacyMode = false;
+
+			Osapi_legacy_mode_reason = "Legacy mode disabled since no existing config was detected.";
 		}
 	}
 

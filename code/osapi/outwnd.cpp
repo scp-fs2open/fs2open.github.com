@@ -229,6 +229,8 @@ void outwnd_print(const char *id, const char *tmp)
 	}
 }
 
+extern const char* Osapi_legacy_mode_reason; // This was not exported in a header since it's not intended for general use
+
 void outwnd_init()
 {
 	if (outwnd_inited)
@@ -269,6 +271,8 @@ void outwnd_init()
 			strftime(datestr, sizeof(datestr) - 1, "%a %b %d %H:%M:%S %Y", localtime(&timedate));
 
 			outwnd_printf("General", "Opened log '%s', %s ...\n", logpath.c_str(), datestr);
+			mprintf(("Legacy config mode is %s.\nReason: %s\n", os_is_legacy_mode() ? "ENABLED" : "DISABLED",
+			         Osapi_legacy_mode_reason));
 		}
 	}
 }
