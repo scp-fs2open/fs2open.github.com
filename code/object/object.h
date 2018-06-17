@@ -243,6 +243,8 @@ void obj_move_one(object * obj, float frametime);
 // function to delete an object -- should probably only be called directly from editor code
 void obj_delete(int objnum);
 
+void obj_delete_all();
+
 // should only be used by the editor!
 void obj_merge_created_list(void);
 

@@ -1806,6 +1806,7 @@ void labviewer_change_background_actual()
 	else {
 		// (DahBlount) - This spot should be used to disable rendering features that only apply to missions.
 		Motion_debris_override = true;
+		Num_stars = 0;
 	}
 }
 
@@ -1924,6 +1925,10 @@ void lab_init()
 	Lab_viewer_flags |= LAB_FLAG_NO_ROTATION;
 	Lab_viewer_flags |= LAB_FLAG_INITIAL_ROTATION;
 
+	obj_init();
+
+	//Reset the background
+	labviewer_change_background_actual();
 
 	flagset<Object::Object_Flags> obs_flags;
 	auto obj_index = obj_create(OBJ_OBSERVER, -1, 0, &vmd_identity_matrix, &vmd_zero_vector, 0, obs_flags);
@@ -1941,6 +1946,19 @@ void lab_init()
 
 	if (The_mission.ai_profile == nullptr)
 		The_mission.ai_profile = &Ai_profiles[Default_ai_profile];
+
+	lab_cam_distance = 100.0f;
+	lab_cam_phi = 1.24f;
+	lab_cam_theta = 2.25f;
+
+	Lab_selected_index = -1;
+	Lab_last_selected_ship = -1;
+	Lab_selected_object = -1;
+	Lab_last_selected_weapon = -1;
+	Lab_model_num = -1;
+
+	Lab_selected_mission = "None";
+	Lab_skybox_orientation = vmd_identity_matrix;
 }
 
 #include "controlconfig/controlsconfig.h"
@@ -2174,5 +2192,5 @@ void lab_close()
 
 	cam_delete(Lab_cam);
 
-	Missiontime = Lab_Save_Missiontime;
+	obj_init();
 }

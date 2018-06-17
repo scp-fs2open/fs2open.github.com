@@ -891,6 +891,7 @@ void game_level_close()
 		mission_campaign_save_player_persistent_variables();	// Goober5000
 
 		// De-Initialize the game subsystems
+		obj_delete_all();
 		sexp_music_close();	// Goober5000
 		event_music_level_close();
 		game_stop_looped_sounds();
