@@ -31,6 +31,7 @@
 #include "scripting/api/objs/option.h"
 #include "scripting/api/objs/order.h"
 #include "scripting/api/objs/particle.h"
+#include "scripting/api/objs/model_path.h"
 #include "scripting/api/objs/physics_info.h"
 #include "scripting/api/objs/player.h"
 #include "scripting/api/objs/sexpvar.h"

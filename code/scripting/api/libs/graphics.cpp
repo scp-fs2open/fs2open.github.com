@@ -945,7 +945,7 @@ ADE_FUNC(
 		return ADE_RETURN_NIL;
 	}
 
-	if (!sshp->IsValid())
+	if (!sshp->isSubsystemValid())
 	{
 		return ADE_RETURN_NIL;
 	}
