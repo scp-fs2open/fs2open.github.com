@@ -506,6 +506,9 @@ static SCP_string get_shader_hash(const SCP_vector<SCP_string>& vert,
 		md5.update(reinterpret_cast<const char*>(&i), sizeof(i));
 	}
 
+	md5.update(GL_implementation_id.data(),
+	           (MD5::size_type)GL_implementation_id.size() * sizeof(SCP_string::value_type));
+
 	md5.finalize();
 
 	return md5.hexdigest();
@@ -559,6 +562,20 @@ static bool load_cached_shader_binary(opengl::ShaderProgram* program, const SCP_
 	}
 	auto binary_format = (GLenum) format;
 	json_decref(metadata_root);
+
+	bool supported = false;
+	for (auto supported_fmt : GL_binary_formats) {
+		if ((GLenum)supported_fmt == binary_format) {
+			supported = true;
+			break;
+		}
+	}
+
+	if (!supported) {
+		// This can happen in case an implementation stops supporting a particular binary format
+		nprintf(("ShaderCache", "Unsupported binary format %d encountered in shader cache.\n", binary_format));
+		return false;
+	}
 
 	auto binary_fp = cfopen(binary.c_str(), "rb", CFILE_NORMAL, CF_TYPE_CACHE);
 	if (!binary_fp) {

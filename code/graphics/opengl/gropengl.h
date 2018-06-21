@@ -58,4 +58,7 @@ extern GLuint GL_vao;
 
 extern float GL_alpha_threshold;
 
+extern SCP_string GL_implementation_id;
+extern SCP_vector<GLint> GL_binary_formats;
+
 #endif
