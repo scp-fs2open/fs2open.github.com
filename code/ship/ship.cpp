@@ -15092,7 +15092,7 @@ char *ship_return_time_to_goal(char *outbuf, ship *sp)
 	min_speed = objp->phys_info.speed;
 
 	// Goober5000 - handle cap
-	if (aip->waypoint_speed_cap >= 0)
+	if (aip->waypoint_speed_cap > 0)
 		max_speed = MIN(sp->current_max_speed, aip->waypoint_speed_cap);
 	else
 		max_speed = sp->current_max_speed;

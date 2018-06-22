@@ -32921,7 +32921,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	{ OP_CAP_WAYPOINT_SPEED, "cap-waypoint-speed\r\n"
 		"\tSets the maximum speed of a ship while flying waypoints.\r\n"
 		"\t1: Ship name\r\n"
-		"\t2: Maximum speed while flying waypoints\r\n"
+		"\t2: Maximum speed while flying waypoints (must be greater than 0)\r\n"
 		"\tNOTE: This will only work if the ship is already in the game\r\n"
 		"\tNOTE: Set to -1 to reset\r\n"},
 
