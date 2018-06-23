@@ -2385,13 +2385,15 @@ void bm_lock_png(int handle, bitmap_slot *bs, bitmap *bmp, int /*bpp*/, ubyte /*
 
 void bm_lock_tga(int handle, bitmap_slot *bs, bitmap *bmp, int bpp, ubyte flags) {
 	ubyte *data = NULL;
-	int d_size, byte_size;
+	int byte_size;
 	char filename[MAX_FILENAME_LEN];
 
 	auto be = &bs->entry;
 
 	// Unload any existing data
 	bm_free_data(bs);
+
+	bpp = be->bm.true_bpp;
 
 	if (Is_standalone) {
 		Assert(bpp == 8);
@@ -2409,7 +2411,6 @@ void bm_lock_tga(int handle, bitmap_slot *bs, bitmap *bmp, int bpp, ubyte flags)
 
 	if (data) {
 		memset(data, 0, be->mem_taken);
-		d_size = byte_size;
 	} else {
 		return;
 	}
@@ -2429,7 +2430,7 @@ void bm_lock_tga(int handle, bitmap_slot *bs, bitmap *bmp, int bpp, ubyte flags)
 	// this will populate filename[] whether it's EFF or not
 	EFF_FILENAME_CHECK;
 
-	tga_error = targa_read_bitmap(filename, data, NULL, d_size, be->dir_type);
+	tga_error = targa_read_bitmap(filename, data, nullptr, byte_size, be->dir_type);
 
 	if (tga_error != TARGA_ERROR_NONE) {
 		bm_free_data(bs);
