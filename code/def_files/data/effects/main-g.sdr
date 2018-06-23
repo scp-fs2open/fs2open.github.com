@@ -115,14 +115,12 @@ in VertexOutput {
 #ifdef FLAG_FOG
 	float fogDist;
 #endif
-#ifdef WORKAROUND_CLIPPING_PLANES
- #ifdef FLAG_TRANSFORM
-	float notVisible;
- #endif
-#endif
 #ifdef FLAG_SHADOW_MAP
  #if !defined(GL_ARB_gpu_shader5)
 	float instance;
+ #endif
+ #ifdef FLAG_TRANSFORM
+	float clipModel;
  #endif
 #else
 	vec4 position;
@@ -145,11 +143,6 @@ out VertexOutput {
 #ifdef FLAG_FOG
 	float fogDist;
 #endif
-#ifdef WORKAROUND_CLIPPING_PLANES
- #ifdef FLAG_TRANSFORM
-	float notVisible;
- #endif
-#endif
 	vec4 position;
 	vec3 normal;
 	vec4 texCoord;
@@ -169,9 +162,19 @@ void main(void)
 #endif
 	for(int vert = 0; vert < gl_in.length(); vert++)
 	{
+#ifdef FLAG_TRANSFORM
+		if (vertIn[vert].clipModel > 0.9) {
+			// If the model was clipped in the vertex shader then we do not apply the shadow projection matrix here
+			gl_Position = gl_in[vert].gl_Position;
+		} else {
+			gl_Position = shadow_proj_matrix[instanceID] * gl_in[vert].gl_Position;
+		}
+#else
 		gl_Position = shadow_proj_matrix[instanceID] * gl_in[vert].gl_Position;
+#endif
 		if(gl_Position.z < -1.0)
 			gl_Position.z = -1.0;
+
 		vertOut.position = gl_in[vert].gl_Position;
 		vertOut.normal = vertIn[vert].normal;
 		vertOut.texCoord = vertIn[vert].texCoord;
@@ -194,17 +197,8 @@ void main(void)
 		vertOut.shadowUV[3] = vertIn[vert].shadowUV[3];
 		vertOut.shadowPos = vertIn[vert].shadowPos;
 #endif
-#ifdef WORKAROUND_CLIPPING_PLANES
- #ifdef FLAG_TRANSFORM
-		vertOut.notVisible = vertIn[vert].notVisible;
- #endif
- #ifdef FLAG_CLIP
+#if defined(FLAG_CLIP)
 		gl_ClipDistance[0] = gl_in[vert].gl_ClipDistance[0];
- #endif
-#else
- #if defined(FLAG_CLIP) || defined(FLAG_TRANSFORM)
-		gl_ClipDistance[0] = gl_in[vert].gl_ClipDistance[0];
- #endif
 #endif
 		EmitVertex();
 	}
@@ -256,17 +250,8 @@ void main(void)
 			vertOut.shadowUV[3] = vertIn[vert].shadowUV[3];
 			vertOut.shadowPos = vertIn[vert].shadowPos;
 #endif
-#ifdef WORKAROUND_CLIPPING_PLANES
- #ifdef FLAG_TRANSFORM
-			vertOut.notVisible = vertIn[vert].notVisible;
- #endif
- #ifdef FLAG_CLIP
+#if defined(FLAG_CLIP)
 			gl_ClipDistance[0] = gl_in[vert].gl_ClipDistance[0];
- #endif
-#else
- #if defined(FLAG_CLIP) || defined(FLAG_TRANSFORM)
-			gl_ClipDistance[0] = gl_in[vert].gl_ClipDistance[0];
- #endif
 #endif
 			EmitVertex();
 		}
