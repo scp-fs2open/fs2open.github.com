@@ -91,6 +91,9 @@ static GLenum GL_read_format = GL_BGRA;
 
 GLuint GL_vao = 0;
 
+SCP_string GL_implementation_id;
+SCP_vector<GLint> GL_binary_formats;
+
 static std::unique_ptr<os::OpenGLContext> GL_context = nullptr;
 
 static std::unique_ptr<os::GraphicsOperations> graphic_operations = nullptr;
@@ -1434,6 +1437,21 @@ bool gr_opengl_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 	mprintf(( "  OpenGL Renderer  : %s\n", glGetString(GL_RENDERER) ));
 	mprintf(( "  OpenGL Version   : %s\n", glGetString(GL_VERSION) ));
 	mprintf(( "\n" ));
+
+	// Build a string identifier for this OpenGL implementation
+	GL_implementation_id.clear();
+	GL_implementation_id += reinterpret_cast<const char*>(glGetString(GL_VENDOR));
+	GL_implementation_id += "\n";
+	GL_implementation_id += reinterpret_cast<const char*>(glGetString(GL_RENDERER));
+	GL_implementation_id += "\n";
+	GL_implementation_id += reinterpret_cast<const char*>(glGetString(GL_VERSION));
+	GL_implementation_id += "\n";
+	GL_implementation_id += reinterpret_cast<const char*>(glGetString(GL_SHADING_LANGUAGE_VERSION));
+
+	GLint formats = 0;
+	glGetIntegerv(GL_NUM_PROGRAM_BINARY_FORMATS, &formats);
+	GL_binary_formats.resize(formats);
+	glGetIntegerv(GL_PROGRAM_BINARY_FORMATS, GL_binary_formats.data());
 
 	if (Cmdline_fullscreen_window || Cmdline_window) {
 		opengl_go_windowed();
