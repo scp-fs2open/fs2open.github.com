@@ -10454,7 +10454,7 @@ void sexp_play_sound_from_file(int n)
 void multi_sexp_play_sound_from_file()
 {
 	char filename[NAME_LENGTH];
-	bool (loop);
+	bool loop;
 	if (!Current_sexp_network_packet.get_string(filename)) {
 		return;
 	}
@@ -27636,6 +27636,9 @@ int query_operator_argument_type(int op, int argnum)
 					return OPF_SUBSYSTEM;
 				case 4:
 					return OPF_BOOL;
+				default:
+					UNREACHABLE("Invalid argnum %d detected!", argnum);
+					return OPF_NULL;
 			}
 
 		case OP_BEAM_FIRE_COORDS:

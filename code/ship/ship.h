@@ -875,37 +875,37 @@ class man_thruster {
 // Most of this only really applies properly to small ships
 typedef struct ship_collision_physics {
 	// Collision physics definitions: how a ship responds to collisions
-	float both_small_bounce;	// Bounce factor when both ships are small
+	float both_small_bounce{};	// Bounce factor when both ships are small
 								// This currently only comes into play if one ship is the player... 
 								// blame retail for that.
-	float bounce;				// Bounce factor for all other cases
-	float friction;				// Controls lateral velocity lost when colliding with a large ship
-	float rotation_factor;		// Affects the rotational energy of collisions... TBH not sure how. 
+	float bounce{};				// Bounce factor for all other cases
+	float friction{};				// Controls lateral velocity lost when colliding with a large ship
+	float rotation_factor{};		// Affects the rotational energy of collisions... TBH not sure how.
 
 	// Speed & angle constraints for a smooth landing
 	// Note that all angles are stored as a dotproduct between normalized vectors instead. This saves us from having
 	// to do a lot of dot product calculations later.
-	float landing_max_z;		
-	float landing_min_z;
-	float landing_min_y;
-	float landing_max_x;
-	float landing_max_angle;
-	float landing_min_angle;
-	float landing_max_rot_angle;
+	float landing_max_z{};
+	float landing_min_z{};
+	float landing_min_y{};
+	float landing_max_x{};
+	float landing_max_angle{};
+	float landing_min_angle{};
+	float landing_max_rot_angle{};
 
 	// Speed & angle constraints for a "rough" landing (one with normal collision consequences, but where 
 	// the ship is still reoriented towards its resting orientation)
-	float reorient_max_z;
-	float reorient_min_z;
-	float reorient_min_y;
-	float reorient_max_x;
-	float reorient_max_angle;
-	float reorient_min_angle;
-	float reorient_max_rot_angle;
+	float reorient_max_z{};
+	float reorient_min_z{};
+	float reorient_min_y{};
+	float reorient_max_x{};
+	float reorient_max_angle{};
+	float reorient_min_angle{};
+	float reorient_max_rot_angle{};
 
 	// Landing response parameters
-	float reorient_mult;		// How quickly the ship will reorient towards it's resting position
-	float landing_rest_angle;	// The vertical angle where the ship's orientation comes to rest
+	float reorient_mult{};		// How quickly the ship will reorient towards it's resting position
+	float landing_rest_angle{};	// The vertical angle where the ship's orientation comes to rest
 	gamesnd_id landing_sound_idx;		//Sound to play on successful landing collisions
 
 } ship_collision_physics;

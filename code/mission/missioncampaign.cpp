@@ -458,7 +458,7 @@ int mission_campaign_load( char *filename, player *pl, int load_savefile, bool r
 		auto len = strlen(filename) - 4;
 		Assert(len < MAX_FILENAME_LEN);
 		strncpy(Campaign.filename, filename, len);
-		Campaign.filename[len] = 0;
+		Campaign.filename[len] = '\0';
 
 		required_string("$Name:");
 		stuff_string( name, F_NAME, NAME_LENGTH );
@@ -846,7 +846,8 @@ void mission_campaign_savefile_delete( char *cfilename )
 		return;	// no such thing as a multiplayer campaign savefile
 	}
 
-	sprintf( filename, NOX("%s.%s.csg"), Player->callsign, base ); // only support the new filename here - taylor
+	// only support the new filename here - taylor
+	sprintf_safe( filename, NOX("%s.%s.csg"), Player->callsign, base );
 
 	cf_delete( filename, CF_TYPE_PLAYERS );
 }

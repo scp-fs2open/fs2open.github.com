@@ -595,9 +595,9 @@ void blit_label(const char *label, int num)
 
 		// set correct string
 		if ( num > 1 ) {
-			sprintf( text, NOX("%s (%d)"), translated_label, num );
+			sprintf_safe( text, NOX("%s (%d)"), translated_label, num );
 		} else {
-			sprintf( text, "%s", translated_label );
+			sprintf_safe( text, "%s", translated_label );
 		}
 	} else if (Lcl_pl && !Disable_built_in_translations) {
 		char translated_label[256];
@@ -606,16 +606,16 @@ void blit_label(const char *label, int num)
 
 		// set correct string
 		if ( num > 1 ) {
-			sprintf( text, NOX("%s (%d)"), translated_label, num );
+			sprintf_safe( text, NOX("%s (%d)"), translated_label, num );
 		} else {
-			sprintf( text, "%s", translated_label );
+			sprintf_safe( text, "%s", translated_label );
 		}
 	} else {
 		// set correct string
 		if ( num > 1 ) {
-			sprintf( text, NOX("%s (%d)"), label, num );
+			sprintf_safe( text, NOX("%s (%d)"), label, num );
 		} else {
-			sprintf( text, "%s", label );
+			sprintf_safe( text, "%s", label );
 		}
 	}
 
@@ -790,12 +790,12 @@ void init_medal_bitmaps()
 				// has no character. next version is a, then b, etc.
 				char temp[MAX_FILENAME_LEN];
 				strcpy_s(temp, base);
-				sprintf( base, "%s%c", temp, (num_medals-2)+'a');
+				sprintf_safe( base, "%s%c", temp, (num_medals-2)+'a');
 			}
 
 			// hi-res support
 			if (gr_screen.res == GR_1024) {
-				sprintf( filename, "2_%s", base );
+				sprintf_safe( filename, "2_%s", base );
 			}
 
 			// base now contains the actual medal bitmap filename needed to load

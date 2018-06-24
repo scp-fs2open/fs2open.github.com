@@ -1520,7 +1520,7 @@ ship_info::ship_info()
 
 	collision_damage_type_idx = -1;
 	// Retail default collision physics and default landing parameters
-	memset(&collision_physics, 0, sizeof(ship_collision_physics));
+	collision_physics = ship_collision_physics();
 	collision_physics.both_small_bounce = 5.0;
 	collision_physics.bounce = 5.0;
 	collision_physics.friction = COLLISION_FRICTION_FACTOR;
@@ -12669,7 +12669,7 @@ int ship_info_lookup(const char *token)
 			return -1;
 		}
 		// assemble using parentheses
-		sprintf(name, "%s (%s)", temp1, temp2);
+		sprintf_safe(name, "%s (%s)", temp1, temp2);
 	}
 	// found a parenthesis
 	else if (*p == '(')
@@ -12679,7 +12679,7 @@ int ship_info_lookup(const char *token)
 		*p2 = '\0';
 
 		// assemble using hash
-		sprintf(name, "%s#%s", temp1, temp2);
+		sprintf_safe(name, "%s#%s", temp1, temp2);
 	}
 	// oops
 	else

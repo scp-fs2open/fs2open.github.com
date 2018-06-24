@@ -591,7 +591,7 @@ int bm_create(int bpp, int w, int h, void *data, int flags) {
 
 	memset(entry, 0, sizeof(bitmap_entry));
 
-	sprintf(entry->filename, "TMP%dx%d+%d", w, h, bpp);
+	sprintf_safe(entry->filename, "TMP%dx%d+%d", w, h, bpp);
 	entry->type = BM_TYPE_USER;
 	entry->comp_type = BM_TYPE_NONE;
 	entry->palette_checksum = 0;
@@ -1253,7 +1253,7 @@ int bm_load(const char *real_filename) {
 
 	// Mark the slot as filled, because cf_read might load a new bitmap
 	// into this slot.
-	strncpy(entry->filename, filename, MAX_FILENAME_LEN - 1);
+	strcpy_s(entry->filename, filename);
 	entry->type = type;
 	entry->comp_type = c_type;
 	entry->signature = Bm_next_signature++;
@@ -1681,7 +1681,7 @@ int bm_load_animation(const char *real_filename, int *nframes, int *fps, int *ke
 
 		if (type == BM_TYPE_EFF) {
 			entry->info.ani.eff.type = eff_type;
-			sprintf(entry->info.ani.eff.filename, "%s_%.4d", clean_name, i);
+			sprintf_safe(entry->info.ani.eff.filename, "%s_%.4d", clean_name, i);
 
 			// bm_load_info() returns non-0 on failure
 			if (bm_load_info(eff_type, entry->info.ani.eff.filename,
@@ -1744,13 +1744,13 @@ int bm_load_animation(const char *real_filename, int *nframes, int *fps, int *ke
 		entry->load_count++;
 
 		if (i == 0) {
-			sprintf(entry->filename, "%s", filename);
+			sprintf_safe(entry->filename, "%s", filename);
 		} else {
 			if (type == BM_TYPE_PNG) {
-				sprintf(entry->filename, "%s_%04d", filename, i);
+				sprintf_safe(entry->filename, "%s_%04d", filename, i);
 			}
 			else {
-				sprintf(entry->filename, "%s[%d]", filename, i);
+				sprintf_safe(entry->filename, "%s[%d]", filename, i);
 			}
 		}
 
@@ -2527,7 +2527,7 @@ int bm_make_render_target(int width, int height, int flags) {
 
 	entry->type = (flags & BMP_FLAG_RENDER_TARGET_STATIC) ? BM_TYPE_RENDER_TARGET_STATIC : BM_TYPE_RENDER_TARGET_DYNAMIC;
 	entry->signature = Bm_next_signature++;
-	sprintf(entry->filename, "RT_%dx%d+%d", w, h, bpp);
+	sprintf_safe(entry->filename, "RT_%dx%d+%d", w, h, bpp);
 	entry->bm.w = (short)w;
 	entry->bm.h = (short)h;
 	entry->bm.rowsize = (short)w;

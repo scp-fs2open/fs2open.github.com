@@ -6,6 +6,8 @@
 
 #include "platformChecks.h"
 
+#include <utility>
+
 #if HAVE_STRCASECMP || HAVE_STRNCASECMP
 #if HAVE_STRINGS_H
 #include <strings.h>
@@ -61,5 +63,19 @@ inline void strlwr(char *s) {
 #error No support for snprintf detected!
 #endif
 #endif
+
+template<size_t SIZE, typename... Args>
+inline int sprintf_safe(char (&dest)[SIZE], const char* format, Args&&... args) {
+	auto written = snprintf(dest, SIZE, format, std::forward<Args>(args)...);
+
+	if (written < 0) {
+		return written;
+	}
+
+	if ((size_t)written >= SIZE) {
+		dest[SIZE - 1] = '\0';
+	}
+	return written;
+}
 
 #endif //FS2_OPEN_CASECMP_H

@@ -1127,7 +1127,7 @@ bool pilotfile::verify(const char *fname, int *rank, char *valid_language)
 	}
 
 	if (valid_language) {
-		strncpy(valid_language, p->language, sizeof(p->language));
+		strcpy(valid_language, p->language);
 	}
 
 	// need to cleanup early to ensure everything is OK for use in the CSG next
