@@ -43,7 +43,11 @@ const char* CHECKED_EXTENSIONS[] = {
 const char* CHECKED_SUBT_EXTENSIONS[] = {"srt"};
 
 double getFrameRate(AVStream* stream, AVCodecContext* codecCtx) {
+#if LIBAVCODEC_VERSION_INT > AV_VERSION_INT(58, 3, 102)
+	auto fps = av_q2d(stream->r_frame_rate);
+#else
 	auto fps = av_q2d(av_stream_get_r_frame_rate(stream));
+#endif
 
 	if (fps < 0.000001)
 	{
