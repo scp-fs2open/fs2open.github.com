@@ -535,10 +535,8 @@ void model_draw_list::render_buffer(queued_buffer_draw &render_elements)
 	GR_DEBUG_SCOPE("Render buffer");
 	TRACE_SCOPE(tracing::RenderBuffer);
 
-	gr_bind_uniform_buffer(uniform_block_type::ModelData,
-						   render_elements.uniform_buffer_offset,
-						   sizeof(graphics::model_uniform_data),
-						   _dataBuffer.bufferHandle());
+	gr_bind_uniform_buffer(uniform_block_type::ModelData, render_elements.uniform_buffer_offset,
+	                       sizeof(graphics::model_uniform_data), _dataBuffer.bufferHandle());
 
 	gr_render_model(&render_elements.render_material, render_elements.vert_src, render_elements.buffer, render_elements.texi);
 }

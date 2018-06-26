@@ -1369,8 +1369,8 @@ bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, int d_mode, 
 	gpu_heap_init();
 
 	mprintf(("Checking graphics capabilities:\n"));
-	mprintf(("  Persistent buffer mapping: %s\n", gr_is_capable(CAPABILITY_PERSISTENT_BUFFER_MAPPING) ? "Enabled"
-																									  : "Disabled"));
+	mprintf(("  Persistent buffer mapping: %s\n",
+	         gr_is_capable(CAPABILITY_PERSISTENT_BUFFER_MAPPING) ? "Enabled" : "Disabled"));
 
 	bool missing_installation = false;
 	if (!running_unittests && Web_cursor == nullptr) {
@@ -2420,17 +2420,12 @@ void gr_print_timestamp(int x, int y, fix timestamp, int resize_mode)
 
 static std::unique_ptr<graphics::util::UniformBufferManager> UniformBufferManager;
 
-static void uniform_buffer_managers_init() {
-	UniformBufferManager.reset(new graphics::util::UniformBufferManager());
-}
-static void uniform_buffer_managers_deinit() {
-	UniformBufferManager.reset();
-}
-static void uniform_buffer_managers_retire_buffers() {
-	UniformBufferManager->onFrameEnd();
-}
+static void uniform_buffer_managers_init() { UniformBufferManager.reset(new graphics::util::UniformBufferManager()); }
+static void uniform_buffer_managers_deinit() { UniformBufferManager.reset(); }
+static void uniform_buffer_managers_retire_buffers() { UniformBufferManager->onFrameEnd(); }
 
-graphics::util::UniformBuffer gr_get_uniform_buffer(uniform_block_type type, size_t num_elements) {
+graphics::util::UniformBuffer gr_get_uniform_buffer(uniform_block_type type, size_t num_elements)
+{
 	return UniformBufferManager->getUniformBuffer(type, num_elements);
 }
 

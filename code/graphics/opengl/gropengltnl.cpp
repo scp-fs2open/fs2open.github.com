@@ -122,9 +122,9 @@ static GLenum convertUsageHint(BufferUsageHint usage) {
 			return GL_DYNAMIC_DRAW;
 		case BufferUsageHint::Streaming:
 			return GL_STREAM_DRAW;
-		case BufferUsageHint::PersistentMapping:
-			return GL_NONE; // Dummy value
-		default:
+	    case BufferUsageHint::PersistentMapping:
+		    return GL_NONE; // Dummy value
+	    default:
 			UNREACHABLE("Unhandled enum value!");
 			return GL_INVALID_ENUM;
 	}
@@ -194,7 +194,7 @@ int opengl_create_buffer_object(GLenum type, GLenum gl_usage, BufferUsageHint us
 	GR_DEBUG_SCOPE("Create buffer object");
 
 	Assertion(usage != BufferUsageHint::PersistentMapping || GLAD_GL_ARB_buffer_storage != 0,
-			  "Persistent mapping is not supported by this OpenGL implementation!");
+	          "Persistent mapping is not supported by this OpenGL implementation!");
 
 	opengl_buffer_object buffer_obj;
 
@@ -286,13 +286,14 @@ void gr_opengl_update_buffer_data_offset(int handle, size_t offset, size_t size,
 	opengl_buffer_object &buffer_obj = GL_buffer_objects[handle];
 
 	Assertion(buffer_obj.usage != BufferUsageHint::PersistentMapping,
-			  "Persistently mapped buffers may not be updated!");
+	          "Persistently mapped buffers may not be updated!");
 
 	opengl_bind_buffer_object(handle);
 
 	glBufferSubData(buffer_obj.type, offset, size, data);
 }
-void* gr_opengl_map_buffer(int handle) {
+void* gr_opengl_map_buffer(int handle)
+{
 	GR_DEBUG_SCOPE("Map buffer");
 
 	Assert(handle >= 0);
@@ -301,16 +302,15 @@ void* gr_opengl_map_buffer(int handle) {
 	auto& buffer_obj = GL_buffer_objects[handle];
 
 	Assertion(buffer_obj.usage == BufferUsageHint::PersistentMapping,
-			  "Buffer mapping is only supported for persistently mapped buffers!");
+	          "Buffer mapping is only supported for persistently mapped buffers!");
 	Assertion(GLAD_GL_ARB_buffer_storage != 0, "Persistent mapping is not available in this OpenGL context!");
 
 	opengl_bind_buffer_object(handle);
-	return glMapBufferRange(buffer_obj.type,
-							0,
-							buffer_obj.size,
-							GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_FLUSH_EXPLICIT_BIT);
+	return glMapBufferRange(buffer_obj.type, 0, buffer_obj.size,
+	                        GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_FLUSH_EXPLICIT_BIT);
 }
-void gr_opengl_flush_mapped_buffer(int handle, size_t offset, size_t size) {
+void gr_opengl_flush_mapped_buffer(int handle, size_t offset, size_t size)
+{
 	GR_DEBUG_SCOPE("Flush mapped buffer");
 
 	Assert(handle >= 0);
@@ -319,7 +319,7 @@ void gr_opengl_flush_mapped_buffer(int handle, size_t offset, size_t size) {
 	auto& buffer_obj = GL_buffer_objects[handle];
 
 	Assertion(buffer_obj.usage == BufferUsageHint::PersistentMapping,
-			  "Buffer mapping is only supported for persistently mapped buffers!");
+	          "Buffer mapping is only supported for persistently mapped buffers!");
 	Assertion(GLAD_GL_ARB_buffer_storage != 0, "Persistent mapping is not available in this OpenGL context!");
 
 	opengl_bind_buffer_object(handle);
@@ -394,7 +394,7 @@ int opengl_create_texture_buffer_object()
 {
 	// create the buffer
 	int buffer_object_handle =
-		opengl_create_buffer_object(GL_TEXTURE_BUFFER, GL_DYNAMIC_DRAW, BufferUsageHint::Dynamic);
+	    opengl_create_buffer_object(GL_TEXTURE_BUFFER, GL_DYNAMIC_DRAW, BufferUsageHint::Dynamic);
 
 	opengl_check_for_errors();
 

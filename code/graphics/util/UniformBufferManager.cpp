@@ -47,8 +47,8 @@ size_t getHeaderSize(uniform_block_type type)
 namespace graphics {
 namespace util {
 
-
-UniformBufferManager::UniformBufferManager() {
+UniformBufferManager::UniformBufferManager()
+{
 	bool success = gr_get_property(gr_property::UNIFORM_BUFFER_OFFSET_ALIGNMENT, &_offset_alignment);
 	Assertion(success, "Uniform buffer usage requires a backend which allows to query the offset alignment!");
 
@@ -57,7 +57,8 @@ UniformBufferManager::UniformBufferManager() {
 	_segment_fences.fill(nullptr);
 	changeSegmentSize(4096);
 }
-UniformBufferManager::~UniformBufferManager() {
+UniformBufferManager::~UniformBufferManager()
+{
 	if (_active_uniform_buffer >= 0) {
 		gr_delete_buffer(_active_uniform_buffer);
 		_active_uniform_buffer = -1;
@@ -76,7 +77,8 @@ UniformBufferManager::~UniformBufferManager() {
 	}
 	_retired_buffers.clear();
 }
-void UniformBufferManager::onFrameEnd() {
+void UniformBufferManager::onFrameEnd()
+{
 	GR_DEBUG_SCOPE("Performing uniform frame end operations");
 
 	if (_segment_offset > _segment_size) {
@@ -102,11 +104,11 @@ void UniformBufferManager::onFrameEnd() {
 			_segment_fences[_active_segment] = nullptr;
 
 			if (i == 10) {
-				// I don't know how to handle this properly but this probably means that something went wrong with the GPU
+				// I don't know how to handle this properly but this probably means that something went wrong with the
+				// GPU
 				Error(LOCATION, "Failed to wait until uniform range is available! Get a coder.");
 			}
 		}
-
 	}
 
 	while (!_retired_buffers.empty()) {
@@ -124,11 +126,10 @@ void UniformBufferManager::onFrameEnd() {
 		}
 	}
 }
-UniformBuffer UniformBufferManager::getUniformBuffer(uniform_block_type type, size_t num_elements) {
-	auto size = UniformAligner::getBufferSize(num_elements,
-											  (size_t) _offset_alignment,
-											  getElementSize(type),
-											  getHeaderSize(type));
+UniformBuffer UniformBufferManager::getUniformBuffer(uniform_block_type type, size_t num_elements)
+{
+	auto size = UniformAligner::getBufferSize(num_elements, (size_t)_offset_alignment, getElementSize(type),
+	                                          getHeaderSize(type));
 
 	auto end_offset = _segment_offset + size;
 
@@ -146,7 +147,7 @@ UniformBuffer UniformBufferManager::getUniformBuffer(uniform_block_type type, si
 	}
 
 	auto data_offset = _segment_size * _active_segment + _segment_offset;
-	_segment_offset = end_offset;
+	_segment_offset  = end_offset;
 
 	// Even in the persistent mapping case we still use a temporary buffer since writing to GPU memory is not very fast
 	// when doing a lot of small writes (e.g. when building model uniform data). Instead we use a shadow buffer and
@@ -154,7 +155,8 @@ UniformBuffer UniformBufferManager::getUniformBuffer(uniform_block_type type, si
 	return UniformBuffer(this, data_offset, _shadow_uniform_buffer.get() + data_offset, size, getElementSize(type),
 	                     getHeaderSize(type), static_cast<size_t>(_offset_alignment));
 }
-void UniformBufferManager::changeSegmentSize(size_t new_size) {
+void UniformBufferManager::changeSegmentSize(size_t new_size)
+{
 	if (_active_uniform_buffer >= 0) {
 		// Retire the old buffer first
 		_retired_buffers.emplace_back(gr_sync_fence(), _active_uniform_buffer, std::move(_shadow_uniform_buffer));
@@ -170,19 +172,20 @@ void UniformBufferManager::changeSegmentSize(size_t new_size) {
 
 	_active_buffer_size = new_size * NUM_SEGMENTS;
 	_shadow_uniform_buffer.reset(new uint8_t[_active_buffer_size]);
-	_active_uniform_buffer = gr_create_buffer(BufferType::Uniform,
-											  _use_persistent_mapping ? BufferUsageHint::PersistentMapping
-																	  : BufferUsageHint::Dynamic);
+	_active_uniform_buffer = gr_create_buffer(
+	    BufferType::Uniform, _use_persistent_mapping ? BufferUsageHint::PersistentMapping : BufferUsageHint::Dynamic);
+
 	gr_update_buffer_data(_active_uniform_buffer, _active_buffer_size, nullptr);
 	if (_use_persistent_mapping) {
 		_buffer_ptr = gr_map_buffer(_active_uniform_buffer);
 	}
 
 	_active_segment = 0;
-	_segment_size = new_size;
+	_segment_size   = new_size;
 	_segment_offset = 0;
 }
-void UniformBufferManager::submitData(void* buffer, size_t data_size, size_t offset) {
+void UniformBufferManager::submitData(void* buffer, size_t data_size, size_t offset)
+{
 	if (_use_persistent_mapping) {
 		auto buffer_dest = reinterpret_cast<void*>(reinterpret_cast<uint8_t*>(_buffer_ptr) + offset);
 		memcpy(buffer_dest, buffer, data_size);
@@ -192,9 +195,6 @@ void UniformBufferManager::submitData(void* buffer, size_t data_size, size_t off
 		gr_update_buffer_data_offset(_active_uniform_buffer, offset, data_size, buffer);
 	}
 }
-int UniformBufferManager::getActiveBufferHandle() {
-	return _active_uniform_buffer;
-}
-
-}
-}
+int UniformBufferManager::getActiveBufferHandle() { return _active_uniform_buffer; }
+} // namespace util
+} // namespace graphics

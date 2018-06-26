@@ -96,8 +96,9 @@ void decal_draw_list::globalShutdown() {
 	gr_delete_buffer(box_index_buffer);
 }
 
-decal_draw_list::decal_draw_list(size_t num_decals) {
-	_buffer = gr_get_uniform_buffer(uniform_block_type::DecalInfo, num_decals);
+decal_draw_list::decal_draw_list(size_t num_decals)
+{
+	_buffer       = gr_get_uniform_buffer(uniform_block_type::DecalInfo, num_decals);
 	auto& aligner = _buffer.aligner();
 
 	// Initialize header data
@@ -148,20 +149,16 @@ void decal_draw_list::render() {
 	source.Ibuffer_handle = box_index_buffer;
 
 	// Bind the global data only once
-	gr_bind_uniform_buffer(uniform_block_type::DecalGlobals,
-						   0,
-						   sizeof(graphics::decal_globals),
-						   _buffer.bufferHandle());
+	gr_bind_uniform_buffer(uniform_block_type::DecalGlobals, 0, sizeof(graphics::decal_globals),
+	                       _buffer.bufferHandle());
 	gr_screen.gf_start_decal_pass();
 
 	for (auto& draw : _draws) {
 		GR_DEBUG_SCOPE("Draw single decal");
 		TRACE_SCOPE(tracing::RenderSingleDecal);
 
-		gr_bind_uniform_buffer(uniform_block_type::DecalInfo,
-							   draw.uniform_offset,
-							   sizeof(graphics::decal_info),
-							   _buffer.bufferHandle());
+		gr_bind_uniform_buffer(uniform_block_type::DecalInfo, draw.uniform_offset, sizeof(graphics::decal_info),
+		                       _buffer.bufferHandle());
 
 		gr_screen.gf_render_decals(&draw.draw_mat, PRIM_TYPE_TRIS, &layout, BOX_NUM_FACES, source);
 	}

@@ -20,26 +20,26 @@ class UniformAligner {
 
 	size_t _requiredAlignment = 1;
 
-	uint8_t* _buffer = nullptr;
+	uint8_t* _buffer    = nullptr;
 	size_t _buffer_size = 0;
 
 	size_t _buffer_offset = 0;
-	size_t _numElements = 0;
+	size_t _numElements   = 0;
 
 	size_t _dataSize = 0;
 	size_t _headerSize = 0;
  public:
-	UniformAligner();
-	UniformAligner(uint8_t* buffer, size_t buffer_size, size_t dataSize, size_t headerSize, size_t element_alignment);
+   UniformAligner();
+   UniformAligner(uint8_t* buffer, size_t buffer_size, size_t dataSize, size_t headerSize, size_t element_alignment);
 
-	void* addElement();
+   void* addElement();
 
-	template<typename T>
-	T* addTypedElement() {
-		Assertion(sizeof(T) == _dataSize,
-				  "Sizes of template parameter and runtime size do not match! This probably uses the wrong type.");
+   template <typename T> T* addTypedElement()
+   {
+	   Assertion(sizeof(T) == _dataSize,
+		         "Sizes of template parameter and runtime size do not match! This probably uses the wrong type.");
 
-		return reinterpret_cast<T*>(addElement());
+	   return reinterpret_cast<T*>(addElement());
 	}
 
 	template<typename THeader>

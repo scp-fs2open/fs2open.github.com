@@ -624,12 +624,7 @@ enum class BufferType {
 	Uniform
 };
 
-enum class BufferUsageHint {
-	Static,
-	Dynamic,
-	Streaming,
-	PersistentMapping
-};
+enum class BufferUsageHint { Static, Dynamic, Streaming, PersistentMapping };
 
 /**
  * @brief Type of a graphics sync object
@@ -994,10 +989,9 @@ inline int gr_create_buffer(BufferType type, BufferUsageHint usage)
 #define gr_delete_buffer				GR_CALL(gr_screen.gf_delete_buffer)
 #define gr_update_buffer_data			GR_CALL(gr_screen.gf_update_buffer_data)
 #define gr_update_buffer_data_offset	GR_CALL(gr_screen.gf_update_buffer_data_offset)
-inline void* gr_map_buffer(int handle) {
-	return gr_screen.gf_map_buffer(handle);
-}
-inline void gr_flush_mapped_buffer(int handle, size_t offset, size_t size) {
+inline void* gr_map_buffer(int handle) { return gr_screen.gf_map_buffer(handle); }
+inline void gr_flush_mapped_buffer(int handle, size_t offset, size_t size)
+{
 	gr_screen.gf_flush_mapped_buffer(handle, offset, size);
 }
 #define gr_update_transform_buffer		GR_CALL(gr_screen.gf_update_transform_buffer)

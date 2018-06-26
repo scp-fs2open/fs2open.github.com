@@ -110,13 +110,9 @@ void gr_stub_save_mouse_area(int  /*x*/, int  /*y*/, int  /*w*/, int  /*h*/)
 {
 }
 
-void gr_stub_update_buffer_data(int  /*handle*/, size_t  /*size*/, const void* /*data*/)
-{
-}
+void gr_stub_update_buffer_data(int /*handle*/, size_t /*size*/, const void* /*data*/) {}
 
-void gr_stub_update_buffer_data_offset(int  /*handle*/, size_t  /*offset*/, size_t  /*size*/, const void* /*data*/)
-{
-}
+void gr_stub_update_buffer_data_offset(int /*handle*/, size_t /*offset*/, size_t /*size*/, const void* /*data*/) {}
 
 void gr_stub_update_transform_buffer(void*  /*data*/, size_t  /*size*/)
 {
@@ -349,7 +345,8 @@ bool gr_stub_is_capable(gr_capability  /*capability*/)
 {
 	return false;
 }
-bool gr_stub_get_property(gr_property p,void* dest) {
+bool gr_stub_get_property(gr_property p, void* dest)
+{
 	if (p == gr_property::UNIFORM_BUFFER_OFFSET_ALIGNMENT) {
 		// This is required by the startup code of the uniform buffer manager
 		*reinterpret_cast<int*>(dest) = 4;
@@ -469,8 +466,8 @@ bool gr_stub_init()
 	gr_screen.gf_update_transform_buffer	= gr_stub_update_transform_buffer;
 	gr_screen.gf_update_buffer_data		= gr_stub_update_buffer_data;
 	gr_screen.gf_update_buffer_data_offset = gr_stub_update_buffer_data_offset;
-	gr_screen.gf_map_buffer = [](int) -> void* { return nullptr; };
-	gr_screen.gf_flush_mapped_buffer = [](int, size_t, size_t){};
+	gr_screen.gf_map_buffer                 = [](int) -> void* { return nullptr; };
+	gr_screen.gf_flush_mapped_buffer        = [](int, size_t, size_t) {};
 
 	gr_screen.gf_post_process_set_effect	= gr_stub_post_process_set_effect;
 	gr_screen.gf_post_process_set_defaults	= gr_stub_post_process_set_defaults;

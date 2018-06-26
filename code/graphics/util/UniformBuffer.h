@@ -18,20 +18,16 @@ class UniformBufferManager;
  */
 class UniformBuffer {
 	UniformBufferManager* _parent = nullptr;
-	size_t _parent_offset = 0;
+	size_t _parent_offset         = 0;
 
 	int _buffer_handle = -1;
 
 	UniformAligner _aligner;
- public:
+
+  public:
 	UniformBuffer();
-	UniformBuffer(UniformBufferManager* parent,
-				  size_t parent_offset,
-				  void* data_buffer,
-				  size_t buffer_size,
-				  size_t element_size,
-				  size_t header_size,
-				  size_t element_alignment);
+	UniformBuffer(UniformBufferManager* parent, size_t parent_offset, void* data_buffer, size_t buffer_size,
+	              size_t element_size, size_t header_size, size_t element_alignment);
 	~UniformBuffer();
 
 	UniformBuffer(const UniformBuffer&) = delete;

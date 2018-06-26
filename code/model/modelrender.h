@@ -254,7 +254,7 @@ class model_draw_list
 	SCP_vector<outline_draw> Outlines;
 
 	graphics::util::UniformBuffer _dataBuffer;
-	
+
 	bool Render_initialized = false; //!< A flag for checking if init_render has been called before a render_all call
 	
 	static bool sort_draw_pair(model_draw_list* target, const int a, const int b);

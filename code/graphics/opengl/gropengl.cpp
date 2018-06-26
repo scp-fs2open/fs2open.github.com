@@ -1147,8 +1147,8 @@ void opengl_setup_function_pointers()
 	gr_screen.gf_delete_buffer		= gr_opengl_delete_buffer;
 	gr_screen.gf_update_buffer_data		= gr_opengl_update_buffer_data;
 	gr_screen.gf_update_buffer_data_offset	= gr_opengl_update_buffer_data_offset;
-	gr_screen.gf_map_buffer = gr_opengl_map_buffer;
-	gr_screen.gf_flush_mapped_buffer = gr_opengl_flush_mapped_buffer;
+	gr_screen.gf_map_buffer                 = gr_opengl_map_buffer;
+	gr_screen.gf_flush_mapped_buffer        = gr_opengl_flush_mapped_buffer;
 	gr_screen.gf_bind_uniform_buffer = gr_opengl_bind_uniform_buffer;
 
 	gr_screen.gf_update_transform_buffer	= gr_opengl_update_transform_buffer;

@@ -16,6 +16,7 @@
 
 #include "globalincs/pstypes.h"
 #include "gropengl.h"
+#include "gropenglshader.h"
 #include "graphics/shadows.h"
 #include "model/model.h"
 
