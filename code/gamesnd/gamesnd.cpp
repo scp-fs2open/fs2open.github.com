@@ -617,6 +617,9 @@ void parse_gamesnd_old(game_snd* gs)
 	gs->sound_entries.resize(1);
 	auto& entry = gs->sound_entries.back();
 
+	// Default pitch is 1.0. This is set here in case we don't have a valid file name
+	gs->pitch_range = util::UniformFloatRange(1.0f);
+
 	stuff_string(entry.filename, F_NAME, MAX_FILENAME_LEN, ",");
 
 	if (!stricmp(entry.filename, NOX("empty")))
@@ -672,9 +675,6 @@ void parse_gamesnd_old(game_snd* gs)
 			}
 		}
 	}
-
-	// Default pitch is 1.0
-	gs->pitch_range = util::UniformFloatRange(1.0f);
 
 	// check for extra values per Mantis #2408
 	ignore_gray_space();
@@ -840,6 +840,9 @@ void parse_gamesnd_new(game_snd* gs, bool no_create)
 	// New extended format found
 	stuff_string(name, F_NAME, MAX_FILENAME_LEN);
 
+	// Default pitch is 1.0. This is set here in case we don't have a valid file name
+	gs->pitch_range = util::UniformFloatRange(1.0f);
+
 	if (!stricmp(name, NOX("empty")))
 	{
 		entry->filename[0] = 0;
@@ -914,9 +917,6 @@ void parse_gamesnd_new(game_snd* gs, bool no_create)
 			error_display(1, "Invalid enhanced sound limit: %d\n", temp_limit);
 		}
 	}
-
-	// Default pitch is 1.0
-	gs->pitch_range = util::UniformFloatRange(1.0f);
 }
 
 void gamesnd_parse_entry(game_snd *gs, bool no_create, SCP_vector<game_snd> *lookupVector)
