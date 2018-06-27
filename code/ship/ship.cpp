@@ -12253,7 +12253,7 @@ int ship_select_next_primary(object *objp, int direction)
 		{
 			for (i = 0; i < swp->num_primary_banks; i++)
 			{
-				if (primary_out_of_ammo(swp, i))
+				if (!Weapon_info[swp->primary_bank_weapons[i]].wi_flags[Weapon::Info_Flags::Nolink] && primary_out_of_ammo(swp, i)) // We only care if linkable primaries are out of ammo.
 				{
 					shipp->flags.remove(Ship_Flags::Primary_linked);
 					
