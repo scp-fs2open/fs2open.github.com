@@ -8,6 +8,7 @@
 */
 
 
+#include "cfile/cfile.h"
 #include "cmdline/cmdline.h"
 #include "def_files/def_files.h"
 #include "graphics/2d.h"
@@ -853,6 +854,49 @@ void gr_opengl_recompile_all_shaders(const std::function<void(size_t, size_t)>& 
 	}
 }
 
+static void opengl_purge_shader_cache_type(const char* ext) {
+	SCP_vector<SCP_string> cache_files;
+	SCP_vector<file_list_info> file_info;
+
+	SCP_string filter("*.");
+	filter += ext;
+
+	cf_get_file_list(cache_files, CF_TYPE_CACHE, filter.c_str(), false, &file_info);
+
+	Assertion(cache_files.size() == file_info.size(),
+			  "cf_get_file_list returned different sizes for file names and file informations!");
+
+	const auto TIMEOUT = 2.0 * 30.0 * 24.0 * 60.0 * 60.0; // purge timeout in seconds which is ~2 months
+	const SCP_string PREFIX = "ogl_shader-";
+
+	auto now = std::time(nullptr);
+	for (size_t i = 0; i < cache_files.size(); ++i) {
+		auto& name = cache_files[i];
+		auto write_time = file_info[i].write_time;
+
+		if (name.compare(0, PREFIX.size(), PREFIX) != 0) {
+			// Not an OpenGL cache file
+			continue;
+		}
+
+		std::cout << std::put_time(localtime(&write_time), "%c %Z") << std::endl;
+
+		auto diff = std::difftime(now, write_time);
+
+		if (diff > TIMEOUT) {
+			auto full_name = name + "." + ext;
+
+			cf_delete(full_name.c_str(), CF_TYPE_CACHE);
+		}
+	}
+}
+
+static void opengl_purge_old_shader_cache()
+{
+	opengl_purge_shader_cache_type("json");
+	opengl_purge_shader_cache_type("bin");
+}
+
 /**
  * Initializes the shader system. Creates a 1x1 texture that can be used as a fallback texture when framebuffer support is missing.
  * Also compiles the shaders used for particle rendering.
@@ -876,6 +920,8 @@ void opengl_shader_init()
 
 	// Reserve 32 shader slots. This should cover most use cases in real life.
 	GL_shader.reserve(32);
+
+	opengl_purge_old_shader_cache();
 
 	// compile effect shaders
 	gr_opengl_maybe_create_shader(SDR_TYPE_EFFECT_PARTICLE, 0);
