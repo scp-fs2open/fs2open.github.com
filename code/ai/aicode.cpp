@@ -764,6 +764,8 @@ void parse_ai_class()
 	set_aic_flag(aicp, "$all ships manage shields:", AI::Profile_Flags::All_ships_manage_shields);
 
 	set_aic_flag(aicp, "$ai can slow down when attacking big ships:", AI::Profile_Flags::Ai_can_slow_down_attacking_big_ships);
+
+	set_aic_flag(aicp, "$use actual primary range:", AI::Profile_Flags::Use_actual_primary_range);
 }
 
 void reset_ai_class_names()
@@ -8768,7 +8770,11 @@ void ai_chase()
 						scale = (scale - 0.6f) * 1.5f;
 					else
 						scale = 0.0f;
-					if (dist_to_enemy < pwip->max_speed * (1.0f + scale)) {
+					float range = pwip->max_speed * (1.0f + scale);
+					if (aip->ai_profile_flags[AI::Profile_Flags::Use_actual_primary_range]) {
+						range = std::min( {range, pwip->max_speed * pwip->lifetime, pwip->weapon_range} );
+					}
+					if (dist_to_enemy < range) {
 						if(ai_fire_primary_weapon(Pl_objp) == 1){
 							has_fired = 1;
 						}else{

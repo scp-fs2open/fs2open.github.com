@@ -458,6 +458,8 @@ void parse_ai_profiles_tbl(const char *filename)
 
 				set_flag(profile, "$ai can slow down when attacking big ships:", AI::Profile_Flags::Ai_can_slow_down_attacking_big_ships);
 
+				set_flag(profile, "$use actual primary range:", AI::Profile_Flags::Use_actual_primary_range);
+
 				profile->bay_arrive_speed_mult = 1.0f;
 				profile->bay_depart_speed_mult = 1.0f;
 				if (optional_string("$bay arrive speed multiplier:")) {

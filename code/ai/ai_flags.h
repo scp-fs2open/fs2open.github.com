@@ -110,6 +110,7 @@ namespace AI {
         Smart_subsystem_targeting_for_turrets,
         Strict_turred_tagged_only_targeting,
         Turrets_ignore_target_radius,
+        Use_actual_primary_range,
         Use_additive_weapon_velocity,
         Use_newtonian_dampening,
         Use_only_single_fov_for_turrets,
