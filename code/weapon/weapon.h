@@ -450,7 +450,7 @@ typedef struct weapon_info {
 
 	// Optional weapon failures
 	float failure_rate;
-	char failure_sub_name[NAME_LENGTH];
+	SCP_string failure_sub_name;
 	int failure_sub;
 
 	// the optional pattern of weapons that this weapon will fire

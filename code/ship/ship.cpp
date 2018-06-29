@@ -11239,7 +11239,6 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 								if (obj == Player_obj) {
 									ship_maybe_play_primary_fail_sound();
 								}
-								//has_fired = true; // Just because it failed, doesn't mean it wouldn't have fired
 								continue;
 							}
 
@@ -11961,6 +11960,14 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 			// create the weapon -- for multiplayer, the net_signature is assigned inside
 			// of weapon_create
 			weapon_num = weapon_create( &firing_pos, &firing_orient, weapon_idx, OBJ_INDEX(obj), -1, aip->current_target_is_locked);
+
+			if (weapon_num == -1) {
+				// Weapon most likely failed to fire
+				if (obj == Player_obj) {
+					ship_maybe_play_secondary_fail_sound(wip);
+				}
+				continue;
+			}
 
 			if (weapon_num >= 0) {
 				weapon_idx = Weapons[Objects[weapon_num].instance].weapon_info_index;

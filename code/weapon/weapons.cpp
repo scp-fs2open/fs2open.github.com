@@ -2692,10 +2692,8 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 	// Set up weapon failure
 	if (optional_string("$Failure Rate:")) {
 		stuff_float(&wip->failure_rate);
-		char subname[NAME_LENGTH];
 		if (optional_string("+Failure Substitute:")) {
-			stuff_string(subname, F_NAME, NAME_LENGTH);
-			strcpy_s(wip->failure_sub_name,subname);
+			stuff_string(wip->failure_sub_name, F_NAME);
 		}
 	}
 
@@ -3392,26 +3390,25 @@ void weapon_generate_indexes_for_substitution() {
 		}
 
 		if (wip->failure_rate > 0.0f) {
-			if (stricmp("none", wip->failure_sub_name) != 0) {
-				wip->failure_sub = weapon_info_lookup(wip->failure_sub_name);
+			if (VALID_FNAME(wip->failure_sub_name)) {
+				wip->failure_sub = weapon_info_lookup(wip->failure_sub_name.c_str());
 
 				if (wip->failure_sub == -1) { // invalid sub weapon
 					Warning(LOCATION, "Weapon '%s' requests substitution with '%s' which does not seem to exist",
-						wip->name, wip->failure_sub_name);
+						wip->name, wip->failure_sub_name.c_str());
 					wip->failure_rate = 0.0f;
 				}
 
 				if (Weapon_info[wip->failure_sub].subtype != wip->subtype) {
 					// Check to make sure secondaries can't be launched by primaries and vice versa
 					Warning(LOCATION, "Weapon '%s' requests substitution with '%s' which is of a different subtype.",
-						wip->name, wip->failure_sub_name);
-					wip->num_substitution_patterns = 0;
+						wip->name, wip->failure_sub_name.c_str());
 					wip->failure_sub = -1;
 					wip->failure_rate = 0.0f;
 				}
 			}
 
-			memset(wip->failure_sub_name, 0, sizeof(char) * NAME_LENGTH);
+			wip->failure_sub_name.clear();
 		}
 	}
 }
@@ -5141,10 +5138,8 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 
 	// Let's setup a fast failure check with a uniform distribution.
 	if (wip->failure_rate > 0.0f) {
-		std::random_device rd;
-		std::mt19937 f(rd());
-		std::uniform_real_distribution<float> gen(0.0f, 1.0f);
-		float test = gen(f);
+		util::UniformFloatRange rng(0.0f, 1.0f);
+		float test = rng.next();
 		if (test < wip->failure_rate) {
 			if (wip->failure_sub != -1) {
 				return weapon_create(pos, porient, wip->failure_sub, parent_objnum, group_id, is_locked, is_spawned, fof_cooldown);
@@ -7819,6 +7814,7 @@ void weapon_info::reset()
 	this->target_lead_scaler = 0.0f;
 
 	this->failure_rate = 0.0f;
+	this->failure_sub_name.clear();
 	this->failure_sub = -1;
 
 	this->selection_effect = Default_weapon_select_effect;
