@@ -44,6 +44,25 @@ bool Enable_scripts_in_fred; // By default FRED does not initialize the scriptin
 SCP_string Window_icon_path;
 bool Disable_built_in_translations;
 
+int Ambient_factor = 128;
+float Static_light_spec_factor = 1.0f;
+float Tube_light_spec_factor = 1.0f;
+float Point_light_spec_factor = 1.0f;
+float Ogl_spec = 80.0f;
+int Bloom_intensity = 75;
+
+template<typename T>
+static void parse_and_clamp(T& dest) {
+	T min_max[2];
+	auto n = stuff_number_list(min_max, 2);
+	if (n == 1) {
+		// No range specified
+		dest = min_max[0];
+	} else {
+		CAP(dest, min_max[0], min_max[1]);
+	}
+}
+
 void parse_mod_table(const char *filename)
 {
 	// SCP_vector<SCP_string> lines;
@@ -281,6 +300,24 @@ void parse_mod_table(const char *filename)
 			else {
 				mprintf(("Game Settings Table: FRED - Scripts will not be executed when running FRED.\n"));
 			}
+		}
+
+		optional_string("#LIGHTING SETTINGS");
+
+		if (optional_string("$Ambient factor:")) {
+			parse_and_clamp(Ambient_factor);
+		}
+		if (optional_string("$Static light specular factor:")) {
+			parse_and_clamp(Static_light_spec_factor);
+		}
+		if (optional_string("$Tube light specular factor:")) {
+			parse_and_clamp(Tube_light_spec_factor);
+		}
+		if (optional_string("$Point light specular factor:")) {
+			parse_and_clamp(Point_light_spec_factor);
+		}
+		if (optional_string("$Bloom factor:")) {
+			parse_and_clamp(Bloom_intensity);
 		}
 
 		optional_string("#OTHER SETTINGS");

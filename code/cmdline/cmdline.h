@@ -53,14 +53,8 @@ extern char *Cmdline_center_res;
 // FSO OPTIONS -------------------------------------------------
 
 // Graphics related
-extern double specular_exponent_value;
 extern float Cmdline_clip_dist;
 extern float Cmdline_fov;
-extern float Cmdline_ogl_spec;
-extern float static_light_factor;
-extern float static_point_factor;
-extern float static_tube_factor;
-extern int Cmdline_ambient_factor;
 extern int Cmdline_env;
 extern int Cmdline_glow;
 extern int Cmdline_nomotiondebris;
@@ -71,7 +65,6 @@ extern int Cmdline_height;
 extern int Cmdline_enable_3d_shockwave;
 extern int Cmdline_softparticles;
 extern int Cmdline_postprocess;
-extern int Cmdline_bloom_intensity;
 extern bool Cmdline_fxaa;
 extern int Cmdline_fxaa_preset;
 extern bool Cmdline_fb_explosions;

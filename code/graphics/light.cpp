@@ -13,6 +13,7 @@
 #include "graphics/2d.h"
 #include "light.h"
 #include "matrix.h"
+#include "mod_table/mod_table.h"
 #include "render/3d.h"
 
 // Structures
@@ -71,7 +72,7 @@ void FSLight2GLLight(light* FSLight, gr_light* GLLight) {
 	GLLight->SpotDir.xyz.y = 0.0f;
 	GLLight->SpotDir.xyz.z = -1.0f;
 	// spot exponent
-	GLLight->SpotExp = Cmdline_ogl_spec * 0.5f;
+	GLLight->SpotExp = Ogl_spec * 0.5f;
 	// spot cutoff
 	GLLight->SpotCutOff = 180.0f; // special value, light in all directions
 	// defaults to disable attenuation
@@ -91,9 +92,9 @@ void FSLight2GLLight(light* FSLight, gr_light* GLLight) {
 		GLLight->ConstantAtten = 1.0f;
 		GLLight->LinearAtten = (1.0f / MAX(FSLight->rada, FSLight->radb)) * 1.25f;
 
-		GLLight->Specular.xyzw.x *= static_point_factor;
-		GLLight->Specular.xyzw.y *= static_point_factor;
-		GLLight->Specular.xyzw.z *= static_point_factor;
+		GLLight->Specular.xyzw.x *= Point_light_spec_factor;
+		GLLight->Specular.xyzw.y *= Point_light_spec_factor;
+		GLLight->Specular.xyzw.z *= Point_light_spec_factor;
 
 		break;
 	}
@@ -103,9 +104,9 @@ void FSLight2GLLight(light* FSLight, gr_light* GLLight) {
 		GLLight->LinearAtten = (1.0f / MAX(FSLight->rada, FSLight->radb)) * 1.25f;
 		GLLight->QuadraticAtten = (1.0f / MAX(FSLight->rada_squared, FSLight->radb_squared)) * 1.25f;
 
-		GLLight->Specular.xyzw.x *= static_tube_factor;
-		GLLight->Specular.xyzw.y *= static_tube_factor;
-		GLLight->Specular.xyzw.z *= static_tube_factor;
+		GLLight->Specular.xyzw.x *= Tube_light_spec_factor;
+		GLLight->Specular.xyzw.y *= Tube_light_spec_factor;
+		GLLight->Specular.xyzw.z *= Tube_light_spec_factor;
 
 		GLLight->Position.xyzw.x = FSLight->vec2.xyz.x; // Valathil: Use endpoint of tube as light position
 		GLLight->Position.xyzw.y = FSLight->vec2.xyz.y;
@@ -128,9 +129,9 @@ void FSLight2GLLight(light* FSLight, gr_light* GLLight) {
 		GLLight->Position.xyzw.z = -FSLight->vec.xyz.z;
 		GLLight->Position.xyzw.w = 0.0f; // This is a direction so the w part must be 0
 
-		GLLight->Specular.xyzw.x *= static_light_factor;
-		GLLight->Specular.xyzw.y *= static_light_factor;
-		GLLight->Specular.xyzw.z *= static_light_factor;
+		GLLight->Specular.xyzw.x *= Static_light_spec_factor;
+		GLLight->Specular.xyzw.y *= Static_light_spec_factor;
+		GLLight->Specular.xyzw.z *= Static_light_spec_factor;
 
 		break;
 	}
@@ -256,7 +257,7 @@ void gr_set_center_alpha(int type) {
 	glight.SpotDir.xyz.x = 0.0f;
 	glight.SpotDir.xyz.y = 0.0f;
 	glight.SpotDir.xyz.z = -1.0f;
-	glight.SpotExp = Cmdline_ogl_spec * 0.5f;
+	glight.SpotExp = Ogl_spec * 0.5f;
 	glight.SpotCutOff = 180.0f;
 	glight.ConstantAtten = 1.0f;
 	glight.LinearAtten = 0.0f;
@@ -278,8 +279,8 @@ void gr_reset_lighting() {
 	Num_active_gr_lights = 0;
 }
 
-void gr_calculate_ambient_factor(int ambient_factor) {
-	gr_user_ambient = (float) ((ambient_factor * 2) - 255) / 255.0f;
+void gr_calculate_ambient_factor(int factor) {
+	gr_user_ambient = (float) ((factor * 2) - 255) / 255.0f;
 }
 
 void gr_light_shutdown() {

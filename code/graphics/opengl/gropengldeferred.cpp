@@ -87,9 +87,9 @@ void gr_opengl_deferred_lighting_end()
 
 extern SCP_vector<light> Lights;
 extern int Num_lights;
-extern float static_point_factor;
-extern float static_light_factor;
-extern float static_tube_factor;
+extern float Point_light_spec_factor;
+extern float Static_light_spec_factor;
+extern float Tube_light_spec_factor;
 
 void gr_opengl_deferred_lighting_finish()
 {
@@ -149,7 +149,7 @@ void gr_opengl_deferred_lighting_finish()
 
 		header->invScreenWidth = 1.0f / gr_screen.max_w;
 		header->invScreenHeight = 1.0f / gr_screen.max_h;
-		header->specFactor = Cmdline_ogl_spec;
+		header->specFactor = Ogl_spec;
 
 		// Only the first directional light uses shaders so we need to know when we already saw that light
 		bool first_directional = true;
@@ -189,7 +189,7 @@ void gr_opengl_deferred_lighting_finish()
 				light_data->lightDir.xyz.y = view_dir.xyzw.y;
 				light_data->lightDir.xyz.z = view_dir.xyzw.z;
 
-				vm_vec_scale(&light_data->specLightColor, static_light_factor);
+				vm_vec_scale(&light_data->specLightColor, Static_light_spec_factor);
 
 				first_directional = false;
 				break;
@@ -203,7 +203,7 @@ void gr_opengl_deferred_lighting_finish()
 				light_data->diffuseLightColor = diffuse;
 				light_data->specLightColor = spec;
 
-				vm_vec_scale(&light_data->specLightColor, static_point_factor);
+				vm_vec_scale(&light_data->specLightColor, Point_light_spec_factor);
 
 				light_data->lightRadius = MAX(l.rada, l.radb) * 1.25f;
 				light_data->scale.xyz.x = MAX(l.rada, l.radb) * 1.28f;
@@ -223,14 +223,14 @@ void gr_opengl_deferred_lighting_finish()
 				light_data->scale.xyz.y = l.radb * 1.53f;
 				light_data->scale.xyz.z = length;
 
-				vm_vec_scale(&light_data->specLightColor, static_tube_factor);
+				vm_vec_scale(&light_data->specLightColor, Tube_light_spec_factor);
 
 				// Tube lights consist of two different types of lights with almost the same properties
 				light_data = uniformAligner.addTypedElement<deferred_light_data>();
 				light_data->diffuseLightColor = diffuse;
 				light_data->specLightColor = spec;
 
-				vm_vec_scale(&light_data->specLightColor, static_tube_factor);
+				vm_vec_scale(&light_data->specLightColor, Tube_light_spec_factor);
 
 				light_data->lightRadius = l.radb * 1.5f;
 				light_data->lightType = LT_POINT;

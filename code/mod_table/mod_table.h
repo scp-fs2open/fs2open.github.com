@@ -37,6 +37,13 @@ extern bool Enable_scripts_in_fred;
 extern SCP_string Window_icon_path;
 extern bool Disable_built_in_translations;
 
+extern int Ambient_factor;
+extern float Static_light_spec_factor;
+extern float Point_light_spec_factor;
+extern float Tube_light_spec_factor;
+extern float Ogl_spec;
+extern int Bloom_intensity;
+
 void mod_table_init();
 
 /**

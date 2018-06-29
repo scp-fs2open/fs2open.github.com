@@ -1006,11 +1006,11 @@ void labviewer_render_options_set_ambient_factor(Slider *caller) {
 }
 
 void labviewer_render_options_set_static_light_factor(Slider *caller) {
-	static_light_factor = caller->GetSliderValue();
+	Static_light_spec_factor = caller->GetSliderValue();
 }
 
 void labviewer_render_options_set_bloom(Slider *caller) {
-	Cmdline_bloom_intensity = fl2i(caller->GetSliderValue());
+	Bloom_intensity = fl2i(caller->GetSliderValue());
 }
 
 void labviewer_make_render_options_window(Button * /*caller*/)
@@ -2184,7 +2184,7 @@ void lab_close()
 	Detail.hardware_textures = Lab_detail_texture_save;
 
 	//Reset ambient factor
-	gr_calculate_ambient_factor(Cmdline_ambient_factor);
+	gr_calculate_ambient_factor(Ambient_factor);
 
 	weapon_unpause_sounds();
 	//audiostream_unpause_all();

@@ -16,6 +16,7 @@
 #include "globalincs/systemvars.h"
 #include "globalincs/version.h"
 #include "hud/hudconfig.h"
+#include "mod_table/mod_table.h"
 #include "network/multi.h"
 #include "scripting/scripting.h"
 #include "parse/sexp.h"
@@ -307,7 +308,6 @@ int Cmdline_use_last_pilot = 0;
 // Graphics related
 cmdline_parm fov_arg("-fov", "Vertical field-of-view factor", AT_FLOAT);					// Cmdline_fov  -- comand line FOV -Bobboau
 cmdline_parm clip_dist_arg("-clipdist", "Changes the distance from the viewpoint for the near-clipping plane", AT_FLOAT);		// Cmdline_clip_dist
-cmdline_parm spec_exp_arg("-spec_exp", "Adjusts the size of shiny spots on ships", AT_FLOAT);
 cmdline_parm ogl_spec_arg("-ogl_spec", "Shininess of specular light", AT_FLOAT);		// Cmdline_ogl_spec
 cmdline_parm spec_static_arg("-spec_static", "Adjusts suns contribution to specular highlights", AT_FLOAT);
 cmdline_parm spec_point_arg("-spec_point", "Adjusts laser weapons contribution to specular highlights", AT_FLOAT);
@@ -337,8 +337,6 @@ cmdline_parm anisotropy_level_arg("-anisotropic_filter", NULL, AT_INT);
 
 float Cmdline_clip_dist = Default_min_draw_distance;
 float Cmdline_fov = 0.75f;
-float Cmdline_ogl_spec = 80.0f;
-int Cmdline_ambient_factor = 128;
 int Cmdline_env = 1;
 int Cmdline_mipmap = 0;
 int Cmdline_glow = 1;
@@ -351,7 +349,6 @@ int Cmdline_height = 1;
 int Cmdline_enable_3d_shockwave = 0;
 int Cmdline_softparticles = 0;
 int Cmdline_postprocess = 0;
-int Cmdline_bloom_intensity = 75;
 bool Cmdline_fxaa = false;
 int Cmdline_fxaa_preset = 6;
 extern int Fxaa_preset_last_frame;
@@ -546,6 +543,7 @@ cmdline_parm deprecated_htl_arg("-nohtl", "Deprecated", AT_NONE);
 cmdline_parm deprecated_brieflighting_arg("-brief_lighting", "Deprecated", AT_NONE);
 cmdline_parm deprecated_sndpreload_arg("-snd_preload", "Deprecated", AT_NONE);
 cmdline_parm deprecated_missile_lighting_arg("-missile_lighting", "Deprecated", AT_NONE);
+cmdline_parm deprecated_spec_exp_arg("-spec_exp", "Deprecated", AT_NONE);
 
 int Cmdline_deprecated_spec = 0;
 int Cmdline_deprecated_glow = 0;
@@ -556,6 +554,7 @@ int Cmdline_deprecated_jpgtga = 0;
 int Cmdline_deprecated_nohtl = 0;
 bool Cmdline_deprecated_brief_lighting = 0;
 bool Cmdline_deprecated_missile_lighting = false;
+bool Cmdline_deprecated_spec_exp = false;
 
 #ifndef NDEBUG
 // NOTE: this assumes that os_init() has already been called but isn't a fatal error if it hasn't
@@ -625,6 +624,10 @@ void cmdline_debug_print_cmdline()
 	if (Cmdline_deprecated_missile_lighting) 
 	{
 		mprintf(("Deprecated flag '-missile_lighting' found. Please remove from your cmdline.\n"));
+	}
+
+	if (Cmdline_deprecated_spec_exp) {
+		mprintf(("Deprecated flag '-spec_exp' found. Please remove from your cmdline.\n"));
 	}
 }
 #endif
@@ -1827,21 +1830,18 @@ bool SetCmdlineParams()
 	if ( stretch_menu.found() )	{
 		Cmdline_stretch_menu = 1;
 	}
-	// specular comand lines
-	if ( spec_exp_arg.found() ) {
-		specular_exponent_value = spec_exp_arg.get_float();
-	}
 
+	// specular comand lines
 	if ( spec_point_arg.found() ) {
-		static_point_factor = spec_point_arg.get_float();
+		Point_light_spec_factor = spec_point_arg.get_float();
 	}
 
 	if ( spec_static_arg.found() ) {
-		static_light_factor = spec_static_arg.get_float();
+		Static_light_spec_factor = spec_static_arg.get_float();
 	}
 
 	if ( spec_tube_arg.found() ) {
-		static_tube_factor = spec_tube_arg.get_float();
+		Tube_light_spec_factor = spec_tube_arg.get_float();
 	}
 
 	if ( spec_arg.found() )
@@ -1897,7 +1897,7 @@ bool SetCmdlineParams()
 	}
 
 	if ( ambient_factor_arg.found() )
-		Cmdline_ambient_factor = ambient_factor_arg.get_int();
+		Ambient_factor = ambient_factor_arg.get_int();
 
 	if ( output_scripting_arg.found() )
 		Output_scripting_meta = true;
@@ -1987,9 +1987,9 @@ bool SetCmdlineParams()
 	}
 
 	if ( ogl_spec_arg.found() ) {
-		Cmdline_ogl_spec = ogl_spec_arg.get_float();
+		Ogl_spec = ogl_spec_arg.get_float();
 
-		CLAMP(Cmdline_ogl_spec, 0.0f, 128.0f);
+		CAP(Ogl_spec, 0.0f, 128.0f);
 	}
 
 	if ( rearm_timer_arg.found() )
@@ -2036,7 +2036,7 @@ bool SetCmdlineParams()
 
 	if ( bloom_intensity_arg.found() )
 	{
-		Cmdline_bloom_intensity = bloom_intensity_arg.get_int();
+		Bloom_intensity = bloom_intensity_arg.get_int();
 	}
 
 	if ( flightshaftsoff_arg.found() )
@@ -2157,6 +2157,10 @@ bool SetCmdlineParams()
 	if (deprecated_missile_lighting_arg.found())
 	{
 		Cmdline_deprecated_missile_lighting = true;
+	}
+
+	if (deprecated_spec_exp_arg.found()) {
+		Cmdline_deprecated_spec_exp = true;
 	}
 
 	return true; 

@@ -185,7 +185,7 @@ void opengl_post_pass_bloom()
 
 		Current_shader->program->Uniforms.setUniformi("tex", 0);
 		Current_shader->program->Uniforms.setUniformi("levels", MAX_MIP_BLUR_LEVELS);
-		Current_shader->program->Uniforms.setUniformf("bloom_intensity", Cmdline_bloom_intensity / 100.0f);
+		Current_shader->program->Uniforms.setUniformf("bloom_intensity", Bloom_intensity / 100.0f);
 
 		GL_state.Texture.Enable(0, GL_TEXTURE_2D, Bloom_textures[0]);
 
@@ -819,7 +819,7 @@ bool opengl_post_init_shaders()
 		gr_opengl_maybe_create_shader(SDR_TYPE_POST_PROCESS_BLUR, SDR_FLAG_BLUR_VERTICAL) < 0 ||
 		gr_opengl_maybe_create_shader(SDR_TYPE_POST_PROCESS_BLOOM_COMP, 0) < 0) {
 		// disable bloom if we don't have those shaders available
-		Cmdline_bloom_intensity = 0;
+		Bloom_intensity = 0;
 	}
 
 	if ( gr_opengl_maybe_create_shader(SDR_TYPE_POST_PROCESS_FXAA, 0) < 0 ||

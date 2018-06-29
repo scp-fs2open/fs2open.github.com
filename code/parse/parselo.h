@@ -147,6 +147,10 @@ extern int stuff_string_list(SCP_vector<SCP_string>& slp);
 extern int stuff_string_list(char slp[][NAME_LENGTH], int max_strings);
 extern int parse_string_flag_list(int *dest, flag_def_list defs[], int defs_size);
 
+// Overloads to make templated parsing functions easier to implement
+inline void stuff_number(float* f) { stuff_float(f); }
+inline void stuff_number(int* i) { stuff_int(i); }
+inline void stuff_number(ubyte* i) { stuff_ubyte(i); }
 
 // A templated version of parse_string_flag_list, to go along with the templated flag_def_list_new.
 // If the "is_special" flag is set, or a string was not found in the def list, it will be added to the unparsed_or_special_strings Vector
@@ -225,6 +229,10 @@ extern void stuff_parenthesized_vec3d(vec3d *vp);
 extern void stuff_boolean(int *i, bool a_to_eol=true);
 extern void stuff_boolean(bool *b, bool a_to_eol=true);
 extern void stuff_boolean_flag(int *i, int flag, bool a_to_eol=true);
+
+// Overloads to make templated parsing functions easier
+inline size_t stuff_number_list(int* l, size_t max) { return static_cast<size_t>(stuff_int_list(l, max)); }
+inline size_t stuff_number_list(float* l, size_t max) { return stuff_float_list(l, max); }
 
 int string_lookup(const char *str1, const char* const *strlist, size_t max, const char *description = NULL, bool say_errors = false);
 

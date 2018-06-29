@@ -3,6 +3,7 @@
 
 #include "globalincs/pstypes.h"
 #include "lighting/lighting.h"
+#include "mod_table/mod_table.h"
 #include "graphics/util/uniform_structs.h"
 
 //Variables
@@ -24,7 +25,7 @@ void gr_set_lighting(bool set, bool state);
 void gr_set_center_alpha(int type);
 void gr_set_ambient_light(int red, int green, int blue);
 
-void gr_calculate_ambient_factor(int ambient_factor = Cmdline_ambient_factor);
+void gr_calculate_ambient_factor(int factor = Ambient_factor);
 
 void gr_light_init();
 void gr_light_shutdown();
