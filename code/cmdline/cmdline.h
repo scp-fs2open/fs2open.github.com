@@ -82,7 +82,6 @@ extern int Cmdline_no_emissive;
 extern int Cmdline_aniso_level;
 
 // Game Speed related
-extern int Cmdline_cache_bitmaps;
 extern int Cmdline_NoFPSCap;
 extern int Cmdline_no_vsync;
 

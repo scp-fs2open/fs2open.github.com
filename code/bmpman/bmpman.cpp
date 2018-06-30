@@ -2590,9 +2590,6 @@ void bm_page_in_start() {
 		for (auto& slot : block) {
 			auto& entry = slot.entry;
 
-			if (!Cmdline_cache_bitmaps && (entry.type != BM_TYPE_NONE)) {
-				bm_unload_fast(entry.handle);
-			}
 			entry.preloaded = 0;
 			entry.preload_count = 0;
 #ifdef BMPMAN_NDEBUG
