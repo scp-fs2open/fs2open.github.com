@@ -10719,8 +10719,8 @@ void ai_dock()
 			char *goal_ship_class_name = goal_sip->name;
 			char *goal_dock_path_name = model_get(goal_sip->model_num)->paths[aip->mp_index].name;
 
-			Warning(LOCATION, "Ship class %s has only %i points on dock path \"%s\".  Recommended minimum number of points is 4.  "\
-				"Docking along that path will look strange.  You may wish to edit the model.", goal_ship_class_name, aip->path_length, goal_dock_path_name);
+			mprintf(("Ship class %s has only %i points on dock path \"%s\".  Recommended minimum number of points is 4.  "\
+				"Docking along that path will look strange.  You may wish to edit the model.", goal_ship_class_name, aip->path_length, goal_dock_path_name));
 		}
 
 		aip->submode = AIS_DOCK_1;
