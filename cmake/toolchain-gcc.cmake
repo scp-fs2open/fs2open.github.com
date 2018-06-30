@@ -85,6 +85,17 @@ set(COMPILER_FLAGS "${COMPILER_FLAGS} -Wreturn-type")
 
 set(COMPILER_FLAGS "${COMPILER_FLAGS} -Wno-deprecated -Wno-char-subscripts")
 
+# These two warnings cause a lot of false-positives in the FSO code base
+check_cxx_compiler_flag(-Wstringop-truncation SUPPORTS_STRINGOP_TRUNCATION)
+if(SUPPORTS_STRINGOP_TRUNCATION)
+	set(COMPILER_FLAGS "${COMPILER_FLAGS} -Wno-stringop-truncation")
+endif()
+
+check_cxx_compiler_flag(-Wstringop-overflow SUPPORTS_STRINGOP_OVERFLOW)
+if(SUPPORTS_STRINGOP_TRUNCATION)
+	set(COMPILER_FLAGS "${COMPILER_FLAGS} -Wno-stringop-overflow")
+endif()
+
 set(COMPILER_FLAGS_RELEASE "-O2 -Wno-unused-variable -Wno-unused-but-set-variable -Wno-array-bounds -Wno-empty-body -Wno-clobbered  -Wno-unused-parameter")
 
 set(COMPILER_FLAGS_DEBUG "-O0 -g -Wshadow")

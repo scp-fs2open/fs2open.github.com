@@ -2544,7 +2544,7 @@ int Editor::internal_error(const char* msg, ...) {
 #ifndef NDEBUG
 	char buf2[2048];
 
-	sprintf(buf2, "%s\n\nThis is an internal error.  Please let Jason\n"
+	sprintf_safe(buf2, "%s\n\nThis is an internal error.  Please let Jason\n"
 		"know about this so he can fix it.  Click cancel to debug.", buf);
 
 	if (_lastActiveViewport->dialogProvider->showButtonDialog(DialogType::Error,

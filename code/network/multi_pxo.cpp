@@ -1823,7 +1823,7 @@ int multi_pxo_connect_do()
 
 		// build the tracker id string
 		memset(id_string, 0, MAX_PXO_TEXT_LEN);
-		sprintf(id_string, "%s %s", Multi_tracker_id_string, Player->callsign);
+		sprintf_safe(id_string, "%s %s", Multi_tracker_id_string, Player->callsign);
 
 		// build the ip string
 		memset(ip_string, 0, MAX_PXO_TEXT_LEN);
@@ -5343,14 +5343,14 @@ void multi_pxo_ban_parse_banner_file(int choose_existing)
 		}
 
 		// base filename
-		strncpy(Multi_pxo_banner.ban_file, banners[idx], MAX_FILENAME_LEN);
+		strcpy_s(Multi_pxo_banner.ban_file, banners[idx]);
 
 		// get the full file url
-		strncpy(Multi_pxo_banner.ban_file_url, file_url, MULTI_OPTIONS_STRING_LEN);
-		strncat(Multi_pxo_banner.ban_file_url, banners[idx], MULTI_OPTIONS_STRING_LEN);
+		strcpy_s(Multi_pxo_banner.ban_file_url, file_url);
+		strcat_s(Multi_pxo_banner.ban_file_url, banners[idx]);
 
 		// url of where to go to when clicked
-		strncpy(Multi_pxo_banner.ban_url, urls[idx], MULTI_OPTIONS_STRING_LEN);		
+		strcpy_s(Multi_pxo_banner.ban_url, urls[idx]);
 	}
 }
 

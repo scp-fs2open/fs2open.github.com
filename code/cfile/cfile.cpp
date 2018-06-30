@@ -222,8 +222,8 @@ int cfile_init(const char *exe_dir, const char *cdrom_dir)
 	cfile_chdir(buf);
 
 	// set root directory
-	strncpy(Cfile_root_dir, buf, CFILE_ROOT_DIRECTORY_LEN-1);
-	strncpy(Cfile_user_dir, os_get_config_path().c_str(), CFILE_ROOT_DIRECTORY_LEN-1);
+	strcpy_s(Cfile_root_dir, buf);
+	strcpy_s(Cfile_user_dir, os_get_config_path().c_str());
 
 	for (i = 0; i < MAX_CFILE_BLOCKS; i++) {
 		Cfile_block_list[i].type = CFILE_BLOCK_UNUSED;
@@ -348,8 +348,7 @@ int cfile_push_chdir(int type)
 		return -1;
 	}
 
-	strncpy(Cfile_stack[Cfile_stack_pos++], OriginalDirectory,
-	        CFILE_ROOT_DIRECTORY_LEN - 1);
+	strcpy_s(Cfile_stack[Cfile_stack_pos++], OriginalDirectory);
 
 	cf_create_default_path_string(dir, sizeof(dir) - 1, type, NULL);
 

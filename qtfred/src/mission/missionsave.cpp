@@ -172,7 +172,7 @@ int CFred_mission_save::fout_ext(const char* pre_str, const char* format, ...) {
 		// _does_ exist, so just write it out as it is
 	else {
 		char buf[10];
-		sprintf(buf, "%d", str_id);
+		sprintf_safe(buf, "%d", str_id);
 
 		str_out_scp += " XSTR(\"";
 		str_out_scp += str_scp;

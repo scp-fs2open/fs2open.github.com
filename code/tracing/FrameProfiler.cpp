@@ -269,7 +269,7 @@ void FrameProfiler::dump_output(SCP_stringstream& out,
 		indented_name += samples[i].name;
 
 		char line[256];
-		sprintf(line, "%5s : %5s : %5s : %3s : ", avg, min, max, num);
+		sprintf_safe(line, "%5s : %5s : %5s : %3s : ", avg, min, max, num);
 
 		out << line + indented_name + "\n";
 	}

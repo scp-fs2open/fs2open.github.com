@@ -455,7 +455,7 @@ void cf_build_root_list(const char *cdrom_dir)
 		// =========================================================================
 		// set users HOME directory as default for loading and saving files
 		root = cf_create_root();
-		strncpy(root->path, Cfile_user_dir, CF_MAX_PATHNAME_LENGTH - 1);
+		strcpy_s(root->path, Cfile_user_dir);
 
 		// do we already have a slash? as in the case of a root directory install
 		if ((strlen(root->path) < (CF_MAX_PATHNAME_LENGTH - 1)) && (root->path[strlen(root->path) - 1] != DIR_SEPARATOR_CHAR)) {
@@ -2121,7 +2121,7 @@ int cf_get_file_list_preallocated( int max, char arr[][MAX_FILENAME_LEN], char *
 
 			if ( !Get_file_list_filter || (*Get_file_list_filter)(dir->d_name) ) {
 
-				strncpy(arr[num_files], dir->d_name, MAX_FILENAME_LEN - 1 );
+				strcpy_s(arr[num_files], dir->d_name );
 				char *ptr = strrchr(arr[num_files], '.');
 				if ( ptr ) {
 					*ptr = 0;

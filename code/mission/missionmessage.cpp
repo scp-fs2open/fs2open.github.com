@@ -1207,7 +1207,7 @@ void message_play_anim( message_q *q )
 					rand_index = ((int) Missiontime % MAX_WINGMAN_HEADS);
 				}
 				strcpy_s(temp, ani_name);
-				sprintf(ani_name, "%s%c", temp, 'a'+rand_index);
+				sprintf_safe(ani_name, "%s%c", temp, 'a'+rand_index);
 				subhead_selected = TRUE;
 			} else if ( Personas[persona_index].flags & (PERSONA_FLAG_COMMAND | PERSONA_FLAG_LARGE) ) {
 				// get a random head
@@ -1221,7 +1221,7 @@ void message_play_anim( message_q *q )
 				}
 
 				strcpy_s(temp, ani_name);
-				sprintf(ani_name, "%s%c", temp, 'a'+rand_index);
+				sprintf_safe(ani_name, "%s%c", temp, 'a'+rand_index);
 				subhead_selected = TRUE;
 			} else {
 				mprintf(("message '%s' uses an unrecognized persona type\n", m->name));
@@ -1232,7 +1232,7 @@ void message_play_anim( message_q *q )
 			// choose between a and b
 			rand_index = ((int) Missiontime % MAX_WINGMAN_HEADS);
 			strcpy_s(temp, ani_name);
-			sprintf(ani_name, "%s%c", temp, 'a'+rand_index);
+			sprintf_safe(ani_name, "%s%c", temp, 'a'+rand_index);
 			mprintf(("message '%s' with invalid head.  Fix by assigning persona to the message.\n", m->name));
 		}
 		nprintf(("Messaging", "playing head %s for %s\n", ani_name, q->who_from));
