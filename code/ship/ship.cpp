@@ -10898,7 +10898,6 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 			ship_stop_fire_primary_bank(obj, bank_to_fire);
 			continue;
 		}		
-		
 
 		if ( pm->n_guns > 0 ) {
 			int num_slots = pm->gun_banks[bank_to_fire].num_slots;
@@ -11234,6 +11233,15 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 							// of weapon_create							
 							weapon_objnum = weapon_create( &firing_pos, &firing_orient, weapon_idx, OBJ_INDEX(obj), new_group_id,
 								0, 0, swp->primary_bank_fof_cooldown[bank_to_fire] );
+
+							if (weapon_objnum == -1) {
+								// Weapon most likely failed to fire
+								if (obj == Player_obj) {
+									ship_maybe_play_primary_fail_sound();
+								}
+								continue;
+							}
+
 							winfo_p = &Weapon_info[Weapons[Objects[weapon_objnum].instance].weapon_info_index];
 							has_fired = true;
 
@@ -11952,6 +11960,14 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 			// create the weapon -- for multiplayer, the net_signature is assigned inside
 			// of weapon_create
 			weapon_num = weapon_create( &firing_pos, &firing_orient, weapon_idx, OBJ_INDEX(obj), -1, aip->current_target_is_locked);
+
+			if (weapon_num == -1) {
+				// Weapon most likely failed to fire
+				if (obj == Player_obj) {
+					ship_maybe_play_secondary_fail_sound(wip);
+				}
+				continue;
+			}
 
 			if (weapon_num >= 0) {
 				weapon_idx = Weapons[Objects[weapon_num].instance].weapon_info_index;

@@ -2689,6 +2689,14 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 	if (wip->burst_delay >= wip->fire_wait)
 		wip->burst_shots = 0;
 
+	// Set up weapon failure
+	if (optional_string("$Failure Rate:")) {
+		stuff_float(&wip->failure_rate);
+		if (optional_string("+Failure Substitute:")) {
+			stuff_string(wip->failure_sub_name, F_NAME);
+		}
+	}
+
 	/* Generate a substitution pattern for this weapon.
 	This pattern is very naive such that it calculates the lowest common denominator as being all of
 	the periods multiplied together.
@@ -3379,6 +3387,28 @@ void weapon_generate_indexes_for_substitution() {
 			}
 
 			memset(wip->weapon_substitution_pattern_names, 0, sizeof(char) * MAX_SUBSTITUTION_PATTERNS * NAME_LENGTH);
+		}
+
+		if (wip->failure_rate > 0.0f) {
+			if (VALID_FNAME(wip->failure_sub_name)) {
+				wip->failure_sub = weapon_info_lookup(wip->failure_sub_name.c_str());
+
+				if (wip->failure_sub == -1) { // invalid sub weapon
+					Warning(LOCATION, "Weapon '%s' requests substitution with '%s' which does not seem to exist",
+						wip->name, wip->failure_sub_name.c_str());
+					wip->failure_rate = 0.0f;
+				}
+
+				if (Weapon_info[wip->failure_sub].subtype != wip->subtype) {
+					// Check to make sure secondaries can't be launched by primaries and vice versa
+					Warning(LOCATION, "Weapon '%s' requests substitution with '%s' which is of a different subtype.",
+						wip->name, wip->failure_sub_name.c_str());
+					wip->failure_sub = -1;
+					wip->failure_rate = 0.0f;
+				}
+			}
+
+			wip->failure_sub_name.clear();
 		}
 	}
 }
@@ -5103,6 +5133,19 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 		} else if ( wip->weapon_substitution_pattern[curr_pos] != weapon_type ) {
 			// weapon wants to sub with weapon other than me
 			return weapon_create(pos, porient, wip->weapon_substitution_pattern[curr_pos], parent_objnum, group_id, is_locked, is_spawned, fof_cooldown);
+		}
+	}
+
+	// Let's setup a fast failure check with a uniform distribution.
+	if (wip->failure_rate > 0.0f) {
+		util::UniformFloatRange rng(0.0f, 1.0f);
+		float test = rng.next();
+		if (test < wip->failure_rate) {
+			if (wip->failure_sub != -1) {
+				return weapon_create(pos, porient, wip->failure_sub, parent_objnum, group_id, is_locked, is_spawned, fof_cooldown);
+			} else {
+				return -1;
+			}
 		}
 	}
 
@@ -7769,6 +7812,10 @@ void weapon_info::reset()
 
 	this->thruster_glow_factor = 1.0f;
 	this->target_lead_scaler = 0.0f;
+
+	this->failure_rate = 0.0f;
+	this->failure_sub_name.clear();
+	this->failure_sub = -1;
 
 	this->selection_effect = Default_weapon_select_effect;
 
