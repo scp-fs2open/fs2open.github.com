@@ -221,7 +221,18 @@ void CAddVariableDlg::validate_variable_name(int set_focus) {
 				edit->SetSel(0, -1);
 			}
 
-			m_name_validated = true;
+			// check for invalid characters
+			auto rval = strcspn(temp_name, "@()");
+			if (rval != len) {
+				char message_text[256];
+				sprintf(message_text, "Invalid char '%c' in variable name", temp_name[(int)rval]);
+				MessageBox(message_text);
+
+				m_name_validated = false;
+			}
+			else {
+				m_name_validated = true;
+			}
 		} else {
 			// conflicting variable name
 			if (len == 0) {
