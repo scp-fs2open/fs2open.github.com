@@ -58,11 +58,11 @@ float Master_voice_volume = Default_voice_volume;
 unsigned int SND_ENV_DEFAULT = 0;
 
 struct LoopingSoundInfo {
-	int m_dsHandle;
+	sound_handle m_dsHandle;
 	float m_defaultVolume;	//!< The default volume of this sound (from game_snd)
 	float m_dynamicVolume;	//!< The dynamic volume before scripted volume adjustment is applied (is updated via snd_set_volume)
 
-	LoopingSoundInfo(int dsHandle, float defaultVolume, float dynamicVolume):
+	LoopingSoundInfo(sound_handle dsHandle, float defaultVolume, float dynamicVolume):
 		m_dsHandle(dsHandle),
 		m_defaultVolume(defaultVolume),
 		m_dynamicVolume(dynamicVolume)
@@ -482,13 +482,12 @@ void snd_close(void)
 // returns:		-1		=>		sound could not be played
 //					n		=>		handle for instance of sound
 //
-int snd_play_raw(sound_load_id soundnum, float pan, float vol_scale, int priority)
+sound_handle snd_play_raw(sound_load_id soundnum, float pan, float vol_scale, int priority)
 {
 	game_snd gs;
-	int		rval;
 
 	if (!soundnum.isValid()) {
-		return -1;
+		return sound_handle::invalid();
 	}
 
 	gs.sound_entries.resize(1);
@@ -503,8 +502,7 @@ int snd_play_raw(sound_load_id soundnum, float pan, float vol_scale, int priorit
 	gs.volume_range = util::UniformFloatRange(1.0f);
 	gs.pitch_range = util::UniformFloatRange(1.0f);
 
-	rval = snd_play(&gs, pan, vol_scale, priority, true);
-	return rval;
+	return snd_play(&gs, pan, vol_scale, priority, true);
 }
 
 MONITOR( NumSoundsStarted )
@@ -527,19 +525,17 @@ MONITOR( NumSoundsLoaded )
 // returns:		-1		=>		sound could not be played
 //					n		=>		handle for instance of sound
 //
-int snd_play( game_snd *gs, float pan, float vol_scale, int priority, bool is_voice_msg )
+sound_handle snd_play( game_snd *gs, float pan, float vol_scale, int priority, bool is_voice_msg )
 {
 	float volume;
 	sound	*snd;
 
-	int handle = -1;
-
 	if (!Sound_enabled)
-		return -1;
+		return sound_handle::invalid();
 
 	if (gs == NULL) {
 		Int3();
-		return -1;
+		return sound_handle::invalid();
 	}
 
 	MONITOR_INC( NumSoundsStarted, 1 );
@@ -554,7 +550,7 @@ int snd_play( game_snd *gs, float pan, float vol_scale, int priority, bool is_vo
 	}
 
 	if (!entry->id.isValid())
-		return -1;
+		return sound_handle::invalid();
 
 	volume = gs->volume_range.next() * vol_scale;
 	if ( gs->flags&GAME_SND_VOICE ) {
@@ -568,15 +564,16 @@ int snd_play( game_snd *gs, float pan, float vol_scale, int priority, bool is_vo
 	snd = &Sounds[entry->id.value()];
 
 	if ( !(snd->flags & SND_F_USED) )
-		return -1;
+		return sound_handle::invalid();
 
 	if (!ds_initialized)
-		return -1;
+		return sound_handle::invalid();
 
+	sound_handle handle;
 	if ( volume > MIN_SOUND_VOLUME ) {
 		handle = ds_play( snd->sid, entry->id_sig, ds_priority(priority), &gs->enhanced_sound_data, volume, pan, 0, is_voice_msg);
 		
-		if (handle != -1) {
+		if (handle.isValid()) {
 			snd_set_pitch(handle, gs->pitch_range.next());
 		}
 	}
@@ -610,9 +607,8 @@ MONITOR( Num3DSoundsLoaded )
 // returns:		-1		=>		sound could not be played
 //					n		=>		handle for instance of sound
 //
-int snd_play_3d(game_snd *gs, vec3d *source_pos, vec3d *listen_pos, float radius, vec3d *source_vel, int looping, float vol_scale, int priority, vec3d * /*sound_fvec*/, float range_factor, int force, bool  /*is_ambient*/ )
+sound_handle snd_play_3d(game_snd *gs, vec3d *source_pos, vec3d *listen_pos, float radius, vec3d *source_vel, int looping, float vol_scale, int priority, vec3d * /*sound_fvec*/, float range_factor, int force, bool  /*is_ambient*/ )
 {
-	int		handle;
 	vec3d	vector_to_sound;
 	sound		*snd;
 	float		volume, distance, max_volume;
@@ -620,11 +616,11 @@ int snd_play_3d(game_snd *gs, vec3d *source_pos, vec3d *listen_pos, float radius
 	float		pan;
 
 	if ( !Sound_enabled )
-		return -1;
+		return sound_handle::invalid();
 
 	if (gs == NULL) {
 		Int3();
-		return -1;
+		return sound_handle::invalid();
 	}
 
 	MONITOR_INC( Num3DSoundsStarted, 1 );
@@ -639,24 +635,22 @@ int snd_play_3d(game_snd *gs, vec3d *source_pos, vec3d *listen_pos, float radius
 	}
 
 	if (!entry->id.isValid())
-		return -1;
+		return sound_handle::invalid();
 
 	snd = &Sounds[entry->id.value()];
 
 	if ( !(snd->flags & SND_F_USED) )
-		return -1;
+		return sound_handle::invalid();
 
 	if (snd->sid < 0) {
-		return -1;
+		return sound_handle::invalid();
 	}
-
-	handle = -1;
 
 	min_range = (gs->min + radius) * range_factor;
 	max_range = (gs->max + radius) * range_factor;
 
 	if (!ds_initialized)
-		return -1;
+		return sound_handle::invalid();
 	
 	// DirectSound3D will not cut off sounds, no matter how quite they become.. so manually
 	// prevent sounds from playing past the max distance.
@@ -664,7 +658,7 @@ int snd_play_3d(game_snd *gs, vec3d *source_pos, vec3d *listen_pos, float radius
 	distance = vm_vec_normalized_dir_quick( &vector_to_sound, source_pos, listen_pos );
 
 	if ( (distance > max_range) && !force){
-		return -1;
+		return sound_handle::invalid();
 	}
 
 	float default_volume = gs->volume_range.next();
@@ -689,13 +683,14 @@ int snd_play_3d(game_snd *gs, vec3d *source_pos, vec3d *listen_pos, float radius
 
 	volume *= (Master_sound_volume * aav_effect_volume);
 	if ( (volume < MIN_SOUND_VOLUME) && !force) {
-		return -1;
+		return sound_handle::invalid();
 	}
 
 	// any stereo sounds will not play in proper 3D, but they should have
 	// been converted to mono already!
 	Assertion( snd->info.n_channels == 1, "Sound should be mono! Sound file: %s", snd->filename );
 
+	sound_handle handle;
 	if (Cmdline_no_3d_sound) {
 		if (distance <= 0.0f) {
 			pan = 0.0f;
@@ -707,8 +702,8 @@ int snd_play_3d(game_snd *gs, vec3d *source_pos, vec3d *listen_pos, float radius
 	} else {
 		handle = ds3d_play(snd->sid, entry->id_sig, source_pos, source_vel, min_range, max_range, looping, (max_volume*Master_sound_volume*aav_effect_volume), volume, &gs->enhanced_sound_data, ds_priority(priority));
 	}
-	
-	if (handle != -1) {
+
+	if (handle.isValid()) {
 		snd_set_pitch(handle, gs->pitch_range.next());
 	}
 
@@ -716,7 +711,7 @@ int snd_play_3d(game_snd *gs, vec3d *source_pos, vec3d *listen_pos, float radius
 }
 
 // update the given 3d sound with a new position
-void snd_update_3d_pos(int soundnum, game_snd *gs, vec3d *new_pos, float radius, float range_factor)
+void snd_update_3d_pos(sound_handle soundnum, game_snd *gs, vec3d *new_pos, float radius, float range_factor)
 {
 	if (Cmdline_no_3d_sound) {
 		float vol, pan;
@@ -821,21 +816,20 @@ int snd_get_3d_vol_and_pan(game_snd *gs, vec3d *pos, float* vol, float *pan, flo
  * @param scriptingUpdateVolume if true the looping sound value is updated default is TRUE
  * @return -1 on error, else the handle for this playing sound
  */
-int snd_play_looping( game_snd *gs, float pan, int  /*start_loop*/, int  /*stop_loop*/, float vol_scale, int scriptingUpdateVolume)
+sound_handle snd_play_looping( game_snd *gs, float pan, int  /*start_loop*/, int  /*stop_loop*/, float vol_scale, int scriptingUpdateVolume)
 {	
 	float volume;
-	int	handle = -1;
 	sound	*snd;	
 
 	if (!Sound_enabled)
-		return -1;
+		return sound_handle::invalid();
 
 	if (!ds_initialized)
-		return -1;
+		return sound_handle::invalid();
 
 	if (gs == NULL) {
 		Int3();
-		return -1;
+		return sound_handle::invalid();
 	}
 
 	auto entry = gamesnd_choose_entry(gs);
@@ -847,12 +841,12 @@ int snd_play_looping( game_snd *gs, float pan, int  /*start_loop*/, int  /*stop_
 	}
 
 	if (!entry->id.isValid())
-		return -1;
+		return sound_handle::invalid();
 
 	snd = &Sounds[entry->id.value()];
 
 	if ( !(snd->flags & SND_F_USED) )
-		return -1;
+		return sound_handle::invalid();
 
 	auto default_volume = gs->volume_range.next();
 	volume = default_volume * vol_scale;
@@ -860,10 +854,11 @@ int snd_play_looping( game_snd *gs, float pan, int  /*start_loop*/, int  /*stop_
 	if ( volume > 1.0f )
 		volume = 1.0f;
 
+	sound_handle handle;
 	if (volume > MIN_SOUND_VOLUME) {
 		handle = ds_play( snd->sid, entry->id_sig, DS_MUST_PLAY, &gs->enhanced_sound_data, volume, pan, 1);
 
-		if(handle != -1) {
+		if(handle.isValid()) {
 			if (scriptingUpdateVolume) {
 				currentlyLoopingSoundInfos.push_back(LoopingSoundInfo(handle, default_volume, vol_scale));
 			}
@@ -880,12 +875,12 @@ int snd_play_looping( game_snd *gs, float pan, int  /*start_loop*/, int  /*stop_
  *
  * @param sig handle to sound, what is returned from snd_play()
  */
-void snd_stop( int sig )
+void snd_stop( sound_handle sig )
 {
 	int channel;
 
 	if (!ds_initialized) return;
-	if ( sig < 0 ) return;
+	if ( !sig.isValid() ) return;
 
 	channel = ds_get_channel(sig);
 	if ( channel == -1 )
@@ -925,7 +920,7 @@ void snd_stop_all()
  * @param sig		handle to sound, what is returned from snd_play()
  * @param volume	volume of sound (range: 0.0 -> 1.0)
  */
-void snd_set_volume( int sig, float volume )
+void snd_set_volume( sound_handle sig, float volume )
 {
 	int	channel;
 	float	new_volume;
@@ -933,7 +928,7 @@ void snd_set_volume( int sig, float volume )
 	if (!ds_initialized)
 		return;
 
-	if ( sig < 0 )
+	if ( !sig.isValid() )
 		return;
 
 	channel = ds_get_channel(sig);
@@ -969,14 +964,14 @@ void snd_set_volume( int sig, float volume )
 // parameters:		sig	=> handle to sound, what is returned from snd_play()
 //						pan	=> pan of sound (range: -1.0 -> 1.0)
 //
-void snd_set_pan( int sig, float pan )
+void snd_set_pan( sound_handle sig, float pan )
 {
 	int channel;
 
 	if (!ds_initialized)
 		return;
 
-	if ( sig < 0 )
+	if ( !sig.isValid() )
 		return;
 	
 	channel = ds_get_channel(sig);
@@ -997,14 +992,14 @@ void snd_set_pan( int sig, float pan )
 //
 // parameters:		sig	=> handle to sound, what is returned from snd_play()
 //
-float snd_get_pitch(int sig)
+float snd_get_pitch(sound_handle sig)
 {
 	int channel;
 
 	if (!ds_initialized)
 		return -1;
 
-	if ( sig < 0 )
+	if ( !sig.isValid() )
 		return -1;
 
 	channel = ds_get_channel(sig);
@@ -1024,12 +1019,12 @@ float snd_get_pitch(int sig)
 // parameters:		sig		=> handle to sound, what is returned from snd_play()
 //						pan		=> pitch of sound (must be greater than zero)
 //
-void snd_set_pitch( int sig, float pitch )
+void snd_set_pitch( sound_handle sig, float pitch )
 {
 	int channel;
 
 	if (!ds_initialized) return;
-	if ( sig < 0 ) return;
+	if ( !sig.isValid() ) return;
 
 	channel = ds_get_channel(sig);
 	if ( channel == -1 ) {
@@ -1050,14 +1045,14 @@ void snd_set_pitch( int sig, float pitch )
 //
 // parameters:		sig	=> signature of sound, what is returned from snd_play()
 //
-int snd_is_playing( int sig )
+int snd_is_playing( sound_handle sig )
 {
 	int	channel, is_playing;
 
 	if (!ds_initialized)
 		return 0;
 
-	if ( sig < 0 )
+	if ( !sig.isValid() )
 		return 0;
 
 	channel = ds_get_channel(sig);
@@ -1124,7 +1119,7 @@ void snd_update_listener(vec3d *pos, vec3d *vel, matrix *orient)
 }
 
 // this could probably be optimized a bit
-void snd_rewind(int snd_handle, float seconds)
+void snd_rewind(sound_handle snd_handle, float seconds)
 {			
 	float current_time,desired_time;
 	float bps;
@@ -1153,7 +1148,7 @@ void snd_rewind(int snd_handle, float seconds)
 }
 
 // this could probably be optimized a bit
-void snd_ffwd(int snd_handle, float seconds)
+void snd_ffwd(sound_handle snd_handle, float seconds)
 {
 	float current_time,desired_time;
 	float bps;
@@ -1182,7 +1177,7 @@ void snd_ffwd(int snd_handle, float seconds)
 }
 
 // this could probably be optimized a bit
-void snd_set_pos(int snd_handle, float val,int as_pct)
+void snd_set_pos(sound_handle snd_handle, float val,int as_pct)
 {
 	sound_info *snd;
 
@@ -1269,14 +1264,14 @@ void snd_get_format(sound_load_id handle, int* bits_per_sample, int* frequency)
 }
 
 // return the time for the sound to play in milliseconds
-int snd_time_remaining(int handle)
+int snd_time_remaining(sound_handle handle)
 {
 	int channel, is_playing, time_remaining = 0;
 
 	if (!ds_initialized)
 		return 0;
 
-	if ( handle < 0 )
+	if ( !handle.isValid() )
 		return 0;
 
 	channel = ds_get_channel(handle);
@@ -1324,7 +1319,7 @@ int snd_time_remaining(int handle)
 //	mprintf(("time_remaining: %d\n", time_remaining));	
 	return time_remaining;
 }
-sound_load_id snd_get_sound_id(int snd_handle)
+sound_load_id snd_get_sound_id(sound_handle snd_handle)
 {
 	if (!ds_initialized) {
 		return sound_load_id::invalid();

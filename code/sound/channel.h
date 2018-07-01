@@ -11,12 +11,12 @@
 #ifndef __CHANNEL_H__
 #define __CHANNEL_H__
 
+#include "sound/ds.h"
 #include "sound/openal.h"
-#include "sound/sound.h"
 
 typedef struct channel
 {
-	int			sig;			// uniquely identifies the sound playing on the channel
+	ds_sound_handle sig;    // uniquely identifies the sound playing on the channel
 	int			snd_id;		// identifies which kind of sound is playing
 	ALuint		source_id;	// OpenAL source id
 	int			sid;		// currently bound sound buffer index (-1 if none)

@@ -171,7 +171,7 @@ static float	Last_dist;
 static vec3d	W_init;
 
 // flag to indicate that the sound for a spinning highlight animation has played
-static int Brief_stage_highlight_sound_handle = -1;
+static sound_handle Brief_stage_highlight_sound_handle = sound_handle::invalid();
 
 // used for scrolling briefing text ( if necessary )
 int		Num_brief_text_lines[MAX_TEXT_STREAMS];
@@ -198,7 +198,7 @@ static int Max_briefing_line_len;
 static int Voice_started_time;
 static int Voice_ended_time;
 
-static int		Brief_text_wipe_snd;					// sound handle of sound effect for text wipe
+static sound_handle Brief_text_wipe_snd;					// sound handle of sound effect for text wipe
 static int		Play_brief_voice;
 
 // animation stuff
@@ -705,7 +705,7 @@ void brief_init_map()
 
 	brief_preload_anims();
 
-	Brief_text_wipe_snd = -1;
+	Brief_text_wipe_snd = sound_handle::invalid();
 	Last_new_stage = -1;
 	Num_fade_icons=0;
 }
@@ -970,7 +970,7 @@ void brief_render_icon(int stage_num, int icon_num, float frametime, int selecte
 
 				hud_anim_render(ha, frametime, 1, 0, 1, 0, GR_RESIZE_MENU, mirror_icon);
 
-				if ( Brief_stage_highlight_sound_handle < 0 ) {
+				if ( !Brief_stage_highlight_sound_handle.isValid() ) {
 					if ( !Fred_running) {
 						Brief_stage_highlight_sound_handle = snd_play(gamesnd_get_interface_sound(InterfaceSounds::ICON_HIGHLIGHT));
 					}
@@ -1815,7 +1815,7 @@ void brief_set_new_stage(vec3d *pos, matrix *orient, int time, int stage_num)
 	Voice_started_time = 0;
 	Voice_ended_time = 0;
 
-	Brief_stage_highlight_sound_handle = -1;
+	Brief_stage_highlight_sound_handle = sound_handle::invalid();
 	Last_new_stage = stage_num;
 }
 

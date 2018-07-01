@@ -48,8 +48,8 @@ static int Collide_friendly = 1;
 DCF_BOOL( collide_friendly, Collide_friendly )
 #endif
 
-static int Player_collide_sound, AI_collide_sound;
-static int Player_collide_shield_sound, AI_collide_shield_sound;
+static sound_handle Player_collide_sound, AI_collide_sound;
+static sound_handle Player_collide_shield_sound, AI_collide_shield_sound;
 
 /**
  * Return true if two ships are docking.
@@ -951,10 +951,10 @@ int get_ship_quadrant_from_global(vec3d *global_pos, object *objp)
 
 void collide_ship_ship_sounds_init()
 {
-	Player_collide_sound = -1;
-	AI_collide_sound = -1;
-	Player_collide_shield_sound = -1;
-	AI_collide_shield_sound = -1;
+	Player_collide_sound = sound_handle::invalid();
+	AI_collide_sound = sound_handle::invalid();
+	Player_collide_shield_sound = sound_handle::invalid();
+	AI_collide_shield_sound = sound_handle::invalid();
 }
 
 /**

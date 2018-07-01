@@ -5868,7 +5868,7 @@ void ship::clear()
 	swarm_missile_bank = -1;
 
 	group = -1;
-	death_roll_snd = -1;
+	death_roll_snd = sound_handle::invalid();
 	ship_list_index = -1;
 
 	thruster_bitmap = -1;
@@ -5902,7 +5902,7 @@ void ship::clear()
 
 	large_ship_blowup_index = -1;
 	for (i = 0; i < NUM_SUB_EXPL_HANDLES; i++)
-		sub_expl_sound_handle[i] = -1;
+		sub_expl_sound_handle[i] = sound_handle::invalid();
 
 	memset(&arc_pts, 0, MAX_SHIP_ARCS * 2 * sizeof(vec3d));
 	for (i = 0; i < MAX_SHIP_ARCS; i++)
@@ -7855,7 +7855,7 @@ static void ship_dying_frame(object *objp, int ship_num)
 				shipp->next_fireball = timestamp_rand(min_time,max_time);
 
 				// do sound - maybe start a random sound, if it has played far enough.
-				do_sub_expl_sound(objp->radius, &outpnt, shipp->sub_expl_sound_handle);
+				do_sub_expl_sound(objp->radius, &outpnt, shipp->sub_expl_sound_handle.data());
 			}
 		}
 
@@ -7903,7 +7903,7 @@ static void ship_dying_frame(object *objp, int ship_num)
 				}
 
 				// do sound - maybe start a random sound, if it has played far enough.
-				do_sub_expl_sound(objp->radius, &outpnt, shipp->sub_expl_sound_handle);
+				do_sub_expl_sound(objp->radius, &outpnt, shipp->sub_expl_sound_handle.data());
 			}
 		}
 
@@ -7988,9 +7988,9 @@ static void ship_dying_frame(object *objp, int ship_num)
 			if (objp == Player_obj)
 				joy_ff_explode();
 
-			if ( shipp->death_roll_snd != -1 ) {
+			if ( shipp->death_roll_snd.isValid() ) {
 				snd_stop(shipp->death_roll_snd);
-				shipp->death_roll_snd = -1;
+				shipp->death_roll_snd = sound_handle::invalid();
 			}
 
 			// if dying ship is docked, do damage to docked and physics

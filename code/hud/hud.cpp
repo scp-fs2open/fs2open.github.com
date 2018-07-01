@@ -85,7 +85,7 @@ int HUD_disable_except_messages = 0;
 color HUD_color_defaults[HUD_NUM_COLOR_LEVELS];		// array of colors with different alpha blending
 color HUD_color_debug;										// grey debug text shown on HUD
 
-static int Player_engine_snd_loop = -1;
+static sound_handle Player_engine_snd_loop = sound_handle::invalid();
 
 // HUD render frame offsets
 float HUD_offset_x = 0.0f;
@@ -1420,7 +1420,7 @@ void hud_update_frame(float  /*frametime*/)
 	}
 
 	if (Player_ai->target_objnum == -1) {
-		if ( Target_static_looping != -1 ) {
+		if ( Target_static_looping.isValid() ) {
 			snd_stop(Target_static_looping);
 		}
 		return;
@@ -1810,9 +1810,9 @@ void hud_render_gauges(int cockpit_display_num)
  */
 void hud_stop_looped_engine_sounds()
 {
-	if ( Player_engine_snd_loop > -1 )	{
+	if ( Player_engine_snd_loop.isValid() )	{
 		snd_stop(Player_engine_snd_loop);
-		Player_engine_snd_loop = -1;
+		Player_engine_snd_loop = sound_handle::invalid();
 	}
 }
 
@@ -1831,9 +1831,9 @@ void update_throttle_sound()
 	float percent_throttle;
 
 	if((Game_mode & GM_MULTIPLAYER) && (Net_player->flags & NETINFO_FLAG_OBSERVER)){
-		if(Player_engine_snd_loop != -1){
+		if(Player_engine_snd_loop.isValid()){
 			snd_stop(Player_engine_snd_loop);
-			Player_engine_snd_loop = -1;
+			Player_engine_snd_loop = sound_handle::invalid();
 		}
 
 		return;
@@ -1851,16 +1851,16 @@ void update_throttle_sound()
 			percent_throttle = Player_obj->phys_info.fspeed / Ships[Player_obj->instance].current_max_speed;
 		}
 
-		if ( percent_throttle != last_percent_throttle || Player_engine_snd_loop == -1 ) {
+		if ( percent_throttle != last_percent_throttle || !Player_engine_snd_loop.isValid() ) {
 
 			if ( percent_throttle < ZERO_PERCENT ) {
-				if ( Player_engine_snd_loop > -1 )	{
+				if ( Player_engine_snd_loop.isValid() )	{
 					snd_stop(Player_engine_snd_loop); // Backslash - otherwise, long engine loops keep playing
-					Player_engine_snd_loop = -1;
+					Player_engine_snd_loop = sound_handle::invalid();
 				}
 			}
 			else {
-				if ( Player_engine_snd_loop == -1 ){
+				if ( !Player_engine_snd_loop.isValid() ){
 					Player_engine_snd_loop = snd_play_looping( gamesnd_get_game_sound(ship_get_sound(Player_obj, GameSounds::ENGINE)), 0.0f , -1, -1, percent_throttle * ENGINE_MAX_VOL, FALSE);
 				} else {
 					// The sound may have been trashed at the low-level if sound channel overflow.
@@ -1869,7 +1869,7 @@ void update_throttle_sound()
 						snd_set_volume(Player_engine_snd_loop, percent_throttle * ENGINE_MAX_VOL);
 					}
 					else {
-						Player_engine_snd_loop = -1;
+						Player_engine_snd_loop = sound_handle::invalid();
 					}
 				}
 			}

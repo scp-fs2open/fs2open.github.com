@@ -12,8 +12,6 @@
 #include "globalincs/pstypes.h"
 #include "radar/radarsetup.h"
 
-extern int Radar_static_looping;
-
 class object;
 struct blip;
 struct color;
@@ -50,7 +48,7 @@ class HudGaugeRadarDradis: public HudGaugeRadar
 
 	bool sub_y_clip;
 
-	int loop_sound_handle;
+	sound_handle loop_sound_handle;
 	gamesnd_id m_loop_snd;
 	float loop_sound_volume;
 

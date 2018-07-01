@@ -335,20 +335,20 @@ void HudGaugeRadarStd::render(float  /*frametime*/)
 	if ( ok_to_blit_radar ) {
 		if ( Radar_static_playing ) {
 			drawBlipsSorted(1);	// passing 1 means to draw distorted
-			if ( Radar_static_looping == -1 ) {
+			if ( !Radar_static_looping.isValid() ) {
 				Radar_static_looping = snd_play_looping(gamesnd_get_game_sound(GameSounds::STATIC));
 			}
 		} else {
 			drawBlipsSorted(0);
-			if ( Radar_static_looping != -1 ) {
+			if ( Radar_static_looping.isValid() ) {
 				snd_stop(Radar_static_looping);
-				Radar_static_looping = -1;
+				Radar_static_looping = sound_handle::invalid();
 			}
 		}
 	} else {
-		if ( Radar_static_looping != -1 ) {
+		if ( Radar_static_looping.isValid() ) {
 			snd_stop(Radar_static_looping);
-			Radar_static_looping = -1;
+			Radar_static_looping = sound_handle::invalid();
 		}
 	}
 

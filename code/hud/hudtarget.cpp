@@ -438,7 +438,7 @@ weapon_flash Weapon_flash_info;
 // Data used for the proximity warning
 typedef struct homing_beep_info
 {
-	int	snd_handle;				// sound handle for last played beep
+	sound_handle	snd_handle;				// sound handle for last played beep
 	fix	last_time_played;		//	time beep was last played
 	int	min_cycle_time;		// time (in ms) for fastest cycling of the sound
 	int	max_cycle_time;		// time (in ms) for slowest cycling of the sound
@@ -447,7 +447,7 @@ typedef struct homing_beep_info
 	float	precalced_interp;		// a precalculated value used in a linear interpretation
 } homing_beep_info;
 
-homing_beep_info Homing_beep = { -1, 0, 150, 1000, 30.0f, 1500.0f, 1.729412f };
+homing_beep_info Homing_beep = { sound_handle::invalid(), 0, 150, 1000, 30.0f, 1500.0f, 1.729412f };
 
 // Set at the start of a mission, used to decide how to draw the separation for the warning missile indicators
 float Min_warning_missile_dist;
@@ -1010,7 +1010,7 @@ void hud_weapons_init()
 // init data used to play the homing "proximity warning" sound
 void hud_init_homing_beep()
 {
-	Homing_beep.snd_handle = -1;
+	Homing_beep.snd_handle = sound_handle::invalid();
 	Homing_beep.last_time_played  = 0;
 	Homing_beep.precalced_interp = (Homing_beep.max_cycle_dist-Homing_beep.min_cycle_dist) / (Homing_beep.max_cycle_time - Homing_beep.min_cycle_time );
 }

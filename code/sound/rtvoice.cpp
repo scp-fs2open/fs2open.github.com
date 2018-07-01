@@ -438,9 +438,9 @@ void rtvoice_free_playback_buffer(int index)
 // Play sound data
 // exit:	>=0	=>	handle to playing sound
 //			-1		=>	error, voice not played
-int rtvoice_play(int index, unsigned char *data, int size)
+sound_handle rtvoice_play(int index, unsigned char *data, int size)
 {
-	int ds_handle, rval;
+	int ds_handle;
 
 	ds_handle = Rtv_output_buffers[index].ds_handle;
 
@@ -451,12 +451,11 @@ int rtvoice_play(int index, unsigned char *data, int size)
 
 	// lock the data in
 	if ( ds_lock_data(ds_handle, data, size) ) {
-		return -1;
+		return sound_handle::invalid();
 	}
 
 	// play the voice
 	EnhancedSoundData enhanced_sound_data(SND_ENHANCED_PRIORITY_MUST_PLAY, SND_ENHANCED_MAX_LIMIT);
-	rval = ds_play(ds_handle, -100, DS_MUST_PLAY, &enhanced_sound_data, Master_voice_volume, 0, 0);
-	return rval;
+	return ds_play(ds_handle, -100, DS_MUST_PLAY, &enhanced_sound_data, Master_voice_volume, 0, 0);
 }
 

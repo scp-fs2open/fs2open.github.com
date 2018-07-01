@@ -29,7 +29,7 @@ const int MAX_AUDIO_BUFFERS = 15;
 
 std::unique_ptr<Decoder> findDecoder(const SCP_string& name) {
 	{
-		std::unique_ptr<Decoder> ffmpeg(new ffmpeg::FFMPEGDecoder());
+		std::unique_ptr<Decoder> ffmpeg(new ::cutscene::ffmpeg::FFMPEGDecoder());
 		if (ffmpeg->initialize(name)) {
 			return ffmpeg;
 		}

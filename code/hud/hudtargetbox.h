@@ -29,7 +29,7 @@ class object;
 #define TBOX_FLASH_STATUS			3
 #define TBOX_FLASH_SUBSYS			4
 
-extern int Target_static_looping;
+extern sound_handle Target_static_looping;
 extern int Target_display_cargo;
 extern char Cargo_string[256];
 

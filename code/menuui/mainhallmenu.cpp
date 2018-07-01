@@ -123,7 +123,7 @@ int Main_hall_next_intercom_sound = 0;
 int Main_hall_next_intercom_sound_stamp = -1;
 
 // handle to any playing instance of a random intercom sound
-int Main_hall_intercom_sound_handle = -1;
+sound_handle Main_hall_intercom_sound_handle = sound_handle::invalid();
 
 // handle any details related to random intercom sounds
 void main_hall_handle_random_intercom_sounds();
@@ -225,10 +225,10 @@ void main_hall_mouse_grab_region(int region);
 #define ALLENDER_REGION		4
 
 // handles to the sound instances of the doors opening/closing
-SCP_vector<int> Main_hall_door_sound_handles;
+SCP_vector<sound_handle> Main_hall_door_sound_handles;
 
 // sound handle for looping ambient sound
-int Main_hall_ambient_loop = -1;
+sound_handle Main_hall_ambient_loop = sound_handle::invalid();
 
 // cull any door sounds that have finished playing
 void main_hall_cull_door_sounds();
@@ -592,7 +592,7 @@ void main_hall_init(const SCP_string &main_hall_name)
 	// initialize door sound handles
 	Main_hall_door_sound_handles.clear();
 	for (idx = 0; idx < Main_hall->num_door_animations; idx++) {
-		Main_hall_door_sound_handles.push_back(-1);
+		Main_hall_door_sound_handles.push_back(sound_handle::invalid());
 	}
 
 	// skip the first frame
@@ -607,7 +607,7 @@ void main_hall_init(const SCP_string &main_hall_name)
 	// initialize the random intercom sound stuff
 	Main_hall_next_intercom_sound = 0;
 	Main_hall_next_intercom_sound_stamp = -1;
-	Main_hall_intercom_sound_handle = -1;
+	Main_hall_intercom_sound_handle = sound_handle::invalid();
 
 	// set the placement of the mouse cursor (start at the ready room)
 	Main_hall_mouse_region = -1;
@@ -1061,9 +1061,9 @@ void main_hall_close()
 
 	// stop any playing door sounds
 	for (idx = 0; idx < Main_hall->num_door_animations-2; idx++) {
-		if ( (Main_hall_door_sound_handles.at(idx) != -1) && snd_is_playing(Main_hall_door_sound_handles.at(idx)) ) {
+		if ( (Main_hall_door_sound_handles.at(idx).isValid()) && snd_is_playing(Main_hall_door_sound_handles.at(idx)) ) {
 			snd_stop(Main_hall_door_sound_handles.at(idx));
-			Main_hall_door_sound_handles.at(idx) = -1;
+			Main_hall_door_sound_handles.at(idx) = sound_handle::invalid();
 		}
 	}
 
@@ -1382,7 +1382,7 @@ void main_hall_mouse_release_region(int region)
 	// check for door sounds, ignoring the OPTIONS_REGION (which isn't a door)
 	if (Main_hall_door_anim.at(region).num_frames > 0) {
 		// don't stop the toaster oven or microwave regions from playing all the way through
-		if (Main_hall_door_sound_handles.at(region) != -1) {
+		if (Main_hall_door_sound_handles.at(region).isValid()) {
 			snd_stop(Main_hall_door_sound_handles.at(region));
 		}
 
@@ -1425,7 +1425,7 @@ void main_hall_mouse_grab_region(int region)
 
 	// check for opening/starting sounds
 	// kill the currently playing sounds if necessary
-	if (Main_hall_door_sound_handles.at(region) != -1) {
+	if (Main_hall_door_sound_handles.at(region).isValid()) {
 		snd_stop(Main_hall_door_sound_handles.at(region));
 	}
 
@@ -1508,8 +1508,8 @@ void main_hall_cull_door_sounds()
 	// basically just set the handle of any finished sound to be -1, so that we know its free any where else in the code we may need it
 	Assert(Main_hall_door_sound_handles.size() < INT_MAX);
 	for (idx = 0; idx < (int)Main_hall_door_sound_handles.size(); idx++) {
-		if ( (Main_hall_door_sound_handles.at(idx) != -1) && !snd_is_playing(Main_hall_door_sound_handles.at(idx)) ) {
-			Main_hall_door_sound_handles.at(idx) = -1;
+		if ( (Main_hall_door_sound_handles.at(idx).isValid()) && !snd_is_playing(Main_hall_door_sound_handles.at(idx)) ) {
+			Main_hall_door_sound_handles.at(idx) = sound_handle::invalid();
 		}
 	}
 }
@@ -1526,14 +1526,14 @@ void main_hall_handle_random_intercom_sounds()
 	}
 
 	// if we have no timestamp for the next random sound, then set on
-	if ( (Main_hall_next_intercom_sound_stamp == -1) && (Main_hall_intercom_sound_handle == -1) ) {
+	if ( (Main_hall_next_intercom_sound_stamp == -1) && (!Main_hall_intercom_sound_handle.isValid()) ) {
 		Main_hall_next_intercom_sound_stamp = timestamp((int)((rand() * RAND_MAX_1f) * 
 			(float)(Main_hall->intercom_delay.at(Main_hall_next_intercom_sound).at(1) 
 				- Main_hall->intercom_delay.at(Main_hall_next_intercom_sound).at(0))) );
 	}
 
 	// if the there is no sound playing
-	if (Main_hall_intercom_sound_handle == -1) {
+	if (!Main_hall_intercom_sound_handle.isValid()) {
 		if (Main_hall_paused) {
 			return;
 		}
@@ -1571,7 +1571,7 @@ void main_hall_handle_random_intercom_sounds()
 					- Main_hall->intercom_delay.at(Main_hall_next_intercom_sound).at(0))) );
 
 			// release the sound handle
-			Main_hall_intercom_sound_handle = -1;
+			Main_hall_intercom_sound_handle = sound_handle::invalid();
 		}
 	}
 }
@@ -1624,7 +1624,7 @@ void main_hall_start_ambient()
 		return;
 	}
 
-	if (Main_hall_ambient_loop == -1) {
+	if (!Main_hall_ambient_loop.isValid()) {
 		play_ambient_loop = 1;
 	} else {
 		if (!snd_is_playing(Main_hall_ambient_loop)) {
@@ -1642,9 +1642,9 @@ void main_hall_start_ambient()
  */
 void main_hall_stop_ambient()
 {
-	if (Main_hall_ambient_loop != -1) {
+	if (Main_hall_ambient_loop.isValid()) {
 		snd_stop(Main_hall_ambient_loop);
-		Main_hall_ambient_loop = -1;
+		Main_hall_ambient_loop = sound_handle::invalid();
 	}
 }
 
@@ -1655,7 +1655,7 @@ void main_hall_stop_ambient()
  */
 void main_hall_reset_ambient_vol()
 {
-	if (Main_hall_ambient_loop >= 0) {
+	if (Main_hall_ambient_loop.isValid()) {
 		snd_set_volume(Main_hall_ambient_loop, gamesnd_get_interface_sound(InterfaceSounds::MAIN_HALL_AMBIENT)->volume_range.next());
 	}
 }

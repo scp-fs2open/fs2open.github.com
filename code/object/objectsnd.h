@@ -47,7 +47,7 @@ void	obj_snd_delete_type(int objnum, gamesnd_id sndnum = gamesnd_id(), ship_subs
 void	obj_snd_delete_all();
 void	obj_snd_stop_all();
 int	obj_snd_is_playing(int objnum, int index);
-int	obj_snd_return_instance(int objnum, int index);
+sound_handle obj_snd_return_instance(int objnum, int index);
 int obj_snd_update_offset(int objnum, int index, vec3d *new_offset);
 
 #endif

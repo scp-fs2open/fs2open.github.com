@@ -14,7 +14,7 @@
 
 #include "globalincs/pstypes.h"
 #include "sound/ffmpeg/WaveFile.h"
-#include "sound/sound.h"
+#include "utils/id.h"
 
 // Constants that DirectSound should assign, but doesn't
 #define MIN_PITCH		100
@@ -50,12 +50,16 @@ typedef struct sound_info {
 
 extern int ds_initialized;
 
+struct ds_sound_handle_tag {
+};
+using ds_sound_handle = ::util::ID<ds_sound_handle_tag, int, -1>;
+
 int ds_init();
 void ds_close();
 int ds_load_buffer(int *sid, int flags, ffmpeg::WaveFile* file);
 void ds_unload_buffer(int sid);
-int ds_play(int sid, int snd_id, int priority, const EnhancedSoundData * enhanced_sound_data, float volume, float pan, int looping, bool is_voice_msg = false);
-int ds_get_channel(int sig);
+ds_sound_handle ds_play(int sid, int snd_id, int priority, const EnhancedSoundData * enhanced_sound_data, float volume, float pan, int looping, bool is_voice_msg = false);
+int ds_get_channel(ds_sound_handle sig);
 int ds_is_channel_playing(int channel);
 void ds_stop_channel(int channel);
 void ds_stop_channel_all();
@@ -92,7 +96,7 @@ int ds_get_sound_index(int channel_id);
 // Returns the number of channels that are actually playing
 int ds_get_number_channels();
 
-int ds3d_play(int sid, int snd_id, vec3d *pos, vec3d *vel, float min, float max, int looping, float max_volume, float estimated_vol, const EnhancedSoundData * enhanced_sound_data, int priority = DS_MUST_PLAY, bool is_ambient = false);
+ds_sound_handle ds3d_play(int sid, int snd_id, vec3d *pos, vec3d *vel, float min, float max, int looping, float max_volume, float estimated_vol, const EnhancedSoundData * enhanced_sound_data, int priority = DS_MUST_PLAY, bool is_ambient = false);
 
 void ds_do_frame();
 

@@ -157,7 +157,7 @@ typedef struct beam {
 	int f_collision_count;														// # of collisions we recorded this frame
 
 	// looping sound info, HANDLE
-	int		beam_sound_loop;		// -1 if none
+	sound_handle beam_sound_loop;		// invalid if none
 
 	// team 
 	char		team;

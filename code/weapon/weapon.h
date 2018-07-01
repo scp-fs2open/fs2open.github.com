@@ -146,7 +146,7 @@ typedef struct weapon {
 
 	mc_info* collisionInfo; // The last collision of this weapon or NULL if it had none
 
-	int hud_in_flight_snd_sig;					// Signature of the sound played while the weapon is in flight
+	sound_handle hud_in_flight_snd_sig;					// Signature of the sound played while the weapon is in flight
 
 	WeaponState weapon_state; // The current state of the weapon
 } weapon;

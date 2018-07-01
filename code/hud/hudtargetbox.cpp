@@ -55,7 +55,7 @@ object *Enemy_attacker = NULL;
 
 static int Target_static_next;
 static int Target_static_playing;
-int Target_static_looping;
+sound_handle Target_static_looping = sound_handle::invalid();
 
 int Target_display_cargo;
 char Cargo_string[256] = "";
@@ -2222,13 +2222,13 @@ void hud_update_target_static()
 	}
 
 	if ( Target_static_playing ) {
-		if ( Target_static_looping == -1 ) {
+		if ( !Target_static_looping.isValid() ) {
 			Target_static_looping = snd_play_looping(gamesnd_get_game_sound(GameSounds::STATIC));
 		}
 	} else {
-		if ( Target_static_looping != -1 ) {
+		if ( Target_static_looping.isValid() ) {
 			snd_stop(Target_static_looping);
-			Target_static_looping = -1;
+			Target_static_looping = sound_handle::invalid();
 		}
 	}
 }

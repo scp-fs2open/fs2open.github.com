@@ -122,20 +122,20 @@ ADE_FUNC(isValid, l_SoundEntry, NULL, "Detects whether handle is valid", "boolea
 
 sound_h::sound_h() :sound_entry_h()
 {
-	sig=-1;
+	sig=sound_handle::invalid();
 }
-sound_h::sound_h(gamesnd_id n_gs_idx, int n_sig) : sound_entry_h(n_gs_idx)
+sound_h::sound_h(gamesnd_id n_gs_idx, sound_handle n_sig) : sound_entry_h(n_gs_idx)
 {
 	sig=n_sig;
 }
-int sound_h::getSignature() {
+sound_handle sound_h::getSignature() {
 	if (!IsValid())
-		return -1;
+		return sound_handle::invalid();
 
 	return sig;
 }
 bool sound_h::IsSoundValid() {
-	if(sig < 0 || ds_get_channel(sig) < 0)
+	if (!sig.isValid() || ds_get_channel(sig) < 0)
 		return false;
 
 	return true;
@@ -144,7 +144,7 @@ bool sound_h::IsValid() {
 	if(!sound_entry_h::IsValid())
 		return false;
 
-	if(sig < 0 || ds_get_channel(sig) < 0)
+	if (!sig.isValid() || ds_get_channel(sig) < 0)
 		return false;
 
 	return true;
@@ -403,7 +403,7 @@ ADE_FUNC(play, l_Soundfile, "[number volume = 1.0[, number panning = 0.0]]", "Pl
 		return ade_set_error(L, "o", l_Sound.Set(sound_h()));
 	}
 
-	int handle = snd_play_raw(snd_idx, panning, volume);
+	auto handle = snd_play_raw(snd_idx, panning, volume);
 
 	return ade_set_args(L, "o", l_Sound.Set(sound_h(gamesnd_id(), handle)));
 }
