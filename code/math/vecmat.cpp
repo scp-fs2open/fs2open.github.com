@@ -428,12 +428,9 @@ float vm_vec_copy_normalize(vec3d *dest, const vec3d *src)
 
 	//	Mainly here to trap attempts to normalize a null vector.
 	if (m <= 0.0f) {
-//		static int been_warned2 = false;//added this so the warning could be sounded and you can still get on with playing-Bobboau
-//		if(!been_warned2)
 		{
-			Warning(LOCATION, "Null vec3d in vec3d normalize.\n"
-							  "Trace out of vecmat.cpp and find offending code.\n");
-//			been_warned2 = true;
+			mprintf(("Null vec3d in vec3d normalize.\n"
+							  "Trace out of vecmat.cpp and find offending code.\n"));
 		}
 
 		dest->xyz.x = 1.0f;
