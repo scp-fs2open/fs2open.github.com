@@ -149,6 +149,9 @@ void object::clear()
 	objsnd_num.clear();
 	net_signature = 0;
 
+	pre_move_event.clear();
+	post_move_event.clear();
+
 	// just in case nobody called obj_delete last mission
 	dock_free_dock_list(this);
 	dock_free_dead_dock_list(this);
@@ -513,6 +516,7 @@ int obj_create(ubyte type,int parent_obj,int instance, matrix * orient,
 
 	obj->n_quadrants = DEFAULT_SHIELD_SECTIONS; // Might be changed by the ship creation code
 	obj->shield_quadrant.resize(obj->n_quadrants);
+
 	return objnum;
 }
 
@@ -1165,8 +1169,10 @@ void obj_move_all_pre(object *objp, float frametime)
 		Int3();
 		break;
 	default:
-		Error( LOCATION, "Unhandled object type %d in obj_move_one\n", objp->type );
-	}	
+		Error(LOCATION, "Unhandled object type %d in obj_move_all_pre\n", objp->type);
+	}
+
+	objp->pre_move_event(objp);
 }
 
 // Used to tell if a particular group of lasers has cast light yet.
@@ -1396,8 +1402,10 @@ void obj_move_all_post(object *objp, float frametime)
 			break;
 
 		default:
-			Error( LOCATION, "Unhandled object type %d in obj_move_one\n", objp->type );
-	}	
+		    Error(LOCATION, "Unhandled object type %d in obj_move_all_post\n", objp->type);
+	    }
+
+	    objp->post_move_event(objp);
 }
 
 
