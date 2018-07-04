@@ -4911,8 +4911,7 @@ void weapon_process_post(object * obj, float frame_time)
 
 		if (play_sound)
 		{
-			if (!wp->hud_in_flight_snd_sig.isValid() || !snd_is_playing(wp->hud_in_flight_snd_sig))
-			{
+			if (!wp->hud_in_flight_snd_sig.isValid() || !snd_is_playing(wp->hud_in_flight_snd_sig)) {
 				wp->hud_in_flight_snd_sig = snd_play_looping(gamesnd_get_game_sound(wip->hud_in_flight_snd));
 			}
 		}
@@ -7273,8 +7272,7 @@ void pause_in_flight_sounds()
 		{
 			weapon* wp = &Weapons[i];
 
-			if (wp->hud_in_flight_snd_sig.isValid() && snd_is_playing(wp->hud_in_flight_snd_sig))
-			{
+			if (wp->hud_in_flight_snd_sig.isValid() && snd_is_playing(wp->hud_in_flight_snd_sig)) {
 				// Stop sound, it will be restarted in the first frame after the game is unpaused
 				snd_stop(wp->hud_in_flight_snd_sig);
 			}

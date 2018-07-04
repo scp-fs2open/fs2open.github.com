@@ -62,10 +62,8 @@ struct LoopingSoundInfo {
 	float m_defaultVolume;	//!< The default volume of this sound (from game_snd)
 	float m_dynamicVolume;	//!< The dynamic volume before scripted volume adjustment is applied (is updated via snd_set_volume)
 
-	LoopingSoundInfo(sound_handle dsHandle, float defaultVolume, float dynamicVolume):
-		m_dsHandle(dsHandle),
-		m_defaultVolume(defaultVolume),
-		m_dynamicVolume(dynamicVolume)
+	LoopingSoundInfo(sound_handle dsHandle, float defaultVolume, float dynamicVolume)
+	    : m_dsHandle(dsHandle), m_defaultVolume(defaultVolume), m_dynamicVolume(dynamicVolume)
 	{
 	}
     
@@ -525,7 +523,7 @@ MONITOR( NumSoundsLoaded )
 // returns:		-1		=>		sound could not be played
 //					n		=>		handle for instance of sound
 //
-sound_handle snd_play( game_snd *gs, float pan, float vol_scale, int priority, bool is_voice_msg )
+sound_handle snd_play(game_snd* gs, float pan, float vol_scale, int priority, bool is_voice_msg)
 {
 	float volume;
 	sound	*snd;
@@ -572,7 +570,7 @@ sound_handle snd_play( game_snd *gs, float pan, float vol_scale, int priority, b
 	sound_handle handle;
 	if ( volume > MIN_SOUND_VOLUME ) {
 		handle = ds_play( snd->sid, entry->id_sig, ds_priority(priority), &gs->enhanced_sound_data, volume, pan, 0, is_voice_msg);
-		
+
 		if (handle.isValid()) {
 			snd_set_pitch(handle, gs->pitch_range.next());
 		}
@@ -607,7 +605,9 @@ MONITOR( Num3DSoundsLoaded )
 // returns:		-1		=>		sound could not be played
 //					n		=>		handle for instance of sound
 //
-sound_handle snd_play_3d(game_snd *gs, vec3d *source_pos, vec3d *listen_pos, float radius, vec3d *source_vel, int looping, float vol_scale, int priority, vec3d * /*sound_fvec*/, float range_factor, int force, bool  /*is_ambient*/ )
+sound_handle snd_play_3d(game_snd* gs, vec3d* source_pos, vec3d* listen_pos, float radius, vec3d* source_vel,
+                         int looping, float vol_scale, int priority, vec3d* /*sound_fvec*/, float range_factor,
+                         int force, bool /*is_ambient*/)
 {
 	vec3d	vector_to_sound;
 	sound		*snd;
@@ -651,7 +651,7 @@ sound_handle snd_play_3d(game_snd *gs, vec3d *source_pos, vec3d *listen_pos, flo
 
 	if (!ds_initialized)
 		return sound_handle::invalid();
-	
+
 	// DirectSound3D will not cut off sounds, no matter how quite they become.. so manually
 	// prevent sounds from playing past the max distance.
 	//IMPORTANT THIS IS NOT WORKING RIGHT OMG WTF
@@ -711,7 +711,7 @@ sound_handle snd_play_3d(game_snd *gs, vec3d *source_pos, vec3d *listen_pos, flo
 }
 
 // update the given 3d sound with a new position
-void snd_update_3d_pos(sound_handle soundnum, game_snd *gs, vec3d *new_pos, float radius, float range_factor)
+void snd_update_3d_pos(sound_handle soundnum, game_snd* gs, vec3d* new_pos, float radius, float range_factor)
 {
 	if (Cmdline_no_3d_sound) {
 		float vol, pan;
@@ -816,7 +816,8 @@ int snd_get_3d_vol_and_pan(game_snd *gs, vec3d *pos, float* vol, float *pan, flo
  * @param scriptingUpdateVolume if true the looping sound value is updated default is TRUE
  * @return -1 on error, else the handle for this playing sound
  */
-sound_handle snd_play_looping( game_snd *gs, float pan, int  /*start_loop*/, int  /*stop_loop*/, float vol_scale, int scriptingUpdateVolume)
+sound_handle snd_play_looping(game_snd* gs, float pan, int /*start_loop*/, int /*stop_loop*/, float vol_scale,
+                              int scriptingUpdateVolume)
 {	
 	float volume;
 	sound	*snd;	
@@ -858,7 +859,7 @@ sound_handle snd_play_looping( game_snd *gs, float pan, int  /*start_loop*/, int
 	if (volume > MIN_SOUND_VOLUME) {
 		handle = ds_play( snd->sid, entry->id_sig, DS_MUST_PLAY, &gs->enhanced_sound_data, volume, pan, 1);
 
-		if(handle.isValid()) {
+		if (handle.isValid()) {
 			if (scriptingUpdateVolume) {
 				currentlyLoopingSoundInfos.push_back(LoopingSoundInfo(handle, default_volume, vol_scale));
 			}
@@ -875,12 +876,13 @@ sound_handle snd_play_looping( game_snd *gs, float pan, int  /*start_loop*/, int
  *
  * @param sig handle to sound, what is returned from snd_play()
  */
-void snd_stop( sound_handle sig )
+void snd_stop(sound_handle sig)
 {
 	int channel;
 
 	if (!ds_initialized) return;
-	if ( !sig.isValid() ) return;
+	if (!sig.isValid())
+		return;
 
 	channel = ds_get_channel(sig);
 	if ( channel == -1 )
@@ -920,7 +922,7 @@ void snd_stop_all()
  * @param sig		handle to sound, what is returned from snd_play()
  * @param volume	volume of sound (range: 0.0 -> 1.0)
  */
-void snd_set_volume( sound_handle sig, float volume )
+void snd_set_volume(sound_handle sig, float volume)
 {
 	int	channel;
 	float	new_volume;
@@ -928,7 +930,7 @@ void snd_set_volume( sound_handle sig, float volume )
 	if (!ds_initialized)
 		return;
 
-	if ( !sig.isValid() )
+	if (!sig.isValid())
 		return;
 
 	channel = ds_get_channel(sig);
@@ -964,14 +966,14 @@ void snd_set_volume( sound_handle sig, float volume )
 // parameters:		sig	=> handle to sound, what is returned from snd_play()
 //						pan	=> pan of sound (range: -1.0 -> 1.0)
 //
-void snd_set_pan( sound_handle sig, float pan )
+void snd_set_pan(sound_handle sig, float pan)
 {
 	int channel;
 
 	if (!ds_initialized)
 		return;
 
-	if ( !sig.isValid() )
+	if (!sig.isValid())
 		return;
 	
 	channel = ds_get_channel(sig);
@@ -999,7 +1001,7 @@ float snd_get_pitch(sound_handle sig)
 	if (!ds_initialized)
 		return -1;
 
-	if ( !sig.isValid() )
+	if (!sig.isValid())
 		return -1;
 
 	channel = ds_get_channel(sig);
@@ -1019,12 +1021,13 @@ float snd_get_pitch(sound_handle sig)
 // parameters:		sig		=> handle to sound, what is returned from snd_play()
 //						pan		=> pitch of sound (must be greater than zero)
 //
-void snd_set_pitch( sound_handle sig, float pitch )
+void snd_set_pitch(sound_handle sig, float pitch)
 {
 	int channel;
 
 	if (!ds_initialized) return;
-	if ( !sig.isValid() ) return;
+	if (!sig.isValid())
+		return;
 
 	channel = ds_get_channel(sig);
 	if ( channel == -1 ) {
@@ -1045,14 +1048,14 @@ void snd_set_pitch( sound_handle sig, float pitch )
 //
 // parameters:		sig	=> signature of sound, what is returned from snd_play()
 //
-int snd_is_playing( sound_handle sig )
+int snd_is_playing(sound_handle sig)
 {
 	int	channel, is_playing;
 
 	if (!ds_initialized)
 		return 0;
 
-	if ( !sig.isValid() )
+	if (!sig.isValid())
 		return 0;
 
 	channel = ds_get_channel(sig);
@@ -1177,7 +1180,7 @@ void snd_ffwd(sound_handle snd_handle, float seconds)
 }
 
 // this could probably be optimized a bit
-void snd_set_pos(sound_handle snd_handle, float val,int as_pct)
+void snd_set_pos(sound_handle snd_handle, float val, int as_pct)
 {
 	sound_info *snd;
 
@@ -1271,7 +1274,7 @@ int snd_time_remaining(sound_handle handle)
 	if (!ds_initialized)
 		return 0;
 
-	if ( !handle.isValid() )
+	if (!handle.isValid())
 		return 0;
 
 	channel = ds_get_channel(handle);

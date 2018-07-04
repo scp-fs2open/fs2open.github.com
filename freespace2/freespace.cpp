@@ -5079,10 +5079,10 @@ void game_process_event( int current_state, int event )
 					Viewer_mode = Player->saved_viewer_mode;
 					hud_subspace_notify_abort();
 					mprintf(( "Player put back to normal mode.\n" ));
-					if ( Warpout_sound.isValid() )	{
-						snd_stop( Warpout_sound );
-						Warpout_sound = sound_handle::invalid();
-					}
+				    if (Warpout_sound.isValid()) {
+					    snd_stop( Warpout_sound );
+					    Warpout_sound = sound_handle::invalid();
+				    }
 				}
 			}
 			break;
@@ -5118,9 +5118,9 @@ void game_process_event( int current_state, int event )
 			mprintf(( "Player warped out.  Going to debriefing!\n" ));
 			Player->control_mode = PCM_NORMAL;
 			Viewer_mode = Player->saved_viewer_mode;
-			Warpout_sound = sound_handle::invalid();
+		    Warpout_sound        = sound_handle::invalid();
 
-			send_debrief_event();
+		    send_debrief_event();
 			break;
 
 		case GS_EVENT_STANDALONE_POSTGAME:
@@ -7435,29 +7435,29 @@ void get_version_string(char *str, int max_size)
 //
 // ----------------------------------------------------------------
 
-static sound_handle Subspace_ambient_left_channel = sound_handle::invalid();
+static sound_handle Subspace_ambient_left_channel  = sound_handle::invalid();
 static sound_handle Subspace_ambient_right_channel = sound_handle::invalid();
 
 // 
 void game_start_subspace_ambient_sound()
 {
-	if ( !Subspace_ambient_left_channel.isValid() ) {
+	if (!Subspace_ambient_left_channel.isValid()) {
 		Subspace_ambient_left_channel = snd_play_looping(gamesnd_get_game_sound(GameSounds::SUBSPACE_LEFT_CHANNEL), -1.0f);
 	}
 
-	if ( !Subspace_ambient_right_channel.isValid() ) {
+	if (!Subspace_ambient_right_channel.isValid()) {
 		Subspace_ambient_right_channel = snd_play_looping(gamesnd_get_game_sound(GameSounds::SUBSPACE_RIGHT_CHANNEL), 1.0f);
 	}
 }
 
 void game_stop_subspace_ambient_sound()
 {
-	if ( Subspace_ambient_left_channel.isValid() ) {
+	if (Subspace_ambient_left_channel.isValid()) {
 		snd_stop(Subspace_ambient_left_channel);
 		Subspace_ambient_left_channel = sound_handle::invalid();
 	}
 
-	if ( Subspace_ambient_right_channel.isValid() ) {
+	if (Subspace_ambient_right_channel.isValid()) {
 		snd_stop(Subspace_ambient_right_channel);
 		Subspace_ambient_right_channel = sound_handle::invalid();
 	}

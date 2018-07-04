@@ -119,16 +119,10 @@ ADE_FUNC(isValid, l_SoundEntry, NULL, "Detects whether handle is valid", "boolea
 	return ade_set_args(L, "b", seh->IsValid());
 }
 
-
-sound_h::sound_h() :sound_entry_h()
+sound_h::sound_h() : sound_entry_h() { sig = sound_handle::invalid(); }
+sound_h::sound_h(gamesnd_id n_gs_idx, sound_handle n_sig) : sound_entry_h(n_gs_idx) { sig = n_sig; }
+sound_handle sound_h::getSignature()
 {
-	sig=sound_handle::invalid();
-}
-sound_h::sound_h(gamesnd_id n_gs_idx, sound_handle n_sig) : sound_entry_h(n_gs_idx)
-{
-	sig=n_sig;
-}
-sound_handle sound_h::getSignature() {
 	if (!IsValid())
 		return sound_handle::invalid();
 

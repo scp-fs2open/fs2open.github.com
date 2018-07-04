@@ -1654,14 +1654,15 @@ typedef struct clip_ship {
 } clip_ship;
 
 typedef struct split_ship {
-	int				used = 0;					// 0 if not used, 1 if used
+	int used = 0; // 0 if not used, 1 if used
 	clip_ship		front_ship;
 	clip_ship		back_ship;
-	int				explosion_flash_timestamp = 0;
-	int				explosion_flash_started = 0;
+	int explosion_flash_timestamp = 0;
+	int explosion_flash_started   = 0;
 	std::array<sound_handle, NUM_SUB_EXPL_HANDLES> sound_handles;
 
-	split_ship() {
+	split_ship()
+	{
 		memset(&front_ship, 0, sizeof(front_ship));
 		memset(&back_ship, 0, sizeof(back_ship));
 		sound_handles.fill(sound_handle::invalid());
@@ -1805,7 +1806,7 @@ static void split_ship_init( ship* shipp, split_ship* split_shipp )
 	split_shipp->front_ship.phys_info.vel = parent_ship_obj->phys_info.vel;
 	split_shipp->back_ship.phys_info.vel  = parent_ship_obj->phys_info.vel;
 	maybe_fireball_wipe(&split_shipp->front_ship, split_shipp->sound_handles.data());
-	maybe_fireball_wipe(&split_shipp->back_ship,  split_shipp->sound_handles.data());
+	maybe_fireball_wipe(&split_shipp->back_ship, split_shipp->sound_handles.data());
 	vm_vec_scale_add2(&split_shipp->front_ship.phys_info.vel, &orient->vec.fvec, front_vel);
 	vm_vec_scale_add2(&split_shipp->back_ship.phys_info.vel,  &orient->vec.fvec, back_vel);
 
@@ -2108,20 +2109,24 @@ void do_sub_expl_sound(float radius, vec3d* sound_pos, sound_handle* handle_arra
 	int handle_index = rand()%NUM_SUB_EXPL_HANDLES;
 
 	auto sound_index = GameSounds::SHIP_EXPLODE_1;
-	auto handle = handle_array[handle_index];
+	auto handle      = handle_array[handle_index];
 
 	if (!handle.isValid()) {
 		// if no handle, get one
-		handle_array[handle_index] = snd_play_3d( gamesnd_get_game_sound(sound_index), sound_pos, &View_position, 0.0f, nullptr, 0, 0.6f, SND_PRIORITY_MUST_PLAY, nullptr, sound_range );
+		handle_array[handle_index] = snd_play_3d(gamesnd_get_game_sound(sound_index), sound_pos, &View_position, 0.0f,
+		                                         nullptr, 0, 0.6f, SND_PRIORITY_MUST_PLAY, nullptr, sound_range);
 	} else if (!snd_is_playing(handle)) {
 		// if sound not playing and old, get new one
 		// I don't think will happen with SND_PRIORITY_MUST_PLAY
 		if (get_sound_time_played(snd_get_sound_id(handle), handle) > 400) {
 			snd_stop(handle_array[handle_index]);
-			handle_array[handle_index] = snd_play_3d( gamesnd_get_game_sound(sound_index), sound_pos, &View_position, 0.0f, nullptr, 0, 0.6f, SND_PRIORITY_MUST_PLAY, nullptr, sound_range );
+			handle_array[handle_index] =
+			    snd_play_3d(gamesnd_get_game_sound(sound_index), sound_pos, &View_position, 0.0f, nullptr, 0, 0.6f,
+			                SND_PRIORITY_MUST_PLAY, nullptr, sound_range);
 		}
 	} else if (get_sound_time_played(snd_get_sound_id(handle), handle) > 750) {
-		handle_array[handle_index] = snd_play_3d( gamesnd_get_game_sound(sound_index), sound_pos, &View_position, 0.0f, nullptr, 0, 0.6f, SND_PRIORITY_MUST_PLAY, nullptr, sound_range );
+		handle_array[handle_index] = snd_play_3d(gamesnd_get_game_sound(sound_index), sound_pos, &View_position, 0.0f,
+		                                         nullptr, 0, 0.6f, SND_PRIORITY_MUST_PLAY, nullptr, sound_range);
 	}
 }
 
@@ -2279,7 +2284,7 @@ int shipfx_large_blowup_do_frame(ship *shipp, float frametime)
 	}
 
 	maybe_fireball_wipe(&the_split_ship->front_ship, the_split_ship->sound_handles.data());
-	maybe_fireball_wipe(&the_split_ship->back_ship,  the_split_ship->sound_handles.data());
+	maybe_fireball_wipe(&the_split_ship->back_ship, the_split_ship->sound_handles.data());
 	return 0;
 }
 
@@ -2996,17 +3001,14 @@ void engine_wash_ship_process(ship *shipp)
 /**
  * Engine wash level init
  */
-void shipfx_engine_wash_level_init()
-{
-	Player_engine_wash_loop = sound_handle::invalid();
-}
+void shipfx_engine_wash_level_init() { Player_engine_wash_loop = sound_handle::invalid(); }
 
 /**
  * Pause engine wash sounds
  */
 void shipfx_stop_engine_wash_sound()
 {
-	if(Player_engine_wash_loop.isValid()){
+	if (Player_engine_wash_loop.isValid()) {
 		snd_stop(Player_engine_wash_loop);
 		Player_engine_wash_loop = sound_handle::invalid();
 	}
@@ -3855,7 +3857,7 @@ int WE_BSG::warpStart()
 	if(gs_end_index.isValid())
 	{
 		snd_end_gs = gamesnd_get_game_sound(gs_end_index);
-		snd_end = sound_handle::invalid();
+		snd_end    = sound_handle::invalid();
 	}
 
 	stage = 0;
@@ -3912,7 +3914,7 @@ int WE_BSG::warpFrame(float  /*frametime*/)
 			return 0;
 	}
 
-	if(snd_start.isValid())
+	if (snd_start.isValid())
 		snd_update_3d_pos(snd_start, snd_start_gs, &objp->pos, 0.0f, snd_range_factor);
 
 	return 1;
@@ -3992,7 +3994,7 @@ int WE_BSG::warpShipRender()
 
 int WE_BSG::warpEnd()
 {
-	if(snd_start.isValid())
+	if (snd_start.isValid())
 		snd_stop(snd_start);
 	if(snd_end_gs != NULL)
 		snd_end = snd_play_3d(snd_end_gs, &objp->pos, &View_position, 0.0f, NULL, 0, 1.0f, SND_PRIORITY_SINGLE_INSTANCE, NULL, snd_range_factor);
@@ -4097,7 +4099,7 @@ WE_Homeworld::WE_Homeworld(object *n_objp, int n_direction)
 	height = 0.0f;
 
 	//Sound
-	snd = sound_handle::invalid();
+	snd    = sound_handle::invalid();
 	snd_gs = NULL;
 }
 
@@ -4223,7 +4225,7 @@ int WE_Homeworld::warpFrame(float  /*frametime*/)
 	}
 
 	//Update sound
-	if(snd.isValid())
+	if (snd.isValid())
 		snd_update_3d_pos(snd, snd_gs, &pos, 0.0f, snd_range_factor);
 		
 	return 1;
@@ -4255,7 +4257,7 @@ int WE_Homeworld::warpShipRender()
 
 int WE_Homeworld::warpEnd()
 {
-	if(snd.isValid())
+	if (snd.isValid())
 		snd_stop(snd);
 	return WarpEffect::warpEnd();
 }

@@ -951,10 +951,10 @@ int get_ship_quadrant_from_global(vec3d *global_pos, object *objp)
 
 void collide_ship_ship_sounds_init()
 {
-	Player_collide_sound = sound_handle::invalid();
-	AI_collide_sound = sound_handle::invalid();
+	Player_collide_sound        = sound_handle::invalid();
+	AI_collide_sound            = sound_handle::invalid();
 	Player_collide_shield_sound = sound_handle::invalid();
-	AI_collide_shield_sound = sound_handle::invalid();
+	AI_collide_shield_sound     = sound_handle::invalid();
 }
 
 /**

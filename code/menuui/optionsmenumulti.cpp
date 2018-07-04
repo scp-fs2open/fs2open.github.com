@@ -1710,7 +1710,7 @@ void options_multi_disable_vox_controls()
 	// unset the sound buffer size so we don't display any waveforms
 	Om_vox_voice_buffer_size = -1;
 	Om_vox_voice_comp_size = -1;
-	Om_vox_playback_handle = sound_handle::invalid();
+	Om_vox_playback_handle   = sound_handle::invalid();
 	Om_vox_test_status = OM_VOX_TEST_NONE;	
 
 	// disable the player list select button
@@ -1739,7 +1739,7 @@ void options_multi_enable_vox_controls()
 	// unset the sound buffer size so we don't display any waveforms
 	Om_vox_voice_buffer_size = -1;
 	Om_vox_voice_comp_size = -1;
-	Om_vox_playback_handle = sound_handle::invalid();
+	Om_vox_playback_handle   = sound_handle::invalid();
 	Om_vox_test_status = OM_VOX_TEST_NONE;	
 
 	// select the first player on the list
@@ -1851,7 +1851,7 @@ void options_multi_vox_do()
 	
 	case OM_VOX_TEST_PLAYBACK:			
 		// if we were playing a sound back, but now the sound is done
-		if ( (Om_vox_playback_handle.isValid()) && !ds_is_channel_playing(ds_get_channel(Om_vox_playback_handle)) ) {
+		if ((Om_vox_playback_handle.isValid()) && !ds_is_channel_playing(ds_get_channel(Om_vox_playback_handle))) {
 			// flush all playing sounds safely
 			rtvoice_stop_playback_all();
 

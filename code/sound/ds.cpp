@@ -558,7 +558,7 @@ void ds_close_channel(int i)
 
 		Channels[i].source_id = 0;
 		Channels[i].sid = -1;
-		Channels[i].sig = ds_sound_handle::invalid();
+		Channels[i].sig       = ds_sound_handle::invalid();
 		Channels[i].snd_id = -1;
 	}
 }
@@ -582,7 +582,7 @@ void ds_close_channel_fast(int i)
 		}
 
 		Channels[i].sid = -1;
-		Channels[i].sig = ds_sound_handle::invalid();
+		Channels[i].sig    = ds_sound_handle::invalid();
 		Channels[i].snd_id = -1;
 	}
 }

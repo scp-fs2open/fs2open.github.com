@@ -198,7 +198,7 @@ static int Max_briefing_line_len;
 static int Voice_started_time;
 static int Voice_ended_time;
 
-static sound_handle Brief_text_wipe_snd;					// sound handle of sound effect for text wipe
+static sound_handle Brief_text_wipe_snd; // sound handle of sound effect for text wipe
 static int		Play_brief_voice;
 
 // animation stuff
@@ -970,7 +970,7 @@ void brief_render_icon(int stage_num, int icon_num, float frametime, int selecte
 
 				hud_anim_render(ha, frametime, 1, 0, 1, 0, GR_RESIZE_MENU, mirror_icon);
 
-				if ( !Brief_stage_highlight_sound_handle.isValid() ) {
+				if (!Brief_stage_highlight_sound_handle.isValid()) {
 					if ( !Fred_running) {
 						Brief_stage_highlight_sound_handle = snd_play(gamesnd_get_interface_sound(InterfaceSounds::ICON_HIGHLIGHT));
 					}

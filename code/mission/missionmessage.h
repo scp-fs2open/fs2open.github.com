@@ -150,7 +150,7 @@ typedef struct pmessage {
 	generic_anim *anim_data;			// animation data to be used by the talking head HUD gauge handler
 	int start_frame;			// the start frame needed to play the animation
 	bool play_anim;			// used to tell HUD gauges if they should be playing or not
-	sound_handle wave;		// handle of wave currently playing
+	sound_handle wave;      // handle of wave currently playing
 	int id;						// id of message currently playing
 	int priority;				// priority of message currently playing
 	int shipnum;				// shipnum of ship sending this message,  -1 if from Terran command

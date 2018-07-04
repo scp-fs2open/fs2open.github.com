@@ -438,7 +438,7 @@ void rtvoice_free_playback_buffer(int index)
 // Play sound data
 // exit:	>=0	=>	handle to playing sound
 //			-1		=>	error, voice not played
-sound_handle rtvoice_play(int index, unsigned char *data, int size)
+sound_handle rtvoice_play(int index, unsigned char* data, int size)
 {
 	int ds_handle;
 

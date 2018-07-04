@@ -5868,7 +5868,7 @@ void ship::clear()
 	swarm_missile_bank = -1;
 
 	group = -1;
-	death_roll_snd = sound_handle::invalid();
+	death_roll_snd  = sound_handle::invalid();
 	ship_list_index = -1;
 
 	thruster_bitmap = -1;
@@ -7988,7 +7988,7 @@ static void ship_dying_frame(object *objp, int ship_num)
 			if (objp == Player_obj)
 				joy_ff_explode();
 
-			if ( shipp->death_roll_snd.isValid() ) {
+			if (shipp->death_roll_snd.isValid()) {
 				snd_stop(shipp->death_roll_snd);
 				shipp->death_roll_snd = sound_handle::invalid();
 			}

@@ -465,7 +465,7 @@ void player::reset()
 	damage_this_burst = 0.0f;
 
 	repair_sound_loop = sound_handle::invalid();
-	cargo_scan_loop = sound_handle::invalid();
+	cargo_scan_loop   = sound_handle::invalid();
 
 	praise_count = 0;
 	allow_praise_timestamp = -1;

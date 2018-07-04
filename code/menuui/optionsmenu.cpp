@@ -467,7 +467,7 @@ void options_play_voice_clip()
 {
 	if ( snd_is_playing(Voice_vol_handle) ) {
 		snd_stop(Voice_vol_handle);
-		Voice_vol_handle=sound_handle::invalid();
+		Voice_vol_handle = sound_handle::invalid();
 	}
 	auto gs = gamesnd_get_interface_sound(InterfaceSounds::VOICE_SLIDER_CLIP);
 	auto entry = gamesnd_choose_entry(gs);
@@ -1045,7 +1045,7 @@ void options_menu_close()
 		}
 	}
 
-	if ( Voice_vol_handle.isValid() ) {
+	if (Voice_vol_handle.isValid()) {
 		snd_stop(Voice_vol_handle);
 		Voice_vol_handle = sound_handle::invalid();
 	}

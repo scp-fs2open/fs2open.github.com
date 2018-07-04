@@ -563,7 +563,7 @@ public:
 	int swarm_missile_bank;				// The missilebank the swarm was originally launched from
 
 	int	group;								// group ship is in, or -1 if none.  Fred thing
-	sound_handle death_roll_snd;					// id of death roll sound, may need to be stopped early
+	sound_handle death_roll_snd;            // id of death roll sound, may need to be stopped early
 	int	ship_list_index;					// index of ship in Ship_objs[] array
 
 	int	thruster_bitmap;					// What frame the current thruster bitmap is at for this ship
@@ -596,7 +596,6 @@ public:
 
 	int	large_ship_blowup_index;			// -1 if not a large ship exploding, else this is an index used by the shipfx large ship exploding code.
 	std::array<sound_handle, NUM_SUB_EXPL_HANDLES> sub_expl_sound_handle;
-
 
 	// Stuff for showing electrical arcs on damaged ships
 	vec3d	arc_pts[MAX_SHIP_ARCS][2];			// The endpoints of each arc

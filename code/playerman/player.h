@@ -13,14 +13,14 @@
 #define _PLAYER_H
 
 #include "globalincs/globals.h"
-#include "hud/hudtarget.h"				// for targeting hotkey lists
-#include "io/keycontrol.h"				// for button_info
+#include "hud/hudtarget.h" // for targeting hotkey lists
+#include "io/keycontrol.h" // for button_info
 #include "localization/localize.h"
 #include "network/multi_options.h"
 #include "parse/sexp.h"
 #include "physics/physics.h"
-#include "stats/scoring.h"             // for scoring/stats
 #include "sound/sound.h"
+#include "stats/scoring.h" // for scoring/stats
 
 struct campaign_info;
 
@@ -146,9 +146,9 @@ public:
 	int				warn_count;									// number of attack warnings player has received this mission
 	float				damage_this_burst;						// amount of damage done this frame to friendly craft
 
-	sound_handle	repair_sound_loop;						// Sound id for ship repair looping sound, this is in the player
-																		// file since the repair sound only plays when Player ship is getting repaired
-	sound_handle	cargo_scan_loop;							// Sound id for scanning cargo looping sound
+	sound_handle repair_sound_loop; // Sound id for ship repair looping sound, this is in the player
+	                                // file since the repair sound only plays when Player ship is getting repaired
+	sound_handle cargo_scan_loop;   // Sound id for scanning cargo looping sound
 
 	int				praise_count;								// number of praises received this mission
 	int				allow_praise_timestamp;					// timestamp marking time until next praise is allowed

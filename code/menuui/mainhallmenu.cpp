@@ -607,7 +607,7 @@ void main_hall_init(const SCP_string &main_hall_name)
 	// initialize the random intercom sound stuff
 	Main_hall_next_intercom_sound = 0;
 	Main_hall_next_intercom_sound_stamp = -1;
-	Main_hall_intercom_sound_handle = sound_handle::invalid();
+	Main_hall_intercom_sound_handle     = sound_handle::invalid();
 
 	// set the placement of the mouse cursor (start at the ready room)
 	Main_hall_mouse_region = -1;
@@ -1061,7 +1061,7 @@ void main_hall_close()
 
 	// stop any playing door sounds
 	for (idx = 0; idx < Main_hall->num_door_animations-2; idx++) {
-		if ( (Main_hall_door_sound_handles.at(idx).isValid()) && snd_is_playing(Main_hall_door_sound_handles.at(idx)) ) {
+		if ((Main_hall_door_sound_handles.at(idx).isValid()) && snd_is_playing(Main_hall_door_sound_handles.at(idx))) {
 			snd_stop(Main_hall_door_sound_handles.at(idx));
 			Main_hall_door_sound_handles.at(idx) = sound_handle::invalid();
 		}
@@ -1508,7 +1508,7 @@ void main_hall_cull_door_sounds()
 	// basically just set the handle of any finished sound to be -1, so that we know its free any where else in the code we may need it
 	Assert(Main_hall_door_sound_handles.size() < INT_MAX);
 	for (idx = 0; idx < (int)Main_hall_door_sound_handles.size(); idx++) {
-		if ( (Main_hall_door_sound_handles.at(idx).isValid()) && !snd_is_playing(Main_hall_door_sound_handles.at(idx)) ) {
+		if ((Main_hall_door_sound_handles.at(idx).isValid()) && !snd_is_playing(Main_hall_door_sound_handles.at(idx))) {
 			Main_hall_door_sound_handles.at(idx) = sound_handle::invalid();
 		}
 	}
@@ -1526,7 +1526,7 @@ void main_hall_handle_random_intercom_sounds()
 	}
 
 	// if we have no timestamp for the next random sound, then set on
-	if ( (Main_hall_next_intercom_sound_stamp == -1) && (!Main_hall_intercom_sound_handle.isValid()) ) {
+	if ((Main_hall_next_intercom_sound_stamp == -1) && (!Main_hall_intercom_sound_handle.isValid())) {
 		Main_hall_next_intercom_sound_stamp = timestamp((int)((rand() * RAND_MAX_1f) * 
 			(float)(Main_hall->intercom_delay.at(Main_hall_next_intercom_sound).at(1) 
 				- Main_hall->intercom_delay.at(Main_hall_next_intercom_sound).at(0))) );

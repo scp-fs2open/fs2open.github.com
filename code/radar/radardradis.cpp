@@ -558,8 +558,7 @@ void HudGaugeRadarDradis::render(float  /*frametime*/)
 		{
 			drawBlipsSorted(0);
 
-			if (Radar_static_looping.isValid())
-			{
+			if (Radar_static_looping.isValid()) {
 				snd_stop(Radar_static_looping);
 				Radar_static_looping = sound_handle::invalid();
 			}
@@ -567,8 +566,7 @@ void HudGaugeRadarDradis::render(float  /*frametime*/)
 	}
 	else
 	{
-		if (Radar_static_looping.isValid())
-		{
+		if (Radar_static_looping.isValid()) {
 			snd_stop(Radar_static_looping);
 			Radar_static_looping = sound_handle::invalid();
 		}
@@ -598,14 +596,11 @@ void HudGaugeRadarDradis::doLoopSnd()
 
 	if (!this->shouldDoSounds())
 	{
-		if (loop_sound_handle.isValid() && snd_is_playing(loop_sound_handle))
-		{
+		if (loop_sound_handle.isValid() && snd_is_playing(loop_sound_handle)) {
 			snd_stop(loop_sound_handle);
 			loop_sound_handle = sound_handle::invalid();
 		}
-	}
-	else if (!this->loop_sound_handle.isValid() || !snd_is_playing(this->loop_sound_handle))
-	{
+	} else if (!this->loop_sound_handle.isValid() || !snd_is_playing(this->loop_sound_handle)) {
 		loop_sound_handle = snd_play(gamesnd_get_game_sound(m_loop_snd), 0.0f, loop_sound_volume);
 	}
 }
