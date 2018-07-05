@@ -1,5 +1,5 @@
 
-#include <string.h>
+#include <cstring>
 
 #include "globalincs/safe_strings.h"
 

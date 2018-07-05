@@ -437,10 +437,10 @@ int multi_ts_can_perform(int from_type,int from_index,int to_type,int to_index,i
 int multi_ts_get_dnd_type(int from_type,int from_index,int to_type,int to_index,int player_index = -1);
 
 // swap two player positions
-int multi_ts_swap_player_player(int from_index,int to_index,int *sound,int player_index = -1);
+int multi_ts_swap_player_player(int from_index,int to_index,interface_snd_id *sound,int player_index = -1);
 
 // move a player
-int multi_ts_move_player(int from_index,int to_index,int *sound,int player_index = -1);
+int multi_ts_move_player(int from_index,int to_index,interface_snd_id *sound,int player_index = -1);
 
 // get the ship class of the current index in the avail list or -1 if none exists
 int multi_ts_get_avail_ship_class(int index);
@@ -573,13 +573,13 @@ void multi_ts_do()
 	// process any keypresses
 	switch(k){
 	case KEY_ESC :		
-		gamesnd_play_iface(SND_USER_SELECT);
+		gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 		multi_quit_game(PROMPT_ALL);
 		break;	
 
 	// cycle to the weapon select screen
 	case KEY_TAB :
-		gamesnd_play_iface(SND_USER_SELECT);
+		gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 		Next_screen = ON_WEAPON_SELECT;
 		gameseq_post_event(GS_EVENT_WEAPON_SELECTION);
 		break;
@@ -870,7 +870,7 @@ void multi_ts_assign_players_all()
 	objp = GET_FIRST(&obj_used_list);
 	while(objp != END_OF_LIST(&obj_used_list)){
 		// find a valid player ship - ignoring the ship which was assigned to the host
-		if((objp->flags[Object::Object_Flags::Player_ship]) && stricmp(Ships[objp->instance].ship_name,name_lookup)){
+		if((objp->flags[Object::Object_Flags::Player_ship]) && stricmp(Ships[objp->instance].ship_name,name_lookup) != 0){
 			// determine what team and slot this ship is				
 			multi_ts_get_team_and_slot(Ships[objp->instance].ship_name,&team_index,&slot_index, true);
 			Assert((team_index != -1) && (slot_index != -1));
@@ -1028,7 +1028,7 @@ void multi_ts_lock_pressed()
 {
 	// do nothing if the button has already been pressed
 	if(multi_ts_is_locked()){
-		gamesnd_play_iface(SND_GENERAL_FAIL);
+		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		return;
 	}
 	
@@ -1037,10 +1037,10 @@ void multi_ts_lock_pressed()
 	} else {
 		Assert(Net_player->flags & NETINFO_FLAG_GAME_HOST);
 	}
-	gamesnd_play_iface(SND_USER_SELECT);
+	gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 
 	// send a final player slot update packet		
-	send_pslot_update_packet(Net_player->p_info.team,TS_CODE_LOCK_TEAM,-1);				
+	send_pslot_update_packet(Net_player->p_info.team,TS_CODE_LOCK_TEAM, interface_snd_id());
 	Multi_ts_team[Net_player->p_info.team].multi_players_locked = 1;
 
 	// sync interface stuff
@@ -1100,17 +1100,17 @@ void multi_ts_button_pressed(int n)
 	switch(n){
 	// back to the briefing screen
 	case MULTI_TS_BRIEFING :
-		gamesnd_play_iface(SND_USER_SELECT);
+		gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 		Next_screen = ON_BRIEFING_SELECT;
 		gameseq_post_event( GS_EVENT_START_BRIEFING );
 		break;
 	// already on this screen
 	case MULTI_TS_SHIP_SELECT:
-		gamesnd_play_iface(SND_GENERAL_FAIL);
+		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		break;
 	// back to the weapon select screen
 	case MULTI_TS_WEAPON_SELECT:
-		gamesnd_play_iface(SND_USER_SELECT);
+		gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 		Next_screen = ON_WEAPON_SELECT;
 		gameseq_post_event(GS_EVENT_WEAPON_SELECTION);
 		break;
@@ -1139,7 +1139,7 @@ void multi_ts_button_pressed(int n)
 		Commit_pressed = 1;
 		break;
 	default :
-		gamesnd_play_iface(SND_GENERAL_FAIL);		
+		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		break;
 	}
 }
@@ -1793,10 +1793,10 @@ void multi_ts_init_flags()
 void multi_ts_avail_scroll_down()
 {	
 	if((Multi_ts_avail_count - Multi_ts_avail_start) > MULTI_TS_AVAIL_MAX_DISPLAY){
-		gamesnd_play_iface(SND_USER_SELECT);
+		gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 		Multi_ts_avail_start++;		
 	} else {
-		gamesnd_play_iface(SND_GENERAL_FAIL);
+		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 	}
 }
 
@@ -1804,10 +1804,10 @@ void multi_ts_avail_scroll_down()
 void multi_ts_avail_scroll_up()
 {
 	if(Multi_ts_avail_start > 0){
-		gamesnd_play_iface(SND_USER_SELECT);
+		gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 		Multi_ts_avail_start--;		
 	} else {
-		gamesnd_play_iface(SND_GENERAL_FAIL);
+		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 	}
 }
 
@@ -1866,7 +1866,7 @@ void multi_ts_handle_mouse()
 	switch(region_type){
 	case MULTI_TS_PLAYER_LIST:
 		if((Multi_ts_hotspot_index != region_index) && (region_index >= 0) && (Multi_ts_team[Net_player->p_info.team].multi_ts_player[region_index] != NULL)){
-			gamesnd_play_iface(SND_USER_SELECT);			
+			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 		}
 		break;
 	}
@@ -2139,7 +2139,7 @@ int multi_ts_can_perform(int from_type,int from_index,int to_type,int to_index,i
 }
 
 // determine the kind of drag and drop operation this is
-int multi_ts_get_dnd_type(int from_type,int from_index,int to_type,int to_index,int player_index)
+int multi_ts_get_dnd_type(int from_type,int  /*from_index*/,int to_type,int to_index,int player_index)
 {	
 	net_player *pl;
 
@@ -2195,7 +2195,7 @@ int multi_ts_get_dnd_type(int from_type,int from_index,int to_type,int to_index,
 
 void multi_ts_apply(int from_type,int from_index,int to_type,int to_index,int ship_class,int player_index)
 {
-	int size,update,sound;
+	int size,update;
 	ubyte wss_data[MAX_PACKET_SIZE-20];	
 	net_player *pl;
 	
@@ -2212,7 +2212,7 @@ void multi_ts_apply(int from_type,int from_index,int to_type,int to_index,int sh
 	// set the proper pool pointers
 	common_set_team_pointers(pl->p_info.team);
 
-	sound = -1;
+	interface_snd_id sound;
 	switch(type){
 	case TS_SWAP_SLOT_SLOT :
 		nprintf(("Network","Apply swap slot slot %d %d\n",from_index,to_index));
@@ -2253,11 +2253,11 @@ void multi_ts_apply(int from_type,int from_index,int to_type,int to_index,int sh
 				send_wss_update_packet(pl->p_info.team,wss_data, size);			
 
 				// send a player slot update packet as well, so ship class information, etc is kept correct
-				send_pslot_update_packet(pl->p_info.team,TS_CODE_PLAYER_UPDATE,-1);				
+				send_pslot_update_packet(pl->p_info.team,TS_CODE_PLAYER_UPDATE, interface_snd_id());
 			}
 
 			// if the player index == -1, it means the action was done locally - so play a sound
-			if((player_index == -1) && (sound != -1)){
+			if((player_index == -1) && (sound.isValid())){
 				gamesnd_play_iface(sound);
 			}
 		}
@@ -2294,7 +2294,7 @@ void multi_ts_drop(int from_type,int from_index,int to_type,int to_index,int shi
 }
 
 // swap two player positions
-int multi_ts_swap_player_player(int from_index,int to_index,int *sound,int player_index)
+int multi_ts_swap_player_player(int from_index,int to_index,interface_snd_id *sound,int player_index)
 {
 	net_player *pl,*temp;
 
@@ -2341,17 +2341,17 @@ int multi_ts_swap_player_player(int from_index,int to_index,int *sound,int playe
 
 	// send an update packet to all players
 	if(Net_player->flags & NETINFO_FLAG_GAME_HOST){
-		send_pslot_update_packet(pl->p_info.team,TS_CODE_PLAYER_UPDATE,SND_ICON_DROP_ON_WING);
-		gamesnd_play_iface(SND_ICON_DROP_ON_WING);
+		send_pslot_update_packet(pl->p_info.team,TS_CODE_PLAYER_UPDATE,InterfaceSounds::ICON_DROP_ON_WING);
+		gamesnd_play_iface(InterfaceSounds::ICON_DROP_ON_WING);
 	}
 
-	*sound = SND_ICON_DROP;
+	*sound = InterfaceSounds::ICON_DROP;
 
 	return 1;
 }
 
 // move a player
-int multi_ts_move_player(int from_index,int to_index,int *sound,int player_index)
+int multi_ts_move_player(int from_index,int to_index,interface_snd_id *sound,int player_index)
 {
 	net_player *pl;
 
@@ -2397,11 +2397,11 @@ int multi_ts_move_player(int from_index,int to_index,int *sound,int player_index
 
 	// send an update packet to all players
 	if(Net_player->flags & NETINFO_FLAG_GAME_HOST){
-		send_pslot_update_packet(pl->p_info.team,TS_CODE_PLAYER_UPDATE,SND_ICON_DROP_ON_WING);
-		gamesnd_play_iface(SND_ICON_DROP_ON_WING);
+		send_pslot_update_packet(pl->p_info.team,TS_CODE_PLAYER_UPDATE,InterfaceSounds::ICON_DROP_ON_WING);
+		gamesnd_play_iface(InterfaceSounds::ICON_DROP_ON_WING);
 	}
 
-	*sound = SND_ICON_DROP;
+	*sound = InterfaceSounds::ICON_DROP;
 
 	return 1;
 }
@@ -2681,19 +2681,19 @@ void multi_ts_commit_pressed()
 
 	// player has not assigned all necessary ships
 	case 1: 	
-		gamesnd_play_iface(SND_GENERAL_FAIL);
+		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		popup(PF_USE_AFFIRMATIVE_ICON | PF_BODY_BIG,1,POPUP_OK, XSTR("You have not yet assigned all necessary ships",752));
 		break;
 	
 	// there are ships without primary weapons
 	case 2: 
-		gamesnd_play_iface(SND_GENERAL_FAIL);
+		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		popup(PF_USE_AFFIRMATIVE_ICON | PF_BODY_BIG,1,POPUP_OK, XSTR("There are ships without primary weapons!",753));
 		break;
 
 	// there are ships without secondary weapons
 	case 3: 
-		gamesnd_play_iface(SND_GENERAL_FAIL);
+		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		popup(PF_USE_AFFIRMATIVE_ICON | PF_BODY_BIG,1,POPUP_OK, XSTR("There are ships without secondary weapons!",754));
 		break;
 	}
@@ -2792,7 +2792,7 @@ void multi_ts_check_errors()
 //
 
 // send a player slot position update
-void send_pslot_update_packet(int team,int code,int sound)
+void send_pslot_update_packet(int team,int code, interface_snd_id sound)
 {
 	ubyte data[MAX_PACKET_SIZE],stop,val;
 	short s_sound;
@@ -2812,7 +2812,7 @@ void send_pslot_update_packet(int team,int code,int sound)
 	ADD_DATA(val);
 
 	// add the sound to play
-	s_sound = (short)sound;
+	s_sound = (short)sound.value();
 	ADD_SHORT(s_sound);
 	
 	// add data based upon the packet code
@@ -2894,7 +2894,7 @@ void process_pslot_update_packet(ubyte *data, header *hinfo)
 	int offset = HEADER_LENGTH;
 	int my_index;
 	int player_index,idx,team,code,objnum;
-	short sound;
+	short sound_id;
 	short player_id;
 	ubyte stop,val,slot_num,ship_class;
 
@@ -2917,7 +2917,8 @@ void process_pslot_update_packet(ubyte *data, header *hinfo)
 	team = (int)val;
 
 	// get the sound to play
-	GET_SHORT(sound);
+	GET_SHORT(sound_id);
+	auto sound = interface_snd_id(sound_id);
 
 	// process the different opcodes
 	switch(code){
@@ -3013,7 +3014,7 @@ void process_pslot_update_packet(ubyte *data, header *hinfo)
 			GET_DATA(stop);
 		}
 		// if we have a sound we're supposed to play
-		if((sound != -1) && !(Game_mode & GM_STANDALONE_SERVER) && (gameseq_get_state() == GS_STATE_TEAM_SELECT)){
+		if((sound.isValid()) && !(Game_mode & GM_STANDALONE_SERVER) && (gameseq_get_state() == GS_STATE_TEAM_SELECT)){
 			gamesnd_play_iface(sound);
 		}
 

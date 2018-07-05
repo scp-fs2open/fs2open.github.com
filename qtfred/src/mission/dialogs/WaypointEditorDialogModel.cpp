@@ -20,7 +20,7 @@ WaypointEditorDialogModel::WaypointEditorDialogModel(QObject* parent, EditorView
 
 	initializeData();
 }
-bool WaypointEditorDialogModel::showErrorDialog(const SCP_string& message, const SCP_string title) {
+bool WaypointEditorDialogModel::showErrorDialog(const SCP_string& message, const SCP_string& title) {
 	if (bypass_errors) {
 		return true;
 	}
@@ -144,7 +144,7 @@ bool WaypointEditorDialogModel::apply() {
 		strcpy_s(_editor->cur_waypoint_list->get_name(), NAME_LENGTH, _currentName.c_str());
 
 		str = _currentName.c_str();
-		if (strcmp(old_name, str)) {
+		if (strcmp(old_name, str) != 0) {
 			update_sexp_references(old_name, str);
 			_editor->ai_update_goal_references(REF_TYPE_WAYPOINT, old_name, str);
 			_editor->update_texture_replacements(old_name, str);
@@ -246,7 +246,7 @@ bool WaypointEditorDialogModel::apply() {
 		jnp->SetName(_currentName.c_str());
 
 		str = _currentName.c_str();
-		if (strcmp(old_name, str)) {
+		if (strcmp(old_name, str) != 0) {
 			update_sexp_references(old_name, str);
 		}
 

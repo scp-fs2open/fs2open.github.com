@@ -529,7 +529,7 @@ void debrief_reset()
 /**
  * Set up the screen regions.  A mulitplayer briefing will look different than a single player briefing.
  */
-void brief_init_screen(int multiplayer_flag)
+void brief_init_screen(int  /*multiplayer_flag*/)
 {
 	bscreen.map_x1			= Brief_grid_coords[gr_screen.res][0];
 	bscreen.map_x2			= Brief_grid_coords[gr_screen.res][0] + Brief_grid_coords[gr_screen.res][2];
@@ -960,7 +960,7 @@ void brief_render_icon(int stage_num, int icon_num, float frametime, int selecte
 			if ( ha->first_frame >= 0 ) {
 				ha->sx = bi->hold_x;
 				if (bi->label[0] != '\0') {
-					ha->sy = bi->hold_y - fl2i(gr_get_font_height()/2.0f +0.5) - 2;
+					ha->sy = bi->hold_y - (int)std::lround(gr_get_font_height()/2.0f) - 2;
 				} else {
 					ha->sy = bi->hold_y;
 				}
@@ -972,7 +972,7 @@ void brief_render_icon(int stage_num, int icon_num, float frametime, int selecte
 
 				if ( Brief_stage_highlight_sound_handle < 0 ) {
 					if ( !Fred_running) {
-						Brief_stage_highlight_sound_handle = snd_play(gamesnd_get_interface_sound(SND_ICON_HIGHLIGHT));
+						Brief_stage_highlight_sound_handle = snd_play(gamesnd_get_interface_sound(InterfaceSounds::ICON_HIGHLIGHT));
 					}
 				}
 			}
@@ -1004,13 +1004,13 @@ void brief_render_icon(int stage_num, int icon_num, float frametime, int selecte
 				gr_string(bc - fl2i(w/2.0f), by - h, Players[Player_num].callsign, GR_RESIZE_MENU);
 			}
 			else {
-				if (Lcl_gr) {
+				if (Lcl_gr && !Disable_built_in_translations) {
 					char buf[128];
 					strcpy_s(buf, bi->label);
 					lcl_translate_brief_icon_name_gr(buf);
 					gr_get_string_size(&w, &h, buf);
 					gr_string(bc - fl2i(w/2.0f), by - h, buf, GR_RESIZE_MENU);
-				} else if (Lcl_pl) {
+				} else if (Lcl_pl && !Disable_built_in_translations) {
 					char buf[128];
 					strcpy_s(buf, bi->label);
 					lcl_translate_brief_icon_name_pl(buf);
@@ -1289,7 +1289,7 @@ int brief_render_text(int line_offset, int x, int y, int h, float frametime, int
 		if (snd_is_playing(Brief_text_wipe_snd)) {
 			snd_stop(Brief_text_wipe_snd);
 		}
-		gamesnd_play_iface(SND_BRIEF_TEXT_WIPE);
+		gamesnd_play_iface(InterfaceSounds::BRIEF_TEXT_WIPE);
 		Play_brief_voice = 1;
 	}
 
@@ -1886,7 +1886,7 @@ float brief_camera_get_dist_moved(float elapsed_time)
 /**
  * Update the camera position
  */
-void brief_camera_move(float frametime, int stage_num)
+void brief_camera_move(float frametime, int  /*stage_num*/)
 {
 	vec3d	dist_moved;
 	float		dist;
@@ -2244,7 +2244,7 @@ void brief_voice_load_all()
 	Assert( Briefing != NULL );
 	for ( i = 0; i < Briefing->num_stages; i++ ) {
 		bs = &Briefing->stages[i];
-		if ( strnicmp(bs->voice, NOX("none"), 4) ) {
+		if ( strnicmp(bs->voice, NOX("none"), 4) != 0 ) {
 			brief_load_voice_file(i, bs->voice);
 		}
 	}

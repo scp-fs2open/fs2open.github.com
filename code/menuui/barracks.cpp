@@ -9,7 +9,7 @@
 
 
 
-#include <ctype.h>
+#include <cctype>
 
 
 #include "cfile/cfile.h"
@@ -599,12 +599,12 @@ void barracks_create_new_pilot()
 {
 	// check if too many pilots
 	if (Num_pilots >= MAX_PILOTS) {
-		gamesnd_play_iface(SND_GENERAL_FAIL);
+		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		return;
 	}
 
 	// play sound for pilot creation
-	gamesnd_play_iface(SND_SCROLL);
+	gamesnd_play_iface(InterfaceSounds::SCROLL);
 	
 	// only write pilot file if there is an active pilot
 	if (strlen(Player->callsign)) {
@@ -672,9 +672,9 @@ void barracks_scroll_callsign_up()
 {
 	if (Selected_line > 0) {
 		Selected_line--;
-		gamesnd_play_iface(SND_SCROLL);
+		gamesnd_play_iface(InterfaceSounds::SCROLL);
 	} else {
-		gamesnd_play_iface(SND_GENERAL_FAIL);
+		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 	}
 	
 	if ((Selected_line >= 0) && (Selected_line < List_scroll_offset)) {
@@ -687,9 +687,9 @@ void barracks_scroll_callsign_down()
 {
 	if (Selected_line < Num_pilots - 1) {
 		Selected_line++;
-		gamesnd_play_iface(SND_SCROLL);
+		gamesnd_play_iface(InterfaceSounds::SCROLL);
 	} else {
-		gamesnd_play_iface(SND_GENERAL_FAIL);
+		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 	}
 	
 	// num_pilots_to_fill_height is the number of pilots that can fit in given height
@@ -704,9 +704,9 @@ void barracks_scroll_stats_up()
 {
 	if (Stats_scroll_offset > 0) {
 		Stats_scroll_offset--;
-		gamesnd_play_iface(SND_SCROLL);
+		gamesnd_play_iface(InterfaceSounds::SCROLL);
 	} else {
-		gamesnd_play_iface(SND_GENERAL_FAIL);
+		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 	}
 }
 
@@ -717,9 +717,9 @@ void barracks_scroll_stats_down()
 
 	if (Stats_scroll_offset + Barracks_stats_coords[gr_screen.res][BARRACKS_H_COORD] / font_height < static_cast<int>(Num_stat_lines)) {
 		Stats_scroll_offset++;
-		gamesnd_play_iface(SND_SCROLL);
+		gamesnd_play_iface(InterfaceSounds::SCROLL);
 	} else {
-		gamesnd_play_iface(SND_GENERAL_FAIL);
+		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 	}
 }
 
@@ -728,7 +728,7 @@ void barracks_prev_pic()
 {
 	// check if no pilot images or no pilot selected
 	if ((Num_pilot_images == 0) || (Cur_pilot->callsign[0] == '\0')) {
-		gamesnd_play_iface(SND_GENERAL_FAIL);
+		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		return;
 	}
 
@@ -744,7 +744,7 @@ void barracks_prev_pic()
 	}
 
 	// play scroll sound
-	gamesnd_play_iface(SND_SCROLL);
+	gamesnd_play_iface(InterfaceSounds::SCROLL);
 }
 
 // show next pilot pic
@@ -752,7 +752,7 @@ void barracks_next_pic()
 {
 	// check if no pilot images or no pilot selected
 	if ((Num_pilot_images == 0) || (Cur_pilot->callsign[0] == '\0')) {
-		gamesnd_play_iface(SND_GENERAL_FAIL);
+		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		return;
 	}
 
@@ -768,7 +768,7 @@ void barracks_next_pic()
 	}
 
 	// play scroll sound
-	gamesnd_play_iface(SND_SCROLL);
+	gamesnd_play_iface(InterfaceSounds::SCROLL);
 }
 
 // show previous squad pic
@@ -776,7 +776,7 @@ void barracks_prev_squad_pic()
 {
 	// check if no squad images or no pilot selected
 	if ((Num_pilot_squad_images == 0) || (Cur_pilot->callsign[0] == '\0')) {
-		gamesnd_play_iface(SND_GENERAL_FAIL);
+		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		return;
 	}
 
@@ -796,7 +796,7 @@ void barracks_prev_squad_pic()
 	}
 
 	// play scroll sound
-	gamesnd_play_iface(SND_SCROLL);
+	gamesnd_play_iface(InterfaceSounds::SCROLL);
 }
 
 // show next squad pic
@@ -804,7 +804,7 @@ void barracks_next_squad_pic()
 {
 	// check if no squad images or no pilot selected
 	if ((Num_pilot_squad_images == 0) || (Cur_pilot->callsign[0] == '\0')) {
-		gamesnd_play_iface(SND_GENERAL_FAIL);
+		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		return;
 	}
 
@@ -824,7 +824,7 @@ void barracks_next_squad_pic()
 	}
 
 	// play scroll sound
-	gamesnd_play_iface(SND_SCROLL);
+	gamesnd_play_iface(InterfaceSounds::SCROLL);
 }
 
 void barracks_delete_pilot()
@@ -834,12 +834,12 @@ void barracks_delete_pilot()
 	int del_rval;
 
 	if (!Num_pilots) {
-		gamesnd_play_iface(SND_GENERAL_FAIL);
+		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		return;
 	}
 
 	if (Player_sel_mode == PLAYER_SELECT_MODE_MULTI) {
-		gamesnd_play_iface(SND_GENERAL_FAIL);
+		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		popup(PF_TITLE_BIG | PF_TITLE_RED | PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("Disabled!\n\nMulti and single player pilots are now identical. "
 					"Deleting a multi-player pilot will also delete all single-player data for that pilot.\n\nAs a safety precaution, pilots can only be "
 					"deleted from the single-player menu.", 1598));
@@ -886,7 +886,7 @@ void barracks_delete_pilot()
 		}
 	}
 
-	gamesnd_play_iface(SND_USER_SELECT);
+	gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 }
 
 // Filter out pilots of wrong type (which shouldn't be in the directory we are checking, but just to be safe..)
@@ -1012,14 +1012,14 @@ void barracks_button_pressed(int n)
 
 		case B_PILOT_SET_ACTIVE_BUTTON:
 			if (barracks_new_pilot_selected()){
-				gamesnd_play_iface(SND_GENERAL_FAIL);
+				gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 
 				// if it's just the missing campaign file that failed for us then don't give the second popup
 				if (Campaign_file_missing) {
 					break;
 				}
 			} else {
-				gamesnd_play_iface(SND_SCROLL);
+				gamesnd_play_iface(InterfaceSounds::SCROLL);
 
 				if (Campaign_file_missing) {
 					popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR( "The currently active campaign cannot be found.  Please select another...", 1600));
@@ -1030,7 +1030,7 @@ void barracks_button_pressed(int n)
 
 		case B_ACCEPT_BUTTON:
 			if (Num_pilots && !barracks_pilot_accepted()) {
-				gamesnd_play_iface(SND_COMMIT_PRESSED);
+				gamesnd_play_iface(InterfaceSounds::COMMIT_PRESSED);
 
 				if (Campaign_file_missing) {
 					popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR( "The currently active campaign cannot be found.  Please select another...", 1600));
@@ -1039,7 +1039,7 @@ void barracks_button_pressed(int n)
 					gameseq_post_event(GS_EVENT_MAIN_MENU);
 				}
 			} else {
-				gamesnd_play_iface(SND_GENERAL_FAIL);
+				gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 
 				// if it's just the missing campaign file that failed for us then don't give the second popup
 				if (Campaign_file_missing) {
@@ -1085,16 +1085,16 @@ void barracks_button_pressed(int n)
 
 		case B_HELP_BUTTON:
 			launch_context_help();
-			gamesnd_play_iface(SND_HELP_PRESSED);
+			gamesnd_play_iface(InterfaceSounds::HELP_PRESSED);
 			break;
 
 		case B_OPTION_BUTTON:
-			gamesnd_play_iface(SND_SWITCH_SCREENS);
+			gamesnd_play_iface(InterfaceSounds::SWITCH_SCREENS);
 			gameseq_post_event(GS_EVENT_OPTIONS_MENU);
 			break;
 
 		case B_STATS_MEDAL_BUTTON:
-			gamesnd_play_iface(SND_SWITCH_SCREENS);
+			gamesnd_play_iface(InterfaceSounds::SWITCH_SCREENS);
 			gameseq_post_event(GS_EVENT_VIEW_MEDALS);
 			break;
 
@@ -1104,7 +1104,7 @@ void barracks_button_pressed(int n)
 
 		case B_PILOT_SINGLE_MODE_BUTTON:
 			if (Player_sel_mode != PLAYER_SELECT_MODE_SINGLE) {
-				gamesnd_play_iface(SND_USER_SELECT);
+				gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 				// make sure we don't carry over the multi flag
 				if (Cur_pilot->flags & PLAYER_FLAGS_IS_MULTI) {
 					Cur_pilot->flags &= ~PLAYER_FLAGS_IS_MULTI;
@@ -1121,7 +1121,7 @@ void barracks_button_pressed(int n)
 			}
 
 			if (Player_sel_mode != PLAYER_SELECT_MODE_MULTI) {
-				gamesnd_play_iface(SND_USER_SELECT);
+				gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 				Cur_pilot->flags |= PLAYER_FLAGS_IS_MULTI;
 				Pilot.save_player(Cur_pilot);
 				barracks_init_player_stuff(PLAYER_SELECT_MODE_MULTI);
@@ -1253,7 +1253,7 @@ void barracks_accept_new_pilot_callsign()
 	}
 
 	if (z) {
-		gamesnd_play_iface(SND_GENERAL_FAIL);
+		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		return;
 	}
 
@@ -1436,7 +1436,7 @@ void barracks_init()
 }
 
 // -----------------------------------------------------------------------------
-void barracks_do_frame(float frametime)
+void barracks_do_frame(float  /*frametime*/)
 {
 	int k = Ui_window.process();
 
@@ -1477,9 +1477,9 @@ void barracks_do_frame(float frametime)
 		switch (k) {
 			case KEY_ENTER:
 				if (barracks_new_pilot_selected()) {
-					gamesnd_play_iface(SND_GENERAL_FAIL);
+					gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 				} else {
-					gamesnd_play_iface(SND_USER_SELECT);
+					gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 				}
 				break;
 
@@ -1488,7 +1488,7 @@ void barracks_do_frame(float frametime)
 					if (Num_pilots && !barracks_pilot_accepted()) {
 						gameseq_post_event(GS_EVENT_MAIN_MENU);
 					} else {
-						gamesnd_play_iface(SND_GENERAL_FAIL);
+						gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 					}
 				} else {
 					// kill the overlay
@@ -1513,15 +1513,15 @@ void barracks_do_frame(float frametime)
 					barracks_init_player_stuff(PLAYER_SELECT_MODE_SINGLE);
 				}
 
-				gamesnd_play_iface(SND_USER_SELECT);
+				gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 				break;
 
 			case KEY_F1:  // show help overlay
-				gamesnd_play_iface(SND_HELP_PRESSED);
+				gamesnd_play_iface(InterfaceSounds::HELP_PRESSED);
 				break;
 
 			case KEY_F2:  // goto options screen
-				gamesnd_play_iface(SND_SWITCH_SCREENS);
+				gamesnd_play_iface(InterfaceSounds::SWITCH_SCREENS);
 				gameseq_post_event(GS_EVENT_OPTIONS_MENU);
 				break;
 		}	// end switch
@@ -1547,7 +1547,7 @@ void barracks_do_frame(float frametime)
 		if (List_region.pressed()) {
 			if (prospective_pilot != -1) {
 				Selected_line = prospective_pilot;
-				gamesnd_play_iface(SND_USER_SELECT);
+				gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			}
 		}
 	}

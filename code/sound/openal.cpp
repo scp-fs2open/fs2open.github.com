@@ -398,13 +398,30 @@ static void get_version_info(OpenALInformation* info) {
 	alcCloseDevice(device);
 }
 
-void enumerate_playback_devices(OpenALInformation* info) {
+static bool device_supports_efx(const char* device_name) {
+	ALCdevice *device = alcOpenDevice(device_name);
+
+	if (device == NULL) {
+		return false;
+	}
+
+	bool result = false;
+	if ( alcIsExtensionPresent(device, (const ALchar*)"ALC_EXT_EFX") == AL_TRUE ) {
+		result = true;
+	}
+
+	alcCloseDevice(device);
+	return result;
+}
+
+static void enumerate_playback_devices(OpenALInformation* info) {
 	info->playback_devices.clear();
 	info->default_playback_device.clear();
 
 	auto default_device = alcGetString( NULL, ALC_DEFAULT_DEVICE_SPECIFIER );
 	if (default_device != nullptr) {
 		info->default_playback_device = default_device;
+		info->efx_support.push_back(std::make_pair(SCP_string(default_device), device_supports_efx(default_device)));
 	}
 
 	if ( alcIsExtensionPresent(NULL, (const ALCchar*)"ALC_ENUMERATION_EXT") == AL_TRUE ) {
@@ -422,6 +439,7 @@ void enumerate_playback_devices(OpenALInformation* info) {
 		if ( (str_list != NULL) && ((ext_length = strlen(str_list)) > 0) ) {
 			while (ext_length) {
 				info->playback_devices.push_back( SCP_string(str_list) );
+				info->efx_support.push_back(std::make_pair(SCP_string(str_list), device_supports_efx(str_list)));
 
 				str_list += (ext_length + 1);
 				ext_length = strlen(str_list);
@@ -434,7 +452,7 @@ void enumerate_playback_devices(OpenALInformation* info) {
 	}
 }
 
-void enumerate_capture_devices(OpenALInformation* info) {
+static void enumerate_capture_devices(OpenALInformation* info) {
 	info->capture_devices.clear();
 	info->default_capture_device.clear();
 

@@ -45,7 +45,7 @@ public:
 	void initMinTargetBoxSizes(int w, int h);
 	void initMinSubTargetBoxSizes(int w, int h);
 	void initBitmaps(char *fname);
-	void render(float frametime) SCP_OVERRIDE;
+	void render(float frametime) override;
 	void renderObjectBrackets(object *targetp, color *clr, int w_correction, int h_correction, int flags);
 	void renderNavBrackets(vec3d* nav_pos, vertex* nav_point, color* clr, char* string);
 	void renderBoundingBrackets(int x1, int y1, int x2, int y2, int w_correction, int h_correction, float distance, int target_objnum, int flags);

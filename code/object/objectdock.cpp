@@ -437,7 +437,7 @@ void dock_move_docked_objects(object *objp)
 			fastest_objp = objp;
 	}
 	
-	// start a tree with that object as the parent... do NOT use the überfunction for this,
+	// start a tree with that object as the parent... do NOT use the Ã¼berfunction for this,
 	// because we must use a tree for the parent ancestry to work correctly
 
 	// we don't need a bit array because OF_DOCKED_ALREADY_HANDLED takes care of it
@@ -475,7 +475,7 @@ void dock_move_docked_children_tree(object *objp, object *parent_objp)
 // helper functions
 // ----------------
 
-void dock_count_total_docked_objects_helper(object *objp, dock_function_info *infop)
+void dock_count_total_docked_objects_helper(object * /*objp*/, dock_function_info *infop)
 {
 	// increment count
 	infop->maintained_variables.int_value++;
@@ -632,7 +632,7 @@ void dock_find_max_speed_helper(object *objp, dock_function_info *infop)
 	}
 }
 // ---------------------------------------------------------------------------------------------------------------
-// end of über code block ----------------------------------------------------------------------------------------
+// end of Ã¼ber code block ----------------------------------------------------------------------------------------
 
 // dock management functions -------------------------------------------------------------------------------------
 void dock_dock_objects(object *objp1, int dockpoint1, object *objp2, int dockpoint2)
@@ -769,7 +769,7 @@ void dock_remove_instance(object *objp, object *other_objp)
 	else
 	{
 		// Trigger an assertion, we can recover from this one, thankfully.
-		Assertion(false, "Tried to undock an object that isn't docked!\n");
+		UNREACHABLE("Tried to undock an object that isn't docked!\n");
 	}
 }
 

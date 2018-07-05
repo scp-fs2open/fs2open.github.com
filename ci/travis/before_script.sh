@@ -20,7 +20,7 @@ if [ "$TRAVIS_OS_NAME" = "linux" ]; then
 
     export CXXFLAGS
     export CFLAGS
-    CMAKE="cmake -G Ninja -DFSO_FATAL_WARNINGS=ON"
+    CMAKE="cmake -G Ninja -DFSO_FATAL_WARNINGS=ON $CMAKE_OPTIONS"
     if [ "$BUILD_DEPLOYMENT" = true ]; then
         for config in $BUILD_CONFIGS
         do
@@ -38,6 +38,6 @@ elif [ "$TRAVIS_OS_NAME" = "osx" ]; then
     if [ "$BUILD_DEPLOYMENT" = true ]; then
         cmake -G "Xcode" -DFSO_FATAL_WARNINGS=ON -DFSO_INSTALL_DEBUG_FILES=ON -DCMAKE_INSTALL_PREFIX="/tmp/release" ..
     else
-        cmake -G "Xcode" ..
+        cmake -G "Xcode" $CMAKE_OPTIONS ..
     fi
 fi

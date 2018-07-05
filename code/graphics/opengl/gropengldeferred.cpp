@@ -188,6 +188,9 @@ void gr_opengl_deferred_lighting_finish()
 				light_data->lightDir.xyz.x = view_dir.xyzw.x;
 				light_data->lightDir.xyz.y = view_dir.xyzw.y;
 				light_data->lightDir.xyz.z = view_dir.xyzw.z;
+
+				vm_vec_scale(&light_data->specLightColor, static_light_factor);
+
 				first_directional = false;
 				break;
 			case Light_Type::Cone:
@@ -199,6 +202,9 @@ void gr_opengl_deferred_lighting_finish()
 			case Light_Type::Point:
 				light_data->diffuseLightColor = diffuse;
 				light_data->specLightColor = spec;
+
+				vm_vec_scale(&light_data->specLightColor, static_point_factor);
+
 				light_data->lightRadius = MAX(l.rada, l.radb) * 1.25f;
 				light_data->scale.xyz.x = MAX(l.rada, l.radb) * 1.28f;
 				light_data->scale.xyz.y = MAX(l.rada, l.radb) * 1.28f;
@@ -217,10 +223,15 @@ void gr_opengl_deferred_lighting_finish()
 				light_data->scale.xyz.y = l.radb * 1.53f;
 				light_data->scale.xyz.z = length;
 
+				vm_vec_scale(&light_data->specLightColor, static_tube_factor);
+
 				// Tube lights consist of two different types of lights with almost the same properties
 				light_data = uniformAligner.addTypedElement<deferred_light_data>();
 				light_data->diffuseLightColor = diffuse;
 				light_data->specLightColor = spec;
+
+				vm_vec_scale(&light_data->specLightColor, static_tube_factor);
+
 				light_data->lightRadius = l.radb * 1.5f;
 				light_data->lightType = LT_POINT;
 

@@ -2,6 +2,7 @@
 
 #include "ui_MissionSpecDialog.h"
 
+#include <ui/util/SignalBlockers.h>
 
 #include <QCloseEvent>
 #include <QFileDialog>
@@ -120,6 +121,8 @@ void MissionSpecDialog::closeEvent(QCloseEvent* event) {
 }
 
 void MissionSpecDialog::updateUI() {
+	util::SignalBlockers blockers(this);
+
 	ui->missionTitle->setText(_model->getMissionTitle().c_str());
 	ui->missionDesigner->setText(_model->getDesigner().c_str());
 
@@ -296,8 +299,6 @@ void MissionSpecDialog::respawnDelayChanged(int value) {
 }
 
 void MissionSpecDialog::squadronNameChanged(const QString & string) {
-	QSignalBlocker blocker(ui->squadronName);
-
 	_model->setSquadronName(string.toStdString());
 }
 
@@ -348,29 +349,21 @@ void MissionSpecDialog::minTrailDisplaySpeedChanged(int value) {
 }
 
 void MissionSpecDialog::cmdSenderChanged(int index) {
-	QSignalBlocker blocker(ui->senderCombBox);
-
 	auto sender = ui->senderCombBox->itemData(index).value<QString>().toStdString();
 	_model->setCommandSender(sender);
 }
 
 void MissionSpecDialog::cmdPersonaChanged(int index) {
-	QSignalBlocker blocker(ui->personaComboBox);
-
 	auto cmdPIndex = ui->personaComboBox->itemData(index).value<int>();
 	_model->setCommandPersona(cmdPIndex);
 }
 
 void MissionSpecDialog::eventMusicChanged(int index) {
-	QSignalBlocker blocker(ui->defaultMusicCombo);
-
 	auto defMusicIdx = ui->defaultMusicCombo->itemData(index).value<int>();
 	_model->setEventMusic(defMusicIdx);
 }
 
 void MissionSpecDialog::subEventMusicChanged(int index) {
-	QSignalBlocker blocker(ui->musicPackCombo);
-
 	auto subMusic = ui->musicPackCombo->itemData(index).value<QString>().toStdString();
 	_model->setSubEventMusic(subMusic);
 }
@@ -380,20 +373,14 @@ void MissionSpecDialog::flagToggled(bool enabled, Mission::Mission_Flags flag) {
 }
 
 void MissionSpecDialog::missionDescChanged() {
-	QSignalBlocker blocker(ui->missionDescEditor);
-
 	_model->setMissionDescText(ui->missionDescEditor->document()->toPlainText().toStdString());
 }
 
 void MissionSpecDialog::designerNotesChanged() {
-	QSignalBlocker blocker(ui->designerNoteEditor);
-
 	_model->setDesignerNoteText(ui->designerNoteEditor->document()->toPlainText().toStdString());
 }
 
 void MissionSpecDialog::aiProfileIndexChanged(int index) {
-	QSignalBlocker blocker(ui->aiProfileCombo);
-
 	auto aipIndex = ui->aiProfileCombo->itemData(index).value<int>();
 	_model->setAIProfileIndex(aipIndex);
 }

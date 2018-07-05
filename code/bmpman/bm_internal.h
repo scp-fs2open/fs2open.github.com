@@ -23,6 +23,16 @@
 
 #include "bmpman/bmpman.h"
 
+#include <array>
+
+/**
+ * @brief Container class for graphics API specific bitmap data
+ */
+class gr_bitmap_info {
+ public:
+	virtual ~gr_bitmap_info() = 0;
+};
+
 union bm_extra_info {
 	struct {
 		// Stuff needed for animations
@@ -90,17 +100,35 @@ struct bitmap_entry {
 #endif
 };
 
-extern bitmap_entry* bm_bitmaps;
+struct bitmap_slot {
+	bitmap_entry entry;
+
+	gr_bitmap_info* gr_info = nullptr;
+};
 
 // image specific lock functions
-void bm_lock_ani( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, int bpp, ubyte flags );
-void bm_lock_dds( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, int bpp, ubyte flags );
-void bm_lock_png( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, int bpp, ubyte flags );
-void bm_lock_apng( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, int bpp, ubyte flags );
-void bm_lock_jpg( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, int bpp, ubyte flags );
-void bm_lock_pcx( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, int bpp, ubyte flags );
-void bm_lock_tga( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, int bpp, ubyte flags );
-void bm_lock_user( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, int bpp, ubyte flags );
+void bm_lock_ani( int handle, bitmap_slot *bs, bitmap *bmp, int bpp, ubyte flags );
+void bm_lock_dds( int handle, bitmap_slot *bs, bitmap *bmp, int bpp, ubyte flags );
+void bm_lock_png( int handle, bitmap_slot *bs, bitmap *bmp, int bpp, ubyte flags );
+void bm_lock_apng( int handle, bitmap_slot *bs, bitmap *bmp, int bpp, ubyte flags );
+void bm_lock_jpg( int handle, bitmap_slot *bs, bitmap *bmp, int bpp, ubyte flags );
+void bm_lock_pcx( int handle, bitmap_slot *bs, bitmap *bmp, int bpp, ubyte flags );
+void bm_lock_tga( int handle, bitmap_slot *bs, bitmap *bmp, int bpp, ubyte flags );
+void bm_lock_user( int handle, bitmap_slot *bs, bitmap *bmp, int bpp, ubyte flags );
 
+const size_t BM_BLOCK_SIZE = 4096;
+
+extern SCP_vector<std::array<bitmap_slot, BM_BLOCK_SIZE>> bm_blocks;
+
+bitmap_slot* bm_get_slot(int handle, bool separate_ani_frames = true);
+
+inline bitmap_entry* bm_get_entry(int handle, bool separate_ani_frames = true) {
+	return &bm_get_slot(handle, separate_ani_frames)->entry;
+}
+
+template<typename T>
+T* bm_get_gr_info(int handle, bool separate_ani_frames = true) {
+	return static_cast<T*>(bm_get_slot(handle, separate_ani_frames)->gr_info);
+}
 
 #endif // __BM_INTERNAL_H__

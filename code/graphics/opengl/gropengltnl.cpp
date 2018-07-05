@@ -106,7 +106,7 @@ static GLenum convertBufferType(BufferType type) {
 		case BufferType::Uniform:
 			return GL_UNIFORM_BUFFER;
 		default:
-			Assertion(false, "Unhandled enum value!");
+			UNREACHABLE("Unhandled enum value!");
 			return GL_INVALID_ENUM;
 	}
 }
@@ -120,7 +120,7 @@ static GLenum convertUsageHint(BufferUsageHint usage) {
 		case BufferUsageHint::Streaming:
 			return GL_STREAM_DRAW;
 		default:
-			Assertion(false, "Unhandled enum value!");
+			UNREACHABLE("Unhandled enum value!");
 			return GL_INVALID_ENUM;
 	}
 }
@@ -144,7 +144,7 @@ static GLenum convertStencilOp(const StencilOperation stencil_op) {
 	case StencilOperation::Invert:
 		return GL_INVERT;
 	default:
-		Assertion(false, "Unhandled enum value encountered!");
+		UNREACHABLE("Unhandled enum value encountered!");
 		return GL_NONE;
 	}
 }
@@ -177,7 +177,7 @@ static GLenum convertComparisionFunction(ComparisionFunction func) {
 		mode = GL_NOTEQUAL;
 		break;
 	default:
-		Assertion(false, "Unhandled comparision function value!");
+		UNREACHABLE("Unhandled comparision function value!");
 		mode = GL_ALWAYS;
 		break;
 	}
@@ -758,18 +758,10 @@ void opengl_tnl_set_model_material(model_material *material_info)
 
 	GL_state.Texture.SetShaderMode(GL_TRUE);
 
-	if (GL_workaround_clipping_planes) {
-		if (Current_shader->flags & SDR_FLAG_MODEL_CLIP) {
-			GL_state.ClipDistance(0, true);
-		} else {
-			GL_state.ClipDistance(0, false);
-		}
+	if (Current_shader->flags & SDR_FLAG_MODEL_CLIP) {
+		GL_state.ClipDistance(0, true);
 	} else {
-		if (Current_shader->flags & SDR_FLAG_MODEL_CLIP || Current_shader->flags & SDR_FLAG_MODEL_TRANSFORM) {
-			GL_state.ClipDistance(0, true);
-		} else {
-			GL_state.ClipDistance(0, false);
-		}
+		GL_state.ClipDistance(0, false);
 	}
 
 	uint32_t array_index;

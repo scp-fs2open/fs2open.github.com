@@ -19,13 +19,13 @@ class CompositeEffect: public ParticleEffect {
  public:
 	explicit CompositeEffect(const SCP_string& name);
 
-	virtual bool processSource(const ParticleSource* source) override;
+	bool processSource(const ParticleSource* source) override;
 
-	virtual void parseValues(bool nocreate) override;
+	void parseValues(bool nocreate) override;
 
-	virtual void pageIn() override;
+	void pageIn() override;
 
-	virtual EffectType getType() const override { return EffectType::Composite; }
+	EffectType getType() const override { return EffectType::Composite; }
 
 	const SCP_vector<ParticleEffectPtr>& getEffects() const { return m_childEffects; }
 

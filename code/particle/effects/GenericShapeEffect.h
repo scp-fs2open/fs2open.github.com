@@ -84,7 +84,7 @@ class GenericShapeEffect : public ParticleEffect {
 	explicit GenericShapeEffect(const SCP_string& name) : ParticleEffect(name) {
 	}
 
-	virtual bool processSource(const ParticleSource* source) override {
+	bool processSource(const ParticleSource* source) override {
 		if (!m_timing.continueProcessing(source)) {
 			return false;
 		}
@@ -102,7 +102,6 @@ class GenericShapeEffect : public ParticleEffect {
 
 			particle_info info;
 
-			memset(&info, 0, sizeof(info));
 			source->getOrigin()->applyToParticleInfo(info);
 
 			info.vel = rotatedVel.vec.fvec;
@@ -114,20 +113,23 @@ class GenericShapeEffect : public ParticleEffect {
 			}
 			vm_vec_scale(&info.vel, m_velocity.next());
 
-			auto part = m_particleProperties.createParticle(info);
-
 			if (m_particleTrail >= 0) {
+				auto part = m_particleProperties.createPersistentParticle(info);
+
 				auto trailSource = ParticleManager::get()->createSource(m_particleTrail);
 				trailSource.moveToParticle(part);
 
 				trailSource.finish();
+			} else {
+				// We don't have a trail so we don't need a persistent particle
+				m_particleProperties.createParticle(info);
 			}
 		}
 
 		return true;
 	}
 
-	virtual void parseValues(bool nocreate) override {
+	void parseValues(bool nocreate) override {
 		m_particleProperties.parse(nocreate);
 
 		m_shape.parse(nocreate);
@@ -172,9 +174,9 @@ class GenericShapeEffect : public ParticleEffect {
 		m_timing.applyToSource(&source);
 	}
 
-	virtual EffectType getType() const override { return m_shape.getType(); }
+	EffectType getType() const override { return m_shape.getType(); }
 
-	virtual void pageIn() override {
+	void pageIn() override {
 		m_particleProperties.pageIn();
 	}
 

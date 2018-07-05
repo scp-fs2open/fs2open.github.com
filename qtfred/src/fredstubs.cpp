@@ -43,7 +43,7 @@ control_info PlayerControls;
 
 char *  Game_CDROM_dir = NULL;
 
-void game_flash(float r, float g, float b )
+void game_flash(float  /*r*/, float  /*g*/, float  /*b*/ )
 {
 }
 
@@ -78,7 +78,7 @@ int game_poll()
 	return key_inkey();
 }
 
-void multi_delete_ship(object *obj)
+void multi_delete_ship(object * /*obj*/)
 {
 }
 
@@ -116,10 +116,10 @@ void send_goal_status_packet()
 
 int Show_area_effect;
 
-void state_set_mem(unsigned char *c, int i) {}
-int state_check_mem(unsigned char *c, int i) { return 0; }
+void state_set_mem(unsigned char * /*c*/, int  /*i*/) {}
+int state_check_mem(unsigned char * /*c*/, int  /*i*/) { return 0; }
 
-void demo_do_flag_dead(int i) {}
+void demo_do_flag_dead(int  /*i*/) {}
 void demo_checkpoint() {}
 void demo_set_playback_filter() {}
 
@@ -130,44 +130,44 @@ void multi_server_respawn() {}
 
 void multi_build_respawn_points() {}
 
-void store_p_object( p_object *pbojp, CFILE *fp ) {}
-void restore_p_object( p_object *pobjp, CFILE *dp) {}
+void store_p_object( p_object * /*pbojp*/, CFILE * /*fp*/ ) {}
+void restore_p_object( p_object * /*pobjp*/, CFILE * /*dp*/) {}
 
 int Multi_squad_msg_targ;
 int Multi_squad_msg_local;
 void send_support_warpin_packet(int,int,int){}
-void send_support_warpin_packet( int net_sig, int how ) {}
+void send_support_warpin_packet( int  /*net_sig*/, int  /*how*/ ) {}
 
-int demo_query_debug(int id) { return 0; };
+int demo_query_debug(int  /*id*/) { return 0; };
 
 void send_support_warpin_packet(int){}
-void game_whack_apply(float x, float y) {}
+void game_whack_apply(float  /*x*/, float  /*y*/) {}
 
-void save_restore_vector(vec3d *vec, CFILE *fp, int version, vec3d *deflt) {}
-void save_restore_matrix(matrix *mat, CFILE *fp, int version, matrix *deflt) {}
-void save_restore_float(float *fl, CFILE *fp, int version, float deflt) {}
-void save_restore_angles(angles *ang, CFILE *fp, int version, angles *deflt) {}
-void save_restore_int(int *n, CFILE *fp, int version, int deflt) {}
-void save_restore_uint(uint *n, CFILE *fp, int version, uint deflt) {}
-void save_restore_short(short *n, CFILE *fp, int version, short deflt) {}
-void save_restore_ushort(ushort *n, CFILE *fp, int version, ushort deflt) {}
-void save_restore_ubyte(ubyte *n, CFILE *fp, int version, ubyte deflt) {}
-void save_restore_fix(fix *n, CFILE *fp, int version, fix deflt) {}
-void save_restore_string(char *str, CFILE *fp, int len, int version, char *deflt) {}
-char *restore_string_alloc(CFILE *fp, int version, char *deflt) { return NULL; }
+void save_restore_vector(vec3d * /*vec*/, CFILE * /*fp*/, int  /*version*/, vec3d * /*deflt*/) {}
+void save_restore_matrix(matrix * /*mat*/, CFILE * /*fp*/, int  /*version*/, matrix * /*deflt*/) {}
+void save_restore_float(float * /*fl*/, CFILE * /*fp*/, int  /*version*/, float  /*deflt*/) {}
+void save_restore_angles(angles * /*ang*/, CFILE * /*fp*/, int  /*version*/, angles * /*deflt*/) {}
+void save_restore_int(int * /*n*/, CFILE * /*fp*/, int  /*version*/, int  /*deflt*/) {}
+void save_restore_uint(uint * /*n*/, CFILE * /*fp*/, int  /*version*/, uint  /*deflt*/) {}
+void save_restore_short(short * /*n*/, CFILE * /*fp*/, int  /*version*/, short  /*deflt*/) {}
+void save_restore_ushort(ushort * /*n*/, CFILE * /*fp*/, int  /*version*/, ushort  /*deflt*/) {}
+void save_restore_ubyte(ubyte * /*n*/, CFILE * /*fp*/, int  /*version*/, ubyte  /*deflt*/) {}
+void save_restore_fix(fix * /*n*/, CFILE * /*fp*/, int  /*version*/, fix  /*deflt*/) {}
+void save_restore_string(char * /*str*/, CFILE * /*fp*/, int  /*len*/, int  /*version*/, char * /*deflt*/) {}
+char *restore_string_alloc(CFILE * /*fp*/, int  /*version*/, char * /*deflt*/) { return NULL; }
 
-void save_restore_p_object(p_object *pobj, CFILE *fp) {}
+void save_restore_p_object(p_object * /*pobj*/, CFILE * /*fp*/) {}
 
-void demo_write_char(char x) {}
+void demo_write_char(char  /*x*/) {}
 char demo_read_char() { return 0; }
 
 int	red_alert_default_status() {return 0;}
 
 void send_ship_kill_packet(class object *,class object *,float,unsigned char) {}
-void send_debris_create_packet( object *objp, ushort net_sig, int model_num, vec3d pos) {}
+void send_debris_create_packet( object * /*objp*/, ushort  /*net_sig*/, int  /*model_num*/, vec3d  /*pos*/) {}
 
 int Game_subspace_effect;
-void big_explosion_flash(float x) {}
+void big_explosion_flash(float  /*x*/) {}
 
 int game_do_cd_check(char *) {return 0;}
 
@@ -230,16 +230,16 @@ void game_unpause() {}
 //Time stuff
 bool Time_compression_locked;
 float flRealframetime;
-void lock_time_compression(bool is_locked){}
-void change_time_compression(float multiplier){}
-void set_time_compression(float multiplier, float change_time){}
+void lock_time_compression(bool  /*is_locked*/){}
+void change_time_compression(float  /*multiplier*/){}
+void set_time_compression(float  /*multiplier*/, float  /*change_time*/){}
 fix game_get_overall_frametime() { return 0; }
 
 //WMC
 void game_level_init(){}
 void game_post_level_init(){}
 camid game_render_frame_setup(){return camid();}
-void game_render_frame(camid cid){}
+void game_render_frame(camid  /*cid*/){}
 void game_simulation_frame(){}
 void game_update_missiontime(){}
 void game_render_post_frame(){}

@@ -14,6 +14,7 @@
 
 #include "globalincs/pstypes.h"
 #include "model/modelrender.h"
+#include "gamesnd/gamesnd.h"
 
 class object;
 class ship_info;
@@ -71,8 +72,8 @@ typedef struct fireball {
 	char	lod;					// current LOD
 	float	time_elapsed;			// in seconds
 	float	total_time;				// total lifetime of animation in seconds
-	int warp_open_sound_index;		// for warp-effect - Goober5000
-	int warp_close_sound_index;		// for warp-effect - Goober5000
+	gamesnd_id warp_open_sound_index;		// for warp-effect - Goober5000
+	gamesnd_id warp_close_sound_index;		// for warp-effect - Goober5000
 } fireball;
 // end move
 
@@ -84,7 +85,7 @@ void fireball_process_post(object * obj, float frame_time);
 // reversed is for warp_in/out effects
 // Velocity: If not NULL, the fireball will move at a constant velocity.
 // warp_lifetime: If warp_lifetime > 0.0f then makes the explosion loop so it lasts this long.  Only works for warp effect
-int fireball_create(vec3d *pos, int fireball_type, int render_type, int parent_obj, float size, int reversed=0, vec3d *velocity=NULL, float warp_lifetime=0.0f, int ship_class=-1, matrix *orient=NULL, int low_res=0, int extra_flags=0, int warp_open_sound=-1, int warp_close_sound=-1); 
+int fireball_create(vec3d *pos, int fireball_type, int render_type, int parent_obj, float size, int reversed=0, vec3d *velocity=NULL, float warp_lifetime=0.0f, int ship_class=-1, matrix *orient=NULL, int low_res=0, int extra_flags=0, gamesnd_id warp_open_sound=gamesnd_id(), gamesnd_id warp_close_sound=gamesnd_id());
 void fireball_render_plane(int plane);
 void fireball_close();
 

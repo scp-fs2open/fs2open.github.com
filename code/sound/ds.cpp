@@ -179,7 +179,7 @@ static void *al_load_function(const char *func_name)
 {
 	void *func = alGetProcAddress(func_name);
 	if ( !func ) {
-		throw func_name;
+		throw std::runtime_error(func_name);
 	}
 	return func;
 }
@@ -246,7 +246,7 @@ int ds_get_sid()
 	return (int)(sound_buffers.size() - 1);
 }
 
-int ds_load_buffer(int *sid, int flags, ffmpeg::WaveFile* file)
+int ds_load_buffer(int *sid, int  /*flags*/, ffmpeg::WaveFile* file)
 {
 	Assert(sid != NULL);
 	Assert(file != NULL);
@@ -312,7 +312,7 @@ void ds_init_channels()
 
 	try {
 		Channels = new channel[MAX_CHANNELS];
-	} catch (std::bad_alloc) {
+	} catch (const std::bad_alloc&) {
 		Error(LOCATION, "Unable to allocate " SIZE_T_ARG " bytes for %d audio channels.", sizeof(channel) * MAX_CHANNELS, MAX_CHANNELS);
 	}
 }
@@ -1447,7 +1447,7 @@ unsigned int ds_get_play_position(int channel_id)
 /**
  * @todo Documentation
  */
-unsigned int ds_get_write_position(int channel_id)
+unsigned int ds_get_write_position(int  /*channel_id*/)
 {
 	return 0;
 }
@@ -1503,7 +1503,7 @@ int ds_get_number_channels()
 /**
  * Retreive raw data from a sound buffer
  */
-int ds_get_data(int sid, char *data)
+int ds_get_data(int  /*sid*/, char * /*data*/)
 {
 	return -1;
 }
@@ -1824,8 +1824,8 @@ int ds_eax_init()
 		v_alAuxiliaryEffectSlotiv = (ALAUXILIARYEFFECTSLOTIV) al_load_function("alAuxiliaryEffectSlotiv");
 		v_alAuxiliaryEffectSlotf = (ALAUXILIARYEFFECTSLOTF) al_load_function("alAuxiliaryEffectSlotf");
 		v_alAuxiliaryEffectSlotfv = (ALAUXILIARYEFFECTSLOTFV) al_load_function("alAuxiliaryEffectSlotfv");
-	} catch (const char *err) {
-		mprintf(("\n  EFX:  Unable to load function: %s()\n", err));
+	} catch (const std::exception& err) {
+		mprintf(("\n  EFX:  Unable to load function: %s()\n", err.what()));
 
 		Ds_eax_inited = 0;
 		return -1;

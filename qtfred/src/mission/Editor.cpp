@@ -98,16 +98,8 @@ extern int Nmodel_bitmap;
 
 namespace fso {
 namespace fred {
-
-Editor::Editor() : currentObject{ -1 } {
-	// We need to do this the hard way since MSVC 2013 is too stupid to support array initializers...
-	for (auto& a : Shield_sys_teams) {
-		a = 0;
-	}
-	for (auto& a : Shield_sys_types) {
-		a = 0;
-	}
-
+	
+Editor::Editor() : currentObject{ -1 }, Shield_sys_teams(MAX_IFFS, 0), Shield_sys_types(MAX_SHIP_CLASSES, 0) {
 	connect(fredApp, &FredApplication::onIdle, this, &Editor::update);
 
 	// When the mission changes we need to update all renderers
@@ -136,7 +128,7 @@ void Editor::update() {
 	}
 }
 
-bool Editor::loadMission(const std::string& filepath, int flags) {
+bool Editor::loadMission(const std::string& mission_name, int flags) {
 	char name[512], * old_name;
 	int i, j, k, ob;
 	int used_pool[MAX_WEAPON_TYPES];
@@ -146,6 +138,18 @@ bool Editor::loadMission(const std::string& filepath, int flags) {
 	fhash_flush();
 
 	clearMission();
+
+	std::string filepath = mission_name;
+	char fullpath[MAX_PATH_LEN];
+	size_t pack_offset;
+	if (cf_find_file_location(filepath.c_str(), CF_TYPE_MISSIONS, sizeof(fullpath) - 1, fullpath, nullptr, &pack_offset)) {
+		// We found this file in the CFile system
+		if (pack_offset == 0) {
+			// This is a "real" file. Since we now have an absolute path we can use that to make sure we only deal with
+			// absolute paths which makes sure that the "recent mission" menu has correct file names
+			filepath = fullpath;
+		}
+	}
 
 	if (parse_main(filepath.c_str(), flags)) {
 		if (flags & MPF_IMPORT_FSM) {
@@ -215,7 +219,7 @@ bool Editor::loadMission(const std::string& filepath, int flags) {
 				|| (Objects[wing_objects[i][j]].type == OBJ_START)) {  // don't change player ship names
 				wing_bash_ship_name(name, Wings[i].name, j + 1);
 				old_name = Ships[Wings[i].ship_index[j]].ship_name;
-				if (stricmp(name, old_name)) {  // need to fix name
+				if (stricmp(name, old_name) != 0) {  // need to fix name
 					update_sexp_references(old_name, name);
 					ai_update_goal_references(REF_TYPE_SHIP, old_name, name);
 					update_texture_replacements(old_name, name);
@@ -654,7 +658,7 @@ void Editor::updateAllViewports() {
 	}
 }
 
-int Editor::create_player(int num, vec3d* pos, matrix* orient, int type, int init) {
+int Editor::create_player(int  /*num*/, vec3d* pos, matrix* orient, int type, int  /*init*/) {
 	int obj;
 
 	if (type == -1) {
@@ -1250,7 +1254,7 @@ int Editor::reference_handler(const char* name, int type, int obj) {
 	return 0;
 }
 
-int Editor::orders_reference_handler(int code, char* msg) {
+int Editor::orders_reference_handler(int  /*code*/, char* msg) {
 	auto r = _lastActiveViewport->dialogProvider->showButtonDialog(DialogType::Warning,
 																   "Warning",
 																   msg,
@@ -1302,7 +1306,7 @@ int Editor::orders_reference_handler(int code, char* msg) {
 	delete_flag = 1;
 	return 2;
 }
-int Editor::sexp_reference_handler(int node, int code, const char* msg) {
+int Editor::sexp_reference_handler(int  /*node*/, int  /*code*/, const char* msg) {
 	auto r = _lastActiveViewport->dialogProvider->showButtonDialog(DialogType::Warning,
 																   "Warning",
 																   msg,
@@ -2218,7 +2222,7 @@ int Editor::global_error_check_impl() {
 				if ((Objects[obj].type == OBJ_SHIP) || (Objects[obj].type == OBJ_START)) {
 					ship = Objects[obj].instance;
 					wing_bash_ship_name(buf, Wings[i].name, j + 1);
-					if (stricmp(buf, Ships[ship].ship_name)) {
+					if (stricmp(buf, Ships[ship].ship_name) != 0) {
 						return internal_error("Ship \"%s\" in wing should be called \"%s\"",
 											  Ships[ship].ship_name,
 											  buf);
@@ -2540,7 +2544,7 @@ int Editor::internal_error(const char* msg, ...) {
 #ifndef NDEBUG
 	char buf2[2048];
 
-	sprintf(buf2, "%s\n\nThis is an internal error.  Please let Jason\n"
+	sprintf_safe(buf2, "%s\n\nThis is an internal error.  Please let Jason\n"
 		"know about this so he can fix it.  Click cancel to debug.", buf);
 
 	if (_lastActiveViewport->dialogProvider->showButtonDialog(DialogType::Error,
@@ -3118,5 +3122,67 @@ int Editor::global_error_check_mixed_player_wing(int w) {
 
 	return 0;
 }
+
+bool Editor::compareShieldSysData(const std::vector<int>& teams, const std::vector<int>& types) const {
+	Assert(Shield_sys_teams.size() == teams.size());
+	Assert(Shield_sys_types.size() == types.size());
+
+	return (Shield_sys_teams == teams) && (Shield_sys_types == types);
+}
+
+void Editor::exportShieldSysData(std::vector<int>& teams, std::vector<int>& types) const {
+	teams = Shield_sys_teams;
+	types = Shield_sys_types;
+}
+
+void Editor::importShieldSysData(const std::vector<int>& teams, const std::vector<int>& types) {
+	Assert(Shield_sys_teams.size() == teams.size());
+	Assert(Shield_sys_types.size() == types.size());
+
+	Shield_sys_teams = teams;
+	Shield_sys_types = types;
+
+	for (int i = 0; i < MAX_SHIPS; i++) {
+		if (Ships[i].objnum >= 0) {
+			int z = Shield_sys_teams[Ships[i].team];
+			if (!Shield_sys_types[Ships[i].ship_info_index])
+				z = 0;
+			else if (Shield_sys_types[Ships[i].ship_info_index] == 1)
+				z = 1;
+
+			if (!z)
+				Objects[Ships[i].objnum].flags.remove(Object::Object_Flags::No_shields);
+			else if (z == 1)
+				Objects[Ships[i].objnum].flags.set(Object::Object_Flags::No_shields);
+		}
+	}
+}
+
+// adapted from shield_sys_dlg OnInitDialog()
+// 0 = has shields, 1 = no shields, 2 = conflict/inconsistent
+void Editor::normalizeShieldSysData() {
+	std::vector<int> teams(MAX_IFFS, 0);
+	std::vector<int> types(MAX_SHIP_CLASSES, 0);
+
+	for (int i = 0; i < MAX_SHIPS; i++) {
+		if (Ships[i].objnum >= 0) {
+			int z = (Objects[Ships[i].objnum].flags[Object::Object_Flags::No_shields]) ? 1 : 0;
+			if (!teams[Ships[i].team])
+				Shield_sys_teams[Ships[i].team] = z;
+			else if (Shield_sys_teams[Ships[i].team] != z)
+				Shield_sys_teams[Ships[i].team] = 2;
+
+			if (!types[Ships[i].ship_info_index])
+				Shield_sys_types[Ships[i].ship_info_index] = z;
+			else if (Shield_sys_types[Ships[i].ship_info_index] != z)
+				Shield_sys_types[Ships[i].ship_info_index] = 2;
+
+			teams[Ships[i].team]++;
+			types[Ships[i].ship_info_index]++;
+		}
+	}
+}
+
+
 } // namespace fred
 } // namespace fso

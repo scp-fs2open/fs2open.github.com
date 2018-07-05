@@ -14,25 +14,42 @@ enum class SubSystem {
 	CFile,
 	ModTable,
 	Locale,
+	Sound,
 	Graphics,
+	Scripting,
 	Fonts,
 	Keyboard,
 	Mouse,
 	Particles,
 	Iff,
 	Objects,
+	Models,
 	Species,
+	BriefingIcons,
+	HudCommOrders,
+	AlphaColors,
+	GameSound,
 	MissionBrief,
 	AI,
 	AIProfiles,
 	Armor,
 	Weapon,
 	Medals,
+	Glowpoints,
 	Ships,
 	Parse,
+	TechroomIntel,
 	Nebulas,
 	Stars,
-	View,
+	Ssm,
+	EventMusic,
+	FictionViewer,
+	CommandBriefing,
+	Campaign,
+	NebulaLightning,
+	FFmpeg,
+	DynamicSEXPs,
+	ScriptingInitHook,
 };
 
 typedef std::function<void(const SubSystem&)> InitializerCallback;
@@ -46,14 +63,16 @@ class Editor;
  * This enable the developer to provide information about the startup
  * sequence.
  *
- * \param[in]   cfilepath   CFile root directory.
- * \param[in]   listener    A callback function called after each initializer.
+ * @param[in]   cfilepath   CFile root directory.
+ * @param[in]   listener    A callback function called after each initializer.
+ *
+ * @return @c true if initialization was successfull, @c false otherwise
  */
-void initialize(const std::string& cfilepath,
+bool initialize(const std::string& cfilepath,
 				int argc,
 				char* argv[],
 				Editor* editor,
-				InitializerCallback listener = [](const SubSystem&) {});
+				const InitializerCallback& listener = [](const SubSystem&) {});
 
 void shutdown();
 

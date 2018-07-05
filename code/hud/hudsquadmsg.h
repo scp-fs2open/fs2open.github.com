@@ -196,10 +196,10 @@ public:
 	void initPgUpOffsets(int x, int y);
 	void initPgDnOffsets(int x, int y);
 
-	void render(float frametime);
-	bool canRender();
-	void pageIn();
-	void initialize();
+	void render(float frametime) override;
+	bool canRender() override;
+	void pageIn() override;
+	void initialize() override;
 	void startFlashPageScroll(int duration = 1400);
 	bool maybeFlashPageScroll(bool flash_fast = false);
 };

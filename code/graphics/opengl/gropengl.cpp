@@ -29,6 +29,7 @@
 #include "math/floating.h"
 #include "model/model.h"
 #include "nebula/neb.h"
+#include "libs/renderdoc/renderdoc.h"
 #include "osapi/osapi.h"
 #include "osapi/osregistry.h"
 #include "render/3d.h"
@@ -90,7 +91,8 @@ static GLenum GL_read_format = GL_BGRA;
 
 GLuint GL_vao = 0;
 
-bool GL_workaround_clipping_planes = false;
+SCP_string GL_implementation_id;
+SCP_vector<GLint> GL_binary_formats;
 
 static std::unique_ptr<os::OpenGLContext> GL_context = nullptr;
 
@@ -382,7 +384,7 @@ void gr_opengl_shutdown()
 	GL_context = nullptr;
 }
 
-void gr_opengl_cleanup(bool closing, int minimize)
+void gr_opengl_cleanup(bool closing, int  /*minimize*/)
 {
 	if ( !GL_initted ) {
 		return;
@@ -619,7 +621,7 @@ void gr_opengl_set_gamma(float gamma)
 	}
 }
 
-void gr_opengl_get_region(int front, int w, int h, ubyte *data)
+void gr_opengl_get_region(int  /*front*/, int w, int h, ubyte *data)
 {
 
 //	if (front) {
@@ -807,17 +809,17 @@ void gr_opengl_zbias(int bias)
 	}
 }
 
-void gr_opengl_push_texture_matrix(int unit)
+void gr_opengl_push_texture_matrix(int  /*unit*/)
 {
 
 }
 
-void gr_opengl_pop_texture_matrix(int unit)
+void gr_opengl_pop_texture_matrix(int  /*unit*/)
 {
 
 }
 
-void gr_opengl_translate_texture_matrix(int unit, const vec3d *shift)
+void gr_opengl_translate_texture_matrix(int  /*unit*/, const vec3d * /*shift*/)
 {
 
 }
@@ -1201,7 +1203,7 @@ void opengl_setup_function_pointers()
 
 #ifndef NDEBUG
 static void APIENTRY debug_callback(GLenum source, GLenum type, GLuint id, GLenum severity,
-						   GLsizei length, const GLchar *message, const void *userParam) {
+						   GLsizei  /*length*/, const GLchar *message, const void * /*userParam*/) {
 	if (source == GL_DEBUG_SOURCE_APPLICATION_ARB) {
 		// Ignore application messages
 		return;
@@ -1365,19 +1367,6 @@ static void init_extensions() {
 	}
 }
 
-static void opengl_do_workaround_checks() {
-	auto vendor = glGetString(GL_VENDOR);
-
-	if (strstr((const char*) vendor, "NVIDIA")) {
-		// Nvidia has some weird issues with clipping planes. Check #1579 for more information.
-		GL_workaround_clipping_planes = true;
-		mprintf(("  Applying clipping plane workaround for NVIDIA hardware.\n"));
-	} else {
-		// Assume everone else has proper support for this
-		GL_workaround_clipping_planes = false;
-	}
-}
-
 bool gr_opengl_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 {
 	if (GL_initted) {
@@ -1389,6 +1378,9 @@ bool gr_opengl_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 		  gr_screen.max_w,
 		  gr_screen.max_h,
 		  gr_screen.bits_per_pixel ));
+
+	// Load the RenderDoc API if available before doing anything with OpenGL
+	renderdoc::loadApi();
 
 	graphic_operations = std::move(graphicsOps);
 
@@ -1446,7 +1438,20 @@ bool gr_opengl_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 	mprintf(( "  OpenGL Version   : %s\n", glGetString(GL_VERSION) ));
 	mprintf(( "\n" ));
 
-	opengl_do_workaround_checks();
+	// Build a string identifier for this OpenGL implementation
+	GL_implementation_id.clear();
+	GL_implementation_id += reinterpret_cast<const char*>(glGetString(GL_VENDOR));
+	GL_implementation_id += "\n";
+	GL_implementation_id += reinterpret_cast<const char*>(glGetString(GL_RENDERER));
+	GL_implementation_id += "\n";
+	GL_implementation_id += reinterpret_cast<const char*>(glGetString(GL_VERSION));
+	GL_implementation_id += "\n";
+	GL_implementation_id += reinterpret_cast<const char*>(glGetString(GL_SHADING_LANGUAGE_VERSION));
+
+	GLint formats = 0;
+	glGetIntegerv(GL_NUM_PROGRAM_BINARY_FORMATS, &formats);
+	GL_binary_formats.resize(formats);
+	glGetIntegerv(GL_PROGRAM_BINARY_FORMATS, GL_binary_formats.data());
 
 	if (Cmdline_fullscreen_window || Cmdline_window) {
 		opengl_go_windowed();

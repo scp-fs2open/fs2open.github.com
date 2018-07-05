@@ -13,7 +13,7 @@
 #define __CFILE_H__
 
 
-#include <time.h>
+#include <ctime>
 #include "globalincs/pstypes.h"
 
 #include <stdexcept>
@@ -111,9 +111,6 @@ extern const char *Get_file_list_child;
 #define CFILE_ROOT_DIRECTORY_LEN			256
 extern char Cfile_root_dir[CFILE_ROOT_DIRECTORY_LEN];
 extern char Cfile_user_dir[CFILE_ROOT_DIRECTORY_LEN];
-#ifdef SCP_UNIX
-extern char Cfile_user_dir_legacy[CFILE_ROOT_DIRECTORY_LEN];
-#endif
 
 //================= LOW-LEVEL FUNCTIONS ==================
 int cfile_init(const char *exe_dir, const char *cdrom_dir=NULL);
@@ -365,16 +362,13 @@ namespace cfile
 			{
 			}
 
-		cfile_error(const std::string &excuse) : m_excuse(excuse)
+			explicit cfile_error(const std::string &excuse) : m_excuse(excuse)
 			{
 			}
 
-			~cfile_error() throw()
-			{
-			}
+			~cfile_error() SCP_NOEXCEPT override {}
 
-			virtual const char *what() const throw()
-			{
+			const char *what() const SCP_NOEXCEPT override {
 				return m_excuse.c_str();
 			}
 
@@ -385,7 +379,7 @@ namespace cfile
 	class max_read_length : public cfile_error
 	{
 		public:
-		max_read_length(const std::string &excuse) : cfile_error(excuse)
+		explicit max_read_length(const std::string &excuse) : cfile_error(excuse)
 			{
 			}
 

@@ -24,7 +24,7 @@
 
 //#define MAX_PAIRS 10000	//	Bumped back to 10,000 by WMC
 			//	Reduced from 10,000 to 6,000 by MK on 4/1/98.
-			//	Most I saw was 3400 in sm1-06a, the asteriod mission.  No other mission came close.
+			//	Most I saw was 3400 in sm1-06a, the asteroid mission.  No other mission came close.
 #define MIN_PAIRS	2500	// start out with this many pairs
 #define PAIRS_BUMP	1000		// increase by this many avialable pairs when more are needed
 

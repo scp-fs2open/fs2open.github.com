@@ -12,7 +12,7 @@ LuaReference UniqueLuaReference::create(lua_State* state, int position) {
 
 	lua_pushvalue(state, position);
 
-	LuaReference ref(new UniqueLuaReference(state, luaL_ref(state, LUA_REGISTRYINDEX)));
+	LuaReference ref = std::make_shared<UniqueLuaReference>(state, luaL_ref(state, LUA_REGISTRYINDEX));
 
 	return ref;
 }
@@ -35,10 +35,10 @@ UniqueLuaReference::UniqueLuaReference(lua_State* state, int reference) : _luaSt
 UniqueLuaReference::UniqueLuaReference() : _luaState(nullptr), _reference(LUA_NOREF) {
 }
 
-UniqueLuaReference::UniqueLuaReference(UniqueLuaReference&& other) : _luaState(nullptr), _reference(LUA_NOREF) {
+UniqueLuaReference::UniqueLuaReference(UniqueLuaReference&& other) SCP_NOEXCEPT : _luaState(nullptr), _reference(LUA_NOREF) {
 	*this = std::move(other);
 }
-UniqueLuaReference& UniqueLuaReference::operator=(UniqueLuaReference&& other) {
+UniqueLuaReference& UniqueLuaReference::operator=(UniqueLuaReference&& other) SCP_NOEXCEPT {
 	std::swap(_luaState, other._luaState);
 	std::swap(_reference, other._reference);
 	return *this;

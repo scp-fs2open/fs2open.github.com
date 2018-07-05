@@ -138,7 +138,7 @@ void MissionSpecDialogModel::reject() {
 
 }
 
-void MissionSpecDialogModel::setMissionTitle(SCP_string m_mission_title) {
+void MissionSpecDialogModel::setMissionTitle(const SCP_string& m_mission_title) {
 	modify(_m_mission_title, m_mission_title);
 }
 
@@ -146,7 +146,7 @@ SCP_string MissionSpecDialogModel::getMissionTitle() {
 	return _m_mission_title;
 }
 
-void MissionSpecDialogModel::setDesigner(SCP_string m_designer_name) {
+void MissionSpecDialogModel::setDesigner(const SCP_string& m_designer_name) {
 	modify(_m_designer_name, m_designer_name);
 }
 
@@ -200,7 +200,7 @@ int MissionSpecDialogModel::getMaxRespawnDelay() {
 	return _m_max_respawn_delay;
 }
 
-void MissionSpecDialogModel::setSquadronName(SCP_string m_squad_name) {
+void MissionSpecDialogModel::setSquadronName(const SCP_string& m_squad_name) {
 	modify(_m_squad_name, m_squad_name);
 }
 
@@ -208,7 +208,7 @@ SCP_string MissionSpecDialogModel::getSquadronName() {
 	return _m_squad_name;
 }
 
-void MissionSpecDialogModel::setSquadronLogo(SCP_string m_squad_filename) {
+void MissionSpecDialogModel::setSquadronLogo(const SCP_string& m_squad_filename) {
 	modify(_m_squad_filename, m_squad_filename);
 }
 
@@ -216,7 +216,7 @@ SCP_string MissionSpecDialogModel::getSquadronLogo() {
 	return _m_squad_filename;
 }
 
-void MissionSpecDialogModel::setLowResLoadingScreen(SCP_string m_loading_640) {
+void MissionSpecDialogModel::setLowResLoadingScreen(const SCP_string& m_loading_640) {
 	modify(_m_loading_640, m_loading_640);
 }
 
@@ -224,7 +224,7 @@ SCP_string MissionSpecDialogModel::getLowResLoadingScren() {
 	return _m_loading_640;
 }
 
-void MissionSpecDialogModel::setHighResLoadingScreen(SCP_string m_loading_1024) {
+void MissionSpecDialogModel::setHighResLoadingScreen(const SCP_string& m_loading_1024) {
 	modify(_m_loading_1024, m_loading_1024);
 }
 
@@ -272,7 +272,7 @@ int MissionSpecDialogModel::getTrailDisplaySpeed() {
 	return _m_contrail_threshold;
 }
 
-void MissionSpecDialogModel::setCommandSender(SCP_string m_command_sender) {
+void MissionSpecDialogModel::setCommandSender(const SCP_string& m_command_sender) {
 	modify(_m_command_sender, m_command_sender);
 }
 
@@ -296,7 +296,7 @@ int MissionSpecDialogModel::getEventMusic() {
 	return _m_event_music;
 }
 
-void MissionSpecDialogModel::setSubEventMusic(SCP_string m_substitute_event_music) {
+void MissionSpecDialogModel::setSubEventMusic(const SCP_string& m_substitute_event_music) {
 	modify(_m_substitute_event_music, m_substitute_event_music);
 }
 
@@ -333,7 +333,7 @@ int MissionSpecDialogModel::getAIProfileIndex() const {
 	return _m_ai_profile;
 }
 
-void MissionSpecDialogModel::setMissionDescText(SCP_string m_mission_desc) {
+void MissionSpecDialogModel::setMissionDescText(const SCP_string& m_mission_desc) {
 	modify(_m_mission_desc, m_mission_desc.substr(0, MIN(MISSION_DESC_LENGTH, m_mission_desc.length())));
 }
 
@@ -341,7 +341,7 @@ SCP_string MissionSpecDialogModel::getMissionDescText() {
 	return _m_mission_desc;
 }
 
-void MissionSpecDialogModel::setDesignerNoteText(SCP_string m_mission_notes) {
+void MissionSpecDialogModel::setDesignerNoteText(const SCP_string& m_mission_notes) {
 	modify(_m_mission_notes, m_mission_notes.substr(0, MIN(NOTES_LENGTH, m_mission_notes.length())));
 }
 

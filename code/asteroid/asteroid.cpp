@@ -76,7 +76,7 @@ float	Asteroid_icon_closeup_zoom;
 /**
  * Force updating of pair stuff for asteroid *objp.
  */
-void asteroid_update_collide(object *objp)
+static void asteroid_update_collide(object *objp)
 {
 	// Asteroid has wrapped, update collide objnum and flags
 	Asteroids[objp->instance].collide_objnum = -1;
@@ -87,7 +87,7 @@ void asteroid_update_collide(object *objp)
 /**
  * Clear out the ::Asteroid_obj_list
  */
-void asteroid_obj_list_init()
+static void asteroid_obj_list_init()
 {
 	int i;
 
@@ -101,7 +101,7 @@ void asteroid_obj_list_init()
  * Add a node from the Asteroid_obj_list.  
  * Only called from ::weapon_create()
  */
-int asteroid_obj_list_add(int objnum)
+static int asteroid_obj_list_add(int objnum)
 {
 	int index;
 
@@ -123,7 +123,7 @@ int asteroid_obj_list_add(int objnum)
  * Remove a node from the Asteroid_obj_list.  
  * Only called from ::weapon_delete()
  */
-void asteroid_obj_list_remove(object * obj)
+static void asteroid_obj_list_remove(object * obj)
 {
 	int index = obj->instance;
 
@@ -138,7 +138,7 @@ void asteroid_obj_list_remove(object * obj)
 /**
  * Prevent speed from getting too huge so it's hard to catch up to an asteroid.
  */
-float asteroid_cap_speed(int asteroid_info_index, float speed)
+static float asteroid_cap_speed(int asteroid_info_index, float speed)
 {
 	float max, double_max;
 
@@ -164,7 +164,7 @@ float asteroid_cap_speed(int asteroid_info_index, float speed)
  * Sum together the following: 1 inside x, 2 inside y, 4 inside z
  * inside only when sum = 7
  */
-int asteroid_in_inner_bound_with_axes(asteroid_field *asfieldp, vec3d *pos, float delta)
+static int asteroid_in_inner_bound_with_axes(asteroid_field *asfieldp, vec3d *pos, float delta)
 {
 	Assert(asfieldp->has_inner_bound);
 
@@ -188,7 +188,7 @@ int asteroid_in_inner_bound_with_axes(asteroid_field *asfieldp, vec3d *pos, floa
  * Check if asteroid is within inner bound
  * @return 0 if not inside or no inner bound, 1 if inside inner bound
  */
-int asteroid_in_inner_bound(asteroid_field *asfieldp, vec3d *pos, float delta) {
+static int asteroid_in_inner_bound(asteroid_field *asfieldp, vec3d *pos, float delta) {
 
 	if (!asfieldp->has_inner_bound) {
 		return 0;
@@ -202,7 +202,7 @@ int asteroid_in_inner_bound(asteroid_field *asfieldp, vec3d *pos, float delta) {
  *
  * Moves to the other side of the inner box a distance delta from edge of box
  */
-void inner_bound_pos_fixup(asteroid_field *asfieldp, vec3d *pos)
+static void inner_bound_pos_fixup(asteroid_field *asfieldp, vec3d *pos)
 {
 	if (!asteroid_in_inner_bound(asfieldp, pos, 0)) {
 		return;
@@ -446,7 +446,7 @@ void asteroid_sub_create(object *parent_objp, int asteroid_type, vec3d *relvec)
 /**
  * Load in an asteroid model
  */
-void asteroid_load(int asteroid_info_index, int asteroid_subtype)
+static void asteroid_load(int asteroid_info_index, int asteroid_subtype)
 {
 	int i;
 	asteroid_info	*asip;
@@ -488,25 +488,11 @@ void asteroid_load(int asteroid_info_index, int asteroid_subtype)
 }
 
 /**
- * Randomly choose a debris model within the current group
- */
-int get_debris_from_same_group(int index) {
-	int group_base, group_offset;
-
-	group_base = (index / NUM_DEBRIS_SIZES) * NUM_DEBRIS_SIZES;
-	group_offset = index - group_base;
-
-	// group base + offset
-	// offset is formed by adding 1 or 2 (since 3 in model group) and mapping back in the 0-2 range
-	return group_base + ((group_offset + rand()%(NUM_DEBRIS_SIZES-1) + 1) % NUM_DEBRIS_SIZES);
-}
-
-/**
  * Returns a weight that depends on asteroid size.
  *
  * The weight is then used to determine the frequencty of different sizes of ship debris
  */
-int get_debris_weight(int ship_debris_index)
+static int get_debris_weight(int ship_debris_index)
 {
 	int size = ship_debris_index % NUM_DEBRIS_SIZES;
 	switch (size)
@@ -626,7 +612,7 @@ void asteroid_create_all()
 }
 
 /**
- * Init asteriod system for the level, called from ::game_level_init()
+ * Init asteroid system for the level, called from ::game_level_init()
  */
 void asteroid_level_init()
 {
@@ -645,7 +631,7 @@ void asteroid_level_init()
  *
  * @return !0 if asteroid should be wrapped, 0 otherwise.  
  */
-int asteroid_should_wrap(object *objp, asteroid_field *asfieldp)
+static int asteroid_should_wrap(object *objp, asteroid_field *asfieldp)
 {
 	if ( MULTIPLAYER_CLIENT )
 		return 0;
@@ -690,7 +676,7 @@ int asteroid_should_wrap(object *objp, asteroid_field *asfieldp)
 /**
  * Wrap an asteroid from one end of the asteroid field to the other
  */
-void asteroid_wrap_pos(object *objp, asteroid_field *asfieldp)
+static void asteroid_wrap_pos(object *objp, asteroid_field *asfieldp)
 {
 	if (objp->pos.xyz.x < asfieldp->min_bound.xyz.x) {
 		objp->pos.xyz.x = asfieldp->max_bound.xyz.x + (objp->pos.xyz.x - asfieldp->min_bound.xyz.x);
@@ -727,7 +713,7 @@ void asteroid_wrap_pos(object *objp, asteroid_field *asfieldp)
  *
  * @return !0 if this asteroid is a target for any ship, otherwise return 0
  */
-int asteroid_is_targeted(object *objp)
+static int asteroid_is_targeted(object *objp)
 {
 	ship_obj	*so;
 	object	*ship_objp;
@@ -748,7 +734,7 @@ int asteroid_is_targeted(object *objp)
 /**
  * Create an asteroid that will hit object *objp in delta_time seconds
  */
-void asteroid_aim_at_target(object *objp, object *asteroid_objp, float delta_time)
+static void asteroid_aim_at_target(object *objp, object *asteroid_objp, float delta_time)
 {
 	vec3d	predicted_center_pos;
 	vec3d	rand_vec;
@@ -776,7 +762,7 @@ void asteroid_aim_at_target(object *objp, object *asteroid_objp, float delta_tim
  *
  * @param count asteroids already targeted on
  */
-void maybe_throw_asteroid(int count)
+static void maybe_throw_asteroid(int count)
 {
 	if (!timestamp_elapsed(Next_asteroid_throw)) {
 		return;
@@ -850,7 +836,7 @@ void asteroid_delete( object * obj )
  * See if we should reposition the asteroid.  
  * Only reposition if oustide the bounding volume and the player isn't looking towards the asteroid.
  */
-void asteroid_maybe_reposition(object *objp, asteroid_field *asfieldp)
+static void asteroid_maybe_reposition(object *objp, asteroid_field *asfieldp)
 {
 	// passive field does not wrap
 	if (asfieldp->field_type == FT_PASSIVE) {
@@ -903,7 +889,7 @@ void asteroid_maybe_reposition(object *objp, asteroid_field *asfieldp)
 	}
 }
 
-void lerp(float *goal, float f1, float f2, float scale)
+static void lerp(float *goal, float f1, float f2, float scale)
 {
 	*goal = (f2 - f1) * scale + f1;
 }
@@ -1207,7 +1193,7 @@ void asteroid_render(object * obj, model_draw_list *scene)
 /**
  * Create a normalized vector generally in the direction from *hitpos to other_obj->pos
  */
-void asc_get_relvec(vec3d *relvec, object *other_obj, vec3d *hitpos)
+static void asc_get_relvec(vec3d *relvec, object *other_obj, vec3d *hitpos)
 {
 	vec3d	tvec, rand_vec;
 	int		count = 0;
@@ -1229,7 +1215,7 @@ void asc_get_relvec(vec3d *relvec, object *other_obj, vec3d *hitpos)
 /**
  * Return multiplier on asteroid radius for fireball
  */
-float asteroid_get_fireball_scale_multiplier(int num)
+static float asteroid_get_fireball_scale_multiplier(int num)
 {
 	if (Asteroids[num].flags & AF_USED) {
 		asteroid_info *asip = &Asteroid_info[Asteroids[num].asteroid_type];
@@ -1258,7 +1244,7 @@ float asteroid_get_fireball_scale_multiplier(int num)
  * Create asteroid explosion
  * @return expected time for explosion anim to last, in seconds
  */
-float asteroid_create_explosion(object *objp)
+static float asteroid_create_explosion(object *objp)
 {
 	int	fireball_objnum;
 	float	explosion_life, fireball_scale_multiplier;
@@ -1290,23 +1276,23 @@ float asteroid_create_explosion(object *objp)
 /**
  * Play sound when asteroid explodes
  */
-void asteriod_explode_sound(object *objp, int type, int play_loud)
+static void asteroid_explode_sound(object *objp, int type, int play_loud)
 {
-	int	sound_index = -1;
+	gamesnd_id sound_index;
 	float range_factor = 1.0f;		// how many times sound should traver farther than normal
 
 	if (type % NUM_DEBRIS_SIZES <= 1)
 	{
-		sound_index = SND_ASTEROID_EXPLODE_SMALL;
+		sound_index = gamesnd_id(GameSounds::ASTEROID_EXPLODE_SMALL);
 		range_factor = 5.0;
 	}
 	else
 	{
-		sound_index = SND_ASTEROID_EXPLODE_LARGE;
+		sound_index = gamesnd_id(GameSounds::ASTEROID_EXPLODE_LARGE);
 		range_factor = 10.0f;
 	}
 
-	Assert(sound_index != -1);
+	Assert(sound_index.isValid());
 
 	if ( !play_loud ) {
 		range_factor = 1.0f;
@@ -1318,9 +1304,9 @@ void asteriod_explode_sound(object *objp, int type, int play_loud)
 /**
  * Do the area effect for an asteroid exploding
  *
- * @param asteroid_objp	object pointer to asteriod causing explosion
+ * @param asteroid_objp	object pointer to asteroid causing explosion
  */
-void asteroid_do_area_effect(object *asteroid_objp)
+static void asteroid_do_area_effect(object *asteroid_objp)
 {
 	object			*ship_objp;
 	float				damage, blast;
@@ -1382,7 +1368,7 @@ void asteroid_hit( object * pasteroid_obj, object * other_obj, vec3d * hitpos, f
 
 			explosion_life = asteroid_create_explosion(pasteroid_obj);
 
-			asteriod_explode_sound(pasteroid_obj, asp->asteroid_type, play_loud_collision);
+			asteroid_explode_sound(pasteroid_obj, asp->asteroid_type, play_loud_collision);
 			asteroid_do_area_effect(pasteroid_obj);
 
 			asp->final_death_time = timestamp( fl2i(explosion_life*1000.0f)/5 );	// Wait till 30% of vclip time before breaking the asteroid up.
@@ -1432,35 +1418,6 @@ void asteroid_level_close()
 DCF_BOOL2(asteroids, Asteroids_enabled, "enables or disables asteroids", "Usage: asteroids [bool]\nTurns asteroid system on/off.  If nothing passed, then toggles it.\n");
 
 
-void hud_target_asteroid()
-{
-	int	i;
-	int	start_index = 0, end_index = MAX_ASTEROIDS;
-
-	if (Player_ai->target_objnum != -1) {
-		if (Objects[Player_ai->target_objnum].type == OBJ_ASTEROID) {
-			start_index = Objects[Player_ai->target_objnum].instance+1;
-			end_index = start_index-1;
-			if (end_index < 0)
-				end_index = MAX_ASTEROIDS;
-		}
-	}
-
-	i = start_index;
-	while (i != end_index) {
-		if (i == MAX_ASTEROIDS)
-			i = 0;
-
-		if (Asteroids[i].flags & AF_USED) {
-			Assert(Objects[Asteroids[i].objnum].type == OBJ_ASTEROID);
-			set_target_objnum( Player_ai, Asteroids[i].objnum);
-			break;
-		}
-
-		i++;
-	}
-}
-
 /**
  * Return the number of active asteroids
  */
@@ -1473,7 +1430,7 @@ int asteroid_count()
  * See if asteroid should split up.  
  * We delay splitting up to allow the explosion animation to play for a bit.
  */
-void asteroid_maybe_break_up(object *pasteroid_obj)
+static void asteroid_maybe_break_up(object *pasteroid_obj)
 {
 	asteroid *asp;
 	asteroid_info *asip;
@@ -1595,26 +1552,7 @@ void asteroid_maybe_break_up(object *pasteroid_obj)
 	}
 }
 
-int asteroid_get_random_in_cone(vec3d *pos, vec3d *dir, float ang, int danger)
-{
-	int idx;
-	vec3d asteroid_dir;
-
-	// just pick the first asteroid which satisfies our condition
-	for(idx=0; idx<Num_asteroids; idx++){
-		vm_vec_sub(&asteroid_dir, &Objects[Asteroids[idx].objnum].pos, pos);
-		vm_vec_normalize_quick(&asteroid_dir);
-
-		// if it satisfies the condition
-		if(vm_vec_dot(dir, &asteroid_dir) >= ang){
-			return idx;
-		}
-	}
-
-	return -1;
-}
-
-void asteroid_test_collide(object *pasteroid_obj, object *pship_obj, mc_info *mc, bool lazy = false)
+static void asteroid_test_collide(object *pasteroid_obj, object *pship_obj, mc_info *mc, bool lazy = false)
 {
 	float		asteroid_ray_dist;
 	vec3d	asteroid_fvec, terminus;
@@ -1656,7 +1594,7 @@ void asteroid_test_collide(object *pasteroid_obj, object *pship_obj, mc_info *mc
  *
  * @return !0 if the asteroid will collide with the escort
  */
-int asteroid_will_collide(object *pasteroid_obj, object *escort_objp)
+static int asteroid_will_collide(object *pasteroid_obj, object *escort_objp)
 {
 	mc_info	mc;
 	mc_info_init(&mc);
@@ -1674,7 +1612,7 @@ int asteroid_will_collide(object *pasteroid_obj, object *escort_objp)
  * Warn if asteroid on collision path with ship
  * @return !0 if we should warn about asteroid hitting ship, otherwise return 0
  */
-int asteroid_valid_ship_to_warn_collide(ship *shipp)
+static int asteroid_valid_ship_to_warn_collide(ship *shipp)
 {
 	if ( !(Ship_info[shipp->ship_info_index].is_big_or_huge()) ) {
 		return 0;
@@ -1696,7 +1634,7 @@ int asteroid_valid_ship_to_warn_collide(ship *shipp)
  * See if asteroid will collide with a large ship on the escort list in the next
  * ASTEROID_MIN_COLLIDE_TIME seconds.
  */
-void asteroid_update_collide_flag(object *asteroid_objp)
+static void asteroid_update_collide_flag(object *asteroid_objp)
 {
 	int		i, num_escorts, escort_objnum, will_collide=0;
 	ship		*escort_shipp;
@@ -1735,7 +1673,7 @@ void asteroid_update_collide_flag(object *asteroid_objp)
 /**
  * Ensure that the collide objnum for the asteroid is still valid
  */
-void asteroid_verify_collide_objnum(asteroid *asp)
+static void asteroid_verify_collide_objnum(asteroid *asp)
 {
 	if ( asp->collide_objnum >= 0 ) {
 		if ( Objects[asp->collide_objnum].signature != asp->collide_objsig ) {
@@ -1815,7 +1753,7 @@ float asteroid_time_to_impact(object *asteroid_objp)
 /**
  * Read in a single asteroid section from asteroid.tbl
  */
-void asteroid_parse_section(asteroid_info *asip)
+static void asteroid_parse_section(asteroid_info *asip)
 {
 	required_string("$Name:");
 	stuff_string(asip->name, F_NAME, NAME_LENGTH);
@@ -1915,7 +1853,7 @@ to do with the debris of ships that explode, however these
 are the same debris and asteroids that get flung at a ship
 that is being protected.
 */
-void asteroid_parse_tbl()
+static void asteroid_parse_tbl()
 {
 	char impact_ani_file[MAX_FILENAME_LEN];
 
@@ -2066,7 +2004,7 @@ void asteroid_parse_tbl()
 /**
  * Return number of asteroids expected to collide with a ship.
  */
-int count_incident_asteroids()
+static int count_incident_asteroids()
 {
 	object	*asteroid_objp;
 	int		count;
@@ -2090,7 +2028,7 @@ int count_incident_asteroids()
  * Pick object to throw asteroids at.
  * Pick any capital or big ship inside the bounds of the asteroid field.
  */
-int set_asteroid_throw_objnum()
+static int set_asteroid_throw_objnum()
 {
 	if (Asteroid_field.num_initial_asteroids < 1)
 		return -1;

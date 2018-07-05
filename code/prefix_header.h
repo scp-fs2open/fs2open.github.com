@@ -2,16 +2,15 @@
 
 // This header is used for compiling the precompiled header file that is included in the entire code project
 
-#include <stdio.h>
-#include <stddef.h>
-#include <string.h>
-#include <stdlib.h>
-#include <memory.h>
-#include <math.h>
-#include <time.h>
-#include <inttypes.h>
-#include <assert.h>
-#include <stdarg.h>
+#include <cstdio>
+#include <cstddef>
+#include <cstring>
+#include <cstdlib>
+#include <cmath>
+#include <ctime>
+#include <cinttypes>
+#include <cassert>
+#include <cstdarg>
 
 #include <algorithm>
 #include <stdexcept>

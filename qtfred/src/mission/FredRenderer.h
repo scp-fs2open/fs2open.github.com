@@ -57,7 +57,7 @@ class FredRenderer: public QObject {
 
  public:
 	explicit FredRenderer(os::Viewport* targetView);
-	~FredRenderer();
+	~FredRenderer() override;
 
 	void setViewport(EditorViewport* viewport);
 

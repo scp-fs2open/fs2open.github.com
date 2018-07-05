@@ -19,11 +19,11 @@ class ParticleEmitterEffect: public ParticleEffect {
  public:
 	ParticleEmitterEffect();
 
-	virtual bool processSource(const ParticleSource* source) override;
+	bool processSource(const ParticleSource* source) override;
 
-	virtual void parseValues(bool nocreate) override;
+	void parseValues(bool nocreate) override;
 
-	virtual void pageIn() override;
+	void pageIn() override;
 
 	void setValues(const particle_emitter& emitter, int bitmap, float range);
 };

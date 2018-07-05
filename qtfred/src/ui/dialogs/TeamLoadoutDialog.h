@@ -17,7 +17,7 @@ class TeamLoadoutDialog : public QDialog
 
 public:
     explicit TeamLoadoutDialog(QWidget *parent = 0);
-    ~TeamLoadoutDialog();
+    ~TeamLoadoutDialog() override;
 
 private:
     Ui::TeamLoadoutDialog *ui;

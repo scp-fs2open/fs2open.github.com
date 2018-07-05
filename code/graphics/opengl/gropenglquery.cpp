@@ -50,7 +50,7 @@ void gr_opengl_query_value(int obj, QueryType type) {
 			glQueryCounter(slot.name, GL_TIMESTAMP);
 			break;
 		default:
-			Assertion(false, "Unhandled enum value!");
+			UNREACHABLE("Unhandled enum value!");
 			break;
 	}
 }

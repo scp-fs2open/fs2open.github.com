@@ -160,6 +160,7 @@
     <addaction name="actionWings"/>
     <addaction name="actionObjects"/>
     <addaction name="actionWaypoint_Paths"/>
+    <addaction name="actionMission_Objectives"/>
     <addaction name="actionEvents"/>
     <addaction name="actionTeam_Loadout"/>
     <addaction name="actionBackground"/>
@@ -172,7 +173,7 @@
     <addaction name="actionFiction_Viewer"/>
     <addaction name="actionShield_System"/>
     <addaction name="actionSet_Global_Ship_Flags"/>
-    <addaction name="actionVoice_Manager"/>
+    <addaction name="actionVoice_Acting_Manager"/>
     <addaction name="separator"/>
     <addaction name="actionCampaign"/>
    </widget>
@@ -1077,6 +1078,9 @@
    <property name="text">
     <string>&amp;Background</string>
    </property>
+   <property name="shortcut">
+    <string>Shift+I</string>
+   </property>
   </action>
   <action name="actionReinforcements">
    <property name="text">
@@ -1121,6 +1125,9 @@
    <property name="text">
     <string>&amp;Fiction Viewer</string>
    </property>
+   <property name="shortcut">
+    <string>Shift+F</string>
+   </property>
   </action>
   <action name="actionShield_System">
    <property name="text">
@@ -1132,9 +1139,9 @@
     <string>Set &amp;Global Ship Flags</string>
    </property>
   </action>
-  <action name="actionVoice_Manager">
+  <action name="actionVoice_Acting_Manager">
    <property name="text">
-    <string>&amp;Voice Manager</string>
+    <string>&amp;Voice Acting Manager</string>
    </property>
   </action>
   <action name="actionCampaign">
@@ -1386,6 +1393,14 @@
   <action name="actionEmpty">
    <property name="text">
     <string>&amp;Empty</string>
+   </property>
+  </action>
+  <action name="actionMission_Objectives">
+   <property name="text">
+    <string>Mission Objectives</string>
+   </property>
+   <property name="shortcut">
+    <string>Shift+G</string>
    </property>
   </action>
  </widget>

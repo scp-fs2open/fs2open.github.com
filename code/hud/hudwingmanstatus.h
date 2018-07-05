@@ -74,9 +74,9 @@ public:
 	void initWingmate5Offsets(int x, int y);
 	void initWingmate6Offsets(int x, int y);
 	void initGrowMode(int mode);
-	void pageIn();
-	void initialize();
-	void render(float frametime);
+	void pageIn() override;
+	void initialize() override;
+	void render(float frametime) override;
 	void renderBackground(int num_wings_to_draw);
 	void renderDots(int wing_index, int screen_index, int num_wings_to_draw);
 	void initFlash();

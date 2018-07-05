@@ -56,7 +56,7 @@ class ParticleEffect {
 	 *
 	 * @param nocreate
 	 */
-	virtual void parseValues(bool nocreate) {}
+	virtual void parseValues(bool  /*nocreate*/) {}
 
 	/**
 	 * @brief Page in used effects
@@ -90,7 +90,7 @@ class ParticleEffect {
 	 *
 	 * @param source The source to be initialized
 	 */
-	virtual void initializeSource(ParticleSource& source) {}
+	virtual void initializeSource(ParticleSource&  /*source*/) {}
 
 	/**
 	 * @brief Gets the type of this effect

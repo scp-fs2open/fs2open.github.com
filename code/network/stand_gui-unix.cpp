@@ -228,8 +228,7 @@ public:
 		passwd.assign(newPasswd);
 	}
 
-	virtual void execute()
-	{
+	void execute() override {
 		if (hasName) {
 			strcpy_s(Netgame.name, name.c_str());
 			strcpy_s(Multi_options_g.std_pname, name.c_str());
@@ -258,7 +257,7 @@ public:
             : mPlayerId(playerId) {
     }
 
-    virtual void execute() {
+	void execute() override {
         size_t foundPlayerIndex = MAX_PLAYERS;
         for (size_t idx = 0; idx < MAX_PLAYERS; idx++) {
             if (MULTI_CONNECTED(Net_players[idx])) {
@@ -278,14 +277,14 @@ private:
 
 class ShutdownServerCommand: public WebapiCommand {
 public:
-    virtual void execute() {
+	void execute() override {
         gameseq_post_event(GS_EVENT_QUIT_GAME);
     }
 };
 
 class UpdateMissionsCommand: public WebapiCommand {
 public:
-    virtual void execute() {
+	void execute() override {
         if (MULTI_IS_TRACKER_GAME) {
             // delete mvalid.cfg if it exists
             cf_delete(MULTI_VALID_MISSION_FILE, CF_TYPE_DATA);
@@ -298,14 +297,14 @@ public:
 
 class ResetGameCommand: public WebapiCommand {
 public:
-    virtual void execute() {
+	void execute() override {
         multi_quit_game(PROMPT_NONE);
     }
 };
 
 class ResetFs2NetCommand: public WebapiCommand {
 public:
-    virtual void execute() {
+	void execute() override {
         fs2netd_reset_connection();
     }
 };
@@ -444,11 +443,11 @@ struct Resource {
     resourceHandler handler;
 };
 
-json_t* emptyResource(ResourceContext *context) {
+json_t* emptyResource(ResourceContext * /*context*/) {
     return json_object();
 }
 
-json_t* serverGet(ResourceContext *context) {
+json_t* serverGet(ResourceContext * /*context*/) {
     json_t *result = json_object();
 
     json_object_set_new(result, "name", json_string(Multi_options_g.std_pname));
@@ -480,27 +479,27 @@ json_t* serverPut(ResourceContext *context) {
 	return json_object();
 }
 
-json_t* serverDelete(ResourceContext *context) {
+json_t* serverDelete(ResourceContext * /*context*/) {
     webapiAddCommand(new ShutdownServerCommand());
     return json_object();
 }
 
-json_t* refreshMissions(ResourceContext *context) {
+json_t* refreshMissions(ResourceContext * /*context*/) {
     webapiAddCommand(new UpdateMissionsCommand());
     return json_object();
 }
 
-json_t* serverResetGame(ResourceContext *context) {
+json_t* serverResetGame(ResourceContext * /*context*/) {
     webapiAddCommand(new ResetGameCommand());
     return json_object();
 }
 
-json_t* fs2netReset(ResourceContext *context) {
+json_t* fs2netReset(ResourceContext * /*context*/) {
     webapiAddCommand(new ResetFs2NetCommand());
     return json_object();
 }
 
-json_t* netgameInfoGet(ResourceContext *context) {
+json_t* netgameInfoGet(ResourceContext * /*context*/) {
     json_t *obj = json_object();
 
     json_object_set_new(obj, "name", json_string(webapi_netgameInfo.name));
@@ -517,7 +516,7 @@ json_t* netgameInfoGet(ResourceContext *context) {
     return obj;
 }
 
-json_t* missionGet(ResourceContext *context) {
+json_t* missionGet(ResourceContext * /*context*/) {
     json_t *fpsEntity = json_object();
 
     json_object_set_new(fpsEntity, "fps", json_real(webui_fps));
@@ -526,7 +525,7 @@ json_t* missionGet(ResourceContext *context) {
     return fpsEntity;
 }
 
-json_t* missionGoalsGet(ResourceContext *context) {
+json_t* missionGoalsGet(ResourceContext * /*context*/) {
     json_t *goals = json_array();
 
     for (std::list<mission_goal>::iterator iter = webuiMissionGoals.begin(); iter != webuiMissionGoals.end(); ++iter) {
@@ -579,7 +578,7 @@ json_t* missionGoalsGet(ResourceContext *context) {
     return goals;
 }
 
-json_t* playerGet(ResourceContext *context) {
+json_t* playerGet(ResourceContext * /*context*/) {
     json_t *playerList = json_array();
 
     for (std::map<short, net_player>::iterator iter = webapiNetPlayers.begin(); iter != webapiNetPlayers.end();
@@ -861,7 +860,7 @@ void std_configLoaded(multi_global_options *options) {
     webserverContext = mg_start(&webserverCallback, NULL, mgOptions);
 }
 
-void std_add_chat_text(const char *text, int player_index, int add_id) {
+void std_add_chat_text(const char *text, int  /*player_index*/, int  /*add_id*/) {
 
     json_t *msg = json_object();
     //json_object_set_new(msg, "source",    json_string(Net_players[player_index].m_player->callsign));
@@ -961,25 +960,25 @@ void std_connect_set_gamename(char *name)
  * Unused methods from the original API below,
  * most of this stuff is now done in std_do_gui_frame
  */
-void std_add_player(net_player *p) {}
+void std_add_player(net_player * /*p*/) {}
 /* The return value does nothing, except cause the two functions below to be called*/
-int std_remove_player(net_player *p) {return 0;}
+int std_remove_player(net_player * /*p*/) {return 0;}
 void std_connect_set_host_connect_status() {}
 int std_connect_set_connect_count() {return 0;}
-void std_update_player_ping(net_player *p) {}
+void std_update_player_ping(net_player * /*p*/) {}
 void std_multi_setup_goal_tree() {}
 void std_multi_add_goals() {}
 void std_multi_update_goals() {}
 void std_multi_update_netgame_info_controls() {}
-void std_multi_set_standalone_mission_name(char *mission_name) {}
-void std_gen_set_text(const char *str, int field_num) {}
-void std_create_gen_dialog(const char *title) {}
+void std_multi_set_standalone_mission_name(char * /*mission_name*/) {}
+void std_gen_set_text(const char * /*str*/, int  /*field_num*/) {}
+void std_create_gen_dialog(const char * /*title*/) {}
 void std_destroy_gen_dialog() {}
 int std_gen_is_active() {return 0;}
-void std_debug_set_standalone_state_string(const char *str) {}
+void std_debug_set_standalone_state_string(const char * /*str*/) {}
 void std_reset_standalone_gui() {}
 void std_reset_timestamps() {}
-void std_multi_set_standalone_missiontime(float mission_time) {}
+void std_multi_set_standalone_missiontime(float  /*mission_time*/) {}
 
 // stub - not required for *nix standalone
 void std_init_os() {}

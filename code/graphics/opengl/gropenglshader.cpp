@@ -8,6 +8,7 @@
 */
 
 
+#include "cfile/cfile.h"
 #include "cmdline/cmdline.h"
 #include "def_files/def_files.h"
 #include "graphics/2d.h"
@@ -213,9 +214,9 @@ static opengl_shader_variant_t GL_shader_variants[] = {
 		{ },
 		"Normal Alpha" },
 
-	{ SDR_TYPE_MODEL, false, SDR_FLAG_MODEL_NORMAL_EXTRUDE, "FLAG_NORMAL_EXTRUDE",
+	{ SDR_TYPE_MODEL, true, SDR_FLAG_MODEL_THICK_OUTLINES, "FLAG_THICK_OUTLINE",
 		{ },
-		"Normal Extrusion" },
+		"Thick outlines" },
 
 	{ SDR_TYPE_EFFECT_PARTICLE, true, SDR_FLAG_PARTICLE_POINT_GEN, "FLAG_EFFECT_GEOMETRY", 
 		{ opengl_vert_attrib::UVEC },
@@ -245,10 +246,10 @@ opengl_shader_t *Current_shader = NULL;
 opengl_shader_t::opengl_shader_t() : shader(SDR_TYPE_NONE), flags(0), flags2(0)
 {
 }
-opengl_shader_t::opengl_shader_t(opengl_shader_t&& other) {
+opengl_shader_t::opengl_shader_t(opengl_shader_t&& other) SCP_NOEXCEPT {
 	*this = std::move(other);
 }
-opengl_shader_t& opengl_shader_t::operator=(opengl_shader_t&& other) {
+opengl_shader_t& opengl_shader_t::operator=(opengl_shader_t&& other) SCP_NOEXCEPT {
 	// VS2013 doesn't support implicit move constructors so we need to explicitly declare it
 	shader = other.shader;
 	flags = other.flags;
@@ -337,17 +338,18 @@ void opengl_shader_shutdown()
 	GL_shader.clear();
 }
 
-static SCP_string opengl_shader_get_header(shader_type type_id, int flags, shader_stage stage) {
+static SCP_string opengl_shader_get_header(shader_type type_id, int flags, bool has_geo_shader) {
 	SCP_stringstream sflags;
 
 	sflags << "#version " << GLSL_version << " core\n";
 
-	if (GL_workaround_clipping_planes) {
-		sflags << "#define WORKAROUND_CLIPPING_PLANES\n";
-	}
-
 	if (Detail.lighting < 3) {
 		sflags << "#define FLAG_LIGHT_MODEL_BLINN_PHONG\n";
+	}
+
+	if (has_geo_shader) {
+		// If there is a geometry shader then we define a special preprocessor symbol to make writing shaders easier
+		sflags << "#define HAS_GEOMETRY_SHADER\n";
 	}
 
 	if (type_id == SDR_TYPE_POST_PROCESS_MAIN || type_id == SDR_TYPE_POST_PROCESS_LIGHTSHAFTS || type_id == SDR_TYPE_POST_PROCESS_FXAA) {
@@ -476,9 +478,9 @@ static SCP_string handle_includes(const char* filename, const SCP_string& origin
 	return output.str();
 }
 
-static SCP_vector<SCP_string> opengl_get_shader_content(shader_type type_id, const char* filename, int flags, shader_stage stage) {
+static SCP_vector<SCP_string> opengl_get_shader_content(shader_type type_id, const char* filename, int flags, bool has_geo_shader) {
 	SCP_vector<SCP_string> parts;
-	parts.push_back(opengl_shader_get_header(type_id, flags, stage));
+	parts.push_back(opengl_shader_get_header(type_id, flags, has_geo_shader));
 
 	parts.push_back(handle_includes(filename, opengl_load_shader(filename)));
 
@@ -505,6 +507,9 @@ static SCP_string get_shader_hash(const SCP_vector<SCP_string>& vert,
 		md5.update(reinterpret_cast<const char*>(&i), sizeof(i));
 	}
 
+	md5.update(GL_implementation_id.data(),
+	           (MD5::size_type)GL_implementation_id.size() * sizeof(SCP_string::value_type));
+
 	md5.finalize();
 
 	return md5.hexdigest();
@@ -522,7 +527,7 @@ static bool do_shader_caching() {
 	return true;
 }
 
-static bool load_cached_shader_binary(opengl::ShaderProgram* program, SCP_string hash) {
+static bool load_cached_shader_binary(opengl::ShaderProgram* program, const SCP_string& hash) {
 	if (!do_shader_caching()) {
 		return false;
 	}
@@ -558,6 +563,20 @@ static bool load_cached_shader_binary(opengl::ShaderProgram* program, SCP_string
 	}
 	auto binary_format = (GLenum) format;
 	json_decref(metadata_root);
+
+	bool supported = false;
+	for (auto supported_fmt : GL_binary_formats) {
+		if ((GLenum)supported_fmt == binary_format) {
+			supported = true;
+			break;
+		}
+	}
+
+	if (!supported) {
+		// This can happen in case an implementation stops supporting a particular binary format
+		nprintf(("ShaderCache", "Unsupported binary format %d encountered in shader cache.\n", binary_format));
+		return false;
+	}
 
 	auto binary_fp = cfopen(binary.c_str(), "rb", CFILE_NORMAL, CF_TYPE_CACHE);
 	if (!binary_fp) {
@@ -690,13 +709,13 @@ void opengl_compile_shader_actual(shader_type sdr, const uint &flags, opengl_sha
 		}
 	}
 
-	auto vert_content = opengl_get_shader_content(sdr_info->type_id, sdr_info->vert, flags, SDR_STAGE_VERTEX);
-	auto frag_content = opengl_get_shader_content(sdr_info->type_id, sdr_info->frag, flags, SDR_STAGE_FRAGMENT);
+	auto vert_content = opengl_get_shader_content(sdr_info->type_id, sdr_info->vert, flags, use_geo_sdr);
+	auto frag_content = opengl_get_shader_content(sdr_info->type_id, sdr_info->frag, flags, use_geo_sdr);
 	SCP_vector<SCP_string> geom_content;
 
 	if (use_geo_sdr) {
 		// read geometry shader
-		geom_content = opengl_get_shader_content(sdr_info->type_id, sdr_info->geo, flags, SDR_STAGE_GEOMETRY);
+		geom_content = opengl_get_shader_content(sdr_info->type_id, sdr_info->geo, flags, use_geo_sdr);
 	}
 
 	auto shader_hash = get_shader_hash(vert_content, geom_content, frag_content);
@@ -824,7 +843,7 @@ int opengl_compile_shader(shader_type sdr, uint flags)
 	return sdr_index;
 }
 
-void gr_opengl_recompile_all_shaders(std::function<void(size_t, size_t)>progress_callback)
+void gr_opengl_recompile_all_shaders(const std::function<void(size_t, size_t)>& progress_callback)
 {
 	for (auto sdr = GL_shader.begin(); sdr != GL_shader.end(); ++sdr)
 	{
@@ -833,6 +852,49 @@ void gr_opengl_recompile_all_shaders(std::function<void(size_t, size_t)>progress
 		sdr->program.reset();
 		opengl_compile_shader_actual(sdr->shader, sdr->flags, *sdr);
 	}
+}
+
+static void opengl_purge_shader_cache_type(const char* ext) {
+	SCP_vector<SCP_string> cache_files;
+	SCP_vector<file_list_info> file_info;
+
+	SCP_string filter("*.");
+	filter += ext;
+
+	cf_get_file_list(cache_files, CF_TYPE_CACHE, filter.c_str(), false, &file_info);
+
+	Assertion(cache_files.size() == file_info.size(),
+			  "cf_get_file_list returned different sizes for file names and file informations!");
+
+	const auto TIMEOUT = 2.0 * 30.0 * 24.0 * 60.0 * 60.0; // purge timeout in seconds which is ~2 months
+	const SCP_string PREFIX = "ogl_shader-";
+
+	auto now = std::time(nullptr);
+	for (size_t i = 0; i < cache_files.size(); ++i) {
+		auto& name = cache_files[i];
+		auto write_time = file_info[i].write_time;
+
+		if (name.compare(0, PREFIX.size(), PREFIX) != 0) {
+			// Not an OpenGL cache file
+			continue;
+		}
+
+		std::cout << std::put_time(localtime(&write_time), "%c %Z") << std::endl;
+
+		auto diff = std::difftime(now, write_time);
+
+		if (diff > TIMEOUT) {
+			auto full_name = name + "." + ext;
+
+			cf_delete(full_name.c_str(), CF_TYPE_CACHE);
+		}
+	}
+}
+
+static void opengl_purge_old_shader_cache()
+{
+	opengl_purge_shader_cache_type("json");
+	opengl_purge_shader_cache_type("bin");
 }
 
 /**
@@ -858,6 +920,8 @@ void opengl_shader_init()
 
 	// Reserve 32 shader slots. This should cover most use cases in real life.
 	GL_shader.reserve(32);
+
+	opengl_purge_old_shader_cache();
 
 	// compile effect shaders
 	gr_opengl_maybe_create_shader(SDR_TYPE_EFFECT_PARTICLE, 0);

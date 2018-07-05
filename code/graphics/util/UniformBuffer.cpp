@@ -57,10 +57,10 @@ bool UniformBuffer::isInUse() {
 	// Fence still exists and has not been signaled yet. The buffer is still in use
 	return true;
 }
-UniformBuffer::UniformBuffer(UniformBuffer&& other) : _aligner(0, 0) {
+UniformBuffer::UniformBuffer(UniformBuffer&& other) SCP_NOEXCEPT : _aligner(0, 0) {
 	*this = std::move(other);
 }
-UniformBuffer& UniformBuffer::operator=(UniformBuffer&& other) {
+UniformBuffer& UniformBuffer::operator=(UniformBuffer&& other) SCP_NOEXCEPT {
 	std::swap(_buffer_obj, other._buffer_obj);
 	std::swap(_aligner, other._aligner);
 	std::swap(_sync_obj, other._sync_obj);

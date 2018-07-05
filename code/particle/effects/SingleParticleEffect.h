@@ -22,15 +22,15 @@ class SingleParticleEffect: public ParticleEffect {
  public:
 	explicit SingleParticleEffect(const SCP_string& name);
 
-	virtual bool processSource(const ParticleSource* source) SCP_OVERRIDE;
+	bool processSource(const ParticleSource* source) override;
 
-	virtual void parseValues(bool nocreate) SCP_OVERRIDE;
+	void parseValues(bool nocreate) override;
 
-	virtual void pageIn() SCP_OVERRIDE;
+	void pageIn() override;
 
-	virtual void initializeSource(ParticleSource& source) SCP_OVERRIDE;
+	void initializeSource(ParticleSource& source) override;
 
-	virtual EffectType getType() const SCP_OVERRIDE { return EffectType::Single; }
+	EffectType getType() const override { return EffectType::Single; }
 
 	util::ParticleProperties& getProperties() { return m_particleProperties; }
 

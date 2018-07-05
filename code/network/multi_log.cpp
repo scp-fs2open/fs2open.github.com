@@ -10,7 +10,7 @@
 
 
 
-#include <stdarg.h>
+#include <cstdarg>
 #include "network/multi_log.h"
 #include "parse/generic_log.h"
 #include "cfile/cfile.h"

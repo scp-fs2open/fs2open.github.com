@@ -33,7 +33,7 @@ class sync_queue_is_closed : public std::runtime_error
 {
 public:
 	sync_queue_is_closed() : std::runtime_error("Sync Bounded Queue is closed") {}
-	~sync_queue_is_closed() throw() {}
+	~sync_queue_is_closed() SCP_NOEXCEPT override {}
 };
 
 template <typename ValueType>
@@ -470,7 +470,7 @@ void sync_bounded_queue<ValueType>::push_back(ValueType&& elem)
 template <typename ValueType>
 sync_bounded_queue<ValueType>& operator<<(sync_bounded_queue<ValueType>& sbq, ValueType&& elem)
 {
-	sbq.push_back(std::move(elem));
+	sbq.push_back(std::forward<ValueType>(elem));
 	return sbq;
 }
 

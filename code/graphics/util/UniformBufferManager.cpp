@@ -17,7 +17,7 @@ size_t getElementSize(uniform_block_type type) {
 		return sizeof(graphics::decal_info);
 	case uniform_block_type::NUM_BLOCK_TYPES:
 	default:
-		Assertion(false, "Invalid block type encountered!");
+		UNREACHABLE("Invalid block type encountered!");
 		return 0;
 	}
 }
@@ -33,7 +33,7 @@ size_t getHeaderSize(uniform_block_type type) {
 		return 0;
 	case uniform_block_type::NUM_BLOCK_TYPES:
 	default:
-		Assertion(false, "Invalid block type encountered!");
+		UNREACHABLE("Invalid block type encountered!");
 		return 0;
 	}
 }

@@ -82,7 +82,7 @@ void pilotfile::update_stats(scoring_struct *stats, bool training)
 		j = -1;
 
 		for (idx = 0; idx < list_size; idx++) {
-			if ( p_stats->medals_earned[idx].name.compare(Medals[stats->m_medal_earned].name) == 0 ) {
+			if ( p_stats->medals_earned[idx].name == Medals[stats->m_medal_earned].name ) {
 				j = idx;
 				break;
 			}
@@ -135,7 +135,7 @@ void pilotfile::update_stats(scoring_struct *stats, bool training)
 			j = -1;
 
 			for (idx = 0; idx < list_size; idx++) {
-				if ( p_stats->medals_earned[idx].name.compare(Medals[stats->m_badge_earned[medal]].name) == 0 ) {
+				if ( p_stats->medals_earned[idx].name == Medals[stats->m_badge_earned[medal]].name ) {
 					j = idx;
 					break;
 				}
@@ -163,7 +163,7 @@ void pilotfile::update_stats(scoring_struct *stats, bool training)
 			j = -1;
 
 			for (i = 0; i < list_size; i++) {
-				if ( p_stats->ship_kills[i].name.compare(it->name) == 0 ) {
+				if ( p_stats->ship_kills[i].name == it->name ) {
 					j = i;
 					break;
 				}
@@ -203,14 +203,14 @@ void pilotfile::update_stats_backout(scoring_struct *stats, bool training)
 		j = -1;
 
 		for (idx = 0; idx < list_size; idx++) {
-			if ( p_stats->medals_earned[idx].name.compare(Medals[stats->m_medal_earned].name) == 0 ) {
+			if ( p_stats->medals_earned[idx].name == Medals[stats->m_medal_earned].name ) {
 				j = idx;
 				break;
 			}
 		}
 
 		if (j >= 0) {
-			p_stats->medals_earned[j].val = MAX(0,p_stats->medals_earned[j].val--);
+			p_stats->medals_earned[j].val = std::max(0,p_stats->medals_earned[j].val--);
 		} else {
 			Assertion(true, "Medal '%s' not found, should have been added by pilotfile::update_stats.", Medals[stats->m_medal_earned].name);
 		}
@@ -258,7 +258,7 @@ void pilotfile::update_stats_backout(scoring_struct *stats, bool training)
 			j = -1;
 
 			for (idx = 0; idx < list_size; idx++) {
-				if ( p_stats->medals_earned[idx].name.compare(Medals[stats->m_badge_earned[medal]].name) == 0 ) {
+				if ( p_stats->medals_earned[idx].name == Medals[stats->m_badge_earned[medal]].name ) {
 					j = idx;
 					break;
 				}
@@ -281,7 +281,7 @@ void pilotfile::update_stats_backout(scoring_struct *stats, bool training)
 			j = -1;
 
 			for (idx = 0; idx < list_size; idx++) {
-				if ( p_stats->ship_kills[idx].name.compare(it->name) == 0 ) {
+				if ( p_stats->ship_kills[idx].name == it->name ) {
 					j = idx;
 					break;
 				}
@@ -290,7 +290,7 @@ void pilotfile::update_stats_backout(scoring_struct *stats, bool training)
 			if (j >= 0) {
 				p_stats->ship_kills[j].val -= stats->m_okKills[i];
 			} else {
-				Assertion(false, "Ship kills of '%s' not found, should have been added by pilotfile::update_stats.", Ship_info[i].name);
+				UNREACHABLE("Ship kills of '%s' not found, should have been added by pilotfile::update_stats.", Ship_info[i].name);
 			}
 		}
 	}

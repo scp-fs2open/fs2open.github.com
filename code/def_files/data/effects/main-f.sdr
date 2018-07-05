@@ -33,7 +33,7 @@ layout (std140) uniform modelData {
 
 	model_light lights[MAX_LIGHTS];
 
-	float extrudeWidth;
+	float outlineWidth;
 	float fogStart;
 	float fogScale;
 	int buffer_matrix_offset;
@@ -105,11 +105,6 @@ in VertexOutput {
 #endif
 #ifdef FLAG_FOG
 	float fogDist;
-#endif
-#ifdef WORKAROUND_CLIPPING_PLANES
- #ifdef FLAG_TRANSFORM
-	float notVisible;
- #endif
 #endif
 	vec4 position;
 	vec3 normal;
@@ -215,11 +210,6 @@ vec3 CalculateLighting(vec3 normal, vec3 diffuseMaterial, vec3 specularMaterial,
 
 void main()
 {
-#ifdef WORKAROUND_CLIPPING_PLANES
- #ifdef FLAG_TRANSFORM
-	if(vertIn.notVisible >= 0.9) { discard; }
- #endif
-#endif
 #ifdef FLAG_SHADOW_MAP
 	// need depth and depth squared for variance shadow maps
 	fragOut0 = vec4(vertIn.position.z, vertIn.position.z * vertIn.position.z * VARIANCE_SHADOW_SCALE_INV, 0.0, 1.0);
@@ -381,8 +371,10 @@ void main()
  #ifdef FLAG_DIFFUSE_MAP
 	if(blend_alpha == 1) finalFogColor *= baseColor.a;
  #endif
-	baseColor.rgb = mix(baseColor.rgb, finalFogColor, vertIn.fogDist);
-	emissiveColor.rgb = mix(emissiveColor.rgb, finalFogColor, vertIn.fogDist);
+	// This code will only be used by the forward renderer so we apply the fog effect to both the emissive and the base
+	// color.
+	baseColor.rgb = mix(emissiveColor.rgb + baseColor.rgb, finalFogColor, vertIn.fogDist);
+	emissiveColor.rgb = vec3(0.0); // Zero the emissive color since it has already been added by the previous line
 	specColor.rgb *= vertIn.fogDist;
 #endif
 
@@ -424,6 +416,7 @@ void main()
 	// emissive colors won't be added later when we are using forward rendering so we need to do that here
 	baseColor.rgb += emissiveColor.rgb;
 #endif
+
 	fragOut0 = baseColor;
 #ifdef FLAG_DEFERRED
 	fragOut1 = vec4(vertIn.position.xyz, 1.0);

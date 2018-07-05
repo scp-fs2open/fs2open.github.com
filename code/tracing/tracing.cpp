@@ -8,7 +8,7 @@
 #include "MainFrameTimer.h"
 #include "FrameProfiler.h"
 
-#include <inttypes.h>
+#include <cinttypes>
 #include <fstream>
 #include <future>
 #include <mutex>
@@ -187,7 +187,7 @@ void process_gpu_events() {
 				}
 				break;
 			default:
-				Assertion(false, "Invalid event type!");
+				UNREACHABLE("Invalid event type!");
 				gpu_events.pop();
 				break;
 		}

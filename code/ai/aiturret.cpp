@@ -24,7 +24,7 @@
 #include "weapon/swarm.h"
 #include "weapon/weapon.h"
 
-#include <limits.h>
+#include <climits>
 
 
 // How close a turret has to be point at its target before it
@@ -243,7 +243,7 @@ int bomb_headed_towards_ship(object *bomb_objp, object *ship_objp)
  * @note All non-negative return values are expressed in what I like to call "widx"s.
  * @return -1 if unable to find a weapon for the target at all.
  */
-int turret_select_best_weapon(ship_subsys *turret, object *target)
+int turret_select_best_weapon(ship_subsys *turret, object * /*target*/)
 {
 	//TODO: Fill this out with extraodinary gun-picking algorithms
 	if(turret->weapons.num_primary_banks > 0)
@@ -2048,7 +2048,7 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 						}
 					}
 
-					if ( wip->launch_snd != -1 ) {
+					if ( wip->launch_snd.isValid() ) {
 						// Don't play turret firing sound if turret sits on player ship... it gets annoying.
 						if ( parent_objnum != OBJ_INDEX(Player_obj) || (turret->flags[Ship::Subsystem_Flags::Play_sound_for_player]) ) {						
 							snd_play_3d( gamesnd_get_game_sound(wip->launch_snd), turret_pos, &View_position );
@@ -2135,7 +2135,7 @@ void turret_swarm_fire_from_turret(turret_swarm_info *tsi)
 		}
 
 		// maybe sound
-		if ( Weapon_info[tsi->weapon_class].launch_snd != -1 ) {
+		if ( Weapon_info[tsi->weapon_class].launch_snd.isValid() ) {
 			// Don't play turret firing sound if turret sits on player ship... it gets annoying.
 			if ( tsi->parent_objnum != OBJ_INDEX(Player_obj) ) {
 				snd_play_3d( gamesnd_get_game_sound(Weapon_info[tsi->weapon_class].launch_snd), &turret_pos, &View_position );

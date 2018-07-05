@@ -5,6 +5,8 @@
 
 #include "ui_ObjectOrientationDialog.h"
 
+#include <ui/util/SignalBlockers.h>
+
 #include <QCloseEvent>
 
 namespace fso {
@@ -85,6 +87,8 @@ void ObjectOrientEditorDialog::closeEvent(QCloseEvent* event) {
 }
 
 void ObjectOrientEditorDialog::updateUI() {
+	util::SignalBlockers blockers(this);
+
 	ui->position_x->setValue(_model->getPosition().xyz.x);
 	ui->position_y->setValue(_model->getPosition().xyz.y);
 	ui->position_z->setValue(_model->getPosition().xyz.z);
@@ -128,8 +132,6 @@ void ObjectOrientEditorDialog::updateComboBox() {
 	ui->objectComboBox->setCurrentIndex(ui->objectComboBox->findData(_model->getObjectIndex()));
 }
 void ObjectOrientEditorDialog::objectSelectionChanged(int index) {
-	QSignalBlocker blocker(ui->objectComboBox);
-
 	auto objNum = ui->objectComboBox->itemData(index).value<int>();
 	_model->setSelectedObjectNum(objNum);
 }

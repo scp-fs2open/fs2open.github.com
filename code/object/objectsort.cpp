@@ -169,7 +169,7 @@ inline bool obj_render_is_model(object *obj)
 }
 
 // Sorts all the objects by Z and renders them
-void obj_render_all(std::function<void(object*)> render_function, bool *draw_viewer_last )
+void obj_render_all(const std::function<void(object*)>& render_function, bool *draw_viewer_last )
 {
 	object *objp;
 	int i;

@@ -10,7 +10,7 @@ FUNCTION(ADD_IMPORTED_LIB NAME INCLUDES LIBS)
 
 	target_link_libraries(${NAME} INTERFACE "${LIBS}")
 
-	target_include_directories(${NAME} INTERFACE "${INCLUDES}")
+	target_include_directories(${NAME} SYSTEM INTERFACE "${INCLUDES}")
 ENDFUNCTION(ADD_IMPORTED_LIB)
 
 MACRO(PKG_CONFIG_LIB_RESOLVE NAME OUTVAR)
@@ -141,10 +141,12 @@ macro(set_if_not_defined VAR VALUE)
 endmacro(set_if_not_defined)
 
 macro(configure_cotire target)
-	# Disable unity build as it doesn't work well for us
-	set_target_properties(${target} PROPERTIES COTIRE_ADD_UNITY_BUILD FALSE)
+	if(ENABLE_COTIRE)
+		# Disable unity build as it doesn't work well for us
+		set_target_properties(${target} PROPERTIES COTIRE_ADD_UNITY_BUILD FALSE)
 
-	cotire(${target})
+		cotire(${target})
+	endif()
 endmacro(configure_cotire)
 
 macro(add_target_copy_files)

@@ -5,6 +5,7 @@
 #include "mod_table/mod_table.h"
 
 #include <iterator>
+#include <cinttypes>
 
 #include <utf8.h>
 

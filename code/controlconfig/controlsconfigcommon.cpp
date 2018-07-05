@@ -7,8 +7,8 @@
  *
 */ 
 
-#include <stdio.h>
-#include <stdarg.h>
+#include <cstdio>
+#include <cstdarg>
 
 #include "cfile/cfile.h"
 #include "controlconfig/controlsconfig.h"
@@ -201,7 +201,7 @@ config_item Control_config[CCFG_MAX + 1] = {
 
 const char *Scan_code_text_german[] = {
 	"",				"Esc",				"1",				"2",				"3",				"4",				"5",				"6",
-	"7",				"8",				"9",				"0",				"Akzent '",				"Eszett",				"R\x81""cktaste",		"Tab",
+	"7",				"8",				"9",				"0",				"Akzent '",				"Eszett",				"R\x81""cktaste",		"Tab", // NOLINT
 	"Q",				"W",				"E",				"R",				"T",				"Z",				"U",				"I",
 	"O",				"P",				"\x9A",				"+",				"Eingabe",			"Strg Links",			"A",				"S",
 
@@ -251,8 +251,8 @@ const char *Joy_button_text_german[] = {
 };
 
 const char *Scan_code_text_french[] = {
-	"",				"\x90""chap",			"1",				"2",				"3",				"4",				"5",				"6",
-	"7",				"8",				"9",				"0",				"-",				"=",				"Fl\x82""che Ret.",			"Tab",
+	"",				"\x90""chap",			"1",				"2",				"3",				"4",				"5",				"6", // NOLINT
+	"7",				"8",				"9",				"0",				"-",				"=",				"Fl\x82""che Ret.",			"Tab",  // NOLINT
 	"Q",				"W",				"E",				"R",				"T",				"Y",				"U",				"I",
 	"O",				"P",				"[",				"]",				"Entr\x82""e",			"Ctrl Gauche",			"A",				"S",
 

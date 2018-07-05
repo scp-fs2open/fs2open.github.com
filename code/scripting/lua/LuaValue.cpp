@@ -56,7 +56,7 @@ LuaValue::LuaValue(const LuaValue& other) : _luaState(other._luaState) {
 LuaValue::~LuaValue() {
 }
 
-void LuaValue::setReference(LuaReference ref) {
+void LuaValue::setReference(const LuaReference& ref) {
 	this->_reference = ref;
 
 	if (isValid()) {

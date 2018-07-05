@@ -39,7 +39,7 @@ typedef struct ssm_info {
 	char		message[NAME_LENGTH];
 	bool		use_custom_message;
 	bool		send_message;
-	int			sound_index;
+	gamesnd_id	sound_index;
 	int			shape;
 } ssm_info;
 

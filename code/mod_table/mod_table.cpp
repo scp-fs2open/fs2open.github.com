@@ -42,6 +42,7 @@ bool Unicode_text_mode;
 SCP_string Movie_subtitle_font;
 bool Enable_scripts_in_fred; // By default FRED does not initialize the scripting system
 SCP_string Window_icon_path;
+bool Disable_built_in_translations;
 
 void parse_mod_table(const char *filename)
 {
@@ -231,14 +232,10 @@ void parse_mod_table(const char *filename)
 		}
 
 		if (optional_string("$BMPMAN Slot Limit:")) {
-			int slots;
-			stuff_int(&slots);
-			if (slots < 3500) {
-				error_display(0, "Invalid BMPMAN slot limit [%d]; must be at least 3500.", slots);
-			} else {
-				mprintf(("Game Settings Table: Setting BMPMAN slot limit to %d\n", slots));
-				MAX_BITMAPS = slots;
-			}
+			int tmp;
+			stuff_int(&tmp);
+
+			mprintf(("Game Settings Table: $BMPMAN Slot Limit is deprecated and should be removed. It is not needed anymore.\n"));
 		}
 
 		optional_string("#NETWORK SETTINGS");
@@ -359,6 +356,10 @@ void parse_mod_table(const char *filename)
 			stuff_string(Movie_subtitle_font, F_NAME);
 		}
 
+		if (optional_string("$Disable built-in translations:")) {
+			stuff_boolean(&Disable_built_in_translations);
+		}
+
 		required_string("#END");
 	}
 	catch (const parse::ParseException& e)
@@ -415,4 +416,5 @@ void mod_table_reset() {
 	Movie_subtitle_font = "font01.vf";
 	Enable_scripts_in_fred = false;
 	Window_icon_path = "app_icon_sse";
+	Disable_built_in_translations = false;
 }

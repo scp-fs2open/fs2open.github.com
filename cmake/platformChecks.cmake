@@ -41,5 +41,8 @@ CHECK_FUNCTION_EXISTS(strlwr HAVE_STRLWR)
 
 CHECK_INCLUDE_FILE("strings.h" HAVE_STRINGS_H)
 
+check_symbol_exists(snprintf "stdio.h" HAVE_SNPRINTF)
+check_symbol_exists(_snprintf "stdio.h" HAVE__SNPRINTF)
+
 set(PLATFORM_CHECK_HEADER "${GENERATED_SOURCE_DIR}/platformChecks.h")
 CONFIGURE_FILE(${CMAKE_CURRENT_LIST_DIR}/platformChecks.h.in "${PLATFORM_CHECK_HEADER}")

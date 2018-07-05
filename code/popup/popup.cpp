@@ -9,7 +9,7 @@
 
 
 
-#include <stdarg.h>
+#include <cstdarg>
 
 #include "anim/animplay.h"
 #include "freespace.h"
@@ -273,7 +273,7 @@ void popup_play_default_change_sound(popup_info *pi)
 		}
 
 		if (!mouse_over) {
-			gamesnd_play_iface(SND_USER_SELECT);
+			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 		}
 	}
 }
@@ -554,7 +554,7 @@ void popup_close(popup_info *pi, int screen_id)
 {
 	int i;
 	
-	gamesnd_play_iface(SND_POPUP_DISAPPEAR); 	// play sound when popup disappears
+	gamesnd_play_iface(InterfaceSounds::POPUP_DISAPPEAR); 	// play sound when popup disappears
 
 	for (i=0; i<pi->nchoices; i++ )	{
 		if ( pi->button_text[i] != NULL ) {
@@ -637,7 +637,7 @@ void popup_draw_title(int sy, char *line, int flags)
 	}
 
 	gr_get_string_size(&w, &h, line);
-	sx = fl2i(Title_coords[gr_screen.res][4] - w/2.0f + 0.5f);
+	sx = (int)std::lround(Title_coords[gr_screen.res][4] - w/2.0f);
 
 	popup_set_title_color(flags);
 	gr_string(sx,sy,line,GR_RESIZE_MENU);
@@ -678,7 +678,7 @@ int popup_calc_starting_y(popup_info *pi, int flags)
 	}
 
 	total_h += num_lines * gr_get_font_height();
-	sy = fl2i((Popup_text_coords[gr_screen.res][1] + Popup_text_coords[gr_screen.res][3]/2.0f) - total_h/2.0f + 0.5f);
+	sy = (int)std::lround((Popup_text_coords[gr_screen.res][1] + Popup_text_coords[gr_screen.res][3]/2.0f) - total_h/2.0f);
 
 	// if this is an input style box, add in some y
 	if(flags & PF_INPUT){
@@ -723,7 +723,7 @@ void popup_draw_msg_text(popup_info *pi, int flags)
 		}
 
 		gr_get_string_size(&w, &h, pi->msg_lines[i]);
-		sx = fl2i(Title_coords[gr_screen.res][4] - w/2.0f + 0.5f);
+		sx = (int)std::lround(Title_coords[gr_screen.res][4] - w/2.0f);
 		gr_string(sx, sy + line_count * h, pi->msg_lines[i], GR_RESIZE_MENU);
 	}
 
@@ -1022,7 +1022,7 @@ int popup(int flags, int nchoices, ... )
 	va_end(args);
 	Popup_info.raw_text[sizeof(Popup_info.raw_text)-1] = '\0';
 	
-	gamesnd_play_iface(SND_POPUP_APPEAR); 	// play sound when popup appears
+	gamesnd_play_iface(InterfaceSounds::POPUP_APPEAR); 	// play sound when popup appears
 
 	io::mouse::CursorManager::get()->pushStatus();
 	io::mouse::CursorManager::get()->showCursor(true);
@@ -1079,7 +1079,7 @@ int popup_till_condition(int (*condition)(), ...)
 	va_end(args);
 	Popup_info.raw_text[sizeof(Popup_info.raw_text)-1] = '\0';
 
-	gamesnd_play_iface(SND_POPUP_APPEAR); 	// play sound when popup appears
+	gamesnd_play_iface(InterfaceSounds::POPUP_APPEAR); 	// play sound when popup appears
 
 	io::mouse::CursorManager::get()->pushStatus();
 	io::mouse::CursorManager::get()->showCursor(true);
@@ -1128,7 +1128,7 @@ char *popup_input(int flags, const char *caption, int max_output_len)
 	// zero the popup input text
 	memset(Popup_info.input_text, 0, POPUP_INPUT_MAX_CHARS);
 	
-	gamesnd_play_iface(SND_POPUP_APPEAR); 	// play sound when popup appears
+	gamesnd_play_iface(InterfaceSounds::POPUP_APPEAR); 	// play sound when popup appears
 
 	io::mouse::CursorManager::get()->showCursor(true);
 	Popup_is_active = 1;

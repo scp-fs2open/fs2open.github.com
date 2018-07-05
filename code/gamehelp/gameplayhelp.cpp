@@ -255,7 +255,7 @@ void gameplay_help_goto_prev_screen()
 	if (Current_help_page < GP_FIRST_SCREEN) {
 		Current_help_page = Gp_last_screen;
 	}
-	gamesnd_play_iface(SND_SWITCH_SCREENS);
+	gamesnd_play_iface(InterfaceSounds::SWITCH_SCREENS);
 
 }
 
@@ -266,7 +266,7 @@ void gameplay_help_goto_next_screen()
 	if (Current_help_page > Gp_last_screen) {
 		Current_help_page = GP_FIRST_SCREEN;
 	}
-	gamesnd_play_iface(SND_SWITCH_SCREENS);
+	gamesnd_play_iface(InterfaceSounds::SWITCH_SCREENS);
 }
 
 // called when the screen is exited
@@ -321,7 +321,7 @@ void gameplay_help_button_pressed(int n)
 
 	case CONTINUE_BUTTON:
 		gameplay_help_leave();
-		gamesnd_play_iface(SND_COMMIT_PRESSED);
+		gamesnd_play_iface(InterfaceSounds::COMMIT_PRESSED);
 		break;
 
 	default:
@@ -790,7 +790,7 @@ void gameplay_help_draw_text()
 }
 
 // gameplay_help_do_frame() is the function that displays help when acutally playing the game
-void gameplay_help_do_frame(float frametime)
+void gameplay_help_do_frame(float  /*frametime*/)
 {
 	int i, k;	
 

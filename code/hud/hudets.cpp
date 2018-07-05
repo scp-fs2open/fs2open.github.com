@@ -426,7 +426,7 @@ void increase_recharge_rate(object* obj, SYSTEM_TYPE ship_system)
 	{
 		if ( obj == Player_obj )
 		{
-			snd_play( gamesnd_get_game_sound(SND_ENERGY_TRANS_FAIL), 0.0f );
+			snd_play( gamesnd_get_game_sound(GameSounds::ENERGY_TRANS_FAIL), 0.0f );
 		}
 		return;
 	}
@@ -464,7 +464,7 @@ void increase_recharge_rate(object* obj, SYSTEM_TYPE ship_system)
 	}
 
 	if ( obj == Player_obj )
-		snd_play( gamesnd_get_game_sound(SND_ENERGY_TRANS), 0.0f );
+		snd_play( gamesnd_get_game_sound(GameSounds::ENERGY_TRANS), 0.0f );
 }
 
 // -------------------------------------------------------------------------------------------------
@@ -545,7 +545,7 @@ void decrease_recharge_rate(object* obj, SYSTEM_TYPE ship_system)
 	count = MIN(2, *lose_index);
 	if ( count <= 0 ) {
 		if ( obj == Player_obj ) {
-			snd_play( gamesnd_get_game_sound(SND_ENERGY_TRANS_FAIL), 0.0f );
+			snd_play( gamesnd_get_game_sound(GameSounds::ENERGY_TRANS_FAIL), 0.0f );
 		}
 		return;
 	}
@@ -583,7 +583,7 @@ void decrease_recharge_rate(object* obj, SYSTEM_TYPE ship_system)
 	}
 
 	if ( obj == Player_obj )
-		snd_play( gamesnd_get_game_sound(SND_ENERGY_TRANS), 0.0f );
+		snd_play( gamesnd_get_game_sound(GameSounds::ENERGY_TRANS), 0.0f );
 }
 
 void transfer_energy_weapon_common(object *objp, float from_field, float to_field, float *from_delta, float *to_delta, float max, float scale)
@@ -597,7 +597,7 @@ void transfer_energy_weapon_common(object *objp, float from_field, float to_fiel
 
 	if ( delta > 0 ) {
 		if ( objp == Player_obj )
-			snd_play( gamesnd_get_game_sound(SND_ENERGY_TRANS), 0.0f );
+			snd_play( gamesnd_get_game_sound(GameSounds::ENERGY_TRANS), 0.0f );
 
 		if (delta > from_field)
 			delta = from_field;
@@ -606,7 +606,7 @@ void transfer_energy_weapon_common(object *objp, float from_field, float to_fiel
 		*from_delta -= delta;
 	} else
 		if ( objp == Player_obj )
-			snd_play( gamesnd_get_game_sound(SND_ENERGY_TRANS_FAIL), 0.0f );
+			snd_play( gamesnd_get_game_sound(GameSounds::ENERGY_TRANS_FAIL), 0.0f );
 }
 
 // -------------------------------------------------------------------------------------------------
@@ -826,7 +826,7 @@ void HudGaugeEts::initBitmaps(char *fname)
 	}
 }
 
-void HudGaugeEts::render(float frametime)
+void HudGaugeEts::render(float  /*frametime*/)
 {
 }
 
@@ -906,7 +906,7 @@ HudGaugeEts(HUD_OBJECT_ETS_RETAIL, 0)
 /**
  * Render the ETS retail gauge to the screen (weapon+shield+engine)
  */
-void HudGaugeEtsRetail::render(float frametime)
+void HudGaugeEtsRetail::render(float  /*frametime*/)
 {
 	int i;
 	int initial_position;
@@ -990,7 +990,7 @@ HudGaugeEts(HUD_OBJECT_ETS_WEAPONS, (int)WEAPONS)
 {
 }
 
-void HudGaugeEtsWeapons::render(float frametime)
+void HudGaugeEtsWeapons::render(float  /*frametime*/)
 {
 	int i;
 
@@ -1027,7 +1027,7 @@ HudGaugeEts(HUD_OBJECT_ETS_SHIELDS, (int)SHIELDS)
 {
 }
 
-void HudGaugeEtsShields::render(float frametime)
+void HudGaugeEtsShields::render(float  /*frametime*/)
 {
 	int i;
 
@@ -1063,7 +1063,7 @@ HudGaugeEts(HUD_OBJECT_ETS_ENGINES, (int)ENGINES)
 {
 }
 
-void HudGaugeEtsEngines::render(float frametime)
+void HudGaugeEtsEngines::render(float  /*frametime*/)
 {
 	int i;
 

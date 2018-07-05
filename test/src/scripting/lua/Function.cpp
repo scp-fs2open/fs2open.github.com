@@ -24,7 +24,7 @@ int testErrorFunctionTwoRetVals(lua_State* L) {
 	return 2;
 }
 
-int testErrorFunctionNoRetVals(lua_State* L) {
+int testErrorFunctionNoRetVals(lua_State*  /*L*/) {
 	return 0;
 }
 
@@ -37,7 +37,7 @@ int upvalueTest(lua_State* L) {
 	}
 
 	auto val = lua_tostring(L, upval);
-	if (strcmp(val, "UpvalueTest")) {
+	if (strcmp(val, "UpvalueTest") != 0) {
 		lua_pushboolean(L, 0);
 		return 1;
 	}

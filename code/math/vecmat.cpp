@@ -9,7 +9,7 @@
 
 
 
-#include <stdio.h>
+#include <cstdio>
 #if _M_IX86_FP >= 1
 	#include <xmmintrin.h>
 #endif
@@ -2528,7 +2528,7 @@ void vm_vec_dist_squared_to_line(const vec3d *p, const vec3d *l0, const vec3d *l
 
 //SUSHI: 2D vector "box" scaling
 //Scales the vector in-place so that the longest dimension = scale
-void vm_vec_boxscale(vec2d *vec, float scale)
+void vm_vec_boxscale(vec2d *vec, float  /*scale*/)
 {
 	float ratio = 1.0f / MAX(fl_abs(vec->x), fl_abs(vec->y));
 	vec->x *= ratio;

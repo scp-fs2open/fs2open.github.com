@@ -145,7 +145,7 @@ static int Red_alert_voice;
 void red_alert_voice_load()
 {
 	Assert( Briefing != NULL );
-	if ( strnicmp(Briefing->stages[0].voice, NOX("none"), 4) && (Briefing->stages[0].voice[0] != '\0') ) {
+	if ( strnicmp(Briefing->stages[0].voice, NOX("none"), 4) != 0 && (Briefing->stages[0].voice[0] != '\0') ) {
 		Red_alert_voice = audiostream_open( Briefing->stages[0].voice, ASF_VOICE );
 	}
 }
@@ -246,13 +246,13 @@ void red_alert_button_pressed(int n)
 			// TODO: make call to campaign code to set correct mission for loading
 			// mission_campaign_play_previous_mission(Red_alert_precursor_mission);
 			if ( !mission_campaign_previous_mission() ) {
-				gamesnd_play_iface(SND_GENERAL_FAIL);
+				gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 				break;
 			}
 
 			gameseq_post_event(GS_EVENT_START_GAME);
 		} else {
-			gamesnd_play_iface(SND_GENERAL_FAIL);
+			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		}
 		break;
 	}
@@ -576,7 +576,7 @@ void red_alert_bash_weapons(red_alert_ship_status *ras, p_object *pobjp)
 		if (Weapon_info[sssp->primary_banks[i]].wi_flags[Weapon::Info_Flags::Ballistic])
 		{
 			float max_count = sip->primary_bank_ammo_capacity[i] / Weapon_info[sssp->primary_banks[i]].cargo_size;
-			sssp->primary_ammo[i] = fl2i(100.0f * (ras->primary_weapons[i].count - 2) / max_count + 0.5f);
+			sssp->primary_ammo[i] = (int)std::lround(100.0f * (ras->primary_weapons[i].count - 2) / max_count);
 		}
 		else
 			sssp->primary_ammo[i] = 100;
@@ -591,7 +591,7 @@ void red_alert_bash_weapons(red_alert_ship_status *ras, p_object *pobjp)
 		sssp->secondary_banks[i] = ras->secondary_weapons[i].index;
 
 		float max_count = sip->secondary_bank_ammo_capacity[i] / Weapon_info[sssp->secondary_banks[i]].cargo_size;
-		sssp->secondary_ammo[i] = fl2i(100.0f * ras->secondary_weapons[i].count / max_count + 0.5f);
+		sssp->secondary_ammo[i] = (int)std::lround(100.0f * ras->secondary_weapons[i].count / max_count);
 	}
 }
 
@@ -612,7 +612,7 @@ void red_alert_bash_subsys_status(red_alert_ship_status *ras, ship *shipp)
 		// probably never happen here
 		try {
 			ss->current_hits = ras->subsys_current_hits.at(count);
-		} catch (std::out_of_range range) {
+		} catch (const std::out_of_range&) {
 			break;
 		}
 
@@ -794,7 +794,7 @@ void red_alert_delete_ship(int shipnum, int ship_state)
 		cleanup_mode = SHIP_DEPARTED_REDALERT;
 		break;
 	default:
-		Assertion(false, "Red-alert: Unknown delete state '%i'\n", ship_state);
+		UNREACHABLE("Red-alert: Unknown delete state '%i'\n", ship_state);
 		cleanup_mode = SHIP_VANISHED;
 		break;
 	}
@@ -1063,7 +1063,7 @@ void red_alert_start_mission()
 
 			// throw down a sound here to make the warning seem ultra-important
 			// gamesnd_play_iface(SND_USER_SELECT);
-			snd_play(gamesnd_get_game_sound(SND_DIRECTIVE_COMPLETE));
+			snd_play(gamesnd_get_game_sound(GameSounds::DIRECTIVE_COMPLETE));
 		}
 	}
 }

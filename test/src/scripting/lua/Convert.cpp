@@ -9,7 +9,7 @@ using namespace luacpp;
 using namespace convert;
 
 namespace {
-int testCFunction(lua_State* state) {
+int testCFunction(lua_State*  /*state*/) {
 	return 0;
 }
 }

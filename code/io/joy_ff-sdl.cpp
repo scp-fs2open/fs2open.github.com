@@ -443,7 +443,7 @@ static int joy_ff_create_effects()
 	return 0;
 }
 
-static void joy_ff_start_effect(haptic_effect_t *eff, const char *name)
+static void joy_ff_start_effect(haptic_effect_t *eff, const char* /* name */)
 {
 	if ( !eff->loaded ) {
 		return;

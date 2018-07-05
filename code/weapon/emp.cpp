@@ -9,7 +9,7 @@
 
 
 
-#include <stdarg.h>
+#include <cstdarg>
 
 
 #include "debugconsole/console.h"
@@ -513,7 +513,7 @@ void emp_hud_printf(int x, int y, int gauge_id, const char *format, ...)
 }
 
 // maybe reformat a string 
-void emp_maybe_reformat_text(char *text, int max_len, int gauge_id)
+void emp_maybe_reformat_text(char *text, int  /*max_len*/, int gauge_id)
 {
 	wacky_text *wt;
 
@@ -544,7 +544,7 @@ void emp_maybe_reformat_text(char *text, int max_len, int gauge_id)
 		case EG_WEAPON_TITLE: case EG_WEAPON_P1: case EG_WEAPON_P2: case EG_WEAPON_P3: case EG_WEAPON_S1: case EG_WEAPON_S2:			
 			int wep_index;
 			wep_index = (int)frand_range(0.0f, (float)(MAX_WEAPON_TYPES - 1));
-			strcpy_s(wt->str, Weapon_info[ wep_index >= MAX_WEAPON_TYPES ? 0 : wep_index ].name);			
+			strcpy_s(wt->str, Weapon_info[ wep_index >= MAX_WEAPON_TYPES ? 0 : wep_index ].get_display_string());
 			break;		
 
 		// escort list

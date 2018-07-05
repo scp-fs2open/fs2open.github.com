@@ -35,10 +35,10 @@ class NanoVGRenderer {
 		Image(const Image&) = delete;
 		Image& operator=(const Image&) = delete;
 
-		Image(Image&& other) {
+		Image(Image&& other) SCP_NOEXCEPT {
 			*this = std::move(other);
 		}
-		Image& operator=(Image&& other) {
+		Image& operator=(Image&& other) SCP_NOEXCEPT {
 			std::swap(bitmap, other.bitmap);
 			std::swap(data, other.data);
 			std::swap(type, other.type);

@@ -29,7 +29,7 @@ IF(MSVC)
 
 	file(WRITE "${GENERATED_SOURCE_DIR}/code/default_files.rc" "${RES_CONTENT}")
 
-	configure_file("def_files/generated_def_files-win32.h.in" "${GENERATED_SOURCE_DIR}/code/def_files/generated_def_files-win32.h")
+	configure_file("def_files/generated_def_files-win32.inc.in" "${GENERATED_SOURCE_DIR}/code/def_files/generated_def_files-win32.inc")
 
 	target_sources(code INTERFACE "${GENERATED_SOURCE_DIR}/code/default_files.rc")
 else()
@@ -51,6 +51,10 @@ else()
 		# Retrieve the path type name from the relative path
 		GET_FILENAME_COMPONENT(PATH_TYPE "${RELATIVE_FILE_PATH}" DIRECTORY)
 		file(TO_NATIVE_PATH "${PATH_TYPE}" PATH_TYPE)
+		if (MINGW)
+			# There is a bug in CMake where it thinks MinGW uses forward slashes for paths but we need backslashes for Windows builds
+			string(REPLACE "/" "\\\\" PATH_TYPE "${PATH_TYPE}")
+		endif()
 		GET_FILENAME_COMPONENT(FILE_NAME "${RELATIVE_FILE_PATH}" NAME)
 
 		string(MAKE_C_IDENTIFIER "${RELATIVE_FILE_PATH}" FIELD_NAME)
@@ -69,14 +73,15 @@ else()
 		ADD_CUSTOM_COMMAND(
 			OUTPUT ${ALL_OUTPUTS}
 			COMMAND embedfile "${INPUT_NAME}" "${OUTPUT}" "${FIELD_NAME}"
-			DEPENDS "${INPUT_NAME}"
+			MAIN_DEPENDENCY "${INPUT_NAME}"
+			DEPENDS embedfile
 			COMMENT "Generating string file for ${INPUT_NAME}"
 			)
 
 		LIST(APPEND DEF_OUT_FILES ${ALL_OUTPUTS})
 	ENDFOREACH(file)
 
-	configure_file("def_files/generated_def_files-generic.h.in" "${GENERATED_SOURCE_DIR}/code/def_files/generated_def_files-generic.h")
+	configure_file("def_files/generated_def_files-generic.inc.in" "${GENERATED_SOURCE_DIR}/code/def_files/generated_def_files-generic.inc")
 	target_sources(code PRIVATE ${DEF_OUT_FILES})
 	SOURCE_GROUP("Generated Files\\Default Files" FILES ${DEF_OUT_FILES})
 

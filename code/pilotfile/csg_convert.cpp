@@ -191,7 +191,7 @@ void pilotfile_convert::csg_import_ships_weapons()
 
 	// get last ship flown index
 	for (idx = 0; idx < ship_count; idx++) {
-		if ( csg->ship_list[idx].name.compare(plr->last_ship_flown) == 0 ) {
+		if ( csg->ship_list[idx].name == plr->last_ship_flown ) {
 			csg->last_ship_flown_index = idx;
 			break;
 		}

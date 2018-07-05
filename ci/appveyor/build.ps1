@@ -14,7 +14,7 @@ $NightlyConfigurations = @(
 		PackageType="Win64";
 		Toolset="v140_xp";
 		SimdType="SSE2";
-		QtDir="C:\Qt\5.7\msvc2015_64";
+		QtDir="C:\Qt\5.9.5\msvc2015_64";
 		SourcePackage=$false;
 	},
 	[BuildConfig]@{ 
@@ -22,7 +22,7 @@ $NightlyConfigurations = @(
 		PackageType="Win32";
 		Toolset="v140_xp";
 		SimdType="SSE2";
-		QtDir="C:\Qt\5.7\msvc2015";
+		QtDir="C:\Qt\5.9.5\msvc2015";
 		SourcePackage=$false;
 	}
 )
@@ -32,7 +32,7 @@ $ReleaseConfigurations = @(
 		PackageType="Win32";
 		Toolset="v140_xp";
 		SimdType="SSE2";
-		QtDir="C:\Qt\5.7\msvc2015";
+		QtDir="C:\Qt\5.9.5\msvc2015";
 		SourcePackage=$true;
 	}
 	[BuildConfig]@{
@@ -40,7 +40,7 @@ $ReleaseConfigurations = @(
 		PackageType="Win32-AVX";
 		Toolset="v140_xp";
 		SimdType="AVX";
-		QtDir="C:\Qt\5.7\msvc2015";
+		QtDir="C:\Qt\5.9.5\msvc2015";
 		SourcePackage=$false;
 	}
 	[BuildConfig]@{
@@ -48,7 +48,7 @@ $ReleaseConfigurations = @(
 		PackageType="Win64";
 		Toolset="v140_xp";
 		SimdType="SSE2";
-		QtDir="C:\Qt\5.7\msvc2015_64";
+		QtDir="C:\Qt\5.9.5\msvc2015_64";
 		SourcePackage=$false;
 	}
 	[BuildConfig]@{
@@ -56,7 +56,7 @@ $ReleaseConfigurations = @(
 		PackageType="Win64-AVX";
 		Toolset="v140_xp";
 		SimdType="AVX";
-		QtDir="C:\Qt\5.7\msvc2015_64";
+		QtDir="C:\Qt\5.9.5\msvc2015_64";
 		SourcePackage=$false;
 	}
 )
@@ -148,7 +148,7 @@ if ($DeployBuild) {
     Push-AppveyorArtifact "$($PackageName)-builds-$($buildConfig.PackageType).zip"
 } else {
 	cmake -DFSO_USE_SPEECH="ON" -DFSO_FATAL_WARNINGS="ON" -DFSO_USE_VOICEREC="ON" -DFSO_BUILD_TESTS="ON" -DMSVC_SIMD_INSTRUCTIONS=SSE2 `
-	-DFSO_BUILD_QTFRED=ON -DQT5_INSTALL_ROOT="$env:QT_DIR" -DFSO_BUILD_FRED2="OFF" `
+	-DFSO_BUILD_QTFRED=ON -DQT5_INSTALL_ROOT="$env:QT_DIR" -DFSO_BUILD_FRED2="ON" `
 	-G "$Env:CMAKE_GENERATOR" -T "$Env:PlatformToolset" ..
 
     cmake --build . --config "$Env:CONFIGURATION" -- /verbosity:minimal

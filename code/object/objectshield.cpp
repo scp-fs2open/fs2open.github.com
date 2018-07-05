@@ -15,7 +15,7 @@
 #include "ship/ship.h"
 #include "ship/subsysdamage.h"
 
-#include <limits.h>
+#include <climits>
 
 // Private variables
 static const float shield_scale_factor = static_cast<float>(1.0 / (log(50.0) - log(1.0)));	// Factor used in Goober5000's scale_quad
@@ -402,7 +402,7 @@ void shield_transfer(object *objp, int quadrant, float rate) {
 		return;
 	
 	} else if (objp == Player_obj) {
-		snd_play(gamesnd_get_game_sound(SND_SHIELD_XFER_OK));
+		snd_play(gamesnd_get_game_sound(GameSounds::SHIELD_XFER_OK));
 	}
 
 	float energy_avail = 0.0f;	// Energy available from the other quadrants that we can transfer

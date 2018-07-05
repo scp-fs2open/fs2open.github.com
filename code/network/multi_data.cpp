@@ -10,8 +10,8 @@
 
 
 
-#include <time.h>
-#include <ctype.h>
+#include <ctime>
+#include <cctype>
 
 #include "network/multi.h"
 #include "network/multi_data.h"

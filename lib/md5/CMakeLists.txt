@@ -5,7 +5,7 @@ SET(MD5_SOURCES
 
 ADD_LIBRARY(md5 STATIC ${MD5_SOURCES})
 
-target_include_directories(md5 PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
+target_include_directories(md5 SYSTEM PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
 
 # Disable warnings if building from source
 suppress_warnings(md5)

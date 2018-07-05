@@ -24,6 +24,7 @@
 #include "hud/hudmessage.h"
 #include "io/key.h"
 #include "io/timer.h"
+#include "mission/missionparse.h"
 #include "mission/missioncampaign.h"
 #include "network/multi.h"
 #include "network/multiutil.h"
@@ -271,7 +272,7 @@ void popupdead_play_default_change_sound()
 	}
 
 	if (!mouse_over) {
-		gamesnd_play_iface(SND_USER_SELECT);
+		gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 	}
 }
 
@@ -410,7 +411,7 @@ void popupdead_draw_button_text()
 }
 
 // Called once per frame to run the dead popup
-int popupdead_do_frame(float frametime)
+int popupdead_do_frame(float  /*frametime*/)
 {
 	int k, choice;
 
@@ -528,7 +529,7 @@ void popupdead_close()
 		return;
 	}
 
-	gamesnd_play_iface(SND_POPUP_DISAPPEAR);
+	gamesnd_play_iface(InterfaceSounds::POPUP_DISAPPEAR);
 	Popupdead_window.destroy();
 	game_flush();
 	

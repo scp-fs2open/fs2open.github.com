@@ -105,7 +105,7 @@ class Decoder {
 	 * @brief Returns the properties of the video
 	 * @return The properties
 	 */
-	virtual MovieProperties getProperties() = 0;
+	virtual MovieProperties getProperties() const = 0;
 
 	/**
 	 * @brief Starts decoding the video
@@ -116,9 +116,9 @@ class Decoder {
 	 * @brief Determines if the video has audio
 	 * @return @c true if audio is included in the video
 	 */
-	virtual bool hasAudio() = 0;
+	virtual bool hasAudio() const = 0;
 
-	virtual bool hasSubtitles() = 0;
+	virtual bool hasSubtitles() const = 0;
 
 	/**
 	 * @brief Ends decoding of the video file

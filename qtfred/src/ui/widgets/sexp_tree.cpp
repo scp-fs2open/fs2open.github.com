@@ -44,9 +44,11 @@
 #include "ship/ship.h"
 
 #include <ui/util/menu.h>
+#include <ui/util/SignalBlockers.h>
 
 #include <QtWidgets/QMessageBox>
 #include <QtWidgets/QMenu>
+#include <QDebug>
 
 #define TREE_NODE_INCREMENT    100
 
@@ -124,10 +126,6 @@ QString node_image_to_resource_name(NodeImage image) {
 	}
 	return ":/images/bitmap1.png";
 }
-
-QIcon nodeimage_to_icon(NodeImage image) {
-	return QIcon(node_image_to_resource_name(image));
-}
 }
 
 SexpTreeEditorInterface::SexpTreeEditorInterface() :
@@ -148,7 +146,7 @@ SCP_vector<SCP_string> SexpTreeEditorInterface::getMessages() {
 
 	return list;
 }
-SCP_vector<SCP_string> SexpTreeEditorInterface::getMissionGoals(const SCP_string& reference_name) {
+SCP_vector<SCP_string> SexpTreeEditorInterface::getMissionGoals(const SCP_string&  /*reference_name*/) {
 	SCP_vector<SCP_string> list;
 
 	for (auto i = 0; i < Num_goals; i++) {
@@ -157,7 +155,7 @@ SCP_vector<SCP_string> SexpTreeEditorInterface::getMissionGoals(const SCP_string
 
 	return list;
 }
-SCP_vector<SCP_string> SexpTreeEditorInterface::getMissionEvents(const SCP_string& reference_name) {
+SCP_vector<SCP_string> SexpTreeEditorInterface::getMissionEvents(const SCP_string&  /*reference_name*/) {
 	SCP_vector<SCP_string> list;
 
 	for (auto i = 0; i < Num_mission_events; i++) {
@@ -190,17 +188,19 @@ int SexpTreeEditorInterface::getRootReturnType() const {
 bool SexpTreeEditorInterface::requireCampaignOperators() const {
 	return false;
 }
-void SexpTreeEditorInterface::rootNodeDeleted(int node) {
-}
-void SexpTreeEditorInterface::rootNodeRenamed(int node) {
-}
-void SexpTreeEditorInterface::rootNodeFormulaChanged(int old, int node) {
+
+QIcon sexp_tree::convertNodeImageToIcon(NodeImage image) {
+	return QIcon(node_image_to_resource_name(image));
 }
 
 // constructor
 sexp_tree::sexp_tree(QWidget* parent) : QTreeWidget(parent) {
 	setSelectionMode(QTreeWidget::SingleSelection);
+	setSelectionBehavior(QTreeWidget::SelectItems);
+
 	setContextMenuPolicy(Qt::CustomContextMenu);
+
+	setHeaderHidden(true);
 
 	select_sexp_node = -1;
 	root_item = -1;
@@ -208,6 +208,7 @@ sexp_tree::sexp_tree(QWidget* parent) : QTreeWidget(parent) {
 
 	connect(this, &QWidget::customContextMenuRequested, this, &sexp_tree::customMenuHandler);
 	connect(this, &QTreeWidget::itemChanged, this, &sexp_tree::handleItemChange);
+	connect(this, &QTreeWidget::itemSelectionChanged, this, &sexp_tree::handleNewItemSelected);
 }
 
 // clears out the tree, so all the nodes are unused.
@@ -1132,15 +1133,15 @@ int sexp_tree::get_default_value(sexp_list_item* item, char* text_buf, int op, i
 
 		// Goober5000 - special cases that used to be numbers but are now hybrids
 	case OPF_GAME_SND:
-		int sound_index = -1;
+		gamesnd_id sound_index;
 
 		if (Operators[op].value == OP_EXPLOSION_EFFECT) {
-			sound_index = SND_SHIP_EXPLODE_1;
+			sound_index = GameSounds::SHIP_EXPLODE_1;
 		} else if (Operators[op].value == OP_WARP_EFFECT) {
-			sound_index = (i == 8) ? SND_CAPITAL_WARP_IN : SND_CAPITAL_WARP_OUT;
+			sound_index = (i == 8) ? GameSounds::CAPITAL_WARP_IN : GameSounds::CAPITAL_WARP_OUT;
 		}
 
-		if (sound_index >= 0) {
+		if (sound_index.isValid()) {
 			game_snd* snd = gamesnd_get_game_sound(sound_index);
 			if (can_construe_as_integer(snd->name.c_str())) {
 				item->set_data(snd->name.c_str(), (SEXPT_NUMBER | SEXPT_VALID));
@@ -1553,7 +1554,7 @@ void sexp_tree::expand_branch(QTreeWidgetItem* h) {
 	}
 }
 
-void sexp_tree::merge_operator(int node) {
+void sexp_tree::merge_operator(int  /*node*/) {
 /*	char buf[256];
 	int child;
 
@@ -1606,7 +1607,7 @@ int sexp_tree::add_variable_data(const char* new_data, int type) {
 
 // add an operator under operator pointed to by item_index.  Updates item_index to point
 // to this new operator.
-void sexp_tree::add_operator(const char* op, QTreeWidgetItem* h) {
+int sexp_tree::add_operator(const char* op, QTreeWidgetItem* h) {
 	int node;
 
 	if (item_index == -1) {
@@ -1623,6 +1624,8 @@ void sexp_tree::add_operator(const char* op, QTreeWidgetItem* h) {
 	tree_nodes[node].flags = OPERAND;
 	setCurrentItemIndex(node);
 	modified();
+
+	return node;
 }
 
 // add an operator with one argument under operator pointed to by item_index.  This function
@@ -1840,24 +1843,21 @@ int sexp_tree::node_error(int node, const char* msg, int* bypass) {
 }
 
 void sexp_tree::hilite_item(int node) {
+
 	ensure_visible(node);
-	tree_nodes[node].handle->setSelected(true);
+	clearSelection();
+	setCurrentItem(tree_nodes[node].handle);
+	scrollToItem(tree_nodes[node].handle);
 }
 
 // because the MFC function EnsureVisible() doesn't do what it says it does, I wrote this.
 void sexp_tree::ensure_visible(int node) {
-	Assert(node != -1);
-	if (tree_nodes[node].parent != -1) {
-		ensure_visible(tree_nodes[node].parent);
-	}  // expand all parents first
+	auto handle = tree_nodes[node].handle->parent();
 
-	if (tree_nodes[node].child != -1) {  // expandable?
-		expandItem(tree_nodes[node].handle);
-	}  // expand this item
-}
-
-void sexp_tree::link_modified(int* ptr) {
-	modified();
+	while (handle != nullptr) {
+		handle->setExpanded(true);
+		handle = handle->parent();
+	}
 }
 
 void get_variable_default_text_from_variable_text(char* text, char* default_text) {
@@ -2092,8 +2092,8 @@ void sexp_tree::replace_data(const char* new_data, int type) {
 	set_node(item_index, type, new_data);
 	h->setText(0, new_data);
 	auto bmap = get_data_image(item_index);
-	h->setIcon(0, nodeimage_to_icon(bmap));
-	tree_nodes[item_index].handle->setFlags(tree_nodes[node].handle->flags().setFlag(Qt::ItemIsEditable, true));
+	h->setIcon(0, convertNodeImageToIcon(bmap));
+	h->setFlags(h->flags().setFlag(Qt::ItemIsEditable, true));
 	tree_nodes[item_index].flags = EDITABLE;
 
 	// check remaining data beyond replaced data for validity (in case any of it is dependent on data just replaced)
@@ -2126,7 +2126,7 @@ void sexp_tree::replace_variable_data(int var_idx, int type) {
 
 	set_node(item_index, type, buf);
 	h->setText(0, QString::fromUtf8(buf));
-	h->setIcon(0, nodeimage_to_icon(NodeImage::VARIABLE));
+	h->setIcon(0, convertNodeImageToIcon(NodeImage::VARIABLE));
 	h->setFlags(h->flags().setFlag(Qt::ItemIsEditable, false));
 	tree_nodes[item_index].flags = NOT_EDITABLE;
 
@@ -2301,21 +2301,20 @@ void sexp_tree::swap_roots(QTreeWidgetItem* one, QTreeWidgetItem* two) {
 //	move_branch(two, TVI_ROOT, one);
 //	DeleteItem(one);
 	auto h = move_branch(one, itemFromIndex(rootIndex()), two);
-	h->setSelected(true);
+	setCurrentItem(h);
 	modified();
 }
 
 QTreeWidgetItem*
 sexp_tree::insert(const QString& lpszItem, NodeImage image, QTreeWidgetItem* hParent, QTreeWidgetItem* hInsertAfter) {
-	return insertWithIcon(lpszItem, nodeimage_to_icon(image), hParent, hInsertAfter);
+	return insertWithIcon(lpszItem, convertNodeImageToIcon(image), hParent, hInsertAfter);
 }
 
 QTreeWidgetItem* sexp_tree::insertWithIcon(const QString& lpszItem,
 										   const QIcon& image,
 										   QTreeWidgetItem* hParent,
 										   QTreeWidgetItem* hInsertAfter) {
-	// We block the signals in this function since it would otherwise trigger the "item was edited" code
-	QSignalBlocker dataChangedBlocker(this);
+	util::SignalBlockers blockers(this);
 
 	QTreeWidgetItem* item = nullptr;
 	if (hParent == nullptr) {
@@ -2378,8 +2377,31 @@ int sexp_tree::get_type(QTreeWidgetItem* h) {
 	return tree_nodes[i].type;
 }
 
+// get node of item clicked on
+int sexp_tree::get_node(QTreeWidgetItem* h) {
+	uint i;
+
+	// get index into sexp_tree
+	for (i = 0; i < tree_nodes.size(); i++) {
+		if (tree_nodes[i].handle == h) {
+			break;
+		}
+	}
+
+	if ((i >= tree_nodes.size())) {
+		// Int3();	// This would be the root of the tree  -- ie, event name
+		return -1;
+	}
+
+	return i;
+}
 
 void sexp_tree::update_help(QTreeWidgetItem* h) {
+	if (h == nullptr) {
+		helpChanged("");
+		miniHelpChanged("");
+	}
+
 	int i, j, z, c, code, index, sibling_place;
 
 	for (i = 0; i < (int) Operators.size(); i++) {
@@ -3286,6 +3308,7 @@ sexp_list_item* sexp_tree::get_listing_opf_subsystem(int parent_node, int arg_in
 		if (arg_index == 3) {
 			special_subsys = OPS_STRENGTH;
 
+			// iterate to the next field two times
 			child = tree_nodes[child].next;
 			Assert(child >= 0);
 			child = tree_nodes[child].next;
@@ -3306,12 +3329,30 @@ sexp_list_item* sexp_tree::get_listing_opf_subsystem(int parent_node, int arg_in
 	case OP_IS_AI_CLASS:
 	case OP_MISSILE_LOCKED:
 	case OP_SHIP_SUBSYS_GUARDIAN_THRESHOLD:
+	case OP_IS_IN_TURRET_FOV:
 		// iterate to the next field
 		child = tree_nodes[child].next;
 		break;
 
 		// this sexp checks the subsystem of the *fourth entry* on the list
 	case OP_QUERY_ORDERS:
+		// iterate to the next field three times
+		child = tree_nodes[child].next;
+		Assert(child >= 0);
+		child = tree_nodes[child].next;
+		Assert(child >= 0);
+		child = tree_nodes[child].next;
+		break;
+
+		// this sexp checks the subsystem of the *seventh entry* on the list
+	case OP_BEAM_FLOATING_FIRE:
+		// iterate to the next field six times
+		child = tree_nodes[child].next;
+		Assert(child >= 0);
+		child = tree_nodes[child].next;
+		Assert(child >= 0);
+		child = tree_nodes[child].next;
+		Assert(child >= 0);
 		child = tree_nodes[child].next;
 		Assert(child >= 0);
 		child = tree_nodes[child].next;
@@ -4067,7 +4108,7 @@ sexp_list_item* sexp_tree::get_listing_opf_cargo() {
 
 	head.add_data("Nothing");
 	for (int i = 0; i < Num_cargo; i++) {
-		if (stricmp(Cargo_names[i], "nothing")) {
+		if (stricmp(Cargo_names[i], "nothing") != 0) {
 			head.add_data(Cargo_names[i]);
 		}
 	}
@@ -5393,10 +5434,15 @@ void sexp_tree::cutActionHandler() {
 	deleteActionHandler();
 }
 void sexp_tree::deleteActionHandler() {
+	if (currentItem() == nullptr) {
+		return;
+	}
+
 	if (_interface->getFlags()[TreeFlags::RootDeletable] && (item_index == -1)) {
 		auto item = currentItem();
-		setCurrentItemIndex(item->data(FormulaDataRole, 0).toInt());
-		_interface->rootNodeDeleted(item_index);
+		item_index = item->data(0, FormulaDataRole).toInt();
+
+		rootNodeDeleted(item_index);
 
 		free_node2(item_index);
 		delete item;
@@ -5417,7 +5463,7 @@ void sexp_tree::deleteActionHandler() {
 void sexp_tree::editDataActionHandler() {
 	beginItemEdit(currentItem());
 }
-void sexp_tree::handleItemChange(QTreeWidgetItem* item, int column) {
+void sexp_tree::handleItemChange(QTreeWidgetItem* item, int  /*column*/) {
 	if (!_currently_editing) {
 		return;
 	}
@@ -5443,8 +5489,10 @@ void sexp_tree::handleItemChange(QTreeWidgetItem* item, int column) {
 	}
 
 	if (node == tree_nodes.size()) {
-		setCurrentItemIndex(qvariant_cast<int>(item->data(FormulaDataRole, 0)));
-		_interface->rootNodeRenamed(item_index);
+		setCurrentItemIndex(qvariant_cast<int>(item->data(0, FormulaDataRole)));
+
+		rootNodeRenamed(item_index);
+
 		return;
 	}
 
@@ -5562,7 +5610,7 @@ void sexp_tree::insertOperatorAction(int op) {
 			h = nullptr;
 			root_item = node;
 		} else {
-			_interface->rootNodeFormulaChanged(item_index, node);
+			rootNodeFormulaChanged(item_index, node);
 			h->setData(0, FormulaDataRole, node);
 		}
 	}
@@ -5605,8 +5653,10 @@ void sexp_tree::addReplaceTypedDataHandler(int data_idx, bool replace) {
 	}
 	Assert(op >= 0);
 
-	auto type = query_operator_argument_type(op, Add_count);
-	auto list = get_listing_opf(type, item_index, Add_count);
+	auto argcount = replace ? Replace_count : Add_count;
+
+	auto type = query_operator_argument_type(op, argcount);
+	auto list = get_listing_opf(type, item_index, argcount);
 	Assert(list);
 
 	auto ptr = list;
@@ -5699,6 +5749,33 @@ void sexp_tree::handleReplaceVariableAction(int id) {
 	// Replace data
 	replace_variable_data(id, (type | SEXPT_VARIABLE));
 
+}
+void sexp_tree::handleNewItemSelected() {
+	auto selectedItem = currentItem();
+
+	update_help(selectedItem);
+
+	if (selectedItem == nullptr) {
+		selectedRootChanged(-1);
+		setCurrentItemIndex(-1);
+		return;
+	}
+
+	// Set the item index so that it is always up to date
+	item_index = get_node(selectedItem);
+
+	auto item = selectedItem;
+	while (item->parent() != nullptr) {
+		item = item->parent();
+	}
+
+	selectedRootChanged(item->data(0, FormulaDataRole).toInt());
+}
+void sexp_tree::deleteCurrentItem() {
+	deleteActionHandler();
+}
+int sexp_tree::getCurrentItemIndex() const {
+	return item_index;
 }
 
 }

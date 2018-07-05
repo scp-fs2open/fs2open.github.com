@@ -92,9 +92,9 @@ private:
 
 class ApngException : public std::runtime_error
 {
-	public:
-		ApngException(const std::string& msg) : std::runtime_error(msg) {}
-		~ApngException() throw() {}
+ public:
+	explicit ApngException(const std::string& msg) : std::runtime_error(msg) {}
+	~ApngException() SCP_NOEXCEPT override {}
 };
 
 }

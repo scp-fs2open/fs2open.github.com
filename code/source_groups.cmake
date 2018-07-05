@@ -571,6 +571,12 @@ set(file_root_libs_ffmpeg
 	libs/ffmpeg/FFmpegHeaders.h
 )
 
+set(file_root_lbs_renderdoc
+	libs/renderdoc/renderdoc.cpp
+	libs/renderdoc/renderdoc.h
+	libs/renderdoc/renderdoc_app.h
+)
+
 # Lighting files
 set (file_root_lighting
 	lighting/lighting.cpp
@@ -772,7 +778,6 @@ set (file_root_network
 	network/multiutil.h
 	network/psnet2.cpp
 	network/psnet2.h
-	network/stand_gui.cpp
 	network/stand_gui.h
 )
 
@@ -1237,6 +1242,7 @@ set(file_root_utils
     utils/encoding.h
 	utils/HeapAllocator.cpp
 	utils/HeapAllocator.h
+	utils/id.h
 	utils/RandomRange.h
 	utils/strings.h
     utils/unicode.cpp
@@ -1339,6 +1345,7 @@ source_group("JumpNode"                           FILES ${file_root_jumpnode})
 source_group("Lab"                                FILES ${file_root_lab})
 source_group("Libs"                               FILES ${file_root_libs})
 source_group("Libs\\FFmpeg"                       FILES ${file_root_libs_ffmpeg})
+source_group("Libs\\RenderDoc"                    FILES ${file_root_lbs_renderdoc})
 source_group("Lighting"                           FILES ${file_root_lighting})
 source_group("Localization"                       FILES ${file_root_localization})
 source_group("Math"                               FILES ${file_root_math})
@@ -1439,6 +1446,7 @@ set (file_root
 	${file_root_lab}
 	${file_root_libs}
 	${file_root_libs_ffmpeg}
+	${file_root_lbs_renderdoc}
 	${file_root_lighting}
 	${file_root_localization}
 	${file_root_math}

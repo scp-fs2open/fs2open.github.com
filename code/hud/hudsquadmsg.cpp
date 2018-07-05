@@ -267,7 +267,7 @@ void hud_squadmsg_start()
 	Msg_enemies = 0;														// tells us if we are messaging enemy ships
 #endif
 
-	snd_play( gamesnd_get_game_sound(SND_SQUADMSGING_ON) );
+	snd_play( gamesnd_get_game_sound(GameSounds::SQUADMSGING_ON) );
 }
 
 // functions which will restore all of the key binding stuff when messaging mode is done
@@ -285,7 +285,7 @@ void hud_squadmsg_end()
 */
 
 	if ( message_is_playing() == FALSE )
-		snd_play( gamesnd_get_game_sound(SND_SQUADMSGING_OFF) );
+		snd_play( gamesnd_get_game_sound(GameSounds::SQUADMSGING_OFF) );
 }
 
 // function which returns true if there are fighters/bombers on the players team in the mission
@@ -637,7 +637,7 @@ int hud_squadmsg_get_key()
 
 			// play general fail sound if inactive item hit.
 			else if ( (i < Num_menu_items) && !(MsgItems[i].active) )
-				gamesnd_play_iface(SND_GENERAL_FAIL);
+				gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 
 			else if ( (i < Num_menu_items) && (MsgItems[i].active) )	// only return keys that are associated with menu items
 				return i;
@@ -1798,7 +1798,7 @@ void hud_squadmsg_msg_all_fighters()
 
 // called to actually bring in a reinforcement.  For single player games, always gets called.
 // for multiplayer games, always called on the server side.  Clients should never get here
-void hud_squadmsg_call_reinforcement(int reinforcement_num, int player_num)
+void hud_squadmsg_call_reinforcement(int reinforcement_num, int  /*player_num*/)
 {
 	int i, delay;
 	reinforcements *rp;
@@ -2134,7 +2134,7 @@ void hud_squadmsg_wing_command()
 // mode is entered.
 //
 // do_scroll indicates whether we should save the page up and page down keys
-void hud_squadmsg_save_keys( int do_scroll )
+void hud_squadmsg_save_keys( int  /*do_scroll*/ )
 {
 //	int i, j;
 
@@ -2430,7 +2430,7 @@ int hud_query_order_issued(char *to, char *order_name, char *target_name, int ti
 	int i, order = -1, ship_or_wing = -1, target = -1, source = -1; 
 	
 	// if the desired order was not sent to all fighters 
-	if (strcmp(to, "<all fighters>")) {
+	if (strcmp(to, "<all fighters>") != 0) {
 		ship_or_wing = get_parse_name_index(to);
 	}
 
@@ -2629,7 +2629,7 @@ bool HudGaugeSquadMessage::canRender()
 	return true;
 }
 
-void HudGaugeSquadMessage::render(float frametime)
+void HudGaugeSquadMessage::render(float  /*frametime*/)
 {
 	char *title;
 	int bx, by, sx, sy, i, nitems, none_valid, messaging_allowed;

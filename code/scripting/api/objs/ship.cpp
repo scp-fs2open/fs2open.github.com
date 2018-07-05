@@ -632,7 +632,7 @@ ADE_VIRTVAR(TargetSubsystem, l_Ship, "subsystem", "Target subsystem of ship.", "
 				if (aip->target_signature != newh->sig)
 					hud_shield_hit_reset(newh->objp);
 
-				Ships[newh->ss->parent_objnum].last_targeted_subobject[Player_num] = newh->ss;
+				Ships[Objects[newh->ss->parent_objnum].instance].last_targeted_subobject[Player_num] = newh->ss;
 			}
 
 			aip->target_objnum = OBJ_INDEX(newh->objp);

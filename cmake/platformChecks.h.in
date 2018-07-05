@@ -25,4 +25,7 @@
 #cmakedefine01 HAVE_CHAR32_T
 #cmakedefine01 HAVE_UNICODE_CHAR_LITERAL
 
+#cmakedefine01 HAVE_SNPRINTF
+#cmakedefine01 HAVE__SNPRINTF
+
 #endif // __PLATFORM_CHECKS_H__

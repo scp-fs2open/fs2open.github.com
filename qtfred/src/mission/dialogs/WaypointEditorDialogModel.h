@@ -34,7 +34,7 @@ class WaypointEditorDialogModel: public AbstractDialogModel {
 	void idSelected(int elementId);
 	void setNameEditText(const SCP_string& name);
  private:
-	bool showErrorDialog(const SCP_string& message, const SCP_string title);
+	bool showErrorDialog(const SCP_string& message, const SCP_string& title);
 
 	void onSelectedObjectChanged(int);
 	void onSelectedObjectMarkingChanged(int, bool);

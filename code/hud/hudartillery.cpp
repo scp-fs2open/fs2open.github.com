@@ -153,7 +153,7 @@ void parse_ssm(const char *filename)
 					s.shape = SSM_SHAPE_SPHERE;
 					break;
 				default:
-					Assertion(false, "Impossible return value from required_string_one_of(); get a coder!\n");
+					UNREACHABLE("Impossible return value from required_string_one_of(); get a coder!\n");
 				}
 			} else {
 				s.shape = SSM_SHAPE_CIRCLE;
@@ -169,8 +169,8 @@ void parse_ssm(const char *filename)
 				s.use_custom_message = true;
 			}
 
-			s.sound_index = -1;
-			parse_sound("+Alarm Sound:", &s.sound_index, s.name);
+			s.sound_index = gamesnd_id();
+			parse_game_sound("+Alarm Sound:", &s.sound_index);
 
 			// see if we have a valid weapon
 			s.weapon_info_index = weapon_info_lookup(weapon_name);
@@ -235,7 +235,7 @@ void ssm_get_random_start_pos(vec3d *out, vec3d *start, matrix *orient, size_t s
 		vm_vec_scale_add(&temp, start, &orient->vec.fvec, radius);
 		break;
 	default:
-		Assertion(false, "Unknown shape '%d' in SSM type #" SIZE_T_ARG " ('%s'). This should not be possible; get a coder!\n", s->shape, ssm_index, s->name);
+		UNREACHABLE("Unknown shape '%d' in SSM type #" SIZE_T_ARG " ('%s'). This should not be possible; get a coder!\n", s->shape, ssm_index, s->name);
 		break;
 	}
 
@@ -332,7 +332,7 @@ void ssm_create(object *target, vec3d *start, size_t ssm_index, ssm_firing_info 
 		else
 			HUD_printf("%s", Ssm_info[ssm_index].message);
 	}
-	if (Ssm_info[ssm_index].sound_index >= 0) {
+	if (Ssm_info[ssm_index].sound_index.isValid()) {
 		snd_play(gamesnd_get_game_sound(Ssm_info[ssm_index].sound_index));
 	}
 

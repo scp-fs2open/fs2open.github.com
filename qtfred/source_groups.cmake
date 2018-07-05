@@ -37,6 +37,8 @@ add_file_folder("Source/Mission"
     src/mission/IDialogProvider.h
     src/mission/management.cpp
     src/mission/management.h
+	src/mission/missionsave.cpp
+	src/mission/missionsave.h
     src/mission/object.cpp
     src/mission/object.h
     src/mission/util.cpp
@@ -48,16 +50,20 @@ add_file_folder("Source/Mission/Dialogs"
     src/mission/dialogs/AbstractDialogModel.h
 	src/mission/dialogs/CustomWingNamesDialogModel.cpp
 	src/mission/dialogs/CustomWingNamesDialogModel.h
-    src/mission/dialogs/EventEditorDialogModel.cpp
-    src/mission/dialogs/EventEditorDialogModel.h
+    src/mission/dialogs/FictionViewerDialogModel.cpp
+    src/mission/dialogs/FictionViewerDialogModel.h
 	src/mission/dialogs/FormWingDialogModel.cpp
 	src/mission/dialogs/FormWingDialogModel.h
+	src/mission/dialogs/MissionGoalsDialogModel.cpp
+	src/mission/dialogs/MissionGoalsDialogModel.h
 	src/mission/dialogs/MissionSpecDialogModel.cpp
 	src/mission/dialogs/MissionSpecDialogModel.h
 	src/mission/dialogs/ObjectOrientEditorDialogModel.cpp
 	src/mission/dialogs/ObjectOrientEditorDialogModel.h
 	src/mission/dialogs/SelectionDialogModel.cpp
 	src/mission/dialogs/SelectionDialogModel.h
+	src/mission/dialogs/ShieldSystemDialogModel.cpp
+	src/mission/dialogs/ShieldSystemDialogModel.h
 	src/mission/dialogs/WaypointEditorDialogModel.cpp
 	src/mission/dialogs/WaypointEditorDialogModel.h
 )
@@ -72,12 +78,16 @@ add_file_folder("Source/UI"
 add_file_folder("Source/UI/Dialogs"
 	src/ui/dialogs/AboutDialog.cpp
 	src/ui/dialogs/AboutDialog.h
+	src/ui/dialogs/BackgroundEditorDialog.h
+	src/ui/dialogs/BackgroundEditorDialog.cpp
     src/ui/dialogs/BriefingEditorDialog.cpp
     src/ui/dialogs/BriefingEditorDialog.h
 	src/ui/dialogs/CustomWingNamesDialog.cpp
 	src/ui/dialogs/CustomWingNamesDialog.h
     src/ui/dialogs/EventEditorDialog.cpp
     src/ui/dialogs/EventEditorDialog.h
+	src/ui/dialogs/FictionViewerDialog.cpp
+	src/ui/dialogs/FictionViewerDialog.h
 	src/ui/dialogs/FormWingDialog.cpp
 	src/ui/dialogs/FormWingDialog.h
 	src/ui/dialogs/MissionGoalsDialog.cpp
@@ -88,8 +98,12 @@ add_file_folder("Source/UI/Dialogs"
 	src/ui/dialogs/ObjectOrientEditorDialog.h
 	src/ui/dialogs/SelectionDialog.cpp
 	src/ui/dialogs/SelectionDialog.h
+	src/ui/dialogs/ShieldSystemDialog.h
+	src/ui/dialogs/ShieldSystemDialog.cpp
 	src/ui/dialogs/TeamLoadoutDialog.cpp
 	src/ui/dialogs/TeamLoadoutDialog.h
+	src/ui/dialogs/VoiceActingManager.h
+	src/ui/dialogs/VoiceActingManager.cpp
 	src/ui/dialogs/WaypointEditorDialog.cpp
 	src/ui/dialogs/WaypointEditorDialog.h
 )
@@ -97,6 +111,8 @@ add_file_folder("Source/UI/Dialogs"
 add_file_folder("Source/UI/Util"
 	src/ui/util/menu.cpp
 	src/ui/util/menu.h
+	src/ui/util/SignalBlockers.cpp
+	src/ui/util/SignalBlockers.h
 )
 
 add_file_folder("Source/UI/Widgets"
@@ -110,16 +126,20 @@ add_file_folder("Source/UI/Widgets"
 
 add_file_folder("UI"
 	ui/AboutDialog.ui
+	ui/BackgroundEditor.ui
 	ui/BriefingEditorDialog.ui
 	ui/CustomWingNamesDialog.ui
     ui/EventEditorDialog.ui
+	ui/FictionViewerDialog.ui
 	ui/FormWingDialog.ui
     ui/FredView.ui
 	ui/MissionGoalsDialog.ui
 	ui/MissionSpecDialog.ui
 	ui/ObjectOrientationDialog.ui
 	ui/SelectionDialog.ui
+	ui/ShieldSystemDialog.ui
 	ui/TeamLoadoutDialog.ui
+	ui/VoiceActingManager.ui
     ui/WaypointEditorDialog.ui
 )
 

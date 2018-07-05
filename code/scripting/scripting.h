@@ -5,7 +5,7 @@
 #include "globalincs/pstypes.h"
 #include "scripting/lua/LuaFunction.h"
 
-#include <stdio.h>
+#include <cstdio>
 
 //**********Scripting languages that are possible
 #define SC_LUA			(1<<0)

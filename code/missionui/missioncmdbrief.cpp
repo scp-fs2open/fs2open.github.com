@@ -5,7 +5,7 @@
  * or otherwise commercially exploit the source or things you created based on the 
  * source.
  *
-*/ 
+*/
 
 
 
@@ -19,6 +19,7 @@
 #include "graphics/font.h"
 #include "io/key.h"
 #include "io/timer.h"
+#include "mission/missionparse.h"
 #include "mission/missionbriefcommon.h"
 #include "missionui/missioncmdbrief.h"
 #include "missionui/missionscreencommon.h"
@@ -192,7 +193,7 @@ void cmd_brief_init_voice()
 	Assert(Cur_cmd_brief);
 	for (i=0; i<Cur_cmd_brief->num_stages; i++) {
 		Cur_cmd_brief->stage[i].wave = -1;
-		if (stricmp(Cur_cmd_brief->stage[i].wave_filename, NOX("none")) && Cur_cmd_brief->stage[i].wave_filename[0]) {
+		if (stricmp(Cur_cmd_brief->stage[i].wave_filename, NOX("none")) != 0 && Cur_cmd_brief->stage[i].wave_filename[0]) {
 			Cur_cmd_brief->stage[i].wave = audiostream_open(Cur_cmd_brief->stage[i].wave_filename, ASF_VOICE);
 			if (Cur_cmd_brief->stage[i].wave < 0) {
 				nprintf(("General", "Failed to load \"%s\"\n", Cur_cmd_brief->stage[i].wave_filename));
@@ -440,11 +441,11 @@ void cmd_brief_button_pressed(int n)
 	switch (n) {
 		case CMD_BRIEF_BUTTON_HELP:
 			launch_context_help();
-			gamesnd_play_iface(SND_HELP_PRESSED);
+			gamesnd_play_iface(InterfaceSounds::HELP_PRESSED);
 			break;
 
 		case CMD_BRIEF_BUTTON_OPTIONS:
-			gamesnd_play_iface(SND_SWITCH_SCREENS);
+			gamesnd_play_iface(InterfaceSounds::SWITCH_SCREENS);
 			gameseq_post_event(GS_EVENT_OPTIONS_MENU);
 			break;
 
@@ -456,10 +457,10 @@ void cmd_brief_button_pressed(int n)
 			}
 			else if (Cur_stage) {
 				cmd_brief_new_stage(0);
-				gamesnd_play_iface(SND_BRIEF_STAGE_CHG);
+				gamesnd_play_iface(InterfaceSounds::BRIEF_STAGE_CHG);
 			} 
 			else {
-				gamesnd_play_iface(SND_GENERAL_FAIL);
+				gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 			}
 
 			break;
@@ -472,9 +473,9 @@ void cmd_brief_button_pressed(int n)
 			}
 			else if (Cur_stage) {
 				cmd_brief_new_stage(Cur_stage - 1);
-				gamesnd_play_iface(SND_BRIEF_STAGE_CHG);
+				gamesnd_play_iface(InterfaceSounds::BRIEF_STAGE_CHG);
 			} else {
-				gamesnd_play_iface(SND_GENERAL_FAIL);
+				gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 			}
 
 			break;
@@ -482,9 +483,9 @@ void cmd_brief_button_pressed(int n)
 		case CMD_BRIEF_BUTTON_NEXT_STAGE:
 			if (Cur_stage < Cur_cmd_brief->num_stages - 1) {
 				cmd_brief_new_stage(Cur_stage + 1);
-				gamesnd_play_iface(SND_BRIEF_STAGE_CHG);
+				gamesnd_play_iface(InterfaceSounds::BRIEF_STAGE_CHG);
 			} else {
-				gamesnd_play_iface(SND_GENERAL_FAIL);
+				gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 			}
 
 			break;
@@ -492,19 +493,19 @@ void cmd_brief_button_pressed(int n)
 		case CMD_BRIEF_BUTTON_LAST_STAGE:
 			if (Cur_stage < Cur_cmd_brief->num_stages - 1) {
 				cmd_brief_new_stage(Cur_cmd_brief->num_stages - 1);
-				gamesnd_play_iface(SND_BRIEF_STAGE_CHG);
+				gamesnd_play_iface(InterfaceSounds::BRIEF_STAGE_CHG);
 			} else {
-				gamesnd_play_iface(SND_GENERAL_FAIL);
+				gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 			}
 			break;
 
 		case CMD_BRIEF_BUTTON_ACCEPT:
 			cmd_brief_exit();
-			gamesnd_play_iface(SND_COMMIT_PRESSED);
+			gamesnd_play_iface(InterfaceSounds::COMMIT_PRESSED);
 			break;
 
 		case CMD_BRIEF_BUTTON_PAUSE:
-			gamesnd_play_iface(SND_USER_SELECT);
+			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			fsspeech_pause(Player->auto_advance != 0);
 			Player->auto_advance ^= 1;
 			break;
@@ -513,9 +514,9 @@ void cmd_brief_button_pressed(int n)
 			Top_cmd_brief_text_line--;
 			if ( Top_cmd_brief_text_line < 0 ) {
 				Top_cmd_brief_text_line = 0;
-				gamesnd_play_iface(SND_GENERAL_FAIL);
+				gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 			} else {
-				gamesnd_play_iface(SND_SCROLL);
+				gamesnd_play_iface(InterfaceSounds::SCROLL);
 			}
 			break;
 
@@ -523,9 +524,9 @@ void cmd_brief_button_pressed(int n)
 			Top_cmd_brief_text_line++;
 			if ( (Num_brief_text_lines[0] - Top_cmd_brief_text_line) < Max_cmdbrief_Lines) {
 				Top_cmd_brief_text_line--;
-				gamesnd_play_iface(SND_GENERAL_FAIL);
+				gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 			} else {
-				gamesnd_play_iface(SND_SCROLL);
+				gamesnd_play_iface(InterfaceSounds::SCROLL);
 			}
 			break;
 	}

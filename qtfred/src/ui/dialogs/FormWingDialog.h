@@ -21,7 +21,7 @@ class FormWingDialog: public QDialog, public IDialog<FormWingDialogModel> {
 
  public:
 	explicit FormWingDialog(QWidget* parent, EditorViewport* viewport);
-	~FormWingDialog();
+	~FormWingDialog() override;
 
  private:
 	FormWingDialogModel* getModel() override;

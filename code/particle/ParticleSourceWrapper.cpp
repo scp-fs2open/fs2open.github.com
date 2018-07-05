@@ -12,13 +12,14 @@ namespace particle
 		m_sources.push_back(source);
 	}
 
-	ParticleSourceWrapper::ParticleSourceWrapper(ParticleSourceWrapper&& other)
+	ParticleSourceWrapper::ParticleSourceWrapper(ParticleSourceWrapper&& other) SCP_NOEXCEPT
 	{
 		*this = std::move(other);
 	}
 
 	ParticleSourceWrapper::~ParticleSourceWrapper()
 	{
+
 		// Prevent empty wrapper from causing issues
 		if (!m_sources.empty())
 		{
@@ -27,7 +28,7 @@ namespace particle
 		}
 	}
 
-	ParticleSourceWrapper& ParticleSourceWrapper::operator=(ParticleSourceWrapper&& other)
+	ParticleSourceWrapper& ParticleSourceWrapper::operator=(ParticleSourceWrapper&& other) SCP_NOEXCEPT
 	{
 		std::swap(other.m_sources, m_sources);
 		return *this;
@@ -59,7 +60,7 @@ namespace particle
 		}
 	}
 
-	void ParticleSourceWrapper::moveToParticle(WeakParticlePtr ptr)
+	void ParticleSourceWrapper::moveToParticle(const WeakParticlePtr& ptr)
 	{
 		for (auto& source : m_sources)
 		{

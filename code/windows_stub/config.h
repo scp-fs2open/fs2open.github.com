@@ -5,7 +5,7 @@
 #ifndef _CONFIG_H
 #define _CONFIG_H
 
-#include <stdio.h>
+#include <cstdio>
 
 
 #include <SDL.h>
@@ -28,12 +28,6 @@
 #endif  // BYTE_ORDER
 
 #if defined _WIN32
-
-#include <direct.h> // for _mkdir, ...
-
-#ifndef snprintf
-#define snprintf _snprintf
-#endif
 
 #ifndef filelength
 #define filelength _filelength

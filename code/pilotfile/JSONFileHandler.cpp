@@ -37,7 +37,7 @@ const char* lookupSectionName(Section s) {
 			return pair.second;
 		}
 	}
-	Assertion(false, "Unknown section!");
+	UNREACHABLE("Unknown section!");
 	return nullptr;
 }
 
@@ -47,7 +47,7 @@ Section lookupSectionValue(const char* name) {
 			return pair.first;
 		}
 	}
-	Assertion(false, "Unknown section name!");
+	UNREACHABLE("Unknown section name!");
 	return Section::Unnamed;
 }
 }

@@ -28,7 +28,7 @@ class FredView: public QMainWindow, public IDialogProvider {
 
  public:
 	explicit FredView(QWidget* parent = nullptr);
-	~FredView();
+	~FredView() override;
 	void setEditor(Editor* editor, EditorViewport* viewport);
 
 	void loadMissionFile(const QString& pathName);
@@ -44,6 +44,7 @@ class FredView: public QMainWindow, public IDialogProvider {
 	void newMission();
 
  private slots:
+	void on_actionSave_As_triggered(bool);
 	void on_actionExit_triggered(bool);
 
 	void on_actionConstrainX_triggered(bool enabled);
@@ -117,6 +118,11 @@ class FredView: public QMainWindow, public IDialogProvider {
 	void on_actionError_Checker_triggered(bool);
 
 	void on_actionAbout_triggered(bool);
+	void on_actionBackground_triggered(bool);
+	void on_actionShield_System_triggered(bool);
+	void on_actionVoice_Acting_Manager_triggered(bool);
+	void on_actionFiction_Viewer_triggered(bool);
+	void on_actionMission_Objectives_triggered(bool);
  signals:
 	/**
 	 * @brief Special version of FredApplication::onIdle which is limited to the lifetime of this object

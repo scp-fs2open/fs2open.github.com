@@ -285,7 +285,7 @@ int HudGaugeEscort::setGaugeColorEscort(int index, int team)
 	return is_flashing;
 }
 
-void HudGaugeEscort::render(float frametime)
+void HudGaugeEscort::render(float  /*frametime*/)
 {
 	int	i = 0;
 
@@ -386,7 +386,7 @@ void HudGaugeEscort::renderIcon(int x, int y, int index)
 
 	// show ship integrity
 	hud_get_target_strength(objp, &shields, &integrity);
-	screen_integrity = fl2i(integrity*100 + 0.5f);
+	screen_integrity = (int)std::lround(integrity * 100);
 	offset = 0;
 	if ( screen_integrity < 100 ) {
 		offset = 2;
@@ -905,7 +905,7 @@ void hud_add_ship_to_escort(int objnum, int supress_feedback)
 
 		if (!found) {
 			HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Escort list is full with %d ships", 288), Num_escort_ships);
-			snd_play( gamesnd_get_game_sound(SND_TARGET_FAIL));
+			snd_play( gamesnd_get_game_sound(GameSounds::TARGET_FAIL));
 		}
 	}
 
@@ -932,7 +932,7 @@ void hud_add_remove_ship_escort(int objnum, int supress_feedback)
 
 	if ( Objects[objnum].type != OBJ_SHIP ) {
 		if ( !supress_feedback ) {
-			snd_play( gamesnd_get_game_sound(SND_TARGET_FAIL));
+			snd_play( gamesnd_get_game_sound(GameSounds::TARGET_FAIL));
 		}
 		return;
 	}
@@ -988,7 +988,7 @@ void hud_remove_ship_from_escort(int objnum)
  * @param objp      The object hit
  * @param quadrant  Shield quadrant on the object that was hit, alternatively -1 if no shield
  */
-void hud_escort_ship_hit(object *objp, int quadrant)
+void hud_escort_ship_hit(object *objp, int  /*quadrant*/)
 {
 	// no ships on the escort list in multiplayer dogfight
 	if(MULTI_DOGFIGHT){
@@ -1010,7 +1010,7 @@ void hud_escort_target_next()
 	int objnum;
 
 	if ( Num_escort_ships == 0 ) {
-		snd_play( gamesnd_get_game_sound(SND_TARGET_FAIL), 0.0f );
+		snd_play( gamesnd_get_game_sound(GameSounds::TARGET_FAIL), 0.0f );
 		return;
 	}
 

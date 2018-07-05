@@ -229,8 +229,8 @@ void FrameProfiler::store_profile_in_history(SCP_string& name,
 	history.push_back(new_history);
 }
 void FrameProfiler::dump_output(SCP_stringstream& out,
-								uint64_t start_profile_time,
-								uint64_t end_profile_time,
+								uint64_t  /*start_profile_time*/,
+								uint64_t  /*end_profile_time*/,
 								SCP_vector<profile_sample>& samples) {
 	out << "  Avg :  Min :  Max :   # : Profile Name\n";
 	out << "----------------------------------------\n";
@@ -261,14 +261,15 @@ void FrameProfiler::dump_output(SCP_stringstream& out,
 		sprintf(max, "%3.1fms", i2fl(max_micro_seconds) * 0.000001f);
 		sprintf(num, "%3d", samples[i].profile_instances);
 
-		SCP_string indented_name(samples[i].name);
+		SCP_string indented_name;
 
 		for (uint indent = 0; indent < samples[i].num_parents; indent++) {
-			indented_name = ">" + indented_name;
+			indented_name += ">";
 		}
+		indented_name += samples[i].name;
 
 		char line[256];
-		sprintf(line, "%5s : %5s : %5s : %3s : ", avg, min, max, num);
+		sprintf_safe(line, "%5s : %5s : %5s : %3s : ", avg, min, max, num);
 
 		out << line + indented_name + "\n";
 	}

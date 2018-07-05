@@ -67,6 +67,7 @@ FFmpegContext::~FFmpegContext() {
 				av_free(m_ctx->pb->buffer);
 			}
 			av_free(m_ctx->pb);
+			m_ctx->pb = nullptr;
 		}
 
 		avformat_close_input(&m_ctx);

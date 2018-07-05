@@ -29,6 +29,7 @@ class medal_stuff
 {
 public:
 	char	name[NAME_LENGTH];
+	SCP_string alt_name;
 	char	bitmap[MAX_FILENAME_LEN];
 	char	debrief_bitmap[MAX_FILENAME_LEN];
 	int	num_versions;
@@ -41,13 +42,8 @@ public:
 	SCP_map<int, SCP_string> promotion_text;
 
 	medal_stuff();
-	~medal_stuff();
 
-	medal_stuff(const medal_stuff &m);
-	const medal_stuff &operator=(const medal_stuff &m);
-
-private:
-	void clone(const medal_stuff &m);
+	const char* get_display_string();
 };
 
 extern SCP_vector<medal_stuff> Medals;

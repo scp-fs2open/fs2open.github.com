@@ -10,7 +10,7 @@
 #ifndef _PARSE_H
 #define _PARSE_H
 
-#include <setjmp.h>
+#include <csetjmp>
 
 #include "ai/ai.h"
 #include "ai/ai_profiles.h"

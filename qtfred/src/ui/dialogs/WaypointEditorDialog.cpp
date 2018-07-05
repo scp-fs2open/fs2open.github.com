@@ -2,7 +2,7 @@
 #include <jumpnode/jumpnode.h>
 #include <QtWidgets/QTextEdit>
 #include "ui/dialogs/WaypointEditorDialog.h"
-
+#include "ui/util/SignalBlockers.h"
 #include "ui_WaypointEditorDialog.h"
 
 namespace fso {
@@ -49,8 +49,6 @@ void WaypointEditorDialog::reject() {
 	accept();
 }
 void WaypointEditorDialog::updateComboBox() {
-	QSignalBlocker blocker(ui->pathSelection);
-
 	// Remove all previous entries
 	ui->pathSelection->clear();
 
@@ -64,9 +62,7 @@ void WaypointEditorDialog::updateComboBox() {
 	ui->pathSelection->setEnabled(ui->pathSelection->count() > 0);
 }
 void WaypointEditorDialog::updateUI() {
-	// We need to block signals here or else updating the combobox would lead to and update of the model
-	// which would call this function again
-	QSignalBlocker blocker(this);
+	util::SignalBlockers blockers(this);
 
 	updateComboBox();
 

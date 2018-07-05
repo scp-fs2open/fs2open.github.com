@@ -111,7 +111,7 @@ char title_str[512];
 static HWND Multi_gen_dialog = NULL;		// the dialog itself
 
 // dialog proc for this dialog
-BOOL CALLBACK std_gen_dialog_proc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
+BOOL CALLBACK std_gen_dialog_proc(HWND /*hwndDlg*/, UINT uMsg, WPARAM /*wParam*/, LPARAM /*lParam*/)
 {
 	switch(uMsg){		
 	case WM_INITDIALOG:
@@ -624,7 +624,7 @@ void std_multi_setup_goal_tree()
 	char goal_name[NAME_LENGTH+1];
 
 	// clear out the tree control
-	TreeView_DeleteAllItems(Standalone_goals);
+	(void)TreeView_DeleteAllItems(Standalone_goals);
 
    // add the primary goal tag
    new_item.mask = TVIF_TEXT | TVIF_IMAGE | TVIF_SELECTEDIMAGE;
@@ -709,7 +709,7 @@ void std_multi_add_goals()
 
 		// insert the item
 		tree_insert.item = new_item;
-		TreeView_InsertItem(Standalone_goals,&tree_insert);
+		(void)TreeView_InsertItem(Standalone_goals,&tree_insert);
 	}	
 
 	// check to see if there are any of the three types of mission goals. If not, then 
@@ -722,7 +722,7 @@ void std_multi_add_goals()
 		new_item.iImage = 3;
 		new_item.iSelectedImage = 3;
 		tree_insert.item = new_item;
-		TreeView_InsertItem(Standalone_goals,&tree_insert);
+		(void)TreeView_InsertItem(Standalone_goals,&tree_insert);
 	}
 	if(!(perm_goal_flags & (1<<2))){
 		// insert the "none" item
@@ -732,7 +732,7 @@ void std_multi_add_goals()
 		new_item.iImage = 3;
 		new_item.iSelectedImage = 3;
 		tree_insert.item = new_item;
-		TreeView_InsertItem(Standalone_goals,&tree_insert);
+		(void)TreeView_InsertItem(Standalone_goals,&tree_insert);
 	}
 	if(!(perm_goal_flags & (1<<3))){
 		// insert the "none" item
@@ -742,12 +742,12 @@ void std_multi_add_goals()
 		new_item.iImage = 3;
 		new_item.iSelectedImage = 3;
 		tree_insert.item = new_item;
-		TreeView_InsertItem(Standalone_goals,&tree_insert);
+		(void)TreeView_InsertItem(Standalone_goals,&tree_insert);
 	}
 
 	// expand out all the tree roots so all goals are shown
 	for(idx=0;idx<3;idx++){
-		TreeView_Expand(Standalone_goals,Goal_items[idx],TVE_EXPAND);
+		(void)TreeView_Expand(Standalone_goals,Goal_items[idx],TVE_EXPAND);
 	}
 }
 
@@ -814,7 +814,7 @@ void std_multi_update_goals()
 		// set the actual image
 		if(should_update){
 			setting.hItem = update_item;
-			TreeView_SetItem(Standalone_goals,&setting);		
+			(void)TreeView_SetItem(Standalone_goals,&setting);
 		}
 	}
 }
@@ -980,7 +980,7 @@ void std_multi_init_multi_controls(HWND hwndDlg)
         WS_VISIBLE | WS_CHILD | WS_BORDER | TVS_HASLINES, 
         GOALVIEW_X,GOALVIEW_Y,GOALVIEW_W,GOALVIEW_H,
         hwndDlg, NULL, GetModuleHandle(NULL), NULL); 
-	TreeView_SetImageList(Standalone_goals,Goal_bitmaps,TVSIL_NORMAL);
+	(void)TreeView_SetImageList(Standalone_goals,Goal_bitmaps,TVSIL_NORMAL);
 }
 
 // return the handle to the item matching the given parameters
@@ -1003,7 +1003,7 @@ HTREEITEM std_multi_get_goal_item(char *goal_string,int type)
 	moveup = TreeView_GetChild(Standalone_goals,Goal_items[type]);
 	while(!done && moveup!=NULL){
 		lookup.hItem = moveup;
-		TreeView_GetItem(Standalone_goals,&lookup);
+		(void)TreeView_GetItem(Standalone_goals,&lookup);
 		if(strcmp(lookup.pszText,goal_string)==0){
 			ret = moveup;
 			done=1;
@@ -1016,7 +1016,7 @@ HTREEITEM std_multi_get_goal_item(char *goal_string,int type)
 }
 
 // message handler for the multiplayer tab
-BOOL CALLBACK multi_proc(HWND hwndDlg,UINT uMsg,WPARAM wParam,LPARAM lParam)
+BOOL CALLBACK multi_proc(HWND hwndDlg,UINT uMsg,WPARAM /*wParam*/,LPARAM lParam)
 {
 	switch(uMsg){
 	// initialize the page
@@ -1069,7 +1069,7 @@ static HWND Player_mstats[MAX_PLAYER_STAT_FIELDS];		// text boxes for player mis
 #define STD_ADDSTRING(hwnd,val) { snprintf(txt,sizeof(txt)-1,"%d",(int)val); SetWindowText(hwnd,txt); }
 
 // intialize all the controls in the player info tab
-void std_pinfo_init_player_info_controls(HWND hwndDlg);
+void std_pinfo_init_player_info_controls();
 
 // returns true or false depending on whether the passed netplayer is the currently selected guy
 int std_pinfo_player_is_active(net_player *p);
@@ -1206,7 +1206,7 @@ void std_pinfo_clear_controls()
 }
 
 // intialize all the controls in the player info tab
-void std_pinfo_init_player_info_controls(HWND hwndDlg)
+void std_pinfo_init_player_info_controls()
 {	
 	// create the player callsign listbox
 	Player_name_list = GetDlgItem(Page_handles[PLAYER_INFO_PAGE],(int)(uintptr_t)MAKEINTRESOURCE(IDC_PLAYER_LIST));
@@ -1283,7 +1283,7 @@ BOOL CALLBACK player_info_proc(HWND hwndDlg,UINT uMsg,WPARAM wParam,LPARAM lPara
 		Page_handles[PLAYER_INFO_PAGE] = hwndDlg;
 
 		// intialize all the control
-      std_pinfo_init_player_info_controls(hwndDlg);
+      std_pinfo_init_player_info_controls();
 		return 1;
 		break;
 
@@ -1347,7 +1347,7 @@ static int  Godstuff_longest_message = 0;				// longest width of a string in the
 
 
 // initialize all the controls in the godstuff tab
-void std_gs_init_godstuff_controls(HWND hwndDlg);
+void std_gs_init_godstuff_controls();
 
 // add a player to the listbox on the godstuff page
 void std_gs_add_god_player(net_player *p)
@@ -1424,7 +1424,7 @@ void std_gs_clear_controls()
 }
 
 // initialize all the controls in the godstuff tab
-void std_gs_init_godstuff_controls(HWND hwndDlg)
+void std_gs_init_godstuff_controls()
 {
 	// initialize the player listbox control   
 	God_player_list = GetDlgItem(Page_handles[GODSTUFF_PAGE], (int)(uintptr_t)MAKEINTRESOURCE(IDC_PLAYER_GOD_LIST));
@@ -1464,7 +1464,7 @@ BOOL CALLBACK godstuff_proc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lPara
 			Page_handles[GODSTUFF_PAGE] = hwndDlg;
 
 			// initialize the controls for this page
-			std_gs_init_godstuff_controls(hwndDlg);
+			std_gs_init_godstuff_controls();
 
 			return 1;
 		}
@@ -1607,7 +1607,7 @@ void std_debug_init_debug_controls(HWND hwndDlg)
 }
 
 // message handler for the godstuff tab
-BOOL CALLBACK debug_proc(HWND hwndDlg,UINT uMsg,WPARAM wParam,LPARAM lParam)
+BOOL CALLBACK debug_proc(HWND hwndDlg,UINT uMsg,WPARAM /*wParam*/,LPARAM lParam)
 {
 	switch(uMsg){
 	// initialize the dialog
@@ -2343,7 +2343,7 @@ static void standalone_do_systray(int mode)
 }
 
 // just like the osapi version for the nonstandalone mode of FreeSpace
-DWORD standalone_process(WORD lparam)
+DWORD standalone_process(WORD /*lparam*/)
 {
 	MSG msg;
 

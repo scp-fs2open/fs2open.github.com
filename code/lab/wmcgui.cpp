@@ -790,7 +790,7 @@ GUIObject::~GUIObject()
 	prev->next = next;
 }
 
-void GUIObject::DeleteChildren(GUIObject* exception)
+void GUIObject::DeleteChildren(GUIObject*  /*exception*/)
 {
 	if ( EMPTY(&Children) ) {
 		return;
@@ -1311,7 +1311,7 @@ int Window::DoRefreshSize()
 	return OF_TRUE;
 }
 
-int Window::DoMouseOver(float frametime)
+int Window::DoMouseOver(float  /*frametime*/)
 {
 	if (OwnerSystem->GetMouseX() >= HideCoords[0]
 		&& OwnerSystem->GetMouseX() <= HideCoords[2]
@@ -1334,7 +1334,7 @@ int Window::DoMouseOver(float frametime)
 	return OF_TRUE;
 }
 
-int Window::DoMouseDown(float frametime)
+int Window::DoMouseDown(float  /*frametime*/)
 {
 	OwnerSystem->SetActiveObject(this);
 
@@ -1357,7 +1357,7 @@ int Window::DoMouseDown(float frametime)
 	return OF_TRUE;
 }
 
-int Window::DoMouseUp(float frametime)
+int Window::DoMouseUp(float  /*frametime*/)
 {
 	if (Style & WS_NONMOVEABLE) {
 		return OF_TRUE;
@@ -1387,7 +1387,7 @@ int Window::DoMouseUp(float frametime)
 	return OF_TRUE;
 }
 
-int Window::DoMouseOut(float frametime)
+int Window::DoMouseOut(float  /*frametime*/)
 {
 	HideHighlight = false;
 	CloseHighlight = false;
@@ -1436,7 +1436,7 @@ void draw_open_rect(int x1, int y1, int x2, int y2, int resize_mode = GR_RESIZE_
 	gr_line(x1, y2, x1, y1, resize_mode);
 }
 
-void Window::DoDraw(float frametime)
+void Window::DoDraw(float  /*frametime*/)
 {
 	int w, h;
 
@@ -1631,7 +1631,7 @@ int Button::DoRefreshSize()
 	return OF_TRUE;
 }
 
-void Button::DoDraw(float frametime)
+void Button::DoDraw(float  /*frametime*/)
 {
 	if (IMG_HANDLE_IS_VALID(GetCIEImageHandle(BCI_BUTTON))) {
 		IMG_SET(GetCIEImageHandle(BCI_BUTTON));
@@ -1662,7 +1662,7 @@ void Button::DoDraw(float frametime)
 	}
 }
 
-int Button::DoMouseDown(float frametime)
+int Button::DoMouseDown(float  /*frametime*/)
 {
 	OwnerSystem->SetActiveObject(this);
 
@@ -1672,7 +1672,7 @@ int Button::DoMouseDown(float frametime)
 	return OF_TRUE;
 }
 
-int Button::DoMouseUp(float frametime)
+int Button::DoMouseUp(float  /*frametime*/)
 {
 	if (function != NULL) {
 		function(this);
@@ -1687,7 +1687,7 @@ int Button::DoMouseUp(float frametime)
 	return OF_TRUE;
 }
 
-int Button::DoMouseOut(float frametime)
+int Button::DoMouseOut(float  /*frametime*/)
 {
 	if (!(Style & BS_STICKY)) {
 		IsDown = false;
@@ -1838,7 +1838,7 @@ void Tree::DrawItems(TreeItem *items)
 	}
 }
 
-void Tree::DoDraw(float frametime)
+void Tree::DoDraw(float  /*frametime*/)
 {
 
 	if (EMPTY(&Items)) {
@@ -1877,19 +1877,19 @@ TreeItem* Tree::HitTest(TreeItem *items)
 	return hti;
 }
 
-int Tree::DoMouseOver(float frametime)
+int Tree::DoMouseOver(float  /*frametime*/)
 {
 	HighlightedItem = HitTest(&Items);
 	return OF_TRUE;
 }
 
-int Tree::DoMouseDown(float frametime)
+int Tree::DoMouseDown(float  /*frametime*/)
 {
 	OwnerSystem->SetActiveObject(this);
 	return OF_TRUE;
 }
 
-int Tree::DoMouseUp(float frametime)
+int Tree::DoMouseUp(float  /*frametime*/)
 {
 	OwnerSystem->SetActiveObject(this);
 
@@ -2025,7 +2025,7 @@ int Text::DoRefreshSize()
 	return OF_TRUE;
 }
 
-int Text::DoMouseDown(float frametime)
+int Text::DoMouseDown(float  /*frametime*/)
 {
 	//Make this the active object
 	if (Style & T_EDITTABLE) {
@@ -2038,7 +2038,7 @@ int Text::DoMouseDown(float frametime)
 	}
 }
 
-void Text::DoDraw(float frametime)
+void Text::DoDraw(float  /*frametime*/)
 {
 	if (OwnerSystem->GetActiveObject() != this) {
 		gr_set_color_fast(&Color_text_normal);
@@ -2064,7 +2064,7 @@ void Text::DoDraw(float frametime)
 
 extern int keypad_to_ascii(int c);
 
-int Text::DoKeyPress(float frametime)
+int Text::DoKeyPress(float  /*frametime*/)
 {
 	if (!(Style & T_EDITTABLE)) {
 		return OF_FALSE;
@@ -2416,7 +2416,7 @@ void Checkbox::DoMove(int dx, int dy)
 	CheckCoords[3] += dy;
 }
 
-void Checkbox::DoDraw(float frametime)
+void Checkbox::DoDraw(float  /*frametime*/)
 {
 	if (HighlightStatus == 1) {
 		gr_set_color_fast(&Color_text_active);
@@ -2438,7 +2438,7 @@ void Checkbox::DoDraw(float frametime)
 	gr_string(CheckCoords[2] + CB_TEXTCHECKDIST, CheckCoords[1], Label.c_str(), GR_RESIZE_NONE);
 }
 
-int Checkbox::DoMouseOver(float frametime)
+int Checkbox::DoMouseOver(float  /*frametime*/)
 {
 	if ( (OwnerSystem->GetMouseX() >= CheckCoords[0])
 		&& (OwnerSystem->GetMouseX() <= CheckCoords[2])
@@ -2450,7 +2450,7 @@ int Checkbox::DoMouseOver(float frametime)
 	return OF_TRUE;
 }
 
-int Checkbox::DoMouseDown(float frametime)
+int Checkbox::DoMouseDown(float  /*frametime*/)
 {
 	OwnerSystem->SetActiveObject(this);
 
@@ -2464,7 +2464,7 @@ int Checkbox::DoMouseDown(float frametime)
 	return OF_TRUE;
 }
 
-int Checkbox::DoMouseUp(float frametime)
+int Checkbox::DoMouseUp(float  /*frametime*/)
 {
 	if ( (OwnerSystem->GetMouseX() >= CheckCoords[0])
 		&& (OwnerSystem->GetMouseX() <= CheckCoords[2])
@@ -2505,7 +2505,7 @@ int Checkbox::DoMouseUp(float frametime)
 	return OF_TRUE;
 }
 
-int Checkbox::DoMouseOut(float frametime)
+int Checkbox::DoMouseOut(float  /*frametime*/)
 {
 	HighlightStatus = 0;
 
@@ -2513,7 +2513,7 @@ int Checkbox::DoMouseOut(float frametime)
 }
 
 //*****************************ImageAnim*******************************
-ImageAnim::ImageAnim(const SCP_string &in_name, const SCP_string &in_imagename, int x_coord, int y_coord, int x_width, int y_width, int in_style)
+ImageAnim::ImageAnim(const SCP_string &in_name, const SCP_string & /*in_imagename*/, int x_coord, int y_coord, int x_width, int y_width, int in_style)
 :GUIObject(in_name, x_coord, y_coord, x_width, y_width, in_style)
 {
 	//Load the image
@@ -2612,7 +2612,7 @@ void ImageAnim::SetImage(const SCP_string &in_imagename)
 	OnRefreshSize();
 }
 
-void ImageAnim::Play(bool in_isreversed)
+void ImageAnim::Play(bool  /*in_isreversed*/)
 {
 	if (ImageFlags & IF_REVERSED) {
 		PlayType = PT_PLAYING;
@@ -2719,7 +2719,7 @@ void Slider::DoMove(int dx, int dy)
 	BarCoords[3] += dy;
 }
 
-void Slider::DoDraw(float frametime)
+void Slider::DoDraw(float  /*frametime*/)
 {
 	gr_set_color_fast(&Color_text_normal);
 
@@ -2741,7 +2741,7 @@ void Slider::DoDraw(float frametime)
 	gr_rect(sliderX, BarCoords[1], SliderWidth, BarCoords[3] - BarCoords[1], false);
 }
 
-int Slider::DoMouseDown(float frametime)
+int Slider::DoMouseDown(float  /*frametime*/)
 {
 	OwnerSystem->SetActiveObject(this);
 
@@ -2774,7 +2774,7 @@ int Slider::DoMouseDown(float frametime)
 	return OF_TRUE;
 }
 
-int Slider::DoMouseUp(float frametime)
+int Slider::DoMouseUp(float  /*frametime*/)
 {
 	SliderGrabbed = false;
 

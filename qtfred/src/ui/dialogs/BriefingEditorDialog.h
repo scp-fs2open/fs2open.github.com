@@ -17,7 +17,7 @@ class BriefingEditorDialog : public QDialog
 
 public:
     explicit BriefingEditorDialog(QWidget *parent = 0);
-    ~BriefingEditorDialog();
+    ~BriefingEditorDialog() override;
 
 private:
     Ui::BriefingEditorDialog *ui;

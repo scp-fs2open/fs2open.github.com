@@ -958,14 +958,14 @@ void chatbox_toggle_size()
 		chatbox_force_big();
 		
 		// play a sound
-		gamesnd_play_iface(SND_IFACE_MOUSE_CLICK);
+		gamesnd_play_iface(InterfaceSounds::IFACE_MOUSE_CLICK);
 	}
 	// if we're in "big" mode
 	else if(Chatbox_mode_flags & CHATBOX_FLAG_BIG){
 		chatbox_force_small();
 		
 		// play a sound
-		gamesnd_play_iface(SND_IFACE_MOUSE_CLICK);
+		gamesnd_play_iface(InterfaceSounds::IFACE_MOUSE_CLICK);
 	}
 }
 
