@@ -34,7 +34,7 @@ void setOGLProperties(const os::ViewPortProperties& props) {
 			profile = SDL_GL_CONTEXT_PROFILE_COMPATIBILITY;
 			break;
 		default:
-			Assertion(false, "Unhandled profile value!");
+			UNREACHABLE("Unhandled profile value!");
 			return;
 	}
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, profile);
@@ -87,10 +87,10 @@ class SDLWindowViewPort: public os::Viewport {
 	const os::ViewPortProperties& getProps() const {
 		return _props;
 	}
-	virtual SDL_Window* toSDLWindow() override {
+	SDL_Window* toSDLWindow() override {
 		return _window;
 	}
-	virtual std::pair<uint32_t, uint32_t> getSize() override {
+	std::pair<uint32_t, uint32_t> getSize() override {
 		int width, height;
 		SDL_GetWindowSize(_window, &width, &height);
 
@@ -99,7 +99,7 @@ class SDLWindowViewPort: public os::Viewport {
 	void swapBuffers() override {
 		SDL_GL_SwapWindow(_window);
 	}
-	virtual void setState(os::ViewportState state) override {
+	void setState(os::ViewportState state) override {
 		switch (state) {
 			case os::ViewportState::Windowed:
 				SDL_SetWindowFullscreen(_window, 0);
@@ -113,11 +113,11 @@ class SDLWindowViewPort: public os::Viewport {
 				SDL_SetWindowFullscreen(_window, SDL_WINDOW_FULLSCREEN);
 				break;
 			default:
-				Assertion(false, "Invalid window state!");
+				UNREACHABLE("Invalid window state!");
 				break;
 		}
 	}
-	virtual void minimize() override {
+	void minimize() override {
 		// lets not minimize if we are in windowed mode
 		if (!(SDL_GetWindowFlags(_window) & SDL_WINDOW_FULLSCREEN)) {
 			return;
@@ -126,7 +126,7 @@ class SDLWindowViewPort: public os::Viewport {
 		SDL_MinimizeWindow(_window);
 	}
 
-	virtual void restore() override {
+	void restore() override {
 		SDL_RestoreWindow(_window);
 	}
 };

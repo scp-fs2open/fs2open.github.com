@@ -22,14 +22,14 @@ class FFMPEGVideoFrame: public VideoFrame {
 	FFMPEGVideoFrame() : frame(nullptr) {
 	}
 
-	virtual ~FFMPEGVideoFrame() {
+	~FFMPEGVideoFrame() override {
 		if (frame != nullptr) {
 			av_freep(&frame->data[0]);
 			av_frame_free(&frame);
 		}
 	}
 
-	virtual DataPointers getDataPointers() {
+	DataPointers getDataPointers() override {
 		DataPointers ptrs;
 		ptrs.y = frame->data[0];
 		ptrs.u = frame->data[1];
@@ -89,7 +89,11 @@ void VideoDecoder::convertAndPushPicture(const AVFrame* frame) {
 	}
 
 	videoFramePtr->id = ++m_frameId;
+#if LIBAVCODEC_VERSION_INT > AV_VERSION_INT(58, 3, 102)
+	videoFramePtr->frameTime = getFrameTime(frame->best_effort_timestamp, m_status->videoStream->time_base);
+#else
 	videoFramePtr->frameTime = getFrameTime(av_frame_get_best_effort_timestamp(frame), m_status->videoStream->time_base);
+#endif
 	videoFramePtr->frame = yuvFrame;
 
 	videoFramePtr->ySize.height = static_cast<size_t>(m_status->videoCodecPars.height);

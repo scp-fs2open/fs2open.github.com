@@ -353,15 +353,6 @@ void light_apply_rgb( ubyte *param_r, ubyte *param_g, ubyte *param_b, const vec3
 	int idx;
 	float rval, gval, bval;
 
-	if (Detail.lighting==0) {
-		// No static light
-		ubyte lVal = ubyte(fl2i(static_light_level*255.0f));
-		*param_r = lVal;
-		*param_g = lVal;
-		*param_b = lVal;
-		return;
-	}
-
 	if ( Lighting_off ) {
 		*param_r = 255;
 		*param_g = 255;

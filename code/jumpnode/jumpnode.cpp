@@ -58,7 +58,7 @@ CJumpNode::CJumpNode(vec3d *position) : m_radius(0.0f), m_modelnum(-1), m_objnum
     m_objnum = obj_create(OBJ_JUMP_NODE, -1, -1, NULL, &m_pos, m_radius, default_flags);
 }
 
-CJumpNode::CJumpNode(CJumpNode&& other)
+CJumpNode::CJumpNode(CJumpNode&& other) SCP_NOEXCEPT
 	: m_radius(other.m_radius), m_modelnum(other.m_modelnum), m_objnum(other.m_objnum), m_flags(other.m_flags)
 {
 	other.m_radius = 0.0f;
@@ -72,7 +72,7 @@ CJumpNode::CJumpNode(CJumpNode&& other)
 	strcpy_s(m_name, other.m_name);
 }
 
-CJumpNode& CJumpNode::operator=(CJumpNode&& other)
+CJumpNode& CJumpNode::operator=(CJumpNode&& other) SCP_NOEXCEPT
 {
 	if (this != &other)
 	{
@@ -357,7 +357,7 @@ void CJumpNode::Render(model_draw_list* scene, vec3d *pos, vec3d *view_pos)
 			} else if ( dist > 10000 ) {
 				alpha_index = HUD_COLOR_ALPHA_USER_MIN;
 			} else {
-				alpha_index = fl2i( HUD_COLOR_ALPHA_USER_MAX - 2 + (dist-1000) * (HUD_COLOR_ALPHA_USER_MIN-HUD_COLOR_ALPHA_USER_MAX-2) / (9000) + 0.5f);
+				alpha_index = (int)std::lround( HUD_COLOR_ALPHA_USER_MAX - 2 + (dist-1000) * (HUD_COLOR_ALPHA_USER_MIN-HUD_COLOR_ALPHA_USER_MAX-2) / (9000));
 				if ( alpha_index < HUD_COLOR_ALPHA_USER_MIN ) {
 					alpha_index = HUD_COLOR_ALPHA_USER_MIN;
 				}

@@ -85,8 +85,18 @@ Category RenderMainFrame("Render frame", true);
 Category RenderHUD("Render HUD", true);
 Category RenderHUDHook("Render HUD Scripting Hook", true);
 Category RenderHUDGauge("Render HUD Gauge", true);
+Category RenderTargettingBracket("Render Target bracket", true);
+Category RenderNavBracket("Render Nav bracket", true);
 Category MainFrame("Main Frame", true);
 Category PageFlip("Page flip", true);
+
+Category NanoVGFlushFrame("NanoVG flush frame", true);
+Category NanoVGDrawFill("NanoVG Draw fill", true);
+Category NanoVGDrawConvexFill("NanoVG Draw convex fill", true);
+Category NanoVGDrawStroke("NanoVG Draw stroke", true);
+Category NanoVGDrawTriangles("NanoVG Draw Triangles", true);
+
+Category LineDrawListFlush("Line draw list flush", true);
 
 Category CutsceneStep("Cutscene step", true);
 Category CutsceneDrawVideoFrame("Draw cutscene frame", true);

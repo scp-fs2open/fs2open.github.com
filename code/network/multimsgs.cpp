@@ -10,7 +10,7 @@
 
 
 
-#include <limits.h>
+#include <climits>
 
 #include "globalincs/pstypes.h"
 #include "network/multimsgs.h"
@@ -942,7 +942,7 @@ void process_join_packet(ubyte* data, header* hinfo)
 		case JOIN_QUERY_RESTRICTED :		
 			if(!(Game_mode & GM_STANDALONE_SERVER)){			
 				// notify the host of the event
-				snd_play(gamesnd_get_game_sound(SND_CUE_VOICE));
+				snd_play(gamesnd_get_game_sound(GameSounds::CUE_VOICE));
 			}
 
 			// set the query timestamp
@@ -2275,7 +2275,7 @@ void send_server_query(net_addr *addr)
 }
 
 // process a query from a client looking for active freespace games
-void process_game_query(ubyte* data, header* hinfo)
+void process_game_query(ubyte*  /*data*/, header* hinfo)
 {
 	int offset;	
 	net_addr addr;
@@ -2936,7 +2936,7 @@ void process_cargo_hidden_packet( ubyte *data, header *hinfo )
 #define SFPF_TARGET_LOCKED		(1<<5)
 
 // send a packet indicating a secondary weapon was fired
-void send_secondary_fired_packet( ship *shipp, ushort starting_sig, int starting_count, int num_fired, int allow_swarm )
+void send_secondary_fired_packet( ship *shipp, ushort starting_sig, int  /*starting_count*/, int num_fired, int allow_swarm )
 {
 	int packet_size, net_player_num;
 	ubyte data[MAX_PACKET_SIZE], sinfo, current_bank;
@@ -3335,7 +3335,7 @@ void process_turret_fired_packet( ubyte *data, header *hinfo )
 
 	if (weapon_objnum != -1) {
 		wid = Weapons[Objects[weapon_objnum].instance].weapon_info_index;
-		if ( Weapon_info[wid].launch_snd != -1 ) {
+		if ( Weapon_info[wid].launch_snd.isValid() ) {
 			snd_play_3d( gamesnd_get_game_sound(Weapon_info[wid].launch_snd), &pos, &View_position );
 		}		
 	}
@@ -3460,7 +3460,7 @@ void process_mission_message_packet( ubyte *data, header *hinfo )
 }
 
 // just send them a pong back as fast as possible
-void process_ping_packet(ubyte *data, header *hinfo)
+void process_ping_packet(ubyte * /*data*/, header *hinfo)
 {
    net_addr addr;
 	int offset;
@@ -3477,7 +3477,7 @@ void process_ping_packet(ubyte *data, header *hinfo)
 
 // right now it just routes the pong through to the standalone gui, which is the only
 // system which uses ping and pong right now.
-void process_pong_packet(ubyte *data, header *hinfo)
+void process_pong_packet(ubyte * /*data*/, header *hinfo)
 {
 	net_player *p;
 	net_addr addr;
@@ -3544,7 +3544,7 @@ void send_pong(net_addr *addr)
 
 // sent from host to master. give me the list of missions you have.
 // this will be used only in a standalone mode
-void send_mission_list_request( int what )
+void send_mission_list_request( int  /*what*/ )
 {
 	ubyte data[MAX_PACKET_SIZE];
 	int packet_size;
@@ -3629,7 +3629,7 @@ void send_mission_items( net_player *pl )
 }
 
 // process a request for a list of missions
-void process_mission_request_packet(ubyte *data, header *hinfo)
+void process_mission_request_packet(ubyte * /*data*/, header *hinfo)
 {   
 	int player_num,offset;	
 	
@@ -3831,7 +3831,7 @@ void send_force_end_mission_packet()
 }
 
 // process a packet indicating that we should jump straight to the debrief screen
-void process_force_end_mission_packet(ubyte *data, header *hinfo)
+void process_force_end_mission_packet(ubyte * /*data*/, header *hinfo)
 {
 	int offset;	
 			
@@ -3885,7 +3885,7 @@ void send_endgame_packet(net_player *pl)
 }
 
 // process a packet indicating we should end the current mission
-void process_endgame_packet(ubyte *data, header *hinfo)
+void process_endgame_packet(ubyte * /*data*/, header *hinfo)
 {
 	int offset;	
 	int player_num;
@@ -6281,7 +6281,7 @@ void process_wss_slots_data_packet(ubyte *data, header *hinfo)
 #define OBJ_VISIBILITY_DOT					0.6f	
 
 // send and receive packets for shield explosion information
-void send_shield_explosion_packet( int objnum, int tri_num, vec3d hit_pos )
+void send_shield_explosion_packet( int objnum, int tri_num, vec3d  /*hit_pos*/ )
 {
 	int packet_size, i;
 	ubyte data[MAX_PACKET_SIZE], utri_num;
@@ -6865,7 +6865,7 @@ void process_host_restr_packet(ubyte *data, header *hinfo)
 			Multi_restr_query_timestamp = timestamp(MULTI_QUERY_RESTR_STAMP);
 
 			// notify the host of the event
-			gamesnd_play_iface(SND_BRIEF_STAGE_CHG_FAIL);
+			gamesnd_play_iface(InterfaceSounds::BRIEF_STAGE_CHG_FAIL);
 			HUD_printf(XSTR("Player %s has tried to join - allow (y/n) ?",736),callsign);
 			break;
 			
@@ -6939,7 +6939,7 @@ void send_countermeasure_success_packet( int objnum )
 }
 
 // start the flashing of my hud gauge
-void process_countermeasure_success_packet( ubyte *data, header *hinfo )
+void process_countermeasure_success_packet( ubyte * /*data*/, header *hinfo )
 {
 	int offset;
 
@@ -7002,7 +7002,7 @@ void send_client_update_packet(net_player *pl)
 
 		// hull strength and shield mesh information are floats (as a percentage).  Pass the integer
 		// percentage value since that should be close enough
-		percent = (ubyte) ((get_hull_pct(objp) * 100.0f) + 0.5f);
+		percent = (ubyte)std::lround (get_hull_pct(objp) * 100.0f);
 		if ( (percent == 0) && (get_hull_pct(objp) > 0.0f) ) {
 			percent = 1;
 		}
@@ -7890,7 +7890,7 @@ void send_sw_query_packet(ubyte code, char *txt)
 	}
 }
 
-void process_sw_query_packet(ubyte *data, header *hinfo)
+void process_sw_query_packet(ubyte * /*data*/, header * /*hinfo*/)
 {	
 }
 
@@ -8140,7 +8140,7 @@ void process_flak_fired_packet(ubyte *data, header *hinfo)
 	weapon_objnum = weapon_create( &pos, &orient, wid, OBJ_INDEX(objp), -1, 1, 0, 0.0f, ssp);
 	if (weapon_objnum != -1) {
 		wid = Weapons[Objects[weapon_objnum].instance].weapon_info_index;
-		if ( Weapon_info[wid].launch_snd != -1 ) {
+		if ( Weapon_info[wid].launch_snd.isValid() ) {
 			snd_play_3d( gamesnd_get_game_sound(Weapon_info[wid].launch_snd), &pos, &View_position );
 		}
 

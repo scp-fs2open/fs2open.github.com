@@ -9,7 +9,7 @@
 
 
 
-#include <stdio.h>
+#include <cstdio>
 
 #include "globalincs/pstypes.h"
 
@@ -22,7 +22,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <sys/select.h>
-#include <errno.h>
+#include <cerrno>
 #include <arpa/inet.h>
 #include <netdb.h>
 
@@ -361,7 +361,7 @@ uint CFtpGet::IssuePort()
 	}
 				
 	// Format the PORT command with the correct numbers.
-#ifdef WINDOWS
+#ifdef WIN32
 	sprintf(szCommandString, "PORT %d,%d,%d,%d,%d,%d\r\n", 
 				listenaddr.sin_addr.S_un.S_un_b.s_b1, 
 				listenaddr.sin_addr.S_un.S_un_b.s_b2,

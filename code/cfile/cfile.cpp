@@ -10,10 +10,10 @@
 
 #define _CFILE_INTERNAL 
 
-#include <stdlib.h>
-#include <string.h>
-#include <stdio.h>
-#include <errno.h>
+#include <cstdlib>
+#include <cstring>
+#include <cstdio>
+#include <cerrno>
 #include <sys/stat.h>
 
 #ifdef _WIN32
@@ -38,16 +38,14 @@
 
 char Cfile_root_dir[CFILE_ROOT_DIRECTORY_LEN] = "";
 char Cfile_user_dir[CFILE_ROOT_DIRECTORY_LEN] = "";
-#ifdef SCP_UNIX
-char Cfile_user_dir_legacy[CFILE_ROOT_DIRECTORY_LEN] = "";
-#endif
 
 // During cfile_init, verify that Pathtypes[n].index == n for each item
-// Each path must have a valid parent that can be tracable all the way back to the root 
+// Each path must have a valid parent that can be tracable all the way back to the root
 // so that we can create directories when we need to.
 //
 // Please make sure extensions are all lower-case, or we'll break unix compatibility
 //
+// clang-format off
 cf_pathtype Pathtypes[CF_MAX_PATH_TYPES]  = {
 	// What type this is          Path																			Extensions        					Parent type
 	{ CF_TYPE_INVALID,				NULL,																		NULL,								CF_TYPE_INVALID },
@@ -69,7 +67,7 @@ cf_pathtype Pathtypes[CF_MAX_PATH_TYPES]  = {
 	{ CF_TYPE_VOICE_SPECIAL,		"data" DIR_SEPARATOR_STR "voice" DIR_SEPARATOR_STR "special",				".wav .ogg",						CF_TYPE_VOICE	},
 	{ CF_TYPE_VOICE_TRAINING,		"data" DIR_SEPARATOR_STR "voice" DIR_SEPARATOR_STR "training",				".wav .ogg",						CF_TYPE_VOICE	},
 	{ CF_TYPE_MUSIC,				"data" DIR_SEPARATOR_STR "music",											".wav .ogg",						CF_TYPE_DATA	},
-	{ CF_TYPE_MOVIES,				"data" DIR_SEPARATOR_STR "movies",											".mve .msb .ogg .mp4",				CF_TYPE_DATA	},
+	{ CF_TYPE_MOVIES,				"data" DIR_SEPARATOR_STR "movies",											".mve .msb .ogg .mp4 .srt",			CF_TYPE_DATA	},
 	{ CF_TYPE_INTERFACE,			"data" DIR_SEPARATOR_STR "interface",										".pcx .ani .dds .tga .eff .png .jpg",	CF_TYPE_DATA	},
 	{ CF_TYPE_FONT,					"data" DIR_SEPARATOR_STR "fonts",											".vf .ttf",							CF_TYPE_DATA	},
 	{ CF_TYPE_EFFECTS,				"data" DIR_SEPARATOR_STR "effects",											".ani .eff .pcx .neb .tga .jpg .png .dds .sdr",	CF_TYPE_DATA	},
@@ -90,7 +88,7 @@ cf_pathtype Pathtypes[CF_MAX_PATH_TYPES]  = {
 	{ CF_TYPE_FICTION,				"data" DIR_SEPARATOR_STR "fiction",											".txt",								CF_TYPE_DATA	}, 
 	{ CF_TYPE_FREDDOCS,				"data" DIR_SEPARATOR_STR "freddocs",										".html",							CF_TYPE_DATA	},
 };
-
+// clang-format on
 
 #define CFILE_STACK_MAX	8
 
@@ -224,14 +222,8 @@ int cfile_init(const char *exe_dir, const char *cdrom_dir)
 	cfile_chdir(buf);
 
 	// set root directory
-	strncpy(Cfile_root_dir, buf, CFILE_ROOT_DIRECTORY_LEN-1);
-	strncpy(Cfile_user_dir, os_get_config_path().c_str(), CFILE_ROOT_DIRECTORY_LEN-1);
-	
-#ifdef SCP_UNIX
-	// Initialize path of old pilot files
-	extern const char* Osreg_user_dir_legacy;
-	snprintf(Cfile_user_dir_legacy, CFILE_ROOT_DIRECTORY_LEN-1, "%s/%s/", getenv("HOME"), Osreg_user_dir_legacy);
-#endif
+	strcpy_s(Cfile_root_dir, buf);
+	strcpy_s(Cfile_user_dir, os_get_config_path().c_str());
 
 	for (i = 0; i < MAX_CFILE_BLOCKS; i++) {
 		Cfile_block_list[i].type = CFILE_BLOCK_UNUSED;
@@ -356,8 +348,7 @@ int cfile_push_chdir(int type)
 		return -1;
 	}
 
-	strncpy(Cfile_stack[Cfile_stack_pos++], OriginalDirectory,
-	        CFILE_ROOT_DIRECTORY_LEN - 1);
+	strcpy_s(Cfile_stack[Cfile_stack_pos++], OriginalDirectory);
 
 	cf_create_default_path_string(dir, sizeof(dir) - 1, type, NULL);
 
@@ -467,7 +458,7 @@ char *cf_add_ext(const char *filename, const char *ext)
 	size_t elen = strlen(ext);
 	Assert(flen < MAX_PATH_LEN);
 	strcpy_s(path, filename);
-	if ((flen < 4) || stricmp(path + flen - elen, ext)) {
+	if ((flen < 4) || stricmp(path + flen - elen, ext) != 0) {
 		Assert(flen + elen < MAX_PATH_LEN);
 		strcat_s(path, ext);
 	}
@@ -561,7 +552,7 @@ void cf_attrib(const char *filename, int set, int clear, int dir_type)
 		fclose(fp);
 
 		DWORD z = GetFileAttributes(longname);
-		SetFileAttributes(longname, z | set & ~clear);
+		SetFileAttributes(longname, z | (set & ~clear));
 	}
 
 }
@@ -686,7 +677,7 @@ CFILE *_cfopen(const char* source, int line, const char *file_path, const char *
 	Assert( mode != NULL );
 	
 	// Can only open read-only binary files in memory mapped mode.
-	if ( (type & CFILE_MEMORY_MAPPED) && strcmp(mode,"rb") ) {
+	if ( (type & CFILE_MEMORY_MAPPED) && strcmp(mode,"rb") != 0 ) {
 		Int3();				
 		return NULL;
 	}
@@ -901,7 +892,7 @@ static int cfget_cfile_block()
 	mprintf(("Out of cfile blocks! Currently opened files:\n"));
 	dump_opened_files();
 
-	Assertion(false, "There are no more free cfile blocks. This means that there are too many files opened by FSO.\n"
+	UNREACHABLE("There are no more free cfile blocks. This means that there are too many files opened by FSO.\n"
 		"This is probably caused by a programming or scripting error where a file does not get closed."); // out of free cfile blocks
 	return -1;			
 }

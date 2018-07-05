@@ -1350,8 +1350,8 @@ void event_editor::OnBrowseAvi()
 		m_avi_filename = _T("");
 
 	z = cfile_push_chdir(CF_TYPE_INTERFACE);
-	CFileDialog dlg(TRUE, "ani", m_avi_filename, OFN_HIDEREADONLY | OFN_FILEMUSTEXIST | OFN_NOCHANGEDIR,
-		"Ani Files (*.ani)|*.ani|Eff Files (*.eff)|*.eff|APNG Files (*.png)|*.png|All Anims (*.ani, *.eff, *.png)|*.ani;*.eff;*.png|");
+	CFileDialog dlg(TRUE, "png", m_avi_filename, OFN_HIDEREADONLY | OFN_FILEMUSTEXIST | OFN_NOCHANGEDIR,
+		"APNG Files (*.png)|*.png|Ani Files (*.ani)|*.ani|Eff Files (*.eff)|*.eff|All Anims (*.ani, *.eff, *.png)|*.ani;*.eff;*.png|");
 
 	if (dlg.DoModal() == IDOK) {
 		m_avi_filename = dlg.GetFileName();

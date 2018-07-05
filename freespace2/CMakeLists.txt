@@ -59,6 +59,8 @@ if (FSO_INSTALL_DEBUG_FILES)
 	endif()
 endif()
 
+enable_clang_tidy(Freespace2)
+
 INCLUDE(util)
 COPY_FILES_TO_TARGET(Freespace2)
 

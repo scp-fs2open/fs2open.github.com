@@ -72,7 +72,7 @@ void training_menu_close()
 	}
 }
 
-void training_menu_do_frame(float frametime)
+void training_menu_do_frame(float  /*frametime*/)
 {
 	int training_menu_choice;	
 

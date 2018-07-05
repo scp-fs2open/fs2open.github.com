@@ -10,7 +10,7 @@
 
 
 
-#include <limits.h>		// this is need even when not building debug!!
+#include <climits>		// this is need even when not building debug!!
 
 #include "globalincs/globals.h"
 #include "object/object.h"
@@ -692,13 +692,13 @@ void multi_ingame_ship_list_process()
 
 	// if we currently don't have any ships selected, but we've got items on the list, select the first one
 	if((Multi_ingame_ship_selected == -1) && (Multi_ingame_num_avail > 0)){
-		gamesnd_play_iface(SND_USER_SELECT);
+		gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 		Multi_ingame_ship_selected = 0;
 	}
 
 	// if we currently have a ship selected, but it disappears, select the next ship (is possible0
 	if((Multi_ingame_ship_selected >= 0) && (Multi_ingame_ship_selected >= Multi_ingame_num_avail)){
-		gamesnd_play_iface(SND_USER_SELECT);
+		gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 		Multi_ingame_ship_selected = Multi_ingame_num_avail-1;
 	}
 	
@@ -711,7 +711,7 @@ void multi_ingame_ship_list_process()
 		if((select_index >= 0) && (select_index < Multi_ingame_num_avail)){
 			// if we're not selected the same item, play a sound
 			if(Multi_ingame_ship_selected != select_index){
-				gamesnd_play_iface(SND_USER_SELECT);
+				gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			}
 
 			// select the item
@@ -751,7 +751,7 @@ void multi_ingame_join_button_pressed(int n)
 		if(Multi_ingame_join_sig == 0) {
 			// if he has a valid ship selected
 			if(Multi_ingame_ship_selected >= 0) {
-				gamesnd_play_iface(SND_USER_SELECT);
+				gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			
 				// select the sig of this ship and send a request for it
 				Multi_ingame_join_sig = Multi_ingame_ship_sigs[Multi_ingame_ship_selected];
@@ -759,10 +759,10 @@ void multi_ingame_join_button_pressed(int n)
 				// send a request to the
 				send_ingame_ship_request_packet(INGAME_SR_REQUEST,Multi_ingame_join_sig);
 			} else {
-				gamesnd_play_iface(SND_GENERAL_FAIL);
+				gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 			}
 		} else {
-			gamesnd_play_iface(SND_GENERAL_FAIL);
+			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		}
 
 		break;
@@ -865,13 +865,13 @@ void multi_ingame_join_display_ship(object *objp,int y_start)
 	// blit the ship's primary weapons	
 	y_spacing = (Mi_spacing[gr_screen.res] - (wp->num_primary_banks * line_height)) / 2;
 	for(idx=0;idx<wp->num_primary_banks;idx++){
-		gr_string(Mi_primary_field[gr_screen.res][MI_FIELD_X], y_start + y_spacing + (idx * line_height), Weapon_info[wp->primary_bank_weapons[idx]].name, GR_RESIZE_MENU);
+		gr_string(Mi_primary_field[gr_screen.res][MI_FIELD_X], y_start + y_spacing + (idx * line_height), Weapon_info[wp->primary_bank_weapons[idx]].get_display_string(), GR_RESIZE_MENU);
 	}
 
 	// blit the ship's secondary weapons	
 	y_spacing = (Mi_spacing[gr_screen.res] - (wp->num_secondary_banks * line_height)) / 2;
 	for(idx=0;idx<wp->num_secondary_banks;idx++){
-		gr_string(Mi_secondary_field[gr_screen.res][MI_FIELD_X], y_start + y_spacing + (idx * line_height), Weapon_info[wp->secondary_bank_weapons[idx]].name, GR_RESIZE_MENU);
+		gr_string(Mi_secondary_field[gr_screen.res][MI_FIELD_X], y_start + y_spacing + (idx * line_height), Weapon_info[wp->secondary_bank_weapons[idx]].get_display_string(), GR_RESIZE_MENU);
 	}	
 
 	// blit the shield/hull integrity
@@ -918,10 +918,10 @@ void multi_ingame_join_display_avail()
 void multi_ingame_scroll_select_up()
 {
 	if(Multi_ingame_ship_selected > 0){
-		gamesnd_play_iface(SND_USER_SELECT);
+		gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 		Multi_ingame_ship_selected--;
 	} else {
-		gamesnd_play_iface(SND_GENERAL_FAIL);
+		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 	}	
 }
 
@@ -929,10 +929,10 @@ void multi_ingame_scroll_select_up()
 void multi_ingame_scroll_select_down()
 {
 	if(Multi_ingame_ship_selected < (Multi_ingame_num_avail - 1)){
-		gamesnd_play_iface(SND_USER_SELECT);
+		gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 		Multi_ingame_ship_selected++;
 	} else {
-		gamesnd_play_iface(SND_GENERAL_FAIL);
+		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 	}
 }
 
@@ -1157,7 +1157,7 @@ void send_ingame_ships_packet(net_player *player)
 	multi_io_send_reliable(player, data, packet_size);
 }
 
-void process_ingame_wings_packet( ubyte *data, header *hinfo )
+void process_ingame_wings_packet( ubyte * /*data*/, header * /*hinfo*/ )
 {
 	Int3();
 }

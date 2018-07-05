@@ -67,7 +67,7 @@ namespace io
 			 *
 			 * @param other A rvalue reference
 			 */
-			Joystick(Joystick &&other);
+			Joystick(Joystick &&other) SCP_NOEXCEPT;
 
 			/**
 			 * @brief Frees the owned SDL handle
@@ -79,7 +79,7 @@ namespace io
 			 *
 			 * @param other A rvalue reference to the other object
 			 */
-			Joystick &operator=(Joystick &&other);
+			Joystick &operator=(Joystick &&other) SCP_NOEXCEPT;
 
 			/**
 			 * @brief Determines if this joystick is still connected to the computer

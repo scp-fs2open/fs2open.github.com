@@ -64,7 +64,7 @@ class LuaFunction: public LuaValue {
 	/**
      * @brief Frees the reference to the function if it exists.
      */
-	virtual ~LuaFunction();
+	~LuaFunction() override;
 
 	/**
      * @brief Sets the function environment.
@@ -91,7 +91,7 @@ class LuaFunction: public LuaValue {
      * @param ref The new reference
      * @return void
      */
-	void setReference(LuaReference ref) override;
+	void setReference(const LuaReference& ref) override;
 
 	/**
      * @brief Calls the function.

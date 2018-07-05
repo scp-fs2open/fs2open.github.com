@@ -24,7 +24,7 @@ namespace font
 	{
 		for (SCP_vector<std::unique_ptr<FSFont>>::iterator iter = fonts.begin(); iter != fonts.end(); iter++)
 		{
-			if (!(*iter)->getName().compare(name))
+			if ((*iter)->getName() == name)
 				return iter->get();
 		}
 
@@ -50,7 +50,7 @@ namespace font
 
 		for (SCP_vector<std::unique_ptr<FSFont>>::iterator iter = fonts.begin(); iter != fonts.end(); iter++, index++)
 		{
-			if (!(*iter)->getName().compare(name))
+			if ((*iter)->getName() == name)
 				return index;
 		}
 

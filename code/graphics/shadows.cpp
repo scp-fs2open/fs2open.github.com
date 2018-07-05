@@ -196,7 +196,7 @@ void shadows_debug_show_frustum(matrix* orient, vec3d *pos, float fov, float asp
  	g3_render_line_3d(true, &far_bottom_left, &far_top_left);
 }
 
-void shadows_construct_light_frustum(light_frustum_info *shadow_data, matrix *light_matrix, matrix *orient, vec3d *pos, float fov, float aspect, float z_near, float z_far)
+void shadows_construct_light_frustum(light_frustum_info *shadow_data, matrix *light_matrix, matrix *orient, vec3d * /*pos*/, float fov, float aspect, float z_near, float z_far)
 {
 	// find the widths and heights of the near plane and far plane to determine the points of this frustum
 	float near_height = tanf(fov * 0.5f) * z_near;

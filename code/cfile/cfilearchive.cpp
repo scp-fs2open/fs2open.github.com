@@ -11,9 +11,9 @@
 
 #define _CFILE_INTERNAL 
 
-#include <stdlib.h>
-#include <string.h>
-#include <stdio.h>
+#include <cstdlib>
+#include <cstring>
+#include <cstdio>
 
 #ifdef _WIN32
 #include <io.h>

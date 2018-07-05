@@ -7,9 +7,10 @@ layout (std140) uniform decalGlobalData {
 	mat4 invViewMatrix;
 	mat4 invProjMatrix;
 
+	vec3 ambientLight;
+
 	vec2 viewportSize;
 };
-
 layout (std140) uniform decalInfoData {
 	mat4 model_matrix;
 	mat4 inv_model_matrix;
@@ -18,11 +19,13 @@ layout (std140) uniform decalInfoData {
 	float normal_angle_cutoff;
 
 	int diffuse_index;
+	int glow_index;
 	int normal_index;
 	float angle_fade_start;
-	float alpha_scale;
 
-	int blend_mode;
+	float alpha_scale;
+	int diffuse_blend_mode;
+	int glow_blend_mode;
 };
 
 void main() {

@@ -41,7 +41,7 @@ SCP_vector<SCP_string> speech_enumerate_voices();
 #define speech_set_voice(voice) ((voice), false)
 #define speech_is_speaking() (false)
 
-SCP_vector<SCP_string> speech_enumerate_voices() {
+inline SCP_vector<SCP_string> speech_enumerate_voices() {
 	return SCP_vector<SCP_string>();
 }
 

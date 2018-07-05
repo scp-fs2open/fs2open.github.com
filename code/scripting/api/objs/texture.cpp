@@ -27,7 +27,7 @@ ADE_FUNC(__gc, l_Texture, NULL, "Auto-deletes texture", NULL, NULL)
 	// might get called even for handles to bitmaps which are actually still in
 	// use, and in order to prevent that we want to double-check the load count
 	// here before unloading the bitmap. -zookeeper
-	if(idx > -1 && bm_is_valid(idx) && bm_bitmaps[bm_get_cache_slot(idx, 0)].load_count < 1)
+	if(idx > -1 && bm_is_valid(idx) && bm_get_entry(idx)->load_count < 1)
 		bm_release(idx);
 
 	return ADE_RETURN_NIL;

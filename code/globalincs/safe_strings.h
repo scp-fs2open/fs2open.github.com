@@ -20,8 +20,8 @@
  */
 
 /* errno_t, EINVAL, ERANGE, etc.. */
-#include <errno.h>
-#include <stdlib.h> /* size_t */
+#include <cerrno>
+#include <cstdlib> /* size_t */
 
 /* Because errno_t is not (yet) standard, we define it here like this */
 typedef int errno_t;

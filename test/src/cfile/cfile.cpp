@@ -11,10 +11,10 @@ class CFileInitTest : public test::FSTestFixture {
 	}
 
  protected:
-	virtual void SetUp() override {
+	void SetUp() override {
 		test::FSTestFixture::SetUp();
 	}
-	virtual void TearDown() override {
+	void TearDown() override {
 		test::FSTestFixture::TearDown();
 
 		cfile_close();
@@ -48,10 +48,10 @@ class CFileTest : public test::FSTestFixture {
 	}
 
  protected:
-	virtual void SetUp() override {
+	void SetUp() override {
 		test::FSTestFixture::SetUp();
 	}
-	virtual void TearDown() override {
+	void TearDown() override {
 		extern bool Skip_memory_files;
 		Skip_memory_files = false;
 

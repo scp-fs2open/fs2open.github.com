@@ -388,6 +388,7 @@ class waypoint_list;
 
 #define OP_TURRET_GET_SECONDARY_AMMO		(0x0050 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// DahBlount, part of the turret ammo code
 #define OP_IS_DOCKED						(0x0051 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// Goober5000
+#define OP_IS_IN_TURRET_FOV					(0x0052 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// Goober5000
 
 // conditional sexpressions
 #define OP_WHEN								(0x0000 | OP_CATEGORY_CONDITIONAL)
@@ -1161,7 +1162,7 @@ extern int query_operator_return_type(int op);
 extern int query_operator_argument_type(int op, int argnum);
 extern void update_sexp_references(const char *old_name, const char *new_name);
 extern void update_sexp_references(const char *old_name, const char *new_name, int format);
-extern int query_referenced_in_sexp(int mode, char *name, int *node);
+extern int query_referenced_in_sexp(int mode, const char *name, int *node);
 extern int verify_vector(char *text);
 extern void skip_white(char **str);
 extern int validate_float(char **str);

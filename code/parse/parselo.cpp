@@ -7,14 +7,14 @@
  *
 */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <assert.h>
-#include <stdarg.h>
-#include <setjmp.h>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <cassert>
+#include <cstdarg>
+#include <csetjmp>
 
-#include "ctype.h"
+#include <cctype>
 #include "globalincs/version.h"
 #include "localization/fhash.h"
 #include "localization/localize.h"
@@ -352,7 +352,7 @@ int skip_to_string(const char *pstr, const char *end)
 	if (end)
 		len2 = strlen(end);
 
-	while ((*Mp != '\0') && strnicmp(pstr, Mp, len)) {
+	while ((*Mp != '\0') && strnicmp(pstr, Mp, len) != 0) {
 		if (end && *Mp == '#')
 			return 0;
 
@@ -382,7 +382,7 @@ int skip_to_start_of_string(const char *pstr, const char *end)
 	else
 		endlen = 0;
 
-	while ( (*Mp != '\0') && strnicmp(pstr, Mp, len) ) {
+	while ( (*Mp != '\0') && strnicmp(pstr, Mp, len) != 0 ) {
 		if (end && *Mp == '#')
 			return 0;
 
@@ -412,7 +412,7 @@ int skip_to_start_of_string_either(const char *pstr1, const char *pstr2, const c
 	else
 		endlen = 0;
 
-	while ( (*Mp != '\0') && strnicmp(pstr1, Mp, len1) && strnicmp(pstr2, Mp, len2) ) {
+	while ( (*Mp != '\0') && strnicmp(pstr1, Mp, len1) != 0 && strnicmp(pstr2, Mp, len2) != 0 ) {
 		if (end && *Mp == '#')
 			return 0;
 
@@ -441,7 +441,7 @@ int required_string(const char *pstr)
 
 	ignore_white_space();
 
-	while (strnicmp(pstr, Mp, strlen(pstr)) && (count < RS_MAX_TRIES)) {
+	while (strnicmp(pstr, Mp, strlen(pstr)) != 0 && (count < RS_MAX_TRIES)) {
 		error_display(1, "Missing required token: [%s]. Found [%.32s] instead.\n", pstr, next_tokens());
 		advance_to_eoln(NULL);
 		ignore_white_space();
@@ -565,7 +565,7 @@ int optional_string_one_of(int arg_count, ...)
 	return found;
 }
 
-int required_string_fred(char *pstr, char *end)
+int required_string_fred(const char *pstr, const char *end)
 {
 	char *backup = Mp;
 
@@ -574,7 +574,7 @@ int required_string_fred(char *pstr, char *end)
 		return 0;
 
 	ignore_white_space();
-	while (*Mp != '\0' && strnicmp(pstr, Mp, strlen(pstr))) {
+	while (*Mp != '\0' && strnicmp(pstr, Mp, strlen(pstr)) != 0) {
 		if ((*Mp == '#') || (end && !strnicmp(end, Mp, strlen(end)))) {
 			Mp = NULL;
 			break;
@@ -602,7 +602,7 @@ int required_string_fred(char *pstr, char *end)
 // further complicate things, we should only search to a certain point, since we don't want
 // a token that belongs to another section which might match the token we want.  Thus, we
 // also pass in an ending token, which marks the point we should stop looking at.
-int optional_string_fred(char *pstr, char *end, char *end2)
+int optional_string_fred(const char *pstr, const char *end, const char *end2)
 {
 	char *mp_save = Mp;
 
@@ -611,7 +611,7 @@ int optional_string_fred(char *pstr, char *end, char *end2)
 		return 0;
 
 	ignore_white_space();
-	while ((*Mp != '\0') && strnicmp(pstr, Mp, strlen(pstr))) {
+	while ((*Mp != '\0') && strnicmp(pstr, Mp, strlen(pstr)) != 0) {
 		if ((*Mp == '#') || (end && !strnicmp(end, Mp, strlen(end))) ||
 			(end2 && !strnicmp(end2, Mp, strlen(end2)))) {
 			Mp = NULL;
@@ -702,7 +702,7 @@ int required_string_one_of(int arg_count, ...)
 		}
 		va_end(vl);
 
-		if (!message.compare("")) {
+		if (message.empty()) {
 			va_start(vl, arg_count);
 			message = "Required token = ";
 			for (idx = 0; idx < arg_count; idx++) {
@@ -1839,7 +1839,7 @@ bool matches_version_specific_tag(const char *line_start, bool &compatible_versi
 	// special version-specific comment
 	// formatted like e.g. ;;FSO 3.7.0;;
 	// Should now support anything from ;;FSO 3;; to ;;FSO 3.7.3.20151106;; -MageKing17
-	if (strnicmp(line_start, ";;FSO ", 6))
+	if (strnicmp(line_start, ";;FSO ", 6) != 0)
 		return false;
 
 	int major, minor, build, revis;
@@ -3521,7 +3521,7 @@ int split_str(const char *src, int max_pixel_w, int *n_chars, const char **p_str
 	// as a line splitting point if necessary
 	unicode::codepoint_range range(src);
 	auto end_iter = std::end(range);
-	unicode::text_iterator iter = std::begin(range);
+	auto iter = std::begin(range);
 	for (; iter != end_iter; ++iter) {
 		auto cp = *iter;
 
@@ -3593,7 +3593,7 @@ int split_str(const char *src, int max_pixel_w, int *n_chars, const char **p_str
 
 			if (breakpoint) {
 				end = breakpoint;
-				iter = unicode::text_iterator(breakpoint, src);
+				iter = unicode::text_iterator(breakpoint, src, src + strlen(src));
 
 			} else {
 				end = iter.pos();  // force a split here since to whitespace
@@ -3646,7 +3646,7 @@ int split_str(const char *src, int max_pixel_w, SCP_vector<int> &n_chars, SCP_ve
 	// as a line splitting point if necessary
 	unicode::codepoint_range range(src);
 	auto end_iter = std::end(range);
-	unicode::text_iterator iter = std::begin(range);
+	auto iter = std::begin(range);
 	for (; iter != end_iter; ++iter) {
 		auto cp = *iter;
 
@@ -3716,7 +3716,7 @@ int split_str(const char *src, int max_pixel_w, SCP_vector<int> &n_chars, SCP_ve
 
 			if (breakpoint) {
 				end = breakpoint;
-				iter = unicode::text_iterator(breakpoint, src);
+				iter = unicode::text_iterator(breakpoint, src, src + strlen(src));
 
 			} else {
 				end = iter.pos();  // force a split here since to whitespace
@@ -4308,7 +4308,7 @@ int parse_modular_table(const char *name_check, void (*parse_callback)(const cha
 	int i, num_files = 0;
 
 	if ( (name_check == NULL) || (parse_callback == NULL) || ((*name_check) != '*') ) {
-		Assertion(false, "parse_modular_table() called with invalid arguments; get a coder!\n");
+		UNREACHABLE("parse_modular_table() called with invalid arguments; get a coder!\n");
 		return 0;
 	}
 

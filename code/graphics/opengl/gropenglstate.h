@@ -210,7 +210,8 @@ class opengl_state
 
 		GLenum frontface_Value;
 		GLenum cullface_Value;
-		GLenum blendfunc_Value[2];
+		std::pair<GLenum, GLenum> blendfunc_Value;
+		std::array<std::pair<GLenum, GLenum>, material::NUM_BUFFER_BLENDS> buffer_blendfunc_Value;
 		GLenum depthfunc_Value;
 
 		GLenum polygon_mode_Face;
@@ -220,8 +221,6 @@ class opengl_state
 		GLfloat polygon_offset_Unit;
 
 		GLfloat line_width_Value;
-
-		gr_alpha_blend Current_alpha_blend_mode;
 
 		GLenum stencilFunc;
 		GLint stencilFuncRef;
@@ -255,6 +254,7 @@ class opengl_state
 		opengl_constant_state Constants;
 
 		void SetAlphaBlendMode(gr_alpha_blend ab);
+		void SetAlphaBlendModei(int buffer, gr_alpha_blend ab);
 		void SetZbufferType(gr_zbuffer_type zt);
 		void SetPolygonOffset(GLfloat factor, GLfloat units);
 		void SetPolygonMode(GLenum face, GLenum mode);
@@ -279,9 +279,8 @@ class opengl_state
 
 		inline GLenum FrontFaceValue(GLenum new_val = GL_INVALID_ENUM);
 		inline GLenum CullFaceValue(GLenum new_val = GL_INVALID_ENUM);
-		inline void BlendFunc(GLenum s_val, GLenum d_val);
-		inline GLenum BlendFuncSource();
-		inline GLenum BlendFuncDest();
+		void BlendFunc(GLenum s_val, GLenum d_val);
+		void BlendFunci(int buffer, GLenum s_val, GLenum d_val);
 		inline GLenum DepthFunc(GLenum new_val = GL_INVALID_ENUM);
 		inline void InvalidateColor();
 
@@ -318,27 +317,6 @@ inline GLenum opengl_state::CullFaceValue(GLenum new_val)
 	}
 
 	return cullface_Value;
-}
-
-inline void opengl_state::BlendFunc(GLenum s_val, GLenum d_val)
-{
-	if ( !((s_val == blendfunc_Value[0]) && (d_val == blendfunc_Value[1])) ) {
-		glBlendFunc(s_val, d_val);
-		blendfunc_Value[0] = s_val;
-		blendfunc_Value[1] = d_val;
-
-		Current_alpha_blend_mode = (gr_alpha_blend)(-1);
-	}
-}
-
-inline GLenum opengl_state::BlendFuncSource()
-{
-	return blendfunc_Value[0];
-}
-
-inline GLenum opengl_state::BlendFuncDest()
-{
-	return blendfunc_Value[1];
 }
 
 inline GLenum opengl_state::DepthFunc(GLenum new_val)

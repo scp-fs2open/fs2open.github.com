@@ -10,7 +10,7 @@
 
 
 
-#include <ctype.h>
+#include <cctype>
 #include "cfile/cfile.h"
 #include "localization/localize.h"
 #include "osapi/osregistry.h"
@@ -278,7 +278,6 @@ void parse_stringstbl_common(const char *filename, const bool external)
 			if (external) {
 				ignore_white_space();
 				get_string(buf, sizeof(buf));
-				drop_trailing_white_space(buf);
 			} else {
 				stuff_string(buf, F_RAW, sizeof(buf));
 			}
@@ -698,7 +697,7 @@ void lcl_ext_localize_sub(const char *in, char *out, size_t max_len, int *id)
 	}
 
 	// otherwise, check to see if it's an XSTR() tag
-	if (strnicmp(in, "XSTR", 4)) {
+	if (strnicmp(in, "XSTR", 4) != 0) {
 		// NOT an XSTR() tag
 		if (str_len > max_len)
 			error_display(0, "Token too long: [%s].  Length = " SIZE_T_ARG ".  Max is " SIZE_T_ARG ".\n", in, str_len, max_len);

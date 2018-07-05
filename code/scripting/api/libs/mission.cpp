@@ -365,7 +365,7 @@ ADE_INDEXER(l_Mission_Waypoints, "number Index", "Array of waypoints in the curr
 		ptr = GET_NEXT(ptr);
 	}
 
-	return ade_set_error(L, "o", l_Weapon.Set(object_h()));
+	return ade_set_error(L, "o", l_Waypoint.Set(object_h()));
 }
 
 ADE_FUNC(__len, l_Mission_Waypoints, NULL, "Gets number of waypoints in mission. Note that this is only accurate for one frame.", "number", "Number of waypoints in the mission")
@@ -393,8 +393,12 @@ ADE_INDEXER(l_Mission_WaypointLists, "number Index/string WaypointListName", "Ar
 	wpl = waypointlist_h(name);
 
 	if (!wpl.IsValid()) {
-		int idx = atoi(name) - 1;
-		wpl = waypointlist_h(find_waypoint_list_at_index(idx));
+		char* end_ptr;
+		auto idx = (int)strtol(name, &end_ptr, 10);
+		if (end_ptr != name && idx >= 1) {
+			// The string is a valid number and the number has a valid value
+			wpl = waypointlist_h(find_waypoint_list_at_index(idx - 1));
+		}
 	}
 
 	if (wpl.IsValid()) {
@@ -974,6 +978,8 @@ ADE_FUNC(loadMission, l_Mission, "Mission name", "Loads a mission", "boolean", "
 
 ADE_FUNC(unloadMission, l_Mission, NULL, "Stops the current mission and unloads it", NULL, NULL)
 {
+	(void)L; // unused parameter
+
 	if(Game_mode & GM_IN_MISSION)
 	{
 		game_level_close();

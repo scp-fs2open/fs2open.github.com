@@ -10,7 +10,7 @@
 
 
 
-#include <math.h>
+#include <cmath>
 
 #define MODEL_LIB
 
@@ -21,7 +21,7 @@
 #include "tracing/tracing.h"
 
 // returns 1 if a point is in an octant.
-int point_in_octant( polymodel * pm, model_octant * oct, vec3d *vert )
+int point_in_octant( polymodel *  /*pm*/, model_octant * oct, vec3d *vert )
 {
 	if ( vert->xyz.x < oct->min.xyz.x ) return 0;
 	if ( vert->xyz.x > oct->max.xyz.x ) return 0;

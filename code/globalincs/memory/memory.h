@@ -1,7 +1,7 @@
 
 #pragma once
 
-#include <stddef.h>
+#include <cstddef>
 #include <cstdlib>
 
 #include "globalincs/pstypes.h"

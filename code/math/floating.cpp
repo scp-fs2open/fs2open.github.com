@@ -7,7 +7,7 @@
  *
 */ 
 
-#include <stdlib.h>
+#include <cstdlib>
 
 #include "io/timer.h"
 #include "math/floating.h"

@@ -613,9 +613,9 @@ void ship_select_button_do(int i)
 				break;
 
 			if ( common_scroll_down_pressed(&SS_active_list_start, SS_active_list_size, MAX_ICONS_ON_SCREEN) ) {
-				gamesnd_play_iface(SND_SCROLL);
+				gamesnd_play_iface(InterfaceSounds::SCROLL);
 			} else {
-				gamesnd_play_iface(SND_GENERAL_FAIL);
+				gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 			}
 			break;
 
@@ -624,9 +624,9 @@ void ship_select_button_do(int i)
 				break;
 
 			if ( common_scroll_up_pressed(&SS_active_list_start, SS_active_list_size, MAX_ICONS_ON_SCREEN) ) {
-				gamesnd_play_iface(SND_SCROLL);
+				gamesnd_play_iface(InterfaceSounds::SCROLL);
 			} else {
-				gamesnd_play_iface(SND_GENERAL_FAIL);
+				gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 			}
 
 			break;
@@ -847,7 +847,7 @@ int do_mouse_over_wing_slot(int block, int slot)
 		if ( ss_icon_being_carried() ) {
 
 			if ( ss_disabled_slot(block*MAX_WING_SLOTS+slot) ) {
-				gamesnd_play_iface(SND_ICON_DROP);
+				gamesnd_play_iface(InterfaceSounds::ICON_DROP);
 				return 0;
 			}
 
@@ -892,7 +892,7 @@ void ss_maybe_drop_icon()
 				ss_drop(Carried_ss_icon.from_slot, -1, -1, Carried_ss_icon.ship_class);
 			} else {
 				if ( ss_carried_icon_moved() ) {
-					gamesnd_play_iface(SND_ICON_DROP);
+					gamesnd_play_iface(InterfaceSounds::ICON_DROP);
 				}
 			}
 			ss_reset_carried_icon();
@@ -1523,7 +1523,9 @@ void ship_select_do(float frametime)
 			int w = 32;
 			int h = 28;
 
-			draw_brackets_square(sx, sy, sx + w, sy + h, GR_RESIZE_MENU);
+			graphics::line_draw_list line_draw_list;
+			draw_brackets_square(&line_draw_list, sx, sy, sx + w, sy + h, GR_RESIZE_MENU);
+			line_draw_list.flush();
 
 			if(Ss_icons[Carried_ss_icon.ship_class].model_index != -1)
 			{
@@ -1710,7 +1712,11 @@ void draw_ship_icon_with_number(int screen_offset, int ship_class)
 			mprintf(("SL WARNING: Had to attempt to page in model for %s paged in manually! Result: %d\n", sip->name, ss_icon->model_index));
 		}
 		gr_set_color_fast(color_to_draw);
-		draw_brackets_square(Ship_list_coords[gr_screen.res][screen_offset][0], Ship_list_coords[gr_screen.res][screen_offset][1], Ship_list_coords[gr_screen.res][screen_offset][0] + 32, Ship_list_coords[gr_screen.res][screen_offset][1] + 28, GR_RESIZE_MENU);
+
+		graphics::line_draw_list line_draw_list;
+		draw_brackets_square(&line_draw_list, Ship_list_coords[gr_screen.res][screen_offset][0], Ship_list_coords[gr_screen.res][screen_offset][1], Ship_list_coords[gr_screen.res][screen_offset][0] + 32, Ship_list_coords[gr_screen.res][screen_offset][1] + 28, GR_RESIZE_MENU);
+		line_draw_list.flush();
+
 		if(ss_icon->model_index != -1)
 		{
 			draw_model_icon(ss_icon->model_index, MR_AUTOCENTER | MR_NO_FOGGING | MR_NO_LIGHTING, sip->closeup_zoom / 1.25f, Ship_list_coords[gr_screen.res][screen_offset][0],Ship_list_coords[gr_screen.res][screen_offset][1], 32, 28, sip, GR_RESIZE_MENU);
@@ -1734,7 +1740,7 @@ void draw_ship_icon_with_number(int screen_offset, int ship_class)
 //
 // UPDATE: this code now initializes a 3d model of a ship to spin like it does
 // in the tech room - UnknownPlayer
-void start_ship_animation(int ship_class, int play_sound)
+void start_ship_animation(int ship_class, int  /*play_sound*/)
 {
 	char *p;
 	char animation_filename[CF_MAX_FILENAME_LENGTH+4];
@@ -1809,7 +1815,7 @@ void start_ship_animation(int ship_class, int play_sound)
 	}
 
 //	if ( play_sound ) {
-		gamesnd_play_iface(SND_SHIP_ICON_CHANGE);
+		gamesnd_play_iface(InterfaceSounds::SHIP_ICON_CHANGE);
 //	}
 }
 
@@ -1858,7 +1864,7 @@ void commit_pressed()
 			int rc;
 			rc = create_wings();
 			if (rc != 0) {
-				gamesnd_play_iface(SND_GENERAL_FAIL);
+				gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 				return;
 			}
 		}
@@ -1892,7 +1898,7 @@ void commit_pressed()
 			num_required_weapons++;
 			if (num_required_weapons > 1)
 				weapon_list.append(1, EOLN);
-			weapon_list.append(Weapon_info[j].name);
+			weapon_list.append(Weapon_info[j].get_display_string());
 
 			// see if it's carried by any ship
 			if (is_weapon_carried(j))
@@ -1921,7 +1927,7 @@ void commit_pressed()
 
 	// Goober5000 - no sound when skipping briefing
 	if (!(The_mission.flags[Mission::Mission_Flags::No_briefing]))
-		gamesnd_play_iface(SND_COMMIT_PRESSED);
+		gamesnd_play_iface(InterfaceSounds::COMMIT_PRESSED);
 
 	// save the player loadout
 	if ( !(Game_mode & GM_MULTIPLAYER) ) {
@@ -2017,7 +2023,7 @@ void pick_from_wing(int wb_num, int ws_num)
 		if ( !ss_disabled_slot(slot_index) ) {
 			ss_drop(Carried_ss_icon.from_slot, Carried_ss_icon.ship_class, slot_index, -1);
 			ss_reset_carried_icon();
-			gamesnd_play_iface(SND_ICON_DROP_ON_WING);
+			gamesnd_play_iface(InterfaceSounds::ICON_DROP_ON_WING);
 		}
 	}
 
@@ -2220,7 +2226,11 @@ void draw_wing_block(int wb_num, int hot_slot, int selected_slot, int class_sele
 		{
 			ship_info *sip = &Ship_info[Wss_slots[slot_index].ship_class];
 			gr_set_color_fast(color_to_draw);
-			draw_brackets_square(Wing_icon_coords[gr_screen.res][slot_index][0], Wing_icon_coords[gr_screen.res][slot_index][1], Wing_icon_coords[gr_screen.res][slot_index][0] + 32, Wing_icon_coords[gr_screen.res][slot_index][1] + 28, GR_RESIZE_MENU);
+
+			graphics::line_draw_list line_draw_list;
+			draw_brackets_square(&line_draw_list, Wing_icon_coords[gr_screen.res][slot_index][0], Wing_icon_coords[gr_screen.res][slot_index][1], Wing_icon_coords[gr_screen.res][slot_index][0] + 32, Wing_icon_coords[gr_screen.res][slot_index][1] + 28, GR_RESIZE_MENU);
+			line_draw_list.flush();
+
 			draw_model_icon(icon->model_index, MR_AUTOCENTER | MR_NO_FOGGING | MR_NO_LIGHTING, sip->closeup_zoom / 1.25f, Wing_icon_coords[gr_screen.res][slot_index][0], Wing_icon_coords[gr_screen.res][slot_index][1], 32, 28, sip, GR_RESIZE_MENU);
 		}
 	}
@@ -2299,7 +2309,11 @@ void ss_blit_ship_icon(int x,int y,int ship_class,int bmap_num)
 			if(icon->model_index != -1)
 			{
 				gr_set_color_fast(&Icon_colors[bmap_num]);
-				draw_brackets_square(x, y, x + 32, y + 28, GR_RESIZE_MENU);
+
+				graphics::line_draw_list line_draw_list;
+				draw_brackets_square(&line_draw_list, x, y, x + 32, y + 28, GR_RESIZE_MENU);
+				line_draw_list.flush();
+
 				draw_model_icon(icon->model_index, MR_AUTOCENTER | MR_NO_FOGGING | MR_NO_LIGHTING, sip->closeup_zoom / 1.25f, x, y, 32, 28, sip, GR_RESIZE_MENU);
 			}
 		}
@@ -3233,18 +3247,18 @@ void ss_synch_interface()
 }
 
 // exit: data changed flag
-int ss_swap_slot_slot(int from_slot, int to_slot, int *sound)
+int ss_swap_slot_slot(int from_slot, int to_slot, interface_snd_id *sound)
 {
 	int i, tmp;
 
 	if ( from_slot == to_slot ) {
-		*sound=SND_ICON_DROP_ON_WING;
+		*sound=InterfaceSounds::ICON_DROP_ON_WING;
 		return 0;
 	}
 
 	// ensure from_slot has a ship to pick up
 	if ( Wss_slots[from_slot].ship_class < 0 ) {
-		*sound=SND_ICON_DROP;
+		*sound=InterfaceSounds::ICON_DROP;
 		return 0;
 	}
 
@@ -3264,12 +3278,12 @@ int ss_swap_slot_slot(int from_slot, int to_slot, int *sound)
 		Wss_slots[to_slot].wep_count[i] = tmp;
 	}
 
-	*sound=SND_ICON_DROP_ON_WING;
+	*sound=InterfaceSounds::ICON_DROP_ON_WING;
 	return 1;
 }
 
 // exit: data changed flag
-int ss_dump_to_list(int from_slot, int to_list, int *sound)
+int ss_dump_to_list(int from_slot, int to_list, interface_snd_id *sound)
 {
 	int i;
 	wss_unit	*slot;
@@ -3280,7 +3294,7 @@ int ss_dump_to_list(int from_slot, int to_list, int *sound)
 
 	// ensure from_slot has a ship to pick up
 	if ( slot->ship_class < 0 ) {
-		*sound=SND_ICON_DROP;
+		*sound=InterfaceSounds::ICON_DROP;
 		return 0;
 	}
 
@@ -3297,12 +3311,12 @@ int ss_dump_to_list(int from_slot, int to_list, int *sound)
 		}
 	}
 
-	*sound=SND_ICON_DROP;
+	*sound=InterfaceSounds::ICON_DROP;
 	return 1;
 }
 
 // exit: data changed flag
-int ss_grab_from_list(int from_list, int to_slot, int *sound)
+int ss_grab_from_list(int from_list, int to_slot, interface_snd_id *sound)
 {
 	wss_unit        *slot;
 	int i, wep[MAX_SHIP_WEAPONS], wep_count[MAX_SHIP_WEAPONS];
@@ -3314,7 +3328,7 @@ int ss_grab_from_list(int from_list, int to_slot, int *sound)
 	// ensure that pool has ship
 	if ( Ss_pool[from_list] <= 0 )
 	{
-		*sound=SND_ICON_DROP;
+		*sound=InterfaceSounds::ICON_DROP;
 		return 0;
 	}
 
@@ -3333,12 +3347,12 @@ int ss_grab_from_list(int from_list, int to_slot, int *sound)
 		slot->wep_count[i] = wep_count[i];
 	}
 
-	*sound=SND_ICON_DROP_ON_WING;
+	*sound=InterfaceSounds::ICON_DROP_ON_WING;
 	return 1;
 }
                         
 // exit: data changed flag
-int ss_swap_list_slot(int from_list, int to_slot, int *sound)
+int ss_swap_list_slot(int from_list, int to_slot, interface_snd_id *sound)
 {
 	int i, wep[MAX_SHIP_WEAPONS], wep_count[MAX_SHIP_WEAPONS];
 	wss_unit        *slot;
@@ -3348,7 +3362,7 @@ int ss_swap_list_slot(int from_list, int to_slot, int *sound)
 	// ensure that pool has ship
 	if ( Ss_pool[from_list] <= 0 )
 	{
-		*sound=SND_ICON_DROP;
+		*sound=InterfaceSounds::ICON_DROP;
 		return 0;
 	}
 
@@ -3382,14 +3396,14 @@ int ss_swap_list_slot(int from_list, int to_slot, int *sound)
 		slot->wep_count[i] = wep_count[i];
 	}
 
-	*sound=SND_ICON_DROP_ON_WING;
+	*sound=InterfaceSounds::ICON_DROP_ON_WING;
 	return 1;
 }
                         
 void ss_apply(int mode, int from_slot, int from_list, int to_slot, int to_list,int player_index)
 {
 	int update=0;
-	int sound=-1;
+	interface_snd_id sound;
 
 	switch(mode){
 	case WSS_SWAP_SLOT_SLOT:
@@ -3407,7 +3421,7 @@ void ss_apply(int mode, int from_slot, int from_list, int to_slot, int to_list,i
 	}
 
 	// only play this sound if the move was done locally (by the host in other words)
-	if ( (sound >= 0) && (player_index == -1) ) {
+	if ( (sound.isValid()) && (player_index == -1) ) {
 		gamesnd_play_iface(sound);		
 	}
 

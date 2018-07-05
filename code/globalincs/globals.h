@@ -82,9 +82,6 @@
 // object.h
 #define MAX_OBJECTS			3500		
 
-// from lighting.cpp
-#define MAX_LIGHTS 256
-
 // from weapon.h (and beam.h)
 #define MAX_BEAM_SECTIONS				5
 

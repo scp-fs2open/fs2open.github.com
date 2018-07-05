@@ -34,8 +34,11 @@ ADE_FUNC(getList, l_Waypoint, NULL, "Returns the waypoint list", "waypointlist",
 waypointlist_h::waypointlist_h() {wlp=NULL;name[0]='\0';}
 waypointlist_h::waypointlist_h(waypoint_list* n_wlp) {
 	wlp = n_wlp;
-	if(n_wlp != NULL)
+	if(n_wlp != NULL) {
 		strcpy_s(name, wlp->get_name());
+	} else {
+		memset(name, 0, sizeof(name));
+	}
 }
 waypointlist_h::waypointlist_h(char* wlname) {
 	wlp = NULL;

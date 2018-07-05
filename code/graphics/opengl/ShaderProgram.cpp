@@ -137,7 +137,7 @@ GLenum get_gl_shader_stage(opengl::ShaderStage stage) {
 		case opengl::STAGE_FRAGMENT:
 			return GL_FRAGMENT_SHADER;
 		default:
-			Assertion(false, "Unhandled shader type found!");
+			UNREACHABLE("Unhandled shader type found!");
 			return GL_NONE;
 	}
 }
@@ -157,11 +157,11 @@ opengl::ShaderProgram::~ShaderProgram() {
 	}
 }
 
-opengl::ShaderProgram::ShaderProgram(ShaderProgram&& other): _program_id(0), Uniforms(this) {
+opengl::ShaderProgram::ShaderProgram(ShaderProgram&& other) SCP_NOEXCEPT : _program_id(0), Uniforms(this) {
 	*this = std::move(other);
 }
 
-opengl::ShaderProgram& opengl::ShaderProgram::operator=(ShaderProgram&& other) {
+opengl::ShaderProgram& opengl::ShaderProgram::operator=(ShaderProgram&& other) SCP_NOEXCEPT {
 	std::swap(_program_id, other._program_id);
 	std::swap(Uniforms, other.Uniforms);
 

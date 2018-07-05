@@ -35,7 +35,7 @@ elseif(PLATFORM_MAC)
 	find_library(SDL2_LIBRARY SDL2 PATHS "${PREBUILT_PATH}" NO_DEFAULT_PATH)
 
 	target_link_libraries(sdl2 INTERFACE "${SDL2_LIBRARY}")
-	target_include_directories(sdl2 INTERFACE "${SDL2_LIBRARY}/Headers")
+	target_include_directories(sdl2 SYSTEM INTERFACE "${SDL2_LIBRARY}/Headers")
 
 	add_target_copy_files("${SDL2_LIBRARY}")
 	INSTALL(FILES "${CMAKE_CURRENT_SOURCE_DIR}/README-SDL.txt"

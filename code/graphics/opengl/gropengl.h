@@ -58,6 +58,7 @@ extern GLuint GL_vao;
 
 extern float GL_alpha_threshold;
 
-extern bool GL_workaround_clipping_planes; //!< If set then clipping planes can not be used for batched model rendering
+extern SCP_string GL_implementation_id;
+extern SCP_vector<GLint> GL_binary_formats;
 
 #endif

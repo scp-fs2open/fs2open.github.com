@@ -663,11 +663,13 @@ void HudGaugeTargetBox::renderTargetShip(object *target_objp)
 					hud_set_iff_color( target_objp, 1 );
 				}
 
+				graphics::line_draw_list line_draw_list;
 				if ( subsys_in_view ) {
-					draw_brackets_square_quick(sx - 10, sy - 10, sx + 10, sy + 10);
+					draw_brackets_square_quick(&line_draw_list, sx - 10, sy - 10, sx + 10, sy + 10);
 				} else {
-					draw_brackets_diamond_quick(sx - 10, sy - 10, sx + 10, sy + 10);
+					draw_brackets_diamond_quick(&line_draw_list, sx - 10, sy - 10, sx + 10, sy + 10);
 				}
+				line_draw_list.flush();
 			}
 		}
 		renderTargetClose();
@@ -1006,7 +1008,7 @@ void HudGaugeTargetBox::renderTargetWeapon(object *target_objp)
 	setGaugeColor();
 
 	// print out the weapon class name
-	sprintf( outstr,"%s", target_wip->name );
+	sprintf( outstr,"%s", target_wip->get_display_string() );
 	gr_get_string_size(&w,&h,outstr);
 
 	// drop name past the # sign
@@ -1401,7 +1403,7 @@ void HudGaugeExtraTargetData::pageIn()
 /**
  * @note Formerly hud_targetbox_show_extra_ship_info(target_shipp, target_objp) (Swifty)
  */
-void HudGaugeExtraTargetData::render(float frametime)
+void HudGaugeExtraTargetData::render(float  /*frametime*/)
 {
 	char outstr[256], tmpbuf[256];
 	int has_orders = 0;
@@ -1657,7 +1659,7 @@ void HudGaugeTargetBox::renderTargetShipInfo(object *target_objp)
 	shield_strength *= 100.0f;
 	ship_integrity *= 100.0f;
 
-	screen_integrity = fl2i(ship_integrity+0.5f);
+	screen_integrity = (int)std::lround(ship_integrity);
 	if ( screen_integrity == 0 ) {
 		if ( ship_integrity > 0 ) {
 			screen_integrity = 1;
@@ -1679,7 +1681,7 @@ void HudGaugeTargetBox::renderTargetShipInfo(object *target_objp)
 	// print out the targeted sub-system and % integrity
 	if (Player_ai->targeted_subsys != NULL) {
 		shield_strength = Player_ai->targeted_subsys->current_hits/Player_ai->targeted_subsys->max_hits * 100.0f;
-		screen_integrity = fl2i(shield_strength+0.5f);
+		screen_integrity = (int)std::lround(shield_strength);
 
 		if ( screen_integrity < 0 ) {
 			screen_integrity = 0;
@@ -1896,7 +1898,7 @@ void HudGaugeTargetBox::maybeRenderCargoScan(ship_info *target_sip)
 	}
 }
 
-void HudGaugeTargetBox::showTargetData(float frametime)
+void HudGaugeTargetBox::showTargetData(float  /*frametime*/)
 {
 	char outstr[256];						// temp buffer for sprintf'ing hud output
 	int w,h;									// width and height of string about to print
@@ -2156,7 +2158,7 @@ void HudGaugeTargetBox::showTargetData(float frametime)
 		gr_printf_no_resize(sx,sy,"%s", outstr);
 		sy += dy;
 		for ( i = 0; i < swp->num_primary_banks; i++ ) {
-			sprintf(outstr,"%d. %s", i+1, Weapon_info[swp->primary_bank_weapons[i]].name);
+			sprintf(outstr,"%d. %s", i+1, Weapon_info[swp->primary_bank_weapons[i]].get_display_string());
 			gr_printf_no_resize(sx,sy,"%s", outstr);
 			sy += dy;
 		}
@@ -2166,7 +2168,7 @@ void HudGaugeTargetBox::showTargetData(float frametime)
 		gr_printf_no_resize(sx,sy,"%s", outstr);
 		sy += dy;
 		for ( i = 0; i < swp->num_secondary_banks; i++ ) {
-			sprintf(outstr,"%d. %s", i+1, Weapon_info[swp->secondary_bank_weapons[i]].name);
+			sprintf(outstr,"%d. %s", i+1, Weapon_info[swp->secondary_bank_weapons[i]].get_display_string());
 			gr_printf_no_resize(sx,sy,"%s", outstr);
 			sy += dy;
 		}
@@ -2221,7 +2223,7 @@ void hud_update_target_static()
 
 	if ( Target_static_playing ) {
 		if ( Target_static_looping == -1 ) {
-			Target_static_looping = snd_play_looping(gamesnd_get_game_sound(SND_STATIC));
+			Target_static_looping = snd_play_looping(gamesnd_get_game_sound(GameSounds::STATIC));
 		}
 	} else {
 		if ( Target_static_looping != -1 ) {

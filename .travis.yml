@@ -3,7 +3,7 @@ sudo: required
 dist: trusty
 cache:
     directories:
-    - $HOME/cmake
+    - $HOME/cmake-3.8
     - $HOME/.ccache
 addons:
     apt:
@@ -17,6 +17,7 @@ addons:
             - libjansson-dev
             - libsdl2-dev
             - valgrind
+            - qt57base
     coverity_scan:
         project:
             name: "scp-fs2open/fs2open.github.com"
@@ -70,28 +71,36 @@ matrix:
               apt:
                   sources:
                       - ubuntu-toolchain-r-test
+                      - sourceline: 'ppa:beineri/opt-qt571-trusty'
                   packages:
-                      - g++-5
                       - *global_deps
+                      - g++-5
         - os: linux
-          env: CONFIGURATION="Debug" CC=gcc-7 CXX=g++-7
+          env: CONFIGURATION="Debug" CC=gcc-8 CXX=g++-8
           addons:
               apt:
                   sources:
                       - ubuntu-toolchain-r-test
+                      - sourceline: 'ppa:beineri/opt-qt571-trusty'
                   packages:
-                      - g++-7
+                      - g++-8
                       - *global_deps
         - os: linux
-          env: CONFIGURATION="Debug" CC=clang-3.6 CXX=clang++-3.6
+          env: CONFIGURATION="Debug" CC=clang-4.0 CXX=clang++-4.0 CMAKE_OPTIONS="-DCMAKE_EXPORT_COMPILE_COMMANDS=ON"
           addons:
               apt:
                   sources:
-                      - llvm-toolchain-precise
+                      - ubuntu-toolchain-r-test
+                      - llvm-toolchain-trusty-4.0
+                      - sourceline: 'ppa:beineri/opt-qt571-trusty'
                   packages:
-                      - clang-3.6
-                      - libc++-dev
                       - *global_deps
+                      - clang-4.0
+                      - clang-tidy-4.0
+                      - libc++-dev
+          script:
+            - ./ci/travis/script.sh
+            - ./ci/travis/clang_tidy.sh
         - os: osx
           env: CONFIGURATION="Debug"
 
@@ -101,28 +110,32 @@ matrix:
               apt:
                   sources:
                       - ubuntu-toolchain-r-test
+                      - sourceline: 'ppa:beineri/opt-qt571-trusty'
                   packages:
-                      - g++-5
                       - *global_deps
+                      - g++-5
         - os: linux
-          env: CONFIGURATION="Release" CC=gcc-7 CXX=g++-7
+          env: CONFIGURATION="Release" CC=gcc-8 CXX=g++-8
           addons:
               apt:
                   sources:
                       - ubuntu-toolchain-r-test
+                      - sourceline: 'ppa:beineri/opt-qt571-trusty'
                   packages:
-                      - g++-7
+                      - g++-8
                       - *global_deps
         - os: linux
-          env: CONFIGURATION="Release" CC=clang-3.6 CXX=clang++-3.6
+          env: CONFIGURATION="Release" CC=clang-4.0 CXX=clang++-4.0
           addons:
               apt:
                   sources:
-                      - llvm-toolchain-precise
+                      - ubuntu-toolchain-r-test
+                      - llvm-toolchain-trusty-4.0
+                      - sourceline: 'ppa:beineri/opt-qt571-trusty'
                   packages:
-                      - clang-3.6
-                      - libc++-dev
                       - *global_deps
+                      - clang-4.0
+                      - libc++-dev
         - os: osx
           env: CONFIGURATION="Release"
 before_install:
@@ -136,8 +149,9 @@ before_install:
     - "./ci/travis/before_install.sh"
 install:
     - "./ci/travis/install.sh"
-    - export PATH=$HOME/cmake/bin:$PATH
+    - export PATH=$HOME/cmake-3.6/bin:$PATH
 before_script:
+    - if [ "$TRAVIS_OS_NAME" = "linux" ]; then QT_ENV_SCRIPT=$(find /opt -name 'qt*-env.sh'); source $QT_ENV_SCRIPT; fi
     - "./ci/travis/before_script.sh"
 script:
     - if [ "$BUILD_DEPLOYMENT" = true ] ; then ./ci/travis/release.sh ; else ./ci/travis/script.sh ; fi

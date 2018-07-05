@@ -17,7 +17,7 @@
 #include "weapon/weapon.h"
 
 #include <string>
-#include <limits.h>
+#include <climits>
 
 //*****************************Low-level abstraction*******************************
 //Lame attempt to keep things from being exceedingly difficult when switching to ferrium
@@ -258,17 +258,17 @@ protected:
 
 	//DO FUNCTIONS
 	//Used by individual objects to define actions when that event happens
-	virtual void DoDraw(float frametime){}
-	virtual int DoFrame(float frametime){return OF_FALSE;}
+	virtual void DoDraw(float  /*frametime*/){}
+	virtual int DoFrame(float  /*frametime*/){return OF_FALSE;}
 	virtual int DoRefreshSize(){return OF_FALSE;}
 	virtual void DoRefreshSkin(){}
-	virtual void DoMove(int dx, int dy){}
-	virtual int DoMouseOver(float frametime){return OF_FALSE;}
-	virtual int DoMouseDown(float frametime){return OF_FALSE;}
-	virtual int DoMouseUp(float frametime){return OF_FALSE;}	//In other words, a click
-	virtual int DoMouseOut(float frametime){return OF_FALSE;}
-	virtual int DoKeyState(float frametime){return OF_FALSE;}
-	virtual int DoKeyPress(float frametime){return OF_FALSE;}
+	virtual void DoMove(int  /*dx*/, int  /*dy*/){}
+	virtual int DoMouseOver(float  /*frametime*/){return OF_FALSE;}
+	virtual int DoMouseDown(float  /*frametime*/){return OF_FALSE;}
+	virtual int DoMouseUp(float  /*frametime*/){return OF_FALSE;}	//In other words, a click
+	virtual int DoMouseOut(float  /*frametime*/){return OF_FALSE;}
+	virtual int DoKeyState(float  /*frametime*/){return OF_FALSE;}
+	virtual int DoKeyPress(float  /*frametime*/){return OF_FALSE;}
 
 	//CALCULATESIZE
 	//Sort of an on and do function; if you define your own, the following MUST be included at the end:
@@ -282,7 +282,7 @@ public:
 	//CONSTRUCTION/DESTRUCTION
 	//Derive your class's constructer from the GUIObject one
 	GUIObject(const SCP_string &in_Name="", int x_coord = 0, int y_coord = 0, int x_width = -1, int y_height = -1, int in_style = 0);
-	~GUIObject();
+	~GUIObject() override;
 	void Delete();
 
 	//CHILD FUNCTIONS
@@ -315,7 +315,7 @@ private:
 	SCP_vector<GUIObject*> DeletionCache;
 public:
 	GUIScreen(const SCP_string &in_Name="");
-	~GUIScreen();
+	~GUIScreen() override;
 
 	ObjectClassInfoEntry *GetObjectClassInfo(GUIObject *cgp);
 
@@ -427,13 +427,13 @@ class Window : public GUIObject
 	shader WindowShade;
 
 protected:
-	void DoDraw(float frametime);
-	void DoMove(int dx, int dy);
-	int DoRefreshSize();
-	int DoMouseOver(float frametime);
-	int DoMouseDown(float frametime);
-	int DoMouseUp(float frametime);
-	int DoMouseOut(float frametime);
+	void DoDraw(float frametime) override;
+	void DoMove(int dx, int dy) override;
+	int DoRefreshSize() override;
+	int DoMouseOver(float frametime) override;
+	int DoMouseDown(float frametime) override;
+	int DoMouseUp(float frametime) override;
+	int DoMouseOut(float frametime) override;
 	bool HasChildren(){return NOT_EMPTY(&Children);}
 
 public:
@@ -462,11 +462,11 @@ class Button : public GUIObject
 	bool IsDown;	//Does it look pressed?
 
 protected:
-	void DoDraw(float frametime);
-	int DoRefreshSize();
-	int DoMouseDown(float frametime);
-	int DoMouseUp(float frametime);
-	int DoMouseOut(float frametime);
+	void DoDraw(float frametime) override;
+	int DoRefreshSize() override;
+	int DoMouseDown(float frametime) override;
+	int DoMouseUp(float frametime) override;
+	int DoMouseOut(float frametime) override;
 public:
 	Button(const SCP_string &in_caption, int x_coord, int y_coord, void (*in_function)(Button *caller) = NULL, int x_width = -1, int y_height = -1, int in_style = 0);
 
@@ -511,7 +511,7 @@ public:
 	void ClearAllItems();
 	
 	TreeItem();
-	~TreeItem();
+	~TreeItem() override;
 };
 
 class Tree : public GUIObject
@@ -528,12 +528,12 @@ class Tree : public GUIObject
 	void CalcItemsSize(TreeItem *items, int *DrawData);
 	void DrawItems(TreeItem *items);
 protected:
-	void DoDraw(float frametime);
-	void DoMove(int dx, int dy);
-	int DoRefreshSize();
-	int DoMouseOver(float frametime);
-	int DoMouseDown(float frametime);
-	int DoMouseUp(float frametime);
+	void DoDraw(float frametime) override;
+	void DoMove(int dx, int dy) override;
+	int DoRefreshSize() override;
+	int DoMouseOver(float frametime) override;
+	int DoMouseDown(float frametime) override;
+	int DoMouseUp(float frametime) override;
 public:
 	Tree(const SCP_string &in_name, int x_coord, int y_coord, void* in_associateditem = NULL, int x_width = -1, int y_width = -1, int in_style = 0);
 
@@ -590,10 +590,10 @@ class Text : public GUIObject
 	union{int SaveMin;float flSaveMin;uint uSaveMin;};
 
 protected:
-	void DoDraw(float frametime);
-	int DoRefreshSize();
-	int DoMouseDown(float frametime);
-	int DoKeyPress(float frametime);
+	void DoDraw(float frametime) override;
+	int DoRefreshSize() override;
+	int DoMouseDown(float frametime) override;
+	int DoKeyPress(float frametime) override;
 public:
 	Text(const SCP_string &in_name, const SCP_string &in_content, int x_coord, int y_coord, int x_width = -1, int y_width = -1, int in_style = 0);
 
@@ -636,13 +636,13 @@ class Checkbox : public GUIObject
 	int HighlightStatus;
 
 protected:
-	void DoDraw(float frametime);
-	void DoMove(int dx, int dy);
-	int DoRefreshSize();
-	int DoMouseOver(float frametime);
-	int DoMouseDown(float frametime);
-	int DoMouseUp(float frametime);
-	int DoMouseOut(float frametime);
+	void DoDraw(float frametime) override;
+	void DoMove(int dx, int dy) override;
+	int DoRefreshSize() override;
+	int DoMouseOver(float frametime) override;
+	int DoMouseDown(float frametime) override;
+	int DoMouseUp(float frametime) override;
+	int DoMouseOut(float frametime) override;
 
 public:
 	Checkbox(const SCP_string &in_label, int x_coord, int y_coord, void (*in_function)(Checkbox *caller) = NULL, int x_width = -1, int y_height = DEFAULT_BUTTON_HEIGHT, int in_style = 0);
@@ -719,8 +719,8 @@ class ImageAnim : public GUIObject
 	int PlayType;
 	int ImageFlags;
 protected:
-	void DoDraw(float frametime);
-	int DoRefreshSize();
+	void DoDraw(float frametime) override;
+	int DoRefreshSize() override;
 public:
 	ImageAnim(const SCP_string &in_name, const SCP_string &in_imagename, int x_coord, int y_coord, int x_width = -1, int y_width = -1, int in_style = 0);
 
@@ -754,11 +754,11 @@ class Slider : public GUIObject
 	float GetSliderPos(int x);
 	void UpdateSlider(int x);
 protected:
-	void DoDraw(float frametime);
-	void DoMove(int dx, int dy);
-	int DoRefreshSize();
-	int DoMouseDown(float frametime);
-	int DoMouseUp(float frametime);
+	void DoDraw(float frametime) override;
+	void DoMove(int dx, int dy) override;
+	int DoRefreshSize() override;
+	int DoMouseDown(float frametime) override;
+	int DoMouseUp(float frametime) override;
 
 public:
 	Slider(const SCP_string &in_label, float min, float max, int x_coord, int y_coord, void(*in_function)(Slider *caller) = NULL, int x_width = -1, int y_height = DEFAULT_BUTTON_HEIGHT, int in_style = 0);

@@ -9,7 +9,7 @@
 
 
 
-#include <ctype.h>
+#include <cctype>
 
 #include "cfile/cfile.h"
 #include "freespace.h"
@@ -22,6 +22,7 @@
 #include "menuui/mainhallmenu.h"
 #include "menuui/readyroom.h"
 #include "menuui/techmenu.h"	// for tech menu reset stuff
+#include "mission/missionparse.h"
 #include "mission/missioncampaign.h"
 #include "missionui/missionscreencommon.h"
 #include "parse/parselo.h"
@@ -677,10 +678,10 @@ void sim_room_scroll_screen_up()
 			}
 		}
 
-		gamesnd_play_iface(SND_SCROLL);
+		gamesnd_play_iface(InterfaceSounds::SCROLL);
 
 	} else
-		gamesnd_play_iface(SND_GENERAL_FAIL);
+		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 }
 
 void sim_room_scroll_line_up()
@@ -693,10 +694,10 @@ void sim_room_scroll_line_up()
 			Sim_room_slider.forceUp();
 		}
 
-		gamesnd_play_iface(SND_SCROLL);
+		gamesnd_play_iface(InterfaceSounds::SCROLL);
 
 	} else
-		gamesnd_play_iface(SND_GENERAL_FAIL);
+		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 }
 
 void sim_room_scroll_screen_down()
@@ -713,10 +714,10 @@ void sim_room_scroll_screen_down()
 			}
 		}
 
-		gamesnd_play_iface(SND_SCROLL);
+		gamesnd_play_iface(InterfaceSounds::SCROLL);
 
 	} else
-		gamesnd_play_iface(SND_GENERAL_FAIL);
+		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 }
 
 void sim_room_scroll_line_down()
@@ -731,10 +732,10 @@ void sim_room_scroll_line_down()
 			Sim_room_slider.forceDown();
 		}
 
-		gamesnd_play_iface(SND_SCROLL);
+		gamesnd_play_iface(InterfaceSounds::SCROLL);
 
 	} else
-		gamesnd_play_iface(SND_GENERAL_FAIL);
+		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 }
 
 /*  Goober5000 - why are there two nearly identical functions?
@@ -760,7 +761,7 @@ int sim_room_reset_campaign()
 */
 
 // Decide if we should offer choice to resume this savegame
-int sim_room_can_resume_savegame(char *savegame_filename)
+int sim_room_can_resume_savegame(char * /*savegame_filename*/)
 {
 	#ifdef FREESPACE_SAVERESTORE_SYSTEM
 	char savegame_mission[MAX_FILENAME_LEN];
@@ -876,13 +877,13 @@ int readyroom_continue_campaign()
 	int mc_rval = mission_campaign_next_mission();
 	if (mc_rval == -1)
 	{  // is campaign and next mission valid?
-		gamesnd_play_iface(SND_GENERAL_FAIL);
+		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR( "The campaign is over.  To replay the campaign, either create a new pilot or restart the campaign in the campaign room.", 112) );
 		return -1;
 	}
 	else if(mc_rval == -2)
 	{
-		gamesnd_play_iface(SND_GENERAL_FAIL);
+		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, NOX("The current campaign has no missions") );
 		return -1;
 	}
@@ -897,7 +898,7 @@ int readyroom_continue_campaign()
 void sim_room_commit()
 {
 	if ((Selected_line >= Num_lines) || !sim_room_lines[Selected_line].filename) {
-		gamesnd_play_iface(SND_GENERAL_FAIL);
+		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		return;
 	}
 
@@ -906,7 +907,7 @@ void sim_room_commit()
 	Game_mode &= ~(GM_CAMPAIGN_MODE);						// be sure this bit is clear
 
 	gameseq_post_event(GS_EVENT_START_GAME);
-	gamesnd_play_iface(SND_COMMIT_PRESSED);
+	gamesnd_play_iface(InterfaceSounds::COMMIT_PRESSED);
 }
 
 int sim_room_button_pressed(int n)
@@ -926,7 +927,7 @@ int sim_room_button_pressed(int n)
 			Simroom_show_all = 0;
 			Player->readyroom_listing_mode = MODE_MISSIONS;
 			Selected_line = Scroll_offset = 0;
-			gamesnd_play_iface(SND_USER_SELECT);
+			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			sim_room_build_listing();
 			break;
 
@@ -941,7 +942,7 @@ int sim_room_button_pressed(int n)
 
 			Player->readyroom_listing_mode = MODE_CAMPAIGNS;
 			Scroll_offset = 0;
-			gamesnd_play_iface(SND_USER_SELECT);
+			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			sim_room_build_listing();
 			break;
 
@@ -951,26 +952,26 @@ int sim_room_button_pressed(int n)
 
 		case HELP_BUTTON:
 			launch_context_help();
-			gamesnd_play_iface(SND_HELP_PRESSED);
+			gamesnd_play_iface(InterfaceSounds::HELP_PRESSED);
 			break;
 
 		case OPTIONS_BUTTON:
-			gamesnd_play_iface(SND_SWITCH_SCREENS);
+			gamesnd_play_iface(InterfaceSounds::SWITCH_SCREENS);
 			gameseq_post_event(GS_EVENT_OPTIONS_MENU);
 			return 1;
 
 		case TECH_DATABASE_BUTTON:
-			gamesnd_play_iface(SND_SWITCH_SCREENS);
+			gamesnd_play_iface(InterfaceSounds::SWITCH_SCREENS);
 			gameseq_post_event(GS_EVENT_TECH_MENU);
 			return 1;
 
 		case CUTSCENES_BUTTON:
-			gamesnd_play_iface(SND_SWITCH_SCREENS);
+			gamesnd_play_iface(InterfaceSounds::SWITCH_SCREENS);
 			gameseq_post_event(GS_EVENT_GOTO_VIEW_CUTSCENES_SCREEN);
 			return 1;
 
 		case CREDITS_BUTTON:
-			gamesnd_play_iface(SND_SWITCH_SCREENS);
+			gamesnd_play_iface(InterfaceSounds::SWITCH_SCREENS);
 			gameseq_post_event(GS_EVENT_CREDITS);
 			return 1;
 	}
@@ -1170,7 +1171,7 @@ void sim_room_close()
 //
 // Called once per frame to process user input for the sim_room Assignment Screen
 //
-void sim_room_do_frame(float frametime)
+void sim_room_do_frame(float  /*frametime*/)
 {
 	char buf[256];
 	int i, k, y, line;
@@ -1226,12 +1227,12 @@ void sim_room_do_frame(float frametime)
 				Player->readyroom_listing_mode = MODE_MISSIONS;
 
 			Selected_line = Scroll_offset = Simroom_show_all = 0;
-			gamesnd_play_iface(SND_USER_SELECT);
+			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			sim_room_build_listing();
 			break;
 
 		case KEY_F2:
-			gamesnd_play_iface(SND_SWITCH_SCREENS);
+			gamesnd_play_iface(InterfaceSounds::SWITCH_SCREENS);
 			gameseq_post_event(GS_EVENT_OPTIONS_MENU);
 			break;
 
@@ -1257,7 +1258,7 @@ void sim_room_do_frame(float frametime)
 	
 		if (List_buttons[i].pressed()) {
 			Selected_line = i + Scroll_offset;
-			gamesnd_play_iface(SND_USER_SELECT);
+			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 		}
 	}
 
@@ -1354,7 +1355,7 @@ void sim_room_do_frame(float frametime)
 	gr_flip();
 }
 
-void sim_room_blit_icons(int line_index, int y_start, fs_builtin_mission *fb, int is_md)
+void sim_room_blit_icons(int line_index, int y_start, fs_builtin_mission *fb, int  /*is_md*/)
 {
 	int is_from_volition = 0;	
 
@@ -1498,20 +1499,20 @@ void campaign_room_scroll_info_up()
 {
 	if (Desc_scroll_offset) {
 		Desc_scroll_offset--;
-		gamesnd_play_iface(SND_SCROLL);
+		gamesnd_play_iface(InterfaceSounds::SCROLL);
 
 	} else
-		gamesnd_play_iface(SND_GENERAL_FAIL);
+		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 }
 
 void campaign_room_scroll_info_down()
 {
 	if ( (Num_info_lines - Desc_scroll_offset) * gr_get_font_height() > Cr_info_coords[gr_screen.res][3]) {
 		Desc_scroll_offset++;
-		gamesnd_play_iface(SND_SCROLL);
+		gamesnd_play_iface(InterfaceSounds::SCROLL);
 
 	} else
-		gamesnd_play_iface(SND_GENERAL_FAIL);
+		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 }
 
 // returns: 0 = success, !0 = aborted or failed
@@ -1542,12 +1543,12 @@ int campaign_room_reset_campaign(int n)
 void campaign_room_commit()
 {
 	if (Selected_campaign_index < 0) {
-		gamesnd_play_iface(SND_GENERAL_FAIL);
+		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		return;
 	}
 
 	// new campaign selected?
-	if (stricmp(Campaign_file_names[Selected_campaign_index], Campaign.filename)) {
+	if (stricmp(Campaign_file_names[Selected_campaign_index], Campaign.filename) != 0) {
 		// Goober5000 - reinitialize tech database if needed
 		if ( (Campaign.flags & CF_CUSTOM_TECH_DATABASE) || !stricmp(Campaign.filename, "freespace2") )
 		{
@@ -1572,12 +1573,12 @@ void campaign_room_commit()
 	}
 
 	if (mission_campaign_next_mission()) {  // is campaign and next mission valid?
-		gamesnd_play_iface(SND_GENERAL_FAIL);
+		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		return;
 	}
 
 	gameseq_post_event(GS_EVENT_MAIN_MENU);
-	gamesnd_play_iface(SND_COMMIT_PRESSED);
+	gamesnd_play_iface(InterfaceSounds::COMMIT_PRESSED);
 }
 
 int campaign_room_button_pressed(int n)
@@ -1617,12 +1618,12 @@ int campaign_room_button_pressed(int n)
 
 		case CR_RESET_BUTTON:
 			if ( (Active_campaign_index < 0) || (Active_campaign_index >= Num_campaigns) )
-				gamesnd_play_iface(SND_GENERAL_FAIL);
+				gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 			else if (campaign_room_reset_campaign(Active_campaign_index))
-				gamesnd_play_iface(SND_GENERAL_FAIL);
+				gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 			else
 			{
-				gamesnd_play_iface(SND_USER_SELECT);
+				gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 
 				// Goober5000 - reinitialize tech database if needed
 				if ( (Campaign.flags & CF_CUSTOM_TECH_DATABASE) || !stricmp(Campaign.filename, "freespace2") )
@@ -1746,7 +1747,7 @@ void campaign_room_close()
 	Pilot.save_player();
 }
 
-void campaign_room_do_frame(float frametime)
+void campaign_room_do_frame(float  /*frametime*/)
 {
 	char buf[256];
 	char line_text[MAX_INFO_LINE_LEN];
@@ -1790,10 +1791,10 @@ void campaign_room_do_frame(float frametime)
 		case KEY_DOWN:  // scroll list down
 			if (Selected_campaign_index < Num_campaigns - 1) {
 				set_new_campaign_line(Selected_campaign_index + 1);
-				gamesnd_play_iface(SND_SCROLL);
+				gamesnd_play_iface(InterfaceSounds::SCROLL);
 
 			} else
-				gamesnd_play_iface(SND_GENERAL_FAIL);
+				gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 
 			break;
 
@@ -1803,10 +1804,10 @@ void campaign_room_do_frame(float frametime)
 
 			if (Selected_campaign_index) {
 				set_new_campaign_line(Selected_campaign_index - 1);
-				gamesnd_play_iface(SND_SCROLL);
+				gamesnd_play_iface(InterfaceSounds::SCROLL);
 
 			} else
-				gamesnd_play_iface(SND_GENERAL_FAIL);
+				gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 
 			break;
 
@@ -1830,7 +1831,7 @@ void campaign_room_do_frame(float frametime)
 	
 		if (List_buttons[i].pressed()) {
 			set_new_campaign_line(i + Scroll_offset);
-			gamesnd_play_iface(SND_USER_SELECT);
+			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 		}
 	}
 

@@ -47,11 +47,11 @@ void convert_model_material(model_uniform_data* data_out,
 
 	data_out->color = material.get_color();
 
+	data_out->vpwidth = 1.0f / i2fl(gr_screen.max_w);
+	data_out->vpheight = 1.0f / i2fl(gr_screen.max_h);
 	if (shader_flags & SDR_FLAG_MODEL_ANIMATED) {
 		data_out->anim_timer = material.get_animated_effect_time();
 		data_out->effect_num = material.get_animated_effect();
-		data_out->vpwidth = 1.0f / i2fl(gr_screen.max_w);
-		data_out->vpheight = 1.0f / i2fl(gr_screen.max_h);
 	}
 
 	if (shader_flags & SDR_FLAG_MODEL_CLIP) {
@@ -240,6 +240,8 @@ void convert_model_material(model_uniform_data* data_out,
 
 		data_out->stripe_color = stripe_color;
 		data_out->base_color = base_color;
+
+		data_out->team_glow_enabled = bm_has_alpha_channel(material.get_texture_map(TM_MISC_TYPE)) ? 1 : 0;
 	}
 
 	if (shader_flags & SDR_FLAG_MODEL_THRUSTER) {
@@ -248,7 +250,7 @@ void convert_model_material(model_uniform_data* data_out,
 
 
 	if (shader_flags & SDR_FLAG_MODEL_FOG) {
-		material::fog fog_params = material.get_fog();
+		auto& fog_params = material.get_fog();
 
 		if (fog_params.enabled) {
 			data_out->fogStart = fog_params.dist_near;
@@ -265,8 +267,8 @@ void convert_model_material(model_uniform_data* data_out,
 		data_out->normalAlphaMinMax.y = material.get_normal_alpha_max();
 	}
 
-	if (shader_flags & SDR_FLAG_MODEL_NORMAL_EXTRUDE) {
-		data_out->extrudeWidth = material.get_normal_extrude_width();
+	if ( shader_flags & SDR_FLAG_MODEL_THICK_OUTLINES ) {
+		data_out->outlineWidth = material.get_outline_thickness();
 	}
 }
 

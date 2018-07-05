@@ -38,9 +38,9 @@
 
 #if defined(NDEBUG)
 #	if _MSC_VER >= 1400  /* MSVC 2005 or newer */
-#		define Assertion(expr, msg, ...)  do { ASSUME(expr); } while (0)
+#		define Assertion(expr, msg, ...)  do { ASSUME(expr); } while (false)
 #	else
-#		define Assertion(expr, msg)  do {} while (0)
+#		define Assertion(expr, msg)  do {} while (false)
 #	endif
 #else
 	/*
@@ -53,13 +53,13 @@
 				if (!(expr)) {                                              \
 					os::dialogs::AssertMessage(#expr, __FILE__, __LINE__, msg, __VA_ARGS__); \
 				}                                                           \
-			} while (0)
+			} while (false)
 #	else                 /* Older MSVC compilers */
 #		define Assertion(expr, msg)                        \
 			do {                                           \
 				if (!(expr)) {                             \
 					os::dialogs::AssertMessage(#expr, __FILE__, __LINE__);  \
-			} while (0)
+			} while (false)
 #	endif
 #endif
 
@@ -71,15 +71,8 @@
 #	endif
 #endif
 
-#define PTRDIFF_T_ARG "%Iu"
-#define SIZE_T_ARG    "%Id"
-
-/* The 'noexcept' keyword is not defined in versions before VS 2015. */
-#if _MSC_VER < 1900
-#	define NOEXCEPT
-#else
-#	define NOEXCEPT  noexcept
-#endif
+#define SIZE_T_ARG    "%Iu"
+#define PTRDIFF_T_ARG "%Id"
 
 #define likely(x)
 #define unlikely(x)
@@ -87,3 +80,15 @@
 #define USED_VARIABLE
 
 #define FALLTHROUGH
+
+#define CLANG_ANALYZER_NORETURN
+
+
+#ifndef NDEBUG
+#define UNREACHABLE(msg, ...)                                                                                          \
+	do {                                                                                                               \
+		os::dialogs::Error(__FILE__, __LINE__, msg, ##__VA_ARGS__);                                                    \
+	} while (false)
+#else
+#define UNREACHABLE(msg, ...) __assume(false)
+#endif

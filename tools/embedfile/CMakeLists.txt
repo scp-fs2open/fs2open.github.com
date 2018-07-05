@@ -11,5 +11,7 @@ IF(NOT CMAKE_CROSSCOMPILING)
 			FOLDER "Tools"
 	)
 
+	enable_clang_tidy(embedfile)
+
 	EXPORT(TARGETS embedfile FILE ${CMAKE_BINARY_DIR}/ImportExecutables.cmake)
 ENDIF(NOT CMAKE_CROSSCOMPILING)

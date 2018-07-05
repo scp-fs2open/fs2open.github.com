@@ -27,8 +27,8 @@ class UniformBuffer {
 	UniformBuffer(const UniformBuffer&) = delete;
 	UniformBuffer& operator=(const UniformBuffer&) = delete;
 
-	UniformBuffer(UniformBuffer&& other);
-	UniformBuffer& operator=(UniformBuffer&& other);
+	UniformBuffer(UniformBuffer&& other) SCP_NOEXCEPT;
+	UniformBuffer& operator=(UniformBuffer&& other) SCP_NOEXCEPT;
 
 	inline UniformAligner& aligner() {
 		return _aligner;

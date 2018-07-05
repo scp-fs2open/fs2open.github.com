@@ -23,14 +23,14 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <sys/select.h>
-#include <errno.h>
+#include <cerrno>
 #include <arpa/inet.h>
 #include <netdb.h>
 
 #define WSAGetLastError()  (errno)
 #endif
-#include <stdio.h>
-#include <limits.h>
+#include <cstdio>
+#include <climits>
 #include <algorithm>
 
 #include "globalincs/pstypes.h"
@@ -268,7 +268,7 @@ int psnet_buffer_get_next(network_packet_buffer_list *l, ubyte *data, int *lengt
 /**
  * Wrappers around select() and recvfrom() for lagging/losing data
  */
-int RECVFROM(SOCKET s, char *buf, int len, int flags, sockaddr *from, int *fromlen, int psnet_type)
+int RECVFROM(SOCKET  /*s*/, char *buf, int  /*len*/, int  /*flags*/, sockaddr *from, int *fromlen, int psnet_type)
 {
 	network_packet_buffer_list *l;
 	net_addr addr;
@@ -455,7 +455,7 @@ void PSNET_TOP_LAYER_PROCESS()
 /**
  * Initialize psnet to use the specified port
  */
-void psnet_init( int protocol, int port_num )
+void psnet_init( int  /*protocol*/, int port_num )
 {	
 	int idx;
 	Tcp_active = 0;
@@ -935,7 +935,7 @@ void psnet_flush()
 /**
  * If the passed string is a valid IP string
  */
-int psnet_is_valid_ip_string( char *ip_string, int allow_port )
+int psnet_is_valid_ip_string( char *ip_string, int  /*allow_port*/ )
 {
 	in_addr addr;
 	struct hostent *host_ent;
@@ -1035,7 +1035,7 @@ void psnet_rel_close_socket( PSNET_SOCKET_RELIABLE *sockp )
 				vm_free(Reliable_sockets[*sockp].sbuffers[i]);
 			}
 			Reliable_sockets[*sockp].sbuffers[i] = NULL;
-			Reliable_sockets[*sockp].rsequence[i] = 0;
+			Reliable_sockets[*sockp].ssequence[i] = 0;
 		}
 	}
 
@@ -1149,7 +1149,7 @@ int psnet_rel_send(PSNET_SOCKET_RELIABLE socketid, ubyte *data, int length, int 
 // -1 socket not connected
 // 0 No packet ready to receive
 // >0 Buffer filled with the number of bytes recieved
-int psnet_rel_get(PSNET_SOCKET socketid, ubyte *buffer, int max_len)
+int psnet_rel_get(PSNET_SOCKET socketid, ubyte *buffer, int  /*max_len*/)
 {	
 	int i;
 	
@@ -1774,7 +1774,7 @@ int psnet_get_ip()
 /**
  * Initialize reliable sockets
  */
-int psnet_init_rel_tcp(int port, int should_listen)
+int psnet_init_rel_tcp(int  /*port*/, int  /*should_listen*/)
 {
 	// success
 	return 1;
@@ -2026,7 +2026,7 @@ unsigned int psnet_ras_status()
 		return INADDR_ANY;
 	}
 
-	ml_printf("Found %d connections", num_connections);
+	ml_printf("Found %lu connections", num_connections);
 
 	for (i = 0; i < num_connections; i++ ) {
 		RASCONNSTATUS status;
@@ -2039,7 +2039,7 @@ unsigned int psnet_ras_status()
 			valid_connections++;
 		}
 
-		ml_printf("Connection %d:", i);
+		ml_printf("Connection %lu:", i);
 		ml_printf("Entry Name: %s", rasbuffer[i].szEntryName);
 		ml_printf("Device Type: %s", rasbuffer[i].szDeviceType);
 		ml_printf("Device Name: %s", rasbuffer[i].szDeviceName);
@@ -2129,7 +2129,7 @@ int psnet_init_tcp()
 	TCP_socket = INVALID_SOCKET;	
 	
 	TCP_socket = socket( AF_INET, SOCK_DGRAM, 0 );
-	if ( TCP_socket == (int)INVALID_SOCKET ) {
+	if ( TCP_socket == (SOCKET)INVALID_SOCKET ) {
 		Tcp_failure_code = WSAGetLastError();
 		ml_printf("Error on TCP startup %d", Tcp_failure_code);
 		return 0;
@@ -2174,7 +2174,7 @@ float psnet_get_time()
 void psnet_mark_received(PSNET_SOCKET_RELIABLE socket)
 {
 	// valid socket?
-	if((socket == 0xffffffff) || (socket >= MAXRELIABLESOCKETS)){
+	if((socket == 0xffffffff) || (socket >= MAXRELIABLESOCKETS)){ // NOLINT
 		return;
 	}
 

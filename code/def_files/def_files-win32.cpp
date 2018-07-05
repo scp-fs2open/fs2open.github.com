@@ -4,6 +4,7 @@
  */
 
 #include "globalincs/pstypes.h"
+
 #include "def_files/def_files.h"
 
 #include <iterator>
@@ -20,7 +21,7 @@ struct def_file
 
 def_file Default_files[] =
 {
-#include "def_files/generated_def_files-win32.h"
+#include "def_files/generated_def_files-win32.inc"
 };
 
 default_file defaults_get_file(const char *filename)

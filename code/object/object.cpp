@@ -516,6 +516,20 @@ int obj_create(ubyte type,int parent_obj,int instance, matrix * orient,
 	return objnum;
 }
 
+void obj_delete_all() 
+{
+	int counter = 0;
+	for (int i = 0; i < MAX_OBJECTS; ++i) 
+	{
+		if (Objects[i].type == OBJ_NONE)
+			continue;
+		++counter;
+		obj_delete(i);
+	}
+
+	mprintf(("Cleanup: Deleted %i objects\n", counter));
+}
+
 /**
  * Remove object from the world
  * If Player_obj, don't remove it!
@@ -574,7 +588,6 @@ void obj_delete(int objnum)
 	case OBJ_START:
 	case OBJ_WAYPOINT:
 	case OBJ_POINT:
-		Assert(Fred_running);
 		break;  // requires no action, handled by the Fred code.
 	case OBJ_JUMP_NODE:
 		break;  // requires no further action, handled by jumpnode deconstructor.
@@ -1183,7 +1196,7 @@ void obj_move_all_post(object *objp, float frametime)
 				weapon_process_post( objp, frametime );
 
 			// Cast light
-			if ( Detail.lighting > 2 ) {
+			if ( Detail.lighting > 3 ) {
 				// Weapons cast light
 
 				int group_id = Weapons[objp->instance].group_id;
@@ -1233,7 +1246,7 @@ void obj_move_all_post(object *objp, float frametime)
 
 			// Make any electrical arcs on ships cast light
 			if (Arc_light)	{
-				if ( (Detail.lighting > 2) && (objp != Viewer_obj) ) {
+				if ( (Detail.lighting > 3) && (objp != Viewer_obj) ) {
 					int i;
 					ship		*shipp;
 					shipp = &Ships[objp->instance];
@@ -1257,7 +1270,7 @@ void obj_move_all_post(object *objp, float frametime)
 
 			//Check for changing team colors
 			ship* shipp = &Ships[objp->instance];
-			if (Ship_info[shipp->ship_info_index].uses_team_colors && stricmp(shipp->secondary_team_name.c_str(), "none")) {
+			if (Ship_info[shipp->ship_info_index].uses_team_colors && stricmp(shipp->secondary_team_name.c_str(), "none") != 0) {
 				if (f2fl(Missiontime) * 1000 > f2fl(shipp->team_change_timestamp) * 1000 + shipp->team_change_time) {
 					shipp->team_name = shipp->secondary_team_name;
 					shipp->team_change_timestamp = 0;
@@ -1276,7 +1289,7 @@ void obj_move_all_post(object *objp, float frametime)
 			if ( !physics_paused )
 				fireball_process_post(objp,frametime);
 
-			if (Detail.lighting > 3) {
+			if (Detail.lighting > 2) {
 				float r = 0.0f, g = 0.0f, b = 0.0f;
 
 				fireball_get_color(Fireballs[objp->instance].fireball_info_index, &r, &g, &b);
@@ -1323,7 +1336,7 @@ void obj_move_all_post(object *objp, float frametime)
 
 			// Make any electrical arcs on debris cast light
 			if (Arc_light)	{
-				if ( Detail.lighting > 2 ) {
+				if ( Detail.lighting > 3 ) {
 					int i;
 					debris		*db;
 					db = &Debris[objp->instance];

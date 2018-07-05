@@ -93,7 +93,7 @@ OPTION(FSO_BUILD_TESTS "Build unit tests" OFF)
 
 OPTION(FSO_DEVELOPMENT_MODE "Generate binaries in development mode, only use if you know what you're doing!" OFF)
 
-OPTION(FSO_BUILD_WXFRED2 "Build wxFRED2 binary" OFF)
+OPTION(FSO_BUILD_QTFRED "Build qtFRED2 binary" OFF)
 
 IF(WIN32 OR APPLE)
 	# On windows and mac the default should be to always build the included libraries
@@ -116,6 +116,8 @@ SET(FSO_RUN_ARGUMENTS "" CACHE STRING "Additional arguments passed to a generate
 
 option(FSO_INSTALL_DEBUG_FILES "Install some debug files (currently only PDB files on windows)" OFF)
 
+option(ENABLE_COTIRE "Enable cotire for faster compilation. Enabled by default." ON)
+
 MARK_AS_ADVANCED(FORCE FSO_CMAKE_DEBUG)
 MARK_AS_ADVANCED(FORCE FSO_BUILD_INCLUDED_LIBS)
 MARK_AS_ADVANCED(FORCE FSO_USE_OPENALSOFT)
@@ -123,6 +125,7 @@ MARK_AS_ADVANCED(FORCE FSO_USE_LUAJIT)
 MARK_AS_ADVANCED(FORCE FSO_DEVELOPMENT_MODE)
 MARK_AS_ADVANCED(FORCE FSO_FATAL_WARNINGS)
 mark_as_advanced(FORCE FSO_INSTALL_DEBUG_FILES)
+mark_as_advanced(FORCE ENABLE_COTIRE)
 
 # Include cotire file from https://github.com/sakra/cotire/
 include(cotire)
@@ -142,6 +145,8 @@ if(FSO_BUILD_APPIMAGE)
 	include(appimage)
 endif()
 
+include(clang-tidy)
+
 # This includes source code for some tools, either used in the build or also for something else
 ADD_SUBDIRECTORY(tools)
 
@@ -155,9 +160,9 @@ IF(FSO_BUILD_FRED2)
 	ADD_SUBDIRECTORY(fred2)
 ENDIF(FSO_BUILD_FRED2)
 
-IF(FSO_BUILD_WXFRED2)
-	ADD_SUBDIRECTORY(wxfred2)
-ENDIF(FSO_BUILD_WXFRED2)
+IF(FSO_BUILD_QTFRED)
+	ADD_SUBDIRECTORY(qtfred)
+ENDIF()
 
 if(FSO_BUILD_TESTS)
 	add_subdirectory(test)
@@ -184,12 +189,12 @@ include(doxygen)
 
 # Print used options to log
 IF (WIN32)
-	message(STATUS "Building FRED2: ${FSO_BUILD_FRED2}")
 	message(STATUS "Using text to speech: ${FSO_USE_SPEECH}")
 	message(STATUS "Using voice recogition: ${FSO_USE_VOICEREC}")
+	message(STATUS "Building FRED2: ${FSO_BUILD_FRED2}")
 elseif(UNIX)
 	message(STATUS "Building AppImage: ${FSO_BUILD_APPIMAGE}")
 ENDIF()
 message(STATUS "Building FSO tools: ${FSO_BUILD_TOOLS}")
-message(STATUS "Building wxFRED: ${FSO_BUILD_WXFRED2}")
+message(STATUS "Building qtFRED: ${FSO_BUILD_QTFRED}")
 message(STATUS "Fatal warnings: ${FSO_FATAL_WARNINGS}")

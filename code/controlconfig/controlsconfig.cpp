@@ -356,7 +356,7 @@ DCF_BOOL(show_controls_info, Show_controls_info);
 
 static int Axes_origin[JOY_NUM_AXES];
 
-static int joy_get_unscaled_reading(int raw, int axn)
+static int joy_get_unscaled_reading(int raw)
 {
 	int rng;
 
@@ -615,7 +615,7 @@ int control_config_undo_last()
 	int i, z, tab;
 
 	if (!Config_item_undo) {
-		gamesnd_play_iface(SND_GENERAL_FAIL);
+		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		return -1;
 	}
 
@@ -664,7 +664,7 @@ int control_config_undo_last()
 	free_undo_block();
 	control_config_conflict_check();
 	control_config_list_prepare();
-	gamesnd_play_iface(SND_USER_SELECT);
+	gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 	return 0;
 }
 
@@ -715,7 +715,7 @@ int control_config_remove_binding()
 	config_item_undo *ptr;
 
 	if (Selected_line < 0) {
-		gamesnd_play_iface(SND_GENERAL_FAIL);
+		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		return -1;
 	}
 
@@ -723,7 +723,7 @@ int control_config_remove_binding()
 	if (z & JOY_AXIS) {
 		z &= ~JOY_AXIS;
 		if (Axis_map_to[z] < 0) {
-			gamesnd_play_iface(SND_GENERAL_FAIL);
+			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 			return -1;
 		}
 
@@ -731,13 +731,13 @@ int control_config_remove_binding()
 		Axis_map_to[z] = -1;
 		control_config_conflict_check();
 		control_config_list_prepare();
-		gamesnd_play_iface(SND_USER_SELECT);
+		gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 		Selected_item = -1;
 		return 0;
 	}
 
 	if ((Control_config[z].joy_id < 0) && (Control_config[z].key_id < 0)) {
-		gamesnd_play_iface(SND_GENERAL_FAIL);
+		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		return -1;
 	}
 
@@ -755,7 +755,7 @@ int control_config_remove_binding()
 
 	control_config_conflict_check();
 	control_config_list_prepare();
-	gamesnd_play_iface(SND_USER_SELECT);
+	gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 	Selected_item = -1;
 	return 0;
 }
@@ -766,7 +766,7 @@ int control_config_clear_other()
 	config_item_undo *ptr;
 
 	if (Selected_line < 0) {
-		gamesnd_play_iface(SND_GENERAL_FAIL);
+		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		return -1;
 	}
 
@@ -776,7 +776,7 @@ int control_config_clear_other()
 
 		z &= ~JOY_AXIS;
 		if (Axis_map_to[z] < 0) {
-			gamesnd_play_iface(SND_GENERAL_FAIL);
+			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 			return -1;
 		}
 
@@ -787,7 +787,7 @@ int control_config_clear_other()
 		}
 
 		if (!total) {
-			gamesnd_play_iface(SND_GENERAL_FAIL);
+			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 			return -1;
 		}
 
@@ -808,7 +808,7 @@ int control_config_clear_other()
 		}
 		control_config_conflict_check();
 		control_config_list_prepare();
-		gamesnd_play_iface(SND_USER_SELECT);
+		gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 		return 0;
 	}
 
@@ -820,12 +820,12 @@ int control_config_clear_other()
 		}
 	}
 	if (!total) {
-		gamesnd_play_iface(SND_GENERAL_FAIL);
+		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		return -1;
 	}
 
 	if ((Control_config[z].joy_id < 0) && (Control_config[z].key_id < 0)) {
-		gamesnd_play_iface(SND_GENERAL_FAIL);
+		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		return -1;
 	}
 
@@ -850,7 +850,7 @@ int control_config_clear_other()
 	}
 	control_config_conflict_check();
 	control_config_list_prepare();
-	gamesnd_play_iface(SND_USER_SELECT);
+	gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 	return 0;
 }
 
@@ -867,7 +867,7 @@ int control_config_clear_all()
 	}
 
 	if (!total) {
-		gamesnd_play_iface(SND_GENERAL_FAIL);
+		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		return -1;
 	}
 
@@ -888,7 +888,7 @@ int control_config_clear_all()
 
 	control_config_conflict_check();
 	control_config_list_prepare();
-	gamesnd_play_iface(SND_RESET_PRESSED);
+	gamesnd_play_iface(InterfaceSounds::RESET_PRESSED);
 	return 0;
 }
 
@@ -945,7 +945,7 @@ int control_config_do_reset()
 	}
 
 	if (!total && !cycling_presets) {
-		gamesnd_play_iface(SND_GENERAL_FAIL);
+		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		return -1;
 	}
 
@@ -981,7 +981,7 @@ int control_config_do_reset()
 
 	control_config_conflict_check();
 	control_config_list_prepare();
-	gamesnd_play_iface(SND_RESET_PRESSED);
+	gamesnd_play_iface(InterfaceSounds::RESET_PRESSED);
 	return 0;
 }
 
@@ -1026,10 +1026,10 @@ void control_config_scroll_screen_up()
 		}
 
 		Selected_item = -1;
-		gamesnd_play_iface(SND_SCROLL);
+		gamesnd_play_iface(InterfaceSounds::SCROLL);
 
 	} else {
-		gamesnd_play_iface(SND_GENERAL_FAIL);
+		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 	}
 }
 
@@ -1042,10 +1042,10 @@ void control_config_scroll_line_up()
 		}
 
 		Selected_item = -1;
-		gamesnd_play_iface(SND_SCROLL);
+		gamesnd_play_iface(InterfaceSounds::SCROLL);
 
 	} else {
-		gamesnd_play_iface(SND_GENERAL_FAIL);
+		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 	}
 }
 
@@ -1059,10 +1059,10 @@ void control_config_scroll_screen_down()
 		}
 
 		Selected_item = -1;
-		gamesnd_play_iface(SND_SCROLL);
+		gamesnd_play_iface(InterfaceSounds::SCROLL);
 
 	} else {
-		gamesnd_play_iface(SND_GENERAL_FAIL);
+		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 	}
 }
 
@@ -1076,10 +1076,10 @@ void control_config_scroll_line_down()
 		}
 
 		Selected_item = -1;
-		gamesnd_play_iface(SND_SCROLL);
+		gamesnd_play_iface(InterfaceSounds::SCROLL);
 
 	} else {
-		gamesnd_play_iface(SND_GENERAL_FAIL);
+		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 	}
 }
 
@@ -1091,13 +1091,13 @@ void control_config_toggle_modifier(int bit)
 	Assert(!(z & JOY_AXIS));
 	k = Control_config[z].key_id;
 	if (k < 0) {
-		gamesnd_play_iface(SND_GENERAL_FAIL);
+		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		return;
 	}
 
 	control_config_bind_key(z, k ^ bit);
 	control_config_conflict_check();
-	gamesnd_play_iface(SND_USER_SELECT);
+	gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 }
 
 void control_config_toggle_invert()
@@ -1118,7 +1118,7 @@ void control_config_do_bind()
 	game_flush();
 //	if ((Selected_line < 0) || (Cc_lines[Selected_line].cc_index & JOY_AXIS)) {
 	if (Selected_line < 0) {
-		gamesnd_play_iface(SND_GENERAL_FAIL);
+		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		return;
 	}
 
@@ -1142,7 +1142,7 @@ void control_config_do_bind()
 	Search_mode = 0;
 	Last_key = -1;
 	Axis_override = -1;
-	gamesnd_play_iface(SND_USER_SELECT);
+	gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 }
 
 void control_config_do_search()
@@ -1166,7 +1166,7 @@ void control_config_do_search()
 	Binding_mode = 0;
 	Search_mode = 1;
 	Last_key = -1;
-	gamesnd_play_iface(SND_USER_SELECT);
+	gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 }
 
 void control_config_do_cancel(int fail = 0)
@@ -1189,9 +1189,9 @@ void control_config_do_cancel(int fail = 0)
 
 	Binding_mode = Search_mode = 0;
 	if (fail){
-		gamesnd_play_iface(SND_GENERAL_FAIL);
+		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 	} else {
-		gamesnd_play_iface(SND_USER_SELECT);
+		gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 	}
 }
 
@@ -1206,13 +1206,13 @@ int control_config_accept()
 	}
 
 	if (i < NUM_TABS) {
-		gamesnd_play_iface(SND_GENERAL_FAIL);
+		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		return -1;
 	}
 
 	hud_squadmsg_save_keys();  // rebuild map for saving/restoring keys in squadmsg mode
 	gameseq_post_event(GS_EVENT_PREVIOUS_STATE);
-	gamesnd_play_iface(SND_COMMIT_PRESSED);
+	gamesnd_play_iface(InterfaceSounds::COMMIT_PRESSED);
 	return 0;
 }
 
@@ -1237,7 +1237,7 @@ void control_config_button_pressed(int n)
 			Tab = n;
 			Scroll_offset = Selected_line = 0;
 			control_config_list_prepare();
-			gamesnd_play_iface(SND_SCREEN_MODE_PRESSED);
+			gamesnd_play_iface(InterfaceSounds::SCREEN_MODE_PRESSED);
 			break;
 
 		case BIND_BUTTON:
@@ -1250,17 +1250,17 @@ void control_config_button_pressed(int n)
 
 		case SHIFT_TOGGLE:
 			control_config_toggle_modifier(KEY_SHIFTED);
-			gamesnd_play_iface(SND_USER_SELECT);
+			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			break;
 
 		case ALT_TOGGLE:
 			control_config_toggle_modifier(KEY_ALTED);
-			gamesnd_play_iface(SND_USER_SELECT);
+			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			break;
 
 		case INVERT_AXIS:
 			control_config_toggle_invert();
-			gamesnd_play_iface(SND_USER_SELECT);
+			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			break;
 
 		case SCROLL_UP_BUTTON:
@@ -1281,7 +1281,7 @@ void control_config_button_pressed(int n)
 
 		case HELP_BUTTON:
 			launch_context_help();
-			gamesnd_play_iface(SND_HELP_PRESSED);
+			gamesnd_play_iface(InterfaceSounds::HELP_PRESSED);
 			break;
 
 		case RESET_BUTTON:
@@ -1799,7 +1799,7 @@ void control_config_do_frame(float frametime)
 
 				Scroll_offset = Selected_line = 0;
 				control_config_list_prepare();
-				gamesnd_play_iface(SND_SCREEN_MODE_PRESSED);
+				gamesnd_play_iface(InterfaceSounds::SCREEN_MODE_PRESSED);
 				break;
 
 			case KEY_TAB:  // activate next tab
@@ -1810,7 +1810,7 @@ void control_config_do_frame(float frametime)
 
 				Scroll_offset = Selected_line = 0;
 				control_config_list_prepare();
-				gamesnd_play_iface(SND_SCREEN_MODE_PRESSED);
+				gamesnd_play_iface(InterfaceSounds::SCREEN_MODE_PRESSED);
 				break;
 
 			case KEY_LEFT:
@@ -1825,7 +1825,7 @@ void control_config_do_frame(float frametime)
 					}
 				}
 
-				gamesnd_play_iface(SND_SCROLL);
+				gamesnd_play_iface(InterfaceSounds::SCROLL);
 				break;
 
 			case KEY_RIGHT:
@@ -1837,7 +1837,7 @@ void control_config_do_frame(float frametime)
 				} else if (Selected_item > 1) {
 					Selected_item = -1;
 				}
-				gamesnd_play_iface(SND_SCROLL);
+				gamesnd_play_iface(InterfaceSounds::SCROLL);
 				break;
 
 			case KEY_BACKSP:  // undo
@@ -1873,7 +1873,7 @@ void control_config_do_frame(float frametime)
 				Selected_item = 1;
 			}
 
-			gamesnd_play_iface(SND_USER_SELECT);
+			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 		}
 
 		if (List_buttons[i].double_clicked()) {
@@ -2379,7 +2379,7 @@ void control_get_axes_readings(int *h, int *p, int *b, int *ta, int *tr)
 
 	*ta = 0;
 	if (Axis_map_to[3] >= 0) {
-		*ta = joy_get_unscaled_reading(axes_values[Axis_map_to[3]], Axis_map_to[3]);
+		*ta = joy_get_unscaled_reading(axes_values[Axis_map_to[3]]);
 	}
 
 	*tr = 0;

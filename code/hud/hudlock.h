@@ -55,11 +55,11 @@ public:
 	void initTargetBoxSize(int w, int h);
 	void initLoopLockedAnim(bool loop);
 
-	void render(float frametime);
+	void render(float frametime) override;
 	void renderLockTriangles(int center_x, int center_y, float frametime);
 	void renderLockTrianglesOld(int center_x, int center_y, int radius);
-	void pageIn();
-	void initialize();
+	void pageIn() override;
+	void initialize() override;
 };
 
 #endif

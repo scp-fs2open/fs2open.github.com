@@ -123,7 +123,7 @@ void SourceOrigin::moveToObject(object* objp, vec3d* offset) {
 	m_offset = *offset;
 }
 
-void SourceOrigin::moveToParticle(WeakParticlePtr weakParticlePtr) {
+void SourceOrigin::moveToParticle(const WeakParticlePtr& weakParticlePtr) {
 	m_originType = SourceOriginType::PARTICLE;
 	m_origin.m_particle = weakParticlePtr;
 }
@@ -290,7 +290,7 @@ bool ParticleSource::isValid() const {
 	return true;
 }
 
-void ParticleSource::initializeThrusterOffset(weapon* wp, weapon_info* wip) {
+void ParticleSource::initializeThrusterOffset(weapon*  /*wp*/, weapon_info* wip) {
 	polymodel* pm = model_get(wip->model_num);
 
 	if (pm->n_thrusters < 1) {

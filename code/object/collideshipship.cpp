@@ -35,7 +35,7 @@
 
 // GENERAL COLLISIONS FUNCTIONS
 // calculates the inverse moment of inertia matrix in world coordinates
-void get_I_inv (matrix* I_inv, matrix* I_inv_body, matrix* orient);
+static void get_I_inv (matrix* I_inv, matrix* I_inv_body, matrix* orient);
 
 // calculate the physics of extended two body collisions
 void calculate_ship_ship_collision_physics(collision_info_struct *ship_ship_hit_info);
@@ -54,7 +54,7 @@ static int Player_collide_shield_sound, AI_collide_shield_sound;
 /**
  * Return true if two ships are docking.
  */
-int ships_are_docking(object *objp1, object *objp2)
+static int ships_are_docking(object *objp1, object *objp2)
 {
 	ai_info	*aip1, *aip2;
 	ship		*shipp1, *shipp2;
@@ -88,7 +88,7 @@ int ships_are_docking(object *objp1, object *objp2)
 /**
  * If light_obj emerging from or departing to dock bay in heavy_obj, no collision detection.
  */
-int bay_emerge_or_depart(object *heavy_objp, object *light_objp)
+static int bay_emerge_or_depart(object *heavy_objp, object *light_objp)
 {
 	if (light_objp->type != OBJ_SHIP)
 		return 0;
@@ -457,7 +457,7 @@ int ship_ship_check_collision(collision_info_struct *ship_ship_hit_info, vec3d *
  * modified mass is 10x, 4x, or 2x larger than asteroid mass
  * @return 1 if modified mass is larger than given mass, 0 otherwise 
  */
-int check_special_cruiser_asteroid_collision(object *heavy, object *lighter, float *cruiser_mass, int *cruiser_light)
+static int check_special_cruiser_asteroid_collision(object *heavy, object *lighter, float *cruiser_mass, int *cruiser_light)
 {
 	int asteroid_type;
 
@@ -504,7 +504,7 @@ int check_special_cruiser_asteroid_collision(object *heavy, object *lighter, flo
 /**
  * Find the subobject corresponding to the submodel hit
  */
-bool check_subsystem_landing_allowed(ship_info *heavy_sip, collision_info_struct *ship_ship_hit_info) {
+static bool check_subsystem_landing_allowed(ship_info *heavy_sip, collision_info_struct *ship_ship_hit_info) {
 	if (!(heavy_sip->flags[Ship::Info_Flags::Allow_landings]))
 		return false;
 
@@ -855,7 +855,7 @@ void calculate_ship_ship_collision_physics(collision_info_struct *ship_ship_hit_
 //
 // calculates the inverse moment of inertia matrix from the body matrix and oreint matrix
 //
-void get_I_inv (matrix* I_inv, matrix* I_inv_body, matrix* orient)
+static void get_I_inv (matrix* I_inv, matrix* I_inv_body, matrix* orient)
 {
 	matrix Mtemp1, Mtemp2;
 	// I_inv = (Rt)(I_inv_body)(R)
@@ -877,7 +877,7 @@ extern void hud_start_text_flash(char *txt, int t, int interval);
  * Procss player_ship:planet damage.
  *	If within range of planet, apply damage to ship.
  */
-void mcp_1(object *player_objp, object *planet_objp)
+static void mcp_1(object *player_objp, object *planet_objp)
 {
 	float	planet_radius;
 	float	dist;
@@ -893,7 +893,7 @@ void mcp_1(object *player_objp, object *planet_objp)
 	if ((Missiontime - Last_planet_damage_time > F1_0) || (Missiontime < Last_planet_damage_time)) {
 		HUD_sourced_printf(HUD_SOURCE_HIDDEN, "%s", XSTR( "Too close to planet.  Taking damage!", 465));
 		Last_planet_damage_time = Missiontime;
-		snd_play_3d( gamesnd_get_game_sound(ship_get_sound(player_objp, SND_ABURN_ENGAGE)), &player_objp->pos, &View_position );
+		snd_play_3d( gamesnd_get_game_sound(ship_get_sound(player_objp, GameSounds::ABURN_ENGAGE)), &player_objp->pos, &View_position );
 	}
 
 }
@@ -902,7 +902,7 @@ void mcp_1(object *player_objp, object *planet_objp)
  * Return true if *objp is a planet, else return false.
  *	Hack: Just checking first six letters of name.
  */
-int is_planet(object *objp)
+static int is_planet(object *objp)
 {
 	return (strnicmp(Ships[objp->instance].ship_name, NOX("planet"), 6) == 0);
 }
@@ -912,7 +912,7 @@ int is_planet(object *objp)
  * If exactly one of these is a planet and the other is a player ship, do something special.
  * @return true if this was a ship:planet (or planet_ship) collision and we processed it. Else return false.
  */
-int maybe_collide_planet (object *obj1, object *obj2)
+static int maybe_collide_planet (object *obj1, object *obj2)
 {
 	ship_info	*sip1, *sip2;
 
@@ -969,15 +969,15 @@ void collide_ship_ship_do_sound(vec3d *world_hit_pos, object *A, object *B, int 
 	rel_speed = vm_vec_mag_quick(&rel_vel);
 
 	if ( rel_speed > MIN_REL_SPEED_FOR_LOUD_COLLISION ) {
-		snd_play_3d( gamesnd_get_game_sound(SND_SHIP_SHIP_HEAVY), world_hit_pos, &View_position );
+		snd_play_3d( gamesnd_get_game_sound(GameSounds::SHIP_SHIP_HEAVY), world_hit_pos, &View_position );
 	} else {
 		if ( player_involved ) {
 			if ( !snd_is_playing(Player_collide_sound) ) {
-				Player_collide_sound = snd_play_3d( gamesnd_get_game_sound(SND_SHIP_SHIP_LIGHT), world_hit_pos, &View_position );
+				Player_collide_sound = snd_play_3d( gamesnd_get_game_sound(GameSounds::SHIP_SHIP_LIGHT), world_hit_pos, &View_position );
 			}
 		} else {
 			if ( !snd_is_playing(AI_collide_sound) ) {
-				AI_collide_sound = snd_play_3d( gamesnd_get_game_sound(SND_SHIP_SHIP_LIGHT), world_hit_pos, &View_position );
+				AI_collide_sound = snd_play_3d( gamesnd_get_game_sound(GameSounds::SHIP_SHIP_LIGHT), world_hit_pos, &View_position );
 			}
 		}
 	}
@@ -986,11 +986,11 @@ void collide_ship_ship_do_sound(vec3d *world_hit_pos, object *A, object *B, int 
 	if ( (shield_get_strength(A) > 5) || (shield_get_strength(B) > 5) ) {
 		if ( player_involved ) {
 			if ( !snd_is_playing(Player_collide_sound) ) {
-				Player_collide_shield_sound = snd_play_3d( gamesnd_get_game_sound(SND_SHIP_SHIP_SHIELD), world_hit_pos, &View_position );
+				Player_collide_shield_sound = snd_play_3d( gamesnd_get_game_sound(GameSounds::SHIP_SHIP_SHIELD), world_hit_pos, &View_position );
 			}
 		} else {
 			if ( !snd_is_playing(Player_collide_sound) ) {
-				AI_collide_shield_sound = snd_play_3d( gamesnd_get_game_sound(SND_SHIP_SHIP_SHIELD), world_hit_pos, &View_position );
+				AI_collide_shield_sound = snd_play_3d( gamesnd_get_game_sound(GameSounds::SHIP_SHIP_SHIELD), world_hit_pos, &View_position );
 			}
 		}
 	}
@@ -1000,7 +1000,7 @@ void collide_ship_ship_do_sound(vec3d *world_hit_pos, object *A, object *B, int 
  * obj1 and obj2 collided.
  * If different teams, kamikaze bit set and other ship is large, auto-explode!
  */
-void do_kamikaze_crash(object *obj1, object *obj2)
+static void do_kamikaze_crash(object *obj1, object *obj2)
 {
 	ai_info	*aip1, *aip2;
 	ship		*ship1, *ship2;
@@ -1029,7 +1029,7 @@ void do_kamikaze_crash(object *obj1, object *obj2)
 /**
  * Response when hit by fast moving cap ship
  */
-void maybe_push_little_ship_from_fast_big_ship(object *big_obj, object *small_obj, float impulse, vec3d *normal)
+static void maybe_push_little_ship_from_fast_big_ship(object *big_obj, object *small_obj, float impulse, vec3d *normal)
 {
 	// Move player out of the way of a BIG|HUGE ship warping in or out
 	int big_class = Ship_info[Ships[big_obj->instance].ship_info_index].class_type;

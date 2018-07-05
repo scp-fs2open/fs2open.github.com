@@ -37,6 +37,7 @@
 #include "network/multi.h"
 #include "network/multiutil.h"
 #include "object/object.h"
+#include "libs/renderdoc/renderdoc.h"
 #include "parse/parselo.h"
 #include "playerman/player.h"
 #include "render/3dinternal.h"
@@ -954,7 +955,7 @@ void hud_target_hotkey_select( int k )
 
 color HUD_color_homing_indicator;
 
-void hud_make_shader(shader *sh, ubyte r, ubyte g, ubyte b, float dimmer = 1000.0f)
+void hud_make_shader(shader *sh, ubyte r, ubyte  /*g*/, ubyte  /*b*/, float dimmer = 1000.0f)
 {
 	// The m matrix converts all colors to shades of green
 	//float tmp = 16.0f*(0.0015625f * i2fl(HUD_color_alpha+1.0f));
@@ -1075,12 +1076,12 @@ void hud_target_subobject_common(int next_flag)
 {
 	if (Player_ai->target_objnum == -1) {
 		HUD_sourced_printf(HUD_SOURCE_HIDDEN, "%s", XSTR( "No target selected.", 322));
-		snd_play( gamesnd_get_game_sound(SND_TARGET_FAIL) );
+		snd_play( gamesnd_get_game_sound(GameSounds::TARGET_FAIL) );
 		return;
 	}
 
 	if (Objects[Player_ai->target_objnum].type != OBJ_SHIP) {
-		snd_play( gamesnd_get_game_sound(SND_TARGET_FAIL));
+		snd_play( gamesnd_get_game_sound(GameSounds::TARGET_FAIL));
 		return;
 	}
 
@@ -1119,7 +1120,7 @@ void hud_target_subobject_common(int next_flag)
 	} // end for
 
 	if ( subsys_to_target == NULL ) {
-		snd_play( gamesnd_get_game_sound(SND_TARGET_FAIL));
+		snd_play( gamesnd_get_game_sound(GameSounds::TARGET_FAIL));
 	} else {
 		set_targeted_subsys(Player_ai, subsys_to_target, Player_ai->target_objnum);
 		target_shipp->last_targeted_subobject[Player_num] =  Player_ai->targeted_subsys;
@@ -1240,7 +1241,7 @@ void hud_target_common(int team_mask, int next_flag)
 	}
 
 	if ( target_found == FALSE ) {
-		snd_play( gamesnd_get_game_sound(SND_TARGET_FAIL) );
+		snd_play( gamesnd_get_game_sound(GameSounds::TARGET_FAIL) );
 	}
 }
 
@@ -1549,7 +1550,7 @@ void hud_target_missile(object *source_obj, int next_flag)
 	}
 
 	if ( !target_found ) {
-		snd_play( gamesnd_get_game_sound(SND_TARGET_FAIL), 0.0f );
+		snd_play( gamesnd_get_game_sound(GameSounds::TARGET_FAIL), 0.0f );
 	}
 }
 
@@ -1623,7 +1624,7 @@ void hud_target_uninspected_cargo(int next_flag)
 	}
 
 	if ( target_found == FALSE ) {
-		snd_play( gamesnd_get_game_sound(SND_TARGET_FAIL));
+		snd_play( gamesnd_get_game_sound(GameSounds::TARGET_FAIL));
 	}
 }
 
@@ -1686,7 +1687,7 @@ void hud_target_newest_ship()
 		hud_restore_subsystem_target(&Ships[newest_obj->instance]);
 	}
 	else {
-		snd_play( gamesnd_get_game_sound(SND_TARGET_FAIL));
+		snd_play( gamesnd_get_game_sound(GameSounds::TARGET_FAIL));
 	}
 }
 
@@ -1744,13 +1745,13 @@ void hud_target_live_turret(int next_flag, int auto_advance, int only_player_tar
 
 	// make sure we're targeting a ship
 	if (Player_ai->target_objnum == -1 && !auto_advance) {
-		snd_play(gamesnd_get_game_sound(SND_TARGET_FAIL));
+		snd_play(gamesnd_get_game_sound(GameSounds::TARGET_FAIL));
 		return;
 	}
 
 	// only targeting subsystems on ship
 	if ((Objects[Player_ai->target_objnum].type != OBJ_SHIP) && (!auto_advance)) {
-		snd_play( gamesnd_get_game_sound(SND_TARGET_FAIL));
+		snd_play( gamesnd_get_game_sound(GameSounds::TARGET_FAIL));
 		return;
 	}
 
@@ -1903,7 +1904,7 @@ void hud_target_live_turret(int next_flag, int auto_advance, int only_player_tar
 		target_shipp->last_targeted_subobject[Player_num] = Player_ai->targeted_subsys;
 	} else {
 		if (!auto_advance) {
-			snd_play( gamesnd_get_game_sound(SND_TARGET_FAIL));
+			snd_play( gamesnd_get_game_sound(GameSounds::TARGET_FAIL));
 		}
 	}
 }
@@ -1975,7 +1976,7 @@ void hud_target_closest_locked_missile(object *locked_obj)
 	}
 
 	if ( !target_found ){
-		snd_play( gamesnd_get_game_sound(SND_TARGET_FAIL), 0.0f );
+		snd_play( gamesnd_get_game_sound(GameSounds::TARGET_FAIL), 0.0f );
 	}
 }
 
@@ -2322,7 +2323,7 @@ int hud_target_closest(int team_mask, int attacked_objnum, int play_fail_snd, in
 	} else {
 		// no target found, maybe play fail sound
 		if (play_fail_snd == TRUE) {
-			snd_play(gamesnd_get_game_sound(SND_TARGET_FAIL));
+			snd_play(gamesnd_get_game_sound(GameSounds::TARGET_FAIL));
 		}
 	}
 
@@ -2445,7 +2446,7 @@ void hud_target_targets_target()
 	return;
 
 	ttt_fail:
-	snd_play( gamesnd_get_game_sound(SND_TARGET_FAIL), 0.0f );
+	snd_play( gamesnd_get_game_sound(GameSounds::TARGET_FAIL), 0.0f );
 }
 
 // Return !0 if target_objp is a valid object type for targeting in reticle, otherwise return 0
@@ -2667,7 +2668,7 @@ void hud_target_in_reticle_old()
 		}
 	}
 	else {
-			snd_play( gamesnd_get_game_sound(SND_TARGET_FAIL), 0.0f );
+			snd_play( gamesnd_get_game_sound(GameSounds::TARGET_FAIL), 0.0f );
 	}
 }
 
@@ -2698,7 +2699,7 @@ void hud_target_subsystem_in_reticle()
 	}
 
 	if ( Player_ai->target_objnum == -1) { //-V581
-		snd_play( gamesnd_get_game_sound(SND_TARGET_FAIL));
+		snd_play( gamesnd_get_game_sound(GameSounds::TARGET_FAIL));
 		return;
 	}
 
@@ -2747,7 +2748,7 @@ void hud_target_subsystem_in_reticle()
 		Ships[shipnum].last_targeted_subobject[Player_num] =  Player_ai->targeted_subsys;
 	}
 	else {
-		snd_play( gamesnd_get_game_sound(SND_TARGET_FAIL));
+		snd_play( gamesnd_get_game_sound(GameSounds::TARGET_FAIL));
 	}
 }
 
@@ -2933,7 +2934,7 @@ void HudGaugeReticleTriangle::initTriHeight(float h)
 	Target_triangle_height = h;
 }
 
-void HudGaugeReticleTriangle::render(float frametime)
+void HudGaugeReticleTriangle::render(float  /*frametime*/)
 {
 }
 
@@ -3159,9 +3160,9 @@ void hud_process_homing_missiles()
 			}
 
 			if ( closest_is_aspect ) {
-				Homing_beep.snd_handle = snd_play(gamesnd_get_game_sound(ship_get_sound(Player_obj, SND_PROXIMITY_ASPECT_WARNING)));
+				Homing_beep.snd_handle = snd_play(gamesnd_get_game_sound(ship_get_sound(Player_obj, GameSounds::PROXIMITY_ASPECT_WARNING)));
 			} else {
-				Homing_beep.snd_handle = snd_play(gamesnd_get_game_sound(ship_get_sound(Player_obj, SND_PROXIMITY_WARNING)));
+				Homing_beep.snd_handle = snd_play(gamesnd_get_game_sound(ship_get_sound(Player_obj, GameSounds::PROXIMITY_WARNING)));
 			}
 		}
 	}
@@ -3172,7 +3173,7 @@ HudGaugeReticleTriangle(HUD_OBJECT_MISSILE_TRI, HUD_MISSILE_WARNING_ARROW)
 {
 }
 
-void HudGaugeMissileTriangles::render(float frametime)
+void HudGaugeMissileTriangles::render(float  /*frametime*/)
 {
 	object		*A;
 	missile_obj	*mo;
@@ -3219,7 +3220,7 @@ void HudGaugeOrientationTee::pageIn()
 // outer reticle ring.  If the T is at 12 o'clock, the target is facing the player, if the T
 // is at 6 o'clock the target is facing away from the player.  If the T is at 3 or 9 o'clock
 // the target is facing 90 away from the player.
-void HudGaugeOrientationTee::render(float frametime)
+void HudGaugeOrientationTee::render(float  /*frametime*/)
 {
 	object* targetp;
 
@@ -3683,7 +3684,7 @@ HudGaugeReticleTriangle(HUD_OBJECT_HOSTILE_TRI, HUD_HOSTILE_TRIANGLE)
 {
 }
 
-void HudGaugeHostileTriangle::render(float frametime)
+void HudGaugeHostileTriangle::render(float  /*frametime*/)
 {
 	if (hostile_obj && maybeFlashSexp() != 1) {
 		bool in_frame = g3_in_frame() > 0;
@@ -3883,7 +3884,7 @@ int HudGaugeLeadIndicator::pickFrame(float prange, float srange, float dist_to_t
 	return frame_offset;
 }
 
-void HudGaugeLeadIndicator::render(float frametime)
+void HudGaugeLeadIndicator::render(float  /*frametime*/)
 {
 	if(Player->target_is_dying) {
 		return;
@@ -4234,7 +4235,7 @@ void HudGaugeLeadSight::pageIn()
 	bm_page_in_aabitmap(Lead_sight.first_frame, Lead_sight.num_frames);
 }
 
-void HudGaugeLeadSight::render(float frametime)
+void HudGaugeLeadSight::render(float  /*frametime*/)
 {
 	vec3d		target_pos;
 	vec3d		source_pos;
@@ -4437,7 +4438,7 @@ void hud_target_change_check()
 	if (Player_ai->last_target != Player_ai->target_objnum) {
 
 		if ( Player_ai->target_objnum != -1){
-			snd_play( gamesnd_get_game_sound(ship_get_sound(Player_obj, SND_TARGET_ACQUIRE)), 0.0f );
+			snd_play( gamesnd_get_game_sound(ship_get_sound(Player_obj, GameSounds::TARGET_ACQUIRE)), 0.0f );
 		}
 
 		// if we have a hotkey set active, see if new target is in set.  If not in
@@ -4528,7 +4529,7 @@ HudGaugeReticleTriangle(HUD_OBJECT_TARGET_TRI, HUD_TARGET_TRIANGLE)
 {
 }
 
-void HudGaugeTargetTriangle::render(float frametime)
+void HudGaugeTargetTriangle::render(float  /*frametime*/)
 {
 	if ( Player_ai->target_objnum == -1)
 		return;
@@ -4616,7 +4617,7 @@ int hud_sensors_ok(ship *sp, int show_msg)
 	if ( (sensors_str < MIN_SENSOR_STR_TO_TARGET) || (ship_subsys_disrupted(sp, SUBSYSTEM_SENSORS)) ) {
 		if ( show_msg ) {
 			HUD_sourced_printf(HUD_SOURCE_HIDDEN, "%s", XSTR( "Targeting is disabled due to sensors damage", 330));
-			snd_play(gamesnd_get_game_sound(SND_TARGET_FAIL));
+			snd_play(gamesnd_get_game_sound(GameSounds::TARGET_FAIL));
 		}
 		return 0;
 	} else {
@@ -4669,7 +4670,7 @@ void hud_target_next_list(int hostile, int next_flag, int team_mask, int attacke
 	} else {
 		// everyone hates a traitor including other traitors so the friendly target option shouldn't work for them
 		if (Player_ship->team == Iff_traitor) {
-			snd_play( gamesnd_get_game_sound(SND_TARGET_FAIL), 0.0f );
+			snd_play( gamesnd_get_game_sound(GameSounds::TARGET_FAIL), 0.0f );
 			return;
 		}
 
@@ -4696,7 +4697,7 @@ void hud_target_next_list(int hostile, int next_flag, int team_mask, int attacke
 		hud_restore_subsystem_target(&Ships[nearest_object->instance]);
 	}
 	else {
-		snd_play( gamesnd_get_game_sound(SND_TARGET_FAIL), 0.0f );
+		snd_play( gamesnd_get_game_sound(GameSounds::TARGET_FAIL), 0.0f );
 	}
 }
 
@@ -4749,7 +4750,7 @@ void HudGaugeAutoTarget::initOffColor(int r, int g, int b, int a)
 	gr_init_alphacolor(&Off_color, r, g, b, a);
 }
 
-void HudGaugeAutoTarget::render(float frametime)
+void HudGaugeAutoTarget::render(float  /*frametime*/)
 {
 	if (Player_ship->flags[Ship::Ship_Flags::Primitive_sensors])
 		return;
@@ -4835,7 +4836,7 @@ void HudGaugeAutoSpeed::initOffColor(int r, int g, int b, int a)
 	gr_init_alphacolor(&Off_color, r, g, b, a);
 }
 
-void HudGaugeAutoSpeed::render(float frametime)
+void HudGaugeAutoSpeed::render(float  /*frametime*/)
 {
 	if (Player_ship->flags[Ship::Ship_Flags::Primitive_sensors])
 		return;
@@ -4989,7 +4990,7 @@ void hud_target_closest_uninspected_object()
 		hud_restore_subsystem_target(&Ships[nearest_obj->instance]);
 	}
 	else {
-		snd_play( gamesnd_get_game_sound(SND_TARGET_FAIL) );
+		snd_play( gamesnd_get_game_sound(GameSounds::TARGET_FAIL) );
 	}
 }
 
@@ -5092,7 +5093,7 @@ void hud_target_uninspected_object(int next_flag)
 		hud_restore_subsystem_target(&Ships[nearest_obj->instance]);
 	}
 	else {
-		snd_play( gamesnd_get_game_sound(SND_TARGET_FAIL) );
+		snd_play( gamesnd_get_game_sound(GameSounds::TARGET_FAIL) );
 	}
 }
 
@@ -5189,7 +5190,7 @@ void hud_target_last_transmit()
 
 	if ( i == MAX_TRANSMIT_TARGETS ) {
 		if ( play_fail_sound ) {
-			snd_play( gamesnd_get_game_sound(SND_TARGET_FAIL) );
+			snd_play( gamesnd_get_game_sound(GameSounds::TARGET_FAIL) );
 		}
 		Transmit_target_current_slot = -1;
 		return;
@@ -5297,11 +5298,13 @@ void hud_stuff_ship_name(char *ship_name_text, ship *shipp)
 		// handle hash symbol
 		end_string_at_first_hash_symbol(ship_name_text);
 
-		// handle translation
-		if (Lcl_gr) {
-			lcl_translate_targetbox_name_gr(ship_name_text);
-		} else if (Lcl_pl) {
-			lcl_translate_targetbox_name_pl(ship_name_text);
+		if (!Disable_built_in_translations) {
+			// handle translation
+			if (Lcl_gr) {
+				lcl_translate_targetbox_name_gr(ship_name_text);
+			} else if (Lcl_pl) {
+				lcl_translate_targetbox_name_pl(ship_name_text);
+			}
 		}
 	}
 }
@@ -5333,11 +5336,13 @@ void hud_stuff_ship_callsign(char *ship_callsign_text, ship *shipp)
 	// handle hash symbol
 	end_string_at_first_hash_symbol(ship_callsign_text);
 
-	// handle translation
-	if (Lcl_gr) {
-		lcl_translate_targetbox_name_gr(ship_callsign_text);
-	} else if (Lcl_pl) {
-		lcl_translate_targetbox_name_pl(ship_callsign_text);
+	if (!Disable_built_in_translations) {
+		// handle translation
+		if (Lcl_gr) {
+			lcl_translate_targetbox_name_gr(ship_callsign_text);
+		} else if (Lcl_pl) {
+			lcl_translate_targetbox_name_pl(ship_callsign_text);
+		}
 	}
 }
 
@@ -5362,11 +5367,13 @@ void hud_stuff_ship_class(char *ship_class_text, ship *shipp)
 	// handle hash symbol
 	end_string_at_first_hash_symbol(ship_class_text);
 
-	// handle translation
-	if (Lcl_gr) {
-		lcl_translate_targetbox_name_gr(ship_class_text);
-	} else if (Lcl_pl) {
-		lcl_translate_targetbox_name_pl(ship_class_text);
+	if (!Disable_built_in_translations) {
+		// handle translation
+		if (Lcl_gr) {
+			lcl_translate_targetbox_name_gr(ship_class_text);
+		} else if (Lcl_pl) {
+			lcl_translate_targetbox_name_pl(ship_class_text);
+		}
 	}
 }
 
@@ -5400,7 +5407,7 @@ void HudGaugeCmeasures::pageIn()
 	bm_page_in_aabitmap(Cmeasure_gauge.first_frame, Cmeasure_gauge.num_frames);
 }
 
-void HudGaugeCmeasures::render(float frametime)
+void HudGaugeCmeasures::render(float  /*frametime*/)
 {
 	if ( Cmeasure_gauge.first_frame == -1) {
 		Int3();	// failed to load coutermeasure gauge background
@@ -5447,7 +5454,7 @@ void HudGaugeAfterburner::initBitmaps(char *fname)
 }
 
 //	Render the HUD afterburner energy gauge
-void HudGaugeAfterburner::render(float frametime)
+void HudGaugeAfterburner::render(float  /*frametime*/)
 {
 	float percent_left;
 	int	clip_h,w,h;
@@ -5468,7 +5475,7 @@ void HudGaugeAfterburner::render(float frametime)
 		percent_left = 1.0f;
 	}
 
-	clip_h = fl2i( (1.0f - percent_left) * Energy_h + 0.5f );
+	clip_h = (int)std::lround((1.0f - percent_left) * Energy_h);
 
 	bm_get_info(Energy_bar.first_frame,&w,&h);
 
@@ -5556,7 +5563,7 @@ void HudGaugeWeaponEnergy::pageIn()
 	bm_page_in_aabitmap( Energy_bar.first_frame, Energy_bar.num_frames);
 }
 
-void HudGaugeWeaponEnergy::render(float frametime)
+void HudGaugeWeaponEnergy::render(float  /*frametime*/)
 {
 	int x;
 	bool use_new_gauge = false;
@@ -5626,10 +5633,11 @@ void HudGaugeWeaponEnergy::render(float frametime)
 				setGaugeColor(HUD_C_NORMAL);
 			}
 			if(gr_screen.max_w_unscaled == 640) {
+				strcpy_s(shortened_name, Weapon_info[Player_ship->weapons.primary_bank_weapons[x]].get_display_string());
 				font::force_fit_string(shortened_name, NAME_LENGTH, 55);
 				renderString(currentx, currenty, shortened_name);
 			} else {
-				renderString(currentx, currenty, Weapon_info[Player_ship->weapons.primary_bank_weapons[x]].name);
+				renderString(currentx, currenty, Weapon_info[Player_ship->weapons.primary_bank_weapons[x]].get_display_string());
 			}
 
 			//Next 'line'
@@ -5708,7 +5716,7 @@ void HudGaugeWeaponEnergy::render(float frametime)
 			}
 		}
 
-		clip_h = fl2i( (1.0f - percent_left) * Wenergy_h + 0.5f );
+		clip_h = (int)std::lround((1.0f - percent_left) * Wenergy_h);
 
 		if ( percent_left <= 0.3 || Show_ballistic || Always_show_text ) {
 			int delta_y = 0, delta_x = 0;
@@ -5722,7 +5730,7 @@ void HudGaugeWeaponEnergy::render(float frametime)
 			if ( Show_ballistic ) {
 				sprintf(buf, "%d", ballistic_ammo);
 			} else {
-				sprintf(buf,XSTR( "%d%%", 326), fl2i(percent_left*100+0.5f));
+				sprintf(buf, XSTR( "%d%%", 326), (int)std::lround(percent_left*100));
 			}
 
 			if ( Moving_text ) {
@@ -5747,7 +5755,7 @@ void HudGaugeWeaponEnergy::render(float frametime)
 				// show all primary banks
 				for ( i = 0; i < Player_ship->weapons.num_primary_banks; i++ ) {
 					wip = &Weapon_info[sw->primary_bank_weapons[i]];
-					strcpy_s(buf, (wip->alt_name[0]) ? wip->alt_name : wip->name);
+					strcpy_s(buf, wip->get_display_string());
 
 					if ( Armed_alignment ) {
 						gr_get_string_size(&w, &h, buf);
@@ -5761,7 +5769,7 @@ void HudGaugeWeaponEnergy::render(float frametime)
 				// just show the current armed bank
 				i = Player_ship->weapons.current_primary_bank;
 				wip = &Weapon_info[sw->primary_bank_weapons[i]];
-				strcpy_s(buf, (wip->alt_name[0]) ? wip->alt_name : wip->name);
+				strcpy_s(buf, wip->get_display_string());
 
 				if ( Armed_alignment ) {
 					gr_get_string_size(&w, &h, buf);
@@ -6006,7 +6014,7 @@ void HudGaugeWeapons::pageIn()
 	}
 }
 
-void HudGaugeWeapons::render(float frametime)
+void HudGaugeWeapons::render(float  /*frametime*/)
 {
 	ship_weapon	*sw;
 	int			np, ns;		// np == num primary, ns == num secondary
@@ -6051,8 +6059,8 @@ void HudGaugeWeapons::render(float frametime)
 				renderBitmap(primary_last[ballistic_hud_index].first_frame, position[0] + frame_offset_x[ballistic_hud_index], y);
 		}
 
-		strcpy_s(name, (Weapon_info[sw->primary_bank_weapons[i]].alt_name[0]) ? Weapon_info[sw->primary_bank_weapons[i]].alt_name : Weapon_info[sw->primary_bank_weapons[i]].name);
-		if (Lcl_gr) {
+		strcpy_s(name, Weapon_info[sw->primary_bank_weapons[i]].get_display_string());
+		if (Lcl_gr && !Disable_built_in_translations) {
 			lcl_translate_wep_name_gr(name);
 		}
 
@@ -6119,11 +6127,16 @@ void HudGaugeWeapons::render(float frametime)
 
 		maybeFlashWeapon(np+i);
 
-		// HACK - make Cluster Bomb fit on the HUD.
-		if(!stricmp(wip->name,"cluster bomb")){
-			strcpy_s(weapon_name, NOX("Cluster"));
+		if (wip->has_alternate_name()) {
+			// Do not apply the cluster bomb hack if we have an alternate name to make translating that name possible
+			strcpy_s(weapon_name, wip->get_display_string());
 		} else {
-			strcpy_s(weapon_name, (wip->alt_name[0]) ? wip->alt_name : wip->name);
+			// HACK - make Cluster Bomb fit on the HUD.
+			if(!stricmp(wip->name,"cluster bomb")){
+				strcpy_s(weapon_name, NOX("Cluster"));
+			} else {
+				strcpy_s(weapon_name, wip->get_display_string());
+			}
 		}
 
 		// get rid of #
@@ -6149,7 +6162,7 @@ void HudGaugeWeapons::render(float frametime)
 			if ( (sw->secondary_bank_ammo[i] > 0) && (sw->current_secondary_bank >= 0) ) {
 				int ms_till_fire = timestamp_until(sw->next_secondary_fire_stamp[sw->current_secondary_bank]);
 				if ( (ms_till_fire >= 500) && ((wip->fire_wait >= 1 ) || (ms_till_fire > wip->fire_wait*1000)) ) {
-					renderPrintf(position[0] + Weapon_sreload_offset_x, name_y, EG_NULL, "%d", fl2i(ms_till_fire/1000.0f +0.5f));
+					renderPrintf(position[0] + Weapon_sreload_offset_x, name_y, EG_NULL, "%d", (int)std::lround(ms_till_fire/1000.0f));
 				}
 			}
 		} else {
@@ -6286,7 +6299,7 @@ void HudGaugeOffscreen::pageIn()
 {
 }
 
-void HudGaugeOffscreen::render(float frametime)
+void HudGaugeOffscreen::render(float  /*frametime*/)
 {
 	// don't show offscreen indicator if we're warping out.
 	if ( Player->control_mode != PCM_NORMAL ) {
@@ -6520,7 +6533,7 @@ void HudGaugeOffscreen::renderOffscreenIndicator(vec2d *coords, int dir, float d
 	gr_set_screen_scale(base_w, base_h);
 
 	if (displayed_distance > 0.0f) {
-		sprintf(buf, "%d", fl2i(displayed_distance + 0.5f));
+		sprintf(buf, "%d", (int)std::lround(displayed_distance));
 		hud_num_make_mono(buf, font_num);
 		gr_get_string_size(&w, &h, buf);
 	} else {
@@ -6541,7 +6554,7 @@ void HudGaugeOffscreen::renderOffscreenIndicator(vec2d *coords, int dir, float d
 		y6 = y5 + Offscreen_tri_base;
 
 		if ( buf[0] ) {
-			gr_string( fl2i(xpos - w - 10), fl2i(ypos - h/2.0f+0.5f), buf);
+			gr_string( fl2i(xpos - w - 10), (int)std::lround(ypos - h/2.0f), buf);
 		}
 	} else if (dir == 1) {
 		x1 = x4 = (xpos-1);
@@ -6554,7 +6567,7 @@ void HudGaugeOffscreen::renderOffscreenIndicator(vec2d *coords, int dir, float d
 		y6 = y5 + Offscreen_tri_base;
 
 		if ( buf[0] ) {
-			gr_string(fl2i(xpos + 10), fl2i(ypos - h/2.0f+0.5f), buf);
+			gr_string(fl2i(xpos + 10), (int)std::lround(ypos - h/2.0f), buf);
 		}
 	} else if (dir == 2) {
 		y1 = y4 = (ypos-1);
@@ -6567,7 +6580,7 @@ void HudGaugeOffscreen::renderOffscreenIndicator(vec2d *coords, int dir, float d
 		x6 = x5 + Offscreen_tri_base;
 
 		if ( buf[0] ) {
-			gr_string(fl2i(xpos - w/2.0f+0.5f), fl2i(ypos+10), buf);
+			gr_string((int)std::lround(xpos - w/2.0f), fl2i(ypos+10), buf);
 		}
 	} else if (dir == 3) {
 		y1 = y4 = (ypos+2);
@@ -6580,7 +6593,7 @@ void HudGaugeOffscreen::renderOffscreenIndicator(vec2d *coords, int dir, float d
 		x6 = x5 + Offscreen_tri_base;
 
 		if ( buf[0] ) {
-			gr_string(fl2i(xpos - w/2.0f+0.5f), fl2i(ypos-h-10), buf);
+			gr_string((int)std::lround(xpos - w/2.0f), fl2i(ypos-h-10), buf);
 		}
 	}
 
@@ -6658,7 +6671,7 @@ void HudGaugeWarheadCount::pageIn()
 	bm_page_in_aabitmap(Warhead.first_frame, Warhead.num_frames);
 }
 
-void HudGaugeWarheadCount::render(float frametime)
+void HudGaugeWarheadCount::render(float  /*frametime*/)
 {
 	if(Player_obj->type == OBJ_OBSERVER) {
 		return;
@@ -6684,7 +6697,7 @@ void HudGaugeWarheadCount::render(float frametime)
 	}
 
 	char weapon_name[NAME_LENGTH + 10];
-	strcpy_s(weapon_name, (wip->alt_name[0]) ? wip->alt_name : wip->name);
+	strcpy_s(weapon_name, wip->get_display_string());
 	end_string_at_first_hash_symbol(weapon_name);
 
 	setGaugeColor();
@@ -6861,7 +6874,7 @@ void HudGaugeWeaponList::maybeFlashWeapon(int index)
 	}
 }
 
-void HudGaugeWeaponList::render(float frametime)
+void HudGaugeWeaponList::render(float  /*frametime*/)
 {
 
 }
@@ -6887,7 +6900,7 @@ void HudGaugePrimaryWeapons::initPrimaryAmmoOffsetX(int x)
 	_pammo_offset_x = x;
 }
 
-void HudGaugePrimaryWeapons::render(float frametime)
+void HudGaugePrimaryWeapons::render(float  /*frametime*/)
 {
 	ship_weapon	*sw;
 
@@ -6921,9 +6934,9 @@ void HudGaugePrimaryWeapons::render(float frametime)
 
 		renderBitmap(_background_entry.first_frame, position[0], position[1] + bg_y_offset);
 
-		strcpy_s(name, (Weapon_info[sw->primary_bank_weapons[i]].alt_name[0]) ? Weapon_info[sw->primary_bank_weapons[i]].alt_name : Weapon_info[sw->primary_bank_weapons[i]].name);
+		strcpy_s(name, Weapon_info[sw->primary_bank_weapons[i]].get_display_string());
 
-		if (Lcl_gr) {
+		if (Lcl_gr && !Disable_built_in_translations) {
 			lcl_translate_wep_name_gr(name);
 		}
 
@@ -7004,7 +7017,7 @@ void HudGaugeSecondaryWeapons::initSecondaryUnlinkedOffsetX(int x)
 	_sunlinked_offset_x = x;
 }
 
-void HudGaugeSecondaryWeapons::render(float frametime)
+void HudGaugeSecondaryWeapons::render(float  /*frametime*/)
 {
 	ship_weapon	*sw;
 
@@ -7040,7 +7053,7 @@ void HudGaugeSecondaryWeapons::render(float frametime)
 
 		maybeFlashWeapon(num_primaries+i);
 
-		strcpy_s(weapon_name, (wip->alt_name[0]) ? wip->alt_name : wip->name);
+		strcpy_s(weapon_name, wip->get_display_string());
 		end_string_at_first_hash_symbol(weapon_name);
 
 		if ( sw->current_secondary_bank == i ) {
@@ -7063,7 +7076,7 @@ void HudGaugeSecondaryWeapons::render(float frametime)
 			if ( (sw->secondary_bank_ammo[i] > 0) && (sw->current_secondary_bank >= 0) ) {
 				int ms_till_fire = timestamp_until(sw->next_secondary_fire_stamp[sw->current_secondary_bank]);
 				if ( (ms_till_fire >= 500) && ((wip->fire_wait >= 1 ) || (ms_till_fire > wip->fire_wait*1000)) ) {
-					renderPrintf(position[0] + _sreload_offset_x, position[1] + text_y_offset, EG_NULL, "%d", fl2i(ms_till_fire/1000.0f +0.5f));
+					renderPrintf(position[0] + _sreload_offset_x, position[1] + text_y_offset, EG_NULL, "%d", (int)std::lround(ms_till_fire/1000.0f));
 				}
 			}
 		} else {
@@ -7122,7 +7135,7 @@ void HudGaugeHardpoints::initDrawOptions(bool primary_models, bool secondary_mod
 	draw_secondary_models = secondary_models;
 }
 
-void HudGaugeHardpoints::render(float frametime)
+void HudGaugeHardpoints::render(float  /*frametime*/)
 {
 	int			sx, sy;
 	ship			*sp;
@@ -7168,26 +7181,22 @@ void HudGaugeHardpoints::render(float frametime)
 	//We're ready to show stuff
 	model_render_params render_info;
 
-	int detail_level_lock = 1;
-	int cull = gr_set_cull(0);
 	gr_stencil_clear();
-	gr_stencil_set(GR_STENCIL_WRITE);
-	int zbuffer = gr_zbuffer_set(GR_ZBUFF_NONE);
-	gr_set_color_buffer(0);
 
-	render_info.set_color(gauge_color);
+	const int detail_level_lock = 1;
+
 	render_info.set_detail_level_lock(detail_level_lock);
-	render_info.set_flags(MR_NO_LIGHTING | MR_AUTOCENTER | MR_NO_FOGGING | MR_NO_TEXTURING | MR_NO_CULL);
+	render_info.set_flags(
+		MR_NO_LIGHTING | MR_AUTOCENTER | MR_NO_FOGGING | MR_NO_TEXTURING | MR_NO_CULL | MR_NO_ZBUFFER | MR_STENCIL_WRITE
+			| MR_NO_COLOR_WRITES);
 	render_info.set_object_number(OBJ_INDEX(objp));
 
 	model_render_immediate( &render_info, sip->model_num, &object_orient, &vmd_zero_vector);
 
-	gr_set_color_buffer(1);
-	gr_stencil_set(GR_STENCIL_READ);
-	gr_set_cull(cull);
-
-	render_info.set_flags(MR_NO_LIGHTING | MR_AUTOCENTER | MR_NO_FOGGING | MR_NO_TEXTURING | MR_NO_ZBUFFER | MR_NO_CULL);
-	render_info.set_normal_extrude_width(_line_width * 0.01f);
+	render_info.set_color(gauge_color);
+	render_info.set_flags(MR_NO_LIGHTING | MR_AUTOCENTER | MR_NO_FOGGING | MR_NO_TEXTURING | MR_NO_ZBUFFER | MR_NO_CULL | MR_STENCIL_READ);
+	// Factor was chosen pretty arbitrarily to make outline feature work with existing data
+	render_info.set_outline_thickness(15.f * _line_width);
 
 	model_render_immediate(
 		&render_info,
@@ -7197,14 +7206,12 @@ void HudGaugeHardpoints::render(float frametime)
 	);
 
 	gr_stencil_set(GR_STENCIL_NONE);
-	gr_zbuffer_set(zbuffer);
 
 	// draw weapon models
 	int i, k;
 	ship_weapon *swp = &sp->weapons;
 	vertex draw_point;
 	vec3d subobj_pos;
-	g3_start_instance_matrix(&vmd_zero_vector, &object_orient, true);
 
 	int render_flags = MR_NO_LIGHTING | MR_AUTOCENTER | MR_NO_FOGGING | MR_NO_TEXTURING | MR_NO_ZBUFFER;
 
@@ -7213,15 +7220,12 @@ void HudGaugeHardpoints::render(float frametime)
 
 	//secondary weapons
 	int num_secondaries_rendered = 0;
-	vec3d secondary_weapon_pos;
-	w_bank* bank;
-
 	if ( draw_secondary_models ) {
 		for (i = 0; i < swp->num_secondary_banks; i++) {
 			if (Weapon_info[swp->secondary_bank_weapons[i]].external_model_num == -1 || !sip->draw_secondary_models[i])
 				continue;
 
-			bank = &(model_get(sip->model_num))->missile_banks[i];
+			auto bank = &(model_get(sip->model_num))->missile_banks[i];
 
 			if (Weapon_info[swp->secondary_bank_weapons[i]].wi_flags[Weapon::Info_Flags::External_weapon_lnch]) {
 				for(k = 0; k < bank->num_slots; k++) {
@@ -7230,14 +7234,18 @@ void HudGaugeHardpoints::render(float frametime)
 					weapon_render_info.set_detail_level_lock(detail_level_lock);
 					weapon_render_info.set_flags(render_flags);
 
-					model_render_immediate(&weapon_render_info, Weapon_info[swp->secondary_bank_weapons[i]].external_model_num, &vmd_identity_matrix, &bank->pnt[k]);
+					// We need to transform the position local to the model to be in "world" space relative to the rendered outline
+					vec3d world_position;
+					vm_vec_unrotate(&world_position, &bank->pnt[k], &object_orient);
+
+					model_render_immediate(&weapon_render_info, Weapon_info[swp->secondary_bank_weapons[i]].external_model_num, &object_orient, &bank->pnt[k]);
 				}
 			} else {
 				num_secondaries_rendered = 0;
 
 				for(k = 0; k < bank->num_slots; k++)
 				{
-					secondary_weapon_pos = bank->pnt[k];
+					auto secondary_weapon_pos = bank->pnt[k];
 
 					if (num_secondaries_rendered >= sp->weapons.secondary_bank_ammo[i])
 						break;
@@ -7260,12 +7268,16 @@ void HudGaugeHardpoints::render(float frametime)
 					weapon_render_info.set_detail_level_lock(detail_level_lock);
 					weapon_render_info.set_flags(render_flags);
 
-					model_render_immediate(&weapon_render_info, Weapon_info[swp->secondary_bank_weapons[i]].external_model_num, &vmd_identity_matrix, &secondary_weapon_pos);
+					// We need to transform the position local to the model to be in "world" space relative to the rendered outline
+					vec3d world_position;
+					vm_vec_unrotate(&world_position, &secondary_weapon_pos, &object_orient);
+
+					model_render_immediate(&weapon_render_info, Weapon_info[swp->secondary_bank_weapons[i]].external_model_num, &object_orient, &world_position);
 				}
 			}
 		}
 	}
-	g3_done_instance(true);
+
 	resetClip();
 
 	setGaugeColor(HUD_C_BRIGHT);
@@ -7273,7 +7285,7 @@ void HudGaugeHardpoints::render(float frametime)
 	//primary weapons
 	if ( draw_primary_models ) {
 		for ( i = 0; i < swp->num_primary_banks; i++ ) {
-			bank = &model_get(sip->model_num)->gun_banks[i];
+			auto bank = &model_get(sip->model_num)->gun_banks[i];
 
 			for ( k = 0; k < bank->num_slots; k++ ) {
 				if ( ( Weapon_info[swp->primary_bank_weapons[i]].external_model_num == -1 || !sip->draw_primary_models[i] ) ) {
@@ -7300,8 +7312,12 @@ void HudGaugeHardpoints::render(float frametime)
 					weapon_render_info.set_flags(render_flags);
 					weapon_render_info.set_alpha(alpha);
 
+					// We need to transform the position local to the model to be in "world" space relative to the rendered outline
+					vec3d world_position;
+					vm_vec_unrotate(&world_position, &bank->pnt[k], &object_orient);
+
 					pm->gun_submodel_rotation = sp->primary_rotate_ang[i];
-					model_render_immediate(&weapon_render_info, Weapon_info[swp->primary_bank_weapons[i]].external_model_num, &vmd_identity_matrix, &bank->pnt[k]);
+					model_render_immediate(&weapon_render_info, Weapon_info[swp->primary_bank_weapons[i]].external_model_num, &object_orient, &world_position);
 					pm->gun_submodel_rotation = 0.0f;
 				}
 			}

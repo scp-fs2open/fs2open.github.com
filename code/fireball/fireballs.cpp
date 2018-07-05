@@ -23,7 +23,7 @@
 #include "ship/ship.h"
 #include "tracing/Monitor.h"
 
-#include <stdlib.h>
+#include <cstdlib>
 
 
 // make use of the LOD checker for tbl/tbm parsing (from weapons.cpp)
@@ -63,7 +63,7 @@ int Warp_ball_bitmap = -1;
  */
 void fireball_play_warphole_open_sound(int ship_class, fireball *fb)
 {
-	int		sound_index;
+	gamesnd_id sound_index;
 	float		range_multiplier = 1.0f;
 	object	*fireball_objp;	
 		
@@ -73,13 +73,13 @@ void fireball_play_warphole_open_sound(int ship_class, fireball *fb)
 	}
 	fireball_objp = &Objects[fb->objnum];
 
-	sound_index = SND_WARP_IN;
+	sound_index = gamesnd_id(GameSounds::WARP_IN);
 
-	if(fb->warp_open_sound_index > -1) {
+	if(fb->warp_open_sound_index.isValid()) {
 		sound_index = fb->warp_open_sound_index;
 	} else if ((ship_class >= 0) && (ship_class < static_cast<int>(Ship_info.size()))) {
 		if ( Ship_info[ship_class].is_huge_ship() ) {
-			sound_index = SND_CAPITAL_WARP_IN;
+			sound_index = gamesnd_id(GameSounds::CAPITAL_WARP_IN);
 			fb->flags |= FBF_WARP_CAPITAL_SIZE;
 		} else if ( Ship_info[ship_class].is_big_ship() ) {
 			range_multiplier = 6.0f;
@@ -95,18 +95,18 @@ void fireball_play_warphole_open_sound(int ship_class, fireball *fb)
  */
 void fireball_play_warphole_close_sound(fireball *fb)
 {
-	int	sound_index;	
+	gamesnd_id sound_index;
 
 	object *fireball_objp;
 
 	fireball_objp = &Objects[fb->objnum];
 
-	sound_index = SND_WARP_OUT;
+	sound_index = gamesnd_id(GameSounds::WARP_OUT);
 
-	if ( fb->warp_close_sound_index > -1 ) {
+	if ( fb->warp_close_sound_index.isValid() ) {
 		sound_index = fb->warp_close_sound_index;
 	} else if ( fb->flags & FBF_WARP_CAPITAL_SIZE ) {
-		sound_index = SND_CAPITAL_WARP_OUT;
+		sound_index = gamesnd_id(GameSounds::CAPITAL_WARP_OUT);
 	} else {
 		return;
 	}
@@ -696,7 +696,7 @@ int fireball_get_lod(vec3d *pos, fireball_info *fd, float size)
 /**
  * Create a fireball, return object index.
  */
-int fireball_create( vec3d * pos, int fireball_type, int render_type, int parent_obj, float size, int reverse, vec3d *velocity, float warp_lifetime, int ship_class, matrix *orient_override, int low_res, int extra_flags, int warp_open_sound, int warp_close_sound)
+int fireball_create( vec3d * pos, int fireball_type, int render_type, int parent_obj, float size, int reverse, vec3d *velocity, float warp_lifetime, int ship_class, matrix *orient_override, int low_res, int extra_flags, gamesnd_id warp_open_sound, gamesnd_id warp_close_sound)
 {
 	int				n, objnum, fb_lod;
 	object			*obj;

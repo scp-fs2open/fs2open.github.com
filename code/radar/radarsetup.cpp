@@ -420,7 +420,7 @@ void HudGaugeRadar::initDistanceInfinityOffsets(int x, int y)
 	Radar_dist_offsets[RR_INFINITY][1] = y;
 }
 
-void HudGaugeRadar::render(float frametime)
+void HudGaugeRadar::render(float  /*frametime*/)
 {
 }
 

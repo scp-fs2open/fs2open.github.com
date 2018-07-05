@@ -11,7 +11,7 @@
 #define _FS2_REGISTRY_HEADER_FILE
 
 
-#include <stdlib.h>
+#include <cstdlib>
 
 // ------------------------------------------------------------------------------------------------------------
 // REGISTRY DEFINES/VARS
@@ -29,6 +29,9 @@ extern const char *Osreg_config_file_name;
 // REGISTRY FUNCTIONS
 //
 
+#ifdef WIN32
+time_t os_registry_get_last_modification_time();
+#endif
 
 // initialize the registry. setup default keys to use
 void os_init_registry_stuff( const char *company, const char *app);

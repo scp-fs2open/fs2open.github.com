@@ -86,9 +86,6 @@ int Beam_good_shot_octants[BEAM_NUM_GOOD_OCTANTS][4] = {
 	{ 4, 0, 1, 0 },
 };
 
-// beam lighting effects
-int Beam_lighting = 1;
-
 // debug stuff - keep track of how many collision tests we perform a second and how many we toss a second
 #define BEAM_TEST_STAMP_TIME		4000	// every 4 seconds
 int Beam_test_stamp = -1;
@@ -309,14 +306,14 @@ int beam_fire(beam_fire_info *fire_info)
 
 	// make sure the beam_info_index is valid
 	if ((fire_info->beam_info_index < 0) || (fire_info->beam_info_index >= Num_weapon_types) || !(Weapon_info[fire_info->beam_info_index].wi_flags[Weapon::Info_Flags::Beam])) {
-		Assertion(false, "beam_info_index (%d) invalid (either <0, >= %d, or not actually a beam)!\n", fire_info->beam_info_index, Num_weapon_types);
+		UNREACHABLE("beam_info_index (%d) invalid (either <0, >= %d, or not actually a beam)!\n", fire_info->beam_info_index, Num_weapon_types);
 		return -1;
 	}
 
 	wip = &Weapon_info[fire_info->beam_info_index];	
 	// make sure a ship is firing this
 	if (!(fire_info->bfi_flags & BFIF_FLOATING_BEAM) && ((fire_info->shooter->type != OBJ_SHIP) || (fire_info->shooter->instance < 0) || (fire_info->shooter->instance >= MAX_SHIPS)) ) {
-		Assertion(false, "Fixed beam fired without a valid ship!\n");
+		UNREACHABLE("Fixed beam fired without a valid ship!\n");
 		return -1;
 	}
 	if (fire_info->shooter != NULL) {
@@ -1281,7 +1278,6 @@ void beam_generate_muzzle_particles(beam *b)
 	weapon_info *wip;
 	vec3d turret_norm, turret_pos, particle_pos, particle_dir;
 	matrix m;
-	particle::particle_info pinfo;
 
 	// if our hack stamp has expired
 	if(!((b->Beam_muzzle_stamp == -1) || timestamp_elapsed(b->Beam_muzzle_stamp))){
@@ -1331,7 +1327,7 @@ void beam_generate_muzzle_particles(beam *b)
 			vm_vec_add2(&particle_dir, &b->objp->phys_info.vel);	//move along with our parent
 		}
 
-		memset(&pinfo, 0, sizeof(particle::particle_info));
+		particle::particle_info pinfo;
 		pinfo.pos = particle_pos;
 		pinfo.vel = particle_dir;
 		pinfo.lifetime = p_life;
@@ -1574,7 +1570,7 @@ void beam_render_all()
 // fvec == forward vector (eye viewpoint basically. in world coords)
 // pos == world coordinate of the point we're calculating "around"
 // w == width of the diff between top and bottom around pos
-void beam_calc_facing_pts( vec3d *top, vec3d *bot, vec3d *fvec, vec3d *pos, float w, float z_add )
+void beam_calc_facing_pts( vec3d *top, vec3d *bot, vec3d *fvec, vec3d *pos, float w, float  /*z_add*/ )
 {
 	vec3d uvec, rvec;
 	vec3d temp;
@@ -1607,7 +1603,7 @@ void beam_add_light_small(beam *bm, object *objp, vec3d *pt_override = NULL)
 	float noise;
 
 	// no lighting 
-	if(!Beam_lighting){
+	if(Detail.lighting < 2){
 		return;
 	}
 
@@ -1677,7 +1673,7 @@ void beam_add_light_large(beam *bm, object *objp, vec3d *pt0, vec3d *pt1)
 	float noise;
 
 	// no lighting 
-	if(!Beam_lighting){
+	if(Detail.lighting < 2){
 		return;
 	}
 
@@ -1874,7 +1870,7 @@ void beam_start_warmup(beam *b)
 	b->warmup_stamp = timestamp(Weapon_info[b->weapon_info_index].b_info.beam_warmup);
 
 	// start playing warmup sound
-	if(!(Game_mode & GM_STANDALONE_SERVER) && (Weapon_info[b->weapon_info_index].b_info.beam_warmup_sound >= 0)){		
+	if(!(Game_mode & GM_STANDALONE_SERVER) && (Weapon_info[b->weapon_info_index].b_info.beam_warmup_sound.isValid())){
 		snd_play_3d(gamesnd_get_game_sound(Weapon_info[b->weapon_info_index].b_info.beam_warmup_sound), &b->last_start, &View_position);
 	}
 }
@@ -1917,11 +1913,11 @@ int beam_start_firing(beam *b)
 	}				
 
 	// start the beam firing sound now, if we haven't already		
-	if((b->beam_sound_loop == -1) && (Weapon_info[b->weapon_info_index].b_info.beam_loop_sound >= 0)){				
+	if((b->beam_sound_loop == -1) && (Weapon_info[b->weapon_info_index].b_info.beam_loop_sound.isValid())){
 		b->beam_sound_loop = snd_play_3d(gamesnd_get_game_sound(Weapon_info[b->weapon_info_index].b_info.beam_loop_sound), &b->last_start, &View_position, 0.0f, NULL, 1, 1.0, SND_PRIORITY_SINGLE_INSTANCE, NULL, 1.0f, 1);
 
 		// "shot" sound
-		if (Weapon_info[b->weapon_info_index].launch_snd >= 0)
+		if (Weapon_info[b->weapon_info_index].launch_snd.isValid())
 			snd_play_3d(gamesnd_get_game_sound(Weapon_info[b->weapon_info_index].launch_snd), &b->last_start, &View_position);
 		// niffwan - if launch_snd < 0, don't play any sound
 	}	
@@ -1941,7 +1937,7 @@ void beam_start_warmdown(beam *b)
 	b->warmdown_stamp = timestamp(Weapon_info[b->weapon_info_index].b_info.beam_warmdown);			
 
 	// start the warmdown sound
-	if(Weapon_info[b->weapon_info_index].b_info.beam_warmdown_sound >= 0){				
+	if(Weapon_info[b->weapon_info_index].b_info.beam_warmdown_sound.isValid()){
 		snd_play_3d(gamesnd_get_game_sound(Weapon_info[b->weapon_info_index].b_info.beam_warmdown_sound), &b->last_start, &View_position);
 	}
 
@@ -2274,7 +2270,7 @@ void beam_aim(beam *b)
 		break;
 
 	default:
-		Assertion(false, "Impossible beam type (%d); get a coder!\n", b->type);
+		UNREACHABLE("Impossible beam type (%d); get a coder!\n", b->type);
 	}
 
 	// recalculate object pairs
@@ -3076,7 +3072,7 @@ void beam_handle_collisions(beam *b)
 		r_coll_count++;		
 
 		// play the impact sound
-		if ( first_hit && (wi->impact_snd >= 0) ) {
+		if ( first_hit && (wi->impact_snd.isValid()) ) {
 			snd_play_3d( gamesnd_get_game_sound(wi->impact_snd), &b->f_collisions[idx].cinfo.hit_point_world, &Eye_position );
 		}
 

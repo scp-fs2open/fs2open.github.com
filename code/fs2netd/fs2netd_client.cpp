@@ -21,6 +21,7 @@
 #include "graphics/2d.h"
 #include "graphics/font.h"
 #include "io/timer.h"
+#include "mission/missionparse.h"
 #include "mod_table/mod_table.h"
 #include "network/multi.h"
 #include "network/multi_log.h"
@@ -38,13 +39,13 @@
 
 #ifndef WIN32
 #include <cstdio>
-#include <stdlib.h>
+#include <cstdlib>
 #include <unistd.h>
 #include <cerrno>
 #endif
 
 #include <string>
-#include <limits.h>
+#include <climits>
 
 
 #define FS2NETD_DEFAULT_PORT			"12009"
@@ -545,7 +546,7 @@ static void fs2netd_handle_ping()
 		// make sure that we are good to go
 		if ( !Is_connected ) {
 			if (!Is_standalone) {
-				gamesnd_play_iface(SND_GENERAL_FAIL);
+				gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 				popup(PF_USE_AFFIRMATIVE_ICON | PF_TITLE_BIG | PF_TITLE_RED, 1, POPUP_OK, "ERROR:\nLost connection to the FS2NetD server!");
 			}
 
@@ -587,7 +588,7 @@ static void fs2netd_handle_ping()
 			// make sure that we are good to go
 			if ( !Is_connected ) {
 				if (!Is_standalone) {
-					gamesnd_play_iface(SND_GENERAL_FAIL);
+					gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 					popup(PF_USE_AFFIRMATIVE_ICON | PF_TITLE_BIG | PF_TITLE_RED, 1, POPUP_OK, "ERROR:\nLost connection to the FS2NetD server!");
 				}
 
@@ -638,7 +639,7 @@ static void fs2netd_handle_messages()
 		os_sleep(20);
 	}
 
-	if ( (bytes_read == 0) || (bytes_read < BASE_PACKET_SIZE) ) {
+	if ( (bytes_read < BASE_PACKET_SIZE) ) {
 		return;
 	}
 

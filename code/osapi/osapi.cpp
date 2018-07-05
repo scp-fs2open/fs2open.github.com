@@ -7,20 +7,19 @@
  *
 */
 
-#include <stdio.h>
 #include <fcntl.h>
-#include <stdarg.h>
-#include <algorithm>
 
 #include "globalincs/pstypes.h"
 #include "gamesequence/gamesequence.h"
 #include "freespace.h"
-#include "osapi/osregistry.h"
-#include "cmdline/cmdline.h"
-#include "osapi/osapi.h"
+#include "parse/parselo.h"
 
-#include <fstream>
-#include <algorithm>
+#ifdef SCP_UNIX
+#include <sys/stat.h>
+#elif defined(WIN32)
+#include <sys/types.h>
+#include <sys/stat.h>
+#endif
 
 namespace
 {
@@ -100,7 +99,7 @@ namespace
 		return false;
 	}
 	
-	bool quit_handler(const SDL_Event& e) {
+	bool quit_handler(const SDL_Event&  /*e*/) {
 		gameseq_post_event(GS_EVENT_QUIT_GAME);
 		return true;
 	}
@@ -204,6 +203,23 @@ static int			Os_inited = 0;
 static SCP_vector<SDL_Event> buffered_events;
 
 int Os_debugger_running = 0;
+
+#ifdef SCP_UNIX
+static bool user_dir_initialized = false;
+static SCP_string Os_user_dir_legacy;
+
+const char* os_get_legacy_user_dir() {
+	if (user_dir_initialized) {
+		return Os_user_dir_legacy.c_str();
+	}
+
+	extern const char* Osreg_user_dir_legacy;
+	sprintf(Os_user_dir_legacy, "%s/%s", getenv("HOME"), Osreg_user_dir_legacy);
+	user_dir_initialized = true;
+
+	return Os_user_dir_legacy.c_str();
+}
+#endif
 
 // ----------------------------------------------------------------------------------------------------
 // OSAPI FORWARD DECLARATIONS
@@ -314,6 +330,27 @@ static bool file_exists(const SCP_string& path) {
 	return str.good();
 }
 
+static time_t get_file_modification_time(const SCP_string& path) {
+#ifdef SCP_UNIX
+	struct stat file_stats{};
+	if(stat(path.c_str(), &file_stats) < 0) {
+		return 0;
+	}
+
+	return file_stats.st_mtime;
+#elif defined(WIN32)
+	struct _stat buf{};
+	if (_stat(path.c_str(), &buf) != 0) {
+		return 0;
+	}
+	return buf.st_mtime;
+#else
+#error Unsupported platform!
+#endif
+}
+
+const char* Osapi_legacy_mode_reason = nullptr;
+
 bool os_is_legacy_mode()
 {
 	// Make this check a little faster by caching the result
@@ -326,34 +363,75 @@ bool os_is_legacy_mode()
 		// When the portable mode option is given, non-legacy is implied
 		legacyMode = false;
 		checkedLegacyMode = true;
+
+		Osapi_legacy_mode_reason = "Legacy mode disabled since portable mode was enabled.";
 	}
 	else {
-		bool old_config_exists = false;
-		bool new_config_exists = false;
-
 		SCP_stringstream path_stream;
-		path_stream << getPreferencesPath() << DIR_SEPARATOR_CHAR << Osreg_config_file_name;
+		path_stream << getPreferencesPath() << Osreg_config_file_name;
 
-		new_config_exists = file_exists(path_stream.str());
+		auto new_config_exists = file_exists(path_stream.str());
+		time_t new_config_time = 0;
+		if (new_config_exists) {
+			new_config_time = get_file_modification_time(path_stream.str());
+		}
+
+		// Also check the modification times of the command line files in case the launcher did not change the settings
+		// file
+		path_stream.str("");
+		path_stream << getPreferencesPath() << "data" << DIR_SEPARATOR_CHAR << "cmdline_fso.cfg";
+		new_config_time = std::max(new_config_time, get_file_modification_time(path_stream.str()));
 #ifdef SCP_UNIX
         path_stream.str("");
-		path_stream << Cfile_user_dir_legacy << DIR_SEPARATOR_CHAR << Osreg_config_file_name;
+		path_stream << os_get_legacy_user_dir() << DIR_SEPARATOR_CHAR << Osreg_config_file_name;
 
-		old_config_exists = file_exists(path_stream.str());
+		auto old_config_exists = file_exists(path_stream.str());
+		time_t old_config_time = 0;
+		if (old_config_exists) {
+			old_config_time = get_file_modification_time(path_stream.str());
+		}
+
+		path_stream.str("");
+		path_stream << os_get_legacy_user_dir() << DIR_SEPARATOR_CHAR << "data" << DIR_SEPARATOR_CHAR
+					<< "cmdline_fso.cfg";
+		old_config_time = std::max(old_config_time, get_file_modification_time(path_stream.str()));
 #else
 		// At this point we can't determine if the old config exists so just assume that it does
-		old_config_exists = true;
+		auto old_config_exists = true;
+		time_t old_config_time = os_registry_get_last_modification_time();
+
+		// On Windows the cmdline_fso file was stored in the game root directory which should be in the current directory
+		path_stream.str("");
+		path_stream << "." << DIR_SEPARATOR_CHAR << "data" << DIR_SEPARATOR_CHAR << "cmdline_fso.cfg";
+		old_config_time = std::max(old_config_time, get_file_modification_time(path_stream.str()));
 #endif
 
-		if (new_config_exists) {
-			// If the new config exists then we never use the lagacy mode
+		if (new_config_exists && old_config_exists) {
+			// Both config files exists so we need to decide which to use based on their last modification times
+			// if the old config was modified more recently than the new config then we use the legacy mode since the
+			// user probably used an outdated launcher after using a more recent one
+			legacyMode = old_config_time > new_config_time;
+
+			if (legacyMode) {
+				Osapi_legacy_mode_reason = "Legacy mode enabled since the old config location was used more recently than the new location.";
+			} else {
+				Osapi_legacy_mode_reason = "Legacy mode disabled since the new config location was used more recently than the old location.";
+			}
+		} else if (new_config_exists) {
+			// If the new config exists and the old one doesn't then we can safely disable the legacy mode
 			legacyMode = false;
+
+			Osapi_legacy_mode_reason = "Legacy mode disabled since the old config does not exist while the new config exists.";
 		} else if (old_config_exists) {
 			// Old config exists but new doesn't -> use legacy mode
 			legacyMode = true;
+
+			Osapi_legacy_mode_reason = "Legacy mode enabled since the old config exists while the new config does not exist.";
 		} else {
 			// Neither old nor new config exists -> this is a new install
 			legacyMode = false;
+
+			Osapi_legacy_mode_reason = "Legacy mode disabled since no existing config was detected.";
 		}
 	}
 
@@ -375,7 +453,7 @@ bool os_is_legacy_mode()
 void os_deinit()
 {
 	// Free the view ports 
-	viewports.clear();
+	os::closeAllViewports();
 
 	if (preferencesPath) {
 		SDL_free(preferencesPath);
@@ -416,6 +494,9 @@ namespace os
 	}
 	Viewport* getMainViewport() {
 		return mainViewPort;
+	}
+	void closeAllViewports() {
+		viewports.clear();
 	}
 
 	namespace events

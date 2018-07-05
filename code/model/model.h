@@ -15,6 +15,7 @@
 #include "globalincs/globals.h"	// for NAME_LENGTH
 #include "globalincs/pstypes.h"
 #include "graphics/2d.h"
+#include "gamesnd/gamesnd.h"
 #include "object/object.h"
 #include "ship/ship_flags.h"
 #include "model/model_flags.h"
@@ -145,16 +146,16 @@ public:
 	vec3d	turret_firing_point[MAX_TFP];		//	in parent object's reference frame, point from which to fire.
 	int		turret_gun_sobj;					// Which subobject in this model the firing points are linked to.
 	float	turret_turning_rate;				// How fast the turret turns. Read from ships.tbl
-	int		turret_base_rotation_snd;				// Sound to make when the turret moves
+	gamesnd_id	turret_base_rotation_snd;				// Sound to make when the turret moves
 	float	turret_base_rotation_snd_mult;			// Volume multiplier for the turret sounds
-	int		turret_gun_rotation_snd;				// Sound to make when the turret moves
+	gamesnd_id		turret_gun_rotation_snd;				// Sound to make when the turret moves
 	float	turret_gun_rotation_snd_mult;			// Volume multiplier for the turret sounds
 
 
 	//Sound stuff
-	int		alive_snd;		//Sound to make while the subsystem is not-dead
-	int		dead_snd;		//Sound to make when the subsystem is dead.
-	int		rotation_snd;	//Sound to make when the subsystem is rotating. (ie turrets)
+	gamesnd_id	alive_snd;		//Sound to make while the subsystem is not-dead
+	gamesnd_id	dead_snd;		//Sound to make when the subsystem is dead.
+	gamesnd_id	rotation_snd;	//Sound to make when the subsystem is rotating. (ie turrets)
 
 	// engine wash info
 	struct engine_wash_info		*engine_wash_pointer;					// index into Engine_wash_info
@@ -825,10 +826,10 @@ void model_set_detail_level(int n);
 #define MR_SHOW_OUTLINE				(1<<0)		// Draw the object in outline mode. Color specified by model_set_outline_color
 #define MR_SKYBOX					(1<<1)		// Draw as a skybox
 #define MR_DESATURATED				(1<<2)		// Draw model in monochrome using outline color
-#define MR_EMPTY_SLOT0				(1<<3)		// Show the radius around the object
-#define MR_EMPTY_SLOT1				(1<<4)		// Show the shield mesh
+#define MR_STENCIL_WRITE			(1<<3)		// Write stencil buffere where the model was rendered
+#define MR_STENCIL_READ				(1<<4)		// Only draw pixels of the model where the stencil buffer has the right value (see MR_STENCIL_WRITE)
 #define MR_SHOW_THRUSTERS			(1<<5)		// Show the engine thrusters. See model_set_thrust for how long it draws.
-#define MR_EMPTY_SLOT2				(1<<6)		// Only draw the detail level defined in model_set_detail_level
+#define MR_NO_COLOR_WRITES			(1<<6)		// Don't write anything to the color buffers (used when setting the stencil buffer)
 #define MR_NO_POLYS					(1<<7)		// Don't draw the polygons.
 #define MR_NO_LIGHTING				(1<<8)		// Don't perform any lighting on the model.
 #define MR_NO_TEXTURING				(1<<9)		// Draw textures as flat-shaded polygons.

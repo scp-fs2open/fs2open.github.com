@@ -2431,18 +2431,18 @@ int sexp_tree::get_default_value(sexp_list_item *item, char *text_buf, int op, i
 
 		// Goober5000 - special cases that used to be numbers but are now hybrids
 		case OPF_GAME_SND:
-			int sound_index = -1;
+			gamesnd_id sound_index;
 
 			if ( (Operators[op].value == OP_EXPLOSION_EFFECT) )
 			{
-				sound_index = SND_SHIP_EXPLODE_1;
+				sound_index = GameSounds::SHIP_EXPLODE_1;
 			}
 			else if ( (Operators[op].value == OP_WARP_EFFECT) )
 			{
-				sound_index = (i == 8) ? SND_CAPITAL_WARP_IN : SND_CAPITAL_WARP_OUT;
+				sound_index = (i == 8) ? GameSounds::CAPITAL_WARP_IN : GameSounds::CAPITAL_WARP_OUT;
 			}
 
-			if (sound_index >= 0)
+			if (sound_index.isValid())
 			{
 				game_snd *snd = gamesnd_get_game_sound(sound_index);
 				if (can_construe_as_integer(snd->name.c_str()))
@@ -4824,6 +4824,7 @@ sexp_list_item *sexp_tree::get_listing_opf_subsystem(int parent_node, int arg_in
 			{
 				special_subsys = OPS_STRENGTH;
 
+				// iterate to the next field two times
 				child = tree_nodes[child].next;
 				Assert(child >= 0);			
 				child = tree_nodes[child].next;			
@@ -4846,12 +4847,30 @@ sexp_list_item *sexp_tree::get_listing_opf_subsystem(int parent_node, int arg_in
 		case OP_IS_AI_CLASS:
 		case OP_MISSILE_LOCKED:
 		case OP_SHIP_SUBSYS_GUARDIAN_THRESHOLD:
+		case OP_IS_IN_TURRET_FOV:
 			// iterate to the next field
 			child = tree_nodes[child].next;
 			break;
 
 		// this sexp checks the subsystem of the *fourth entry* on the list
 		case OP_QUERY_ORDERS:
+			// iterate to the next field three times
+			child = tree_nodes[child].next;
+			Assert(child >= 0);
+			child = tree_nodes[child].next;
+			Assert(child >= 0);
+			child = tree_nodes[child].next;
+			break;
+
+		// this sexp checks the subsystem of the *seventh entry* on the list
+		case OP_BEAM_FLOATING_FIRE:
+			// iterate to the next field six times
+			child = tree_nodes[child].next;
+			Assert(child >= 0);
+			child = tree_nodes[child].next;
+			Assert(child >= 0);
+			child = tree_nodes[child].next;
+			Assert(child >= 0);
 			child = tree_nodes[child].next;
 			Assert(child >= 0);
 			child = tree_nodes[child].next;

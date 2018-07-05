@@ -17,7 +17,7 @@
 #include "osapi/osapi.h"	// for multi-thread macros
 
 #include <SDL_timer.h>
-#include <limits.h>
+#include <climits>
 
 static Uint64 Timer_perf_counter_freq = 0;	// perf counter frequency - number of ticks per second
 static Uint64 Timer_base_value;

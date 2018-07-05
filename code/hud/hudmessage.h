@@ -113,10 +113,10 @@ public:
 	void processMessageBuffer();
 	void addPending(const char *text, int source, int x = 0);
 	void scrollMessages();
-	void preprocess();
-	void render(float frametime);
-	void initialize();
-	void pageIn();
+	void preprocess() override;
+	void render(float frametime) override;
+	void initialize() override;
+	void pageIn() override;
 };
 
 class HudGaugeTalkingHead: public HudGauge // HUD_TALKING_HEAD
@@ -136,10 +136,10 @@ public:
 	void initHeaderOffsets(int x, int y);
 	void initAnimOffsets(int x, int y);
 	void initAnimSizes(int w, int h);
-	void pageIn();
-	void render(float frametime);
-	void initialize();
-	bool canRender();
+	void pageIn() override;
+	void render(float frametime) override;
+	void initialize() override;
+	bool canRender() override;
 	anim_instance* createAnim(int anim_start_frame, anim* anim_data);
 };
 
@@ -149,8 +149,8 @@ class HudGaugeFixedMessages: public HudGauge
 public:
 	HudGaugeFixedMessages();
 	void initCenterText(bool center);
-	void render(float frametime);
-	void pageIn();
+	void render(float frametime) override;
+	void pageIn() override;
 };
 
 #endif

@@ -18,9 +18,9 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <netdb.h>
-#include <errno.h>
+#include <cerrno>
 #endif
-#include <ctype.h>
+#include <cctype>
 
 #include "globalincs/pstypes.h"
 #include "network/multiutil.h"
@@ -1976,7 +1976,7 @@ int multi_eval_join_request(join_request *jr,net_addr *addr)
 					if( MULTIPLAYER_STANDALONE ) {
 						send_game_chat_packet(&Net_players[MY_NET_PLAYER_NUM],knock_message,MULTI_MSG_TARGET, Netgame.host, NULL, 1);
 					} else {
-						snd_play(gamesnd_get_game_sound(SND_CUE_VOICE));
+						snd_play(gamesnd_get_game_sound(GameSounds::CUE_VOICE));
 						HUD_sourced_printf(HUD_SOURCE_HIDDEN, "%s", knock_message);
 					}
 					break;
@@ -2004,7 +2004,7 @@ int multi_eval_join_request(join_request *jr,net_addr *addr)
 			*/
 
 			// if we're password protected		
-			if(std_is_host_passwd() && strcmp(jr->passwd, Multi_options_g.std_passwd)){
+			if(std_is_host_passwd() && strcmp(jr->passwd, Multi_options_g.std_passwd) != 0){
 				return JOIN_DENY_JR_PASSWD;
 			}
 				
@@ -2052,7 +2052,7 @@ int multi_eval_join_request(join_request *jr,net_addr *addr)
 	}	
 
 	// check to see if the player has passed a valid password in a password protected game
-	if((Netgame.mode == NG_MODE_PASSWORD) && strcmp(Netgame.passwd,jr->passwd)){
+	if((Netgame.mode == NG_MODE_PASSWORD) && strcmp(Netgame.passwd,jr->passwd) != 0){
 		return JOIN_DENY_JR_PASSWD;
 	}
 
@@ -3592,9 +3592,9 @@ int multi_pack_unpack_position( int write, ubyte *data, vec3d *pos)
 	if ( write )	{
 		// Output pos
 
-		a = fl2i(pos->xyz.x*105.0f+0.5f); 
-		b = fl2i(pos->xyz.y*105.0f+0.5f);
-		c = fl2i(pos->xyz.z*105.0f+0.5f);
+		a = (int)std::lround(pos->xyz.x*105.0f);
+		b = (int)std::lround(pos->xyz.y*105.0f);
+		c = (int)std::lround(pos->xyz.z*105.0f);
 		CAP(a,-8388608,8388607);
 		CAP(b,-8388608,8388607);
 		CAP(c,-8388608,8388607);
@@ -3888,7 +3888,7 @@ int multi_pack_unpack_orient( int write, ubyte *data, matrix *orient)
 // Packs/unpacks velocity
 // Returns number of bytes read or written.
 // #define OO_VEL_RET_SIZE							4
-int multi_pack_unpack_vel( int write, ubyte *data, matrix *orient, vec3d *pos, physics_info *pi)
+int multi_pack_unpack_vel( int write, ubyte *data, matrix *orient, vec3d * /*pos*/, physics_info *pi)
 {
 	bitbuffer buf;
 
@@ -3936,7 +3936,7 @@ int multi_pack_unpack_vel( int write, ubyte *data, matrix *orient, vec3d *pos, p
 // Packs/unpacks desired_velocity
 // Returns number of bytes read or written.
 // #define OO_DESIRED_VEL_RET_SIZE				3
-int multi_pack_unpack_desired_vel( int write, ubyte *data, matrix *orient, vec3d *pos, physics_info *pi, ship_info *sip)
+int multi_pack_unpack_desired_vel( int write, ubyte *data, matrix *orient, vec3d * /*pos*/, physics_info *pi, ship_info *sip)
 {
 	bitbuffer buf;
 
@@ -4036,7 +4036,7 @@ int multi_pack_unpack_desired_vel( int write, ubyte *data, matrix *orient, vec3d
 // Packs/unpacks rotational velocity
 // Returns number of bytes read or written.
 // #define OO_ROTVEL_RET_SIZE						4
-int multi_pack_unpack_rotvel( int write, ubyte *data, matrix *orient, vec3d *pos, physics_info *pi)
+int multi_pack_unpack_rotvel( int write, ubyte *data, matrix * /*orient*/, vec3d * /*pos*/, physics_info *pi)
 {
 	bitbuffer buf;
 
@@ -4076,7 +4076,7 @@ int multi_pack_unpack_rotvel( int write, ubyte *data, matrix *orient, vec3d *pos
 // Packs/unpacks desired rotvel
 // Returns number of bytes read or written.
 // #define OO_DESIRED_ROTVEL_RET_SIZE			3
-int multi_pack_unpack_desired_rotvel( int write, ubyte *data, matrix *orient, vec3d *pos, physics_info *pi, ship_info *sip)
+int multi_pack_unpack_desired_rotvel( int write, ubyte *data, matrix * /*orient*/, vec3d * /*pos*/, physics_info *pi, ship_info *sip)
 {
 	bitbuffer buf;
 	int fields = 0;

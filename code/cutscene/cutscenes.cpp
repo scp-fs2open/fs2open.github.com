@@ -286,10 +286,10 @@ void cutscenes_screen_scroll_line_up()
 	if (Selected_line)
 	{
 		Selected_line--;
-		gamesnd_play_iface(SND_SCROLL);
+		gamesnd_play_iface(InterfaceSounds::SCROLL);
 
 	} else
-		gamesnd_play_iface(SND_GENERAL_FAIL);
+		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 
 	if (Selected_line < Scroll_offset)
 		Scroll_offset = Selected_line;
@@ -302,10 +302,10 @@ void cutscenes_screen_scroll_line_down()
 	if (Selected_line < (int) Cutscene_list.size() - 1)
 	{
 		Selected_line++;
-		gamesnd_play_iface(SND_SCROLL);
+		gamesnd_play_iface(InterfaceSounds::SCROLL);
 
 	} else
-		gamesnd_play_iface(SND_GENERAL_FAIL);
+		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 
 	h = Cutscene_list_coords[gr_screen.res][3] / gr_get_font_height();
 	if (Selected_line >= Scroll_offset + h)
@@ -328,11 +328,11 @@ void cutscenes_screen_scroll_screen_up()
 			Selected_line--;
 		}
 
-		gamesnd_play_iface(SND_SCROLL);
+		gamesnd_play_iface(InterfaceSounds::SCROLL);
 
 	} else
 	{
-		gamesnd_play_iface(SND_GENERAL_FAIL);
+		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 	}
 }
 
@@ -349,10 +349,10 @@ void cutscenes_screen_scroll_screen_down()
 			Selected_line = Scroll_offset;
 		}
 
-		gamesnd_play_iface(SND_SCROLL);
+		gamesnd_play_iface(InterfaceSounds::SCROLL);
 	} else
 	{
-		gamesnd_play_iface(SND_GENERAL_FAIL);
+		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 	}
 }
 
@@ -361,17 +361,17 @@ int cutscenes_screen_button_pressed(int n)
 	switch (n)
 	{
 		case TECH_DATABASE_BUTTON:
-			gamesnd_play_iface(SND_SWITCH_SCREENS);
+			gamesnd_play_iface(InterfaceSounds::SWITCH_SCREENS);
 			gameseq_post_event(GS_EVENT_TECH_MENU);
 			return 1;
 
 		case SIMULATOR_BUTTON:
-			gamesnd_play_iface(SND_SWITCH_SCREENS);
+			gamesnd_play_iface(InterfaceSounds::SWITCH_SCREENS);
 			gameseq_post_event(GS_EVENT_SIMULATOR_ROOM);
 			return 1;
 
 		case CREDITS_BUTTON:
-			gamesnd_play_iface(SND_SWITCH_SCREENS);
+			gamesnd_play_iface(InterfaceSounds::SWITCH_SCREENS);
 			gameseq_post_event(GS_EVENT_CREDITS);
 			return 1;
 
@@ -388,7 +388,7 @@ int cutscenes_screen_button_pressed(int n)
 			break;
 
 		case EXIT_BUTTON:
-			gamesnd_play_iface(SND_COMMIT_PRESSED);
+			gamesnd_play_iface(InterfaceSounds::COMMIT_PRESSED);
 			gameseq_post_event(GS_EVENT_MAIN_MENU);
 			game_flush();
 			break;

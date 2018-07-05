@@ -10,7 +10,7 @@ FUNCTION(ADD_IMPORTED_LIB NAME INCLUDES LIBS)
 
 	target_link_libraries(${NAME} INTERFACE "${LIBS}")
 
-	target_include_directories(${NAME} INTERFACE "${INCLUDES}")
+	target_include_directories(${NAME} SYSTEM INTERFACE "${INCLUDES}")
 ENDFUNCTION(ADD_IMPORTED_LIB)
 
 MACRO(PKG_CONFIG_LIB_RESOLVE NAME OUTVAR)
@@ -141,10 +141,12 @@ macro(set_if_not_defined VAR VALUE)
 endmacro(set_if_not_defined)
 
 macro(configure_cotire target)
-	# Disable unity build as it doesn't work well for us
-	set_target_properties(${target} PROPERTIES COTIRE_ADD_UNITY_BUILD FALSE)
+	if(ENABLE_COTIRE)
+		# Disable unity build as it doesn't work well for us
+		set_target_properties(${target} PROPERTIES COTIRE_ADD_UNITY_BUILD FALSE)
 
-	cotire(${target})
+		cotire(${target})
+	endif()
 endmacro(configure_cotire)
 
 macro(add_target_copy_files)
@@ -195,3 +197,31 @@ function(suppress_warnings _target)
 		target_compile_options(${_target} PRIVATE "-w")
     endif()
 endfunction(suppress_warnings)
+
+
+function(list_target_dependencies _target _out_var)
+	set(out_list)
+	set(work_libs ${_target})
+	list(LENGTH work_libs libs_length)
+
+	while(libs_length GREATER 0)
+		list(GET work_libs 0 current)
+		list(REMOVE_AT work_libs 0)
+		list(APPEND out_list ${current})
+
+		get_target_property(current_libs ${current} INTERFACE_LINK_LIBRARIES)
+
+		if(current_libs)
+			foreach(lib ${current_libs})
+				if (TARGET ${lib})
+					list(APPEND work_libs ${lib})
+				endif (TARGET ${lib})
+			endforeach(lib)
+		endif(current_libs)
+
+		list(LENGTH work_libs libs_length)
+	endwhile(libs_length GREATER 0)
+
+	list(REMOVE_DUPLICATES out_list)
+	set(${_out_var} ${out_list} PARENT_SCOPE)
+endfunction(list_target_dependencies)

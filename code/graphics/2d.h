@@ -160,6 +160,7 @@ enum shader_type {
 	SDR_TYPE_DEFAULT_MATERIAL,
 	SDR_TYPE_NANOVG,
 	SDR_TYPE_DECAL,
+	SDR_TYPE_SCENE_FOG,
 	NUM_SHADER_TYPES
 };
 
@@ -185,7 +186,7 @@ enum shader_type {
 #define SDR_FLAG_MODEL_HDR			(1<<18)
 #define SDR_FLAG_MODEL_AMBIENT_MAP	(1<<19)
 #define SDR_FLAG_MODEL_NORMAL_ALPHA	(1<<20)
-#define SDR_FLAG_MODEL_NORMAL_EXTRUDE (1<<21)
+#define SDR_FLAG_MODEL_THICK_OUTLINES (1<<21) // Renders the model geometry as an outline with configurable line width
 
 #define SDR_FLAG_PARTICLE_POINT_GEN			(1<<0)
 
@@ -216,6 +217,7 @@ struct vertex_format_data
 		SCREEN_POS,
 		COLOR3,
 		COLOR4,
+		COLOR4F,
 		TEX_COORD2,
 		TEX_COORD3,
 		NORMAL,
@@ -283,6 +285,7 @@ typedef enum gr_capability {
 	CAPABILITY_BATCHED_SUBMODELS,
 	CAPABILITY_POINT_PARTICLES,
 	CAPABILITY_TIMESTAMP_QUERY,
+	CAPABILITY_SEPARATE_BLEND_FUNCTIONS,
 } gr_capability;
 
 enum class gr_property {
@@ -362,7 +365,7 @@ class poly_list {
 public:
 	poly_list(): n_verts(0), vert(NULL), norm(NULL), tsb(NULL), submodels(NULL), sorted_indices(NULL), currently_allocated(0) {}
 	~poly_list();
-	poly_list& operator = (poly_list&);
+	poly_list& operator=(const poly_list&);
 
 	void allocate(int size);
 	void make_index_buffer(SCP_vector<int> &vertex_list);
@@ -631,7 +634,6 @@ typedef struct screen {
 
 	int		current_alphablend_mode;		// See GR_ALPHABLEND defines above
 	int		current_bitblt_mode;				// See GR_BITBLT_MODE defines above
-	int		current_fog_mode;					// See GR_FOGMODE_* defines above
 	int		current_bitmap;
 	color		current_color;
 	color		current_fog_color;				// current fog color
@@ -694,9 +696,6 @@ typedef struct screen {
 	// grab a region of the screen. assumes data is large enough
 	void (*gf_get_region)(int front, int w, int h, ubyte *data);
 
-	// set fog attributes
-	void (*gf_fog_set)(int fog_mode, int r, int g, int b, float fog_near, float fog_far);
-
 	// poly culling
 	int (*gf_set_cull)(int cull);
 
@@ -710,14 +709,14 @@ typedef struct screen {
 	void (*gf_set_clear_color)(int r, int g, int b);
 
 	// Here be the bitmap functions
-	void (*gf_bm_free_data)(int n, bool release);
-	void (*gf_bm_create)(int n);
-	void (*gf_bm_init)(int n);
+	void (*gf_bm_free_data)(bitmap_slot* slot, bool release);
+	void (*gf_bm_create)(bitmap_slot* slot);
+	void (*gf_bm_init)(bitmap_slot* slot);
 	void (*gf_bm_page_in_start)();
-	bool (*gf_bm_data)(int n, bitmap* bm);
+	bool (*gf_bm_data)(int handle, bitmap* bm);
 
-	int (*gf_bm_make_render_target)(int n, int *width, int *height, int *bpp, int *mm_lvl, int flags );
-	int (*gf_bm_set_render_target)(int n, int face);
+	int (*gf_bm_make_render_target)(int handle, int *width, int *height, int *bpp, int *mm_lvl, int flags );
+	int (*gf_bm_set_render_target)(int handle, int face);
 
 	void (*gf_translate_texture_matrix)(int unit, const vec3d *shift);
 	void (*gf_push_texture_matrix)(int unit);
@@ -757,7 +756,8 @@ typedef struct screen {
 
 	void (*gf_sphere)(material *material_def, float rad);
 
-	int (*gf_maybe_create_shader)(shader_type type, unsigned int flags);
+	int  (*gf_maybe_create_shader)(shader_type type, unsigned int flags);
+	void (*gf_recompile_all_shaders)(const std::function<void(size_t, size_t)>& progress_callback);
 
 	void (*gf_clear_states)();
 
@@ -928,11 +928,6 @@ void gr_shield_icon(coord2d coords[6], const int resize_mode = GR_RESIZE_FULL);
 
 #define gr_get_region		GR_CALL(gr_screen.gf_get_region)
 
-__inline void gr_fog_set(int fog_mode, int r, int g, int b, float fog_near = -1.0f, float fog_far = -1.0f)
-{
-	(*gr_screen.gf_fog_set)(fog_mode, r, g, b, fog_near, fog_far);
-}
-
 #define gr_set_cull			GR_CALL(gr_screen.gf_set_cull)
 #define gr_set_color_buffer	GR_CALL(gr_screen.gf_set_color_buffer)
 
@@ -947,66 +942,67 @@ __inline void gr_fog_set(int fog_mode, int r, int g, int b, float fog_near = -1.
 
 
 // Here be the bitmap functions
-#define gr_bm_free_data				GR_CALL(*gr_screen.gf_bm_free_data)
-#define gr_bm_create				GR_CALL(*gr_screen.gf_bm_create)
-#define gr_bm_init					GR_CALL(*gr_screen.gf_bm_init)
-#define gr_bm_page_in_start			GR_CALL(*gr_screen.gf_bm_page_in_start)
-#define gr_bm_data					GR_CALL(*gr_screen.gf_bm_data)
+#define gr_bm_free_data				GR_CALL(gr_screen.gf_bm_free_data)
+#define gr_bm_create				GR_CALL(gr_screen.gf_bm_create)
+#define gr_bm_init					GR_CALL(gr_screen.gf_bm_init)
+#define gr_bm_page_in_start			GR_CALL(gr_screen.gf_bm_page_in_start)
+#define gr_bm_data					GR_CALL(gr_screen.gf_bm_data)
 
-#define gr_bm_make_render_target					GR_CALL(*gr_screen.gf_bm_make_render_target)
+#define gr_bm_make_render_target					GR_CALL(gr_screen.gf_bm_make_render_target)
 
 __inline int gr_bm_set_render_target(int n, int face = -1)
 {
 	return (*gr_screen.gf_bm_set_render_target)(n, face);
 }
 
-#define gr_set_texture_addressing					 GR_CALL(*gr_screen.gf_set_texture_addressing)
+#define gr_set_texture_addressing					 GR_CALL(gr_screen.gf_set_texture_addressing)
 
 inline int gr_create_buffer(BufferType type, BufferUsageHint usage)
 {
 	return (*gr_screen.gf_create_buffer)(type, usage);
 }
 
-#define gr_delete_buffer				GR_CALL(*gr_screen.gf_delete_buffer)
-#define gr_update_buffer_data			GR_CALL(*gr_screen.gf_update_buffer_data)
-#define gr_update_buffer_data_offset	GR_CALL(*gr_screen.gf_update_buffer_data_offset)
-#define gr_update_transform_buffer		GR_CALL(*gr_screen.gf_update_transform_buffer)
+#define gr_delete_buffer				GR_CALL(gr_screen.gf_delete_buffer)
+#define gr_update_buffer_data			GR_CALL(gr_screen.gf_update_buffer_data)
+#define gr_update_buffer_data_offset	GR_CALL(gr_screen.gf_update_buffer_data_offset)
+#define gr_update_transform_buffer		GR_CALL(gr_screen.gf_update_transform_buffer)
 
-#define gr_scene_texture_begin			GR_CALL(*gr_screen.gf_scene_texture_begin)
-#define gr_scene_texture_end			GR_CALL(*gr_screen.gf_scene_texture_end)
-#define gr_copy_effect_texture			GR_CALL(*gr_screen.gf_copy_effect_texture)
+#define gr_scene_texture_begin			GR_CALL(gr_screen.gf_scene_texture_begin)
+#define gr_scene_texture_end			GR_CALL(gr_screen.gf_scene_texture_end)
+#define gr_copy_effect_texture			GR_CALL(gr_screen.gf_copy_effect_texture)
 
-#define gr_post_process_set_effect		GR_CALL(*gr_screen.gf_post_process_set_effect)
-#define gr_post_process_set_defaults	GR_CALL(*gr_screen.gf_post_process_set_defaults)
-#define gr_post_process_begin			GR_CALL(*gr_screen.gf_post_process_begin)
-#define gr_post_process_end				GR_CALL(*gr_screen.gf_post_process_end)
-#define gr_post_process_save_zbuffer	GR_CALL(*gr_screen.gf_post_process_save_zbuffer)
+#define gr_post_process_set_effect		GR_CALL(gr_screen.gf_post_process_set_effect)
+#define gr_post_process_set_defaults	GR_CALL(gr_screen.gf_post_process_set_defaults)
+#define gr_post_process_begin			GR_CALL(gr_screen.gf_post_process_begin)
+#define gr_post_process_end				GR_CALL(gr_screen.gf_post_process_end)
+#define gr_post_process_save_zbuffer	GR_CALL(gr_screen.gf_post_process_save_zbuffer)
 inline void gr_post_process_restore_zbuffer() {
 	gr_screen.gf_post_process_restore_zbuffer();
 }
 
-#define gr_deferred_lighting_begin		GR_CALL(*gr_screen.gf_deferred_lighting_begin)
-#define gr_deferred_lighting_end		GR_CALL(*gr_screen.gf_deferred_lighting_end)
-#define gr_deferred_lighting_finish		GR_CALL(*gr_screen.gf_deferred_lighting_finish)
+#define gr_deferred_lighting_begin		GR_CALL(gr_screen.gf_deferred_lighting_begin)
+#define gr_deferred_lighting_end		GR_CALL(gr_screen.gf_deferred_lighting_end)
+#define gr_deferred_lighting_finish		GR_CALL(gr_screen.gf_deferred_lighting_finish)
 
-#define	gr_zbias						GR_CALL(*gr_screen.gf_zbias)
-#define	gr_set_fill_mode				GR_CALL(*gr_screen.gf_set_fill_mode)
+#define	gr_zbias						GR_CALL(gr_screen.gf_zbias)
+#define	gr_set_fill_mode				GR_CALL(gr_screen.gf_set_fill_mode)
 
-#define gr_set_line_width				GR_CALL(*gr_screen.gf_set_line_width)
+#define gr_set_line_width				GR_CALL(gr_screen.gf_set_line_width)
 
-#define gr_sphere						GR_CALL(*gr_screen.gf_sphere)
+#define gr_sphere						GR_CALL(gr_screen.gf_sphere)
 
-#define gr_maybe_create_shader			GR_CALL(*gr_screen.gf_maybe_create_shader)
-#define gr_set_animated_effect			GR_CALL(*gr_screen.gf_set_animated_effect)
+#define gr_maybe_create_shader			GR_CALL(gr_screen.gf_maybe_create_shader)
+#define gr_recompile_all_shaders		GR_CALL(gr_screen.gf_recompile_all_shaders)
+#define gr_set_animated_effect			GR_CALL(gr_screen.gf_set_animated_effect)
 
-#define gr_clear_states					GR_CALL(*gr_screen.gf_clear_states)
+#define gr_clear_states					GR_CALL(gr_screen.gf_clear_states)
 
-#define gr_update_texture				GR_CALL(*gr_screen.gf_update_texture)
-#define gr_get_bitmap_from_texture		GR_CALL(*gr_screen.gf_get_bitmap_from_texture)
+#define gr_update_texture				GR_CALL(gr_screen.gf_update_texture)
+#define gr_get_bitmap_from_texture		GR_CALL(gr_screen.gf_get_bitmap_from_texture)
 
-#define gr_shadow_map_start				GR_CALL(*gr_screen.gf_shadow_map_start)
-#define gr_shadow_map_end				GR_CALL(*gr_screen.gf_shadow_map_end)
-#define gr_render_shield_impact			GR_CALL(*gr_screen.gf_render_shield_impact)
+#define gr_shadow_map_start				GR_CALL(gr_screen.gf_shadow_map_start)
+#define gr_shadow_map_end				GR_CALL(gr_screen.gf_shadow_map_end)
+#define gr_render_shield_impact			GR_CALL(gr_screen.gf_render_shield_impact)
 
 __inline void gr_render_primitives(material* material_info, primitive_type prim_type, vertex_layout* layout, int vert_offset, int n_verts, int buffer_handle = -1, size_t buffer_offset = 0)
 {

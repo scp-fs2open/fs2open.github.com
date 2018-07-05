@@ -107,9 +107,9 @@ public:
 	void initDisabledStatusOffsets(int x, int y, bool activate);
 	void initDesaturate(bool desaturate);
 
-	void initialize();
-	void pageIn();
-	void render(float frametime);
+	void initialize() override;
+	void pageIn() override;
+	void render(float frametime) override;
 	void renderTargetShip(object *target_objp);
 	void renderTargetWeapon(object *target_objp);
 	void renderTargetDebris(object *target_objp);
@@ -149,13 +149,13 @@ public:
 	void initOrderOffsets(int x, int y);
 	void initOrderMaxWidth(int width);
 	void updateFrame();
-	void render(float frametime);
-	void initialize();
+	void render(float frametime) override;
+	void initialize() override;
 	void initDockFlashTimer();
 	void startFlashDock(int duration=TBOX_FLASH_DURATION);
 	int maybeFlashDock(int flash_fast=0);
 	void endFlashDock();
-	void pageIn();
+	void pageIn() override;
 };
 
 void	hud_targetbox_init();

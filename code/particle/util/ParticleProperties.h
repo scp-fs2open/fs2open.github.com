@@ -33,7 +33,14 @@ class ParticleProperties {
 	 * @param info The base values of the particle. Some values will be overwritten by this function
 	 * @return The created particle
 	 */
-	WeakParticlePtr createParticle(particle_info& info);
+	void createParticle(particle_info& info);
+
+	/**
+	 * @brief Creates a particle with the stored values
+	 * @param info The base values of the particle. Some values will be overwritten by this function
+	 * @return The created particle
+	 */
+	WeakParticlePtr createPersistentParticle(particle_info& info);
 
 	void pageIn();
 };

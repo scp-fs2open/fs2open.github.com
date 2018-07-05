@@ -1,0 +1,553 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>fso::fred::dialogs::EventEditorDialog</class>
+ <widget class="QDialog" name="fso::fred::dialogs::EventEditorDialog">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>926</width>
+    <height>857</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Mission Event Edit</string>
+  </property>
+  <layout class="QGridLayout" name="gridLayout_3">
+   <item row="0" column="0">
+    <layout class="QHBoxLayout" name="horizontalLayout">
+     <item>
+      <layout class="QVBoxLayout" name="verticalLayout">
+       <item>
+        <widget class="fso::fred::sexp_tree" name="eventTree">
+         <attribute name="headerVisible">
+          <bool>false</bool>
+         </attribute>
+        </widget>
+       </item>
+       <item>
+        <layout class="QFormLayout" name="formLayout">
+         <item row="0" column="1">
+          <widget class="QLineEdit" name="editDirectiveText"/>
+         </item>
+         <item row="0" column="0">
+          <widget class="QLabel" name="label">
+           <property name="text">
+            <string>Directive te&amp;xt</string>
+           </property>
+           <property name="buddy">
+            <cstring>editDirectiveText</cstring>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="0">
+          <widget class="QLabel" name="label_2">
+           <property name="text">
+            <string>Directive &amp;keypress text</string>
+           </property>
+           <property name="buddy">
+            <cstring>editDirectiveKeypressText</cstring>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="1">
+          <widget class="QLineEdit" name="editDirectiveKeypressText"/>
+         </item>
+        </layout>
+       </item>
+       <item>
+        <layout class="QGridLayout" name="gridLayout_4">
+         <item row="1" column="0">
+          <widget class="QCheckBox" name="checkLogTrue">
+           <property name="text">
+            <string>True</string>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="3">
+          <widget class="QCheckBox" name="checkLogFirstTrigger">
+           <property name="text">
+            <string>First Trigger</string>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="1">
+          <widget class="QCheckBox" name="checkLogPrevious">
+           <property name="text">
+            <string>Log Previous</string>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="2">
+          <widget class="QCheckBox" name="checkLogFirstRepeat">
+           <property name="text">
+            <string>First Repeat</string>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="0">
+          <widget class="QCheckBox" name="checkLogFalse">
+           <property name="text">
+            <string>False</string>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="1">
+          <widget class="QCheckBox" name="checkLogAlwaysFalse">
+           <property name="text">
+            <string>Always False</string>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="2">
+          <widget class="QCheckBox" name="checkLogLastRepeat">
+           <property name="text">
+            <string>Last Repeat</string>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="3">
+          <widget class="QCheckBox" name="checkLogLastTrigger">
+           <property name="text">
+            <string>Last Trigger</string>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="0" colspan="4">
+          <widget class="QLabel" name="label_3">
+           <property name="text">
+            <string>Log These States To The Event.log</string>
+           </property>
+           <property name="alignment">
+            <set>Qt::AlignCenter</set>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+      </layout>
+     </item>
+     <item>
+      <layout class="QGridLayout" name="gridLayout">
+       <item row="7" column="0">
+        <widget class="QSpinBox" name="triggerCountBox"/>
+       </item>
+       <item row="16" column="0" colspan="2">
+        <widget class="QDialogButtonBox" name="buttonBox">
+         <property name="orientation">
+          <enum>Qt::Horizontal</enum>
+         </property>
+         <property name="standardButtons">
+          <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
+         </property>
+        </widget>
+       </item>
+       <item row="17" column="0" colspan="2">
+        <widget class="QLineEdit" name="miniHelpBox">
+         <property name="readOnly">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+       <item row="12" column="0">
+        <widget class="QComboBox" name="teamCombo">
+         <item>
+          <property name="text">
+           <string>Team 1</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>Team 2</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>none</string>
+          </property>
+         </item>
+        </widget>
+       </item>
+       <item row="3" column="0">
+        <widget class="QPushButton" name="btnDeleteEvent">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="text">
+          <string>Delete Event</string>
+         </property>
+        </widget>
+       </item>
+       <item row="11" column="0">
+        <widget class="QSpinBox" name="scoreBox"/>
+       </item>
+       <item row="2" column="0">
+        <widget class="QPushButton" name="btnInsertEvent">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="text">
+          <string>Insert Event</string>
+         </property>
+        </widget>
+       </item>
+       <item row="4" column="0">
+        <widget class="QLabel" name="label_4">
+         <property name="text">
+          <string>Repeat Co&amp;unt</string>
+         </property>
+         <property name="buddy">
+          <cstring>repeatCountBox</cstring>
+         </property>
+        </widget>
+       </item>
+       <item row="10" column="0">
+        <widget class="QLabel" name="label_7">
+         <property name="text">
+          <string>Score</string>
+         </property>
+         <property name="buddy">
+          <cstring>scoreBox</cstring>
+         </property>
+        </widget>
+       </item>
+       <item row="14" column="0">
+        <widget class="QLabel" name="label_8">
+         <property name="text">
+          <string>Chain Dela&amp;y</string>
+         </property>
+         <property name="buddy">
+          <cstring>chainDelayBox</cstring>
+         </property>
+        </widget>
+       </item>
+       <item row="18" column="0" colspan="2">
+        <widget class="QTextEdit" name="helpBox">
+         <property name="verticalScrollBarPolicy">
+          <enum>Qt::ScrollBarAlwaysOff</enum>
+         </property>
+         <property name="readOnly">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+       <item row="13" column="0">
+        <widget class="QCheckBox" name="chainedCheckBox">
+         <property name="text">
+          <string>Chained</string>
+         </property>
+        </widget>
+       </item>
+       <item row="9" column="0">
+        <widget class="QSpinBox" name="intervalTimeBox"/>
+       </item>
+       <item row="6" column="0">
+        <widget class="QLabel" name="label_5">
+         <property name="text">
+          <string>Tri&amp;gger Count</string>
+         </property>
+         <property name="buddy">
+          <cstring>triggerCountBox</cstring>
+         </property>
+        </widget>
+       </item>
+       <item row="8" column="0">
+        <widget class="QLabel" name="label_6">
+         <property name="text">
+          <string>Interval time</string>
+         </property>
+         <property name="buddy">
+          <cstring>intervalTimeBox</cstring>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="1" rowspan="15">
+        <widget class="QGroupBox" name="groupBox">
+         <property name="title">
+          <string>Messages</string>
+         </property>
+         <layout class="QGridLayout" name="gridLayout_2">
+          <item row="1" column="1">
+           <widget class="QLineEdit" name="messageName"/>
+          </item>
+          <item row="5" column="0" colspan="2">
+           <widget class="QGroupBox" name="groupBox_2">
+            <property name="title">
+             <string>Properties</string>
+            </property>
+            <layout class="QGridLayout" name="gridLayout_6">
+             <item row="1" column="2">
+              <widget class="QPushButton" name="btnBrowseWave">
+               <property name="sizePolicy">
+                <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+                 <horstretch>0</horstretch>
+                 <verstretch>0</verstretch>
+                </sizepolicy>
+               </property>
+               <property name="text">
+                <string>Browse</string>
+               </property>
+              </widget>
+             </item>
+             <item row="0" column="0" alignment="Qt::AlignRight">
+              <widget class="QLabel" name="label_10">
+               <property name="text">
+                <string>ANI file</string>
+               </property>
+               <property name="buddy">
+                <cstring>aniCombo</cstring>
+               </property>
+              </widget>
+             </item>
+             <item row="0" column="1">
+              <widget class="QComboBox" name="aniCombo">
+               <property name="editable">
+                <bool>true</bool>
+               </property>
+              </widget>
+             </item>
+             <item row="1" column="0" alignment="Qt::AlignRight">
+              <widget class="QLabel" name="label_11">
+               <property name="text">
+                <string>Wave file</string>
+               </property>
+               <property name="buddy">
+                <cstring>waveCombo</cstring>
+               </property>
+              </widget>
+             </item>
+             <item row="3" column="0" alignment="Qt::AlignRight">
+              <widget class="QLabel" name="label_13">
+               <property name="text">
+                <string>&amp;Team</string>
+               </property>
+               <property name="buddy">
+                <cstring>messageTeamCombo</cstring>
+               </property>
+              </widget>
+             </item>
+             <item row="1" column="1">
+              <widget class="QComboBox" name="waveCombo">
+               <property name="editable">
+                <bool>true</bool>
+               </property>
+              </widget>
+             </item>
+             <item row="2" column="1">
+              <widget class="QComboBox" name="personaCombo"/>
+             </item>
+             <item row="3" column="1">
+              <widget class="QComboBox" name="messageTeamCombo">
+               <item>
+                <property name="text">
+                 <string>Team 1</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>Team 2</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>none</string>
+                </property>
+               </item>
+              </widget>
+             </item>
+             <item row="2" column="0" alignment="Qt::AlignRight">
+              <widget class="QLabel" name="label_12">
+               <property name="text">
+                <string>Persona</string>
+               </property>
+               <property name="buddy">
+                <cstring>personaCombo</cstring>
+               </property>
+              </widget>
+             </item>
+             <item row="1" column="3">
+              <widget class="QPushButton" name="btnWavePlay">
+               <property name="sizePolicy">
+                <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                 <horstretch>0</horstretch>
+                 <verstretch>0</verstretch>
+                </sizepolicy>
+               </property>
+               <property name="text">
+                <string/>
+               </property>
+               <property name="icon">
+                <iconset resource="../resources/resources.qrc">
+                 <normaloff>:/images/play.png</normaloff>:/images/play.png</iconset>
+               </property>
+              </widget>
+             </item>
+             <item row="0" column="2" colspan="2">
+              <widget class="QPushButton" name="btnAniBrowse">
+               <property name="text">
+                <string>Browse</string>
+               </property>
+              </widget>
+             </item>
+             <item row="2" column="2" colspan="2">
+              <widget class="QPushButton" name="btnUpdateStuff">
+               <property name="text">
+                <string>Update Stuff</string>
+               </property>
+              </widget>
+             </item>
+             <item row="3" column="2" colspan="2">
+              <widget class="QLabel" name="label_14">
+               <property name="text">
+                <string>(multiplayer TvT only)</string>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </widget>
+          </item>
+          <item row="1" column="0">
+           <widget class="QLabel" name="label_9">
+            <property name="text">
+             <string>Name</string>
+            </property>
+            <property name="buddy">
+             <cstring>messageName</cstring>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="0" colspan="2">
+           <widget class="QListWidget" name="messageList">
+            <property name="editTriggers">
+             <set>QAbstractItemView::NoEditTriggers</set>
+            </property>
+            <property name="alternatingRowColors">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="0" colspan="2">
+           <layout class="QHBoxLayout" name="horizontalLayout_2">
+            <property name="spacing">
+             <number>0</number>
+            </property>
+            <item>
+             <widget class="QPushButton" name="btnNewMsg">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+              <property name="text">
+               <string>New Msg</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="btnDeleteMsg">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+              <property name="text">
+               <string>Delete Msg</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+          <item row="2" column="0" colspan="2">
+           <widget class="QPlainTextEdit" name="messageContent">
+            <property name="statusTip">
+             <string>Message Text</string>
+            </property>
+            <property name="whatsThis">
+             <string>Message Text</string>
+            </property>
+            <property name="placeholderText">
+             <string>Message Text</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item row="5" column="0">
+        <widget class="QSpinBox" name="repeatCountBox"/>
+       </item>
+       <item row="1" column="0">
+        <widget class="QPushButton" name="btnNewEvent">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="text">
+          <string>New Event</string>
+         </property>
+        </widget>
+       </item>
+       <item row="15" column="0">
+        <widget class="QSpinBox" name="chainDelayBox"/>
+       </item>
+      </layout>
+     </item>
+    </layout>
+   </item>
+  </layout>
+ </widget>
+ <customwidgets>
+  <customwidget>
+   <class>fso::fred::sexp_tree</class>
+   <extends>QTreeView</extends>
+   <header>ui/widgets/sexp_tree.h</header>
+  </customwidget>
+ </customwidgets>
+ <resources>
+  <include location="../resources/resources.qrc"/>
+ </resources>
+ <connections>
+  <connection>
+   <sender>buttonBox</sender>
+   <signal>rejected()</signal>
+   <receiver>fso::fred::dialogs::EventEditorDialog</receiver>
+   <slot>reject()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>917</x>
+     <y>636</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>530</x>
+     <y>7</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>buttonBox</sender>
+   <signal>accepted()</signal>
+   <receiver>fso::fred::dialogs::EventEditorDialog</receiver>
+   <slot>accept()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>917</x>
+     <y>636</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>504</x>
+     <y>-11</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
+</ui>

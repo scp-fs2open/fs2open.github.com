@@ -362,7 +362,7 @@ void labviewer_render_model(float frametime)
 		auto lab_envmap_override_save = Envmap_override;
 		auto lab_emissive_light_save = Cmdline_no_emissive;
 
-		if (Lab_selected_mission.compare("None") == 0) {
+		if (Lab_selected_mission == "None") {
 			Lab_render_without_light = true;
 			Cmdline_nomotiondebris = 1;
 		}
@@ -463,7 +463,7 @@ void labviewer_do_render(float frametime)
 	gr_set_color_fast(&Color_white);
 
 	if (frametotal != 0.0f) {
-		gr_printf_no_resize(gr_screen.center_offset_x + 2, gr_screen.center_offset_y + gr_screen.center_h - gr_get_font_height(), "FPS: %3i Camera Distance: %4f", fl2i(Framerate + 0.5f), lab_cam_distance);
+		gr_printf_no_resize(gr_screen.center_offset_x + 2, gr_screen.center_offset_y + gr_screen.center_h - gr_get_font_height(), "FPS: %3i Camera Distance: %4f", (int)std::lround(Framerate), lab_cam_distance);
 	}
 	else {
 		gr_string(gr_screen.center_offset_x + 10, gr_screen.center_offset_y + gr_screen.center_h - gr_get_font_height(), "FPS: ?", GR_RESIZE_NONE);
@@ -481,7 +481,7 @@ void labviewer_do_render(float frametime)
 	gr_printf_no_resize(gr_screen.center_offset_x + 2, gr_screen.center_offset_y + gr_screen.center_h - (gr_get_font_height() * 4) - 3, "Hold LMB to rotate the ship or weapon. Hold RMB to rotate the Camera. Hold Shift + LMB to zoom in or out. Use number keys to switch between FXAA presets.");
 }
 
-void labviewer_exit(Button *caller)
+void labviewer_exit(Button * /*caller*/)
 {
 	if (Lab_selected_object != -1) {
 		obj_delete(Lab_selected_object);
@@ -490,7 +490,7 @@ void labviewer_exit(Button *caller)
 }
 
 // ----------------------------  Class Window ----------------------------------
-void labviewer_close_class_window(GUIObject *caller)
+void labviewer_close_class_window(GUIObject * /*caller*/)
 {
 	if (Lab_class_toolbar) {
 		Lab_class_toolbar->DeleteChildren();
@@ -639,7 +639,7 @@ void labviewer_update_flags_window()
 	}
 }
 
-void labviewer_close_flags_window(GUIObject *caller)
+void labviewer_close_flags_window(GUIObject * /*caller*/)
 {
 	Lab_flags_window = NULL;
 
@@ -647,7 +647,7 @@ void labviewer_close_flags_window(GUIObject *caller)
 	Weapon_Class_Flags.empty();
 }
 
-void labviewer_make_flags_window(Button *caller)
+void labviewer_make_flags_window(Button * /*caller*/)
 {
 	if (Lab_flags_window == NULL) {
 		Lab_flags_window = (Window*)Lab_screen->Add(new Window("Flags Window", gr_screen.center_offset_x + gr_screen.center_w - 205, gr_screen.center_offset_y + 200));
@@ -681,7 +681,7 @@ void labviewer_make_flags_window(Button *caller)
 
 static SCP_vector<Text*> Lab_variables;
 
-void labviewer_close_variables_window(GUIObject *caller)
+void labviewer_close_variables_window(GUIObject * /*caller*/)
 {
 	Lab_variables_window = NULL;
 
@@ -920,7 +920,7 @@ void labviewer_update_variables_window()
 		Assert(Lab_selected_index < Num_weapon_types);
 		weapon_info *wip = &Weapon_info[Lab_selected_index];
 
-		VAR_SET_VALUE(wip->name);
+		VAR_SET_VALUE(wip->get_display_string());
 		VAR_SET_VALUE_SAVE(wip->subtype, Num_weapon_subtypes - 1);
 
 		VAR_SET_VALUE_SAVE(wip->mass, 0);
@@ -950,7 +950,7 @@ void labviewer_update_variables_window()
 	}
 }
 
-void labviewer_make_variables_window(Button *caller)
+void labviewer_make_variables_window(Button * /*caller*/)
 {
 	if (Lab_variables_window != NULL) {
 		return;
@@ -984,7 +984,7 @@ void labviewer_change_detail_texture(Tree *caller)
 	Detail.hardware_textures = slider_pos;
 }
 
-void labviewer_close_render_options_window(GUIObject *caller)
+void labviewer_close_render_options_window(GUIObject * /*caller*/)
 {
 	Lab_render_options_window = NULL;
 }
@@ -1013,7 +1013,7 @@ void labviewer_render_options_set_bloom(Slider *caller) {
 	Cmdline_bloom_intensity = fl2i(caller->GetSliderValue());
 }
 
-void labviewer_make_render_options_window(Button *caller)
+void labviewer_make_render_options_window(Button * /*caller*/)
 {
 	Checkbox *cbp;
 	Tree *cmp;
@@ -1092,7 +1092,7 @@ void labviewer_make_render_options_window(Button *caller)
 }
 // -------------------------  Material Override Window  ------------------------------
 
-void labviewer_close_material_override_window(GUIObject *caller)
+void labviewer_close_material_override_window(GUIObject * /*caller*/)
 {
 	Lab_material_override_window = NULL;
 
@@ -1162,7 +1162,7 @@ void labviewer_set_material_override_specular_gloss(Slider *caller)
 	Gloss_override = caller->GetSliderValue() / 255.0f;
 }
 
-void labviewer_make_material_override_window(Button *caller)
+void labviewer_make_material_override_window(Button * /*caller*/)
 {
 	Checkbox *cbp;
 	Slider *sldr;
@@ -1233,7 +1233,7 @@ void labviewer_make_material_override_window(Button *caller)
 }
 
 // -------------------------  Description Window  ------------------------------
-void labviewer_close_desc_window(GUIObject *caller)
+void labviewer_close_desc_window(GUIObject * /*caller*/)
 {
 	Lab_description_text = NULL;
 	Lab_description_window = NULL;
@@ -1257,7 +1257,7 @@ void labviewer_update_desc_window()
 			}
 		}
 		else if (Lab_mode == LAB_MODE_WEAPON) {
-			Lab_description_window->SetCaption(Weapon_info[Lab_selected_index].name);
+			Lab_description_window->SetCaption(Weapon_info[Lab_selected_index].get_display_string());
 
 			if (Weapon_info[Lab_selected_index].tech_desc != NULL) {
 				Lab_description_text->SetText(Weapon_info[Lab_selected_index].tech_desc);
@@ -1269,7 +1269,7 @@ void labviewer_update_desc_window()
 	}
 }
 
-void labviewer_make_desc_window(Button *caller)
+void labviewer_make_desc_window(Button * /*caller*/)
 {
 	if (Lab_description_window != NULL) {
 		return;
@@ -1286,7 +1286,7 @@ void labviewer_make_desc_window(Button *caller)
 }
 
 // ------------------------   Ships Window   -----------------------------------
-void labviewer_make_ship_window(Button *caller)
+void labviewer_make_ship_window(Button * /*caller*/)
 {
 	GUIObject *cbp;
 	TreeItem *ctip, *stip;
@@ -1482,7 +1482,7 @@ void labviewer_change_weapon(Tree *caller)
 }
 
 // weapon window create function
-void labviewer_make_weap_window(Button* caller)
+void labviewer_make_weap_window(Button*  /*caller*/)
 {
 	GUIObject *cbp;
 	TreeItem *stip;
@@ -1543,7 +1543,7 @@ void labviewer_make_weap_window(Button* caller)
 			stip = type_nodes[Weapon_info[i].subtype];
 		}
 
-		cmp->AddItem(stip, Weapon_info[i].name, i, false, labviewer_change_weapon);
+		cmp->AddItem(stip, Weapon_info[i].get_display_string(), i, false, labviewer_change_weapon);
 
 		//if (Weapon_info[i].tech_model[0] != '\0') {
 		//	cmp->AddItem(cwip, "Tech Model", 0, false, labviewer_show_tech_model);
@@ -1611,16 +1611,16 @@ SCP_string get_directory_or_vp(char* path)
 		found = result.find(".vp");
 	}
 
-	auto directory_name_pos = result.rfind(DIR_SEPARATOR_STR, found - strlen(DIR_SEPARATOR_STR) - 1);
+	auto directory_name_pos = result.rfind(DIR_SEPARATOR_CHAR, found - strlen(DIR_SEPARATOR_STR) - 1);
 
 	result = result.substr(directory_name_pos, found - directory_name_pos);
 
-	found = result.find(DIR_SEPARATOR_STR);
+	found = result.find(DIR_SEPARATOR_CHAR);
 	//Strip directory separators
 	while (found != std::string::npos)
 	{
 		result.erase(found, strlen(DIR_SEPARATOR_STR));
-		found = result.find(DIR_SEPARATOR_STR);
+		found = result.find(DIR_SEPARATOR_CHAR);
 	}
 
 	return result;
@@ -1636,7 +1636,7 @@ void labviewer_change_background_actual()
 	// (DahBlount) - Remember to load the debris anims
 	stars_load_debris(false);
 
-	if (Lab_selected_mission.compare("None") != 0)
+	if (Lab_selected_mission != "None")
 	{
 		read_file_text((Lab_selected_mission + ".fs2").c_str(), CF_TYPE_MISSIONS);
 		reset_parse();
@@ -1806,6 +1806,7 @@ void labviewer_change_background_actual()
 	else {
 		// (DahBlount) - This spot should be used to disable rendering features that only apply to missions.
 		Motion_debris_override = true;
+		Num_stars = 0;
 	}
 }
 
@@ -1816,12 +1817,12 @@ void labviewer_change_background(Tree* caller)
 	labviewer_change_background_actual();
 }
 
-void lab_background_window_close(GUIObject* caller) 
+void lab_background_window_close(GUIObject*  /*caller*/) 
 {
 	Lab_background_window = NULL;
 }
 
-void labviewer_make_background_window(Button* caller)
+void labviewer_make_background_window(Button*  /*caller*/)
 {
 	if (Lab_background_window != NULL) return;
 
@@ -1834,7 +1835,7 @@ void labviewer_make_background_window(Button* caller)
 	SCP_map<SCP_string, SCP_vector<SCP_string>> directories;
 	char fullpath[MAX_PATH_LEN];
 
-	for (auto filename : missions)
+	for (const auto& filename : missions)
 	{
 		cf_find_file_location((filename + ".fs2").c_str(), CF_TYPE_MISSIONS, sizeof(fullpath) - 1, fullpath, NULL, NULL);
 		auto location = get_directory_or_vp(fullpath);
@@ -1854,7 +1855,7 @@ void labviewer_make_background_window(Button* caller)
 		auto directoryItem = Mission_directories[i];
 		directoryItem = missiontree->AddItem(NULL, directory.first);
 
-		for (auto Lab_mission : directory.second)
+		for (const auto& Lab_mission : directory.second)
 		{
 			missiontree->AddItem(directoryItem, Lab_mission, 0, true, labviewer_change_background);
 		}
@@ -1924,6 +1925,10 @@ void lab_init()
 	Lab_viewer_flags |= LAB_FLAG_NO_ROTATION;
 	Lab_viewer_flags |= LAB_FLAG_INITIAL_ROTATION;
 
+	obj_init();
+
+	//Reset the background
+	labviewer_change_background_actual();
 
 	flagset<Object::Object_Flags> obs_flags;
 	auto obj_index = obj_create(OBJ_OBSERVER, -1, 0, &vmd_identity_matrix, &vmd_zero_vector, 0, obs_flags);
@@ -1941,6 +1946,19 @@ void lab_init()
 
 	if (The_mission.ai_profile == nullptr)
 		The_mission.ai_profile = &Ai_profiles[Default_ai_profile];
+
+	lab_cam_distance = 100.0f;
+	lab_cam_phi = 1.24f;
+	lab_cam_theta = 2.25f;
+
+	Lab_selected_index = -1;
+	Lab_last_selected_ship = -1;
+	Lab_selected_object = -1;
+	Lab_last_selected_weapon = -1;
+	Lab_model_num = -1;
+
+	Lab_selected_mission = "None";
+	Lab_skybox_orientation = vmd_identity_matrix;
 }
 
 #include "controlconfig/controlsconfig.h"
@@ -2174,5 +2192,5 @@ void lab_close()
 
 	cam_delete(Lab_cam);
 
-	Missiontime = Lab_Save_Missiontime;
+	obj_init();
 }

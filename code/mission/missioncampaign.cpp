@@ -9,10 +9,10 @@
 
 
 
-#include <stdio.h>
-#include <string.h>
-#include <setjmp.h>
-#include <errno.h>
+#include <cstdio>
+#include <cstring>
+#include <csetjmp>
+#include <cerrno>
 
 #ifdef _WIN32
 #include <direct.h>
@@ -108,7 +108,7 @@ int mission_campaign_get_info(const char *filename, char *name, int *type, int *
 
 	strncpy(fname, filename, MAX_FILENAME_LEN - 1);
 	auto fname_len = strlen(fname);
-	if ((fname_len < 4) || stricmp(fname + fname_len - 4, FS_CAMPAIGN_FILE_EXT)){
+	if ((fname_len < 4) || stricmp(fname + fname_len - 4, FS_CAMPAIGN_FILE_EXT) != 0){
 		strcat_s(fname, FS_CAMPAIGN_FILE_EXT);
 		fname_len += 4;
 	}
@@ -458,7 +458,7 @@ int mission_campaign_load( char *filename, player *pl, int load_savefile, bool r
 		auto len = strlen(filename) - 4;
 		Assert(len < MAX_FILENAME_LEN);
 		strncpy(Campaign.filename, filename, len);
-		Campaign.filename[len] = 0;
+		Campaign.filename[len] = '\0';
 
 		required_string("$Name:");
 		stuff_string( name, F_NAME, NAME_LENGTH );
@@ -846,7 +846,8 @@ void mission_campaign_savefile_delete( char *cfilename )
 		return;	// no such thing as a multiplayer campaign savefile
 	}
 
-	sprintf( filename, NOX("%s.%s.csg"), Player->callsign, base ); // only support the new filename here - taylor
+	// only support the new filename here - taylor
+	sprintf_safe( filename, NOX("%s.%s.csg"), Player->callsign, base );
 
 	cf_delete( filename, CF_TYPE_PLAYERS );
 }
@@ -1636,7 +1637,7 @@ bool campaign_is_ignored(const char *filename)
 	drop_extension(filename_no_ext);
 
 	for (SCP_vector<SCP_string>::iterator ii = Ignored_campaigns.begin(); ii != Ignored_campaigns.end(); ++ii) {
-		if (ii->compare(filename_no_ext) == 0) {
+		if (*ii == filename_no_ext) {
 			return true;
 		}
 	}

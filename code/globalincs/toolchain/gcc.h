@@ -32,7 +32,7 @@
 #define ASSUME(x)
 
 #if defined(NDEBUG)
-#	define Assertion(expr, msg, ...)  do {} while (0)
+#	define Assertion(expr, msg, ...)  do {} while (false)
 #else
 /*
  * NOTE: Assertion() can only use its proper functionality in compilers
@@ -43,7 +43,7 @@
 			if (!(expr)) {                                                \
 				os::dialogs::AssertMessage(#expr, __FILE__, __LINE__, msg, ##__VA_ARGS__); \
 			}                                                             \
-		} while (0)
+		} while (false)
 #endif
 
 /* C++11 Standard Detection */
@@ -60,8 +60,6 @@
 #define SIZE_T_ARG    "%zu"
 #define PTRDIFF_T_ARG "%zd"
 
-#define NOEXCEPT  noexcept
-
 #define likely(x)    __builtin_expect((long) !!(x), 1L)
 #define unlikely(x)  __builtin_expect((long) !!(x), 0L)
 
@@ -71,4 +69,15 @@
 #define FALLTHROUGH [[fallthrough]]
 #else
 #define FALLTHROUGH
+#endif
+
+#define CLANG_ANALYZER_NORETURN
+
+#ifndef NDEBUG
+#define UNREACHABLE(msg, ...)                                                                                          \
+	do {                                                                                                               \
+		os::dialogs::Error(__FILE__, __LINE__, msg, ##__VA_ARGS__);                                                    \
+	} while (false)
+#else
+#define UNREACHABLE(msg, ...) __builtin_unreachable()
 #endif

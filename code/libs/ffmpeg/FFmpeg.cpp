@@ -55,7 +55,10 @@ void initialize() {
 		return;
 	}
 
+	// This is deprecated since 58.9.100 and not needed anymore
+#if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(58, 9, 100)
 	av_register_all();
+#endif
 
 	check_version("libavcodec", avcodec_version(), LIBAVCODEC_VERSION_INT);
 	check_version("libavformat", avformat_version(), LIBAVFORMAT_VERSION_INT);

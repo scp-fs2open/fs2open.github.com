@@ -12,7 +12,7 @@
 #ifndef __JUMPNODE_H__
 #define __JUMPNODE_H__
 
-#include <stdlib.h>
+#include <cstdlib>
 
 #include "globalincs/globals.h"
 #include "graphics/2d.h"
@@ -47,9 +47,9 @@ public:
     //Constructors
     CJumpNode();
     CJumpNode(vec3d *position);
-	CJumpNode(CJumpNode&& other);
+	CJumpNode(CJumpNode&& other) SCP_NOEXCEPT;
 
-	CJumpNode& operator=(CJumpNode&&);
+	CJumpNode& operator=(CJumpNode&&) SCP_NOEXCEPT;
     
     //Destructor
     ~CJumpNode();

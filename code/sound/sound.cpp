@@ -30,7 +30,7 @@
 
 #include "globalincs/pstypes.h"
 
-#include <limits.h>
+#include <climits>
 
 const unsigned int SND_ENHANCED_MAX_LIMIT = 15; // seems like a good max limit
 
@@ -284,7 +284,7 @@ void snd_spew_debug_info()
 //						failure => -1
 //
 //int snd_load( char *filename, int hardware, int use_ds3d, int *sig)
-int snd_load( game_snd_entry *entry, int flags, int allow_hardware_load )
+int snd_load( game_snd_entry *entry, int flags, int  /*allow_hardware_load*/ )
 {
 	int				type;
 	sound_info		*si;
@@ -604,7 +604,7 @@ MONITOR( Num3DSoundsLoaded )
 // returns:		-1		=>		sound could not be played
 //					n		=>		handle for instance of sound
 //
-int snd_play_3d(game_snd *gs, vec3d *source_pos, vec3d *listen_pos, float radius, vec3d *source_vel, int looping, float vol_scale, int priority, vec3d *sound_fvec, float range_factor, int force, bool is_ambient )
+int snd_play_3d(game_snd *gs, vec3d *source_pos, vec3d *listen_pos, float radius, vec3d *source_vel, int looping, float vol_scale, int priority, vec3d * /*sound_fvec*/, float range_factor, int force, bool  /*is_ambient*/ )
 {
 	int		handle;
 	vec3d	vector_to_sound;
@@ -739,7 +739,7 @@ void snd_update_3d_pos(int soundnum, game_snd *gs, vec3d *new_pos, float radius,
 		}
 
 		float min_range = (float) (fl2i( (gs->min) * range_factor));
-		float max_range = (float) (fl2i( (gs->max) * range_factor + 0.5f));
+		float max_range = (float) ((int)std::lround((gs->max) * range_factor));
 
 		ds3d_update_buffer(channel, min_range, max_range, new_pos, NULL);
 	}
@@ -778,7 +778,7 @@ int snd_get_3d_vol_and_pan(game_snd *gs, vec3d *pos, float* vol, float *pan, flo
 	Assertion( gs != NULL, "*gs was NULL in snd_get_3d_vol_and_pan(); get a coder!\n" );
 
 	float min_range = (float) (fl2i( (gs->min) * range_factor));
-	float max_range = (float) (fl2i( (gs->max) * range_factor + 0.5f));
+	float max_range = (float) ((int)std::lround((gs->max) * range_factor));
 
 	distance = vm_vec_normalized_dir_quick( &vector_to_sound, pos, &View_position );
 	distance -= radius;
@@ -815,7 +815,7 @@ int snd_get_3d_vol_and_pan(game_snd *gs, vec3d *pos, float* vol, float *pan, flo
  * @param scriptingUpdateVolume if true the looping sound value is updated default is TRUE
  * @return -1 on error, else the handle for this playing sound
  */
-int snd_play_looping( game_snd *gs, float pan, int start_loop, int stop_loop, float vol_scale, int scriptingUpdateVolume)
+int snd_play_looping( game_snd *gs, float pan, int  /*start_loop*/, int  /*stop_loop*/, float vol_scale, int scriptingUpdateVolume)
 {	
 	float volume;
 	int	handle = -1;
@@ -1335,7 +1335,7 @@ int snd_time_remaining(int handle)
 	if ( current_offset < max_offset ) {
 		int bytes_remaining = max_offset - current_offset;
 		int samples_remaining = bytes_remaining / (bits_per_sample/8);
-		time_remaining = fl2i(1000.0f * samples_remaining/frequency + 0.5f);
+		time_remaining = (int)std::lround(1000.0f * samples_remaining/frequency);
 	}
 
 //	mprintf(("time_remaining: %d\n", time_remaining));	

@@ -39,8 +39,8 @@
 #include <dirent.h>
 #endif
 
-#include <string.h>
-#include <stdlib.h>
+#include <cstring>
+#include <cstdlib>
 #include <cstdio>
 
 #include <jansson.h>
@@ -173,7 +173,6 @@ Flag exe_params[] =
 	{ "-no_deferred",		"Disable Deferred Lighting",				true,	EASY_DEFAULT_MEM,	EASY_DEFAULT,		"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-no_deferred"},
 	{ "-enable_shadows",	"Enable Shadows",							true,	EASY_MEM_ALL_ON,	EASY_DEFAULT,		"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-no_shadows"},
 	{ "-no_vsync",			"Disable vertical sync",					true,	0,					EASY_DEFAULT,		"Game Speed",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-no_vsync", },
-	{ "-cache_bitmaps",		"Cache bitmaps between missions",			true,	0,					EASY_DEFAULT_MEM,	"Game Speed",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-cache_bitmaps", },
 
 	{ "-dualscanlines",		"Add another pair of scanning lines",		true,	0,					EASY_DEFAULT,		"HUD",			"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-dualscanlines", },
 	{ "-targetinfo",		"Enable info next to target",				true,	0,					EASY_DEFAULT,		"HUD",			"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-targetinfo", },
@@ -333,6 +332,7 @@ cmdline_parm flightshaftsoff_arg("-nolightshafts", NULL, AT_NONE);
 cmdline_parm shadow_quality_arg("-shadow_quality", NULL, AT_INT);
 cmdline_parm enable_shadows_arg("-enable_shadows", NULL, AT_NONE);
 cmdline_parm no_deferred_lighting_arg("-no_deferred", NULL, AT_NONE);	// Cmdline_no_deferred
+cmdline_parm anisotropy_level_arg("-anisotropic_filter", NULL, AT_INT);
 
 float Cmdline_clip_dist = Default_min_draw_distance;
 float Cmdline_fov = 0.75f;
@@ -359,13 +359,12 @@ bool Cmdline_fb_thrusters = false;
 extern bool ls_force_off;
 int Cmdline_shadow_quality = 0;
 int Cmdline_no_deferred_lighting = 0;
+int Cmdline_aniso_level = 0;
 
 // Game Speed related
-cmdline_parm cache_bitmaps_arg("-cache_bitmaps", NULL, AT_NONE);	// Cmdline_cache_bitmaps
 cmdline_parm no_fpscap("-no_fps_capping", "Don't limit frames-per-second", AT_NONE);	// Cmdline_NoFPSCap
 cmdline_parm no_vsync_arg("-no_vsync", NULL, AT_NONE);		// Cmdline_no_vsync
 
-int Cmdline_cache_bitmaps = 0;	// caching of bitmaps between missions (faster loads, can hit swap on reload with <512 Meg RAM though) - taylor
 int Cmdline_NoFPSCap = 0; // Disable FPS capping - kazan
 int Cmdline_no_vsync = 0;
 
@@ -544,6 +543,7 @@ cmdline_parm deprecated_htl_arg("-nohtl", "Deprecated", AT_NONE);
 cmdline_parm deprecated_brieflighting_arg("-brief_lighting", "Deprecated", AT_NONE);
 cmdline_parm deprecated_sndpreload_arg("-snd_preload", "Deprecated", AT_NONE);
 cmdline_parm deprecated_missile_lighting_arg("-missile_lighting", "Deprecated", AT_NONE);
+cmdline_parm deprecated_cache_bitmaps_arg("-cache_bitmaps", "Deprecated", AT_NONE);
 
 int Cmdline_deprecated_spec = 0;
 int Cmdline_deprecated_glow = 0;
@@ -554,6 +554,7 @@ int Cmdline_deprecated_jpgtga = 0;
 int Cmdline_deprecated_nohtl = 0;
 bool Cmdline_deprecated_brief_lighting = 0;
 bool Cmdline_deprecated_missile_lighting = false;
+bool Cmdline_deprecated_cache_bitmaps = false;
 
 #ifndef NDEBUG
 // NOTE: this assumes that os_init() has already been called but isn't a fatal error if it hasn't
@@ -623,6 +624,10 @@ void cmdline_debug_print_cmdline()
 	if (Cmdline_deprecated_missile_lighting) 
 	{
 		mprintf(("Deprecated flag '-missile_lighting' found. Please remove from your cmdline.\n"));
+	}
+
+	if (Cmdline_deprecated_cache_bitmaps) {
+		mprintf(("Deprecated flag '-cache_bitmaps' found. Please remove from your cmdline.\n"));
 	}
 }
 #endif
@@ -816,7 +821,7 @@ void os_validate_parms(int argc, char *argv[])
 					size_t sp = 0;
 					for (parmp = GET_FIRST(&Parm_list); parmp !=END_OF_LIST(&Parm_list); parmp = GET_NEXT(parmp) ) {
 						// don't output deprecated flags
-						if (stricmp("deprecated", parmp->help)) {
+						if (stricmp("deprecated", parmp->help) != 0) {
 							sp = strlen(parmp->name);
 							if (parmp->arg_type != AT_NONE) {
 								atp = strlen(cmdline_arg_types[parmp->arg_type]);
@@ -1165,7 +1170,7 @@ bool cmdline_parm::has_param() {
 #ifdef SCP_UNIX
 // Return a vector with all filesystem names of "parent/dir" relative to parent.
 // dir must not contain a slash.
-static SCP_vector<SCP_string> unix_get_single_dir_names(SCP_string parent, SCP_string dir)
+static SCP_vector<SCP_string> unix_get_single_dir_names(const SCP_string& parent, const SCP_string& dir)
 {
 	SCP_vector<SCP_string> ret;
 
@@ -1188,7 +1193,7 @@ static SCP_vector<SCP_string> unix_get_single_dir_names(SCP_string parent, SCP_s
 
 // Return a vector with all filesystem names of "parent/dir" relative to parent.
 // Recurses to deal with slashes in dir.
-static SCP_vector<SCP_string> unix_get_dir_names(SCP_string parent, SCP_string dir)
+static SCP_vector<SCP_string> unix_get_dir_names(const SCP_string& parent, const SCP_string& dir)
 {
 	size_t slash = dir.find_first_of("/\\");
 
@@ -1388,6 +1393,15 @@ static json_t* json_get_v1() {
 			}
 
 			json_object_set_new(openal_obj, "capture_devices", capture_array);
+		}
+		{
+			auto efx_support_obj = json_object();
+
+			for (auto& pair : openal_info.efx_support) {
+				json_object_set_new(efx_support_obj, pair.first.c_str(), json_boolean(pair.second));
+			}
+
+			json_object_set_new(openal_obj, "efx_support", efx_support_obj);
 		}
 
 		json_object_set_new(root, "openal", openal_obj);
@@ -1954,10 +1968,6 @@ bool SetCmdlineParams()
 		Cmdline_ballistic_gauge = 1;
 	}
 
-	if ( cache_bitmaps_arg.found() ) {
-		Cmdline_cache_bitmaps = 1;
-	}
-
 	if(old_collision_system.found())
 		Cmdline_old_collision_sys = 1;
 
@@ -2053,6 +2063,11 @@ bool SetCmdlineParams()
 		Cmdline_no_deferred_lighting = 1;
 	}
 
+	if (anisotropy_level_arg.found()) 
+	{
+		Cmdline_aniso_level = anisotropy_level_arg.get_int();
+	}
+
 	if (frame_profile_write_file.found())
 	{
 		Cmdline_profile_write_file = true;
@@ -2141,6 +2156,10 @@ bool SetCmdlineParams()
 	if (deprecated_missile_lighting_arg.found())
 	{
 		Cmdline_deprecated_missile_lighting = true;
+	}
+
+	if (deprecated_cache_bitmaps_arg.found()) {
+		Cmdline_deprecated_cache_bitmaps = true;
 	}
 
 	return true; 

@@ -13,13 +13,13 @@ class IntelParseTest : public test::FSTestFixture {
 	}
 
  protected:
-	virtual void SetUp() override {
+	void SetUp() override {
 		test::FSTestFixture::SetUp();
 
 		// techroom_intel_init() is not here so it is handled in
 		// the test if it throws.
 	}
-	virtual void TearDown() override {
+	void TearDown() override {
 		// this is here so that it is run even when a test fails
 		techroom_intel_reset();
 

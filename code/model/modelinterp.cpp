@@ -37,7 +37,7 @@
 #include "tracing/Monitor.h"
 #include "tracing/tracing.h"
 
-#include <limits.h>
+#include <climits>
 
 
 float model_radius = 0;
@@ -350,7 +350,7 @@ void interp_clear_instance()
 /**
  * Scales the engines thrusters by this much
  */
-void model_set_thrust(int model_num, mst_info *mst)
+void model_set_thrust(int  /*model_num*/, mst_info *mst)
 {
 	if (mst == NULL) {
 		Int3();
@@ -398,7 +398,7 @@ float GEOMETRY_NOISE = 0.0f;
 // +16     int         offset from start of chunk to vertex data
 // +20     n_verts*char    norm_counts
 // +offset             vertex data. Each vertex n is a point followed by norm_counts[n] normals.
-void model_interp_splode_defpoints(ubyte * p, polymodel *pm, bsp_info *sm, float dist)
+void model_interp_splode_defpoints(ubyte * p, polymodel * /*pm*/, bsp_info * /*sm*/, float dist)
 {
 	if(dist==0.0f)return;
 
@@ -1158,7 +1158,7 @@ float interp_closest_dist_to_box( vec3d *hitpt, vec3d *p0, vec3d *min, vec3d *ma
 //   distance from eye_pos to closest_point.  0 means eye_pos is 
 //   on or inside the bounding box.
 //   Also fills in outpnt with the actual closest point.
-float model_find_closest_point( vec3d *outpnt, int model_num, int submodel_num, matrix *orient, vec3d * pos, vec3d *eye_pos )
+float model_find_closest_point( vec3d * /*outpnt*/, int model_num, int submodel_num, matrix *orient, vec3d * pos, vec3d *eye_pos )
 {
 	vec3d closest_pos, tempv, eye_rel_pos;
 	
@@ -1191,7 +1191,7 @@ DCF(tiling, "Toggles rendering of tiled textures (default is on)")
 	}
 }
 
-void moldel_calc_facing_pts( vec3d *top, vec3d *bot, vec3d *fvec, vec3d *pos, float w, float z_add, vec3d *Eyeposition )
+void moldel_calc_facing_pts( vec3d *top, vec3d *bot, vec3d *fvec, vec3d *pos, float w, float  /*z_add*/, vec3d *Eyeposition )
 {
 	vec3d uvec, rvec;
 	vec3d temp;
@@ -1331,6 +1331,14 @@ void submodel_get_two_random_points_better(int model_num, int submodel_num, vec3
 	if (pm != NULL) {
 		if ( submodel_num < 0 )	{
 			submodel_num = pm->detail[0];
+		}
+
+		// the Shivan Comm Node does not have a collision tree, for one
+		if (pm->submodel[submodel_num].collision_tree_index < 0) {
+			nprintf(("Model", "In submodel_get_two_random_points_better(), model %s does not have a collision tree!  Falling back to submodel_get_two_random_points().\n", pm->filename));
+
+			submodel_get_two_random_points(model_num, submodel_num, v1, v2);
+			return;
 		}
 
 		bsp_collision_tree *tree = model_get_bsp_collision_tree(pm->submodel[submodel_num].collision_tree_index);

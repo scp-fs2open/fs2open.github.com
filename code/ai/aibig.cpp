@@ -714,7 +714,7 @@ extern void maybe_cheat_fire_synaptic(object *objp, ai_info *aip);
 // dist_to_enemy	=>		distance (in m) to attack point on current target
 // dot_to_enemy	=>		dot product between fvec of Pl_objp and vector from Pl_objp to attack point
 //
-void ai_big_maybe_fire_weapons(float dist_to_enemy, float dot_to_enemy, vec3d *firing_pos, vec3d *enemy_pos, vec3d *enemy_vel)
+void ai_big_maybe_fire_weapons(float dist_to_enemy, float dot_to_enemy, vec3d * /*firing_pos*/, vec3d * /*enemy_pos*/, vec3d * /*enemy_vel*/)
 {
 	ai_info		*aip;
 	ship_weapon	*swp;
@@ -1153,7 +1153,7 @@ void ai_big_chase()
 	}
 }
 
-void ai_big_ship(object *objp)
+void ai_big_ship(object * /*objp*/)
 {
 	// do nothing
 }
@@ -1228,7 +1228,7 @@ void ai_big_attack_get_data(vec3d *enemy_pos, float *dist_to_enemy, float *dot_t
 
 // check to see if Pl_objp has gotten too close to attacking point.. if so, break off by entering
 // AIS_STRAFE_RETREAT
-int ai_big_strafe_maybe_retreat(float dist, vec3d *target_pos)
+int ai_big_strafe_maybe_retreat(float  /*dist*/, vec3d *target_pos)
 {
 	ai_info	*aip;
 	aip = &Ai_info[Ships[Pl_objp->instance].ai_index];
@@ -1704,7 +1704,7 @@ void ai_big_strafe()
 //
 // Check if weapon_objnum was fired by Pl_objp's target, and whether Pl_objp's target is a big ship, if
 // so, enter AIM_STRAFE
-int ai_big_maybe_enter_strafe_mode(object *pl_objp, int weapon_objnum, int consider_target_only)
+int ai_big_maybe_enter_strafe_mode(object *pl_objp, int weapon_objnum, int  /*consider_target_only*/)
 {
 	ai_info		*aip;
 	ship_info	*sip;

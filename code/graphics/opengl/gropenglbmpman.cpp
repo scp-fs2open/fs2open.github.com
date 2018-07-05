@@ -51,31 +51,28 @@ int get_num_mipmap_levels(int w, int h)
 /**
  * Anything API specific to freeing bm data
  */
-void gr_opengl_bm_free_data(int n, bool release)
+void gr_opengl_bm_free_data(bitmap_slot* slot, bool release)
 {
-	Assert( (n >= 0) && (n < MAX_BITMAPS) );
-
 	if ( release )
-		 opengl_free_texture_slot( n );
+		 opengl_free_texture_slot( slot );
 
-	if ( (bm_bitmaps[n].type == BM_TYPE_RENDER_TARGET_STATIC) || (bm_bitmaps[n].type == BM_TYPE_RENDER_TARGET_DYNAMIC) )
-		opengl_kill_render_target( n );
+	if ( (slot->entry.type == BM_TYPE_RENDER_TARGET_STATIC) || (slot->entry.type == BM_TYPE_RENDER_TARGET_DYNAMIC) )
+		opengl_kill_render_target( slot );
 }
 
 /**
  * API specifics for creating a user bitmap
  */
-void gr_opengl_bm_create(int n)
+void gr_opengl_bm_create(bitmap_slot* /*entry*/)
 {
-	Assert( (n >= 0) && (n < MAX_BITMAPS) );
 }
 
 /**
  * API specific init instructions
  */
-void gr_opengl_bm_init(int n)
+void gr_opengl_bm_init(bitmap_slot* slot)
 {
-	Assert( (n >= 0) && (n < MAX_BITMAPS) );
+	slot->gr_info = new tcache_slot_opengl;
 }
 
 /**
@@ -86,23 +83,19 @@ void gr_opengl_bm_page_in_start()
 	opengl_preload_init();
 }
 
-extern void bm_clean_slot(int n);
-
 extern bool opengl_texture_slot_valid(int n, int handle);
 
 
-void gr_opengl_bm_save_render_target(int n)
+void gr_opengl_bm_save_render_target(int handle)
 {
-	Assert( (n >= 0) && (n < MAX_BITMAPS) );
-
 	if ( Cmdline_no_fbo ) {
 		return;
 	}
 
-	bitmap_entry *be = &bm_bitmaps[n];
+	bitmap_entry *be = bm_get_entry(handle);
 	bitmap *bmp = &be->bm;
 
-	size_t rc = opengl_export_render_target( n, bmp->w, bmp->h, (bmp->true_bpp == 32), be->num_mipmaps, (ubyte*)bmp->data );
+	size_t rc = opengl_export_render_target( handle, bmp->w, bmp->h, (bmp->true_bpp == 32), be->num_mipmaps, (ubyte*)bmp->data );
 
 	if (rc != be->mem_taken) {
 		Int3();
@@ -112,10 +105,8 @@ void gr_opengl_bm_save_render_target(int n)
 	dds_save_image(bmp->w, bmp->h, bmp->true_bpp, be->num_mipmaps, (ubyte*)bmp->data, (bmp->flags & BMP_FLAG_CUBEMAP));
 }
 
-int gr_opengl_bm_make_render_target(int n, int *width, int *height, int *bpp, int *mm_lvl, int flags)
+int gr_opengl_bm_make_render_target(int handle, int *width, int *height, int *bpp, int *mm_lvl, int flags)
 {
-	Assert( (n >= 0) && (n < MAX_BITMAPS) );
-
 	if ( Cmdline_no_fbo ) {
 		return 0;
 	}
@@ -124,7 +115,7 @@ int gr_opengl_bm_make_render_target(int n, int *width, int *height, int *bpp, in
 		MIN(*width, *height) = MAX(*width, *height);
 	}
 
-	if ( opengl_make_render_target(bm_bitmaps[n].handle, n, width, height, bpp, mm_lvl, flags) ) {
+	if ( opengl_make_render_target(handle, width, height, bpp, mm_lvl, flags) ) {
 		return 1;
 	}
 
@@ -142,9 +133,9 @@ int gr_opengl_bm_set_render_target(int n, int face)
 		return 1;
 	}
 
-	Assert( (n >= 0) && (n < MAX_BITMAPS) );
+	auto entry = bm_get_entry(n);
 
-	int is_static = (bm_bitmaps[n].type == BM_TYPE_RENDER_TARGET_STATIC);
+	int is_static = (entry->type == BM_TYPE_RENDER_TARGET_STATIC);
 
 	if ( opengl_set_render_target(n, face, is_static) ) {
 		return 1;
@@ -153,7 +144,7 @@ int gr_opengl_bm_set_render_target(int n, int face)
 	return 0;
 }
 
-bool gr_opengl_bm_data(int n, bitmap* bm)
+bool gr_opengl_bm_data(int  /*n*/, bitmap*  /*bm*/)
 {
 	// Do nothing here
 	return true;

@@ -2794,14 +2794,14 @@ void load_gauge_radar_dradis(gauge_settings* settings)
 	int display_size[2] = {0, 0};
 	int canvas_size[2] = {0, 0};
 
-	int loop_snd = -1;
+	gamesnd_id loop_snd;
 	float loop_snd_volume = 1.0f;
 
-	int arrival_beep_snd = -1;
-	int departure_beep_snd = -1;
+	gamesnd_id arrival_beep_snd;
+	gamesnd_id departure_beep_snd;
 
-	int stealth_arrival_snd = -1;
-	int stealth_departure_snd = -1;
+	gamesnd_id stealth_arrival_snd;
+	gamesnd_id stealth_departure_snd;
 
 	float arrival_beep_delay = 0.0f;
 	float departure_beep_delay = 0.0f;
@@ -2910,7 +2910,7 @@ void load_gauge_radar_dradis(gauge_settings* settings)
 		adjust_for_multimonitor(settings->base_res, true, settings->coords);
 	}
 
-	parse_sound("Loop Sound:", &loop_snd, "DRADIS HudGauge");
+	parse_game_sound("Loop Sound:", &loop_snd);
 
 	if (optional_string("Loop Volume:"))
 	{
@@ -2923,8 +2923,8 @@ void load_gauge_radar_dradis(gauge_settings* settings)
 		}
 	}
 
-	parse_sound("Arrival Beep Sound:", &arrival_beep_snd, "DRADIS HudGauge");
-	parse_sound("Stealth arrival Beep Sound:", &stealth_arrival_snd, "DRADIS HudGauge");
+	parse_game_sound("Arrival Beep Sound:", &arrival_beep_snd);
+	parse_game_sound("Stealth arrival Beep Sound:", &stealth_arrival_snd);
 
 	if (optional_string("Minimum Beep Delay:"))
 	{
@@ -2937,8 +2937,8 @@ void load_gauge_radar_dradis(gauge_settings* settings)
 		}
 	}
 
-	parse_sound("Departure Beep Sound:", &departure_beep_snd, "DRADIS HudGauge");
-	parse_sound("Stealth departure Beep Sound:", &stealth_departure_snd, "DRADIS HudGauge");
+	parse_game_sound("Departure Beep Sound:", &departure_beep_snd);
+	parse_game_sound("Stealth departure Beep Sound:", &stealth_departure_snd);
 
 	if (optional_string("Minimum Beep Delay:"))
 	{

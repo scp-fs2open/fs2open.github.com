@@ -40,15 +40,15 @@ namespace particle
 
 		~ParticleSourceWrapper();
 
-		ParticleSourceWrapper(ParticleSourceWrapper&& other);
+		ParticleSourceWrapper(ParticleSourceWrapper&& other) SCP_NOEXCEPT;
 
-		ParticleSourceWrapper& operator=(ParticleSourceWrapper&& other);
+		ParticleSourceWrapper& operator=(ParticleSourceWrapper&& other) SCP_NOEXCEPT;
 
 		void finish();
 
 		void setCreationTimestamp(int timestamp);
 
-		void moveToParticle(WeakParticlePtr ptr);
+		void moveToParticle(const WeakParticlePtr& ptr);
 
 		void moveToObject(object* obj, vec3d* localPos);
 

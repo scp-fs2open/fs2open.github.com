@@ -26,8 +26,7 @@
 
 
 extern float ai_endangered_time(object *ship_objp, object *weapon_objp);
-int check_inside_radius_for_big_ships( object *ship, object *weapon_obj, obj_pair *pair );
-float estimate_ship_speed_upper_limit( object *ship, float time );
+static int check_inside_radius_for_big_ships( object *ship, object *weapon_obj, obj_pair *pair );
 extern float flFrametime;
 
 
@@ -35,7 +34,7 @@ extern float flFrametime;
  * If weapon_obj is likely to hit ship_obj sooner than current aip->danger_weapon_objnum,
  * then update danger_weapon_objnum.
  */
-void update_danger_weapon(object *pship_obj, object *weapon_obj)
+static void update_danger_weapon(object *pship_obj, object *weapon_obj)
 {
 	ai_info	*aip;
 
@@ -63,7 +62,7 @@ void update_danger_weapon(object *pship_obj, object *weapon_obj)
  * Deal with weapon-ship hit stuff.  
  * Separated from check_collision routine below because of multiplayer reasons.
  */
-void ship_weapon_do_hit_stuff(object *pship_obj, object *weapon_obj, vec3d *world_hitpos, vec3d *hitpos, int quadrant_num, int submodel_num, vec3d /*not a pointer intentionaly*/ hit_dir)
+static void ship_weapon_do_hit_stuff(object *pship_obj, object *weapon_obj, vec3d *world_hitpos, vec3d *hitpos, int quadrant_num, int submodel_num, vec3d /*not a pointer intentionaly*/ hit_dir)
 {
 	weapon	*wp = &Weapons[weapon_obj->instance];
 	weapon_info *wip = &Weapon_info[wp->weapon_info_index];
@@ -130,7 +129,7 @@ void ship_weapon_do_hit_stuff(object *pship_obj, object *weapon_obj, vec3d *worl
 
 extern int Framecount;
 
-int ship_weapon_check_collision(object *ship_objp, object *weapon_objp, float time_limit = 0.0f, int *next_hit = NULL)
+static int ship_weapon_check_collision(object *ship_objp, object *weapon_objp, float time_limit = 0.0f, int *next_hit = NULL)
 {
 	mc_info mc, mc_shield, mc_hull;
 	ship	*shipp;
@@ -525,7 +524,7 @@ int collide_ship_weapon( obj_pair * pair )
 /**
  * Upper limit estimate ship speed at end of time
  */
-float estimate_ship_speed_upper_limit( object *ship, float time ) 
+static float estimate_ship_speed_upper_limit( object *ship, float time ) 
 {
 	float exponent;
 	float delta_v;
@@ -553,7 +552,7 @@ float estimate_ship_speed_upper_limit( object *ship, float time )
  * @return 1 if pair can be culled
  * @return 0 if pair can not be culled
  */
-int check_inside_radius_for_big_ships( object *ship, object *weapon_obj, obj_pair *pair )
+static int check_inside_radius_for_big_ships( object *ship, object *weapon_obj, obj_pair *pair )
 {
 	vec3d error_vel;		// vel perpendicular to laser
 	float error_vel_mag;	// magnitude of error_vel

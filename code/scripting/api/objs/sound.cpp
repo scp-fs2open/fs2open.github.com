@@ -10,9 +10,8 @@ namespace scripting {
 namespace api {
 
 sound_entry_h::sound_entry_h() {
-	idx = -1;
 }
-sound_entry_h::sound_entry_h(int n_idx) {
+sound_entry_h::sound_entry_h(gamesnd_id n_idx) {
 	idx = n_idx;
 }
 game_snd* sound_entry_h::Get() {
@@ -125,7 +124,7 @@ sound_h::sound_h() :sound_entry_h()
 {
 	sig=-1;
 }
-sound_h::sound_h(int n_gs_idx, int n_sig) : sound_entry_h(n_gs_idx)
+sound_h::sound_h(gamesnd_id n_gs_idx, int n_sig) : sound_entry_h(n_gs_idx)
 {
 	sig=n_sig;
 }
@@ -406,7 +405,7 @@ ADE_FUNC(play, l_Soundfile, "[number volume = 1.0[, number panning = 0.0]]", "Pl
 
 	int handle = snd_play_raw(snd_idx, panning, volume);
 
-	return ade_set_args(L, "o", l_Sound.Set(sound_h(-1, handle)));
+	return ade_set_args(L, "o", l_Sound.Set(sound_h(gamesnd_id(), handle)));
 }
 
 ADE_FUNC(isValid, l_Soundfile, NULL, "Checks if the soundfile handle is valid", "boolean", "true if valid, false otherwise")

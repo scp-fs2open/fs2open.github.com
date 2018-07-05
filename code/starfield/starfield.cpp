@@ -9,7 +9,7 @@
 
 
 
-#include <limits.h>
+#include <climits>
 
 #include "cmdline/cmdline.h"
 #include "debugconsole/console.h"
@@ -1694,11 +1694,6 @@ void stars_draw_debris()
 
 	gr_set_color( 0, 0, 0 );
 
-	// turn off fogging
-	if (The_mission.flags[Mission::Mission_Flags::Fullneb]) {
-		gr_fog_set(GR_FOGMODE_NONE, 0, 0, 0);
-	}
-
 	old_debris * d = odebris; 
 
 	for (i=0; i<MAX_DEBRIS; i++, d++ ) {
@@ -1760,7 +1755,7 @@ void stars_draw_debris()
 	reload_old_debris = 0;
 }
 
-void stars_draw(int show_stars, int show_suns, int show_nebulas, int show_subspace, int env, bool in_mission)
+void stars_draw(int show_stars, int show_suns, int  /*show_nebulas*/, int show_subspace, int env, bool in_mission)
 {
 	GR_DEBUG_SCOPE("Draw Stars");
 	TRACE_SCOPE(tracing::DrawStars);

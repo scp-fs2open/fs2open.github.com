@@ -12,7 +12,7 @@
 #ifndef _SCORING_HEADER_FILE
 #define _SCORING_HEADER_FILE
 
-#include <time.h>
+#include <ctime>
 
 #include "globalincs/globals.h"
 #include "globalincs/pstypes.h"

@@ -95,7 +95,7 @@ int snazzy_menu_do(ubyte *data, int mask_w, int mask_h, int num_regions, MENU_RE
 		for (i=0; i < num_regions; i++) {
 			if (pixel_value == regions[i].mask) {
 				choice = regions[i].mask;
-				if ( regions[i].click_sound != -1 ) {
+				if ( regions[i].click_sound.isValid() ) {
 					snd_play( gamesnd_get_interface_sound(regions[i].click_sound), 0.0f );
 				}
 			}
@@ -114,7 +114,7 @@ int snazzy_menu_do(ubyte *data, int mask_w, int mask_h, int num_regions, MENU_RE
 						continue;
 					if (ascii_table[k] == regions[i].key || shifted_ascii_table[k] == regions[i].key) {
 						choice = regions[i].mask;
-						if ( regions[i].click_sound != -1 ) {
+						if ( regions[i].click_sound.isValid() ) {
 							snd_play( gamesnd_get_interface_sound(regions[i].click_sound), 0.0f );
 						}
 					}
@@ -165,7 +165,7 @@ int snazzy_menu_do(ubyte *data, int mask_w, int mask_h, int num_regions, MENU_RE
 //
 //
 
-void snazzy_menu_add_region(MENU_REGION* region, const char* text, int mask, int key, int click_sound)
+void snazzy_menu_add_region(MENU_REGION* region, const char* text, int mask, int key, interface_snd_id click_sound)
 {
 	region->mask = mask;
 	region->key = key;
@@ -246,9 +246,9 @@ void read_menu_tbl(const char* menu_name, char* bkg_filename, char* mask_filenam
 
 				// stuff default click sound (not in menu.tbl)
 				if ( play_sound ) {
-					regions[*num_regions].click_sound = SND_IFACE_MOUSE_CLICK;
+					regions[*num_regions].click_sound = InterfaceSounds::IFACE_MOUSE_CLICK;
 				} else {
-					regions[*num_regions].click_sound = -1;
+					regions[*num_regions].click_sound = interface_snd_id();
 				}
 
 				*num_regions = *num_regions + 1;

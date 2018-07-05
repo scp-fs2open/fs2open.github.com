@@ -133,7 +133,7 @@ float Neb_ship_fog_vals_d3d[MAX_SHIP_TYPE_COUNTS][2] = {
 */
 //WMC - these were originally indexed to SHIP_TYPE_FIGHTER_BOMBER
 const static float Default_fog_near = 10.0f;
-const static float Default_fog_far = 500.0f;
+const static float Default_fog_far = 750.0f;
 
 // fog near and far values for rendering the background nebula
 #define NEB_BACKG_FOG_NEAR_GLIDE		2.5f
@@ -1074,7 +1074,6 @@ void neb2_render_player()
 				//gr_set_bitmap(Neb2_cubes[idx1][idx2][idx3].bmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, (alpha + Neb2_cubes[idx1][idx2][idx3].flash));
 
 				gr_set_lighting(false, false);
-				//gr_fog_set(GR_FOGMODE_NONE, 0, 0, 0);
 				//g3_draw_rotated_bitmap(&p, fl_radians(Neb2_cubes[idx1][idx2][idx3].rot), Nd->prad, TMAP_FLAG_TEXTURED);
 				material mat_params;
 				material_set_unlit(&mat_params, Neb2_cubes[idx1][idx2][idx3].bmap, alpha + Neb2_cubes[idx1][idx2][idx3].flash, true, true);
@@ -1130,17 +1129,13 @@ void neb2_get_fog_values(float *fnear, float *ffar, object *objp)
 {
 	int type_index = -1;
 
-	// default values in case something truly nasty happens
-	*fnear = 10.0f;
-	*ffar = 1000.0f;
+	//use defaults
+	*fnear = Default_fog_near;
+	*ffar = Default_fog_far;
 
 	if (objp == NULL) {
 		return;
 	}
-
-	//Otherwise, use defaults
-	*fnear = Default_fog_near;
-	*ffar = Default_fog_far;
 
 	// determine what fog index to use
 	if(objp->type == OBJ_SHIP) {

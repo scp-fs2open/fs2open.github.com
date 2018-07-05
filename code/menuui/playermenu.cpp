@@ -8,8 +8,8 @@
 */ 
 
 
-#include <limits.h>
-#include <ctype.h>
+#include <climits>
+#include <cctype>
 
 
 #include "cfile/cfile.h"
@@ -375,12 +375,12 @@ void player_select_do()
 		// switch between single and multiplayer modes
 		case KEY_TAB: {
 			if (Player_select_input_mode) {
-				gamesnd_play_iface(SND_GENERAL_FAIL);
+				gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 				break;
 			}
 
 			// play a little sound
-			gamesnd_play_iface(SND_USER_SELECT);
+			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 
 			if (Player_select_mode == PLAYER_SELECT_MODE_MULTI) {
 				player_select_set_bottom_text(XSTR( "Single-Player Mode", 376));
@@ -579,7 +579,7 @@ void player_select_button_pressed(int n)
 		if (Player_select_num_pilots >= MAX_PILOTS) {
 			player_select_set_bottom_text(XSTR( "You already have the maximum # of pilots!", 379));
 
-			gamesnd_play_iface(SND_GENERAL_FAIL);
+			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 			break;
 		}
 
@@ -622,7 +622,7 @@ void player_select_button_pressed(int n)
 		if(Player_select_num_pilots >= MAX_PILOTS) {
 			player_select_set_bottom_text(XSTR( "You already have the maximum # of pilots!", 379));
 
-			gamesnd_play_iface(SND_GENERAL_FAIL);
+			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 			break;
 		}
 
@@ -668,14 +668,14 @@ void player_select_button_pressed(int n)
 		// switch to single player mode
 		if (Player_select_mode != PLAYER_SELECT_MODE_SINGLE) {
 			// play a little sound
-			gamesnd_play_iface(SND_USER_SELECT);
+			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 
 			player_select_set_bottom_text(XSTR( "Single Player Mode", 376));
 
 			// reinitialize as single player mode
 			player_select_init_player_stuff(PLAYER_SELECT_MODE_SINGLE);
 		} else {
-			gamesnd_play_iface(SND_GENERAL_FAIL);
+			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		}
 		break;
 
@@ -691,14 +691,14 @@ void player_select_button_pressed(int n)
 		// switch to multiplayer mode
 		if (Player_select_mode != PLAYER_SELECT_MODE_MULTI) {
 			// play a little sound
-			gamesnd_play_iface(SND_USER_SELECT);
+			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 
 			player_select_set_bottom_text(XSTR( "Multiplayer Mode", 377));
 
 			// reinitialize as multiplayer mode
 			player_select_init_player_stuff(PLAYER_SELECT_MODE_MULTI);
 		} else {
-			gamesnd_play_iface(SND_GENERAL_FAIL);
+			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		}
 		break;
 	}
@@ -710,14 +710,14 @@ int player_select_create_new_pilot()
 
 	// make sure we haven't reached the max
 	if (Player_select_num_pilots >= MAX_PILOTS) {
-		gamesnd_play_iface(SND_GENERAL_FAIL);
+		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		return 0;
 	}
 
 	int play_scroll_sound = 1;
 
 	if ( play_scroll_sound ) {
-		gamesnd_play_iface(SND_SCROLL);
+		gamesnd_play_iface(InterfaceSounds::SCROLL);
 	}
 
 	idx = Player_select_num_pilots;	
@@ -787,9 +787,9 @@ void player_select_scroll_list_up()
 	// change the pilot selected index and play the appropriate sound
 	if (Player_select_pilot) {
 		Player_select_pilot--;
-		gamesnd_play_iface(SND_SCROLL);
+		gamesnd_play_iface(InterfaceSounds::SCROLL);
 	} else {
-		gamesnd_play_iface(SND_GENERAL_FAIL);
+		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 	}
 
 	if (Player_select_pilot < Player_select_list_start) {
@@ -803,9 +803,9 @@ void player_select_scroll_list_down()
 	// change the pilot selected index and play the appropriate sound
 	if ( Player_select_pilot < Player_select_num_pilots - 1 ) {
 		Player_select_pilot++;
-		gamesnd_play_iface(SND_SCROLL);
+		gamesnd_play_iface(InterfaceSounds::SCROLL);
 	} else {
-		gamesnd_play_iface(SND_GENERAL_FAIL);
+		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 	}
 
 	if ( Player_select_pilot >= (Player_select_list_start + Max_lines) ) {
@@ -1059,7 +1059,7 @@ void player_select_process_input(int k)
 		}
 
 		if (z) {
-			gamesnd_play_iface(SND_GENERAL_FAIL);
+			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 			break;
 		}
 
@@ -1137,12 +1137,12 @@ void player_select_display_copyright()
 	}
 
 	gr_get_string_size(&w, NULL, Copyright_msg1);
-	sx = fl2i((gr_screen.max_w_unscaled / 2) - w/2.0f + 0.5f);
+	sx = (int)std::lround((gr_screen.max_w_unscaled / 2) - w/2.0f);
 	sy = (gr_screen.max_h_unscaled - 2) - 2*gr_get_font_height();
 	gr_string(sx, sy, Copyright_msg1, GR_RESIZE_MENU);
 
 	gr_get_string_size(&w, NULL, Copyright_msg2);
-	sx = fl2i((gr_screen.max_w_unscaled / 2) - w/2.0f + 0.5f);
+	sx = (int)std::lround((gr_screen.max_w_unscaled / 2) - w/2.0f);
 	sy = (gr_screen.max_h_unscaled - 2) - gr_get_font_height();
 
 	gr_string(sx, sy, Copyright_msg2, GR_RESIZE_MENU);
@@ -1198,7 +1198,7 @@ void player_select_eval_very_first_pilot()
 	// if we already have this flag set, check to see if our callsigns match
 	if(Player_select_very_first_pilot) {
 		// if the callsign has changed, unset the flag
-		if(strcmp(Player_select_very_first_pilot_callsign,Pilots[Player_select_pilot])){
+		if(strcmp(Player_select_very_first_pilot_callsign,Pilots[Player_select_pilot]) != 0){
 			Player_select_very_first_pilot = 0;
 		}
 	} else { // otherwise check to see if there is only 1 pilot
@@ -1216,7 +1216,7 @@ void player_select_commit()
 	Assert(Player_select_num_pilots > 0);
 
 	gameseq_post_event(GS_EVENT_MAIN_MENU);
-	gamesnd_play_iface(SND_COMMIT_PRESSED);
+	gamesnd_play_iface(InterfaceSounds::COMMIT_PRESSED);
 
 	// evaluate if this is the _very_ first pilot
 	player_select_eval_very_first_pilot();

@@ -17,8 +17,10 @@
  * the detected toolchain.
  */
 
+#include <stdio.h>
+
 #define SCP_FORMAT_STRING
-#define SCP_FORMAT_STRING_ARGS(x,y)  __attribute__((format(printf, x, y)))
+#define SCP_FORMAT_STRING_ARGS(x,y)  __attribute__((format(__MINGW_PRINTF_FORMAT, x, y)))
 
 #define __UNUSED __attribute__((__unused__))
 #define __ALIGNED(x)  __attribute__((__aligned__(x)))
@@ -32,7 +34,7 @@
 #define ASSUME(x)
 
 #if defined(NDEBUG)
-#	define Assertion(expr, msg, ...)  do {} while (0)
+#	define Assertion(expr, msg, ...)  do {} while (false)
 #else
 /*
  * NOTE: Assertion() can only use its proper functionality in compilers
@@ -43,7 +45,7 @@
 			if (!(expr)) {                                                \
 				os::dialogs::AssertMessage(#expr, __FILE__, __LINE__, msg, ##__VA_ARGS__); \
 			}                                                             \
-		} while (0)
+		} while (false)
 #endif
 
 /* C++11 Standard Detection */
@@ -55,17 +57,24 @@
 #define SIZE_T_ARG    "%zu"
 #define PTRDIFF_T_ARG "%zd"
 
-#define NOEXCEPT  noexcept
-
 #define likely(x)    __builtin_expect((long) !!(x), 1L)
 #define unlikely(x)  __builtin_expect((long) !!(x), 0L)
-
-#define __STDC_FORMAT_MACROS 1
 
 #define USED_VARIABLE __attribute__((used))
 
 #if SCP_COMPILER_VERSION_MAJOR >= 7
-#define FALLTHROUGH [[fallthough]]
+#define FALLTHROUGH __attribute__((fallthrough))
 #else
 #define FALLTHROUGH
+#endif
+
+#define CLANG_ANALYZER_NORETURN
+
+#ifndef NDEBUG
+#define UNREACHABLE(msg, ...)                                                                                          \
+	do {                                                                                                               \
+		os::dialogs::Error(__FILE__, __LINE__, msg, ##__VA_ARGS__);                                                    \
+	} while (false)
+#else
+#define UNREACHABLE(msg, ...) __builtin_unreachable()
 #endif

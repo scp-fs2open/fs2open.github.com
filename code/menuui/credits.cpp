@@ -9,7 +9,7 @@
 
 
 
-#include <stdlib.h>
+#include <cstdlib>
 
 #include "cfile/cfile.h"
 #include "freespace.h"
@@ -256,22 +256,22 @@ int credits_screen_button_pressed(int n)
 {
 	switch (n) {
 	case TECH_DATABASE_BUTTON:
-		gamesnd_play_iface(SND_SWITCH_SCREENS);
+		gamesnd_play_iface(InterfaceSounds::SWITCH_SCREENS);
 		gameseq_post_event(GS_EVENT_TECH_MENU);
 		return 1;
 
 	case SIMULATOR_BUTTON:
-		gamesnd_play_iface(SND_SWITCH_SCREENS);
+		gamesnd_play_iface(InterfaceSounds::SWITCH_SCREENS);
 		gameseq_post_event(GS_EVENT_SIMULATOR_ROOM);
 		return 1;
 
 	case CUTSCENES_BUTTON:
-		gamesnd_play_iface(SND_SWITCH_SCREENS);
+		gamesnd_play_iface(InterfaceSounds::SWITCH_SCREENS);
 		gameseq_post_event(GS_EVENT_GOTO_VIEW_CUTSCENES_SCREEN);
 		return 1;
 
 	case EXIT_BUTTON:
-		gamesnd_play_iface(SND_COMMIT_PRESSED);
+		gamesnd_play_iface(InterfaceSounds::COMMIT_PRESSED);
 		gameseq_post_event(GS_EVENT_MAIN_MENU);
 		game_flush();
 		break;
@@ -363,7 +363,7 @@ void credits_parse_table(const char* filename)
 			// This is a bit odd but it means if a total conversion uses different credits the 
 			// Volition credit won't happen
 			// Also don't append the default credits anymore when there was already a parsed table
-			if (first_run && !Credits_parsed && !line.compare(mod_check))
+			if (first_run && !Credits_parsed && line == mod_check)
 			{
 				credits_text.append(unmodified_credits);
 			}
@@ -665,7 +665,7 @@ void credits_close()
 	common_free_interface_palette();		// restore game palette
 }
 
-void credits_do_frame(float frametime)
+void credits_do_frame(float  /*frametime*/)
 {
 	GR_DEBUG_SCOPE("Credits do frame");
 

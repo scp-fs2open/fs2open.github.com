@@ -458,7 +458,7 @@ int Debrief_award_text_num_lines = 0;
 
 
 // prototypes, you know you love 'em
-void debrief_add_award_text(char *str);
+void debrief_add_award_text(const char *str);
 void debrief_award_text_clear();
 
 
@@ -483,7 +483,7 @@ const char *debrief_tooltip_handler(const char *str)
 
 	} else if (!stricmp(str, NOX("@Medal"))) {
 		if (Medal_bitmap >= 0){
-			return Medals[Player->stats.m_medal_earned].name;
+			return Medals[Player->stats.m_medal_earned].get_display_string();
 		}
 
 	} else if (!stricmp(str, NOX("@Rank"))) {
@@ -493,7 +493,7 @@ const char *debrief_tooltip_handler(const char *str)
 
 	} else if (!stricmp(str, NOX("@Badge"))) {
 		if (Badge_bitmap >= 0){
-			return Medals[Player->stats.m_badge_earned.back()].name;
+			return Medals[Player->stats.m_badge_earned.back()].get_display_string();
 		}
 	}
 
@@ -551,7 +551,7 @@ void debrief_voice_load_all()
 		if ( strlen(Debrief_stages[i]->voice) <= 0 ) {
 			continue;
 		}
-		if ( strnicmp(Debrief_stages[i]->voice, NOX("none"), 4) ) {
+		if ( strnicmp(Debrief_stages[i]->voice, NOX("none"), 4) != 0 ) {
 			debrief_load_voice_file(i, Debrief_stages[i]->voice);
 //			Debrief_voices[i] = audiostream_open(Debrief_stages[i]->voice, ASF_VOICE);
 		}
@@ -992,7 +992,7 @@ void debrief_award_init()
 		debrief_choose_medal_variant(buf, Player->stats.m_medal_earned, Player->stats.medal_counts[Player->stats.m_medal_earned] - 1);
 		Medal_bitmap = bm_load(buf);
 
-		debrief_add_award_text(Medals[Player->stats.m_medal_earned].name);
+		debrief_add_award_text(Medals[Player->stats.m_medal_earned].get_display_string());
 	}
 	
 	// handle promotions
@@ -1038,7 +1038,7 @@ void debrief_award_init()
 		// choose appropriate badge voice for this mission
 		debrief_choose_voice(Badge_stage.voice, Medals[Player->stats.m_badge_earned.back()].voice_base, persona_index);
 
-		debrief_add_award_text(Medals[Player->stats.m_badge_earned.back()].name);
+		debrief_add_award_text(Medals[Player->stats.m_badge_earned.back()].get_display_string());
 	}
 
 	if ((Rank_bitmap >= 0) || (Medal_bitmap >= 0) || (Badge_bitmap >= 0)) {
@@ -1149,30 +1149,30 @@ void debrief_multi_list_scroll_up()
 {
 	// if we're at the beginning of the list, don't do anything
 	if(Multi_list_offset == 0){
-		gamesnd_play_iface(SND_GENERAL_FAIL);
+		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		return;
 	}
 
 	// otherwise scroll up
 	Multi_list_offset--;
-	gamesnd_play_iface(SND_USER_SELECT);
+	gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 }
 
 void debrief_multi_list_scroll_down()
 {		
 	// if we can scroll down no further
 	if(Multi_list_size < Debrief_multi_list_team_max_display[gr_screen.res]){
-		gamesnd_play_iface(SND_GENERAL_FAIL);
+		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		return;
 	}
 	if((Multi_list_offset + Debrief_multi_list_team_max_display[gr_screen.res]) >= Multi_list_size){
-		gamesnd_play_iface(SND_GENERAL_FAIL);
+		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		return;
 	}
 
 	// otherwise scroll down
 	Multi_list_offset++;
-	gamesnd_play_iface(SND_USER_SELECT);
+	gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 }
 
 // draw the connected net players
@@ -1405,7 +1405,7 @@ void debrief_accept(int ok_to_post_start_game_event)
 
 		// Goober5000
 		if ( play_commit_sound && !(The_mission.flags[Mission::Mission_Flags::Toggle_debriefing])) {
-			gamesnd_play_iface(SND_COMMIT_PRESSED);
+			gamesnd_play_iface(InterfaceSounds::COMMIT_PRESSED);
 		}
 
 		game_flush();
@@ -1433,10 +1433,10 @@ void debrief_next_stage()
 {
 	if (Current_stage < Num_stages - 1) {
 		New_stage = Current_stage + 1;
-		gamesnd_play_iface(SND_BRIEF_STAGE_CHG);
+		gamesnd_play_iface(InterfaceSounds::BRIEF_STAGE_CHG);
 
 	} else
-		gamesnd_play_iface(SND_BRIEF_STAGE_CHG_FAIL);
+		gamesnd_play_iface(InterfaceSounds::BRIEF_STAGE_CHG_FAIL);
 }
 
 // --------------------------------------------------------------------------------------
@@ -1446,10 +1446,10 @@ void debrief_prev_stage()
 {
 	if (Current_stage) {
 		New_stage = Current_stage - 1;
-		gamesnd_play_iface(SND_BRIEF_STAGE_CHG);
+		gamesnd_play_iface(InterfaceSounds::BRIEF_STAGE_CHG);
 
 	} else
-		gamesnd_play_iface(SND_BRIEF_STAGE_CHG_FAIL);
+		gamesnd_play_iface(InterfaceSounds::BRIEF_STAGE_CHG_FAIL);
 }
 
 // --------------------------------------------------------------------------------------
@@ -1458,10 +1458,10 @@ void debrief_first_stage()
 {
 	if (Current_stage) {
 		New_stage = 0;
-		gamesnd_play_iface(SND_BRIEF_STAGE_CHG);
+		gamesnd_play_iface(InterfaceSounds::BRIEF_STAGE_CHG);
 
 	} else
-		gamesnd_play_iface(SND_BRIEF_STAGE_CHG_FAIL);
+		gamesnd_play_iface(InterfaceSounds::BRIEF_STAGE_CHG_FAIL);
 }
 
 // --------------------------------------------------------------------------------------
@@ -1470,10 +1470,10 @@ void debrief_last_stage()
 {
 	if (Current_stage != Num_stages - 1) {
 		New_stage = Num_stages - 1;
-		gamesnd_play_iface(SND_BRIEF_STAGE_CHG);
+		gamesnd_play_iface(InterfaceSounds::BRIEF_STAGE_CHG);
 
 	} else
-		gamesnd_play_iface(SND_BRIEF_STAGE_CHG_FAIL);
+		gamesnd_play_iface(InterfaceSounds::BRIEF_STAGE_CHG_FAIL);
 }
 
 // draw what stage number the debriefing is on
@@ -1603,7 +1603,7 @@ void debrief_replay_pressed()
 	}
 
 	gameseq_post_event(GS_EVENT_START_GAME);	// restart mission
-	gamesnd_play_iface(SND_COMMIT_PRESSED);
+	gamesnd_play_iface(InterfaceSounds::COMMIT_PRESSED);
 }
 
 // -------------------------------------------------------------------
@@ -1636,7 +1636,7 @@ void debrief_button_pressed(int num)
 			Buttons[gr_screen.res][RECOMMENDATIONS].button.enable();			
 			// Debrief_ui_window.use_hack_to_get_around_stupid_problem_flag = 0;
 			if (num != Current_mode){
-				gamesnd_play_iface(SND_SCREEN_MODE_PRESSED);
+				gamesnd_play_iface(InterfaceSounds::SCREEN_MODE_PRESSED);
 			}
 			New_mode = num;
 			break;
@@ -1644,7 +1644,7 @@ void debrief_button_pressed(int num)
 			// Debrief_ui_window.use_hack_to_get_around_stupid_problem_flag = 1;			// allows failure sound to be played
 			Buttons[gr_screen.res][RECOMMENDATIONS].button.disable();			
 			if (num != Current_mode){
-				gamesnd_play_iface(SND_SCREEN_MODE_PRESSED);
+				gamesnd_play_iface(InterfaceSounds::SCREEN_MODE_PRESSED);
 			}
 			New_mode = num;
 			break;
@@ -1652,18 +1652,18 @@ void debrief_button_pressed(int num)
 		case TEXT_SCROLL_UP:
 			if (Text_offset) {
 				Text_offset--;
-				gamesnd_play_iface(SND_SCROLL);
+				gamesnd_play_iface(InterfaceSounds::SCROLL);
 			} else {
-				gamesnd_play_iface(SND_GENERAL_FAIL);
+				gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 			}
 			break;
 
 		case TEXT_SCROLL_DOWN:
 			if (Max_debrief_Lines < (Num_text_lines - Text_offset)) {
 				Text_offset++;
-				gamesnd_play_iface(SND_SCROLL);
+				gamesnd_play_iface(InterfaceSounds::SCROLL);
 			} else {
-				gamesnd_play_iface(SND_GENERAL_FAIL);
+				gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 			}
 			break;
 
@@ -1676,7 +1676,7 @@ void debrief_button_pressed(int num)
 			break;
 
 		case RECOMMENDATIONS:
-			gamesnd_play_iface(SND_USER_SELECT);
+			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			Recommend_active = !Recommend_active;
 			debrief_text_init();
 			break;
@@ -1698,12 +1698,12 @@ void debrief_button_pressed(int num)
 			break;
 
 		case HELP_BUTTON:
-			gamesnd_play_iface(SND_HELP_PRESSED);
+			gamesnd_play_iface(InterfaceSounds::HELP_PRESSED);
 			launch_context_help();
 			break;
 
 		case OPTIONS_BUTTON:
-			gamesnd_play_iface(SND_SWITCH_SCREENS);
+			gamesnd_play_iface(InterfaceSounds::SWITCH_SCREENS);
 			gameseq_post_event( GS_EVENT_OPTIONS_MENU );
 			break;
 
@@ -1712,7 +1712,7 @@ void debrief_button_pressed(int num)
 			break;
 
 		case MEDALS_BUTTON:
-			gamesnd_play_iface(SND_SWITCH_SCREENS);
+			gamesnd_play_iface(InterfaceSounds::SWITCH_SCREENS);
 			gameseq_post_event(GS_EVENT_VIEW_MEDALS);
 			break;
 
@@ -1734,7 +1734,7 @@ void debrief_button_pressed(int num)
 	} // end swtich
 }
 
-void debrief_setup_ship_kill_stats(int stage_num)
+void debrief_setup_ship_kill_stats(int  /*stage_num*/)
 {
 	int i;
 	//ushort *kill_arr;
@@ -1807,7 +1807,7 @@ void debrief_check_buttons()
 			Debrief_player = Net_players[Multi_list[z].net_player_index].m_player;
 			Multi_list_select = z;
 			debrief_setup_ship_kill_stats(Current_stage);
-			gamesnd_play_iface(SND_USER_SELECT);			
+			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 		}
 	}	
 
@@ -2247,7 +2247,7 @@ void debrief_award_text_clear() {
 }
 
 // this is the nastiest code I have ever written.  if you are modifying this, i feel bad for you.
-void debrief_add_award_text(char *str)
+void debrief_add_award_text(const char *str)
 {
 	Assert(Debrief_award_text_num_lines < AWARD_TEXT_MAX_LINES);
 	if (Debrief_award_text_num_lines >= AWARD_TEXT_MAX_LINES) {
@@ -2260,11 +2260,13 @@ void debrief_add_award_text(char *str)
 	// copy in the line
 	strcpy_s(Debrief_award_text[Debrief_award_text_num_lines], str);	
 
-	// maybe translate for displaying
-	if (Lcl_gr) {
-		lcl_translate_medal_name_gr(Debrief_award_text[Debrief_award_text_num_lines]);
-	} else if (Lcl_pl) {
-		lcl_translate_medal_name_pl(Debrief_award_text[Debrief_award_text_num_lines]);
+	if (!Disable_built_in_translations) {
+		// maybe translate for displaying
+		if (Lcl_gr) {
+			lcl_translate_medal_name_gr(Debrief_award_text[Debrief_award_text_num_lines]);
+		} else if (Lcl_pl) {
+			lcl_translate_medal_name_pl(Debrief_award_text[Debrief_award_text_num_lines]);
+		}
 	}
 
 	Debrief_award_text_num_lines++;

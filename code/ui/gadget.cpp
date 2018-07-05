@@ -349,7 +349,7 @@ void UI_GADGET::get_mouse_pos(int *xx, int *yy)
 // Call process() for all children of gadget.  As a base gadget for all other gadget types,
 // it doesn't actually do anything for itself.
 //
-void UI_GADGET::process(int focus)
+void UI_GADGET::process(int  /*focus*/)
 {
 	UI_GADGET *tmp;
 
