@@ -1008,6 +1008,8 @@ set(file_root_scripting_api_libs
 set(file_root_scripting_api_objs
 	scripting/api/objs/asteroid.cpp
 	scripting/api/objs/asteroid.h
+	scripting/api/objs/background_element.cpp
+	scripting/api/objs/background_element.h
 	scripting/api/objs/beam.cpp
 	scripting/api/objs/beam.h
 	scripting/api/objs/camera.cpp

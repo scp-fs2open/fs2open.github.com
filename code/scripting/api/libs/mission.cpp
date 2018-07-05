@@ -3,41 +3,43 @@
 
 #include "mission.h"
 
-#include "scripting/api/objs/object.h"
+#include "scripting/api/objs/LuaSEXP.h"
 #include "scripting/api/objs/asteroid.h"
+#include "scripting/api/objs/background_element.h"
+#include "scripting/api/objs/beam.h"
 #include "scripting/api/objs/debris.h"
-#include "scripting/api/objs/ship.h"
+#include "scripting/api/objs/enums.h"
 #include "scripting/api/objs/event.h"
+#include "scripting/api/objs/message.h"
+#include "scripting/api/objs/object.h"
 #include "scripting/api/objs/sexpvar.h"
+#include "scripting/api/objs/ship.h"
+#include "scripting/api/objs/shipclass.h"
+#include "scripting/api/objs/team.h"
+#include "scripting/api/objs/vecmath.h"
 #include "scripting/api/objs/waypoint.h"
 #include "scripting/api/objs/weapon.h"
-#include "scripting/api/objs/beam.h"
-#include "scripting/api/objs/wing.h"
-#include "scripting/api/objs/team.h"
-#include "scripting/api/objs/message.h"
-#include "scripting/api/objs/enums.h"
-#include "scripting/api/objs/shipclass.h"
-#include "scripting/api/objs/vecmath.h"
 #include "scripting/api/objs/weaponclass.h"
-#include "scripting/api/objs/LuaSEXP.h"
+#include "scripting/api/objs/wing.h"
 
-#include "parse/sexp.h"
-#include "parse/parselo.h"
+#include "freespace.h"
 #include "asteroid/asteroid.h"
 #include "debris/debris.h"
-#include "hud/hudescort.h"
-#include "mission/missiongoals.h"
-#include "ship/ship.h"
+#include "gamesequence/gamesequence.h"
 #include "globalincs/linklist.h"
-#include "weapon/weapon.h"
-#include "weapon/beam.h"
-#include "mission/missioncampaign.h"
+#include "hud/hudescort.h"
 #include "iff_defs/iff_defs.h"
+#include "mission/missioncampaign.h"
+#include "mission/missiongoals.h"
+#include "mission/missionload.h"
 #include "mission/missionmessage.h"
 #include "mission/missiontraining.h"
-#include "freespace.h"
-#include "mission/missionload.h"
-#include "gamesequence/gamesequence.h"
+#include "parse/parselo.h"
+#include "parse/sexp.h"
+#include "ship/ship.h"
+#include "starfield/starfield.h"
+#include "weapon/beam.h"
+#include "weapon/weapon.h"
 
 #include "scripting/lua/LuaTable.h"
 #include "scripting/lua/LuaFunction.h"
@@ -1041,6 +1043,139 @@ ADE_FUNC(isInCampaign, l_Mission, NULL, "Get whether or not the current mission 
 
 ADE_FUNC(getMissionTitle, l_Mission, NULL, "Get the title of the current mission", "string", "The mission title or an empty string if currently not in mission") {
 	return ade_set_args(L, "s", The_mission.name);
+}
+
+ADE_FUNC(addBackgroundBitmap, l_Mission,
+         "string name, matrix orientation = identity, float scaleX = 1.0, scale_y = 1.0, int div_x = 1.0, int "
+         "div_y = 1.0",
+         "Adds a background bitmap to the mission with the specified parameters", "background_element",
+         "A handle to the background element, or invalid handle if the function failed.")
+{
+	const char* filename = nullptr;
+	float scale_x        = 1.0f;
+	float scale_y        = 1.0f;
+	int div_x            = 1;
+	int div_y            = 1;
+	matrix_h orient(&vmd_identity_matrix);
+
+	if (!ade_get_args(L, "s|offii", &filename, l_Matrix.Get(&orient), &scale_x, &scale_y, &div_x, &div_y)) {
+		return ade_set_error(L, "o", l_BackgroundElement.Set(background_el_h()));
+	}
+
+	starfield_list_entry sle;
+	strcpy_s(sle.filename, filename);
+
+	// sanity checking
+	if (stars_find_bitmap(sle.filename) < 0) {
+		LuaError(L, "Background bitmap %s not found!", sle.filename);
+		return ade_set_error(L, "o", l_BackgroundElement.Set(background_el_h()));
+	}
+
+	sle.ang     = *orient.GetAngles();
+	sle.scale_x = scale_x;
+	sle.scale_y = scale_y;
+	sle.div_x   = div_x;
+	sle.div_y   = div_y;
+
+	// restrict parameters (same code as used by FRED)
+	if (sle.scale_x > 18)
+		sle.scale_x = 18;
+	if (sle.scale_x < 0.1f)
+		sle.scale_x = 0.1f;
+	if (sle.scale_y > 18)
+		sle.scale_y = 18;
+	if (sle.scale_y < 0.1f)
+		sle.scale_y = 0.1f;
+	if (sle.div_x > 5)
+		sle.div_x = 5;
+	if (sle.div_x < 1)
+		sle.div_x = 1;
+	if (sle.div_y > 5)
+		sle.div_y = 5;
+	if (sle.div_y < 1)
+		sle.div_y = 1;
+
+	auto idx = stars_add_bitmap_entry(&sle);
+	return ade_set_args(L, "o", l_BackgroundElement.Set(background_el_h(BackgroundType::Bitmap, idx)));
+}
+
+ADE_FUNC(addSunBitmap, l_Mission, "string name, matrix orientation = identity, float scaleX = 1.0, scale_y = 1.0",
+         "Adds a sun bitmap to the mission with the specified parameters", "background_element",
+         "A handle to the background element, or invalid handle if the function failed.")
+{
+	const char* filename = nullptr;
+	float scale_x        = 1.0f;
+	float scale_y        = 1.0f;
+	matrix_h orient(&vmd_identity_matrix);
+
+	if (!ade_get_args(L, "s|off", &filename, l_Matrix.Get(&orient), &scale_x, &scale_y)) {
+		return ade_set_error(L, "o", l_BackgroundElement.Set(background_el_h()));
+	}
+
+	starfield_list_entry sle;
+	strcpy_s(sle.filename, filename);
+
+	// sanity checking
+	if (stars_find_sun(sle.filename) < 0) {
+		LuaError(L, "Background bitmap %s not found!", sle.filename);
+		return ade_set_error(L, "o", l_BackgroundElement.Set(background_el_h()));
+	}
+
+	sle.ang     = *orient.GetAngles();
+	sle.scale_x = scale_x;
+	sle.scale_y = scale_y;
+	sle.div_x   = 1;
+	sle.div_y   = 1;
+
+	// restrict parameters (same code as used by FRED)
+	if (sle.scale_x > 18)
+		sle.scale_x = 18;
+	if (sle.scale_x < 0.1f)
+		sle.scale_x = 0.1f;
+	if (sle.scale_y > 18)
+		sle.scale_y = 18;
+	if (sle.scale_y < 0.1f)
+		sle.scale_y = 0.1f;
+
+	auto idx = stars_add_sun_entry(&sle);
+	return ade_set_args(L, "o", l_BackgroundElement.Set(background_el_h(BackgroundType::Sun, idx)));
+}
+
+ADE_FUNC(removeBackgroundElement, l_Mission, "background_element el",
+         "Removes the background element specified by the handle. The handle must have been returned by either "
+         "addBackgroundBitmap or addBackgroundSun. This handle will be invalidated by this function.",
+         "boolean", "true if successful")
+{
+	background_el_h* el = nullptr;
+	if (!ade_get_args(L, "o", l_BackgroundElement.GetPtr(&el))) {
+		return ADE_RETURN_FALSE;
+	}
+
+	if (!el->isValid()) {
+		return ADE_RETURN_FALSE;
+	}
+
+	if (el->type == BackgroundType::Bitmap) {
+		int instances = stars_get_num_bitmaps();
+		if (instances > el->id) {
+			stars_mark_bitmap_unused(el->id);
+		} else {
+			LuaError(L, "Background slot %d does not exist. Slot must be less than %d.", el->id, instances);
+			return ADE_RETURN_FALSE;
+		}
+		return ADE_RETURN_TRUE;
+	} else if (el->type == BackgroundType::Sun) {
+		int instances = stars_get_num_suns();
+		if (instances > el->id) {
+			stars_mark_sun_unused(el->id);
+		} else {
+			LuaError(L, "Background slot %d does not exist. Slot must be less than %d.", el->id, instances);
+			return ADE_RETURN_FALSE;
+		}
+		return ADE_RETURN_TRUE;
+	} else {
+		return ADE_RETURN_FALSE;
+	}
 }
 
 ADE_LIB_DERIV(l_Mission_LuaSEXPs, "LuaSEXPs", NULL, "Lua SEXPs", l_Mission);
