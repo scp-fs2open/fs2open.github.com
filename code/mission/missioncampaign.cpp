@@ -952,7 +952,7 @@ int mission_campaign_previous_mission()
 	Campaign.num_missions_completed--;
 	Campaign.missions[Campaign.next_mission].completed = 0;
 
-	// copy backed up variables over
+	// copy backed up variables over  
 	for (auto& i : Campaign.red_alert_variables) {
 		Campaign.persistent_variables.push_back(i);
 	}
