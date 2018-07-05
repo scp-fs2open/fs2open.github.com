@@ -125,12 +125,8 @@ public:
 	ubyte	ships_allowed[MAX_SHIP_CLASSES];		// which ships the player can use
 	ubyte	weapons_allowed[MAX_WEAPON_TYPES];		// which weapons the player can use
 	cmission	missions[MAX_CAMPAIGN_MISSIONS];	// decription of the missions
-	//int				num_variables;					// number of variables this campaign had - Goober5000
-	//sexp_variable	*variables;						// malloced array of sexp_variables (of num_variables size) containing variables which are saved - Goober5000
-	//int				redalert_num_variables;			// These two variables hold the previous state of the above for restoration
-	//sexp_variable	*redalert_variables;			// if you replay the previous mission in a Red Alert scenario. -MageKing17
-	SCP_vector<sexp_variable> persistent_variables;
-	SCP_vector<sexp_variable> red_alert_data;
+	SCP_vector<sexp_variable> persistent_variables;		// These variables will be saved at the end of a mission
+	SCP_vector<sexp_variable> red_alert_variables;		// state of the variables in the previous mission of a Red Alert scenario.
 
 	campaign()
 		: desc(NULL), num_missions(0)

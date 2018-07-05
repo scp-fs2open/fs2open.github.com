@@ -854,8 +854,8 @@ void mission_campaign_savefile_delete( char *cfilename )
 
 void campaign_delete_save( char *cfn, char *pname)
 {
-strcpy_s(Player->callsign, pname);
-mission_campaign_savefile_delete(cfn);
+	strcpy_s(Player->callsign, pname);
+	mission_campaign_savefile_delete(cfn);
 }
 
 /**
@@ -953,9 +953,8 @@ int mission_campaign_previous_mission()
 	Campaign.missions[Campaign.next_mission].completed = 0;
 
 	// copy backed up variables over
-	Campaign.persistent_variables.clear();
-	for (int i = 0; i < Campaign.red_alert_data.size(); i++) {
-		Campaign.persistent_variables.push_back(Campaign.red_alert_data[i]);
+	for (auto& i : Campaign.red_alert_variables) {
+		Campaign.persistent_variables.push_back(i);
 	}
 	
 	Pilot.save_savefile();
@@ -1105,8 +1104,8 @@ void mission_campaign_store_variables(int persistence_type, bool store_red_alert
 	if (num_mission_variables > 0) {
 		
 		if (store_red_alert) {
-			for (i = 0; i < Campaign.red_alert_data.size(); i++) {
-				Campaign.persistent_variables.push_back(Campaign.red_alert_data[i]);
+			for (i = 0; i < Campaign.red_alert_variables.size(); i++) {
+				Campaign.persistent_variables.push_back(Campaign.red_alert_variables[i]);
 			}
 		}
 
@@ -1344,7 +1343,7 @@ void mission_campaign_clear()
 	memset( Campaign.ships_allowed, 0, sizeof(Campaign.ships_allowed) );
 	memset( Campaign.weapons_allowed, 0, sizeof(Campaign.weapons_allowed) );
 	Campaign.persistent_variables.clear(); 
-	Campaign.red_alert_data.clear();
+	Campaign.red_alert_variables.clear();
 }
 
 /**

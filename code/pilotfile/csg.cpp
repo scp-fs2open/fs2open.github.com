@@ -1032,10 +1032,10 @@ void pilotfile::csg_read_variables()
 		}
 	}
 
+	Campaign.red_alert_variables.clear();
 	if (csg_ver < 4) { // CSG files before version 4 don't have a Red Alert set of CPVs to load, so just copy the regular set.
-		Campaign.persistent_variables.clear();
 		for (int i = 0; i < Campaign.persistent_variables.size(); i++) {
-			Campaign.red_alert_data.push_back(Campaign.persistent_variables[i]);
+			Campaign.red_alert_variables.push_back(Campaign.persistent_variables[i]);
 		}
 	} else {
 		int redalert_num_variables = cfread_int(cfp);
@@ -1047,7 +1047,7 @@ void pilotfile::csg_read_variables()
 				temp_var.type = cfread_int(cfp);
 				cfread_string_len(temp_var.text, TOKEN_LENGTH, cfp);
 				cfread_string_len(temp_var.variable_name, TOKEN_LENGTH, cfp);
-				Campaign.red_alert_data.push_back(temp_var);
+				Campaign.red_alert_variables.push_back(temp_var);
 			}
 		}
 	}
@@ -1069,12 +1069,12 @@ void pilotfile::csg_write_variables()
 		}
 	}
 
-	cfwrite_int((int)Campaign.red_alert_data.size(), cfp);
+	cfwrite_int((int)Campaign.red_alert_variables.size(), cfp);
 
-	for (idx = 0; idx < (int)Campaign.red_alert_data.size(); idx++) {
-		cfwrite_int(Campaign.red_alert_data[idx].type, cfp);
-		cfwrite_string_len(Campaign.red_alert_data[idx].text, cfp);
-		cfwrite_string_len(Campaign.red_alert_data[idx].variable_name, cfp);
+	for (idx = 0; idx < (int)Campaign.red_alert_variables.size(); idx++) {
+		cfwrite_int(Campaign.red_alert_variables[idx].type, cfp);
+		cfwrite_string_len(Campaign.red_alert_variables[idx].text, cfp);
+		cfwrite_string_len(Campaign.red_alert_variables[idx].variable_name, cfp);
 	}
 
 	endSection();
@@ -1287,7 +1287,7 @@ void pilotfile::csg_reset_data()
 
 	// clear out variables
 	Campaign.persistent_variables.clear();
-	Campaign.red_alert_data.clear();
+	Campaign.red_alert_variables.clear();
 
 	// clear red alert data
 	Red_alert_wingman_status.clear();

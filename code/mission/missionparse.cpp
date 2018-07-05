@@ -5508,14 +5508,14 @@ void parse_variables()
 			if ( !stricmp(Sexp_variables[j].variable_name, Campaign.persistent_variables[i].variable_name) ) {
 				// if this is an eternal that shares the same name as a non-eternal warn but do nothing
 				if (Sexp_variables[j].type & SEXP_VARIABLE_SAVE_TO_PLAYER_FILE) {
-					Warning(LOCATION, "Variable %s is marked eternal but has the same name as another persistent variable. One of these should be renamed to avoid confusion", Sexp_variables[j].text);
+					error_display(0, "Variable %s is marked eternal but has the same name as another persistent variable. One of these should be renamed to avoid confusion", Sexp_variables[j].text);
 				}
 				else if (Sexp_variables[j].type  & SEXP_VARIABLE_IS_PERSISTENT) {
 					Sexp_variables[j].type = Campaign.persistent_variables[i].type;
 					strcpy_s(Sexp_variables[j].text, Campaign.persistent_variables[i].text);
 					break;
 				} else {
-					WarningEx(LOCATION, "Variable %s has the same name as another persistent variable. One of these should be renamed to avoid confusion", Sexp_variables[j].text);
+					error_display(0, "Variable %s has the same name as another persistent variable. One of these should be renamed to avoid confusion", Sexp_variables[j].text);
 				}
 			}
 		}
@@ -5547,7 +5547,7 @@ void parse_variables()
 
 					break;
 				} else {
-					WarningEx(LOCATION, "Variable %s has the same name as an eternal variable. One of these should be renamed to avoid confusion", Sexp_variables[j].text);
+					error_display(0, "Variable %s has the same name as an eternal variable. One of these should be renamed to avoid confusion", Sexp_variables[j].text);
 				}
 			}
 		}
