@@ -3702,10 +3702,10 @@ int CFred_mission_save::save_variables() {
 
 				// player-persistent - Goober5000
 				if (Sexp_variables[i].type & SEXP_VARIABLE_SAVE_ON_MISSION_CLOSE) {
-					fout("\t\t\"%s\"", "player-persistent");
+					fout("\t\t\"%s\"", "save-on-mission-close");
 					// campaign-persistent - Goober5000
 				} else if (Sexp_variables[i].type & SEXP_VARIABLE_SAVE_ON_MISSION_PROGRESS) {
-					fout("\t\t\"%s\"", "campaign-persistent");
+					fout("\t\t\"%s\"", "save-on-mission-progress");
 				}
 			}
 
