@@ -1046,9 +1046,9 @@ ADE_FUNC(getMissionTitle, l_Mission, NULL, "Get the title of the current mission
 }
 
 ADE_FUNC(addBackgroundBitmap, l_Mission,
-         "string name, matrix orientation = identity, float scaleX = 1.0, scale_y = 1.0, int div_x = 1.0, int "
+         "string name, orientation orientation = identity, float scaleX = 1.0, scale_y = 1.0, int div_x = 1.0, int "
          "div_y = 1.0",
-         "Adds a background bitmap to the mission with the specified parameters", "background_element",
+         "Adds a background bitmap to the mission with the specified parameters.", "background_element",
          "A handle to the background element, or invalid handle if the function failed.")
 {
 	const char* filename = nullptr;
@@ -1099,8 +1099,8 @@ ADE_FUNC(addBackgroundBitmap, l_Mission,
 	return ade_set_args(L, "o", l_BackgroundElement.Set(background_el_h(BackgroundType::Bitmap, idx)));
 }
 
-ADE_FUNC(addSunBitmap, l_Mission, "string name, matrix orientation = identity, float scaleX = 1.0, scale_y = 1.0",
-         "Adds a sun bitmap to the mission with the specified parameters", "background_element",
+ADE_FUNC(addSunBitmap, l_Mission, "string name, orientation orientation = identity, float scaleX = 1.0, scale_y = 1.0",
+         "Adds a sun bitmap to the mission with the specified parameters.", "background_element",
          "A handle to the background element, or invalid handle if the function failed.")
 {
 	const char* filename = nullptr;
