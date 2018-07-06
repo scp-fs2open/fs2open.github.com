@@ -35,17 +35,30 @@ function(get_prebuilt_path OUT_VAR)
     endif()
     set(DOWNLOAD_URL "https://github.com/scp-fs2open/scp-prebuilt/releases/download/${TAG_NAME}/${FILENAME}")
     set(DOWNLOAD_FILE "${CURRENT_ROOT}/${FILENAME}")
-    
-    message(STATUS "Downloading prebuilt libraries from \"${DOWNLOAD_URL}\"")
-    file(DOWNLOAD "${DOWNLOAD_URL}" "${DOWNLOAD_FILE}" SHOW_PROGRESS TLS_VERIFY ON STATUS DOWNLOAD_STATUS_LIST)
-    
-    list(GET DOWNLOAD_STATUS_LIST 0 DOWNLOAD_STATUS)
-    list(GET DOWNLOAD_STATUS_LIST 1 DOWNLOAD_ERROR)
+
+    set(MAX_RETRIES 5)
+    foreach(i RANGE 1 ${MAX_RETRIES})
+        if (NOT (i EQUAL 1))
+            message(STATUS "Retry after 5 seconds (attempt #${i}) ...")
+            execute_process(COMMAND "${CMAKE_COMMAND}" -E sleep "5")
+        endif()
+
+        message(STATUS "Downloading prebuilt libraries from \"${DOWNLOAD_URL}\" (try ${i}/${MAX_RETRIES})")
+        file(DOWNLOAD "${DOWNLOAD_URL}" "${DOWNLOAD_FILE}" SHOW_PROGRESS TLS_VERIFY ON STATUS DOWNLOAD_STATUS_LIST)
+
+        list(GET DOWNLOAD_STATUS_LIST 0 DOWNLOAD_STATUS)
+        list(GET DOWNLOAD_STATUS_LIST 1 DOWNLOAD_ERROR)
+        if (DOWNLOAD_STATUS EQUAL 0)
+            break()
+        endif()
+        message(STATUS "Download of prebuilt binaries failed: ${DOWNLOAD_ERROR}!")
+    endforeach()
+
     if (NOT (DOWNLOAD_STATUS EQUAL 0))
-        message(FATAL_ERROR "Download of prebuilt binaries failed: ${DOWNLOAD_ERROR}!")
+        message(FATAL_ERROR "${MAX_RETRIES} download attemps failed!")
         return()
     endif()
-    
+
     if (IS_DIRECTORY "${PREBUILT_LIB_DIR}")
         # Remove previous files
         file(REMOVE_RECURSE "${PREBUILT_LIB_DIR}")
