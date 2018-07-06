@@ -807,6 +807,10 @@ ADE_FUNC(createShip, l_Mission, "[string Name, shipclass Class=Shipclass[1], ori
 		real_orient = orient->GetMatrix();
 	}
 
+	if (sclass == -1) {
+		return ade_set_error(L, "o", l_Ship.Set(object_h()));
+	}
+
 	int obj_idx = ship_create(real_orient, &pos, sclass, name);
 
 	if(obj_idx > -1) {

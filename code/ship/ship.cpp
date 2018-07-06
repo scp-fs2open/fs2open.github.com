@@ -9359,7 +9359,7 @@ int ship_create(matrix *orient, vec3d *pos, int ship_type, char *ship_name)
 		return -1;
 	}
 
-	Assert((ship_type >= 0) && (ship_type < static_cast<int>(Ship_info.size())));
+	Assertion((ship_type >= 0) && (ship_type < static_cast<int>(Ship_info.size())), "Invalid ship_type %d passed to ship_create() (expected value in the range 0-%d)\n", ship_type, static_cast<int>(Ship_info.size())-1);
 	sip = &(Ship_info[ship_type]);
 	shipp = &Ships[n];
 	shipp->clear();
