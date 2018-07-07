@@ -15,6 +15,7 @@
 #include "anim/packunpack.h"
 #include "globalincs/globals.h"		// include so that we can gets defs for lengths of tokens
 #include "graphics/generic.h"
+#include "sound/sound.h"
 
 class ship;
 
@@ -26,7 +27,7 @@ class ship;
 
 typedef struct message_extra {
 	char				name[MAX_FILENAME_LEN];
-	int				num;
+	sound_load_id num;
 	generic_anim		anim_data;
 	bool				exists;
 } message_extra;

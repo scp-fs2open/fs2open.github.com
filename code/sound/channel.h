@@ -12,6 +12,7 @@
 #define __CHANNEL_H__
 
 #include "sound/openal.h"
+#include "sound/sound.h"
 
 typedef struct channel
 {

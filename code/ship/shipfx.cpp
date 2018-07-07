@@ -2079,9 +2079,9 @@ static float get_model_cross_section_at_z(float z, polymodel* pm)
 /**
  * Returns how long sound has been playing
  */
-static int get_sound_time_played(int snd_id, int handle)
+static int get_sound_time_played(sound_load_id snd_id, int handle)
 {
-	if (handle == -1 || snd_id == -1) {
+	if (handle == -1 || !snd_id.isValid()) {
 		return 100000;
 	}
 

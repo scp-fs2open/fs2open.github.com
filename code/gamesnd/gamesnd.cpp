@@ -565,9 +565,9 @@ void gamesnd_unload_gameplay_sounds()
 	Assert( Snds.size() <= INT_MAX );
 	for (SCP_vector<game_snd>::iterator gs = Snds.begin(); gs != Snds.end(); ++gs) {
 		for (auto& entry : gs->sound_entries) {
-			if (entry.id != -1) {
+			if (entry.id.isValid()) {
 				snd_unload(entry.id);
-				entry.id = -1;
+				entry.id = sound_load_id::invalid();
 			}
 		}
 	}
@@ -599,9 +599,9 @@ void gamesnd_unload_interface_sounds()
 	Assert( Snds_iface.size() < INT_MAX );
 	for (SCP_vector<game_snd>::iterator si = Snds_iface.begin(); si != Snds_iface.end(); ++si) {
 		for (auto& entry : si->sound_entries) {
-			if ( entry.id != -1 ) {
+			if (entry.id.isValid()) {
 				snd_unload( entry.id );
-				entry.id = -1;
+				entry.id     = sound_load_id::invalid();
 				entry.id_sig = -1;
 			}
 		}
@@ -1322,7 +1322,7 @@ float gamesnd_get_max_duration(game_snd* gs) {
 	int max_length = 0;
 
 	for (auto& entry : gs->sound_entries) {
-		if (entry.id < 0) {
+		if (!entry.id.isValid()) {
 			// Lazily load unloaded sound entries when required
 			entry.id = snd_load(&entry, gs->flags);
 		}
