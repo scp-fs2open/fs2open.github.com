@@ -24,10 +24,11 @@
 #include <glob.h>
 #endif
 
+#include "freespace.h"
+#include "missioncampaign.h"
 #include "cfile/cfile.h"
 #include "cutscene/cutscenes.h"
 #include "cutscene/movie.h"
-#include "freespace.h"
 #include "gamesequence/gamesequence.h"
 #include "gamesnd/eventmusic.h"
 #include "localization/localize.h"
@@ -46,7 +47,6 @@
 #include "starfield/supernova.h"
 #include "ui/ui.h"
 #include "weapon/weapon.h"
-
 
 // campaign wasn't ended
 int Campaign_ending_via_supernova = 0;
@@ -1384,6 +1384,30 @@ int mission_campaign_get_filenames(char *filename, char dest[][NAME_LENGTH], int
 	}
 
 	return 0;
+}
+
+SCP_string mission_campaign_get_name(const char* filename)
+{
+	// read the mission file and only read the name entry
+	SCP_string filename_str = filename;
+	filename_str += FS_CAMPAIGN_FILE_EXT;
+	try {
+		Assertion(filename_str.size() < MAX_FILENAME_LEN,
+		          "Filename (%s) is too long. Is " SIZE_T_ARG " bytes long but maximum is %d.", filename_str.c_str(),
+		          filename_str.size(), MAX_FILENAME_LEN); // make sure no overflow
+		read_file_text(filename_str.c_str());
+		reset_parse();
+
+		required_string("$Name:");
+
+		SCP_string res;
+		stuff_string(res, F_NAME);
+
+		return res;
+	} catch (const parse::ParseException& e) {
+		mprintf(("MISSIONCAMPAIGN: Unable to parse '%s'!  Error message = %s.\n", filename_str.c_str(), e.what()));
+		return SCP_string();
+	}
 }
 
 /**

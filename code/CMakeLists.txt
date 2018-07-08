@@ -37,6 +37,8 @@ TARGET_LINK_LIBRARIES(code PUBLIC compiler)
 
 target_link_libraries(code PUBLIC md5)
 
+target_link_libraries(code PUBLIC discord-rpc)
+
 enable_clang_tidy(code)
 
 IF (FSO_USE_SPEECH)
