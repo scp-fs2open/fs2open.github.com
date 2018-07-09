@@ -18364,7 +18364,7 @@ void parse_weapon_targeting_priorities()
 			}
 		}
 		if(k == MAX_WEAPON_TYPES) {
-			Warning(LOCATION, "Unrecognized weapon '%s' found when setting weapon targeting priorities.\n", tempname);
+			error_display(0, "Unrecognized weapon '%s' found when setting weapon targeting priorities.\n", tempname);
 			if (optional_string("+Target Priority:")) {		// consume the data to avoid parsing errors
 				SCP_vector<SCP_string> dummy;
 				stuff_string_list(dummy);
@@ -18383,7 +18383,7 @@ void parse_weapon_targeting_priorities()
 				if (num_strings > 32)
 					num_strings = 32;
 
-				int num_groups = (int)Ai_tp_list.size();
+				auto num_groups = static_cast<int>(Ai_tp_list.size());
 
 				for(i = 0; i < num_strings; i++) {
 					for(j = 0; j < num_groups; j++) {
@@ -18394,7 +18394,7 @@ void parse_weapon_targeting_priorities()
 						}
 					}
 					if(j == num_groups)
-						Warning(LOCATION, "Unrecognized string '%s' found when setting weapon targeting priorities.\n", tgt_priorities[i].c_str());
+						error_display(0, "Unrecognized string '%s' found when setting weapon targeting priorities.\n", tgt_priorities[i].c_str());
 				}
 			}
 		}
