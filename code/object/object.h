@@ -15,8 +15,9 @@
 #include "globalincs/globals.h"
 #include "globalincs/pstypes.h"
 #include "math/vecmat.h"
-#include "physics/physics.h"
 #include "object/object_flags.h"
+#include "physics/physics.h"
+#include "utils/event.h"
 
 #include <functional>
 
@@ -144,6 +145,9 @@ public:
 
 	int				collision_group_id; // This is a bitfield. Collision checks will be skipped if A->collision_group_id & B->collision_group_id returns nonzero
 
+	util::event<void, object*> pre_move_event;
+	util::event<void, object*> post_move_event;
+
 	object();
 	~object();
 	void clear();
@@ -236,9 +240,6 @@ void obj_render_all(const std::function<void(object*)>& render_function, bool* r
 
 //move all objects for the current frame
 void obj_move_all(float frametime);		// moves all objects
-
-//move an object for the current frame
-void obj_move_one(object * obj, float frametime);
 
 // function to delete an object -- should probably only be called directly from editor code
 void obj_delete(int objnum);

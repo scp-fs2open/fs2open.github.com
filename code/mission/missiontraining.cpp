@@ -746,7 +746,7 @@ int message_play_training_voice(int index)
 		return -1;
 	}
 
-	if (Message_waves[index].num < 0) {
+	if (!Message_waves[index].num.isValid()) {
 		fp = cfopen(Message_waves[index].name, "rb");
 		if (!fp)
 			return -1;
@@ -786,7 +786,7 @@ int message_play_training_voice(int index)
 			game_snd_entry tmp_gs;
 			strcpy_s(tmp_gs.filename, Message_waves[index].name);
 			Message_waves[index].num = snd_load(&tmp_gs, 0, 0);
-			if (Message_waves[index].num < 0) {
+			if (!Message_waves[index].num.isValid()) {
 				nprintf(("Warning", "Cannot load message wave: %s.  Will not play\n", Message_waves[index].name));
 				return -1;
 			}
@@ -803,7 +803,7 @@ int message_play_training_voice(int index)
 	}
 
 	Training_voice = index;
-	if (Message_waves[index].num >= 0)
+	if (Message_waves[index].num.isValid())
 		Training_voice_handle = snd_play_raw(Message_waves[index].num, 0.0f);
 	else
 		Training_voice_handle = -1;

@@ -1197,12 +1197,14 @@
 #define IDC_MISSION_LOG_LAST_TRIGGER    1642
 #define IDC_NO_COLLIDE                  1643
 #define IDC_NO_DISABLED_SELF_DESTRUCT   1644
-#define IDC_CONTAINER_NAME              1645
-#define IDC_NEW_CONTAINER_NAME          1645
-#define IDC_CONTAINER_REMOVE            1646
-#define IDC_ADD_NEW_CONTAINER           1647
-#define IDC_KEY_TYPE                    1648
-#define IDC_DELETE_CONTAINER            1649
+#define IDC_ETERNAL                     1644
+#define IDC_TYPE_ETERNAL                1645
+#define IDC_CONTAINER_NAME              1646
+#define IDC_NEW_CONTAINER_NAME          1647
+#define IDC_CONTAINER_REMOVE            1648
+#define IDC_ADD_NEW_CONTAINER           1649
+#define IDC_KEY_TYPE                    1650
+#define IDC_DELETE_CONTAINER            1651
 #define ID_FILE_MISSIONNOTES            32771
 #define ID_DUPLICATE                    32774
 #define ID_VIEW_ROTATE                  32775
@@ -1499,7 +1501,7 @@
 #define _APS_3D_CONTROLS                     1
 #define _APS_NEXT_RESOURCE_VALUE        322
 #define _APS_NEXT_COMMAND_VALUE         33102
-#define _APS_NEXT_CONTROL_VALUE         1649
+#define _APS_NEXT_CONTROL_VALUE         1651
 #define _APS_NEXT_SYMED_VALUE           105
 #endif
 #endif

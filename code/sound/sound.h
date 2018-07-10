@@ -15,6 +15,7 @@
 #include "globalincs/pstypes.h"
 
 #include "utils/RandomRange.h"
+#include "utils/id.h"
 
 // Used for keeping track which low-level sound library is being used
 #define SOUND_LIB_DIRECTSOUND		0
@@ -58,10 +59,14 @@ extern const unsigned int SND_ENHANCED_MAX_LIMIT;
 #define AAV_VOICE		1
 #define AAV_EFFECTS		2
 
+struct sound_load_tag {
+};
+using sound_load_id = ::util::ID<sound_load_tag, int, -1>;
+
 struct game_snd_entry {
 	char filename[MAX_FILENAME_LEN];
-	int	id = -1;					//!< index into Sounds[], where sound data is stored
-	int	id_sig = -1;				//!< signature of Sounds[] element
+	sound_load_id id = sound_load_id::invalid(); //!< index into Sounds[], where sound data is stored
+	int id_sig       = -1;                       //!< signature of Sounds[] element
 
 	game_snd_entry();
 };
@@ -115,9 +120,9 @@ extern float aav_music_volume;
 extern float aav_effect_volume;
 
 //int	snd_load( char *filename, int hardware=0, int three_d=0, int *sig=NULL );
-int	snd_load( game_snd_entry *entry, int flags, int allow_hardware_load = 0);
+sound_load_id snd_load(game_snd_entry* entry, int flags, int allow_hardware_load = 0);
 
-int	snd_unload( int sndnum );
+int snd_unload(sound_load_id sndnum);
 void	snd_unload_all();
 
 // Plays a sound with volume between 0 and 1.0, where 0 is the
@@ -127,7 +132,7 @@ int snd_play( game_snd *gs, float pan=0.0f, float vol_scale=1.0f, int priority =
 
 // Play a sound directly from index returned from snd_load().  Bypasses
 // the sound management process of using game_snd.
-int snd_play_raw( int soundnum, float pan, float vol_scale=1.0f, int priority = SND_PRIORITY_MUST_PLAY );
+int snd_play_raw(sound_load_id soundnum, float pan, float vol_scale = 1.0f, int priority = SND_PRIORITY_MUST_PLAY);
 
 // Plays a sound with volume between 0 and 1.0, where 0 is the
 // inaudible and 1.0 is the loudest sound in the game.  It scales
@@ -168,10 +173,10 @@ int	snd_is_playing( int snd_handle );
 void	snd_chg_loop_status(int snd_handle, int loop);
 
 // return the time in ms for the duration of the sound
-int snd_get_duration(int snd_id);
+int snd_get_duration(sound_load_id snd_id);
 
 // Get the file name of the specified sound
-const char *snd_get_filename(int snd_id);
+const char* snd_get_filename(sound_load_id snd_id);
 
 // get a 3D vol and pan for a particular sound
 int	snd_get_3d_vol_and_pan(game_snd *gs, vec3d *pos, float* vol, float *pan, float radius=0.0f, float range_factor=1.0f);
@@ -188,8 +193,8 @@ void 	snd_use_lib(int lib_id);
 
 int snd_num_playing();
 
-int snd_get_data(int handle, char *data);
-int snd_size(int handle, int *size);
+int snd_get_data(sound_load_id handle, char* data);
+int snd_size(sound_load_id handle, int* size);
 void snd_do_frame();
 void snd_adjust_audio_volume(int type, float percent, int time);
 
@@ -198,15 +203,15 @@ void snd_rewind(int snd_handle, float seconds);					// rewind N seconds from the
 void snd_ffwd(int snd_handle, float seconds);						// fast forward N seconds from the current position
 void snd_set_pos(int snd_handle, float val,int as_pct);		// set the position val as either a percentage (if as_pct) or as a # of seconds into the sound
 
-void snd_get_format(int handle, int *bits_per_sample, int *frequency);
+void snd_get_format(sound_load_id handle, int* bits_per_sample, int* frequency);
 int snd_time_remaining(int handle);
 
 /**
  * @brief Get the sound id that was used to start the sound with the specified handle
  * @param snd_handle The sound handle to query the id from
- * @return The loaded sound handle or -1 on error
+ * @return The loaded sound handle or invalid handle on error
  */
-int snd_get_sound_id(int snd_handle);
+sound_load_id snd_get_sound_id(int snd_handle);
 
 // sound environment
 extern unsigned int SND_ENV_DEFAULT;

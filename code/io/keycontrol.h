@@ -23,8 +23,6 @@ extern bool Perspective_locked;
 
 extern int Ignored_keys[];
 
-extern bool quit_mission_popup_shown;
-
 typedef struct button_info
 {
 	int status[NUM_BUTTON_FIELDS];

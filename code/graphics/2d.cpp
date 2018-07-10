@@ -19,17 +19,17 @@
 
 #include "cmdline/cmdline.h"
 #include "debugconsole/console.h"
-#include "gamesequence/gamesequence.h"	//WMC - for scripting hooks in gr_flip()
+#include "gamesequence/gamesequence.h" //WMC - for scripting hooks in gr_flip()
 #include "globalincs/systemvars.h"
 #include "graphics/2d.h"
-#include "graphics/matrix.h"
-#include "graphics/light.h"
 #include "graphics/font.h"
 #include "graphics/grbatch.h"
 #include "graphics/grinternal.h"
+#include "graphics/grstub.h"
+#include "graphics/light.h"
+#include "graphics/matrix.h"
 #include "graphics/opengl/gropengl.h"
 #include "graphics/opengl/gropengldraw.h"
-#include "graphics/grstub.h"
 #include "graphics/paths/PathRenderer.h"
 #include "graphics/util/GPUMemoryHeap.h"
 #include "graphics/util/UniformBuffer.h"
@@ -37,9 +37,10 @@
 #include "io/keycontrol.h" // m!m
 #include "io/timer.h"
 #include "osapi/osapi.h"
-#include "scripting/scripting.h"
 #include "parse/parselo.h"
+#include "popup/popup.h"
 #include "render/3d.h"
+#include "scripting/scripting.h"
 #include "tracing/tracing.h"
 #include "utils/boost/hash_combine.h"
 
@@ -2152,8 +2153,7 @@ void gr_set_bitmap(int bitmap_num, int alphablend_mode, int bitblt_mode, float a
 void gr_flip(bool execute_scripting)
 {
 	// m!m avoid running CHA_ONFRAME when the "Quit mission" popup is shown. See mantis 2446 for reference
-	if (execute_scripting && !quit_mission_popup_shown)
-	{
+	if (execute_scripting && !popup_active()) {
 		TRACE_SCOPE(tracing::LuaOnFrame);
 
 		//WMC - Do conditional hooks. Yippee!

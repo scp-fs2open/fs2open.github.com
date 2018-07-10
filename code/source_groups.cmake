@@ -982,6 +982,11 @@ set(file_root_scripting
 	scripting/scripting.h
 )
 
+set(file_root_scripting_api
+	scripting/api/LuaEventCallback.cpp
+	scripting/api/LuaEventCallback.h
+)
+
 set(file_root_scripting_api_libs
 	scripting/api/libs/audio.cpp
 	scripting/api/libs/audio.h
@@ -1008,6 +1013,8 @@ set(file_root_scripting_api_libs
 set(file_root_scripting_api_objs
 	scripting/api/objs/asteroid.cpp
 	scripting/api/objs/asteroid.h
+	scripting/api/objs/background_element.cpp
+	scripting/api/objs/background_element.h
 	scripting/api/objs/beam.cpp
 	scripting/api/objs/beam.h
 	scripting/api/objs/camera.cpp
@@ -1240,6 +1247,7 @@ set (file_root_ui
 set(file_root_utils
 	utils/encoding.cpp
     utils/encoding.h
+    utils/event.h
 	utils/HeapAllocator.cpp
 	utils/HeapAllocator.h
 	utils/id.h
@@ -1373,6 +1381,7 @@ source_group("Popup"                              FILES ${file_root_popup})
 source_group("Radar"                              FILES ${file_root_radar})
 source_group("Render"                             FILES ${file_root_render})
 source_group("Scripting"                          FILES ${file_root_scripting})
+source_group("Scripting\\Api"                     FILES ${file_root_scripting_api})
 source_group("Scripting\\Api\\Libs"               FILES ${file_root_scripting_api_libs})
 source_group("Scripting\\Api\\Objs"               FILES ${file_root_scripting_api_objs})
 source_group("Scripting\\Lua"                     FILES ${file_root_scripting_lua})
@@ -1474,6 +1483,7 @@ set (file_root
 	${file_root_radar}
 	${file_root_render}
 	${file_root_scripting}
+	${file_root_scripting_api}
 	${file_root_scripting_api_libs}
 	${file_root_scripting_api_objs}
 	${file_root_scripting_lua}
