@@ -1034,8 +1034,8 @@ void pilotfile::csg_read_variables()
 
 	Campaign.red_alert_variables.clear();
 	if (csg_ver < 4) { // CSG files before version 4 don't have a Red Alert set of CPVs to load, so just copy the regular set.
-		for (int i = 0; i < Campaign.persistent_variables.size(); i++) {
-			Campaign.red_alert_variables.push_back(Campaign.persistent_variables[i]);
+		for (auto& current_pv : Campaign.persistent_variables) {
+			Campaign.red_alert_variables.push_back(current_pv);
 		}
 	} else {
 		int redalert_num_variables = cfread_int(cfp);

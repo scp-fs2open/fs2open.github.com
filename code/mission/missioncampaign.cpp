@@ -1104,8 +1104,8 @@ void mission_campaign_store_variables(int persistence_type, bool store_red_alert
 	if (num_mission_variables > 0) {
 		
 		if (store_red_alert) {
-			for (i = 0; i < Campaign.red_alert_variables.size(); i++) {
-				Campaign.persistent_variables.push_back(Campaign.red_alert_variables[i]);
+			for (auto& current_rav : Campaign.red_alert_variables) {
+				Campaign.persistent_variables.push_back(current_rav);
 			}
 		}
 

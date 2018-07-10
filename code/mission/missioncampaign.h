@@ -129,7 +129,7 @@ public:
 	SCP_vector<sexp_variable> red_alert_variables;		// state of the variables in the previous mission of a Red Alert scenario.
 
 	campaign()
-		: desc(NULL), num_missions(0)
+		: desc(nullptr), num_missions(0)
 	{
 		name[0] = 0;
 		filename[0] = 0;

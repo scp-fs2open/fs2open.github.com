@@ -5503,16 +5503,16 @@ void parse_variables()
 	// loop through the current mission's variables
 	for (j = 0; j < num_variables; j++) {
 		// check against existing variables
-		for (i = 0; i < Campaign.persistent_variables.size(); i++) {
+		for (auto& current_pv : Campaign.persistent_variables) {
 			// if the active mission has a variable with the same name as a variable saved to the campaign file override its initial value with the previous mission's value
-			if ( !stricmp(Sexp_variables[j].variable_name, Campaign.persistent_variables[i].variable_name) ) {
+			if ( !stricmp(Sexp_variables[j].variable_name, current_pv.variable_name) ) {
 				// if this is an eternal that shares the same name as a non-eternal warn but do nothing
 				if (Sexp_variables[j].type & SEXP_VARIABLE_SAVE_TO_PLAYER_FILE) {
 					error_display(0, "Variable %s is marked eternal but has the same name as another persistent variable. One of these should be renamed to avoid confusion", Sexp_variables[j].text);
 				}
 				else if (Sexp_variables[j].type  & SEXP_VARIABLE_IS_PERSISTENT) {
-					Sexp_variables[j].type = Campaign.persistent_variables[i].type;
-					strcpy_s(Sexp_variables[j].text, Campaign.persistent_variables[i].text);
+					Sexp_variables[j].type = current_pv.type;
+					strcpy_s(Sexp_variables[j].text, current_pv.text);
 					break;
 				} else {
 					error_display(0, "Variable %s has the same name as another persistent variable. One of these should be renamed to avoid confusion", Sexp_variables[j].text);
