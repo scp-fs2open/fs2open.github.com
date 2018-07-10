@@ -25,9 +25,10 @@ BEGIN_MESSAGE_MAP(CAddVariableDlg, CDialog)
 	//{{AFX_MSG_MAP(CAddVariableDlg)
 	ON_BN_CLICKED(IDC_TYPE_NUMBER, OnTypeNumber)
 	ON_BN_CLICKED(IDC_TYPE_STRING, OnTypeString)
-	ON_BN_CLICKED(IDC_TYPE_CAMPAIGN_PERSISTENT, OnTypeCampaignPersistent)
-	ON_BN_CLICKED(IDC_TYPE_PLAYER_PERSISTENT, OnTypePlayerPersistent)
+	ON_BN_CLICKED(IDC_TYPE_CAMPAIGN_PERSISTENT, OnTypeMissionProgress)
+	ON_BN_CLICKED(IDC_TYPE_PLAYER_PERSISTENT, OnTypeMissionClose)
 	ON_BN_CLICKED(IDC_TYPE_NETWORK_VARIABLE, OnTypeNetworkVariable)
+	ON_BN_CLICKED(IDC_TYPE_ETERNAL, OnTypeEternal)
 	//}}AFX_MSG_MAP
 END_MESSAGE_MAP()
 
@@ -58,8 +59,9 @@ BOOL CAddVariableDlg::OnInitDialog() {
 
 	// Set variable type to number
 	m_type_number = true;
-	m_type_campaign_persistent = false;
-	m_type_player_persistent = false;
+	m_type_on_mission_progress = false;
+	m_type_on_mission_close = false;
+	m_type_eternal = false;
 	m_type_network_variable = false;
 	set_variable_type();
 
@@ -67,11 +69,40 @@ BOOL CAddVariableDlg::OnInitDialog() {
 	m_data_validated = false;
 	m_create = false;
 
+	//create tool tip controls
+	m_ProgressToolTip = new CToolTipCtrl();
+	m_ProgressToolTip->Create(this);
+	m_CloseToolTip = new CToolTipCtrl();
+	m_CloseToolTip->Create(this);
+	m_EternalToolTip = new CToolTipCtrl();
+	m_EternalToolTip->Create(this);
+
+	CWnd* pWnd = GetDlgItem(IDC_TYPE_CAMPAIGN_PERSISTENT);
+	m_ProgressToolTip->AddTool(pWnd, "This type of variable will save when the player clicks Accept to go to the next mission");
+	m_ProgressToolTip->Activate(TRUE);
+
+	pWnd = GetDlgItem(IDC_TYPE_PLAYER_PERSISTENT);
+	m_CloseToolTip->AddTool(pWnd, "This type of variable will save when the player leaves the mission");
+	m_CloseToolTip->Activate(TRUE);
+
+	pWnd = GetDlgItem(IDC_TYPE_ETERNAL);
+	m_EternalToolTip->AddTool(pWnd, "This type of variable is saved to the player file. So it can be referred to by other campaigns");
+	m_EternalToolTip->Activate(TRUE);
+	
 	// Send default name and values into dialog box
 	UpdateData(FALSE);
 
 	return TRUE;  // return TRUE unless you set the focus to a control
 	// EXCEPTION: OCX Property Pages should return FALSE
+}
+
+BOOL CAddVariableDlg::PreTranslateMessage(MSG* pMsg) {
+
+	m_ProgressToolTip->RelayEvent(pMsg);
+	m_CloseToolTip->RelayEvent(pMsg);
+	m_EternalToolTip->RelayEvent(pMsg);
+
+	return CDialog::PreTranslateMessage(pMsg);
 }
 
 void CAddVariableDlg::OnOK() {
@@ -114,11 +145,15 @@ void CAddVariableDlg::OnOK() {
 	}
 }
 
-void CAddVariableDlg::OnTypeCampaignPersistent() {
-	m_type_campaign_persistent = ((CButton *) GetDlgItem(IDC_TYPE_CAMPAIGN_PERSISTENT))->GetCheck() ? true : false;
+void CAddVariableDlg::OnTypeMissionProgress() {
+	m_type_on_mission_progress = ((CButton *) GetDlgItem(IDC_TYPE_CAMPAIGN_PERSISTENT))->GetCheck() ? true : false;
 
-	if (m_type_campaign_persistent)
-		m_type_player_persistent = false;
+	if (m_type_on_mission_progress)
+		m_type_on_mission_close = false;
+
+	// if the variable isn't persistent, it can't be eternal
+	if (!m_type_on_mission_progress && !m_type_on_mission_close)
+		m_type_eternal = false;
 
 	set_variable_type();
 }
@@ -133,11 +168,33 @@ void CAddVariableDlg::OnTypeNumber() {
 	set_variable_type();
 }
 
-void CAddVariableDlg::OnTypePlayerPersistent() {
-	m_type_player_persistent = ((CButton *) GetDlgItem(IDC_TYPE_PLAYER_PERSISTENT))->GetCheck() ? true : false;
+void CAddVariableDlg::OnTypeMissionClose() {
+	m_type_on_mission_close = ((CButton *) GetDlgItem(IDC_TYPE_PLAYER_PERSISTENT))->GetCheck() ? true : false;
 
-	if (m_type_player_persistent)
-		m_type_campaign_persistent = false;
+	if (m_type_on_mission_close)
+		m_type_on_mission_progress = false;
+
+	// if the variable isn't persistent, it can't be eternal
+	if (!m_type_on_mission_progress && !m_type_on_mission_close)
+		m_type_eternal = false;
+
+	// if the variable isn't persistent, it can't be eternal
+	if (!m_type_on_mission_close && !m_type_on_mission_progress) {
+		m_type_eternal = false;
+	}
+
+	set_variable_type();
+}
+
+void CAddVariableDlg::OnTypeEternal() {
+	m_type_eternal = ((CButton *)GetDlgItem(IDC_TYPE_ETERNAL))->GetCheck() ? true : false;
+
+
+	// if the variable isn't persistent, it can't be eternal
+	if (!m_type_on_mission_close && !m_type_on_mission_progress) {
+		m_type_eternal = false;
+		MessageBox("Eternal variables must have a different persistence type set first!");
+	}
 
 	set_variable_type();
 }
@@ -155,9 +212,10 @@ void CAddVariableDlg::set_variable_type() {
 	button_number->SetCheck(m_type_number);
 	button_string->SetCheck(!m_type_number);
 
-	((CButton *) GetDlgItem(IDC_TYPE_CAMPAIGN_PERSISTENT))->SetCheck(m_type_campaign_persistent);
-	((CButton *) GetDlgItem(IDC_TYPE_PLAYER_PERSISTENT))->SetCheck(m_type_player_persistent);
+	((CButton *) GetDlgItem(IDC_TYPE_CAMPAIGN_PERSISTENT))->SetCheck(m_type_on_mission_progress);
+	((CButton *) GetDlgItem(IDC_TYPE_PLAYER_PERSISTENT))->SetCheck(m_type_on_mission_close);
 	((CButton *) GetDlgItem(IDC_TYPE_NETWORK_VARIABLE))->SetCheck(m_type_network_variable);
+	((CButton *) GetDlgItem(IDC_TYPE_ETERNAL))->SetCheck(m_type_eternal);
 }
 
 void CAddVariableDlg::validate_data(int set_focus) {

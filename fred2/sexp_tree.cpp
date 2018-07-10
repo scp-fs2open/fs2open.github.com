@@ -1586,10 +1586,14 @@ BOOL sexp_tree::OnCommand(WPARAM wParam, LPARAM lParam)
 				type |= SEXP_VARIABLE_NETWORK;
 			}
 
-			if ( dlg.m_type_campaign_persistent ) {
-				type |= SEXP_VARIABLE_CAMPAIGN_PERSISTENT;
-			} else if ( dlg.m_type_player_persistent ) {
-				type |= SEXP_VARIABLE_PLAYER_PERSISTENT;
+			if ( dlg.m_type_on_mission_progress) {
+				type |= SEXP_VARIABLE_SAVE_ON_MISSION_PROGRESS;
+			} else if ( dlg.m_type_on_mission_close) {
+				type |= SEXP_VARIABLE_SAVE_ON_MISSION_CLOSE;
+			}
+
+			if (dlg.m_type_eternal) {
+				type |= SEXP_VARIABLE_SAVE_TO_PLAYER_FILE;
 			}
 
 			// add variable
@@ -1655,10 +1659,14 @@ BOOL sexp_tree::OnCommand(WPARAM wParam, LPARAM lParam)
 				type |= SEXP_VARIABLE_NETWORK;
 			}
 
-			if ( dlg.m_type_campaign_persistent ) {
-				type |= SEXP_VARIABLE_CAMPAIGN_PERSISTENT;
-			} else if ( dlg.m_type_player_persistent ) {
-				type |= SEXP_VARIABLE_PLAYER_PERSISTENT;
+			if ( dlg.m_type_on_mission_progress) {
+				type |= SEXP_VARIABLE_SAVE_ON_MISSION_PROGRESS;
+			} else if ( dlg.m_type_on_mission_close) {
+				type |= SEXP_VARIABLE_SAVE_ON_MISSION_CLOSE;
+			}
+
+			if (dlg.m_type_eternal) {
+				type |= SEXP_VARIABLE_SAVE_TO_PLAYER_FILE;
 			}
 
 			// update sexp_variable

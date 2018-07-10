@@ -26,25 +26,25 @@ ADE_VIRTVAR(Persistence, l_SEXPVariable, "enumeration", "SEXP Variable persistan
 	{
 		if(type->index == LE_SEXPVAR_PLAYER_PERSISTENT)
 		{
-			sv->type &= ~(SEXP_VARIABLE_CAMPAIGN_PERSISTENT);
-			sv->type |= SEXP_VARIABLE_PLAYER_PERSISTENT;
+			sv->type &= ~(SEXP_VARIABLE_SAVE_ON_MISSION_PROGRESS);
+			sv->type |= SEXP_VARIABLE_SAVE_ON_MISSION_CLOSE;
 		}
 		else if(type->index == LE_SEXPVAR_CAMPAIGN_PERSISTENT)
 		{
-			sv->type |= SEXP_VARIABLE_CAMPAIGN_PERSISTENT;
-			sv->type &= ~(SEXP_VARIABLE_PLAYER_PERSISTENT);
+			sv->type |= SEXP_VARIABLE_SAVE_ON_MISSION_PROGRESS;
+			sv->type &= ~(SEXP_VARIABLE_SAVE_ON_MISSION_CLOSE);
 		}
 		else if(type->index == LE_SEXPVAR_NOT_PERSISTENT)
 		{
-			sv->type &= ~(SEXP_VARIABLE_CAMPAIGN_PERSISTENT);
-			sv->type &= ~(SEXP_VARIABLE_PLAYER_PERSISTENT);
+			sv->type &= ~(SEXP_VARIABLE_SAVE_ON_MISSION_PROGRESS);
+			sv->type &= ~(SEXP_VARIABLE_SAVE_ON_MISSION_CLOSE);
 		}
 	}
 
 	enum_h ren;
-	if(sv->type & SEXP_VARIABLE_PLAYER_PERSISTENT)
+	if(sv->type & SEXP_VARIABLE_SAVE_ON_MISSION_CLOSE)
 		ren.index = LE_SEXPVAR_PLAYER_PERSISTENT;
-	else if(sv->type & SEXP_VARIABLE_CAMPAIGN_PERSISTENT)
+	else if(sv->type & SEXP_VARIABLE_SAVE_ON_MISSION_PROGRESS)
 		ren.index = LE_SEXPVAR_CAMPAIGN_PERSISTENT;
 	else
 		ren.index = LE_SEXPVAR_NOT_PERSISTENT;

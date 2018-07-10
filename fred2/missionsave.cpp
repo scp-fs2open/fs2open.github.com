@@ -3748,12 +3748,16 @@ int CFred_mission_save::save_variables() {
 					fout("\t\t\"%s\"", "network-variable");
 				}
 
+				if (Sexp_variables[i].type & SEXP_VARIABLE_SAVE_TO_PLAYER_FILE) {
+					fout("\t\t\"%s\"", "eternal");
+				}
+
 				// player-persistent - Goober5000
-				if (Sexp_variables[i].type & SEXP_VARIABLE_PLAYER_PERSISTENT) {
-					fout("\t\t\"%s\"", "player-persistent");
+				if (Sexp_variables[i].type & SEXP_VARIABLE_SAVE_ON_MISSION_CLOSE) {
+					fout("\t\t\"%s\"", "save-on-mission-close");
 					// campaign-persistent - Goober5000
-				} else if (Sexp_variables[i].type & SEXP_VARIABLE_CAMPAIGN_PERSISTENT) {
-					fout("\t\t\"%s\"", "campaign-persistent");
+				} else if (Sexp_variables[i].type & SEXP_VARIABLE_SAVE_ON_MISSION_PROGRESS) {
+					fout("\t\t\"%s\"", "save-on-mission-progress");
 				}
 			}
 

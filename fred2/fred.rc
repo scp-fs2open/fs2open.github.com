@@ -659,8 +659,8 @@ CAPTION "About FRED2"
 FONT 8, "MS Sans Serif"
 BEGIN
     ICON            IDR_MAINFRAME,IDC_STATIC,10,17,20,20,SS_REALSIZEIMAGE
-    LTEXT           ABOUT_LINE_1,IDC_STATIC,39,8,184,10,SS_NOPREFIX
-    LTEXT           L"Copyright \x00A9 1999 Volition, Inc.  All Rights Reserved",IDC_STATIC,39,17,164,8
+    LTEXT           "FRED2_OPEN - FreeSpace Editor, Version 3.8.1 OpenGL",IDC_STATIC,39,8,184,10,SS_NOPREFIX
+    LTEXT           "Copyright © 1999 Volition, Inc.  All Rights Reserved",IDC_STATIC,39,17,164,8
     DEFPUSHBUTTON   "OK",IDOK,229,7,48,14,WS_GROUP
     LTEXT           """Fred2 is the omega of all giant unwieldy pieces of code. Its big, its horrifying, and it just doesn't care. View it at your own risk."" - Dave Baranec",IDC_STATIC,39,62,238,20
     LTEXT           "Ported to OGL by RT",IDC_STATIC,39,40,68,8
@@ -1878,10 +1878,10 @@ BEGIN
                     "Button",BS_3STATE | WS_TABSTOP,165,199,114,10
 END
 
-IDD_ADD_VARIABLE DIALOG 0, 0, 422, 102
+IDD_ADD_VARIABLE DIALOGEX 0, 0, 422, 102
 STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "Add Variable"
-FONT 8, "MS Sans Serif"
+FONT 8, "MS Sans Serif", 0, 0, 0x0
 BEGIN
     CONTROL         "String",IDC_TYPE_STRING,"Button",BS_AUTORADIOBUTTON,21,19,34,10
     CONTROL         "Number",IDC_TYPE_NUMBER,"Button",BS_AUTORADIOBUTTON,21,32,41,10
@@ -1892,16 +1892,19 @@ BEGIN
     LTEXT           "Variable Name",IDC_STATIC,138,15,47,8
     LTEXT           "Default Value",IDC_STATIC,251,15,44,8
     GROUPBOX        "Variable Type",IDC_STATIC,7,7,114,38
-    CONTROL         "Campaign-Persistent",IDC_TYPE_CAMPAIGN_PERSISTENT,
-                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,137,47,84,11
-    CONTROL         "Player-Persistent",IDC_TYPE_PLAYER_PERSISTENT,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,137,59,84,11
-    CONTROL         "Network-Variable",IDC_TYPE_NETWORK_VARIABLE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,137,71,84,11
+    CONTROL         "Save On Mission Complete",IDC_TYPE_CAMPAIGN_PERSISTENT,
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,229,57,99,11
+    CONTROL         "Save On Mission Close",IDC_TYPE_PLAYER_PERSISTENT,
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,229,70,84,11
+    CONTROL         "Network-Variable",IDC_TYPE_NETWORK_VARIABLE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,136,49,84,11
+    GROUPBOX        "Persistence",IDC_STATIC,221,43,186,52
+    CONTROL         "Eternal",IDC_TYPE_ETERNAL,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,335,57,38,10
 END
 
-IDD_MODIFY_VARIABLE DIALOG 0, 0, 422, 102
+IDD_MODIFY_VARIABLE DIALOGEX 0, 0, 422, 102
 STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "Modify Variable"
-FONT 8, "MS Sans Serif"
+FONT 8, "MS Sans Serif", 0, 0, 0x0
 BEGIN
     CONTROL         "String",IDC_TYPE_STRING,"Button",BS_AUTORADIOBUTTON,21,19,34,10
     CONTROL         "Number",IDC_TYPE_NUMBER,"Button",BS_AUTORADIOBUTTON,21,32,41,10
@@ -1914,10 +1917,13 @@ BEGIN
     LTEXT           "Variable Name",IDC_STATIC,138,15,47,8
     LTEXT           "Default Value",IDC_STATIC,251,15,44,8
     GROUPBOX        "Delete Variable and References",IDC_STATIC,7,56,114,38
-    CONTROL         "Campaign-Persistent",IDC_TYPE_CAMPAIGN_PERSISTENT,
-                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,138,47,84,11
-    CONTROL         "Player-Persistent",IDC_TYPE_PLAYER_PERSISTENT,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,138,59,84,11
-    CONTROL         "Network-Variable",IDC_TYPE_NETWORK_VARIABLE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,138,72,84,11
+    CONTROL         "Save On Mission Complete",IDC_TYPE_CAMPAIGN_PERSISTENT,
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,219,57,104,11
+    CONTROL         "Save On Mission Close",IDC_TYPE_PLAYER_PERSISTENT,
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,219,70,84,11
+    CONTROL         "Network-Variable",IDC_TYPE_NETWORK_VARIABLE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,137,49,84,11
+    GROUPBOX        "Persistence",IDC_STATIC,212,44,196,44
+    CONTROL         "Eternal",IDC_TYPE_ETERNAL,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,323,57,75,9
 END
 
 IDD_SPECIAL_DAMAGE DIALOG 0, 0, 234, 129
@@ -2694,12 +2700,28 @@ IDC_CURSOR2             CURSOR                  "res\\cursor2.cur"
 
 /////////////////////////////////////////////////////////////////////////////
 //
+// AFX_DIALOG_LAYOUT
+//
+
+IDD_MODIFY_VARIABLE AFX_DIALOG_LAYOUT
+BEGIN
+    0
+END
+
+IDD_ADD_VARIABLE AFX_DIALOG_LAYOUT
+BEGIN
+    0
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
 // String Table
 //
 
 STRINGTABLE
 BEGIN
-    IDR_MAINFRAME           MAINFRAME_CONTENTS
+    IDR_MAINFRAME           "FRED2_OPEN 3.8.1 - FreeSpace2 Mission Editor\nUntitled\nFRED2\nFreeSpace2 Missions (*.fs2)\n.fs2\nFreeSpace2Mission\nFreeSpace2 Mission"
 END
 
 STRINGTABLE
