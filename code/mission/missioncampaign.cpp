@@ -1890,9 +1890,9 @@ void mission_campaign_save_on_close_variables()
 		// deal with eternals 
 		if ((Sexp_variables[i].type & SEXP_VARIABLE_SAVE_TO_PLAYER_FILE)) {
 			// check if variable already exists and updated it
-			for (size_t j = 0; j < Player->variables.size(); j++) {
-				if (!(stricmp(Sexp_variables[i].variable_name, Player->variables[j].variable_name))) {
-					Player->variables[j] = Sexp_variables[i];
+			for (auto& current_variable : Player->variables) {
+				if (!(stricmp(Sexp_variables[i].variable_name, current_variable.variable_name))) {
+					current_variable = Sexp_variables[i];
 
 					found = true;
 					break;
