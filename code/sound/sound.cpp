@@ -1293,7 +1293,7 @@ int snd_time_remaining(int handle)
 
 	auto sdx = snd_get_sound_id(handle);
 
-	if (sdx.isValid()) {
+	if (!sdx.isValid()) {
 		Int3();
 		return 0;
 	}
