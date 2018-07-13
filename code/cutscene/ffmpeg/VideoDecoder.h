@@ -9,11 +9,12 @@ class VideoDecoder: public FFMPEGStreamDecoder<VideoFrame> {
  private:
 	int m_frameId;
 	SwsContext* m_swsCtx;
+	AVPixelFormat m_destinationFormat;
 
 	void convertAndPushPicture(const AVFrame* frame);
 
  public:
-	explicit VideoDecoder(DecoderStatus* status);
+	explicit VideoDecoder(DecoderStatus* status, AVPixelFormat destination_fmt);
 
 	~VideoDecoder() override;
 

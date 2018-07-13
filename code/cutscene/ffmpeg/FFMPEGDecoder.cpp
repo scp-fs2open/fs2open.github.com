@@ -105,6 +105,72 @@ SCP_string normalizeLanguage(const char* langauge_name) {
 	// Default to english for everything else
 	return "English";
 }
+
+/**
+ * @brief Given a FFmpeg pixel format returns the format it should be converted to
+ * @param in_fmt The input format
+ * @return The output format
+ */
+AVPixelFormat getConversionFormat(AVPixelFormat in_fmt)
+{
+	switch (in_fmt) {
+	case AV_PIX_FMT_RGB24:
+	case AV_PIX_FMT_BGR24:
+	case AV_PIX_FMT_BGR8:
+	case AV_PIX_FMT_BGR4:
+	case AV_PIX_FMT_BGR4_BYTE:
+	case AV_PIX_FMT_RGB8:
+	case AV_PIX_FMT_RGB4:
+	case AV_PIX_FMT_RGB4_BYTE:
+	case AV_PIX_FMT_RGB48BE:
+	case AV_PIX_FMT_RGB48LE:
+	case AV_PIX_FMT_RGB565BE:
+	case AV_PIX_FMT_RGB565LE:
+	case AV_PIX_FMT_RGB555BE:
+	case AV_PIX_FMT_RGB555LE:
+	case AV_PIX_FMT_BGR565BE:
+	case AV_PIX_FMT_BGR565LE:
+	case AV_PIX_FMT_BGR555BE:
+	case AV_PIX_FMT_BGR555LE:
+	case AV_PIX_FMT_RGB444LE:
+	case AV_PIX_FMT_RGB444BE:
+	case AV_PIX_FMT_BGR444LE:
+	case AV_PIX_FMT_BGR444BE:
+	case AV_PIX_FMT_BGR48BE:
+	case AV_PIX_FMT_BGR48LE:
+	case AV_PIX_FMT_0RGB:
+	case AV_PIX_FMT_RGB0:
+	case AV_PIX_FMT_0BGR:
+	case AV_PIX_FMT_BGR0:
+		return AV_PIX_FMT_BGR24;
+
+	case AV_PIX_FMT_RGBA64BE:
+	case AV_PIX_FMT_RGBA64LE:
+	case AV_PIX_FMT_BGRA64BE:
+	case AV_PIX_FMT_BGRA64LE:
+	case AV_PIX_FMT_ARGB:
+	case AV_PIX_FMT_RGBA:
+	case AV_PIX_FMT_ABGR:
+	case AV_PIX_FMT_BGRA:
+		return AV_PIX_FMT_BGRA;
+
+	default:
+		// Assume that everything else is converted to YUV 420
+		return AV_PIX_FMT_YUV420P;
+	}
+}
+
+FramePixelFormat getPixelFormat(AVPixelFormat fmt)
+{
+	switch (fmt) {
+	case AV_PIX_FMT_BGR24:
+		return FramePixelFormat::BGR;
+	case AV_PIX_FMT_BGRA:
+		return FramePixelFormat::BGRA;
+	default:
+		return FramePixelFormat::YUV420;
+	}
+}
 }
 
 namespace cutscene {
@@ -411,11 +477,13 @@ MovieProperties FFMPEGDecoder::getProperties() const
 
 	props.fps = static_cast<float>(getFrameRate(m_status->videoStream, m_status->videoCodecCtx));
 
+	props.pixelFormat = getPixelFormat(getConversionFormat(m_status->videoCodecPars.pixel_format));
+
 	return props;
 }
 
 void FFMPEGDecoder::startDecoding() {
-	std::unique_ptr<VideoDecoder> videoDecoder(new VideoDecoder(m_status.get()));
+	std::unique_ptr<VideoDecoder> videoDecoder(new VideoDecoder(m_status.get(), getConversionFormat(m_status->videoCodecPars.pixel_format)));
 
 	std::unique_ptr<AudioDecoder> audioDecoder;
 	std::unique_ptr<SubtitleDecoder> subtitleDecoder;
