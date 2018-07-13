@@ -54,6 +54,9 @@ extern int Num_weapon_subtypes;
 #define MAX_PARTICLE_SPEWERS	4	//i figure 4 spewers should be enough for now -nuke
 #define MAX_WEP_DAMAGE_SLOTS	32		//Maximum number of ships which can be counted as killer or assits on destroying this weapon
 
+// scale factor for supercaps taking damage from weapons which are not "supercap" weapons
+#define SUPERCAP_DAMAGE_SCALE			0.25f
+
 enum class WeaponState : uint32_t
 {
 	INVALID,

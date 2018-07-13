@@ -1842,6 +1842,8 @@ static int maybe_shockwave_damage_adjust(object *ship_objp, object *other_obj, f
 {
 	ship_subsys *subsys;
 	ship *shipp;
+	weapon_info *wip;
+	ship_info *sip;
 	float dist, nearest_dist = FLT_MAX;
 	vec3d g_subobj_pos;
 	float max_damage;
@@ -1860,11 +1862,12 @@ static int maybe_shockwave_damage_adjust(object *ship_objp, object *other_obj, f
 		return 0;
 	}
 
-	if (!(Ship_info[Ships[ship_objp->instance].ship_info_index].is_huge_ship())) {
+	shipp = &Ships[ship_objp->instance];
+	sip = &Ship_info[shipp->ship_info_index];
+
+	if (!sip->is_huge_ship()) {
 		return 0;
 	}
-
-	shipp = &Ships[ship_objp->instance];
 
 	// find closest subsystem distance to shockwave origin
 	for (subsys=GET_FIRST(&shipp->subsys_list); subsys != END_OF_LIST(&shipp->subsys_list); subsys = GET_NEXT(subsys) ) {
@@ -1880,6 +1883,39 @@ static int maybe_shockwave_damage_adjust(object *ship_objp, object *other_obj, f
 	max_damage = shockwave_get_damage(other_obj->instance);
 	if (shockwave_get_flags(other_obj->instance) & SW_WEAPON_KILL) {
 		max_damage *= 4.0f;
+	}
+
+	// If the shockwave was caused by a weapon, then check if the weapon can deal lethal damage to the ship.
+	// If it cannot, then neither should the shockwave caused by the weapon be able to do the same.
+	// The code for this is copied from part of weapon_get_damage_scale.
+	int wp_index = shockwave_get_weapon_index(other_obj->instance);
+	if ((wp_index >= 0) && Weapon_shockwaves_respect_huge) {
+		wip = &Weapon_info[wp_index];
+
+		float hull_pct = get_hull_pct(ship_objp);
+
+		// First handle Supercap ships.
+		if ((sip->flags[Ship::Info_Flags::Supercap]) && !(wip->wi_flags[Weapon::Info_Flags::Supercap])) {
+			if (hull_pct <= 0.75f) {
+				*damage = 0.0f;
+				return 1;
+			} else {
+				// If hull isn't below 3/4, then allow damage to be applied just like in weapon_get_damage_scale.
+				// SUPERCAP_DAMAGE_SCALE is defined in weapon.h.
+				max_damage *= SUPERCAP_DAMAGE_SCALE;
+			}
+		}
+
+		// Next handle big damage ships.
+		bool is_big_damage_ship = (sip->flags[Ship::Info_Flags::Big_damage]);
+		if (is_big_damage_ship && !(wip->hurts_big_ships())) {
+			if (hull_pct > 0.1f) {
+				max_damage *= hull_pct;
+			} else {
+				*damage = 0.0f;
+				return 1;
+			}
+		}
 	}
 
 	outer_radius = shockwave_get_max_radius(other_obj->instance);

@@ -202,9 +202,6 @@ int		Weapon_impact_timer;			// timer, initialized at start of each mission
 #define ESUCK_DEFAULT_WEAPON_REDUCE				(10.0f)
 #define ESUCK_DEFAULT_AFTERBURNER_REDUCE		(10.0f)
 
-// scale factor for supercaps taking damage from weapons which are not "supercap" weapons
-#define SUPERCAP_DAMAGE_SCALE			0.25f
-
 // scale factor for big ships getting hit by flak
 #define FLAK_DAMAGE_SCALE				0.05f
 
