@@ -33,12 +33,9 @@ class AVPacketScope
 	}
 };
 
-const char* CHECKED_EXTENSIONS[] = {
-	"webm",
-	"mp4",
-	"ogg",
-	"mve"
-};
+const char* CHECKED_EXTENSIONS[] = {"webm", "mp4", "ogg",
+                                    "png", // This is designed to be used with APNG animations
+                                    "mve"};
 
 const char* CHECKED_SUBT_EXTENSIONS[] = {"srt"};
 

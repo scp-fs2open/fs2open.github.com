@@ -52,7 +52,7 @@ struct PlayerState {
  * @brief A movie player
  */
 class Player {
- private:
+  private:
 	std::unique_ptr<Decoder> m_decoder;
 
 	std::unique_ptr<std::thread> m_decoderThread;
@@ -61,13 +61,11 @@ class Player {
 
 	bool processDecoderData();
 
- private:
+  private:
 	void decoderThread();
 
-	void initPlayback();
-
- public:
-	explicit Player(std::unique_ptr<Decoder>&& decoder);
+  public:
+	explicit Player(std::unique_ptr<Decoder>&& decoder, bool enable_audio = true);
 
 	~Player();
 
@@ -98,6 +96,12 @@ class Player {
 	const MovieProperties& getMovieProperties() const;
 
 	/**
+	 * @brief Determines if this player can start displaying video.
+	 * @return true if the cutscene is ready, false otherwise
+	 */
+	bool isPlaybackReady() const;
+
+	/**
 	 * @brief Draws the current movie frame at the specified coordinates.
 	 *
 	 * This may not draw anything if there is currently not a frame to display.
@@ -109,6 +113,10 @@ class Player {
 	 */
 	void draw(float x1, float y1, float x2, float y2);
 
+	/**
+	 * @brief Gets the subtitle text that should be displayed now
+	 * @return The text, encoded in UTF-8
+	 */
 	SCP_string getCurrentSubtitle();
 
 	/**
@@ -119,11 +127,12 @@ class Player {
 	void stopPlayback();
 
 	/**
-     * @brief Creates a player
-     * The player is configured to play the movie with the specified name
-     * @param name The movie to play
-     * @return @c nullptr if the specified movie could not be opened, a valid Player pointer otherwise
-     */
-	static std::unique_ptr<Player> newPlayer(const SCP_string& name);
+	 * @brief Creates a player
+	 * The player is configured to play the movie with the specified name
+	 * @param name The movie to play
+	 * @param enable_audio Enable audio for this player instance
+	 * @return @c nullptr if the specified movie could not be opened, a valid Player pointer otherwise
+	 */
+	static std::unique_ptr<Player> newPlayer(const SCP_string& name, bool enable_audio = true);
 };
 }

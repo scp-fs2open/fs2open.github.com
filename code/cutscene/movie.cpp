@@ -202,10 +202,12 @@ void movie_display_loop(Player* player, PlaybackState* state) {
 		auto passed = timestamp - lastDisplayTimestamp;
 		lastDisplayTimestamp = timestamp;
 
-		// Play as long as the player reports that there is more to display
-		state->playing = player->update(passed);
+		if (player->isPlaybackReady()) {
+			// Play as long as the player reports that there is more to display
+			state->playing = player->update(passed);
 
-		displayVideo(player, state);
+			displayVideo(player, state);
+		}
 
 		processEvents(state);
 

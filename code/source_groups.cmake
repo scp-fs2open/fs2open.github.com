@@ -996,6 +996,8 @@ set(file_root_scripting_api_libs
 	scripting/api/libs/bitops.h
 	scripting/api/libs/cfile.cpp
 	scripting/api/libs/cfile.h
+	scripting/api/libs/graphics.cpp
+	scripting/api/libs/graphics.h
 	scripting/api/libs/hookvars.cpp
 	scripting/api/libs/hookvars.h
 	scripting/api/libs/hud.cpp
@@ -1006,6 +1008,8 @@ set(file_root_scripting_api_libs
 	scripting/api/libs/tables.h
 	scripting/api/libs/testing.cpp
 	scripting/api/libs/testing.h
+    scripting/api/libs/time_lib.cpp
+    scripting/api/libs/time_lib.h
 	scripting/api/libs/utf8.cpp
 	scripting/api/libs/utf8.h
 )
@@ -1041,8 +1045,6 @@ set(file_root_scripting_api_objs
 	scripting/api/objs/gameevent.h
 	scripting/api/objs/gamestate.cpp
 	scripting/api/objs/gamestate.h
-	scripting/api/objs/graphics.cpp
-	scripting/api/objs/graphics.h
 	scripting/api/objs/hudgauge.cpp
 	scripting/api/objs/hudgauge.h
 	scripting/api/objs/LuaSEXP.cpp
@@ -1053,6 +1055,8 @@ set(file_root_scripting_api_objs
 	scripting/api/objs/message.h
 	scripting/api/objs/model.cpp
 	scripting/api/objs/model.h
+	scripting/api/objs/movie_player.cpp
+	scripting/api/objs/movie_player.h
 	scripting/api/objs/object.cpp
 	scripting/api/objs/object.h
 	scripting/api/objs/order.cpp
@@ -1089,6 +1093,8 @@ set(file_root_scripting_api_objs
 	scripting/api/objs/texture.h
 	scripting/api/objs/texturemap.cpp
 	scripting/api/objs/texturemap.h
+    scripting/api/objs/time_obj.cpp
+    scripting/api/objs/time_obj.h
 	scripting/api/objs/vecmath.cpp
 	scripting/api/objs/vecmath.h
 	scripting/api/objs/waypoint.cpp
