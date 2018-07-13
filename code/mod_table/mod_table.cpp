@@ -43,6 +43,7 @@ SCP_string Movie_subtitle_font;
 bool Enable_scripts_in_fred; // By default FRED does not initialize the scripting system
 SCP_string Window_icon_path;
 bool Disable_built_in_translations;
+bool Weapon_shockwaves_respect_huge;
 
 void parse_mod_table(const char *filename)
 {
@@ -360,6 +361,10 @@ void parse_mod_table(const char *filename)
 			stuff_boolean(&Disable_built_in_translations);
 		}
 
+		if (optional_string("$Weapon shockwave damage respects huge ship flags:")) {
+			stuff_boolean(&Weapon_shockwaves_respect_huge);
+		}
+
 		required_string("#END");
 	}
 	catch (const parse::ParseException& e)
@@ -417,4 +422,5 @@ void mod_table_reset() {
 	Enable_scripts_in_fred = false;
 	Window_icon_path = "app_icon_sse";
 	Disable_built_in_translations = false;
+	Weapon_shockwaves_respect_huge = false;
 }

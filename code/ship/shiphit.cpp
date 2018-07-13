@@ -1889,7 +1889,7 @@ static int maybe_shockwave_damage_adjust(object *ship_objp, object *other_obj, f
 	// If it cannot, then neither should the shockwave caused by the weapon be able to do the same.
 	// The code for this is copied from part of weapon_get_damage_scale.
 	int wp_index = shockwave_get_weapon_index(other_obj->instance);
-	if (wp_index >= 0) {
+	if ((wp_index >= 0) && Weapon_shockwaves_respect_huge) {
 		wip = &Weapon_info[wp_index];
 
 		float hull_pct = get_hull_pct(ship_objp);
