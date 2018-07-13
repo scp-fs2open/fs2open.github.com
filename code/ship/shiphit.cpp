@@ -1901,8 +1901,8 @@ static int maybe_shockwave_damage_adjust(object *ship_objp, object *other_obj, f
 				return 1;
 			} else {
 				// If hull isn't below 3/4, then allow damage to be applied just like in weapon_get_damage_scale.
-				// Magic constant is SUPERCAP_DAMAGE_SCALE from weapons.cpp.
-				max_damage *= 0.25f;
+				// SUPERCAP_DAMAGE_SCALE is defined in weapon.h.
+				max_damage *= SUPERCAP_DAMAGE_SCALE;
 			}
 		}
 
