@@ -12,16 +12,13 @@ namespace cutscene {
 namespace player {
 
 class VideoPresenter {
-	int _ytex = -1;
-	std::unique_ptr<uint8_t[]> _yTexBuffer;
+	MovieProperties _properties;
 
-	int _utex = -1;
-	std::unique_ptr<uint8_t[]> _uTexBuffer;
+	std::array<int, 3> _planeTextureHandles;
+	std::array<std::unique_ptr<uint8_t[]>, 3> _planeTextureBuffers;
 
-	int _vtex = -1;
-	std::unique_ptr<uint8_t[]> _vTexBuffer;
-
-	movie_material _render_material;
+	movie_material _movie_material;
+	material _rgb_material; // Material used when a RGB/RGBA movie is played
  public:
 	explicit VideoPresenter(const MovieProperties& props);
 

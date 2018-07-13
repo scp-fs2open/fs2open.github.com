@@ -14,46 +14,85 @@ struct movie_vertex {
 
 namespace cutscene {
 namespace player {
-VideoPresenter::VideoPresenter(const MovieProperties& props) {
+VideoPresenter::VideoPresenter(const MovieProperties& props) : _properties(props)
+{
 	GR_DEBUG_SCOPE("Init video");
+
+	_planeTextureHandles.fill(-1);
 
 	auto w = static_cast<int>(props.size.width);
 	auto h = static_cast<int>(props.size.height);
 
-	// Create buffer textures
-	_yTexBuffer.reset(new uint8_t[w * h]);
-	_ytex = bm_create(8, w, h, _yTexBuffer.get(), BMP_AABITMAP);
+	switch (props.pixelFormat) {
+	case FramePixelFormat::YUV420:
+		_planeTextureBuffers[0].reset(new uint8_t[w * h]);
+		_planeTextureHandles[0] = bm_create(8, w, h, _planeTextureBuffers[0].get(), BMP_AABITMAP);
 
-	_uTexBuffer.reset(new uint8_t[w / 2 * h / 2]);
-	_utex = bm_create(8, w / 2, h / 2, _uTexBuffer.get(), BMP_AABITMAP);
+		_planeTextureBuffers[1].reset(new uint8_t[w / 2 * h / 2]);
+		_planeTextureHandles[1] = bm_create(8, w / 2, h / 2, _planeTextureBuffers[1].get(), BMP_AABITMAP);
 
-	_vTexBuffer.reset(new uint8_t[w / 2 * h / 2]);
-	_vtex = bm_create(8, w / 2, h / 2, _vTexBuffer.get(), BMP_AABITMAP);
+		_planeTextureBuffers[2].reset(new uint8_t[w / 2 * h / 2]);
+		_planeTextureHandles[2] = bm_create(8, w / 2, h / 2, _planeTextureBuffers[2].get(), BMP_AABITMAP);
 
-	material_set_movie(&_render_material, _ytex, _utex, _vtex);
+		material_set_movie(&_movie_material, _planeTextureHandles[0], _planeTextureHandles[1], _planeTextureHandles[2]);
+		break;
+	case FramePixelFormat::BGR:
+		_planeTextureBuffers[0].reset(new uint8_t[w * h * 3]);
+		_planeTextureHandles[0] = bm_create(24, w, h, _planeTextureBuffers[0].get(), 0);
+
+		material_set_unlit(&_rgb_material, _planeTextureHandles[0], 1.0f, false, false);
+		break;
+	case FramePixelFormat::BGRA:
+		_planeTextureBuffers[0].reset(new uint8_t[w * h * 4]);
+		_planeTextureHandles[0] = bm_create(32, w, h, _planeTextureBuffers[0].get(), 0);
+
+		material_set_unlit(&_rgb_material, _planeTextureHandles[0], 1.0f, true, false);
+		break;
+	default:
+		UNREACHABLE("Unhandled enum value!");
+		break;
+	}
 }
 
 VideoPresenter::~VideoPresenter() {
 	GR_DEBUG_SCOPE("Deinit video");
 
-	bm_release(_ytex);
-	bm_release(_utex);
-	bm_release(_vtex);
-
-	_ytex = _utex = _vtex = -1;
+	for (auto& handle : _planeTextureHandles) {
+		if (handle > 0) {
+			bm_release(handle);
+			handle = -1;
+		}
+	}
 }
 
 void VideoPresenter::uploadVideoFrame(const VideoFramePtr& frame) {
 	GR_DEBUG_SCOPE("Update video frame");
-	auto ptrs = frame->getDataPointers();
 
-	memcpy(_yTexBuffer.get(), ptrs.y, frame->ySize.stride * frame->ySize.height);
-	memcpy(_uTexBuffer.get(), ptrs.u, frame->uvSize.stride * frame->uvSize.height);
-	memcpy(_vTexBuffer.get(), ptrs.v, frame->uvSize.stride * frame->uvSize.height);
+	for (size_t i = 0; i < frame->getPlaneNumber(); ++i) {
+		auto size = frame->getPlaneSize(i);
+		auto data = frame->getPlaneData(i);
 
-	gr_update_texture(_ytex, 8, _yTexBuffer.get(), (int) frame->ySize.width, (int) frame->ySize.height);
-	gr_update_texture(_utex, 8, _uTexBuffer.get(), (int) frame->uvSize.width, (int) frame->uvSize.height);
-	gr_update_texture(_vtex, 8, _vTexBuffer.get(), (int) frame->uvSize.width, (int) frame->uvSize.height);
+		memcpy(_planeTextureBuffers[i].get(), data, size.stride * size.height);
+
+		int bpp = 0;
+		switch (_properties.pixelFormat) {
+		case FramePixelFormat::YUV420:
+			bpp = 8;
+			break;
+		case FramePixelFormat::BGR:
+			bpp = 24;
+			break;
+		case FramePixelFormat::BGRA:
+			bpp = 32;
+			break;
+		default:
+			UNREACHABLE("Unhandled enum value!");
+			break;
+		}
+
+		gr_update_texture(_planeTextureHandles[i], bpp, _planeTextureBuffers[i].get(), static_cast<int>(size.width),
+		                  static_cast<int>(size.height));
+	}
 }
 
 void VideoPresenter::displayFrame(float x1, float y1, float x2, float y2) {
@@ -88,7 +127,11 @@ void VideoPresenter::displayFrame(float x1, float y1, float x2, float y2) {
 	layout.add_vertex_component(vertex_format_data::POSITION2, sizeof(vertex_data[0]), offset + offsetof(movie_vertex, pos));
 	layout.add_vertex_component(vertex_format_data::TEX_COORD2, sizeof(vertex_data[0]), offset + offsetof(movie_vertex, uv));
 
-	gr_render_movie(&_render_material, PRIM_TYPE_TRISTRIP, &layout, 4, gr_immediate_buffer_handle);
+	if (_properties.pixelFormat == FramePixelFormat::YUV420) {
+		gr_render_movie(&_movie_material, PRIM_TYPE_TRISTRIP, &layout, 4, gr_immediate_buffer_handle);
+	} else {
+		gr_render_primitives(&_rgb_material, PRIM_TYPE_TRISTRIP, &layout, 0, 4, gr_immediate_buffer_handle);
+	}
 }
 
 }

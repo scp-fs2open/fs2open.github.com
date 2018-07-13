@@ -10,28 +10,26 @@ struct FrameSize {
 	size_t width = 0;
 	size_t height = 0;
 	size_t stride = 0;
+
+	FrameSize(size_t width, size_t in_height, size_t in_stride);
+	FrameSize();
 };
 
 class VideoFrame {
  protected:
-	VideoFrame() {}
+	VideoFrame() = default;
 
- public:
-	virtual ~VideoFrame() {}
+  public:
+	virtual ~VideoFrame() = default;
 
 	double frameTime = -1.0;
 	int id = -1;
 
-	FrameSize ySize;
-	FrameSize uvSize;
+	virtual size_t getPlaneNumber() = 0;
 
-	struct DataPointers {
-		ubyte* y;
-		ubyte* u;
-		ubyte* v;
-	};
+	virtual FrameSize getPlaneSize(size_t plane) = 0;
 
-	virtual DataPointers getDataPointers() = 0;
+	virtual void* getPlaneData(size_t plane) = 0;
 };
 
 /**
@@ -43,10 +41,19 @@ using FramePtr = std::unique_ptr<T>;
 
 typedef std::unique_ptr<VideoFrame> VideoFramePtr;
 
+enum class FramePixelFormat {
+	Invalid,
+	YUV420,
+	BGR,
+	BGRA
+};
+
 struct MovieProperties {
 	FrameSize size;
 
 	float fps = -1.0f;
+
+	FramePixelFormat pixelFormat = FramePixelFormat::Invalid;
 };
 
 struct AudioFrame {
