@@ -1,35 +1,36 @@
 //
 //
 
-#include <graphics/2d.h>
-#include <camera/camera.h>
-#include <graphics/opengl/gropenglpostprocessing.h>
-#include <graphics/matrix.h>
-#include <globalincs/systemvars.h>
-#include <freespace.h>
-#include <render/3d.h>
-#include <render/3dinternal.h>
-#include <graphics/material.h>
-#include <model/modelrender.h>
-#include <jumpnode/jumpnode.h>
-#include <ship/ship.h>
-#include <debris/debris.h>
-#include <weapon/weapon.h>
+#include "graphics.h"
+#include "scripting/api/objs/camera.h"
+#include "scripting/api/objs/enums.h"
+#include "scripting/api/objs/font.h"
+#include "scripting/api/objs/model.h"
+#include "scripting/api/objs/movie_player.h"
+#include "scripting/api/objs/object.h"
+#include "scripting/api/objs/streaminganim.h"
+#include "scripting/api/objs/subsystem.h"
+#include "scripting/api/objs/texture.h"
+#include "scripting/api/objs/vecmath.h"
 #include <asteroid/asteroid.h>
+#include <camera/camera.h>
+#include <debris/debris.h>
+#include <freespace.h>
+#include <globalincs/systemvars.h>
+#include <graphics/2d.h>
+#include <graphics/material.h>
+#include <graphics/matrix.h>
+#include <graphics/opengl/gropenglpostprocessing.h>
 #include <hud/hudbrackets.h>
 #include <hud/hudtarget.h>
+#include <jumpnode/jumpnode.h>
+#include <model/modelrender.h>
 #include <parse/parselo.h>
+#include <render/3d.h>
+#include <render/3dinternal.h>
 #include <scripting/scripting.h>
-#include "graphics.h"
-#include "camera.h"
-#include "font.h"
-#include "enums.h"
-#include "texture.h"
-#include "vecmath.h"
-#include "model.h"
-#include "object.h"
-#include "subsystem.h"
-#include "streaminganim.h"
+#include <ship/ship.h>
+#include <weapon/weapon.h>
 
 namespace {
 
@@ -1540,5 +1541,25 @@ ADE_FUNC(resetClip, l_Graphics, NULL, "Resets the clipping region that might hav
 	return ADE_RETURN_TRUE;
 }
 
+ADE_FUNC(openMovie, l_Graphics, "string name",
+         "Opens the movie with the specified name. If the name has an extension it will be removed. This function will "
+         "try all movie formats supported by the engine and use the first that is found.",
+         "movie_player", "The cutscene player handle or invalid handle if cutscene could not be opened.")
+{
+	const char* name = nullptr;
+	if (!ade_get_args(L, "s", &name)) {
+		return ade_set_error(L, "o", l_MoviePlayer.Set(nullptr));
+	}
+
+	// Audio is disabled for scripted movies at the moment
+	auto player = cutscene::Player::newPlayer(name, false);
+
+	if (!player) {
+		return ade_set_args(L, "o", l_MoviePlayer.Set(nullptr));
+	}
+
+	return ade_set_args(L, "o", l_MoviePlayer.Set(new movie_player_h(std::move(player))));
 }
-}
+
+} // namespace api
+} // namespace scripting

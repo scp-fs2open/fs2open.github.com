@@ -17,6 +17,7 @@
 #include "io/key.h"
 #include "io/timer.h"
 
+#include "player.h"
 #include "parse/parselo.h"
 
 using namespace cutscene::player;
@@ -272,8 +273,21 @@ bool shouldBeginPlayback(Decoder* decoder) {
 }
 
 namespace cutscene {
-Player::Player(std::unique_ptr<Decoder>&& decoder) : m_decoder(std::move(decoder)) {
-	initPlayback();
+Player::Player(std::unique_ptr<Decoder>&& decoder, bool enable_audio) : m_decoder(std::move(decoder))
+{
+	Assertion(!m_state.videoInited,
+	          "Internal State has been initialized before! Create a new player for replaying a movie.");
+
+	m_decoderThread.reset(new std::thread(std::bind(&Player::decoderThread, this)));
+
+	m_state.props   = m_decoder->getProperties();
+	m_state.decoder = m_decoder.get();
+
+	videoPlaybackInit(&m_state);
+
+	if (enable_audio) {
+		audioPlaybackInit(&m_state);
+	}
 }
 
 Player::~Player() {
@@ -315,19 +329,6 @@ bool Player::processDecoderData() {
 
 	return decoding || pendingAudio || pendingVideo;
 }
-
-void Player::initPlayback() {
-	Assertion(!m_state.videoInited, "Internal State has been initialized before! Create a new player for replaying a movie.");
-
-	m_decoderThread.reset(new std::thread(std::bind(&Player::decoderThread, this)));
-
-	m_state.props = m_decoder->getProperties();
-	m_state.decoder = m_decoder.get();
-
-	videoPlaybackInit(&m_state);
-
-	audioPlaybackInit(&m_state);
-}
 bool Player::update(uint64_t diff_time_micro) {
 	if (m_state.playbackHasBegun) {
 		m_state.playback_time += diff_time_micro;
@@ -354,7 +355,8 @@ void Player::decoderThread() {
 	}
 }
 
-std::unique_ptr<Player> Player::newPlayer(const SCP_string& name) {
+std::unique_ptr<Player> Player::newPlayer(const SCP_string& name, bool enable_audio)
+{
 	mprintf(("Creating player for movie '%s'.\n", name.c_str()));
 
 	auto decoder = findDecoder(name);
@@ -362,7 +364,7 @@ std::unique_ptr<Player> Player::newPlayer(const SCP_string& name) {
 	if (decoder == nullptr) {
 		return nullptr;
 	}
-	return std::unique_ptr<Player>(new Player(std::move(decoder)));
+	return std::unique_ptr<Player>(new Player(std::move(decoder), enable_audio));
 }
 const PlayerState& Player::getInternalState() const {
 	return m_state;
@@ -386,4 +388,5 @@ SCP_string Player::getCurrentSubtitle() {
 		return m_state.currentSubtitle->text;
 	}
 }
+bool Player::isPlaybackReady() const { return m_state.playbackHasBegun || shouldBeginPlayback(m_decoder.get()); }
 }
