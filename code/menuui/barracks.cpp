@@ -433,7 +433,7 @@ void barracks_init_stats(scoring_struct *stats)
 	Num_stat_lines++;
 
 	Assert(Num_stat_lines < Max_stat_lines);
-	STRCPY1(Stat_labels[Num_stat_lines], "Current Score:");
+	STRCPY1(Stat_labels[Num_stat_lines], XSTR( "Current Score:", 1583));
 	sprintf(Stats[Num_stat_lines], "%d", stats->score);
 	Num_stat_lines++;
 
