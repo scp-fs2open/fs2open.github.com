@@ -1066,12 +1066,12 @@ void process_debug_keys(int k)
 
 			if (is_support_allowed(obj_to_rearm))
 			{
-				HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR("Issuing rearm request for %s", -1), Ships[obj_to_rearm->instance].ship_name);
+				HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR("Issuing rearm request for %s", 1610), Ships[obj_to_rearm->instance].ship_name);
 				ai_issue_rearm_request(obj_to_rearm);
 			}
 			else
 			{
-				HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR("Cannot issue rearm request for %s", -1), Ships[obj_to_rearm->instance].ship_name);
+				HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR("Cannot issue rearm request for %s", 1611), Ships[obj_to_rearm->instance].ship_name);
 			}
 
 			break;
@@ -2423,10 +2423,10 @@ int button_function(int n)
 				HUD_printf("%s", XSTR("Engine failure.  Cannot engage subspace drive.", 40));
 			} else if (!ship_navigation_ok_to_warp(Player_ship)) {
 				gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
-				HUD_printf("%s", XSTR("Navigation failure.  Cannot engage subspace drive.", 1596));
+				HUD_printf("%s", XSTR("Navigation failure.  Cannot engage subspace drive.", 1572));
 			} else if ( (Player_obj != NULL) && object_get_gliding(Player_obj)) {
 				gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
-				HUD_printf("%s", XSTR("Cannot engage subspace drive while gliding.", 1597));
+				HUD_printf("%s", XSTR("Cannot engage subspace drive while gliding.", 1573));
 			} else {
 				gameseq_post_event( GS_EVENT_PLAYER_WARPOUT_START );
 			}
