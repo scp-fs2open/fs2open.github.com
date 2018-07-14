@@ -335,7 +335,7 @@ void gr_stub_render_primitives_distortion(distortion_material*  /*material_info*
 {
 
 }
-void gr_stub_render_movie(movie_material*  /*material_info*/, primitive_type  /*prim_type*/, vertex_layout*  /*layout*/, int  /*n_verts*/, int  /*buffer*/)
+void gr_stub_render_movie(movie_material*  /*material_info*/, primitive_type  /*prim_type*/, vertex_layout*  /*layout*/, int  /*n_verts*/, int  /*buffer*/, size_t /*buffer_offset*/)
 {
 }
 
