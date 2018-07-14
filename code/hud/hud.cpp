@@ -2895,7 +2895,7 @@ void HudGaugeSupport::render(float  /*frametime*/)
 			}
 			else
 			{
-				sprintf(outstr, "Waiting...");
+				sprintf(outstr, XSTR("Waiting...", 1603));
 			}	
 		}
 		renderStringAlignCenter(position[0], position[1] + text_val_offset_y, w, outstr);
