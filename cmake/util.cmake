@@ -225,3 +225,13 @@ function(list_target_dependencies _target _out_var)
 	list(REMOVE_DUPLICATES out_list)
 	set(${_out_var} ${out_list} PARENT_SCOPE)
 endfunction(list_target_dependencies)
+
+macro(add_file_folder FOLDER_NAME)
+	string(MAKE_C_IDENTIFIER "${FOLDER_NAME}" VARIABLE_NAME)
+	set(files_${VARIABLE_NAME} ${files_${VARIABLE_NAME}} ${ARGN})
+
+	string(REPLACE "/" "\\" FIXED_FOLDER_FILE "${FOLDER_NAME}")
+
+	source_group("${FIXED_FOLDER_FILE}" FILES ${ARGN})
+	set(source_files ${source_files} ${ARGN})
+endmacro(add_file_folder)

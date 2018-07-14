@@ -3,7 +3,7 @@ INCLUDE(source_groups.cmake)
 
 INCLUDE(voice_rec.cmake)
 
-ADD_LIBRARY(code STATIC ${file_root} ${VOICE_REC_FILES})
+ADD_LIBRARY(code STATIC ${source_files} ${VOICE_REC_FILES})
 
 target_compile_features(code PUBLIC ${REQUIRED_CXX_FEATURES})
 
