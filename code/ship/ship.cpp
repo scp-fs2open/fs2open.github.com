@@ -7402,7 +7402,8 @@ void ship_destroy_instantly(object *ship_objp, int shipnum)
 void ship_cleanup(int shipnum, int cleanup_mode)
 {
 	Assert(shipnum >= 0 && shipnum < MAX_SHIPS);
-	Assert(cleanup_mode & (SHIP_DESTROYED | SHIP_DEPARTED | SHIP_VANISHED));
+	Assert(cleanup_mode &
+	       (SHIP_DESTROYED | SHIP_DEPARTED | SHIP_VANISHED | SHIP_DESTROYED_REDALERT | SHIP_DEPARTED_REDALERT));
 	Assert(Objects[Ships[shipnum].objnum].type == OBJ_SHIP);
 	Assert(Objects[Ships[shipnum].objnum].flags[Object::Object_Flags::Should_be_dead]);
 
