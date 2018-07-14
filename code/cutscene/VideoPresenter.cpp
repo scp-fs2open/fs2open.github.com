@@ -124,13 +124,13 @@ void VideoPresenter::displayFrame(float x1, float y1, float x2, float y2) {
 	auto offset = gr_add_to_immediate_buffer(sizeof(vertex_data), vertex_data);
 
 	vertex_layout layout;
-	layout.add_vertex_component(vertex_format_data::POSITION2, sizeof(vertex_data[0]), offset + offsetof(movie_vertex, pos));
-	layout.add_vertex_component(vertex_format_data::TEX_COORD2, sizeof(vertex_data[0]), offset + offsetof(movie_vertex, uv));
+	layout.add_vertex_component(vertex_format_data::POSITION2, sizeof(vertex_data[0]), offsetof(movie_vertex, pos));
+	layout.add_vertex_component(vertex_format_data::TEX_COORD2, sizeof(vertex_data[0]), offsetof(movie_vertex, uv));
 
 	if (_properties.pixelFormat == FramePixelFormat::YUV420) {
-		gr_render_movie(&_movie_material, PRIM_TYPE_TRISTRIP, &layout, 4, gr_immediate_buffer_handle);
+		gr_render_movie(&_movie_material, PRIM_TYPE_TRISTRIP, &layout, 4, gr_immediate_buffer_handle, offset);
 	} else {
-		gr_render_primitives(&_rgb_material, PRIM_TYPE_TRISTRIP, &layout, 0, 4, gr_immediate_buffer_handle);
+		gr_render_primitives(&_rgb_material, PRIM_TYPE_TRISTRIP, &layout, 0, 4, gr_immediate_buffer_handle, offset);
 	}
 }
 
