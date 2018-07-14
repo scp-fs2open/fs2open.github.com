@@ -1034,7 +1034,7 @@ void HudGaugeTargetBox::renderTargetWeapon(object *target_objp)
 		dist = vm_vec_dist(&target_objp->pos, &wp->homing_pos);
 		
 		if ( speed > 0 ) {
-			sprintf(outstr, NOX("impact: %.1f sec"), dist/speed);
+			sprintf(outstr, XSTR("impact: %.1f sec", 1596), dist/speed);
 		} else {
 			strcpy_s(outstr, XSTR( "unknown", 349));
 		}
