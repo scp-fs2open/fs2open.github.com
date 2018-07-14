@@ -13,6 +13,7 @@
 #include <FredApplication.h>
 
 #include <ui/dialogs/EventEditorDialog.h>
+#include <ui/dialogs/AsteroidEditorDialog.h>
 #include <ui/dialogs/BriefingEditorDialog.h>
 #include <ui/dialogs/WaypointEditorDialog.h>
 #include <ui/dialogs/MissionGoalsDialog.h>
@@ -671,6 +672,10 @@ void FredView::onUpdateShipClassBox() {
 }
 void FredView::onShipClassSelected(int ship_class) {
 	_viewport->cur_model_index = ship_class;
+}
+void FredView::on_actionAsteroid_Field_triggered(bool) {
+	auto asteroidFieldEditor = new dialogs::AsteroidEditorDialog(this, _viewport);
+	asteroidFieldEditor->show();
 }
 void FredView::on_actionBriefing_triggered(bool) {
 	auto eventEditor = new dialogs::BriefingEditorDialog(this);
