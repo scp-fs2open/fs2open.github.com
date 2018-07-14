@@ -648,7 +648,7 @@ void player_select_button_pressed(int n)
 			if (Player_select_mode == PLAYER_SELECT_MODE_MULTI) {
 				popup(PF_TITLE_BIG | PF_TITLE_RED | PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("Disabled!\n\nMulti and single player pilots are now identical. "
 							"Deleting a multi-player pilot will also delete all single-player data for that pilot.\n\nAs a safety precaution, pilots can only be "
-							"deleted from the single-player menu.", 1610));
+							"deleted from the single-player menu.", 1598));
 			} else {
 				// display a popup requesting confirmation
 				ret = popup(PF_TITLE_BIG | PF_TITLE_RED, 2, POPUP_NO, POPUP_YES, XSTR( "Warning!\n\nAre you sure you wish to delete this pilot?", 382));
