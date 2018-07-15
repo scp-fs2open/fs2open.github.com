@@ -1593,7 +1593,7 @@ ship_info::ship_info()
 	regular_end_particles.min_vel = 0.0f;
 	regular_end_particles.variance = 2.0f;
 
-	death_effect = -1;
+	death_effect = particle::ParticleEffectHandle::invalid();
 
 	debris_min_lifetime = -1.0f;
 	debris_max_lifetime = -1.0f;
@@ -7999,7 +7999,7 @@ static void ship_dying_frame(object *objp, int ship_num)
 			}
 
 			if (!knossos_ship){
-				if (sip->death_effect > 0) {
+				if (sip->death_effect.isValid()) {
 					// Use the new particle effect
 					auto source = particle::ParticleManager::get()->createSource(sip->death_effect);
 

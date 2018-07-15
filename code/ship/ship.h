@@ -1015,7 +1015,7 @@ public:
 	particle_effect		knossos_end_particles;
 	particle_effect		regular_end_particles;
 
-	particle::ParticleEffectIndex death_effect;
+	particle::ParticleEffectHandle death_effect;
 
 	//Debris stuff
 	float			debris_min_lifetime;

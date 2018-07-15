@@ -6,13 +6,15 @@
 #include "particle/ParticleEffect.h"
 #include "particle/ParticleSource.h"
 #include "particle/ParticleSourceWrapper.h"
+#include "utils/id.h"
 
 namespace particle {
-// typedef this to make usages of particle effects clearer
+struct particle_effect_tag {
+};
 /**
- * The particle index type. Use this in place of int or ptrdiff_t.
+ * The particle index type.
  */
-typedef ptrdiff_t ParticleEffectIndex;
+using ParticleEffectHandle = ::util::ID<particle_effect_tag, ptrdiff_t, -1>;
 
 /**
  * @brief Manages high-level particle effects and sources
@@ -79,11 +81,13 @@ class ParticleManager {
 	 * @param effectID The id of the effect to retrieve
 	 * @return The particle effect pointer, will not be @c nullptr
 	 */
-	inline ParticleEffectPtr getEffect(ParticleEffectIndex effectID) {
-		Assertion(effectID >= 0 && effectID < static_cast<ParticleEffectIndex>(m_effects.size()),
-				  "Particle effect index " PTRDIFF_T_ARG " is invalid!", effectID);
+	inline ParticleEffectPtr getEffect(ParticleEffectHandle effectID)
+	{
+		Assertion(effectID.value() >= 0 &&
+		              effectID.value() < static_cast<ParticleEffectHandle::impl_type>(m_effects.size()),
+		          "Particle effect index " PTRDIFF_T_ARG " is invalid!", effectID.value());
 
-		return m_effects[effectID].get();
+		return m_effects[effectID.value()].get();
 	}
 
 	/**
@@ -95,14 +99,14 @@ class ParticleManager {
 	 * @param name The name of the effect that is being searchd, may not be empty
 	 * @return The index of the effect
 	 */
-	ParticleEffectIndex getEffectByName(const SCP_string& name);
+	ParticleEffectHandle getEffectByName(const SCP_string& name);
 
 	/**
 	 * @brief Adds an effect
 	 * @param effect The effect to add
 	 * @return The index of the added effect
 	 */
-	ParticleEffectIndex addEffect(ParticleEffectPtr effect);
+	ParticleEffectHandle addEffect(ParticleEffectPtr effect);
 
 	/**
 	 * @brief Does one processing step of the particle manager
@@ -128,7 +132,7 @@ class ParticleManager {
 	 * @param index The index of the effect
 	 * @return A wrapper class which allows access to the created sources
 	 */
-	ParticleSourceWrapper createSource(ParticleEffectIndex index);
+	ParticleSourceWrapper createSource(ParticleEffectHandle index);
 };
 
 namespace internal {
@@ -142,8 +146,7 @@ namespace internal {
  * @param name The name of the created effect, an empty string means no special name
  * @return The index of the added effect
  */
-ParticleEffectIndex parseEffectElement(EffectType forcedType = EffectType::Invalid,
-									   const SCP_string& name = "");
+ParticleEffectHandle parseEffectElement(EffectType forcedType = EffectType::Invalid, const SCP_string& name = "");
 
 /**
  * @brief Utility function for required_string
@@ -178,7 +181,7 @@ namespace util {
  * @param objectName Can be optionally specified so the error message is a bit more specific
  * @return The index
  */
-ParticleEffectIndex parseEffect(const SCP_string& objectName = "");
+ParticleEffectHandle parseEffect(const SCP_string& objectName = "");
 }
 }
 
