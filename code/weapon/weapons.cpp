@@ -1668,8 +1668,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 
 		// Default value
 		wip->shield_impact_explosion_radius = 1.0f;
-		if (wip->impact_weapon_expl_effect >= 0)
-		{
+		if (wip->impact_weapon_expl_effect.isValid()) {
 			auto singleEffect = dynamic_cast<effects::SingleParticleEffect*>(ParticleManager::get()->getEffect(wip->impact_weapon_expl_effect));
 
 			if (singleEffect)
@@ -1743,7 +1742,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		if (first_time)
 		{
 			// The secondary effect is only needed if the old effect got parsed
-			wip->piercing_impact_secondary_effect = -1;
+			wip->piercing_impact_secondary_effect = particle::ParticleEffectHandle::invalid();
 		}
 	}
 	else
@@ -6142,8 +6141,7 @@ void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos, int qu
 		weapon_hit_do_sound(other_obj, wip, hitpos, armed_weapon, quadrant);
 	}
 
-	if ( wip->impact_weapon_expl_effect >= 0 && armed_weapon)
-	{
+	if (wip->impact_weapon_expl_effect.isValid() && armed_weapon) {
 		auto particleSource = particle::ParticleManager::get()->createSource(wip->impact_weapon_expl_effect);
 		particleSource.moveTo(hitpos);
 		particleSource.setOrientationFromVec(&weapon_obj->phys_info.vel);
@@ -6154,9 +6152,7 @@ void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos, int qu
 		}
 
 		particleSource.finish();
-	}
-	else if(wip->dinky_impact_weapon_expl_effect >= 0 && !armed_weapon)
-	{
+	} else if (wip->dinky_impact_weapon_expl_effect.isValid() && !armed_weapon) {
 		auto particleSource = particle::ParticleManager::get()->createSource(wip->dinky_impact_weapon_expl_effect);
 		particleSource.moveTo(hitpos);
 		particleSource.setOrientationFromVec(&weapon_obj->phys_info.vel);
@@ -6169,7 +6165,7 @@ void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos, int qu
 		particleSource.finish();
 	}
 
-	if((other_obj != NULL) && (quadrant == -1) && (wip->piercing_impact_effect > -1 && armed_weapon)) {
+	if ((other_obj != nullptr) && (quadrant == -1) && (wip->piercing_impact_effect.isValid() && armed_weapon)) {
 		if ((other_obj->type == OBJ_SHIP) || (other_obj->type == OBJ_DEBRIS)) {
 
 			int ok_to_draw = 1;
@@ -6211,8 +6207,7 @@ void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos, int qu
 
 				primarySource.finish();
 
-				if (wip->piercing_impact_secondary_effect >= 0)
-				{
+				if (wip->piercing_impact_secondary_effect.isValid()) {
 					auto secondarySource = ParticleManager::get()->createSource(wip->piercing_impact_secondary_effect);
 					secondarySource.moveTo(&weapon_obj->pos);
 					secondarySource.setOrientationMatrix(&weapon_obj->last_orient);
@@ -7676,14 +7671,14 @@ void weapon_info::reset()
 
 	this->shield_impact_explosion_radius = 1.0f;
 
-	this->impact_weapon_expl_effect = -1;
+	this->impact_weapon_expl_effect = particle::ParticleEffectHandle::invalid();
 
-	this->dinky_impact_weapon_expl_effect = -1;
+	this->dinky_impact_weapon_expl_effect = particle::ParticleEffectHandle::invalid();
 
-	this->flash_impact_weapon_expl_effect = -1;
+	this->flash_impact_weapon_expl_effect = particle::ParticleEffectHandle::invalid();
 
-	this->piercing_impact_effect = -1;
-	this->piercing_impact_secondary_effect = -1;
+	this->piercing_impact_effect           = particle::ParticleEffectHandle::invalid();
+	this->piercing_impact_secondary_effect = particle::ParticleEffectHandle::invalid();
 
 	this->muzzle_flash = -1;
 

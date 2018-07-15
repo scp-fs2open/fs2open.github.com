@@ -155,10 +155,11 @@ ParticleSource* ParticleManager::createSource() {
 	return source;
 }
 
-ParticleEffectIndex ParticleManager::getEffectByName(const SCP_string& name) {
+ParticleEffectHandle ParticleManager::getEffectByName(const SCP_string& name)
+{
 	if (name.empty()) {
 		// Don't allow empty names, it's a special case for effects that should not be referenced.
-		return -1;
+		return ParticleEffectHandle::invalid();
 	}
 
 	auto foundIterator = find_if(m_effects.begin(), m_effects.end(),
@@ -167,10 +168,10 @@ ParticleEffectIndex ParticleManager::getEffectByName(const SCP_string& name) {
 								 });
 
 	if (foundIterator == m_effects.end()) {
-		return -1;
+		return ParticleEffectHandle::invalid();
 	}
 
-	return distance(m_effects.begin(), foundIterator);
+	return ParticleEffectHandle(distance(m_effects.begin(), foundIterator));
 }
 
 void ParticleManager::doFrame(float) {
@@ -210,7 +211,8 @@ void ParticleManager::doFrame(float) {
 	}
 }
 
-ParticleEffectIndex ParticleManager::addEffect(ParticleEffectPtr effect) {
+ParticleEffectHandle ParticleManager::addEffect(ParticleEffectPtr effect)
+{
 	Assertion(effect, "Invalid effect pointer passed!");
 
 #ifndef NDEBUG
@@ -218,7 +220,7 @@ ParticleEffectIndex ParticleManager::addEffect(ParticleEffectPtr effect) {
 		// This check is a bit expensive and will only be used in debug
 		auto index = getEffectByName(effect->getName());
 
-		if (index >= 0) {
+		if (index.isValid()) {
 			Warning(LOCATION, "Effect with name '%s' already exists!", effect->getName().c_str());
 			return index;
 		}
@@ -227,7 +229,7 @@ ParticleEffectIndex ParticleManager::addEffect(ParticleEffectPtr effect) {
 
 	m_effects.push_back(std::shared_ptr<ParticleEffect>(effect));
 
-	return static_cast<ParticleEffectIndex>(m_effects.size() - 1);
+	return ParticleEffectHandle(static_cast<ParticleEffectHandle::impl_type>(m_effects.size() - 1));
 }
 
 void ParticleManager::pageIn() {
@@ -236,7 +238,8 @@ void ParticleManager::pageIn() {
 	}
 }
 
-ParticleSourceWrapper ParticleManager::createSource(ParticleEffectIndex index) {
+ParticleSourceWrapper ParticleManager::createSource(ParticleEffectHandle index)
+{
 	ParticleEffectPtr eff = this->getEffect(index);
 	ParticleSourceWrapper wrapper;
 
@@ -277,13 +280,14 @@ void ParticleManager::clearSources() {
 }
 
 namespace util {
-ParticleEffectIndex parseEffect(const SCP_string& objectName) {
+ParticleEffectHandle parseEffect(const SCP_string& objectName)
+{
 	SCP_string name;
 	stuff_string(name, F_NAME);
 
 	auto idx = ParticleManager::get()->getEffectByName(name);
 
-	if (idx < 0) {
+	if (!idx.isValid()) {
 		if (objectName.empty()) {
 			error_display(0, "Unknown particle effect name '%s' encountered!", name.c_str());
 		} else {
@@ -297,14 +301,15 @@ ParticleEffectIndex parseEffect(const SCP_string& objectName) {
 }
 
 namespace internal {
-ParticleEffectIndex parseEffectElement(EffectType forcedType, const SCP_string& name) {
+ParticleEffectHandle parseEffectElement(EffectType forcedType, const SCP_string& name)
+{
 	if (!optional_string("$New Effect")) {
 		SCP_string newName;
 		stuff_string(newName, F_NAME);
 
 		auto index = ParticleManager::get()->getEffectByName(newName);
 
-		if (index < 0) {
+		if (!index.isValid()) {
 			error_display(0, "Unknown particle effect name '%s' encountered!", newName.c_str());
 		}
 		if (forcedType != EffectType::Invalid) {

@@ -15,7 +15,7 @@ bool CompositeEffect::processSource(const ParticleSource*) {
 void CompositeEffect::parseValues(bool) {
 	while (optional_string("+Child effect:")) {
 		auto effectId = internal::parseEffectElement();
-		if (effectId >= 0) {
+		if (effectId.isValid()) {
 			ParticleEffectPtr effect = ParticleManager::get()->getEffect(effectId);
 
 			if (effect->getType() == EffectType::Composite) {

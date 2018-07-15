@@ -337,17 +337,17 @@ typedef struct weapon_info {
 
 	float shield_impact_explosion_radius;
 
-	particle::ParticleEffectIndex impact_weapon_expl_effect; // Impact particle effect
-	
-	particle::ParticleEffectIndex dinky_impact_weapon_expl_effect; // Dinky impact particle effect
+	particle::ParticleEffectHandle impact_weapon_expl_effect; // Impact particle effect
 
-	particle::ParticleEffectIndex flash_impact_weapon_expl_effect;
+	particle::ParticleEffectHandle dinky_impact_weapon_expl_effect; // Dinky impact particle effect
 
-	particle::ParticleEffectIndex piercing_impact_effect;
-	particle::ParticleEffectIndex piercing_impact_secondary_effect;
+	particle::ParticleEffectHandle flash_impact_weapon_expl_effect;
+
+	particle::ParticleEffectHandle piercing_impact_effect;
+	particle::ParticleEffectHandle piercing_impact_secondary_effect;
 
 	// Particle effect for the various states, WeaponState::NORMAL is the state for the whole lifetime, even for missiles
-	SCP_unordered_map<WeaponState, particle::ParticleEffectIndex, WeaponStateHash> state_effects;
+	SCP_unordered_map<WeaponState, particle::ParticleEffectHandle, WeaponStateHash> state_effects;
 
 	// EMP effect
 	float emp_intensity;					// intensity of the EMP effect

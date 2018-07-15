@@ -32,7 +32,7 @@ class GenericShapeEffect : public ParticleEffect {
 	::util::UniformFloatRange m_velocity;
 	::util::UniformUIntRange m_particleNum;
 
-	ParticleEffectIndex m_particleTrail = -1;
+	ParticleEffectHandle m_particleTrail = ParticleEffectHandle::invalid();
 
 	util::EffectTiming m_timing;
 
@@ -113,7 +113,7 @@ class GenericShapeEffect : public ParticleEffect {
 			}
 			vm_vec_scale(&info.vel, m_velocity.next());
 
-			if (m_particleTrail >= 0) {
+			if (m_particleTrail.isValid()) {
 				auto part = m_particleProperties.createPersistentParticle(info);
 
 				auto trailSource = ParticleManager::get()->createSource(m_particleTrail);

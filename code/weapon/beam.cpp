@@ -3079,10 +3079,11 @@ void beam_handle_collisions(beam *b)
 		// KOMET_EXT -->
 
 		// draw flash, explosion
-		if (draw_effects && ((wi->piercing_impact_effect >= 0) || (wi->flash_impact_weapon_expl_effect >= 0))) {
+		if (draw_effects &&
+		    ((wi->piercing_impact_effect.isValid()) || (wi->flash_impact_weapon_expl_effect.isValid()))) {
 			float rnd = frand();
 			int do_expl = 0;
-			if((rnd < 0.2f || apply_beam_physics) && wi->impact_weapon_expl_effect >= 0){
+			if ((rnd < 0.2f || apply_beam_physics) && wi->impact_weapon_expl_effect.isValid()) {
 				do_expl = 1;
 			}
 			vec3d temp_pos, temp_local_pos;
@@ -3103,7 +3104,7 @@ void beam_handle_collisions(beam *b)
 				vm_vec_unrotate(&worldNormal, &b->f_collisions[idx].cinfo.hit_normal, &Objects[target].orient);
 			}
 
-			if (wi->flash_impact_weapon_expl_effect >= 0) {
+			if (wi->flash_impact_weapon_expl_effect.isValid()) {
 				auto particleSource = particle::ParticleManager::get()->createSource(wi->flash_impact_weapon_expl_effect);
 				particleSource.moveToObject(&Objects[target], &temp_local_pos);
 				particleSource.setOrientationNormal(&worldNormal);
@@ -3132,8 +3133,8 @@ void beam_handle_collisions(beam *b)
 
 				particleSource.finish();
 			}
-			
-			if (wi->piercing_impact_effect > 0) {
+
+			if (wi->piercing_impact_effect.isValid()) {
 				vec3d fvec;
 				vm_vec_sub(&fvec, &b->last_shot, &b->last_start);
 
@@ -3200,7 +3201,7 @@ void beam_handle_collisions(beam *b)
 		} else {
 			if(draw_effects && apply_beam_physics && !physics_paused){
 				// maybe draw an explosion, if we aren't hitting shields
-				if ( (wi->impact_weapon_expl_effect >= 0) && (b->f_collisions[idx].quadrant < 0) ) {
+				if ((wi->impact_weapon_expl_effect.isValid()) && (b->f_collisions[idx].quadrant < 0)) {
 					vec3d worldNormal;
 					if (Objects[target].type == OBJ_SHIP) {
 						auto shipp = &Ships[Objects[target].instance];
