@@ -714,7 +714,7 @@ extern void maybe_cheat_fire_synaptic(object *objp, ai_info *aip);
 // dist_to_enemy	=>		distance (in m) to attack point on current target
 // dot_to_enemy	=>		dot product between fvec of Pl_objp and vector from Pl_objp to attack point
 //
-void ai_big_maybe_fire_weapons(float dist_to_enemy, float dot_to_enemy, vec3d * /*firing_pos*/, vec3d * /*enemy_pos*/, vec3d * /*enemy_vel*/)
+static void ai_big_maybe_fire_weapons(float dist_to_enemy, float dot_to_enemy)
 {
 	ai_info		*aip;
 	ship_weapon	*swp;
@@ -1144,7 +1144,7 @@ void ai_big_chase()
 	//		 TODO: investigate why ships fire (and aren't close to hitting ship) when following a path near
 	//				 a big ship
 	if (aip->mode != AIM_EVADE && aip->path_start == -1 ) {
-		ai_big_maybe_fire_weapons(dist_to_enemy, dot_to_enemy, &player_pos, &predicted_enemy_pos, &En_objp->phys_info.vel);
+		ai_big_maybe_fire_weapons(dist_to_enemy, dot_to_enemy);
 	} else {
 		if (flFrametime < 1.0f)
 			aip->time_enemy_in_range *= (1.0f - flFrametime);
@@ -1347,7 +1347,7 @@ void ai_big_strafe_attack()
 	}
 
 	// maybe fire weapons at target
-	ai_big_maybe_fire_weapons(target_dist, target_dot, &Pl_objp->pos, &En_objp->pos, &En_objp->phys_info.vel);
+	ai_big_maybe_fire_weapons(target_dist, target_dot);
 	turn_towards_point(Pl_objp, &target_pos, NULL, 0.0f);
 
 	fix last_hit = Missiontime - aip->last_hit_time;
@@ -1493,7 +1493,7 @@ void ai_big_strafe_glide_attack()
 		vm_vec_sub2(&target_pos, &En_objp->pos);
 
 		turn_towards_point(Pl_objp, &target_pos, NULL, 0.0f);
-		ai_big_maybe_fire_weapons(target_dist, target_dot, &Pl_objp->pos, &En_objp->pos, &En_objp->phys_info.vel);
+		ai_big_maybe_fire_weapons(target_dist, target_dot);
 	}
 
 	// if haven't been hit in quite a while, leave strafe mode
