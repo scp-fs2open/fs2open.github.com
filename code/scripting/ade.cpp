@@ -1,12 +1,12 @@
 //
 //
 
+#include "scripting/ade.h"
+#include "ade_api.h"
 #include "def_files/def_files.h"
 #include "mod_table/mod_table.h"
-#include "scripting/ade.h"
 #include "scripting/lua/LuaFunction.h"
 #include "ship/ship.h"
-#include "ade_api.h"
 
 #include "ade.h"
 #include "scripting/api/objs/asteroid.h"
@@ -1004,7 +1004,8 @@ int ade_set_object_with_breed(lua_State *L, int obj_idx)
 	}
 }
 
-void load_default_script(lua_State* L, const char* name) {
+void load_default_script(lua_State* L, const char* name)
+{
 	using namespace luacpp;
 
 	SCP_string source;
@@ -1018,7 +1019,7 @@ void load_default_script(lua_State* L, const char* name) {
 
 		auto length = cfilelength(cfp);
 
-		source.resize((size_t) length);
+		source.resize((size_t)length);
 		cfread(&source[0], 1, length, cfp);
 
 		cfclose(cfp);
@@ -1038,11 +1039,11 @@ void load_default_script(lua_State* L, const char* name) {
 		try {
 			func();
 		} catch (const LuaException&) {
-			// The execution of the function may also throw an exception but that should have been handled by a LuaError before
+			// The execution of the function may also throw an exception but that should have been handled by a LuaError
+			// before
 		}
 	} catch (const LuaException& e) {
 		LuaError(L, "Error while loading default script: %s", e.what());
 	}
 }
-
 }

@@ -201,8 +201,6 @@ int script_state::CreateLuaState()
 	mprintf(("ADE: Loading default scripts...\n"));
 	load_default_script(L, "cfile_require.lua");
 
-//	(void)l_BitOps.GetName();
-
 	return 1;
 }
 

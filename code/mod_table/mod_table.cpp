@@ -415,7 +415,7 @@ void mod_table_reset() {
 	Default_weapon_select_effect = 2;
 	Default_fiction_viewer_ui = -1;
 	Enable_external_shaders = false;
-	Enable_external_default_scripts = false;
+	Enable_external_default_scripts             = false;
 	Default_detail_level = 3; // "very high" seems a reasonable default in 2012 -zookeeper
 	Full_color_head_anis = false;
 	Weapons_inherit_parent_collision_group = false;
