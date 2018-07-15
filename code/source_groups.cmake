@@ -209,6 +209,10 @@ add_file_folder("Default files\\\\data\\\\maps"
 	def_files/data/maps/app_icon_sse_d.png
 )
 
+add_file_folder("Default files\\\\data\\\\scripts"
+	def_files/data/scripts/cfile_require.lua
+)
+
 add_file_folder("Default files\\\\data\\\\tables"
 	def_files/data/tables/autopilot.tbl
 	def_files/data/tables/controlconfigdefaults.tbl
@@ -230,6 +234,7 @@ set(default_files_files
 	${files_Default_files_data}
 	${files_Default_files_data_effects}
 	${files_Default_files_data_maps}
+	${files_Default_files_data_scripts}
 	${files_Default_files_data_tables}
 	${files_Default_files_builtin}
 )

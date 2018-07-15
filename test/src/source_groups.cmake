@@ -34,6 +34,7 @@ add_file_folder("Parse"
 
 add_file_folder("Scripting"
     scripting/ade_args.cpp
+    scripting/require.cpp
     scripting/ScriptingTestFixture.h
     scripting/ScriptingTestFixture.cpp
 )

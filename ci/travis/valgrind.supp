@@ -26,3 +26,11 @@
     fun:dl_open_worker
     fun:_dl_catch_error
 }
+{
+   CLang Lua unitialized value error
+   Memcheck:Cond
+   ...
+   fun:luaH_get
+   fun:lua_rawget
+   fun:_ZN12_GLOBAL__N_117ade_index_handlerEP9lua_State
+}

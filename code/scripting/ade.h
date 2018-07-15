@@ -357,8 +357,22 @@ const char *ade_get_type_string(lua_State *L, int argnum);
  * @return The return value of ade_set_args
  *
  * @author WMC
+ * @ingroup ade_api
  */
 int ade_set_object_with_breed(lua_State *L, int obj_idx);
+
+/**
+ * @brief Loads and executes a default lua script
+ *
+ * This uses the specified file name and either retrieves it from the default files or uses it as a file name if the mod
+ * option is enabled.
+ *
+ * @param L The lua state
+ * @param name The name of the script file
+ *
+ * @ingroup ade_api
+ */
+void load_default_script(lua_State* L, const char* name);
 }
 
 #endif //FS2_OPEN_ADE_H
