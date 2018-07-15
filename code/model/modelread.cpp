@@ -1179,7 +1179,12 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 				}
 
 				pm->num_debris_objects = cfread_int(fp);
-				Assert( pm->num_debris_objects <= MAX_DEBRIS_OBJECTS );
+			    if (pm->num_debris_objects > MAX_DEBRIS_OBJECTS) {
+				    Error(LOCATION,
+				          "Model %s specified that it contains %d debris objects but only %d are supported by the "
+				          "engine.",
+				          filename, pm->num_debris_objects, MAX_DEBRIS_OBJECTS);
+			    }
 				// mprintf(( "There are %d debris objects\n", pm->num_debris_objects ));
 				for (i=0; i<pm->num_debris_objects;i++ )	{
 					pm->debris_objects[i] = cfread_int(fp);
