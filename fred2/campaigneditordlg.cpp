@@ -129,9 +129,6 @@ void campaign_editor::OnUpdate(CView* pSender, LPARAM lHint, CObject* pHint)
 
 void campaign_editor::OnLoad() 
 {
-	char buf[512];
-	size_t size, offset;
-
 	if (Cur_campaign_mission < 0){
 		return;
 	}
@@ -142,9 +139,11 @@ void campaign_editor::OnLoad()
 		}
 	}
 
-	cf_find_file_location(Campaign.missions[Cur_campaign_mission].name, CF_TYPE_MISSIONS, 512, buf, &size, &offset, false);
+	auto res = cf_find_file_location(Campaign.missions[Cur_campaign_mission].name, CF_TYPE_MISSIONS, false);
 
-	FREDDoc_ptr->SetPathName(buf);
+	if (res.found) {
+		FREDDoc_ptr->SetPathName(res.full_name.c_str());
+	}
 	Campaign_wnd->DestroyWindow();
 
 //		if (FREDDoc_ptr->OnOpenDocument(Campaign.missions[Cur_campaign_mission].name)) {

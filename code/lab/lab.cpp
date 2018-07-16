@@ -1599,7 +1599,7 @@ char envmap_name[MAX_FILENAME_LEN];
 
 const char* mission_ext_list[] = { ".fs2" };
 
-SCP_string get_directory_or_vp(char* path)
+SCP_string get_directory_or_vp(const char* path)
 {
 	SCP_string result(path);
 
@@ -1833,14 +1833,15 @@ void labviewer_make_background_window(Button*  /*caller*/)
 	cf_get_file_list(missions, CF_TYPE_MISSIONS, NOX("*.fs2"));
 
 	SCP_map<SCP_string, SCP_vector<SCP_string>> directories;
-	char fullpath[MAX_PATH_LEN];
 
-	for (const auto& filename : missions)
-	{
-		cf_find_file_location((filename + ".fs2").c_str(), CF_TYPE_MISSIONS, sizeof(fullpath) - 1, fullpath, NULL, NULL);
-		auto location = get_directory_or_vp(fullpath);
+	for (const auto& filename : missions) {
+		auto res = cf_find_file_location((filename + ".fs2").c_str(), CF_TYPE_MISSIONS);
 
-		directories[location].push_back(filename);
+		if (res.found) {
+			auto location = get_directory_or_vp(res.full_name.c_str());
+
+			directories[location].push_back(filename);
+		}
 	}
 
 	Num_mission_directories = directories.size();

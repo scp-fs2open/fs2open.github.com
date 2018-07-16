@@ -1876,24 +1876,19 @@ int bm_load_sub_fast(const char *real_filename, int *handle, int dir_type, bool 
 }
 
 int bm_load_sub_slow(const char *real_filename, const int num_ext, const char **ext_list, CFILE **img_cfp, int dir_type) {
-	char full_path[MAX_PATH];
-	size_t size = 0, offset = 0;
-	int rval = -1;
-	const void* file_data = nullptr;
-
-	rval = cf_find_file_location_ext(real_filename, num_ext, ext_list, dir_type, sizeof(full_path) - 1, full_path, &size, &offset, 0, &file_data);
+	auto res = cf_find_file_location_ext(real_filename, num_ext, ext_list, dir_type, false);
 
 	// could not be found, or is invalid for some reason
-	if ((rval < 0) || (rval >= num_ext))
+	if (!res.found)
 		return -1;
 
-	CFILE *test = cfopen_special(full_path, "rb", size, offset, file_data, dir_type);
+	CFILE *test = cfopen_special(res.full_name.c_str(), "rb", res.size, res.offset, res.data_ptr, dir_type);
 
 	if (test != NULL) {
 		if (img_cfp != NULL)
 			*img_cfp = test;
 
-		return rval;
+		return res.extension_index;
 	}
 
 	// umm, that's not good...

@@ -977,15 +977,11 @@ void cf_free_secondary_filelist()
  *
  * @param filespec      Filename & extension
  * @param pathtype      See CF_TYPE_ defines in CFILE.H
- * @param max_out       Maximum string length that should be stuffed into pack_filename
- * @param pack_filename OUTPUT: Absolute path and filename of this file.   Could be a packfile or the actual file.
- * @param size          OUTPUT: File size
- * @param offset        OUTPUT: Offset into pack file.  0 if not a packfile.
  * @param localize      Undertake localization
  *
- * @return If not found returns 0.
+ * @return A structure which describes the found file
  */
-int cf_find_file_location( const char *filespec, int pathtype, int max_out, char *pack_filename, size_t *size, size_t *offset, bool localize, const void** data_out )
+CFileLocation cf_find_file_location( const char *filespec, int pathtype, bool localize)
 {
 	int i;
     uint ui;
@@ -993,7 +989,6 @@ int cf_find_file_location( const char *filespec, int pathtype, int max_out, char
 	char longname[MAX_PATH_LEN];
 
 	Assert( (filespec != NULL) && (strlen(filespec) > 0) ); //-V805
-	Assert( (pack_filename == NULL) || (max_out > 1) );
 
 	// see if we have something other than just a filename
 	// our current rules say that any file that specifies a direct
@@ -1009,16 +1004,15 @@ int cf_find_file_location( const char *filespec, int pathtype, int max_out, char
 #endif
 		FILE *fp = fopen(filespec, "rb" );
 		if (fp)	{
-			if ( size ) *size = filelength(fileno(fp));
-			if ( offset ) *offset = 0;
-			if ( pack_filename ) {
-				strncpy( pack_filename, filespec, max_out );
-			}				
+			CFileLocation res(true);
+			res.size = static_cast<size_t>(filelength(fileno(fp)));
+			res.offset = 0;
+			res.full_name = filespec;
 			fclose(fp);
-			return 1;		
+			return res;
 		}
 
-		return 0;		// If they give a full path, fail if not found.
+		return CFileLocation();		// If they give a full path, fail if not found.
 	}
 
 	// Search the hard drive for files first.
@@ -1064,36 +1058,31 @@ int cf_find_file_location( const char *filespec, int pathtype, int max_out, char
 
 			intptr_t findhandle = _findfirst(longname, &findstruct);
 			if (findhandle != -1) {
-				if (size)
-					*size = findstruct.size;
+				CFileLocation res;
+				res.found = true;
+				res.size = static_cast<size_t>(findstruct.size);
 
 				_findclose(findhandle);
 
-				if (offset)
-					*offset = 0;
+				res.offset = 0;
+				res.full_name = longname;
 
-				if (pack_filename)
-					strncpy( pack_filename, longname, max_out );
-
-				return 1;
+				return res;
 			}
 #endif
 			{
 				FILE *fp = fopen(longname, "rb" );
 
 				if (fp) {
-					if (size)
-						*size = filelength( fileno(fp) );
+					CFileLocation res(true);
+					res.size = static_cast<size_t>(filelength( fileno(fp) ));
 
 					fclose(fp);
 
-					if (offset)
-						*offset = 0;
+					res.offset = 0;
+					res.full_name = longname;
 
-					if (pack_filename)
-						strncpy(pack_filename, longname, max_out);
-
-					return 1;
+					return res;
 				}
 			}
 		}
@@ -1114,70 +1103,58 @@ int cf_find_file_location( const char *filespec, int pathtype, int max_out, char
 
 			if ( lcl_add_dir_to_path_with_filename(longname, MAX_PATH_LEN - 1) ) {
 				if ( !stricmp(longname, f->name_ext) ) {
-					if (size)
-						*size = f->size;
+					CFileLocation res(true);
+					res.size = static_cast<size_t>(f->size);
+					res.offset = (size_t)f->pack_offset;
+					res.data_ptr = f->data;
 
-					if (offset)
-						*offset = (size_t)f->pack_offset;
+					if (f->data != nullptr) {
+						// This is an in-memory file so we just copy the pathtype name + file name
+						res.full_name = Pathtypes[f->pathtype_index].path;
+						res.full_name += DIR_SEPARATOR_STR;
+						res.full_name += f->name_ext;
+					} else if (f->pack_offset < 1) {
+						// This is a real file, return the actual file path
+						res.full_name = f->real_name;
+					} else {
+						// File is in a pack file
+						cf_root *r = cf_get_root(f->root_index);
 
-					if (data_out)
-						*data_out = f->data;
-
-					if (pack_filename) {
-						if (f->data != nullptr) {
-							// This is an in-memory file so we just copy the pathtype name + file name
-							strncpy(pack_filename, Pathtypes[f->pathtype_index].path, max_out);
-							strncat(pack_filename, DIR_SEPARATOR_STR, max_out);
-							strncat(pack_filename, f->name_ext, max_out);
-						} else if (f->pack_offset < 1) {
-							// This is a real file, return the actual file path
-							strncpy( pack_filename, f->real_name, max_out );
-						} else {
-							// File is in a pack file
-							cf_root *r = cf_get_root(f->root_index);
-
-							strncpy( pack_filename, r->path, max_out );
-						}
+						res.full_name = r->path;
 					}
 
-					return 1;
+					return res;
 				}
 			}
 		}
 
 		// file either not localized or localized version not found
 		if ( !stricmp(filespec, f->name_ext) ) {
-			if (size)
-				*size = f->size;
+			CFileLocation res(true);
+			res.size = static_cast<size_t>(f->size);
+			res.offset = (size_t)f->pack_offset;
+			res.data_ptr = f->data;
 
-			if (offset)
-				*offset = (size_t)f->pack_offset;
+			if (f->data != nullptr) {
+				// This is an in-memory file so we just copy the pathtype name + file name
+				res.full_name = Pathtypes[f->pathtype_index].path;
+				res.full_name += DIR_SEPARATOR_STR;
+				res.full_name += f->name_ext;
+			} else if (f->pack_offset < 1) {
+				// This is a real file, return the actual file path
+				res.full_name = f->real_name;
+			} else {
+				// File is in a pack file
+				cf_root *r = cf_get_root(f->root_index);
 
-			if (data_out)
-				*data_out = f->data;
-
-			if (pack_filename) {
-				if (f->data != nullptr) {
-					// This is an in-memory file so we just copy the pathtype name + file name
-					strncpy(pack_filename, Pathtypes[f->pathtype_index].path, max_out);
-					strncat(pack_filename, DIR_SEPARATOR_STR, max_out);
-					strncat(pack_filename, f->name_ext, max_out);
-				} else if (f->pack_offset < 1) {
-					// This is a real file, return the actual file path
-					strncpy( pack_filename, f->real_name, max_out );
-				} else {
-					// File is in a pack file
-					cf_root *r = cf_get_root(f->root_index);
-
-					strncpy( pack_filename, r->path, max_out );
-				}
+				res.full_name = r->path;
 			}
 
-			return 1;
+			return res;
 		}
 	}
 		
-	return 0;
+	return CFileLocation();
 }
 
 // -- from parselo.cpp --
@@ -1194,14 +1171,11 @@ extern char *stristr(char *str, const char *substr);
  * @param ext_list      Extension filter list
  * @param pathtype      See CF_TYPE_ defines in CFILE.H
  * @param max_out       Maximum string length that should be stuffed into pack_filename
- * @param pack_filename OUTPUT: Absolute path and filename of this file.   Could be a packfile or the actual file.
- * @param size          OUTPUT: File size
- * @param offset        OUTPUT: Offset into pack file.  0 if not a packfile.
  * @param localize      Undertake localization
  *
- * @return If not found returns -1, else returns offset into ext_list.
+ * @return A structure containing information about the found file
  */
-int cf_find_file_location_ext( const char *filename, const int ext_num, const char **ext_list, int pathtype, int max_out, char *pack_filename, size_t *size, size_t *offset, bool localize, const void** data_out)
+CFileLocationExt cf_find_file_location_ext( const char *filename, const int ext_num, const char **ext_list, int pathtype, bool localize)
 {
 	int cur_ext, i;
     uint ui;
@@ -1213,7 +1187,6 @@ int cf_find_file_location_ext( const char *filename, const int ext_num, const ch
 	Assert( (filename != NULL) && (strlen(filename) < MAX_FILENAME_LEN) );
 	Assert( (ext_list != NULL) && (ext_num > 1) );	// if we are searching for just one ext
 													// then this is the wrong function to use
-	Assert( (pack_filename == NULL) || (max_out > 1) );
 
 
 	// if we have a full path already then fail.  this function if for searching via filter only!
@@ -1223,7 +1196,7 @@ int cf_find_file_location_ext( const char *filename, const int ext_num, const ch
 	if ( strpbrk(filename,"/\\:")  ) {		// do we have a full path already?
 #endif
 		Int3();
-		return 0;
+		return CFileLocationExt();
 	}
 
 	// Search the hard drive for files first.
@@ -1281,44 +1254,35 @@ int cf_find_file_location_ext( const char *filename, const int ext_num, const ch
 
 #if defined _WIN32
 			_finddata_t findstruct;
+
 			intptr_t findhandle = _findfirst(longname, &findstruct);
 			if (findhandle != -1) {
-				if (size)
-					*size = findstruct.size;
-
-				if (data_out)
-					*data_out = nullptr;
+				CFileLocationExt res(cur_ext);
+				res.found = true;
+				res.size = static_cast<size_t>(findstruct.size);
 
 				_findclose(findhandle);
 
-				if (offset)
-					*offset = 0;
+				res.offset = 0;
+				res.full_name = longname;
 
-				if (pack_filename)
-					strncpy( pack_filename, longname, max_out );
-
-				return cur_ext;
+				return res;
 			}
 #endif
 			{
 				FILE *fp = fopen(longname, "rb" );
 
 				if (fp) {
-					if (size)
-						*size = filelength( fileno(fp) );
-
-					if (data_out)
-						*data_out = nullptr;
+					CFileLocationExt res(cur_ext);
+					res.found = true;
+					res.size = static_cast<size_t>(filelength( fileno(fp) ));
 
 					fclose(fp);
 
-					if (offset)
-						*offset = 0;
+					res.offset = 0;
+					res.full_name = longname;
 
-					if (pack_filename)
-						strncpy(pack_filename, longname, max_out);
-
-					return cur_ext;
+					return res;
 				}
 			}
 		}
@@ -1403,76 +1367,62 @@ int cf_find_file_location_ext( const char *filename, const int ext_num, const ch
 
 				if ( lcl_add_dir_to_path_with_filename(longname, MAX_PATH_LEN - 1) ) {
 					if ( !stricmp(longname, f->name_ext) ) {
-						if (size)
-							*size = f->size;
+						CFileLocationExt res(cur_ext);
+						res.found = true;
+						res.size = static_cast<size_t>(f->size);
+						res.offset = (size_t)f->pack_offset;
+						res.data_ptr = f->data;
 
-						if (offset)
-							*offset = f->pack_offset;
+						if (f->data != nullptr) {
+							// This is an in-memory file so we just copy the pathtype name + file name
+							res.full_name = Pathtypes[f->pathtype_index].path;
+							res.full_name += DIR_SEPARATOR_STR;
+							res.full_name += f->name_ext;
+						} else if (f->pack_offset < 1) {
+							// This is a real file, return the actual file path
+							res.full_name = f->real_name;
+						} else {
+							// File is in a pack file
+							cf_root *r = cf_get_root(f->root_index);
 
-						if (data_out)
-							*data_out = f->data;
-
-						if (pack_filename) {
-							if (f->data != nullptr) {
-								// This is an in-memory file so we just copy the pathtype name + file name
-								strncpy(pack_filename, Pathtypes[f->pathtype_index].path, max_out);
-								strncat(pack_filename, DIR_SEPARATOR_STR, max_out);
-								strncat(pack_filename, f->name_ext, max_out);
-							}
-							else if (f->pack_offset < 1) {
-								// This is a real file, return the actual file path
-								strncpy(pack_filename, f->real_name, max_out);
-							}
-							else {
-								// File is in a pack file
-								cf_root *r = cf_get_root(f->root_index);
-
-								strncpy(pack_filename, r->path, max_out);
-							}
+							res.full_name = r->path;
 						}
 
 						// found it, so cleanup and return
 						file_list_index.clear();
 
-						return cur_ext;
+						return res;
 					}
 				}
 			}
 
 			// file either not localized or localized version not found
 			if ( !stricmp(filespec, f->name_ext) ) {
-				if (size)
-					*size = f->size;
+				CFileLocationExt res(cur_ext);
+				res.found = true;
+				res.size = static_cast<size_t>(f->size);
+				res.offset = (size_t)f->pack_offset;
+				res.data_ptr = f->data;
 
-				if (offset)
-					*offset = f->pack_offset;
+				if (f->data != nullptr) {
+					// This is an in-memory file so we just copy the pathtype name + file name
+					res.full_name = Pathtypes[f->pathtype_index].path;
+					res.full_name += DIR_SEPARATOR_STR;
+					res.full_name += f->name_ext;
+				} else if (f->pack_offset < 1) {
+					// This is a real file, return the actual file path
+					res.full_name = f->real_name;
+				} else {
+					// File is in a pack file
+					cf_root *r = cf_get_root(f->root_index);
 
-				if (data_out)
-					*data_out = f->data;
-
-				if (pack_filename) {
-					if (f->data != nullptr) {
-						// This is an in-memory file so we just copy the pathtype name + file name
-						strncpy(pack_filename, Pathtypes[f->pathtype_index].path, max_out);
-						strncat(pack_filename, DIR_SEPARATOR_STR, max_out);
-						strncat(pack_filename, f->name_ext, max_out);
-					}
-					else if (f->pack_offset < 1) {
-						// This is a real file, return the actual file path
-						strncpy(pack_filename, f->real_name, max_out);
-					}
-					else {
-						// File is in a pack file
-						cf_root *r = cf_get_root(f->root_index);
-
-						strncpy(pack_filename, r->path, max_out);
-					}
+					res.full_name = r->path;
 				}
 
 				// found it, so cleanup and return
 				file_list_index.clear();
 
-				return cur_ext;
+				return res;
 			}
 
 			// ok, we're still here, so strip off the extension again in order to
@@ -1483,7 +1433,7 @@ int cf_find_file_location_ext( const char *filename, const int ext_num, const ch
 		}
 	}
 
-	return -1;
+	return CFileLocationExt();
 }
 
 

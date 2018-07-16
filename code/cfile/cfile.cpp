@@ -507,12 +507,12 @@ int cf_access(const char *filename, int dir_type, int mode)
 // If offset equates to boolean true, it was found in a VP and the logic will negate the function return
 int cf_exists(const char *filename, int dir_type)
 {
-	size_t offset = 1;
-
 	if ( (filename == NULL) || !strlen(filename) )
 		return 0;
 
-	return (cf_find_file_location(filename, dir_type, 0, NULL, NULL, &offset) && !offset);
+	auto find_res = cf_find_file_location(filename, dir_type);
+
+	return find_res.found && !find_res.offset;
 }
 
 // Goober5000
@@ -523,7 +523,7 @@ int cf_exists_full(const char *filename, int dir_type)
 	if ( (filename == NULL) || !strlen(filename) )
 		return 0;
 
-	return cf_find_file_location(filename, dir_type, 0, NULL, NULL, NULL);
+	return cf_find_file_location(filename, dir_type).found;
 }
 
 // same as the above, but with extension check
@@ -535,7 +535,7 @@ int cf_exists_full_ext(const char *filename, int dir_type, const int num_ext, co
 	if ( (num_ext <= 0) || (ext_list == NULL) )
 		return 0;
 
-	return (cf_find_file_location_ext(filename, num_ext, ext_list, dir_type, 0, NULL, NULL, NULL) != -1);
+	return cf_find_file_location_ext(filename, num_ext, ext_list, dir_type).found;
 }
 
 #ifdef _WIN32
@@ -664,8 +664,6 @@ CFILE *_cfopen(const char* source, int line, const char *file_path, const char *
 	if( strlen(file_path) > 31 )
 		Error(LOCATION, "file name %s too long, \nmust be less than 31 charicters", file_path);*/
 
-	char longname[_MAX_PATH];
-
 	if ( !cfile_inited ) {
 		Int3();
 		return NULL;
@@ -687,6 +685,8 @@ CFILE *_cfopen(const char* source, int line, const char *file_path, const char *
 	// the harddisk.  No fancy packfile stuff here!
 	
 	if ( strchr(mode,'w') || strchr(mode,'+') || strchr(mode,'a') )	{
+		char longname[_MAX_PATH];
+
 		// For write-only files, require a full path or a path type
 #ifdef SCP_UNIX
 		if ( strpbrk(file_path, "/") ) {
@@ -752,30 +752,29 @@ CFILE *_cfopen(const char* source, int line, const char *file_path, const char *
 	//================================================
 	// Search for file on disk, on cdrom, or in a packfile
 
-	size_t offset, size;
 	char copy_file_path[MAX_PATH_LEN];  // FIX change in memory from cf_find_file_location
 	strcpy_s(copy_file_path, file_path);
 
-	const void* file_data = nullptr;
-	if ( cf_find_file_location( copy_file_path, dir_type, sizeof(longname) - 1, longname, &size, &offset, localize, &file_data ) )	{
+	auto find_res = cf_find_file_location( copy_file_path, dir_type, localize );
+	if ( find_res.found ) {
 
 		// Fount it, now create a cfile out of it
-		nprintf(("CFileDebug", "Requested file %s found at: %s\n", file_path, longname));
-		
+		nprintf(("CFileDebug", "Requested file %s found at: %s\n", file_path, find_res.full_name.c_str()));
+
 		if ( type & CFILE_MEMORY_MAPPED ) {
 		
 			// Can't open memory mapped files out of pack or memory files
-			if ( offset == 0 && file_data != nullptr )	{
+			if ( find_res.offset == 0 && find_res.data_ptr != nullptr )	{
 #if defined _WIN32
 				HANDLE hFile;
 
-				hFile = CreateFile(longname, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+				hFile = CreateFile(find_res.full_name.c_str(), GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 
 				if (hFile != INVALID_HANDLE_VALUE)	{
 					return cf_open_mapped_fill_cfblock(source, line, hFile, dir_type);
 				}
 #elif defined SCP_UNIX
-				FILE *fp = fopen( longname, "rb" );
+				FILE* fp = fopen(find_res.full_name.c_str(), "rb");
 				if (fp) {
 					return cf_open_mapped_fill_cfblock(source, line, fp, dir_type);
 				}
@@ -784,7 +783,8 @@ CFILE *_cfopen(const char* source, int line, const char *file_path, const char *
 
 		} else {
 			// since cfopen_special already has all the code to handle the opening we can just use that here
-			return _cfopen_special(source, line, longname, mode, size, offset, file_data, dir_type);
+			return _cfopen_special(source, line, find_res.full_name.c_str(), mode, find_res.size, find_res.offset,
+			                       find_res.data_ptr, dir_type);
 		}
 
 	}
