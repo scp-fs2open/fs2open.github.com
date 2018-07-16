@@ -5599,7 +5599,7 @@ void HudGaugeWeaponEnergy::render(float  /*frametime*/)
 			setGaugeColor(HUD_C_BRIGHT);
 
 		//Draw name
-		renderString(currentx, currenty, "Energy");
+		renderString(currentx, currenty, XSTR("Energy", 1616));
 		currenty += line_height;
 
 		//Draw background
