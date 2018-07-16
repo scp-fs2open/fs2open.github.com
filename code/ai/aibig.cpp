@@ -1698,7 +1698,7 @@ void ai_big_strafe()
 //
 // Check if weapon_objnum was fired by Pl_objp's target, and whether Pl_objp's target is a big ship, if
 // so, enter AIM_STRAFE
-int ai_big_maybe_enter_strafe_mode(object *pl_objp, int weapon_objnum, int  /*consider_target_only*/)
+int ai_big_maybe_enter_strafe_mode(const object *pl_objp, int weapon_objnum)
 {
 	ai_info		*aip;
 	ship_info	*sip;
