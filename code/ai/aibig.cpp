@@ -64,6 +64,7 @@ void	ai_big_chase_attack(ai_info *aip, ship_info *sip, vec3d *enemy_pos, float d
 void	ai_big_avoid_ship();
 int	ai_big_maybe_follow_subsys_path(int do_dot_check=1);
 void ai_big_strafe_position();
+static int ai_big_strafe_maybe_retreat(const vec3d *target_pos);
 
 extern int model_which_octant_distant_many( vec3d *pnt, int model_num,matrix *model_orient, vec3d * model_pos, polymodel **pm, int *octs);
 extern void compute_desired_rvec(vec3d *rvec, vec3d *goal_pos, vec3d *cur_pos);
@@ -845,8 +846,6 @@ void ai_big_switch_to_chase_mode(ai_info *aip)
 	aip->submode_start_time = Missiontime;
 }
 
-extern int ai_big_strafe_maybe_retreat(float dist, vec3d *target_pos);
-
 // Make object Pl_objp chase object En_objp, which is a big ship, not a small ship.
 void ai_big_chase()
 {
@@ -882,7 +881,7 @@ void ai_big_chase()
 	dot_to_enemy = vm_vec_dot(&vec_to_enemy, &Pl_objp->orient.vec.fvec);
 
 	if (aip->ai_flags[AI::AI_Flags::Target_collision]) {
-		if ( ai_big_strafe_maybe_retreat(dist_to_enemy, &enemy_pos) ) {
+		if ( ai_big_strafe_maybe_retreat(&enemy_pos) ) {
 			aip->mode = AIM_STRAFE;
 			aip->submode_parm0 = Missiontime;	// use parm0 as time strafe mode entered (i.e. MODE start time)
 			aip->submode = AIS_STRAFE_AVOID;
@@ -1223,7 +1222,7 @@ void ai_big_attack_get_data(vec3d *enemy_pos, float *dist_to_enemy, float *dot_t
 
 // check to see if Pl_objp has gotten too close to attacking point.. if so, break off by entering
 // AIS_STRAFE_RETREAT
-int ai_big_strafe_maybe_retreat(float  /*dist*/, vec3d *target_pos)
+static int ai_big_strafe_maybe_retreat(const vec3d *target_pos)
 {
 	ai_info	*aip;
 	aip = &Ai_info[Ships[Pl_objp->instance].ai_index];
@@ -1293,7 +1292,7 @@ void ai_big_strafe_attack()
 	}
 
 	ai_big_attack_get_data(&target_pos, &target_dist, &target_dot);
-	if ( ai_big_strafe_maybe_retreat(target_dist, &target_pos) )
+	if ( ai_big_strafe_maybe_retreat(&target_pos) )
 		return;
 
 	if (aip->ai_flags[AI::AI_Flags::Kamikaze]) {
@@ -1512,7 +1511,7 @@ void ai_big_strafe_avoid()
 	mode_time = Missiontime - aip->submode_start_time;
 
 	ai_big_attack_get_data(&target_pos, &target_dist, &target_dot);
-	if ( ai_big_strafe_maybe_retreat(target_dist, &target_pos) )
+	if ( ai_big_strafe_maybe_retreat(&target_pos) )
 		return;
 
 	if ( mode_time > fl2f(0.5)) {
