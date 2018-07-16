@@ -7117,7 +7117,7 @@ void sexp_set_object_orient_sub(object *objp, vec3d *location, int turn_time, in
 		}
 
 		// turn
-		ai_turn_towards_vector(location, objp, flFrametime, float(turn_time)/(1000.0f), NULL, NULL, 0.0f, 0, NULL, (AITTV_VIA_SEXP | bankflag));
+		ai_turn_towards_vector(location, objp, float(turn_time)/(1000.0f), NULL, NULL, 0.0f, 0, NULL, (AITTV_VIA_SEXP | bankflag));
 
 		// return
 		return;
