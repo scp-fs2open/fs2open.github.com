@@ -1772,7 +1772,7 @@ int ai_big_maybe_enter_strafe_mode(object *pl_objp, int weapon_objnum, int  /*co
 // Consider attacking a turret, if a turret actually fired the weapon
 // input:	ship_objp	=>	ship that will attack the turret
 //				weapon_objp	=>	
-void ai_big_strafe_maybe_attack_turret(object *ship_objp, object *weapon_objp)
+void ai_big_strafe_maybe_attack_turret(const object *ship_objp, const object *weapon_objp)
 {
 	ai_info	*aip;
 	object	*parent_objp;
