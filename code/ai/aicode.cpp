@@ -13070,7 +13070,6 @@ void ai_execute_behavior(ai_info *aip)
 	case AIM_NONE:
 		break;
 	case AIM_BIGSHIP:
-		ai_big_ship(Pl_objp);
 		break;
 	case AIM_PATH: {
 		int path_num;

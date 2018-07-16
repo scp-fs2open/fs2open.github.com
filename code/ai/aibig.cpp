@@ -1153,11 +1153,6 @@ void ai_big_chase()
 	}
 }
 
-void ai_big_ship(object * /*objp*/)
-{
-	// do nothing
-}
-
 // all three parms are output parameters
 //	Enemy object is En_objp
 // pos	=>		world pos of attack point

@@ -17,7 +17,6 @@ struct ai_info;
 struct vec3d;
 class ship_subsys;
 
-void	ai_big_ship(object *objp);
 void	ai_big_chase();
 void	ai_big_subsys_path_cleanup(ai_info *aip);
 
