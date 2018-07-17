@@ -622,7 +622,7 @@ extern float ai_path();
 extern void evade_weapon();
 extern int might_collide_with_ship(object *obj1, object *obj2, float dot_to_enemy, float dist_to_enemy, float duration);
 extern int ai_fire_primary_weapon(object *objp);	//changed to return weather it fired-Bobboau
-extern int ai_fire_secondary_weapon(object *objp, int priority1 = -1, int priority2 = -1);
+extern int ai_fire_secondary_weapon(object *objp);
 extern float ai_get_weapon_dist(ship_weapon *swp);
 extern void turn_towards_point(object *objp, vec3d *point, vec3d *slide_vec, float bank_override);
 extern int ai_maybe_fire_afterburner(object *objp, ai_info *aip);

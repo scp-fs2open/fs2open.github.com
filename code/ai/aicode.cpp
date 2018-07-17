@@ -6024,8 +6024,7 @@ int check_ok_to_fire(int objnum, int target_objnum, weapon_info *wip)
 //	--------------------------------------------------------------------------
 //	Fire a secondary weapon.
 //	Maybe choose to fire a different one.
-//	priority1 and priority2 are optional parameters with defaults = -1
-int ai_fire_secondary_weapon(object *objp, int  /*priority1*/, int  /*priority2*/)
+int ai_fire_secondary_weapon(object *objp)
 {
 	ship_weapon *swp;
 	ship	*shipp;
@@ -6045,7 +6044,7 @@ int ai_fire_secondary_weapon(object *objp, int  /*priority1*/, int  /*priority2*
 	Assert( shipp->ship_info_index >= 0 && shipp->ship_info_index < static_cast<int>(Ship_info.size()));
 
 	//	Select secondary weapon.
-	current_bank = swp->current_secondary_bank; //ai_select_secondary_weapon(objp, swp, priority1, priority2);
+	current_bank = swp->current_secondary_bank;
 
 	if (current_bank == -1) {
 		return rval;
