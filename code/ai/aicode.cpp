@@ -3450,35 +3450,6 @@ float compute_time_to_enemy(float dist_to_enemy, object *pobjp)
 	return time_to_enemy + flFrametime;
 }
 
-//	Stuff *dot and *tts.
-//	*dot is always computed.  If dot is less than zero, the magnitude is
-//	incorrect, not having been divided by distance.
-//	If *dot is > 0.0f, then tts is computed.  This is the time it will take object
-//	*objp to get to *pos, assuming it moves right at it.
-void fds_aux(float *dot, float *tts, vec3d *pos, float  /*dtime*/, object *objp)
-{
-	vec3d	v2s;
-
-	vm_vec_sub(&v2s, pos, &objp->pos);
-	*dot = vm_vec_dot(&v2s, &objp->orient.vec.fvec);
-
-	if (*dot > 0.0f) {
-		float	dist;
-
-		dist = vm_vec_dist(&objp->pos, pos);
-
-		if (dist > 0.1f)
-			*dot /= dist;
-		else
-			*dot = 1.0f;
-
-		if (objp->phys_info.speed > 0.1f)
-			*tts = dist / objp->phys_info.speed;
-		else
-			*tts = dist * 100.0f;
-	}
-}
-
 //	--------------------------------------------------------------------------
 void ai_set_positions(object *pl_objp, object *en_objp, ai_info *aip, vec3d *player_pos, vec3d *enemy_pos)
 {
