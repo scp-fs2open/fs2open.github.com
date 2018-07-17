@@ -14769,10 +14769,10 @@ int firing_aspect_seeking_bomb(object *objp)
 	return 0;
 }
 
-//	*objp collided with big ship *big_objp at global point *collide_pos
-//	Make it fly away from the collision point.
+// *objp collided with big ship *big_objp at some global point.
+// Make it fly away from the collision point.
 // collision_normal is NULL, when a collision is imminent and we just want to bug out.
-void big_ship_collide_recover_start(object *objp, object *big_objp, vec3d * /*collide_pos*/, vec3d *collision_normal)
+void big_ship_collide_recover_start(object *objp, object *big_objp, vec3d *collision_normal)
 {
 	ai_info	*aip;
 
@@ -14863,7 +14863,7 @@ void ai_update_lethality(object *pship_obj, object *other_obj, float damage)
 /**
  * Object *objp_ship was hit by either weapon *objp_weapon or collided into by ship hit_objp at point *hitpos.
  */
-void ai_ship_hit(object *objp_ship, object *hit_objp, vec3d *hitpos, int  /*shield_quadrant*/, vec3d *hit_normal)
+void ai_ship_hit(object *objp_ship, object *hit_objp, vec3d * /*hitpos*/, int  /*shield_quadrant*/, vec3d *hit_normal)
 {
 	int		hitter_objnum = -2;
 	object	*objp_hitter = NULL;
@@ -14905,7 +14905,7 @@ void ai_ship_hit(object *objp_ship, object *hit_objp, vec3d *hitpos, int  /*shie
 			//	And the current object is _not_ a big ship
 			if (!Ship_info[Ships[objp_ship->instance].ship_info_index].is_big_or_huge()) {
 				//	Recover from hitting a big ship.  Note, if two big ships collide, they just pound away at each other.  Oh well.  Recovery looks dumb and it's very late.
-				big_ship_collide_recover_start(objp_ship, hit_objp, hitpos, hit_normal);
+				big_ship_collide_recover_start(objp_ship, hit_objp, hit_normal);
 			}
 		}
 	}

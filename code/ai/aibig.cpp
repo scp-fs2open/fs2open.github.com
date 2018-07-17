@@ -68,7 +68,7 @@ static int ai_big_strafe_maybe_retreat(const vec3d *target_pos);
 
 extern int model_which_octant_distant_many( vec3d *pnt, int model_num,matrix *model_orient, vec3d * model_pos, polymodel **pm, int *octs);
 extern void compute_desired_rvec(vec3d *rvec, vec3d *goal_pos, vec3d *cur_pos);
-extern void big_ship_collide_recover_start(object *objp, object *big_objp, vec3d *collide_pos, vec3d *collision_normal);
+extern void big_ship_collide_recover_start(object *objp, object *big_objp, vec3d *collision_normal);
 
 
 //	Called by ai_big_pick_attack_point.
@@ -1044,7 +1044,7 @@ void ai_big_chase()
 			if ((dist_normal_to_enemy < ATTACK_COLLIDE_AVOID_DIST + speed_dist) || (time_to_enemy < ATTACK_COLLIDE_AVOID_TIME) ) {
 				// get away, simulate crsh recovery (don't use avoid)
 //				accelerate_ship(aip, -1.0f);
-				big_ship_collide_recover_start(Pl_objp, En_objp, &Pl_objp->pos, NULL);
+				big_ship_collide_recover_start(Pl_objp, En_objp, NULL);
 //				aip->submode = SM_AVOID;
 //				aip->submode_start_time = Missiontime;
 			} else if ((dist_normal_to_enemy < ATTACK_COLLIDE_SLOW_DIST) || (time_to_enemy < ATTACK_COLLIDE_SLOW_TIME) ) {
@@ -1252,7 +1252,7 @@ static int ai_big_strafe_maybe_retreat(const vec3d *target_pos)
 		if (aip->ai_flags[AI::AI_Flags::Target_collision]) {
 			// use standard collision resolution
 			aip->ai_flags.remove(AI::AI_Flags::Target_collision);
-			big_ship_collide_recover_start(Pl_objp, En_objp, &Pl_objp->pos, NULL);
+			big_ship_collide_recover_start(Pl_objp, En_objp, NULL);
 		} else {
 			// too close for comfort so fly to box point + 300
 			aip->submode = AIS_STRAFE_RETREAT1;
