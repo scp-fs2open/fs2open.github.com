@@ -14861,9 +14861,9 @@ void ai_update_lethality(object *pship_obj, object *other_obj, float damage)
 
 
 /**
- * Object *objp_ship was hit by either weapon *objp_weapon or collided into by ship hit_objp at point *hitpos.
+ * Object *objp_ship was hit by either weapon *objp_weapon or collided into by ship hit_objp
  */
-void ai_ship_hit(object *objp_ship, object *hit_objp, vec3d * /*hitpos*/, int  /*shield_quadrant*/, vec3d *hit_normal)
+void ai_ship_hit(object *objp_ship, object *hit_objp, vec3d *hit_normal)
 {
 	int		hitter_objnum = -2;
 	object	*objp_hitter = NULL;
