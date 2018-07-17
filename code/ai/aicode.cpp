@@ -6518,7 +6518,7 @@ void ai_chase_ct()
 /**
  * ATTACK submode handler for chase mode.
  */
-void ai_chase_eb(ai_info *aip, ship_info *sip, vec3d *predicted_enemy_pos, float  /*dist_to_enemy*/)
+static void ai_chase_eb(ai_info *aip, ship_info *sip, vec3d *predicted_enemy_pos)
 {
 	vec3d	_pep;
 	float		dot_to_enemy, dot_from_enemy;
@@ -8294,7 +8294,7 @@ void ai_chase()
 		break;
 
 	case SM_EVADE_BRAKE:
-		ai_chase_eb(aip, sip, &predicted_enemy_pos, dist_to_enemy);
+		ai_chase_eb(aip, sip, &predicted_enemy_pos);
 		break;
 
 	case SM_EVADE:
