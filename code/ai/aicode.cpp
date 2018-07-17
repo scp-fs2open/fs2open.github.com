@@ -13482,7 +13482,7 @@ void ai_announce_ship_dying(object *dying_objp)
 
 //	Return object index of weapon that could produce a shockwave that should be known about to *objp.
 //	Return nearest one.
-int ai_find_shockwave_ship(object *objp, ai_info * /*aip*/)
+static int ai_find_shockwave_ship(object *objp)
 {
 	ship_obj	*so;
 	float	nearest_dist = 999999.9f;
@@ -13614,7 +13614,7 @@ int aas_1(object *objp, ai_info *aip, vec3d *safe_pos)
 		}
 	} else if (aip->ai_flags[AI::AI_Flags::Avoid_shockwave_ship]) {
 		if (aip->shockwave_object == -1) {
-			int shockwave_ship = ai_find_shockwave_ship(objp, aip);
+			int shockwave_ship = ai_find_shockwave_ship(objp);
 			if (shockwave_ship == -1) {
 				aip->ai_flags.remove(AI::AI_Flags::Avoid_shockwave_ship);
 				return 0;
