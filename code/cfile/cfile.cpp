@@ -33,6 +33,8 @@
 #include "cfile/cfilesystem.h"
 #include "osapi/osapi.h"
 #include "parse/encrypt.h"
+#include "cfilesystem.h"
+
 
 #include <limits>
 
@@ -471,17 +473,17 @@ char *cf_add_ext(const char *filename, const char *ext)
  *
  * @param filename Name of file to delete
  * @param path_type Path type (CF_TYPE_xxx)
+ * @param location_flags Where to search for the location of the file to delete
  *
  * @return 0 on failure, 1 on success
  */
-int cf_delete(const char *filename, int path_type)
+int cf_delete(const char *filename, int path_type, uint32_t location_flags)
 {
 	char longname[MAX_PATH_LEN];
 
 	Assert(CF_TYPE_SPECIFIED(path_type));
 
-	cf_create_default_path_string(longname, sizeof(longname) - 1,
-	                              path_type, filename);
+	cf_create_default_path_string(longname, sizeof(longname) - 1, path_type, filename, false, location_flags);
 
 	return (_unlink(longname) != -1);
 }
@@ -609,7 +611,7 @@ static void mkdir_recursive(const char *path) {
 
 // Creates the directory path if it doesn't exist. Even creates all its
 // parent paths.
-void cf_create_directory( int dir_type )
+void cf_create_directory(int dir_type, uint32_t location_flags)
 {
 	int num_dirs = 0;
 	int dir_tree[CF_MAX_PATH_TYPES];
@@ -631,7 +633,7 @@ void cf_create_directory( int dir_type )
 	int i;
 
 	for (i=num_dirs-1; i>=0; i-- )	{
-		cf_create_default_path_string( longname, sizeof(longname)-1, dir_tree[i], NULL );
+		cf_create_default_path_string(longname, sizeof(longname) - 1, dir_tree[i], NULL, false, location_flags);
 		if (stat(longname, &statbuf) != 0) {
 			mprintf(( "CFILE: Creating new directory '%s'\n", longname ));
 			mkdir_recursive(longname);
@@ -658,7 +660,8 @@ extern int game_cd_changed();
 //					error   ==> NULL
 //
 
-CFILE *_cfopen(const char* source, int line, const char *file_path, const char *mode, int type, int dir_type, bool localize)
+CFILE* _cfopen(const char* source, int line, const char* file_path, const char* mode, int type, int dir_type,
+               bool localize, uint32_t location_flags)
 {
 	/* Bobboau, what is this doing here? 31 is way too short... - Goober5000
 	if( strlen(file_path) > 31 )
@@ -700,9 +703,9 @@ CFILE *_cfopen(const char* source, int line, const char *file_path, const char *
 			Assert( dir_type != CF_TYPE_ANY );
 
 			// Create the directory if necessary
-			cf_create_directory( dir_type );
+			cf_create_directory(dir_type, location_flags);
 
-			cf_create_default_path_string( longname, sizeof(longname)-1, dir_type, file_path );
+			cf_create_default_path_string(longname, sizeof(longname) - 1, dir_type, file_path, false, location_flags);
 		}
 		Assert( !(type & CFILE_MEMORY_MAPPED) );
 
@@ -755,7 +758,7 @@ CFILE *_cfopen(const char* source, int line, const char *file_path, const char *
 	char copy_file_path[MAX_PATH_LEN];  // FIX change in memory from cf_find_file_location
 	strcpy_s(copy_file_path, file_path);
 
-	auto find_res = cf_find_file_location( copy_file_path, dir_type, localize );
+	auto find_res = cf_find_file_location( copy_file_path, dir_type, localize, location_flags );
 	if ( find_res.found ) {
 
 		// Fount it, now create a cfile out of it

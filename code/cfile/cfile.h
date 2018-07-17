@@ -95,6 +95,64 @@ typedef struct {
 #define CF_SORT_TIME 2
 #define CF_SORT_REVERSE 3
 
+/**
+ * @brief Contains a collection of flags for specifying from where a CFILE should be opened
+ *
+ * There are two types of flags. CF_LOCATION_GAME_ROOT and CF_LOCATION_USER_ROOT specify in which basic root directory
+ * CFile should search for files.
+ *
+ * The remaining flags control what type of location may be used for the operation. It's possible to restrict the
+ * location to the primary mod, the remaining mods or the top-level root directory.
+ */
+enum CFileLocationFlags {
+	CF_LOCATION_ROOT_GAME = 1 << 0, //!< The game root location. This is the location of the game data (e.g. FS2 retail)
+	/**
+	 * @brief The user directories.
+	 *
+	 * If the engine is in portable mode then using this flag exclusively will result in a failure to open files!
+	 */
+	CF_LOCATION_ROOT_USER = 1 << 1,
+
+	/**
+	 * @brief The memory root
+	 *
+	 * This contains all the built-in files available to the engine.
+	 */
+	CF_LOCATION_ROOT_MEMORY = 1 << 2,
+
+	/**
+	 * @brief Mask for extracting root type from a location bit field
+	 */
+	CF_LOCATION_ROOT_MASK = 0xFFFF,
+
+	CF_LOCATION_TYPE_ROOT = 1 << 16, //!< The basic, top-level root location
+	/**
+	 * @brief The primary mod location.
+	 *
+	 * This is the mod that appears first on the command line. If there are no mods then the root location is considered
+	 * to be the primary mod
+	 */
+	CF_LOCATION_TYPE_PRIMARY_MOD = 1 << 17,
+	/**
+	 * @brief The remaining mods.
+	 *
+	 * If there are no mods on the command line then this might not include any valid location.
+	 */
+	CF_LOCATION_TYPE_SECONDARY_MODS = 1 << 18,
+
+	/**
+	 * @brief Bitmask for extracting the type from a location bit field
+	 */
+	CF_LOCATION_TYPE_MASK = 0xFFFF0000,
+
+	/**
+	 * @brief A combination of all flags
+	 *
+	 * This should be used when the default behavior without any location filtering is desired.
+	 */
+	CF_LOCATION_ALL = CF_LOCATION_ROOT_MASK | CF_LOCATION_TYPE_MASK
+};
+
 #define cfread_fix(file) (fix)cfread_int(file)
 #define cfwrite_fix(i,file) cfwrite_int(i,file)
 
@@ -127,11 +185,10 @@ char *cf_add_ext(const char *filename, const char *ext);
 // return CF_TYPE (directory location type) of a CFILE you called cfopen() successfully on.
 int cf_get_dir_type(CFILE *cfile);
 
-
 // Opens the file.  If no path is given, use the extension to look into the
-// default path.  If mode is NULL, delete the file.  
-CFILE *_cfopen(const char* source_file, int line, const char *filename, const char *mode,
-	int type = CFILE_NORMAL, int dir_type = CF_TYPE_ANY, bool localize = false);
+// default path.  If mode is NULL, delete the file.
+CFILE* _cfopen(const char* source_file, int line, const char* filename, const char* mode, int type = CFILE_NORMAL,
+               int dir_type = CF_TYPE_ANY, bool localize = false, uint32_t location_flags = CF_LOCATION_ALL);
 #define cfopen(...) _cfopen(LOCATION, __VA_ARGS__) // Pass source location to the function
 
 // like cfopen(), but it accepts a fully qualified path only (ie, the result of a cf_find_file_location() call)
@@ -153,7 +210,7 @@ void cf_set_version( CFILE * cfile, int version );
 void cf_set_max_read_len(CFILE *cfile, size_t len);
 
 // Deletes a file. Returns 0 on error, 1 if successful
-int cf_delete(const char *filename, int dir_type);
+int cf_delete(const char *filename, int dir_type, uint32_t location_flags = CF_LOCATION_ALL);
 
 // Same as _access function to read a file's access bits
 int cf_access(const char *filename, int dir_type, int mode);
@@ -308,7 +365,8 @@ int cfwrite_string(const char *buf, CFILE *file);
  */
 int cfwrite_string_len(const char *buf, CFILE *file);
 
-int cf_get_file_list( SCP_vector<SCP_string> &list, int pathtype, const char *filter, int sort = CF_SORT_NONE, SCP_vector<file_list_info> *info = NULL );
+int cf_get_file_list(SCP_vector<SCP_string>& list, int pathtype, const char* filter, int sort = CF_SORT_NONE,
+                     SCP_vector<file_list_info>* info = NULL, uint32_t location_flags = CF_LOCATION_ALL);
 int cf_get_file_list( int max, char **list, int type, const char *filter, int sort = CF_SORT_NONE, file_list_info *info = NULL );
 int cf_get_file_list_preallocated( int max, char arr[][MAX_FILENAME_LEN], char **list, int type, const char *filter, int sort = CF_SORT_NONE, file_list_info *info = NULL );
 void cf_sort_filenames( int n, char **list, int sort, file_list_info *info = NULL );
@@ -333,7 +391,8 @@ struct CFileLocation {
 //         size        - File size
 //         offset      - Offset into pack file.  0 if not a packfile.
 // Returns: If not found returns 0.
-CFileLocation cf_find_file_location(const char* filespec, int pathtype, bool localize = false);
+CFileLocation cf_find_file_location(const char* filespec, int pathtype, bool localize = false,
+                                    uint32_t location_flags = CF_LOCATION_ALL);
 
 struct CFileLocationExt : public CFileLocation {
 	int extension_index = -1;
