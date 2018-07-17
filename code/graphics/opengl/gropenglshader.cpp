@@ -537,7 +537,8 @@ static bool load_cached_shader_binary(opengl::ShaderProgram* program, const SCP_
 	auto metadata = base_filename + ".json";
 	auto binary = base_filename + ".bin";
 
-	auto metadata_fp = cfopen(metadata.c_str(), "rb", CFILE_NORMAL, CF_TYPE_CACHE);
+	auto metadata_fp = cfopen(metadata.c_str(), "rb", CFILE_NORMAL, CF_TYPE_CACHE, false,
+	                          CF_LOCATION_ROOT_USER | CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT);
 	if (!metadata_fp) {
 		nprintf(("ShaderCache", "Metadata file does not exist.\n"));
 		return false;
@@ -578,7 +579,8 @@ static bool load_cached_shader_binary(opengl::ShaderProgram* program, const SCP_
 		return false;
 	}
 
-	auto binary_fp = cfopen(binary.c_str(), "rb", CFILE_NORMAL, CF_TYPE_CACHE);
+	auto binary_fp = cfopen(binary.c_str(), "rb", CFILE_NORMAL, CF_TYPE_CACHE, false,
+	                        CF_LOCATION_ROOT_USER | CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT);
 	if (!binary_fp) {
 		nprintf(("ShaderCache", "Binary file does not exist.\n"));
 		return false;
@@ -641,7 +643,8 @@ static void cache_program_binary(GLuint program, const SCP_string& hash) {
 	auto metadata_name = base_filename + ".json";
 	auto binary_name = base_filename + ".bin";
 
-	auto metadata_fp = cfopen(metadata_name.c_str(), "wb", CFILE_NORMAL, CF_TYPE_CACHE);
+	auto metadata_fp = cfopen(metadata_name.c_str(), "wb", CFILE_NORMAL, CF_TYPE_CACHE, false,
+	                          CF_LOCATION_ROOT_USER | CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT);
 	if (!metadata_fp) {
 		mprintf(("Could not open shader cache metadata file!\n"));
 		return;
@@ -656,7 +659,8 @@ static void cache_program_binary(GLuint program, const SCP_string& hash) {
 	cfclose(metadata_fp);
 	json_decref(metadata);
 
-	auto binary_fp = cfopen(binary_name.c_str(), "wb", CFILE_NORMAL, CF_TYPE_CACHE);
+	auto binary_fp = cfopen(binary_name.c_str(), "wb", CFILE_NORMAL, CF_TYPE_CACHE, false,
+	                        CF_LOCATION_ROOT_USER | CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT);
 	if (!binary_fp) {
 		mprintf(("Could not open shader cache binary file!\n"));
 		return;
@@ -855,13 +859,28 @@ void gr_opengl_recompile_all_shaders(const std::function<void(size_t, size_t)>& 
 }
 
 static void opengl_purge_shader_cache_type(const char* ext) {
-	SCP_vector<SCP_string> cache_files;
-	SCP_vector<file_list_info> file_info;
 
 	SCP_string filter("*.");
 	filter += ext;
 
-	cf_get_file_list(cache_files, CF_TYPE_CACHE, filter.c_str(), false, &file_info);
+	// Previously the cache files were stored in the mod directory. Since we have a better system now, those files
+	// should be cleaned out. This is only needed if we have a mod directory since otherwise we would delete the actual
+	// cache files
+	if (Cmdline_mod != nullptr || strlen(Cmdline_mod) > 0) {
+		SCP_vector<SCP_string> cache_files;
+		cf_get_file_list(cache_files, CF_TYPE_CACHE, filter.c_str(), CF_SORT_NONE, nullptr,
+		                 CF_LOCATION_TYPE_PRIMARY_MOD | CF_LOCATION_TYPE_SECONDARY_MODS);
+
+		for (auto& file : cache_files) {
+			cf_delete((file + "." + ext).c_str(), CF_TYPE_CACHE,
+			          CF_LOCATION_TYPE_PRIMARY_MOD | CF_LOCATION_TYPE_SECONDARY_MODS);
+		}
+	}
+
+	SCP_vector<SCP_string> cache_files;
+	SCP_vector<file_list_info> file_info;
+	cf_get_file_list(cache_files, CF_TYPE_CACHE, filter.c_str(), CF_SORT_NONE, &file_info,
+	                 CF_LOCATION_ROOT_USER | CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT);
 
 	Assertion(cache_files.size() == file_info.size(),
 			  "cf_get_file_list returned different sizes for file names and file informations!");
@@ -878,8 +897,6 @@ static void opengl_purge_shader_cache_type(const char* ext) {
 			// Not an OpenGL cache file
 			continue;
 		}
-
-		std::cout << std::put_time(localtime(&write_time), "%c %Z") << std::endl;
 
 		auto diff = std::difftime(now, write_time);
 
