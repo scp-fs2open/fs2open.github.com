@@ -15482,7 +15482,7 @@ int ai_return_path_num_from_dockbay(object *dockee_objp, int dockbay_index)
 /**
  * Actually go ahead and fire the synaptics.
  */
-void cheat_fire_synaptic(object *objp, ship *shipp, ai_info * /*aip*/)
+static void cheat_fire_synaptic(object *objp, ship *shipp)
 {
 	ship_weapon	*swp;
 	swp = &shipp->weapons;
@@ -15536,7 +15536,7 @@ void maybe_cheat_fire_synaptic(object *objp, ai_info *aip)
 						int count = num_nearby_fighters(iff_get_attackee_mask(obj_team(objp)), &objp->pos, 1500.0f);
 
 						if (count > 0)
-							cheat_fire_synaptic(objp, shipp, aip);
+							cheat_fire_synaptic(objp, shipp);
 					}
 				}
 			}
