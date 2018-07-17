@@ -1379,7 +1379,8 @@ bool pilotfile::load_savefile(const char *campaign)
 	m_data_invalid = false;
 
 	// open it, hopefully...
-	cfp = cfopen((char*)filename.c_str(), "rb", CFILE_NORMAL, CF_TYPE_PLAYERS);
+	cfp = cfopen(filename.c_str(), "rb", CFILE_NORMAL, CF_TYPE_PLAYERS, false,
+	             CF_LOCATION_ROOT_USER | CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT);
 
 	if ( !cfp ) {
 		mprintf(("CSG => Unable to open '%s' for reading!\n", filename.c_str()));
@@ -1557,7 +1558,8 @@ bool pilotfile::save_savefile()
 	Assertion(Red_alert_wingman_status.size() <= MAX_SHIPS, "Invalid number of Red_alert_wingman_status entries: " SIZE_T_ARG "\n", Red_alert_wingman_status.size());
 
 	// open it, hopefully...
-	cfp = cfopen((char*)filename.c_str(), "wb", CFILE_NORMAL, CF_TYPE_PLAYERS);
+	cfp = cfopen(filename.c_str(), "wb", CFILE_NORMAL, CF_TYPE_PLAYERS, false,
+	             CF_LOCATION_ROOT_USER | CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT);
 
 	if ( !cfp ) {
 		mprintf(("CSG => Unable to open '%s' for saving!\n", filename.c_str()));
@@ -1620,7 +1622,8 @@ bool pilotfile::get_csg_rank(int *rank)
 	p = &t_csg;
 
 	// filename has already been set
-	cfp = cfopen((char*)filename.c_str(), "rb", CFILE_NORMAL, CF_TYPE_PLAYERS);
+	cfp = cfopen(filename.c_str(), "rb", CFILE_NORMAL, CF_TYPE_PLAYERS, false,
+	             CF_LOCATION_ROOT_USER | CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT);
 
 	if ( !cfp ) {
 		mprintf(("CSG => Unable to open '%s'!\n", filename.c_str()));

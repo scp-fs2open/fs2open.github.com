@@ -820,7 +820,8 @@ bool pilotfile::load_player(const char *callsign, player *_p)
 		return false;
 	}
 
-	cfp = cfopen((char*)filename.c_str(), "rb", CFILE_NORMAL, CF_TYPE_PLAYERS);
+	cfp = cfopen(filename.c_str(), "rb", CFILE_NORMAL, CF_TYPE_PLAYERS, false,
+	             CF_LOCATION_ROOT_USER | CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT);
 
 	if ( !cfp ) {
 		mprintf(("PLR => Unable to open '%s' for reading!\n", filename.c_str()));
@@ -985,7 +986,8 @@ bool pilotfile::save_player(player *_p)
 	}
 
 	// open it, hopefully...
-	auto fp = cfopen((char*)filename.c_str(), "wb", CFILE_NORMAL, CF_TYPE_PLAYERS);
+	auto fp = cfopen(filename.c_str(), "wb", CFILE_NORMAL, CF_TYPE_PLAYERS, false,
+	                 CF_LOCATION_ROOT_USER | CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT);
 
 	if ( !fp ) {
 		mprintf(("PLR => Unable to open '%s' for saving!\n", filename.c_str()));
@@ -1050,7 +1052,8 @@ bool pilotfile::verify(const char *fname, int *rank, char *valid_language)
 		return false;
 	}
 
-	cfp = cfopen((char*)filename.c_str(), "rb", CFILE_NORMAL, CF_TYPE_PLAYERS);
+	cfp = cfopen(filename.c_str(), "rb", CFILE_NORMAL, CF_TYPE_PLAYERS, false,
+	             CF_LOCATION_ROOT_USER | CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT);
 
 	if ( !cfp ) {
 		mprintf(("PLR => Unable to open '%s'!\n", filename.c_str()));

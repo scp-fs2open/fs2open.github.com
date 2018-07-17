@@ -48,9 +48,6 @@ enum CfileRootType {
 	CF_ROOTTYPE_MEMORY = 2,
 };
 
-// for a defined and specifically set location to get/send pilot/campaign files
-SCP_string Pilot_file_path;
-
 //  Created by:
 //    specifying hard drive tree
 //    searching for pack files on hard drive		// Found by searching all known paths
@@ -451,10 +448,6 @@ void cf_build_root_list(const char *cdrom_dir)
 		}
 		root->roottype = CF_ROOTTYPE_PATH;
 
-		// If it wasn't set before, set the pilot path
-		if (Pilot_file_path.empty())
-			Pilot_file_path = root->path;
-
 		// Next, check any VP files under the current directory.
 		cf_build_pack_list(root);
 #endif
@@ -483,10 +476,6 @@ void cf_build_root_list(const char *cdrom_dir)
 			strcat_s(root->path, DIR_SEPARATOR_STR);		// put trailing backslash on for easier path construction
 		}
 		root->roottype = CF_ROOTTYPE_PATH;
-
-		// set the default player location to here
-		if (Pilot_file_path.empty())
-			Pilot_file_path = root->path;
 
 		// Next, check any VP files under the current directory.
 		cf_build_pack_list(root);
@@ -519,10 +508,6 @@ void cf_build_root_list(const char *cdrom_dir)
 	}
 
 	root->roottype = CF_ROOTTYPE_PATH;
-
-	// If the path wasn't set before use the working directory
-	if ( Pilot_file_path.empty() )
-		Pilot_file_path = root->path;
 
    //======================================================
 	// Next, check any VP files under the current directory.
@@ -1797,7 +1782,8 @@ int cf_file_already_in_list( int num_files, char **list, const char *filename )
 // This one has a 'type', which is a CF_TYPE_* value.  Because this specifies the directory
 // location, 'filter' only needs to be the filter itself, with no path information.
 // See above descriptions of cf_get_file_list() for more information about how it all works.
-int cf_get_file_list( int max, char **list, int pathtype, const char *filter, int sort, file_list_info *info )
+int cf_get_file_list(int max, char** list, int pathtype, const char* filter, int sort, file_list_info* info,
+                     uint32_t location_flags)
 {
 	char *ptr;
 	uint i;
@@ -1820,7 +1806,7 @@ int cf_get_file_list( int max, char **list, int pathtype, const char *filter, in
 	char filespec[MAX_PATH_LEN];
 
 #if defined _WIN32
-	cf_create_default_path_string( filespec, sizeof(filespec)-1, pathtype, filter );
+	cf_create_default_path_string(filespec, sizeof(filespec) - 1, pathtype, filter, false, location_flags);
 
 	_finddata_t find;
 	intptr_t find_handle;
@@ -1861,7 +1847,7 @@ int cf_get_file_list( int max, char **list, int pathtype, const char *filter, in
 	}
 
 #elif defined SCP_UNIX
-	cf_create_default_path_string( filespec, sizeof(filespec)-1, pathtype, NULL );
+	cf_create_default_path_string(filespec, sizeof(filespec) - 1, pathtype, NULL, false, location_flags);
 
 	DIR *dirp;
 	struct dirent *dir;
@@ -1932,6 +1918,16 @@ int cf_get_file_list( int max, char **list, int pathtype, const char *filter, in
 			// only search paths we're supposed to...
 			if ( (pathtype != CF_TYPE_ANY) && (pathtype != f->pathtype_index)  )	{
 				continue;
+			}
+
+			if (location_flags != CF_LOCATION_ALL) {
+				// If a location flag was specified we need to check if the root of this file satisfies the request
+				auto root = cf_get_root(f->root_index);
+
+				if (!cf_check_location_flags(root->location_flags, location_flags)) {
+					// Root does not satisfy location flags
+					continue;
+				}
 			}
 
 			if (num_files >= max)
@@ -2017,7 +2013,8 @@ int cf_file_already_in_list_preallocated( int num_files, char arr[][MAX_FILENAME
 // This one has a 'type', which is a CF_TYPE_* value.  Because this specifies the directory
 // location, 'filter' only needs to be the filter itself, with no path information.
 // See above descriptions of cf_get_file_list() for more information about how it all works.
-int cf_get_file_list_preallocated( int max, char arr[][MAX_FILENAME_LEN], char **list, int pathtype, const char *filter, int sort, file_list_info *info )
+int cf_get_file_list_preallocated(int max, char arr[][MAX_FILENAME_LEN], char** list, int pathtype, const char* filter,
+                                  int sort, file_list_info* info, uint32_t location_flags)
 {
 	int num_files = 0, own_flag = 0;
 
@@ -2046,7 +2043,7 @@ int cf_get_file_list_preallocated( int max, char arr[][MAX_FILENAME_LEN], char *
 
 	// Search the default directories
 #if defined _WIN32
-	cf_create_default_path_string( filespec, sizeof(filespec)-1, pathtype, filter );
+	cf_create_default_path_string(filespec, sizeof(filespec) - 1, pathtype, filter, false, location_flags);
 
 	intptr_t find_handle;
 	_finddata_t find;
@@ -2087,7 +2084,7 @@ int cf_get_file_list_preallocated( int max, char arr[][MAX_FILENAME_LEN], char *
 	}
 
 #elif defined SCP_UNIX
-	cf_create_default_path_string( filespec, sizeof(filespec)-1, pathtype, NULL );
+	cf_create_default_path_string(filespec, sizeof(filespec) - 1, pathtype, NULL, false, location_flags);
 
 	DIR *dirp;
 	struct dirent *dir;
@@ -2156,6 +2153,16 @@ int cf_get_file_list_preallocated( int max, char arr[][MAX_FILENAME_LEN], char *
 			// only search paths we're supposed to...
 			if ( (pathtype != CF_TYPE_ANY) && (pathtype != f->pathtype_index)  )	{
 				continue;
+			}
+
+			if (location_flags != CF_LOCATION_ALL) {
+				// If a location flag was specified we need to check if the root of this file satisfies the request
+				auto root = cf_get_root(f->root_index);
+
+				if (!cf_check_location_flags(root->location_flags, location_flags)) {
+					// Root does not satisfy location flags
+					continue;
+				}
 			}
 
 			if (num_files >= max)
@@ -2261,12 +2268,7 @@ int cf_create_default_path_string(char* path, uint path_max, int pathtype, const
 
 		Assert(CF_TYPE_SPECIFIED(pathtype));
 
-		// force a specific directory to search for player files
-		if ( (pathtype == CF_TYPE_PLAYERS) || (pathtype == CF_TYPE_SINGLE_PLAYERS) || (pathtype == CF_TYPE_MULTI_PLAYERS) ) {
-			strncpy(path, Pilot_file_path.c_str(), path_max);
-		} else {
-			strncpy(path, root->path, path_max);
-		}
+		strncpy(path, root->path, path_max);
 
 		strcat_s(path, path_max, Pathtypes[pathtype].path);
 
@@ -2350,12 +2352,7 @@ int cf_create_default_path_string(SCP_string& path, int pathtype, const char* fi
 		Assert(CF_TYPE_SPECIFIED(pathtype));
 		std::ostringstream s_path;
 
-		// force a specific directory to search for player files
-		if ( (pathtype == CF_TYPE_PLAYERS) || (pathtype == CF_TYPE_SINGLE_PLAYERS) || (pathtype == CF_TYPE_MULTI_PLAYERS) ) {
-			s_path << Pilot_file_path;
-		} else {
-			s_path << root->path;
-		}
+		s_path << root->path;
 
 		s_path << Pathtypes[pathtype].path;
 

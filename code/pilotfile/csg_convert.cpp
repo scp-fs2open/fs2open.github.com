@@ -1165,7 +1165,8 @@ bool pilotfile_convert::csg_convert(const char *fname, bool inferno)
 
 	filename.reserve(200);
 
-	cf_create_default_path_string(filename, CF_TYPE_SINGLE_PLAYERS, (inferno) ? "inferno" : NULL);
+	cf_create_default_path_string(filename, CF_TYPE_SINGLE_PLAYERS, (inferno) ? "inferno" : NULL, false,
+	                              CF_LOCATION_ROOT_USER | CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT);
 
 	if (inferno) {
 		filename.append(DIR_SEPARATOR_STR);
@@ -1206,7 +1207,8 @@ bool pilotfile_convert::csg_convert(const char *fname, bool inferno)
 	filename.assign(fname);
 	filename.append(".csg");
 
-	cfp = cfopen(filename.c_str(), "wb", CFILE_NORMAL, CF_TYPE_PLAYERS);
+	cfp = cfopen(filename.c_str(), "wb", CFILE_NORMAL, CF_TYPE_PLAYERS, false,
+	             CF_LOCATION_ROOT_USER | CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT);
 
 	if ( !cfp ) {
 		mprintf(("    CSG => Unable to open '%s' for export!\n", fname));

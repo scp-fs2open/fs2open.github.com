@@ -367,8 +367,11 @@ int cfwrite_string_len(const char *buf, CFILE *file);
 
 int cf_get_file_list(SCP_vector<SCP_string>& list, int pathtype, const char* filter, int sort = CF_SORT_NONE,
                      SCP_vector<file_list_info>* info = NULL, uint32_t location_flags = CF_LOCATION_ALL);
-int cf_get_file_list( int max, char **list, int type, const char *filter, int sort = CF_SORT_NONE, file_list_info *info = NULL );
-int cf_get_file_list_preallocated( int max, char arr[][MAX_FILENAME_LEN], char **list, int type, const char *filter, int sort = CF_SORT_NONE, file_list_info *info = NULL );
+int cf_get_file_list(int max, char** list, int type, const char* filter, int sort = CF_SORT_NONE,
+                     file_list_info* info = NULL, uint32_t location_flags = CF_LOCATION_ALL);
+int cf_get_file_list_preallocated(int max, char arr[][MAX_FILENAME_LEN], char** list, int type, const char* filter,
+                                  int sort = CF_SORT_NONE, file_list_info* info = NULL,
+                                  uint32_t location_flags = CF_LOCATION_ALL);
 void cf_sort_filenames( int n, char **list, int sort, file_list_info *info = NULL );
 void cf_sort_filenames( SCP_vector<SCP_string> &list, int sort, SCP_vector<file_list_info> *info = NULL );
 
