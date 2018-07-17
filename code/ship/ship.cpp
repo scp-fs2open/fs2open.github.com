@@ -7534,13 +7534,9 @@ void ship_cleanup(int shipnum, int cleanup_mode)
 		ship_wing_cleanup(shipnum, wingp);
 	}
 
-	// Note, this call to ai_ship_destroy must come after ship_wing_cleanup for guarded wings to
+	// Note, this call to ai_ship_destroy() must come after ship_wing_cleanup for guarded wings to
 	// properly note the destruction of a ship in their wing.
-	if (cleanup_mode == SHIP_DESTROYED) {
-		ai_ship_destroy(shipnum, Ship::Exit_Flags::Destroyed);	// Do AI stuff for destruction of ship.
-	} else {
-		ai_ship_destroy(shipnum, Ship::Exit_Flags::Departed);		// should still do AI cleanup after ship has departed
-	}
+	ai_ship_destroy(shipnum);	// Do AI stuff for destruction/leave of ship.
 
 	// Goober5000 - lastly, clear out the dead-docked list, per Mantis #2294
 	// (for exploding ships, this list should have already been cleared by now, via
