@@ -633,7 +633,7 @@ void cf_create_directory(int dir_type, uint32_t location_flags)
 	int i;
 
 	for (i=num_dirs-1; i>=0; i-- )	{
-		cf_create_default_path_string(longname, sizeof(longname) - 1, dir_tree[i], NULL, false, location_flags);
+		cf_create_default_path_string(longname, sizeof(longname) - 1, dir_tree[i], nullptr, false, location_flags);
 		if (stat(longname, &statbuf) != 0) {
 			mprintf(( "CFILE: Creating new directory '%s'\n", longname ));
 			mkdir_recursive(longname);

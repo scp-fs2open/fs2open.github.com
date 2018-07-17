@@ -1847,7 +1847,7 @@ int cf_get_file_list(int max, char** list, int pathtype, const char* filter, int
 	}
 
 #elif defined SCP_UNIX
-	cf_create_default_path_string(filespec, sizeof(filespec) - 1, pathtype, NULL, false, location_flags);
+	cf_create_default_path_string(filespec, sizeof(filespec) - 1, pathtype, nullptr, false, location_flags);
 
 	DIR *dirp;
 	struct dirent *dir;
@@ -2084,7 +2084,7 @@ int cf_get_file_list_preallocated(int max, char arr[][MAX_FILENAME_LEN], char** 
 	}
 
 #elif defined SCP_UNIX
-	cf_create_default_path_string(filespec, sizeof(filespec) - 1, pathtype, NULL, false, location_flags);
+	cf_create_default_path_string(filespec, sizeof(filespec) - 1, pathtype, nullptr, false, location_flags);
 
 	DIR *dirp;
 	struct dirent *dir;
