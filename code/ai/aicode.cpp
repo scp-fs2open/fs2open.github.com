@@ -6727,7 +6727,7 @@ void attack_set_accel(ai_info *aip, ship_info *sip, float dist_to_enemy, float d
 
 //	Pl_objp (aip) tries to get behind En_objp.
 //	New on 2/21/98: If this ship can move backwards and slide, maybe do that to get behind.
-void get_behind_ship(ai_info *aip, ship_info *sip, float  /*dist_to_enemy*/)
+static void get_behind_ship(ai_info *aip, ship_info *sip)
 {
 	vec3d	new_pos;
 	float	dot;
@@ -8306,7 +8306,7 @@ void ai_chase()
 		break;
 
 	case SM_GET_BEHIND:
-		get_behind_ship(aip, sip, dist_to_enemy);
+		get_behind_ship(aip, sip);
 		break;
 
 	case SM_GET_AWAY:		//	Used to get away from opponent to prevent endless circling.
