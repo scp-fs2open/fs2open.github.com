@@ -12167,7 +12167,7 @@ void ai_maybe_launch_cmeasure(object *objp, ai_info *aip)
 }
 
 //	--------------------------------------------------------------------------
-void ai_preprocess_ignore_objnum(object * /*objp*/, ai_info *aip)
+static void ai_preprocess_ignore_objnum(ai_info *aip)
 {
 	if (aip->ai_flags[AI::AI_Flags::Temporary_ignore])
 	{
@@ -13978,7 +13978,7 @@ void ai_frame(int objnum)
 	if (maybe_big_ship_collide_recover_frame(Pl_objp, aip))
 		return;
 
-	ai_preprocess_ignore_objnum(Pl_objp, aip);
+	ai_preprocess_ignore_objnum(aip);
 	target_objnum = set_target_objnum(aip, aip->target_objnum);
 
 	Assert(objnum != target_objnum);
