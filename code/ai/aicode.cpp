@@ -5207,7 +5207,7 @@ vec3d	G_predicted_pos, G_fire_pos;
 //	Else
 //		Select Any ol' weapon.
 //	Returns primary_bank index.
-int ai_select_primary_weapon_OLD(object *objp, object * /*other_objp*/, Weapon::Info_Flags flags)
+static int ai_select_primary_weapon_OLD(const object *objp, Weapon::Info_Flags flags)
 {
 	ship	*shipp = &Ships[objp->instance];
 	ship_weapon *swp = &shipp->weapons;
@@ -5298,7 +5298,7 @@ int ai_select_primary_weapon(object *objp, object *other_objp, Weapon::Info_Flag
 	//not using the new AI, use the old version of this function instead.
 	if (!(Ai_info[shipp->ai_index].ai_profile_flags[AI::Profile_Flags::Smart_primary_weapon_selection]))
 	{
-		return ai_select_primary_weapon_OLD(objp, other_objp, flags);
+		return ai_select_primary_weapon_OLD(objp, flags);
 	}
 
 	Assert( shipp->ship_info_index >= 0 && shipp->ship_info_index < static_cast<int>(Ship_info.size()));
