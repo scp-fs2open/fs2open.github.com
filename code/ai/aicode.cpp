@@ -13416,7 +13416,7 @@ void ai_warp_out(object *objp)
 
 //	Return object index of weapon that could produce a shockwave that should be known about to *objp.
 //	Return nearest one.
-int ai_find_shockwave_weapon(object *objp, ai_info * /*aip*/)
+static int ai_find_shockwave_weapon(const object *objp)
 {
 	missile_obj	*mo;
 	float	nearest_dist = 999999.9f;
@@ -13525,7 +13525,7 @@ int aas_1(object *objp, ai_info *aip, vec3d *safe_pos)
 		//	If we don't currently know of a weapon to avoid, try to find one.
 		//	If we can't find one, then clear the bit so we don't keep coming here.
 		if (aip->shockwave_object == -1) {
-			int shockwave_weapon = ai_find_shockwave_weapon(objp, aip);
+			int shockwave_weapon = ai_find_shockwave_weapon(objp);
 			if (shockwave_weapon == -1) {
 				aip->ai_flags.remove(AI::AI_Flags::Avoid_shockwave_weapon);
 				return 0;
