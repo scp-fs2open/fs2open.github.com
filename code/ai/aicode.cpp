@@ -11361,7 +11361,7 @@ float gwlr_1(object *objp, ai_info *aip)
 /**
  * Compute the largest radius of a ship forming on *objp's wing.
  */
-float gwlr_object_1(object *objp, ai_info * /*aip*/)
+static float gwlr_object_1(object *objp)
 {
 	float		max_radius;
 	object	*o;
@@ -11394,7 +11394,7 @@ float get_wing_largest_radius(object *objp, int formation_object_flag)
 	aip = &Ai_info[shipp->ai_index];
 
 	if (formation_object_flag) {
-		return gwlr_object_1(objp, aip);
+		return gwlr_object_1(objp);
 	} else {
 		return gwlr_1(objp, aip);
 	}
