@@ -708,7 +708,7 @@ extern float set_secondary_fire_delay(ai_info *aip, ship *shipp, weapon_info *sw
 extern void ai_choose_secondary_weapon(object *objp, ai_info *aip, object *en_objp);
 extern int maybe_avoid_big_ship(object *objp, object *ignore_objp, ai_info *aip, vec3d *goal_point, float delta_time);
 
-extern void maybe_cheat_fire_synaptic(object *objp, ai_info *aip);
+extern void maybe_cheat_fire_synaptic(object *objp);
 
 // Determine if Pl_objp should fire weapons at current target, based on input parameters
 //
@@ -858,7 +858,7 @@ void ai_big_chase()
 
 	Assert(aip->mode == AIM_CHASE);
 
-	maybe_cheat_fire_synaptic(Pl_objp, aip);
+	maybe_cheat_fire_synaptic(Pl_objp);
 
 	ai_set_positions(Pl_objp, En_objp, aip, &player_pos, &enemy_pos);
 

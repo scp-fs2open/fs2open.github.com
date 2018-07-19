@@ -15504,7 +15504,7 @@ static void cheat_fire_synaptic(object *objp, ship *shipp)
 //				if they're near one or more enemies
 //					every so often
 //						fire a synaptic if they have one.
-void maybe_cheat_fire_synaptic(object *objp, ai_info *aip)
+void maybe_cheat_fire_synaptic(object *objp)
 {
 	//	Only do in subspace missions.
 	if (!(The_mission.flags[Mission::Mission_Flags::Subspace]))
