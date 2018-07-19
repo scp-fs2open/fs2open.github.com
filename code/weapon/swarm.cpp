@@ -368,7 +368,7 @@ void swarm_update_direction(object *objp)
 
 	swarm_new_target_calced:
 
-	ai_turn_towards_vector(&swarmp->new_target, objp, wip->turn_time, NULL, NULL, 0.0f, 0);
+	ai_turn_towards_vector(&swarmp->new_target, objp, wip->turn_time, nullptr, nullptr, 0.0f, 0);
 	vel = vm_vec_mag(&objp->phys_info.desired_vel);
 	vm_vec_copy_scale(&objp->phys_info.desired_vel, &objp->orient.vec.fvec, vel);
 }

@@ -4399,7 +4399,7 @@ void weapon_home(object *obj, int num, float frame_time)
 		// turn the missile towards the target only if non-swarm.  Homing swarm missiles choose
 		// a different vector to turn towards, this is done in swarm_update_direction().
 		if ( wp->swarm_index < 0 ) {
-			ai_turn_towards_vector(&target_pos, obj, wip->turn_time, NULL, NULL, 0.0f, 0, NULL);
+			ai_turn_towards_vector(&target_pos, obj, wip->turn_time, nullptr, nullptr, 0.0f, 0, nullptr);
 			vel = vm_vec_mag(&obj->phys_info.desired_vel);
 
 			vm_vec_copy_scale(&obj->phys_info.desired_vel, &obj->orient.vec.fvec, vel);

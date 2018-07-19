@@ -632,7 +632,7 @@ void ai_big_chase_attack(ai_info *aip, ship_info *sip, vec3d *enemy_pos, float d
 		else
 			rvec = NULL;
 
-		ai_turn_towards_vector(enemy_pos, Pl_objp, sip->srotation_time, NULL, rel_pos, 0.0f, 0, rvec);
+		ai_turn_towards_vector(enemy_pos, Pl_objp, sip->srotation_time, nullptr, rel_pos, 0.0f, 0, rvec);
 
 		// calc range of primary weapon
 		weapon_travel_dist = ai_get_weapon_dist(&Ships[Pl_objp->instance].weapons);
@@ -1044,7 +1044,7 @@ void ai_big_chase()
 			if ((dist_normal_to_enemy < ATTACK_COLLIDE_AVOID_DIST + speed_dist) || (time_to_enemy < ATTACK_COLLIDE_AVOID_TIME) ) {
 				// get away, simulate crsh recovery (don't use avoid)
 //				accelerate_ship(aip, -1.0f);
-				big_ship_collide_recover_start(Pl_objp, En_objp, NULL);
+				big_ship_collide_recover_start(Pl_objp, En_objp, nullptr);
 //				aip->submode = SM_AVOID;
 //				aip->submode_start_time = Missiontime;
 			} else if ((dist_normal_to_enemy < ATTACK_COLLIDE_SLOW_DIST) || (time_to_enemy < ATTACK_COLLIDE_SLOW_TIME) ) {
@@ -1252,7 +1252,7 @@ static int ai_big_strafe_maybe_retreat(const vec3d *target_pos)
 		if (aip->ai_flags[AI::AI_Flags::Target_collision]) {
 			// use standard collision resolution
 			aip->ai_flags.remove(AI::AI_Flags::Target_collision);
-			big_ship_collide_recover_start(Pl_objp, En_objp, NULL);
+			big_ship_collide_recover_start(Pl_objp, En_objp, nullptr);
 		} else {
 			// too close for comfort so fly to box point + 300
 			aip->submode = AIS_STRAFE_RETREAT1;
@@ -1297,7 +1297,7 @@ void ai_big_strafe_attack()
 
 	if (aip->ai_flags[AI::AI_Flags::Kamikaze]) {
 		if (target_dist < 1200.0f) {
-			ai_turn_towards_vector(&target_pos, Pl_objp, Ship_info[Ships[Pl_objp->instance].ship_info_index].srotation_time, NULL, NULL, 0.0f, 0);
+			ai_turn_towards_vector(&target_pos, Pl_objp, Ship_info[Ships[Pl_objp->instance].ship_info_index].srotation_time, nullptr, nullptr, 0.0f, 0);
 			accelerate_ship(aip, 1.0f);
 			if ((target_dist < 400.0f) && ai_maybe_fire_afterburner(Pl_objp, aip)) {
 				afterburners_start(Pl_objp);
