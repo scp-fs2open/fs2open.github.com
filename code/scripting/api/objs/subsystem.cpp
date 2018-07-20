@@ -42,7 +42,7 @@ ADE_FUNC(__tostring, l_Subsystem, NULL, "Returns name of subsystem", "string", "
 ADE_VIRTVAR(ArmorClass, l_Subsystem, "string", "Current Armor class", "string", "Armor class name, or empty string if none is set")
 {
 	ship_subsys_h *sso;
-	char *s = NULL;
+	const char* s    = NULL;
 	const char *name = NULL;
 
 	if(!ade_get_args(L, "o|s", l_Subsystem.GetPtr(&sso), &s))
@@ -225,7 +225,7 @@ ADE_VIRTVAR(GunPosition, l_Subsystem, "vector", "Subsystem gun position with reg
 ADE_VIRTVAR(Name, l_Subsystem, "string", "Subsystem name", "string", "Subsystem name, or an empty string if handle is invalid")
 {
 	ship_subsys_h *sso;
-	char *s = NULL;
+	const char* s = NULL;
 	if(!ade_get_args(L, "o|s", l_Subsystem.GetPtr(&sso), &s))
 		return ade_set_error(L, "s", "");
 

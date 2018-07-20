@@ -39,7 +39,7 @@ ADE_FUNC(__tostring, l_Font, NULL, "Name of font", "string", "Font filename, or 
 ADE_VIRTVAR(Filename, l_Font, "string", "Name of font (including extension)<br><b>Important:</b>This variable is deprecated. Use <i>Name</i> instead.", "string", NULL)
 {
 	font_h *fh = NULL;
-	char *newname = NULL;
+	const char* newname = NULL;
 	if (!ade_get_args(L, "o|s", l_Font.GetPtr(&fh), &newname))
 		return ade_set_error(L, "s", "");
 
@@ -57,7 +57,7 @@ ADE_VIRTVAR(Filename, l_Font, "string", "Name of font (including extension)<br><
 ADE_VIRTVAR(Name, l_Font, "string", "Name of font (including extension)", "string", NULL)
 {
 	font_h *fh = NULL;
-	char *newname = NULL;
+	const char* newname = NULL;
 	if (!ade_get_args(L, "o|s", l_Font.GetPtr(&fh), &newname))
 		return ade_set_error(L, "s", "");
 
@@ -136,4 +136,4 @@ ADE_FUNC(isValid, l_Font, NULL, "True if valid, false or nil if not", "boolean",
 }
 
 }
-}
+} // namespace scripting

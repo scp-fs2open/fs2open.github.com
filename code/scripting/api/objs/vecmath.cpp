@@ -62,7 +62,7 @@ ADE_INDEXER(l_Matrix,
 			"number",
 			"Number at the specified index, or 0 if index is invalid.") {
 	matrix_h* mh;
-	char* s = NULL;
+	const char* s = NULL;
 	float newval = 0.0f;
 	int numargs = ade_get_args(L, "os|f", l_Matrix.GetPtr(&mh), &s, &newval);
 
@@ -286,7 +286,7 @@ ADE_INDEXER(l_Vector,
 			"number",
 			"Value at index, or 0 if vector handle is invalid") {
 	vec3d* v3;
-	char* s = NULL;
+	const char* s = NULL;
 	float newval = 0.0f;
 	int numargs = ade_get_args(L, "os|f", l_Vector.GetPtr(&v3), &s, &newval);
 

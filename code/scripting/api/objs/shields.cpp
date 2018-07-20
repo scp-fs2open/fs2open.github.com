@@ -32,7 +32,7 @@ ADE_INDEXER(l_Shields, "enumeration/number", "Gets or sets shield segment streng
 
 	if(lua_isstring(L, 2))
 	{
-		char *qd = NULL;
+		const char* qd = NULL;
 		if(!ade_get_args(L, "os|f", l_Shields.GetPtr(&objh), &qd, &nval))
 			return ade_set_error(L, "f", 0.0f);
 

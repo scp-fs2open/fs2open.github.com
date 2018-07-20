@@ -23,7 +23,7 @@ ADE_FUNC(__eq, l_Team, "team, team", "Checks whether two teams are the same team
 ADE_VIRTVAR(Name, l_Team, "string", "Team name", "string", "Team name, or empty string if handle is invalid")
 {
 	int tdx=-1;
-	char *s=NULL;
+	const char* s = NULL;
 	if(!ade_get_args(L, "o|s", l_Team.Get(&tdx), &s))
 		return ade_set_error(L, "s", "");
 

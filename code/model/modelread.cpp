@@ -5098,7 +5098,7 @@ int model_find_dock_index(int modelnum, int dock_type, int index_to_start_at)
 // function to return an index into the docking_bays array which matches the string passed
 // Fred uses strings to identify docking positions.  This function also accepts generic strings
 // so that a desginer doesn't have to know exact names if building a mission from hand.
-int model_find_dock_name_index( int modelnum, char *name )
+int model_find_dock_name_index(int modelnum, const char* name)
 {
 	int i;
 	polymodel *pm;

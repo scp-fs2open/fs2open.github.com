@@ -1251,13 +1251,13 @@ int collide_ship_ship( obj_pair * pair )
 			if(!(b_override && !a_override))
 			{
 				Script_system.SetHookObjects(4, "Ship", A, "ShipB", B, "Self", A, "Object", B);
-				Script_system.RunCondition(CHA_COLLIDESHIP, '\0', NULL, A);
+				Script_system.RunCondition(CHA_COLLIDESHIP, A);
 			}
 			if((b_override && !a_override) || (!b_override && !a_override))
 			{
 				//Yes this should be reversed.
 				Script_system.SetHookObjects(4, "Ship", B, "ShipB", A, "Self", B, "Object", A);
-				Script_system.RunCondition(CHA_COLLIDESHIP, '\0', NULL, B);
+				Script_system.RunCondition(CHA_COLLIDESHIP, B);
 			}
 
 			Script_system.RemHookVars(4, "Ship", "ShipB", "Self", "Object");

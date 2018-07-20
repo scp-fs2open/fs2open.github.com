@@ -1547,7 +1547,7 @@ static void asteroid_maybe_break_up(object *pasteroid_obj)
 			}
 			asp->final_death_time = timestamp(-1);
 		}
-		Script_system.RunCondition(CHA_DEATH, '\0', NULL, pasteroid_obj);
+		Script_system.RunCondition(CHA_DEATH, pasteroid_obj);
 		Script_system.RemHookVar("Self");
 	}
 }

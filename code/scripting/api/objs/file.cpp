@@ -96,11 +96,11 @@ ADE_FUNC(read, l_File, "number or string, ...",
 	for (i = 2; i <= lastarg; i++)
 	{
 		type = lua_type(L, i);
-		char *fmt = NULL;
+		const char* fmt = NULL;
 		//int num = 0;
 		if (type == LUA_TSTRING)
 		{
-			fmt = (char*)lua_tostring(L, i);
+			fmt = lua_tostring(L, i);
 			if (!stricmp(fmt, "*n"))
 			{
 				double d = 0.0f;
@@ -197,7 +197,7 @@ ADE_FUNC(seek, l_File, "[string Whence=\"cur\", number Offset=0]",
 	"number",
 	"new offset, or false or nil on failure")
 {
-	char *w = NULL;
+	const char* w = NULL;
 	int o = 0;
 
 	CFILE *cfp = NULL;
@@ -248,7 +248,7 @@ ADE_FUNC(write, l_File, "string or number, ...",
 	{
 		if (type == LUA_TSTRING)
 		{
-			char *s = (char*)lua_tostring(L, l_pos);
+			auto s = lua_tostring(L, l_pos);
 			if (cfwrite(s, (int)sizeof(char), (int)strlen(s), cfp))
 				num_successful++;
 		}

@@ -197,8 +197,8 @@ void game_do_state(int current_state);
 bool GameState_Stack_Valid();
 
 //WMC
-int gameseq_get_event_idx(char *s);
-int gameseq_get_state_idx(char *s);
+int gameseq_get_event_idx(const char* s);
+int gameseq_get_state_idx(const char* s);
 
 //zookeeper
 int gameseq_get_state_idx(int state);

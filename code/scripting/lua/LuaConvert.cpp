@@ -1,15 +1,6 @@
 
 #include "LuaConvert.h"
 
-namespace
-{
-using namespace scripting;
-
-ade_table_entry& getTableEntry(size_t idx) {
-	return ade_manager::getInstance()->getEntry(idx);
-}
-}
-
 namespace luacpp {
 namespace convert {
 namespace internal {
@@ -49,7 +40,8 @@ void pushValue(lua_State* luaState, const lua_CFunction& value) {
 	lua_pushcfunction(luaState, value);
 }
 
-void pushValue(lua_State* L, const ade_odata& od) {
+void pushValue(lua_State* L, const scripting::ade_odata& od)
+{
 	using namespace scripting;
 
 	//WMC - char must be 1 byte, foo.
@@ -59,7 +51,7 @@ void pushValue(lua_State* L, const ade_odata& od) {
 	//Create new LUA object and get handle
 	char *newod = (char*)lua_newuserdata(L, od.size + sizeof(ODATA_SIG_TYPE));
 	//Create or get object metatable
-	luaL_getmetatable(L, getTableEntry(od.idx).Name);
+	luaL_getmetatable(L, ::scripting::internal::getTableEntry(od.idx).Name);
 	//Set the metatable for the object
 	lua_setmetatable(L, -2);
 
@@ -193,21 +185,22 @@ bool popValue(lua_State* L, scripting::ade_odata& od, int stackposition, bool re
 		if ((uint)lua_tonumber(L, -1) != od.idx)
 		{
 			// Issue the LuaError here since this is the only place where we have all relevant information
-			LuaError(L, "Argument %d is the wrong type of userdata; '%s' given, but '%s' expected", stackposition, getTableEntry((uint)lua_tonumber(L, -2)).Name, getTableEntry(od.idx).GetName());
+			LuaError(L, "Argument %d is the wrong type of userdata; '%s' given, but '%s' expected", stackposition,
+			         ::scripting::internal::getTableEntry((uint)lua_tonumber(L, -2)).Name,
+			         ::scripting::internal::getTableEntry(od.idx).GetName());
 			return false;
 		}
 		lua_pop(L, 1);
 	}
 	lua_pop(L, 2);
-	if (od.size != ODATA_PTR_SIZE)
-	{
+	if (od.size != scripting::ODATA_PTR_SIZE) {
 		memcpy(od.buf, lua_touserdata(L, stackposition), od.size);
 		if (od.sig != NULL) {
 			//WMC - char must be 1
 			Assert(sizeof(char) == 1);
 			//WMC - Yuck. Copy sig data.
 			//Maybe in the future I'll do a packet userdata thing.
-			(*od.sig) = *(ODATA_SIG_TYPE*)(*(char **)od.buf + od.size);
+			(*od.sig) = *(scripting::ODATA_SIG_TYPE*)(*(char**)od.buf + od.size);
 		}
 	}
 	else {

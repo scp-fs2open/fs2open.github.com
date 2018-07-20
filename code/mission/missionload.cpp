@@ -43,9 +43,9 @@ int	Num_recent_missions;
 //
 //	Update the Recent_missions[][] array
 //
-void ml_update_recent_missions(char *filename)
+void ml_update_recent_missions(const char* filename)
 {
-	char	tmp[MAX_RECENT_MISSIONS][MAX_FILENAME_LEN], *p;
+	char tmp[MAX_RECENT_MISSIONS][MAX_FILENAME_LEN];
 	int	i,j;
 	
 
@@ -54,7 +54,7 @@ void ml_update_recent_missions(char *filename)
 	}
 
 	// get a pointer to just the basename of the filename (including extension)
-	p = strrchr(filename, DIR_SEPARATOR_CHAR);
+	const char* p = strrchr(filename, DIR_SEPARATOR_CHAR);
 	if ( p == NULL ) {
 		p = filename;
 	} else {
@@ -98,7 +98,7 @@ bool mission_is_ignored(const char *filename)
 //   Game_current_mission_filename
 
 // returns -1 if failed, 0 if successful
-int mission_load(char *filename_ext)
+int mission_load(const char* filename_ext)
 {
 	TRACE_SCOPE(tracing::LoadMissionLoad);
 

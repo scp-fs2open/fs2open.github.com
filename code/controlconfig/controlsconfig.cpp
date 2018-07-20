@@ -2345,7 +2345,7 @@ int check_control(int id, int key)
 		// which has just been released
 
 		Script_system.SetHookVar("Action", 's', Control_config[id].text);
-		Script_system.RunCondition(CHA_ONACTIONSTOPPED, '\0', NULL, NULL, id);
+		Script_system.RunCondition(CHA_ONACTIONSTOPPED, NULL, id);
 		Script_system.RemHookVar("Action");
 
 		Control_config[id].continuous_ongoing = false;
@@ -2419,7 +2419,7 @@ void control_used(int id)
 	if (Control_config[id].used < Last_frame_timestamp) {
 		if (!Control_config[id].continuous_ongoing) {
 			Script_system.SetHookVar("Action", 's', Control_config[id].text);
-			Script_system.RunCondition(CHA_ONACTION, '\0', NULL, NULL, id);
+			Script_system.RunCondition(CHA_ONACTION, NULL, id);
 			Script_system.RemHookVar("Action");
 
 			if (Control_config[id].type == CC_TYPE_CONTINUOUS)

@@ -135,11 +135,11 @@ int collide_debris_ship( obj_pair * pair )
 
 			Script_system.SetHookObjects(2, "Self",pship, "Object", pdebris);
 			if(!(debris_override && !ship_override))
-				Script_system.RunCondition(CHA_COLLIDEDEBRIS, '\0', NULL, pship);
+				Script_system.RunCondition(CHA_COLLIDEDEBRIS, pship);
 
 			Script_system.SetHookObjects(2, "Self",pdebris, "Object", pship);
 			if((debris_override && !ship_override) || (!debris_override && !ship_override))
-				Script_system.RunCondition(CHA_COLLIDESHIP, '\0', NULL, pdebris);
+				Script_system.RunCondition(CHA_COLLIDESHIP, pdebris);
 
 			Script_system.RemHookVars(4, "Ship", "Debris", "Self", "Object");
 
@@ -296,11 +296,11 @@ int collide_asteroid_ship( obj_pair * pair )
 
 			Script_system.SetHookObjects(2, "Self",pship, "Object", pasteroid);
 			if(!(asteroid_override && !ship_override))
-				Script_system.RunCondition(CHA_COLLIDEASTEROID, '\0', NULL, pship);
+				Script_system.RunCondition(CHA_COLLIDEASTEROID, pship);
 
 			Script_system.SetHookObjects(2, "Self",pasteroid, "Object", pship);
 			if((asteroid_override && !ship_override) || (!asteroid_override && !ship_override))
-				Script_system.RunCondition(CHA_COLLIDESHIP, '\0', NULL, pasteroid);
+				Script_system.RunCondition(CHA_COLLIDESHIP, pasteroid);
 
 			Script_system.RemHookVars(4, "Ship", "Asteroid", "Self", "Object");
 

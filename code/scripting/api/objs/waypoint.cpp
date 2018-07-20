@@ -40,7 +40,8 @@ waypointlist_h::waypointlist_h(waypoint_list* n_wlp) {
 		memset(name, 0, sizeof(name));
 	}
 }
-waypointlist_h::waypointlist_h(char* wlname) {
+waypointlist_h::waypointlist_h(const char* wlname)
+{
 	wlp = NULL;
 	if ( wlname != NULL ) {
 		strcpy_s(name, wlname);
@@ -95,7 +96,7 @@ ADE_FUNC(__len, l_WaypointList,
 ADE_VIRTVAR(Name, l_WaypointList, "string", "Name of WaypointList", "string", "Waypointlist name, or empty string if handle is invalid")
 {
 	waypointlist_h* wlh = NULL;
-	char *s = NULL;
+	const char* s       = NULL;
 	if ( !ade_get_args(L, "o|s", l_WaypointList.GetPtr(&wlh), &s) ) {
 		return ade_set_error(L, "s", "");
 	}

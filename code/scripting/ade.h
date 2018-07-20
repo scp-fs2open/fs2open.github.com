@@ -22,29 +22,6 @@ extern "C" {
 
 namespace scripting {
 
-//*************************Lua funcs*************************
-//Used to parse arguments on the stack to C values
-
-/**
- *
- * @param L
- * @param fmt
- * @return
- *
- * @ingroup ade_api
- */
-int ade_get_args(lua_State* L, const char* fmt, ...);
-
-/**
- *
- * @param L
- * @param fmt
- * @return
- *
- * @ingroup ade_api
- */
-int ade_set_args(lua_State* L, const char* fmt, ...);
-
 /**
  *
  * @param L
@@ -373,6 +350,11 @@ int ade_set_object_with_breed(lua_State *L, int obj_idx);
  * @ingroup ade_api
  */
 void load_default_script(lua_State* L, const char* name);
+
+namespace internal {
+
+ade_table_entry& getTableEntry(size_t idx);
+}
 }
 
 #endif //FS2_OPEN_ADE_H

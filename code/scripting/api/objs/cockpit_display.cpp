@@ -413,7 +413,7 @@ ADE_INDEXER(l_CockpitDisplayInfos, "number/string", "Returns the handle at the r
 	else
 	{
 		cockpit_displays_info_h *cdih = NULL;
-		char *name = NULL;
+		const char* name              = NULL;
 
 		if (!ade_get_args(L, "os", l_CockpitDisplayInfos.GetPtr(&cdih), &name))
 		{
@@ -537,7 +537,7 @@ ADE_INDEXER(l_CockpitDisplays, "number/string", "Gets a cockpit display from the
 	else
 	{
 		cockpit_displays_h *cdh = NULL;
-		char *name = NULL;
+		const char* name        = NULL;
 
 		if (!ade_get_args(L, "os", l_CockpitDisplays.GetPtr(&cdh), &name))
 		{

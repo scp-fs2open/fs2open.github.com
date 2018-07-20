@@ -585,7 +585,7 @@ void shipfx_warpin_start( object *objp )
 	Script_system.SetHookObject("Self", objp);
 	if(Script_system.IsConditionOverride(CHA_WARPIN, objp))
 	{
-		Script_system.RunCondition(CHA_WARPIN, 0, NULL, objp);
+		Script_system.RunCondition(CHA_WARPIN, objp);
 		Script_system.RemHookVar("Self");
 		return;
 	}
@@ -598,8 +598,8 @@ void shipfx_warpin_start( object *objp )
 	}
 
 	shipp->warpin_effect->warpStart();
-	
-	Script_system.RunCondition(CHA_WARPIN, 0, NULL, objp);
+
+	Script_system.RunCondition(CHA_WARPIN, objp);
 	Script_system.RemHookVar("Self");
 }
 
@@ -805,7 +805,7 @@ void shipfx_warpout_start( object *objp )
 	Script_system.SetHookObject("Self", objp);
 	if(Script_system.IsConditionOverride(CHA_WARPOUT, objp))
 	{
-		Script_system.RunCondition(CHA_WARPOUT, 0, NULL, objp);
+		Script_system.RunCondition(CHA_WARPOUT, objp);
 		Script_system.RemHookVar("Self");
 		return;
 	}
@@ -841,8 +841,8 @@ void shipfx_warpout_start( object *objp )
 	}
 
 	shipp->warpout_effect->warpStart();
-	
-	Script_system.RunCondition(CHA_WARPOUT, 0, NULL, objp);
+
+	Script_system.RunCondition(CHA_WARPOUT, objp);
 	Script_system.RemHookVar("Self");
 }
 

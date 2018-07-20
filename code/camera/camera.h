@@ -68,7 +68,7 @@ public:
 	void set_rotation_velocity(angles *in_rotation_rate, float in_acceleration_time = 0.0f);
 
 	//Get
-	char *get_name() {return name;}
+	const char* get_name() { return name; }
 	int get_signature() {return sig;}
 	object *get_object_host();
 	int get_object_host_submodel();
@@ -163,7 +163,7 @@ camid cam_create(const char *n_name, vec3d *n_pos, vec3d *n_norm, object *n_obje
 void cam_delete(camid cid);
 bool cam_set_camera(camid cid);
 void cam_reset_camera();
-camid cam_lookup(char *name);
+camid cam_lookup(const char* name);
 camid cam_get_camera(uint index);
 camid cam_get_current();
 size_t cam_get_num();

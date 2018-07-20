@@ -9,6 +9,7 @@
 #include "ship/ship.h"
 
 #include "ade.h"
+#include "ade_args.h"
 #include "scripting/api/objs/asteroid.h"
 #include "scripting/api/objs/beam.h"
 #include "scripting/api/objs/debris.h"
@@ -1046,4 +1047,6 @@ void load_default_script(lua_State* L, const char* name)
 		LuaError(L, "Error while loading default script: %s", e.what());
 	}
 }
+
+ade_table_entry& internal::getTableEntry(size_t idx) { return ade_manager::getInstance()->getEntry(idx); }
 }

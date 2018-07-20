@@ -5,6 +5,7 @@
 #define FS2_OPEN_ADE_API_H_H
 
 #include "scripting/ade.h"
+#include "scripting/ade_args.h"
 
 namespace scripting {
 
@@ -202,16 +203,6 @@ static const ::scripting::ade_lib* SCP_TOKEN_CONCAT(field, reference_dummy) USED
  * @ingroup ade_api
  */
 #define ADE_RETURN_FALSE			ade_set_args(L, "b", false)
-
-/**
- * @brief Return a value in error
- *
- * Should be used if the value is not valid
- *
- * @ingroup ade_api
- */
-#define ade_set_error				ade_set_args
-
 
 }
 

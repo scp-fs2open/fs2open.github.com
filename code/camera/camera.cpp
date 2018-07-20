@@ -962,7 +962,7 @@ size_t cam_get_num()
 /**
  * Looks up camera by name, returns -1 on failure
  */
-camid cam_lookup(char *name)
+camid cam_lookup(const char* name)
 {
 	size_t i, size=Cameras.size();
 	for(i = 0; i < size; i++)

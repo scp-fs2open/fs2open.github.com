@@ -35,7 +35,7 @@ const char *Animation_type_names[MAX_TRIGGER_ANIMATION_TYPES] =
 	"turret-fired"
 };
 
-int model_anim_match_type(char *p)
+int model_anim_match_type(const char* p)
 {	
 	int i;
 

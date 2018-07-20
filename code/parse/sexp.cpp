@@ -928,7 +928,7 @@ int get_generic_subsys(char *subsy_name);
 bool ship_class_unchanged(int ship_index); 
 void multi_sexp_modify_variable();
 
-int get_effect_from_name(char* name);
+int get_effect_from_name(const char* name);
 
 #define NO_OPERATOR_INDEX_DEFINED		-2
 #define NOT_A_SEXP_OPERATOR				-1
@@ -22276,7 +22276,7 @@ int sexp_script_eval(int node, int return_type, bool concat_args = false)
 			{
 				char* s = CTEXT(n);
 				int r = -1;
-				bool success = Script_system.EvalString(s, "|i", &r);
+				bool success = Script_system.EvalStringWithReturn(s, "|i", &r);
 
 				if(!success)
 					Warning(LOCATION, "sexp-script-eval failed to evaluate string \"%s\"; check your syntax", s);
@@ -22285,10 +22285,10 @@ int sexp_script_eval(int node, int return_type, bool concat_args = false)
 			}
 		case OPR_STRING:
 			{
-				char* ret = NULL;
+				const char* ret = NULL;
 				char* s = CTEXT(n);
 
-				bool success = Script_system.EvalString(s, "|s", &ret);
+				bool success = Script_system.EvalStringWithReturn(s, "|s", &ret);
 				n = CDR(n);
 
 				if(!success)
@@ -22329,7 +22329,7 @@ int sexp_script_eval(int node, int return_type, bool concat_args = false)
 					}
 					else
 					{
-						bool success = Script_system.EvalString(s, NULL, NULL);
+						bool success = Script_system.EvalString(s);
 
 						if (!success)
 							Warning(LOCATION, "sexp-script-eval failed to evaluate string \"%s\"; check your syntax", s);
@@ -22340,7 +22340,7 @@ int sexp_script_eval(int node, int return_type, bool concat_args = false)
 
 				if (concat_args)
 				{
-					bool success = Script_system.EvalString(script_cmd.c_str(), NULL, NULL);
+					bool success = Script_system.EvalString(script_cmd.c_str());
 
 					if (!success)
 						Warning(LOCATION, "sexp-script-eval failed to evaluate string \"%s\"; check your syntax", script_cmd.c_str());
@@ -22409,7 +22409,7 @@ void sexp_script_eval_multi(int node)
 	Current_sexp_network_packet.end_callback();
 
 	if (execute_on_server) {		
-		success = Script_system.EvalString(s, NULL, NULL, s);
+		success = Script_system.EvalString(s, s);
 	}
 
 	if(!success) {
@@ -22428,14 +22428,14 @@ void multi_sexp_script_eval_multi()
 	Current_sexp_network_packet.get_bool(sent_to_all);
 
 	if (sent_to_all) {
-		success = Script_system.EvalString(s, NULL, NULL, s);
+		success = Script_system.EvalString(s, s);
 	}
 	// go through all the ships that were sent and see if any of them match this client.
 	else {
 		while (Current_sexp_network_packet.get_ship(sindex)) {
 			Assertion(sindex >= 0, "Illegal value for the ship index sent in multi_sexp_script_eval_multi()! Ship %d does not exist!", sindex); 
 			if (Player->objnum == Ships[sindex].objnum) {
-				success = Script_system.EvalString(s, NULL, NULL, s);
+				success = Script_system.EvalString(s, s);
 			}
 		}
 	}
@@ -22647,7 +22647,7 @@ int sexp_get_colgroup(int node) {
 	return Objects[shipp->objnum].collision_group_id;
 }
 
-int get_effect_from_name(char* name) {
+int get_effect_from_name(const char* name) {
 	int i = 0;
 	for (SCP_vector<ship_effect>::iterator sei = Ship_effects.begin(); sei != Ship_effects.end(); ++sei) {
 		if (!stricmp(name, sei->name))

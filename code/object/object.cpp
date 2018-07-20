@@ -1521,7 +1521,7 @@ void obj_move_all(float frametime)
 				target = &Objects[Player_ai->target_objnum];
 
 			Script_system.SetHookObjects(2, "User", objp, "Target", target);
-			Script_system.RunCondition(CHA_ONWPEQUIPPED, 0, NULL, objp);
+			Script_system.RunCondition(CHA_ONWPEQUIPPED, objp);
 		}
 		Script_system.RemHookVars(2, "User", "Target");
 	}
@@ -1638,8 +1638,8 @@ void obj_queue_render(object* obj, model_draw_list* scene)
 	auto skip_render = Script_system.IsConditionOverride(CHA_OBJECTRENDER, obj);
 	
 	// Always execute the hook content
-	Script_system.RunCondition(CHA_OBJECTRENDER, '\0', NULL, obj);
-	
+	Script_system.RunCondition(CHA_OBJECTRENDER, obj);
+
 	Script_system.RemHookVar("Self");
 
 	if (skip_render) {

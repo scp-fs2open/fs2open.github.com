@@ -58,7 +58,7 @@ ADE_LIB_DERIV(l_Graphics_Cameras, "Cameras", NULL, "Cameras", l_Graphics);
 
 ADE_INDEXER(l_Graphics_Cameras, "number Index/string Name", "Gets camera", "camera", "Ship handle, or invalid ship handle if index was invalid")
 {
-	char *s = NULL;
+	const char* s = NULL;
 	if(!ade_get_args(L, "*s", &s))
 		return ade_set_error(L, "o", l_Camera.Set(camid()));
 
@@ -110,7 +110,7 @@ ADE_INDEXER(l_Graphics_Fonts, "number Index/string Filename", "Array of loaded f
 	}
 	else
 	{
-		char *s = NULL;
+		const char* s = NULL;
 
 		if(!ade_get_args(L, "*s", &s))
 			return ade_set_error(L, "o", l_Font.Set(font_h()));
@@ -168,7 +168,7 @@ ADE_FUNC(__len, l_Graphics_Posteffects, nullptr, "Gets the number of available p
 
 ADE_FUNC(setPostEffect, l_Graphics, "string name, [number value=0, number red=0.0, number green=0.0, number blue=0.0]", "Sets the intensity of the specified post-processing effect. Optionally sets RGB values for effects that use them (valid values are 0.0 to 1.0)", "boolean", "true when successful, false otherwise")
 {
-	char* name = nullptr;
+	const char* name     = nullptr;
 	int intensity = 0;
 	vec3d rgb; rgb.xyz.x = 0.0f; rgb.xyz.y = 0.0f; rgb.xyz.z = 0.0f; // clang you are a PITA
 
@@ -280,7 +280,7 @@ ADE_FUNC(createCamera, l_Graphics,
 		 "camera",
 		 "Camera handle, or invalid camera handle if camera couldn't be created")
 {
-	char *s = NULL;
+	const char* s = NULL;
 	vec3d *v = &vmd_zero_vector;
 	matrix_h *mh = NULL;
 	if(!ade_get_args(L, "s|oo", &s, l_Vector.GetPtr(&v), l_Matrix.GetPtr(&mh)))
@@ -1150,7 +1150,7 @@ ADE_FUNC(getStringWidth, l_Graphics, "string String", "Gets string width", "numb
 	if(!Gr_inited)
 		return ade_set_error(L, "i", 0);
 
-	char *s;
+	const char* s;
 	if(!ade_get_args(L, "s", &s))
 		return ade_set_error(L, "i", 0);
 
@@ -1168,7 +1168,7 @@ ADE_FUNC(loadStreamingAnim, l_Graphics, "string Filename, [boolean loop, boolean
 		 "streaminganim",
 		 "Streaming animation handle, or invalid handle if animation couldn't be loaded")
 {
-	char *s;
+	const char* s;
 	int rc = -1;
 	bool loop = false, reverse = false, pause = false, cache = true;
 
@@ -1231,7 +1231,7 @@ ADE_FUNC(loadTexture, l_Graphics, "string Filename, [boolean LoadIfAnimation, bo
 		 "texture",
 		 "Texture handle, or invalid texture handle if texture couldn't be loaded")
 {
-	char *s;
+	const char* s;
 	int idx=-1;
 	bool b=false;
 	bool d=false;
@@ -1275,7 +1275,7 @@ ADE_FUNC(drawImage, l_Graphics, "string Filename/texture Texture, [number X1=0, 
 
 	if(lua_isstring(L, 1))
 	{
-		char *s = NULL;
+		const char* s = NULL;
 		if(!ade_get_args(L, "s|iiiifffff", &s,&x1,&y1,&x2,&y2,&uv_x1,&uv_y1,&uv_x2,&uv_y2,&alpha))
 			return ade_set_error(L, "b", false);
 
@@ -1326,7 +1326,7 @@ ADE_FUNC(drawMonochromeImage, l_Graphics, "string Filename/texture Texture, numb
 
 	if(lua_isstring(L, 1))
 	{
-		char *s = NULL;
+		const char* s = NULL;
 		if(!ade_get_args(L, "sii|iif", &s,&x,&y,&x2,&y2,&alpha))
 			return ade_set_error(L, "b", false);
 
@@ -1368,7 +1368,7 @@ ADE_FUNC(drawMonochromeImage, l_Graphics, "string Filename/texture Texture, numb
 
 ADE_FUNC(getImageWidth, l_Graphics, "string Filename", "Gets image width", "number", "Image width, or 0 if filename is invalid")
 {
-	char *s;
+	const char* s;
 	if(!ade_get_args(L, "s", &s))
 		return ade_set_error(L, "i", 0);
 
@@ -1385,7 +1385,7 @@ ADE_FUNC(getImageWidth, l_Graphics, "string Filename", "Gets image width", "numb
 
 ADE_FUNC(getImageHeight, l_Graphics, "Image name", "Gets image height", "number", "Image height, or 0 if filename is invalid")
 {
-	char *s;
+	const char* s;
 	if(!ade_get_args(L, "s", &s))
 		return ade_set_error(L, "i", 0);
 
@@ -1417,7 +1417,7 @@ ADE_FUNC(flashScreen, l_Graphics, "number Red, number Green, number Blue", "Flas
 
 ADE_FUNC(loadModel, l_Graphics, "string Filename", "Loads the model - will not setup subsystem data, DO NOT USE FOR LOADING SHIP MODELS", "model", "Handle to a model")
 {
-	char *s;
+	const char* s;
 	int model_num = -1;
 
 	if(!ade_get_args(L, "s", &s))

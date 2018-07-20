@@ -349,7 +349,7 @@ ADE_LIB_DERIV(l_Base_Events, "GameEvents", NULL, "Freespace 2 game events", l_Ba
 
 ADE_INDEXER(l_Base_Events, "number Index/string Name", "Array of game events", "gameevent", "Game event, or invalid gameevent handle if index is invalid")
 {
-	char *name;
+	const char* name;
 	if(!ade_get_args(L, "*s", &name))
 		return ade_set_error(L, "o", l_GameEvent.Set(gameevent_h()));
 
@@ -379,7 +379,7 @@ ADE_LIB_DERIV(l_Base_States, "GameStates", NULL, "Freespace 2 states", l_Base);
 
 ADE_INDEXER(l_Base_States, "number Index/string Name", "Array of game states", "gamestate", "Game state, or invalid gamestate handle if index is invalid")
 {
-	char *name;
+	const char* name;
 	if(!ade_get_args(L, "*s", &name))
 		return ade_set_error(L, "o", l_GameState.Set(gamestate_h()));
 

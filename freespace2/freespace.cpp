@@ -4201,7 +4201,7 @@ void game_frame(bool paused)
 			{
 				TRACE_SCOPE(tracing::RenderHUDHook);
 
-				Script_system.RunCondition(CHA_HUDDRAW, '\0', NULL, Viewer_obj);
+				Script_system.RunCondition(CHA_HUDDRAW, Viewer_obj);
 			}
 			Script_system.RemHookVar("Self");
 			
