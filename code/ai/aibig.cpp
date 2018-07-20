@@ -68,7 +68,7 @@ static int ai_big_strafe_maybe_retreat(const vec3d *target_pos);
 
 extern int model_which_octant_distant_many( vec3d *pnt, int model_num,matrix *model_orient, vec3d * model_pos, polymodel **pm, int *octs);
 extern void compute_desired_rvec(vec3d *rvec, vec3d *goal_pos, vec3d *cur_pos);
-extern void big_ship_collide_recover_start(object *objp, object *big_objp, vec3d *collide_pos, vec3d *collision_normal);
+extern void big_ship_collide_recover_start(object *objp, object *big_objp, vec3d *collision_normal);
 
 
 //	Called by ai_big_pick_attack_point.
@@ -632,7 +632,7 @@ void ai_big_chase_attack(ai_info *aip, ship_info *sip, vec3d *enemy_pos, float d
 		else
 			rvec = NULL;
 
-		ai_turn_towards_vector(enemy_pos, Pl_objp, flFrametime, sip->srotation_time, NULL, rel_pos, 0.0f, 0, rvec);
+		ai_turn_towards_vector(enemy_pos, Pl_objp, sip->srotation_time, nullptr, rel_pos, 0.0f, 0, rvec);
 
 		// calc range of primary weapon
 		weapon_travel_dist = ai_get_weapon_dist(&Ships[Pl_objp->instance].weapons);
@@ -708,7 +708,7 @@ extern float set_secondary_fire_delay(ai_info *aip, ship *shipp, weapon_info *sw
 extern void ai_choose_secondary_weapon(object *objp, ai_info *aip, object *en_objp);
 extern int maybe_avoid_big_ship(object *objp, object *ignore_objp, ai_info *aip, vec3d *goal_point, float delta_time);
 
-extern void maybe_cheat_fire_synaptic(object *objp, ai_info *aip);
+extern void maybe_cheat_fire_synaptic(object *objp);
 
 // Determine if Pl_objp should fire weapons at current target, based on input parameters
 //
@@ -858,7 +858,7 @@ void ai_big_chase()
 
 	Assert(aip->mode == AIM_CHASE);
 
-	maybe_cheat_fire_synaptic(Pl_objp, aip);
+	maybe_cheat_fire_synaptic(Pl_objp);
 
 	ai_set_positions(Pl_objp, En_objp, aip, &player_pos, &enemy_pos);
 
@@ -1044,7 +1044,7 @@ void ai_big_chase()
 			if ((dist_normal_to_enemy < ATTACK_COLLIDE_AVOID_DIST + speed_dist) || (time_to_enemy < ATTACK_COLLIDE_AVOID_TIME) ) {
 				// get away, simulate crsh recovery (don't use avoid)
 //				accelerate_ship(aip, -1.0f);
-				big_ship_collide_recover_start(Pl_objp, En_objp, &Pl_objp->pos, NULL);
+				big_ship_collide_recover_start(Pl_objp, En_objp, nullptr);
 //				aip->submode = SM_AVOID;
 //				aip->submode_start_time = Missiontime;
 			} else if ((dist_normal_to_enemy < ATTACK_COLLIDE_SLOW_DIST) || (time_to_enemy < ATTACK_COLLIDE_SLOW_TIME) ) {
@@ -1252,7 +1252,7 @@ static int ai_big_strafe_maybe_retreat(const vec3d *target_pos)
 		if (aip->ai_flags[AI::AI_Flags::Target_collision]) {
 			// use standard collision resolution
 			aip->ai_flags.remove(AI::AI_Flags::Target_collision);
-			big_ship_collide_recover_start(Pl_objp, En_objp, &Pl_objp->pos, NULL);
+			big_ship_collide_recover_start(Pl_objp, En_objp, nullptr);
 		} else {
 			// too close for comfort so fly to box point + 300
 			aip->submode = AIS_STRAFE_RETREAT1;
@@ -1297,7 +1297,7 @@ void ai_big_strafe_attack()
 
 	if (aip->ai_flags[AI::AI_Flags::Kamikaze]) {
 		if (target_dist < 1200.0f) {
-			ai_turn_towards_vector(&target_pos, Pl_objp, flFrametime, Ship_info[Ships[Pl_objp->instance].ship_info_index].srotation_time, NULL, NULL, 0.0f, 0);
+			ai_turn_towards_vector(&target_pos, Pl_objp, Ship_info[Ships[Pl_objp->instance].ship_info_index].srotation_time, nullptr, nullptr, 0.0f, 0);
 			accelerate_ship(aip, 1.0f);
 			if ((target_dist < 400.0f) && ai_maybe_fire_afterburner(Pl_objp, aip)) {
 				afterburners_start(Pl_objp);

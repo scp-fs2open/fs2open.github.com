@@ -57,7 +57,7 @@ extern turret_swarm_info Turret_swarm_info[MAX_TURRET_SWARM_INFO];
 void	swarm_level_init();
 void	swarm_delete(int index);
 int	swarm_create();
-void	swarm_update_direction(object *objp, float frametime);
+void	swarm_update_direction(object *objp);
 void	swarm_maybe_fire_missile(int shipnum);
 
 int	turret_swarm_create();

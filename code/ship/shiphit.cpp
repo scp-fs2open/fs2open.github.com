@@ -2419,7 +2419,7 @@ void ship_apply_local_damage(object *ship_objp, object *other_obj, vec3d *hitpos
 	// only want to check the following in single player or if I am the multiplayer game server
 	// Added OBJ_BEAM for traitor detection - FUBAR
 	if ( !MULTIPLAYER_CLIENT && ((other_obj->type == OBJ_SHIP) || (other_obj->type == OBJ_WEAPON) || (other_obj->type == OBJ_BEAM)) ) {
-		ai_ship_hit(ship_objp, other_obj, hitpos, quadrant, hit_normal);
+		ai_ship_hit(ship_objp, other_obj, hit_normal);
 	}
 
 	//	Cut damage done on the player by 4x in training missions, but do full accredidation
