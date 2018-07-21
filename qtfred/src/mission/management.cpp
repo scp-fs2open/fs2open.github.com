@@ -31,7 +31,7 @@
 
 extern int Xstr_inited;
 
-extern void allocate_mission_text(size_t size);
+extern void allocate_parse_text(size_t size);
 
 extern void parse_init(bool basic = false);
 

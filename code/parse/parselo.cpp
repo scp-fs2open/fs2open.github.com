@@ -48,16 +48,16 @@ int		Warning_count_save = 0, Error_count_save = 0;
 int		fred_parse_flag = 0;
 int		Token_found_flag;
 
-char 	*Mission_text = NULL;
-char	*Mission_text_raw = NULL;
+char 	*Parse_text = NULL;
+char	*Parse_text_raw = NULL;
 char	*Mp = NULL, *Mp_save = NULL;
 const char	*token_found;
 
 static int Parsing_paused = 0;
 
 // text allocation stuff
-void allocate_mission_text(size_t size);
-static size_t Mission_text_size = 0;
+void allocate_parse_text(size_t size);
+static size_t Parse_text_size = 0;
 
 
 //	Return true if this character is white space, else false.
@@ -238,7 +238,7 @@ int get_line_num()
 	char	*stoploc;
 	char	*p;
 
-	p = Mission_text;
+	p = Parse_text;
 	stoploc = Mp;
 
 	while (p < stoploc)
@@ -2041,10 +2041,10 @@ void read_file_text(const char *filename, int mode, char *processed_text, char *
 	read_raw_file_text(filename, mode, raw_text);
 
 	if (processed_text == NULL)
-		processed_text = Mission_text;
+		processed_text = Parse_text;
 
 	if (raw_text == NULL)
-		raw_text = Mission_text_raw;
+		raw_text = Parse_text_raw;
 
 	// process it (strip comments)
 	process_raw_file_text(processed_text, raw_text);
@@ -2062,11 +2062,11 @@ void read_file_text_from_default(const default_file& file, char *processed_text,
 	}
 
 	// make sure to do this before anything else
-	allocate_mission_text(file.size + 1);
+	allocate_parse_text(file.size + 1);
 
 	// if we have no raw buffer, set it as the default raw text area
 	if (raw_text == NULL)
-		raw_text = Mission_text_raw;
+		raw_text = Parse_text_raw;
 
 	auto text = reinterpret_cast<const char*>(file.data);
 
@@ -2080,7 +2080,7 @@ void read_file_text_from_default(const default_file& file, char *processed_text,
 	}
 
 	if (processed_text == NULL)
-		processed_text = Mission_text;
+		processed_text = Parse_text;
 
 	// process the text
 	process_raw_file_text(processed_text, raw_text);
@@ -2090,30 +2090,30 @@ void stop_parse()
 {
 	Assert( !Parsing_paused );
 
-	if (Mission_text != NULL) {
-		vm_free(Mission_text);
-		Mission_text = NULL;
+	if (Parse_text != NULL) {
+		vm_free(Parse_text);
+		Parse_text = NULL;
 	}
 
-	if (Mission_text_raw != NULL) {
-		vm_free(Mission_text_raw);
-		Mission_text_raw = NULL;
+	if (Parse_text_raw != NULL) {
+		vm_free(Parse_text_raw);
+		Parse_text_raw = NULL;
 	}
 
-	Mission_text_size = 0;
+	Parse_text_size = 0;
 }
 
-void allocate_mission_text(size_t size)
+void allocate_parse_text(size_t size)
 {
 	Assert( size > 0 );
 
 	// Make sure that there is space for the terminating null character
 	size += 1;
 
-	if (size <= Mission_text_size) {
+	if (size <= Parse_text_size) {
 		// Make sure that a new parsing session does not use uninitialized data.
-		memset( Mission_text, 0, sizeof(char) * Mission_text_size );
-		memset( Mission_text_raw, 0, sizeof(char) * Mission_text_size);
+		memset( Parse_text, 0, sizeof(char) * Parse_text_size );
+		memset( Parse_text_raw, 0, sizeof(char) * Parse_text_size);
 		return;
 	}
 
@@ -2124,27 +2124,27 @@ void allocate_mission_text(size_t size)
 		parse_atexit = 1;
 	}
 
-	if (Mission_text != NULL) {
-		vm_free(Mission_text);
-		Mission_text = NULL;
+	if (Parse_text != NULL) {
+		vm_free(Parse_text);
+		Parse_text = NULL;
 	}
 
-	if (Mission_text_raw != NULL) {
-		vm_free(Mission_text_raw);
-		Mission_text_raw = NULL;
+	if (Parse_text_raw != NULL) {
+		vm_free(Parse_text_raw);
+		Parse_text_raw = NULL;
 	}
 
-	Mission_text = (char *) vm_malloc(sizeof(char) * size, memory::quiet_alloc);
-	Mission_text_raw = (char *) vm_malloc(sizeof(char) * size, memory::quiet_alloc);
+	Parse_text = (char *) vm_malloc(sizeof(char) * size, memory::quiet_alloc);
+	Parse_text_raw = (char *) vm_malloc(sizeof(char) * size, memory::quiet_alloc);
 
-	if ( (Mission_text == NULL) || (Mission_text_raw == NULL) ) {
+	if ( (Parse_text == NULL) || (Parse_text_raw == NULL) ) {
 		Error(LOCATION, "Unable to allocate enough memory for Mission_text!  Aborting...\n");
 	}
 
-	memset( Mission_text, 0, sizeof(char) * size );
-	memset( Mission_text_raw, 0, sizeof(char) * size);
+	memset( Parse_text, 0, sizeof(char) * size );
+	memset( Parse_text_raw, 0, sizeof(char) * size);
 
-	Mission_text_size = size;
+	Parse_text_size = size;
 }
 
 // Goober5000
@@ -2175,9 +2175,9 @@ void read_raw_file_text(const char *filename, int mode, char *raw_text)
 	auto can_reallocate = raw_text == nullptr;
 	if (raw_text == nullptr) {
 		// allocate, or reallocate, memory for Mission_text and Mission_text_raw based on size we need now
-		allocate_mission_text((size_t) (file_len + 1));
+		allocate_parse_text((size_t) (file_len + 1));
 		// NOTE: this always has to be done *after* the allocate_mission_text() call!!
-		raw_text = Mission_text_raw;
+		raw_text = Parse_text_raw;
 	}
 
 	// read first 10 bytes to determine if file is encrypted
@@ -2230,8 +2230,8 @@ void read_raw_file_text(const char *filename, int mode, char *raw_text)
 				do {
 					auto in_str = input_str.c_str();
 					auto in_size = input_str.size();
-					auto out_str = Mission_text_raw;
-					auto out_size = Mission_text_size;
+					auto out_str = Parse_text_raw;
+					auto out_size = Parse_text_size;
 
 					auto iconv = SDL_iconv_open("UTF-8", "ISO-8859-1");
 					auto err = SDL_iconv(iconv, &in_str, &in_size, &out_str, &out_size);
@@ -2242,13 +2242,13 @@ void read_raw_file_text(const char *filename, int mode, char *raw_text)
 					} else if (err == SDL_ICONV_E2BIG) {
 						// buffer is not big enough, try again with a bigger buffer. Use a rather conservative size
 						// increment since the additional size required is probably pretty small
-						allocate_mission_text(Mission_text_size + 300);
+						allocate_parse_text(Parse_text_size + 300);
 					} else {
 						Warning(LOCATION, "File reencoding failed (error code " SIZE_T_ARG ")!\n"
 							"You will probably encounter encoding issues.", err);
 
 						// Copy the original data back to the mission text pointer so that we don't loose any data here
-						strcpy(Mission_text_raw, input_str.c_str());
+						strcpy(Parse_text_raw, input_str.c_str());
 						break;
 					}
 				} while(true);
@@ -2274,10 +2274,10 @@ void process_raw_file_text(char *processed_text, char *raw_text)
 	int raw_text_len = (int)strlen(raw_text);
 
 	if (processed_text == NULL)
-		processed_text = Mission_text;
+		processed_text = Parse_text;
 
 	if (raw_text == NULL)
-		raw_text = Mission_text_raw;
+		raw_text = Parse_text_raw;
 
 	Assert( processed_text != NULL );
 	Assert( raw_text != NULL );
@@ -2329,7 +2329,7 @@ void process_raw_file_text(char *processed_text, char *raw_text)
 
 		//	If you hit this assert, it is probably telling you the obvious.  The file
 		//	you are trying to read is truly too large.  Look at *filename to see the file name.
-		Assert(mp_raw - file_text_raw + strlen(outbuf) < MISSION_TEXT_SIZE);
+		Assert(mp_raw - file_text_raw + strlen(outbuf) < PARSE_TEXT_SIZE);
 		strcpy_s(mp_raw, outbuf);
 		mp_raw += strlen(outbuf);
 
@@ -2345,7 +2345,7 @@ void process_raw_file_text(char *processed_text, char *raw_text)
 
 void debug_show_mission_text()
 {
-	char	*mp = Mission_text;
+	char	*mp = Parse_text;
 	char	ch;
 
 	while ((ch = *mp++) != '\0')
@@ -3390,7 +3390,7 @@ void reset_parse(char *text)
 	if (text != NULL) {
 		Mp = text;
 	} else {
-		Mp = Mission_text;
+		Mp = Parse_text;
 	}
 
 	Warning_count = 0;

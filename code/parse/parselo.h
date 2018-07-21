@@ -21,10 +21,10 @@
 #include <exception>
 
 // NOTE: although the main game doesn't need this anymore, FRED2 still does
-#define	MISSION_TEXT_SIZE	1000000
+#define	PARSE_TEXT_SIZE	1000000
 
-extern char	*Mission_text;
-extern char	*Mission_text_raw;
+extern char	*Parse_text;
+extern char	*Parse_text_raw;
 extern char	*Mp;
 extern const char	*token_found;
 extern int fred_parse_flag;
