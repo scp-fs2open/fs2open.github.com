@@ -48,8 +48,8 @@ int		Warning_count_save = 0, Error_count_save = 0;
 int		fred_parse_flag = 0;
 int		Token_found_flag;
 
-char 	*Parse_text = NULL;
-char	*Parse_text_raw = NULL;
+char 	*Parse_text = nullptr;
+char	*Parse_text_raw = nullptr;
 char	*Mp = NULL, *Mp_save = NULL;
 const char	*token_found;
 
@@ -2090,14 +2090,14 @@ void stop_parse()
 {
 	Assert( !Parsing_paused );
 
-	if (Parse_text != NULL) {
+	if (Parse_text != nullptr) {
 		vm_free(Parse_text);
-		Parse_text = NULL;
+		Parse_text = nullptr;
 	}
 
-	if (Parse_text_raw != NULL) {
+	if (Parse_text_raw != nullptr) {
 		vm_free(Parse_text_raw);
-		Parse_text_raw = NULL;
+		Parse_text_raw = nullptr;
 	}
 
 	Parse_text_size = 0;
@@ -2124,20 +2124,20 @@ void allocate_parse_text(size_t size)
 		parse_atexit = 1;
 	}
 
-	if (Parse_text != NULL) {
+	if (Parse_text != nullptr) {
 		vm_free(Parse_text);
-		Parse_text = NULL;
+		Parse_text = nullptr;
 	}
 
-	if (Parse_text_raw != NULL) {
+	if (Parse_text_raw != nullptr) {
 		vm_free(Parse_text_raw);
-		Parse_text_raw = NULL;
+		Parse_text_raw = nullptr;
 	}
 
 	Parse_text = (char *) vm_malloc(sizeof(char) * size, memory::quiet_alloc);
 	Parse_text_raw = (char *) vm_malloc(sizeof(char) * size, memory::quiet_alloc);
 
-	if ( (Parse_text == NULL) || (Parse_text_raw == NULL) ) {
+	if ( (Parse_text == nullptr) || (Parse_text_raw == nullptr) ) {
 		Error(LOCATION, "Unable to allocate enough memory for Mission_text!  Aborting...\n");
 	}
 
