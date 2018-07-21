@@ -2,10 +2,10 @@
 //
 
 #include "cfile.h"
-#include "scripting/api/objs/file.h"
-
 #include "cfile/cfile.h"
 #include "cfile/cfilesystem.h"
+#include "scripting/api/objs/file.h"
+#include "scripting/lua/LuaTable.h"
 
 namespace scripting {
 namespace api {
@@ -93,6 +93,54 @@ ADE_FUNC(fileExists, l_CFile, "string Filename, [string Path = \"\", boolean Che
 		return ade_set_args(L, "b", cf_exists(n_filename, path) != 0);
 	else
 		return ade_set_args(L, "b", cf_exists_full(n_filename, path ) != 0);
+}
+
+ADE_FUNC(listFiles, l_CFile, "string directory, string filter",
+         "Lists all the files in the specified directory and optionally applies a filter. The filter must have the "
+         "format \"*<rest>\" (the wildcard has to appear at the start).",
+         "table", "A table with all files in the directory or nil on error")
+{
+	using namespace luacpp;
+
+	const char* dir;
+	const char* filter;
+	if (!ade_get_args(L, "ss", &dir, &filter)) {
+		return ADE_RETURN_NIL;
+	}
+
+	SCP_string filter_str = filter;
+	if (filter_str.empty()) {
+		LuaError(L, "The filter \"%s\" is not valid! It may not be empty.", filter);
+		return ADE_RETURN_NIL;
+	}
+
+	if (filter_str[0] != '*') {
+		LuaError(L, "The filter \"%s\" is not valid! The first character must be a '*'.", filter);
+		return ADE_RETURN_NIL;
+	}
+
+	SCP_string ext; // Extension with '.' if it exists
+	auto dot_pos = filter_str.find('.');
+	if (dot_pos != SCP_string::npos) {
+		ext = filter_str.substr(dot_pos);
+	}
+
+	auto path_type = l_cf_get_path_id(dir);
+	if (path_type == CF_TYPE_INVALID) {
+		LuaError(L, "The directory \"%s\" is not valid!", dir);
+		return ADE_RETURN_NIL;
+	}
+
+	SCP_vector<SCP_string> files;
+	cf_get_file_list(files, path_type, filter, CF_SORT_NAME);
+
+	LuaTable table = LuaTable::create(L);
+	for (size_t i = 0; i < files.size(); ++i) {
+		// Add the extension since cf_get_file_list removes it. We use the filter without the preceeding '*' here
+		table.addValue(i + 1, files[i] + ext);
+	}
+
+	return ade_set_args(L, "t", &table);
 }
 
 ADE_FUNC(openFile, l_CFile, "string Filename, [string Mode=\"r\", string Path = \"\"]",
