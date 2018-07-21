@@ -7,10 +7,10 @@
 #include "cfile/cfile.h"
 #include "cfile/cfilesystem.h"
 
-namespace {
+namespace scripting {
+namespace api {
 
-int l_cf_get_path_id(const char* n_path)
-{
+int l_cf_get_path_id(const char* n_path) {
 	size_t i;
 	size_t path_len = strlen(n_path);
 
@@ -49,12 +49,7 @@ int l_cf_get_path_id(const char* n_path)
 	vm_free(buf);
 	buf = NULL;
 	return CF_TYPE_INVALID;
-}
-
-}
-
-namespace scripting {
-namespace api {
+};
 
 //**********LIBRARY: CFILE
 //WMC - It's on my to-do list! (Well, if I had one anyway)

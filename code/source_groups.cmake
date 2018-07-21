@@ -1007,6 +1007,8 @@ add_file_folder("Scripting\\\\Api\\\\Libs"
 	scripting/api/libs/hud.h
 	scripting/api/libs/mission.cpp
 	scripting/api/libs/mission.h
+	scripting/api/libs/parse.cpp
+	scripting/api/libs/parse.h
 	scripting/api/libs/tables.cpp
 	scripting/api/libs/tables.h
 	scripting/api/libs/testing.cpp
