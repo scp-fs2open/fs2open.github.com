@@ -10,6 +10,7 @@
 #include <sstream>
 #include <climits>
 
+#include "gamesnd.h"
 #include "gamesnd/gamesnd.h"
 #include "localization/localize.h"
 #include "parse/parselo.h"
@@ -421,19 +422,30 @@ bool parse_game_sound(const char* tag, gamesnd_id* idx_dest)
 {
 	if (optional_string(tag))
 	{
-		SCP_string buf;
-		stuff_string(buf, F_NAME);
-
-		*idx_dest = gamesnd_get_by_name(buf.c_str());
-
-		// The special case "-1" is needed to silence warnings where sounds are intentionally removed
-		if (idx_dest->isValid() || buf == "-1")
-			return true;
-		
-		error_display(0, "Could not find game sound with name '%s'!", buf.c_str());
+		*idx_dest = parse_game_sound_inline();
+		return true;
 	}
 
 	return false;
+}
+
+/**
+ * @brief Parses a game sound that should appear at the current parsing location
+ * @return The game sound id or invalid id when parsing fails
+ */
+gamesnd_id parse_game_sound_inline()
+{
+	SCP_string buf;
+	stuff_string(buf, F_NAME);
+
+	auto id = gamesnd_get_by_name(buf.c_str());
+
+	// The special case "-1" is needed to silence warnings where sounds are intentionally removed
+	if (!id.isValid() && buf != "-1") {
+		error_display(0, "Could not find game sound with name '%s'!", buf.c_str());
+	}
+
+	return id;
 }
 
 /**

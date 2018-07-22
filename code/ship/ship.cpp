@@ -943,7 +943,7 @@ void ship_info::clone(const ship_info& other)
 
 	if ( other.n_subsystems > 0 ) {
 		if( n_subsystems < 1 ) {
-            subsystems = (model_subsystem *)vm_malloc(sizeof(model_subsystem) * other.n_subsystems);
+			subsystems = new model_subsystem[other.n_subsystems];
 		} else {
 			for ( int i = 0; i < n_subsystems; i++ ) {
 				for ( int j = 0; j < subsystems[i].n_triggers; j++ ) {
@@ -954,10 +954,11 @@ void ship_info::clone(const ship_info& other)
 					}
 				}
 			}
-            subsystems = (model_subsystem *)vm_realloc(subsystems, sizeof(model_subsystem) * other.n_subsystems);
+			delete[] subsystems;
+			subsystems = new model_subsystem[other.n_subsystems];
 		}
 
-        Assert(subsystems != NULL);
+		Assert(subsystems != nullptr);
 		for ( int i = n_subsystems; i < other.n_subsystems; i++ ) {
 			subsystems[i].triggers = (queued_animation*) vm_malloc(sizeof(queued_animation) * (other.subsystems[i].n_triggers));
 		}
@@ -1896,8 +1897,8 @@ ship_info::~ship_info()
 			}
 		}
 
-		vm_free(subsystems);
-        subsystems = NULL;
+		delete[] subsystems;
+		subsystems = nullptr;
 	}
 
 	free_strings();
@@ -4531,9 +4532,9 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 
 	int n_subsystems = 0;
 	int cont_flag = 1;
-	model_subsystem subsystems[MAX_MODEL_SUBSYSTEMS];		// see model.h for max_model_subsystems
+	model_subsystem subsystems[MAX_MODEL_SUBSYSTEMS] = {}; // see model.h for max_model_subsystems
 	for (auto i=0; i<MAX_MODEL_SUBSYSTEMS; i++) {
-		subsystems[i].stepped_rotation = NULL;
+		subsystems[i].reset();
 	}
 	
 	float	hull_percentage_of_hits = 100.0f;
@@ -5033,6 +5034,8 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 				}
 			}
 
+			sp->beam_warmdown_program = actions::ProgramSet::parseProgramSet("$On Beam Warmdown:",
+				{actions::ProgramContextFlags::HasObject, actions::ProgramContextFlags::HasSubobject});
 		}
 		break;
 		case 2:
@@ -5055,14 +5058,21 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 	// when done reading subsystems, malloc and copy the subsystem data to the ship info structure
 	int orig_n_subsystems = sip->n_subsystems;
 	if ( n_subsystems > 0 ) {
-		if(sip->n_subsystems < 1) {
-			sip->n_subsystems = n_subsystems;
-			sip->subsystems = (model_subsystem*)vm_malloc(sizeof(model_subsystem) * sip->n_subsystems);
+		// Let's make sure that n_subsystems is not negative
+		Assertion(sip->n_subsystems >= 0, "Invalid n_subsystems detected!");
+		auto new_n = sip->n_subsystems + n_subsystems;
 
+		std::unique_ptr<model_subsystem[]> subsys_storage(new model_subsystem[new_n]);
+
+		if(sip->n_subsystems <= 0) {
+			sip->n_subsystems = n_subsystems;
 		} else {
+			// This used realloc originally so we need to copy the existing subsystems to the new storage
+			std::copy(sip->subsystems, sip->subsystems + sip->n_subsystems, subsys_storage.get());
+
 			sip->n_subsystems += n_subsystems;
-			sip->subsystems = (model_subsystem *)vm_realloc(sip->subsystems, sizeof(model_subsystem) * sip->n_subsystems);
-		} 
+		}
+		sip->subsystems = subsys_storage.release();
 
 	    Assert(sip->subsystems != NULL);
     }
@@ -13328,7 +13338,7 @@ int ship_type_name_lookup(const char *name)
 // Return true/false for subsystem found/not found.
 // Stuff vector *pos with absolute position.
 // subsysp is a pointer to the subsystem.
-int get_subsystem_pos(vec3d *pos, object *objp, ship_subsys *subsysp)
+int get_subsystem_pos(vec3d* pos, object* objp, ship_subsys* subsysp)
 {
 	if (subsysp == NULL) {
 		*pos = objp->pos;
@@ -13336,7 +13346,7 @@ int get_subsystem_pos(vec3d *pos, object *objp, ship_subsys *subsysp)
 	}
 	Assertion(objp->type == OBJ_SHIP, "Only ships can have subsystems!");
 
-	model_subsystem *mss = subsysp->system_info;
+	model_subsystem* mss = subsysp->system_info;
 
 	if (mss->subobj_num == -1) {
 		// If it's a special point subsys, we can use its offset directly

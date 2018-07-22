@@ -5565,4 +5565,10 @@ void model_subsystem::reset()
 
     turret_max_bomb_ownage = 0;
     turret_max_target_ownage = 0;
+
+	beam_warmdown_program = actions::ProgramSet();
+}
+
+model_subsystem::model_subsystem() {
+	reset();
 }

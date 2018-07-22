@@ -143,4 +143,6 @@ Category RenderDecals("Render all decals", true);
 Category RenderSingleDecal("Render single decal", true);
 Category GpuHeapAllocate("GPU heap allocate", false);
 Category GpuHeapDeallocate("GPU heap deallocate", false);
+
+Category ProgramStepOne("Step one program", false);
 }

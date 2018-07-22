@@ -3012,6 +3012,19 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		}
 	}
 
+	// This only works with lasters and missiles for now
+	if (wip->subtype == WP_MISSILE || wip->subtype == WP_LASER) {
+		// We always have an object we are attached to
+		flagset<actions::ProgramContextFlags> contexts{actions::ProgramContextFlags::HasObject};
+
+		if (wip->render_type == WRT_POF) {
+			// We will render with a model so we can have subobejcts
+			contexts.set(actions::ProgramContextFlags::HasSubobject, true);
+		}
+
+		wip->on_create_program = actions::ProgramSet::parseProgramSet("$On Create:", contexts);
+	}
+
 	/* Generate a substitution pattern for this weapon.
 	This pattern is very naive such that it calculates the lowest common denominator as being all of
 	the periods multiplied together.
@@ -5764,10 +5777,8 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 
 		objp->radius = model_get_radius(wip->model_num);
 
-		// if we intrinsic-rotate, make sure we have a model instance
-		if (model_get(wip->model_num)->flags & PM_FLAG_HAS_INTRINSIC_ROTATE) {
-			wp->model_instance_num = model_create_instance(false, wip->model_num);
-		}
+		// Always create an instance in case we need them
+		wp->model_instance_num = model_create_instance(false, wip->model_num);
 	} else if ( wip->render_type == WRT_LASER ) {
 		objp->radius = wip->laser_head_radius;
 	}
@@ -5947,6 +5958,17 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 	}
 
 	weapon_update_state(wp);
+
+	if (wip->render_type == WRT_LASER) {
+		// No model so we also have no submodel
+		wip->on_create_program.start(&Objects[objnum], &vmd_zero_vector, &vmd_identity_matrix, -1);
+	} else if (wip->render_type == WRT_POF) {
+		// We have a model so we can specify a subobject
+		wip->on_create_program.start(&Objects[objnum],
+			&vmd_zero_vector,
+			&vmd_identity_matrix,
+			model_get(wip->model_num)->detail[0]);
+	}
 
 	Script_system.SetHookObject("Weapon", &Objects[objnum]);
 	Script_system.RunCondition(CHA_ONWEAPONCREATED);
@@ -8361,6 +8383,8 @@ void weapon_info::reset()
 
 	// Reset using default constructor
 	this->impact_decal = decals::creation_info();
+
+	this->on_create_program = actions::ProgramSet();
 }
 
 const char* weapon_info::get_display_name() const

@@ -14,15 +14,17 @@
 
 #include "globalincs/globals.h"
 #include "globalincs/systemvars.h"
+
+#include "actions/Program.h"
+#include "decals/decals.h"
+#include "gamesnd/gamesnd.h"
 #include "graphics/2d.h"
 #include "graphics/generic.h"
-#include "gamesnd/gamesnd.h"
 #include "model/model.h"
+#include "particle/ParticleManager.h"
 #include "weapon/shockwave.h"
 #include "weapon/trails.h"
-#include "particle/ParticleManager.h"
 #include "weapon/weapon_flags.h"
-#include "decals/decals.h"
 
 class object;
 class ship_subsys;
@@ -511,6 +513,8 @@ struct weapon_info
 	int			score; //Optional score for destroying the weapon
 
 	decals::creation_info impact_decal;
+
+	actions::ProgramSet on_create_program;
 
 public:
 	weapon_info();
