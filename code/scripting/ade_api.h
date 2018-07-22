@@ -145,7 +145,7 @@ const ::scripting::ade_lib& field = SCP_TOKEN_CONCAT(get_, field)()
  *
  * @ingroup ade_api
  */
-#define ADE_LIB(field, name, short_name, desc) ADE_LIB_IMPL(field, name, short_name, desc, nullptr);
+#define ADE_LIB(field, name, short_name, desc) ADE_LIB_IMPL(field, name, short_name, desc, nullptr)
 
 /**
  * @brief Define an API library which is the child of another library
@@ -164,7 +164,7 @@ const ::scripting::ade_lib& field = SCP_TOKEN_CONCAT(get_, field)()
  * @ingroup ade_api
  */
 #define ADE_LIB_DERIV(field, name, short_name, desc, parent) \
-	ADE_LIB_IMPL(field, name, short_name, desc, &SCP_TOKEN_CONCAT(get_, parent)());
+	ADE_LIB_IMPL(field, name, short_name, desc, &SCP_TOKEN_CONCAT(get_, parent)())
 
 /**
  * @brief Declare an API library but don't define it

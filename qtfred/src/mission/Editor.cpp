@@ -89,7 +89,7 @@ ai_goal_list Ai_goal_list[] = {
 char Fred_callsigns[MAX_SHIPS][NAME_LENGTH + 1];
 char Fred_alt_names[MAX_SHIPS][NAME_LENGTH + 1];
 
-extern void allocate_mission_text(size_t size);
+extern void allocate_parse_text(size_t size);
 
 extern int Nmodel_num;
 extern int Nmodel_instance_num;
@@ -370,7 +370,7 @@ void Editor::clearMission() {
     }
 #endif
 
-	allocate_mission_text(MISSION_TEXT_SIZE);
+	allocate_parse_text(PARSE_TEXT_SIZE);
 
 	The_mission.cutscenes.clear();
 	fiction_viewer_reset();
@@ -474,8 +474,8 @@ void Editor::clearMission() {
 		Team_data[i].num_weapon_choices = count;
 	}
 
-	*Mission_text = *Mission_text_raw = '\0';
-	Mission_text[1] = Mission_text_raw[1] = 0;
+	*Parse_text = *Parse_text_raw = '\0';
+	Parse_text[1] = Parse_text_raw[1] = 0;
 
 	waypoint_parse_init();
 	Num_mission_events = 0;

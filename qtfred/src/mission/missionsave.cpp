@@ -344,7 +344,7 @@ void CFred_mission_save::parse_comments(int newlines) {
 		same_line = 1;
 	}
 
-	if (fred_parse_flag || !Token_found_flag || !token_found || (token_found && (*Mission_text_raw == '\0'))) {
+	if (fred_parse_flag || !Token_found_flag || !token_found || (token_found && (*Parse_text_raw == '\0'))) {
 		while (newlines-- > 0) {
 			fout("\n");
 		}

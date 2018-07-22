@@ -37,7 +37,7 @@ public:
 	/**
 	 * @brief Default constructor
 	 */
-	CFred_mission_save() : err(0), raw_ptr(Mission_text_raw) {}
+	CFred_mission_save() : err(0), raw_ptr(Parse_text_raw) {}
 
 	/**
 	 * @brief Move past the comment without copying it to the output file. Used for special FSO comment tags

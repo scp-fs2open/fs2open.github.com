@@ -8019,7 +8019,7 @@ void conv_fix_punctuation_section(char *str, const char *section_start, const ch
 		t2 = strstr(t1, text_end);
 		if (!t2 || t2 > s2) return;
 
-		replace_all(t1, "\"", "$quote", MISSION_TEXT_SIZE - (str - Mission_text), (t2 - t1));
+		replace_all(t1, "\"", "$quote", PARSE_TEXT_SIZE - (str - Parse_text), (t2 - t1));
 	}	
 }
 	
@@ -8027,16 +8027,16 @@ void conv_fix_punctuation_section(char *str, const char *section_start, const ch
 void conv_fix_punctuation()
 {
 	// command briefings
-	conv_fix_punctuation_section(Mission_text, "#Command Briefing", "#Briefing", "$Stage Text:", "$end_multi_text");
+	conv_fix_punctuation_section(Parse_text, "#Command Briefing", "#Briefing", "$Stage Text:", "$end_multi_text");
 
 	// briefings
-	conv_fix_punctuation_section(Mission_text, "#Briefing", "#Debriefing_info", "$multi_text", "$end_multi_text");
+	conv_fix_punctuation_section(Parse_text, "#Briefing", "#Debriefing_info", "$multi_text", "$end_multi_text");
 
 	// debriefings
-	conv_fix_punctuation_section(Mission_text, "#Debriefing_info", "#Players", "$Multi text", "$end_multi_text");
+	conv_fix_punctuation_section(Parse_text, "#Debriefing_info", "#Players", "$Multi text", "$end_multi_text");
 
 	// messages
-	conv_fix_punctuation_section(Mission_text, "#Messages", "#Reinforcements", "$Message:", "\n");
+	conv_fix_punctuation_section(Parse_text, "#Messages", "#Reinforcements", "$Message:", "\n");
 }
 
 // Goober5000
