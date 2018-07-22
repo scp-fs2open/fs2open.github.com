@@ -2040,6 +2040,14 @@ void beam_start_warmdown(beam *b)
 		snd_stop(b->beam_sound_loop);
 		b->beam_sound_loop = sound_handle::invalid();
 	}
+
+	if (b->subsys != nullptr) {
+		// Starts the warmdown program if it exists
+		b->subsys->system_info->beam_warmdown_program.start(b->objp,
+			&vmd_zero_vector,
+			&vmd_identity_matrix,
+			b->subsys->system_info->subobj_num);
+	}
 }
 
 // recalculate beam sounds (looping sounds relative to the player)
