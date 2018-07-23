@@ -3183,6 +3183,19 @@ void Editor::normalizeShieldSysData() {
 	}
 }
 
+void Editor::strip_quotation_marks(SCP_string& str) {
+	SCP_string::size_type idx = 0;
+	while ((idx = str.find('\"', idx)) != SCP_string::npos) {
+		str.erase(idx, 1);
+	}
+}
+
+void Editor::pad_with_newline(SCP_string& str, int max_size) {
+	if (str.back() != '\n' && str.size() < max_size) {
+		str += "\n";
+	}
+}
+
 
 } // namespace fred
 } // namespace fso

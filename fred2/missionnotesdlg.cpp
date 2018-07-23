@@ -296,6 +296,18 @@ void CMissionNotesDlg::OnOK()
 		set_modified();
 	}
 
+	//if there's a odd number of quotation marks, the mission won't parse
+	//If there are an even number, nothing after the first one appears
+	//So just get rid of them
+	strip_quotation_marks(m_mission_title);
+	strip_quotation_marks(m_designer_name);
+	strip_quotation_marks(m_mission_notes);
+	strip_quotation_marks(m_mission_desc);
+	strip_quotation_marks(m_squad_name);
+
+	// puts "$End Notes:" on a different line to ensure it's not interpreted as part of a comment
+	pad_with_newline(m_mission_notes, NOTES_LENGTH - 1);
+
 	string_copy(The_mission.name, m_mission_title, NAME_LENGTH, 1);
 	string_copy(The_mission.author, m_designer_name, NAME_LENGTH, 1);
 	string_copy(The_mission.loading_screen[GR_640], m_loading_640, NAME_LENGTH,1);

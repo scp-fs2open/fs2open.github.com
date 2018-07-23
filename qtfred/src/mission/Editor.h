@@ -272,6 +272,9 @@ class Editor: public QObject {
 	int global_error_check_player_wings(int multi);
 
 	const char *get_order_name(int order);
+	
+	void strip_quotation_marks(SCP_string& str);
+	void pad_with_newline(SCP_string& str, int max_size);
 };
 
 } // namespace fred

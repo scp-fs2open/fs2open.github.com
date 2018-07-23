@@ -2165,7 +2165,7 @@ int CFred_mission_save::save_mission_info() {
 
 	required_string_fred("$Notes:");
 	parse_comments();
-	fout("\n%s\n", The_mission.notes);
+	fout("\n%s", The_mission.notes);
 
 	required_string_fred("$End Notes:");
 	parse_comments(0);
