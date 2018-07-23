@@ -224,6 +224,8 @@ extern object *Player_obj;	// Which object is the player. Has to be valid.
 //do whatever setup needs to be done
 void obj_init();
 
+void obj_shutdown();
+
 //initialize a new object.  adds to the list for the given segment.
 //returns the object number.  The object will be a non-rendering, non-physics
 //object.  Returns 0 if failed, otherwise object index.

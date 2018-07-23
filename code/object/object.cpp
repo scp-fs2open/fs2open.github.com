@@ -359,6 +359,13 @@ void obj_init()
 	}
 }
 
+void obj_shutdown()
+{
+	for (auto& obj : Objects) {
+		obj.clear();
+	}
+}
+
 static int num_objects_hwm = 0;
 
 /** 
