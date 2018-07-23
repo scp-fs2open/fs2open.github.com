@@ -274,7 +274,7 @@ class Editor: public QObject {
 	const char *get_order_name(int order);
 	
 	void strip_quotation_marks(SCP_string& str);
-	void pad_with_newline(SCP_string& str, int max_size);
+	void pad_with_newline(SCP_string& str, SCP_string::size_type max_size);
 };
 
 } // namespace fred

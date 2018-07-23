@@ -3190,7 +3190,7 @@ void Editor::strip_quotation_marks(SCP_string& str) {
 	}
 }
 
-void Editor::pad_with_newline(SCP_string& str, int max_size) {
+void Editor::pad_with_newline(SCP_string& str, SCP_string::size_type max_size) {
 	if (str.back() != '\n' && str.size() < max_size) {
 		str += "\n";
 	}

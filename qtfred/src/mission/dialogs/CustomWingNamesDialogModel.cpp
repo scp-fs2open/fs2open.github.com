@@ -14,15 +14,15 @@ CustomWingNamesDialogModel::CustomWingNamesDialogModel(QObject * parent, EditorV
 bool CustomWingNamesDialogModel::apply() {
 	int i;
 	for (i = 0; i < MAX_STARTING_WINGS; i++) {
-		strip_quotation_marks(_m_starting[i]);
+		Editor::strip_quotation_marks(_m_starting[i]);
 	}
 
 	for (i = 0; i < MAX_SQUADRON_WINGS; i++) {
-		strip_quotation_marks(_m_squadron[i]);
+		Editor::strip_quotation_marks(_m_squadron[i]);
 	}
 
 	for (i = 0; i < MAX_TVT_WINGS; i++) {
-		strip_quotation_marks(_m_tvt[i]);
+		Editor::strip_quotation_marks(_m_tvt[i]);
 	}
 	
 	if (strcmp(_m_starting[0].c_str(), _m_tvt[0].c_str()) != 0)
