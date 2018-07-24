@@ -2672,6 +2672,14 @@ int CFred_mission_save::save_objects() {
 		parse_comments(z ? 2 : 1);
 		fout(" %s\t\t;! Object #%d\n", shipp->ship_name, i);
 
+		// Display name
+		if (Format_fs2_open != FSO_FORMAT_RETAIL && shipp->has_display_name()) {
+			// The display name is only written if there was one at the start to avoid introducing inconsistencies
+			fout("\n$Display name:");
+			fout_ext(" ", "%s", shipp->display_name.c_str());
+			fout("\n");
+		}
+
 		required_string_fred("$Class:");
 		parse_comments(0);
 		fout(" %s", Ship_info[shipp->ship_info_index].name);

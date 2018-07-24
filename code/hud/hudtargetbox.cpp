@@ -1405,7 +1405,7 @@ void HudGaugeExtraTargetData::pageIn()
  */
 void HudGaugeExtraTargetData::render(float  /*frametime*/)
 {
-	char outstr[256], tmpbuf[256];
+	char tmpbuf[256];
 	int has_orders = 0;
 	int not_training;
 	int extra_data_shown=0;
@@ -1440,17 +1440,22 @@ void HudGaugeExtraTargetData::render(float  /*frametime*/)
 				!(Iff_info[target_shipp->team].flags & IFFF_ORDERS_HIDDEN)))
 			&& Ship_info[target_shipp->ship_info_index].is_flyable()) {
 			extra_data_shown = 1;
-			if (ship_return_orders(outstr, target_shipp)) {
+			auto orders = ship_return_orders(target_shipp);
+			if (!orders.empty()) {
+				char outstr[256];
+				strcpy_s(outstr, orders.c_str());
 				font::force_fit_string(outstr, 255, order_max_w);
+				orders = outstr;
 				has_orders = 1;
 			} else {
-				strcpy_s(outstr, XSTR("no orders", 337));
+				orders = XSTR("no orders", 337);
 			}
 
-			renderString(position[0] + order_offsets[0], position[1] + order_offsets[1], EG_TBOX_EXTRA1, outstr);
+			renderString(position[0] + order_offsets[0], position[1] + order_offsets[1], EG_TBOX_EXTRA1, orders.c_str());
 		}
 
 		if ( has_orders ) {
+			char outstr[256];
 			strcpy_s(outstr, XSTR( "time to: ", 338));
 			if ( ship_return_time_to_goal(tmpbuf, target_shipp) ) {
 				strcat_s(outstr, tmpbuf);
@@ -1471,10 +1476,11 @@ void HudGaugeExtraTargetData::render(float  /*frametime*/)
 		// count the objects directly docked to me
 		int dock_count = dock_count_direct_docked_objects(target_objp);
 
+		char outstr[256];
 		// docked to only one object
 		if (dock_count == 1)
 		{
-			sprintf(outstr, XSTR("Docked: %s", 339), Ships[dock_get_first_docked_object(target_objp)->instance].ship_name);
+			sprintf(outstr, XSTR("Docked: %s", 339), Ships[dock_get_first_docked_object(target_objp)->instance].get_display_string());
 			end_string_at_first_hash_symbol(outstr);
 		}
 		// docked to multiple objects
@@ -2040,10 +2046,10 @@ void HudGaugeTargetBox::showTargetData(float  /*frametime*/)
 				float	dot, dist;
 				vec3d	v2t;
 
-				if (aip->target_objnum == Player_obj-Objects)
+				if (aip->target_objnum == OBJ_INDEX(Player_obj))
 					strcpy_s(target_str, "Player!");
 				else
-					sprintf(target_str, "%s", Ships[Objects[aip->target_objnum].instance].ship_name);
+					sprintf(target_str, "%s", Ships[Objects[aip->target_objnum].instance].get_display_string());
 
 				gr_printf_no_resize(sx, sy, "Targ: %s", target_str);
 				sy += dy;
@@ -2091,14 +2097,14 @@ void HudGaugeTargetBox::showTargetData(float  /*frametime*/)
 						eshipp = &Ships[Enemy_attacker->instance];
 						eaip = &Ai_info[eshipp->ai_index];
 
-						if (eaip->target_objnum == Player_obj-Objects) {
+						if (eaip->target_objnum == OBJ_INDEX(Player_obj)) {
 							found = 1;
 							dist = vm_vec_dist_quick(&Enemy_attacker->pos, &Player_obj->pos);
 							vm_vec_normalized_dir(&v2t,&Objects[eaip->target_objnum].pos, &Enemy_attacker->pos);
 
 							dot = vm_vec_dot(&v2t, &Enemy_attacker->orient.vec.fvec);
 
-							gr_printf_no_resize(sx, sy, "#%i: %s", OBJ_INDEX(Enemy_attacker), Ships[Enemy_attacker->instance].ship_name);
+							gr_printf_no_resize(sx, sy, "#%i: %s", OBJ_INDEX(Enemy_attacker), Ships[Enemy_attacker->instance].get_display_string());
 							sy += dy;
 							gr_printf_no_resize(sx, sy, "Targ dist: %5.1f", dist);
 							sy += dy;

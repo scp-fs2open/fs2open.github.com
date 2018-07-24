@@ -494,6 +494,7 @@ public:
 
 
 	char	ship_name[NAME_LENGTH];
+	SCP_string display_name;
 
 	int	team;				//	Which team it's on, HOSTILE, FRIENDLY, UNKNOWN, NEUTRAL
 	
@@ -715,6 +716,9 @@ public:
     inline bool is_departing() { return flags[Ship::Ship_Flags::Depart_warp, Ship::Ship_Flags::Depart_dockbay]; }
     inline bool cannot_warp() { return flags[Ship::Ship_Flags::Warp_broken, Ship::Ship_Flags::Warp_never, Ship::Ship_Flags::Disabled]; }
     inline bool is_dying_or_departing() { return is_departing() || flags[Ship::Ship_Flags::Dying]; }
+
+	bool has_display_name();
+	const char* get_display_string();
 };
 
 struct ai_target_priority {
@@ -741,6 +745,7 @@ ai_target_priority init_ai_target_priorities();
 
 typedef struct exited_ship {
 	char	ship_name[NAME_LENGTH];
+	SCP_string display_string;
 	int		obj_signature;
 	int		ship_class;
 	int		team;
@@ -1573,7 +1578,7 @@ int ship_dumbfire_threat(ship *sp);
 int ship_lock_threat(ship *sp);
 
 int	bitmask_2_bitnum(int num);
-char	*ship_return_orders(char *outbuf, ship *sp);
+SCP_string ship_return_orders(ship *sp);
 char	*ship_return_time_to_goal(char *outbuf, ship *sp);
 
 void	ship_maybe_warn_player(ship *enemy_sp, float dist);
