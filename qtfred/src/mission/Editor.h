@@ -174,6 +174,9 @@ class Editor: public QObject {
 	void exportShieldSysData(std::vector<int>& teams, std::vector<int>& types) const;
 	void importShieldSysData(const std::vector<int>& teams, const std::vector<int>& types);
 	void normalizeShieldSysData();
+
+	static void strip_quotation_marks(SCP_string& str);
+	static void pad_with_newline(SCP_string& str, size_t max_size);
  private:
 	void clearMission();
 
@@ -272,9 +275,6 @@ class Editor: public QObject {
 	int global_error_check_player_wings(int multi);
 
 	const char *get_order_name(int order);
-	
-	void strip_quotation_marks(SCP_string& str);
-	void pad_with_newline(SCP_string& str, SCP_string::size_type max_size);
 };
 
 } // namespace fred

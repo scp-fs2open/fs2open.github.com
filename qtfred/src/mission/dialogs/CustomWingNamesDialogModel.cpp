@@ -13,16 +13,17 @@ CustomWingNamesDialogModel::CustomWingNamesDialogModel(QObject * parent, EditorV
 
 bool CustomWingNamesDialogModel::apply() {
 	int i;
-	for (i = 0; i < MAX_STARTING_WINGS; i++) {
-		Editor::strip_quotation_marks(_m_starting[i]);
+
+	for (auto wing : _m_starting) {
+		Editor::strip_quotation_marks(wing);
 	}
 
-	for (i = 0; i < MAX_SQUADRON_WINGS; i++) {
-		Editor::strip_quotation_marks(_m_squadron[i]);
+	for (auto wing : _m_squadron) {
+		Editor::strip_quotation_marks(wing);
 	}
 
-	for (i = 0; i < MAX_TVT_WINGS; i++) {
-		Editor::strip_quotation_marks(_m_tvt[i]);
+	for (auto wing : _m_squadron) {
+		Editor::strip_quotation_marks(wing);
 	}
 	
 	if (strcmp(_m_starting[0].c_str(), _m_tvt[0].c_str()) != 0)
