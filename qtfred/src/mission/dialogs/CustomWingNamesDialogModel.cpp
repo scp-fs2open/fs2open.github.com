@@ -22,7 +22,7 @@ bool CustomWingNamesDialogModel::apply() {
 		Editor::strip_quotation_marks(wing);
 	}
 
-	for (auto wing : _m_squadron) {
+	for (auto wing : _m_tvt) {
 		Editor::strip_quotation_marks(wing);
 	}
 	
