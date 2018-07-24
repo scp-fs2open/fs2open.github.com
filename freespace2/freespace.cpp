@@ -6907,6 +6907,8 @@ void game_shutdown(void)
 	gamesnd_close();		// close out gamesnd, needs to happen *after* other sounds are closed
 	psnet_close();
 
+	obj_shutdown();
+
 	model_free_all();
 	bm_unload_all();			// unload/free bitmaps, has to be called *after* model_free_all()!
 
