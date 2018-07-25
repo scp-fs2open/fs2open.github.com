@@ -13,6 +13,19 @@ CustomWingNamesDialogModel::CustomWingNamesDialogModel(QObject * parent, EditorV
 
 bool CustomWingNamesDialogModel::apply() {
 	int i;
+
+	for (auto wing : _m_starting) {
+		Editor::strip_quotation_marks(wing);
+	}
+
+	for (auto wing : _m_squadron) {
+		Editor::strip_quotation_marks(wing);
+	}
+
+	for (auto wing : _m_tvt) {
+		Editor::strip_quotation_marks(wing);
+	}
+	
 	if (strcmp(_m_starting[0].c_str(), _m_tvt[0].c_str()) != 0)
 	{
 		auto button = _viewport->dialogProvider->showButtonDialog(DialogType::Error, "Custom Wing Error", "The first starting wing and the first team-versus-team wing must have the same wing name.",
