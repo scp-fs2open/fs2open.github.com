@@ -239,6 +239,11 @@ set(default_files_files
 	${files_Default_files_builtin}
 )
 
+add_file_folder("Events"
+	events/events.cpp
+	events/events.h
+)
+
 # ExceptionHandler files
 add_file_folder("ExceptionHandler"
 	exceptionhandler/exceptionhandler.cpp
@@ -569,6 +574,11 @@ add_file_folder("Lab"
 )
 
 add_file_folder("Libs"
+)
+
+add_file_folder("Libs\\\\Discord"
+	libs/discord/discord.cpp
+	libs/discord/discord.h
 )
 
 add_file_folder("Libs\\\\FFmpeg"

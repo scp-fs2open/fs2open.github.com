@@ -276,5 +276,7 @@ extern void mission_campaign_save_on_close_variables();
 
 extern void mission_campaign_load_failure_popup();
 
+SCP_string mission_campaign_get_name(const char* filename);
+
 // End CSFE stuff
 #endif
