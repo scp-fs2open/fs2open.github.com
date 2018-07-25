@@ -5323,11 +5323,10 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 	if(wip->life_min < 0.0f && wip->life_max < 0.0f) {
 		wp->lifeleft = wip->lifetime;
 	} else {
-		wp->lifeleft = (rand_val) * (wip->life_max - wip->life_min) / wip->life_min;
+		wp->lifeleft = ((rand_val) * (wip->life_max - wip->life_min)) + wip->life_min;
 		if((wip->wi_flags[Weapon::Info_Flags::Cmeasure]) && (parent_objp != NULL) && (parent_objp->flags[Object::Object_Flags::Player_ship])) {
 			wp->lifeleft *= The_mission.ai_profile->cmeasure_life_scale[Game_skill_level];
 		}
-		wp->lifeleft = wip->life_min + wp->lifeleft * (wip->life_max - wip->life_min);
 	}
 
 	if(wip->wi_flags[Weapon::Info_Flags::Cmeasure]) {
