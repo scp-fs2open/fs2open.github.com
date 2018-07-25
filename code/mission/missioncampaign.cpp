@@ -849,7 +849,7 @@ void mission_campaign_savefile_delete( char *cfilename )
 	// only support the new filename here - taylor
 	sprintf_safe( filename, NOX("%s.%s.csg"), Player->callsign, base );
 
-	cf_delete( filename, CF_TYPE_PLAYERS );
+	cf_delete(filename, CF_TYPE_PLAYERS, CF_LOCATION_ROOT_USER | CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT);
 }
 
 void campaign_delete_save( char *cfn, char *pname)
@@ -881,13 +881,14 @@ void mission_campaign_delete_all_savefiles(char *pilot_name)
 	// be.  I have to save any file filters
 	filter_save = Get_file_list_filter;
 	Get_file_list_filter = NULL;
-	num_files = cf_get_file_list(names, dir_type, file_spec);
+	num_files            = cf_get_file_list(names, dir_type, file_spec, CF_SORT_NONE, nullptr,
+                                 CF_LOCATION_ROOT_USER | CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT);
 	Get_file_list_filter = filter_save;
 
 	for (i = 0; i < num_files; i++) {
 		strcpy_s(filename, names[i].c_str());
 		strcat_s(filename, ext);
-		cf_delete(filename, dir_type);
+		cf_delete(filename, dir_type, CF_LOCATION_ROOT_USER | CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT);
 	}
 }
 

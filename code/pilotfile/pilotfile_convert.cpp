@@ -75,13 +75,16 @@ void convert_pilot_files()
 	SCP_vector<SCP_string> old_files;
 
 	// get list of pilots which already exist (new or converted already)
-	cf_get_file_list(existing, CF_TYPE_PLAYERS, "*.plr");
+	cf_get_file_list(existing, CF_TYPE_PLAYERS, "*.plr", CF_SORT_NONE, nullptr,
+	                 CF_LOCATION_ROOT_USER | CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT);
 
 	// get list of old pilots which may need converting, starting with inferno pilots
 	Get_file_list_child = "inferno";
-	cf_get_file_list(old_files, CF_TYPE_SINGLE_PLAYERS, "*.pl2");
+	cf_get_file_list(old_files, CF_TYPE_SINGLE_PLAYERS, "*.pl2", CF_SORT_NONE, nullptr,
+	                 CF_LOCATION_ROOT_USER | CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT);
 	inf_count = old_files.size();
-	cf_get_file_list(old_files, CF_TYPE_SINGLE_PLAYERS, "*.pl2");
+	cf_get_file_list(old_files, CF_TYPE_SINGLE_PLAYERS, "*.pl2", CF_SORT_NONE, nullptr,
+	                 CF_LOCATION_ROOT_USER | CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT);
 
 	if ( old_files.empty() ) {
 		return;
@@ -135,7 +138,8 @@ void convert_pilot_files()
 				Get_file_list_child = "inferno";
 			}
 
-			cf_get_file_list(savefiles, CF_TYPE_SINGLE_PLAYERS, wildcard.c_str());
+			cf_get_file_list(savefiles, CF_TYPE_SINGLE_PLAYERS, wildcard.c_str(), CF_SORT_NONE, nullptr,
+			                 CF_LOCATION_ROOT_USER | CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT);
 
 			for (j = 0; j < savefiles.size(); j++) {
 				pcon->csg_convert(savefiles[j].c_str(), inferno);

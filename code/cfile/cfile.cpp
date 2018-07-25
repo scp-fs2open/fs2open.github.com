@@ -33,6 +33,8 @@
 #include "cfile/cfilesystem.h"
 #include "osapi/osapi.h"
 #include "parse/encrypt.h"
+#include "cfilesystem.h"
+
 
 #include <limits>
 
@@ -471,17 +473,17 @@ char *cf_add_ext(const char *filename, const char *ext)
  *
  * @param filename Name of file to delete
  * @param path_type Path type (CF_TYPE_xxx)
+ * @param location_flags Where to search for the location of the file to delete
  *
  * @return 0 on failure, 1 on success
  */
-int cf_delete(const char *filename, int path_type)
+int cf_delete(const char *filename, int path_type, uint32_t location_flags)
 {
 	char longname[MAX_PATH_LEN];
 
 	Assert(CF_TYPE_SPECIFIED(path_type));
 
-	cf_create_default_path_string(longname, sizeof(longname) - 1,
-	                              path_type, filename);
+	cf_create_default_path_string(longname, sizeof(longname) - 1, path_type, filename, false, location_flags);
 
 	return (_unlink(longname) != -1);
 }
@@ -507,12 +509,12 @@ int cf_access(const char *filename, int dir_type, int mode)
 // If offset equates to boolean true, it was found in a VP and the logic will negate the function return
 int cf_exists(const char *filename, int dir_type)
 {
-	size_t offset = 1;
-
 	if ( (filename == NULL) || !strlen(filename) )
 		return 0;
 
-	return (cf_find_file_location(filename, dir_type, 0, NULL, NULL, &offset) && !offset);
+	auto find_res = cf_find_file_location(filename, dir_type);
+
+	return find_res.found && !find_res.offset;
 }
 
 // Goober5000
@@ -523,7 +525,7 @@ int cf_exists_full(const char *filename, int dir_type)
 	if ( (filename == NULL) || !strlen(filename) )
 		return 0;
 
-	return cf_find_file_location(filename, dir_type, 0, NULL, NULL, NULL);
+	return cf_find_file_location(filename, dir_type).found;
 }
 
 // same as the above, but with extension check
@@ -535,7 +537,7 @@ int cf_exists_full_ext(const char *filename, int dir_type, const int num_ext, co
 	if ( (num_ext <= 0) || (ext_list == NULL) )
 		return 0;
 
-	return (cf_find_file_location_ext(filename, num_ext, ext_list, dir_type, 0, NULL, NULL, NULL) != -1);
+	return cf_find_file_location_ext(filename, num_ext, ext_list, dir_type).found;
 }
 
 #ifdef _WIN32
@@ -609,7 +611,7 @@ static void mkdir_recursive(const char *path) {
 
 // Creates the directory path if it doesn't exist. Even creates all its
 // parent paths.
-void cf_create_directory( int dir_type )
+void cf_create_directory(int dir_type, uint32_t location_flags)
 {
 	int num_dirs = 0;
 	int dir_tree[CF_MAX_PATH_TYPES];
@@ -631,7 +633,7 @@ void cf_create_directory( int dir_type )
 	int i;
 
 	for (i=num_dirs-1; i>=0; i-- )	{
-		cf_create_default_path_string( longname, sizeof(longname)-1, dir_tree[i], NULL );
+		cf_create_default_path_string(longname, sizeof(longname) - 1, dir_tree[i], nullptr, false, location_flags);
 		if (stat(longname, &statbuf) != 0) {
 			mprintf(( "CFILE: Creating new directory '%s'\n", longname ));
 			mkdir_recursive(longname);
@@ -658,13 +660,12 @@ extern int game_cd_changed();
 //					error   ==> NULL
 //
 
-CFILE *_cfopen(const char* source, int line, const char *file_path, const char *mode, int type, int dir_type, bool localize)
+CFILE* _cfopen(const char* source, int line, const char* file_path, const char* mode, int type, int dir_type,
+               bool localize, uint32_t location_flags)
 {
 	/* Bobboau, what is this doing here? 31 is way too short... - Goober5000
 	if( strlen(file_path) > 31 )
 		Error(LOCATION, "file name %s too long, \nmust be less than 31 charicters", file_path);*/
-
-	char longname[_MAX_PATH];
 
 	if ( !cfile_inited ) {
 		Int3();
@@ -687,6 +688,8 @@ CFILE *_cfopen(const char* source, int line, const char *file_path, const char *
 	// the harddisk.  No fancy packfile stuff here!
 	
 	if ( strchr(mode,'w') || strchr(mode,'+') || strchr(mode,'a') )	{
+		char longname[_MAX_PATH];
+
 		// For write-only files, require a full path or a path type
 #ifdef SCP_UNIX
 		if ( strpbrk(file_path, "/") ) {
@@ -700,9 +703,9 @@ CFILE *_cfopen(const char* source, int line, const char *file_path, const char *
 			Assert( dir_type != CF_TYPE_ANY );
 
 			// Create the directory if necessary
-			cf_create_directory( dir_type );
+			cf_create_directory(dir_type, location_flags);
 
-			cf_create_default_path_string( longname, sizeof(longname)-1, dir_type, file_path );
+			cf_create_default_path_string(longname, sizeof(longname) - 1, dir_type, file_path, false, location_flags);
 		}
 		Assert( !(type & CFILE_MEMORY_MAPPED) );
 
@@ -752,30 +755,29 @@ CFILE *_cfopen(const char* source, int line, const char *file_path, const char *
 	//================================================
 	// Search for file on disk, on cdrom, or in a packfile
 
-	size_t offset, size;
 	char copy_file_path[MAX_PATH_LEN];  // FIX change in memory from cf_find_file_location
 	strcpy_s(copy_file_path, file_path);
 
-	const void* file_data = nullptr;
-	if ( cf_find_file_location( copy_file_path, dir_type, sizeof(longname) - 1, longname, &size, &offset, localize, &file_data ) )	{
+	auto find_res = cf_find_file_location( copy_file_path, dir_type, localize, location_flags );
+	if ( find_res.found ) {
 
 		// Fount it, now create a cfile out of it
-		nprintf(("CFileDebug", "Requested file %s found at: %s\n", file_path, longname));
-		
+		nprintf(("CFileDebug", "Requested file %s found at: %s\n", file_path, find_res.full_name.c_str()));
+
 		if ( type & CFILE_MEMORY_MAPPED ) {
 		
 			// Can't open memory mapped files out of pack or memory files
-			if ( offset == 0 && file_data != nullptr )	{
+			if ( find_res.offset == 0 && find_res.data_ptr != nullptr )	{
 #if defined _WIN32
 				HANDLE hFile;
 
-				hFile = CreateFile(longname, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+				hFile = CreateFile(find_res.full_name.c_str(), GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 
 				if (hFile != INVALID_HANDLE_VALUE)	{
 					return cf_open_mapped_fill_cfblock(source, line, hFile, dir_type);
 				}
 #elif defined SCP_UNIX
-				FILE *fp = fopen( longname, "rb" );
+				FILE* fp = fopen(find_res.full_name.c_str(), "rb");
 				if (fp) {
 					return cf_open_mapped_fill_cfblock(source, line, fp, dir_type);
 				}
@@ -784,7 +786,8 @@ CFILE *_cfopen(const char* source, int line, const char *file_path, const char *
 
 		} else {
 			// since cfopen_special already has all the code to handle the opening we can just use that here
-			return _cfopen_special(source, line, longname, mode, size, offset, file_data, dir_type);
+			return _cfopen_special(source, line, find_res.full_name.c_str(), mode, find_res.size, find_res.offset,
+			                       find_res.data_ptr, dir_type);
 		}
 
 	}

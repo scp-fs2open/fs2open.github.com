@@ -29,6 +29,8 @@ typedef struct cf_pathtype {
 // During cfile_init, verify that Pathtypes[n].index == n for each item
 extern cf_pathtype Pathtypes[CF_MAX_PATH_TYPES];
 
+bool cf_check_location_flags(uint32_t check_flags, uint32_t desired_flags);
+
 // Returns the default storage path for files given a 
 // particular pathtype.   In other words, the path to 
 // the unpacked, non-cd'd, stored on hard drive path.
@@ -39,7 +41,9 @@ extern cf_pathtype Pathtypes[CF_MAX_PATH_TYPES];
 //          filename  - optional, if set, tacks the filename onto end of path.
 // Output:  path      - Fully qualified pathname.
 //Returns 0 if result would be too long (invalid result)
-int cf_create_default_path_string( char *path, uint path_max, int pathtype, const char *filename=NULL, bool localize = false);
-int cf_create_default_path_string( SCP_string &path, int pathtype, const char *filename=NULL, bool localize = false );
+int cf_create_default_path_string(char* path, uint path_max, int pathtype, const char* filename = nullptr,
+                                  bool localize = false, uint32_t location_flags = CF_LOCATION_ALL);
+int cf_create_default_path_string(SCP_string& path, int pathtype, const char* filename = nullptr, bool localize = false,
+                                  uint32_t location_flags = CF_LOCATION_ALL);
 
 #endif	//_CFILESYSTEM_H
