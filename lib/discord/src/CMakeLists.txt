@@ -52,6 +52,8 @@ endif(UNIX)
 
 target_link_libraries(discord-rpc PUBLIC Threads::Threads)
 
+target_link_libraries(discord-rpc PUBLIC compiler)
+
 suppress_warnings(discord-rpc)
 
 target_include_directories(discord-rpc PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../thirdparty")
