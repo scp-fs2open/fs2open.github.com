@@ -112,7 +112,7 @@ void shipfx_large_blowup_queue_render(model_draw_list *scene, ship* shipp);
 void shipfx_debris_limit_speed(struct debris *db, ship *shipp);
 
 // sound manager fore big ship sub explosions sounds
-void do_sub_expl_sound(float radius, vec3d* sound_pos, int* sound_handle);
+void do_sub_expl_sound(float radius, vec3d* sound_pos, sound_handle* sound_handle);
 
 // do all shockwaves for a ship blowing up
 void shipfx_do_shockwave_stuff(ship *shipp, shockwave_create_info *sci);
@@ -256,9 +256,9 @@ private:
 	vec3d pos;
 	//Sound
 	float snd_range_factor;
-	int snd_start;
+	sound_handle snd_start;
 	game_snd *snd_start_gs;
-	int snd_end;
+	sound_handle snd_end;
 	game_snd *snd_end_gs;
 
 public:
@@ -299,7 +299,7 @@ private:
 	int anim_fps;
 
 	//sound
-	int snd;
+	sound_handle snd;
 	float snd_range_factor;
 	game_snd *snd_gs;
 

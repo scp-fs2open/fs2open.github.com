@@ -720,7 +720,7 @@ void messages_init()
 		Playing_messages[i].anim_data = NULL;
 		Playing_messages[i].start_frame = -1;
 		Playing_messages[i].play_anim = false;
-		Playing_messages[i].wave = -1;
+		Playing_messages[i].wave         = sound_handle::invalid();
 		Playing_messages[i].id = -1;
 		Playing_messages[i].priority = -1;
 		Playing_messages[i].shipnum = -1;
@@ -844,7 +844,7 @@ void message_kill_all( int kill_all )
 		}
 
 		if ( kill_all ) {
-			if ( (Playing_messages[i].wave != -1 ) && snd_is_playing(Playing_messages[i].wave) ){
+			if ((Playing_messages[i].wave.isValid()) && snd_is_playing(Playing_messages[i].wave)) {
 				snd_stop( Playing_messages[i].wave );
 			}
 
@@ -872,7 +872,7 @@ void message_kill_playing( int message_num )
 		Playing_messages[message_num].play_anim = false;
 	}
 
-	if ( (Playing_messages[message_num].wave != -1 ) && snd_is_playing(Playing_messages[message_num].wave) )
+	if ((Playing_messages[message_num].wave.isValid()) && snd_is_playing(Playing_messages[message_num].wave))
 		snd_stop( Playing_messages[message_num].wave );
 
 	Playing_messages[message_num].shipnum = -1;
@@ -1091,7 +1091,7 @@ bool message_play_wave( message_q *q )
 			Message_wave_duration = snd_get_duration(Message_waves[index].num);
 			Playing_messages[Num_messages_playing].wave = snd_play_raw( Message_waves[index].num, 0.0f );
 
-			return (Playing_messages[Num_messages_playing].wave != -1);
+			return Playing_messages[Num_messages_playing].wave.isValid();
 		}
 	}
 
@@ -1311,7 +1311,7 @@ void message_queue_process()
 			wave_done = 1;
 
 //			if ( (Playing_messages[i].wave != -1) && snd_is_playing(Playing_messages[i].wave) )
-			if ( (Playing_messages[i].wave != -1) && (snd_time_remaining(Playing_messages[i].wave) > 250) )
+			if ((Playing_messages[i].wave.isValid()) && (snd_time_remaining(Playing_messages[i].wave) > 250))
 				wave_done = 0;
 
 			// Goober5000
@@ -1319,7 +1319,7 @@ void message_queue_process()
 				wave_done = 0;
 
 			// AL 1-20-98: If voice message is done, kill the animation early
-			if ( (Playing_messages[i].wave != -1) && wave_done ) {
+			if ((Playing_messages[i].wave.isValid()) && wave_done) {
 				/*if ( !ani_done ) {
 					anim_stop_playing( Playing_messages[i].anim );
 				}*/
@@ -1358,7 +1358,9 @@ void message_queue_process()
 
 			// if both ani and wave are done, mark internal variable so we can do next message on queue, and
 			// global variable to clear voice brackets on hud
-			if ( wave_done && ani_done && ( timestamp_elapsed(Message_expire) || (Playing_messages[i].wave != -1) || (Playing_messages[i].shipnum == -1) ) ) {
+			if (wave_done && ani_done &&
+			    (timestamp_elapsed(Message_expire) || (Playing_messages[i].wave.isValid()) ||
+			     (Playing_messages[i].shipnum == -1))) {
 				nprintf(("messaging", "Message %d is done playing\n", i));
 				Message_shipnum = -1;
 				Num_messages_playing--;
@@ -1520,7 +1522,7 @@ void message_queue_process()
 	// set up module globals for this message
 	m = &Messages[q->message_num];
 	Playing_messages[Num_messages_playing].anim_data = NULL;
-	Playing_messages[Num_messages_playing].wave  = -1;
+	Playing_messages[Num_messages_playing].wave         = sound_handle::invalid();
 	Playing_messages[Num_messages_playing].id  = q->message_num;
 	Playing_messages[Num_messages_playing].priority = q->priority;
 	Playing_messages[Num_messages_playing].shipnum = Message_shipnum;
@@ -1567,7 +1569,7 @@ void message_queue_process()
 
 #ifndef NDEBUG
 	// debug only -- if the message is a builtin message, put in parens whether or not the voice played
-	if ( Sound_enabled && (Playing_messages[Num_messages_playing].wave == -1) ) {
+	if (Sound_enabled && !Playing_messages[Num_messages_playing].wave.isValid()) {
 		strcat_s( buf, NOX("..(no wavefile for voice)"));
 		snd_play(gamesnd_get_game_sound(GameSounds::CUE_VOICE));
 	}
@@ -2182,7 +2184,7 @@ void message_maybe_distort()
 
 	// distort the number of voices currently playing
 	for ( i = 0; i < Num_messages_playing; i++ ) {
-		Assert(Playing_messages[i].wave >= 0 );
+		Assert(Playing_messages[i].wave.isValid());
 
 		was_muted = 0;
 

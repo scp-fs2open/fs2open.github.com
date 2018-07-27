@@ -24,7 +24,7 @@
 // ----------------------------------------------------------
 // Global to file
 // ----------------------------------------------------------
-static int		Player_afterburner_loop_id;		// identifies the looping afterburner sound of the player ship
+static sound_handle Player_afterburner_loop_id; // identifies the looping afterburner sound of the player ship
 static int		Player_afterburner_loop_delay;	// timestamp used to time the start of the looping afterburner sound
 static int		Player_disengage_timer;
 static float	Player_afterburner_vol;
@@ -54,7 +54,7 @@ void afterburner_level_init()
 {
 	Player_disengage_timer = 1;
 	Player_afterburner_vol = AFTERBURNER_DEFAULT_VOL;
-	Player_afterburner_loop_id = -1;
+	Player_afterburner_loop_id    = sound_handle::invalid();
 	Player_afterburner_start_time = 0;
 }
 
@@ -251,7 +251,7 @@ void afterburners_update(object *objp, float fl_frametime)
 		if ( timestamp_elapsed(Player_afterburner_loop_delay) ) {
 			Player_afterburner_vol = AFTERBURNER_DEFAULT_VOL;
 			Player_afterburner_loop_delay = 0;
-			if ( Player_afterburner_loop_id == -1 ) {
+			if (!Player_afterburner_loop_id.isValid()) {
 				Player_afterburner_loop_id = snd_play_looping( gamesnd_get_game_sound(ship_get_sound(objp, GameSounds::ABURN_LOOP)), 0.0f , -1, -1);
 				snd_set_volume(Player_afterburner_loop_id, Player_afterburner_vol);
 			}
@@ -317,7 +317,7 @@ void afterburners_stop(object *objp, int key_released)
 			snd_play( gamesnd_get_game_sound(ship_get_sound(objp, GameSounds::ABURN_FAIL)) );
 		}
 
-		if ( Player_afterburner_loop_id > -1 )	{
+		if (Player_afterburner_loop_id.isValid()) {
 			Player_disengage_timer = timestamp(DISENGAGE_TIME);
 		}
 
@@ -331,11 +331,11 @@ void afterburners_stop(object *objp, int key_released)
  */
 void afterburner_stop_sounds()
 {
-	if ( Player_afterburner_loop_id != -1 ) {
+	if (Player_afterburner_loop_id.isValid()) {
 		snd_stop(Player_afterburner_loop_id);
 	}
 
-	Player_afterburner_loop_id = -1;
+	Player_afterburner_loop_id    = sound_handle::invalid();
 	Player_disengage_timer = 1;
 	Player_afterburner_loop_delay = 0;
 }

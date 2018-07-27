@@ -3633,7 +3633,7 @@ void weapon_delete(object *obj)
 		wp->trail_ptr = NULL;
 	}
 
-	if (wp->hud_in_flight_snd_sig >= 0 && snd_is_playing(wp->hud_in_flight_snd_sig))
+	if (wp->hud_in_flight_snd_sig.isValid() && snd_is_playing(wp->hud_in_flight_snd_sig))
 		snd_stop(wp->hud_in_flight_snd_sig);
 
 	if (wp->model_instance_num >= 0)
@@ -4911,8 +4911,7 @@ void weapon_process_post(object * obj, float frame_time)
 
 		if (play_sound)
 		{
-			if (wp->hud_in_flight_snd_sig < 0 || !snd_is_playing(wp->hud_in_flight_snd_sig))
-			{
+			if (!wp->hud_in_flight_snd_sig.isValid() || !snd_is_playing(wp->hud_in_flight_snd_sig)) {
 				wp->hud_in_flight_snd_sig = snd_play_looping(gamesnd_get_game_sound(wip->hud_in_flight_snd));
 			}
 		}
@@ -5515,7 +5514,7 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 	wp->alpha_backward = 0;
 
 	wp->collisionInfo = nullptr;
-	wp->hud_in_flight_snd_sig = -1;
+	wp->hud_in_flight_snd_sig = sound_handle::invalid();
 
 	Num_weapons++;
 
@@ -7272,8 +7271,7 @@ void pause_in_flight_sounds()
 		{
 			weapon* wp = &Weapons[i];
 
-			if (wp->hud_in_flight_snd_sig >= 0 && snd_is_playing(wp->hud_in_flight_snd_sig))
-			{
+			if (wp->hud_in_flight_snd_sig.isValid() && snd_is_playing(wp->hud_in_flight_snd_sig)) {
 				// Stop sound, it will be restarted in the first frame after the game is unpaused
 				snd_stop(wp->hud_in_flight_snd_sig);
 			}

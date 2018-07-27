@@ -125,7 +125,7 @@ typedef struct voice_stream {
 	fix stream_last_heard;													// last time we heard from this stream	
 
 	fix stream_start_time;													// time the stream started playing
-	int stream_snd_handle;													// sound playing instance handle
+	sound_handle stream_snd_handle;                                         // sound playing instance handle
 	int stream_rtvoice_handle;												// rtvoice buffer handle
 } voice_stream;
 voice_stream Multi_voice_stream[MULTI_VOICE_MAX_STREAMS];		// voice streams themselves
@@ -337,8 +337,8 @@ void multi_voice_init()
 	memset(Multi_voice_stream,0,sizeof(voice_stream) * MULTI_VOICE_MAX_STREAMS);	
 	for(idx=0;idx<MULTI_VOICE_MAX_STREAMS;idx++){
 		Multi_voice_stream[idx].token_status = MULTI_VOICE_TOKEN_INDEX_FREE;
-		Multi_voice_stream[idx].token_stamp = -1;		
-		Multi_voice_stream[idx].stream_snd_handle = -1;
+		Multi_voice_stream[idx].token_stamp = -1;
+		Multi_voice_stream[idx].stream_snd_handle = sound_handle::invalid();
 
 		// get a playback buffer handle
 		if(Multi_voice_can_play){
@@ -395,7 +395,7 @@ void multi_voice_close()
 		if(Multi_voice_stream[idx].stream_rtvoice_handle != -1){
 			rtvoice_free_playback_buffer(Multi_voice_stream[idx].stream_rtvoice_handle);
 			Multi_voice_stream[idx].stream_rtvoice_handle = -1;
-			Multi_voice_stream[idx].stream_snd_handle = -1;
+			Multi_voice_stream[idx].stream_snd_handle     = sound_handle::invalid();
 		}
 	}
 
@@ -463,8 +463,8 @@ void multi_voice_process()
 
 	// find any playing sound streams which have finished and unmark them
 	for(idx=0;idx<MULTI_VOICE_MAX_STREAMS;idx++){
-		if((Multi_voice_stream[idx].stream_snd_handle != -1) && !multi_voice_stream_playing(idx)){
-			Multi_voice_stream[idx].stream_snd_handle = -1;
+		if ((Multi_voice_stream[idx].stream_snd_handle.isValid()) && !multi_voice_stream_playing(idx)) {
+			Multi_voice_stream[idx].stream_snd_handle = sound_handle::invalid();
 		}
 	}
 
@@ -522,7 +522,7 @@ int multi_voice_status()
 	earliest_time = -1;
 	for(idx=0;idx<MULTI_VOICE_MAX_STREAMS;idx++){
 		// if we found a playing stream
-		if(Multi_voice_stream[idx].stream_snd_handle != -1){
+		if (Multi_voice_stream[idx].stream_snd_handle.isValid()) {
 			if((earliest == -1) || (Multi_voice_stream[idx].stream_start_time < earliest_time)){
 				earliest = idx;
 				earliest_time = Multi_voice_stream[idx].stream_start_time;
@@ -1919,8 +1919,8 @@ void multi_voice_alg_play_window(int stream_index)
 		Assert(Multi_voice_stream[stream_index].stream_rtvoice_handle != -1);
 
 		// kill any previously playing sounds
-		rtvoice_stop_playback(Multi_voice_stream[stream_index].stream_rtvoice_handle);	
-		Multi_voice_stream[stream_index].stream_snd_handle = -1;
+		rtvoice_stop_playback(Multi_voice_stream[stream_index].stream_rtvoice_handle);
+		Multi_voice_stream[stream_index].stream_snd_handle = sound_handle::invalid();
 
 		// if we can play sound and we know who this is from, display it
 		if(Multi_voice_can_play){
@@ -2117,7 +2117,7 @@ void multi_voice_test_process()
 int multi_voice_test_get_playback_buffer()
 {
 	// return voice stream 0
-	Assert(Multi_voice_stream[0].stream_snd_handle == -1);
+	Assert(!Multi_voice_stream[0].stream_snd_handle.isValid());
 	Assert(Multi_voice_stream[0].stream_rtvoice_handle != -1);
 
 	return Multi_voice_stream[0].stream_rtvoice_handle;

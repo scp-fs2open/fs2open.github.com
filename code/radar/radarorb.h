@@ -14,8 +14,6 @@
 
 #include "radar/radarsetup.h"
 
-extern int Radar_static_looping;
-
 class object;
 struct blip;
 struct color;

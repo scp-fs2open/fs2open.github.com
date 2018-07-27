@@ -32,7 +32,7 @@
 #include "weapon/weapon.h"
 #include "mod_table/mod_table.h"
 
-int Radar_static_looping = -1;
+sound_handle Radar_static_looping = sound_handle::invalid();
 
 rcol Radar_color_rgb[MAX_RADAR_COLORS][MAX_RADAR_LEVELS] =
 {

@@ -77,7 +77,8 @@ int Training_message_method = 1;
 int Training_num_lines = 0;
 int Training_voice = -1;
 int Training_voice_type;
-int Training_voice_handle;
+int Training_voice_soundstream;
+sound_handle Training_voice_snd_handle;
 int Training_flag = 0;
 int Training_failure = 0;
 int Training_message_queue_count = 0;
@@ -601,10 +602,10 @@ void training_mission_shutdown()
 
 	if (Training_voice >= 0) {
 		if (Training_voice_type) {
-			audiostream_close_file(Training_voice_handle, 0);
+			audiostream_close_file(Training_voice_soundstream, false);
 
 		} else {
-			snd_stop(Training_voice_handle);
+			snd_stop(Training_voice_snd_handle);
 		}
 	}
 
@@ -735,10 +736,10 @@ int message_play_training_voice(int index)
 	if (index < 0) {
 		if (Training_voice >= 0) {
 			if (Training_voice_type) {
-				audiostream_close_file(Training_voice_handle, 0);
+				audiostream_close_file(Training_voice_soundstream, false);
 
 			} else {
-				snd_stop(Training_voice_handle);
+				snd_stop(Training_voice_snd_handle);
 			}
 		}
 
@@ -758,26 +759,26 @@ int message_play_training_voice(int index)
 				if (Training_voice >= 0) {
 					if (Training_voice_type) {
 						if (Training_voice == index)
-							audiostream_stop(Training_voice_handle, 1, 0);
+							audiostream_stop(Training_voice_soundstream, 1, 0);
 						else
-							audiostream_close_file(Training_voice_handle, 0);
+							audiostream_close_file(Training_voice_soundstream, false);
 
 					} else {
-						snd_stop(Training_voice_handle);
+						snd_stop(Training_voice_snd_handle);
 					}
 				}
 
 				if (strnicmp(Message_waves[index].name, NOX("none.wav"), 4) != 0) {
-					Training_voice_handle = audiostream_open(Message_waves[index].name, ASF_VOICE);
-					if (Training_voice_handle < 0) {
+					Training_voice_soundstream = audiostream_open(Message_waves[index].name, ASF_VOICE);
+					if (Training_voice_soundstream < 0) {
 						nprintf(("Warning", "Unable to load voice file %s\n", Message_waves[index].name));
 					}
 				}
 			}  // Training_voice should be valid and loaded now
 
 			Training_voice_type = 1;
-			if (Training_voice_handle >= 0)
-				audiostream_play(Training_voice_handle, (Master_voice_volume * aav_voice_volume), 0);
+			if (Training_voice_soundstream >= 0)
+				audiostream_play(Training_voice_soundstream, (Master_voice_volume * aav_voice_volume), 0);
 
 			Training_voice = index;
 			return Training_voice;
@@ -795,18 +796,18 @@ int message_play_training_voice(int index)
 
 	if (Training_voice >= 0) {
 		if (Training_voice_type) {
-			audiostream_close_file(Training_voice_handle, 0);
+			audiostream_close_file(Training_voice_soundstream, false);
 
 		} else {
-			snd_stop(Training_voice_handle);
+			snd_stop(Training_voice_snd_handle);
 		}
 	}
 
 	Training_voice = index;
 	if (Message_waves[index].num.isValid())
-		Training_voice_handle = snd_play_raw(Message_waves[index].num, 0.0f);
+		Training_voice_snd_handle = snd_play_raw(Message_waves[index].num, 0.0f);
 	else
-		Training_voice_handle = -1;
+		Training_voice_snd_handle = sound_handle::invalid();
 
 	Training_voice_type = 0;
 	return Training_voice;
@@ -981,9 +982,9 @@ void message_training_update_frame()
 
 	if ((Training_voice >= 0) && (Training_num_lines > 0) && !(Training_message_timestamp)) {
 		if (Training_voice_type)
-			z = audiostream_is_playing(Training_voice_handle);
+			z = audiostream_is_playing(Training_voice_soundstream);
 		else
-			z = snd_is_playing(Training_voice_handle);
+			z = snd_is_playing(Training_voice_snd_handle);
 
 		if (!z)
 			Training_message_timestamp = timestamp(2000);  // 2 second delay

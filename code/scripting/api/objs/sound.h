@@ -27,13 +27,13 @@ DECLARE_ADE_OBJ(l_SoundEntry, sound_entry_h);
 
 struct sound_h : public sound_entry_h
 {
-	int sig;
+	sound_handle sig;
 
 	sound_h();
 
-	sound_h(gamesnd_id n_gs_idx, int n_sig);
+	sound_h(gamesnd_id n_gs_idx, sound_handle n_sig);
 
-	int getSignature();
+	sound_handle getSignature();
 
 	bool IsSoundValid();
 

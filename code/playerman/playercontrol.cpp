@@ -1383,8 +1383,8 @@ void player_level_init()
 
 	Player->request_repair_timestamp = 1;	// timestamp until next 'requesting repair sir' message can be played
 
-	Player->repair_sound_loop = -1;
-	Player->cargo_scan_loop = -1;
+	Player->repair_sound_loop  = sound_handle::invalid();
+	Player->cargo_scan_loop    = sound_handle::invalid();
 	Player->cargo_inspect_time = 0;			// time that current target's cargo has been inspected for
 
 	Player->target_is_dying = -1;				// The player target is dying, set to -1 if no target
@@ -1424,13 +1424,13 @@ void player_init()
 void player_stop_looped_sounds()
 {
 	Assert(Player);
-	if ( Player->repair_sound_loop > -1 )	{
+	if (Player->repair_sound_loop.isValid()) {
 		snd_stop(Player->repair_sound_loop);
-		Player->repair_sound_loop = -1;
+		Player->repair_sound_loop = sound_handle::invalid();
 	}
-	if ( Player->cargo_scan_loop > -1 )	{
+	if (Player->cargo_scan_loop.isValid()) {
 		snd_stop(Player->cargo_scan_loop);
-		Player->cargo_scan_loop = -1;
+		Player->cargo_scan_loop = sound_handle::invalid();
 	}
 }
 
@@ -1441,7 +1441,7 @@ void player_stop_looped_sounds()
 void player_maybe_start_repair_sound()
 {
 	Assert(Player);
-	if ( Player->repair_sound_loop == -1 ) {
+	if (!Player->repair_sound_loop.isValid()) {
 		Player->repair_sound_loop = snd_play_looping( gamesnd_get_game_sound(GameSounds::SHIP_REPAIR) );
 	}
 }
@@ -1452,9 +1452,9 @@ void player_maybe_start_repair_sound()
 void player_stop_repair_sound()
 {
 	Assert(Player);
-	if ( Player->repair_sound_loop != -1 ) {
+	if (Player->repair_sound_loop.isValid()) {
 		snd_stop(Player->repair_sound_loop);
-		Player->repair_sound_loop  = -1;
+		Player->repair_sound_loop = sound_handle::invalid();
 	}
 }
 
@@ -1464,7 +1464,7 @@ void player_stop_repair_sound()
 void player_maybe_start_cargo_scan_sound()
 {
 	Assert(Player);
-	if ( Player->cargo_scan_loop == -1 ) {
+	if (!Player->cargo_scan_loop.isValid()) {
 		Player->cargo_scan_loop = snd_play_looping( gamesnd_get_game_sound(ship_get_sound(Player_obj, GameSounds::CARGO_SCAN)) );
 	}
 }
@@ -1475,9 +1475,9 @@ void player_maybe_start_cargo_scan_sound()
 void player_stop_cargo_scan_sound()
 {
 	Assert(Player);
-	if ( Player->cargo_scan_loop != -1 ) {
+	if (Player->cargo_scan_loop.isValid()) {
 		snd_stop(Player->cargo_scan_loop);
-		Player->cargo_scan_loop  = -1;
+		Player->cargo_scan_loop = sound_handle::invalid();
 	}
 }
 

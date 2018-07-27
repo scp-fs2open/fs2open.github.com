@@ -251,7 +251,7 @@ int	Game_skill_level = DEFAULT_SKILL_LEVEL;
 // Needs to be cleaned up.
 float Warpout_time = 0.0f;
 int Warpout_forced = 0;		// Set if this is a forced warpout that cannot be cancelled.
-int Warpout_sound = -1;
+sound_handle Warpout_sound = sound_handle::invalid();
 int Use_joy_mouse = 0;
 int Use_palette_flash = 1;
 #ifndef NDEBUG
@@ -2758,7 +2758,7 @@ void do_timing_test(float frame_time)
 	static int test_running = 0;
 	static float test_time = 0.0f;
 
-	static int snds[NUM_MIXED_SOUNDS];
+	static sound_handle snds[NUM_MIXED_SOUNDS];
 	int i;
 
 	if ( test_running ) {
@@ -2779,7 +2779,7 @@ void do_timing_test(float frame_time)
 		Test_begin = 0;
 
 		for ( i = 0; i < NUM_MIXED_SOUNDS; i++ )
-			snds[i] = -1;
+			snds[i] = sound_handle::invalid();
 
 		// start looping digital sounds
 		for ( i = 0; i < NUM_MIXED_SOUNDS; i++ )
@@ -5086,10 +5086,10 @@ void game_process_event( int current_state, int event )
 					Viewer_mode = Player->saved_viewer_mode;
 					hud_subspace_notify_abort();
 					mprintf(( "Player put back to normal mode.\n" ));
-					if ( Warpout_sound > -1 )	{
-						snd_stop( Warpout_sound );
-						Warpout_sound = -1;
-					}
+				    if (Warpout_sound.isValid()) {
+					    snd_stop( Warpout_sound );
+					    Warpout_sound = sound_handle::invalid();
+				    }
 				}
 			}
 			break;
@@ -5125,9 +5125,9 @@ void game_process_event( int current_state, int event )
 			mprintf(( "Player warped out.  Going to debriefing!\n" ));
 			Player->control_mode = PCM_NORMAL;
 			Viewer_mode = Player->saved_viewer_mode;
-			Warpout_sound = -1;
+		    Warpout_sound        = sound_handle::invalid();
 
-			send_debrief_event();
+		    send_debrief_event();
 			break;
 
 		case GS_EVENT_STANDALONE_POSTGAME:
@@ -6974,10 +6974,10 @@ void game_stop_looped_sounds()
 	obj_snd_stop_all();		// stop all object-linked persistant sounds
 	game_stop_subspace_ambient_sound();
 	snd_stop(Radar_static_looping);
-	Radar_static_looping = -1;
+	Radar_static_looping = sound_handle::invalid();
 	snd_stop(Target_static_looping);
 	shipfx_stop_engine_wash_sound();
-	Target_static_looping = -1;
+	Target_static_looping = sound_handle::invalid();
 }
 
 void game_do_training_checks()
@@ -7452,31 +7452,31 @@ void get_version_string(char *str, int max_size)
 //
 // ----------------------------------------------------------------
 
-static int Subspace_ambient_left_channel = -1;
-static int Subspace_ambient_right_channel = -1;
+static sound_handle Subspace_ambient_left_channel  = sound_handle::invalid();
+static sound_handle Subspace_ambient_right_channel = sound_handle::invalid();
 
 // 
 void game_start_subspace_ambient_sound()
 {
-	if ( Subspace_ambient_left_channel < 0 ) {
+	if (!Subspace_ambient_left_channel.isValid()) {
 		Subspace_ambient_left_channel = snd_play_looping(gamesnd_get_game_sound(GameSounds::SUBSPACE_LEFT_CHANNEL), -1.0f);
 	}
 
-	if ( Subspace_ambient_right_channel < 0 ) {
+	if (!Subspace_ambient_right_channel.isValid()) {
 		Subspace_ambient_right_channel = snd_play_looping(gamesnd_get_game_sound(GameSounds::SUBSPACE_RIGHT_CHANNEL), 1.0f);
 	}
 }
 
 void game_stop_subspace_ambient_sound()
 {
-	if ( Subspace_ambient_left_channel >= 0 ) {
+	if (Subspace_ambient_left_channel.isValid()) {
 		snd_stop(Subspace_ambient_left_channel);
-		Subspace_ambient_left_channel = -1;
+		Subspace_ambient_left_channel = sound_handle::invalid();
 	}
 
-	if ( Subspace_ambient_right_channel >= 0 ) {
+	if (Subspace_ambient_right_channel.isValid()) {
 		snd_stop(Subspace_ambient_right_channel);
-		Subspace_ambient_right_channel = -1;
+		Subspace_ambient_right_channel = sound_handle::invalid();
 	}
 }
 
