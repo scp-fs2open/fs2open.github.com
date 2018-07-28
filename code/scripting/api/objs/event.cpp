@@ -13,7 +13,7 @@ ADE_OBJ(l_Event, int, "event", "Mission event handle");
 ADE_VIRTVAR(Name, l_Event, "string", "Mission event name", "string", NULL)
 {
 	int idx;
-	const char* s = NULL;
+	const char* s = nullptr;
 	if (!ade_get_args(L, "o|s", l_Event.Get(&idx), &s))
 		return ade_set_error(L, "s", "");
 
@@ -32,7 +32,7 @@ ADE_VIRTVAR(Name, l_Event, "string", "Mission event name", "string", NULL)
 ADE_VIRTVAR(DirectiveText, l_Event, "string", "Directive text", "string", NULL)
 {
 	int idx;
-	const char* s = NULL;
+	const char* s = nullptr;
 	if (!ade_get_args(L, "o|s", l_Event.Get(&idx), &s))
 		return ade_set_error(L, "s", "");
 
@@ -57,7 +57,7 @@ ADE_VIRTVAR(DirectiveText, l_Event, "string", "Directive text", "string", NULL)
 ADE_VIRTVAR(DirectiveKeypressText, l_Event, "string", "Raw directive keypress text, as seen in FRED.", "string", NULL)
 {
 	int idx;
-	const char* s = NULL;
+	const char* s = nullptr;
 	if (!ade_get_args(L, "o|s", l_Event.Get(&idx), &s))
 		return ade_set_error(L, "s", "");
 

@@ -516,9 +516,9 @@ bool ConditionedHook::Run(class script_state* sys, int action)
 	Assert(sys != NULL);
 
 	// Do the actions
-	for (SCP_vector<script_action>::iterator sap = Actions.begin(); sap != Actions.end(); ++sap) {
-		if (sap->action_type == action) {
-			sys->RunBytecode(sap->hook.hook_function);
+	for (auto & Action : Actions) {
+		if (Action.action_type == action) {
+			sys->RunBytecode(Action.hook.hook_function);
 		}
 	}
 

@@ -247,8 +247,8 @@ ADE_LIB_DERIV(l_Mission_SEXPVariables, "SEXPVariables", NULL, "SEXP Variables", 
 
 ADE_INDEXER(l_Mission_SEXPVariables, "number Index/string Name", "Array of SEXP variables. Note that you can set a sexp variable using the array, eg \'SEXPVariables[\"newvariable\"] = \"newvalue\"\'", "sexpvariable", "Handle to SEXP variable, or invalid sexpvariable handle if index was invalid")
 {
-	const char* name   = NULL;
-	const char* newval = NULL;
+	const char* name   = nullptr;
+	const char* newval = nullptr;
 	if(!ade_get_args(L, "*s|s", &name, &newval))
 		return ade_set_error(L, "o", l_SEXPVariable.Set(sexpvar_h()));
 
@@ -553,7 +553,7 @@ ADE_INDEXER(l_Mission_Messages, "number Index/string messageName", "Messages of 
 	}
 	else
 	{
-		const char* name = NULL;
+		const char* name = nullptr;
 
 		if (!ade_get_args(L, "*s", &name))
 			return ade_set_args(L, "o", l_Message.Set(-1));
@@ -598,7 +598,7 @@ ADE_INDEXER(l_Mission_BuiltinMessages, "number Index/string messageName", "Built
 	}
 	else
 	{
-		const char* name = NULL;
+		const char* name = nullptr;
 
 		if (!ade_get_args(L, "*s", &name))
 			return ade_set_args(L, "o", l_Message.Set(-1));
@@ -643,7 +643,7 @@ ADE_INDEXER(l_Mission_Personas, "number Index/string name", "Personas of the mis
 	}
 	else
 	{
-		const char* name = NULL;
+		const char* name = nullptr;
 
 		if (!ade_get_args(L, "*s", &name))
 			return ade_set_args(L, "o", l_Persona.Set(-1));
@@ -667,8 +667,8 @@ ADE_FUNC(__len, l_Mission_Personas, NULL, "Number of personas in the mission", "
 
 ADE_FUNC(addMessage, l_Mission, "string name, string text[, persona persona]", "Adds a message", "message", "The new message or invalid handle on error")
 {
-	const char* name = NULL;
-	const char* text = NULL;
+	const char* name = nullptr;
+	const char* text = nullptr;
 	int personaIdx = -1;
 
 	if (!ade_get_args(L, "ss|o", &name, &text, l_Persona.Get(&personaIdx)))
@@ -691,7 +691,7 @@ ADE_FUNC(sendMessage, l_Mission, "string sender, message message[, number delay=
 			 "If you pass <i>nil</i> as the sender then the message will not have a sender.",
 		 "boolean", "true if successfull, false otherwise")
 {
-	const char* sender = NULL;
+	const char* sender = nullptr;
 	int messageIdx = -1;
 	int priority = MESSAGE_PRIORITY_NORMAL;
 	bool fromCommand = false;
@@ -795,7 +795,7 @@ ADE_FUNC(sendTrainingMessage, l_Mission, "message message, number time[, number 
 
 ADE_FUNC(createShip, l_Mission, "[string Name, shipclass Class=Shipclass[1], orientation Orientation=null, vector Position={0,0,0}]", "Creates a ship and returns a handle to it using the specified name, class, world orientation, and world position", "ship", "Ship handle, or invalid ship handle if ship couldn't be created")
 {
-	const char* name = NULL;
+	const char* name = nullptr;
 	int sclass = -1;
 	matrix_h *orient = NULL;
 	vec3d pos = vmd_zero_vector;
@@ -1250,7 +1250,7 @@ ADE_FUNC(getPrevMissionFilename, l_Campaign, NULL, "Gets previous mission filena
 // DahBlount - This jumps to a mission, the reason it accepts a boolean value is so that players can return to campaign maps
 ADE_FUNC(jumpToMission, l_Campaign, "string filename, [boolean hub]", "Jumps to a mission based on the filename. Optionally, the player can be sent to a hub mission without setting missions to skipped.", "boolean", "Jumps to a mission, or returns nil.")
 {
-	const char* filename = NULL;
+	const char* filename = nullptr;
 	bool hub = false;
 	if (!ade_get_args(L, "s|b", &filename, &hub))
 		return ADE_RETURN_NIL;

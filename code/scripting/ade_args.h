@@ -150,7 +150,7 @@ inline int ade_get_args(lua_State* L, const char* fmt, Args... args)
 	state.needed_args = (int)strlen(fmt);
 	state.total_args  = lua_gettop(L) - internal::Ade_get_args_skip;
 
-	if (strchr(fmt, '|') != NULL) {
+	if (strchr(fmt, '|') != nullptr) {
 		state.needed_args = (int)(strchr(fmt, '|') - fmt);
 	}
 
@@ -161,7 +161,7 @@ inline int ade_get_args(lua_State* L, const char* fmt, Args... args)
 	if (lua_getstack(L, 0, &ar)) {
 		lua_getinfo(L, "nl", &ar);
 		strcpy_s(state.funcname, "");
-		if (ar.name != NULL) {
+		if (ar.name != nullptr) {
 			strcat_s(state.funcname, ar.name);
 		}
 		if (ar.currentline > -1) {

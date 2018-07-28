@@ -332,7 +332,7 @@ ADE_FUNC(accessButtonInfo, l_Control_Info, "number, number, number, number", "Ac
 ADE_FUNC(useButtonControl, l_Control_Info, "number, string", "Adds the defined button control to lua button control data, if number is -1 it tries to use the string", NULL, NULL)
 {
 	int index;
-	const char* buf = NULL;
+	const char* buf = nullptr;
 
 	if(!ade_get_args(L, "i|s", &index, &buf))
 		return ADE_RETURN_NIL;

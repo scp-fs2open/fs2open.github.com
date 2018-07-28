@@ -138,7 +138,7 @@ ADE_OBJ_DERIV(l_Ship, object_h, "ship", "Ship handle", l_Object);
 ADE_INDEXER(l_Ship, "string Name/number Index", "Array of ship subsystems", "subsystem", "Subsystem handle, or invalid subsystem handle if index or ship handle is invalid")
 {
 	object_h *objh;
-	const char* s      = NULL;
+	const char* s      = nullptr;
 	ship_subsys_h *sub = nullptr;
 	if(!ade_get_args(L, "o|so", l_Ship.GetPtr(&objh), &s, l_Subsystem.GetPtr(&sub)))
 		return ade_set_error(L, "o", l_Subsystem.Set(ship_subsys_h()));
@@ -180,7 +180,7 @@ ADE_FUNC(__len, l_Ship, NULL, "Number of subsystems on ship", "number", "Subsyst
 ADE_VIRTVAR(ShieldArmorClass, l_Ship, "string", "Current Armor class of the ships' shield", "string", "Armor class name, or empty string if none is set")
 {
 	object_h *objh;
-	const char* s    = NULL;
+	const char* s    = nullptr;
 	const char *name = NULL;
 
 	if(!ade_get_args(L, "o|s", l_Ship.GetPtr(&objh), &s))
@@ -207,7 +207,7 @@ ADE_VIRTVAR(ShieldArmorClass, l_Ship, "string", "Current Armor class of the ship
 ADE_VIRTVAR(ArmorClass, l_Ship, "string", "Current Armor class", "string", "Armor class name, or empty string if none is set")
 {
 	object_h *objh;
-	const char* s    = NULL;
+	const char* s    = nullptr;
 	const char *name = NULL;
 
 	if(!ade_get_args(L, "o|s", l_Ship.GetPtr(&objh), &s))
@@ -234,7 +234,7 @@ ADE_VIRTVAR(ArmorClass, l_Ship, "string", "Current Armor class", "string", "Armo
 ADE_VIRTVAR(Name, l_Ship, "string", "Ship name. This is the actual name of the ship. Use <i>getDisplayString</i> to get the string which should be displayed to the player.", "string", "Ship name, or empty string if handle is invalid")
 {
 	object_h *objh;
-	const char* s = NULL;
+	const char* s = nullptr;
 	if(!ade_get_args(L, "o|s", l_Ship.GetPtr(&objh), &s))
 		return ade_set_error(L, "s", "");
 
@@ -942,7 +942,7 @@ ADE_FUNC(kill, l_Ship, "[object Killer]", "Kills the ship. Set \"Killer\" to the
 
 ADE_FUNC(addShipEffect, l_Ship, "string name, int duration (in milliseconds)", "Activates an effect for this ship. Effect names are defined in Post_processing.tbl, and need to be implemented in the main shader. This functions analogous to the ship-effect sexp. NOTE: only one effect can be active at any time, adding new effects will override effects already in progress.\n", "boolean", "Returns true if the effect was successfully added, false otherwise") {
 	object_h *shiph;
-	const char* effect = NULL;
+	const char* effect = nullptr;
 	int duration;
 	int effect_num;
 
@@ -1033,7 +1033,7 @@ ADE_FUNC(fireSecondary, l_Ship, NULL, "Fires ship secondary bank(s)", "number", 
 ADE_FUNC(getAnimationDoneTime, l_Ship, "number Type, number Subtype", "Gets time that animation will be done", "number", "Time (seconds), or 0 if ship handle is invalid")
 {
 	object_h *objh;
-	const char* s = NULL;
+	const char* s = nullptr;
 	int subtype=-1;
 	if(!ade_get_args(L, "o|si", l_Ship.GetPtr(&objh), &s, &subtype))
 		return ade_set_error(L, "f", 0.0f);
@@ -1402,7 +1402,7 @@ ADE_FUNC(triggerAnimation, l_Ship, "string Type, [number Subtype, boolean Forwar
 		 "True if successful, false or nil otherwise")
 {
 	object_h *objh;
-	const char* s = NULL;
+	const char* s = nullptr;
 	bool b = true;
 	bool instant = false;
 	int subtype=-1;

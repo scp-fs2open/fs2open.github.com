@@ -215,9 +215,9 @@ public:
 
 	//***Hook creation functions
 	template <typename T>
-	bool EvalStringWithReturn(const char* string, const char* format = NULL, T* rtn = NULL,
-	                          const char* debug_str = NULL);
-	bool EvalString(const char* string, const char* debug_str = NULL);
+	bool EvalStringWithReturn(const char* string, const char* format = nullptr, T* rtn = NULL,
+	                          const char* debug_str = nullptr);
+	bool EvalString(const char* string, const char* debug_str = nullptr);
 	void ParseChunk(script_hook *dest, const char* debug_str=NULL);
 	void ParseGlobalChunk(int hookType, const char* debug_str=NULL);
 	bool ParseCondition(const char *filename="<Unknown>");
@@ -227,7 +227,7 @@ public:
 	int RunBytecode(script_function& hd, char format = '\0', T* data = nullptr);
 	int RunBytecode(script_function& hd);
 	bool IsOverride(script_hook &hd);
-	int RunCondition(int condition, object* objp = NULL, int more_data = 0);
+	int RunCondition(int condition, object* objp = nullptr, int more_data = 0);
 	bool IsConditionOverride(int action, object *objp=NULL);
 
 	//*****Other functions
@@ -240,7 +240,7 @@ void script_state::SetHookVar(const char *name, char format, T value)
 	if(format == '\0')
 		return;
 
-	if(LuaState != NULL)
+	if(LuaState != nullptr)
 	{
 		char fmt[2] = {format, '\0'};
 		//Get ScriptVar table
@@ -286,7 +286,7 @@ bool script_state::EvalStringWithReturn(const char* string, const char* format, 
 	std::string s;
 	s.reserve(s_bufSize);
 	if (string[0] != '[') {
-		if (rtn != NULL) {
+		if (rtn != nullptr) {
 			s = "return ";
 		}
 		s += string;
@@ -309,7 +309,7 @@ bool script_state::EvalStringWithReturn(const char* string, const char* format, 
 		try {
 			auto ret = function.call();
 
-			if (rtn != NULL && ret.size() >= 1) {
+			if (rtn != nullptr && ret.size() >= 1) {
 				auto stack_start = lua_gettop(LuaState);
 
 				auto val = ret.front();
@@ -347,7 +347,7 @@ int script_state::RunBytecode(script_function& hd, char format, T* data)
 	try {
 		auto ret = hd.function.call();
 
-		if (data != NULL && ret.size() >= 1) {
+		if (data != nullptr && ret.size() >= 1) {
 			auto stack_start = lua_gettop(LuaState);
 
 			auto val = ret.front();

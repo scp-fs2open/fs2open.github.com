@@ -34,7 +34,7 @@ ADE_FUNC(getSoundentry, l_Audio, "string/number", "Return a sound entry matching
 	}
 	else
 	{
-		const char* s = NULL;
+		const char* s = nullptr;
 		if(!ade_get_args(L, "s", &s))
 			return ade_set_error(L, "o", l_SoundEntry.Set(sound_entry_h()));
 
@@ -56,7 +56,7 @@ ADE_FUNC(getSoundentry, l_Audio, "string/number", "Return a sound entry matching
 
 ADE_FUNC(loadSoundfile, l_Audio, "string filename", "Loads the specified sound file", "soundfile", "A soundfile handle")
 {
-	const char* fileName = NULL;
+	const char* fileName = nullptr;
 
 	if (!ade_get_args(L, "s", &fileName))
 		return ade_set_error(L, "o", l_Soundfile.Set(sound_load_id::invalid()));
@@ -223,7 +223,7 @@ ADE_FUNC(stopMusic, l_Audio, "int audiohandle, [bool fade = false], [string 'bri
 {
 	int ah;
 	bool fade = false;
-	const char* music_type = NULL;
+	const char* music_type = nullptr;
 
 	if(!ade_get_args(L, "i|bs", &ah, &fade, &music_type))
 		return ADE_RETURN_NIL;

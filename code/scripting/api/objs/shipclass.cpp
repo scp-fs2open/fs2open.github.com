@@ -21,7 +21,7 @@ ADE_OBJ(l_Shipclass, int, "shipclass", "Ship class handle");
 ADE_FUNC(__tostring, l_Shipclass, NULL, "Ship class name", "string", "Ship class name, or an empty string if handle is invalid")
 {
 	int idx;
-	const char* s = NULL;
+	const char* s = nullptr;
 	if(!ade_get_args(L, "o|s", l_Shipclass.Get(&idx), &s))
 		return ade_set_error(L, "s", "");
 
@@ -49,7 +49,7 @@ ADE_FUNC(__eq, l_Shipclass, "shipclass, shipclass", "Checks if the two classes a
 ADE_VIRTVAR(Name, l_Shipclass, "string", "Ship class name", "string", "Ship class name, or an empty string if handle is invalid")
 {
 	int idx;
-	const char* s = NULL;
+	const char* s = nullptr;
 	if(!ade_get_args(L, "o|s", l_Shipclass.Get(&idx), &s))
 		return ade_set_error(L, "s", "");
 
@@ -66,7 +66,7 @@ ADE_VIRTVAR(Name, l_Shipclass, "string", "Ship class name", "string", "Ship clas
 ADE_VIRTVAR(ShortName, l_Shipclass, "string", "Ship class short name", "string", "Ship short name, or empty string if handle is invalid")
 {
 	int idx;
-	const char* s = NULL;
+	const char* s = nullptr;
 	if(!ade_get_args(L, "o|s", l_Shipclass.Get(&idx), &s))
 		return ade_set_error(L, "s", "");
 
@@ -83,7 +83,7 @@ ADE_VIRTVAR(ShortName, l_Shipclass, "string", "Ship class short name", "string",
 ADE_VIRTVAR(TypeString, l_Shipclass, "string", "Ship class type string", "string", "Type string, or empty string if handle is invalid")
 {
 	int idx;
-	const char* s = NULL;
+	const char* s = nullptr;
 	if(!ade_get_args(L, "o|s", l_Shipclass.Get(&idx), &s))
 		return ade_set_error(L, "s", "");
 
@@ -111,7 +111,7 @@ ADE_VIRTVAR(TypeString, l_Shipclass, "string", "Ship class type string", "string
 ADE_VIRTVAR(ManeuverabilityString, l_Shipclass, "string", "Ship class maneuverability string", "string", "Maneuverability string, or empty string if handle is invalid")
 {
 	int idx;
-	const char* s = NULL;
+	const char* s = nullptr;
 	if(!ade_get_args(L, "o|s", l_Shipclass.Get(&idx), &s))
 		return ade_set_error(L, "s", "");
 
@@ -139,7 +139,7 @@ ADE_VIRTVAR(ManeuverabilityString, l_Shipclass, "string", "Ship class maneuverab
 ADE_VIRTVAR(ArmorString, l_Shipclass, "string", "Ship class armor string", "string", "Armor string, or empty string if handle is invalid")
 {
 	int idx;
-	const char* s = NULL;
+	const char* s = nullptr;
 	if(!ade_get_args(L, "o|s", l_Shipclass.Get(&idx), &s))
 		return ade_set_error(L, "s", "");
 
@@ -167,7 +167,7 @@ ADE_VIRTVAR(ArmorString, l_Shipclass, "string", "Ship class armor string", "stri
 ADE_VIRTVAR(ManufacturerString, l_Shipclass, "string", "Ship class manufacturer", "string", "Manufacturer, or empty string if handle is invalid")
 {
 	int idx;
-	const char* s = NULL;
+	const char* s = nullptr;
 	if(!ade_get_args(L, "o|s", l_Shipclass.Get(&idx), &s))
 		return ade_set_error(L, "s", "");
 
@@ -196,7 +196,7 @@ ADE_VIRTVAR(ManufacturerString, l_Shipclass, "string", "Ship class manufacturer"
 ADE_VIRTVAR(Description, l_Shipclass, "string", "Ship class description", "string", "Description, or empty string if handle is invalid")
 {
 	int idx;
-	const char* s = NULL;
+	const char* s = nullptr;
 	if(!ade_get_args(L, "o|s", l_Shipclass.Get(&idx), &s))
 		return ade_set_error(L, "s", "");
 
@@ -224,7 +224,7 @@ ADE_VIRTVAR(Description, l_Shipclass, "string", "Ship class description", "strin
 ADE_VIRTVAR(TechDescription, l_Shipclass, "string", "Ship class tech description", "string", "Tech description, or empty string if handle is invalid")
 {
 	int idx;
-	const char* s = NULL;
+	const char* s = nullptr;
 	if(!ade_get_args(L, "o|s", l_Shipclass.Get(&idx), &s))
 		return ade_set_error(L, "s", "");
 
@@ -394,7 +394,7 @@ ADE_VIRTVAR(Type, l_Shipclass, "shiptype", "Ship class type", "shiptype", "Ship 
 
 ADE_VIRTVAR(AltName, l_Shipclass, "string", "Alternate name for ship class", "string", "Alternate string or empty string if handle is invalid")
 {
-	const char* newName = NULL;
+	const char* newName = nullptr;
 	int idx;
 	if(!ade_get_args(L, "o|s", l_Shipclass.Get(&idx), &newName))
 		return ade_set_error(L, "s", "");

@@ -58,7 +58,7 @@ ADE_LIB_DERIV(l_Graphics_Cameras, "Cameras", NULL, "Cameras", l_Graphics);
 
 ADE_INDEXER(l_Graphics_Cameras, "number Index/string Name", "Gets camera", "camera", "Ship handle, or invalid ship handle if index was invalid")
 {
-	const char* s = NULL;
+	const char* s = nullptr;
 	if(!ade_get_args(L, "*s", &s))
 		return ade_set_error(L, "o", l_Camera.Set(camid()));
 
@@ -110,7 +110,7 @@ ADE_INDEXER(l_Graphics_Fonts, "number Index/string Filename", "Array of loaded f
 	}
 	else
 	{
-		const char* s = NULL;
+		const char* s = nullptr;
 
 		if(!ade_get_args(L, "*s", &s))
 			return ade_set_error(L, "o", l_Font.Set(font_h()));
@@ -280,7 +280,7 @@ ADE_FUNC(createCamera, l_Graphics,
 		 "camera",
 		 "Camera handle, or invalid camera handle if camera couldn't be created")
 {
-	const char* s = NULL;
+	const char* s = nullptr;
 	vec3d *v = &vmd_zero_vector;
 	matrix_h *mh = NULL;
 	if(!ade_get_args(L, "s|oo", &s, l_Vector.GetPtr(&v), l_Matrix.GetPtr(&mh)))
@@ -1275,7 +1275,7 @@ ADE_FUNC(drawImage, l_Graphics, "string Filename/texture Texture, [number X1=0, 
 
 	if(lua_isstring(L, 1))
 	{
-		const char* s = NULL;
+		const char* s = nullptr;
 		if(!ade_get_args(L, "s|iiiifffff", &s,&x1,&y1,&x2,&y2,&uv_x1,&uv_y1,&uv_x2,&uv_y2,&alpha))
 			return ade_set_error(L, "b", false);
 
@@ -1326,7 +1326,7 @@ ADE_FUNC(drawMonochromeImage, l_Graphics, "string Filename/texture Texture, numb
 
 	if(lua_isstring(L, 1))
 	{
-		const char* s = NULL;
+		const char* s = nullptr;
 		if(!ade_get_args(L, "sii|iif", &s,&x,&y,&x2,&y2,&alpha))
 			return ade_set_error(L, "b", false);
 

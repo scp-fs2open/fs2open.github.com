@@ -37,7 +37,7 @@ ADE_FUNC(__tostring, l_GameEvent, NULL, "Game event name", "string", "Game event
 ADE_VIRTVAR(Name, l_GameEvent, "string", "Game event name", "string", "Game event name, or empty string if handle is invalid")
 {
 	gameevent_h *gh = NULL;
-	const char* n_name = NULL;
+	const char* n_name = nullptr;
 	if (!ade_get_args(L, "o|s", l_GameEvent.GetPtr(&gh), &n_name))
 		return ade_set_error(L, "s", "");
 

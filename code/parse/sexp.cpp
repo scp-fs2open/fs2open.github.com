@@ -22285,7 +22285,7 @@ int sexp_script_eval(int node, int return_type, bool concat_args = false)
 			}
 		case OPR_STRING:
 			{
-				const char* ret = NULL;
+				const char* ret = nullptr;
 				char* s = CTEXT(n);
 
 				bool success = Script_system.EvalStringWithReturn(s, "|s", &ret);

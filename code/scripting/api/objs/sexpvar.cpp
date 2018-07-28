@@ -90,7 +90,7 @@ ADE_VIRTVAR(Type, l_SEXPVariable, "enumeration", "SEXP Variable type, uses SEXPV
 ADE_VIRTVAR(Value, l_SEXPVariable, "number/string", "SEXP variable value", "string", "SEXP variable contents, or nil if the variable is of an invalid type or the handle is invalid")
 {
 	sexpvar_h *svh = NULL;
-	const char* newvalue = NULL;
+	const char* newvalue = nullptr;
 	char number_as_str[TOKEN_LENGTH];
 
 	if(lua_type(L, 2) == LUA_TNUMBER)

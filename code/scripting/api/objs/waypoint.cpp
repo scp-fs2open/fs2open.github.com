@@ -96,7 +96,7 @@ ADE_FUNC(__len, l_WaypointList,
 ADE_VIRTVAR(Name, l_WaypointList, "string", "Name of WaypointList", "string", "Waypointlist name, or empty string if handle is invalid")
 {
 	waypointlist_h* wlh = NULL;
-	const char* s       = NULL;
+	const char* s       = nullptr;
 	if ( !ade_get_args(L, "o|s", l_WaypointList.GetPtr(&wlh), &s) ) {
 		return ade_set_error(L, "s", "");
 	}

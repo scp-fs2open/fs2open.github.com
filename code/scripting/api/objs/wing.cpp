@@ -46,7 +46,7 @@ ADE_FUNC(__len, l_Wing, NULL, "Gets the number of ships in the wing", "number", 
 ADE_VIRTVAR(Name, l_Wing, "string", "Name of Wing", "string", "Wing name, or empty string if handle is invalid")
 {
 	int wdx;
-	const char* s = NULL;
+	const char* s = nullptr;
 	if ( !ade_get_args(L, "o|s", l_Wing.Get(&wdx), &s) || wdx < 0 || wdx >= Num_wings )
 		return ade_set_error(L, "s", "");
 

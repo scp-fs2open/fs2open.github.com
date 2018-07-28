@@ -61,7 +61,7 @@ ADE_VIRTVAR(Message, l_Message, "string", "The unaltered text of the message, se
 			"string", "The message or an empty string if handle is invalid")
 {
 	int idx = -1;
-	const char* newText = NULL;
+	const char* newText = nullptr;
 	if (!ade_get_args(L, "o|s", l_Message.Get(&idx), &newText))
 		return ade_set_error(L, "s", "");
 
