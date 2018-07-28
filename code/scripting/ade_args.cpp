@@ -121,95 +121,28 @@ bool get_single_arg(lua_State* L, const get_args_state& state, char fmt, luacpp:
 	return true;
 }
 
-bool get_args_actual(lua_State*, get_args_state&, const char* fmt)
+void set_single_arg(lua_State* L, char fmt, const char* s)
 {
-	Assertion(strlen(fmt) == 0, "No class parameters left but format is not empty!");
-	return true;
+	Assertion(fmt == 's', "Invalid format character '%c' for string type!", fmt);
+	// WMC - Isn't working with HookVar for some strange reason
+	lua_pushstring(L, s);
 }
-}
-
-//ade_set_args(state, arguments, variables)
-//----------------------------------------------
-//based on "Programming in Lua"
-//
-//Takes variables given and pushes them onto the
-//Lua stack. Use it to return variables from a
-//Lua scripting function.
-//
-//NOTE: You can also use this to push arguments
-//on to the stack in series. See script_state::SetHookVar
-int ade_set_args(lua_State *L, const char *fmt, ...)
+void set_single_arg(lua_State* L, char fmt, ade_odata od)
 {
-	//Start throught
-	va_list vl;
-	int nargs;
-	int setargs;	//args actually set
-
-	va_start(vl, fmt);
-	nargs = 0;
-	setargs = 0;
-	while(*fmt != '\0')
-	{
-		switch(*fmt++)
-		{
-			case '*':
-				lua_pushnil(L);
-				break;
-			case 'b':	//WMC - Bool is actually int for GCC (Why...?)
-				lua_pushboolean(L, va_arg(vl, int) ? 1 : 0);
-				break;
-			case 'd':
-				lua_pushnumber(L, va_arg(vl, double));
-				break;
-			case 'f':
-				lua_pushnumber(L, va_arg(vl, double));
-				break;
-			case 'i':
-				lua_pushnumber(L, va_arg(vl, int));
-				break;
-			case 's':
-			{
-				//WMC - Isn't working with HookVar for some strange reason
-				char *s = va_arg(vl, char*);
-				lua_pushstring(L, s);
-				break;
-			}
-			case 'x':
-				lua_pushnumber(L, f2fl(va_arg(vl, fix)));
-				break;
-			case 'o':
-			{
-				//Copy over objectdata
-				ade_odata od = (ade_odata) va_arg(vl, ade_odata);
-
-				// Use the common helper method
-				luacpp::convert::pushValue(L, od);
-				break;
-			}
-			case 't':
-			{
-				// Set a table
-				luacpp::LuaTable* table = va_arg(vl, luacpp::LuaTable*); // This must be a pointer since C++ classes can't be passed by vararg
-				table->pushValue();
-				break;
-			}
-			case 'u':
-			{
-				// Set a function
-				luacpp::LuaFunction* func = va_arg(vl, luacpp::LuaFunction*); // This must be a pointer since C++ classes can't be passed by vararg
-				func->pushValue();
-				break;
-			}
-				//WMC -  Don't forget to update lua_set_arg
-			default:
-				Error(LOCATION, "Bad character passed to ade_set_args; (%c)", *(fmt-1));
-				setargs--;
-		}
-		nargs++;
-		setargs++;
-	}
-	va_end(vl);
-	return setargs;
+	Assertion(fmt == 'o', "Invalid format character '%c' for object type!", fmt);
+	// Use the common helper method
+	luacpp::convert::pushValue(L, od);
+}
+void set_single_arg(lua_State*, char fmt, luacpp::LuaTable* table)
+{
+	Assertion(fmt == 't', "Invalid format character '%c' for table type!", fmt);
+	table->pushValue();
+}
+void set_single_arg(lua_State*, char fmt, luacpp::LuaFunction* func)
+{
+	Assertion(fmt == 'u', "Invalid format character '%c' for function type!", fmt);
+	func->pushValue();
 }
 
+} // namespace internal
 }

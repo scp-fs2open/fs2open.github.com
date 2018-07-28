@@ -999,7 +999,7 @@ ADE_FUNC(fireCountermeasure, l_Ship, NULL, "Launches a countermeasure from the s
 	if(!objh->IsValid())
 		return ade_set_error(L, "b", false);
 
-	return ade_set_args(L, "b", ship_launch_countermeasure(objh->objp));
+	return ade_set_args(L, "b", ship_launch_countermeasure(objh->objp) != 0);
 }
 
 ADE_FUNC(firePrimary, l_Ship, NULL, "Fires ship primary bank(s)", "number", "Number of primary banks fired")

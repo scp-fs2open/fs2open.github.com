@@ -1602,7 +1602,7 @@ void message_queue_process()
 	Script_system.SetHookVar("SenderString", 's', who_from);
 
 	builtinMessage = q->builtin_type != -1;
-	Script_system.SetHookVar("Builtin", 'b', &builtinMessage);
+	Script_system.SetHookVar("Builtin", 'b', builtinMessage);
 
 	if (Message_shipnum >= 0) {
 		sender = &Objects[Ships[Message_shipnum].objnum];

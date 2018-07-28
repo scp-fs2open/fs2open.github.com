@@ -351,25 +351,40 @@ int ade_table_entry::SetTable(lua_State* L, int p_amt_ldx, int p_mtb_ldx) {
 	if (Instanced) {
 		//Set any actual data
 		int nset = 0;
+		char typestr[2] = {Type, '\0'};
 		switch (Type) {
-			//WMC - This hack by taylor is a necessary evil.
-			//64-bit function pointers do not get passed properly
-			//when using va_args for some reason.
-			case 'u':
-			case 'v':
-				lua_pushstring(L, "<UNNAMED FUNCTION>");
-				lua_pushboolean(L, 0);
-				lua_pushcclosure(L, Value.Function, 2);
-				nset++;
-				break;
+		case 'b':
+			nset = ade_set_args(L, typestr, Value.varBool);
+			break;
+		case 'f':
+			nset = ade_set_args(L, typestr, Value.varFloat);
+			break;
+		case 'd':
+			nset = ade_set_args(L, typestr, Value.varDouble);
+			break;
+		case 'i':
+			nset = ade_set_args(L, typestr, Value.varInt);
+			break;
+		case 's':
+			nset = ade_set_args(L, typestr, Value.varString);
+			break;
+		case 'o':
+			nset = ade_set_args(L, typestr, Value.Object);
+			break;
+		case 'u':
+		case 'v':
+			// WMC - This hack by taylor is a necessary evil.
+			// 64-bit function pointers do not get passed properly
+			// when using va_args for some reason.
+			lua_pushstring(L, "<UNNAMED FUNCTION>");
+			lua_pushboolean(L, 0);
+			lua_pushcclosure(L, Value.Function, 2);
+			nset++;
+			break;
 
-			default:
-				char typestr[2] = {
-					Type,
-					'\0'
-				};
-				nset = ade_set_args(L, typestr, Value);
-				break;
+		default:
+			UNREACHABLE("Unhandled value type '%c'!", Type);
+			break;
 		}
 
 		if (nset) {

@@ -60,6 +60,7 @@ template <typename T>
 typename std::enable_if<std::is_integral<T>::value, bool>::type
 get_single_arg(lua_State* L, const get_args_state& state, char fmt, T* i)
 {
+	// fix is also an int for C++ so we need to check the format character to determine what should be done
 	Assertion(fmt == 'i' || fmt == 'x', "Invalid character '%c' for number type!", fmt);
 
 	if (lua_isnumber(L, state.nargs)) {
@@ -81,7 +82,11 @@ bool get_single_arg(lua_State* L, const get_args_state& state, char fmt, luacpp:
 bool get_single_arg(lua_State* L, const get_args_state& state, char fmt, luacpp::LuaFunction* f);
 
 // This is not a template function so we can put the implementation in a source file
-bool get_args_actual(lua_State* /*L*/, get_args_state& /*state*/, const char* fmt);
+inline bool get_args_actual(lua_State* /*L*/, get_args_state& /*state*/, const char* fmt)
+{
+	Assertion(strlen(fmt) == 0, "No class parameters left but format is not empty!");
+	return true;
+}
 
 template <typename T, typename... Args>
 bool get_args_actual(lua_State* L, get_args_state& state, const char* fmt, T current, Args... args)
@@ -204,15 +209,92 @@ inline int ade_get_args(lua_State* L, const char* fmt, Args... args)
 	return state.counted_args;
 }
 
-/**
- *
- * @param L
- * @param fmt
- * @return
- *
- * @ingroup ade_api
- */
-int ade_set_args(lua_State *L, const char *fmt, ...);
+namespace internal {
+struct set_args_state {
+	int nargs;
+	int setargs; // args actually set
+};
+
+// This is an extremely complicated way of telling the compiler that this function should not be called with pointers
+template <typename T>
+typename std::enable_if<std::is_same<typename std::remove_cv<T>::type, bool>::value, void>::type
+set_single_arg(lua_State* L, char fmt, T b)
+{
+	Assertion(fmt == 'b', "Invalid format character '%c' for boolean type!", fmt);
+	lua_pushboolean(L, b ? 1 : 0);
+}
+template <typename T>
+typename std::enable_if<std::is_floating_point<T>::value, void>::type set_single_arg(lua_State* L, char fmt, T f)
+{
+	Assertion(fmt == 'f' || fmt == 'd', "Invalid character '%c' for number type!", fmt);
+	lua_pushnumber(L, static_cast<lua_Number>(f));
+}
+template <typename T>
+typename std::enable_if<!std::is_same<T, bool>::value && std::is_integral<T>::value, void>::type
+set_single_arg(lua_State* L, char fmt, T i)
+{
+	// fix is also an int for C++ so we need to check the format character to determine what should be done
+	Assertion(fmt == 'i' || fmt == 'x', "Invalid character '%c' for number type!", fmt);
+
+	if (fmt == 'x') {
+		lua_pushnumber(L, static_cast<lua_Number>(f2fl((fix)i)));
+	} else {
+		lua_pushinteger(L, static_cast<lua_Integer>(i));
+	}
+}
+void set_single_arg(lua_State* L, char fmt, const char* s);
+void set_single_arg(lua_State* L, char fmt, ade_odata od);
+void set_single_arg(lua_State* /*L*/, char fmt, luacpp::LuaTable* table);
+void set_single_arg(lua_State* /*L*/, char fmt, luacpp::LuaFunction* func);
+
+// This is not a template function so we can put the implementation in a source file
+inline void set_args_actual(lua_State* /*L*/, set_args_state& /*state*/, const char* fmt)
+{
+	Assertion(strlen(fmt) == 0, "No class parameters left but format is not empty!");
+}
+
+template <typename T, typename... Args>
+void set_args_actual(lua_State* L, set_args_state& state, const char* fmt, T current, Args... args)
+{
+	Assertion(strlen(fmt) > 0, "Format was empty but there were still parameters in the argument list!");
+
+	if (*fmt == '*') {
+		lua_pushnil(L);
+		state.nargs++;
+		state.setargs++;
+		return set_args_actual(L, state, fmt + 1, std::forward<T>(current), std::forward<Args>(args)...);
+	}
+
+	set_single_arg(L, *fmt, std::forward<T>(current));
+
+	state.nargs++;
+	state.setargs++;
+	return set_args_actual(L, state, fmt + 1, std::forward<Args>(args)...);
+}
+} // namespace internal
+
+// ade_set_args(state, arguments, variables)
+//----------------------------------------------
+// based on "Programming in Lua"
+//
+// Takes variables given and pushes them onto the
+// Lua stack. Use it to return variables from a
+// Lua scripting function.
+//
+// NOTE: You can also use this to push arguments
+// on to the stack in series. See script_state::SetHookVar
+template <typename... Args>
+int ade_set_args(lua_State* L, const char* fmt, Args... args)
+{
+	// Start throught
+	internal::set_args_state state{};
+	state.nargs   = 0;
+	state.setargs = 0;
+
+	internal::set_args_actual(L, state, fmt, std::forward<Args>(args)...);
+
+	return state.setargs;
+}
 
 /**
  * @brief Return a value in error

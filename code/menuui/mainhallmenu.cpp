@@ -929,7 +929,7 @@ void main_hall_do(float frametime)
 					bool success    = Script_system.EvalString(lua, lua);
 					if (!success)
 						Warning(LOCATION,
-				 		        "mainhall '+Door Action / $Script' failed to evaluate \"%s\"; check your syntax", lua);
+						        "mainhall '+Door Action / $Script' failed to evaluate \"%s\"; check your syntax", lua);
 					break;
 			} // END switch (code)
 

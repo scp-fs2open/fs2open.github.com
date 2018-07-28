@@ -206,7 +206,8 @@ public:
 	//***Moves data
 	//void MoveData(script_state &in);
 
-	void SetHookVar(const char *name, char format, const void *data=NULL);
+	template<typename T>
+	void SetHookVar(const char *name, char format, T value);
 	void SetHookObject(const char *name, object *objp);
 	void SetHookObjects(int num, ...);
 	void RemHookVar(const char *name);
@@ -232,6 +233,38 @@ public:
 	//*****Other functions
 	void EndFrame();
 };
+
+template<typename T>
+void script_state::SetHookVar(const char *name, char format, T value)
+{
+	if(format == '\0')
+		return;
+
+	if(LuaState != NULL)
+	{
+		char fmt[2] = {format, '\0'};
+		//Get ScriptVar table
+		if(this->OpenHookVarTable())
+		{
+			int amt_ldx = lua_gettop(LuaState);
+			lua_pushstring(LuaState, name);
+			scripting::ade_set_args(LuaState, fmt, value);
+			//--------------------
+			//WMC - This was a separate function
+			//lua_set_arg(LuaState, format, data);
+			//WMC - switch to the scripting library
+			//lua_setglobal(LuaState, name);
+			lua_rawset(LuaState, amt_ldx);
+
+			//Close hook var table
+			this->CloseHookVarTable();
+		}
+		else
+		{
+			LuaError(LuaState, "Could not get HookVariable library to set hook variable '%s'", name);
+		}
+	}
+}
 
 template <typename T>
 bool script_state::EvalStringWithReturn(const char* string, const char* format, T* rtn, const char* debug_str)

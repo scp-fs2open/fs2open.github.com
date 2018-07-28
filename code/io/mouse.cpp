@@ -256,7 +256,7 @@ void mouse_mark_button( uint flags, int set)
 
 	SDL_UnlockMutex( mouse_lock );
 
-	Script_system.SetHookVar("MouseButton", 'i', &flags);
+	Script_system.SetHookVar("MouseButton", 'i', flags);
 
 	//WMC - On Mouse Pressed and On Mouse Released hooks
 	if (set == 1)

@@ -298,9 +298,9 @@ ADE_FUNC(createCamera, l_Graphics,
 ADE_FUNC(isMenuStretched, l_Graphics, NULL, "Returns whether the standard interface is stretched", "boolean", "True if stretched, false if aspect ratio is maintained")
 {
 	if(!Gr_inited)
-		return ade_set_error(L, "b", 0);
+		return ade_set_error(L, "b", false);
 
-	return ade_set_args(L, "b", Cmdline_stretch_menu);
+	return ade_set_args(L, "b", Cmdline_stretch_menu != 0);
 }
 
 ADE_FUNC(getScreenWidth, l_Graphics, NULL, "Gets screen width", "number", "Width in pixels, or 0 if graphics are not initialized yet")
@@ -1466,7 +1466,7 @@ ADE_FUNC(hasViewmode, l_Graphics, "enumeration", "Specifies if the current viemo
 			break;
 
 		case LE_VM_EXTERNAL_CAMERA_LOCKED:
-			return ade_set_args(L, "b", (Viewer_mode & VM_CAMERA_LOCKED) && (Viewer_mode & VM_EXTERNAL));
+			return ade_set_args(L, "b", ((Viewer_mode & VM_CAMERA_LOCKED) && (Viewer_mode & VM_EXTERNAL)) != 0);
 			break;
 
 		case LE_VM_CAMERA_LOCKED:

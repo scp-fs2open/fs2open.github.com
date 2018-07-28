@@ -615,7 +615,7 @@ void hud_sourced_print(int source, const char *msg)
 
     // Invoke the scripting hook
     Script_system.SetHookVar("Text", 's', const_cast<char*>(msg));
-    Script_system.SetHookVar("SourceType", 'i', &source);
+    Script_system.SetHookVar("SourceType", 'i', source);
 
     Script_system.RunCondition(CHA_HUDMSGRECEIVED);
 
