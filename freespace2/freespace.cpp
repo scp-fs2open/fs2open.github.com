@@ -944,9 +944,6 @@ void game_level_close()
 	}
 
 	Script_system.RunCondition(CHA_MISSIONEND);
-
-	// Clear mission file name again
-	Game_current_mission_filename[0] = '\0';
 }
 
 uint load_gl_init;
