@@ -20,6 +20,8 @@ bool initialized        = false;
 bool discord_ready      = false;
 int next_mission_update = -1;
 
+bool in_mission = false;
+
 PresenceInfo current_info;
 
 const char* APPLICATION_ID = "465270111440470016";
@@ -45,8 +47,10 @@ SCP_string get_current_campaign_name()
 {
 	if (Game_mode & GM_CAMPAIGN_MODE) {
 		return Campaign.name;
-	} else {
+	} else if (Player != nullptr) {
 		return get_campaign_name(Player->current_campaign);
+	} else {
+		return "";
 	}
 }
 
@@ -54,18 +58,17 @@ SCP_string get_details()
 {
 	SCP_string res;
 
-	auto has_mission  = strlen(Game_current_mission_filename) > 0;
-	auto has_campaign = strlen(Player->current_campaign) > 0;
-	if (has_mission && !(Game_mode & GM_CAMPAIGN_MODE)) {
+	auto has_campaign = Player != nullptr && strlen(Player->current_campaign) > 0;
+	if (in_mission && !(Game_mode & GM_CAMPAIGN_MODE)) {
 		// This is a standalone mission so we don't actually have a campaign
 		has_campaign = false;
 	}
 
-	if (has_campaign && has_mission) {
+	if (has_campaign && in_mission) {
 		sprintf(res, "%s: %s", get_current_campaign_name().c_str(), The_mission.name);
 	} else if (has_campaign) {
 		sprintf(res, "Campaign %s", get_current_campaign_name().c_str());
-	} else if (has_mission) {
+	} else if (in_mission) {
 		res = The_mission.name;
 	} else {
 		res = "In game";
@@ -135,8 +138,12 @@ void shutdown_discord()
 	discord_ready = false;
 }
 
-void handleEnterState(int /*old_state*/, int new_state)
+void handleEnterState(int old_state, int new_state)
 {
+	if (old_state == new_state) {
+		return;
+	}
+
 	if (new_state == GS_STATE_GAME_PLAY) {
 		// Update immediately if we enter the game play state again
 		set_game_play_presence();
@@ -193,9 +200,18 @@ void handleLeaveState(int old_state, int /*new_state*/)
 		// Reset the game play state immediately
 		set_game_play_presence();
 	}
+
+	if (old_state == GS_STATE_GAME_PLAY) {
+		in_mission          = false;
+		next_mission_update = -1;
+	}
 }
 
-void handleMissionLoad(const char* /*filename*/) { set_presence("Loading mission"); }
+void handleMissionLoad(const char* /*filename*/)
+{
+	set_presence("Loading mission");
+	in_mission = true;
+}
 
 } // namespace
 
