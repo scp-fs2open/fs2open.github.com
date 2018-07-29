@@ -49,7 +49,7 @@ void pushValue(lua_State* L, const scripting::ade_odata& od)
 	//WMC - step by step
 
 	//Create new LUA object and get handle
-	char *newod = (char*)lua_newuserdata(L, od.size + sizeof(ODATA_SIG_TYPE));
+	char *newod = (char*)lua_newuserdata(L, od.size);
 	//Create or get object metatable
 	luaL_getmetatable(L, ::scripting::internal::getTableEntry(od.idx).Name);
 	//Set the metatable for the object
@@ -57,15 +57,6 @@ void pushValue(lua_State* L, const scripting::ade_odata& od)
 
 	//Copy the actual object data to the Lua object
 	memcpy(newod, od.buf, od.size);
-
-	//Also copy in the unique sig
-	if (od.sig != NULL)
-		memcpy(newod + od.size, od.sig, sizeof(ODATA_SIG_TYPE));
-	else
-	{
-		ODATA_SIG_TYPE tempsig = ODATA_SIG_DEFAULT;
-		memcpy(newod + od.size, &tempsig, sizeof(ODATA_SIG_TYPE));
-	}
 }
 
 bool popValue(lua_State* luaState, int& target, int stackposition, bool remove) {
@@ -195,13 +186,6 @@ bool popValue(lua_State* L, scripting::ade_odata& od, int stackposition, bool re
 	lua_pop(L, 2);
 	if (od.size != scripting::ODATA_PTR_SIZE) {
 		memcpy(od.buf, lua_touserdata(L, stackposition), od.size);
-		if (od.sig != NULL) {
-			//WMC - char must be 1
-			Assert(sizeof(char) == 1);
-			//WMC - Yuck. Copy sig data.
-			//Maybe in the future I'll do a packet userdata thing.
-			(*od.sig) = *(scripting::ODATA_SIG_TYPE*)(*(char**)od.buf + od.size);
-		}
 	}
 	else {
 		(*(void**)od.buf) = lua_touserdata(L, stackposition);
