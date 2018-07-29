@@ -75,31 +75,7 @@ int ade_index_handler(lua_State* L) {
 		}
 		lua_pop(L, 1);
 
-		//*****STEP 2: Check for handle signature-specific values
-		if (lua_isuserdata(L, obj_ldx) && ade_id != UINT_MAX && !ADE_SETTING_VAR) {
-			//WMC - I assume char is one byte
-			static_assert(sizeof(char) == 1, "char needs to have size 1!");
-
-			//Get userdata sig
-			char* ud = (char*) lua_touserdata(L, obj_ldx);
-			ODATA_SIG_TYPE sig = *(ODATA_SIG_TYPE*) (ud + entry->Value.Object.size);
-
-			//Now use it to index the table with that #
-			lua_pushnumber(L, sig);
-			lua_rawget(L, mtb_ldx);
-			if (lua_istable(L, -1)) {
-				int hvt_ldx = lua_gettop(L);
-				lua_pushvalue(L, key_ldx);
-				lua_rawget(L, hvt_ldx);
-				if (!lua_isnil(L, -1)) {
-					return 1;
-				} else
-					lua_pop(L, 1);    //nil value
-			}
-			lua_pop(L, 1);    //sig table
-		}
-
-		//*****STEP 3: Check for __ademember objects (ie defaults)
+		//*****STEP 2: Check for __ademember objects (ie defaults)
 		lua_pushstring(L, "__ademembers");
 		lua_rawget(L, mtb_ldx);
 		if (lua_istable(L, -1)) {
@@ -113,7 +89,7 @@ int ade_index_handler(lua_State* L) {
 		}
 		lua_pop(L, 1);    //member table
 
-		//*****STEP 4: Check for virtual variables
+		//*****STEP 3: Check for virtual variables
 		lua_pushstring(L, "__virtvars");
 		lua_rawget(L, mtb_ldx);
 		if (lua_istable(L, -1)) {
@@ -147,7 +123,7 @@ int ade_index_handler(lua_State* L) {
 		}
 		lua_pop(L, 1);    //virtvar table
 
-		//*****STEP 5: Use the indexer
+		//*****STEP 4: Use the indexer
 		//NOTE: Requires metatable from step 1.5
 
 		//Get indexer
@@ -183,41 +159,6 @@ int ade_index_handler(lua_State* L) {
 		lua_pushvalue(L, key_ldx);
 		lua_rawget(L, obj_ldx);
 		return 1;
-	}
-		//*****STEP 7: Set sig thingie
-	else if (ADE_SETTING_VAR && ade_id != UINT_MAX && mtb_ldx != INT_MAX && lua_isuserdata(L, obj_ldx)) {
-		//WMC - I assume char is one byte
-		Assert(sizeof(char) == 1);
-
-		//Get userdata sig
-		char* ud = (char*) lua_touserdata(L, obj_ldx);
-		ODATA_SIG_TYPE sig = *(ODATA_SIG_TYPE*) (ud + entry->Value.Object.size);
-
-		//Now use it to index the table with that #
-		lua_pushnumber(L, sig);
-		lua_rawget(L, mtb_ldx);
-
-		//Create table, if necessary
-		if (!lua_istable(L, -1)) {
-			lua_pop(L, 1);
-			lua_newtable(L);
-			lua_pushnumber(L, sig);
-			lua_pushvalue(L, -2);
-			lua_rawset(L, mtb_ldx);
-		}
-
-		//Index the table
-		if (lua_istable(L, -1)) {
-			int hvt_ldx = lua_gettop(L);
-			lua_pushvalue(L, key_ldx);
-			lua_pushvalue(L, arg_ldx);
-			lua_rawset(L, hvt_ldx);
-
-			lua_pushvalue(L, key_ldx);
-			lua_rawget(L, hvt_ldx);
-			return 1;
-		}
-		lua_pop(L, 1);    //WMC - maybe-sig-table
 	}
 	lua_pop(L, 1);    //WMC - metatable
 
@@ -351,26 +292,17 @@ int ade_table_entry::SetTable(lua_State* L, int p_amt_ldx, int p_mtb_ldx) {
 	if (Instanced) {
 		//Set any actual data
 		int nset = 0;
-		char typestr[2] = {Type, '\0'};
 		switch (Type) {
-		case 'b':
-			nset = ade_set_args(L, typestr, Value.varBool);
+		case 'o': {
+			// Create an empty userdata value and use it as the value for this library
+			lua_newuserdata(L, 0);
+			//Create or get object metatable
+			luaL_getmetatable(L, Name);
+			//Set the metatable for the object
+			lua_setmetatable(L, -2);
+			nset++;
 			break;
-		case 'f':
-			nset = ade_set_args(L, typestr, Value.varFloat);
-			break;
-		case 'd':
-			nset = ade_set_args(L, typestr, Value.varDouble);
-			break;
-		case 'i':
-			nset = ade_set_args(L, typestr, Value.varInt);
-			break;
-		case 's':
-			nset = ade_set_args(L, typestr, Value.varString);
-			break;
-		case 'o':
-			nset = ade_set_args(L, typestr, Value.Object);
-			break;
+		}
 		case 'u':
 		case 'v':
 			// WMC - This hack by taylor is a necessary evil.
@@ -378,7 +310,7 @@ int ade_table_entry::SetTable(lua_State* L, int p_amt_ldx, int p_mtb_ldx) {
 			// when using va_args for some reason.
 			lua_pushstring(L, "<UNNAMED FUNCTION>");
 			lua_pushboolean(L, 0);
-			lua_pushcclosure(L, Value.Function, 2);
+			lua_pushcclosure(L, Function, 2);
 			nset++;
 			break;
 
@@ -770,10 +702,6 @@ ade_lib::ade_lib(const char* in_name, const ade_lib_handle* parent, const char* 
 	//within the scripting environment, but I don't think
 	//there will be any catastrophic consequences.
 	ate.Type = 'o';
-	ate.Value.Object.idx = ade_manager::getInstance()->getNumEntries();
-	ate.Value.Object.sig = NULL;
-	ate.Value.Object.buf = &Num_reinforcements;	//WMC - I just chose Num_ship_classes randomly. MageKing17 - changed to Num_reinforcements, likewise at random, due to the removal of Num_ship_classes
-	ate.Value.Object.size = sizeof(Num_reinforcements);
 	ate.Description = in_desc;
 
 	if(parent != NULL)
@@ -802,7 +730,7 @@ ade_func::ade_func(const char* name,
 	ate.Name = name;
 	ate.Instanced = true;
 	ate.Type = 'u';
-	ate.Value.Function = func;
+	ate.Function = func;
 	ate.Arguments = args;
 	ate.Description = desc;
 	ate.ReturnType = ret_type;
@@ -823,7 +751,7 @@ ade_virtvar::ade_virtvar(const char* name,
 	ate.Name = name;
 	ate.Instanced = true;
 	ate.Type = 'v';
-	ate.Value.Function = func;
+	ate.Function = func;
 	ate.Arguments = args;
 	ate.Description = desc;
 	ate.ReturnType = ret_type;
@@ -844,7 +772,7 @@ ade_indexer::ade_indexer(lua_CFunction func,
 	ate.Name = "__indexer";
 	ate.Instanced = true;
 	ate.Type = 'u';
-	ate.Value.Function = func;
+	ate.Function = func;
 	ate.Arguments = args;
 	ate.Description = desc;
 	ate.ReturnType = ret_type;

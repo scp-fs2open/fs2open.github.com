@@ -73,7 +73,7 @@ ADE_INDEXER(l_WaypointList, "number Index", "Array of waypoints that are part of
 	sprintf(wpname, "%s:%d", wlh->wlp->get_name(), calc_waypoint_index(idx) + 1);
 	waypoint *wpt = find_matching_waypoint( wpname );
 	if( (idx >= 0) && ((uint) idx < wlh->wlp->get_waypoints().size()) && (wpt != NULL) && (wpt->get_objnum() >= 0) ) {
-		return ade_set_args( L, "o", l_Waypoint.Set( object_h( &Objects[wpt->get_objnum()] ), Objects[wpt->get_objnum()].signature ) );
+		return ade_set_args(L, "o", l_Waypoint.Set(object_h(&Objects[wpt->get_objnum()])));
 	}
 
 	return ade_set_error(L, "o", l_Waypoint.Set( object_h() ) );

@@ -137,7 +137,7 @@ ADE_INDEXER(l_Mission_Asteroids, "number Index", "Gets asteroid", "asteroid", "A
 	}
 	if( idx > -1 && idx < asteroid_count() ) {
 		idx--; //Convert from Lua to C, as lua indices start from 1, not 0
-		return ade_set_args( L, "o", l_Asteroid.Set( object_h( &Objects[Asteroids[idx].objnum] ), Objects[Asteroids[idx].objnum].signature ) );
+		return ade_set_args(L, "o", l_Asteroid.Set(object_h(&Objects[Asteroids[idx].objnum])));
 	}
 
 	return ade_set_error(L, "o", l_Asteroid.Set( object_h() ) );
@@ -167,7 +167,7 @@ ADE_INDEXER(l_Mission_Debris, "number Index", "Array of debris in the current mi
 		idx--; // Lua -> C
 		if (Debris[idx].objnum == -1) //Somehow accessed an invalid debris piece
 			return ade_set_error(L, "o", l_Debris.Set(object_h()));
-		return ade_set_args(L, "o", l_Debris.Set(object_h(&Objects[Debris[idx].objnum]), Objects[Debris[idx].objnum].signature));
+		return ade_set_args(L, "o", l_Debris.Set(object_h(&Objects[Debris[idx].objnum])));
 	}
 
 	return ade_set_error(L, "o", l_Debris.Set(object_h()));
@@ -303,7 +303,7 @@ ADE_INDEXER(l_Mission_Ships, "number Index/string Name", "Gets ship", "ship", "S
 
 	if(idx > -1)
 	{
-		return ade_set_args(L, "o", l_Ship.Set(object_h(&Objects[Ships[idx].objnum]), Objects[Ships[idx].objnum].signature));
+		return ade_set_args(L, "o", l_Ship.Set(object_h(&Objects[Ships[idx].objnum])));
 	}
 	else
 	{
@@ -318,7 +318,7 @@ ADE_INDEXER(l_Mission_Ships, "number Index/string Name", "Gets ship", "ship", "S
 					continue;
 
 				if(count == idx) {
-					return ade_set_args(L, "o", l_Ship.Set(object_h(&Objects[Ships[i].objnum]), Objects[Ships[i].objnum].signature));
+					return ade_set_args(L, "o", l_Ship.Set(object_h(&Objects[Ships[i].objnum])));
 				}
 
 				count++;
@@ -816,7 +816,7 @@ ADE_FUNC(createShip, l_Mission, "[string Name, shipclass Class=Shipclass[1], ori
 	if(obj_idx > -1) {
 		model_page_in_textures(Ship_info[sclass].model_num, sclass);
 
-		return ade_set_args(L, "o", l_Ship.Set(object_h(&Objects[obj_idx]), Objects[obj_idx].signature));
+		return ade_set_args(L, "o", l_Ship.Set(object_h(&Objects[obj_idx])));
 	} else
 		return ade_set_error(L, "o", l_Ship.Set(object_h()));
 }
@@ -871,7 +871,7 @@ ADE_FUNC(createWeapon, l_Mission, "[weaponclass Class=WeaponClass[1], orientatio
 	int obj_idx = weapon_create(&pos, real_orient, wclass, parent_idx, group);
 
 	if(obj_idx > -1)
-		return ade_set_args(L, "o", l_Weapon.Set(object_h(&Objects[obj_idx]), Objects[obj_idx].signature));
+		return ade_set_args(L, "o", l_Weapon.Set(object_h(&Objects[obj_idx])));
 	else
 		return ade_set_error(L, "o", l_Weapon.Set(object_h()));
 }

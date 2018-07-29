@@ -41,12 +41,8 @@ void ade_stackdump(lua_State* L, char* stackdump);
 int ade_friendly_error(lua_State* L);
 
 //*************************Lua types*************************
-
-//WMC - Define to say that this is to store just a pointer.
-typedef uint32_t ODATA_SIG_TYPE; //WMC - Please don't touch.
+// Value fo ade_odata::size for when buf contains a pointer
 const size_t ODATA_PTR_SIZE = (size_t) -1;
-const ODATA_SIG_TYPE ODATA_SIG_DEFAULT = 0;
-
 
 const int ADE_FUNCNAME_UPVALUE_INDEX = 1;
 const int ADE_SETTING_UPVALUE_INDEX = 2;
@@ -61,7 +57,6 @@ const int ADE_SETTING_UPVALUE_INDEX = 2;
 struct ade_odata {
 	//ade_id aid;
 	size_t idx;
-	ODATA_SIG_TYPE* sig;
 	void* buf;
 	size_t size;
 	//ade_odata(){idx=UINT_MAX;sig=NULL;buf=NULL;size=0;}
@@ -109,20 +104,10 @@ class ade_table_entry {
 	//Type-specific
 	bool Instanced;                //Is this a single instance?
 	char Type;
-	union {
-		//Variables
-		bool varBool;
-		double varDouble;
-		float varFloat;
-		int varInt;
-		char* varString;
 
-		//Functions/virtfuncs
-		lua_CFunction Function;
+	//Functions/virtfuncs
+	lua_CFunction Function;
 
-		//Objects
-		ade_odata Object;
-	} Value;
 	size_t Size;
 
 	//Metadata
@@ -217,28 +202,23 @@ class ade_obj: public ade_lib_handle {
 		}
 		ate.Type = 'o';
 		ate.Description = in_desc;
-		ate.Value.Object.idx = ade_manager::getInstance()->getNumEntries();
-		ate.Value.Object.sig = NULL;
-		ate.Value.Object.size = sizeof(StoreType);
 
 		LibIdx = ade_manager::getInstance()->addTableEntry(ate);
 	}
 
 	//WMC - Use this to store object data for return, or for setting as a global
-	ade_odata Set(const StoreType& obj, ODATA_SIG_TYPE n_sig = ODATA_SIG_DEFAULT) const {
+	ade_odata Set(const StoreType& obj) const {
 		ade_odata od;
 		od.idx = LibIdx;
-		od.sig = &n_sig;
 		od.buf = (void*) &obj;
 		od.size = sizeof(StoreType);
 		return od;
 	}
 
 	//WMC - Use this to copy object data, for modification or whatever
-	ade_odata Get(StoreType* ptr, uint* n_sig = NULL) const {
+	ade_odata Get(StoreType* ptr) const {
 		ade_odata od;
 		od.idx = LibIdx;
-		od.sig = n_sig;
 		od.buf = ptr;
 		od.size = sizeof(StoreType);
 		return od;
@@ -251,7 +231,6 @@ class ade_obj: public ade_lib_handle {
 	ade_odata GetPtr(StoreType** ptr) const {
 		ade_odata od;
 		od.idx = LibIdx;
-		od.sig = NULL;
 		od.buf = (void**) ptr;
 		od.size = ODATA_PTR_SIZE;
 		return od;
