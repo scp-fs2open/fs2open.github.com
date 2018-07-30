@@ -495,6 +495,79 @@ vec3d vm_vec4_to_vec3(const vec4& vec);
  */
 vec4 vm_vec3_to_ve4(const vec3d& vec, float w = 1.0f);
 
+/** Compares two vec3ds */
+inline bool operator==(const vec3d& left, const vec3d& right) { return vm_vec_same(&left, &right) != 0; }
+inline bool operator!=(const vec3d& left, const vec3d& right) { return !(left == right); }
+
+inline vec3d operator+(const vec3d& left, const vec3d& right)
+{
+	vec3d res;
+	vm_vec_add(&res, &left, &right);
+	return res;
+}
+inline vec3d& operator+=(vec3d& left, const vec3d& right)
+{
+	vm_vec_add2(&left, &right);
+	return left;
+}
+
+inline vec3d operator-(const vec3d& left, const vec3d& right)
+{
+	vec3d res;
+	vm_vec_sub(&res, &left, &right);
+	return res;
+}
+inline vec3d& operator-=(vec3d& left, const vec3d& right)
+{
+	vm_vec_sub2(&left, &right);
+	return left;
+}
+
+inline vec3d operator*(vec3d& left, float right)
+{
+	vec3d out;
+	vm_vec_copy_scale(&out, &left, right);
+	return out;
+}
+inline vec3d& operator*=(vec3d& left, float right)
+{
+	vm_vec_scale(&left, right);
+	return left;
+}
+
+inline vec3d operator/(vec3d& left, float right)
+{
+	vec3d out;
+	vm_vec_copy_scale(&out, &left, 1.0f / right);
+	return out;
+}
+inline vec3d& operator/=(vec3d& left, float right)
+{
+	vm_vec_scale(&left, 1.0f / right);
+	return left;
+}
+
+/**
+ * @brief Rotates a vector into the orientation specified by the matrix
+ * @param left The matrix
+ * @param right The vector
+ * @return The rotated vector
+ *
+ * @note This actually follows the definition of the * operator in linear algebra. The standard vm_vec_rotate actually
+ * implements a multiplication with the transpose of the matrix.
+ */
+inline vec3d operator*(const matrix& left, const vec3d& right) {
+	vec3d out;
+	vm_vec_unrotate(&out, &right, &left);
+	return out;
+}
+
+inline matrix operator*(const matrix& left, const matrix& right) {
+	matrix out;
+	vm_matrix_x_matrix(&out, &left, &right);
+	return out;
+}
+
 #endif
 
 
