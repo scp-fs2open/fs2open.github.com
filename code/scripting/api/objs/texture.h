@@ -7,7 +7,24 @@
 namespace scripting {
 namespace api {
 
-DECLARE_ADE_OBJ(l_Texture, int);
+struct texture_h {
+	int handle = -1;
+
+	texture_h();
+	explicit texture_h(int bm);
+
+	~texture_h();
+
+	texture_h(const texture_h&) = delete;
+	texture_h& operator=(const texture_h&) = delete;
+
+	texture_h(texture_h&&);
+	texture_h& operator=(texture_h&&);
+
+	bool isValid() const;
+};
+
+DECLARE_ADE_OBJ(l_Texture, texture_h);
 
 }
 }

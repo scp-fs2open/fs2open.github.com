@@ -11,6 +11,7 @@ class movie_player_h {
 	std::unique_ptr<cutscene::Player> _player;
 
   public:
+	movie_player_h();
 	explicit movie_player_h(std::unique_ptr<cutscene::Player>&& player);
 
 	cutscene::Player* player();
@@ -18,7 +19,7 @@ class movie_player_h {
 	bool isValid() const;
 };
 
-DECLARE_ADE_OBJ(l_MoviePlayer, movie_player_h*);
+DECLARE_ADE_OBJ(l_MoviePlayer, movie_player_h);
 
 } // namespace api
 } // namespace scripting

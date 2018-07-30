@@ -76,7 +76,9 @@ ADE_FUNC(createParticle, l_Testing, "vector Position, vector Velocity, number Li
 	enum_h *type = NULL;
 	bool rev=false;
 	object_h *objh=NULL;
-	if(!ade_get_args(L, "ooffo|fboo", l_Vector.Get(&pi.pos), l_Vector.Get(&pi.vel), &pi.lifetime, &pi.rad, l_Enum.GetPtr(&type), &temp, &rev, l_Texture.Get((int*)&pi.optional_data), l_Object.GetPtr(&objh)))
+	texture_h* texture = nullptr;
+	if (!ade_get_args(L, "ooffo|fboo", l_Vector.Get(&pi.pos), l_Vector.Get(&pi.vel), &pi.lifetime, &pi.rad,
+	                  l_Enum.GetPtr(&type), &temp, &rev, l_Texture.GetPtr(&texture), l_Object.GetPtr(&objh)))
 		return ADE_RETURN_NIL;
 
 	if(type != NULL)
@@ -96,13 +98,14 @@ ADE_FUNC(createParticle, l_Testing, "vector Position, vector Velocity, number Li
 				pi.type = particle::PARTICLE_SMOKE2;
 				break;
 			case LE_PARTICLE_BITMAP:
-				if (pi.optional_data < 0)
-				{
-					LuaError(L, "Invalid texture specified for createParticle()!");
-				}
-
-				pi.type = particle::PARTICLE_BITMAP;
-				break;
+			    if (texture == nullptr || !texture->isValid()) {
+				    LuaError(L, "Invalid texture specified for createParticle()!");
+				    return ADE_RETURN_NIL;
+			    } else {
+				    pi.optional_data = texture->handle;
+				    pi.type          = particle::PARTICLE_BITMAP;
+			    }
+			    break;
 		}
 	}
 
@@ -118,7 +121,7 @@ ADE_FUNC(createParticle, l_Testing, "vector Position, vector Velocity, number Li
 	particle::WeakParticlePtr p = particle::createPersistent(&pi);
 
 	if (!p.expired())
-		return ade_set_args(L, "o", l_Particle.Set(new particle_h(p)));
+		return ade_set_args(L, "o", l_Particle.Set(particle_h(p)));
 	else
 		return ADE_RETURN_NIL;
 }

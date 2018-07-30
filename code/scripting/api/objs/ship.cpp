@@ -56,12 +56,12 @@ ADE_INDEXER(l_ShipTextures, "number Index/string TextureFilename", "Array of shi
 {
 	object_h *oh;
 	const char* s;
-	int tdx=-1;
-	if (!ade_get_args(L, "os|o", l_ShipTextures.GetPtr(&oh), &s, l_Texture.Get(&tdx)))
-		return ade_set_error(L, "o", l_Texture.Set(-1));
+	texture_h* tdx = nullptr;
+	if (!ade_get_args(L, "os|o", l_ShipTextures.GetPtr(&oh), &s, l_Texture.GetPtr(&tdx)))
+		return ade_set_error(L, "o", l_Texture.Set(texture_h()));
 
 	if (!oh->IsValid() || s==NULL)
-		return ade_set_error(L, "o", l_Texture.Set(-1));
+		return ade_set_error(L, "o", l_Texture.Set(texture_h()));
 
 	ship *shipp = &Ships[oh->objp->instance];
 	polymodel *pm = model_get(Ship_info[shipp->ship_info_index].model_num);
@@ -100,7 +100,7 @@ ADE_INDEXER(l_ShipTextures, "number Index/string TextureFilename", "Array of shi
 		final_index = atoi(s) - 1;	//Lua->FS2
 
 		if (final_index < 0 || final_index >= MAX_REPLACEMENT_TEXTURES)
-			return ade_set_error(L, "o", l_Texture.Set(-1));
+			return ade_set_error(L, "o", l_Texture.Set(texture_h()));
 	}
 
 	if (ADE_SETTING_VAR) {
@@ -111,16 +111,16 @@ ADE_INDEXER(l_ShipTextures, "number Index/string TextureFilename", "Array of shi
 				shipp->ship_replacement_textures[i] = -1;
 		}
 
-		if(bm_is_valid(tdx))
-			shipp->ship_replacement_textures[final_index] = tdx;
+		if(tdx->isValid())
+			shipp->ship_replacement_textures[final_index] = tdx->handle;
 		else
 			shipp->ship_replacement_textures[final_index] = -1;
 	}
 
 	if (shipp->ship_replacement_textures != NULL && shipp->ship_replacement_textures[final_index] >= 0)
-		return ade_set_args(L, "o", l_Texture.Set(shipp->ship_replacement_textures[final_index]));
+		return ade_set_args(L, "o", l_Texture.Set(texture_h(shipp->ship_replacement_textures[final_index])));
 	else
-		return ade_set_args(L, "o", l_Texture.Set(pm->maps[final_index / TM_NUM_TYPES].textures[final_index % TM_NUM_TYPES].GetTexture()));
+		return ade_set_args(L, "o", l_Texture.Set(texture_h(pm->maps[final_index / TM_NUM_TYPES].textures[final_index % TM_NUM_TYPES].GetTexture())));
 }
 
 ADE_FUNC(isValid, l_ShipTextures, NULL, "Detects whether handle is valid", "boolean", "true if valid, false if handle is invalid, nil if a syntax/type error occurs")

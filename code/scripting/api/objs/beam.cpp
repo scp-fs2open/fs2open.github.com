@@ -274,7 +274,7 @@ ADE_FUNC(getCollisionInformation, l_Beam, "number", "Get the collision informati
 		return ade_set_error(L, "o", l_ColInfo.Set(mc_info_h()));
 
 	// so we have valid beam and valid indexer
-	return ade_set_args(L, "o", l_ColInfo.Set(mc_info_h(new mc_info(bp->f_collisions[idx].cinfo))));
+	return ade_set_args(L, "o", l_ColInfo.Set(mc_info_h(bp->f_collisions[idx].cinfo)));
 }
 
 ADE_FUNC(getCollisionObject, l_Beam, "number", "Get the target of the defined collision.", "object", "Object the beam collided with")

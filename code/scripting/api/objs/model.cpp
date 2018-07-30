@@ -277,16 +277,16 @@ ADE_FUNC(__len, l_ModelTextures, NULL, "Number of textures on model", "number", 
 ADE_INDEXER(l_ModelTextures, "texture", "number Index/string TextureName", "texture", "Model textures, or invalid modeltextures handle if model handle is invalid")
 {
 	modeltextures_h *mth = NULL;
-	int new_tex = -1;
+	texture_h* new_tex   = nullptr;
 	const char* s        = nullptr;
 
-	if (!ade_get_args(L, "os|o", l_ModelTextures.GetPtr(&mth), &s, l_Texture.Get(&new_tex)))
-		return ade_set_error(L, "o", l_Texture.Set(-1));
+	if (!ade_get_args(L, "os|o", l_ModelTextures.GetPtr(&mth), &s, l_Texture.GetPtr(&new_tex)))
+		return ade_set_error(L, "o", l_Texture.Set(texture_h()));
 
 	polymodel *pm = mth->Get();
 
 	if (!mth->IsValid() || s == NULL || pm == NULL)
-		return ade_set_error(L, "o", l_Texture.Set(-1));
+		return ade_set_error(L, "o", l_Texture.Set(texture_h()));
 
 	texture_info *tinfo = NULL;
 	texture_map *tmap = NULL;
@@ -297,7 +297,7 @@ ADE_INDEXER(l_ModelTextures, "texture", "number Index/string TextureName", "text
 		int idx = atoi(s) - 1;	//Lua->FS2
 
 		if (idx < 0 || idx >= num_textures)
-			return ade_set_error(L, "o", l_Texture.Set(-1));
+			return ade_set_error(L, "o", l_Texture.Set(texture_h()));
 
 		tmap = &pm->maps[idx / TM_NUM_TYPES];
 		tinfo = &tmap->textures[idx % TM_NUM_TYPES];
@@ -316,13 +316,13 @@ ADE_INDEXER(l_ModelTextures, "texture", "number Index/string TextureName", "text
 	}
 
 	if(tinfo == NULL)
-		return ade_set_error(L, "o", l_Texture.Set(-1));
+		return ade_set_error(L, "o", l_Texture.Set(texture_h()));
 
 	if (ADE_SETTING_VAR) {
-		tinfo->SetTexture(new_tex);
+		tinfo->SetTexture(new_tex->handle);
 	}
 
-	return ade_set_args(L, "o", l_Texture.Set(tinfo->GetTexture()));
+	return ade_set_args(L, "o", l_Texture.Set(texture_h(tinfo->GetTexture())));
 }
 
 ADE_FUNC(isValid, l_ModelTextures, NULL, "Detects whether handle is valid", "boolean", "true if valid, false if handle is invalid, nil if a syntax/type error occurs")

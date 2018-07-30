@@ -46,6 +46,7 @@ const size_t ODATA_PTR_SIZE = (size_t) -1;
 
 const int ADE_FUNCNAME_UPVALUE_INDEX = 1;
 const int ADE_SETTING_UPVALUE_INDEX = 2;
+const int ADE_DESTRUCTOR_OBJ_UPVALUE_INDEX = 3; // Upvalue which stores the reference to the ade_obj of a destructor
 #define ADE_SETTING_VAR lua_toboolean(L,lua_upvalueindex(ADE_SETTING_UPVALUE_INDEX))
 
 template <typename T>
@@ -94,35 +95,39 @@ struct ade_odata_setter {
  */
 class ade_table_entry {
  public:
-	const char* Name;
-	const char* ShortName;
+	const char* Name = nullptr;
+	const char* ShortName = nullptr;
 
 	//Important stuff
-	size_t Idx;
-	size_t ParentIdx;
-	size_t DerivatorIdx;
+	size_t Idx = UINT_MAX;
+	size_t ParentIdx = UINT_MAX;
+	size_t DerivatorIdx = UINT_MAX;
 	//ade_id AdeID;
 	//ade_id DerivatorID;			//Who do we derive from
 
 	//Type-specific
-	bool Instanced;                //Is this a single instance?
-	char Type;
+	bool Instanced = false;                //Is this a single instance?
+	char Type = '\0';
 
 	//Functions/virtfuncs
-	lua_CFunction Function;
+	lua_CFunction Function = nullptr;
 
-	size_t Size;
+	// For Objects, the destructor of the object
+	void* Destructor_upvalue = nullptr;
+	lua_CFunction Destructor = nullptr;
+
+	size_t Size = 0;
 
 	//Metadata
-	const char* Arguments;
-	const char* Description;
-	const char* ReturnType;
-	const char* ReturnDescription;
+	const char* Arguments = nullptr;
+	const char* Description = nullptr;
+	const char* ReturnType = nullptr;
+	const char* ReturnDescription = nullptr;
 
 	//Subentries, of course
 	//WMC - I have HAD it with these motherfriendly vectors
 	//on this motherfriendly class.
-	size_t Num_subentries;
+	size_t Num_subentries = 0;
 	size_t Subentries[256];
 
  private:
@@ -169,120 +174,6 @@ class ade_manager {
 	const ade_table_entry& getEntry(size_t idx) const;
 
 	size_t getNumEntries() const { return _table_entries.size(); }
-};
-
-/**
- * @ingroup ade_api
- */
-class ade_lib_handle {
- protected:
-	size_t LibIdx;
- public:
-	ade_lib_handle() {}
-
-	size_t GetIdx() const {
-		return LibIdx;
-	}
-};
-
-/**
- * @ingroup ade_api
- */
-template<class StoreType>
-class ade_obj: public ade_lib_handle {
- public:
-	// Make sure that the stored type is compatible with our requirements
-#ifdef HAVE_STD_IS_TRIVIALLY_COPYABLE
-	static_assert(std::is_trivially_copyable<StoreType>::value, "ADE object types must be trivially copyable!");
-#endif
-	ade_obj(const char* in_name, const char* in_desc, const ade_lib_handle* in_deriv = NULL) {
-		ade_table_entry ate;
-
-		//WMC - object metadata are uninstanced library types
-		ate.Name = in_name;
-		if (in_deriv != NULL) {
-			ate.DerivatorIdx = in_deriv->GetIdx();
-		}
-		ate.Type = 'o';
-		ate.Description = in_desc;
-
-		LibIdx = ade_manager::getInstance()->addTableEntry(ate);
-	}
-
-	//WMC - Use this to store object data for return, or for setting as a global
-	ade_odata_setter<StoreType> Set(StoreType&& obj) const
-	{
-		return ade_odata_setter<StoreType>(LibIdx, std::move(obj));
-	}
-
-	ade_odata_setter<StoreType> Set(const StoreType& obj) const
-	{
-		return ade_odata_setter<StoreType>(LibIdx, obj);
-	}
-
-	//WMC - Use this to copy object data, for modification or whatever
-	ade_odata_getter<StoreType> Get(StoreType* ptr) const { return ade_odata_getter<StoreType>(LibIdx, ptr); }
-
-	// WMC - Use this to get a pointer to Lua object data.
-	// Use >ONLY< when:
-	// 1 - You are setting the data of an object (ie 'x' component of vector)
-	// 2 - To speed up read-only calcs (ie computing dot product of vectors)
-	// 3 - To get a reference to a move-only type stored in Lua memory
-	ade_odata_ptr_getter<StoreType> GetPtr(StoreType** ptr) const
-	{
-		return ade_odata_ptr_getter<StoreType>(LibIdx, ptr);
-	}
-};
-
-/**
- * Library class
- * This is what you define a variable of to make new libraries
- *
- * @ingroup ade_api
- */
-class ade_lib : public ade_lib_handle {
- public:
-   explicit ade_lib(const char* in_name, const ade_lib_handle* parent = NULL, const char* in_shortname = NULL,
-	                const char* in_desc = NULL);
-
-   const char* GetName() const;
-};
-
-/**
- * @ingroup ade_api
- */
-class ade_func: public ade_lib_handle {
- public:
-	ade_func(const char* name,
-			 lua_CFunction func,
-			 const ade_lib_handle& parent,
-			 const char* args = NULL,
-			 const char* desc = NULL,
-			 const char* ret_type = NULL,
-			 const char* ret_desc = NULL);
-};
-
-/**
- * @ingroup ade_api
- */
-class ade_virtvar: public ade_lib_handle {
- public:
-	ade_virtvar(const char* name,
-				lua_CFunction func,
-				const ade_lib_handle& parent,
-				const char* args = NULL,
-				const char* desc = NULL,
-				const char* ret_type = NULL,
-				const char* ret_desc = NULL);
-};
-
-/**
- * @ingroup ade_api
- */
-class ade_indexer: public ade_lib_handle {
- public:
-	ade_indexer(lua_CFunction func, const ade_lib_handle& parent, const char* args = NULL, const char* desc = NULL,
-				const char* ret_type = NULL, const char* ret_desc = NULL);
 };
 
 /**
