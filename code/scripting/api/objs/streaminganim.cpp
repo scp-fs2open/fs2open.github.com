@@ -19,10 +19,10 @@ streaminganim_h::~streaminganim_h() {
 	// generic_anim_unload has safety checks
 	generic_anim_unload(&ga);
 }
-streaminganim_h::streaminganim_h(streaminganim_h&& other) {
+streaminganim_h::streaminganim_h(streaminganim_h&& other) noexcept {
 	*this = std::move(other);
 }
-streaminganim_h& streaminganim_h::operator=(streaminganim_h&& other) {
+streaminganim_h& streaminganim_h::operator=(streaminganim_h&& other) noexcept {
 	generic_anim_unload(&ga);
 
 	memcpy(&ga, &other.ga, sizeof(ga));

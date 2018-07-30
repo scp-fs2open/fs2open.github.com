@@ -19,7 +19,7 @@ class ade_lib_handle {
 	size_t LibIdx;
 
   public:
-	ade_lib_handle() {}
+	ade_lib_handle() = default;
 
 	size_t GetIdx() const { return LibIdx; }
 };
@@ -31,8 +31,8 @@ template <class StoreType>
 class ade_obj : public ade_lib_handle {
 	static int lua_destructor(lua_State* L)
 	{
-		ade_obj<StoreType>* obj = reinterpret_cast<ade_obj<StoreType>*>(
-		    lua_touserdata(L, lua_upvalueindex(ADE_DESTRUCTOR_OBJ_UPVALUE_INDEX)));
+		auto* obj =
+		    static_cast<ade_obj<StoreType>*>(lua_touserdata(L, lua_upvalueindex(ADE_DESTRUCTOR_OBJ_UPVALUE_INDEX)));
 		StoreType* value = nullptr;
 		if (!ade_get_args(L, "o", obj->GetPtr(&value))) {
 			return 0;
@@ -47,13 +47,13 @@ class ade_obj : public ade_lib_handle {
 	}
 
   public:
-	ade_obj(const char* in_name, const char* in_desc, const ade_lib_handle* in_deriv = NULL)
+	ade_obj(const char* in_name, const char* in_desc, const ade_lib_handle* in_deriv = nullptr)
 	{
 		ade_table_entry ate;
 
 		// WMC - object metadata are uninstanced library types
 		ate.Name = in_name;
-		if (in_deriv != NULL) {
+		if (in_deriv != nullptr) {
 			ate.DerivatorIdx = in_deriv->GetIdx();
 		}
 		ate.Type        = 'o';
@@ -156,8 +156,8 @@ class ade_obj : public ade_lib_handle {
  */
 class ade_lib : public ade_lib_handle {
   public:
-	explicit ade_lib(const char* in_name, const ade_lib_handle* parent = NULL, const char* in_shortname = NULL,
-	                 const char* in_desc = NULL);
+	explicit ade_lib(const char* in_name, const ade_lib_handle* parent = nullptr, const char* in_shortname = nullptr,
+	                 const char* in_desc = nullptr);
 
 	const char* GetName() const;
 };
@@ -225,8 +225,8 @@ class ade_lib : public ade_lib_handle {
  */
 class ade_func : public ade_lib_handle {
   public:
-	ade_func(const char* name, lua_CFunction func, const ade_lib_handle& parent, const char* args = NULL,
-	         const char* desc = NULL, const char* ret_type = NULL, const char* ret_desc = NULL);
+	ade_func(const char* name, lua_CFunction func, const ade_lib_handle& parent, const char* args = nullptr,
+	         const char* desc = nullptr, const char* ret_type = nullptr, const char* ret_desc = nullptr);
 };
 
 /**
@@ -253,8 +253,8 @@ class ade_func : public ade_lib_handle {
  */
 class ade_virtvar : public ade_lib_handle {
   public:
-	ade_virtvar(const char* name, lua_CFunction func, const ade_lib_handle& parent, const char* args = NULL,
-	            const char* desc = NULL, const char* ret_type = NULL, const char* ret_desc = NULL);
+	ade_virtvar(const char* name, lua_CFunction func, const ade_lib_handle& parent, const char* args = nullptr,
+	            const char* desc = nullptr, const char* ret_type = nullptr, const char* ret_desc = nullptr);
 };
 
 /**
@@ -282,8 +282,8 @@ class ade_virtvar : public ade_lib_handle {
  */
 class ade_indexer : public ade_lib_handle {
   public:
-	ade_indexer(lua_CFunction func, const ade_lib_handle& parent, const char* args = NULL, const char* desc = NULL,
-	            const char* ret_type = NULL, const char* ret_desc = NULL);
+	ade_indexer(lua_CFunction func, const ade_lib_handle& parent, const char* args = nullptr,
+	            const char* desc = nullptr, const char* ret_type = nullptr, const char* ret_desc = nullptr);
 };
 
 /**

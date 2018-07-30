@@ -27,10 +27,10 @@ texture_h::~texture_h()
 		bm_release(handle);
 }
 bool texture_h::isValid() const { return bm_is_valid(handle) != 0; }
-texture_h::texture_h(texture_h&& other) {
+texture_h::texture_h(texture_h&& other) noexcept {
 	*this = std::move(other);
 }
-texture_h& texture_h::operator=(texture_h&& other) {
+texture_h& texture_h::operator=(texture_h&& other) noexcept {
 	std::swap(handle, other.handle);
 	return *this;
 }
@@ -76,7 +76,7 @@ ADE_INDEXER(l_Texture, "number",
 
 	//Get me some info
 	int num=-1;
-	int first = bm_get_info(th->handle, NULL, NULL, NULL, &num);
+	int first = bm_get_info(th->handle, nullptr, nullptr, nullptr, &num);
 
 	//Check it's a valid one
 	if(first < 0 || frame > num)
@@ -157,7 +157,7 @@ ADE_FUNC(getHeight, l_Texture, NULL, "Gets texture height", "number", "Texture h
 
 	int h=-1;
 
-	if (bm_get_info(th->handle, NULL, &h) < 0)
+	if (bm_get_info(th->handle, nullptr, &h) < 0)
 		return ade_set_error(L, "i", 0);
 
 	return ade_set_args(L, "i", h);
@@ -174,7 +174,7 @@ ADE_FUNC(getFPS, l_Texture, NULL,"Gets frames-per-second of texture", "number", 
 
 	int fps=-1;
 
-	if (bm_get_info(th->handle, NULL, NULL, NULL, NULL, &fps) < 0)
+	if (bm_get_info(th->handle, nullptr, nullptr, nullptr, nullptr, &fps) < 0)
 		return ade_set_error(L, "i", 0);
 
 	return ade_set_args(L, "i", fps);
@@ -191,7 +191,7 @@ ADE_FUNC(getFramesLeft, l_Texture, NULL, "Gets number of frames left, from handl
 
 	int num=-1;
 
-	if (bm_get_info(th->handle, NULL, NULL, NULL, &num) < 0)
+	if (bm_get_info(th->handle, nullptr, nullptr, nullptr, &num) < 0)
 		return ade_set_error(L, "i", 0);
 
 	return ade_set_args(L, "i", num);

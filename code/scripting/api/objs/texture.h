@@ -18,8 +18,8 @@ struct texture_h {
 	texture_h(const texture_h&) = delete;
 	texture_h& operator=(const texture_h&) = delete;
 
-	texture_h(texture_h&&);
-	texture_h& operator=(texture_h&&);
+	texture_h(texture_h&&) noexcept;
+	texture_h& operator=(texture_h&&) noexcept;
 
 	bool isValid() const;
 };
