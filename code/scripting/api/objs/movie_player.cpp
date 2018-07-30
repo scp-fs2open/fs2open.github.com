@@ -5,34 +5,18 @@
 namespace scripting {
 namespace api {
 
+movie_player_h::movie_player_h() = default;
 movie_player_h::movie_player_h(std::unique_ptr<cutscene::Player>&& player) : _player(std::move(player)) {}
 bool movie_player_h::isValid() const { return (bool)_player; }
 cutscene::Player* movie_player_h::player() { return _player.get(); }
 
-ADE_OBJ(l_MoviePlayer, movie_player_h*, "movie_player", "A movie player instance");
-
-ADE_FUNC(__gc, l_MoviePlayer, nullptr, "Cleans up the allocated resources. Should only be used by Lua.", "nothing",
-         nullptr)
-{
-	movie_player_h* ph = nullptr;
-	if (!ade_get_args(L, "o", l_MoviePlayer.Get(&ph)))
-		return ADE_RETURN_NIL;
-
-	if (ph == nullptr) {
-		return ADE_RETURN_NIL;
-	}
-
-	// Clean up the pointer
-	delete ph;
-
-	return ADE_RETURN_NIL;
-}
+ADE_OBJ(l_MoviePlayer, movie_player_h, "movie_player", "A movie player instance");
 
 ADE_VIRTVAR(Width, l_MoviePlayer, "number", "Determines the width in pixels of this movie <b>Read-only</b>", "number",
             "The width of the movie or -1 if handle is invalid")
 {
 	movie_player_h* ph = nullptr;
-	if (!ade_get_args(L, "o", l_MoviePlayer.Get(&ph)))
+	if (!ade_get_args(L, "o", l_MoviePlayer.GetPtr(&ph)))
 		return ade_set_args(L, "i", -1);
 
 	if (ph == nullptr || !ph->isValid()) {
@@ -50,7 +34,7 @@ ADE_VIRTVAR(Height, l_MoviePlayer, "number", "Determines the height in pixels of
             "The height of the movie or -1 if handle is invalid")
 {
 	movie_player_h* ph = nullptr;
-	if (!ade_get_args(L, "o", l_MoviePlayer.Get(&ph)))
+	if (!ade_get_args(L, "o", l_MoviePlayer.GetPtr(&ph)))
 		return ade_set_args(L, "i", -1);
 
 	if (ph == nullptr || !ph->isValid()) {
@@ -68,7 +52,7 @@ ADE_VIRTVAR(FPS, l_MoviePlayer, "number", "Determines the frames per second of t
             "The FPS of the movie or -1 if handle is invalid")
 {
 	movie_player_h* ph = nullptr;
-	if (!ade_get_args(L, "o", l_MoviePlayer.Get(&ph)))
+	if (!ade_get_args(L, "o", l_MoviePlayer.GetPtr(&ph)))
 		return ade_set_args(L, "i", -1);
 
 	if (ph == nullptr || !ph->isValid()) {
@@ -88,7 +72,7 @@ ADE_FUNC(update, l_MoviePlayer, "timespan step_time",
 {
 	movie_player_h* ph = nullptr;
 	int64_t time_diff  = 0;
-	if (!ade_get_args(L, "oo", l_MoviePlayer.Get(&ph), l_TimeSpan.Get(&time_diff)))
+	if (!ade_get_args(L, "oo", l_MoviePlayer.GetPtr(&ph), l_TimeSpan.Get(&time_diff)))
 		return ADE_RETURN_FALSE;
 
 	if (ph == nullptr || !ph->isValid()) {
@@ -107,7 +91,7 @@ ADE_FUNC(isPlaybackReady, l_MoviePlayer, nullptr,
          "boolean", "true if playback is ready, false otherwise")
 {
 	movie_player_h* ph = nullptr;
-	if (!ade_get_args(L, "o", l_MoviePlayer.Get(&ph)))
+	if (!ade_get_args(L, "o", l_MoviePlayer.GetPtr(&ph)))
 		return ADE_RETURN_FALSE;
 
 	if (ph == nullptr || !ph->isValid()) {
@@ -128,7 +112,7 @@ ADE_FUNC(drawMovie, l_MoviePlayer, "number x1, number y1[, number x2, number y2]
 	float x2 = -1.f;
 	float y2 = -1.f;
 
-	if (!ade_get_args(L, "off|ff", l_MoviePlayer.Get(&ph), &x1, &y1, &x2, &y2))
+	if (!ade_get_args(L, "off|ff", l_MoviePlayer.GetPtr(&ph), &x1, &y1, &x2, &y2))
 		return ADE_RETURN_NIL;
 
 	if (ph == nullptr || !ph->isValid()) {
@@ -156,7 +140,7 @@ ADE_FUNC(stop, l_MoviePlayer, nullptr,
          "nothing", "Returns nothing")
 {
 	movie_player_h* ph = nullptr;
-	if (!ade_get_args(L, "o", l_MoviePlayer.Get(&ph)))
+	if (!ade_get_args(L, "o", l_MoviePlayer.GetPtr(&ph)))
 		return ADE_RETURN_NIL;
 
 	if (ph == nullptr || !ph->isValid()) {
@@ -172,7 +156,7 @@ ADE_FUNC(isValid, l_MoviePlayer, nullptr, "Determines if this handle is valid", 
          "true if valid, false otherwise")
 {
 	movie_player_h* ph = nullptr;
-	if (!ade_get_args(L, "o", l_MoviePlayer.Get(&ph)))
+	if (!ade_get_args(L, "o", l_MoviePlayer.GetPtr(&ph)))
 		return ADE_RETURN_FALSE;
 
 	if (ph == nullptr) {

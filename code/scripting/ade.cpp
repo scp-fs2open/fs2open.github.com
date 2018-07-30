@@ -274,12 +274,7 @@ const ade_table_entry& ade_manager::getEntry(size_t idx) const {
 	return _table_entries[idx];
 }
 
-ade_table_entry::ade_table_entry()
-	: Name(NULL), ShortName(NULL), Idx(UINT_MAX), ParentIdx(UINT_MAX), DerivatorIdx(UINT_MAX), Instanced(false),
-	  Size(0), Arguments(NULL), Description(NULL), ReturnType(NULL), ReturnDescription(NULL), Num_subentries(0) {
-	Type = '\0';
-	memset(Subentries, 0, sizeof(Subentries));
-}
+ade_table_entry::ade_table_entry() { memset(Subentries, 0, sizeof(Subentries)); }
 //Think of n_mtb_ldx as the parent metatable
 int ade_table_entry::SetTable(lua_State* L, int p_amt_ldx, int p_mtb_ldx) {
 	uint i;
@@ -418,6 +413,16 @@ int ade_table_entry::SetTable(lua_State* L, int p_amt_ldx, int p_mtb_ldx) {
 		lua_pushboolean(L, 1);                            //upvalue(2) = setting true/false
 		lua_pushcclosure(L, ade_index_handler, 2);
 		lua_rawset(L, mtb_ldx);
+
+		if (Destructor != nullptr) {
+			// Set up the destructor of this type if it exists
+			lua_pushstring(L, "__gc");
+			lua_pushfstring(L, "%s Destructor", GetName()); // upvalue(1) = function name
+			lua_pushboolean(L, 0);                          // upvalue(2) = setting true/false
+			lua_pushlightuserdata(L, Destructor_upvalue);   // upvalue(3) = Reference to ade_obj
+			lua_pushcclosure(L, Destructor, 3);
+			lua_rawset(L, mtb_ldx);
+		}
 
 		//***Create virtvar storage facility
 		lua_pushstring(L, "__virtvars");
@@ -725,6 +730,8 @@ ade_func::ade_func(const char* name,
 				   const char* desc,
 				   const char* ret_type,
 				   const char* ret_desc) {
+	Assertion(strcmp(name, "__gc") != 0, "__gc is a reserved function name! An API function may not use it!");
+
 	ade_table_entry ate;
 
 	ate.Name = name;
@@ -746,6 +753,8 @@ ade_virtvar::ade_virtvar(const char* name,
 						 const char* desc,
 						 const char* ret_type,
 						 const char* ret_desc) {
+	Assertion(strcmp(name, "__gc") != 0, "__gc is a reserved function name! An API function may not use it!");
+
 	ade_table_entry ate;
 
 	ate.Name = name;

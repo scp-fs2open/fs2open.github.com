@@ -224,27 +224,26 @@ ADE_VIRTVAR(CurrentOpacityType, l_Graphics, "enumeration", "Current alpha blendi
 
 ADE_VIRTVAR(CurrentRenderTarget, l_Graphics, "texture", "Current rendering target", "texture", "Current rendering target, or invalid texture handle if screen is render target")
 {
-	int newtx = -1;
+	texture_h* newtx = nullptr;
 
 	if(ADE_SETTING_VAR && lua_isnil(L, 2))
 	{
 		bm_set_render_target(-1);
-		return ade_set_args(L, "o", l_Texture.Set(gr_screen.rendering_to_texture));
+		return ade_set_args(L, "o", l_Texture.Set(texture_h(gr_screen.rendering_to_texture)));
 	}
 	else
 	{
-
-		if(!ade_get_args(L, "*|o", l_Texture.Get(&newtx)))
-			return ade_set_error(L, "o", l_Texture.Set(-1));
+		if (!ade_get_args(L, "*|o", l_Texture.GetPtr(&newtx)))
+			return ade_set_error(L, "o", l_Texture.Set(texture_h()));
 
 		if(ADE_SETTING_VAR) {
-			if(newtx > -1 && bm_is_valid(newtx))
-				bm_set_render_target(newtx, 0);
+			if (newtx != nullptr && newtx->isValid())
+				bm_set_render_target(newtx->handle, 0);
 			else
 				bm_set_render_target(-1);
 		}
 
-		return ade_set_args(L, "o", l_Texture.Set(gr_screen.rendering_to_texture));
+		return ade_set_args(L, "o", l_Texture.Set(texture_h(gr_screen.rendering_to_texture)));
 	}
 }
 
@@ -437,10 +436,10 @@ ADE_FUNC(setTarget, l_Graphics, "[texture Texture]",
 	if(!Gr_inited)
 		return ade_set_error(L, "b", false);
 
-	int idx = -1;
-	ade_get_args(L, "|o", l_Texture.Get(&idx));
+	texture_h* idx = nullptr;
+	ade_get_args(L, "|o", l_Texture.GetPtr(&idx));
 
-	return ade_set_args(L, "b", bm_set_render_target(idx, 0));
+	return ade_set_args(L, "b", bm_set_render_target(idx->isValid() ? idx->handle : -1, 0));
 }
 
 ADE_FUNC(setCamera, l_Graphics, "[camera handle Camera]", "Sets current camera, or resets camera if none specified", "boolean", "true if successful, false or nil otherwise")
@@ -599,15 +598,15 @@ ADE_FUNC(drawPixel, l_Graphics, "number X, number Y", "Sets pixel to CurrentColo
 
 ADE_FUNC(drawPolygon, l_Graphics, "texture Texture, [vector Position={0,0,0}, orientation Orientation=nil, number Width=1.0, number Height=1.0]", "Draws a polygon. May not work properly in hooks other than On Object Render.", NULL, NULL)
 {
-	int tdx = -1;
+	texture_h* tdx = nullptr;
 	vec3d pos = vmd_zero_vector;
 	matrix_h *mh = NULL;
 	float width = 1.0f;
 	float height = 1.0f;
-	if(!ade_get_args(L, "o|ooff", l_Texture.Get(&tdx), l_Vector.Get(&pos), l_Matrix.GetPtr(&mh), &width, &height))
+	if (!ade_get_args(L, "o|ooff", l_Texture.GetPtr(&tdx), l_Vector.Get(&pos), l_Matrix.GetPtr(&mh), &width, &height))
 		return ADE_RETURN_NIL;
 
-	if(!bm_is_valid(tdx))
+	if (!tdx->isValid())
 		return ADE_RETURN_FALSE;
 
 	matrix *orip = &vmd_identity_matrix;
@@ -622,7 +621,8 @@ ADE_FUNC(drawPolygon, l_Graphics, "texture Texture, [vector Position={0,0,0}, or
 	//gr_set_bitmap(tdx, lua_Opacity_type, GR_BITBLT_MODE_NORMAL, lua_Opacity);
 	//g3_draw_polygon(&pos, orip, width, height, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT);
 	material mat_params;
-	material_set_unlit(&mat_params, tdx, lua_Opacity, lua_Opacity_type == GR_ALPHABLEND_FILTER ? true : false, false);
+	material_set_unlit(&mat_params, tdx->handle, lua_Opacity, lua_Opacity_type == GR_ALPHABLEND_FILTER ? true : false,
+	                   false);
 	g3_render_rect_oriented(&mat_params, &pos, orip, width, height);
 
 	if(!in_frame)
@@ -1188,9 +1188,11 @@ ADE_FUNC(loadStreamingAnim, l_Graphics, "string Filename, [boolean loop, boolean
 	rc = generic_anim_stream(&sah.ga, cache);
 
 	if(rc < 0)
-		return ade_set_args(L, "o", l_streaminganim.Set(sah)); // this object should be "invalid", matches loadTexture behaviour
+		return ade_set_args(
+		    L, "o",
+		    l_streaminganim.Set(std::move(sah))); // this object should be "invalid", matches loadTexture behaviour
 
-	return ade_set_args(L, "o", l_streaminganim.Set(sah));
+	return ade_set_args(L, "o", l_streaminganim.Set(std::move(sah)));
 }
 
 ADE_FUNC(createTexture, l_Graphics, "[number Width=512, number Height=512, enumeration Type=TEXTURE_DYNAMIC]",
@@ -1218,9 +1220,9 @@ ADE_FUNC(createTexture, l_Graphics, "[number Width=512, number Height=512, enume
 	int idx = bm_make_render_target(w, h, t);
 
 	if(idx < 0)
-		return ade_set_error(L, "o", l_Texture.Set(-1));
+		return ade_set_error(L, "o", l_Texture.Set(texture_h()));
 
-	return ade_set_args(L, "o", l_Texture.Set(idx));
+	return ade_set_args(L, "o", l_Texture.Set(texture_h(idx)));
 }
 
 ADE_FUNC(loadTexture, l_Graphics, "string Filename, [boolean LoadIfAnimation, boolean NoDropFrames]",
@@ -1237,7 +1239,7 @@ ADE_FUNC(loadTexture, l_Graphics, "string Filename, [boolean LoadIfAnimation, bo
 	bool d=false;
 
 	if(!ade_get_args(L, "s|bb", &s, &b, &d))
-		return ade_set_error(L, "o", l_Texture.Set(-1));
+		return ade_set_error(L, "o", l_Texture.Set(texture_h()));
 
 	if(b == true) {
 		idx = bm_load_animation(s, nullptr, nullptr, nullptr, nullptr, d);
@@ -1247,9 +1249,9 @@ ADE_FUNC(loadTexture, l_Graphics, "string Filename, [boolean LoadIfAnimation, bo
 	}
 
 	if(idx < 0)
-		return ade_set_error(L, "o", l_Texture.Set(-1));
+		return ade_set_error(L, "o", l_Texture.Set(texture_h()));
 
-	return ade_set_args(L, "o", l_Texture.Set(idx));
+	return ade_set_args(L, "o", l_Texture.Set(texture_h(idx)));
 }
 
 ADE_FUNC(drawImage, l_Graphics, "string Filename/texture Texture, [number X1=0, Y1=0, number X2, number Y2, number UVX1 = 0.0, number UVY1 = 0.0, number UVX2=1.0, number UVY2=1.0, number alpha=1.0]",
@@ -1286,8 +1288,16 @@ ADE_FUNC(drawImage, l_Graphics, "string Filename/texture Texture, [number X1=0, 
 	}
 	else
 	{
-		if(!ade_get_args(L, "o|iiiifffff", l_Texture.Get(&idx),&x1,&y1,&x2,&y2,&uv_x1,&uv_y1,&uv_x2,&uv_y2,&alpha))
+		texture_h* th = nullptr;
+		if (!ade_get_args(L, "o|iiiifffff", l_Texture.GetPtr(&th), &x1, &y1, &x2, &y2, &uv_x1, &uv_y1, &uv_x2, &uv_y2,
+		                  &alpha))
 			return ade_set_error(L, "b", false);
+
+		if (!th->isValid()) {
+			return ade_set_error(L, "b", false);
+		}
+
+		idx = th->handle;
 	}
 
 	if(!bm_is_valid(idx))
@@ -1337,8 +1347,15 @@ ADE_FUNC(drawMonochromeImage, l_Graphics, "string Filename/texture Texture, numb
 	}
 	else
 	{
-		if(!ade_get_args(L, "oii|iif", l_Texture.Get(&idx),&x,&y,&x2,&y2,&alpha))
+		texture_h* th = nullptr;
+		if(!ade_get_args(L, "oii|iif", l_Texture.GetPtr(&th),&x,&y,&x2,&y2,&alpha))
 			return ade_set_error(L, "b", false);
+
+		if (!th->isValid()) {
+			return ade_set_error(L, "b", false);
+		}
+
+		idx = th->handle;
 	}
 
 	if(!bm_is_valid(idx))
@@ -1549,7 +1566,7 @@ ADE_FUNC(openMovie, l_Graphics, "string name, boolean looping = false",
 	const char* name = nullptr;
 	bool looping = false;
 	if (!ade_get_args(L, "s|b", &name, &looping)) {
-		return ade_set_error(L, "o", l_MoviePlayer.Set(nullptr));
+		return ade_set_error(L, "o", l_MoviePlayer.Set(movie_player_h()));
 	}
 
 	// Audio is disabled for scripted movies at the moment
@@ -1560,10 +1577,10 @@ ADE_FUNC(openMovie, l_Graphics, "string name, boolean looping = false",
 	auto player = cutscene::Player::newPlayer(name, props);
 
 	if (!player) {
-		return ade_set_args(L, "o", l_MoviePlayer.Set(nullptr));
+		return ade_set_args(L, "o", l_MoviePlayer.Set(movie_player_h()));
 	}
 
-	return ade_set_args(L, "o", l_MoviePlayer.Set(new movie_player_h(std::move(player))));
+	return ade_set_args(L, "o", l_MoviePlayer.Set(movie_player_h(std::move(player))));
 }
 
 } // namespace api

@@ -14,24 +14,27 @@ bool streaminganim_h::IsValid() {
 streaminganim_h::streaminganim_h(const char* filename) {
 	generic_anim_init(&ga, filename);
 }
+streaminganim_h::~streaminganim_h() {
+	// don't bother to check if valid before unloading
+	// generic_anim_unload has safety checks
+	generic_anim_unload(&ga);
+}
+streaminganim_h::streaminganim_h(streaminganim_h&& other) {
+	*this = std::move(other);
+}
+streaminganim_h& streaminganim_h::operator=(streaminganim_h&& other) {
+	generic_anim_unload(&ga);
+
+	memcpy(&ga, &other.ga, sizeof(ga));
+
+	// Reset the other instance so that we own the only instance
+	generic_anim_init(&other.ga, nullptr);
+
+	return *this;
+}
 
 //**********HANDLE: streamingAnimation
 ADE_OBJ(l_streaminganim, streaminganim_h, "streaminganim", "Streaming Animation handle");
-
-ADE_FUNC(__gc, l_streaminganim, NULL, "Auto-deletes streaming animation", NULL, NULL)
-{
-	// NOTE: very similar to the l_streaminganim ADE_FUNC unload
-	streaminganim_h* sah;
-
-	if(!ade_get_args(L, "o", l_streaminganim.GetPtr(&sah)))
-		return ADE_RETURN_NIL;
-
-	// don't bother to check if valid before unloading
-	// generic_anim_unload has safety checks
-	generic_anim_unload(&sah->ga);
-
-	return ADE_RETURN_NIL;
-}
 
 ADE_VIRTVAR(Loop, l_streaminganim, "[boolean loop]", "Make the streaming animation loop.", "boolean", "Is the animation looping, or nil if anim invalid")
 {

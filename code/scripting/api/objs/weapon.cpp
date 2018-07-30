@@ -323,7 +323,7 @@ ADE_FUNC(getCollisionInformation, l_Weapon, NULL, "Returns the collision informa
 	weapon *wp = &Weapons[oh->objp->instance];
 
 	if (wp->collisionInfo != nullptr)
-		return ade_set_args(L, "o", l_ColInfo.Set(mc_info_h(new mc_info(*(wp->collisionInfo)))));
+		return ade_set_args(L, "o", l_ColInfo.Set(mc_info_h(*wp->collisionInfo)));
 	else
 		return ade_set_args(L, "o", l_ColInfo.Set(mc_info_h()));
 }

@@ -404,9 +404,9 @@ ADE_FUNC(checkRayCollision, l_Object, "vector Start Point, vector End Point, [bo
 	}
 
 	if (local)
-		return ade_set_args(L, "oo", l_Vector.Set(hull_check.hit_point), l_ColInfo.Set(mc_info_h(new mc_info(hull_check))));
+		return ade_set_args(L, "oo", l_Vector.Set(hull_check.hit_point), l_ColInfo.Set(mc_info_h(hull_check)));
 	else
-		return ade_set_args(L, "oo", l_Vector.Set(hull_check.hit_point_world),  l_ColInfo.Set(mc_info_h(new mc_info(hull_check))));
+		return ade_set_args(L, "oo", l_Vector.Set(hull_check.hit_point_world),  l_ColInfo.Set(mc_info_h(hull_check)));
 }
 
 ADE_FUNC(addPreMoveHook, l_Object, "function(object) callback",
