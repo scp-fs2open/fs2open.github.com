@@ -49,7 +49,24 @@ void pushValue(lua_State* luaState, const bool& value);
 
 void pushValue(lua_State* luaState, const lua_CFunction& value);
 
-void pushValue(lua_State* L, const scripting::ade_odata& value);
+template<typename T>
+void pushValue(lua_State* L, scripting::ade_odata_setter<T>&& value) {
+	using namespace scripting;
+
+	//WMC - char must be 1 byte, foo.
+	static_assert(sizeof(char) == 1, "char must be 1 byte!");
+	//WMC - step by step
+
+	//Create new LUA object and get handle
+	char *newod = (char*)lua_newuserdata(L, sizeof(T));
+	//Create or get object metatable
+	luaL_getmetatable(L, ::scripting::internal::getTableEntry(value.idx).Name);
+	//Set the metatable for the object
+	lua_setmetatable(L, -2);
+
+	//Copy the actual object data to the Lua object
+	new(newod) T(std::move(value.value));
+}
 
 /**
  * @brief Convenience function for string literals

@@ -261,7 +261,13 @@ set_single_arg(lua_State* L, char fmt, T i)
 	}
 }
 void set_single_arg(lua_State* L, char fmt, const char* s);
-void set_single_arg(lua_State* L, char fmt, ade_odata od);
+template<typename T>
+void set_single_arg(lua_State* L, char fmt, ade_odata_setter<T>&& od)
+{
+	Assertion(fmt == 'o', "Invalid format character '%c' for object type!", fmt);
+	// Use the common helper method
+	luacpp::convert::pushValue(L, std::move(od));
+}
 void set_single_arg(lua_State* /*L*/, char fmt, luacpp::LuaTable* table);
 void set_single_arg(lua_State* /*L*/, char fmt, luacpp::LuaFunction* func);
 
@@ -272,7 +278,7 @@ inline void set_args_actual(lua_State* /*L*/, set_args_state& /*state*/, const c
 }
 
 template <typename T, typename... Args>
-void set_args_actual(lua_State* L, set_args_state& state, const char* fmt, T current, Args... args)
+void set_args_actual(lua_State* L, set_args_state& state, const char* fmt, T&& current, Args&&... args)
 {
 	Assertion(strlen(fmt) > 0, "Format was empty but there were still parameters in the argument list!");
 
@@ -302,7 +308,7 @@ void set_args_actual(lua_State* L, set_args_state& state, const char* fmt, T cur
 // NOTE: You can also use this to push arguments
 // on to the stack in series. See script_state::SetHookVar
 template <typename... Args>
-int ade_set_args(lua_State* L, const char* fmt, Args... args)
+int ade_set_args(lua_State* L, const char* fmt, Args&&... args)
 {
 	// Start throught
 	internal::set_args_state state{};

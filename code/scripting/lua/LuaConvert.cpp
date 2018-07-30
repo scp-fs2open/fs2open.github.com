@@ -40,25 +40,6 @@ void pushValue(lua_State* luaState, const lua_CFunction& value) {
 	lua_pushcfunction(luaState, value);
 }
 
-void pushValue(lua_State* L, const scripting::ade_odata& od)
-{
-	using namespace scripting;
-
-	//WMC - char must be 1 byte, foo.
-	static_assert(sizeof(char) == 1, "char must be 1 byte!");
-	//WMC - step by step
-
-	//Create new LUA object and get handle
-	char *newod = (char*)lua_newuserdata(L, od.size);
-	//Create or get object metatable
-	luaL_getmetatable(L, ::scripting::internal::getTableEntry(od.idx).Name);
-	//Set the metatable for the object
-	lua_setmetatable(L, -2);
-
-	//Copy the actual object data to the Lua object
-	memcpy(newod, od.buf, od.size);
-}
-
 bool popValue(lua_State* luaState, int& target, int stackposition, bool remove) {
 	double temp;
 
@@ -173,11 +154,10 @@ bool popValue(lua_State* L, scripting::ade_odata& od, int stackposition, bool re
 	{
 		lua_pushstring(L, "__adederivid");
 		lua_rawget(L, mtb_ldx);
-		if ((uint)lua_tonumber(L, -1) != od.idx)
-		{
+		if ((size_t)lua_tointeger(L, -1) != od.idx) {
 			// Issue the LuaError here since this is the only place where we have all relevant information
 			LuaError(L, "Argument %d is the wrong type of userdata; '%s' given, but '%s' expected", stackposition,
-			         ::scripting::internal::getTableEntry((uint)lua_tonumber(L, -2)).Name,
+			         ::scripting::internal::getTableEntry((size_t)lua_tointeger(L, -2)).Name,
 			         ::scripting::internal::getTableEntry(od.idx).GetName());
 			return false;
 		}
@@ -188,7 +168,7 @@ bool popValue(lua_State* L, scripting::ade_odata& od, int stackposition, bool re
 		memcpy(od.buf, lua_touserdata(L, stackposition), od.size);
 	}
 	else {
-		(*(void**)od.buf) = lua_touserdata(L, stackposition);
+		*(void**)od.buf = lua_touserdata(L, stackposition);
 	}
 
 	if (remove) {

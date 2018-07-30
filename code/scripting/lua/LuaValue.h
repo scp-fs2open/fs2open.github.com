@@ -47,10 +47,10 @@ class LuaValue {
      * @return luacpp::LuaValue A new LuaValue instance which references the specified value
      */
 	template<class ValueType>
-	static LuaValue createValue(lua_State* state, const ValueType& value) {
+	static LuaValue createValue(lua_State* state, ValueType&& value) {
 		LuaValue retVal(state);
 
-		convert::pushValue(state, value);
+		convert::pushValue(state, std::forward<ValueType>(value));
 
 		retVal.setReference(UniqueLuaReference::create(state));
 

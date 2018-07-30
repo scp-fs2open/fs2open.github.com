@@ -127,12 +127,6 @@ void set_single_arg(lua_State* L, char fmt, const char* s)
 	// WMC - Isn't working with HookVar for some strange reason
 	lua_pushstring(L, s);
 }
-void set_single_arg(lua_State* L, char fmt, ade_odata od)
-{
-	Assertion(fmt == 'o', "Invalid format character '%c' for object type!", fmt);
-	// Use the common helper method
-	luacpp::convert::pushValue(L, od);
-}
 void set_single_arg(lua_State*, char fmt, luacpp::LuaTable* table)
 {
 	Assertion(fmt == 't', "Invalid format character '%c' for table type!", fmt);
