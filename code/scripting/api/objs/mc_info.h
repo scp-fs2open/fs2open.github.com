@@ -10,8 +10,9 @@ class mc_info_h
 {
  protected:
 	mc_info info;
-	bool valid;
- public:
+	bool valid = false;
+
+  public:
 	explicit mc_info_h(const mc_info& val);
 	mc_info_h();
 

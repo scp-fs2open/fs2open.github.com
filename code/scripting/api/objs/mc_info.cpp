@@ -10,7 +10,7 @@ namespace api {
 
 mc_info_h::mc_info_h(const mc_info& val) : info(val), valid(true) {}
 
-mc_info_h::mc_info_h() : valid(false) {}
+mc_info_h::mc_info_h() = default;
 
 mc_info* mc_info_h::Get() { return &info; }
 bool mc_info_h::IsValid() { return valid; }
