@@ -13,6 +13,32 @@ bool isValidIndex(lua_State* state, int index) {
 	}
 }
 
+bool ade_odata_helper(lua_State* L, int stackposition, size_t idx) {
+	// WMC - Get metatable
+	lua_getmetatable(L, stackposition);
+	int mtb_ldx = lua_gettop(L);
+	Assert(!lua_isnil(L, -1));
+
+	// Get ID
+	lua_pushstring(L, "__adeid");
+	lua_rawget(L, mtb_ldx);
+
+	if (lua_tonumber(L, -1) != idx) {
+		lua_pushstring(L, "__adederivid");
+		lua_rawget(L, mtb_ldx);
+		if ((size_t)lua_tointeger(L, -1) != idx) {
+			// Issue the LuaError here since this is the only place where we have all relevant information
+			LuaError(L, "Argument %d is the wrong type of userdata; '%s' given, but '%s' expected", stackposition,
+			         ::scripting::internal::getTableEntry((size_t)lua_tointeger(L, -2)).Name,
+			         ::scripting::internal::getTableEntry(idx).GetName());
+			return false;
+		}
+		lua_pop(L, 1);
+	}
+	lua_pop(L, 2);
+	return true;
+}
+
 }
 
 void pushValue(lua_State* luaState, const double& value) {
@@ -138,44 +164,6 @@ bool popValue(lua_State* luaState, lua_CFunction& target, int stackposition, boo
 
 		return true;
 	}
-}
-
-bool popValue(lua_State* L, scripting::ade_odata& od, int stackposition, bool remove) {
-	//WMC - Get metatable
-	lua_getmetatable(L, stackposition);
-	int mtb_ldx = lua_gettop(L);
-	Assert(!lua_isnil(L, -1));
-
-	//Get ID
-	lua_pushstring(L, "__adeid");
-	lua_rawget(L, mtb_ldx);
-
-	if (lua_tonumber(L, -1) != od.idx)
-	{
-		lua_pushstring(L, "__adederivid");
-		lua_rawget(L, mtb_ldx);
-		if ((size_t)lua_tointeger(L, -1) != od.idx) {
-			// Issue the LuaError here since this is the only place where we have all relevant information
-			LuaError(L, "Argument %d is the wrong type of userdata; '%s' given, but '%s' expected", stackposition,
-			         ::scripting::internal::getTableEntry((size_t)lua_tointeger(L, -2)).Name,
-			         ::scripting::internal::getTableEntry(od.idx).GetName());
-			return false;
-		}
-		lua_pop(L, 1);
-	}
-	lua_pop(L, 2);
-	if (od.size != scripting::ODATA_PTR_SIZE) {
-		memcpy(od.buf, lua_touserdata(L, stackposition), od.size);
-	}
-	else {
-		*(void**)od.buf = lua_touserdata(L, stackposition);
-	}
-
-	if (remove) {
-		lua_remove(L, stackposition);
-	}
-
-	return true;
 }
 
 }
