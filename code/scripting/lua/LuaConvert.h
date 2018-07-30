@@ -95,7 +95,47 @@ bool popValue(lua_State* luaState, bool& target, int stackposition = -1, bool re
 
 bool popValue(lua_State* luaState, lua_CFunction& target, int stackposition = -1, bool remove = true);
 
-bool popValue(lua_State* L, scripting::ade_odata& od, int stackposition = -1, bool remove = true);
+namespace internal {
+bool ade_odata_helper(lua_State* L, int stackposition, size_t idx);
+}
+
+template <typename T>
+bool popValue(lua_State* L, scripting::ade_odata_getter<T>&& od, int stackposition = -1, bool remove = true)
+{
+	// Use the helper to reduce the amount of code here
+	if (!internal::ade_odata_helper(L, stackposition, od.idx)) {
+		return false;
+	}
+	auto lua_ptr = lua_touserdata(L, stackposition);
+
+	// Copy the value over by using the standard copy constructor
+	*od.value_ptr = *reinterpret_cast<T*>(lua_ptr);
+
+	if (remove) {
+		lua_remove(L, stackposition);
+	}
+
+	return true;
+}
+
+template <typename T>
+bool popValue(lua_State* L, scripting::ade_odata_ptr_getter<T>&& od, int stackposition = -1, bool remove = true)
+{
+	// Use the helper to reduce the amount of code here
+	if (!internal::ade_odata_helper(L, stackposition, od.idx)) {
+		return false;
+	}
+	auto lua_ptr = lua_touserdata(L, stackposition);
+
+	// Only write the pointer value to the output pointer
+	*od.value_ptr = reinterpret_cast<T*>(lua_ptr);
+
+	if (remove) {
+		lua_remove(L, stackposition);
+	}
+
+	return true;
+}
 
 }
 }

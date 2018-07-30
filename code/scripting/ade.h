@@ -48,14 +48,20 @@ const int ADE_FUNCNAME_UPVALUE_INDEX = 1;
 const int ADE_SETTING_UPVALUE_INDEX = 2;
 #define ADE_SETTING_VAR lua_toboolean(L,lua_upvalueindex(ADE_SETTING_UPVALUE_INDEX))
 
-/** Used for internal object->lua_set and lua_get->object communication.
- *
- * @ingroup ade_api
-*/
-struct ade_odata {
+template <typename T>
+struct ade_odata_getter {
 	size_t idx;
-	void* buf;
-	size_t size;
+	T* value_ptr;
+
+	ade_odata_getter(size_t idx_in, T* ptr_in) : idx(idx_in), value_ptr(ptr_in) {}
+};
+
+template <typename T>
+struct ade_odata_ptr_getter {
+	size_t idx;
+	T** value_ptr;
+
+	ade_odata_ptr_getter(size_t idx_in, T** ptr_in) : idx(idx_in), value_ptr(ptr_in) {}
 };
 
 template <typename T>
@@ -215,24 +221,16 @@ class ade_obj: public ade_lib_handle {
 	}
 
 	//WMC - Use this to copy object data, for modification or whatever
-	ade_odata Get(StoreType* ptr) const {
-		ade_odata od;
-		od.idx = LibIdx;
-		od.buf = ptr;
-		od.size = sizeof(StoreType);
-		return od;
-	}
+	ade_odata_getter<StoreType> Get(StoreType* ptr) const { return ade_odata_getter<StoreType>(LibIdx, ptr); }
 
-	//WMC - Use this to get a pointer to Lua object data.
-	//Use >ONLY< when:
-	//1 - You are setting the data of an object (ie 'x' component of vector)
-	//2 - To speed up read-only calcs (ie computing dot product of vectors)
-	ade_odata GetPtr(StoreType** ptr) const {
-		ade_odata od;
-		od.idx = LibIdx;
-		od.buf = (void**) ptr;
-		od.size = ODATA_PTR_SIZE;
-		return od;
+	// WMC - Use this to get a pointer to Lua object data.
+	// Use >ONLY< when:
+	// 1 - You are setting the data of an object (ie 'x' component of vector)
+	// 2 - To speed up read-only calcs (ie computing dot product of vectors)
+	// 3 - To get a reference to a move-only type stored in Lua memory
+	ade_odata_ptr_getter<StoreType> GetPtr(StoreType** ptr) const
+	{
+		return ade_odata_ptr_getter<StoreType>(LibIdx, ptr);
 	}
 };
 
@@ -244,9 +242,10 @@ class ade_obj: public ade_lib_handle {
  */
 class ade_lib : public ade_lib_handle {
  public:
-	ade_lib(const char *in_name, const ade_lib_handle *parent=NULL, const char *in_shortname=NULL, const char *in_desc=NULL);
+   explicit ade_lib(const char* in_name, const ade_lib_handle* parent = NULL, const char* in_shortname = NULL,
+	                const char* in_desc = NULL);
 
-	const char *GetName() const;
+   const char* GetName() const;
 };
 
 /**

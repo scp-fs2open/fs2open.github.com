@@ -77,7 +77,37 @@ get_single_arg(lua_State* L, const get_args_state& state, char fmt, T* i)
 	return true;
 }
 bool get_single_arg(lua_State* L, const get_args_state& state, char fmt, const char** s);
-bool get_single_arg(lua_State* L, const get_args_state& state, char fmt, ade_odata od);
+
+template <typename T>
+bool ade_odata_getter_helper(lua_State* L, const get_args_state& state, char fmt, T&& od) {
+	Assertion(fmt == 'o', "Invalid character '%c' for object type!", fmt);
+
+	if (lua_isuserdata(L, state.nargs)) {
+		// Use the helper function
+		if (!luacpp::convert::popValue(L, std::forward<T>(od), state.nargs, false)) {
+			return false;
+		}
+	} else if (lua_isnil(L, state.nargs) && state.optional_args) {
+		// WMC - Modder has chosen to ignore this argument
+	} else {
+		LuaError(L, "%s: Argument %d is an invalid type '%s'; type '%s' expected", state.funcname, state.nargs,
+		         ade_get_type_string(L, state.nargs), internal::getTableEntry(od.idx).GetName());
+		return false;
+	}
+
+	return true;
+}
+template <typename T>
+bool get_single_arg(lua_State* L, const get_args_state& state, char fmt, ade_odata_getter<T>&& od)
+{
+	return ade_odata_getter_helper(L, state, fmt, std::forward<ade_odata_getter<T>>(od));
+}
+template <typename T>
+bool get_single_arg(lua_State* L, const get_args_state& state, char fmt, ade_odata_ptr_getter<T>&& od)
+{
+	return ade_odata_getter_helper(L, state, fmt, std::forward<ade_odata_ptr_getter<T>>(od));
+}
+
 bool get_single_arg(lua_State* L, const get_args_state& state, char fmt, luacpp::LuaTable* t);
 bool get_single_arg(lua_State* L, const get_args_state& state, char fmt, luacpp::LuaFunction* f);
 
@@ -107,7 +137,7 @@ inline bool get_args_actual(lua_State* /*L*/, get_args_state& state, const char*
 }
 
 template <typename T, typename... Args>
-bool get_args_actual(lua_State* L, get_args_state& state, const char* fmt, T current, Args... args)
+bool get_args_actual(lua_State* L, get_args_state& state, const char* fmt, T&& current, Args&&... args)
 {
 	Assertion(strlen(fmt) > 0, "Format was empty but there were still parameters in the argument list!");
 
@@ -160,7 +190,7 @@ bool get_args_actual(lua_State* L, get_args_state& state, const char* fmt, T cur
  * @return The number of arguments taken from the stack or 0 on error
  */
 template <typename... Args>
-inline int ade_get_args(lua_State* L, const char* fmt, Args... args)
+inline int ade_get_args(lua_State* L, const char* fmt, Args&&... args)
 {
 	// Check that we have all the arguments that we need
 	// If we don't, return 0
