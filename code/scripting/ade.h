@@ -49,25 +49,22 @@ const int ADE_SETTING_UPVALUE_INDEX = 2;
 #define ADE_SETTING_VAR lua_toboolean(L,lua_upvalueindex(ADE_SETTING_UPVALUE_INDEX))
 
 /** Used for internal object->lua_set and lua_get->object communication.
- * Must remain a struct and only contain POD datatypes because this is passed via
- * variable args.
  *
  * @ingroup ade_api
 */
 struct ade_odata {
-	//ade_id aid;
 	size_t idx;
 	void* buf;
 	size_t size;
-	//ade_odata(){idx=UINT_MAX;sig=NULL;buf=NULL;size=0;}
-/*
-	ade_odata &operator =(const ade_odata &slo) {
-		aid = slo.aid;
-		buf = slo.buf;
-		size = slo.size;
+};
 
-		return (*this);
-	}*/
+template <typename T>
+struct ade_odata_setter {
+	size_t idx;
+	T value;
+
+	ade_odata_setter(size_t idx_in, T&& value_in) : idx(idx_in), value(std::move(value_in)) {}
+	ade_odata_setter(size_t idx_in, const T& value_in) : idx(idx_in), value(value_in) {}
 };
 
 //WMC - 'Type' is the same as ade_set_args,
@@ -207,12 +204,14 @@ class ade_obj: public ade_lib_handle {
 	}
 
 	//WMC - Use this to store object data for return, or for setting as a global
-	ade_odata Set(const StoreType& obj) const {
-		ade_odata od;
-		od.idx = LibIdx;
-		od.buf = (void*) &obj;
-		od.size = sizeof(StoreType);
-		return od;
+	ade_odata_setter<StoreType> Set(StoreType&& obj) const
+	{
+		return ade_odata_setter<StoreType>(LibIdx, std::move(obj));
+	}
+
+	ade_odata_setter<StoreType> Set(const StoreType& obj) const
+	{
+		return ade_odata_setter<StoreType>(LibIdx, obj);
 	}
 
 	//WMC - Use this to copy object data, for modification or whatever
