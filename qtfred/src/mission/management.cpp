@@ -66,7 +66,10 @@ initialize(const std::string& cfilepath, int argc, char* argv[], Editor* editor,
 
 	listener(SubSystem::CommandLine);
 	// this should enable mods - Kazan
-	parse_cmdline(argc, argv);
+	if (!parse_cmdline(argc, argv)) {
+		// Command line contained an option that terminates the program immediately
+		return false;
+	}
 
 #ifndef NDEBUG
 #if FS_VERSION_REVIS == 0
