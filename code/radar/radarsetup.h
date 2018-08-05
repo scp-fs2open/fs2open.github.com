@@ -14,6 +14,7 @@
 
 #include "hud/hud.h"
 #include "hud/hudconfig.h"
+#include "sound/sound.h"
 
 //which radar type are we using
 //to add another radar type, begin by adding a RADAR_MODE_* define and increment MAX_RADAR_MODES
@@ -97,7 +98,7 @@ void radar_mission_init();
 void radar_plot_object( object *objp );
 RadarVisibility radar_is_visible( object *objp );
 
-extern int Radar_static_looping;
+extern sound_handle Radar_static_looping;
 
 class HudGaugeRadar: public HudGauge
 {

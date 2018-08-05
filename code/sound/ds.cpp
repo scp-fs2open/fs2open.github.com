@@ -558,7 +558,7 @@ void ds_close_channel(int i)
 
 		Channels[i].source_id = 0;
 		Channels[i].sid = -1;
-		Channels[i].sig = -1;
+		Channels[i].sig       = ds_sound_handle::invalid();
 		Channels[i].snd_id = -1;
 	}
 }
@@ -582,7 +582,7 @@ void ds_close_channel_fast(int i)
 		}
 
 		Channels[i].sid = -1;
-		Channels[i].sig = -1;
+		Channels[i].sig    = ds_sound_handle::invalid();
 		Channels[i].snd_id = -1;
 	}
 }
@@ -1089,23 +1089,24 @@ int ds_play_easy(int sid, float volume)
  * 
  * @return 1 if sound effect could not be started, >=0 sig for sound effect successfully started
  */
-int ds_play(int sid, int snd_id, int priority, const EnhancedSoundData * enhanced_sound_data, float volume, float pan, int looping, bool is_voice_msg)
+ds_sound_handle ds_play(int sid, int snd_id, int priority, const EnhancedSoundData* enhanced_sound_data, float volume,
+                        float pan, int looping, bool is_voice_msg)
 {
 	int ch_idx;
 	int enhanced_priority = SND_ENHANCED_PRIORITY_INVALID;
 
 	if (!ds_initialized) {
-		return -1;
+		return ds_sound_handle::invalid();
 	}
 
 	ch_idx = ds_get_free_channel(volume, snd_id, priority, enhanced_priority, *enhanced_sound_data);
 
 	if (ch_idx < 0) {
-		return -1;
+		return ds_sound_handle::invalid();
 	}
 
 	if (Channels[ch_idx].source_id == 0) {
-		return -1;
+		return ds_sound_handle::invalid();
 	}
 
 	if (pan) {
@@ -1122,14 +1123,15 @@ int ds_play(int sid, int snd_id, int priority, const EnhancedSoundData * enhance
 
 
 	ALint status;
-	OpenAL_ErrorCheck( alGetSourcei(Channels[ch_idx].source_id, AL_SOURCE_STATE, &status), return -1 );
+	OpenAL_ErrorCheck(alGetSourcei(Channels[ch_idx].source_id, AL_SOURCE_STATE, &status),
+	                  return ds_sound_handle::invalid());
 
 	if (status == AL_PLAYING) {
 		OpenAL_ErrorPrint( alSourceStop(Channels[ch_idx].source_id) );
 	}
 
-
-	OpenAL_ErrorCheck( alSourcei(Channels[ch_idx].source_id, AL_BUFFER, sound_buffers[sid].buf_id), return -1 );
+	OpenAL_ErrorCheck(alSourcei(Channels[ch_idx].source_id, AL_BUFFER, sound_buffers[sid].buf_id),
+	                  return ds_sound_handle::invalid());
 
 	OpenAL_ErrorPrint( alSourcei(Channels[ch_idx].source_id, AL_SOURCE_RELATIVE, AL_TRUE) );
 
@@ -1145,7 +1147,7 @@ int ds_play(int sid, int snd_id, int priority, const EnhancedSoundData * enhance
 
 	Channels[ch_idx].sid = sid;
 	Channels[ch_idx].snd_id = snd_id;
-	Channels[ch_idx].sig = channel_next_sig++;
+	Channels[ch_idx].sig           = ds_sound_handle(channel_next_sig++);
 	Channels[ch_idx].last_position = 0;
 	Channels[ch_idx].is_voice_msg = is_voice_msg;
 	Channels[ch_idx].vol = volume;
@@ -1165,7 +1167,7 @@ int ds_play(int sid, int snd_id, int priority, const EnhancedSoundData * enhance
  * Return the channel number that is playing the sound identified by sig.
  * @return Channel number, if not playing, return -1.
  */
-int ds_get_channel(int sig)
+int ds_get_channel(ds_sound_handle sig)
 {
 	int i;
 
@@ -1322,24 +1324,26 @@ void ds_chg_loop_status(int channel_id, int loop)
  *
  * @return 0 if sound started successfully, -1 if sound could not be played
  */
-int ds3d_play(int sid, int snd_id, vec3d *pos, vec3d *vel, float min, float max, int looping, float max_volume, float estimated_vol, const EnhancedSoundData * enhanced_sound_data, int priority, bool is_ambient)
+ds_sound_handle ds3d_play(int sid, int snd_id, vec3d* pos, vec3d* vel, float min, float max, int looping,
+                          float max_volume, float estimated_vol, const EnhancedSoundData* enhanced_sound_data,
+                          int priority, bool is_ambient)
 {
 	int channel_id;
 	int enhanced_priority = SND_ENHANCED_PRIORITY_INVALID;
 
 
 	if (!ds_initialized) {
-		return -1;
+		return ds_sound_handle::invalid();
 	}
 
 	channel_id = ds_get_free_channel(estimated_vol, snd_id, priority, enhanced_priority, *enhanced_sound_data);
 
 	if (channel_id < 0) {
-		return -1;
+		return ds_sound_handle::invalid();
 	}
 
 	if ( Channels[channel_id].source_id == 0 ) {
-		return -1;
+		return ds_sound_handle::invalid();
 	}
 
 	// set up 3D sound data here
@@ -1351,14 +1355,15 @@ int ds3d_play(int sid, int snd_id, vec3d *pos, vec3d *vel, float min, float max,
 	OpenAL_ErrorPrint( alSourcef(Channels[channel_id].source_id, AL_GAIN, max_volume) );
 
 	ALint status;
-	OpenAL_ErrorCheck( alGetSourcei(Channels[channel_id].source_id, AL_SOURCE_STATE, &status), return -1 );
-	
+	OpenAL_ErrorCheck(alGetSourcei(Channels[channel_id].source_id, AL_SOURCE_STATE, &status),
+	                  return ds_sound_handle::invalid());
+
 	if (status == AL_PLAYING) {
 		OpenAL_ErrorPrint( alSourceStop(Channels[channel_id].source_id) );
 	}
 
-
-	OpenAL_ErrorCheck( alSourcei(Channels[channel_id].source_id, AL_BUFFER, sound_buffers[sid].buf_id), return -1 );
+	OpenAL_ErrorCheck(alSourcei(Channels[channel_id].source_id, AL_BUFFER, sound_buffers[sid].buf_id),
+	                  return ds_sound_handle::invalid());
 
 	if (Ds_eax_inited) {
 		OpenAL_ErrorPrint( alSource3i(Channels[channel_id].source_id, AL_AUXILIARY_SEND_FILTER, AL_EFX_aux_id, 0, AL_FILTER_NULL) );
@@ -1375,7 +1380,7 @@ int ds3d_play(int sid, int snd_id, vec3d *pos, vec3d *vel, float min, float max,
 
 	Channels[channel_id].sid = sid;
 	Channels[channel_id].snd_id = snd_id;
-	Channels[channel_id].sig = channel_next_sig++;
+	Channels[channel_id].sig           = ds_sound_handle(channel_next_sig++);
 	Channels[channel_id].last_position = 0;
 	Channels[channel_id].is_voice_msg = false;
 	Channels[channel_id].vol = max_volume;

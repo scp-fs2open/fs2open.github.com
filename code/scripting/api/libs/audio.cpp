@@ -78,10 +78,9 @@ ADE_FUNC(playSound, l_Audio, "soundentry", "Plays the specified sound entry hand
 	if (seh == NULL || !seh->IsValid())
 		return ade_set_error(L, "o", l_Sound.Set(sound_h()));
 
-	int handle = snd_play(seh->Get());
+	auto handle = snd_play(seh->Get());
 
-	if (handle < 0)
-	{
+	if (!handle.isValid()) {
 		return ade_set_args(L, "o", l_Sound.Set(sound_h()));
 	}
 	else
@@ -100,10 +99,9 @@ ADE_FUNC(playLoopingSound, l_Audio, "soundentry", "Plays the specified sound as 
 	if (seh == NULL || !seh->IsValid())
 		return ade_set_error(L, "o", l_Sound.Set(sound_h()));
 
-	int handle = snd_play_looping(seh->Get());
+	auto handle = snd_play_looping(seh->Get());
 
-	if (handle < 0)
-	{
+	if (!handle.isValid()) {
 		return ade_set_args(L, "o", l_Sound.Set(sound_h()));
 	}
 	else
@@ -124,10 +122,9 @@ ADE_FUNC(play3DSound, l_Audio, "soundentry[, vector source[, vector listener]]",
 	if (seh == NULL || !seh->IsValid())
 		return ade_set_error(L, "o", l_Sound3D.Set(sound_h()));
 
-	int handle = snd_play_3d(seh->Get(), source, listener);
+	auto handle = snd_play_3d(seh->Get(), source, listener);
 
-	if (handle < 0)
-	{
+	if (!handle.isValid()) {
 		return ade_set_args(L, "o", l_Sound3D.Set(sound_h()));
 	}
 	else
@@ -158,8 +155,8 @@ ADE_FUNC(playGameSound, l_Audio, "Sound index, [Panning (-1.0 left to 1.0 right)
 	auto gamesnd_idx = gamesnd_get_by_tbl_index(idx);
 
 	if (gamesnd_idx.isValid()) {
-		int sound_handle = snd_play(gamesnd_get_game_sound(gamesnd_idx), pan, vol*0.01f, pri, voice_msg);
-		return ade_set_args(L, "b", sound_handle >= 0);
+		auto sound_handle = snd_play(gamesnd_get_game_sound(gamesnd_idx), pan, vol * 0.01f, pri, voice_msg);
+		return ade_set_args(L, "b", sound_handle.isValid());
 	} else {
 		LuaError(L, "Invalid sound index %i (Snds[%i]) in playGameSound()", idx, gamesnd_idx.value());
 		return ADE_RETURN_FALSE;

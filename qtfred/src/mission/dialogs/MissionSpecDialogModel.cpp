@@ -95,6 +95,18 @@ bool MissionSpecDialogModel::apply() {
 	} else {
 		The_mission.contrail_threshold = CONTRAIL_THRESHOLD_DEFAULT;
 	}
+	
+	//if there's a odd number of quotation marks, the mission won't parse
+	//If there are an even number, nothing after the first one appears
+	//So just get rid of them
+	Editor::strip_quotation_marks(_m_mission_title);
+	Editor::strip_quotation_marks(_m_designer_name);
+	Editor::strip_quotation_marks(_m_mission_notes);
+	Editor::strip_quotation_marks(_m_mission_desc);
+	Editor::strip_quotation_marks(_m_squad_name);
+
+	// puts "$End Notes:" on a different line to ensure it's not interpreted as part of a comment
+	Editor::pad_with_newline(_m_mission_notes, NOTES_LENGTH - 1);
 
 	strncpy(The_mission.name, _m_mission_title.c_str(), NAME_LENGTH-1);
 	strncpy(The_mission.author, _m_designer_name.c_str(), NAME_LENGTH-1);

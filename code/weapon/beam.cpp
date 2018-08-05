@@ -357,7 +357,7 @@ int beam_fire(beam_fire_info *fire_info)
 	new_item->target = fire_info->target;
 	new_item->target_subsys = fire_info->target_subsys;
 	new_item->target_sig = (fire_info->target != NULL) ? fire_info->target->signature : 0;
-	new_item->beam_sound_loop = -1;
+	new_item->beam_sound_loop        = sound_handle::invalid();
 	new_item->type = wip->b_info.beam_type;
 	new_item->targeting_laser_offset = fire_info->targeting_laser_offset;
 	new_item->framecount = 0;
@@ -542,8 +542,8 @@ int beam_fire_targeting(fighter_beam_fire_info *fire_info)
 	new_item->f_collision_count = 0;
 	new_item->target = NULL;
 	new_item->target_subsys = NULL;
-	new_item->target_sig = 0;	
-	new_item->beam_sound_loop = -1;
+	new_item->target_sig = 0;
+	new_item->beam_sound_loop        = sound_handle::invalid();
 	new_item->type = BEAM_TYPE_C;	
 	new_item->targeting_laser_offset = fire_info->targeting_laser_offset;
 	new_item->framecount = 0;
@@ -694,7 +694,7 @@ void beam_pause_sounds()
 	}
 	while(moveup != END_OF_LIST(&Beam_used_list)){				
 		// set the volume to 0, if he has a looping beam sound
-		if(moveup->beam_sound_loop >= 0){
+		if (moveup->beam_sound_loop.isValid()) {
 			snd_set_volume(moveup->beam_sound_loop, 0.0f);
 		}
 
@@ -717,7 +717,7 @@ void beam_unpause_sounds()
 		if (Cmdline_no_3d_sound) {
 			beam_recalc_sounds(moveup);
 		} else {
-			if (moveup->beam_sound_loop >= 0) {
+			if (moveup->beam_sound_loop.isValid()) {
 				snd_set_volume(moveup->beam_sound_loop, 1.0f);
 			}
 		}
@@ -1797,9 +1797,9 @@ void beam_delete(beam *b)
 	b->objnum = -1;
 
 	// kill the beam looping sound
-	if(b->beam_sound_loop != -1){
+	if (b->beam_sound_loop.isValid()) {
 		snd_stop(b->beam_sound_loop);
-		b->beam_sound_loop = -1;
+		b->beam_sound_loop = sound_handle::invalid();
 	}	
 
 	// handle model animation reversal (closing)
@@ -1912,8 +1912,8 @@ int beam_start_firing(beam *b)
 		return 1;
 	}				
 
-	// start the beam firing sound now, if we haven't already		
-	if((b->beam_sound_loop == -1) && (Weapon_info[b->weapon_info_index].b_info.beam_loop_sound.isValid())){
+	// start the beam firing sound now, if we haven't already
+	if ((!b->beam_sound_loop.isValid()) && (Weapon_info[b->weapon_info_index].b_info.beam_loop_sound.isValid())) {
 		b->beam_sound_loop = snd_play_3d(gamesnd_get_game_sound(Weapon_info[b->weapon_info_index].b_info.beam_loop_sound), &b->last_start, &View_position, 0.0f, NULL, 1, 1.0, SND_PRIORITY_SINGLE_INSTANCE, NULL, 1.0f, 1);
 
 		// "shot" sound
@@ -1941,11 +1941,11 @@ void beam_start_warmdown(beam *b)
 		snd_play_3d(gamesnd_get_game_sound(Weapon_info[b->weapon_info_index].b_info.beam_warmdown_sound), &b->last_start, &View_position);
 	}
 
-	// kill the beam looping sound 
-	if(b->beam_sound_loop != -1){
+	// kill the beam looping sound
+	if (b->beam_sound_loop.isValid()) {
 		snd_stop(b->beam_sound_loop);
-		b->beam_sound_loop = -1;
-	}						
+		b->beam_sound_loop = sound_handle::invalid();
+	}
 }
 
 // recalculate beam sounds (looping sounds relative to the player)
@@ -1961,7 +1961,7 @@ void beam_recalc_sounds(beam *b)
 	bwi = &Weapon_info[b->weapon_info_index].b_info;
 
 	// update the sound position relative to the player
-	if(b->beam_sound_loop != -1){
+	if (b->beam_sound_loop.isValid()) {
 		// get the point closest to the player's viewing position
 		switch(vm_vec_dist_to_line(&View_position, &b->last_start, &b->last_shot, &pos, NULL)){
 		// behind the beam, so use the start pos
@@ -3079,10 +3079,11 @@ void beam_handle_collisions(beam *b)
 		// KOMET_EXT -->
 
 		// draw flash, explosion
-		if (draw_effects && ((wi->piercing_impact_effect >= 0) || (wi->flash_impact_weapon_expl_effect >= 0))) {
+		if (draw_effects &&
+		    ((wi->piercing_impact_effect.isValid()) || (wi->flash_impact_weapon_expl_effect.isValid()))) {
 			float rnd = frand();
 			int do_expl = 0;
-			if((rnd < 0.2f || apply_beam_physics) && wi->impact_weapon_expl_effect >= 0){
+			if ((rnd < 0.2f || apply_beam_physics) && wi->impact_weapon_expl_effect.isValid()) {
 				do_expl = 1;
 			}
 			vec3d temp_pos, temp_local_pos;
@@ -3103,7 +3104,7 @@ void beam_handle_collisions(beam *b)
 				vm_vec_unrotate(&worldNormal, &b->f_collisions[idx].cinfo.hit_normal, &Objects[target].orient);
 			}
 
-			if (wi->flash_impact_weapon_expl_effect >= 0) {
+			if (wi->flash_impact_weapon_expl_effect.isValid()) {
 				auto particleSource = particle::ParticleManager::get()->createSource(wi->flash_impact_weapon_expl_effect);
 				particleSource.moveToObject(&Objects[target], &temp_local_pos);
 				particleSource.setOrientationNormal(&worldNormal);
@@ -3132,8 +3133,8 @@ void beam_handle_collisions(beam *b)
 
 				particleSource.finish();
 			}
-			
-			if (wi->piercing_impact_effect > 0) {
+
+			if (wi->piercing_impact_effect.isValid()) {
 				vec3d fvec;
 				vm_vec_sub(&fvec, &b->last_shot, &b->last_start);
 
@@ -3200,7 +3201,7 @@ void beam_handle_collisions(beam *b)
 		} else {
 			if(draw_effects && apply_beam_physics && !physics_paused){
 				// maybe draw an explosion, if we aren't hitting shields
-				if ( (wi->impact_weapon_expl_effect >= 0) && (b->f_collisions[idx].quadrant < 0) ) {
+				if ((wi->impact_weapon_expl_effect.isValid()) && (b->f_collisions[idx].quadrant < 0)) {
 					vec3d worldNormal;
 					if (Objects[target].type == OBJ_SHIP) {
 						auto shipp = &Ships[Objects[target].instance];

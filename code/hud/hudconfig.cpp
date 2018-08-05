@@ -1642,7 +1642,8 @@ void hud_config_as_player()
 void hud_config_color_save(char *name)
 {
 	int idx;
-	CFILE *out = cfopen(name, "wt", CFILE_NORMAL, CF_TYPE_PLAYERS);
+	CFILE* out     = cfopen(name, "wt", CFILE_NORMAL, CF_TYPE_PLAYERS, false,
+                        CF_LOCATION_ROOT_USER | CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT);
 	char vals[255] = "";
 
 	// bad
@@ -1843,7 +1844,8 @@ void hud_config_color_init()
 
 	// get a list of all hcf files
 	memset(HC_filenames, 0, sizeof(char*) * MAX_HCF_FILES);
-	HC_num_files = cf_get_file_list(MAX_HCF_FILES, HC_filenames, CF_TYPE_PLAYERS, "*.hcf", CF_SORT_NAME);
+	HC_num_files = cf_get_file_list(MAX_HCF_FILES, HC_filenames, CF_TYPE_PLAYERS, "*.hcf", CF_SORT_NAME, nullptr,
+	                                CF_LOCATION_ROOT_USER | CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT);
 }
 
 void hud_config_color_close()

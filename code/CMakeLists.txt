@@ -3,7 +3,7 @@ INCLUDE(source_groups.cmake)
 
 INCLUDE(voice_rec.cmake)
 
-ADD_LIBRARY(code STATIC ${file_root} ${VOICE_REC_FILES})
+ADD_LIBRARY(code STATIC ${source_files} ${VOICE_REC_FILES})
 
 target_compile_features(code PUBLIC ${REQUIRED_CXX_FEATURES})
 
@@ -36,6 +36,8 @@ TARGET_LINK_LIBRARIES(code PUBLIC platform)
 TARGET_LINK_LIBRARIES(code PUBLIC compiler)
 
 target_link_libraries(code PUBLIC md5)
+
+target_link_libraries(code PUBLIC discord-rpc)
 
 enable_clang_tidy(code)
 

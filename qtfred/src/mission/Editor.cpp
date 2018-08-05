@@ -89,7 +89,7 @@ ai_goal_list Ai_goal_list[] = {
 char Fred_callsigns[MAX_SHIPS][NAME_LENGTH + 1];
 char Fred_alt_names[MAX_SHIPS][NAME_LENGTH + 1];
 
-extern void allocate_mission_text(size_t size);
+extern void allocate_parse_text(size_t size);
 
 extern int Nmodel_num;
 extern int Nmodel_instance_num;
@@ -140,14 +140,13 @@ bool Editor::loadMission(const std::string& mission_name, int flags) {
 	clearMission();
 
 	std::string filepath = mission_name;
-	char fullpath[MAX_PATH_LEN];
-	size_t pack_offset;
-	if (cf_find_file_location(filepath.c_str(), CF_TYPE_MISSIONS, sizeof(fullpath) - 1, fullpath, nullptr, &pack_offset)) {
+	auto res = cf_find_file_location(filepath.c_str(), CF_TYPE_MISSIONS);
+	if (res.found) {
 		// We found this file in the CFile system
-		if (pack_offset == 0) {
+		if (res.offset == 0) {
 			// This is a "real" file. Since we now have an absolute path we can use that to make sure we only deal with
 			// absolute paths which makes sure that the "recent mission" menu has correct file names
-			filepath = fullpath;
+			filepath = res.full_name;
 		}
 	}
 
@@ -370,7 +369,7 @@ void Editor::clearMission() {
     }
 #endif
 
-	allocate_mission_text(MISSION_TEXT_SIZE);
+	allocate_parse_text(PARSE_TEXT_SIZE);
 
 	The_mission.cutscenes.clear();
 	fiction_viewer_reset();
@@ -474,8 +473,8 @@ void Editor::clearMission() {
 		Team_data[i].num_weapon_choices = count;
 	}
 
-	*Mission_text = *Mission_text_raw = '\0';
-	Mission_text[1] = Mission_text_raw[1] = 0;
+	*Parse_text = *Parse_text_raw = '\0';
+	Parse_text[1] = Parse_text_raw[1] = 0;
 
 	waypoint_parse_init();
 	Num_mission_events = 0;
@@ -3180,6 +3179,20 @@ void Editor::normalizeShieldSysData() {
 			teams[Ships[i].team]++;
 			types[Ships[i].ship_info_index]++;
 		}
+	}
+}
+
+void Editor::strip_quotation_marks(SCP_string& str) {
+	SCP_string::size_type idx = 0;
+	while ((idx = str.find('\"', idx)) != SCP_string::npos) {
+		str.erase(idx, 1);
+	}
+}
+
+void Editor::pad_with_newline(SCP_string& str, size_t max_size) {
+	size_t len = str.size();
+	if (!len || (str.back() != '\n' && len < max_size)) {
+		str += "\n";
 	}
 }
 

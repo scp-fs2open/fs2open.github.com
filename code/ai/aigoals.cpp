@@ -125,7 +125,7 @@ const char *Ai_goal_text(int goal)
 	case AI_GOAL_REARM_REPAIR:
 		return XSTR( "rearm ", 484);
 	case AI_GOAL_FLY_TO_SHIP:
-		return XSTR( "rendezvous with ", -1);
+		return XSTR( "rendezvous with ", 1597);
 	}
 
 	// Avoid compiler warning

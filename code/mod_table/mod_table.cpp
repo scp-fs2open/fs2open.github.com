@@ -25,6 +25,7 @@ int Default_ship_select_effect;
 int Default_weapon_select_effect;
 int Default_fiction_viewer_ui;
 bool Enable_external_shaders;
+bool Enable_external_default_scripts;
 int Default_detail_level;
 bool Full_color_head_anis;
 bool Weapons_inherit_parent_collision_group;
@@ -43,6 +44,7 @@ SCP_string Movie_subtitle_font;
 bool Enable_scripts_in_fred; // By default FRED does not initialize the scripting system
 SCP_string Window_icon_path;
 bool Disable_built_in_translations;
+bool Weapon_shockwaves_respect_huge;
 
 void parse_mod_table(const char *filename)
 {
@@ -360,6 +362,20 @@ void parse_mod_table(const char *filename)
 			stuff_boolean(&Disable_built_in_translations);
 		}
 
+		if (optional_string("$Weapon shockwave damage respects huge ship flags:")) {
+			stuff_boolean(&Weapon_shockwaves_respect_huge);
+		}
+
+		if (optional_string("$Enable external default scripts:")) {
+			stuff_boolean(&Enable_external_default_scripts);
+
+			if (Enable_external_default_scripts) {
+				mprintf(("Game Settings Table: Enabled external default scripts.\n"));
+			} else {
+				mprintf(("Game Settings Table: Disabled external default scripts.\n"));
+			}
+		}
+
 		required_string("#END");
 	}
 	catch (const parse::ParseException& e)
@@ -399,6 +415,7 @@ void mod_table_reset() {
 	Default_weapon_select_effect = 2;
 	Default_fiction_viewer_ui = -1;
 	Enable_external_shaders = false;
+	Enable_external_default_scripts             = false;
 	Default_detail_level = 3; // "very high" seems a reasonable default in 2012 -zookeeper
 	Full_color_head_anis = false;
 	Weapons_inherit_parent_collision_group = false;
@@ -417,4 +434,5 @@ void mod_table_reset() {
 	Enable_scripts_in_fred = false;
 	Window_icon_path = "app_icon_sse";
 	Disable_built_in_translations = false;
+	Weapon_shockwaves_respect_huge = false;
 }

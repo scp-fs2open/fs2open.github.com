@@ -224,7 +224,7 @@ void ssm_get_random_start_pos(vec3d *out, vec3d *start, matrix *orient, size_t s
 	switch (s->shape) {
 	case SSM_SHAPE_SPHERE:
 		// get a random vector in a sphere around the target
-		vm_vec_random_in_sphere(&temp, start, orient, radius, 1);
+		vm_vec_random_in_sphere(&temp, start, radius, 1);
 		break;
 	case SSM_SHAPE_CIRCLE:
 		// get a random vector in the circle of the firing plane

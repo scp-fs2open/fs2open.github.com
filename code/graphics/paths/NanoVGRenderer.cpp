@@ -270,6 +270,12 @@ void NanoVGRenderer::renderFill(NVGpaint* paint,
 								const float* bounds,
 								const NVGpath* paths,
 								int npaths) {
+	if (npaths <= 0) {
+		// Ignore irrelevant render calls
+		mprintf(("NanoVG asked us to render filled triangles but no paths were supplied!\n"));
+		return;
+	}
+
 	auto call = addDrawCall();
 
 	call->type = CallType::Fill;
@@ -331,6 +337,12 @@ void NanoVGRenderer::renderFill(NVGpaint* paint,
 	}
 }
 void NanoVGRenderer::renderTriangles(NVGpaint* paint, NVGscissor* scissor, const NVGvertex* verts, int nverts) {
+	if (nverts <= 0) {
+		// Ignore irrelevant render calls
+		mprintf(("NanoVG asked us to render triangles but no vertices were supplied!\n"));
+		return;
+	}
+
 	_vertices.insert(_vertices.end(), verts, verts + nverts);
 
 	auto call = addDrawCall();
@@ -354,6 +366,12 @@ void NanoVGRenderer::renderStroke(NVGpaint* paint,
 								  float strokeWidth,
 								  const NVGpath* paths,
 								  int npaths) {
+	if (npaths <= 0) {
+		// Ignore irrelevant render calls
+		mprintf(("NanoVG asked us to render stroke triangles but no paths were supplied!\n"));
+		return;
+	}
+
 	auto call = addDrawCall();
 
 	call->type = CallType::Stroke;

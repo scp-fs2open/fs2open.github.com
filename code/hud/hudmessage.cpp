@@ -558,7 +558,7 @@ void HUD_ship_sent_printf(int sh, const char *format, ...)
 	tmp[sizeof(tmp)-1] = '\0';
 	size_t len;
 
-	snprintf(tmp, sizeof(tmp)-1, NOX("%s: "), Ships[sh].ship_name);
+	snprintf(tmp, sizeof(tmp)-1, NOX("%s: "), Ships[sh].get_display_string());
 	len = strlen(tmp);
 
 	va_start(args, format);

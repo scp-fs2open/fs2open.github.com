@@ -242,7 +242,7 @@ static int Sound_volume_int;
 static int Music_volume_int;
 static int Voice_volume_int;
 
-static int Voice_vol_handle = -1;
+static sound_handle Voice_vol_handle = sound_handle::invalid();
 int Options_notify_stamp = -1;
 char Options_notify_string[200];
 
@@ -467,7 +467,7 @@ void options_play_voice_clip()
 {
 	if ( snd_is_playing(Voice_vol_handle) ) {
 		snd_stop(Voice_vol_handle);
-		Voice_vol_handle=-1;
+		Voice_vol_handle = sound_handle::invalid();
 	}
 	auto gs = gamesnd_get_interface_sound(InterfaceSounds::VOICE_SLIDER_CLIP);
 	auto entry = gamesnd_choose_entry(gs);
@@ -1045,9 +1045,9 @@ void options_menu_close()
 		}
 	}
 
-	if ( Voice_vol_handle >= 0 ) {
+	if (Voice_vol_handle.isValid()) {
 		snd_stop(Voice_vol_handle);
-		Voice_vol_handle = -1;
+		Voice_vol_handle = sound_handle::invalid();
 	}
 
 	options_multi_close();

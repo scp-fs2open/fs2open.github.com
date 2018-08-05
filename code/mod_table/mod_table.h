@@ -19,6 +19,7 @@ extern int Default_ship_select_effect;
 extern int Default_weapon_select_effect;
 extern int Default_fiction_viewer_ui;
 extern bool Enable_external_shaders;
+extern bool Enable_external_default_scripts;
 extern int Default_detail_level;
 extern bool Full_color_head_anis;
 extern bool Weapons_inherit_parent_collision_group;
@@ -36,6 +37,7 @@ extern SCP_string Movie_subtitle_font;
 extern bool Enable_scripts_in_fred;
 extern SCP_string Window_icon_path;
 extern bool Disable_built_in_translations;
+extern bool Weapon_shockwaves_respect_huge;
 
 void mod_table_init();
 

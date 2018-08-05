@@ -1101,7 +1101,7 @@ void fs2netd_store_stats()
 	if (Duplicate_login_detected) {
 		Duplicate_login_detected = false;
 		multi_display_chat_msg( XSTR("<Duplicate login detected - stats have been tossed>", 1582), 0, 0 );
-		ml_string( XSTR("<Duplicate login detected - stats have been tossed>", 1583) );
+		ml_string( XSTR("<Duplicate login detected - stats have been tossed>", 1582) );
 		fs2netd_store_stats_results();
 		return;
 	}

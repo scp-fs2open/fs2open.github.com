@@ -344,7 +344,7 @@ void CFred_mission_save::parse_comments(int newlines) {
 		same_line = 1;
 	}
 
-	if (fred_parse_flag || !Token_found_flag || !token_found || (token_found && (*Mission_text_raw == '\0'))) {
+	if (fred_parse_flag || !Token_found_flag || !token_found || (token_found && (*Parse_text_raw == '\0'))) {
 		while (newlines-- > 0) {
 			fout("\n");
 		}
@@ -2522,6 +2522,14 @@ int CFred_mission_save::save_objects() {
 		required_string_fred("$Name:");
 		parse_comments(z ? 2 : 1);
 		fout(" %s\t\t;! Object #%d\n", shipp->ship_name, i);
+
+		// Display name
+		if (save_format != MissionFormat::RETAIL && shipp->has_display_name()) {
+			// The display name is only written if there was one at the start to avoid introducing inconsistencies
+			fout("\n$Display name:");
+			fout_ext(" ", "%s", shipp->display_name.c_str());
+			fout("\n");
+		}
 
 		required_string_fred("$Class:");
 		parse_comments(0);

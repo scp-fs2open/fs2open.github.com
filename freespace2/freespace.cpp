@@ -27,6 +27,9 @@
  #include <sys/stat.h>
 #endif
 
+#include "freespace.h"
+#include "freespaceresource.h"
+#include "levelpaging.h"
 #include "anim/animplay.h"
 #include "asteroid/asteroid.h"
 #include "autopilot/autopilot.h"
@@ -35,15 +38,14 @@
 #include "cmdline/cmdline.h"
 #include "cmeasure/cmeasure.h"
 #include "cutscene/cutscenes.h"
-#include "cutscene/player.h"
 #include "cutscene/movie.h"
+#include "cutscene/player.h"
 #include "debris/debris.h"
 #include "debugconsole/console.h"
+#include "decals/decals.h"
+#include "events/events.h"
 #include "exceptionhandler/exceptionhandler.h"
 #include "fireball/fireballs.h"
-#include "freespace.h"
-#include "freespaceresource.h"
-#include "levelpaging.h"
 #include "fs2netd/fs2netd_client.h"
 #include "gamehelp/contexthelp.h"
 #include "gamehelp/gameplayhelp.h"
@@ -54,9 +56,9 @@
 #include "globalincs/mspdb_callstack.h"
 #include "globalincs/version.h"
 #include "graphics/font.h"
-#include "graphics/shadows.h"
-#include "graphics/matrix.h"
 #include "graphics/light.h"
+#include "graphics/matrix.h"
+#include "graphics/shadows.h"
 #include "headtracking/headtracking.h"
 #include "hud/hud.h"
 #include "hud/hudconfig.h"
@@ -68,16 +70,17 @@
 #include "hud/hudsquadmsg.h"
 #include "hud/hudtargetbox.h"
 #include "iff_defs/iff_defs.h"
+#include "io/cursor.h"
 #include "io/joy.h"
 #include "io/joy_ff.h"
 #include "io/key.h"
 #include "io/mouse.h"
-#include "io/cursor.h"
 #include "io/timer.h"
 #include "jumpnode/jumpnode.h"
-#include "libs/ffmpeg/FFmpeg.h"
 #include "lab/lab.h"
-#include "lab/wmcgui.h"	//So that GUI_System can be initialized
+#include "lab/wmcgui.h" //So that GUI_System can be initialized
+#include "libs/discord/discord.h"
+#include "libs/ffmpeg/FFmpeg.h"
 #include "lighting/lighting.h"
 #include "localization/localize.h"
 #include "math/staticrand.h"
@@ -136,11 +139,10 @@
 #include "parse/encrypt.h"
 #include "parse/generic_log.h"
 #include "parse/parselo.h"
-#include "scripting/scripting.h"
 #include "parse/sexp.h"
 #include "parse/sexp/sexp_lookup.h"
-#include "particle/particle.h"
 #include "particle/ParticleManager.h"
+#include "particle/particle.h"
 #include "pilotfile/pilotfile.h"
 #include "playerman/managepilot.h"
 #include "playerman/player.h"
@@ -150,6 +152,7 @@
 #include "radar/radarsetup.h"
 #include "render/3d.h"
 #include "render/batching.h"
+#include "scripting/scripting.h"
 #include "ship/afterburner.h"
 #include "ship/awacs.h"
 #include "ship/ship.h"
@@ -165,15 +168,14 @@
 #include "starfield/supernova.h"
 #include "stats/medals.h"
 #include "stats/stats.h"
+#include "tracing/Monitor.h"
 #include "tracing/tracing.h"
 #include "weapon/beam.h"
-#include "decals/decals.h"
 #include "weapon/emp.h"
 #include "weapon/flak.h"
 #include "weapon/muzzleflash.h"
 #include "weapon/shockwave.h"
 #include "weapon/weapon.h"
-#include "tracing/Monitor.h"
 
 #include "SDLGraphicsOperations.h"
 
@@ -249,7 +251,7 @@ int	Game_skill_level = DEFAULT_SKILL_LEVEL;
 // Needs to be cleaned up.
 float Warpout_time = 0.0f;
 int Warpout_forced = 0;		// Set if this is a forced warpout that cannot be cancelled.
-int Warpout_sound = -1;
+sound_handle Warpout_sound = sound_handle::invalid();
 int Use_joy_mouse = 0;
 int Use_palette_flash = 1;
 #ifndef NDEBUG
@@ -2025,6 +2027,8 @@ void game_init()
 	
 	libs::ffmpeg::initialize();
 
+	libs::discord::init();
+
 	nprintf(("General", "Ships.tbl is : %s\n", Game_ships_tbl_valid ? "VALID" : "INVALID!!!!"));
 	nprintf(("General", "Weapons.tbl is : %s\n", Game_weapons_tbl_valid ? "VALID" : "INVALID!!!!"));
 
@@ -2751,7 +2755,7 @@ void do_timing_test(float frame_time)
 	static int test_running = 0;
 	static float test_time = 0.0f;
 
-	static int snds[NUM_MIXED_SOUNDS];
+	static sound_handle snds[NUM_MIXED_SOUNDS];
 	int i;
 
 	if ( test_running ) {
@@ -2772,7 +2776,7 @@ void do_timing_test(float frame_time)
 		Test_begin = 0;
 
 		for ( i = 0; i < NUM_MIXED_SOUNDS; i++ )
-			snds[i] = -1;
+			snds[i] = sound_handle::invalid();
 
 		// start looping digital sounds
 		for ( i = 0; i < NUM_MIXED_SOUNDS; i++ )
@@ -2894,7 +2898,7 @@ void say_view_target()
 				if (Ships[Objects[Player_ai->target_objnum].instance].flags[Ship::Ship_Flags::Hide_ship_name]) {
 					strcpy_s(view_target_name, "targeted ship");
 				} else {
-					strcpy_s(view_target_name, Ships[Objects[Player_ai->target_objnum].instance].ship_name);
+					strcpy_s(view_target_name, Ships[Objects[Player_ai->target_objnum].instance].get_display_string());
 				}
 				break;
 			case OBJ_WEAPON:
@@ -5079,10 +5083,10 @@ void game_process_event( int current_state, int event )
 					Viewer_mode = Player->saved_viewer_mode;
 					hud_subspace_notify_abort();
 					mprintf(( "Player put back to normal mode.\n" ));
-					if ( Warpout_sound > -1 )	{
-						snd_stop( Warpout_sound );
-						Warpout_sound = -1;
-					}
+				    if (Warpout_sound.isValid()) {
+					    snd_stop( Warpout_sound );
+					    Warpout_sound = sound_handle::invalid();
+				    }
 				}
 			}
 			break;
@@ -5118,9 +5122,9 @@ void game_process_event( int current_state, int event )
 			mprintf(( "Player warped out.  Going to debriefing!\n" ));
 			Player->control_mode = PCM_NORMAL;
 			Viewer_mode = Player->saved_viewer_mode;
-			Warpout_sound = -1;
+		    Warpout_sound        = sound_handle::invalid();
 
-			send_debrief_event();
+		    send_debrief_event();
 			break;
 
 		case GS_EVENT_STANDALONE_POSTGAME:
@@ -5192,6 +5196,8 @@ void game_process_event( int current_state, int event )
 // need to post an event, not change the state.
 void game_leave_state( int old_state, int new_state )
 {
+	events::GameLeaveState(old_state, new_state);
+
 	int end_mission = 1;
 
 	switch (new_state) {
@@ -5614,6 +5620,8 @@ int Main_hall_netgame_started = 0;
 
 void game_enter_state( int old_state, int new_state )
 {
+	events::GameEnterState(old_state, new_state);
+
 	//WMC - Scripting override
 	/*
 	if(script_hook_valid(&GS_state_hooks[new_state]) && Script_system.IsOverride(GS_state_hooks[new_state])) {
@@ -6772,6 +6780,8 @@ int game_main(int argc, char *argv[])
 		// only important for non THREADED mode
 		os_poll();
 
+		events::EngineUpdate();
+
 		state = gameseq_process_events();
 		if ( state == GS_STATE_QUIT_GAME ) {
 			break;
@@ -6830,6 +6840,8 @@ void game_launch_launcher_on_exit()
 //
 void game_shutdown(void)
 {
+	events::EngineShutdown();
+
 	headtracking::shutdown();
 
 	fsspeech_deinit();
@@ -6907,6 +6919,8 @@ void game_shutdown(void)
 	gamesnd_close();		// close out gamesnd, needs to happen *after* other sounds are closed
 	psnet_close();
 
+	obj_shutdown();
+
 	model_free_all();
 	bm_unload_all();			// unload/free bitmaps, has to be called *after* model_free_all()!
 
@@ -6957,10 +6971,10 @@ void game_stop_looped_sounds()
 	obj_snd_stop_all();		// stop all object-linked persistant sounds
 	game_stop_subspace_ambient_sound();
 	snd_stop(Radar_static_looping);
-	Radar_static_looping = -1;
+	Radar_static_looping = sound_handle::invalid();
 	snd_stop(Target_static_looping);
 	shipfx_stop_engine_wash_sound();
-	Target_static_looping = -1;
+	Target_static_looping = sound_handle::invalid();
 }
 
 void game_do_training_checks()
@@ -7435,31 +7449,31 @@ void get_version_string(char *str, int max_size)
 //
 // ----------------------------------------------------------------
 
-static int Subspace_ambient_left_channel = -1;
-static int Subspace_ambient_right_channel = -1;
+static sound_handle Subspace_ambient_left_channel  = sound_handle::invalid();
+static sound_handle Subspace_ambient_right_channel = sound_handle::invalid();
 
 // 
 void game_start_subspace_ambient_sound()
 {
-	if ( Subspace_ambient_left_channel < 0 ) {
+	if (!Subspace_ambient_left_channel.isValid()) {
 		Subspace_ambient_left_channel = snd_play_looping(gamesnd_get_game_sound(GameSounds::SUBSPACE_LEFT_CHANNEL), -1.0f);
 	}
 
-	if ( Subspace_ambient_right_channel < 0 ) {
+	if (!Subspace_ambient_right_channel.isValid()) {
 		Subspace_ambient_right_channel = snd_play_looping(gamesnd_get_game_sound(GameSounds::SUBSPACE_RIGHT_CHANNEL), 1.0f);
 	}
 }
 
 void game_stop_subspace_ambient_sound()
 {
-	if ( Subspace_ambient_left_channel >= 0 ) {
+	if (Subspace_ambient_left_channel.isValid()) {
 		snd_stop(Subspace_ambient_left_channel);
-		Subspace_ambient_left_channel = -1;
+		Subspace_ambient_left_channel = sound_handle::invalid();
 	}
 
-	if ( Subspace_ambient_right_channel >= 0 ) {
+	if (Subspace_ambient_right_channel.isValid()) {
 		snd_stop(Subspace_ambient_right_channel);
-		Subspace_ambient_right_channel = -1;
+		Subspace_ambient_right_channel = sound_handle::invalid();
 	}
 }
 
@@ -7930,7 +7944,6 @@ void game_unpause()
 		}
 	}
 }
-
 
 int actual_main(int argc, char *argv[])
 {

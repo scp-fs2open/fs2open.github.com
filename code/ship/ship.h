@@ -494,6 +494,7 @@ public:
 
 
 	char	ship_name[NAME_LENGTH];
+	SCP_string display_name;
 
 	int	team;				//	Which team it's on, HOSTILE, FRIENDLY, UNKNOWN, NEUTRAL
 	
@@ -563,7 +564,7 @@ public:
 	int swarm_missile_bank;				// The missilebank the swarm was originally launched from
 
 	int	group;								// group ship is in, or -1 if none.  Fred thing
-	int	death_roll_snd;					// id of death roll sound, may need to be stopped early	
+	sound_handle death_roll_snd;            // id of death roll sound, may need to be stopped early
 	int	ship_list_index;					// index of ship in Ship_objs[] array
 
 	int	thruster_bitmap;					// What frame the current thruster bitmap is at for this ship
@@ -595,8 +596,7 @@ public:
 	int	ts_index;							// index into the team select and Wss_slots array (or -1 if not in one of those arrays)
 
 	int	large_ship_blowup_index;			// -1 if not a large ship exploding, else this is an index used by the shipfx large ship exploding code.
-	int	sub_expl_sound_handle[NUM_SUB_EXPL_HANDLES];
-
+	std::array<sound_handle, NUM_SUB_EXPL_HANDLES> sub_expl_sound_handle;
 
 	// Stuff for showing electrical arcs on damaged ships
 	vec3d	arc_pts[MAX_SHIP_ARCS][2];			// The endpoints of each arc
@@ -715,6 +715,9 @@ public:
     inline bool is_departing() { return flags[Ship::Ship_Flags::Depart_warp, Ship::Ship_Flags::Depart_dockbay]; }
     inline bool cannot_warp() { return flags[Ship::Ship_Flags::Warp_broken, Ship::Ship_Flags::Warp_never, Ship::Ship_Flags::Disabled]; }
     inline bool is_dying_or_departing() { return is_departing() || flags[Ship::Ship_Flags::Dying]; }
+
+	bool has_display_name();
+	const char* get_display_string();
 };
 
 struct ai_target_priority {
@@ -741,6 +744,7 @@ ai_target_priority init_ai_target_priorities();
 
 typedef struct exited_ship {
 	char	ship_name[NAME_LENGTH];
+	SCP_string display_string;
 	int		obj_signature;
 	int		ship_class;
 	int		team;
@@ -1015,7 +1019,7 @@ public:
 	particle_effect		knossos_end_particles;
 	particle_effect		regular_end_particles;
 
-	particle::ParticleEffectIndex death_effect;
+	particle::ParticleEffectHandle death_effect;
 
 	//Debris stuff
 	float			debris_min_lifetime;
@@ -1573,7 +1577,7 @@ int ship_dumbfire_threat(ship *sp);
 int ship_lock_threat(ship *sp);
 
 int	bitmask_2_bitnum(int num);
-char	*ship_return_orders(char *outbuf, ship *sp);
+SCP_string ship_return_orders(ship *sp);
 char	*ship_return_time_to_goal(char *outbuf, ship *sp);
 
 void	ship_maybe_warn_player(ship *enemy_sp, float dist);

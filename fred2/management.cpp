@@ -205,6 +205,18 @@ void deconvert_multiline_string(SCP_string &dest, const CString &str)
 	replace_all(dest, "\r\n", "\n");
 }
 
+void strip_quotation_marks(CString& str) { str.Remove('\"'); }
+
+void pad_with_newline(CString& str, int max_size) {
+	int len = str.GetLength();
+	if (!len) {
+		len = 1;
+	}
+	if (str[len - 1] != '\n' && len < max_size) {
+		str += _T("\n");
+	}
+}
+
 // medal_stuff Medals[NUM_MEDALS];
 /*
 void parse_medal_tbl()
@@ -792,8 +804,8 @@ void clear_mission()
 		Briefing_dialog->reset_editor();
 	}
 
-	extern void allocate_mission_text(size_t size);
-	allocate_mission_text( MISSION_TEXT_SIZE );
+	extern void allocate_parse_text(size_t size);
+	allocate_parse_text( PARSE_TEXT_SIZE );
 
 	The_mission.cutscenes.clear(); 
 	fiction_viewer_reset();
@@ -909,8 +921,8 @@ void clear_mission()
 		Team_data[i].num_weapon_choices = count; 
 	}
 
-	*Mission_text = *Mission_text_raw = '\0';
-	Mission_text[1] = Mission_text_raw[1] = 0;
+	*Parse_text = *Parse_text_raw = '\0';
+	Parse_text[1] = Parse_text_raw[1] = 0;
 
 	waypoint_parse_init();
 	Num_mission_events = 0;

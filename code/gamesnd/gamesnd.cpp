@@ -19,7 +19,7 @@
 
 SCP_vector<game_snd>	Snds;
 SCP_vector<game_snd>	Snds_iface;
-SCP_vector<int>			Snds_iface_handle;
+SCP_vector<sound_handle> Snds_iface_handle;
 
 // jg18 - default priorities and limits for retail gameplay sounds
 static const int NUM_RETAIL_GAMEPLAY_SOUNDS = 192; // indices 0-191, from retail sounds.tbl
@@ -260,7 +260,7 @@ void gamesnd_add_retail_default_enhanced_sound_data()
 
 void gamesnd_play_iface(interface_snd_id n)
 {
-	if (Snds_iface_handle[n.value()] >= 0)
+	if (Snds_iface_handle[n.value()].isValid())
 		snd_stop(Snds_iface_handle[n.value()]);
 
 	Snds_iface_handle[n.value()] = snd_play(gamesnd_get_interface_sound(n));
@@ -1197,7 +1197,7 @@ void parse_sound_table(const char* filename)
 				if (gamesnd_parse_line(&tempSound, "$Name:", &Snds_iface))
 				{
 					Snds_iface.push_back(game_snd(tempSound));
-					Snds_iface_handle.push_back(-1);
+					Snds_iface_handle.push_back(sound_handle::invalid());
 				}
 			}
 

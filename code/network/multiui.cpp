@@ -4976,7 +4976,7 @@ void multi_create_accept_hit()
 								XSTR("A time limit is being used in a co-op game.\r\n"
 									"  Select \'Cancel\' to go back to the mission select screen.\r\n"
 									"  Select \'Yes\' to continue with this time limit.\r\n"
-									"  Select \'No\' to continue without this time limit.", -1));
+									"  Select \'No\' to continue without this time limit.", 1620));
 
 			if (popup_choice == 0) {
 				return;
@@ -4991,7 +4991,7 @@ void multi_create_accept_hit()
 								XSTR("A kill limit is being used in a co-op game.\r\n"
 									"  Select \'Cancel\' to go back to the mission select screen.\r\n"
 									"  Select \'Yes\' to continue with this kill limit.\r\n"
-									"  Select \'No\' to continue without this kill limit.", -1));
+									"  Select \'No\' to continue without this kill limit.", 1621));
 
 			if (popup_choice == 0) {
 				return;

@@ -83,7 +83,7 @@ CPoint Global_point2;
 /**
  * @brief Launches the default browser to open the given URL
  */
-void url_launch(char *url);
+void url_launch(const char *url);
 
 
 #ifdef _DEBUG
@@ -237,23 +237,20 @@ void CMainFrame::OnFileMissionnotes() {
 }
 
 void CMainFrame::OnFredHelp() {
-	char buffer[_MAX_PATH];
-
-	size_t size;
-	size_t offset;
-	if (!cf_find_file_location("index.html", CF_TYPE_FREDDOCS, _MAX_PATH, buffer, &size, &offset)) {
+	auto res = cf_find_file_location("index.html", CF_TYPE_FREDDOCS);
+	if (!res.found) {
 		ReleaseWarning(LOCATION, "Could not find FRED help files!");
 		return;
 	}
 
-	if (offset != 0) {
+	if (res.offset != 0) {
 		// We need an actual file location so VP files are not valid
 		Error(LOCATION, "The FRED documentation was found in a pack (VP) file. This is not valid!");
 		return;
 	}
 
 	// shell_open url
-	url_launch(buffer);
+	url_launch(res.full_name.c_str());
 }
 
 void CMainFrame::OnHelpInputInterface() {
@@ -491,7 +488,7 @@ int color_combo_box::SetCurSelNEW(int model_index) {
 }
 
 
-void url_launch(char *url) {
+void url_launch(const char *url) {
 	int r;
 
 	r = (int) ShellExecute(NULL, "open", url, NULL, NULL, SW_SHOW);

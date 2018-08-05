@@ -648,7 +648,7 @@ void player_select_button_pressed(int n)
 			if (Player_select_mode == PLAYER_SELECT_MODE_MULTI) {
 				popup(PF_TITLE_BIG | PF_TITLE_RED | PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("Disabled!\n\nMulti and single player pilots are now identical. "
 							"Deleting a multi-player pilot will also delete all single-player data for that pilot.\n\nAs a safety precaution, pilots can only be "
-							"deleted from the single-player menu.", 1610));
+							"deleted from the single-player menu.", 1598));
 			} else {
 				// display a popup requesting confirmation
 				ret = popup(PF_TITLE_BIG | PF_TITLE_RED, 2, POPUP_NO, POPUP_YES, XSTR( "Warning!\n\nAre you sure you wish to delete this pilot?", 382));
@@ -852,7 +852,9 @@ int player_select_get_last_pilot()
 
 		Get_file_list_filter = player_select_pilot_file_filter;
 
-		Player_select_num_pilots = cf_get_file_list_preallocated(MAX_PILOTS, Pilots_arr, Pilots, CF_TYPE_PLAYERS, NOX("*.plr"), CF_SORT_TIME);
+		Player_select_num_pilots = cf_get_file_list_preallocated(
+		    MAX_PILOTS, Pilots_arr, Pilots, CF_TYPE_PLAYERS, NOX("*.plr"), CF_SORT_TIME, nullptr,
+		    CF_LOCATION_ROOT_USER | CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT);
 
 		Player_select_pilot = -1;
 		idx = 0;
@@ -890,7 +892,9 @@ void player_select_init_player_stuff(int mode)
 	// load up the list of players based upon the Player_select_mode (single or multiplayer)
 	Get_file_list_filter = player_select_pilot_file_filter;
 
-	Player_select_num_pilots = cf_get_file_list_preallocated(MAX_PILOTS, Pilots_arr, Pilots, CF_TYPE_PLAYERS, NOX("*.plr"), CF_SORT_TIME);
+	Player_select_num_pilots =
+	    cf_get_file_list_preallocated(MAX_PILOTS, Pilots_arr, Pilots, CF_TYPE_PLAYERS, NOX("*.plr"), CF_SORT_TIME,
+	                                  nullptr, CF_LOCATION_ROOT_USER | CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT);
 
 	// if we have a "last_player", and they're in the list, bash them to the top of the list
 	if (Player_select_last_pilot[0] != '\0') {

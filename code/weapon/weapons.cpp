@@ -202,9 +202,6 @@ int		Weapon_impact_timer;			// timer, initialized at start of each mission
 #define ESUCK_DEFAULT_WEAPON_REDUCE				(10.0f)
 #define ESUCK_DEFAULT_AFTERBURNER_REDUCE		(10.0f)
 
-// scale factor for supercaps taking damage from weapons which are not "supercap" weapons
-#define SUPERCAP_DAMAGE_SCALE			0.25f
-
 // scale factor for big ships getting hit by flak
 #define FLAK_DAMAGE_SCALE				0.05f
 
@@ -1671,8 +1668,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 
 		// Default value
 		wip->shield_impact_explosion_radius = 1.0f;
-		if (wip->impact_weapon_expl_effect >= 0)
-		{
+		if (wip->impact_weapon_expl_effect.isValid()) {
 			auto singleEffect = dynamic_cast<effects::SingleParticleEffect*>(ParticleManager::get()->getEffect(wip->impact_weapon_expl_effect));
 
 			if (singleEffect)
@@ -1746,7 +1742,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		if (first_time)
 		{
 			// The secondary effect is only needed if the old effect got parsed
-			wip->piercing_impact_secondary_effect = -1;
+			wip->piercing_impact_secondary_effect = particle::ParticleEffectHandle::invalid();
 		}
 	}
 	else
@@ -3637,7 +3633,7 @@ void weapon_delete(object *obj)
 		wp->trail_ptr = NULL;
 	}
 
-	if (wp->hud_in_flight_snd_sig >= 0 && snd_is_playing(wp->hud_in_flight_snd_sig))
+	if (wp->hud_in_flight_snd_sig.isValid() && snd_is_playing(wp->hud_in_flight_snd_sig))
 		snd_stop(wp->hud_in_flight_snd_sig);
 
 	if (wp->model_instance_num >= 0)
@@ -4403,7 +4399,7 @@ void weapon_home(object *obj, int num, float frame_time)
 		// turn the missile towards the target only if non-swarm.  Homing swarm missiles choose
 		// a different vector to turn towards, this is done in swarm_update_direction().
 		if ( wp->swarm_index < 0 ) {
-			ai_turn_towards_vector(&target_pos, obj, frame_time, wip->turn_time, NULL, NULL, 0.0f, 0, NULL);
+			ai_turn_towards_vector(&target_pos, obj, wip->turn_time, nullptr, nullptr, 0.0f, 0, nullptr);
 			vel = vm_vec_mag(&obj->phys_info.desired_vel);
 
 			vm_vec_copy_scale(&obj->phys_info.desired_vel, &obj->orient.vec.fvec, vel);
@@ -4760,7 +4756,7 @@ void weapon_process_post(object * obj, float frame_time)
 		
 		// If this is a swarm type missile,  
 		if ( wp->swarm_index >= 0 ) {
-			swarm_update_direction(obj, frame_time);
+			swarm_update_direction(obj);
 		}
 
 		if( wp->cscrew_index >= 0) {
@@ -4915,8 +4911,7 @@ void weapon_process_post(object * obj, float frame_time)
 
 		if (play_sound)
 		{
-			if (wp->hud_in_flight_snd_sig < 0 || !snd_is_playing(wp->hud_in_flight_snd_sig))
-			{
+			if (!wp->hud_in_flight_snd_sig.isValid() || !snd_is_playing(wp->hud_in_flight_snd_sig)) {
 				wp->hud_in_flight_snd_sig = snd_play_looping(gamesnd_get_game_sound(wip->hud_in_flight_snd));
 			}
 		}
@@ -5327,11 +5322,10 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 	if(wip->life_min < 0.0f && wip->life_max < 0.0f) {
 		wp->lifeleft = wip->lifetime;
 	} else {
-		wp->lifeleft = (rand_val) * (wip->life_max - wip->life_min) / wip->life_min;
+		wp->lifeleft = ((rand_val) * (wip->life_max - wip->life_min)) + wip->life_min;
 		if((wip->wi_flags[Weapon::Info_Flags::Cmeasure]) && (parent_objp != NULL) && (parent_objp->flags[Object::Object_Flags::Player_ship])) {
 			wp->lifeleft *= The_mission.ai_profile->cmeasure_life_scale[Game_skill_level];
 		}
-		wp->lifeleft = wip->life_min + wp->lifeleft * (wip->life_max - wip->life_min);
 	}
 
 	if(wip->wi_flags[Weapon::Info_Flags::Cmeasure]) {
@@ -5520,7 +5514,7 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 	wp->alpha_backward = 0;
 
 	wp->collisionInfo = nullptr;
-	wp->hud_in_flight_snd_sig = -1;
+	wp->hud_in_flight_snd_sig = sound_handle::invalid();
 
 	Num_weapons++;
 
@@ -6145,8 +6139,7 @@ void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos, int qu
 		weapon_hit_do_sound(other_obj, wip, hitpos, armed_weapon, quadrant);
 	}
 
-	if ( wip->impact_weapon_expl_effect >= 0 && armed_weapon)
-	{
+	if (wip->impact_weapon_expl_effect.isValid() && armed_weapon) {
 		auto particleSource = particle::ParticleManager::get()->createSource(wip->impact_weapon_expl_effect);
 		particleSource.moveTo(hitpos);
 		particleSource.setOrientationFromVec(&weapon_obj->phys_info.vel);
@@ -6157,9 +6150,7 @@ void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos, int qu
 		}
 
 		particleSource.finish();
-	}
-	else if(wip->dinky_impact_weapon_expl_effect >= 0 && !armed_weapon)
-	{
+	} else if (wip->dinky_impact_weapon_expl_effect.isValid() && !armed_weapon) {
 		auto particleSource = particle::ParticleManager::get()->createSource(wip->dinky_impact_weapon_expl_effect);
 		particleSource.moveTo(hitpos);
 		particleSource.setOrientationFromVec(&weapon_obj->phys_info.vel);
@@ -6172,7 +6163,7 @@ void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos, int qu
 		particleSource.finish();
 	}
 
-	if((other_obj != NULL) && (quadrant == -1) && (wip->piercing_impact_effect > -1 && armed_weapon)) {
+	if ((other_obj != nullptr) && (quadrant == -1) && (wip->piercing_impact_effect.isValid() && armed_weapon)) {
 		if ((other_obj->type == OBJ_SHIP) || (other_obj->type == OBJ_DEBRIS)) {
 
 			int ok_to_draw = 1;
@@ -6214,8 +6205,7 @@ void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos, int qu
 
 				primarySource.finish();
 
-				if (wip->piercing_impact_secondary_effect >= 0)
-				{
+				if (wip->piercing_impact_secondary_effect.isValid()) {
 					auto secondarySource = ParticleManager::get()->createSource(wip->piercing_impact_secondary_effect);
 					secondarySource.moveTo(&weapon_obj->pos);
 					secondarySource.setOrientationMatrix(&weapon_obj->last_orient);
@@ -7281,8 +7271,7 @@ void pause_in_flight_sounds()
 		{
 			weapon* wp = &Weapons[i];
 
-			if (wp->hud_in_flight_snd_sig >= 0 && snd_is_playing(wp->hud_in_flight_snd_sig))
-			{
+			if (wp->hud_in_flight_snd_sig.isValid() && snd_is_playing(wp->hud_in_flight_snd_sig)) {
 				// Stop sound, it will be restarted in the first frame after the game is unpaused
 				snd_stop(wp->hud_in_flight_snd_sig);
 			}
@@ -7679,14 +7668,14 @@ void weapon_info::reset()
 
 	this->shield_impact_explosion_radius = 1.0f;
 
-	this->impact_weapon_expl_effect = -1;
+	this->impact_weapon_expl_effect = particle::ParticleEffectHandle::invalid();
 
-	this->dinky_impact_weapon_expl_effect = -1;
+	this->dinky_impact_weapon_expl_effect = particle::ParticleEffectHandle::invalid();
 
-	this->flash_impact_weapon_expl_effect = -1;
+	this->flash_impact_weapon_expl_effect = particle::ParticleEffectHandle::invalid();
 
-	this->piercing_impact_effect = -1;
-	this->piercing_impact_secondary_effect = -1;
+	this->piercing_impact_effect           = particle::ParticleEffectHandle::invalid();
+	this->piercing_impact_secondary_effect = particle::ParticleEffectHandle::invalid();
 
 	this->muzzle_flash = -1;
 

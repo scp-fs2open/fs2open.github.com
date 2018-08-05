@@ -3342,18 +3342,16 @@ void process_turret_fired_packet( ubyte *data, header *hinfo )
 }
 
 // send a mission log item packet
-void send_mission_log_packet( int num )
+void send_mission_log_packet( log_entry* entry )
 {
 	int packet_size;
 	ubyte data[MAX_PACKET_SIZE];
 	ubyte type;
 	int sindex;
-	log_entry *entry;
 
 	Assert ( MULTIPLAYER_MASTER );
 
 	// get the data from the log
-	entry = &log_entries[num];
 	type = (ubyte)entry->type;			// do the type casting thing to save on packet space
 	sindex = entry->index;
 
@@ -3390,7 +3388,7 @@ void process_mission_log_packet( ubyte *data, header *hinfo )
 
 	PACKET_SET_SIZE();
 
-	mission_log_add_entry_multi( type, pname, sname, sindex, timestamp, flags );
+	mission_log_add_entry_multi( static_cast<LogType>(type), pname, sname, sindex, timestamp, flags );
 }
 
 // send a mission message packet

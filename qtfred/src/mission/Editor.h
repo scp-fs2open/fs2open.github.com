@@ -174,6 +174,9 @@ class Editor: public QObject {
 	void exportShieldSysData(std::vector<int>& teams, std::vector<int>& types) const;
 	void importShieldSysData(const std::vector<int>& teams, const std::vector<int>& types);
 	void normalizeShieldSysData();
+
+	static void strip_quotation_marks(SCP_string& str);
+	static void pad_with_newline(SCP_string& str, size_t max_size);
  private:
 	void clearMission();
 

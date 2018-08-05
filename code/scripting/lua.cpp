@@ -23,7 +23,6 @@
 #include "scripting/api/objs/font.h"
 #include "scripting/api/objs/gameevent.h"
 #include "scripting/api/objs/gamestate.h"
-#include "scripting/api/objs/graphics.h"
 #include "scripting/api/objs/hudgauge.h"
 #include "scripting/api/objs/mc_info.h"
 #include "scripting/api/objs/message.h"
@@ -46,21 +45,25 @@
 #include "scripting/api/objs/team.h"
 #include "scripting/api/objs/texture.h"
 #include "scripting/api/objs/texturemap.h"
+#include "scripting/api/objs/time_obj.h"
 #include "scripting/api/objs/vecmath.h"
 #include "scripting/api/objs/waypoint.h"
 #include "scripting/api/objs/weapon.h"
 #include "scripting/api/objs/weaponclass.h"
 #include "scripting/api/objs/wing.h"
 
-#include "scripting/api/libs/bitops.h"
 #include "scripting/api/libs/audio.h"
 #include "scripting/api/libs/base.h"
+#include "scripting/api/libs/bitops.h"
 #include "scripting/api/libs/cfile.h"
-#include "scripting/api/libs/hud.h"
+#include "scripting/api/libs/graphics.h"
 #include "scripting/api/libs/hookvars.h"
+#include "scripting/api/libs/hud.h"
 #include "scripting/api/libs/mission.h"
+#include "scripting/api/libs/parse.h"
 #include "scripting/api/libs/tables.h"
 #include "scripting/api/libs/testing.h"
+#include "scripting/api/libs/time_lib.h"
 #include "scripting/api/libs/utf8.h"
 
 // End of definitions includes
@@ -195,7 +198,9 @@ int script_state::CreateLuaState()
 	mprintf(("ADE: Assigning Lua session...\n"));
 	SetLuaSession(L);
 
-//	(void)l_BitOps.GetName();
+	//***** LOAD DEFAULT SCRIPTS
+	mprintf(("ADE: Loading default scripts...\n"));
+	load_default_script(L, "cfile_require.lua");
 
 	return 1;
 }

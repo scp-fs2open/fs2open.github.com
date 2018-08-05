@@ -63,7 +63,8 @@ int delete_pilot_file(char *pilot_name)
 	strcpy_s( filename, basename );
 	strcat_s( filename, NOX(".plr") );
 
-	delreturn = cf_delete(filename, CF_TYPE_PLAYERS);
+	delreturn =
+	    cf_delete(filename, CF_TYPE_PLAYERS, CF_LOCATION_ROOT_USER | CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT);
 
 	// we must try and delete the campaign save files for a pilot as well.
 	if (delreturn) {
@@ -464,8 +465,8 @@ void player::reset()
 	warn_count = 0;
 	damage_this_burst = 0.0f;
 
-	repair_sound_loop = -1;
-	cargo_scan_loop = -1;
+	repair_sound_loop = sound_handle::invalid();
+	cargo_scan_loop   = sound_handle::invalid();
 
 	praise_count = 0;
 	allow_praise_timestamp = -1;

@@ -81,7 +81,7 @@ xy_plane(-1), xz_yz_plane(-1), sweep_plane(-1), target_brackets(-1), unknown_con
 	fx_guides2_1.a1d[1] = 0.0f;
 	fx_guides2_1.a1d[2] = 1.0f;
 
-	this->loop_sound_handle = -1;
+	this->loop_sound_handle = sound_handle::invalid();
 }
 
 void HudGaugeRadarDradis::initBitmaps(char* fname_xy, char* fname_xz_yz, char* fname_sweep, char* fname_target_brackets, char* fname_unknown)
@@ -551,26 +551,24 @@ void HudGaugeRadarDradis::render(float  /*frametime*/)
 		{
 			drawBlipsSorted(1);	// passing 1 means to draw distorted
 
-			if (Radar_static_looping == -1)
+			if (!Radar_static_looping.isValid())
 				Radar_static_looping = snd_play_looping(gamesnd_get_game_sound(GameSounds::STATIC));
 		}
 		else
 		{
 			drawBlipsSorted(0);
 
-			if (Radar_static_looping != -1)
-			{
+			if (Radar_static_looping.isValid()) {
 				snd_stop(Radar_static_looping);
-				Radar_static_looping = -1;
+				Radar_static_looping = sound_handle::invalid();
 			}
 		}
 	}
 	else
 	{
-		if (Radar_static_looping != -1)
-		{
+		if (Radar_static_looping.isValid()) {
 			snd_stop(Radar_static_looping);
-			Radar_static_looping = -1;
+			Radar_static_looping = sound_handle::invalid();
 		}
 	}
 
@@ -598,14 +596,11 @@ void HudGaugeRadarDradis::doLoopSnd()
 
 	if (!this->shouldDoSounds())
 	{
-		if (loop_sound_handle >= 0 && snd_is_playing(loop_sound_handle))
-		{
+		if (loop_sound_handle.isValid() && snd_is_playing(loop_sound_handle)) {
 			snd_stop(loop_sound_handle);
-			loop_sound_handle = -1;
+			loop_sound_handle = sound_handle::invalid();
 		}
-	}
-	else if (this->loop_sound_handle < 0 || !snd_is_playing(this->loop_sound_handle))
-	{
+	} else if (!this->loop_sound_handle.isValid() || !snd_is_playing(this->loop_sound_handle)) {
 		loop_sound_handle = snd_play(gamesnd_get_game_sound(m_loop_snd), 0.0f, loop_sound_volume);
 	}
 }
@@ -708,7 +703,7 @@ void HudGaugeRadarDradis::doBeeps()
 void HudGaugeRadarDradis::initSound(gamesnd_id loop_snd, float _loop_snd_volume, gamesnd_id arrival_snd, gamesnd_id departure_snd, gamesnd_id stealth_arrival_snd, gamesnd_id stealth_departue_snd, float arrival_delay, float departure_delay)
 {
 	this->m_loop_snd = loop_snd;
-	this->loop_sound_handle = -1;
+	this->loop_sound_handle = sound_handle::invalid();
 	this->loop_sound_volume = _loop_snd_volume;
 
 	this->arrival_beep_snd = arrival_snd;

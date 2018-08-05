@@ -127,57 +127,41 @@ WaveFile::~WaveFile() {
 bool WaveFile::Open(const char* pszFilename, bool keep_ext) {
 	using namespace libs::ffmpeg;
 
-	size_t FileSize, FileOffset;
-	const void* file_data = nullptr;
-	char fullpath[MAX_PATH_LEN];
 	char filename[MAX_FILENAME_LEN];
 
 	// NOTE: the extension will be removed and set to the actual extension of keep_ext is false, otherwise it's not changed
 	strcpy_s(filename, pszFilename);
 
 	try {
-		int rc = -1;
+		CFILE* cfp = nullptr;
 		// if we are supposed to load the file as passed...
 		if (keep_ext) {
+			auto known_format = false;
 			for (int i = 0; i < NUM_AUDIO_EXT; i++) {
 				if (stristr(pszFilename, audio_ext_list[i])) {
-					rc = i;
+					known_format = true;
 					break;
 				}
 			}
 
 			// not a supported extension format ... somebody screwed up their tbls :)
-			if (rc < 0) {
+			if (!known_format) {
 				throw FFmpegException("Unknown file extension.");
 			}
 
-			rc = cf_find_file_location(pszFilename,
-									   CF_TYPE_ANY,
-									   sizeof(fullpath) - 1,
-									   fullpath,
-									   &FileSize,
-									   &FileOffset,
-									   false,
-									   &file_data);
+			auto res = cf_find_file_location(pszFilename, CF_TYPE_ANY, false);
 
-			if(rc == 0) {
+			if (!res.found) {
 				throw FFmpegException("File not found.");
 			}
+
+			cfp = cfopen_special(res.full_name.c_str(), "rb", res.size, res.offset, res.data_ptr, CF_TYPE_ANY);
 		}
 		else {
 			// ... otherwise we just find the best match
-			rc = cf_find_file_location_ext(filename,
-										   NUM_AUDIO_EXT,
-										   audio_ext_list,
-										   CF_TYPE_ANY,
-										   sizeof(fullpath) - 1,
-										   fullpath,
-										   &FileSize,
-										   &FileOffset,
-										   false,
-										   &file_data);
+			auto res = cf_find_file_location_ext(filename, NUM_AUDIO_EXT, audio_ext_list, CF_TYPE_ANY, false);
 
-			if (rc < 0) {
+			if (!res.found) {
 				throw FFmpegException("File not found with any known extension.");
 			}
 
@@ -188,10 +172,10 @@ bool WaveFile::Open(const char* pszFilename, bool keep_ext) {
 			}
 
 			// set proper filename for later use
-			strcat_s(filename, audio_ext_list[rc]);
-		}
+			strcat_s(filename, audio_ext_list[res.extension_index]);
 
-		auto cfp = cfopen_special(fullpath, "rb", FileSize, FileOffset, file_data, CF_TYPE_ANY);
+			cfp = cfopen_special(res.full_name.c_str(), "rb", res.size, res.offset, res.data_ptr, CF_TYPE_ANY);
+		}
 
 		if (cfp == NULL) {
 			throw FFmpegException("Failed to open file.");

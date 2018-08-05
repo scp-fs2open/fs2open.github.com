@@ -3,11 +3,9 @@
 #include "tracing/tracing.h"
 
 namespace {
-const AVPixelFormat DESTINATION_FORMAT = AV_PIX_FMT_YUV420P;
-
-SwsContext* getSWSContext(int width, int height, AVPixelFormat fmt) {
-	return sws_getContext(width, height, fmt, width, height, DESTINATION_FORMAT,
-						  SWS_BILINEAR, nullptr, nullptr, nullptr);
+SwsContext* getSWSContext(int width, int height, AVPixelFormat fmt, AVPixelFormat destination_fmt)
+{
+	return sws_getContext(width, height, fmt, width, height, destination_fmt, SWS_BILINEAR, nullptr, nullptr, nullptr);
 }
 
 double getFrameTime(int64_t pts, AVRational time_base) {
@@ -18,34 +16,53 @@ double getFrameTime(int64_t pts, AVRational time_base) {
 namespace cutscene {
 namespace ffmpeg {
 class FFMPEGVideoFrame: public VideoFrame {
- public:
-	FFMPEGVideoFrame() : frame(nullptr) {
-	}
+	size_t _width;
+	size_t _height;
+	AVFrame* _frame;
+
+  public:
+	FFMPEGVideoFrame(size_t width, size_t height, AVFrame* frame) : _width(width), _height(height), _frame(frame) {}
 
 	~FFMPEGVideoFrame() override {
-		if (frame != nullptr) {
-			av_freep(&frame->data[0]);
-			av_frame_free(&frame);
+		if (_frame != nullptr) {
+			av_freep(&_frame->data[0]);
+			av_frame_free(&_frame);
 		}
 	}
-
-	DataPointers getDataPointers() override {
-		DataPointers ptrs;
-		ptrs.y = frame->data[0];
-		ptrs.u = frame->data[1];
-		ptrs.v = frame->data[2];
-
-		return ptrs;
+	size_t getPlaneNumber() override
+	{
+		switch (_frame->format) {
+		case AV_PIX_FMT_YUV420P:
+			// YUV data is planar
+			return 3;
+		default:
+			// Everything else is packed
+			return 1;
+		}
 	}
+	FrameSize getPlaneSize(size_t plane) override
+	{
+		switch (_frame->format) {
+		case AV_PIX_FMT_YUV420P: {
+			// YUV data is planar
+			auto width  = plane > 0 ? _width / 2 : _width;
+			auto height = plane > 0 ? _height / 2 : _height;
 
-	AVFrame* frame;
+			return {width, height, (size_t)_frame->linesize[plane]};
+		}
+		default:
+			// Everything else is packed
+			return {_width, _height, (size_t)_frame->linesize[plane]};
+		}
+	}
+	void* getPlaneData(size_t plane) override { return _frame->data[plane]; }
 };
 
-VideoDecoder::VideoDecoder(DecoderStatus* status)
-	: FFMPEGStreamDecoder(status),
-	  m_frameId(0) {
+VideoDecoder::VideoDecoder(DecoderStatus* status, AVPixelFormat destination_fmt)
+    : FFMPEGStreamDecoder(status), m_frameId(0), m_destinationFormat(destination_fmt)
+{
 	m_swsCtx = getSWSContext(m_status->videoCodecPars.width, m_status->videoCodecPars.height,
-							 m_status->videoCodecPars.pixel_format);
+	                         m_status->videoCodecPars.pixel_format, destination_fmt);
 }
 
 VideoDecoder::~VideoDecoder() {
@@ -53,57 +70,32 @@ VideoDecoder::~VideoDecoder() {
 }
 
 void VideoDecoder::convertAndPushPicture(const AVFrame* frame) {
-	// Allocate a picture to hold the YUV data
+	// Allocate a picture to hold the destination data
 	AVFrame* yuvFrame = av_frame_alloc();
 	av_frame_copy(yuvFrame, frame);
-	yuvFrame->format = DESTINATION_FORMAT;
+	yuvFrame->format = m_destinationFormat;
 
-	av_image_alloc(yuvFrame->data,
-				   yuvFrame->linesize,
-				   m_status->videoCodecPars.width,
-				   m_status->videoCodecPars.height,
-				   DESTINATION_FORMAT,
-				   1);
+	av_image_alloc(yuvFrame->data, yuvFrame->linesize, m_status->videoCodecPars.width, m_status->videoCodecPars.height,
+	               m_destinationFormat, 1);
 
-	std::unique_ptr<FFMPEGVideoFrame> videoFramePtr(new FFMPEGVideoFrame());
-
-	if (m_status->videoCodecPars.pixel_format == DESTINATION_FORMAT) {
-		av_image_copy(yuvFrame->data,
-					  yuvFrame->linesize,
-					  (const uint8_t**) (frame->data),
-					  frame->linesize,
-					  DESTINATION_FORMAT,
-					  m_status->videoCodecPars.width,
-					  m_status->videoCodecPars.height);
+	if (m_status->videoCodecPars.pixel_format == m_destinationFormat) {
+		av_image_copy(yuvFrame->data, yuvFrame->linesize, (const uint8_t**)(frame->data), frame->linesize,
+		              m_destinationFormat, m_status->videoCodecPars.width, m_status->videoCodecPars.height);
 	} else {
-		// Convert frame to YUV
-		sws_scale(
-			m_swsCtx,
-			(uint8_t const* const*) frame->data,
-			frame->linesize,
-			0,
-			m_status->videoCodecPars.height,
-			yuvFrame->data,
-			yuvFrame->linesize
-		);
+		// Convert frame to destination format
+		sws_scale(m_swsCtx, (uint8_t const* const*)frame->data, frame->linesize, 0, m_status->videoCodecPars.height,
+		          yuvFrame->data, yuvFrame->linesize);
 	}
 
+	std::unique_ptr<FFMPEGVideoFrame> videoFramePtr(
+	    new FFMPEGVideoFrame(static_cast<size_t>(m_status->videoCodecPars.width),
+	                         static_cast<size_t>(m_status->videoCodecPars.height), yuvFrame));
 	videoFramePtr->id = ++m_frameId;
 #if LIBAVCODEC_VERSION_INT > AV_VERSION_INT(58, 3, 102)
 	videoFramePtr->frameTime = getFrameTime(frame->best_effort_timestamp, m_status->videoStream->time_base);
 #else
 	videoFramePtr->frameTime = getFrameTime(av_frame_get_best_effort_timestamp(frame), m_status->videoStream->time_base);
 #endif
-	videoFramePtr->frame = yuvFrame;
-
-	videoFramePtr->ySize.height = static_cast<size_t>(m_status->videoCodecPars.height);
-	videoFramePtr->ySize.width = static_cast<size_t>(m_status->videoCodecPars.width);
-	videoFramePtr->ySize.stride = static_cast<size_t>(yuvFrame->linesize[0]);
-
-	// 420P means that the UV channels have half the width and height
-	videoFramePtr->uvSize.height = static_cast<size_t>(m_status->videoCodecPars.height / 2);
-	videoFramePtr->uvSize.width = static_cast<size_t>(m_status->videoCodecPars.width / 2);
-	videoFramePtr->uvSize.stride = static_cast<size_t>(yuvFrame->linesize[1]);
 
 	pushFrame(VideoFramePtr(videoFramePtr.release()));
 }

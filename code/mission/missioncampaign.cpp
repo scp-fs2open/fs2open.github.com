@@ -24,10 +24,11 @@
 #include <glob.h>
 #endif
 
+#include "freespace.h"
+#include "missioncampaign.h"
 #include "cfile/cfile.h"
 #include "cutscene/cutscenes.h"
 #include "cutscene/movie.h"
-#include "freespace.h"
 #include "gamesequence/gamesequence.h"
 #include "gamesnd/eventmusic.h"
 #include "localization/localize.h"
@@ -46,7 +47,6 @@
 #include "starfield/supernova.h"
 #include "ui/ui.h"
 #include "weapon/weapon.h"
-
 
 // campaign wasn't ended
 int Campaign_ending_via_supernova = 0;
@@ -849,7 +849,7 @@ void mission_campaign_savefile_delete( char *cfilename )
 	// only support the new filename here - taylor
 	sprintf_safe( filename, NOX("%s.%s.csg"), Player->callsign, base );
 
-	cf_delete( filename, CF_TYPE_PLAYERS );
+	cf_delete(filename, CF_TYPE_PLAYERS, CF_LOCATION_ROOT_USER | CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT);
 }
 
 void campaign_delete_save( char *cfn, char *pname)
@@ -881,13 +881,14 @@ void mission_campaign_delete_all_savefiles(char *pilot_name)
 	// be.  I have to save any file filters
 	filter_save = Get_file_list_filter;
 	Get_file_list_filter = NULL;
-	num_files = cf_get_file_list(names, dir_type, file_spec);
+	num_files            = cf_get_file_list(names, dir_type, file_spec, CF_SORT_NONE, nullptr,
+                                 CF_LOCATION_ROOT_USER | CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT);
 	Get_file_list_filter = filter_save;
 
 	for (i = 0; i < num_files; i++) {
 		strcpy_s(filename, names[i].c_str());
 		strcat_s(filename, ext);
-		cf_delete(filename, dir_type);
+		cf_delete(filename, dir_type, CF_LOCATION_ROOT_USER | CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT);
 	}
 }
 
@@ -1384,6 +1385,30 @@ int mission_campaign_get_filenames(char *filename, char dest[][NAME_LENGTH], int
 	}
 
 	return 0;
+}
+
+SCP_string mission_campaign_get_name(const char* filename)
+{
+	// read the mission file and only read the name entry
+	SCP_string filename_str = filename;
+	filename_str += FS_CAMPAIGN_FILE_EXT;
+	try {
+		Assertion(filename_str.size() < MAX_FILENAME_LEN,
+		          "Filename (%s) is too long. Is " SIZE_T_ARG " bytes long but maximum is %d.", filename_str.c_str(),
+		          filename_str.size(), MAX_FILENAME_LEN); // make sure no overflow
+		read_file_text(filename_str.c_str());
+		reset_parse();
+
+		required_string("$Name:");
+
+		SCP_string res;
+		stuff_string(res, F_NAME);
+
+		return res;
+	} catch (const parse::ParseException& e) {
+		mprintf(("MISSIONCAMPAIGN: Unable to parse '%s'!  Error message = %s.\n", filename_str.c_str(), e.what()));
+		return SCP_string();
+	}
 }
 
 /**

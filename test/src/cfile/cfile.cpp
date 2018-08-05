@@ -1,6 +1,7 @@
 
-#include <gtest/gtest.h>
+#include <cfile/cfilesystem.h>
 #include <graphics/font.h>
+#include <gtest/gtest.h>
 
 #include "util/FSTestFixture.h"
 
@@ -111,4 +112,18 @@ TEST_F(CFileTest, override_default_file) {
 	ASSERT_EQ(66, cfilelength(fp));
 
 	cfclose(fp);
+}
+
+TEST(CFileStandalone, test_check_location_flags)
+{
+	ASSERT_FALSE(cf_check_location_flags(CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT, CF_LOCATION_ROOT_USER));
+	ASSERT_TRUE(cf_check_location_flags(CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT, CF_LOCATION_ROOT_GAME));
+	ASSERT_TRUE(cf_check_location_flags(CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT, CF_LOCATION_TYPE_ROOT));
+	ASSERT_FALSE(cf_check_location_flags(CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT, CF_LOCATION_TYPE_PRIMARY_MOD));
+	ASSERT_FALSE(
+	    cf_check_location_flags(CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT, CF_LOCATION_TYPE_SECONDARY_MODS));
+	ASSERT_FALSE(cf_check_location_flags(CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT,
+	                                     CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_PRIMARY_MOD));
+	ASSERT_TRUE(cf_check_location_flags(CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT,
+	                                    CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT));
 }

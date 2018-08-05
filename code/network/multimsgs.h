@@ -27,6 +27,7 @@ struct button_info;
 struct header;
 struct beam_info;
 class ship_subsys;
+struct log_entry;
 
 // macros for building up packets -- to save on time and typing.  Important to note that local variables
 // must be named correctly
@@ -297,7 +298,7 @@ void send_ship_create_packet( object *objp, int is_support = 0 );
 void send_ship_depart_packet( object *objp, int method = -1 );
 
 // send a mission log item packet
-void send_mission_log_packet( int entry );
+void send_mission_log_packet( log_entry* entry );
 
 // send a mission message packet
 void send_mission_message_packet(int id, const char *who_from, int priority, int timing, int source, int builtin_type, int multi_target, int multi_team_filter, int delay = 0);

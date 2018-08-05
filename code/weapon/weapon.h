@@ -54,6 +54,9 @@ extern int Num_weapon_subtypes;
 #define MAX_PARTICLE_SPEWERS	4	//i figure 4 spewers should be enough for now -nuke
 #define MAX_WEP_DAMAGE_SLOTS	32		//Maximum number of ships which can be counted as killer or assits on destroying this weapon
 
+// scale factor for supercaps taking damage from weapons which are not "supercap" weapons
+#define SUPERCAP_DAMAGE_SCALE			0.25f
+
 enum class WeaponState : uint32_t
 {
 	INVALID,
@@ -143,7 +146,7 @@ typedef struct weapon {
 
 	mc_info* collisionInfo; // The last collision of this weapon or NULL if it had none
 
-	int hud_in_flight_snd_sig;					// Signature of the sound played while the weapon is in flight
+	sound_handle hud_in_flight_snd_sig; // Signature of the sound played while the weapon is in flight
 
 	WeaponState weapon_state; // The current state of the weapon
 } weapon;
@@ -334,17 +337,17 @@ typedef struct weapon_info {
 
 	float shield_impact_explosion_radius;
 
-	particle::ParticleEffectIndex impact_weapon_expl_effect; // Impact particle effect
-	
-	particle::ParticleEffectIndex dinky_impact_weapon_expl_effect; // Dinky impact particle effect
+	particle::ParticleEffectHandle impact_weapon_expl_effect; // Impact particle effect
 
-	particle::ParticleEffectIndex flash_impact_weapon_expl_effect;
+	particle::ParticleEffectHandle dinky_impact_weapon_expl_effect; // Dinky impact particle effect
 
-	particle::ParticleEffectIndex piercing_impact_effect;
-	particle::ParticleEffectIndex piercing_impact_secondary_effect;
+	particle::ParticleEffectHandle flash_impact_weapon_expl_effect;
+
+	particle::ParticleEffectHandle piercing_impact_effect;
+	particle::ParticleEffectHandle piercing_impact_secondary_effect;
 
 	// Particle effect for the various states, WeaponState::NORMAL is the state for the whole lifetime, even for missiles
-	SCP_unordered_map<WeaponState, particle::ParticleEffectIndex, WeaponStateHash> state_effects;
+	SCP_unordered_map<WeaponState, particle::ParticleEffectHandle, WeaponStateHash> state_effects;
 
 	// EMP effect
 	float emp_intensity;					// intensity of the EMP effect

@@ -13,7 +13,7 @@
 #define __SOUND_H__
 
 #include "globalincs/pstypes.h"
-
+#include "sound/ds.h"
 #include "utils/RandomRange.h"
 #include "utils/id.h"
 
@@ -62,6 +62,8 @@ extern const unsigned int SND_ENHANCED_MAX_LIMIT;
 struct sound_load_tag {
 };
 using sound_load_id = ::util::ID<sound_load_tag, int, -1>;
+
+using sound_handle = ds_sound_handle;
 
 struct game_snd_entry {
 	char filename[MAX_FILENAME_LEN];
@@ -128,49 +130,56 @@ void	snd_unload_all();
 // Plays a sound with volume between 0 and 1.0, where 0 is the
 // inaudible and 1.0 is the loudest sound in the game.
 // Pan goes from -1.0 all the way left to 0.0 in center to 1.0 all the way right.
-int snd_play( game_snd *gs, float pan=0.0f, float vol_scale=1.0f, int priority = SND_PRIORITY_SINGLE_INSTANCE, bool voice_message = false );
+sound_handle snd_play(game_snd* gs, float pan = 0.0f, float vol_scale = 1.0f,
+                      int priority = SND_PRIORITY_SINGLE_INSTANCE, bool voice_message = false);
 
 // Play a sound directly from index returned from snd_load().  Bypasses
 // the sound management process of using game_snd.
-int snd_play_raw(sound_load_id soundnum, float pan, float vol_scale = 1.0f, int priority = SND_PRIORITY_MUST_PLAY);
+sound_handle snd_play_raw(sound_load_id soundnum, float pan, float vol_scale = 1.0f,
+                          int priority = SND_PRIORITY_MUST_PLAY);
 
 // Plays a sound with volume between 0 and 1.0, where 0 is the
 // inaudible and 1.0 is the loudest sound in the game.  It scales
 // the pan and volume relative to the current viewer's location.
-int snd_play_3d(game_snd *gs, vec3d *source_pos, vec3d *listen_pos, float radius=0.0f, vec3d *vel = NULL, int looping = 0, float vol_scale=1.0f, int priority = SND_PRIORITY_SINGLE_INSTANCE, vec3d *sound_fvec = NULL, float range_factor = 1.0f, int force = 0, bool is_ambient = false );
+sound_handle snd_play_3d(game_snd* gs, vec3d* source_pos, vec3d* listen_pos, float radius = 0.0f, vec3d* vel = nullptr,
+                         int looping = 0, float vol_scale = 1.0f, int priority = SND_PRIORITY_SINGLE_INSTANCE,
+                         vec3d* sound_fvec = nullptr, float range_factor = 1.0f, int force = 0,
+                         bool is_ambient = false);
 
 // update the given 3d sound with a new position
-void snd_update_3d_pos(int soudnnum, game_snd *gs, vec3d *new_pos, float radius = 0.0f, float range_factor = 1.0f);
+void snd_update_3d_pos(sound_handle soudnnum, game_snd* gs, vec3d* new_pos, float radius = 0.0f,
+                       float range_factor = 1.0f);
 
 // Use these for looping sounds.
 // Returns the handle of the sound. -1 if failed.
 // If startloop or stoploop are not -1, then then are used.
-int	snd_play_looping( game_snd *gs, float pan=0.0f, int start_loop=-1, int stop_loop=-1, float vol_scale=1.0f, int scriptingUpdateVolume = 1);
+sound_handle snd_play_looping(game_snd* gs, float pan = 0.0f, int start_loop = -1, int stop_loop = -1,
+                              float vol_scale = 1.0f, int scriptingUpdateVolume = 1);
 
-void	snd_stop( int snd_handle );
+void snd_stop(sound_handle snd_handle);
 
 // Sets the volume of a sound that is already playing.
 // The volume is between 0 and 1.0, where 0 is the
 // inaudible and 1.0 is the loudest sound in the game.
-void snd_set_volume( int snd_handle, float volume );
+void snd_set_volume(sound_handle snd_handle, float volume);
 
 // Sets the panning location of a sound that is already playing.
 // Pan goes from -1.0 all the way left to 0.0 in center to 1.0 all the way right.
-void snd_set_pan( int snd_handle, float pan );
+void snd_set_pan(sound_handle snd_handle, float pan);
 
 // Sets the pitch (frequency) of a sound that is already playing
 // Valid values for pitch are between 100 and 100000
-void	snd_set_pitch( int snd_handle, float pitch );
-float	snd_get_pitch( int snd_handle );
+void snd_set_pitch(sound_handle snd_handle, float pitch);
+float snd_get_pitch(sound_handle snd_handle);
 
 // Stops all sounds from playing, even looping ones.
 void	snd_stop_all();
 
 // determines if the sound handle is still palying
-int	snd_is_playing( int snd_handle );
+int snd_is_playing(sound_handle snd_handle);
 
 // change the looping status of a sound that is playing
-void	snd_chg_loop_status(int snd_handle, int loop);
+void snd_chg_loop_status(sound_handle snd_handle, int loop);
 
 // return the time in ms for the duration of the sound
 int snd_get_duration(sound_load_id snd_id);
@@ -199,19 +208,21 @@ void snd_do_frame();
 void snd_adjust_audio_volume(int type, float percent, int time);
 
 // repositioning of the sound buffer pointer
-void snd_rewind(int snd_handle, float seconds);					// rewind N seconds from the current position
-void snd_ffwd(int snd_handle, float seconds);						// fast forward N seconds from the current position
-void snd_set_pos(int snd_handle, float val,int as_pct);		// set the position val as either a percentage (if as_pct) or as a # of seconds into the sound
+void snd_rewind(sound_handle snd_handle, float seconds); // rewind N seconds from the current position
+void snd_ffwd(sound_handle snd_handle, float seconds);   // fast forward N seconds from the current position
+void snd_set_pos(
+    sound_handle snd_handle, float val,
+    int as_pct); // set the position val as either a percentage (if as_pct) or as a # of seconds into the sound
 
 void snd_get_format(sound_load_id handle, int* bits_per_sample, int* frequency);
-int snd_time_remaining(int handle);
+int snd_time_remaining(sound_handle handle);
 
 /**
  * @brief Get the sound id that was used to start the sound with the specified handle
  * @param snd_handle The sound handle to query the id from
  * @return The loaded sound handle or invalid handle on error
  */
-sound_load_id snd_get_sound_id(int snd_handle);
+sound_load_id snd_get_sound_id(sound_handle snd_handle);
 
 // sound environment
 extern unsigned int SND_ENV_DEFAULT;

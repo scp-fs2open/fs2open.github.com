@@ -231,7 +231,7 @@ ADE_VIRTVAR(ArmorClass, l_Ship, "string", "Current Armor class", "string", "Armo
 	return ade_set_args(L, "s", name);
 }
 
-ADE_VIRTVAR(Name, l_Ship, "string", "Ship name", "string", "Ship name, or empty string if handle is invalid")
+ADE_VIRTVAR(Name, l_Ship, "string", "Ship name. This is the actual name of the ship. Use <i>getDisplayString</i> to get the string which should be displayed to the player.", "string", "Ship name, or empty string if handle is invalid")
 {
 	object_h *objh;
 	char *s = NULL;
@@ -248,6 +248,25 @@ ADE_VIRTVAR(Name, l_Ship, "string", "Ship name", "string", "Ship name, or empty 
 	}
 
 	return ade_set_args(L, "s", shipp->ship_name);
+}
+
+ADE_VIRTVAR(DisplayName, l_Ship, "string", "Ship display name", "string", "The display name of the ship or empty if there is no display string")
+{
+	object_h *objh;
+	char *s = nullptr;
+	if(!ade_get_args(L, "o|s", l_Ship.GetPtr(&objh), &s))
+		return ade_set_error(L, "s", "");
+
+	if(!objh->IsValid())
+		return ade_set_error(L, "s", "");
+
+	ship *shipp = &Ships[objh->objp->instance];
+
+	if(ADE_SETTING_VAR && s != nullptr) {
+		shipp->display_name = s;
+	}
+
+	return ade_set_args(L, "s", shipp->display_name.c_str());
 }
 
 ADE_VIRTVAR(AfterburnerFuelLeft, l_Ship, "number", "Afterburner fuel left", "number", "Afterburner fuel left, or 0 if handle is invalid")
@@ -1629,6 +1648,21 @@ ADE_FUNC(getWing, l_Ship, NULL, "Returns the ship's wing", "wing", "Wing handle,
 
 	shipp = &Ships[objh->objp->instance];
 	return ade_set_args(L, "o", l_Wing.Set(shipp->wingnum));
+}
+
+ADE_FUNC(getDisplayString, l_Ship, nullptr, "Returns the string which should be used when displaying the name of the ship to the player", "string", "The display string or empty if handle is invalid")
+{
+	object_h *objh = nullptr;
+	ship *shipp = nullptr;
+
+	if (!ade_get_args(L, "o", l_Ship.GetPtr(&objh)))
+		return ade_set_error(L, "s", "");
+
+	if(!objh->IsValid())
+		return ade_set_error(L, "s", "");
+
+	shipp = &Ships[objh->objp->instance];
+	return ade_set_args(L, "s", shipp->get_display_string());
 }
 
 
