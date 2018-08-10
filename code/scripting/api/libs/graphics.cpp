@@ -1541,18 +1541,23 @@ ADE_FUNC(resetClip, l_Graphics, NULL, "Resets the clipping region that might hav
 	return ADE_RETURN_TRUE;
 }
 
-ADE_FUNC(openMovie, l_Graphics, "string name",
+ADE_FUNC(openMovie, l_Graphics, "string name, boolean looping = false",
          "Opens the movie with the specified name. If the name has an extension it will be removed. This function will "
          "try all movie formats supported by the engine and use the first that is found.",
          "movie_player", "The cutscene player handle or invalid handle if cutscene could not be opened.")
 {
 	const char* name = nullptr;
-	if (!ade_get_args(L, "s", &name)) {
+	bool looping = false;
+	if (!ade_get_args(L, "s|b", &name, &looping)) {
 		return ade_set_error(L, "o", l_MoviePlayer.Set(nullptr));
 	}
 
 	// Audio is disabled for scripted movies at the moment
-	auto player = cutscene::Player::newPlayer(name, false);
+	cutscene::PlaybackProperties props;
+	props.with_audio = false;
+	props.looping = looping;
+
+	auto player = cutscene::Player::newPlayer(name, props);
 
 	if (!player) {
 		return ade_set_args(L, "o", l_MoviePlayer.Set(nullptr));

@@ -18,6 +18,8 @@ class FFMPEGDecoder: public Decoder {
 
 	std::unique_ptr<DecoderStatus> m_status;
 
+	PlaybackProperties m_properties;
+
 	bool hasExternalSubtitle() const;
 
 	void runSubtitleDecoder(SubtitleDecoder* decoder);
@@ -27,7 +29,7 @@ class FFMPEGDecoder: public Decoder {
 
 	~FFMPEGDecoder() override;
 
-	bool initialize(const SCP_string& fileName) override;
+	bool initialize(const SCP_string& fileName, const PlaybackProperties& properties) override;
 
 	MovieProperties getProperties() const override;
 

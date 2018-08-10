@@ -28,6 +28,9 @@ class AVPacketScope
 		: _packet(av_packet) {
 	}
 
+	AVPacketScope(const AVPacketScope&) = delete;
+	AVPacketScope& operator=(const AVPacketScope&) = delete;
+
 	~AVPacketScope() {
 		av_packet_unref(_packet);
 	}
@@ -214,8 +217,14 @@ std::unique_ptr<InputStream> openStream(const SCP_string& name) {
 }
 
 std::unique_ptr<DecoderStatus> initializeStatus(std::unique_ptr<InputStream>& stream,
-                                                std::unique_ptr<InputStream>& subt)
+                                                std::unique_ptr<InputStream>& subt,
+                                                const PlaybackProperties& properties)
 {
+	if (subt && properties.looping) {
+		mprintf(("FFmpeg: External subtitles and looping movies are not supported!\n"));
+		return nullptr;
+	}
+
 	std::unique_ptr<DecoderStatus> status(new DecoderStatus());
 
 	auto ctx = stream->m_ctx->ctx();
@@ -233,14 +242,18 @@ std::unique_ptr<DecoderStatus> initializeStatus(std::unique_ptr<InputStream>& st
 		return nullptr;
 	}
 
-	auto audioStream = av_find_best_stream(ctx, AVMEDIA_TYPE_AUDIO, -1, videoStream, &status->audioCodec, 0);
-	if (audioStream < 0) {
-		if (audioStream == AVERROR_STREAM_NOT_FOUND) {
-			mprintf(("FFmpeg: No audio stream found in file!\n"));
-		} else if (audioStream == AVERROR_DECODER_NOT_FOUND) {
-			mprintf(("FFmpeg: Codec for audio stream could not be found!\n"));
-		} else {
-			mprintf(("FFmpeg: Unknown error while finding audio stream!\n"));
+	int audioStream = -1;
+
+	if (properties.with_audio) {
+		audioStream = av_find_best_stream(ctx, AVMEDIA_TYPE_AUDIO, -1, videoStream, &status->audioCodec, 0);
+		if (audioStream < 0) {
+			if (audioStream == AVERROR_STREAM_NOT_FOUND) {
+				mprintf(("FFmpeg: No audio stream found in file!\n"));
+			} else if (audioStream == AVERROR_DECODER_NOT_FOUND) {
+				mprintf(("FFmpeg: Codec for audio stream could not be found!\n"));
+			} else {
+				mprintf(("FFmpeg: Unknown error while finding audio stream!\n"));
+			}
 		}
 	}
 
@@ -431,7 +444,8 @@ std::unique_ptr<InputStream> openSubtitleStream(const SCP_string& name)
 }
 }
 
-bool FFMPEGDecoder::initialize(const SCP_string& fileName) {
+bool FFMPEGDecoder::initialize(const SCP_string& fileName, const PlaybackProperties& properties)
+{
 	SCP_string movieName = fileName;
 	// First make the file name lower case
 	std::transform(movieName.begin(), movieName.end(), movieName.begin(), ::tolower);
@@ -451,7 +465,7 @@ bool FFMPEGDecoder::initialize(const SCP_string& fileName) {
 	auto subt = openSubtitleStream(movieName);
 
 	// We now have a valid input stream, try to find the correct streams
-	auto status = initializeStatus(input, subt);
+	auto status = initializeStatus(input, subt, properties);
 	if (!status) {
 		return false;
 	}
@@ -463,6 +477,7 @@ bool FFMPEGDecoder::initialize(const SCP_string& fileName) {
 	std::swap(m_input, input);
 	std::swap(m_subtitleInput, subt);
 	std::swap(m_status, status);
+	m_properties = properties;
 	return true;
 }
 
@@ -502,74 +517,93 @@ void FFMPEGDecoder::startDecoding() {
 
 	auto ctx = m_input->m_ctx->ctx();
 	AVPacket packet;
-	while (isDecoding()) {
-		auto read_err = av_read_frame(ctx, &packet);
-		AVPacketScope scope(&packet);
-
-		if (read_err < 0) {
-			if (read_err == AVERROR_EOF) {
-				// Finished reading -> break out of loop
-				break;
-			} else if (avio_feof(ctx->pb) != 0) {
-				// Also EOF!
-				break;
-			} else {
-				// Some kind of other error, try to continue reading
-				char errorStr[512];
-				av_strerror(read_err, errorStr, sizeof(errorStr));
-				mprintf(("FFMPEG: Failed to read frame! Error: %s\n", errorStr));
-
-				// Skip packet
-				continue;
-			}
+	do {
+		auto seek_err = av_seek_frame(ctx, -1, 0, AVSEEK_FLAG_BACKWARD);
+		if (seek_err < 0) {
+			char errorStr[512];
+			av_strerror(seek_err, errorStr, sizeof(errorStr));
+			mprintf(("FFMPEG: Failed to seek to start of movie file! Error: %s\n", errorStr));
+			break;
 		}
-
-		if (packet.stream_index == m_status->videoStreamIndex) {
-			videoDecoder->decodePacket(&packet);
-
-			VideoFramePtr ptr;
-			while((ptr = videoDecoder->getFrame()) != nullptr) {
-				pushFrameData(std::move(ptr));
-			}
-		} else if (audioDecoder && packet.stream_index == m_status->audioStreamIndex) {
-			audioDecoder->decodePacket(&packet);
-
-			AudioFramePtr ptr;
-			while ((ptr = audioDecoder->getFrame()) != nullptr) {
-				pushAudioData(std::move(ptr));
-			}
-		} else if (subtitleDecoder && packet.stream_index == m_status->subtitleStreamIndex) {
-			subtitleDecoder->decodePacket(&packet);
-
-			SubtitleFramePtr ptr;
-			while ((ptr = subtitleDecoder->getFrame()) != nullptr) {
-				pushSubtitleData(std::move(ptr));
-			}
-		}
-	}
-
-	if (isDecoding()) {
-		// If we are still alive then read the last frames from the decoders
-		videoDecoder->finishDecoding();
-		VideoFramePtr video_ptr;
-		while ((video_ptr = videoDecoder->getFrame()) != nullptr) {
-			pushFrameData(std::move(video_ptr));
-		}
-
+		videoDecoder->flushBuffers();
 		if (audioDecoder) {
-			audioDecoder->finishDecoding();
-			AudioFramePtr audio_frame;
-			while ((audio_frame = audioDecoder->getFrame()) != nullptr) {
-				pushAudioData(std::move(audio_frame));
+			audioDecoder->flushBuffers();
+		}
+		if (subtitleDecoder) {
+			subtitleDecoder->flushBuffers();
+		}
+
+		while (isDecoding()) {
+			auto read_err = av_read_frame(ctx, &packet);
+			AVPacketScope scope(&packet);
+
+			if (read_err < 0) {
+				if (read_err == AVERROR_EOF) {
+					// Finished reading -> break out of loop
+					break;
+				} else if (avio_feof(ctx->pb) != 0) {
+					// Also EOF!
+					break;
+				} else {
+					// Some kind of other error, try to continue reading
+					char errorStr[512];
+					av_strerror(read_err, errorStr, sizeof(errorStr));
+					mprintf(("FFMPEG: Failed to read frame! Error: %s\n", errorStr));
+
+					// Skip packet
+					continue;
+				}
+			}
+
+			if (packet.stream_index == m_status->videoStreamIndex) {
+				videoDecoder->decodePacket(&packet);
+
+				VideoFramePtr ptr;
+				while ((ptr = videoDecoder->getFrame()) != nullptr) {
+					pushFrameData(std::move(ptr));
+				}
+			} else if (audioDecoder && packet.stream_index == m_status->audioStreamIndex) {
+				audioDecoder->decodePacket(&packet);
+
+				AudioFramePtr ptr;
+				while ((ptr = audioDecoder->getFrame()) != nullptr) {
+					pushAudioData(std::move(ptr));
+				}
+			} else if (subtitleDecoder && packet.stream_index == m_status->subtitleStreamIndex) {
+				subtitleDecoder->decodePacket(&packet);
+
+				SubtitleFramePtr ptr;
+				while ((ptr = subtitleDecoder->getFrame()) != nullptr) {
+					pushSubtitleData(std::move(ptr));
+				}
 			}
 		}
-	}
+
+		if (isDecoding()) {
+			// If we are still alive then read the last frames from the decoders
+			videoDecoder->finishDecoding();
+			VideoFramePtr video_ptr;
+			while ((video_ptr = videoDecoder->getFrame()) != nullptr) {
+				pushFrameData(std::move(video_ptr));
+			}
+
+			if (audioDecoder) {
+				audioDecoder->finishDecoding();
+				AudioFramePtr audio_frame;
+				while ((audio_frame = audioDecoder->getFrame()) != nullptr) {
+					pushAudioData(std::move(audio_frame));
+				}
+			}
+		}
+		// If the video is being looped then we start again from the beginning
+	} while (m_properties.looping && isDecoding());
+
+	// Stop the decoder first to let the subtitle thread know that it shouldn't continue
+	stopDecoder();
 
 	if (subtitle_thread) {
 		subtitle_thread->join();
 	}
-
-	stopDecoder();
 }
 
 bool FFMPEGDecoder::hasAudio() const { return m_status->audioStreamIndex >= 0; }

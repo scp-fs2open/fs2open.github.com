@@ -73,6 +73,11 @@ struct SubtitleFrame {
 };
 typedef std::unique_ptr<SubtitleFrame> SubtitleFramePtr;
 
+struct PlaybackProperties {
+	bool with_audio = true;
+	bool looping = false;
+};
+
 /**
  * @brief Abstract class for decoding a video or audio stream
  *
@@ -106,7 +111,7 @@ class Decoder {
 	 * @param fileName The name of the file that should be opened
 	 * @return @c true if the initialization was successfull, @c false otherwise
 	 */
-	virtual bool initialize(const SCP_string& fileName) = 0;
+	virtual bool initialize(const SCP_string& fileName, const PlaybackProperties& properties) = 0;
 
 	/**
 	 * @brief Returns the properties of the video

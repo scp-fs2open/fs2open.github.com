@@ -30,6 +30,8 @@ class AudioDecoder: public FFMPEGStreamDecoder<AudioFrame> {
 	void decodePacket(AVPacket* packet) override;
 
 	void finishDecoding() override;
+
+	void flushBuffers() override;
 };
 }
 }
