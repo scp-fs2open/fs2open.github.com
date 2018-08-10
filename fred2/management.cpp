@@ -308,7 +308,10 @@ bool fred_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 	cfile_chdir(Fred_base_dir);
 
 	// this should enable mods - Kazan
-	parse_cmdline(__argc, __argv);
+	if (!parse_cmdline(__argc, __argv)) {
+		// Command line contained an option that terminates the program immediately
+		exit(1);
+	}
 
 #ifndef NDEBUG
 	#if FS_VERSION_REVIS == 0
