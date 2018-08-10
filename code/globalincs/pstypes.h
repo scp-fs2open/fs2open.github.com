@@ -103,20 +103,6 @@ typedef struct vec3d {
 	};
 } vec3d;
 
-/** Compares two vec3ds */
-inline bool operator==(const vec3d &self, const vec3d &other)
-{
-	return (self.xyz.x == other.xyz.x
-		&& self.xyz.y == other.xyz.y
-		&& self.xyz.z == other.xyz.z
-	);
-}
-
-inline bool operator!=(const vec3d &self, const vec3d &other)
-{
-	return !(self == other);
-}
-
 typedef struct vec2d {
 	float x, y;
 } vec2d;
