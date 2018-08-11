@@ -351,7 +351,7 @@ void AsteroidEditorDialogModel::update_init()
 			set_modified();
 		}
 
-		vec3d vel_vec{ {1.0f, 0.0f, 0.0f} };
+		vec3d vel_vec {{{ 1.0f, 0.0f, 0.0f }}};
 		vm_vec_scale(&vel_vec, static_cast<float>(_avg_speed));
 		modify(_a_field.vel, vel_vec);
 
