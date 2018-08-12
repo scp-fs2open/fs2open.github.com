@@ -389,7 +389,7 @@ template <class T> void CAP( T& v, T mn, T mx )
 }
 
 // faster version of CAP()
-#define CLAMP(x, min, max) do { if ( (x) < (min) ) (x) = (min); else if ((x) > (max)) (x) = (max); } while(0)
+#define CLAMP(x, min, max) do { if ( (x) < (min) ) (x) = (min); else if ((x) > (max)) (x) = (max); } while(false)
 
 //=========================================================
 // Memory management functions
