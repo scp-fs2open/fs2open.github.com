@@ -56,7 +56,7 @@ void AsteroidEditorDialogModel::reject()
 
 void AsteroidEditorDialogModel::initializeData()
 {
-	for (auto i = 0; i < MAX_ACTIVE_DEBRIS_TYPES; ++i) {
+	for (auto i : _field_debris_type) {
 		_field_debris_type[i] = -1;
 	}
 
@@ -351,7 +351,7 @@ void AsteroidEditorDialogModel::update_init()
 			set_modified();
 		}
 
-		vec3d vel_vec {{{ 1.0f, 0.0f, 0.0f }}};
+		vec3d vel_vec = vmd_x_vector;
 		vm_vec_scale(&vel_vec, static_cast<float>(_avg_speed));
 		modify(_a_field.vel, vel_vec);
 

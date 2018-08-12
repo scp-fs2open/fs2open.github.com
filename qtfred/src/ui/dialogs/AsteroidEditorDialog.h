@@ -17,11 +17,11 @@ class AsteroidEditorDialog : public QDialog
 {
 	Q_OBJECT
 public:
-	explicit AsteroidEditorDialog(FredView* parent, EditorViewport* viewport);
-	~AsteroidEditorDialog();
+	AsteroidEditorDialog(FredView* parent, EditorViewport* viewport);
+	~AsteroidEditorDialog() override;
 
 private:
-	void done(int r);
+	void done(int r) override;
 
 	void toggleEnabled(bool enabled);
 	void toggleInnerBoxEnabled(bool enabled);

@@ -55,11 +55,11 @@ AsteroidEditorDialog::AsteroidEditorDialog(FredView *parent, EditorViewport* vie
 
 	QString debris_size[NUM_DEBRIS_SIZES] = { "Small", "Medium", "Large" };
 	QStringList debris_names("None");
-	for (auto i = 0ul; i < Species_info.size(); i++)  // each species
+	for (auto i : Species_info)  // each species
 	{
-		for (auto j = 0; j < NUM_DEBRIS_SIZES; j++) // each size
+		for (auto j : debris_size) // each size
 		{
-			debris_names += QString(Species_info.at(i).species_name) + " " + debris_size[j];
+			debris_names += QString(i.species_name) + " " + j;
 		}
 	}
 
@@ -124,9 +124,7 @@ AsteroidEditorDialog::AsteroidEditorDialog(FredView *parent, EditorViewport* vie
 	updateUI();
 }
 
-AsteroidEditorDialog::~AsteroidEditorDialog()
-{
-}
+AsteroidEditorDialog::~AsteroidEditorDialog() = default;
 
 QString & AsteroidEditorDialog::getBoxText(AsteroidEditorDialogModel::_box_line_edits type)
 {
