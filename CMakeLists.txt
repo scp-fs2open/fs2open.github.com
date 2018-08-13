@@ -84,7 +84,6 @@ IF (WIN32)
 	OPTION(FSO_BUILD_FRED2 "Build FRED2 binary" ON)
 elseif(UNIX)
 	option(FSO_BUILD_APPIMAGE "Build an AppImage package" OFF)
-	set(APPIMAGE_ASSISTANT "" CACHE STRING "The root directory of an AppImage clone.")
 ENDIF(WIN32)
 
 OPTION(FSO_BUILD_TOOLS "Build tools related to FSO" OFF)

@@ -2,15 +2,19 @@
 
 set -ex
 
+if [ "$TRAVIS_OS_NAME" = "linux" ]; then
+    mkdir -p /tmp/builds
+    if [ "$RELEASE_BUILD" = true ]; then
+        # Package the source code in release builds
+        PARENT_DIR="$(basename "$PWD")"
+        (cd .. && tar -czvf /tmp/builds/$PACKAGE_NAME-source-Unix.tar.gz --exclude-vcs "$PARENT_DIR")
+    fi
+fi
+
 mkdir -p build
 cd build
 
 if [ "$TRAVIS_OS_NAME" = "linux" ]; then
-    if [ "$RELEASE_BUILD" = true ]; then
-        PARENT_DIR="$(basename $PWD)"
-        (cd .. && tar -czvf /tmp/builds/$PACKAGE_NAME-source-Unix.tar.gz --exclude-vcs "$PARENT_DIR")
-    fi
-    
     CXXFLAGS="-m64 -mtune=generic -mfpmath=sse -msse -msse2 -pipe -Wno-unknown-pragmas"
     CFLAGS="-m64 -mtune=generic -mfpmath=sse -msse -msse2 -pipe -Wno-unknown-pragmas"
 
@@ -27,8 +31,7 @@ if [ "$TRAVIS_OS_NAME" = "linux" ]; then
             mkdir -p $config
             cd $config
             eval $CMAKE -DFSO_INSTALL_DEBUG_FILES=ON -DCMAKE_BUILD_TYPE=$config -DCMAKE_INSTALL_PREFIX="/tmp/release/$config" \
-                -DFSO_BUILD_APPIMAGE=ON -DAPPIMAGE_ASSISTANT="$HOME/AppImageAssistant" \
-                -DFSO_BUILD_INCLUDED_LIBS=ON -DFFMPEG_USE_PRECOMPILED=ON ../..
+                -DFSO_BUILD_APPIMAGE=ON -DFSO_BUILD_INCLUDED_LIBS=ON -DFFMPEG_USE_PRECOMPILED=ON -DFSO_BUILD_QTFRED=ON ../..
             cd ..
         done
     else

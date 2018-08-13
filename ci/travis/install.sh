@@ -16,8 +16,11 @@ if [ "$TRAVIS_OS_NAME" = "linux" ]; then
     cd $HOME
     
     if [ "${BUILD_DEPLOYMENT}" = true ]; then
-        wget -c "https://github.com/probonopd/AppImageKit/releases/download/5/AppImageAssistant" # (64-bit)
-        chmod a+x ./AppImageAssistant
+        wget -O appimagetool -c "https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage" # (64-bit)
+        chmod a+x ./appimagetool
+
+        wget -O linuxdeployqt -c "https://github.com/probonopd/linuxdeployqt/releases/download/continuous/linuxdeployqt-continuous-x86_64.AppImage" # (64-bit)
+        chmod a+x ./linuxdeployqt
     fi
 elif [ "$TRAVIS_OS_NAME" = "osx" ]; then
     gem install xcpretty
