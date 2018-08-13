@@ -55,9 +55,9 @@ AsteroidEditorDialog::AsteroidEditorDialog(FredView *parent, EditorViewport* vie
 
 	QString debris_size[NUM_DEBRIS_SIZES] = { "Small", "Medium", "Large" };
 	QStringList debris_names("None");
-	for (auto i : Species_info)  // each species
+	for (const auto& i : Species_info)  // each species
 	{
-		for (const auto j : debris_size) // each size
+		for (const auto& j : debris_size) // each size
 		{
 			debris_names += QString(i.species_name) + " " + j;
 		}

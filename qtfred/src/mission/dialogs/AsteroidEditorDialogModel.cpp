@@ -33,7 +33,7 @@ AsteroidEditorDialogModel::AsteroidEditorDialogModel(QObject* parent, EditorView
 		debris_inverse_idx_lookup.emplace(ship_debris_idx_lookup[i], i);
 	}
 	// note that normal asteroids use the same index field! Need to add dummy entries for them as well
-	for (auto i = 0; i < 3; ++i) {
+	for (auto i = 0; i < MAX_ACTIVE_DEBRIS_TYPES; ++i) {
 		debris_inverse_idx_lookup.emplace(i, 0);
 	}
 	initializeData();
@@ -56,8 +56,8 @@ void AsteroidEditorDialogModel::reject()
 
 void AsteroidEditorDialogModel::initializeData()
 {
-	for (auto i : _field_debris_type) {
-		_field_debris_type[i] = -1;
+	for (auto& i : _field_debris_type) {
+		i = -1;
 	}
 
 	_a_field = Asteroid_field;
