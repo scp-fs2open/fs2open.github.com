@@ -22,6 +22,7 @@
 #include "menuui/mainhallmenu.h"
 #include "menuui/readyroom.h"
 #include "menuui/techmenu.h"	// for tech menu reset stuff
+#include "mission/missionload.h"
 #include "mission/missionparse.h"
 #include "mission/missioncampaign.h"
 #include "missionui/missionscreencommon.h"
@@ -471,7 +472,9 @@ int build_standalone_mission_list_do_frame()
 
 			// tack on an extension
 			strcat_s(filename, FS_MISSION_FILE_EXT);
-			if (!get_mission_info(filename)) {			
+
+			// check if we can list the mission and if loading basic info didn't return an error code
+			if (!mission_is_ignored(filename) && !get_mission_info(filename)) {
 				Standalone_mission_names[Num_standalone_missions_with_info] = vm_strdup(The_mission.name);
 				Standalone_mission_flags[Num_standalone_missions_with_info] = The_mission.game_type;
 				int y = Num_lines * (font_height + 2);
@@ -481,7 +484,7 @@ int build_standalone_mission_list_do_frame()
 				fs_builtin_mission *fb = game_find_builtin_mission(filename);				
 				if((fb != NULL) && (fb->flags & FSB_FROM_VOLITION)){
 					flags |= READYROOM_FLAG_FROM_VOLITION;
-				}				
+				}
 
 				// add the line
 				sim_room_line_add(READYROOM_LINE_MISSION, Standalone_mission_names[Num_standalone_missions_with_info], Mission_filenames[Num_standalone_missions_with_info], list_x1 + M_TEXT_X, y, flags);			
