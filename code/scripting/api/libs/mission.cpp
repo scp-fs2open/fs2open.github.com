@@ -878,7 +878,15 @@ ADE_FUNC(createWeapon, l_Mission, "[weaponclass Class=WeaponClass[1], orientatio
 
 ADE_FUNC(getMissionFilename, l_Mission, NULL, "Gets mission filename", "string", "Mission filename, or empty string if game is not in a mission")
 {
-	return ade_set_args(L, "s", Game_current_mission_filename);
+	char temp[MAX_FILENAME_LEN];
+
+	// per Axem, mn.getMissionFilename() sometimes returns the filename with the .fs2 extension, and sometimes not
+	// depending if you are in a campaign or tech room
+	strcpy_s(temp, Game_current_mission_filename);
+	if (stristr(temp, ".fs2") == nullptr)
+		strcat_s(temp, ".fs2");
+
+	return ade_set_args(L, "s", temp);
 }
 
 ADE_FUNC(startMission, l_Mission, "[Filename or MISSION_* enumeration, Briefing = true]", "Starts the defined mission", "boolean", "True, or false if the function fails")
