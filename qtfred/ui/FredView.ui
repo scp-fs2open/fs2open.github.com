@@ -1091,6 +1091,9 @@
    <property name="text">
     <string>&amp;Asteroid Field</string>
    </property>
+   <property name="shortcut">
+    <string>Shift+A</string>
+   </property>
   </action>
   <action name="actionMission_Specs">
    <property name="text">
