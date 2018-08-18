@@ -83,8 +83,8 @@ bool mission_is_ignored(const char *filename)
 	SCP_string filename_no_ext = filename;
 	drop_extension(filename_no_ext);
 
-	for (SCP_vector<SCP_string>::iterator ii = Ignored_missions.begin(); ii != Ignored_missions.end(); ++ii) {
-		if (*ii == filename_no_ext) {
+	for (auto &ii: Ignored_missions) {
+		if (ii == filename_no_ext) {
 			return true;
 		}
 	}
