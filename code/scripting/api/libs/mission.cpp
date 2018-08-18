@@ -883,8 +883,7 @@ ADE_FUNC(getMissionFilename, l_Mission, NULL, "Gets mission filename", "string",
 	// per Axem, mn.getMissionFilename() sometimes returns the filename with the .fs2 extension, and sometimes not
 	// depending if you are in a campaign or tech room
 	strcpy_s(temp, Game_current_mission_filename);
-	if (stristr(temp, ".fs2") == nullptr)
-		strcat_s(temp, ".fs2");
+	drop_extension(temp);
 
 	return ade_set_args(L, "s", temp);
 }
