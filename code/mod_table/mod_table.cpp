@@ -122,6 +122,9 @@ void parse_mod_table(const char *filename)
 					mprintf(("Game Settings Table: Removed extension on ignored campaign file name %s\n", campaign_name.c_str()));
 				}
 
+				// we want case-insensitive matching, so make this lowercase
+				std::transform(campaign_name.begin(), campaign_name.end(), campaign_name.begin(), ::tolower);
+
 				Ignored_campaigns.push_back(campaign_name);
 			}
 		}
@@ -137,6 +140,9 @@ void parse_mod_table(const char *filename)
 				if (drop_extension(mission_name)) {
 					mprintf(("Game Settings Table: Removed extension on ignored mission file name %s\n", mission_name.c_str()));
 				}
+
+				// we want case-insensitive matching, so make this lowercase
+				std::transform(mission_name.begin(), mission_name.end(), mission_name.begin(), ::tolower);
 
 				Ignored_missions.push_back(mission_name);
 			}
