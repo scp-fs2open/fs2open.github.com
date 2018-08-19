@@ -302,7 +302,7 @@ void main()
 
 	#ifdef FLAG_HDR
 	baseColor.rgb = linear_to_srgb(baseColor.rgb);
-	specColor.rgb = linear_to_srgb(baseColor.rgb);
+	specColor.rgb = linear_to_srgb(specColor.rgb);
 	#endif
 
 	baseColor.rgb += team_color;					
@@ -312,7 +312,7 @@ void main()
 
 	#ifdef FLAG_HDR
 	baseColor.rgb = srgb_to_linear(baseColor.rgb);
-	specColor.rgb = srgb_to_linear(baseColor.rgb);
+	specColor.rgb = srgb_to_linear(specColor.rgb);
 	#endif
 
  #endif
