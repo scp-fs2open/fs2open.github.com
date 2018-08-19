@@ -32,6 +32,7 @@
 #include "network/stand_gui.h"
 #include "network/multiteamselect.h"
 #include "mission/missioncampaign.h"
+#include "mission/missionload.h"
 #include "graphics/font.h"
 #include "io/mouse.h"
 #include "gamesnd/gamesnd.h"
@@ -4467,11 +4468,11 @@ void multi_create_list_load_missions()
 			std_gen_set_text(filename, 2);
 		}
 
-		flags = mission_parse_is_multi(filename, mission_name);		
+		flags = mission_parse_is_multi(filename, mission_name);
 
-		// if the mission is a multiplayer mission, then add it to the mission list
-		if ( flags ) {
-			max_players = mission_parse_get_multi_mission_info( filename );				
+		// if the mission is a multiplayer mission, and we can list it, then add it to the mission list
+		if (flags && !mission_is_ignored(filename)) {
+			max_players = mission_parse_get_multi_mission_info( filename );
 			m_respawn = The_mission.num_respawns;
 
 			multi_create_info mcip;

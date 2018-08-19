@@ -9,6 +9,7 @@
 #include "globalincs/version.h"
 #include "localization/localize.h"
 #include "mission/missioncampaign.h"
+#include "mission/missionload.h"
 #include "mission/missionmessage.h"
 #include "missionui/fictionviewer.h"
 #include "mod_table/mod_table.h"
@@ -121,7 +122,29 @@ void parse_mod_table(const char *filename)
 					mprintf(("Game Settings Table: Removed extension on ignored campaign file name %s\n", campaign_name.c_str()));
 				}
 
+				// we want case-insensitive matching, so make this lowercase
+				std::transform(campaign_name.begin(), campaign_name.end(), campaign_name.begin(), ::tolower);
+
 				Ignored_campaigns.push_back(campaign_name);
+			}
+		}
+
+		// Note: this feature does not ignore missions that are contained in campaigns
+		if (optional_string("#Ignored Mission File Names")) {
+			SCP_string mission_name;
+
+			while (optional_string("$Mission File Name:")) {
+				stuff_string(mission_name, F_NAME);
+
+				// remove extension?
+				if (drop_extension(mission_name)) {
+					mprintf(("Game Settings Table: Removed extension on ignored mission file name %s\n", mission_name.c_str()));
+				}
+
+				// we want case-insensitive matching, so make this lowercase
+				std::transform(mission_name.begin(), mission_name.end(), mission_name.begin(), ::tolower);
+
+				Ignored_missions.push_back(mission_name);
 			}
 		}
 
