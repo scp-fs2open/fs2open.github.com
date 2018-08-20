@@ -1374,8 +1374,8 @@ void flash_ball::initialize(int number, float min_ray_width, float max_ray_width
 			//random cones
 			vec3d start, end;
 
-			vm_vec_random_cone(&start, dir, inner, outer);
-			vm_vec_random_cone(&end, dir, inner, outer);
+			vm_vec_random_cone(&start, dir, outer, inner);
+			vm_vec_random_cone(&end, dir, outer, inner);
 
 			ray[i].start.world = start;
 			ray[i].end.world = end;
@@ -1502,7 +1502,7 @@ void flash_ball::initialize(ubyte *bsp_data, float min_ray_width, float max_ray_
 			//random cones
 			vec3d end;
 
-			vm_vec_random_cone(&end, dir, inner, outer);
+			vm_vec_random_cone(&end, dir, outer, inner);
 
 			ray[i].end.world = end;
 		}
