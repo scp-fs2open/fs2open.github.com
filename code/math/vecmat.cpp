@@ -2397,6 +2397,12 @@ void vm_vec_random_cone(vec3d *out, const vec3d *in, float min_angle, float max_
 	const matrix *rot;
 	matrix m;
 
+	if (max_angle < min_angle) {
+		auto tmp  = min_angle;
+		min_angle = max_angle;
+		max_angle = tmp;
+	}
+
 	// get an orientation matrix
 	if(orient != NULL){
 		rot = orient;
