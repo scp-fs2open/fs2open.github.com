@@ -1991,6 +1991,7 @@ void load_gauge_center_reticle(gauge_settings* settings)
 	int scaleX = 15;
 	int scaleY = 10;
 	int size = 5;
+	int autoaim_frame = -1;
 	
 	settings->origin[0] = 0.5f;
 	settings->origin[1] = 0.5f;
@@ -2040,8 +2041,12 @@ void load_gauge_center_reticle(gauge_settings* settings)
 	if (optional_string("Firepoint Y coordinate multiplier:"))
 		stuff_int(&scaleY);
 
+	if(optional_string("Autoaim Frame:"))
+		stuff_int(&autoaim_frame);
+
 	hud_gauge->initBitmaps(fname);
 	hud_gauge->initFirepointDisplay(firepoints, scaleX, scaleY, size);
+	hud_gauge->setAutoaimFrame(autoaim_frame);
 
 	gauge_assign_common(settings, std::move(hud_gauge));
 }

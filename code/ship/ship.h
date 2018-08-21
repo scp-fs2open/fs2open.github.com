@@ -1200,6 +1200,8 @@ public:
 	float minimum_convergence_distance;
 	float convergence_distance;
 	vec3d convergence_offset;
+	gamesnd_id autoaim_lock_snd;
+	gamesnd_id autoaim_lost_snd;
 
 	float emp_resistance_mod;
 
@@ -1406,6 +1408,7 @@ extern void ship_cleanup(int shipnum, int cleanup_mode);
 extern void ship_destroy_instantly(object *ship_obj, int shipnum);
 extern void ship_actually_depart(int shipnum, int method = SHIP_DEPARTED_WARP);
 
+extern bool in_autoaim_fov(ship *shipp, int bank_to_fire, object *obj);
 extern int ship_fire_primary_debug(object *objp);	//	Fire the debug laser.
 extern int ship_stop_fire_primary(object * obj);
 extern int ship_fire_primary(object * objp, int stream_weapons, int force = 0);
