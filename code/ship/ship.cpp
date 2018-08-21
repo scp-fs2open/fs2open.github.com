@@ -10673,12 +10673,12 @@ bool in_autoaim_fov(ship *shipp, int bank_to_fire, object *obj)
 	has_autoaim = ((has_converging_autoaim || (sip->aiming_flags[Ship::Aiming_Flags::Autoaim])) && aip->target_objnum != -1);
 
 	if (!has_autoaim) {
-		return FALSE;
+		return false;
 	}
 
 	autoaim_fov = MAX(shipp->autoaim_fov, The_mission.ai_profile->player_autoaim_fov[Game_skill_level]);
 
-	if (aip->targeted_subsys != NULL) {
+	if (aip->targeted_subsys != nullptr) {
 		get_subsystem_world_pos(&Objects[aip->target_objnum], aip->targeted_subsys, &target_position);
 	}
 	else {
@@ -10690,7 +10690,7 @@ bool in_autoaim_fov(ship *shipp, int bank_to_fire, object *obj)
 	hud_calculate_lead_pos(&plr_to_target_vec, &target_position, obj, winfo_p, dist_to_target);
 	vm_vec_sub2(&plr_to_target_vec, &Objects[shipp->objnum].pos);
 
-	float angle_to_target = vm_vec_delta_ang(&player_forward_vec, &plr_to_target_vec, NULL);
+	float angle_to_target = vm_vec_delta_ang(&player_forward_vec, &plr_to_target_vec, nullptr);
 
 	if (angle_to_target <= autoaim_fov) {
 		return true;
