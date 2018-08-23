@@ -292,20 +292,29 @@ void main()
  #ifdef FLAG_TEAMCOLOR
 	vec4 teamMask = vec4(0.0, 0.0, 0.0, 0.0);
 	teamMask = texture(sMiscmap, vec3(texCoord, float(sMiscmapIndex)));
+
 	//For team colors applied to a diffuse or spec map, we assume that the base color of the diffuse 
 	//at this point is vec3(0.5). To get accurate results, we subtract 0.5 from the team colors
-	vec3 team_color = ((base_color - vec3(0.5)) * teamMask.x) + ((stripe_color - vec3(0.5)) * teamMask.y);
+	vec3 color_offset = vec3(-0.5) * (teamMask.x + teamMask.y);
+
+	vec3 team_color = base_color * teamMask.x + stripe_color * teamMask.y + color_offset;
 	vec3 team_color_glow = (base_color * teamMask.b) + (stripe_color * teamMask.a);
 
 	#ifdef FLAG_HDR
-	team_color = srgb_to_linear(team_color);
-	team_color_glow = srgb_to_linear(team_color_glow) * GLOW_MAP_SRGB_MULTIPLIER;
+	baseColor.rgb = linear_to_srgb(baseColor.rgb);
+	specColor.rgb = linear_to_srgb(specColor.rgb);
 	#endif
 
 	baseColor.rgb += team_color;					
 	baseColor.rgb = max(baseColor.rgb, vec3(0.0));	// We need to make sure that nothing here ever goes negative
 	specColor.rgb += team_color;
 	specColor.rgb = max(specColor.rgb, vec3(0.03));
+
+	#ifdef FLAG_HDR
+	baseColor.rgb = srgb_to_linear(baseColor.rgb);
+	specColor.rgb = srgb_to_linear(specColor.rgb);
+	#endif
+
  #endif
 #endif
 	// Lights aren't applied when we are rendering to the G-buffers since that gets handled later
