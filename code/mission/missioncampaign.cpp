@@ -91,8 +91,6 @@ LOCAL UI_BUTTON Campaign_okb, Campaign_cancelb;
 campaign Campaign;
 
 
-bool campaign_is_ignored(const char *filename);
-
 /**
  * Returns a string (which is malloced in this routine) of the name of the given freespace campaign file.  
  * In the type field, we return if the campaign is a single player or multiplayer campaign.  
@@ -247,10 +245,10 @@ int mission_campaign_maybe_add(const char *filename)
 	char *desc = NULL;
 	int type, max_players;
 
-		// don't add ignored campaigns
-		if (campaign_is_ignored(filename)) {
-			return 0;
-		}
+	// don't add ignored campaigns
+	if (campaign_is_ignored(filename)) {
+		return 0;
+	}
 
 	if ( mission_campaign_get_info( filename, name, &type, &max_players, &desc) ) {
 		if ( !MC_multiplayer && (type == CAMPAIGN_TYPE_SINGLE) ) {
