@@ -4553,9 +4553,10 @@ void multi_create_list_load_campaigns()
 			std_gen_set_text(filename, 2);
 		}
 
-		// if the campaign is a multiplayer campaign, then add the data to the campaign list items
 		flags = mission_campaign_parse_is_multi( filename, name );
-		if( flags != CAMPAIGN_TYPE_SINGLE && mission_campaign_get_info(filename,title,&campaign_type,&max_players)) {
+
+		// if the campaign is a multiplayer campaign, and we can list it, and we can get its info, then add the data to the campaign list items
+		if( flags != CAMPAIGN_TYPE_SINGLE && !campaign_is_ignored(filename) && mission_campaign_get_info(filename, title, &campaign_type, &max_players)) {
 			multi_create_info mcip;
 
 			strcpy_s(mcip.filename, filename );
