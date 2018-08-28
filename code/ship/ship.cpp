@@ -1704,8 +1704,8 @@ ship_info::ship_info()
 	score = 0;
 
 	scan_time = 2000;
-	scan_range_normal = 150.0f;
-	scan_range_capital = 300.0f;
+	scan_range_normal = CARGO_REVEAL_MIN_DIST;
+	scan_range_capital = CAP_CARGO_REVEAL_MIN_DIST;
 
 	memset(&ct_info, 0, sizeof(trail_info) * MAX_SHIP_CONTRAILS);
 	ct_count = 0;
