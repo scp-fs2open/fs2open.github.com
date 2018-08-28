@@ -26,6 +26,7 @@ struct weapon_info;
 #define MATCH_SPEED_THRESHOLD				0.1f		// minimum speed target must be moving for match speed to apply
 #define CARGO_RADIUS_DELTA					100		// distance added to radius required for cargo scanning
 #define CAPITAL_CARGO_RADIUS_DELTA		250		// distance added to radius required for cargo scanning
+static const int CARGO_RADIUS_REAL_DELTA = 50;
 #define CARGO_REVEAL_MIN_DIST				150		// minimum distance for reveal cargo (used if radius+CARGO_RADIUS_DELTA < CARGO_REVEAL_MIN_DIST)
 #define CAP_CARGO_REVEAL_MIN_DIST		300		// minimum distance for reveal cargo (used if radius+CARGO_RADIUS_DELTA < CARGO_REVEAL_MIN_DIST)
 #define CARGO_MIN_DOT_TO_REVEAL			0.95		// min dot to proceed to have cargo scanning take place

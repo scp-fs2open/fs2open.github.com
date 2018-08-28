@@ -1016,6 +1016,8 @@ void ship_info::clone(const ship_info& other)
 	score = other.score;
 
 	scan_time = other.scan_time;
+	scan_range_normal = other.scan_range_normal;
+	scan_range_capital = other.scan_range_capital;
 
 	memcpy(ct_info, other.ct_info, sizeof(trail_info) * MAX_SHIP_CONTRAILS);
 	ct_count = other.ct_count;
@@ -1307,6 +1309,8 @@ void ship_info::move(ship_info&& other)
 	score = other.score;
 
 	scan_time = other.scan_time;
+	scan_range_normal = other.scan_range_normal;
+	scan_range_capital = other.scan_range_capital;
 
 	std::swap(ct_info, other.ct_info);
 	ct_count = other.ct_count;
@@ -1700,6 +1704,8 @@ ship_info::ship_info()
 	score = 0;
 
 	scan_time = 2000;
+	scan_range_normal = 150.0f;
+	scan_range_capital = 300.0f;
 
 	memset(&ct_info, 0, sizeof(trail_info) * MAX_SHIP_CONTRAILS);
 	ct_count = 0;
@@ -3601,6 +3607,12 @@ static int parse_ship_values(ship_info* sip, const bool is_template, const bool 
 
 	if(optional_string("$Scan time:"))
 		stuff_int(&sip->scan_time);
+
+	if(optional_string("$Scan range Normal:"))
+		stuff_float(&sip->scan_range_normal);
+
+	if(optional_string("$Scan range Capital:"))
+		stuff_float(&sip->scan_range_capital);
 
 	//Parse the engine sound
 	parse_game_sound("$EngineSnd:", &sip->engine_snd);

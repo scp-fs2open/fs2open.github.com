@@ -1117,6 +1117,8 @@ public:
 	int	score;								// default score for this ship
 
 	int	scan_time;							// time to scan this ship (in ms)
+	float scan_range_normal;                // this ship can scan other normal/small ships at this range
+	float scan_range_capital;               // this ship can scan other capital/large ships at this range
 
 	// contrail info
 	trail_info ct_info[MAX_SHIP_CONTRAILS];	
