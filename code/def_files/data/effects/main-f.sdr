@@ -280,11 +280,11 @@ void main()
 	}
 	if(gammaSpec) {
 		specColor.rgb = max(specColor.rgb, vec3(0.03f)); // hardcoded minimum specular value. read John Hable's blog post titled 'Everything Is Shiny'. 
- #ifdef FLAG_HDR
-		specColor.rgb = srgb_to_linear(specColor.rgb);
- #endif
 		fresnelFactor = 1.0;
 	}
+	#ifdef FLAG_HDR
+		specColor.rgb = srgb_to_linear(specColor.rgb);
+	#endif
 #endif
 	baseColor.rgb *= aoFactors.y;
 	specColor.rgb *= aoFactors.y;
