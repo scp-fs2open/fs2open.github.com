@@ -314,6 +314,11 @@ std::unique_ptr<DecoderStatus> initializeStatus(std::unique_ptr<InputStream>& st
 
     status->videoCodecPars = getCodecParameters(status->videoStream);
 
+	if (properties.looping && status->videoCodecPars.codec_id == AV_CODEC_ID_INTERPLAY_VIDEO) {
+		mprintf(("FFmpeg: Looping is not supported for inteplay (MVE) movies!\n"));
+		return nullptr;
+	}
+
 	int err;
 #if LIBAVCODEC_VERSION_INT > AV_VERSION_INT(57, 24, 255)
 	status->videoCodecCtx = avcodec_alloc_context3(status->videoCodec);
@@ -518,13 +523,18 @@ void FFMPEGDecoder::startDecoding() {
 	auto ctx = m_input->m_ctx->ctx();
 	AVPacket packet;
 	do {
-		auto seek_err = av_seek_frame(ctx, -1, 0, AVSEEK_FLAG_BACKWARD);
-		if (seek_err < 0) {
-			char errorStr[512];
-			av_strerror(seek_err, errorStr, sizeof(errorStr));
-			mprintf(("FFMPEG: Failed to seek to start of movie file! Error: %s\n", errorStr));
-			break;
+		if (m_properties.looping) {
+			// Only seek if we are looping the movie. The MVE code doesn't support seeking to this function may not be
+			// called there
+			auto seek_err = av_seek_frame(ctx, -1, 0, AVSEEK_FLAG_BACKWARD);
+			if (seek_err < 0) {
+				char errorStr[512];
+				av_strerror(seek_err, errorStr, sizeof(errorStr));
+				mprintf(("FFMPEG: Failed to seek to start of movie file! Error: %s\n", errorStr));
+				break;
+			}
 		}
+
 		videoDecoder->flushBuffers();
 		if (audioDecoder) {
 			audioDecoder->flushBuffers();
