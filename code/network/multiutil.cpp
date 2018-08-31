@@ -3263,7 +3263,7 @@ void multi_spew_pxo_checksums(int max_files, const char *outfile)
 	char filename[65] = { 0 };
 	char gametype[32] = { 0 };
 	size_t offset = 0;
-	char *p = NULL;
+	const char *p = nullptr;
 
 	// allocate filename space	
 	file_names = (char**)vm_malloc(sizeof(char*) * max_files);
@@ -3285,7 +3285,7 @@ void multi_spew_pxo_checksums(int max_files, const char *outfile)
 		if (out == NULL)
 			goto Done;
 
-		p = Cmdline_spew_mission_crcs;
+		p = Cmdline_spew_mission_crcs.c_str();
 
 		while (*p && (offset < sizeof(description))) {
 			if (*p == '"') {

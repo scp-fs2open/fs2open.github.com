@@ -160,379 +160,113 @@ cf_root *cf_create_root()
 	return &Root_blocks[block]->roots[offset];
 }
 
-// return the # of packfiles which exist
-int cf_get_packfile_count(cf_root *root)
+static bool has_mod_location(const SCP_vector<cfile::ModRoot>& modRoots)
 {
-	SCP_string filespec;
-	int i;
-	int packfile_count;
-
-	// count up how many packfiles we're gonna have
-	packfile_count = 0;
-	for (i=CF_TYPE_ROOT; i<CF_MAX_PATH_TYPES; i++ )
+	for (const auto& root : modRoots)
 	{
-		filespec = root->path;
-		
-		if(strlen(Pathtypes[i].path))
+		if (root.location_type == cfile::LocationType::PrimaryMod)
 		{
-			filespec += Pathtypes[ i ].path;
-			if ( filespec[ filespec.length( ) - 1 ] != DIR_SEPARATOR_CHAR )
-			{
-				filespec += DIR_SEPARATOR_STR;
-			}
-		}
-
-#if defined _WIN32
-		filespec += "*.vp";
-
-		intptr_t find_handle;
-		_finddata_t find;
-		
-		find_handle = _findfirst( filespec.c_str( ), &find );
-
- 		if (find_handle != -1) {
-			do {
-				if (!(find.attrib & _A_SUBDIR)) {
-					packfile_count++;
-				}
-
-			} while (!_findnext(find_handle, &find));
-
-			_findclose( find_handle );
-		}	
-#elif defined SCP_UNIX
-		filespec += "*.[vV][pP]";
-
-		glob_t globinfo;
-		memset(&globinfo, 0, sizeof(globinfo));
-		int status = glob(filespec.c_str( ), 0, NULL, &globinfo);
-		if (status == 0) {
-			for (unsigned int j = 0;  j < globinfo.gl_pathc;  j++) {
-				// Determine if this is a regular file
-				struct stat statbuf;
-				memset(&statbuf, 0, sizeof(statbuf));
-				stat(globinfo.gl_pathv[j], &statbuf);
-				if (S_ISREG(statbuf.st_mode)) {
-					packfile_count++;
-				}
-			}
-			globfree(&globinfo);
-		}
-#endif
-	}
-
-	return packfile_count;
-}
-
-// packfile sort function
-bool cf_packfile_sort_func(const cf_root_sort &r1, const cf_root_sort &r2)
-{
-	// if the 2 directory types are the same, do a string compare
-	if (r1.cf_type == r2.cf_type) {
-		return (stricmp(r1.path, r2.path) < 0);
-	}
-
-	// otherwise return them in order of CF_TYPE_* precedence
-	return (r1.cf_type < r2.cf_type);
-}
-
-// Go through a root and look for pack files
-void cf_build_pack_list( cf_root *root )
-{
-	char filespec[MAX_PATH_LEN];
-	int i;
-	cf_root_sort *temp_roots_sort, *rptr_sort;
-	int temp_root_count, root_index;
-
-	// determine how many packfiles there are
-	temp_root_count = cf_get_packfile_count(root);
-
-	if (temp_root_count <= 0)
-		return;
-
-	// allocate a temporary array of temporary roots so we can easily sort them
-	temp_roots_sort = (cf_root_sort*)vm_malloc(sizeof(cf_root_sort) * temp_root_count);
-
-	if (temp_roots_sort == NULL) {
-		Int3();
-		return;
-	}
-
-	// now just setup all the root info
-	root_index = 0;
-	for (i = CF_TYPE_ROOT; i < CF_MAX_PATH_TYPES; i++) {
-		strcpy_s( filespec, root->path );
-		
-		if ( strlen(Pathtypes[i].path) ) {
-			strcat_s( filespec, Pathtypes[i].path );
-
-			if ( filespec[strlen(filespec)-1] != DIR_SEPARATOR_CHAR )
-				strcat_s( filespec, DIR_SEPARATOR_STR );
-		}
-
-#if defined _WIN32
-		strcat_s( filespec, "*.vp" );
-
-		intptr_t find_handle;
-		_finddata_t find;
-		
-		find_handle = _findfirst( filespec, &find );
-
- 		if (find_handle != -1) {
-			do {
-				// add the new item
-				if (!(find.attrib & _A_SUBDIR)) {					
-					Assert(root_index < temp_root_count);
-
-					// get a temp pointer
-					rptr_sort = &temp_roots_sort[root_index++];
-
-					// fill in all the proper info
-					strcpy_s(rptr_sort->path, root->path);
-					
-					if(strlen(Pathtypes[i].path)) {
-
-						strcat_s(rptr_sort->path, Pathtypes[i].path );
-						strcat_s(rptr_sort->path, DIR_SEPARATOR_STR);
-					}
-					
-					strcat_s(rptr_sort->path, find.name );
-					rptr_sort->roottype = CF_ROOTTYPE_PACK;
-					rptr_sort->cf_type = i;
-				}
-
-			} while (!_findnext(find_handle, &find));
-
-			_findclose( find_handle );
-		}	
-#elif defined SCP_UNIX
-		strcat_s( filespec, "*.[vV][pP]" );
-		glob_t globinfo;
-
-		memset(&globinfo, 0, sizeof(globinfo));
-
-		int status = glob(filespec, 0, NULL, &globinfo);
-
-		if (status == 0) {
-			for (uint j = 0;  j < globinfo.gl_pathc;  j++) {
-				// Determine if this is a regular file
-				struct stat statbuf;
-				memset(&statbuf, 0, sizeof(statbuf));
-				stat(globinfo.gl_pathv[j], &statbuf);
-
-				if ( S_ISREG(statbuf.st_mode) ) {
-					Assert(root_index < temp_root_count);
-
-					// get a temp pointer
-					rptr_sort = &temp_roots_sort[root_index++];
-
-					// fill in all the proper info
-					strcpy_s(rptr_sort->path, globinfo.gl_pathv[j] );
-					rptr_sort->roottype = CF_ROOTTYPE_PACK;
-					rptr_sort->cf_type = i;
-				}
-			}
-
-			globfree(&globinfo);
-		}
-#endif
-	}
-
-	// these should always be the same
-	Assert(root_index == temp_root_count);
-
-	// sort the roots
-	std::sort(temp_roots_sort, temp_roots_sort + temp_root_count, cf_packfile_sort_func);
-
-	// now insert them all into the real root list properly
-	for (i = 0; i < temp_root_count; i++) {
-		auto new_root            = cf_create_root();
-		new_root->location_flags = root->location_flags;
-		strcpy_s( new_root->path, root->path );
-
-#ifndef NDEBUG
-		uint chksum = 0;
-		cf_chksum_pack(temp_roots_sort[i].path, &chksum);
-		mprintf(("Found root pack '%s' with a checksum of 0x%08x\n", temp_roots_sort[i].path, chksum));
-#endif
-
-		// mwa -- 4/2/98 put in the next 2 lines because the path name needs to be there
-		// to find the files.
-		strcpy_s(new_root->path, temp_roots_sort[i].path);		
-		new_root->roottype = CF_ROOTTYPE_PACK;		
-	}
-
-	// free up the temp list
-	vm_free(temp_roots_sort);
-}
-
-static char normalize_directory_separator(char in)
-{
-	if (in == '/')
-	{
-		return DIR_SEPARATOR_CHAR;
-	}
-
-	return in;
-}
-
-static void cf_add_mod_roots(const char* rootDirectory, uint32_t basic_location)
-{
-	if (Cmdline_mod)
-	{
-		bool primary = true;
-		for (const char* cur_pos=Cmdline_mod; strlen(cur_pos) != 0; cur_pos+= (strlen(cur_pos)+1))
-		{
-			SCP_stringstream ss;
-			ss << rootDirectory;
-
-			if (rootDirectory[strlen(rootDirectory) - 1] != DIR_SEPARATOR_CHAR)
-			{
-				ss << DIR_SEPARATOR_CHAR;
-			}
-
-			ss << cur_pos << DIR_SEPARATOR_STR;
-
-			SCP_string rootPath = ss.str();
-			if (rootPath.size() + 1 >= CF_MAX_PATHNAME_LENGTH) {
-				Error(LOCATION, "The length of mod directory path '%s' exceeds the maximum of %d!\n", rootPath.c_str(), CF_MAX_PATHNAME_LENGTH);
-			}
-
-			// normalize the path to the native path format
-			std::transform(rootPath.begin(), rootPath.end(), rootPath.begin(), normalize_directory_separator);
-
-			cf_root* root = cf_create_root();
-
-			strncpy(root->path, rootPath.c_str(),  CF_MAX_PATHNAME_LENGTH-1);
-			if (primary) {
-				root->location_flags = basic_location | CF_LOCATION_TYPE_PRIMARY_MOD;
-			} else {
-				root->location_flags = basic_location | CF_LOCATION_TYPE_SECONDARY_MODS;
-			}
-
-			root->roottype = CF_ROOTTYPE_PATH;
-			cf_build_pack_list(root);
-
-			primary = false;
+			return true;
 		}
 	}
+
+	return false;
 }
 
-void cf_build_root_list(const char *cdrom_dir)
+void cf_build_root_list(const SCP_vector<cfile::ModRoot>& modRoots)
 {
 	Num_roots = 0;
 	Num_path_roots = 0;
 
-	cf_root	*root = nullptr;
+	auto has_mod = has_mod_location(modRoots);
 
-	if (os_is_legacy_mode())
+	mprintf(("CFile root configuration:\n"));
+	// Go through the roots specified and convert them to the internal data structure
+	for (const auto& root : modRoots)
 	{
-		// =========================================================================
-#ifdef WIN32
-		// Nothing to do here, Windows uses the current directory as the base
-#else
-		cf_add_mod_roots(os_get_legacy_user_dir(), CF_LOCATION_ROOT_USER);
-
-		root = cf_create_root();
-		strncpy(root->path, os_get_legacy_user_dir(), CF_MAX_PATHNAME_LENGTH - 1);
-
-		root->location_flags |= CF_LOCATION_ROOT_USER | CF_LOCATION_TYPE_ROOT;
-		if (Cmdline_mod == nullptr || strlen(Cmdline_mod) <= 0) {
-			// If there are no mods then the root is the primary mod
-			root->location_flags |= CF_LOCATION_TYPE_PRIMARY_MOD;
+		if (root.path.size() >= CF_MAX_PATHNAME_LENGTH - 1)
+		{
+			Error(LOCATION, "Mod root path '%s' is longer than the maximum %d!", root.path.c_str(), CF_MAX_PATHNAME_LENGTH - 1);
+			return;
 		}
 
-		// do we already have a slash? as in the case of a root directory install
-		if ((strlen(root->path) < (CF_MAX_PATHNAME_LENGTH - 1)) && (root->path[strlen(root->path) - 1] != DIR_SEPARATOR_CHAR)) {
-			strcat_s(root->path, DIR_SEPARATOR_STR);		// put trailing backslash on for easier path construction
-		}
-		root->roottype = CF_ROOTTYPE_PATH;
+		auto cfile_root = cf_create_root();
+		memset(cfile_root, 0, sizeof(*cfile_root));
 
-		// Next, check any VP files under the current directory.
-		cf_build_pack_list(root);
+		strcpy_s(cfile_root->path, root.path.c_str());
+
+		if (root.user_location)
+		{
+			cfile_root->location_flags |= CF_LOCATION_ROOT_USER;
+		} else {
+			cfile_root->location_flags |= CF_LOCATION_ROOT_GAME;
+		}
+
+		if (root.location_type == cfile::LocationType::SecondaryMod)
+		{
+			cfile_root->location_flags |= CF_LOCATION_TYPE_SECONDARY_MODS;
+		} else if (root.location_type == cfile::LocationType::PrimaryMod)
+		{
+			cfile_root->location_flags |= CF_LOCATION_TYPE_PRIMARY_MOD;
+		} else if (root.location_type == cfile::LocationType::GameRoot)
+		{
+			cfile_root->location_flags |= CF_LOCATION_TYPE_ROOT;
+			if (!has_mod)
+			{
+				// If we do not have a mod then game roots are also primary mods
+				cfile_root->location_flags |= CF_LOCATION_TYPE_PRIMARY_MOD;
+			}
+		} else {
+			UNREACHABLE("Unknown root location type!");
+		}
+
+		switch (root.type)
+		{
+		case cfile::ModRootType::Folder:
+			cfile_root->roottype = CF_ROOTTYPE_PATH;
+			break;
+		case cfile::ModRootType::Package:
+			cfile_root->roottype = CF_ROOTTYPE_PACK;
+			break;
+		default:
+			UNREACHABLE("Unknown root type!");
+			break;
+		}
+
+		if (root.type == cfile::ModRootType::Folder)
+		{
+			size_t path_len = strlen(cfile_root->path);
+
+			// do we already have a slash? as in the case of a root directory install
+			if ( (path_len < (CF_MAX_PATHNAME_LENGTH-1)) && (cfile_root->path[path_len-1] != DIR_SEPARATOR_CHAR) ) {
+				strcat_s(cfile_root->path, DIR_SEPARATOR_STR);		// put trailing backslash on for easier path construction
+			}
+		}
+
+#ifndef NDEBUG
+		switch (root.type)
+		{
+		case cfile::ModRootType::Folder:
+			mprintf(("  Found root folder '%s'\n", root.path.c_str()));
+			break;
+		case cfile::ModRootType::Package: {
+			uint chksum = 0;
+			cf_chksum_pack(root.path.c_str(), &chksum);
+			mprintf(("  Found root pack '%s' with a checksum of 0x%08x\n", root.path.c_str(), chksum));
+			break;
+		}
+		default:
+			UNREACHABLE("Unknown root type!");
+			break;
+		}
 #endif
-		// =========================================================================
-	}
-	else if (!Cmdline_portable_mode)
-	{
-		// =========================================================================
-		// now look for mods under the users HOME directory to use before system ones
-		cf_add_mod_roots(Cfile_user_dir, CF_LOCATION_ROOT_USER);
-		// =========================================================================
-
-		// =========================================================================
-		// set users HOME directory as default for loading and saving files
-		root = cf_create_root();
-		strcpy_s(root->path, Cfile_user_dir);
-
-		root->location_flags |= CF_LOCATION_ROOT_USER | CF_LOCATION_TYPE_ROOT;
-		if (Cmdline_mod == nullptr || strlen(Cmdline_mod) <= 0) {
-			// If there are no mods then the root is the primary mod
-			root->location_flags |= CF_LOCATION_TYPE_PRIMARY_MOD;
-		}
-
-		// do we already have a slash? as in the case of a root directory install
-		if ((strlen(root->path) < (CF_MAX_PATHNAME_LENGTH - 1)) && (root->path[strlen(root->path) - 1] != DIR_SEPARATOR_CHAR)) {
-			strcat_s(root->path, DIR_SEPARATOR_STR);		// put trailing backslash on for easier path construction
-		}
-		root->roottype = CF_ROOTTYPE_PATH;
-
-		// Next, check any VP files under the current directory.
-		cf_build_pack_list(root);
-		// =========================================================================
-	}
-
-	char working_directory[CF_MAX_PATHNAME_LENGTH];
-	
-	if ( !_getcwd(working_directory, CF_MAX_PATHNAME_LENGTH ) ) {
-		Error(LOCATION, "Can't get current working directory -- %d", errno );
-	}
-
-	cf_add_mod_roots(working_directory, CF_LOCATION_ROOT_GAME);
-
-	root = cf_create_root();
-
-	root->location_flags |= CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT;
-	if (Cmdline_mod == nullptr || strlen(Cmdline_mod) <= 0) {
-		// If there are no mods then the root is the primary mod
-		root->location_flags |= CF_LOCATION_TYPE_PRIMARY_MOD;
-	}
-
-	strcpy_s(root->path, working_directory);
-
-	size_t path_len = strlen(root->path);
-
-	// do we already have a slash? as in the case of a root directory install
-	if ( (path_len < (CF_MAX_PATHNAME_LENGTH-1)) && (root->path[path_len-1] != DIR_SEPARATOR_CHAR) ) {
-		strcat_s(root->path, DIR_SEPARATOR_STR);		// put trailing backslash on for easier path construction
-	}
-
-	root->roottype = CF_ROOTTYPE_PATH;
-
-   //======================================================
-	// Next, check any VP files under the current directory.
-	cf_build_pack_list(root);
-
-
-   //======================================================
-	// Check the real CD if one...
-	if ( cdrom_dir && (strlen(cdrom_dir) < CF_MAX_PATHNAME_LENGTH) )	{
-		root = cf_create_root();
-		strcpy_s( root->path, cdrom_dir );
-		root->roottype = CF_ROOTTYPE_PATH;
-
-		//======================================================
-		// Next, check any VP files in the CD-ROM directory.
-		cf_build_pack_list(root);
-
 	}
 
 	// The final root is the in-memory root
-	root = cf_create_root();
+	auto root = cf_create_root();
 	root->location_flags = CF_LOCATION_ROOT_MEMORY | CF_LOCATION_TYPE_ROOT;
 	memset(root->path, 0, sizeof(root->path));
 	root->roottype = CF_ROOTTYPE_MEMORY;
-
 }
 
 // Given a lower case list of file extensions 
@@ -923,7 +657,7 @@ void cf_build_file_list()
 }
 
 
-void cf_build_secondary_filelist(const char *cdrom_dir)
+void cf_build_secondary_filelist(const SCP_vector<cfile::ModRoot>& modRoots)
 {
 	int i;
 
@@ -944,7 +678,7 @@ void cf_build_secondary_filelist(const char *cdrom_dir)
 	mprintf(( "Building file index...\n" ));
 	
 	// build the list of searchable roots
-	cf_build_root_list(cdrom_dir);	
+	cf_build_root_list(modRoots);
 
 	// build the list of files themselves
 	cf_build_file_list();

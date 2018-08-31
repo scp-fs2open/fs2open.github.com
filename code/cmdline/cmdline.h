@@ -12,6 +12,7 @@
 #ifndef FS_CMDLINE_HEADER_FILE
 #define FS_CMDLINE_HEADER_FILE
 
+#include "globalincs/pstypes.h"
 
 int parse_cmdline(int argc, char *argv[]);
 
@@ -24,11 +25,11 @@ int parse_cmdline(int argc, char *argv[]);
 
 
 // RETAIL OPTIONS ----------------------------------------------
-extern char *Cmdline_connect_addr;
-extern char *Cmdline_game_name;
-extern char *Cmdline_game_password;
-extern char *Cmdline_rank_above;
-extern char *Cmdline_rank_below;
+extern SCP_string Cmdline_connect_addr;
+extern SCP_string Cmdline_game_name;
+extern SCP_string Cmdline_game_password;
+extern SCP_string Cmdline_rank_above;
+extern SCP_string Cmdline_rank_below;
 extern int Cmdline_cd_check;
 extern int Cmdline_client_dodamage;
 extern int Cmdline_closed_game;
@@ -46,8 +47,8 @@ extern int Cmdline_timeout;
 extern int Cmdline_use_last_pilot;
 extern int Cmdline_window;
 extern int Cmdline_fullscreen_window;
-extern char *Cmdline_res;
-extern char *Cmdline_center_res;
+extern SCP_string Cmdline_res;
+extern SCP_string Cmdline_center_res;
 
 
 // FSO OPTIONS -------------------------------------------------
@@ -96,14 +97,18 @@ extern int Cmdline_stretch_menu;
 extern int Cmdline_voice_recognition;
 extern int Cmdline_no_enhanced_sound;
 
+namespace cfile {
+struct ModRoot;
+} // namespace cfile
+
 // MOD related
-extern char *Cmdline_mod;	 // DTP for mod support
+extern SCP_vector<cfile::ModRoot> Cmdline_mod;	 // DTP for mod support
 // Multiplayer/Network related
-extern char *Cmdline_almission;	// DTP for autoload mission (for multi only)
+extern SCP_string Cmdline_almission;	// DTP for autoload mission (for multi only)
 extern int Cmdline_ingamejoin;
 extern int Cmdline_mpnoreturn;
-extern char *Cmdline_spew_mission_crcs;
-extern char *Cmdline_spew_table_crcs;
+extern SCP_string Cmdline_spew_mission_crcs;
+extern SCP_string Cmdline_spew_table_crcs;
 extern int Cmdline_objupd;
 
 // Launcher related options
@@ -119,7 +124,7 @@ extern int Cmdline_mipmap;
 extern int Cmdline_ati_color_swap;
 extern int Cmdline_no_3d_sound;
 extern int Cmdline_drawelements;
-extern char* Cmdline_keyboard_layout;
+extern SCP_string Cmdline_keyboard_layout;
 extern bool Cmdline_gl_finish;
 extern bool Cmdline_no_geo_sdr_effects;
 extern bool Cmdline_set_cpu_affinity;
@@ -130,7 +135,7 @@ extern bool Cmdline_alternate_registry_path;
 #endif
 
 // Developer/Testing related
-extern char *Cmdline_start_mission;
+extern SCP_string Cmdline_start_mission;
 extern int Cmdline_dis_collisions;
 extern int Cmdline_dis_weapons;
 extern bool Cmdline_output_sexp_info;

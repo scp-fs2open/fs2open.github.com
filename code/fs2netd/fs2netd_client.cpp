@@ -1678,7 +1678,7 @@ void fs2netd_spew_table_checksums(const char *outfile)
 	char description[512] = { 0 };
 	char filename[65] = { 0 };
 	size_t offset = 0;
-	char *p = NULL;
+	const char *p = nullptr;
 
 	if ( Table_valid_status.empty() ) {
 		return;
@@ -1693,7 +1693,7 @@ void fs2netd_spew_table_checksums(const char *outfile)
 		return;
 	}
 
-	p = Cmdline_spew_table_crcs;
+	p = Cmdline_spew_table_crcs.c_str();
 
 	while (*p && (offset < sizeof(description))) {
 		if (*p == '"' && offset < sizeof(description)-1) {

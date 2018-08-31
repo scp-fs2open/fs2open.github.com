@@ -35,6 +35,7 @@
 #include "autopilot/autopilot.h"
 #include "bmpman/bmpman.h"
 #include "cfile/cfile.h"
+#include "cfile/cfilemod.h"
 #include "cmdline/cmdline.h"
 #include "cmeasure/cmeasure.h"
 #include "cutscene/cutscenes.h"
@@ -1684,7 +1685,6 @@ void game_init()
 {
 	int s1 __UNUSED, e1 __UNUSED;
 	const char *ptr;
-	char whee[MAX_PATH_LEN];
 
 	Game_current_mission_filename[0] = 0;
 
@@ -1725,17 +1725,11 @@ void game_init()
 	cmdline_debug_print_cmdline();
 #endif
 
-	memset(whee, 0, sizeof(whee));
-
-	_getcwd(whee, MAX_PATH_LEN-1);
-
-	strcat_s(whee, DIR_SEPARATOR_STR);
-	strcat_s(whee, EXE_FNAME);
-
 	//Initialize the libraries
 	s1 = timer_get_milliseconds();
 
-	if ( cfile_init(whee, NULL) ) {			// initialize before calling any cfopen stuff!!!
+	// initialize before calling any cfopen stuff!!!
+	if ( cfile_init(Cmdline_mod) ) {
 		exit(1);
 	}
 
@@ -5686,17 +5680,17 @@ void game_enter_state( int old_state, int new_state )
 			//	Main_hall_netgame_started = 1;
 			//	main_hall_do_multi_ready();
 			//} DTP commented out to keep original source
-			if ( (Cmdline_start_netgame || (Cmdline_connect_addr != NULL)) && (!Main_hall_netgame_started) /*&& (Game_mode == GM_MULTIPLAYER)*/) { // DTP added "&& (game_mode == GM_multiplayer)" so that ppl don't get thrown into Multiplayer with a Singleplayer Pilot.
+			if ( (Cmdline_start_netgame || (!Cmdline_connect_addr.empty())) && (!Main_hall_netgame_started) /*&& (Game_mode == GM_MULTIPLAYER)*/) { // DTP added "&& (game_mode == GM_multiplayer)" so that ppl don't get thrown into Multiplayer with a Singleplayer Pilot.
 				Main_hall_netgame_started = 1;
 				main_hall_do_multi_ready();
 			}
 
-			if(Cmdline_start_mission) {
-				strcpy_s(Game_current_mission_filename, Cmdline_start_mission);
+			if(!Cmdline_start_mission.empty()) {
+				strcpy_s(Game_current_mission_filename, Cmdline_start_mission.c_str());
 				mprintf(( "Straight to mission '%s'\n", Game_current_mission_filename ));
 				gameseq_post_event(GS_EVENT_START_GAME);
 				// This stops the mission from loading again when you go back to the hall
-				Cmdline_start_mission = NULL;
+				Cmdline_start_mission.clear();
 			}
 			break;
 
@@ -6738,7 +6732,6 @@ int game_main(int argc, char *argv[])
 	tmp_mem = NULL;
 #endif // _WIN32
 
-
 	if ( !parse_cmdline(argc, argv) ) {
 		return 1;
 	}
@@ -6757,10 +6750,10 @@ int game_main(int argc, char *argv[])
 
 	game_stop_time();
 
-	if (Cmdline_spew_mission_crcs) {
+	if (!Cmdline_spew_mission_crcs.empty()) {
 		multi_spew_pxo_checksums(1024, "mission_crcs.csv");
 
-		if (Cmdline_spew_table_crcs) {
+		if (!Cmdline_spew_table_crcs.empty()) {
 			fs2netd_spew_table_checksums("table_crcs.csv");
 		}
 
@@ -6768,7 +6761,7 @@ int game_main(int argc, char *argv[])
 		return 0;
 	}
 
-	if (Cmdline_spew_table_crcs) {
+	if (!Cmdline_spew_table_crcs.empty()) {
 		fs2netd_spew_table_checksums("table_crcs.csv");
 		game_shutdown();
 		return 0;
@@ -6964,13 +6957,6 @@ void game_shutdown(void)
 	os_cleanup();
 
 	cfile_close();
-
-	// although the comment in cmdline.cpp said this isn't needed,
-	// Valgrind disagrees (quite possibly incorrectly), but this is just cleaner
-	if (Cmdline_mod != NULL) {
-		delete[] Cmdline_mod;
-		Cmdline_mod = NULL;
-	}
 
 	lcl_xstr_close();
 

@@ -165,11 +165,22 @@ extern const char *Get_file_list_child;
 
 // cfile directory. valid after cfile_init() returns successfully
 #define CFILE_ROOT_DIRECTORY_LEN			256
-extern char Cfile_root_dir[CFILE_ROOT_DIRECTORY_LEN];
-extern char Cfile_user_dir[CFILE_ROOT_DIRECTORY_LEN];
+
+namespace cfile {
+enum class ModRootType { Unknown, Folder, Package };
+
+enum class LocationType { Unknown, SecondaryMod, PrimaryMod, GameRoot };
+
+struct ModRoot {
+	ModRootType type = ModRootType::Unknown;
+	SCP_string path;
+	LocationType location_type = LocationType::Unknown;
+	bool user_location         = false;
+};
+} // namespace cfile
 
 //================= LOW-LEVEL FUNCTIONS ==================
-int cfile_init(const char *exe_dir, const char *cdrom_dir=NULL);
+int cfile_init(const SCP_vector<cfile::ModRoot>& modRoots);
 void cfile_close();
 
 // add an extension to a filename if it doesn't already have it

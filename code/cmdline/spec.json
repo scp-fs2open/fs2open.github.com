@@ -1,0 +1,48 @@
+{
+  "version": 1,
+  "flags": {
+    "-bool_option": false,
+    "-number_option": 5.8,
+    "-string_option": "asdf",
+    "-mod": [
+      {
+        "type": "folder",
+        "path": "/home/fso/mediavps",
+        "user": true,
+        "location_type": "primary_mod"
+      },
+      {
+        "type": "folder",
+        "path": "/home/fso",
+        "user": true,
+        "location_type": "game_root"
+      },
+      {
+        "type": "folder",
+        "path": "/path/to/fso/mediavps",
+        "user": false,
+        "location_type": "primary_mod"
+      },
+      {
+        "type": "package",
+        "path": "/path/to/fso/mediavps/MVPS-Z.vp",
+        "location_type": "primary_mod"
+      },
+      {
+        "type": "package",
+        "path": "/path/to/fso/mediavps/MVPS-X.vp",
+        "location_type": "primary_mod"
+      },
+      {
+        "type": "folder",
+        "path": "/path/to/fso",
+        "location_type": "game_root"
+      },
+      {
+        "type": "package",
+        "path": "/path/to/fso/retail.vp",
+        "location_type": "game_root"
+      }
+    ]
+  }
+}

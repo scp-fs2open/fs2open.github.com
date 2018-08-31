@@ -33,8 +33,6 @@ void test::FSTestFixture::SetUp() {
 
 	if (_initFlags & INIT_CFILE) {
 		SCP_string cfile_dir(TEST_DATA_PATH);
-		cfile_dir += DIR_SEPARATOR_CHAR;
-		cfile_dir += "test"; // Cfile expects something after the path
 
 		if (cfile_init(cfile_dir.c_str())) {
 			FAIL() << "Cfile init failed!";

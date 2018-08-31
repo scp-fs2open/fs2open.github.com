@@ -5688,16 +5688,29 @@ bool parse_mission(mission *pm, int flags)
 				strcat_s(text, pm->name);
 			}
 
-			strcat_s(text, "\", and the current mod is \"");
+			strcat_s(text, "\", and the current mod root is \"");
 
-			if (Cmdline_mod == NULL || *Cmdline_mod == 0) {
-				strcat_s(text, "<retail default> ");
-			} else {
-				for (char *mod_token = Cmdline_mod; *mod_token != '\0'; mod_token += strlen(mod_token) + 1) {
-					strcat_s(text, mod_token);
-					strcat_s(text, " ");
+			// Try to find the first non-user, folder root and display that. Not ideal but better than nothing I guess...
+			// We go through all the specified mod roots and find the first non-user folder. If that does not exist then
+			// user folders will be considered next. If that also fails, a default value is used.
+			SCP_string modRoot = "<Unknown>";
+			for (const auto& consider_user : {false, true})
+			{
+				for (const auto& root : Cmdline_mod)
+				{
+					if (root.type != cfile::ModRootType::Folder)
+					{
+						continue;
+					}
+
+					if (root.user_location && !consider_user) {
+						continue;
+					}
+
+					modRoot = root.path;
 				}
 			}
+			strcat_s(text, modRoot.c_str());
 
 			strcpy(text + strlen(text) - 1, "\".)\n\n  You can continue to load the mission, but it is quite likely that you will encounter a large number of mysterious errors.  It is recommended that you either select a ");
 			strcat(text, (Game_mode & GM_CAMPAIGN_MODE) ? "campaign" : "mission");

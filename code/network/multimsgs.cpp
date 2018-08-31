@@ -1370,8 +1370,8 @@ void process_accept_player_data( ubyte *data, header *hinfo )
 	if ( stop == APD_END_DATA ) {
 		// if joining a game automatically, set the connect address to NULl so we don't try and
 		// do this next time we enter a game
-		if (Cmdline_connect_addr != NULL) {
-			Cmdline_connect_addr = NULL;
+		if (!Cmdline_connect_addr.empty()) {
+			Cmdline_connect_addr.clear();
 		}
 
 		// send my stats to the server if I'm not in observer mode

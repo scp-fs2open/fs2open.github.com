@@ -34,6 +34,9 @@
 #include <CoreFoundation/CoreFoundation.h>
 #endif
 
+#include "cfile/cfile.h"
+#include "cfile/cfilemod.h"
+
 #ifdef SCP_UNIX
 #include "osapi/osapi.h"
 #include <dirent.h>
@@ -71,23 +74,36 @@ enum class flag_output_type {
 	Json_V1,
 };
 
+enum class flag_input_type {
+	Flags,
+	Stdin_Json_V1,
+};
+
 // variables
 class cmdline_parm {
 public:
-	cmdline_parm *next, *prev;
-	const char *name;						// name of parameter, must start with '-' char
-	const char *help;						// help text for this parameter
-	const bool stacks;					// whether this arg stacks with each use or is replaced by newest use (should only be used for strings!!)
-	char *args;						// string value for parameter arguments (NULL if no arguments)
-	int name_found;				// true if parameter on command line, otherwise false
-	const int arg_type;					// from enum cmdline_arg_type; used for help
+	cmdline_parm *next = nullptr, *prev = nullptr;
+	const char* name;   // name of parameter, must start with '-' char
+	const char* help;   // help text for this parameter
+	const bool stacks;  // whether this arg stacks with each use or is replaced by newest use (should only be used for
+	                    // strings!!)
+	SCP_string args;    // string value for parameter arguments (empty if no arguments)
+	bool name_found;    // true if parameter on command line, otherwise false
+	const int arg_type; // from enum cmdline_arg_type; used for help
 
-	cmdline_parm(const char *name, const char *help, const int arg_type, const bool stacks = false);
-	~cmdline_parm();
-	int found();
+	cmdline_parm(const char* name, const char* help, const int arg_type, const bool stacks = false) noexcept;
+	~cmdline_parm() noexcept;
+
+	cmdline_parm(const cmdline_parm& other) = delete;
+	cmdline_parm& operator=(const cmdline_parm& other) = delete;
+
+	cmdline_parm(cmdline_parm&& other) = delete;
+	cmdline_parm& operator=(cmdline_parm&& other) = delete;
+
+	bool found();
 	int get_int();
 	float get_float();
-	char *str();
+	SCP_string str();
 	bool check_if_args_is_valid();
 	bool has_param();
 };
@@ -275,11 +291,11 @@ cmdline_parm mouse_coords("-coords", NULL, AT_NONE);			// Cmdline_mouse_coords
 cmdline_parm timeout("-timeout", "Multiplayer network timeout (secs)", AT_INT);				// Cmdline_timeout
 cmdline_parm bit32_arg("-32bit", "Deprecated", AT_NONE);				// (only here for retail compatibility reasons, doesn't actually do anything)
 
-char *Cmdline_connect_addr = NULL;
-char *Cmdline_game_name = NULL;
-char *Cmdline_game_password = NULL;
-char *Cmdline_rank_above = NULL;
-char *Cmdline_rank_below = NULL;
+SCP_string Cmdline_connect_addr;
+SCP_string Cmdline_game_name;
+SCP_string Cmdline_game_password;
+SCP_string Cmdline_rank_above;
+SCP_string Cmdline_rank_below;
 int Cmdline_cd_check = 1;
 int Cmdline_client_dodamage = 0;
 int Cmdline_closed_game = 0;
@@ -392,7 +408,7 @@ int Cmdline_no_enhanced_sound = 0;
 // MOD related
 cmdline_parm mod_arg("-mod", "List of folders to overwrite/add-to the default data", AT_STRING, true);	// Cmdline_mod  -- DTP modsupport
 
-char *Cmdline_mod = NULL; //DTP for mod argument
+SCP_vector<cfile::ModRoot> Cmdline_mod; // DTP for mod argument
 
 // Multiplayer/Network related
 cmdline_parm almission_arg("-almission", "Autoload multiplayer mission", AT_STRING);		// Cmdline_almission  -- DTP for autoload Multi mission
@@ -402,15 +418,19 @@ cmdline_parm missioncrcspew_arg("-missioncrcs", NULL, AT_STRING);		// Cmdline_sp
 cmdline_parm tablecrcspew_arg("-tablecrcs", NULL, AT_STRING);			// Cmdline_spew_table_crcs
 cmdline_parm objupd_arg("-cap_object_update", "Multiplayer object update cap (0-3)", AT_INT);
 
-char *Cmdline_almission = NULL;	//DTP for autoload multi mission.
+SCP_string Cmdline_almission; // DTP for autoload multi mission.
 int Cmdline_ingamejoin = 0;
 int Cmdline_mpnoreturn = 0;
-char *Cmdline_spew_mission_crcs = NULL;
-char *Cmdline_spew_table_crcs = NULL;
+SCP_string Cmdline_spew_mission_crcs;
+SCP_string Cmdline_spew_table_crcs;
 int Cmdline_objupd = 3;		// client object updates on LAN by default
 
 // Launcher related options
 cmdline_parm portable_mode("-portable_mode", NULL, AT_NONE);
+cmdline_parm
+    stdin_flags("-stdin_flags",
+                "Tells FSO to read flags from stdin. Parameter is format if data supplied. Possible values: json_v1",
+                AT_STRING);
 
 bool Cmdline_portable_mode = false;
 
@@ -442,7 +462,7 @@ int Cmdline_no_pbo = 0;
 int Cmdline_ati_color_swap = 0;
 int Cmdline_no_3d_sound = 0;
 int Cmdline_drawelements = 0;
-char* Cmdline_keyboard_layout = NULL;
+SCP_string Cmdline_keyboard_layout;
 bool Cmdline_gl_finish = false;
 bool Cmdline_no_geo_sdr_effects = false;
 bool Cmdline_set_cpu_affinity = false;
@@ -479,8 +499,7 @@ cmdline_parm show_video_info("-show_video_info", NULL, AT_NONE); //Cmdline_show_
 cmdline_parm frame_profile_arg("-profile_frame_time", NULL, AT_NONE); //Cmdline_frame_profile
 cmdline_parm debug_window_arg("-debug_window", NULL, AT_NONE);	// Cmdline_debug_window
 
-
-char *Cmdline_start_mission = NULL;
+SCP_string Cmdline_start_mission;
 int Cmdline_dis_collisions = 0;
 int Cmdline_dis_weapons = 0;
 bool Cmdline_output_sexp_info = false;
@@ -495,8 +514,8 @@ int Cmdline_show_stats = 0;
 int Cmdline_save_render_targets = 0;
 int Cmdline_window = 0;
 int Cmdline_fullscreen_window = 0;
-char *Cmdline_res = 0;
-char *Cmdline_center_res = 0;
+SCP_string Cmdline_res;
+SCP_string Cmdline_center_res;
 int Cmdline_verify_vps = 0;
 int Cmdline_reparse_mainhall = 0;
 bool Cmdline_profile_write_file = false;
@@ -547,8 +566,8 @@ void cmdline_debug_print_cmdline()
 
 	for (parmp = GET_FIRST(&Parm_list); parmp !=END_OF_LIST(&Parm_list); parmp = GET_NEXT(parmp) ) {
 		if ( parmp->name_found ) {
-			if ( parmp->args != NULL ) {
-				mprintf(("\n  %s %s", parmp->name, parmp->args));
+			if (!parmp->args.empty()) {
+				mprintf(("\n  %s %s", parmp->name, parmp->args.c_str()));
 			} else {
 				mprintf(("\n  %s", parmp->name));
 			}
@@ -654,14 +673,13 @@ char *drop_extra_chars(char *str)
 	return str;
 }
 
-
 /*
  * @brief Processes one argument for the given parameter
  *
  * @param param The parameter to check
  * @param argc The argument count
- * @param argc The argument values
- * @param argc The current index
+ * @param argv The argument values
+ * @param index The current index
  * @return @c true when an extra parameter was found, @c false otherwise
  */
 bool parm_stuff_args(cmdline_parm *parm, int argc, char *argv[], int index)
@@ -678,47 +696,17 @@ bool parm_stuff_args(cmdline_parm *parm, int argc, char *argv[], int index)
 		}
 		else
 		{
-			char* saved_args = NULL;
-
-			if (parm->args != NULL) {
-				if (parm->stacks) {
-					saved_args = parm->args;
+			if (parm->stacks) {
+				if (!parm->args.empty())
+				{
+					// Avoid adding the , at the start
+					parm->args += ",";
 				}
-				else {
-					delete[] parm->args;
-				}
-
-				parm->args = NULL;
-			}
-
-			size_t argsize = strlen(argv[index + 1]);
-			size_t buffersize = argsize;
-
-			if (saved_args != NULL)
-			{
-				// Add one for the , separating args
-				buffersize += strlen(saved_args) + 1;
-			}
-
-			buffersize += 1; // Null-terminator
-
-			parm->args = new char[buffersize];
-			memset(parm->args, 0, buffersize);
-
-			if (saved_args != NULL)
-			{
-				// saved args go first, then new arg
-				strcpy_s(parm->args, buffersize, saved_args);
-				// add a separator too, so that we can tell the args apart
-				strcat_s(parm->args, buffersize, ",");
-				// now the new arg
-				strcat_s(parm->args, buffersize, argv[index + 1]);
-
-				delete[] saved_args;
+				parm->args += argv[index + 1];
 			}
 			else
 			{
-				strcpy_s(parm->args, buffersize, argv[index + 1]);
+				parm->args = argv[index + 1];
 			}
 
 			return true;
@@ -750,7 +738,7 @@ void os_parse_parms(int argc, char *argv[])
 		for (parmp = GET_FIRST(&Parm_list); parmp != END_OF_LIST(&Parm_list); parmp = GET_NEXT(parmp)) {
 			if (!stricmp(parmp->name, argv[i]))
 			{
-				parmp->name_found = 1;
+				parmp->name_found = true;
 				if (parm_stuff_args(parmp, argc, argv, i))
 				{
 					i++;
@@ -931,11 +919,8 @@ bool has_cmdline_only_flag(int argc, char *argv[])
 static void reset_cmdline_parms()
 {
 	for (cmdline_parm *parmp = GET_FIRST(&Parm_list); parmp != END_OF_LIST(&Parm_list); parmp = GET_NEXT(parmp)) {
-		if (parmp->args != NULL) {
-			delete[] parmp->args;
-			parmp->args = NULL;
-		}
-		parmp->name_found = 0;
+		parmp->args.clear();
+		parmp->name_found = false;
 	}
 }
 
@@ -1031,11 +1016,14 @@ void os_init_cmdline(int argc, char *argv[])
  * @param arg_type_    parameters arguement type (if any)
  * @param stacks_    can the parameter be stacked
  */
-cmdline_parm::cmdline_parm(const char *name_, const char *help_, const int arg_type_, const bool stacks_):
-	name(name_), help(help_), stacks(stacks_), arg_type(arg_type_)
+cmdline_parm::cmdline_parm(const char* name_, const char* help_, const int arg_type_, const bool stacks_) noexcept
+    : name(name_), help(help_), stacks(stacks_), arg_type(arg_type_)
 {
-	args = NULL;
-	name_found = 0;
+	if (stacks) {
+		Assertion(arg_type == AT_STRING, "Only string arguments can stack!");
+	}
+
+	name_found = false;
 
 	if (Parm_list_inited == 0) {
 		Assertion(&Parm_list == this, "Coding error! 1st initialised cmdline_parm must be static Parm_list\n");
@@ -1054,20 +1042,12 @@ cmdline_parm::cmdline_parm(const char *name_, const char *help_, const int arg_t
 
 
 // destructor - frees any allocated memory
-cmdline_parm::~cmdline_parm()
-{
-#ifndef FRED
-	if (args) {
-		delete [] args;
-		args = NULL;
-	}
-#endif
-}
+cmdline_parm::~cmdline_parm() noexcept = default;
 
 // checks if the objects args variable is valid
 // returns true if it is, shows an error box and returns false if not valid.
 bool cmdline_parm::check_if_args_is_valid() {
-	if ( args == NULL ) {
+	if (args.empty()) {
 		Error(__FILE__, __LINE__, 
 			"Command line flag passed that requires an argument, but the argument is missing!\r\n"
 			"The flag is '%s', make sure that you have an argument that follows it.\r\n"
@@ -1081,10 +1061,7 @@ bool cmdline_parm::check_if_args_is_valid() {
 
 
 // returns - true if the parameter exists on the command line, otherwise false
-int cmdline_parm::found()
-{
-	return name_found;
-}
+bool cmdline_parm::found() { return name_found; }
 
 // returns - the interger representation for the parameter argument
 int cmdline_parm::get_int()
@@ -1092,22 +1069,12 @@ int cmdline_parm::get_int()
 	Assertion(arg_type == AT_INT, "Coding error! Cmdline arg (%s) called cmdline_parm::get_int() with invalid arg_type (%s)", name, cmdline_arg_types[arg_type]);
 	check_if_args_is_valid();
 
-	size_t offset = 0;
-
-	if (stacks) {
-		// first off, DON'T STACK NON-STRINGS!!
-		Int3();
-
-		// secondly, we still need to get it right for the user's sake...
-		char *moron = strstr(args, ",");
-
-		if ( moron && ((strlen(moron) + 1) < strlen(args)) ) {
-			// we get the last arg, since it's the newest one
-			offset = strlen(args) - strlen(moron) + 1;
-		}
+	try {
+		return std::stoi(args);
+	} catch (const std::exception& e) {
+		Warning(LOCATION, "Failed to convert '%s' to a float for parameter '%s'!", args.c_str(), name);
+		return 0;
 	}
-
-	return atoi(args+offset);
 }
 
 
@@ -1117,36 +1084,24 @@ float cmdline_parm::get_float()
 	Assertion(arg_type == AT_FLOAT, "Coding error! Cmdline arg (%s) called cmdline_parm::get_float() with invalid arg_type (%s)", name, cmdline_arg_types[arg_type]);
 	check_if_args_is_valid();
 
-	size_t offset = 0;
-
-	if (stacks) {
-		// first off, DON'T STACK NON-STRINGS!!
-		Int3();
-
-		// secondly, we still need to get it right for the user's sake
-		char *moron = strstr(args, ",");
-
-		if ( moron && ((strlen(moron) + 1) < strlen(args)) ) {
-			// we get the last arg, since it's the newest one
-			offset = strlen(args) - strlen(moron) + 1;
-		}
+	try {
+		return std::stof(args);
+	} catch (const std::exception& e) {
+		Warning(LOCATION, "Failed to convert '%s' to a float for parameter '%s'!", args.c_str(), name);
+		return 0.0f;
 	}
-
-	return (float)atof(args+offset);
 }
 
 
 // returns - the string value for the parameter argument
-char *cmdline_parm::str()
+SCP_string cmdline_parm::str()
 {
 	Assertion(arg_type == AT_STRING, "Coding error! Cmdline arg (%s) called cmdline_parm::str() with invalid arg_type (%s)", name, cmdline_arg_types[arg_type]);
 	check_if_args_is_valid();
 
 	return args;
 }
-bool cmdline_parm::has_param() {
-	return args != nullptr;
-}
+bool cmdline_parm::has_param() { return !args.empty(); }
 
 #ifdef SCP_UNIX
 // Return a vector with all filesystem names of "parent/dir" relative to parent.
@@ -1207,39 +1162,31 @@ static SCP_vector<SCP_string> unix_get_dir_names(const SCP_string& parent, const
 }
 
 // For case sensitive filesystems (e.g. Linux/BSD) perform case-insensitive dir matches.
-static void handle_unix_modlist(char **modlist, size_t *len)
+static SCP_string handle_unix_modlist(const SCP_string& modlist)
 {
 	// search filesystem for given paths
 	SCP_vector<SCP_string> mod_paths;
-	for (char *cur_mod = strtok(*modlist, ","); cur_mod != NULL; cur_mod = strtok(NULL, ","))
-	{
+
+	SCP_stringstream iss(modlist);
+	SCP_string cur_mod;
+	while (std::getline(iss, cur_mod, ',')) {
 		SCP_vector<SCP_string> this_mod_paths = unix_get_dir_names(".", cur_mod);
 		// Ignore non-existing mods for unit tests
 		if (!running_unittests && this_mod_paths.empty()) {
-			ReleaseWarning(LOCATION, "Can't find mod '%s'. Ignoring.", cur_mod);
+			ReleaseWarning(LOCATION, "Can't find mod '%s'. Ignoring.", cur_mod.c_str());
 		}
 		mod_paths.insert(mod_paths.end(), this_mod_paths.begin(), this_mod_paths.end());
 	}
 
-	// create new char[] to replace modlist
-	size_t total_len = 0;
-	SCP_vector<SCP_string>::iterator ii, end = mod_paths.end();
-	for (ii = mod_paths.begin(); ii != end; ++ii) {
-		total_len += ii->length() + 1;
-	}
-
-	char *new_modlist = new char[total_len + 1];
-	memset(new_modlist, 0, total_len + 1);
-	end = mod_paths.end();
-	for (ii = mod_paths.begin(); ii != end; ++ii) {
-		strcat_s(new_modlist, total_len + 1, ii->c_str());
-		strcat_s(new_modlist, total_len + 1, ","); // replace later with NUL
+	// create new string to replace modlist
+	SCP_string new_modlist;
+	for (const auto& path : mod_paths) {
+		new_modlist += path;
+		new_modlist += ","; // replace later with NUL
 	}
 
 	// make the rest of the modlist manipulation unaware that anything happened here
-	delete [] *modlist;
-	*modlist = new_modlist;
-	*len = total_len;
+	return new_modlist;
 }
 #endif /* SCP_UNIX */
 
@@ -1297,6 +1244,7 @@ static json_t* json_get_v1() {
 		json_array_append_new(caps_array, json_string("No D3D"));
 		json_array_append_new(caps_array, json_string("New Sound"));
 		json_array_append_new(caps_array, json_string("SDL"));
+		json_array_append_new(caps_array, json_string("Stdin Flags: Json V1"));
 
 		json_object_set_new(root, "caps", caps_array);
 	}
@@ -1487,16 +1435,218 @@ static void write_flags() {
 	case flag_output_type::Binary:
 		write_flags_file();
 		break;
-	case flag_output_type::Json_V1:
+	case flag_output_type::Json_V1: {
 		json_t* root = json_get_v1();
 
 		json_dumpf(root, stdout, JSON_INDENT(4));
 		json_decref(root);
 		break;
 	}
+	}
 }
 
-bool SetCmdlineParams()
+static bool validate_version(json_t* rootEl)
+{
+	const auto version_el = json_object_get(rootEl, "version");
+
+	if (version_el == nullptr) {
+		printf("Version element is missing!\n");
+		return false;
+	}
+
+	if (!json_is_number(version_el)) {
+		printf("Version value is not a number!\n");
+		return false;
+	}
+
+	if (json_integer_value(version_el) != 1) {
+		printf("Version value %" JSON_INTEGER_FORMAT " is not supported!\n", json_integer_value(version_el));
+		return false;
+	}
+
+	return true;
+}
+
+static cfile::ModRootType mapModRootType(const char* rootStr) {
+	if (!stricmp(rootStr, "folder")) {
+		return cfile::ModRootType::Folder;
+	} else if (!stricmp(rootStr, "package")) {
+		return cfile::ModRootType::Package;
+	} else {
+		return cfile::ModRootType::Unknown;
+	}
+}
+static cfile::LocationType mapLocationType(const char* rootStr) {
+	if (!stricmp(rootStr, "game_root")) {
+		return cfile::LocationType::GameRoot;
+	} else if (!stricmp(rootStr, "primary_mod")) {
+		return cfile::LocationType::PrimaryMod;
+	} else if (!stricmp(rootStr, "secondary_mod")) {
+		return cfile::LocationType::SecondaryMod;
+	} else {
+		return cfile::LocationType::Unknown;
+	}
+}
+
+static void stuff_mod_option(cmdline_parm* param, json_t* el)
+{
+	if (!json_is_array(el))
+	{
+		printf("Value for option %s must be an array!", param->name);
+		return;
+	}
+
+	SCP_vector<cfile::ModRoot> roots;
+
+	size_t i;
+	json_t* modObj;
+
+	json_array_foreach(el, i, modObj)
+	{
+		const auto typeEl = json_object_get(modObj, "type");
+		const auto pathEl = json_object_get(modObj, "path");
+		const auto locationEl = json_object_get(modObj, "location_type");
+
+		if (typeEl == nullptr || pathEl == nullptr || locationEl == nullptr)
+		{
+			printf("A required mod root element is missing: Type %p, Path %p, Location %p", typeEl, pathEl, locationEl);
+			continue;
+		}
+		if (!json_is_string(typeEl) || !json_is_string(pathEl) || !json_is_string(locationEl))
+		{
+			printf("An element had a wrong type: Type %d, Path %d, Location %d", json_typeof(typeEl), json_typeof(pathEl), json_typeof(locationEl));
+			continue;
+		}
+
+		const auto userEl = json_object_get(modObj, "user");
+
+		if (userEl != nullptr && !json_is_boolean(userEl))
+		{
+			printf("User element type is not a boolean!");
+			continue;
+		}
+
+		cfile::ModRoot root;
+		root.type = mapModRootType(json_string_value(typeEl));
+		root.path = json_string_value(pathEl);
+		root.location_type = mapLocationType(json_string_value(locationEl));
+		root.user_location = userEl == nullptr ? false : json_boolean_value(userEl);
+		roots.push_back(root);
+	}
+
+	Cmdline_mod = roots;
+}
+
+static void stuff_json_option(cmdline_parm* param, json_t* el)
+{
+	if (param == &mod_arg)
+	{
+		// The -mod parameter is handled specially since it is not a simple string
+		stuff_mod_option(param, el);
+		return;
+	}
+
+	switch (param->arg_type) {
+	case AT_NONE:
+		if (!json_is_boolean(el)) {
+			printf("Value for option %s must be a boolean!", param->name);
+			return;
+		}
+		param->name_found = json_is_true(el);
+		break;
+	case AT_INT:
+		if (!json_is_number(el)) {
+			printf("Value for option %s must be a number!", param->name);
+			return;
+		}
+		param->name_found = true;
+		param->args = std::to_string(json_integer_value(el));
+
+		break;
+	case AT_FLOAT:
+		if (!json_is_number(el)) {
+			printf("Value for option %s must be a number!", param->name);
+			return;
+		}
+		param->name_found = true;
+		param->args = std::to_string(json_real_value(el));
+		break;
+	case AT_STRING:
+		if (!json_is_string(el)) {
+			printf("Value for option %s must be a string!", param->name);
+			return;
+		}
+		param->name_found = true;
+		param->args.assign(json_string_value(el), json_string_length(el));
+		break;
+	default:
+		UNREACHABLE("Unknown arg type %d.", param->arg_type);
+		return;
+	}
+}
+
+static bool parse_json_flags(json_t* rootEl)
+{
+	if (!json_is_object(rootEl)) {
+		printf("Root element must be an object!\n");
+		return false;
+	}
+
+	if (!validate_version(rootEl)) {
+		return false;
+	}
+
+	const auto flagsEl = json_object_get(rootEl, "flags");
+
+	if (flagsEl == nullptr) {
+		printf("Flags element is missing!\n");
+		return false;
+	}
+
+	if (!json_is_object(flagsEl)) {
+		printf("Flags element is not an object!\n");
+		return false;
+	}
+
+	const char* flagName;
+	json_t* flagValue;
+
+	json_object_foreach(flagsEl, flagName, flagValue)
+	{
+		for (auto parmp = GET_FIRST(&Parm_list); parmp != END_OF_LIST(&Parm_list); parmp = GET_NEXT(parmp)) {
+			if (!stricmp(parmp->name, flagName)) {
+				stuff_json_option(parmp, flagValue);
+			}
+		}
+	}
+
+	return true;
+}
+
+static bool SetCmdlineParams(flag_input_type inputType);
+
+static bool SetCmdlineParamsFromStdin(const SCP_string& format)
+{
+	if (format != "json_v1") {
+		// Invalid format!
+		printf("INPUT TYPE '%s' IS NOT SUPPORTED!\n", format.c_str());
+		return false;
+	}
+
+	json_error_t error;
+	json_t* flagsEl = json_loadf(stdin, JSON_DISABLE_EOF_CHECK, &error);
+	if (flagsEl == nullptr) {
+		printf("Failed to parse JSON: %s(%d:%d): %s\n", error.source, error.line, error.column, error.text);
+		return false;
+	}
+
+	if (!parse_json_flags(flagsEl)) {
+		return false;
+	}
+	return SetCmdlineParams(flag_input_type::Stdin_Json_V1);
+}
+
+static bool SetCmdlineParams(flag_input_type inputType)
 // Sets externed variables used for communication cmdline information
 {
 	//getcwd(FreeSpace_Directory, 256); // set the directory to our fs2 root
@@ -1506,6 +1656,10 @@ bool SetCmdlineParams()
 		write_flags();
 		
 		return false; 
+	}
+
+	if (inputType == flag_input_type::Flags && stdin_flags.found()) {
+		return SetCmdlineParamsFromStdin(stdin_flags.str());
 	}
 
 	if (no_fpscap.found())
@@ -1539,8 +1693,8 @@ bool SetCmdlineParams()
 		Cmdline_spew_mission_crcs = missioncrcspew_arg.str();
 
 		// strip off blank space at end if it's there
-		if ( Cmdline_spew_mission_crcs[strlen(Cmdline_spew_mission_crcs)-1] == ' ' ) {
-			Cmdline_spew_mission_crcs[strlen(Cmdline_spew_mission_crcs)-1] = '\0';
+		if (Cmdline_spew_mission_crcs.back() == ' ') {
+			Cmdline_spew_mission_crcs.resize(Cmdline_spew_mission_crcs.size() - 1);
 		}
  	}
  
@@ -1548,8 +1702,8 @@ bool SetCmdlineParams()
 		Cmdline_spew_table_crcs = tablecrcspew_arg.str();
 
 		// strip off blank space at end if it's there
-		if ( Cmdline_spew_table_crcs[strlen(Cmdline_spew_table_crcs)-1] == ' ' ) {
-			Cmdline_spew_table_crcs[strlen(Cmdline_spew_table_crcs)-1] = '\0';
+		if (Cmdline_spew_table_crcs.back() == ' ') {
+			Cmdline_spew_table_crcs.resize(Cmdline_spew_table_crcs.size() - 1);
 		}
  	}
 
@@ -1615,8 +1769,8 @@ bool SetCmdlineParams()
 		Cmdline_game_name = gamename_arg.str();
 
 		// be sure that this string fits in our limits
-		if ( strlen(Cmdline_game_name) > MAX_GAMENAME_LEN ) {
-			Cmdline_game_name[MAX_GAMENAME_LEN-1] = '\0';
+		if (Cmdline_game_name.size() > MAX_GAMENAME_LEN - 1) {
+			Cmdline_game_name.resize(MAX_GAMENAME_LEN - 1);
 		}
 	}
 
@@ -1625,8 +1779,8 @@ bool SetCmdlineParams()
 		Cmdline_game_password = gamepassword_arg.str();
 
 		// be sure that this string fits in our limits
-		if ( strlen(Cmdline_game_name) > MAX_PASSWD_LEN ) {
-			Cmdline_game_name[MAX_PASSWD_LEN-1] = '\0';
+		if (Cmdline_game_password.size() > MAX_GAMENAME_LEN - 1) {
+			Cmdline_game_password.resize(MAX_GAMENAME_LEN - 1);
 		}
 	}
 
@@ -1695,12 +1849,13 @@ bool SetCmdlineParams()
 		int width = 0;
 		int height = 0;
 
-		if ( sscanf(Cmdline_res, "%dx%d", &width, &height) == 2 ) {
+		if (sscanf(Cmdline_res.c_str(), "%dx%d", &width, &height) == 2) {
 			SCP_string override;
-			sprintf(override, "{\"width\":%d,\"height\":%d}", width, height);
+			sprintf(override, R"({"width":%d,"height":%d})", width, height);
 			options::OptionsManager::instance()->setOverride("Graphics.Resolution", override);
 		} else {
-			mprintf(("Failed to parse -res parameter \"%s\". Must be in format \"<width>x<height>\".", Cmdline_res));
+			mprintf(("Failed to parse -res parameter \"%s\". Must be in format \"<width>x<height>\".",
+			         Cmdline_res.c_str()));
 		}
 	}
 	if(center_res_arg.found()){
@@ -1733,35 +1888,32 @@ bool SetCmdlineParams()
 		Cmdline_noparseerrors = 1;
 	}
 
-
-	if(mod_arg.found() ) {
-		Cmdline_mod = mod_arg.str();
+	// Legacy mod handling is handled here
+	if (inputType == flag_input_type::Flags && mod_arg.found()) {
+		auto modCmdline = mod_arg.str();
 
 		// strip off blank space it it's there
-		if ( Cmdline_mod[strlen(Cmdline_mod)-1] == ' ' ) {
-			Cmdline_mod[strlen(Cmdline_mod)-1] = '\0';
+		if (modCmdline.back() == ' ') {
+			modCmdline.resize(modCmdline.size() - 1);
 		}
-
-		// Ok - mod stacking support
-		size_t len = strlen(Cmdline_mod);
-		char *modlist = new char[len+2];
-		memset( modlist, 0, len + 2 );
-		strcpy_s(modlist, len+2, Cmdline_mod);
 
 #ifdef SCP_UNIX
 		// handle case-insensitive searching
-		handle_unix_modlist(&modlist, &len);
+		modCmdline = handle_unix_modlist(modCmdline);
 #endif
 
 		// null terminate each individual
-		for (size_t i = 0; i < len; i++)
+		for (auto& ch : modCmdline)
 		{
-			if (modlist[i] == ',')
-				modlist[i] = '\0';
+			if (ch == ',')
+				ch = '\0';
 		}
-		
-		//copy over - we don't have to delete[] Cmdline_mod because it's a pointer to an automatic global char*
-		Cmdline_mod = modlist;
+
+		char whee[MAX_PATH_LEN];
+		memset(whee, 0, sizeof(whee));
+		_getcwd(whee, MAX_PATH_LEN-1);
+
+		Cmdline_mod = cfile::getModRootsFromModCmdline(whee, modCmdline.c_str());
 	}
 
 
@@ -2185,7 +2337,7 @@ int parse_cmdline(int argc, char *argv[])
 	// --------------- Kazan -------------
 	// If you're looking for the list of if (someparam.found()) { cmdline_someparam = something; } look above at this function
 	// I did this because of fred2_parse_cmdline()
-	return SetCmdlineParams();
+	return SetCmdlineParams(flag_input_type::Flags);
 }
 
 const char * get_param_desc(const char *flag_name)

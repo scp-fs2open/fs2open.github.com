@@ -81,12 +81,8 @@ initialize(const std::string& cfilepath, int argc, char* argv[], Editor* editor,
 	cmdline_debug_print_cmdline();
 #endif
 
-	// d'oh
-	// cfile needs a file path...
-	auto file_path = cfilepath + DIR_SEPARATOR_STR + "qtfred.exe";
-
 	listener(SubSystem::CFile);
-	if (cfile_init(file_path.c_str())) {
+	if (cfile_init(cfilepath.c_str())) {
 		return false;
 	}
 

@@ -883,20 +883,6 @@ static void opengl_purge_shader_cache_type(const char* ext) {
 	SCP_string filter("*.");
 	filter += ext;
 
-	// Previously the cache files were stored in the mod directory. Since we have a better system now, those files
-	// should be cleaned out. This is only needed if we have a mod directory since otherwise we would delete the actual
-	// cache files
-	if (Cmdline_mod != nullptr && strlen(Cmdline_mod) > 0) {
-		SCP_vector<SCP_string> cache_files;
-		cf_get_file_list(cache_files, CF_TYPE_CACHE, filter.c_str(), CF_SORT_NONE, nullptr,
-		                 CF_LOCATION_TYPE_PRIMARY_MOD | CF_LOCATION_TYPE_SECONDARY_MODS);
-
-		for (auto& file : cache_files) {
-			cf_delete((file + "." + ext).c_str(), CF_TYPE_CACHE,
-			          CF_LOCATION_TYPE_PRIMARY_MOD | CF_LOCATION_TYPE_SECONDARY_MODS);
-		}
-	}
-
 	SCP_vector<SCP_string> cache_files;
 	SCP_vector<file_list_info> file_info;
 	cf_get_file_list(cache_files, CF_TYPE_CACHE, filter.c_str(), CF_SORT_NONE, &file_info,
