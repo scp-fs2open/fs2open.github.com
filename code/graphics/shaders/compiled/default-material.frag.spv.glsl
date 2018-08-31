@@ -28,24 +28,24 @@ void main()
         discard;
     }
     bool _66 = _39.srgb == 1;
-    vec3 _146;
+    vec3 _148;
     if (_66)
     {
-        _146 = pow(_48.xyz, vec3(2.2000000476837158203125));
+        _148 = pow(_48.xyz, vec3(2.2000000476837158203125));
     }
     else
     {
-        _146 = _48.xyz;
+        _148 = _48.xyz;
     }
-    vec4 _148;
+    vec4 _150;
     if (_66)
     {
-        _148 = vec4(pow(fragColor.xyz, vec3(2.2000000476837158203125)), fragColor.w);
+        _150 = vec4(pow(fragColor.xyz, vec3(2.2000000476837158203125)), fragColor.w);
     }
     else
     {
-        _148 = fragColor;
+        _150 = fragColor;
     }
-    fragOut0 = mix(mix(vec4(_146.x, _146.y, _146.z, _48.w) * _148, vec4(_148.xyz, _146.x * _148.w), vec4(float(_39.alphaTexture))), _148, vec4(float(_39.noTexturing))) * _39.intensity;
+    fragOut0 = mix(mix(vec4(_148.x, _148.y, _148.z, _48.w) * _150, vec4(_150.xyz, _148.x * _150.w), vec4(float(_39.alphaTexture))), _150, vec4(float(_39.noTexturing))) * _39.intensity;
 }
 

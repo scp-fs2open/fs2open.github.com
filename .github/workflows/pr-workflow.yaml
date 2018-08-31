@@ -136,7 +136,7 @@ jobs:
           if [ "$COMPILER" = "MinGW" ]; then
               cmake --build . --config "$CONFIGURATION"
           else
-              cmake --build . --config "$CONFIGURATION" -- /verbosity:minimal
+              cmake --build . --config "$CONFIGURATION" -- /verbosity:minimal /clp:Summary
           fi
       - name: Run Tests
         working-directory: ./build

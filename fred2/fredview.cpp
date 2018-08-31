@@ -397,9 +397,12 @@ BOOL CFREDView::PreCreateWindow(CREATESTRUCT& cs)
 	cs.y = 0;  // doesn't seem to do anything. :(
 
 // other miscellaneous initializations
-	
-	if (Cmdline_mod)
-		cfile_chdir(Cmdline_mod);
+	for (const auto& root : Cmdline_mod) {
+		if (root.type == cfile::ModRootType::Folder && !root.user_location) {
+			cfile_chdir(root.path);
+			break;
+		}
+	}
 	cfile_chdir("data\\missions");
 	
 	

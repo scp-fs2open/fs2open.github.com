@@ -1501,11 +1501,11 @@ bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, int d_mode, 
 			}
 		}
 
-		if (Cmdline_res != nullptr) {
+		if (!Cmdline_res.empty()) {
 			int tmp_width = 0;
 			int tmp_height = 0;
 
-			if ( sscanf(Cmdline_res, "%dx%d", &tmp_width, &tmp_height) == 2 ) {
+			if ( sscanf(Cmdline_res.c_str(), "%dx%d", &tmp_width, &tmp_height) == 2 ) {
 				width = tmp_width;
 				height = tmp_height;
 			}
@@ -1513,11 +1513,11 @@ bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, int d_mode, 
 
 		Gr_enable_soft_particles = Cmdline_softparticles != 0;
 	}
-	if (Cmdline_center_res != NULL) {
+	if (!Cmdline_center_res.empty()) {
 		int tmp_center_width = 0;
 		int tmp_center_height = 0;
 
-		if ( (sscanf(Cmdline_center_res, "%dx%d", &tmp_center_width, &tmp_center_height) == 2) && (tmp_center_width > 0) && (tmp_center_height > 0) ) {
+		if ( (sscanf(Cmdline_center_res.c_str(), "%dx%d", &tmp_center_width, &tmp_center_height) == 2) && (tmp_center_width > 0) && (tmp_center_height > 0) ) {
 			center_aspect_ratio = (float)tmp_center_width / (float)tmp_center_height;
 		}
 	}

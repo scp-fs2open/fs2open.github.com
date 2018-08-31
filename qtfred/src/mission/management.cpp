@@ -17,7 +17,6 @@
 #include <scripting/scripting.h>
 #include <hud/hudsquadmsg.h>
 #include <globalincs/alphacolors.h>
-
 #include <menuui/techmenu.h>
 #include <localization/fhash.h>
 #include <gamesnd/eventmusic.h>
@@ -26,6 +25,7 @@
 #include <nebula/neblightning.h>
 #include <libs/ffmpeg/FFmpeg.h>
 #include <parse/sexp/sexp_lookup.h>
+#include <cfile/cfilemod.h>
 
 #include <clocale>
 
@@ -66,7 +66,7 @@ initialize(const std::string& cfilepath, int argc, char* argv[], Editor* editor,
 
 	listener(SubSystem::CommandLine);
 	// this should enable mods - Kazan
-	if (!parse_cmdline(argc, argv)) {
+	if (!parse_cmdline(cfilepath, argc, argv)) {
 		// Command line contained an option that terminates the program immediately
 		return false;
 	}
@@ -81,12 +81,8 @@ initialize(const std::string& cfilepath, int argc, char* argv[], Editor* editor,
 	cmdline_debug_print_cmdline();
 #endif
 
-	// d'oh
-	// cfile needs a file path...
-	auto file_path = cfilepath + DIR_SEPARATOR_STR + "qtfred.exe";
-
 	listener(SubSystem::CFile);
-	if (cfile_init(file_path.c_str())) {
+	if (cfile_init(Cmdline_mod)) {
 		return false;
 	}
 

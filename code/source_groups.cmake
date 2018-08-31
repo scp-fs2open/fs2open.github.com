@@ -62,6 +62,8 @@ add_file_folder("CFile"
 	cfile/cfilearchive.cpp
 	cfile/cfilearchive.h
 	cfile/cfilelist.cpp
+	cfile/cfilemod.cpp
+	cfile/cfilemod.h
 	cfile/cfilesystem.cpp
 	cfile/cfilesystem.h
 )

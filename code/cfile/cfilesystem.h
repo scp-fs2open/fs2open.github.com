@@ -15,7 +15,7 @@
 #include "cfile/cfile.h"
 
 // Builds a list of all the files
-void cf_build_secondary_filelist( const char *cdrom_path );
+void cf_build_secondary_filelist(const SCP_vector<cfile::ModRoot>& modRoots);
 void cf_free_secondary_filelist();
 
 // Internal stuff

@@ -190,7 +190,7 @@ int main(int argc, char* argv[]) {
 	// Allow other parts of the code to execute code that needs to run after everything has been set up
 	fredApp->initializeComplete();
 
-	if (Cmdline_start_mission) {
+	if (!Cmdline_start_mission.empty()) {
 		// Automatically load a mission if specified on the command line
 		QTimer::singleShot(500, [&]() {
 			fred->loadMission(Cmdline_start_mission);

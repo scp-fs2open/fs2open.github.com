@@ -961,10 +961,10 @@ void multi_join_game_init()
 
 	// if starting a network game, then go to the create game screen
 	if ( Cmdline_start_netgame ) {
-		multi_join_create_game();		
-	} else if (Cmdline_connect_addr != nullptr) {
+		multi_join_create_game();
+	} else if (!Cmdline_connect_addr.empty()) {
 		// joining a game.  Send a join request to the given IP address, and wait for the return.
-		psnet_string_to_addr(Cmdline_connect_addr, &Multi_autojoin_addr);
+		psnet_string_to_addr(Cmdline_connect_addr.c_str(), &Multi_autojoin_addr);
 
 		send_server_query(&Multi_autojoin_addr);
 		Multi_autojoin_query_stamp = timestamp(MULTI_AUTOJOIN_QUERY_STAMP);
@@ -1004,7 +1004,7 @@ void multi_join_game_do_frame()
 	}
 
 	// when joining a network game, wait for the server query to come back, and then join the game
-	if ( Cmdline_connect_addr != NULL ) {
+	if ( !Cmdline_connect_addr.empty() ) {
 		int rval;
 
 		if ( !Multi_did_autojoin ) {
@@ -1012,7 +1012,7 @@ void multi_join_game_do_frame()
 			if ( rval == 0 ) {
 				// cancel was hit.  Send the user back to the main hall
 				gameseq_post_event(GS_EVENT_MAIN_MENU);
-				Cmdline_connect_addr = NULL;		// reset this value.
+				Cmdline_connect_addr.clear();		// reset this value.
 			}
 
 			// when we get here, we have the data -- join the game.
@@ -2303,7 +2303,7 @@ void multi_sg_select_rank_default();
 // function which takes a rank name and returns the index.  Useful for commandline options
 // for above and below rank.  We return the index of the rank in the Ranks[] array.  If
 // the rank isn't found, we return -1
-int multi_start_game_rank_from_name( char *rank ) {
+int multi_start_game_rank_from_name( const char *rank ) {
 	int i;
 
 	for ( i = 0; i <= MAX_FREESPACE2_RANK; i++ ) {
@@ -2388,8 +2388,8 @@ void multi_start_game_init()
 
 	// if starting a netgame, set the name of the game and any other options that are appropriate
 	if ( Cmdline_start_netgame ) {
-		if ( Cmdline_game_name != NULL ) {
-			strcpy_s( Multi_sg_netgame->name, Cmdline_game_name );
+		if ( !Cmdline_game_name.empty() ) {
+			strcpy_s( Multi_sg_netgame->name, Cmdline_game_name.c_str() );
 			Multi_sg_game_name.set_text(Multi_sg_netgame->name);
 		}
 
@@ -2399,21 +2399,21 @@ void multi_start_game_init()
 			Multi_sg_netgame->mode = NG_MODE_CLOSED;
 		} else if ( Cmdline_restricted_game ) {
 			Multi_sg_netgame->mode = NG_MODE_RESTRICTED;
-		} else if ( Cmdline_game_password != NULL ) {
+		} else if ( !Cmdline_game_password.empty() ) {
 			Multi_sg_netgame->mode = NG_MODE_PASSWORD;
-			strcpy_s(Multi_sg_netgame->passwd, Cmdline_game_password);
+			strcpy_s(Multi_sg_netgame->passwd, Cmdline_game_password.c_str());
 			Multi_sg_game_passwd.set_text(Multi_sg_netgame->passwd);
 		}
 
 		// deal with rank above and rank below
-		if ( (Cmdline_rank_above != NULL) || (Cmdline_rank_below != NULL) ) {
+		if ( (!Cmdline_rank_above.empty()) || (!Cmdline_rank_below.empty()) ) {
 			int rank;
-			char *rank_str;
+			const char *rank_str;
 
-			if ( Cmdline_rank_above != NULL ) {
-				rank_str = Cmdline_rank_above;
+			if ( !Cmdline_rank_above.empty() ) {
+				rank_str = Cmdline_rank_above.c_str();
 			} else {
-				rank_str = Cmdline_rank_below;
+				rank_str = Cmdline_rank_below.c_str();
 			}
 
 			// try and get the rank index from the name -- if found, then set the rank base
@@ -2424,7 +2424,7 @@ void multi_start_game_init()
 				Multi_sg_netgame->rank_base = Multi_sg_rank_select;
 
 				// now an arbitrary decision
-				if ( Cmdline_rank_above != NULL ) {
+				if ( !Cmdline_rank_above.empty() ) {
 					Multi_sg_netgame->mode = NG_MODE_RANK_ABOVE;
 				} else {
 					Multi_sg_netgame->mode = NG_MODE_RANK_BELOW;
@@ -3684,7 +3684,7 @@ void multi_create_game_do()
 	//DTP CHECK ALMISSION FLAG HERE AND SKIP THE BITMAP LOADING PROGRESS 
 	//SINCE WE ALREADY HAVE A MISSION SELECTED IF THIS MISSION IS A VALID MULTIPLAYER MISSION
 	//IF NOT A VALID MULTIPLAYER MISSION CONTINUE LOADING, MAYBE CALL POPUP.
-	if ((Cmdline_almission) && (Net_player->flags & NETINFO_FLAG_AM_MASTER)) {	//
+	if ((!Cmdline_almission.empty()) && (Net_player->flags & NETINFO_FLAG_AM_MASTER)) {	//
 		multi_create_list_do(); //uhm here because off, hehe, my mind is failing right now
 
 		// DTP Var section for the is mission multi player Check.
@@ -3692,7 +3692,7 @@ void multi_create_game_do()
 		char mission_name[NAME_LENGTH+1];
 		int flags;
 		char *filename; 
-		filename = cf_add_ext( Cmdline_almission, FS_MISSION_FILE_EXT ); //DTP ADD EXTENSION needed next line
+		filename = cf_add_ext( Cmdline_almission.c_str(), FS_MISSION_FILE_EXT ); //DTP ADD EXTENSION needed next line
 		flags = mission_parse_is_multi(filename, mission_name); //DTP flags will set if mission is multi
 
 		if (flags) { //only continue if mission is multiplayer mission
@@ -3700,7 +3700,7 @@ void multi_create_game_do()
 			ng = &Netgame;
 
 			char almissionname[256]; // needed, for the strncpy below
-			strncpy(almissionname, Cmdline_almission,MAX_FILENAME_LEN); //DTP; copying name from cmd_almission line
+			strncpy(almissionname, Cmdline_almission.c_str(), MAX_FILENAME_LEN); //DTP; copying name from cmd_almission line
 
 			Netgame.options.respawn = 99; //override anything //for debugging, i often forget this.
 			ng->respawn = Netgame.options.respawn;
@@ -3713,13 +3713,13 @@ void multi_create_game_do()
 			Multi_sync_mode = MULTI_SYNC_PRE_BRIEFING; //DTP must be set before a call to gameseq_post_event(GS_EVENT_MULTI_MISSION_SYNC) is done as it is below.
 			gameseq_post_event(GS_EVENT_MULTI_MISSION_SYNC);//DTP STart game
 
-			Cmdline_almission = NULL; // we don't want to autoload anymore do we, we will be able to quit. halleluja. Startgame has already been disabled, so no need to turn of "Cmdline_start_netgame"
+			Cmdline_almission.clear(); // we don't want to autoload anymore do we, we will be able to quit. halleluja. Startgame has already been disabled, so no need to turn of "Cmdline_start_netgame"
 			return;	// we don't need to check or set regarding ships/weapons anything as we are already progressing into mission so return
 		}
 		else {
 			popup(PF_BODY_BIG | PF_USE_AFFIRMATIVE_ICON,1,POPUP_OK,XSTR(" Not a multi player-mission",9999)); //DTP startgame popup pilot error
 			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
-			Cmdline_almission = NULL; //DTP make sure this gets nullified.
+			Cmdline_almission.clear(); //DTP make sure this gets nullified.
 		
 		}
 	}
