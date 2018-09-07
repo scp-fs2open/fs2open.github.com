@@ -5010,6 +5010,20 @@ int sexp_is_destroyed(int n, fix *latest_time)
 			if ( latest_time && (time > *latest_time) )
 				*latest_time = time;
 		} else {
+			// If a previous SEXP already had an empty wing then this code would expose the internal value as the
+			// directive count. Instead, we reset the count to zero here to make sure that the wing or ship count is
+			// correct.
+			if (Directive_count == DIRECTIVE_WING_ZERO) {
+#ifndef NDEBUG
+				static bool wing_zero_warning_shown = false;
+				if (!wing_zero_warning_shown) {
+					mprintf(("SEXP: is-destroyed-delay was used multiple times in a directive event! This might have "
+					         "unintended effects and should be replaced by a single use of is-destroyed-delay.\n"));
+					wing_zero_warning_shown = true;
+				}
+#endif
+				Directive_count = 0;
+			}
 			// ship or wing isn't destroyed -- add to directive count
 			if ( (wing_index = wing_name_lookup( name, 1 )) >= 0 ) {
 				Directive_count += Wings[wing_index].current_count;
@@ -30336,6 +30350,7 @@ int get_subcategory(int sexp_id)
 	}
 }
 
+// clang-format off
 SCP_vector<sexp_help_struct> Sexp_help = {
 	{ OP_PLUS, "Plus (Arithmetic operator)\r\n"
 		"\tAdds numbers and returns results.\r\n\r\n"
@@ -30858,7 +30873,9 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t1:\tName of the event in the mission."},
 
 	{ OP_IS_DESTROYED_DELAY, "Is destroyed delay (Boolean operator)\r\n"
-		"\tBecomes true <delay> seconds after all specified ships have been destroyed.\r\n\r\n"
+		"\tBecomes true <delay> seconds after all specified ships have been destroyed.\r\n"
+		"\tWARNING: If multiple is-destroyed-delay SEXPs are used in a directive event, unexpected results may be "
+		"observed. Instead, use a single is-destroyed-delay SEXP with multiple parameters.\r\n"
 		"Returns a boolean value.  Takes 2 or more arguments...\r\n"
 		"\t1:\tTime delay in seconds (see above).\r\n"
 		"\tRest:\tName of ship (or wing) to check status of." },
@@ -34102,6 +34119,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t3:\tThe XSTR index. If set to -1 then the default value will be used\r\n"
 	},
 };
+// clang-format on
 
 
 
