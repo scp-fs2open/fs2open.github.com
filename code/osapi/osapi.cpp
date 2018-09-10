@@ -248,7 +248,14 @@ void os_init(const char * wclass, const char * title, const char * app_name)
 	strcpy_s( szWinTitle, title );
 	strcpy_s( szWinClass, wclass );
 
-	mprintf(("  Initializing SDL...\n"));
+	SDL_version compiled;
+	SDL_version linked;
+
+	SDL_VERSION(&compiled);
+	SDL_GetVersion(&linked);
+
+	mprintf(("  Initializing SDL %d.%d.%d (compiled with %d.%d.%d)...\n", linked.major, linked.minor, linked.patch,
+	         compiled.major, compiled.minor, compiled.patch));
 
 	if (SDL_Init(SDL_INIT_EVENTS) < 0)
 	{
