@@ -6722,7 +6722,7 @@ static int subsys_set(int objnum, int ignore_subsys_info)
 			mprintf(("\"fixed firingpoint\" flag used with turret which has less weapons defined for it than it has firingpoints\nsubsystem '%s' on ship type '%s'.\nsome of the firingpoints will be left unused\n", model_system->subobj_name, sinfo->name));
 		}
 
-		if ((ship_system->system_info->flags[Model::Subsystem_Flags::Share_fire_direction]) && (!(ship_system->system_info->flags[Model::Subsystem_Flags::Turret_salvo]) || !(ship_system->system_info->flags[Model::Subsystem_Flags::Use_multiple_guns])))
+		if ((ship_system->system_info->flags[Model::Subsystem_Flags::Share_fire_direction]) && (!(ship_system->system_info->flags[Model::Subsystem_Flags::Turret_salvo]) && !(ship_system->system_info->flags[Model::Subsystem_Flags::Use_multiple_guns])))
 		{
 			Warning(LOCATION, "\"share fire direction\" flag used with turret which does not have the \"salvo mode\" or \"use multiple guns\" flag set\nsubsystem '%s' on ship type '%s'.\n\"share fire direction\" flag is ignored\n", model_system->subobj_name, sinfo->name);
 			ship_system->system_info->flags.remove(Model::Subsystem_Flags::Share_fire_direction);
