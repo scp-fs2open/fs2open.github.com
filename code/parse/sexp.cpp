@@ -33448,8 +33448,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	},
 
 	{ OP_SET_POST_EFFECT, "set-post-effect\r\n"
-		"\tConfigures post-processing effect\r\n"
-		"\tTakes 2 arguments\r\n"
+		"\tConfigures a post-processing effect.  Takes 2 arguments...\r\n"
 		"\t1: Effect type\r\n"
 		"\t2: Effect intensity (0 - 100)."
 		"\t3: (Optional) Red (0 - 255)."
