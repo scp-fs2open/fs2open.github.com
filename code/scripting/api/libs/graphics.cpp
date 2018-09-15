@@ -134,9 +134,9 @@ ADE_VIRTVAR(CurrentFont, l_Graphics, "font", "Current font", "font", NULL)
 }
 
 //****SUBLIBRARY: Graphics/PostEffects
-ADE_LIB_DERIV(l_Graphics_Posteffects, "PostEffects", NULL, "Post processing effects", l_Graphics);
+ADE_LIB_DERIV(l_Graphics_Posteffects, "PostEffects", NULL, "Post-processing effects", l_Graphics);
 
-ADE_INDEXER(l_Graphics_Posteffects, "number index", "Gets the name of the specified post processing index", "string", "post processing name or empty string on error")
+ADE_INDEXER(l_Graphics_Posteffects, "number index", "Gets the name of the specified post-processing index", "string", "post-processing name or empty string on error")
 {
 	int index = -1;
 	if(!ade_get_args(L, "*i", &index))
@@ -157,7 +157,7 @@ ADE_INDEXER(l_Graphics_Posteffects, "number index", "Gets the name of the specif
 	return ade_set_args(L, "s", const_cast<char*>(names[index].c_str()));
 }
 
-ADE_FUNC(__len, l_Graphics_Posteffects, NULL, "Gets the number or available post processing effects", "number", "number of post processing effects or 0 on error")
+ADE_FUNC(__len, l_Graphics_Posteffects, NULL, "Gets the number of available post-processing effects", "number", "number of post-processing effects or 0 on error")
 {
 	SCP_vector<SCP_string> names;
 	get_post_process_effect_names(names);
@@ -166,7 +166,7 @@ ADE_FUNC(__len, l_Graphics_Posteffects, NULL, "Gets the number or available post
 	return ade_set_args(L, "i", ((int) names.size()) + 1);
 }
 
-ADE_FUNC(setPostEffect, l_Graphics, "string name, [number value=0, number red=0.0, number green=0.0, number blue=0.0]", "Sets the intensity of the specified post processing effect. Optionally sets RGB values for post effects that use them (valid values are 0.0 to 1.0)", "boolean", "true when successful, false otherwise")
+ADE_FUNC(setPostEffect, l_Graphics, "string name, [number value=0, number red=0.0, number green=0.0, number blue=0.0]", "Sets the intensity of the specified post-processing effect. Optionally sets RGB values for effects that use them (valid values are 0.0 to 1.0)", "boolean", "true when successful, false otherwise")
 {
 	char* name = NULL;
 	int intensity = 0;
@@ -187,7 +187,7 @@ ADE_FUNC(setPostEffect, l_Graphics, "string name, [number value=0, number red=0.
 	return ADE_RETURN_TRUE;
 }
 
-ADE_FUNC(resetPostEffects, l_Graphics, NULL, "Resets all post effects to their default values", "boolean", "true if successful, false otherwise")
+ADE_FUNC(resetPostEffects, l_Graphics, NULL, "Resets all post-processing effects to their default values", "boolean", "true if successful, false otherwise")
 {
 	gr_post_process_set_defaults();
 
