@@ -139,6 +139,7 @@ namespace particle
 		part->attached_sig = info->attached_sig;
 		part->reverse = info->reverse;
 		part->particle_index = (int) Persistent_particles.size();
+		part->looping = false;
 
 		switch (info->type)
 		{
@@ -280,8 +281,8 @@ namespace particle
 
 		bool remove_particle = false;
 
-		// if its time expired, remove it
-		if (part->age > part->max_life)
+		// if its time expired, remove it. If the particle is looping then it will never be removed due to age
+		if (part->age > part->max_life && !part->looping)
 		{
 			// special case, if max_life is 0 then we want it to render at least once
 			if ((part->age > frametime) || (part->max_life > 0.0f))
@@ -419,7 +420,7 @@ namespace particle
 		int framenum;
 		int cur_frame;
 		if (part->nframes > 1) {
-			framenum = bm_get_anim_frame(part->optional_data, part->age, part->max_life);
+			framenum = bm_get_anim_frame(part->optional_data, part->age, part->max_life, part->looping);
 			cur_frame = part->reverse ? (part->nframes - framenum - 1) : framenum;
 		}
 		else

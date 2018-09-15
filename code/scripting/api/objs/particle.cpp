@@ -129,6 +129,30 @@ ADE_VIRTVAR(MaximumLife, l_Particle, "number", "The time this particle can live"
 	return ade_set_args(L, "f", ph->Get().lock()->max_life);
 }
 
+ADE_VIRTVAR(Looping, l_Particle, "boolean",
+            "The looping status of the particle. If a particle loops then it will not be removed when its max_life "
+            "value has been reached. Instead its animation will be reset to the start. When the particle should "
+            "finally be removed then set this to false and set MaxLife to 0.",
+            "boolean", "The looping status")
+{
+	particle_h* ph = nullptr;
+	bool newloop   = false;
+	if (!ade_get_args(L, "o|b", l_Particle.Get(&ph), &newloop))
+		return ADE_RETURN_FALSE;
+
+	if (ph == nullptr)
+		return ADE_RETURN_FALSE;
+
+	if (!ph->isValid())
+		return ADE_RETURN_FALSE;
+
+	if (ADE_SETTING_VAR) {
+		ph->Get().lock()->looping = newloop;
+	}
+
+	return ade_set_args(L, "b", ph->Get().lock()->looping);
+}
+
 ADE_VIRTVAR(Radius, l_Particle, "number", "The radius of the particle", "number", "The radius or -1 on error")
 {
 	particle_h *ph = NULL;
