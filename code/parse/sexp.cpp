@@ -662,6 +662,7 @@ SCP_vector<sexp_oper> Operators = {
 
 	//Special Effects Sub-Category
 	{ "set-post-effect",				OP_SET_POST_EFFECT,						2,	5,			SEXP_ACTION_OPERATOR,	},	// Hery
+	{ "reset-post-effects",				OP_RESET_POST_EFFECTS,					0,	0,			SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "ship-effect",					OP_SHIP_EFFECT,							3,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Valathil
 	{ "ship-create",					OP_SHIP_CREATE,							5,	8,			SEXP_ACTION_OPERATOR,	},	// WMC
 	{ "weapon-create",					OP_WEAPON_CREATE,						5,	10,			SEXP_ACTION_OPERATOR,	},	// Goober5000
@@ -16752,6 +16753,11 @@ void sexp_set_post_effect(int node)
 	gr_post_process_set_effect(name, amount, &rgb);
 }
 
+void sexp_reset_post_effects()
+{
+	gr_post_process_set_defaults();
+}
+
 // Goober5000
 void sexp_set_skybox_orientation(int n)
 {
@@ -24873,6 +24879,11 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = SEXP_TRUE;
 				break;
 
+			case OP_RESET_POST_EFFECTS:
+				sexp_reset_post_effects();
+				sexp_val = SEXP_TRUE;
+				break;
+
 			case OP_PRIMARY_FIRED_SINCE:
 			case OP_SECONDARY_FIRED_SINCE:
 				sexp_val = sexp_weapon_fired_delay(node, op_num); 
@@ -26256,6 +26267,7 @@ int query_operator_return_type(int op)
 		case OP_SET_SHIELD_ENERGY:
 		case OP_SET_AMBIENT_LIGHT:
 		case OP_SET_POST_EFFECT:
+		case OP_RESET_POST_EFFECTS:
 		case OP_CHANGE_IFF_COLOR:
 		case OP_REMOVE_WEAPONS:
 		case OP_MISSION_SET_SUBSPACE:
@@ -26387,6 +26399,7 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_SUPERNOVA_STOP:
 		case OP_NAV_UNSELECT:
 		case OP_PLAYER_IS_CHEATING_BASTARD:
+		case OP_RESET_POST_EFFECTS:
 			return OPF_NONE;
 
 		case OP_AND:
@@ -30199,6 +30212,7 @@ int get_subcategory(int sexp_id)
 			return CHANGE_SUBCATEGORY_JUMP_NODES;
 
 		case OP_SET_POST_EFFECT:
+		case OP_RESET_POST_EFFECTS:
 		case OP_SHIP_EFFECT:
 		case OP_SHIP_CREATE:
 		case OP_WEAPON_CREATE:
@@ -33434,13 +33448,16 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	},
 
 	{ OP_SET_POST_EFFECT, "set-post-effect\r\n"
-		"\tConfigures post-processing effect\r\n"
-		"\tTakes 2 arguments\r\n"
+		"\tConfigures a post-processing effect.  Takes 2 arguments...\r\n"
 		"\t1: Effect type\r\n"
 		"\t2: Effect intensity (0 - 100)."
 		"\t3: (Optional) Red (0 - 255)."
 		"\t4: (Optional) Green (0 - 255)."
 		"\t5: (Optional) Blue (0 - 255)."
+	},
+
+	{ OP_RESET_POST_EFFECTS, "reset-post-effects\r\n"
+		"\tResets all post-processing effects to their default values.  Takes no arguments.\r\n"
 	},
 
 	{ OP_CHANGE_SUBSYSTEM_NAME, "change-subsystem-name\r\n"
