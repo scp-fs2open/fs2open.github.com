@@ -72,8 +72,12 @@ typedef struct fireball {
 	char	lod;					// current LOD
 	float	time_elapsed;			// in seconds
 	float	total_time;				// total lifetime of animation in seconds
-	gamesnd_id warp_open_sound_index;		// for warp-effect - Goober5000
-	gamesnd_id warp_close_sound_index;		// for warp-effect - Goober5000
+
+	// for warp-effect - Goober5000
+	gamesnd_id warp_open_sound_index;		
+	gamesnd_id warp_close_sound_index;
+	float	warp_open_duration;
+	float	warp_close_duration;
 } fireball;
 // end move
 
@@ -85,7 +89,7 @@ void fireball_process_post(object * obj, float frame_time);
 // reversed is for warp_in/out effects
 // Velocity: If not NULL, the fireball will move at a constant velocity.
 // warp_lifetime: If warp_lifetime > 0.0f then makes the explosion loop so it lasts this long.  Only works for warp effect
-int fireball_create(vec3d *pos, int fireball_type, int render_type, int parent_obj, float size, int reversed=0, vec3d *velocity=NULL, float warp_lifetime=0.0f, int ship_class=-1, matrix *orient=NULL, int low_res=0, int extra_flags=0, gamesnd_id warp_open_sound=gamesnd_id(), gamesnd_id warp_close_sound=gamesnd_id());
+int fireball_create(vec3d *pos, int fireball_type, int render_type, int parent_obj, float size, int reversed=0, vec3d *velocity=NULL, float warp_lifetime=0.0f, int ship_class=-1, matrix *orient=NULL, int low_res=0, int extra_flags=0, gamesnd_id warp_open_sound=gamesnd_id(), gamesnd_id warp_close_sound=gamesnd_id(), float warp_open_duration=-1.0f, float warp_close_duration=-1.0f);
 void fireball_render_plane(int plane);
 void fireball_close();
 
@@ -111,7 +115,7 @@ int fireball_ship_explosion_type(ship_info *sip);
 int fireball_asteroid_explosion_type(asteroid_info *aip);
 
 // returns the intensity of a wormhole
-float fireball_wormhole_intensity( object *obj );
+float fireball_wormhole_intensity( fireball *fb );
 
 // internal function to draw warp grid.
 extern void warpin_render(object *obj, matrix *orient, vec3d *pos, int texture_bitmap_num, float radius, float life_percent, float max_radius, int warp_3d = 0 );

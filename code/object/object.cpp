@@ -1321,9 +1321,9 @@ void obj_move_all_post(object *objp, float frametime)
 					float rad = p * (1.0f + frand() * 0.05f) * objp->radius;
 					
 					float intensity = 1.0f;
-					if(fireball_is_warp(objp))
+					if (fireball_is_warp(objp))
 					{
-						intensity = fireball_wormhole_intensity(objp); // Valathil: Get wormhole radius for lighting
+						intensity = fireball_wormhole_intensity(&Fireballs[objp->instance]); // Valathil: Get wormhole radius for lighting
 						rad = objp->radius;
 					}
 					// P goes from 0 to 1 to 0 over the life of the explosion

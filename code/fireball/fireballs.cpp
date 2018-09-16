@@ -543,7 +543,7 @@ void fireball_maybe_play_warp_close_sound(fireball *fb)
 
 	life_left = fb->total_time - fb->time_elapsed;
 
-	if ( life_left < WARPHOLE_GROW_TIME ) {
+	if ( life_left < fb->warp_close_duration ) {
 		fireball_play_warphole_close_sound(fb);
 		fb->flags |= FBF_WARP_CLOSE_SOUND_PLAYED;
 	}
@@ -696,7 +696,7 @@ int fireball_get_lod(vec3d *pos, fireball_info *fd, float size)
 /**
  * Create a fireball, return object index.
  */
-int fireball_create( vec3d * pos, int fireball_type, int render_type, int parent_obj, float size, int reverse, vec3d *velocity, float warp_lifetime, int ship_class, matrix *orient_override, int low_res, int extra_flags, gamesnd_id warp_open_sound, gamesnd_id warp_close_sound)
+int fireball_create(vec3d *pos, int fireball_type, int render_type, int parent_obj, float size, int reverse, vec3d *velocity, float warp_lifetime, int ship_class, matrix *orient_override, int low_res, int extra_flags, gamesnd_id warp_open_sound, gamesnd_id warp_close_sound, float warp_open_duration, float warp_close_duration)
 {
 	int				n, objnum, fb_lod;
 	object			*obj;
@@ -757,6 +757,8 @@ int fireball_create( vec3d * pos, int fireball_type, int render_type, int parent
 	fb->flags = extra_flags;
 	fb->warp_open_sound_index = warp_open_sound;
 	fb->warp_close_sound_index = warp_close_sound;
+	fb->warp_open_duration = (warp_open_duration < 0.0f) ? WARPHOLE_GROW_TIME : warp_open_duration;
+	fb->warp_close_duration = (warp_close_duration < 0.0f) ? WARPHOLE_GROW_TIME : warp_close_duration;
 
 	matrix orient;
 	if(orient_override != NULL){
@@ -941,26 +943,17 @@ int fireball_asteroid_explosion_type(asteroid_info *aip)
 	return index;
 }
 
-float fireball_wormhole_intensity( object *obj )
+float fireball_wormhole_intensity(fireball *fb)
 {
-	int			num, objnum;
-	fireball		*fb;
-
-	num = obj->instance;
-	objnum = OBJ_INDEX(obj);
-	Assertion( Fireballs[num].objnum == objnum, "Basic sanity check. Fireballs[num].objnum (%d) should == objnum (%d)", Fireballs[num].objnum, objnum );
-
-	fb = &Fireballs[num];
-
 	float t = fb->time_elapsed;
 	float rad;
 
-	if ( t < WARPHOLE_GROW_TIME )	{
-		rad = (float)pow(t/WARPHOLE_GROW_TIME,0.4f);
-	} else if ( t < fb->total_time - WARPHOLE_GROW_TIME )	{
-		rad = 1;
+	if ( t < fb->warp_open_duration )	{
+		rad = (float)pow(t / fb->warp_open_duration, 0.4f);
+	} else if ( t < fb->total_time - fb->warp_close_duration )	{
+		rad = 1.0f;
 	} else {
-		rad = (float)pow((fb->total_time - t)/WARPHOLE_GROW_TIME,0.4f);
+		rad = (float)pow((fb->total_time - t) / fb->warp_close_duration, 0.4f);
 	}
 	return rad;
 } 
@@ -996,19 +989,7 @@ void fireball_render(object* obj, model_draw_list *scene)
 
 		case FIREBALL_WARP_EFFECT: {
 			float percent_life = fb->time_elapsed / fb->total_time;
-
-			float rad;
-
-			// Code to make effect grow/shrink. 
-			float t = fb->time_elapsed;
-
-			if ( t < WARPHOLE_GROW_TIME )	{
-				rad = (float)pow(t/WARPHOLE_GROW_TIME,0.4f)*obj->radius;
-			} else if ( t < fb->total_time - WARPHOLE_GROW_TIME )	{
-				rad = obj->radius;
-			} else {
-				rad = (float)pow((fb->total_time - t)/WARPHOLE_GROW_TIME,0.4f)*obj->radius;
-			}
+			float rad = obj->radius * fireball_wormhole_intensity(fb);
 
 			warpin_queue_render(scene, obj, &obj->orient, &obj->pos, Fireballs[num].current_bitmap, rad, percent_life, obj->radius, (Fireballs[num].flags & FBF_WARP_3D) );
 		}
