@@ -11042,7 +11042,7 @@ void sexp_warp_effect(int n)
 
 	// create fireball -----------------------------
 
-	fireball_create(&origin, fireball_type, FIREBALL_WARP_EFFECT, -1, radius, 0, NULL, duration, -1, &m_orient, 0, extra_flags, warp_open_sound_index, warp_close_sound_index, warp_open_duration, warp_close_duration);
+	fireball_create(&origin, fireball_type, FIREBALL_WARP_EFFECT, -1, radius, 0, nullptr, duration, -1, &m_orient, 0, extra_flags, warp_open_sound_index, warp_close_sound_index, warp_open_duration, warp_close_duration);
 }
 
 // this function get called by send-message or send-message random with the name of the message, sender,
