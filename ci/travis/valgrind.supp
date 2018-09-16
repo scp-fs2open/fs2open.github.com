@@ -35,10 +35,9 @@
    fun:_ZN12_GLOBAL__N_117ade_index_handlerEP9lua_State
 }
 {
-   <insert_a_suppression_name_here>
+   False-positive uninitialized variable warning
    Memcheck:Cond
    fun:_Z23cf_check_location_flagsjj
    fun:_Z29cf_create_default_path_stringPcjiPKcbj
-   fun:_Z25cf_find_file_location_extPKciPS0_ib
    ...
 }
