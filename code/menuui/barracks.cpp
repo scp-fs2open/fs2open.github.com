@@ -32,6 +32,8 @@
 #include "popup/popup.h"
 #include "ship/ship.h"
 #include "ui/ui.h"
+#include "barracks.h"
+
 
 // stats defines
 //#define NUM_STAT_LINES (21 + MAX_SHIP_CLASSES)	// Goober5000
@@ -672,7 +674,11 @@ void barracks_accept_pilot(player* plr) {
 	// MWA -- I think that we should be writing plr here.
 	Pilot.save_player(plr);
 
+	Player = &Players[Player_num];
+	Player->assign(plr);
+
 	os_config_write_string(nullptr, "LastPlayer", plr->callsign);
+	gameseq_post_event(GS_EVENT_MAIN_MENU);
 }
 
 // scroll up barracks pilot list one line

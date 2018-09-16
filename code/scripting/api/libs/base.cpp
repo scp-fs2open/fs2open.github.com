@@ -344,6 +344,35 @@ ADE_FUNC(getVersionString, l_Base, nullptr,
 	return ade_set_args(L, "s", str.c_str());
 }
 
+ADE_VIRTVAR(MultiplayerMode, l_Base, "boolean", "Determines if the game is currently in single- or multiplayer mode",
+            "boolean",
+            "true if in multiplayer mode, false if in singleplayer. If neither is the case (e.g. on game init) nil "
+            "will be returned")
+{
+	bool b;
+	if (!ade_get_args(L, "*|b", &b)) {
+		return ADE_RETURN_NIL;
+	}
+
+	if (ADE_SETTING_VAR) {
+		if (b) {
+			Game_mode &= ~GM_NORMAL;
+			Game_mode |= GM_MULTIPLAYER;
+		} else {
+			Game_mode &= ~GM_MULTIPLAYER;
+			Game_mode |= GM_NORMAL;
+		}
+	}
+
+	if (Game_mode & GM_MULTIPLAYER) {
+		return ADE_RETURN_TRUE;
+	} else if (Game_mode & GM_NORMAL) {
+		return ADE_RETURN_FALSE;
+	} else {
+		return ADE_RETURN_NIL;
+	}
+}
+
 //**********SUBLIBRARY: Base/Events
 ADE_LIB_DERIV(l_Base_Events, "GameEvents", NULL, "Freespace 2 game events", l_Base);
 

@@ -265,7 +265,7 @@ namespace os
 			switch (buttonId)
 			{
 			case 2:
-				exit(1);
+				abort();
 
 			case 0:
 				Int3();
@@ -343,13 +343,13 @@ namespace os
 			if (SDL_ShowMessageBox(&boxData, &buttonId) < 0)
 			{
 				// Call failed
-				exit(1);
+				abort();
 			}
 
 			switch (buttonId)
 			{
 			case 1:
-				exit(1);
+				abort();
 
 			default:
 				Int3();
@@ -411,13 +411,13 @@ namespace os
 			if (SDL_ShowMessageBox(&boxData, &buttonId) < 0)
 			{
 				// Call failed
-				exit(1);
+				abort();
 			}
 
 			switch (buttonId)
 			{
 			case 2:
-				exit(1);
+				abort();
 
 			case 0:
 				Int3();

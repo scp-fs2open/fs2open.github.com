@@ -240,6 +240,20 @@ ADE_FUNC(listPilotImages, l_UserInterface_Barracks, nullptr, "Lists the names of
 	return ade_set_args(L, "t", &out);
 }
 
+ADE_FUNC(listSquadImages, l_UserInterface_Barracks, nullptr, "Lists the names of the available squad images.",
+         "table {string...}", "The list of squad filenames or nil on error")
+{
+	pilot_load_squad_pic_list();
+
+	using namespace luacpp;
+
+	LuaTable out = LuaTable::create(L);
+	for (auto i = 0; i < Num_pilot_squad_images; ++i) {
+		out.addValue(i + 1, Pilot_squad_image_names[i]);
+	}
+	return ade_set_args(L, "t", &out);
+}
+
 ADE_FUNC(acceptPilot, l_UserInterface_Barracks, "player selection", "Accept the given player as the current player",
          "boolean", "true on sucess, false otherwise")
 {
