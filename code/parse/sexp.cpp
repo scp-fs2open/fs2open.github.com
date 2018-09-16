@@ -16753,7 +16753,7 @@ void sexp_set_post_effect(int node)
 	gr_post_process_set_effect(name, amount, &rgb);
 }
 
-void sexp_reset_post_effects(int node)
+void sexp_reset_post_effects()
 {
 	gr_post_process_set_defaults();
 }
@@ -24880,7 +24880,7 @@ int eval_sexp(int cur_node, int referenced_node)
 				break;
 
 			case OP_RESET_POST_EFFECTS:
-				sexp_reset_post_effects(node);
+				sexp_reset_post_effects();
 				sexp_val = SEXP_TRUE;
 				break;
 
