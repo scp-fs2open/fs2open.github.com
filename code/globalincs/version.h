@@ -85,6 +85,13 @@ bool check_at_least(const version& v);
  */
 SCP_string format_version(const version& v);
 
+/**
+ * @brief
+ * @return
+ */
+SCP_string get_version_string();
+
 }
+
 
 #endif

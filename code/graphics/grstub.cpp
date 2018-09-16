@@ -351,6 +351,12 @@ void gr_stub_render_primitives_batched(batched_bitmap_material*  /*material_info
 {
 }
 
+void gr_stub_render_rocket_primitives(interface_material* /*material_info*/, primitive_type /*prim_type*/,
+                                      vertex_layout* /*layout*/, int /*n_indices*/, int /*vertex_buffer*/,
+                                      int /*index_buffer*/)
+{
+}
+
 bool gr_stub_is_capable(gr_capability  /*capability*/)
 {
 	return false;
@@ -511,6 +517,7 @@ bool gr_stub_init()
 	gr_screen.gf_render_movie = gr_stub_render_movie;
 	gr_screen.gf_render_nanovg = gr_stub_render_nanovg;
 	gr_screen.gf_render_primitives_batched = gr_stub_render_primitives_batched;
+	gr_screen.gf_render_rocket_primitives     = gr_stub_render_rocket_primitives;
 
 	gr_screen.gf_is_capable = gr_stub_is_capable;
 	gr_screen.gf_get_property = [](gr_property,void*) { return false; };

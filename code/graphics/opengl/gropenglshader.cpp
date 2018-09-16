@@ -64,6 +64,7 @@ opengl_uniform_block_binding GL_uniform_blocks[] = {
  * Static lookup reference for shader uniforms
  * When adding a new shader, list all associated uniforms and attributes here
  */
+// clang-format off
 static opengl_shader_type_t GL_shader_types[] = {
 	{ SDR_TYPE_MODEL, "main-v.sdr", "main-f.sdr", "main-g.sdr",
 		{ opengl_vert_attrib::POSITION, opengl_vert_attrib::TEXCOORD, opengl_vert_attrib::NORMAL, opengl_vert_attrib::TANGENT, opengl_vert_attrib::MODEL_ID }, "Model Rendering" },
@@ -100,7 +101,7 @@ static opengl_shader_type_t GL_shader_types[] = {
 
 	{ SDR_TYPE_DEFERRED_LIGHTING, "deferred-v.sdr", "deferred-f.sdr", 0,
 		{ opengl_vert_attrib::POSITION }, "Deferred Lighting" },
-	
+
 	{ SDR_TYPE_DEFERRED_CLEAR, "deferred-clear-v.sdr", "deferred-clear-f.sdr", 0,
 		{ opengl_vert_attrib::POSITION }, "Clear Deferred Lighting Buffer" },
 
@@ -127,7 +128,11 @@ static opengl_shader_type_t GL_shader_types[] = {
 
 	{ SDR_TYPE_SCENE_FOG, "post-v.sdr", "fog-f.sdr", nullptr,
 		{ opengl_vert_attrib::POSITION, opengl_vert_attrib::TEXCOORD }, "Scene fogging" },
+
+	{ SDR_TYPE_ROCKET_UI, "rocketui-v.sdr",	"rocketui-f.sdr", nullptr,
+		{ opengl_vert_attrib::POSITION, opengl_vert_attrib::COLOR, opengl_vert_attrib::TEXCOORD }, "libRocket UI" },
 };
+// clang-format on
 
 /**
  * Static lookup reference for shader variant uniforms

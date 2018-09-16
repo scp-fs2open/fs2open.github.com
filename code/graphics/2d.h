@@ -49,6 +49,7 @@ class movie_material;
 class batched_bitmap_material;
 class nanovg_material;
 class decal_material;
+class interface_material;
 
 class transform_stack {
 
@@ -154,13 +155,15 @@ enum shader_type {
 	SDR_TYPE_DEFERRED_LIGHTING,
 	SDR_TYPE_DEFERRED_CLEAR,
 	SDR_TYPE_VIDEO_PROCESS,
-	SDR_TYPE_PASSTHROUGH_RENDER, //!< Shader for doing the old style fixed-function rendering. Only used internally, use SDR_TYPE_DEFAULT_MATERIAL.
+	SDR_TYPE_PASSTHROUGH_RENDER, //!< Shader for doing the old style fixed-function rendering. Only used internally, use
+	                             //!< SDR_TYPE_DEFAULT_MATERIAL.
 	SDR_TYPE_SHIELD_DECAL,
 	SDR_TYPE_BATCHED_BITMAP,
 	SDR_TYPE_DEFAULT_MATERIAL,
 	SDR_TYPE_NANOVG,
 	SDR_TYPE_DECAL,
 	SDR_TYPE_SCENE_FOG,
+	SDR_TYPE_ROCKET_UI,
 	NUM_SHADER_TYPES
 };
 
@@ -780,6 +783,8 @@ typedef struct screen {
 	void (*gf_render_primitives_batched)(batched_bitmap_material* material_info, primitive_type prim_type, vertex_layout* layout, int offset, int n_verts, int buffer_handle);
 	void (*gf_render_nanovg)(nanovg_material* material_info, primitive_type prim_type, vertex_layout* layout, int offset, int n_verts, int buffer_handle);
 	void (*gf_render_decals)(decal_material* material_info, primitive_type prim_type, vertex_layout* layout, int num_elements, const indexed_vertex_source& buffers);
+	void (*gf_render_rocket_primitives)(interface_material* material_info, primitive_type prim_type,
+	                                    vertex_layout* layout, int n_indices, int vertex_buffer, int index_buffer);
 
 	bool (*gf_is_capable)(gr_capability capability);
 	bool (*gf_get_property)(gr_property property, void* destination);
@@ -1037,6 +1042,12 @@ inline void gr_render_movie(movie_material* material_info, primitive_type prim_t
 __inline void gr_render_model(model_material* material_info, indexed_vertex_source *vert_source, vertex_buffer* bufferp, size_t texi)
 {
 	(*gr_screen.gf_render_model)(material_info, vert_source, bufferp, texi);
+}
+
+__inline void gr_render_rocket_primitives(interface_material* material_info, primitive_type prim_type,
+                                          vertex_layout* layout, int n_indices, int vertex_buffer, int index_buffer)
+{
+	(*gr_screen.gf_render_rocket_primitives)(material_info, prim_type, layout, n_indices, vertex_buffer, index_buffer);
 }
 
 __inline bool gr_is_capable(gr_capability capability)

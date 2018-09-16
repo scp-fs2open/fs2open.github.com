@@ -12,6 +12,8 @@
 #ifndef _PLAYER_SELECT_MENU_HEADER_FILE
 #define _PLAYER_SELECT_MENU_HEADER_FILE
 
+#include "globalincs/pstypes.h"
+
 // general defines
 #define PLAYER_SELECT_MODE_SINGLE	0							// looking through single player pilots
 #define PLAYER_SELECT_MODE_MULTI    1							// looking through multi player pilots
@@ -39,6 +41,14 @@ void player_tips_close();
 extern int Player_select_screen_active;
 
 // check the pilots language
-bool valid_pilot_lang(char *callsign);
+bool valid_pilot_lang(const char *callsign);
+
+SCP_vector<SCP_string> player_select_enumerate_pilots();
+
+SCP_string player_get_last_player();
+
+void player_finish_select(const char* callsign, bool is_multi);
+
+bool player_create_new_pilot(const char* callsign, bool is_multi, const char* copy_from_callsign = nullptr);
 
 #endif

@@ -10,15 +10,16 @@
 #include <cstdlib>
 #include <climits>
 
+#include "freespace.h"
 #include "anim/animplay.h"
 #include "anim/packunpack.h"
 #include "cmdline/cmdline.h"
-#include "freespace.h"
 #include "gamehelp/contexthelp.h"
 #include "gamesequence/gamesequence.h"
 #include "gamesnd/eventmusic.h"
 #include "gamesnd/gamesnd.h"
 #include "globalincs/alphacolors.h"
+#include "globalincs/version.h"
 #include "graphics/generic.h"
 #include "io/key.h"
 #include "io/mouse.h"
@@ -33,9 +34,9 @@
 #include "network/multiui.h"
 #include "network/multiutil.h"
 #include "parse/parselo.h"
-#include "scripting/scripting.h"
 #include "playerman/player.h"
 #include "popup/popup.h"
+#include "scripting/scripting.h"
 #include "sound/audiostr.h"
 
 #ifndef NDEBUG
@@ -409,6 +410,8 @@ void main_hall_init(const SCP_string &main_hall_name)
 	if (Main_hall_inited) {
 		return;
 	}
+
+	// gameseq_post_event(GS_EVENT_SCRIPTING);
 
 	int idx;
 	SCP_string main_hall_to_load;
@@ -1666,20 +1669,19 @@ void main_hall_reset_ambient_vol()
 void main_hall_blit_version()
 {
 	int w, h;
-	char version_string[100];
 
 	// format the version string
-	get_version_string(version_string, sizeof(version_string));
+	auto version_string = gameversion::get_version_string();
 
 	int old_font = font::get_current_fontnum();
 	font::set_font(Main_hall->font);
 
 	// get the length of the string
-	gr_get_string_size(&w,&h,version_string);
+	gr_get_string_size(&w, &h, version_string.c_str());
 
 	// print the string near the lower left corner
 	gr_set_color_fast(&Color_bright_white);
-	gr_string(5, gr_screen.max_h_unscaled_zoomed - (h * 2 + 6), version_string, GR_RESIZE_MENU_ZOOMED);
+	gr_string(5, gr_screen.max_h_unscaled_zoomed - (h * 2 + 6), version_string.c_str(), GR_RESIZE_MENU_ZOOMED);
 
 	font::set_font(old_font);
 }

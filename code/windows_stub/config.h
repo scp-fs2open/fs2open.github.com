@@ -81,7 +81,7 @@ int filelength(int fd);
 int _chdir(const char *path);
 int _getcwd(char *buffer, unsigned int len);
 int _mkdir(const char *path);
-void _splitpath(char *path, char *drive, char *dir, char *fname, char *ext);
+void _splitpath(const char *path, char *drive, char *dir, char *fname, char *ext);
 
 // other stuff
 #define _hypot(x, y)  hypot(x, y)

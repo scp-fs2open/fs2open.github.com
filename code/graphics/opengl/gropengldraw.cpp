@@ -825,6 +825,22 @@ void gr_opengl_render_primitives_batched(batched_bitmap_material* material_info,
 
 	opengl_render_primitives(prim_type, layout, n_verts, buffer_handle, offset, 0);
 }
+void gr_opengl_render_rocket_primitives(interface_material* material_info, primitive_type prim_type,
+                                        vertex_layout* layout, int n_indices, int vertex_buffer, int index_buffer)
+{
+	GR_DEBUG_SCOPE("Render rocket ui primitives");
+
+	gr_set_2d_matrix();
+
+	opengl_tnl_set_rocketui_material(material_info);
+
+	opengl_bind_vertex_layout(*layout, opengl_buffer_get_id(GL_ARRAY_BUFFER, vertex_buffer),
+	                          opengl_buffer_get_id(GL_ELEMENT_ARRAY_BUFFER, index_buffer));
+
+	glDrawElements(opengl_primitive_type(prim_type), n_indices, GL_UNSIGNED_INT, nullptr);
+
+	gr_end_2d_matrix();
+}
 
 void opengl_draw_textured_quad(GLfloat x1,
 							   GLfloat y1,

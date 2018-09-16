@@ -152,6 +152,7 @@
 #include "radar/radarsetup.h"
 #include "render/3d.h"
 #include "render/batching.h"
+#include "scpui/rocket_ui.h"
 #include "scripting/scripting.h"
 #include "ship/afterburner.h"
 #include "ship/awacs.h"
@@ -2017,6 +2018,9 @@ void game_init()
 
 	Viewer_mode = 0;
 	Game_paused = 0;
+
+	// Do this before the initial scripting hook runs in case that hook does something with the UI
+	scpui::initialize();
 
 	Script_system.RunCondition(CHA_GAMEINIT);
 
@@ -6193,6 +6197,9 @@ void game_do_state(int state)
 
 	if(Script_system.IsConditionOverride(CHA_ONFRAME)) {
 		game_set_frametime(state);
+
+		game_check_key();
+
 		gr_clear();
 		gr_flip();	//Does state hook automagically
 		return;
@@ -6859,7 +6866,17 @@ void game_shutdown(void)
 		gr_flip();
 	}
 
-   // if the player has left the "player select" screen and quit the game without actually choosing
+	// Free the scripting resources of the new UI first
+	scpui::shutdown_scripting();
+
+	// Everything after this should be done without scripting so we can free those resources here
+	Script_system.Clear();
+
+	// Deinitialize the new UI system, needs to be done after scripting shutdown to make sure the resources were
+	// released properly
+	scpui::shutdown();
+
+	// if the player has left the "player select" screen and quit the game without actually choosing
 	// a player, Player will be NULL, in which case we shouldn't write the player file out!
 	if (!(Game_mode & GM_STANDALONE_SERVER) && (Player!=NULL) && !Is_standalone){
 		Pilot.save_player();
@@ -7420,27 +7437,6 @@ void game_format_time(fix m_time,char *time_str)
 	} 
 	sprintf(tmp,"%d",seconds);
 	strcat(time_str,tmp);
-}
-
-//	Stuff version string in *str.
-void get_version_string(char *str, int max_size)
-{
-//XSTR:OFF
-	Assert( max_size > 6 );
-
-	sprintf(str, "FreeSpace 2 Open v%s", FS_VERSION_FULL);
-
-#ifndef NDEBUG
-	strcat_s( str, max_size, " Debug" );
-#endif
-
-	// Lets get some more info in here
-	switch(gr_screen.mode)
-	{
-		case GR_OPENGL:
-			strcat_s( str, max_size, " OpenGL" );
-			break;
-	}
 }
 
 // ----------------------------------------------------------------

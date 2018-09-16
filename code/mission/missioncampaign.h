@@ -232,8 +232,6 @@ int mission_campaign_savefile_save();
 int campaign_savefile_save(char *pname);
 // Deletes the campaign save camp under the player name pname
 void campaign_delete_save( char *cfn, char *pname);
-// Loads campaign camp from fname under player name pname
-void campaign_savefile_load(char *fname, char *pname);
 
 // get name and type of specified campaign file
 int mission_campaign_get_info(const char *filename, char *name, int *type, int *max_players, char **desc = NULL);

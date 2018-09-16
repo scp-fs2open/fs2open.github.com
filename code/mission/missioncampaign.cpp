@@ -676,7 +676,7 @@ int mission_campaign_load( char *filename, player *pl, int load_savefile, bool r
 	if (!Fred_running && load_savefile && (Campaign.type == CAMPAIGN_TYPE_SINGLE)) {
 		// savefile can fail to load for numerous otherwise non-fatal reasons
 		// if it doesn't load in that case then it will be (re)created at save
-		if ( !Pilot.load_savefile(Campaign.filename) ) {
+		if ( !Pilot.load_savefile(pl, Campaign.filename) ) {
 			// but if the data is invalid for the savefile then it is fatal
 			if ( Pilot.is_invalid() ) {
 				Campaign.filename[0] = 0;
@@ -888,23 +888,6 @@ void mission_campaign_delete_all_savefiles(char *pilot_name)
 		strcat_s(filename, ext);
 		cf_delete(filename, dir_type, CF_LOCATION_ROOT_USER | CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT);
 	}
-}
-
-/**
- * The following code only ever called by CSFE!!!!
- */
-void campaign_savefile_load(char *fname, char *pname)
-{
-	if (Campaign.type == CAMPAIGN_TYPE_SINGLE) {
-		Game_mode &= ~GM_MULTIPLAYER;
-		Game_mode &= GM_NORMAL;
-	}
-	else
-		Game_mode |= GM_MULTIPLAYER;
-
-	strcpy_s(Player->callsign, pname);
-
-	Pilot.load_savefile(fname);
 }
 
 /**

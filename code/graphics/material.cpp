@@ -123,6 +123,18 @@ void material_set_distortion(distortion_material *mat_info, int texture, bool th
 	mat_info->set_cull_mode(false);
 	mat_info->set_color(1.0f, 1.0f, 1.0f, 1.0f);
 }
+void material_set_rocket_interface(interface_material* mat_info, int texture, const vec2d& offset)
+{
+	mat_info->set_texture_map(TM_BASE_TYPE, texture);
+	mat_info->set_offset(offset);
+
+	mat_info->set_cull_mode(false);
+	mat_info->set_color(1.0f, 1.0f, 1.0f, 1.0f);
+
+	mat_info->set_depth_mode(ZBUFFER_TYPE_NONE);
+
+	mat_info->set_blend_mode(ALPHA_BLEND_ALPHA_BLEND_ALPHA);
+}
 
 void material_set_movie(movie_material* mat_info, int y_bm, int u_bm, int v_bm) {
 	mat_info->set_depth_mode(ZBUFFER_TYPE_NONE);
@@ -890,3 +902,13 @@ uint decal_material::get_shader_flags() const {
 
 	return flags;
 }
+
+interface_material::interface_material()
+{
+	set_shader_type(SDR_TYPE_ROCKET_UI);
+
+	offset.x = 0;
+	offset.y = 0;
+}
+void interface_material::set_offset(const vec2d& new_offset) { this->offset = new_offset; }
+vec2d interface_material::get_offset() { return offset; }

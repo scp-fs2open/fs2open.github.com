@@ -3,10 +3,11 @@
 
 #include <freespace.h>
 #include <gamesequence/gamesequence.h>
-#include <network/multi.h>
-#include <playerman/player.h>
-#include <parse/parselo.h>
 #include <globalincs/version.h>
+#include <network/multi.h>
+#include <parse/parselo.h>
+#include <pilotfile/pilotfile.h>
+#include <playerman/player.h>
 
 #include "base.h"
 
@@ -117,7 +118,37 @@ ADE_FUNC(getCurrentMPStatus, l_Base, "NIL", "Gets this computers current MP stat
 
 ADE_FUNC(getCurrentPlayer, l_Base, NULL, "Gets a handle of the currently used player.<br><b>Note:</b> If there is no current player then the first player will be returned, check the game state to make sure you have a valid player handle.", "player", "Player handle")
 {
-	return ade_set_args(L, "o", l_Player.Set(Player_num));
+	return ade_set_args(L, "o", l_Player.Set(player_h(Players[Player_num])));
+}
+
+ADE_FUNC(loadPlayer, l_Base, "string callsign", "Loads the player with the specified callsign.", "player",
+         "Player handle or invalid handle on load failure")
+{
+	const char* callsign;
+	if (!ade_get_args(L, "s", &callsign)) {
+		return ade_set_error(L, "o", l_Player.Set(player_h()));
+	}
+
+	player plr;
+	plr.reset();
+	pilotfile loader;
+	if (!loader.load_player(callsign, &plr)) {
+		return ade_set_error(L, "o", l_Player.Set(player_h()));
+	}
+
+	return ade_set_args(L, "o", l_Player.Set(player_h(plr)));
+}
+
+ADE_FUNC(savePlayer, l_Base, "player plr", "Saves the specified player.", "boolean",
+         "true of successfull, false otherwise")
+{
+	player_h* plh;
+	if (!ade_get_args(L, "o", l_Player.GetPtr(&plh))) {
+		return ADE_RETURN_FALSE;
+	}
+
+	pilotfile loader;
+	return ade_set_args(L, "b", loader.save_player(plh->get()));
 }
 
 ADE_FUNC(setControlMode, l_Base, "NIL or enumeration LE_*_CONTROL", "Sets the current control mode for the game.", "string", "Current control mode")
@@ -302,6 +333,15 @@ ADE_FUNC(getCurrentLanguageExtension,
 		 "string",
 		 "The current game language") {
 	return ade_set_args(L, "s", Lcl_languages[Lcl_current_lang].lang_ext);
+}
+
+ADE_FUNC(getVersionString, l_Base, nullptr,
+         "Returns a string describing the version of the build that is currently running. This is mostly intended to "
+         "be displayed to the user and not processed by a script so don't rely on the exact format of the string.",
+         "string", "The version information")
+{
+	auto str = gameversion::get_version_string();
+	return ade_set_args(L, "s", str.c_str());
 }
 
 //**********SUBLIBRARY: Base/Events

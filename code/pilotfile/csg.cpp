@@ -1343,7 +1343,7 @@ void pilotfile::csg_close()
 	m_have_info = false;
 }
 
-bool pilotfile::load_savefile(const char *campaign)
+bool pilotfile::load_savefile(player *_p, const char *campaign)
 {
 	char base[_MAX_FNAME] = { '\0' };
 	std::ostringstream buf;
@@ -1358,7 +1358,7 @@ bool pilotfile::load_savefile(const char *campaign)
 
 	// set player ptr first thing
 	Assert( (Player_num >= 0) && (Player_num < MAX_PLAYERS) );
-	p = &Players[Player_num];
+	p = _p;
 
 	// build up filename for the savefile...
 	_splitpath((char*)campaign, NULL, NULL, base, NULL);
