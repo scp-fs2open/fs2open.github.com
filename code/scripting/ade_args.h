@@ -82,8 +82,26 @@ bool get_single_arg(lua_State* L, const get_args_state& state, char fmt, luacpp:
 bool get_single_arg(lua_State* L, const get_args_state& state, char fmt, luacpp::LuaFunction* f);
 
 // This is not a template function so we can put the implementation in a source file
-inline bool get_args_actual(lua_State* /*L*/, get_args_state& /*state*/, const char* fmt)
+inline bool get_args_actual(lua_State* /*L*/, get_args_state& state, const char* fmt)
 {
+	while (*fmt != '\0') {
+		switch(*fmt) {
+		case '|':
+			state.optional_args = true;
+			break;
+		case '*':
+			state.nargs++;
+			state.counted_args++;
+			break;
+		default:
+			UNREACHABLE("Invalid format string '%s'!", fmt);
+			return false;
+		}
+
+		// Ignored parameters are still valid here so we skip them until we reach the end
+		++fmt;
+	}
+	// Now there should be nothing left in the parameter string
 	Assertion(strlen(fmt) == 0, "No class parameters left but format is not empty!");
 	return true;
 }
