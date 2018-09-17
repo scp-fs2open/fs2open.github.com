@@ -2174,7 +2174,7 @@ static void maybe_fireball_wipe(clip_ship* half_ship, sound_handle* handle_array
 				fireball_type = FIREBALL_EXPLOSION_LARGE1 + rand()%FIREBALL_NUM_LARGE_EXPLOSIONS;
 			}
 			int low_res_fireballs = Bs_exp_fire_low;
-			fireball_create(&model_clip_plane_pt, fireball_type, FIREBALL_LARGE_EXPLOSION, OBJ_INDEX(half_ship->parent_obj), rad, 0, &half_ship->parent_obj->phys_info.vel, 0.0f, -1, NULL, low_res_fireballs);
+			fireball_create(&model_clip_plane_pt, fireball_type, FIREBALL_LARGE_EXPLOSION, OBJ_INDEX(half_ship->parent_obj), rad, 0, &half_ship->parent_obj->phys_info.vel, 0.0f, -1, nullptr, low_res_fireballs);
 
 			// start the next fireball up (3-4 per frame) + 30%
 			int time_low, time_high;
@@ -3442,7 +3442,7 @@ int WE_Default::warpStart()
 		HUD_printf(NOX("Subspace drive engaged"));
 	}
 
-	portal_objp = NULL;
+	portal_objp = nullptr;
 	if ((direction == WD_WARP_IN) && shipfx_special_warp_objnum_valid(shipp->special_warpin_objnum))
 	{
 		portal_objp = &Objects[shipp->special_warpin_objnum];
@@ -3457,7 +3457,7 @@ int WE_Default::warpStart()
 	if(direction == WD_WARP_IN)
 	{
 		polymodel *pm = model_get(sip->model_num);
-		vm_vec_scale_add( &pos, &objp->pos, &objp->orient.vec.fvec, (pm != NULL) ? -pm->mins.xyz.z : objp->radius );
+		vm_vec_scale_add( &pos, &objp->pos, &objp->orient.vec.fvec, (pm != nullptr) ? -pm->mins.xyz.z : objp->radius );
 
 		// Effect time is 'SHIPFX_WARP_DELAY' (1.5 secs) seconds to start, 'shipfx_calculate_warp_time' 
 		// for ship to go thru, and 'SHIPFX_WARP_DELAY' (1.5 secs) to go away.
@@ -3471,7 +3471,7 @@ int WE_Default::warpStart()
 
 	radius = shipfx_calculate_effect_radius(objp, direction);
 	// cap radius to size of knossos
-	if(portal_objp != NULL)
+	if (portal_objp != nullptr)
 	{
 		// cap radius to size of knossos
 		radius = MIN(radius, 0.8f*portal_objp->radius);
@@ -3481,18 +3481,18 @@ int WE_Default::warpStart()
 	if (direction == WD_WARP_OUT)
 	{
 		// maybe special warpout
-		int fireball_type = ((portal_objp != NULL) || (sip->warpout_type == WT_KNOSSOS) || (sip->warpout_type == WT_DEFAULT_THEN_KNOSSOS)) ? FIREBALL_KNOSSOS : FIREBALL_WARP;
+		int fireball_type = ((portal_objp != nullptr) || (sip->warpout_type == WT_KNOSSOS) || (sip->warpout_type == WT_DEFAULT_THEN_KNOSSOS)) ? FIREBALL_KNOSSOS : FIREBALL_WARP;
 
 		// create fireball
-		warp_objnum = fireball_create(&pos, fireball_type, FIREBALL_WARP_EFFECT, OBJ_INDEX(objp), radius, 1, NULL, warp_time, shipp->ship_info_index, NULL, 0, 0, sip->warpout_snd_start, sip->warpout_snd_end);
+		warp_objnum = fireball_create(&pos, fireball_type, FIREBALL_WARP_EFFECT, OBJ_INDEX(objp), radius, 1, nullptr, warp_time, shipp->ship_info_index, nullptr, 0, 0, sip->warpout_snd_start, sip->warpout_snd_end);
 	}
 	else if (direction == WD_WARP_IN)
 	{
 		// maybe special warpin
-		int fireball_type = ((portal_objp != NULL) || (sip->warpin_type == WT_KNOSSOS)) ? FIREBALL_KNOSSOS : FIREBALL_WARP;
+		int fireball_type = ((portal_objp != nullptr) || (sip->warpin_type == WT_KNOSSOS)) ? FIREBALL_KNOSSOS : FIREBALL_WARP;
 
 		// create fireball
-		warp_objnum = fireball_create(&pos, fireball_type, FIREBALL_WARP_EFFECT, OBJ_INDEX(objp), radius, 0, NULL, warp_time, shipp->ship_info_index, NULL, 0, 0, sip->warpin_snd_start, sip->warpin_snd_end);
+		warp_objnum = fireball_create(&pos, fireball_type, FIREBALL_WARP_EFFECT, OBJ_INDEX(objp), radius, 0, nullptr, warp_time, shipp->ship_info_index, nullptr, 0, 0, sip->warpin_snd_start, sip->warpin_snd_end);
 	}
 	else
 	{

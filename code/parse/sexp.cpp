@@ -671,7 +671,7 @@ SCP_vector<sexp_oper> Operators = {
 	{ "ship-no-vaporize",				OP_SHIP_NO_VAPORIZE,					1,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "set-explosion-option",			OP_SET_EXPLOSION_OPTION,				3,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "explosion-effect",				OP_EXPLOSION_EFFECT,					11,	14,			SEXP_ACTION_OPERATOR,	},	// Goober5000
-	{ "warp-effect",					OP_WARP_EFFECT,							12, 12,			SEXP_ACTION_OPERATOR,	},	// Goober5000
+	{ "warp-effect",					OP_WARP_EFFECT,							12, 14,			SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "remove-weapons",					OP_REMOVE_WEAPONS,						0,	1,			SEXP_ACTION_OPERATOR,	},	// Karajorma
 	{ "set-time-compression",			OP_CUTSCENES_SET_TIME_COMPRESSION,		1,	3,			SEXP_ACTION_OPERATOR,	},
 	{ "reset-time-compression",			OP_CUTSCENES_RESET_TIME_COMPRESSION,	0,	0,			SEXP_ACTION_OPERATOR,	},
@@ -3528,8 +3528,8 @@ int get_sexp()
 				// set flag for taylor
 				if (CAR(n) != -1 || !strcmp(Sexp_nodes[n].text, SEXP_ARGUMENT_STRING))	// if it's evaluating a sexp or a special argument
 					Knossos_warp_ani_used = 1;												// set flag just in case
-				else if (atoi(CTEXT(n)) == 1)											// if it's the Knossos type
-					Knossos_warp_ani_used = 1;												// set flag for sure
+				else if (atoi(CTEXT(n)) != 0)											// if it's not the default 0
+					Knossos_warp_ani_used = 1;												// set flag just in case
 				break;
 
 			case OP_SET_SKYBOX_MODEL:
@@ -10757,30 +10757,10 @@ void sexp_set_explosion_option(int node)
 }
 
 // Goober5000
-void sexp_explosion_effect(int n)
-/* From the SEXP help...
-	{ OP_EXPLOSION_EFFECT, "explosion-effect\r\n"
-		"\tCauses an explosion at a given origin, with the given parameters.  "
-		"Takes 11 to 14 arguments...\r\n"
-		"\t1:  Origin X\r\n"
-		"\t2:  Origin Y\r\n"
-		"\t3:  Origin Z\r\n"
-		"\t4:  Damage\r\n"
-		"\t5:  Blast force\r\n"
-		"\t6:  Size of explosion (if 0, explosion will not be visible)\r\n"
-		"\t7:  Inner radius to apply damage (if 0, explosion will not be visible)\r\n"
-		"\t8:  Outer radius to apply damage (if 0, explosion will not be visible)\r\n"
-		"\t9:  Shockwave speed (if 0, there will be no shockwave)\r\n"
-		"\t10: Type - For backward compatibility 0 = medium, 1 = large1 (4th in table), 2 = large2 (5th in table)\r\n"
-		"           3 or greater link to respctive entry in fireball.tbl\r\n"
-		"\t11: Sound (index into sounds.tbl or name of the sound entry)\r\n"
-		"\t12: EMP intensity (optional)\r\n"
-		"\t13: EMP duration in seconds (optional)\r\n"
-		"\t14: Whether to use the full EMP time for capship turrets (optional, defaults to false)" },
-*/
 // Basically, this function pretends that there's a ship at the origin that's blowing up, and
 // it does stuff accordingly.  In some places, it has to tiptoe around a little because the
 // code often expects a parent object when in fact there is none. <.<  >.>
+void sexp_explosion_effect(int n)
 {
 	vec3d origin;
 	int max_damage, max_blast, explosion_size, inner_radius, outer_radius, shockwave_speed, num, fireball_type;
@@ -10956,27 +10936,11 @@ void sexp_explosion_effect(int n)
 
 // Goober5000
 void sexp_warp_effect(int n)
-/* From the SEXP help...
-	{ OP_WARP_EFFECT, "warp-effect\r\n"
-		"\tCauses a subspace warp effect at a given origin, facing toward a given location, with the given parameters.  "
-		"Takes 12 arguments...\r\n"
-		"\t1:  Origin X\r\n"
-		"\t2:  Origin Y\r\n"
-		"\t3:  Origin Z\r\n"
-		"\t4:  Location X\r\n"
-		"\t5:  Location Y\r\n"
-		"\t6:  Location Z\r\n"
-		"\t7:  Radius\r\n"
-		"\t8:  Duration in seconds\r\n"
-		"\t9:  Warp opening sound (index into sounds.tbl)\r\n"
-		"\t10: Warp closing sound (index into sounds.tbl)\r\n"
-		"\t11: Type (0 for standard blue [default], 1 for Knossos green)\r\n"
-		"\t12: Shape (0 for 2-D [default], 1 for 3-D)" },
-*/
 {
 	vec3d origin, location, v_orient;
 	matrix m_orient;
-	int radius, duration, fireball_type, extra_flags;
+	int num, fireball_type, extra_flags;
+	float radius, duration, warp_open_duration, warp_close_duration;
 	extra_flags = FBF_WARP_VIA_SEXP;
 
 	// read in data --------------------------------
@@ -10994,11 +10958,13 @@ void sexp_warp_effect(int n)
 	location.xyz.z = (float)eval_num(n);
 	n = CDR(n);
 
-	radius = eval_num(n);
+	radius = (float)eval_num(n);
 	n = CDR(n);
-	duration = eval_num(n);
-	if (duration < 4) duration = 4;
+	duration = (float)eval_num(n);
 	n = CDR(n);
+
+	if (duration < 4.0f)
+		duration = 4.0f;
 
 	auto warp_open_sound_index = sexp_get_sound_index(n);
 	n = CDR(n);
@@ -11006,18 +10972,23 @@ void sexp_warp_effect(int n)
 	n = CDR(n);
 
 	// fireball type
-	if (eval_num(n) == 0)
+	num = eval_num(n);
+	if (num == 0)
 	{
 		fireball_type = FIREBALL_WARP;
 	}
-	else if (eval_num(n) == 1)
+	else if (num == 1)
 	{
 		fireball_type = FIREBALL_KNOSSOS;
 	}
+	else if (num >= Num_fireball_types)
+	{
+		Warning(LOCATION, "warp-effect fireball type is out of range; quitting the warp...\n");
+		return;
+	}
 	else
 	{
-		Warning(LOCATION, "warp-effect type is out of range; quitting the warp...\n");
-		return;
+		fireball_type = num;
 	}
 	n = CDR(n);
 
@@ -11035,6 +11006,27 @@ void sexp_warp_effect(int n)
 		Warning(LOCATION, "warp-effect shape is out of range; quitting the warp...\n");
 		return;
 	}
+	n = CDR(n);
+
+	// opening and closing durations
+	warp_open_duration = warp_close_duration = -1.0f;
+	if (n >= 0)
+	{
+		warp_open_duration = warp_close_duration = ((float)eval_num(n)) / 1000.0f;
+		n = CDR(n);
+	}
+	if (n >= 0)
+	{
+		warp_close_duration = ((float)eval_num(n)) / 1000.0f;
+		n = CDR(n);
+	}
+
+	// sanity check, if these were specified
+	if (duration < warp_open_duration + warp_close_duration)
+	{
+		Warning(LOCATION, "Both warp opening and warp closing must occur within the duration of the warp effect.  Adjusting opening and closing durations to fit.");
+		warp_open_duration = warp_close_duration = duration / 2.0f;
+	}
 
 
 	// calculate orientation matrix ----------------
@@ -11051,7 +11043,7 @@ void sexp_warp_effect(int n)
 
 	// create fireball -----------------------------
 
-	fireball_create(&origin, fireball_type, FIREBALL_WARP_EFFECT, -1, (float)radius, 0, NULL, (float)duration, -1, &m_orient, 0, extra_flags, warp_open_sound_index, warp_close_sound_index);
+	fireball_create(&origin, fireball_type, FIREBALL_WARP_EFFECT, -1, radius, 0, nullptr, duration, -1, &m_orient, 0, extra_flags, warp_open_sound_index, warp_close_sound_index, warp_open_duration, warp_close_duration);
 }
 
 // this function get called by send-message or send-message random with the name of the message, sender,
@@ -31630,8 +31622,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t7:  Inner radius to apply damage (if 0, explosion will not be visible)\r\n"
 		"\t8:  Outer radius to apply damage (if 0, explosion will not be visible)\r\n"
 		"\t9:  Shockwave speed (if 0, there will be no shockwave)\r\n"
-		"\t10: Type - For backward compatibility 0 = medium, 1 = large1 (4th in table), 2 = large2 (5th in table)\r\n"
-		"           3 or greater link to respctive entry in fireball.tbl\r\n"
+		"\t10: Type (0 = medium, 1 = large1 [4th in table], 2 = large2 [5th in table], 3 or greater link to respective entry in fireball.tbl)\r\n"
 		"\t11: Sound (index into sounds.tbl or name of the sound entry)\r\n"
 		"\t12: EMP intensity (optional)\r\n"
 		"\t13: EMP duration in seconds (optional)\r\n"
@@ -31640,7 +31631,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	// Goober5000
 	{ OP_WARP_EFFECT, "warp-effect\r\n"
 		"\tCauses a subspace warp effect at a given origin, facing toward a given location, with the given parameters.\r\n"
-		"Takes 12 arguments...\r\n"
+		"Takes 12 to 14 arguments...\r\n"
 		"\t1:  Origin X\r\n"
 		"\t2:  Origin Y\r\n"
 		"\t3:  Origin Z\r\n"
@@ -31651,8 +31642,10 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t8:  Duration in seconds (values smaller than 4 are ignored)\r\n"
 		"\t9:  Warp opening sound (index into sounds.tbl or name of the sound entry)\r\n"
 		"\t10: Warp closing sound (index into sounds.tbl or name of the sound entry)\r\n"
-		"\t11: Type (0 for standard blue [default], 1 for Knossos green)\r\n"
-		"\t12: Shape (0 for 2-D [default], 1 for 3-D)" },
+		"\t11: Type (0 for standard blue [default], 1 for Knossos green, 2 or greater link to respective entry in fireball.tbl)\r\n"
+		"\t12: Shape (0 for 2-D [default], 1 for 3-D)\r\n"
+		"\t13: Duration of the opening effect, in milliseconds (and also the closing effect if the next argument is not specified)\r\n"
+		"\t14: Duration of the closing effect, in milliseconds\r\n"	},
 
 	// Goober5000
 	{ OP_SET_OBJECT_FACING, "set-object-facing\r\n"
