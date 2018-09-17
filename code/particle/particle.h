@@ -82,6 +82,7 @@ namespace particle
 		vec3d	velocity;			// velocity
 		float	age;				// How long it's been alive
 		float	max_life;			// How much life we had
+		bool    looping;            // If the particle will loop its animation at the end of its life instead of expiring
 		float	radius;				// radius
 		int		type;				// type										// -1 = None
 		int		optional_data;		// depends on type
