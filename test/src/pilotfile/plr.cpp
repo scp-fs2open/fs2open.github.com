@@ -16,7 +16,7 @@ class PilotPlayerFileTest: public test::FSTestFixture {
  protected:
 	void TearDown() override {
 		// Delete the converted files
-		cf_delete("asdf.json", CF_TYPE_PLAYERS);
+		cf_delete("asdf.json", CF_TYPE_PLAYERS, CF_LOCATION_ROOT_USER | CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT);
 
 		FSTestFixture::TearDown();
 	}
