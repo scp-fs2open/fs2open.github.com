@@ -118,7 +118,7 @@ ADE_VIRTVAR(Looping, l_Particle, "boolean",
 {
 	particle_h* ph = nullptr;
 	bool newloop   = false;
-	if (!ade_get_args(L, "o|b", l_Particle.Get(&ph), &newloop))
+	if (!ade_get_args(L, "o|b", l_Particle.GetPtr(&ph), &newloop))
 		return ADE_RETURN_FALSE;
 
 	if (ph == nullptr)

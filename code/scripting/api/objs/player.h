@@ -12,11 +12,17 @@ class player_h {
 	player_h();
 	player_h(const player& plr);
 
+	player_h(const player_h&) = delete;
+	player_h& operator=(const player_h&) = delete;
+
+	player_h(player_h&&) noexcept;
+	player_h& operator=(player_h&&) noexcept;
+
+	~player_h();
+
 	bool isValid() const;
 
 	player* get();
-
-	void cleanup();
 };
 
 DECLARE_ADE_OBJ(l_Player, player_h);
