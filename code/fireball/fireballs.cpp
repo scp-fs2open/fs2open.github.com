@@ -36,8 +36,6 @@ int Knossos_warp_ani_used;
 
 #define WARPHOLE_GROW_TIME		(2.35f)	// time for warphole to reach max size (also time to shrink to nothing once it begins to shrink)
 
-#define MAX_FIREBALL_LOD						4
-
 #define MAX_FIREBALLS	200
 
 #define MAX_WARP_LOD	0
@@ -153,71 +151,124 @@ static void fireball_set_default_color(int idx)
 	}
 }
 
+void fireball_info_clear(fireball_info *fb)
+{
+	Assert(fb != nullptr);
+	memset(fb, 0, sizeof(fireball_info));
+
+	for (int i = 0; i < MAX_FIREBALL_LOD; ++i)
+		fb->lod[i].bitmap_id = -1;
+}
+
+int fireball_info_lookup(const char *unique_id)
+{
+	for (int i = 0; i < Num_fireball_types; ++i)
+		if (!stricmp(Fireball_info[i].unique_id, unique_id))
+			return i;
+
+	return -1;
+}
+
 /**
  * Parse fireball tbl
- *
- * NOTE: we can't be too trusting here so a tbm will only modify the LOD count, not add an entry
  */
-void parse_fireball_tbl(const char *filename)
+void parse_fireball_tbl(const char *table_filename)
 {
-	lod_checker lod_check;
-	color fb_color;
-
 	try
 	{
-		read_file_text(filename, CF_TYPE_TABLES);
+		read_file_text(table_filename, CF_TYPE_TABLES);
 		reset_parse();
 
 		required_string("#Start");
 
-		while (required_string_either("#End", "$Name:")) {
-			memset(&lod_check, 0, sizeof(lod_checker));
+		while (required_string_either("#End", "$Name:"))
+		{
+			fireball_info *fi;
+			int existing_idx = -1;
+			char unique_id[NAME_LENGTH];
+			char fireball_filename[MAX_FILENAME_LEN];
+
+			// unique ID, because indexes are unpredictable
+			*unique_id = '\0';
+			if (optional_string("$Unique ID:"))
+				stuff_string(unique_id, F_NAME, NAME_LENGTH);
 
 			// base filename
 			required_string("$Name:");
-			stuff_string(lod_check.filename, F_NAME, MAX_FILENAME_LEN);
+			stuff_string(fireball_filename, F_NAME, MAX_FILENAME_LEN);
 
-			lod_check.override = -1;
+			// find out if we are overriding a previous entry;
+			// per precedent, these strings should only be in TBMs
+			// UNLIKE precedent, we can now add fireballs in modular tables, not just replace them
+			if (Parsing_modular_table)
+			{
+				if (optional_string("+Explosion_Medium"))
+					existing_idx = FIREBALL_EXPLOSION_MEDIUM;
+				else if (optional_string("+Warp_Effect"))
+					existing_idx = FIREBALL_WARP;
+				else if (optional_string("+Knossos_Effect"))
+					existing_idx = FIREBALL_KNOSSOS;
+				else if (optional_string("+Asteroid"))
+					existing_idx = FIREBALL_ASTEROID;
+				else if (optional_string("+Explosion_Large1"))
+					existing_idx = FIREBALL_EXPLOSION_LARGE1;
+				else if (optional_string("+Explosion_Large2"))
+					existing_idx = FIREBALL_EXPLOSION_LARGE2;
+				else if (optional_string("+Custom_Fireball"))
+					stuff_int(&existing_idx);
 
-			// these entries should only be in TBMs, and it has to include at least one
-			if (Parsing_modular_table) {
-				if (optional_string("+Explosion_Medium")) {
-					lod_check.override = FIREBALL_EXPLOSION_MEDIUM;
-				}
-				else if (optional_string("+Warp_Effect")) {
-					lod_check.override = FIREBALL_WARP;
-				}
-				else if (optional_string("+Knossos_Effect")) {
-					lod_check.override = FIREBALL_KNOSSOS;
-				}
-				else if (optional_string("+Asteroid")) {
-					lod_check.override = FIREBALL_ASTEROID;
-				}
-				else if (optional_string("+Explosion_Large1")) {
-					lod_check.override = FIREBALL_EXPLOSION_LARGE1;
-				}
-				else if (optional_string("+Explosion_Large2")){
-					lod_check.override = FIREBALL_EXPLOSION_LARGE2;
-				}
-				else {
-					required_string("+Custom_Fireball");
-					stuff_int(&lod_check.override);
+				// we can ALSO override a previous entry by specifying a previously used unique ID
+				// either way will work, but if both are specified, unique ID takes precedence
+				if (*unique_id)
+				{
+					int temp_idx = fireball_info_lookup(unique_id);
+					if (temp_idx >= 0)
+						existing_idx = temp_idx;
 				}
 			}
 
-			lod_check.num_lods = 1;
+			// now select our entry accordingly...
+			// are we using a previous entry?
+			if (existing_idx >= 0)
+			{
+				fi = &Fireball_info[existing_idx];
+			}
+			// we are creating a new entry, so set some defaults
+			else
+			{
+				// make sure we don't exceed the max
+				if (Num_fireball_types >= MAX_FIREBALL_TYPES)
+				{
+					Warning(LOCATION, "Too many fireball entries!  Max is %d", MAX_FIREBALL_TYPES);
+					return;
+				}
 
-			// Do we have an LOD num
-			if (optional_string("$LOD:")) {
-				stuff_int(&lod_check.num_lods);
+				fi = &Fireball_info[Num_fireball_types];
+				fireball_info_clear(fi);
+
+				fireball_set_default_color(Num_fireball_types);
+
+				Num_fireball_types++;
 			}
 
-			if (lod_check.num_lods > MAX_FIREBALL_LOD) {
-				lod_check.num_lods = MAX_FIREBALL_LOD;
+			// copy over what we already parsed
+			// (copying the unique ID is okay because the default fireball.tbl doesn't HAVE a unique ID)
+			if (*unique_id)
+				strcpy_s(fi->unique_id, unique_id);
+			strcpy_s(fi->lod[0].filename, fireball_filename);
+
+			// Do we have a LOD num?
+			if (optional_string("$LOD:"))
+			{
+				stuff_int(&fi->lod_count);
+
+				if (fi->lod_count > MAX_FIREBALL_LOD)
+					fi->lod_count = MAX_FIREBALL_LOD;
 			}
 
 			// check for particular lighting color
-			if (optional_string("$Light color:")) {
+			if (optional_string("$Light color:"))
+			{
 				int r, g, b;
 
 				stuff_int(&r);
@@ -228,89 +279,39 @@ void parse_fireball_tbl(const char *filename)
 				CLAMP(g, 0, 255);
 				CLAMP(b, 0, 255);
 
-				gr_init_color(&fb_color, r, g, b);
+				fi->exp_color[0] = (r / 255.0f);
+				fi->exp_color[1] = (g / 255.0f);
+				fi->exp_color[2] = (b / 255.0f);
 			}
-			else {
-				// to keep things simple, we just use 0 alpha to indicate that a default value should be used
-				memset(&fb_color, 0, sizeof(color));
-			}
-
-			// we may use one filename for multiple entries so we'll have to handle dupes post parse
-			LOD_checker.push_back(lod_check);
-			LOD_color.push_back(fb_color);
 		}
 
 		required_string("#End");
 	}
 	catch (const parse::ParseException& e)
 	{
-		mprintf(("TABLES: Unable to parse '%s'!  Error message = %s.\n", filename, e.what()));
+		mprintf(("TABLES: Unable to parse '%s'!  Error message = %s.\n", table_filename, e.what()));
 		return;
 	}
 }
 
 void fireball_parse_tbl()
 {
-	int i = 0, j;
-	SCP_vector<lod_checker>::iterator lod;
-
-	memset( &Fireball_info, 0, sizeof(fireball_info) * MAX_FIREBALL_TYPES );
-
+	// every newly parsed fireball_info will get cleared before being added
+	// must do this outside of parse_fireball_tbl because it's called twice
+	Num_fireball_types = 0;
 
 	parse_fireball_tbl("fireball.tbl");
 
 	// look for any modular tables
 	parse_modular_table(NOX("*-fbl.tbm"), parse_fireball_tbl);
 
-	// we've got our list so pass it off for final checking and loading.
-	// we assume that entries in fireball.tbl are in the correct order
-	for (lod = LOD_checker.begin(); lod != LOD_checker.end(); ++lod) {
-		if ( (i < MAX_FIREBALL_TYPES) && (lod->override < 0) ) {
-			strcpy_s( Fireball_info[i].lod[0].filename, lod->filename );
-			Fireball_info[i].lod_count = lod->num_lods;
-			Num_fireball_types++;
-
-			if (LOD_color[i].alpha == 255) {
-				Fireball_info[i].exp_color[0] = (LOD_color[i].red / 255.0f);
-				Fireball_info[i].exp_color[1] = (LOD_color[i].green / 255.0f);
-				Fireball_info[i].exp_color[2] = (LOD_color[i].blue / 255.0f);
-			} else {
-				fireball_set_default_color(i);
-			}
-		}
-		i++;
-	}
-
-	// having to do this twice is less than optimal, but less error prone too.
-	// this handles (and should only have to handle) TBM related entries
-	i = 0;
-	for (lod = LOD_checker.begin(); lod != LOD_checker.end(); ++lod) {
-		// try entry replacement
-		if ( (lod->override >= 0) && (lod->override < Num_fireball_types) ) {
-			strcpy_s( Fireball_info[lod->override].lod[0].filename, lod->filename );
-			Fireball_info[lod->override].lod_count = lod->num_lods;
-
-			if (LOD_color[i].alpha == 255) {
-				Fireball_info[lod->override].exp_color[0] = (LOD_color[i].red / 255.0f);
-				Fireball_info[lod->override].exp_color[1] = (LOD_color[i].green / 255.0f);
-				Fireball_info[lod->override].exp_color[2] = (LOD_color[i].blue / 255.0f);
-			} else {
-				fireball_set_default_color(lod->override);
-			}
-		}
-	}
-
 	// fill in extra LOD filenames
-	for (i = 0; i < Num_fireball_types; i++) {
-		for (j = 1; j < Fireball_info[i].lod_count; j++) {
+	for (int i = 0; i < Num_fireball_types; i++)
+	{
+		for (int j = 1; j < Fireball_info[i].lod_count; j++)
 			sprintf( Fireball_info[i].lod[j].filename, "%s_%d", Fireball_info[i].lod[0].filename, j);
-		}
 	}
-
-	// done
-	LOD_checker.clear();
 }
-
 
 void fireball_load_data()
 {
