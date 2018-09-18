@@ -112,6 +112,42 @@ void fireball_play_warphole_close_sound(fireball *fb)
 	snd_play_3d(gamesnd_get_game_sound(sound_index), &fireball_objp->pos, &Eye_position, fireball_objp->radius); // play warp sound effect
 }
 
+static void fireball_generate_unique_id(char *unique_id, int idx)
+{
+	switch (idx)
+	{
+		// use sensible names for the fireball.tbl default entries
+		case FIREBALL_EXPLOSION_MEDIUM:
+			strcpy(unique_id, "Medium Explosion");
+			break;
+
+		case FIREBALL_WARP:
+			strcpy(unique_id, "Warp Effect");
+			break;
+
+		case FIREBALL_KNOSSOS:
+			strcpy(unique_id, "Knossos Effect");
+			break;
+
+		case FIREBALL_ASTEROID:
+			strcpy(unique_id, "Asteroid Explosion");
+			break;
+
+		case FIREBALL_EXPLOSION_LARGE1:
+			strcpy(unique_id, "Large Explosion 1");
+			break;
+
+		case FIREBALL_EXPLOSION_LARGE2:
+			strcpy(unique_id, "Large Explosion 2");
+			break;
+
+		// base the id on the index
+		default:
+			sprintf(unique_id, "Custom Fireball %d", idx - NUM_DEFAULT_FIREBALLS + 1);
+			break;
+	}
+}
+
 /**
  * Set default colors for each explosion type (original values from object.cpp)
  */
@@ -189,7 +225,7 @@ void parse_fireball_tbl(const char *table_filename)
 			char fireball_filename[MAX_FILENAME_LEN];
 
 			// unique ID, because indexes are unpredictable
-			*unique_id = '\0';
+			memset(unique_id, 0, NAME_LENGTH);
 			if (optional_string("$Unique ID:"))
 				stuff_string(unique_id, F_NAME, NAME_LENGTH);
 
@@ -219,7 +255,7 @@ void parse_fireball_tbl(const char *table_filename)
 
 				// we can ALSO override a previous entry by specifying a previously used unique ID
 				// either way will work, but if both are specified, unique ID takes precedence
-				if (*unique_id)
+				if (strlen(unique_id) > 0)
 				{
 					int temp_idx = fireball_info_lookup(unique_id);
 					if (temp_idx >= 0)
@@ -246,14 +282,18 @@ void parse_fireball_tbl(const char *table_filename)
 				fi = &Fireball_info[Num_fireball_types];
 				fireball_info_clear(fi);
 
+				// If the table didn't specify a unique ID, generate one.  This will be assigned a few lines later.
+				if (strlen(unique_id) == 0)
+					fireball_generate_unique_id(unique_id, Num_fireball_types);
+
+				// Set remaining fireball defaults
 				fireball_set_default_color(Num_fireball_types);
 
 				Num_fireball_types++;
 			}
 
 			// copy over what we already parsed
-			// (copying the unique ID is okay because the default fireball.tbl doesn't HAVE a unique ID)
-			if (*unique_id)
+			if (strlen(unique_id) > 0)
 				strcpy_s(fi->unique_id, unique_id);
 			strcpy_s(fi->lod[0].filename, fireball_filename);
 
