@@ -5269,7 +5269,8 @@ std::unique_ptr<QMenu> sexp_tree::buildContextMenu(QTreeWidgetItem* h) {
 		}
 			// Goober5000
 		else if (type == OPF_GAME_SND || type == OPF_FIREBALL || type == OPF_WEAPON_BANK_NUMBER) {
-			// enable number even though we are also going to default to string
+			// even though these default to strings, we allow replacing them with index values
+			replace_type = OPR_POSITIVE;
 			replace_number_act->setEnabled(true);
 		}
 
