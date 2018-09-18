@@ -156,7 +156,6 @@ extern bool Cmdline_profile_write_file;
 extern bool Cmdline_no_unfocus_pause;
 extern bool Cmdline_benchmark_mode;
 extern bool Cmdline_noninteractive;
-extern bool Cmdline_json_pilot;
 extern bool Cmdline_json_profiling;
 extern bool Cmdline_frame_profile;
 extern bool Cmdline_show_video_info;

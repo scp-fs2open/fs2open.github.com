@@ -215,7 +215,7 @@ bool valid_pilot_lang(const char *callsign)
 	char pilot_lang[LCL_LANG_NAME_LEN+1], current_lang[LCL_LANG_NAME_LEN+1];
 	SCP_string filename = callsign;
 
-	filename += ".plr";
+	filename += ".json";
 	lcl_get_language_name(current_lang);
 
 	if (Pilot.verify(filename.c_str(), NULL, pilot_lang)) {
@@ -1396,7 +1396,7 @@ SCP_vector<SCP_string> player_select_enumerate_pilots() {
 	Get_file_list_filter = player_select_pilot_file_filter;
 
 	SCP_vector<SCP_string> pilots;
-	cf_get_file_list(pilots, CF_TYPE_PLAYERS, "*.plr", CF_SORT_TIME, nullptr, CF_LOCATION_ROOT_USER | CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT);
+	cf_get_file_list(pilots, CF_TYPE_PLAYERS, "*.json", CF_SORT_TIME, nullptr, CF_LOCATION_ROOT_USER | CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT);
 
 	return pilots;
 }

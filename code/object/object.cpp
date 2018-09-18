@@ -2114,3 +2114,15 @@ int object_get_model(object *objp)
 
 	return -1;
 }
+bool obj_compare(object* left, object* right) {
+	if (left == right) {
+		// Same pointer
+		return true;
+	}
+	if (left == nullptr || right == nullptr) {
+		// Only one is nullptr and the other is not (since they are not equal)
+		return false;
+	}
+
+	return OBJ_INDEX(left) == OBJ_INDEX(right);
+}

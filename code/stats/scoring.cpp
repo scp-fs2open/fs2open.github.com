@@ -126,7 +126,7 @@ void scoring_struct::init()
 
 	medal_counts.assign(Num_medals, 0);
 
-	memset(kills, 0, MAX_SHIP_CLASSES * sizeof(int));
+	memset(kills, 0, sizeof(kills));
 	assists = 0;
 	kill_count = 0;
 	kill_count_ok = 0;
@@ -150,8 +150,8 @@ void scoring_struct::init()
 	m_badge_earned.clear();
 
 	m_score = 0;
-	memset(m_kills, 0, MAX_SHIP_CLASSES * sizeof(int));
-	memset(m_okKills, 0, MAX_SHIP_CLASSES * sizeof(int));
+	memset(m_kills, 0, sizeof(m_kills));
+	memset(m_okKills, 0, sizeof(m_okKills));
 	m_kill_count = 0;
 	m_kill_count_ok = 0;
 	m_assists = 0;
@@ -164,7 +164,7 @@ void scoring_struct::init()
 	m_bonehead_kills = 0;
 	m_player_deaths = 0;
 
-	memset(m_dogfight_kills, 0, MAX_PLAYERS * sizeof(int));
+	memset(m_dogfight_kills, 0, sizeof(m_dogfight_kills));
 }
 
 // clone someone else's scoring element
@@ -215,6 +215,43 @@ void scoring_struct::assign(const scoring_struct &s)
 	m_player_deaths = s.m_player_deaths;
 
 	memcpy(m_dogfight_kills, s.m_dogfight_kills, MAX_PLAYERS * sizeof(int));
+}
+template<typename T, size_t N>
+bool array_compare(const T (&left)[N], const T (&right)[N]) {
+	auto left_el = std::begin(left);
+	auto right_el = std::begin(right);
+
+	auto left_end = std::end(left);
+	auto right_end = std::end(right);
+
+	for (; left_el != left_end && right_el != right_end; ++left_el, ++right_el) {
+		if (!(*left_el == *right_el)) {
+			return false;
+		}
+	}
+
+	return true;
+}
+bool scoring_struct::operator==(const scoring_struct& rhs) const {
+	return flags == rhs.flags && score == rhs.score && rank == rhs.rank && medal_counts == rhs.medal_counts
+		&& array_compare(kills, rhs.kills) && assists == rhs.assists && kill_count == rhs.kill_count
+		&& kill_count_ok == rhs.kill_count_ok && p_shots_fired == rhs.p_shots_fired
+		&& s_shots_fired == rhs.s_shots_fired && p_shots_hit == rhs.p_shots_hit && s_shots_hit == rhs.s_shots_hit
+		&& p_bonehead_hits == rhs.p_bonehead_hits && s_bonehead_hits == rhs.s_bonehead_hits
+		&& bonehead_kills == rhs.bonehead_kills && missions_flown == rhs.missions_flown
+		&& flight_time == rhs.flight_time && last_flown == rhs.last_flown && last_backup == rhs.last_backup
+		&& m_medal_earned == rhs.m_medal_earned && m_badge_earned == rhs.m_badge_earned
+		&& m_promotion_earned == rhs.m_promotion_earned && m_score == rhs.m_score
+		&& array_compare(m_kills, rhs.m_kills)
+		&& array_compare(m_okKills, rhs.m_okKills) && m_kill_count == rhs.m_kill_count
+		&& m_kill_count_ok == rhs.m_kill_count_ok && m_assists == rhs.m_assists && mp_shots_fired == rhs.mp_shots_fired
+		&& ms_shots_fired == rhs.ms_shots_fired && mp_shots_hit == rhs.mp_shots_hit && ms_shots_hit == rhs.ms_shots_hit
+		&& mp_bonehead_hits == rhs.mp_bonehead_hits && ms_bonehead_hits == rhs.ms_bonehead_hits
+		&& m_bonehead_kills == rhs.m_bonehead_kills && m_player_deaths == rhs.m_player_deaths
+		&& array_compare(m_dogfight_kills, rhs.m_dogfight_kills) ;
+}
+bool scoring_struct::operator!=(const scoring_struct& rhs) const {
+	return !(rhs == *this);
 }
 
 // initialize the Player's mission-based stats before he goes into a mission

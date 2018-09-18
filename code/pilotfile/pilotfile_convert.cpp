@@ -1,6 +1,7 @@
 
 #include "pilotfile/pilotfile_convert.h"
 #include "playerman/managepilot.h"
+#include "playerman/player.h"
 
 
 pilotfile_convert::pilotfile_convert()
@@ -65,8 +66,10 @@ void pilotfile_convert::endSection()
 	}
 }
 
-
-void convert_pilot_files()
+/**
+ * @brief Converts retail pilots to the "new" binary style
+ */
+static void convert_retail_pilot_files()
 {
 	size_t idx, j, i;
 	size_t count, inf_count;
@@ -156,4 +159,60 @@ void convert_pilot_files()
 	}
 
 	mprintf(("PILOT: Pilot file conversion complete!\n"));
+}
+
+/**
+ * @brief Converts the binary pilots into the JSON representation
+ *
+ * This only converts the main pilot file to JSON at the moment to make debugging easier if something is wrong
+ */
+static void convert_binary_pilot_files() {
+	SCP_vector<SCP_string> binary_pilots;
+	SCP_vector<SCP_string> json_pilots;
+
+	// get list of binary pilot files
+	cf_get_file_list(binary_pilots, CF_TYPE_PLAYERS, "*.plr");
+
+	// get list of existing json pilot files
+	cf_get_file_list(json_pilots, CF_TYPE_PLAYERS, "*.json");
+
+	for (auto& binary_pilot : binary_pilots) {
+		for (auto& json_pilot : json_pilots) {
+			// The file extensions are already removed so we can just compare the iterator values
+			if (binary_pilot == json_pilot) {
+				// pilot was already converted. We just set this to the empty string to remove it from the list
+				binary_pilot = "";
+			}
+		}
+	}
+
+	// binary_pilots now contains all unconverted pilots
+	for (auto& callsign : binary_pilots) {
+		if (callsign.empty()) {
+			// This pilot already has a json pilot
+			continue;
+		}
+
+		// This is simple, read the binary pilot and then write it again as JSON
+		pilotfile file;
+		player plr; // Player struct to save the loaded values in
+		plr.reset();
+
+		if (!file.load_player(callsign.c_str(), &plr, true)) {
+			mprintf(("Failed to load binary pilot '%s'!\n", callsign.c_str()));
+			continue;
+		}
+
+		if (!file.save_player(&plr)) {
+			mprintf(("Failed to save JSON pilot '%s'!\n", callsign.c_str()));
+			continue;
+		}
+		mprintf(("Pilot '%s' was successfully converted to JSON.\n", callsign.c_str()));
+	}
+}
+
+void convert_pilot_files() {
+	convert_retail_pilot_files();
+
+	convert_binary_pilot_files();
 }

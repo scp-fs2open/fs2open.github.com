@@ -576,6 +576,8 @@ add_file_folder("Lab"
 )
 
 add_file_folder("Libs"
+	libs/jansson.cpp
+	libs/jansson.h
 )
 
 add_file_folder("Libs\\\\Discord"

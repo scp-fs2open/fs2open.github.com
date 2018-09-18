@@ -63,6 +63,11 @@ bool delete_pilot_file(const char *pilot_name)
 	strcpy_s( filename, basename );
 	strcat_s( filename, NOX(".plr") );
 
+	cf_delete(filename, CF_TYPE_PLAYERS);
+
+	strcpy_s( filename, basename );
+	strcat_s( filename, NOX(".json") );
+
 	delreturn =
 	    cf_delete(filename, CF_TYPE_PLAYERS, CF_LOCATION_ROOT_USER | CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT);
 
@@ -438,8 +443,8 @@ void player::reset()
 
 	objnum = -1;
 
-	memset(&bi, 0, sizeof(button_info));
-	memset(&ci, 0, sizeof(control_info));
+	memset(&bi, 0, sizeof(bi));
+	memset(&ci, 0, sizeof(ci));
 
 	stats.init();
 	// only reset Pilotfile stats if we're resetting Player
@@ -524,9 +529,9 @@ void player::reset()
 
 	death_message = "";
 
-	memset(&lua_ci, 0, sizeof(control_info));
-	memset(&lua_bi, 0, sizeof(button_info));
-	memset(&lua_bi_full, 0, sizeof(button_info));
+	memset(&lua_ci, 0, sizeof(lua_ci));
+	memset(&lua_bi, 0, sizeof(lua_bi));
+	memset(&lua_bi_full, 0, sizeof(lua_bi_full));
 
 	player_was_multi = 0;
 	memset(language, 0, sizeof(language));
@@ -685,4 +690,112 @@ void player::assign(const player *other)
 
 	player_was_multi = other->player_was_multi;
 	strcpy_s(language, other->language);
+
+	Assertion(*this == *other, "Equality comparison failed after pilot assignment!");
+}
+
+template<typename T, size_t N>
+bool array_compare(const T (&left)[N], const T (&right)[N]) {
+	auto left_el = std::begin(left);
+	auto right_el = std::begin(right);
+
+	auto left_end = std::end(left);
+	auto right_end = std::end(right);
+
+	for (; left_el != left_end && right_el != right_end; ++left_el, ++right_el) {
+		if (!(*left_el == *right_el)) {
+			return false;
+		}
+	}
+
+	return true;
+}
+
+bool operator==(const htarget_list& left, const htarget_list& right) {
+	return left.how_added == right.how_added && obj_compare(left.objp, right.objp);
+}
+
+bool operator==(const button_info& left, const button_info& right) {
+	return array_compare(left.status, right.status);
+}
+
+bool operator==(const control_info& left, const control_info& right) {
+	return left.pitch == right.pitch && left.vertical == right.vertical && left.heading == right.heading
+		&& left.sideways == right.sideways && left.bank == right.bank && left.forward == right.forward
+		&& left.forward_cruise_percent == right.forward_cruise_percent
+		&& left.fire_primary_count == right.fire_primary_count
+		&& left.fire_secondary_count == right.fire_secondary_count
+		&& left.fire_countermeasure_count == right.fire_countermeasure_count
+		&& left.fire_debug_count == right.fire_debug_count && left.afterburner_start == right.afterburner_start
+		&& left.afterburner_stop == right.afterburner_stop;
+}
+
+bool operator==(const multi_local_options& left, const multi_local_options& right) {
+	return left.flags == right.flags && left.obj_update_level == right.obj_update_level;
+}
+
+bool operator==(const multi_server_options& left, const multi_server_options& right) {
+	return left.squad_set == right.squad_set && left.endgame_set == right.endgame_set && left.flags == right.flags
+		&& left.respawn == right.respawn && left.max_observers == right.max_observers
+		&& left.skill_level == right.skill_level && left.voice_qos == right.voice_qos
+		&& left.voice_token_wait == right.voice_token_wait && left.voice_record_time == right.voice_record_time
+		&& left.mission_time_limit == right.mission_time_limit && left.kill_limit == right.kill_limit;
+}
+
+bool operator==(const sexp_variable& left, const sexp_variable& right) {
+	return left.type == right.type && !strcmp(left.text, right.text)
+		&& !strcmp(left.variable_name, right.variable_name);
+}
+
+bool operator==(const player& lhs, const player& rhs) {
+	return !strcmp(lhs.callsign, rhs.callsign) && !strcmp(lhs.short_callsign, rhs.short_callsign)
+		&& lhs.short_callsign_width == rhs.short_callsign_width && !strcmp(lhs.image_filename, rhs.image_filename)
+		&& !strcmp(lhs.s_squad_filename, rhs.s_squad_filename) && !strcmp(lhs.s_squad_name, rhs.s_squad_name)
+		&& !strcmp(lhs.m_squad_filename, rhs.m_squad_filename) && !strcmp(lhs.m_squad_name, rhs.m_squad_name)
+		&& !strcmp(lhs.current_campaign, rhs.current_campaign) && lhs.readyroom_listing_mode == rhs.readyroom_listing_mode
+		&& lhs.flags == rhs.flags && lhs.save_flags == rhs.save_flags && array_compare(lhs.keyed_targets, rhs.keyed_targets)
+		&& lhs.current_hotkey_set == rhs.current_hotkey_set && lhs.lead_target_pos == rhs.lead_target_pos
+		&& lhs.lead_target_cheat == rhs.lead_target_cheat && lhs.lead_indicator_active == rhs.lead_indicator_active
+		&& lhs.lock_indicator_x == rhs.lock_indicator_x && lhs.lock_indicator_y == rhs.lock_indicator_y
+		&& lhs.lock_indicator_start_x == rhs.lock_indicator_start_x
+		&& lhs.lock_indicator_start_y == rhs.lock_indicator_start_y
+		&& lhs.lock_indicator_visible == rhs.lock_indicator_visible
+		&& lhs.lock_time_to_target == rhs.lock_time_to_target && lhs.lock_dist_to_target == rhs.lock_dist_to_target
+		&& lhs.last_ship_flown_si_index == rhs.last_ship_flown_si_index && lhs.objnum == rhs.objnum && lhs.bi == rhs.bi
+		&& lhs.ci == rhs.ci && lhs.stats == rhs.stats && lhs.friendly_hits == rhs.friendly_hits
+		&& lhs.friendly_damage == rhs.friendly_damage && lhs.friendly_last_hit_time == rhs.friendly_last_hit_time
+		&& lhs.last_warning_message_time == rhs.last_warning_message_time && lhs.control_mode == rhs.control_mode
+		&& lhs.saved_viewer_mode == rhs.saved_viewer_mode && lhs.check_warn_timestamp == rhs.check_warn_timestamp
+		&& lhs.distance_warning_count == rhs.distance_warning_count
+		&& lhs.distance_warning_time == rhs.distance_warning_time
+		&& lhs.allow_warn_timestamp == rhs.allow_warn_timestamp && lhs.warn_count == rhs.warn_count
+		&& lhs.damage_this_burst == rhs.damage_this_burst && lhs.repair_sound_loop == rhs.repair_sound_loop
+		&& lhs.cargo_scan_loop == rhs.cargo_scan_loop && lhs.praise_count == rhs.praise_count
+		&& lhs.allow_praise_timestamp == rhs.allow_praise_timestamp
+		&& lhs.praise_delay_timestamp == rhs.praise_delay_timestamp && lhs.ask_help_count == rhs.ask_help_count
+		&& lhs.allow_ask_help_timestamp == rhs.allow_ask_help_timestamp && lhs.scream_count == rhs.scream_count
+		&& lhs.allow_scream_timestamp == rhs.allow_scream_timestamp
+		&& lhs.low_ammo_complaint_count == rhs.low_ammo_complaint_count
+		&& lhs.allow_ammo_timestamp == rhs.allow_ammo_timestamp && lhs.praise_self_count == rhs.praise_self_count
+		&& lhs.praise_self_timestamp == rhs.praise_self_timestamp && lhs.subsys_in_view == rhs.subsys_in_view
+		&& lhs.request_repair_timestamp == rhs.request_repair_timestamp
+		&& lhs.cargo_inspect_time == rhs.cargo_inspect_time && lhs.target_is_dying == rhs.target_is_dying
+		&& lhs.current_target_sx == rhs.current_target_sx && lhs.current_target_sy == rhs.current_target_sy
+		&& lhs.target_in_lock_cone == rhs.target_in_lock_cone && lhs.locking_subsys == rhs.locking_subsys
+		&& lhs.locking_subsys_parent == rhs.locking_subsys_parent && lhs.locking_on_center == rhs.locking_on_center
+		&& lhs.killer_objtype == rhs.killer_objtype && lhs.killer_species == rhs.killer_species
+		&& lhs.killer_weapon_index == rhs.killer_weapon_index && !strcmp(lhs.killer_parent_name, rhs.killer_parent_name)
+		&& lhs.check_for_all_alone_msg == rhs.check_for_all_alone_msg
+		&& lhs.update_dumbfire_time == rhs.update_dumbfire_time && lhs.update_lock_time == rhs.update_lock_time
+		&& lhs.threat_flags == rhs.threat_flags && lhs.auto_advance == rhs.auto_advance
+		&& lhs.m_local_options == rhs.m_local_options && lhs.m_server_options == rhs.m_server_options
+		&& lhs.insignia_texture == rhs.insignia_texture && lhs.tips == rhs.tips
+		&& lhs.shield_penalty_stamp == rhs.shield_penalty_stamp
+		&& lhs.failures_this_session == rhs.failures_this_session && lhs.show_skip_popup == rhs.show_skip_popup
+		&& lhs.variables == rhs.variables && lhs.death_message == rhs.death_message && lhs.lua_ci == rhs.lua_ci
+		&& lhs.lua_bi == rhs.lua_bi && lhs.lua_bi_full == rhs.lua_bi_full
+		&& lhs.player_was_multi == rhs.player_was_multi && !strcmp(lhs.language, rhs.language);
+}
+bool operator!=(const player& lhs, const player& rhs) {
+	return !(rhs == lhs);
 }

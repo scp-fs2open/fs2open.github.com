@@ -34,3 +34,10 @@
    fun:lua_rawget
    fun:_ZN12_GLOBAL__N_117ade_index_handlerEP9lua_State
 }
+{
+   False-positive uninitialized variable warning
+   Memcheck:Cond
+   fun:_Z23cf_check_location_flagsjj
+   fun:_Z29cf_create_default_path_stringPcjiPKcbj
+   ...
+}

@@ -960,7 +960,7 @@ void barracks_init_player_stuff(int mode)
 	Get_file_list_filter = barracks_pilot_filter;
 
 	Num_pilots =
-	    cf_get_file_list_preallocated(MAX_PILOTS, Pilots_arr, Pilots, CF_TYPE_PLAYERS, NOX("*.plr"), CF_SORT_TIME,
+	    cf_get_file_list_preallocated(MAX_PILOTS, Pilots_arr, Pilots, CF_TYPE_PLAYERS, NOX("*.json"), CF_SORT_TIME,
 	                                  nullptr, CF_LOCATION_ROOT_USER | CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT);
 
 	int ranks[MAX_PILOTS];

@@ -345,6 +345,13 @@ void cfread_string(char *buf,int n, CFILE *file);
  */
 void cfread_string_len(char *buf,int n, CFILE *file);
 
+/**
+ * @brief Read a string from the file where the length is stored in the file
+ * @param file The file to read the string from
+ * @return The string that was read
+ */
+SCP_string cfread_string_len(CFILE *file);
+
 // functions for writing cfiles
 int cfwrite_char(char c, CFILE *file);
 int cfwrite_float(float f, CFILE *file);

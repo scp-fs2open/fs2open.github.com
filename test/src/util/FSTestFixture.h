@@ -13,6 +13,7 @@ enum InitFlags {
 	INIT_GRAPHICS = 1 << 1,
 	INIT_SHIPS = 1 << 2,
 	INIT_MOD_TABLE = 1 << 3,
+	INIT_FONTS = 1 << 4,
 };
 
 class FSTestFixture: public ::testing::Test {

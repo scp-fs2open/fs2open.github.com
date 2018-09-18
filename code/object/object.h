@@ -353,4 +353,15 @@ int object_get_model(object *objp);
 
 void obj_render_queue_all();
 
+/**
+ * @brief Compares two object pointers and determines if they refer to the same object
+ *
+ * @note Two @c nullptr parameters are considered equal
+ *
+ * @param left The first object pointer, may be @c nullptr
+ * @param right The second object pointer, may be @c nullptr
+ * @return @c true if the two pointers refer to the same object
+ */
+bool obj_compare(object *left, object *right);
+
 #endif

@@ -32,6 +32,10 @@ add_file_folder("Parse"
     parse/test_parselo.cpp
 )
 
+add_file_folder("Pilotfile"
+    pilotfile/plr.cpp
+)
+
 add_file_folder("Scripting"
     scripting/ade_args.cpp
     scripting/require.cpp

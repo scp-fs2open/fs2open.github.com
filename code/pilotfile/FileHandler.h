@@ -15,6 +15,7 @@
 #endif
 // sections of a pilot file. includes both plr and csg sections
 enum class Section {
+	Invalid = -1,
 	Unnamed = 0, //!< Special unnamed section
 	Flags = 0x0001,
 	Info = 0x0002,
@@ -53,15 +54,55 @@ class FileHandler {
 
 	virtual void writeString(const char* name, const char* str) = 0;
 
+	virtual void beginWritingSections() = 0;
+
 	virtual void startSectionWrite(Section id) = 0;
 
 	virtual void endSectionWrite() = 0;
+
+	virtual void endWritingSections() = 0;
 
 	virtual void startArrayWrite(const char* name, size_t size, bool short_length = false) = 0;
 
 	virtual void endArrayWrite() = 0;
 
 	virtual void flush() = 0;
+
+	virtual std::uint8_t readUByte(const char* name) = 0;
+
+	virtual std::int16_t readShort(const char* name) = 0;
+
+	virtual std::int32_t readInt(const char* name) = 0;
+
+	virtual std::uint32_t readUInt(const char* name) = 0;
+
+	virtual float readFloat(const char* name) = 0;
+
+	virtual SCP_string readString(const char* name) = 0;
+
+	virtual void readString(const char* name, char* dest, size_t max_size) {
+		auto string = readString(name);
+		Assertion(string.size() < max_size, "String in file is too long! Maximum is "
+			SIZE_T_ARG
+			" but the file contained a string with length "
+			SIZE_T_ARG
+			"!", max_size, string.size());
+		strcpy_s(dest, max_size, string.c_str());
+	}
+
+	virtual void beginSectionRead() = 0;
+
+	virtual bool hasMoreSections() = 0;
+
+	virtual Section nextSection() = 0;
+
+	virtual void endSectionRead() = 0;
+
+	virtual size_t startArrayRead(const char* name, bool short_index = false) = 0;
+
+	virtual void nextArraySection() = 0;
+
+	virtual void endArrayRead() = 0;
 };
 }
 
