@@ -26,11 +26,6 @@
 #include <cstdlib>
 
 
-// make use of the LOD checker for tbl/tbm parsing (from weapons.cpp)
-extern SCP_vector<lod_checker> LOD_checker;
-
-static SCP_vector<color> LOD_color;
-
 int Warp_model;
 int Knossos_warp_ani_used;
 
@@ -114,6 +109,8 @@ void fireball_play_warphole_close_sound(fireball *fb)
 
 static void fireball_generate_unique_id(char *unique_id, int idx)
 {
+	Assert((idx >= 0) && (idx < MAX_FIREBALL_TYPES));
+
 	switch (idx)
 	{
 		// use sensible names for the fireball.tbl default entries
@@ -153,7 +150,7 @@ static void fireball_generate_unique_id(char *unique_id, int idx)
  */
 static void fireball_set_default_color(int idx)
 {
-	Assert( (idx >= 0) && (idx < MAX_FIREBALL_TYPES) );
+	Assert((idx >= 0) && (idx < MAX_FIREBALL_TYPES));
 
 	switch (idx)
 	{

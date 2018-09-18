@@ -1132,27 +1132,66 @@ int sexp_tree::get_default_value(sexp_list_item* item, char* text_buf, int op, i
 		return 0;
 
 		// Goober5000 - special cases that used to be numbers but are now hybrids
-	case OPF_GAME_SND:
-		gamesnd_id sound_index;
+		case OPF_GAME_SND:
+		{
+			gamesnd_id sound_index;
 
-		if (Operators[op].value == OP_EXPLOSION_EFFECT) {
-			sound_index = GameSounds::SHIP_EXPLODE_1;
-		} else if (Operators[op].value == OP_WARP_EFFECT) {
-			sound_index = (i == 8) ? GameSounds::CAPITAL_WARP_IN : GameSounds::CAPITAL_WARP_OUT;
-		}
-
-		if (sound_index.isValid()) {
-			game_snd* snd = gamesnd_get_game_sound(sound_index);
-			if (can_construe_as_integer(snd->name.c_str())) {
-				item->set_data(snd->name.c_str(), (SEXPT_NUMBER | SEXPT_VALID));
-			} else {
-				item->set_data(snd->name.c_str(), (SEXPT_STRING | SEXPT_VALID));
+			if (Operators[op].value == OP_EXPLOSION_EFFECT)
+			{
+				sound_index = GameSounds::SHIP_EXPLODE_1;
 			}
-			return 0;
+			else if (Operators[op].value == OP_WARP_EFFECT)
+			{
+				sound_index = (i == 8) ? GameSounds::CAPITAL_WARP_IN : GameSounds::CAPITAL_WARP_OUT;
+			}
+
+			if (sound_index.isValid())
+			{
+				game_snd* snd = gamesnd_get_game_sound(sound_index);
+				if (can_construe_as_integer(snd->name.c_str()))
+					item->set_data(snd->name.c_str(), (SEXPT_NUMBER | SEXPT_VALID));
+				else
+					item->set_data(snd->name.c_str(), (SEXPT_STRING | SEXPT_VALID));
+				return 0;
+			}
+
+			// if no hardcoded default, just use the listing default
+			break;
 		}
 
-		// if no hardcoded default, just use the listing default
-		break;
+		// Goober5000 - ditto
+		case OPF_FIREBALL:
+		{
+			int fireball_index = -1;
+
+			if (Operators[op].value == OP_EXPLOSION_EFFECT)
+			{
+				fireball_index = FIREBALL_MEDIUM_EXPLOSION;
+			}
+			else if (Operators[op].value == OP_WARP_EFFECT)
+			{
+				fireball_index = FIREBALL_WARP;
+			}
+
+			if (fireball_index >= 0)
+			{
+				extern fireball_info Fireball_info[MAX_FIREBALL_TYPES];
+
+				char *unique_id = Fireball_info[fireball_index].unique_id;
+				if (strlen(unique_id) > 0)
+					item->set_data(unique_id, (SEXPT_STRING | SEXPT_VALID));
+				else
+				{
+					char num_str[NAME_LENGTH];
+					sprintf(num_str, "%d", fireball_index);
+					item->set_data(num_str, (SEXPT_NUMBER | SEXPT_VALID));
+				}
+				return 0;
+			}
+
+			// if no hardcoded default, just use the listing default
+			break;
+		}
 	}
 
 	list = get_listing_opf(type, index, i);
@@ -1394,6 +1433,7 @@ int sexp_tree::query_default_argument_available(int op, int i) {
 	case OPF_NAV_POINT:
 	case OPF_TEAM_COLOR:
 	case OPF_GAME_SND:
+	case OPF_FIREBALL:
 		return 1;
 
 	case OPF_SHIP:
@@ -2946,6 +2986,10 @@ sexp_list_item* sexp_tree::get_listing_opf(int opf, int parent_node, int arg_ind
 		list = get_listing_opf_game_snds();
 		break;
 
+	case OPF_FIREBALL:
+		list = get_listing_opf_fireball();
+		break;
+
 	default:
 		Int3();  // unknown OPF code
 		list = NULL;
@@ -4477,6 +4521,22 @@ sexp_list_item* sexp_tree::get_listing_opf_game_snds() {
 	return head.next;
 }
 
+sexp_list_item *sexp_tree::get_listing_opf_fireball()
+{
+	extern fireball_info Fireball_info[MAX_FIREBALL_TYPES];
+	sexp_list_item head;
+
+	for (int i = 0; i < Num_fireball_types; ++i)
+	{
+		char *unique_id = Fireball_info[i].unique_id;
+
+		if (strlen(unique_id) > 0)
+			head.add_data(unique_id);
+	}
+
+	return head.next;
+}
+
 // Deletes sexp_variable from sexp_tree.
 // resets tree to not include given variable, and resets text and type
 void sexp_tree::delete_sexp_tree_variable(const char* var_name) {
@@ -4768,7 +4828,7 @@ std::unique_ptr<QMenu> sexp_tree::buildContextMenu(QTreeWidgetItem* h) {
 			}
 
 			// Goober5000 - certain types accept both integers and a list of strings
-			if (op_type == OPF_GAME_SND || op_type == OPF_WEAPON_BANK_NUMBER) {
+			if (op_type == OPF_GAME_SND || op_type == OPF_FIREBALL || op_type == OPF_WEAPON_BANK_NUMBER) {
 				type = SEXPT_NUMBER | SEXPT_STRING;
 			}
 
@@ -5208,7 +5268,7 @@ std::unique_ptr<QMenu> sexp_tree::buildContextMenu(QTreeWidgetItem* h) {
 			replace_type = OPR_FLEXIBLE_ARGUMENT;
 		}
 			// Goober5000
-		else if (type == OPF_GAME_SND || type == OPF_WEAPON_BANK_NUMBER) {
+		else if (type == OPF_GAME_SND || type == OPF_FIREBALL || type == OPF_WEAPON_BANK_NUMBER) {
 			// enable number even though we are also going to default to string
 			replace_number_act->setEnabled(true);
 		}
