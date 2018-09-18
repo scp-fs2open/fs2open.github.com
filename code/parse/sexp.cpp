@@ -1782,6 +1782,13 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 						t = OPR_AMBIGUOUS;
 						break;
 
+					// these types can accept either lists of strings or indexes
+					case OPF_GAME_SND:
+					case OPF_FIREBALL:
+					case OPF_WEAPON_BANK_NUMBER:
+						t = OPR_POSITIVE;
+						break;
+
 					default:
 						return SEXP_CHECK_UNKNOWN_TYPE;  // no other return types available
 				}
@@ -3188,7 +3195,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 				break;
 
 			case OPF_FIREBALL:
-				if (type2 == SEXP_ATOM_NUMBER)
+				if (type2 == SEXP_ATOM_NUMBER || can_construe_as_integer(CTEXT(node)))
 				{
 					int num = atoi(CTEXT(node));
 					if (num < 0 || num >= Num_fireball_types)
@@ -10814,9 +10821,15 @@ void sexp_explosion_effect(int n)
 	// -------------
 
 	// this node is another SEXP operator or a plain number
+	num = -1;
 	if (CAR(n) != -1 || Sexp_nodes[n].subtype == SEXP_ATOM_NUMBER)
-	{
 		num = eval_num(n);
+	else if (can_construe_as_integer(CTEXT(n)))
+		num = atoi(CTEXT(n));
+
+	// is it a number?
+	if (num >= 0)
+	{
 		if (num == 0)
 		{
 			fireball_type = FIREBALL_EXPLOSION_MEDIUM;
@@ -11013,7 +11026,14 @@ void sexp_warp_effect(int n)
 	// -------------
 
 	// this node is another SEXP operator or a plain number
+	num = -1;
 	if (CAR(n) != -1 || Sexp_nodes[n].subtype == SEXP_ATOM_NUMBER)
+		num = eval_num(n);
+	else if (can_construe_as_integer(CTEXT(n)))
+		num = atoi(CTEXT(n));
+
+	// is it a number?
+	if (num >= 0)
 	{
 		num = eval_num(n);
 		if (num == 0)

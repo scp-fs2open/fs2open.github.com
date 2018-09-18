@@ -417,6 +417,11 @@ bool fred_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 	parse_init();
 	techroom_intel_init();
 
+	// get fireball IDs for sexpression usage
+	// (we don't need to init the entire system via fireball_init, we just need the information)
+	extern void fireball_parse_tbl();
+	fireball_parse_tbl();
+
 	// initialize and activate external string hash table
 	// make sure to do here so that we don't parse the table files into the hash table - waste of space
 	fhash_init();
