@@ -1,21 +1,22 @@
 /*
  * Copyright (C) Freespace Open 2013.  All rights reserved.
  *
- * All source code herein is the property of Freespace Open. You may not sell 
- * or otherwise commercially exploit the source or things you created based on the 
+ * All source code herein is the property of Freespace Open. You may not sell
+ * or otherwise commercially exploit the source or things you created based on the
  * source.
  *
-*/ 
+ */
 
+#include "graphics/shadows.h"
 #include "asteroid/asteroid.h"
 #include "cmdline/cmdline.h"
 #include "debris/debris.h"
-#include "graphics/shadows.h"
 #include "graphics/matrix.h"
 #include "lighting/lighting.h"
 #include "math/vecmat.h"
 #include "model/model.h"
 #include "model/modelrender.h"
+#include "options/Option.h"
 #include "render/3d.h"
 #include "tracing/tracing.h"
 
@@ -26,6 +27,27 @@ matrix4 Shadow_proj_matrix[MAX_SHADOW_CASCADES];
 float Shadow_cascade_distances[MAX_SHADOW_CASCADES];
 
 light_frustum_info Shadow_frustums[MAX_SHADOW_CASCADES];
+
+ShadowQuality Shadow_quality;
+
+auto ShadowQualityOption =
+    options::OptionBuilder<ShadowQuality>("Graphics.Shadows", "Shadow Quality", "The quality of the shadows")
+        .values({{ShadowQuality::Disabled, "Disabled"},
+                 {ShadowQuality::Low, "Low"},
+                 {ShadowQuality::Medium, "Medium"},
+                 {ShadowQuality::High, "High"},
+                 {ShadowQuality::Ultra, "Ultra"}})
+        .change_listener([](ShadowQuality val, bool initial) {
+	        if (initial) {
+		        Shadow_quality = val;
+	        }
+	        return initial; // No dynamic changes implemented
+        })
+        .level(options::ExpertLevel::Advanced)
+        .category("Graphics")
+        .default_val(ShadowQuality::Disabled)
+        .importance(80)
+        .finish();
 
 bool shadows_obj_in_frustum(object *objp, matrix *light_orient, vec3d *min, vec3d *max)
 {
@@ -402,7 +424,7 @@ void shadows_render_all(float fov, matrix *eye_orient, vec3d *eye_pos)
 		return;
 	}
 
-	if (!Cmdline_shadow_quality) {
+	if (Shadow_quality == ShadowQuality::Disabled) {
 		return;
 	}
 

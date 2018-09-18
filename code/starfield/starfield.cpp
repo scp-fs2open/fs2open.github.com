@@ -11,11 +11,11 @@
 
 #include <climits>
 
+#include "freespace.h"
 #include "cmdline/cmdline.h"
 #include "debugconsole/console.h"
-#include "freespace.h"
-#include "graphics/paths/PathRenderer.h"
 #include "graphics/matrix.h"
+#include "graphics/paths/PathRenderer.h"
 #include "hud/hud.h"
 #include "hud/hudtarget.h"
 #include "io/timer.h"
@@ -24,6 +24,7 @@
 #include "mission/missionparse.h"
 #include "model/modelrender.h"
 #include "nebula/neb.h"
+#include "options/Option.h"
 #include "parse/parselo.h"
 #include "render/3d.h"
 #include "starfield/nebula.h"
@@ -178,6 +179,17 @@ int Num_debris_nebula = 0;
 bool Dynamic_environment = false;
 bool Motion_debris_override = false;
 
+bool Motion_debris_enabled = true;
+
+auto MotionDebrisOption = options::OptionBuilder<bool>("Graphics.MotionDebris", "Motion Debris",
+                                                       "Controls whether motion debris are shown or not")
+                              .category("Graphics")
+                              .bind_to_once(&Motion_debris_enabled)
+                              .default_val(true)
+                              .level(options::ExpertLevel::Advanced)
+                              .importance(67)
+                              .finish();
+
 static int Default_env_map = -1;
 static int Mission_env_map = -1;
 static bool Env_cubemap_drawn = false;
@@ -223,7 +235,7 @@ void stars_load_debris_vclips(debris_vclip *vclips)
 
 void stars_load_debris(int fullneb)
 {
-	if (Cmdline_nomotiondebris) {
+	if (!Motion_debris_enabled) {
 		return;
 	}
 
@@ -1687,10 +1699,12 @@ void stars_draw_debris()
 	vec3d tmp;
 	vertex p;
 
-	extern bool Motion_debris_override;
-
 	if (Motion_debris_override)
 		return;
+
+	if (!Motion_debris_enabled) {
+		return;
+	}
 
 	gr_set_color( 0, 0, 0 );
 
@@ -1800,7 +1814,7 @@ void stars_draw(int show_stars, int show_suns, int  /*show_nebulas*/, int show_s
 	mprintf(( "Stars: %d\n", xt2-xt1 ));
 #endif
 
-	if ( !Rendering_to_env && (Game_detail_flags & DETAIL_FLAG_MOTION) && (!Fred_running) && (supernova_active() < 3) && (!Cmdline_nomotiondebris) && in_mission)	{
+	if ( !Rendering_to_env && (Game_detail_flags & DETAIL_FLAG_MOTION) && (!Fred_running) && (supernova_active() < 3) && in_mission)	{
 		stars_draw_debris();
 	}
 
@@ -2085,7 +2099,7 @@ void stars_page_in()
 	}
 
 
-	if (Cmdline_nomotiondebris)
+	if (!Motion_debris_enabled)
 		return;
 
 	for (idx = 0; idx < MAX_DEBRIS_VCLIPS; idx++) {

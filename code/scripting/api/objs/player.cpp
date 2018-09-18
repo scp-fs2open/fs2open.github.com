@@ -266,16 +266,11 @@ ADE_FUNC(loadCampaignSavefile, l_Player, "string campaign = <current>", "Loads t
 scoring_stats_h::scoring_stats_h() = default;
 scoring_stats_h::scoring_stats_h(const scoring_struct& stats)
 {
-	_score = new scoring_struct();
-	_score->assign(stats);
+	_score.assign(stats);
+	_valid = true;
 }
-bool scoring_stats_h::isValid() const { return _score != nullptr; }
-scoring_struct* scoring_stats_h::get() { return _score; }
-void scoring_stats_h::cleanup()
-{
-	delete _score;
-	_score = nullptr;
-}
+bool scoring_stats_h::isValid() const { return _valid; }
+scoring_struct* scoring_stats_h::get() { return &_score; }
 
 ADE_OBJ(l_ScoringStats, scoring_stats_h, "scoring_stats", "Player related scoring stats.");
 

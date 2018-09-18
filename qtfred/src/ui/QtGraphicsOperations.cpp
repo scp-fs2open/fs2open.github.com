@@ -166,8 +166,9 @@ QtOpenGLContext::~QtOpenGLContext() {
 os::OpenGLLoadProc QtOpenGLContext::getLoaderFunction() {
 	return openglFunctionLoader;
 }
-void QtOpenGLContext::setSwapInterval(int) {
+bool QtOpenGLContext::setSwapInterval(int) {
 	// Not used at the moment, should default to vsync enabled
+	return true;
 }
 void QtOpenGLContext::makeCurrent(QSurface* surface) {
 	_context->makeCurrent(surface);

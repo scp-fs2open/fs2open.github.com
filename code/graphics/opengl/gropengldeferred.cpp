@@ -115,7 +115,7 @@ void gr_opengl_deferred_lighting_finish()
 	GL_state.Texture.Enable(1, GL_TEXTURE_2D, Scene_normal_texture);
 	GL_state.Texture.Enable(2, GL_TEXTURE_2D, Scene_position_texture);
 	GL_state.Texture.Enable(3, GL_TEXTURE_2D, Scene_specular_texture);
-	if (Cmdline_shadow_quality) {
+	if (Shadow_quality != ShadowQuality::Disabled) {
 		GL_state.Texture.Enable(4, GL_TEXTURE_2D_ARRAY, Shadow_map_texture);
 	}
 	
@@ -133,7 +133,7 @@ void gr_opengl_deferred_lighting_finish()
 		GR_DEBUG_SCOPE("Build buffer data");
 
 		auto header = uniformAligner.getHeader<deferred_global_data>();
-		if (Cmdline_shadow_quality) {
+		if (Shadow_quality != ShadowQuality::Disabled) {
 			// Avoid this overhead when we are not going to use these values
 			header->shadow_mv_matrix = Shadow_view_matrix;
 			for (size_t i = 0; i < MAX_SHADOW_CASCADES; ++i) {
@@ -173,7 +173,7 @@ void gr_opengl_deferred_lighting_finish()
 
 			switch (l.type) {
 			case Light_Type::Directional:
-				if (Cmdline_shadow_quality) {
+				if (Shadow_quality != ShadowQuality::Disabled) {
 					light_data->enable_shadows = first_directional ? 1 : 0;
 				}
 				vec4 light_dir;

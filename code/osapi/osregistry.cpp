@@ -11,6 +11,8 @@
 #include "osapi/osregistry.h"
 #include "osapi/osapi.h"
 #include "cmdline/cmdline.h"
+#include "osregistry.h"
+
 
 #ifdef WIN32
 #include <windows.h>
@@ -828,6 +830,8 @@ static void profile_save(Profile *profile, const char *file)
 
 // os registry functions -------------------------------------------------------------
 
+static Profile* Osreg_profile = nullptr;
+
 // initialize the registry. setup default keys to use
 void os_init_registry_stuff(const char *company, const char *app)
 {
@@ -845,15 +849,36 @@ void os_init_registry_stuff(const char *company, const char *app)
 		strcpy_s(szAppName, Osreg_app_name);
 	}
 
+	Osreg_profile = profile_read(Osreg_config_file_name);
+
 	Os_reg_inited = 1;
+}
+void os_deinit_registry_stuff()
+{
+	if (Osreg_profile != nullptr) {
+		profile_free(Osreg_profile);
+		Osreg_profile = nullptr;
+	}
+}
+bool os_config_has_value(const char* section, const char* name) {
+#ifdef WIN32
+	if (Osreg_profile == nullptr) {
+		// No config file, fall back to registy
+		return registry_read_string(section, name, nullptr) != nullptr;
+	}
+#endif
+	if (section == nullptr)
+		section = DEFAULT_SECTION;
+
+	char *ptr = profile_get_value(Osreg_profile, section, name);
+
+	return ptr != nullptr;
 }
 
 const char *os_config_read_string(const char *section, const char *name, const char *default_value)
 {
-	Profile *p = profile_read(Osreg_config_file_name);
-
 #ifdef WIN32
-	if (p == nullptr) {
+	if (Osreg_profile == nullptr) {
 		// No config file, fall back to registy
 		return registry_read_string(section, name, default_value);
 	}
@@ -864,24 +889,20 @@ const char *os_config_read_string(const char *section, const char *name, const c
 	if (section == NULL)
 		section = DEFAULT_SECTION;
 
-	char *ptr = profile_get_value(p, section, name);
+	char *ptr = profile_get_value(Osreg_profile, section, name);
 
 	if (ptr != NULL) {
 		strncpy(tmp_string_data, ptr, 1023);
 		default_value = tmp_string_data;
 	}
 
-	profile_free(p);
-
 	return default_value;
 }
 
 unsigned int os_config_read_uint(const char *section, const char *name, unsigned int default_value)
 {
-	Profile *p = profile_read(Osreg_config_file_name);
-
 #ifdef WIN32
-	if (p == nullptr) {
+	if (Osreg_profile == nullptr) {
 		// No config file, fall back to registy
 		return registry_read_uint(section, name, default_value);
 	}
@@ -890,25 +911,21 @@ unsigned int os_config_read_uint(const char *section, const char *name, unsigned
 	if (section == NULL)
 		section = DEFAULT_SECTION;
 
-	char *ptr = profile_get_value(p, section, name);
+	char *ptr = profile_get_value(Osreg_profile, section, name);
 
 	if (ptr != NULL) {
 		default_value = atoi(ptr);
 	}
-
-	profile_free(p);
 
 	return default_value;
 }
 
 void os_config_write_string(const char *section, const char *name, const char *value)
 {
-	Profile *p = profile_read(Osreg_config_file_name);
-
 #ifdef WIN32
 	// When there is no config file then it shouldn't be created because that would "hide" all previous settings
 	// Instead fall back to writing the settings to the config file
-	if (p == nullptr) {
+	if (Osreg_profile == nullptr) {
 		registry_write_string(section, name, value);
 		return;
 	}
@@ -917,20 +934,16 @@ void os_config_write_string(const char *section, const char *name, const char *v
 	if (section == NULL)
 		section = DEFAULT_SECTION;
 
-	p = profile_update(p, section, name, value);
-	profile_save(p, Osreg_config_file_name);
-	profile_free(p);
+	Osreg_profile = profile_update(Osreg_profile, section, name, value);
+	profile_save(Osreg_profile, Osreg_config_file_name);
 }
 
 void os_config_write_uint(const char *section, const char *name, unsigned int value)
 {
-
-	Profile *p = profile_read(Osreg_config_file_name);
-
 #ifdef WIN32
 	// When there is no config file then it shouldn't be created because that would "hide" all previous settings
 	// Instead fall back to writing the settings to the config file
-	if (p == nullptr) {
+	if (Osreg_profile == nullptr) {
 		registry_write_uint(section, name, value);
 		return;
 	}
@@ -943,8 +956,7 @@ void os_config_write_uint(const char *section, const char *name, unsigned int va
 
 	snprintf(buf, 20, "%u", value);
 
-	p = profile_update(p, section, name, buf);
-	profile_save(p, Osreg_config_file_name);
-	profile_free(p);
+	Osreg_profile = profile_update(Osreg_profile, section, name, buf);
+	profile_save(Osreg_profile, Osreg_config_file_name);
 }
 

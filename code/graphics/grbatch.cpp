@@ -690,12 +690,12 @@ int batch_add_bitmap(int texture, int tmap_flags, vertex *pnt, int orient, float
 		return 1;
 	}
 
-	if ( tmap_flags & TMAP_FLAG_SOFT_QUAD && !Cmdline_softparticles ) {
+	if ( tmap_flags & TMAP_FLAG_SOFT_QUAD && !Gr_enable_soft_particles ) {
 		// don't render this as a soft particle if we don't support soft particles
 		tmap_flags &= ~(TMAP_FLAG_SOFT_QUAD);
 	}
 
-	if ( Cmdline_softparticles && !Cmdline_no_geo_sdr_effects && (tmap_flags & TMAP_FLAG_VERTEX_GEN) ) {
+	if ( Gr_enable_soft_particles && !Cmdline_no_geo_sdr_effects && (tmap_flags & TMAP_FLAG_VERTEX_GEN) ) {
 		geometry_batch_add_bitmap(texture, tmap_flags, pnt, orient, rad, alpha, depth);
 		return 0;
 	} else if ( tmap_flags & TMAP_FLAG_VERTEX_GEN ) {
@@ -759,7 +759,7 @@ int batch_add_bitmap_rotated(int texture, int tmap_flags, vertex *pnt, float ang
 		return 1;
 	}
 
-	if ( tmap_flags & TMAP_FLAG_SOFT_QUAD && !Cmdline_softparticles ) {
+	if ( tmap_flags & TMAP_FLAG_SOFT_QUAD && !Gr_enable_soft_particles ) {
 		// don't render this as a soft particle if we don't support soft particles
 		tmap_flags &= ~(TMAP_FLAG_SOFT_QUAD);
 	}

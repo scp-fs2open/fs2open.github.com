@@ -134,6 +134,7 @@
 #include "object/objectsnd.h"
 #include "object/waypoint.h"
 #include "observer/observer.h"
+#include "options/OptionsManager.h"
 #include "osapi/osapi.h"
 #include "osapi/osregistry.h"
 #include "parse/encrypt.h"
@@ -1742,6 +1743,11 @@ void game_init()
 
 	mod_table_init();		// load in all the mod dependent settings
 
+	// This needs to be delayed until we know if the new options are actually going to be used
+	if (Using_in_game_options) {
+		options::OptionsManager::instance()->loadInitialValues();
+	}
+
 	// initialize localization module. Make sure this is done AFTER initialzing OS.
 	lcl_init( detect_lang() );	
 	lcl_xstr_init();
@@ -1752,7 +1758,7 @@ void game_init()
 		Cmdline_spec = 0;
 		Cmdline_glow = 0;
 		Cmdline_env = 0;
-		Cmdline_3dwarp = 0;
+		Fireball_use_3d_warp = false;
 		Cmdline_normal = 0;
 
 		// now init the standalone server code

@@ -7,19 +7,18 @@
  *
 */
 
-
-
+#include "weapon/shockwave.h"
 #include "asteroid/asteroid.h"
 #include "gamesnd/gamesnd.h"
 #include "globalincs/linklist.h"
 #include "io/timer.h"
 #include "model/modelrender.h"
 #include "object/object.h"
+#include "options/Option.h"
 #include "render/3d.h"
 #include "render/batching.h"
 #include "ship/ship.h"
 #include "ship/shiphit.h"
-#include "weapon/shockwave.h"
 #include "weapon/weapon.h"
 
 // -----------------------------------------------------------
@@ -47,8 +46,20 @@ int Shockwave_inited = 0;
 // -----------------------------------------------------------
 extern int Show_area_effect;
 extern int Cmdline_enable_3d_shockwave;
-extern bool Cmdline_fb_explosions;
 
+static SCP_string shockwave_mode_display(bool mode) { return mode ? "3D" : "2D"; }
+
+static bool Use_3D_shockwaves = true;
+
+static auto Shockwave3DMode =
+    options::OptionBuilder<bool>("Graphics.3DShockwaves", "Shockwaves", "The way shockwaves are displayed.")
+        .category("Graphics")
+        .display(shockwave_mode_display)
+        .default_val(true)
+        .bind_to_once(&Use_3D_shockwaves)
+        .level(options::ExpertLevel::Advanced)
+        .importance(66)
+        .finish();
 
 /**
  * Call to create a shockwave
@@ -62,7 +73,7 @@ extern bool Cmdline_fb_explosions;
  * @return success		object number of shockwave
  * @return failure		-1
  */
-int shockwave_create(int parent_objnum, vec3d *pos, shockwave_create_info *sci, int flag, int delay)
+int shockwave_create(int parent_objnum, vec3d* pos, shockwave_create_info* sci, int flag, int delay)
 {
 	int				i, objnum, real_parent;
 	int				info_index = -1, model_id = -1;
@@ -396,7 +407,7 @@ void shockwave_render(object *objp, model_draw_list *scene)
 
 		model_render_queue( &render_info, scene, sw->model_id, &Objects[sw->objnum].orient, &sw->pos);
 
-		if ( Cmdline_fb_explosions && Default_2D_shockwave_index > -1) {
+		if ( Gr_framebuffer_effects[FramebufferEffects::Shockwaves] && Default_2D_shockwave_index > -1) {
 			g3_transfer_vertex(&p, &sw->pos);
 
 			float intensity = ((sw->time_elapsed / sw->total_time) > 0.9f) ? (1.0f - (sw->time_elapsed / sw->total_time))*10.0f : 1.0f;
@@ -405,7 +416,7 @@ void shockwave_render(object *objp, model_draw_list *scene)
 	} else {
 		g3_transfer_vertex(&p, &sw->pos);
 
-		if ( Cmdline_fb_explosions ) {
+		if ( Gr_framebuffer_effects[FramebufferEffects::Shockwaves] ) {
 			float intensity = ((sw->time_elapsed / sw->total_time) > 0.9f) ? (1.0f - (sw->time_elapsed / sw->total_time)) * 10.0f : 1.0f;
 			batching_add_distortion_bitmap_rotated(sw->current_bitmap, &p, fl_radians(sw->rot_angles.p), sw->radius, intensity);
 		}
@@ -475,7 +486,12 @@ int shockwave_load(const char *s_name, bool shock_3D)
  */
 void shockwave_level_init()
 {
-	int i;	
+	int i;
+
+	if (!Using_in_game_options) {
+		// If the new option system is not in use then use the command line
+		Use_3D_shockwaves = Cmdline_enable_3d_shockwave != 0;
+	}
 
 	if ( !Default_shockwave_loaded ) {
 		i = -1;
@@ -485,7 +501,7 @@ void shockwave_level_init()
 		// chief1983 - Spicious added this check for the command line option.  I've modified the hardcoded "shockwave.pof" that existed in the check 
 		// 	to use the static name instead, and added a check to override the command line if a 2d default filename is not found
 		//  Note - The 3d shockwave flag is forced on by TBP's flag as of rev 4983
-		if ( Cmdline_enable_3d_shockwave && cf_exists_full(Default_shockwave_3D_filename, CF_TYPE_MODELS) ) {
+		if ( Use_3D_shockwaves && cf_exists_full(Default_shockwave_3D_filename, CF_TYPE_MODELS) ) {
 			mprintf(("SHOCKWAVE =>  Loading default shockwave model... \n"));
 
 			i = shockwave_load( Default_shockwave_3D_filename, true );
@@ -499,7 +515,7 @@ void shockwave_level_init()
 
 		// next, try the 2d shockwave effect, unless the 3d effect was loaded
 		// chief1983 - added some messages similar to those for the 3d shockwave
-		if (i < 0 || Cmdline_fb_explosions) {
+		if (i < 0 || Gr_framebuffer_effects[FramebufferEffects::Shockwaves]) {
 			mprintf(("SHOCKWAVE =>  Loading default shockwave animation... \n"));
 
 			i = shockwave_load( Default_shockwave_2D_filename );
@@ -515,7 +531,7 @@ void shockwave_level_init()
 		// chief1983 - The first patch broke mods that don't provide a 2d shockwave or define a specific shockwave for each model/weapon (shame on them)
 		// The next patch involved a direct copy of the attempt above, with an i < 0 check in place of the command line check.  I've taken that and modified it to 
 		// spit out a more meaningful message.  Might as well not bother trying again if the command line option was checked as it should have tried the first time through
-		if ( i < 0 && !Cmdline_enable_3d_shockwave && cf_exists_full(Default_shockwave_3D_filename, CF_TYPE_MODELS) ) {
+		if ( i < 0 && !Use_3D_shockwaves && cf_exists_full(Default_shockwave_3D_filename, CF_TYPE_MODELS) ) {
 			mprintf(("SHOCKWAVE =>  Loading default shockwave model as last resort... \n"));
 
 			i = shockwave_load( Default_shockwave_3D_filename, true );

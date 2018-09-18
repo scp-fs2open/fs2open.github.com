@@ -12,28 +12,29 @@
 #include <windows.h>
 #endif
 
+#include "ShaderProgram.h"
+#include "gropengldeferred.h"
+#include "gropengldraw.h"
+#include "gropenglshader.h"
+#include "gropenglstate.h"
+#include "gropengltexture.h"
+#include "gropengltnl.h"
 #include "cmdline/cmdline.h"
 #include "def_files/def_files.h"
 #include "globalincs/alphacolors.h"
 #include "globalincs/systemvars.h"
 #include "graphics/2d.h"
-#include "graphics/matrix.h"
 #include "graphics/grinternal.h"
-#include "gropengldraw.h"
-#include "gropenglshader.h"
-#include "gropenglstate.h"
-#include "gropengltexture.h"
-#include "gropengldeferred.h"
-#include "gropengltnl.h"
+#include "graphics/light.h"
+#include "graphics/material.h"
+#include "graphics/matrix.h"
+#include "graphics/shadows.h"
 #include "lighting/lighting.h"
 #include "math/vecmat.h"
+#include "options/Option.h"
+#include "particle/particle.h"
 #include "render/3d.h"
 #include "weapon/trails.h"
-#include "particle/particle.h"
-#include "graphics/shadows.h"
-#include "graphics/material.h"
-#include "graphics/light.h"
-#include "ShaderProgram.h"
 
 extern int GLOWMAP;
 extern int CLOAKMAP;
@@ -61,6 +62,7 @@ GLint GL_max_elements_indices = 4096;
 GLuint Shadow_map_texture = 0;
 GLuint Shadow_map_depth_texture = 0;
 GLuint shadow_fbo = 0;
+int Shadow_texture_size = 0;
 bool Rendering_to_shadow_map = false;
 
 int Transform_buffer_handle = -1;
@@ -455,6 +457,7 @@ static bool opengl_init_shadow_framebuffer(int size, GLenum color_format)
 	if (status == GL_FRAMEBUFFER_COMPLETE) {
 		// Everything is fine
 		mprintf(("Shadow framebuffer created successfully.\n"));
+		Shadow_texture_size = size;
 		return true;
 	}
 
@@ -491,13 +494,30 @@ void opengl_tnl_init()
 {
 	Transform_buffer_handle = opengl_create_texture_buffer_object();
 
-	if (Cmdline_shadow_quality) {
-		int size = (Cmdline_shadow_quality == 2 ? 1024 : 512);
+	if (Shadow_quality != ShadowQuality::Disabled) {
+		int size;
+		switch (Shadow_quality) {
+		case ShadowQuality::Low:
+			size = 512;
+			break;
+		case ShadowQuality::Medium:
+			size = 1024;
+			break;
+		case ShadowQuality::High:
+			size = 2048;
+			break;
+		case ShadowQuality::Ultra:
+			size = 4096;
+			break;
+		default:
+			size = 256;
+			break;
+		}
 
 		if (!opengl_init_shadow_framebuffer(size, GL_RGBA32F)) {
 			if (!opengl_init_shadow_framebuffer(size, GL_RGBA16F)) {
 				mprintf(("Failed to create either 32 or 16-bit color shadow framebuffer. Disabling shadow support.\n"));
-				Cmdline_shadow_quality = 0;
+				Shadow_quality = ShadowQuality::Disabled;
 			}
 		}
 	}
@@ -628,7 +648,7 @@ extern bool gr_htl_projection_matrix_set;
 
 void gr_opengl_shadow_map_start(matrix4 *shadow_view_matrix, const matrix *light_orient)
 {
-	if ( !Cmdline_shadow_quality )
+	if (Shadow_quality == ShadowQuality::Disabled)
 		return;
 
 	GL_state.PushFramebufferState();
@@ -652,8 +672,7 @@ void gr_opengl_shadow_map_start(matrix4 *shadow_view_matrix, const matrix *light
 
 	*shadow_view_matrix = gr_view_matrix;
 
-	int size = (Cmdline_shadow_quality == 2 ? 1024 : 512);
-	glViewport(0, 0, size, size);
+	glViewport(0, 0, Shadow_texture_size, Shadow_texture_size);
 }
 
 void gr_opengl_shadow_map_end()

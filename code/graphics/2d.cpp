@@ -36,6 +36,8 @@
 #include "graphics/util/UniformBufferManager.h"
 #include "io/keycontrol.h" // m!m
 #include "io/timer.h"
+#include "libs/jansson.h"
+#include "options/Option.h"
 #include "osapi/osapi.h"
 #include "parse/parselo.h"
 #include "popup/popup.h"
@@ -102,6 +104,239 @@ float Gr_save_menu_offset_X = 0.0f, Gr_save_menu_offset_Y = 0.0f;
 float Gr_save_menu_zoomed_offset_X = 0.0f, Gr_save_menu_zoomed_offset_Y = 0.0f;
 
 bool Save_custom_screen_size;
+
+static int videodisplay_deserializer(const json_t* value)
+{
+	int id;
+
+	json_error_t err;
+	if (json_unpack_ex((json_t*)value, &err, 0, "i", &id) != 0) {
+		throw json_exception(err);
+	}
+
+	return id;
+}
+static json_t* videodisplay_serializer(int value) { return json_pack("i", value); }
+static SCP_vector<int> videodisplay_enumerator()
+{
+	SCP_vector<int> vals;
+	for (int i = 0; i < SDL_GetNumVideoDisplays(); ++i) {
+		vals.push_back(i);
+	}
+	return vals;
+}
+static SCP_string videodisplay_display(int id)
+{
+	SCP_string out;
+	sprintf(out, "(%d) %s", id + 1, SDL_GetDisplayName(id));
+	return out;
+}
+static bool videodisplay_change(int display, bool initial)
+{
+	if (initial) {
+		return false;
+	}
+
+	auto window = os::getSDLMainWindow();
+	if (window == nullptr) {
+		return false;
+	}
+
+	SDL_SetWindowPosition(window, SDL_WINDOWPOS_CENTERED_DISPLAY(display), SDL_WINDOWPOS_CENTERED_DISPLAY(display));
+	return true;
+}
+static auto VideoDisplayOption =
+    options::OptionBuilder<int>("Graphics.Display", "Primary display", "The display used for rendering.")
+        .category("Graphics")
+        .level(options::ExpertLevel::Beginner)
+        .deserializer(videodisplay_deserializer)
+        .serializer(videodisplay_serializer)
+        .enumerator(videodisplay_enumerator)
+        .display(videodisplay_display)
+        .default_val(0)
+        .change_listener(videodisplay_change)
+        .importance(99)
+        .finish();
+
+struct ResolutionInfo {
+	uint32_t width  = 0;
+	uint32_t height = 0;
+	ResolutionInfo(uint32_t _width, uint32_t _height) : width(_width), height(_height) {}
+	ResolutionInfo() = default;
+	friend bool operator==(const ResolutionInfo& lhs, const ResolutionInfo& rhs)
+	{
+		return lhs.width == rhs.width && lhs.height == rhs.height;
+	}
+	friend bool operator!=(const ResolutionInfo& lhs, const ResolutionInfo& rhs) { return !(rhs == lhs); }
+};
+
+static ResolutionInfo resolution_deserializer(const json_t* el)
+{
+	int width;
+	int height;
+
+	json_error_t err;
+	if (json_unpack_ex((json_t*)el, &err, 0, "{s:i, s:i}", "width", &width, "height", &height) != 0) {
+		throw json_exception(err);
+	}
+
+	return {(uint32_t)width, (uint32_t)height};
+}
+static json_t* resolution_serializer(const ResolutionInfo& value)
+{
+	return json_pack("{s:i, s:i}", "width", value.width, "height", value.height);
+}
+static SCP_vector<ResolutionInfo> resolution_enumerator()
+{
+	SCP_vector<ResolutionInfo> out;
+	auto display = VideoDisplayOption->getValue();
+	for (auto i = 0; i < SDL_GetNumDisplayModes(display); ++i) {
+		SDL_DisplayMode mode;
+		if (SDL_GetDisplayMode(display, i, &mode) != 0) {
+			continue;
+		}
+
+		auto res = ResolutionInfo(mode.w, mode.h);
+		if (std::find(out.begin(), out.end(), res) == out.end()) {
+			out.push_back(res);
+		}
+	}
+
+	return out;
+}
+static SCP_string resolution_display(const ResolutionInfo& info)
+{
+	SCP_string str;
+	sprintf(str, "%dx%d", info.width, info.height);
+	return str;
+}
+static ResolutionInfo resolution_default()
+{
+	SDL_DisplayMode mode;
+	if (SDL_GetDesktopDisplayMode(VideoDisplayOption->getValue(), &mode) != 0) {
+		return {};
+	}
+	return ResolutionInfo(mode.w, mode.h);
+}
+static bool resolution_change(const ResolutionInfo& /*info*/, bool initial)
+{
+	if (initial) {
+		return false;
+	}
+	return false;
+	// The following code should change the size of the window properly but FSO currently can't handle that
+	/*
+	auto window = os::getSDLMainWindow();
+	if (window == nullptr) {
+	    return;
+	}
+
+	auto display = VideoDisplayOption->getValue();
+	if (SDL_GetWindowFlags(window) & SDL_WINDOW_FULLSCREEN) {
+	    SDL_DisplayMode target;
+	    target.w            = info.width;
+	    target.h            = info.height;
+	    target.format       = 0; // don't care
+	    target.refresh_rate = 0; // don't care
+	    target.driverdata   = 0; // initialize to 0
+
+	    SDL_DisplayMode closest;
+	    if (SDL_GetClosestDisplayMode(display, &target, &closest) == nullptr) {
+	        return;
+	    }
+
+	    SDL_SetWindowDisplayMode(window, &closest);
+	} else {
+	    SDL_SetWindowSize(window, info.width, info.height);
+	    // Recenter the window
+	    SDL_SetWindowPosition(window, SDL_WINDOWPOS_CENTERED_DISPLAY(display), SDL_WINDOWPOS_CENTERED_DISPLAY(display));
+	}
+	 */
+}
+static auto ResolutionOption =
+    options::OptionBuilder<ResolutionInfo>("Graphics.Resolution", "Resolution", "The rendering resolution.")
+        .category("Graphics")
+        .level(options::ExpertLevel::Beginner)
+        .deserializer(resolution_deserializer)
+        .serializer(resolution_serializer)
+        .enumerator(resolution_enumerator)
+        .display(resolution_display)
+        .default_func(resolution_default)
+        .change_listener(resolution_change)
+        .importance(100)
+        .finish();
+
+bool Gr_enable_soft_particles = false;
+
+static auto SoftParticlesOption = options::OptionBuilder<bool>("Graphics.SoftParticles", "Soft Particles",
+                                                               "Enable or disable soft particle rendering.")
+                                      .category("Graphics")
+                                      .level(options::ExpertLevel::Advanced)
+                                      .default_val(true)
+                                      .bind_to_once(&Gr_enable_soft_particles)
+                                      .importance(68)
+                                      .finish();
+
+flagset<FramebufferEffects> Gr_framebuffer_effects;
+
+static auto FramebufferEffectsOption =
+    options::OptionBuilder<flagset<FramebufferEffects>>(
+        "Graphics.FramebufferEffects", "Framebuffer effects",
+        "Controls which framebuffer effects will be applied to the scene.")
+        .category("Graphics")
+        .level(options::ExpertLevel::Advanced)
+        .values({{{}, "None"},
+                 {{FramebufferEffects::Shockwaves}, "Shockwaves"},
+                 {{FramebufferEffects::Thrusters}, "Thrusters"},
+                 {{FramebufferEffects::Shockwaves, FramebufferEffects::Thrusters}, "All"}})
+        .default_val({FramebufferEffects::Shockwaves, FramebufferEffects::Thrusters})
+        .bind_to_once(&Gr_framebuffer_effects)
+        .importance(77)
+        .finish();
+
+AntiAliasMode Gr_aa_mode = AntiAliasMode::None;
+AntiAliasMode Gr_aa_mode_last_frame = AntiAliasMode::None;
+
+static auto AAOption = options::OptionBuilder<AntiAliasMode>("Graphics.AAMode", "Anti Aliasing",
+                                                             "Controls the anti aliasing mode of the engine.")
+                           .category("Graphics")
+                           .level(options::ExpertLevel::Advanced)
+                           .values({{AntiAliasMode::None, "None"},
+                                    {AntiAliasMode::FXAA_Low, "FXAA Low"},
+                                    {AntiAliasMode::FXAA_Medium, "FXAA Medium"},
+                                    {AntiAliasMode::FXAA_High, "FXAA High"}})
+                           .default_val(AntiAliasMode::None)
+                           .bind_to(&Gr_aa_mode)
+                           .importance(79)
+                           .finish();
+
+bool gr_is_fxaa_mode(AntiAliasMode mode)
+{
+	return mode == AntiAliasMode::FXAA_Low || mode == AntiAliasMode::FXAA_Medium || mode == AntiAliasMode::FXAA_High;
+}
+
+bool Gr_post_processing_enabled = false;
+
+static auto PostProcessOption =
+    options::OptionBuilder<bool>("Graphis.PostProcessing", "Post processing",
+                                 "Controls whether post processing is enabled in the engine")
+        .category("Graphics")
+        .level(options::ExpertLevel::Advanced)
+        .default_val(false)
+        .bind_to_once(&Gr_post_processing_enabled)
+        .importance(69)
+        .finish();
+
+bool Gr_enable_vsync = true;
+
+static auto VSyncOption = options::OptionBuilder<bool>("Graphis.VSync", "Vertical Sync",
+                                                       "Controls how the engine does vertical synchronization")
+                              .category("Graphics")
+                              .level(options::ExpertLevel::Advanced)
+                              .default_val(true)
+                              .bind_to_once(&Gr_enable_vsync)
+                              .importance(70)
+                              .finish();
 
 // Forward definitions
 static void uniform_buffer_managers_init();
@@ -953,69 +1188,77 @@ bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, int d_mode, 
 		}
 	}
 
-	// We cannot continue without this, quit, but try to help the user out first
-	ptr = os_config_read_string(NULL, NOX("VideocardFs2open"), NULL);
+	if (Using_in_game_options) {
+		auto res = ResolutionOption->getValue();
+		width = res.width;
+		height = res.height;
+	} else {
+		// We cannot continue without this, quit, but try to help the user out first
+		ptr = os_config_read_string(nullptr, NOX("VideocardFs2open"), nullptr);
 
-	// if we don't have a config string then construct one, using OpenGL 1024x768 32-bit as the default
-	if (ptr == NULL) {
-		// If we don't have a display mode, use SDL to get default settings
-		// We need to initialize SDL to do this
+		// if we don't have a config string then construct one, using OpenGL 1024x768 32-bit as the default
+		if (ptr == nullptr) {
+			// If we don't have a display mode, use SDL to get default settings
+			// We need to initialize SDL to do this
 
-		if (SDL_InitSubSystem(SDL_INIT_VIDEO) == 0)
-		{
-			int display = static_cast<int>(os_config_read_uint("Video", "Display", 0));
-			SDL_DisplayMode displayMode;
-			if (SDL_GetDesktopDisplayMode(display, &displayMode) == 0)
+			if (SDL_InitSubSystem(SDL_INIT_VIDEO) == 0)
 			{
-				width = displayMode.w;
-				height = displayMode.h;
-				int sdlBits = SDL_BITSPERPIXEL(displayMode.format);
+				auto display = static_cast<int>(os_config_read_uint("Video", "Display", 0));
+				SDL_DisplayMode displayMode;
+				if (SDL_GetDesktopDisplayMode(display, &displayMode) == 0)
+				{
+					width = displayMode.w;
+					height = displayMode.h;
+					int sdlBits = SDL_BITSPERPIXEL(displayMode.format);
 
-				if (SDL_ISPIXELFORMAT_ALPHA(displayMode.format))
-				{
-					depth = sdlBits;
-				}
-				else
-				{
-					// Fix a few values
-					if (sdlBits == 24)
-					{
-						depth = 32;
-					}
-					else if (sdlBits == 15)
-					{
-						depth = 16;
-					}
-					else
+					if (SDL_ISPIXELFORMAT_ALPHA(displayMode.format))
 					{
 						depth = sdlBits;
 					}
+					else
+					{
+						// Fix a few values
+						if (sdlBits == 24)
+						{
+							depth = 32;
+						}
+						else if (sdlBits == 15)
+						{
+							depth = 16;
+						}
+						else
+						{
+							depth = sdlBits;
+						}
+					}
+
+					SCP_string videomode;
+					sprintf(videomode, "OGL -(%dx%d)x%d bit", width, height, depth);
+
+					os_config_write_string(nullptr, NOX("VideocardFs2open"), videomode.c_str());
 				}
+			}
+		} else {
+			Assert(ptr != nullptr);
 
-				SCP_string videomode;
-				sprintf(videomode, "OGL -(%dx%d)x%d bit", width, height, depth);
-
-				os_config_write_string(NULL, NOX("VideocardFs2open"), videomode.c_str());
+			// NOTE: The "ptr+5" is to skip over the initial "????-" in the video string.
+			//       If the format of that string changes you'll have to change this too!!!
+			if (sscanf(ptr + 5, "(%dx%d)x%d ", &width, &height, &depth) != 3) {
+				Error(LOCATION, "Can't understand 'VideocardFs2open' config entry!");
 			}
 		}
-	} else {
-		Assert(ptr != NULL);
 
-		// NOTE: The "ptr+5" is to skip over the initial "????-" in the video string.
-		//       If the format of that string changes you'll have to change this too!!!
-		if (sscanf(ptr + 5, "(%dx%d)x%d ", &width, &height, &depth) != 3) {
-			Error(LOCATION, "Can't understand 'VideocardFs2open' config entry!");
+		if (Cmdline_res != nullptr) {
+			int tmp_width = 0;
+			int tmp_height = 0;
+
+			if ( sscanf(Cmdline_res, "%dx%d", &tmp_width, &tmp_height) == 2 ) {
+				width = tmp_width;
+				height = tmp_height;
+			}
 		}
-	}
 
-	if (Cmdline_res != NULL) {
-		int tmp_width = 0;
-		int tmp_height = 0;
-
-		if ( sscanf(Cmdline_res, "%dx%d", &tmp_width, &tmp_height) == 2 ) {
-			width = tmp_width;
-			height = tmp_height;
-		}
+		Gr_enable_soft_particles = Cmdline_softparticles != 0;
 	}
 	if (Cmdline_center_res != NULL) {
 		int tmp_center_width = 0;

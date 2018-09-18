@@ -36,11 +36,15 @@ time_t os_registry_get_last_modification_time();
 // initialize the registry. setup default keys to use
 void os_init_registry_stuff( const char *company, const char *app);
 
+void os_deinit_registry_stuff();
+
 // Writes a string to the registry
 void os_config_write_string( const char *section, const char *name, const char *value );
 
 // Writes an unsigned int to the INI file.  
 void os_config_write_uint( const char *section, const char *name, unsigned int value );
+
+bool os_config_has_value(const char *section, const char *name);
 
 // Reads a string from the INI file.  If default is passed,
 // and the string isn't found, returns ptr to default otherwise

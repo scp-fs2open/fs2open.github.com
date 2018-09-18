@@ -25,6 +25,10 @@ struct light_frustum_info
 	float start_dist;
 };
 
+enum class ShadowQuality { Disabled = 0, Low = 1, Medium = 2, High = 3, Ultra = 4 };
+
+extern ShadowQuality Shadow_quality;
+
 extern matrix4 Shadow_view_matrix;
 extern matrix4 Shadow_proj_matrix[MAX_SHADOW_CASCADES];
 extern float Shadow_cascade_distances[MAX_SHADOW_CASCADES];

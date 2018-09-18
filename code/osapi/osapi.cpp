@@ -9,9 +9,9 @@
 
 #include <fcntl.h>
 
-#include "globalincs/pstypes.h"
-#include "gamesequence/gamesequence.h"
 #include "freespace.h"
+#include "gamesequence/gamesequence.h"
+#include "globalincs/pstypes.h"
 #include "parse/parselo.h"
 
 #ifdef SCP_UNIX
@@ -300,6 +300,8 @@ void os_set_title( const char * title )
 // call at program end
 void os_cleanup()
 {
+	os_deinit_registry_stuff();
+
 #ifndef NDEBUG
 	outwnd_close();
 #endif

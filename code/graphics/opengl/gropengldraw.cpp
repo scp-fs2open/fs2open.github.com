@@ -88,9 +88,9 @@ void opengl_setup_scene_textures()
 	Scene_texture_initialized = 0;
 
 	if ( Cmdline_no_fbo ) {
-		Cmdline_postprocess = 0;
-		Cmdline_softparticles = 0;
-		Cmdline_fb_explosions = 0;
+		Gr_post_processing_enabled = false;
+		Gr_enable_soft_particles = false;
+		Gr_framebuffer_effects = {};
 
 		Scene_ldr_texture = 0;
 		Scene_color_texture = 0;
@@ -338,13 +338,13 @@ void opengl_setup_scene_textures()
 		//glDeleteTextures(1, &Scene_fxaa_output_texture);
 		//Scene_fxaa_output_texture = 0;
 
-		Cmdline_postprocess = 0;
-		Cmdline_softparticles = 0;
+		Gr_post_processing_enabled = false;
+		Gr_enable_soft_particles = false;
 		return;
 	}
 
 	//Setup thruster distortion framebuffer
-    if (Cmdline_fb_thrusters || Cmdline_fb_explosions) 
+    if (Gr_framebuffer_effects.any_set())
     {
         glGenFramebuffers(1, &Distortion_framebuffer);
 		GL_state.BindFrameBuffer(Distortion_framebuffer);
@@ -392,8 +392,8 @@ void opengl_setup_scene_textures()
 		Scene_color_texture = 0;
 		Scene_depth_texture = 0;
 
-		Cmdline_postprocess = 0;
-		Cmdline_softparticles = 0;
+		Gr_post_processing_enabled = false;
+		Gr_enable_soft_particles = false;
 		return;
 	}
 
@@ -510,7 +510,7 @@ void gr_opengl_scene_texture_begin()
 
 	Scene_framebuffer_in_frame = true;
 
-	if ( Cmdline_postprocess && !PostProcessing_override ) {
+	if ( Gr_post_processing_enabled && !PostProcessing_override ) {
 		High_dynamic_range = true;
 	}
 }
@@ -533,7 +533,7 @@ void gr_opengl_scene_texture_end()
 		time_buffer = 0.0f;
 	}
 
-	if ( Cmdline_postprocess && !PostProcessing_override ) {
+	if ( Gr_post_processing_enabled && !PostProcessing_override ) {
 		gr_post_process_end();
 	} else {
 		GR_DEBUG_SCOPE("Draw scene texture");

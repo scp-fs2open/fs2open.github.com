@@ -1780,7 +1780,7 @@ void draw_model_rotating(model_render_params *render_info, int model_id, int x1,
 			render_info->set_detail_level_lock(0);
 
 			gr_zbuffer_set(true);
-			if(Cmdline_shadow_quality)
+			if(Shadow_quality != ShadowQuality::Disabled)
             {
 				gr_end_view_matrix();
 				gr_end_proj_matrix();
@@ -1894,7 +1894,7 @@ void draw_model_rotating(model_render_params *render_info, int model_id, int x1,
 
 		render_info->set_detail_level_lock(0);
 
-		if(Cmdline_shadow_quality)
+		if(Shadow_quality != ShadowQuality::Disabled)
 		{
 			if ( flags & MR_IS_MISSILE )  {
 				shadows_start_render(&Eye_matrix, &Eye_position, Proj_fov, gr_screen.clip_aspect, -closeup_pos->xyz.z + pm->rad, -closeup_pos->xyz.z + pm->rad + 20.0f, -closeup_pos->xyz.z + pm->rad + 200.0f, -closeup_pos->xyz.z + pm->rad + 1000.0f);

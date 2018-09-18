@@ -5,27 +5,27 @@
  * or otherwise commercially exploit the source or things you created based on the 
  * source.
  *
-*/ 
+*/
 
-
-
-#include "camera/camera.h" //VIEWER_ZOOM_DEFAULT
 #include "cmdline/cmdline.h"
+#include "camera/camera.h" //VIEWER_ZOOM_DEFAULT
+#include "cfile/cfilesystem.h"
+#include "fireball/fireballs.h"
 #include "globalincs/linklist.h"
 #include "globalincs/pstypes.h"
 #include "globalincs/systemvars.h"
 #include "globalincs/version.h"
+#include "graphics/shadows.h"
 #include "hud/hudconfig.h"
-#include "network/multi.h"
-#include "scripting/scripting.h"
-#include "parse/sexp.h"
-#include "globalincs/version.h"
-#include "globalincs/pstypes.h"
-#include "osapi/osapi.h"
-#include "cfile/cfilesystem.h"
-#include "sound/speech.h"
-#include "sound/openal.h"
 #include "io/joy.h"
+#include "network/multi.h"
+#include "options/OptionsManager.h"
+#include "osapi/osapi.h"
+#include "parse/sexp.h"
+#include "scripting/scripting.h"
+#include "sound/openal.h"
+#include "sound/speech.h"
+#include "starfield/starfield.h"
 
 #ifdef _WIN32
 #include <io.h>
@@ -331,13 +331,11 @@ cmdline_parm no_deferred_lighting_arg("-no_deferred", NULL, AT_NONE);	// Cmdline
 cmdline_parm anisotropy_level_arg("-anisotropic_filter", NULL, AT_INT);
 
 float Cmdline_clip_dist = Default_min_draw_distance;
-float Cmdline_fov = 0.75f;
 float Cmdline_ogl_spec = 80.0f;
 int Cmdline_ambient_factor = 128;
 int Cmdline_env = 1;
 int Cmdline_mipmap = 0;
 int Cmdline_glow = 1;
-int Cmdline_nomotiondebris = 0;
 int Cmdline_noscalevid = 0;
 int Cmdline_spec = 1;
 int Cmdline_no_emissive = 0;
@@ -345,15 +343,8 @@ int Cmdline_normal = 1;
 int Cmdline_height = 1;
 int Cmdline_enable_3d_shockwave = 0;
 int Cmdline_softparticles = 0;
-int Cmdline_postprocess = 0;
 int Cmdline_bloom_intensity = 75;
-bool Cmdline_fxaa = false;
-int Cmdline_fxaa_preset = 6;
-extern int Fxaa_preset_last_frame;
-bool Cmdline_fb_explosions = 0;
-bool Cmdline_fb_thrusters = false;
 extern bool ls_force_off;
-int Cmdline_shadow_quality = 0;
 int Cmdline_no_deferred_lighting = 0;
 int Cmdline_aniso_level = 0;
 
@@ -1685,18 +1676,32 @@ bool SetCmdlineParams()
 	}
 
 	// d3d windowed
-	if(window_arg.found()){
+	if(window_arg.found()) {
+		// We need to set both values since we don't know if we are going to use the new config system
+		options::OptionsManager::instance()->setOverride("Graphics.WindowMode", "0");
 		Cmdline_window = 1;
 	}
 
 	if ( fullscreen_window_arg.found( ) )
 	{
+		options::OptionsManager::instance()->setOverride("Graphics.WindowMode", "1");
 		Cmdline_fullscreen_window = 1;
 		Cmdline_window = 0; /* Make sure no-one sets both */
 	}
 
 	if(res_arg.found()){
 		Cmdline_res = res_arg.str();
+
+		int width = 0;
+		int height = 0;
+
+		if ( sscanf(Cmdline_res, "%dx%d", &width, &height) == 2 ) {
+			SCP_string override;
+			sprintf(override, "{\"width\":%d,\"height\":%d}", width, height);
+			options::OptionsManager::instance()->setOverride("Graphics.Resolution", override);
+		} else {
+			mprintf(("Failed to parse -res parameter \"%s\". Must be in format \"<width>x<height>\".", Cmdline_res));
+		}
 	}
 	if(center_res_arg.found()){
 		Cmdline_center_res = center_res_arg.str();
@@ -1776,7 +1781,7 @@ bool SetCmdlineParams()
 	}
 
 	if ( nomotiondebris_arg.found() ) {
-		Cmdline_nomotiondebris = 1;
+		Motion_debris_enabled = false;
 	}
 
 	if( mipmap_arg.found() ) {
@@ -1788,11 +1793,11 @@ bool SetCmdlineParams()
 	}
 
 	if ( fov_arg.found() ) {
-		Cmdline_fov = fov_arg.get_float();
-		if (Cmdline_fov > 0.1) {
-			VIEWER_ZOOM_DEFAULT = Cmdline_fov;
+		auto val = fov_arg.get_float();
+		if (val > 0.1) {
+			VIEWER_ZOOM_DEFAULT = val;
 		} else {
-			VIEWER_ZOOM_DEFAULT = Cmdline_fov = 0.75f;
+			VIEWER_ZOOM_DEFAULT = 0.75f;
 		}
 	}
 
@@ -1806,7 +1811,7 @@ bool SetCmdlineParams()
 	}
 
 	if ( use_3dwarp.found() ) {
-		Cmdline_3dwarp = 1;
+		Fireball_use_3d_warp = true;
 	}
 
 	if ( use_warp_flash.found() ) {
@@ -1849,7 +1854,7 @@ bool SetCmdlineParams()
 
 	if(no_vsync_arg.found() )
 	{
-		Cmdline_no_vsync = 1;
+		Gr_enable_vsync = false;
 	}
 
 	if ( normal_arg.found() ) {
@@ -1861,13 +1866,20 @@ bool SetCmdlineParams()
 	}
 	
 	if (fxaa_arg.found() ) {
-		Cmdline_fxaa = true;
+		Gr_aa_mode = AntiAliasMode::FXAA_Medium;
 
 		if (fxaa_preset_arg.found()) {
-			Cmdline_fxaa_preset = fxaa_preset_arg.get_int();
+			auto val = fxaa_preset_arg.get_int();
+			if (val > 6) {
+				Gr_aa_mode = AntiAliasMode::FXAA_High;
+			} else if (val > 3) {
+				Gr_aa_mode = AntiAliasMode::FXAA_Medium;
+			} else {
+				Gr_aa_mode = AntiAliasMode::FXAA_Low;
+			}
 		}
 
-		Fxaa_preset_last_frame = Cmdline_fxaa_preset;
+		Gr_aa_mode_last_frame = Gr_aa_mode;
 	}
 
 	if ( glow_arg.found() )
@@ -2004,17 +2016,17 @@ bool SetCmdlineParams()
 
 	if ( fb_explosions_arg.found() )
 	{
-		Cmdline_fb_explosions = 1;
+		Gr_framebuffer_effects.set(FramebufferEffects::Shockwaves, true);
 	}
 
     if (fb_thrusters_arg.found()) 
     {
-        Cmdline_fb_thrusters = true;
+	    Gr_framebuffer_effects.set(FramebufferEffects::Thrusters, true);
     }
 
 	if ( postprocess_arg.found() )
 	{
-		Cmdline_postprocess = 1;
+		Gr_post_processing_enabled = true;
 	}
 
 	if ( bloom_intensity_arg.found() )
@@ -2034,12 +2046,32 @@ bool SetCmdlineParams()
 
 	if( enable_shadows_arg.found() )
 	{
-		Cmdline_shadow_quality = 2;
+		Shadow_quality = ShadowQuality::Medium;
 	}
 
 	if( shadow_quality_arg.found() )
 	{
-		Cmdline_shadow_quality = shadow_quality_arg.get_int();
+		switch (shadow_quality_arg.get_int()) {
+		case 0:
+			Shadow_quality = ShadowQuality::Disabled;
+			break;
+		case 1:
+			Shadow_quality = ShadowQuality::Low;
+			break;
+		case 2:
+			Shadow_quality = ShadowQuality::Medium;
+			break;
+		case 3:
+			Shadow_quality = ShadowQuality::High;
+			break;
+		case 4:
+			Shadow_quality = ShadowQuality::Ultra;
+			break;
+		default:
+			mprintf(("Invalid shadow quality %d. Disabling shadows...\n", shadow_quality_arg.get_int()));
+			Shadow_quality = ShadowQuality::Disabled;
+			break;
+		}
 	}
 
 	if( no_deferred_lighting_arg.found() )

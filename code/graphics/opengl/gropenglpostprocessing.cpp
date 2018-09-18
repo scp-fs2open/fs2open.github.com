@@ -21,10 +21,8 @@ extern bool PostProcessing_override;
 extern int opengl_check_framebuffer();
 
 //Needed to track where the FXAA shaders are
-size_t fxaa_shader_id;
 //In case we don't find the shaders at all, this override is needed
 bool fxaa_unavailable = false;
-int Fxaa_preset_last_frame;
 bool zbuffer_saved = false;
 
 // lightshaft parameters
@@ -227,8 +225,11 @@ void gr_opengl_post_process_begin()
 }
 
 void recompile_fxaa_shader() {
+	if (!gr_is_fxaa_mode(Gr_aa_mode)) {
+		return;
+	}
 
-	mprintf(("Recompiling FXAA shader with preset %d\n", Cmdline_fxaa_preset));
+	mprintf(("Recompiling FXAA shader...\n"));
 
 	// start recompile by grabbing deleting the current shader we have, assuming it's already created
 	opengl_delete_shader( gr_opengl_maybe_create_shader(SDR_TYPE_POST_PROCESS_FXAA, 0) );
@@ -236,7 +237,7 @@ void recompile_fxaa_shader() {
 	// then recreate it again. shader loading code will be updated with the new FXAA presets
 	gr_opengl_maybe_create_shader(SDR_TYPE_POST_PROCESS_FXAA, 0);
 
-	Fxaa_preset_last_frame = Cmdline_fxaa_preset;
+	Gr_aa_mode_last_frame = Gr_aa_mode;
 }
 
 void opengl_post_pass_fxaa() {
@@ -244,7 +245,7 @@ void opengl_post_pass_fxaa() {
 	TRACE_SCOPE(tracing::FXAA);
 
 	//If the preset changed, recompile the shader
-	if (Fxaa_preset_last_frame != Cmdline_fxaa_preset) {
+	if (Gr_aa_mode_last_frame != Gr_aa_mode) {
 		recompile_fxaa_shader();
 	}
 
@@ -362,7 +363,7 @@ void gr_opengl_post_process_end()
 	opengl_post_pass_tonemap();
 
     // Do FXAA
-    if (Cmdline_fxaa && !fxaa_unavailable && !GL_rendering_to_texture) {
+    if (gr_is_fxaa_mode(Gr_aa_mode) && !fxaa_unavailable && !GL_rendering_to_texture) {
         opengl_post_pass_fxaa();
     }
 
@@ -728,63 +729,26 @@ void opengl_post_shader_header(SCP_stringstream &sflags, shader_type shader_t, i
 			sflags << "#define FXAA_GATHER4_ALPHA 1\n";
 		}
 
-		switch (Cmdline_fxaa_preset) {
-		case 0:
+		switch (Gr_aa_mode) {
+		case AntiAliasMode::None:
 			sflags << "#define FXAA_QUALITY_PRESET 10\n";
 			sflags << "#define FXAA_QUALITY_EDGE_THRESHOLD (1.0/6.0)\n";
 			sflags << "#define FXAA_QUALITY_EDGE_THRESHOLD_MIN (1.0/12.0)\n";
 			sflags << "#define FXAA_QUALITY_SUBPIX 0.33\n";
 			break;
-		case 1:
-			sflags << "#define FXAA_QUALITY_PRESET 11\n";
-			sflags << "#define FXAA_QUALITY_EDGE_THRESHOLD (1.0/7.0)\n";
-			sflags << "#define FXAA_QUALITY_EDGE_THRESHOLD_MIN (1.0/14.0)\n";
-			sflags << "#define FXAA_QUALITY_SUBPIX 0.33\n";
-			break;
-		case 2:
+		case AntiAliasMode::FXAA_Low:
 			sflags << "#define FXAA_QUALITY_PRESET 12\n";
 			sflags << "#define FXAA_QUALITY_EDGE_THRESHOLD (1.0/8.0)\n";
 			sflags << "#define FXAA_QUALITY_EDGE_THRESHOLD_MIN (1.0/16.0)\n";
 			sflags << "#define FXAA_QUALITY_SUBPIX 0.33\n";
 			break;
-		case 3:
-			sflags << "#define FXAA_QUALITY_PRESET 13\n";
-			sflags << "#define FXAA_QUALITY_EDGE_THRESHOLD (1.0/9.0)\n";
-			sflags << "#define FXAA_QUALITY_EDGE_THRESHOLD_MIN (1.0/18.0)\n";
-			sflags << "#define FXAA_QUALITY_SUBPIX 0.33\n";
-			break;
-		case 4:
-			sflags << "#define FXAA_QUALITY_PRESET 14\n";
-			sflags << "#define FXAA_QUALITY_EDGE_THRESHOLD (1.0/10.0)\n";
-			sflags << "#define FXAA_QUALITY_EDGE_THRESHOLD_MIN (1.0/20.0)\n";
-			sflags << "#define FXAA_QUALITY_SUBPIX 0.33\n";
-			break;
-		case 5:
-			sflags << "#define FXAA_QUALITY_PRESET 25\n";
-			sflags << "#define FXAA_QUALITY_EDGE_THRESHOLD (1.0/11.0)\n";
-			sflags << "#define FXAA_QUALITY_EDGE_THRESHOLD_MIN (1.0/22.0)\n";
-			sflags << "#define FXAA_QUALITY_SUBPIX 0.33\n";
-			break;
-		case 6:
+		case AntiAliasMode::FXAA_Medium:
 			sflags << "#define FXAA_QUALITY_PRESET 26\n";
 			sflags << "#define FXAA_QUALITY_EDGE_THRESHOLD (1.0/12.0)\n";
 			sflags << "#define FXAA_QUALITY_EDGE_THRESHOLD_MIN (1.0/24.0)\n";
 			sflags << "#define FXAA_QUALITY_SUBPIX 0.33\n";
 			break;
-		case 7:
-			sflags << "#define FXAA_PC 1\n";
-			sflags << "#define FXAA_QUALITY_PRESET 27\n";
-			sflags << "#define FXAA_QUALITY_EDGE_THRESHOLD (1.0/13.0)\n";
-			sflags << "#define FXAA_QUALITY_EDGE_THRESHOLD_MIN (1.0/26.0)\n";
-			sflags << "#define FXAA_QUALITY_SUBPIX 0.33\n";
-			break;
-		case 8:
-			sflags << "#define FXAA_QUALITY_PRESET 28\n";
-			sflags << "#define FXAA_QUALITY_EDGE_THRESHOLD (1.0/14.0)\n";
-			sflags << "#define FXAA_QUALITY_EDGE_THRESHOLD_MIN (1.0/28.0)\n";
-			sflags << "#define FXAA_QUALITY_SUBPIX 0.33\n";
-			break;
-		case 9:
+		case AntiAliasMode::FXAA_High:
 			sflags << "#define FXAA_QUALITY_PRESET 39\n";
 			sflags << "#define FXAA_QUALITY_EDGE_THRESHOLD (1.0/15.0)\n";
 			sflags << "#define FXAA_QUALITY_EDGE_THRESHOLD_MIN (1.0/32.0)\n";
@@ -821,7 +785,7 @@ bool opengl_post_init_shaders()
 
 	if ( gr_opengl_maybe_create_shader(SDR_TYPE_POST_PROCESS_FXAA, 0) < 0 ||
 		gr_opengl_maybe_create_shader(SDR_TYPE_POST_PROCESS_FXAA_PREPASS, 0) < 0 ) {
-		Cmdline_fxaa = false;
+		Gr_aa_mode = AntiAliasMode::None;
 		fxaa_unavailable = true;
 		mprintf(("Error while compiling FXAA shaders. FXAA will be unavailable.\n"));
 	}
@@ -918,11 +882,11 @@ void opengl_post_process_init()
 	//We need to read the tbl first. This is mostly for FRED's benefit, as otherwise the list of post effects for the sexp doesn't get updated.
 	if ( !opengl_post_init_table() ) {
 		mprintf(("  Unable to read post-processing table! Disabling post-processing...\n\n"));
-		Cmdline_postprocess = 0;
+		Gr_post_processing_enabled = false;
 		return;
 	}
 
-	if ( !Cmdline_postprocess ) {
+	if ( !Gr_post_processing_enabled ) {
 		return;
 	}
 
@@ -931,19 +895,19 @@ void opengl_post_process_init()
 	}
 
 	if ( Cmdline_no_fbo ) {
-		Cmdline_postprocess = 0;
+		Gr_post_processing_enabled = false;
 		return;
 	}
 
 	if ( !opengl_post_init_shaders() ) {
 		mprintf(("  Unable to initialize post-processing shaders! Disabling post-processing...\n\n"));
-		Cmdline_postprocess = 0;
+		Gr_post_processing_enabled = false;
 		return;
 	}
 
 	if ( !opengl_post_init_framebuffer() ) {
 		mprintf(("  Unable to initialize post-processing framebuffer! Disabling post-processing...\n\n"));
-		Cmdline_postprocess = 0;
+		Gr_post_processing_enabled = false;
 		return;
 	}
 

@@ -502,7 +502,7 @@ void model_draw_list::add_buffer_draw(model_material *render_material, indexed_v
 
 		draw_data.render_material.set_deferred_lighting(possibly_deferred ? Deferred_lighting : false);
 		draw_data.render_material.set_high_dynamic_range(High_dynamic_range);
-		draw_data.render_material.set_shadow_receiving(Cmdline_shadow_quality != 0);
+		draw_data.render_material.set_shadow_receiving(Shadow_quality != ShadowQuality::Disabled);
 	}
 
 	if (tmap_flags & TMAP_FLAG_BATCH_TRANSFORMS && buffer->flags & VB_FLAG_MODEL_ID) {
@@ -2254,7 +2254,8 @@ void model_queue_render_thrusters(model_render_params *interp, polymodel *pm, in
 
 					batching_add_beam(thruster_info.secondary_glow_bitmap, &pnt, &norm2, wVal*thruster_info.secondary_glow_rad_factor*0.5f, d);
 
-					if (Scene_framebuffer_in_frame && thruster_info.draw_distortion && Cmdline_fb_thrusters) {
+					if (Scene_framebuffer_in_frame && thruster_info.draw_distortion &&
+					    Gr_framebuffer_effects[FramebufferEffects::Thrusters]) {
 						vm_vec_scale_add(&norm2, &pnt, &fvec, wVal * 2 * thruster_info.distortion_length_factor);
 						int dist_bitmap;
 						if (thruster_info.distortion_bitmap > 0) {
