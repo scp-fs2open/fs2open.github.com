@@ -1782,6 +1782,13 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 						t = OPR_AMBIGUOUS;
 						break;
 
+					// these types can accept either lists of strings or indexes
+					case OPF_GAME_SND:
+					case OPF_FIREBALL:
+					case OPF_WEAPON_BANK_NUMBER:
+						t = OPR_POSITIVE;
+						break;
+
 					default:
 						return SEXP_CHECK_UNKNOWN_TYPE;  // no other return types available
 				}
@@ -1851,6 +1858,9 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 				break;
 
                 case OPF_AMBIGUOUS:
+				case OPF_GAME_SND:
+				case OPF_FIREBALL:
+				case OPF_WEAPON_BANK_NUMBER:
                     break;
 
 				default: 
@@ -3183,6 +3193,24 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 					if (stricmp(CTEXT(node), SEXP_NONE_STRING) != 0 && !gamesnd_get_by_name(CTEXT(node)).isValid())
 					{
 						return SEXP_CHECK_INVALID_GAME_SND;
+					}
+				}
+				break;
+
+			case OPF_FIREBALL:
+				if (type2 == SEXP_ATOM_NUMBER || can_construe_as_integer(CTEXT(node)))
+				{
+					int num = atoi(CTEXT(node));
+					if (num < 0 || num >= Num_fireball_types)
+					{
+						return SEXP_CHECK_NUM_RANGE_INVALID;
+					}
+				}
+				else if (type2 == SEXP_ATOM_STRING)
+				{
+					if (fireball_info_lookup(CTEXT(node)) < 0)
+					{
+						return SEXP_CHECK_INVALID_FIREBALL;
 					}
 				}
 				break;
@@ -10793,29 +10821,55 @@ void sexp_explosion_effect(int n)
 	n = CDR(n);
 
 	// fireball type
-	num = eval_num(n);
-	if (num == 0)
+	// -------------
+
+	// this node is another SEXP operator or a plain number
+	num = -1;
+	if (CAR(n) != -1 || Sexp_nodes[n].subtype == SEXP_ATOM_NUMBER)
+		num = eval_num(n);
+	else if (can_construe_as_integer(CTEXT(n)))
+		num = atoi(CTEXT(n));
+
+	// is it a number?
+	if (num >= 0)
 	{
-		fireball_type = FIREBALL_EXPLOSION_MEDIUM;
+		if (num == 0)
+		{
+			fireball_type = FIREBALL_EXPLOSION_MEDIUM;
+		}
+		else if (num == 1)
+		{
+			fireball_type = FIREBALL_EXPLOSION_LARGE1;
+		}
+		else if (num == 2)
+		{
+			fireball_type = FIREBALL_EXPLOSION_LARGE2;
+		}
+		else if (num >= Num_fireball_types)
+		{
+			Warning(LOCATION, "explosion-effect fireball type is out of range; quitting the explosion...\n");
+			return;
+		}
+		else
+		{
+			fireball_type = num;
+		}
 	}
-	else if (num == 1)
-	{
-		fireball_type = FIREBALL_EXPLOSION_LARGE1;
-	}
-	else if (num == 2)
-	{
-		fireball_type = FIREBALL_EXPLOSION_LARGE2;
-	}
-	else if (num >= Num_fireball_types)
-	{
-		Warning(LOCATION, "explosion-effect fireball type is out of range; quitting the explosion...\n");
-		return;
-	}
+	// it's gotta be a name
 	else
 	{
-		fireball_type = num;
+		const char *unique_id = CTEXT(n);
+		fireball_type = fireball_info_lookup(unique_id);
+
+		if (fireball_type < 0)
+		{
+			Warning(LOCATION, "unrecognized fireball entry \'%s\'; quitting the explosion...\n", unique_id);
+			return;
+		}
 	}
 	n = CDR(n);
+
+	// -------------
 
 	auto sound_index = sexp_get_sound_index(n);
 	n = CDR(n);
@@ -10972,25 +11026,52 @@ void sexp_warp_effect(int n)
 	n = CDR(n);
 
 	// fireball type
-	num = eval_num(n);
-	if (num == 0)
+	// -------------
+
+	// this node is another SEXP operator or a plain number
+	num = -1;
+	if (CAR(n) != -1 || Sexp_nodes[n].subtype == SEXP_ATOM_NUMBER)
+		num = eval_num(n);
+	else if (can_construe_as_integer(CTEXT(n)))
+		num = atoi(CTEXT(n));
+
+	// is it a number?
+	if (num >= 0)
 	{
-		fireball_type = FIREBALL_WARP;
+		num = eval_num(n);
+		if (num == 0)
+		{
+			fireball_type = FIREBALL_WARP;
+		}
+		else if (num == 1)
+		{
+			fireball_type = FIREBALL_KNOSSOS;
+		}
+		else if (num >= Num_fireball_types)
+		{
+			Warning(LOCATION, "warp-effect fireball type is out of range; quitting the warp...\n");
+			return;
+		}
+		else
+		{
+			fireball_type = num;
+		}
 	}
-	else if (num == 1)
-	{
-		fireball_type = FIREBALL_KNOSSOS;
-	}
-	else if (num >= Num_fireball_types)
-	{
-		Warning(LOCATION, "warp-effect fireball type is out of range; quitting the warp...\n");
-		return;
-	}
+	// it's gotta be a name
 	else
 	{
-		fireball_type = num;
+		const char *unique_id = CTEXT(n);
+		fireball_type = fireball_info_lookup(unique_id);
+
+		if (fireball_type < 0)
+		{
+			Warning(LOCATION, "unrecognized fireball entry \'%s\'; quitting the warp...\n", unique_id);
+			return;
+		}
 	}
 	n = CDR(n);
+
+	// -------------
 
 	// shape
 	if (eval_num(n) == 0)
@@ -27264,6 +27345,8 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_EXPLOSION_EFFECT:
 			if (argnum <= 2)
 				return OPF_NUMBER;
+			else if (argnum == 9)
+				return OPF_FIREBALL;
 			else if (argnum == 10)
 				return OPF_GAME_SND;
 			else
@@ -27274,6 +27357,8 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_NUMBER;
 			else if (argnum == 8 || argnum == 9)
 				return OPF_GAME_SND;
+			else if (argnum == 10)
+				return OPF_FIREBALL;
 			else
 				return OPF_POSITIVE;
 
@@ -29027,6 +29112,9 @@ const char *sexp_error_message(int num)
 
 		case SEXP_CHECK_INVALID_SSM_CLASS:
 			return "Invalid SSM class";
+
+		case SEXP_CHECK_INVALID_FIREBALL:
+			return "Invalid fireball";
 
 		default:
 			Warning(LOCATION, "Unhandled sexp error code %d!", num);
@@ -31622,7 +31710,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t7:  Inner radius to apply damage (if 0, explosion will not be visible)\r\n"
 		"\t8:  Outer radius to apply damage (if 0, explosion will not be visible)\r\n"
 		"\t9:  Shockwave speed (if 0, there will be no shockwave)\r\n"
-		"\t10: Type (0 = medium, 1 = large1 [4th in table], 2 = large2 [5th in table], 3 or greater link to respective entry in fireball.tbl)\r\n"
+		"\t10: Fireball Type (unique ID of a fireball entry, OR a number: 0 = medium explosion [default, 1st in table], 1 = large explosion 1 [4th in table], 2 = large explosion 2 [5th in table], 3 or greater the respective entry in fireball.tbl)\r\n"
 		"\t11: Sound (index into sounds.tbl or name of the sound entry)\r\n"
 		"\t12: EMP intensity (optional)\r\n"
 		"\t13: EMP duration in seconds (optional)\r\n"
@@ -31642,7 +31730,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t8:  Duration in seconds (values smaller than 4 are ignored)\r\n"
 		"\t9:  Warp opening sound (index into sounds.tbl or name of the sound entry)\r\n"
 		"\t10: Warp closing sound (index into sounds.tbl or name of the sound entry)\r\n"
-		"\t11: Type (0 for standard blue [default], 1 for Knossos green, 2 or greater link to respective entry in fireball.tbl)\r\n"
+		"\t11: Fireball Type (unique ID of a fireball entry, OR a number: 0 for standard blue [default], 1 for Knossos green, 2 or greater the respective entry in fireball.tbl)\r\n"
 		"\t12: Shape (0 for 2-D [default], 1 for 3-D)\r\n"
 		"\t13: Duration of the opening effect, in milliseconds (and also the closing effect if the next argument is not specified)\r\n"
 		"\t14: Duration of the closing effect, in milliseconds\r\n"	},
