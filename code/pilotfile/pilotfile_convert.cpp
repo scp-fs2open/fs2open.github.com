@@ -171,10 +171,12 @@ static void convert_binary_pilot_files() {
 	SCP_vector<SCP_string> json_pilots;
 
 	// get list of binary pilot files
-	cf_get_file_list(binary_pilots, CF_TYPE_PLAYERS, "*.plr");
+	cf_get_file_list(binary_pilots, CF_TYPE_PLAYERS, "*.plr", 0, nullptr,
+	                 CF_LOCATION_ROOT_USER | CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT);
 
 	// get list of existing json pilot files
-	cf_get_file_list(json_pilots, CF_TYPE_PLAYERS, "*.json");
+	cf_get_file_list(json_pilots, CF_TYPE_PLAYERS, "*.json", 0, nullptr,
+	                 CF_LOCATION_ROOT_USER | CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT);
 
 	for (auto& binary_pilot : binary_pilots) {
 		for (auto& json_pilot : json_pilots) {
