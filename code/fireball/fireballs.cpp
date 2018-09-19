@@ -107,42 +107,45 @@ void fireball_play_warphole_close_sound(fireball *fb)
 	snd_play_3d(gamesnd_get_game_sound(sound_index), &fireball_objp->pos, &Eye_position, fireball_objp->radius); // play warp sound effect
 }
 
-static void fireball_generate_unique_id(char *unique_id, int idx)
+static void fireball_generate_unique_id(char *unique_id, int buffer_len, int fireball_index)
 {
-	Assert((idx >= 0) && (idx < MAX_FIREBALL_TYPES));
+	Assert((fireball_index >= 0) && (fireball_index < MAX_FIREBALL_TYPES));
 
-	switch (idx)
+	switch (fireball_index)
 	{
 		// use sensible names for the fireball.tbl default entries
 		case FIREBALL_EXPLOSION_MEDIUM:
-			strcpy(unique_id, "Medium Explosion");
+			strncpy(unique_id, "Medium Explosion", buffer_len);
 			break;
 
 		case FIREBALL_WARP:
-			strcpy(unique_id, "Warp Effect");
+			strncpy(unique_id, "Warp Effect", buffer_len);
 			break;
 
 		case FIREBALL_KNOSSOS:
-			strcpy(unique_id, "Knossos Effect");
+			strncpy(unique_id, "Knossos Effect", buffer_len);
 			break;
 
 		case FIREBALL_ASTEROID:
-			strcpy(unique_id, "Asteroid Explosion");
+			strncpy(unique_id, "Asteroid Explosion", buffer_len);
 			break;
 
 		case FIREBALL_EXPLOSION_LARGE1:
-			strcpy(unique_id, "Large Explosion 1");
+			strncpy(unique_id, "Large Explosion 1", buffer_len);
 			break;
 
 		case FIREBALL_EXPLOSION_LARGE2:
-			strcpy(unique_id, "Large Explosion 2");
+			strncpy(unique_id, "Large Explosion 2", buffer_len);
 			break;
 
 		// base the id on the index
 		default:
-			sprintf(unique_id, "Custom Fireball %d", idx - NUM_DEFAULT_FIREBALLS + 1);
+			snprintf(unique_id, buffer_len, "Custom Fireball %d", fireball_index - NUM_DEFAULT_FIREBALLS + 1);
 			break;
 	}
+
+	// null-terminate
+	unique_id[buffer_len - 1] = '\0';
 }
 
 /**
@@ -205,7 +208,7 @@ int fireball_info_lookup(const char *unique_id)
 /**
  * Parse fireball tbl
  */
-void parse_fireball_tbl(const char *table_filename)
+static void parse_fireball_tbl(const char *table_filename)
 {
 	try
 	{
@@ -272,7 +275,7 @@ void parse_fireball_tbl(const char *table_filename)
 				// make sure we don't exceed the max
 				if (Num_fireball_types >= MAX_FIREBALL_TYPES)
 				{
-					Warning(LOCATION, "Too many fireball entries!  Max is %d", MAX_FIREBALL_TYPES);
+					error_display(0, "Too many fireball entries!  Max is %d", MAX_FIREBALL_TYPES);
 					return;
 				}
 
@@ -281,7 +284,7 @@ void parse_fireball_tbl(const char *table_filename)
 
 				// If the table didn't specify a unique ID, generate one.  This will be assigned a few lines later.
 				if (strlen(unique_id) == 0)
-					fireball_generate_unique_id(unique_id, Num_fireball_types);
+					fireball_generate_unique_id(unique_id, NAME_LENGTH, Num_fireball_types);
 
 				// Set remaining fireball defaults
 				fireball_set_default_color(Num_fireball_types);

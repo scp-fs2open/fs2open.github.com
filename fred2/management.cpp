@@ -419,7 +419,6 @@ bool fred_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 
 	// get fireball IDs for sexpression usage
 	// (we don't need to init the entire system via fireball_init, we just need the information)
-	extern void fireball_parse_tbl();
 	fireball_parse_tbl();
 
 	// initialize and activate external string hash table

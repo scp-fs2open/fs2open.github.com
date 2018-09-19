@@ -1175,8 +1175,6 @@ int sexp_tree::get_default_value(sexp_list_item* item, char* text_buf, int op, i
 
 			if (fireball_index >= 0)
 			{
-				extern fireball_info Fireball_info[MAX_FIREBALL_TYPES];
-
 				char *unique_id = Fireball_info[fireball_index].unique_id;
 				if (strlen(unique_id) > 0)
 					item->set_data(unique_id, (SEXPT_STRING | SEXPT_VALID));
@@ -4523,7 +4521,6 @@ sexp_list_item* sexp_tree::get_listing_opf_game_snds() {
 
 sexp_list_item *sexp_tree::get_listing_opf_fireball()
 {
-	extern fireball_info Fireball_info[MAX_FIREBALL_TYPES];
 	sexp_list_item head;
 
 	for (int i = 0; i < Num_fireball_types; ++i)

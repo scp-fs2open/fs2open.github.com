@@ -201,6 +201,10 @@ initialize(const std::string& cfilepath, int argc, char* argv[], Editor* editor,
 	listener(SubSystem::TechroomIntel);
 	techroom_intel_init();
 
+	// get fireball IDs for sexpression usage
+	// (we don't need to init the entire system via fireball_init, we just need the information)
+	fireball_parse_tbl();
+
 	// initialize and activate external string hash table
 	// make sure to do here so that we don't parse the table files into the hash table - waste of space
 	fhash_init();

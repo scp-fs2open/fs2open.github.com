@@ -160,7 +160,8 @@ int main(int argc, char* argv[]) {
 								 { SubSystem::NebulaLightning,   app.tr("Initializing nebula lightning") },
 								 { SubSystem::FFmpeg,            app.tr("Initializing FFmpeg") },
 								 { SubSystem::DynamicSEXPs,      app.tr("Initializing dynamic SEXP system") },
-								 { SubSystem::ScriptingInitHook, app.tr("Running game init scripting hook") }, };
+								 { SubSystem::ScriptingInitHook, app.tr("Running game init scripting hook") },
+	};
 
 	auto initSuccess = fso::fred::initialize(baseDir.toStdString(), argc, argv, fred.get(), [&](const SubSystem& which) {
 		if (initializers.count(which)) {

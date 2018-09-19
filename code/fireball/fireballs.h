@@ -41,7 +41,6 @@ class asteroid_info;
 #define FIREBALL_NUM_LARGE_EXPLOSIONS 2
 
 extern int fireball_used[MAX_FIREBALL_TYPES];
-extern int Num_fireball_types;
 
 // all this moved here by Goober5000 because it makes more sense in the H file
 typedef struct fireball_lod {
@@ -57,6 +56,9 @@ typedef struct fireball_info {
 	fireball_lod		lod[MAX_FIREBALL_LOD];
 	float				exp_color[3];	// red, green, blue
 } fireball_info;
+
+extern fireball_info Fireball_info[MAX_FIREBALL_TYPES];
+extern int Num_fireball_types;
 
 // flag values for fireball struct flags member
 #define	FBF_WARP_CLOSE_SOUND_PLAYED		(1<<0)
@@ -88,6 +90,9 @@ void fireball_init();
 void fireball_render(object* obj, model_draw_list *scene);
 void fireball_delete( object * obj );
 void fireball_process_post(object * obj, float frame_time);
+
+// This does not load all the data, just the filenames and such.  Only used by FRED.
+void fireball_parse_tbl();
 
 int fireball_info_lookup(const char *unique_id);
 
