@@ -183,7 +183,7 @@ static void fireball_set_default_color(int idx)
 	}
 }
 
-static void fireball_set_default_warp_stuff(int idx)
+static void fireball_set_default_warp_attributes(int idx)
 {
 	Assert((idx >= 0) && (idx < MAX_FIREBALL_TYPES));
 
@@ -206,8 +206,8 @@ void fireball_info_clear(fireball_info *fb)
 	for (int i = 0; i < MAX_FIREBALL_LOD; ++i)
 		fb->lod[i].bitmap_id = -1;
 
-	fb->warp_ball_bitmap = -1;
 	fb->warp_glow_bitmap = -1;
+	fb->warp_ball_bitmap = -1;
 	fb->warp_model_id = -1;
 }
 
@@ -303,6 +303,7 @@ static void parse_fireball_tbl(const char *table_filename)
 
 				// Set remaining fireball defaults
 				fireball_set_default_color(Num_fireball_types);
+				fireball_set_default_warp_attributes(Num_fireball_types);
 
 				Num_fireball_types++;
 			}
@@ -1066,7 +1067,7 @@ void fireball_render(object* obj, model_draw_list *scene)
 			float rad = obj->radius * fireball_wormhole_intensity(fb);
 
 			fireball_info *fi = &Fireball_info[fb->fireball_info_index];
-			warpin_queue_render(scene, obj, &obj->orient, &obj->pos, fb->current_bitmap, rad, percent_life, obj->radius, (fb->flags & FBF_WARP_3D), fi->warp_glow_bitmap, fi->warp_ball_bitmap, fi->warp_model_id);
+			warpin_queue_render(scene, obj, &obj->orient, &obj->pos, fb->current_bitmap, rad, percent_life, obj->radius, (fb->flags & FBF_WARP_3D) != 0, fi->warp_glow_bitmap, fi->warp_ball_bitmap, fi->warp_model_id);
 		}
 		break;
 
