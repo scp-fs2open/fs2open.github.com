@@ -26,7 +26,6 @@
 #include <cstdlib>
 
 
-int Warp_model;
 int Knossos_warp_ani_used;
 
 #define WARPHOLE_GROW_TIME		(2.35f)	// time for warphole to reach max size (also time to shrink to nothing once it begins to shrink)
@@ -45,9 +44,6 @@ int Num_fireballs = 0;
 int Num_fireball_types = 0;
 
 int fireballs_inited = 0;
-
-int Warp_glow_bitmap = -1;
-int Warp_ball_bitmap = -1;
 
 #define FB_INDEX(fb)	(fb-Fireballs)
 
@@ -187,6 +183,21 @@ static void fireball_set_default_color(int idx)
 	}
 }
 
+static void fireball_set_default_warp_stuff(int idx)
+{
+	Assert((idx >= 0) && (idx < MAX_FIREBALL_TYPES));
+
+	switch (idx)
+	{
+		case FIREBALL_WARP:
+		case FIREBALL_KNOSSOS:
+			strcpy_s(Fireball_info[idx].warp_glow, "warpglow01");
+			strcpy_s(Fireball_info[idx].warp_ball, "warpball01");
+			strcpy_s(Fireball_info[idx].warp_model, "warp.pof");
+			break;
+	}
+}
+
 void fireball_info_clear(fireball_info *fb)
 {
 	Assert(fb != nullptr);
@@ -194,6 +205,10 @@ void fireball_info_clear(fireball_info *fb)
 
 	for (int i = 0; i < MAX_FIREBALL_LOD; ++i)
 		fb->lod[i].bitmap_id = -1;
+
+	fb->warp_ball_bitmap = -1;
+	fb->warp_glow_bitmap = -1;
+	fb->warp_model_id = -1;
 }
 
 int fireball_info_lookup(const char *unique_id)
@@ -323,6 +338,18 @@ static void parse_fireball_tbl(const char *table_filename)
 				fi->exp_color[1] = (g / 255.0f);
 				fi->exp_color[2] = (b / 255.0f);
 			}
+
+			// check for custom warp glow
+			if (optional_string("$Warp glow:"))
+				stuff_string(fi->warp_glow, F_NAME, NAME_LENGTH);
+
+			// check for custom warp ball
+			if (optional_string("$Warp ball:"))
+				stuff_string(fi->warp_ball, F_NAME, NAME_LENGTH);
+
+			// check for custom warp model
+			if (optional_string("$Warp model:"))
+				stuff_string(fi->warp_model, F_NAME, NAME_LENGTH);
 		}
 
 		required_string("#End");
@@ -371,13 +398,27 @@ void fireball_load_data()
 				Error(LOCATION, "Could not load %s anim file\n", fd->lod[idx].filename);
 			}
 		}
-	} 
 
-	if ( Warp_glow_bitmap == -1 )	{
-		Warp_glow_bitmap = bm_load( NOX("warpglow01") );
-	}
-	if ( Warp_ball_bitmap == -1 )	{
-		Warp_ball_bitmap = bm_load( NOX("warpball01") );
+		if (strlen(fd->warp_glow) > 0) {
+			mprintf(("Loading warp glow '%s'\n", fd->warp_glow));
+			fd->warp_glow_bitmap = bm_load(fd->warp_glow);
+		} else {
+			fd->warp_glow_bitmap = -1;
+		}
+
+		if (strlen(fd->warp_ball) > 0) {
+			mprintf(("Loading warp ball '%s'\n", fd->warp_ball));
+			fd->warp_ball_bitmap = bm_load(fd->warp_ball);
+		} else {
+			fd->warp_ball_bitmap = -1;
+		}
+
+		if (strlen(fd->warp_model) > 0 && cf_exists_full(fd->warp_model, CF_TYPE_MODELS)) {
+			mprintf(("Loading warp model '%s'\n", fd->warp_model));
+			fd->warp_model_id = model_load(fd->warp_model, 0, NULL, 0);
+		} else {
+			fd->warp_model_id = -1;
+		}
 	}
 }
 
@@ -402,17 +443,6 @@ void fireball_init()
 
 	// Goober5000 - reset Knossos warp flag
 	Knossos_warp_ani_used = 0;
-
-	mprintf(("Loading warp model\n"));
-	Warp_model = -1;
-
-	// Goober5000 - check for existence of file before trying to load it
-	if (cf_exists_full("warp.pof", CF_TYPE_MODELS))
-	{
-		Warp_model = model_load("warp.pof", 0, NULL, 0);
-	}
-
-	mprintf((" %d\n", Warp_model));
 }
 
 MONITOR( NumFireballsRend )
@@ -919,10 +949,11 @@ void fireballs_page_in()
 				bm_page_in_texture( fd->lod[idx].bitmap_id, fd->lod[idx].num_frames );
 			}
 		}
-	}
 
-	bm_page_in_texture( Warp_glow_bitmap );
-	bm_page_in_texture( Warp_ball_bitmap );
+		// page in glow and ball bitmaps, if we have any
+		bm_page_in_texture(fd->warp_glow_bitmap);
+		bm_page_in_texture(fd->warp_ball_bitmap);
+	}
 }
 
 void fireball_get_color(int idx, float *red, float *green, float *blue)
@@ -999,6 +1030,8 @@ float fireball_wormhole_intensity(fireball *fb)
 	return rad;
 } 
 
+extern void warpin_queue_render(model_draw_list *scene, object *obj, matrix *orient, vec3d *pos, int texture_bitmap_num, float radius, float life_percent, float max_radius, bool warp_3d, int warp_glow_bitmap, int warp_ball_bitmap, int warp_model_id);
+
 void fireball_render(object* obj, model_draw_list *scene)
 {
 	int		num;
@@ -1032,7 +1065,8 @@ void fireball_render(object* obj, model_draw_list *scene)
 			float percent_life = fb->time_elapsed / fb->total_time;
 			float rad = obj->radius * fireball_wormhole_intensity(fb);
 
-			warpin_queue_render(scene, obj, &obj->orient, &obj->pos, Fireballs[num].current_bitmap, rad, percent_life, obj->radius, (Fireballs[num].flags & FBF_WARP_3D) );
+			fireball_info *fi = &Fireball_info[fb->fireball_info_index];
+			warpin_queue_render(scene, obj, &obj->orient, &obj->pos, fb->current_bitmap, rad, percent_life, obj->radius, (fb->flags & FBF_WARP_3D), fi->warp_glow_bitmap, fi->warp_ball_bitmap, fi->warp_model_id);
 		}
 		break;
 
