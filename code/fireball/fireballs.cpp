@@ -416,7 +416,7 @@ void fireball_load_data()
 
 		if (strlen(fd->warp_model) > 0 && cf_exists_full(fd->warp_model, CF_TYPE_MODELS)) {
 			mprintf(("Loading warp model '%s'\n", fd->warp_model));
-			fd->warp_model_id = model_load(fd->warp_model, 0, NULL, 0);
+			fd->warp_model_id = model_load(fd->warp_model, 0, nullptr, 0);
 		} else {
 			fd->warp_model_id = -1;
 		}
