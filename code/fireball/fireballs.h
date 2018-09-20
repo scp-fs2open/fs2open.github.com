@@ -55,6 +55,13 @@ typedef struct fireball_info {
 	int					lod_count;
 	fireball_lod		lod[MAX_FIREBALL_LOD];
 	float				exp_color[3];	// red, green, blue
+
+	char	warp_glow[NAME_LENGTH];
+	int		warp_glow_bitmap;
+	char	warp_ball[NAME_LENGTH];
+	int		warp_ball_bitmap;
+	char	warp_model[NAME_LENGTH];
+	int		warp_model_id;
 } fireball_info;
 
 extern fireball_info Fireball_info[MAX_FIREBALL_TYPES];
@@ -126,13 +133,6 @@ int fireball_asteroid_explosion_type(asteroid_info *aip);
 
 // returns the intensity of a wormhole
 float fireball_wormhole_intensity( fireball *fb );
-
-// internal function to draw warp grid.
-extern void warpin_render(object *obj, matrix *orient, vec3d *pos, int texture_bitmap_num, float radius, float life_percent, float max_radius, int warp_3d = 0 );
-
-extern void warpin_queue_render(model_draw_list *scene, object *obj, matrix *orient, vec3d *pos, int texture_bitmap_num, float radius, float life_percent, float max_radius, int warp_3d);
-
-extern int Warp_model;
 
 // Goober5000
 extern int Knossos_warp_ani_used;
