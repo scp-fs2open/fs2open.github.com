@@ -1560,15 +1560,22 @@ int bm_load_animation(const char *real_filename, int *nframes, int *fps, int *ke
 	// EFF/APNG need 5 extra characters for each frame filename too, which just happens to be the same length as the frame designator needed otherwise
 	// MAX_FILENAME_LEN-10 == 5 character frame designator plus '.' plus 3 letter ext plus NULL terminator
 	// we only check for -5 here since the filename should already have the extension on it, and it must have passed the previous check
-	if (strlen(filename) > MAX_FILENAME_LEN - 5) {
+	/*if (strlen(filename) > MAX_FILENAME_LEN - 5) {
 		Warning(LOCATION, "Passed filename, '%s', is too long to support an extension and frames!!\n\nMaximum length for an ANI/EFF/APNG, minus the extension, is %i characters.\n", filename, MAX_FILENAME_LEN - 10);
 		if (img_cfp != nullptr)
 			cfclose(img_cfp);
 		return -1;
-	}
+	}*/
 
 	// it's an effect file, any readable image type with eff being txt
 	if (type == BM_TYPE_EFF) {
+		// Move filename length check to this section to account for differences between EFF, ANI, and APNG
+		if (strlen(filename) > MAX_FILENAME_LEN - 5) {
+			Warning(LOCATION, "Passed filename, '%s', is too long to support an extension and frames!!\n\nMaximum length for an EFF, minus the extension, is %i characters.\n", filename, MAX_FILENAME_LEN - 10);
+			if (img_cfp != nullptr)
+				cfclose(img_cfp);
+			return -1;
+		}
 		if (!bm_load_and_parse_eff(filename, dir_type, &anim_frames, &anim_fps, &key, &eff_type)) {
 			mprintf(("BMPMAN: Error reading EFF\n"));
 			if (img_cfp != nullptr)
@@ -1584,6 +1591,12 @@ int bm_load_animation(const char *real_filename, int *nframes, int *fps, int *ke
 	}
 	// regular ani file
 	else if (type == BM_TYPE_ANI) {
+		if (strlen(filename) > MAX_FILENAME_LEN) {
+			Warning(LOCATION, "Passed filename, '%s', is too long to support an extension and frames!!\n\nMaximum length for an ANI, minus the extension, is %i characters.\n", filename, MAX_FILENAME_LEN - 5);
+			if (img_cfp != nullptr)
+				cfclose(img_cfp);
+			return -1;
+		}
 #ifndef NDEBUG
 		// for debug of ANI sizes
 		strcpy_s(the_anim.name, real_filename);
@@ -1626,6 +1639,12 @@ int bm_load_animation(const char *real_filename, int *nframes, int *fps, int *ke
 		}
 	}
 	else if (type == BM_TYPE_PNG) {
+		if (strlen(filename) > MAX_FILENAME_LEN) {
+			Warning(LOCATION, "Passed filename, '%s', is too long to support an extension and frames!!\n\nMaximum length for an APNG, minus the extension, is %i characters.\n", filename, MAX_FILENAME_LEN - 5);
+			if (img_cfp != nullptr)
+				cfclose(img_cfp);
+			return -1;
+		}
 		nprintf(("apng", "Loading apng: %s\n", filename));
 		try {
 			apng::apng_ani the_apng = apng::apng_ani(filename);
