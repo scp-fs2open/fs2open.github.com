@@ -232,7 +232,7 @@ static void parse_fireball_tbl(const char *table_filename)
 
 		required_string("#Start");
 
-		while (required_string_either("#End", "$Name:"))
+		while (required_string_one_of(3, "#End", "$Name:", "$Unique ID:"))
 		{
 			fireball_info *fi;
 			int existing_idx = -1;
@@ -935,9 +935,9 @@ void fireballs_page_in()
 	fireball_info	*fd;
 
 	for ( i = 0; i < Num_fireball_types; i++ ) {
-		if((i < NUM_DEFAULT_FIREBALLS) || fireball_used[i]){
-			fd = &Fireball_info[i];
+		fd = &Fireball_info[i];
 
+		if((i < NUM_DEFAULT_FIREBALLS) || fireball_used[i]) {
 			// if this is a Knossos ani, only load if Knossos_warp_ani_used is true
 			if ( (i == FIREBALL_KNOSSOS) && !Knossos_warp_ani_used)
 				continue;
