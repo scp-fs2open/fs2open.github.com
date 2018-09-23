@@ -413,13 +413,6 @@ void fireball_load_data()
 		} else {
 			fd->warp_ball_bitmap = -1;
 		}
-
-		if (strlen(fd->warp_model) > 0 && cf_exists_full(fd->warp_model, CF_TYPE_MODELS)) {
-			mprintf(("Loading warp model '%s'\n", fd->warp_model));
-			fd->warp_model_id = model_load(fd->warp_model, 0, nullptr, 0);
-		} else {
-			fd->warp_model_id = -1;
-		}
 	}
 }
 
@@ -954,6 +947,14 @@ void fireballs_page_in()
 		// page in glow and ball bitmaps, if we have any
 		bm_page_in_texture(fd->warp_glow_bitmap);
 		bm_page_in_texture(fd->warp_ball_bitmap);
+
+		// load the warp model, if we have one
+		if (strlen(fd->warp_model) > 0 && cf_exists_full(fd->warp_model, CF_TYPE_MODELS)) {
+			mprintf(("Loading warp model '%s'\n", fd->warp_model));
+			fd->warp_model_id = model_load(fd->warp_model, 0, nullptr, 0);
+		} else {
+			fd->warp_model_id = -1;
+		}
 	}
 }
 
