@@ -45,7 +45,6 @@ if [ "$TRAVIS_OS_NAME" = "linux" ]; then
 
     cp `find /tmp/release -name '*.AppImage' -print` /tmp/release
     (cd /tmp/release && tar -cvzf /tmp/builds/$PACKAGE_NAME-builds-Linux.tar.gz *.AppImage)
-    curl --upload-file /tmp/builds/$PACKAGE_NAME-builds-Linux.tar.gz "https://transfer.sh/$PACKAGE_NAME-builds-Linux.tar.gz"
 elif [ "$TRAVIS_OS_NAME" = "osx" ]; then
     cd build
     
