@@ -12,6 +12,7 @@
 
 #include "scpui/rocket_ui.h"
 #include "cfile/cfile.h"
+#include "mod_table/mod_table.h"
 #include "osapi/osapi.h"
 #include "scpui/RocketFileInterface.h"
 #include "scpui/RocketRenderingInterface.h"
@@ -40,6 +41,8 @@
 using namespace Rocket::Core;
 
 namespace {
+bool rocket_initialized = false;
+
 std::unique_ptr<scpui::RocketRenderingInterface> rendering_interface;
 std::unique_ptr<scpui::RocketSystemInterface> system_interface;
 std::unique_ptr<scpui::RocketFileInterface> file_interface;
@@ -501,6 +504,11 @@ namespace scpui {
 
 void initialize()
 {
+	if (!Unicode_text_mode) {
+		mprintf(("NOTE: libRocket is disabled since unicode text mode is not enabled!\n"));
+		return;
+	}
+
 	rendering_interface.reset(new RocketRenderingInterface());
 	system_interface.reset(new RocketSystemInterface());
 	file_interface.reset(new RocketFileInterface());
@@ -543,13 +551,25 @@ void initialize()
 	os::events::addEventListener(SDL_KEYDOWN, os::events::DEFAULT_LISTENER_WEIGHT - 10, key_event_handler);
 
 	os::events::addEventListener(SDL_TEXTINPUT, os::events::DEFAULT_LISTENER_WEIGHT - 10, text_input_handler);
+
+	rocket_initialized = true;
 }
 void setOffset(float x, float y) { rendering_interface->setRenderOffset({x, y}); }
 
-void shutdown_scripting() { Rocket::Core::Lua::Interpreter::Shutdown(false); }
+void shutdown_scripting()
+{
+	if (!rocket_initialized) {
+		return;
+	}
+	Rocket::Core::Lua::Interpreter::Shutdown(false);
+}
 
 void shutdown()
 {
+	if (!rocket_initialized) {
+		return;
+	}
+
 	if (input_context != nullptr) {
 		// If this is still here then the user forgot to disable input
 		mprintf(("Warning: The input context is still active! Disabling input...\n"));
@@ -562,6 +582,8 @@ void shutdown()
 	rendering_interface.reset();
 	system_interface.reset();
 	file_interface.reset();
+
+	rocket_initialized = false;
 }
 
 void reloadContext(Rocket::Core::Context* context)
