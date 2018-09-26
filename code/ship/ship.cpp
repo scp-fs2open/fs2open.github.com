@@ -2958,12 +2958,18 @@ static int parse_ship_values(ship_info* sip, const bool is_template, const bool 
 	if(optional_string("$Warpin type:"))
 	{
 		stuff_string(buf, F_NAME, SHIP_MULTITEXT_LENGTH);
-		auto j = warptype_match(buf);
-		if(j >= 0) {
+		int j = warptype_match(buf);
+		if (j >= 0) {
 			sip->warpin_type = j;
 		} else {
-			Warning(LOCATION, "Invalid warpin type '%s' specified for %s '%s'", buf, info_type_name, sip->name);
-			sip->warpin_type = WT_DEFAULT;
+			// try to match the warp type with one of our fireballs
+			j = fireball_info_lookup(buf);
+			if (j >= 0) {
+				sip->warpin_type = j | WT_DEFAULT_WITH_FIREBALL;
+			} else {
+				Warning(LOCATION, "Invalid warpin type '%s' specified for %s '%s'", buf, info_type_name, sip->name);
+				sip->warpin_type = WT_DEFAULT;
+			}
 		}
 	}
 
@@ -3010,12 +3016,18 @@ static int parse_ship_values(ship_info* sip, const bool is_template, const bool 
 	if(optional_string("$Warpout type:"))
 	{
 		stuff_string(buf, F_NAME, SHIP_MULTITEXT_LENGTH);
-		auto j = warptype_match(buf);
-		if(j >= 0) {
+		int j = warptype_match(buf);
+		if (j >= 0) {
 			sip->warpout_type = j;
 		} else {
-			Warning(LOCATION, "Invalid warpout type '%s' specified for %s '%s'", buf, info_type_name, sip->name);
-			sip->warpout_type = WT_DEFAULT;
+			// try to match the warp type with one of our fireballs
+			j = fireball_info_lookup(buf);
+			if (j >= 0) {
+				sip->warpout_type = j | WT_DEFAULT_WITH_FIREBALL;
+			} else {
+				Warning(LOCATION, "Invalid warpout type '%s' specified for %s '%s'", buf, info_type_name, sip->name);
+				sip->warpout_type = WT_DEFAULT;
+			}
 		}
 	}
 
@@ -5691,11 +5703,18 @@ vec3d get_submodel_offset(int model, int submodel){
 static void ship_set_warp_effects(object *objp, ship_info *sip)
 {
 	ship *shipp = &Ships[objp->instance];
+	int warpin_type = sip->warpin_type;
+	int warpout_type = sip->warpout_type;
 
-	if(shipp->warpin_effect != NULL)
+	if (warpin_type & WT_DEFAULT_WITH_FIREBALL)
+		warpin_type = WT_DEFAULT;
+	if (warpout_type & WT_DEFAULT_WITH_FIREBALL)
+		warpout_type = WT_DEFAULT;
+
+	if (shipp->warpin_effect != nullptr)
 		delete shipp->warpin_effect;
 
-	switch(sip->warpin_type)
+	switch (warpin_type)
 	{
 		case WT_DEFAULT:
 		case WT_KNOSSOS:
@@ -5715,10 +5734,10 @@ static void ship_set_warp_effects(object *objp, ship_info *sip)
 			shipp->warpin_effect = new WarpEffect();
 	}
 
-	if(shipp->warpout_effect != NULL)
+	if (shipp->warpout_effect != nullptr)
 		delete shipp->warpout_effect;
 
-	switch(sip->warpout_type)
+	switch (warpout_type)
 	{
 		case WT_DEFAULT:
 		case WT_KNOSSOS:

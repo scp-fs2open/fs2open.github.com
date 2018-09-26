@@ -43,7 +43,8 @@ int fireball_used[MAX_FIREBALL_TYPES];
 int Num_fireballs = 0;
 int Num_fireball_types = 0;
 
-int fireballs_inited = 0;
+bool fireballs_inited = false;
+bool fireballs_parsed = false;
 
 #define FB_INDEX(fb)	(fb-Fireballs)
 
@@ -364,6 +365,9 @@ static void parse_fireball_tbl(const char *table_filename)
 
 void fireball_parse_tbl()
 {
+	if (fireballs_parsed)
+		return;
+
 	// every newly parsed fireball_info will get cleared before being added
 	// must do this outside of parse_fireball_tbl because it's called twice
 	Num_fireball_types = 0;
@@ -379,6 +383,8 @@ void fireball_parse_tbl()
 		for (int j = 1; j < Fireball_info[i].lod_count; j++)
 			sprintf( Fireball_info[i].lod[j].filename, "%s_%d", Fireball_info[i].lod[0].filename, j);
 	}
+
+	fireballs_parsed = true;
 }
 
 void fireball_load_data()
@@ -422,11 +428,11 @@ void fireball_init()
 	int i;
 
 	if ( !fireballs_inited ) {
-		fireballs_inited = 1;
-
 		// Do all the processing that happens only once
 		fireball_parse_tbl();
 		fireball_load_data();
+
+		fireballs_inited = true;
 	}
 	
 	// Reset everything between levels

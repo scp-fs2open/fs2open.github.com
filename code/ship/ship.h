@@ -867,6 +867,12 @@ class man_thruster {
     }
 };
 
+// if we are specifying a Default warp with an index into fireball.tbl, use this flag
+#define WT_DEFAULT_WITH_FIREBALL	(1<<31)
+
+// if we have more than one flag defined above, this should mask all of them
+#define WT_FLAG_MASK				~(1<<31)
+
 //Warp type defines
 #define WT_DEFAULT					0
 #define WT_KNOSSOS					1

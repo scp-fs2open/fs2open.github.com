@@ -3480,23 +3480,32 @@ int WE_Default::warpStart()
 	int warp_objnum = -1;
 	if (direction == WD_WARP_OUT)
 	{
-		// maybe special warpout
-		int fireball_type = ((portal_objp != nullptr) || (sip->warpout_type == WT_KNOSSOS) || (sip->warpout_type == WT_DEFAULT_THEN_KNOSSOS)) ? FIREBALL_KNOSSOS : FIREBALL_WARP;
+		// select the fireball we use
+		int fireball_type = FIREBALL_WARP;
+		if ((portal_objp != nullptr) || (sip->warpout_type == WT_KNOSSOS) || (sip->warpout_type == WT_DEFAULT_THEN_KNOSSOS))
+			fireball_type = FIREBALL_KNOSSOS;
+		else if (sip->warpout_type & WT_DEFAULT_WITH_FIREBALL)
+			fireball_type = sip->warpout_type & WT_FLAG_MASK;
 
 		// create fireball
 		warp_objnum = fireball_create(&pos, fireball_type, FIREBALL_WARP_EFFECT, OBJ_INDEX(objp), radius, 1, nullptr, warp_time, shipp->ship_info_index, nullptr, 0, 0, sip->warpout_snd_start, sip->warpout_snd_end);
 	}
 	else if (direction == WD_WARP_IN)
 	{
-		// maybe special warpin
-		int fireball_type = ((portal_objp != nullptr) || (sip->warpin_type == WT_KNOSSOS)) ? FIREBALL_KNOSSOS : FIREBALL_WARP;
+		// select the fireball we use
+		int fireball_type = FIREBALL_WARP;
+		if ((portal_objp != nullptr) || (sip->warpin_type == WT_KNOSSOS))
+			fireball_type = FIREBALL_KNOSSOS;
+		else if (sip->warpin_type & WT_DEFAULT_WITH_FIREBALL)
+			fireball_type = sip->warpin_type & WT_FLAG_MASK;
 
 		// create fireball
 		warp_objnum = fireball_create(&pos, fireball_type, FIREBALL_WARP_EFFECT, OBJ_INDEX(objp), radius, 0, nullptr, warp_time, shipp->ship_info_index, nullptr, 0, 0, sip->warpin_snd_start, sip->warpin_snd_end);
 	}
 	else
 	{
-		Int3();
+		Warning(LOCATION, "Invalid warp direction %d!", direction);
+		return 0;
 	}
 
 	//WMC - bail
