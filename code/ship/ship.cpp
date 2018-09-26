@@ -5711,7 +5711,7 @@ static void ship_set_warp_effects(object *objp, ship_info *sip)
 	if (warpout_type & WT_DEFAULT_WITH_FIREBALL)
 		warpout_type = WT_DEFAULT;
 
-	if (shipp->warpin_effect != NULL)
+	if (shipp->warpin_effect != nullptr)
 		delete shipp->warpin_effect;
 
 	switch (warpin_type)
@@ -5734,7 +5734,7 @@ static void ship_set_warp_effects(object *objp, ship_info *sip)
 			shipp->warpin_effect = new WarpEffect();
 	}
 
-	if (shipp->warpout_effect != NULL)
+	if (shipp->warpout_effect != nullptr)
 		delete shipp->warpout_effect;
 
 	switch (warpout_type)
