@@ -6232,9 +6232,12 @@ void reset_arrival_to_false(p_object *pobjp, bool reset_wing)
 
 /**
  * In both retail and SCP, the dock "leader" is defined as the only guy in his
- * group with a non-false arrival cue
+ * group with a non-false arrival cue.
+ *
+ * If we are forcing a leader, that means *none* of the ships in this dock group
+ * have a non-false arrival cue, so we just need to pick one
  */
-void parse_object_mark_dock_leader_helper(p_object *pobjp, p_dock_function_info *infop)
+void parse_object_mark_dock_leader_sub(p_object *pobjp, p_dock_function_info *infop, bool force_a_leader)
 {
 	int cue_to_check;
 
@@ -6250,7 +6253,7 @@ void parse_object_mark_dock_leader_helper(p_object *pobjp, p_dock_function_info 
 	}
 
 	// is he a leader (using the definition above)?
-	if (!sexp_is_locked_false(cue_to_check))
+	if (!sexp_is_locked_false(cue_to_check) || force_a_leader)
 	{
 		p_object *existing_leader;
 
@@ -6278,6 +6281,16 @@ void parse_object_mark_dock_leader_helper(p_object *pobjp, p_dock_function_info 
         pobjp->flags.set(Mission::Parse_Object_Flags::SF_Dock_leader);
 		infop->maintained_variables.objp_value = pobjp;
 	}
+}
+
+void parse_object_mark_dock_leader_helper(p_object *pobjp, p_dock_function_info *infop)
+{
+	parse_object_mark_dock_leader_sub(pobjp, infop, false);
+}
+
+void parse_object_choose_arbitrary_dock_leader_helper(p_object *pobjp, p_dock_function_info *infop)
+{
+	parse_object_mark_dock_leader_sub(pobjp, infop, true);
 }
 
 // Goober5000
@@ -6389,6 +6402,10 @@ void mission_parse_set_up_initial_docks()
 		if (dfi.maintained_variables.int_value == 0)
 		{
 			Warning(LOCATION, "No dock leaders found in the docking group containing %s.  The group will not appear in-mission!\n", pobjp->name);
+
+			// for FRED, we must arbitrarily choose a dock leader, otherwise the entire docked group will not be loaded
+			if (Fred_running)
+				dock_evaluate_all_docked_objects(pobjp, &dfi, parse_object_choose_arbitrary_dock_leader_helper);
 		}
 		else if (dfi.maintained_variables.int_value > 1)
 		{
