@@ -147,6 +147,9 @@ ADE_FUNC(getType, l_Order, NULL, "Gets the type of the order.", "enumeration", "
 		case AI_GOAL_PLAY_DEAD:
 			eh_idx = LE_ORDER_PLAY_DEAD;
 			break;
+		case AI_GOAL_PLAY_DEAD_PERSISTENT:
+			eh_idx = LE_ORDER_PLAY_DEAD_PERSISTENT;
+			break;
 		case AI_GOAL_FLY_TO_SHIP:
 			eh_idx = LE_ORDER_FLY_TO;
 			break;

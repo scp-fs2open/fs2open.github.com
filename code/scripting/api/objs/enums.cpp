@@ -135,6 +135,12 @@ flag_def_list Enumerations[] = {
 	},
 
 	{
+		"ORDER_PLAY_DEAD_PERSISTENT",
+		LE_ORDER_PLAY_DEAD_PERSISTENT,
+		0
+	},
+
+	{
 		"ORDER_REARM",
 		LE_ORDER_REARM,
 		0

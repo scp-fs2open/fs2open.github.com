@@ -540,6 +540,9 @@ void CFred_mission_save::save_ai_goals(ai_goal* goalp, int ship) {
 		} else if (goalp[i].ai_mode == AI_GOAL_PLAY_DEAD) {
 			fout("( ai-play-dead %d ) ", goalp[i].priority);
 
+		} else if (goalp[i].ai_mode == AI_GOAL_PLAY_DEAD_PERSISTENT) {
+			fout("( ai-play-dead-persistent %d ) ", goalp[i].priority);
+
 		} else if (goalp[i].ai_mode == AI_GOAL_WARP) {
 			fout("( ai-warp-out %d ) ", goalp[i].priority);
 
