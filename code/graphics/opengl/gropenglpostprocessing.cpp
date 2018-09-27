@@ -73,9 +73,6 @@ static GLuint Bloom_framebuffer = 0;
 static GLuint Bloom_textures[2] = { 0 };
 
 static GLuint Post_framebuffer_id[2] = { 0 };
-static GLuint Post_shadow_framebuffer_id = 0;
-static GLuint Post_shadow_texture_id = 0;
-static GLuint Post_shadow_depth_texture_id = 0;
 
 static int Post_texture_width = 0;
 static int Post_texture_height = 0;
@@ -864,76 +861,6 @@ void opengl_setup_bloom_textures()
 	GL_state.BindFrameBuffer(0);
 }
 
-static bool opengl_init_shadow_framebuffer(int size, GLenum color_format) {
-	mprintf(("Trying to create %dx%d %d-bit shadow framebuffer\n", size, size, color_format == GL_RGBA32F ? 32 : 16));
-
-	glGenFramebuffers(1, &Post_shadow_framebuffer_id);
-	GL_state.BindFrameBuffer(Post_shadow_framebuffer_id);
-
-	glGenTextures(1, &Post_shadow_texture_id);
-
-	GL_state.Texture.SetActiveUnit(0);
-	GL_state.Texture.SetTarget(GL_TEXTURE_2D_ARRAY);
-	GL_state.Texture.Enable(Post_shadow_texture_id);
-
-	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-	glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, color_format, size, size, 4, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
-
-	glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, Post_shadow_texture_id, 0);
-
-	glGenTextures(1, &Post_shadow_depth_texture_id);
-
-	GL_state.Texture.Enable(Post_shadow_depth_texture_id);
-
-	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-	glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_DEPTH_COMPONENT32, size, size, 4, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
-
-	glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, Post_shadow_depth_texture_id, 0);
-
-	auto status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
-	if (status == GL_FRAMEBUFFER_COMPLETE) {
-		// Everything is fine
-		mprintf(("Shadow framebuffer created successfully.\n"));
-		return true;
-	}
-
-	// Clean up resources
-	glDeleteTextures(1, &Post_shadow_texture_id);
-	glDeleteTextures(1, &Post_shadow_depth_texture_id);
-	glDeleteFramebuffers(1, &Post_shadow_framebuffer_id);
-
-	Post_shadow_texture_id = 0;
-	Post_shadow_depth_texture_id = 0;
-	Post_shadow_framebuffer_id = 0;
-
-	const char* error;
-	switch (status) {
-	case GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT:
-		error = "Incomplete framebuffer attachment";
-		break;
-	case GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT:
-		error = "Framebuffer is missing an attachment";
-		break;
-	case GL_FRAMEBUFFER_UNSUPPORTED:
-		error = "Framebuffer configuration is unsupported";
-		break;
-	default:
-		error = "Unknown framebuffer status";
-		break;
-	}
-
-	mprintf(("Failed to create framebuffer: %s\n", error));
-	return false;
-}
-
 // generate and test the framebuffer and textures that we are going to use
 static bool opengl_post_init_framebuffer()
 {
@@ -952,17 +879,6 @@ static bool opengl_post_init_framebuffer()
 	}
 
 	opengl_setup_bloom_textures();
-
-	if ( Cmdline_shadow_quality ) {
-		int size = (Cmdline_shadow_quality == 2 ? 1024 : 512);
-
-		if (!opengl_init_shadow_framebuffer(size, GL_RGBA32F)) {
-			if (!opengl_init_shadow_framebuffer(size, GL_RGBA16F)) {
-				mprintf(("Failed to create either 32 or 16-bit color shadow framebuffer. Disabling shadow support.\n"));
-				Cmdline_shadow_quality = 0;
-			}
-		}
-	}
 
 	GL_state.BindFrameBuffer(0);
 
