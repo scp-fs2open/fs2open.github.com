@@ -1905,9 +1905,12 @@ int ai_goal_priority_compare(const void *a, const void *b)
 	// check whether or not the goal override flag is set.  If it is set, then push this goal higher
 	// in the list
 
-	else if ( (ga->flags[AI::Goal_Flags::Goal_override]) && !(gb->flags[AI::Goal_Flags::Goal_override]) )
+	// Goober5000: the ONLY goals we do not override are play-dead and play-dead-persistent,
+	// because the override flag needs to work in any other situation
+
+	else if ( (ga->flags[AI::Goal_Flags::Goal_override]) && !(gb->flags[AI::Goal_Flags::Goal_override]) && !(gb->ai_mode == AI_GOAL_PLAY_DEAD) && !(gb->ai_mode == AI_GOAL_PLAY_DEAD_PERSISTENT) )
 		return -1;
-	else if ( !(ga->flags[AI::Goal_Flags::Goal_override]) && (gb->flags[AI::Goal_Flags::Goal_override]) )
+	else if ( !(ga->flags[AI::Goal_Flags::Goal_override]) && (gb->flags[AI::Goal_Flags::Goal_override]) && !(ga->ai_mode == AI_GOAL_PLAY_DEAD) && !(ga->ai_mode == AI_GOAL_PLAY_DEAD_PERSISTENT))
 		return 1;
 
 	// now normal priority processing
