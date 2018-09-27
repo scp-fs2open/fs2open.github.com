@@ -62,31 +62,32 @@ char	Ai_dock_names[MAX_AI_DOCK_NAMES][NAME_LENGTH];
 // Used in objecttypes.tbl to define custom ship types
 ai_goal_list Ai_goal_names[] =
 {
-	{ "Attack ship",			AI_GOAL_CHASE,			0 },
-	{ "Dock",					AI_GOAL_DOCK,			0 },
-	{ "Waypoints",				AI_GOAL_WAYPOINTS,		0 },
-	{ "Waypoints once",			AI_GOAL_WAYPOINTS_ONCE,	0 },
-	{ "Depart",					AI_GOAL_WARP,			0 },
-	{ "Attack subsys",			AI_GOAL_DESTROY_SUBSYSTEM,	0 },
-	{ "Form on wing",			AI_GOAL_FORM_ON_WING,	0 },
-	{ "Undock",					AI_GOAL_UNDOCK,			0 },
-	{ "Attack wing",			AI_GOAL_CHASE_WING,		0 },
-	{ "Guard ship",				AI_GOAL_GUARD,			0 },
-	{ "Disable ship",			AI_GOAL_DISABLE_SHIP,	0 },
-	{ "Disarm ship",			AI_GOAL_DISARM_SHIP,	0 },
-	{ "Attack any",				AI_GOAL_CHASE_ANY,		0 },
-	{ "Ignore ship",			AI_GOAL_IGNORE,			0 },
-	{ "Ignore ship (new)",		AI_GOAL_IGNORE_NEW,		0 },
-	{ "Guard wing",				AI_GOAL_GUARD_WING,		0 },
-	{ "Evade ship",				AI_GOAL_EVADE_SHIP,		0 },
-	{ "Stay near ship",			AI_GOAL_STAY_NEAR_SHIP,	0 },
-	{ "keep safe dist",			AI_GOAL_KEEP_SAFE_DISTANCE,	0 },
-	{ "Rearm ship",				AI_GOAL_REARM_REPAIR,	0 },
-	{ "Stay still",				AI_GOAL_STAY_STILL,		0 },
-	{ "Play dead",				AI_GOAL_PLAY_DEAD,		0 },
-	{ "Attack weapon",			AI_GOAL_CHASE_WEAPON,	0 },
-	{ "Fly to ship",			AI_GOAL_FLY_TO_SHIP,	0 },
-	{ "Attack ship class",		AI_GOAL_CHASE_SHIP_CLASS, 0 },
+	{ "Attack ship",			AI_GOAL_CHASE,					0 },
+	{ "Dock",					AI_GOAL_DOCK,					0 },
+	{ "Waypoints",				AI_GOAL_WAYPOINTS,				0 },
+	{ "Waypoints once",			AI_GOAL_WAYPOINTS_ONCE,			0 },
+	{ "Depart",					AI_GOAL_WARP,					0 },
+	{ "Attack subsys",			AI_GOAL_DESTROY_SUBSYSTEM,		0 },
+	{ "Form on wing",			AI_GOAL_FORM_ON_WING,			0 },
+	{ "Undock",					AI_GOAL_UNDOCK,					0 },
+	{ "Attack wing",			AI_GOAL_CHASE_WING,				0 },
+	{ "Guard ship",				AI_GOAL_GUARD,					0 },
+	{ "Disable ship",			AI_GOAL_DISABLE_SHIP,			0 },
+	{ "Disarm ship",			AI_GOAL_DISARM_SHIP,			0 },
+	{ "Attack any",				AI_GOAL_CHASE_ANY,				0 },
+	{ "Ignore ship",			AI_GOAL_IGNORE,					0 },
+	{ "Ignore ship (new)",		AI_GOAL_IGNORE_NEW,				0 },
+	{ "Guard wing",				AI_GOAL_GUARD_WING,				0 },
+	{ "Evade ship",				AI_GOAL_EVADE_SHIP,				0 },
+	{ "Stay near ship",			AI_GOAL_STAY_NEAR_SHIP,			0 },
+	{ "keep safe dist",			AI_GOAL_KEEP_SAFE_DISTANCE,		0 },
+	{ "Rearm ship",				AI_GOAL_REARM_REPAIR,			0 },
+	{ "Stay still",				AI_GOAL_STAY_STILL,				0 },
+	{ "Play dead",				AI_GOAL_PLAY_DEAD,				0 },
+	{ "Play dead (persistent)",	AI_GOAL_PLAY_DEAD_PERSISTENT,	0 },
+	{ "Attack weapon",			AI_GOAL_CHASE_WEAPON,			0 },
+	{ "Fly to ship",			AI_GOAL_FLY_TO_SHIP,			0 },
+	{ "Attack ship class",		AI_GOAL_CHASE_SHIP_CLASS,		0 },
 };
 
 int Num_ai_goals = sizeof(Ai_goal_names) / sizeof(ai_goal_list);
@@ -937,6 +938,11 @@ void ai_add_goal_sub_sexp( int sexp, int type, ai_goal *aigp, char *actor_name )
 		aigp->ai_mode = AI_GOAL_PLAY_DEAD;
 		break;
 
+	case OP_AI_PLAY_DEAD_PERSISTENT:
+		aigp->priority = atoi( CTEXT(CDR(node)) );
+		aigp->ai_mode = AI_GOAL_PLAY_DEAD_PERSISTENT;
+		break;
+
 	case OP_AI_KEEP_SAFE_DISTANCE:
 		aigp->priority = atoi( CTEXT(CDR(node)) );
 		aigp->ai_mode = AI_GOAL_KEEP_SAFE_DISTANCE;
@@ -1124,6 +1130,10 @@ int ai_remove_goal_sexp_sub( int sexp, ai_goal* aigp )
 		break;
 	case OP_AI_PLAY_DEAD:
 		goalmode = AI_GOAL_PLAY_DEAD;
+		priority = ( CDR(node) >= 0 ) ? atoi( CTEXT( CDR( node ) ) ) : -1;
+		break;
+	case OP_AI_PLAY_DEAD_PERSISTENT:
+		goalmode = AI_GOAL_PLAY_DEAD_PERSISTENT;
 		priority = ( CDR(node) >= 0 ) ? atoi( CTEXT( CDR( node ) ) ) : -1;
 		break;
 	case OP_AI_KEEP_SAFE_DISTANCE:
@@ -1401,7 +1411,7 @@ int ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 	//  these orders are always achievable.
 	if ( (aigp->ai_mode == AI_GOAL_KEEP_SAFE_DISTANCE)
 		|| (aigp->ai_mode == AI_GOAL_CHASE_ANY) || (aigp->ai_mode == AI_GOAL_STAY_STILL)
-		|| (aigp->ai_mode == AI_GOAL_PLAY_DEAD) )
+		|| (aigp->ai_mode == AI_GOAL_PLAY_DEAD) || (aigp->ai_mode == AI_GOAL_PLAY_DEAD_PERSISTENT) )
 		return AI_GOAL_ACHIEVABLE;
 
 	// warp (depart) only achievable if there's somewhere to depart to
@@ -2285,6 +2295,13 @@ void ai_process_mission_orders( int objnum, ai_info *aip )
 		// if a ship is playing dead, MWA says that it shouldn't try to do anything else.
 		// clearing out goals is okay here since we are now what mode to set this AI object to.
 		ai_clear_ship_goals( aip );
+		aip->mode = AIM_PLAY_DEAD;
+		aip->submode = -1;
+		aip->submode_start_time = Missiontime;
+		break;
+
+	case AI_GOAL_PLAY_DEAD_PERSISTENT:
+		// same as above, but we don't clear out ship goals
 		aip->mode = AIM_PLAY_DEAD;
 		aip->submode = -1;
 		aip->submode_start_time = Missiontime;

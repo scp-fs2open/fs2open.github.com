@@ -1269,6 +1269,11 @@ ADE_FUNC(giveOrder, l_Ship, "enumeration Order, [object Target=nil, subsystem Ta
 			ai_mode = AI_GOAL_PLAY_DEAD;
 			break;
 		}
+		case LE_ORDER_PLAY_DEAD_PERSISTENT:
+		{
+			ai_mode = AI_GOAL_PLAY_DEAD_PERSISTENT;
+			break;
+		}
 		case LE_ORDER_FLY_TO:
 		{
 			if(tgh_valid && tgh->objp->type == OBJ_SHIP)

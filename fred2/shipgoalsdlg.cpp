@@ -446,6 +446,7 @@ void ShipGoalsDlg::initialize(ai_goal *goals, int ship)
 			case AI_GOAL_UNDOCK:
 			case AI_GOAL_KEEP_SAFE_DISTANCE:
 			case AI_GOAL_PLAY_DEAD:
+			case AI_GOAL_PLAY_DEAD_PERSISTENT:
 			case AI_GOAL_WARP:
 				continue;
 
@@ -610,7 +611,7 @@ void ShipGoalsDlg::set_item(int item, int init)
 
 	auto mode = m_behavior_box[item] -> GetItemData(m_behavior[item]);
 	m_priority_box[item] -> EnableWindow(TRUE);
-	if ((mode == AI_GOAL_CHASE_ANY) || (mode == AI_GOAL_UNDOCK) || (mode == AI_GOAL_KEEP_SAFE_DISTANCE) || (mode == AI_GOAL_PLAY_DEAD) || (mode == AI_GOAL_WARP) ) {
+	if ((mode == AI_GOAL_CHASE_ANY) || (mode == AI_GOAL_UNDOCK) || (mode == AI_GOAL_KEEP_SAFE_DISTANCE) || (mode == AI_GOAL_PLAY_DEAD) || (mode == AI_GOAL_PLAY_DEAD_PERSISTENT) || (mode == AI_GOAL_WARP) ) {
 		m_object_box[item] -> EnableWindow(FALSE);
 		m_subsys_box[item] -> EnableWindow(FALSE);
 		m_dock2_box[item] -> EnableWindow(FALSE);
@@ -930,6 +931,7 @@ void ShipGoalsDlg::update_item(int item, int multi)
 		case AI_GOAL_UNDOCK:
 		case AI_GOAL_KEEP_SAFE_DISTANCE:
 		case AI_GOAL_PLAY_DEAD:
+		case AI_GOAL_PLAY_DEAD_PERSISTENT:
 		case AI_GOAL_WARP:
 			// these goals do not have a target in the dialog box, so let's set the goal and return immediately
 			// so that we don't run afoul of the "doesn't have a valid target" code at the bottom of the function
@@ -1099,7 +1101,7 @@ void ShipGoalsDlg::OnOK()
 
 	for (i=0; i<ED_MAX_GOALS; i++) {
 		auto mode = m_behavior_box[i] -> GetItemData(m_behavior[i]);
-		if ((mode != AI_GOAL_NONE) && (mode != AI_GOAL_CHASE_ANY) && (mode != AI_GOAL_UNDOCK) && (mode != AI_GOAL_KEEP_SAFE_DISTANCE) && (mode != AI_GOAL_PLAY_DEAD) && (mode != AI_GOAL_WARP) ) {
+		if ((mode != AI_GOAL_NONE) && (mode != AI_GOAL_CHASE_ANY) && (mode != AI_GOAL_UNDOCK) && (mode != AI_GOAL_KEEP_SAFE_DISTANCE) && (mode != AI_GOAL_PLAY_DEAD) && (mode != AI_GOAL_PLAY_DEAD_PERSISTENT) && (mode != AI_GOAL_WARP) ) {
 			if (!m_object_box[i] -> GetCount())  // no valid objects?
 				m_behavior[i] = 0;
 			else

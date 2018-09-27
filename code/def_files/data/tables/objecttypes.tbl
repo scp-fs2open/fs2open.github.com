@@ -45,7 +45,7 @@ $Fog:
 	+Start dist:			10.0										
 	+Compl dist:			600.0										
 $AI:																	
-	+Valid goals:			( "fly to ship" "attack ship" "attack wing" "dock" "waypoints" "waypoints once" "depart" "undock" "stay still" "play dead" "stay near ship" )	
+	+Valid goals:			( "fly to ship" "attack ship" "attack wing" "dock" "waypoints" "waypoints once" "depart" "undock" "stay still" "play dead" "play dead (persistent)" "stay near ship" )	
 	+Actively Pursues:		( "navbuoy" "sentry gun" "escape pod" "cargo" "support" "stealth" "fighter" "bomber" "fighter/bomber" "transport" "freighter" "awacs" "gas miner" "cruiser" "corvette" "capital" "super cap" "drydock" "knossos device" )	
 	+Turrets attack this:	YES											
 	+Ignored on cripple by:	( "navbuoy" "sentry gun" "escape pod" "cargo" "support" "stealth" "fighter" "bomber" "fighter/bomber" "transport" "freighter" "awacs" "gas miner" "cruiser" "corvette" "capital" "super cap" "drydock" "knossos device" )	
@@ -79,7 +79,7 @@ $Fog:
 	+Start dist:			10.0										
 	+Compl dist:			500.0										
 $AI:																	
-	+Valid goals:			( "fly to ship" "dock" "undock" "waypoints" "waypoints once" "stay near ship" "keep safe dist" "stay still" "play dead" )							
+	+Valid goals:			( "fly to ship" "dock" "undock" "waypoints" "waypoints once" "stay near ship" "keep safe dist" "stay still" "play dead" "play dead (persistent)" )							
 	+Accept Player Orders:	YES											
 	+Player orders:			( "rearm me" "abort rearm" "depart" )																	
 	+Auto attacks:			YES											
@@ -104,7 +104,7 @@ $Fog:
 	+Start dist:			10.0										
 	+Compl dist:			500.0										
 $AI:																	
-	+Valid goals:			( "fly to ship" "attack ship" "waypoints" "waypoints once" "depart" "attack subsys" "attack wing" "guard ship" "disable ship" "disarm ship" "attack any" "attack ship class" "ignore ship" "ignore ship (new)" "guard wing" "evade ship" "stay still" "play dead" "stay near ship" "keep safe dist" )	
+	+Valid goals:			( "fly to ship" "attack ship" "waypoints" "waypoints once" "depart" "attack subsys" "attack wing" "guard ship" "disable ship" "disarm ship" "attack any" "attack ship class" "ignore ship" "ignore ship (new)" "guard wing" "evade ship" "stay still" "play dead" "play dead (persistent)" "stay near ship" "keep safe dist" )	
 	+Accept Player Orders:	YES											
 	+Player Orders:			( "attack ship" "disable ship" "disarm ship" "guard ship" "ignore ship" "ignore ship (new)" "form on wing" "cover me" "attack any" "depart" "disable subsys" )		
 	+Auto attacks:			YES											
@@ -130,7 +130,7 @@ $Fog:
 	+Start dist:			10.0										
 	+Compl dist:			500.0										
 $AI:																	
-	+Valid goals:			( "fly to ship" "attack ship" "waypoints" "waypoints once" "depart" "attack subsys" "attack wing" "guard ship" "disable ship" "disarm ship" "attack any" "attack ship class" "ignore ship" "ignore ship (new)" "guard wing" "evade ship" "stay still" "play dead" "stay near ship" "keep safe dist" "form on wing")	
+	+Valid goals:			( "fly to ship" "attack ship" "waypoints" "waypoints once" "depart" "attack subsys" "attack wing" "guard ship" "disable ship" "disarm ship" "attack any" "attack ship class" "ignore ship" "ignore ship (new)" "guard wing" "evade ship" "stay still" "play dead" "play dead (persistent)" "stay near ship" "keep safe dist" "form on wing")	
 	+Accept Player Orders:	YES											
 	+Player Orders:			( "attack ship" "disable ship" "disarm ship" "guard ship" "ignore ship" "ignore ship (new)" "form on wing" "cover me" "attack any" "depart" "disable subsys" )		
 	+Auto attacks:			YES											
@@ -157,7 +157,7 @@ $Fog:
 	+Start dist:			10.0										
 	+Compl dist:			500.0										
 $AI:																	
-	+Valid goals:			( "fly to ship" "attack ship" "waypoints" "waypoints once" "depart" "attack subsys" "attack wing" "guard ship" "disable ship" "disarm ship" "attack any" "attack ship class" "ignore ship" "ignore ship (new)" "guard wing" "evade ship" "stay still" "play dead" "stay near ship" "keep safe dist" "form on wing" )	
+	+Valid goals:			( "fly to ship" "attack ship" "waypoints" "waypoints once" "depart" "attack subsys" "attack wing" "guard ship" "disable ship" "disarm ship" "attack any" "attack ship class" "ignore ship" "ignore ship (new)" "guard wing" "evade ship" "stay still" "play dead" "play dead (persistent)" "stay near ship" "keep safe dist" "form on wing" )	
 	+Accept Player Orders:	YES											
 	+Player Orders:			( "attack ship" "disable ship" "disarm ship" "guard ship" "ignore ship" "ignore ship (new)" "form on wing" "cover me" "attack any" "depart" "disable subsys" )		
 	+Auto attacks:			YES											
@@ -184,7 +184,7 @@ $Fog:
 	+Start dist:			10.0										
 	+Compl dist:			500.0										
 $AI:																	
-	+Valid goals:			( "fly to ship" "attack ship" "waypoints" "waypoints once" "depart" "attack subsys" "attack wing" "guard ship" "disable ship" "disarm ship" "attack any" "attack ship class" "ignore ship" "ignore ship (new)" "guard wing" "evade ship" "stay still" "play dead" "stay near ship" "keep safe dist" "form on wing" )	
+	+Valid goals:			( "fly to ship" "attack ship" "waypoints" "waypoints once" "depart" "attack subsys" "attack wing" "guard ship" "disable ship" "disarm ship" "attack any" "attack ship class" "ignore ship" "ignore ship (new)" "guard wing" "evade ship" "stay still" "play dead" "play dead (persistent)" "stay near ship" "keep safe dist" "form on wing" )	
 	+Accept Player Orders:	YES											
 	+Player Orders:			( "attack ship" "disable ship" "disarm ship" "guard ship" "ignore ship" "ignore ship (new)" "form on wing" "cover me" "attack any" "depart" "disable subsys" )		
 	+Auto attacks:			YES											
@@ -210,7 +210,7 @@ $Fog:
 	+Start dist:			10.0										
 	+Compl dist:			500.0										
 $AI:																	
-	+Valid goals:			( "fly to ship" "attack ship" "attack wing" "dock" "waypoints" "waypoints once" "depart" "undock" "stay still" "play dead" "stay near ship" )	
+	+Valid goals:			( "fly to ship" "attack ship" "attack wing" "dock" "waypoints" "waypoints once" "depart" "undock" "stay still" "play dead" "play dead (persistent)" "stay near ship" )	
 	+Accept Player Orders:	YES											
 	+Player Orders:			( "attack ship" "dock" "depart" )		
 	+Auto attacks:			YES											
@@ -238,7 +238,7 @@ $Fog:
 	+Start dist:			10.0										
 	+Compl dist:			600.0										
 $AI:																	
-	+Valid goals:			( "fly to ship" "attack ship" "attack wing" "dock" "waypoints" "waypoints once" "depart" "undock" "stay still" "play dead" "stay near ship" )	
+	+Valid goals:			( "fly to ship" "attack ship" "attack wing" "dock" "waypoints" "waypoints once" "depart" "undock" "stay still" "play dead" "play dead (persistent)" "stay near ship" )	
 	+Accept Player Orders:	YES											
 	+Player Orders:			( "attack ship" "dock" "depart" )		
 	+Auto attacks:			YES											
@@ -266,7 +266,7 @@ $Fog:
 	+Start dist:			10.0										
 	+Compl dist:			600.0										
 $AI:																	
-	+Valid goals:			( "fly to ship" "attack ship" "attack wing" "dock" "waypoints" "waypoints once" "depart" "undock" "stay still" "play dead" "stay near ship" )	
+	+Valid goals:			( "fly to ship" "attack ship" "attack wing" "dock" "waypoints" "waypoints once" "depart" "undock" "stay still" "play dead" "play dead (persistent)" "stay near ship" )	
 	+Accept Player Orders:	YES											
 	+Player Orders:			( "attack ship" "depart" )				
 	+Auto attacks:			YES											
@@ -293,7 +293,7 @@ $Fog:
 	+Start dist:			10.0										
 	+Compl dist:			600.0										
 $AI:																	
-	+Valid goals:			( "fly to ship" "attack ship" "attack wing" "dock" "waypoints" "waypoints once" "depart" "undock" "stay still" "play dead" "stay near ship" )	
+	+Valid goals:			( "fly to ship" "attack ship" "attack wing" "dock" "waypoints" "waypoints once" "depart" "undock" "stay still" "play dead" "play dead (persistent)" "stay near ship" )	
 	+Accept Player Orders:	YES											
 	+Player Orders:			( "attack ship" "depart" )				
 	+Auto attacks:			YES											
@@ -320,7 +320,7 @@ $Fog:
 	+Start dist:			10.0										
 	+Compl dist:			600.0										
 $AI:																	
-	+Valid goals:			( "fly to ship" "attack ship" "attack wing" "dock" "waypoints" "waypoints once" "depart" "undock" "stay still" "play dead" "stay near ship" )	
+	+Valid goals:			( "fly to ship" "attack ship" "attack wing" "dock" "waypoints" "waypoints once" "depart" "undock" "stay still" "play dead" "play dead (persistent)" "stay near ship" )	
 	+Accept Player Orders:	YES											
 	+Player Orders:			( "attack ship" "depart" )				
 	+Auto attacks:			YES											
@@ -347,7 +347,7 @@ $Fog:
 	+Start dist:			10.0										
 	+Compl dist:			600.0										
 $AI:																	
-	+Valid goals:			( "fly to ship" "attack ship" "attack wing" "dock" "waypoints" "waypoints once" "depart" "undock" "stay still" "play dead" "stay near ship" )	
+	+Valid goals:			( "fly to ship" "attack ship" "attack wing" "dock" "waypoints" "waypoints once" "depart" "undock" "stay still" "play dead" "play dead (persistent)" "stay near ship" )	
 	+Accept Player Orders:	YES											
 	+Player Orders:			( "attack ship" "depart" )				
 	+Auto attacks:			YES											
@@ -375,7 +375,7 @@ $Fog:
 	+Start dist:			10.0										
 	+Compl dist:			750.0										
 $AI:																	
-	+Valid goals:			( "fly to ship" "attack ship" "attack wing" "waypoints" "waypoints once" "depart" "stay still" "play dead" "stay near ship" )						
+	+Valid goals:			( "fly to ship" "attack ship" "attack wing" "waypoints" "waypoints once" "depart" "stay still" "play dead" "play dead (persistent)" "stay near ship" )						
 	+Accept Player Orders:	YES											
 	+Player Orders:			( "depart" )								
 	+Auto attacks:			YES											
@@ -403,7 +403,7 @@ $Fog:
 	+Start dist:			10.0										
 	+Compl dist:			1000.0										
 $AI:																	
-	+Valid goals:			( "fly to ship" "attack ship" "attack wing" "waypoints" "waypoints once" "depart" "stay still" "play dead" "stay near ship" )						
+	+Valid goals:			( "fly to ship" "attack ship" "attack wing" "waypoints" "waypoints once" "depart" "stay still" "play dead" "play dead (persistent)" "stay near ship" )
 	+Auto attacks:			YES											
 	+Attempt Broadside:		YES											
 	+Actively Pursues:		( "transport" "freighter" "awacs" "gas miner" "cruiser" "corvette" "capital" "super cap" "drydock" "knossos device" )										
