@@ -53,14 +53,13 @@ ADE_INDEXER(l_HookVar_Globals, "number Index", "Array of current HookVariable na
 	}
 
 	//List 'em
-	char *keyname = NULL;
 	int count = 1;
 	lua_pushnil(L);
 	while(lua_next(L, amt_ldx))
 	{
 		//Now on stack: Key, value
 		lua_pushvalue(L, -2);
-		keyname = (char *)lua_tostring(L, -1);
+		auto keyname = lua_tostring(L, -1);
 		if(strcmp(keyname, "Globals") != 0)
 		{
 			if(count == idx)

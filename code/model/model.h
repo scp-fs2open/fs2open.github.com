@@ -642,7 +642,7 @@ public:
 	bool is_transparent;
 
 	int FindTexture(int bm_handle);
-	int FindTexture(char *name);
+	int FindTexture(const char* name);
 
 	void PageIn();
 	void PageOut(bool release);
@@ -1005,7 +1005,7 @@ extern void submodel_get_two_random_points_better(int model_num, int submodel_nu
 // Returns the index.  second functions returns the index of the docking bay with
 // the specified name
 extern int model_find_dock_index(int modelnum, int dock_type, int index_to_start_at = 0);
-extern int model_find_dock_name_index(int modelnum, char *name);
+extern int model_find_dock_name_index(int modelnum, const char* name);
 
 // returns the actual name of a docking point on a model, needed by Fred.
 char *model_get_dock_name(int modelnum, int index);

@@ -332,7 +332,7 @@ ADE_FUNC(accessButtonInfo, l_Control_Info, "number, number, number, number", "Ac
 ADE_FUNC(useButtonControl, l_Control_Info, "number, string", "Adds the defined button control to lua button control data, if number is -1 it tries to use the string", NULL, NULL)
 {
 	int index;
-	char *buf = NULL;
+	const char* buf = nullptr;
 
 	if(!ade_get_args(L, "i|s", &index, &buf))
 		return ADE_RETURN_NIL;
@@ -379,7 +379,7 @@ ADE_FUNC(getButtonControlName, l_Control_Info, "number", "Gives the name of the 
 ADE_FUNC(getButtonControlNumber, l_Control_Info, "string", "Gives the number of the command corresponding with the given string", "number", "Number of the command")
 {
 	int i;
-	char *buf;
+	const char* buf;
 
 	if(!ade_get_args(L, "s", &buf))
 		return ade_set_error(L, "i", -1);

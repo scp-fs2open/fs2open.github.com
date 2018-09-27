@@ -24,7 +24,7 @@ ADE_VIRTVAR(Name, l_HudGauge, "string", "Custom HUD Gauge name", "string", "Cust
 ADE_VIRTVAR(Text, l_HudGauge, "string", "Custom HUD Gauge text", "string", "Custom HUD Gauge text, or nil if handle is invalid")
 {
 	HudGauge* gauge;
-	char* text = NULL;
+	const char* text = nullptr;
 
 	if (!ade_get_args(L, "o|s", l_HudGauge.Get(&gauge), &text))
 		return ADE_RETURN_NIL;

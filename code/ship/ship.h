@@ -226,7 +226,7 @@ public:
 
 	//Get
 	char *GetNamePtr(){return Name;}
-	bool IsName(char *in_name){return (stricmp(in_name,Name)==0);}
+	bool IsName(const char* in_name) { return (stricmp(in_name, Name) == 0); }
 	float GetDamage(float damage_applied, int in_damage_type_idx, float diff_dmg_scale, int is_beam = 0);
 	float GetShieldPiercePCT(int damage_type_idx);
 	int GetPiercingType(int damage_type_idx);
@@ -1379,7 +1379,7 @@ extern void ship_init();				// called once	at game start
 extern void ship_level_init();		// called before the start of each level
 
 //returns -1 if failed
-extern int ship_create(matrix * orient, vec3d * pos, int ship_type, char *ship_name = NULL);
+extern int ship_create(matrix* orient, vec3d* pos, int ship_type, const char* ship_name = nullptr);
 extern void change_ship_type(int n, int ship_type, int by_sexp = 0);
 extern void ship_process_pre( object * objp, float frametime );
 extern void ship_process_post( object * objp, float frametime );
@@ -1515,7 +1515,7 @@ extern ship_subsys *ship_get_closest_subsys_in_sight(ship *sp, int subsys_type, 
 //WMC
 char *ship_subsys_get_name(ship_subsys *ss);
 bool ship_subsys_has_instance_name(ship_subsys *ss);
-void ship_subsys_set_name(ship_subsys *ss, char *n_name);
+void ship_subsys_set_name(ship_subsys* ss, const char* n_name);
 
 // subsys disruption
 extern int ship_subsys_disrupted(ship_subsys *ss);
@@ -1749,7 +1749,7 @@ int ship_tvt_wing_lookup(const char *wing_name);
 // Goober5000
 int ship_class_compare(int ship_class_1, int ship_class_2);
 
-int armor_type_get_idx(char* name);
+int armor_type_get_idx(const char* name);
 
 void armor_init();
 

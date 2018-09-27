@@ -34,7 +34,7 @@ ADE_FUNC(getSoundentry, l_Audio, "string/number", "Return a sound entry matching
 	}
 	else
 	{
-		char *s = NULL;
+		const char* s = nullptr;
 		if(!ade_get_args(L, "s", &s))
 			return ade_set_error(L, "o", l_SoundEntry.Set(sound_entry_h()));
 
@@ -56,7 +56,7 @@ ADE_FUNC(getSoundentry, l_Audio, "string/number", "Return a sound entry matching
 
 ADE_FUNC(loadSoundfile, l_Audio, "string filename", "Loads the specified sound file", "soundfile", "A soundfile handle")
 {
-	char* fileName = NULL;
+	const char* fileName = nullptr;
 
 	if (!ade_get_args(L, "s", &fileName))
 		return ade_set_error(L, "o", l_Soundfile.Set(sound_load_id::invalid()));
@@ -202,7 +202,7 @@ ADE_FUNC(playInterfaceSoundByName, l_Audio, "string name",
 
 ADE_FUNC(playMusic, l_Audio, "string Filename, [float volume = 1.0, bool looping = true]", "Plays a music file using FS2Open's builtin music system. Volume is currently ignored, uses players music volume setting. Files passed to this function are looped by default.", "number", "Audiohandle of the created audiostream, or -1 on failure")
 {
-	char *s;
+	const char* s;
 	float volume = 1.0f;
 	bool loop = true;
 	if (!ade_get_args(L, "s|fb", &s, &volume, &loop))
@@ -223,7 +223,7 @@ ADE_FUNC(stopMusic, l_Audio, "int audiohandle, [bool fade = false], [string 'bri
 {
 	int ah;
 	bool fade = false;
-	char *music_type = NULL;
+	const char* music_type = nullptr;
 
 	if(!ade_get_args(L, "i|bs", &ah, &fade, &music_type))
 		return ADE_RETURN_NIL;

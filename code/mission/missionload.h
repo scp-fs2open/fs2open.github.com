@@ -27,7 +27,7 @@ extern SCP_vector<SCP_string> Ignored_missions;
 // It sets the following global variables:
 // Game_current_mission_filename
 
-int mission_load(char *filename_ext);
+int mission_load(const char* filename_ext);
 
 bool mission_is_ignored(const char *filename);
 

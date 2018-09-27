@@ -1823,7 +1823,7 @@ void mission_campaign_exit_loop()
  * all previous missions marked skipped
  * this relies on correct mission ordering in the campaign file
  */
-void mission_campaign_jump_to_mission(char *name, bool no_skip)
+void mission_campaign_jump_to_mission(const char* name, bool no_skip)
 {
 	int i = 0, mission_num = -1;
 	char dest_name[64], *p;

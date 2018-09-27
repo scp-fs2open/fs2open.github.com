@@ -84,7 +84,7 @@ ADE_FUNC(setCursorImage, l_Mouse, "Image filename", "Sets mouse cursor image, an
 	if (Is_standalone)
 		return ade_set_error(L, "b", false);
 
-	char *s = NULL;
+	const char* s = nullptr;
 	enum_h *u = NULL; // This isn't used anymore
 
 	if(!ade_get_args(L, "s|o", &s, l_Enum.GetPtr(&u)))

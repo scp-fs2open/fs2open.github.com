@@ -7442,7 +7442,7 @@ void ship_destroy_instantly(object *ship_objp, int shipnum)
 	
 	// scripting stuff
 	Script_system.SetHookObject("Self", ship_objp);
-	Script_system.RunCondition(CHA_DEATH, 0, NULL, ship_objp);
+	Script_system.RunCondition(CHA_DEATH, ship_objp);
 	Script_system.RemHookVar("Self");
 
 	ship_objp->flags.set(Object::Object_Flags::Should_be_dead);
@@ -9376,7 +9376,7 @@ static void ship_init_afterburners(ship *shipp)
  * Returns object index of ship.
  * @return -1 means failed.
  */
-int ship_create(matrix *orient, vec3d *pos, int ship_type, char *ship_name)
+int ship_create(matrix* orient, vec3d* pos, int ship_type, const char* ship_name)
 {
 	int			i, n, objnum, j, k, t;
 	ship_info	*sip;
@@ -11528,9 +11528,9 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 			target = &Objects[Player_ai->target_objnum]; 
 
 		Script_system.SetHookObjects(2, "User", objp, "Target", target);
-		Script_system.RunCondition(CHA_ONWPFIRED, 0, NULL, objp, 1);
+		Script_system.RunCondition(CHA_ONWPFIRED, objp, 1);
 
-		Script_system.RunCondition(CHA_PRIMARYFIRE, 0, NULL, objp);
+		Script_system.RunCondition(CHA_PRIMARYFIRE, objp);
 		Script_system.RemHookVars(2, "User", "Target");
 	}
 
@@ -12196,8 +12196,8 @@ done_secondary:
 		if (objp == Player_obj && Player_ai->target_objnum != -1)
 			target = &Objects[Player_ai->target_objnum]; 
 		Script_system.SetHookObjects(2, "User", objp, "Target", target);
-		Script_system.RunCondition(CHA_ONWPFIRED, 0, NULL, objp);
-		Script_system.RunCondition(CHA_SECONDARYFIRE, 0, NULL, objp);
+		Script_system.RunCondition(CHA_ONWPFIRED, objp);
+		Script_system.RunCondition(CHA_SECONDARYFIRE, objp);
 		Script_system.RemHookVars(2, "User", "Target");
 	}
 
@@ -12455,9 +12455,9 @@ int ship_select_next_primary(object *objp, int direction)
 		if (objp == Player_obj && Player_ai->target_objnum != -1)
 			target = &Objects[Player_ai->target_objnum]; 
 		Script_system.SetHookObjects(2, "User", objp, "Target", target);
-		Script_system.RunCondition(CHA_ONWPSELECTED, 0, NULL, objp);
+		Script_system.RunCondition(CHA_ONWPSELECTED, objp);
 		Script_system.SetHookObjects(2, "User", objp, "Target", target);
-		Script_system.RunCondition(CHA_ONWPDESELECTED, 0, NULL, objp);
+		Script_system.RunCondition(CHA_ONWPDESELECTED, objp);
 		Script_system.RemHookVars(2, "User", "Target");
 		return 1;
 	}
@@ -12549,9 +12549,9 @@ int ship_select_next_secondary(object *objp)
 			if (objp == Player_obj && Player_ai->target_objnum != -1)
 				target = &Objects[Player_ai->target_objnum]; 
 			Script_system.SetHookObjects(2, "User", objp, "Target", target);
-			Script_system.RunCondition(CHA_ONWPSELECTED, 0, NULL, objp);
+			Script_system.RunCondition(CHA_ONWPSELECTED, objp);
 			Script_system.SetHookObjects(2, "User", objp, "Target", target);
-			Script_system.RunCondition(CHA_ONWPDESELECTED, 0, NULL, objp);
+			Script_system.RunCondition(CHA_ONWPDESELECTED, objp);
 			Script_system.RemHookVars(2, "User", "Target");
 			return 1;
 		}
@@ -14942,10 +14942,7 @@ bool ship_subsys_has_instance_name(ship_subsys *ss)
 		return false;
 }
 
-void ship_subsys_set_name(ship_subsys *ss, char* n_name)
-{
-	strncpy(ss->sub_name, n_name, NAME_LENGTH-1);
-}
+void ship_subsys_set_name(ship_subsys* ss, const char* n_name) { strncpy(ss->sub_name, n_name, NAME_LENGTH - 1); }
 
 /**
  * Return the shield strength of the specified quadrant on hit_objp
@@ -18287,7 +18284,7 @@ void ArmorType::ParseData()
 
 //********************************Global functions
 
-int armor_type_get_idx(char* name)
+int armor_type_get_idx(const char* name)
 {
 	auto num = Armor_types.size();
 	for(size_t i = 0; i < num; i++)

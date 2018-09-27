@@ -76,7 +76,7 @@ ADE_FUNC(getObjectFromSignature, l_Mission, "number Signature", "Gets a handle o
 
 ADE_FUNC(evaluateSEXP, l_Mission, "string", "Runs the defined SEXP script", "boolean", "if the operation was successful")
 {
-	char *s;
+	const char* s;
 	int r_val;
 
 	if(!ade_get_args(L, "s", &s))
@@ -92,7 +92,7 @@ ADE_FUNC(evaluateSEXP, l_Mission, "string", "Runs the defined SEXP script", "boo
 
 ADE_FUNC(runSEXP, l_Mission, "string", "Runs the defined SEXP script", "boolean", "if the operation was successful")
 {
-	char *s;
+	const char* s;
 	int r_val;
 	char buf[8192];
 
@@ -215,7 +215,7 @@ ADE_LIB_DERIV(l_Mission_Events, "Events", NULL, "Events", l_Mission);
 
 ADE_INDEXER(l_Mission_Events, "number Index/string Name", "Indexes events list", "event", "Event handle, or invalid event handle if index was invalid")
 {
-	char *s;
+	const char* s;
 	if(!ade_get_args(L, "*s", &s))
 		return ade_set_error(L, "o", l_Event.Set(-1));
 
@@ -247,8 +247,8 @@ ADE_LIB_DERIV(l_Mission_SEXPVariables, "SEXPVariables", NULL, "SEXP Variables", 
 
 ADE_INDEXER(l_Mission_SEXPVariables, "number Index/string Name", "Array of SEXP variables. Note that you can set a sexp variable using the array, eg \'SEXPVariables[\"newvariable\"] = \"newvalue\"\'", "sexpvariable", "Handle to SEXP variable, or invalid sexpvariable handle if index was invalid")
 {
-	char *name = NULL;
-	char *newval = NULL;
+	const char* name   = nullptr;
+	const char* newval = nullptr;
 	if(!ade_get_args(L, "*s|s", &name, &newval))
 		return ade_set_error(L, "o", l_SEXPVariable.Set(sexpvar_h()));
 
@@ -295,7 +295,7 @@ ADE_LIB_DERIV(l_Mission_Ships, "Ships", NULL, "Ships in the mission", l_Mission)
 
 ADE_INDEXER(l_Mission_Ships, "number Index/string Name", "Gets ship", "ship", "Ship handle, or invalid ship handle if index was invalid")
 {
-	char *name;
+	const char* name;
 	if(!ade_get_args(L, "*s", &name))
 		return ade_set_error(L, "o", l_Ship.Set(object_h()));
 
@@ -388,7 +388,7 @@ ADE_LIB_DERIV(l_Mission_WaypointLists, "WaypointLists", NULL, NULL, l_Mission);
 ADE_INDEXER(l_Mission_WaypointLists, "number Index/string WaypointListName", "Array of waypoint lists", "waypointlist", "Gets waypointlist handle")
 {
 	waypointlist_h wpl;
-	char *name;
+	const char* name;
 	if(!ade_get_args(L, "*s", &name))
 		return ade_set_error(L, "o", l_WaypointList.Set(waypointlist_h()));
 
@@ -482,7 +482,7 @@ ADE_LIB_DERIV(l_Mission_Wings, "Wings", NULL, NULL, l_Mission);
 
 ADE_INDEXER(l_Mission_Wings, "number Index/string WingName", "Wings in the mission", "wing", "Wing handle, or invalid wing handle if index or name was invalid")
 {
-	char *name;
+	const char* name;
 	if(!ade_get_args(L, "*s", &name))
 		return ade_set_error(L, "o", l_Wing.Set(-1));
 
@@ -511,7 +511,7 @@ ADE_LIB_DERIV(l_Mission_Teams, "Teams", NULL, NULL, l_Mission);
 
 ADE_INDEXER(l_Mission_Teams, "number Index/string TeamName", "Teams in the mission", "team", "Team handle or invalid team handle if the requested team could not be found")
 {
-	char *name;
+	const char* name;
 	if(!ade_get_args(L, "*s", &name))
 		return ade_set_error(L, "o", l_Team.Set(-1));
 
@@ -553,7 +553,7 @@ ADE_INDEXER(l_Mission_Messages, "number Index/string messageName", "Messages of 
 	}
 	else
 	{
-		char* name = NULL;
+		const char* name = nullptr;
 
 		if (!ade_get_args(L, "*s", &name))
 			return ade_set_args(L, "o", l_Message.Set(-1));
@@ -598,7 +598,7 @@ ADE_INDEXER(l_Mission_BuiltinMessages, "number Index/string messageName", "Built
 	}
 	else
 	{
-		char* name = NULL;
+		const char* name = nullptr;
 
 		if (!ade_get_args(L, "*s", &name))
 			return ade_set_args(L, "o", l_Message.Set(-1));
@@ -643,7 +643,7 @@ ADE_INDEXER(l_Mission_Personas, "number Index/string name", "Personas of the mis
 	}
 	else
 	{
-		char* name = NULL;
+		const char* name = nullptr;
 
 		if (!ade_get_args(L, "*s", &name))
 			return ade_set_args(L, "o", l_Persona.Set(-1));
@@ -667,8 +667,8 @@ ADE_FUNC(__len, l_Mission_Personas, NULL, "Number of personas in the mission", "
 
 ADE_FUNC(addMessage, l_Mission, "string name, string text[, persona persona]", "Adds a message", "message", "The new message or invalid handle on error")
 {
-	char* name = NULL;
-	char* text = NULL;
+	const char* name = nullptr;
+	const char* text = nullptr;
 	int personaIdx = -1;
 
 	if (!ade_get_args(L, "ss|o", &name, &text, l_Persona.Get(&personaIdx)))
@@ -691,7 +691,7 @@ ADE_FUNC(sendMessage, l_Mission, "string sender, message message[, number delay=
 			 "If you pass <i>nil</i> as the sender then the message will not have a sender.",
 		 "boolean", "true if successfull, false otherwise")
 {
-	char* sender = NULL;
+	const char* sender = nullptr;
 	int messageIdx = -1;
 	int priority = MESSAGE_PRIORITY_NORMAL;
 	bool fromCommand = false;
@@ -795,7 +795,7 @@ ADE_FUNC(sendTrainingMessage, l_Mission, "message message, number time[, number 
 
 ADE_FUNC(createShip, l_Mission, "[string Name, shipclass Class=Shipclass[1], orientation Orientation=null, vector Position={0,0,0}]", "Creates a ship and returns a handle to it using the specified name, class, world orientation, and world position", "ship", "Ship handle, or invalid ship handle if ship couldn't be created")
 {
-	char *name = NULL;
+	const char* name = nullptr;
 	int sclass = -1;
 	matrix_h *orient = NULL;
 	vec3d pos = vmd_zero_vector;
@@ -892,7 +892,7 @@ ADE_FUNC(startMission, l_Mission, "[Filename or MISSION_* enumeration, Briefing 
 {
 	bool b = true;
 	char s[MAX_FILENAME_LEN];
-	char *str = s;
+	const char* str = s;
 
 	if(lua_isstring(L, 1))
 	{
@@ -920,15 +920,16 @@ ADE_FUNC(startMission, l_Mission, "[Filename or MISSION_* enumeration, Briefing 
 	if (str == NULL)
 		return ade_set_args(L, "b", false);
 
-	// if mission name has extension... it needs to be removed...
-	char *file_ext;
+	char name_copy[MAX_FILENAME_LEN];
+	strcpy_s(name_copy, str);
 
-	file_ext = strrchr(str, '.');
+	// if mission name has extension... it needs to be removed...
+	auto file_ext = strrchr(name_copy, '.');
 	if (file_ext)
 		*file_ext = 0;
 
 	// game is in MP mode... or if the file does not exist... bail
-	if ((Game_mode & GM_MULTIPLAYER) || (cf_exists_full(str, CF_TYPE_MISSIONS) != 0))
+	if ((Game_mode & GM_MULTIPLAYER) || (cf_exists_full(name_copy, CF_TYPE_MISSIONS) != 0))
 		return ade_set_args(L, "b", false);
 
 	// mission is already running...
@@ -942,7 +943,7 @@ ADE_FUNC(startMission, l_Mission, "[Filename or MISSION_* enumeration, Briefing 
 	} else {
 		// due safety checks of the game_start_mission() function allow only main menu for now.
 		if (gameseq_get_state(gameseq_get_depth()) == GS_STATE_MAIN_MENU) {
-			strcpy_s( Game_current_mission_filename, str );
+			strcpy_s(Game_current_mission_filename, name_copy);
 			if (b == true) {
 				// start mission - go via briefing screen
 				gameseq_post_event(GS_EVENT_START_GAME);
@@ -967,7 +968,7 @@ ADE_FUNC(getMissionTime, l_Mission, NULL, "Game time in seconds since the missio
 //WMC - These are in freespace.cpp
 ADE_FUNC(loadMission, l_Mission, "Mission name", "Loads a mission", "boolean", "True if mission was loaded, otherwise false")
 {
-	char *s;
+	const char* s;
 	if(!ade_get_args(L, "s", &s))
 		return ade_set_error(L, "b", false);
 
@@ -1249,7 +1250,7 @@ ADE_FUNC(getPrevMissionFilename, l_Campaign, NULL, "Gets previous mission filena
 // DahBlount - This jumps to a mission, the reason it accepts a boolean value is so that players can return to campaign maps
 ADE_FUNC(jumpToMission, l_Campaign, "string filename, [boolean hub]", "Jumps to a mission based on the filename. Optionally, the player can be sent to a hub mission without setting missions to skipped.", "boolean", "Jumps to a mission, or returns nil.")
 {
-	char *filename = NULL;;
+	const char* filename = nullptr;
 	bool hub = false;
 	if (!ade_get_args(L, "s|b", &filename, &hub))
 		return ADE_RETURN_NIL;

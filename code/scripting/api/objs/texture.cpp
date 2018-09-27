@@ -85,7 +85,7 @@ ADE_FUNC(isValid, l_Texture, NULL, "Detects whether handle is valid", "boolean",
 	if(!ade_get_args(L, "o", l_Texture.Get(&idx)))
 		return ADE_RETURN_NIL;
 
-	return ade_set_args(L, "b", bm_is_valid(idx));
+	return ade_set_args(L, "b", bm_is_valid(idx) != 0);
 }
 
 ADE_FUNC(unload, l_Texture, NULL, "Unloads a texture from memory", NULL, NULL)

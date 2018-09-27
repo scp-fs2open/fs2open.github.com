@@ -2915,7 +2915,7 @@ int texture_map::FindTexture(int bm_handle)
 	}
 	return -1;
 }
-int texture_map::FindTexture(char *fname)
+int texture_map::FindTexture(const char* fname)
 {
 	if(fname == NULL || !strlen(fname))
 		return -1;

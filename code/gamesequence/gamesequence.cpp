@@ -404,9 +404,9 @@ int gameseq_process_events()
 	state_reentry--;
 
 	return gs[gs_current_stack].current_state;
-} 
+}
 
-int gameseq_get_event_idx(char *s)
+int gameseq_get_event_idx(const char* s)
 {
 	for(int i = 0; i < Num_gs_event_text; i++)
 	{
@@ -418,7 +418,7 @@ int gameseq_get_event_idx(char *s)
 	return -1;
 }
 
-int gameseq_get_state_idx(char *s)
+int gameseq_get_state_idx(const char* s)
 {
 	for(int i = 0; i < Num_gs_state_text; i++)
 	{

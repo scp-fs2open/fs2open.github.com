@@ -1602,14 +1602,14 @@ void message_queue_process()
 	Script_system.SetHookVar("SenderString", 's', who_from);
 
 	builtinMessage = q->builtin_type != -1;
-	Script_system.SetHookVar("Builtin", 'b', &builtinMessage);
+	Script_system.SetHookVar("Builtin", 'b', builtinMessage);
 
 	if (Message_shipnum >= 0) {
 		sender = &Objects[Ships[Message_shipnum].objnum];
 	}
 	Script_system.SetHookObject("Sender", sender);
 
-	Script_system.RunCondition(CHA_MSGRECEIVED, 0, NULL, sender);
+	Script_system.RunCondition(CHA_MSGRECEIVED, sender);
 
 	Script_system.RemHookVars(5, "Name", "Message", "SenderString", "Builtin", "Sender");
 
@@ -2155,7 +2155,7 @@ int message_is_playing()
 // Functions below pertain only to personas!!!!
 
 // given a character string, try to find the persona index
-int message_persona_name_lookup( char *name )
+int message_persona_name_lookup(const char* name)
 {
 	int i;
 
@@ -2342,7 +2342,7 @@ void message_pagein_mission_messages()
 // ---------------------------------------------------
 // Add and remove messages - used by autopilot code now, but useful elswhere
 
-bool add_message(const char *name, char *message, int persona_index, int multi_team)
+bool add_message(const char* name, const char* message, int persona_index, int multi_team)
 {
 	MissionMessage msg; 
 	strcpy_s(msg.name, name);
@@ -2357,7 +2357,7 @@ bool add_message(const char *name, char *message, int persona_index, int multi_t
 	return true;
 }
 
-bool change_message(const char *name, char *message, int persona_index, int multi_team)
+bool change_message(const char* name, const char* message, int persona_index, int multi_team)
 {
 	for (int i = Num_builtin_messages; i < Num_messages; i++) 
 	{

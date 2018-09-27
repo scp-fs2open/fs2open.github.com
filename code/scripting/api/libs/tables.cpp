@@ -28,7 +28,7 @@ ADE_INDEXER(l_Tables_ShipClasses, "number Index/string Name", "Array of ship cla
 	if(!ships_inited)
 		return ade_set_error(L, "o", l_Shipclass.Set(-1));
 
-	char *name;
+	const char* name;
 	if(!ade_get_args(L, "*s", &name))
 		return ade_set_error(L, "o", l_Shipclass.Set(-1));
 
@@ -67,7 +67,7 @@ ADE_INDEXER(l_Tables_WeaponClasses, "number Index/string WeaponName", "Array of 
 	if(!Weapons_inited)
 		return ade_set_error(L, "o", l_Weaponclass.Set(-1));
 
-	char *name;
+	const char* name;
 	if(!ade_get_args(L, "*s", &name))
 		return 0;
 

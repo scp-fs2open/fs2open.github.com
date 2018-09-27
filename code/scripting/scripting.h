@@ -3,6 +3,8 @@
 
 #include "globalincs/globals.h"
 #include "globalincs/pstypes.h"
+#include "graphics/2d.h"
+#include "scripting/ade_args.h"
 #include "scripting/lua/LuaFunction.h"
 
 #include <cstdio>
@@ -143,7 +145,7 @@ public:
 
 	bool ConditionsValid(int action, class object *objp=NULL, int more_data = 0);
 	bool IsOverride(class script_state *sys, int action);
-	bool Run(class script_state *sys, int action, char format='\0', void *data=NULL);
+	bool Run(class script_state* sys, int action);
 };
 
 //**********Main script_state function
@@ -163,7 +165,6 @@ private:
 private:
 
 	void ParseChunkSub(script_function& out_func, const char* debug_str=NULL);
-	int RunBytecodeSub(script_function& func, char format='\0', void *data=NULL);
 
 	void SetLuaSession(struct lua_State *L);
 
@@ -191,7 +192,7 @@ public:
 	void Clear();
 
 	//***Internal scripting stuff
-	int LoadBm(char *name);
+	int LoadBm(const char* name);
 	void UnloadImages();
 
 	lua_State *GetLuaSession(){return LuaState;}
@@ -205,33 +206,166 @@ public:
 	//***Moves data
 	//void MoveData(script_state &in);
 
-	//***Variable handling functions
-	bool GetGlobal(const char *name, char format='\0', void *data=NULL);
-	void RemGlobal(const char *name);
-
-	void SetHookVar(const char *name, char format, const void *data=NULL);
+	template<typename T>
+	void SetHookVar(const char *name, char format, T value);
 	void SetHookObject(const char *name, object *objp);
 	void SetHookObjects(int num, ...);
-	bool GetHookVar(const char *name, char format='\0', void *data=NULL);
 	void RemHookVar(const char *name);
 	void RemHookVars(unsigned int num, ...);
 
 	//***Hook creation functions
-	bool EvalString(const char *string, const char *format=NULL, void *rtn=NULL, const char *debug_str=NULL);
+	template <typename T>
+	bool EvalStringWithReturn(const char* string, const char* format = nullptr, T* rtn = NULL,
+	                          const char* debug_str = nullptr);
+	bool EvalString(const char* string, const char* debug_str = nullptr);
 	void ParseChunk(script_hook *dest, const char* debug_str=NULL);
 	void ParseGlobalChunk(int hookType, const char* debug_str=NULL);
 	bool ParseCondition(const char *filename="<Unknown>");
 
 	//***Hook running functions
-	int RunBytecode(script_hook &hd, char format='\0', void *data=NULL);
+	template <typename T>
+	int RunBytecode(script_function& hd, char format = '\0', T* data = nullptr);
+	int RunBytecode(script_function& hd);
 	bool IsOverride(script_hook &hd);
-	int RunCondition(int condition, char format='\0', void *data=NULL, class object *objp = NULL, int more_data = 0);
+	int RunCondition(int condition, object* objp = nullptr, int more_data = 0);
 	bool IsConditionOverride(int action, object *objp=NULL);
 
 	//*****Other functions
 	void EndFrame();
 };
 
+template<typename T>
+void script_state::SetHookVar(const char *name, char format, T value)
+{
+	if(format == '\0')
+		return;
+
+	if(LuaState != nullptr)
+	{
+		char fmt[2] = {format, '\0'};
+		//Get ScriptVar table
+		if(this->OpenHookVarTable())
+		{
+			int amt_ldx = lua_gettop(LuaState);
+			lua_pushstring(LuaState, name);
+			scripting::ade_set_args(LuaState, fmt, value);
+			//--------------------
+			//WMC - This was a separate function
+			//lua_set_arg(LuaState, format, data);
+			//WMC - switch to the scripting library
+			//lua_setglobal(LuaState, name);
+			lua_rawset(LuaState, amt_ldx);
+
+			//Close hook var table
+			this->CloseHookVarTable();
+		}
+		else
+		{
+			LuaError(LuaState, "Could not get HookVariable library to set hook variable '%s'", name);
+		}
+	}
+}
+
+template <typename T>
+bool script_state::EvalStringWithReturn(const char* string, const char* format, T* rtn, const char* debug_str)
+{
+	using namespace luacpp;
+
+	size_t string_size = strlen(string);
+	char lastchar      = string[string_size - 1];
+
+	if (string[0] == '{') {
+		return false;
+	}
+
+	if (string[0] == '[' && lastchar != ']') {
+		return false;
+	}
+
+	size_t s_bufSize = string_size + 8;
+	std::string s;
+	s.reserve(s_bufSize);
+	if (string[0] != '[') {
+		if (rtn != nullptr) {
+			s = "return ";
+		}
+		s += string;
+	} else {
+		s.assign(string + 1, string + string_size);
+	}
+
+	SCP_string debug_name;
+	if (debug_str == nullptr) {
+		debug_name = "String: ";
+		debug_name += s;
+	} else {
+		debug_name = debug_str;
+	}
+
+	try {
+		auto function = LuaFunction::createFromCode(LuaState, s, debug_name);
+		function.setErrorFunction(LuaFunction::createFromCFunction(LuaState, scripting::ade_friendly_error));
+
+		try {
+			auto ret = function.call();
+
+			if (rtn != nullptr && ret.size() >= 1) {
+				auto stack_start = lua_gettop(LuaState);
+
+				auto val = ret.front();
+				val.pushValue();
+
+				scripting::internal::Ade_get_args_skip      = stack_start;
+				scripting::internal::Ade_get_args_lfunction = true;
+				scripting::ade_get_args(LuaState, format, rtn);
+				scripting::internal::Ade_get_args_skip      = 0;
+				scripting::internal::Ade_get_args_lfunction = false;
+			}
+		} catch (const LuaException&) {
+			return false;
+		}
+	} catch (const LuaException& e) {
+		LuaError(GetLuaSession(), "%s", e.what());
+
+		return false;
+	}
+
+	return true;
+}
+
+template <typename T>
+int script_state::RunBytecode(script_function& hd, char format, T* data)
+{
+	using namespace luacpp;
+
+	if (!hd.function.isValid()) {
+		return 1;
+	}
+
+	GR_DEBUG_SCOPE("Lua code");
+
+	try {
+		auto ret = hd.function.call();
+
+		if (data != nullptr && ret.size() >= 1) {
+			auto stack_start = lua_gettop(LuaState);
+
+			auto val = ret.front();
+			val.pushValue();
+
+			char fmt[2]                                 = {format, '\0'};
+			scripting::internal::Ade_get_args_skip      = stack_start;
+			scripting::internal::Ade_get_args_lfunction = true;
+			scripting::ade_get_args(LuaState, fmt, data);
+			scripting::internal::Ade_get_args_skip      = 0;
+			scripting::internal::Ade_get_args_lfunction = false;
+		}
+	} catch (const LuaException&) {
+		return 0;
+	}
+
+	return 1;
+}
 
 //**********Script registration functions
 void script_init();

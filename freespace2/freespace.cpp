@@ -1191,7 +1191,7 @@ void game_loading_callback(int count)
 
 	auto progress = static_cast<float>(count) / static_cast<float>(COUNT_ESTIMATE);
 	CLAMP(progress, 0.0f, 1.0f);
-	Script_system.SetHookVar("Progress", 'f', &progress);
+	Script_system.SetHookVar("Progress", 'f', progress);
 
 	if (Script_system.RunCondition(CHA_LOADSCREEN)) {
 		// At least one script exeuted so we probably need to do a flip now
@@ -4205,7 +4205,7 @@ void game_frame(bool paused)
 			{
 				TRACE_SCOPE(tracing::RenderHUDHook);
 
-				Script_system.RunCondition(CHA_HUDDRAW, '\0', NULL, Viewer_obj);
+				Script_system.RunCondition(CHA_HUDDRAW, Viewer_obj);
 			}
 			Script_system.RemHookVar("Self");
 			

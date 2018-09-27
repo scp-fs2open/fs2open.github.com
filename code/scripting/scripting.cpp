@@ -494,36 +494,35 @@ bool ConditionedHook::ConditionsValid(int action, object *objp, int more_data)
 	return true;
 }
 
-bool ConditionedHook::Run(script_state *sys, int action, char format, void *data)
+bool ConditionedHook::IsOverride(script_state* sys, int action)
 {
 	Assert(sys != NULL);
+	// bool b = false;
 
 	//Do the actions
 	for(SCP_vector<script_action>::iterator sap = Actions.begin(); sap != Actions.end(); ++sap)
 	{
-		if(sap->action_type == action)
-			sys->RunBytecode(sap->hook, format, data);
-	}
-
-	return true;
-}
-
-bool ConditionedHook::IsOverride(script_state *sys, int action)
-{
-	Assert(sys != NULL);
-	//bool b = false;
-
-	//Do the actions
-	for(SCP_vector<script_action>::iterator sap = Actions.begin(); sap != Actions.end(); ++sap)
-	{
-		if(sap->action_type == action)
-		{
-			if(sys->IsOverride(sap->hook))
+		if (sap->action_type == action) {
+			if (sys->IsOverride(sap->hook))
 				return true;
 		}
 	}
 
 	return false;
+}
+
+bool ConditionedHook::Run(class script_state* sys, int action)
+{
+	Assert(sys != NULL);
+
+	// Do the actions
+	for (auto & Action : Actions) {
+		if (Action.action_type == action) {
+			sys->RunBytecode(Action.hook.hook_function);
+		}
+	}
+
+	return true;
 }
 
 //*************************CLASS: script_state*************************
@@ -629,116 +628,6 @@ bool script_state::CloseHookVarTable()
 	}
 }
 
-void script_state::SetHookVar(const char *name, char format, const void *data)
-{
-	if(format == '\0')
-		return;
-
-	if(LuaState != NULL)
-	{
-		char fmt[2] = {format, '\0'};
-		int data_ldx = 0;
-		if(data == NULL)
-			data_ldx = lua_gettop(LuaState);
-
-		if(data_ldx < 1 && data == NULL)
-			return;
-
-		//Get ScriptVar table
-		if(this->OpenHookVarTable())
-		{
-			int amt_ldx = lua_gettop(LuaState);
-			lua_pushstring(LuaState, name);
-			//ERRORS? LOOK HERE!!!
-			//--------------------
-			//WMC - Now THIS has to be the nastiest hack I've made
-			//Basically, I tell it to copy over enough stack
-			//for a ade_odata object. If you pass
-			//_anything_ larger as a stack object, this will not work.
-			//You'll get memory corruption
-			if(data == NULL)
-			{
-				lua_pushvalue(LuaState, data_ldx);
-			}
-			else
-			{
-				switch (format) {
-					case 's':
-						ade_set_args(LuaState, fmt, data);
-						break;
-					case 'i':
-						ade_set_args(LuaState, fmt, *(int*)data);
-						break;
-					case 'b':
-						ade_set_args(LuaState, fmt, *(bool*)data);
-						break;
-					case 'f':
-						ade_set_args(LuaState, fmt, *(float*)data);
-						break;
-					default:
-						ade_set_args(LuaState, fmt, *(ade_odata*)data);
-						break;
-				}
-			}
-			//--------------------
-			//WMC - This was a separate function
-			//lua_set_arg(LuaState, format, data);
-			//WMC - switch to the scripting library
-			//lua_setglobal(LuaState, name);
-			lua_rawset(LuaState, amt_ldx);
-			
-			if(data_ldx)
-				lua_pop(LuaState, 1);
-			//Close hook var table
-			this->CloseHookVarTable();
-		}
-		else
-		{
-			LuaError(LuaState, "Could not get HookVariable library to set hook variable '%s'", name);
-			if(data_ldx)
-				lua_pop(LuaState, 1);
-		}
-	}
-}
-
-//WMC - data can be NULL, if we just want to know if it exists
-bool script_state::GetHookVar(const char *name, char format, void *data)
-{
-	bool got_global = false;
-	if(LuaState != NULL)
-	{
-		//Construct format string
-		char fmt[3] = {'|', format, '\0'};
-
-		//WMC - Quick and clean. :)
-		//WMC - *sigh* nostalgia
-		//Get ScriptVar table
-		if(this->OpenHookVarTable())
-		{
-			int amt_ldx = lua_gettop(LuaState);
-
-			lua_pushstring(LuaState, name);
-			lua_rawget(LuaState, amt_ldx);
-			if(!lua_isnil(LuaState, -1))
-			{
-				if(data != NULL) {
-					ade_get_args(LuaState, fmt, data);
-				}
-				got_global = true;
-			}
-			lua_pop(LuaState, 1);	//Remove data
-
-			this->CloseHookVarTable();
-		}
-		else
-		{
-			LuaError(LuaState, "Could not get HookVariable library to get hook variable '%s'", name);
-		}
-	}
-
-	return got_global;
-}
-
 void script_state::RemHookVar(const char *name)
 {
 	this->RemHookVars(1, name);
@@ -774,41 +663,7 @@ void script_state::RemHookVars(unsigned int num, ...)
 	}
 }
 
-//WMC - data can be NULL, if we just want to know if it exists
-bool script_state::GetGlobal(const char *name, char format, void *data)
-{
-	bool got_global = false;
-	if(LuaState != NULL)
-	{
-		//Construct format string
-		char fmt[3] = {'|', format, '\0'};
-
-		lua_getglobal(LuaState, name);
-		//Does global exist?
-		if(!lua_isnil(LuaState, -1))
-		{
-			if(data != NULL) {
-				ade_get_args(LuaState, fmt, data);
-			}
-			got_global = true;
-		}
-		lua_pop(LuaState, 1);	//Remove data
-	}
-
-	return got_global;
-}
-
-void script_state::RemGlobal(const char *name)
-{
-	if(LuaState != NULL)
-	{
-		//WMC - Quick and clean. :)
-		lua_pushnil(LuaState);
-		lua_setglobal(LuaState, name);
-	}
-}
-
-int script_state::LoadBm(char *name)
+int script_state::LoadBm(const char* name)
 {
 	for(int i = 0; i < (int)ScriptImages.size(); i++)
 	{
@@ -838,54 +693,14 @@ void script_state::UnloadImages()
 	ScriptImages.clear();
 }
 
-int script_state::RunBytecodeSub(script_function& func, char format, void *data)
-{
-	using namespace luacpp;
-
-	if (!func.function.isValid()) {
-		return 1;
-	}
-
-	GR_DEBUG_SCOPE("Lua code");
-
-	try {
-		auto ret = func.function.call();
-
-		if (data != NULL && ret.size() >= 1) {
-			auto stack_start = lua_gettop(LuaState);
-
-			auto val = ret.front();
-			val.pushValue();
-
-			char fmt[2] = {format, '\0'};
-			Ade_get_args_skip = stack_start;
-			Ade_get_args_lfunction = true;
-			ade_get_args(LuaState, fmt, data);
-			Ade_get_args_skip = 0;
-			Ade_get_args_lfunction = false;
-		}
-	} catch (const LuaException&) {
-		return 0;
-	}
-
-	return 1;
-}
-
-//returns 0 on failure (Parse error), 1 on success
-int script_state::RunBytecode(script_hook &hd, char format, void *data)
-{
-	RunBytecodeSub(hd.hook_function, format, data);
-	return 1;
-}
-
-int script_state::RunCondition(int action, char format, void *data, object *objp, int more_data)
+int script_state::RunCondition(int action, object* objp, int more_data)
 {
 	int num = 0;
 	for(SCP_vector<ConditionedHook>::iterator chp = ConditionalHooks.begin(); chp != ConditionalHooks.end(); ++chp) 
 	{
 		if(chp->ConditionsValid(action, objp, more_data))
 		{
-			chp->Run(this, action, format, data);
+			chp->Run(this, action);
 			num++;
 		}
 	}
@@ -1018,78 +833,6 @@ int script_state::OutputMeta(const char *filename)
 	return 1;
 }
 
-bool script_state::EvalString(const char *string, const char *format, void *rtn, const char *debug_str)
-{
-	using namespace luacpp;
-
-	size_t string_size = strlen(string);
-	char lastchar = string[string_size -1];
-
-	if(string[0] == '{')
-	{
-		return false;
-	}
-
-	if(string[0] == '[' && lastchar != ']')
-	{
-		return false;
-	}
-
-	size_t s_bufSize = string_size + 8;
-	std::string s;
-	s.reserve(s_bufSize);
-	if(string[0] != '[')
-	{
-		if(rtn != NULL)
-		{
-			s = "return ";
-		}
-		s += string;
-	}
-	else
-	{
-		s.assign(string + 1, string + string_size);
-	}
-
-	SCP_string debug_name;
-	if (debug_str == nullptr) {
-		debug_name = "String: ";
-		debug_name += s;
-	} else {
-		debug_name = debug_str;
-	}
-
-	try {
-		auto function = LuaFunction::createFromCode(LuaState, s, debug_name);
-		function.setErrorFunction(LuaFunction::createFromCFunction(LuaState, ade_friendly_error));
-
-		try {
-			auto ret = function.call();
-
-			if (rtn != NULL && ret.size() >= 1) {
-				auto stack_start = lua_gettop(LuaState);
-
-				auto val = ret.front();
-				val.pushValue();
-
-				Ade_get_args_skip = stack_start;
-				Ade_get_args_lfunction = true;
-				ade_get_args(LuaState, format, rtn);
-				Ade_get_args_skip = 0;
-				Ade_get_args_lfunction = false;
-			}
-		} catch (const LuaException&) {
-			return false;
-		}
-	} catch (const LuaException& e) {
-		LuaError(GetLuaSession(), "%s", e.what());
-
-		return false;
-	}
-
-	return true;
-}
-
 void script_state::ParseChunkSub(script_function& script_func, const char* debug_str)
 {
 	using namespace luacpp;
@@ -1196,6 +939,74 @@ void script_state::ParseChunk(script_hook *dest, const char *debug_str)
 		ParseChunkSub(dest->override_function, debug_str_over);
 		vm_free(debug_str_over);
 	}
+}
+
+bool script_state::EvalString(const char* string, const char* debug_str)
+{
+	using namespace luacpp;
+
+	size_t string_size = strlen(string);
+	char lastchar      = string[string_size - 1];
+
+	if (string[0] == '{') {
+		return false;
+	}
+
+	if (string[0] == '[' && lastchar != ']') {
+		return false;
+	}
+
+	size_t s_bufSize = string_size + 8;
+	std::string s;
+	s.reserve(s_bufSize);
+	if (string[0] != '[') {
+		s += string;
+	} else {
+		s.assign(string + 1, string + string_size);
+	}
+
+	SCP_string debug_name;
+	if (debug_str == nullptr) {
+		debug_name = "String: ";
+		debug_name += s;
+	} else {
+		debug_name = debug_str;
+	}
+
+	try {
+		auto function = LuaFunction::createFromCode(LuaState, s, debug_name);
+		function.setErrorFunction(LuaFunction::createFromCFunction(LuaState, scripting::ade_friendly_error));
+
+		try {
+			function.call();
+		} catch (const LuaException&) {
+			return false;
+		}
+	} catch (const LuaException& e) {
+		LuaError(GetLuaSession(), "%s", e.what());
+
+		return false;
+	}
+
+	return true;
+}
+int script_state::RunBytecode(script_function& hd)
+{
+	using namespace luacpp;
+
+	if (!hd.function.isValid()) {
+		return 1;
+	}
+
+	GR_DEBUG_SCOPE("Lua code");
+
+	try {
+		hd.function.call();
+	} catch (const LuaException&) {
+		return 0;
+	}
+
+	return 1;
 }
 
 int script_parse_condition()
@@ -1317,7 +1128,7 @@ bool script_state::IsOverride(script_hook &hd)
 		return false;
 
 	bool b=false;
-	RunBytecodeSub(hd.override_function, 'b', &b);
+	RunBytecode(hd.override_function, 'b', &b);
 
 	return b;
 }

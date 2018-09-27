@@ -167,7 +167,7 @@ ADE_VIRTVAR(BoundingBoxMin, l_Model, "vector", "Model bounding box minimum", "ve
 ADE_VIRTVAR(Filename, l_Model, "string", "Model filename", "string", "Model filename, or an empty string if the handle is invalid")
 {
 	model_h *mdl = NULL;
-	char *s = NULL;
+	const char* s = nullptr;
 	if(!ade_get_args(L, "o|s", l_Model.GetPtr(&mdl), &s))
 		return ade_set_error(L, "s", "");
 
@@ -278,7 +278,7 @@ ADE_INDEXER(l_ModelTextures, "texture", "number Index/string TextureName", "text
 {
 	modeltextures_h *mth = NULL;
 	int new_tex = -1;
-	char *s = NULL;
+	const char* s        = nullptr;
 
 	if (!ade_get_args(L, "os|o", l_ModelTextures.GetPtr(&mth), &s, l_Texture.Get(&new_tex)))
 		return ade_set_error(L, "o", l_Texture.Set(-1));
@@ -437,7 +437,7 @@ ADE_FUNC(__len, l_Thrusters, NULL, "Number of thruster banks on the model", "num
 ADE_INDEXER(l_Thrusters, "number Index", "Array of all thrusterbanks on this thruster", "thrusterbank", "Handle to the thrusterbank or invalid handle if index is invalid")
 {
 	thrusters_h *trh = NULL;
-	char *s = NULL;
+	const char* s    = nullptr;
 	thrusterbank_h newThr;
 
 	if (!ade_get_args(L, "os|o", l_Thrusters.GetPtr(&trh), &s, l_Thrusterbank.Get(&newThr)))
@@ -512,7 +512,7 @@ ADE_FUNC(__len, l_Thrusterbank, NULL, "Number of thrusters on this thrusterbank"
 ADE_INDEXER(l_Thrusterbank, "number Index", "Array of glowpoint", "glowpoint", "Glowpoint, or invalid glowpoint handle on failure")
 {
 	thrusterbank_h *tbh = NULL;
-	char *s = NULL;
+	const char* s       = nullptr;
 	glowpoint_h *glh = NULL;
 
 	if (!ade_get_args(L, "os|o", l_Thrusterbank.GetPtr(&tbh), &s, l_Glowpoint.GetPtr(&glh)))
@@ -648,7 +648,7 @@ ADE_INDEXER(l_Dockingbays, "dockingbay", "Gets a dockingbay handle from this mod
 	}
 	else
 	{
-		char* name = NULL;
+		const char* name = nullptr;
 
 		if (!ade_get_args(L, "os|o", l_Dockingbays.GetPtr(&dbhp), &name, l_Dockingbay.GetPtr(&newVal)))
 		{

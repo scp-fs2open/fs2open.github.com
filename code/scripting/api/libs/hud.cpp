@@ -89,7 +89,7 @@ ADE_FUNC(getHUDGaugeColor, l_HUD, "number (index number of the gauge)", "Color u
 
 ADE_FUNC(getHUDGaugeHandle, l_HUD, "string Name", "Returns a handle to a specified HUD gauge", "HudGauge", "HUD Gauge handle, or nil if invalid")
 {
-	char* name;
+	const char* name;
 	if (!ade_get_args(L, "s", &name))
 		return ADE_RETURN_NIL;
 	HudGauge* gauge = NULL;

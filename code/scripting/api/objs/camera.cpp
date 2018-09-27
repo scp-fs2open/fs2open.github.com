@@ -40,7 +40,7 @@ ADE_FUNC(isValid, l_Camera, NULL, "True if valid, false or nil if not", "boolean
 ADE_VIRTVAR(Name, l_Camera, "string", "New camera name", "string", "Camera name")
 {
 	camid cid;
-	char *s = NULL;
+	const char* s = nullptr;
 	if(!ade_get_args(L, "o|s", l_Camera.Get(&cid), &s))
 		return ade_set_error(L, "s", "");
 
