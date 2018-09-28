@@ -296,7 +296,7 @@ void set_single_arg(lua_State* L, char fmt, ade_odata_setter<T>&& od)
 {
 	Assertion(fmt == 'o', "Invalid format character '%c' for object type!", fmt);
 	// Use the common helper method
-	luacpp::convert::pushValue(L, std::move(od));
+	luacpp::convert::pushValue(L, std::forward<ade_odata_setter<T>>(od));
 }
 void set_single_arg(lua_State* /*L*/, char fmt, luacpp::LuaTable* table);
 void set_single_arg(lua_State* /*L*/, char fmt, luacpp::LuaFunction* func);
