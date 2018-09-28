@@ -75,8 +75,10 @@ class ade_obj : public ade_lib_handle {
 	{
 		return ade_odata_setter<StoreType>(LibIdx, std::move(obj));
 	}
-
-	ade_odata_setter<StoreType> Set(const StoreType& obj) const { return ade_odata_setter<StoreType>(LibIdx, obj); }
+	ade_odata_setter<StoreType> Set(const StoreType& obj) const
+	{
+		return ade_odata_setter<StoreType>(LibIdx, obj);
+	}
 
 	// WMC - Use this to copy object data, for modification or whatever
 	ade_odata_getter<StoreType> Get(StoreType* ptr) const { return ade_odata_getter<StoreType>(LibIdx, ptr); }

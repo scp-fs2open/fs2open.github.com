@@ -70,8 +70,7 @@ struct ade_odata_setter {
 	size_t idx;
 	T value;
 
-	ade_odata_setter(size_t idx_in, T&& value_in) : idx(idx_in), value(std::move(value_in)) {}
-	ade_odata_setter(size_t idx_in, const T& value_in) : idx(idx_in), value(value_in) {}
+	ade_odata_setter(size_t idx_in, T value_in) : idx(idx_in), value(std::move(value_in)) {}
 };
 
 //WMC - 'Type' is the same as ade_set_args,
