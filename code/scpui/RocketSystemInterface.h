@@ -17,6 +17,8 @@ namespace scpui {
  */
 class RocketSystemInterface : public Rocket::Core::SystemInterface {
   public:
+	RocketSystemInterface();
+
 	/**
 	 * @details Uses the FSO timer routines for determining how much time has passed
 	 *

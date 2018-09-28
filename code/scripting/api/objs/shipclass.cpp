@@ -415,6 +415,23 @@ ADE_VIRTVAR(AltName, l_Shipclass, "string", "Alternate name for ship class", "st
 	return ade_set_args(L, "s", Ship_info[idx].alt_name);
 }
 
+ADE_VIRTVAR(Score, l_Shipclass, "string", "The score of this ship class", "number", "The score or -1 on invalid ship class")
+{
+	int idx;
+	int new_score;
+	if(!ade_get_args(L, "o|i", l_Shipclass.Get(&idx), &new_score))
+		return ade_set_error(L, "i", -1);
+
+	if(idx < 0 || idx >= static_cast<int>(Ship_info.size()))
+		return ade_set_error(L, "i", -1);
+
+	if(ADE_SETTING_VAR) {
+		Ship_info[idx].score = new_score;
+	}
+
+	return ade_set_args(L, "i", Ship_info[idx].score);
+}
+
 ADE_FUNC(isValid, l_Shipclass, NULL, "Detects whether handle is valid", "boolean", "true if valid, false if handle is invalid, nil if a syntax/type error occurs")
 {
 	int idx;

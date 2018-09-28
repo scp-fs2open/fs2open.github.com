@@ -18,6 +18,7 @@ using namespace Rocket::Core;
 
 namespace scpui {
 
+RocketFileInterface::RocketFileInterface() = default;
 FileHandle RocketFileInterface::Open(const String& path)
 {
 	// In order to use libRocket correctly we need to make sure that we only have Unicode data. This is done here since

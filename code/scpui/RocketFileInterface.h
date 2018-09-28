@@ -16,6 +16,8 @@ namespace scpui {
 
 class RocketFileInterface : public Rocket::Core::FileInterface {
   public:
+	RocketFileInterface();
+
 	/**
 	 * @brief Opens the specified file using the CFile system
 	 *
