@@ -31,7 +31,7 @@ if [ "$TRAVIS_OS_NAME" = "linux" ]; then
             mkdir -p $config
             cd $config
             eval $CMAKE -DFSO_INSTALL_DEBUG_FILES=ON -DCMAKE_BUILD_TYPE=$config -DCMAKE_INSTALL_PREFIX="/tmp/release/$config" \
-                -DFSO_BUILD_APPIMAGE=ON -DFSO_BUILD_INCLUDED_LIBS=ON -DFFMPEG_USE_PRECOMPILED=ON -DFSO_BUILD_QTFRED=ON ../..
+                -DFSO_BUILD_APPIMAGE=ON -DFSO_BUILD_INCLUDED_LIBS=ON -DFFMPEG_USE_PRECOMPILED=ON -DFSO_BUILD_QTFRED=OFF ../..
             cd ..
         done
     else

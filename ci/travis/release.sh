@@ -16,11 +16,11 @@ if [ "$TRAVIS_OS_NAME" = "linux" ]; then
         cmake -DCMAKE_INSTALL_PREFIX=/tmp/release/$config/fso -DCOMPONENT=Unspecified -P cmake_install.cmake
         cmake -DCMAKE_INSTALL_PREFIX=/tmp/release/$config/fso -DCOMPONENT=Freespace2 -P cmake_install.cmake
 
-: <<'END'
         # We need to be a bit creative for determining the AppImage name since we don't want to hard-code the name
         FILENAME="$(find /tmp/release/$config/fso/bin -name 'fs2_open_*' -type f -printf "%f\n").AppImage"
         $HOME/appimagetool -n /tmp/release/$config/fso "/tmp/release/$config/fso/$FILENAME"
 
+: <<'END'
         # Install qtFRED targets
         cmake -DCMAKE_INSTALL_PREFIX=/tmp/release/$config/qtfred/usr -DCOMPONENT=Unspecified -P cmake_install.cmake
         cmake -DCMAKE_INSTALL_PREFIX=/tmp/release/$config/qtfred/usr -DCOMPONENT=qtFRED -P cmake_install.cmake
