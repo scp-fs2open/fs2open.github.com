@@ -33101,9 +33101,9 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\tSets ETS indexes for a ship\r\n"
 		"\tUse values retrieved with get-ets-value\r\n"
 		"\tIf you use your own values, make sure they add up to 12\r\n"
-		"\t1: Engine percent\r\n"
-		"\t2: Shields percent\r\n"
-		"\t3: Weapons percent\r\n"
+		"\t1: Engine index\r\n"
+		"\t2: Shields index\r\n"
+		"\t3: Weapons index\r\n"
 		"\t4: Ship name\r\n"},
 
 	{ OP_CARGO_NO_DEPLETE, "cargo-no-deplete\r\n"
