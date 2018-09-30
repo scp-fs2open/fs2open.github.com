@@ -33094,6 +33094,8 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 
 	{ OP_GET_ETS_VALUE, "get-ets-value\r\n"
 		"\tGets one ETS index for a ship\r\n"
+		"\tIndex values are used in a hard-coded array to lookup recharge percentages\r\n"
+		"\tEach index has a valid range of 0 to 12\r\n"
 		"\t1: ETS index to get, Engine|Shield|Weapon\r\n"
 		"\t2: Ship name\r\n"},
 
