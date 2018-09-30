@@ -15,6 +15,7 @@
 #include "mod_table/mod_table.h"
 #include "parse/parselo.h"
 #include "sound/sound.h"
+#include "playerman/player.h"
 
 int Directive_wait_time;
 bool True_loop_argument_sexps;
@@ -397,6 +398,18 @@ void parse_mod_table(const char *filename)
 			} else {
 				mprintf(("Game Settings Table: Disabled external default scripts.\n"));
 			}
+		}
+
+		if (optional_string("$Player warpout speed:")) {
+			stuff_float(&Player_warpout_speed);
+		}
+		
+		if (optional_string("$Target warpout match percent:")) {
+			stuff_float(&Target_warpout_match_percent);
+		}
+
+		if (optional_string("$Minimum player warpout time:")) {
+			stuff_float(&Minimum_player_warpout_time);
 		}
 
 		required_string("#END");

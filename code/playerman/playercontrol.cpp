@@ -68,6 +68,10 @@ int press_glide = 0;
 ////////////////////////////////////////////////////////////
 static int Player_all_alone_msg_inited=0;	// flag used for initializing a player-specific voice msg
 
+float Player_warpout_speed = 40.0f;
+float Target_warpout_match_percent = 0.05f;
+float Minimum_player_warpout_time = 3.0f;
+
 #ifndef NDEBUG
 	int Show_killer_weapon = 0;
 	DCF_BOOL( show_killer_weapon, Show_killer_weapon )
@@ -1060,7 +1064,7 @@ void read_player_controls(object *objp, float frametime)
 					if (sip->warpout_engage_time >= 0)
 						warpout_delay = sip->warpout_engage_time / 1000.0f;
 					else
-						warpout_delay = MINIMUM_PLAYER_WARPOUT_TIME;
+						warpout_delay = Minimum_player_warpout_time;
 
 					// Wait at least 3 seconds before making sure warp speed is set.
 					if ( Warpout_time > warpout_delay) {
@@ -1069,7 +1073,7 @@ void read_player_controls(object *objp, float frametime)
 						if(target_warpout_speed != 0.0f) {
 							diffSpeed = fl_abs(objp->phys_info.fspeed - target_warpout_speed )/target_warpout_speed;
 						}
-						if ( diffSpeed < TARGET_WARPOUT_MATCH_PERCENT )	{
+						if ( diffSpeed < Target_warpout_match_percent)	{
 							gameseq_post_event( GS_EVENT_PLAYER_WARPOUT_DONE_STAGE1 );
 						}
 					}

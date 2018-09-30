@@ -279,9 +279,9 @@ camid player_get_cam();
 
 //=============================================================
 //===================== PLAYER WARPOUT STUFF ==================
-#define PLAYER_WARPOUT_SPEED 40.0f		// speed you need to be going to warpout
-#define TARGET_WARPOUT_MATCH_PERCENT 0.05f	// how close to TARGET_WARPOUT_SPEED you need to be
-#define MINIMUM_PLAYER_WARPOUT_TIME	3.0f		// How long before you can press 'ESC' to abort warpout
+extern float Player_warpout_speed;	// speed you need to be going to warpout
+extern float Target_warpout_match_percent;	// how close to TARGET_WARPOUT_SPEED you need to be
+extern float Minimum_player_warpout_time;		// How long before you can press 'ESC' to abort warpout
 
 extern float Warpout_time;							// Declared in freespace.cpp
 extern int Warpout_forced;							// If non-zero, bash the player to speed and go through effect
