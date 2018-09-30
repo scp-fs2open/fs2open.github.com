@@ -154,7 +154,7 @@ int keys_used[] = {	KEY_1, KEY_2, KEY_3, KEY_4, KEY_5, KEY_6, KEY_7, KEY_8, KEY_
 #define TYPE_REPAIR_REARM_ABORT_ITEM	5
 
 
-char Comm_order_types[NUM_COMM_ORDER_TYPES][NAME_LENGTH];
+SCP_string  Comm_order_types[NUM_COMM_ORDER_TYPES];
 comm_order Comm_orders[NUM_COMM_ORDER_ITEMS];
 
 
@@ -207,25 +207,25 @@ void hud_init_comm_orders()
 
 	for (i = 0; i < NUM_COMM_ORDER_TYPES; i++)
 	{
-		strcpy_s(Comm_order_types[i], temp_comm_order_types[i]);
+		Comm_order_types[i] = temp_comm_order_types[i];
 	}
 
 	for (i = 0; i < NUM_COMM_ORDER_ITEMS; i++)
 	{
-		strcpy_s(Comm_orders[i].name, XSTR(Sexp_comm_orders[i].name, Sexp_comm_orders[i].xstring));
+		Comm_orders[i].name, XSTR(Sexp_comm_orders[i].name, Sexp_comm_orders[i].xstring);
 		Comm_orders[i].item = Sexp_comm_orders[i].item;
 	}
 }
 
 // Text to display on the messaging menu when using the shortcut keys
-char *comm_order_get_text(int item)
+const char *comm_order_get_text(int item)
 {
 	int i;
 
 	for (i = 0; i < NUM_COMM_ORDER_ITEMS; i++)
 	{
 		if (Comm_orders[i].item == item)
-			return Comm_orders[i].name;
+			return Comm_orders[i].name.c_str();
 	}
 
 	// not found
@@ -1625,7 +1625,7 @@ void hud_squadmsg_type_select( )
 	// Add the items
 	for (i = 0; i < NUM_COMM_ORDER_TYPES; i++)
 	{
-		strcpy_s(MsgItems[i].text, Comm_order_types[i]);
+		strcpy_s(MsgItems[i].text, Comm_order_types[i].c_str());
 		MsgItems[i].active = 1;						// assume active
 	}
 	Num_menu_items = NUM_COMM_ORDER_TYPES;
@@ -1984,7 +1984,7 @@ void hud_squadmsg_ship_command()
 		// the order will be activated if the bit is set for the ship.
 		if ( default_orders & Comm_orders[i].item ) {
 			Assert ( Num_menu_items < MAX_MENU_ITEMS );
-			strcpy_s(MsgItems[Num_menu_items].text, Comm_orders[i].name);
+			strcpy_s(MsgItems[Num_menu_items].text, Comm_orders[i].name.c_str());
 			MsgItems[Num_menu_items].instance = Comm_orders[i].item;
 			MsgItems[Num_menu_items].active = 0;
 			// check the bit to see if the command is active
@@ -2085,7 +2085,7 @@ void hud_squadmsg_wing_command()
 		// to be available in the wing.
 		if ( default_orders & Comm_orders[i].item ) {
 			Assert ( Num_menu_items < MAX_MENU_ITEMS );
-			strcpy_s(MsgItems[Num_menu_items].text, Comm_orders[i].name);
+			strcpy_s(MsgItems[Num_menu_items].text, Comm_orders[i].name.c_str());
 			MsgItems[Num_menu_items].instance = Comm_orders[i].item;
 			MsgItems[Num_menu_items].active = 0;
 
@@ -2445,7 +2445,7 @@ int hud_query_order_issued(char *to, char *order_name, char *target_name, int ti
 
 	
 	for (i = 0; i < NUM_COMM_ORDER_ITEMS; i++)
-		if (!stricmp(order_name, Comm_orders[i].name))
+		if (!stricmp(order_name, Comm_orders[i].name.c_str()))
 			order = Comm_orders[i].item;
 
 	// Goober5000 - if not found, check compatibility

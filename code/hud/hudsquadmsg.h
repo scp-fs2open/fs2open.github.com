@@ -63,7 +63,7 @@ class object;
 
 // data structure to hold character string of commands for comm menu
 typedef struct comm_order {
-	char name[NAME_LENGTH];
+	SCP_string name;
 	int item;
 } comm_order;
 
