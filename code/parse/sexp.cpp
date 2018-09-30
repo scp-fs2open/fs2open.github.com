@@ -33094,16 +33094,20 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 
 	{ OP_GET_ETS_VALUE, "get-ets-value\r\n"
 		"\tGets one ETS index for a ship\r\n"
+		"\tIndex values are used in a hard-coded array to lookup recharge percentages\r\n"
+		"\tEach index has a valid range of 0 to 12\r\n"
 		"\t1: ETS index to get, Engine|Shield|Weapon\r\n"
 		"\t2: Ship name\r\n"},
 
 	{ OP_SET_ETS_VALUES, "set-ets-values\r\n"
 		"\tSets ETS indexes for a ship\r\n"
-		"\tUse values retrieved with get-ets-value\r\n"
-		"\tIf you use your own values, make sure they add up to 12\r\n"
-		"\t1: Engine percent\r\n"
-		"\t2: Shields percent\r\n"
-		"\t3: Weapons percent\r\n"
+		"\tIndex values are used in a hard-coded array to lookup recharge percentages\r\n"
+		"\tEach index has a valid range of 0 to 12\r\n"
+		"\tUse index values retrieved with get-ets-value\r\n"
+		"\tOr if you use your own values, ensure they add up to 12 (e.g. 0,3,9)\r\n"
+		"\t1: Engine index\r\n"
+		"\t2: Shields index\r\n"
+		"\t3: Weapons index\r\n"
 		"\t4: Ship name\r\n"},
 
 	{ OP_CARGO_NO_DEPLETE, "cargo-no-deplete\r\n"
