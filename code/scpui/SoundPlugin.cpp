@@ -169,6 +169,9 @@ bool SoundPlugin::PlayElementSound(Element* element, const String& event, const 
 
 void SoundPlugin::SoundEventHandler::ProcessEvent(Event& event)
 {
-	SoundPlugin::instance()->PlayElementSound(event.GetCurrentElement(), event.GetType());
+	// Hover events bubble up so ignore any mouse movement events that aren't caused by the target element
+	if ((event.GetType() != "mouseover" && event.GetType() != "mouseout") || event.GetPhase() == Event::PHASE_TARGET) {
+		SoundPlugin::instance()->PlayElementSound(event.GetCurrentElement(), event.GetType());
+	}
 }
 } // namespace scpui
