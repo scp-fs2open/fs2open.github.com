@@ -495,7 +495,7 @@ float shipfx_calculate_warp_time(object *objp, int warp_dir)
 			return ship_class_get_length(sip) / sip->warpout_player_speed;
 		//Player warpout not defined
 		} else if ( (warp_dir == WD_WARP_OUT) && (objp == Player_obj) ) {
-			return ship_class_get_length(sip) / PLAYER_WARPOUT_SPEED;
+			return ship_class_get_length(sip) / Player_warpout_speed;
 		}
 
 	}
