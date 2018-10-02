@@ -87,6 +87,7 @@ namespace AI {
         Fix_heat_seeker_stealth_bug,
         Fix_linked_primary_bug,
         Force_beam_turret_fov,
+		Free_afterburner_use,
         Glide_decay_requires_thrust,
         Hack_improve_non_homing_swarm_turret_fire_accuracy,
         Huge_turret_weapons_ignore_bombs,

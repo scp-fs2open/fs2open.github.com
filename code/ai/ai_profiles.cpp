@@ -357,6 +357,8 @@ void parse_ai_profiles_tbl(const char *filename)
 
 				set_flag(profile, "$smart afterburner management:", AI::Profile_Flags::Smart_afterburner_management);
 
+				set_flag(profile, "$free afterburner use:", AI::Profile_Flags::Free_afterburner_use);
+
 				set_flag(profile, "$allow rapid secondary dumbfire:", AI::Profile_Flags::Allow_rapid_secondary_dumbfire);
 
 				set_flag(profile, "$huge turret weapons ignore bombs:", AI::Profile_Flags::Huge_turret_weapons_ignore_bombs);
