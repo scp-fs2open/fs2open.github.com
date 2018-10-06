@@ -2027,10 +2027,6 @@ void hud_squadmsg_ship_command()
 				if ( !all_accept ) {
 					// either modify the text if a partial accept, or grey it out if no one accepts
 					if ( partial_accept ) {
-						/*SCP_string temp_string;
-						temp_string.assign = XSTR("(*)", 320);
-						temp_string.append*/
-						//MsgItems[Num_menu_items].text.assign(temp_string, strlen(temp_string));
 						MsgItems[Num_menu_items].text += XSTR("(*)", 320);
 					} else {
 						MsgItems[Num_menu_items].active = 0;
