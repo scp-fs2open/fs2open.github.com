@@ -4321,7 +4321,10 @@ WE_Hyperspace::WE_Hyperspace(object *n_objp, int n_direction)
 	//*****Sound
 	snd_range_factor = 1.0f;
 	snd_start = snd_end = sound_handle::invalid();
-	snd_start_gs = snd_end_gs = NULL;	
+	snd_start_gs = snd_end_gs = NULL;
+	
+	//*****Instance
+	pos = vmd_zero_vector;	
 }
 
 int WE_Hyperspace::warpStart()
