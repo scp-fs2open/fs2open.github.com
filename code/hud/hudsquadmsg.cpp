@@ -105,7 +105,7 @@ int Menu_pgdn_coords[GR_NUM_RESOLUTIONS][2] = {
 typedef struct mmode_item {
 	int	instance;					// instance in Ships/Wings array of this menu item
 	int	active;						// active items are in bold text -- inactive items greyed out
-	char	text[NAME_LENGTH];		// text to display on the menu
+	SCP_string	text;		// text to display on the menu
 } mmode_item;
 
 #define MAX_MENU_ITEMS		50				// max number of items in the menu
@@ -154,7 +154,7 @@ int keys_used[] = {	KEY_1, KEY_2, KEY_3, KEY_4, KEY_5, KEY_6, KEY_7, KEY_8, KEY_
 #define TYPE_REPAIR_REARM_ABORT_ITEM	5
 
 
-char Comm_order_types[NUM_COMM_ORDER_TYPES][NAME_LENGTH];
+SCP_string  Comm_order_types[NUM_COMM_ORDER_TYPES];
 comm_order Comm_orders[NUM_COMM_ORDER_ITEMS];
 
 
@@ -207,25 +207,25 @@ void hud_init_comm_orders()
 
 	for (i = 0; i < NUM_COMM_ORDER_TYPES; i++)
 	{
-		strcpy_s(Comm_order_types[i], temp_comm_order_types[i]);
+		Comm_order_types[i] = temp_comm_order_types[i];
 	}
 
 	for (i = 0; i < NUM_COMM_ORDER_ITEMS; i++)
 	{
-		strcpy_s(Comm_orders[i].name, XSTR(Sexp_comm_orders[i].name, Sexp_comm_orders[i].xstring));
+		Comm_orders[i].name = XSTR(Sexp_comm_orders[i].name, Sexp_comm_orders[i].xstring);
 		Comm_orders[i].item = Sexp_comm_orders[i].item;
 	}
 }
 
 // Text to display on the messaging menu when using the shortcut keys
-char *comm_order_get_text(int item)
+const char *comm_order_get_text(int item)
 {
 	int i;
 
 	for (i = 0; i < NUM_COMM_ORDER_ITEMS; i++)
 	{
 		if (Comm_orders[i].item == item)
-			return Comm_orders[i].name;
+			return Comm_orders[i].name.c_str();
 	}
 
 	// not found
@@ -404,7 +404,7 @@ int hud_squadmsg_count_ships(int add_to_menu)
 		if (add_to_menu)
 		{
 			Assert ( Num_menu_items < MAX_MENU_ITEMS );
-			strcpy_s( MsgItems[Num_menu_items].text, shipp->get_display_string() );
+			MsgItems[Num_menu_items].text = shipp->get_display_string();
 			end_string_at_first_hash_symbol(MsgItems[Num_menu_items].text); // truncate the name if it has a # in it
 			MsgItems[Num_menu_items].instance = SHIP_INDEX(shipp);
 			MsgItems[Num_menu_items].active = 1;
@@ -485,7 +485,7 @@ int hud_squadmsg_count_wings( int add_to_menu )
 			count++;
 			if ( add_to_menu ) {
 				Assert ( Num_menu_items < MAX_MENU_ITEMS );
-				strcpy_s( MsgItems[Num_menu_items].text, Wings[wingnum].name );
+				MsgItems[Num_menu_items].text = Wings[wingnum].name;
 				end_string_at_first_hash_symbol(MsgItems[Num_menu_items].text);
 				MsgItems[Num_menu_items].instance = wingnum;
 				MsgItems[Num_menu_items].active = 1;
@@ -507,7 +507,7 @@ int hud_squadmsg_count_wings( int add_to_menu )
 			count++;
 			if ( add_to_menu ) {
 				Assert ( Num_menu_items < MAX_MENU_ITEMS );
-				strcpy_s( MsgItems[Num_menu_items].text, Wings[i].name );
+				MsgItems[Num_menu_items].text = Wings[i].name;
 				end_string_at_first_hash_symbol(MsgItems[Num_menu_items].text); 
 				MsgItems[Num_menu_items].instance = i;
 				MsgItems[Num_menu_items].active = 1;
@@ -1625,7 +1625,7 @@ void hud_squadmsg_type_select( )
 	// Add the items
 	for (i = 0; i < NUM_COMM_ORDER_TYPES; i++)
 	{
-		strcpy_s(MsgItems[i].text, Comm_order_types[i]);
+		MsgItems[i].text = Comm_order_types[i];
 		MsgItems[i].active = 1;						// assume active
 	}
 	Num_menu_items = NUM_COMM_ORDER_TYPES;
@@ -1916,7 +1916,7 @@ void hud_squadmsg_reinforcement_select()
 			}
 
 			Assert ( Num_menu_items < MAX_MENU_ITEMS );
-			strcpy_s( MsgItems[Num_menu_items].text, rp->name );
+			MsgItems[Num_menu_items].text = rp->name;
 			end_string_at_first_hash_symbol(MsgItems[Num_menu_items].text);
 			MsgItems[Num_menu_items].instance = i;
 			MsgItems[Num_menu_items].active = 0;
@@ -1984,7 +1984,7 @@ void hud_squadmsg_ship_command()
 		// the order will be activated if the bit is set for the ship.
 		if ( default_orders & Comm_orders[i].item ) {
 			Assert ( Num_menu_items < MAX_MENU_ITEMS );
-			strcpy_s(MsgItems[Num_menu_items].text, Comm_orders[i].name);
+			MsgItems[Num_menu_items].text = Comm_orders[i].name.c_str();
 			MsgItems[Num_menu_items].instance = Comm_orders[i].item;
 			MsgItems[Num_menu_items].active = 0;
 			// check the bit to see if the command is active
@@ -2027,7 +2027,7 @@ void hud_squadmsg_ship_command()
 				if ( !all_accept ) {
 					// either modify the text if a partial accept, or grey it out if no one accepts
 					if ( partial_accept ) {
-						strcat_s( MsgItems[Num_menu_items].text, XSTR( "(*)", 320) );
+						MsgItems[Num_menu_items].text += XSTR("(*)", 320);
 					} else {
 						MsgItems[Num_menu_items].active = 0;
 					}
@@ -2085,7 +2085,7 @@ void hud_squadmsg_wing_command()
 		// to be available in the wing.
 		if ( default_orders & Comm_orders[i].item ) {
 			Assert ( Num_menu_items < MAX_MENU_ITEMS );
-			strcpy_s(MsgItems[Num_menu_items].text, Comm_orders[i].name);
+			MsgItems[Num_menu_items].text = Comm_orders[i].name;
 			MsgItems[Num_menu_items].instance = Comm_orders[i].item;
 			MsgItems[Num_menu_items].active = 0;
 
@@ -2445,7 +2445,7 @@ int hud_query_order_issued(char *to, char *order_name, char *target_name, int ti
 
 	
 	for (i = 0; i < NUM_COMM_ORDER_ITEMS; i++)
-		if (!stricmp(order_name, Comm_orders[i].name))
+		if (!stricmp(order_name, Comm_orders[i].name.c_str()))
 			order = Comm_orders[i].item;
 
 	// Goober5000 - if not found, check compatibility
@@ -2679,7 +2679,7 @@ void HudGaugeSquadMessage::render(float  /*frametime*/)
 
 	for ( i = 0; i < nitems; i++ ) {
 		int item_num;
-		char *text = MsgItems[First_menu_item+i].text;
+		const char *text = MsgItems[First_menu_item+i].text.c_str();
 
 		// blit the background
 		// hud_set_default_color();
