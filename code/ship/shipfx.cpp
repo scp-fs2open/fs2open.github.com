@@ -4319,12 +4319,9 @@ WE_Hyperspace::WE_Hyperspace(object *n_objp, int n_direction)
 		initial_velocity = (float) p_objp->initial_velocity * sip->max_speed / 100.0f;
 	
 	//*****Sound
-	snd_range_factor = 1.0f;
+	snd_range_factor = 1.0f * objp->radius;
 	snd_start = snd_end = sound_handle::invalid();
-	snd_start_gs = snd_end_gs = NULL;
-	
-	//*****Instance
-	pos = vmd_zero_vector;	
+	snd_start_gs = snd_end_gs = nullptr;
 }
 
 int WE_Hyperspace::warpStart()
@@ -4361,12 +4358,12 @@ int WE_Hyperspace::warpStart()
 	if(gs_start_index.isValid())
 	{
 		snd_start_gs = gamesnd_get_game_sound(gs_start_index);
-		snd_start = snd_play_3d(snd_start_gs, &objp->pos, &View_position, 0.0f, NULL, 0, 1, SND_PRIORITY_SINGLE_INSTANCE, NULL, snd_range_factor);
+		snd_start = snd_play_3d(snd_start_gs, &pos_final, &View_position, 0.0f, NULL, 0, 1, SND_PRIORITY_SINGLE_INSTANCE, NULL, snd_range_factor);
 	}
 	if(gs_end_index.isValid())
 	{
 		snd_end_gs = gamesnd_get_game_sound(gs_end_index);
-		snd_end    = sound_handle::invalid();
+		snd_end    = snd_play_3d(snd_end_gs, &pos_final, &View_position, 0.0f, NULL, 0, 1, SND_PRIORITY_SINGLE_INSTANCE, NULL, snd_range_factor);
 	}
 	
 	return 1;
@@ -4420,7 +4417,16 @@ int WE_Hyperspace::warpFrame(float  /*frametime*/)
 	}
 	
 	if (snd_start.isValid())
-		snd_update_3d_pos(snd_start, snd_start_gs, &objp->pos, 0.0f, snd_range_factor);
+		snd_update_3d_pos(snd_start, snd_start_gs, &pos_final, 0.0f, snd_range_factor);
 	
 	return 1;
+}
+int WE_Hyperspace::warpEnd()
+{
+	if (snd_start.isValid())
+		snd_stop(snd_start);
+	if(snd_end_gs != NULL)
+		snd_end = snd_play_3d(snd_end_gs, &objp->pos, &View_position, 0.0f, NULL, 0, 1.0f, SND_PRIORITY_SINGLE_INSTANCE, NULL, snd_range_factor);
+
+	return WarpEffect::warpEnd();
 }
