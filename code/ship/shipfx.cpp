@@ -4358,7 +4358,7 @@ int WE_Hyperspace::warpStart()
 	if(gs_start_index.isValid())
 	{
 		snd_start_gs = gamesnd_get_game_sound(gs_start_index);
-		snd_start = snd_play_3d(snd_start_gs, &pos_final, &View_position, 0.0f, NULL, 0, 1, SND_PRIORITY_SINGLE_INSTANCE, NULL, snd_range_factor);
+		snd_start = snd_play_3d(snd_start_gs, &pos_final, &View_position, 0.0f, nullptr, 0, 1, SND_PRIORITY_SINGLE_INSTANCE, nullptr, snd_range_factor);
 	}
 	if(gs_end_index.isValid())
 	{
@@ -4425,8 +4425,8 @@ int WE_Hyperspace::warpEnd()
 {
 	if (snd_start.isValid())
 		snd_stop(snd_start);
-	if(snd_end_gs != NULL)
-		snd_end = snd_play_3d(snd_end_gs, &objp->pos, &View_position, 0.0f, NULL, 0, 1.0f, SND_PRIORITY_SINGLE_INSTANCE, NULL, snd_range_factor);
+	if(snd_end_gs != nullptr)
+		snd_end = snd_play_3d(snd_end_gs, &objp->pos, &View_position, 0.0f, nullptr, 0, 1.0f, SND_PRIORITY_SINGLE_INSTANCE, nullptr, snd_range_factor);
 
 	return WarpEffect::warpEnd();
 }
