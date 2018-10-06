@@ -4317,6 +4317,11 @@ WE_Hyperspace::WE_Hyperspace(object *n_objp, int n_direction)
 	p_object *p_objp = mission_parse_get_parse_object(shipp->ship_name);
 	if (p_objp != NULL)
 		initial_velocity = (float) p_objp->initial_velocity * sip->max_speed / 100.0f;
+	
+	//*****Sound
+	snd_range_factor = 1.0f;
+	snd_start = snd_end = sound_handle::invalid();
+	snd_start_gs = snd_end_gs = NULL;	
 }
 
 int WE_Hyperspace::warpStart()
@@ -4410,5 +4415,9 @@ int WE_Hyperspace::warpFrame(float  /*frametime*/)
 		}
 		vm_vec_scale_add(&objp->pos, &pos_final, &objp->orient.vec.fvec, scale);
 	}
+	
+	if (snd_start.isValid())
+		snd_update_3d_pos(snd_start, snd_start_gs, &objp->pos, 0.0f, snd_range_factor);
+	
 	return 1;
 }
