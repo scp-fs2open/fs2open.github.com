@@ -342,8 +342,6 @@ private:
 	vec3d	pos_final;
 	float	scale_factor;
 	
-	vec3d pos;
-	
 	//Sound
 	float snd_range_factor;
 	sound_handle snd_start;

@@ -4363,7 +4363,7 @@ int WE_Hyperspace::warpStart()
 	if(gs_end_index.isValid())
 	{
 		snd_end_gs = gamesnd_get_game_sound(gs_end_index);
-		snd_end    = snd_play_3d(snd_end_gs, &pos_final, &View_position, 0.0f, NULL, 0, 1, SND_PRIORITY_SINGLE_INSTANCE, NULL, snd_range_factor);
+		snd_end    = sound_handle::invalid();
 	}
 	
 	return 1;
