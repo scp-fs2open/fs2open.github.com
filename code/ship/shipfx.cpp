@@ -4326,17 +4326,23 @@ int WE_Hyperspace::warpStart()
 
 	total_time_start = timestamp();
 	total_time_end = timestamp(total_duration);
-
+	gamesnd_id gs_start_index;
+	gamesnd_id gs_end_index;
+	
 	if(direction == WD_WARP_IN)
 	{
         shipp->flags.set(Ship::Ship_Flags::Arriving_stage_1);
 		objp->phys_info.flags |= PF_WARP_IN;
 		objp->phys_info.vel.xyz.z = (scale_factor / sip->warpin_time)*1000.0f;
         objp->flags.remove(Object::Object_Flags::Physics);
+		gs_start_index = sip->warpin_snd_start;
+		gs_end_index = sip->warpin_snd_end;		
 	}
 	else if(direction == WD_WARP_OUT)
 	{
         shipp->flags.set(Ship::Ship_Flags::Depart_warp);
+		gs_start_index = sip->warpout_snd_start;
+		gs_end_index = sip->warpout_snd_end;		
 	}
 	else
 	{
@@ -4344,7 +4350,17 @@ int WE_Hyperspace::warpStart()
 	}
 
 	pos_final = objp->pos;
-
+	if(gs_start_index.isValid())
+	{
+		snd_start_gs = gamesnd_get_game_sound(gs_start_index);
+		snd_start = snd_play_3d(snd_start_gs, &objp->pos, &View_position, 0.0f, NULL, 0, 1, SND_PRIORITY_SINGLE_INSTANCE, NULL, snd_range_factor);
+	}
+	if(gs_end_index.isValid())
+	{
+		snd_end_gs = gamesnd_get_game_sound(gs_end_index);
+		snd_end    = sound_handle::invalid();
+	}
+	
 	return 1;
 }
 
