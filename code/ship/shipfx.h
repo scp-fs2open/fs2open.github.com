@@ -341,11 +341,20 @@ private:
 	//sweeper polygon and clip effect
 	vec3d	pos_final;
 	float	scale_factor;
+	
+	//Sound
+	float snd_range_factor;
+	sound_handle snd_start;
+	game_snd *snd_start_gs;
+	sound_handle snd_end;
+	game_snd *snd_end_gs;	
+	
 public:
 	WE_Hyperspace(object *n_objp, int n_direction);
 
 	int warpStart() override;
 	int warpFrame(float frametime) override;
+	int warpEnd() override;	
 };
 
 

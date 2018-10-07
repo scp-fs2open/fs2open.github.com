@@ -4317,6 +4317,11 @@ WE_Hyperspace::WE_Hyperspace(object *n_objp, int n_direction)
 	p_object *p_objp = mission_parse_get_parse_object(shipp->ship_name);
 	if (p_objp != NULL)
 		initial_velocity = (float) p_objp->initial_velocity * sip->max_speed / 100.0f;
+	
+	//*****Sound
+	snd_range_factor = 1.0f * objp->radius;
+	snd_start = snd_end = sound_handle::invalid();
+	snd_start_gs = snd_end_gs = nullptr;
 }
 
 int WE_Hyperspace::warpStart()
@@ -4326,17 +4331,23 @@ int WE_Hyperspace::warpStart()
 
 	total_time_start = timestamp();
 	total_time_end = timestamp(total_duration);
-
+	gamesnd_id gs_start_index;
+	gamesnd_id gs_end_index;
+	
 	if(direction == WD_WARP_IN)
 	{
         shipp->flags.set(Ship::Ship_Flags::Arriving_stage_1);
 		objp->phys_info.flags |= PF_WARP_IN;
 		objp->phys_info.vel.xyz.z = (scale_factor / sip->warpin_time)*1000.0f;
         objp->flags.remove(Object::Object_Flags::Physics);
+		gs_start_index = sip->warpin_snd_start;
+		gs_end_index = sip->warpin_snd_end;		
 	}
 	else if(direction == WD_WARP_OUT)
 	{
         shipp->flags.set(Ship::Ship_Flags::Depart_warp);
+		gs_start_index = sip->warpout_snd_start;
+		gs_end_index = sip->warpout_snd_end;		
 	}
 	else
 	{
@@ -4344,7 +4355,17 @@ int WE_Hyperspace::warpStart()
 	}
 
 	pos_final = objp->pos;
-
+	if(gs_start_index.isValid())
+	{
+		snd_start_gs = gamesnd_get_game_sound(gs_start_index);
+		snd_start = snd_play_3d(snd_start_gs, &pos_final, &View_position, 0.0f, nullptr, 0, 1, SND_PRIORITY_SINGLE_INSTANCE, nullptr, snd_range_factor);
+	}
+	if(gs_end_index.isValid())
+	{
+		snd_end_gs = gamesnd_get_game_sound(gs_end_index);
+		snd_end    = sound_handle::invalid();
+	}
+	
 	return 1;
 }
 
@@ -4394,5 +4415,18 @@ int WE_Hyperspace::warpFrame(float  /*frametime*/)
 		}
 		vm_vec_scale_add(&objp->pos, &pos_final, &objp->orient.vec.fvec, scale);
 	}
+	
+	if (snd_start.isValid())
+		snd_update_3d_pos(snd_start, snd_start_gs, &pos_final, 0.0f, snd_range_factor);
+	
 	return 1;
+}
+int WE_Hyperspace::warpEnd()
+{
+	if (snd_start.isValid())
+		snd_stop(snd_start);
+	if(snd_end_gs != nullptr)
+		snd_end = snd_play_3d(snd_end_gs, &objp->pos, &View_position, 0.0f, nullptr, 0, 1.0f, SND_PRIORITY_SINGLE_INSTANCE, nullptr, snd_range_factor);
+
+	return WarpEffect::warpEnd();
 }
