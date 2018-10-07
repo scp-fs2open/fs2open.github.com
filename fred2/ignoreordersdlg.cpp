@@ -116,7 +116,7 @@ BOOL ignore_orders_dlg::OnInitDialog()
 				break;
 			}
 
-			check_boxes[m_num_checks_active].button->SetWindowText(Comm_orders[i].name);
+			check_boxes[m_num_checks_active].button->SetWindowText(Comm_orders[i].name.c_str());
 			check_boxes[m_num_checks_active].id = Comm_orders[i].item;
 			m_num_checks_active++;
 		}
