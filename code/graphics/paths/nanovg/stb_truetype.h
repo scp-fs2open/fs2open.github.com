@@ -431,6 +431,9 @@ typedef signed   int    stbtt_int32;
 typedef char stbtt__check_size32[sizeof(stbtt_int32) == 4 ? 1 : -1];
 typedef char stbtt__check_size16[sizeof(stbtt_int16) == 2 ? 1 : -1];
 
+// Function from NanoVGRenderer.cpp to provide log printing capabilities here.
+extern void nvgOldCPrintf(const char *string, ...);
+
 // e.g. #define your own STBTT_ifloor/STBTT_iceil() to avoid math.h
 #ifndef STBTT_ifloor
 #include <math.h>
@@ -1501,7 +1504,12 @@ STBTT_DEF int stbtt_FindGlyphIndex(const stbtt_fontinfo *info, int unicode_codep
 			stbtt_uint16 offset, start;
 			stbtt_uint16 item = (stbtt_uint16)((search - endCount) >> 1);
 
-			STBTT_assert(unicode_codepoint <= ttUSHORT(data + endCount + 2 * item));
+			if (unicode_codepoint > ttUSHORT(data + endCount + 2 * item)) {
+				nvgOldCPrintf("WARNING: Probably font character is missing. Unicode decimal index is %d.\n", unicode_codepoint);
+			}
+			STBTT_assert((unicode_codepoint <= ttUSHORT(data + endCount + 2 * item)) &&
+				"                                        \
+				Looks like the font file you're using misses a character. Look into log for 'WARNING: Probably font' to know its code.");
 			start = ttUSHORT(data + index_map + 14 + segcount * 2 + 2 + 2 * item);
 			if (unicode_codepoint < start)
 				return 0;
