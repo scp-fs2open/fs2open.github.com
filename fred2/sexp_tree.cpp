@@ -5662,7 +5662,7 @@ sexp_list_item *sexp_tree::get_listing_opf_ai_order()
 	sexp_list_item head;
 
 	for (i=0; i<NUM_COMM_ORDER_ITEMS; i++)
-		head.add_data(Comm_orders[i].name);
+		head.add_data(Comm_orders[i].name.c_str());
 
 	return head.next;
 }
