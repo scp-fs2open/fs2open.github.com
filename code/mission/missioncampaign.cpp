@@ -1225,7 +1225,9 @@ void mission_campaign_mission_over(bool do_next_mission)
 
 		Sexp_nodes[mission_obj->formula].value = SEXP_UNKNOWN;
 	}
-
+	
+	gameseq_post_event( GS_EVENT_CAMPAIGN_MISSION_ACCEPT );
+	
 	if (do_next_mission)
 		mission_campaign_next_mission();			// sets up whatever needs to be set to actually play next mission
 }
