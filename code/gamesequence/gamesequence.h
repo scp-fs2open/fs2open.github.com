@@ -89,7 +89,6 @@ enum GS_EVENT {
 	GS_EVENT_PXO_HELP,
 	GS_EVENT_FICTION_VIEWER,
 	GS_EVENT_SCRIPTING,
-	GS_EVENT_CAMPAIGN_MISSION_ACCEPT,			//Player has accepted mission outcome in campaign mission	
 
 	GS_NUM_EVENTS    // Last one++
 };
@@ -160,7 +159,6 @@ enum GS_STATE {
 	GS_STATE_START_GAME,
 	GS_STATE_FICTION_VIEWER,
 	GS_STATE_SCRIPTING,
-	GS_STATE_CAMPAIGN_MISSION_ACCEPT,	
 
 	GS_NUM_STATES    // Last one++
 };
