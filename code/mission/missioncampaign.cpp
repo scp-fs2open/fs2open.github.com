@@ -43,6 +43,7 @@
 #include "pilotfile/pilotfile.h"
 #include "playerman/player.h"
 #include "popup/popup.h"
+#include "scripting/scripting.h"
 #include "ship/ship.h"
 #include "starfield/supernova.h"
 #include "ui/ui.h"
@@ -1201,6 +1202,9 @@ void mission_campaign_mission_over(bool do_next_mission)
 			Pilot.save_savefile();
 		}
 
+		// runs the new scripting conditional hook, "On Campaign Mission Accept" --wookieejedi
+		Script_system.RunCondition(CHA_CMISSIONACCEPT);
+		
 	} else {
 		// free up the goals and events which were just malloced.  It's kind of like erasing any fact
 		// that the player played this mission in the campaign.
@@ -1225,7 +1229,7 @@ void mission_campaign_mission_over(bool do_next_mission)
 
 		Sexp_nodes[mission_obj->formula].value = SEXP_UNKNOWN;
 	}
-
+	
 	if (do_next_mission)
 		mission_campaign_next_mission();			// sets up whatever needs to be set to actually play next mission
 }

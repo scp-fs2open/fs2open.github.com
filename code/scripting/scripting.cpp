@@ -85,6 +85,7 @@ flag_def_list Script_actions[] =
 	{ "On Beam Fire",			CHA_BEAMFIRE,		0 },
 	{ "On Simulation",			CHA_SIMULATION,		0 },
 	{ "On Load Screen",			CHA_LOADSCREEN,		0 },
+	{ "On Campaign Mission Accept", 	CHA_CMISSIONACCEPT,	0 },
 };
 
 int Num_script_actions = sizeof(Script_actions)/sizeof(flag_def_list);
