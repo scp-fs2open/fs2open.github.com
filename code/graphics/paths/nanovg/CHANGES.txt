@@ -8,4 +8,5 @@ Changes to fontstash.h
   - Include <malloc.h> as malloc and free weren't found for some reason
 
 Changes to stb_truetype.h
-  - Added extern function to print in log. Made Assert on missed glyph a bit more friendly 
+  - Added extern function to print in log. Made Assert on missed glyph a bit more friendly
+  - Explicit fallthrough comment for gcc

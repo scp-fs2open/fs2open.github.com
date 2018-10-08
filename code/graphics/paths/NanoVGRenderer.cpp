@@ -29,7 +29,7 @@ extern "C" {
 // That is a wrapper function for log prints to be availiable for nanovg components. For now it is stb_truetype.h
 // Planted by ksotar with blessing from asarium
 void nvgOldCPrintf(const char *message, ...) {
-	nprintf(("General", message));
+	outwnd_printf2(message);
 }
 
 #ifdef __cplusplus
