@@ -21,21 +21,11 @@
 #include "NanoVGRenderer.h"
 #include "tracing/tracing.h"
 
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 // That is a wrapper function for log prints to be availiable for nanovg components. For now it is stb_truetype.h
 // Planted by ksotar with blessing from asarium
 void nvgOldCPrintf(SCP_FORMAT_STRING const char *message, ...) {
 	outwnd_printf2(message);
 }
-
-#ifdef __cplusplus
-}
-#endif
-
 
 namespace {
 using namespace graphics::paths;
