@@ -2123,6 +2123,14 @@ static int stbtt__run_charstring(const stbtt_fontinfo *info, int glyph_index, st
 					subrs = stbtt__cid_get_glyph_subrs(info, glyph_index);
 				has_subrs = 1;
 			};
+			#ifdef __GNUC__
+				#if __has_include(<features.h>)
+					#include <features.h>
+					#if __GNUC_PREREQ(8, 0)
+						[[fallthrough]];
+					#endif		
+				#endif
+			#endif // __GNUC__
 			//-fallthrough
 		case 0x1D: // callgsubr
 			if (sp < 1) return STBTT__CSERR("call(g|)subr stack");
