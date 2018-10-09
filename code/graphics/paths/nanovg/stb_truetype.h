@@ -2127,7 +2127,7 @@ static int stbtt__run_charstring(const stbtt_fontinfo *info, int glyph_index, st
 				#if __has_include(<features.h>)
 					#include <features.h>
 					#if __GNUC_PREREQ(8, 0)
-						[[fallthrough]];
+						__attribute__((fallthrough));
 					#endif		
 				#endif
 			#endif // __GNUC__
