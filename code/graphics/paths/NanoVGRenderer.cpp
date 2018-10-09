@@ -25,13 +25,14 @@
 // Planted by ksotar with blessing from asarium
 extern "C" {
 void nvgOldCPrintf(SCP_FORMAT_STRING const char *message, ...) {
-	SCP_string buf;
-	va_list args;
-	va_start(args, message);
-	vsprintf(buf, message, args);
-	va_end(args);
-
-	outwnd_printf2("%s", message);
+	#ifdef outwnd_printf2
+		SCP_string buf;
+		va_list args;
+		va_start(args, message);
+		vsprintf(buf, message, args);
+		va_end(args);
+		outwnd_printf2("%s", message);
+	#endif
 }
 }
 
