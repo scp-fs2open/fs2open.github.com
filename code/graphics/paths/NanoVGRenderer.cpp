@@ -23,9 +23,18 @@
 
 // That is a wrapper function for log prints to be availiable for nanovg components. For now it is stb_truetype.h
 // Planted by ksotar with blessing from asarium
+extern "C" {
 void nvgOldCPrintf(SCP_FORMAT_STRING const char *message, ...) {
-	outwnd_printf2(message);
+	SCP_string buf;
+	va_list args;
+	va_start(args, message);
+	vsprintf(buf, message, args);
+	va_end(args);
+
+	outwnd_printf2("%s", message);
 }
+}
+
 
 namespace {
 using namespace graphics::paths;
