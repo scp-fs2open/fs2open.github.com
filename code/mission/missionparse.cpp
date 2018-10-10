@@ -2450,7 +2450,7 @@ int parse_create_object_sub(p_object *p_objp)
 	}
 
 	// The ship is in a wing, but is docked. Adding this block ensures that docked ships actually execute "On Ship Arrive". --wookieejedi
-	if (Game_mode & GM_IN_MISSION && shipp->wingnum != -1 && object_is_docked(pobjp)) {
+	if (Game_mode & GM_IN_MISSION && shipp->wingnum != -1 && object_is_docked(p_objp)) {
 		Script_system.SetHookObjects(2, "Ship", &Objects[objnum], "Parent", nullptr);
 		Script_system.RunCondition(CHA_ONSHIPARRIVE, &Objects[objnum]);
 		Script_system.RemHookVars(2, "Ship", "Parent");
