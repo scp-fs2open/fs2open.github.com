@@ -37,7 +37,7 @@
 
 // stats defines
 //#define NUM_STAT_LINES (21 + MAX_SHIP_CLASSES)	// Goober5000
-#define STAT_COLUMN1_W 40
+#define STAT_COLUMN1_W 40*2							// as we might use Unicode //ksotar
 #define STAT_COLUMN2_W 10
 
 static int Stat_column1_w[GR_NUM_RESOLUTIONS] =
@@ -76,7 +76,7 @@ static int Barracks_stats_coords[GR_NUM_RESOLUTIONS][4] = {
 		32, 212, 240, 250
 	},
 	{ // GR_1024
-		42, 351, 240, 400
+		42, 351, 350, 400
 	}
 };
 
@@ -85,7 +85,7 @@ static int Barracks_stats2_coords[GR_NUM_RESOLUTIONS][3] = {
 		276, 212, 81		// X2, , W2
 	},
 	{ // GR_1024
-		286, 351, 81		// X2, , W2
+		396, 351, 81		// X2, , W2
 	}
 };
 
