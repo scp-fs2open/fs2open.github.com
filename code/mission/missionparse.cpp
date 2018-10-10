@@ -2489,6 +2489,24 @@ void parse_bring_in_docked_wing(p_object *p_objp, int wingnum, int shipnum)
 	// make sure we haven't created too many ships
 	Assert(wingp->current_count <= MAX_SHIPS_PER_WING);
 
+	//fixes bug where docked wings are not called with the 'On Ship Arrive' hook variable --wookieejedi
+	int num_ships = wingp->current_count;
+	int anchor_objnum = -1;
+	anchor_objnum = mission_set_arrival_location(wingp->arrival_anchor, wingp->arrival_location, wingp->arrival_distance, OBJ_INDEX(leader_objp), wingp->arrival_path_mask, &pos, &orient);
+	if (num_ships > 0 && Game_mode & GM_IN_MISSION) {
+		for ( index = wingp->current_count - num_ships; index < wingp->current_count; index ++ ) {
+			object *objp = &Objects[Ships[wingp->ship_index[index]].objnum];
+
+			if (anchor_objnum >= 0)
+				Script_system.SetHookObjects(2, "Ship", objp, "Parent", &Objects[anchor_objnum]);
+			else
+				Script_system.SetHookObjects(2, "Ship", objp, "Parent", NULL);
+
+			Script_system.RunCondition(CHA_ONSHIPARRIVE, objp);
+			Script_system.RemHookVars(2, "Ship", "Parent");
+		}
+	}
+	
 	// at this point the wing has arrived, so handle the stuff for this particular ship
 
 	// set up wingman status index
