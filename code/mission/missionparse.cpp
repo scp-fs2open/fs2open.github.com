@@ -1837,6 +1837,7 @@ int parse_create_object_sub(p_object *p_objp)
 {
 	int	i, j, k, objnum, shipnum;
 	int anchor_objnum = -1;
+	bool brought_in_docked_wing = false;
 	ai_info *aip;
 	ship_subsys *ptr;
 	ship *shipp;
@@ -1865,7 +1866,10 @@ int parse_create_object_sub(p_object *p_objp)
 	if (object_is_docked(p_objp) && !(p_objp->flags[Mission::Parse_Object_Flags::SF_Dock_leader]) && (p_objp->wingnum >= 0))
 	{
 		if (!Fred_running)
+		{
 			parse_bring_in_docked_wing(p_objp, p_objp->wingnum, shipnum);
+			brought_in_docked_wing = true;
+		}
 	}
 
 	// if arriving through knossos, adjust objpj->pos to plane of knossos and set flag
@@ -2439,7 +2443,8 @@ int parse_create_object_sub(p_object *p_objp)
 	}
 
 	// If the ship is in a wing, this will be done in mission_set_wing_arrival_location() instead
-	if (Game_mode & GM_IN_MISSION && shipp->wingnum == -1) {
+	// If the ship is in a wing, but the wing is docked then addition of bool brought_in_docked_wing accounts for that status --wookieejedi
+	if (Game_mode & GM_IN_MISSION && (shipp->wingnum == -1 || brought_in_docked_wing)) {
 		if (anchor_objnum >= 0)
 			Script_system.SetHookObjects(2, "Ship", &Objects[objnum], "Parent", &Objects[anchor_objnum]);
 		else
@@ -2448,13 +2453,6 @@ int parse_create_object_sub(p_object *p_objp)
 		Script_system.RunCondition(CHA_ONSHIPARRIVE, &Objects[objnum]);
 		Script_system.RemHookVars(2, "Ship", "Parent");
 	}
-
-	// The ship is in a wing, but is docked. Adding this block ensures that docked ships actually execute "On Ship Arrive". --wookieejedi
-	if (Game_mode & GM_IN_MISSION && shipp->wingnum != -1 && object_is_docked(p_objp)) {
-		Script_system.SetHookObjects(2, "Ship", &Objects[objnum], "Parent", nullptr);
-		Script_system.RunCondition(CHA_ONSHIPARRIVE, &Objects[objnum]);
-		Script_system.RemHookVars(2, "Ship", "Parent");
-	}	
 
 	return objnum;
 }
