@@ -2458,7 +2458,8 @@ int parse_create_object_sub(p_object *p_objp)
 		if (object_is_docked(p_objp) && !(p_objp->flags[Mission::Parse_Object_Flags::SF_Dock_leader])) {
 			object* objp;
 			objp = p_objp->created_object;
-			shipfx_warpin_start(objp);		
+			shipfx_warpin_start(objp);	
+		}			
 	}
 
 	return objnum;
