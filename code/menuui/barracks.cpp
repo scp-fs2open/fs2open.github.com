@@ -304,7 +304,7 @@ void barracks_squad_change_popup();
 #define STRCPY1(a, b) do {	\
 	Assert(strlen(b) < STAT_COLUMN1_W); \
 	strcpy_s(a, b); \
-} while (0)
+} while (false)
 
 void barracks_init_stats(scoring_struct *stats)
 {
