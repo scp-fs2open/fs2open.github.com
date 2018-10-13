@@ -216,7 +216,3 @@ void multi_obs_zoom_to_target()
 	// move
 	vm_vec_add2(&Player_obj->pos,&direct);
 }
-
-void multi_obs_restore_hud() {
-	hud_config_restore();
-}

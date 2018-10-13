@@ -22,7 +22,8 @@
 #include "network/multiui.h"
 #include "network/multiutil.h"
 #include "network/multi_pmsg.h"
-#include "network/multi_observer.h"
+#include "hud/hudconfig.h"
+//#include "network/multi_observer.h"
 #include "fs2netd/fs2netd_client.h"
 
 
@@ -323,8 +324,8 @@ void multi_endgame_cleanup()
 {
 	int idx;
 
-	if (Player_obj->type == OBJ_OBSERVER) {		// Do not forget restore players HUD
-		multi_obs_restore_hud();
+	if (HUD_config.is_observer) {		// Do not forget restore players HUD
+		hud_config_restore();
 	}
 
 	send_leave_game_packet();			
