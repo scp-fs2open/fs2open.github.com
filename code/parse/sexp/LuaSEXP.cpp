@@ -37,7 +37,7 @@ SCP_unordered_map<SCP_string, int> parameter_type_mapping{{ "boolean",      OPF_
 														  { "weaponclass",  OPF_WEAPON_NAME }, };
 int get_parameter_type(const SCP_string& name) {
 	SCP_string copy = name;
-	std::transform(copy.begin(), copy.end(), copy.begin(), ::tolower);
+	std::transform(copy.begin(), copy.end(), copy.begin(), [](char c) { return (char)::tolower(c); });
 
 	auto iter = parameter_type_mapping.find(copy);
 	if (iter == parameter_type_mapping.end()) {
@@ -52,7 +52,7 @@ SCP_unordered_map<SCP_string, int> return_type_mapping{{ "number",  OPR_NUMBER }
 													   { "nothing", OPR_NULL }, };
 int get_return_type(const SCP_string& name) {
 	SCP_string copy = name;
-	std::transform(copy.begin(), copy.end(), copy.begin(), ::tolower);
+	std::transform(copy.begin(), copy.end(), copy.begin(), [](char c) { return (char)::tolower(c); });
 
 	auto iter = return_type_mapping.find(copy);
 	if (iter == return_type_mapping.end()) {

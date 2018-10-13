@@ -43,4 +43,12 @@ elif [ "$TRAVIS_OS_NAME" = "osx" ]; then
     else
         cmake -G "Xcode" $CMAKE_OPTIONS ..
     fi
+elif [ "$TRAVIS_OS_NAME" = "windows" ]; then
+    if [ "$CMAKE_GENERATOR" = "Ninja" ]; then
+        cmake -DFSO_USE_SPEECH="OFF" -DFSO_FATAL_WARNINGS="ON" -DFSO_USE_VOICEREC="OFF" -DFSO_BUILD_TESTS="ON" \
+            -DFSO_BUILD_FRED2="OFF" -G "$CMAKE_GENERATOR" ..
+    else
+        cmake -DFSO_USE_SPEECH="ON" -DFSO_FATAL_WARNINGS="ON" -DFSO_USE_VOICEREC="OFF" -DFSO_BUILD_TESTS="ON" \
+            -DMSVC_SIMD_INSTRUCTIONS=SSE2 -DFSO_BUILD_FRED2="ON" -G "$CMAKE_GENERATOR" -T "$CMAKE_TOOLSET" ..
+    fi
 fi

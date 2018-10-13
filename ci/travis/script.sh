@@ -22,4 +22,10 @@ elif [ "$TRAVIS_OS_NAME" = "osx" ]; then
         curl --upload-file build.log.tar.gz "https://transfer.sh/build.log.tar.gz"
         exit $XCODE_RET
     fi
+elif [ "$TRAVIS_OS_NAME" = "windows" ]; then
+    if [ "$CMAKE_GENERATOR" = "Ninja" ]; then
+        cmake --build . --config "$CONFIGURATION"
+    else
+        cmake --build . --config "$CONFIGURATION" -- /verbosity:minimal
+    fi
 fi

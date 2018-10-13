@@ -74,8 +74,8 @@
 #define SIZE_T_ARG    "%Iu"
 #define PTRDIFF_T_ARG "%Id"
 
-#define likely(x)
-#define unlikely(x)
+#define likely(x) (x)
+#define unlikely(x) (x)
 
 #define USED_VARIABLE
 

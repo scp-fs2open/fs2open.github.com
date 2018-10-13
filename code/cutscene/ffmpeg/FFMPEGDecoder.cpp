@@ -453,7 +453,7 @@ bool FFMPEGDecoder::initialize(const SCP_string& fileName, const PlaybackPropert
 {
 	SCP_string movieName = fileName;
 	// First make the file name lower case
-	std::transform(movieName.begin(), movieName.end(), movieName.begin(), ::tolower);
+	std::transform(movieName.begin(), movieName.end(), movieName.begin(), [](char c) { return (char)::tolower(c); });
 
 	// Then remove the extension
 	size_t dotPos = movieName.find('.');

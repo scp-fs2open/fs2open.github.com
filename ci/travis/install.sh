@@ -27,6 +27,8 @@ elif [ "$TRAVIS_OS_NAME" = "osx" ]; then
     
     brew update
     brew outdated cmake || brew upgrade cmake
+elif [ "$TRAVIS_OS_NAME" = "windows" ]; then
+    choco install mingw ninja
 fi
 
 cmake --version
