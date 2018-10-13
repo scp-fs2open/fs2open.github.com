@@ -23,7 +23,6 @@
 #include "network/multiutil.h"
 #include "network/multi_pmsg.h"
 #include "hud/hudconfig.h"
-//#include "network/multi_observer.h"
 #include "fs2netd/fs2netd_client.h"
 
 
