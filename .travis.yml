@@ -1,158 +1,181 @@
-language: generic
+language: bash
 sudo: required
 dist: trusty
 cache:
-    directories:
+  directories:
     - $HOME/cmake-3.8
     - $HOME/.ccache
 addons:
-    apt:
-        packages: &global_deps
-            - ninja-build
-            - libopenal-dev
-            - libreadline6-dev
-            - libpng12-dev
-            - libjpeg62-dev
-            - liblua5.1-0-dev
-            - libjansson-dev
-            - libsdl2-dev
-            - libfreetype6-dev
-            - valgrind
-            - qt57base
-    coverity_scan:
-        project:
-            name: "scp-fs2open/fs2open.github.com"
-        notification_email: niffiwan.scp@gmail.com
-        build_command:   "ci/travis/script.sh"
-        # must match TRAVIS_BRANCH check below
-        branch_pattern: coverity_scan
+  apt:
+    packages: &global_deps
+      - ninja-build
+      - libopenal-dev
+      - libreadline6-dev
+      - libpng12-dev
+      - libjpeg62-dev
+      - liblua5.1-0-dev
+      - libjansson-dev
+      - libsdl2-dev
+      - libfreetype6-dev
+      - valgrind
+      - qt57base
+  coverity_scan:
+    project:
+      name: "scp-fs2open/fs2open.github.com"
+    notification_email: niffiwan.scp@gmail.com
+    build_command:   "ci/travis/script.sh"
+    # must match TRAVIS_BRANCH check below
+    branch_pattern: coverity_scan
 env:
-    global:
-     # The next declaration is the encrypted COVERITY_SCAN_TOKEN, created
-     #   via the "travis encrypt" command using the project repo's public key
-     #   also note that fork's don't get access to secure keys
-     #   you have to test using a branch in the main repo
-     - secure: "C3wF967ZeliwwP1vC12EMIBOaC568n26Z/cPnwzn317ve59DWH3YSfPZVgvt08GzmaXITGGsJvPB+qxfGoKvQzYE4O1B73q81RpUe5pB3IhF+ThQ91VfQZIRJR5xEGJaLINUlHTTZGX5jxlkVO9wAcauVj/s3b8sQ3dvUZauPvk="
-     # These declarations set INDIEGAMES_USER and INDIEGAMES_PASSWORD for uploading nightly builds to the indiegames server
-     - secure: "lUuRu8XIi8MKNf1ebOfyC4iVEpPyASojJIDWXRo2bNqEF4ILAljXdkVeXeN6H5yKCHD52cxCNTtyePIG/o3p3QEuGSVud9bDS3D7LaQicLETGGrsw3l07U49gF2OKHXGopg0MzBbZUU9QmhoFTAe8t6PV9NDuEayYCheqvTqjZg="
-     - secure: "E/DHLYcPK/hBUqxBYYlUqp5sjgvIqY5A0qRHyQ4bmjsB+WB/Xx71bGCSiF7hk6lTxar1ZI1i5RAXXh9AIvNVaYAIdEOlCP+q3gvwCYuc5naZEKmkxlUCf0oEL4O9Fye93A/3VkFHuBdC1TGPYYf69m4W5r4367wWO9dPRIdWpJA="
-     # These declarations set FS2DOWNLOADS_USER and FS2DOWNLOADS_PASSWORD
-     - secure: "h6GbMX2jLsW1bS9fCM9fthOSJ1nfQQIRWi6EUH2p8u4NFLD5Bfi/C8JhQPKHUzyo3wvKkSHl+PsW7bgr1oXLusRwAur/dtv2N3imqvtbfIz305b00hZlsvbcYmQmUzQFSAdOGShK57JJ5aKQKccaUBP25KqB7Q+JaqBRdaMBS54="
-     - secure: "fUDAPAUUaaYZy8I4zU3SJ0JcK7aw4eb6eTdaEr7LyNyTMSfPgwY6P1MrbSQC0lJNQIUQ5ffjdxE5g7D7OYpoJF9L14ni4UY8t2QASt7kmpgcYihmjeuYy8FQXgmFG8CTxiWBPKTybZJ7voQcvIvRaNG7b2wM9PMfc5lRIondB6c="
+  global:
+    # The next declaration is the encrypted COVERITY_SCAN_TOKEN, created
+    #   via the "travis encrypt" command using the project repo's public key
+    #   also note that fork's don't get access to secure keys
+    #   you have to test using a branch in the main repo
+    - secure: "C3wF967ZeliwwP1vC12EMIBOaC568n26Z/cPnwzn317ve59DWH3YSfPZVgvt08GzmaXITGGsJvPB+qxfGoKvQzYE4O1B73q81RpUe5pB3IhF+ThQ91VfQZIRJR5xEGJaLINUlHTTZGX5jxlkVO9wAcauVj/s3b8sQ3dvUZauPvk="
+    # These declarations set INDIEGAMES_USER and INDIEGAMES_PASSWORD for uploading nightly builds to the indiegames server
+    - secure: "lUuRu8XIi8MKNf1ebOfyC4iVEpPyASojJIDWXRo2bNqEF4ILAljXdkVeXeN6H5yKCHD52cxCNTtyePIG/o3p3QEuGSVud9bDS3D7LaQicLETGGrsw3l07U49gF2OKHXGopg0MzBbZUU9QmhoFTAe8t6PV9NDuEayYCheqvTqjZg="
+    - secure: "E/DHLYcPK/hBUqxBYYlUqp5sjgvIqY5A0qRHyQ4bmjsB+WB/Xx71bGCSiF7hk6lTxar1ZI1i5RAXXh9AIvNVaYAIdEOlCP+q3gvwCYuc5naZEKmkxlUCf0oEL4O9Fye93A/3VkFHuBdC1TGPYYf69m4W5r4367wWO9dPRIdWpJA="
+    # These declarations set FS2DOWNLOADS_USER and FS2DOWNLOADS_PASSWORD
+    - secure: "h6GbMX2jLsW1bS9fCM9fthOSJ1nfQQIRWi6EUH2p8u4NFLD5Bfi/C8JhQPKHUzyo3wvKkSHl+PsW7bgr1oXLusRwAur/dtv2N3imqvtbfIz305b00hZlsvbcYmQmUzQFSAdOGShK57JJ5aKQKccaUBP25KqB7Q+JaqBRdaMBS54="
+    - secure: "fUDAPAUUaaYZy8I4zU3SJ0JcK7aw4eb6eTdaEr7LyNyTMSfPgwY6P1MrbSQC0lJNQIUQ5ffjdxE5g7D7OYpoJF9L14ni4UY8t2QASt7kmpgcYihmjeuYy8FQXgmFG8CTxiWBPKTybZJ7voQcvIvRaNG7b2wM9PMfc5lRIondB6c="
 deploy:
-    - provider: releases
-      api_key:
-          secure: "Wdt4Ccefo7a0ZDjEJQJgpghh7n72FtNJuKSAPUvoz4gtEX6Ct9J8yJI1t9V3jE3CTbbLJ21/Q6eZRDfT7UfNJe5DdepoJsP9DeFhKMWqQCq+AChqQWlm0KeZAffJoJreL8vXYhnRYcLT9ceZHEH6AqwN9TPV+xJziGPISAkYNZ8="
-      skip_cleanup: true
-      file_glob: true
-      file: "/tmp/builds/*"
-      on:
-          condition: '"$RELEASE_BUILD" == true'
-          tags: true
+  - provider: releases
+    api_key:
+      secure: "Wdt4Ccefo7a0ZDjEJQJgpghh7n72FtNJuKSAPUvoz4gtEX6Ct9J8yJI1t9V3jE3CTbbLJ21/Q6eZRDfT7UfNJe5DdepoJsP9DeFhKMWqQCq+AChqQWlm0KeZAffJoJreL8vXYhnRYcLT9ceZHEH6AqwN9TPV+xJziGPISAkYNZ8="
+    skip_cleanup: true
+    file_glob: true
+    file: "/tmp/builds/*"
+    on:
+      condition: '"$RELEASE_BUILD" == true'
+      tags: true
 
-    - provider: script
-      script: bash ci/travis/ftp_deploy.sh
-      on:
-          condition: '"$NIGHTLY_BUILD" == true'
-          tags: true
+  - provider: script
+    script: bash ci/travis/ftp_deploy.sh
+    on:
+      condition: '"$NIGHTLY_BUILD" == true'
+      tags: true
 
-    - provider: script
-      skip_cleanup: true
-      script: bash ci/travis/ftp_deploy.sh
-      on:
-          condition: $TEST_BUILD = true
-          all_branches: true
+  - provider: script
+    skip_cleanup: true
+    script: bash ci/travis/ftp_deploy.sh
+    on:
+      condition: $TEST_BUILD = true
+      all_branches: true
 
 matrix:
-    include:
-        # note that gcc Debug MUST be 1st for Coverity
-        - os: linux
-          env: CONFIGURATION="Debug" CC=gcc-5 CXX=g++-5
-          addons:
-              apt:
-                  sources:
-                      - ubuntu-toolchain-r-test
-                      - sourceline: 'ppa:beineri/opt-qt571-trusty'
-                  packages:
-                      - *global_deps
-                      - g++-5
-        - os: linux
-          env: CONFIGURATION="Debug" CC=gcc-8 CXX=g++-8
-          addons:
-              apt:
-                  sources:
-                      - ubuntu-toolchain-r-test
-                      - sourceline: 'ppa:beineri/opt-qt571-trusty'
-                  packages:
-                      - g++-8
-                      - *global_deps
-        - os: linux
-          env: CONFIGURATION="Debug" CC=clang-4.0 CXX=clang++-4.0 CMAKE_OPTIONS="-DCMAKE_EXPORT_COMPILE_COMMANDS=ON"
-          addons:
-              apt:
-                  sources:
-                      - ubuntu-toolchain-r-test
-                      - llvm-toolchain-trusty-4.0
-                      - sourceline: 'ppa:beineri/opt-qt571-trusty'
-                  packages:
-                      - *global_deps
-                      - clang-4.0
-                      - clang-tidy-4.0
-                      - libc++-dev
-          script:
-            - ./ci/travis/script.sh
-            - ./ci/travis/clang_tidy.sh
-        - os: osx
-          env: CONFIGURATION="Debug"
+  include:
+    # note that gcc Debug MUST be 1st for Coverity
+    - os: linux
+      env: CONFIGURATION="Debug" CC=gcc-5 CXX=g++-5
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+            - sourceline: 'ppa:beineri/opt-qt571-trusty'
+          packages:
+            - *global_deps
+            - g++-5
+    - os: linux
+      env: CONFIGURATION="Debug" CC=gcc-8 CXX=g++-8
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+            - sourceline: 'ppa:beineri/opt-qt571-trusty'
+          packages:
+            - g++-8
+            - *global_deps
+    - os: linux
+      env: CONFIGURATION="Debug" CC=clang-4.0 CXX=clang++-4.0 CMAKE_OPTIONS="-DCMAKE_EXPORT_COMPILE_COMMANDS=ON"
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+            - llvm-toolchain-trusty-4.0
+            - sourceline: 'ppa:beineri/opt-qt571-trusty'
+          packages:
+            - *global_deps
+            - clang-4.0
+            - clang-tidy-4.0
+            - libc++-dev
+      script:
+        - ./ci/travis/script.sh
+        - ./ci/travis/clang_tidy.sh
+    - os: osx
+      env: CONFIGURATION="Debug"
 
-        - os: linux
-          env: CONFIGURATION="Release" CC=gcc-5 CXX=g++-5
-          addons:
-              apt:
-                  sources:
-                      - ubuntu-toolchain-r-test
-                      - sourceline: 'ppa:beineri/opt-qt571-trusty'
-                  packages:
-                      - *global_deps
-                      - g++-5
-        - os: linux
-          env: CONFIGURATION="Release" CC=gcc-8 CXX=g++-8
-          addons:
-              apt:
-                  sources:
-                      - ubuntu-toolchain-r-test
-                      - sourceline: 'ppa:beineri/opt-qt571-trusty'
-                  packages:
-                      - g++-8
-                      - *global_deps
-        - os: linux
-          env: CONFIGURATION="Release" CC=clang-4.0 CXX=clang++-4.0
-          addons:
-              apt:
-                  sources:
-                      - ubuntu-toolchain-r-test
-                      - llvm-toolchain-trusty-4.0
-                      - sourceline: 'ppa:beineri/opt-qt571-trusty'
-                  packages:
-                      - *global_deps
-                      - clang-4.0
-                      - libc++-dev
-        - os: osx
-          env: CONFIGURATION="Release"
+    - os: windows
+      env: CONFIGURATION="Debug" CMAKE_TOOLSET=v141_xp CMAKE_GENERATOR="Visual Studio 15 2017"
+    - os: windows
+      env: CONFIGURATION="Debug" CMAKE_TOOLSET="" CMAKE_GENERATOR="Ninja"
+
+    - os: linux
+      env: CONFIGURATION="Release" CC=gcc-5 CXX=g++-5
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+            - sourceline: 'ppa:beineri/opt-qt571-trusty'
+          packages:
+            - *global_deps
+            - g++-5
+    - os: linux
+      env: CONFIGURATION="Release" CC=gcc-8 CXX=g++-8
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+            - sourceline: 'ppa:beineri/opt-qt571-trusty'
+          packages:
+            - g++-8
+            - *global_deps
+    - os: linux
+      env: CONFIGURATION="Release" CC=clang-4.0 CXX=clang++-4.0
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+            - llvm-toolchain-trusty-4.0
+            - sourceline: 'ppa:beineri/opt-qt571-trusty'
+          packages:
+            - *global_deps
+            - clang-4.0
+            - libc++-dev
+    - os: osx
+      env: CONFIGURATION="Release"
+
+    - os: windows
+      env: CONFIGURATION="Release" CMAKE_TOOLSET=v141_xp CMAKE_GENERATOR="Visual Studio 15 2017"
+    - os: windows
+      env: CONFIGURATION="Release" CMAKE_TOOLSET="" CMAKE_GENERATOR="Ninja"
+  # As long as Windows is still experimental on Travis CI, allow failures
+  allow_failures:
+    - os: windows
+      env: CONFIGURATION="Debug" CMAKE_TOOLSET=v141_xp CMAKE_GENERATOR="Visual Studio 15 2017"
+    - os: windows
+      env: CONFIGURATION="Debug" CMAKE_TOOLSET="" CMAKE_GENERATOR="Ninja"
+    - os: windows
+      env: CONFIGURATION="Release" CMAKE_TOOLSET=v141_xp CMAKE_GENERATOR="Visual Studio 15 2017"
+    - os: windows
+      env: CONFIGURATION="Release" CMAKE_TOOLSET="" CMAKE_GENERATOR="Ninja"
+  fast_finish: true
+
 before_install:
-    # ugly hack; if running a coverity scan abort all except the 1st build
-    # see note re gcc compiler above needing to be 1st
-    # also note that branch_pattern & the TRAVIS_BRANCH check must match
-    # unfortunately COVERITY_SCAN_BRANCH isn't defined until later in the
-    # build process
-    - if ([[ "${TRAVIS_JOB_NUMBER##*.}" != "1" ]] && [[ "${TRAVIS_BRANCH}" == "coverity_scan" ]]); then false ; fi
-    - source "./ci/travis/check_release.sh"
-    - "./ci/travis/before_install.sh"
+  # ugly hack; if running a coverity scan abort all except the 1st build
+  # see note re gcc compiler above needing to be 1st
+  # also note that branch_pattern & the TRAVIS_BRANCH check must match
+  # unfortunately COVERITY_SCAN_BRANCH isn't defined until later in the
+  # build process
+  - if ([[ "${TRAVIS_JOB_NUMBER##*.}" != "1" ]] && [[ "${TRAVIS_BRANCH}" == "coverity_scan" ]]); then false ; fi
+  - source "./ci/travis/check_release.sh"
+  - "./ci/travis/before_install.sh"
 install:
-    - "./ci/travis/install.sh"
-    - export PATH=$HOME/cmake-3.6/bin:$PATH
+  - if [ "$TRAVIS_OS_NAME" = "windows" ]; then export PATH="/c/Program Files/CMake/bin":$PATH; fi
+  - "./ci/travis/install.sh"
+  - export PATH=$HOME/cmake-3.6/bin:$PATH
 before_script:
-    - if [ "$TRAVIS_OS_NAME" = "linux" ]; then QT_ENV_SCRIPT=$(find /opt -name 'qt*-env.sh'); source $QT_ENV_SCRIPT; fi
-    - "./ci/travis/before_script.sh"
+  - if [ "$TRAVIS_OS_NAME" = "linux" ]; then QT_ENV_SCRIPT=$(find /opt -name 'qt*-env.sh'); source $QT_ENV_SCRIPT; fi
+  - "./ci/travis/before_script.sh"
 script:
-    - if [ "$BUILD_DEPLOYMENT" = true ] ; then ./ci/travis/release.sh ; else ./ci/travis/script.sh ; fi
+  - if [ "$BUILD_DEPLOYMENT" = true ] ; then ./ci/travis/release.sh ; else ./ci/travis/script.sh ; fi

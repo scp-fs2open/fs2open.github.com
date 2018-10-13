@@ -3250,12 +3250,12 @@ int CFREDView::global_error_check_player_wings(int multi)
 			{
 				if (The_mission.game_type & MISSION_TYPE_MULTI_TEAMS) 
 				{
-					if (error("Player %s should be part of %s wing", Ships[ship_instance].ship_name, tvt_wing_list))
+					if (error("Player %s should be part of %s wing", Ships[ship_instance].ship_name, static_cast<LPCTSTR>(tvt_wing_list)))
 						return 1;
 				}
 				else
 				{
-					if (error("Player %s should be part of %s wing", Ships[ship_instance].ship_name, starting_wing_list))
+					if (error("Player %s should be part of %s wing", Ships[ship_instance].ship_name, static_cast<LPCTSTR>(starting_wing_list)))
 						return 1;
 				}
 			}
