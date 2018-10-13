@@ -609,7 +609,8 @@ void brief_preload_icon_anim(brief_icon *bi)
 	// force read of data from disk, so we don't glitch on initial playback
 	if ( ga->first_frame == -1 ) {
 		ga->first_frame = bm_load_animation(ga->filename, &ga->num_frames);
-		Assert(ga->first_frame >= 0);
+		if ( ga->first_frame < 0 )
+			Warning(LOCATION, "Failed to load icon %s!", ga->filename);
 	}
 }
 
@@ -624,13 +625,13 @@ void brief_preload_fade_anim(brief_icon *bi)
 		return;
 
 	// force read of data from disk, so we don't glitch on initial playback
-	if ( ha->first_frame == -1 ) {
+	if ( ha->first_frame == -1 )
 		hud_anim_load(ha);
-		Assert(ha->first_frame >= 0);
-	}
 
-	gr_set_bitmap(ha->first_frame);
-	gr_aabitmap(0, 0);
+	if ( ha->first_frame >= 0 ) {
+		gr_set_bitmap(ha->first_frame);
+		gr_aabitmap(0, 0);
+	}
 }
 
 void brief_preload_highlight_anim(brief_icon *bi)
@@ -644,15 +645,15 @@ void brief_preload_highlight_anim(brief_icon *bi)
 		return;
 
 	// force read of data from disk, so we don't glitch on initial playback
-	if ( ha->first_frame == -1 ) {
+	if ( ha->first_frame == -1 )
 		hud_anim_load(ha);
-		Assert(ha->first_frame >= 0);
+
+	if ( ha->first_frame >= 0 ) {
+		bi->highlight_anim = *ha;
+
+		gr_set_bitmap(ha->first_frame);
+		gr_aabitmap(0, 0);
 	}
-
-	bi->highlight_anim = *ha;
-
-	gr_set_bitmap(ha->first_frame);
-	gr_aabitmap(0, 0);
 }
 
 /**
@@ -920,7 +921,6 @@ void brief_render_icon(int stage_num, int icon_num, float frametime, int selecte
 
 		ga = &bii->regular;
 		if (ga->first_frame < 0) {
-			Int3();
 			return;
 		}
 

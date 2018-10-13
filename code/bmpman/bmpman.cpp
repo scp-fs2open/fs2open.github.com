@@ -1892,6 +1892,7 @@ int bm_load_sub_slow(const char *real_filename, const int num_ext, const char **
 	}
 
 	// umm, that's not good...
+	Warning(LOCATION, "Could not open file %s!", res.full_name.c_str());
 	return -1;
 }
 
