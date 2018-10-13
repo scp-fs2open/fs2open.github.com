@@ -1633,6 +1633,7 @@ void hud_config_as_observer(ship *shipp,ai_info *aif)
 
 void hud_config_as_player()
 {
+	hud_config_restore();
 } 
 
 // ---------------------------------------------------------------------------------------------------------------

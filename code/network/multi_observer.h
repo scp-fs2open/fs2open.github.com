@@ -42,4 +42,6 @@ void multi_obs_level_init();
 // if i'm an observer, zoom to near my targted object (if any)
 void multi_obs_zoom_to_target();
 
+void multi_obs_restore_hud();
+
 #endif
