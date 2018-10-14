@@ -33,11 +33,12 @@
 #include "ship/ship.h"
 #include "ui/ui.h"
 #include "barracks.h"
+#include "mod_table/mod_table.h"
 
 
 // stats defines
 //#define NUM_STAT_LINES (21 + MAX_SHIP_CLASSES)	// Goober5000
-#define STAT_COLUMN1_W 40
+#define STAT_COLUMN1_W 40*2							// as we might use Unicode //ksotar
 #define STAT_COLUMN2_W 10
 
 static int Stat_column1_w[GR_NUM_RESOLUTIONS] =
@@ -79,6 +80,7 @@ static int Barracks_stats_coords[GR_NUM_RESOLUTIONS][4] = {
 		42, 351, 240, 400
 	}
 };
+
 
 static int Barracks_stats2_coords[GR_NUM_RESOLUTIONS][3] = {
 	{ // GR_640
@@ -266,6 +268,9 @@ UI_XSTR Barracks_text[GR_NUM_RESOLUTIONS][BARRACKS_NUM_TEXT] = {
 static size_t Num_stat_lines;
 static char (*Stat_labels)[STAT_COLUMN1_W];
 static char (*Stats)[STAT_COLUMN2_W];
+static uint16_t Stats_max_width;		// If Unicode language is used then we adapt stats width for new words/strings length
+static uint16_t Stats_X2;				// And numbers position adapted as well
+
 
 static int Player_sel_mode;
 
@@ -299,7 +304,7 @@ void barracks_squad_change_popup();
 #define STRCPY1(a, b) do {	\
 	Assert(strlen(b) < STAT_COLUMN1_W); \
 	strcpy_s(a, b); \
-} while (0)
+} while (false)
 
 void barracks_init_stats(scoring_struct *stats)
 {
@@ -384,28 +389,30 @@ void barracks_init_stats(scoring_struct *stats)
 	Num_stat_lines++;
 
 	Assert(Num_stat_lines < Max_stat_lines);
-	STRCPY1(Stat_labels[Num_stat_lines], XSTR( "Secondary friendly hits:", 59));
+	STRCPY1(Stat_labels[Num_stat_lines], XSTR("Secondary friendly hits:", 59));
 	sprintf(Stats[Num_stat_lines], "%u", stats->s_bonehead_hits);
 	Num_stat_lines++;
 
 	Assert(Num_stat_lines < Max_stat_lines);
-	STRCPY1(Stat_labels[Num_stat_lines], XSTR( "Secondary hit %:", 60));
+	STRCPY1(Stat_labels[Num_stat_lines], XSTR("Secondary hit %:", 60));
 	if (stats->s_shots_fired > 0) {
-		f = (float) stats->s_shots_hit * 100.0f / (float) stats->s_shots_fired;
-	} else {
+		f = (float)stats->s_shots_hit * 100.0f / (float)stats->s_shots_fired;
+	}
+	else {
 		f = 0.0f;
 	}
-	sprintf(Stats[Num_stat_lines], XSTR( "%.1f%%", 55), f);
+	sprintf(Stats[Num_stat_lines], XSTR("%.1f%%", 55), f);
 	Num_stat_lines++;
 
 	Assert(Num_stat_lines < Max_stat_lines);
-	STRCPY1(Stat_labels[Num_stat_lines], XSTR( "Secondary friendly hit %:", 61));
+	STRCPY1(Stat_labels[Num_stat_lines], XSTR("Secondary friendly hit %:", 61));
 	if (stats->s_shots_fired > 0) {
-		f = (float) stats->s_bonehead_hits * 100.0f / (float) stats->s_shots_fired;
-	} else {
+		f = (float)stats->s_bonehead_hits * 100.0f / (float)stats->s_shots_fired;
+	}
+	else {
 		f = 0.0f;
 	}
-	sprintf(Stats[Num_stat_lines], XSTR( "%.1f%%", 55), f);
+	sprintf(Stats[Num_stat_lines], XSTR("%.1f%%", 55), f);
 	Num_stat_lines++;
 
 	Assert(Num_stat_lines < Max_stat_lines);
@@ -414,12 +421,12 @@ void barracks_init_stats(scoring_struct *stats)
 	Num_stat_lines++;
 
 	Assert(Num_stat_lines < Max_stat_lines);
-	STRCPY1(Stat_labels[Num_stat_lines], XSTR( "Total kills:", 62));
+	STRCPY1(Stat_labels[Num_stat_lines], XSTR("Total kills:", 62));
 	sprintf(Stats[Num_stat_lines], "%d", stats->kill_count_ok);
 	Num_stat_lines++;
 
 	Assert(Num_stat_lines < Max_stat_lines);
-	STRCPY1(Stat_labels[Num_stat_lines], XSTR( "Assists:", 63));
+	STRCPY1(Stat_labels[Num_stat_lines], XSTR("Assists:", 63));
 	sprintf(Stats[Num_stat_lines], "%d", stats->assists);
 	Num_stat_lines++;
 
@@ -429,7 +436,7 @@ void barracks_init_stats(scoring_struct *stats)
 	Num_stat_lines++;
 
 	Assert(Num_stat_lines < Max_stat_lines);
-	strcpy_s(Stat_labels[Num_stat_lines], XSTR( "Current Score:", 1583));
+	strcpy_s(Stat_labels[Num_stat_lines], XSTR("Current Score:", 1583));
 	sprintf(Stats[Num_stat_lines], "%d", stats->score);
 	Num_stat_lines++;
 
@@ -443,7 +450,7 @@ void barracks_init_stats(scoring_struct *stats)
 	Stats[Num_stat_lines][0] = 0;
 	Num_stat_lines++;
 
-	STRCPY1(Stat_labels[Num_stat_lines], XSTR( "*Kills by Ship Type", 64));
+	STRCPY1(Stat_labels[Num_stat_lines], XSTR("*Kills by Ship Type", 64));
 	Stats[Num_stat_lines][0] = 0;
 	Num_stat_lines++;
 
@@ -478,13 +485,29 @@ void barracks_init_stats(scoring_struct *stats)
 
 	// add the score from kills
 	Assert((Num_stat_lines + 1) < Max_stat_lines);
-	STRCPY1(Stat_labels[Num_stat_lines], XSTR( "Score from kills only:", 1636));
+	STRCPY1(Stat_labels[Num_stat_lines], XSTR("Score from kills only:", 1636));
 	sprintf(Stats[Num_stat_lines], "%d", score_from_kills);
 	Num_stat_lines++;
 
-	for (i=0; i<Num_stat_lines; i++) {
-		font::force_fit_string(Stat_labels[i], Stat_column1_w[gr_screen.res], Barracks_stats_coords[gr_screen.res][BARRACKS_W_COORD]);
-		font::force_fit_string(Stats[i], Stat_column2_w[gr_screen.res], Barracks_stats2_coords[gr_screen.res][BARRACKS_W_COORD]);
+	int w;
+	Stats_max_width = 0;
+	Stats_X2	 = 0;
+	if (Unicode_text_mode && (gr_screen.res != GR_640)) {
+		for (i = 0; i < Num_stat_lines; i++) {					// Find the longest string in labels to base list appearance on that
+			gr_get_string_size(&w, nullptr, Stat_labels[i]);
+			if (Stats_max_width < w) 
+				Stats_max_width = (uint16_t)w;
+		}
+		Stats_max_width += 20;
+		Stats_X2 = Stats_max_width + 46;
+	}
+	else {
+		Stats_max_width = (uint16_t) Barracks_stats_coords[gr_screen.res][BARRACKS_W_COORD];
+		Stats_X2	 = (uint16_t) Barracks_stats2_coords[gr_screen.res][BARRACKS_X_COORD];
+		for (i = 0; i < Num_stat_lines; i++) {
+			font::force_fit_string(Stat_labels[i], Stat_column1_w[gr_screen.res], Stats_max_width);
+			font::force_fit_string(Stats[i], Stat_column2_w[gr_screen.res], Barracks_stats2_coords[gr_screen.res][BARRACKS_W_COORD]);
+		}
 	}
 }
 
@@ -1203,18 +1226,18 @@ void barracks_display_pilot_stats()
 
 			gr_get_string_size(&w, &h, str);
 			i = Barracks_stats_coords[gr_screen.res][BARRACKS_Y_COORD] + y + h / 2 - 1;			
-			gr_line(Barracks_stats_coords[gr_screen.res][BARRACKS_X_COORD], i, Barracks_stats_coords[gr_screen.res][BARRACKS_X_COORD] + Barracks_stats_coords[gr_screen.res][BARRACKS_W_COORD] - w - 2, i, GR_RESIZE_MENU);
-			gr_line(Barracks_stats_coords[gr_screen.res][BARRACKS_X_COORD] + Barracks_stats_coords[gr_screen.res][BARRACKS_W_COORD] + 1, i, Barracks_stats2_coords[gr_screen.res][BARRACKS_X_COORD] + Barracks_stats2_coords[gr_screen.res][BARRACKS_W_COORD], i, GR_RESIZE_MENU);
+			gr_line(Barracks_stats_coords[gr_screen.res][BARRACKS_X_COORD], i, Barracks_stats_coords[gr_screen.res][BARRACKS_X_COORD] + Stats_max_width - w - 2, i, GR_RESIZE_MENU);
+			gr_line(Barracks_stats_coords[gr_screen.res][BARRACKS_X_COORD] + Stats_max_width + 1, i, Stats_X2 + Barracks_stats2_coords[gr_screen.res][BARRACKS_W_COORD], i, GR_RESIZE_MENU);
 
 		} else {
 			gr_set_color_fast(&Color_text_normal);
 		}
 
 		gr_get_string_size(&w, NULL, str);
-		gr_printf_menu(Barracks_stats_coords[gr_screen.res][BARRACKS_X_COORD] + Barracks_stats_coords[gr_screen.res][BARRACKS_W_COORD] - w, Barracks_stats_coords[gr_screen.res][BARRACKS_Y_COORD] + y, "%s", str);
+		gr_printf_menu(Barracks_stats_coords[gr_screen.res][BARRACKS_X_COORD] + Stats_max_width - w, Barracks_stats_coords[gr_screen.res][BARRACKS_Y_COORD] + y, "%s", str);
 		str = Stats[z];
 		if (*str) {
-			gr_printf_menu(Barracks_stats2_coords[gr_screen.res][BARRACKS_X_COORD], Barracks_stats_coords[gr_screen.res][BARRACKS_Y_COORD] + y, "%s", str);
+			gr_printf_menu(Stats_X2, Barracks_stats_coords[gr_screen.res][BARRACKS_Y_COORD] + y, "%s", str);
 		}
 
 		y += font_height;
