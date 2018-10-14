@@ -1505,11 +1505,12 @@ STBTT_DEF int stbtt_FindGlyphIndex(const stbtt_fontinfo *info, int unicode_codep
 			stbtt_uint16 item = (stbtt_uint16)((search - endCount) >> 1);
 
 			if (unicode_codepoint > ttUSHORT(data + endCount + 2 * item)) {
-				nvgOldCPrintf("WARNING: Probably font character is missing. Unicode decimal index is %d.\n", unicode_codepoint);
+				nvgOldCPrintf("WARNING: A font character is probably missing. Unicode decimal index is %d.\n", unicode_codepoint);
 			}
 			STBTT_assert((unicode_codepoint <= ttUSHORT(data + endCount + 2 * item)) &&
 				"                                        \
-				Looks like the font file you're using misses a character. Look into log for 'WARNING: Probably font' to know its code.");
+				Looks like the font file you're using misses a character. Search the log for 'WARNING: A font character is probably missing.' \
+				in order to find out the missing unicode codepoint.");
 			start = ttUSHORT(data + index_map + 14 + segcount * 2 + 2 + 2 * item);
 			if (unicode_codepoint < start)
 				return 0;
