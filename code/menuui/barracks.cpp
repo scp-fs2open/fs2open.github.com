@@ -492,10 +492,11 @@ void barracks_init_stats(scoring_struct *stats)
 	int w;
 	Calculated_width = 0;
 	Calculated_X2	 = 0;
-	if ((Unicode_text_mode) && (gr_screen.res != GR_640)) {
+	if (Unicode_text_mode && (gr_screen.res != GR_640)) {
 		for (i = 0; i < Num_stat_lines; i++) {					// Find the longest string in labels to base list appearance on that
 			gr_get_string_size(&w, nullptr, Stat_labels[i]);
-			if (Calculated_width < w) Calculated_width = (uint16_t) w;
+			if (Calculated_width < w) 
+				Calculated_width = (uint16_t)w;
 		}
 		Calculated_width += 20;
 		Calculated_X2 = Calculated_width + 46;
