@@ -1633,7 +1633,9 @@ void hud_config_as_observer(ship *shipp,ai_info *aif)
 
 void hud_config_as_player()
 {
-	hud_config_restore();
+	if (HUD_config.is_observer) {		// If he was observer before
+		hud_config_restore();
+	}
 } 
 
 // ---------------------------------------------------------------------------------------------------------------

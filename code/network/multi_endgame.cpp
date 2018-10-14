@@ -323,9 +323,7 @@ void multi_endgame_cleanup()
 {
 	int idx;
 
-	if (HUD_config.is_observer) {		// Do not forget restore players HUD
-		hud_config_restore();
-	}
+	hud_config_as_player();
 
 	send_leave_game_packet();			
 
