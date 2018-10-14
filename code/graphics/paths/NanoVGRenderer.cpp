@@ -21,20 +21,21 @@
 #include "NanoVGRenderer.h"
 #include "tracing/tracing.h"
 
+
+#ifndef NDEBUG
 // That is a wrapper function for log prints to be availiable for nanovg components. For now it is stb_truetype.h
 // Planted by ksotar with blessing from asarium
 extern "C" {
-void nvgOldCPrintf(SCP_FORMAT_STRING const char *message, ...) {
-	SCP_string buf;
-	va_list args;
-	va_start(args, message);
-	vsprintf(buf, message, args);
-	va_end(args);
-	#ifdef outwnd_printf2
+	void nvgOldCPrintf(SCP_FORMAT_STRING const char *message, ...) {
+		SCP_string buf;
+		va_list args;
+		va_start(args, message);
+		vsprintf(buf, message, args);
+		va_end(args);
 		outwnd_printf2("%s", message);
-	#endif
+	}
 }
-}
+#endif
 
 
 namespace {
