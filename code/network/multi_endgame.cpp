@@ -22,6 +22,7 @@
 #include "network/multiui.h"
 #include "network/multiutil.h"
 #include "network/multi_pmsg.h"
+#include "hud/hudconfig.h"
 #include "fs2netd/fs2netd_client.h"
 
 
@@ -321,6 +322,8 @@ int multi_quit_game(int prompt, int notify_code, int err_code, int wsa_error)
 void multi_endgame_cleanup()
 {
 	int idx;
+
+	hud_config_as_player();
 
 	send_leave_game_packet();			
 
