@@ -16,6 +16,7 @@
 #include "cfile/cfile.h"
 #include "cmdline/cmdline.h"
 #include "freespace.h"
+#include "sound/speech.h"
 #include "gamehelp/contexthelp.h"
 #include "gamesequence/gamesequence.h"
 #include "gamesnd/gamesnd.h"
@@ -1928,6 +1929,11 @@ void commit_pressed()
 	// Goober5000 - no sound when skipping briefing
 	if (!(The_mission.flags[Mission::Mission_Flags::No_briefing]))
 		gamesnd_play_iface(InterfaceSounds::COMMIT_PRESSED);
+
+	// plieblang - resume simulated speech if necessary
+	if (speech_init && !Player->auto_advance) {
+		speech_resume();
+	}
 
 	// save the player loadout
 	if ( !(Game_mode & GM_MULTIPLAYER) ) {
