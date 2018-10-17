@@ -16,7 +16,6 @@
 #include "cfile/cfile.h"
 #include "cmdline/cmdline.h"
 #include "freespace.h"
-#include "sound/speech.h"
 #include "gamehelp/contexthelp.h"
 #include "gamesequence/gamesequence.h"
 #include "gamesnd/gamesnd.h"
@@ -48,6 +47,7 @@
 #include "popup/popup.h"
 #include "render/3d.h"
 #include "ship/ship.h"
+#include "sound/fsspeech.h"
 #include "species_defs/species_defs.h"
 #include "weapon/weapon.h"
 
@@ -1931,8 +1931,8 @@ void commit_pressed()
 		gamesnd_play_iface(InterfaceSounds::COMMIT_PRESSED);
 
 	// plieblang - resume simulated speech if necessary
-	if (speech_init && !Player->auto_advance) {
-		speech_resume();
+	if (!Player->auto_advance) {
+		fsspeech_pause(Player->auto_advance);
 	}
 
 	// save the player loadout
