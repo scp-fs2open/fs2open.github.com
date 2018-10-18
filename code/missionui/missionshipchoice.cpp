@@ -1932,7 +1932,7 @@ void commit_pressed()
 
 	// plieblang - resume simulated speech if necessary
 	if (!Player->auto_advance) {
-		fsspeech_pause(Player->auto_advance);
+		fsspeech_pause(false);
 	}
 
 	// save the player loadout
