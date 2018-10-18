@@ -192,13 +192,6 @@ void labviewer_change_model(char *model_fname, int lod = 0, int sel_index = -1)
 			
 			Lab_model_num = model_load(model_fname, (valid_ship) ? Ship_info[sel_index].n_subsystems : 0, subsystems, 0);
 
-			if (Lab_model_num >= 0) {
-				strcpy_s(Lab_model_filename, model_fname);
-			}
-			else {
-				memset(Lab_model_filename, 0, sizeof(Lab_model_filename));
-			}
-
 			if (valid_ship) {
 				if (Lab_model_num >= 0) {
 					model_page_in_textures(Lab_model_num, sel_index);
@@ -1418,6 +1411,16 @@ void labviewer_change_ship_lod(Tree* caller)
 
 	Lab_last_selected_ship = Lab_selected_index;
 	labviewer_change_model(Ship_info[ship_index].pof_file, caller->GetSelectedItem()->GetData(), ship_index);
+
+	//update the displayed POF filename
+	//moved out of labviewer_change_model which apparently doesn't do much after the first ship is loaded
+	if (Lab_model_num >= 0) {
+		strcpy_s(Lab_model_filename, Ship_info[ship_index].pof_file);
+	}
+	else {
+		memset(Lab_model_filename, 0, sizeof(Lab_model_filename));
+	}
+
 	if (Ship_info[ship_index].uses_team_colors) {
 		Lab_team_color = Ship_info[ship_index].default_team_name;
 	}
