@@ -7417,6 +7417,13 @@ static void ship_actually_depart_helper(object *objp, dock_function_info *infop)
  */
 void ship_actually_depart(int shipnum, int method)
 {
+	
+	// run "On Ship Depart" conditional hook variable. This hook accounts for all departure types.
+	// it is not limited to only warping --wookieejedi
+	Script_system.SetHookObject("Ship", &Objects[Ships[shipnum].objnum]);
+	Script_system.RunCondition(CHA_ONSHIPDEPART);
+	Script_system.RemHookVar("Ship");
+	
 	dock_function_info dfi;
 	dfi.parameter_variables.bool_value = (method == SHIP_VANISHED ? true:false);
 	dock_evaluate_all_docked_objects(&Objects[Ships[shipnum].objnum], &dfi, ship_actually_depart_helper);
