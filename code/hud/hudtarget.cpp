@@ -4383,6 +4383,13 @@ void hud_cease_subsystem_targeting(int print_message)
 	hud_lock_reset();
 }
 
+//like hud_cease_targeting but doesn't turn off auto-targeting
+void hud_cease_targeting_ship() {
+	set_target_objnum(Player_ai, -1);
+	hud_cease_subsystem_targeting(0);
+	//don't need to call hud_lock_reset because hud_cease_subsystem_targeting already does
+}
+
 // hud_cease_targeting() will cease all targeting (main target and subsystem)
 //
 void hud_cease_targeting()
