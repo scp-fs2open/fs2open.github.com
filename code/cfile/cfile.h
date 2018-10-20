@@ -13,10 +13,11 @@
 #define __CFILE_H__
 
 
-#include <ctime>
 #include "globalincs/pstypes.h"
 
+#include <ctime>
 #include <stdexcept>
+#include <memory>
 
 
 #define CF_EOF (-1)
@@ -461,5 +462,18 @@ namespace cfile
 	};
 
 }
+
+// This allows to use std::unique_ptr with CFILE
+namespace std {
+template <>
+struct default_delete<CFILE> {
+	void operator()(CFILE* ptr)
+	{
+		if (cf_is_valid(ptr)) {
+			cfclose(ptr);
+		}
+	}
+};
+} // namespace std
 
 #endif	/* __CFILE_H__ */
