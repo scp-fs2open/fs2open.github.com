@@ -101,6 +101,7 @@ extern bool script_hook_valid(script_hook *hook);
 #define CHA_SIMULATION      39
 #define CHA_LOADSCREEN      40
 #define CHA_CMISSIONACCEPT  41
+#define CHA_ONSHIPDEPART	42
 
 // management stuff
 void scripting_state_init();
