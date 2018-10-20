@@ -1282,7 +1282,7 @@ void labviewer_make_desc_window(Button * /*caller*/)
 void labviewer_make_ship_window(Button * /*caller*/)
 {
 	GUIObject *cbp;
-	TreeItem /**ctip, */*stip;
+	TreeItem *stip;
 	int x, idx;
 
 	if (Lab_mode == LAB_MODE_SHIP) {
@@ -1385,7 +1385,7 @@ void labviewer_make_ship_window(Button * /*caller*/)
 
 void labviewer_change_ship_lod(Tree* caller)
 {
-	int ship_index = (int)(caller->GetSelectedItem()->GetData());
+	int ship_index = caller->GetSelectedItem()->GetData();
 	Assert(ship_index >= 0);
 
 	if (Lab_selected_object == -1)
