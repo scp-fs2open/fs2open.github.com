@@ -47,6 +47,7 @@
 #include "popup/popup.h"
 #include "render/3d.h"
 #include "ship/ship.h"
+#include "sound/fsspeech.h"
 #include "species_defs/species_defs.h"
 #include "weapon/weapon.h"
 
@@ -1928,6 +1929,11 @@ void commit_pressed()
 	// Goober5000 - no sound when skipping briefing
 	if (!(The_mission.flags[Mission::Mission_Flags::No_briefing]))
 		gamesnd_play_iface(InterfaceSounds::COMMIT_PRESSED);
+
+	// plieblang - resume simulated speech if necessary
+	if (!Player->auto_advance) {
+		fsspeech_pause(false);
+	}
 
 	// save the player loadout
 	if ( !(Game_mode & GM_MULTIPLAYER) ) {
