@@ -67,73 +67,6 @@ SCP_unordered_map<uint, collider_pair> Collision_cached_pairs;
 class checkobject;
 extern checkobject CheckObjects[MAX_OBJECTS];
 
-extern int Cmdline_old_collision_sys;
-
-void obj_pairs_close()
-{
-	if (Obj_pairs != NULL) {
-		vm_free(Obj_pairs);
-		Obj_pairs = NULL;
-	}
-
-	Num_pairs_allocated = 0;
-}
-
-void obj_all_collisions_retime(int checkdly)
-// sets all collisions to be checked (in 25ms by default)
-// this is for when we warp objects
-{
-	obj_pair *parent, *tmp;	
-
-	parent = &pair_used_list;
-	tmp = parent->next;
-
-
-	while (tmp != NULL) 
-	{
-		tmp->next_check_time = timestamp(checkdly);
-		tmp = tmp->next;
-	}
-}
-
-
-void obj_reset_pairs()
-{
-	int i;
-	
-//	mprintf(( "Resetting object pairs...\n" ));
-
-	pair_used_list.a = pair_used_list.b = NULL;		
-	pair_used_list.next = NULL;
-	pair_free_list.a = pair_free_list.b = NULL;
-
-	Num_pairs = 0;
-
-	if (Obj_pairs != NULL) {
-		vm_free(Obj_pairs);
-		Obj_pairs = NULL;
-	}
-
-	Obj_pairs = (obj_pair*) vm_malloc( sizeof(obj_pair) * MIN_PAIRS );
-
-	if ( Obj_pairs == NULL ) {
-		mprintf(("Unable to create space for collision pairs!!\n"));
-		return;
-	}
-
-	Num_pairs_allocated = MIN_PAIRS;
-
-	memset( Obj_pairs, 0, sizeof(obj_pair) * MIN_PAIRS );
-
-	for (i = 0; i < MIN_PAIRS; i++) {
-		Obj_pairs[i].next = &Obj_pairs[i+1];
-	}
-
-	Obj_pairs[MIN_PAIRS-1].next = NULL;
-
-	pair_free_list.next = &Obj_pairs[0];
-}
-
 // returns true if we should reject object pair if one is child of other.
 int reject_obj_pair_on_parent(object *A, object *B)
 {
@@ -527,103 +460,6 @@ MONITOR(NumPairs)
 MONITOR(NumPairsChecked)
 
 //#define PAIR_STATS
-
-extern int Cmdline_dis_collisions;
-void obj_check_all_collisions()
-{
-	obj_pair *parent, *tmp;	
-
-#ifdef PAIR_STATS
-	// debug info
-	float avg_time_to_next_check = 0.0f;
-#endif
-
-	if (Cmdline_dis_collisions)
-		return;
-
-	if ( !(Game_detail_flags & DETAIL_FLAG_COLLISION) )
-		return;
-
-
-	parent = &pair_used_list;
-	tmp = parent->next;
-
-	Num_pairs_checked = 0;
-
-	while (tmp != NULL) {
-		int removed = 0;
-
-		if ( !timestamp_elapsed(tmp->next_check_time) )
-			goto NextPair;
-
-		if ( (tmp->a) && (tmp->b) ) {
-			Num_pairs_checked++;
-
-			if ( (*tmp->check_collision)(tmp) ) {
-				// We never need to check this pair again.
-				#if 0	//def DONT_REMOVE_PAIRS
-					// Never check it again, but keep the pair around
-					// (useful for debugging)
-					tmp->next_check_time = timestamp(-1);		
-				#else
-					// Never check it again, so remove the pair
-					removed = 1;
-					tmp->a->num_pairs--;	
-					Assert( tmp->a->num_pairs > -1 );
-					tmp->b->num_pairs--;
-					Assert( tmp->b->num_pairs > -1 );
-					Num_pairs--;
-					// Assert(Num_pairs >= 0);
-					parent->next = tmp->next;
-					tmp->a = tmp->b = NULL;
-					tmp->next = pair_free_list.next;
-					pair_free_list.next = tmp;
-					tmp = parent->next;
-				#endif
-			}
-		} 
-
-NextPair:
-		if ( !removed ) {
-			parent = tmp;
-			tmp = tmp->next;
-
-#ifdef PAIR_STATS
-			// debug info
-			if (tmp) {
-				int add_time = timestamp_until( tmp->next_check_time );
-				if (add_time > 0)
-					avg_time_to_next_check += (float) add_time;
-			}
-#endif
-		}
-	}
-
-	MONITOR_INC(NumPairs, Num_pairs);
-	MONITOR_INC(NumPairsChecked, Num_pairs_checked);
-
-#ifdef PAIR_STATS
-	avg_time_to_next_check = avg_time_to_next_check / Num_pairs;
-	extern int Num_hull_pieces;
-	extern int Weapons_created;
-	// mprintf(( "[pairs checked: %d, start_pairs: %d, num obj: %d, avg next time: %f]\n", n, org_pairs, Num_objects, avg_time_to_next_check ));
-	// mprintf(( "[Num_hull_pieces: %3d, Num_weapons_created: %3d, pairs_not_created: %3d, pairs_created: %3d, percent new saved: %9.5f]\n", Num_hull_pieces, Weapons_created, pairs_not_created, Pairs_created, 100.0f*(float)pairs_not_created/(float)(pairs_not_created + Pairs_created) ));
-	 mprintf(( "[pairs_created: %3d, pairs_not_created: %3d, percent saved %6.3f]\n", Pairs_created, pairs_not_created, 100.0f*pairs_not_created/(Pairs_created+pairs_not_created) ));
-	pairs_not_created = 0;
-	Weapons_created = 0;
-	Pairs_created = 0;
-#endif
-
-	// What percent of the pairs did we check?
-	// FYI: (n*(n-1))/2 is the total number of checks required for comparing n objects.
-
-//	if ( org_pairs > 1 )	{
-//		Object_checked_percentage = (i2fl(n)*100.0f) / i2fl(org_pairs);
-//	} else {
-//		Object_checked_percentage = 0.0f;
-//	}
-
-}
 
 //	See if two lines intersect by doing recursive subdivision.
 //	Bails out if larger distance traveled is less than sum of radii + 1.0f.
@@ -1040,7 +876,6 @@ void crw_check_weapon( int weapon_num, int collide_next_check )
 
 int collide_remove_weapons( )
 {
-	obj_pair *opp;
 	int i, num_deleted, oldest_index, j, loop_count;
 	float oldest_time;
 
@@ -1053,46 +888,29 @@ int collide_remove_weapons( )
 	}
 
 	// first pass is to see if any of the weapons don't have collision pairs.
+	SCP_unordered_map<uint, collider_pair>::iterator it;
+	collider_pair* pair_obj;
 
-	if ( Cmdline_old_collision_sys ) {
-		opp = &pair_used_list;
-		opp = opp->next;
-		while( opp != NULL )	{
-			// for each collide pair, if the two objects can still collide, then set the remove_weapon
-			// parameter for the weapon to 0.  need to check both parameters
-			if ( opp->a->type == OBJ_WEAPON )
-				crw_check_weapon( opp->a->instance, opp->next_check_time );
+	for (it = Collision_cached_pairs.begin(); it != Collision_cached_pairs.end(); ++it) {
+		pair_obj = &it->second;
 
-			if ( opp->b->type == OBJ_WEAPON )
-				crw_check_weapon( opp->b->instance, opp->next_check_time );
-
-			opp = opp->next;
+		if (!pair_obj->initialized) {
+			continue;
 		}
-	} else {
-		SCP_unordered_map<uint, collider_pair>::iterator it;
-		collider_pair *pair_obj;
 
-		for ( it = Collision_cached_pairs.begin(); it != Collision_cached_pairs.end(); ++it ) {
-			pair_obj = &it->second;
-			
-			if ( !pair_obj->initialized ) {
-				continue;
+		if (pair_obj->a->type == OBJ_WEAPON && pair_obj->signature_a == pair_obj->a->signature) {
+			crw_check_weapon(pair_obj->a->instance, pair_obj->next_check_time);
+
+			if (crw_status[pair_obj->a->instance] == CRW_CAN_DELETE) {
+				pair_obj->initialized = false;
 			}
+		}
 
-			if ( pair_obj->a->type == OBJ_WEAPON && pair_obj->signature_a == pair_obj->a->signature ) {
-				crw_check_weapon(pair_obj->a->instance, pair_obj->next_check_time);
+		if (pair_obj->b->type == OBJ_WEAPON && pair_obj->signature_b == pair_obj->b->signature) {
+			crw_check_weapon(pair_obj->b->instance, pair_obj->next_check_time);
 
-				if ( crw_status[pair_obj->a->instance] == CRW_CAN_DELETE ) {
-					pair_obj->initialized = false;
-				}
-			}
-
-			if ( pair_obj->b->type == OBJ_WEAPON && pair_obj->signature_b == pair_obj->b->signature ) {
-				crw_check_weapon(pair_obj->b->instance, pair_obj->next_check_time);
-
-				if ( crw_status[pair_obj->b->instance] == CRW_CAN_DELETE ) {
-					pair_obj->initialized = false;
-				}
+			if (crw_status[pair_obj->b->instance] == CRW_CAN_DELETE) {
+				pair_obj->initialized = false;
 			}
 		}
 	}
