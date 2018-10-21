@@ -278,7 +278,8 @@ flag_def_list_new<Model::Subsystem_Flags> Subsystem_flags[] = {
 	{ "turret use ammo",		    Model::Subsystem_Flags::Turret_use_ammo,                    true, false },
 	{ "autorepair if disabled",	    Model::Subsystem_Flags::Autorepair_if_disabled,             true, false },
 	{ "don't autorepair if disabled", Model::Subsystem_Flags::No_autorepair_if_disabled,        true, false },
-	{ "share fire direction",       Model::Subsystem_Flags::Share_fire_direction,               true, false }
+	{ "share fire direction",       Model::Subsystem_Flags::Share_fire_direction,               true, false },
+	{ "no damage spew",             Model::Subsystem_Flags::No_sparks,                          true, false },
 };
 
 const size_t Num_subsystem_flags = sizeof(Subsystem_flags)/sizeof(flag_def_list_new<Model::Subsystem_Flags>);
@@ -19164,4 +19165,22 @@ void toggle_ignore_list_flag(Ship::Ship_Flags flag) {
 		Ignore_List.remove(flag);
 	else
 		Ignore_List.set(flag);
+}
+
+ship_subsys* ship_get_subsys_for_submodel(ship* shipp, int submodel)
+{
+	ship_subsys* subsys;
+
+	if (submodel == -1) {
+		return nullptr;
+	}
+
+	for (subsys = GET_FIRST(&shipp->subsys_list); subsys != END_OF_LIST(&shipp->subsys_list);
+	     subsys = GET_NEXT(subsys)) {
+		if (subsys->system_info->subobj_num == submodel) {
+			return subsys;
+		}
+	}
+
+	return nullptr;
 }

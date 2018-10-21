@@ -2496,6 +2496,15 @@ void ship_apply_local_damage(object *ship_objp, object *other_obj, vec3d *hitpos
 			}
 
 			if (create_sparks) {
+				auto subsys = ship_get_subsys_for_submodel(ship_p, submodel_num);
+
+				if (subsys != nullptr && subsys->system_info->flags[Model::Subsystem_Flags::No_sparks]) {
+					// Spark creation was explicitly disabled for this subsystem
+					create_sparks = false;
+				}
+			}
+
+			if (create_sparks) {
 				ship_hit_create_sparks(ship_objp, hitpos, submodel_num);
 			}
 		}
