@@ -7412,49 +7412,11 @@ static void ship_actually_depart_helper(object *objp, dock_function_info *infop)
 		gameseq_post_event(GS_EVENT_PLAYER_WARPOUT_DONE);
 }
 
-// convert the departure int method to a string --wookieejedi
-static const char* get_departure_name(int method)
-{
-	const char* departname;
-	switch (method) {
-	case SHIP_DEPARTED_WARP: {
-		departname = "SHIP_DEPARTED_WARP";
-		break;
-	};
-	case SHIP_DEPARTED_BAY: {
-		departname = "SHIP_DEPARTED_BAY";
-		break;
-	};
-	case SHIP_VANISHED: {
-		departname = "SHIP_VANISHED";
-		break;
-	};
-	case SHIP_DEPARTED_REDALERT: {
-		departname = "SHIP_DEPARTED_REDALERT";
-		break;
-	};
-	// assume SHIP_DEPARTED
-	default:
-		departname = "SHIP_DEPARTED";
-	};
-	return departname;
-}
-
 /**
  * Used to actually remove a ship, plus all the ships it's docked to, from the mission
  */
 void ship_actually_depart(int shipnum, int method)
 {
-	
-	const char* departmethod = get_departure_name(method);
-	// run "On Ship Depart" conditional hook variable. This hook accounts for all departure types.
-	// Departure types include: SHIP_DEPARTED_BAY, SHIP_VANISHED, SHIP_DEPARTED_REDALERT, and SHIP_DEPARTED_WARP
-	// it is not limited to only warping --wookieejedi
-	Script_system.SetHookObject("Ship", &Objects[Ships[shipnum].objnum]);
-	Script_system.SetHookVar("Method", 's', departmethod);
-	Script_system.RunCondition(CHA_ONSHIPDEPART);
-	Script_system.RemHookVars(2, "Ship", "Method");
-	
 	dock_function_info dfi;
 	dfi.parameter_variables.bool_value = (method == SHIP_VANISHED ? true:false);
 	dock_evaluate_all_docked_objects(&Objects[Ships[shipnum].objnum], &dfi, ship_actually_depart_helper);
@@ -7487,6 +7449,33 @@ void ship_destroy_instantly(object *ship_objp, int shipnum)
 	ship_cleanup(shipnum,SHIP_DESTROYED);
 }
 
+// convert the departure int method to a string --wookieejedi
+static const char* get_departure_name(int method)
+{
+	const char* departname;
+	switch (method) {
+	case SHIP_DEPARTED_WARP: {
+		departname = "SHIP_DEPARTED_WARP";
+		break;
+	};
+	case SHIP_DEPARTED_BAY: {
+		departname = "SHIP_DEPARTED_BAY";
+		break;
+	};
+	case SHIP_VANISHED: {
+		departname = "SHIP_VANISHED";
+		break;
+	};
+	case SHIP_DEPARTED_REDALERT: {
+		departname = "SHIP_DEPARTED_REDALERT";
+		break;
+	};
+	// assume SHIP_DEPARTED
+	default:
+		departname = "SHIP_DEPARTED";
+	};
+	return departname;
+}
 
 /**
  * Merge ship_destroyed and ship_departed and ship_vanished
@@ -7549,6 +7538,18 @@ void ship_cleanup(int shipnum, int cleanup_mode)
 			mission_log_add_entry(LOG_SHIP_DEPARTED, shipp->ship_name, NULL, shipp->wingnum);
 		else
 			mission_log_add_entry(LOG_SHIP_DEPARTED, shipp->ship_name, jnp->GetName(), shipp->wingnum);
+	}
+
+	// run "On Ship Depart" conditional hook variable that accounts for all departure types
+	// the hook is not limited to only warping --wookieejedi
+	if ((cleanup_mode == SHIP_DEPARTED_WARP) || (cleanup_mode == SHIP_DEPARTED_BAY) ||
+	    (cleanup_mode == SHIP_DEPARTED) || (cleanup_mode == SHIP_DEPARTED_REDALERT) ||
+	    (cleanup_mode == SHIP_VANISHED)) {
+		const char* departmethod = get_departure_name(cleanup_mode);
+		Script_system.SetHookObject("Ship", objp);
+		Script_system.SetHookVar("Method", 's', departmethod);
+		Script_system.RunCondition(CHA_ONSHIPDEPART);
+		Script_system.RemHookVars(2, "Ship", "Method");
 	}
 
 #ifndef NDEBUG
