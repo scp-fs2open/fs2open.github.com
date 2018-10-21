@@ -48,6 +48,7 @@ namespace Model {
         No_autorepair_if_disabled,	// Inversion of the previous; disallows this particular subsystem if the ship-wide flag is set (MageKing17)
         Share_fire_direction,		// (DahBlount) Whenever the turret fires, make all firing points fire in the same direction.
         No_sparks,          // Subsystem does not generate sparks if hit - m!m
+		No_impact_debris,    // Don't spawn the small debris on impact - m!m
 
         NUM_VALUES
 	};
