@@ -114,9 +114,8 @@ void hud_target_random_ship();
 
 void	hud_target_next_subobject();
 void	hud_target_prev_subobject();
-void	hud_cease_subsystem_targeting(int print_message=1);
-void	hud_cease_targeting_ship();
-void	hud_cease_targeting();
+void	hud_cease_subsystem_targeting(bool print_message = true);
+void	hud_cease_targeting(bool deliberate = true);
 void	hud_restore_subsystem_target(ship* shipp);
 int	subsystem_in_sight(object* objp, ship_subsys* subsys, vec3d *eye, vec3d* subsystem);
 vec3d* get_subsystem_world_pos(object* parent_obj, ship_subsys* subsys, vec3d* world_pos);
