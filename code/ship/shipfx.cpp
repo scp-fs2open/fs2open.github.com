@@ -392,11 +392,7 @@ void shipfx_blow_up_model(object *obj,int model, int submodel, int ndebris, vec3
 		vec3d pnt1, pnt2;
 
 		// Gets two random points on the surface of a submodel
-		if ( Cmdline_old_collision_sys ) {
-			submodel_get_two_random_points(model, submodel, &pnt1, &pnt2 );
-		} else {
-			submodel_get_two_random_points_better(model, submodel, &pnt1, &pnt2 );
-		}
+		submodel_get_two_random_points_better(model, submodel, &pnt1, &pnt2);
 
 		vec3d tmp, outpnt;
 
@@ -2387,13 +2383,8 @@ void shipfx_do_damaged_arcs_frame( ship *shipp )
 		int n, n_arcs = ((rand()>>5) % 3)+1;		// Create 1-3 sparks
 
 		vec3d v1, v2, v3, v4;
-		if ( Cmdline_old_collision_sys ) {
-			submodel_get_two_random_points(model_num, -1, &v1, &v2);
-			submodel_get_two_random_points(model_num, -1, &v3, &v4);
-		} else {
-			submodel_get_two_random_points_better(model_num, -1, &v1, &v2);
-			submodel_get_two_random_points_better(model_num, -1, &v3, &v4);
-		}
+		submodel_get_two_random_points_better(model_num, -1, &v1, &v2);
+		submodel_get_two_random_points_better(model_num, -1, &v3, &v4);
 
 		// For large ships, cap the length to be 25% of max radius
 		if ( obj->radius > 200.0f )	{
@@ -2503,11 +2494,7 @@ void shipfx_do_damaged_arcs_frame( ship *shipp )
 				int mr = myrand();
 				if ( mr < RAND_MAX/5 )	{
 					vec3d v1, v2;
-					if ( Cmdline_old_collision_sys ) {
-						submodel_get_two_random_points(model_num, -1, &v1, &v2);
-					} else {
-						submodel_get_two_random_points_better(model_num, -1, &v1, &v2);
-					}
+					submodel_get_two_random_points_better(model_num, -1, &v1, &v2);
 
 					vec3d static_one;
 

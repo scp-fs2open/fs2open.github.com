@@ -1053,11 +1053,7 @@ void nav_warp(bool prewarp=false)
 	}
 
 	// retime all collision pairs
-	if ( Cmdline_old_collision_sys ) {
-		obj_all_collisions_retime();
-	} else {
-		obj_collide_retime_cached_pairs();
-	}
+	obj_collide_retime_cached_pairs();
 }
 
 // ********************************************************************************************
