@@ -4364,7 +4364,7 @@ void HudGaugeLeadSight::render(float  /*frametime*/)
 
 // hud_cease_subsystem_targeting() will cease targeting the current targets subsystems
 //
-void hud_cease_subsystem_targeting(int print_message)
+void hud_cease_subsystem_targeting(bool print_message)
 {
 	int ship_index;
 
@@ -4383,22 +4383,17 @@ void hud_cease_subsystem_targeting(int print_message)
 	hud_lock_reset();
 }
 
-//like hud_cease_targeting but doesn't turn off auto-targeting
-void hud_cease_targeting_ship() {
-	set_target_objnum(Player_ai, -1);
-	hud_cease_subsystem_targeting(0);
-	//don't need to call hud_lock_reset because hud_cease_subsystem_targeting already does
-}
-
-// hud_cease_targeting() will cease all targeting (main target and subsystem)
-//
-void hud_cease_targeting()
+// hud_cease_targeting() will cease targeting main target and subsystem
+// with default param, also turns off auto-targeting
+void hud_cease_targeting(bool deliberate)
 {
 	set_target_objnum( Player_ai, -1 );
-	Players[Player_num].flags &= ~PLAYER_FLAGS_AUTO_TARGETING;
-	hud_cease_subsystem_targeting(0);
-	HUD_sourced_printf(HUD_SOURCE_HIDDEN, "%s", XSTR( "Deactivating targeting system", 325));
-	hud_lock_reset();
+	hud_cease_subsystem_targeting(false);
+
+	if (deliberate) {
+		Players[Player_num].flags &= ~PLAYER_FLAGS_AUTO_TARGETING;
+		HUD_sourced_printf(HUD_SOURCE_HIDDEN, "%s", XSTR("Deactivating targeting system", 325));
+	}
 }
 
 // hud_restore_subsystem_target() will remember the last targeted subsystem

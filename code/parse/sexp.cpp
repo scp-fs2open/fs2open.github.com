@@ -13011,7 +13011,7 @@ void multi_sexp_deal_with_ship_flag()
 			if (ship_flag == (int)Ship::Ship_Flags::Hidden_from_sensors) {
 				if (set_it) {
 					if (Player_ai->target_objnum == shipp->objnum) {
-						hud_cease_targeting_ship(); 
+						hud_cease_targeting(false); 
 					}
 				}
 				else {
@@ -14188,7 +14188,7 @@ void sexp_ships_visible(int n, bool visible)
 			continue;
 
 		if (!visible && Player_ai->target_objnum == Ships[shipnum].objnum) {
-			hud_cease_targeting_ship(); 
+			hud_cease_targeting(false); 
 		}
 		else if (visible && (Ships[shipnum].flags[Ship::Ship_Flags::Escort])) {
 			hud_add_ship_to_escort(Ships[shipnum].objnum, 1);
