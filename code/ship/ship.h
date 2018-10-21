@@ -1814,4 +1814,6 @@ extern void set_default_ignore_list();
 
 extern void toggle_ignore_list_flag(Ship::Ship_Flags flag);
 
+ship_subsys* ship_get_subsys_for_submodel(ship* shipp, int submodel);
+
 #endif
