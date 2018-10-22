@@ -4384,7 +4384,7 @@ void hud_cease_subsystem_targeting(bool print_message)
 }
 
 // hud_cease_targeting() will cease targeting main target and subsystem
-// with default param, also turns off auto-targeting
+// does not turn off auto-targeting by default
 void hud_cease_targeting(bool deliberate)
 {
 	set_target_objnum( Player_ai, -1 );

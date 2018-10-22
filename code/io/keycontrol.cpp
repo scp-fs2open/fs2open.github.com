@@ -2667,7 +2667,7 @@ int button_function(int n)
 
 		// stop targeting ship
 		case STOP_TARGETING_SHIP:
-			hud_cease_targeting();
+			hud_cease_targeting(true);
 			break;
 
 		// stop targeting subsystems on ship
