@@ -81,7 +81,8 @@ SCP_string getJoystickGUID(SDL_Joystick *stick)
 	joystickGUID.resize(GUID_STR_SIZE - 1);
 
 	// Make sure the GUID is upper case
-	std::transform(begin(joystickGUID), end(joystickGUID), begin(joystickGUID), toupper);
+	std::transform(begin(joystickGUID), end(joystickGUID), begin(joystickGUID),
+	               [](char c) { return (char)::toupper(c); });
 
 	return joystickGUID;
 }
@@ -96,7 +97,7 @@ bool isCurrentJoystick(Joystick* testStick) {
 	}
 
 	SCP_string guidStr(currentGUID);
-	std::transform(begin(guidStr), end(guidStr), begin(guidStr), toupper);
+	std::transform(begin(guidStr), end(guidStr), begin(guidStr), [](char c) { return (char)::toupper(c); });
 
 	if (testStick->getGUID() != guidStr) {
 		return false; // GUID doesn't match

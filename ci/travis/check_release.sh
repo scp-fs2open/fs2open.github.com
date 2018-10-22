@@ -58,6 +58,11 @@ if [ "$BUILD_DEPLOYMENT" = true ]; then
         echo "Skipping non-release configuration";
         exit 0;
     fi
+
+    if [ "$TRAVIS_OS_NAME" = "windows" ]; then
+        echo "Skipping non-release platform"
+        exit 0
+    fi
 fi
 
 export RELEASE_BUILD

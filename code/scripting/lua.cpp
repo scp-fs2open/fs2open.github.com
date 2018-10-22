@@ -254,10 +254,12 @@ static bool sort_table_entries(const ade_table_entry* left, const ade_table_entr
 	}
 
 	SCP_string leftStr(leftCmp);
-	std::transform(std::begin(leftStr), std::end(leftStr), std::begin(leftStr), ::tolower);
+	std::transform(std::begin(leftStr), std::end(leftStr), std::begin(leftStr),
+	               [](char c) { return (char)::tolower(c); });
 
 	SCP_string rightStr(rightCmp);
-	std::transform(std::begin(rightStr), std::end(rightStr), std::begin(rightStr), ::tolower);
+	std::transform(std::begin(rightStr), std::end(rightStr), std::begin(rightStr),
+	               [](char c) { return (char)::tolower(c); });
 
 	return leftStr < rightStr;
 }

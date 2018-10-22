@@ -70,7 +70,7 @@ void create_wing_dlg::OnOK()
 
 	for (i=0; i<MAX_WINGS; i++)
 		if (!stricmp(Wings[i].name, m_name) && Wings[i].wave_count) {
-			msg.Format("The name \"%s\" is already being used by another wing", m_name);
+			msg.Format("The name \"%s\" is already being used by another wing", static_cast<LPCTSTR>(m_name));
 			MessageBox(msg);
 			return;
 		}
@@ -105,7 +105,7 @@ void create_wing_dlg::OnOK()
 
 	for (i=0; i<Num_iffs; i++) {
 		if (!stricmp(m_name, Iff_info[i].iff_name)) {
-			msg.Format("The name \"%s\" is already being used by a team", m_name);
+			msg.Format("The name \"%s\" is already being used by a team", static_cast<LPCTSTR>(m_name));
 			MessageBox(msg);
 			return;
 		}
@@ -113,7 +113,7 @@ void create_wing_dlg::OnOK()
 
 	for ( i=0; i < (int)Ai_tp_list.size(); i++) {
 		if (!stricmp(m_name, Ai_tp_list[i].name)) {
-			msg.Format("The name \"%s\" is already being used by a target priority group", m_name);
+			msg.Format("The name \"%s\" is already being used by a target priority group", static_cast<LPCTSTR>(m_name));
 			MessageBox(msg);
 			return;
 		}
