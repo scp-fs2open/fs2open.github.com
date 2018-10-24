@@ -30,6 +30,7 @@ const int32_t LE_ORDER_GUARD					= 37;
 const int32_t LE_ORDER_IGNORE					= 38;
 const int32_t LE_ORDER_KEEP_SAFE_DISTANCE		= 39;
 const int32_t LE_ORDER_PLAY_DEAD				= 40;
+const int32_t LE_ORDER_PLAY_DEAD_PERSISTENT		= 77;
 const int32_t LE_ORDER_REARM					= 41;
 const int32_t LE_ORDER_STAY_NEAR				= 42;
 const int32_t LE_ORDER_STAY_STILL				= 43;
@@ -87,7 +88,7 @@ const int32_t LE_MESSAGE_PRIORITY_LOW			= 71;
 const int32_t LE_MESSAGE_PRIORITY_NORMAL		= 72;
 const int32_t LE_MESSAGE_PRIORITY_HIGH			= 73;
 
-const int ENUM_NEXT_INDEX = 77; // <<<<<<<<<<<<<<<<<<<<<<
+const int ENUM_NEXT_INDEX = 78; // <<<<<<<<<<<<<<<<<<<<<<
 extern flag_def_list Enumerations[];
 extern size_t Num_enumerations;
 

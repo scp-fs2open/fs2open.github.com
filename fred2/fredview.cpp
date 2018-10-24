@@ -3411,6 +3411,7 @@ char *error_check_initial_orders(ai_goal *goals, int ship, int wing)
 			case AI_GOAL_UNDOCK:
 			case AI_GOAL_KEEP_SAFE_DISTANCE:
 			case AI_GOAL_PLAY_DEAD:
+			case AI_GOAL_PLAY_DEAD_PERSISTENT:
 			case AI_GOAL_WARP:
 				flag = 0;
 				break;

@@ -723,6 +723,7 @@ SCP_vector<sexp_oper> Operators = {
 	{ "ai-keep-safe-distance",			OP_AI_KEEP_SAFE_DISTANCE,				1,	1,			SEXP_GOAL_OPERATOR,	},
 	{ "ai-stay-still",					OP_AI_STAY_STILL,						2,	2,			SEXP_GOAL_OPERATOR,	},
 	{ "ai-play-dead",					OP_AI_PLAY_DEAD,						1,	1,			SEXP_GOAL_OPERATOR,	},
+	{ "ai-play-dead-persistent",		OP_AI_PLAY_DEAD_PERSISTENT,				1,	1,			SEXP_GOAL_OPERATOR, },
 	{ "ai-form-on-wing",				OP_AI_FORM_ON_WING,						1,	1,			SEXP_GOAL_OPERATOR,	},
 
 	{ "goals",							OP_GOALS_ID,							1,	INT_MAX,	SEXP_ACTION_OPERATOR,	},
@@ -776,6 +777,7 @@ sexp_ai_goal_link Sexp_ai_goal_links[] = {
 	{ AI_GOAL_IGNORE_NEW, OP_AI_IGNORE_NEW },
 	{ AI_GOAL_STAY_STILL, OP_AI_STAY_STILL },
 	{ AI_GOAL_PLAY_DEAD, OP_AI_PLAY_DEAD },
+	{ AI_GOAL_PLAY_DEAD_PERSISTENT, OP_AI_PLAY_DEAD_PERSISTENT },
 	{ AI_GOAL_FORM_ON_WING, OP_AI_FORM_ON_WING }
 };
 
@@ -26399,6 +26401,7 @@ int query_operator_return_type(int op)
 		case OP_AI_IGNORE_NEW:
 		case OP_AI_STAY_STILL:
 		case OP_AI_PLAY_DEAD:
+		case OP_AI_PLAY_DEAD_PERSISTENT:
 		case OP_AI_FORM_ON_WING:
 			return OPR_AI_GOAL;
 
@@ -27546,6 +27549,7 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_POSITIVE;
 
 		case OP_AI_PLAY_DEAD:
+		case OP_AI_PLAY_DEAD_PERSISTENT:
 		case OP_AI_CHASE_ANY:
 			return OPF_POSITIVE;
 
@@ -32335,11 +32339,20 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t1:\tShip or waypoint the ship staying still will directly face (currently not implemented)\r\n"
 		"\t2:\tGoal priority (number between 0 and 89)." },
 
-	{ OP_AI_PLAY_DEAD, "Ai-play dead (Ship goal)\r\n"
+	{ OP_AI_PLAY_DEAD, "Ai-play-dead (Ship goal)\r\n"
 		"\tCauses the specified ship to pretend that it is dead and not do anything.  This "
 		"expression should be used to indicate that a ship has no pilot and cannot respond "
 		"to any enemy threats.  A ship playing dead will not respond to any attack.  This "
 		"should really be named ai-is-dead\r\n\r\n"
+		"Takes 1 argument...\r\n"
+		"\t1:\tGoal priority (number between 0 and 89)." },
+
+	{ OP_AI_PLAY_DEAD_PERSISTENT, "Ai-play-dead-persistent (Ship goal)\r\n"
+		"\tCauses the specified ship to pretend that it is dead and not do anything.  This "
+		"goal behaves exactly like ai-play-dead, with the important difference that the ship "
+		"will not immediately come back to life whenever it is given an order or a new goal "
+		"of any priority.  The only ways this goal can be removed are via remove-goal, "
+		"clear-goals, or a new goal of a *higher* priority.\r\n\r\n"
 		"Takes 1 argument...\r\n"
 		"\t1:\tGoal priority (number between 0 and 89)." },
 
