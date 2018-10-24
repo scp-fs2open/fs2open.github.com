@@ -1705,7 +1705,10 @@ float ship_get_warpout_speed(object *objp);
 int ship_is_beginning_warpout_speedup(object *objp);
 
 // return the length of the ship class
-float ship_class_get_length(ship_info *sip);
+float ship_class_get_length(const ship_info *sip);
+
+// return the actual center of the ship class
+void ship_class_get_actual_center(const ship_info *sip, vec3d *center_pos);
 
 // Goober5000 - used by change-ai-class
 extern void ship_set_new_ai_class(int ship_num, int new_ai_class);

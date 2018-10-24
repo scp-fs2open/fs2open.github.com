@@ -17321,11 +17321,32 @@ int ship_is_beginning_warpout_speedup(object *objp)
 /**
  * Return the length of a ship
  */
-float ship_class_get_length(ship_info *sip)
+float ship_class_get_length(const ship_info *sip)
 {
+	Assert(sip != nullptr);
 	Assert(sip->model_num >= 0);
+
 	polymodel *pm = model_get(sip->model_num);
-	return (pm->maxs.xyz.z - pm->mins.xyz.z);
+	Assert(pm != nullptr);
+
+	float length = pm->maxs.xyz.z - pm->mins.xyz.z;
+	Assert(length > 0.0f);
+
+	return length;
+}
+
+/**
+ * Get the offset of the actual center of the ship model for the purposes of warping (which may not be the specified center)
+ */
+void ship_class_get_actual_center(const ship_info *sip, vec3d *center_pos)
+{
+	Assert(sip != nullptr && center_pos != nullptr);
+	Assert(sip->model_num >= 0);
+
+	polymodel *pm = model_get(sip->model_num);
+	center_pos->xyz.x = (pm->maxs.xyz.x + pm->mins.xyz.x) * 0.5f;
+	center_pos->xyz.y = (pm->maxs.xyz.y + pm->mins.xyz.y) * 0.5f;
+	center_pos->xyz.z = (pm->maxs.xyz.z + pm->mins.xyz.z) * 0.5f;
 }
 
 // Goober5000
