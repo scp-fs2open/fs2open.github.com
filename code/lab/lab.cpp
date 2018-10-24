@@ -1282,7 +1282,7 @@ void labviewer_make_desc_window(Button * /*caller*/)
 void labviewer_make_ship_window(Button * /*caller*/)
 {
 	GUIObject *cbp;
-	TreeItem *ctip, *stip;
+	TreeItem *stip;
 	int x, idx;
 
 	if (Lab_mode == LAB_MODE_SHIP) {
@@ -1342,8 +1342,7 @@ void labviewer_make_ship_window(Button * /*caller*/)
 			stip = Lab_species_nodes[Species_info.size()];
 		}
 
-		ctip = cmp->AddItem(stip, it->name, (int)std::distance(Ship_info.cbegin(), it), false, labviewer_change_ship);
-		cmp->AddItem(ctip, "Model", 0, false, labviewer_change_ship_lod);
+		cmp->AddItem(stip, it->name, (int)std::distance(Ship_info.cbegin(), it), false, labviewer_change_ship);
 		//cmp->AddItem(ctip, "Debris", 99, false, labviewer_change_ship_lod);
 	}
 
@@ -1386,7 +1385,7 @@ void labviewer_make_ship_window(Button * /*caller*/)
 
 void labviewer_change_ship_lod(Tree* caller)
 {
-	int ship_index = (int)(caller->GetSelectedItem()->GetParentItem()->GetData());
+	int ship_index = caller->GetSelectedItem()->GetData();
 	Assert(ship_index >= 0);
 
 	if (Lab_selected_object == -1)
@@ -1441,6 +1440,7 @@ void labviewer_change_ship(Tree *caller)
 	labviewer_update_desc_window();
 	labviewer_update_flags_window();
 	labviewer_update_variables_window();
+	labviewer_change_ship_lod(caller);
 }
 
 // ---------------------------  Weapons Window  --------------------------------
