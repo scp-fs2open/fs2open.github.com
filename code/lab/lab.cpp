@@ -36,6 +36,7 @@
 #include "nebula/neb.h"
 #include "model/modelrender.h"
 #include "tracing/tracing.h"
+#include <utility>
 
 // flags
 #define LAB_FLAG_NORMAL				(0)		// default
@@ -68,6 +69,12 @@ static Window *Lab_description_window = NULL;
 static Window *Lab_background_window = NULL;
 static Text *Lab_description_text = NULL;
 static TreeItem **Lab_species_nodes = NULL;
+
+//holds the beginning and ending indices of each specie/type of ship/weapon
+static std::pair<TreeItem*, TreeItem*> *ship_list_endpoints = nullptr;
+static std::pair<TreeItem*, TreeItem*> *weap_list_endpoints = nullptr;
+
+static TreeItem *Lab_last_selected_object = nullptr;
 
 static int Lab_insignia_bitmap = -1;
 static int Lab_insignia_index = -1;
@@ -1282,7 +1289,7 @@ void labviewer_make_desc_window(Button * /*caller*/)
 void labviewer_make_ship_window(Button * /*caller*/)
 {
 	GUIObject *cbp;
-	TreeItem *stip;
+	TreeItem *stip, *ctip;
 	int x, idx;
 
 	if (Lab_mode == LAB_MODE_SHIP) {
@@ -1323,6 +1330,11 @@ void labviewer_make_ship_window(Button * /*caller*/)
 		Lab_species_nodes = NULL;
 	}
 
+	ship_list_endpoints = new std::pair<TreeItem*, TreeItem*>[Ship_info.size()];
+	for (int i = 0; i < Ship_info.size(); i++) {
+		ship_list_endpoints[i] = std::make_pair(nullptr, nullptr);
+	}
+
 	Lab_species_nodes = new TreeItem*[Species_info.size() + 1];
 
 	// Add species nodes
@@ -1342,7 +1354,11 @@ void labviewer_make_ship_window(Button * /*caller*/)
 			stip = Lab_species_nodes[Species_info.size()];
 		}
 
-		cmp->AddItem(stip, it->name, (int)std::distance(Ship_info.cbegin(), it), false, labviewer_change_ship);
+		ctip = cmp->AddItem(stip, it->name, (int)std::distance(Ship_info.cbegin(), it), false, labviewer_change_ship);
+		if (ship_list_endpoints[it->species].first == nullptr) {
+			ship_list_endpoints[it->species].first = ctip;
+		}
+		ship_list_endpoints[it->species].second = ctip;
 		//cmp->AddItem(ctip, "Debris", 99, false, labviewer_change_ship_lod);
 	}
 
@@ -1385,7 +1401,11 @@ void labviewer_make_ship_window(Button * /*caller*/)
 
 void labviewer_change_ship_lod(Tree* caller)
 {
-	int ship_index = caller->GetSelectedItem()->GetData();
+	int ship_index = Lab_last_selected_object->GetData();
+	if (caller != nullptr) {
+		ship_index = caller->GetSelectedItem()->GetData();
+	}
+	
 	Assert(ship_index >= 0);
 
 	if (Lab_selected_object == -1)
@@ -1409,10 +1429,10 @@ void labviewer_change_ship_lod(Tree* caller)
 	lab_cam_distance = Objects[Lab_selected_object].radius * 1.6f;
 
 	Lab_last_selected_ship = Lab_selected_index;
-	labviewer_change_model(Ship_info[ship_index].pof_file, caller->GetSelectedItem()->GetData(), ship_index);
+	labviewer_change_model(Ship_info[ship_index].pof_file, ship_index, ship_index);
 
 	//update the displayed POF filename
-	//moved out of labviewer_change_model which apparently doesn't do much after the first ship is loaded
+	//moved out of labviewer_change_model which doesn't necessarily do much of anything after the first ship is loaded
 	if (Lab_model_num >= 0) {
 		strcpy_s(Lab_model_filename, Ship_info[ship_index].pof_file);
 	}
@@ -1435,11 +1455,9 @@ void labviewer_change_ship_lod(Tree* caller)
 
 void labviewer_change_ship(Tree *caller)
 {
-	Lab_selected_index = (int)(caller->GetSelectedItem()->GetData());
+	Lab_selected_index = caller->GetSelectedItem()->GetData();
+	Lab_last_selected_object = caller->GetSelectedItem();
 
-	labviewer_update_desc_window();
-	labviewer_update_flags_window();
-	labviewer_update_variables_window();
 	labviewer_change_ship_lod(caller);
 }
 
@@ -1463,7 +1481,13 @@ void labviewer_show_external_model(Tree *caller)
 extern void weapon_load_bitmaps(int weapon_index);
 void labviewer_change_weapon(Tree *caller)
 {
-	int weap_index = (int)(caller->GetSelectedItem()->GetData());
+	int weap_index;
+	if (caller != nullptr) {
+		weap_index = caller->GetSelectedItem()->GetData();
+		Lab_last_selected_object = caller->GetSelectedItem();
+	}
+	else weap_index = Lab_last_selected_object->GetData();
+	
 	Assert(weap_index >= 0);
 
 	if (Lab_selected_object != -1)
@@ -1488,7 +1512,7 @@ void labviewer_change_weapon(Tree *caller)
 void labviewer_make_weap_window(Button*  /*caller*/)
 {
 	GUIObject *cbp;
-	TreeItem *stip;
+	TreeItem *stip, *ctip;
 	int x;
 
 	if (Lab_mode == LAB_MODE_WEAPON) {
@@ -1516,10 +1540,13 @@ void labviewer_make_weap_window(Button*  /*caller*/)
 	x += cbp->GetWidth() + 10;
 	cbp = Lab_class_toolbar->AddChild(new Button("Class Variables", x, 0, labviewer_make_variables_window));
 
+	weap_list_endpoints = new std::pair<TreeItem*, TreeItem*>[Num_weapon_types];
+	for (int i = 0; i < Num_weapon_subtypes; i++) {
+		weap_list_endpoints[i] = std::make_pair(nullptr, nullptr);
+	}
 
 	// populate the weapons window
 	Tree *cmp = (Tree*)Lab_class_window->AddChild(new Tree("Weapon Tree", 0, 0));
-
 	// Unfortunately these are hardcoded
 	TreeItem **type_nodes = new TreeItem*[Num_weapon_subtypes];
 	int i;
@@ -1546,7 +1573,12 @@ void labviewer_make_weap_window(Button*  /*caller*/)
 			stip = type_nodes[Weapon_info[i].subtype];
 		}
 
-		cmp->AddItem(stip, Weapon_info[i].get_display_string(), i, false, labviewer_change_weapon);
+		ctip = cmp->AddItem(stip, Weapon_info[i].get_display_string(), i, false, labviewer_change_weapon);
+
+		if (weap_list_endpoints[Weapon_info[i].subtype].first == nullptr) {
+			weap_list_endpoints[Weapon_info[i].subtype].first = ctip;
+		}
+		weap_list_endpoints[Weapon_info[i].subtype].second = ctip;
 
 		//if (Weapon_info[i].tech_model[0] != '\0') {
 		//	cmp->AddItem(cwip, "Tech Model", 0, false, labviewer_show_tech_model);
@@ -1867,6 +1899,101 @@ void labviewer_make_background_window(Button*  /*caller*/)
 }
 
 // ----------------------------- Lab functions ---------------------------------
+bool is_same_obj_type(int curr, int next) {
+	if (Lab_mode == LAB_MODE_SHIP) {
+		if (Ship_info[curr].species == Ship_info[next].species) {
+			return true;
+		}
+		return false;
+	}
+
+	if (Lab_mode == LAB_MODE_WEAPON) {
+		if (Weapon_info[curr].subtype == Weapon_info[next].subtype) {
+			return true;
+		}
+		return false;
+	}
+	return false;
+}
+
+int lab_get_type_idx() {
+	if (Lab_mode == LAB_MODE_SHIP) {
+		ship_info *si = &Ship_info[Lab_last_selected_object->GetData()];
+		for (int i = 0; i < Species_info.size(); i++) {
+			species_info specie = Species_info[i];
+			if (!strncmp(specie.species_name, Species_info[si->species].species_name, NAME_LENGTH)) {
+				return i;
+			}
+		}
+	}
+	else if (Lab_mode == LAB_MODE_WEAPON) {
+		weapon_info *wi = &Weapon_info[Lab_last_selected_object->GetData()];
+		for (int i = 0; i < Num_weapon_subtypes; i++) {
+			if (i == wi->subtype) {
+				return i;
+			}
+		}
+	}
+
+	return -1;
+}
+
+//plieblang - scroll through entries with the arrow keys
+void lab_scroll_up() {
+	if (Lab_mode == LAB_MODE_SHIP) {
+		if (Lab_last_selected_object <= ship_list_endpoints[lab_get_type_idx()].first) {
+			return;
+		}
+	}
+	else if (Lab_mode == LAB_MODE_WEAPON) {
+		if (Lab_last_selected_object <= weap_list_endpoints[lab_get_type_idx()].first) {
+			return;
+		}
+	}
+
+	int curr_obj_idx = Lab_last_selected_object->GetData();
+	int prev_obj_idx = ((TreeItem*)Lab_last_selected_object->prev)->GetData();
+	do {
+		Lab_last_selected_object = (TreeItem*)Lab_last_selected_object->prev;
+		curr_obj_idx = prev_obj_idx;
+		prev_obj_idx = Lab_last_selected_object->GetData();
+	} while (!is_same_obj_type(curr_obj_idx, prev_obj_idx));
+
+	if (Lab_mode == LAB_MODE_SHIP) {
+		labviewer_change_ship_lod(nullptr);
+	}
+	else if (Lab_mode == LAB_MODE_WEAPON) {
+		labviewer_change_weapon(nullptr);
+	}
+}
+
+void lab_scroll_down() {
+	if (Lab_mode == LAB_MODE_SHIP) {
+		if (Lab_last_selected_object >= ship_list_endpoints[lab_get_type_idx()].second) {
+			return;
+		}
+	}
+	else if (Lab_mode == LAB_MODE_WEAPON) {
+		if (Lab_last_selected_object >= weap_list_endpoints[lab_get_type_idx()].second) {
+			return;
+		}
+	}
+
+	int curr_obj_idx = Lab_last_selected_object->GetData();
+	int next_obj_idx = ((TreeItem*)Lab_last_selected_object->next)->GetData();
+	do {
+		Lab_last_selected_object = (TreeItem*)Lab_last_selected_object->next;
+		curr_obj_idx = next_obj_idx;
+		next_obj_idx = Lab_last_selected_object->GetData();
+	} while (!is_same_obj_type(curr_obj_idx, next_obj_idx));
+
+	if (Lab_mode == LAB_MODE_SHIP) {
+		labviewer_change_ship_lod(nullptr);
+	}
+	else if (Lab_mode == LAB_MODE_WEAPON) {
+		labviewer_change_weapon(nullptr);
+	}
+}
 
 void lab_init()
 {
@@ -2091,6 +2218,14 @@ void lab_do_frame(float frametime)
 			Lab_team_color = color_itr->first;
 			break;
 
+		case KEY_UP:
+			lab_scroll_up();
+			break;
+
+		case KEY_DOWN:
+			lab_scroll_down();
+			break;
+
 			// bail...
 		case KEY_ESC:
 			labviewer_exit(NULL);
@@ -2141,6 +2276,15 @@ void lab_close()
 
 		delete[] Lab_species_nodes;
 		Lab_species_nodes = NULL;
+	}
+
+	if (ship_list_endpoints != nullptr) {
+		delete[] ship_list_endpoints;
+		ship_list_endpoints = nullptr;
+	}
+	if (weap_list_endpoints != nullptr) {
+		delete[] weap_list_endpoints;
+		weap_list_endpoints = nullptr;
 	}
 
 	if (Lab_insignia_bitmap >= 0) {
