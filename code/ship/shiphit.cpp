@@ -1761,17 +1761,17 @@ void ship_apply_whack(vec3d *force, vec3d *hit_pos, object *objp)
 		// looks like the fighter is doing evasive maneuvers
 		if ((objp->type != OBJ_SHIP) || !(Ship_info[Ships[objp->instance].ship_info_index].is_fighter_bomber()))
 		{
-			vec3d world_hit_pos, world_center_pos;
+			vec3d world_hit_pos, world_center_of_mass;
 
 			// calc world hit pos of the hit ship
 			vm_vec_unrotate(&world_hit_pos, hit_pos, &objp->orient);
 			vm_vec_add2(&world_hit_pos, &objp->pos);
 
-			// calc overall world center of ships
-			dock_calc_docked_center(&world_center_pos, objp);
+			// calc overall center-of-mass of all ships
+			dock_calc_docked_center_of_mass(&world_center_of_mass, objp);
 
-			// the new hitpos is the vector from world center to world hitpos
-			vm_vec_sub(hit_pos, &world_hit_pos, &world_center_pos);
+			// the new hitpos is the vector from world center-of-mass to world hitpos
+			vm_vec_sub(hit_pos, &world_hit_pos, &world_center_of_mass);
 		}
 
 		// whack it
