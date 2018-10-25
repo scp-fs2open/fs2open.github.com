@@ -146,15 +146,30 @@ void dock_calc_docked_center(vec3d *dest, object *objp)
 	Assert(dest != NULL);
 	Assert(objp != NULL);
 
-	vm_vec_zero(dest);
+	vec3d overall_center;
+	vec3d overall_mins(vmd_zero_vector);
+	vec3d overall_maxs(vmd_zero_vector);
+
+	// Let's calculate all mins/maxes in relation to the orientation of the main object
+	// (which is expected to be the dock leader, but this technically isn't required).
+	// Since the vast majority of dockpoints are aligned with an axis, this should
+	// yield a much better fit of our docked bounding box.
 
 	dock_function_info dfi;
-	dfi.maintained_variables.vecp_value = dest;
+	dfi.parameter_variables.objp_value = objp;				// the reference object for our bounding box orientation
+	dfi.maintained_variables.vecp_value = &overall_mins;	// mins
+	dfi.maintained_variables.vecp_value2 = &overall_maxs;	// maxs
 
 	dock_evaluate_all_docked_objects(objp, &dfi, dock_calc_docked_center_helper);
-	
-	// overall center = sum of centers divided by sum of objects
-	vm_vec_scale(dest, (1.0f / (float) dfi.maintained_variables.int_value));
+
+	// c.f. ship_class_get_actual_center() in ship.cpp
+	overall_center.xyz.x = (overall_maxs.xyz.x + overall_mins.xyz.x) * 0.5f;
+	overall_center.xyz.y = (overall_maxs.xyz.y + overall_mins.xyz.y) * 0.5f;
+	overall_center.xyz.z = (overall_maxs.xyz.z + overall_mins.xyz.z) * 0.5f;
+
+	// now transform into world coordinates
+	vm_vec_unrotate(dest, &overall_center, &objp->orient);
+	vm_vec_add2(dest, &objp->pos);
 }
 
 void dock_calc_docked_center_of_mass(vec3d *dest, object *objp)
@@ -493,9 +508,57 @@ void dock_check_find_docked_object_helper(object *objp, dock_function_info *info
 
 void dock_calc_docked_center_helper(object *objp, dock_function_info *infop)
 {
-	// add object position and increment count
-	vm_vec_add2(infop->maintained_variables.vecp_value, &objp->pos);
-	infop->maintained_variables.int_value++;
+	polymodel *pm;
+	vec3d parent_relative_mins, parent_relative_maxs;
+
+	// find the model used by this object
+	int modelnum = object_get_model(objp);
+	Assert(modelnum >= 0);
+	pm = model_get(modelnum);
+
+	// special case: we are already in the correct frame of reference
+	if (objp == infop->parameter_variables.objp_value)
+	{
+		parent_relative_mins = pm->mins;
+		parent_relative_maxs = pm->maxs;
+	}
+	// we are not the parent object and need to do some gymnastics
+	else
+	{
+		// get mins and maxs in world coordinates
+		vec3d world_mins, world_maxs;
+		vm_vec_unrotate(&world_mins, &pm->mins, &objp->orient);
+		vm_vec_add2(&world_mins, &objp->pos);
+		vm_vec_unrotate(&world_maxs, &pm->maxs, &objp->orient);
+		vm_vec_add2(&world_maxs, &objp->pos);
+
+		// now adjust them to be local to the parent
+		vec3d temp_mins, temp_maxs;
+		vm_vec_sub(&temp_mins, &world_mins, &infop->parameter_variables.objp_value->pos);
+		vm_vec_rotate(&parent_relative_mins, &temp_mins, &infop->parameter_variables.objp_value->orient);
+		vm_vec_sub(&temp_maxs, &world_maxs, &infop->parameter_variables.objp_value->pos);
+		vm_vec_rotate(&parent_relative_maxs, &temp_maxs, &infop->parameter_variables.objp_value->orient);
+	}
+
+	// We test both points for both cases because they may have been flipped around.  However, X is still comparable to X, Y to Y, Z to Z.
+
+	// test for overall min
+	for (int i = 0; i < 3; ++i)
+	{
+		if (parent_relative_mins.a1d[i] < infop->maintained_variables.vecp_value->a1d[i])
+			infop->maintained_variables.vecp_value->a1d[i] = parent_relative_mins.a1d[i];
+		if (parent_relative_maxs.a1d[i] < infop->maintained_variables.vecp_value->a1d[i])
+			infop->maintained_variables.vecp_value->a1d[i] = parent_relative_maxs.a1d[i];
+	}
+
+	// test for overall max
+	for (int i = 0; i < 3; ++i)
+	{
+		if (parent_relative_mins.a1d[i] > infop->maintained_variables.vecp_value2->a1d[i])
+			infop->maintained_variables.vecp_value2->a1d[i] = parent_relative_mins.a1d[i];
+		if (parent_relative_maxs.a1d[i] > infop->maintained_variables.vecp_value2->a1d[i])
+			infop->maintained_variables.vecp_value2->a1d[i] = parent_relative_maxs.a1d[i];
+	}
 }
 
 void dock_calc_docked_center_of_mass_helper(object *objp, dock_function_info *infop)
