@@ -1330,8 +1330,8 @@ void labviewer_make_ship_window(Button * /*caller*/)
 		Lab_species_nodes = NULL;
 	}
 
-	ship_list_endpoints = new std::pair<TreeItem*, TreeItem*>[Ship_info.size()];
-	for (int i = 0; i < Ship_info.size(); i++) {
+	ship_list_endpoints = new std::pair<TreeItem*, TreeItem*>[Species_info.size()];
+	for (int i = 0; i < Species_info.size(); i++) {
 		ship_list_endpoints[i] = std::make_pair(nullptr, nullptr);
 	}
 
