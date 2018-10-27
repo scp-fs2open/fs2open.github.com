@@ -17273,11 +17273,30 @@ float ship_get_max_speed(ship *shipp)
 /**
  * Determine warpout speed of ship
  */
-float ship_get_warpout_speed(object *objp)
+float ship_get_warpout_speed(object *objp, ship_info *sip, float half_length, float warping_dist)
 {
-	Assert(objp->type == OBJ_SHIP);
+	Assert(objp != nullptr && objp->type == OBJ_SHIP);
 
-	ship_info *sip = &Ship_info[Ships[objp->instance].ship_info_index];
+	// certain places in the code don't precalculate these variables
+	if (sip == nullptr)
+	{
+		sip = &Ship_info[Ships[objp->instance].ship_info_index];
+
+		// c.f.  WE_Default::warpStart()
+		// determine the half-length and the warping distance (which is actually the full length)
+		if (object_is_docked(objp))
+		{
+			// we need to get the longitudinal radius of our ship, so find the semilatus rectum along the Z-axis
+			half_length = dock_calc_max_semilatus_rectum_parallel_to_axis(objp, Z_AXIS);
+			warping_dist = 2.0f * half_length;
+		}
+		else
+		{
+			warping_dist = ship_class_get_length(sip);
+			half_length = 0.5f * warping_dist;
+		}
+	}
+
 	//WMC - Any speed is good for in place anims (aka BSG FTL effect)
 	if(sip->warpout_type == WT_IN_PLACE_ANIM && sip->warpout_speed <= 0.0f)
 	{
@@ -17295,7 +17314,7 @@ float ship_get_warpout_speed(object *objp)
 			return sip->warpout_speed;
 	}
 
-	return shipfx_calculate_warp_dist(objp) / shipfx_calculate_warp_time(objp, WD_WARP_OUT);
+	return warping_dist / shipfx_calculate_warp_time(objp, sip, WD_WARP_OUT, half_length, warping_dist);
 }
 
 /**
