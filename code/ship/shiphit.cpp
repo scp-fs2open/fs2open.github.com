@@ -451,7 +451,6 @@ float do_subobj_hit_stuff(object *ship_objp, object *other_obj, vec3d *hitpos, i
 	vec3d			g_subobj_pos;
 	float				damage_left, damage_if_hull;
 	int				weapon_info_index;
-	ship_subsys		*subsys;
 	ship				*ship_p;
 	sublist			subsys_list[MAX_SUBSYS_LIST];
 	int				subsys_hit_first = -1; // the subsys which should be hit first and take most of the damage; index into subsys_list
@@ -514,13 +513,17 @@ float do_subobj_hit_stuff(object *ship_objp, object *other_obj, vec3d *hitpos, i
 #endif
 
 	if (!global_damage) {
-		create_subsys_debris(ship_objp, hitpos);
+		auto subsys = ship_get_subsys_for_submodel(ship_p, submodel_num);
+
+		if (subsys == nullptr || !subsys->system_info->flags[Model::Subsystem_Flags::No_impact_debris]) {
+			create_subsys_debris(ship_objp, hitpos);
+		}
 	}
 
 	//	First, create a list of the N subsystems within range.
 	//	Then, one at a time, process them in order.
 	int	count = 0;
-	for ( subsys=GET_FIRST(&ship_p->subsys_list); subsys != END_OF_LIST(&ship_p->subsys_list); subsys = GET_NEXT(subsys) )
+	for ( auto subsys=GET_FIRST(&ship_p->subsys_list); subsys != END_OF_LIST(&ship_p->subsys_list); subsys = GET_NEXT(subsys) )
 	{
 		model_subsystem *mss = subsys->system_info;
 
@@ -2491,6 +2494,15 @@ void ship_apply_local_damage(object *ship_objp, object *other_obj, vec3d *hitpos
 				Assert(wip != NULL);
 
 				if (wip->wi_flags[Weapon::Info_Flags::Training]) {
+					create_sparks = false;
+				}
+			}
+
+			if (create_sparks) {
+				auto subsys = ship_get_subsys_for_submodel(ship_p, submodel_num);
+
+				if (subsys != nullptr && subsys->system_info->flags[Model::Subsystem_Flags::No_sparks]) {
+					// Spark creation was explicitly disabled for this subsystem
 					create_sparks = false;
 				}
 			}
