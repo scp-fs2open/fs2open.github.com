@@ -141,12 +141,16 @@ int dock_find_dockpoint_used_by_object(object *objp, object *other_objp)
 		return result->dockpoint_used;
 }
 
-void dock_calc_docked_center(vec3d *dest, object *objp)
+/**
+ * Get the offset of the actual center of the docked ship models for the purposes of warping (which may not be the specified center).
+ * Note, these are LOCAL coordinates in relation to objp, not world coordinates.
+ * See also ship_class_get_actual_center() in ship.cpp
+ */
+void dock_calc_docked_actual_center(vec3d *dest, object *objp)
 {
 	Assert(dest != NULL);
 	Assert(objp != NULL);
 
-	vec3d overall_center;
 	vec3d overall_mins(vmd_zero_vector);
 	vec3d overall_maxs(vmd_zero_vector);
 
@@ -163,13 +167,9 @@ void dock_calc_docked_center(vec3d *dest, object *objp)
 	dock_evaluate_all_docked_objects(objp, &dfi, dock_calc_docked_center_helper);
 
 	// c.f. ship_class_get_actual_center() in ship.cpp
-	overall_center.xyz.x = (overall_maxs.xyz.x + overall_mins.xyz.x) * 0.5f;
-	overall_center.xyz.y = (overall_maxs.xyz.y + overall_mins.xyz.y) * 0.5f;
-	overall_center.xyz.z = (overall_maxs.xyz.z + overall_mins.xyz.z) * 0.5f;
-
-	// now transform into world coordinates
-	vm_vec_unrotate(dest, &overall_center, &objp->orient);
-	vm_vec_add2(dest, &objp->pos);
+	dest->xyz.x = (overall_maxs.xyz.x + overall_mins.xyz.x) * 0.5f;
+	dest->xyz.y = (overall_maxs.xyz.y + overall_mins.xyz.y) * 0.5f;
+	dest->xyz.z = (overall_maxs.xyz.z + overall_mins.xyz.z) * 0.5f;
 }
 
 void dock_calc_docked_center_of_mass(vec3d *dest, object *objp)

@@ -1770,7 +1770,7 @@ void ship_apply_whack(vec3d *force, vec3d *hit_pos, object *objp)
 			vm_vec_unrotate(&world_hit_pos, hit_pos, &objp->orient);
 			vm_vec_add2(&world_hit_pos, &objp->pos);
 
-			// calc overall center-of-mass of all ships
+			// calc overall world center-of-mass of all ships
 			dock_calc_docked_center_of_mass(&world_center_of_mass, objp);
 
 			// the new hitpos is the vector from world center-of-mass to world hitpos

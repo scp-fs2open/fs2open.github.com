@@ -1699,7 +1699,7 @@ int ship_is_tagged(object *objp);
 float ship_get_max_speed(ship *shipp);
 
 // returns warpout speed of ship
-float ship_get_warpout_speed(object *objp);
+float ship_get_warpout_speed(object *objp, ship_info *sip = nullptr, float half_length = 0.0f, float warping_dist = 0.0f);
 
 // returns true if ship is beginning to speed up in warpout
 int ship_is_beginning_warpout_speedup(object *objp);

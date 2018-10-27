@@ -148,8 +148,7 @@ float shipfx_calc_visibility(object *obj, vec3d *view_pt);
 #define WD_NONE		0
 #define WD_WARP_IN	1
 #define WD_WARP_OUT	2
-float shipfx_calculate_warp_time(object *objp, int warp_dir);
-float shipfx_calculate_warp_dist(object *objp);
+float shipfx_calculate_warp_time(object *objp, ship_info *sip, int warp_dir, float half_length, float warping_dist);
 
 //********************-----CLASS: WarpEffect-----********************//
 class WarpEffect
@@ -192,6 +191,15 @@ class WE_Default : public WarpEffect
 private:
 	//portal object
 	object *portal_objp;
+
+	//ship data
+	vec3d actual_local_center;	// center of the ship, not necessarily the model origin
+	float half_length;			// half the length of the ship, or the docked assembly
+	float warping_dist;			// distance to go through the effect (which is the full length)
+	float warping_time;			// time to go through the effect
+	float warping_speed;		// speed to go through the effect
+
+	void compute_warpout_stuff(float *warp_time, vec3d *warp_pos);
 
 	//Total data
 	int total_time_start;
