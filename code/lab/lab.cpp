@@ -74,8 +74,8 @@ static Tree *ship_tree = nullptr;
 static Tree *weap_tree = nullptr;
 
 //holds the beginning and ending indices of each specie/type of ship/weapon
-static std::pair<TreeItem*, TreeItem*> *ship_list_endpoints = nullptr;
-static std::pair<TreeItem*, TreeItem*> *weap_list_endpoints = nullptr;
+static SCP_vector<std::pair<TreeItem*, TreeItem*>> ship_list_endpoints;
+static SCP_vector<std::pair<TreeItem*, TreeItem*>> weap_list_endpoints;
 
 static TreeItem *Lab_last_selected_object = nullptr;
 
@@ -1333,9 +1333,8 @@ void labviewer_make_ship_window(Button * /*caller*/)
 		Lab_species_nodes = NULL;
 	}
 
-	ship_list_endpoints = new std::pair<TreeItem*, TreeItem*>[Species_info.size()];
 	for (int i = 0; i < Species_info.size(); i++) {
-		ship_list_endpoints[i] = std::make_pair(nullptr, nullptr);
+		ship_list_endpoints.push_back(std::make_pair(nullptr, nullptr));
 	}
 
 	Lab_species_nodes = new TreeItem*[Species_info.size() + 1];
@@ -1543,9 +1542,8 @@ void labviewer_make_weap_window(Button*  /*caller*/)
 	x += cbp->GetWidth() + 10;
 	cbp = Lab_class_toolbar->AddChild(new Button("Class Variables", x, 0, labviewer_make_variables_window));
 
-	weap_list_endpoints = new std::pair<TreeItem*, TreeItem*>[Num_weapon_types];
 	for (int i = 0; i < Num_weapon_subtypes; i++) {
-		weap_list_endpoints[i] = std::make_pair(nullptr, nullptr);
+		weap_list_endpoints.push_back(std::make_pair(nullptr, nullptr));
 	}
 
 	// populate the weapons window
@@ -1943,6 +1941,10 @@ int lab_get_type_idx() {
 
 //plieblang - scroll through entries with the arrow keys
 void lab_scroll_up() {
+	if (Lab_last_selected_object == nullptr) {
+		return;
+	}
+
 	//if we're at the beginning of the list, don't do anything
 	if (Lab_mode == LAB_MODE_SHIP) {
 		if (Lab_last_selected_object == ship_list_endpoints[lab_get_type_idx()].first) {
@@ -1974,6 +1976,10 @@ void lab_scroll_up() {
 }
 
 void lab_scroll_down() {
+	if (Lab_last_selected_object == nullptr) {
+		return;
+	}
+
 	//if we're at the end of the list, don't do anything
 	if (Lab_mode == LAB_MODE_SHIP) {
 		if (Lab_last_selected_object == ship_list_endpoints[lab_get_type_idx()].second) {
@@ -2285,15 +2291,6 @@ void lab_close()
 
 		delete[] Lab_species_nodes;
 		Lab_species_nodes = NULL;
-	}
-
-	if (ship_list_endpoints != nullptr) {
-		delete[] ship_list_endpoints;
-		ship_list_endpoints = nullptr;
-	}
-	if (weap_list_endpoints != nullptr) {
-		delete[] weap_list_endpoints;
-		weap_list_endpoints = nullptr;
 	}
 
 	if (Lab_insignia_bitmap >= 0) {
