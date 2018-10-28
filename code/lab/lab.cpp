@@ -1333,19 +1333,19 @@ void labviewer_make_ship_window(Button * /*caller*/)
 		Lab_species_nodes = NULL;
 	}
 
-	for (int i = 0; i < Species_info.size(); i++) {
-		ship_list_endpoints.push_back(std::make_pair(nullptr, nullptr));
+	for (int i = 0; i < (int)Species_info.size(); i++) {
+		ship_list_endpoints.emplace_back(std::make_pair(nullptr, nullptr));
 	}
 
 	Lab_species_nodes = new TreeItem*[Species_info.size() + 1];
 
 	// Add species nodes
 	for (idx = 0; idx < (int)Species_info.size(); idx++) {
-		Lab_species_nodes[idx] = ship_tree->AddItem(NULL, Species_info[idx].species_name, 0, false);
+		Lab_species_nodes[idx] = ship_tree->AddItem(nullptr, Species_info[idx].species_name, 0, false);
 	}
 
 	// Just in case. I don't actually think this is possible though.
-	Lab_species_nodes[Species_info.size()] = ship_tree->AddItem(NULL, "Other", 0, false);
+	Lab_species_nodes[Species_info.size()] = ship_tree->AddItem(nullptr, "Other", 0, false);
 
 	// Now add the ships
 	for (auto it = Ship_info.cbegin(); it != Ship_info.cend(); ++it) {
@@ -1368,7 +1368,7 @@ void labviewer_make_ship_window(Button * /*caller*/)
 	// No the <= is not a mistake :)
 	for (idx = 0; idx < (int)Species_info.size(); idx++) {
 		if (!Lab_species_nodes[idx]->HasChildren()) {
-			ship_tree->AddItem(Lab_species_nodes[idx], "<none>", 0, false, NULL);
+			ship_tree->AddItem(Lab_species_nodes[idx], "<none>", 0, false, nullptr);
 		}
 	}
 
@@ -1543,7 +1543,7 @@ void labviewer_make_weap_window(Button*  /*caller*/)
 	cbp = Lab_class_toolbar->AddChild(new Button("Class Variables", x, 0, labviewer_make_variables_window));
 
 	for (int i = 0; i < Num_weapon_subtypes; i++) {
-		weap_list_endpoints.push_back(std::make_pair(nullptr, nullptr));
+		weap_list_endpoints.emplace_back(std::make_pair(nullptr, nullptr));
 	}
 
 	// populate the weapons window
@@ -1554,7 +1554,7 @@ void labviewer_make_weap_window(Button*  /*caller*/)
 
 	// Add type nodes
 	for (i = 0; i < Num_weapon_subtypes; i++) {
-		type_nodes[i] = weap_tree->AddItem(NULL, Weapon_subtype_names[i], 0, false);
+		type_nodes[i] = weap_tree->AddItem(nullptr, Weapon_subtype_names[i], 0, false);
 	}
 
 	// Now add the weapons
@@ -1920,7 +1920,7 @@ bool is_same_obj_type(int curr, int next) {
 int lab_get_type_idx() {
 	if (Lab_mode == LAB_MODE_SHIP) {
 		ship_info *si = &Ship_info[Lab_last_selected_object->GetData()];
-		for (int i = 0; i < Species_info.size(); i++) {
+		for (int i = 0; i < (int)Species_info.size(); i++) {
 			species_info specie = Species_info[i];
 			if (!strncmp(specie.species_name, Species_info[si->species].species_name, NAME_LENGTH)) {
 				return i;
