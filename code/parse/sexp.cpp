@@ -5726,7 +5726,7 @@ int sexp_special_warp_dist( int n)
 	dist_to_plane -= half_length;
 
 	// return as a percent of length -- simplified from 100*dist/(2*half_length)
-	return (int) (50.0f * dist / half_length);
+	return (int) (50.0f * dist_to_plane / half_length);
 }
 
 
