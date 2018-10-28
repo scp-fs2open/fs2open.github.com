@@ -58,6 +58,7 @@
 #include "network/multi_respawn.h"
 #include "network/multimsgs.h"
 #include "network/multiutil.h"
+#include "object/objectdock.h"
 #include "object/parseobjectdock.h"
 #include "object/objectshield.h"
 #include "object/waypoint.h"
@@ -1646,51 +1647,73 @@ void parse_debriefing_new(mission * /*pm*/)
 		Error(LOCATION, "Not enough debriefings for mission.  There are %d teams and only %d debriefings;\n", Num_teams, nt );
 }
 
-void position_ship_for_knossos_warpin(p_object *p_objp)
+void position_ship_for_knossos_warpin(object *objp)
 {
-	object *objp = p_objp->created_object;
 	ship *shipp = &Ships[objp->instance];
-	object *knossos_objp = NULL;
+	ship_info *sip = &Ship_info[shipp->ship_info_index];
+	object *knossos_objp = nullptr;
+	float half_length, min_dist = -1.0f;
+	vec3d center_pos, actual_local_center;
+	vec3d new_point, new_center_pos, offset;
 
 	// Assume no valid knossos device
 	shipp->special_warpin_objnum = -1;
 
-	// find knossos device
+	// find closest knossos device (allow multiple knossoses)
 	for (ship_obj *so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so))
 	{
 		object *ship_objp = &Objects[so->objnum];
 
 		if (Ship_info[Ships[ship_objp->instance].ship_info_index].flags[Ship::Info_Flags::Knossos_device])
 		{
-			// be close to the right device (allow multiple knossoses)
-			if ( vm_vec_dist_quick(&ship_objp->pos, &p_objp->pos) < 2.0f*(ship_objp->radius + objp->radius) )
+			// is this the closest?  (can use dist_squared since we're only comparing)
+			float dist = vm_vec_dist_squared(&ship_objp->pos, &objp->pos);
+			if (min_dist < 0.0f || dist < min_dist)
 			{
 				knossos_objp = ship_objp;
-				break;
+				min_dist = dist;
 			}
 		}
 	}
 
-	if (knossos_objp == NULL)
+	if (knossos_objp == nullptr)
 		return;
 
 	// set ship special_warpin_objnum
 	shipp->special_warpin_objnum = OBJ_INDEX(knossos_objp);
 
-	// position self for warp on plane of device
-	vec3d new_point;
-	polymodel *pm = model_get(Ship_info[shipp->ship_info_index].model_num);
+	// determine the correct center of the model (which may not be the model's origin)
+	if (object_is_docked(objp))
+		dock_calc_docked_actual_center(&actual_local_center, objp);
+	else
+		ship_class_get_actual_center(sip, &actual_local_center);
 
-	float dist = fvi_ray_plane(&new_point, &knossos_objp->pos, &knossos_objp->orient.vec.fvec, &p_objp->pos, &p_objp->orient.vec.fvec, 0.0f);
-	float desired_dist = -pm->mins.xyz.z;
-	vm_vec_scale_add2(&objp->pos, &objp->orient.vec.fvec, (dist - desired_dist));
+	// find world position of the center of the ship assembly
+	vm_vec_unrotate(&center_pos, &actual_local_center, &objp->orient);
+	vm_vec_add2(&center_pos, &objp->pos);
+
+	// determine the half-length
+	if (object_is_docked(objp))
+	{
+		// we need to get the longitudinal radius of our ship, so find the semilatus rectum along the Z-axis
+		half_length = dock_calc_max_semilatus_rectum_parallel_to_axis(objp, Z_AXIS);
+	}
+	else
+		half_length = 0.5f * ship_class_get_length(sip);
+
+	// position self for warp on plane of device
+	float dist = fvi_ray_plane(&new_point, &knossos_objp->pos, &knossos_objp->orient.vec.fvec, &center_pos, &objp->orient.vec.fvec, 0.0f);
+	vm_vec_scale_add(&new_center_pos, &center_pos, &objp->orient.vec.fvec, (dist - half_length));
+
+	// now move the actual ship based on how we moved the center
+	vm_vec_sub(&offset, &new_center_pos, &center_pos);
+	vm_vec_add2(&objp->pos, &offset);
 	
 	// if ship is HUGE, make it go through the center of the knossos
-	if (Ship_info[shipp->ship_info_index].is_huge_ship())
+	if (sip->is_huge_ship())
 	{
-		vec3d offset;
 		vm_vec_sub(&offset, &knossos_objp->pos, &new_point);
-		vm_vec_add2(&knossos_objp->pos, &offset);
+		vm_vec_add2(&objp->pos, &offset);
 	}
 }
 
@@ -1814,6 +1837,14 @@ int parse_create_object(p_object *pobjp)
 	// get the main object
 	objp = pobjp->created_object;
 
+	// if arriving through knossos, adjust objp->pos to plane of knossos and set object reference
+	// special warp is single player only
+	if ((pobjp->flags[Mission::Parse_Object_Flags::Knossos_warp_in]) && !(Game_mode & GM_MULTIPLAYER))
+	{
+		if (!Fred_running)
+			position_ship_for_knossos_warpin(objp);
+	}
+
 	// warp it in (moved from parse_create_object_sub)
 	if ((Game_mode & GM_IN_MISSION) && (!Fred_running) && (!Game_restoring))
 	{
@@ -1870,14 +1901,6 @@ int parse_create_object_sub(p_object *p_objp)
 			parse_bring_in_docked_wing(p_objp, p_objp->wingnum, shipnum);
 			brought_in_docked_wing = true;
 		}
-	}
-
-	// if arriving through knossos, adjust objpj->pos to plane of knossos and set flag
-	// special warp is single player only
-	if ((p_objp->flags[Mission::Parse_Object_Flags::Knossos_warp_in]) && !(Game_mode & GM_MULTIPLAYER))
-	{
-		if (!Fred_running)
-			position_ship_for_knossos_warpin(p_objp);
 	}
 
 	shipp->group = p_objp->group;
