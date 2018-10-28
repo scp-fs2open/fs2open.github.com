@@ -3382,7 +3382,7 @@ int WE_Default::warpStart()
 		vm_vec_add2(&pos, &objp->pos);
 
 		// now project the warp effect forward
-		vm_vec_scale_add( &pos, &pos, &objp->orient.vec.fvec, ship_class_get_length(sip) * 0.5f );
+		vm_vec_scale_add( &pos, &pos, &objp->orient.vec.fvec, half_length );
 
 		// Effect time is 'SHIPFX_WARP_DELAY' (1.5 secs) seconds to start, warping_time 
 		// for ship to go thru, and 'SHIPFX_WARP_DELAY' (1.5 secs) to go away.
