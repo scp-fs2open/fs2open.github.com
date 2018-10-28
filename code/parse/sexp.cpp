@@ -5661,6 +5661,10 @@ int sexp_special_warp_dist( int n)
 {
 	char *ship_name;
 	int shipnum;
+	ship *shipp;
+	ship_info *sip;
+	vec3d center_pos, actual_local_center;
+	float half_length, dist_to_plane;
 
 	// get shipname
 	ship_name = CTEXT(n);
@@ -5676,44 +5680,53 @@ int sexp_special_warp_dist( int n)
 		return SEXP_NAN;
 	}
 
+	shipp = &Ships[shipnum];
+	sip = &Ship_info[shipp->ship_info_index];
+
 	// check that ship has warpout_objnum
-	if (Ships[shipnum].special_warpout_objnum < 0) {
+	if (shipp->special_warpout_objnum < 0 || shipp->special_warpout_objnum >= MAX_OBJECTS) {
 		return SEXP_NAN;
 	}
-	
-	Assert( (Ships[shipnum].special_warpout_objnum >= 0) && (Ships[shipnum].special_warpout_objnum < MAX_OBJECTS));
-	if ( (Ships[shipnum].special_warpout_objnum < 0) || (Ships[shipnum].special_warpout_objnum >= MAX_OBJECTS) ) {
-		return SEXP_NAN;
-	}
+
+	object *objp = &Objects[shipp->objnum];
+	object *knossos_objp = &Objects[shipp->special_warpout_objnum];
 
 	// check the special warpout device is valid
-	int valid = FALSE;
-	object *ship_objp = &Objects[Ships[shipnum].objnum];
-	object *warp_objp = &Objects[Ships[shipnum].special_warpout_objnum];
-	if (warp_objp->type == OBJ_SHIP) {
-		if (Ship_info[Ships[warp_objp->instance].ship_info_index].flags[Ship::Info_Flags::Knossos_device]) {
-			valid = TRUE;
-		}
-	}
-
-	if (!valid) {
+	if (knossos_objp->type != OBJ_SHIP || !Ship_info[Ships[knossos_objp->instance].ship_info_index].flags[Ship::Info_Flags::Knossos_device]) {
 		return SEXP_NAN;
 	}
 
 	// check if within 45 degree half-angle cone of facing 
-	float dot = fl_abs(vm_vec_dot(&warp_objp->orient.vec.fvec, &ship_objp->orient.vec.fvec));
+	float dot = fl_abs(vm_vec_dot(&knossos_objp->orient.vec.fvec, &objp->orient.vec.fvec));
 	if (dot < 0.707f) {
 		return SEXP_NAN;
 	}
 
-	// get distance
-	vec3d hit_pt;
-	float dist = fvi_ray_plane(&hit_pt, &warp_objp->pos, &warp_objp->orient.vec.fvec, &ship_objp->pos, &ship_objp->orient.vec.fvec, 0.0f);
-	polymodel *pm = model_get(Ship_info[Ships[shipnum].ship_info_index].model_num);
-	dist += pm->mins.xyz.z;
+	// determine the correct center of the model (which may not be the model's origin)
+	if (object_is_docked(objp))
+		dock_calc_docked_actual_center(&actual_local_center, objp);
+	else
+		ship_class_get_actual_center(sip, &actual_local_center);
 
-	// return as a percent of length
-	return (int) (100.0f * dist / ship_class_get_length(&Ship_info[Ships[shipnum].ship_info_index]));
+	// find world position of the center of the ship assembly
+	vm_vec_unrotate(&center_pos, &actual_local_center, &objp->orient);
+	vm_vec_add2(&center_pos, &objp->pos);
+
+	// determine the half-length
+	if (object_is_docked(objp))
+	{
+		// we need to get the longitudinal radius of our ship, so find the semilatus rectum along the Z-axis
+		half_length = dock_calc_max_semilatus_rectum_parallel_to_axis(objp, Z_AXIS);
+	}
+	else
+		half_length = 0.5f * ship_class_get_length(sip);
+
+	// get distance
+	dist_to_plane = fvi_ray_plane(nullptr, &knossos_objp->pos, &knossos_objp->orient.vec.fvec, &center_pos, &objp->orient.vec.fvec, 0.0f);
+	dist_to_plane -= half_length;
+
+	// return as a percent of length -- simplified from 100*dist/(2*half_length)
+	return (int) (50.0f * dist / half_length);
 }
 
 
