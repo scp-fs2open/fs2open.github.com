@@ -624,11 +624,11 @@ void WE_Default::compute_warpout_stuff(float *warp_time, vec3d *warp_pos)
 		dist_to_plane = fvi_ray_plane(warp_pos, &portal_objp->pos, &facing_normal, &center_pos, &objp->orient.vec.fvec, 0.0f);
 
 		// calculate distance to warpout point.
-		dist_to_plane += half_length;
+		dist_to_plane -= half_length;
 
 		if (dist_to_plane < 0.0f) {
 			mprintf(("special warpout started too late\n"));
-			dist_to_plane = half_length;
+			dist_to_plane = 0.0f;
 		}
 
 		// validate angle
