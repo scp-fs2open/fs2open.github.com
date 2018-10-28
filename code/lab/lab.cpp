@@ -70,6 +70,9 @@ static Window *Lab_background_window = NULL;
 static Text *Lab_description_text = NULL;
 static TreeItem **Lab_species_nodes = NULL;
 
+static Tree *ship_tree = nullptr;
+static Tree *weap_tree = nullptr;
+
 //holds the beginning and ending indices of each specie/type of ship/weapon
 static std::pair<TreeItem*, TreeItem*> *ship_list_endpoints = nullptr;
 static std::pair<TreeItem*, TreeItem*> *weap_list_endpoints = nullptr;
@@ -1319,7 +1322,7 @@ void labviewer_make_ship_window(Button * /*caller*/)
 
 
 	// populate ship class window
-	Tree *cmp = (Tree*)Lab_class_window->AddChild(new Tree("Ship Tree", 0, 0));
+	ship_tree = (Tree*)Lab_class_window->AddChild(new Tree("Ship Tree", 0, 0));
 
 	if (Lab_species_nodes != NULL) {
 		for (idx = 0; idx < (int)Species_info.size(); idx++) {
@@ -1339,11 +1342,11 @@ void labviewer_make_ship_window(Button * /*caller*/)
 
 	// Add species nodes
 	for (idx = 0; idx < (int)Species_info.size(); idx++) {
-		Lab_species_nodes[idx] = cmp->AddItem(NULL, Species_info[idx].species_name, 0, false);
+		Lab_species_nodes[idx] = ship_tree->AddItem(NULL, Species_info[idx].species_name, 0, false);
 	}
 
 	// Just in case. I don't actually think this is possible though.
-	Lab_species_nodes[Species_info.size()] = cmp->AddItem(NULL, "Other", 0, false);
+	Lab_species_nodes[Species_info.size()] = ship_tree->AddItem(NULL, "Other", 0, false);
 
 	// Now add the ships
 	for (auto it = Ship_info.cbegin(); it != Ship_info.cend(); ++it) {
@@ -1354,7 +1357,7 @@ void labviewer_make_ship_window(Button * /*caller*/)
 			stip = Lab_species_nodes[Species_info.size()];
 		}
 
-		ctip = cmp->AddItem(stip, it->name, (int)std::distance(Ship_info.cbegin(), it), false, labviewer_change_ship);
+		ctip = ship_tree->AddItem(stip, it->name, (int)std::distance(Ship_info.cbegin(), it), false, labviewer_change_ship);
 		if (ship_list_endpoints[it->species].first == nullptr) {
 			ship_list_endpoints[it->species].first = ctip;
 		}
@@ -1366,7 +1369,7 @@ void labviewer_make_ship_window(Button * /*caller*/)
 	// No the <= is not a mistake :)
 	for (idx = 0; idx < (int)Species_info.size(); idx++) {
 		if (!Lab_species_nodes[idx]->HasChildren()) {
-			cmp->AddItem(Lab_species_nodes[idx], "<none>", 0, false, NULL);
+			ship_tree->AddItem(Lab_species_nodes[idx], "<none>", 0, false, NULL);
 		}
 	}
 
@@ -1546,14 +1549,14 @@ void labviewer_make_weap_window(Button*  /*caller*/)
 	}
 
 	// populate the weapons window
-	Tree *cmp = (Tree*)Lab_class_window->AddChild(new Tree("Weapon Tree", 0, 0));
+	weap_tree = (Tree*)Lab_class_window->AddChild(new Tree("Weapon Tree", 0, 0));
 	// Unfortunately these are hardcoded
 	TreeItem **type_nodes = new TreeItem*[Num_weapon_subtypes];
 	int i;
 
 	// Add type nodes
 	for (i = 0; i < Num_weapon_subtypes; i++) {
-		type_nodes[i] = cmp->AddItem(NULL, Weapon_subtype_names[i], 0, false);
+		type_nodes[i] = weap_tree->AddItem(NULL, Weapon_subtype_names[i], 0, false);
 	}
 
 	// Now add the weapons
@@ -1573,7 +1576,7 @@ void labviewer_make_weap_window(Button*  /*caller*/)
 			stip = type_nodes[Weapon_info[i].subtype];
 		}
 
-		ctip = cmp->AddItem(stip, Weapon_info[i].get_display_string(), i, false, labviewer_change_weapon);
+		ctip = weap_tree->AddItem(stip, Weapon_info[i].get_display_string(), i, false, labviewer_change_weapon);
 
 		if (weap_list_endpoints[Weapon_info[i].subtype].first == nullptr) {
 			weap_list_endpoints[Weapon_info[i].subtype].first = ctip;
@@ -1940,13 +1943,14 @@ int lab_get_type_idx() {
 
 //plieblang - scroll through entries with the arrow keys
 void lab_scroll_up() {
+	//if we're at the beginning of the list, don't do anything
 	if (Lab_mode == LAB_MODE_SHIP) {
-		if (Lab_last_selected_object <= ship_list_endpoints[lab_get_type_idx()].first) {
+		if (Lab_last_selected_object == ship_list_endpoints[lab_get_type_idx()].first) {
 			return;
 		}
 	}
 	else if (Lab_mode == LAB_MODE_WEAPON) {
-		if (Lab_last_selected_object <= weap_list_endpoints[lab_get_type_idx()].first) {
+		if (Lab_last_selected_object == weap_list_endpoints[lab_get_type_idx()].first) {
 			return;
 		}
 	}
@@ -1960,21 +1964,24 @@ void lab_scroll_up() {
 	} while (!is_same_obj_type(curr_obj_idx, prev_obj_idx));
 
 	if (Lab_mode == LAB_MODE_SHIP) {
+		ship_tree->SetSelectedItem(Lab_last_selected_object);
 		labviewer_change_ship_lod(nullptr);
 	}
 	else if (Lab_mode == LAB_MODE_WEAPON) {
+		weap_tree->SetSelectedItem(Lab_last_selected_object);
 		labviewer_change_weapon(nullptr);
 	}
 }
 
 void lab_scroll_down() {
+	//if we're at the end of the list, don't do anything
 	if (Lab_mode == LAB_MODE_SHIP) {
-		if (Lab_last_selected_object >= ship_list_endpoints[lab_get_type_idx()].second) {
+		if (Lab_last_selected_object == ship_list_endpoints[lab_get_type_idx()].second) {
 			return;
 		}
 	}
 	else if (Lab_mode == LAB_MODE_WEAPON) {
-		if (Lab_last_selected_object >= weap_list_endpoints[lab_get_type_idx()].second) {
+		if (Lab_last_selected_object == weap_list_endpoints[lab_get_type_idx()].second) {
 			return;
 		}
 	}
@@ -1988,9 +1995,11 @@ void lab_scroll_down() {
 	} while (!is_same_obj_type(curr_obj_idx, next_obj_idx));
 
 	if (Lab_mode == LAB_MODE_SHIP) {
+		ship_tree->SetSelectedItem(Lab_last_selected_object);
 		labviewer_change_ship_lod(nullptr);
 	}
 	else if (Lab_mode == LAB_MODE_WEAPON) {
+		weap_tree->SetSelectedItem(Lab_last_selected_object);
 		labviewer_change_weapon(nullptr);
 	}
 }
