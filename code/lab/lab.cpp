@@ -453,7 +453,7 @@ void labviewer_render_model(float frametime)
 	}
 }
 
-char* get_rot_mode_string(int rotmode)
+SCP_string get_rot_mode_string(int rotmode)
 {
 	switch (rotmode) {
 	case LAB_ROTATION_MODE_BOTH:
@@ -469,7 +469,7 @@ char* get_rot_mode_string(int rotmode)
 	}
 }
 
-char* get_rot_speed_string(float speed_divisor)
+SCP_string get_rot_speed_string(float speed_divisor)
 {
 	auto exp = std::lroundf(log10f(speed_divisor));
 
@@ -547,8 +547,8 @@ void labviewer_do_render(float frametime)
 	SCP_string text = get_rot_mode_string(Lab_rotation_mode);
 	gr_printf_no_resize(
 	    gr_screen.center_offset_x + 2, gr_screen.center_offset_y + gr_screen.center_h - (gr_get_font_height() * 5) - 3,
-	                    "%s Rotation speed: %s", get_rot_mode_string(Lab_rotation_mode),
-	                    get_rot_speed_string(Lab_manual_rotation_speed_divisor));
+	                    "%s Rotation speed: %s", get_rot_mode_string(Lab_rotation_mode).c_str(),
+	                    get_rot_speed_string(Lab_manual_rotation_speed_divisor).c_str());
 }
 
 void labviewer_exit(Button* /*caller*/)
