@@ -1631,7 +1631,7 @@ void labviewer_make_weap_window(Button* /*caller*/)
 	// populate the weapons window
 	weap_tree = (Tree*)Lab_class_window->AddChild(new Tree("Weapon Tree", 0, 0));
 	// Unfortunately these are hardcoded
-	TreeItem** type_nodes = new TreeItem*[Num_weapon_subtypes];
+	auto type_nodes = new TreeItem*[Num_weapon_subtypes];
 	int i;
 
 	// Add type nodes
