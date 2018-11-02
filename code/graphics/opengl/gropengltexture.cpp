@@ -503,8 +503,6 @@ static int opengl_texture_set_level(int bitmap_handle, int bitmap_type, int bmap
 			auto mipmap_w = bmap_w;
 			auto mipmap_h = bmap_h;
 
-			doffset += dsize;
-
 			// check if it's a compressed cubemap first
 			if (block_size > 0) {
 				for (auto level = 0; level < mipmap_levels + base_level; level++) {
