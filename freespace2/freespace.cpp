@@ -1791,20 +1791,8 @@ void game_init()
 		snd_init();
 	}
 
-	if(fsspeech_init() == false) {
+	if(!fsspeech_init()) {
 		mprintf(("Failed to init speech\n"));
-
-		if(Cmdline_query_speech)
-		{
-			if (!fsspeech_was_compiled())
-				os::dialogs::Message(os::dialogs::MESSAGEBOX_WARNING, "Speech is not compiled in this build in code.lib");
-			else
-				os::dialogs::Message(os::dialogs::MESSAGEBOX_WARNING, "Speech is compiled, but failed to init");
-		}
-	} else if(Cmdline_query_speech) {
-		// Its bad practice to use a negative type, this is an exceptional case
-		fsspeech_play(-1,"Welcome to FS2 open");
-		os::dialogs::Message(os::dialogs::MESSAGEBOX_INFORMATION, "Speech is compiled and initialised and should be working");
 	}
 
 /////////////////////////////

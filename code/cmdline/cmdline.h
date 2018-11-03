@@ -101,7 +101,6 @@ extern int Cmdline_autopilot_interruptable;
 extern int Cmdline_stretch_menu;
 
 // Audio related
-extern int Cmdline_query_speech;
 extern int Cmdline_voice_recognition;
 extern int Cmdline_no_enhanced_sound;
 
