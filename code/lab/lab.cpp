@@ -1292,7 +1292,7 @@ void labviewer_make_desc_window(Button * /*caller*/)
 void labviewer_make_ship_window(Button * /*caller*/)
 {
 	GUIObject *cbp;
-	TreeItem *stip, *ctip;
+	TreeItem *stip;
 	int x, idx;
 
 	if (Lab_mode == LAB_MODE_SHIP) {
@@ -1333,6 +1333,8 @@ void labviewer_make_ship_window(Button * /*caller*/)
 		Lab_species_nodes = NULL;
 	}
 
+	//in case the window had already been opened
+	ship_list_endpoints.clear();
 	for (int i = 0; i < (int)Species_info.size(); i++) {
 		ship_list_endpoints.emplace_back(std::make_pair(nullptr, nullptr));
 	}
@@ -1356,11 +1358,11 @@ void labviewer_make_ship_window(Button * /*caller*/)
 			stip = Lab_species_nodes[Species_info.size()];
 		}
 
-		ctip = ship_tree->AddItem(stip, it->name, (int)std::distance(Ship_info.cbegin(), it), false, labviewer_change_ship);
+		TreeItem *new_ship_item = ship_tree->AddItem(stip, it->name, (int)std::distance(Ship_info.cbegin(), it), false, labviewer_change_ship);
 		if (ship_list_endpoints[it->species].first == nullptr) {
-			ship_list_endpoints[it->species].first = ctip;
+			ship_list_endpoints[it->species].first = new_ship_item;
 		}
-		ship_list_endpoints[it->species].second = ctip;
+		ship_list_endpoints[it->species].second = new_ship_item;
 		//cmp->AddItem(ctip, "Debris", 99, false, labviewer_change_ship_lod);
 	}
 
@@ -1403,10 +1405,10 @@ void labviewer_make_ship_window(Button * /*caller*/)
 
 void labviewer_change_ship_lod(Tree* caller)
 {
-	int ship_index = Lab_last_selected_object->GetData();
-	if (caller != nullptr) {
-		ship_index = caller->GetSelectedItem()->GetData();
+	if (caller == nullptr) {
+		return;
 	}
+	int ship_index = caller->GetSelectedItem()->GetData();
 	
 	Assert(ship_index >= 0);
 
@@ -1483,12 +1485,12 @@ void labviewer_show_external_model(Tree *caller)
 extern void weapon_load_bitmaps(int weapon_index);
 void labviewer_change_weapon(Tree *caller)
 {
-	int weap_index;
-	if (caller != nullptr) {
-		weap_index = caller->GetSelectedItem()->GetData();
-		Lab_last_selected_object = caller->GetSelectedItem();
+	if (caller == nullptr) {
+		return;
 	}
-	else weap_index = Lab_last_selected_object->GetData();
+
+	int weap_index = caller->GetSelectedItem()->GetData();
+	Lab_last_selected_object = caller->GetSelectedItem();
 	
 	Assert(weap_index >= 0);
 
@@ -1514,7 +1516,7 @@ void labviewer_change_weapon(Tree *caller)
 void labviewer_make_weap_window(Button*  /*caller*/)
 {
 	GUIObject *cbp;
-	TreeItem *stip, *ctip;
+	TreeItem *stip;
 	int x;
 
 	if (Lab_mode == LAB_MODE_WEAPON) {
@@ -1542,6 +1544,7 @@ void labviewer_make_weap_window(Button*  /*caller*/)
 	x += cbp->GetWidth() + 10;
 	cbp = Lab_class_toolbar->AddChild(new Button("Class Variables", x, 0, labviewer_make_variables_window));
 
+	weap_list_endpoints.clear();
 	for (int i = 0; i < Num_weapon_subtypes; i++) {
 		weap_list_endpoints.emplace_back(std::make_pair(nullptr, nullptr));
 	}
@@ -1574,12 +1577,12 @@ void labviewer_make_weap_window(Button*  /*caller*/)
 			stip = type_nodes[Weapon_info[i].subtype];
 		}
 
-		ctip = weap_tree->AddItem(stip, Weapon_info[i].get_display_string(), i, false, labviewer_change_weapon);
+		TreeItem *new_weap_item = weap_tree->AddItem(stip, Weapon_info[i].get_display_string(), i, false, labviewer_change_weapon);
 
 		if (weap_list_endpoints[Weapon_info[i].subtype].first == nullptr) {
-			weap_list_endpoints[Weapon_info[i].subtype].first = ctip;
+			weap_list_endpoints[Weapon_info[i].subtype].first = new_weap_item;
 		}
-		weap_list_endpoints[Weapon_info[i].subtype].second = ctip;
+		weap_list_endpoints[Weapon_info[i].subtype].second = new_weap_item;
 
 		//if (Weapon_info[i].tech_model[0] != '\0') {
 		//	cmp->AddItem(cwip, "Tech Model", 0, false, labviewer_show_tech_model);
@@ -1967,11 +1970,9 @@ void lab_scroll_up() {
 
 	if (Lab_mode == LAB_MODE_SHIP) {
 		ship_tree->SetSelectedItem(Lab_last_selected_object);
-		labviewer_change_ship_lod(nullptr);
 	}
 	else if (Lab_mode == LAB_MODE_WEAPON) {
 		weap_tree->SetSelectedItem(Lab_last_selected_object);
-		labviewer_change_weapon(nullptr);
 	}
 }
 
@@ -2002,11 +2003,9 @@ void lab_scroll_down() {
 
 	if (Lab_mode == LAB_MODE_SHIP) {
 		ship_tree->SetSelectedItem(Lab_last_selected_object);
-		labviewer_change_ship_lod(nullptr);
 	}
 	else if (Lab_mode == LAB_MODE_WEAPON) {
 		weap_tree->SetSelectedItem(Lab_last_selected_object);
-		labviewer_change_weapon(nullptr);
 	}
 }
 
