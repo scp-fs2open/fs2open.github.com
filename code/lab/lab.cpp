@@ -113,6 +113,7 @@ static float Lab_manual_rotation_speed_divisor = 100.f;
 #define LAB_ROTATION_MODE_YAW 1
 #define LAB_ROTATION_MODE_PITCH 2
 #define LAB_ROTATION_MODE_BOTH 3
+#define LAB_ROTATION_MODE_ROLL 4
 
 // Trackball_mode:
 //   1  ==  rotate	(left-mouse)
@@ -341,16 +342,22 @@ void labviewer_render_model(float frametime)
 						rot_angle.h += dx / Lab_manual_rotation_speed_divisor;
 						rot_angle.p += dy / Lab_manual_rotation_speed_divisor;
 					}
+					if (Lab_rotation_mode == LAB_ROTATION_MODE_ROLL) {
+						rot_angle.b += dx / Lab_manual_rotation_speed_divisor;
+					}
 
 					if (rot_angle.h < -PI)
 						rot_angle.h = -PI - 0.001f;
 					if (rot_angle.h > PI)
 						rot_angle.h = -PI + 0.001f;
 
-					if (rot_angle.p < -PI_2)
-						rot_angle.p = -PI_2;
-					if (rot_angle.p > PI_2)
-						rot_angle.p = PI_2;
+					CLAMP(rot_angle.p, -PI_2, PI_2);
+					
+					if (rot_angle.b < -PI)
+						rot_angle.b = -PI - 0.001f;
+					if (rot_angle.b > PI)
+						rot_angle.b = -PI + 0.001f;
+
 
 					vm_angles_2_matrix(&Lab_model_orient, &rot_angle);
 				}
@@ -464,6 +471,8 @@ SCP_string get_rot_mode_string(int rotmode)
 		return "Manual rotation mode: Yaw";
 	case LAB_ROTATION_MODE_NONE:
 		return "Manual rotation mode: Disabled";
+	case LAB_ROTATION_MODE_ROLL:
+		return "Manual rotation mode: Roll";
 	default:
 		return "HOW DID THIS HAPPEN? Ask a coder!";
 	}
@@ -539,14 +548,15 @@ void labviewer_do_render(float frametime)
 	gr_printf_no_resize(gr_screen.center_offset_x + 2,
 	                    gr_screen.center_offset_y + gr_screen.center_h - (gr_get_font_height() * 4) - 3,
 	                    "Hold LMB to rotate the ship or weapon. Hold RMB to rotate the Camera. Hold Shift + LMB to "
-	                    "zoom in or out. Use number keys to switch between FXAA presets. R to cycle model rotation modes, S to cycle model rotation speeds.");
+	                    "zoom in or out. Use number keys to switch between FXAA presets. R to cycle model rotation "
+	                    "modes, S to cycle model rotation speeds.");
 
 	// Rotation mode
 	angles rot_angle;
 	vm_extract_angles_matrix(&rot_angle, &Lab_model_orient);
 	SCP_string text = get_rot_mode_string(Lab_rotation_mode);
-	gr_printf_no_resize(
-	    gr_screen.center_offset_x + 2, gr_screen.center_offset_y + gr_screen.center_h - (gr_get_font_height() * 5) - 3,
+	gr_printf_no_resize(gr_screen.center_offset_x + 2,
+	                    gr_screen.center_offset_y + gr_screen.center_h - (gr_get_font_height() * 5) - 3,
 	                    "%s Rotation speed: %s", get_rot_mode_string(Lab_rotation_mode).c_str(),
 	                    get_rot_speed_string(Lab_manual_rotation_speed_divisor).c_str());
 }
@@ -2294,7 +2304,7 @@ void lab_do_frame(float frametime)
 
 		case KEY_R:
 			Lab_rotation_mode++;
-			if (Lab_rotation_mode == 4)
+			if (Lab_rotation_mode == 5)
 				Lab_rotation_mode = 0;
 			break;
 		case KEY_S:
