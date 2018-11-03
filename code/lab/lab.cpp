@@ -36,6 +36,7 @@
 #include "nebula/neb.h"
 #include "model/modelrender.h"
 #include "tracing/tracing.h"
+#include <utility>
 
 // flags
 #define LAB_FLAG_NORMAL				(0)		// default
@@ -68,6 +69,15 @@ static Window *Lab_description_window = NULL;
 static Window *Lab_background_window = NULL;
 static Text *Lab_description_text = NULL;
 static TreeItem **Lab_species_nodes = NULL;
+
+static Tree *ship_tree = nullptr;
+static Tree *weap_tree = nullptr;
+
+//holds the beginning and ending indices of each specie/type of ship/weapon
+static SCP_vector<std::pair<TreeItem*, TreeItem*>> ship_list_endpoints;
+static SCP_vector<std::pair<TreeItem*, TreeItem*>> weap_list_endpoints;
+
+static TreeItem *Lab_last_selected_object = nullptr;
 
 static int Lab_insignia_bitmap = -1;
 static int Lab_insignia_index = -1;
@@ -1312,7 +1322,7 @@ void labviewer_make_ship_window(Button * /*caller*/)
 
 
 	// populate ship class window
-	Tree *cmp = (Tree*)Lab_class_window->AddChild(new Tree("Ship Tree", 0, 0));
+	ship_tree = (Tree*)Lab_class_window->AddChild(new Tree("Ship Tree", 0, 0));
 
 	if (Lab_species_nodes != NULL) {
 		for (idx = 0; idx < (int)Species_info.size(); idx++) {
@@ -1323,15 +1333,21 @@ void labviewer_make_ship_window(Button * /*caller*/)
 		Lab_species_nodes = NULL;
 	}
 
+	//in case the window had already been opened
+	ship_list_endpoints.clear();
+	for (int i = 0; i < (int)Species_info.size(); i++) {
+		ship_list_endpoints.emplace_back(std::make_pair(nullptr, nullptr));
+	}
+
 	Lab_species_nodes = new TreeItem*[Species_info.size() + 1];
 
 	// Add species nodes
 	for (idx = 0; idx < (int)Species_info.size(); idx++) {
-		Lab_species_nodes[idx] = cmp->AddItem(NULL, Species_info[idx].species_name, 0, false);
+		Lab_species_nodes[idx] = ship_tree->AddItem(nullptr, Species_info[idx].species_name, 0, false);
 	}
 
 	// Just in case. I don't actually think this is possible though.
-	Lab_species_nodes[Species_info.size()] = cmp->AddItem(NULL, "Other", 0, false);
+	Lab_species_nodes[Species_info.size()] = ship_tree->AddItem(nullptr, "Other", 0, false);
 
 	// Now add the ships
 	for (auto it = Ship_info.cbegin(); it != Ship_info.cend(); ++it) {
@@ -1342,7 +1358,11 @@ void labviewer_make_ship_window(Button * /*caller*/)
 			stip = Lab_species_nodes[Species_info.size()];
 		}
 
-		cmp->AddItem(stip, it->name, (int)std::distance(Ship_info.cbegin(), it), false, labviewer_change_ship);
+		TreeItem *new_ship_item = ship_tree->AddItem(stip, it->name, (int)std::distance(Ship_info.cbegin(), it), false, labviewer_change_ship);
+		if (ship_list_endpoints[it->species].first == nullptr) {
+			ship_list_endpoints[it->species].first = new_ship_item;
+		}
+		ship_list_endpoints[it->species].second = new_ship_item;
 		//cmp->AddItem(ctip, "Debris", 99, false, labviewer_change_ship_lod);
 	}
 
@@ -1350,7 +1370,7 @@ void labviewer_make_ship_window(Button * /*caller*/)
 	// No the <= is not a mistake :)
 	for (idx = 0; idx < (int)Species_info.size(); idx++) {
 		if (!Lab_species_nodes[idx]->HasChildren()) {
-			cmp->AddItem(Lab_species_nodes[idx], "<none>", 0, false, NULL);
+			ship_tree->AddItem(Lab_species_nodes[idx], "<none>", 0, false, nullptr);
 		}
 	}
 
@@ -1385,7 +1405,11 @@ void labviewer_make_ship_window(Button * /*caller*/)
 
 void labviewer_change_ship_lod(Tree* caller)
 {
+	if (caller == nullptr) {
+		return;
+	}
 	int ship_index = caller->GetSelectedItem()->GetData();
+	
 	Assert(ship_index >= 0);
 
 	if (Lab_selected_object == -1)
@@ -1409,10 +1433,10 @@ void labviewer_change_ship_lod(Tree* caller)
 	lab_cam_distance = Objects[Lab_selected_object].radius * 1.6f;
 
 	Lab_last_selected_ship = Lab_selected_index;
-	labviewer_change_model(Ship_info[ship_index].pof_file, caller->GetSelectedItem()->GetData(), ship_index);
+	labviewer_change_model(Ship_info[ship_index].pof_file, ship_index, ship_index);
 
 	//update the displayed POF filename
-	//moved out of labviewer_change_model which apparently doesn't do much after the first ship is loaded
+	//moved out of labviewer_change_model which doesn't necessarily do much of anything after the first ship is loaded
 	if (Lab_model_num >= 0) {
 		strcpy_s(Lab_model_filename, Ship_info[ship_index].pof_file);
 	}
@@ -1435,11 +1459,9 @@ void labviewer_change_ship_lod(Tree* caller)
 
 void labviewer_change_ship(Tree *caller)
 {
-	Lab_selected_index = (int)(caller->GetSelectedItem()->GetData());
+	Lab_selected_index = caller->GetSelectedItem()->GetData();
+	Lab_last_selected_object = caller->GetSelectedItem();
 
-	labviewer_update_desc_window();
-	labviewer_update_flags_window();
-	labviewer_update_variables_window();
 	labviewer_change_ship_lod(caller);
 }
 
@@ -1463,7 +1485,13 @@ void labviewer_show_external_model(Tree *caller)
 extern void weapon_load_bitmaps(int weapon_index);
 void labviewer_change_weapon(Tree *caller)
 {
-	int weap_index = (int)(caller->GetSelectedItem()->GetData());
+	if (caller == nullptr) {
+		return;
+	}
+
+	int weap_index = caller->GetSelectedItem()->GetData();
+	Lab_last_selected_object = caller->GetSelectedItem();
+	
 	Assert(weap_index >= 0);
 
 	if (Lab_selected_object != -1)
@@ -1516,17 +1544,20 @@ void labviewer_make_weap_window(Button*  /*caller*/)
 	x += cbp->GetWidth() + 10;
 	cbp = Lab_class_toolbar->AddChild(new Button("Class Variables", x, 0, labviewer_make_variables_window));
 
+	weap_list_endpoints.clear();
+	for (int i = 0; i < Num_weapon_subtypes; i++) {
+		weap_list_endpoints.emplace_back(std::make_pair(nullptr, nullptr));
+	}
 
 	// populate the weapons window
-	Tree *cmp = (Tree*)Lab_class_window->AddChild(new Tree("Weapon Tree", 0, 0));
-
+	weap_tree = (Tree*)Lab_class_window->AddChild(new Tree("Weapon Tree", 0, 0));
 	// Unfortunately these are hardcoded
 	TreeItem **type_nodes = new TreeItem*[Num_weapon_subtypes];
 	int i;
 
 	// Add type nodes
 	for (i = 0; i < Num_weapon_subtypes; i++) {
-		type_nodes[i] = cmp->AddItem(NULL, Weapon_subtype_names[i], 0, false);
+		type_nodes[i] = weap_tree->AddItem(nullptr, Weapon_subtype_names[i], 0, false);
 	}
 
 	// Now add the weapons
@@ -1546,7 +1577,12 @@ void labviewer_make_weap_window(Button*  /*caller*/)
 			stip = type_nodes[Weapon_info[i].subtype];
 		}
 
-		cmp->AddItem(stip, Weapon_info[i].get_display_string(), i, false, labviewer_change_weapon);
+		TreeItem *new_weap_item = weap_tree->AddItem(stip, Weapon_info[i].get_display_string(), i, false, labviewer_change_weapon);
+
+		if (weap_list_endpoints[Weapon_info[i].subtype].first == nullptr) {
+			weap_list_endpoints[Weapon_info[i].subtype].first = new_weap_item;
+		}
+		weap_list_endpoints[Weapon_info[i].subtype].second = new_weap_item;
 
 		//if (Weapon_info[i].tech_model[0] != '\0') {
 		//	cmp->AddItem(cwip, "Tech Model", 0, false, labviewer_show_tech_model);
@@ -1867,6 +1903,111 @@ void labviewer_make_background_window(Button*  /*caller*/)
 }
 
 // ----------------------------- Lab functions ---------------------------------
+bool is_same_obj_type(int curr, int next) {
+	if (Lab_mode == LAB_MODE_SHIP) {
+		if (Ship_info[curr].species == Ship_info[next].species) {
+			return true;
+		}
+		return false;
+	}
+
+	if (Lab_mode == LAB_MODE_WEAPON) {
+		if (Weapon_info[curr].subtype == Weapon_info[next].subtype) {
+			return true;
+		}
+		return false;
+	}
+	return false;
+}
+
+int lab_get_type_idx() {
+	if (Lab_mode == LAB_MODE_SHIP) {
+		ship_info *si = &Ship_info[Lab_last_selected_object->GetData()];
+		for (int i = 0; i < (int)Species_info.size(); i++) {
+			species_info specie = Species_info[i];
+			if (!strncmp(specie.species_name, Species_info[si->species].species_name, NAME_LENGTH)) {
+				return i;
+			}
+		}
+	}
+	else if (Lab_mode == LAB_MODE_WEAPON) {
+		weapon_info *wi = &Weapon_info[Lab_last_selected_object->GetData()];
+		for (int i = 0; i < Num_weapon_subtypes; i++) {
+			if (i == wi->subtype) {
+				return i;
+			}
+		}
+	}
+
+	return -1;
+}
+
+//plieblang - scroll through entries with the arrow keys
+void lab_scroll_up() {
+	if (Lab_last_selected_object == nullptr) {
+		return;
+	}
+
+	//if we're at the beginning of the list, don't do anything
+	if (Lab_mode == LAB_MODE_SHIP) {
+		if (Lab_last_selected_object == ship_list_endpoints[lab_get_type_idx()].first) {
+			return;
+		}
+	}
+	else if (Lab_mode == LAB_MODE_WEAPON) {
+		if (Lab_last_selected_object == weap_list_endpoints[lab_get_type_idx()].first) {
+			return;
+		}
+	}
+
+	int curr_obj_idx = Lab_last_selected_object->GetData();
+	int prev_obj_idx = ((TreeItem*)Lab_last_selected_object->prev)->GetData();
+	do {
+		Lab_last_selected_object = (TreeItem*)Lab_last_selected_object->prev;
+		curr_obj_idx = prev_obj_idx;
+		prev_obj_idx = Lab_last_selected_object->GetData();
+	} while (!is_same_obj_type(curr_obj_idx, prev_obj_idx));
+
+	if (Lab_mode == LAB_MODE_SHIP) {
+		ship_tree->SetSelectedItem(Lab_last_selected_object);
+	}
+	else if (Lab_mode == LAB_MODE_WEAPON) {
+		weap_tree->SetSelectedItem(Lab_last_selected_object);
+	}
+}
+
+void lab_scroll_down() {
+	if (Lab_last_selected_object == nullptr) {
+		return;
+	}
+
+	//if we're at the end of the list, don't do anything
+	if (Lab_mode == LAB_MODE_SHIP) {
+		if (Lab_last_selected_object == ship_list_endpoints[lab_get_type_idx()].second) {
+			return;
+		}
+	}
+	else if (Lab_mode == LAB_MODE_WEAPON) {
+		if (Lab_last_selected_object == weap_list_endpoints[lab_get_type_idx()].second) {
+			return;
+		}
+	}
+
+	int curr_obj_idx = Lab_last_selected_object->GetData();
+	int next_obj_idx = ((TreeItem*)Lab_last_selected_object->next)->GetData();
+	do {
+		Lab_last_selected_object = (TreeItem*)Lab_last_selected_object->next;
+		curr_obj_idx = next_obj_idx;
+		next_obj_idx = Lab_last_selected_object->GetData();
+	} while (!is_same_obj_type(curr_obj_idx, next_obj_idx));
+
+	if (Lab_mode == LAB_MODE_SHIP) {
+		ship_tree->SetSelectedItem(Lab_last_selected_object);
+	}
+	else if (Lab_mode == LAB_MODE_WEAPON) {
+		weap_tree->SetSelectedItem(Lab_last_selected_object);
+	}
+}
 
 void lab_init()
 {
@@ -2089,6 +2230,14 @@ void lab_do_frame(float frametime)
 			if (color_itr == Team_Colors.end())
 				color_itr = Team_Colors.begin();
 			Lab_team_color = color_itr->first;
+			break;
+
+		case KEY_UP:
+			lab_scroll_up();
+			break;
+
+		case KEY_DOWN:
+			lab_scroll_down();
 			break;
 
 			// bail...

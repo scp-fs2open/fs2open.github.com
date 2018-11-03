@@ -542,6 +542,7 @@ public:
 	void ClearItems();
 
 	TreeItem* GetSelectedItem(){return SelectedItem;}
+	void SetSelectedItem(TreeItem *item);
 };
 
 //*****************************Text*******************************

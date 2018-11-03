@@ -1893,15 +1893,8 @@ int Tree::DoMouseUp(float  /*frametime*/)
 {
 	OwnerSystem->SetActiveObject(this);
 
-	if (HighlightedItem != NULL) {
-		SelectedItem = HighlightedItem;
-		SelectedItem->ShowChildren = !SelectedItem->ShowChildren;
-		if (NOT_EMPTY(&SelectedItem->Children)) {
-			OnRefreshSize();	//Unfortunately
-		}
-		if (SelectedItem->Function != NULL) {
-			SelectedItem->Function(this);
-		}
+	if (HighlightedItem != nullptr) {
+		SetSelectedItem(HighlightedItem);
 	}
 
 	return OF_TRUE;
@@ -1958,6 +1951,17 @@ void Tree::ClearItems()
 	for (; cgp != END_OF_LIST(&Items); cgp = cgp_next) {
 		cgp_next = GET_NEXT(cgp);
 		delete cgp;
+	}
+}
+
+void Tree::SetSelectedItem(TreeItem *item) {
+	SelectedItem = item;
+	SelectedItem->ShowChildren = !SelectedItem->ShowChildren;
+	if (NOT_EMPTY(&SelectedItem->Children)) {
+		OnRefreshSize();	//Unfortunately
+	}
+	if (SelectedItem->Function != nullptr) {
+		SelectedItem->Function(this);
 	}
 }
 
