@@ -109,11 +109,10 @@ static bool Lab_thrust_afterburn = false;
 static int Lab_rotation_mode                   = 0;
 static float Lab_manual_rotation_speed_divisor = 100.f;
 
-#define LAB_ROTATION_MODE_NONE 0
-#define LAB_ROTATION_MODE_YAW 1
-#define LAB_ROTATION_MODE_PITCH 2
-#define LAB_ROTATION_MODE_BOTH 3
-#define LAB_ROTATION_MODE_ROLL 4
+#define LAB_ROTATION_MODE_YAW 0
+#define LAB_ROTATION_MODE_PITCH 1
+#define LAB_ROTATION_MODE_BOTH 2
+#define LAB_ROTATION_MODE_ROLL 3
 
 // Trackball_mode:
 //   1  ==  rotate	(left-mouse)
@@ -328,39 +327,37 @@ void labviewer_render_model(float frametime)
 		if (dx || dy) {
 			// Rotate the ship
 			if (Trackball_mode == 1) {
-				if (Lab_rotation_mode != LAB_ROTATION_MODE_NONE) {
-					angles rot_angle;
-					vm_extract_angles_matrix_alternate(&rot_angle, &Lab_model_orient);
+				angles rot_angle;
+				vm_extract_angles_matrix_alternate(&rot_angle, &Lab_model_orient);
 
-					if (Lab_rotation_mode == LAB_ROTATION_MODE_YAW) {
-						rot_angle.h += dx / Lab_manual_rotation_speed_divisor;
-					}
-					if (Lab_rotation_mode == LAB_ROTATION_MODE_PITCH) {
-						rot_angle.p += dy / Lab_manual_rotation_speed_divisor;
-					}
-					if (Lab_rotation_mode == LAB_ROTATION_MODE_BOTH) {
-						rot_angle.h += dx / Lab_manual_rotation_speed_divisor;
-						rot_angle.p += dy / Lab_manual_rotation_speed_divisor;
-					}
-					if (Lab_rotation_mode == LAB_ROTATION_MODE_ROLL) {
-						rot_angle.b += dx / Lab_manual_rotation_speed_divisor;
-					}
-
-					if (rot_angle.h < -PI)
-						rot_angle.h = -PI - 0.001f;
-					if (rot_angle.h > PI)
-						rot_angle.h = -PI + 0.001f;
-
-					CLAMP(rot_angle.p, -PI_2, PI_2);
-					
-					if (rot_angle.b < -PI)
-						rot_angle.b = -PI - 0.001f;
-					if (rot_angle.b > PI)
-						rot_angle.b = -PI + 0.001f;
-
-
-					vm_angles_2_matrix(&Lab_model_orient, &rot_angle);
+				if (Lab_rotation_mode == LAB_ROTATION_MODE_YAW) {
+					rot_angle.h += dx / Lab_manual_rotation_speed_divisor;
 				}
+				if (Lab_rotation_mode == LAB_ROTATION_MODE_PITCH) {
+					rot_angle.p += dy / Lab_manual_rotation_speed_divisor;
+				}
+				if (Lab_rotation_mode == LAB_ROTATION_MODE_BOTH) {
+					rot_angle.h += dx / Lab_manual_rotation_speed_divisor;
+					rot_angle.p += dy / Lab_manual_rotation_speed_divisor;
+				}
+				if (Lab_rotation_mode == LAB_ROTATION_MODE_ROLL) {
+					rot_angle.b += dx / Lab_manual_rotation_speed_divisor;
+				}
+
+				if (rot_angle.h < -PI)
+					rot_angle.h = -PI - 0.001f;
+				if (rot_angle.h > PI)
+					rot_angle.h = -PI + 0.001f;
+
+				CLAMP(rot_angle.p, -PI_2, PI_2);
+					
+				if (rot_angle.b < -PI)
+					rot_angle.b = -PI - 0.001f;
+				if (rot_angle.b > PI)
+					rot_angle.b = -PI + 0.001f;
+
+
+				vm_angles_2_matrix(&Lab_model_orient, &rot_angle);
 			}
 			// zoom in/out
 			else if (Trackball_mode == 2) {
@@ -420,8 +417,7 @@ void labviewer_render_model(float frametime)
 			ship_model_update_instance(obj);
 
 			Ships[obj->instance].team_name = Lab_team_color;
-		} else if (obj->type == OBJ_WEAPON) {
-		}
+		} 
 
 		if (Lab_render_wireframe)
 			model_render_set_wireframe_color(&Color_white);
@@ -469,8 +465,6 @@ SCP_string get_rot_mode_string(int rotmode)
 		return "Manual rotation mode: Pitch";
 	case LAB_ROTATION_MODE_YAW:
 		return "Manual rotation mode: Yaw";
-	case LAB_ROTATION_MODE_NONE:
-		return "Manual rotation mode: Disabled";
 	case LAB_ROTATION_MODE_ROLL:
 		return "Manual rotation mode: Roll";
 	default:
@@ -2304,7 +2298,7 @@ void lab_do_frame(float frametime)
 
 		case KEY_R:
 			Lab_rotation_mode++;
-			if (Lab_rotation_mode == 5)
+			if (Lab_rotation_mode == 4)
 				Lab_rotation_mode = 0;
 			break;
 		case KEY_S:
