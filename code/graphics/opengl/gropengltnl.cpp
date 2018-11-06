@@ -421,6 +421,8 @@ static bool opengl_init_shadow_framebuffer(int size, GLenum color_format)
 
 	glGenTextures(1, &Shadow_map_depth_texture);
 
+	GL_state.Texture.SetActiveUnit(0);
+	GL_state.Texture.SetTarget(GL_TEXTURE_2D_ARRAY);
 	GL_state.Texture.Enable(Shadow_map_depth_texture);
 
 	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
