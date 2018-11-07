@@ -32,9 +32,9 @@
 #include "starfield/nebula.h"
 #include "starfield/starfield.h"
 #include "tracing/tracing.h"
-#include <utility>
 #include "weapon/beam.h"
 #include "weapon/weapon.h"
+#include <utility>
 
 // flags
 #define LAB_FLAG_NORMAL (0)                    // default
@@ -67,14 +67,14 @@ static Window* Lab_background_window        = nullptr;
 static Text* Lab_description_text           = nullptr;
 static TreeItem** Lab_species_nodes         = nullptr;
 
-static Tree *ship_tree = nullptr;
-static Tree *weap_tree = nullptr;
+static Tree* ship_tree = nullptr;
+static Tree* weap_tree = nullptr;
 
-//holds the beginning and ending indices of each specie/type of ship/weapon
+// holds the beginning and ending indices of each specie/type of ship/weapon
 static SCP_vector<std::pair<TreeItem*, TreeItem*>> ship_list_endpoints;
 static SCP_vector<std::pair<TreeItem*, TreeItem*>> weap_list_endpoints;
 
-static TreeItem *Lab_last_selected_object = nullptr;
+static TreeItem* Lab_last_selected_object = nullptr;
 
 static int Lab_insignia_bitmap = -1;
 static int Lab_insignia_index  = -1;
@@ -106,13 +106,9 @@ static int anim_timer_start = 0;
 static float Lab_thrust_len      = 1.0f;
 static bool Lab_thrust_afterburn = false;
 
-static int Lab_rotation_mode                   = 0;
+enum class Lab_rotation_modes { Both, Yaw, Pitch, Roll };
+static Lab_rotation_modes Lab_rotation_mode    = Lab_rotation_modes::Both;
 static float Lab_manual_rotation_speed_divisor = 100.f;
-
-#define LAB_ROTATION_MODE_YAW 0
-#define LAB_ROTATION_MODE_PITCH 1
-#define LAB_ROTATION_MODE_BOTH 2
-#define LAB_ROTATION_MODE_ROLL 3
 
 // Trackball_mode:
 //   1  ==  rotate	(left-mouse)
@@ -126,9 +122,7 @@ SCP_string Lab_team_color = "<none>";
 camid Lab_cam;
 float lab_cam_distance = 100.0f;
 float lab_cam_phi      = 0;
-// 1.24f; // Values chosen to approximate the initial rotation used previously
-float lab_cam_theta = 0;
-// 2.25f;
+float lab_cam_theta	   = 0;
 bool Lab_render_wireframe      = false;
 bool Lab_render_without_light  = false;
 bool Lab_render_show_thrusters = false;
@@ -330,32 +324,31 @@ void labviewer_render_model(float frametime)
 				angles rot_angle;
 				vm_extract_angles_matrix_alternate(&rot_angle, &Lab_model_orient);
 
-				if (Lab_rotation_mode == LAB_ROTATION_MODE_YAW) {
+				if (Lab_rotation_mode == Lab_rotation_modes::Yaw) {
 					rot_angle.h += dx / Lab_manual_rotation_speed_divisor;
 				}
-				if (Lab_rotation_mode == LAB_ROTATION_MODE_PITCH) {
+				if (Lab_rotation_mode == Lab_rotation_modes::Pitch) {
 					rot_angle.p += dy / Lab_manual_rotation_speed_divisor;
 				}
-				if (Lab_rotation_mode == LAB_ROTATION_MODE_BOTH) {
+				if (Lab_rotation_mode == Lab_rotation_modes::Both) {
 					rot_angle.h += dx / Lab_manual_rotation_speed_divisor;
 					rot_angle.p += dy / Lab_manual_rotation_speed_divisor;
 				}
-				if (Lab_rotation_mode == LAB_ROTATION_MODE_ROLL) {
+				if (Lab_rotation_mode == Lab_rotation_modes::Roll) {
 					rot_angle.b += dx / Lab_manual_rotation_speed_divisor;
 				}
 
 				if (rot_angle.h < -PI)
-					rot_angle.h = -PI - 0.001f;
+					rot_angle.h = PI - 0.001f;
 				if (rot_angle.h > PI)
 					rot_angle.h = -PI + 0.001f;
 
 				CLAMP(rot_angle.p, -PI_2, PI_2);
-					
+
 				if (rot_angle.b < -PI)
-					rot_angle.b = -PI - 0.001f;
+					rot_angle.b = PI - 0.001f;
 				if (rot_angle.b > PI)
 					rot_angle.b = -PI + 0.001f;
-
 
 				vm_angles_2_matrix(&Lab_model_orient, &rot_angle);
 			}
@@ -417,7 +410,7 @@ void labviewer_render_model(float frametime)
 			ship_model_update_instance(obj);
 
 			Ships[obj->instance].team_name = Lab_team_color;
-		} 
+		}
 
 		if (Lab_render_wireframe)
 			model_render_set_wireframe_color(&Color_white);
@@ -456,16 +449,16 @@ void labviewer_render_model(float frametime)
 	}
 }
 
-SCP_string get_rot_mode_string(int rotmode)
+SCP_string get_rot_mode_string(Lab_rotation_modes rotmode)
 {
 	switch (rotmode) {
-	case LAB_ROTATION_MODE_BOTH:
+	case Lab_rotation_modes::Both:
 		return "Manual rotation mode: Pitch and Yaw";
-	case LAB_ROTATION_MODE_PITCH:
+	case Lab_rotation_modes::Pitch:
 		return "Manual rotation mode: Pitch";
-	case LAB_ROTATION_MODE_YAW:
+	case Lab_rotation_modes::Yaw:
 		return "Manual rotation mode: Yaw";
-	case LAB_ROTATION_MODE_ROLL:
+	case Lab_rotation_modes::Roll:
 		return "Manual rotation mode: Roll";
 	default:
 		return "HOW DID THIS HAPPEN? Ask a coder!";
@@ -1422,7 +1415,7 @@ void labviewer_make_ship_window(Button* /*caller*/)
 		Lab_species_nodes = nullptr;
 	}
 
-	//in case the window had already been opened
+	// in case the window had already been opened
 	ship_list_endpoints.clear();
 	for (int i = 0; i < (int)Species_info.size(); i++) {
 		ship_list_endpoints.emplace_back(std::make_pair(nullptr, nullptr));
@@ -1446,12 +1439,13 @@ void labviewer_make_ship_window(Button* /*caller*/)
 			stip = Lab_species_nodes[Species_info.size()];
 		}
 
-		TreeItem *new_ship_item = ship_tree->AddItem(stip, it->name, (int)std::distance(Ship_info.cbegin(), it), false, labviewer_change_ship);
+		TreeItem* new_ship_item = ship_tree->AddItem(stip, it->name, (int)std::distance(Ship_info.cbegin(), it), false,
+		                                             labviewer_change_ship);
 		if (ship_list_endpoints[it->species].first == nullptr) {
 			ship_list_endpoints[it->species].first = new_ship_item;
 		}
 		ship_list_endpoints[it->species].second = new_ship_item;
-		//cmp->AddItem(ctip, "Debris", 99, false, labviewer_change_ship_lod);
+		// cmp->AddItem(ctip, "Debris", 99, false, labviewer_change_ship_lod);
 	}
 
 	// if any nodes are empty, just add a single "<none>" entry so we know that species doesn't have anything yet
@@ -1497,7 +1491,7 @@ void labviewer_change_ship_lod(Tree* caller)
 		return;
 	}
 	int ship_index = caller->GetSelectedItem()->GetData();
-	
+
 	Assert(ship_index >= 0);
 
 	if (Lab_selected_object == -1) {
@@ -1521,8 +1515,8 @@ void labviewer_change_ship_lod(Tree* caller)
 	Lab_last_selected_ship = Lab_selected_index;
 	labviewer_change_model(Ship_info[ship_index].pof_file, ship_index, ship_index);
 
-	//update the displayed POF filename
-	//moved out of labviewer_change_model which doesn't necessarily do much of anything after the first ship is loaded
+	// update the displayed POF filename
+	// moved out of labviewer_change_model which doesn't necessarily do much of anything after the first ship is loaded
 	if (Lab_model_num >= 0) {
 		strcpy_s(Lab_model_filename, Ship_info[ship_index].pof_file);
 	} else {
@@ -1543,7 +1537,7 @@ void labviewer_change_ship_lod(Tree* caller)
 
 void labviewer_change_ship(Tree* caller)
 {
-	Lab_selected_index = caller->GetSelectedItem()->GetData();
+	Lab_selected_index       = caller->GetSelectedItem()->GetData();
 	Lab_last_selected_object = caller->GetSelectedItem();
 
 	labviewer_change_ship_lod(caller);
@@ -1574,9 +1568,9 @@ void labviewer_change_weapon(Tree* caller)
 		return;
 	}
 
-	int weap_index = caller->GetSelectedItem()->GetData();
+	int weap_index           = caller->GetSelectedItem()->GetData();
 	Lab_last_selected_object = caller->GetSelectedItem();
-	
+
 	Assert(weap_index >= 0);
 
 	if (Lab_selected_object != -1)
@@ -1658,7 +1652,8 @@ void labviewer_make_weap_window(Button* /*caller*/)
 			stip = type_nodes[Weapon_info[i].subtype];
 		}
 
-		TreeItem *new_weap_item = weap_tree->AddItem(stip, Weapon_info[i].get_display_string(), i, false, labviewer_change_weapon);
+		TreeItem* new_weap_item =
+		    weap_tree->AddItem(stip, Weapon_info[i].get_display_string(), i, false, labviewer_change_weapon);
 
 		if (weap_list_endpoints[Weapon_info[i].subtype].first == nullptr) {
 			weap_list_endpoints[Weapon_info[i].subtype].first = new_weap_item;
@@ -1963,7 +1958,8 @@ void labviewer_make_background_window(Button* /*caller*/)
 }
 
 // ----------------------------- Lab functions ---------------------------------
-bool is_same_obj_type(int curr, int next) {
+bool is_same_obj_type(int curr, int next)
+{
 	if (Lab_mode == LAB_MODE_SHIP) {
 		if (Ship_info[curr].species == Ship_info[next].species) {
 			return true;
@@ -1980,18 +1976,18 @@ bool is_same_obj_type(int curr, int next) {
 	return false;
 }
 
-int lab_get_type_idx() {
+int lab_get_type_idx()
+{
 	if (Lab_mode == LAB_MODE_SHIP) {
-		ship_info *si = &Ship_info[Lab_last_selected_object->GetData()];
+		ship_info* si = &Ship_info[Lab_last_selected_object->GetData()];
 		for (int i = 0; i < (int)Species_info.size(); i++) {
 			species_info specie = Species_info[i];
 			if (!strncmp(specie.species_name, Species_info[si->species].species_name, NAME_LENGTH)) {
 				return i;
 			}
 		}
-	}
-	else if (Lab_mode == LAB_MODE_WEAPON) {
-		weapon_info *wi = &Weapon_info[Lab_last_selected_object->GetData()];
+	} else if (Lab_mode == LAB_MODE_WEAPON) {
+		weapon_info* wi = &Weapon_info[Lab_last_selected_object->GetData()];
 		for (int i = 0; i < Num_weapon_subtypes; i++) {
 			if (i == wi->subtype) {
 				return i;
@@ -2002,19 +1998,19 @@ int lab_get_type_idx() {
 	return -1;
 }
 
-//plieblang - scroll through entries with the arrow keys
-void lab_scroll_up() {
+// plieblang - scroll through entries with the arrow keys
+void lab_scroll_up()
+{
 	if (Lab_last_selected_object == nullptr) {
 		return;
 	}
 
-	//if we're at the beginning of the list, don't do anything
+	// if we're at the beginning of the list, don't do anything
 	if (Lab_mode == LAB_MODE_SHIP) {
 		if (Lab_last_selected_object == ship_list_endpoints[lab_get_type_idx()].first) {
 			return;
 		}
-	}
-	else if (Lab_mode == LAB_MODE_WEAPON) {
+	} else if (Lab_mode == LAB_MODE_WEAPON) {
 		if (Lab_last_selected_object == weap_list_endpoints[lab_get_type_idx()].first) {
 			return;
 		}
@@ -2024,30 +2020,29 @@ void lab_scroll_up() {
 	int prev_obj_idx = ((TreeItem*)Lab_last_selected_object->prev)->GetData();
 	do {
 		Lab_last_selected_object = (TreeItem*)Lab_last_selected_object->prev;
-		curr_obj_idx = prev_obj_idx;
-		prev_obj_idx = Lab_last_selected_object->GetData();
+		curr_obj_idx             = prev_obj_idx;
+		prev_obj_idx             = Lab_last_selected_object->GetData();
 	} while (!is_same_obj_type(curr_obj_idx, prev_obj_idx));
 
 	if (Lab_mode == LAB_MODE_SHIP) {
 		ship_tree->SetSelectedItem(Lab_last_selected_object);
-	}
-	else if (Lab_mode == LAB_MODE_WEAPON) {
+	} else if (Lab_mode == LAB_MODE_WEAPON) {
 		weap_tree->SetSelectedItem(Lab_last_selected_object);
 	}
 }
 
-void lab_scroll_down() {
+void lab_scroll_down()
+{
 	if (Lab_last_selected_object == nullptr) {
 		return;
 	}
 
-	//if we're at the end of the list, don't do anything
+	// if we're at the end of the list, don't do anything
 	if (Lab_mode == LAB_MODE_SHIP) {
 		if (Lab_last_selected_object == ship_list_endpoints[lab_get_type_idx()].second) {
 			return;
 		}
-	}
-	else if (Lab_mode == LAB_MODE_WEAPON) {
+	} else if (Lab_mode == LAB_MODE_WEAPON) {
 		if (Lab_last_selected_object == weap_list_endpoints[lab_get_type_idx()].second) {
 			return;
 		}
@@ -2057,14 +2052,13 @@ void lab_scroll_down() {
 	int next_obj_idx = ((TreeItem*)Lab_last_selected_object->next)->GetData();
 	do {
 		Lab_last_selected_object = (TreeItem*)Lab_last_selected_object->next;
-		curr_obj_idx = next_obj_idx;
-		next_obj_idx = Lab_last_selected_object->GetData();
+		curr_obj_idx             = next_obj_idx;
+		next_obj_idx             = Lab_last_selected_object->GetData();
 	} while (!is_same_obj_type(curr_obj_idx, next_obj_idx));
 
 	if (Lab_mode == LAB_MODE_SHIP) {
 		ship_tree->SetSelectedItem(Lab_last_selected_object);
-	}
-	else if (Lab_mode == LAB_MODE_WEAPON) {
+	} else if (Lab_mode == LAB_MODE_WEAPON) {
 		weap_tree->SetSelectedItem(Lab_last_selected_object);
 	}
 }
@@ -2297,9 +2291,21 @@ void lab_do_frame(float frametime)
 			break;
 
 		case KEY_R:
-			Lab_rotation_mode++;
-			if (Lab_rotation_mode == 4)
-				Lab_rotation_mode = 0;
+			switch (Lab_rotation_mode) {
+			case Lab_rotation_modes::Both:
+				Lab_rotation_mode = Lab_rotation_modes::Yaw;
+				break;
+			case Lab_rotation_modes::Yaw:
+				Lab_rotation_mode = Lab_rotation_modes::Pitch;
+				break;
+			case Lab_rotation_modes::Pitch:
+				Lab_rotation_mode = Lab_rotation_modes::Roll;
+				break;
+			case Lab_rotation_modes::Roll:
+				Lab_rotation_mode = Lab_rotation_modes::Both;
+				break;
+			}
+
 			break;
 		case KEY_S:
 			Lab_manual_rotation_speed_divisor *= 10.f;
