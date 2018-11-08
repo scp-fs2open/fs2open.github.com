@@ -1103,18 +1103,18 @@ void labviewer_make_render_options_window(Button * /*caller*/)
 
 	ambient_sldr = new Slider("Ambient Factor", 0, 128, 0, y + 2, labviewer_render_options_set_ambient_factor, Lab_render_options_window->GetWidth());
 	ambient_sldr->SetSliderValue((float)Cmdline_ambient_factor);
-	Slider* sldr = (Slider*)Lab_render_options_window->AddChild(ambient_sldr);
-	y += sldr->GetHeight() + 1;
+	Lab_render_options_window->AddChild(ambient_sldr);
+	y += ambient_sldr->GetHeight() + 1;
 
 	direct_sldr = new Slider("Direct. Lights", 0.0f, 2.0f, 0, y + 2, labviewer_render_options_set_static_light_factor, Lab_render_options_window->GetWidth());
 	direct_sldr->SetSliderValue(static_light_factor);
-	sldr = (Slider*)Lab_render_options_window->AddChild(direct_sldr);
-	y += sldr->GetHeight() + 1;
+	Lab_render_options_window->AddChild(direct_sldr);
+	y += direct_sldr->GetHeight() + 1;
 
 	bloom_sldr = new Slider("Bloom", 0, 200, 0, y + 2, labviewer_render_options_set_bloom, Lab_render_options_window->GetWidth());
 	bloom_sldr->SetSliderValue((float)Cmdline_bloom_intensity);
-	sldr = (Slider*)Lab_render_options_window->AddChild(bloom_sldr);
-	y += sldr->GetHeight() + 1;
+	Lab_render_options_window->AddChild(bloom_sldr);
+	y += bloom_sldr->GetHeight() + 1;
 
 	// start tree
 	cmp = (Tree*)Lab_render_options_window->AddChild(new Tree("Detail Options Tree", 0, y + 2, NULL, Lab_render_options_window->GetWidth()));
