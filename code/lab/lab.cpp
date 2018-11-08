@@ -176,9 +176,17 @@ void reset_view() {
 	Lab_model_orient = vmd_identity_matrix;
 
 	//reset lighting
-	ambient_sldr->SetSliderValue((float)orig_cmdline_ambient);
-	direct_sldr->SetSliderValue(orig_cmdline_direct);
-	bloom_sldr->SetSliderValue((float)orig_cmdline_bloom);
+	//if the rendering options window is close, these sliders are null
+	//we still want to be able to reset lighting in this situation though, so just set the values directly
+	if (ambient_sldr == nullptr) {
+		gr_calculate_ambient_factor(orig_cmdline_ambient);
+		static_light_factor = orig_cmdline_direct;
+		Cmdline_bloom_intensity = orig_cmdline_bloom;
+	} else {
+		ambient_sldr->SetSliderValue((float)orig_cmdline_ambient);
+		direct_sldr->SetSliderValue(orig_cmdline_direct);
+		bloom_sldr->SetSliderValue((float)orig_cmdline_bloom);
+	}
 }
 
 void labviewer_change_model(char* model_fname, int lod = 0, int sel_index = -1)
@@ -2419,13 +2427,6 @@ void lab_close()
 			Lab_weaponmodel_num[i] = -1;
 		}
 	}
-
-	delete ambient_sldr;
-	ambient_sldr = nullptr;
-	delete direct_sldr;
-	direct_sldr = nullptr;
-	delete bloom_sldr;
-	bloom_sldr = nullptr;
 
 	Lab_selected_mission = "None";
 	stars_pre_level_init(true);

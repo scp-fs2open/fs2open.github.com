@@ -2707,7 +2707,7 @@ void Slider::UpdateSlider(int x)
 
 	CLAMP(SliderScale, 0.0, 1.0f);
 
-	if ( function != NULL ) {
+	if ( function != nullptr ) {
 		function(this);
 	}
 }
@@ -2718,7 +2718,7 @@ float Slider::GetSliderValue()
 }
 
 void Slider::SetSliderValue(float raw_val) {
-	SliderScale = raw_val / Max + Min;
+	SliderScale = (raw_val - Min) / Max + Min;
 	//we don't want to actually change it here
 	UpdateSlider(-1);
 }
