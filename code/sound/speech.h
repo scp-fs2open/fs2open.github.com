@@ -31,15 +31,15 @@ SCP_vector<SCP_string> speech_enumerate_voices();
 
 // Goober5000: see, the *real* way to do stubs (avoiding the warnings)
 // is to just use #defines (c.f. NO_SOUND)
-#define speech_init() (false)
-#define speech_deinit()
-#define speech_play(text) ((text), false)
-#define speech_pause() (false)
-#define speech_resume() (false)
-#define speech_stop() (false)
-#define speech_set_volume(volume) ((volume), false)
-#define speech_set_voice(voice) ((voice), false)
-#define speech_is_speaking() (false)
+inline bool speech_init() { return false; }
+inline void speech_deinit() {}
+inline bool speech_play(const char* /*text*/) { return false; }
+inline bool speech_pause() { return false; }
+inline bool speech_resume() { return false; }
+inline bool speech_stop() { return false; }
+inline bool speech_set_volume(unsigned short /*volume*/) { return false; }
+inline bool speech_set_voice(int /*voice*/) { return false; }
+inline bool speech_is_speaking() { return false; }
 
 inline SCP_vector<SCP_string> speech_enumerate_voices() {
 	return SCP_vector<SCP_string>();
