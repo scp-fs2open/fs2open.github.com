@@ -211,7 +211,6 @@ Flag exe_params[] =
 	{ "-no_3d_sound",		"Use only 2D/stereo for sound effects",		true,	0,					EASY_DEFAULT,		"Troubleshoot",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-no_3d_sound", },
 	{ "-mipmap",			"Enable mipmapping",						true,	0,					EASY_DEFAULT_MEM,	"Troubleshoot",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-mipmap", },
 	{ "-use_gldrawelements","Don't use glDrawRangeElements",			true,	0,					EASY_DEFAULT,		"Troubleshoot",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-use_gldrawelements", },
-	{ "-old_collision",		"Use old collision detection system",		true,	EASY_DEFAULT,		EASY_ALL_ON,		"Troubleshoot",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-old_collision", },
 	{ "-gl_finish",			"Fix input lag on some ATI+Linux systems",	true,	0,					EASY_DEFAULT,		"Troubleshoot", "http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-gl_finish", },
 	{ "-no_geo_effects",	"Disable geometry shader for effects",		true,	0,					EASY_DEFAULT,		"Troubleshoot", "", },
 	{ "-set_cpu_affinity",	"Sets processor affinity to config value",	true,	0,					EASY_DEFAULT,		"Troubleshoot", "", },
@@ -435,7 +434,6 @@ cmdline_parm atiswap_arg("-ati_swap", NULL, AT_NONE);        // Cmdline_atiswap 
 cmdline_parm no3dsound_arg("-no_3d_sound", NULL, AT_NONE);		// Cmdline_no_3d_sound - Disable use of full 3D sounds
 cmdline_parm no_drawrangeelements("-use_gldrawelements", NULL, AT_NONE); // Cmdline_drawelements -- Uses glDrawElements instead of glDrawRangeElements
 cmdline_parm keyboard_layout("-keyboard_layout", "Specify keyboard layout (qwertz or azerty)", AT_STRING);
-cmdline_parm old_collision_system("-old_collision", NULL, AT_NONE); // Cmdline_old_collision_sys
 cmdline_parm gl_finish ("-gl_finish", NULL, AT_NONE);
 cmdline_parm no_geo_sdr_effects("-no_geo_effects", NULL, AT_NONE);
 cmdline_parm set_cpu_affinity("-set_cpu_affinity", NULL, AT_NONE);
@@ -492,7 +490,6 @@ cmdline_parm debug_window_arg("-debug_window", NULL, AT_NONE);	// Cmdline_debug_
 
 
 char *Cmdline_start_mission = NULL;
-int Cmdline_old_collision_sys = 0;
 int Cmdline_dis_collisions = 0;
 int Cmdline_dis_weapons = 0;
 bool Cmdline_output_sexp_info = false;
@@ -1957,9 +1954,6 @@ bool SetCmdlineParams()
 	if ( ballistic_gauge.found() ) {
 		Cmdline_ballistic_gauge = 1;
 	}
-
-	if(old_collision_system.found())
-		Cmdline_old_collision_sys = 1;
 
 	if(dis_collisions.found())
 		Cmdline_dis_collisions = 1;

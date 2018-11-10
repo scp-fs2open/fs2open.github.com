@@ -7004,11 +7004,7 @@ void sexp_set_object_position(int n)
 	// Goober5000 - only if we have a valid object (don't do this for departed ships, waypoints, etc.)
 	if (oswpt.type == OSWPT_TYPE_SHIP || oswpt.type == OSWPT_TYPE_WING)
 	{
-		if ( Cmdline_old_collision_sys ) {
-			obj_all_collisions_retime();
-		} else {
-			obj_collide_retime_cached_pairs();
-		}
+		obj_collide_retime_cached_pairs();
 	}
 
 	// if this is a nebula mission and a player is being moved far enough,
@@ -7110,11 +7106,7 @@ void sexp_set_object_orientation(int n)
 	// Goober5000 - only if we have a valid object (don't do this for departed ships, waypoints, etc.)
 	if (oswpt.type == OSWPT_TYPE_SHIP || oswpt.type == OSWPT_TYPE_WING)
 	{
-		if ( Cmdline_old_collision_sys ) {
-			obj_all_collisions_retime();
-		} else {
-			obj_collide_retime_cached_pairs();
-		}
+		obj_collide_retime_cached_pairs();
 	}
 
 	switch (oswpt.type)

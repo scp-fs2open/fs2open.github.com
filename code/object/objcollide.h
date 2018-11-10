@@ -62,25 +62,16 @@ typedef struct obj_pair	{
 
 #define COLLISION_OF(a,b) (((a)<<8)|(b))
 
-#define COLLISION_TYPE_NONE	0	
-#define COLLISION_TYPE_OLD		1	// checks all n objects with each other each frame
-#define COLLISION_TYPE_NEW		2	// keeps track of collision pairs.  throws out collisions that won't happen.
-
-extern int collision_type;
-
 #define SUBMODEL_NO_ROT_HIT	0
 #define SUBMODEL_ROT_HIT		1
 void set_hit_struct_info(collision_info_struct *hit, mc_info *mc, int submodel_rot_hit);
 
-void obj_pairs_close();
-void obj_reset_pairs();
 void obj_add_pair( object *A, object *B, int check_time = -1, int add_to_end = 0 );
 
 void obj_add_collider(int obj_index);
 void obj_remove_collider(int obj_index);
 void obj_reset_colliders();
 
-void obj_check_all_collisions();
 void obj_sort_and_collide();
 void obj_quicksort_colliders(SCP_vector<int> *list, int left, int right, int axis);
 void obj_find_overlap_colliders(SCP_vector<int> *overlap_list_out, SCP_vector<int> *list, int axis, bool collide);
@@ -88,7 +79,6 @@ float obj_get_collider_endpoint(int obj_num, int axis, bool min);
 void obj_collide_pair(object *A, object *B);
 
 // retimes all collision pairs to be checked (in 25ms by default)
-void obj_all_collisions_retime(int checkdly=25);
 void obj_collide_retime_cached_pairs(int checkdly=25);
 
 // Returns TRUE if the weapon will never hit the other object.

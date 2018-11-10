@@ -6923,11 +6923,7 @@ void game_shutdown(void)
 	// Free SEXP resources
 	sexp_shutdown();
 
-	if ( Cmdline_old_collision_sys ) {
-		obj_pairs_close();		// free memory from object collision pairs
-	} else {
-		obj_reset_colliders();
-	}
+	obj_reset_colliders();
 	stars_close();			// clean out anything used by stars code
 
 	// the menu close functions will unload the bitmaps if they were displayed during the game
