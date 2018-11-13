@@ -2113,9 +2113,11 @@ void lab_init()
 
 	// the default insignia bitmap
 	Lab_insignia_index = 0;
-	Assert((Lab_insignia_index < Num_pilot_squad_images));
+	if (Num_pilot_squad_images > 0) {
+		Assert((Lab_insignia_index < Num_pilot_squad_images));
 
-	Lab_insignia_bitmap = bm_load_duplicate(Pilot_squad_image_names[Lab_insignia_index]);
+		Lab_insignia_bitmap = bm_load_duplicate(Pilot_squad_image_names[Lab_insignia_index]);
+	}
 
 	// enable post-processing by default in the lab
 	PostProcessing_override = false;
@@ -2201,7 +2203,7 @@ void lab_do_frame(float frametime)
 		switch (key) {
 			// switch between the current insignia bitmap to render with
 		case KEY_DIVIDE: {
-			if (!(Lab_viewer_flags & LAB_FLAG_SHOW_INSIGNIA)) {
+			if (!(Lab_viewer_flags & LAB_FLAG_SHOW_INSIGNIA) || (Num_pilot_squad_images == 0)) {
 				break;
 			}
 
