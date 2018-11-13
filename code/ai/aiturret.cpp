@@ -1290,7 +1290,9 @@ void ship_get_global_turret_gun_info(object *objp, ship_subsys *ssp, vec3d *gpos
 		model_instance_find_world_point(&tmp_pos, &avg, Ships[objp->instance].model_instance_num, tp->turret_gun_sobj, &objp->orient, &objp->pos);
 
 		if (targetp == nullptr) {
-            Assertion(ssp->turret_enemy_objnum >= 0, "The turret enemy object number %d for %s on ship number %d is invalid.", ssp->turret_enemy_objnum, ssp->sub_name, Objects[ssp->parent_objnum].instance);
+			ship* shipp = &Ships[Objects[ssp->parent_objnum].instance];
+            Assertion(ssp->turret_enemy_objnum >= 0, "The turret enemy object number %d for %s on ship name %s is invalid.", ssp->turret_enemy_objnum, ssp->sub_name, 
+																								(shipp->has_display_name()) ? shipp->display_name.c_str() : shipp->ship_name);
             object *lep = &Objects[ssp->turret_enemy_objnum];
 
 			int best_weapon_tidx = turret_select_best_weapon(ssp, lep);
@@ -1301,9 +1303,9 @@ void ship_get_global_turret_gun_info(object *objp, ship_subsys *ssp, vec3d *gpos
 
 			weapon_info *wip = get_turret_weapon_wip(&ssp->weapons, best_weapon_tidx);
 
-			float weapon_system_strength = ship_get_subsystem_strength(&Ships[Objects[ssp->parent_objnum].instance], SUBSYSTEM_WEAPONS);
+			float weapon_system_strength = ship_get_subsystem_strength(shipp, SUBSYSTEM_WEAPONS);
 
-            turret_ai_update_aim(&Ai_info[Ships[Objects[ssp->parent_objnum].instance].ai_index], &Objects[ssp->turret_enemy_objnum], ssp);
+            turret_ai_update_aim(&Ai_info[shipp->ai_index], &Objects[ssp->turret_enemy_objnum], ssp);
 
 			if ((ssp->targeted_subsys != nullptr) && !(ssp->flags[Ship::Subsystem_Flags::No_SS_targeting])) {
 				vm_vec_unrotate(&enemy_point, &ssp->targeted_subsys->system_info->pnt, &Objects[ssp->turret_enemy_objnum].orient);
