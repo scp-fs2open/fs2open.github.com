@@ -75,6 +75,11 @@ static Slider* ambient_sldr = nullptr;
 static Slider* direct_sldr = nullptr;
 static Slider* bloom_sldr = nullptr;
 
+//these are here unfortunately because otherwise there's no way to reset them
+static Slider *ambient_sldr = nullptr;
+static Slider *direct_sldr = nullptr;
+static Slider *bloom_sldr = nullptr;
+
 //holds the beginning and ending indices of each specie/type of ship/weapon
 static SCP_vector<std::pair<TreeItem*, TreeItem*>> ship_list_endpoints;
 static SCP_vector<std::pair<TreeItem*, TreeItem*>> weap_list_endpoints;
@@ -176,7 +181,7 @@ void reset_view() {
 	Lab_model_orient = vmd_identity_matrix;
 
 	//reset lighting
-	//if the rendering options window is closed, these sliders are null
+	//if the rendering options window is close, these sliders are null
 	//we still want to be able to reset lighting in this situation though, so just set the values directly
 	if (ambient_sldr == nullptr) {
 		gr_calculate_ambient_factor(orig_cmdline_ambient);
