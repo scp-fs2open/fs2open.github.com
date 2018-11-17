@@ -176,7 +176,7 @@ void reset_view() {
 	Lab_model_orient = vmd_identity_matrix;
 
 	//reset lighting
-	//if the rendering options window is close, these sliders are null
+	//if the rendering options window is closed, these sliders are null
 	//we still want to be able to reset lighting in this situation though, so just set the values directly
 	if (ambient_sldr == nullptr) {
 		gr_calculate_ambient_factor(orig_cmdline_ambient);
@@ -1085,7 +1085,12 @@ void labviewer_change_detail_texture(Tree* caller)
 	Detail.hardware_textures = slider_pos;
 }
 
-void labviewer_close_render_options_window(GUIObject* /*caller*/) { Lab_render_options_window = nullptr; }
+void labviewer_close_render_options_window(GUIObject* /*caller*/) {
+	ambient_sldr = nullptr;
+	bloom_sldr = nullptr;
+	direct_sldr = nullptr;
+	Lab_render_options_window = nullptr;
+}
 
 #define ADD_RENDER_FLAG(text, flag, var)                                                                               \
 	{                                                                                                                  \
