@@ -14,7 +14,7 @@ $NightlyConfigurations = @(
 		PackageType="Win64";
 		Toolset="v140_xp";
 		SimdType="SSE2";
-		QtDir="C:\Qt\5.9.5\msvc2015_64";
+		QtDir="C:\Qt\5.9\msvc2015_64";
 		SourcePackage=$false;
 	},
 	[BuildConfig]@{ 
@@ -22,7 +22,7 @@ $NightlyConfigurations = @(
 		PackageType="Win32";
 		Toolset="v140_xp";
 		SimdType="SSE2";
-		QtDir="C:\Qt\5.9.5\msvc2015";
+		QtDir="C:\Qt\5.9\msvc2015";
 		SourcePackage=$false;
 	}
 )
@@ -32,7 +32,7 @@ $ReleaseConfigurations = @(
 		PackageType="Win32";
 		Toolset="v140_xp";
 		SimdType="SSE2";
-		QtDir="C:\Qt\5.9.5\msvc2015";
+		QtDir="C:\Qt\5.9\msvc2015";
 		SourcePackage=$true;
 	}
 	[BuildConfig]@{
@@ -40,7 +40,7 @@ $ReleaseConfigurations = @(
 		PackageType="Win32-AVX";
 		Toolset="v140_xp";
 		SimdType="AVX";
-		QtDir="C:\Qt\5.9.5\msvc2015";
+		QtDir="C:\Qt\5.9\msvc2015";
 		SourcePackage=$false;
 	}
 	[BuildConfig]@{
@@ -48,7 +48,7 @@ $ReleaseConfigurations = @(
 		PackageType="Win64";
 		Toolset="v140_xp";
 		SimdType="SSE2";
-		QtDir="C:\Qt\5.9.5\msvc2015_64";
+		QtDir="C:\Qt\5.9\msvc2015_64";
 		SourcePackage=$false;
 	}
 	[BuildConfig]@{
@@ -56,7 +56,7 @@ $ReleaseConfigurations = @(
 		PackageType="Win64-AVX";
 		Toolset="v140_xp";
 		SimdType="AVX";
-		QtDir="C:\Qt\5.9.5\msvc2015_64";
+		QtDir="C:\Qt\5.9\msvc2015_64";
 		SourcePackage=$false;
 	}
 )
