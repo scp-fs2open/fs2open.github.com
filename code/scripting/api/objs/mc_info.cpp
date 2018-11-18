@@ -8,41 +8,15 @@
 namespace scripting {
 namespace api {
 
-mc_info_h::mc_info_h(mc_info* val) : info(val) {}
+mc_info_h::mc_info_h(const mc_info& val) : info(val), valid(true) {}
 
-mc_info_h::mc_info_h() : info(NULL) {}
+mc_info_h::mc_info_h() = default;
 
-mc_info* mc_info_h::Get() {
-	return info;
-}
-void mc_info_h::deleteInfo() {
-	if (!this->IsValid())
-		return;
-
-	delete info;
-
-	info = NULL;
-}
-
-bool mc_info_h::IsValid() {
-	return info != NULL;
-}
+mc_info* mc_info_h::Get() { return &info; }
+bool mc_info_h::IsValid() { return valid; }
 
 //**********HANDLE: Collision info
 ADE_OBJ(l_ColInfo, mc_info_h, "collision info", "Information about a collision");
-
-ADE_FUNC(__gc, l_ColInfo, NULL, "Removes the allocated reference of this handle", NULL, NULL)
-{
-	mc_info_h* info;
-
-	if(!ade_get_args(L, "o", l_ColInfo.GetPtr(&info)))
-		return ADE_RETURN_NIL;
-
-	if (info->IsValid())
-		info->deleteInfo();
-
-	return ADE_RETURN_NIL;
-}
 
 ADE_VIRTVAR(Model, l_ColInfo, "model", "The model this collision info is about", "model", "The model")
 {

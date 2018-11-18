@@ -49,7 +49,24 @@ void pushValue(lua_State* luaState, const bool& value);
 
 void pushValue(lua_State* luaState, const lua_CFunction& value);
 
-void pushValue(lua_State* L, const scripting::ade_odata& value);
+template<typename T>
+void pushValue(lua_State* L, scripting::ade_odata_setter<T>&& value) {
+	using namespace scripting;
+
+	//WMC - char must be 1 byte, foo.
+	static_assert(sizeof(char) == 1, "char must be 1 byte!");
+	//WMC - step by step
+
+	//Create new LUA object and get handle
+	auto newod = (char*)lua_newuserdata(L, sizeof(T));
+	//Create or get object metatable
+	luaL_getmetatable(L, ::scripting::internal::getTableEntry(value.idx).Name);
+	//Set the metatable for the object
+	lua_setmetatable(L, -2);
+
+	//Copy the actual object data to the Lua object
+	new(newod) T(std::move(value.value));
+}
 
 /**
  * @brief Convenience function for string literals
@@ -78,7 +95,47 @@ bool popValue(lua_State* luaState, bool& target, int stackposition = -1, bool re
 
 bool popValue(lua_State* luaState, lua_CFunction& target, int stackposition = -1, bool remove = true);
 
-bool popValue(lua_State* L, scripting::ade_odata& od, int stackposition = -1, bool remove = true);
+namespace internal {
+bool ade_odata_helper(lua_State* L, int stackposition, size_t idx);
+}
+
+template <typename T>
+bool popValue(lua_State* L, scripting::ade_odata_getter<T>&& od, int stackposition = -1, bool remove = true)
+{
+	// Use the helper to reduce the amount of code here
+	if (!internal::ade_odata_helper(L, stackposition, od.idx)) {
+		return false;
+	}
+	auto lua_ptr = lua_touserdata(L, stackposition);
+
+	// Copy the value over by using the standard copy constructor
+	*od.value_ptr = *reinterpret_cast<T*>(lua_ptr);
+
+	if (remove) {
+		lua_remove(L, stackposition);
+	}
+
+	return true;
+}
+
+template <typename T>
+bool popValue(lua_State* L, scripting::ade_odata_ptr_getter<T>&& od, int stackposition = -1, bool remove = true)
+{
+	// Use the helper to reduce the amount of code here
+	if (!internal::ade_odata_helper(L, stackposition, od.idx)) {
+		return false;
+	}
+	auto lua_ptr = lua_touserdata(L, stackposition);
+
+	// Only write the pointer value to the output pointer
+	*od.value_ptr = reinterpret_cast<T*>(lua_ptr);
+
+	if (remove) {
+		lua_remove(L, stackposition);
+	}
+
+	return true;
+}
 
 }
 }

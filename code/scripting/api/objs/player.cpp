@@ -22,26 +22,21 @@ player_h::player_h(const player& plr)
 }
 bool player_h::isValid() const { return _plr != nullptr; }
 player* player_h::get() { return _plr; }
-void player_h::cleanup()
+player_h::~player_h()
 {
 	delete _plr;
 	_plr = nullptr;
+}
+player_h::player_h(player_h&& other) noexcept { *this = std::move(other); }
+player_h& player_h::operator=(player_h&& other) noexcept
+{
+	std::swap(_plr, other._plr);
+	return *this;
 }
 
 //**********HANDLE: Player
 ADE_OBJ(l_Player, player_h, "player", "Player handle");
 
-ADE_FUNC(__gc, l_Player, nullptr, "Deletes the underlying resources", "nothing", "nothing") {
-	player_h* plr;
-	if (!ade_get_args(L, "o", l_Player.GetPtr(&plr)))
-		return ADE_RETURN_NIL;
-
-	if (!plr->isValid())
-		return ADE_RETURN_NIL;
-
-	plr->cleanup();
-	return ADE_RETURN_NIL;
-}
 
 ADE_VIRTVAR(Stats, l_Player, "scoring_stats stats", "The scoring stats of this player (read-only)", "scoring_stats", "The player stats or invalid handle") {
 	player_h* plr;

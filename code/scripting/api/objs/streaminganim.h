@@ -14,6 +14,13 @@ class streaminganim_h {
 
 	bool IsValid();
 	explicit streaminganim_h (const char* filename);
+	~streaminganim_h();
+
+	streaminganim_h(const streaminganim_h&) = delete;
+	streaminganim_h& operator=(const streaminganim_h&) = delete;
+
+	streaminganim_h(streaminganim_h&&) noexcept;
+	streaminganim_h& operator=(streaminganim_h&&) noexcept;
 };
 
 DECLARE_ADE_OBJ(l_streaminganim, streaminganim_h);

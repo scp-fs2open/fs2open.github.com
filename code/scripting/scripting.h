@@ -209,7 +209,7 @@ public:
 	//void MoveData(script_state &in);
 
 	template<typename T>
-	void SetHookVar(const char *name, char format, T value);
+	void SetHookVar(const char *name, char format, T&& value);
 	void SetHookObject(const char *name, object *objp);
 	void SetHookObjects(int num, ...);
 	void RemHookVar(const char *name);
@@ -237,7 +237,7 @@ public:
 };
 
 template<typename T>
-void script_state::SetHookVar(const char *name, char format, T value)
+void script_state::SetHookVar(const char *name, char format, T&& value)
 {
 	if(format == '\0')
 		return;
@@ -250,7 +250,7 @@ void script_state::SetHookVar(const char *name, char format, T value)
 		{
 			int amt_ldx = lua_gettop(LuaState);
 			lua_pushstring(LuaState, name);
-			scripting::ade_set_args(LuaState, fmt, value);
+			scripting::ade_set_args(LuaState, fmt, std::forward<T>(value));
 			//--------------------
 			//WMC - This was a separate function
 			//lua_set_arg(LuaState, format, data);

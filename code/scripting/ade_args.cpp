@@ -75,25 +75,6 @@ bool get_single_arg(lua_State* L, const get_args_state& state, char fmt, const c
 	}
 	return true;
 }
-bool get_single_arg(lua_State* L, const get_args_state& state, char fmt, ade_odata od)
-{
-	Assertion(fmt == 'o', "Invalid character '%c' for object type!", fmt);
-
-	if (lua_isuserdata(L, state.nargs)) {
-		// Use the helper function
-		if (!luacpp::convert::popValue(L, od, state.nargs, false)) {
-			return false;
-		}
-	} else if (lua_isnil(L, state.nargs) && state.optional_args) {
-		// WMC - Modder has chosen to ignore this argument
-	} else {
-		LuaError(L, "%s: Argument %d is an invalid type '%s'; type '%s' expected", state.funcname, state.nargs,
-		         ade_get_type_string(L, state.nargs), internal::getTableEntry(od.idx).GetName());
-		return false;
-	}
-
-	return true;
-}
 bool get_single_arg(lua_State* L, const get_args_state& state, char fmt, luacpp::LuaTable* t)
 {
 	Assertion(fmt == 't', "Invalid character '%c' for table type!", fmt);
@@ -126,12 +107,6 @@ void set_single_arg(lua_State* L, char fmt, const char* s)
 	Assertion(fmt == 's', "Invalid format character '%c' for string type!", fmt);
 	// WMC - Isn't working with HookVar for some strange reason
 	lua_pushstring(L, s);
-}
-void set_single_arg(lua_State* L, char fmt, ade_odata od)
-{
-	Assertion(fmt == 'o', "Invalid format character '%c' for object type!", fmt);
-	// Use the common helper method
-	luacpp::convert::pushValue(L, od);
 }
 void set_single_arg(lua_State*, char fmt, luacpp::LuaTable* table)
 {
