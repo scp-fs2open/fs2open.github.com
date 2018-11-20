@@ -91,6 +91,9 @@ int dock_find_dockpoint_used_by_object(object *objp, object *other_objp);
 // calculate the local center of all docked objects (returned in dest)
 void dock_calc_docked_actual_center(vec3d *dest, object *objp);
 
+// calculate the local mins and maxs of all docked objects
+void dock_calc_docked_extents(vec3d *mins, vec3d *maxs, object *objp);
+
 // calculate the center of mass of all docked objects (returned in dest)
 // currently the game assumes the center of mass is the center of an object; this will need to
 // be fixed eventually (though this function does weight the object masses properly)

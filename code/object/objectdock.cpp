@@ -22,7 +22,7 @@ void dock_evaluate_tree(object *objp, dock_function_info *infop, void (*function
 void dock_move_docked_children_tree(object *objp, object *parent_objp);
 void dock_count_total_docked_objects_helper(object *objp, dock_function_info *infop);
 void dock_check_find_docked_object_helper(object *objp, dock_function_info *infop);
-void dock_calc_docked_center_helper(object *objp, dock_function_info *infop);
+void dock_calc_docked_mins_maxs_helper(object *objp, dock_function_info *infop);
 void dock_calc_docked_center_of_mass_helper(object *objp, dock_function_info *infop);
 void dock_calc_total_docked_mass_helper(object *objp, dock_function_info *infop);
 void dock_calc_max_cross_sectional_radius_squared_perpendicular_to_line_helper(object *objp, dock_function_info *infop);
@@ -148,11 +148,30 @@ int dock_find_dockpoint_used_by_object(object *objp, object *other_objp)
  */
 void dock_calc_docked_actual_center(vec3d *dest, object *objp)
 {
-	Assert(dest != NULL);
-	Assert(objp != NULL);
+	Assert(dest != nullptr);
+	Assert(objp != nullptr);
 
-	vec3d overall_mins(vmd_zero_vector);
-	vec3d overall_maxs(vmd_zero_vector);
+	vec3d overall_mins, overall_maxs;
+	dock_calc_docked_extents(&overall_mins, &overall_maxs, objp);
+
+	// c.f. ship_class_get_actual_center() in ship.cpp
+	dest->xyz.x = (overall_maxs.xyz.x + overall_mins.xyz.x) * 0.5f;
+	dest->xyz.y = (overall_maxs.xyz.y + overall_mins.xyz.y) * 0.5f;
+	dest->xyz.z = (overall_maxs.xyz.z + overall_mins.xyz.z) * 0.5f;
+}
+
+/**
+* Get the mins and maxs of the entire assembly of docked ship models.
+* Note, these are LOCAL coordinates in relation to objp, not world coordinates.
+*/
+void dock_calc_docked_extents(vec3d *mins, vec3d *maxs, object *objp)
+{
+	Assert(mins != nullptr);
+	Assert(maxs != nullptr);
+	Assert(objp != nullptr);
+
+	*mins = vmd_zero_vector;
+	*maxs = vmd_zero_vector;
 
 	// Let's calculate all mins/maxes in relation to the orientation of the main object
 	// (which is expected to be the dock leader, but this technically isn't required).
@@ -160,16 +179,11 @@ void dock_calc_docked_actual_center(vec3d *dest, object *objp)
 	// yield a much better fit of our docked bounding box.
 
 	dock_function_info dfi;
-	dfi.parameter_variables.objp_value = objp;				// the reference object for our bounding box orientation
-	dfi.maintained_variables.vecp_value = &overall_mins;	// mins
-	dfi.maintained_variables.vecp_value2 = &overall_maxs;	// maxs
+	dfi.parameter_variables.objp_value = objp;		// the reference object for our bounding box orientation
+	dfi.maintained_variables.vecp_value = mins;		// mins
+	dfi.maintained_variables.vecp_value2 = maxs;	// maxs
 
-	dock_evaluate_all_docked_objects(objp, &dfi, dock_calc_docked_center_helper);
-
-	// c.f. ship_class_get_actual_center() in ship.cpp
-	dest->xyz.x = (overall_maxs.xyz.x + overall_mins.xyz.x) * 0.5f;
-	dest->xyz.y = (overall_maxs.xyz.y + overall_mins.xyz.y) * 0.5f;
-	dest->xyz.z = (overall_maxs.xyz.z + overall_mins.xyz.z) * 0.5f;
+	dock_evaluate_all_docked_objects(objp, &dfi, dock_calc_docked_mins_maxs_helper);
 }
 
 void dock_calc_docked_center_of_mass(vec3d *dest, object *objp)
@@ -506,7 +520,7 @@ void dock_check_find_docked_object_helper(object *objp, dock_function_info *info
 	}
 }
 
-void dock_calc_docked_center_helper(object *objp, dock_function_info *infop)
+void dock_calc_docked_mins_maxs_helper(object *objp, dock_function_info *infop)
 {
 	polymodel *pm;
 	vec3d parent_relative_mins, parent_relative_maxs;
