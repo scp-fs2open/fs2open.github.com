@@ -603,7 +603,7 @@ static void shipfx_actually_warpout(int shipnum)
 
 void WE_Default::compute_warpout_stuff(float *warp_time, vec3d *warp_pos)
 {
-	float warp_dist, dist_to_plane, ship_move_dist;
+	float warp_dist(0.0f), dist_to_plane, ship_move_dist;
 	vec3d facing_normal, vec_to_knossos, center_pos;
 
 	// find world position of the center of the ship assembly
