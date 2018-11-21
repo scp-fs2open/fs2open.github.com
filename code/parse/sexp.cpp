@@ -6989,6 +6989,8 @@ void sexp_set_object_position(int n)
 {
 	vec3d target_vec, orig_leader_vec;
 	object_ship_wing_point_team oswpt;
+	bool something_collides = false;
+	extern neb2_detail *Nd;
 
 	sexp_get_object_ship_wing_point_team(&oswpt, CTEXT(n));
 	n = CDR(n);
@@ -7000,31 +7002,17 @@ void sexp_set_object_position(int n)
 	target_vec.xyz.z = i2fl(eval_num(n));
 	n = CDR(n);
 
-	// retime all collision checks so they're performed
-	// Goober5000 - only if we have a valid object (don't do this for departed ships, waypoints, etc.)
-	if (oswpt.type == OSWPT_TYPE_SHIP || oswpt.type == OSWPT_TYPE_WING)
-	{
-		obj_collide_retime_cached_pairs();
-	}
-
-	// if this is a nebula mission and a player is being moved far enough,
-	// regenerate the nebula
-	extern neb2_detail *Nd;
-
-	if ( (oswpt.objp == Player_obj) 
-		&& (The_mission.flags[Mission::Mission_Flags::Fullneb]) 
-		&& (vm_vec_dist(&oswpt.objp->pos, &target_vec) >= Nd->cube_inner) )
-	{
-		neb2_eye_changed();
-	}
-
 	switch (oswpt.type)
 	{
 		case OSWPT_TYPE_SHIP:
 		{
 			oswpt.objp->pos = target_vec;
 			set_object_for_clients(oswpt.objp);
-			return;
+
+			if (oswpt.objp->flags[Object::Object_Flags::Collides])
+				something_collides = true;
+
+			break;
 		}
 
 		case OSWPT_TYPE_WAYPOINT:
@@ -7037,7 +7025,7 @@ void sexp_set_object_position(int n)
             Current_sexp_network_packet.send_float(target_vec.xyz.y);
             Current_sexp_network_packet.send_float(target_vec.xyz.z);
             Current_sexp_network_packet.end_callback();
-			return;
+			break;
 		}
 
 		case OSWPT_TYPE_WING:
@@ -7058,10 +7046,28 @@ void sexp_set_object_position(int n)
 					vm_vec_add2(&objp->pos, &target_vec);
 					set_object_for_clients(objp);
 				}
+
+				if (objp->flags[Object::Object_Flags::Collides])
+					something_collides = true;
 			}
 
-			return;
+			break;
 		}
+	}
+
+	// retime all collision pairs (so they're checked again) if we moved something that collides
+	if (something_collides)
+	{
+		obj_collide_retime_cached_pairs();
+	}
+
+	// if this is a nebula mission and a player is being moved far enough,
+	// regenerate the nebula
+	if ( (oswpt.objp == Player_obj) 
+		&& (The_mission.flags[Mission::Mission_Flags::Fullneb]) 
+		&& (vm_vec_dist(&oswpt.objp->pos, &target_vec) >= Nd->cube_inner) )
+	{
+		neb2_eye_changed();
 	}
 }
 
@@ -7089,6 +7095,7 @@ void sexp_set_object_orientation(int n)
 	angles a;
 	matrix target_orient;
 	object_ship_wing_point_team oswpt;
+	bool something_collides = false;
 
 	sexp_get_object_ship_wing_point_team(&oswpt, CTEXT(n));
 	n = CDR(n);
@@ -7102,20 +7109,17 @@ void sexp_set_object_orientation(int n)
 
 	vm_angles_2_matrix(&target_orient, &a);
 
-	// retime all collision checks so they're performed
-	// Goober5000 - only if we have a valid object (don't do this for departed ships, waypoints, etc.)
-	if (oswpt.type == OSWPT_TYPE_SHIP || oswpt.type == OSWPT_TYPE_WING)
-	{
-		obj_collide_retime_cached_pairs();
-	}
-
 	switch (oswpt.type)
 	{
 		case OSWPT_TYPE_SHIP:
 		{
 			oswpt.objp->orient = target_orient;
 			set_object_for_clients(oswpt.objp);
-			return;
+
+			if (oswpt.objp->flags[Object::Object_Flags::Collides])
+				something_collides = true;
+
+			break;
 		}
 
 		case OSWPT_TYPE_WING:
@@ -7126,10 +7130,19 @@ void sexp_set_object_orientation(int n)
 				object *objp = &Objects[Ships[oswpt.wingp->ship_index[i]].objnum];
 				objp->orient = target_orient;
 				set_object_for_clients(objp);
+
+				if (objp->flags[Object::Object_Flags::Collides])
+					something_collides = true;
 			}
 
-			return;
+			break;
 		}
+	}
+
+	// retime all collision pairs (so they're checked again) if we rotated something that collides
+	if (something_collides)
+	{
+		obj_collide_retime_cached_pairs();
 	}
 }
 
