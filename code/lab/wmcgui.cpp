@@ -2701,11 +2701,13 @@ float Slider::GetSliderPos(int x)
 
 void Slider::UpdateSlider(int x)
 {
-	SliderScale = GetSliderPos(x);
-
+	if (x >= 0) {
+		SliderScale = GetSliderPos(x);
+	}
+	
 	CLAMP(SliderScale, 0.0, 1.0f);
 
-	if ( function != NULL ) {
+	if ( function != nullptr ) {
 		function(this);
 	}
 }
@@ -2713,6 +2715,13 @@ void Slider::UpdateSlider(int x)
 float Slider::GetSliderValue()
 {
 	return (SliderScale * (Max - Min) + Min);
+}
+
+void Slider::SetSliderValue(float raw_val)
+{
+	SliderScale = (raw_val - Min) / Max + Min;
+	//we don't want to actually change it here
+	UpdateSlider(-1);
 }
 
 void Slider::DoMove(int dx, int dy)

@@ -765,6 +765,7 @@ public:
 	Slider(const SCP_string &in_label, float min, float max, int x_coord, int y_coord, void(*in_function)(Slider *caller) = NULL, int x_width = -1, int y_height = DEFAULT_BUTTON_HEIGHT, int in_style = 0);
 
 	float GetSliderValue();
+	void SetSliderValue(float raw_val);
 };
 
 //*****************************GLOBALS*******************************
