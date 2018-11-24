@@ -13394,7 +13394,7 @@ int ship_get_subsys_index(ship *sp, const char* ss_name)
 /**
 * Returns the index number of the ship_subsys parameter
 */
-int ship_get_subsys_index(ship *shipp, ship_subsys *subsys, int error_bypass)
+int ship_get_subsys_index(ship *shipp, ship_subsys *subsys)
 {
 	int count;
 	ship_subsys *ss;
@@ -13407,9 +13407,6 @@ int ship_get_subsys_index(ship *shipp, ship_subsys *subsys, int error_bypass)
 		count++;
 		ss = GET_NEXT(ss);
 	}
-
-	if (!error_bypass)
-		Int3();
 
 	return -1;
 }
