@@ -13345,7 +13345,7 @@ ship_subsys *ship_get_indexed_subsys( ship *sp, int index, vec3d *attacker_pos )
 /**
  * Given a pointer to a subsystem and an associated object, return the index.
  */
-int ship_get_index_from_subsys(ship_subsys *ssp, int objnum, int error_bypass)
+int ship_get_index_from_subsys(ship_subsys *ssp, int objnum)
 {
 	if (ssp == NULL)
 		return -1;
@@ -13367,8 +13367,7 @@ int ship_get_index_from_subsys(ship_subsys *ssp, int objnum, int error_bypass)
 			count++;
 			ss = GET_NEXT( ss );
 		}
-		if ( !error_bypass )
-			Int3();			// get allender -- turret ref didn't fixup correctly!!!!
+
 		return -1;
 	}
 }
@@ -13376,7 +13375,7 @@ int ship_get_index_from_subsys(ship_subsys *ssp, int objnum, int error_bypass)
 /**
  * Returns the index number of the ship_subsys parameter
  */
-int ship_get_subsys_index(ship *sp, const char* ss_name, int error_bypass)
+int ship_get_subsys_index(ship *sp, const char* ss_name)
 {
 	int count;
 	ship_subsys *ss;
@@ -13389,9 +13388,6 @@ int ship_get_subsys_index(ship *sp, const char* ss_name, int error_bypass)
 		count++;
 		ss = GET_NEXT( ss );
 	}
-
-	if (!error_bypass)
-		Int3();
 
 	return -1;
 }
