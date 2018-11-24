@@ -14780,29 +14780,33 @@ void sexp_destroy_instantly(int n)
 	int ship_num;
 	object *ship_obj_p;
 
-	for ( ; n != -1; n = CDR(n) ) {
-		ship_name = CTEXT(n);
+	if (MULTIPLAYER_MASTER)
+		Current_sexp_network_packet.start_callback();
 
-		// check to see if ship destroyed or departed.  In either case, do nothing.
-		if ( mission_log_get_time(LOG_SHIP_DEPARTED, ship_name, nullptr, nullptr) || mission_log_get_time(LOG_SHIP_DESTROYED, ship_name, nullptr, nullptr) || mission_log_get_time(LOG_SELF_DESTRUCTED, ship_name, nullptr, nullptr) )
-			continue;
+	for ( ; n >= 0; n = CDR(n) )
+	{
+		ship_name = CTEXT(n);
 		ship_num = ship_name_lookup(ship_name);
 
 		// if it still exists, destroy it
-		if (ship_num >= 0) {
+		if (ship_num >= 0)
+		{
 			ship_obj_p = &Objects[Ships[ship_num].objnum];
 
-			//if its the player don't destroy
-			if (ship_obj_p != Player_obj) {
+			// if it's the player don't destroy
+			if (ship_obj_p != Player_obj)
+			{
 				ship_destroy_instantly(ship_obj_p, ship_num);
 
 				// multiplayer callback
-				Current_sexp_network_packet.start_callback();
-				Current_sexp_network_packet.send_ship(ship_num);
-				Current_sexp_network_packet.end_callback();
+				if (MULTIPLAYER_MASTER)
+					Current_sexp_network_packet.send_ship(ship_num);
 			}
 		}
 	}
+
+	if (MULTIPLAYER_MASTER)
+		Current_sexp_network_packet.end_callback();
 }
 
 void multi_sexp_destroy_instantly()
@@ -14810,15 +14814,19 @@ void multi_sexp_destroy_instantly()
 	int ship_num;
 	object *ship_obj_p;
 
-	Current_sexp_network_packet.get_ship(ship_num);
+	// destroy ships
+	while (Current_sexp_network_packet.get_ship(ship_num))
+	{
+		// if it still exists, destroy it
+		if (ship_num >= 0)
+		{
+			ship_obj_p = &Objects[Ships[ship_num].objnum];
 
-	// if it still exists, destroy it
-	if (ship_num >= 0) {
-		ship_obj_p = &Objects[Ships[ship_num].objnum];
-
-		//if its the player don't destroy
-		if (ship_obj_p != Player_obj) {
-			ship_destroy_instantly(ship_obj_p, ship_num);
+			// if it's the player don't destroy
+			if (ship_obj_p != Player_obj)
+			{
+				ship_destroy_instantly(ship_obj_p, ship_num);
+			}
 		}
 	}
 }
