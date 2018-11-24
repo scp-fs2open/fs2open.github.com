@@ -11759,9 +11759,8 @@ void sexp_destroy_subsys_instantly(int n)
 
 	shipnum = ship_name_lookup(CTEXT(n));
 	// if no ship, then return immediately.
-	if (shipnum < 0) {
+	if (shipnum < 0)
 		return;
-	}
 
 	shipp = &Ships[shipnum];
 	n = CDR(n);
@@ -11809,7 +11808,6 @@ void sexp_destroy_subsys_instantly(int n)
 			if (ss == nullptr)
 			{
 				nprintf(("Warning", "Nonexistent subsystem '%s' on ship %s for destroy-subsys-instantly\n", subsystem, shipp->ship_name));
-				n = CDR(n);
 				continue;
 			}
 
