@@ -7320,7 +7320,7 @@ void send_homing_weapon_info( int weapon_num )
 		if ( (homing_object->type == OBJ_SHIP) && (wp->homing_subsys != NULL) ) {
 			int s_index;
 
-			s_index = ship_get_index_from_subsys( wp->homing_subsys, OBJ_INDEX(homing_object), 1 );
+			s_index = ship_get_index_from_subsys( wp->homing_subsys, OBJ_INDEX(homing_object) );
 			Assert( s_index < CHAR_MAX );			// better be less than this!!!!
 			t_subsys = (char)s_index;
 		}
@@ -7708,7 +7708,7 @@ void send_beam_fired_packet(object *shooter, ship_subsys *turret, object *target
 		Assert( (bank_point >= 0) && (bank_point < UCHAR_MAX) );
 		subsys_index = (char)bank_point;
 	} else {
-		subsys_index = (char)ship_get_index_from_subsys(turret, OBJ_INDEX(shooter), 1);
+		subsys_index = (char)ship_get_index_from_subsys(turret, OBJ_INDEX(shooter));
 	}
 
 	Assert(subsys_index >= 0);
