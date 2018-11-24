@@ -439,7 +439,12 @@ ADE_FUNC(setTarget, l_Graphics, "[texture Texture]",
 	texture_h* idx = nullptr;
 	ade_get_args(L, "|o", l_Texture.GetPtr(&idx));
 
-	return ade_set_args(L, "b", bm_set_render_target(idx->isValid() ? idx->handle : -1, 0));
+	if (idx == nullptr) {
+		return ade_set_args(L, "b", bm_set_render_target(-1, 0));
+	}
+	else {
+		return ade_set_args(L, "b", bm_set_render_target(idx->isValid() ? idx->handle : -1, 0));
+	}
 }
 
 ADE_FUNC(setCamera, l_Graphics, "[camera handle Camera]", "Sets current camera, or resets camera if none specified", "boolean", "true if successful, false or nil otherwise")
