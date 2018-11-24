@@ -226,6 +226,7 @@ void parse_decals_table(const char* filename) {
 struct Decal {
 	int definition_handle = -1;
 	object_h object;
+	int orig_obj_type = OBJ_NONE;
 	int submodel = -1;
 
 	float creation_time = -1.0f; //!< The mission time at which this decal was created
@@ -241,6 +242,12 @@ struct Decal {
 
 	bool isValid() {
 		if (!object.IsValid()) {
+			return false;
+		}
+
+		if (orig_obj_type != object.objp->type) {
+			mprintf(("Decal object type for object %d has changed from %s to %s. Please let m!m know about this\n",
+			         OBJ_INDEX(object.objp), Object_type_names[orig_obj_type], Object_type_names[object.objp->type]));
 			return false;
 		}
 
@@ -525,6 +532,7 @@ addDecal(creation_info& info, object* host, int submodel, const vec3d& local_pos
 	Decal newDecal;
 	newDecal.definition_handle = info.definition_handle;
 	newDecal.object = object_h(host);
+	newDecal.orig_obj_type     = host->type;
 	newDecal.submodel = submodel;
 	newDecal.creation_time = f2fl(Missiontime);
 	newDecal.lifetime = info.lifetime.next();
