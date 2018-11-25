@@ -7434,7 +7434,6 @@ void ship_destroy_instantly(object *ship_objp, int shipnum)
 {
 	Assert(ship_objp->type == OBJ_SHIP);
 	Assert(!(ship_objp == Player_obj));
-	Assert(!(Game_mode & GM_MULTIPLAYER));
 
 	// undocking and death preparation
 	ship_stop_fire_primary(ship_objp);
@@ -13387,6 +13386,26 @@ int ship_get_subsys_index(ship *sp, const char* ss_name)
 			return count;
 		count++;
 		ss = GET_NEXT( ss );
+	}
+
+	return -1;
+}
+
+/**
+* Returns the index number of the ship_subsys parameter
+*/
+int ship_get_subsys_index(ship *shipp, ship_subsys *subsys)
+{
+	int count;
+	ship_subsys *ss;
+
+	count = 0;
+	ss = GET_FIRST(&shipp->subsys_list);
+	while (ss != END_OF_LIST(&shipp->subsys_list)) {
+		if (ss == subsys)
+			return count;
+		count++;
+		ss = GET_NEXT(ss);
 	}
 
 	return -1;

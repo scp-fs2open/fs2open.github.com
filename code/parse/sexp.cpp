@@ -11750,69 +11750,104 @@ void sexp_set_subsystem_strength(int n)
 }
 
 // destroys a subsystem without explosions
-void sexp_destroy_subsys_instantly (int n)
+void sexp_destroy_subsys_instantly(int n)
 {
 	char *subsystem;
-	int	shipnum, index, generic_type;
+	int	shipnum, subsys_index, generic_type;
 	ship *shipp;
-	ship_subsys *ss = NULL;
-	
-	// if MULTIPLAYER bail
-	if (Game_mode & GM_MULTIPLAYER) {
-		return;
-	}
+	ship_subsys *ss;
 
 	shipnum = ship_name_lookup(CTEXT(n));
 	// if no ship, then return immediately.
-	if ( shipnum == -1 ){
+	if (shipnum < 0)
 		return;
-	}
 
 	shipp = &Ships[shipnum];
 	n = CDR(n);
-	
-	//Process subsystems
-	while(n != -1)
+
+	if (MULTIPLAYER_MASTER)
+	{
+		Current_sexp_network_packet.start_callback();
+		Current_sexp_network_packet.send_ship(shipp);
+	}
+
+	for ( ; n >= 0; n = CDR(n))
 	{
 		subsystem = CTEXT(n);
-		if ( !stricmp( subsystem, SEXP_HULL_STRING) || !stricmp( subsystem, SEXP_SIM_HULL_STRING)){
-			n = CDR(n);
+
+		// use destroy-instantly if we want to do this
+		if (!stricmp(subsystem, SEXP_HULL_STRING) || !stricmp(subsystem, SEXP_SIM_HULL_STRING))
 			continue;
-		}
+
 		// deal with generic subsystems
 		generic_type = get_generic_subsys(subsystem);
-		if (generic_type) {
-			for (ss = GET_FIRST(&shipp->subsys_list); ss != END_OF_LIST(&shipp->subsys_list); ss = GET_NEXT(ss)) {
-				if (generic_type == ss->system_info->type) {
+		if (generic_type != SUBSYSTEM_NONE)
+		{
+			for (ss = GET_FIRST(&shipp->subsys_list); ss != END_OF_LIST(&shipp->subsys_list); ss = GET_NEXT(ss))
+			{
+				if (generic_type == ss->system_info->type)
+				{
 					// do destruction stuff
 					ss->current_hits = 0;
 					ship_recalc_subsys_strength(shipp);
-					do_subobj_destroyed_stuff(shipp, ss, NULL, true);
+					do_subobj_destroyed_stuff(shipp, ss, nullptr, true);
+
+					if (MULTIPLAYER_MASTER)
+					{
+						subsys_index = ship_get_subsys_index(shipp, ss);
+						Assert(subsys_index >= 0);
+						Current_sexp_network_packet.send_int(subsys_index);
+					}
 				}
 			}
 		}
+		// normal subsystems
 		else
 		{
-			// normal subsystems
 			ss = ship_get_subsys(shipp, subsystem);
-			index = ship_get_subsys_index(shipp, subsystem);
-			if ( index == -1 ) {
-				nprintf(("Warning", "Couldn't find subsystem %s on ship %s for destroy-subsys-instantly\n", subsystem, shipp->ship_name));
-				n = CDR(n);
+			if (ss == nullptr)
+			{
+				nprintf(("Warning", "Nonexistent subsystem '%s' on ship %s for destroy-subsys-instantly\n", subsystem, shipp->ship_name));
 				continue;
 			}
-			if(ss == NULL) {
-				nprintf(("Warning", "Nonexistent subsystem for index %d on ship %s for destroy-subsys-instantly\n", index, shipp->ship_name));
-				n = CDR(n);
-				continue;
-			}
+
 			// do destruction stuff
 			ss->current_hits = 0;
 			ship_recalc_subsys_strength(shipp);
-			do_subobj_destroyed_stuff(shipp, ss, NULL, true);
+			do_subobj_destroyed_stuff(shipp, ss, nullptr, true);
+
+			if (MULTIPLAYER_MASTER)
+			{
+				subsys_index = ship_get_subsys_index(shipp, ss);
+				Assert(subsys_index >= 0);
+				Current_sexp_network_packet.send_int(subsys_index);
+			}
 		}
-		// next
-		n = CDR(n);
+	}
+
+	if (MULTIPLAYER_MASTER)
+		Current_sexp_network_packet.end_callback();
+}
+
+void multi_sexp_destroy_subsys_instantly()
+{
+	ship *shipp;
+	int subsys_index;
+	ship_subsys *ss;
+
+	Current_sexp_network_packet.get_ship(shipp);
+
+	// destroy subsystems
+	while (Current_sexp_network_packet.get_int(subsys_index))
+	{
+		// find subsystem
+		Assert(subsys_index >= 0);
+		ss = ship_get_indexed_subsys(shipp, subsys_index);
+
+		// do destruction stuff
+		ss->current_hits = 0;
+		ship_recalc_subsys_strength(shipp);
+		do_subobj_destroyed_stuff(shipp, ss, nullptr, true);
 	}
 }
 
@@ -14745,27 +14780,53 @@ void sexp_destroy_instantly(int n)
 	int ship_num;
 	object *ship_obj_p;
 
-	// if MULTIPLAYER bail
-	if (Game_mode & GM_MULTIPLAYER) {
-		return;
-	}
+	if (MULTIPLAYER_MASTER)
+		Current_sexp_network_packet.start_callback();
 
-	for ( ; n != -1; n = CDR(n) ) {
+	for ( ; n >= 0; n = CDR(n) )
+	{
 		ship_name = CTEXT(n);
-
-		// check to see if ship destroyed or departed.  In either case, do nothing.
-		if ( mission_log_get_time(LOG_SHIP_DEPARTED, ship_name, NULL, NULL) || mission_log_get_time(LOG_SHIP_DESTROYED, ship_name, NULL, NULL) || mission_log_get_time(LOG_SELF_DESTRUCTED, ship_name, NULL, NULL) )
-			continue;
 		ship_num = ship_name_lookup(ship_name);
 
 		// if it still exists, destroy it
-		if (ship_num >= 0) {
+		if (ship_num >= 0)
+		{
 			ship_obj_p = &Objects[Ships[ship_num].objnum];
 
-			//if its the player don't destroy
-			if (ship_obj_p == Player_obj)
-				continue;
-			ship_destroy_instantly(ship_obj_p,ship_num);
+			// if it's the player don't destroy
+			if (ship_obj_p != Player_obj)
+			{
+				ship_destroy_instantly(ship_obj_p, ship_num);
+
+				// multiplayer callback
+				if (MULTIPLAYER_MASTER)
+					Current_sexp_network_packet.send_ship(ship_num);
+			}
+		}
+	}
+
+	if (MULTIPLAYER_MASTER)
+		Current_sexp_network_packet.end_callback();
+}
+
+void multi_sexp_destroy_instantly()
+{
+	int ship_num;
+	object *ship_obj_p;
+
+	// destroy ships
+	while (Current_sexp_network_packet.get_ship(ship_num))
+	{
+		// if it still exists, destroy it
+		if (ship_num >= 0)
+		{
+			ship_obj_p = &Objects[Ships[ship_num].objnum];
+
+			// if it's the player don't destroy
+			if (ship_obj_p != Player_obj)
+			{
+				ship_destroy_instantly(ship_obj_p, ship_num);
+			}
 		}
 	}
 }
@@ -25727,6 +25788,14 @@ void multi_sexp_eval()
 				multi_sexp_change_iff_color();
 				break;
 				
+			case OP_DESTROY_INSTANTLY:
+				multi_sexp_destroy_instantly();
+				break;
+
+			case OP_DESTROY_SUBSYS_INSTANTLY:
+				multi_sexp_destroy_subsys_instantly();
+				break;
+
 			// bad sexp in the packet
 			default: 
 				// probably just a version error where the host supports a SEXP but a client does not
@@ -31585,7 +31654,6 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 
 	{ OP_DESTROY_SUBSYS_INSTANTLY, "destroy-subsys-instantly\r\n"
 		"\tDetroys the specified subsystems without effects."
-		"\tSingle player only!"
 		"Takes 2 or more arguments...\r\n"
 		"\t1:\tName of ship subsystem is on.\r\n"
 		"\tRest:\tName of subsystem to destroy.\r\n"},
@@ -33196,7 +33264,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 
 	{ OP_DESTROY_INSTANTLY, "destroy-instantly\r\n"
 		"\tSelf-destructs the named ship without explosion, death roll, or debris.  That is, the ship is instantly gone from the mission and the only indication of what happened is a mission log entry.\r\n"
-		"\tSingle Player Only! Non-player ship only!\r\n"
+		"\tNon-player ship only!\r\n"
 		"\tAll: List of ship names to destroy.\r\n"},
 
 	{ OP_SHIP_CREATE, "ship-create\r\n"
