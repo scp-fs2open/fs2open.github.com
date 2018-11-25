@@ -333,7 +333,7 @@ int multi_oo_pack_client_data(ubyte *data)
 
 		// locked targeted subsys index
 		if(Player->locking_subsys != NULL){
-			l_subsys = (char)ship_get_index_from_subsys( Player->locking_subsys, Player_ai->target_objnum, 1 );
+			l_subsys = (char)ship_get_index_from_subsys( Player->locking_subsys, Player_ai->target_objnum );
 		}
 	}
 

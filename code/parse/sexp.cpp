@@ -11482,7 +11482,7 @@ void sexp_sabotage_subsystem(int n)
 		}
 		else {
 			do_loop = false;
-			index = ship_get_subsys_index(shipp, subsystem, 1);	// Bypass any error since we supply one here
+			index = ship_get_subsys_index(shipp, subsystem);
 			if ( index == -1 ) {
 				nprintf(("Warning", "Couldn't find subsystem %s on ship %s for sabotage subsystem\n", subsystem, shipp->ship_name));
 				return;
@@ -11595,7 +11595,7 @@ void sexp_repair_subsystem(int n)
 		}
 		else {
 			do_loop = false;
-			index = ship_get_subsys_index(shipp, subsystem, 1);	// Bypass any error since we supply one here
+			index = ship_get_subsys_index(shipp, subsystem);
 			if ( index == -1 ) {
 				nprintf(("Warning", "Couldn't find subsystem %s on ship %s for repair subsystem\n", subsystem, shipp->ship_name));
 				return;
@@ -11714,7 +11714,7 @@ void sexp_set_subsystem_strength(int n)
 		}
 		else {
 			do_loop = false;
-			index = ship_get_subsys_index(shipp, subsystem, 1);	// Bypass any error since we supply one here
+			index = ship_get_subsys_index(shipp, subsystem);
 			if ( index == -1 ) {
 				nprintf(("Warning", "Couldn't find subsystem %s on ship %s for set subsystem strength\n", subsystem, shipp->ship_name));
 				return;
@@ -11795,7 +11795,7 @@ void sexp_destroy_subsys_instantly (int n)
 		{
 			// normal subsystems
 			ss = ship_get_subsys(shipp, subsystem);
-			index = ship_get_subsys_index(shipp, subsystem, 1);
+			index = ship_get_subsys_index(shipp, subsystem);
 			if ( index == -1 ) {
 				nprintf(("Warning", "Couldn't find subsystem %s on ship %s for destroy-subsys-instantly\n", subsystem, shipp->ship_name));
 				n = CDR(n);
@@ -20103,7 +20103,7 @@ void sexp_subsys_set_random(int node)
 
 	// get exclusion list
 	while( n != -1) {
-		int exclude_index = ship_get_subsys_index(shipp, CTEXT(n), 0);
+		int exclude_index = ship_get_subsys_index(shipp, CTEXT(n));
 		if (exclude_index >= 0) {
 			exclusion_list[exclude_index] = 1;
 		}
