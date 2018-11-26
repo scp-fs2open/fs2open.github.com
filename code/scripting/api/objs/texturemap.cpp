@@ -77,7 +77,7 @@ ADE_VIRTVAR(BaseMap, l_TextureMap, "texture", "Base texture", "texture", "Base t
 	if(tmap == NULL)
 		return ade_set_error(L, "o", l_Texture.Set(texture_h()));
 
-	if(ADE_SETTING_VAR && new_tex->isValid()) {
+	if (ADE_SETTING_VAR && new_tex != nullptr && new_tex->isValid()) {
 		tmap->textures[TM_BASE_TYPE].SetTexture(new_tex->handle);
 	}
 
@@ -95,7 +95,7 @@ ADE_VIRTVAR(GlowMap, l_TextureMap, "texture", "Glow texture", "texture", "Glow t
 	if(tmap == NULL)
 		return ade_set_error(L, "o", l_Texture.Set(texture_h()));
 
-	if(ADE_SETTING_VAR && new_tex->isValid()) {
+	if (ADE_SETTING_VAR && new_tex != nullptr && new_tex->isValid()) {
 		tmap->textures[TM_GLOW_TYPE].SetTexture(new_tex->handle);
 	}
 
@@ -113,7 +113,7 @@ ADE_VIRTVAR(SpecularMap, l_TextureMap, "texture", "Specular texture", "texture",
 	if(tmap == NULL)
 		return ade_set_error(L, "o", l_Texture.Set(texture_h()));
 
-	if(ADE_SETTING_VAR && new_tex->isValid()) {
+	if (ADE_SETTING_VAR && new_tex != nullptr && new_tex->isValid()) {
 		tmap->textures[TM_SPECULAR_TYPE].SetTexture(new_tex->handle);
 	}
 
