@@ -188,7 +188,7 @@ ADE_VIRTVAR(AttachedObject, l_Particle, "object", "The object this particle is a
 
 	if (ADE_SETTING_VAR)
 	{
-		if (newObj->IsValid())
+		if (newObj != nullptr && newObj->IsValid())
 			ph->Get().lock()->attached_objnum = newObj->objp->signature;
 	}
 
