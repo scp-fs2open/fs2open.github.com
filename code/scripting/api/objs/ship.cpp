@@ -111,10 +111,12 @@ ADE_INDEXER(l_ShipTextures, "number Index/string TextureFilename", "Array of shi
 				shipp->ship_replacement_textures[i] = -1;
 		}
 
-		if(tdx->isValid())
-			shipp->ship_replacement_textures[final_index] = tdx->handle;
-		else
-			shipp->ship_replacement_textures[final_index] = -1;
+		if (tdx != nullptr) {
+			if (tdx->isValid())
+				shipp->ship_replacement_textures[final_index] = tdx->handle;
+			else
+				shipp->ship_replacement_textures[final_index] = -1;
+		}
 	}
 
 	if (shipp->ship_replacement_textures != NULL && shipp->ship_replacement_textures[final_index] >= 0)
