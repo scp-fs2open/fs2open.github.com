@@ -318,7 +318,7 @@ ADE_INDEXER(l_ModelTextures, "texture", "number Index/string TextureName", "text
 	if(tinfo == NULL)
 		return ade_set_error(L, "o", l_Texture.Set(texture_h()));
 
-	if (ADE_SETTING_VAR) {
+	if (ADE_SETTING_VAR && new_tex != nullptr) {
 		tinfo->SetTexture(new_tex->handle);
 	}
 
