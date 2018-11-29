@@ -317,6 +317,7 @@ void obj_render_all(const std::function<void(object*)>& render_function, bool *d
 	}
 
 	Sorted_objects.clear();
+
 	batching_render_all();
 	batching_render_all(true);
 }
@@ -366,6 +367,7 @@ void obj_render_queue_all()
 			obj_queue_render(objp, &scene);
 		}
 	}
+
 	scene.init_render();
 
 	scene.render_all(ZBUFFER_TYPE_FULL);
