@@ -358,7 +358,7 @@ void obj_render_queue_all()
 			}
 
 
-			if( (objp->type == OBJ_SHIP) && Ships[objp->instance].shader_effect_active ) {
+			if ( (objp->type == OBJ_SHIP) && Ships[objp->instance].shader_effect_active ) {
 				effect_ships.push_back(objp);
 				continue;
 			}
