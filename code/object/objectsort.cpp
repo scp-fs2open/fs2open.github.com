@@ -357,18 +357,16 @@ void obj_render_queue_all()
 				}
 			}
 
-			if ( obj_render_is_model(objp) ) {
-				if( (objp->type == OBJ_SHIP) && Ships[objp->instance].shader_effect_active ) {
-					effect_ships.push_back(objp);
-					continue;
-				}
+
+			if( (objp->type == OBJ_SHIP) && Ships[objp->instance].shader_effect_active ) {
+				effect_ships.push_back(objp);
+				continue;
 			}
 
             objp->flags.set(Object::Object_Flags::Was_rendered);
 			obj_queue_render(objp, &scene);
 		}
 	}
-
 	scene.init_render();
 
 	scene.render_all(ZBUFFER_TYPE_FULL);
