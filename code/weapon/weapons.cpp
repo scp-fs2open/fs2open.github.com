@@ -5524,6 +5524,11 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 
 	weapon_update_state(wp);
 
+	object* weapon_obj = &Objects[objnum];
+	Script_system.SetHookObjects(1, "Weapon", weapon_obj);
+	Script_system.RunCondition(CHA_ONWEAPONCREATED, weapon_obj);
+	Script_system.RemHookVars(1, "Weapon");
+
 	return objnum;
 }
 
