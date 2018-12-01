@@ -317,7 +317,7 @@ bool ConditionedHook::ConditionsValid(int action, object *objp, int more_data)
 					} else if(objp == NULL || objp->type != OBJ_SHIP) {
 						return false;
 					} else if (action == CHA_ONWEAPONCREATED) {
-						if (objp == NULL || objp->type != OBJ_WEAPON)
+						if (objp == nullptr || objp->type != OBJ_WEAPON)
 							return false;
 					} else {
 
