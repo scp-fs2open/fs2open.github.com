@@ -31,6 +31,18 @@
 
 SCP_vector<opengl_shader_t> GL_shader;
 
+typedef std::pair<int, uint32_t> shader_descriptor_t;
+
+struct key_hasher
+{
+    size_t operator()(const shader_descriptor_t &obj) const
+    {
+        return obj.first ^ obj.second;
+    }
+};
+
+SCP_unordered_map<shader_descriptor_t, size_t, key_hasher> GL_shader_map;
+
 GLuint Framebuffer_fallback_texture_id = 0;
 
 SCP_vector<opengl_vert_attrib> GL_vertex_attrib_info =
@@ -296,12 +308,10 @@ void opengl_shader_set_current(int handle)
 
 size_t opengl_get_shader_idx(shader_type shader_t, unsigned int flags) 
 {
-	for (size_t idx = 0; idx < GL_shader.size(); idx++) {
-		if (GL_shader[idx].shader == shader_t && GL_shader[idx].flags == flags) {
-			return idx;
-		}
+	auto found = GL_shader_map.find(shader_descriptor_t(shader_t, flags));
+	if (found != GL_shader_map.end()) {
+		return found->second;
 	}
-
 	return GL_shader.size();
 }
 
@@ -327,6 +337,8 @@ void opengl_delete_shader(int sdr_handle)
 {
 	Assert(sdr_handle >= 0);
 	Assert(sdr_handle < (int)GL_shader.size());
+	opengl_shader_t &victim = GL_shader[sdr_handle];
+	GL_shader_map.erase(std::make_pair(victim.shader, victim.flags));
 
 	GL_shader[sdr_handle].program.reset();
 	
@@ -341,6 +353,7 @@ void opengl_delete_shader(int sdr_handle)
 void opengl_shader_shutdown()
 {
 	GL_shader.clear();
+	GL_shader_map.clear();
 }
 
 static SCP_string opengl_shader_get_header(shader_type type_id, int flags, bool has_geo_shader) {
@@ -840,6 +853,8 @@ int opengl_compile_shader(shader_type sdr, uint flags)
 		}
 	}
 
+	int new_shader_shader = new_shader.shader;
+	unsigned int new_shader_flags = new_shader.flags;
 	// then insert it at an empty slot or at the end
 	if ( empty_idx >= 0 ) {
 		GL_shader[empty_idx] = std::move(new_shader);
@@ -848,7 +863,7 @@ int opengl_compile_shader(shader_type sdr, uint flags)
 		sdr_index = (int)GL_shader.size();
 		GL_shader.push_back(std::move(new_shader));
 	}
-
+	GL_shader_map[std::make_pair(new_shader_shader, new_shader_flags)] = sdr_index;
 	return sdr_index;
 }
 
@@ -939,6 +954,7 @@ void opengl_shader_init()
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, 1, 1, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, &pixels);
 
 	GL_shader.clear();
+	GL_shader_map.clear();
 
 	// Reserve 32 shader slots. This should cover most use cases in real life.
 	GL_shader.reserve(32);
