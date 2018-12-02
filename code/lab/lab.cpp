@@ -565,7 +565,7 @@ void labviewer_do_render(float frametime)
 	                    gr_screen.center_offset_y + gr_screen.center_h - (gr_get_font_height() * 4) - 3,
 	                    "Hold LMB to rotate the ship or weapon. Hold RMB to rotate the Camera. Hold Shift + LMB to "
 	                    "zoom in or out. Use number keys to switch between FXAA presets. R to cycle model rotation "
-	                    "modes, S to cycle model rotation speeds.");
+	                    "modes, S to cycle model rotation speeds, V to reset view.");
 
 	// Rotation mode
 	angles rot_angle;

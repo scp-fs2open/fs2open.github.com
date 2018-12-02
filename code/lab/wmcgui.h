@@ -753,7 +753,7 @@ class Slider : public GUIObject
 
 	int GetSliderOffset();
 	float GetSliderPos(int x);
-	void UpdateSlider(int x);
+	void UpdateSlider(float x);
 protected:
 	void DoDraw(float frametime) override;
 	void DoMove(int dx, int dy) override;
