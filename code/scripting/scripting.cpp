@@ -87,6 +87,7 @@ flag_def_list Script_actions[] =
 	{ "On Load Screen",			CHA_LOADSCREEN,		0 },
 	{ "On Campaign Mission Accept", 	CHA_CMISSIONACCEPT,	0 },
     { "On Ship Depart",			CHA_ONSHIPDEPART,	0 },
+	{ "On Weapon Created",		CHA_ONWEAPONCREATED, 0},
 };
 
 int Num_script_actions = sizeof(Script_actions)/sizeof(flag_def_list);
@@ -315,6 +316,9 @@ bool ConditionedHook::ConditionsValid(int action, object *objp, int more_data)
 							return false;
 					} else if(objp == NULL || objp->type != OBJ_SHIP) {
 						return false;
+					} else if (action == CHA_ONWEAPONCREATED) {
+						if (objp == nullptr || objp->type != OBJ_WEAPON)
+							return false;
 					} else {
 
 						// Okay, if we're still here, then objp is both valid and a ship
