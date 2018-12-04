@@ -854,7 +854,7 @@ int opengl_compile_shader(shader_type sdr, uint flags)
 	}
 
 	int new_shader_shader = new_shader.shader;
-	unsigned int new_shader_flags = new_shader.flags;
+	uint32_t new_shader_flags = new_shader.flags;
 	// then insert it at an empty slot or at the end
 	if ( empty_idx >= 0 ) {
 		GL_shader[empty_idx] = std::move(new_shader);
