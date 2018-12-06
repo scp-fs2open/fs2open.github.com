@@ -1700,13 +1700,16 @@ int ship_is_tagged(object *objp);
 float ship_get_max_speed(ship *shipp);
 
 // returns warpout speed of ship
-float ship_get_warpout_speed(object *objp);
+float ship_get_warpout_speed(object *objp, ship_info *sip = nullptr, float half_length = 0.0f, float warping_dist = 0.0f);
 
 // returns true if ship is beginning to speed up in warpout
 int ship_is_beginning_warpout_speedup(object *objp);
 
 // return the length of the ship class
-float ship_class_get_length(ship_info *sip);
+float ship_class_get_length(const ship_info *sip);
+
+// return the actual center of the ship class
+void ship_class_get_actual_center(const ship_info *sip, vec3d *center_pos);
 
 // Goober5000 - used by change-ai-class
 extern void ship_set_new_ai_class(int ship_num, int new_ai_class);

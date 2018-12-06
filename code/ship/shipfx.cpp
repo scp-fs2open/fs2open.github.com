@@ -468,53 +468,35 @@ static float shipfx_calculate_effect_radius( object *objp, int warp_dir )
 #define SMALLEST_RAD 15.0f
 #define SMALLEST_RAD_TIME 1.5f
 
-float shipfx_calculate_warp_time(object *objp, int warp_dir)
+float shipfx_calculate_warp_time(object *objp, ship_info *sip, int warp_dir, float half_length, float warping_dist)
 {
-	if(objp->type == OBJ_SHIP)
-	{
-		ship_info *sip = &Ship_info[Ships[objp->instance].ship_info_index];
-
-		//Warpin time defined
-		if( (warp_dir == WD_WARP_IN) && (sip->warpin_time > 0.0f)) {
-			return (float)sip->warpin_time/1000.0f;
-		//Warpout time defined
-		} else if( (warp_dir == WD_WARP_OUT) && (sip->warpout_time > 0.0f)) {
-			return (float)sip->warpout_time/1000.0f;
-		//Warpin defined
-		} else if ( (warp_dir == WD_WARP_IN) && (sip->warpin_speed != 0.0f) ) {
-			return ship_class_get_length(sip) / sip->warpin_speed;
-		//Warpout defined
-		} else if ( (warp_dir == WD_WARP_OUT) && (sip->warpout_speed != 0.0f) ) {
-			return ship_class_get_length(sip) / sip->warpout_speed;
-		//Player warpout defined
-		} else if ( (warp_dir == WD_WARP_OUT) && (objp == Player_obj) && (sip->warpout_player_speed != 0.0f) ) {
-			return ship_class_get_length(sip) / sip->warpout_player_speed;
-		//Player warpout not defined
-		} else if ( (warp_dir == WD_WARP_OUT) && (objp == Player_obj) ) {
-			return ship_class_get_length(sip) / Player_warpout_speed;
-		}
-
+	//Warpin time defined
+	if( (warp_dir == WD_WARP_IN) && (sip->warpin_time > 0.0f)) {
+		return (float)sip->warpin_time/1000.0f;
+	//Warpout time defined
+	} else if( (warp_dir == WD_WARP_OUT) && (sip->warpout_time > 0.0f)) {
+		return (float)sip->warpout_time/1000.0f;
+	//Warpin defined
+	} else if ( (warp_dir == WD_WARP_IN) && (sip->warpin_speed != 0.0f) ) {
+		return warping_dist / sip->warpin_speed;
+	//Warpout defined
+	} else if ( (warp_dir == WD_WARP_OUT) && (sip->warpout_speed != 0.0f) ) {
+		return warping_dist / sip->warpout_speed;
+	//Player warpout defined
+	} else if ( (warp_dir == WD_WARP_OUT) && (objp == Player_obj) && (sip->warpout_player_speed != 0.0f) ) {
+		return warping_dist / sip->warpout_player_speed;
+	//Player warpout not defined
+	} else if ( (warp_dir == WD_WARP_OUT) && (objp == Player_obj) ) {
+		return warping_dist / Player_warpout_speed;
 	}
+
 	// Find rad_percent from 0 to 1, 0 being smallest ship, 1 being largest
-	float rad_percent = (objp->radius-SMALLEST_RAD) / (LARGEST_RAD-SMALLEST_RAD);
+	float rad_percent = (half_length-SMALLEST_RAD) / (LARGEST_RAD-SMALLEST_RAD);
     CLAMP(rad_percent, 0.0f, 1.0f);
 
 	float rad_time = rad_percent*(LARGEST_RAD_TIME-SMALLEST_RAD_TIME) + SMALLEST_RAD_TIME;
 
 	return rad_time;
-}
-
-float shipfx_calculate_warp_dist(object *objp)
-{
-	float length;
-
-	Assert(objp->type == OBJ_SHIP);
-	if (objp->type != OBJ_SHIP) {
-		length = 2.0f * objp->radius;
-	} else {
-		length = ship_class_get_length(&Ship_info[Ships[objp->instance].ship_info_index]);
-	}
-	return length;
 }
 
 // This is called to actually warp this object in
@@ -619,168 +601,76 @@ static void shipfx_actually_warpout(int shipnum)
 	ship_actually_depart(shipnum);
 }
 
-// compute_special_warpout_stuff();
-static int compute_special_warpout_stuff(object *objp, float *speed, float *warp_time, vec3d *warp_pos)
+void WE_Default::compute_warpout_stuff(float *warp_time, vec3d *warp_pos)
 {
-	object	*sp_objp = NULL;
-	ship_info	*sip;
-	int		valid_reference_ship = FALSE, ref_objnum;
-	vec3d	facing_normal, vec_to_knossos, center_pos;
-	float		dist_to_plane;
+	float warp_dist(0.0f), dist_to_plane, ship_move_dist;
+	vec3d facing_normal, vec_to_knossos, center_pos;
 
-	// knossos warpout only valid in single player
-	if (Game_mode & GM_MULTIPLAYER) {
-		mprintf(("special warpout only for single player\n"));
-		return -1;
-	}
-
-	// find special warp ship reference
-	valid_reference_ship = FALSE;
-	ref_objnum = Ships[objp->instance].special_warpout_objnum;
-
-	// Validate reference_objnum
-	if ((ref_objnum >= 0) && (ref_objnum < MAX_OBJECTS)) {
-		sp_objp = &Objects[ref_objnum];
-		if (sp_objp->type == OBJ_SHIP) {
-			if (Ship_info[Ships[sp_objp->instance].ship_info_index].flags[Ship::Info_Flags::Knossos_device]) {
-				valid_reference_ship = TRUE;
-			}
-		}
-	}
-	
-	if (!valid_reference_ship) {
-		mprintf(("Special warpout reference ship is not a Knossos\n"));
-		return -1;
-	}
-	sip = &Ship_info[Ships[objp->instance].ship_info_index];
-
-	
-	//find the actual center of the model
-	polymodel *pm = model_get(sip->model_num);
-	vm_vec_add(&center_pos, &objp->pos, &pm->autocenter);
-
-	// get facing normal from knossos
-	vm_vec_sub(&vec_to_knossos, &sp_objp->pos, &center_pos);
-	facing_normal = sp_objp->orient.vec.fvec;
-	if (vm_vec_dot(&vec_to_knossos, &sp_objp->orient.vec.fvec) > 0) {
-		vm_vec_negate(&facing_normal);
-	}
-
-	// find position to play the warp ani..
-	dist_to_plane = fvi_ray_plane(warp_pos, &sp_objp->pos, &facing_normal, &center_pos, &objp->orient.vec.fvec, 0.0f);
-
-	// calculate distance to warpout point.
-	dist_to_plane += pm->mins.xyz.z;
-
-
-	if (dist_to_plane < 0) {
-		mprintf(("warpout started too late\n"));
-		return -1;
-	}
-
-	// validate angle
-	float max_warpout_angle = 0.707f;	// 45 degree half-angle cone for small ships
-	if (Ship_info[Ships[objp->instance].ship_info_index].is_big_or_huge()) {
-		max_warpout_angle = 0.866f;	// 30 degree half-angle cone for BIG or HUGE
-	}
-
-	if (-vm_vec_dot(&objp->orient.vec.fvec, &facing_normal) < max_warpout_angle) {	// within allowed angle
-		Int3();
-		mprintf(("special warpout angle exceeded\n"));
-		return -1;
-	}
-	
-	// Calculate how long to fly through the effect.  Not to get to the effect, just through it.
-	*warp_time = shipfx_calculate_warp_time(objp, WD_WARP_OUT);
-
-	// Calculate speed to fly through
-	*speed = ship_get_warpout_speed(objp);
-	
-	// increase time, because we have extra distance to cover
-	*warp_time += dist_to_plane / *speed;
-
-	return 0;
-}
-
-
-static void compute_warpout_stuff(object *objp, float *speed, float *warp_time, vec3d *warp_pos)
-{
-	Assert(objp);	// Goober5000
-	ship *shipp = &Ships[objp->instance];
-	ship_info *sip = &Ship_info[shipp->ship_info_index];
+	// find world position of the center of the ship assembly
+	vm_vec_unrotate(&center_pos, &actual_local_center, &objp->orient);
+	vm_vec_add2(&center_pos, &objp->pos);
 
 	// If we're warping through the knossos, do something different.
-	if (shipp->special_warpout_objnum >= 0) {
-		if (compute_special_warpout_stuff(objp, speed, warp_time, warp_pos) != -1) {
-			return;
-		} else {
-			mprintf(("Invalid special warp\n"));
+	if (portal_objp != nullptr)
+	{
+		// get facing normal from knossos
+		vm_vec_sub(&vec_to_knossos, &portal_objp->pos, &center_pos);
+		facing_normal = portal_objp->orient.vec.fvec;
+		if (vm_vec_dot(&vec_to_knossos, &portal_objp->orient.vec.fvec) > 0.0f) {
+			vm_vec_negate(&facing_normal);
 		}
+
+		// find position to play the warp ani..
+		dist_to_plane = fvi_ray_plane(warp_pos, &portal_objp->pos, &facing_normal, &center_pos, &objp->orient.vec.fvec, 0.0f);
+
+		// calculate distance to warpout point.
+		dist_to_plane -= half_length;
+
+		if (dist_to_plane < 0.0f) {
+			mprintf(("special warpout started too late\n"));
+			dist_to_plane = 0.0f;
+		}
+
+		// validate angle
+		float max_warpout_angle = 0.707f;	// 45 degree half-angle cone for small ships
+		if (Ship_info[Ships[objp->instance].ship_info_index].is_big_or_huge()) {
+			max_warpout_angle = 0.866f;	// 30 degree half-angle cone for BIG or HUGE
+		}
+
+		if (-vm_vec_dot(&objp->orient.vec.fvec, &facing_normal) < max_warpout_angle) {	// within allowed angle
+			mprintf(("special warpout angle exceeded\n"));
+		}
+
+		ship_move_dist = dist_to_plane;
 	}
-
-	float ship_move_dist, warp_dist;
-	vec3d	center_pos;
-
-
-	// Calculate how long to fly through the effect.  Not to get to the effect, just through it.
-	*warp_time = shipfx_calculate_warp_time(objp, WD_WARP_OUT);
-
-	// Pick some speed at which we want to go through the warp effect.  
-	*speed = ship_get_warpout_speed(objp);
-
-	if ( objp == Player_obj )	{
-		// Goober5000 - cap at 65
-		*speed = MIN(0.8f*objp->phys_info.max_vel.xyz.z, 65.0f);
-	}
-
-	// center the effect properly
-	if (object_is_docked(objp))
-		dock_calc_docked_center(&center_pos, objp);
+	// normal warp
 	else
 	{
-		polymodel *pm = model_get(sip->model_num);
-		vm_vec_unrotate(&center_pos, &pm->autocenter, &objp->orient);
-		vm_vec_add2(&center_pos,&objp->pos);
-	}
-
-
-	// If this is a huge ship, set the distance to the length of the ship
-	if (sip->is_huge_ship())
-	{
-		ship_move_dist = 0.5f * ship_class_get_length(sip);
-	}
-	else
-	{
-		float radius;
-
-		if (object_is_docked(objp))
+		// If this is a huge ship, set the distance to the length of the ship
+		if (sip->is_huge_ship())
 		{
-			// we need to get the longitudinal radius of our ship, so find the semilatus rectum along the Z-axis
-			radius = dock_calc_max_semilatus_rectum_parallel_to_axis(objp, Z_AXIS);
+			warp_dist = half_length * 2.0f;
 		}
 		else
-			radius = objp->radius;
-
-		// Now we know our speed. Figure out how far the warp effect will be from here.  
-		ship_move_dist = (*speed * SHIPFX_WARP_DELAY) + radius*1.5f;		// We want to get to 1.5R away from effect
-		if ( ship_move_dist < radius*1.5f ) {
-			ship_move_dist = radius*1.5f;
+		{
+			// Now we know our speed. Figure out how far the warp effect will be from here.
+			warp_dist = (warping_speed * SHIPFX_WARP_DELAY) + half_length * 1.5f;		// We want to get to 1.5R away from effect
 		}
+
+		ship_move_dist = warp_dist - half_length;
 	}
 
+	// Calculate how long to fly through the effect.  Not to get to the effect, just through it.
+	*warp_time = warping_time;
 
 	// Acount for time to get to warp effect, before we actually go through it.
-	*warp_time += ship_move_dist / *speed;
+	*warp_time += ship_move_dist / warping_speed;
 
-	warp_dist = ship_move_dist;
-
-	// allow for off center
-	if (sip->is_huge_ship()) {
-		polymodel *pm = model_get(sip->model_num);
-		warp_dist -= pm->mins.xyz.z;
+	if (portal_objp == nullptr)
+	{
+		// project the warp portal in front of us
+		vm_vec_scale_add(warp_pos, &center_pos, &objp->orient.vec.fvec, warp_dist);
 	}
-
-	vm_vec_scale_add( warp_pos, &center_pos, &objp->orient.vec.fvec, warp_dist );
 }
 
 // JAS - code to start the ship doing the warp out effect
@@ -3412,7 +3302,7 @@ WE_Default::WE_Default(object *n_objp, int n_direction)
 	if(!this->isValid())
 		return;
 
-	portal_objp = NULL;
+	portal_objp = nullptr;
 	stage_duration[0] = 0;
 
 	pos = vmd_zero_vector;
@@ -3421,7 +3311,7 @@ WE_Default::WE_Default(object *n_objp, int n_direction)
 
 int WE_Default::warpStart()
 {
-	if(!this->isValid())
+	if (!this->isValid())
 		return 0;
 
 	if(direction == WD_WARP_OUT && objp == Player_obj)
@@ -3429,6 +3319,7 @@ int WE_Default::warpStart()
 		HUD_printf(NOX("Subspace drive engaged"));
 	}
 
+	// see if we have a valid Knossos device
 	portal_objp = nullptr;
 	if ((direction == WD_WARP_IN) && shipfx_special_warp_objnum_valid(shipp->special_warpin_objnum))
 	{
@@ -3439,21 +3330,68 @@ int WE_Default::warpStart()
 		portal_objp = &Objects[shipp->special_warpout_objnum];
 	}
 
-	float warpout_speed = 0.0f;
-	float warp_time = 0.0f;
-	if(direction == WD_WARP_IN)
+	// knossos warpout only valid in single player
+	if (portal_objp != nullptr && Game_mode & GM_MULTIPLAYER)
 	{
-		polymodel *pm = model_get(sip->model_num);
-		vm_vec_scale_add( &pos, &objp->pos, &objp->orient.vec.fvec, (pm != nullptr) ? -pm->mins.xyz.z : objp->radius );
+		mprintf(("special warpout only for single player\n"));
+		portal_objp = nullptr;
+	}
 
-		// Effect time is 'SHIPFX_WARP_DELAY' (1.5 secs) seconds to start, 'shipfx_calculate_warp_time' 
-		// for ship to go thru, and 'SHIPFX_WARP_DELAY' (1.5 secs) to go away.
-		warp_time = shipfx_calculate_warp_time(objp, WD_WARP_IN) + SHIPFX_WARP_DELAY + SHIPFX_WARP_DELAY;
+	// determine the correct center of the model (which may not be the model's origin)
+	if (object_is_docked(objp))
+		dock_calc_docked_actual_center(&actual_local_center, objp);
+	else
+		ship_class_get_actual_center(sip, &actual_local_center);
+
+	// determine the half-length and the warping distance (which is actually the full length)
+	if (object_is_docked(objp))
+	{
+		// we need to get the longitudinal radius of our ship, so find the semilatus rectum along the Z-axis
+		half_length = dock_calc_max_semilatus_rectum_parallel_to_axis(objp, Z_AXIS);
+		warping_dist = 2.0f * half_length;
 	}
 	else
 	{
-		compute_warpout_stuff(objp, &warpout_speed, &warp_time, &pos);
-		warp_time += SHIPFX_WARP_DELAY;
+		warping_dist = ship_class_get_length(sip);
+		half_length = 0.5f * warping_dist;
+	}
+
+	// determine the warping time
+	warping_time = shipfx_calculate_warp_time(objp, sip, direction, half_length, warping_dist);
+
+	// determine the warping speed
+	if (direction == WD_WARP_OUT)
+	{
+		warping_speed = ship_get_warpout_speed(objp, sip, half_length, warping_dist);
+
+		// this is Volition behavior; we probably will want an AI profiles flag for this so that the ship could use its tabled speed
+		if (objp == Player_obj) {
+			warping_speed = 0.8f*objp->phys_info.max_vel.xyz.z;
+		}
+	}
+	else
+		warping_speed = warping_dist / warping_time;
+
+	// done with initial computation; now set up the warp effect
+
+	float effect_time = 0.0f;
+	if(direction == WD_WARP_IN)
+	{
+		// first determine the world center in relation to its position
+		vm_vec_unrotate(&pos, &actual_local_center, &objp->orient);
+		vm_vec_add2(&pos, &objp->pos);
+
+		// now project the warp effect forward
+		vm_vec_scale_add( &pos, &pos, &objp->orient.vec.fvec, half_length );
+
+		// Effect time is 'SHIPFX_WARP_DELAY' (1.5 secs) seconds to start, warping_time 
+		// for ship to go thru, and 'SHIPFX_WARP_DELAY' (1.5 secs) to go away.
+		effect_time = warping_time + SHIPFX_WARP_DELAY + SHIPFX_WARP_DELAY;
+	}
+	else
+	{
+		compute_warpout_stuff(&effect_time, &pos);
+		effect_time += SHIPFX_WARP_DELAY;
 	}
 
 	radius = shipfx_calculate_effect_radius(objp, direction);
@@ -3475,7 +3413,7 @@ int WE_Default::warpStart()
 			fireball_type = sip->warpout_type & WT_FLAG_MASK;
 
 		// create fireball
-		warp_objnum = fireball_create(&pos, fireball_type, FIREBALL_WARP_EFFECT, OBJ_INDEX(objp), radius, 1, nullptr, warp_time, shipp->ship_info_index, nullptr, 0, 0, sip->warpout_snd_start, sip->warpout_snd_end);
+		warp_objnum = fireball_create(&pos, fireball_type, FIREBALL_WARP_EFFECT, OBJ_INDEX(objp), radius, 1, nullptr, effect_time, shipp->ship_info_index, nullptr, 0, 0, sip->warpout_snd_start, sip->warpout_snd_end);
 	}
 	else if (direction == WD_WARP_IN)
 	{
@@ -3487,7 +3425,7 @@ int WE_Default::warpStart()
 			fireball_type = sip->warpin_type & WT_FLAG_MASK;
 
 		// create fireball
-		warp_objnum = fireball_create(&pos, fireball_type, FIREBALL_WARP_EFFECT, OBJ_INDEX(objp), radius, 0, nullptr, warp_time, shipp->ship_info_index, nullptr, 0, 0, sip->warpin_snd_start, sip->warpin_snd_end);
+		warp_objnum = fireball_create(&pos, fireball_type, FIREBALL_WARP_EFFECT, OBJ_INDEX(objp), radius, 0, nullptr, effect_time, shipp->ship_info_index, nullptr, 0, 0, sip->warpin_snd_start, sip->warpin_snd_end);
 	}
 	else
 	{
@@ -3509,7 +3447,7 @@ int WE_Default::warpStart()
 	if(direction == WD_WARP_IN)
 	{
 		stage_duration[1] = fl2i(SHIPFX_WARP_DELAY*1000.0f);
-		stage_duration[2] = fl2i(shipfx_calculate_warp_time(objp, WD_WARP_IN)*1000.0f);
+		stage_duration[2] = fl2i(warping_time*1000.0f);
 		stage_time_end = timestamp(stage_duration[1]);
 		total_time_end = stage_duration[1] + stage_duration[2];
         shipp->flags.set(Ship::Ship_Flags::Arriving_stage_1);
@@ -3521,9 +3459,9 @@ int WE_Default::warpStart()
 		// Make the warp effect stage 1 last SHIP_WARP_TIME1 seconds.
 		if ( objp == Player_obj )	{
 			stage_duration[1] = fl2i(fireball_lifeleft(&Objects[warp_objnum])*1000.0f);
-			total_time_end = timestamp(fl2i(warp_time*1000.0f));
+			total_time_end = timestamp(fl2i(effect_time*1000.0f));
 		} else {
-			total_time_end = timestamp(fl2i(warp_time*2.0f*1000.0f));
+			total_time_end = timestamp(fl2i(effect_time*1000.0f));
 		}
 
 		// This is a hack to make the ship go at the right speed to go from it's current position to the warp_effect_pos;
@@ -3535,12 +3473,12 @@ int WE_Default::warpStart()
 		if ( objp != Player_obj || Player_use_ai )	{
 			vec3d vel;
 			vel = objp->orient.vec.fvec;
-			vm_vec_scale( &vel, warpout_speed );
+			vm_vec_scale( &vel, warping_speed );
 			objp->phys_info.vel = vel;
 			objp->phys_info.desired_vel = vel;
 			objp->phys_info.prev_ramp_vel.xyz.x = 0.0f;
 			objp->phys_info.prev_ramp_vel.xyz.y = 0.0f;
-			objp->phys_info.prev_ramp_vel.xyz.z = warpout_speed;
+			objp->phys_info.prev_ramp_vel.xyz.z = warping_speed;
 			objp->phys_info.forward_thrust = 1.0f;		// How much the forward thruster is applied.  0-1.
 		}
 	}
@@ -3561,21 +3499,18 @@ int WE_Default::warpFrame(float frametime)
             shipp->flags.remove(Ship::Ship_Flags::Arriving_stage_1);
             shipp->flags.set(Ship::Ship_Flags::Arriving_stage_2);
 
-			float warp_time = shipfx_calculate_warp_time(objp, WD_WARP_IN);
-			float speed = shipfx_calculate_warp_dist(objp) / warp_time;		// How long it takes to move through warp effect
-
 			// Make ship move at velocity so that it moves two radii in warp_time seconds.
 			vec3d vel;
 			vel = objp->orient.vec.fvec;
-			vm_vec_scale( &vel, speed );
+			vm_vec_scale( &vel, warping_speed );
 			objp->phys_info.vel = vel;
 			objp->phys_info.desired_vel = vel;
 			objp->phys_info.prev_ramp_vel.xyz.x = 0.0f;
 			objp->phys_info.prev_ramp_vel.xyz.y = 0.0f;
-			objp->phys_info.prev_ramp_vel.xyz.z = speed;
+			objp->phys_info.prev_ramp_vel.xyz.z = warping_speed;
 			objp->phys_info.forward_thrust = 0.0f;		// How much the forward thruster is applied.  0-1.
 
-			stage_time_end = timestamp(fl2i(warp_time*1000.0f));
+			stage_time_end = timestamp(fl2i(warping_time*1000.0f));
 		}
 		else if ( (shipp->flags[Ship::Ship_Flags::Arriving_stage_2]) && timestamp_elapsed(stage_time_end) )
 		{
@@ -3816,9 +3751,7 @@ int WE_BSG::warpStart()
 
 		shockwave_radius = z_offset_max - z_offset_min;
 
-		vec3d dock_center;
-		dock_calc_docked_center(&dock_center, objp);
-		vm_vec_sub(&autocenter, &dock_center, &objp->pos);
+		dock_calc_docked_actual_center(&autocenter, objp);
 	}
 
     if (direction == WD_WARP_IN)
