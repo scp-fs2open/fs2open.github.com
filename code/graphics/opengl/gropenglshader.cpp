@@ -338,7 +338,7 @@ void opengl_delete_shader(int sdr_handle)
 	Assert(sdr_handle >= 0);
 	Assert(sdr_handle < (int)GL_shader.size());
 	opengl_shader_t &victim = GL_shader[sdr_handle];
-	GL_shader_map.erase(std::make_pair(victim.shader, victim.flags));
+	GL_shader_map.erase(shader_descriptor_t(victim.shader, victim.flags));
 
 	GL_shader[sdr_handle].program.reset();
 	
