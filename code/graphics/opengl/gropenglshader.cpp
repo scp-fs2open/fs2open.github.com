@@ -863,7 +863,7 @@ int opengl_compile_shader(shader_type sdr, uint flags)
 		sdr_index = (int)GL_shader.size();
 		GL_shader.push_back(std::move(new_shader));
 	}
-	GL_shader_map[std::make_pair(new_shader_shader, new_shader_flags)] = sdr_index;
+	GL_shader_map[shader_descriptor_t(new_shader_shader, new_shader_flags)] = sdr_index;
 	return sdr_index;
 }
 
