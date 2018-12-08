@@ -385,7 +385,7 @@ ADE_FUNC(play, l_Soundfile, "[number volume = 1.0[, number panning = 0.0]]", "Pl
 	float volume = 1.0f;
 	float panning = 0.0f;
 
-	if (!ade_get_args(L, "o|ff", l_Soundfile.Get(&snd_idx)))
+	if (!ade_get_args(L, "o|ff", l_Soundfile.Get(&snd_idx), &volume, &panning))
 		return ade_set_error(L, "o", l_Sound.Set(sound_h()));
 
 	if (!snd_idx.isValid())
