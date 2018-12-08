@@ -19,6 +19,7 @@
 #include "render/batching.h"
 #include "tracing/tracing.h"
 #include "tracing/Monitor.h"
+#include <omp.h>
 
 using namespace particle;
 
@@ -460,12 +461,14 @@ namespace particle
 		if (Persistent_particles.empty() && Particles.empty())
 			return;
 
+		#pragma omp parallel for
 		for (auto& part : Persistent_particles) {
 			if (render_particle(part.get())) {
 				render_batch = true;
 			}
 		}
 
+		#pragma omp parallel for
 		for (auto& part : Particles) {
 			if (render_particle(&part)) {
 				render_batch = true;
