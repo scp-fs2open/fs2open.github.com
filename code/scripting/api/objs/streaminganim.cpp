@@ -20,12 +20,16 @@ streaminganim_h::~streaminganim_h() {
 	generic_anim_unload(&ga);
 }
 streaminganim_h::streaminganim_h(streaminganim_h&& other) noexcept {
-	*this = std::move(other);
+	// Copy the other data over to us
+	ga = other.ga;
+
+	// Reset the other instance so that we own the only instance
+	generic_anim_init(&other.ga, nullptr);
 }
 streaminganim_h& streaminganim_h::operator=(streaminganim_h&& other) noexcept {
 	generic_anim_unload(&ga);
 
-	memcpy(&ga, &other.ga, sizeof(ga));
+	ga = other.ga;
 
 	// Reset the other instance so that we own the only instance
 	generic_anim_init(&other.ga, nullptr);
