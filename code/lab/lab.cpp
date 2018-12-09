@@ -173,7 +173,7 @@ void rotate_view(int dx, int dy)
 void reset_view()
 {
 	//reset position
-	Lab_model_pos = ZERO_VECTOR;
+	Lab_model_pos = vmd_zero_vector;
 	Lab_model_orient = vmd_identity_matrix;
 	//reset lighting
 	//if the rendering options window is close, these sliders are null
