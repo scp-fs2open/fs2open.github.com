@@ -9662,7 +9662,10 @@ int sexp_is_ai_class(int n)
 			ai_class_to_check = i;
 	}
 
-	Assert(ai_class_to_check >= 0);
+	if (ai_class_to_check < 0) {
+		Warning(LOCATION, "is-ai-class called with nonexistent AI class [%s].", CTEXT(n));
+		return SEXP_FALSE;
+	}
 
 	n = CDR(n);
 	ship_name = CTEXT(n);
@@ -9726,7 +9729,10 @@ void sexp_change_ai_class(int n)
 			new_ai_class = i;
 	}
 
-	Assert(new_ai_class >= 0);
+	if (new_ai_class < 0) {
+		Warning(LOCATION, "change-ai-class called with nonexistent AI class [%s].", CTEXT(n));
+		return;
+	}
 
 	// find ship
 	n = CDR(n);
