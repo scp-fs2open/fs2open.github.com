@@ -1043,8 +1043,8 @@ void obj_sort_and_collide()
 	if ( !(Game_detail_flags & DETAIL_FLAG_COLLISION) )
 		return;
 
-	SCP_vector<int> sort_list_y;
-	SCP_vector<int> sort_list_z;
+	static SCP_vector<int> sort_list_y;
+	static SCP_vector<int> sort_list_z;
 
 	sort_list_y.clear();
 	{
