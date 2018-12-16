@@ -163,11 +163,24 @@ class GenericShapeEffect : public ParticleEffect {
 			}
 		}
 
+		bool saw_deprecated_effect_location = false;
 		if (optional_string("+Trail effect:")) {
+			// This is the deprecated location since this introduces ambiguities in the parsing process
 			m_particleTrail = internal::parseEffectElement();
+			saw_deprecated_effect_location = true;
 		}
 
 		m_timing = util::EffectTiming::parseTiming();
+
+		if (optional_string("+Trail effect:")) {
+			// This is the new and correct location. This might create duplicate effects but the warning should be clear
+			// enough to avoid that
+			if (saw_deprecated_effect_location) {
+				error_display(0, "Found two trail effect options! Specifying '+Trail effect:' before '+Duration:' is "
+				                 "deprecated since that can cause issues with conflicting effect options.");
+			}
+			m_particleTrail = internal::parseEffectElement();
+		}
 	}
 
 	void initializeSource(ParticleSource& source) override {
