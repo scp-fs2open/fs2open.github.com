@@ -1035,6 +1035,10 @@ void obj_collide_retime_cached_pairs(int checkdly)
 	}
 }
 
+// used only in obj_sort_and_collide()
+static SCP_vector<int> sort_list_y;
+static SCP_vector<int> sort_list_z;
+
 void obj_sort_and_collide()
 {
 	if (Cmdline_dis_collisions)
@@ -1042,9 +1046,6 @@ void obj_sort_and_collide()
 
 	if ( !(Game_detail_flags & DETAIL_FLAG_COLLISION) )
 		return;
-
-	static SCP_vector<int> sort_list_y;
-	static SCP_vector<int> sort_list_z;
 
 	sort_list_y.clear();
 	{
