@@ -29,8 +29,6 @@ SCP_vector<SCP_string> speech_enumerate_voices();
 
 #else
 
-// Goober5000: see, the *real* way to do stubs (avoiding the warnings)
-// is to just use #defines (c.f. NO_SOUND)
 inline bool speech_init() { return false; }
 inline void speech_deinit() {}
 inline bool speech_play(const char* /*text*/) { return false; }
