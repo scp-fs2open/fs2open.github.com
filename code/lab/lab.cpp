@@ -70,6 +70,11 @@ static TreeItem** Lab_species_nodes         = nullptr;
 static Tree* ship_tree = nullptr;
 static Tree* weap_tree = nullptr;
 
+// these are here unfortunately because otherwise there's no way to reset them
+static Slider* ambient_sldr = nullptr;
+static Slider* direct_sldr = nullptr;
+static Slider* bloom_sldr = nullptr;
+
 // holds the beginning and ending indices of each specie/type of ship/weapon
 static SCP_vector<std::pair<TreeItem*, TreeItem*>> ship_list_endpoints;
 static SCP_vector<std::pair<TreeItem*, TreeItem*>> weap_list_endpoints;
@@ -119,6 +124,11 @@ static int Trackball_active = 0;
 
 SCP_string Lab_team_color = "<none>";
 
+//save the original cmdline values in case we need to reset to them
+int orig_cmdline_ambient;
+float orig_cmdline_direct;
+int orig_cmdline_bloom;
+
 camid Lab_cam;
 float lab_cam_distance = 100.0f;
 float lab_cam_phi      = 0;
@@ -158,6 +168,25 @@ void rotate_view(int dx, int dy)
 	lab_cam_phi += dy / 100.0f;
 
 	CLAMP(lab_cam_phi, 0.01f, PI - 0.01f);
+}
+
+void reset_view()
+{
+	//reset position
+	Lab_model_pos = vmd_zero_vector;
+	Lab_model_orient = vmd_identity_matrix;
+	//reset lighting
+	//if the rendering options window is close, these sliders are null
+	//we still want to be able to reset lighting in this situation though, so just set the values directly
+	if (ambient_sldr == nullptr) {
+		gr_calculate_ambient_factor(orig_cmdline_ambient);
+		static_light_factor = orig_cmdline_direct;
+		Cmdline_bloom_intensity = orig_cmdline_bloom;
+	} else {
+		ambient_sldr->SetSliderValue((float)orig_cmdline_ambient);
+		direct_sldr->SetSliderValue(orig_cmdline_direct);
+		bloom_sldr->SetSliderValue((float)orig_cmdline_bloom);
+	}
 }
 
 void labviewer_change_model(char* model_fname, int lod = 0, int sel_index = -1)
@@ -536,7 +565,7 @@ void labviewer_do_render(float frametime)
 	                    gr_screen.center_offset_y + gr_screen.center_h - (gr_get_font_height() * 4) - 3,
 	                    "Hold LMB to rotate the ship or weapon. Hold RMB to rotate the Camera. Hold Shift + LMB to "
 	                    "zoom in or out. Use number keys to switch between FXAA presets. R to cycle model rotation "
-	                    "modes, S to cycle model rotation speeds.");
+	                    "modes, S to cycle model rotation speeds, V to reset view.");
 
 	// Rotation mode
 	angles rot_angle;
@@ -1056,7 +1085,13 @@ void labviewer_change_detail_texture(Tree* caller)
 	Detail.hardware_textures = slider_pos;
 }
 
-void labviewer_close_render_options_window(GUIObject* /*caller*/) { Lab_render_options_window = nullptr; }
+void labviewer_close_render_options_window(GUIObject* /*caller*/)
+{
+	ambient_sldr = nullptr;
+	bloom_sldr = nullptr;
+	direct_sldr = nullptr;
+	Lab_render_options_window = nullptr;
+}
 
 #define ADD_RENDER_FLAG(text, flag, var)                                                                               \
 	{                                                                                                                  \
@@ -1140,17 +1175,22 @@ void labviewer_make_render_options_window(Button* /*caller*/)
 	ADD_RENDER_FLAG("Show Destroyed Subsystems", Lab_viewer_flags, LAB_FLAG_DESTROYED_SUBSYSTEMS);
 
 	ADD_RENDER_BOOL("Emissive Lighting", Lab_emissive_light_override);
-	Slider* sldr = (Slider*)Lab_render_options_window->AddChild(new Slider("Ambient Factor", 0, 128, 0, y + 2,
-	                                                                       labviewer_render_options_set_ambient_factor,
-	                                                                       Lab_render_options_window->GetWidth()));
-	y += sldr->GetHeight() + 1;
-	sldr = (Slider*)Lab_render_options_window->AddChild(new Slider("Direct. Lights", 0.0f, 2.0f, 0, y + 2,
-	                                                               labviewer_render_options_set_static_light_factor,
-	                                                               Lab_render_options_window->GetWidth()));
-	y += sldr->GetHeight() + 1;
-	sldr = (Slider*)Lab_render_options_window->AddChild(new Slider(
-	    "Bloom", 0, 200, 0, y + 2, labviewer_render_options_set_bloom, Lab_render_options_window->GetWidth()));
-	y += sldr->GetHeight() + 1;
+
+
+	ambient_sldr = new Slider("Ambient Factor", 0, 128, 0, y + 2, labviewer_render_options_set_ambient_factor, Lab_render_options_window->GetWidth());
+	ambient_sldr->SetSliderValue((float)Cmdline_ambient_factor);
+	Lab_render_options_window->AddChild(ambient_sldr);
+	y += ambient_sldr->GetHeight() + 1;
+
+	direct_sldr = new Slider("Direct. Lights", 0.0f, 2.0f, 0, y + 2, labviewer_render_options_set_static_light_factor, Lab_render_options_window->GetWidth());
+	direct_sldr->SetSliderValue(static_light_factor);
+	Lab_render_options_window->AddChild(direct_sldr);
+	y += direct_sldr->GetHeight() + 1;
+
+	bloom_sldr = new Slider("Bloom", 0, 200, 0, y + 2, labviewer_render_options_set_bloom, Lab_render_options_window->GetWidth());
+	bloom_sldr->SetSliderValue((float)Cmdline_bloom_intensity);
+	Lab_render_options_window->AddChild(bloom_sldr);
+	y += bloom_sldr->GetHeight() + 1;
 
 	// start tree
 	cmp = (Tree*)Lab_render_options_window->AddChild(
@@ -2106,6 +2146,10 @@ void lab_init()
 		Lab_weaponmodel_num[i] = -1;
 	}
 
+	orig_cmdline_ambient = Cmdline_ambient_factor;
+	orig_cmdline_direct = static_light_factor;
+	orig_cmdline_bloom = Cmdline_bloom_intensity;
+
 	// save detail options
 	Lab_detail_texture_save = Detail.hardware_textures;
 	// load up the list of insignia that we might use on the ships
@@ -2282,6 +2326,10 @@ void lab_do_frame(float frametime)
 			if (color_itr == Team_Colors.end())
 				color_itr = Team_Colors.begin();
 			Lab_team_color = color_itr->first;
+			break;
+
+		case KEY_V:
+			reset_view();
 			break;
 
 		case KEY_UP:

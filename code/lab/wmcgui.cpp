@@ -2699,13 +2699,13 @@ float Slider::GetSliderPos(int x)
 	return i2fl(x - BarCoords[0]) / i2fl(BarCoords[2] - BarCoords[0] - SliderWidth);
 }
 
-void Slider::UpdateSlider(int x)
+void Slider::UpdateSlider(float x)
 {
-	SliderScale = GetSliderPos(x);
-
+	SliderScale = x;
+	
 	CLAMP(SliderScale, 0.0, 1.0f);
 
-	if ( function != NULL ) {
+	if ( function != nullptr ) {
 		function(this);
 	}
 }
@@ -2713,6 +2713,11 @@ void Slider::UpdateSlider(int x)
 float Slider::GetSliderValue()
 {
 	return (SliderScale * (Max - Min) + Min);
+}
+
+void Slider::SetSliderValue(float raw_val)
+{
+	UpdateSlider((raw_val - Min) / Max + Min);
 }
 
 void Slider::DoMove(int dx, int dy)
@@ -2755,7 +2760,7 @@ int Slider::DoMouseDown(float  /*frametime*/)
 	int sliderX = GetSliderOffset();
 
 	if ( SliderGrabbed ) {
-		UpdateSlider(x);
+		UpdateSlider(GetSliderPos(x));
 	} else {
 		// first check if the mouse is within the slider bounds
 		if ( x >= sliderX 
@@ -2770,7 +2775,7 @@ int Slider::DoMouseDown(float  /*frametime*/)
 			&& y <= BarCoords[3]) {
 			// we've clicked on an area of the bar but didn't click the slider
 			// move the slider to the new position
-			UpdateSlider(x);
+			UpdateSlider(GetSliderPos(x));
 			SliderGrabbed = true;
 		}
 	}
