@@ -167,9 +167,6 @@ public:
 
 	bool valid();
 
-	float get_channel_red(float u, float v);
-	float get_channel_green(float u, float v);
-	float get_channel_blue(float u, float v);
 	float get_channel_alpha(float u, float v);
 };
 
@@ -310,13 +307,6 @@ int bm_load_either(const char *filename, int *nframes = NULL, int *fps = NULL, i
  * @returns NULL if unsuccessful
  */
 bitmap* bm_lock(int handle, int bpp, ubyte flags, bool nodebug = false);
-
-/**
- * @brief Returns a unique signiature for the bitmap indexed by handle
- *
- * @details A signature will change when the bitmap's data changes
- */
-uint bm_get_signature(int handle);
 
 /**
  * @brief Returns the image type of the given bitmap handle
@@ -460,15 +450,6 @@ void bm_page_in_xparent_texture(int bitmapnum, int num_frames = 1);
 void bm_page_in_aabitmap(int bitmapnum, int num_frames = 1);
 
 /**
- * @brief Unloads the bitmap indexed by handle that was previously paged-in
- *
- * @returns 0 If the bitmap had already been released, or
- * @returns 0 If the handle is invalid, or
- * @returns 1 If successful
- */
-bool bm_page_out(int handle);
-
-/**
  * @brief Sets BMPMAN's memory mode
  *
  * @details 0 = High memory;
@@ -581,10 +562,6 @@ int bm_is_compressed(int handle);
  */
 int bm_get_tcache_type(int handle);
 
-/**
- * @brief Gets the size, in bytes, taken up by the bitmap indexed by handle
- */
-size_t bm_get_size(int handle);
 
 /**
  * @brief Gets the number of mipmaps of the indexed texture
