@@ -193,42 +193,6 @@ float bitmap_lookup::map_texture_address(float address)
 	return address - floorf(address);
 }
 
-float bitmap_lookup::get_channel_red(float u, float v)
-{
-	Assert( Bitmap_data != NULL );
-
-	CLAMP(u, 0.0f, 1.0f);
-	CLAMP(v, 0.0f, 1.0f);
-
-	int x = fl2i(map_texture_address(u) * (Width-1));
-	int y = fl2i(map_texture_address(v) * (Height-1));
-
-	return i2fl(Bitmap_data[(y*Width + x)*Num_channels]) / 255.0f;
-}
-
-float bitmap_lookup::get_channel_green(float u, float v)
-{
-	Assert( Bitmap_data != NULL );
-
-	CLAMP(u, 0.0, 1.0f);
-	CLAMP(v, 0.0, 1.0f);
-
-	int x = fl2i(map_texture_address(u) * (Width-1));
-	int y = fl2i(map_texture_address(v) * (Height-1));
-
-	return i2fl(Bitmap_data[(y*Width + x)*Num_channels + 1]) / 255.0f;
-}
-
-float bitmap_lookup::get_channel_blue(float u, float v)
-{
-	Assert( Bitmap_data != NULL );
-
-	int x = fl2i(map_texture_address(u) * (Width-1));
-	int y = fl2i(map_texture_address(v) * (Height-1));
-
-	return i2fl(Bitmap_data[(y*Width + x)*Num_channels + 2]) / 255.0f;
-}
-
 float bitmap_lookup::get_channel_alpha(float u, float v)
 {
 	Assert( Bitmap_data != NULL );
@@ -956,16 +920,6 @@ void bm_get_palette(int handle, ubyte *pal, char *name) {
 	if (pcx_error != PCX_ERROR_NONE) {
 		// Error(LOCATION, "Couldn't open '%s'\n", filename );
 	}
-}
-
-uint bm_get_signature(int handle) {
-	Assertion(bm_inited, "bmpman must be initialized before this function can be called!");
-
-	return bm_get_entry(handle)->signature;
-}
-
-size_t bm_get_size(int handle) {
-	return bm_get_entry(handle)->mem_taken;
 }
 
 int bm_get_tcache_type(int num) {
@@ -2773,30 +2727,6 @@ void bm_page_in_xparent_texture(int bitmapnum, int nframes) {
 			continue;
 		}
 	}
-}
-
-bool bm_page_out(int handle) {
-	auto entry = bm_get_entry(handle);
-
-	// in case it's already been released
-	if (entry->type == BM_TYPE_NONE)
-		return 0;
-
-	// it's possible to hit < 0 here when model_page_out_textures() is
-	// called from anywhere other than in a mission
-	if (entry->preload_count > 0) {
-		nprintf(("BmpMan",
-			 "PAGE-OUT: %s - preload_count remaining: %d\n",
-			 entry->filename,
-			 entry->preload_count));
-
-		// lets decrease it for next time around
-		entry->preload_count--;
-
-		return 0;
-	}
-
-	return (bm_unload(handle) == 1);
 }
 
 void bm_print_bitmaps() {
