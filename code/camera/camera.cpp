@@ -145,7 +145,7 @@ void camera::set_object_target(object *objp, int n_object_target_submodel)
  * Custom function receives the already-modified current position value.
  * It should be replaced or added to as the custom function modifier sees fit.
  */
-void camera::set_custom_position_function(void (*n_func_custom_position)(camera *cam, vec3d *camera_pos))
+void camera::set_custom_position_function(void (*n_func_custom_position)(camera* /*cam*/, vec3d* /*camera_pos*/))
 {
 	func_custom_position = n_func_custom_position;
 }
@@ -154,7 +154,7 @@ void camera::set_custom_position_function(void (*n_func_custom_position)(camera 
  * Custom function receives the already-modified current orientation value.
  * It should be replaced or added to as the custom function modifier sees fit.
  */
-void camera::set_custom_orientation_function(void (*n_func_custom_orientation)(camera *cam, matrix *camera_ori))
+void camera::set_custom_orientation_function(void (*n_func_custom_orientation)(camera* /*cam*/, matrix* /*camera_ori*/))
 {
 	func_custom_orientation = n_func_custom_orientation;
 }
@@ -183,13 +183,6 @@ void camera::set_position(vec3d *in_position, float in_translation_time, float i
 	pos_x.setAVD(in_position->xyz.x, in_translation_time, in_translation_acceleration_time, in_translation_deceleration_time, in_end_velocity);
 	pos_y.setAVD(in_position->xyz.y, in_translation_time, in_translation_acceleration_time, in_translation_deceleration_time, in_end_velocity);
 	pos_z.setAVD(in_position->xyz.z, in_translation_time, in_translation_acceleration_time, in_translation_deceleration_time, in_end_velocity);
-}
-
-void camera::set_translation_velocity(vec3d *in_velocity, float in_acceleration_time)
-{
-	pos_x.setVD(in_acceleration_time, in_acceleration_time, in_velocity->xyz.x);
-	pos_y.setVD(in_acceleration_time, in_acceleration_time, in_velocity->xyz.y);
-	pos_z.setVD(in_acceleration_time, in_acceleration_time, in_velocity->xyz.z);
 }
 
 void camera::set_rotation(matrix *in_orientation, float in_rotation_time, float in_rotation_acceleration_time, float in_rotation_deceleration_time)
@@ -243,11 +236,6 @@ void camera::set_rotation_facing(vec3d *in_target, float in_rotation_time, float
 	}
 
 	set_rotation(&temp_matrix, in_rotation_time, in_rotation_acceleration_time, in_rotation_deceleration_time);
-}
-
-void camera::set_rotation_velocity(angles * /*in_rotation_rate*/, float  /*in_acceleration_time*/)
-{
-	Error(LOCATION, "This function is disabled until further notice.");
 }
 
 void camera::do_frame(float  /*in_frametime*/)

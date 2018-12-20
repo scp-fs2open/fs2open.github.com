@@ -17,7 +17,6 @@
 
 class camera
 {
-	friend class avd_camera;
 protected:
 	char name[NAME_LENGTH];
 	int sig;
@@ -60,12 +59,10 @@ public:
 	void set_fov(float in_fov, float in_fov_time = 0.0f, float in_fov_acceleration_time = 0.0f, float in_deceleration_time = 0.0f);
 
 	void set_position(vec3d *in_position = NULL, float in_translation_time = 0.0f, float in_translation_acceleration_time = 0.0f, float in_translation_deceleration_time = 0.0f, float in_end_velocity = 0.0f);
-	void set_translation_velocity(vec3d *in_velocity, float in_acceleration_time = 0.0f);
 
 	void set_rotation(matrix *in_orientation = NULL, float in_rotation_time = 0.0f, float in_rotation_acceleration_time = 0.0f, float in_rotation_deceleration_time = 0.0f);
 	void set_rotation(angles *in_angles, float in_rotation_time = 0.0f, float in_rotation_acceleration_time = 0.0f, float in_rotation_deceleration_time = 0.0f);
 	void set_rotation_facing(vec3d *in_target, float in_rotation_time = 0.0f, float in_rotation_acceleration_time = 0.0f, float in_rotation_deceleration_time = 0.0f);
-	void set_rotation_velocity(angles *in_rotation_rate, float in_acceleration_time = 0.0f);
 
 	//Get
 	const char* get_name() { return name; }
