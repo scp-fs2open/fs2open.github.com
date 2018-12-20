@@ -113,12 +113,7 @@ extern const BM_TYPE bm_ani_type_list[];   //!< List of valid bitmap animation t
 extern const char *bm_ani_ext_list[];    //!< List of extensions for those types
 extern const int BM_ANI_NUM_TYPES;       //!< Calculated number of bitmap animation types
 
-extern int GLOWMAP;     //!< References a map that is a fully lit version of its index -Bobboau
-extern int SPECMAP;     //!< References a map that is for specular mapping -Bobboau
 extern int ENVMAP;      //!< References a map that is for environment mapping -Bobboau
-extern int NORMMAP;     //!< Normal mapping
-extern int HEIGHTMAP;   //!< Height map for normal mapping
-extern int MISCMAP;     //!< Utility map, to be utilized for various things shader authors can come up with
 
 /**
  * @brief Initilizes the bitmap manager
@@ -498,28 +493,11 @@ void BM_SELECT_ALPHA_TEX_FORMAT();
 extern void(*bm_set_components)(ubyte *pixel, ubyte *r, ubyte *g, ubyte *b, ubyte *a);
 
 /**
- * @brief Functional pointer that references any of the bm_set_components_32 functions.
- *
- * @details The bm_set_components functions packs the RGBA values into the ubyte array referenced by pixel, whose
- * format differs according to its bpp value and presence of an alpha channel. The RGBA values are scaled accordingly.
- *
- * @see bm_set_components
- */
-extern void(*bm_set_components_32)(ubyte *pixel, ubyte *r, ubyte *g, ubyte *b, ubyte *a);
-
-/**
  * @brief Sets the 16bpp screen pixel to the specified RGBA value
  *
  * @see bm_set_components
  */
 void bm_set_components_argb_16_screen(ubyte *pixel, ubyte *r, ubyte *g, ubyte *b, ubyte *a);
-
-/**
- * @brief Sets the 32bpp screen pixel to the specified RGBA value
- *
- * @see bm_set_components
- */
-void bm_set_components_argb_32_screen(ubyte *pixel, ubyte *r, ubyte *g, ubyte *b, ubyte *a);
 
 /**
  * @brief Sets the 16bpp texture pixel to the specified RGBA value
@@ -542,15 +520,7 @@ void bm_set_components_argb_32_tex(ubyte *pixel, ubyte *r, ubyte *g, ubyte *b, u
  */
 void bm_get_components(ubyte *pixel, ubyte *r, ubyte *g, ubyte *b, ubyte *a);
 
-extern int UNLITMAP; //this holds a reference to a map that is optional used instead of the base map for unlit rendering
-extern int GLOWMAP;	//this holds a reference to a map that is a fully lit version of its index -Bobboau
-extern int SPECMAP;	//this holds a reference to a map that is for specular mapping -Bobboau
-extern int SPECGLOSSMAP;	//this holds a reference to a map that is for specular mapping -Bobboau
 extern int ENVMAP;	//this holds a reference to a map that is for environment mapping -Bobboau
-extern int NORMMAP;	// normal mapping
-extern int HEIGHTMAP;	// height map for normal mapping
-extern int AMBIENTMAP; // ambient occluion map. red channel affects ambient lighting, green channel affects diffuse and specular
-extern int MISCMAP; // Utility map, to be utilized for various things shader authors can come up with
 
 /**
  * @brief Returns the compression type of the bitmap indexed by handle
