@@ -242,16 +242,6 @@ int cfile_init(const char *exe_dir, const char *cdrom_dir)
 	return 0;
 }
 
-// Call this if pack files got added or removed or the
-// cdrom changed.  This will refresh the list of filenames 
-// stored in packfiles and on the cdrom.
-void cfile_refresh()
-{
-	cf_build_secondary_filelist(Cfile_cdrom_dir);
-}
-
-
-
 #ifdef _WIN32
 // Changes to a drive if valid.. 1=A, 2=B, etc
 // If flag, then changes to it.
@@ -642,9 +632,6 @@ void cf_create_directory(int dir_type, uint32_t location_flags)
 		}
 	}
 }
-
-
-extern int game_cd_changed();
 
 // cfopen()
 //
@@ -1168,17 +1155,6 @@ const void *cf_returndata(CFILE *cfile)
 	return cb->data;
 }
 
-
-
-// version number of opened file.  Will be 0 unless you put something else here after you
-// open a file.  Once set, you can use minimum version numbers with the read functions.
-void cf_set_version( CFILE * cfile, int version )
-{
-	Assert(cfile != NULL);
-
-	cfile->version = version;
-}
-
 // cutoff point where cfread() will throw an error when it hits this limit
 // if 'len' is 0 then this check will be disabled
 void cf_set_max_read_len( CFILE * cfile, size_t len )
@@ -1296,22 +1272,6 @@ void cfread_vector(vec3d *vec, CFILE *file, int ver, vec3d *deflt)
 	vec->xyz.y = cfread_float(file, ver, deflt ? deflt->xyz.y : 0.0f);
 	vec->xyz.z = cfread_float(file, ver, deflt ? deflt->xyz.z : 0.0f);
 }
-	
-void cfread_angles(angles *ang, CFILE *file, int ver, angles *deflt)
-{
-	if (file->version < ver) {
-		if (deflt)
-			*ang = *deflt;
-		else
-			ang->p = ang->b = ang->h = 0.0f;
-
-		return;
-	}
-
-	ang->p = cfread_float(file, ver, deflt ? deflt->p : 0.0f);
-	ang->b = cfread_float(file, ver, deflt ? deflt->b : 0.0f);
-	ang->h = cfread_float(file, ver, deflt ? deflt->h : 0.0f);
-}
 
 char cfread_char(CFILE *file, int ver, char deflt)
 {
@@ -1398,28 +1358,6 @@ int cfwrite_ushort(ushort s, CFILE *file)
 int cfwrite_ubyte(ubyte b, CFILE *file)
 {
 	return cfwrite(&b, sizeof(b), 1, file);
-}
-
-int cfwrite_vector(vec3d *vec, CFILE *file)
-{
-	if(!cfwrite_float(vec->xyz.x, file)){
-		return 0;
-	}
-	if(!cfwrite_float(vec->xyz.y, file)){
-		return 0;
-	}
-	return cfwrite_float(vec->xyz.z, file);
-}
-
-int cfwrite_angles(angles *ang, CFILE *file)
-{
-	if(!cfwrite_float(ang->p, file)){
-		return 0;
-	}
-	if(!cfwrite_float(ang->b, file)){
-		return 0;
-	}
-	return cfwrite_float(ang->h, file);
 }
 
 int cfwrite_char(char b, CFILE *file)

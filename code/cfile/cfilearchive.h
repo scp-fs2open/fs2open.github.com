@@ -32,7 +32,6 @@ typedef struct Cfile_block {
 	HANDLE	hInFile;			// Handle from CreateFile()
 	HANDLE	hMapFile;		// Handle from CreateFileMapping()
 #else
-//	int		fd;				// file descriptor
 	size_t	data_length;	// length of data for mmap
 #endif
 	size_t	lib_offset;

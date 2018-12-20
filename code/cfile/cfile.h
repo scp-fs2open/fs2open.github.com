@@ -155,9 +155,6 @@ enum CFileLocationFlags {
 	CF_LOCATION_ALL = CF_LOCATION_ROOT_MASK | CF_LOCATION_TYPE_MASK
 };
 
-#define cfread_fix(file) (fix)cfread_int(file)
-#define cfwrite_fix(i,file) cfwrite_int(i,file)
-
 // callback function used for get_file_list() to filter files to be added to list.  Return 1
 // to add file to list, or 0 to not add it.
 extern int (*Get_file_list_filter)(const char *filename);
@@ -175,11 +172,6 @@ extern char Cfile_user_dir[CFILE_ROOT_DIRECTORY_LEN];
 //================= LOW-LEVEL FUNCTIONS ==================
 int cfile_init(const char *exe_dir, const char *cdrom_dir=NULL);
 void cfile_close();
-
-// Call this if pack files got added or removed or the
-// cdrom changed.  This will refresh the list of filenames 
-// stored in packfiles and on the cdrom.
-void cfile_refresh();
 
 // add an extension to a filename if it doesn't already have it
 char *cf_add_ext(const char *filename, const char *ext);
@@ -201,10 +193,6 @@ CFILE *_cfopen_special(const char* source_file, int line, const char *file_path,
 
 // Flush the open file buffer
 int cflush(CFILE *cfile);
-
-// version number of opened file.  Will be 0 unless you put something else here after you
-// open a file.  Once set, you can use minimum version numbers with the read functions.
-void cf_set_version( CFILE * cfile, int version );
 
 // will throw an error if cfread*() functions read past this mark
 // converted to raw offsets when used, but gets passed actual length from current position
@@ -245,10 +233,6 @@ int cfread(void *buf, int elsize, int nelem, CFILE *fp);
 
 // cfwrite() writes to the file
 int cfwrite(const void *buf, int elsize, int nelem, CFILE *cfile);
-
-// Reads/writes RLE compressed data.
-int cfread_compressed(void *buf, int elsize, int nelem, CFILE *cfile);
-int cfwrite_compressed(void *param_buf, int param_elsize, int param_nelem, CFILE *cfile);
 
 // Moves the file pointer
 int cfseek(CFILE *fp, int offset, int where);
@@ -301,7 +285,6 @@ uint cf_add_chksum_long(uint seed, ubyte *buffer, size_t size);
 // convenient for misc checksumming purposes ------------------------------------------
 
 //================= HIGH LEVEL FUNCTIONS ==================
-int cfexist(const char *filename);	// Returns true if file exists on disk (1) or in hog (2).
 
 // rename a file, utilizing the extension to determine where file is.
 #define CF_RENAME_SUCCESS				0					// successfully renamed the file
@@ -319,7 +302,6 @@ int cfile_flush_dir(int type);
 // functions for reading from cfile
 // These are all high level, built up from
 // cfread.
-int cfgetc(CFILE *fp);
 char *cfgets(char *buf, size_t n, CFILE *fp);
 char cfread_char(CFILE *file, int ver = 0, char deflt = 0);
 ubyte cfread_ubyte(CFILE *file, int ver = 0, ubyte deflt = 0);
@@ -329,7 +311,6 @@ int cfread_int(CFILE *file, int ver = 0, int deflt = 0);
 uint cfread_uint(CFILE *file, int ver = 0, uint deflt = 0);
 float cfread_float(CFILE *file, int ver = 0, float deflt = 0.0f);
 void cfread_vector(vec3d *vec, CFILE *file, int ver = 0, vec3d *deflt = NULL);
-void cfread_angles(angles *ang, CFILE *file, int ver = 0, angles *deflt = NULL);
 
 // Reads variable length, null-termined string.   Will only read up
 // to n characters.
@@ -360,8 +341,6 @@ int cfwrite_uint(uint i, CFILE *file);
 int cfwrite_short(short s, CFILE *file);
 int cfwrite_ushort(ushort s, CFILE *file);
 int cfwrite_ubyte(ubyte u, CFILE *file);
-int cfwrite_vector(vec3d *vec, CFILE *file);
-int cfwrite_angles(angles *ang, CFILE *file);
 
 // writes variable length, null-termined string.
 int cfwrite_string(const char *buf, CFILE *file);
