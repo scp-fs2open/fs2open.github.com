@@ -524,9 +524,6 @@ void HudGaugeRadarOrb::render(float  /*frametime*/)
 
 void HudGaugeRadarOrb::blitGauge()
 {
-	SPECMAP = -1;
-	GLOWMAP = -1;
-
 	renderBitmap(Radar_gauge.first_frame+1, position[0], position[1] );
 }
 

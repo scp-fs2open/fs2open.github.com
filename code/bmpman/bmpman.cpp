@@ -55,14 +55,7 @@ MONITOR(SizeBitmapPage)
 
 // --------------------------------------------------------------------------------------------------------------------
 // Definition of public variables (declared as extern in bmpman.h).
-int GLOWMAP = -1;
-int SPECMAP = -1;
-int SPECGLOSSMAP = -1;
 int ENVMAP = -1;
-int NORMMAP = -1;
-int HEIGHTMAP = -1;
-int MISCMAP = -1;
-int AMBIENTMAP = -1;
 
 size_t bm_texture_ram = 0;
 int Bm_paging = 0;
@@ -80,11 +73,6 @@ const char *bm_ani_ext_list[] = { ".eff", ".ani", ".png" };
 const int BM_ANI_NUM_TYPES = sizeof(bm_ani_type_list) / sizeof(bm_ani_type_list[0]);
 
 void(*bm_set_components)(ubyte *pixel, ubyte *r, ubyte *g, ubyte *b, ubyte *a) = NULL;
-void(*bm_set_components_32)(ubyte *pixel, ubyte *r, ubyte *g, ubyte *b, ubyte *a) = NULL;
-
-// --------------------------------------------------------------------------------------------------------------------
-// Declaration of protected variables (defined in cmdline.cpp).
-extern int Cmdline_cache_bitmaps;
 
 // --------------------------------------------------------------------------------------------------------------------
 // Definition of public variables (declared as extern in bm_internal.h).
@@ -558,7 +546,6 @@ int bm_create(int bpp, int w, int h, void *data, int flags) {
 	sprintf_safe(entry->filename, "TMP%dx%d+%d", w, h, bpp);
 	entry->type = BM_TYPE_USER;
 	entry->comp_type = BM_TYPE_NONE;
-	entry->palette_checksum = 0;
 
 	entry->bm.w = (short)w;
 	entry->bm.h = (short)h;
@@ -576,7 +563,6 @@ int bm_create(int bpp, int w, int h, void *data, int flags) {
 	entry->signature = Bm_next_signature++;
 
 	entry->handle = n;
-	entry->last_used = -1;
 	entry->mem_taken = (w * h * (bpp >> 3));
 
 	entry->load_count++;
@@ -1222,9 +1208,7 @@ int bm_load(const char *real_filename) {
 	entry->num_mipmaps = mm_lvl;
 	entry->mem_taken = (size_t)bm_size;
 	entry->dir_type = CF_TYPE_ANY;
-	entry->palette_checksum = 0;
 	entry->handle = handle;
-	entry->last_used = -1;
 
 	entry->load_count++;
 
@@ -1687,10 +1671,8 @@ int bm_load_animation(const char *real_filename, int *nframes, int *fps, int *ke
 		entry->bm.palette = nullptr;
 		entry->type = type;
 		entry->comp_type = c_type;
-		entry->palette_checksum = 0;
 		entry->signature = Bm_next_signature++;
 		entry->handle = n + i;
-		entry->last_used = -1;
 		entry->num_mipmaps = mm_lvl;
 		entry->mem_taken = (size_t)img_size;
 		entry->dir_type = dir_type;
@@ -1933,8 +1915,6 @@ bitmap * bm_lock(int handle, int bpp, ubyte flags, bool nodebug) {
 			// Mark all the bitmaps in this bitmap or animation as recently used
 			auto frame_entry = bm_get_entry(first + i);
 
-			frame_entry->last_used = timer_get_milliseconds();
-
 #ifdef BMPMAN_NDEBUG
 			// Mark all the bitmaps in this bitmap or animation as used for the usage tracker.
 			frame_entry->used_count++;
@@ -1943,9 +1923,6 @@ bitmap * bm_lock(int handle, int bpp, ubyte flags, bool nodebug) {
 			frame_entry->used_flags = flags;
 		}
 	} else {
-		// Mark all the bitmaps in this bitmap or animation as recently used
-		be->last_used = timer_get_milliseconds();
-
 #ifdef BMPMAN_NDEBUG
 		// Mark all the bitmaps in this bitmap or animation as used for the usage tracker.
 		be->used_count++;
@@ -2490,9 +2467,7 @@ int bm_make_render_target(int width, int height, int flags) {
 	entry->mem_taken = (size_t)size;
 	entry->dir_type = CF_TYPE_ANY;
 
-	entry->palette_checksum = 0;
 	entry->handle = n;
-	entry->last_used = -1;
 
 	if (entry->mem_taken) {
 		entry->bm.data = (ptr_u)bm_malloc(n, entry->mem_taken);
@@ -2814,7 +2789,6 @@ int bm_release(int handle, int clear_render_targets) {
 			// For debugging:
 			strcpy_s(entry->filename, "IVE_BEEN_RELEASED!");
 			entry->signature = 0xDEADBEEF;									// a unique signature identifying the data
-			entry->palette_checksum = 0xDEADBEEF;							// checksum used to be sure bitmap is in current palette
 
 			// bookeeping
 			entry->ref_count = -1;									// Number of locks on bitmap.  Can't unload unless ref_count is 0.
@@ -2841,7 +2815,6 @@ int bm_release(int handle, int clear_render_targets) {
 		// For debugging:
 		strcpy_s(entry->filename, "IVE_BEEN_RELEASED!");
 		entry->signature = 0xDEADBEEF;									// a unique signature identifying the data
-		entry->palette_checksum = 0xDEADBEEF;							// checksum used to be sure bitmap is in current palette
 
 		// bookeeping
 		entry->ref_count = -1;									// Number of locks on bitmap.  Can't unload unless ref_count is 0.
@@ -2883,7 +2856,6 @@ void BM_SELECT_ALPHA_TEX_FORMAT() {
 	Gr_current_alpha = &Gr_ta_alpha;
 
 	// setup pointers
-	bm_set_components_32 = bm_set_components_argb_32_tex;
 	// should always assume that 16-bit is the default request
 	bm_set_components = bm_set_components_argb_16_tex;
 }
@@ -2895,7 +2867,6 @@ void BM_SELECT_SCREEN_FORMAT() {
 	Gr_current_alpha = &Gr_alpha;
 
 	// setup pointers
-	bm_set_components_32 = bm_set_components_argb_32_screen;
 	// should always assume that 16-bit is the default request
 	bm_set_components = bm_set_components_argb_16_screen;
 }
@@ -2907,7 +2878,6 @@ void BM_SELECT_TEX_FORMAT() {
 	Gr_current_alpha = &Gr_t_alpha;
 
 	// setup pointers
-	bm_set_components_32 = bm_set_components_argb_32_tex;
 	// should always assume that 16-bit is the default request
 	bm_set_components = bm_set_components_argb_16_tex;
 }
@@ -2933,29 +2903,6 @@ void bm_set_components_argb_16_tex(ubyte *pixel, ubyte *rv, ubyte *gv, ubyte *bv
 	*((unsigned short*)pixel) |= (unsigned short)(((int)*gv / Gr_current_green->scale) << Gr_current_green->shift);
 	*((unsigned short*)pixel) |= (unsigned short)(((int)*bv / Gr_current_blue->scale) << Gr_current_blue->shift);
 	*((unsigned short*)pixel) |= (unsigned short)(Gr_current_alpha->mask);
-}
-
-void bm_set_components_argb_32_screen(ubyte *pixel, ubyte *rv, ubyte *gv, ubyte *bv, ubyte *av) {
-	if (*av == 0) {
-		*((unsigned int*)pixel) = (unsigned int)Gr_current_green->mask;
-		return;
-	}
-
-	*((unsigned int*)pixel) = (unsigned int)(((int)*rv / Gr_current_red->scale) << Gr_current_red->shift);
-	*((unsigned int*)pixel) |= (unsigned int)(((int)*gv / Gr_current_green->scale) << Gr_current_green->shift);
-	*((unsigned int*)pixel) |= (unsigned int)(((int)*bv / Gr_current_blue->scale) << Gr_current_blue->shift);
-}
-
-void bm_set_components_argb_32_tex(ubyte *pixel, ubyte *rv, ubyte *gv, ubyte *bv, ubyte *av) {
-	if (*av == 0) {
-		*((unsigned int*)pixel) = 0;
-		return;
-	}
-
-	*((unsigned int*)pixel) = (unsigned int)(((int)*rv / Gr_current_red->scale) << Gr_current_red->shift);
-	*((unsigned int*)pixel) |= (unsigned int)(((int)*gv / Gr_current_green->scale) << Gr_current_green->shift);
-	*((unsigned int*)pixel) |= (unsigned int)(((int)*bv / Gr_current_blue->scale) << Gr_current_blue->shift);
-	*((unsigned int*)pixel) |= (unsigned int)(Gr_current_alpha->mask);
 }
 
 void bm_set_low_mem(int mode) {
