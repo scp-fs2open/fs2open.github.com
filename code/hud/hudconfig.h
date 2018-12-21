@@ -73,11 +73,7 @@ void hud_config_restore();
 void hud_config_backup();
 void hud_config_as_observer(ship *shipp,ai_info *aif);
 
-
-void hud_config_as_observer();
 void hud_config_as_player();
-void hud_config_display_text(char* gauge_text, int x, int y);
-void hud_set_display_gauge_cbox();
 
 // leave hud config without accepting changes
 void hud_config_cancel();

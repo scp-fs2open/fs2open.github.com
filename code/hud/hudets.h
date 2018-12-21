@@ -27,7 +27,6 @@ class object;
 #define AI_MODIFY_ETS_INTERVAL 500	// time between ets modifications for ai's (in milliseconds)
 
 #define ZERO_INDEX			0
-#define ONE_THIRD_INDEX		4
 #define ONE_HALF_INDEX		6
 #define ALL_INDEX			12
 

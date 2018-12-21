@@ -58,27 +58,3 @@ void hud_observer_init(ship *shipp, ai_info *aip)
 void hud_obs_render_player(int  /*loc*/,net_player * /*pl*/)
 {
 }
-
-void hud_obs_render_players_all()
-{
-	int idx,count;
-
-	// render kills and stats information for all players
-	count = 0;
-	for(idx=0;idx<MAX_PLAYERS;idx++){
-		if(MULTI_CONNECTED(Net_players[idx]) && !MULTI_STANDALONE(Net_players[idx]) && !MULTI_PERM_OBSERVER(Net_players[idx]) ){
-			hud_obs_render_player(count,&Net_players[idx]);
-		}
-	}
-}
-
-/**
- * Render any specific observer stuff
- */
-void hud_render_observer()
-{
-	Assert((Game_mode & GM_MULTIPLAYER) && (Net_player->flags & NETINFO_FLAG_OBSERVER));
-
-	// render individual player text
-	hud_obs_render_players_all();
-}
