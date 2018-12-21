@@ -34,13 +34,6 @@ int Failed_key_index;
 int Joy_dead_zone_size = 10;
 int Joy_sensitivity = 9;
 
-// assume control keys are used as modifiers until we find out 
-int Shift_is_modifier;
-int Ctrl_is_modifier;
-int Alt_is_modifier;
-
-int Axis_enabled[JOY_NUM_AXES] = { 1, 1, 1, 0, 0, 0 };
-int Axis_enabled_defaults[JOY_NUM_AXES] = { 1, 1, 1, 0, 0, 0 };
 int Invert_axis[JOY_NUM_AXES] = { 0, 0, 0, 0, 0, 0 };
 int Invert_axis_defaults[JOY_NUM_AXES] = { 0, 0, 0, 0, 0, 0 };
 
@@ -409,31 +402,6 @@ const char **Joy_button_text = Joy_button_text_english;
 
 SCP_vector<config_item*> Control_config_presets;
 SCP_vector<SCP_string> Control_config_preset_names;
-
-void set_modifier_status()
-{
-	int i;
-
-	Alt_is_modifier = 0;
-	Shift_is_modifier = 0;
-	Ctrl_is_modifier = 0;
-
-	for (i=0; i<CCFG_MAX; i++) {
-		if (Control_config[i].key_id < 0)
-			continue;
-
-		if (Control_config[i].key_id & KEY_ALTED)
-			Alt_is_modifier = 1;
-
-		if (Control_config[i].key_id & KEY_SHIFTED)
-			Shift_is_modifier = 1;
-
-		if (Control_config[i].key_id & KEY_CTRLED) {
-			Assert(0);  // get Alan
-			Ctrl_is_modifier = 1;
-		}
-	}
-}
 
 // If find_override is set to true, then this returns the index of the action
 // which has been bound to the given key. Otherwise, the index of the action

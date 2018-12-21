@@ -277,12 +277,6 @@ enum IoActionId  {
 };
 
 extern int Failed_key_index;
-extern int Invert_heading;
-extern int Invert_pitch;
-extern int Invert_roll;
-extern int Invert_thrust;
-extern int Disable_axis2;
-extern int Disable_axis3;
 
 extern int Axis_map_to[];
 extern int Invert_axis[];
@@ -336,7 +330,6 @@ int check_control(int id, int key = -1);
 void control_get_axes_readings(int *h, int *p, int *b, int *ta, int *tr);
 void control_used(int id);
 void control_config_clear();
-void clear_key_binding(short key);
 void control_check_indicate();
 void control_config_clear_used_status();
 
