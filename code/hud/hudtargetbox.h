@@ -148,7 +148,6 @@ public:
 	void initTimeOffsets(int x, int y);
 	void initOrderOffsets(int x, int y);
 	void initOrderMaxWidth(int width);
-	void updateFrame();
 	void render(float frametime) override;
 	void initialize() override;
 	void initDockFlashTimer();
@@ -158,7 +157,6 @@ public:
 	void pageIn() override;
 };
 
-void	hud_targetbox_init();
 void	hud_targetbox_init_flash();
 void	hud_get_target_strength(object *objp, float *shields, float *integrity);
 

@@ -169,11 +169,4 @@ public:
 void hud_init_reticle();
 void hud_update_reticle( player *pp );
 
-void hud_draw_outer_reticle();
-void hud_draw_center_reticle();
-void hud_draw_throttle_gauge();
-void hud_draw_target_throttle_gauge();
-
-
-
 #endif
