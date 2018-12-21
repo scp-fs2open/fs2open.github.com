@@ -36,7 +36,6 @@ public:
 	int waypoint_num; //only used when flags & NP_WAYPOINT
 
 	vec3d *GetPosition();
-	char* GetInternalName();
 
 	void clear()
 	{
@@ -129,9 +128,6 @@ void SelectNav(char *Nav);
 // Deselects any navpoint selected.
 void DeselectNav();
 
-// Set A Nav point to "ZERO"
-void ZeroNav(int i);
-
 // Removes a Nav
 bool DelNavPoint(char *Nav);
 bool DelNavPoint(int nav);
@@ -139,9 +135,6 @@ bool DelNavPoint(int nav);
 // adds a Nav
 bool AddNav_Ship(char *Nav, char *TargetName, int flags); 
 bool AddNav_Waypoint(char *Nav, char *WP_Path, int node, int flags);
-
-//Change Flags
-bool Nav_Alt_Flags(char *Nav, int flags);
 
 // Sexp Accessors
 bool Nav_Set_Flag(char *Nav, int flag);
