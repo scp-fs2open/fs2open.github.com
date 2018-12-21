@@ -53,26 +53,6 @@ void cmeasure_set_ship_launch_vel(object *objp, object *parent_objp, int arand)
 	vm_vec_copy_scale(&objp->phys_info.desired_vel, &objp->orient.vec.fvec, objp->phys_info.max_vel.xyz.z );
 }
 
-void cmeasure_select_next(ship *shipp)
-{
-	Assert(shipp != NULL);
-	int i, new_index;
-
-	for (i = 1; i < Num_weapon_types; i++)
-	{
-		new_index = (shipp->current_cmeasure + i) % Num_weapon_types;
-
-		if(Weapon_info[new_index].wi_flags[Weapon::Info_Flags::Cmeasure])
-		{
-			shipp->current_cmeasure = new_index;
-			return;
-		}
-	}
-
-	mprintf(("Countermeasure type set to %i in frame %i\n", shipp->current_cmeasure, Framecount));
-}
-
-
 /** 
  * @brief If this is a player countermeasure, let the player know they evaded a missile.
  * @param objp [description]
