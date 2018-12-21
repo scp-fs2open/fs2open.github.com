@@ -478,14 +478,6 @@ void joy_ff_mission_init(vec3d v)
 	joy_ff_handling_scaler = (int) ((vm_vec_mag(&v) + 1.3f) * 5.0f);
 }
 
-void joy_reacquire_ff()
-{
-}
-
-void joy_unacquire_ff()
-{
-}
-
 void joy_ff_play_vector_effect(vec3d *v, float scaler)
 {
 	vec3d vf;
