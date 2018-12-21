@@ -435,6 +435,8 @@ void parse_ai_profiles_tbl(const char *filename)
 
 				set_flag(profile, "$ai guards specific ship in wing:", AI::Profile_Flags::Ai_guards_specific_ship_in_wing);
 
+				set_flag(profile, "$support don't add primaries:", AI::Profile_Flags::Support_dont_add_primaries);
+
 				profile->ai_path_mode = AI_PATH_MODE_NORMAL;
 				if (optional_string("$ai path mode:"))
 				{
