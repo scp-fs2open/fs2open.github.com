@@ -7478,32 +7478,6 @@ void ai_set_guard_wing(object *objp, int wingnum)
 	}
 }
 
-//	Make object *objp guard object *other_objp.
-//	To be called from the goals code.
-void ai_set_evade_object(object *objp, object *other_objp)
-{
-	ship		*shipp;
-	ai_info	*aip;
-	int		other_objnum;
-
-	Assert(objp->type == OBJ_SHIP);
-	Assert(objp->instance >= 0);
-
-	shipp = &Ships[objp->instance];
-
-	Assert(shipp->ai_index >= 0);
-
-	aip = &Ai_info[shipp->ai_index];
-
-	other_objnum = OBJ_INDEX(other_objp);
-	Assert(other_objnum >= 0);
-
-	Assert(other_objnum != Ships[aip->shipnum].objnum);	//	make sure not targeting self
-	aip->target_objnum = other_objnum;
-
-	aip->mode = AIM_EVADE;
-}
-
 //	Make objp guard other_objp
 //	If other_objp is a member of a wing, objp will guard that whole wing
 //	UNLESS objp is also a member of the wing!
@@ -11537,53 +11511,6 @@ void render_wing_phantoms_all()
 }
 
 #endif
-
-//	Hook from goals code to AI.
-//	Force a wing to fly in formation.
-//	Sets AIF_FORMATION bit in ai_flags.
-//	wingnum		Wing to force to fly in formation
-void ai_fly_in_formation(int wingnum)
-{
-	object	*objp;
-	ship		*shipp;
-	ship_obj	*so;
-
-	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
-		objp = &Objects[so->objnum];
-		Assert((objp->instance >= 0) && (objp->instance < MAX_SHIPS));
-
-		shipp = &Ships[objp->instance];
-		Assert((shipp->ai_index >= 0) && (shipp->ai_index < MAX_AI_INFO));
-
-		if (Ai_info[shipp->ai_index].wing == wingnum) {
-			Ai_info[shipp->ai_index].ai_flags.set(AI::AI_Flags::Formation_wing);
-			Ai_info[shipp->ai_index].ai_flags.remove(AI::AI_Flags::Formation_object);
-		}
-	}
-}
-
-//	Hook from goals code to AI.
-//	Force a wing to abandon formation flying.
-//	Clears AIF_FORMATION bit in ai_flags.
-//	wingnum		Wing to force to fly in formation
-void ai_disband_formation(int wingnum)
-{
-	object	*objp;
-	ship		*shipp;
-	ship_obj	*so;
-
-	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
-		objp = &Objects[so->objnum];
-		Assert((objp->instance >= 0) && (objp->instance < MAX_SHIPS));
-
-		shipp = &Ships[objp->instance];
-		Assert((shipp->ai_index >= 0) && (shipp->ai_index < MAX_AI_INFO));
-
-		if (Ai_info[shipp->ai_index].wing == wingnum) {
-			Ai_info[shipp->ai_index].ai_flags.remove(AI::AI_Flags::Formation_wing);
-		}
-	}
-}
 
 float	Leader_chaos = 0.0f;
 int Chaos_frame = -1;
