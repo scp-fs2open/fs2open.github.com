@@ -109,38 +109,6 @@ static int Gameplay_help_inited = 0;
 
 static int Current_help_page;
 
-// generate a line for the on-line help for a control item with specified id
-// input:	id		=>	index for control item within Control_config[]
-//				buf	=> buffer with enough space to hold ouput string
-const char *gameplay_help_control_text(int id, char *buf)
-{
-	int			has_key=0, has_joy=0;
-	config_item	*ci;
-
-	ci = &Control_config[id];
-
-	if ( ci->key_id >= 0 ) {
-		strcpy(buf, textify_scancode(ci->key_id));
-		has_key=1;
-	}
-
-	if ( ci->joy_id >= 0 ) {
-		if ( has_key ) {
-			strcat(buf, XSTR( ", ", 129));
-		}
-		strcat(buf, Joy_button_text[ci->joy_id]);
-		has_joy=1;
-	}
-
-	if ( !has_key && !has_joy ) {
-		strcpy(buf, XSTR( "no binding", 130));
-	}
-
-	strcat(buf, XSTR( " - ", 131));
-	strcat(buf, ci->text);
-
-	return buf;
-}
 
 void gameplay_help_blit_control_line(int x, int y, int id)
 {
@@ -823,21 +791,4 @@ void gameplay_help_do_frame(float  /*frametime*/)
 
 	gameplay_help_draw_text();
 	gr_flip();
-}
-
-
-// called once when leaving the gameplay help state
-void gameplay_help_close()
-{
-	if ( Gameplay_help_inited ) {
-		if (Background_bitmap >= 0) {
-			bm_release(Background_bitmap);
-		}
-
-		Ui_window.destroy();
-		common_free_interface_palette();		// restore game palette
-		game_flush();
-	}
-
-	Gameplay_help_inited = 0;
 }
