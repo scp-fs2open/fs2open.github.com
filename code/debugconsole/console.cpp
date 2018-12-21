@@ -70,7 +70,6 @@ int dc_font = font::FONT1;
 
 SCP_string dc_title;
 
-#define SCROLL_X_MAX (DBCOLS - DCOLS)
 #define SCROLL_Y_MAX (DBROWS - DROWS)
 
 // Commands and History
@@ -116,11 +115,6 @@ void dc_draw_window(bool show_prompt);
  * @details Also handles tab alignment, newlines, and maintains the target.
  */
 void dc_putc(char c);
-
-/**
- * @brief Predicate function used to sort debug_commands
- */
-bool dcmd_less(debug_command *first, debug_command *second);
 
 // ============================== IMPLEMENTATIONS =============================
 void dc_do_command(SCP_string *cmd_str)
@@ -492,11 +486,6 @@ void dc_putc(char c)
 
 	// Else, just push the char onto the line
 	line_str->push_back(c);
-}
-
-bool dcmd_less(debug_command *first, debug_command *second)
-{
-	return (strcmp(first->name, second->name) < 0);
 }
 
 void debug_console(void (*_func)(void))
