@@ -587,13 +587,10 @@ extern void get_absolute_wing_pos_autopilot( vec3d *result_pos, object *leader_o
 
 //	Interface from goals code to AI.  Set ship to guard.  *objp guards *other_objp
 extern void ai_set_guard_object(object *objp, object *other_objp);
-extern void ai_set_evade_object(object *objp, object *other_objp);
 extern void ai_set_guard_wing(object *objp, int wingnum);
 extern void ai_warp_out(object *objp, vec3d *vp);
 extern void ai_attack_wing(object *attacker, int wingnum);
 extern void ai_deathroll_start(object *ship_obj);
-extern void ai_fly_in_formation(int wing_num);		//	Force wing to fly in formation.
-extern void ai_disband_formation(int wing_num);		//	Force wing to disband formation flying.
 extern int set_target_objnum(ai_info *aip, int objnum);
 extern void ai_form_on_wing(object *objp, object *goal_objp);
 extern void ai_do_stay_near(object *objp, object *other_obj, float dist);
@@ -645,8 +642,6 @@ extern void ai_do_objects_repairing_stuff( object *repaired_obj, object *repair_
 // Goober5000
 //	Move to a position relative to a dock bay using thrusters.
 extern float dock_orient_and_approach(object *docker_objp, int docker_index, object *dockee_objp, int dockee_index, int dock_mode, rotating_dockpoint_info *rdinfo = NULL);
-
-extern int find_danger_weapon(object *sobjp, float dtime, float *atime, float dot_threshhold);
 
 void ai_set_mode_warp_out(object *objp, ai_info *aip);
 
