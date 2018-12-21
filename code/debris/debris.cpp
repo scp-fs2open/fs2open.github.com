@@ -31,7 +31,6 @@
 #include "weapon/weapon.h"
 #include "tracing/Monitor.h"
 
-#define MAX_LIFE									10.0f
 #define MIN_RADIUS_FOR_PERSISTANT_DEBRIS	50		// ship radius at which debris from it becomes persistant
 #define DEBRIS_SOUND_DELAY						2000	// time to start debris sound after created
 #define MAX_HULL_PIECES			MAX_DEBRIS_PIECES // limit the number of hull debris chunks that can exist. 
@@ -51,10 +50,6 @@ int Debris_num_submodels = 0;
 #define	MAX_DEBRIS_DIST					10000.0f			//	Debris goes away if it's this far away.
 #define	DEBRIS_DISTANCE_CHECK_TIME		(10*1000)		//	Check every 10 seconds.
 #define	DEBRIS_INDEX(dp) (int)(dp-Debris)
-
-#define	MAX_SPEED_SMALL_DEBRIS		200					// maximum velocity of small debris piece
-#define	MAX_SPEED_BIG_DEBRIS			150					// maximum velocity of big debris piece
-#define	MAX_SPEED_CAPITAL_DEBRIS	100					// maximum velocity of capital debris piece
 
 /**
  * Start the sequence of a piece of debris writhing in unholy agony!!!
@@ -496,7 +491,6 @@ object *debris_create(object *source_obj, int model_num, int submodel_num, vec3d
 	db->flags |= DEBRIS_USED;
 	db->is_hull = hull_flag;
 	db->source_objnum = parent_objnum;
-	db->source_sig = source_obj->signature;
 	db->damage_type_idx = shipp->debris_damage_type_idx;
 	db->ship_info_index = shipp->ship_info_index;
 	db->team = shipp->team;

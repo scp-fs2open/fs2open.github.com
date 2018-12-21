@@ -24,7 +24,6 @@ typedef struct debris {
 	debris	*next, *prev;		// used for a linked list of the hull debris chunks
 	int		flags;					// See DEBRIS_??? defines
 	int		source_objnum;		// What object this came from
-	int		source_sig;			// Signature of the source object
 	int		damage_type_idx;	// Damage type of this debris
 	int		ship_info_index;	// Ship info index of the ship type debris came from
 	int		team;					// Team of the ship where the debris came from
