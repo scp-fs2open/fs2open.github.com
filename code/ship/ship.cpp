@@ -13650,7 +13650,8 @@ int ship_do_rearm_frame( object *objp, float frametime )
 	// AL 10-31-97: Add missing primary weapons to the ship.  This is required since designers
 	//              want to have ships that start with no primaries, but can get them through
 	//					 rearm/repair
-	if ( swp->num_primary_banks < sip->num_primary_banks ) {
+	// plieblang - skip this if the ai profile flag is set
+	if ( swp->num_primary_banks < sip->num_primary_banks && !aip->ai_profile_flags[AI::Profile_Flags::Support_dont_add_primaries] ) {
 		for ( i = swp->num_primary_banks; i < sip->num_primary_banks; i++ ) {
 			swp->primary_bank_weapons[i] = sip->primary_bank_weapons[i];
 		}
