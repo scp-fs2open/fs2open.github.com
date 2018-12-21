@@ -76,14 +76,6 @@ namespace
 		return filename;
 	}
 
-	char replaceNewline(char in)
-	{
-		if (in == '\n')
-			return ' ';
-
-		return in;
-	}
-
 	void set_clipboard_text(const char* text)
 	{
 		// Make sure video is enabled
