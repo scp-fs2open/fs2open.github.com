@@ -1028,55 +1028,6 @@ void ds_stop_easy(int sid)
 }
 
 /**
- * Play a sound without the usual baggage (used for playing back real-time voice)
- *  
- * @param sid Software id of sound
- * @param volume Volume of sound effect in linear scale
- */
-int ds_play_easy(int sid, float volume)
-{
-	if (!ds_initialized) {
-		return -1;
-	}
-
-	int ch_idx = -1;
-	if (!Cmdline_no_enhanced_sound) {
-		ds_get_free_channel_enhanced(volume, -1, SND_ENHANCED_PRIORITY_MUST_PLAY, SND_ENHANCED_MAX_LIMIT);
-	} else {
-		ds_get_free_channel_retail(volume, -1, DS_MUST_PLAY);
-	}
-
-	if (ch_idx < 0) {
-		return -1;
-	}
-
-	ALuint source_id = Channels[ch_idx].source_id;
-
-	OpenAL_ErrorPrint( alSourceStop(source_id) );
-
-	if (Channels[ch_idx].sid != sid) {
-		ALuint buffer_id = sound_buffers[sid].buf_id;
-		OpenAL_ErrorCheck( alSourcei(source_id, AL_BUFFER, buffer_id), return -1 );
-	}
-
-	Channels[ch_idx].sid = sid;
-
-	OpenAL_ErrorPrint( alSourcef(source_id, AL_GAIN, volume) );
-
-	OpenAL_ErrorPrint( alSourcei(source_id, AL_LOOPING, AL_FALSE) );
-	OpenAL_ErrorPrint( alSourcei(source_id, AL_SOURCE_RELATIVE, AL_TRUE) );
-
-	OpenAL_ErrorPrint( alSource3f(Channels[ch_idx].source_id, AL_POSITION, 0.0f, 0.0f, 0.0f) );
-	OpenAL_ErrorPrint( alSource3f(Channels[ch_idx].source_id, AL_VELOCITY, 0.0f, 0.0f, 0.0f) );
-
-	OpenAL_ErrorPrint( alDopplerFactor(0.0f) );
-
-	OpenAL_ErrorPrint( alSourcePlay(source_id) );
-
-	return 0;
-}
-
-/**
  * Play a sound secondary buffer.  
  *
  * @param sid Software id of sound
@@ -1295,20 +1246,6 @@ void ds_set_pitch(int channel_id, float pitch)
 }
 
 /**
- * @todo Documentation
- */
-void ds_chg_loop_status(int channel_id, int loop)
-{
-	if ( (channel_id < 0) || (channel_id >= MAX_CHANNELS) ) {
-		return;
-	}
-
-	ALuint source_id = Channels[channel_id].source_id;
-
-	OpenAL_ErrorPrint( alSourcei(source_id, AL_LOOPING, loop ? AL_TRUE : AL_FALSE) );
-}
-
-/**
  * Starts a ds3d sound playing
  *
  * @param sid Software id for sound to play
@@ -1447,14 +1384,6 @@ unsigned int ds_get_play_position(int channel_id)
 	}
 
 	return (unsigned int) pos;
-}
-
-/**
- * @todo Documentation
- */
-unsigned int ds_get_write_position(int  /*channel_id*/)
-{
-	return 0;
 }
 
 /**
@@ -1604,20 +1533,6 @@ int ds_eax_set_damping(float damp)
 	OpenAL_ErrorPrint( v_alEffectf(AL_EFX_effect_id, AL_EAXREVERB_DECAY_HFRATIO, damp) );
 
 	OpenAL_ErrorCheck( v_alAuxiliaryEffectSloti(AL_EFX_aux_id, AL_EFFECTSLOT_EFFECT, AL_EFX_effect_id), return -1 );
-
-	return 0;
-}
-
-/** 
- * Set up the environment type for all sound sources.
- *
- * @param envid Value from the EAX_ENVIRONMENT_* enumeration in ds_eax.h
- * @return Always returns 0.
- * @todo Proper error reporting, otherwise make a void return type.
- */
-int ds_eax_set_environment(unsigned long envid)
-{
-	al_efx_load_preset(envid);
 
 	return 0;
 }
