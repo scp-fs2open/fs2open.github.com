@@ -57,11 +57,8 @@ SOUNDTRACK_INFO Soundtracks[MAX_SOUNDTRACKS];
 int Num_soundtracks;
 int Current_soundtrack_num;	// Active soundtrack for the current mission.. index into Soundtracks[]
 
-#define PATTERN_DELAY	1000	// in ms
 int Current_pattern = -1;		// currently playing part of track
-int Pending_pattern = -1;
 int Pattern_timer_id = 0;
-int Current_nrml = SONG_NRML_1;
 
 // File Globals
 static int Num_enemy_arrivals;
@@ -240,7 +237,6 @@ static int Event_music_begun = FALSE;
 
 // forward function declarations
 int hostile_ships_present();
-int hostile_ships_to_arrive();
 extern int hud_target_invalid_awacs(object *objp);
 
 // Holds file names of spooled music that is played at menus, briefings, credits etc.
@@ -544,7 +540,6 @@ void event_music_level_init(int force_soundtrack)
 		return;
 
 	Current_pattern = -1;
-	Current_nrml = SONG_NRML_1;
 
 	if (Event_music_inited == FALSE)
 		return;
@@ -556,15 +551,6 @@ void event_music_level_init(int force_soundtrack)
 	if (Current_soundtrack_num < 0)
 	{
 		return;
-/*
-		// okay, assign a random soundtrack if one exists
-		if ( Num_soundtracks > 0 ) {
-			Current_soundtrack_num = rand()%Num_soundtracks;
-			nprintf(("EVENTMUSIC", "EVENTMUSIC ==> Picking random event music soundtrack: %s\n", Soundtracks[Current_soundtrack_num].name));
-		} else {
-			return;
-		}
-*/
 	}
 
 	Assert(Current_soundtrack_num >= 0 && Current_soundtrack_num < Num_soundtracks);
@@ -631,9 +617,7 @@ void event_music_level_init(int force_soundtrack)
 // -------------------------------------------------------------------------------------------------
 // event_music_first_pattern() 
 //
-// Picks the first pattern to play, based on whether the battle has started.  Delay start
-// by PATTERN_DELAY
-//
+// Picks the first pattern to play, based on whether the battle has started.
 void event_music_first_pattern()
 {
 	if ( Event_music_inited == FALSE ) {
@@ -1521,59 +1505,6 @@ void event_music_start_default()
 }
 
 // -------------------------------------------------------------------------------------------------
-// event_music_pause()
-//
-//	Stop any playing pattern, but don't rewind.
-//
-void event_music_pause()
-{
-	if ( Event_music_enabled == FALSE ) {
-		nprintf(("EVENTMUSIC", "EVENTMUSIC ==> Requested a song switch when event music is not enabled\n"));
-		return;
-	}
-
-	if ( Event_music_level_inited == FALSE ) {
-		nprintf(("EVENTMUSIC", "EVENTMUSIC ==> Event music is not enabled\n"));
-		return;
-	}
-
-	if (Current_pattern == -1)
-		return;
-
-	Assert( Current_pattern >= 0 && Current_pattern < MAX_PATTERNS );
-	if (  audiostream_is_playing(Patterns[Current_pattern].handle) ) {
-			audiostream_stop(Patterns[Current_pattern].handle, 0);	// stop current and don't rewind
-	}
-}
-
-// -------------------------------------------------------------------------------------------------
-// event_music_unpause()
-//
-//	Start the Current_pattern if it is paused.
-//
-void event_music_unpause()
-{
-	if ( Event_music_enabled == FALSE ) {
-		nprintf(("EVENTMUSIC", "EVENTMUSIC ==> Requested a song switch when event music is not enabled\n"));
-		return;
-	}
-
-	if ( Event_music_level_inited == FALSE ) {
-		nprintf(("EVENTMUSIC", "EVENTMUSIC ==> Event music is not enabled\n"));
-		return;
-	}
-
-	if (Current_pattern == -1)
-		return;
-
-	Assert( Current_pattern >= 0 && Current_pattern < MAX_PATTERNS );
-	if ( audiostream_is_paused(Patterns[Current_pattern].handle) == TRUE ) {
-		audiostream_play(Patterns[Current_pattern].handle, (Master_event_music_volume * aav_music_volume), 0);	// no looping
-		audiostream_set_sample_cutoff(Patterns[Current_pattern].handle, fl2i(Patterns[Current_pattern].num_measures * Patterns[Current_pattern].samples_per_measure) );
-	}
-}
-
-// -------------------------------------------------------------------------------------------------
 // event_music_set_volume_all()
 //
 //	Set the volume of the event driven music.  Used when using the game-wide music volume is changed
@@ -1621,33 +1552,6 @@ int hostile_ships_present()
 		if ( hud_target_invalid_awacs(&Objects[so->objnum]) == 1 ) {
 			continue;
 		}
-
-		return 1;
-	}
-
-	return 0;
-}
-
-// ----------------------------------------------------------------------
-// hostile_ships_to_arrive()
-//
-// Determine if there are any non-friendly ships yet to arrive
-//
-// NOTE: neutral ships are considered hostile for the purpose of event music
-//
-int hostile_ships_to_arrive()
-{
-	p_object *p_objp;
-
-	for (p_objp = GET_FIRST(&Ship_arrival_list); p_objp != END_OF_LIST(&Ship_arrival_list); p_objp = GET_NEXT(p_objp))
-	{
-		// check if ship can arrive
-		if (p_objp->flags[Mission::Parse_Object_Flags::SF_Cannot_arrive])
-			continue;
-
-		// check if ship is enemy ship (we attack it)
-		if (!(iff_x_attacks_y(Player_ship->team, p_objp->team)))
-			continue;
 
 		return 1;
 	}
