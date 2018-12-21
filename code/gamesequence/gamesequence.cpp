@@ -350,29 +350,6 @@ void gameseq_pop_state()
 
 }
 
-// gameseq_pop_and_discard_state() is used to remove a state that was pushed onto the stack, but
-// will never need to be popped.  An example of this is entering a state that may require returning
-// to the previous state (then you would call gameseq_pop_state).  Or you may simply continue to
-// another part of the game, to avoid filling up the stack with states that may never be popped, you
-// call this function to discard the top of the gs.
-//
-
-void gameseq_pop_and_discard_state()
-{
-	if (gs_current_stack > 0 ) {
-		gs_current_stack--;
-	}
-}
-
-// Returns the last state pushed on stack
-int gameseq_get_pushed_state()
-{
-	if (gs_current_stack >= 1) {
-		return gs[gs_current_stack-1].current_state;
-	} else	
-		return -1;
-}
-
 // gameseq_process_events gets called every time through high level loops
 // (i.e. game loops, main menu loop).  Function is responsible for pulling
 // game sequence events off the queue and changing the state when necessary.
