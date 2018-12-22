@@ -55,11 +55,6 @@ extern void g3_end_frame_func(const char *filename, int lineno);
 extern int g3_in_frame();
 
 /**
- * Set view from x,y,z & p,b,h, zoom.  Must call one of g3_set_view_*()
- */
-void g3_set_view_angles(const vec3d *view_pos, const angles *view_orient, float zoom);
-
-/**
  * Set view from camera
  */
 void g3_set_view(camera *cam);
@@ -123,11 +118,6 @@ int g3_check_normal_facing(const vec3d *v, const vec3d *norm);
  * Rotates a point. returns codes.  does not check if already rotated
  */
 ubyte g3_rotate_vertex(vertex *dest, const vec3d *src);
-
-/**
- * Same as above, only ignores the current instancing
- */
-ubyte g3_rotate_vertex_popped(vertex *dest, const vec3d *src);
 
 /**
  * Use this for stars, etc
@@ -228,7 +218,6 @@ void g3_render_primitives_colored_textured(material* mat, vertex* verts, int n_v
 
 void g3_render_rod(color *clr, int num_points, vec3d *pvecs, float width);
 
-void g3_render_laser(material *mat_params, vec3d *headp, float head_width, vec3d *tailp, float tail_width);
 void g3_render_laser_2d(material *mat_params, vec3d *headp, float head_width, vec3d *tailp, float tail_width, float max_len);
 
 void g3_render_rect_screen_aligned_rotated(material *mat_params, vertex *pnt, float angle, float rad);
@@ -247,8 +236,6 @@ void g3_render_sphere(vec3d* position, float radius);
 
 void g3_render_shield_icon(color *clr, coord2d coords[6], int resize_mode = GR_RESIZE_FULL);
 void g3_render_shield_icon(coord2d coords[6], int resize_mode = GR_RESIZE_FULL);
-
-void g3_render_colored_rect(color *clr, int x, int y, int w, int h, int resize_mode);
 
 typedef struct horz_pt {
 	float x, y;

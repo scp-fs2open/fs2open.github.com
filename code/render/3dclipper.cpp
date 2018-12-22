@@ -248,27 +248,3 @@ int clip_plane(int plane_flag,vertex **src,vertex **dest,int *nv,ccodes *cc,uint
 
 	return (int)(dest-save_dest);
 }
-
-/**
- * @brief Clips a polygon to the viewing pyramid.
- */
-vertex **clip_polygon(vertex **src,vertex **dest,int *nv,ccodes *cc,uint flags)
-{
-	int plane_flag;
-	vertex **t;
-
-	for (plane_flag=1;plane_flag<=CC_OFF_USER;plane_flag<<=1)
-
-		if (cc->cc_or & plane_flag) {
-
-			*nv = clip_plane(plane_flag,src,dest,nv,cc,flags);
-
-			if (cc->cc_and)		//clipped away
-				return dest;
-
-			t = src; src = dest; dest = t;
-
-		}
-
-	return src;		//we swapped after we copied
-}

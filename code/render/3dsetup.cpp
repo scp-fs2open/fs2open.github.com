@@ -167,20 +167,6 @@ void g3_set_view_matrix(const vec3d *view_pos, const matrix *view_matrix, float 
 
 
 /**
- * Set view from x,y,z & p,b,h, zoom.  Must call one of g3_set_view_*()
- */
-void g3_set_view_angles(const vec3d *view_pos, const angles *view_orient, float zoom)
-{
-	matrix tmp;
-
-	Assert( G3_count == 1 );
-
-	vm_angles_2_matrix(&tmp,view_orient);
-	g3_set_view_matrix(view_pos,&tmp,zoom);
-}
-
-
-/**
  * Performs aspect scaling on global view matrix
  */
 void scale_matrix(void)
@@ -201,21 +187,6 @@ void scale_matrix(void)
 	vm_vec_scale(&View_matrix.vec.fvec,Matrix_scale.xyz.z );
 
 }
-
-ubyte g3_rotate_vertex_popped(vertex *dest, const vec3d *src)
-{
-	vec3d tempv;
-
-	Assert( G3_count == 1 );
-
-	Assert( instance_depth > 0 );
-
-	vm_vec_sub(&tempv,src,&instance_stack[0].p);
-	vm_vec_rotate( &dest->world, &tempv, &instance_stack[0].m );
-	dest->flags = 0;	//not projected
-	return g3_code_vertex(dest);
-}	
-
 
 /**
  * nstance at specified point with specified orientation

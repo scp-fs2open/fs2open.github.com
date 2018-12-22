@@ -114,7 +114,6 @@ struct primitive_batch_buffer {
 primitive_batch* batching_find_batch(int texture, batch_info::material_type material_id, primitive_type prim_type = PRIM_TYPE_TRIS, bool thruster = false);
 
 void batching_add_bitmap(int texture, vertex *pnt, int orient, float rad, float alpha = 1.0f, float depth = 0.0f);
-void batching_add_bitmap_rotated(int texture, vertex *pnt, float angle, float rad, float alpha = 1.0f, float depth = 0.0f);
 void batching_add_volume_bitmap(int texture, vertex *pnt, int orient, float rad, float alpha = 1.0f, float depth = 0.0f);
 void batching_add_volume_bitmap_rotated(int texture, vertex *pnt, float angle, float rad, float alpha = 1.0f, float depth = 0.0f);
 void batching_add_distortion_bitmap_rotated(int texture, vertex *pnt, float angle, float rad, float alpha = 1.0f, float depth = 0.0f);
