@@ -23,7 +23,6 @@ struct vec3d;
 
 class HudGaugeRadarOrb: public HudGaugeRadar
 {
-	char Radar_fname[MAX_FILENAME_LEN];
 	hud_frames Radar_gauge;
 
 	vec3d target_position;
@@ -43,7 +42,6 @@ public:
 	void initBitmaps(char *fname);
 	void initCenterOffsets(float x, float y);
 
-	void loadDefaultPositions();
 	void blipDrawDistorted(blip *b, vec3d *pos);
 	void blipDrawFlicker(blip *b, vec3d *pos);
 	void blitGauge();
@@ -53,11 +51,8 @@ public:
 	void drawContactHtl(vec3d *pnt, int rad);
 	void drawContactImage(vec3d *pnt, int rad, int idx, int clr_idx, float mult);
 	void drawCrosshairs( vec3d pnt );
-	void doneDrawing();
 	void doneDrawingHtl();
-	void drawOutlines();
 	void drawOutlinesHtl();
-	void setupView();
 	void setupViewHtl();
 	int calcAlpha(vec3d* pt);
 	void render(float frametime) override;

@@ -16,11 +16,6 @@
 #include "hud/hudconfig.h"
 #include "sound/sound.h"
 
-//which radar type are we using
-//to add another radar type, begin by adding a RADAR_MODE_* define and increment MAX_RADAR_MODES
-#define RADAR_MODE_STANDARD 0
-#define RADAR_MODE_ORB 1
-#define MAX_RADAR_MODES 2
 
 //structures
 #define NUM_FLICKER_TIMERS	2

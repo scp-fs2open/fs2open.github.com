@@ -75,15 +75,10 @@ public:
 	void drawBlips(int blip_type, int bright, int distort);
 	void drawBlipsSorted(int distort);
 	void drawContact(vec3d *pnt, int idx, int clr_idx, float dist, float alpha, float scale_factor);
-	void drawContactImage(vec3d *pnt, int rad, int idx, int clr_idx, float mult);
 	void drawSweeps();
-	void drawCrosshairs( vec3d pnt );
-	void doneDrawing();
 	void doneDrawingHtl();
-	void drawOutlines();
 	void drawOutlinesHtl();
 	void setupViewHtl();
-	int calcAlpha(vec3d* pt);
 	void render(float frametime) override;
 	void pageIn() override;
 	void plotBlip(blip* b, vec3d *pos, float *alpha);
