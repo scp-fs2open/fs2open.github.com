@@ -59,13 +59,6 @@ extern void shipfx_warpout_frame( object *objp, float frametime );
 //          SHIP SHADOW EFFECT STUFF
 // =================================================
 
-// Given point p0, in object's frame of reference, find if 
-// it can see the sun.
-bool shipfx_point_in_shadow( vec3d *p0, matrix *src_orient, vec3d *src_pos, float radius );
-
-// Given an ship see if it is in a shadow.
-bool shipfx_in_shadow( object * src_obj );
-
 // Given world point see if it is in a shadow.
 bool shipfx_eye_in_shadow( vec3d *eye_pos, object *src_obj, int sun_n);
 
@@ -83,12 +76,6 @@ void shipfx_flash_init();
 // Set is_primary to non-zero if this is a primary weapon.
 // Gun_pos should be in object's frame of reference, not world!!!
 void shipfx_flash_create(object *objp, int model_num, vec3d *gun_pos, vec3d *gun_dir, int is_primary, int weapon_info_index);
-
-// Sets the flash lights in the model used by this
-// ship to the appropriate values.  There might not
-// be any flashes linked to this ship in which
-// case this function does nothing.
-void shipfx_flash_light_model(object *objp, int model_num);
 
 // Does whatever processing needs to be done each frame.
 void shipfx_flash_do_frame(float frametime);
@@ -135,16 +122,6 @@ void shipfx_engine_wash_level_init();
 // pause engine wash sounds
 void shipfx_stop_engine_wash_sound();
 
-// =====================================================
-// CLOAKING
-// =====================================================
-
-//translate the texture matrix some
-void shipfx_cloak_frame(ship *shipp, float frametime);
-void shipfx_start_cloak(ship *shipp, int warmup = 5000, int recalc_transform = 0, int device=0);
-void shipfx_stop_cloak(ship *shipp, int warpdown = 5000);
-float shipfx_calc_visibility(object *obj, vec3d *view_pt);
-
 #define WD_NONE		0
 #define WD_WARP_IN	1
 #define WD_WARP_OUT	2
@@ -176,7 +153,6 @@ public:
 	virtual int warpFrame(float frametime);
 	virtual int warpShipClip(model_render_params *render_info);
 	virtual int warpShipRender();
-	virtual int warpShipQueueRender(model_draw_list *scene);
 	virtual int warpEnd();
 
 	//For VM_WARP_CHASE
