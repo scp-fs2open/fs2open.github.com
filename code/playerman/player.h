@@ -22,8 +22,6 @@
 #include "sound/sound.h"
 #include "stats/scoring.h" // for scoring/stats
 
-struct campaign_info;
-
 #define MAX_KEYED_TARGETS			8		// number of hot keys available to assign targets to
 
 // player image defines
@@ -76,12 +74,6 @@ struct campaign_info;
 // number of times dude can fail a mission in a session before 
 // having the opportunity to skip it
 #define PLAYER_MISSION_FAILURE_LIMIT		5
-
-
-typedef struct campaign_stats {
-	char campaign_name[MAX_FILENAME_LEN+1];	// insurance
-	scoring_struct stats;
-} campaign_stats;
 
 class player
 {
@@ -223,11 +215,9 @@ extern player Players[MAX_PLAYERS];
 
 extern int Player_num;								// player num of person playing on this machine
 extern player *Player;								// pointer to my information
-//extern control_info PlayerControls;
 
 extern int Player_use_ai;
-extern int view_centering;
-extern angles chase_slew_angles;					// The viewing angles in which viewer_slew_angles will chase to. 				
+extern angles chase_slew_angles;					// The viewing angles in which viewer_slew_angles will chase to.
 
 extern void player_init();							// initialization per level
 extern void player_level_init();
@@ -267,11 +257,9 @@ extern void player_control_reset_ci( control_info *ci );
 
 void player_generate_death_message(player *player_p);
 void player_show_death_message();
-void player_maybe_fire_turret(object *objp);
 void player_maybe_play_all_alone_msg();
 void player_set_next_all_alone_msg_timestamp();
 
-void player_get_padlock_orient(matrix *eye_orient);
 void player_display_padlock_view();
 
 // get the player's eye position and orient
