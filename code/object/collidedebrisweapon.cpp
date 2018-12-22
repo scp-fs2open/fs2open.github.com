@@ -19,19 +19,6 @@
 
 
 
-// placeholder struct for ship_debris collisions
-typedef struct ship_weapon_debris_struct {
-	object	*ship_object;
-	object	*debris_object;
-	vec3d	ship_collision_cm_pos;
-	vec3d	r_ship;
-	vec3d	collision_normal;
-	int		shield_hit_tri;
-	vec3d	shield_hit_tri_point;
-	float		impulse;
-} ship_weapon_debris_struct;
-
-
 /**
  * Checks debris-weapon collisions.  
  * @param pair obj_pair pointer to the two objects. pair->a is debris and pair->b is weapon.
