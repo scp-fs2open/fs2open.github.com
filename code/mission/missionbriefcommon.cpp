@@ -257,7 +257,6 @@ SCP_vector<briefing_icon_info> Briefing_icon_info;
 // --------------------------------------------------------------------------------------
 void	brief_render_elements(vec3d *pos, grid *gridp);
 void	brief_render_icons(int stage_num, float frametime);
-void	brief_grid_read_camera_controls( control_info * ci, float frametime );
 void	brief_maybe_create_new_grid(grid *gridp, vec3d *pos, matrix *orient, int force = 0);
 grid	*brief_create_grid(grid *gridp, vec3d *forward, vec3d *right, vec3d *center, int nrows, int ncols, float square_size);
 grid	*brief_create_default_grid(void);
@@ -1818,50 +1817,6 @@ void brief_set_new_stage(vec3d *pos, matrix *orient, int time, int stage_num)
 	Brief_stage_highlight_sound_handle = sound_handle::invalid();
 	Last_new_stage = stage_num;
 }
-
-// ------------------------------------------------------------------------------------
-// camera_pos_past_target()
-//
-//
-int camera_pos_past_target(vec3d *start, vec3d *current, vec3d *dest)
-{
-	vec3d num, den;
-	float ratio;
-
-	vm_vec_sub(&num, current, start);
-	vm_vec_sub(&den, start, dest);
-
-	ratio = vm_vec_mag_quick(&num) / vm_vec_mag_quick(&den);
-	if (ratio >= 1.0f)
-		return TRUE;
-	
-	return FALSE;
-}
-
-/**
- * Interpolate between matrices.
- * elapsed_time/total_time gives percentage of interpolation between cur and goal.
- */
-void interpolate_matrix(matrix *result, matrix *goal, matrix *start, float elapsed_time, float total_time)
-{
-	vec3d fvec, rvec;
-	float	time0, time1;
-	
-	if ( !vm_matrix_cmp( goal, start ) ) {
-		return;
-	}	
-
-	time0 = elapsed_time / total_time;
-	time1 = (total_time - elapsed_time) / total_time;
-
-	vm_vec_copy_scale(&fvec, &start->vec.fvec, time1);
-	vm_vec_scale_add2(&fvec, &goal->vec.fvec, time0);
-
-	vm_vec_copy_scale(&rvec, &start->vec.rvec, time1);
-	vm_vec_scale_add2(&rvec, &goal->vec.rvec, time0);
-
-	vm_vector_2_matrix(result, &fvec, NULL, &rvec);
- }
 
 /**
  * Calculate how far the camera should have moved

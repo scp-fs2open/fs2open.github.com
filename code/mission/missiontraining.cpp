@@ -37,8 +37,6 @@
 #define TRAINING_LINE_WIDTH			250  // width in pixels of actual text
 #define TRAINING_TIMING					150  // milliseconds per character to display messages
 #define TRAINING_TIMING_BASE			1000  // Minimum milliseconds to display any message
-#define TRAINING_OBJ_WND_WIDTH		170	// number of pixels wide window is.
-#define TRAINING_OBJ_LINE_WIDTH		150	// number of pixels wide text can be
 #define TRAINING_OBJ_LINES				50		// number of lines to track in objective list
 #define TRAINING_OBJ_DISPLAY_LINES	5		// only display this many lines on screen max
 #define MAX_TRAINING_MESSAGE_MODS			20
@@ -109,16 +107,7 @@ void training_process_message(char *message);
 void message_translate_tokens(char *buf, const char *text);
 
 
-#define NUM_DIRECTIVE_GAUGES			3
-static hud_frames Directive_gauge[NUM_DIRECTIVE_GAUGES];
 static int Directive_frames_loaded = 0;
-
-#define DIRECTIVE_H						9
-#define DIRECTIVE_X						5
-#define NUM_DIRECTIVE_COORDS			3
-#define DIRECTIVE_COORDS_TOP			0
-#define DIRECTIVE_COORDS_MIDDLE		1
-#define DIRECTIVE_COORDS_TITLE		2
 
 HudGaugeDirectives::HudGaugeDirectives():
 HudGauge(HUD_OBJECT_DIRECTIVES, HUD_DIRECTIVES_VIEW, false, true, (VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY | VM_OTHER_SHIP), 255, 255, 255)
@@ -366,15 +355,6 @@ void training_mission_init()
 		Player->flags &= ~(PLAYER_FLAGS_MATCH_TARGET | PLAYER_FLAGS_MSG_MODE | PLAYER_FLAGS_AUTO_TARGETING | PLAYER_FLAGS_AUTO_MATCH_SPEED | PLAYER_FLAGS_LINK_PRIMARY | PLAYER_FLAGS_LINK_SECONDARY );
 	}
 }
-
-void training_mission_page_in()
-{
-	int i;
-	for ( i = 0; i < NUM_DIRECTIVE_GAUGES; i++ ) {
-		bm_page_in_aabitmap( Directive_gauge[i].first_frame, Directive_gauge[i].num_frames );
-	}
-}
-
 
 int comp_training_lines_by_born_on_date(const void *m1, const void *m2)
 {
