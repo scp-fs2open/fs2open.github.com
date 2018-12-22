@@ -501,22 +501,6 @@ void missle_obj_list_remove(int index)
 }
 
 /**
- * Called by the save/restore code to rebuild Missile_obj_list
- */
-void missile_obj_list_rebuild()
-{
-	object *objp;
-
-	missile_obj_list_init();
-
-	for ( objp = GET_FIRST(&obj_used_list); objp !=END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) ) {
-		if ( objp->type == OBJ_WEAPON && Weapon_info[Weapons[objp->instance].weapon_info_index].subtype == WP_MISSILE ) {
-			Weapons[objp->instance].missile_list_index = missile_obj_list_add(OBJ_INDEX(objp));
-		}
-	}
-}
-
-/**
  * Called externally to generate an address from an index into
  * the Missile_objs[] array
  */
@@ -5935,7 +5919,6 @@ int weapon_area_calc_damage(object *objp, vec3d *pos, float inner_rad, float out
  */
 void weapon_area_apply_blast(vec3d * /*force_apply_pos*/, object *ship_objp, vec3d *blast_pos, float blast, int make_shockwave)
 {
-	#define	SHAKE_CONST 3000
 	vec3d		force, vec_blast_to_ship, vec_ship_to_impact;
 	polymodel		*pm;
 
