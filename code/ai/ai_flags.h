@@ -110,7 +110,7 @@ namespace AI {
         Smart_shield_management,
         Smart_subsystem_targeting_for_turrets,
         Strict_turred_tagged_only_targeting,
-		Support_dont_add_primaries,
+		Support_dont_add_primaries, //Prevents support ship from equipping new primary as requested in http://scp.indiegames.us/mantis/view.php?id=3198
         Turrets_ignore_target_radius,
         Use_actual_primary_range,
         Use_additive_weapon_velocity,
