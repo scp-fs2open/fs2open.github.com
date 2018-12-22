@@ -316,71 +316,12 @@ void HudGaugeRadarOrb::drawBlipsSorted(int distort)
 	g3_done_instance(false);
 }
 
-void HudGaugeRadarOrb::doneDrawing()
-{
-	g3_done_instance(false);
-	g3_end_frame();
-	g3_start_frame(0);
-	hud_save_restore_camera_data(0);
-	resetClip();
-}
-
 void HudGaugeRadarOrb::doneDrawingHtl()
 {
 	gr_end_view_matrix();
 	gr_end_proj_matrix();
 	resetClip();
     gr_zbuffer_set(GR_ZBUFF_FULL);
-}
-
-void HudGaugeRadarOrb::drawOutlines()
-{
-	int i;
-	vertex center;
-//	vertex extents[6];
-	vertex proj_orb_lines_xy[NUM_ORB_RING_SLICES];
-	vertex proj_orb_lines_xz[NUM_ORB_RING_SLICES];
-	vertex proj_orb_lines_yz[NUM_ORB_RING_SLICES];
-
-	g3_start_instance_matrix(&vmd_zero_vector, &view_perturb, false);
-	g3_start_instance_matrix(&vmd_zero_vector, &Player_obj->orient, false);
-
-	g3_rotate_vertex(&center, &vmd_zero_vector);
-	g3_rotate_vertex(&proj_orb_lines_xy[0], &orb_ring_xy[0]);
-	g3_rotate_vertex(&proj_orb_lines_yz[0], &orb_ring_yz[0]);
-	g3_rotate_vertex(&proj_orb_lines_xz[0], &orb_ring_xz[0]);
-
-	g3_project_vertex(&center);
-	gr_set_color(255,255,255);
-	g3_draw_sphere(&center, .05f);
-
-	g3_project_vertex(&proj_orb_lines_xy[0]);
-	g3_project_vertex(&proj_orb_lines_yz[0]);
-	g3_project_vertex(&proj_orb_lines_xz[0]);
-
-	for (i=1; i < NUM_ORB_RING_SLICES; i++)
-	{
-		g3_rotate_vertex(&proj_orb_lines_xy[i], &orb_ring_xy[i]);
-		g3_rotate_vertex(&proj_orb_lines_yz[i], &orb_ring_yz[i]);
-		g3_rotate_vertex(&proj_orb_lines_xz[i], &orb_ring_xz[i]);
-
-		g3_project_vertex(&proj_orb_lines_xy[i]);
-		g3_project_vertex(&proj_orb_lines_yz[i]);
-		g3_project_vertex(&proj_orb_lines_xz[i]);
-		
-		gr_set_color(192,96,32);
-		g3_draw_sphere(&proj_orb_lines_xy[i-1], .01f);
-		g3_draw_sphere(&proj_orb_lines_xz[i-1], .01f);
-		g3_draw_line(&proj_orb_lines_xy[i-1],&proj_orb_lines_xy[i]);
-		g3_draw_line(&proj_orb_lines_xz[i-1],&proj_orb_lines_xz[i]);
-
-		gr_set_color(112,16,192);
-
-		g3_draw_sphere(&proj_orb_lines_yz[i-1], .01f);
-		g3_draw_line(&proj_orb_lines_yz[i-1],&proj_orb_lines_yz[i]);
-	}
-
-	g3_done_instance(false);
 }
 
 int HudGaugeRadarOrb::calcAlpha(vec3d* pt)
@@ -622,26 +563,6 @@ void HudGaugeRadarOrb::drawCrosshairs( vec3d pnt )
 
 extern void hud_save_restore_camera_data(int);
 extern float View_zoom;
-
-void HudGaugeRadarOrb::setupView()
-{
-	hud_save_restore_camera_data(1);
-
-	g3_end_frame();
-
-	int w,h;
-	bm_get_info(Radar_gauge.first_frame,&w, &h, NULL, NULL, NULL);
-	
-	setClip(position[0], position[1],w, h);
-	g3_start_frame(1);
-	
-	float old_zoom=View_zoom;
-	View_zoom=.75;
-
-	g3_set_view_matrix( &Orb_eye_position, &vmd_identity_matrix, View_zoom);
-
-	View_zoom=old_zoom;
-}
 
 void HudGaugeRadarOrb::setupViewHtl()
 {
