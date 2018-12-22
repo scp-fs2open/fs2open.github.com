@@ -756,108 +756,6 @@ void shipfx_warpout_frame( object *objp, float frametime )
 // whose shadows.
 
 
-/**
- * Given point p0, in object's frame of reference, find if it can see the sun.
- */
-bool shipfx_point_in_shadow( vec3d *p0, matrix *src_orient, vec3d *src_pos, float  /*radius*/ )
-{
-	mc_info mc;
-	object *objp;
-	ship_obj *so;
-	int n_lights;
-	int idx;
-
-	vec3d rp0, rp1;
-
-	vec3d light_dir;
-
-	// Move rp0 into world coordinates	
-	vm_vec_unrotate(&rp0, p0, src_orient);
-	vm_vec_add2(&rp0, src_pos);
-
-	// get the # of global lights
-	n_lights = light_get_global_count();
-	
-	for(idx=0; idx<n_lights; idx++){
-		// get the light dir for this light
-		light_get_global_dir(&light_dir, idx);
-
-		// Find rp1
-		vm_vec_scale_add( &rp1, &rp0, &light_dir, 10000.0f );
-
-		for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) )	{
-			objp = &Objects[so->objnum];
-
-			mc_info_init(&mc);
-			mc.model_instance_num = -1;
-			mc.model_num = Ship_info[Ships[objp->instance].ship_info_index].model_num;
-			mc.orient = &objp->orient;
-			mc.pos = &objp->pos;
-			mc.p0 = &rp0;
-			mc.p1 = &rp1;
-			mc.flags = MC_CHECK_MODEL;	
-
-			if ( model_collide(&mc) ){
-				return true;
-			}
-		}
-	}
-
-	// not in shadow
-	return false;
-}
-
-
-/**
- * Given an ship see if it is in a shadow.
- */
-bool shipfx_in_shadow( object * src_obj )
-{
-	mc_info mc;
-	object *objp;
-	ship_obj *so;
-	int n_lights;
-	int idx;
-
-	vec3d rp0, rp1;
-	vec3d light_dir;
-
-	rp0 = src_obj->pos;
-	
-	// get the # of global lights
-	n_lights = light_get_global_count();
-
-	for(idx=0; idx<n_lights; idx++){
-		// get the direction for this light
-		light_get_global_dir(&light_dir, idx);
-
-		// Find rp1
-		for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) )	{
-			objp = &Objects[so->objnum];
-
-			if ( src_obj != objp )	{
-				vm_vec_scale_add( &rp1, &rp0, &light_dir, objp->radius*10.0f );
-
-				mc_info_init(&mc);
-				mc.model_instance_num = -1;
-				mc.model_num = Ship_info[Ships[objp->instance].ship_info_index].model_num;
-				mc.orient = &objp->orient;
-				mc.pos = &objp->pos;
-				mc.p0 = &rp0;
-				mc.p1 = &rp1;
-				mc.flags = MC_CHECK_MODEL;	
-
-				if ( model_collide(&mc) )	{
-					return true;
-				}
-			}
-		}
-	}
-
-	// not in shadow
-	return false;
-}
-
 #define w(p)	(*((int *) (p)))
 /**
  * Given world point see if it is in a shadow.
@@ -1192,25 +1090,6 @@ void shipfx_flash_create(object *objp, int model_num, vec3d *gun_pos, vec3d *gun
 		Ship_flash[first_slot].max_life = FLASH_LIFE_SECONDARY;
 	}
 	Ship_flash[first_slot].light_num = closest_light;		
-}
-
-/**
- * Sets the flash lights in the model used by this ship to the appropriate values.  
- * 
- * There might not be any flashes linked to this ship in which case this function does nothing.
- */
-void shipfx_flash_light_model(object *objp, int model_num)
-{
-	int i, objnum = OBJ_INDEX(objp);
-	polymodel *pm = model_get(model_num);
-
-	for (i=0; i<=Ship_flash_highest; i++ )	{
-		if ( (Ship_flash[i].objnum == objnum) && (Ship_flash[i].obj_signature==objp->signature) )	{
-			float v = (Ship_flash[i].max_life - Ship_flash[i].life)/Ship_flash[i].max_life;
-
-			pm->lights[Ship_flash[i].light_num].value += v / 255.0f;
-		}
-	}
 }
 
 /**
@@ -2433,26 +2312,26 @@ void shipfx_do_lightning_frame( ship * /*shipp*/ )
 	Assert(shipp != NULL);
 	if(shipp == NULL){
 		return;
-	} 
+	}
 	Assert(shipp->ship_info_index >= 0);
 	if(shipp->ship_info_index < 0){
 		return;
-	}	
+	}
 	Assert(shipp->objnum >= 0);
 	if(shipp->objnum < 0){
 		return;
-	}	
+	}
 
 	// get some pointers
 	sip = &Ship_info[shipp->ship_info_index];
-	objp = &Objects[shipp->objnum];	
+	objp = &Objects[shipp->objnum];
 
 	// if this is not a nebula mission, don't do anything
 	if(!(The_mission.flags[Mission::Mission_Flags::Fullneb])){
 		shipp->lightning_stamp = -1;
 		return;
 	}
-	
+
 	// if this not a cruiser or big ship
 	if(!((sip->flags[Ship::Info_Flags::Cruiser]) || (sip->is_big_ship()) || (sip->is_huge_ship()))){
 		shipp->lightning_stamp = -1;
@@ -2463,7 +2342,7 @@ void shipfx_do_lightning_frame( ship * /*shipp*/ )
 	if(sip->flags[Ship::Info_Flags::Cruiser]){
 		stamp = (int)((float)(Nebl_cruiser_min + ((Nebl_cruiser_max - Nebl_cruiser_min) * Nebl_intensity)) * frand_range(0.8f, 1.1f));
 		count = l_cruiser_count;
-	} 
+	}
 	else {
 		if(sip->is_huge_ship()){
 			stamp = (int)((float)(Nebl_supercap_min + ((Nebl_supercap_max - Nebl_supercap_min) * Nebl_intensity)) * frand_range(0.8f, 1.1f));
@@ -2493,7 +2372,7 @@ void shipfx_do_lightning_frame( ship * /*shipp*/ )
 	count = (int)frand_range(0.0f, (float)count);
 	while(count > 0){
 		// get 2 points on the hull of the ship
-		submodel_get_two_random_points(shipp->modelnum, 0, &v1, &v2, &n1, &n2);		
+		submodel_get_two_random_points(shipp->modelnum, 0, &v1, &v2, &n1, &n2);
 
 		// make up to 2 bolts
 		if(objp->radius > l_max_radius){
@@ -2515,13 +2394,13 @@ void shipfx_do_lightning_frame( ship * /*shipp*/ )
 		binfo.delay = (int)frand_range(0.0f, 1600.0f);
 		nebl_bolt(&binfo);
 		count--;
-	
+
 		// done
 		if(count <= 0){
 			break;
 		}
 
-		// one more		
+		// one more
 		if(objp->radius > l_max_radius){
 			vm_vec_scale_add(&temp2, &v2, &n2, l_max_radius);
 		} else {
@@ -2539,7 +2418,7 @@ void shipfx_do_lightning_frame( ship * /*shipp*/ )
 		binfo.noise = 0.045f;
 		binfo.life = 375;
 		binfo.delay = (int)frand_range(0.0f, 1600.0f);
-		nebl_bolt(&binfo);		
+		nebl_bolt(&binfo);
 		count--;
 	}
 	*/
@@ -3249,11 +3128,6 @@ int WarpEffect::warpShipClip(model_render_params * /*render_info*/)
 }
 
 int WarpEffect::warpShipRender()
-{
-	return 0;
-}
-
-int WarpEffect::warpShipQueueRender(model_draw_list * /*scene*/)
 {
 	return 0;
 }
