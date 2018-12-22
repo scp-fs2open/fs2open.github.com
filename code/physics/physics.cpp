@@ -390,50 +390,6 @@ void physics_sim_editor(vec3d *position, matrix * orient, physics_info * pi, flo
 	pi->fspeed = vm_vec_dot(&orient->vec.fvec, &pi->vel);		// instead of vector magnitude -- use only forward vector since we are only interested in forward velocity
 }
 
-// function to predict an object's position given the delta time and an objects physics info
-void physics_predict_pos(physics_info *pi, float delta_time, vec3d *predicted_pos)
-{
-	apply_physics( pi->side_slip_time_const, pi->desired_vel.xyz.x, pi->vel.xyz.x, delta_time,
-								 NULL, &predicted_pos->xyz.x );
-
-	apply_physics( pi->side_slip_time_const, pi->desired_vel.xyz.y, pi->vel.xyz.y, delta_time,
-								 NULL, &predicted_pos->xyz.y );
-
-	apply_physics( pi->side_slip_time_const, pi->desired_vel.xyz.z, pi->vel.xyz.z, delta_time,
-								 NULL, &predicted_pos->xyz.z );
-}
-
-// function to predict an object's velocity given the parameters
-void physics_predict_vel(physics_info *pi, float delta_time, vec3d *predicted_vel)
-{
-	if (pi->flags & PF_CONST_VEL) {
-		predicted_vel = &pi->vel;
-	} else {
-		apply_physics( pi->side_slip_time_const, pi->desired_vel.xyz.x, pi->vel.xyz.x, delta_time,
-									 &predicted_vel->xyz.x, NULL );
-
-		apply_physics( pi->side_slip_time_const, pi->desired_vel.xyz.y, pi->vel.xyz.y, delta_time,
-									 &predicted_vel->xyz.y, NULL );
-
-		apply_physics( pi->side_slip_time_const, pi->desired_vel.xyz.z, pi->vel.xyz.z, delta_time,
-									 &predicted_vel->xyz.z, NULL );
-	}
-}
-
-// function to predict position and velocity of an object
-void physics_predict_pos_and_vel(physics_info *pi, float delta_time, vec3d *predicted_vel, vec3d *predicted_pos)
-{
-
-	apply_physics( pi->side_slip_time_const, pi->desired_vel.xyz.x, pi->vel.xyz.x, delta_time,
-	                      &predicted_vel->xyz.x, &predicted_pos->xyz.x );
-
-	apply_physics( pi->side_slip_time_const, pi->desired_vel.xyz.y, pi->vel.xyz.y, delta_time,
-	                      &predicted_vel->xyz.y, &predicted_pos->xyz.y );
-
-	apply_physics( pi->side_slip_time_const, pi->desired_vel.xyz.z, pi->vel.xyz.z, delta_time,
-	                      &predicted_vel->xyz.z, &predicted_pos->xyz.z );
-}
-
 // physics_read_flying_controls()
 //
 // parmeters:  *orient	==>
@@ -733,30 +689,6 @@ void physics_read_flying_controls( matrix * orient, physics_info * pi, control_i
 		}
 	} else  // object does not accelerate  (PF_ACCELERATES not set)
 		pi->desired_vel = pi->vel;
-}
-
-
-
-//	----------------------------------------------------------------
-//	Do *dest = *delta unless:
-//				*delta is pretty small
-//		and	they are of different signs.
-void physics_set_rotvel_and_saturate(float *dest, float delta)
-{
-	/*
-	if ((delta ^ *dest) < 0) {
-		if (abs(delta) < F1_0/8) {
-			// mprintf((0, "D"));
-			*dest = delta/4;
-		} else
-			// mprintf((0, "d"));
-			*dest = delta;
-	} else {
-		// mprintf((0, "!"));
-		*dest = delta;
-	}
-	*/
-	*dest = delta;
 }
 
 

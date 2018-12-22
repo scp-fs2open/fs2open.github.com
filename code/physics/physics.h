@@ -137,12 +137,6 @@ extern void physics_collide_whack(vec3d *impulse, vec3d *delta_rotvel, physics_i
 int check_rotvel_limit( physics_info *pi );
 
 
-
-// functions which use physics calcs to predict position and velocity
-void physics_predict_pos(physics_info *pi, float delta_time, vec3d *predicted_pos);
-void physics_predict_vel(physics_info *pi, float delta_time, vec3d *predicted_vel);
-void physics_predict_pos_and_vel(physics_info *pi, float delta_time, vec3d *predicted_vel, vec3d *predicted_pos);
-
 // If physics_set_viewer is called with the viewer's physics_info, then
 // this variable tracks the viewer's bank.  This is used for g3_draw_rotated_bitmap.
 extern float Physics_viewer_bank;
