@@ -652,18 +652,6 @@ void nebl_bolt(size_t type, vec3d *start, vec3d *strike)
 	}
 }
 
-// get the current # of active lightning bolts
-int nebl_get_active_bolts()
-{
-	return Num_lbolts;
-}
-
-// get the current # of active nodes
-int nebl_get_active_nodes()
-{
-	return Num_lnodes;
-}
-
 // "new" a lightning node
 l_node *nebl_new()
 {

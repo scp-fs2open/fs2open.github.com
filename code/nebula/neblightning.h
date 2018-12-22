@@ -117,12 +117,6 @@ void nebl_process();
 // create a lightning bolt
 void nebl_bolt(size_t type, vec3d *start, vec3d *strike);
 
-// get the current # of active lightning bolts
-int nebl_get_active_bolts();
-
-// get the current # of active nodes
-int nebl_get_active_nodes();
-
 // "new" a lightning node
 l_node *nebl_new();
 
