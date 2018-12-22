@@ -118,9 +118,7 @@ extern void fs2netd_add_table_validation(const char *tblname);
 
 int	Ai_render_debug_flag=0;
 #ifndef NDEBUG
-int	Ship_sphere_check = 0;
 int	Ship_auto_repair = 1;		// flag to indicate auto-repair of subsystem should occur
-extern void render_path_points(object *objp);
 #endif
 
 int	Num_wings = 0;
@@ -629,22 +627,6 @@ static void ship_obj_list_remove(int index)
 	Assert(index >= 0 && index < MAX_SHIP_OBJS);
 	list_remove( Ship_obj_list, &Ship_objs[index]);	
 	ship_obj_list_reset_slot(index);
-}
-
-/**
- * Called from the save/restore code to re-create the Ship_obj_list
- */
-void ship_obj_list_rebuild()
-{
-	object *objp;
-
-	ship_obj_list_init();
-
-	for ( objp = GET_FIRST(&obj_used_list); objp !=END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) ) {
-		if ( objp->type == OBJ_SHIP ) {
-			Ships[objp->instance].ship_list_index = ship_obj_list_add(OBJ_INDEX(objp));
-		}
-	}
 }
 
 ship_obj *get_ship_obj_ptr_from_index(int index)
@@ -6846,54 +6828,6 @@ void compute_slew_matrix(matrix *orient, angles *a)
 	vm_orthogonalize_matrix(orient);
 }
 
-
-#ifndef NDEBUG
-/**
- * Render docking information, NOT while in object's reference frame.
- */
-void render_dock_bays(object *objp)
-{
-	polymodel	*pm;
-	dock_bay		*db;
-
-	pm = model_get(Ship_info[Ships[objp->instance].ship_info_index].model_num);
-
-	if (pm->docking_bays == NULL)
-		return;
-
-	if (pm->docking_bays[0].num_slots != 2)
-		return;
-
-	db = &pm->docking_bays[0];
-
-	vertex	v0, v1;
-	vec3d	p0, p1, p2, p3, nr;
-
-	vm_vec_unrotate(&p0, &db->pnt[0], &objp->orient);
-	vm_vec_add2(&p0, &objp->pos);
-	g3_rotate_vertex(&v0, &p0);
-
-	vm_vec_unrotate(&p1, &db->pnt[1], &objp->orient);
-	vm_vec_add2(&p1, &objp->pos);
-	g3_rotate_vertex(&v1, &p1);
-
-	gr_set_color(255, 0, 0);
-	g3_draw_line(&v0, &v1);
-
-	vm_vec_avg(&p2, &p0, &p1);
-
-	vm_vec_unrotate(&nr, &db->norm[0], &objp->orient);
-	vm_vec_scale_add(&p3, &p2, &nr, 10.0f);
-
-	g3_rotate_vertex(&v0, &p2);
-	g3_rotate_vertex(&v1, &p3);
-	gr_set_color(255, 255, 0);
-	g3_draw_line(&v0, &v1);
-	g3_draw_sphere(&v1, 1.25f);
-
-}
-#endif
-
 int Ship_shadows = 0;
 
 DCF_BOOL( ship_shadows, Ship_shadows )
@@ -8824,8 +8758,6 @@ DCF(lethality_decay, "Sets ship lethality_decay, or the time in sec to go from 1
 	dc_stuff_float(&Decay_rate);
 }
 
-float min_lethality = 0.0f;
-
 static void lethality_decay(ai_info *aip)
 {
 	float decay_rate = Decay_rate;
@@ -10341,39 +10273,6 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 		sp->team_name = sip->default_team_name;
 	}
 }
-
-#ifndef NDEBUG
-/**
- * Fire the debug laser
- */
-int ship_fire_primary_debug(object *objp)
-{
-	int	i;
-	ship	*shipp = &Ships[objp->instance];
-	vec3d wpos;
-
-	if ( !timestamp_elapsed(shipp->weapons.next_primary_fire_stamp[0]) )
-		return 0;
-
-	// do timestamp stuff for next firing time
-	shipp->weapons.next_primary_fire_stamp[0] = timestamp(250);
-	shipp->weapons.last_primary_fire_stamp[0] = timestamp();
-
-	//	Debug code!  Make the single laser fire only one bolt and from the object center!
-	for (i=0; i<MAX_WEAPON_TYPES; i++)
-		if (!stricmp(Weapon_info[i].name, NOX("Debug Laser")))
-			break;
-	
-	vm_vec_add(&wpos, &objp->pos, &(objp->orient.vec.fvec) );
-	if (i != MAX_WEAPONS) {
-		int weapon_objnum;
-		weapon_objnum = weapon_create( &wpos, &objp->orient, i, OBJ_INDEX(objp) );
-		weapon_set_tracking_info(weapon_objnum, OBJ_INDEX(objp), Ai_info[shipp->ai_index].target_objnum);
-		return 1;
-	} else
-		return 0;
-}
-#endif
 
 /**
  * Launch countermeasures from object *objp.
@@ -13497,9 +13396,6 @@ void ship_set_subsystem_strength( ship *shipp, int type, float strength )
 	shipp->subsys_info[type].aggregate_current_hits = total_current_hits;
 }
 
-#define		SHIELD_REPAIR_RATE	0.20f			//	Percent of shield repaired per second.
-#define		HULL_REPAIR_RATE		0.15f			//	Percent of hull repaired per second.
-#define		SUBSYS_REPAIR_RATE	0.10f			// Percent of subsystems repaired per second.
 
 #define REARM_NUM_MISSILES_PER_BATCH 4		// how many missiles are dropped in per load sound
 #define REARM_NUM_BALLISTIC_PRIMARIES_PER_BATCH	100	// how many bullets are dropped in per load sound
@@ -14725,29 +14621,6 @@ int ship_secondary_bank_has_ammo(int shipnum)
 		return 0;
 
 	return 1;
-}
-
-// ship_primary_bank_has_ammo()
-//
-// check if currently selected primary bank has ammo
-//
-// input:	shipnum	=>	index into Ships[] array for ship to check
-//
-int ship_primary_bank_has_ammo(int shipnum)
-{
-	ship_weapon	*swp;
-
-	Assert(shipnum >= 0 && shipnum < MAX_SHIPS);
-	swp = &Ships[shipnum].weapons;
-	
-	if ( swp->current_primary_bank == -1 )
-	{
-		return 0;
-	}
-
-	Assert(swp->current_primary_bank >= 0 && swp->current_primary_bank < MAX_SHIP_PRIMARY_BANKS );
-	
-	return ( primary_out_of_ammo(swp, swp->current_primary_bank) == 0 );
 }
 
 // see if there is enough engine power to allow the ship to warp
@@ -17105,22 +16978,6 @@ int ship_get_reinforcement_team(int r_index)
 	return -1;
 }
 
-/**
- * Determine if the given texture is used by a ship type. return ship info index, or -1 if not used by a ship
- */
-int ship_get_texture(int bitmap)
-{
-	// check all ship types
-	for (auto it = Ship_info.cbegin(); it != Ship_info.cend(); ++it) {
-		if ((it->model_num >= 0) && model_find_texture(it->model_num, bitmap) == 1) {
-			return (int)std::distance(Ship_info.cbegin(), it);
-		}
-	}
-
-	// couldn't find the texture
-	return -1;
-}
-
 // update artillery lock info
 #define CLEAR_ARTILLERY_AND_CONTINUE()	{ if(aip != NULL){ aip->artillery_objnum = -1; aip->artillery_sig = -1;	aip->artillery_lock_time = 0.0f;} continue; } 
 float artillery_dist = 10.0f;
@@ -17913,25 +17770,6 @@ const char *TypeNames[] = {
 	"random"
 };
 
-//STEP 3: Add the default value
-float TypeDefaultValues[] = {
-	0.0f,	//additive
-	1.0f,	//multiplicatve
-	1.0f,	//exp
-	1.0f, 	//exp base - Damage will always be one (No mathematical way to do better)
-	0.0f,	//cutoff
-	0.0f,	//reverse cutoff
-	0.0f,	//instant cutoff
-	0.0f,	//rev instant cutoff
-	// Added by Nuke
-	0.0f,	// cap - caps are the same as reverse cutoffs, but sets damage to value instead of 0
-	0.0f,	// instant cap
-	0.0f,	// set - set the damage to value
-	0.0f,	// data storage index - load and store calculations allow you to dump and retrieve the current damage in one of a few memory locations (these only persist for the duration of the computation)
-	0.0f,	// data storage index
-	0.0f	// random min/max
-};
-
 const int Num_armor_calculation_types = sizeof(TypeNames)/sizeof(char*);
 
 int calculation_type_get(char *str)
@@ -17945,7 +17783,7 @@ int calculation_type_get(char *str)
 	return -1;
 }
 
-//STEP 4: Add the calculation to the switch statement.
+//STEP 3: Add the calculation to the switch statement.
 float ArmorType::GetDamage(float damage_applied, int in_damage_type_idx, float diff_dmg_scale, int is_beam) {
 	// Nuke: If the weapon has no damage type, just return damage
 	if (in_damage_type_idx < 0) {
