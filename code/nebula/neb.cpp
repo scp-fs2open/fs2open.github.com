@@ -909,8 +909,6 @@ DCF(max_area, "")
 }
 */
 
-float g3_draw_rotated_bitmap_area(vertex *pnt, float angle, float rad, uint tmap_flags, float area);
-int neb_mode = 1;
 int frames_total = 0;
 int frame_count = 0;
 float frame_avg;
@@ -1274,123 +1272,6 @@ void neb2_pre_render(camid cid)
 
 // wacky scheme for smoothing colors
 int wacky_scheme = 3;
-
-// get the color of the pixel in the small pre-rendered background nebula
-#define PIXEL_INDEX_SMALL(xv, yv)	( (this_esize * (yv) * gr_screen.bytes_per_pixel) + ((xv) * gr_screen.bytes_per_pixel) )
-void neb2_get_pixel(int x, int y, int *r, int *g, int *b)
-{
-	// we shouldn't ever be here if in htl rendering mode
-	Assert( Neb2_render_mode != NEB2_RENDER_HTL );
-
-	int ra, ga, ba;
-	ubyte rv, gv, bv;
-	ubyte avg_count;
-	int xs, ys;
-
-
-	// get the proper pixel index to be looking up
-	rv = gv = bv = 0;
-
-	// select screen format
-	BM_SELECT_SCREEN_FORMAT();
-
-	// pixel plus all immediate neighbors (on the small screen - should be more effective than 2 or 1)
-	xs = (int)(ex_scale * x);
-	ys = (int)(ey_scale * y);
-
-	// sometimes goes over by 1 in direct3d
-	if (ys >= (this_esize - 1)) {
-		ys--;
-	}
-
-	avg_count = 0;
-	bm_get_components(&tpixels[PIXEL_INDEX_SMALL(xs, ys)], &rv, &gv, &bv, NULL);
-	ra = rv;
-	ga = gv;
-	ba = bv;
-	avg_count++;
-	if (xs > 0) {
-		bm_get_components(&tpixels[PIXEL_INDEX_SMALL(xs - 1, ys)], &rv, &gv, &bv, NULL);	// left
-		ra += rv;
-		ba += bv;
-		ga += gv;
-		avg_count++;
-	}
-	if (xs < this_esize - 1) {
-		bm_get_components(&tpixels[PIXEL_INDEX_SMALL(xs + 1, ys)], &rv, &gv, &bv, NULL);	// right
-		ra += rv;
-		ba += bv;
-		ga += gv;
-		avg_count++;
-	}
-	if (ys > 0) {
-		bm_get_components(&tpixels[PIXEL_INDEX_SMALL(xs, ys - 1)], &rv, &gv, &bv, NULL);	// top
-		ra += rv;
-		ba += bv;
-		ga += gv;
-		avg_count++;
-	}
-	if (ys < this_esize - 2) {
-		bm_get_components(&tpixels[PIXEL_INDEX_SMALL(xs, ys + 1)], &rv, &gv, &bv, NULL);	// bottom
-		ra += rv;
-		ba += bv;
-		ga += gv;
-		avg_count++;
-	}
-	if ( (xs > 0) && (ys > 0) ) {
-		bm_get_components(&tpixels[PIXEL_INDEX_SMALL(xs - 1, ys - 1)], &rv, &gv, &bv, NULL);	// upper left
-		ra += rv;
-		ba += bv;
-		ga += gv;
-		avg_count++;
-	}
-	if ( (xs < this_esize - 1) && (ys < this_esize - 1) ) {
-		bm_get_components(&tpixels[PIXEL_INDEX_SMALL(xs + 1, ys + 1)], &rv, &gv, &bv, NULL);	// lower right
-		ra += rv;
-		ba += bv;
-		ga += gv;
-		avg_count++;
-	}
-	if ( (ys > 0) && (xs < this_esize - 1) ) {
-		bm_get_components(&tpixels[PIXEL_INDEX_SMALL(xs + 1, ys - 1)], &rv, &gv, &bv, NULL);	// lower left
-		ra += rv;
-		ba += bv;
-		ga += gv;
-		avg_count++;
-	}
-	if ( (ys < this_esize - 1) && (xs > 0) ) {
-		bm_get_components(&tpixels[PIXEL_INDEX_SMALL(xs - 1, ys + 1)], &rv, &gv, &bv, NULL);	// upper right
-		ra += rv;
-		ba += bv;
-		ga += gv;
-		avg_count++;
-	}
-
-	rv = (ubyte)(ra / (int)avg_count);
-	gv = (ubyte)(ga / (int)avg_count);
-	bv = (ubyte)(ba / (int)avg_count);
-
-	// return values
-	*r = (int)rv;
-	*g = (int)gv;
-	*b = (int)bv;
-}
-
-// get the color to fog the background color to
-void neb2_get_backg_color(int *r, int *g, int *b)
-{
-	*r = Neb2_background_color[0];
-	*g = Neb2_background_color[1];
-	*b = Neb2_background_color[2];
-}
-
-// set the background color
-void neb2_set_backg_color(int r, int g, int b)
-{
-	Neb2_background_color[0] = r;
-	Neb2_background_color[1] = g;
-	Neb2_background_color[2] = b;
-}
 
 // fill in the position of the eye for this frame
 void neb2_get_eye_pos(vec3d *eye_vector)
