@@ -322,26 +322,6 @@ float shield_get_strength(object *objp)
 	return strength;
 }
 
-int shield_is_up(object *objp, int quadrant_num) {
-	Assert(objp);
-
-	if ((quadrant_num >= 0) && (quadrant_num < objp->n_quadrants)) {
-		// Just check one quadrant
-		float quad = shield_get_quad(objp, quadrant_num);
-
-		if (quad > MAX(2.0f, 0.1f * shield_get_max_quad(objp)))	// [z64555] Where the heck does this 2HP come from?
-			return 1;
-	} else {
-		// Check all quadrants
-		float strength = shield_get_strength(objp);
-
-		if (strength > MAX(2.0f * objp->n_quadrants, 0.1f * shield_get_max_strength(objp)))	// [z64555] Where the heck does this 2HP come from?
-			return 1;
-	}
-
-	return 0;	// no shield strength
-}
-
 void shield_set_max_strength(object *objp, float newmax) {
 	Assert(objp);
 
