@@ -3326,51 +3326,6 @@ int submodel_find_2d_bound_min(int model_num,int submodel, matrix *orient, vec3d
 	return 0;
 }
 
-
-/**
- * Find 2D bound for model
- *
- * Note that x1,y1,x2,y2 aren't clipped to 2D screen coordinates.
- *
- * @return zero if x1,y1,x2,y2 are valid
- * @return 2 for point offscreen
- */
-int model_find_2d_bound(int model_num,matrix * /*orient*/, vec3d * pos,int *x1, int *y1, int *x2, int *y2 )
-{
-	float t,w,h;
-	vertex pnt;
-	polymodel * po;
-
-	po = model_get(model_num);
-	float width = po->rad;
-	float height = po->rad;
-
-	g3_rotate_vertex(&pnt,pos);
-
-	if ( pnt.flags & CC_BEHIND ) 
-		return 2;
-
-	if (!(pnt.flags&PF_PROJECTED))
-		g3_project_vertex(&pnt);
-
-	if (pnt.flags & PF_OVERFLOW)
-		return 2;
-
-	t = (width * Canv_w2)/pnt.world.xyz.z;
-	w = t*Matrix_scale.xyz.x;
-
-	t = (height*Canv_h2)/pnt.world.xyz.z;
-	h = t*Matrix_scale.xyz.y;
-
-	if (x1) *x1 = fl2i(pnt.screen.xyw.x - w);
-	if (y1) *y1 = fl2i(pnt.screen.xyw.y - h);
-
-	if (x2) *x2 = fl2i(pnt.screen.xyw.x + w);
-	if (y2) *y2 = fl2i(pnt.screen.xyw.y + h);
-
-	return 0;
-}
-
 /**
  * Find 2D bound for sub object
  *
@@ -3411,43 +3366,6 @@ int subobj_find_2d_bound(float radius ,matrix * /*orient*/, vec3d * pos,int *x1,
 	if (y2) *y2 = fl2i(pnt.screen.xyw.y + h);
 
 	return 0;
-}
-
-
-// Given a vector that is in sub_model_num's frame of
-// reference, and given the object's orient and position,
-// return the vector in the model's frame of reference.
-void model_find_obj_dir(vec3d *w_vec, vec3d *m_vec, int model_num, int submodel_num, matrix *objorient)
-{
-	vec3d tvec, vec;
-	matrix m;
-	int mn;
-
-	polymodel *pm = model_get(model_num);
-	vec = *m_vec;
-	mn = submodel_num;
-
-	// instance up the tree for this point
-	while ( (mn >= 0) && (pm->submodel[mn].parent >= 0) ) {
-		// By using this kind of computation, the rotational angles can always
-		// be computed relative to the submodel itself, instead of relative
-		// to the parent - KeldorKatarn
-		matrix rotation_matrix = pm->submodel[mn].orientation;
-		vm_rotate_matrix_by_angles(&rotation_matrix, &pm->submodel[mn].angs);
-
-		matrix inv_orientation;
-		vm_copy_transpose(&inv_orientation, &pm->submodel[mn].orientation);
-
-		vm_matrix_x_matrix(&m, &rotation_matrix, &inv_orientation);
-
-		vm_vec_unrotate(&tvec, &vec, &m);
-		vec = tvec;
-
-		mn = pm->submodel[mn].parent;
-	}
-
-	// now instance for the entire object
-	vm_vec_unrotate(w_vec, &vec, objorient);
 }
 
 void model_instance_find_obj_dir(vec3d *w_vec, vec3d *m_vec, int model_instance_num, int submodel_num, matrix *objorient)
@@ -4204,49 +4122,6 @@ void model_instance_find_world_point(vec3d *outpnt, vec3d *mpnt, int model_insta
 	//now instance for the entire object
 	vm_vec_unrotate(outpnt,&pnt,objorient);
 	vm_vec_add2(outpnt,objpos);
-}
-
-// Given a point in the world RF, find the corresponding point in the model RF.
-// This is special purpose code, specific for model collision.
-// NOTE - this code ASSUMES submodel is 1 level down from hull (detail[0])
-//
-// out - point in model RF
-// world_pt - point in world RF
-// pm - polygon model
-// submodel_num - submodel in whose RF we're trying to find the corresponding world point
-// orient - orient matrix of ship
-// pos - pos vector of ship
-void world_find_model_point(vec3d *out, vec3d *world_pt, const polymodel *pm, int submodel_num, const matrix *orient, const vec3d *pos)
-{
-	Assert( (pm->submodel[submodel_num].parent == pm->detail[0]) || (pm->submodel[submodel_num].parent == -1) );
-
-	vec3d tempv1, tempv2;
-	matrix m;
-
-	// get into ship RF
-	vm_vec_sub(&tempv1, world_pt, pos);
-	vm_vec_rotate(&tempv2, &tempv1, orient);
-
-	if (pm->submodel[submodel_num].parent == -1) {
-		*out  = tempv2;
-		return;
-	}
-
-	// put into submodel RF
-	vm_vec_sub2(&tempv2, &pm->submodel[submodel_num].offset);
-
-	// By using this kind of computation, the rotational angles can always
-	// be computed relative to the submodel itself, instead of relative
-	// to the parent - KeldorKatarn
-	matrix rotation_matrix = pm->submodel[submodel_num].orientation;
-	vm_rotate_matrix_by_angles(&rotation_matrix, &pm->submodel[submodel_num].angs);
-
-	matrix inv_orientation;
-	vm_copy_transpose(&inv_orientation, &pm->submodel[submodel_num].orientation);
-
-	vm_matrix_x_matrix(&m, &rotation_matrix, &inv_orientation);
-
-	vm_vec_rotate(out, &tempv2, &m);
 }
 
 void world_find_model_instance_point(vec3d *out, vec3d *world_pt, const polymodel_instance *pmi, int submodel_num, const matrix *orient, const vec3d *pos)
