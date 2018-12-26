@@ -1,9 +1,10 @@
 
 #include "parse/sexp/sexp_lookup.h"
-#include "parse/sexp/LuaSEXP.h"
 
-#include "parse/sexp.h"
 #include "parse/parselo.h"
+#include "parse/sexp.h"
+#include "parse/sexp/LuaSEXP.h"
+#include "scripting/scripting.h"
 
 #include <memory>
 
@@ -82,7 +83,21 @@ void parse_sexp_table(const char* filename) {
 	}
 }
 
+void free_lua_sexps(lua_State* /*L*/)
+{
+	// Remove all Lua sexps from our list so that there are no dangling pointers on the lua state
+	for (auto iter = operator_const_mapping.begin(); iter != operator_const_mapping.end();) {
+		auto lua_sexp = dynamic_cast<LuaSEXP*>(iter->second.get());
+		if (lua_sexp == nullptr) {
+			++iter;
+			continue;
+		}
+
+		iter = operator_const_mapping.erase(iter);
+	}
 }
+
+} // namespace
 
 namespace sexp {
 
@@ -119,9 +134,12 @@ DynamicSEXP* get_dynamic_sexp(int operator_const) {
 }
 void dynamic_sexp_init() {
 	parse_modular_table("*-sexp.tbm", parse_sexp_table, CF_TYPE_TABLES);
+
+	Script_system.OnStateDestroy.add(free_lua_sexps);
 }
 void dynamic_sexp_shutdown() {
 	operator_const_mapping.clear();
+	next_free_operator_mapping.clear();
 }
 int add_subcategory(int parent_category, const SCP_string& name) {
 	// Another hack to make sure change2 is interpreted as the normal change category
