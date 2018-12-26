@@ -6,6 +6,7 @@
 #include "graphics/2d.h"
 #include "scripting/ade_args.h"
 #include "scripting/lua/LuaFunction.h"
+#include "utils/event.h"
 
 #include <cstdio>
 
@@ -235,6 +236,8 @@ public:
 
 	//*****Other functions
 	void EndFrame();
+
+	util::event<void, lua_State*> OnStateDestroy;
 };
 
 template<typename T>

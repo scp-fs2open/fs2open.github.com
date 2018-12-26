@@ -738,6 +738,8 @@ void script_state::Clear()
 	ConditionalHooks.clear();
 
 	if(LuaState != NULL) {
+		OnStateDestroy(LuaState);
+
 		lua_close(LuaState);
 	}
 
