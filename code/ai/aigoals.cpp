@@ -1350,25 +1350,6 @@ void ai_add_goal_ship_internal( ai_info *aip, int goal_type, char *name, int  /*
 		ai_process_mission_orders( Ships[aip->shipnum].objnum, aip );
 }
 
-// function to add an internal goal to a wing.  Mike K says that the goal doesn't need to persist
-// across waves of the wing so we merely need to add the goal to each ship in the wing.  Certain
-// goal are simply not valid for wings (like dock, undock).  Immediate parameter gets passed to add_ship_goal
-// to say whether or not we should process this goal right away
-void ai_add_goal_wing_internal( wing *wingp, int goal_type, char *name, int immediate )
-{
-	int i;
-
-	// be sure we are not trying to issue dock or undock goals to wings
-	Assert ( (goal_type != AI_GOAL_DOCK) && (goal_type != AI_GOAL_UNDOCK) );
-
-	for (i = 0; i < wingp->current_count; i++) {
-		int num = wingp->ship_index[i];
-		if ( num == -1 )			// ship must have been destroyed or departed
-			continue;
-		ai_add_goal_ship_internal(  &Ai_info[Ships[num].ai_index], goal_type, name, -1, -1, immediate);
-	}
-}
-
 // this function copies goals from a wing to an ai_info * from a ship.
 void ai_copy_mission_wing_goal( ai_goal *aigp, ai_info *aip )
 {

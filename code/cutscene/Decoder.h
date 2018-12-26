@@ -11,8 +11,8 @@ struct FrameSize {
 	size_t height = 0;
 	size_t stride = 0;
 
-	FrameSize(size_t width, size_t in_height, size_t in_stride);
 	FrameSize();
+	FrameSize(size_t width, size_t in_height, size_t in_stride);
 };
 
 class VideoFrame {
@@ -147,10 +147,6 @@ class Decoder {
 
 	bool isSubtitleQueueFull() { return m_subtitleQueue->size() == m_queueSize; }
 
-	bool isSubtitleFrameAvailable() { return !m_subtitleQueue->empty(); }
-
-	size_t getSubtitleQueueSize() { return m_subtitleQueue->size(); }
-
 	bool tryPopSubtitleData(SubtitleFramePtr&);
 
 	bool isVideoQueueFull() { return m_videoQueue->size() == m_queueSize; }
@@ -168,15 +164,9 @@ class Decoder {
  protected:
 	void initializeQueues(size_t queueSize);
 
-	bool canPushAudioData();
-
 	void pushAudioData(AudioFramePtr&& data);
 
-	bool canPushSubtitleData();
-
 	void pushSubtitleData(SubtitleFramePtr&& data);
-
-	bool canPushVideoData();
 
 	void pushFrameData(VideoFramePtr&& frame);
 };

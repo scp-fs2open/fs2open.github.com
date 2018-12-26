@@ -55,14 +55,7 @@ MONITOR(SizeBitmapPage)
 
 // --------------------------------------------------------------------------------------------------------------------
 // Definition of public variables (declared as extern in bmpman.h).
-int GLOWMAP = -1;
-int SPECMAP = -1;
-int SPECGLOSSMAP = -1;
 int ENVMAP = -1;
-int NORMMAP = -1;
-int HEIGHTMAP = -1;
-int MISCMAP = -1;
-int AMBIENTMAP = -1;
 
 size_t bm_texture_ram = 0;
 int Bm_paging = 0;
@@ -80,11 +73,6 @@ const char *bm_ani_ext_list[] = { ".eff", ".ani", ".png" };
 const int BM_ANI_NUM_TYPES = sizeof(bm_ani_type_list) / sizeof(bm_ani_type_list[0]);
 
 void(*bm_set_components)(ubyte *pixel, ubyte *r, ubyte *g, ubyte *b, ubyte *a) = NULL;
-void(*bm_set_components_32)(ubyte *pixel, ubyte *r, ubyte *g, ubyte *b, ubyte *a) = NULL;
-
-// --------------------------------------------------------------------------------------------------------------------
-// Declaration of protected variables (defined in cmdline.cpp).
-extern int Cmdline_cache_bitmaps;
 
 // --------------------------------------------------------------------------------------------------------------------
 // Definition of public variables (declared as extern in bm_internal.h).
@@ -191,42 +179,6 @@ float bitmap_lookup::map_texture_address(float address)
 {
 	// assume we're just wrapping
 	return address - floorf(address);
-}
-
-float bitmap_lookup::get_channel_red(float u, float v)
-{
-	Assert( Bitmap_data != NULL );
-
-	CLAMP(u, 0.0f, 1.0f);
-	CLAMP(v, 0.0f, 1.0f);
-
-	int x = fl2i(map_texture_address(u) * (Width-1));
-	int y = fl2i(map_texture_address(v) * (Height-1));
-
-	return i2fl(Bitmap_data[(y*Width + x)*Num_channels]) / 255.0f;
-}
-
-float bitmap_lookup::get_channel_green(float u, float v)
-{
-	Assert( Bitmap_data != NULL );
-
-	CLAMP(u, 0.0, 1.0f);
-	CLAMP(v, 0.0, 1.0f);
-
-	int x = fl2i(map_texture_address(u) * (Width-1));
-	int y = fl2i(map_texture_address(v) * (Height-1));
-
-	return i2fl(Bitmap_data[(y*Width + x)*Num_channels + 1]) / 255.0f;
-}
-
-float bitmap_lookup::get_channel_blue(float u, float v)
-{
-	Assert( Bitmap_data != NULL );
-
-	int x = fl2i(map_texture_address(u) * (Width-1));
-	int y = fl2i(map_texture_address(v) * (Height-1));
-
-	return i2fl(Bitmap_data[(y*Width + x)*Num_channels + 2]) / 255.0f;
 }
 
 float bitmap_lookup::get_channel_alpha(float u, float v)
@@ -594,7 +546,6 @@ int bm_create(int bpp, int w, int h, void *data, int flags) {
 	sprintf_safe(entry->filename, "TMP%dx%d+%d", w, h, bpp);
 	entry->type = BM_TYPE_USER;
 	entry->comp_type = BM_TYPE_NONE;
-	entry->palette_checksum = 0;
 
 	entry->bm.w = (short)w;
 	entry->bm.h = (short)h;
@@ -612,7 +563,6 @@ int bm_create(int bpp, int w, int h, void *data, int flags) {
 	entry->signature = Bm_next_signature++;
 
 	entry->handle = n;
-	entry->last_used = -1;
 	entry->mem_taken = (w * h * (bpp >> 3));
 
 	entry->load_count++;
@@ -958,16 +908,6 @@ void bm_get_palette(int handle, ubyte *pal, char *name) {
 	}
 }
 
-uint bm_get_signature(int handle) {
-	Assertion(bm_inited, "bmpman must be initialized before this function can be called!");
-
-	return bm_get_entry(handle)->signature;
-}
-
-size_t bm_get_size(int handle) {
-	return bm_get_entry(handle)->mem_taken;
-}
-
 int bm_get_tcache_type(int num) {
 	if (bm_is_compressed(num))
 		return TCACHE_TYPE_COMPRESSED;
@@ -1268,9 +1208,7 @@ int bm_load(const char *real_filename) {
 	entry->num_mipmaps = mm_lvl;
 	entry->mem_taken = (size_t)bm_size;
 	entry->dir_type = CF_TYPE_ANY;
-	entry->palette_checksum = 0;
 	entry->handle = handle;
-	entry->last_used = -1;
 
 	entry->load_count++;
 
@@ -1733,10 +1671,8 @@ int bm_load_animation(const char *real_filename, int *nframes, int *fps, int *ke
 		entry->bm.palette = nullptr;
 		entry->type = type;
 		entry->comp_type = c_type;
-		entry->palette_checksum = 0;
 		entry->signature = Bm_next_signature++;
 		entry->handle = n + i;
-		entry->last_used = -1;
 		entry->num_mipmaps = mm_lvl;
 		entry->mem_taken = (size_t)img_size;
 		entry->dir_type = dir_type;
@@ -1979,8 +1915,6 @@ bitmap * bm_lock(int handle, int bpp, ubyte flags, bool nodebug) {
 			// Mark all the bitmaps in this bitmap or animation as recently used
 			auto frame_entry = bm_get_entry(first + i);
 
-			frame_entry->last_used = timer_get_milliseconds();
-
 #ifdef BMPMAN_NDEBUG
 			// Mark all the bitmaps in this bitmap or animation as used for the usage tracker.
 			frame_entry->used_count++;
@@ -1989,9 +1923,6 @@ bitmap * bm_lock(int handle, int bpp, ubyte flags, bool nodebug) {
 			frame_entry->used_flags = flags;
 		}
 	} else {
-		// Mark all the bitmaps in this bitmap or animation as recently used
-		be->last_used = timer_get_milliseconds();
-
 #ifdef BMPMAN_NDEBUG
 		// Mark all the bitmaps in this bitmap or animation as used for the usage tracker.
 		be->used_count++;
@@ -2536,9 +2467,7 @@ int bm_make_render_target(int width, int height, int flags) {
 	entry->mem_taken = (size_t)size;
 	entry->dir_type = CF_TYPE_ANY;
 
-	entry->palette_checksum = 0;
 	entry->handle = n;
-	entry->last_used = -1;
 
 	if (entry->mem_taken) {
 		entry->bm.data = (ptr_u)bm_malloc(n, entry->mem_taken);
@@ -2775,30 +2704,6 @@ void bm_page_in_xparent_texture(int bitmapnum, int nframes) {
 	}
 }
 
-bool bm_page_out(int handle) {
-	auto entry = bm_get_entry(handle);
-
-	// in case it's already been released
-	if (entry->type == BM_TYPE_NONE)
-		return 0;
-
-	// it's possible to hit < 0 here when model_page_out_textures() is
-	// called from anywhere other than in a mission
-	if (entry->preload_count > 0) {
-		nprintf(("BmpMan",
-			 "PAGE-OUT: %s - preload_count remaining: %d\n",
-			 entry->filename,
-			 entry->preload_count));
-
-		// lets decrease it for next time around
-		entry->preload_count--;
-
-		return 0;
-	}
-
-	return (bm_unload(handle) == 1);
-}
-
 void bm_print_bitmaps() {
 #ifdef BMPMAN_NDEBUG
 	for (auto& block : bm_blocks) {
@@ -2884,7 +2789,6 @@ int bm_release(int handle, int clear_render_targets) {
 			// For debugging:
 			strcpy_s(entry->filename, "IVE_BEEN_RELEASED!");
 			entry->signature = 0xDEADBEEF;									// a unique signature identifying the data
-			entry->palette_checksum = 0xDEADBEEF;							// checksum used to be sure bitmap is in current palette
 
 			// bookeeping
 			entry->ref_count = -1;									// Number of locks on bitmap.  Can't unload unless ref_count is 0.
@@ -2911,7 +2815,6 @@ int bm_release(int handle, int clear_render_targets) {
 		// For debugging:
 		strcpy_s(entry->filename, "IVE_BEEN_RELEASED!");
 		entry->signature = 0xDEADBEEF;									// a unique signature identifying the data
-		entry->palette_checksum = 0xDEADBEEF;							// checksum used to be sure bitmap is in current palette
 
 		// bookeeping
 		entry->ref_count = -1;									// Number of locks on bitmap.  Can't unload unless ref_count is 0.
@@ -2953,7 +2856,6 @@ void BM_SELECT_ALPHA_TEX_FORMAT() {
 	Gr_current_alpha = &Gr_ta_alpha;
 
 	// setup pointers
-	bm_set_components_32 = bm_set_components_argb_32_tex;
 	// should always assume that 16-bit is the default request
 	bm_set_components = bm_set_components_argb_16_tex;
 }
@@ -2965,7 +2867,6 @@ void BM_SELECT_SCREEN_FORMAT() {
 	Gr_current_alpha = &Gr_alpha;
 
 	// setup pointers
-	bm_set_components_32 = bm_set_components_argb_32_screen;
 	// should always assume that 16-bit is the default request
 	bm_set_components = bm_set_components_argb_16_screen;
 }
@@ -2977,7 +2878,6 @@ void BM_SELECT_TEX_FORMAT() {
 	Gr_current_alpha = &Gr_t_alpha;
 
 	// setup pointers
-	bm_set_components_32 = bm_set_components_argb_32_tex;
 	// should always assume that 16-bit is the default request
 	bm_set_components = bm_set_components_argb_16_tex;
 }
@@ -3003,29 +2903,6 @@ void bm_set_components_argb_16_tex(ubyte *pixel, ubyte *rv, ubyte *gv, ubyte *bv
 	*((unsigned short*)pixel) |= (unsigned short)(((int)*gv / Gr_current_green->scale) << Gr_current_green->shift);
 	*((unsigned short*)pixel) |= (unsigned short)(((int)*bv / Gr_current_blue->scale) << Gr_current_blue->shift);
 	*((unsigned short*)pixel) |= (unsigned short)(Gr_current_alpha->mask);
-}
-
-void bm_set_components_argb_32_screen(ubyte *pixel, ubyte *rv, ubyte *gv, ubyte *bv, ubyte *av) {
-	if (*av == 0) {
-		*((unsigned int*)pixel) = (unsigned int)Gr_current_green->mask;
-		return;
-	}
-
-	*((unsigned int*)pixel) = (unsigned int)(((int)*rv / Gr_current_red->scale) << Gr_current_red->shift);
-	*((unsigned int*)pixel) |= (unsigned int)(((int)*gv / Gr_current_green->scale) << Gr_current_green->shift);
-	*((unsigned int*)pixel) |= (unsigned int)(((int)*bv / Gr_current_blue->scale) << Gr_current_blue->shift);
-}
-
-void bm_set_components_argb_32_tex(ubyte *pixel, ubyte *rv, ubyte *gv, ubyte *bv, ubyte *av) {
-	if (*av == 0) {
-		*((unsigned int*)pixel) = 0;
-		return;
-	}
-
-	*((unsigned int*)pixel) = (unsigned int)(((int)*rv / Gr_current_red->scale) << Gr_current_red->shift);
-	*((unsigned int*)pixel) |= (unsigned int)(((int)*gv / Gr_current_green->scale) << Gr_current_green->shift);
-	*((unsigned int*)pixel) |= (unsigned int)(((int)*bv / Gr_current_blue->scale) << Gr_current_blue->shift);
-	*((unsigned int*)pixel) |= (unsigned int)(Gr_current_alpha->mask);
 }
 
 void bm_set_low_mem(int mode) {

@@ -38,7 +38,6 @@
 
 
 
-#define NUM_SYSTEM_KEYS			14
 #define NUM_BUTTONS				19
 #define NUM_TABS				4
 
@@ -156,11 +155,6 @@ char *Joy_axis_text[NUM_AXIS_TEXT];
 char *Mouse_button_text[NUM_MOUSE_TEXT];
 char *Mouse_axis_text[NUM_MOUSE_AXIS_TEXT];
 char *Invert_text[NUM_INVERT_TEXT];
-
-ubyte System_keys[NUM_SYSTEM_KEYS] = {
-	KEY_ESC, KEY_F1, KEY_F2, KEY_F3, KEY_F4, KEY_F5, KEY_F6, KEY_F7, KEY_F8, KEY_F9, KEY_F10,
-	KEY_F11, KEY_F12, KEY_PRINT_SCRN
-};
 
 int Control_check_count = 0;
 
@@ -2193,17 +2187,6 @@ void control_config_do_frame(float frametime)
 	gr_flip();
 }
 
-void clear_key_binding(short key)
-{
-	int i;
-
-	for (i=0; i<CCFG_MAX; i++) {
-		if (Control_config[i].key_id == key) {
-			Control_config[i].key_id = -1;
-		}
-	}
-}
-
 float check_control_timef(int id)
 {
 	float t1, t2;
@@ -2447,9 +2430,4 @@ void control_config_clear()
 	for (i=0; i<CCFG_MAX; i++) {
 		Control_config[i].key_id = Control_config[i].joy_id = -1;
 	}
-}
-
-int control_config_handle_conflict()
-{
-	return 0;
 }
