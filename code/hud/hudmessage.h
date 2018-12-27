@@ -68,7 +68,6 @@ int HUD_source_get_team(int team);
 void HUD_printf(SCP_FORMAT_STRING const char *format, ...) SCP_FORMAT_STRING_ARGS(1, 2);
 void hud_sourced_print(int source, const char *msg);
 void HUD_sourced_printf(int source, SCP_FORMAT_STRING const char *format, ...) SCP_FORMAT_STRING_ARGS(2, 3);  // send hud message from specified source
-void HUD_ship_sent_printf(int sh, SCP_FORMAT_STRING const char *format, ...) SCP_FORMAT_STRING_ARGS(2, 3);  // send hud message from a specific ship
 void HUD_fixed_printf(float duration, color col, SCP_FORMAT_STRING const char *format, ...) SCP_FORMAT_STRING_ARGS(3, 4);		//	Display a single message for duration seconds.
 void HUD_init_fixed_text();			//	Clear all pending fixed text.
 
@@ -140,7 +139,6 @@ public:
 	void render(float frametime) override;
 	void initialize() override;
 	bool canRender() override;
-	anim_instance* createAnim(int anim_start_frame, anim* anim_data);
 };
 
 class HudGaugeFixedMessages: public HudGauge

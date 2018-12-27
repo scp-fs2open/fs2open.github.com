@@ -53,14 +53,12 @@ typedef struct gauge_settings {
 } gauge_settings;
 
 //Functions
-int hud_get_gauge_index(char* name);
 void hud_positions_init();
 void set_current_hud();
 void init_hud();
 void load_missing_retail_gauges();
 void check_color(int *colorp);
 
-#define NUM_HUD_OBJECT_ENTRIES			56		// not used anywhere?
 int parse_gauge_type();
 void load_gauge(int gauge, gauge_settings* settings);
 

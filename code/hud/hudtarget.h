@@ -95,7 +95,6 @@ void	hud_target_subsystem_in_reticle();
 void	hud_show_targeting_gauges(float frametime);
 void	hud_target_targets_target();
 void	hud_check_reticle_list();
-void	hud_target_closest_locked_missile(object *A);
 void	hud_target_missile(object *source_obj, int next_flag);
 void	hud_target_next_list(int hostile=1, int next_flag=1, int team_mask = -1, int attacked_objnum = -1, int play_fail_sound = TRUE, int filter = 0, int turret_attacking_target = 0);
 int	hud_target_closest_repair_ship(int goal_objnum=-1);
@@ -117,7 +116,6 @@ void	hud_target_prev_subobject();
 void	hud_cease_subsystem_targeting(bool print_message = true);
 void	hud_cease_targeting(bool deliberate = false);
 void	hud_restore_subsystem_target(ship* shipp);
-int	subsystem_in_sight(object* objp, ship_subsys* subsys, vec3d *eye, vec3d* subsystem);
 vec3d* get_subsystem_world_pos(object* parent_obj, ship_subsys* subsys, vec3d* world_pos);
 void	hud_target_change_check();
 

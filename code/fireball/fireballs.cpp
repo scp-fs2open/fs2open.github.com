@@ -46,8 +46,6 @@ int Num_fireball_types = 0;
 bool fireballs_inited = false;
 bool fireballs_parsed = false;
 
-#define FB_INDEX(fb)	(fb-Fireballs)
-
 /**
  * Play warp in sound for warp effect
  */
