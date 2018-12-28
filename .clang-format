@@ -47,6 +47,7 @@ Cpp11BracedListStyle: true
 DerivePointerAlignment: false
 DisableFormat:   false
 ForEachMacros:   [ foreach, Q_FOREACH, BOOST_FOREACH ]
+IncludeBlocks: Regroup
 IncludeCategories:
   - Regex:           '^(<.*\.(h|hh|hpp)>)$' # Includes of external libraries
     Priority:        4
