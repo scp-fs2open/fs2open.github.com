@@ -12,12 +12,6 @@
 #ifndef _KEY_H
 #define _KEY_H
 
-/*
-#ifdef __cplusplus
-extern "C" {
-#endif
-*/
-
 #include "globalincs/pstypes.h"
 
 #define NUM_KEYS 256
@@ -34,11 +28,9 @@ void key_lost_focus();
 void key_got_focus();
 void key_mark( uint code, int state, uint latency );
 int key_getch();
-int key_peekkey();
 void key_flush();
 
 // Routines/data you can access:
-//NOT USED! extern fix key_down_time( uint code );
 float key_down_timef( uint code );
 
 int key_to_ascii(int keycode );
@@ -49,12 +41,7 @@ int key_inkey();
 
 uint key_get_shift_status();
 int key_down_count(int scancode);
-int key_up_count(int scancode);
 int key_checkch();
-int key_check(int key);
-
-//	Put "key" back in the input buffer.
-void key_outkey(int key);
 
 extern int Cheats_enabled;
 extern int Key_normal_game;
@@ -184,11 +171,5 @@ extern int Key_normal_game;
 #define KEY_PRINT_SCRN  0xB7
 #define KEY_PAUSE       0x45	//DOS: 0x61
 #define KEY_BREAK       0xc6
-
-/*
-#ifdef __cplusplus
-}
-#endif
-*/
 
 #endif

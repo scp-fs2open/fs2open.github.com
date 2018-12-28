@@ -190,21 +190,12 @@ static bool Interp_draw_distortion = true;
 static float Interp_warp_scale_x = 1.0f;
 static float Interp_warp_scale_y = 1.0f;
 static float Interp_warp_scale_z = 1.0f;
-static int Interp_warp_bitmap = -1;
-static float Interp_warp_alpha = -1.0f;
 
 // if != -1, use this bitmap when rendering ship insignias
 static int Interp_insignia_bitmap = -1;
 
-// replacement - Goober5000
-// updated - WMC
-static int *Interp_new_replacement_textures = NULL;
-
 // if != -1, use this bitmap when rendering with a forced texture
 static int Interp_forced_bitmap = -1;
-
-// for rendering with the MR_ALL_XPARENT FLAG SET
-static float Interp_xparent_alpha = 1.0f;
 
 // our current level of detail (LOD)
 int Interp_detail_level = 0;
@@ -684,57 +675,6 @@ void model_draw_debug_points( polymodel *pm, bsp_info * submodel, uint flags )
 /**
  * Debug code to show all the paths of a model
  */
-void model_draw_paths( int model_num, uint flags )
-{
-	int i,j;
-	vec3d pnt;
-	polymodel * pm;	
-
-	if ( flags & MR_SHOW_OUTLINE_PRESET )	{
-		return;
-	}
-
-	pm = model_get(model_num);
-
-	if (pm->n_paths<1){
-		return;
-	}	
-
-	for (i=0; i<pm->n_paths; i++ )	{
-		vertex prev_pnt;
-
-		for (j=0; j<pm->paths[i].nverts; j++ )	{
-			// Rotate point into world coordinates			
-			pnt = pm->paths[i].verts[j].pos;
-
-			// Pnt is now the x,y,z world coordinates of this vert.
-			// For this example, I am just drawing a sphere at that
-			// point.
-			{
-				vertex tmp = vertex();
-				g3_rotate_vertex(&tmp,&pnt);
-
-				if ( pm->paths[i].verts[j].nturrets > 0 ){
-					gr_set_color( 0, 0, 255 );						// draw points covered by turrets in blue
-				} else {
-					gr_set_color( 255, 0, 0 );
-				}
-
-				g3_draw_sphere( &tmp, 0.5f );
-
-				if (j){
-					g3_draw_line(&prev_pnt, &tmp);
-				}
-
-				prev_pnt = tmp;
-			}
-		}
-	}
-}
-
-/**
- * Debug code to show all the paths of a model
- */
 void model_draw_paths_htl( int model_num, uint flags )
 {
 	int i,j;
@@ -833,57 +773,6 @@ void model_draw_bay_paths_htl(int model_num)
 
 	gr_set_cull(cull);
 }
-
-/**
- * Docking bay and fighter bay paths
- */
-void model_draw_bay_paths(int model_num)
-{
-	int idx, s_idx;
-	vec3d v1, v2;
-	vertex l1, l2;	
-
-	polymodel *pm = model_get(model_num);
-	if(pm == NULL){
-		return;
-	}
-
-	// render docking bay normals
-	gr_set_color(0, 255, 0);
-	for(idx=0; idx<pm->n_docks; idx++){
-		for(s_idx=0; s_idx<pm->docking_bays[idx].num_slots; s_idx++){
-			v1 = pm->docking_bays[idx].pnt[s_idx];
-			vm_vec_scale_add(&v2, &v1, &pm->docking_bays[idx].norm[s_idx], 10.0f);
-
-			// rotate the points
-			g3_rotate_vertex(&l1, &v1);
-			g3_rotate_vertex(&l2, &v2);
-
-			// draw the point and normal
-			g3_draw_sphere(&l1, 2.0);
-			g3_draw_line(&l1, &l2);
-		}
-	}
-
-	// render figher bay paths
-	gr_set_color(0, 255, 255);
-		
-	// iterate through the paths that exist in the polymodel, searching for $bayN pathnames
-	for (idx = 0; idx<pm->n_paths; idx++) {
-		if ( !strnicmp(pm->paths[idx].name, NOX("$bay"), 4) ) {						
-			for(s_idx=0; s_idx<pm->paths[idx].nverts-1; s_idx++){
-				v1 = pm->paths[idx].verts[s_idx].pos;
-				v2 = pm->paths[idx].verts[s_idx+1].pos;
-
-				// rotate and draw
-				g3_rotate_vertex(&l1, &v1);
-				g3_rotate_vertex(&l2, &v2);
-				g3_draw_line(&l1, &l2);
-			}
-		}
-	}	
-}
-
 
 static const int MAX_ARC_SEGMENT_POINTS = 50;
 int Num_arc_segment_points = 0;
@@ -1384,56 +1273,11 @@ void model_set_outline_color(int r, int g, int b )
 
 }
 
-// If MR_FLAG_OUTLINE bit set this color will be used for outlines.
-// This defaults to black.
-void model_set_outline_color_fast(void *outline_color)
-{
-	Interp_outline_color = *((color*)(outline_color));
-}
-
 // IF MR_LOCK_DETAIL is set, then it will always draw detail level 'n'
 // This defaults to 0. (0=highest, larger=lower)
 void model_set_detail_level(int n)
 {
 	Interp_detail_level_locked = n;
-}
-
-/**
- * Returns number of verts in a submodel;
- */
-int submodel_get_num_verts(int model_num, int submodel_num )
-{
-	polymodel * pm;
-
-	pm = model_get(model_num);
-
-	ubyte *p = pm->submodel[submodel_num].bsp_data;
-	int chunk_type, chunk_size;
-
-	chunk_type = w(p);
-	chunk_size = w(p+4);
-
-	while (chunk_type != OP_EOF)	{
-		switch (chunk_type) {
-		case OP_DEFPOINTS:	{
-				int n=w(p+8);
-				return n;		// Read in 'n' points
-			}
-			break;
-		case OP_FLATPOLY:		break;
-		case OP_TMAPPOLY:		break;
-		case OP_SORTNORM:		break;
-		case OP_BOUNDBOX:	break;
-		default:
-			mprintf(( "Bad chunk type %d, len=%d in submodel_get_num_verts\n", chunk_type, chunk_size ));
-			Int3();		// Bad chunk type!
-			return 0;
-		}
-		p += chunk_size;
-		chunk_type = w(p);
-		chunk_size = w(p+4);
-	}
-	return 0;		// Couldn't find 'em
 }
 
 /**
@@ -1486,70 +1330,6 @@ int submodel_get_num_polys(int model_num, int submodel_num )
 	pm = model_get(model_num);
 
 	return submodel_get_num_polys_sub( pm->submodel[submodel_num].bsp_data );
-}
-
-// Sets the submodel instance data in a submodel
-// If show_damaged is true it shows only damaged submodels.
-// If it is false it shows only undamaged submodels.
-void model_show_damaged(int model_num, int show_damaged )
-{
-	polymodel * pm;
-	int i;
-
-	pm = model_get(model_num);
-
-	for (i=0; i<pm->n_models; i++ )	{
-		bsp_info *sm = &pm->submodel[i];
-
-		// Set the "blown out" flags	
-		sm->blown_off = 0;
-	}
-
-	for (i=0; i<pm->n_models; i++ )	{
-		bsp_info *sm = &pm->submodel[i];
-
-		// Set the "blown out" flags	
-		if ( show_damaged )	{
-			if ( sm->my_replacement > -1 )	{
-				pm->submodel[sm->my_replacement].blown_off = 0;
-				sm->blown_off = 1;
-			}
-		} else {
-			if ( sm->my_replacement > -1 )	{
-				pm->submodel[sm->my_replacement].blown_off = 1;
-				sm->blown_off = 0;
-			}
-		}
-	}
-}
-
-/**
- * Set the insignia bitmap to be used when rendering a ship with an insignia (-1 switches it off altogether)
- */
-void model_set_insignia_bitmap(int bmap)
-{
-	Interp_insignia_bitmap = bmap;
-}
-
-void model_set_replacement_textures(int *replacement_textures)
-{
-	Interp_new_replacement_textures = replacement_textures;
-}
-
-/**
- * Set the forces bitmap
- */
-void model_set_forced_texture(int bmap)
-{
-	Interp_forced_bitmap = bmap;
-}
-
-/**
- * Set model transparency for use with MR_ALL_XPARENT
- */
-void model_set_alpha(float alpha)
-{
-	Interp_xparent_alpha = alpha;
 }
 
 /**
@@ -2736,16 +2516,6 @@ int model_interp_get_texture(texture_info *tinfo, fix base_frametime)
 
 	// done
 	return texture;
-}
-
-void model_set_warp_globals(float scale_x, float scale_y, float scale_z, int bitmap_id, float alpha)
-{
-	Interp_warp_scale_x = scale_x;
-	Interp_warp_scale_y = scale_y;
-	Interp_warp_scale_z = scale_z;
-
-	Interp_warp_bitmap = bitmap_id;
-	Interp_warp_alpha = alpha;
 }
 
 void model_mix_two_team_colors(team_color* dest, team_color* a, team_color* b, float mix_factor)

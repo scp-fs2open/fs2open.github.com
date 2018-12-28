@@ -2304,20 +2304,6 @@ void message_maybe_distort_text(char *text, int shipnum)
 	Distort_next = 0;
 }
 
-// return 1 if a talking head animation is playing, otherwise return 0
-int message_anim_is_playing()
-{
-	int i;
-
-	for (i = 0; i < Num_messages_playing; i++ ) {
-		//if ( (Playing_messages[i].anim != NULL) && anim_playing(Playing_messages[i].anim) )
-		if(Playing_messages[i].play_anim)
-			return 1;
-	}
-
-	return 0;
-}
-
 // Load mission messages (this is called by the level paging code when running with low memory)
 void message_pagein_mission_messages()
 {

@@ -78,9 +78,6 @@ void lcl_xstr_init();
 // free the xstr table
 void lcl_xstr_close();
 
-// determine what language we're running in, see LCL_* defines above
-int lcl_get_language();
-
 // returns the current language character string
 void lcl_get_language_name(char *lang_name);
 
@@ -94,9 +91,6 @@ ubyte lcl_get_font_index(int font_num);
 //        which should already be well entrenched in FreeSpace. If you think you need to use one of the below
 //        functions - ask first :)
 // externalization of table/mission files (only parse routines ever need to deal with these functions) ----------------------- 
-
-// maybe add on an appropriate subdirectory when opening a localized file
-void lcl_add_dir(char *current_path);
 
 // maybe add localized directory to full path with file name when opening a localized file
 int lcl_add_dir_to_path_with_filename(char *current_path, size_t path_max);

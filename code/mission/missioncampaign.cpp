@@ -702,49 +702,6 @@ int mission_campaign_load( char *filename, player *pl, int load_savefile, bool r
 	return 0;
 }
 
-/**
- * Loads up a freespace campaign given the filename.  
- * This routine is used to load up campaigns when a pilot file is loaded.  
- * Generally, the filename will probably be the freespace campaign file, but not necessarily.
- */
-int mission_campaign_load_by_name( char *filename )
-{
-	char name[NAME_LENGTH],test[5];
-	int type,max_players;
-
-	// make sure to tack on .fsc on the end if its not there already
-	if(filename[0] != '\0'){
-		if(strlen(filename) > 4){
-			strcpy_s(test,filename+(strlen(filename)-4));
-			if(strcmp(test, FS_CAMPAIGN_FILE_EXT)!=0){
-				strcat(filename, FS_CAMPAIGN_FILE_EXT);
-			}
-		} else {
-			strcat(filename, FS_CAMPAIGN_FILE_EXT);
-		}
-	} else {
-		Error(LOCATION,"Tried to load campaign file with illegal length/extension!");
-	}
-
-	if (!mission_campaign_get_info(filename, name, &type, &max_players)){
-		return -1;	
-	}
-
-	Num_campaigns = 0;
-	Campaign_file_names[Num_campaigns] = vm_strdup(filename);
-	Campaign_names[Num_campaigns] = vm_strdup(name);
-	Num_campaigns++;
-	mission_campaign_load(filename);		
-	return 0;
-}
-
-int mission_campaign_load_by_name_csfe( char *filename, char *callsign )
-{
-	Game_mode |= GM_NORMAL;
-	strcpy_s(Player->callsign, callsign);
-	return mission_campaign_load_by_name( filename);
-}
-
 /*
  * initialise Player_loadout with default values
  */
@@ -811,22 +768,6 @@ void mission_campaign_savefile_generate_root(char *filename, player *pl)
 	sprintf( filename, NOX("%s.%s."), pl->callsign, base );
 }
 
-/**
- * The following function always only ever ever ever called by CSFE!!!!!
- */
-int campaign_savefile_save(char *pname)
-{
-	if (Campaign.type == CAMPAIGN_TYPE_SINGLE)
-		Game_mode &= ~GM_MULTIPLAYER;
-	else
-		Game_mode |= GM_MULTIPLAYER;
-
-	strcpy_s(Player->callsign, pname);
-	
-	return (int)Pilot.save_savefile();
-}
-
-
 // the below two functions is internal to this module.  It is here so that I can group the save/load
 // functions together.
 //
@@ -849,12 +790,6 @@ void mission_campaign_savefile_delete( char *cfilename )
 	sprintf_safe( filename, NOX("%s.%s.csg"), Player->callsign, base );
 
 	cf_delete(filename, CF_TYPE_PLAYERS, CF_LOCATION_ROOT_USER | CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT);
-}
-
-void campaign_delete_save( char *cfn, char *pname)
-{
-	strcpy_s(Player->callsign, pname);
-	mission_campaign_savefile_delete(cfn);
 }
 
 /**

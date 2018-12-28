@@ -77,12 +77,6 @@ void mission_log_init()
 	log_entries.fill({});
 }
 
-// returns the number of entries in the mission log
-int mission_log_query_scrollback_size()
-{
-	return last_entry;
-}
-
 // function to clean up the mission log removing obsolete entries.  Entries might get marked obsolete
 // in several ways -- having to recycle entries, a ship's subsystem destroyed entries when a ship is
 // fully destroyed, etc.

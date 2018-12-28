@@ -50,10 +50,6 @@ int Mouse_dx = 0;
 int Mouse_dy = 0;
 int Mouse_dz = 0;
 
-int Last_mouse_dx = 0;
-int Last_mouse_dy = 0;
-int Last_mouse_dz = 0;
-
 int Mouse_sensitivity = 4;
 int Use_mouse_to_fly = 0;
 
@@ -111,24 +107,6 @@ void mouse_force_pos(int x, int y);
 void mousewheel_decay(int btn);
 
 static bool Mouse_in_focus = true;
-
-void mouse_got_focus()
-{
-    if ( !mouse_inited ) return;
-
-    Mouse_in_focus = true;
-
-    mouse_flush();
-}
-
-void mouse_lost_focus()
-{
-    if ( !mouse_inited ) return;
-
-    Mouse_in_focus = false;
-
-    mouse_flush();
-}
 
 void mouse_close()
 {
@@ -418,33 +396,6 @@ int mouse_down(int btn)
 	return tmp;
 }
 
-// returns the fraction of time btn has been down since last call
-// (currently returns 1 if buttons is down, 0 otherwise)
-//
-float mouse_down_time(int btn)
-{
-	float tmp;
-	if ( !mouse_inited ) return 0.0f;
-
-	// Bail if not a button or wheel direction
-	if ( (btn < LOWEST_MOUSE_BUTTON) || (btn > HIGHEST_MOUSE_WHEEL)) return 0.0f;
-
-	SDL_LockMutex( mouse_lock );
-
-	if (mouse_flags & btn) {
-		tmp = 1.0f;
-		if ((btn >= LOWEST_MOUSE_WHEEL) && (btn <= HIGHEST_MOUSE_WHEEL)) {
-			mousewheel_decay(btn);
-		}
-	} else {
-		tmp = 0.0f;
-	}
-
-	SDL_UnlockMutex( mouse_lock );
-
-	return tmp;
-}
-
 void mouse_get_delta(int *dx, int *dy, int *dz)
 {
 	if (dx)
@@ -466,10 +417,6 @@ void mouse_force_pos(int x, int y)
 // Reset deltas so we don't have duplicate mouse deltas
 void mouse_reset_deltas()
 {
-	Last_mouse_dx = Mouse_dx;
-	Last_mouse_dy = Mouse_dy;
-	Last_mouse_dz = Mouse_dz;
-
 	Mouse_dx = Mouse_dy = Mouse_dz = 0;
 }
 

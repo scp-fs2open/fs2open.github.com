@@ -625,11 +625,6 @@ light_indexing_info scene_lights::bufferLights()
 	return light_info;
 }
 
-size_t scene_lights::getNumStaticLights()
-{
-	return StaticLightIndices.size();
-}
-
 void scene_lights::resetLightState()
 {
 	current_light_index = static_cast<size_t>(-1);

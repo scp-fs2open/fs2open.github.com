@@ -50,6 +50,5 @@ grid *create_default_grid(void);
 void render_grid(grid *gridp);
 void modify_grid(grid *gridp);
 void rpd_line(vec3d *v0, vec3d *v1);
-void grid_render_elevation_line(vec3d *pos, grid* gridp);
 
 #endif
