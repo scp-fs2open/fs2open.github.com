@@ -165,35 +165,6 @@ Failure:
 	return 0;
 }
 
-
-void snd_spew_info()
-{
-	size_t idx;
-	char txt[512] = "";
-	CFILE *out = cfopen("sounds.txt", "wt", CFILE_NORMAL, CF_TYPE_DATA);
-	if(out == NULL){
-		return;
-	}
-	
-	cfwrite_string("Sounds loaded :\n", out);
-
-	// spew info for all sounds
-	for (idx = 0; idx < Sounds.size(); idx++) {
-		if(!(Sounds[idx].flags & SND_F_USED)){
-			continue;
-		}
-		
-		sprintf(txt, "%s (%ds)\n", Sounds[idx].filename, Sounds[idx].info.duration); 
-		cfwrite_string(txt, out);
-	}
-
-	// close the outfile
-	if(out != NULL){
-		cfclose(out);
-		out = NULL;
-	}
-}
-
 int Sound_spew = 0;
 DCF(show_sounds, "Toggles display of sound debug info")
 {
@@ -1209,19 +1180,6 @@ void snd_set_pos(sound_handle snd_handle, float val, int as_pct)
 int snd_num_playing()
 {
 	return ds_get_number_channels();
-}
-
-// Stop the first channel found that is playing a sound
-void snd_stop_any_sound()
-{
-	int i;
-
-	for ( i = 0; i < 16; i++ ) {
-		if ( ds_is_channel_playing(i) ) {
-			ds_stop_channel(i);
-			break;
-		}
-	}
 }
 
 // Return the raw sound data for a loaded sound

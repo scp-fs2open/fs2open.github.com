@@ -2407,23 +2407,6 @@ bool stars_sun_has_glare(int index)
 	return (sb && sb->glare);
 }
 
-// get a starfield_bitmap_instance, obviously
-starfield_bitmap_instance *stars_get_instance(int index, bool is_a_sun)
-{
-	int max_index = (is_a_sun) ? (int)Suns.size() : (int)Starfield_bitmap_instances.size();
-
-	Assert( (index >= 0) && (index < max_index) );
-
-	if ( (index < 0) || (index >= max_index) )
-		return NULL;
-
-	if (is_a_sun) {
-		return &Suns[index];
-	} else {
-		return &Starfield_bitmap_instances[index];
-	}
-}
-
 // set an instace to not render
 void stars_mark_instance_unused(int index, bool is_a_sun)
 {

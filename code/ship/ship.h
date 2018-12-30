@@ -1417,7 +1417,6 @@ extern void ship_destroy_instantly(object *ship_obj, int shipnum);
 extern void ship_actually_depart(int shipnum, int method = SHIP_DEPARTED_WARP);
 
 extern bool in_autoaim_fov(ship *shipp, int bank_to_fire, object *obj);
-extern int ship_fire_primary_debug(object *objp);	//	Fire the debug laser.
 extern int ship_stop_fire_primary(object * obj);
 extern int ship_fire_primary(object * objp, int stream_weapons, int force = 0);
 extern int ship_fire_secondary(object * objp, int allow_swarm = 0 );
@@ -1477,10 +1476,6 @@ extern void add_shield_point(int objnum, int tri_num, vec3d *hit_pos);
 extern void add_shield_point_multi(int objnum, int tri_num, vec3d *hit_pos);
 extern void shield_point_multi_setup();
 extern void shield_hit_close();
-
-void ship_draw_shield( object *objp);
-
-float compute_shield_strength(object *objp);
 
 // Returns true if the shield presents any opposition to something 
 // trying to force through it.
@@ -1545,11 +1540,8 @@ extern int ship_query_general_type(ship *shipp);
 extern int ship_docking_valid(int docker, int dockee);
 extern int get_quadrant(vec3d *hit_pnt, object *shipobjp = NULL);	//	Return quadrant num of given hit point.
 
-extern void ship_obj_list_rebuild();	// only called by save/restore code
 extern int ship_query_state(char *name);
 
-// Goober5000
-int ship_primary_bank_has_ammo(int shipnum);	// check if current primary bank has ammo
 int ship_secondary_bank_has_ammo(int shipnum);	// check if current secondary bank has ammo
 
 int ship_engine_ok_to_warp(ship *sp);		// check if ship has engine power to warp
@@ -1675,9 +1667,6 @@ int ship_get_by_signature(int sig);
 // get the team of a reinforcement item
 int ship_get_reinforcement_team(int r_index);
 
-// determine if the given texture is used by a ship type. return ship info index, or -1 if not used by a ship
-int ship_get_texture(int bitmap);
-
 // page in bitmaps for all ships on a given level
 void ship_page_in();
 
@@ -1728,9 +1717,6 @@ extern bool ship_fighterbays_all_destroyed(ship *shipp);
 
 // Goober5000
 extern bool ship_subsys_takes_damage(ship_subsys *ss);
-
-//phreak
-extern int ship_fire_tertiary(object *objp);
 
 // Goober5000 - handles submodel rotation, incorporating conditions such as gun barrels when firing
 extern void ship_do_submodel_rotation(ship *shipp, model_subsystem *psub, ship_subsys *pss);
