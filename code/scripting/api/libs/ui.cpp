@@ -1,9 +1,11 @@
 //
 //
 #include "ui.h"
+
 #include "cmdline/cmdline.h"
 #include "menuui/barracks.h"
 #include "menuui/mainhallmenu.h"
+#include "menuui/optionsmenu.h"
 #include "menuui/playermenu.h"
 #include "playerman/managepilot.h"
 #include "scpui/SoundPlugin.h"
@@ -263,6 +265,21 @@ ADE_FUNC(acceptPilot, l_UserInterface_Barracks, "player selection", "Accept the 
 	}
 
 	barracks_accept_pilot(plh->get());
+	return ADE_RETURN_TRUE;
+}
+
+//**********SUBLIBRARY: UserInterface/OptionsMenu
+// This needs a slightly different name since there is already a type called "Options"
+ADE_LIB_DERIV(l_UserInterface_Options, "OptionsMenu", nullptr,
+              "API for accessing values specific to the options screen.<br><b>Warning:</b> This is an internal "
+              "API for the new UI system. This should not be used by other code and may be removed in the future!",
+              l_UserInterface);
+
+ADE_FUNC(playVoiceClip, l_UserInterface_Options, nullptr,
+         "Plays the example voice clip used for checking the voice volume", "boolean",
+         "true on sucess, false otherwise")
+{
+	options_play_voice_clip();
 	return ADE_RETURN_TRUE;
 }
 

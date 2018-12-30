@@ -17,6 +17,7 @@
 #include "io/joy.h"
 #include "io/key.h"
 #include "localization/localize.h"
+#include "options/Option.h"
 #include "parse/parselo.h"
 
 // z64: These enumerations MUST equal to those in controlsconfig.cpp...
@@ -32,7 +33,28 @@ int Failed_key_index;
 
 // Joystick configuration
 int Joy_dead_zone_size = 10;
+
+auto DeadZoneOption =
+    options::OptionBuilder<int>("Input.JoystickDeadZone", "Deadzone", "The deadzone of the selected joystick.")
+        .category("Input")
+        .range(0, 45)
+        .level(options::ExpertLevel::Beginner)
+        .default_val(10)
+        .bind_to(&Joy_dead_zone_size)
+        .importance(1)
+        .finish();
+
 int Joy_sensitivity = 9;
+
+auto SensitivityOption =
+    options::OptionBuilder<int>("Input.JoystickSensitivity", "Sensitivity", "The sentitivity of the selected joystick.")
+        .category("Input")
+        .range(0, 9)
+        .level(options::ExpertLevel::Beginner)
+        .default_val(9)
+        .bind_to(&Joy_sensitivity)
+        .importance(2)
+        .finish();
 
 int Invert_axis[JOY_NUM_AXES] = { 0, 0, 0, 0, 0, 0 };
 int Invert_axis_defaults[JOY_NUM_AXES] = { 0, 0, 0, 0, 0, 0 };

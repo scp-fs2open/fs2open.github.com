@@ -59,6 +59,33 @@ void set_defaults<float>(Option<float>& opt) {
 	opt.setType(OptionType::Range);
 }
 
+int int_deserializer(const json_t* value)
+{
+	int i;
+
+	json_error_t err;
+	if (json_unpack_ex((json_t*)value, &err, 0, "i", &i) != 0) {
+		throw json_exception(err);
+	}
+
+	return i;
+}
+json_t* int_serializer(int value) { return json_pack("i", value); }
+SCP_string int_display(int value)
+{
+	SCP_string out;
+	sprintf(out, "%d", value);
+	return out;
+}
+template<>
+void set_defaults<int>(Option<int>& opt) {
+	opt.setDeserializer(int_deserializer);
+	opt.setSerializer(int_serializer);
+	opt.setDisplayFunc(int_display);
+
+	opt.setType(OptionType::Range);
+}
+
 bool boolean_deserializer(const json_t* value)
 {
 	int b;
@@ -134,5 +161,12 @@ bool operator<=(const OptionBase& lhs, const OptionBase& rhs) {
 bool operator>=(const OptionBase& lhs, const OptionBase& rhs) {
 	return !(lhs < rhs);
 }
+const flagset<OptionFlags>& OptionBase::getFlags() const {
+	return _flags;
+}
+void OptionBase::setFlags(const flagset<OptionFlags>& flags) {
+	_flags = flags;
+}
+bool OptionBase::persistChanges() const { return _parent->persistOptionChanges(this); }
 
 } // namespace options

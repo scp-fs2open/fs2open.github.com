@@ -134,6 +134,8 @@ void material_set_rocket_interface(interface_material* mat_info, int texture, co
 	mat_info->set_depth_mode(ZBUFFER_TYPE_NONE);
 
 	mat_info->set_blend_mode(ALPHA_BLEND_ALPHA_BLEND_ALPHA);
+
+	mat_info->set_texture_type(material::TEX_TYPE_INTERFACE);
 }
 
 void material_set_movie(movie_material* mat_info, int y_bm, int u_bm, int v_bm) {

@@ -137,10 +137,6 @@ int gr_stub_set_color_buffer(int  /*mode*/)
 	return 0;
 }
 
-void gr_stub_set_gamma(float  /*gamma*/)
-{
-}
-
 void gr_stub_set_tex_env_scale(float  /*scale*/)
 {
 }
@@ -434,8 +430,6 @@ bool gr_stub_init()
 	gr_screen.gf_save_screen		= gr_stub_save_screen;
 	gr_screen.gf_restore_screen		= gr_stub_restore_screen;
 	gr_screen.gf_free_screen		= gr_stub_free_screen;
-	
-	gr_screen.gf_set_gamma			= gr_stub_set_gamma;
 
 	// UnknownPlayer : Don't recognize this - MAY NEED DEBUGGING
 	gr_screen.gf_get_region			= gr_stub_get_region;

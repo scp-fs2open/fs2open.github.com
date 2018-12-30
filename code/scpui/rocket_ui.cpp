@@ -16,6 +16,7 @@
 #include "osapi/osapi.h"
 #include "scpui/RocketFileInterface.h"
 #include "scpui/RocketRenderingInterface.h"
+#include "scpui/IncludeNodeHandler.h"
 #include "scpui/RocketSystemInterface.h"
 #include "scpui/SoundPlugin.h"
 #include "scpui/elements/AnimationElement.h"
@@ -526,6 +527,8 @@ void initialize()
 
 	Rocket::Core::Factory::RegisterElementInstancer("ani", new ElementInstancerGeneric<elements::AnimationElement>())
 	    ->RemoveReference();
+
+	XMLParser::RegisterNodeHandler("include", new IncludeNodeHandler())->RemoveReference();
 
 	// Setup the plugin a style sheet properties for the sound support
 	Rocket::Core::RegisterPlugin(new SoundPlugin());

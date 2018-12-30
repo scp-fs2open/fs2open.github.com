@@ -181,6 +181,8 @@ auto JoystickOption = options::OptionBuilder<Joystick*>("Input.Joystick", "Joyst
                           .enumerator(joystick_enumerator)
                           .level(options::ExpertLevel::Beginner)
                           .default_val(nullptr)
+                          .flags({options::OptionFlags::ForceMultiValueSelection})
+                          .importance(3)
                           .finish();
 
 HatPosition convertSDLHat(int val)

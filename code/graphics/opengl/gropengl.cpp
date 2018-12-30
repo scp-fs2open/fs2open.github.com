@@ -53,8 +53,6 @@ bool GL_initted = 0;
 //3==NV Radial
 int OGL_fogmode = 0;
 
-static ushort *GL_original_gamma_ramp = NULL;
-
 int Use_PBOs = 0;
 
 static ubyte *GL_saved_screen = NULL;
@@ -67,12 +65,6 @@ extern const char *Osreg_title;
 extern SCP_string Window_title;
 
 extern GLfloat GL_anisotropy;
-
-extern float FreeSpace_gamma;
-void gr_opengl_set_gamma(float gamma);
-
-extern float FreeSpace_gamma;
-void gr_opengl_set_gamma(float gamma);
 
 static int GL_fullscreen = 0;
 static int GL_windowed = 0;
@@ -122,7 +114,7 @@ void opengl_go_fullscreen()
 	if (Cmdline_fullscreen_window || Cmdline_window || GL_fullscreen || Fred_running)
 		return;
 
-	gr_opengl_set_gamma(FreeSpace_gamma);
+	gr_set_gamma(Gr_gamma);
 
 	GL_fullscreen = 1;
 	GL_minimized = 0;
@@ -383,15 +375,6 @@ void gr_opengl_shutdown()
 	glDeleteVertexArrays(1, &GL_vao);
 	GL_vao = 0;
 
-	if (GL_original_gamma_ramp != NULL && os::getSDLMainWindow() != nullptr) {
-		SDL_SetWindowGammaRamp( os::getSDLMainWindow(), GL_original_gamma_ramp, (GL_original_gamma_ramp+256), (GL_original_gamma_ramp+512) );
-	}
-
-	if (GL_original_gamma_ramp != NULL) {
-		vm_free(GL_original_gamma_ramp);
-		GL_original_gamma_ramp = NULL;
-	}
-
 	graphic_operations->makeOpenGLContextCurrent(nullptr, nullptr);
 	GL_context = nullptr;
 }
@@ -548,89 +531,6 @@ int gr_opengl_alpha_mask_set(int mode, float alpha)
 
 	// alpha masking is deprecated
 	return mode;
-}
-
-// I feel dirty...
-static void opengl_make_gamma_ramp(float gamma, ushort *ramp)
-{
-	ushort x, y;
-	ushort base_ramp[256];
-
-	Assert( ramp != NULL );
-
-	// generate the base ramp values first off
-
-	// if no gamma set then just do this quickly
-	if (gamma <= 0.0f) {
-		memset( ramp, 0, 3 * 256 * sizeof(ushort) );
-		return;
-	}
-	// identity gamma, avoid all of the math
-	else if ( (gamma == 1.0f) || (GL_original_gamma_ramp == NULL) ) {
-		if (GL_original_gamma_ramp != NULL) {
-			memcpy( ramp, GL_original_gamma_ramp, 3 * 256 * sizeof(ushort) );
-		}
-		// set identity if no original ramp
-		else {
-			for (x = 0; x < 256; x++) {
-				ramp[x]	= (x << 8) | x;
-				ramp[x + 256] = (x << 8) | x;
-				ramp[x + 512] = (x << 8) | x;
-			}
-		}
-
-		return;
-	}
-	// for everything else we need to actually figure it up
-	else {
-		double g = 1.0 / (double)gamma;
-		double val;
-
-		Assert( GL_original_gamma_ramp != NULL );
-
-		for (x = 0; x < 256; x++) {
-			val = (pow(x/255.0, g) * 65535.0 + 0.5);
-			CLAMP( val, 0, 65535 );
-
-			base_ramp[x] = (ushort)val;
-		}
-
-		for (y = 0; y < 3; y++) {
-			for (x = 0; x < 256; x++) {
-				val = (base_ramp[x] * 2) - GL_original_gamma_ramp[x + y * 256];
-				CLAMP( val, 0, 65535 );
-
-				ramp[x + y * 256] = (ushort)val;
-			}
-		}
-	}
-}
-
-void gr_opengl_set_gamma(float gamma)
-{
-	ushort *gamma_ramp = NULL;
-
-	Gr_gamma = gamma;
-	Gr_gamma_int = int (Gr_gamma*10);
-
-	// new way - but not while running FRED
-	if (!Fred_running && !Cmdline_no_set_gamma && os::getSDLMainWindow() != nullptr) {
-		gamma_ramp = (ushort*) vm_malloc( 3 * 256 * sizeof(ushort), memory::quiet_alloc);
-
-		if (gamma_ramp == NULL) {
-			Int3();
-			return;
-		}
-
-		memset( gamma_ramp, 0, 3 * 256 * sizeof(ushort) );
-
-		// Create the Gamma lookup table
-		opengl_make_gamma_ramp(gamma, gamma_ramp);
-
-		SDL_SetWindowGammaRamp( os::getSDLMainWindow(), gamma_ramp, (gamma_ramp+256), (gamma_ramp+512) );
-
-		vm_free(gamma_ramp);
-	}
 }
 
 void gr_opengl_get_region(int  /*front*/, int w, int h, ubyte *data)
@@ -982,21 +882,6 @@ int opengl_init_display_device()
 	Gr_ta_alpha.shift = 12;
 	Gr_ta_alpha.scale = 17;
 
-	// allocate storage for original gamma settings
-	if ( !Cmdline_no_set_gamma && (GL_original_gamma_ramp == NULL) ) {
-		GL_original_gamma_ramp = (ushort*) vm_malloc( 3 * 256 * sizeof(ushort), memory::quiet_alloc);
-
-		if (GL_original_gamma_ramp == NULL) {
-			mprintf(("  Unable to allocate memory for gamma ramp!  Disabling...\n"));
-			Cmdline_no_set_gamma = 1;
-		} else {
-			// assume identity ramp by default, to be overwritten by true ramp later
-			for (ushort x = 0; x < 256; x++) {
-				GL_original_gamma_ramp[x] = GL_original_gamma_ramp[x + 256] = GL_original_gamma_ramp[x + 512] = (x << 8) | x;
-			}
-		}
-	}
-
 	os::ViewPortProperties attrs;
 	attrs.enable_opengl = true;
 
@@ -1071,11 +956,6 @@ int opengl_init_display_device()
 	graphic_operations->makeOpenGLContextCurrent(port, GL_context.get());
 	current_viewport = port;
 
-	if (GL_original_gamma_ramp != NULL && os::getSDLMainWindow() != nullptr) {
-		SDL_GetWindowGammaRamp( os::getSDLMainWindow(), GL_original_gamma_ramp, (GL_original_gamma_ramp+256),
-								(GL_original_gamma_ramp+512) );
-	}
-
 	return 0;
 }
 
@@ -1104,8 +984,6 @@ void opengl_setup_function_pointers()
 	gr_screen.gf_save_screen		= gr_opengl_save_screen;
 	gr_screen.gf_restore_screen		= gr_opengl_restore_screen;
 	gr_screen.gf_free_screen		= gr_opengl_free_screen;
-
-	gr_screen.gf_set_gamma			= gr_opengl_set_gamma;
 
 	// UnknownPlayer : Don't recognize this - MAY NEED DEBUGGING
 	gr_screen.gf_get_region			= gr_opengl_get_region;

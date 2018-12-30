@@ -403,15 +403,16 @@ void labviewer_render_model(float frametime)
 		vm_rotate_matrix_by_angles(&Lab_model_orient, &rot_angles);
 	}
 
-	if (Lab_selected_object != -1) {
-		auto lab_render_light_save    = Lab_render_without_light;
+	if (Lab_selected_object != -1)
+	{
+		auto lab_render_light_save = Lab_render_without_light;
 		auto lab_debris_override_save = Motion_debris_enabled;
 		auto lab_envmap_override_save = Envmap_override;
 		auto lab_emissive_light_save  = Cmdline_emissive;
 
 		if (Lab_selected_mission == "None") {
 			Lab_render_without_light = true;
-			Motion_debris_enabled    = true;
+			Motion_debris_enabled = true;
 		}
 
 		Cmdline_emissive = Lab_emissive_light_override;
@@ -547,7 +548,7 @@ void labviewer_do_render(float frametime)
 		          "FPS: ?", GR_RESIZE_NONE);
 	}
 
-	// Print FXAA preset
+	//Print FXAA preset
 	if (gr_is_fxaa_mode(Gr_aa_mode) && !PostProcessing_override) {
 		const char* fxaa_mode;
 		switch (Gr_aa_mode) {
@@ -565,12 +566,10 @@ void labviewer_do_render(float frametime)
 			break;
 		}
 
-		gr_printf_no_resize(gr_screen.center_offset_x + 2,
-		                    gr_screen.center_offset_y + gr_screen.center_h - (gr_get_font_height() * 2) - 3,
-		                    "FXAA Preset: %s", fxaa_mode);
+		gr_printf_no_resize(gr_screen.center_offset_x + 2, gr_screen.center_offset_y + gr_screen.center_h - (gr_get_font_height() * 2) - 3, "FXAA Preset: %s", fxaa_mode);
 	}
-
-	// Print current Team Color setting, if any
+	
+	//Print current Team Color setting, if any
 	if (Lab_team_color != "<none>")
 		gr_printf_no_resize(gr_screen.center_offset_x + 2,
 		                    gr_screen.center_offset_y + gr_screen.center_h - (gr_get_font_height() * 3) - 3,

@@ -7,8 +7,6 @@
  *
 */
 
-
-
 #include "cfile/cfile.h"
 #include "cmdline/cmdline.h"
 #include "debugconsole/console.h"
@@ -17,18 +15,18 @@
 #include "globalincs/alphacolors.h"
 #include "globalincs/pstypes.h"
 #include "globalincs/vmallocator.h"
+#include "menuui/mainhallmenu.h"
 #include "mod_table/mod_table.h"
+#include "options/Option.h"
 #include "osapi/osapi.h"
 #include "render/3d.h"
-#include "sound/ffmpeg/WaveFile.h"
 #include "sound/audiostr.h"
 #include "sound/ds.h"
 #include "sound/ds3d.h"
 #include "sound/dscap.h"
+#include "sound/ffmpeg/WaveFile.h"
 #include "tracing/Monitor.h"
 #include "tracing/tracing.h"
-
-#include "globalincs/pstypes.h"
 
 #include <climits>
 
@@ -50,10 +48,48 @@ SCP_vector<sound> Sounds;
 
 int Sound_enabled = FALSE;				// global flag to turn sound on/off
 size_t Snd_sram;								// mem (in bytes) used up by storing sounds in system memory
+
 float Default_sound_volume = 1.0f;		// range is 0 -> 1, used for non-music sound fx
-float Default_voice_volume = 0.7f;		// range is 0 -> 1, used for all voice playback
 float Master_sound_volume = Default_sound_volume;
+
+static bool effects_volume_change_listener(float new_val, bool /*initial*/)
+{
+	Assertion(new_val >= 0.0f && new_val <= 1.0f, "Invalid value %f supplied by options system!", new_val);
+
+	snd_set_effects_volume(new_val);
+
+	return true;
+}
+
+static auto EffectVolumeOption =
+    options::OptionBuilder<float>("Audio.Effects", "Effects", "Volume used for playing in-game effects")
+        .category("Audio")
+        .default_val(Default_sound_volume)
+        .range(0.0f, 1.0f)
+        .change_listener(effects_volume_change_listener)
+        .importance(2)
+        .finish();
+
+float Default_voice_volume = 0.7f; // range is 0 -> 1, used for all voice playback
 float Master_voice_volume = Default_voice_volume;
+
+static bool voice_volume_change_listener(float new_val, bool /*initial*/)
+{
+	Assertion(new_val >= 0.0f && new_val <= 1.0f, "Invalid value %f supplied by options system!", new_val);
+
+	snd_set_voice_volume(new_val);
+
+	return true;
+}
+
+static auto VoiceVolumeOption =
+    options::OptionBuilder<float>("Audio.Voice", "Voice", "Volume used for playing voice audio")
+        .category("Audio")
+        .default_val(Default_voice_volume)
+        .range(0.0f, 1.0f)
+        .change_listener(voice_volume_change_listener)
+        .importance(0)
+        .finish();
 
 unsigned int SND_ENV_DEFAULT = 0;
 
@@ -1465,6 +1501,20 @@ void snd_aav_init()
 		aav_data[i].delta_time = 0;
 		aav_data[i].start_time = 0.0f;	
 	}
+}
+void snd_set_effects_volume(float volume)
+{
+	Assertion(volume >= 0.0f && volume <= 1.0f, "Invalid effects volume %f!", volume);
+
+	Master_sound_volume = volume;
+	main_hall_reset_ambient_vol();
+}
+void snd_set_voice_volume(float volume)
+{
+	Assertion(volume >= 0.0f && volume <= 1.0f, "Invalid voice volume %f!", volume);
+
+	Master_voice_volume = volume;
+	audiostream_set_volume_all(Master_voice_volume, ASF_VOICE);
 }
 
 game_snd::game_snd() : last_entry_index(std::numeric_limits<size_t>::max())

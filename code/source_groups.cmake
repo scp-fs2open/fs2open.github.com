@@ -1016,6 +1016,8 @@ add_file_folder("Render"
 )
 
 add_file_folder("ScpUi"
+	scpui/IncludeNodeHandler.cpp
+	scpui/IncludeNodeHandler.h
 	scpui/rocket_ui.cpp
 	scpui/rocket_ui.h
 	scpui/RocketFileInterface.cpp

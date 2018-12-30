@@ -27,9 +27,11 @@
  #include <sys/stat.h>
 #endif
 
+#include "SDLGraphicsOperations.h"
 #include "freespace.h"
 #include "freespaceresource.h"
 #include "levelpaging.h"
+
 #include "anim/animplay.h"
 #include "asteroid/asteroid.h"
 #include "autopilot/autopilot.h"
@@ -135,6 +137,7 @@
 #include "object/objectsnd.h"
 #include "object/waypoint.h"
 #include "observer/observer.h"
+#include "options/Option.h"
 #include "options/OptionsManager.h"
 #include "osapi/osapi.h"
 #include "osapi/osregistry.h"
@@ -181,13 +184,11 @@
 #include "weapon/shockwave.h"
 #include "weapon/weapon.h"
 
-#include "SDLGraphicsOperations.h"
-
-#include <cinttypes>
-
-#include <stdexcept>
 #include <SDL.h>
 #include <SDL_main.h>
+
+#include <cinttypes>
+#include <stdexcept>
 
 
 #ifdef WIN32
@@ -235,6 +236,22 @@ struct big_expl_flash {
 
 #define DEFAULT_SKILL_LEVEL	1
 int	Game_skill_level = DEFAULT_SKILL_LEVEL;
+
+static SCP_string skill_level_display(int value)
+{
+	return SCP_string(Skill_level_names(value, true));
+}
+
+static auto GameSkillOption =
+    options::OptionBuilder<int>("Game.SkillLevel", "Skill Level", "The skill level for the game.")
+        .category("Game")
+        .range(0, 4)
+        .level(options::ExpertLevel::Beginner)
+        .default_val(DEFAULT_SKILL_LEVEL)
+        .bind_to(&Game_skill_level)
+        .display(skill_level_display)
+        .importance(1)
+        .finish();
 
 #define EXE_FNAME			("fs2.exe")
 
@@ -1551,37 +1568,6 @@ DCF(force_fullscreen, "Forces game to startup in fullscreen mode")
 
 int	Framerate_delay = 0;
 
-float FreeSpace_gamma = 1.0f;
-
-DCF(gamma,"Sets and saves Gamma Factor")
-{
-	if (dc_optional_string_either("help", "--help")) {
-		dc_printf( "Usage: gamma <float>\n" );
-		dc_printf( "Sets gamma in range 1-3, no argument resets to default 1.2\n" );
-		return;
-	}
-
-	if (dc_optional_string_either("status", "--status") || dc_optional_string_either("?", "--?")) {
-		dc_printf( "Gamma = %.2f\n", FreeSpace_gamma );
-		return;
-	}
-
-	if (!dc_maybe_stuff_float(&FreeSpace_gamma)) {
-		dc_printf( "Gamma reset to 1.0f\n" );
-		FreeSpace_gamma = 1.0f;
-	}
-	if ( FreeSpace_gamma < 0.1f )	{
-		FreeSpace_gamma = 0.1f;
-	} else if ( FreeSpace_gamma > 5.0f )	{
-		FreeSpace_gamma = 5.0f;
-	}
-	gr_set_gamma(FreeSpace_gamma);
-
-	char tmp_gamma_string[32];
-	sprintf( tmp_gamma_string, NOX("%.2f"), FreeSpace_gamma );
-	os_config_write_string( nullptr, NOX("Gamma"), tmp_gamma_string );
-}
-
 #ifdef FS2_VOICER
 // This is really awful but thank the guys of X11 for naming something "Window"
 #	include "SDL_syswm.h" // For SDL_SysWMinfo
@@ -1720,7 +1706,7 @@ void game_init()
 		// Standalone mode doesn't require graphics operations
 		sdlGraphicsOperations.reset(new SDLGraphicsOperations());
 	}
-	if ( gr_init(std::move(sdlGraphicsOperations)) == false ) {
+	if (!gr_init(std::move(sdlGraphicsOperations))) {
 		os::dialogs::Message(os::dialogs::MESSAGEBOX_ERROR, "Error intializing graphics!");
 		exit(1);
 		return;
@@ -1758,11 +1744,6 @@ void game_init()
 	}
 
 #endif
-
-	// D3D's gamma system now works differently. 1.0 is the default value
-	ptr = os_config_read_string(nullptr, NOX("GammaD3D"), NOX("1.0"));
-	FreeSpace_gamma = (float)atof(ptr);
-
 	script_init();			//WMC
 
 	font::init();					// loads up all fonts
@@ -1770,8 +1751,7 @@ void game_init()
 	// add title screen
 	if(!Is_standalone){
 		// #Kazan# - moved this down - WATCH THESE calls - anything that shares code between standalone and normal
-		// cannot make gr_* calls in standalone mode because all gr_ calls are null pointers
-		gr_set_gamma(FreeSpace_gamma);
+		// cannot make gr_* calls in standalone mode because all gr_ calls are NULL pointers
 		game_title_screen_display();
 	}
 	

@@ -1093,29 +1093,39 @@ void pilotfile::csg_write_variables()
 void pilotfile::csg_read_settings()
 {
 	// sound/voice/music
-	Master_sound_volume = cfread_float(cfp);
-	Master_event_music_volume = cfread_float(cfp);
-	Master_voice_volume = cfread_float(cfp);
+	if (!Using_in_game_options) {
+		snd_set_effects_volume(cfread_float(cfp));
+		event_music_set_volume(cfread_float(cfp));
+		snd_set_voice_volume(cfread_float(cfp));
 
-	audiostream_set_volume_all(Master_voice_volume, ASF_VOICE);
-	audiostream_set_volume_all(Master_event_music_volume, ASF_EVENTMUSIC);
-
-	if (Master_event_music_volume > 0.0f) {
-		Event_music_enabled = 1;
+		Briefing_voice_enabled = cfread_int(cfp) != 0;
 	} else {
-		Event_music_enabled = 0;
+		// The values are set by the in-game menu but we still need to read the int from the file to maintain the
+		// correct offset
+		cfread_float(cfp);
+		cfread_float(cfp);
+		cfread_float(cfp);
+
+		cfread_int(cfp);
 	}
 
-	Briefing_voice_enabled = cfread_int(cfp);
 
 	// skill level
 	Game_skill_level = cfread_int(cfp);
 
 	// input options
-	Use_mouse_to_fly = cfread_int(cfp);
-	Mouse_sensitivity = cfread_int(cfp);
-	Joy_sensitivity = cfread_int(cfp);
-	Joy_dead_zone_size = cfread_int(cfp);
+	if (!Using_in_game_options) {
+		Use_mouse_to_fly   = cfread_int(cfp) != 0;
+		Mouse_sensitivity  = cfread_int(cfp);
+		Joy_sensitivity    = cfread_int(cfp);
+		Joy_dead_zone_size = cfread_int(cfp);
+	} else {
+		// The values are set by the in-game menu but we still need to read the int from the file to maintain the correct offset
+		cfread_int(cfp);
+		cfread_int(cfp);
+		cfread_int(cfp);
+		cfread_int(cfp);
+	}
 
 	if (csg_ver < 3) {
 		// detail
@@ -1143,7 +1153,7 @@ void pilotfile::csg_write_settings()
 	cfwrite_float(Master_event_music_volume, cfp);
 	cfwrite_float(Master_voice_volume, cfp);
 
-	cfwrite_int(Briefing_voice_enabled, cfp);
+	cfwrite_int(Briefing_voice_enabled ? 1 : 0, cfp);
 
 	// skill level
 	cfwrite_int(Game_skill_level, cfp);

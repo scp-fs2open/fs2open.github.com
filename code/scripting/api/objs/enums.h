@@ -91,7 +91,6 @@ const int32_t LE_OPTION_TYPE_SELECTION       = 78;
 const int32_t LE_OPTION_TYPE_RANGE           = 79;
 
 const int ENUM_NEXT_INDEX = 80; // <<<<<<<<<<<<<<<<<<<<<<
-
 extern flag_def_list Enumerations[];
 extern size_t Num_enumerations;
 

@@ -41,7 +41,6 @@ extern color_gun Gr_ta_red, Gr_ta_green, Gr_ta_blue, Gr_ta_alpha;
 extern color_gun *Gr_current_red, *Gr_current_green, *Gr_current_blue, *Gr_current_alpha;
 
 extern float Gr_gamma;
-extern int Gr_gamma_int;
 
 #define TCACHE_TYPE_AABITMAP				0		// HUD bitmap.  All Alpha.
 #define TCACHE_TYPE_NORMAL					1		// Normal bitmap. Alpha = 0.

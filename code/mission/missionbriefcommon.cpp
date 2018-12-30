@@ -1,14 +1,13 @@
 /*
  * Copyright (C) Volition, Inc. 1999.  All rights reserved.
  *
- * All source code herein is the property of Volition, Inc. You may not sell 
- * or otherwise commercially exploit the source or things you created based on the 
+ * All source code herein is the property of Volition, Inc. You may not sell
+ * or otherwise commercially exploit the source or things you created based on the
  * source.
  *
-*/ 
+ */
 
-
-
+#include "mission/missionbriefcommon.h"
 
 #include "anim/animplay.h"
 #include "gamesnd/gamesnd.h"
@@ -19,13 +18,13 @@
 #include "io/timer.h"
 #include "localization/localize.h"
 #include "math/fvi.h"
-#include "mission/missionbriefcommon.h"
 #include "mission/missiongrid.h"
 #include "mission/missionparse.h"
 #include "missionui/missionbrief.h"
 #include "missionui/missioncmdbrief.h"
 #include "missionui/missiondebrief.h"
 #include "mod_table/mod_table.h"
+#include "options/Option.h"
 #include "parse/parselo.h"
 #include "playerman/player.h"
 #include "render/3d.h"
@@ -33,7 +32,6 @@
 #include "sound/audiostr.h"
 #include "sound/fsspeech.h"
 #include "species_defs/species_defs.h"
-
 
 // --------------------------------------------------------------------------------------
 // briefing screen
@@ -127,7 +125,16 @@ debriefing	Debriefings[MAX_TVT_TEAMS];			// there can be multiple debriefings pe
 briefing		*Briefing;							// pointer used in code -- points to correct briefing
 debriefing	*Debriefing;						// pointer to correct debriefing
 
-int			Briefing_voice_enabled=1;		// flag which turn on/off voice playback of briefings/debriefings
+bool Briefing_voice_enabled = true; // flag which turn on/off voice playback of briefings/debriefings
+
+static auto BriefingVoiceOption = options::OptionBuilder<bool>("Audio.BriefingVoice", "Briefing voice",
+                                                               "Enable or disable voice playback in the briefing.")
+                                      .category("Audio")
+                                      .level(options::ExpertLevel::Beginner)
+                                      .default_val(true)
+                                      .bind_to(&Briefing_voice_enabled)
+                                      .importance(4)
+                                      .finish();
 
 // --------------------------------------------------------------------------------------
 // Module global data
