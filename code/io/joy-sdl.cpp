@@ -20,14 +20,6 @@ Joystick *currentJoystick = nullptr;
 bool initialized = false;
 
 /**
- * @brief Compatibility conversion from HatPosition to array index
- */
-inline
-int hatEnumToIdx(HatPosition in) {
-	return static_cast<int>(in - JOY_NUM_BUTTONS);
-}
-
-/**
 * @brief Compatibility conversion from Button index to HatPosition
 */
 inline
