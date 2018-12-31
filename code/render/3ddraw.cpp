@@ -213,22 +213,6 @@ int g3_get_bitmap_dims(int bitmap, vertex *pnt, float rad, int *x, int *y, int *
 	return 0;
 }
 
-/** As a define only for readability. */
-#define TRIANGLE_AREA(_p, _q, _r)	do {\
-	vec3d a, b, cross;\
-	\
-	a.xyz.x = _q->world.xyz.x - _p->world.xyz.x;\
-	a.xyz.y = _q->world.xyz.y - _p->world.xyz.y;\
-	a.xyz.z = 0.0f;\
-	\
-	b.xyz.x = _r->world.xyz.x - _p->world.xyz.x;\
-	b.xyz.y = _r->world.xyz.y - _p->world.xyz.y;\
-	b.xyz.z = 0.0f;\
-	\
-	vm_vec_cross(&cross, &a, &b);\
-	total_area += vm_vec_mag(&cross) * 0.5f;\
-} while(0);
-
 #include "graphics/2d.h"
 
 //draws a horizon. takes eax=sky_color, edx=ground_color
@@ -329,8 +313,6 @@ vec3d g3_square[4] = {
 	{ { { 1.0f, 1.0f, 20.0f } } },
 	{ { { 1.0f, -1.0f, 20.0f } } }
 };
-
-#define MAX_PERSPECTIVE_DIVISIONS			5				// should never even come close to this limit
 
 void stars_project_2d_onto_sphere( vec3d *pnt, float rho, float phi, float theta )
 {		
@@ -815,73 +797,6 @@ void g3_render_rect_screen_aligned(material *mat_params, vertex *pnt, int orient
 	g3_render_primitives_textured(mat_params, P, 4, PRIM_TYPE_TRIFAN, false);
 }
 
-// adapted from g3_draw_laser_htl()
-void g3_render_laser(material *mat_params, vec3d *headp, float head_width, vec3d *tailp, float tail_width)
-{
-	head_width *= 0.5f;
-	tail_width *= 0.5f;
-	vec3d uvec, fvec, rvec, center, reye, rfvec;
-
-	vm_vec_sub(&fvec, headp, tailp);
-	vm_vec_normalize_safe(&fvec);
-	vm_vec_copy_scale(&rfvec, &fvec, -1.0f);
-
-	vm_vec_avg(&center, headp, tailp); //needed for the return value only
-	vm_vec_sub(&reye, &Eye_position, &center);
-	vm_vec_normalize(&reye);
-
-	// code intended to prevent possible null vector normalize issue - start
-	if ( vm_vec_equal(reye, fvec) ) {
-		fvec.xyz.x = -reye.xyz.z;
-		fvec.xyz.y = 0.0f;
-		fvec.xyz.z = -reye.xyz.x;
-
-	} else if ( vm_vec_equal(reye, rfvec) ) {
-		fvec.xyz.x = reye.xyz.z;
-		fvec.xyz.y = 0.0f;
-		fvec.xyz.z = reye.xyz.x;
-	}
-	// code intended to prevent possible null vector normalize issue - end
-
-	vm_vec_cross(&uvec, &fvec, &reye);
-	vm_vec_normalize(&uvec);
-	vm_vec_cross(&fvec, &uvec, &reye);
-	vm_vec_normalize(&fvec);
-
-	//now recompute right vector, in case it wasn't entirely perpendiclar
-	vm_vec_cross(&rvec, &uvec, &fvec);
-
-	// Now have uvec, which is up vector and rvec which is the normal
-	// of the face.
-
-	int i;
-	vec3d start, end;
-	vm_vec_scale_add(&start, headp, &fvec, -head_width);
-	vm_vec_scale_add(&end, tailp, &fvec, tail_width);
-	vec3d vecs[4];
-	vertex pts[4];
-
-	vm_vec_scale_add(&vecs[0], &start, &uvec, head_width);
-	vm_vec_scale_add(&vecs[1], &end, &uvec, tail_width);
-	vm_vec_scale_add(&vecs[2], &end, &uvec, -tail_width);
-	vm_vec_scale_add(&vecs[3], &start, &uvec, -head_width);
-
-	for ( i = 0; i < 4; i++ ) {
-		g3_transfer_vertex(&pts[i], &vecs[i]);
-	}
-
-	pts[0].texture_position.u = 0.0f;
-	pts[0].texture_position.v = 0.0f;
-	pts[1].texture_position.u = 1.0f;
-	pts[1].texture_position.v = 0.0f;
-	pts[2].texture_position.u = 1.0f;
-	pts[2].texture_position.v = 1.0f;
-	pts[3].texture_position.u = 0.0f;
-	pts[3].texture_position.v = 1.0f;
-
-	g3_render_primitives_textured(mat_params, pts, 4, PRIM_TYPE_TRIFAN, false);
-}
-
 // adapted from g3_draw_laser()
 //void render_laser_2d(int texture, color* clr, float alpha, vec3d *headp, float head_width, vec3d *tailp, float tail_width, float max_len)
 void g3_render_laser_2d(material *mat_params, vec3d *headp, float head_width, vec3d *tailp, float tail_width, float max_len)
@@ -1253,76 +1168,6 @@ void g3_render_sphere(color *clr, vec3d* position, float radius)
 void g3_render_sphere(vec3d* position, float radius)
 {
 	g3_render_sphere(&gr_screen.current_color, position, radius);
-}
-
-void g3_render_colored_rect(color *clr, int x, int y, int w, int h, int resize_mode)
-{
-	if ( resize_mode != GR_RESIZE_NONE ) {
-		gr_resize_screen_pos(&x, &y, &w, &h, resize_mode);
-	}
-
-	vertex v[4];
-
-	memset(v, 0, sizeof(vertex) * 4);
-
-	float sw = 0.1f;
-
-	// stuff coords		
-	v[0].screen.xyw.x = i2fl(x);
-	v[0].screen.xyw.y = i2fl(y);
-	v[0].screen.xyw.w = sw;
-	v[0].texture_position.u = 0.0f;
-	v[0].texture_position.v = 0.0f;
-	v[0].flags = PF_PROJECTED;
-	v[0].codes = 0;
-	v[0].r = (ubyte)clr->red;
-	v[0].g = (ubyte)clr->green;
-	v[0].b = (ubyte)clr->blue;
-	v[0].a = (ubyte)clr->alpha;
-
-	v[1].screen.xyw.x = i2fl(x + w);
-	v[1].screen.xyw.y = i2fl(y);
-	v[1].screen.xyw.w = sw;
-	v[1].texture_position.u = 0.0f;
-	v[1].texture_position.v = 0.0f;
-	v[1].flags = PF_PROJECTED;
-	v[1].codes = 0;
-	v[1].r = (ubyte)clr->red;
-	v[1].g = (ubyte)clr->green;
-	v[1].b = (ubyte)clr->blue;
-	v[1].a = (ubyte)clr->alpha;
-
-	v[2].screen.xyw.x = i2fl(x + w);
-	v[2].screen.xyw.y = i2fl(y + h);
-	v[2].screen.xyw.w = sw;
-	v[2].texture_position.u = 0.0f;
-	v[2].texture_position.v = 0.0f;
-	v[2].flags = PF_PROJECTED;
-	v[2].codes = 0;
-	v[2].r = (ubyte)clr->red;
-	v[2].g = (ubyte)clr->green;
-	v[2].b = (ubyte)clr->blue;
-	v[2].a = (ubyte)clr->alpha;
-
-	v[3].screen.xyw.x = i2fl(x);
-	v[3].screen.xyw.y = i2fl(y + h);
-	v[3].screen.xyw.w = sw;
-	v[3].texture_position.u = 0.0f;
-	v[3].texture_position.v = 0.0f;
-	v[3].flags = PF_PROJECTED;
-	v[3].codes = 0;
-	v[3].r = (ubyte)clr->red;
-	v[3].g = (ubyte)clr->green;
-	v[3].b = (ubyte)clr->blue;
-	v[3].a = (ubyte)clr->alpha;
-
-	material material_params;
-	material_params.set_depth_mode(ZBUFFER_TYPE_NONE);
-	material_params.set_blend_mode(ALPHA_BLEND_ALPHA_BLEND_ALPHA);
-	material_params.set_cull_mode(false);
-
-	// draw the polys
-	g3_render_primitives_colored(&material_params, v, 4, PRIM_TYPE_TRIFAN, true);
 }
 
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++//

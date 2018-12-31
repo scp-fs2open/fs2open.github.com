@@ -59,8 +59,6 @@ object obj_create_list;
 object *Player_obj = NULL;
 object *Viewer_obj = NULL;
 
-extern int Cmdline_old_collision_sys;
-
 //Data for objects
 object Objects[MAX_OBJECTS];
 
@@ -955,8 +953,6 @@ obj_maybe_fire:
 	}
 }
 
-
-#define IMPORTANT_FLAGS (OF_COLLIDES)
 
 #ifdef OBJECT_CHECK 
 

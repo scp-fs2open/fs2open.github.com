@@ -266,61 +266,6 @@ void batching_add_bitmap_internal(primitive_batch *batch, int texture, vertex *p
 	batch->add_triangle(&verts[2], &verts[1], &verts[0]);
 }
 
-void batching_add_point_bitmap(primitive_batch *batch, int texture, vertex *position, int orient, float rad, float depth)
-{
-	Assert(batch->get_render_info().prim_type == PRIM_TYPE_POINTS);
-
-	float radius = rad;
-	radius *= 1.41421356f;//1/0.707, becase these are the points of a square or width and height rad
-
-	vec3d PNT(position->world);
-	vec3d fvec;
-
-	// get the direction from the point to the eye
-	vm_vec_sub(&fvec, &View_position, &PNT);
-	vm_vec_normalize_safe(&fvec);
-
-	// move the center of the sprite based on the depth parameter
-	if ( depth != 0.0f )
-		vm_vec_scale_add(&PNT, &PNT, &fvec, depth);
-
-	batch_vertex new_particle;
-	vec3d up = {{{ 0.0f, 1.0f, 0.0f }}};
-
-	new_particle.position = position->world;
-	new_particle.radius = radius;
-
-	int direction = orient % 4;
-
-	switch ( direction ) {
-	case 0:
-		up.xyz.x = 0.0f;
-		up.xyz.y = 1.0f;
-		up.xyz.z = 0.0f;
-		break;
-	case 1:
-		up.xyz.x = 0.0f;
-		up.xyz.y = -1.0f;
-		up.xyz.z = 0.0f;
-		break;
-	case 2:
-		up.xyz.x = -1.0f;
-		up.xyz.y = 0.0f;
-		up.xyz.z = 0.0f;
-		break;
-	case 3:
-		up.xyz.x = 1.0f;
-		up.xyz.y = 0.0f;
-		up.xyz.z = 0.0f;
-		break;
-	}
-
-	new_particle.uvec = up;
-	new_particle.tex_coord.xyz.z = (float)(texture - batch->get_render_info().texture);
-
-	batch->add_point_sprite(&new_particle);
-}
-
 void batching_add_bitmap_rotated_internal(primitive_batch *batch, int texture, vertex *pnt, float angle, float rad, color *clr, float depth)
 {
 	Assert(batch->get_render_info().prim_type == PRIM_TYPE_TRIS);
@@ -394,37 +339,6 @@ void batching_add_bitmap_rotated_internal(primitive_batch *batch, int texture, v
 
 	batch->add_triangle(&verts[0], &verts[1], &verts[2]);
 	batch->add_triangle(&verts[3], &verts[4], &verts[5]);
-}
-
-void batching_add_point_bitmap(primitive_batch *batch, int texture, vertex *position, float rad, float angle, float depth)
-{
-	Assert(batch->get_render_info().prim_type == PRIM_TYPE_POINTS);
-
-	float radius = rad;
-	radius *= 1.41421356f;//1/0.707, becase these are the points of a square or width and height rad
-
-	vec3d PNT(position->world);
-	vec3d fvec;
-
-	// get the direction from the point to the eye
-	vm_vec_sub(&fvec, &View_position, &PNT);
-	vm_vec_normalize_safe(&fvec);
-
-	// move the center of the sprite based on the depth parameter
-	if ( depth != 0.0f )
-		vm_vec_scale_add(&PNT, &PNT, &fvec, depth);
-
-	batch_vertex new_particle;
-	vec3d up;
-
-	vm_rot_point_around_line(&up, &vmd_y_vector, angle, &vmd_zero_vector, &vmd_z_vector);
-
-	new_particle.position = position->world;
-	new_particle.radius = radius;
-	new_particle.uvec = up;
-	new_particle.tex_coord.xyz.z = (float)(texture - batch->get_render_info().texture);
-
-	batch->add_point_sprite(&new_particle);
 }
 
 void batching_add_polygon_internal(primitive_batch *batch, int texture, vec3d *pos, matrix *orient, float width, float height, color *clr)
@@ -701,21 +615,6 @@ void batching_add_bitmap(int texture, vertex *pnt, int orient, float rad, float 
 	batching_determine_blend_color(&clr, texture, alpha);
 
 	batching_add_bitmap_internal(batch, texture, pnt, orient, rad, &clr, depth);
-}
-
-void batching_add_bitmap_rotated(int texture, vertex *pnt, float angle, float rad, float alpha, float depth)
-{
-	if ( texture < 0 ) {
-		Int3();
-		return;
-	}
-
-	primitive_batch *batch = batching_find_batch(texture, batch_info::FLAT_EMISSIVE);
-
-	color clr;
-	batching_determine_blend_color(&clr, texture, alpha);
-
-	batching_add_bitmap_rotated_internal(batch, texture, pnt, angle, rad, &clr, depth);
 }
 
 void batching_add_volume_bitmap(int texture, vertex *pnt, int orient, float rad, float alpha, float depth)

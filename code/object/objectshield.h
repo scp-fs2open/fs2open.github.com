@@ -132,14 +132,4 @@ float shield_get_max_quad(object *objp);
  */
 float shield_apply_damage(object *objp, int quadrant, float damage);
 
-/**
- * @brief Checks if the given quadrant is stronger than 10%
- *
- * @param[in] quadrant_num Quadrant index to check. If -1, then check if the entire shield is stronger than 10%
- *
- * @returns true If the quadrant (or shield) is stronger than 10%, or
- * @returns false otherwise
- */
-int shield_is_up(object *objp, int quadrant_num);
-
 #endif //_OBJECTSHIELD_H

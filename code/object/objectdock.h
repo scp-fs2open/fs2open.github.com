@@ -117,7 +117,7 @@ float dock_calc_docked_fspeed(object *objp);
 // calculate the overall speed of the entire docked mass
 float dock_calc_docked_speed(object *objp);
 
-// Überfunction for evaluating all objects that could possibly be docked to objp.  This will
+// Ãœberfunction for evaluating all objects that could possibly be docked to objp.  This will
 // call "function" for each docked object.  The function should store its intermediate and
 // return values in the dock_function_info class.
 void dock_evaluate_all_docked_objects(object *objp, dock_function_info *infop, void (*function)(object *, dock_function_info *));

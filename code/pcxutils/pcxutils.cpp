@@ -525,32 +525,3 @@ int pcx_write_bitmap( const char * real_filename, int w, int h, ubyte ** row_ptr
 	return PCX_ERROR_NONE;
 
 }
-
-//text for error messges
-char pcx_error_messages[] = {
-	"No error.\0"
-	"Error opening file.\0"
-	"Couldn't read PCX header.\0"
-	"Unsupported PCX version.\0"
-	"Error reading data.\0"
-	"Couldn't find palette information.\0"
-	"Error writing data.\0"
-};
-
-
-//function to return pointer to error message
-char *pcx_errormsg(int error_number)
-{
-	char *p = pcx_error_messages;
-
-	while (error_number--) {
-
-		if (!p) return NULL;
-
-		p += strlen(p)+1;
-
-	}
-
-	return p;
-
-}

@@ -25,7 +25,6 @@ extern vec3d View_position,Matrix_scale;
 extern matrix View_matrix,Unscaled_matrix;
 
 extern void free_temp_point(vertex *p);
-extern vertex **clip_polygon(vertex **src,vertex **dest,int *nv,ccodes *cc,uint flags);
 extern void init_free_points(void);
 extern void clip_line(vertex **p0,vertex **p1,ubyte codes_or, uint flags);
 

@@ -1994,30 +1994,6 @@ void player_maybe_play_all_alone_msg()
 	Player->flags |= PLAYER_FLAGS_NO_CHECK_ALL_ALONE_MSG;
 } 
 
-void player_get_padlock_orient(matrix *eye_orient)
-{
-	Assert(Viewer_mode & VM_PADLOCK_ANY);
-
-	matrix old_eye_orient;
-	old_eye_orient = *eye_orient;
-
-	if ( Viewer_mode & VM_PADLOCK_UP ) {
-		eye_orient->vec.fvec = old_eye_orient.vec.uvec;
-		vm_vec_copy_scale( &eye_orient->vec.uvec, &old_eye_orient.vec.fvec, -1.0f );
-	} else if ( Viewer_mode & VM_PADLOCK_REAR ) {
-		vm_vec_negate(&eye_orient->vec.fvec);
-		vm_vec_negate(&eye_orient->vec.rvec);
-	} else if ( Viewer_mode & VM_PADLOCK_LEFT ) {
-		vm_vec_copy_scale( &eye_orient->vec.fvec, &old_eye_orient.vec.rvec, -1.0f );
-		eye_orient->vec.rvec = old_eye_orient.vec.fvec;
-	} else if ( Viewer_mode & VM_PADLOCK_RIGHT ) {
-		eye_orient->vec.fvec = old_eye_orient.vec.rvec;
-		vm_vec_copy_scale( &eye_orient->vec.rvec, &old_eye_orient.vec.fvec, -1.0f );
-	} else {
-		Int3();
-	}
-}
-
 void player_display_padlock_view()
 {
 	int padlock_view_index=0;
