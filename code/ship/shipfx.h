@@ -122,10 +122,9 @@ void shipfx_engine_wash_level_init();
 // pause engine wash sounds
 void shipfx_stop_engine_wash_sound();
 
-#define WD_NONE		0
-#define WD_WARP_IN	1
-#define WD_WARP_OUT	2
-float shipfx_calculate_warp_time(object *objp, ship_info *sip, int warp_dir, float half_length, float warping_dist);
+enum class WarpDirection { WD_NONE, WD_WARP_IN, WD_WARP_OUT };
+
+float shipfx_calculate_warp_time(object *objp, ship_info *sip, WarpDirection warp_dir, float half_length, float warping_dist);
 
 //********************-----CLASS: WarpEffect-----********************//
 class WarpEffect
@@ -133,14 +132,14 @@ class WarpEffect
 protected:
 	//core variables
 	object	*objp;
-	int		direction;
+	WarpDirection	direction;
 
 	//variables provided for expediency
 	ship *shipp;
 	ship_info *sip;
 public:
 	WarpEffect();
-	WarpEffect(object *n_objp, int n_direction);
+	WarpEffect(object *n_objp, WarpDirection n_direction);
 	virtual ~WarpEffect() = default;
 
 	void clear();
@@ -193,7 +192,7 @@ private:
 	float	radius;
 
 public:
-	WE_Default(object *n_objp, int n_direction);
+	WE_Default(object *n_objp, WarpDirection n_direction);
 
 	int warpStart() override;
 	int warpFrame(float frametime) override;
@@ -246,7 +245,7 @@ private:
 	game_snd *snd_end_gs;
 
 public:
-	WE_BSG(object *n_objp, int n_direction);
+	WE_BSG(object *n_objp, WarpDirection n_direction);
 	~WE_BSG() override;
 
 	void pageIn() override;
@@ -297,7 +296,7 @@ private:
 	float	z_offset_min;
 	float	z_offset_max;
 public:
-	WE_Homeworld(object *n_objp, int n_direction);
+	WE_Homeworld(object *n_objp, WarpDirection n_direction);
 	~WE_Homeworld() override;
 
 	int warpStart() override;
@@ -334,7 +333,7 @@ private:
 	game_snd *snd_end_gs;	
 	
 public:
-	WE_Hyperspace(object *n_objp, int n_direction);
+	WE_Hyperspace(object *n_objp, WarpDirection n_direction);
 
 	int warpStart() override;
 	int warpFrame(float frametime) override;
