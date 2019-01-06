@@ -5703,16 +5703,16 @@ static void ship_set_warp_effects(object *objp, ship_info *sip)
 		case WT_DEFAULT:
 		case WT_KNOSSOS:
 		case WT_DEFAULT_THEN_KNOSSOS:
-			shipp->warpin_effect = new WE_Default(objp, WD_WARP_IN);
+			shipp->warpin_effect = new WE_Default(objp, WarpDirection::WD_WARP_IN);
 			break;
 		case WT_IN_PLACE_ANIM:
-			shipp->warpin_effect = new WE_BSG(objp, WD_WARP_IN);
+			shipp->warpin_effect = new WE_BSG(objp, WarpDirection::WD_WARP_IN);
 			break;
 		case WT_SWEEPER:
-			shipp->warpin_effect = new WE_Homeworld(objp, WD_WARP_IN);
+			shipp->warpin_effect = new WE_Homeworld(objp, WarpDirection::WD_WARP_IN);
 			break;
 		case WT_HYPERSPACE:
-			shipp->warpin_effect = new WE_Hyperspace(objp, WD_WARP_IN);
+			shipp->warpin_effect = new WE_Hyperspace(objp, WarpDirection::WD_WARP_IN);
 			break;
 		default:
 			shipp->warpin_effect = new WarpEffect();
@@ -5726,16 +5726,16 @@ static void ship_set_warp_effects(object *objp, ship_info *sip)
 		case WT_DEFAULT:
 		case WT_KNOSSOS:
 		case WT_DEFAULT_THEN_KNOSSOS:
-			shipp->warpout_effect = new WE_Default(objp, WD_WARP_OUT);
+			shipp->warpout_effect = new WE_Default(objp, WarpDirection::WD_WARP_OUT);
 			break;
 		case WT_IN_PLACE_ANIM:
-			shipp->warpout_effect = new WE_BSG(objp, WD_WARP_OUT);
+			shipp->warpout_effect = new WE_BSG(objp, WarpDirection::WD_WARP_OUT);
 			break;
 		case WT_SWEEPER:
-			shipp->warpout_effect = new WE_Homeworld(objp, WD_WARP_OUT);
+			shipp->warpout_effect = new WE_Homeworld(objp, WarpDirection::WD_WARP_OUT);
 			break;
 		case WT_HYPERSPACE:
-			shipp->warpout_effect = new WE_Hyperspace(objp, WD_WARP_OUT);
+			shipp->warpout_effect = new WE_Hyperspace(objp, WarpDirection::WD_WARP_OUT);
 			break;
 		default:
 			shipp->warpout_effect = new WarpEffect();
@@ -17187,7 +17187,7 @@ float ship_get_warpout_speed(object *objp, ship_info *sip, float half_length, fl
 			return sip->warpout_speed;
 	}
 
-	return warping_dist / shipfx_calculate_warp_time(objp, sip, WD_WARP_OUT, half_length, warping_dist);
+	return warping_dist / shipfx_calculate_warp_time(objp, sip, WarpDirection::WD_WARP_OUT, half_length, warping_dist);
 }
 
 /**
