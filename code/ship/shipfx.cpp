@@ -3303,7 +3303,7 @@ int WE_Default::warpStart()
 	}
 	else
 	{
-		Warning(LOCATION, "Invalid warp direction %d!", direction);
+		Warning(LOCATION, "Invalid warp direction!");
 		return 0;
 	}
 
