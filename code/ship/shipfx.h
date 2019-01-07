@@ -122,7 +122,7 @@ void shipfx_engine_wash_level_init();
 // pause engine wash sounds
 void shipfx_stop_engine_wash_sound();
 
-enum class WarpDirection { WD_NONE, WD_WARP_IN, WD_WARP_OUT };
+enum class WarpDirection { NONE, WARP_IN, WARP_OUT };
 
 float shipfx_calculate_warp_time(object *objp, ship_info *sip, WarpDirection warp_dir, float half_length, float warping_dist);
 
