@@ -2498,6 +2498,102 @@ int CFred_mission_save::save_music() {
 	return err;
 }
 
+int CFred_mission_save::save_warp_params(WarpDirection direction, ship *shipp)
+{
+	// for writing to file; c.f. parse_warp_params
+	char *prefix = (direction == WarpDirection::WD_WARP_IN) ? "$Warpin" : "$Warpout";
+
+	WarpParams *shipp_params, *sip_params;
+	if (direction == WarpDirection::WD_WARP_IN)
+	{
+		// if exactly the same params used, no need to output anything
+		if (shipp->warpin_params_index == Ship_info[shipp->ship_info_index].warpin_params_index)
+			return err;
+
+		shipp_params = &Warp_params[shipp->warpin_params_index];
+		sip_params = &Warp_params[Ship_info[shipp->ship_info_index].warpin_params_index];
+	}
+	else
+	{
+		// if exactly the same params used, no need to output anything
+		if (shipp->warpout_params_index == Ship_info[shipp->ship_info_index].warpout_params_index)
+			return err;
+
+		shipp_params = &Warp_params[shipp->warpout_params_index];
+		sip_params = &Warp_params[Ship_info[shipp->ship_info_index].warpout_params_index];
+	}
+
+	if (shipp_params->warp_type != sip_params->warp_type)
+	{
+		// is it a fireball?
+		if (shipp_params->warp_type & WT_DEFAULT_WITH_FIREBALL)
+		{
+			fout("%s type: %s", prefix, Fireball_info[shipp_params->warp_type & WT_FLAG_MASK].unique_id);
+		}
+		// probably a warp type
+		else if (shipp_params->warp_type >= 0 && shipp_params->warp_type < Num_warp_types)
+		{
+			fout("%s type: %s", prefix, Warp_types[shipp_params->warp_type]);
+		}
+	}
+
+	if (shipp_params->snd_start != sip_params->snd_start)
+	{
+		if (shipp_params->snd_start.isValid())
+			fout("%s Start Sound: %s", prefix, gamesnd_get_game_sound(shipp_params->snd_start)->name.c_str());
+	}
+
+	if (shipp_params->snd_end != sip_params->snd_end)
+	{
+		if (shipp_params->snd_end.isValid())
+			fout("%s End Sound: %s", prefix, gamesnd_get_game_sound(shipp_params->snd_end)->name.c_str());
+	}
+
+	if (direction == WarpDirection::WD_WARP_OUT && shipp_params->warpout_engage_time != sip_params->warpout_engage_time)
+	{
+		if (shipp_params->warpout_engage_time > 0)
+			fout("%s engage time: %f", prefix, i2fl(shipp_params->warpout_engage_time) / 1000.0f);
+	}
+
+	if (shipp_params->speed != sip_params->speed)
+	{
+		if (shipp_params->speed > 0.0f)
+			fout("%s speed: %f", prefix, shipp_params->speed);
+	}
+
+	if (shipp_params->time != sip_params->time)
+	{
+		if (shipp_params->time > 0)
+			fout("%s time: %f", prefix, i2fl(shipp_params->time) / 1000.0f);
+	}
+
+	if (shipp_params->accel_exp != sip_params->accel_exp)
+	{
+		if (shipp_params->accel_exp > 0.0f)
+			fout("%s %s exp: %f", prefix, direction == WarpDirection::WD_WARP_IN ? "decel" : "accel", shipp_params->accel_exp);
+	}
+
+	if (shipp_params->radius != sip_params->radius)
+	{
+		if (shipp_params->radius > 0.0f)
+			fout("%s radius: %f", prefix, shipp_params->radius);
+	}
+
+	if (stricmp(shipp_params->anim, sip_params->anim) != 0)
+	{
+		if (strlen(shipp_params->anim) > 0)
+			fout("%s animation: %s", prefix, shipp_params->anim);
+	}
+
+	if (direction == WarpDirection::WD_WARP_OUT && shipp_params->warpout_player_speed != sip_params->warpout_player_speed)
+	{
+		if (shipp_params->warpout_player_speed > 0.0f)
+			fout("$Player warpout speed: %f", shipp_params->warpout_player_speed);
+	}
+
+	return err;
+}
+
 int CFred_mission_save::save_objects() {
 	SCP_string sexp_out;
 	int i, z;
@@ -2741,6 +2837,9 @@ int CFred_mission_save::save_objects() {
 		parse_comments();
 		convert_sexp_to_string(sexp_out, shipp->departure_cue, SEXP_SAVE_MODE);
 		fout(" %s", sexp_out.c_str());
+
+		save_warp_params(WarpDirection::WD_WARP_IN, shipp);
+		save_warp_params(WarpDirection::WD_WARP_OUT, shipp);
 
 		required_string_fred("$Determination:");
 		parse_comments();

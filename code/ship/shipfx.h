@@ -158,6 +158,12 @@ public:
 
 extern SCP_vector<WarpParams> Warp_params;
 
+
+extern const char *Warp_types[];
+extern int Num_warp_types;
+extern int warptype_match(const char *p);
+
+
 //********************-----CLASS: WarpEffect-----********************//
 class WarpEffect
 {
