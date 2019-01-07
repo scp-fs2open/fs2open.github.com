@@ -116,6 +116,7 @@ namespace Ship {
 		Render_without_miscmap,
 		Render_full_detail, 
 		Render_without_light,
+		Force_primary_unlinking,	// plieblang - turned on when the ship is under good-primary-time
 
 		NUM_VALUES
 

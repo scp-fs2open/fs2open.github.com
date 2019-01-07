@@ -69,6 +69,7 @@
 #include "weapon/weapon.h"
 #include <map>
 #include <climits>
+#include <utility>
 
 
 #ifdef _MSC_VER
@@ -266,6 +267,14 @@ pnode		*Ppfp;			//	Free pointer in path points.
 float	AI_frametime;
 
 char** Ai_class_names = NULL;
+
+//used for good-primary-time
+//maps pair of object signatures to weapon index
+std::map<std::pair<int, int>, int> preferred_primaries;
+//this is used to detect when good-primary-time has been called
+//in order to force the ai to reselect a primary
+//instead of possibly waiting the normal elapsed time
+size_t pref_primary_size = preferred_primaries.size();
 
 typedef struct {
 	int team;
@@ -876,6 +885,9 @@ void ai_level_init()
 	ai_init_secondary_info();
 
 	Ai_last_arrive_path=0;
+
+	//clear out the preferred primaries so that it doesn't persist between missions or between mission reloads
+	preferred_primaries.clear();
 }
 
 // BEGIN STEALTH
@@ -5200,6 +5212,149 @@ void ai_evade()
 float	G_collision_time;
 vec3d	G_predicted_pos, G_fire_pos;
 
+enum class obj_types{none, ship, team, wing};
+
+/*
+* Figure out whether the subject is a team, wing or ship
+* Prioritize team, then wing, then individual ship
+*/
+int get_team_wing_ship_idx(char *name, obj_types &type) {
+	int index = iff_lookup(name);
+
+	//wasn't a team
+	if (index == -1) {
+		index = wing_name_lookup(name);
+	} else {
+		type = obj_types::team;
+		return index;
+	}
+
+	//wasn't a wing
+	if (index == -1) {
+		index = ship_name_lookup(name);
+	} else {
+		type = obj_types::wing;
+		return index;
+	}
+	
+	//either found a suitable ship or nothing
+	if (index != -1) {
+		type = obj_types::ship;
+	}
+	return index;
+}
+
+//helper function for create_subject_target_combos
+void set_unset_primary_linking(ship *shp, bool set) {
+	if (set) {
+		shp->flags.set(Ship::Ship_Flags::Force_primary_unlinking);
+	} else shp->flags.remove(Ship::Ship_Flags::Force_primary_unlinking);
+}
+
+/*
+* Creates all possible combinations of subject and target
+* 
+* @param subject_name name of ship with the weapon
+* @param target_name target ship
+* @param creating whether the return vector will be used for adding or clearing preferred primaries
+* @return a vector containing pairs of object signatures
+*/
+SCP_vector<std::pair<int, int>> create_subject_target_combos(char *subject_name, char *target_name, bool creating) {
+	obj_types subject_type, target_type = obj_types::none;
+	int subject_idx = get_team_wing_ship_idx(subject_name, subject_type);
+	int target_idx = get_team_wing_ship_idx(target_name, target_type);
+
+	//return vector where all the pairs get stored
+	SCP_vector<std::pair<int, int>> combinations;
+
+	//if we were given an invalid name(s), return immediately
+	if (subject_idx == -1 || target_idx == -1) {
+		return combinations;
+	}
+
+	//create a vector of all eligible target ships
+	SCP_vector<ship*> targets;
+	if (target_type == obj_types::ship) {
+		targets.emplace_back(&Ships[target_idx]);
+	} else if (target_type == obj_types::team) {
+		//*_idx are indices into Iff_info and so is ship::team
+		//the old-style for loop is necessary to store the correct pointer
+		for (int i = 0; i < MAX_SHIPS; i++) {
+			//store valid ships that are members of the specified team
+			if (Ships[i].objnum != -1 && Ships[i].team == target_idx) {
+				targets.emplace_back(&Ships[i]);
+			}
+		}
+	} else if (target_type == obj_types::wing) {
+		for (int shp_idx : Wings[target_idx].ship_index) {
+			//store valid ships that are members of the specified wing
+			if (shp_idx != -1) {
+				targets.emplace_back(&Ships[shp_idx]);
+			}
+		}
+	}
+
+	//then pair their signatures with that of the eligible subjects
+	if(subject_type == obj_types::ship) {
+		//forcing a ship to use a certain primary should prevent it from linking weapons
+		set_unset_primary_linking(&Ships[subject_idx], creating);
+
+		//don't add it if they're on the same team
+		if (Ships[subject_idx].team == targets[0]->team) {
+			return combinations;
+		}
+
+		for (ship *tgt : targets) {
+			combinations.emplace_back(std::make_pair(Objects[Ships[subject_idx].objnum].signature, Objects[tgt->objnum].signature));
+		}
+	} else if (subject_type == obj_types::team) {
+		for (ship subj_shp : Ships) {
+			//filter out teammates and invalid ships
+			if (subj_shp.objnum != -1 && subj_shp.team != targets[0]->team) {
+				set_unset_primary_linking(&subj_shp, creating);
+
+				for (ship *tgt_shp : targets) {
+					combinations.emplace_back(std::make_pair(Objects[subj_shp.objnum].signature, Objects[tgt_shp->objnum].signature));
+				}
+			}
+		}
+	} else if(subject_type == obj_types::wing) {
+		for (int shp_idx : Wings[subject_idx].ship_index) {
+			if (shp_idx != -1 && Ships[shp_idx].team != targets[0]->team) {
+				set_unset_primary_linking(&Ships[shp_idx], creating);
+
+				for (ship *tgt : targets) {
+					combinations.emplace_back(std::make_pair(Objects[Ships[shp_idx].objnum].signature, Objects[tgt->objnum].signature));
+				}
+			}
+		}
+	}
+
+	return combinations;
+}
+
+/*
+* plieblang
+* Used by the good-primary-time sexp to store the info supplied from there
+* weapon_idx indexes into Weapon_info
+*/
+void ai_set_preferred_primary_weapon(char *subject_name, int weapon_idx, char *target_name) {
+	auto subj_targ_combos = create_subject_target_combos(subject_name, target_name, true);
+	for (auto key : subj_targ_combos) {
+		preferred_primaries[key] = weapon_idx;
+	}
+}
+
+/*
+* plieblang
+* Used by good-primary-type to clear the entry or entries with this precise combination
+*/
+void ai_clear_preferred_primary(char *subject_name, int weapon_idx, char *target_name) {
+	auto subj_targ_combos = create_subject_target_combos(subject_name, target_name, false);
+	for (auto key : subj_targ_combos) {
+		preferred_primaries.erase(key);
+	}
+}
 
 //old version of this fuction, this will be useful for playing old missions and not having the new primary
 //selection code throw off the balance of the mission.
@@ -5295,6 +5450,28 @@ int ai_select_primary_weapon(object *objp, object *other_objp, Weapon::Info_Flag
 		// change.  using notification message instead of a fault
 		mprintf(("'other_objpp == NULL' in ai_select_primary_weapon()\n"));
 		return -1;
+	}
+
+	//if the good-primary-time sexp has been used, return that weapon immediately
+	//if smart primary weapon selection isn't set, turning this override behavior off might not do anything
+	//however this seems acceptable
+	auto key = std::make_pair(objp->signature, other_objp->signature);
+	if (preferred_primaries.count(key)) {
+		int weapon_idx = preferred_primaries[key];
+
+		//figure out what bank the weapon belongs to
+		int bank_num = -1;
+		for (int i = 0; i < MAX_SHIP_PRIMARY_BANKS; i++) {
+			if (weapon_idx == swp->primary_bank_weapons[i]) {
+				bank_num = i;
+				break;
+			}
+		}
+		//if it's a valid bank, set it and return
+		if (bank_num != -1) {
+			swp->current_primary_bank = bank_num;
+			return bank_num;
+		}
 	}
 
 	//not using the new AI, use the old version of this function instead.
@@ -5497,6 +5674,11 @@ void set_primary_weapon_linkage(object *objp)
 
     shipp->flags.remove(Ship::Ship_Flags::Primary_linked);
 
+	//bail if it's been included in a good-primary-time
+	if (shipp->flags[Ship::Ship_Flags::Force_primary_unlinking]) {
+		return;
+	}
+
 	// AL: ensure target is a ship!
 	if ( (aip->target_objnum != -1) && (Objects[aip->target_objnum].type == OBJ_SHIP) ) {
 		// If trying to destroy a big ship (i.e., not disable/disarm), always unleash all weapons
@@ -5641,7 +5823,8 @@ int ai_fire_primary_weapon(object *objp)
 		enemy_sip = NULL;
 	}
 
-	if ( (swp->current_primary_bank < 0) || (swp->current_primary_bank >= swp->num_primary_banks) || timestamp_elapsed(aip->primary_select_timestamp)) {
+	//plieblang - added check for size of preferred_primaries to force reevaluation if good-primary-time has been used in the mean time
+	if ( (swp->current_primary_bank < 0) || (swp->current_primary_bank >= swp->num_primary_banks) || timestamp_elapsed(aip->primary_select_timestamp || preferred_primaries.size() != pref_primary_size)) {
 		Weapon::Info_Flags flags = Weapon::Info_Flags::NUM_VALUES;
 		if ( aip->targeted_subsys != NULL ) {
 			flags = Weapon::Info_Flags::Puncture;
@@ -5649,6 +5832,8 @@ int ai_fire_primary_weapon(object *objp)
 		ai_select_primary_weapon(objp, enemy_objp, flags);
 		ship_primary_changed(shipp);	// AL: maybe send multiplayer information when AI ship changes primaries
 		aip->primary_select_timestamp = timestamp(5 * 1000);	//	Maybe change primary weapon five seconds from now.
+
+		pref_primary_size = preferred_primaries.size();
 	}
 
 	//	If pointing nearly at predicted collision point of target, bash orientation to be perfectly pointing.
