@@ -467,6 +467,9 @@ public:
 	WarpEffect *warpin_effect;
 	WarpEffect *warpout_effect;
 
+	int warpin_params_index;
+	int warpout_params_index;
+
 	int	next_fireball;
 
 	int	next_hit_spark;
@@ -976,26 +979,8 @@ public:
 	float		slide_accel;
 	float		slide_decel;
 
-	char		warpin_anim[MAX_FILENAME_LEN];
-	float		warpin_radius;
-	gamesnd_id	warpin_snd_start;
-	gamesnd_id	warpin_snd_end;
-	float		warpin_speed;
-	int			warpin_time;	//in ms
-	float		warpin_decel_exp;
-	int			warpin_type;
-
-	char		warpout_anim[MAX_FILENAME_LEN];
-	float		warpout_radius;
-	gamesnd_id	warpout_snd_start;
-	gamesnd_id	warpout_snd_end;
-	int			warpout_engage_time;	//in ms
-	float		warpout_speed;
-	int			warpout_time;	//in ms
-	float		warpout_accel_exp;
-	int			warpout_type;
-
-	float		warpout_player_speed;
+	int warpin_params_index;
+	int warpout_params_index;
 
 	flagset<Ship::Info_Flags> flags;							//	See SIF_xxxx - changed to uint by Goober5000, changed back by Zacam, and changed to something entirely different by The E!
 	int		ai_class;							//	Index into Ai_classes[].  Defined in ai.tbl

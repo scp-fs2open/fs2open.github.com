@@ -1059,10 +1059,10 @@ void read_player_controls(object *objp, float frametime)
 				if ( Player->control_mode == PCM_WARPOUT_STAGE1 )
 				{
 					float warpout_delay;
-					ship_info *sip = &Ship_info[Ships[objp->instance].ship_info_index];
+					int warpout_engage_time = Warp_params[Ships[objp->instance].warpout_params_index].warpout_engage_time;
 
-					if (sip->warpout_engage_time >= 0)
-						warpout_delay = sip->warpout_engage_time / 1000.0f;
+					if (warpout_engage_time >= 0)
+						warpout_delay = warpout_engage_time / 1000.0f;
 					else
 						warpout_delay = Minimum_player_warpout_time;
 

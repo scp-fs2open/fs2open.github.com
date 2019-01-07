@@ -2411,9 +2411,9 @@ int button_function(int n)
 
 			control_used(END_MISSION);
 
-			if (collide_predict_large_ship(Player_obj, 200.0f) 
-			|| (Ship_info[Ships[Player_obj->instance].ship_info_index].warpout_type == WT_HYPERSPACE 
-			&& collide_predict_large_ship(Player_obj, 100000.0f)))
+			if ( collide_predict_large_ship(Player_obj, 200.0f) 
+			|| (Warp_params[Ships[Player_obj->instance].warpout_params_index].warp_type == WT_HYPERSPACE 
+				&& collide_predict_large_ship(Player_obj, 100000.0f)) )
 			{
 				gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 				HUD_printf("%s", XSTR( "** WARNING ** Collision danger.  Subspace drive not activated.", 39));
@@ -2423,7 +2423,7 @@ int button_function(int n)
 			} else if (!ship_navigation_ok_to_warp(Player_ship)) {
 				gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 				HUD_printf("%s", XSTR("Navigation failure.  Cannot engage subspace drive.", 1572));
-			} else if ( (Player_obj != NULL) && object_get_gliding(Player_obj)) {
+			} else if ((Player_obj != nullptr) && object_get_gliding(Player_obj)) {
 				gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 				HUD_printf("%s", XSTR("Cannot engage subspace drive while gliding.", 1573));
 			} else {
@@ -2769,9 +2769,9 @@ int button_function(int n)
 
 			control_used(END_MISSION);
 			
-			if (collide_predict_large_ship(Player_obj, 200.0f) 
-			|| (Ship_info[Ships[Player_obj->instance].ship_info_index].warpout_type == WT_HYPERSPACE 
-			&& collide_predict_large_ship(Player_obj, 100000.0f)))
+			if ( collide_predict_large_ship(Player_obj, 200.0f) 
+			|| (Warp_params[Ships[Player_obj->instance].warpout_params_index].warp_type == WT_HYPERSPACE 
+				&& collide_predict_large_ship(Player_obj, 100000.0f)) )
 			{
 				gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 				HUD_printf("%s", XSTR( "** WARNING ** Collision danger.  Subspace drive not activated.", 39));
@@ -2781,7 +2781,7 @@ int button_function(int n)
 			} else if (!ship_navigation_ok_to_warp(Player_ship)) {
 				gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 				HUD_printf("%s", XSTR("Navigation failure.  Cannot engage subspace drive.", 1572));
-			} else if (Player_obj != NULL && object_get_gliding(Player_obj)) {
+			} else if ((Player_obj != nullptr) && object_get_gliding(Player_obj)) {
 				gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 				HUD_printf("%s", XSTR("Cannot engage subspace drive while gliding.", 1573));
 			} else {
