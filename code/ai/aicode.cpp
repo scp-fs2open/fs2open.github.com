@@ -5212,7 +5212,7 @@ void ai_evade()
 float	G_collision_time;
 vec3d	G_predicted_pos, G_fire_pos;
 
-enum class obj_types{none, ship, team, wing};
+enum class obj_types{none, ship_t, team_t, wing_t};
 
 /*
 * Figure out whether the subject is a team, wing or ship
@@ -5225,7 +5225,7 @@ int get_team_wing_ship_idx(char *name, obj_types &type) {
 	if (index == -1) {
 		index = wing_name_lookup(name);
 	} else {
-		type = obj_types::team;
+		type = obj_types::team_t;
 		return index;
 	}
 
@@ -5233,13 +5233,13 @@ int get_team_wing_ship_idx(char *name, obj_types &type) {
 	if (index == -1) {
 		index = ship_name_lookup(name);
 	} else {
-		type = obj_types::wing;
+		type = obj_types::wing_t;
 		return index;
 	}
 	
 	//either found a suitable ship or nothing
 	if (index != -1) {
-		type = obj_types::ship;
+		type = obj_types::ship_t;
 	}
 	return index;
 }
@@ -5274,9 +5274,9 @@ SCP_vector<std::pair<int, int>> create_subject_target_combos(char *subject_name,
 
 	//create a vector of all eligible target ships
 	SCP_vector<ship*> targets;
-	if (target_type == obj_types::ship) {
+	if (target_type == obj_types::ship_t) {
 		targets.emplace_back(&Ships[target_idx]);
-	} else if (target_type == obj_types::team) {
+	} else if (target_type == obj_types::team_t) {
 		//*_idx are indices into Iff_info and so is ship::team
 		//the old-style for loop is necessary to store the correct pointer
 		for (int i = 0; i < MAX_SHIPS; i++) {
@@ -5285,7 +5285,7 @@ SCP_vector<std::pair<int, int>> create_subject_target_combos(char *subject_name,
 				targets.emplace_back(&Ships[i]);
 			}
 		}
-	} else if (target_type == obj_types::wing) {
+	} else if (target_type == obj_types::wing_t) {
 		for (int shp_idx : Wings[target_idx].ship_index) {
 			//store valid ships that are members of the specified wing
 			if (shp_idx != -1) {
@@ -5295,7 +5295,7 @@ SCP_vector<std::pair<int, int>> create_subject_target_combos(char *subject_name,
 	}
 
 	//then pair their signatures with that of the eligible subjects
-	if(subject_type == obj_types::ship) {
+	if(subject_type == obj_types::ship_t) {
 		//forcing a ship to use a certain primary should prevent it from linking weapons
 		set_unset_primary_linking(&Ships[subject_idx], creating);
 
@@ -5307,7 +5307,7 @@ SCP_vector<std::pair<int, int>> create_subject_target_combos(char *subject_name,
 		for (ship *tgt : targets) {
 			combinations.emplace_back(std::make_pair(Objects[Ships[subject_idx].objnum].signature, Objects[tgt->objnum].signature));
 		}
-	} else if (subject_type == obj_types::team) {
+	} else if (subject_type == obj_types::team_t) {
 		for (ship subj_shp : Ships) {
 			//filter out teammates and invalid ships
 			if (subj_shp.objnum != -1 && subj_shp.team != targets[0]->team) {
@@ -5318,7 +5318,7 @@ SCP_vector<std::pair<int, int>> create_subject_target_combos(char *subject_name,
 				}
 			}
 		}
-	} else if(subject_type == obj_types::wing) {
+	} else if(subject_type == obj_types::wing_t) {
 		for (int shp_idx : Wings[subject_idx].ship_index) {
 			if (shp_idx != -1 && Ships[shp_idx].team != targets[0]->team) {
 				set_unset_primary_linking(&Ships[shp_idx], creating);
@@ -5349,7 +5349,7 @@ void ai_set_preferred_primary_weapon(char *subject_name, int weapon_idx, char *t
 * plieblang
 * Used by good-primary-type to clear the entry or entries with this precise combination
 */
-void ai_clear_preferred_primary(char *subject_name, int weapon_idx, char *target_name) {
+void ai_clear_preferred_primary(char *subject_name, char *target_name) {
 	auto subj_targ_combos = create_subject_target_combos(subject_name, target_name, false);
 	for (auto key : subj_targ_combos) {
 		preferred_primaries.erase(key);

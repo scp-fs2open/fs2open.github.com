@@ -13550,7 +13550,7 @@ void sexp_set_subspace_drive(int node)
 
 //forward declarations
 extern void ai_set_preferred_primary_weapon(char *subject_name, int weapon_idx, char *target_name);
-extern void ai_clear_preferred_primary(char *subject_name, int weapon_idx, char *target_name);
+extern void ai_clear_preferred_primary(char *subject_name, char *target_name);
 
 void sexp_good_primary_time(int node)
 {
@@ -13562,7 +13562,7 @@ void sexp_good_primary_time(int node)
 	
 	if (activate) {
 		ai_set_preferred_primary_weapon(subject_name, weap_idx, target_name);
-	} else ai_clear_preferred_primary(subject_name, weap_idx, target_name);
+	} else ai_clear_preferred_primary(subject_name, target_name);
 }
 
 /**
