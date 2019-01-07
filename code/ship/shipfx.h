@@ -112,9 +112,10 @@ void shipfx_do_damaged_arcs_frame( ship *shipp );
 
 
 // =================================================
-//				NEBULA LIGHTNING.
+//				NEBULA LIGHTNING
 // =================================================
 void shipfx_do_lightning_frame( ship *shipp );
+
 
 // engine wash level init
 void shipfx_engine_wash_level_init();
@@ -125,6 +126,37 @@ void shipfx_stop_engine_wash_sound();
 enum class WarpDirection { NONE, WARP_IN, WARP_OUT };
 
 float shipfx_calculate_warp_time(object *objp, ship_info *sip, WarpDirection warp_dir, float half_length, float warping_dist);
+
+
+// =================================================
+//				WARP PARAMS
+// =================================================
+
+// WarpParams allows per-ship customization of what was previously in ships.tbl
+class WarpParams
+{
+public:
+	WarpDirection	direction;
+
+	char		anim[MAX_FILENAME_LEN];
+	float		radius;
+	gamesnd_id	snd_start;
+	gamesnd_id	snd_end;
+	float		speed;
+	int			time;		// in ms
+	float		accel_exp;
+	int			warp_type;
+
+	// only valid for warpout
+	int			warpout_engage_time;	//in ms
+	float		warpout_player_speed;
+
+	WarpParams();
+	bool operator==(const WarpParams &other);
+	bool operator!=(const WarpParams &other);
+};
+
+extern SCP_vector<WarpParams> Warp_params;
 
 //********************-----CLASS: WarpEffect-----********************//
 class WarpEffect
@@ -137,6 +169,8 @@ protected:
 	//variables provided for expediency
 	ship *shipp;
 	ship_info *sip;
+	WarpParams *params;
+
 public:
 	WarpEffect();
 	WarpEffect(object *n_objp, WarpDirection n_direction);
@@ -317,8 +351,7 @@ private:
 	int total_time_start;
 	int total_duration;
 	int total_time_end;
-	float accel_exp;
-	float decel_exp;
+	float accel_or_decel_exp;
 	float initial_velocity;
 
 	//sweeper polygon and clip effect

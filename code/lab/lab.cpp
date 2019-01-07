@@ -982,8 +982,6 @@ void labviewer_update_variables_window()
 		VAR_SET_VALUE_SAVE(sip->max_vel.xyz.x, 0);
 		VAR_SET_VALUE_SAVE(sip->max_vel.xyz.y, 0);
 		VAR_SET_VALUE_SAVE(sip->max_vel.xyz.z, 0);
-		VAR_SET_VALUE_SAVE(sip->warpin_speed, 0);
-		VAR_SET_VALUE_SAVE(sip->warpout_speed, 0);
 
 		VAR_SET_VALUE_SAVE(sip->max_shield_strength, 0);
 		VAR_SET_VALUE_SAVE(sip->max_hull_strength, 0);

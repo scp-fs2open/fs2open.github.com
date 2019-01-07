@@ -183,6 +183,8 @@ SCP_vector<ship_info>	Ship_templates;
 
 SCP_vector<ship_type_info> Ship_types;
 
+SCP_vector<WarpParams> Warp_params;
+
 SCP_vector<ArmorType> Armor_types;
 SCP_vector<DamageTypeStruct>	Damage_types;
 
@@ -837,26 +839,8 @@ void ship_info::clone(const ship_info& other)
 	slide_accel = other.slide_accel;
 	slide_decel = other.slide_decel;
 
-	strcpy_s(warpin_anim, other.warpin_anim);
-	warpin_radius = other.warpin_radius;
-	warpin_snd_start = other.warpin_snd_start;
-	warpin_snd_end = other.warpin_snd_end;
-	warpin_speed = other.warpin_speed;
-	warpin_time = other.warpin_time;
-	warpin_decel_exp = other.warpin_decel_exp;
-	warpin_type = other.warpin_type;
-
-	strcpy_s(warpout_anim, other.warpout_anim);
-	warpout_radius = other.warpout_radius;
-	warpout_snd_start = other.warpout_snd_start;
-	warpout_snd_end = other.warpout_snd_end;
-	warpout_engage_time = other.warpout_engage_time;
-	warpout_speed = other.warpout_speed;
-	warpout_time = other.warpout_time;
-	warpout_accel_exp = other.warpout_accel_exp;
-	warpout_type = other.warpout_type;
-
-	warpout_player_speed = other.warpout_player_speed;
+	warpin_params_index = other.warpin_params_index;
+	warpout_params_index = other.warpout_params_index;
 
 	flags = other.flags;
 	ai_class = other.ai_class;
@@ -1158,26 +1142,8 @@ void ship_info::move(ship_info&& other)
 	slide_accel = other.slide_accel;
 	slide_decel = other.slide_decel;
 
-	std::swap(warpin_anim, other.warpin_anim);
-	warpin_radius = other.warpin_radius;
-	warpin_snd_start = other.warpin_snd_start;
-	warpin_snd_end = other.warpin_snd_end;
-	warpin_speed = other.warpin_speed;
-	warpin_time = other.warpin_time;
-	warpin_decel_exp = other.warpin_decel_exp;
-	warpin_type = other.warpin_type;
-
-	std::swap(warpout_anim, other.warpout_anim);
-	warpout_radius = other.warpout_radius;
-	warpout_snd_start = other.warpout_snd_start;
-	warpout_snd_end = other.warpout_snd_end;
-	warpout_engage_time = other.warpout_engage_time;
-	warpout_speed = other.warpout_speed;
-	warpout_time = other.warpout_time;
-	warpout_accel_exp = other.warpout_accel_exp;
-	warpout_type = other.warpout_type;
-
-	warpout_player_speed = other.warpout_player_speed;
+	warpin_params_index = other.warpin_params_index;
+	warpout_params_index = other.warpout_params_index;
 
 	flags = other.flags;
 	ai_class = other.ai_class;
@@ -1485,26 +1451,8 @@ ship_info::ship_info()
 	slide_accel = 0.0f;
 	slide_decel = 0.0f;
 
-	warpin_anim[0] = '\0';
-	warpin_radius = 0.0f;
-	warpin_snd_start = gamesnd_id();
-	warpin_snd_end = gamesnd_id();
-	warpin_speed = 0.0f;
-	warpin_time = 0;
-	warpin_decel_exp = 1;
-	warpin_type = WT_DEFAULT;
-
-	warpout_anim[0] = '\0';
-	warpout_radius = 0.0f;
-	warpout_snd_start = gamesnd_id();
-	warpout_snd_end = gamesnd_id();
-	warpout_engage_time = -1;
-	warpout_speed = 0.0f;
-	warpout_time = 0;
-	warpout_accel_exp = 1;
-	warpout_type = WT_DEFAULT;
-
-	warpout_player_speed = 0.0f;
+	warpin_params_index = -1;
+	warpout_params_index = -1;
 
 	flags.reset();
 	ai_class = 0;
@@ -2282,6 +2230,130 @@ static int parse_and_add_briefing_icon_info()
 }
 
 /**
+* Determines the warp parameters for this ship class (or ship).
+*/
+int parse_warp_params(WarpDirection direction, const char *info_type_name, const char *sip_name)
+{
+	// for parsing
+	char *prefix = direction == WarpDirection::WD_WARP_IN ? "$Warpin" : "$Warpout";
+	char str[NAME_LENGTH];
+
+	WarpParams params;
+	params.direction = direction;
+
+	sprintf(str, "%s type:", prefix);
+	if (optional_string(str))
+	{
+		char buf[NAME_LENGTH];
+
+		stuff_string(buf, F_NAME, NAME_LENGTH);
+		int j = warptype_match(buf);
+		if (j >= 0) {
+			params.warp_type = j;
+		}
+		else {
+			// try to match the warp type with one of our fireballs
+			j = fireball_info_lookup(buf);
+			if (j >= 0) {
+				params.warp_type = j | WT_DEFAULT_WITH_FIREBALL;
+			}
+			else {
+				Warning(LOCATION, "Invalid %s '%s' specified for %s '%s'", str, buf, info_type_name, sip_name);
+				params.warp_type = WT_DEFAULT;
+			}
+		}
+	}
+
+	sprintf(str, "%s Start Sound:", prefix);
+	parse_game_sound(str, &params.snd_start);
+
+	sprintf(str, "%s End Sound:", prefix);
+	parse_game_sound(str, &params.snd_end);
+
+	if (direction == WarpDirection::WD_WARP_OUT)
+	{
+		sprintf(str, "%s engage time:", prefix);
+		if (optional_string(str))
+		{
+			float t_time;
+			stuff_float(&t_time);
+			if (t_time > 0)
+				params.warpout_engage_time = fl2i(t_time*1000.0f);
+			else
+				Warning(LOCATION, "%s specified as 0 or less on %s '%s'; value ignored", str, info_type_name, sip_name);
+		}
+	}
+
+	sprintf(str, "%s speed:", prefix);
+	if (optional_string(str))
+	{
+		stuff_float(&params.speed);
+	}
+
+	sprintf(str, "%s time:", prefix);
+	if (optional_string(str))
+	{
+		float t_time;
+		stuff_float(&t_time);
+		if (t_time > 0)
+			params.time = fl2i(t_time*1000.0f);
+		else
+			Warning(LOCATION, "%s specified as 0 or less on %s '%s'; value ignored", str, info_type_name, sip_name);
+	}
+
+	sprintf(str, "%s %s exp:", prefix, direction == WarpDirection::WD_WARP_IN ? "decel" : "accel");
+	if (optional_string(str))
+	{
+		float accel_exp;
+		stuff_float(&accel_exp);
+		if (accel_exp >= 0.0f)
+			params.accel_exp = accel_exp;
+		else
+			Warning(LOCATION, "%s specified as less than 0 on %s '%s'; value ignored", str, info_type_name, sip_name);
+	}
+
+	sprintf(str, "%s radius:", prefix);
+	if (optional_string(str))
+	{
+		float rad;
+		stuff_float(&rad);
+		if (rad > 0.0f)
+			params.radius = rad;
+		else
+			Warning(LOCATION, "%s specified as 0 or less on %s '%s'; value ignored", str, info_type_name, sip_name);
+	}
+
+	sprintf(str, "%s animation:", prefix);
+	if (optional_string(str))
+	{
+		stuff_string(params.anim, F_NAME, MAX_FILENAME_LEN);
+	}
+
+	if (direction == WarpDirection::WD_WARP_OUT)
+	{
+		sprintf(str, "$Player warpout speed:");
+		if (optional_string(str))
+		{
+			float speed;
+			stuff_float(&speed);
+			if (speed > 0.0f)
+				params.speed = speed;
+			else
+				Warning(LOCATION, "%s specified as 0 or less on %s '%s'; value ignored", str, info_type_name, sip_name);
+		}
+	}
+
+	// after all that, see if these parameters already exist
+	auto ii = std::find(Warp_params.begin(), Warp_params.end(), params);
+	if (ii != Warp_params.end())
+		return ii - Warp_params.begin();
+
+	// these are unique, so add them
+	Warp_params.push_back(params);
+	return Warp_params.size() - 1;
+}
+
+/**
  * Puts values into a ship_info.
  */
 static int parse_ship_values(ship_info* sip, const bool is_template, const bool first_time, const bool replace)
@@ -2939,142 +3011,9 @@ static int parse_ship_values(ship_info* sip, const bool is_template, const bool 
 		}
 	}
 
-	if(optional_string("$Warpin type:"))
-	{
-		stuff_string(buf, F_NAME, SHIP_MULTITEXT_LENGTH);
-		int j = warptype_match(buf);
-		if (j >= 0) {
-			sip->warpin_type = j;
-		} else {
-			// try to match the warp type with one of our fireballs
-			j = fireball_info_lookup(buf);
-			if (j >= 0) {
-				sip->warpin_type = j | WT_DEFAULT_WITH_FIREBALL;
-			} else {
-				Warning(LOCATION, "Invalid warpin type '%s' specified for %s '%s'", buf, info_type_name, sip->name);
-				sip->warpin_type = WT_DEFAULT;
-			}
-		}
-	}
-
-	parse_game_sound("$Warpin Start Sound:", &sip->warpin_snd_start);
-	parse_game_sound("$Warpin End Sound:", &sip->warpin_snd_end);
-
-	if(optional_string("$Warpin speed:"))
-	{
-		stuff_float(&sip->warpin_speed);
-	}
-
-	if(optional_string("$Warpin time:"))
-	{
-		float t_time;
-		stuff_float(&t_time);
-		sip->warpin_time = fl2i(t_time*1000.0f);
-		if(sip->warpin_time <= 0) {
-			Warning(LOCATION, "Warp-in time specified as 0 or less on %s '%s'; value ignored", info_type_name, sip->name);
-		}
-	}
-
-	if(optional_string("$Warpin decel exp:"))
-	{
-		stuff_float(&sip->warpin_decel_exp);
-		if (sip->warpin_decel_exp < 0.0f) {
-			Warning(LOCATION, "Warp-in deceleration exponent specified as less than 0 on %s '%s'; value ignored", info_type_name, sip->name);
-			sip->warpin_decel_exp = 1.0f;
-		}
-	}
-
-	if(optional_string("$Warpin radius:"))
-	{
-		stuff_float(&sip->warpin_radius);
-		if(sip->warpin_radius <= 0.0f) {
-			Warning(LOCATION, "Warp-in radius specified as 0 or less on %s '%s'; value ignored", info_type_name, sip->name);
-		}
-	}
-
-	if(optional_string("$Warpin animation:"))
-	{
-		stuff_string(sip->warpin_anim, F_NAME, MAX_FILENAME_LEN);
-	}
-
-	if(optional_string("$Warpout type:"))
-	{
-		stuff_string(buf, F_NAME, SHIP_MULTITEXT_LENGTH);
-		int j = warptype_match(buf);
-		if (j >= 0) {
-			sip->warpout_type = j;
-		} else {
-			// try to match the warp type with one of our fireballs
-			j = fireball_info_lookup(buf);
-			if (j >= 0) {
-				sip->warpout_type = j | WT_DEFAULT_WITH_FIREBALL;
-			} else {
-				Warning(LOCATION, "Invalid warpout type '%s' specified for %s '%s'", buf, info_type_name, sip->name);
-				sip->warpout_type = WT_DEFAULT;
-			}
-		}
-	}
-
-	parse_game_sound("$Warpout Start Sound:", &sip->warpout_snd_start);
-	parse_game_sound("$Warpout End Sound:", &sip->warpout_snd_end);
-
-	if(optional_string("$Warpout engage time:"))
-	{
-		float t_time;
-		stuff_float(&t_time);
-		if (t_time >= 0)
-			sip->warpout_engage_time = fl2i(t_time*1000.0f);
-		else
-			Warning(LOCATION, "Warp-out engage time specified as 0 or less on %s '%s'; value ignored", info_type_name, sip->name);
-	} else {
-		sip->warpout_engage_time = -1;
-	}
-
-	if(optional_string("$Warpout speed:"))
-	{
-		stuff_float(&sip->warpout_speed);
-	}
-
-	if(optional_string("$Warpout time:"))
-	{
-		float t_time;
-		stuff_float(&t_time);
-		sip->warpout_time = fl2i(t_time*1000.0f);
-		if(sip->warpout_time <= 0) {
-			Warning(LOCATION, "Warp-out time specified as 0 or less on %s '%s'; value ignored", info_type_name, sip->name);
-		}
-	}
-
-	if(optional_string("$Warpout accel exp:"))
-	{
-		stuff_float(&sip->warpout_accel_exp);
-		if (sip->warpout_accel_exp < 0.0f) {
-			Warning(LOCATION, "Warp-out acceleration exponent specified as less than 0 on %s '%s'; value ignored", info_type_name, sip->name);
-			sip->warpout_accel_exp = 1.0f;
-		}
-	}
-
-	if(optional_string("$Warpout radius:"))
-	{
-		stuff_float(&sip->warpout_radius);
-		if(sip->warpout_radius <= 0.0f) {
-			Warning(LOCATION, "Warp-out radius specified as 0 or less on %s '%s'; value ignored", info_type_name, sip->name);
-		}
-	}
-
-	if(optional_string("$Warpout animation:"))
-	{
-		stuff_string(sip->warpout_anim, F_NAME, MAX_FILENAME_LEN);
-	}
-
-
-	if(optional_string("$Player warpout speed:"))
-	{
-		stuff_float(&sip->warpout_player_speed);
-		if(sip->warpout_player_speed == 0.0f) {
-			Warning(LOCATION, "Player warp-out speed cannot be 0; value ignored.");
-		}
-	}
+	// get ship parameters for warpin and warpout
+	sip->warpin_params_index = parse_warp_params(WarpDirection::WD_WARP_IN, info_type_name, sip->name);
+	sip->warpout_params_index = parse_warp_params(WarpDirection::WD_WARP_OUT, info_type_name, sip->name);
 
 	// get ship explosion info
 	shockwave_create_info *sci = &sip->shockwave;
@@ -5684,11 +5623,11 @@ vec3d get_submodel_offset(int model, int submodel){
 
 }
 
-static void ship_set_warp_effects(object *objp, ship_info *sip)
+static void ship_set_warp_effects(object *objp)
 {
 	ship *shipp = &Ships[objp->instance];
-	int warpin_type = sip->warpin_type;
-	int warpout_type = sip->warpout_type;
+	int warpin_type = Warp_params[shipp->warpin_params_index].warp_type;
+	int warpout_type = Warp_params[shipp->warpout_params_index].warp_type;
 
 	if (warpin_type & WT_DEFAULT_WITH_FIREBALL)
 		warpin_type = WT_DEFAULT;
@@ -5779,12 +5718,15 @@ void ship::clear()
 	really_final_death_time = timestamp(-1);
 	deathroll_rotvel = vmd_zero_vector;
 
-	if (warpin_effect != NULL)
+	if (warpin_effect != nullptr)
 		delete warpin_effect;
-	if (warpout_effect != NULL)
+	if (warpout_effect != nullptr)
 		delete warpout_effect;
-	warpin_effect = NULL;
-	warpout_effect = NULL;
+	warpin_effect = nullptr;
+	warpout_effect = nullptr;
+
+	warpin_params_index = -1;
+	warpout_params_index = -1;
 
 	next_fireball = timestamp(-1);
 	next_hit_spark = timestamp(-1);
@@ -6151,7 +6093,7 @@ static void ship_set(int ship_index, int objnum, int ship_type)
 	physics_ship_init(objp);
 
 	if ( !Fred_running ) {
-		ship_set_warp_effects(objp, sip);
+		ship_set_warp_effects(objp);
 	}
 
 	if (Fred_running){
@@ -6261,6 +6203,9 @@ static void ship_set(int ship_index, int objnum, int ship_type)
 	shipp->shield_armor_type_idx = sip->shield_armor_type_idx;
 	shipp->collision_damage_type_idx =  sip->collision_damage_type_idx;
 	shipp->debris_damage_type_idx = sip->debris_damage_type_idx;
+
+	shipp->warpin_params_index = sip->warpin_params_index;
+	shipp->warpout_params_index = sip->warpout_params_index;
 
 	if(pm != NULL && pm->n_view_positions > 0)
 		ship_set_eye(objp, 0);
@@ -8969,7 +8914,7 @@ void ship_process_post(object * obj, float frametime)
 	ship_radar_process(obj, shipp, sip);
 
 	if ( (!(shipp->is_arriving()) || (Ai_info[shipp->ai_index].mode == AIM_BAY_EMERGE)
-		|| ((sip->warpin_type == WT_IN_PLACE_ANIM) && (shipp->flags[Ship_Flags::Arriving_stage_2])) )
+		|| ((Warp_params[shipp->warpin_params_index].warp_type == WT_IN_PLACE_ANIM) && (shipp->flags[Ship_Flags::Arriving_stage_2])) )
 		&&	!(shipp->flags[Ship_Flags::Depart_warp]))
 	{
 		//	Do AI.
@@ -9880,7 +9825,7 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 
 	if (!Fred_running) {
 		//WMC - set warp effects
-		ship_set_warp_effects(objp, sip);
+		ship_set_warp_effects(objp);
 	}
 
 	// set the correct hull strength
@@ -17170,21 +17115,23 @@ float ship_get_warpout_speed(object *objp, ship_info *sip, float half_length, fl
 		}
 	}
 
+	WarpParams *params = &Warp_params[Ships[objp->instance].warpout_params_index];
+
 	//WMC - Any speed is good for in place anims (aka BSG FTL effect)
-	if(sip->warpout_type == WT_IN_PLACE_ANIM && sip->warpout_speed <= 0.0f)
+	if (params->warp_type == WT_IN_PLACE_ANIM && params->speed <= 0.0f)
 	{
 		return objp->phys_info.speed;
 	}
-	else if(sip->warpout_type == WT_SWEEPER || sip->warpout_type == WT_IN_PLACE_ANIM)
+	else if (params->warp_type == WT_SWEEPER || params->warp_type == WT_IN_PLACE_ANIM)
 	{
-		return sip->warpout_speed;
+		return params->speed;
 	}
-	else if(sip->warpout_type == WT_HYPERSPACE)
+	else if (params->warp_type == WT_HYPERSPACE)
 	{
-		if (objp->phys_info.speed > sip->warpout_speed)
+		if (objp->phys_info.speed > params->speed)
 			return objp->phys_info.speed;
 		else
-			return sip->warpout_speed;
+			return params->speed;
 	}
 
 	return warping_dist / shipfx_calculate_warp_time(objp, sip, WarpDirection::WARP_OUT, half_length, warping_dist);
@@ -18894,7 +18841,7 @@ void ship_render(object* obj, model_draw_list* scene)
 		// This is a hack to make ships using the hyperspace warpin type to
 		// render even in stage 1, which is used for collision detection
 		// purposes -zookeeper
-		if ( Ship_info[warp_shipp->ship_info_index].warpin_type == WT_HYPERSPACE ) {
+		if ( Warp_params[warp_shipp->warpin_params_index].warp_type == WT_HYPERSPACE ) {
 			warp_shipp = NULL;
 			is_first_stage_arrival = false;
 		}
