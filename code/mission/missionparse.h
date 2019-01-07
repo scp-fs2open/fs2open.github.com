@@ -358,6 +358,9 @@ public:
 	int	departure_cue;						//	Index in Sexp_nodes of this sexp.
 	int	departure_delay;
 
+	int warpin_params_index;
+	int warpout_params_index;
+
 	char	misc[NAME_LENGTH];
 
 	int	wingnum;							// set to -1 if not in a wing -- Wing array index otherwise

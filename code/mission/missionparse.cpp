@@ -2021,6 +2021,11 @@ int parse_create_object_sub(p_object *p_objp)
 	if (Ship_info[shipp->ship_info_index].uses_team_colors && !p_objp->team_color_setting.empty())
 		shipp->team_name = p_objp->team_color_setting;
 
+	if (p_objp->warpin_params_index >= 0)
+		shipp->warpin_params_index = p_objp->warpin_params_index;
+	if (p_objp->warpout_params_index >= 0)
+		shipp->warpout_params_index = p_objp->warpout_params_index;
+
 	// reset texture animations
 	shipp->base_texture_anim_frametime = game_get_overall_frametime();
 
@@ -2775,6 +2780,8 @@ bool p_object::has_display_string() {
 	return !display_name.empty();
 }
 
+extern int parse_warp_params(WarpDirection direction, const char *info_type_name, const char *sip_name);
+
 /**
  * Mp points at the text of an object, which begins with the "$Name:" field.
  * Snags all object information.  Creating the ship now only happens after everything has been parsed.
@@ -3074,6 +3081,10 @@ int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
 
 	required_string("$Departure Cue:");
 	p_objp->departure_cue = get_sexp_main();
+
+	// look for warp parameters
+	p_objp->warpin_params_index = parse_warp_params(WarpDirection::WD_WARP_IN, "Ship", p_objp->name);
+	p_objp->warpout_params_index = parse_warp_params(WarpDirection::WD_WARP_OUT, "Ship", p_objp->name);
 
 	if (optional_string("$Misc Properties:"))
 		stuff_string(p_objp->misc, F_NAME, NAME_LENGTH);
@@ -7781,6 +7792,9 @@ void mission_bring_in_support_ship( object *requester_objp )
 
 	pobj->departure_cue = Locked_sexp_false;
 	pobj->departure_delay = 0;
+
+	pobj->warpin_params_index = -1;
+	pobj->warpout_params_index = -1;
 
 	pobj->wingnum = -1;
 

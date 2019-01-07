@@ -183,8 +183,6 @@ SCP_vector<ship_info>	Ship_templates;
 
 SCP_vector<ship_type_info> Ship_types;
 
-SCP_vector<WarpParams> Warp_params;
-
 SCP_vector<ArmorType> Armor_types;
 SCP_vector<DamageTypeStruct>	Damage_types;
 
@@ -734,29 +732,6 @@ static void parse_engine_wash(bool replace)
 	if(optional_string("$Intensity:")) {
 		stuff_float(&ewp->intensity);
 	}
-}
-
-static const char *Warp_types[] = {
-	"Default",
-	"Knossos",
-	"Babylon5",
-	"Galactica",
-	"Homeworld",
-	"Hyperspace",
-};
-
-static int Num_warp_types = sizeof(Warp_types)/sizeof(char*);
-
-static int warptype_match(char *p)
-{
-	int i;
-	for(i = 0; i < Num_warp_types; i++)
-	{
-		if(!stricmp(Warp_types[i], p))
-			return i;
-	}
-
-	return -1;
 }
 
 static const char *Lightning_types[] = {
@@ -2235,7 +2210,7 @@ static int parse_and_add_briefing_icon_info()
 int parse_warp_params(WarpDirection direction, const char *info_type_name, const char *sip_name)
 {
 	// for parsing
-	char *prefix = direction == WarpDirection::WD_WARP_IN ? "$Warpin" : "$Warpout";
+	char *prefix = (direction == WarpDirection::WD_WARP_IN) ? "$Warpin" : "$Warpout";
 	char str[NAME_LENGTH];
 
 	WarpParams params;
@@ -2277,7 +2252,7 @@ int parse_warp_params(WarpDirection direction, const char *info_type_name, const
 		{
 			float t_time;
 			stuff_float(&t_time);
-			if (t_time > 0)
+			if (t_time > 0.0f)
 				params.warpout_engage_time = fl2i(t_time*1000.0f);
 			else
 				Warning(LOCATION, "%s specified as 0 or less on %s '%s'; value ignored", str, info_type_name, sip_name);
@@ -2287,7 +2262,12 @@ int parse_warp_params(WarpDirection direction, const char *info_type_name, const
 	sprintf(str, "%s speed:", prefix);
 	if (optional_string(str))
 	{
-		stuff_float(&params.speed);
+		float speed;
+		stuff_float(&speed);
+		if (speed > 0.0f)
+			params.speed = speed;
+		else
+			Warning(LOCATION, "%s specified as 0 or less on %s '%s'; value ignored", str, info_type_name, sip_name);
 	}
 
 	sprintf(str, "%s time:", prefix);
@@ -2295,7 +2275,7 @@ int parse_warp_params(WarpDirection direction, const char *info_type_name, const
 	{
 		float t_time;
 		stuff_float(&t_time);
-		if (t_time > 0)
+		if (t_time > 0.0f)
 			params.time = fl2i(t_time*1000.0f);
 		else
 			Warning(LOCATION, "%s specified as 0 or less on %s '%s'; value ignored", str, info_type_name, sip_name);
@@ -2337,7 +2317,7 @@ int parse_warp_params(WarpDirection direction, const char *info_type_name, const
 			float speed;
 			stuff_float(&speed);
 			if (speed > 0.0f)
-				params.speed = speed;
+				params.warpout_player_speed = speed;
 			else
 				Warning(LOCATION, "%s specified as 0 or less on %s '%s'; value ignored", str, info_type_name, sip_name);
 		}

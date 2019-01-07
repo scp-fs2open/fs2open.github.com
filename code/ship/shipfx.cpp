@@ -3088,6 +3088,32 @@ bool WarpParams::operator!=(const WarpParams &other)
 	return !(operator==(other));
 }
 
+SCP_vector<WarpParams> Warp_params;
+
+
+const char *Warp_types[] = {
+	"Default",
+	"Knossos",
+	"Babylon5",
+	"Galactica",
+	"Homeworld",
+	"Hyperspace",
+};
+
+int Num_warp_types = sizeof(Warp_types) / sizeof(char*);
+
+int warptype_match(const char *p)
+{
+	int i;
+	for (i = 0; i < Num_warp_types; i++)
+	{
+		if (!stricmp(Warp_types[i], p))
+			return i;
+	}
+
+	return -1;
+}
+
 
 //********************-----CLASS: WarpEffect-----********************//
 WarpEffect::WarpEffect()
