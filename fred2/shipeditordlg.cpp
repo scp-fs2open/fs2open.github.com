@@ -39,6 +39,7 @@
 #include "species_defs/species_defs.h"
 #include "iff_defs/iff_defs.h"
 #include "restrictpaths.h"
+#include "warpparamsdlg.h"
 
 #define ID_SHIP_MENU 9000
 
@@ -234,6 +235,8 @@ BEGIN_MESSAGE_MAP(CShipEditorDlg, CDialog)
 	ON_BN_CLICKED(IDC_RESTRICT_DEPARTURE, OnRestrictDeparture)
 	ON_WM_INITMENU()
 	ON_BN_CLICKED(IDC_SET_AS_PLAYER_SHIP, OnSetAsPlayerShip)
+	ON_BN_CLICKED(IDC_CUSTOM_WARPIN_PARAMS, OnBnClickedCustomWarpinParams)
+	ON_BN_CLICKED(IDC_CUSTOM_WARPOUT_PARAMS, OnBnClickedCustomWarpoutParams)
 	//}}AFX_MSG_MAP
 END_MESSAGE_MAP()
 
@@ -852,8 +855,10 @@ void CShipEditorDlg::initialize_data(int full_update)
 		}
 		if (m_arrival_location == ARRIVE_FROM_DOCK_BAY) {
 			GetDlgItem(IDC_RESTRICT_ARRIVAL)->EnableWindow(enable);
+			GetDlgItem(IDC_CUSTOM_WARPIN_PARAMS)->EnableWindow(FALSE);
 		} else {
 			GetDlgItem(IDC_RESTRICT_ARRIVAL)->EnableWindow(FALSE);
+			GetDlgItem(IDC_CUSTOM_WARPIN_PARAMS)->EnableWindow(enable);
 		}
 
 		GetDlgItem(IDC_DEPARTURE_LOCATION)->EnableWindow(enable);
@@ -864,8 +869,10 @@ void CShipEditorDlg::initialize_data(int full_update)
 		}
 		if (m_departure_location == DEPART_AT_DOCK_BAY) {
 			GetDlgItem(IDC_RESTRICT_DEPARTURE)->EnableWindow(enable);
+			GetDlgItem(IDC_CUSTOM_WARPOUT_PARAMS)->EnableWindow(FALSE);
 		} else {
 			GetDlgItem(IDC_RESTRICT_DEPARTURE)->EnableWindow(FALSE);
+			GetDlgItem(IDC_CUSTOM_WARPOUT_PARAMS)->EnableWindow(enable);
 		}
 
 		GetDlgItem(IDC_ARRIVAL_DELAY)->EnableWindow(enable);
@@ -1909,7 +1916,6 @@ void CShipEditorDlg::OnSelchangeArrivalLocation()
 		} else {
 			management_add_ships_to_combo( box, SHIPS_2_COMBO_SPECIAL | SHIPS_2_COMBO_ALL_SHIPS );
 		}
-
 	} else {
 		m_arrival_target = -1;
 		GetDlgItem(IDC_ARRIVAL_DISTANCE)->EnableWindow(FALSE);
@@ -1918,8 +1924,10 @@ void CShipEditorDlg::OnSelchangeArrivalLocation()
 
 	if (m_arrival_location == ARRIVE_FROM_DOCK_BAY)	{
 		GetDlgItem(IDC_RESTRICT_ARRIVAL)->EnableWindow(TRUE);
+		GetDlgItem(IDC_CUSTOM_WARPIN_PARAMS)->EnableWindow(FALSE);
 	} else {
 		GetDlgItem(IDC_RESTRICT_ARRIVAL)->EnableWindow(FALSE);
+		GetDlgItem(IDC_CUSTOM_WARPIN_PARAMS)->EnableWindow(TRUE);
 	}
 
 	UpdateData(FALSE);
@@ -1945,7 +1953,6 @@ void CShipEditorDlg::OnSelchangeDepartureLocation()
 			// I think that this section is currently illegal
 			Int3();
 		}
-
 	} else {
 		m_departure_target = -1;
 		box->EnableWindow(FALSE);
@@ -1953,8 +1960,10 @@ void CShipEditorDlg::OnSelchangeDepartureLocation()
 
 	if (m_departure_location == DEPART_AT_DOCK_BAY)	{
 		GetDlgItem(IDC_RESTRICT_DEPARTURE)->EnableWindow(TRUE);
+		GetDlgItem(IDC_CUSTOM_WARPOUT_PARAMS)->EnableWindow(FALSE);
 	} else {
 		GetDlgItem(IDC_RESTRICT_DEPARTURE)->EnableWindow(FALSE);
+		GetDlgItem(IDC_CUSTOM_WARPOUT_PARAMS)->EnableWindow(TRUE);
 	}
 
 	UpdateData(FALSE);
@@ -2387,5 +2396,19 @@ void CShipEditorDlg::OnRestrictDeparture()
 	dlg.m_ship_class = Ships[depart_to_ship].ship_info_index;
 	dlg.m_path_mask = &Ships[marked_ship].departure_path_mask;
 
+	dlg.DoModal();
+}
+
+void CShipEditorDlg::OnBnClickedCustomWarpinParams()
+{
+	warp_params_dlg dlg;
+	dlg.m_warp_in = true;
+	dlg.DoModal();
+}
+
+void CShipEditorDlg::OnBnClickedCustomWarpoutParams()
+{
+	warp_params_dlg dlg;
+	dlg.m_warp_in = false;
 	dlg.DoModal();
 }

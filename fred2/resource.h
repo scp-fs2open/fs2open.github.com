@@ -20,8 +20,6 @@
 #define IDD_SHIP_CLASS_EDITOR           161
 #define IDD_AI_CLASS_EDITOR             162
 #define IDD_MESSAGE_EDITOR              163
-#define IDD_SHIP_GOALSS                 165
-#define IDD_SHIP_GOALS2                 166
 #define IDD_SHIP_GOALS                  166
 #define IDD_SHIP_GOALS_EDITOR           166
 #define IDD_MODEL_EDITOR                168
@@ -124,6 +122,7 @@
 #define IDB_DATA_95                     315
 #define IDD_FICTION_VIEWER              318
 #define IDD_SOUND_ENVIRONMENT           319
+#define IDD_WARP_PARAMS                 324
 #define IDC_SHIP_CLASS                  1003
 #define IDC_SHIP_WING                   1004
 #define IDC_SOUND_CLIP_NAME             1007
@@ -1069,7 +1068,9 @@
 #define IDC_ENABLE_SPECIAL_HITPOINTS    1554
 #define IDC_RESTRICT_DEPARTURE          1554
 #define IDC_SPECIAL_SHIELDS             1555
+#define IDC_CUSTOM_WARPIN_PARAMS        1555
 #define IDC_SPECIAL_HULL                1556
+#define IDC_CUSTOM_WARPOUT_PARAMS       1556
 #define IDC_LOADING_SCREEN_BUTTON1024   1557
 #define IDC_ENABLE_SPECIAL_SHIELD       1557
 #define IDC_LOADING_SCREEN640           1558
@@ -1183,6 +1184,20 @@
 #define IDC_NO_DISABLED_SELF_DESTRUCT   1644
 #define IDC_ETERNAL                     1644
 #define IDC_TYPE_ETERNAL                1645
+#define IDC_WARP_TYPE                   1646
+#define IDC_START_SOUND                 1647
+#define IDC_END_SOUND                   1648
+#define IDC_WARPOUT_ENGAGE_TIME         1649
+#define IDC_SPEED                       1650
+#define IDC_STATIC_WARPOUT_ENGAGE_TIME  1651
+#define IDC_ACCEL_EXP                   1652
+#define IDC_RADIUS                      1653
+#define IDC_ANIM                        1654
+#define IDC_PLAYER_WARPOUT_SPEED        1655
+#define IDC_WARPOUT_ENGAGE_TIME_LABEL   1656
+#define IDC_ACCEL_EXP_LABEL             1657
+#define IDC_ANIM_LABEL                  1658
+#define IDC_PLAYER_WARPOUT_SPEED_LABEL  1659
 #define ID_FILE_MISSIONNOTES            32771
 #define ID_DUPLICATE                    32774
 #define ID_VIEW_ROTATE                  32775
@@ -1473,9 +1488,9 @@
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_3D_CONTROLS                     1
-#define _APS_NEXT_RESOURCE_VALUE        322
+#define _APS_NEXT_RESOURCE_VALUE        327
 #define _APS_NEXT_COMMAND_VALUE         33098
-#define _APS_NEXT_CONTROL_VALUE         1646
+#define _APS_NEXT_CONTROL_VALUE         1660
 #define _APS_NEXT_SYMED_VALUE           105
 #endif
 #endif
