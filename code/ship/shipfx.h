@@ -158,6 +158,8 @@ public:
 
 extern SCP_vector<WarpParams> Warp_params;
 
+extern int find_or_add_warp_params(const WarpParams &params);
+
 
 extern const char *Warp_types[];
 extern int Num_warp_types;

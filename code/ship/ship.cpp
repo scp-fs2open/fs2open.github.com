@@ -2323,14 +2323,8 @@ int parse_warp_params(WarpDirection direction, const char *info_type_name, const
 		}
 	}
 
-	// after all that, see if these parameters already exist
-	auto ii = std::find(Warp_params.begin(), Warp_params.end(), params);
-	if (ii != Warp_params.end())
-		return ii - Warp_params.begin();
-
-	// these are unique, so add them
-	Warp_params.push_back(params);
-	return Warp_params.size() - 1;
+	// get the index of these warp params, which may be a new index
+	return find_or_add_warp_params(params);
 }
 
 /**
