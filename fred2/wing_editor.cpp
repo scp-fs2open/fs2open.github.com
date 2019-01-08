@@ -23,6 +23,7 @@
 #include "cfile/cfile.h"
 #include "restrictpaths.h"
 #include "iff_defs/iff_defs.h"
+#include "warpparamsdlg.h"
 
 #define ID_WING_MENU 9000
 
@@ -163,6 +164,8 @@ BEGIN_MESSAGE_MAP(wing_editor, CDialog)
 	ON_BN_CLICKED(IDC_WING_SQUAD_LOGO_BUTTON, OnSquadLogo)
 	ON_BN_CLICKED(IDC_RESTRICT_ARRIVAL, OnRestrictArrival)
 	ON_BN_CLICKED(IDC_RESTRICT_DEPARTURE, OnRestrictDeparture)
+	ON_BN_CLICKED(IDC_CUSTOM_WARPIN_PARAMS, OnBnClickedCustomWarpinParams)
+	ON_BN_CLICKED(IDC_CUSTOM_WARPOUT_PARAMS, OnBnClickedCustomWarpoutParams)
 	//}}AFX_MSG_MAP
 END_MESSAGE_MAP()
 
@@ -442,8 +445,10 @@ void wing_editor::initialize_data_safe(int full_update)
 	}
 	if (m_arrival_location == ARRIVE_FROM_DOCK_BAY) {
 		GetDlgItem(IDC_RESTRICT_ARRIVAL)->EnableWindow(enable);
+		GetDlgItem(IDC_CUSTOM_WARPIN_PARAMS)->EnableWindow(FALSE);
 	} else {
 		GetDlgItem(IDC_RESTRICT_ARRIVAL)->EnableWindow(FALSE);
+		GetDlgItem(IDC_CUSTOM_WARPIN_PARAMS)->EnableWindow(enable);
 	}
 	GetDlgItem(IDC_NO_DYNAMIC)->EnableWindow(enable);
 
@@ -454,8 +459,10 @@ void wing_editor::initialize_data_safe(int full_update)
 	}
 	if (m_departure_location == DEPART_AT_DOCK_BAY) {
 		GetDlgItem(IDC_RESTRICT_DEPARTURE)->EnableWindow(enable);
+		GetDlgItem(IDC_CUSTOM_WARPOUT_PARAMS)->EnableWindow(FALSE);
 	} else {
 		GetDlgItem(IDC_RESTRICT_DEPARTURE)->EnableWindow(FALSE);
+		GetDlgItem(IDC_CUSTOM_WARPOUT_PARAMS)->EnableWindow(enable);
 	}
 
 	if (player_wing)
@@ -1190,8 +1197,10 @@ void wing_editor::OnSelchangeArrivalLocation()
 
 	if (m_arrival_location == ARRIVE_FROM_DOCK_BAY)	{
 		GetDlgItem(IDC_RESTRICT_ARRIVAL)->EnableWindow(TRUE);
+		GetDlgItem(IDC_CUSTOM_WARPIN_PARAMS)->EnableWindow(FALSE);
 	} else {
 		GetDlgItem(IDC_RESTRICT_ARRIVAL)->EnableWindow(FALSE);
+		GetDlgItem(IDC_CUSTOM_WARPIN_PARAMS)->EnableWindow(TRUE);
 	}
 
 	UpdateData(FALSE);
@@ -1223,8 +1232,10 @@ void wing_editor::OnSelchangeDepartureLocation()
 
 	if (m_departure_location == DEPART_AT_DOCK_BAY)	{
 		GetDlgItem(IDC_RESTRICT_DEPARTURE)->EnableWindow(TRUE);
+		GetDlgItem(IDC_CUSTOM_WARPOUT_PARAMS)->EnableWindow(FALSE);
 	} else {
 		GetDlgItem(IDC_RESTRICT_DEPARTURE)->EnableWindow(FALSE);
+		GetDlgItem(IDC_CUSTOM_WARPOUT_PARAMS)->EnableWindow(TRUE);
 	}
 
 	UpdateData(FALSE);
@@ -1361,4 +1372,18 @@ int wing_editor::calc_max_wave_treshold()
 	const int treshold1 = Wings[cur_wing].wave_count - 1; // At least 1 ship must have died before allowing respawn
 	const int treshold2 = MAX_SHIPS_PER_WING - Wings[cur_wing].wave_count; // Maximum MAX_SHIPS_PER_WING ships can be alive at any given time
 	return std::min(treshold1, treshold2);
+}
+
+void wing_editor::OnBnClickedCustomWarpinParams()
+{
+	warp_params_dlg dlg;
+	dlg.m_warp_in = true;
+	dlg.DoModal();
+}
+
+void wing_editor::OnBnClickedCustomWarpoutParams()
+{
+	warp_params_dlg dlg;
+	dlg.m_warp_in = false;
+	dlg.DoModal();
 }
