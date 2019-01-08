@@ -1939,6 +1939,8 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 					bank->type = cfread_int(fp);
 					bank->num_points = cfread_int(fp);
 					bank->points = NULL;
+					bank->glow_bitmap = -1;
+					bank->glow_neb_bitmap = -1;
 
 					if (bank->num_points > 0)
 						bank->points = (glow_point *) vm_malloc(sizeof(glow_point) * bank->num_points);
@@ -1953,44 +1955,44 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 					if (length > 0)
 					{
 						auto base_length = strlen("$glow_texture=");
-						Assert(strstr( (const char *)&props, "$glow_texture=") != NULL);
-						Assert(length > base_length);
-						char *glow_texture_name = props + base_length;
-						
-						if (glow_texture_name[0] == '$')
-							glow_texture_name++;
+						char *glow_texture_start = strstr(props, "$glow_texture=");
+						if ( (length > base_length) && (glow_texture_start != nullptr) && (strlen(glow_texture_start + base_length) > 0) ) {
+							char *glow_texture_name = glow_texture_start + base_length;
+							
+							if (glow_texture_name[0] == '$')
+								glow_texture_name++;
 
-						bank->glow_bitmap = bm_load(glow_texture_name);
+							bank->glow_bitmap = bm_load(glow_texture_name);
 
-						if (bank->glow_bitmap < 0)
-						{
-							Warning( LOCATION, "Couldn't open glowpoint texture '%s'\nreferenced by model '%s'\n", glow_texture_name, pm->filename);
-						}
-						else
-						{
-							nprintf(( "Model", "Glow point bank %i texture num is %d for '%s'\n", gpb, bank->glow_bitmap, pm->filename));
-						}
+							if (bank->glow_bitmap < 0)
+							{
+								Warning( LOCATION, "Couldn't open glowpoint texture '%s'\nreferenced by model '%s'\n", glow_texture_name, pm->filename);
+							}
+							else
+							{
+								nprintf(( "Model", "Glow point bank %i texture num is %d for '%s'\n", gpb, bank->glow_bitmap, pm->filename));
+							}
 
-						strcat(glow_texture_name, "-neb");
-						bank->glow_neb_bitmap = bm_load(glow_texture_name);
+							strcat(glow_texture_name, "-neb");
+							bank->glow_neb_bitmap = bm_load(glow_texture_name);
 
-						if (bank->glow_neb_bitmap < 0)
-						{
-							bank->glow_neb_bitmap = bank->glow_bitmap;
-							nprintf(( "Model", "Glow point bank nebula texture not found for '%s', using normal glowpoint texture instead\n", pm->filename));
-						//	Error( LOCATION, "Couldn't open texture '%s'\nreferenced by model '%s'\n", glow_texture_name, pm->filename );
-						}
-						else
-						{
-							nprintf(( "Model", "Glow point bank %i nebula texture num is %d for '%s'\n", gpb, bank->glow_neb_bitmap, pm->filename));
+							if (bank->glow_neb_bitmap < 0)
+							{
+								bank->glow_neb_bitmap = bank->glow_bitmap;
+								nprintf(( "Model", "Glow point bank nebula texture not found for '%s', using normal glowpoint texture instead\n", pm->filename));
+							//	Error( LOCATION, "Couldn't open texture '%s'\nreferenced by model '%s'\n", glow_texture_name, pm->filename );
+							}
+							else
+							{
+								nprintf(( "Model", "Glow point bank %i nebula texture num is %d for '%s'\n", gpb, bank->glow_neb_bitmap, pm->filename));
+							}
+						} else {
+							Warning( LOCATION, "No glow point texture for bank '%d' referenced by model '%s'\n", gpb, pm->filename);
 						}
 					} 
 					else 
 					{
-						// niffiwan: no "props" string found - ensure we don't have a random texture assigned!
-						bank->glow_bitmap = -1;
-						bank->glow_neb_bitmap = -1;
-						Warning( LOCATION, "No Glow point texture for bank '%d' referenced by model '%s'\n", gpb, pm->filename);
+						Warning( LOCATION, "No glow point texture for bank '%d' referenced by model '%s'\n", gpb, pm->filename);
 					}
 
 					for (j = 0; j < bank->num_points; j++)
