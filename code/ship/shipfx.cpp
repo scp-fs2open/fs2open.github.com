@@ -3094,11 +3094,11 @@ int find_or_add_warp_params(const WarpParams &params)
 	// see if these parameters already exist
 	auto ii = std::find(Warp_params.begin(), Warp_params.end(), params);
 	if (ii != Warp_params.end())
-		return ii - Warp_params.begin();
+		return (int) (ii - Warp_params.begin());
 
 	// these are unique, so add them
 	Warp_params.push_back(params);
-	return Warp_params.size() - 1;
+	return (int) (Warp_params.size() - 1);
 }
 
 
