@@ -2205,15 +2205,22 @@ static int parse_and_add_briefing_icon_info()
 }
 
 /**
-* Determines the warp parameters for this ship class (or ship).
-*/
-int parse_warp_params(WarpDirection direction, const char *info_type_name, const char *sip_name)
+ * Determines the warp parameters for this ship class (or ship).
+ *
+ * If we are creating a ship, we want to inherit the parameters of the ship class, then override on a field-by-field basis.
+ */
+int parse_warp_params(const WarpParams *inherit_from, WarpDirection direction, const char *info_type_name, const char *info_name)
 {
+	Assert(info_type_name != nullptr);
+	Assert(info_name != nullptr);
+
 	// for parsing
 	char *prefix = (direction == WarpDirection::WARP_IN) ? "$Warpin" : "$Warpout";
 	char str[NAME_LENGTH];
 
 	WarpParams params;
+	if (inherit_from != nullptr)
+		params = *inherit_from;
 	params.direction = direction;
 
 	sprintf(str, "%s type:", prefix);
@@ -2233,7 +2240,7 @@ int parse_warp_params(WarpDirection direction, const char *info_type_name, const
 				params.warp_type = j | WT_DEFAULT_WITH_FIREBALL;
 			}
 			else {
-				Warning(LOCATION, "Invalid %s '%s' specified for %s '%s'", str, buf, info_type_name, sip_name);
+				Warning(LOCATION, "Invalid %s '%s' specified for %s '%s'", str, buf, info_type_name, info_name);
 				params.warp_type = WT_DEFAULT;
 			}
 		}
@@ -2255,7 +2262,7 @@ int parse_warp_params(WarpDirection direction, const char *info_type_name, const
 			if (t_time > 0.0f)
 				params.warpout_engage_time = fl2i(t_time*1000.0f);
 			else
-				Warning(LOCATION, "%s specified as 0 or less on %s '%s'; value ignored", str, info_type_name, sip_name);
+				Warning(LOCATION, "%s specified as 0 or less on %s '%s'; value ignored", str, info_type_name, info_name);
 		}
 	}
 
@@ -2267,7 +2274,7 @@ int parse_warp_params(WarpDirection direction, const char *info_type_name, const
 		if (speed > 0.0f)
 			params.speed = speed;
 		else
-			Warning(LOCATION, "%s specified as 0 or less on %s '%s'; value ignored", str, info_type_name, sip_name);
+			Warning(LOCATION, "%s specified as 0 or less on %s '%s'; value ignored", str, info_type_name, info_name);
 	}
 
 	sprintf(str, "%s time:", prefix);
@@ -2278,7 +2285,7 @@ int parse_warp_params(WarpDirection direction, const char *info_type_name, const
 		if (t_time > 0.0f)
 			params.time = fl2i(t_time*1000.0f);
 		else
-			Warning(LOCATION, "%s specified as 0 or less on %s '%s'; value ignored", str, info_type_name, sip_name);
+			Warning(LOCATION, "%s specified as 0 or less on %s '%s'; value ignored", str, info_type_name, info_name);
 	}
 
 	sprintf(str, "%s %s exp:", prefix, direction == WarpDirection::WARP_IN ? "decel" : "accel");
@@ -2289,7 +2296,7 @@ int parse_warp_params(WarpDirection direction, const char *info_type_name, const
 		if (accel_exp >= 0.0f)
 			params.accel_exp = accel_exp;
 		else
-			Warning(LOCATION, "%s specified as less than 0 on %s '%s'; value ignored", str, info_type_name, sip_name);
+			Warning(LOCATION, "%s specified as less than 0 on %s '%s'; value ignored", str, info_type_name, info_name);
 	}
 
 	sprintf(str, "%s radius:", prefix);
@@ -2300,7 +2307,7 @@ int parse_warp_params(WarpDirection direction, const char *info_type_name, const
 		if (rad > 0.0f)
 			params.radius = rad;
 		else
-			Warning(LOCATION, "%s specified as 0 or less on %s '%s'; value ignored", str, info_type_name, sip_name);
+			Warning(LOCATION, "%s specified as 0 or less on %s '%s'; value ignored", str, info_type_name, info_name);
 	}
 
 	sprintf(str, "%s animation:", prefix);
@@ -2319,7 +2326,7 @@ int parse_warp_params(WarpDirection direction, const char *info_type_name, const
 			if (speed > 0.0f)
 				params.warpout_player_speed = speed;
 			else
-				Warning(LOCATION, "%s specified as 0 or less on %s '%s'; value ignored", str, info_type_name, sip_name);
+				Warning(LOCATION, "%s specified as 0 or less on %s '%s'; value ignored", str, info_type_name, info_name);
 		}
 	}
 
@@ -2986,8 +2993,8 @@ static int parse_ship_values(ship_info* sip, const bool is_template, const bool 
 	}
 
 	// get ship parameters for warpin and warpout
-	sip->warpin_params_index = parse_warp_params(WarpDirection::WARP_IN, info_type_name, sip->name);
-	sip->warpout_params_index = parse_warp_params(WarpDirection::WARP_OUT, info_type_name, sip->name);
+	sip->warpin_params_index = parse_warp_params(nullptr, WarpDirection::WARP_IN, info_type_name, sip->name);
+	sip->warpout_params_index = parse_warp_params(nullptr, WarpDirection::WARP_OUT, info_type_name, sip->name);
 
 	// get ship explosion info
 	shockwave_create_info *sci = &sip->shockwave;
