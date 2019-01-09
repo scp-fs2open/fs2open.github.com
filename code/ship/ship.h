@@ -870,20 +870,6 @@ class man_thruster {
     }
 };
 
-// if we are specifying a Default warp with an index into fireball.tbl, use this flag
-#define WT_DEFAULT_WITH_FIREBALL	(1<<31)
-
-// if we have more than one flag defined above, this should mask all of them
-#define WT_FLAG_MASK				~(1<<31)
-
-//Warp type defines
-#define WT_DEFAULT					0
-#define WT_KNOSSOS					1
-#define WT_DEFAULT_THEN_KNOSSOS		2
-#define WT_IN_PLACE_ANIM			3
-#define WT_SWEEPER					4
-#define WT_HYPERSPACE				5
-
 // Holds variables for collision physics (Gets its own struct purely for clarity purposes)
 // Most of this only really applies properly to small ships
 typedef struct ship_collision_physics {
