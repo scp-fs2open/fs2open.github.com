@@ -136,20 +136,20 @@ float shipfx_calculate_warp_time(object *objp, WarpDirection warp_dir, float hal
 class WarpParams
 {
 public:
-	WarpDirection	direction;
+	WarpDirection	direction = WarpDirection::WARP_IN;
 
 	char		anim[MAX_FILENAME_LEN];
-	float		radius;
+	float		radius = 0.0f;
 	gamesnd_id	snd_start;
 	gamesnd_id	snd_end;
-	float		speed;
-	int			time;		// in ms
-	float		accel_exp;
-	int			warp_type;
+	float		speed = 0.0f;
+	int			time = 0;					// in ms
+	float		accel_exp = 1.0f;
+	int			warp_type = WT_DEFAULT;
 
 	// only valid for warpout
-	int			warpout_engage_time;	//in ms
-	float		warpout_player_speed;
+	int			warpout_engage_time = -1;	// in ms
+	float		warpout_player_speed = 0.0f;
 
 	WarpParams();
 	bool operator==(const WarpParams &other);
