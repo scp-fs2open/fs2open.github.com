@@ -2215,7 +2215,7 @@ int parse_warp_params(const WarpParams *inherit_from, WarpDirection direction, c
 	Assert(info_name != nullptr);
 
 	// for parsing
-	char *prefix = (direction == WarpDirection::WARP_IN) ? "$Warpin" : "$Warpout";
+	const char *prefix = (direction == WarpDirection::WARP_IN) ? "$Warpin" : "$Warpout";
 	char str[NAME_LENGTH];
 
 	WarpParams params;
@@ -17115,7 +17115,7 @@ float ship_get_warpout_speed(object *objp, ship_info *sip, float half_length, fl
 			return params->speed;
 	}
 
-	return warping_dist / shipfx_calculate_warp_time(objp, sip, WarpDirection::WARP_OUT, half_length, warping_dist);
+	return warping_dist / shipfx_calculate_warp_time(objp, WarpDirection::WARP_OUT, half_length, warping_dist);
 }
 
 /**

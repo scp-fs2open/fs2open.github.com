@@ -464,7 +464,7 @@ static float shipfx_calculate_effect_radius( object *objp, WarpDirection warp_di
 #define SMALLEST_RAD 15.0f
 #define SMALLEST_RAD_TIME 1.5f
 
-float shipfx_calculate_warp_time(object *objp, ship_info *sip, WarpDirection warp_dir, float half_length, float warping_dist)
+float shipfx_calculate_warp_time(object *objp, WarpDirection warp_dir, float half_length, float warping_dist)
 {
 	WarpParams *params = &Warp_params[warp_dir == WarpDirection::WARP_IN ? Ships[objp->instance].warpin_params_index : Ships[objp->instance].warpout_params_index];
 
@@ -3293,7 +3293,7 @@ int WE_Default::warpStart()
 	}
 
 	// determine the warping time
-	warping_time = shipfx_calculate_warp_time(objp, sip, direction, half_length, warping_dist);
+	warping_time = shipfx_calculate_warp_time(objp, direction, half_length, warping_dist);
 
 	// determine the warping speed
 	if (direction == WarpDirection::WARP_OUT)
