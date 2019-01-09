@@ -2501,7 +2501,7 @@ int CFred_mission_save::save_music() {
 int CFred_mission_save::save_warp_params(WarpDirection direction, ship *shipp)
 {
 	// for writing to file; c.f. parse_warp_params
-	char *prefix = (direction == WarpDirection::WARP_IN) ? "$Warpin" : "$Warpout";
+	const char *prefix = (direction == WarpDirection::WARP_IN) ? "$Warpin" : "$Warpout";
 
 	WarpParams *shipp_params, *sip_params;
 	if (direction == WarpDirection::WARP_IN)
