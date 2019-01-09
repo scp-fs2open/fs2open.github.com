@@ -3063,7 +3063,6 @@ flag_def_list Warp_variables[] = {
 
 
 WarpParams::WarpParams()
-	: direction(), radius(0.0f), snd_start(), snd_end(), speed(0.0f), time(0), accel_exp(1.0f), warp_type(WT_DEFAULT), warpout_engage_time(-1), warpout_player_speed(0.0f)
 {
 	anim[0] = '\0';
 }
