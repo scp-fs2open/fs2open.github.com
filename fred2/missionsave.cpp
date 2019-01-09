@@ -2648,10 +2648,10 @@ int CFred_mission_save::save_music() {
 int CFred_mission_save::save_warp_params(WarpDirection direction, ship *shipp)
 {
 	// for writing to file; c.f. parse_warp_params
-	char *prefix = (direction == WarpDirection::WD_WARP_IN) ? "$Warpin" : "$Warpout";
+	char *prefix = (direction == WarpDirection::WARP_IN) ? "$Warpin" : "$Warpout";
 
 	WarpParams *shipp_params, *sip_params;
-	if (direction == WarpDirection::WD_WARP_IN)
+	if (direction == WarpDirection::WARP_IN)
 	{
 		// if exactly the same params used, no need to output anything
 		if (shipp->warpin_params_index == Ship_info[shipp->ship_info_index].warpin_params_index)
@@ -2696,7 +2696,7 @@ int CFred_mission_save::save_warp_params(WarpDirection direction, ship *shipp)
 			fout("\n%s End Sound: %s", prefix, gamesnd_get_game_sound(shipp_params->snd_end)->name.c_str());
 	}
 
-	if (direction == WarpDirection::WD_WARP_OUT && shipp_params->warpout_engage_time != sip_params->warpout_engage_time)
+	if (direction == WarpDirection::WARP_OUT && shipp_params->warpout_engage_time != sip_params->warpout_engage_time)
 	{
 		if (shipp_params->warpout_engage_time > 0)
 			fout("\n%s engage time: %.2f", prefix, i2fl(shipp_params->warpout_engage_time) / 1000.0f);
@@ -2717,7 +2717,7 @@ int CFred_mission_save::save_warp_params(WarpDirection direction, ship *shipp)
 	if (shipp_params->accel_exp != sip_params->accel_exp)
 	{
 		if (shipp_params->accel_exp > 0.0f)
-			fout("\n%s %s exp: %.2f", prefix, direction == WarpDirection::WD_WARP_IN ? "decel" : "accel", shipp_params->accel_exp);
+			fout("\n%s %s exp: %.2f", prefix, direction == WarpDirection::WARP_IN ? "decel" : "accel", shipp_params->accel_exp);
 	}
 
 	if (shipp_params->radius != sip_params->radius)
@@ -2732,7 +2732,7 @@ int CFred_mission_save::save_warp_params(WarpDirection direction, ship *shipp)
 			fout("\n%s animation: %s", prefix, shipp_params->anim);
 	}
 
-	if (direction == WarpDirection::WD_WARP_OUT && shipp_params->warpout_player_speed != sip_params->warpout_player_speed)
+	if (direction == WarpDirection::WARP_OUT && shipp_params->warpout_player_speed != sip_params->warpout_player_speed)
 	{
 		if (shipp_params->warpout_player_speed > 0.0f)
 			fout("\n$Player warpout speed: %.2f", shipp_params->warpout_player_speed);
@@ -2982,8 +2982,8 @@ int CFred_mission_save::save_objects() {
 		convert_sexp_to_string(sexp_out, shipp->departure_cue, SEXP_SAVE_MODE);
 		fout(" %s", sexp_out.c_str());
 
-		save_warp_params(WarpDirection::WD_WARP_IN, shipp);
-		save_warp_params(WarpDirection::WD_WARP_OUT, shipp);
+		save_warp_params(WarpDirection::WARP_IN, shipp);
+		save_warp_params(WarpDirection::WARP_OUT, shipp);
 
 		required_string_fred("$Determination:");
 		parse_comments();
