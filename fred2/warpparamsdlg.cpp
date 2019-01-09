@@ -194,35 +194,35 @@ void warp_params_dlg::OnOK()
 
 	if (!m_warp_in && m_warpout_engage_time.GetLength() > 0)
 	{
-		float t_time = atof(m_warpout_engage_time);
+		float t_time = (float)atof(m_warpout_engage_time);
 		if (t_time > 0.0f)
 			params.warpout_engage_time = fl2i(t_time*1000.0f);
 	}
 
 	if (m_speed.GetLength() > 0)
 	{
-		float speed = atof(m_speed);
+		float speed = (float)atof(m_speed);
 		if (speed > 0.0f)
 			params.speed = speed;
 	}
 
 	if (m_time.GetLength() > 0)
 	{
-		float t_time = atof(m_time);
+		float t_time = (float)atof(m_time);
 		if (t_time > 0.0f)
 			params.time = fl2i(t_time*1000.0f);
 	}
 
 	if (m_accel_exp.GetLength() > 0)
 	{
-		float accel_exp = atof(m_accel_exp);
+		float accel_exp = (float)atof(m_accel_exp);
 		if (accel_exp >= 0.0f)
 			params.accel_exp = accel_exp;
 	}
 
 	if (m_radius.GetLength() > 0)
 	{
-		float rad = atof(m_radius);
+		float rad = (float)atof(m_radius);
 		if (rad > 0.0f)
 			params.radius = rad;
 	}
@@ -232,7 +232,7 @@ void warp_params_dlg::OnOK()
 
 	if (!m_warp_in && m_player_warpout_speed.GetLength() > 0)
 	{
-		float speed = atof(m_player_warpout_speed);
+		float speed = (float)atof(m_player_warpout_speed);
 		if (speed > 0.0f)
 			params.warpout_player_speed = speed;
 	}
