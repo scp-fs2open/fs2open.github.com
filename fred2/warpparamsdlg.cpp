@@ -178,7 +178,7 @@ void warp_params_dlg::OnOK()
 
 	// save stuff in params object
 	WarpParams params;
-	params.direction = m_warp_in ? WarpDirection::WD_WARP_IN : WarpDirection::WD_WARP_OUT;
+	params.direction = m_warp_in ? WarpDirection::WARP_IN : WarpDirection::WARP_OUT;
 
 	if (m_warp_type < Num_warp_types)
 		params.warp_type = m_warp_type;

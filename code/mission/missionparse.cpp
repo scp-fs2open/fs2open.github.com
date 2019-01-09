@@ -3083,8 +3083,8 @@ int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
 	p_objp->departure_cue = get_sexp_main();
 
 	// look for warp parameters
-	p_objp->warpin_params_index = parse_warp_params(WarpDirection::WD_WARP_IN, "Ship", p_objp->name);
-	p_objp->warpout_params_index = parse_warp_params(WarpDirection::WD_WARP_OUT, "Ship", p_objp->name);
+	p_objp->warpin_params_index = parse_warp_params(WarpDirection::WARP_IN, "Ship", p_objp->name);
+	p_objp->warpout_params_index = parse_warp_params(WarpDirection::WARP_OUT, "Ship", p_objp->name);
 
 	if (optional_string("$Misc Properties:"))
 		stuff_string(p_objp->misc, F_NAME, NAME_LENGTH);

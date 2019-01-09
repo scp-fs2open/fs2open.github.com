@@ -2210,7 +2210,7 @@ static int parse_and_add_briefing_icon_info()
 int parse_warp_params(WarpDirection direction, const char *info_type_name, const char *sip_name)
 {
 	// for parsing
-	char *prefix = (direction == WarpDirection::WD_WARP_IN) ? "$Warpin" : "$Warpout";
+	char *prefix = (direction == WarpDirection::WARP_IN) ? "$Warpin" : "$Warpout";
 	char str[NAME_LENGTH];
 
 	WarpParams params;
@@ -2245,7 +2245,7 @@ int parse_warp_params(WarpDirection direction, const char *info_type_name, const
 	sprintf(str, "%s End Sound:", prefix);
 	parse_game_sound(str, &params.snd_end);
 
-	if (direction == WarpDirection::WD_WARP_OUT)
+	if (direction == WarpDirection::WARP_OUT)
 	{
 		sprintf(str, "%s engage time:", prefix);
 		if (optional_string(str))
@@ -2281,7 +2281,7 @@ int parse_warp_params(WarpDirection direction, const char *info_type_name, const
 			Warning(LOCATION, "%s specified as 0 or less on %s '%s'; value ignored", str, info_type_name, sip_name);
 	}
 
-	sprintf(str, "%s %s exp:", prefix, direction == WarpDirection::WD_WARP_IN ? "decel" : "accel");
+	sprintf(str, "%s %s exp:", prefix, direction == WarpDirection::WARP_IN ? "decel" : "accel");
 	if (optional_string(str))
 	{
 		float accel_exp;
@@ -2309,7 +2309,7 @@ int parse_warp_params(WarpDirection direction, const char *info_type_name, const
 		stuff_string(params.anim, F_NAME, MAX_FILENAME_LEN);
 	}
 
-	if (direction == WarpDirection::WD_WARP_OUT)
+	if (direction == WarpDirection::WARP_OUT)
 	{
 		sprintf(str, "$Player warpout speed:");
 		if (optional_string(str))
@@ -2986,8 +2986,8 @@ static int parse_ship_values(ship_info* sip, const bool is_template, const bool 
 	}
 
 	// get ship parameters for warpin and warpout
-	sip->warpin_params_index = parse_warp_params(WarpDirection::WD_WARP_IN, info_type_name, sip->name);
-	sip->warpout_params_index = parse_warp_params(WarpDirection::WD_WARP_OUT, info_type_name, sip->name);
+	sip->warpin_params_index = parse_warp_params(WarpDirection::WARP_IN, info_type_name, sip->name);
+	sip->warpout_params_index = parse_warp_params(WarpDirection::WARP_OUT, info_type_name, sip->name);
 
 	// get ship explosion info
 	shockwave_create_info *sci = &sip->shockwave;
