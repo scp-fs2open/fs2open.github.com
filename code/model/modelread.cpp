@@ -1956,7 +1956,7 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 					{
 						auto base_length = strlen("$glow_texture=");
 						char *glow_texture_start = strstr(props, "$glow_texture=");
-						if ( (length > base_length) && (glow_texture_start != nullptr) && (strlen(glow_texture_start + base_length) > 0) ) {
+						if ( (glow_texture_start != nullptr) && (strlen(glow_texture_start + base_length) > 0) ) {
 							char *glow_texture_name = glow_texture_start + base_length;
 							
 							if (glow_texture_name[0] == '$')
@@ -2031,53 +2031,50 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 
 						bank->obj_num = -1;
 						bank->submodel_num = -1;
+						bank->wash_info_pointer = nullptr;
 
-						if (pm->version < 2117) {
-							bank->wash_info_pointer = NULL;
-						} else {
+						if (pm->version >= 2117) {
 							cfread_string_len( props, MAX_PROP_LEN, fp );
 							// look for $engine_subsystem=xxx
 							auto length = strlen(props);
 							if (length > 0) {
 								auto base_length = strlen("$engine_subsystem=");
-								Assert( strstr( (const char *)&props, "$engine_subsystem=") != NULL );
-								Assert( length > base_length );
-								char *engine_subsys_name = props + base_length;
-								if (engine_subsys_name[0] == '$') {
-									engine_subsys_name++;
-								}
+								char *engine_subsys_start = strstr(props, "$engine_subsystem=");
+								if ( (engine_subsys_start != nullptr) && (strlen(engine_subsys_start + base_length) > 0) ) {
+									char *engine_subsys_name = engine_subsys_start + base_length;
+									if (engine_subsys_name[0] == '$') {
+										engine_subsys_name++;
+									}
 
-								nprintf(("wash", "Ship %s with engine wash associated with subsys %s\n", filename, engine_subsys_name));
+									nprintf(("wash", "Ship %s with engine wash associated with subsys %s\n", filename, engine_subsys_name));
 
-								// set wash_info_index to invalid
-								int table_error = 1;
-								bank->wash_info_pointer = NULL;
-								for (int k=0; k<n_subsystems; k++) {
-									if ( !subsystem_stricmp(subsystems[k].subobj_name, engine_subsys_name) ) {
-										bank->submodel_num = subsystems[k].subobj_num;
+									// start off assuming the subsys is invalid
+									int table_error = 1;
+									for (int k=0; k<n_subsystems; k++) {
+										if ( !subsystem_stricmp(subsystems[k].subobj_name, engine_subsys_name) ) {
+											bank->submodel_num = subsystems[k].subobj_num;
 
-										bank->wash_info_pointer = subsystems[k].engine_wash_pointer;
-										if (bank->wash_info_pointer != NULL) {
-											table_error = 0;
+											bank->wash_info_pointer = subsystems[k].engine_wash_pointer;
+											if (bank->wash_info_pointer != nullptr) {
+												table_error = 0;
+											}
+											// also set what subsystem this is attached to but not if we only have one thruster bank
+											// do this so that original :V: models still work like they used to
+											if (pm->n_thrusters > 1) {
+												bank->obj_num = k;
+											}
+											break;
 										}
-										// also set what subsystem this is attached to but not if we only have one thruster bank
-										// do this so that original :V: models still work like they used to
-										if (pm->n_thrusters > 1) {
-											bank->obj_num = k;
+									}
+
+									if ( (bank->wash_info_pointer == nullptr) && (n_subsystems > 0) ) {
+										if (table_error) {
+										//	Warning(LOCATION, "No engine wash table entry in ships.tbl for ship model %s", filename);
+										} else {
+											Warning(LOCATION, "Inconsistent model: Engine wash engine subsystem does not match any ship subsytem names for ship model %s", filename);
 										}
-										break;
 									}
 								}
-
-								if ( (bank->wash_info_pointer == NULL) && (n_subsystems > 0) ) {
-									if (table_error) {
-									//	Warning(LOCATION, "No engine wash table entry in ships.tbl for ship model %s", filename);
-									} else {
-										Warning(LOCATION, "Inconsistent model: Engine wash engine subsystem does not match any ship subsytem names for ship model %s", filename);
-									}
-								}
-							} else {
-								bank->wash_info_pointer = NULL;
 							}
 						}
 
