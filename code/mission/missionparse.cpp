@@ -2021,6 +2021,11 @@ int parse_create_object_sub(p_object *p_objp)
 	if (Ship_info[shipp->ship_info_index].uses_team_colors && !p_objp->team_color_setting.empty())
 		shipp->team_name = p_objp->team_color_setting;
 
+	if (p_objp->warpin_params_index >= 0)
+		shipp->warpin_params_index = p_objp->warpin_params_index;
+	if (p_objp->warpout_params_index >= 0)
+		shipp->warpout_params_index = p_objp->warpout_params_index;
+
 	// reset texture animations
 	shipp->base_texture_anim_frametime = game_get_overall_frametime();
 
@@ -2375,7 +2380,7 @@ int parse_create_object_sub(p_object *p_objp)
 		// initial velocities now do not apply to ships which warp in after mission starts
 		// WMC - Make it apply for ships with IN_PLACE_ANIM type
 		// zookeeper - Also make it apply for hyperspace warps
-		if (!(Game_mode & GM_IN_MISSION) || (sip->warpin_type == WT_IN_PLACE_ANIM || sip->warpin_type == WT_HYPERSPACE))
+		if (!(Game_mode & GM_IN_MISSION) || (Warp_params[shipp->warpin_params_index].warp_type == WT_IN_PLACE_ANIM || Warp_params[shipp->warpin_params_index].warp_type == WT_HYPERSPACE))
 		{
 			Objects[objnum].phys_info.speed = (float) p_objp->initial_velocity * sip->max_speed / 100.0f;
 			Objects[objnum].phys_info.vel.xyz.z = Objects[objnum].phys_info.speed;
@@ -2775,6 +2780,8 @@ bool p_object::has_display_string() {
 	return !display_name.empty();
 }
 
+extern int parse_warp_params(const WarpParams *inherit_from, WarpDirection direction, const char *info_type_name, const char *sip_name);
+
 /**
  * Mp points at the text of an object, which begins with the "$Name:" field.
  * Snags all object information.  Creating the ship now only happens after everything has been parsed.
@@ -2788,6 +2795,7 @@ int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
 {
 	int	i, j, count, delay;
     char name[NAME_LENGTH];
+	ship_info *sip;
 
 	Assert(pm != NULL);
 
@@ -2818,6 +2826,7 @@ int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
 		p_objp->ship_class = 0;
 		Num_unknown_ship_classes++;
 	}
+	sip = &Ship_info[p_objp->ship_class];
 
 	// Karajorma - See if there are any alternate classes specified for this ship. 
 	p_objp->alt_classes.clear();
@@ -2873,7 +2882,7 @@ int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
 	}
 
 	// if this is a multiplayer dogfight mission, skip support ships
-	if(MULTI_DOGFIGHT && (Ship_info[p_objp->ship_class].flags[Ship::Info_Flags::Support]))
+	if(MULTI_DOGFIGHT && (sip->flags[Ship::Info_Flags::Support]))
 		return 0;
 
 	// optional alternate name type
@@ -2920,7 +2929,7 @@ int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
 
 		if (Team_Colors.find(p_objp->team_color_setting) == Team_Colors.end()) {
 			mprintf(("Invalid team color specified in mission file for ship %s, resetting to default\n", p_objp->name));
-			p_objp->team_color_setting = Ship_info[p_objp->ship_class].default_team_name;
+			p_objp->team_color_setting = sip->default_team_name;
 		}
 	}
 
@@ -2951,7 +2960,7 @@ int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
 	}
 	else
 	{
-		p_objp->ai_class = Ship_info[p_objp->ship_class].ai_class;
+		p_objp->ai_class = sip->ai_class;
 	}
 
 	if (optional_string("$AI Goals:"))
@@ -3074,6 +3083,10 @@ int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
 
 	required_string("$Departure Cue:");
 	p_objp->departure_cue = get_sexp_main();
+
+	// look for warp parameters
+	p_objp->warpin_params_index = parse_warp_params(&Warp_params[sip->warpin_params_index], WarpDirection::WARP_IN, "Ship", p_objp->name);
+	p_objp->warpout_params_index = parse_warp_params(&Warp_params[sip->warpout_params_index], WarpDirection::WARP_OUT, "Ship", p_objp->name);
 
 	if (optional_string("$Misc Properties:"))
 		stuff_string(p_objp->misc, F_NAME, NAME_LENGTH);
@@ -3228,7 +3241,7 @@ int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
 		p_objp->ship_max_shield_strength = (float) p_objp->special_shield; 
 	}
 	else {
-		p_objp->ship_max_shield_strength = Ship_info[p_objp->ship_class].max_shield_strength;
+		p_objp->ship_max_shield_strength = sip->max_shield_strength;
 	}
 	
 	// set custom hitpoint value
@@ -3236,11 +3249,11 @@ int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
 		p_objp->ship_max_hull_strength = (float) p_objp->special_hitpoints; 
 	}
 	else {
-		p_objp->ship_max_hull_strength = Ship_info[p_objp->ship_class].max_hull_strength;
+		p_objp->ship_max_hull_strength = sip->max_hull_strength;
 	}
 
 	Assert(p_objp->ship_max_hull_strength > 0.0f);	// Goober5000: div-0 check (not shield because we might not have one)
-	p_objp->max_shield_recharge = Ship_info[p_objp->ship_class].max_shield_recharge;
+	p_objp->max_shield_recharge = sip->max_shield_recharge;
 
 
 	// if the kamikaze flag is set, we should have the next flag
@@ -3337,7 +3350,7 @@ int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
 	}
 	
 	if (table_score) {
-		p_objp->score = Ship_info[p_objp->ship_class].score;
+		p_objp->score = sip->score;
 	}
 
 	if (optional_string("+Assist Score Percentage:")) {
@@ -3360,7 +3373,7 @@ int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
 		stuff_int(&p_objp->persona_index);
 
 	// texture replacement - Goober5000
-	p_objp->replacement_textures = Ship_info[p_objp->ship_class].replacement_textures;	// initialize our set with the ship class set, which may be empty
+	p_objp->replacement_textures = sip->replacement_textures;	// initialize our set with the ship class set, which may be empty
 	if (optional_string("$Texture Replace:") || optional_string("$Duplicate Model Texture Replace:"))
 	{
 		texture_replace tr;
@@ -7781,6 +7794,9 @@ void mission_bring_in_support_ship( object *requester_objp )
 
 	pobj->departure_cue = Locked_sexp_false;
 	pobj->departure_delay = 0;
+
+	pobj->warpin_params_index = -1;
+	pobj->warpout_params_index = -1;
 
 	pobj->wingnum = -1;
 

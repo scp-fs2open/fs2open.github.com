@@ -765,7 +765,7 @@ int fireball_get_lod(vec3d *pos, fireball_info *fd, float size)
 /**
  * Create a fireball, return object index.
  */
-int fireball_create(vec3d *pos, int fireball_type, int render_type, int parent_obj, float size, int reverse, vec3d *velocity, float warp_lifetime, int ship_class, matrix *orient_override, int low_res, int extra_flags, gamesnd_id warp_open_sound, gamesnd_id warp_close_sound, float warp_open_duration, float warp_close_duration)
+int fireball_create(vec3d *pos, int fireball_type, int render_type, int parent_obj, float size, bool reverse, vec3d *velocity, float warp_lifetime, int ship_class, matrix *orient_override, int low_res, int extra_flags, gamesnd_id warp_open_sound, gamesnd_id warp_close_sound, float warp_open_duration, float warp_close_duration)
 {
 	int				n, objnum, fb_lod;
 	object			*obj;

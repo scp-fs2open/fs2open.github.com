@@ -167,6 +167,8 @@ protected:
 	afx_msg void OnSetAsPlayerShip();
 	afx_msg void OnRestrictArrival();
 	afx_msg void OnRestrictDeparture();
+	afx_msg void OnBnClickedCustomWarpinParams();
+	afx_msg void OnBnClickedCustomWarpoutParams();
 	//}}AFX_MSG
 	DECLARE_MESSAGE_MAP()
 };

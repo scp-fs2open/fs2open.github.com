@@ -103,10 +103,11 @@ void fireball_parse_tbl();
 
 int fireball_info_lookup(const char *unique_id);
 
-// reversed is for warp_in/out effects
-// Velocity: If not NULL, the fireball will move at a constant velocity.
+// reverse is for warp_in/out effects
+// velocity: If not NULL, the fireball will move at a constant velocity.
 // warp_lifetime: If warp_lifetime > 0.0f then makes the explosion loop so it lasts this long.  Only works for warp effect
-int fireball_create(vec3d *pos, int fireball_type, int render_type, int parent_obj, float size, int reversed=0, vec3d *velocity=nullptr, float warp_lifetime=0.0f, int ship_class=-1, matrix *orient=nullptr, int low_res=0, int extra_flags=0, gamesnd_id warp_open_sound=gamesnd_id(), gamesnd_id warp_close_sound=gamesnd_id(), float warp_open_duration=-1.0f, float warp_close_duration=-1.0f);
+int fireball_create(vec3d *pos, int fireball_type, int render_type, int parent_obj, float size, bool reverse=false, vec3d *velocity=nullptr, float warp_lifetime=0.0f, int ship_class=-1, matrix *orient=nullptr, int low_res=0, int extra_flags=0, gamesnd_id warp_open_sound=gamesnd_id(), gamesnd_id warp_close_sound=gamesnd_id(), float warp_open_duration=-1.0f, float warp_close_duration=-1.0f);
+
 void fireball_close();
 
 // Returns 1 if you can remove this fireball
