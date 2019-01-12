@@ -183,7 +183,6 @@ void warp_params_dlg::OnOK()
 	if (m_warp_type < Num_warp_types)
 		params.warp_type = m_warp_type;
 	else
-	
 		params.warp_type = (m_warp_type - Num_warp_types) | WT_DEFAULT_WITH_FIREBALL;
 
 	if (m_start_sound.GetLength() > 0)
@@ -237,7 +236,7 @@ void warp_params_dlg::OnOK()
 			params.warpout_player_speed = speed;
 	}
 
-	// register this set of parameters
+	// resolve this set of parameters
 	int index = find_or_add_warp_params(params);
 
 	// assign to all marked ships
