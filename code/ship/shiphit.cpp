@@ -167,7 +167,7 @@ void do_subobj_destroyed_stuff( ship *ship_p, ship_subsys *subsys, vec3d* hitpos
 				if(fireball_type < 0) {
 					fireball_type = FIREBALL_EXPLOSION_MEDIUM;
 				}
-				fireball_create( &temp_vec, fireball_type, FIREBALL_MEDIUM_EXPLOSION, OBJ_INDEX(objp), fireball_rad, 0, &fb_vel );
+				fireball_create( &temp_vec, fireball_type, FIREBALL_MEDIUM_EXPLOSION, OBJ_INDEX(objp), fireball_rad, false, &fb_vel );
 			}
 		}
 	}

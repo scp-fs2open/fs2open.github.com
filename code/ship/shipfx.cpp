@@ -1934,7 +1934,7 @@ static void maybe_fireball_wipe(clip_ship* half_ship, sound_handle* handle_array
 				fireball_type = FIREBALL_EXPLOSION_LARGE1 + rand()%FIREBALL_NUM_LARGE_EXPLOSIONS;
 			}
 			int low_res_fireballs = Bs_exp_fire_low;
-			fireball_create(&model_clip_plane_pt, fireball_type, FIREBALL_LARGE_EXPLOSION, OBJ_INDEX(half_ship->parent_obj), rad, 0, &half_ship->parent_obj->phys_info.vel, 0.0f, -1, nullptr, low_res_fireballs);
+			fireball_create(&model_clip_plane_pt, fireball_type, FIREBALL_LARGE_EXPLOSION, OBJ_INDEX(half_ship->parent_obj), rad, false, &half_ship->parent_obj->phys_info.vel, 0.0f, -1, nullptr, low_res_fireballs);
 
 			// start the next fireball up (3-4 per frame) + 30%
 			int time_low, time_high;
@@ -3345,7 +3345,7 @@ int WE_Default::warpStart()
 		fireball_type = params->warp_type & WT_FLAG_MASK;
 
 	// create fireball
-	int warp_objnum = fireball_create(&pos, fireball_type, FIREBALL_WARP_EFFECT, OBJ_INDEX(objp), radius, 1, nullptr, effect_time, shipp->ship_info_index, nullptr, 0, 0, params->snd_start, params->snd_end);
+	int warp_objnum = fireball_create(&pos, fireball_type, FIREBALL_WARP_EFFECT, OBJ_INDEX(objp), radius, (direction == WarpDirection::WARP_OUT), nullptr, effect_time, shipp->ship_info_index, nullptr, 0, 0, params->snd_start, params->snd_end);
 
 	//WMC - bail
 	// JAS: This must always be created, if not, just warp the ship in/out
