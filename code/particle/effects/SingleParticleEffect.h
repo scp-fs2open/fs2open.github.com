@@ -22,7 +22,7 @@ class SingleParticleEffect: public ParticleEffect {
  public:
 	explicit SingleParticleEffect(const SCP_string& name);
 
-	bool processSource(const ParticleSource* source) override;
+	bool processSource(ParticleSource* source) override;
 
 	void parseValues(bool nocreate) override;
 

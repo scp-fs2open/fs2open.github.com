@@ -196,6 +196,7 @@ class SourceOrientation {
 class SourceTiming {
  private:
 	int m_creationTimestamp;
+	int m_nextCreation; //! The next time the source should generate a particle. Controlled by the effect of the source.
 
 	int m_beginTimestamp;
 	int m_endTimestamp;
@@ -237,6 +238,23 @@ class SourceTiming {
 	 * @return The progress of the source through its lifetime
 	 */
 	float getLifeTimeProgress() const;
+
+	/**
+	 * @brief Determine if the timestamp for the next particle creation has expired
+	 * @return @c true if the timestamp has expired, false otherwise
+	 */
+	bool nextCreationTimeExpired() const;
+
+	/**
+	 * @brief Move the internal timestamp for the next creation forward
+	 *
+	 * Use this for achieving a consistent amount of created particles regardless of FPS by setting time_diff_ms to a
+	 * constant time and call nextCreationTimeExpired() until that returns false. Then all particles for that frame have
+	 * been created.
+	 *
+	 * @param time_diff_ms
+	 */
+	void incrementNextCreationTime(int time_diff_ms);
 
 	friend class ParticleSource;
 };
