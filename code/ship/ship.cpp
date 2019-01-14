@@ -5604,7 +5604,7 @@ vec3d get_submodel_offset(int model, int submodel){
 
 }
 
-static void ship_set_warp_effects(object *objp)
+void ship_set_warp_effects(object *objp)
 {
 	ship *shipp = &Ships[objp->instance];
 	int warpin_type = Warp_params[shipp->warpin_params_index].warp_type;
@@ -6072,10 +6072,6 @@ static void ship_set(int ship_index, int objnum, int ship_type)
 
 	ai_object_init(objp, shipp->ai_index);
 	physics_ship_init(objp);
-
-	if ( !Fred_running ) {
-		ship_set_warp_effects(objp);
-	}
 
 	if (Fred_running){
 		shipp->ship_max_hull_strength = 100.0f;
@@ -9803,6 +9799,14 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 	// point to new ship data
 	ship_model_change(n, ship_type);
 	sp->ship_info_index = ship_type;
+
+	// if we have the same warp parameters as the ship class, we will need to update them to point to the new class
+	if (sp->warpin_params_index == sip_orig->warpin_params_index) {
+		sp->warpin_params_index = sip->warpin_params_index;
+	}
+	if (sp->warpout_params_index == sip_orig->warpout_params_index) {
+		sp->warpout_params_index = sip->warpout_params_index;
+	}
 
 	if (!Fred_running) {
 		//WMC - set warp effects
