@@ -2437,7 +2437,6 @@ static int parse_ship_values(ship_info* sip, const bool is_template, const bool 
 	}
 
 	// Ship fadein effect, used when no ani is specified or ship_select_3d is active
-	sip->selection_effect = Default_ship_select_effect; //By default, use the FS2 effect
 	if(optional_string("$Selection Effect:")) {
 		char effect[NAME_LENGTH];
 		stuff_string(effect, F_NAME, NAME_LENGTH);
