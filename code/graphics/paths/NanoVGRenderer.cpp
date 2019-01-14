@@ -490,8 +490,6 @@ int NanoVGRenderer::createTexture(int type, int w, int h, int imageFlags, const 
 	img.width = w;
 	img.height = h;
 
-	bm_get_info(img.bitmap);
-
 	auto id = ++_lastImageId;
 	_textureMap.insert(std::make_pair(id, std::move(img)));
 
@@ -509,7 +507,11 @@ int NanoVGRenderer::updateTexture(int image, int  /*x*/, int  /*y*/, int  /*w*/,
 	} else {
 		bpp = 8;
 	}
-	bm_get_info(texture->bitmap);
+
+	// Copy the updated data to our internal buffer so that changes in the hardware texture detail don't discard the
+	// changes NanoVG made to the texture
+	memcpy(texture->data.get(), data, texture->width * texture->height * bpp / 8);
+
 	// TODO: This could probably be done better by only uploading the changed area
 	gr_update_texture(texture->bitmap, bpp, data, texture->width, texture->height);
 
