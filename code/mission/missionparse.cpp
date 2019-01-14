@@ -2027,7 +2027,7 @@ int parse_create_object_sub(p_object *p_objp)
 	if (p_objp->warpout_params_index >= 0)
 		shipp->warpout_params_index = p_objp->warpout_params_index;
 
-	// now that we have our correct warpout params, set the warp effect
+	// now that we have our correct warpout params, set the warp effects
 	if (!Fred_running) {
 		ship_set_warp_effects(&Objects[objnum]);
 	}
