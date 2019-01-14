@@ -13,9 +13,13 @@
 #include "globalincs/globals.h"
 #include "globalincs/pstypes.h"	// for NULL
 
+class object;
+class p_object;
 class ship_subsys;
 class ship;
+class waypoint;
 class waypoint_list;
+struct wing;
 
 // bumped to 30 by Goober5000
 #define	OPERATOR_LENGTH	30  // if this ever exceeds TOKEN_LENGTH, let JasonH know!
@@ -1284,5 +1288,32 @@ extern int Sexp_hud_display_warpout;
 int get_effect_from_name(const char* name);
 
 void maybe_write_to_event_log(int result);
+
+#define OSWPT_TYPE_NONE				0
+#define OSWPT_TYPE_SHIP				1
+#define OSWPT_TYPE_WING				2
+#define OSWPT_TYPE_WAYPOINT			3
+#define OSWPT_TYPE_SHIP_ON_TEAM		4	// e.g. <any friendly>
+#define OSWPT_TYPE_WHOLE_TEAM		5	// e.g. Friendly
+#define OSWPT_TYPE_PARSE_OBJECT		6	// a "ship" that hasn't arrived yet
+#define OSWPT_TYPE_EXITED			7
+#define OSWPT_TYPE_WING_NOT_PRESENT	8	// a wing that hasn't arrived yet or is between waves
+
+// Goober5000
+typedef struct object_ship_wing_point_team
+{
+	char *object_name;
+	int type;
+
+	p_object *p_objp;
+	object *objp;
+	ship *shipp;
+	wing *wingp;
+	waypoint *waypointp;
+	int team;
+
+	void clear();
+}
+object_ship_wing_point_team;
 
 #endif

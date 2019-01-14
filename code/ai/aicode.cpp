@@ -5212,43 +5212,14 @@ void ai_evade()
 float	G_collision_time;
 vec3d	G_predicted_pos, G_fire_pos;
 
-enum class obj_types{none, ship_t, team_t, wing_t};
-
-/*
-* Figure out whether the subject is a team, wing or ship
-* Prioritize team, then wing, then individual ship
-*/
-int get_team_wing_ship_idx(char *name, obj_types &type) {
-	int index = iff_lookup(name);
-
-	//wasn't a team
-	if (index == -1) {
-		index = wing_name_lookup(name);
-	} else {
-		type = obj_types::team_t;
-		return index;
-	}
-
-	//wasn't a wing
-	if (index == -1) {
-		index = ship_name_lookup(name);
-	} else {
-		type = obj_types::wing_t;
-		return index;
-	}
-	
-	//either found a suitable ship or nothing
-	if (index != -1) {
-		type = obj_types::ship_t;
-	}
-	return index;
-}
-
 //helper function for create_subject_target_combos
-void set_unset_primary_linking(ship *shp, bool set) {
+void set_unset_primary_linking(ship *shp, bool set)
+{
 	if (set) {
 		shp->flags.set(Ship::Ship_Flags::Force_primary_unlinking);
-	} else shp->flags.remove(Ship::Ship_Flags::Force_primary_unlinking);
+	} else {
+		shp->flags.remove(Ship::Ship_Flags::Force_primary_unlinking);
+	}
 }
 
 /*
@@ -5259,34 +5230,28 @@ void set_unset_primary_linking(ship *shp, bool set) {
 * @param creating whether the return vector will be used for adding or clearing preferred primaries
 * @return a vector containing pairs of object signatures
 */
-SCP_vector<std::pair<int, int>> create_subject_target_combos(char *subject_name, char *target_name, bool creating) {
-	obj_types subject_type, target_type = obj_types::none;
-	int subject_idx = get_team_wing_ship_idx(subject_name, subject_type);
-	int target_idx = get_team_wing_ship_idx(target_name, target_type);
+SCP_vector<std::pair<int, int>> create_subject_target_combos(object_ship_wing_point_team *subject, object_ship_wing_point_team *target, bool creating)
+{
+	int subject_type = subject->type;
+	int target_type = target->type;
 
 	//return vector where all the pairs get stored
 	SCP_vector<std::pair<int, int>> combinations;
 
-	//if we were given an invalid name(s), return immediately
-	if (subject_idx == -1 || target_idx == -1) {
-		return combinations;
-	}
-
 	//create a vector of all eligible target ships
 	SCP_vector<ship*> targets;
-	if (target_type == obj_types::ship_t) {
-		targets.emplace_back(&Ships[target_idx]);
-	} else if (target_type == obj_types::team_t) {
-		//*_idx are indices into Iff_info and so is ship::team
+	if (target_type == OSWPT_TYPE_SHIP) {
+		targets.emplace_back(target->shipp);
+	} else if (target_type == OSWPT_TYPE_WHOLE_TEAM) {
 		//the old-style for loop is necessary to store the correct pointer
 		for (int i = 0; i < MAX_SHIPS; i++) {
 			//store valid ships that are members of the specified team
-			if (Ships[i].objnum != -1 && Ships[i].team == target_idx) {
+			if (Ships[i].objnum != -1 && Ships[i].team == target->team) {
 				targets.emplace_back(&Ships[i]);
 			}
 		}
-	} else if (target_type == obj_types::wing_t) {
-		for (int shp_idx : Wings[target_idx].ship_index) {
+	} else if (target_type == OSWPT_TYPE_WING) {
+		for (int shp_idx : target->wingp->ship_index) {
 			//store valid ships that are members of the specified wing
 			if (shp_idx != -1) {
 				targets.emplace_back(&Ships[shp_idx]);
@@ -5295,19 +5260,19 @@ SCP_vector<std::pair<int, int>> create_subject_target_combos(char *subject_name,
 	}
 
 	//then pair their signatures with that of the eligible subjects
-	if(subject_type == obj_types::ship_t) {
+	if(subject_type == OSWPT_TYPE_SHIP) {
 		//forcing a ship to use a certain primary should prevent it from linking weapons
-		set_unset_primary_linking(&Ships[subject_idx], creating);
+		set_unset_primary_linking(subject->shipp, creating);
 
 		//don't add it if they're on the same team
-		if (Ships[subject_idx].team == targets[0]->team) {
+		if (subject->shipp->team == targets[0]->team) {
 			return combinations;
 		}
 
 		for (ship *tgt : targets) {
-			combinations.emplace_back(std::make_pair(Objects[Ships[subject_idx].objnum].signature, Objects[tgt->objnum].signature));
+			combinations.emplace_back(std::make_pair(Objects[subject->shipp->objnum].signature, Objects[tgt->objnum].signature));
 		}
-	} else if (subject_type == obj_types::team_t) {
+	} else if (subject_type == OSWPT_TYPE_WHOLE_TEAM) {
 		for (ship subj_shp : Ships) {
 			//filter out teammates and invalid ships
 			if (subj_shp.objnum != -1 && subj_shp.team != targets[0]->team) {
@@ -5318,8 +5283,8 @@ SCP_vector<std::pair<int, int>> create_subject_target_combos(char *subject_name,
 				}
 			}
 		}
-	} else if(subject_type == obj_types::wing_t) {
-		for (int shp_idx : Wings[subject_idx].ship_index) {
+	} else if(subject_type == OSWPT_TYPE_WING) {
+		for (int shp_idx : subject->wingp->ship_index) {
 			if (shp_idx != -1 && Ships[shp_idx].team != targets[0]->team) {
 				set_unset_primary_linking(&Ships[shp_idx], creating);
 
@@ -5338,8 +5303,10 @@ SCP_vector<std::pair<int, int>> create_subject_target_combos(char *subject_name,
 * Used by the good-primary-time sexp to store the info supplied from there
 * weapon_idx indexes into Weapon_info
 */
-void ai_set_preferred_primary_weapon(char *subject_name, int weapon_idx, char *target_name) {
-	auto subj_targ_combos = create_subject_target_combos(subject_name, target_name, true);
+void ai_set_preferred_primary_weapon(object_ship_wing_point_team *subject, int weapon_idx, object_ship_wing_point_team *target)
+{
+	//error checking is done by sexp_good_primary_time
+	auto subj_targ_combos = create_subject_target_combos(subject, target, true);
 	for (auto key : subj_targ_combos) {
 		preferred_primaries[key] = weapon_idx;
 	}
@@ -5349,8 +5316,10 @@ void ai_set_preferred_primary_weapon(char *subject_name, int weapon_idx, char *t
 * plieblang
 * Used by good-primary-type to clear the entry or entries with this precise combination
 */
-void ai_clear_preferred_primary(char *subject_name, char *target_name) {
-	auto subj_targ_combos = create_subject_target_combos(subject_name, target_name, false);
+void ai_clear_preferred_primary(object_ship_wing_point_team *subject, object_ship_wing_point_team *target)
+{
+	//error checking is done by sexp_good_primary_time
+	auto subj_targ_combos = create_subject_target_combos(subject, target, false);
 	for (auto key : subj_targ_combos) {
 		preferred_primaries.erase(key);
 	}

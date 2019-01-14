@@ -4700,33 +4700,6 @@ int sexp_string_compare(int n, int op)
 	return SEXP_TRUE;
 }
 
-#define OSWPT_TYPE_NONE				0
-#define OSWPT_TYPE_SHIP				1
-#define OSWPT_TYPE_WING				2
-#define OSWPT_TYPE_WAYPOINT			3
-#define OSWPT_TYPE_SHIP_ON_TEAM		4	// e.g. <any friendly>
-#define OSWPT_TYPE_WHOLE_TEAM		5	// e.g. Friendly
-#define OSWPT_TYPE_PARSE_OBJECT		6	// a "ship" that hasn't arrived yet
-#define OSWPT_TYPE_EXITED			7
-#define OSWPT_TYPE_WING_NOT_PRESENT	8	// a wing that hasn't arrived yet or is between waves
-
-// Goober5000
-typedef struct object_ship_wing_point_team
-{
-	char *object_name;
-	int type;
-
-	p_object *p_objp;
-	object *objp;
-	ship *shipp;
-	wing *wingp;
-	waypoint *waypointp;
-	int team;
-
-	void clear();
-}
-object_ship_wing_point_team;
-
 void object_ship_wing_point_team::clear()
 {
 	object_name = NULL;
@@ -13549,20 +13522,34 @@ void sexp_set_subspace_drive(int node)
 }
 
 //forward declarations
-extern void ai_set_preferred_primary_weapon(char *subject_name, int weapon_idx, char *target_name);
-extern void ai_clear_preferred_primary(char *subject_name, char *target_name);
+extern void ai_set_preferred_primary_weapon(object_ship_wing_point_team *subject, int weapon_idx, object_ship_wing_point_team *target);
+extern void ai_clear_preferred_primary(object_ship_wing_point_team *subject, object_ship_wing_point_team *target);
 
 void sexp_good_primary_time(int node)
 {
-	char *subject_name = CTEXT(node);
+	object_ship_wing_point_team subject;
+	sexp_get_object_ship_wing_point_team(&subject, CTEXT(node));
+	//if we don't get a ship, wing or team, bail
+	if (!subject.shipp && !subject.wingp && subject.team == -1) {
+		return;
+	}
+
 	//index into Weapon_info
 	int weap_idx = weapon_info_lookup(CTEXT(CDR(node)));
-	char *target_name = CTEXT(CDDR(node));
+
+	object_ship_wing_point_team target;
+	sexp_get_object_ship_wing_point_team(&target, CTEXT(CDDR(node)));
+	if (!target.shipp && !target.wingp && target.team == -1) {
+		return;
+	}
+
 	int activate = eval_num(CDDDR(node));
-	
+
 	if (activate) {
-		ai_set_preferred_primary_weapon(subject_name, weap_idx, target_name);
-	} else ai_clear_preferred_primary(subject_name, target_name);
+		ai_set_preferred_primary_weapon(&subject, weap_idx, &target);
+	} else {
+		ai_clear_preferred_primary(&subject, &target);
+	}
 }
 
 /**
