@@ -1859,6 +1859,7 @@ int parse_create_object(p_object *pobjp)
 }
 
 void parse_bring_in_docked_wing(p_object *p_objp, int wingnum, int shipnum);
+void ship_set_warp_effects(object *objp);
 
 /**
  * Given a stuffed p_object struct, create an object and fill in the necessary fields.
@@ -2025,6 +2026,11 @@ int parse_create_object_sub(p_object *p_objp)
 		shipp->warpin_params_index = p_objp->warpin_params_index;
 	if (p_objp->warpout_params_index >= 0)
 		shipp->warpout_params_index = p_objp->warpout_params_index;
+
+	// now that we have our correct warpout params, set the warp effects
+	if (!Fred_running) {
+		ship_set_warp_effects(&Objects[objnum]);
+	}
 
 	// reset texture animations
 	shipp->base_texture_anim_frametime = game_get_overall_frametime();
