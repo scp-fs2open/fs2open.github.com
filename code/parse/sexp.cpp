@@ -6223,7 +6223,7 @@ int sexp_hits_left_subsystem(int n)
 
 			// we reached end of ship subsys list without finding subsys_name
 			if (ship_class_unchanged(shipnum)) {
-				Error(LOCATION, "Invalid subsystem '%s' passed to hits-left-subsystem", subsys_name);
+				Warning(LOCATION, "Invalid subsystem '%s' passed to hits-left-subsystem", subsys_name);
 			}
 			return SEXP_NAN;
 
@@ -6310,7 +6310,7 @@ int sexp_hits_left_subsystem_specific(int node)
 
 	// we reached end of ship subsys list without finding subsys_name
 	if (ship_class_unchanged(ship_num)) {
-		Error(LOCATION, "Invalid subsystem '%s' passed to hits-left-subsystem", subsys_name);
+		Warning(LOCATION, "Invalid subsystem '%s' passed to hits-left-subsystem", subsys_name);
 	}
 	return SEXP_NAN;
 }
@@ -6543,7 +6543,8 @@ bool sexp_get_subsystem_world_pos(vec3d *subsys_world_pos, int shipnum, char *su
 
 	if(shipnum < 0)
 	{
-		Error(LOCATION, "Error - nonexistent ship.\n");
+		Warning(LOCATION, "Error - nonexistent ship.\n");
+		return false;
 	}
 
 	// find the ship subsystem
@@ -6558,7 +6559,7 @@ bool sexp_get_subsystem_world_pos(vec3d *subsys_world_pos, int shipnum, char *su
 	// we reached end of ship subsys list without finding subsys_name 
 	if (ship_class_unchanged(shipnum)) {
 		// this ship should have had the subsystem named as it shouldn't have changed class
-		Error(LOCATION, "sexp_get_subsystem_world_pos could not find subsystem '%s'", subsys_name);
+		Warning(LOCATION, "sexp_get_subsystem_world_pos could not find subsystem '%s'", subsys_name);
 	}
 	return false;
 }
@@ -8128,7 +8129,7 @@ void sexp_set_scanned_unscanned(int n, int flag)
 
 		// if we didn't find the subsystem -- bad
 		if (ss == NULL && ship_class_unchanged(shipnum)) {
-			Error(LOCATION, "Couldn't find subsystem '%s' on ship '%s' in sexp_set_scanned_unscanned", subsys_name, ship_name);
+			Warning(LOCATION, "Couldn't find subsystem '%s' on ship '%s' in sexp_set_scanned_unscanned", subsys_name, ship_name);
 		}
 
 		// but if it did, loop again
@@ -8333,7 +8334,7 @@ void eval_when_do_one_exp(int exp)
 
 		case OP_DO_FOR_VALID_ARGUMENTS:
 			if (special_argument_appears_in_sexp_tree(exp)) { 
-				Warning(LOCATION, "<Argument> used within Do-for-valid-arguments SEXP. Skipping entire SEXP"); 
+				Warning(LOCATION, "<Argument> used within do-for-valid-arguments SEXP. Skipping entire SEXP");
 				break; 
 			}
 
@@ -12419,7 +12420,7 @@ void sexp_add_background_bitmap(int n)
 		}
 		else
 		{
-			Error(LOCATION, "sexp-add-background-bitmap: Variable %s must be a number variable!", Sexp_variables[sexp_var].variable_name);
+			Warning(LOCATION, "sexp-add-background-bitmap: Variable %s must be a number variable!", Sexp_variables[sexp_var].variable_name);
 			return;
 		}
 	}
@@ -12434,8 +12435,7 @@ void sexp_remove_background_bitmap(int n)
 		if ( instances > slot ) {
 			stars_mark_bitmap_unused( slot );
 		} else {
-			Warning(LOCATION, "remove-background-bitmap: slot %d does not exist. Slot must be less than %d.",
-				slot, instances);
+			Warning(LOCATION, "remove-background-bitmap: slot %d does not exist. Slot must be less than %d.", slot, instances);
 		}
 	}
 }
@@ -12512,7 +12512,7 @@ void sexp_add_sun_bitmap(int n)
 		}
 		else
 		{
-			Error(LOCATION, "sexp-add-sun-bitmap: Variable %s must be a number variable!", Sexp_variables[sexp_var].variable_name);
+			Warning(LOCATION, "sexp-add-sun-bitmap: Variable %s must be a number variable!", Sexp_variables[sexp_var].variable_name);
 			return;
 		}
 	}
@@ -12527,8 +12527,7 @@ void sexp_remove_sun_bitmap(int n)
 		if ( instances > slot ) {
 			stars_mark_sun_unused( slot );
 		} else {
-			Warning(LOCATION, "remove-sun-bitmap: slot %d does not exist. Slot must be less than %d.",
-				slot, instances);
+			Warning(LOCATION, "remove-sun-bitmap: slot %d does not exist. Slot must be less than %d.", slot, instances);
 		}
 	}
 }
@@ -13703,7 +13702,7 @@ void sexp_set_mission_mood (int node)
 		}
 	}
 
-	Warning(LOCATION, "Sexp-mission-mood attempted to set mood %s which does not exist in messages.tbl", mood); 
+	Warning(LOCATION, "Sexp-mission-mood attempted to set mood %s which does not exist in messages.tbl", mood);
 }
 
 int sexp_weapon_fired_delay(int node, int op_num)
@@ -20172,7 +20171,7 @@ void sexp_subsys_set_random(int node)
 	}
 
 	if (low > high) {
-		Error(LOCATION, "subsys-set-random was passed an invalid range (%d ... %d)!", low, high);
+		Warning(LOCATION, "subsys-set-random was passed an invalid range (%d ... %d)!", low, high);
 		return;
 	}
 
@@ -20530,7 +20529,7 @@ void sexp_int_to_string(int n)
 	// check variable type
 	if (!(Sexp_variables[sexp_variable_index].type & SEXP_VARIABLE_STRING))
 	{
-		Warning(LOCATION, "Cannot assign a string to a non-string variable!");
+		Warning(LOCATION, "Cannot assign a string to a non-string variable %s!", Sexp_variables[sexp_variable_index].variable_name);
 		return;
 	}
 
@@ -20566,7 +20565,7 @@ void sexp_string_concatenate(int n)
 	// check variable type
 	if (!(Sexp_variables[sexp_variable_index].type & SEXP_VARIABLE_STRING))
 	{
-		Warning(LOCATION, "Cannot assign a string to a non-string variable!");
+		Warning(LOCATION, "Cannot assign a string to a non-string variable %s!", Sexp_variables[sexp_variable_index].variable_name);
 		return;
 	}
 
@@ -20606,7 +20605,7 @@ void sexp_string_concatenate_block(int n)
 	// check variable type
 	if (!(Sexp_variables[sexp_variable_index].type & SEXP_VARIABLE_STRING))
 	{
-		Warning(LOCATION, "Cannot assign a string to a non-string variable!");
+		Warning(LOCATION, "Cannot assign a string to a non-string variable %s!", Sexp_variables[sexp_variable_index].variable_name);
 		return;
 	}
 
@@ -20663,7 +20662,7 @@ void sexp_string_get_substring(int node)
 	// check variable type
 	if (!(Sexp_variables[sexp_variable_index].type & SEXP_VARIABLE_STRING))
 	{
-		Warning(LOCATION, "Cannot assign a string to a non-string variable!");
+		Warning(LOCATION, "Cannot assign a string to a non-string variable %s!", Sexp_variables[sexp_variable_index].variable_name);
 		return;
 	}
 
@@ -20728,7 +20727,7 @@ void sexp_string_set_substring(int node)
 	// check variable type
 	if (!(Sexp_variables[sexp_variable_index].type & SEXP_VARIABLE_STRING))
 	{
-		Warning(LOCATION, "Cannot assign a string to a non-string variable!");
+		Warning(LOCATION, "Cannot assign a string to a non-string variable %s!", Sexp_variables[sexp_variable_index].variable_name);
 		return;
 	}
 
