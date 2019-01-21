@@ -216,6 +216,7 @@ SourceTiming::SourceTiming() : m_creationTimestamp(timestamp(-1)), m_beginTimest
 
 void SourceTiming::setCreationTimestamp(int time) {
 	m_creationTimestamp = time;
+	m_nextCreation      = time;
 }
 
 void SourceTiming::setLifetime(int begin, int end) {
@@ -271,6 +272,8 @@ float SourceTiming::getLifeTimeProgress() const {
 
 	return done / (float) total;
 }
+bool SourceTiming::nextCreationTimeExpired() const { return timestamp_elapsed(m_nextCreation); }
+void SourceTiming::incrementNextCreationTime(int time_diff) { m_nextCreation += time_diff; }
 
 ParticleSource::ParticleSource() : m_effect(nullptr), m_processingCount(0) {}
 

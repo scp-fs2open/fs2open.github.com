@@ -23,7 +23,7 @@ class BeamPiercingEffect: public ParticleEffect {
  public:
 	BeamPiercingEffect() : ParticleEffect("") {}
 
-	bool processSource(const ParticleSource* source) override;
+	bool processSource(ParticleSource* source) override;
 
 	void parseValues(bool nocreate) override;
 

@@ -65,8 +65,8 @@ class RandomRange {
 	typedef Value ValueType;
 
  private:
-	GeneratorType m_generator;
-	DistributionType m_distribution;
+	mutable GeneratorType m_generator;
+	mutable DistributionType m_distribution;
 
 	bool m_constant;
 	ValueType m_minValue;
@@ -100,7 +100,7 @@ class RandomRange {
 	 * @brief Determines the next random number of this range
 	 * @return The random number
 	 */
-	ValueType next() {
+	ValueType next() const {
 		if (m_constant) {
 			return m_minValue;
 		}

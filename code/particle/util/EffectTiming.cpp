@@ -8,7 +8,8 @@ EffectTiming::EffectTiming() : m_duration(Duration::Onetime) {
 
 }
 
-void EffectTiming::applyToSource(ParticleSource* source) {
+void EffectTiming::applyToSource(ParticleSource* source) const
+{
 	if (m_duration == Duration::Range || m_duration == Duration::Always) {
 		int duration = -1;
 		int delay = static_cast<int>(m_delayRange.next() * 1000.f);
@@ -31,8 +32,8 @@ void EffectTiming::applyToSource(ParticleSource* source) {
 	}
 }
 
-
-bool EffectTiming::continueProcessing(const ParticleSource* source) {
+bool EffectTiming::continueProcessing(const ParticleSource* source) const
+{
 	switch (m_duration) {
 		case Duration::Onetime:
 			if (source->getProcessingCount() > 0) {
@@ -46,6 +47,35 @@ bool EffectTiming::continueProcessing(const ParticleSource* source) {
 	}
 
 	return true;
+}
+
+bool EffectTiming::shouldCreateEffect(ParticleSource* source, EffectTiming::TimingState& localState) const
+{
+	if (m_particlesPerSecond < 0.0f) {
+		// If this is not specified then on every frame we will create exactly one effect
+		if (localState.initial) {
+			localState.initial = false;
+			return true;
+		} else {
+			return false;
+		}
+	}
+
+	// We have a valid particles per second value so we use the next creation timestamp in the particle source for
+	// deciding if we can create an effect
+
+
+	if (source->getTiming()->nextCreationTimeExpired())
+	{
+		// Invert this so we can compute the time difference between effect creations
+		auto secondsPerParticle = 1.0f / m_particlesPerSecond;
+		auto time_diff_ms = fl2i(secondsPerParticle * 1000.f);
+		source->getTiming()->incrementNextCreationTime(time_diff_ms);
+
+		return true;
+	}
+
+	return false;
 }
 
 EffectTiming EffectTiming::parseTiming() {
@@ -70,6 +100,14 @@ EffectTiming EffectTiming::parseTiming() {
 		}
 		else {
 			timing.m_delayRange = ::util::parseUniformRange<float>(0.0f);
+		}
+	}
+
+	if (optional_string("+Effects per second:")) {
+		stuff_float(&timing.m_particlesPerSecond);
+		if (timing.m_particlesPerSecond < 0.001f) {
+			error_display(0, "Invalid effect per second value %f. Setting was disabled.", timing.m_particlesPerSecond);
+			timing.m_particlesPerSecond = -1.f;
 		}
 	}
 

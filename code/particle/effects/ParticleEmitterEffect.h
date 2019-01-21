@@ -19,7 +19,7 @@ class ParticleEmitterEffect: public ParticleEffect {
  public:
 	ParticleEmitterEffect();
 
-	bool processSource(const ParticleSource* source) override;
+	bool processSource(ParticleSource* source) override;
 
 	void parseValues(bool nocreate) override;
 
