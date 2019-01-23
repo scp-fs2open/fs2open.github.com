@@ -353,7 +353,7 @@ ADE_FUNC(useButtonControl, l_Control_Info, "number, string", "Adds the defined b
 		for(i=0; i<num_plr_commands; i++) {
 			if(!(strcmp(buf, plr_commands[i].name))) {
 				int a;
-				a = plr_commands[i].def / 32;
+				a = plr_commands[i].def % 32;
 				Player->lua_bi.status[plr_commands[i].var] |= (1<<a);
 				break;
 			}
