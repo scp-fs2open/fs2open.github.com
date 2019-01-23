@@ -127,13 +127,14 @@ void timestamp_reset()
 // For debugging & testing, you could set this to
 // something like 1 minute (6000).
 const std::uint32_t MAX_TIME = INT_MAX / 2;
+const std::uint64_t MAX_TICKER = (MAX_TIME - 2) * 1000;	// subtract 2 because timestamp_ms() adds 2, and we want MAX_TICKER to correspond to MAX_TIME
 
 static int timestamp_ms() {
 	if (timestamp_ticker <= 2) {
 		// These are special values, don't adjust them
 		return (int)timestamp_ticker;
 	}
-	return (int)(timestamp_ticker / 1000);
+	return (int)(timestamp_ticker / 1000) + 2; // avoid values below 2
 }
 
 void timestamp_inc(fix frametime)
@@ -144,8 +145,8 @@ void timestamp_inc(fix frametime)
 
 	timestamp_ticker += delta;
 
-	if ( timestamp_ms() > (int)MAX_TIME )	{
-		timestamp_ticker = 2;		// Roll!
+	if ( timestamp_ticker > MAX_TICKER )	{
+		timestamp_ticker -= MAX_TICKER - 2;		// Roll!
 	}
 
 	if (timestamp_ticker < 2 ) {
@@ -161,8 +162,9 @@ int timestamp(int delta_ms ) {
 	t2 = timestamp_ms() + delta_ms;
 	if ( t2 > (int)MAX_TIME )	{
 		// wrap!!!
-		t2 = delta_ms - (MAX_TIME-timestamp_ms());
+		t2 -= MAX_TIME - 2;
 	}
+	Assertion(t2 >= 2, "Math no longer makes sense; t2 is %d", t2);
 	if (t2 < 2 ) t2 = 2;	// hack??
 	return t2;
 }
@@ -170,25 +172,16 @@ int timestamp(int delta_ms ) {
 //	Returns milliseconds until timestamp will elapse.
 //	Negative value gives milliseconds ago that timestamp elapsed.
 int timestamp_until(int stamp) {
-	// JAS: FIX
-	// HACK!! This doesn't handle rollover!
-	// (Will it ever happen?)
+	int delta;
 
-	return stamp - timestamp_ms();
+	delta = stamp - timestamp_ms();
 
-/*
-	uint	delta;
-
-	delta = stamp - timestamp_ticker;
-
-
-	if (delta > UINT_MAX/2)
-		delta = UINT_MAX - delta + 1;
-	else if (delta < - ( (int) (UINT_MAX/2)))
-		delta = UINT_MAX + delta + 1;
+	if (delta > (int)MAX_TIME/2)
+		delta = delta - MAX_TIME + 1;
+	else if (delta < -(int)MAX_TIME/2)
+		delta = delta + MAX_TIME - 1;
 
 	return delta;
-*/
 }
 
 // alternate timestamp functions.  The way these work is you call xtimestamp() to get the
@@ -204,17 +197,22 @@ int timestamp_has_time_elapsed(int stamp, int time) {
 		return 1;
 
 	t = stamp + time;
-	if (t <= timestamp_ms())
-		return 1;  // if we are unlucky enough to have it wrap on us, this will assume time has elapsed.
+	if (t > (int)MAX_TIME) {
+		t -= MAX_TIME - 2;
+	}
+	if (timestamp_until(t) <= 0)
+		return 1;
 
 	return 0;
 }
 bool timestamp_elapsed(int stamp) {
 	if (stamp == 0) {
 		return false;
+	} else if (stamp == 1) {
+		return true;
 	}
 
-	return timestamp_ms() >= stamp;
+	return timestamp_until(stamp) <= 0;
 }
 bool timestamp_elapsed_safe(int a, int b) {
 	if (a == 0) {
