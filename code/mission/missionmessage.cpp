@@ -1500,8 +1500,8 @@ void message_queue_process()
 		return;
 
 	// Goober5000 - argh, don't conflate special sources with ships!
-	// NOTA BENE: don't check for != MESSAGE_SOURCE_COMMAND, because with the new command persona code, Command could be a ship
-	if ( q->source != MESSAGE_SOURCE_SPECIAL ) {
+	// NOTA BENE: don't check for != HUD_SOURCE_TERRAN_CMD, because with the new command persona code, Command could be a ship
+	if ( q->source != HUD_SOURCE_IMPORTANT ) {
 		Message_shipnum = ship_name_lookup( q->who_from );
 
 		// see if we need to check if sending ship is alive
@@ -1859,7 +1859,7 @@ void message_send_unique_to_player( char *id, void *data, int m_source, int prio
 				source = HUD_SOURCE_TERRAN_CMD;
 			} else if ( m_source == MESSAGE_SOURCE_SPECIAL ) {
 				who_from = (char *)data;
-				source = HUD_SOURCE_TERRAN_CMD;
+				source = HUD_SOURCE_IMPORTANT;
 			} else if ( m_source == MESSAGE_SOURCE_WINGMAN ) {
 				int m_persona, ship_index;
 
