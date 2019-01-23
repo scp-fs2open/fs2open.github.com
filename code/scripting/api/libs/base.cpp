@@ -213,11 +213,11 @@ ADE_FUNC(setButtonControlMode, l_Base, "NIL or enumeration LE_*_BUTTON_CONTROL",
 		case LE_LUA_ADDITIVE_BUTTON_CONTROL:
 			lua_game_control |= LGC_B_ADDITIVE;
 			lua_game_control &= ~(LGC_B_NORMAL|LGC_B_OVERRIDE);
-			return ade_set_args(L, "s", "LUA OVERRIDE BUTTON CONTROL");
+			return ade_set_args(L, "s", "LUA ADDITIVE BUTTON CONTROL");
 		case LE_LUA_OVERRIDE_BUTTON_CONTROL:
 			lua_game_control |= LGC_B_OVERRIDE;
 			lua_game_control &= ~(LGC_B_ADDITIVE|LGC_B_NORMAL);
-			return ade_set_args(L, "s", "LUA ADDITIVE BUTTON CONTROL");
+			return ade_set_args(L, "s", "LUA OVERRIDE BUTTON CONTROL");
 		default:
 			return ade_set_error(L, "s", "");
 	}
