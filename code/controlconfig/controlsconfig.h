@@ -270,6 +270,11 @@ enum IoActionId  {
 	//!< ----------------------------
 	CYCLE_PRIMARY_WEAPON_SEQUENCE					=118,	//!< cycle num primaries to fire at once
 
+	//!< @n
+	//!< Auto-balance shields
+	//!< ----------------------
+	TOGGLE_AUTO_SHIELD_EQUALIZE						=119,	//!< toggle automatic shield equalization
+
 	/*!
 	 * This must always be below the last defined item
 	 */

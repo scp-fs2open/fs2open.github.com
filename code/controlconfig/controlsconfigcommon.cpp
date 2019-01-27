@@ -189,6 +189,7 @@ config_item Control_config[CCFG_MAX + 1] = {
 	{ KEY_ALTED |               KEY_N,              -1, COMPUTER_TAB, false, "Cycle Nav Points",                       CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
 	{ KEY_ALTED |               KEY_G,              -1, SHIP_TAB,     false, "Toggle Gliding",                         CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
 	{                           KEY_O,              -1, WEAPON_TAB,   false, "Cycle Primary Weapon Firing Rate",       CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
+	{ KEY_ALTED |               KEY_Q,              -1, COMPUTER_TAB, false, "Toggle Auto Equalize Shields",           CC_TYPE_TRIGGER,    -1, -1, 0, true, false },
 	{                           -1,                 -1, -1,           false, "",                                       CC_TYPE_TRIGGER,    -1, -1, 0, false, false }
 };
 
@@ -584,7 +585,6 @@ void control_config_common_load_overrides();
 void control_config_common_init()
 {
 	for (int i=0; i<CCFG_MAX; i++) {
-		Control_config[i].disabled = false;
 		Control_config[i].continuous_ongoing = false;
 	}
 
@@ -905,6 +905,8 @@ void control_config_common_load_overrides()
 						advance_to_eoln(NULL);
 						ignore_white_space();
 						return;
+						mprintf(("  Deprecated option '+Disable' found. Please use '$Disable: true' instead\n"));
+						mprintf(("  Bind '%s' was disabled\n", r_ccConfig.text));
 					}
 				}
 			}
