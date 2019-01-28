@@ -61,6 +61,8 @@ extern const char *Warp_types[];
 extern int Num_warp_types;
 extern int warptype_match(const char *p);
 
+extern void ship_set_warp_effects(object *objp);
+
 enum class WarpDirection { NONE, WARP_IN, WARP_OUT };
 
 

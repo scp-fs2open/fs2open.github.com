@@ -87,6 +87,7 @@
 #include "ship/afterburner.h"
 #include "ship/awacs.h"
 #include "ship/ship.h"
+#include "ship/shipfx.h"
 #include "ship/shiphit.h"
 #include "ship/ship_flags.h"
 #include "sound/audiostr.h"
@@ -14668,7 +14669,32 @@ void sexp_ship_create(int n)
 		vm_angles_2_matrix(&new_ship_ori, &new_ship_ang);
 	}
 
-	ship_create(&new_ship_ori, &new_ship_pos, new_ship_class, new_ship_name);
+	int objnum = ship_create(&new_ship_ori, &new_ship_pos, new_ship_class, new_ship_name);
+	Assert(objnum != -1);
+
+	// do some initialization that is usually handled by parse_create_object_sub
+	int shipnum = Objects[objnum].instance;
+	ship *shipp = &Ships[shipnum];
+	ship_info *sip = &Ship_info[shipp->ship_info_index];
+
+	ship_assign_sound(shipp);
+
+	ship_set_warp_effects(&Objects[objnum]);
+
+	if (sip->flags[Ship::Info_Flags::Intrinsic_no_shields])
+		Objects[objnum].flags.set(Object::Object_Flags::No_shields);
+
+	mission_log_add_entry(LOG_SHIP_ARRIVED, shipp->ship_name, NULL);
+
+	// If the ship is in a wing, this will be done in mission_set_wing_arrival_location() instead
+	// If the ship is in a wing, but the wing is docked then addition of bool brought_in_docked_wing accounts for that status --wookieejedi
+	if (Game_mode & GM_IN_MISSION)
+	{
+		Script_system.SetHookObjects(2, "Ship", &Objects[objnum], "Parent", NULL);
+
+		Script_system.RunCondition(CHA_ONSHIPARRIVE, &Objects[objnum]);
+		Script_system.RemHookVars(2, "Ship", "Parent");
+	}
 }
 
 // Goober5000
