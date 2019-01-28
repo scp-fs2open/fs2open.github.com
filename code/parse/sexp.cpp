@@ -14686,15 +14686,9 @@ void sexp_ship_create(int n)
 
 	mission_log_add_entry(LOG_SHIP_ARRIVED, shipp->ship_name, NULL);
 
-	// If the ship is in a wing, this will be done in mission_set_wing_arrival_location() instead
-	// If the ship is in a wing, but the wing is docked then addition of bool brought_in_docked_wing accounts for that status --wookieejedi
-	if (Game_mode & GM_IN_MISSION)
-	{
-		Script_system.SetHookObjects(2, "Ship", &Objects[objnum], "Parent", NULL);
-
-		Script_system.RunCondition(CHA_ONSHIPARRIVE, &Objects[objnum]);
-		Script_system.RemHookVars(2, "Ship", "Parent");
-	}
+	Script_system.SetHookObjects(2, "Ship", &Objects[objnum], "Parent", NULL);
+	Script_system.RunCondition(CHA_ONSHIPARRIVE, &Objects[objnum]);
+	Script_system.RemHookVars(2, "Ship", "Parent");
 }
 
 // Goober5000
