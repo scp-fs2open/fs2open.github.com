@@ -14684,7 +14684,7 @@ void sexp_ship_create(int n)
 	if (sip->flags[Ship::Info_Flags::Intrinsic_no_shields])
 		Objects[objnum].flags.set(Object::Object_Flags::No_shields);
 
-	mission_log_add_entry(LOG_SHIP_ARRIVED, shipp->ship_name, NULL);
+	mission_log_add_entry(LOG_SHIP_ARRIVED, shipp->ship_name, nullptr);
 
 	Script_system.SetHookObjects(2, "Ship", &Objects[objnum], "Parent", NULL);
 	Script_system.RunCondition(CHA_ONSHIPARRIVE, &Objects[objnum]);
