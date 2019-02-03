@@ -58,6 +58,8 @@
 #include "physics/physics.h"
 #include "playerman/player.h"
 #include "render/3d.h"
+#include "scripting/api/objs/wing.h"
+#include "scripting/scripting.h"
 #include "ship/afterburner.h"
 #include "ship/awacs.h"
 #include "ship/ship.h"
@@ -4586,6 +4588,11 @@ void ai_waypoints()
 					ai_mission_wing_goal_complete( Ships[Pl_objp->instance].wingnum, &(aip->goals[aip->active_goal]) );
 					mission_log_add_entry( LOG_WAYPOINTS_DONE, Wings[Ships[Pl_objp->instance].wingnum].name, aip->wp_list->get_name(), -1 );
 				}
+				// adds scripting hook for 'On Waypoints Done' --wookieejedi
+				Script_system.SetHookObject("Ship", &Objects[Ships[Pl_objp->instance].objnum]);
+				Script_system.SetHookVar("Wing", 'o', scripting::api::l_Wing.Set(Ships[Pl_objp->instance].wingnum));
+				Script_system.RunCondition(CHA_ONWAYPOINTSDONE);
+				Script_system.RemHookVars(2, "Ship", "Wing");
 			}
 		}
 	}
