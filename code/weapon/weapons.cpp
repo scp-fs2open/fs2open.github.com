@@ -3760,7 +3760,7 @@ void find_homing_object(object *weapon_objp, int num)
                     //if the homing weapon is a huge weapon and the ship that is being
                     //looked at is not huge, then don't home
                     if ((wip->wi_flags[Weapon::Info_Flags::Huge]) &&
-                        (sip->is_small_ship() || !sip->is_flyable() || sip->is_harmless()))
+                        !(sip->is_huge_ship()))
                     {
                         continue;
                     }
