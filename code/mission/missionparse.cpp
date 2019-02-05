@@ -1966,11 +1966,6 @@ int parse_create_object_sub(p_object *p_objp)
 		}
 	}
 
-	if (!Fred_running)
-	{
-		ship_assign_sound(&Ships[shipnum]);
-	}
-
 	// alternate stuff
 	shipp->alt_type_index = p_objp->alt_type_index;
 	shipp->callsign_index = p_objp->callsign_index;

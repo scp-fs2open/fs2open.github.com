@@ -14677,8 +14677,6 @@ void sexp_ship_create(int n)
 	ship *shipp = &Ships[shipnum];
 	ship_info *sip = &Ship_info[shipp->ship_info_index];
 
-	ship_assign_sound(shipp);
-
 	ship_set_warp_effects(&Objects[objnum]);
 
 	if (sip->flags[Ship::Info_Flags::Intrinsic_no_shields])

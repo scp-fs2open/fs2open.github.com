@@ -9375,13 +9375,9 @@ int ship_create(matrix* orient, vec3d* pos, int ship_type, const char* ship_name
 		sip->flags.set(Ship::Info_Flags::Path_fixup);
 	}
 
-	// Add this ship to Ship_obj_list
-	shipp->ship_list_index = ship_obj_list_add(objnum);
-
-	// Set time when ship is created
-	shipp->create_time = timer_get_milliseconds();
-
-	ship_make_create_time_unique(shipp);
+	// this used to be done in parse_create_object_sub
+	if (!Fred_running)
+		ship_assign_sound(shipp);
 
 	// first try at ABtrails -Bobboau
 	ship_init_afterburners(shipp);
@@ -9392,6 +9388,14 @@ int ship_create(matrix* orient, vec3d* pos, int ship_type, const char* ship_name
 	model_anim_set_initial_states(shipp);
 
 	shipp->model_instance_num = model_create_instance(true, sip->model_num);
+
+	// Add this ship to Ship_obj_list
+	shipp->ship_list_index = ship_obj_list_add(objnum);
+
+	// Set time when ship is created
+	shipp->create_time = timer_get_milliseconds();
+
+	ship_make_create_time_unique(shipp);
 
 	shipp->time_created = Missiontime;
 
@@ -10072,7 +10076,8 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 	model_anim_set_initial_states(sp);
 
 	//Reassign sound stuff
-	ship_assign_sound(sp);
+	if (!Fred_running)
+		ship_assign_sound(sp);
 	
 	// create new model instance data
 	sp->model_instance_num = model_create_instance(true, sip->model_num);
