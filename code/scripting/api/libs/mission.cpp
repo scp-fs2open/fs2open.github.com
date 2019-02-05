@@ -32,11 +32,14 @@
 #include "mission/missioncampaign.h"
 #include "mission/missiongoals.h"
 #include "mission/missionload.h"
+#include "mission/missionlog.h"
 #include "mission/missionmessage.h"
 #include "mission/missiontraining.h"
 #include "parse/parselo.h"
 #include "parse/sexp.h"
+#include "scripting/scripting.h"
 #include "ship/ship.h"
+#include "ship/shipfx.h"
 #include "starfield/starfield.h"
 #include "weapon/beam.h"
 #include "weapon/weapon.h"
@@ -813,8 +816,20 @@ ADE_FUNC(createShip, l_Mission, "[string Name, shipclass Class=Shipclass[1], ori
 
 	int obj_idx = ship_create(real_orient, &pos, sclass, name);
 
-	if(obj_idx > -1) {
+	if(obj_idx >= 0) {
 		model_page_in_textures(Ship_info[sclass].model_num, sclass);
+
+		ship_set_warp_effects(&Objects[obj_idx]);
+
+		if (Ship_info[sclass].flags[Ship::Info_Flags::Intrinsic_no_shields]) {
+			Objects[obj_idx].flags.set(Object::Object_Flags::No_shields);
+		}
+
+		mission_log_add_entry(LOG_SHIP_ARRIVED, Ships[Objects[obj_idx].instance].ship_name, nullptr);
+
+		Script_system.SetHookObjects(2, "Ship", &Objects[obj_idx], "Parent", NULL);
+		Script_system.RunCondition(CHA_ONSHIPARRIVE, &Objects[obj_idx]);
+		Script_system.RemHookVars(2, "Ship", "Parent");
 
 		return ade_set_args(L, "o", l_Ship.Set(object_h(&Objects[obj_idx])));
 	} else

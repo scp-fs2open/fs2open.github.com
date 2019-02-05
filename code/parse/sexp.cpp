@@ -14677,6 +14677,8 @@ void sexp_ship_create(int n)
 	ship *shipp = &Ships[shipnum];
 	ship_info *sip = &Ship_info[shipp->ship_info_index];
 
+	model_page_in_textures(Ship_info[new_ship_class].model_num, new_ship_class);
+
 	ship_set_warp_effects(&Objects[objnum]);
 
 	if (sip->flags[Ship::Info_Flags::Intrinsic_no_shields])
