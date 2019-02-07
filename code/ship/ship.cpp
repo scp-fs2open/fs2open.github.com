@@ -5605,64 +5605,6 @@ vec3d get_submodel_offset(int model, int submodel){
 
 }
 
-void ship_set_warp_effects(object *objp)
-{
-	ship *shipp = &Ships[objp->instance];
-	int warpin_type = Warp_params[shipp->warpin_params_index].warp_type;
-	int warpout_type = Warp_params[shipp->warpout_params_index].warp_type;
-
-	if (warpin_type & WT_DEFAULT_WITH_FIREBALL)
-		warpin_type = WT_DEFAULT;
-	if (warpout_type & WT_DEFAULT_WITH_FIREBALL)
-		warpout_type = WT_DEFAULT;
-
-	if (shipp->warpin_effect != nullptr)
-		delete shipp->warpin_effect;
-
-	switch (warpin_type)
-	{
-		case WT_DEFAULT:
-		case WT_KNOSSOS:
-		case WT_DEFAULT_THEN_KNOSSOS:
-			shipp->warpin_effect = new WE_Default(objp, WarpDirection::WARP_IN);
-			break;
-		case WT_IN_PLACE_ANIM:
-			shipp->warpin_effect = new WE_BSG(objp, WarpDirection::WARP_IN);
-			break;
-		case WT_SWEEPER:
-			shipp->warpin_effect = new WE_Homeworld(objp, WarpDirection::WARP_IN);
-			break;
-		case WT_HYPERSPACE:
-			shipp->warpin_effect = new WE_Hyperspace(objp, WarpDirection::WARP_IN);
-			break;
-		default:
-			shipp->warpin_effect = new WarpEffect();
-	}
-
-	if (shipp->warpout_effect != nullptr)
-		delete shipp->warpout_effect;
-
-	switch (warpout_type)
-	{
-		case WT_DEFAULT:
-		case WT_KNOSSOS:
-		case WT_DEFAULT_THEN_KNOSSOS:
-			shipp->warpout_effect = new WE_Default(objp, WarpDirection::WARP_OUT);
-			break;
-		case WT_IN_PLACE_ANIM:
-			shipp->warpout_effect = new WE_BSG(objp, WarpDirection::WARP_OUT);
-			break;
-		case WT_SWEEPER:
-			shipp->warpout_effect = new WE_Homeworld(objp, WarpDirection::WARP_OUT);
-			break;
-		case WT_HYPERSPACE:
-			shipp->warpout_effect = new WE_Hyperspace(objp, WarpDirection::WARP_OUT);
-			break;
-		default:
-			shipp->warpout_effect = new WarpEffect();
-	}
-}
-
 // Reset all ship values to empty/unused.
 void ship::clear()
 {
@@ -9433,13 +9375,9 @@ int ship_create(matrix* orient, vec3d* pos, int ship_type, const char* ship_name
 		sip->flags.set(Ship::Info_Flags::Path_fixup);
 	}
 
-	// Add this ship to Ship_obj_list
-	shipp->ship_list_index = ship_obj_list_add(objnum);
-
-	// Set time when ship is created
-	shipp->create_time = timer_get_milliseconds();
-
-	ship_make_create_time_unique(shipp);
+	// this used to be done in parse_create_object_sub
+	if (!Fred_running)
+		ship_assign_sound(shipp);
 
 	// first try at ABtrails -Bobboau
 	ship_init_afterburners(shipp);
@@ -9450,6 +9388,14 @@ int ship_create(matrix* orient, vec3d* pos, int ship_type, const char* ship_name
 	model_anim_set_initial_states(shipp);
 
 	shipp->model_instance_num = model_create_instance(true, sip->model_num);
+
+	// Add this ship to Ship_obj_list
+	shipp->ship_list_index = ship_obj_list_add(objnum);
+
+	// Set time when ship is created
+	shipp->create_time = timer_get_milliseconds();
+
+	ship_make_create_time_unique(shipp);
 
 	shipp->time_created = Missiontime;
 
@@ -10130,7 +10076,8 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 	model_anim_set_initial_states(sp);
 
 	//Reassign sound stuff
-	ship_assign_sound(sp);
+	if (!Fred_running)
+		ship_assign_sound(sp);
 	
 	// create new model instance data
 	sp->model_instance_num = model_create_instance(true, sip->model_num);

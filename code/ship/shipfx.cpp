@@ -3125,6 +3125,64 @@ int warptype_match(const char *p)
 	return -1;
 }
 
+void ship_set_warp_effects(object *objp)
+{
+	ship *shipp = &Ships[objp->instance];
+	int warpin_type = Warp_params[shipp->warpin_params_index].warp_type;
+	int warpout_type = Warp_params[shipp->warpout_params_index].warp_type;
+
+	if (warpin_type & WT_DEFAULT_WITH_FIREBALL)
+		warpin_type = WT_DEFAULT;
+	if (warpout_type & WT_DEFAULT_WITH_FIREBALL)
+		warpout_type = WT_DEFAULT;
+
+	if (shipp->warpin_effect != nullptr)
+		delete shipp->warpin_effect;
+
+	switch (warpin_type)
+	{
+		case WT_DEFAULT:
+		case WT_KNOSSOS:
+		case WT_DEFAULT_THEN_KNOSSOS:
+			shipp->warpin_effect = new WE_Default(objp, WarpDirection::WARP_IN);
+			break;
+		case WT_IN_PLACE_ANIM:
+			shipp->warpin_effect = new WE_BSG(objp, WarpDirection::WARP_IN);
+			break;
+		case WT_SWEEPER:
+			shipp->warpin_effect = new WE_Homeworld(objp, WarpDirection::WARP_IN);
+			break;
+		case WT_HYPERSPACE:
+			shipp->warpin_effect = new WE_Hyperspace(objp, WarpDirection::WARP_IN);
+			break;
+		default:
+			shipp->warpin_effect = new WarpEffect();
+	}
+
+	if (shipp->warpout_effect != nullptr)
+		delete shipp->warpout_effect;
+
+	switch (warpout_type)
+	{
+		case WT_DEFAULT:
+		case WT_KNOSSOS:
+		case WT_DEFAULT_THEN_KNOSSOS:
+			shipp->warpout_effect = new WE_Default(objp, WarpDirection::WARP_OUT);
+			break;
+		case WT_IN_PLACE_ANIM:
+			shipp->warpout_effect = new WE_BSG(objp, WarpDirection::WARP_OUT);
+			break;
+		case WT_SWEEPER:
+			shipp->warpout_effect = new WE_Homeworld(objp, WarpDirection::WARP_OUT);
+			break;
+		case WT_HYPERSPACE:
+			shipp->warpout_effect = new WE_Hyperspace(objp, WarpDirection::WARP_OUT);
+			break;
+		default:
+			shipp->warpout_effect = new WarpEffect();
+	}
+}
+
 
 //********************-----CLASS: WarpEffect-----********************//
 WarpEffect::WarpEffect()

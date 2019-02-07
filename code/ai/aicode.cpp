@@ -1347,6 +1347,7 @@ void ai_object_init(object * obj, int ai_index)
 	aip->wing = -1;		//	Member of what wing? -1 means none.
 	aip->ai_class = Ship_info[Ships[obj->instance].ship_info_index].ai_class;
 	aip->behavior = AIM_NONE;
+	aip->mode = aip->behavior;
 }
 
 /**

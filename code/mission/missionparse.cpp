@@ -1859,7 +1859,6 @@ int parse_create_object(p_object *pobjp)
 }
 
 void parse_bring_in_docked_wing(p_object *p_objp, int wingnum, int shipnum);
-void ship_set_warp_effects(object *objp);
 
 /**
  * Given a stuffed p_object struct, create an object and fill in the necessary fields.
@@ -1906,7 +1905,6 @@ int parse_create_object_sub(p_object *p_objp)
 
 	shipp->group = p_objp->group;
 	shipp->team = p_objp->team;
-	strcpy_s(shipp->ship_name, p_objp->name);
 	shipp->display_name = p_objp->display_name;
 	shipp->escort_priority = p_objp->escort_priority;
 	shipp->use_special_explosion = p_objp->use_special_explosion;
@@ -1968,23 +1966,12 @@ int parse_create_object_sub(p_object *p_objp)
 		}
 	}
 
-	if (!Fred_running)
-	{
-		ship_assign_sound(&Ships[shipnum]);
-	}
-
-	aip = &(Ai_info[shipp->ai_index]);
-	aip->behavior = p_objp->behavior;
-	aip->mode = aip->behavior;
-
-	// make sure aim_safety has its submode defined
-	if (aip->mode == AIM_SAFETY) {
-		aip->submode = AISS_1;
-	}
-
 	// alternate stuff
 	shipp->alt_type_index = p_objp->alt_type_index;
 	shipp->callsign_index = p_objp->callsign_index;
+
+	// AI stuff.  Note a lot of the AI was already initialized in ship_create.
+	aip = &(Ai_info[shipp->ai_index]);
 
 	aip->ai_class = p_objp->ai_class;
 	shipp->weapons.ai_class = p_objp->ai_class;  // Fred uses this instead of above.
@@ -1992,13 +1979,12 @@ int parse_create_object_sub(p_object *p_objp)
 	if (The_mission.ai_profile->flags[AI::Profile_Flags::Fix_ai_class_bug])
 		ship_set_new_ai_class(shipnum, p_objp->ai_class);
 
-	// must reset the number of ai goals when the object is created
-	for (i = 0; i < MAX_AI_GOALS; i++)
-	{
-		aip->goals[i].ai_mode = AI_GOAL_NONE;
-		aip->goals[i].signature = -1;
-		aip->goals[i].priority = -1;
-		aip->goals[i].flags.reset();
+	aip->behavior = p_objp->behavior;
+	aip->mode = aip->behavior;
+
+	// make sure aim_safety has its submode defined
+	if (aip->mode == AIM_SAFETY) {
+		aip->submode = AISS_1;
 	}
 
 	shipp->cargo1 = p_objp->cargo1;
@@ -2259,11 +2245,13 @@ int parse_create_object_sub(p_object *p_objp)
 				}
 			}
 
+			// skip the rest because the Pilot subsystem is special
 			continue;
 		}
 
-		ptr = GET_FIRST(&shipp->subsys_list);
-		while (ptr != END_OF_LIST(&shipp->subsys_list))
+		// find the subsystem in the ship list that corresponds to the parsed subsystem
+		ptr = ship_get_subsys(shipp, sssp->name);
+		if (ptr != nullptr)
 		{
 			// check the mission flag to possibly free all beam weapons - Goober5000, taken from SEXP.CPP
 			if (The_mission.flags[Mission::Mission_Flags::Beam_free_all_by_default])
@@ -2285,81 +2273,80 @@ int parse_create_object_sub(p_object *p_objp)
 				}
 			}
 
-			if (!subsystem_stricmp(ptr->system_info->subobj_name, sssp->name))
+			if (Fred_running)
 			{
-				if (Fred_running)
+				ptr->current_hits = sssp->percent;
+				ptr->max_hits = 100.0f;
+			}
+			else
+			{
+				ptr->max_hits = ptr->system_info->max_subsys_strength * (shipp->ship_max_hull_strength / sip->max_hull_strength);
+
+				float new_hits = ptr->max_hits * (100.0f - sssp->percent) / 100.f;
+				if (!(ptr->flags[Ship::Subsystem_Flags::No_aggregate])) {
+					shipp->subsys_info[ptr->system_info->type].aggregate_current_hits -= (ptr->max_hits - new_hits);
+				}
+
+				if ((100.0f - sssp->percent) < 0.5)
 				{
-					ptr->current_hits = sssp->percent;
-					ptr->max_hits = 100.0f;
+					ptr->current_hits = 0.0f;
+					ptr->submodel_info_1.blown_off = 1;
 				}
 				else
 				{
-					ptr->max_hits = ptr->system_info->max_subsys_strength * (shipp->ship_max_hull_strength / sip->max_hull_strength);
-
-					float new_hits = ptr->max_hits * (100.0f - sssp->percent) / 100.f;
-					if (!(ptr->flags[Ship::Subsystem_Flags::No_aggregate])) {
-						shipp->subsys_info[ptr->system_info->type].aggregate_current_hits -= (ptr->max_hits - new_hits);
-					}
-
-					if ((100.0f - sssp->percent) < 0.5)
-					{
-						ptr->current_hits = 0.0f;
-						ptr->submodel_info_1.blown_off = 1;
-					}
-					else
-					{
-						ptr->current_hits = new_hits;
-					}
+					ptr->current_hits = new_hits;
 				}
-
-				if (sssp->primary_banks[0] != SUBSYS_STATUS_NO_CHANGE)
-					for (j=0; j<MAX_SHIP_PRIMARY_BANKS; j++)
-						ptr->weapons.primary_bank_weapons[j] = sssp->primary_banks[j];
-
-				if (sssp->secondary_banks[0] != SUBSYS_STATUS_NO_CHANGE)
-					for (j=0; j<MAX_SHIP_SECONDARY_BANKS; j++)
-						ptr->weapons.secondary_bank_weapons[j] = sssp->secondary_banks[j];
-
-				// Goober5000
-				for (j = 0; j < ptr->weapons.num_primary_banks; j++)
-				{
-					if (Fred_running) {
-						ptr->weapons.primary_bank_ammo[j] = sssp->primary_ammo[j];
-					} else if (ptr->weapons.primary_bank_weapons[j] >= 0 && Weapon_info[ptr->weapons.primary_bank_weapons[j]].wi_flags[Weapon::Info_Flags::Ballistic]) {
-						Assertion(Weapon_info[ptr->weapons.primary_bank_weapons[j]].cargo_size > 0.0f,
-								"Primary weapon cargo size <= 0. Ship (%s) Subsystem (%s) Bank (%i) Weapon (%s)",
-								shipp->ship_name, sssp->name, j, Weapon_info[ptr->weapons.primary_bank_weapons[j]].name);
-
-						int capacity = (int)std::lround(sssp->primary_ammo[j]/100.0f * ptr->weapons.primary_bank_capacity[j]);
-						ptr->weapons.primary_bank_ammo[j] = (int)std::lround(capacity / Weapon_info[ptr->weapons.primary_bank_weapons[j]].cargo_size);
-					}
-				}
-
-				for (j = 0; j < ptr->weapons.num_secondary_banks; j++)
-				{
-					if (Fred_running) {
-						ptr->weapons.secondary_bank_ammo[j] = sssp->secondary_ammo[j];
-					} else if (ptr->weapons.secondary_bank_weapons[j] >= 0) {
-						Assertion(Weapon_info[ptr->weapons.secondary_bank_weapons[j]].cargo_size > 0.0f,
-								"Secondary weapon cargo size <= 0. Ship (%s) Subsystem (%s) Bank (%i) Weapon (%s)",
-								shipp->ship_name, sssp->name, j, Weapon_info[ptr->weapons.secondary_bank_weapons[j]].name);
-
-						int capacity = (int)std::lround(sssp->secondary_ammo[j]/100.0f * ptr->weapons.secondary_bank_capacity[j]);
-						ptr->weapons.secondary_bank_ammo[j] = (int)std::lround(capacity / Weapon_info[ptr->weapons.secondary_bank_weapons[j]].cargo_size);
-					}
-				}
-
-				ptr->subsys_cargo_name = sssp->subsys_cargo_name;
-
-				if (sssp->ai_class != SUBSYS_STATUS_NO_CHANGE)
-					ptr->weapons.ai_class = sssp->ai_class;
-
-				ptr->turret_best_weapon = -1;
-				ptr->turret_animation_position = MA_POS_NOT_SET;	// model animation position is not set
-				ptr->turret_animation_done_time = 0;
 			}
 
-			ptr = GET_NEXT(ptr);
+			if (sssp->primary_banks[0] != SUBSYS_STATUS_NO_CHANGE)
+				for (j=0; j<MAX_SHIP_PRIMARY_BANKS; j++)
+					ptr->weapons.primary_bank_weapons[j] = sssp->primary_banks[j];
+
+			if (sssp->secondary_banks[0] != SUBSYS_STATUS_NO_CHANGE)
+				for (j=0; j<MAX_SHIP_SECONDARY_BANKS; j++)
+					ptr->weapons.secondary_bank_weapons[j] = sssp->secondary_banks[j];
+
+			// Goober5000
+			for (j = 0; j < ptr->weapons.num_primary_banks; j++)
+			{
+				if (Fred_running) {
+					ptr->weapons.primary_bank_ammo[j] = sssp->primary_ammo[j];
+				} else if (ptr->weapons.primary_bank_weapons[j] >= 0 && Weapon_info[ptr->weapons.primary_bank_weapons[j]].wi_flags[Weapon::Info_Flags::Ballistic]) {
+					Assertion(Weapon_info[ptr->weapons.primary_bank_weapons[j]].cargo_size > 0.0f,
+							"Primary weapon cargo size <= 0. Ship (%s) Subsystem (%s) Bank (%i) Weapon (%s)",
+							shipp->ship_name, sssp->name, j, Weapon_info[ptr->weapons.primary_bank_weapons[j]].name);
+
+					int capacity = (int)std::lround(sssp->primary_ammo[j]/100.0f * ptr->weapons.primary_bank_capacity[j]);
+					ptr->weapons.primary_bank_ammo[j] = (int)std::lround(capacity / Weapon_info[ptr->weapons.primary_bank_weapons[j]].cargo_size);
+				}
+			}
+
+			for (j = 0; j < ptr->weapons.num_secondary_banks; j++)
+			{
+				if (Fred_running) {
+					ptr->weapons.secondary_bank_ammo[j] = sssp->secondary_ammo[j];
+				} else if (ptr->weapons.secondary_bank_weapons[j] >= 0) {
+					Assertion(Weapon_info[ptr->weapons.secondary_bank_weapons[j]].cargo_size > 0.0f,
+							"Secondary weapon cargo size <= 0. Ship (%s) Subsystem (%s) Bank (%i) Weapon (%s)",
+							shipp->ship_name, sssp->name, j, Weapon_info[ptr->weapons.secondary_bank_weapons[j]].name);
+
+					int capacity = (int)std::lround(sssp->secondary_ammo[j]/100.0f * ptr->weapons.secondary_bank_capacity[j]);
+					ptr->weapons.secondary_bank_ammo[j] = (int)std::lround(capacity / Weapon_info[ptr->weapons.secondary_bank_weapons[j]].cargo_size);
+				}
+			}
+
+			ptr->subsys_cargo_name = sssp->subsys_cargo_name;
+
+			if (sssp->ai_class != SUBSYS_STATUS_NO_CHANGE)
+				ptr->weapons.ai_class = sssp->ai_class;
+
+			ptr->turret_best_weapon = -1;
+			ptr->turret_animation_position = MA_POS_NOT_SET;	// model animation position is not set
+			ptr->turret_animation_done_time = 0;
+		}
+		else
+		{
+			Warning(LOCATION, "Unable to find '%s' in ship subsys_list!", sssp->name);
 		}
 	}
 	
