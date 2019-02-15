@@ -1461,6 +1461,9 @@ bool model_render_check_detail_box(vec3d *view_pos, polymodel *pm, int submodel_
 	bsp_info *model = &pm->submodel[submodel_num];
 
 	float box_scale = model_render_determine_box_scale();
+	if (model->do_not_scale_detail_distances) {
+		box_scale = 1.0f;
+	}
 
 	if ( !( flags & MR_FULL_DETAIL ) && model->use_render_box ) {
 		vec3d box_min, box_max, offset;

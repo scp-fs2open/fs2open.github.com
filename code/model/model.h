@@ -346,6 +346,7 @@ public:
 	bool	use_render_box_offset;		// whether an offset has been defined; needed because one can't tell just by looking at render_box_offset
 	int		use_render_sphere;		// 0==do nothing, 1==only render this object if you are inside the sphere, -1==only if you're outside
 	bool 	use_render_sphere_offset;// whether an offset has been defined; needed because one can't tell just by looking at render_sphere_offset
+	bool    do_not_scale_detail_distances{false}; // if set should not scale boxes or spheres based on 'model detail' settings
 	bool	gun_rotation;			// for animated weapon models
 	bool	no_collisions;			// for $no_collisions property - kazan
 	bool	nocollide_this_only;	//SUSHI: Like no_collisions, but not recursive. For the "replacement" collision model scheme.
