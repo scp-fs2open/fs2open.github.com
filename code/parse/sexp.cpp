@@ -22692,9 +22692,13 @@ int sexp_is_docked(int node)
 
 		current_shipp = &Ships[shipnum];
 
-		// if we're currently handling the host ship, this is all we need to do for this loop iteration
+		// if host_shipp is a nullptr then we're on the 1st loop iteration
 		if (host_shipp == nullptr)
 		{
+			// if the host isn't docked to anything, no need to check each ship individually
+			if (!object_is_docked(&Objects[current_shipp->objnum]))
+				return SEXP_FALSE;
+
 			host_shipp = current_shipp;
 			continue;
 		}
@@ -31325,7 +31329,8 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	{ OP_IS_DOCKED, "Is-Docked (Status operator)\r\n"
 		"\tChecks whether the specified ships are currently docked.  This sexp is different from has-docked-delay, which will return true if the ships have docked at "
 		"any point in the past.  The has-docked-delay sexp checks the mission log, whereas the is-docked sexp examines the actual dockpoints.\r\n\r\n"
-		"Takes 2 or more arguments.  (If more than 2 arguments are specified, the sexp will only evaluate to true if all ships are docked simultaneously.)\r\n"
+		"Takes 1 or more arguments.  (If more than 2 arguments are specified, the sexp will only evaluate to true if all ships are docked simultaneously.)\r\n"
+		"If a single argument is supplied, the sexp will evaluate to true if anything is docked to the host ship. \r\n"
 		"\t1:\tThe host ship.\r\n"
 		"\tRest:\tShip to check as docked to the host ship." },
 
