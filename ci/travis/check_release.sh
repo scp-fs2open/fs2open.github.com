@@ -14,7 +14,7 @@ NIGHTLY_PATTERN="^nightly_(.*)$"
 TEST_BUILD_PATTERN="^test\/(.*)$"
 
 # These are for testing
-NIGHTLY_TEST=false
+NIGHTLY_TEST=true
 RELEASE_TEST=false
 TEST_BUILD_TEST=false
 
