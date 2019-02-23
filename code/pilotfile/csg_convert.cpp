@@ -7,9 +7,9 @@
  */
 
 #include "cfile/cfilesystem.h"
+#include "pilotfile/pilotfile_convert.h"
 #include "cutscene/cutscenes.h"
 #include "menuui/techmenu.h"
-#include "pilotfile/pilotfile_convert.h"
 #include "ship/ship.h"
 #include "stats/medals.h"
 #include "weapon/weapon.h"

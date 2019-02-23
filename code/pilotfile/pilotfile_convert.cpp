@@ -30,7 +30,7 @@ pilotfile_convert::~pilotfile_convert()
 	}
 }
 
-void pilotfile_convert::startSection(Section::id section_id)
+void pilotfile_convert::startSection(Section section_id)
 {
 	Assert( cfp );
 
