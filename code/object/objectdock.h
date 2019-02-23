@@ -141,4 +141,10 @@ void dock_undock_all(object *objp);
 // free the entire dock list without undocking anything; should only be used on object cleanup
 void dock_free_dock_list(object *objp);
 
+// flag set/remove helpers required in multiple places
+void object_set_arriving_stage1_ndl_flag_helper(object *objp, dock_function_info * /*infop*/ );
+void object_remove_arriving_stage1_ndl_flag_helper(object *objp, dock_function_info * /*infop*/ );
+void object_set_arriving_stage2_ndl_flag_helper(object *objp, dock_function_info * /*infop*/ );
+void object_remove_arriving_stage2_ndl_flag_helper(object *objp, dock_function_info * /*infop*/ );
+
 #endif	// _OBJECT_DOCK_H

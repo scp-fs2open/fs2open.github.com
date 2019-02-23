@@ -95,7 +95,7 @@ void radar_stuff_blip_info(object *objp, int is_bright, color **blip_color, int 
 		case OBJ_SHIP:
 			shipp = &Ships[objp->instance];
 
-			if (shipp->flags[Ship::Ship_Flags::Arriving_stage_1])
+			if (shipp->flags[Ship::Ship_Flags::Arriving_stage_1, Ship::Ship_Flags::Arriving_stage_1_ndl])
 			{
 				*blip_color = &Radar_colors[RCOL_WARPING_SHIP][is_bright];
 				*blip_type = BLIP_TYPE_WARPING_SHIP;
@@ -525,7 +525,7 @@ RadarVisibility radar_is_visible( object *objp )
 				return NOT_VISIBLE;
 
 			// Ships that are warp in in are not visible on the radar
-			if (Ships[objp->instance].flags[Ship::Ship_Flags::Arriving_stage_1])
+			if (Ships[objp->instance].flags[Ship::Ship_Flags::Arriving_stage_1, Ship::Ship_Flags::Arriving_stage_1_ndl])
 				return NOT_VISIBLE;
 
 			break;

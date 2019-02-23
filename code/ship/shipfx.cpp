@@ -501,6 +501,13 @@ void shipfx_actually_warpin(ship *shipp, object *objp)
 {
 	shipp->flags.remove(Ship::Ship_Flags::Arriving_stage_1);
 	shipp->flags.remove(Ship::Ship_Flags::Arriving_stage_2);
+	// dock leader needs to handle dockees
+	if (object_is_docked(objp)) {
+		Assertion(shipp->flags[Ship::Ship_Flags::Dock_leader], "The docked ship warping in (%s) should only be the dock leader at this point!\n", shipp->ship_name);
+		dock_function_info dfi;
+		dock_evaluate_all_docked_objects(objp, &dfi, object_remove_arriving_stage1_ndl_flag_helper);
+		dock_evaluate_all_docked_objects(objp, &dfi, object_remove_arriving_stage2_ndl_flag_helper);
+	}
 
 	// let physics in on it too.
 	objp->phys_info.flags &= (~PF_WARP_IN);
@@ -3256,9 +3263,15 @@ int WarpEffect::warpEnd()
 	if(!this->isValid())
 		return 0;
 
-    shipp->flags.remove(Ship::Ship_Flags::Arriving_stage_1);
-    shipp->flags.remove(Ship::Ship_Flags::Arriving_stage_2);
-    shipp->flags.remove(Ship::Ship_Flags::Depart_warp);
+	shipp->flags.remove(Ship::Ship_Flags::Arriving_stage_1);
+	shipp->flags.remove(Ship::Ship_Flags::Arriving_stage_2);
+	shipp->flags.remove(Ship::Ship_Flags::Depart_warp);
+	// dock leader needs to handle dockees
+	if (object_is_docked(objp)) {
+		dock_function_info dfi;
+		dock_evaluate_all_docked_objects(objp, &dfi, object_remove_arriving_stage1_ndl_flag_helper);
+		dock_evaluate_all_docked_objects(objp, &dfi, object_remove_arriving_stage2_ndl_flag_helper);
+	}
 
 	// let physics in on it too.
 	objp->phys_info.flags &= (~PF_WARP_IN);
@@ -3422,7 +3435,13 @@ int WE_Default::warpStart()
 		stage_duration[2] = fl2i(warping_time*1000.0f);
 		stage_time_end = timestamp(stage_duration[1]);
 		total_time_end = stage_duration[1] + stage_duration[2];
-        shipp->flags.set(Ship::Ship_Flags::Arriving_stage_1);
+		shipp->flags.set(Ship::Ship_Flags::Arriving_stage_1);
+		// dock leader needs to handle dockees
+		if (object_is_docked(objp)) {
+			Assertion(shipp->flags[Ship::Ship_Flags::Dock_leader], "The docked ship warping in (%s) should only be the dock leader at this point!\n", shipp->ship_name);
+			dock_function_info dfi;
+			dock_evaluate_all_docked_objects(objp, &dfi, object_set_arriving_stage1_ndl_flag_helper);
+		}
 	}
 	else if(direction == WarpDirection::WARP_OUT)
 	{
@@ -3468,9 +3487,15 @@ int WE_Default::warpFrame(float frametime)
 			objp->phys_info.flags |= PF_WARP_IN;
 
 			// done doing stage 1 of warp, so go on to stage 2
-            shipp->flags.remove(Ship::Ship_Flags::Arriving_stage_1);
-            shipp->flags.set(Ship::Ship_Flags::Arriving_stage_2);
-
+			shipp->flags.remove(Ship::Ship_Flags::Arriving_stage_1);
+			shipp->flags.set(Ship::Ship_Flags::Arriving_stage_2);
+			// if the ship is a dock leader; handle all the dockees
+			if (object_is_docked(objp)) {
+				Assertion(shipp->flags[Ship::Ship_Flags::Dock_leader], "The docked ship warping in (%s) should only be the dock leader at this point!\n", shipp->ship_name);
+				dock_function_info dfi;
+				dock_evaluate_all_docked_objects(objp, &dfi, object_remove_arriving_stage1_ndl_flag_helper);
+				dock_evaluate_all_docked_objects(objp, &dfi, object_set_arriving_stage2_ndl_flag_helper);
+			}
 			// Make ship move at velocity so that it moves two radii in warp_time seconds.
 			vec3d vel;
 			vel = objp->orient.vec.fvec;
@@ -3714,8 +3739,16 @@ int WE_BSG::warpStart()
 		dock_calc_docked_actual_center(&autocenter, objp);
 	}
 
-    if (direction == WarpDirection::WARP_IN)
-        shipp->flags.set(Ship::Ship_Flags::Arriving_stage_1);
+	if (direction == WarpDirection::WARP_IN)
+	{
+		shipp->flags.set(Ship::Ship_Flags::Arriving_stage_1);
+		// dock leader needs to handle dockees
+		if (object_is_docked(objp)) {
+			Assertion(shipp->flags[Ship::Ship_Flags::Dock_leader], "The ship warping in (%s) must be the dock leader at this point!\n", shipp->ship_name);
+			dock_function_info dfi;
+			dock_evaluate_all_docked_objects(objp, &dfi, object_set_arriving_stage1_ndl_flag_helper);
+		}
+	}
 	else
         shipp->flags.set(Ship::Ship_Flags::Depart_warp);
 
@@ -3763,8 +3796,15 @@ int WE_BSG::warpFrame(float  /*frametime*/)
 			case 1:
 				if(direction == WarpDirection::WARP_IN)
 				{
-                    shipp->flags.remove(Ship::Ship_Flags::Arriving_stage_1);
-                    shipp->flags.set(Ship::Ship_Flags::Arriving_stage_2);
+					shipp->flags.remove(Ship::Ship_Flags::Arriving_stage_1);
+					shipp->flags.set(Ship::Ship_Flags::Arriving_stage_2);
+					// dock leader needs to handle dockees
+					if (object_is_docked(objp)) {
+						Assertion(shipp->flags[Ship::Ship_Flags::Dock_leader], "The ship warping in (%s) must be the dock leader at this point!\n", shipp->ship_name);
+						dock_function_info dfi;
+						dock_evaluate_all_docked_objects(objp, &dfi, object_remove_arriving_stage1_ndl_flag_helper);
+						dock_evaluate_all_docked_objects(objp, &dfi, object_set_arriving_stage2_ndl_flag_helper);
+					}
 				}
 				break;
 			default:
@@ -4004,7 +4044,13 @@ int WE_Homeworld::warpStart()
 
 	if(direction == WarpDirection::WARP_IN)
 	{
-        shipp->flags.set(Ship::Ship_Flags::Arriving_stage_1);
+		shipp->flags.set(Ship::Ship_Flags::Arriving_stage_1);
+		// dock leader needs to handle dockees
+		if (object_is_docked(objp)) {
+			Assertion(shipp->flags[Ship::Ship_Flags::Dock_leader], "The ship warping in (%s) must be the dock leader at this point!\n", shipp->ship_name);
+			dock_function_info dfi;
+			dock_evaluate_all_docked_objects(objp, &dfi, object_set_arriving_stage1_ndl_flag_helper);
+		}
 	}
 	else if(direction == WarpDirection::WARP_OUT)
 	{
@@ -4047,8 +4093,15 @@ int WE_Homeworld::warpFrame(float  /*frametime*/)
 				if(direction == WarpDirection::WARP_IN)
 				{
 					objp->phys_info.flags |= PF_WARP_IN;
-                    shipp->flags.remove(Ship::Ship_Flags::Arriving_stage_1);
-                    shipp->flags.set(Ship::Ship_Flags::Arriving_stage_2);
+					shipp->flags.remove(Ship::Ship_Flags::Arriving_stage_1);
+					shipp->flags.set(Ship::Ship_Flags::Arriving_stage_2);
+					// dock leader needs to handle dockees
+					if (object_is_docked(objp)) {
+						Assertion(shipp->flags[Ship::Ship_Flags::Dock_leader], "The ship warping in (%s) must be the dock leader at this point!\n", shipp->ship_name);
+						dock_function_info dfi;
+						dock_evaluate_all_docked_objects(objp, &dfi, object_remove_arriving_stage1_ndl_flag_helper);
+						dock_evaluate_all_docked_objects(objp, &dfi, object_set_arriving_stage2_ndl_flag_helper);
+					}
 				}
 
 				break;
@@ -4177,10 +4230,17 @@ int WE_Hyperspace::warpStart()
 	
 	if(direction == WarpDirection::WARP_IN)
 	{
-        shipp->flags.set(Ship::Ship_Flags::Arriving_stage_1);
+		shipp->flags.set(Ship::Ship_Flags::Arriving_stage_1);
+		// dock leader needs to handle dockees
+		if (object_is_docked(objp)) {
+			Assertion(shipp->flags[Ship::Ship_Flags::Dock_leader], "The ship warping in (%s) must be the dock leader at this point!\n", shipp->ship_name);
+			dock_function_info dfi;
+			dock_evaluate_all_docked_objects(objp, &dfi, object_set_arriving_stage1_ndl_flag_helper);
+		}
 		objp->phys_info.flags |= PF_WARP_IN;
 		objp->phys_info.vel.xyz.z = (scale_factor / params->time)*1000.0f;
-        objp->flags.remove(Object::Object_Flags::Physics);
+		objp->phys_info.speed = objp->phys_info.vel.xyz.z;  // docked objects use speed to find the object that controls movement; therefore the warping in dock leader must have the highest speed!
+		objp->flags.remove(Object::Object_Flags::Physics);
 	}
 	else if(direction == WarpDirection::WARP_OUT)
 	{
@@ -4223,7 +4283,8 @@ int WE_Hyperspace::warpFrame(float  /*frametime*/)
 			vm_vec_scale( &vel, initial_velocity );
 			objp->phys_info.vel = vel;
 			objp->phys_info.desired_vel = vel;
-            shipp->flags.set(Ship::Ship_Flags::Arriving_stage_2);
+			objp->phys_info.speed = vel.xyz.z;
+			// warpEnd() removes Arriving_* Ship_Flags; no need to set any here
 		}
         objp->flags.set(Object::Object_Flags::Physics);
 		this->warpEnd();

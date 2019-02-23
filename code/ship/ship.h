@@ -714,7 +714,7 @@ public:
 	void clear();
 
     //Helper functions
-    inline bool is_arriving() { return flags[Ship::Ship_Flags::Arriving_stage_1, Ship::Ship_Flags::Arriving_stage_2]; }
+    inline bool is_arriving() { return flags[Ship::Ship_Flags::Arriving_stage_1, Ship::Ship_Flags::Arriving_stage_1_ndl, Ship::Ship_Flags::Arriving_stage_2, Ship::Ship_Flags::Arriving_stage_2_ndl]; }
     inline bool is_departing() { return flags[Ship::Ship_Flags::Depart_warp, Ship::Ship_Flags::Depart_dockbay]; }
     inline bool cannot_warp() { return flags[Ship::Ship_Flags::Warp_broken, Ship::Ship_Flags::Warp_never, Ship::Ship_Flags::Disabled]; }
     inline bool is_dying_or_departing() { return is_departing() || flags[Ship::Ship_Flags::Dying]; }

@@ -6718,7 +6718,8 @@ static void ship_find_warping_ship_helper(object *objp, dock_function_info *info
 		return;
 
 	// am I arriving or departing by warp?
-	if (Ships[objp->instance].is_arriving() || Ships[objp->instance].flags[Ship_Flags::Depart_warp])
+	// ignore _ndl flags as they are now on all docked-warping ships; we need the dock leader!
+	if (Ships[objp->instance].flags[Ship_Flags::Arriving_stage_1, Ship_Flags::Arriving_stage_2, Ship_Flags::Depart_warp])
 	{
 #ifndef NDEBUG
 		// in debug builds, make sure only one of the docked objects has these flags set
@@ -8820,7 +8821,7 @@ void ship_process_post(object * obj, float frametime)
 		}
 	}
 	
-	if ( shipp->is_arriving() && Ai_info[shipp->ai_index].mode != AIM_BAY_EMERGE )	{
+	if ( shipp->flags[Ship::Ship_Flags::Arriving_stage_1, Ship::Ship_Flags::Arriving_stage_2] && Ai_info[shipp->ai_index].mode != AIM_BAY_EMERGE )	{ // _ndl's don't manage warping
 		// JAS -- if the ship is warping in, just move it forward at a speed
 		// fast enough to move 2x its radius in SHIP_WARP_TIME seconds.
 		shipfx_warpin_frame( obj, frametime );
@@ -18785,7 +18786,7 @@ void ship_render(object* obj, model_draw_list* scene)
 		//WMC - based on Bobb's secondary thruster stuff
 		//which was in turn based on the beam code.
 		//I'm gonna need some serious acid to neutralize this base.
-		if(shipp->is_arriving()) {
+		if(shipp->flags[Ship::Ship_Flags::Arriving_stage_1, Ship::Ship_Flags::Arriving_stage_2]) {
 			shipp->warpin_effect->warpShipRender();
 		} else if(shipp->flags[Ship_Flags::Depart_warp]) {
 			shipp->warpout_effect->warpShipRender();
@@ -18821,7 +18822,7 @@ void ship_render(object* obj, model_draw_list* scene)
 		//WMC - based on Bobb's secondary thruster stuff
 		//which was in turn based on the beam code.
 		//I'm gonna need some serious acid to neutralize this base.
-		if(shipp->is_arriving()) {
+		if(shipp->flags[Ship::Ship_Flags::Arriving_stage_1, Ship::Ship_Flags::Arriving_stage_2]) {
 			shipp->warpin_effect->warpShipRender();
 		} else if(shipp->flags[Ship_Flags::Depart_warp]) {
 			shipp->warpout_effect->warpShipRender();
@@ -18847,7 +18848,7 @@ void ship_render(object* obj, model_draw_list* scene)
 	// Warp_shipp points to the ship that is going through a
 	// warp... either this ship or the ship it is docked with.
 	if ( warp_shipp != NULL ) {
-		if ( warp_shipp->is_arriving() ) {
+		if ( warp_shipp->flags[Ship::Ship_Flags::Arriving_stage_1, Ship::Ship_Flags::Arriving_stage_2] ) {
 			warp_shipp->warpin_effect->warpShipClip(&render_info);
 		} else if ( warp_shipp->flags[Ship_Flags::Depart_warp] ) {
 			warp_shipp->warpout_effect->warpShipClip(&render_info);
@@ -18944,7 +18945,7 @@ void ship_render(object* obj, model_draw_list* scene)
 	//WMC - based on Bobb's secondary thruster stuff
 	//which was in turn based on the beam code.
 	//I'm gonna need some serious acid to neutralize this base.
-	if(shipp->is_arriving()) {
+	if(shipp->flags[Ship::Ship_Flags::Arriving_stage_1, Ship::Ship_Flags::Arriving_stage_2]) {
 		shipp->warpin_effect->warpShipRender();
 	} else if(shipp->flags[Ship_Flags::Depart_warp]) {
 		shipp->warpout_effect->warpShipRender();
@@ -18958,6 +18959,7 @@ void set_default_ignore_list() {
 	Ignore_List.set(Ship::Ship_Flags::Depart_warp);
 	Ignore_List.set(Ship::Ship_Flags::Dying);
 	Ignore_List.set(Ship::Ship_Flags::Arriving_stage_1);
+	Ignore_List.set(Ship::Ship_Flags::Arriving_stage_1_ndl);
 	Ignore_List.set(Ship::Ship_Flags::Hidden_from_sensors);
 }
 

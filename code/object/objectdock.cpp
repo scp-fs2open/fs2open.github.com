@@ -708,6 +708,27 @@ void dock_find_max_speed_helper(object *objp, dock_function_info *infop)
 		infop->maintained_variables.objp_value = objp;
 	}
 }
+
+void object_set_arriving_stage1_ndl_flag_helper(object *objp, dock_function_info * /*infop*/ )
+{
+	Ships[objp->instance].flags.set(Ship::Ship_Flags::Arriving_stage_1_ndl);
+}
+
+void object_remove_arriving_stage1_ndl_flag_helper(object *objp, dock_function_info * /*infop*/ )
+{
+	Ships[objp->instance].flags.remove(Ship::Ship_Flags::Arriving_stage_1_ndl);
+}
+
+void object_set_arriving_stage2_ndl_flag_helper(object *objp, dock_function_info * /*infop*/ )
+{
+	Ships[objp->instance].flags.set(Ship::Ship_Flags::Arriving_stage_2_ndl);
+}
+
+void object_remove_arriving_stage2_ndl_flag_helper(object *objp, dock_function_info * /*infop*/ )
+{
+	Ships[objp->instance].flags.remove(Ship::Ship_Flags::Arriving_stage_2_ndl);
+}
+
 // ---------------------------------------------------------------------------------------------------------------
 // end of über code block ----------------------------------------------------------------------------------------
 
