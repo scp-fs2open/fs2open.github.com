@@ -112,7 +112,7 @@ ADE_FUNC(openFile, l_CFile, "string Filename, [string Mode=\"r\", string Path = 
 	const char *n_mode = "r";
 	const char *n_path = "";
 	if(!ade_get_args(L, "s|ss", &n_filename, &n_mode, &n_path))
-		return ade_set_error(L, "o", l_File.Set(NULL));
+		return ade_set_error(L, "o", l_File.Set(cfile_h()));
 
 	int type = CFILE_NORMAL;
 
@@ -121,19 +121,19 @@ ADE_FUNC(openFile, l_CFile, "string Filename, [string Mode=\"r\", string Path = 
 		path = cfile_get_path_type(n_path);
 
 	if(path == CF_TYPE_INVALID)
-		return ade_set_error(L, "o", l_File.Set(NULL));
+		return ade_set_error(L, "o", l_File.Set(cfile_h()));
 
 	CFILE *cfp = cfopen(n_filename, n_mode, type, path);
 
 	if(!cf_is_valid(cfp))
-		return ade_set_error(L, "o", l_File.Set(NULL));
+		return ade_set_error(L, "o", l_File.Set(cfile_h()));
 
-	return ade_set_args(L, "o", l_File.Set(cfp));
+	return ade_set_args(L, "o", l_File.Set(cfile_h(cfp)));
 }
 
 ADE_FUNC(openTempFile, l_CFile, NULL, "Opens a temp file that is automatically deleted when closed", "file", "File handle, or invalid file handle if tempfile couldn't be created")
 {
-	return ade_set_args(L, "o", l_File.Set(ctmpfile()));
+	return ade_set_args(L, "o", l_File.Set(cfile_h(ctmpfile())));
 }
 
 ADE_FUNC(renameFile, l_CFile, "string CurrentFilename, string NewFilename, string Path", "Renames given file. Path must be specified. Use a slash for the root directory.", "boolean", "True if file was renamed, otherwise false")
