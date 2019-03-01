@@ -1488,7 +1488,7 @@ ADE_FUNC(isWarpingIn, l_Ship, NULL, "Checks if ship is warping in", "boolean", "
 		return ADE_RETURN_NIL;
 
 	ship *shipp = &Ships[objh->objp->instance];
-	if(shipp->flags[Ship::Ship_Flags::Arriving_stage_1, Ship::Ship_Flags::Arriving_stage_1_ndl]){
+	if(shipp->is_arriving_stage_1_all_docked()){
 		return ADE_RETURN_TRUE;
 	}
 
