@@ -381,8 +381,6 @@ int ship_ship_check_collision(collision_info_struct *ship_ship_hit_info, vec3d *
 
 		// SET PHYSICS PARAMETERS
 		// already have (hitpos - heavy) and light_cm_pos
-		// get heavy cm pos - already have light_cm_pos
-		ship_ship_hit_info->heavy_collision_cm_pos = zero;
 
 		// get r_heavy and r_light
 		ship_ship_hit_info->r_heavy = ship_ship_hit_info->hit_pos;

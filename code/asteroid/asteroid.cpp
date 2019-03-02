@@ -1143,8 +1143,6 @@ int asteroid_check_collision(object *pasteroid, object *other_obj, vec3d *hitpos
 
 		// SET PHYSICS PARAMETERS
 		// already have (hitpos - heavy) and light_cm_pos
-		// get heavy cm pos - already have light_cm_pos
-		asteroid_hit_info->heavy_collision_cm_pos = zero;
 
 		// get r_heavy and r_light
 		asteroid_hit_info->r_heavy = asteroid_hit_info->hit_pos;

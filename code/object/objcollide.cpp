@@ -21,7 +21,7 @@
 #include "tracing/Monitor.h"
 
 
-#define PAIRS_BUMP	1000		// increase by this many avialable pairs when more are needed
+#define PAIRS_BUMP	1000		// increase by this many available pairs when more are needed
 
 // the next 3 variables are used for pair statistics
 // also in weapon.cpp there is Weapons_created.
@@ -31,7 +31,7 @@ int Num_pairs_allocated = 0;
 int Num_pairs_checked = 0;
 int pairs_not_created = 0;
 
-obj_pair *Obj_pairs = NULL;
+obj_pair *Obj_pairs = nullptr;
 
 obj_pair pair_used_list;
 obj_pair pair_free_list;
@@ -51,7 +51,7 @@ public:
 	// we need to define a constructor because the hash map can
 	// implicitly insert an object when we use the [] operator
 	collider_pair()
-		: a(NULL), b(NULL), signature_a(-1), signature_b(-1), next_check_time(-1), initialized(false)
+		: a(nullptr), b(nullptr), signature_a(-1), signature_b(-1), next_check_time(-1), initialized(false)
 	{}
 };
 
@@ -105,7 +105,7 @@ void obj_add_pair( object *A, object *B, int check_time, int add_to_end )
 	int (*check_collision)( obj_pair *pair );
 	int swapped = 0;	
 	
-	check_collision = NULL;
+	check_collision = nullptr;
 
 	if ( Num_pairs_allocated == 0 ) return;		// don't have anything to add the pair too
 
@@ -343,7 +343,7 @@ void obj_add_pair( object *A, object *B, int check_time, int add_to_end )
 	// these two should be checked, so add the pair to the
 	// collision pair list.
 
-	if ( pair_free_list.next == NULL )	{
+	if ( pair_free_list.next == nullptr )	{
 		nprintf(( "collision", "Out of object pairs!! Not all collisions will work!\n" ));
 		return;
 	}
@@ -358,7 +358,7 @@ void obj_add_pair( object *A, object *B, int check_time, int add_to_end )
 	if ( Num_pairs >= (Num_pairs_allocated - 20) ) {
 		int i;
 
-		Assert( Obj_pairs != NULL );
+		Assert( Obj_pairs != nullptr );
 
 		int old_pair_count = Num_pairs_allocated;
 		obj_pair *old_pairs_ptr = Obj_pairs;
@@ -371,13 +371,13 @@ void obj_add_pair( object *A, object *B, int check_time, int add_to_end )
 
 		// allow us to fail here and only if we don't do we setup the new pairs
 
-		if (Obj_pairs == NULL) {
+		if (Obj_pairs == nullptr) {
 			// failed, just go back to the way we were and use only the pairs we have already
 			Obj_pairs = old_pairs_ptr;
 		} else {
 			Num_pairs_allocated += PAIRS_BUMP;
 
-			Assert( Obj_pairs != NULL );
+			Assert( Obj_pairs != nullptr );
 
 			// have to reset all of the "next" ptrs for the old set and handle the new set
 			for (i = 0; i < Num_pairs_allocated; i++) {
@@ -385,21 +385,21 @@ void obj_add_pair( object *A, object *B, int check_time, int add_to_end )
 					memset( &Obj_pairs[i], 0, sizeof(obj_pair) );
 					Obj_pairs[i].next = &Obj_pairs[i+1];
 				} else {
-					if (Obj_pairs[i].next != NULL) {
+					if (Obj_pairs[i].next != nullptr) {
 						// the "next" ptr will end up going backwards for used pairs so we have
 						// to allow for that with this craziness...
 						int next_mark = (int)(Obj_pairs[i].next - old_pairs_ptr);
 						Obj_pairs[i].next = &Obj_pairs[next_mark];
 					}
 
-					// catch that last NULL from the previously allocated set
+					// catch that last nullptr from the previously allocated set
 					if ( i == (old_pair_count-1) ) {
 						Obj_pairs[i].next = &Obj_pairs[i+1];
 					}
 				}
 			}
 
-			Obj_pairs[Num_pairs_allocated-1].next = NULL;
+			Obj_pairs[Num_pairs_allocated-1].next = nullptr;
 
 			// reset the "previous" ptrs
 			pair_free_list.next = &Obj_pairs[prev_free_mark];
@@ -415,19 +415,19 @@ void obj_add_pair( object *A, object *B, int check_time, int add_to_end )
 		obj_pair *last, *tmp;
 
 		last = tmp = pair_used_list.next;
-		while( tmp != NULL )	{
-			if ( tmp->next == NULL )
+		while( tmp != nullptr )	{
+			if ( tmp->next == nullptr )
 				last = tmp;
 
 			tmp = tmp->next;
 		}
 
-		if ( last == NULL )
+		if ( last == nullptr )
 			last = &pair_used_list;
 			
 		last->next = new_pair;
-		Assert(new_pair != NULL);
-		new_pair->next = NULL;
+		Assert(new_pair != nullptr);
+		new_pair->next = nullptr;
 	}
 	else {
 		new_pair->next = pair_used_list.next;
@@ -439,7 +439,6 @@ void obj_add_pair( object *A, object *B, int check_time, int add_to_end )
 	
 	new_pair->a = A;
 	new_pair->b = B;
-	new_pair->check_collision = check_collision;
 
 	if ( check_time == -1 ){
 		new_pair->next_check_time = timestamp(0);	// 0 means instantly time out
@@ -1113,8 +1112,6 @@ void obj_find_overlap_colliders(SCP_vector<int> *overlap_list_out, SCP_vector<in
 
 		overlappers.push_back((*list)[i]);
 	}
-
-	overlapped = true;
 }
 
 float obj_get_collider_endpoint(int obj_num, int axis, bool min)
@@ -1204,11 +1201,10 @@ void obj_collide_pair(object *A, object *B)
 {
 	TRACE_SCOPE(tracing::CollidePair);
 
-	uint ctype;
 	int (*check_collision)( obj_pair *pair );
 	int swapped = 0;	
 	
-	check_collision = NULL;
+	check_collision = nullptr;
 
 	if ( A==B ) return;		// Don't check collisions with yourself
 
@@ -1227,7 +1223,7 @@ void obj_collide_pair(object *A, object *B)
 	Assert( A->type < 127 );
 	Assert( B->type < 127 );
 
-	ctype = COLLISION_OF(A->type,B->type);
+	uint ctype = COLLISION_OF(A->type,B->type);
 	switch( ctype )	{
 	case COLLISION_OF(OBJ_WEAPON,OBJ_SHIP):
 		swapped = 1;
@@ -1367,7 +1363,7 @@ void obj_collide_pair(object *A, object *B)
 		B = tmp;
 	}
 
-	collider_pair *collision_info = NULL;
+	collider_pair *collision_info = nullptr;
 	bool valid = false;
 	uint key = (OBJ_INDEX(A) << 12) + OBJ_INDEX(B);
 
@@ -1474,7 +1470,6 @@ void obj_collide_pair(object *A, object *B)
 
 	new_pair.a = A;
 	new_pair.b = B;
-	new_pair.check_collision = check_collision;
 	new_pair.next_check_time = collision_info->next_check_time;
 
 	if ( check_collision(&new_pair) ) {

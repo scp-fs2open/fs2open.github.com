@@ -111,7 +111,7 @@ int collide_debris_ship( obj_pair * pair )
 				int quadrant_num, apply_ship_damage;
 
 				// apply damage to ship unless 1) debris is from ship
-				apply_ship_damage = !(pship->signature == pdebris->parent_sig);
+				apply_ship_damage = (pship->signature != pdebris->parent_sig);
 
 				if ( debris_hit_info.heavy == pship ) {
 					quadrant_num = get_ship_quadrant_from_global(&hitpos, pship);

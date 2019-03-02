@@ -22,7 +22,6 @@ struct mc_info;
 typedef struct collision_info_struct {
 	object	*heavy;
 	object	*light;
-	vec3d	heavy_collision_cm_pos;	// should be zero
 	vec3d	light_collision_cm_pos;	// relative cm collision pos
 	vec3d	r_heavy;						// relative to A
 	vec3d	r_light;						// relative to B
@@ -54,7 +53,6 @@ typedef struct collision_info_struct {
 typedef struct obj_pair	{
 	object *a;
 	object *b;
-	int (*check_collision)( obj_pair * pair );
 	int	next_check_time;	// a timestamp that when elapsed means to check for a collision
 	struct obj_pair *next;
 } obj_pair;
@@ -134,7 +132,7 @@ int pp_collide(vec3d *curpos, vec3d *goalpos, object *goalobjp, float radius);
 int collide_predict_large_ship(object *objp, float distance);
 
 // function to remove old weapons when no more weapon slots available.
-int collide_remove_weapons(void);
+int collide_remove_weapons();
 
 void collide_ship_ship_do_sound(vec3d *world_hit_pos, object *A, object *B, int player_involved);
 void collide_ship_ship_sounds_init();
