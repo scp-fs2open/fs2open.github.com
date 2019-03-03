@@ -172,6 +172,8 @@ ELSE(FSO_USE_LUAJIT)
 			lundump.h
 			lvm.h
 			lzio.h
+
+			lua.natvis
 			)
 
 		ADD_LIBRARY(lua51 ${LUA51_SOURCES})
