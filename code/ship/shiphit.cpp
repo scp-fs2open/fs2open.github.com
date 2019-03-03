@@ -1547,15 +1547,10 @@ void ship_hit_kill(object *ship_objp, object *other_obj, float percent_killed, i
 {
 	Assert(ship_objp);	// Goober5000 - but not other_obj, not only for sexp but also for self-destruct
 
-	Script_system.SetHookObject("Self", ship_objp);
-	if(other_obj != NULL)
-		Script_system.SetHookObject("Killer", other_obj);
-	else
-		Script_system.SetHookObject("Killer", 0);
-
 	if(Script_system.IsConditionOverride(CHA_DEATH, ship_objp))
 	{
 		//WMC - Do scripting stuff
+		Script_system.SetHookObjects(2, "Self", ship_objp, "Killer", other_obj);
 		Script_system.RunCondition(CHA_DEATH, ship_objp);
 		Script_system.RemHookVars(2, "Self", "Killer");
 		return;
@@ -1693,6 +1688,7 @@ void ship_hit_kill(object *ship_objp, object *other_obj, float percent_killed, i
 		ship_maybe_lament();
 	}
 
+	Script_system.SetHookObjects(2, "Self", ship_objp, "Killer", other_obj);
 	Script_system.RunCondition(CHA_DEATH, ship_objp);
 	Script_system.RemHookVars(2, "Self", "Killer");
 }
