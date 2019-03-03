@@ -66,11 +66,14 @@ int collide_debris_ship( obj_pair * pair )
 		hit = debris_check_collision(pdebris, pship, &hitpos, &debris_hit_info );
 		if ( hit )
 		{
-			Script_system.SetHookObjects(4, "Ship", pship, "Debris", pdebris, "Self", pship, "Object", pdebris);
+			Script_system.SetHookObjects(4, "Self", pship, "Object", pdebris, "Ship", pship, "Debris", pdebris);
 			bool ship_override = Script_system.IsConditionOverride(CHA_COLLIDEDEBRIS, pship);
+			Script_system.RemHookVars(4, "Self", "Object", "Ship", "Debris");
 
-			Script_system.SetHookObjects(2, "Self",pdebris, "Object", pship);
+			Script_system.SetHookObjects(4, "Self", pdebris, "Object", pship, "Ship", pship, "Debris", pdebris);
 			bool debris_override = Script_system.IsConditionOverride(CHA_COLLIDESHIP, pdebris);
+			Script_system.RemHookVars(4, "Self", "Object", "Ship", "Debris");
+
 			if(!ship_override && !debris_override)
 			{
 				float		ship_damage;	
@@ -133,15 +136,15 @@ int collide_debris_ship( obj_pair * pair )
 				collide_ship_ship_do_sound(&hitpos, pship, pdebris, pship==Player_obj);
 			}
 
-			Script_system.SetHookObjects(2, "Self",pship, "Object", pdebris);
+			Script_system.SetHookObjects(4, "Self", pship, "Object", pdebris, "Ship", pship, "Debris", pdebris);
 			if(!(debris_override && !ship_override))
 				Script_system.RunCondition(CHA_COLLIDEDEBRIS, pship);
+			Script_system.RemHookVars(4, "Self", "Object", "Ship", "Debris");
 
-			Script_system.SetHookObjects(2, "Self",pdebris, "Object", pship);
+			Script_system.SetHookObjects(4, "Self", pdebris, "Object", pship, "Ship", pship, "Debris", pdebris);
 			if((debris_override && !ship_override) || (!debris_override && !ship_override))
 				Script_system.RunCondition(CHA_COLLIDESHIP, pdebris);
-
-			Script_system.RemHookVars(4, "Ship", "Debris", "Self", "Object");
+			Script_system.RemHookVars(4, "Self", "Object", "Ship", "Debris");
 
 			return 0;
 		}
@@ -221,11 +224,13 @@ int collide_asteroid_ship( obj_pair * pair )
 		if ( hit )
 		{
 			//Scripting support (WMC)
-			Script_system.SetHookObjects(4, "Ship", pship, "Asteroid", pasteroid, "Self",pship, "Object", pasteroid);
+			Script_system.SetHookObjects(4, "Self", pship, "Object", pasteroid, "Ship", pship, "Asteroid", pasteroid);
 			bool ship_override = Script_system.IsConditionOverride(CHA_COLLIDEASTEROID, pship);
+			Script_system.RemHookVars(4, "Self", "Object", "Ship", "Asteroid");
 
-			Script_system.SetHookObjects(2, "Self",pasteroid, "Object", pship);
+			Script_system.SetHookObjects(4, "Self", pasteroid, "Object", pship, "Ship", pship, "Asteroid", pasteroid);
 			bool asteroid_override = Script_system.IsConditionOverride(CHA_COLLIDESHIP, pasteroid);
+			Script_system.RemHookVars(4, "Self", "Object", "Ship", "Asteroid");
 
 			if(!ship_override && !asteroid_override)
 			{
@@ -294,15 +299,15 @@ int collide_asteroid_ship( obj_pair * pair )
 				collide_ship_ship_do_sound(&hitpos, pship, pasteroid, pship==Player_obj);
 			}
 
-			Script_system.SetHookObjects(2, "Self",pship, "Object", pasteroid);
+			Script_system.SetHookObjects(4, "Self", pship, "Object", pasteroid, "Ship", pship, "Asteroid", pasteroid);
 			if(!(asteroid_override && !ship_override))
 				Script_system.RunCondition(CHA_COLLIDEASTEROID, pship);
+			Script_system.RemHookVars(4, "Self", "Object", "Ship", "Asteroid");
 
-			Script_system.SetHookObjects(2, "Self",pasteroid, "Object", pship);
+			Script_system.SetHookObjects(4, "Self", pasteroid, "Object", pship, "Ship", pship, "Asteroid", pasteroid);
 			if((asteroid_override && !ship_override) || (!asteroid_override && !ship_override))
 				Script_system.RunCondition(CHA_COLLIDESHIP, pasteroid);
-
-			Script_system.RemHookVars(4, "Ship", "Asteroid", "Self", "Object");
+			Script_system.RemHookVars(4, "Self", "Object", "Ship", "Asteroid");
 
 			return 0;
 		}
