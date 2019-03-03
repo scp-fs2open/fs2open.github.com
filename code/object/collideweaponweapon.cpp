@@ -82,12 +82,14 @@ int collide_weapon_weapon( obj_pair * pair )
 	//	Rats, do collision detection.
 	if (collide_subdivide(&A->last_pos, &A->pos, A_radius, &B->last_pos, &B->pos, B_radius))
 	{
-		Script_system.SetHookObjects(4, "Weapon", A, "WeaponB", B, "Self",A, "Object", B);
+		Script_system.SetHookObjects(4, "Self", A, "Object", B, "Weapon", A, "WeaponB", B);
 		bool a_override = Script_system.IsConditionOverride(CHA_COLLIDEWEAPON, A);
-		
-		//Should be reversed
-		Script_system.SetHookObjects(4, "Weapon", B, "WeaponB", A, "Self",B, "Object", A);
+		Script_system.RemHookVars(4, "Self", "Object", "Weapon", "WeaponB");
+
+		// Yes, this should be reversed.
+		Script_system.SetHookObjects(4, "Self", B, "Object", A, "Weapon", B, "WeaponB", A);
 		bool b_override = Script_system.IsConditionOverride(CHA_COLLIDEWEAPON, B);
+		Script_system.RemHookVars(4, "Self", "Object", "Weapon", "WeaponB");
 
 		if(!a_override && !b_override)
 		{
@@ -170,17 +172,18 @@ int collide_weapon_weapon( obj_pair * pair )
 
 		if(!(b_override && !a_override))
 		{
-			Script_system.SetHookObjects(4, "Weapon", A, "WeaponB", B, "Self",A, "Object", B);
+			Script_system.SetHookObjects(4, "Self", A, "Object", B, "Weapon", A, "WeaponB", B);
 			Script_system.RunCondition(CHA_COLLIDEWEAPON, A, wpA->weapon_info_index);
+			Script_system.RemHookVars(4, "Self", "Object", "Weapon", "WeaponB");
 		}
 		else
 		{
-			//Should be reversed
-			Script_system.SetHookObjects(4, "Weapon", B, "WeaponB", A, "Self",B, "Object", A);
+			// Yes, this should be reversed.
+			Script_system.SetHookObjects(4, "Self", B, "Object", A, "Weapon", B, "WeaponB", A);
 			Script_system.RunCondition(CHA_COLLIDEWEAPON, B, wpB->weapon_info_index);
+			Script_system.RemHookVars(4, "Self", "Object", "Weapon", "WeaponB");
 		}
 
-		Script_system.RemHookVars(4, "Weapon", "WeaponB", "Self", "Object");
 		return 1;
 	}
 
