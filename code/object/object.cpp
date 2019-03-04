@@ -1498,8 +1498,8 @@ void obj_move_all(float frametime)
 
 			Script_system.SetHookObjects(2, "User", objp, "Target", target);
 			Script_system.RunCondition(CHA_ONWPEQUIPPED, objp);
+			Script_system.RemHookVars(2, "User", "Target");
 		}
-		Script_system.RemHookVars(2, "User", "Target");
 	}
 
 	// Now that we've moved all the objects, move all the models that use intrinsic rotations.  We do that here because we already handled the

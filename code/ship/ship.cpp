@@ -11333,7 +11333,6 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 
 		Script_system.SetHookObjects(2, "User", objp, "Target", target);
 		Script_system.RunCondition(CHA_ONWPFIRED, objp, 1);
-
 		Script_system.RunCondition(CHA_PRIMARYFIRE, objp);
 		Script_system.RemHookVars(2, "User", "Target");
 	}
@@ -11998,7 +11997,8 @@ done_secondary:
 		else
 			target = NULL;
 		if (objp == Player_obj && Player_ai->target_objnum != -1)
-			target = &Objects[Player_ai->target_objnum]; 
+			target = &Objects[Player_ai->target_objnum];
+
 		Script_system.SetHookObjects(2, "User", objp, "Target", target);
 		Script_system.RunCondition(CHA_ONWPFIRED, objp);
 		Script_system.RunCondition(CHA_SECONDARYFIRE, objp);
@@ -12257,12 +12257,13 @@ int ship_select_next_primary(object *objp, int direction)
 		else
 			target = NULL;
 		if (objp == Player_obj && Player_ai->target_objnum != -1)
-			target = &Objects[Player_ai->target_objnum]; 
+			target = &Objects[Player_ai->target_objnum];
+
 		Script_system.SetHookObjects(2, "User", objp, "Target", target);
 		Script_system.RunCondition(CHA_ONWPSELECTED, objp);
-		Script_system.SetHookObjects(2, "User", objp, "Target", target);
 		Script_system.RunCondition(CHA_ONWPDESELECTED, objp);
 		Script_system.RemHookVars(2, "User", "Target");
+
 		return 1;
 	}
 
@@ -12351,12 +12352,13 @@ int ship_select_next_secondary(object *objp)
 			else
 				target = NULL;
 			if (objp == Player_obj && Player_ai->target_objnum != -1)
-				target = &Objects[Player_ai->target_objnum]; 
+				target = &Objects[Player_ai->target_objnum];
+
 			Script_system.SetHookObjects(2, "User", objp, "Target", target);
 			Script_system.RunCondition(CHA_ONWPSELECTED, objp);
-			Script_system.SetHookObjects(2, "User", objp, "Target", target);
 			Script_system.RunCondition(CHA_ONWPDESELECTED, objp);
 			Script_system.RemHookVars(2, "User", "Target");
+
 			return 1;
 		}
 	} // end if

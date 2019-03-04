@@ -2462,11 +2462,9 @@ int parse_create_object_sub(p_object *p_objp)
 	// If the ship is in a wing, this will be done in mission_set_wing_arrival_location() instead
 	// If the ship is in a wing, but the wing is docked then addition of bool brought_in_docked_wing accounts for that status --wookieejedi
 	if (Game_mode & GM_IN_MISSION && ((shipp->wingnum == -1) || (brought_in_docked_wing))) {
-		if (anchor_objnum >= 0)
-			Script_system.SetHookObjects(2, "Ship", &Objects[objnum], "Parent", &Objects[anchor_objnum]);
-		else
-			Script_system.SetHookObjects(2, "Ship", &Objects[objnum], "Parent", NULL);
+		object *anchor_objp = (anchor_objnum >= 0) ? &Objects[anchor_objnum] : nullptr;
 
+		Script_system.SetHookObjects(2, "Ship", &Objects[objnum], "Parent", anchor_objp);
 		Script_system.RunCondition(CHA_ONSHIPARRIVE, &Objects[objnum]);
 		Script_system.RemHookVars(2, "Ship", "Parent");
 	}
@@ -6166,12 +6164,9 @@ void mission_set_wing_arrival_location( wing *wingp, int num_to_set )
 	if (Game_mode & GM_IN_MISSION) {
 		for ( index = wingp->current_count - num_to_set; index < wingp->current_count; index ++ ) {
 			object *objp = &Objects[Ships[wingp->ship_index[index]].objnum];
+			object *anchor_objp = (anchor_objnum >= 0) ? &Objects[anchor_objnum] : nullptr;
 
-			if (anchor_objnum >= 0)
-				Script_system.SetHookObjects(2, "Ship", objp, "Parent", &Objects[anchor_objnum]);
-			else
-				Script_system.SetHookObjects(2, "Ship", objp, "Parent", NULL);
-
+			Script_system.SetHookObjects(2, "Ship", objp, "Parent", anchor_objp);
 			Script_system.RunCondition(CHA_ONSHIPARRIVE, objp);
 			Script_system.RemHookVars(2, "Ship", "Parent");
 
