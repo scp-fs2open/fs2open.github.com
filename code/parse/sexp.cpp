@@ -31694,7 +31694,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t4:\tRepair turret submodel.  Optional argument that defaults to true."},
 
 	{ OP_DESTROY_SUBSYS_INSTANTLY, "destroy-subsys-instantly\r\n"
-		"\tDetroys the specified subsystems without effects."
+		"\tDestroys the specified subsystems without effects."
 		"Takes 2 or more arguments...\r\n"
 		"\t1:\tName of ship subsystem is on.\r\n"
 		"\tRest:\tName of subsystem to destroy.\r\n"},
