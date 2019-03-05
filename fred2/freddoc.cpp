@@ -100,9 +100,10 @@ void CFREDDoc::AssertValid() const {
 }
 #endif //_DEBUG
 
-int CFREDDoc::autoload() {
+bool CFREDDoc::autoload() {
 	char name[256], backup_name[256];
-	int i, r;
+	int i;
+	bool r;
 	FILE *fp;
 
 	cf_create_default_path_string(name, sizeof(name) - 1, CF_TYPE_MISSIONS);
@@ -217,7 +218,7 @@ void CFREDDoc::editor_init_mission() {
 	recreate_dialogs();
 }
 
-int CFREDDoc::load_mission(char *pathname, int flags) {
+bool CFREDDoc::load_mission(char *pathname, int flags) {
 	// make sure we're in the correct working directory!!!!!!
 	chdir(Fred_base_dir);
 
@@ -234,7 +235,7 @@ int CFREDDoc::load_mission(char *pathname, int flags) {
 
 	clear_mission();
 
-	if (parse_main(pathname, flags)) {
+	if (!parse_main(pathname, flags)) {
 		if (flags & MPF_IMPORT_FSM) {
 			sprintf(name, "Unable to import the file \"%s\".", pathname);
 			Fred_view_wnd->MessageBox(name);
@@ -243,7 +244,7 @@ int CFREDDoc::load_mission(char *pathname, int flags) {
 			Fred_view_wnd->MessageBox(name);
 		}
 		create_new_mission();
-		return -1;
+		return false;
 	}
 
 	if ((Num_unknown_ship_classes > 0) || (Num_unknown_weapon_classes > 0) || (Num_unknown_loadout_classes > 0)) {
@@ -360,7 +361,7 @@ int CFREDDoc::load_mission(char *pathname, int flags) {
 
 	recreate_dialogs();
 
-	return 0;
+	return true;
 }
 
 void CFREDDoc::OnDuplicate() {
@@ -514,7 +515,7 @@ void CFREDDoc::OnFileImportFSM() {
 		strcpy_s(fs1_path, fs1_path_mfc);
 
 		// load mission into memory
-		if (load_mission(fs1_path, MPF_IMPORT_FSM))
+		if (!load_mission(fs1_path, MPF_IMPORT_FSM))
 			continue;
 
 		// get filename
@@ -597,7 +598,7 @@ BOOL CFREDDoc::OnOpenDocument(LPCTSTR pathname) {
 	//		unlink(name);
 	//	}
 
-	if (load_mission(mission_pathname)) {
+	if (!load_mission(mission_pathname)) {
 		*Mission_filename = 0;
 		return FALSE;
 	}
@@ -653,7 +654,7 @@ BOOL CFREDDoc::OnSaveDocument(LPCTSTR pathname) {
 	}
 
 	SetModifiedFlag(FALSE);
-	if (load_mission((char *) pathname))
+	if (!load_mission((char *) pathname))
 		Error(LOCATION, "Failed attempting to reload mission after saving.  Report this bug now!");
 
 	if (Briefing_dialog) {

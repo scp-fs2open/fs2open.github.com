@@ -374,7 +374,7 @@ extern fix game_get_overall_frametime();	// for texture animation
 
 // local prototypes
 void parse_player_info2(mission *pm);
-int post_process_mission();
+bool post_process_mission();
 int allocate_subsys_status();
 void parse_common_object_data(p_object	*objp);
 void parse_asteroid_fields(mission *pm);
@@ -5598,7 +5598,7 @@ void parse_variables()
 	}
 }
 
-int parse_mission(mission *pm, int flags)
+bool parse_mission(mission *pm, int flags)
 {
 	int saved_warning_count = Global_warning_count;
 	int saved_error_count = Global_error_count;
@@ -5639,7 +5639,7 @@ int parse_mission(mission *pm, int flags)
 	Current_file_checksum = netmisc_calc_checksum(pm,MISSION_CHECKSUM_SIZE);
 
 	if (flags & MPF_ONLY_MISSION_INFO)
-		return 0;
+		return true;
 
 	parse_plot_info(pm);
 	parse_variables();
@@ -5666,7 +5666,7 @@ int parse_mission(mission *pm, int flags)
 		// if running on standalone server, just print to the log
 		if (Game_mode & GM_STANDALONE_SERVER) {
 			mprintf(("Warning!  Could not load %d ship classes!", Num_unknown_ship_classes));
-			return -2;
+			return false;
 		}
 		// don't do this in FRED; we will display a separate popup
 		else if (!Fred_running) {
@@ -5708,14 +5708,13 @@ int parse_mission(mission *pm, int flags)
 			// now display the popup
 			int popup_rval = popup(PF_TITLE_BIG | PF_TITLE_RED, 2, POPUP_NO, POPUP_YES, text);
 			if (popup_rval == 0) {
-				return -2;
+				return false;
 			}
 		}
 	}
 
-	i = post_process_mission();
-	if (i != 0) {
-		return i;
+	if (!post_process_mission()) {
+		return false;
 	}
 
 	if ((saved_warning_count - Global_warning_count) > 10 || (saved_error_count - Global_error_count) > 0) {
@@ -5727,10 +5726,10 @@ int parse_mission(mission *pm, int flags)
 	log_printf(LOGFILE_EVENT_LOG, "Mission %s loaded.\n", pm->name); 
 
 	// success
-	return 0;
+	return true;
 }
 
-int post_process_mission()
+bool post_process_mission()
 {
 	int			i;
 	int			indices[MAX_SHIPS], objnum;
@@ -5854,7 +5853,7 @@ int post_process_mission()
 				Warning(LOCATION, "%s", error_msg.c_str());
 
 				// syntax errors are unrecoverable, so abort
-				return -3;
+				return false;
 			}
 		}
 	}
@@ -5960,7 +5959,7 @@ int post_process_mission()
 	Last_file_checksum = Current_file_checksum;
 
 	// success
-	return 0;
+	return true;
 }
 
 int get_mission_info(const char *filename, mission *mission_p, bool basic)
@@ -6029,9 +6028,10 @@ void parse_init(bool basic)
 // mai parse routine for parsing a mission.  The default parameter flags tells us which information
 // to get when parsing the mission.  0 means get everything (default).  Other flags just gets us basic
 // info such as game type, number of players etc.
-int parse_main(const char *mission_name, int flags)
+bool parse_main(const char *mission_name, int flags)
 {
-	int rval, i;
+	int i;
+	bool rval;
 
 	// reset parse error stuff
 	Num_unknown_ship_classes = 0;
@@ -6060,7 +6060,7 @@ int parse_main(const char *mission_name, int flags)
 				Current_file_length = -1;
 				Current_file_checksum = 0;
 	
-				rval = -1;
+				rval = false;
 				break;
 			}
 
@@ -6086,7 +6086,7 @@ int parse_main(const char *mission_name, int flags)
 		catch (const parse::ParseException& e)
 		{
 			mprintf(("MISSIONS: Unable to parse '%s'!  Error message = %s.\n", mission_name, e.what()));
-			rval = 1;
+			rval = false;
 			break;
 		}
 	} while (0);
