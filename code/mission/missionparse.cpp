@@ -374,7 +374,7 @@ extern fix game_get_overall_frametime();	// for texture animation
 
 // local prototypes
 void parse_player_info2(mission *pm);
-void post_process_mission();
+int post_process_mission();
 int allocate_subsys_status();
 void parse_common_object_data(p_object	*objp);
 void parse_asteroid_fields(mission *pm);
@@ -5713,7 +5713,10 @@ int parse_mission(mission *pm, int flags)
 		}
 	}
 
-	post_process_mission();
+	i = post_process_mission();
+	if (i != 0) {
+		return i;
+	}
 
 	if ((saved_warning_count - Global_warning_count) > 10 || (saved_error_count - Global_error_count) > 0) {
 		char text[512];
@@ -5727,7 +5730,7 @@ int parse_mission(mission *pm, int flags)
 	return 0;
 }
 
-void post_process_mission()
+int post_process_mission()
 {
 	int			i;
 	int			indices[MAX_SHIPS], objnum;
@@ -5840,6 +5843,7 @@ void post_process_mission()
 
 			// entering this if statement will result in program termination!!!!!
 			// print out an error based on the return value from check_sexp_syntax()
+			// G5K: now entering this statement simply aborts the mission load
 			if ( result ) {
 				SCP_string sexp_str;
 				SCP_string error_msg;
@@ -5847,14 +5851,10 @@ void post_process_mission()
 				convert_sexp_to_string(sexp_str, i, SEXP_ERROR_CHECK_MODE);
 				truncate_message_lines(sexp_str, 30);
 				sprintf(error_msg, "%s.\n\nIn sexpression: %s\n(Error appears to be: %s)", sexp_error_message(result), sexp_str.c_str(), Sexp_nodes[bad_node].text);
+				Warning(LOCATION, "%s", error_msg.c_str());
 
-				if (!Fred_running) {
-					nprintf(("Error", "%s", error_msg.c_str()));
-					Error(LOCATION, "%s", error_msg.c_str());
-				} else {
-					nprintf(("Warning", "%s", error_msg.c_str()));
-					Warning(LOCATION, "%s", error_msg.c_str());
-				}
+				// syntax errors are unrecoverable, so abort
+				return -3;
 			}
 		}
 	}
@@ -5958,6 +5958,9 @@ void post_process_mission()
 		mission_hotkey_reset_saved();
 	}
 	Last_file_checksum = Current_file_checksum;
+
+	// success
+	return 0;
 }
 
 int get_mission_info(const char *filename, mission *mission_p, bool basic)
