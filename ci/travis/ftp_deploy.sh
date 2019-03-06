@@ -10,27 +10,61 @@ if [[ ! "$(curl -V)" == *"sftp"* ]]; then
 
     if [ "$TRAVIS_OS_NAME" = "linux" ]; then
 
-        # Since the Travis CI people are not capable of enabling SSH/SCP support for their libcurl we need to build that manually...
-        # These commands are based on the tutorial from here: http://zeroset.mnim.org/2013/03/14/sftp-support-for-curl-in-ubuntu-12-10-quantal-quetzal-and-later/
-        mkdir /tmp/curl
-        cd /tmp/curl
-        sudo apt-get update
-        sudo apt-get install build-essential debhelper libssh2-1-dev libgnutls-dev libidn11-dev libkrb5-dev libldap2-dev libnss3-dev librtmp-dev libtool openssh-server quilt
-        apt-get source curl
-        sudo apt-get build-dep curl
+        if [ -f ~/curl_cache/curl*.deb ]; then
+            cd ~/curl_cache
+            sudo dpkg -i libcurl3*.deb
+            sudo dpkg -i curl*.deb
+        else
+            # Since the Travis CI people are not capable of enabling SSH/SCP support for their libcurl we need to build that manually...
+            # These commands are based on the tutorial from here: http://zeroset.mnim.org/2013/03/14/sftp-support-for-curl-in-ubuntu-12-10-quantal-quetzal-and-later/
+            mkdir /tmp/curl
+            cd /tmp/curl
+            sudo apt-get update
+            sudo apt-get install build-essential debhelper libssh2-1-dev libgnutls-dev libidn11-dev libkrb5-dev libldap2-dev libnss3-dev librtmp-dev libtool openssh-server quilt
+            apt-get source curl
+            sudo apt-get build-dep curl
 
-        cd curl-*
-        export DEB_BUILD_OPTIONS="nocheck"
-        sudo dpkg-buildpackage -uc -us -j"$(grep -c ^processor /proc/cpuinfo)"
+            cd curl-*
+            export DEB_BUILD_OPTIONS="nocheck"
+            sudo dpkg-buildpackage -uc -us -j"$(grep -c ^processor /proc/cpuinfo)"
 
-        cd ..
-        dpkg -l | grep curl
-        ls -al
-        sudo dpkg -i libcurl3*.deb
-        sudo dpkg -i curl*.deb
+            cd ..
+            dpkg -l | grep curl
+            ls -al
+
+            if [ ! -d ~/curl_cache ]; then
+                mkdir ~/curl_cache
+            fi
+
+            cp libcurl3*.deb curl*.deb ~/curl_cache
+
+            sudo dpkg -i libcurl3*.deb
+            sudo dpkg -i curl*.deb
+        fi
     elif [ "$TRAVIS_OS_NAME" = "osx" ]; then
-        brew install curl --with-libssh2
-        export PATH="/usr/local/opt/curl/bin:$PATH"
+        brew install libssh2
+        
+        if [ -d ~/curl_cache/curl ]; then
+            cd ~/curl_cache/curl
+            sudo make install
+        else
+            mkdir /tmp/curl
+            cd /tmp/curl
+
+            curl -LO "https://curl.haxx.se/download/curl-7.64.0.tar.bz2"
+            tar -xjf curl-7.64.0.tar.bz2
+
+            cd curl-7.64.0
+            ./configure --disable-debug --disable-dependency-tracking --disable-silent-rules --with-libssh2 --with-darwinssl --without-ca-bundle --without-ca-path
+            make -j"$(sysctl hw.logicalcpu | cut -d " " -f 2)"
+
+            if [ ! -d ~/curl_cache ]; then
+                mkdir ~/curl_cache
+            fi
+
+            cp -a . ~/curl_cache/curl
+            sudo make install
+        fi
     fi
 
     # After
