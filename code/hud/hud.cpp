@@ -246,8 +246,8 @@ static int Damage_flash_timer;
 
 HudGauge::HudGauge():
 base_w(0), base_h(0), gauge_config(-1), font_num(font::FONT1), lock_color(false), sexp_lock_color(false), reticle_follow(false),
-active(false), off_by_default(false), sexp_override(false), pop_up(false), disabled_views(0), custom_gauge(false),
-texture_target(-1), canvas_w(-1), canvas_h(-1), target_w(-1), target_h(-1), only_render_in_chase_view(false)
+active(false), off_by_default(false), sexp_override(false), pop_up(false), disabled_views(0), only_render_in_chase_view(false), custom_gauge(false),
+texture_target(-1), canvas_w(-1), canvas_h(-1), target_w(-1), target_h(-1)
 {
 	position[0] = 0;
 	position[1] = 0;
@@ -271,8 +271,8 @@ texture_target(-1), canvas_w(-1), canvas_h(-1), target_w(-1), target_h(-1), only
 HudGauge::HudGauge(int _gauge_object, int _gauge_config, bool _slew, bool _message, int _disabled_views, int r, int g, int b):
 base_w(0), base_h(0), gauge_config(_gauge_config), gauge_object(_gauge_object), font_num(font::FONT1), lock_color(false), sexp_lock_color(false),
 reticle_follow(_slew), active(false), off_by_default(false), sexp_override(false), pop_up(false), message_gauge(_message),
-disabled_views(_disabled_views), custom_gauge(false), textoffset_x(0), textoffset_y(0), texture_target(-1),
-canvas_w(-1), canvas_h(-1), target_w(-1), target_h(-1), only_render_in_chase_view(false)
+disabled_views(_disabled_views), only_render_in_chase_view(false), custom_gauge(false), textoffset_x(0), textoffset_y(0), texture_target(-1),
+canvas_w(-1), canvas_h(-1), target_w(-1), target_h(-1)
 {
 	Assert(gauge_config <= NUM_HUD_GAUGES && gauge_config >= 0);
 
@@ -307,8 +307,8 @@ canvas_w(-1), canvas_h(-1), target_w(-1), target_h(-1), only_render_in_chase_vie
 HudGauge::HudGauge(int _gauge_config, bool _slew, int r, int g, int b, char* _custom_name, char* _custom_text, char* frame_fname, int txtoffset_x, int txtoffset_y):
 base_w(0), base_h(0), gauge_config(_gauge_config), gauge_object(HUD_OBJECT_CUSTOM), font_num(font::FONT1), lock_color(false), sexp_lock_color(false),
 reticle_follow(_slew), active(false), off_by_default(false), sexp_override(false), pop_up(false), message_gauge(false),
-disabled_views(VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY), custom_gauge(true), textoffset_x(txtoffset_x),
-textoffset_y(txtoffset_y), texture_target(-1), canvas_w(-1), canvas_h(-1), target_w(-1), target_h(-1), only_render_in_chase_view(false)
+disabled_views(VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY), only_render_in_chase_view(false), custom_gauge(true), textoffset_x(txtoffset_x),
+textoffset_y(txtoffset_y), texture_target(-1), canvas_w(-1), canvas_h(-1), target_w(-1), target_h(-1)
 {
 	position[0] = 0;
 	position[1] = 0;
