@@ -710,16 +710,20 @@ public:
 
 	float autoaim_fov;
 
+	enum warpstage {
+		STAGE1 = 0,
+		STAGE2,
+		BOTH,
+	};
+
 	// reset to a completely blank ship
 	void clear();
 
     //Helper functions
-    inline bool is_arriving() { return flags[Ship::Ship_Flags::Arriving_stage_1, Ship::Ship_Flags::Arriving_stage_1_ndl, Ship::Ship_Flags::Arriving_stage_2, Ship::Ship_Flags::Arriving_stage_2_ndl]; }
-    inline bool is_arriving_dock_leader() { return flags[Ship::Ship_Flags::Arriving_stage_1, Ship::Ship_Flags::Arriving_stage_2]; }
-    inline bool is_arriving_stage_1_all_docked() { return flags[Ship::Ship_Flags::Arriving_stage_1, Ship::Ship_Flags::Arriving_stage_1_ndl]; }
-    inline bool is_departing() { return flags[Ship::Ship_Flags::Depart_warp, Ship::Ship_Flags::Depart_dockbay]; }
-    inline bool cannot_warp() { return flags[Ship::Ship_Flags::Warp_broken, Ship::Ship_Flags::Warp_never, Ship::Ship_Flags::Disabled]; }
-    inline bool is_dying_or_departing() { return is_departing() || flags[Ship::Ship_Flags::Dying]; }
+	bool is_arriving(ship::warpstage stage = ship::warpstage::BOTH, bool dock_leader_only = false);
+	inline bool is_departing() { return flags[Ship::Ship_Flags::Depart_warp, Ship::Ship_Flags::Depart_dockbay]; }
+	inline bool cannot_warp() { return flags[Ship::Ship_Flags::Warp_broken, Ship::Ship_Flags::Warp_never, Ship::Ship_Flags::Disabled]; }
+	inline bool is_dying_or_departing() { return is_departing() || flags[Ship::Ship_Flags::Dying]; }
 
 	bool has_display_name();
 	const char* get_display_string();

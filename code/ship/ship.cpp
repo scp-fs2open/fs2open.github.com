@@ -6718,7 +6718,7 @@ static void ship_find_warping_ship_helper(object *objp, dock_function_info *info
 		return;
 
 	// am I arriving or departing by warp?
-	if (Ships[objp->instance].is_arriving_dock_leader() || Ships[objp->instance].flags[Ship_Flags::Depart_warp])
+	if (Ships[objp->instance].is_arriving(ship::warpstage::BOTH, true) || Ships[objp->instance].flags[Ship_Flags::Depart_warp])
 	{
 #ifndef NDEBUG
 		// in debug builds, make sure only one of the docked objects has these flags set
@@ -8820,7 +8820,7 @@ void ship_process_post(object * obj, float frametime)
 		}
 	}
 	
-	if ( shipp->is_arriving_dock_leader() && Ai_info[shipp->ai_index].mode != AIM_BAY_EMERGE )	{ // _ndl's don't manage warping
+	if ( shipp->is_arriving(ship::warpstage::BOTH, true) && Ai_info[shipp->ai_index].mode != AIM_BAY_EMERGE )	{
 		// JAS -- if the ship is warping in, just move it forward at a speed
 		// fast enough to move 2x its radius in SHIP_WARP_TIME seconds.
 		shipfx_warpin_frame( obj, frametime );
@@ -18785,7 +18785,7 @@ void ship_render(object* obj, model_draw_list* scene)
 		//WMC - based on Bobb's secondary thruster stuff
 		//which was in turn based on the beam code.
 		//I'm gonna need some serious acid to neutralize this base.
-		if(shipp->is_arriving_dock_leader()) {
+		if(shipp->is_arriving(ship::warpstage::BOTH, true)) {
 			shipp->warpin_effect->warpShipRender();
 		} else if(shipp->flags[Ship_Flags::Depart_warp]) {
 			shipp->warpout_effect->warpShipRender();
@@ -18821,7 +18821,7 @@ void ship_render(object* obj, model_draw_list* scene)
 		//WMC - based on Bobb's secondary thruster stuff
 		//which was in turn based on the beam code.
 		//I'm gonna need some serious acid to neutralize this base.
-		if(shipp->is_arriving_dock_leader()) {
+		if(shipp->is_arriving(ship::warpstage::BOTH, true)) {
 			shipp->warpin_effect->warpShipRender();
 		} else if(shipp->flags[Ship_Flags::Depart_warp]) {
 			shipp->warpout_effect->warpShipRender();
@@ -18847,7 +18847,7 @@ void ship_render(object* obj, model_draw_list* scene)
 	// Warp_shipp points to the ship that is going through a
 	// warp... either this ship or the ship it is docked with.
 	if ( warp_shipp != NULL ) {
-		if ( warp_shipp->is_arriving_dock_leader() ) {
+		if ( warp_shipp->is_arriving(ship::warpstage::BOTH, true) ) {
 			warp_shipp->warpin_effect->warpShipClip(&render_info);
 		} else if ( warp_shipp->flags[Ship_Flags::Depart_warp] ) {
 			warp_shipp->warpout_effect->warpShipClip(&render_info);
@@ -18944,7 +18944,7 @@ void ship_render(object* obj, model_draw_list* scene)
 	//WMC - based on Bobb's secondary thruster stuff
 	//which was in turn based on the beam code.
 	//I'm gonna need some serious acid to neutralize this base.
-	if(shipp->is_arriving_dock_leader()) {
+	if(shipp->is_arriving(ship::warpstage::BOTH, true)) {
 		shipp->warpin_effect->warpShipRender();
 	} else if(shipp->flags[Ship_Flags::Depart_warp]) {
 		shipp->warpout_effect->warpShipRender();
@@ -18958,7 +18958,7 @@ void set_default_ignore_list() {
 	Ignore_List.set(Ship::Ship_Flags::Depart_warp);
 	Ignore_List.set(Ship::Ship_Flags::Dying);
 	Ignore_List.set(Ship::Ship_Flags::Arriving_stage_1);
-	Ignore_List.set(Ship::Ship_Flags::Arriving_stage_1_ndl);
+	Ignore_List.set(Ship::Ship_Flags::Arriving_stage_1_dock_follower);
 	Ignore_List.set(Ship::Ship_Flags::Hidden_from_sensors);
 }
 
@@ -18985,4 +18985,49 @@ ship_subsys* ship_get_subsys_for_submodel(ship* shipp, int submodel)
 	}
 
 	return nullptr;
+}
+
+/**
+ * Is the requested type of ship arriving in the requested stage?
+ *
+ * Dock leaders & followers need to be handled separately such that
+ * leaders handle the warp process, but followers need to behave as though
+ * warping with respect to targeting, drawing thrusters, radar, AI
+ * targeting, etc
+ *
+ * @param stage Check one of stage1, stage2 or both
+ * @param dock_leader_only only the dock leader, or leader/followers/non-docked?
+ *
+ * @return is the ship arriving, bool
+ */
+bool ship::is_arriving(ship::warpstage stage, bool dock_leader_only)
+{
+	if (stage == ship::warpstage::BOTH) {
+		if (dock_leader_only == false) {
+			return flags[Ship::Ship_Flags::Arriving_stage_1, Ship::Ship_Flags::Arriving_stage_1_dock_follower, Ship::Ship_Flags::Arriving_stage_2, Ship::Ship_Flags::Arriving_stage_2_dock_follower];
+		}
+		else {
+			return flags[Ship::Ship_Flags::Arriving_stage_1, Ship::Ship_Flags::Arriving_stage_2];
+		}
+	}
+	else if (stage == ship::warpstage::STAGE1) {
+		if (dock_leader_only == false) {
+			return flags[Ship::Ship_Flags::Arriving_stage_1, Ship::Ship_Flags::Arriving_stage_1_dock_follower];
+		}
+		else {
+			return flags[Ship::Ship_Flags::Arriving_stage_1];
+		}
+	}
+	if (stage == ship::warpstage::STAGE2) {
+		if (dock_leader_only == false) {
+			return flags[Ship::Ship_Flags::Arriving_stage_2, Ship::Ship_Flags::Arriving_stage_2_dock_follower];
+		}
+		else {
+			return flags[Ship::Ship_Flags::Arriving_stage_2];
+		}
+	}
+
+	// should never reach here
+	Assertion(false, "ship::is_arriving didn't handle all possible states; get a coder!");
+	return false;
 }
