@@ -18990,20 +18990,20 @@ ship_subsys* ship_get_subsys_for_submodel(ship* shipp, int submodel)
 /**
  * Is the requested type of ship arriving in the requested stage?
  *
- * Dock leaders & followers need to be handled separately such that
- * leaders handle the warp process, but followers need to behave as though
- * warping with respect to targeting, drawing thrusters, radar, AI
- * targeting, etc
+ * Dock leaders (plus single ships) & dock followers need to be handled
+ * separately such that leaders+singles handle the warp process, but
+ * followers need to behave as though they are warping with respect to
+ * HUD targeting, drawing thrusters, radar, AI targeting, etc
  *
  * @param stage Check one of stage1, stage2 or both
- * @param dock_leader_only only the dock leader, or leader/followers/non-docked?
+ * @param dock_leader_or_single_only check dock-leaders+singles, or dock-followers?
  *
  * @return is the ship arriving, bool
  */
-bool ship::is_arriving(ship::warpstage stage, bool dock_leader_only)
+bool ship::is_arriving(ship::warpstage stage, bool dock_leader_or_single_only)
 {
 	if (stage == ship::warpstage::BOTH) {
-		if (dock_leader_only == false) {
+		if (!dock_leader_or_single_only) {
 			return flags[Ship::Ship_Flags::Arriving_stage_1, Ship::Ship_Flags::Arriving_stage_1_dock_follower, Ship::Ship_Flags::Arriving_stage_2, Ship::Ship_Flags::Arriving_stage_2_dock_follower];
 		}
 		else {
@@ -19011,7 +19011,7 @@ bool ship::is_arriving(ship::warpstage stage, bool dock_leader_only)
 		}
 	}
 	else if (stage == ship::warpstage::STAGE1) {
-		if (dock_leader_only == false) {
+		if (!dock_leader_or_single_only) {
 			return flags[Ship::Ship_Flags::Arriving_stage_1, Ship::Ship_Flags::Arriving_stage_1_dock_follower];
 		}
 		else {
@@ -19019,7 +19019,7 @@ bool ship::is_arriving(ship::warpstage stage, bool dock_leader_only)
 		}
 	}
 	if (stage == ship::warpstage::STAGE2) {
-		if (dock_leader_only == false) {
+		if (!dock_leader_or_single_only) {
 			return flags[Ship::Ship_Flags::Arriving_stage_2, Ship::Ship_Flags::Arriving_stage_2_dock_follower];
 		}
 		else {
