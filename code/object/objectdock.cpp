@@ -708,6 +708,31 @@ void dock_find_max_speed_helper(object *objp, dock_function_info *infop)
 		infop->maintained_variables.objp_value = objp;
 	}
 }
+
+void object_set_arriving_stage1_ndl_flag_helper(object *objp, dock_function_info * /*infop*/ )
+{
+	if (! Ships[objp->instance].flags[Ship::Ship_Flags::Dock_leader])
+		Ships[objp->instance].flags.set(Ship::Ship_Flags::Arriving_stage_1_dock_follower);
+}
+
+void object_remove_arriving_stage1_ndl_flag_helper(object *objp, dock_function_info * /*infop*/ )
+{
+	if (! Ships[objp->instance].flags[Ship::Ship_Flags::Dock_leader])
+		Ships[objp->instance].flags.remove(Ship::Ship_Flags::Arriving_stage_1_dock_follower);
+}
+
+void object_set_arriving_stage2_ndl_flag_helper(object *objp, dock_function_info * /*infop*/ )
+{
+	if (! Ships[objp->instance].flags[Ship::Ship_Flags::Dock_leader])
+		Ships[objp->instance].flags.set(Ship::Ship_Flags::Arriving_stage_2_dock_follower);
+}
+
+void object_remove_arriving_stage2_ndl_flag_helper(object *objp, dock_function_info * /*infop*/ )
+{
+	if (! Ships[objp->instance].flags[Ship::Ship_Flags::Dock_leader])
+		Ships[objp->instance].flags.remove(Ship::Ship_Flags::Arriving_stage_2_dock_follower);
+}
+
 // ---------------------------------------------------------------------------------------------------------------
 // end of über code block ----------------------------------------------------------------------------------------
 
