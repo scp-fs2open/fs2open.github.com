@@ -720,7 +720,7 @@ public:
 	void clear();
 
     //Helper functions
-	bool is_arriving(ship::warpstage stage = ship::warpstage::BOTH, bool dock_leader_or_single_only = false);
+	bool is_arriving(ship::warpstage stage = ship::warpstage::BOTH, bool dock_leader_or_single = false);
 	inline bool is_departing() { return flags[Ship::Ship_Flags::Depart_warp, Ship::Ship_Flags::Depart_dockbay]; }
 	inline bool cannot_warp() { return flags[Ship::Ship_Flags::Warp_broken, Ship::Ship_Flags::Warp_never, Ship::Ship_Flags::Disabled]; }
 	inline bool is_dying_or_departing() { return is_departing() || flags[Ship::Ship_Flags::Dying]; }
