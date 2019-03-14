@@ -796,8 +796,22 @@ void event_editor::OnCancel()
 // this is called the clicking the ID_CANCEL button
 void event_editor::On_Cancel()
 {
+	int z;
+
 	audiostream_close_file(m_wave_id, 0);
 	m_wave_id = -1;
+
+	if (query_modified()) {
+		z = MessageBox("Do you want to keep your changes?", "Close", MB_ICONQUESTION | MB_YESNOCANCEL);
+		if (z == IDCANCEL) {
+			return;
+		}
+
+		if (z == IDYES) {
+			OnOk();
+			return;
+		}
+	}
 
 	theApp.record_window_data(&Events_wnd_data, this);
 	delete Event_editor_dlg;
