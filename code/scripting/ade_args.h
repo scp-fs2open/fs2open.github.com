@@ -299,7 +299,10 @@ void set_single_arg(lua_State* L, char fmt, ade_odata_setter<T>&& od)
 	luacpp::convert::pushValue(L, std::forward<ade_odata_setter<T>>(od));
 }
 void set_single_arg(lua_State* /*L*/, char fmt, luacpp::LuaTable* table);
+void set_single_arg(lua_State* /*L*/, char fmt, const luacpp::LuaTable& table);
+
 void set_single_arg(lua_State* /*L*/, char fmt, luacpp::LuaFunction* func);
+void set_single_arg(lua_State* /*L*/, char fmt, const luacpp::LuaFunction& func);
 
 // This is not a template function so we can put the implementation in a source file
 inline void set_args_actual(lua_State* /*L*/, set_args_state& /*state*/, const char* fmt)

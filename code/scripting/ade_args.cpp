@@ -108,15 +108,25 @@ void set_single_arg(lua_State* L, char fmt, const char* s)
 	// WMC - Isn't working with HookVar for some strange reason
 	lua_pushstring(L, s);
 }
-void set_single_arg(lua_State*, char fmt, luacpp::LuaTable* table)
+
+void set_single_arg(lua_State* L, char fmt, luacpp::LuaTable* table)
+{
+	set_single_arg(L, fmt, *table);
+}
+void set_single_arg(lua_State*, char fmt, const luacpp::LuaTable& table)
 {
 	Assertion(fmt == 't', "Invalid format character '%c' for table type!", fmt);
-	table->pushValue();
+	table.pushValue();
 }
-void set_single_arg(lua_State*, char fmt, luacpp::LuaFunction* func)
+
+void set_single_arg(lua_State* L, char fmt, luacpp::LuaFunction* func)
+{
+	set_single_arg(L, fmt, *func);
+}
+void set_single_arg(lua_State*, char fmt, const luacpp::LuaFunction& func)
 {
 	Assertion(fmt == 'u', "Invalid format character '%c' for function type!", fmt);
-	func->pushValue();
+	func.pushValue();
 }
 
 } // namespace internal

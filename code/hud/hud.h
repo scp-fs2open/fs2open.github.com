@@ -110,6 +110,7 @@ extern int Hud_max_targeting_range;
 
 void HUD_init_colors();
 void HUD_init();
+void hud_scripting_close(lua_State*);
 void hud_close();
 void hud_level_close();
 void hud_update_frame(float frametime);		// updates hud systems not dependant on rendering

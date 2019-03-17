@@ -10,6 +10,8 @@ namespace api {
 
 DECLARE_ADE_OBJ(l_HudGauge, HudGauge*);
 
+DECLARE_ADE_OBJ(l_HudGaugeDrawFuncs, HudGauge*);
+
 }
 }
 

@@ -5,7 +5,7 @@
  * or otherwise commercially exploit the source or things you created based on the 
  * source.
  *
-*/ 
+*/
 
 
 #include "ai/aigoals.h"
@@ -23,9 +23,10 @@
 #include "hud/hudets.h"
 #include "hud/hudlock.h"
 #include "hud/hudmessage.h"
-#include "hud/hudnavigation.h"	//kazan
+#include "hud/hudnavigation.h"    //kazan
 #include "hud/hudobserver.h"
 #include "hud/hudreticle.h"
+#include "hud/hudscripting.h"
 #include "hud/hudshield.h"
 #include "hud/hudsquadmsg.h"
 #include "hud/hudtarget.h"
@@ -50,6 +51,7 @@
 #include "radar/radar.h"
 #include "radar/radarsetup.h"
 #include "render/3d.h"
+#include "scripting/scripting.h"
 #include "ship/ship.h"
 #include "starfield/supernova.h"
 #include "weapon/emp.h"
@@ -1221,6 +1223,25 @@ void HUD_init()
 		default_hud_gauges[j]->initialize();
 		default_hud_gauges[j]->resetTimers();
 		default_hud_gauges[j]->updateSexpOverride(false);
+	}
+
+	Script_system.OnStateDestroy.add(hud_scripting_close);
+}
+
+void hud_scripting_close(lua_State*) {
+	// Clean up Lua references so that we don't have dangling references on to the lua state in the HUD gauges
+	for (auto it = Ship_info.begin(); it != Ship_info.end(); ++it) {
+		for (const auto& gauge : it->hud_gauges) {
+			if (gauge->getObjectType() == HUD_OBJECT_SCRIPTING) {
+				static_cast<HudGaugeScripting*>(gauge.get())->setRenderFunction(luacpp::LuaFunction());
+			}
+		}
+	}
+
+	for (const auto& gauge : default_hud_gauges) {
+		if (gauge->getObjectType() == HUD_OBJECT_SCRIPTING) {
+			static_cast<HudGaugeScripting*>(gauge.get())->setRenderFunction(luacpp::LuaFunction());
+		}
 	}
 }
 
