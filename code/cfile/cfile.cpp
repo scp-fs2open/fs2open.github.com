@@ -101,8 +101,7 @@ static int Cfile_stack_pos = 0;
 
 static char Cfile_stack[CFILE_STACK_MAX][CFILE_ROOT_DIRECTORY_LEN];
 
-Cfile_block Cfile_block_list[MAX_CFILE_BLOCKS];
-static CFILE Cfile_list[MAX_CFILE_BLOCKS];
+std::array<CFILE, MAX_CFILE_BLOCKS> Cfile_block_list;
 
 static const char *Cfile_cdrom_dir = NULL;
 
@@ -201,7 +200,6 @@ int cfile_init(const char *exe_dir, const char *cdrom_dir)
 
 	strncpy(buf, exe_dir, CFILE_ROOT_DIRECTORY_LEN - 1);
 	buf[CFILE_ROOT_DIRECTORY_LEN - 1] = '\0';
-	size_t i = strlen(buf);
 
 	// are we in a root directory?		
 	if(cfile_in_root_dir(buf)){
@@ -229,9 +227,8 @@ int cfile_init(const char *exe_dir, const char *cdrom_dir)
 	strcpy_s(Cfile_root_dir, buf);
 	strcpy_s(Cfile_user_dir, os_get_config_path().c_str());
 
-	for (i = 0; i < MAX_CFILE_BLOCKS; i++) {
-		Cfile_block_list[i].type = CFILE_BLOCK_UNUSED;
-	}
+	// Initialize the block list with proper data
+	Cfile_block_list.fill({});
 
 	// 32 bit CRC table init
 	cf_chksum_long_init();
@@ -865,14 +862,14 @@ CFILE *ctmpfile()
 static int cfget_cfile_block()
 {	
 	int i;
-	Cfile_block *cb;
+	CFILE* cfile;
 
 	for ( i = 0; i < MAX_CFILE_BLOCKS; i++ ) {
-		cb = &Cfile_block_list[i];
-		if ( cb->type == CFILE_BLOCK_UNUSED ) {
-			cb->data = NULL;
-			cb->fp = NULL;
-			cb->type = CFILE_BLOCK_USED;
+		cfile = &Cfile_block_list[i];
+		if (cfile->type == CFILE_BLOCK_UNUSED) {
+			cfile->data = nullptr;
+			cfile->fp = nullptr;
+			cfile->type = CFILE_BLOCK_USED;
 			return i;
 		}
 	}
@@ -900,39 +897,36 @@ int cfclose( CFILE * cfile )
 	int result;
 
 	Assert(cfile != NULL);
-	Cfile_block *cb;
-	Assert(cfile->id >= 0 && cfile->id < MAX_CFILE_BLOCKS);
-	cb = &Cfile_block_list[cfile->id];	
 
 	result = 0;
-	if ( cb->data && cb->mem_mapped ) {
+	if ( cfile->data && cfile->mem_mapped ) {
 		// close memory mapped file
 #if defined _WIN32
-		result = UnmapViewOfFile((void*)cb->data);
+		result = UnmapViewOfFile((void*)cfile->data);
 		Assert(result);
-		result = CloseHandle(cb->hInFile);		
+		result = CloseHandle(cfile->hInFile);
 		Assert(result);	// Ensure file handle is closed properly
-		result = CloseHandle(cb->hMapFile);		
+		result = CloseHandle(cfile->hMapFile);
 		Assert(result);	// Ensure file handle is closed properly
 		result = 0;
 #elif defined SCP_UNIX
 		// FIXME: result is wrong after munmap() but it is successful
-		//result = munmap(cb->data, cb->data_length);
+		//result = munmap(cfile->data, cfile->data_length);
 		//Assert(result);
 		// This const_cast is safe since the pointer returned by mmap was also non-const
-		munmap(const_cast<void*>(cb->data), cb->data_length);
-		if ( cb->fp != NULL)
-			result = fclose(cb->fp);
+		munmap(const_cast<void*>(cfile->data), cfile->data_length);
+		if ( cfile->fp != nullptr)
+			result = fclose(cfile->fp);
 #endif
 
-	} else if ( cb->fp != NULL )	{
-		Assert(cb->fp != NULL);
-		result = fclose(cb->fp);
+	} else if ( cfile->fp != nullptr )	{
+		Assert(cfile->fp != nullptr);
+		result = fclose(cfile->fp);
 	} else {
 		// VP  do nothing
 	}
 
-	cb->type = CFILE_BLOCK_UNUSED;
+	cfile->type = CFILE_BLOCK_UNUSED;
 	return result;
 }
 
@@ -942,13 +936,8 @@ int cf_is_valid(CFILE *cfile)
 	if(cfile == NULL)
 		return 0;
 
-	//Does it have a valid ID?
-	if(cfile->id < 0 || cfile->id >= MAX_CFILE_BLOCKS)
-		return 0;
-
 	//Is it used?
-	Cfile_block *cb = &Cfile_block_list[cfile->id];	
-	if(cb->type != CFILE_BLOCK_USED && (cb->fp != NULL || cb->data != NULL))
+	if (cfile->type != CFILE_BLOCK_USED && (cfile->fp != nullptr || cfile->data != nullptr))
 		return 0;
 
 	//It's good, as near as we can tell.
@@ -973,20 +962,15 @@ static CFILE *cf_open_fill_cfblock(const char* source, int line, FILE *fp, int t
 		fclose(fp);
 		return NULL;
 	} else {
-		CFILE *cfp;
-		Cfile_block *cfbp;
-		cfbp = &Cfile_block_list[cfile_block_index];
-		cfp = &Cfile_list[cfile_block_index];
-		cfp->id = cfile_block_index;
-		cfp->version = 0;
-		cfbp->data = NULL;
-		cfbp->mem_mapped = false;
-		cfbp->fp = fp;
-		cfbp->dir_type = type;
-		cfbp->max_read_len = 0;
+		CFILE *cfp = &Cfile_block_list[cfile_block_index];
+		cfp->data = nullptr;
+		cfp->mem_mapped = false;
+		cfp->fp = fp;
+		cfp->dir_type = type;
+		cfp->max_read_len = 0;
 
-		cfbp->source_file = source;
-		cfbp->line_num = line;
+		cfp->source_file = source;
+		cfp->line_num = line;
 		
 		int pos = ftell(fp);
 		if(pos == -1L)
@@ -1014,21 +998,16 @@ static CFILE *cf_open_packed_cfblock(const char* source, int line, FILE *fp, int
 		fclose(fp);
 		return NULL;
 	} else {
-		CFILE *cfp;
-		Cfile_block *cfbp;
-		cfbp = &Cfile_block_list[cfile_block_index];
-	
-		cfp = &Cfile_list[cfile_block_index];
-		cfp->id = cfile_block_index;
-		cfp->version = 0;
-		cfbp->data = NULL;
-		cfbp->fp = fp;
-		cfbp->mem_mapped = false;
-		cfbp->dir_type = type;
-		cfbp->max_read_len = 0;
+		CFILE *cfp = &Cfile_block_list[cfile_block_index];
 
-		cfbp->source_file = source;
-		cfbp->line_num = line;
+		cfp->data = nullptr;
+		cfp->fp = fp;
+		cfp->mem_mapped = false;
+		cfp->dir_type = type;
+		cfp->max_read_len = 0;
+
+		cfp->source_file = source;
+		cfp->line_num = line;
 
 		cf_init_lowlevel_read_code(cfp,offset, size, 0 );
 
@@ -1060,44 +1039,39 @@ static CFILE *cf_open_mapped_fill_cfblock(const char* source, int line, FILE *fp
 		return NULL;
 	}
 	else {
-		CFILE *cfp;
-		Cfile_block *cfbp;
-		cfbp = &Cfile_block_list[cfile_block_index];
+		CFILE *cfp = &Cfile_block_list[cfile_block_index];
 
-		cfp = &Cfile_list[cfile_block_index];
-		cfp->id = cfile_block_index;
-		cfp->version = 0;
-		cfbp->max_read_len = 0;
-		cfbp->fp = NULL;
-		cfbp->mem_mapped = true;
+		cfp->max_read_len = 0;
+		cfp->fp = nullptr;
+		cfp->mem_mapped = true;
 #if defined _WIN32
-		cfbp->hInFile = hFile;
+		cfp->hInFile = hFile;
 #endif
-		cfbp->dir_type = type;
+		cfp->dir_type = type;
 
-		cfbp->source_file = source;
-		cfbp->line_num = line;
+		cfp->source_file = source;
+		cfp->line_num = line;
 
 		cf_init_lowlevel_read_code(cfp, 0, 0, 0 );
 #if defined _WIN32
-		cfbp->hMapFile = CreateFileMapping(cfbp->hInFile, NULL, PAGE_READONLY, 0, 0, NULL);
-		if (cfbp->hMapFile == NULL) { 
+		cfp->hMapFile = CreateFileMapping(cfp->hInFile, NULL, PAGE_READONLY, 0, 0, NULL);
+		if (cfp->hMapFile == NULL) {
 			nprintf(("Error", "Could not create file-mapping object.\n")); 
 			return NULL;
 		} 
 	
-		cfbp->data = (ubyte*)MapViewOfFile(cfbp->hMapFile, FILE_MAP_READ, 0, 0, 0);
-		Assert( cfbp->data != NULL );		
+		cfp->data = (ubyte*)MapViewOfFile(cfp->hMapFile, FILE_MAP_READ, 0, 0, 0);
+		Assert( cfp->data != NULL );
 #elif defined SCP_UNIX
-		cfbp->fp = fp;
-		cfbp->data_length = filelength( fileno(fp) );
-		cfbp->data = mmap(NULL,						// start
-								cfbp->data_length,	// length
-								PROT_READ,				// prot
-								MAP_SHARED,				// flags
-								fileno(fp),				// fd
-								0);						// offset
-		Assert( cfbp->data != NULL );		
+		cfp->fp = fp;
+		cfp->data_length = filelength(fileno(fp));
+		cfp->data = mmap(nullptr,                        // start
+		                 cfp->data_length,    // length
+		                 PROT_READ,                // prot
+		                 MAP_SHARED,                // flags
+		                 fileno(fp),                // fd
+		                 0);                        // offset
+		Assert(cfp->data != nullptr);
 #endif
 
 		return cfp;
@@ -1113,23 +1087,18 @@ static CFILE *cf_open_memory_fill_cfblock(const char* source, int line, const vo
 		return NULL;
 	}
 	else {
-		CFILE *cfp;
-		Cfile_block *cfbp;
-		cfbp = &Cfile_block_list[cfile_block_index];
+		CFILE *cfp = &Cfile_block_list[cfile_block_index];
 
-		cfp = &Cfile_list[cfile_block_index];
-		cfp->id = cfile_block_index;
-		cfp->version = 0;
-		cfbp->max_read_len = 0;
-		cfbp->fp = NULL;
-		cfbp->mem_mapped = false;
-		cfbp->dir_type = dir_type;
+		cfp->max_read_len = 0;
+		cfp->fp = nullptr;
+		cfp->mem_mapped = false;
+		cfp->dir_type = dir_type;
 
-		cfbp->source_file = source;
-		cfbp->line_num = line;
+		cfp->source_file = source;
+		cfp->line_num = line;
 
 		cf_init_lowlevel_read_code(cfp, 0, size, 0 );
-		cfbp->data = data;
+		cfp->data = data;
 
 		return cfp;
 	}
@@ -1137,7 +1106,7 @@ static CFILE *cf_open_memory_fill_cfblock(const char* source, int line, const vo
 
 int cf_get_dir_type(CFILE *cfile)
 {
-	return Cfile_block_list[cfile->id].dir_type;
+	return cfile->dir_type;
 }
 
 // cf_returndata() returns the data pointer for a memory-mapped file that is associated
@@ -1148,11 +1117,8 @@ int cf_get_dir_type(CFILE *cfile)
 const void *cf_returndata(CFILE *cfile)
 {
 	Assert(cfile != NULL);
-	Cfile_block *cb;
-	Assert(cfile->id >= 0 && cfile->id < MAX_CFILE_BLOCKS);
-	cb = &Cfile_block_list[cfile->id];	
-	Assert(cb->data != NULL);
-	return cb->data;
+	Assert(cfile->data != nullptr);
+	return cfile->data;
 }
 
 // cutoff point where cfread() will throw an error when it hits this limit
@@ -1160,26 +1126,20 @@ const void *cf_returndata(CFILE *cfile)
 void cf_set_max_read_len( CFILE * cfile, size_t len )
 {
 	Assert( cfile != NULL );
-	Assert( (cfile->id >= 0) && (cfile->id < MAX_CFILE_BLOCKS) );
-
-	Cfile_block *cb = &Cfile_block_list[cfile->id];
 
 	if (len) {
-		cb->max_read_len = cb->raw_position + len;
+		cfile->max_read_len = cfile->raw_position + len;
 	} else {
-		cb->max_read_len = 0;
+		cfile->max_read_len = 0;
 	}
 }
 
 // routines to read basic data types from CFILE's.  Put here to
 // simplify mac/pc reading from cfiles.
 
-float cfread_float(CFILE *file, int ver, float deflt)
+float cfread_float(CFILE* file, float deflt)
 {
 	float f;
-
-	if (file->version < ver)
-		return deflt;
 
 	if (cfread( &f, sizeof(f), 1, file) != 1)
 		return deflt;
@@ -1188,13 +1148,10 @@ float cfread_float(CFILE *file, int ver, float deflt)
 	return f;
 }
 
-int cfread_int(CFILE *file, int ver, int deflt)
+int cfread_int(CFILE* file, int deflt)
 {
 	int i;
 
-	if (file->version < ver)
-		return deflt;
-
 	if (cfread( &i, sizeof(i), 1, file) != 1)
 		return deflt;
 
@@ -1202,13 +1159,10 @@ int cfread_int(CFILE *file, int ver, int deflt)
 	return i;
 }
 
-uint cfread_uint(CFILE *file, int ver, uint deflt)
+uint cfread_uint(CFILE* file, uint deflt)
 {
 	uint i;
 
-	if (file->version < ver)
-		return deflt;
-
 	if (cfread( &i, sizeof(i), 1, file) != 1)
 		return deflt;
 
@@ -1216,13 +1170,10 @@ uint cfread_uint(CFILE *file, int ver, uint deflt)
 	return i;
 }
 
-short cfread_short(CFILE *file, int ver, short deflt)
+short cfread_short(CFILE* file, short deflt)
 {
 	short s;
 
-	if (file->version < ver)
-		return deflt;
-
 	if (cfread( &s, sizeof(s), 1, file) != 1)
 		return deflt;
 
@@ -1230,13 +1181,10 @@ short cfread_short(CFILE *file, int ver, short deflt)
 	return s;
 }
 
-ushort cfread_ushort(CFILE *file, int ver, ushort deflt)
+ushort cfread_ushort(CFILE* file, ushort deflt)
 {
 	ushort s;
 
-	if (file->version < ver)
-		return deflt;
-
 	if (cfread( &s, sizeof(s), 1, file) != 1)
 		return deflt;
 
@@ -1244,12 +1192,9 @@ ushort cfread_ushort(CFILE *file, int ver, ushort deflt)
 	return s;
 }
 
-ubyte cfread_ubyte(CFILE *file, int ver, ubyte deflt)
+ubyte cfread_ubyte(CFILE* file, ubyte deflt)
 {
 	ubyte b;
-
-	if (file->version < ver)
-		return deflt;
 
 	if (cfread( &b, sizeof(b), 1, file) != 1)
 		return deflt;
@@ -1257,28 +1202,15 @@ ubyte cfread_ubyte(CFILE *file, int ver, ubyte deflt)
 	return b;
 }
 
-void cfread_vector(vec3d *vec, CFILE *file, int ver, vec3d *deflt)
-{
-	if (file->version < ver) {
-		if (deflt)
-			*vec = *deflt;
-		else
-			vec->xyz.x = vec->xyz.y = vec->xyz.z = 0.0f;
-
-		return;
-	}
-
-	vec->xyz.x = cfread_float(file, ver, deflt ? deflt->xyz.x : 0.0f);
-	vec->xyz.y = cfread_float(file, ver, deflt ? deflt->xyz.y : 0.0f);
-	vec->xyz.z = cfread_float(file, ver, deflt ? deflt->xyz.z : 0.0f);
+void cfread_vector(vec3d* vec, CFILE* file, vec3d* deflt) {
+	vec->xyz.x = cfread_float(file, deflt ? deflt->xyz.x : 0.0f);
+	vec->xyz.y = cfread_float(file, deflt ? deflt->xyz.y : 0.0f);
+	vec->xyz.z = cfread_float(file, deflt ? deflt->xyz.z : 0.0f);
 }
 
-char cfread_char(CFILE *file, int ver, char deflt)
+char cfread_char(CFILE* file, char deflt)
 {
 	char b;
-
-	if (file->version < ver)
-		return deflt;
 
 	if (cfread( &b, sizeof(b), 1, file) != 1)
 		return deflt;
@@ -1392,22 +1324,18 @@ int cfwrite_string_len(const char *buf, CFILE *file)
 }
 
 // Get the filelength
-int cfilelength( CFILE * cfile )
-{
+int cfilelength(CFILE* cfile) {
 	Assert(cfile != NULL);
-	Cfile_block *cb;
-	Assert(cfile->id >= 0 && cfile->id < MAX_CFILE_BLOCKS);
-	cb = &Cfile_block_list[cfile->id];	
 
 	// TODO: return length of memory mapped file
-	Assert( !cb->mem_mapped );
+	Assert(!cfile->mem_mapped);
 
-	// cb->size gets set at cfopen
-	
+	// cfile->size gets set at cfopen
+
 	// The rest of the code still uses ints, do an overflow check to detect cases where this fails
-	Assertion(cb->size <= static_cast<size_t>(std::numeric_limits<int>::max()),
-		"Integer overflow in cfilelength! A file is too large (but I don't know which...).");
-	return (int) cb->size;
+	Assertion(cfile->size <= static_cast<size_t>(std::numeric_limits<int>::max()),
+	          "Integer overflow in cfilelength! A file is too large (but I don't know which...).");
+	return (int) cfile->size;
 }
 
 // cfwrite() writes to the file
@@ -1423,15 +1351,13 @@ int cfwrite(const void *buf, int elsize, int nelem, CFILE *cfile)
 	if(buf == NULL || elsize == 0 || nelem == 0)
 		return 0;
 
-	Cfile_block *cb = &Cfile_block_list[cfile->id];	
-
-	if(cb->lib_offset != 0)
+	if(cfile->lib_offset != 0)
 	{
 		Error(LOCATION, "Attempt to write to a VP file (unsupported)");
 		return 0;
 	}
 
-	if(cb->data != NULL)
+	if(cfile->data != nullptr)
 	{
 		Warning(LOCATION, "Writing is not supported for mem-mapped files");
 		return EOF;
@@ -1440,16 +1366,16 @@ int cfwrite(const void *buf, int elsize, int nelem, CFILE *cfile)
 	size_t bytes_written = 0;
 	size_t size = elsize * nelem;
 
-	bytes_written = fwrite(buf, 1, size, cb->fp);
+	bytes_written = fwrite(buf, 1, size, cfile->fp);
 
 	//WMC - update filesize and position
 	if (bytes_written > 0) {
-		cb->size += bytes_written;
-		cb->raw_position += bytes_written;
+		cfile->size += bytes_written;
+		cfile->raw_position += bytes_written;
 	}
 
 #if defined(CHECK_SIZE) && !defined(NDEBUG)
-	Assert( cb->size == filelength(fileno(cb->fp)) );
+	Assert( cfile->size == filelength(fileno(cfile->fp)) );
 #endif
 
 	return (int)(bytes_written / elsize);
@@ -1466,34 +1392,32 @@ int cfputc(int c, CFILE *cfile)
 	if(!cf_is_valid(cfile))
 		return EOF;
 
-	Cfile_block *cb = &Cfile_block_list[cfile->id];	
-
-	if(cb->lib_offset != 0)
+	if(cfile->lib_offset != 0)
 	{
 		Error(LOCATION, "Attempt to write character to a VP file (unsupported)");
 		return EOF;
 	}
 
-	if(cb->data != NULL)
+	if(cfile->data != nullptr)
 	{
 		Warning(LOCATION, "Writing is not supported for mem-mapped files");
 		return EOF;
 	}
 
 	// writing not supported for memory-mapped files
-	Assert( !cb->data );
+	Assert( !cfile->data );
 
-	int result = fputc(c, cb->fp);
+	int result = fputc(c, cfile->fp);
 
 	//WMC - update filesize and position
 	if(result != EOF)
 	{
-		cb->size += 1;
-		cb->raw_position += 1;
+		cfile->size += 1;
+		cfile->raw_position += 1;
 	}
 
 #if defined(CHECK_SIZE) && !defined(NDEBUG)
-	Assert( cb->size == filelength(fileno(cb->fp)) );
+	Assert( cfile->size == filelength(fileno(cfile->fp)) );
 #endif
 
 	return result;	
@@ -1512,31 +1436,29 @@ int cfputs(const char *str, CFILE *cfile)
 	if(str == NULL)
 		return EOF;
 
-	Cfile_block *cb = &Cfile_block_list[cfile->id];	
-
-	if(cb->lib_offset != 0)
+	if(cfile->lib_offset != 0)
 	{
 		Error(LOCATION, "Attempt to write character to a VP file (unsupported)");
 		return EOF;
 	}
 
-	if(cb->data != NULL)
+	if(cfile->data != nullptr)
 	{
 		Warning(LOCATION, "Writing is not supported for mem-mapped files");
 		return EOF;
 	}
 
-	int result = fputs(str, cb->fp);
+	int result = fputs(str, cfile->fp);
 
 	//WMC - update filesize and position
 	if(result != EOF)
 	{
-		cb->size += strlen(str);
-		cb->raw_position += strlen(str);
+		cfile->size += strlen(str);
+		cfile->raw_position += strlen(str);
 	}
 
 #if defined(CHECK_SIZE) && !defined(NDEBUG)
-	Assert( cb->size == filelength(fileno(cb->fp)) );
+	Assert( cfile->size == filelength(fileno(cfile->fp)) );
 #endif
 
 	return result;	
@@ -1898,19 +1820,16 @@ int cf_chksum_long(CFILE *file, uint *chksum, int max_size)
 int cflush(CFILE *cfile)
 {
 	Assert(cfile != NULL);
-	Cfile_block *cb;
-	Assert(cfile->id >= 0 && cfile->id < MAX_CFILE_BLOCKS);
-	cb = &Cfile_block_list[cfile->id];	
 
 	// not supported for memory mapped files
-	Assert( !cb->data );
+	Assert( !cfile->data );
 
-	Assert(cb->fp != NULL);
+	Assert(cfile->fp != nullptr);
 
-	int result = fflush(cb->fp);
+	int result = fflush(cfile->fp);
 
 	//WMC - update filesize
-	cb->size = filelength(fileno(cb->fp));
+	cfile->size = filelength(fileno(cfile->fp));
 
 	return result;
 }

@@ -26,10 +26,8 @@
 #define CF_SEEK_CUR (1)
 #define CF_SEEK_END (2)
 
-typedef struct CFILE {
-	int		id;			// Index into cfile.cpp specific structure
-	int		version;		// version of this file
-} CFILE;
+// Opaque file handle
+struct CFILE;
 
 // extra info that can be returned when getting a file listing
 typedef struct {
@@ -304,14 +302,14 @@ int cfile_flush_dir(int type);
 // These are all high level, built up from
 // cfread.
 char *cfgets(char *buf, size_t n, CFILE *fp);
-char cfread_char(CFILE *file, int ver = 0, char deflt = 0);
-ubyte cfread_ubyte(CFILE *file, int ver = 0, ubyte deflt = 0);
-short cfread_short(CFILE *file, int ver = 0, short deflt = 0);
-ushort cfread_ushort(CFILE *file, int ver = 0, ushort deflt = 0);
-int cfread_int(CFILE *file, int ver = 0, int deflt = 0);
-uint cfread_uint(CFILE *file, int ver = 0, uint deflt = 0);
-float cfread_float(CFILE *file, int ver = 0, float deflt = 0.0f);
-void cfread_vector(vec3d *vec, CFILE *file, int ver = 0, vec3d *deflt = NULL);
+char cfread_char(CFILE* file, char deflt = 0);
+ubyte cfread_ubyte(CFILE* file, ubyte deflt = 0);
+short cfread_short(CFILE* file, short deflt = 0);
+ushort cfread_ushort(CFILE* file, ushort deflt = 0);
+int cfread_int(CFILE* file, int deflt = 0);
+uint cfread_uint(CFILE* file, uint deflt = 0);
+float cfread_float(CFILE* file, float deflt = 0.0f);
+void cfread_vector(vec3d* vec, CFILE* file, vec3d* deflt = nullptr);
 
 // Reads variable length, null-termined string.   Will only read up
 // to n characters.
