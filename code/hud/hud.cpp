@@ -3911,7 +3911,7 @@ void HudGaugeSupernova::render(float  /*frametime*/)
 	if (Lcl_pl) {
 		renderPrintf(position[0], position[1], "Wybuch supernowej: %.2f s", time_left);
 	} else {
-		renderPrintf(position[0], position[1], "Supernova Warning: %.2f s", time_left);
+		renderPrintf(position[0], position[1], XSTR( "Supernova Warning: %.2f s", 1639), time_left);
 	}
 }
 
