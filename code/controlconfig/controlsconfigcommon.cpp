@@ -504,7 +504,9 @@ char *translate_key(char *key)
 	// both key and joystick button are mapped to this control
 	if ((key_code >= 0 ) && (joy_code >= 0) ) {
 		strcpy_s(text, key_text);
-		strcat_s(text, " or ");
+		strcat_s(text, " ");
+		strcat_s(text, XSTR("or", 1638));
+		strcat_s(text, " ");
 		strcat_s(text, joy_text);
 	}
 	// if we only have one
