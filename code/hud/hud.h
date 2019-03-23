@@ -223,6 +223,7 @@ protected:
 	int flash_duration;
 	int flash_next;
 	bool flash_status;
+	bool only_render_in_chase_view;
 
 	// custom gauge specific stuff
 	bool custom_gauge;
@@ -268,7 +269,7 @@ public:
 	void updateActive(bool show);
 	void updatePopUp(bool pop_up_flag);
 	void updateSexpOverride(bool sexp);
-
+	void initChase_view_only(bool chase_view_only);
 
 	// SEXP interfacing functions
 	// For flashing gauges in training missions
