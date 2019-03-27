@@ -1399,7 +1399,7 @@ void game_post_level_init()
 /**
  * Tells the server to load the mission and initialize structures
  */
-int game_start_mission()
+bool game_start_mission()
 {
 	mprintf(( "=================== STARTING LEVEL LOAD ==================\n" ));
 
@@ -1424,7 +1424,7 @@ int game_start_mission()
 
 	game_busy( NOX("** starting mission_load() **") );
 	load_mission_load = (uint) time(NULL);
-	if (mission_load(Game_current_mission_filename)) {
+	if ( !mission_load(Game_current_mission_filename) ) {
 		if ( !(Game_mode & GM_MULTIPLAYER) ) {
 			popup(PF_BODY_BIG | PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR( "Attempt to load the mission failed", 169));
 			gameseq_post_event(GS_EVENT_MAIN_MENU);
@@ -1438,7 +1438,7 @@ int game_start_mission()
 
 		game_level_close();
 
-		return 0;
+		return false;
 	}
 	load_mission_load = (uint) (time(NULL) - load_mission_load);
 
@@ -1463,7 +1463,7 @@ int game_start_mission()
 	int e1 __UNUSED = timer_get_milliseconds();
 
 	mprintf(("Level load took %f seconds.\n", (e1 - s1) / 1000.0f ));
-	return 1;
+	return true;
 }
 
 int Interface_framerate = 0;

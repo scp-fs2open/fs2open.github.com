@@ -995,7 +995,7 @@ ADE_FUNC(loadMission, l_Mission, "Mission name", "Loads a mission", "boolean", "
 	get_mission_info(s, &The_mission, false);
 	game_level_init();
 
-	if(mission_load(s) == -1)
+	if(!mission_load(s))
 		return ADE_RETURN_FALSE;
 
 	game_post_level_init();

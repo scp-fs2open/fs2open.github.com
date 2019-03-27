@@ -97,9 +97,8 @@ bool mission_is_ignored(const char *filename)
 // Mission_load takes no parameters.
 // It sets the following global variables
 //   Game_current_mission_filename
-
-// returns -1 if failed, 0 if successful
-int mission_load(const char* filename_ext)
+// returns true successful, false if failed
+bool mission_load(const char* filename_ext)
 {
 	TRACE_SCOPE(tracing::LoadMissionLoad);
 
@@ -120,7 +119,7 @@ int mission_load(const char* filename_ext)
 
 	if (mission_is_ignored(filename)) {
 		mprintf(("MISSION LOAD: Tried to load an ignored mission!  Aborting..."));
-		return -1;
+		return false;
 	}
 
 	strcat_s(filename, FS_MISSION_FILE_EXT);
@@ -131,8 +130,8 @@ int mission_load(const char* filename_ext)
 	// to choose the type of ship that he is to fly
 	// return value of 0 indicates success, other is failure.
 
-	if ( parse_main(filename) )
-		return -1;
+	if ( !parse_main(filename) )
+		return false;
 
 	if (Select_default_ship) {
 		int ret;
@@ -143,7 +142,8 @@ int mission_load(const char* filename_ext)
 	ml_update_recent_missions(filename_ext);  // update recently played missions list (save the csg later)
 
 	init_hud();
-	return 0;
+
+	return true;
 }
 
 //====================================

@@ -186,7 +186,7 @@ void game_set_view_clip(){}
 int Warpout_forced = 0;
 float Warpout_time;
 vec3d Dead_player_last_vel;
-int game_start_mission(){return 0;}
+bool game_start_mission() {return false;}
 int Game_weapons_tbl_valid;
 int Game_ships_tbl_valid;
 void game_level_close(){}

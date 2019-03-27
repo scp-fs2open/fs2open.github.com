@@ -38,7 +38,7 @@ public:
 	 *
 	 * @returns The file index of the loaded Undo item
 	 */
-	int autoload();
+	bool autoload();
 
 	/**
 	 * @brief Read in a new mission file from disk
@@ -46,10 +46,9 @@ public:
 	 * @param[in] pathname The full filepath name of the file to open
 	 * @param[in] flags
 	 *
-	 * @returns File index of the loaded file, or
-	 * @returns 0 if unable to load
+	 * @returns true on success, false on failure
 	 */
-	int load_mission(char *pathname, int flags = 0);
+	bool load_mission(char *pathname, int flags = 0);
 
 	/**
 	 * @brief Pushes an Undo item onto the stack
