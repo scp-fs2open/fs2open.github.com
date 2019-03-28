@@ -947,6 +947,28 @@ void HudGauge::renderCircle(int x, int y, int diameter)
 	gr_reset_screen_scale();
 }
 
+void HudGauge::renderCircle_unfilled(int x, int y, int diameter)
+{
+	int nx = 0, ny = 0;
+
+	if (gr_screen.rendering_to_texture != -1) {
+		gr_set_screen_scale(canvas_w, canvas_h, -1, -1, target_w, target_h, target_w, target_h, true);
+	} else {
+		if (reticle_follow) {
+			nx = HUD_nose_x;
+			ny = HUD_nose_y;
+
+			gr_resize_screen_pos(&nx, &ny);
+			gr_set_screen_scale(base_w, base_h);
+			gr_unsize_screen_pos(&nx, &ny);
+		} else {
+			gr_set_screen_scale(base_w, base_h);
+		}
+	}
+	gr_unfilled_circle(x + nx, y + ny, diameter);
+	gr_reset_screen_scale();
+}
+
 void HudGauge::setClip(int x, int y, int w, int h)
 {
 	int hx = fl2i(HUD_offset_x);
