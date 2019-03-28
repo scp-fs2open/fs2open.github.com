@@ -4,7 +4,6 @@
 #include "hudgauge.h"
 #include "hud/hudscripting.h"
 #include "texture.h"
-#include "texturemap.h"
 
 namespace scripting {
 namespace api {
