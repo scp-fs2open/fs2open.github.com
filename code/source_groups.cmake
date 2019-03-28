@@ -509,6 +509,8 @@ add_file_folder("Hud"
 	hud/hudparse.h
 	hud/hudreticle.cpp
 	hud/hudreticle.h
+	hud/hudscripting.cpp
+	hud/hudscripting.h
 	hud/hudshield.cpp
 	hud/hudshield.h
 	hud/hudsquadmsg.cpp

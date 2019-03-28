@@ -19,6 +19,7 @@
 #include "hud/hudmessage.h"
 #include "hud/hudparse.h" //Duh.
 #include "hud/hudreticle.h"
+#include "hud/hudscripting.h"
 #include "hud/hudshield.h"
 #include "hud/hudsquadmsg.h"
 #include "hud/hudtarget.h"
@@ -914,6 +915,9 @@ int parse_gauge_type()
 
 	if ( optional_string("+Secondary Weapons:") )
 		return HUD_OBJECT_SECONDARY_WEAPONS;
+
+	if ( optional_string("+Scripted Gauge:") )
+		return HUD_OBJECT_SCRIPTING;
 	
 	return -1;
 }
@@ -1093,6 +1097,9 @@ void load_gauge(int gauge, gauge_settings* settings)
 		break;
 	case HUD_OBJECT_SECONDARY_WEAPONS:
 		load_gauge_secondary_weapons(settings);
+		break;
+	case HUD_OBJECT_SCRIPTING:
+		load_gauge_scripting(settings);
 		break;
 	default:
 		// It's either -1, indicating we're ignoring a parse error, or it's a coding error.
@@ -5216,6 +5223,18 @@ void load_gauge_secondary_weapons(gauge_settings* settings)
 	hud_gauge->initSecondaryReloadOffsetX(reload_x);
 	hud_gauge->initSecondaryUnlinkedOffsetX(unlink_x);
 	hud_gauge->initLinkIcon();
+
+	gauge_assign_common(settings, std::move(hud_gauge));
+}
+
+void load_gauge_scripting(gauge_settings* settings) {
+	auto hud_gauge = gauge_load_common<HudGaugeScripting>(settings);
+
+	required_string("Name:");
+	SCP_string name;
+	stuff_string(name, F_NAME);
+
+	hud_gauge->initName(name);
 
 	gauge_assign_common(settings, std::move(hud_gauge));
 }

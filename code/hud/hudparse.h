@@ -232,4 +232,7 @@ void load_gauge_primary_weapons(gauge_settings* settings);
 #define HUD_OBJECT_SECONDARY_WEAPONS	55
 void load_gauge_secondary_weapons(gauge_settings* settings);
 
+#define HUD_OBJECT_SCRIPTING 56
+void load_gauge_scripting(gauge_settings* settings);
+
 #endif // _HUDPARSE_H
