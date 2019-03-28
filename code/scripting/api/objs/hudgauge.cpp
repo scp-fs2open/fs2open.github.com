@@ -3,6 +3,8 @@
 
 #include "hudgauge.h"
 #include "hud/hudscripting.h"
+#include "texture.h"
+#include "texturemap.h"
 
 namespace scripting {
 namespace api {
@@ -91,6 +93,30 @@ ADE_FUNC(drawString,
 	gauge->getPosition(&gauge_x, &gauge_y);
 
 	gauge->renderString(fl2i(gauge_x + x), fl2i(gauge_y), text);
+
+	return ADE_RETURN_TRUE;
+}
+
+ADE_FUNC(drawImage, l_HudGaugeDrawFuncs, "texture handle Texture, [number X=0, Y=0]",
+         "Draws an image in the context of the HUD gauge.", "boolean",
+         "true on success, false otherwise")
+{
+	HudGauge* gauge;
+	texture_h* texture = nullptr;
+	float x1           = 0;
+	float y1           = 0;
+
+	if (!ade_get_args(L, "oo|ff", l_HudGaugeDrawFuncs.Get(&gauge), l_Texture.GetPtr(&texture), &x1, &y1)) {
+		return ADE_RETURN_FALSE;
+	}
+	if (!texture->isValid()) {
+		return ADE_RETURN_FALSE;
+	}
+
+	int gauge_x, gauge_y;
+	gauge->getPosition(&gauge_x, &gauge_y);
+
+	gauge->renderBitmapColor(texture->handle, fl2i(gauge_x + x1), fl2i(gauge_y + y1));
 
 	return ADE_RETURN_TRUE;
 }
