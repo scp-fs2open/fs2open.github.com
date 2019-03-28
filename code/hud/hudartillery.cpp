@@ -95,6 +95,32 @@ void parse_ssm(const char *filename)
 				s.max_count = -1;
 			}
 
+			if (optional_string("+WarpEffect:")) {
+				int temp;
+				if (stuff_int_optional(&temp) != 2) {
+					// We have a string to parse instead.
+					char unique_id[NAME_LENGTH];
+					memset(unique_id, 0, NAME_LENGTH);
+					stuff_string(unique_id, F_NAME, NAME_LENGTH);
+					int fireball_type = fireball_info_lookup(unique_id);
+					if (fireball_type < 0) {
+						error_display(1, "Unknown fireball [%s] to use as warp effect for SSM strike [%s]", unique_id, s.name);
+						s.fireball_idx = FIREBALL_WARP;
+					} else {
+						s.fireball_idx = fireball_type;
+					}
+				} else {
+					if ((temp < 0) || (temp >= Num_fireball_types)) {
+						error_display(1, "Fireball index [%d] out of range (should be 0-%d) for SSM strike [%s]", temp, Num_fireball_types - 1, s.name);
+						s.fireball_idx = FIREBALL_WARP;
+					} else {
+						s.fireball_idx = temp;
+					}
+				}
+			} else {
+				s.fireball_idx = FIREBALL_WARP;
+			}
+
 			required_string("+WarpRadius:");
 			stuff_float(&s.warp_radius);
 
@@ -422,7 +448,7 @@ void ssm_process()
                     vm_vec_sub(&temp, &moveup->sinfo.target->pos, &moveup->sinfo.start_pos[idx]);
 					vm_vec_normalize(&temp);
 					vm_vector_2_matrix(&orient, &temp, NULL, NULL);
-					moveup->fireballs[idx] = fireball_create(&moveup->sinfo.start_pos[idx], FIREBALL_WARP, FIREBALL_WARP_EFFECT, -1, si->warp_radius, false, &vmd_zero_vector, si->warp_time, 0, &orient);
+					moveup->fireballs[idx] = fireball_create(&moveup->sinfo.start_pos[idx], si->fireball_idx, FIREBALL_WARP_EFFECT, -1, si->warp_radius, false, &vmd_zero_vector, si->warp_time, 0, &orient);
 				}
 			}
 		}

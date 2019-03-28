@@ -65,6 +65,7 @@ if [[ ! "$(curl -V)" == *"sftp"* ]]; then
             cp -a . ~/curl_cache/curl
             sudo make install
         fi
+        export PATH=/usr/local/bin:$PATH
     fi
 
     # After

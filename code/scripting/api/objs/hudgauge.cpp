@@ -75,7 +75,7 @@ ADE_OBJ(l_HudGaugeDrawFuncs,
 
 ADE_FUNC(drawString,
          l_HudGaugeDrawFuncs,
-         "number x, number y, string text",
+         "string text, number x, number y",
          "Draws a string in the context of the HUD gauge.",
          "boolean",
          "true on success, false otherwise") {
@@ -84,14 +84,85 @@ ADE_FUNC(drawString,
 	float y;
 	const char* text;
 
-	if (!ade_get_args(L, "offs", l_HudGaugeDrawFuncs.Get(&gauge), &x, &y, &text)) {
+	if (!ade_get_args(L, "osff", l_HudGaugeDrawFuncs.Get(&gauge), &text, &x, &y)) {
 		return ADE_RETURN_FALSE;
 	}
 
 	int gauge_x, gauge_y;
 	gauge->getPosition(&gauge_x, &gauge_y);
 
-	gauge->renderString(fl2i(gauge_x + x), fl2i(gauge_y), text);
+	gauge->renderString(fl2i(gauge_x + x), fl2i(gauge_y + y), text);
+
+	return ADE_RETURN_TRUE;
+}
+
+ADE_FUNC(drawLine, l_HudGaugeDrawFuncs, "number X1, number Y1, number X2, number Y2",
+         "Draws a line in the context of the HUD gauge.", "boolean", "true on success, false otherwise")
+{
+	HudGauge* gauge;
+	float x1;
+	float y1;
+	float x2;
+	float y2;
+
+	if (!ade_get_args(L, "offff", l_HudGaugeDrawFuncs.Get(&gauge), &x1, &y1, &x2, &y2)) {
+		return ADE_RETURN_FALSE;
+	}
+
+	int gauge_x, gauge_y;
+	gauge->getPosition(&gauge_x, &gauge_y);
+
+	gauge->renderLine(fl2i(gauge_x + x1), fl2i(gauge_y + y1), fl2i(gauge_x + x2), fl2i(gauge_y + y2));
+
+	return ADE_RETURN_TRUE;
+}
+
+ADE_FUNC(drawCircle, l_HudGaugeDrawFuncs, "number radius, number X, number Y, [boolean filled=true]",
+         "Draws a circle in the context of the HUD gauge.", "boolean", "true on success, false otherwise")
+{
+	HudGauge* gauge;
+	float x;
+	float y;
+	float radius;
+	bool filled=true;
+
+	if (!ade_get_args(L, "offf|b", l_HudGaugeDrawFuncs.Get(&gauge), &radius, &x, &y, &filled)) {
+		return ADE_RETURN_FALSE;
+	}
+
+	int gauge_x, gauge_y;
+	gauge->getPosition(&gauge_x, &gauge_y);
+
+	gauge->renderCircle(fl2i(gauge_x + x), fl2i(gauge_y + y), fl2i(radius*2), filled);
+
+	return ADE_RETURN_TRUE;
+}
+
+ADE_FUNC(drawRectangle, l_HudGaugeDrawFuncs, "number X1, number Y1, number X2, number Y2, [boolean Filled=true]",
+         "Draws a rectangle in the context of the HUD gauge.", "boolean", "true on success, false otherwise")
+{
+	HudGauge* gauge;
+	float x1;
+	float y1;
+	float x2;
+	float y2;
+	bool filled = true;
+
+	if (!ade_get_args(L, "offff|b", l_HudGaugeDrawFuncs.Get(&gauge), &x1, &y1, &x2, &y2, &filled)) {
+		return ADE_RETURN_FALSE;
+	}
+
+	int gauge_x, gauge_y;
+	gauge->getPosition(&gauge_x, &gauge_y);
+
+	if (filled) {
+		gauge->renderRect(fl2i(gauge_x + x1), fl2i(gauge_y + y1), fl2i(x2-x1), fl2i(y2-y1));
+	} else {
+		gauge->renderLine(fl2i(gauge_x + x1), fl2i(gauge_y + y1), fl2i(gauge_x + x2), fl2i(gauge_y + y1));
+		gauge->renderLine(fl2i(gauge_x + x1), fl2i(gauge_y + y2), fl2i(gauge_x + x2), fl2i(gauge_y + y2));
+		gauge->renderLine(fl2i(gauge_x + x1), fl2i(gauge_y + y1), fl2i(gauge_x + x1), fl2i(gauge_y + y2));
+		gauge->renderLine(fl2i(gauge_x + x2), fl2i(gauge_y + y1), fl2i(gauge_x + x2), fl2i(gauge_y + y2));
+	}
 
 	return ADE_RETURN_TRUE;
 }

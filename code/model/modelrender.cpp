@@ -1461,6 +1461,9 @@ bool model_render_check_detail_box(vec3d *view_pos, polymodel *pm, int submodel_
 	bsp_info *model = &pm->submodel[submodel_num];
 
 	float box_scale = model_render_determine_box_scale();
+	if (model->do_not_scale_detail_distances) {
+		box_scale = 1.0f;
+	}
 
 	if ( !( flags & MR_FULL_DETAIL ) && model->use_render_box ) {
 		vec3d box_min, box_max, offset;
@@ -2536,13 +2539,13 @@ void model_render_debug(int model_num, matrix *orient, vec3d * pos, uint flags, 
 	gr_zbuffer_set(save_gr_zbuffering_mode);
 }
 
-void model_render_immediate(model_render_params *render_info, int model_num, matrix *orient, vec3d * pos, int render, bool sort)
+void model_render_immediate(model_render_params* render_info, int model_num, matrix* orient, vec3d* pos, int render, bool sort, vec3d show_ship_pos, bool is_using_showship)
 {
 	model_draw_list model_list;
 
 	model_list.init();
 
-	model_render_queue(render_info, &model_list, model_num, orient, pos);
+	model_render_queue(render_info, &model_list, model_num, orient, pos, show_ship_pos, is_using_showship);
 
 	model_list.init_render(sort);
 
@@ -2578,7 +2581,7 @@ void model_render_immediate(model_render_params *render_info, int model_num, mat
 	}
 }
 
-void model_render_queue(model_render_params *interp, model_draw_list *scene, int model_num, matrix *orient, vec3d *pos)
+void model_render_queue(model_render_params* interp, model_draw_list* scene, int model_num, matrix* orient, vec3d* pos, vec3d show_ship_pos, bool is_using_showship)
 {
 	int i;
 
@@ -2809,7 +2812,9 @@ void model_render_queue(model_render_params *interp, model_draw_list *scene, int
 
 	//*************************** draw the hull of the ship *********************************************
 	vec3d view_pos = scene->get_view_position();
-
+	if (is_using_showship) {
+		view_pos = show_ship_pos;
+	}
 	if ( model_render_check_detail_box(&view_pos, pm, pm->detail[detail_level], model_flags) ) {
 		int detail_model_num = pm->detail[detail_level];
 
