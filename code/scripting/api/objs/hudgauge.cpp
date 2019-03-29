@@ -91,7 +91,7 @@ ADE_FUNC(drawString,
 	int gauge_x, gauge_y;
 	gauge->getPosition(&gauge_x, &gauge_y);
 
-	gauge->renderString(fl2i(gauge_x + x), fl2i(gauge_y), text);
+	gauge->renderString(fl2i(gauge_x + x), fl2i(gauge_y + y), text);
 
 	return ADE_RETURN_TRUE;
 }
