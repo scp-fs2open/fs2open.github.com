@@ -75,7 +75,7 @@ ADE_OBJ(l_HudGaugeDrawFuncs,
 
 ADE_FUNC(drawString,
          l_HudGaugeDrawFuncs,
-         "number x, number y, string text",
+         "string text, number x, number y",
          "Draws a string in the context of the HUD gauge.",
          "boolean",
          "true on success, false otherwise") {
@@ -84,7 +84,7 @@ ADE_FUNC(drawString,
 	float y;
 	const char* text;
 
-	if (!ade_get_args(L, "offs", l_HudGaugeDrawFuncs.Get(&gauge), &x, &y, &text)) {
+	if (!ade_get_args(L, "osff", l_HudGaugeDrawFuncs.Get(&gauge), &text, &x, &y)) {
 		return ADE_RETURN_FALSE;
 	}
 
@@ -144,7 +144,7 @@ ADE_FUNC(drawCirle, l_HudGaugeDrawFuncs, "number X, number Y, number radius, [bo
 	return ADE_RETURN_TRUE;
 }
 
-ADE_FUNC(drawRect, l_HudGaugeDrawFuncs, "number X1, number Y1, number X2, number Y2, [boolean Filled=true]",
+ADE_FUNC(drawRectangle, l_HudGaugeDrawFuncs, "number X1, number Y1, number X2, number Y2, [boolean Filled=true]",
          "Draws a rectangle in the context of the HUD gauge.", "boolean", "true on success, false otherwise")
 {
 	HudGauge* gauge;
