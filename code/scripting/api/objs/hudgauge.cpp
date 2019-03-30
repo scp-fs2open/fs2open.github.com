@@ -133,13 +133,7 @@ ADE_FUNC(drawCirle, l_HudGaugeDrawFuncs, "number radius, number X, number Y, [bo
 	int gauge_x, gauge_y;
 	gauge->getPosition(&gauge_x, &gauge_y);
 
-	if (filled ) {
-		gauge->renderCircle(fl2i(gauge_x + x), fl2i(gauge_y + y), fl2i(radius*2));
-	}
-	else
-	{
-		gauge->renderCircle_unfilled(fl2i(gauge_x + x), fl2i(gauge_y + y), fl2i(radius * 2));
-	}
+	gauge->renderCircle(fl2i(gauge_x + x), fl2i(gauge_y + y), fl2i(radius*2), filled);
 
 	return ADE_RETURN_TRUE;
 }
