@@ -117,7 +117,7 @@ ADE_FUNC(drawLine, l_HudGaugeDrawFuncs, "number X1, number Y1, number X2, number
 	return ADE_RETURN_TRUE;
 }
 
-ADE_FUNC(drawCirle, l_HudGaugeDrawFuncs, "number radius, number X, number Y, [boolean filled=true]",
+ADE_FUNC(drawCircle, l_HudGaugeDrawFuncs, "number radius, number X, number Y, [boolean filled=true]",
          "Draws a circle in the context of the HUD gauge.", "boolean", "true on success, false otherwise")
 {
 	HudGauge* gauge;
