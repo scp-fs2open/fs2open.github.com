@@ -156,7 +156,7 @@ ADE_FUNC(drawRectangle, l_HudGaugeDrawFuncs, "number X1, number Y1, number X2, n
 	gauge->getPosition(&gauge_x, &gauge_y);
 
 	if (filled) {
-		gauge->renderRect(fl2i(gauge_x + x1), fl2i(gauge_y + y1), fl2i(gauge_x + x2), fl2i(gauge_y + y2));
+		gauge->renderRect(fl2i(gauge_x + x1), fl2i(gauge_y + y1), fl2i(x2-x1), fl2i(y2-y1));
 	} else {
 		gauge->renderLine(fl2i(gauge_x + x1), fl2i(gauge_y + y1), fl2i(gauge_x + x2), fl2i(gauge_y + y1));
 		gauge->renderLine(fl2i(gauge_x + x1), fl2i(gauge_y + y2), fl2i(gauge_x + x2), fl2i(gauge_y + y2));
