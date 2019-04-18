@@ -136,7 +136,7 @@ SCP_vector<sexp_oper> Operators = {
 	{ "pow",							OP_POW,									2,	2,			SEXP_ARITHMETIC_OPERATOR,	},	// Goober5000
 	{ "signum",							OP_SIGNUM,								1,	1,			SEXP_ARITHMETIC_OPERATOR,	},	// Goober5000
 	{ "is-nan",							OP_IS_NAN,								1,	1,			SEXP_ARITHMETIC_OPERATOR,	},	// Goober5000
-	{ "nan-to-num",						OP_NAN_TO_NUM,							1,	1,			SEXP_ARITHMETIC_OPERATOR,	},	// Goober5000
+	{ "nan-to-number",					OP_NAN_TO_NUMBER,						1,	1,			SEXP_ARITHMETIC_OPERATOR,	},	// Goober5000
 	{ "set-bit",						OP_SET_BIT,								2,	2,			SEXP_ARITHMETIC_OPERATOR,	},	// Goober5000
 	{ "unset-bit",						OP_UNSET_BIT,							2,	2,			SEXP_ARITHMETIC_OPERATOR,	},	// Goober5000
 	{ "is-bit-set",						OP_IS_BIT_SET,							2,	2,			SEXP_BOOLEAN_OPERATOR,		},	// Goober5000
@@ -4324,7 +4324,7 @@ int sexp_is_nan(int n)
 }
 
 // Goober5000
-int sexp_nan_to_num(int n)
+int sexp_nan_to_number(int n)
 {
 	// if this sexp has an operator, evaluate it
 	if (CAR(n) != -1) {
@@ -23370,8 +23370,8 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = sexp_is_nan(node);
 				break;
 
-			case OP_NAN_TO_NUM:
-				sexp_val = sexp_nan_to_num(node);
+			case OP_NAN_TO_NUMBER:
+				sexp_val = sexp_nan_to_number(node);
 				break;
 
 			case OP_SET_BIT:
@@ -26168,7 +26168,7 @@ int query_operator_return_type(int op)
 		case OP_AVG:
 		case OP_POW:
 		case OP_SIGNUM:
-		case OP_NAN_TO_NUM:
+		case OP_NAN_TO_NUMBER:
 		case OP_GET_OBJECT_X:
 		case OP_GET_OBJECT_Y:
 		case OP_GET_OBJECT_Z:
@@ -26700,7 +26700,7 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_AVG:
 		case OP_SIGNUM:
 		case OP_IS_NAN:
-		case OP_NAN_TO_NUM:
+		case OP_NAN_TO_NUMBER:
 			return OPF_NUMBER;
 
 		case OP_POW:
@@ -30808,7 +30808,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\tReturns true if the argument is NaN (not-a-number).  This can happen e.g. when checking statistics for ships that have departed.  Takes one argument.\r\n" },
 
 	// Goober5000
-	{ OP_NAN_TO_NUM, "NaN-to-Number (Arithmetic operator)\r\n"
+	{ OP_NAN_TO_NUMBER, "NaN-to-Number (Arithmetic operator)\r\n"
 		"\tUsed to safely filter NaN values from arithmetic operations, which would otherwise pass NaN up the sexp tree.  If the argument is a number, it is returned.  If the argument is NaN, a zero is returned.  Takes one argument.\r\n" },
 
 	// Goober5000

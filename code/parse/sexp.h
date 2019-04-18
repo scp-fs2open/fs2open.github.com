@@ -236,7 +236,7 @@ class waypoint_list;
 #define OP_IS_BIT_SET						(0x0012 | OP_CATEGORY_ARITHMETIC)	// Goober5000
 #define OP_SIGNUM							(0x0013 | OP_CATEGORY_ARITHMETIC)	// Goober5000
 #define OP_IS_NAN							(0x0014 | OP_CATEGORY_ARITHMETIC)	// Goober5000
-#define OP_NAN_TO_NUM						(0x0015 | OP_CATEGORY_ARITHMETIC)	// Goober5000
+#define OP_NAN_TO_NUMBER					(0x0015 | OP_CATEGORY_ARITHMETIC)	// Goober5000
 
 
 #define	OP_TRUE								(0x0000 | OP_CATEGORY_LOGICAL)
