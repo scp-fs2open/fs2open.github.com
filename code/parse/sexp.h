@@ -945,6 +945,7 @@ char *CTEXT(int n);
 
 #define SEXP_TRUE			1
 #define SEXP_FALSE			0
+
 // Goober5000: changed these to unlikely values, because now we have sexps using negative numbers
 #define SEXP_KNOWN_FALSE	(INT_MIN+10)
 #define SEXP_KNOWN_TRUE		(INT_MIN+11)
@@ -953,6 +954,8 @@ char *CTEXT(int n);
 #define SEXP_NAN_FOREVER	(INT_MIN+14)	// not a number and will never change -- used to falsify boolean sexpressions
 #define SEXP_CANT_EVAL		(INT_MIN+15)	// can't evaluate yet for whatever reason (acts like false)
 #define SEXP_NUM_EVAL		(INT_MIN+16)	// already completed an arithmetic operation and result is stored
+// in case we want to test for any of the above
+#define SEXP_UNLIKELY_RETURN_VALUE_BOUND		(INT_MIN+17)
 
 // defines for check_sexp_syntax
 #define SEXP_CHECK_NONOP_ARGS			-1			// non-operator has arguments
