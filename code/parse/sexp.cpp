@@ -135,6 +135,8 @@ SCP_vector<sexp_oper> Operators = {
 	{ "avg",							OP_AVG,									1,	INT_MAX,	SEXP_ARITHMETIC_OPERATOR,	},	// Goober5000
 	{ "pow",							OP_POW,									2,	2,			SEXP_ARITHMETIC_OPERATOR,	},	// Goober5000
 	{ "signum",							OP_SIGNUM,								1,	1,			SEXP_ARITHMETIC_OPERATOR,	},	// Goober5000
+	{ "is-nan",							OP_IS_NAN,								1,	1,			SEXP_ARITHMETIC_OPERATOR,	},	// Goober5000
+	{ "nan-to-num",						OP_NAN_TO_NUM,							1,	1,			SEXP_ARITHMETIC_OPERATOR,	},	// Goober5000
 	{ "set-bit",						OP_SET_BIT,								2,	2,			SEXP_ARITHMETIC_OPERATOR,	},	// Goober5000
 	{ "unset-bit",						OP_UNSET_BIT,							2,	2,			SEXP_ARITHMETIC_OPERATOR,	},	// Goober5000
 	{ "is-bit-set",						OP_IS_BIT_SET,							2,	2,			SEXP_BOOLEAN_OPERATOR,		},	// Goober5000
@@ -331,6 +333,7 @@ SCP_vector<sexp_oper> Operators = {
 	{ "every-time",						OP_EVERY_TIME,							2,	INT_MAX,	SEXP_CONDITIONAL_OPERATOR,},	// Goober5000
 	{ "every-time-argument",			OP_EVERY_TIME_ARGUMENT,					3,	INT_MAX,	SEXP_CONDITIONAL_OPERATOR,},	// Goober5000
 	{ "if-then-else",					OP_IF_THEN_ELSE,						3,	INT_MAX,	SEXP_CONDITIONAL_OPERATOR,},	// Goober5000
+	{ "functional-if-then-else",		OP_FUNCTIONAL_IF_THEN_ELSE,				3,	3,			SEXP_CONDITIONAL_OPERATOR, },	// Goober5000
 	{ "any-of",							OP_ANY_OF,								1,	INT_MAX,	SEXP_ARGUMENT_OPERATOR,	},	// Goober5000
 	{ "every-of",						OP_EVERY_OF,							1,	INT_MAX,	SEXP_ARGUMENT_OPERATOR,	},	// Goober5000
 	{ "random-of",						OP_RANDOM_OF,							1,	INT_MAX,	SEXP_ARGUMENT_OPERATOR,	},	// Goober5000
@@ -4293,6 +4296,50 @@ int signum_sexp(int node)
 	// hurr durr math
 	Assert(num > 0);
 	return 1;
+}
+
+// Goober5000
+int sexp_is_nan(int n)
+{
+	// if this sexp has an operator, evaluate it
+	if (CAR(n) != -1) {
+		eval_sexp(CAR(n));
+
+		// see whether the result was NaN
+		if (Sexp_nodes[CAR(n)].value == SEXP_NAN)
+			return SEXP_TRUE;
+		if (Sexp_nodes[CAR(n)].value == SEXP_NAN_FOREVER)
+			return SEXP_KNOWN_TRUE;
+
+		// see whether the result won't change
+		if (Sexp_nodes[CAR(n)].value == SEXP_KNOWN_TRUE || Sexp_nodes[CAR(n)].value == SEXP_KNOWN_FALSE)
+			return SEXP_KNOWN_FALSE;
+
+		// it's not NaN, for now
+		return SEXP_FALSE;
+	}
+	// straight-up numeric or string arguments cannot be NaN
+	else
+		return SEXP_KNOWN_FALSE;
+}
+
+// Goober5000
+int sexp_nan_to_num(int n)
+{
+	// if this sexp has an operator, evaluate it
+	if (CAR(n) != -1) {
+		int val = eval_sexp(CAR(n));
+
+		// see whether the result was NaN
+		if (Sexp_nodes[CAR(n)].value == SEXP_NAN || Sexp_nodes[CAR(n)].value == SEXP_NAN_FOREVER)
+			return 0;
+
+		// if not NaN, result is acceptable
+		return val;
+	}
+	// straight-up numeric or string arguments cannot be NaN
+	else
+		return atoi(CTEXT(n));
 }
 
 // Goober5000
@@ -9272,6 +9319,25 @@ bool is_blank_of_op(int op_const)
 		default:
 			return false;
 	}
+}
+
+// Goober5000
+int sexp_functional_if_then_else(int node)
+{
+	Assertion(CAR(node) >= 0, "The condition in functional-if-then-else must be an operator!");
+
+	// decision time
+	int condition = eval_sexp(CAR(node));
+
+	// we need to evaluate both numbers regardless of which one we pick
+	int num1 = eval_num(CDR(node));
+	int num2 = eval_num(CDDR(node));
+
+	// pick one
+	if (condition == SEXP_TRUE || condition == SEXP_KNOWN_TRUE)
+		return num1;
+	else
+		return num2;
 }
 
 // Goober5000 - added wing capability
@@ -23300,6 +23366,14 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = signum_sexp(node);
 				break;
 
+			case OP_IS_NAN:
+				sexp_val = sexp_is_nan(node);
+				break;
+
+			case OP_NAN_TO_NUM:
+				sexp_val = sexp_nan_to_num(node);
+				break;
+
 			case OP_SET_BIT:
 			case OP_UNSET_BIT:
 				sexp_val = sexp_set_bit(node, op_num == OP_SET_BIT);
@@ -23782,6 +23856,11 @@ int eval_sexp(int cur_node, int referenced_node)
 
 			case OP_NUM_VALID_ARGUMENTS:
 				sexp_val = sexp_num_valid_arguments( cur_node );
+				break;
+
+			// this is a "conditional", but it's not really treated the same way as when, etc.
+			case OP_FUNCTIONAL_IF_THEN_ELSE:
+				sexp_val = sexp_functional_if_then_else(node);
 				break;
 
 			// sexpressions with side effects
@@ -26067,6 +26146,7 @@ int query_operator_return_type(int op)
 		case OP_HAS_PRIMARY_WEAPON:
 		case OP_HAS_SECONDARY_WEAPON:
 		case OP_IS_BIT_SET:
+		case OP_IS_NAN:
 		case OP_DIRECTIVE_VALUE:
 		case OP_IS_IN_BOX:
 		case OP_IS_IN_MISSION:
@@ -26088,6 +26168,7 @@ int query_operator_return_type(int op)
 		case OP_AVG:
 		case OP_POW:
 		case OP_SIGNUM:
+		case OP_NAN_TO_NUM:
 		case OP_GET_OBJECT_X:
 		case OP_GET_OBJECT_Y:
 		case OP_GET_OBJECT_Z:
@@ -26102,6 +26183,7 @@ int query_operator_return_type(int op)
 		case OP_GET_THROTTLE_SPEED:
 		case OP_GET_VARIABLE_BY_INDEX:
 		case OP_GET_COLGROUP_ID:
+		case OP_FUNCTIONAL_IF_THEN_ELSE:
 			return OPR_NUMBER;
 
 		case OP_ABS:
@@ -26616,6 +26698,9 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_MIN:
 		case OP_MAX:
 		case OP_AVG:
+		case OP_SIGNUM:
+		case OP_IS_NAN:
+		case OP_NAN_TO_NUM:
 			return OPF_NUMBER;
 
 		case OP_POW:
@@ -26623,9 +26708,6 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_NUMBER;
 			else
 				return OPF_POSITIVE;
-
-		case OP_SIGNUM:
-			return OPF_NUMBER;
 
 		case OP_STRING_EQUALS:
 		case OP_STRING_GREATER_THAN:
@@ -27241,6 +27323,12 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_INVALIDATE_ARGUMENT:
 		case OP_VALIDATE_ARGUMENT:
 			return OPF_ANYTHING;
+
+		case OP_FUNCTIONAL_IF_THEN_ELSE:
+			if (argnum == 0)
+				return OPF_BOOL;
+			else
+				return OPF_NUMBER;
 
 		case OP_AI_DISABLE_SHIP:
 		case OP_AI_DISARM_SHIP:
@@ -30716,6 +30804,14 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\tReturns the sign of a number: -1 if it is negative, 0 if it is 0, and 1 if it is positive.  Takes one argument.\r\n" },
 
 	// Goober5000
+	{ OP_IS_NAN, "Is-NaN (Arithmetic operator)\r\n"
+		"\tReturns true if the argument is NaN (not-a-number).  This can happen e.g. when checking statistics for ships that have departed.  Takes one argument.\r\n" },
+
+	// Goober5000
+	{ OP_NAN_TO_NUM, "NaN-to-Number (Arithmetic operator)\r\n"
+		"\tUsed to safely filter NaN values from arithmetic operations, which would otherwise pass NaN up the sexp tree.  If the argument is a number, it is returned.  If the argument is NaN, a zero is returned.  Takes one argument.\r\n" },
+
+	// Goober5000
 	{ OP_SET_BIT, "set-bit\r\n"
 		"\tTurns on (sets to 1) a certain bit in the provided number, returning the result.  This allows numbers to store up to 32 boolean flags, from 2^0 to 2^31.  Takes 2 numeric arguments...\r\n"
 		"\t1: The number whose bit should be set\r\n"
@@ -31488,6 +31584,16 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\tRestores all arguments for future consideration as " SEXP_ARGUMENT_STRING " special data items.\r\n"
 		"\tIf the argument hasn't been previously invalidated, it will do nothing.\r\n"
 		"Takes no arguments." },
+
+	// Goober5000
+	{ OP_FUNCTIONAL_IF_THEN_ELSE, "Functional If-then-else (Conditional operator)\r\n"
+		"\tReturns the first number if the condition is true, and the second number otherwise.\r\n\r\n"
+		"This sexp is very similar to the ?: ternary operator in C and other programming languages.  Unfortunately, "
+		"due to limitations of the sexp system, it is not possible to create an equivalent sexp for string values.\r\n\r\n"
+		"Takes exactly 3 arguments...\r\n"
+		"\t1:\tBoolean expression to evaluate.\r\n"
+		"\t2:\tNumber to return if the expression is currently true.\r\n"
+		"\t3:\tNumber to return if the expression is not currently true..\r\n" },
 
 	// Goober5000 - added wing capability
 	{ OP_CHANGE_IFF, "Change IFF (Action operator)\r\n"
