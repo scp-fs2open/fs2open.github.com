@@ -1513,6 +1513,11 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 					} else {
 						pm->submodel[n].render_box_max = pm->submodel[n].max;
 					}
+
+					if ( (p = strstr(props, "$do_not_scale_distances")) != nullptr ) {
+						p += 23;
+						pm->submodel[n].do_not_scale_detail_distances = true;
+					}
 				}
 
 				if ( (p = strstr(props, "$detail_sphere:")) != NULL ) {
@@ -1540,6 +1545,11 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 						pm->submodel[n].use_render_sphere_offset = true;
 					} else {
 						pm->submodel[n].render_sphere_offset = vmd_zero_vector;
+					}
+
+					if ( (p = strstr(props, "$do_not_scale_distances")) != nullptr ) {
+						p += 23;
+						pm->submodel[n].do_not_scale_detail_distances = true;
 					}
 				}
 
