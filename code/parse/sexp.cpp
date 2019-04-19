@@ -6381,7 +6381,7 @@ int sexp_directive_value(int n)
 		replace_current_value = eval_sexp(n);
 	}
 
-	if (replace_current_value == SEXP_FALSE || replace_current_value == SEXP_KNOWN_FALSE) {
+	if (replace_current_value == SEXP_FALSE) { // note: any SEXP_KNOWN_FALSE result will return SEXP_FALSE
 		Directive_count += directive_value;
 	}
 	else {
@@ -8552,7 +8552,7 @@ int eval_when(int n, int when_op_num)
 
 
 	// if value is true, perform the actions in the 'then' part
-	if (val == SEXP_TRUE || val == SEXP_KNOWN_TRUE)
+	if (val == SEXP_TRUE) // note: SEXP_KNOWN_TRUE is never returned from eval_sexp
 	{
 		// get the operator
 		int exp = CAR(actions);
@@ -8584,7 +8584,7 @@ int eval_when(int n, int when_op_num)
 		}
 	}
 	// if-then-else has actions to perform under "else"
-	else if ((val == SEXP_FALSE || val == SEXP_KNOWN_FALSE) && (when_op_num == OP_IF_THEN_ELSE))
+	else if (val == SEXP_FALSE && when_op_num == OP_IF_THEN_ELSE) // note: SEXP_KNOWN_FALSE is never returned from eval_sexp
 	{
 		// skip past the "if" action
 		actions = CDR(actions);
@@ -8649,7 +8649,7 @@ int eval_cond(int n)
 
 		// if the conditional evaluated to true, then we must evaluate the rest of the expression returning
 		// the value of this evaluation
-		if (val == SEXP_TRUE || val == SEXP_KNOWN_TRUE)
+		if (val == SEXP_TRUE) // note: any SEXP_KNOWN_TRUE result is returned as SEXP_TRUE
 		{
 			int actions, exp;
 
@@ -8994,7 +8994,7 @@ int eval_random_of(int arg_handler_node, int condition_node, bool multiple)
 		val = eval_sexp(condition_node);
 
 		// true?
-		if (val == SEXP_TRUE || val == SEXP_KNOWN_TRUE)
+		if (val == SEXP_TRUE)
 		{
 			Sexp_applicable_argument_list.add_data(Sexp_nodes[n].text);
 		} else if ((!multiple || num_valid_args == 1) && (Sexp_nodes[condition_node].value == SEXP_KNOWN_FALSE || Sexp_nodes[condition_node].value == SEXP_NAN_FOREVER)) {
@@ -9045,7 +9045,7 @@ int eval_in_sequence(int arg_handler_node, int condition_node)
 		val = eval_sexp(condition_node);
 
 		// true?
-		if (val == SEXP_TRUE || val == SEXP_KNOWN_TRUE)
+		if (val == SEXP_TRUE)
 		{
 			Sexp_applicable_argument_list.add_data(Sexp_nodes[n].text);
 		} else if ((Sexp_nodes[condition_node].value == SEXP_KNOWN_FALSE) || (Sexp_nodes[condition_node].value == SEXP_NAN_FOREVER)) {
@@ -23036,8 +23036,7 @@ bool is_sexp_true(int cur_node, int referenced_node)
 {
 	int result = eval_sexp(cur_node, referenced_node);
 
-	// any* SEXP_KNOWN_TRUE result will return SEXP_TRUE from eval_sexp, but let's be defensive
-	// *for almost all return paths... there is one path where it has not yet been proven that it won't
+	// any SEXP_KNOWN_TRUE result will return SEXP_TRUE from eval_sexp, but let's be defensive
 	return (result == SEXP_TRUE) || (result == SEXP_KNOWN_TRUE);
 }
 
