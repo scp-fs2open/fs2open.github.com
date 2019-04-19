@@ -25576,7 +25576,7 @@ int eval_sexp(int cur_node, int referenced_node)
 		}
 
 		// now, reconcile positive and negative - Goober5000
-		if (sexp_val < 0 || sexp_val > SEXP_UNLIKELY_RETURN_VALUE_BOUND)
+		if (sexp_val < 0 && sexp_val > SEXP_UNLIKELY_RETURN_VALUE_BOUND)
 		{
 			int parent_node = find_parent_operator(cur_node);
 
