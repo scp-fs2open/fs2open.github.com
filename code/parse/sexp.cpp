@@ -4064,29 +4064,34 @@ bool sexp_query_has_yet_to_arrive(const char *name)
 // arithmetic functions
 int add_sexps(int n)
 {
-	int	sum = 0, val;
+	int	val, sum = 0;
 
 	if (n != -1) {
 		if (CAR(n) != -1) {
-			sum = eval_sexp(CAR(n));
+			val = eval_sexp(CAR(n));
+
 			// be sure to check for the NAN value when doing arithmetic -- this value should
 			// get propagated to the next highest function.
-			if ( Sexp_nodes[CAR(n)].value == SEXP_NAN )
+			if (Sexp_nodes[CAR(n)].value == SEXP_NAN)
 				return SEXP_NAN;
-			else if ( Sexp_nodes[CAR(n)].value == SEXP_NAN_FOREVER )
+			else if (Sexp_nodes[CAR(n)].value == SEXP_NAN_FOREVER)
 				return SEXP_NAN_FOREVER;
+
+			sum = val;
 		}
 		else
-			sum = atoi( CTEXT(n) );
+			sum = atoi(CTEXT(n));
 
 		while (CDR(n) != -1) {
 			val = eval_sexp(CDR(n));
+
 			// be sure to check for the NAN value when doing arithmetic -- this value should
 			// get propagated to the next highest function.
-			if ( Sexp_nodes[CDR(n)].value == SEXP_NAN )
+			if (Sexp_nodes[CDR(n)].value == SEXP_NAN)
 				return SEXP_NAN;
-			else if ( Sexp_nodes[CDR(n)].value == SEXP_NAN_FOREVER )
+			else if (Sexp_nodes[CDR(n)].value == SEXP_NAN_FOREVER)
 				return SEXP_NAN_FOREVER;
+
 			sum += val;
 			n = CDR(n);
 		}
@@ -4097,17 +4102,35 @@ int add_sexps(int n)
 
 int sub_sexps(int n)
 {
-	int	sum = 0;
+	int	val, sum = 0;
 
-	if (n != -1) { 
+	if (n != -1) {
 		if (CAR(n) != -1) {
-			sum = eval_sexp(CAR(n));
+			val = eval_sexp(CAR(n));
+
+			// be sure to check for the NAN value when doing arithmetic -- this value should
+			// get propagated to the next highest function.
+			if (Sexp_nodes[CAR(n)].value == SEXP_NAN)
+				return SEXP_NAN;
+			else if (Sexp_nodes[CAR(n)].value == SEXP_NAN_FOREVER)
+				return SEXP_NAN_FOREVER;
+
+			sum = val;
 		}
 		else
 			sum = atoi(CTEXT(n));
 
 		while (CDR(n) != -1) {
-			sum -= eval_sexp(CDR(n));
+			val = eval_sexp(CDR(n));
+
+			// be sure to check for the NAN value when doing arithmetic -- this value should
+			// get propagated to the next highest function.
+			if (Sexp_nodes[CDR(n)].value == SEXP_NAN)
+				return SEXP_NAN;
+			else if (Sexp_nodes[CDR(n)].value == SEXP_NAN_FOREVER)
+				return SEXP_NAN_FOREVER;
+
+			sum -= val;
 			n = CDR(n);
 		}
 	}
@@ -4117,17 +4140,35 @@ int sub_sexps(int n)
 
 int mul_sexps(int n)
 {
-	int	sum = 0;
+	int	val, sum = 0;
 
 	if (n != -1) {
 		if (CAR(n) != -1) {
-			sum = eval_sexp(CAR(n));
+			val = eval_sexp(CAR(n));
+
+			// be sure to check for the NAN value when doing arithmetic -- this value should
+			// get propagated to the next highest function.
+			if (Sexp_nodes[CAR(n)].value == SEXP_NAN)
+				return SEXP_NAN;
+			else if (Sexp_nodes[CAR(n)].value == SEXP_NAN_FOREVER)
+				return SEXP_NAN_FOREVER;
+
+			sum = val;
 		}
 		else
 			sum = atoi(CTEXT(n));
 
 		while (CDR(n) != -1) {
-			sum *= eval_sexp(CDR(n));
+			val = eval_sexp(CDR(n));
+
+			// be sure to check for the NAN value when doing arithmetic -- this value should
+			// get propagated to the next highest function.
+			if (Sexp_nodes[CDR(n)].value == SEXP_NAN)
+				return SEXP_NAN;
+			else if (Sexp_nodes[CDR(n)].value == SEXP_NAN_FOREVER)
+				return SEXP_NAN_FOREVER;
+
+			sum *= val;
 			n = CDR(n);
 		}
 	}
@@ -4137,23 +4178,41 @@ int mul_sexps(int n)
 
 int div_sexps(int n)
 {
-	int	sum = 0;
+	int	val, sum = 0;
 
 	if (n != -1) {
 		if (CAR(n) != -1) {
-			sum = eval_sexp(CAR(n));
+			val = eval_sexp(CAR(n));
+
+			// be sure to check for the NAN value when doing arithmetic -- this value should
+			// get propagated to the next highest function.
+			if (Sexp_nodes[CAR(n)].value == SEXP_NAN)
+				return SEXP_NAN;
+			else if (Sexp_nodes[CAR(n)].value == SEXP_NAN_FOREVER)
+				return SEXP_NAN_FOREVER;
+
+			sum = val;
 		}
 		else
 			sum = atoi(CTEXT(n));
 
 		while (CDR(n) != -1) {
-			int div = eval_sexp(CDR(n));
-			n = CDR(n);
-			if (div == 0) {
+			val = eval_sexp(CDR(n));
+
+			// be sure to check for the NAN value when doing arithmetic -- this value should
+			// get propagated to the next highest function.
+			if (Sexp_nodes[CDR(n)].value == SEXP_NAN)
+				return SEXP_NAN;
+			else if (Sexp_nodes[CDR(n)].value == SEXP_NAN_FOREVER)
+				return SEXP_NAN_FOREVER;
+
+			if (val == 0) {
 				Warning(LOCATION, "Division by zero in sexp. Please check all uses of the / operator for possible causes.\n");
-				continue;
-			} 
-			sum /= div;
+				return SEXP_NAN;
+			}
+
+			sum /= val;
+			n = CDR(n);
 		}
 	}
 
@@ -4162,23 +4221,41 @@ int div_sexps(int n)
 
 int mod_sexps(int n)
 {
-	int	sum = 0;
+	int	val, sum = 0;
 
 	if (n != -1) {
 		if (CAR(n) != -1) {
-			sum = eval_sexp(CAR(n));
+			val = eval_sexp(CAR(n));
+
+			// be sure to check for the NAN value when doing arithmetic -- this value should
+			// get propagated to the next highest function.
+			if (Sexp_nodes[CAR(n)].value == SEXP_NAN)
+				return SEXP_NAN;
+			else if (Sexp_nodes[CAR(n)].value == SEXP_NAN_FOREVER)
+				return SEXP_NAN_FOREVER;
+
+			sum = val;
 		}
 		else
 			sum = atoi(CTEXT(n));
 
 		while (CDR(n) != -1) {
-			int div = eval_sexp(CDR(n));
-			n = CDR(n);
-			if (div == 0) {
+			val = eval_sexp(CDR(n));
+
+			// be sure to check for the NAN value when doing arithmetic -- this value should
+			// get propagated to the next highest function.
+			if (Sexp_nodes[CDR(n)].value == SEXP_NAN)
+				return SEXP_NAN;
+			else if (Sexp_nodes[CDR(n)].value == SEXP_NAN_FOREVER)
+				return SEXP_NAN_FOREVER;
+
+			if (val == 0) {
 				Warning(LOCATION, "Modulo by zero in sexp. Please check all uses of the %% operator for possible causes.\n");
-				continue;
+				return SEXP_NAN;
 			}
-			sum = sum % div;
+
+			sum = sum % val;
+			n = CDR(n);
 		}
 	}
 
@@ -4204,17 +4281,31 @@ int rand_internal(int low, int high, int seed = 0)
 // Goober5000
 int abs_sexp(int n)
 {
-	return abs(eval_num(n));
+	bool is_nan, is_nan_forever;
+	int val = eval_num(n, is_nan, is_nan_forever);
+
+	if (is_nan)
+		return SEXP_NAN;
+	if (is_nan_forever)
+		return SEXP_NAN_FOREVER;
+
+	return abs(val);
 }
 
 // Goober5000
 int min_sexp(int n)
 {
+	bool is_nan, is_nan_forever;
 	int temp, min_val = INT_MAX;
 
 	while (n != -1)
 	{
-		temp = eval_num(n);
+		temp = eval_num(n, is_nan, is_nan_forever);
+
+		if (is_nan)
+			return SEXP_NAN;
+		if (is_nan_forever)
+			return SEXP_NAN_FOREVER;
 
 		if (temp < min_val)
 			min_val = temp;
@@ -4228,11 +4319,17 @@ int min_sexp(int n)
 // Goober5000
 int max_sexp(int n)
 {
+	bool is_nan, is_nan_forever;
 	int temp, max_val = INT_MIN;
 
 	while (n != -1)
 	{
-		temp = eval_num(n);
+		temp = eval_num(n, is_nan, is_nan_forever);
+
+		if (is_nan)
+			return SEXP_NAN;
+		if (is_nan_forever)
+			return SEXP_NAN_FOREVER;
 
 		if (temp > max_val)
 			max_val = temp;
@@ -4246,11 +4343,19 @@ int max_sexp(int n)
 // Goober5000
 int avg_sexp(int n)
 {
+	bool is_nan, is_nan_forever;
 	int num = 0, avg_val = 0;
 
 	while (n != -1)
 	{
-		avg_val += eval_num(n);
+		int val = eval_num(n, is_nan, is_nan_forever);
+
+		if (is_nan)
+			return SEXP_NAN;
+		if (is_nan_forever)
+			return SEXP_NAN_FOREVER;
+
+		avg_val += val;
 		num++;
 
 		n = CDR(n);
@@ -4262,8 +4367,14 @@ int avg_sexp(int n)
 // Goober5000
 int pow_sexp(int node)
 {
-	int num_1 = eval_num(node);
-	int num_2 = eval_num(CDR(node));
+	int num_1, num_2;
+	bool is_nan, is_nan_forever;
+
+	eval_nums(node, is_nan, is_nan_forever, num_1, num_2);
+	if (is_nan)
+		return SEXP_NAN;
+	if (is_nan_forever)
+		return SEXP_NAN_FOREVER;
 
 	// this is disallowed in FRED, but can still happen through careless arithmetic
 	if (num_2 < 0)
@@ -4313,7 +4424,13 @@ T sign(T t)
 // Goober5000
 int signum_sexp(int node)
 {
-	int num = eval_num(node);
+	bool is_nan, is_nan_forever;
+	int num = eval_num(node, is_nan, is_nan_forever);
+
+	if (is_nan)
+		return SEXP_NAN;
+	if (is_nan_forever)
+		return SEXP_NAN_FOREVER;
 
 	return sign(num);
 }
@@ -4365,8 +4482,14 @@ int sexp_nan_to_number(int n)
 // Goober5000
 int sexp_set_bit(int node, bool set_it)
 {
-	int val = eval_num(node);
-	int bit_index = eval_num(CDR(node));
+	int val, bit_index;
+	bool is_nan, is_nan_forever;
+
+	eval_nums(node, is_nan, is_nan_forever, val, bit_index);
+	if (is_nan)
+		return SEXP_NAN;
+	if (is_nan_forever)
+		return SEXP_NAN_FOREVER;
 
 	if (bit_index < 0 || bit_index > 31)
 	{
@@ -4384,8 +4507,14 @@ int sexp_set_bit(int node, bool set_it)
 // Goober5000
 int sexp_is_bit_set(int node)
 {
-	int val = eval_num(node);
-	int bit_index = eval_num(CDR(node));
+	int val, bit_index;
+	bool is_nan, is_nan_forever;
+
+	eval_nums(node, is_nan, is_nan_forever, val, bit_index);
+	if (is_nan)
+		return SEXP_FALSE;
+	if (is_nan_forever)
+		return SEXP_KNOWN_FALSE;
 
 	if (bit_index < 0 || bit_index > 31)
 	{
@@ -4403,44 +4532,88 @@ int sexp_is_bit_set(int node)
 // Goober5000
 int sexp_bitwise_and(int node)
 {
-	int val = eval_num(node);
+	bool is_nan, is_nan_forever;
+
+	int result = eval_num(node, is_nan, is_nan_forever);
+	if (is_nan)
+		return SEXP_NAN;
+	if (is_nan_forever)
+		return SEXP_NAN_FOREVER;
 
 	for (int n = CDR(node); n != -1; n = CDR(n))
-		val &= eval_num(n);
+	{
+		int val = eval_num(n, is_nan, is_nan_forever);
+		if (is_nan)
+			return SEXP_NAN;
+		if (is_nan_forever)
+			return SEXP_NAN_FOREVER;
 
-	return val;
+		result &= val;
+	}
+
+	return result;
 }
 
 // Goober5000
 int sexp_bitwise_or(int node)
 {
-	int val = eval_num(node);
+	bool is_nan, is_nan_forever;
+
+	int result = eval_num(node, is_nan, is_nan_forever);
+	if (is_nan)
+		return SEXP_NAN;
+	if (is_nan_forever)
+		return SEXP_NAN_FOREVER;
 
 	for (int n = CDR(node); n != -1; n = CDR(n))
-		val |= eval_num(n);
+	{
+		int val = eval_num(n, is_nan, is_nan_forever);
+		if (is_nan)
+			return SEXP_NAN;
+		if (is_nan_forever)
+			return SEXP_NAN_FOREVER;
 
-	return val;
+		result |= val;
+	}
+
+	return result;
 }
 
 // Goober5000
 int sexp_bitwise_not(int node)
 {
-	int result = ~(eval_num(node));
+	bool is_nan, is_nan_forever;
 
-	// clear the sign bit
-	return result & INT_MAX;
+	int val = eval_num(node, is_nan, is_nan_forever);
+	if (is_nan)
+		return SEXP_NAN;
+	if (is_nan_forever)
+		return SEXP_NAN_FOREVER;
+
+	// flip the bits, then clear the sign bit
+	return (~val) & INT_MAX;
 }
 
 // Goober5000
 int sexp_bitwise_xor(int node)
 {
-	return eval_num(node) ^ eval_num(CDR(node));
+	int val1, val2;
+	bool is_nan, is_nan_forever;
+
+	eval_nums(node, is_nan, is_nan_forever, val1, val2);
+	if (is_nan)
+		return SEXP_NAN;
+	if (is_nan_forever)
+		return SEXP_NAN_FOREVER;
+
+	return val1 ^ val2;
 }
 
 // seeding added by Karajorma and Goober5000
 int rand_sexp(int n, bool multiple)
 {
-	int low, high, rand_num, seed;
+	bool is_nan, is_nan_forever;
+	int count, low, high, rand_num, seed;
 
 	Assert(n >= 0);
 
@@ -4451,16 +4624,12 @@ int rand_sexp(int n, bool multiple)
 		return atoi(CTEXT(n));
 	}
 
-	low = eval_num(n);
-
-	// get high
-	high = eval_num(CDR(n));
-			
-	// is there a seed provided?
-	if (CDDR(n) != -1)
-		seed = eval_num(CDDR(n));
-	else
-		seed = 0;
+	// get low, high, and (optional) seed - seed will be 0, per eval_nums, if not specified
+	count = eval_nums(n, is_nan, is_nan_forever, low, high, seed);
+	if (is_nan)
+		return SEXP_NAN;
+	if (is_nan_forever)
+		return SEXP_NAN_FOREVER;
 
 	// get the random number
 	rand_num = rand_internal(low, high, seed);
@@ -4646,17 +4815,57 @@ int sexp_not(int n)
 	return result ? SEXP_FALSE : SEXP_TRUE;
 }
 
-int sexp_xor(int node)
+int sexp_xor(int n)
 {
-	int num_true = 0;
+	bool result;
+	int num_true = 0, num_known_true = 0, num_known_false = 0, num_args = 0;
 
-	for (int n = node; n != -1; n = CDR(n))
+	if (n != -1)
 	{
-		if (is_sexp_true(n))
-			num_true++;
+		if (CAR(n) != -1)
+		{
+			num_args++;
+
+			result = is_sexp_true(CAR(n));
+			if (Sexp_nodes[CAR(n)].value == SEXP_KNOWN_TRUE)
+				num_known_true++;
+			else if (Sexp_nodes[CAR(n)].value == SEXP_KNOWN_FALSE || Sexp_nodes[CAR(n)].value == SEXP_NAN_FOREVER)
+				num_known_false++;
+			else if (result)
+				num_true++;
+		}
+		// this should never happen, because all arguments which return logical values are operators
+		else
+			result = (atoi(CTEXT(n)) != 0);
+
+		while (CDR(n) != -1)
+		{
+			num_args++;
+
+			result = is_sexp_true(CDR(n));
+			if (Sexp_nodes[CDR(n)].value == SEXP_KNOWN_TRUE)
+				num_known_true++;
+			else if (Sexp_nodes[CDR(n)].value == SEXP_KNOWN_FALSE || Sexp_nodes[CDR(n)].value == SEXP_NAN_FOREVER)
+				num_known_false++;
+			else if (result)
+				num_true++;
+
+			n = CDR(n);
+		}
 	}
 
-	return (num_true == 1);
+	if (num_known_true + num_known_false == num_args)
+	{
+		if (num_known_true == 1)
+			return SEXP_KNOWN_TRUE;
+		else
+			return SEXP_KNOWN_FALSE;
+	}
+
+	if (num_true + num_known_true == 1)
+		return SEXP_TRUE;
+	else
+		return SEXP_FALSE;
 }
 
 // Goober5000
@@ -5343,11 +5552,17 @@ int sexp_is_destroyed_delay(int n)
 {
 	fix delay, time;
 	int val;
+	bool is_nan, is_nan_forever;
 
 	Assert ( n >= 0 );
 
 	time = 0;
-	delay = i2f(eval_num(n));
+	delay = i2f(eval_num(n, is_nan, is_nan_forever));
+
+	if (is_nan)
+		return SEXP_FALSE;
+	if (is_nan_forever)
+		return SEXP_KNOWN_FALSE;
 
 	// check value of is_destroyed function.  KNOWN_FALSE should be returned immediately
 	val = sexp_is_destroyed( CDR(n), &time );
@@ -5365,7 +5580,6 @@ int sexp_is_destroyed_delay(int n)
 
 	return SEXP_FALSE;
 }
-
 
 // First ship is the destroyer, rest of the arguments are the destroyed ships.
 int sexp_was_destroyed_by(int n, fix* latest_time)
@@ -5412,11 +5626,17 @@ int sexp_was_destroyed_by_delay(int n)
 {
 	fix delay, time;
 	int val;
+	bool is_nan, is_nan_forever;
 
 	Assert(n >= 0);
 
 	time = 0;
-	delay = i2f(eval_num(n));
+	delay = i2f(eval_num(n, is_nan, is_nan_forever));
+
+	if (is_nan)
+		return SEXP_FALSE;
+	if (is_nan_forever)
+		return SEXP_KNOWN_FALSE;
 
 	// check value of is_destroyed function.  KNOWN_FALSE should be returned immediately
 	val = sexp_was_destroyed_by(CDR(n), &time);
@@ -5439,12 +5659,18 @@ int sexp_is_subsystem_destroyed_delay(int n)
 {
 	char *ship_name, *subsys_name;
 	fix delay, time;
+	bool is_nan, is_nan_forever;
 
 	Assert( n != -1 );
 	
 	ship_name = CTEXT(n);
 	subsys_name = CTEXT(CDR(n));
-	delay = i2f(eval_num(CDR(CDR(n))));
+	delay = i2f(eval_num(CDDR(n), is_nan, is_nan_forever));
+
+	if (is_nan)
+		return SEXP_FALSE;
+	if (is_nan_forever)
+		return SEXP_KNOWN_FALSE;
 
 	if (sexp_query_has_yet_to_arrive(ship_name))
 		return SEXP_CANT_EVAL;
@@ -5465,11 +5691,17 @@ int sexp_is_disabled_delay(int n)
 {
 	fix delay, time;
 	int val;
+	bool is_nan, is_nan_forever;
 
 	Assert ( n >= 0 );
 
 	time = 0;
-	delay = i2f(eval_num(n));
+	delay = i2f(eval_num(n, is_nan, is_nan_forever));
+
+	if (is_nan)
+		return SEXP_FALSE;
+	if (is_nan_forever)
+		return SEXP_KNOWN_FALSE;
 
 	// check value of is_disable for known false and return immediately if it is.
 	val = sexp_is_disabled( CDR(n), &time );
@@ -5491,11 +5723,17 @@ int sexp_is_disarmed_delay(int n)
 {
 	fix delay, time;
 	int val;
+	bool is_nan, is_nan_forever;
 
 	Assert ( n >= 0 );
 
 	time = 0;
-	delay = i2f(eval_num(n));
+	delay = i2f(eval_num(n, is_nan, is_nan_forever));
+
+	if (is_nan)
+		return SEXP_FALSE;
+	if (is_nan_forever)
+		return SEXP_KNOWN_FALSE;
 	
 	// check value of is_disarmed for a known false value and return that immediately if it is
 	val = sexp_is_disarmed( CDR(n), &time );
@@ -5515,11 +5753,17 @@ int sexp_is_disarmed_delay(int n)
 
 int sexp_has_docked_or_undocked(int n, int op_num)
 {
+	bool is_nan, is_nan_forever;
 	Assert(op_num == OP_HAS_DOCKED || op_num == OP_HAS_UNDOCKED || op_num == OP_HAS_DOCKED_DELAY || op_num == OP_HAS_UNDOCKED_DELAY);
 
 	char *docker = CTEXT(n);
 	char *dockee = CTEXT(CDR(n));
-	int count = eval_num(CDR(CDR(n)));		// count of times that we should look for
+	int count = eval_num(CDDR(n), is_nan, is_nan_forever);		// count of times that we should look for
+
+	if (is_nan)
+		return SEXP_FALSE;
+	if (is_nan_forever)
+		return SEXP_KNOWN_FALSE;
 
 	if (count <= 0)
 	{
@@ -5535,8 +5779,13 @@ int sexp_has_docked_or_undocked(int n, int op_num)
 
 	if (op_num == OP_HAS_DOCKED_DELAY || op_num == OP_HAS_UNDOCKED_DELAY)
 	{
-		fix delay = i2f(eval_num(CDR(CDR(CDR(n)))));
+		fix delay = i2f(eval_num(CDDDR(n), is_nan, is_nan_forever));
 		fix time;
+
+		if (is_nan)
+			return SEXP_FALSE;
+		if (is_nan_forever)
+			return SEXP_KNOWN_FALSE;
 
 		if ( mission_log_get_time_indexed(op_num == OP_HAS_DOCKED_DELAY ? LOG_SHIP_DOCKED : LOG_SHIP_UNDOCKED, docker, dockee, count, &time) )
 		{
@@ -5563,11 +5812,17 @@ int sexp_has_arrived_delay(int n)
 {
 	fix delay, time;
 	int val;
+	bool is_nan, is_nan_forever;
 
 	Assert ( n >= 0 );
 
 	time = 0;
-	delay = i2f(eval_num(n));
+	delay = i2f(eval_num(n, is_nan, is_nan_forever));
+
+	if (is_nan)
+		return SEXP_FALSE;
+	if (is_nan_forever)
+		return SEXP_KNOWN_FALSE;
 
 	// check return value from arrived function.  if can never arrive, then return that value here as well
 	val = sexp_has_arrived( CDR(n), &time );
@@ -5589,11 +5844,17 @@ int sexp_has_departed_delay(int n)
 {
 	fix delay, time;
 	int val;
+	bool is_nan, is_nan_forever;
 
 	Assert ( n >= 0 );
 
 	time = 0;
-	delay = i2f(eval_num(n));
+	delay = i2f(eval_num(n, is_nan, is_nan_forever));
+
+	if (is_nan)
+		return SEXP_FALSE;
+	if (is_nan_forever)
+		return SEXP_KNOWN_FALSE;
 
 	// must first check to see if the departed function could ever be true/false or is true or false.
 	// if it can never be true, return that value
@@ -5620,6 +5881,7 @@ int sexp_are_waypoints_done_delay(int node)
 	char *ship_name, *waypoint_name;
 	int count, n = node;
 	fix time, delay;
+	bool is_nan, is_nan_forever;
 
 	ship_name = CTEXT(n);
 	n = CDR(n);
@@ -5627,10 +5889,18 @@ int sexp_are_waypoints_done_delay(int node)
 	waypoint_name = CTEXT(n);
 	n = CDR(n);
 
-	delay = i2f(eval_num(n));
+	delay = i2f(eval_num(n, is_nan, is_nan_forever));
 	n = CDR(n);
+	if (is_nan)
+		return SEXP_FALSE;
+	if (is_nan_forever)
+		return SEXP_KNOWN_FALSE;
 
-	count = (n >= 0) ? eval_num(n) : 1;
+	count = (n >= 0) ? eval_num(n, is_nan, is_nan_forever) : 1;
+	if (is_nan)
+		return SEXP_FALSE;
+	if (is_nan_forever)
+		return SEXP_KNOWN_FALSE;
 	if (count <= 0)
 	{
 		Warning(LOCATION, "Are-waypoints-done-delay count should be at least 1!  This has been automatically adjusted.");
@@ -5668,8 +5938,14 @@ int sexp_ship_type_destroyed(int n)
 	int percent;
 	int type;
 	char *shiptype;
+	bool is_nan, is_nan_forever;
 
-	percent = eval_num(n);
+	percent = eval_num(n, is_nan, is_nan_forever);
+	if (is_nan)
+		return SEXP_FALSE;
+	if (is_nan_forever)
+		return SEXP_KNOWN_FALSE;
+
 	shiptype = CTEXT(CDR(n));
 
 	type = ship_type_name_lookup(shiptype);
@@ -5695,7 +5971,12 @@ int sexp_ship_type_destroyed(int n)
 // following are time based functions
 int sexp_has_time_elapsed(int n)
 {
-	int time = eval_num(n);
+	bool is_nan, is_nan_forever;
+	int time = eval_num(n, is_nan, is_nan_forever);
+	if (is_nan)
+		return SEXP_FALSE;
+	if (is_nan_forever)
+		return SEXP_KNOWN_FALSE;
 
 	if ( f2i(Missiontime) >= time )
 		return SEXP_KNOWN_TRUE;
@@ -5824,9 +6105,16 @@ int sexp_time_wing_destroyed(int n)
 int sexp_time_docked_or_undocked(int n, bool docked)
 {
 	fix time;
+	bool is_nan, is_nan_forever;
+
 	char *docker = CTEXT(n);
 	char *dockee = CTEXT(CDR(n));
-	int count = eval_num(CDR(CDR(n)));
+	int count = eval_num(CDDR(n), is_nan, is_nan_forever);
+
+	if (is_nan)
+		return SEXP_NAN;
+	if (is_nan_forever)
+		return SEXP_NAN_FOREVER;
 
 	if (count <= 0) {
 		Warning(LOCATION, "Time-%sdocked count should be at least 1!  This has been automatically adjusted.", docked ? "" : "un");
@@ -5895,9 +6183,13 @@ void sexp_set_energy_pct (int node, int op_num)
 	char *shipname;
 	ship * shipp; 
 	ship_info * sip; 
+	bool is_nan, is_nan_forever;
 
 	Assert (node >= 0);
-	new_pct = eval_num(node) / 100.0f;
+
+	new_pct = eval_num(node, is_nan, is_nan_forever) / 100.0f;
+	if (is_nan || is_nan_forever)
+		return;
 
 	// deal with ridiculous percentages
     CLAMP(new_pct, 0.0f, 1.0f);
@@ -6225,7 +6517,12 @@ int sexp_team_score(int node)
 	if (Game_mode & GM_MULTIPLAYER) {
 		if (Netgame.type_flags & NG_TYPE_TEAM) {
 
-			int team = eval_num(node);
+			bool is_nan, is_nan_forever;
+			int team = eval_num(node, is_nan, is_nan_forever);
+			if (is_nan)
+				return SEXP_NAN;
+			if (is_nan_forever)
+				return SEXP_NAN_FOREVER;
 
 			// Teams can only be 1 or 2 at the moment but we should use Num_teams in case more become possible in the future
 			if (team <= 0 || team > Num_teams)
@@ -6387,12 +6684,13 @@ int sexp_directive_value(int n)
 {	
 	int replace_current_value = SEXP_TRUE; 
 	int directive_value;
+	bool is_nan, is_nan_forever;
 
 	Assert(n >= 0);
 
-	directive_value = eval_num(n);
+	directive_value = eval_num(n, is_nan, is_nan_forever);
 
-	if ((directive_value == SEXP_NAN) || (directive_value == SEXP_NAN_FOREVER)) {
+	if (is_nan || is_nan_forever) {
 		directive_value = 0;
 	}
 
@@ -6722,7 +7020,7 @@ int sexp_distance_subsystem(int n)
 	return SEXP_NAN;
 }
 
-bool sexp_helper_is_within_box(const std::array<float, 6> &box_vals, vec3d *pos)
+bool sexp_helper_is_within_box(const std::array<float, 6> &box_vals, const vec3d *pos)
 {
 	int i;
 	for(i = 0; i < 3; i++)
@@ -6743,13 +7041,13 @@ int sexp_num_within_box(int n)
 	char *ship_wing;
 	int i, idx;
 	int retval = 0;
+	bool is_nan, is_nan_forever;
 
-	for(i = 0; i < 6; i++)
-	{
-		box_vals[i] = i2fl(eval_num(n));
-		n = CDR(n);
-	}
+	eval_array(box_vals, n, is_nan, is_nan_forever);
 
+	// nobody can be within a NaN box
+	if (is_nan || is_nan_forever)
+		return 0;
 	
 	for(; n >= 0; n = CDR(n))
 	{
@@ -6814,6 +7112,7 @@ void sexp_set_object_speed(int n, int axis)
 {
 	Assert(n >= 0);
 
+	bool is_nan, is_nan_forever;
 	int speed;
 	bool subjective = false;
 	object_ship_wing_point_team oswpt;
@@ -6821,8 +7120,10 @@ void sexp_set_object_speed(int n, int axis)
 	sexp_get_object_ship_wing_point_team(&oswpt, CTEXT(n));
 	n = CDR(n);
 
-	speed = eval_num(n);
+	speed = eval_num(n, is_nan, is_nan_forever);
 	n = CDR(n);
+	if (is_nan || is_nan_forever)
+		return;
 
 	if (n >= 0)
 	{
@@ -6989,16 +7290,12 @@ int sexp_get_object_coordinate(int n, int axis)
 		{
 			relative_location = &relative_location_buf;
 
-			relative_location->xyz.x = (float) eval_num(n);
-			n = CDR(n);
-			if (n >= 0) {
-				relative_location->xyz.y = (float) eval_num(n);
-				n = CDR(n);
-				if (n >= 0) {
-					relative_location->xyz.z = (float) eval_num(n);
-					n = CDR(n);
-				}
-			}
+			bool is_nan, is_nan_forever;
+			eval_vec3d(relative_location, n, is_nan, is_nan_forever);
+			if (is_nan)
+				return SEXP_NAN;
+			if (is_nan_forever)
+				return SEXP_NAN_FOREVER;
 		}
 	}
 
@@ -7076,12 +7373,10 @@ void sexp_set_object_position(int n)
 	sexp_get_object_ship_wing_point_team(&oswpt, CTEXT(n));
 	n = CDR(n);
 
-	target_vec.xyz.x = i2fl(eval_num(n));
-	n = CDR(n);
-	target_vec.xyz.y = i2fl(eval_num(n));
-	n = CDR(n);
-	target_vec.xyz.z = i2fl(eval_num(n));
-	n = CDR(n);
+	bool is_nan, is_nan_forever;
+	eval_vec3d(&target_vec, n, is_nan, is_nan_forever);
+	if (is_nan || is_nan_forever)
+		return;
 
 	switch (oswpt.type)
 	{
@@ -7220,12 +7515,10 @@ void sexp_set_object_orientation(int n)
 	sexp_get_object_ship_wing_point_team(&oswpt, CTEXT(n));
 	n = CDR(n);
 
-	a.p = fl_radians(eval_num(n) % 360);
-	n = CDR(n);
-	a.b = fl_radians(eval_num(n) % 360);
-	n = CDR(n);
-	a.h = fl_radians(eval_num(n) % 360);
-	n = CDR(n);
+	bool is_nan, is_nan_forever;
+	eval_angles(&a, n, is_nan, is_nan_forever);
+	if (is_nan || is_nan_forever)
+		return;
 
 	vm_angles_2_matrix(&target_orient, &a);
 
@@ -7406,6 +7699,7 @@ void sexp_set_oswpt_facing(object_ship_wing_point_team *oswpt, vec3d *location, 
 // Goober5000
 void sexp_set_object_facing(int n, bool facing_object)
 {
+	bool is_nan, is_nan_forever;
 	vec3d *location = nullptr;
 	vec3d location_buf;
 	int turn_time, bank;
@@ -7431,25 +7725,15 @@ void sexp_set_object_facing(int n, bool facing_object)
 	{
 		location = &location_buf;
 
-		location->xyz.x = (float) eval_num(n);
-		n = CDR(n);
-		location->xyz.y = (float) eval_num(n);
-		n = CDR(n);
-		location->xyz.z = (float) eval_num(n);
-		n = CDR(n);
+		eval_vec3d(location, n, is_nan, is_nan_forever);
+		if (is_nan || is_nan_forever)
+			return;
 	}
 
 	// get optional turn time and bank
-	turn_time = bank = 0;
-	if (n != -1)
-	{
-		turn_time = eval_num(n);
-		n = CDR(n);
-	}
-	if (n != -1)
-	{
-		bank = eval_num(n);
-	}
+	eval_nums(n, is_nan, is_nan_forever, turn_time, bank);
+	if (is_nan || is_nan_forever)
+		return;
 
 	sexp_set_oswpt_facing(&oswpt1, location, turn_time, bank);
 }
@@ -7534,21 +7818,24 @@ void sexp_set_ship_maneuver(int n, int op_num)
 	int bank = 0, heading = 0, pitch = 0;
 	int up = 0, sideways = 0, forward = 0;
 	int duration, i, temp;
-	bool apply_all_rotate = false, apply_all_lat = false;
+	bool apply_all_rotate = false, apply_all_lat = false, is_nan, is_nan_forever;
 	object_ship_wing_point_team oswpt;
 
 	sexp_get_object_ship_wing_point_team(&oswpt, CTEXT(n));
 
 	n = CDR(n);
-	duration = eval_num(n);
-	if (duration < 2)
+	duration = eval_num(n, is_nan, is_nan_forever);
+	if (is_nan || is_nan_forever || duration < 2)
 		return;
 
 	if (op_num == OP_SHIP_ROT_MANEUVER || op_num == OP_SHIP_MANEUVER) {
 		for(i=0;i<3;i++) {
 			n = CDR(n);
 
-			temp = eval_num(n);
+			temp = eval_num(n, is_nan, is_nan_forever);
+			if (is_nan || is_nan_forever)
+				return;
+
 			if (temp > 100) temp = 100;
 			if (temp < -100) temp = -100;
 
@@ -7568,7 +7855,10 @@ void sexp_set_ship_maneuver(int n, int op_num)
 		for(i=0;i<3;i++) {
 			n = CDR(n);
 
-			temp = eval_num(n);
+			temp = eval_num(n, is_nan, is_nan_forever);
+			if (is_nan || is_nan_forever)
+				return;
+
 			if (temp > 100) temp = 100;
 			if (temp < -100) temp = -100;
 
@@ -7601,8 +7891,13 @@ int sexp_last_order_time(int n)
 	fix time;
 	char *name;
 	ai_goal *aigp;
+	bool is_nan, is_nan_forever;
 
-	time = i2f(eval_num(n));
+	time = i2f(eval_num(n, is_nan, is_nan_forever));
+	if (is_nan)
+		return SEXP_FALSE;
+	if (is_nan_forever)
+		return SEXP_KNOWN_FALSE;
 	Assert ( time >= 0 );
 
 	n = CDR(n);
@@ -7823,8 +8118,13 @@ int sexp_percent_ships_arrive_depart_destroy_disarm_disable(int n, int what)
 	int percent;
 	int total, count;
 	char *name;
+	bool is_nan, is_nan_forever;
 
-	percent = eval_num(n);
+	percent = eval_num(n, is_nan, is_nan_forever);
+	if (is_nan)
+		return SEXP_FALSE;
+	if (is_nan_forever)
+		return SEXP_KNOWN_FALSE;
 
 	total = 0;
 	count = 0;
@@ -7888,12 +8188,16 @@ int sexp_depart_node_delay(int n)
 	int count, num_departed;
 	char *jump_node_name, *name;
 	fix delay, latest_time, this_time;
-
-	Assert( n >= 0 );
+	bool is_nan, is_nan_forever;
 
 	// get the delay
-	delay = i2f(eval_num(n));
+	delay = i2f(eval_num(n, is_nan, is_nan_forever));
 	n = CDR(n);
+
+	if (is_nan)
+		return SEXP_FALSE;
+	if (is_nan_forever)
+		return SEXP_KNOWN_FALSE;
 
 	jump_node_name = CTEXT(n);
 	n = CDR(n);
@@ -7935,12 +8239,18 @@ int sexp_destroyed_departed_delay(int n)
 	int count, total;
 	fix delay, latest_time;
 	char *name;
+	bool is_nan, is_nan_forever;
 
 	Assert( n >= 0 );
 
 	// get the delay
-	delay = i2f(eval_num(n));
+	delay = i2f(eval_num(n, is_nan, is_nan_forever));
 	n = CDR(n);
+
+	if (is_nan)
+		return SEXP_FALSE;
+	if (is_nan_forever)
+		return SEXP_KNOWN_FALSE;
 
 	count = 0;					// number destroyed or departed
 	total = 0;					// total number of ships/wings to check
@@ -8023,6 +8333,7 @@ int sexp_special_warpout_name( int node )
  */
 int sexp_is_cargo_known( int n, int check_delay )
 {
+	bool is_nan, is_nan_forever;
 	int count, ship_num, num_known, delay;
 
 	char *name;
@@ -8036,8 +8347,13 @@ int sexp_is_cargo_known( int n, int check_delay )
 	delay = 0;
 	if ( check_delay )
 	{
-		delay = eval_num(n);
+		delay = eval_num(n, is_nan, is_nan_forever);
 		n = CDR(n);
+
+		if (is_nan)
+			return SEXP_FALSE;
+		if (is_nan_forever)
+			return SEXP_KNOWN_FALSE;
 	}
 
 	while ( n != -1 )
@@ -8135,6 +8451,7 @@ void get_cap_subsys_cargo_flags(int shipnum, char *subsys_name, int *known, fix 
 // reworked by Goober5000 to allow for set-scanned and set-unscanned to be used more than once
 int sexp_cap_subsys_cargo_known_delay(int n)
 {
+	bool is_nan, is_nan_forever;
 	int delay, count, num_known, ship_num;
 	char *ship_name, *subsys_name;
 
@@ -8144,8 +8461,13 @@ int sexp_cap_subsys_cargo_known_delay(int n)
 	Assert( n >= 0 );
 
 	// get delay
-	delay = eval_num(n);
+	delay = eval_num(n, is_nan, is_nan_forever);
 	n = CDR(n);
+
+	if (is_nan)
+		return SEXP_FALSE;
+	if (is_nan_forever)
+		return SEXP_KNOWN_FALSE;
 
 	// get ship name
 	ship_name = CTEXT(n);
@@ -8310,6 +8632,7 @@ void sexp_set_scanned_unscanned(int n, int flag)
 
 int sexp_has_been_tagged_delay(int n)
 {
+	bool is_nan, is_nan_forever;
 	int count, shipnum, num_known, delay;
 	char *name;
 
@@ -8319,8 +8642,13 @@ int sexp_has_been_tagged_delay(int n)
 	num_known = 0;
 
 	// get the delay value
-	delay = eval_num(n);
+	delay = eval_num(n, is_nan, is_nan_forever);
 	n = CDR(n);
+
+	if (is_nan)
+		return SEXP_FALSE;
+	if (is_nan_forever)
+		return SEXP_KNOWN_FALSE;
 
 	while ( n != -1 ) {
 		fix time_known;
@@ -9012,6 +9340,7 @@ int eval_every_of(int arg_handler_node, int condition_node)
 // Goober5000
 int eval_number_of(int arg_handler_node, int condition_node)
 {
+	bool is_nan, is_nan_forever;
 	int n, num_valid_arguments, num_true, num_false, num_known_true, num_known_false, threshold;
 	Assert(arg_handler_node != -1 && condition_node != -1);
 
@@ -9019,11 +9348,17 @@ int eval_number_of(int arg_handler_node, int condition_node)
 	n = CDR(arg_handler_node);
 
 	// the first argument is the number threshold
-	threshold = eval_num(n);
+	threshold = eval_num(n, is_nan, is_nan_forever);
 	n = CDR(n);
 
 	// test the whole argument list
 	num_valid_arguments = test_argument_nodes_for_condition(n, condition_node, &num_true, &num_false, &num_known_true, &num_known_false);
+
+	// we check for NaN after the conditions are evaluated, just as the logical operators evaluate all their conditions
+	if (is_nan)
+		return SEXP_FALSE;
+	if (is_nan_forever)
+		return SEXP_KNOWN_FALSE;
 
 	// use the sexp_or algorithm, modified
 	// (true if at least threshold arguments are true)
@@ -9185,6 +9520,7 @@ int eval_in_sequence(int arg_handler_node, int condition_node)
 // Goober5000
 int eval_for_counter(int arg_handler_node, int condition_node)
 {
+	bool is_nan, is_nan_forever;
 	int n, num_valid_arguments, num_true, num_false, num_known_true, num_known_false;
 	int i, counter_start, counter_stop, counter_step;
 	char buf[NAME_LENGTH];
@@ -9193,11 +9529,11 @@ int eval_for_counter(int arg_handler_node, int condition_node)
 	n = CDR(arg_handler_node);
 
 	// determine the counter parameters
-	counter_start = eval_num(n);
-	n = CDR(n);
-	counter_stop = eval_num(n);
-	n = CDR(n);
-	counter_step = (n >= 0) ? eval_num(n) : 1;
+	eval_nums(n, is_nan, is_nan_forever, counter_start, counter_stop, counter_step);
+	if (is_nan)
+		return SEXP_FALSE;
+	if (is_nan_forever)
+		return SEXP_KNOWN_FALSE;
 
 	// a bunch of error checking
 	if (counter_step == 0)
@@ -9436,14 +9772,21 @@ bool is_blank_of_op(int op_const)
 // Goober5000
 int sexp_functional_if_then_else(int node)
 {
+	int num1, num2, n;
+	bool is_nan, is_nan_forever;
+
 	Assertion(CAR(node) >= 0, "The condition in functional-if-then-else must be an operator!");
 
 	// decision time
 	int condition = eval_sexp(CAR(node));
 
 	// we need to evaluate both numbers regardless of which one we pick
-	int num1 = eval_num(CDR(node));
-	int num2 = eval_num(CDDR(node));
+	n = CDR(node);
+	eval_nums(n, is_nan, is_nan_forever, num1, num2);
+	if (is_nan)
+		return SEXP_NAN;
+	if (is_nan_forever)
+		return SEXP_NAN_FOREVER;
 
 	// pick one
 	if (condition == SEXP_TRUE || condition == SEXP_KNOWN_TRUE)
@@ -9686,9 +10029,9 @@ void sexp_change_iff_color_helper(object_ship_wing_point_team oswpt, int observe
 void sexp_change_iff_color(int n)
 {
 	int observer_team, observed_team, alternate_iff_color;
-	int i;
 	std::array<int, 3> rgb;
 	char *name;
+	bool is_nan, is_nan_forever;
 
 	// First node
 	if (n == -1) {
@@ -9707,18 +10050,19 @@ void sexp_change_iff_color(int n)
 	n = CDR(n);
 
 	// Three following nodes
-	for (i = 0; i < 3; i++)
-	{
-		if (n == -1) {
-			Warning(LOCATION, "Detected incomplete color parameter list in sexp-change_iff_color\n");
-			return;
-		}
-		rgb[i] = eval_num(n);
-		if (rgb[i] > 255) {
+	int count = eval_array<int>(rgb, n, is_nan, is_nan_forever, [](int num)->int {
+		if (num < 0 || num > 255) {
 			Warning(LOCATION, "Invalid argument for iff color in sexp-change-iff-color. Valid range is 0 to 255.\n");
-			rgb[i] = 255;
+			num = 255;
 		}
-		n = CDR(n);
+		return num;
+	});
+	if (count < 3) {
+		Warning(LOCATION, "Detected incomplete color parameter list in sexp-change_iff_color\n");
+		return;
+	}
+	if (is_nan || is_nan_forever) {
+		return;
 	}
 	alternate_iff_color = iff_init_color(rgb[0], rgb[1], rgb[2]);
 
@@ -10110,7 +10454,11 @@ void sexp_clear_goals(int n)
 // Goober5000
 void sexp_hud_disable(int n)
 {
-	int disable_hud = eval_num(n);
+	bool is_nan, is_nan_forever;
+	int disable_hud = eval_num(n, is_nan, is_nan_forever);
+	if (is_nan || is_nan_forever)
+		return;
+
 	hud_set_draw(!disable_hud);
 
     Current_sexp_network_packet.start_callback();
@@ -10130,7 +10478,11 @@ void multi_sexp_hud_disable()
 // Goober5000
 void sexp_hud_disable_except_messages(int n)
 {
-	int disable_hud = eval_num(n);
+	bool is_nan, is_nan_forever;
+	int disable_hud = eval_num(n, is_nan, is_nan_forever);
+	if (is_nan || is_nan_forever)
+		return;
+
 	hud_disable_except_messages(disable_hud);
 
     Current_sexp_network_packet.start_callback();
@@ -10149,12 +10501,19 @@ void multi_sexp_hud_disable_except_messages()
 
 void sexp_hud_set_text_num(int n)
 {
+	bool is_nan, is_nan_forever;
 	char* gaugename = CTEXT(n);
 	char tmp[16] = "";
 
 	HudGauge* cg = hud_get_gauge(gaugename);
 	if(cg) {
-		sprintf( tmp, "%d", eval_num(CDR(n)) );
+		int num = eval_num(CDR(n), is_nan, is_nan_forever);
+		if (is_nan || is_nan_forever) {
+			strcpy_s(tmp, "NaN");
+		}
+		else {
+			sprintf(tmp, "%d", num);
+		}
 		cg->updateCustomGaugeText(tmp);
 	}
 }
@@ -10241,9 +10600,15 @@ void sexp_hud_clear_messages()
 
 void sexp_hud_set_coords(int n)
 {
+	int coord_x, coord_y;
+	bool is_nan, is_nan_forever;
+
 	char* gaugename = CTEXT(n);
-	int coord_x = eval_num(CDR(n));
-	int coord_y = eval_num(CDR(CDR(n)));
+	n = CDR(n);
+
+	eval_nums(n, is_nan, is_nan_forever, coord_x, coord_y);
+	if (is_nan || is_nan_forever)
+		return;
 
 	HudGauge* cg = hud_get_gauge(gaugename);
 	if(cg) {
@@ -10253,8 +10618,12 @@ void sexp_hud_set_coords(int n)
 
 void sexp_hud_set_frame(int n)
 {
+	bool is_nan, is_nan_forever;
 	char* gaugename = CTEXT(n);
-	int frame_num = eval_num(CDR(n));
+
+	int frame_num = eval_num(CDR(n), is_nan, is_nan_forever);
+	if (is_nan || is_nan_forever)
+		return;
 
 	HudGauge* cg = hud_get_gauge(gaugename);
 	if(cg) {
@@ -10268,15 +10637,13 @@ void sexp_hud_set_color(int n)
 	n = CDR(n);
 
 	std::array<int, 3> rgb;
-	rgb[0] = eval_num(n);
-	rgb[1] = eval_num(CDR(n));
-	rgb[2] = eval_num(CDR(CDR(n)));
-	CLAMP(rgb[0], 0, 255);
-	CLAMP(rgb[1], 0, 255);
-	CLAMP(rgb[2], 0, 255);
+	bool is_nan, is_nan_forever;
+	eval_array(rgb, n, is_nan, is_nan_forever);
+	if (is_nan || is_nan_forever)
+		return;
 
 	HudGauge* cg = hud_get_gauge(gaugename);
-	if(cg) {
+	if (cg) {
 		cg->sexpLockConfigColor(false);
 		cg->updateColor((ubyte)rgb[0], (ubyte)rgb[1], (ubyte)rgb[2], (HUD_color_alpha + 1) * 16);
 		cg->sexpLockConfigColor(true);
@@ -10286,7 +10653,11 @@ void sexp_hud_set_color(int n)
 // Goober5000
 void sexp_hud_set_max_targeting_range(int n)
 {
-	Hud_max_targeting_range = eval_num(n);
+	bool is_nan, is_nan_forever;
+
+	Hud_max_targeting_range = eval_num(n, is_nan, is_nan_forever);
+	if (is_nan || is_nan_forever)
+		return;
 
 	if (Hud_max_targeting_range < 0) {
 		Hud_max_targeting_range = 0;
@@ -10308,7 +10679,12 @@ int Sexp_hud_display_warpout = 0;
 
 void sexp_hud_display_gauge(int n)
 {
-	int show_for = eval_num(n);
+	bool is_nan, is_nan_forever;
+
+	int show_for = eval_num(n, is_nan, is_nan_forever);
+	if (is_nan || is_nan_forever)
+		return;
+
 	char* gauge = CTEXT(CDR(n));
 
 	if ( stricmp(SEXP_HUD_GAUGE_WARPOUT, gauge) == 0 ) {
@@ -10566,12 +10942,17 @@ void sexp_start_music(int loop)
 gamesnd_id sexp_get_sound_index(int node)
 {
 	Assert(node >= 0);
+	bool is_nan, is_nan_forever;
 	gamesnd_id sound_index;
 
 	// this node is another SEXP operator or a plain number
 	if (CAR(node) != -1 || Sexp_nodes[node].subtype == SEXP_ATOM_NUMBER)
 	{
-		sound_index = gamesnd_get_by_tbl_index(eval_num(node));
+		int index = eval_num(node, is_nan, is_nan_forever);
+		if (is_nan || is_nan_forever)
+			index = -1;
+
+		sound_index = gamesnd_get_by_tbl_index(index);
 	}
 	// it's gotta be a name
 	else
@@ -10594,17 +10975,15 @@ gamesnd_id sexp_get_sound_index(int node)
 // Goober5000
 void sexp_play_sound_from_table(int n)
 {
+	bool is_nan, is_nan_forever;
 	vec3d origin;
 
 	Assert( n >= 0 );
 
 	// read in data --------------------------------
-	origin.xyz.x = (float)eval_num(n);
-	n = CDR(n);
-	origin.xyz.y = (float)eval_num(n);
-	n = CDR(n);
-	origin.xyz.z = (float)eval_num(n);
-	n = CDR(n);
+	eval_vec3d(&origin, n, is_nan, is_nan_forever);
+	if (is_nan || is_nan_forever)
+		return;
 	auto sound_index = sexp_get_sound_index(n);
 
 
@@ -10772,6 +11151,7 @@ void sexp_set_sound_environment(int node)
 	int n = node;
 	sound_env env;
 	int preset_id = -1;
+	bool is_nan, is_nan_forever;
 
 	char *preset = CTEXT(n);
 	n = CDR(n);
@@ -10800,8 +11180,10 @@ void sexp_set_sound_environment(int node)
 			break;
 		}
 
-		float val = (float)eval_num(n) / 1000.0f;
+		float val = (float)eval_num(n, is_nan, is_nan_forever) / 1000.0f;
 		n = CDR(n);
+		if (is_nan || is_nan_forever)
+			continue;
 
 		if ( option == SEO_VOLUME ) {
 			env.volume = val;
@@ -10819,6 +11201,7 @@ void sexp_set_sound_environment(int node)
 void sexp_update_sound_environment(int node)
 {
 	int n = node;
+	bool is_nan, is_nan_forever;
 
 	while (n >= 0) {
 		int option = sexp_sound_environment_option_lookup(CTEXT(n));
@@ -10829,8 +11212,10 @@ void sexp_update_sound_environment(int node)
 			break;
 		}
 
-		float val = (float)eval_num(n) / 1000.0f;
+		float val = (float)eval_num(n, is_nan, is_nan_forever) / 1000.0f;
 		n = CDR(n);
+		if (is_nan || is_nan_forever)
+			continue;
 
 		if ( option == SEO_VOLUME ) {
 			ds_eax_set_volume(val);
@@ -10871,6 +11256,7 @@ int audio_volume_option_lookup(char *text)
 void sexp_adjust_audio_volume(int node)
 {
 	int n = node;
+	bool is_nan, is_nan_forever;
 
 	if (n > 0) {
 		int option = audio_volume_option_lookup(CTEXT(n));
@@ -10879,14 +11265,22 @@ void sexp_adjust_audio_volume(int node)
 
 			float target_volume = 1.0f;
 			if (n >= 0) {
-				target_volume = (float)eval_num(n) / 100;
+				target_volume = (float)eval_num(n, is_nan, is_nan_forever) / 100.0f;
 				CLAMP(target_volume, 0.0f, 1.0f);
 				n = CDR(n);
+
+				if (is_nan || is_nan_forever)
+					return;
 			}
 
 			int time = 0;
-			if (n >= 0)
-				time = eval_num(n);
+			if (n >= 0) {
+				time = eval_num(n, is_nan, is_nan_forever);
+				n = CDR(n);
+
+				if (is_nan || is_nan_forever)
+					return;
+			}
 
 			snd_adjust_audio_volume(option, target_volume, time);
 		}
@@ -10918,6 +11312,7 @@ void sexp_set_explosion_option(int node)
 	ship *shipp;
 	ship_info *sip;
 	shockwave_create_info *sci;
+	bool is_nan, is_nan_forever;
 
 	// get ship
 	ship_num = ship_name_lookup(CTEXT(n));
@@ -10954,11 +11349,13 @@ void sexp_set_explosion_option(int node)
 		if (n < 0)
 			break;
 
-		int val = eval_num(n);
+		int val = eval_num(n, is_nan, is_nan_forever);
 		Assert(val >= 0);	// should be true due to OPF_POSITIVE
 		n = CDR(n);
 
-		if (option == EO_DAMAGE) {
+		if (is_nan || is_nan_forever) {
+			continue;
+		} else if (option == EO_DAMAGE) {
 			shipp->special_exp_damage = val;
 		} else if (option == EO_BLAST) {
 			shipp->special_exp_blast = val;
@@ -11004,32 +11401,25 @@ void sexp_explosion_effect(int n)
 	vec3d origin;
 	int max_damage, max_blast, explosion_size, inner_radius, outer_radius, shockwave_speed, num, fireball_type;
 	int emp_intensity, emp_duration;
-	bool use_emp_time_for_capship_turrets;
+	bool use_emp_time_for_capship_turrets, is_nan, is_nan_forever;
 
 	Assert( n >= 0 );
 
 	// read in data --------------------------------
-	origin.xyz.x = (float)eval_num(n);
-	n = CDR(n);
-	origin.xyz.y = (float)eval_num(n);
-	n = CDR(n);
-	origin.xyz.z = (float)eval_num(n);
-	n = CDR(n);
+	std::array<int, 9> numbers;
+	eval_array(numbers, n, is_nan, is_nan_forever);
+	if (is_nan || is_nan_forever)
+		return;
 
-	max_damage = eval_num(n);
-	n = CDR(n);
-	max_blast = eval_num(n);
-	n = CDR(n);
-
-	explosion_size = eval_num(n);
-	n = CDR(n);
-	inner_radius = eval_num(n);
-	n = CDR(n);
-	outer_radius = eval_num(n);
-	n = CDR(n);
-
-	shockwave_speed = eval_num(n);
-	n = CDR(n);
+	origin.xyz.x = (float)numbers[0];
+	origin.xyz.y = (float)numbers[1];
+	origin.xyz.z = (float)numbers[2];
+	max_damage = numbers[3];
+	max_blast = numbers[4];
+	explosion_size = numbers[5];
+	inner_radius = numbers[6];
+	outer_radius = numbers[7];
+	shockwave_speed = numbers[8];
 
 	// fireball type
 	// -------------
@@ -11037,7 +11427,11 @@ void sexp_explosion_effect(int n)
 	// this node is another SEXP operator or a plain number
 	num = -1;
 	if (CAR(n) != -1 || Sexp_nodes[n].subtype == SEXP_ATOM_NUMBER)
-		num = eval_num(n);
+	{
+		num = eval_num(n, is_nan, is_nan_forever);
+		if (is_nan || is_nan_forever)
+			return;
+	}
 	else if (can_construe_as_integer(CTEXT(n)))
 		num = atoi(CTEXT(n));
 
@@ -11086,19 +11480,10 @@ void sexp_explosion_effect(int n)
 	n = CDR(n);
 
 	// optional EMP
-	emp_intensity = 0;
-	emp_duration = 0;
+	eval_nums(n, is_nan, is_nan_forever, emp_intensity, emp_duration);
+	if (is_nan || is_nan_forever)
+		return;
 	use_emp_time_for_capship_turrets = false;
-	if (n != -1)
-	{
-		emp_intensity = eval_num(n);
-		n = CDR(n);
-	}
-	if (n != -1)
-	{
-		emp_duration = eval_num(n);
-		n = CDR(n);
-	}
 	if (n != -1)
 	{
 		use_emp_time_for_capship_turrets = is_sexp_true(n);
@@ -11206,26 +11591,24 @@ void sexp_warp_effect(int n)
 	matrix m_orient;
 	int num, shape, fireball_type, extra_flags = FBF_WARP_VIA_SEXP;
 	float radius, duration, warp_open_duration, warp_close_duration;
+	bool is_nan, is_nan_forever;
 
 	// read in data --------------------------------
-	origin.xyz.x = (float)eval_num(n);
-	n = CDR(n);
-	origin.xyz.y = (float)eval_num(n);
-	n = CDR(n);
-	origin.xyz.z = (float)eval_num(n);
-	n = CDR(n);
+	std::array<float, 8> numbers;
+	eval_array(numbers, n, is_nan, is_nan_forever);
+	if (is_nan || is_nan_forever)
+		return;
 
-	location.xyz.x = (float)eval_num(n);
-	n = CDR(n);
-	location.xyz.y = (float)eval_num(n);
-	n = CDR(n);
-	location.xyz.z = (float)eval_num(n);
-	n = CDR(n);
+	origin.xyz.x = numbers[0];
+	origin.xyz.y = numbers[1];
+	origin.xyz.z = numbers[2];
 
-	radius = (float)eval_num(n);
-	n = CDR(n);
-	duration = (float)eval_num(n);
-	n = CDR(n);
+	location.xyz.x = numbers[3];
+	location.xyz.y = numbers[4];
+	location.xyz.z = numbers[5];
+
+	radius = numbers[6];
+	duration = numbers[7];
 
 	if (duration < 4.0f)
 		duration = 4.0f;
@@ -11241,7 +11624,11 @@ void sexp_warp_effect(int n)
 	// this node is another SEXP operator or a plain number
 	num = -1;
 	if (CAR(n) != -1 || Sexp_nodes[n].subtype == SEXP_ATOM_NUMBER)
-		num = eval_num(n);
+	{
+		num = eval_num(n, is_nan, is_nan_forever);
+		if (is_nan || is_nan_forever)
+			return;
+	}
 	else if (can_construe_as_integer(CTEXT(n)))
 		num = atoi(CTEXT(n));
 
@@ -11283,7 +11670,9 @@ void sexp_warp_effect(int n)
 	// -------------
 
 	// shape
-	shape = eval_num(n);
+	shape = eval_num(n, is_nan, is_nan_forever);
+	if (is_nan || is_nan_forever)
+		return;
 	if (shape == 0)
 	{
 		// do nothing; this is standard
@@ -11303,13 +11692,19 @@ void sexp_warp_effect(int n)
 	warp_open_duration = warp_close_duration = -1.0f;
 	if (n >= 0)
 	{
-		warp_open_duration = warp_close_duration = ((float)eval_num(n)) / 1000.0f;
+		warp_open_duration = warp_close_duration = ((float)eval_num(n, is_nan, is_nan_forever)) / 1000.0f;
 		n = CDR(n);
+
+		if (is_nan || is_nan_forever)
+			return;
 	}
 	if (n >= 0)
 	{
-		warp_close_duration = ((float)eval_num(n)) / 1000.0f;
+		warp_close_duration = ((float)eval_num(n, is_nan, is_nan_forever)) / 1000.0f;
 		n = CDR(n);
+
+		if (is_nan || is_nan_forever)
+			return;
 	}
 
 	// sanity check, if these were specified
@@ -11444,6 +11839,7 @@ void sexp_send_message_list(int n)
 {
 	char *name, *who_from, *priority;
 	int delay;
+	bool is_nan, is_nan_forever;
 
 	if(physics_paused){
 		return;
@@ -11476,8 +11872,13 @@ void sexp_send_message_list(int n)
 			Warning(LOCATION, "Detected incomplete parameter list in sexp-send-message-list");
 			return;
 		}
-		delay += eval_num(n);
+		delay += eval_num(n, is_nan, is_nan_forever);
 		n = CDR(n);
+
+		if (is_nan || is_nan_forever) {
+			Warning(LOCATION, "Encounterd a NaN in sexp-send-message-list");
+			return;
+		}
 
 		// send the message
 		sexp_send_one_message(name, who_from, priority, 1, delay);
@@ -11701,11 +12102,14 @@ void sexp_sabotage_subsystem(int n)
 	float sabotage_hits;
 	ship	*shipp;
 	ship_subsys *ss = NULL, *ss_start;
-	bool do_loop = true;
+	bool do_loop = true, is_nan, is_nan_forever;
 
 	shipname = CTEXT(n);
 	subsystem = CTEXT(CDR(n));
-	percentage = eval_num(CDR(CDR(n)));
+	percentage = eval_num(CDDR(n), is_nan, is_nan_forever);
+
+	if (is_nan || is_nan_forever)
+		return;
 
 	// abort if we're not even sabotaging anything
 	if (percentage <= 0) {
@@ -11809,14 +12213,24 @@ void sexp_repair_subsystem(int n)
 	float repair_hits;
 	ship *shipp;
 	ship_subsys *ss = NULL, *ss_start;
-	bool do_loop = true;
+	bool do_loop = true, is_nan, is_nan_forever;
 
 	shipname = CTEXT(n);
 	n = CDR(n);
+
 	subsystem = CTEXT(n);
 	n = CDR(n);
-	percentage = eval_num(n);
+
+	percentage = eval_num(n, is_nan, is_nan_forever);
+	if (is_nan || is_nan_forever)
+		return;
 	n = CDR(n);
+
+	// abort if we're not even repairing anything
+	if (percentage <= 0) {
+		return;
+	}
+
 	if (n >= 0)
 	{
 		do_submodel_repair = is_sexp_true(n);
@@ -11824,11 +12238,6 @@ void sexp_repair_subsystem(int n)
 
 		if (n >= 0)
 			do_ancestor_repair = is_sexp_true(n);
-	}
-
-	// abort if we're not even repairing anything
-	if (percentage <= 0) {
-		return;
 	}
 
 	shipnum = ship_name_lookup(shipname);
@@ -11924,14 +12333,19 @@ void sexp_set_subsystem_strength(int n)
 	bool do_submodel_repair = true, do_ancestor_repair = true;
 	ship *shipp;
 	ship_subsys *ss = NULL, *ss_start;
-	bool do_loop = true;
+	bool do_loop = true, is_nan, is_nan_forever;
 
 	shipname = CTEXT(n);
 	n = CDR(n);
+
 	subsystem = CTEXT(n);
 	n = CDR(n);
-	percentage = eval_num(n);
+
+	percentage = eval_num(n, is_nan, is_nan_forever);
+	if (is_nan || is_nan_forever)
+		return;
 	n = CDR(n);
+
 	if (n >= 0)
 	{
 		do_submodel_repair = is_sexp_true(n);
@@ -12405,9 +12819,13 @@ void sexp_cap_waypoint_speed(int n)
 	char *shipname;
 	int shipnum;
 	int speed;
+	bool is_nan, is_nan_forever;
 
 	shipname = CTEXT(n);
-	speed = eval_num(CDR(n));
+	speed = eval_num(CDR(n), is_nan, is_nan_forever);
+
+	if (is_nan || is_nan_forever)
+		return;
 
 	shipnum = ship_name_lookup(shipname);
 
@@ -12436,6 +12854,7 @@ void sexp_jettison_cargo(int n, bool jettison_new)
 	char *shipname;
 	int ship_index;
 	float jettison_speed;
+	bool is_nan, is_nan_forever;
 
 	// get some data
 	shipname = CTEXT(n);
@@ -12451,8 +12870,12 @@ void sexp_jettison_cargo(int n, bool jettison_new)
 	// in jettison-cargo, this is the jettison speed, which is optional
 	if (n >= 0)
 	{
-		jettison_speed = static_cast<float>(eval_num(n));
+		jettison_speed = static_cast<float>(eval_num(n, is_nan, is_nan_forever));
 		n = CDR(n);
+
+		// it would be fun to break the physics engine, but let's not
+		if (is_nan || is_nan_forever)
+			return;
 	}
 	// per sexp help, if unspecified, default to 25
 	// (see also OP_JETTISON_CARGO_NEW in sexp_tree.cpp)
@@ -12534,6 +12957,7 @@ void sexp_cargo_no_deplete(int n)
 {
 	char *shipname;
 	int ship_index, no_deplete = 1;
+	bool is_nan, is_nan_forever;
 
 	// get some data
 	shipname = CTEXT(n);
@@ -12550,9 +12974,12 @@ void sexp_cargo_no_deplete(int n)
 	}
 
 	if (CDR(n) != -1) {
-		no_deplete = eval_num(CDR(n));
+		no_deplete = eval_num(CDR(n), is_nan, is_nan_forever);
 		Assert((no_deplete == 0) || (no_deplete == 1));
-		if ( (no_deplete != 0) && (no_deplete != 1) ) {
+		if (is_nan || is_nan_forever) {
+			no_deplete = 0;
+		}
+		else if ( (no_deplete != 0) && (no_deplete != 1) ) {
 			no_deplete = 1;
 		}
 	}
@@ -12583,7 +13010,12 @@ void sexp_force_jump()
 
 void sexp_mission_set_nebula(int n)
 {
-	stars_set_nebula(eval_num(n) > 0);
+	bool is_nan, is_nan_forever;
+	int set_it = eval_num(n, is_nan, is_nan_forever);
+	if (is_nan || is_nan_forever)
+		return;
+
+	stars_set_nebula(set_it > 0);
 }
 
 /* freespace.cpp does not have these availiable externally, and we must call
@@ -12598,7 +13030,12 @@ extern void game_stop_subspace_ambient_sound();
 
 void sexp_mission_set_subspace(int n)
 {
-    if (eval_num(n) > 0) {
+	bool is_nan, is_nan_forever;
+	int set_it = eval_num(n, is_nan, is_nan_forever);
+	if (is_nan || is_nan_forever)
+		return;
+
+	if (set_it > 0) {
 		Game_subspace_effect = 1;
 		game_start_subspace_ambient_sound();
 	} else {
@@ -12613,6 +13050,7 @@ void sexp_mission_set_subspace(int n)
 void sexp_add_background_bitmap(int n, bool is_sun)
 {
 	int sexp_var, new_number, sanity;
+	bool is_nan, is_nan_forever;
 	char number_as_str[TOKEN_LENGTH];
 	starfield_list_entry sle;
 
@@ -12629,18 +13067,19 @@ void sexp_add_background_bitmap(int n, bool is_sun)
 	}
 
 	// angles
-	sle.ang.p = fl_radians(eval_num(n) % 360);
-	n = CDR(n);
-	sle.ang.b = fl_radians(eval_num(n) % 360);
-	n = CDR(n);
-	sle.ang.h = fl_radians(eval_num(n) % 360);
-	n = CDR(n);
+	eval_angles(&sle.ang, n, is_nan, is_nan_forever);
+	if (is_nan || is_nan_forever)
+		return;
 
 	if (is_sun)
 	{
-		// scale
-		sle.scale_x = eval_num(n) / 100.0f;
+		int num = eval_num(n, is_nan, is_nan_forever);
 		n = CDR(n);
+		if (is_nan || is_nan_forever)
+			return;
+
+		// scale
+		sle.scale_x = num / 100.0f;
 		sle.scale_y = sle.scale_x;
 
 		// div
@@ -12655,17 +13094,19 @@ void sexp_add_background_bitmap(int n, bool is_sun)
 	}
 	else
 	{
+		// next 4
+		std::array<int, 4> numbers;
+		eval_array(numbers, n, is_nan, is_nan_forever);
+		if (is_nan || is_nan_forever)
+			return;
+
 		// scale
-		sle.scale_x = eval_num(n) / 100.0f;
-		n = CDR(n);
-		sle.scale_y = eval_num(n) / 100.0f;
-		n = CDR(n);
+		sle.scale_x = numbers[0] / 100.0f;
+		sle.scale_y = numbers[1] / 100.0f;
 
 		// div
-		sle.div_x = eval_num(n);
-		n = CDR(n);
-		sle.div_y = eval_num(n);
-		n = CDR(n);
+		sle.div_x = numbers[2];
+		sle.div_y = numbers[3];
 
 		// restrict parameters
 		if (sle.scale_x > 18) sle.scale_x = 18;
@@ -12720,9 +13161,10 @@ void sexp_add_background_bitmap(int n, bool is_sun)
 
 void sexp_remove_background_bitmap(int n, bool is_sun)
 {
-	int slot = eval_num(n);
+	bool is_nan, is_nan_forever;
+	int slot = eval_num(n, is_nan, is_nan_forever);
 
-	if (slot >= 0) {
+	if (slot >= 0 && !is_nan && !is_nan_forever) {
 		int instances = is_sun ? stars_get_num_suns() : stars_get_num_bitmaps();
 		if (instances > slot) {
 			if (is_sun) {
@@ -12836,9 +13278,13 @@ void sexp_set_debriefing_toggled(int node)
 void sexp_good_time_to_rearm(int n)
 {
 	int team, time;
+	bool is_nan, is_nan_forever;
 
 	team = iff_lookup(CTEXT(n));
-	time = eval_num(CDR(n));						// this is the time for how long a good rearm is active -- in seconds
+	time = eval_num(CDR(n), is_nan, is_nan_forever);			// this is the time for how long a good rearm is active -- in seconds
+
+	if (is_nan || is_nan_forever)
+		return;
 
 	ai_set_rearm_status(team, time);
 }
@@ -12903,9 +13349,13 @@ void sexp_change_player_score(int node)
 	int sindex;	
 	int score;
 	int plr_index;
+	bool is_nan, is_nan_forever;
 
-	score = eval_num(node); 
+	score = eval_num(node, is_nan, is_nan_forever); 
 	node = CDR(node);
+
+	if (is_nan || is_nan_forever)
+		return;
 
 	if(!(Game_mode & GM_MULTIPLAYER)){
 		if ( (sindex = ship_name_lookup(CTEXT(node))) == -1) {
@@ -12941,14 +13391,16 @@ void sexp_change_player_score(int node)
 void sexp_change_team_score(int node)
 {
 	int i, score, team;
+	bool is_nan, is_nan_forever;
 
 	// since we only have a team score in TvT
 	if ( !(MULTI_TEAM) ) {
 		return;
 	}
 
-	score = eval_num(node); 
-	team = eval_num(CDR(node)); 
+	eval_nums(node, is_nan, is_nan_forever, score, team);
+	if (is_nan || is_nan_forever)
+		return;
 
 	if (team == 0) {
 		for (i = 0; i < MAX_TVT_TEAMS; i++) {
@@ -13756,11 +14208,15 @@ void sexp_good_secondary_time(int n)
 {
 	char *team_name, *weapon_name, *ship_name;
 	int num_weapons, weapon_index, team;
+	bool is_nan, is_nan_forever;
 
 	team_name = CTEXT(n);
-	num_weapons = eval_num(CDR(n));
+	num_weapons = eval_num(CDR(n), is_nan, is_nan_forever);
 	weapon_name = CTEXT(CDR(CDR(n)));
 	ship_name = CTEXT(CDR(CDR(CDR(n))));
+
+	if (is_nan || is_nan_forever)
+		return;
 
 	weapon_index = weapon_info_lookup(weapon_name);
 	if ( weapon_index == -1 ) {
@@ -13912,6 +14368,7 @@ int sexp_weapon_fired_delay(int node, int op_num)
 {
 	ship *shipp;
 	int requested_bank, delay, last_fired = -1;
+	bool is_nan, is_nan_forever;
 
 	shipp = sexp_get_ship_from_node(node); 
 	if (shipp == NULL) {
@@ -13920,15 +14377,19 @@ int sexp_weapon_fired_delay(int node, int op_num)
 
 	// Get the bank to check
 	node = CDR(node);
-	requested_bank = eval_num(node);
-	if (requested_bank < 0) {
+	requested_bank = eval_num(node, is_nan, is_nan_forever);
+	if (is_nan_forever) {
+		return SEXP_KNOWN_FALSE;
+	} else if (is_nan || requested_bank < 0) {
 		return SEXP_FALSE;
 	}
 
 	// get the delay
 	node = CDR(node);
-	delay = eval_num(node);
-	if (delay <= 0 ) {
+	delay = eval_num(node, is_nan, is_nan_forever);
+	if (is_nan_forever) {
+		return SEXP_KNOWN_FALSE;
+	} else if (is_nan || delay <= 0) {
 		return SEXP_FALSE; 
 	}
 
@@ -13963,6 +14424,7 @@ int sexp_weapon_fired_delay(int node, int op_num)
 int sexp_has_weapon(int node, int op_num)
 {
 	ship *shipp;
+	bool is_nan, is_nan_forever;
 	int i;
 	int requested_bank;
 	int weapon_index;
@@ -13980,7 +14442,13 @@ int sexp_has_weapon(int node, int op_num)
 		requested_bank = -1;
 	}
 	else {
-		requested_bank = eval_num(node);
+		requested_bank = eval_num(node, is_nan, is_nan_forever);
+		if (is_nan) {
+			return SEXP_FALSE;
+		}
+		if (is_nan_forever) {
+			return SEXP_KNOWN_FALSE;
+		}
 	}	
 	node = CDR(node);
  
@@ -14234,6 +14702,7 @@ int sexp_event_status( int n, int want_true )
 int sexp_event_delay_status( int n, int want_true, bool use_msecs = false)
 {
 	char *name;
+	bool is_nan, is_nan_forever;
 	int i, result;
 	fix delay;
 	int rval = SEXP_FALSE;
@@ -14243,13 +14712,26 @@ int sexp_event_delay_status( int n, int want_true, bool use_msecs = false)
 	Assertion(name != nullptr, "CTEXT returned NULL for node %d!", n);
 
 	if (use_msecs) {
-		uint64_t tempDelay = eval_num(CDR(n));
+		uint64_t tempDelay = eval_num(CDR(n), is_nan, is_nan_forever);
+		if (is_nan) {
+			return SEXP_FALSE;
+		}
+		else if (is_nan_forever) {
+			return SEXP_KNOWN_FALSE;
+		}
+
 		tempDelay = tempDelay << 16;
 		tempDelay = tempDelay / 1000;
 
 		delay = (fix) tempDelay;
 	} else {
-		delay = i2f(eval_num(CDR(n)));
+		delay = i2f(eval_num(CDR(n), is_nan, is_nan_forever));
+		if (is_nan) {
+			return SEXP_FALSE;
+		}
+		else if (is_nan_forever) {
+			return SEXP_KNOWN_FALSE;
+		}
 	}
 
 	for (i = 0; i < Num_mission_events; i++ ) {
@@ -14327,9 +14809,16 @@ int sexp_goal_delay_status( int n, int want_true )
 {
 	char *name;
 	fix delay, time;
+	bool is_nan, is_nan_forever;
 
 	name = CTEXT(n);
-	delay = i2f(eval_num(CDR(n)));
+	delay = i2f(eval_num(CDR(n), is_nan, is_nan_forever));
+	if (is_nan) {
+		return SEXP_FALSE;
+	}
+	else if (is_nan_forever) {
+		return SEXP_KNOWN_FALSE;
+	}
 	
 	if ( want_true ) {
 		// if we are looking for a goal true entry and we find a false, then return known false here
@@ -14611,6 +15100,7 @@ void multi_sexp_deal_with_subsys_flag(Ship::Subsystem_Flags ss_flag)
 void sexp_ship_tag( int n, int tag )
 {
 	int ship_num, tag_level, tag_time, ssm_index(0), ssm_team(0);
+	bool is_nan, is_nan_forever;
 
 	char *ship_name = CTEXT(n);
 	n = CDR(n);
@@ -14633,10 +15123,9 @@ void sexp_ship_tag( int n, int tag )
 	}
 
 	// get the tag level and time
-	tag_level = eval_num(n);
-	n = CDR(n);
-	tag_time = eval_num(n);
-	n = CDR(n);
+	eval_nums(n, is_nan, is_nan_forever, tag_level, tag_time);
+	if (is_nan || is_nan_forever)
+		return;
 
 	// get SSM info if needed
 	vec3d start;
@@ -14649,20 +15138,9 @@ void sexp_ship_tag( int n, int tag )
 			return;
 		n = CDR(n);
 
-		if (n < 0)
+		eval_vec3d(&start, n, is_nan, is_nan_forever);
+		if (is_nan || is_nan_forever)
 			return;
-		start.xyz.x = (float)eval_num(n);
-		n = CDR(n);
-
-		if (n < 0)
-			return;
-		start.xyz.y = (float)eval_num(n);
-		n = CDR(n);
-
-		if (n < 0)
-			return;
-		start.xyz.z = (float)eval_num(n);
-		n = CDR(n);
 
         if (n >= 0)
             ssm_team = iff_lookup(CTEXT(n));
@@ -14687,9 +15165,12 @@ void sexp_ship_guardian_threshold(int node)
 {
 	char *ship_name;
 	int ship_num, threshold, n = node;
+	bool is_nan, is_nan_forever;
 
-	threshold = eval_num(n);
+	threshold = eval_num(n, is_nan, is_nan_forever);
 	n = CDR(n);
+	if (is_nan || is_nan_forever)
+		return;
 
 	// for all ships
 	for ( ; n != -1; n = CDR(n) ) {
@@ -14714,10 +15195,13 @@ void sexp_ship_subsys_guardian_threshold(int node)
 {
 	char *ship_name, *hull_name;
 	int ship_num, threshold, n = node;
+	bool is_nan, is_nan_forever;
 	ship_subsys *ss;
 
-	threshold = eval_num(n);
+	threshold = eval_num(n, is_nan, is_nan_forever);
 	n = CDR(n);
+	if (is_nan || is_nan_forever)
+		return;
 
 	ship_name = CTEXT(n);
 	n = CDR(n);
@@ -14797,12 +15281,12 @@ void sexp_ships_guardian( int n, int guardian )
 
 void sexp_ship_create(int n)
 {
-	int new_ship_class = -1;
+	int new_ship_class, angle_count;
 	char *new_ship_name;
-	vec3d new_ship_pos = vmd_zero_vector;
-	angles new_ship_ang = {0.0f, 0.0f, 0.0f};
-	matrix new_ship_ori = vmd_identity_matrix;
-	bool change_angles = false;
+	vec3d new_ship_pos;
+	angles new_ship_ang;
+	matrix new_ship_ori;
+	bool is_nan, is_nan_forever;
 
 	Assert( n >= 0 );
 
@@ -14823,34 +15307,20 @@ void sexp_ship_create(int n)
 	}
 	n = CDR(n);
 
-	new_ship_pos.xyz.x = (float) eval_num(n);
-	n = CDR(n);
-	new_ship_pos.xyz.y = (float) eval_num(n);
-	n = CDR(n);
-	new_ship_pos.xyz.z = (float) eval_num(n);
-	n = CDR(n);
+	eval_vec3d(&new_ship_pos, n, is_nan, is_nan_forever);
+	if (is_nan || is_nan_forever)
+		return;
 
-	if (n != -1) {
-		new_ship_ang.p = fl_radians(eval_num(n) % 360);
-		n = CDR(n);
-		change_angles = true;
-	}
-
-	if (n != -1) {
-		new_ship_ang.b = fl_radians(eval_num(n) % 360);
-		n = CDR(n);
-		change_angles = true;
-	}
-
-	if (n != -1) {
-		new_ship_ang.h = fl_radians(eval_num(n) % 360);
-		n = CDR(n);
-		change_angles = true;
-	}
+	angle_count = eval_angles(&new_ship_ang, n, is_nan, is_nan_forever);
+	if (is_nan || is_nan_forever)
+		return;
 
 	//This is a costly function, so only do it if needed
-	if (change_angles) {
+	if (angle_count > 0) {
 		vm_angles_2_matrix(&new_ship_ori, &new_ship_ang);
+	}
+	else {
+		new_ship_ori = vmd_identity_matrix;
 	}
 
 	int objnum = ship_create(&new_ship_ori, &new_ship_pos, new_ship_class, new_ship_name);
@@ -14876,14 +15346,12 @@ void sexp_ship_create(int n)
 // Goober5000
 void sexp_weapon_create(int n)
 {
-	int weapon_class, parent_objnum, target_objnum, weapon_objnum, is_locked;
+	int weapon_class, parent_objnum, target_objnum, weapon_objnum, angle_count, is_locked;
 	ship_subsys *targeted_ss;
-	vec3d weapon_pos = vmd_zero_vector;
-	angles weapon_angles = {0.0f, 0.0f, 0.0f};
-	matrix weapon_orient = vmd_identity_matrix;
-	bool change_angles = false;
-
-	Assert( n >= 0 );
+	vec3d weapon_pos;
+	angles weapon_angles;
+	matrix weapon_orient;
+	bool is_nan, is_nan_forever;
 
 	parent_objnum = -1;
 	if (stricmp(CTEXT(n), SEXP_NONE_STRING) != 0)
@@ -14903,39 +15371,19 @@ void sexp_weapon_create(int n)
 	}
 	n = CDR(n);
 
-	weapon_pos.xyz.x = (float) eval_num(n);
-	n = CDR(n);
-	weapon_pos.xyz.y = (float) eval_num(n);
-	n = CDR(n);
-	weapon_pos.xyz.z = (float) eval_num(n);
-	n = CDR(n);
+	eval_vec3d(&weapon_pos, n, is_nan, is_nan_forever);
+	if (is_nan || is_nan_forever)
+		return;
 
-	if (n >= 0)
-	{
-		weapon_angles.p = fl_radians(eval_num(n) % 360);
-		n = CDR(n);
-		change_angles = true;
-	}
-
-	if (n >= 0)
-	{
-		weapon_angles.b = fl_radians(eval_num(n) % 360);
-		n = CDR(n);
-		change_angles = true;
-	}
-
-	if (n >= 0)
-	{
-		weapon_angles.h = fl_radians(eval_num(n) % 360);
-		n = CDR(n);
-		change_angles = true;
-	}
+	angle_count = eval_angles(&weapon_angles, n, is_nan, is_nan_forever);
+	if (is_nan || is_nan_forever)
+		return;
 
 	// This is a costly function, so only do it if needed
-	if (change_angles)
-	{
+	if (angle_count > 0)
 		vm_angles_2_matrix(&weapon_orient, &weapon_angles);
-	}
+	else
+		weapon_orient = vmd_identity_matrix;
 
 	target_objnum = -1;
 	if (n >= 0)
@@ -15087,12 +15535,16 @@ void sexp_parse_ship_kamikaze(p_object *parse_obj, int kdamage)
 void sexp_kamikaze(int n, int kamikaze)
 {
 	int kdamage;
+	bool is_nan, is_nan_forever;
 
 	kdamage = 0;
 	if (kamikaze)
 	{
-		kdamage = eval_num(n);
+		kdamage = eval_num(n, is_nan, is_nan_forever);
 		n = CDR(n);
+
+		if (is_nan || is_nan_forever)
+			return;
 	}
 
 	for ( ; n != -1; n = CDR(n) )
@@ -15342,6 +15794,7 @@ void sexp_set_death_message(int n)
 int sexp_key_pressed(int node)
 {
 	int z, t;
+	bool is_nan, is_nan_forever;
 
 	Assert(node != -1);
 	z = translate_key_to_index(CTEXT(node), false);
@@ -15357,7 +15810,12 @@ int sexp_key_pressed(int node)
 		return SEXP_TRUE;
 	}
 
-	t = eval_num(CDR(node));
+	t = eval_num(CDR(node), is_nan, is_nan_forever);
+	if (is_nan)
+		return SEXP_FALSE;
+	if (is_nan_forever)
+		return SEXP_KNOWN_FALSE;
+
 	return timestamp_has_time_elapsed(Control_config[z].used, t * 1000);
 }
 
@@ -15376,8 +15834,11 @@ void sexp_key_reset(int node)
 void sexp_ignore_key(int node)
 {
 	int ignore_count, ignored_key;
+	bool is_nan, is_nan_forever;
 
-	ignore_count = eval_num(node);
+	ignore_count = eval_num(node, is_nan, is_nan_forever);
+	if (is_nan || is_nan_forever)
+		return;
 
 	Current_sexp_network_packet.start_callback();
 	Current_sexp_network_packet.send_int(ignore_count);
@@ -15413,6 +15874,7 @@ void multi_sexp_ignore_key()
 int sexp_targeted(int node)
 {
 	int z;
+	bool is_nan, is_nan_forever;
 	ship_subsys *ptr;
 
 	if (mission_check_ship_yet_to_arrive(CTEXT(node))) {
@@ -15429,7 +15891,12 @@ int sexp_targeted(int node)
 	}
 
 	if (CDR(node) >= 0) {
-		z = eval_num(CDR(node)) * 1000;
+		z = eval_num(CDR(node), is_nan, is_nan_forever) * 1000;
+		if (is_nan)
+			return SEXP_FALSE;
+		if (is_nan_forever)
+			return SEXP_KNOWN_FALSE;
+
 		if (!timestamp_has_time_elapsed(Players_target_timestamp, z)){
 			return SEXP_FALSE;
 		}
@@ -15448,6 +15915,7 @@ int sexp_targeted(int node)
 int sexp_node_targeted(int node)
 {
 	int z;
+	bool is_nan, is_nan_forever;
 
 	CJumpNode *jnp = jumpnode_get_by_name(CTEXT(node));
 
@@ -15456,7 +15924,12 @@ int sexp_node_targeted(int node)
 	}
 
 	if (CDR(node) >= 0) {
-		z = eval_num(CDR(node)) * 1000;
+		z = eval_num(CDR(node), is_nan, is_nan_forever) * 1000;
+		if (is_nan)
+			return SEXP_FALSE;
+		if (is_nan_forever)
+			return SEXP_KNOWN_FALSE;
+
 		if (!timestamp_has_time_elapsed(Players_target_timestamp, z)){
 			return SEXP_FALSE;
 		}
@@ -15468,10 +15941,15 @@ int sexp_node_targeted(int node)
 int sexp_speed(int node)
 {
 	int z;
+	bool is_nan, is_nan_forever;
 
 	if (Training_context & TRAINING_CONTEXT_SPEED) {
 		if (Training_context_speed_set) {
-			z = eval_num(node) * 1000;
+			z = eval_num(node, is_nan, is_nan_forever) * 1000;
+			if (is_nan)
+				return SEXP_FALSE;
+			if (is_nan_forever)
+				return SEXP_KNOWN_FALSE;
 
 			if (timestamp_has_time_elapsed(Training_context_speed_timestamp, z)){
 				return SEXP_KNOWN_TRUE;
@@ -15499,6 +15977,8 @@ int sexp_get_throttle_speed(int node)
 // CommanderDJ
 void sexp_set_player_throttle_speed(int node)
 {
+	bool is_nan, is_nan_forever;
+
 	//get and sanity check the player first
 	player *the_player;
 	the_player = get_player_from_ship_node(node); 
@@ -15507,7 +15987,9 @@ void sexp_set_player_throttle_speed(int node)
 	{
 		//now the throttle percentage
 		node = CDR(node);
-		int throttle_percent = eval_num(node);
+		int throttle_percent = eval_num(node, is_nan, is_nan_forever);
+		if (is_nan || is_nan_forever)
+			return;
 		CLAMP(throttle_percent, 0, 100);
 		
 		//now actually set the throttle
@@ -15588,6 +16070,7 @@ int sexp_secondaries_depleted(int node)
 int sexp_facing(int node)
 {
 	int angle;
+	bool is_nan, is_nan_forever;
 	float a1, a2;
 	vec3d v1, v2;
 
@@ -15605,7 +16088,11 @@ int sexp_facing(int node)
 		return SEXP_KNOWN_FALSE;
 	}
 
-	angle = eval_num(CDR(node));
+	angle = eval_num(CDR(node), is_nan, is_nan_forever);
+	if (is_nan)
+		return SEXP_FALSE;
+	if (is_nan_forever)
+		return SEXP_KNOWN_FALSE;
 
 	v1 = Player_obj->orient.vec.fvec;
 	vm_vec_normalize(&v1);
@@ -15625,6 +16112,7 @@ int sexp_facing(int node)
 int sexp_is_facing(int node)
 {
 	int angle;
+	bool is_nan, is_nan_forever;
 	float a1, a2;
 	vec3d v1, v2;
 	object *origin_objp, *target_objp;
@@ -15660,12 +16148,20 @@ int sexp_is_facing(int node)
 
 	node = CDR(node);
 
-	angle = eval_num(node);
+	angle = eval_num(node, is_nan, is_nan_forever);
+	if (is_nan)
+		return SEXP_FALSE;
+	if (is_nan_forever)
+		return SEXP_KNOWN_FALSE;
 	node = CDR(node);
 
 	// check optional distance argument
 	if (node >= 0) {
-		int threshold = eval_num(node);
+		int threshold = eval_num(node, is_nan, is_nan_forever);
+		if (is_nan)
+			return SEXP_FALSE;
+		if (is_nan_forever)
+			return SEXP_KNOWN_FALSE;
 
 		if (sexp_distance3(origin_objp, target_objp) > threshold) {
 			return SEXP_FALSE;
@@ -15691,6 +16187,7 @@ int sexp_is_facing(int node)
 int sexp_facing2(int node)
 {
 	int angle;
+	bool is_nan, is_nan_forever;
 	float a1, a2;
 	vec3d v1, v2;
 
@@ -15710,7 +16207,11 @@ int sexp_facing2(int node)
 	}
 
 	// get angle
-	angle = eval_num(CDR(node));
+	angle = eval_num(CDR(node), is_nan, is_nan_forever);
+	if (is_nan)
+		return SEXP_FALSE;
+	if (is_nan_forever)
+		return SEXP_KNOWN_FALSE;
 
 	v1 = Player_obj->orient.vec.fvec;
 	vm_vec_normalize(&v1);
@@ -15749,12 +16250,18 @@ int sexp_query_orders (int n)
 	char *order_from = NULL;
 	char *special = NULL;
 	int timestamp = 0;
+	bool is_nan, is_nan_forever;
 
 	// delay
 	n = CDDR(n); 
 	if (n != -1) {
-		timestamp = eval_num(n); 
+		timestamp = eval_num(n, is_nan, is_nan_forever);
 		n = CDR(n); 
+
+		if (is_nan)
+			return SEXP_FALSE;
+		if (is_nan_forever)
+			return SEXP_KNOWN_FALSE;
 	}
 	
 	//target
@@ -15815,9 +16322,10 @@ int sexp_path_flown()
 	return SEXP_FALSE;
 }
 
-void sexp_send_training_message(int node)
+void sexp_send_training_message(const int node)
 {
-	int n = node, delay, duration;
+	bool is_nan, is_nan_forever;
+	int n = node, count, delay, duration;
 
 	if(physics_paused){
 		return;
@@ -15832,10 +16340,15 @@ void sexp_send_training_message(int node)
 	char *secondary_message = (n >= 0) ? CTEXT(n) : nullptr;
 	n = CDR(n);
 
-	delay = (n >= 0) ? eval_num(n) * 1000 : 0;
-	n = CDR(n);
-
-	duration = (n >= 0) ? eval_num(n) : -1;
+	count = eval_nums(n, is_nan, is_nan_forever, delay, duration);
+	if (is_nan || is_nan_forever)
+		return;
+	if (count > 0) {
+		delay *= 1000;
+	}
+	if (count < 2) {
+		duration = -1;
+	}
 
 	Current_sexp_network_packet.start_callback();
 	Current_sexp_network_packet.send_int(duration);
@@ -15949,15 +16462,14 @@ int sexp_get_ets_value(int node)
  */
 void sexp_set_ets_values(int node)
 {
+	bool is_nan, is_nan_forever;
 	int sindex;
 	int ets_idx[num_retail_ets_gauges];
 
-	ets_idx[ENGINES] = eval_num(node);
-	node = CDR(node);
-	ets_idx[SHIELDS] = eval_num(node);
-	node = CDR(node);
-	ets_idx[WEAPONS] = eval_num(node);
-	node = CDR(node);
+	//get inputs
+	eval_nums(node, is_nan, is_nan_forever, ets_idx[ENGINES], ets_idx[SHIELDS], ets_idx[WEAPONS]);
+	if (is_nan || is_nan_forever)
+		return;
 
 	// sanity check inputs
 	sanity_check_ets_inputs(ets_idx);
@@ -16002,6 +16514,7 @@ int sexp_shield_quad_low(int node)
 {
 	int sindex, idx;	
 	float max_quad, check;
+	bool is_nan, is_nan_forever;
 	ship_info *sip;
 	object *objp;
 
@@ -16024,7 +16537,11 @@ int sexp_shield_quad_low(int node)
 	max_quad = shield_get_max_quad(objp);	
 
 	// shield pct
-	check = (float)eval_num(CDR(node));
+	check = (float)eval_num(CDR(node), is_nan, is_nan_forever);
+	if (is_nan)
+		return SEXP_FALSE;
+	if (is_nan_forever)
+		return SEXP_KNOWN_FALSE;
 
 	// check his quadrants
 	for(idx=0; idx<objp->n_quadrants; idx++){
@@ -16045,6 +16562,7 @@ int sexp_primary_ammo_pct(int node)
 	int check, idx;
 	int ret_sum[MAX_SHIP_PRIMARY_BANKS];
 	int ret = 0;
+	bool is_nan, is_nan_forever;
 
 	// get the ship
 	sindex = ship_name_lookup(CTEXT(node));
@@ -16059,10 +16577,10 @@ int sexp_primary_ammo_pct(int node)
 	shipp = &Ships[sindex];
 	
 	// bank to check
-	check = eval_num(CDR(node));
+	check = eval_num(CDR(node), is_nan, is_nan_forever);
 
 	// bogus check?
-	if(check < 0){
+	if(is_nan || is_nan_forever || check < 0){
 		return 0;
 	}
 
@@ -16116,6 +16634,7 @@ int sexp_secondary_ammo_pct(int node)
 	int check, idx;
 	int ret_sum[MAX_SHIP_SECONDARY_BANKS];
 	int ret = 0;
+	bool is_nan, is_nan_forever;
 
 	// get the ship
 	sindex = ship_name_lookup(CTEXT(node));
@@ -16128,10 +16647,10 @@ int sexp_secondary_ammo_pct(int node)
 	shipp = &Ships[sindex];
 	
 	// bank to check
-	check = eval_num(CDR(node));
+	check = eval_num(CDR(node), is_nan, is_nan_forever);
 
 	// bogus check?
-	if(check < 0){
+	if(is_nan || is_nan_forever || check < 0){
 		return 0;
 	}
 
@@ -16164,6 +16683,7 @@ int sexp_get_primary_ammo(int node)
 	int ammo_left = 0;
 	int sindex;
 	int check;
+	bool is_nan, is_nan_forever;
 
 	// get the ship
 	sindex = ship_name_lookup(CTEXT(node));
@@ -16178,10 +16698,10 @@ int sexp_get_primary_ammo(int node)
 	shipp = &Ships[sindex];
 	
 	// bank to check
-	check = eval_num(CDR(node));
+	check = eval_num(CDR(node), is_nan, is_nan_forever);
 
 	// bogus check?
-	if(check < 0){
+	if(is_nan || is_nan_forever || check < 0){
 		return 0;
 	}
 
@@ -16218,6 +16738,7 @@ void sexp_set_primary_ammo (int node)
 	int requested_bank ;
 	int requested_weapons ;
 	int rearm_limit = -1;
+	bool is_nan, is_nan_forever;
 
 	// Check that a ship has been supplied
 	sindex = ship_name_lookup(CTEXT(node));
@@ -16227,16 +16748,16 @@ void sexp_set_primary_ammo (int node)
 	}
 
 	// Get the bank to set the number on
-	requested_bank = eval_num(CDR(node));
-	if (requested_bank < 0)
+	requested_bank = eval_num(CDR(node), is_nan, is_nan_forever);
+	if (is_nan || is_nan_forever || requested_bank < 0)
 	{
 		return ;
 	}
 
 	//  Get the number of weapons requested
 	node = CDR(node);
-	requested_weapons = eval_num(CDR(node)); 
-	if (requested_weapons < 0)
+	requested_weapons = eval_num(CDR(node), is_nan, is_nan_forever);
+	if (is_nan || is_nan_forever || requested_weapons < 0)
 	{
 		return ;
 	}
@@ -16245,7 +16766,9 @@ void sexp_set_primary_ammo (int node)
 
 	// If a rearm limit hasn't been specified simply change the ammo. Otherwise read in the rearm limit
 	if (node >= 0) {
-		rearm_limit = eval_num(node); 
+		rearm_limit = eval_num(node, is_nan, is_nan_forever);
+		if (is_nan || is_nan_forever)
+			return ;
 	}
 	set_primary_ammo(sindex, requested_bank, requested_weapons, rearm_limit);
 
@@ -16336,6 +16859,7 @@ int sexp_get_secondary_ammo (int node)
 	ship *shipp ;
 	int sindex ; 
 	int check ;
+	bool is_nan, is_nan_forever;
 
 	// Get the ship
 	sindex = ship_name_lookup(CTEXT(node));
@@ -16349,10 +16873,10 @@ int sexp_get_secondary_ammo (int node)
 	shipp = &Ships[sindex];
 	
 	// bank to check
-	check = eval_num(CDR(node));
+	check = eval_num(CDR(node), is_nan, is_nan_forever);
 
 	// bogus check?
-	if(check < 0){
+	if(is_nan || is_nan_forever || check < 0){
 		return 0;
 	}
 
@@ -16380,6 +16904,7 @@ void sexp_set_secondary_ammo (int node)
 	int requested_bank;
 	int requested_weapons;
 	int rearm_limit = -1;
+	bool is_nan, is_nan_forever;
 
 	// Check that a ship has been supplied
 	sindex = ship_name_lookup(CTEXT(node));
@@ -16389,16 +16914,16 @@ void sexp_set_secondary_ammo (int node)
 	}
 	
 	// Get the bank to set the number on
-	requested_bank = eval_num(CDR(node));
-	if (requested_bank < 0)
+	requested_bank = eval_num(CDR(node), is_nan, is_nan_forever);
+	if (is_nan || is_nan_forever || requested_bank < 0)
 	{
 		return ;
 	}
 
 	//  Get the number of weapons requested	
 	node = CDR(node);
-	requested_weapons = eval_num(CDR(node)); 
-	if (requested_weapons < 0)
+	requested_weapons = eval_num(CDR(node), is_nan, is_nan_forever);
+	if (is_nan || is_nan_forever || requested_weapons < 0)
 	{
 		return ;
 	}
@@ -16407,7 +16932,9 @@ void sexp_set_secondary_ammo (int node)
 
 	// If a rearm limit hasn't been specified simply change the ammo. Otherwise read in the rearm limit
 	if (node >= 0) {
-		rearm_limit = eval_num(node); 
+		rearm_limit = eval_num(node, is_nan, is_nan_forever);
+		if (is_nan || is_nan_forever)
+			return ;
 	}
 	set_secondary_ammo(sindex, requested_bank, requested_weapons, rearm_limit);
 
@@ -16488,6 +17015,7 @@ void sexp_set_weapon(int node, bool primary)
 {
 	ship *shipp;
 	int sindex, requested_bank, windex, requested_ammo = -1, rearm_limit = -1;
+	bool is_nan, is_nan_forever;
 
 	Assert(node != -1);
 
@@ -16505,7 +17033,9 @@ void sexp_set_weapon(int node, bool primary)
 	shipp = &Ships[sindex];
 
 	// Get the bank to change the weapon of
-	requested_bank = eval_num(CDR(node));
+	requested_bank = eval_num(CDR(node), is_nan, is_nan_forever);
+	if (is_nan || is_nan_forever)
+		return;
 
 	// Skip to the node holding the weapon name
 	node = CDDR(node);
@@ -16536,7 +17066,9 @@ void sexp_set_weapon(int node, bool primary)
 	// Check to see if the optional ammo and rearm_limit settings were supplied
 	node = CDR(node);
 	if (node >= 0) {
-		requested_ammo = eval_num(node);
+		requested_ammo = eval_num(node, is_nan, is_nan_forever);
+		if (is_nan || is_nan_forever)
+			return;
 
 		if (requested_ammo < 0) {
 			requested_ammo = 0;
@@ -16545,7 +17077,9 @@ void sexp_set_weapon(int node, bool primary)
 
 		// If nothing was supplied then set the rearm limit to a negative value so that it is ignored
 		if (node >= 0) {
-			rearm_limit = eval_num(node);
+			rearm_limit = eval_num(node, is_nan, is_nan_forever);
+			if (is_nan || is_nan_forever)
+				return;
 		}
 
 		// Set the ammo
@@ -16626,6 +17160,7 @@ void sexp_set_countermeasures(int node)
 {
 	ship *shipp;
 	int num_cmeasures;
+	bool is_nan, is_nan_forever;
 
 	shipp = sexp_get_ship_from_node(node);
 
@@ -16633,7 +17168,10 @@ void sexp_set_countermeasures(int node)
 		return;
 	}
 	node = CDR(node);
-	num_cmeasures = eval_num(node);
+	num_cmeasures = eval_num(node, is_nan, is_nan_forever);
+	if (is_nan || is_nan_forever) {
+		return;
+	}
 	if (num_cmeasures < 0) {
 		num_cmeasures = 0;
 	}
@@ -17005,13 +17543,17 @@ void sexp_activate_deactivate_glow_points(int n, bool activate)
 void sexp_activate_deactivate_glow_point_bank(int n, bool activate)
 {
 	int sindex, num;
+	bool is_nan, is_nan_forever;
 
 	sindex = ship_name_lookup(CTEXT(n), 1);
 	if (sindex >= 0)
 	{
 		for ( n = CDR(n); n != -1; n = CDR(n))
 		{
-			num = eval_num(n);
+			num = eval_num(n, is_nan, is_nan_forever);
+			if (is_nan || is_nan_forever)
+				continue;
+
 			if (num >= 0 && num < (int)Ships[sindex].glow_point_bank_active.size())
 			{
 				Ships[sindex].glow_point_bank_active[num] = activate;
@@ -17039,13 +17581,14 @@ void sexp_activate_deactivate_glow_maps(int n, int activate)
 
 void sexp_set_ambient_light(int node)
 {
-	int red, green, blue, level = 0;
+	int red, green, blue, level = 0; 
+	bool is_nan, is_nan_forever;
 
-	red = eval_num(node);
-	node = CDR(node);
-	green = eval_num(node);
-	node = CDR(node);
-	blue = eval_num(node);
+	Assert(node >= 0);
+
+	eval_nums(node, is_nan, is_nan_forever, red, green, blue);
+	if (is_nan || is_nan_forever)
+		return;
 
 	if (red < 0 || red > 255)
 		red = 0;
@@ -17084,32 +17627,31 @@ void multi_sexp_set_ambient_light()
 
 void sexp_set_post_effect(int node)
 {
+	std::array<float, 3> a1d;
+	vec3d rgb;
+	bool is_nan, is_nan_forever;
+
 	char *name = CTEXT(node);
+	node = CDR(node);
 	if (name == nullptr || *name == '\0')
 		return;
-	node = CDR(node);
 
-	int amount = eval_num(node);
+	int amount = eval_num(node, is_nan, is_nan_forever);
+	if (is_nan || is_nan_forever)
+		return;
 	if (amount < 0 || amount > 100)
 		amount = 0;
 	node = CDR(node);
 
-	vec3d rgb; rgb.xyz.x = 0.0f; rgb.xyz.y = 0.0f; rgb.xyz.z = 0.0f; // clang you are a PITA
-	if (node != -1) {
-		rgb.xyz.x = static_cast<float>(eval_num(node)) / 255.0f;
-		node = CDR(node);
-	}
-	if (node != -1) {
-		rgb.xyz.y = static_cast<float>(eval_num(node)) / 255.0f;
-		node = CDR(node);
-	}
-	if (node != -1) {
-		rgb.xyz.z = static_cast<float>(eval_num(node)) / 255.0f;
-		node = CDR(node);
-	}
-	CAP(rgb.xyz.x, 0.0f, 1.0f);
-	CAP(rgb.xyz.y, 0.0f, 1.0f);
-	CAP(rgb.xyz.z, 0.0f, 1.0f);
+	eval_array<float>(a1d, node, is_nan, is_nan_forever, [](int num)->float
+	{
+		float f = static_cast<float>(num) / 255.0f;
+		CAP(f, 0.0f, 1.0f);
+		return f;
+	});
+	if (is_nan || is_nan_forever)
+		return;
+	std::copy(a1d.begin(), a1d.end(), std::begin(rgb.a1d));
 
 	gr_post_process_set_effect(name, amount, &rgb);
 }
@@ -17124,15 +17666,11 @@ void sexp_set_skybox_orientation(int n)
 {
 	matrix m;
 	angles a;
+	bool is_nan, is_nan_forever;
 
-	a.p = fl_radians(eval_num(n) % 360);
-	n = CDR(n);
-
-	a.b = fl_radians(eval_num(n) % 360);
-	n = CDR(n);
-
-	a.h = fl_radians(eval_num(n) % 360);
-	n = CDR(n);
+	eval_angles(&a, n, is_nan, is_nan_forever);
+	if (is_nan || is_nan_forever)
+		return;
 
 	vm_angles_2_matrix(&m, &a);
 	stars_set_background_orientation(&m);
@@ -17211,6 +17749,7 @@ void sexp_beam_fire(int node, bool at_coords)
 	int sindex, n = node;
 	beam_fire_info fire_info;		
 	int idx;
+	bool is_nan, is_nan_forever;
 
 	// zero stuff out
 	memset(&fire_info, 0, sizeof(beam_fire_info));
@@ -17236,12 +17775,11 @@ void sexp_beam_fire(int node, bool at_coords)
 
 	if (at_coords) {
 		// get the target coordinates
-		fire_info.target_pos1.xyz.x = fire_info.target_pos2.xyz.x = static_cast<float>(eval_num(n));
-		n = CDR(n);
-		fire_info.target_pos1.xyz.y = fire_info.target_pos2.xyz.y = static_cast<float>(eval_num(n));
-		n = CDR(n);
-		fire_info.target_pos1.xyz.z = fire_info.target_pos2.xyz.z = static_cast<float>(eval_num(n));
-		n = CDR(n);
+		eval_vec3d(&fire_info.target_pos1, n, is_nan, is_nan_forever);
+		if (is_nan || is_nan_forever) {
+			return;
+		}
+
 		fire_info.bfi_flags |= BFIF_TARGETING_COORDS;
 		fire_info.target = NULL;
 		fire_info.target_subsys = NULL;
@@ -17273,17 +17811,13 @@ void sexp_beam_fire(int node, bool at_coords)
 
 	// get the second set of coordinates
 	if (at_coords) {
-		if (n >= 0) {
-			fire_info.target_pos2.xyz.x = static_cast<float>(eval_num(n));
-			n = CDR(n);
+		int count = eval_vec3d(&fire_info.target_pos2, n, is_nan, is_nan_forever);
+		if (is_nan || is_nan_forever) {
+			return;
 		}
-		if (n >= 0) {
-			fire_info.target_pos2.xyz.y = static_cast<float>(eval_num(n));
-			n = CDR(n);
-		}
-		if (n >= 0) {
-			fire_info.target_pos2.xyz.z = static_cast<float>(eval_num(n));
-			n = CDR(n);
+
+		if (count == 0) {
+			fire_info.target_pos2 = fire_info.target_pos1;
 		}
 	}
 
@@ -17323,6 +17857,7 @@ void sexp_beam_fire(int node, bool at_coords)
 void sexp_beam_floating_fire(int n)
 {
 	int sindex;
+	bool is_nan, is_nan_forever;
 	beam_fire_info fire_info;
 	memset(&fire_info, 0, sizeof(beam_fire_info));
 	fire_info.accuracy = 0.000001f;							// this will guarantee a hit
@@ -17354,12 +17889,9 @@ void sexp_beam_floating_fire(int n)
 	fire_info.team = static_cast<char>(iff_lookup(CTEXT(n)));
 	n = CDR(n);
 
-	fire_info.starting_pos.xyz.x = static_cast<float>(eval_num(n));
-	n = CDR(n);
-	fire_info.starting_pos.xyz.y = static_cast<float>(eval_num(n));
-	n = CDR(n);
-	fire_info.starting_pos.xyz.z = static_cast<float>(eval_num(n));
-	n = CDR(n);
+	eval_vec3d(&fire_info.starting_pos, n, is_nan, is_nan_forever);
+	if (is_nan || is_nan_forever)
+		return;
 
 	fire_info.target = NULL;
 	fire_info.target_subsys = NULL;
@@ -17386,31 +17918,15 @@ void sexp_beam_floating_fire(int n)
 		n = CDR(n);
 	}
 
-	if (n >= 0) {
-		fire_info.target_pos1.xyz.x = fire_info.target_pos2.xyz.x = static_cast<float>(eval_num(n));
-		n = CDR(n);
-	}
-	if (n >= 0) {
-		fire_info.target_pos1.xyz.y = fire_info.target_pos2.xyz.y = static_cast<float>(eval_num(n));
-		n = CDR(n);
-	}
-	if (n >= 0) {
-		fire_info.target_pos1.xyz.z = fire_info.target_pos2.xyz.z = static_cast<float>(eval_num(n));
-		n = CDR(n);
-	}
+	// if the nodes do not exist, the vector will be set to 0
+	eval_vec3d(&fire_info.target_pos1, n, is_nan, is_nan_forever);
+	if (is_nan || is_nan_forever)
+		return;
 
-	if (n >= 0) {
-		fire_info.target_pos2.xyz.x = static_cast<float>(eval_num(n));
-		n = CDR(n);
-	}
-	if (n >= 0) {
-		fire_info.target_pos2.xyz.y = static_cast<float>(eval_num(n));
-		n = CDR(n);
-	}
-	if (n >= 0) {
-		fire_info.target_pos2.xyz.z = static_cast<float>(eval_num(n));
-		n = CDR(n);
-	}
+	// ditto
+	eval_vec3d(&fire_info.target_pos2, n, is_nan, is_nan_forever);
+	if (is_nan || is_nan_forever)
+		return;
 
 	beam_fire(&fire_info);
 }
@@ -17764,15 +18280,15 @@ void sexp_turret_change_weapon(int node)
 	}
 	node = CDR(node);
 
+	node = CDR(node);
 	//Get the slot
 	float capacity, size;
-	int prim_slot = 0;
-	int sec_slot = 0;
+	int prim_slot, sec_slot;
+	bool is_nan, is_nan_forever;
 
-	prim_slot = eval_num(node);
-	node = CDR(node);
-
-	sec_slot = eval_num(node);
+	eval_nums(node, is_nan, is_nan_forever, prim_slot, sec_slot);
+	if (is_nan || is_nan_forever)
+		return;
 
 	if(prim_slot)
 	{
@@ -18137,6 +18653,7 @@ void sexp_turret_set_target_order(int node)
 void sexp_turret_set_direction_preference(int node)
 {	
 	int sindex;
+	bool is_nan, is_nan_forever;
 	ship_subsys *turret = NULL;	
 	
 	// get ship
@@ -18150,7 +18667,9 @@ void sexp_turret_set_direction_preference(int node)
 
 	//store direction preference
 	node = CDR(node);
-	int dirpref = eval_num(node);
+	int dirpref = eval_num(node, is_nan, is_nan_forever);
+	if (is_nan || is_nan_forever)
+		return;
 	node = CDR(node);
 
 	//Set range
@@ -18181,6 +18700,7 @@ void sexp_turret_set_direction_preference(int node)
 void sexp_turret_set_rate_of_fire(int node)
 {	
 	int sindex;
+	bool is_nan, is_nan_forever;
 	ship_subsys *turret = NULL;	
 	
 	// get ship
@@ -18194,7 +18714,9 @@ void sexp_turret_set_rate_of_fire(int node)
 
 	//store rof
 	node = CDR(node);
-	float rof = (float)eval_num(node);
+	float rof = (float)eval_num(node, is_nan, is_nan_forever);
+	if (is_nan || is_nan_forever)
+		return;
 	node = CDR(node);
 
 	//Set rof
@@ -18220,6 +18742,7 @@ void sexp_turret_set_rate_of_fire(int node)
 void sexp_turret_set_optimum_range(int node)
 {	
 	int sindex;
+	bool is_nan, is_nan_forever;
 	ship_subsys *turret = NULL;	
 	
 	// get ship
@@ -18233,7 +18756,9 @@ void sexp_turret_set_optimum_range(int node)
 
 	//store range
 	node = CDR(node);
-	float range = (float)eval_num(node);
+	float range = (float)eval_num(node, is_nan, is_nan_forever);
+	if (is_nan || is_nan_forever)
+		return;
 	node = CDR(node);
 
 	//Set range
@@ -18367,6 +18892,7 @@ int sexp_get_turret_primary_ammo(int node)
 	ship_subsys *turret = NULL;
 	ship_weapon *swp;
 	int sindex, bank, check, ammo_left = 0;
+	bool is_nan, is_nan_forever;
 
 	sindex = ship_name_lookup(CTEXT(node));
 	if (sindex < 0) {
@@ -18390,8 +18916,8 @@ int sexp_get_turret_primary_ammo(int node)
 
 	node = CDR(node);
 
-	check = eval_num(node);
-	if (check < 0) {
+	check = eval_num(node, is_nan, is_nan_forever);
+	if (is_nan || is_nan_forever || check < 0) {
 		return 0;
 	}
 
@@ -18421,6 +18947,7 @@ void sexp_set_turret_primary_ammo(int node)
 {
 	ship_subsys *turret = NULL;
 	int sindex, requested_bank, requested_weapons;
+	bool is_nan, is_nan_forever;
 
 	// Check that a ship has been supplied
 	sindex = ship_name_lookup(CTEXT(node));
@@ -18441,16 +18968,16 @@ void sexp_set_turret_primary_ammo(int node)
 	node = CDR(node);
 
 	// Get the bank to set the number on
-	requested_bank = eval_num(node);
-	if (requested_bank < 0)
+	requested_bank = eval_num(node, is_nan, is_nan_forever);
+	if (is_nan || is_nan_forever || requested_bank < 0)
 	{
 		return;
 	}
 
 	//  Get the number of weapons requested	
 	node = CDR(node);
-	requested_weapons = eval_num(node);
-	if (requested_weapons < 0)
+	requested_weapons = eval_num(node, is_nan, is_nan_forever);
+	if (is_nan || is_nan_forever || requested_weapons < 0)
 	{
 		return;
 	}
@@ -18519,6 +19046,7 @@ int sexp_get_turret_secondary_ammo(int node)
 	ship_subsys *turret = NULL;
 	ship_weapon *swp;
 	int sindex, bank, check, ammo_left = 0;
+	bool is_nan, is_nan_forever;
 
 	sindex = ship_name_lookup(CTEXT(node));
 	if (sindex < 0) {
@@ -18542,8 +19070,8 @@ int sexp_get_turret_secondary_ammo(int node)
 
 	node = CDR(node);
 
-	check = eval_num(node);
-	if (check < 0) {
+	check = eval_num(node, is_nan, is_nan_forever);
+	if (is_nan || is_nan_forever || check < 0) {
 		return 0;
 	}
 
@@ -18565,6 +19093,7 @@ void sexp_set_turret_secondary_ammo(int node)
 {
 	ship_subsys *turret = NULL;
 	int sindex, requested_bank, requested_weapons;
+	bool is_nan, is_nan_forever;
 
 	// Check that a ship has been supplied
 	sindex = ship_name_lookup(CTEXT(node));
@@ -18585,8 +19114,8 @@ void sexp_set_turret_secondary_ammo(int node)
 	node = CDR(node);
 
 	// Get the bank to set the number on
-	requested_bank = eval_num(node);
-	if (requested_bank < 0)
+	requested_bank = eval_num(node, is_nan, is_nan_forever);
+	if (is_nan || is_nan_forever || requested_bank < 0)
 	{
 		return;
 	}
@@ -18595,8 +19124,8 @@ void sexp_set_turret_secondary_ammo(int node)
 
 	node = CDR(node);
 
-	requested_weapons = eval_num(node);
-	if (requested_weapons < 0)
+	requested_weapons = eval_num(node, is_nan, is_nan_forever);
+	if (is_nan || is_nan_forever || requested_weapons < 0)
 	{
 		return;
 	}
@@ -18660,6 +19189,7 @@ int sexp_is_in_turret_fov(int node)
 	char *turret_ship_name;
 	char *turret_subsys_name;
 	int target_shipnum, turret_shipnum, range;
+	bool is_nan, is_nan_forever;
 	object *target_objp, *turret_objp;
 	ship_subsys *turret_subsys;
 	vec3d tpos, tvec;
@@ -18667,7 +19197,16 @@ int sexp_is_in_turret_fov(int node)
 	target_ship_name = CTEXT(node);
 	turret_ship_name = CTEXT(CDR(node));
 	turret_subsys_name = CTEXT(CDDR(node));
-	range = CDDDR(node) >= 0 ? eval_num(CDDDR(node)) : -1;
+
+	if (CDDDR(node) >= 0) {
+		range = eval_num(CDDDR(node), is_nan, is_nan_forever);
+		if (is_nan)
+			return SEXP_FALSE;
+		if (is_nan_forever)
+			return SEXP_KNOWN_FALSE;
+	}
+	else
+		range = -1;
 
 	if (sexp_query_has_yet_to_arrive(target_ship_name) || sexp_query_has_yet_to_arrive(turret_ship_name))
 		return SEXP_CANT_EVAL;
@@ -18791,6 +19330,7 @@ void sexp_reverse_rotating_subsystem(int node)
 void sexp_rotating_subsys_set_turn_time(int node)
 {
 	int ship_num, n = node;
+	bool is_nan, is_nan_forever;
 	float turn_time, turn_accel;
 	ship_subsys *rotate;
 
@@ -18809,14 +19349,18 @@ void sexp_rotating_subsys_set_turn_time(int node)
 	n = CDR(n);
 
 	// get and set the turn time
-	turn_time = eval_num(n) / 1000.0f;
+	turn_time = eval_num(n, is_nan, is_nan_forever) / 1000.0f;
+	if (is_nan || is_nan_forever)
+		return;
 	rotate->submodel_info_1.desired_turn_rate = PI2 / turn_time;
 	n = CDR(n);
 
 	// maybe get and set the turn accel
 	if (n != -1)
 	{
-		turn_accel = eval_num(n) / 1000.0f;
+		turn_accel = eval_num(n, is_nan, is_nan_forever) / 1000.0f;
+		if (is_nan || is_nan_forever)
+			return;
 		rotate->submodel_info_1.turn_accel = PI2 / turn_accel;
 	}
 	else
@@ -18826,7 +19370,7 @@ void sexp_rotating_subsys_set_turn_time(int node)
 void sexp_trigger_submodel_animation(int node)
 {
 	int ship_num, animation_type, animation_subtype, direction, n = node;
-	bool instant;
+	bool instant, is_nan, is_nan_forever;
 
 	// get the ship
 	ship_num = ship_name_lookup(CTEXT(n));
@@ -18845,18 +19389,16 @@ void sexp_trigger_submodel_animation(int node)
 	}
 	n = CDR(n);
 
-	// get the subtype
-	animation_subtype = eval_num(n);
-	n = CDR(n);
+	// get the subtype and direction
+	eval_nums(n, is_nan, is_nan_forever, animation_subtype, direction);
+	if (is_nan || is_nan_forever)
+		return;
 
-	// get the direction, 1 or -1
-	direction = eval_num(n);
 	if (direction != 1 && direction != -1)
 	{
 		Warning(LOCATION, "Direction is %d; it must be 1 or -1!", direction);
 		return;
 	}
-	n = CDR(n);
 
 	// instant or not
 	if (n >= 0)
@@ -18941,6 +19483,7 @@ void sexp_turret_tagged_clear_specific(int node)
 void sexp_add_remove_escort(int node)
 {
 	int sindex, flag;
+	bool is_nan, is_nan_forever;
 
 	// get the firing ship
 	sindex = ship_name_lookup(CTEXT(node));
@@ -18952,7 +19495,10 @@ void sexp_add_remove_escort(int node)
 	}
 
 	// determine whether to add or remove it
-	flag = eval_num(CDR(node));
+	flag = eval_num(CDR(node), is_nan, is_nan_forever);
+	if (is_nan || is_nan_forever) {
+		return;
+	}
 
 	// add/remove
 	if(flag){
@@ -18994,6 +19540,7 @@ void sexp_damage_escort_list(int node)
 	int n = node;
 	int priority1;		//escort priority to set the most damaged ship
 	int priority2;		//""         ""   to set the other ships
+	bool is_nan, is_nan_forever;
 
 	ship* shipp;
 	float smallest_hull_pct=1;		//smallest hull pct found
@@ -19001,11 +19548,10 @@ void sexp_damage_escort_list(int node)
 	float current_hull_pct;			//hull pct of current ship we are evaluating
 	int shipnum=-1;				//index in Ships[] of the above
 
-	priority1=eval_num(n);
-	n = CDR(n);
-	priority2=eval_num(n);
-	n = CDR(n);
-	
+	eval_nums(n, is_nan, is_nan_forever, priority1, priority2);
+	if (is_nan || is_nan_forever)
+		return;
+
 	//loop through the ships
 	for ( ; n != -1; n = CDR(n) )
 	{
@@ -19052,6 +19598,7 @@ void sexp_damage_escort_list(int node)
 void sexp_set_support_ship(int n)
 {
 	int i, temp_val;
+	bool is_nan, is_nan_forever;
 
 	// get arrival location
 	temp_val = -1;
@@ -19151,7 +19698,10 @@ void sexp_set_support_ship(int n)
 
 	// get max number of ships allowed
 	n = CDR(n);
-	The_mission.support_ships.max_support_ships = eval_num(n);
+	temp_val = eval_num(n, is_nan, is_nan_forever);
+	if (!is_nan && !is_nan_forever) {
+		The_mission.support_ships.max_support_ships = temp_val;
+	}
 
 	// get the number of concurrent ships allowed
 	n = CDR(n);
@@ -19159,7 +19709,10 @@ void sexp_set_support_ship(int n)
 		// 7th arg not specified, set default
 		The_mission.support_ships.max_concurrent_ships = 1;
 	} else {
-		The_mission.support_ships.max_concurrent_ships = eval_num(n);
+		temp_val = eval_num(n, is_nan, is_nan_forever);
+		if (!is_nan && !is_nan_forever) {
+			The_mission.support_ships.max_concurrent_ships = temp_val;
+		}
 	}
 }
 
@@ -19167,7 +19720,7 @@ void sexp_set_support_ship(int n)
 void sexp_set_arrival_info(int node)
 {
 	int i, arrival_location, arrival_anchor, arrival_mask, arrival_distance, arrival_delay, n = node;
-	bool show_warp;
+	bool show_warp, is_nan, is_nan_forever;
 	object_ship_wing_point_team oswpt;
 
 	// get ship or wing
@@ -19213,23 +19766,10 @@ void sexp_set_arrival_info(int node)
 	}
 	n = CDR(n);
 
-	// get arrival path mask
-	arrival_mask = 0;
-	if (n >= 0)
-		arrival_mask = eval_num(n);
-	n = CDR(n);
-
-	// get arrival distance
-	arrival_distance = 0;
-	if (n >= 0)
-		arrival_distance = eval_num(n);
-	n = CDR(n);
-
-	// get arrival delay
-	arrival_delay = 0;
-	if (n >= 0)
-		arrival_delay = eval_num(n);
-	n = CDR(n);
+	// get arrival path mask, distance, and delay
+	eval_nums(n, is_nan, is_nan_forever, arrival_mask, arrival_distance, arrival_delay);
+	if (is_nan || is_nan_forever)
+		return;
 
 	// get warp effect
 	show_warp = true;
@@ -19272,7 +19812,7 @@ void sexp_set_arrival_info(int node)
 void sexp_set_departure_info(int node)
 {
 	int i, departure_location, departure_anchor, departure_mask, departure_delay, n = node;
-	bool show_warp;
+	bool show_warp, is_nan, is_nan_forever;
 	object_ship_wing_point_team oswpt;
 
 	// get ship or wing
@@ -19318,17 +19858,10 @@ void sexp_set_departure_info(int node)
 	}
 	n = CDR(n);
 
-	// get departure path mask
-	departure_mask = 0;
-	if (n >= 0)
-		departure_mask = eval_num(n);
-	n = CDR(n);
-
-	// get departure delay
-	departure_delay = 0;
-	if (n >= 0)
-		departure_delay = eval_num(n);
-	n = CDR(n);
+	// get departure path mask and delay
+	eval_nums(n, is_nan, is_nan_forever, departure_mask, departure_delay);
+	if (is_nan || is_nan_forever)
+		return;
 
 	// get warp effect
 	show_warp = true;
@@ -19377,19 +19910,17 @@ void sexp_damage_escort_list_all(int n)
 		float hull;
 	} my_escort_ship;
 
-	int priority[MAX_COMPLETE_ESCORT_LIST];
+	std::array<int, MAX_COMPLETE_ESCORT_LIST> priority;
 	my_escort_ship escort_ship[MAX_COMPLETE_ESCORT_LIST];
 	int i, j, num_escort_ships, num_priorities, temp_i;
+	bool is_nan, is_nan_forever;
 	float temp_f;
 	ship *shipp;
 
 	// build list of priorities
-	num_priorities = 0;
-	for ( ; n != -1; n = CDR(n) )
-	{
-		priority[num_priorities] = eval_num(n);
-		num_priorities++;
-	}
+	num_priorities = eval_array(priority, n, is_nan, is_nan_forever);
+	if (is_nan || is_nan_forever)
+		return;
 
 	// build custom list of escort ships
 	num_escort_ships = 0;
@@ -19447,7 +19978,8 @@ void sexp_damage_escort_list_all(int n)
 
 void sexp_awacs_set_radius(int node)
 {
-	int sindex;
+	int sindex, radius;
+	bool is_nan, is_nan_forever;
 	ship_subsys *awacs;
 
 	// get the firing ship
@@ -19466,21 +19998,27 @@ void sexp_awacs_set_radius(int node)
 		return;
 
 	// set the new awacs radius
-	awacs->awacs_radius = (float)eval_num(CDR(CDR(node)));
+	radius = eval_num(CDDR(node), is_nan, is_nan_forever);
+	if (is_nan || is_nan_forever)
+		return;
+	awacs->awacs_radius = (float)radius;
 }
 
 // Goober5000
 void sexp_primitive_sensors_set_range(int n)
 {
-	char *ship_name = CTEXT(n);
-	int ship_num, range = eval_num(CDR(n));
+	int ship_num, range;
+	bool is_nan, is_nan_forever;
 
 	// get the ship
-	ship_num = ship_name_lookup(ship_name);
+	ship_num = ship_name_lookup(CTEXT(n));
 	if (ship_num < 0)
 		return;
 
 	// set the new range
+	range = eval_num(CDR(n), is_nan, is_nan_forever);
+	if (is_nan || is_nan_forever)
+		return;
 	Ships[ship_num].primitive_sensor_range = range;
 }
 
@@ -19605,9 +20143,15 @@ void add_nav_waypoint(char *nav, char *WP_path, int vert, char *oswpt_name)
 //args: 4, Nav Name, Waypoint Path Name, Waypoint Path point, ShipWingTeam
 void add_nav_waypoint(int node)
 {
+	bool is_nan, is_nan_forever;
+
 	char *nav_name = CTEXT(node);
 	char *way_name = CTEXT(CDR(node));
-	int  vert = eval_num(CDR(CDR(node)));
+
+	int  vert = eval_num(CDR(CDR(node)), is_nan, is_nan_forever);
+	if (is_nan || is_nan_forever) {
+		return;
+	}
 
 	char *oswpt_name;
 	node = CDR(CDR(CDR(node)));
@@ -19844,6 +20388,7 @@ int sexp_is_tagged(int node)
 int sexp_missile_locked(int node)
 {
 	int z;
+	bool is_nan, is_nan_forever;
 
 	// if we aren't targeting anything, it's false
 	if ((Players_target == -1) || (Players_target == UNINITIALIZED))
@@ -19875,7 +20420,11 @@ int sexp_missile_locked(int node)
 
 	// if we've gotten this far, we must have satisfied whatever conditions the sexp imposed
 	// finally, test if we've locked for a certain period of time
-	z = eval_num(node) * 1000;
+	z = eval_num(node, is_nan, is_nan_forever) * 1000;
+	if (is_nan)
+		return SEXP_FALSE;
+	if (is_nan_forever)
+		return SEXP_KNOWN_FALSE;
 	if (timestamp_has_time_elapsed(Players_mlocked_timestamp, z))
 	{
 		return SEXP_TRUE;
@@ -19951,6 +20500,7 @@ int sexp_is_player(int node)
 void sexp_set_respawns(int node)
 {
 	int num_respawns;
+	bool is_nan, is_nan_forever;
 	p_object *p_objp;
 
 	// we're wasting our time if you can't respawn
@@ -19958,8 +20508,10 @@ void sexp_set_respawns(int node)
 		return;
 	}
 
-	num_respawns = eval_num(node);
-
+	num_respawns = eval_num(node, is_nan, is_nan_forever);
+	if (is_nan || is_nan_forever) {
+		return;
+	}
 	node = CDR(node);
 
 	// send the information to clients
@@ -20315,6 +20867,7 @@ int sexp_num_class_kills(int node)
 void sexp_subsys_set_random(int node)
 {
 	int sindex, low, high, n = node, idx, rand, exclusion_list[MAX_MODEL_SUBSYSTEMS];
+	bool is_nan, is_nan_forever;
 	ship_subsys *subsys;
 	ship *shipp;
 
@@ -20327,11 +20880,10 @@ void sexp_subsys_set_random(int node)
 	n = CDR(n);
 
 	// get low and high
-	low = eval_num(n);
-	n = CDR(n);
-	high = eval_num(n);
-	n = CDR(n);
-
+	eval_nums(n, is_nan, is_nan_forever, low, high);
+	if (is_nan || is_nan_forever) {
+		return;
+	}
 	if (low < 0) {
 		low = 0;
 	}
@@ -20375,7 +20927,12 @@ void sexp_subsys_set_random(int node)
 
 void sexp_supernova_start(int node)
 {
-	supernova_start(eval_num(node));
+	bool is_nan, is_nan_forever;
+	int countdown = eval_num(node, is_nan, is_nan_forever);
+	if (is_nan || is_nan_forever)
+		return;
+
+	supernova_start(countdown);
 }
 
 void sexp_supernova_stop(int  /*node*/)
@@ -20386,6 +20943,7 @@ void sexp_supernova_stop(int  /*node*/)
 int sexp_is_secondary_selected(int node)
 {
 	int sindex, bank;
+	bool is_nan, is_nan_forever;
 	ship *shipp;
 
 	// lookup ship
@@ -20396,8 +20954,11 @@ int sexp_is_secondary_selected(int node)
 	shipp = &Ships[sindex];
 
 	// bogus value?
-	bank = eval_num(CDR(node));
-	if(bank >= shipp->weapons.num_secondary_banks){
+	bank = eval_num(CDR(node), is_nan, is_nan_forever);
+	if (is_nan_forever) {
+		return SEXP_KNOWN_FALSE;
+	}
+	if (is_nan || bank >= shipp->weapons.num_secondary_banks) {
 		return SEXP_FALSE;
 	}
 
@@ -20413,6 +20974,7 @@ int sexp_is_secondary_selected(int node)
 int sexp_is_primary_selected(int node)
 {
 	int sindex, bank;
+	bool is_nan, is_nan_forever;
 	ship *shipp;
 
 	// lookup ship
@@ -20423,8 +20985,11 @@ int sexp_is_primary_selected(int node)
 	shipp = &Ships[sindex];
 
 	// bogus value?
-	bank = eval_num(CDR(node));
-	if(bank >= shipp->weapons.num_primary_banks){
+	bank = eval_num(CDR(node), is_nan, is_nan_forever);
+	if (is_nan_forever) {
+		return SEXP_KNOWN_FALSE;
+	}
+	if (is_nan || bank >= shipp->weapons.num_primary_banks) {
 		return SEXP_FALSE;
 	}
 
@@ -20668,13 +21233,14 @@ int sexp_string_to_int(int n)
 void sexp_int_to_string(int n)
 {
 	int i, sexp_variable_index;
+	bool is_nan, is_nan_forever;
 	char new_text[TOKEN_LENGTH];
 
 	// Only do single player or multi host
 	if (MULTIPLAYER_CLIENT)
 		return;
 
-	i = eval_num(n);
+	i = eval_num(n, is_nan, is_nan_forever);
 	n = CDR(n);
 
 	// get sexp_variable index
@@ -20692,7 +21258,10 @@ void sexp_int_to_string(int n)
 	}
 
 	// write string
-	sprintf(new_text, "%d", i);
+	if (is_nan || is_nan_forever)
+		sprintf(new_text, "NaN");
+	else
+		sprintf(new_text, "%d", i);
 
 	// assign to variable
 	sexp_modify_variable(new_text, sexp_variable_index);
@@ -20796,6 +21365,7 @@ int sexp_string_get_length(int node)
 void sexp_string_get_substring(int node)
 {
 	int n = node, pos, len, sexp_variable_index;
+	bool is_nan, is_nan_forever;
 	char new_text[TOKEN_LENGTH];
 	memset(new_text, 0, TOKEN_LENGTH);
 
@@ -20805,10 +21375,8 @@ void sexp_string_get_substring(int node)
 
 	char *parent = CTEXT(n);
 	n = CDR(n);
-	pos = eval_num(n);
-	n = CDR(n);
-	len = eval_num(n);
-	n = CDR(n);
+
+	eval_nums(n, is_nan, is_nan_forever, pos, len);
 
 	// get sexp_variable index
 	Assert(Sexp_nodes[n].first == -1);
@@ -20824,32 +21392,36 @@ void sexp_string_get_substring(int node)
 		return;
 	}
 
-	auto parent_byte_len = strlen(parent);
-	auto parent_end = parent + parent_byte_len;
-	int parent_len = (int)unicode::num_codepoints(parent, parent_end);
-
-	// sanity
-	if (pos >= parent_len)
+	// now actually get the substring
+	if (!is_nan && !is_nan_forever)
 	{
-		Warning(LOCATION, "( string-get-substring %s %d %d ) failed: starting position is larger than the string length!", parent, pos, len);
-		return;
+		auto parent_byte_len = strlen(parent);
+		auto parent_end = parent + parent_byte_len;
+		int parent_len = (int)unicode::num_codepoints(parent, parent_end);
+
+		// sanity
+		if (pos >= parent_len)
+		{
+			Warning(LOCATION, "( string-get-substring %s %d %d ) failed: starting position is larger than the string length!", parent, pos, len);
+			return;
+		}
+
+		// sanity
+		if (pos + len > parent_len)
+			len = parent_len - pos;
+
+		// copy substring
+		auto start_ptr = parent;
+		// Advance the pointer by n codepoints to the start of our substring
+		unicode::advance(start_ptr, static_cast<size_t>(pos), parent_end);
+
+		auto end_ptr = start_ptr;
+		unicode::advance(end_ptr, static_cast<size_t>(len), parent_end);
+
+		auto byte_diff = end_ptr - start_ptr;
+
+		strncpy(new_text, start_ptr, byte_diff);
 	}
-
-	// sanity
-	if (pos + len > parent_len)
-		len = parent_len - pos;
-
-	// copy substring
-	auto start_ptr = parent;
-	// Advance the pointer by n codepoints to the start of our substring
-	unicode::advance(start_ptr, static_cast<size_t>(pos), parent_end);
-
-	auto end_ptr = start_ptr;
-	unicode::advance(end_ptr, static_cast<size_t>(len), parent_end);
-
-	auto byte_diff = end_ptr - start_ptr;
-	
-	strncpy(new_text, start_ptr, byte_diff);
 
 	// assign to variable
 	sexp_modify_variable(new_text, sexp_variable_index);
@@ -20859,6 +21431,7 @@ void sexp_string_get_substring(int node)
 void sexp_string_set_substring(int node)
 {
 	int n = node, pos, len, sexp_variable_index;
+	bool is_nan, is_nan_forever;
 
 	// Only do single player or multi host
 	if ( MULTIPLAYER_CLIENT )
@@ -20866,10 +21439,11 @@ void sexp_string_set_substring(int node)
 
 	char *parent = CTEXT(n);
 	n = CDR(n);
-	pos = eval_num(n);
-	n = CDR(n);
-	len = eval_num(n);
-	n = CDR(n);
+
+	eval_nums(n, is_nan, is_nan_forever, pos, len);
+	if (is_nan || is_nan_forever)
+		return;
+
 	char *new_substring = CTEXT(n);
 	n = CDR(n);
 
@@ -21012,8 +21586,13 @@ void sexp_debug(int node)
 int sexp_special_training_check(int node)
 {
 	int num, rtn;
+	bool is_nan, is_nan_forever;
 
-	num = eval_num(node);
+	num = eval_num(node, is_nan, is_nan_forever);
+	if (is_nan)
+		return SEXP_FALSE;
+	if (is_nan_forever)
+		return SEXP_KNOWN_FALSE;
 	if (num == SPECIAL_CHECK_TRAINING_FAILURE)
 		return Training_failure ? SEXP_TRUE : SEXP_FALSE;
 
@@ -21054,11 +21633,15 @@ void multi_sexp_flash_hud_gauge()
 
 void sexp_set_training_context_fly_path(int node)
 {
+	bool is_nan, is_nan_forever;
+
 	waypoint_list *wp_list = find_matching_waypoint_list(CTEXT(node));
 	if (wp_list == NULL)
 		return;
 
-	int distance = eval_num(CDR(node));
+	int distance = eval_num(CDR(node), is_nan, is_nan_forever);
+	if (is_nan || is_nan_forever)
+		return;
 
 	Training_context |= TRAINING_CONTEXT_FLY_PATH;
 	Training_context_path = wp_list;
@@ -21069,8 +21652,12 @@ void sexp_set_training_context_fly_path(int node)
 
 void sexp_set_training_context_speed(int node)
 {
-	int min = eval_num(node);
-	int max = eval_num(CDR(node));
+	int min, max;
+	bool is_nan, is_nan_forever;
+
+	eval_nums(node, is_nan, is_nan_forever, min, max);
+	if (is_nan || is_nan_forever)
+		return;
 
 	Training_context |= TRAINING_CONTEXT_SPEED;
 	Training_context_speed_min = min;
@@ -21112,10 +21699,15 @@ void toggle_cutscene_bars(float delta_speed, int set)
 
 void sexp_toggle_cutscene_bars(int node, int set)
 {
+	bool is_nan, is_nan_forever;
 	float delta_speed = 0.0f;
 
-	if(node != -1)
-		delta_speed = eval_num(node)/1000.0f;
+	if (node != -1) {
+		delta_speed = eval_num(node, is_nan, is_nan_forever) / 1000.0f;
+		if (is_nan || is_nan_forever) {
+			return;
+		}
+	}
 
 	toggle_cutscene_bars(delta_speed, set);
 
@@ -21155,37 +21747,28 @@ static int Fade_out_b = -1;
 
 void sexp_fade(int n, bool fade_in)
 {
-	int duration = 0;
-	int R = -1;
-	int G = -1;
-	int B = -1;
+	int duration = 0, R, G, B;
+	bool is_nan, is_nan_forever;
+	std::array<int, 3> temp_rgb;
 
-	if (n != -1)
+	// get duration if present
+	if (n >= 0)
 	{
-		duration = eval_num(n);
+		duration = eval_num(n, is_nan, is_nan_forever);
+		if (is_nan || is_nan_forever)
+			return;
 		n = CDR(n);
-
-		if (n != -1)
-		{
-			R = eval_num(n);
-			if (R < 0 || R > 255) R = -1;
-			n = CDR(n);
-
-			if (n != -1)
-			{
-				G = eval_num(n);
-				if (G < 0 || G > 255) G = -1;
-				n = CDR(n);
-
-				if (n != -1)
-				{
-					B = eval_num(n);
-					if (B < 0 || B > 255) B = -1;
-					n = CDR(n);
-				}
-			}
-		}
 	}
+
+	// get color if present, with range checks, defaulting to -1
+	eval_array<int>(temp_rgb, n, is_nan, is_nan_forever, [](int num) {
+		return (num < 0 || num > 255) ? -1 : num;
+	}, -1);
+	if (is_nan || is_nan_forever)
+		return;
+	R = temp_rgb[0];
+	G = temp_rgb[1];
+	B = temp_rgb[2];
 
 	// select legacy (or default) fade color
 	if (R < 0 || G < 0 || B < 0)
@@ -21296,34 +21879,21 @@ void sexp_set_camera_position(int n)
 	if (cam == nullptr)
 		return;
 
+	bool is_nan, is_nan_forever;
 	vec3d camera_vec;
-	float camera_time = 0.0f;
-	float camera_acc_time = 0.0f;
-	float camera_dec_time = 0.0f;
+	float camera_time, camera_acc_time, camera_dec_time;
 
-	camera_vec.xyz.x = i2fl(eval_num(n));
-	n = CDR(n);
-	camera_vec.xyz.y = i2fl(eval_num(n));
-	n = CDR(n);
-	camera_vec.xyz.z = i2fl(eval_num(n));
-	n = CDR(n);
+	eval_vec3d(&camera_vec, n, is_nan, is_nan_forever);
+	if (is_nan || is_nan_forever)
+		return;
 
-	if(n != -1)
-	{
-		camera_time = eval_num(n) / 1000.0f;
-		n = CDR(n);
-		if(n != -1)
-		{
-			camera_dec_time = camera_acc_time = eval_num(n) / 1000.0f;
-			n = CDR(n);
-			if(n != -1)
-			{
-				camera_dec_time = eval_num(n) / 1000.0f;
-			}
-		}
-	}
+	int count = eval_nums(n, is_nan, is_nan_forever, camera_time, camera_acc_time, camera_dec_time);
+	if (is_nan || is_nan_forever)
+		return;
+	if (count == 2)
+		camera_dec_time = camera_acc_time;
 
-	cam->set_position(&camera_vec, camera_time, camera_acc_time, camera_dec_time);
+	cam->set_position(&camera_vec, camera_time / 1000.0f, camera_acc_time / 1000.0f, camera_dec_time / 1000.0f);
 
 	//multiplayer callback
 	Current_sexp_network_packet.start_callback();
@@ -21363,34 +21933,22 @@ void sexp_set_camera_rotation(int n)
 	if (cam == nullptr)
 		return;
 
+	bool is_nan, is_nan_forever;
 	angles rot_angles;
-	float rot_time = 0.0f;
-	float rot_acc_time = 0.0f;
-	float rot_dec_time = 0.0f;
+	float rot_time, rot_acc_time, rot_dec_time;
 
-	//Angles are in degrees
-	rot_angles.p = fl_radians(eval_num(n) % 360);
-	n = CDR(n);
-	rot_angles.b = fl_radians(eval_num(n) % 360);
-	n = CDR(n);
-	rot_angles.h = fl_radians(eval_num(n) % 360);
-	n = CDR(n);
-	if(n != -1)
-	{
-		rot_time = eval_num(n) / 1000.0f;
-		n = CDR(n);
-		if(n != -1)
-		{
-			rot_dec_time = rot_acc_time = eval_num(n) / 1000.0f;
-			n = CDR(n);
-			if(n != -1)
-			{
-				rot_dec_time = eval_num(n) / 1000.0f;
-			}
-		}
-	}
+	// Angles are in degrees
+	eval_angles(&rot_angles, n, is_nan, is_nan_forever);
+	if (is_nan || is_nan_forever)
+		return;
 
-	cam->set_rotation(&rot_angles, rot_time, rot_acc_time, rot_dec_time);
+	int count = eval_nums(n, is_nan, is_nan_forever, rot_time, rot_acc_time, rot_dec_time);
+	if (is_nan || is_nan_forever)
+		return;
+	if (count == 2)
+		rot_dec_time = rot_acc_time;
+
+	cam->set_rotation(&rot_angles, rot_time / 1000.0f, rot_acc_time / 1000.0f, rot_dec_time / 1000.0f);
 
 	Current_sexp_network_packet.start_callback();
 	Current_sexp_network_packet.send_float(rot_angles.b);
@@ -21429,33 +21987,21 @@ void sexp_set_camera_facing(int n)
 	if (cam == nullptr)
 		return;
 
+	bool is_nan, is_nan_forever;
 	vec3d location;
-	float rot_time = 0.0f;
-	float rot_acc_time = 0.0f;
-	float rot_dec_time = 0.0f;
+	float rot_time, rot_acc_time, rot_dec_time;
 
-	location.xyz.x = i2fl(eval_num(n));
-	n = CDR(n);
-	location.xyz.y = i2fl(eval_num(n));
-	n = CDR(n);
-	location.xyz.z = i2fl(eval_num(n));
-	n = CDR(n);
-	if(n != -1)
-	{
-		rot_time = eval_num(n) / 1000.0f;
-		n = CDR(n);
-		if(n != -1)
-		{
-			rot_dec_time = rot_acc_time = eval_num(n) / 1000.0f;
-			n = CDR(n);
-			if(n != -1)
-			{
-				rot_dec_time = eval_num(n) / 1000.0f;
-			}
-		}
-	}
+	eval_vec3d(&location, n, is_nan, is_nan_forever);
+	if (is_nan || is_nan_forever)
+		return;
 
-	cam->set_rotation_facing(&location, rot_time, rot_acc_time, rot_dec_time);
+	int count = eval_nums(n, is_nan, is_nan_forever, rot_time, rot_acc_time, rot_dec_time);
+	if (is_nan || is_nan_forever)
+		return;
+	if (count == 2)
+		rot_dec_time = rot_acc_time;
+
+	cam->set_rotation_facing(&location, rot_time / 1000.0f, rot_acc_time / 1000.0f, rot_dec_time / 1000.0f);
 
 	//multiplayer callback
 	Current_sexp_network_packet.start_callback();
@@ -21524,25 +22070,18 @@ void sexp_set_camera_facing_object(int n)
 	char *object_name = CTEXT(n);
 	n = CDR(n);
 
-	float rot_time = 0.0f;
-	float rot_acc_time = 0.0f;
-	float rot_dec_time = 0.0f;
+	bool is_nan, is_nan_forever;
+	float rot_time, rot_acc_time, rot_dec_time;
 
-	//Now get the rotation time values
-	if(n != -1)
-	{
-		rot_time = eval_num(n) / 1000.0f;
-		n = CDR(n);
-		if(n != -1)
-		{
-			rot_dec_time = rot_acc_time = eval_num(n) / 1000.0f;
-			n = CDR(n);
-			if(n != -1)
-			{
-				rot_dec_time = eval_num(n) / 1000.0f;
-			}
-		}
-	}
+	// Now get the rotation time values
+	int count = eval_nums(n, is_nan, is_nan_forever, rot_time, rot_acc_time, rot_dec_time);
+	if (is_nan || is_nan_forever)
+		return;
+	if (count == 2)
+		rot_dec_time = rot_acc_time;
+	rot_time /= 1000.0f;
+	rot_acc_time /= 1000.0f;
+	rot_dec_time /= 1000.0f;
 	actually_set_camera_facing_object(object_name, rot_time, rot_acc_time, rot_dec_time);
 
 	//multiplayer callback
@@ -21577,30 +22116,23 @@ void sexp_set_camera_fov(int n)
 	if (cam == nullptr)
 		return;
 
-	float camera_time = 0.0f;
-	float camera_acc_time = 0.0f;
-	float camera_dec_time = 0.0f;
+	bool is_nan, is_nan_forever;
+	int int_fov;
+	float camera_fov, camera_time, camera_acc_time, camera_dec_time = 0.0f;
 
-	float camera_fov = fl_radians(eval_num(n) % 360);
+	int_fov = eval_num(n, is_nan, is_nan_forever);
+	if (is_nan || is_nan_forever)
+		return;
 	n = CDR(n);
+	camera_fov = fl_radians(int_fov % 360);
 
-	if(n != -1)
-	{
-		camera_time = eval_num(n) / 1000.0f;
-		n = CDR(n);
-		if(n != -1)
-		{
-			camera_dec_time = camera_acc_time = eval_num(n) / 1000.0f;
-			n = CDR(n);
-			if(n != -1)
-			{
-				camera_dec_time = eval_num(n) / 1000.0f;
-			}
-		}
-	}
+	int count = eval_nums(n, is_nan, is_nan_forever, camera_time, camera_acc_time, camera_dec_time);
+	if (is_nan || is_nan_forever)
+		return;
+	if (count == 2)
+		camera_dec_time = camera_acc_time;
 
-	cam->set_fov(camera_fov, camera_time, camera_acc_time, camera_dec_time);
-
+	cam->set_fov(camera_fov, camera_time / 1000.0f, camera_acc_time / 1000.0f, camera_dec_time / 1000.0f);
 
 	Current_sexp_network_packet.start_callback();
 	Current_sexp_network_packet.send_float(camera_fov);
@@ -21741,8 +22273,13 @@ void sexp_set_fov(int n)
 		cam = Main_camera.getCamera();
 	}
 
+	bool is_nan, is_nan_forever;
+	int int_fov = eval_num(n, is_nan, is_nan_forever);
+	if (is_nan || is_nan_forever)
+		return;
+
 	//Cap FOV to something reasonable.
-	float new_fov = (float)(eval_num(n) % 360);
+	float new_fov = (float)(int_fov % 360);
 	Sexp_fov = fl_radians(new_fov);
 
 	Current_sexp_network_packet.start_callback();
@@ -21837,12 +22374,11 @@ void sexp_show_subtitle(int node)
 	char *text, *imageanim = nullptr;
 	float display_time, fade_time = 0.0f;
 	int r = 255, g = 255, b = 255, n = node;
-	bool center_x = false, center_y = false, post_shaded = false;
+	bool is_nan, is_nan_forever, center_x = false, center_y = false, post_shaded = false;
 
-	x_pos = eval_num(node);
-	n = CDR(node);
-	y_pos = eval_num(n);
-	n = CDR(n);
+	eval_nums(n, is_nan, is_nan_forever, x_pos, y_pos);
+	if (is_nan || is_nan_forever)
+		return;
 
 	if (gr_screen.center_w != 1024)
 		x_pos = (int)((x_pos / 1024.0f) * gr_screen.center_w);
@@ -21852,7 +22388,9 @@ void sexp_show_subtitle(int node)
 	text = CTEXT(n);
 	n = CDR(n);
 
-	display_time = eval_num(n) / 1000.0f;	//is in ms
+	display_time = eval_num(n, is_nan, is_nan_forever) / 1000.0f;	//is in ms
+	if (is_nan || is_nan_forever)
+		return;
 	n = CDR(n);
 
 	if (n != -1)
@@ -21862,7 +22400,9 @@ void sexp_show_subtitle(int node)
 
 		if (n != -1)
 		{
-			fade_time = eval_num(n) / 1000.0f; //also in ms
+			fade_time = eval_num(n, is_nan, is_nan_forever) / 1000.0f; //also in ms
+			if (is_nan || is_nan_forever)
+				return;
 			n = CDR(n);
 
 			if (n != -1)
@@ -21875,33 +22415,13 @@ void sexp_show_subtitle(int node)
 					center_y = is_sexp_true(n);
 					n = CDR(n);
 
+					eval_nums(n, is_nan, is_nan_forever, width, r, g, b);
+					if (is_nan || is_nan_forever)
+						return;
+
 					if (n != -1)
 					{
-						width = eval_num(n);
-						n = CDR(n);
-
-						if (n != -1)
-						{
-							r = eval_num(n);
-							n = CDR(n);
-
-							if (n != -1)
-							{
-								g = eval_num(n);
-								n = CDR(n);
-
-								if (n != -1)
-								{
-									b = eval_num(n);
-									n = CDR(n);
-
-									if (n != -1)
-									{
-										post_shaded = is_sexp_true(n);
-									}
-								}
-							}
-						}
+						post_shaded = is_sexp_true(n);
 					}
 				}
 			}
@@ -21934,6 +22454,7 @@ void multi_sexp_clear_subtitles()
 
 void sexp_show_subtitle_text(int node)
 {
+	bool is_nan, is_nan_forever;
 	int i, n = node, message_index = -1;
 	char text[MESSAGE_LENGTH];
 
@@ -21956,13 +22477,13 @@ void sexp_show_subtitle_text(int node)
 	// (we don't need to do variable replacements because the subtitle code already does that)
 	message_translate_tokens(text, ctext);
 
-	int x_pct = eval_num(n);
-	n = CDR(n);
-	int y_pct = eval_num(n);
-	n = CDR(n);
-
-	CLAMP(x_pct, -100, 100);
-	CLAMP(y_pct, -100, 100);
+	std::array<int, 2> xy_pct;
+	eval_array<int>(xy_pct, n, is_nan, is_nan_forever, [](int num)->int {
+		CLAMP(num, -100, 100);
+		return num;
+	});
+	if (is_nan || is_nan_forever)
+		return;
 
 	bool center_x = is_sexp_true(n);
 	n = CDR(n);
@@ -21970,47 +22491,24 @@ void sexp_show_subtitle_text(int node)
 	bool center_y = is_sexp_true(n);
 	n = CDR(n);
 
-	float display_time = eval_num(n) / 1000.0f;
-	n = CDR(n);
-
-	float fade_time = 0.0f;
-	if (n >= 0)
-	{
-		fade_time = eval_num(n) / 1000.0f;
-		n = CDR(n);
-	}
-
-	int width_pct = 0;
-	if (n >= 0)
-	{
-		width_pct = eval_num(n);
-		n = CDR(n);
-	}
-
+	float display_time, fade_time;
+	int width_pct;
+	eval_nums(n, is_nan, is_nan_forever, display_time, fade_time, width_pct);
+	if (is_nan || is_nan_forever)
+		return;
+	display_time /= 1000.0f;
+	fade_time /= 1000.0f;
 	// note: width_pct is OPF_POSITIVE
 	if (width_pct > 100)
 		width_pct = 100;
 
-	int red = 255;
-	if (n >= 0)
-	{
-		red = eval_num(n);
-		n = CDR(n);
-	}
-
-	int green = 255;
-	if (n >= 0)
-	{
-		green = eval_num(n);
-		n = CDR(n);
-	}
-
-	int blue = 255;
-	if (n >= 0)
-	{
-		blue = eval_num(n);
-		n = CDR(n);
-	}
+	std::array<int, 3> rgb;
+	eval_array<int>(rgb, n, is_nan, is_nan_forever, [](int num)->int {
+		CLAMP(num, 0, 255);
+		return num;
+	}, 255);
+	if (is_nan || is_nan_forever)
+		return;
 
 	int fontnum = -1;
 	if (n >= 0)
@@ -22028,16 +22526,12 @@ void sexp_show_subtitle_text(int node)
 		n = CDR(n);
 	}
 
-	CLAMP(red, 0, 255);
-	CLAMP(green, 0, 255);
-	CLAMP(blue, 0, 255);
-
 	color new_color;
-	gr_init_alphacolor(&new_color, red, green, blue, 255);
+	gr_init_alphacolor(&new_color, rgb[0], rgb[1], rgb[2], 255);
 
 	// calculate pixel positions
-	int x_pos = (int) (gr_screen.center_w * (x_pct / 100.0f));
-	int y_pos = (int) (gr_screen.center_h * (y_pct / 100.0f));
+	int x_pos = (int) (gr_screen.center_w * (xy_pct[0] / 100.0f));
+	int y_pos = (int) (gr_screen.center_h * (xy_pct[1] / 100.0f));
 	int width = (int) (gr_screen.center_w * (width_pct / 100.0f));
 
 	// add the subtitle
@@ -22045,8 +22539,8 @@ void sexp_show_subtitle_text(int node)
 	Subtitles.push_back(new_subtitle);
 
 	Current_sexp_network_packet.start_callback();
-	Current_sexp_network_packet.send_int(x_pct);
-	Current_sexp_network_packet.send_int(y_pct);
+	Current_sexp_network_packet.send_int(xy_pct[0]);
+	Current_sexp_network_packet.send_int(xy_pct[1]);
 	Current_sexp_network_packet.send_int (message_index);
 	// only send the text if it is not a message. If it is a message, we've already sent the index anyway. 
 	if (message_index == -1) {
@@ -22054,9 +22548,9 @@ void sexp_show_subtitle_text(int node)
 	}
 	Current_sexp_network_packet.send_float(display_time);
 	Current_sexp_network_packet.send_float(fade_time);
-	Current_sexp_network_packet.send_int(red);
-	Current_sexp_network_packet.send_int(green);
-	Current_sexp_network_packet.send_int(blue);
+	Current_sexp_network_packet.send_int(rgb[0]);
+	Current_sexp_network_packet.send_int(rgb[1]);
+	Current_sexp_network_packet.send_int(rgb[2]);
 	Current_sexp_network_packet.send_int(fontnum);
 	Current_sexp_network_packet.send_bool(center_x);
 	Current_sexp_network_packet.send_bool(center_y);
@@ -22111,19 +22605,19 @@ void multi_sexp_show_subtitle_text()
 
 void sexp_show_subtitle_image(int node)
 {
+	bool is_nan, is_nan_forever;
 	int n = node;
 
 	char *image = CTEXT(n);
 	n = CDR(n);
 
-	int x_pct = eval_num(n);
-	n = CDR(n);
-
-	int y_pct = eval_num(n);
-	n = CDR(n);
-
-	CLAMP(x_pct, -100, 100);
-	CLAMP(y_pct, -100, 100);
+	std::array<int, 2> xy_pct;
+	eval_array<int>(xy_pct, n, is_nan, is_nan_forever, [](int num)->int {
+		CLAMP(num, -100, 100);
+		return num;
+	});
+	if (is_nan || is_nan_forever)
+		return;
 
 	bool center_x = is_sexp_true(n);
 	n = CDR(n);
@@ -22131,27 +22625,18 @@ void sexp_show_subtitle_image(int node)
 	bool center_y = is_sexp_true(n);
 	n = CDR(n);
 
-	int width_pct = eval_num(n);
-	n = CDR(n);
-
-	int height_pct = eval_num(n);
-	n = CDR(n);
-
+	int width_pct, height_pct;
+	float display_time, fade_time;
+	eval_nums(n, is_nan, is_nan_forever, width_pct, height_pct, display_time, fade_time);
+	if (is_nan || is_nan_forever)
+		return;
 	// note: width_pct and height_pct are OPF_POSITIVE
 	if (width_pct > 100)
 		width_pct = 100;
 	if (height_pct > 100)
 		height_pct = 100;
-
-	float display_time = eval_num(n) / 1000.0f;
-	n = CDR(n);
-
-	float fade_time = 0.0f;
-	if (n >= 0)
-	{
-		fade_time = eval_num(n) / 1000.0f;
-		n = CDR(n);
-	}
+	display_time /= 1000.0f;
+	fade_time /= 1000.0f;
 
 	bool post_shaded = false;
 	if (n >= 0)
@@ -22161,8 +22646,8 @@ void sexp_show_subtitle_image(int node)
 	}
 
 	// calculate pixel positions
-	int x_pos = fl2i(gr_screen.center_w * (x_pct / 100.0f));
-	int y_pos = fl2i(gr_screen.center_h * (y_pct / 100.0f));
+	int x_pos = fl2i(gr_screen.center_w * (xy_pct[0] / 100.0f));
+	int y_pos = fl2i(gr_screen.center_h * (xy_pct[1] / 100.0f));
 	int width = fl2i(gr_screen.center_w * (width_pct / 100.0f));
 	int height = fl2i(gr_screen.center_h * (height_pct / 100.0f));
 
@@ -22211,26 +22696,27 @@ void multi_sexp_show_subtitle_image()
 
 void sexp_set_time_compression(int n)
 {
-	float new_multiplier = 0.0f;
-	float new_change_time = 0.0f;
-	float starting_multiplier = 0.0f;
+	bool is_nan, is_nan_forever;
+	float new_multiplier, new_change_time, starting_multiplier;
+
+	int count = eval_nums(n, is_nan, is_nan_forever, new_multiplier, new_change_time, starting_multiplier);
+	if (is_nan || is_nan_forever)
+		return;
 
 	Current_sexp_network_packet.start_callback();
 
-	new_multiplier = eval_num(n)/100.0f;			//percent->decimal
+	new_multiplier /= 100.0f;			//percent->decimal
 	Current_sexp_network_packet.send_float(new_multiplier);
 
 	//Time to change
-	n = CDR(n);
-	if(n != -1) {
-		new_change_time = eval_num(n)/1000.0f;			//ms->seconds
+	if (count > 1) {
+		new_change_time /= 1000.0f;		//ms->seconds
 		Current_sexp_network_packet.send_float(new_change_time);
 	}
 
 	//Override current time compression with this value
-	n = CDR(n);
-	if(n != -1) {
-		starting_multiplier = eval_num(n)/100.0f;
+	if (count > 2) {
+		starting_multiplier /= 100.0f;	//percent->decimal
 		set_time_compression(starting_multiplier);
 		Current_sexp_network_packet.send_float(starting_multiplier);
 	}
@@ -22281,7 +22767,10 @@ void sexp_force_perspective(int n)
 
 	if(n != -1)
 	{
-		n = eval_num(n);
+		bool is_nan, is_nan_forever;
+		n = eval_num(n, is_nan, is_nan_forever);
+		if (is_nan || is_nan_forever)
+			return;
 		switch(n)
 		{
 			case 0:
@@ -22302,8 +22791,14 @@ void sexp_force_perspective(int n)
 
 void sexp_set_camera_shudder(int n)
 {
-	int time = eval_num(n); 
-	float intensity = (float) eval_num(CDR(n)) * 0.01f; 
+	int time;
+	float intensity;
+	bool is_nan, is_nan_forever;
+
+	eval_nums(n, is_nan, is_nan_forever, time, intensity);
+	if (is_nan || is_nan_forever)
+		return;
+	intensity *= 0.01f;
 
 	game_shudder_apply(time, intensity);
 
@@ -22368,14 +22863,14 @@ void sexp_set_jumpnode_color(int n)
 	if (jnp == nullptr)
 		return;
 
+	bool is_nan, is_nan_forever;
 	std::array<int, 4> rgba;
-	rgba[0] = eval_num(n);
-	rgba[1] = eval_num(CDR(n));
-	rgba[2] = eval_num(CDR(CDR(n)));
-	rgba[3] = eval_num(CDR(CDR(CDR(n))));
-
-	for (int &num : rgba)
+	eval_array<int>(rgba, n, is_nan, is_nan_forever, [](int num)->int {
 		CLAMP(num, 0, 255);
+		return num;
+	});
+	if (is_nan || is_nan_forever)
+		return;
 
 	jnp->SetAlphaColor(rgba[0], rgba[1], rgba[2], rgba[3]);
 
@@ -22714,6 +23209,8 @@ bool test_point_within_box(vec3d *test_point, vec3d *box_corner_1, vec3d *box_co
 int sexp_is_in_box(int n)
 {
 	int i;
+	float x1, x2, y1, y2, z1, z2;
+	bool is_nan, is_nan_forever;
 	Assert(n >= 0);
 
 	object_ship_wing_point_team oswpt;
@@ -22721,18 +23218,11 @@ int sexp_is_in_box(int n)
 	n = CDR(n);
 
 	// Get box corners
-	float x1 = (float) eval_num(n);
-	n = CDR(n);
-	float x2 = (float) eval_num(n);
-	n = CDR(n);
-	float y1 = (float) eval_num(n);
-	n = CDR(n);
-	float y2 = (float) eval_num(n);
-	n = CDR(n);
-	float z1 = (float) eval_num(n);
-	n = CDR(n);
-	float z2 = (float) eval_num(n);
-	n = CDR(n);	
+	eval_nums(n, is_nan, is_nan_forever, x1, x2, y1, y2, z1, z2);
+	if (is_nan)
+		return SEXP_FALSE;
+	if (is_nan_forever)
+		return SEXP_KNOWN_FALSE;
 	vec3d box_corner_1;
 	box_corner_1.xyz.x = MIN(x1, x2);
 	box_corner_1.xyz.y = MIN(y1, y2);
@@ -22842,9 +23332,12 @@ void sexp_manipulate_colgroup(int node, bool add_to_group)
 	node = CDR(node);
 
 	while (node != -1) {
-
-		int group = eval_num(node);
+		bool is_nan, is_nan_forever;
+		int group = eval_num(node, is_nan, is_nan_forever);
 		node = CDR(node);
+		if (is_nan || is_nan_forever) {
+			continue;
+		}
 
 		if (group < 0 || group > 31) {
 			WarningEx(LOCATION, "Invalid collision group id %d specified for object %s. Valid IDs range from 0 to 31.\n", group, shipp->ship_name); 
@@ -22884,8 +23377,7 @@ void sexp_ship_effect(int n)
 {
 	char	*name;
 	int ship_index, wing_index;
-	
-	Assert ( n != -1 );
+	bool is_nan, is_nan_forever;
 	
 	int effect_num = get_effect_from_name(CTEXT(n));
 	if (effect_num == -1) {
@@ -22894,7 +23386,9 @@ void sexp_ship_effect(int n)
 	}
 	n = CDR(n);
 
-	int effect_duration = eval_num(n);
+	int effect_duration = eval_num(n, is_nan, is_nan_forever);
+	if (is_nan || is_nan_forever)
+		return;
 	n = CDR(n);
 
 	ship_index = -1;
@@ -22960,8 +23454,11 @@ void sexp_change_team_color(int n)
 	SCP_string new_color = CTEXT(n);
 	SCP_vector<ship*> shippointers;
 	n = CDR(n);
-	int fade_time = eval_num(n);
 
+	bool is_nan, is_nan_forever;
+	int fade_time = eval_num(n, is_nan, is_nan_forever);
+	if (is_nan || is_nan_forever)
+		return;
 	n = CDR(n);
 
 	while (n != -1) {
@@ -29698,6 +30195,7 @@ bool is_sexp_node_numeric(int node)
 void sexp_set_variable_by_index(int node)
 {
 	int sexp_variable_index, new_number;
+	bool is_nan, is_nan_forever;
 	char *new_text;
 	char number_as_str[TOKEN_LENGTH];
 
@@ -29708,7 +30206,9 @@ void sexp_set_variable_by_index(int node)
 		return;
 
 	// get sexp_variable index
-	sexp_variable_index = eval_num(node);
+	sexp_variable_index = eval_num(node, is_nan, is_nan_forever);
+	if (is_nan || is_nan_forever)
+		return;
 
 	// check range
 	if (sexp_variable_index < 0 || sexp_variable_index >= MAX_SEXP_VARIABLES)
@@ -29727,8 +30227,11 @@ void sexp_set_variable_by_index(int node)
 	if (Sexp_variables[sexp_variable_index].type & SEXP_VARIABLE_NUMBER)
 	{
 		// get new numerical value
-		new_number = eval_sexp(CDR(node));
-		sprintf(number_as_str, "%d", new_number);
+		new_number = eval_num(CDR(node), is_nan, is_nan_forever);
+		if (is_nan || is_nan_forever)
+			strcpy_s(number_as_str, "NaN");
+		else
+			sprintf(number_as_str, "%d", new_number);
 
 		// assign to variable
 		sexp_modify_variable(number_as_str, sexp_variable_index);
@@ -29751,11 +30254,16 @@ void sexp_set_variable_by_index(int node)
 int sexp_get_variable_by_index(int node)
 {
 	int sexp_variable_index;
+	bool is_nan, is_nan_forever;
 
 	Assert(node >= 0);
 
 	// get sexp_variable index
-	sexp_variable_index = eval_num(node);
+	sexp_variable_index = eval_num(node, is_nan, is_nan_forever);
+	if (is_nan)
+		return SEXP_NAN;
+	if (is_nan_forever)
+		return SEXP_NAN_FOREVER;
 
 	// check range
 	if (sexp_variable_index < 0 || sexp_variable_index >= MAX_SEXP_VARIABLES)
@@ -29787,6 +30295,7 @@ int sexp_get_variable_by_index(int node)
 void sexp_copy_variable_from_index(int node)
 {
 	int from_index, to_index;
+	bool is_nan, is_nan_forever;
 
 	Assert(node >= 0);
 
@@ -29795,7 +30304,9 @@ void sexp_copy_variable_from_index(int node)
 		return;
 
 	// get sexp_variable index
-	from_index = eval_num(node);
+	from_index = eval_num(node, is_nan, is_nan_forever);
+	if (is_nan || is_nan_forever)
+		return;
 
 	// check range
 	if (from_index < 0 || from_index >= MAX_SEXP_VARIABLES)
@@ -29837,6 +30348,7 @@ void sexp_copy_variable_from_index(int node)
 void sexp_copy_variable_between_indexes(int node)
 {
 	int from_index, to_index;
+	bool is_nan, is_nan_forever;
 
 	Assert(node >= 0);
 
@@ -29845,8 +30357,9 @@ void sexp_copy_variable_between_indexes(int node)
 		return;
 
 	// get sexp_variable indexes
-	from_index = eval_num(node);
-	to_index = eval_num(CDR(node));
+	eval_nums(node, is_nan, is_nan_forever, from_index, to_index);
+	if (is_nan || is_nan_forever)
+		return;
 
 	// check ranges
 	if (from_index < 0 || from_index >= MAX_SEXP_VARIABLES)
@@ -30184,14 +30697,159 @@ void sexp_variable_sort()
 /**
  * Evaluate number which may result from an operator or may be text
  */
-int eval_num(int n)
+int eval_num(int n, bool &is_nan, bool &is_nan_forever)
 {
+	is_nan = false;
+	is_nan_forever = false;
+
 	Assert(n >= 0);
+	if (n < 0)
+		return 0;
 
 	if (CAR(n) != -1)				// if argument is a sexp
-		return eval_sexp(CAR(n));
+	{
+		int val = eval_sexp(CAR(n));
+
+		// NaNs will propagate through operations, so let the calling function know
+		if (Sexp_nodes[CAR(n)].value == SEXP_NAN)
+		{
+			val = 0;
+			is_nan = true;
+		}
+		else if (Sexp_nodes[CAR(n)].value == SEXP_NAN_FOREVER)
+		{
+			val = 0;
+			is_nan_forever = true;
+		}
+
+		return val;
+	}
 	else
 		return atoi(CTEXT(n));		// otherwise, just get the number
+}
+
+template <typename T>
+int eval_nums(int &n, bool &is_nan, bool &is_nan_forever, T &arg)
+{
+	if (n >= 0)
+	{
+		int val = eval_num(n, is_nan, is_nan_forever);
+		n = CDR(n);
+
+		arg = (T)val;
+		return 1;
+	}
+	else
+	{
+		is_nan = false;
+		is_nan_forever = false;
+
+		arg = (T)0;
+		return 0;
+	}
+}
+
+/**
+ * Populate variadic arguments by running eval_num repeatedly.  No custom converter function is used; all numbers are cast from int to the desired type.
+ * The count of numbers actually found (which depending on the sexp may not be the count of parameters) is returned.
+ * NOTE: in contrast to eval_num, the *n* parameter will be advanced along the CDR path
+ */
+template <typename T, typename... Args>
+int eval_nums(int &n, bool &is_nan, bool &is_nan_forever, T& first, Args&... rest)
+{
+	bool temp_nan, temp_nan_forever;
+	int count = 0;
+
+	is_nan = false;
+	is_nan_forever = false;
+
+	count += eval_nums(n, temp_nan, temp_nan_forever, first);
+	if (temp_nan)
+		is_nan = true;
+	if (temp_nan_forever)
+		is_nan_forever = true;
+
+	count += eval_nums(n, temp_nan, temp_nan_forever, rest...);
+	if (temp_nan)
+		is_nan = true;
+	if (temp_nan_forever)
+		is_nan_forever = true;
+
+	return count;
+}
+
+/**
+ * Populate a numeric array by running eval_num repeatedly.  The converter function/lambda can be used to adapt the numbers returned from eval_num, such as casting (the default)
+ * or restricting to a range.  The count of numbers actually found (which depending on the sexp may not be the size of the array) is returned.
+ * NOTE: in contrast to eval_num, the *n* parameter will be advanced along the CDR path
+ */
+template <class T, std::size_t SIZE>
+int eval_array(std::array<T, SIZE> &numbers, int &n, bool &is_nan, bool &is_nan_forever, const std::function<T(int)> &converter, const T &value_if_missing)
+{
+	bool temp_nan, temp_nan_forever;
+	int count = 0;
+
+	is_nan = false;
+	is_nan_forever = false;
+
+	// fill up the array
+	for (int i = 0; i < SIZE; ++i)
+	{
+		// see if we have a number
+		if (n >= 0)
+		{
+			int num = eval_num(n, temp_nan, temp_nan_forever);
+			n = CDR(n);
+			++count;
+
+			if (temp_nan)
+				is_nan = true;
+			if (temp_nan_forever)
+				is_nan_forever = true;
+
+			// populate the array with that number
+			numbers[i] = converter(num);
+		}
+		// use the default
+		else
+			numbers[i] = value_if_missing;
+	}
+
+	return count;
+}
+
+/**
+ * Populate a vector by running eval_num on up to three consecutive nodes.  Returns the number of nodes processed.
+ * NOTE: in contrast to eval_num, the *n* parameter will be advanced along the CDR path
+ */
+int eval_vec3d(vec3d *vec, int &n, bool &is_nan, bool &is_nan_forever)
+{
+	Assertion(vec != nullptr, "Vec must not be null!");
+
+	// this is slightly more verbose than ideal, because one can't cast between C and C++ arrays
+	std::array<float, 3> a1d;
+	int count = eval_array(a1d, n, is_nan, is_nan_forever);
+	std::copy(a1d.begin(), a1d.end(), std::begin(vec->a1d));
+
+	return count;
+}
+
+/**
+ * Populate an angles struct by running eval_num on up to three consecutive nodes.  Returns the number of nodes processed.
+ * NOTE: in contrast to eval_num, the *n* parameter will be advanced along the CDR path
+ */
+int eval_angles(angles *a, int &n, bool &is_nan, bool &is_nan_forever)
+{
+	Assertion(a != nullptr, "a must not be null!");
+
+	std::array<int, 3> a1d;
+	int count = eval_array(a1d, n, is_nan, is_nan_forever);
+
+	a->p = fl_radians(a1d[0] % 360);
+	a->b = fl_radians(a1d[1] % 360);
+	a->h = fl_radians(a1d[2] % 360);
+
+	return count;
 }
 
 // Goober5000

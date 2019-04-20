@@ -13,6 +13,8 @@
 #include "globalincs/globals.h"
 #include "globalincs/pstypes.h"	// for NULL
 
+#include <functional>
+
 class ship_subsys;
 class ship;
 class waypoint_list;
@@ -1170,7 +1172,15 @@ extern int get_sexp_main(void);	//	Returns start node
 extern int run_sexp(const char* sexpression); // debug and lua sexps
 extern int stuff_sexp_variable_list();
 extern int eval_sexp(int cur_node, int referenced_node = -1);
-extern int eval_num(int n);
+extern int eval_num(int n, bool &is_nan, bool &is_nan_forever);
+template <typename T>
+extern int eval_nums(int &n, bool &is_nan, bool &is_nan_forever, T &arg);
+template <typename T, typename... Args>
+extern int eval_nums(int &n, bool &is_nan, bool &is_nan_forever, T& first, Args&... rest);
+template <class T, std::size_t SIZE>
+extern int eval_array(std::array<T, SIZE> &integers, int &n, bool &is_nan, bool &is_nan_forever, const std::function<T(int)> &converter = [](int num) -> T { return (T)num; }, const T &value_if_missing = (T)0 );
+extern int eval_vec3d(vec3d *vec, int &n, bool &is_nan, bool &is_nan_forever);
+extern int eval_angles(angles *a, int &n, bool &is_nan, bool &is_nan_forever);
 extern bool is_sexp_true(int cur_node, int referenced_node = -1);
 extern int query_operator_return_type(int op);
 extern int query_operator_argument_type(int op, int argnum);
