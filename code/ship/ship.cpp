@@ -6789,10 +6789,27 @@ void ship_render_cockpit(object *objp)
 
 void ship_render_show_ship_cockpit(object *objp)
 {
+	if (objp->type != OBJ_SHIP || objp->instance < 0)
+		return;
+
 	vec3d cockpit_eye_pos;
 	matrix dummy;
 	ship_get_eye(&cockpit_eye_pos, &dummy, objp, true, true); //Get cockpit eye position
 	
+	// Get the eye position for the ship in local coordinates
+	// Will be used for detail_box calculations, which use local coordinates
+	ship* shipp    = &Ships[objp->instance];
+	ship_info* sip = &Ship_info[shipp->ship_info_index];
+	polymodel* pm  = model_get(sip->model_num);
+	vec3d pos_for_detail_box_check;
+	// Check if there is a valid eye position
+	if (!(shipp->current_viewpoint < 0) && !(pm->n_view_positions == 0) && !(shipp->current_viewpoint > pm->n_view_positions)) {
+		eye* ep = &(pm->view_positions[shipp->current_viewpoint]);
+		pos_for_detail_box_check = ep->pnt;
+	} else {
+		pos_for_detail_box_check = cockpit_eye_pos;
+	}
+
 	gr_end_view_matrix();
 	gr_end_proj_matrix();
 	gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, 0.05f, Max_draw_distance);
@@ -6805,7 +6822,8 @@ void ship_render_show_ship_cockpit(object *objp)
 	render_info.set_object_number(OBJ_INDEX(objp));
 	render_info.set_detail_level_lock(0);
 
-	model_render_immediate(&render_info, Ship_info[Ships[objp->instance].ship_info_index].model_num, &objp->orient, &vmd_zero_vector); // Render ship model with fixed detail level 0 so its not switching LOD when moving away from origin
+	// Render ship model with fixed detail level 0 so its not switching LOD when moving away from origin
+	model_render_immediate(&render_info, sip->model_num, &objp->orient, &vmd_zero_vector, MODEL_RENDER_ALL, true, pos_for_detail_box_check, true);
 	Glowpoint_override = false;
 
 	gr_end_view_matrix();
