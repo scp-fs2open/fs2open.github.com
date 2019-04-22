@@ -6789,6 +6789,9 @@ void ship_render_cockpit(object *objp)
 
 void ship_render_show_ship_cockpit(object *objp)
 {
+	if (objp->type != OBJ_SHIP || objp->instance < 0)
+		return;
+
 	vec3d cockpit_eye_pos;
 	matrix dummy;
 	ship_get_eye(&cockpit_eye_pos, &dummy, objp, true, false); //Get cockpit eye position
