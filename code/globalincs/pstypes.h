@@ -450,7 +450,7 @@ SCP_string dump_stacktrace();
 // DEBUG compile time catch for dangerous uses of memset/memcpy/memmove
 // This is disabled for VS2013 and lower since that doesn't support the necessary features
 #if !defined(NDEBUG) && !defined(USING_THIRD_PARTY_LIBS) && (!defined(_MSC_VER) || _MSC_VER >= 1900)
-	#if SCP_COMPILER_CXX_AUTO_TYPE && SCP_COMPILER_CXX_STATIC_ASSERT && defined(HAVE_STD_IS_TRIVIALLY_COPYABLE)
+	#if SCP_COMPILER_CXX_AUTO_TYPE && SCP_COMPILER_CXX_STATIC_ASSERT && defined(SCP_HAVE_STD_IS_TRIVIALLY_COPYABLE)
 	// feature support seems to be: gcc   clang   msvc
 	// auto                         4.4   2.9     2010
 	// std::is_trivial              4.5   ?       2012 (2010 only duplicates std::is_pod)

@@ -61,6 +61,7 @@ version get_executable_version() {
 version::version(int major_in, int minor_in, int build_in, int revision_in) :
 	major(major_in), minor(minor_in), build(build_in), revision(revision_in) {
 }
+bool version::isValid() const { return major != 0 || minor != 0 || build != 0 || revision != 0; }
 bool version::operator<(const version& v) const {
 
 	if (major < v.major) {

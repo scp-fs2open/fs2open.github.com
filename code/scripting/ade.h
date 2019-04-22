@@ -5,8 +5,7 @@
 #define FS2_OPEN_ADE_H
 
 #include "globalincs/pstypes.h"
-#include "platformChecks.h"
-#include <utility>
+#include "globalincs/version.h"
 
 extern "C" {
 #include <lauxlib.h>
@@ -123,6 +122,8 @@ class ade_table_entry {
 	const char* Description = nullptr;
 	const char* ReturnType = nullptr;
 	const char* ReturnDescription = nullptr;
+	gameversion::version DeprecationVersion;
+	const char* DeprecationMessage = nullptr;
 
 	//Subentries, of course
 	//WMC - I have HAD it with these motherfriendly vectors
