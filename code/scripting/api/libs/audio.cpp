@@ -59,13 +59,13 @@ ADE_FUNC(loadSoundfile, l_Audio, "string filename", "Loads the specified sound f
 	const char* fileName = nullptr;
 
 	if (!ade_get_args(L, "s", &fileName))
-		return ade_set_error(L, "o", l_Soundfile.Set(sound_load_id::invalid()));
+		return ade_set_error(L, "o", l_Soundfile.Set(soundfile_h(sound_load_id::invalid())));
 
 	game_snd_entry tmp_gs;
 	strcpy_s( tmp_gs.filename, fileName );
 	auto n = snd_load(&tmp_gs, 0, 0);
 
-	return ade_set_error(L, "o", l_Soundfile.Set(n));
+	return ade_set_error(L, "o", l_Soundfile.Set(soundfile_h(n)));
 }
 
 ADE_FUNC(playSound, l_Audio, "soundentry", "Plays the specified sound entry handle", "sound", "A handle to the playing sound")
