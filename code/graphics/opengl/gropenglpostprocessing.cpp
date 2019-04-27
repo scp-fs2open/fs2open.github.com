@@ -89,7 +89,7 @@ void opengl_post_pass_tonemap()
 
 	GL_state.Texture.Enable(0, GL_TEXTURE_2D, Scene_color_texture);
 
-	opengl_draw_textured_quad(-1.0f, -1.0f, 0.0f, 0.0f, 1.0f, 1.0f, Scene_texture_u_scale, Scene_texture_u_scale);
+	opengl_draw_full_screen_textured(0.0f, 0.0f, Scene_texture_u_scale, Scene_texture_u_scale);
 }
 
 void opengl_post_pass_bloom()
@@ -124,7 +124,7 @@ void opengl_post_pass_bloom()
 
 		GL_state.Texture.Enable(0, GL_TEXTURE_2D, Scene_color_texture);
 
-		opengl_draw_textured_quad(-1.0f, -1.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f, 1.0f);
+		opengl_draw_full_screen_textured(0.0f, 0.0f, 1.0f, 1.0f);
 	}
 	// ------ end bright pass ------
 
@@ -164,7 +164,7 @@ void opengl_post_pass_bloom()
 
 				glViewport(0, 0, bloom_width, bloom_height);
 
-				opengl_draw_textured_quad(-1.0f, -1.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f, 1.0f);
+				opengl_draw_full_screen_textured(0.0f, 0.0f, 1.0f, 1.0f);
 			}
 		}
 	}
@@ -188,7 +188,7 @@ void opengl_post_pass_bloom()
 
 		glViewport(0, 0, gr_screen.max_w, gr_screen.max_h);
 
-		opengl_draw_textured_quad(-1.0f, -1.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f, 1.0f);
+		opengl_draw_full_screen_textured(0.0f, 0.0f, 1.0f, 1.0f);
 
 		GL_state.SetAlphaBlendMode(ALPHA_BLEND_NONE);
 	}
@@ -263,7 +263,7 @@ void opengl_post_pass_fxaa() {
 
 	GL_state.Texture.Enable(0, GL_TEXTURE_2D, Scene_ldr_texture);
 
-	opengl_draw_textured_quad(-1.0f, -1.0f, 0.0f, 0.0f, 1.0f, 1.0f, Scene_texture_u_scale, Scene_texture_u_scale);
+	opengl_draw_full_screen_textured(0.0f, 0.0f, Scene_texture_u_scale, Scene_texture_u_scale);
 
 	// set and configure post shader ..
 	opengl_shader_set_current( gr_opengl_maybe_create_shader(SDR_TYPE_POST_PROCESS_FXAA, 0) );
@@ -277,7 +277,7 @@ void opengl_post_pass_fxaa() {
 
 	GL_state.Texture.Enable(0, GL_TEXTURE_2D, Scene_luminance_texture);
 
-	opengl_draw_textured_quad(-1.0f, -1.0f, 0.0f, 0.0f, 1.0f, 1.0f, Scene_texture_u_scale, Scene_texture_u_scale);
+	opengl_draw_full_screen_textured(0.0f, 0.0f, Scene_texture_u_scale, Scene_texture_u_scale);
 
 	opengl_shader_set_current();
 }
@@ -332,7 +332,7 @@ void opengl_post_lightshafts()
 				GL_state.Blend(GL_TRUE);
 				GL_state.SetAlphaBlendMode(ALPHA_BLEND_ADDITIVE);
 
-				opengl_draw_textured_quad(-1.0f, -1.0f, 0.0f, 0.0f, 1.0f, 1.0f, Scene_texture_u_scale, Scene_texture_u_scale);
+				opengl_draw_full_screen_textured(0.0f, 0.0f, Scene_texture_u_scale, Scene_texture_u_scale);
 
 				GL_state.Blend(GL_FALSE);
 				break;
@@ -422,7 +422,7 @@ void gr_opengl_post_process_end()
 
 	GL_state.Texture.Enable(1, GL_TEXTURE_2D, Scene_depth_texture);
 
-	opengl_draw_textured_quad(-1.0f, -1.0f, 0.0f, 0.0f, 1.0f, 1.0f, Scene_texture_u_scale, Scene_texture_u_scale);
+	opengl_draw_full_screen_textured(0.0f, 0.0f, Scene_texture_u_scale, Scene_texture_u_scale);
 
 	//Shadow Map debug window
 //#define SHADOW_DEBUG

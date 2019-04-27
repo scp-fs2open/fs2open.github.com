@@ -864,7 +864,24 @@ void opengl_draw_textured_quad(GLfloat x1,
 	vert_def.add_vertex_component(vertex_format_data::POSITION2, sizeof(GLfloat) * 4, 0);
 	vert_def.add_vertex_component(vertex_format_data::TEX_COORD2, sizeof(GLfloat) * 4, sizeof(GLfloat) * 2);
 
-	opengl_render_primitives_immediate(PRIM_TYPE_TRISTRIP, &vert_def, 4, glVertices, sizeof(GLfloat) * 4 * 4);
+	opengl_render_primitives_immediate(PRIM_TYPE_TRISTRIP, &vert_def, 4, glVertices, sizeof(glVertices));
+}
+
+void opengl_draw_full_screen_textured(GLfloat u1, GLfloat v1, GLfloat u2, GLfloat v2) {
+	GR_DEBUG_SCOPE("Draw full screen triangle");
+
+	GLfloat glVertices[3][4] = {
+		{ -1.f, -1.f, u1, v1 },
+		{ 3.f, -1.f, u2 * 2.f, v1 },
+		{ -1.f, 3.f, u1, v2 * 2.f },
+	};
+
+	vertex_layout vert_def;
+
+	vert_def.add_vertex_component(vertex_format_data::POSITION2, sizeof(GLfloat) * 4, 0);
+	vert_def.add_vertex_component(vertex_format_data::TEX_COORD2, sizeof(GLfloat) * 4, sizeof(GLfloat) * 2);
+
+	opengl_render_primitives_immediate(PRIM_TYPE_TRIS, &vert_def, 3, glVertices, sizeof(glVertices));
 }
 
 void gr_opengl_render_decals(decal_material* material_info,
