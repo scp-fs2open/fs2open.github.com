@@ -68,8 +68,8 @@ class SDLOpenGLContext: public os::OpenGLContext {
 		SDL_GL_MakeCurrent(window, _glCtx);
 	}
 
-	void setSwapInterval(int status) override {
-		SDL_GL_SetSwapInterval(status);
+	bool setSwapInterval(int status) override {
+		return SDL_GL_SetSwapInterval(status) == 0;
 	}
 };
 class SDLWindowViewPort: public os::Viewport {
@@ -103,11 +103,11 @@ class SDLWindowViewPort: public os::Viewport {
 		switch (state) {
 			case os::ViewportState::Windowed:
 				SDL_SetWindowFullscreen(_window, 0);
-				SDL_SetWindowBordered(_window, SDL_FALSE);
+				SDL_SetWindowBordered(_window, SDL_TRUE);
 				break;
 			case os::ViewportState::Borderless:
 				SDL_SetWindowFullscreen(_window, 0);
-				SDL_SetWindowBordered(_window, SDL_TRUE);
+				SDL_SetWindowBordered(_window, SDL_FALSE);
 				break;
 			case os::ViewportState::Fullscreen:
 				SDL_SetWindowFullscreen(_window, SDL_WINDOW_FULLSCREEN);

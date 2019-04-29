@@ -909,7 +909,7 @@ void wl_render_overhead_view(float frametime)
 				render_info.set_replacement_textures(wl_ship->model_num, sip->replacement_textures);
 			}
 
-			if(Cmdline_shadow_quality)
+			if(Shadow_quality != ShadowQuality::Disabled)
 			{
 				gr_reset_clip();
 				shadows_start_render(&Eye_matrix, &Eye_position, Proj_fov, gr_screen.clip_aspect, -sip->closeup_pos.xyz.z + pm->rad, 

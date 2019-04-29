@@ -1,8 +1,16 @@
 
 
-
-
-
+#include "gropengl.h"
+#include "gropenglbmpman.h"
+#include "gropengldeferred.h"
+#include "gropengldraw.h"
+#include "gropenglpostprocessing.h"
+#include "gropenglquery.h"
+#include "gropenglshader.h"
+#include "gropenglstate.h"
+#include "gropenglsync.h"
+#include "gropengltexture.h"
+#include "gropengltnl.h"
 #include "bmpman/bmpman.h"
 #include "cfile/cfile.h"
 #include "cmdline/cmdline.h"
@@ -10,32 +18,22 @@
 #include "debugconsole/console.h"
 #include "globalincs/systemvars.h"
 #include "graphics/2d.h"
+#include "graphics/line.h"
 #include "graphics/matrix.h"
 #include "graphics/paths/PathRenderer.h"
-#include "gropengl.h"
-#include "gropenglbmpman.h"
-#include "gropengldraw.h"
-#include "gropenglpostprocessing.h"
-#include "gropenglquery.h"
-#include "gropenglsync.h"
-#include "gropenglshader.h"
-#include "gropenglstate.h"
-#include "gropengltexture.h"
-#include "gropengltnl.h"
-#include "gropengldeferred.h"
-#include "graphics/line.h"
 #include "io/mouse.h"
 #include "io/timer.h"
+#include "libs/renderdoc/renderdoc.h"
 #include "math/floating.h"
 #include "model/model.h"
 #include "nebula/neb.h"
-#include "libs/renderdoc/renderdoc.h"
+#include "options/Option.h"
 #include "osapi/osapi.h"
 #include "osapi/osregistry.h"
-#include "render/3d.h"
-#include "popup/popup.h"
-#include "tracing/tracing.h"
 #include "pngutils/pngutils.h"
+#include "popup/popup.h"
+#include "render/3d.h"
+#include "tracing/tracing.h"
 
 #if defined(_WIN32)
 #include <windows.h>
@@ -98,6 +96,33 @@ static std::unique_ptr<os::OpenGLContext> GL_context = nullptr;
 
 static std::unique_ptr<os::GraphicsOperations> graphic_operations = nullptr;
 static os::Viewport* current_viewport = nullptr;
+
+static bool mode_change_func(os::ViewportState state, bool initial)
+{
+	if (initial) {
+		return false;
+	}
+
+	auto window = os::getMainViewport();
+	if (window == nullptr) {
+		return false;
+	}
+
+	window->setState(state);
+
+	return true;
+}
+static auto WindowModeOption = options::OptionBuilder<os::ViewportState>("Graphics.WindowMode", "Window Mode",
+                                                                         "Controls how the game window is created.")
+                                   .category("Graphics")
+                                   .level(options::ExpertLevel::Beginner)
+                                   .values({{os::ViewportState::Fullscreen, "Fullscreen"},
+                                            {os::ViewportState::Borderless, "Borderless"},
+                                            {os::ViewportState::Windowed, "Windowed"}})
+                                   .importance(98)
+                                   .default_val(os::ViewportState::Fullscreen)
+                                   .change_listener(mode_change_func)
+                                   .finish();
 
 void opengl_go_fullscreen()
 {
@@ -854,16 +879,16 @@ int opengl_check_for_errors(const char *err_at)
 	return num_errors;
 }
 
-void opengl_set_vsync(int status)
+void opengl_set_vsync(bool enable)
 {
-	if ( (status < 0) || (status > 1) ) {
-		Int3();
-		return;
+	if (enable) {
+		// Try to use adaptive vsync when supported
+		if (!GL_context->setSwapInterval(-1)) {
+			GL_context->setSwapInterval(1);
+		}
+	} else {
+		GL_context->setSwapInterval(0);
 	}
-
-	GL_context->setSwapInterval(status);
-
-	GL_CHECK_FOR_ERRORS("end of set_vsync()");
 }
 
 std::unique_ptr<os::Viewport> gr_opengl_create_viewport(const os::ViewPortProperties& props) {
@@ -1021,10 +1046,24 @@ int opengl_init_display_device()
 		attrs.title = Window_title;
 	}
 
-	if (!Cmdline_window && ! Cmdline_fullscreen_window) {
-		attrs.flags.set(os::ViewPortFlags::Fullscreen);
-	} else if (Cmdline_fullscreen_window) {
-		attrs.flags.set(os::ViewPortFlags::Borderless);
+	if (Using_in_game_options) {
+		switch (WindowModeOption->getValue()) {
+		case os::ViewportState::Windowed:
+			// That's the default
+			break;
+		case os::ViewportState::Borderless:
+			attrs.flags.set(os::ViewPortFlags::Borderless);
+			break;
+		case os::ViewportState::Fullscreen:
+			attrs.flags.set(os::ViewPortFlags::Fullscreen);
+			break;
+		}
+	} else {
+		if (!Cmdline_window && !Cmdline_fullscreen_window) {
+			attrs.flags.set(os::ViewPortFlags::Fullscreen);
+		} else if (Cmdline_fullscreen_window) {
+			attrs.flags.set(os::ViewPortFlags::Borderless);
+		}
 	}
 
 	auto viewport = gr_opengl_create_viewport(attrs);
@@ -1497,7 +1536,7 @@ bool gr_opengl_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 	opengl_post_process_init();
 
 	// must be called after extensions are setup
-	opengl_set_vsync( !Cmdline_no_vsync );
+	opengl_set_vsync(Gr_enable_vsync);
 
 	gr_reset_matrices();
 	gr_setup_viewport();
@@ -1541,7 +1580,7 @@ bool gr_opengl_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 
 	mprintf(( "  Can use compressed textures: %s\n", Use_compressed_textures ? NOX("YES") : NOX("NO") ));
 	mprintf(( "  Texture compression available: %s\n", Texture_compression_available ? NOX("YES") : NOX("NO") ));
-	mprintf(( "  Post-processing enabled: %s\n", (Cmdline_postprocess) ? "YES" : "NO"));
+	mprintf(( "  Post-processing enabled: %s\n", (Gr_post_processing_enabled) ? "YES" : "NO"));
 	mprintf(( "  Using %s texture filter.\n", (GL_mipmap_filter) ? NOX("trilinear") : NOX("bilinear") ));
 
 	mprintf(( "  OpenGL Shader Version: %s\n", glGetString(GL_SHADING_LANGUAGE_VERSION) ));
@@ -1572,9 +1611,9 @@ bool gr_opengl_is_capable(gr_capability capability)
 		return Cmdline_height ? true : false;
 	case CAPABILITY_SOFT_PARTICLES:
 	case CAPABILITY_DISTORTION:
-		return Cmdline_softparticles && !Cmdline_no_fbo;
+		return Gr_enable_soft_particles && !Cmdline_no_fbo;
 	case CAPABILITY_POST_PROCESSING:
-		return Cmdline_postprocess  && !Cmdline_no_fbo;
+		return Gr_post_processing_enabled  && !Cmdline_no_fbo;
 	case CAPABILITY_DEFERRED_LIGHTING:
 		return !Cmdline_no_fbo && !Cmdline_no_deferred_lighting;
 	case CAPABILITY_SHADOWS:
@@ -1592,16 +1631,20 @@ bool gr_opengl_is_capable(gr_capability capability)
 	return false;
 }
 
-bool gr_opengl_get_property(gr_property prop, void* dest) {
-	switch(prop) {
-		case gr_property::UNIFORM_BUFFER_OFFSET_ALIGNMENT:
-			*((int*)dest) = GL_state.Constants.GetUniformBufferOffsetAlignment();
-			return true;
-		case gr_property::UNIFORM_BUFFER_MAX_SIZE:
-			*((int*)dest) = GL_state.Constants.GetMaxUniformBlockSize();
-			return true;
-		default:
-			return false;
+bool gr_opengl_get_property(gr_property prop, void* dest)
+{
+	switch (prop) {
+	case gr_property::UNIFORM_BUFFER_OFFSET_ALIGNMENT:
+		*((int*)dest) = GL_state.Constants.GetUniformBufferOffsetAlignment();
+		return true;
+	case gr_property::UNIFORM_BUFFER_MAX_SIZE:
+		*((int*)dest) = GL_state.Constants.GetMaxUniformBlockSize();
+		return true;
+	case gr_property::MAX_ANISOTROPY:
+		*((float*)dest) = GL_state.Constants.GetMaxAnisotropy();
+		return true;
+	default:
+		return false;
 	}
 }
 
@@ -1679,7 +1722,8 @@ DCF(ogl_anisotropy, "toggles anisotropic filtering")
 
 	if (dc_optional_string_either("help", "--help")) {
 		dc_printf("Sets OpenGL anisotropic filtering level.\n");
-		dc_printf("GL_anisotropy [int]  Valid values are 0 to %i. 0 turns off anisotropic filtering.\n", (int)opengl_get_max_anisotropy());
+		dc_printf("GL_anisotropy [int]  Valid values are 0 to %i. 0 turns off anisotropic filtering.\n",
+		          (int)GL_state.Constants.GetMaxAnisotropy());
 		process = false;
 	}
 

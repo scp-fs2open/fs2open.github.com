@@ -12,15 +12,16 @@
 #endif
 
 #define BMPMAN_INTERNAL
+#include "gropenglstate.h"
+#include "gropengltexture.h"
 #include "bmpman/bm_internal.h"
 #include "bmpman/bmpman.h"
 #include "cmdline/cmdline.h"
 #include "ddsutils/ddsutils.h"
 #include "globalincs/systemvars.h"
 #include "graphics/grinternal.h"
-#include "gropenglstate.h"
-#include "gropengltexture.h"
 #include "math/vecmat.h"
+#include "options/Option.h"
 #include "osapi/osregistry.h"
 
 matrix4 GL_texture_matrix;
@@ -35,7 +36,6 @@ int GL_last_detail = -1;
 GLint GL_supported_texture_units = 2;
 int GL_should_preload = 0;
 GLfloat GL_anisotropy = 1.0f;
-GLfloat GL_max_anisotropy = -1.0f;
 int GL_mipmap_filter = 0;
 GLenum GL_texture_target = GL_TEXTURE_2D;
 GLenum GL_texture_face = GL_TEXTURE_2D;
@@ -49,6 +49,57 @@ extern int CLOAKMAP;
 extern int ENVMAP;
 extern int Interp_multitex_cloakmap;
 
+static SCP_vector<float> anisotropic_value_enumerator()
+{
+	float max;
+	if (!gr_get_property(gr_property::MAX_ANISOTROPY, &max)) {
+		return SCP_vector<float>();
+	}
+
+	if (max <= 2.0f) {
+		return SCP_vector<float>();
+	}
+
+	SCP_vector<float> out;
+
+	// We assume here that the anisotropy levels are powers of two...
+	float current = 1.0f;
+	while (current <= max) {
+		out.push_back(current);
+		current *= 2.0f;
+	}
+
+	return out;
+}
+static SCP_string anisotropic_display(float val)
+{
+	if (val < 2.0f) {
+		return "None";
+	}
+
+	SCP_string out;
+	sprintf(out, "%.0fx", val);
+	return out;
+}
+static float anisotropic_default()
+{
+	float max;
+	if (!gr_get_property(gr_property::MAX_ANISOTROPY, &max)) {
+		return 1.0f;
+	}
+	return max;
+}
+
+static auto AnisotropyOption =
+    options::OptionBuilder<float>("Graphics.Anisotropy", "Anisotropic filtering",
+                                  "Controls the amount of anisotropic filtering of the textures.")
+        .enumerator(anisotropic_value_enumerator)
+        .category("Graphics")
+        .display(anisotropic_display)
+        .default_func(anisotropic_default)
+        .level(options::ExpertLevel::Advanced)
+        .importance(78)
+        .finish();
 
 // forward declarations
 int opengl_free_texture(tcache_slot_opengl *t);
@@ -70,22 +121,6 @@ void opengl_set_modulate_tex_env()
 
 
 	GL_CHECK_FOR_ERRORS("end of set_modulate_tex_env()");
-}
-
-GLfloat opengl_get_max_anisotropy()
-{
-	if ( !GLAD_GL_EXT_texture_filter_anisotropic ) {
-		return 0.0f;
-	}
-
-	if ( GL_max_anisotropy < 0.0f ) {
-		glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &GL_max_anisotropy);
-	}
-
-	// the spec says that it should be a minimum of 2.0
-	Assert( GL_max_anisotropy >= 2.0f );
-
-	return GL_max_anisotropy;
 }
 
 void opengl_set_texture_target( GLenum target )
@@ -131,13 +166,17 @@ void opengl_tcache_init()
 	// anisotropy
 	if ( GLAD_GL_EXT_texture_filter_anisotropic ) {
 		// set max value first thing
-		GL_anisotropy = opengl_get_max_anisotropy();
+		GL_anisotropy = GL_state.Constants.GetMaxAnisotropy();
 
-		// now for the user setting
-		if (Cmdline_aniso_level != 0)
-			GL_anisotropy = (GLfloat) Cmdline_aniso_level;
+		if (Using_in_game_options) {
+			GL_anisotropy = AnisotropyOption->getValue();
+		} else {
+			// now for the user setting
+			if (Cmdline_aniso_level != 0)
+				GL_anisotropy = (GLfloat)Cmdline_aniso_level;
+		}
 
-		CLAMP(GL_anisotropy, 1.0f, GL_max_anisotropy);
+		CLAMP(GL_anisotropy, 1.0f, GL_state.Constants.GetMaxAnisotropy());
 	}
 
 	Assert( GL_supported_texture_units >= 2 );

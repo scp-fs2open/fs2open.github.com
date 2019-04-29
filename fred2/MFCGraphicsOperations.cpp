@@ -106,12 +106,13 @@ os::OpenGLLoadProc MFCOpenGLContext::getLoaderFunction()
 	return wglLoader;
 }
 
-void MFCOpenGLContext::setSwapInterval(int status)
+bool MFCOpenGLContext::setSwapInterval(int status)
 {
 	if (GLAD_WGL_EXT_swap_control)
 	{
 		wglSwapIntervalEXT(status);
 	}
+	return true;
 }
 
 HGLRC MFCOpenGLContext::getHandle()

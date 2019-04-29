@@ -178,6 +178,7 @@ class opengl_constant_state {
 	GLint _uniform_buffer_offset_alignment;
 	GLint _max_uniform_block_size;
 	GLint _max_uniform_block_bindings;
+	GLfloat _max_anisotropy;
 
  public:
 	opengl_constant_state();
@@ -189,6 +190,8 @@ class opengl_constant_state {
 	GLint GetMaxUniformBlockSize();
 
 	GLint GetMaxUniformBlockBindings();
+
+	GLfloat GetMaxAnisotropy();
 };
 
 class opengl_state

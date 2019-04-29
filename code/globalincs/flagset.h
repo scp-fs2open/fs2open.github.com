@@ -125,7 +125,16 @@ class flagset {
 
 	void from_u64(std::uint64_t num) { values = (unsigned long) num; }
 	std::uint64_t to_u64() const { return (std::uint64_t) values.to_ulong(); }
+
+	size_t hash() const { return std::hash<std::bitset<SIZE>>()(values); }
 };
+
+namespace std {
+template <typename T, size_t N>
+struct hash<::flagset<T, N>> {
+	size_t operator()(const ::flagset<T, N>& val) { return val.hash(); }
+};
+} // namespace std
 
 #define FLAG_LIST(Type) enum class Type : size_t
 

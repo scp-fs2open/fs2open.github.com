@@ -171,7 +171,7 @@ namespace os
 		/**
 		 * @brief Sets the swap interval
 		 */
-		virtual void setSwapInterval(int status) = 0;
+		virtual bool setSwapInterval(int status) = 0;
 	};
 
 	/**
@@ -213,9 +213,9 @@ namespace os
 	 * @ingroup os_graphics_api
 	 */
 	enum class ViewportState {
-		Windowed,
-		Borderless,
-		Fullscreen
+		Windowed = 0,
+		Borderless = 1,
+		Fullscreen = 2
 	};
 
 	/**

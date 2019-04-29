@@ -1,22 +1,21 @@
 /*
  * Copyright (C) Volition, Inc. 1999.  All rights reserved.
  *
- * All source code herein is the property of Volition, Inc. You may not sell 
- * or otherwise commercially exploit the source or things you created based on the 
+ * All source code herein is the property of Volition, Inc. You may not sell
+ * or otherwise commercially exploit the source or things you created based on the
  * source.
  *
-*/ 
+ */
 
-
-
+#include "fireball/fireballs.h"
 #include "asteroid/asteroid.h"
 #include "cmdline/cmdline.h"
-#include "fireball/fireballs.h"
 #include "gamesnd/gamesnd.h"
 #include "graphics/tmapper.h"
 #include "localization/localize.h"
 #include "model/model.h"
 #include "object/object.h"
+#include "options/Option.h"
 #include "parse/parselo.h"
 #include "render/3d.h"
 #include "render/batching.h"
@@ -46,6 +45,15 @@ int Num_fireball_types = 0;
 bool fireballs_inited = false;
 bool fireballs_parsed = false;
 
+bool Fireball_use_3d_warp = false;
+
+static auto WarpOption = options::OptionBuilder<bool>("Graphics.3dWarp", "3D Warp", "Use a 3D model for warp effects")
+                             .category("Graphics")
+                             .default_val(true)
+                             .level(options::ExpertLevel::Advanced)
+                             .bind_to(&Fireball_use_3d_warp)
+                             .importance(65)
+                             .finish();
 /**
  * Play warp in sound for warp effect
  */

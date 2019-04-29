@@ -100,7 +100,7 @@ void warpin_queue_render(model_draw_list *scene, object *obj, matrix *orient, ve
 		}
 	}
 
-	if ( (warp_model_id >= 0) && (warp_3d || Cmdline_3dwarp) ) {
+	if ( (warp_model_id >= 0) && (warp_3d || Fireball_use_3d_warp) ) {
 		model_render_params render_info;
 
 		float scale = radius / 25.0f;
@@ -137,7 +137,7 @@ void warpin_queue_render(model_draw_list *scene, object *obj, matrix *orient, ve
 		vm_vec_scale_add2( &vecs[3], &orient->vec.rvec, -radius );
 		vm_vec_scale_add2( &vecs[3], &orient->vec.fvec, Grid_depth );
 
-		//	vm_vec_scale_add( &vecs[4], ¢er, &orient->vec.fvec, -Grid_depth );
+		//	vm_vec_scale_add( &vecs[4], center, &orient->vec.fvec, -Grid_depth );
 		vecs[4] = center;
 
 		verts[0].texture_position.u = 0.01f;

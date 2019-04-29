@@ -405,13 +405,13 @@ void labviewer_render_model(float frametime)
 
 	if (Lab_selected_object != -1) {
 		auto lab_render_light_save    = Lab_render_without_light;
-		auto lab_debris_override_save = Cmdline_nomotiondebris;
+		auto lab_debris_override_save = Motion_debris_enabled;
 		auto lab_envmap_override_save = Envmap_override;
 		auto lab_emissive_light_save  = Cmdline_no_emissive;
 
 		if (Lab_selected_mission == "None") {
 			Lab_render_without_light = true;
-			Cmdline_nomotiondebris   = 1;
+			Motion_debris_enabled    = true;
 		}
 
 		Cmdline_no_emissive = !Lab_emissive_light_override;
@@ -464,7 +464,7 @@ void labviewer_render_model(float frametime)
 		Trail_render_override = false;
 
 		Lab_render_without_light = lab_render_light_save;
-		Cmdline_nomotiondebris   = lab_debris_override_save;
+		Motion_debris_enabled    = lab_debris_override_save;
 		Envmap_override          = lab_envmap_override_save;
 		Cmdline_no_emissive      = lab_emissive_light_save;
 
@@ -548,10 +548,27 @@ void labviewer_do_render(float frametime)
 	}
 
 	// Print FXAA preset
-	if (Cmdline_fxaa && !PostProcessing_override)
+	if (gr_is_fxaa_mode(Gr_aa_mode) && !PostProcessing_override) {
+		const char* fxaa_mode;
+		switch (Gr_aa_mode) {
+		case AntiAliasMode::FXAA_Low:
+			fxaa_mode = "Low";
+			break;
+		case AntiAliasMode::FXAA_Medium:
+			fxaa_mode = "Medium";
+			break;
+		case AntiAliasMode::FXAA_High:
+			fxaa_mode = "High";
+			break;
+		default:
+			fxaa_mode = "None";
+			break;
+		}
+
 		gr_printf_no_resize(gr_screen.center_offset_x + 2,
 		                    gr_screen.center_offset_y + gr_screen.center_h - (gr_get_font_height() * 2) - 3,
-		                    "FXAA Preset: %i", Cmdline_fxaa_preset);
+		                    "FXAA Preset: %s", fxaa_mode);
+	}
 
 	// Print current Team Color setting, if any
 	if (Lab_team_color != "<none>")
@@ -1140,7 +1157,7 @@ void labviewer_make_render_options_window(Button* /*caller*/)
 	ADD_RENDER_FLAG("Show Damage Lightning", Lab_viewer_flags, LAB_FLAG_LIGHTNING_ARCS);
 	ADD_RENDER_BOOL("Rotate Subsystems", Lab_rotate_subobjects);
 
-	if (Cmdline_postprocess) {
+	if (Gr_post_processing_enabled) {
 		ADD_RENDER_BOOL("Hide Post Processing", PostProcessing_override);
 	}
 
@@ -2270,43 +2287,15 @@ void lab_do_frame(float frametime)
 			// Adjust FXAA presets
 		case KEY_0:
 			if (!PostProcessing_override)
-				Cmdline_fxaa_preset = 0;
+				Gr_aa_mode = AntiAliasMode::FXAA_Low;
 			break;
 		case KEY_1:
 			if (!PostProcessing_override)
-				Cmdline_fxaa_preset = 1;
+				Gr_aa_mode = AntiAliasMode::FXAA_Medium;
 			break;
 		case KEY_2:
 			if (!PostProcessing_override)
-				Cmdline_fxaa_preset = 2;
-			break;
-		case KEY_3:
-			if (!PostProcessing_override)
-				Cmdline_fxaa_preset = 3;
-			break;
-		case KEY_4:
-			if (!PostProcessing_override)
-				Cmdline_fxaa_preset = 4;
-			break;
-		case KEY_5:
-			if (!PostProcessing_override)
-				Cmdline_fxaa_preset = 5;
-			break;
-		case KEY_6:
-			if (!PostProcessing_override)
-				Cmdline_fxaa_preset = 6;
-			break;
-		case KEY_7:
-			if (!PostProcessing_override)
-				Cmdline_fxaa_preset = 7;
-			break;
-		case KEY_8:
-			if (!PostProcessing_override)
-				Cmdline_fxaa_preset = 8;
-			break;
-		case KEY_9:
-			if (!PostProcessing_override)
-				Cmdline_fxaa_preset = 9;
+				Gr_aa_mode = AntiAliasMode::FXAA_High;
 			break;
 
 		case KEY_T:

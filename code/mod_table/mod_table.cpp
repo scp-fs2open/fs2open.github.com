@@ -47,6 +47,7 @@ bool Enable_scripts_in_fred; // By default FRED does not initialize the scriptin
 SCP_string Window_icon_path;
 bool Disable_built_in_translations;
 bool Weapon_shockwaves_respect_huge;
+bool Using_in_game_options;
 
 void parse_mod_table(const char *filename)
 {
@@ -414,6 +415,16 @@ void parse_mod_table(const char *filename)
 			stuff_float(&Minimum_player_warpout_time);
 		}
 
+		if (optional_string("$Enable in-game options:")) {
+			stuff_boolean(&Using_in_game_options);
+
+			if (Using_in_game_options) {
+				mprintf(("Game Settings Table: Using in-game options system.\n"));
+			} else {
+				mprintf(("Game Settings Table: Not using in-game options system.\n"));
+			}
+		}
+
 		required_string("#END");
 	}
 	catch (const parse::ParseException& e)
@@ -473,4 +484,5 @@ void mod_table_reset() {
 	Window_icon_path = "app_icon_sse";
 	Disable_built_in_translations = false;
 	Weapon_shockwaves_respect_huge = false;
+	Using_in_game_options = false;
 }

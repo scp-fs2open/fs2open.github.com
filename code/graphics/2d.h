@@ -12,15 +12,15 @@
 #ifndef _GRAPHICS_H
 #define _GRAPHICS_H
 
-#include "graphics/grinternal.h"
-#include "osapi/osapi.h"
 #include "bmpman/bmpman.h"
 #include "cfile/cfile.h"
+#include "globalincs/flagset.h"
 #include "globalincs/pstypes.h"
+#include "graphics/grinternal.h"
 #include "graphics/tmapper.h"
-#include "cfile/cfile.h"
-#include "math/vecmat.h"
 #include "io/cursor.h"
+#include "math/vecmat.h"
+#include "osapi/osapi.h"
 
 // Forward definition
 namespace graphics {
@@ -39,6 +39,26 @@ extern int Gr_inited;
 // z-buffering stuff
 extern int gr_zbuffering, gr_zbuffering_mode;
 extern int gr_global_zbuffering;
+
+extern bool Gr_enable_soft_particles;
+
+FLAG_LIST(FramebufferEffects){Thrusters = 0, Shockwaves, NUM_VALUES};
+extern flagset<FramebufferEffects> Gr_framebuffer_effects;
+
+enum class AntiAliasMode {
+	None,
+	FXAA_Low,
+	FXAA_Medium,
+	FXAA_High
+};
+extern AntiAliasMode Gr_aa_mode;
+extern AntiAliasMode Gr_aa_mode_last_frame;
+
+bool gr_is_fxaa_mode(AntiAliasMode mode);
+
+extern bool Gr_post_processing_enabled;
+
+extern bool Gr_enable_vsync;
 
 class material;
 class model_material;
@@ -294,6 +314,7 @@ typedef enum gr_capability {
 enum class gr_property {
 	UNIFORM_BUFFER_OFFSET_ALIGNMENT,
 	UNIFORM_BUFFER_MAX_SIZE,
+	MAX_ANISOTROPY
 };
 
 // stencil buffering stuff

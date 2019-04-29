@@ -7,9 +7,10 @@
 #include "math/vecmat.h"
 #include "mod_table/mod_table.h"
 #include "model/model.h" //polymodel, model_get
+#include "options/Option.h"
 #include "parse/parselo.h"
 #include "playerman/player.h" //player_get_padlock_orient
-#include "ship/ship.h" //compute_slew_matrix
+#include "ship/ship.h"        //compute_slew_matrix
 
 //*************************IMPORTANT GLOBALS*************************
 float VIEWER_ZOOM_DEFAULT = 0.75f;			//	Default viewer zoom, 0.625 as per multi-lateral agreement on 3/24/97
@@ -23,6 +24,23 @@ SCP_vector<camera*> Cameras;
 //Preset cameras
 camid Current_camera;
 camid Main_camera;
+
+static SCP_string fov_display(float val)
+{
+	auto degrees = fl_degrees(val);
+	SCP_string out;
+	sprintf(out, u8"%.1f\u00B0", degrees);
+	return out;
+}
+auto FovOption = options::OptionBuilder<float>("Graphics.FOV", "Field Of View", "The vertical field of view.")
+                     .category("Graphics")
+                     .range(0.436332f, 1.5708f)
+                     .bind_to(&VIEWER_ZOOM_DEFAULT)
+                     .display(fov_display)
+                     .default_val(0.75f)
+                     .level(options::ExpertLevel::Advanced)
+                     .importance(60)
+                     .finish();
 
 //*************************CLASS: camera*************************
 //This is where the camera class beings! :D

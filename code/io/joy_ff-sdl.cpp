@@ -1,21 +1,20 @@
 /*
  * Copyright (C) Volition, Inc. 1999.  All rights reserved.
  *
- * All source code herein is the property of Volition, Inc. You may not sell 
- * or otherwise commercially exploit the source or things you created based on the 
+ * All source code herein is the property of Volition, Inc. You may not sell
+ * or otherwise commercially exploit the source or things you created based on the
  * source.
  *
-*/ 
-
-
-
+ */
 
 #include "globalincs/pstypes.h"
-#include "math/vecmat.h"
-#include "osapi/osregistry.h"
-#include "io/joy_ff.h"
 #include "io/joy.h"
+#include "io/joy_ff.h"
+#include "math/vecmat.h"
+#include "mod_table/mod_table.h"
+#include "options/Option.h"
 #include "osapi/osapi.h"
+#include "osapi/osregistry.h"
 
 #include "SDL_haptic.h"
 
@@ -27,7 +26,7 @@
 static int Joy_ff_enabled = 0;
 static SDL_Haptic *haptic = NULL;
 static int joy_ff_handling_scaler = 0;
-static int Joy_ff_directional_hit_effect_enabled = 1;
+static bool Joy_ff_directional_hit_effect_enabled = true;
 
 typedef struct {
 	SDL_HapticEffect eff;
@@ -46,6 +45,28 @@ static haptic_effect_t pDock;
 static haptic_effect_t pDeathroll1;
 static haptic_effect_t pDeathroll2;
 static haptic_effect_t pExplode;
+
+static auto ForceFeedbackOption =
+    options::OptionBuilder<bool>("Input.ForceFeedback", "Force Feedback", "Enable or disable force feedback.")
+        .category("Input")
+        .level(options::ExpertLevel::Beginner)
+        .default_val(false)
+        .finish();
+
+static auto HitEffectOption =
+    options::OptionBuilder<bool>("Input.HitEffect", "Directional Hit", "Enable or disable the directional hit effect.")
+        .category("Input")
+        .level(options::ExpertLevel::Beginner)
+        .default_val(false)
+        .finish();
+
+static auto ForceFeedbackStrength = options::OptionBuilder<float>("Input.FFStrength", "Force Feedback Strength",
+                                                                  "The relative strength of Force Feedback effects.")
+                                        .category("Input")
+                                        .level(options::ExpertLevel::Beginner)
+                                        .range(0, 100)
+                                        .default_val(100)
+                                        .finish();
 
 static int joy_ff_create_effects();
 static int joy_ff_has_valid_effects();
@@ -82,9 +103,13 @@ static void print_haptic_support() {
 
 int joy_ff_init()
 {
-	int ff_enabled = 0;
+	bool ff_enabled;
 
-	ff_enabled = os_config_read_uint(NULL, "EnableJoystickFF", 1);
+	if (Using_in_game_options) {
+		ff_enabled = ForceFeedbackOption->getValue();
+	} else {
+		ff_enabled = os_config_read_uint(nullptr, "EnableJoystickFF", 1) != 0;
+	}
 
 	if ( !ff_enabled || io::joystick::getCurrentJoystick() == nullptr) {
 		return 0;
@@ -137,10 +162,20 @@ int joy_ff_init()
 		return -1;
 	}
 
-	Joy_ff_directional_hit_effect_enabled = os_config_read_uint(NULL, "EnableHitEffect", 1);
+	if (Using_in_game_options) {
+		Joy_ff_directional_hit_effect_enabled = HitEffectOption->getValue();
+	} else {
+		Joy_ff_directional_hit_effect_enabled = os_config_read_uint(nullptr, "EnableHitEffect", 1) != 0;
+	}
 	// ForceFeedback.Strength lets the user specify how strong the effects should be. This uses SDL_HapticSetGain which
 	// needs to be supported by the haptic device
-	int ff_strength = os_config_read_uint("ForceFeedback", "Strength", 100);
+	int ff_strength;
+
+	if (Using_in_game_options) {
+		ff_strength = (int)ForceFeedbackStrength->getValue();
+	} else {
+		ff_strength = os_config_read_uint("ForceFeedback", "Strength", 100);
+	}
 	CLAMP(ff_strength, 0, 100);
 	if (SDL_HapticQuery(haptic) & SDL_HAPTIC_GAIN) {
 		SDL_HapticSetGain(haptic, ff_strength);
