@@ -304,7 +304,11 @@ static auto AAOption = options::OptionBuilder<AntiAliasMode>("Graphics.AAMode", 
                            .values({{AntiAliasMode::None, "None"},
                                     {AntiAliasMode::FXAA_Low, "FXAA Low"},
                                     {AntiAliasMode::FXAA_Medium, "FXAA Medium"},
-                                    {AntiAliasMode::FXAA_High, "FXAA High"}})
+                                    {AntiAliasMode::FXAA_High, "FXAA High"},
+                                    {AntiAliasMode::SMAA_Low, "SMAA Low"},
+                                    {AntiAliasMode::SMAA_Medium, "SMAA Medium"},
+                                    {AntiAliasMode::SMAA_High, "SMAA High"},
+                                    {AntiAliasMode::SMAA_Ultra, "SMAA Ultra"}})
                            .default_val(AntiAliasMode::None)
                            .bind_to(&Gr_aa_mode)
                            .importance(79)
@@ -313,6 +317,9 @@ static auto AAOption = options::OptionBuilder<AntiAliasMode>("Graphics.AAMode", 
 bool gr_is_fxaa_mode(AntiAliasMode mode)
 {
 	return mode == AntiAliasMode::FXAA_Low || mode == AntiAliasMode::FXAA_Medium || mode == AntiAliasMode::FXAA_High;
+}
+bool gr_is_smaa_mode(AntiAliasMode mode) {
+	return mode == AntiAliasMode::SMAA_Low || mode == AntiAliasMode::SMAA_Medium || mode == AntiAliasMode::SMAA_High || mode == AntiAliasMode::SMAA_Ultra;
 }
 
 bool Gr_post_processing_enabled = false;

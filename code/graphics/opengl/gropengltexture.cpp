@@ -199,7 +199,6 @@ void opengl_tcache_flush()
 
 extern void opengl_kill_all_render_targets();
 
-void opengl_tex_array_storage(GLenum target, GLint levels, GLenum format, GLint width, GLint height, GLint frames);
 void opengl_tcache_shutdown()
 {
 	opengl_kill_all_render_targets();

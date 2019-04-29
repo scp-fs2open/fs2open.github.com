@@ -25,6 +25,11 @@ Category BloomBrightPass("Bloom bright pass", true);
 Category BloomIterationStep("Bloom iteration step", true);
 Category BloomCompositeStep("Bloom composite step", true);
 Category FXAA("FXAA", true);
+Category SMAA("SMAA", true);
+Category SMAAEdgeDetection("SMAA Edge Detection", true);
+Category SMAACalculateBlendingWeights("SMAA Calculate BLending Weights", true);
+Category SMAANeighborhoodBlending("SMAA Neighborhood Blending", true);
+Category SMAAResolve("SMAA Resolve", true);
 Category Lightshafts("Lightshafts", true);
 Category DrawPostEffects("Draw post effects", true);
 

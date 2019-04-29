@@ -6827,8 +6827,8 @@ void ship_render_show_ship_cockpit(object *objp)
 
 	vec3d cockpit_eye_pos;
 	matrix dummy;
-	ship_get_eye(&cockpit_eye_pos, &dummy, objp, true, false); //Get cockpit eye position
-	
+	ship_get_eye(&cockpit_eye_pos, &dummy, objp, true, false); // Get cockpit eye position
+
 	gr_end_view_matrix();
 	gr_end_proj_matrix();
 	gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, 0.05f, Max_draw_distance);
@@ -6841,7 +6841,9 @@ void ship_render_show_ship_cockpit(object *objp)
 	render_info.set_object_number(OBJ_INDEX(objp));
 	render_info.set_detail_level_lock(0);
 
-	model_render_immediate(&render_info, Ship_info[Ships[objp->instance].ship_info_index].model_num, &objp->orient, &objp->pos); // Render ship model with fixed detail level 0 so its not switching LOD when moving away from origin
+	model_render_immediate(&render_info, Ship_info[Ships[objp->instance].ship_info_index].model_num, &objp->orient,
+	                       &objp->pos); // Render ship model with fixed detail level 0 so its not switching LOD when
+	                                    // moving away from origin
 	Glowpoint_override = false;
 
 	gr_end_view_matrix();

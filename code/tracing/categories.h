@@ -37,6 +37,11 @@ extern Category BloomBrightPass;
 extern Category BloomIterationStep;
 extern Category BloomCompositeStep;
 extern Category FXAA;
+extern Category SMAA;
+extern Category SMAAEdgeDetection;
+extern Category SMAACalculateBlendingWeights;
+extern Category SMAANeighborhoodBlending;
+extern Category SMAAResolve;
 extern Category Lightshafts;
 extern Category DrawPostEffects;
 

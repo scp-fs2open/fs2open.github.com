@@ -197,11 +197,18 @@ add_file_folder("Default files\\\\data\\\\effects"
 	def_files/data/effects/shadowdebug-f.sdr
 	def_files/data/effects/shadowdebug-v.sdr
 	def_files/data/effects/shadows.sdr
+	def_files/data/effects/shield-impact-v.sdr
+	def_files/data/effects/shield-impact-f.sdr
+	def_files/data/effects/SMAA.sdr
+	def_files/data/effects/smaa-blend-v.sdr
+	def_files/data/effects/smaa-blend-f.sdr
+	def_files/data/effects/smaa-edge-v.sdr
+	def_files/data/effects/smaa-edge-f.sdr
+	def_files/data/effects/smaa-neighbour-v.sdr
+	def_files/data/effects/smaa-neighbour-f.sdr
 	def_files/data/effects/tonemapping-f.sdr
 	def_files/data/effects/video-f.sdr
 	def_files/data/effects/video-v.sdr
-	def_files/data/effects/shield-impact-v.sdr
-	def_files/data/effects/shield-impact-f.sdr
 )
 
 add_file_folder("Default files\\\\data\\\\maps"
@@ -406,6 +413,8 @@ add_file_folder("Graphics\\\\OpenGLGr\\\\OpenGL Headers"
 	graphics/opengl/gropengltexture.h
 	graphics/opengl/gropengltnl.h
 	graphics/opengl/ShaderProgram.h
+	graphics/opengl/SmaaAreaTex.h
+	graphics/opengl/SmaaSearchTex.h
 )
 
 # Graphics -> Paths
