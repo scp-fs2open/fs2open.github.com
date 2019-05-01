@@ -117,8 +117,6 @@ void obj_add_pair( object *A, object *B, int check_time, int add_to_end )
 	if ((A->flags[Object::Object_Flags::Immobile]) && (B->flags[Object::Object_Flags::Immobile])) return;	// Two immobile objects will never collide with each other
 	
 	// Make sure you're not checking a parent with it's kid or vicy-versy
-//	if ( A->parent_sig == B->signature && !(A->type == OBJ_SHIP && B->type == OBJ_DEBRIS) ) return;
-//	if ( B->parent_sig == A->signature && !(A->type == OBJ_DEBRIS && B->type == OBJ_SHIP) ) return;
 	if ( reject_obj_pair_on_parent(A,B) ) {
 		return;
 	}
@@ -150,29 +148,17 @@ void obj_add_pair( object *A, object *B, int check_time, int add_to_end )
 		swapped = 1;
 		break;
 	case COLLISION_OF(OBJ_ASTEROID, OBJ_WEAPON):
-		// Only check collision's with player weapons
-//		if ( Objects[B->parent].flags[Object::Object_Flags::Player_ship] ) {
-			check_collision = collide_asteroid_weapon;
-//		}
+		check_collision = collide_asteroid_weapon;
 		break;
 	case COLLISION_OF(OBJ_WEAPON, OBJ_ASTEROID):
 		swapped = 1;
-		// Only check collision's with player weapons
-//		if ( Objects[A->parent].flags[Object::Object_Flags::Player_ship] ) {
-			check_collision = collide_asteroid_weapon;
-//		}
+		check_collision = collide_asteroid_weapon;
 		break;
 	case COLLISION_OF(OBJ_ASTEROID, OBJ_SHIP):
-		// Only check collisions with player ships
-//		if ( B->flags[Object::Object_Flags::Player_ship] )	{
-			check_collision = collide_asteroid_ship;
-//		}
+		check_collision = collide_asteroid_ship;
 		break;
 	case COLLISION_OF(OBJ_SHIP, OBJ_ASTEROID):
-		// Only check collisions with player ships
-//		if ( A->flags[Object::Object_Flags::Player_ship] )	{
-			check_collision = collide_asteroid_ship;
-//		}
+		check_collision = collide_asteroid_ship;
 		swapped = 1;
 		break;
 	case COLLISION_OF(OBJ_SHIP,OBJ_SHIP):
@@ -220,40 +206,6 @@ void obj_add_pair( object *A, object *B, int check_time, int add_to_end )
 				check_collision = collide_weapon_weapon;
 			}
 		}
-/*
-
-		if (awip->subtype != WP_LASER || bwip->subtype != WP_LASER) {
-			if (awip->subtype == WP_LASER) {
-				if ( bwip->wi_flags[Weapon::Info_Flags::Bomb] ) {
-					check_collision = collide_weapon_weapon;
-				}
-			} else if (bwip->subtype == WP_LASER) {
-				if ( awip->wi_flags[Weapon::Info_Flags::Bomb] ) {
-					check_collision = collide_weapon_weapon;
-					swapped=1;			
-				}
-			} else {
-				if ( (awip->wi_flags&WIF_BOMB) || (bwip->wi_flags&WIF_BOMB) ) {
-					check_collision = collide_weapon_weapon;
-				}
-			}
-		}
-*/
-/*
-		int	atype, btype;
-
-		atype = Weapon_info[Weapons[A->instance].weapon_info_index].subtype;
-		btype = Weapon_info[Weapons[B->instance].weapon_info_index].subtype;
-
-		if ((atype == WP_LASER) && (btype == WP_MISSILE))
-			check_collision = collide_weapon_weapon;
-		else if ((atype == WP_MISSILE) && (btype == WP_LASER)) {
-			check_collision = collide_weapon_weapon;
-			swapped = 1;
-		} else if ((atype == WP_MISSILE) && (btype == WP_MISSILE))
-			check_collision = collide_weapon_weapon;
-*/
-
 		break;
 	}
 
@@ -349,11 +301,6 @@ void obj_add_pair( object *A, object *B, int check_time, int add_to_end )
 	}
 
 	Num_pairs++;
-/*	if (Num_pairs > Num_pairs_hwm) {
-		Num_pairs_hwm = Num_pairs;
-		//nprintf(("AI", "Num_pairs high water mark = %i\n", Num_pairs_hwm));
-	}
-*/
 
 	if ( Num_pairs >= (Num_pairs_allocated - 20) ) {
 		int i;
@@ -450,8 +397,6 @@ void obj_add_pair( object *A, object *B, int check_time, int add_to_end )
 
 MONITOR(NumPairs)
 MONITOR(NumPairsChecked)
-
-//#define PAIR_STATS
 
 //	See if two lines intersect by doing recursive subdivision.
 //	Bails out if larger distance traveled is less than sum of radii + 1.0f.
@@ -564,9 +509,6 @@ int weapon_will_never_hit( object *obj_weapon, object *other, obj_pair * current
 	weapon *wp = &Weapons[obj_weapon->instance];
 	weapon_info *wip = &Weapon_info[wp->weapon_info_index];
 
-//	mprintf(( "Frame: %d,  Weapon=%d, Other=%d, pair=$%08x\n", G3_frame_count, OBJ_INDEX(weapon), OBJ_INDEX(other), current_pair ));
-	
-
 	// Do some checks for weapons that don't turn
 	if ( !(wip->wi_flags[Weapon::Info_Flags::Turns]) )	{
 
@@ -600,7 +542,6 @@ int weapon_will_never_hit( object *obj_weapon, object *other, obj_pair * current
 		// Given a laser does it hit a slow or not moving object
 		// in its life or the next n seconds?  We'd actually need to check the 
 		// model for this.
-				
 	}
 
 
@@ -615,7 +556,7 @@ int weapon_will_never_hit( object *obj_weapon, object *other, obj_pair * current
 		// tmp->next_check_time = timestamp(500);
 		//vector	max_vel;			//maximum foward velocity in x,y,z
 
-		float max_vel_weapon, max_vel_other;
+		float max_vel_weapon;
 
 		//SUSHI: Fix bug where additive weapon velocity screws up collisions
 		//If the PF_CONST_VEL flag is set, we can safely assume it doesn't change speed.
@@ -626,7 +567,7 @@ int weapon_will_never_hit( object *obj_weapon, object *other, obj_pair * current
 		else
 			max_vel_weapon = wp->weapon_max_vel;
 
-		max_vel_other = other->phys_info.max_vel.xyz.z;
+		float max_vel_other = other->phys_info.max_vel.xyz.z;
 		if (max_vel_other < 10.0f) {
 			if ( vm_vec_mag_squared( &other->phys_info.vel ) > 100 ) {
 				// bump up velocity from collision
@@ -1214,8 +1155,6 @@ void obj_collide_pair(object *A, object *B)
 	if ((A->flags[Object::Object_Flags::Immobile]) && (B->flags[Object::Object_Flags::Immobile])) return;	// Two immobile objects will never collide with each other
 
 	// Make sure you're not checking a parent with it's kid or vicy-versy
-//	if ( A->parent_sig == B->signature && !(A->type == OBJ_SHIP && B->type == OBJ_DEBRIS) ) return;
-//	if ( B->parent_sig == A->signature && !(A->type == OBJ_DEBRIS && B->type == OBJ_SHIP) ) return;
 	if ( reject_obj_pair_on_parent(A,B) ) {
 		return;
 	}
@@ -1247,29 +1186,17 @@ void obj_collide_pair(object *A, object *B)
 		swapped = 1;
 		break;
 	case COLLISION_OF(OBJ_ASTEROID, OBJ_WEAPON):
-		// Only check collision's with player weapons
-//		if ( Objects[B->parent].flags[Object::Object_Flags::Player_ship] ) {
-			check_collision = collide_asteroid_weapon;
-//		}
+		check_collision = collide_asteroid_weapon;
 		break;
 	case COLLISION_OF(OBJ_WEAPON, OBJ_ASTEROID):
 		swapped = 1;
-		// Only check collision's with player weapons
-//		if ( Objects[A->parent].flags[Object::Object_Flags::Player_ship] ) {
-			check_collision = collide_asteroid_weapon;
-//		}
+        check_collision = collide_asteroid_weapon;
 		break;
 	case COLLISION_OF(OBJ_ASTEROID, OBJ_SHIP):
-		// Only check collisions with player ships
-//		if ( B->flags[Object::Object_Flags::Player_ship] )	{
-			check_collision = collide_asteroid_ship;
-//		}
+		check_collision = collide_asteroid_ship;
 		break;
 	case COLLISION_OF(OBJ_SHIP, OBJ_ASTEROID):
-		// Only check collisions with player ships
-//		if ( A->flags[Object::Object_Flags::Player_ship] )	{
-			check_collision = collide_asteroid_ship;
-//		}
+	    check_collision = collide_asteroid_ship;
 		swapped = 1;
 		break;
 	case COLLISION_OF(OBJ_SHIP,OBJ_SHIP):
@@ -1400,13 +1327,6 @@ void obj_collide_pair(object *A, object *B)
 			}
 		}
 	} else {
-		//if ( A->type == OBJ_BEAM ) {
-			//if(beam_collide_early_out(A, B)){
-				//collision_info->next_check_time = -1;
-				//return;
-			//}
-		//}
-
 		// only check debris:weapon collisions for player
 		if (check_collision == collide_debris_weapon) {
 			// weapon is B
