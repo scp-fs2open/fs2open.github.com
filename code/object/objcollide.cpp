@@ -303,7 +303,6 @@ void obj_add_pair( object *A, object *B, int check_time, int add_to_end )
 	Num_pairs++;
 
 	if ( Num_pairs >= (Num_pairs_allocated - 20) ) {
-		int i;
 
 		Assert( Obj_pairs != nullptr );
 
@@ -327,7 +326,7 @@ void obj_add_pair( object *A, object *B, int check_time, int add_to_end )
 			Assert( Obj_pairs != nullptr );
 
 			// have to reset all of the "next" ptrs for the old set and handle the new set
-			for (i = 0; i < Num_pairs_allocated; i++) {
+			for (int i = 0; i < Num_pairs_allocated; i++) {
 				if (i >= old_pair_count) {
 					memset( &Obj_pairs[i], 0, sizeof(obj_pair) );
 					Obj_pairs[i].next = &Obj_pairs[i+1];
@@ -402,12 +401,9 @@ MONITOR(NumPairsChecked)
 //	Bails out if larger distance traveled is less than sum of radii + 1.0f.
 int collide_subdivide(vec3d *p0, vec3d *p1, float prad, vec3d *q0, vec3d *q1, float qrad)
 {
-	float	a_dist, b_dist, ab_dist;
-
-	a_dist = vm_vec_dist(p0, p1);
-	b_dist = vm_vec_dist(q0, q1);
-
-	ab_dist = vm_vec_dist(p1, q1);
+    float a_dist = vm_vec_dist(p0, p1);
+    float b_dist = vm_vec_dist(q0, q1);
+    float ab_dist = vm_vec_dist(p1, q1);
 
 	//	See if their spheres intersect
 	if (ab_dist < a_dist + b_dist + prad + qrad) {
@@ -446,32 +442,30 @@ int collide_subdivide(vec3d *p0, vec3d *p1, float prad, vec3d *q0, vec3d *q1, fl
 //			is useful if a moving object wants to prevent a collision.
 int objects_will_collide(object *A, object *B, float duration, float radius_scale)
 {
-	vec3d	prev_pos;
-	vec3d	hitpos;
+	vec3d hitpos;
 	int ret;
 
 
-	prev_pos = A->pos;
+    vec3d prev_pos = A->pos;
 	vm_vec_scale_add2(&A->pos, &A->phys_info.vel, duration);
 
 	if (radius_scale == 0.0f) {
 		ret = ship_check_collision_fast(B, A, &hitpos);
 	} else {
-		float		size_A, size_B, dist, r;
 		vec3d	nearest_point;
 
-		size_A = A->radius * radius_scale;
-		size_B = B->radius * radius_scale;
+		const float size_A = A->radius * radius_scale;
+		const float size_B = B->radius * radius_scale;
 
 		//	If A is moving, check along vector.
 		if (A->phys_info.speed != 0.0f) {
-			r = find_nearest_point_on_line(&nearest_point, &prev_pos, &A->pos, &B->pos);
+			const float r = find_nearest_point_on_line(&nearest_point, &prev_pos, &A->pos, &B->pos);
 			if (r < 0) {
 				nearest_point = prev_pos;
 			} else if (r > 1) {
 				nearest_point = A->pos;
 			}
-			dist = vm_vec_dist_quick(&B->pos, &nearest_point);
+			const float dist = vm_vec_dist_quick(&B->pos, &nearest_point);
 			ret = (dist < size_A + size_B);
 		} else {
 			ret = vm_vec_dist_quick(&B->pos, &prev_pos) < size_A + size_B;
@@ -487,12 +481,11 @@ int objects_will_collide(object *A, object *B, float duration, float radius_scal
 //	Return true if the vector from *start_pos to *end_pos is within objp->radius*radius_scale of *objp
 int vector_object_collision(vec3d *start_pos, vec3d *end_pos, object *objp, float radius_scale)
 {
-	float		dist, r;
 	vec3d	nearest_point;
 
-	r = find_nearest_point_on_line(&nearest_point, start_pos, end_pos, &objp->pos);
+	float r = find_nearest_point_on_line(&nearest_point, start_pos, end_pos, &objp->pos);
 	if ((r >= 0.0f) && (r <= 1.0f)) {
-		dist = vm_vec_dist_quick(&objp->pos, &nearest_point);
+		float dist = vm_vec_dist_quick(&objp->pos, &nearest_point);
 
 		return (dist < objp->radius * radius_scale);
 	} else
@@ -642,8 +635,6 @@ int weapon_will_never_hit( object *obj_weapon, object *other, obj_pair * current
 				}
 			}
 
-
-
 			// check if possible collision occurs after weapon expires
 			if ( earliest_time > 1000*wp->lifeleft )
 				return 1;
@@ -660,15 +651,12 @@ int weapon_will_never_hit( object *obj_weapon, object *other, obj_pair * current
 			}
 
 		} else {
-
-			float dist, max_vel, time;
-
-			max_vel = max_vel_weapon + max_vel_other;
+			const float max_vel = max_vel_weapon + max_vel_other;
 
 			// suggest that fudge factor for other radius be changed to other_radius + const (~10)
-			dist = vm_vec_dist( &other->pos, &obj_weapon->pos ) - (other->radius + 10.0f);
+			const float dist = vm_vec_dist( &other->pos, &obj_weapon->pos ) - (other->radius + 10.0f);
 			if ( dist > 0.0f )	{
-				time = (dist*1000.0f) / max_vel;
+				const float time = (dist*1000.0f) / max_vel;
 				int time_ms = fl2i(time);
 
 				// check if possible collision occurs after weapon expires
@@ -719,9 +707,7 @@ int pp_collide(vec3d *curpos, vec3d *goalpos, object *goalobjp, float radius)
 //	Returns true if objp will collide with objp2 before it reaches goal_pos.
 int cpls_aux(vec3d *goal_pos, object *objp2, object *objp)
 {
-	float	radius;
-	
-	radius = objp->radius;
+	float radius = objp->radius;
 	if (1.5f * radius < 70.0f)
 		radius *= 1.5f;
 	else
@@ -738,12 +724,10 @@ int cpls_aux(vec3d *goal_pos, object *objp2, object *objp)
 int collide_predict_large_ship(object *objp, float distance)
 {
 	object	*objp2;
-	vec3d	cur_pos, goal_pos;
-	ship_info	*sip;
+	vec3d	goal_pos;
+	ship_info* sip = &Ship_info[Ships[objp->instance].ship_info_index];
 
-	sip = &Ship_info[Ships[objp->instance].ship_info_index];
-
-	cur_pos = objp->pos;
+	vec3d cur_pos = objp->pos;
 
 	vm_vec_scale_add(&goal_pos, &cur_pos, &objp->orient.vec.fvec, distance);
 
@@ -758,13 +742,11 @@ int collide_predict_large_ship(object *objp, float distance)
 			}
 		} else if (!(sip->is_big_or_huge()) && (objp2->type == OBJ_ASTEROID)) {
 			if (vm_vec_dist_quick(&objp2->pos, &objp->pos) < (distance + objp2->radius)*2.5f) {
-				vec3d	pos, delvec;
-				int		count;
-				float		d1;
+                vec3d delvec;
 
-				d1 = 2.5f * distance + objp2->radius;
-				count = (int) (d1/(objp2->radius + objp->radius));	//	Scale up distance, else looks like there would be a collision.
-				pos = cur_pos;
+				const float d1 = 2.5f * distance + objp2->radius;
+				auto count = (int) (d1/(objp2->radius + objp->radius));	//	Scale up distance, else looks like there would be a collision.
+				vec3d pos = cur_pos;
 				vm_vec_normalized_dir(&delvec, &goal_pos, &cur_pos);
 				vm_vec_scale(&delvec, d1/count);
 
@@ -795,25 +777,19 @@ char crw_status[MAX_WEAPONS];
 
 void crw_check_weapon( int weapon_num, int collide_next_check )
 {
-	float next_check_time;
-	weapon *wp;
-
-	wp = &Weapons[weapon_num];
+	weapon *wp = &Weapons[weapon_num];
 
 	// if this weapons life left > time before next collision, then we cannot remove it
 	crw_status[WEAPON_INDEX(wp)] = CRW_IN_PAIR;
-	next_check_time = ((float)(timestamp_until(collide_next_check)) / 1000.0f);
+	const float next_check_time = ((float)(timestamp_until(collide_next_check)) / 1000.0f);
 	if ( wp->lifeleft < next_check_time )
 		crw_status[WEAPON_INDEX(wp)] = CRW_CAN_DELETE;
 }
 
 int collide_remove_weapons( )
 {
-	int i, num_deleted, oldest_index, j, loop_count;
-	float oldest_time;
-
 	// setup remove_weapon array.  assume we can remove it.
-	for (i = 0; i < MAX_WEAPONS; i++ ) {
+	for (int i = 0; i < MAX_WEAPONS; i++ ) {
 		if ( Weapons[i].objnum == -1 )
 			crw_status[i] = CRW_NO_OBJECT;
 		else
@@ -821,11 +797,8 @@ int collide_remove_weapons( )
 	}
 
 	// first pass is to see if any of the weapons don't have collision pairs.
-	SCP_unordered_map<uint, collider_pair>::iterator it;
-	collider_pair* pair_obj;
-
-	for (it = Collision_cached_pairs.begin(); it != Collision_cached_pairs.end(); ++it) {
-		pair_obj = &it->second;
+	for (auto& pair : Collision_cached_pairs) {
+        collider_pair* pair_obj = &pair.second;
 
 		if (!pair_obj->initialized) {
 			continue;
@@ -849,8 +822,8 @@ int collide_remove_weapons( )
 	}
 
 	// for each weapon which could be removed, delete the object
-	num_deleted = 0;
-	for ( i = 0; i < MAX_WEAPONS; i++ ) {
+	int num_deleted = 0;
+	for (int i = 0; i < MAX_WEAPONS; i++ ) {
 		if ( crw_status[i] == CRW_CAN_DELETE ) {
 			Assert( Weapons[i].objnum != -1 );
 			obj_delete( Weapons[i].objnum );
@@ -864,12 +837,12 @@ int collide_remove_weapons( )
 	// if we didn't remove any weapons, try to the N oldest weapons.  first checking for pairs, then
 	// checking for oldest weapons in general.  We will go through the loop a max of 2 times.  first time
 	// through, we check oldest weapons with pairs, next time through, for oldest weapons.
-	loop_count = 0;
+	int loop_count = 0;
 	do {
-		for ( j = 0; j < CRW_MAX_TO_DELETE; j++ ) {
-			oldest_time = 1000.0f;
-			oldest_index = -1;
-			for (i = 0; i < MAX_WEAPONS; i++ ) {
+		for (int j = 0; j < CRW_MAX_TO_DELETE; j++ ) {
+			float oldest_time = 1000.0f;
+			int oldest_index = -1;
+			for (int i = 0; i < MAX_WEAPONS; i++ ) {
 				if ( Weapons[i].objnum == -1 )			// shouldn't happen, but this is the safe thing to do.
 					continue;
 				if ( ((loop_count || crw_status[i] == CRW_NO_PAIR)) && (Weapons[i].lifeleft < oldest_time) ) {
@@ -940,9 +913,7 @@ void obj_remove_collider(int obj_index)
     CheckObjects[obj_index].flags.set(Object::Object_Flags::Not_in_coll);
 #endif	
 
-	size_t i;
-
-	for ( i = 0; i < Collision_sort_list.size(); ++i ) {
+	for (size_t i = 0; i < Collision_sort_list.size(); ++i ) {
 		if ( Collision_sort_list[i] == obj_index ) {
 			Collision_sort_list[i] = Collision_sort_list.back();
 			Collision_sort_list.pop_back();
@@ -961,10 +932,8 @@ void obj_reset_colliders()
 
 void obj_collide_retime_cached_pairs(int checkdly)
 {
-	SCP_unordered_map<uint, collider_pair>::iterator it;
-
-	for ( it = Collision_cached_pairs.begin(); it != Collision_cached_pairs.end(); ++it ) {
-		it->second.next_check_time = timestamp(checkdly);
+	for ( auto& pair : Collision_cached_pairs ) {
+		pair.second.next_check_time = timestamp(checkdly);
 	}
 }
 
@@ -1036,8 +1005,7 @@ void obj_quicksort_colliders(SCP_vector<int> *list, int left, int right, int axi
 
         int store_index = left;
 
-        int i;
-        for ( i = left; i < right; ++i ) {
+        for (int i = left; i < right; ++i ) {
             if ( obj_get_collider_endpoint((*list)[i], axis, true) <= pivot_value ) {
                 temp = (*list)[i];
                 (*list)[i] = (*list)[store_index];
@@ -1059,10 +1027,8 @@ void obj_collide_pair(object *A, object *B)
 {
     TRACE_SCOPE(tracing::CollidePair);
 
-    int (*check_collision)( obj_pair *pair );
+    int (*check_collision)( obj_pair *pair ) = nullptr;
     int swapped = 0;
-
-    check_collision = nullptr;
 
     if ( A==B ) return;		// Don't check collisions with yourself
 
@@ -1178,9 +1144,8 @@ void obj_collide_pair(object *A, object *B)
             break;
 
         case COLLISION_OF(OBJ_WEAPON, OBJ_WEAPON): {
-            weapon_info *awip, *bwip;
-            awip = &Weapon_info[Weapons[A->instance].weapon_info_index];
-            bwip = &Weapon_info[Weapons[B->instance].weapon_info_index];
+            weapon_info* awip = &Weapon_info[Weapons[A->instance].weapon_info_index];
+            weapon_info* bwip = &Weapon_info[Weapons[B->instance].weapon_info_index];
 
             if ((awip->weapon_hitpoints > 0) || (bwip->weapon_hitpoints > 0)) {
                 if (bwip->weapon_hitpoints == 0) {
@@ -1201,17 +1166,14 @@ void obj_collide_pair(object *A, object *B)
     if ( !check_collision ) return;
 
     // Swap them if needed
-    if ( swapped )	{
-        object *tmp = A;
-        A = B;
-        B = tmp;
+    if ( swapped ) {
+        std::swap(A,B);
     }
 
-    collider_pair *collision_info = nullptr;
     bool valid = false;
     uint key = (OBJ_INDEX(A) << 12) + OBJ_INDEX(B);
 
-    collision_info = &Collision_cached_pairs[key];
+    collider_pair* collision_info = &Collision_cached_pairs[key];
 
     if ( collision_info->initialized ) {
         // make sure we're referring to the correct objects in case the original pair was deleted
@@ -1317,37 +1279,30 @@ void obj_collide_pair(object *A, object *B)
     }
 }
 
-void obj_find_overlap_colliders(SCP_vector<int> *overlap_list_out, SCP_vector<int> *list, int axis, bool collide)
+void obj_find_overlap_colliders(SCP_vector<int> &overlap_list_out, SCP_vector<int> &list, int axis, bool collide)
 {
     TRACE_SCOPE(tracing::FindOverlapColliders);
 
-    size_t i, j;
-    bool overlapped;
     bool first_not_added = true;
     SCP_vector<int> overlappers;
 
-    float min;
-    float overlap_max;
+    for (int in_index : list){
+        bool overlapped = false;
 
-    overlappers.clear();
+        const float min = obj_get_collider_endpoint(in_index, axis, true);
 
-    for ( i = 0; i < (*list).size(); ++i ) {
-        overlapped = false;
-
-        min = obj_get_collider_endpoint((*list)[i], axis, true);
-
-        for ( j = 0; j < overlappers.size(); ) {
-            overlap_max = obj_get_collider_endpoint(overlappers[j], axis, false);
+        for (size_t j = 0; j < overlappers.size(); ) {
+            const float overlap_max = obj_get_collider_endpoint(overlappers[j], axis, false);
             if ( min <= overlap_max ) {
                 overlapped = true;
 
                 if ( overlappers.size() == 1 && first_not_added ) {
                     first_not_added = false;
-                    overlap_list_out->push_back(overlappers[j]);
+                    overlap_list_out.push_back(overlappers[j]);
                 }
 
                 if ( collide ) {
-                    obj_collide_pair(&Objects[(*list)[i]], &Objects[overlappers[j]]);
+                    obj_collide_pair(&Objects[in_index], &Objects[overlappers[j]]);
                 }
             } else {
                 overlappers[j] = overlappers.back();
@@ -1363,10 +1318,10 @@ void obj_find_overlap_colliders(SCP_vector<int> *overlap_list_out, SCP_vector<in
         }
 
         if ( overlapped ) {
-            overlap_list_out->push_back((*list)[i]);
+            overlap_list_out.push_back(in_index);
         }
 
-        overlappers.push_back((*list)[i]);
+        overlappers.push_back(in_index);
     }
 }
 } //anon namespace
@@ -1388,19 +1343,19 @@ void obj_sort_and_collide()
 		TRACE_SCOPE(tracing::SortColliders);
 		obj_quicksort_colliders(&Collision_sort_list, 0, (int)(Collision_sort_list.size() - 1), 0);
 	}
-	obj_find_overlap_colliders(&sort_list_y, &Collision_sort_list, 0, false);
+	obj_find_overlap_colliders(sort_list_y, Collision_sort_list, 0, false);
 
 	sort_list_z.clear();
 	{
 		TRACE_SCOPE(tracing::SortColliders);
 		obj_quicksort_colliders(&sort_list_y, 0, (int)(sort_list_y.size() - 1), 1);
 	}
-	obj_find_overlap_colliders(&sort_list_z, &sort_list_y, 1, false);
+	obj_find_overlap_colliders(sort_list_z, sort_list_y, 1, false);
 
 	sort_list_y.clear();
 	{
 		TRACE_SCOPE(tracing::SortColliders);
 		obj_quicksort_colliders(&sort_list_z, 0, (int)(sort_list_z.size() - 1), 2);
 	}
-	obj_find_overlap_colliders(&sort_list_y, &sort_list_z, 2, true);
+	obj_find_overlap_colliders(sort_list_y, sort_list_z, 2, true);
 }
