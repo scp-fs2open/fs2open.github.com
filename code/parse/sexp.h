@@ -235,6 +235,8 @@ class waypoint_list;
 #define OP_UNSET_BIT						(0x0011 | OP_CATEGORY_ARITHMETIC)	// Goober5000
 #define OP_IS_BIT_SET						(0x0012 | OP_CATEGORY_ARITHMETIC)	// Goober5000
 #define OP_SIGNUM							(0x0013 | OP_CATEGORY_ARITHMETIC)	// Goober5000
+#define OP_IS_NAN							(0x0014 | OP_CATEGORY_ARITHMETIC)	// Goober5000
+#define OP_NAN_TO_NUMBER					(0x0015 | OP_CATEGORY_ARITHMETIC)	// Goober5000
 
 
 #define	OP_TRUE								(0x0000 | OP_CATEGORY_LOGICAL)
@@ -408,8 +410,10 @@ class waypoint_list;
 #define OP_INVALIDATE_ALL_ARGUMENTS			(0x000d | OP_CATEGORY_CONDITIONAL)	// Karajorma
 #define OP_VALIDATE_ALL_ARGUMENTS			(0x000e | OP_CATEGORY_CONDITIONAL)	// Karajorma
 #define OP_FOR_COUNTER						(0x000f | OP_CATEGORY_CONDITIONAL)	// Goober5000
+
 #define OP_IF_THEN_ELSE						(0x0010 | OP_CATEGORY_CONDITIONAL)	// Goober5000
 #define OP_NUM_VALID_ARGUMENTS				(0x0011 | OP_CATEGORY_CONDITIONAL)	// Karajorma
+#define OP_FUNCTIONAL_IF_THEN_ELSE			(0x0012 | OP_CATEGORY_CONDITIONAL)	// Goober5000
 
 
 // sexpressions with side-effects
@@ -945,14 +949,17 @@ char *CTEXT(int n);
 
 #define SEXP_TRUE			1
 #define SEXP_FALSE			0
+
 // Goober5000: changed these to unlikely values, because now we have sexps using negative numbers
-#define SEXP_KNOWN_FALSE	-32767	//-1
-#define SEXP_KNOWN_TRUE		-32766	//-2
-#define SEXP_UNKNOWN		-32765	//-3
-#define SEXP_NAN			-32764	//-4	// not a number -- used when ships/wing part of boolean and haven't arrived yet
-#define SEXP_NAN_FOREVER	-32763	//-5	// not a number and will never change -- used to falsify boolean sexpressions
-#define SEXP_CANT_EVAL		-32762	//-6	// can't evaluate yet for whatever reason (acts like false)
-#define SEXP_NUM_EVAL		-32761	//-7	// already completed an arithmetic operation and result is stored
+#define SEXP_KNOWN_FALSE	(INT_MIN+10)
+#define SEXP_KNOWN_TRUE		(INT_MIN+11)
+#define SEXP_UNKNOWN		(INT_MIN+12)
+#define SEXP_NAN			(INT_MIN+13)	// not a number -- used when ships/wing part of boolean and haven't arrived yet
+#define SEXP_NAN_FOREVER	(INT_MIN+14)	// not a number and will never change -- used to falsify boolean sexpressions
+#define SEXP_CANT_EVAL		(INT_MIN+15)	// can't evaluate yet for whatever reason (acts like false)
+#define SEXP_NUM_EVAL		(INT_MIN+16)	// already completed an arithmetic operation and result is stored
+// in case we want to test for any of the above
+#define SEXP_UNLIKELY_RETURN_VALUE_BOUND		(INT_MIN+17)
 
 // defines for check_sexp_syntax
 #define SEXP_CHECK_NONOP_ARGS			-1			// non-operator has arguments
