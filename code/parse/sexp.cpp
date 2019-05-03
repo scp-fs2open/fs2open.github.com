@@ -15339,7 +15339,7 @@ int sexp_facing(int node)
 	ship *target_shipp = sexp_get_ship_from_node(node);
 	if (target_shipp == NULL) {
 		// hasn't arrived yet
-		if (mission_parse_get_arrival_ship(CTEXT(node)) != NULL) {
+		if (mission_parse_get_arrival_ship(CTEXT(node)) != nullptr) {
 			return SEXP_CANT_EVAL;
 		}
 		// not found and won't arrive: invalid
@@ -15373,7 +15373,7 @@ int sexp_is_facing(int node)
 	ship *origin_shipp = sexp_get_ship_from_node(node);
 	if (origin_shipp == NULL) {
 		// hasn't arrived yet
-		if (mission_parse_get_arrival_ship(CTEXT(node)) != NULL) {
+		if (mission_parse_get_arrival_ship(CTEXT(node)) != nullptr) {
 			return SEXP_CANT_EVAL;
 		}
 		// not found and won't arrive: invalid
@@ -15384,7 +15384,7 @@ int sexp_is_facing(int node)
 	object_ship_wing_point_team oswpt;
 	sexp_get_object_ship_wing_point_team(&oswpt, CTEXT(node));
 
-	if (oswpt.type == OSWPT_TYPE_SHIP && sexp_get_ship_from_node(node) == NULL) {
+	if (oswpt.type == OSWPT_TYPE_SHIP && sexp_get_ship_from_node(node) == nullptr) {
 		return SEXP_KNOWN_FALSE;
 	}
 
@@ -16714,7 +16714,7 @@ void sexp_ship_copy_damage(int node)
 
 		// maybe it's on the arrival list
 		target_pobjp = mission_parse_get_arrival_ship(CTEXT(n));
-		if (target_pobjp != NULL)
+		if (target_pobjp != nullptr)
 		{
 			parse_copy_damage(target_pobjp, &Ships[source_shipnum]);
 			continue;
@@ -20931,16 +20931,16 @@ void multi_sexp_fade(bool fade_in)
 camera* sexp_get_set_camera(bool reset = false)
 {
 	static camid sexp_camera;
-	if(!reset)
+	if (!reset)
 	{
-		if(Viewer_mode & VM_FREECAMERA)
+		if (Viewer_mode & VM_FREECAMERA)
 		{
 			camera *cam = cam_get_current().getCamera();
-			if(cam != NULL)
+			if (cam != nullptr)
 				return cam;
 		}
 	}
-	if(!sexp_camera.isValid())
+	if (!sexp_camera.isValid())
 	{
 		sexp_camera = cam_create("SEXP camera");
 	}
@@ -20952,7 +20952,7 @@ camera* sexp_get_set_camera(bool reset = false)
 
 void sexp_set_camera(int node)
 {
-	if(node == -1)
+	if (node < 0)
 	{
 		sexp_get_set_camera(true);
 		return;
@@ -20960,7 +20960,7 @@ void sexp_set_camera(int node)
 
 	char *cam_name = CTEXT(node);
 	camid cid = cam_lookup(cam_name);
-	if(!cid.isValid())
+	if (!cid.isValid())
 	{
 		cid = cam_create(cam_name);
 	}
@@ -21082,7 +21082,7 @@ void sexp_set_camera_rotation(int n)
 void multi_sexp_set_camera_rotation()
 {
 	camera *cam = sexp_get_set_camera();
-	if(cam == NULL)
+	if (cam == nullptr)
 		return;
 
 	angles rot_angles;
@@ -21148,7 +21148,7 @@ void sexp_set_camera_facing(int n)
 void multi_sexp_set_camera_facing()
 {
 	camera *cam = sexp_get_set_camera();
-	if(cam == NULL)
+	if (cam == nullptr)
 		return;
 
 	vec3d location;
@@ -21188,7 +21188,7 @@ void actually_set_camera_facing_object(char *object_name, float rot_time, float 
 		case OSWPT_TYPE_WAYPOINT:
 		{
 			camera *cam = sexp_get_set_camera();
-			if(cam == NULL)
+			if (cam == nullptr)
 				return;
 			cam->set_rotation_facing(&oswpt.objp->pos, rot_time, rot_acc_time, rot_dec_time);
 			return;
@@ -21291,8 +21291,7 @@ void sexp_set_camera_fov(int n)
 void multi_sexp_set_camera_fov()
 {
 	camera *cam = sexp_get_set_camera();
-	
-	if(cam == NULL)
+	if (cam == nullptr)
 		return;
 
 	float camera_fov = VIEWER_ZOOM_DEFAULT;
@@ -21364,8 +21363,7 @@ void sexp_set_camera_host(int node)
 {
 	//Try to get current camera
 	camera *cam = sexp_get_set_camera();
-	
-	if(cam == NULL)
+	if (cam == nullptr)
 		return;
 	
 	//*****Get variables
@@ -21380,8 +21378,7 @@ void sexp_set_camera_target(int node)
 {
 	//Try to get current camera
 	camera *cam = sexp_get_set_camera();
-	
-	if(cam == NULL)
+	if (cam == nullptr)
 		return;
 	
 	//*****Get variables
@@ -21404,8 +21401,7 @@ void multi_sexp_set_camera_target()
 	
 	//Try to get current camera
 	camera *cam = sexp_get_set_camera();
-	
-	if(cam == NULL)
+	if (cam == nullptr)
 		return;
 
 	Current_sexp_network_packet.get_object(objp);
@@ -21417,7 +21413,7 @@ void multi_sexp_set_camera_target()
 void sexp_set_fov(int n)
 {
 	camera *cam = Main_camera.getCamera();
-	if(cam == NULL) {
+	if (cam == nullptr) {
 		game_render_frame_setup();
 		cam = Main_camera.getCamera();
 	}
@@ -21436,7 +21432,7 @@ void multi_sexp_set_fov()
 	float new_fov;
 
 	camera *cam = Main_camera.getCamera();
-	if(cam == NULL) {
+	if (cam == nullptr) {
 		game_render_frame_setup();
 		cam = Main_camera.getCamera();
 	}
@@ -21448,13 +21444,13 @@ void multi_sexp_set_fov()
 int sexp_get_fov()
 {
 	camera *cam = Main_camera.getCamera();
-	if(cam == NULL)
+	if (cam == nullptr)
 		return -1;
-	else if(Sexp_fov > 0.0f)
+	else if (Sexp_fov > 0.0f)
 		// SEXP override has been set
-		return (int) fl_degrees(Sexp_fov);
-	else	
-		return (int) fl_degrees(cam->get_fov());
+		return (int)fl_degrees(Sexp_fov);
+	else
+		return (int)fl_degrees(cam->get_fov());
 }
 
 /**
@@ -21463,7 +21459,7 @@ int sexp_get_fov()
 void sexp_reset_fov()
 {
 	camera *cam = Main_camera.getCamera();
-	if(cam == NULL)
+	if (cam == nullptr)
 		return;
 
 	Sexp_fov = 0.0;
@@ -21475,7 +21471,7 @@ void sexp_reset_fov()
 void multi_sexp_reset_fov()
 {
 	camera *cam = Main_camera.getCamera();
-	if(cam == NULL)
+	if (cam == nullptr)
 		return;
 
 	Sexp_fov = 0.0;
@@ -21483,11 +21479,11 @@ void multi_sexp_reset_fov()
 
 void sexp_reset_camera(int node)
 {
-	bool cam_reset = false; 
+	bool cam_reset = false;
 	camera *cam = cam_get_current().getCamera();
-	if(cam != NULL)
+	if (cam != nullptr)
 	{
-		if(is_sexp_true(node))
+		if (is_sexp_true(node))
 		{
 			cam->reset();
 			cam_reset = true;
@@ -21505,7 +21501,7 @@ void multi_sexp_reset_camera()
 	bool cam_reset = false;
 
 	Current_sexp_network_packet.get_bool(cam_reset);
-	if((cam != NULL) && cam_reset) {
+	if ((cam != nullptr) && cam_reset) {
 		cam->reset();
 	}
 	cam_reset_camera();
