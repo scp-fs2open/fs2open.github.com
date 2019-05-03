@@ -4147,12 +4147,12 @@ int div_sexps(int n)
 
 		while (CDR(n) != -1) {
 			int div = eval_sexp(CDR(n));
+			n = CDR(n);
 			if (div == 0) {
 				Warning(LOCATION, "Division by zero in sexp. Please check all uses of the / operator for possible causes.\n");
 				continue;
 			} 
 			sum /= div;
-			n = CDR(n);
 		}
 	}
 
@@ -4172,12 +4172,12 @@ int mod_sexps(int n)
 
 		while (CDR(n) != -1) {
 			int div = eval_sexp(CDR(n));
+			n = CDR(n);
 			if (div == 0) {
 				Warning(LOCATION, "Modulo by zero in sexp. Please check all uses of the % operator for possible causes.\n");
 				continue;
 			}
 			sum = sum % div;
-			n = CDR(n);
 		}
 	}
 
@@ -5501,14 +5501,14 @@ int sexp_has_docked_or_undocked(int n, int op_num)
 	}
 	else
 	{
-		if ( mission_log_get_time_indexed(op_num == OP_HAS_DOCKED ? LOG_SHIP_DOCKED : LOG_SHIP_UNDOCKED, docker, dockee, count, NULL) )
+		if ( mission_log_get_time_indexed(op_num == OP_HAS_DOCKED ? LOG_SHIP_DOCKED : LOG_SHIP_UNDOCKED, docker, dockee, count, nullptr) )
 			return SEXP_KNOWN_TRUE;
 	}
 
-	if ( mission_log_get_time(LOG_SHIP_DESTROYED, docker, NULL, NULL) || mission_log_get_time(LOG_SHIP_DESTROYED, dockee, NULL, NULL) )
+	if ( mission_log_get_time(LOG_SHIP_DESTROYED, docker, nullptr, nullptr) || mission_log_get_time(LOG_SHIP_DESTROYED, dockee, nullptr, nullptr) )
 		return SEXP_KNOWN_FALSE;
 
-	if ( mission_log_get_time(LOG_SELF_DESTRUCTED, docker, NULL, NULL) || mission_log_get_time(LOG_SELF_DESTRUCTED, dockee, NULL, NULL) )
+	if ( mission_log_get_time(LOG_SELF_DESTRUCTED, docker, nullptr, nullptr) || mission_log_get_time(LOG_SELF_DESTRUCTED, dockee, nullptr, nullptr) )
 		return SEXP_KNOWN_FALSE;
 
 	return SEXP_FALSE;
@@ -6677,7 +6677,7 @@ int sexp_distance_subsystem(int n)
 	return SEXP_NAN;
 }
 
-bool sexp_helper_is_within_box(std::array<float, 6> box_vals, vec3d *pos)
+bool sexp_helper_is_within_box(const std::array<float, 6> &box_vals, vec3d *pos)
 {
 	int i;
 	for(i = 0; i < 3; i++)
@@ -7738,13 +7738,14 @@ int sexp_percent_ships_arrive_depart_destroy_disarm_disable(int n, int what)
  */
 int sexp_depart_node_delay(int n)
 {
-	int delay, count, num_departed;
+	int count, num_departed;
 	char *jump_node_name, *name;
-	fix latest_time, this_time;
+	fix delay, latest_time, this_time;
 
 	Assert( n >= 0 );
 
-	delay = eval_num(n);
+	// get the delay
+	delay = i2f(eval_num(n));
 	n = CDR(n);
 
 	jump_node_name = CTEXT(n);
@@ -14427,10 +14428,10 @@ void sexp_ships_bomb_targetable(int n, bool targetable)
 void sexp_ship_guardian_threshold(int node)
 {
 	char *ship_name;
-	int ship_num, threshold, n = -1;
+	int ship_num, threshold, n = node;
 
-	threshold = eval_num(node);
-	n = CDR(node);
+	threshold = eval_num(n);
+	n = CDR(n);
 
 	// for all ships
 	for ( ; n != -1; n = CDR(n) ) {
@@ -15211,7 +15212,7 @@ int sexp_speed(int node)
 
 	if (Training_context & TRAINING_CONTEXT_SPEED) {
 		if (Training_context_speed_set) {
-			int z = eval_num(node) * 1000;
+			z = eval_num(node) * 1000;
 
 			if (timestamp_has_time_elapsed(Training_context_speed_timestamp, z)){
 				return SEXP_KNOWN_TRUE;
@@ -15345,7 +15346,7 @@ int sexp_facing(int node)
 		return SEXP_KNOWN_FALSE;
 	}
 
-	angle = eval_num(CDR(node)));
+	angle = eval_num(CDR(node));
 
 	v1 = Player_obj->orient.vec.fvec;
 	vm_vec_normalize(&v1);
@@ -15555,9 +15556,9 @@ int sexp_path_flown()
 	return SEXP_FALSE;
 }
 
-void sexp_send_training_message(const int node)
+void sexp_send_training_message(int node)
 {
-	int n = node, count, delay, duration;
+	int n = node, delay, duration;
 
 	if(physics_paused){
 		return;
@@ -19247,10 +19248,7 @@ void set_unset_nav_carry_status(int node, bool set_it)
 		{
 			if (!stricmp(Wings[i].name, name))
 			{
-				if (set_it)
-	                Wings[i].flags.set(Ship::Wing_Flags::Nav_carry);
-				else
-					Wings[i].flags.remove(Ship::Wing_Flags::Nav_carry);
+                Wings[i].flags.set(Ship::Wing_Flags::Nav_carry, set_it);
 				skip = true;
 				break;
 			}
@@ -19262,10 +19260,7 @@ void set_unset_nav_carry_status(int node, bool set_it)
 			{
 				if (Ships[i].objnum != -1 && !stricmp(Ships[i].ship_name, name))
 				{
-					if (set_it)
-	                    Ships[i].flags.set(Ship::Ship_Flags::Navpoint_carry);
-					else
-						Ships[i].flags.remove(Ship::Ship_Flags::Navpoint_carry);
+                    Ships[i].flags.set(Ship::Ship_Flags::Navpoint_carry, set_it);
 					break;
 				}
 			}
@@ -19293,12 +19288,9 @@ void set_unset_nav_needslink(int node, bool set_it)
 			if (Ships[i].objnum != -1 && !stricmp(Ships[i].ship_name, name))
 			{
 				if (set_it)
-				{
 					Ships[i].flags.remove(Ship::Ship_Flags::Navpoint_carry);
-					Ships[i].flags.set(Ship::Ship_Flags::Navpoint_needslink);
-				}
-				else
-					Ships[i].flags.remove(Ship::Ship_Flags::Navpoint_needslink);
+
+				Ships[i].flags.set(Ship::Ship_Flags::Navpoint_needslink, set_it);
 				break;
 			}
 		}
@@ -21720,22 +21712,6 @@ void sexp_show_subtitle_text(int node)
 	CLAMP(red, 0, 255);
 	CLAMP(green, 0, 255);
 	CLAMP(blue, 0, 255);
-
-	// check bounds
-	if (x_pct < -100)
-		x_pct = -100;
-	if (x_pct > 100)
-		x_pct = 100;
-	if (y_pct < -100)
-		y_pct = -100;
-	if (y_pct > 100)
-		y_pct = 100;
-	if (red > 255)
-		red = 255;
-	if (green > 255)
-		green = 255;
-	if (blue > 255)
-		blue = 255;
 
 	color new_color;
 	gr_init_alphacolor(&new_color, red, green, blue, 255);
