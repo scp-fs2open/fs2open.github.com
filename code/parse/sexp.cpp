@@ -4174,7 +4174,7 @@ int mod_sexps(int n)
 			int div = eval_sexp(CDR(n));
 			n = CDR(n);
 			if (div == 0) {
-				Warning(LOCATION, "Modulo by zero in sexp. Please check all uses of the % operator for possible causes.\n");
+				Warning(LOCATION, "Modulo by zero in sexp. Please check all uses of the %% operator for possible causes.\n");
 				continue;
 			}
 			sum = sum % div;
