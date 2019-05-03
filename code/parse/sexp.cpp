@@ -21312,8 +21312,8 @@ object *sexp_camera_get_objsub(int node, int *o_submodel)
 {
 	//Get arguments
 	int n = node;
-	char *obj_name = NULL;
-	char *sub_name = NULL;
+	char *obj_name = nullptr;
+	char *sub_name = nullptr;
 	
 	obj_name = CTEXT(n);
 	n = CDR(n);
@@ -21321,7 +21321,7 @@ object *sexp_camera_get_objsub(int node, int *o_submodel)
 		sub_name = CTEXT(n);
 	
 	//Important variables
-	object *objp = NULL;
+	object *objp = nullptr;
 	int submodel = -1;
 	
 	//*****Process obj_name
@@ -21337,23 +21337,23 @@ object *sexp_camera_get_objsub(int node, int *o_submodel)
 			break;
 
 		default:
-			objp = NULL;
+			objp = nullptr;
 	}
 
 	//*****Process submodel
-	if(objp != NULL && sub_name != NULL && oswpt.type == OSWPT_TYPE_SHIP)
+	if(objp != nullptr && sub_name != nullptr && oswpt.type == OSWPT_TYPE_SHIP)
 	{
 		if(stricmp(sub_name, SEXP_NONE_STRING) != 0)
 		{
 			ship_subsys *ss = ship_get_subsys(&Ships[objp->instance], sub_name);
-			if (ss != NULL)
+			if (ss != nullptr)
 			{
 				submodel = ss->system_info->subobj_num;
 			}
 		}
 	}
 	
-	if(o_submodel != NULL)
+	if(o_submodel != nullptr)
 		*o_submodel = submodel;
 	
 	return objp;
