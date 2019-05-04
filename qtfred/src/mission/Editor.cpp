@@ -151,7 +151,7 @@ bool Editor::loadMission(const std::string& mission_name, int flags) {
 		}
 	}
 
-	if (parse_main(filepath.c_str(), flags)) {
+	if (!parse_main(filepath.c_str(), flags)) {
 		if (flags & MPF_IMPORT_FSM) {
 			SCP_string msg;
 			sprintf(msg, "Unable to import the file \"%s\".", filepath.c_str());
