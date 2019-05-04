@@ -6025,7 +6025,7 @@ void parse_init(bool basic)
 		init_sexp();
 }
 
-// mai parse routine for parsing a mission.  The default parameter flags tells us which information
+// main parse routine for parsing a mission.  The default parameter flags tells us which information
 // to get when parsing the mission.  0 means get everything (default).  Other flags just gets us basic
 // info such as game type, number of players etc.
 bool parse_main(const char *mission_name, int flags)
