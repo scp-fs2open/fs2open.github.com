@@ -64,8 +64,6 @@ struct obj_pair	{
 #define SUBMODEL_ROT_HIT		1
 void set_hit_struct_info(collision_info_struct *hit, mc_info *mc, int submodel_rot_hit);
 
-void obj_add_pair( object *A, object *B, int check_time = -1, int add_to_end = 0 );
-
 void obj_add_collider(int obj_index);
 void obj_remove_collider(int obj_index);
 void obj_reset_colliders();

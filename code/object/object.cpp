@@ -1854,91 +1854,10 @@ int obj_team(object *objp)
 }
 
 /**
- * Add an element to the CheckObjects[] array, and update the
- * object pairs.  This is called from obj_create(), and the restore
- * save-game code.
- */
-void obj_add_pairs(int objnum)
-{
-	object	*objp;
-
-	Assert(objnum != -1);
-	objp = &Objects[objnum];	
-
-	// don't do anything if its already in the object pair list
-	if(!(objp->flags[Object::Object_Flags::Not_in_coll])){
-		return;
-	}
-
-#ifdef OBJECT_CHECK 
-	CheckObjects[objnum].type = objp->type;
-	CheckObjects[objnum].signature = objp->signature;
-    CheckObjects[objnum].flags = objp->flags;
-    CheckObjects[objnum].flags.remove(Object::Object_Flags::Not_in_coll);
-	CheckObjects[objnum].parent_sig = objp->parent_sig;
-	CheckObjects[objnum].parent_type = objp->parent_type;
-#endif	
-
-	// Find all the objects that can collide with this and add 
-	// it to the collision pair list. 
-	object * A;
-	for ( A = GET_FIRST(&obj_used_list); A !=END_OF_LIST(&obj_used_list); A = GET_NEXT(A) )	{
-		obj_add_pair( objp, A );
-	}
-	
-	objp->flags.remove(Object::Object_Flags::Not_in_coll);
-}
-
-/**
  * Removes any occurances of object 'a' from
  * the pairs list.
  */
 extern int Num_pairs;
-extern obj_pair pair_used_list;
-extern obj_pair pair_free_list;
-void obj_remove_pairs( object * a )
-{
-	obj_pair *parent, *tmp;
-
-	a->flags.set(Object::Object_Flags::Not_in_coll);	
-#ifdef OBJECT_CHECK 
-	CheckObjects[OBJ_INDEX(a)].flags.set(Object::Object_Flags::Not_in_coll);
-#endif	
-
-	if ( a->num_pairs < 1 )	{
-		return;
-	}
-
-	Num_pairs-=a->num_pairs;
-	
-	parent = &pair_used_list;
-	tmp = parent->next;
-
-	while( tmp != NULL )	{
-		if ( (tmp->a==a) || (tmp->b==a) )	{
-			// Hmmm... a potenial compiler optimization problem here... either tmp->a or tmp->b
-			// is equal to 'a' and we modify 'num_pairs' in one of these and then use the value
-			// stored in 'a' later one... will the optimizer find that?  Hmmm...
-			tmp->a->num_pairs--;
-			Assert( tmp->a->num_pairs > -1 );
-			tmp->b->num_pairs--;
-			Assert( tmp->b->num_pairs > -1 );
-			parent->next = tmp->next;
-			tmp->a = tmp->b = NULL;
-			tmp->next = pair_free_list.next;
-			pair_free_list.next = tmp;
-			tmp = parent->next;
-
-			if ( a->num_pairs==0 )	{
-				break;
-			}
-
-		} else {
-			parent = tmp;
-			tmp = tmp->next;
-		}
-	}
-}
 
 /**
  * Reset all collisions
