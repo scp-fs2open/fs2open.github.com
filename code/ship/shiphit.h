@@ -22,7 +22,7 @@ class object;
 
 #define MISS_SHIELDS		-1
 
-const float DEATHROLL_ROTVEL_CAP = 6.3f;
+constexpr float DEATHROLL_ROTVEL_CAP = 6.3f;    // maximum added deathroll rotvel in rad/sec (6.3 rad/sec is about 1 rev/sec)
 
 // =====================   NOTE!! =========================
 // To apply damage to a ship, call either ship_apply_local_damage or ship_apply_global_damage.
