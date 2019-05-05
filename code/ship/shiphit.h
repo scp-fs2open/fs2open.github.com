@@ -22,6 +22,8 @@ class object;
 
 #define MISS_SHIELDS		-1
 
+const float DEATHROLL_ROTVEL_CAP = 6.3f;
+
 // =====================   NOTE!! =========================
 // To apply damage to a ship, call either ship_apply_local_damage or ship_apply_global_damage.
 // These replace the old calls to ship_hit and ship_do_damage...
