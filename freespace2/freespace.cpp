@@ -4112,10 +4112,6 @@ void game_frame(bool paused)
 fix Last_time = 0;						// The absolute time of game at end of last frame (beginning of this frame)
 fix Last_delta_time = 0;				// While game is paused, this keeps track of how much elapsed in the frame before paused.
 static int timer_paused=0;
-#if defined(TIMER_TEST) && !defined(NDEBUG)
-static int stop_count,start_count;
-static int time_stopped,time_started;
-#endif
 int saved_timestamp_ticker = -1;
 
 void game_reset_time()
@@ -4139,23 +4135,13 @@ void game_stop_time()
 		Last_delta_time = time - Last_time;		
 
 		if (Last_delta_time < 0) {
-			#if defined(TIMER_TEST) && !defined(NDEBUG)
-			Int3();		//get Matt!!!!
-			#endif
 			Last_delta_time = 0;
 		}
-		#if defined(TIMER_TEST) && !defined(NDEBUG)
-		time_stopped = time;
-		#endif
 
 		// Stop the timer_tick stuff...
 		saved_timestamp_ticker = timestamp();
 	}
 	timer_paused++;
-
-	#if defined(TIMER_TEST) && !defined(NDEBUG)
-	stop_count++;
-	#endif
 }
 
 void game_start_time()
@@ -4165,19 +4151,11 @@ void game_start_time()
 	if (timer_paused==0) {
 		fix time;
 		time = timer_get_fixed_seconds();
-		#if defined(TIMER_TEST) && !defined(NDEBUG)
-		if (Last_time < 0)
-			Int3();		//get Matt!!!!
-		}
-		#endif
-		// Take current time, and set it backwards to account for time	
+		// Take current time, and set it backwards to account for time
 		// that the frame already executed, so that timer_get_fixed_seconds() - Last_time
 		// will be correct when it goes to calculate the frametime next
 		// frame.
 		Last_time = time - Last_delta_time;		
-		#if defined(TIMER_TEST) && !defined(NDEBUG)
-		time_started = time;
-		#endif
 
 		// Restore the timer_tick stuff...
 		// Normally, you should never access 'timestamp_ticker', consider this a low-level routine
@@ -4185,10 +4163,6 @@ void game_start_time()
 		timestamp_set_value(saved_timestamp_ticker);
 		saved_timestamp_ticker = -1;
 	}
-
-	#if defined(TIMER_TEST) && !defined(NDEBUG)
-	start_count++;
-	#endif
 }
 
 void lock_time_compression(bool is_locked)
