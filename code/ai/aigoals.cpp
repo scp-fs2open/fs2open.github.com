@@ -733,6 +733,12 @@ void ai_add_goal_sub_scripting(int type, int mode, int submode, int priority, ch
 		aigp->target_signature = Objects[Weapons[submode].objnum].signature;
 	}
 
+	if ( mode == AI_GOAL_WAYPOINTS_ONCE || mode == AI_GOAL_WAYPOINTS ) {
+		// should be the same as setting via sexp, see ai_add_goal_sub_sexp
+		// set to null so the AI code can setup the new waypoint list, see ai_mission_goal_achievable
+		aigp->wp_list = nullptr;
+	}
+
 	if ( target_name != NULL )
 		aigp->target_name = ai_get_goal_target_name( target_name, &aigp->target_name_index );
 	else
