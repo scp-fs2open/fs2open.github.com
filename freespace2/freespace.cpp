@@ -2037,7 +2037,6 @@ void game_show_framerate()
 	}
 #endif
 
-
 	if ((Show_framerate && HUD_draw) || Cmdline_frame_profile || Cmdline_bmpman_usage) {
 
 		gr_set_color_fast(&HUD_color_debug);
@@ -3335,10 +3334,8 @@ void game_render_frame( camid cid )
 
 	neb2_render_setup(cid);
 
-#ifndef DYN_CLIP_DIST
 	gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
 	gr_set_view_matrix(&Eye_position, &Eye_matrix);
-#endif
 
 	if ( Game_subspace_effect )	{
 		stars_draw(0,0,0,1,0);
@@ -3354,12 +3351,6 @@ void game_render_frame( camid cid )
 	if (!Trail_render_override) trail_render_all();						// render missilie trails after everything else.
 	particle::render_all();					// render particles after everything else.
 	
-#ifdef DYN_CLIP_DIST
-	gr_end_proj_matrix();
-	gr_end_view_matrix();
-	gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
-	gr_set_view_matrix(&Eye_position, &Eye_matrix);
-#endif
 
 	beam_render_all();						// render all beam weapons
 
