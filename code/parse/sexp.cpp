@@ -21838,10 +21838,10 @@ void sexp_show_subtitle_image(int node)
 	}
 
 	// calculate pixel positions
-	int x_pos = (int)(gr_screen.center_w * (x_pct / 100.0f));
-	int y_pos = (int)(gr_screen.center_h * (y_pct / 100.0f));
-	int width = (int)(gr_screen.center_w * (width_pct / 100.0f));
-	int height = (int)(gr_screen.center_h * (height_pct / 100.0f));
+	int x_pos = fl2i(gr_screen.center_w * (x_pct / 100.0f));
+	int y_pos = fl2i(gr_screen.center_h * (y_pct / 100.0f));
+	int width = fl2i(gr_screen.center_w * (width_pct / 100.0f));
+	int height = fl2i(gr_screen.center_h * (height_pct / 100.0f));
 
 	// add the subtitle
 	subtitle new_subtitle(x_pos, y_pos, NULL, image, display_time, fade_time, NULL, -1, center_x, center_y, width, height, post_shaded);
