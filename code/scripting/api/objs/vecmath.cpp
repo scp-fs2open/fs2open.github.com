@@ -99,6 +99,7 @@ ADE_INDEXER(l_Matrix,
 		if (idx == -3) {
 			val = &ang->h;
 		}
+		
 	} else {
 		idx--;    //Lua->FS2
 		val = &mh->GetMatrix()->a1d[idx];
@@ -112,7 +113,7 @@ ADE_INDEXER(l_Matrix,
 		if (idx < 0) {
 			mh->SetStatus(MatrixState::MatrixOutOfdate);
 		} else {
-			mh->SetStatus(MatrixState::MatrixOutOfdate);
+			mh->SetStatus(MatrixState::AnglesOutOfDate);
 		}
 
 //Might as well put this here
