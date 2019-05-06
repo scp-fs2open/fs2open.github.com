@@ -543,60 +543,7 @@ void game_flash_reset()
 	Big_expl_flash.flash_start = 0;
 }
 
-float Gf_critical = -1.0f;					// framerate we should be above on the average for this mission
-float Gf_critical_time = 0.0f;			// how much time we've been at the critical framerate
-
-void game_framerate_check_init()
-{
-	// zero critical time
-	Gf_critical_time = 0.0f;
-		
-	// nebula missions
-	if(The_mission.flags[Mission::Mission_Flags::Fullneb]){
-		Gf_critical = 15.0f;			
-	} else {
-		Gf_critical = 25.0f;
-	}
-}
-
 extern float Framerate;
-void game_framerate_check()
-{
-	int y_start = gr_screen.center_offset_y + 100;
-	
-	// if the current framerate is above the critical level, add frametime
-	if(Framerate >= Gf_critical){
-		Gf_critical_time += flFrametime;
-	}	
-
-	if (!Show_framerate) {
-		return;
-	}
-
-	// display if we're above the critical framerate
-	if(Framerate < Gf_critical){
-		gr_set_color_fast(&Color_bright_red);
-		gr_string(gr_screen.center_offset_x + 200, y_start, "Framerate warning", GR_RESIZE_NONE);
-
-		y_start += 10;
-	}
-
-	// display our current pct of good frametime
-	if(f2fl(Missiontime) >= 0.0f){
-		float pct = (Gf_critical_time / f2fl(Missiontime)) * 100.0f;
-
-		if(pct >= 85.0f){
-			gr_set_color_fast(&Color_bright_green);
-		} else {
-			gr_set_color_fast(&Color_bright_red);
-		}
-
-		gr_printf_no_resize(gr_screen.center_offset_x + 200, y_start, "%d%%", (int)pct);
-
-		y_start += 10;
-	}
-}
-
 
 /**
  * Adds a flash effect.  
@@ -1342,8 +1289,6 @@ void game_post_level_init()
 	gr_set_ambient_light(The_mission.ambient_light_level & 0xff, 
 							(The_mission.ambient_light_level >> 8) & 0xff,
 							(The_mission.ambient_light_level >> 16) & 0xff);
-
-	game_framerate_check_init();
 
 	// If this is a red alert mission in campaign mode, bash wingman status
 	if ( (Game_mode & GM_CAMPAIGN_MODE) && red_alert_mission() ) {
