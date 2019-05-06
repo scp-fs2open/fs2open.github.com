@@ -217,9 +217,6 @@ extern "C" {
 //	OEM version:
 //		1.00		5/28/98	AL.	First release to Interplay QA.
 
-
-extern bool frame_rate_display;
-
 void game_reset_view_clip();
 void game_reset_shade_frame();
 void game_post_level_init();
@@ -227,8 +224,6 @@ void game_do_frame();
 void game_update_missiontime();	// called from game_do_frame() and navmap_do_frame()
 void game_reset_time();
 void game_show_framerate();			// draws framerate in lower right corner
-
-int Game_no_clear = 0;
 
 typedef struct big_expl_flash {
 	float max_flash_intensity;	// max intensity
@@ -284,7 +279,6 @@ extern void model_page_in_start();
 int	Show_cpu = 0;
 int	Show_target_debug_info = 0;
 int	Show_target_weapons = 0;
-int	Game_font = -1;
 #ifndef NDEBUG
 static int Show_player_pos = 0;		// debug console command to show player world pos on HUD
 #endif
@@ -298,10 +292,6 @@ bool Time_compression_locked = false; //Can the user change time with shift- con
 
 // auto-lang stuff
 int detect_lang();
-
-// table checksums that will be used for pilot files
-uint Weapon_tbl_checksum = 0;
-uint Ships_tbl_checksum = 0;
 
 // if the ships.tbl the player has is valid
 int Game_ships_tbl_valid = 0;
@@ -327,10 +317,6 @@ int game_single_step = 0;
 int last_single_step=0;
 
 int game_zbuffer = 1;
-static int Game_paused;
-
-#define EXPIRE_BAD_CHECKSUM			1
-#define EXPIRE_BAD_TIME					2
 
 extern void ssm_init();
 extern void ssm_level_init();
@@ -344,10 +330,6 @@ extern void ssm_process();
 // defines and variables used for dumping frame for making trailers.
 #ifndef NDEBUG
 int Debug_dump_frames = 0;			// Set to 0 to not dump frames, else equal hz to dump. (15 or 30 probably)
-int Debug_dump_trigger = 0;
-int Debug_dump_frame_count;
-int Debug_dump_frame_num = 0;
-#define DUMP_BUFFER_NUM_FRAMES	1			// store every 15 frames
 #endif
 
 // amount of time to wait after the player has died before we display the death died popup
@@ -530,7 +512,6 @@ float Game_shudder_intensity = 0.0f;			// should be between 0.0 and 100.0
 // EAX stuff
 sound_env Game_sound_env;
 sound_env Game_default_sound_env = { EAX_ENVIRONMENT_BATHROOM, 0.2f, 0.2f, 1.0f };
-int Game_sound_env_update_timestamp;
 
 fs_builtin_mission *game_find_builtin_mission(char *filename)
 {
@@ -928,7 +909,6 @@ void game_level_close()
 		lock_time_compression(false);
 
 		audiostream_unpause_all();
-		Game_paused = 0;
 
 		gr_set_ambient_light(120, 120, 120);
 
@@ -1049,9 +1029,6 @@ void game_level_init()
 	nebl_level_init();
 
 	Last_view_target = NULL;
-	Game_paused = 0;
-
-	Game_no_clear = 0;
 
 	// campaign wasn't ended
 	Campaign_ending_via_supernova = 0;
@@ -1274,8 +1251,6 @@ void game_assign_sound_environment()
 	} else {
 		Game_sound_env = Game_default_sound_env;
 	}
-
-	Game_sound_env_update_timestamp = timestamp(1);
 }
 
 /**
@@ -2009,7 +1984,6 @@ void game_init()
 	}
 
 	Viewer_mode = 0;
-	Game_paused = 0;
 
 	// Do this before the initial scripting hook runs in case that hook does something with the UI
 	scpui::initialize();
@@ -2430,8 +2404,6 @@ void game_increase_skill_level()
 	}
 }
 
-int	Player_died_time;
-
 int View_percent = 100;
 
 
@@ -2513,25 +2485,6 @@ void game_set_view_clip(float  /*frametime*/)
 			gr_set_clip(xborder, yborder, gr_screen.max_w-xborder*2,gr_screen.max_h-yborder*2, GR_RESIZE_NONE );
 		}
 	}
-}
-
-
-void show_debug_stuff()
-{
-	int	i;
-	int	laser_count = 0, missile_count = 0;
-
-	for (i=0; i<MAX_OBJECTS; i++) {
-		if (Objects[i].type == OBJ_WEAPON){
-			if (Weapon_info[Weapons[Objects[i].instance].weapon_info_index].subtype == WP_LASER){
-				laser_count++;
-			} else if (Weapon_info[Weapons[Objects[i].instance].weapon_info_index].subtype == WP_MISSILE){
-				missile_count++;
-			}
-		}
-	}
-
-	nprintf(("Mike", "Frame: %i Lasers: %4i, Missiles: %4i\n", Framecount, laser_count, missile_count));
 }
 
 extern int Tool_enabled;
@@ -2959,8 +2912,6 @@ void game_whack_apply( float x, float y )
 	// Move the eye 
 	Game_hit_x += x;
 	Game_hit_y += y;
-
-//	mprintf(( "WHACK = %.1f, %.1f\n", Game_hit_x, Game_hit_y ));
 }
 
 // call to apply a "shudder"
@@ -3055,17 +3006,6 @@ void apply_view_shake(matrix *eye_orient)
 vec3d	Dead_player_last_vel = { { { 1.0f, 1.0f, 1.0f } } };
 
 int Scripting_didnt_draw_hud = 1;
-
-camid chase_get_camera()
-{
-	static camid chase_camera;
-	if(!chase_camera.isValid())
-	{
-		chase_camera = cam_create("Chase camera");
-	}
-
-	return chase_camera;
-}
 
 extern vec3d Dead_camera_pos;
 
@@ -3602,8 +3542,6 @@ void john_debug_stuff(vec3d *eye_pos, matrix *eye_orient)
 }
 #endif
 
-extern int Player_dead_state;
-
 //	Flip the page and time how long it took.
 void game_flip_page_and_time_it()
 {
@@ -3756,8 +3694,6 @@ void game_simulation_frame()
 
 		// move all objects - does interpolation now as well
 		obj_move_all(flFrametime);
-
-
 	}
 
 	// only process the message queue when the player is "in" the game
@@ -4097,11 +4033,8 @@ void game_frame(bool paused)
 			}
 		}
 	
-		if (Missiontime > Entry_delay_time){
+		if (Missiontime > Entry_delay_time)
 			Pre_player_entry = 0;
-		} else {
-			; //nprintf(("AI", "Framecount = %i, time = %7.3f\n", Framecount, f2fl(Missiontime)));
-		}
 
 		//	Note: These are done even before the player enters, else buffers can overflow.
 		if (! (Game_mode & GM_STANDALONE_SERVER)){
@@ -4293,7 +4226,6 @@ void game_reset_time()
 		return ;
 	}
 
-	//	Last_time = timer_get_fixed_seconds();
 	game_start_time();
 	timestamp_reset();
 	game_stop_time();
@@ -4308,7 +4240,6 @@ void game_stop_time()
 		// use it when we unpause.
 		Last_delta_time = time - Last_time;		
 
-		//mprintf(("Last_time in game_stop_time = %7.3f\n", f2fl(Last_delta_time)));
 		if (Last_delta_time < 0) {
 			#if defined(TIMER_TEST) && !defined(NDEBUG)
 			Int3();		//get Matt!!!!
@@ -4400,8 +4331,6 @@ void game_set_frametime(int state)
 	else
 		Frametime = thistime - Last_time;
 
-//	Frametime = F1_0 / 30;
-
 #ifndef NDEBUG
 	fix	debug_frametime = Frametime;	//	Just used to display frametime.
 #endif
@@ -4436,7 +4365,6 @@ void game_set_frametime(int state)
 		cap = F1_0/Framerate_cap;
 		if (Frametime < cap) {
 			thistime = cap - Frametime;
-//  			mprintf(("Sleeping for %6.3f seconds.\n", f2fl(thistime)));
 			os_sleep(static_cast<int>(f2fl(thistime) * 1000.0f));
 			Frametime = cap;
 			thistime = timer_get_fixed_seconds();
@@ -4485,7 +4413,6 @@ void game_set_frametime(int state)
 	}
 
 	Last_time = thistime;
-	//mprintf(("Frame %i, Last_time = %7.3f\n", Framecount, f2fl(Last_time)));
 	Last_frame_timestamp = timestamp();
 
 	flFrametime = f2fl(Frametime);
@@ -4497,11 +4424,6 @@ void game_set_frametime(int state)
 		FrametimeOverall = 0;
 
 	FrametimeOverall += Frametime;
-
-/*	if ((Framecount > 0) && (Framecount < 10)) {
-		mprintf(("Frame %2i: frametime = %.3f (%.3f)\n", Framecount, f2fl(Frametime), f2fl(debug_frametime)));
-	}
-*/
 }
 
 fix game_get_overall_frametime()
@@ -4522,9 +4444,6 @@ void game_do_frame()
 {	
 	game_set_frametime(GS_STATE_GAME_PLAY);
 	game_update_missiontime();
-
-//	if (Player_ship->flags[Ship::Ship_Flags::Dying])
-//		flFrametime /= 15.0;
 
 	if (Game_mode & GM_STANDALONE_SERVER) {
 		std_multi_set_standalone_missiontime(f2fl(Missiontime));
@@ -4560,8 +4479,6 @@ void game_flush()
 	snazzy_flush();
 
 	Joymouse_button_status = 0;
-
-	//mprintf(("Game flush!\n" ));
 }
 
 // function for multiplayer only which calls game_do_state_common() when running the
@@ -4639,7 +4556,6 @@ int game_poll()
 		m = mouse_down(MOUSE_LEFT_BUTTON);
 
 		if ( j != Joymouse_button_status )	{
-			//mprintf(( "Joy went from %d to %d, mouse is %d\n", Joymouse_button_status, j, m ));
 			Joymouse_button_status = j;
 			if ( j && (!m) )	{
 				mouse_mark_button( MOUSE_LEFT_BUTTON, 1 );
@@ -4663,8 +4579,6 @@ int game_poll()
 		}
 	}
 
-//	if ( k ) nprintf(( "General", "Key = %x\n", k ));
-
 	switch (k) {
 		case KEY_F1:
 			launch_context_help();
@@ -4672,9 +4586,7 @@ int game_poll()
 			break;
 
 		case KEY_F2:
-//			if (state != GS_STATE_INITIAL_PLAYER_SELECT) {
-
-			// don't allow f2 while warping out in multiplayer	
+			// don't allow f2 while warping out in multiplayer
 			if((Game_mode & GM_MULTIPLAYER) && (Net_player != NULL) && (Net_player->flags & NETINFO_FLAG_WARPING_OUT)){
 				break;
 			}
@@ -4902,7 +4814,6 @@ void game_process_event( int current_state, int event )
 				Script_system.RemHookVar("Player");
 
 			Start_time = f2fl(timer_get_approx_seconds());
-			//Framecount = 0;
 			mprintf(("Entering game at time = %7.3f\n", Start_time));
 			break;
 
@@ -5213,13 +5124,6 @@ void game_leave_state( int old_state, int new_state )
 			end_mission = 0;  // these events shouldn't end a mission
 			break;
 	}
-
-	//WMC - Scripting override
-	/*
-	if(script_hook_valid(&GS_state_hooks[old_state]) && Script_system.IsOverride(GS_state_hooks[old_state])) {
-		return;
-	}
-	*/
 
 	using namespace scripting::api;
 
@@ -5626,13 +5530,6 @@ void game_enter_state( int old_state, int new_state )
 {
 	events::GameEnterState(old_state, new_state);
 
-	//WMC - Scripting override
-	/*
-	if(script_hook_valid(&GS_state_hooks[new_state]) && Script_system.IsOverride(GS_state_hooks[new_state])) {
-		return;
-	}
-	*/
-
 	using namespace scripting::api;
 
 	Script_system.SetHookVar("OldState", 'o', l_GameState.Set(gamestate_h(old_state)));
@@ -5675,10 +5572,6 @@ void game_enter_state( int old_state, int new_state )
 				main_hall_init(Campaign.missions[Campaign.next_mission].main_hall);
 			}
 
-			//if ( (Cmdline_start_netgame || (Cmdline_connect_addr != NULL)) && !Main_hall_netgame_started ) {
-			//	Main_hall_netgame_started = 1;
-			//	main_hall_do_multi_ready();
-			//} DTP commented out to keep original source
 			if ( (Cmdline_start_netgame || (Cmdline_connect_addr != NULL)) && (!Main_hall_netgame_started) /*&& (Game_mode == GM_MULTIPLAYER)*/) { // DTP added "&& (game_mode == GM_multiplayer)" so that ppl don't get thrown into Multiplayer with a Singleplayer Pilot.
 				Main_hall_netgame_started = 1;
 				main_hall_do_multi_ready();
@@ -5788,10 +5681,6 @@ void game_enter_state( int old_state, int new_state )
 			break;
 
 		case GS_STATE_DEBUG_PAUSED:
-	//		game_stop_time();
-	//		os_set_title("FreeSpace - PAUSED");
-	//		break;
-	//
 		case GS_STATE_TRAINING_PAUSED:
 			#ifndef NDEBUG
 				game_stop_time();
@@ -5800,7 +5689,6 @@ void game_enter_state( int old_state, int new_state )
 			break;
 
 		case GS_STATE_OPTIONS_MENU:
-			//game_stop_time();
 			options_menu_init();
 			break;
  
@@ -5810,11 +5698,6 @@ void game_enter_state( int old_state, int new_state )
 			if((old_state == GS_STATE_BRIEFING) || (old_state == GS_STATE_SHIP_SELECT) || 
 			   (old_state == GS_STATE_WEAPON_SELECT) || (old_state == GS_STATE_RED_ALERT) ) {
 				common_maybe_play_cutscene(MOVIE_PRE_GAME); 
-			}
-			// reset time compression to default level so it's right at the beginning of a mission - taylor
-			if(old_state != GS_STATE_GAME_PAUSED)
-			{
-				//Game_time_compression = F1_0;
 			}
 
 			/* game could be comming from a restart (rather than first start)
@@ -6014,8 +5897,6 @@ void mouse_force_pos(int x, int y);
 			break;
 
 		case GS_STATE_DEATH_DIED:
-			Player_died_time = timestamp(10);
-
 			if(!(Game_mode & GM_MULTIPLAYER)){
 				player_show_death_message();
 			}
@@ -6213,16 +6094,6 @@ void game_do_state(int state)
 		gr_flip();	//Does state hook automagically
 		return;
 	}
-	/*
-	if(Script_system.IsOverride(GS_state_hooks[state]))
-	{
-		game_set_frametime(state);
-		gr_clear();
-		Script_system.RunBytecode(GS_state_hooks[state]);
-		gr_flip();
-		return;
-	}
-	*/
 	
 	switch (state) {
 		case GS_STATE_MAIN_MENU:
@@ -6264,7 +6135,6 @@ void game_do_state(int state)
 			if(pause_get_type() == PAUSE_TYPE_VIEWER)	{
 
 				read_player_controls( Player_obj, flFrametime);
-			//	game_process_keys();
 				game_frame(true);
 			}
 				
@@ -6527,48 +6397,6 @@ int game_do_ram_check(uint64_t ram_in_bytes)
 	return 0;
 }
 
-
-#if 0 // no updater for fs2
-// Check if there is a freespace.exe in the /update directory (relative to where fs.exe is installed).
-// If so, copy it over and remove the update directory.
-void game_maybe_update_launcher(char *exe_dir)
-{
-	char src_filename[MAX_PATH];
-	char dest_filename[MAX_PATH];
-
-	strcpy_s(src_filename, exe_dir);
-	strcat_s(src_filename, NOX("\\update\\freespace.exe"));
-
-	strcpy_s(dest_filename, exe_dir);
-	strcat_s(dest_filename, NOX("\\freespace.exe"));
-
-	// see if src_filename exists
-	FILE *fp;
-	fp = fopen(src_filename, "rb");
-	if ( !fp ) {
-		return;
-	}
-	fclose(fp);
-
-	SetFileAttributes(dest_filename, FILE_ATTRIBUTE_NORMAL);
-
-	// copy updated freespace.exe to freespace exe dir
-	if ( CopyFile(src_filename, dest_filename, 0) == 0 ) {
-		MessageBox( NULL, XSTR("Unable to copy freespace.exe from update directory to installed directory.  You should copy freespace.exe from the update directory (located in your FreeSpace install directory) to your install directory", 988), NULL, MB_OK|MB_TASKMODAL|MB_SETFOREGROUND );
-		return;
-	}
-
-	// delete the file in the update directory
-	DeleteFile(src_filename);
-
-	// safe to assume directory is empty, since freespace.exe should only be the file ever in the update dir
-	char update_dir[MAX_PATH];
-	strcpy_s(update_dir, exe_dir);
-	strcat_s(update_dir, NOX("\\update"));
-	RemoveDirectory(update_dir);
-}
-#endif // no launcher
-
 #endif // ifdef WIN32
 
 void game_spew_pof_info_sub(int model_num, polymodel *pm, int sm, CFILE *out, int *out_total, int *out_destroyed_total)
@@ -6795,44 +6623,6 @@ int game_main(int argc, char *argv[])
 	return 0;
 }
 
-#if 0  // don't have an updater for fs2_open
-// launch the fslauncher program on exit
-void game_launch_launcher_on_exit()
-{
-	STARTUPINFO si;
-	PROCESS_INFORMATION pi;
-	char cmd_line[2048];
-	char original_path[1024] = "";
-	
-	memset( &si, 0, sizeof(STARTUPINFO) );
-	si.cb = sizeof(si);
-
-	// directory
-	_getcwd(original_path, 1023);
-
-	// set up command line
-	strcpy_s(cmd_line, original_path);
-	strcat_s(cmd_line, DIR_SEPARATOR_STR);
-	strcat_s(cmd_line, LAUNCHER_FNAME);
-	strcat_s(cmd_line, " -straight_to_update");
-
-	BOOL ret = CreateProcess(	NULL,									// pointer to name of executable module 
-										cmd_line,							// pointer to command line string
-										NULL,									// pointer to process security attributes 
-										NULL,									// pointer to thread security attributes 
-										FALSE,								// handle inheritance flag 
-										CREATE_DEFAULT_ERROR_MODE,		// creation flags 
-										NULL,									// pointer to new environment block 
-										NULL,									// pointer to current directory name 
-										&si,									// pointer to STARTUPINFO 
-										&pi									// pointer to PROCESS_INFORMATION  
-										);			
-	// to eliminate build warnings
-	ret;
-}
-#endif
-
-
 // game_shutdown()
 //
 // This function is called when FreeSpace terminates normally.  
@@ -6949,14 +6739,6 @@ void game_shutdown(void)
 
 	lcl_xstr_close();
 
-#if 0  // don't have an updater for fs2_open
-	// HACKITY HACK HACK
-	// if this flag is set, we should be firing up the launcher when exiting freespace
-	extern int Multi_update_fireup_launcher_on_exit;
-	if(Multi_update_fireup_launcher_on_exit){
-		game_launch_launcher_on_exit();
-	}
-#endif
 }
 
 // game_stop_looped_sounds()
@@ -7203,8 +6985,6 @@ int Num_models_needing_splitting = 0;
 
 void Time_model( int modelnum )
 {
-//	mprintf(( "Timing ship '%s'\n", si->name ));
-
 	vec3d eye_pos, model_pos;
 	matrix eye_orient, model_orient;
 
@@ -7222,7 +7002,6 @@ void Time_model( int modelnum )
 
 	int model_needs_splitting = 0;
 
-	//fprintf( Texture_fp, "Model: %s\n", pof_file );
 	int i;
 	for (i=0; i<pm->n_textures; i++ )	{
 		char filename[1024];
@@ -7243,8 +7022,6 @@ void Time_model( int modelnum )
 					Tmap_num_too_big++;
 					model_needs_splitting++;
 				}
-			} else {
-				//fprintf( Texture_fp, "\tTexture %d is bogus\n", i );
 			}
 		}
 	}
@@ -7283,7 +7060,6 @@ void Time_model( int modelnum )
 		vm_matrix_x_matrix( &model_orient, &vmd_identity_matrix, &m1 );
 
 		gr_reset_clip();
-//		gr_clear();
 
 		g3_start_frame(1);
 
@@ -7299,7 +7075,6 @@ void Time_model( int modelnum )
 		model_render_immediate( &render_info, modelnum, &model_orient, &model_pos );	//|MR_NO_POLYS );
 
 		g3_end_frame();
-//		gr_flip();
 
 		framecount++;
 		ta.h += 0.1f;
@@ -7329,8 +7104,6 @@ DCF_BOOL( time_models, Time_models )
 
 void Do_model_timings_test()
 {
-	
-
 	if ( !Time_models ) return;
 
 	mprintf(( "Timing models!\n" ));
@@ -7358,8 +7131,7 @@ void Do_model_timings_test()
 	if ( !Time_fp ) return;
 
 	fprintf( Time_fp, "Name\tFPS\tTRAM\tPolys\tVerts\tPixels\n" );
-//	fprintf( Time_fp, "FPS\tTRAM\tPolys\tVerts\tPixels\n" );
-	
+
 	for (i=0; i<MAX_POLYGON_MODELS; i++ )	{
 		if ( model_used[i] )	{
 			Time_model( model_id[i] );
@@ -7532,12 +7304,7 @@ int Game_ships_tbl_checksums[NUM_SHIPS_TBL_CHECKSUMS] = {
 
 void verify_ships_tbl()
 {	
-	/*
-#ifdef NDEBUG
-	Game_ships_tbl_valid = 1;
-#else
-	*/
-	uint file_checksum;		
+	uint file_checksum;
 	int idx;
 
 	// detect if the packfile exists
@@ -7594,11 +7361,6 @@ int Game_weapons_tbl_checksums[NUM_WEAPONS_TBL_CHECKSUMS] = {
 
 void verify_weapons_tbl()
 {
-	/*
-#ifdef NDEBUG
-	Game_weapons_tbl_valid = 1;
-#else
-	*/
 	uint file_checksum;
 	int idx;
 
@@ -7626,7 +7388,6 @@ void verify_weapons_tbl()
 			return;
 		}
 	}
-// #endif
 }
 
 DCF(wepspew, "display the checksum for the current weapons.tbl")
@@ -7660,56 +7421,6 @@ int game_hacked_data()
 
 void game_title_screen_display()
 {
-/*	_finddata_t find;
-	long		find_handle;
-	char current_dir[256];
-
-	//Get the find string
-	_getcwd(current_dir, 256);
-	strcat_s(current_dir, DIR_SEPARATOR_STR);
-	strcat_s(current_dir, "*.pcx");
-
-	//Let the search begin!
-	find_handle = _findfirst(current_dir, &find);
-	int i = 0;
-	if(find_handle != -1)
-	{
-		char *p;
-
-		do {
-			if(!(find.attrib & _A_SUBDIR) && (strlen(find.name) < MAX_FILENAME_LEN)) {
-				p = strchr( find.name, '.' );
-				if(p) {
-					*p = '\0';
-				}
-
-				if(stricmp(find.name, Game_logo_screen_fname[gr_screen.res])
-					&& stricmp(find.name, Game_title_screen_fname[gr_screen.res]))
-				{
-					strcpy_s(Splash_screens[i], find.name);
-					i++;
-				}
-
-				if(i == MAX_SPLASHSCREENS) {
-					break;
-				}
-			}
-		} while(!_findnext(find_handle, &find));
-	}
-
-	if(i) {
-		srand(time(NULL));
-		title_bitmap = bm_load(Splash_screens[rand() % i]);
-
-	} else {
-		title_bitmap = bm_load(Game_title_screen_fname[gr_screen.res]);
-	}
-	
-	if (title_bitmap == -1 && title_logo == -1) {
-//		return;
-	}
-	*/
-
 	bool condhook_override = Script_system.IsConditionOverride(CHA_SPLASHSCREEN);
 	mprintf(("SCRIPTING: Splash screen overrides checked\n"));
 	if(!condhook_override)
@@ -7913,7 +7624,7 @@ void game_unpause()
 	}
 }
 
-int actual_main(int argc, char *argv[])
+int main(int argc, char *argv[])
 {
 	int result = -1;
 	Assert(argc > 0);
@@ -7988,14 +7699,4 @@ int actual_main(int argc, char *argv[])
 #endif
 
 	return result;
-}
-
-#ifdef __cplusplus
-extern "C"
-#endif
-int main(int argc, char *argv[])
-{
-	// The extern "C" causes problems with linking so we'll just call
-	// the actual main function here
-	return actual_main(argc, argv);
 }
