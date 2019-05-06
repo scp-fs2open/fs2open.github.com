@@ -3249,10 +3249,6 @@ camid game_render_frame_setup()
 					mprintf(("Invalid Value for Viewer_obj->type. Expected values are OBJ_SHIP (1) and OBJ_OBSERVER (12), we encountered %d. Please tell a coder.\n", Viewer_obj->type));
 					Int3();
 				}
-
-				#ifdef JOHNS_DEBUG_CODE
-				john_debug_stuff(&eye_pos, &eye_orient);
-				#endif
 			}
 		}
 	}
@@ -3443,39 +3439,6 @@ void game_render_frame( camid cid )
 	
 	g3_end_frame();
 }
-
-//#define JOHNS_DEBUG_CODE	1
-
-#ifdef JOHNS_DEBUG_CODE
-void john_debug_stuff(vec3d *eye_pos, matrix *eye_orient)
-{
-	//if ( keyd_pressed[KEY_LSHIFT] )		
-	{
-		ship_subsys *tsys = Players[Player_num].targeted_subobject;
-		if ( tsys )	{
-			model_subsystem *turret = tsys->system_info;
-
-			if (turret->type == SUBSYSTEM_TURRET )	{
-				vec3d fvec, uvec;
-				object * tobj = &Objects[Players[Player_num].targeted_subobject_parent];
-
-				ship_model_start(tobj);
-
-				model_find_world_point(eye_pos, &turret->turret_firing_point[0], turret->model_num, turret->turret_gun_sobj, &tobj->orient, &tobj->pos );
-				model_find_world_dir(&fvec, &turret->turret_matrix.vec.fvec, turret->model_num, turret->turret_gun_sobj, &tobj->orient, NULL );
-				model_find_world_dir(&uvec, &turret->turret_matrix.vec.uvec, turret->model_num, turret->turret_gun_sobj, &tobj->orient, NULL );
-				
-				vm_vector_2_matrix( eye_orient, &fvec, &uvec, NULL );
-
-				ship_model_stop(tobj);
-
-				Viewer_obj = NULL;
-			}
-		}
-
-	}
-}
-#endif
 
 //	Flip the page and time how long it took.
 void game_flip_page_and_time_it()
