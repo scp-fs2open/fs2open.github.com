@@ -238,8 +238,6 @@ int	Game_skill_level = DEFAULT_SKILL_LEVEL;
 
 #define EXE_FNAME			("fs2.exe")
 
-#define LAUNCHER_FNAME	("Launcher.exe")
-
 // JAS: Code for warphole camera.
 // Needs to be cleaned up.
 float Warpout_time = 0.0f;
@@ -781,7 +779,7 @@ void game_sunspot_process(float frametime)
  * Call once a frame to diminish the flash effect to 0.
  * @param frametime Period over which to dimish at ::DIMINISH_RATE
  */
-void game_flash_diminish(float frametime)
+static void game_flash_diminish(float frametime)
 {
 	float dec_amount = frametime*DIMINISH_RATE;
 
