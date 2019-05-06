@@ -2039,6 +2039,7 @@ void game_show_framerate()
 
 
 	if ((Show_framerate && HUD_draw) || Cmdline_frame_profile || Cmdline_bmpman_usage) {
+
 		gr_set_color_fast(&HUD_color_debug);
 
 		if (Cmdline_frame_profile) {
