@@ -10638,7 +10638,10 @@ void sexp_hud_set_color(int n)
 
 	std::array<int, 3> rgb;
 	bool is_nan, is_nan_forever;
-	eval_array(rgb, n, is_nan, is_nan_forever);
+	eval_array<int>(rgb, n, is_nan, is_nan_forever, [](int num)->int {
+		CLAMP(num, 0, 255);
+		return num;
+	});
 	if (is_nan || is_nan_forever)
 		return;
 
@@ -10653,15 +10656,17 @@ void sexp_hud_set_color(int n)
 // Goober5000
 void sexp_hud_set_max_targeting_range(int n)
 {
+	int val;
 	bool is_nan, is_nan_forever;
 
-	Hud_max_targeting_range = eval_num(n, is_nan, is_nan_forever);
+	val = eval_num(n, is_nan, is_nan_forever);
 	if (is_nan || is_nan_forever)
 		return;
+	if (val < 0) {
+		val = 0;
+	}
 
-	if (Hud_max_targeting_range < 0) {
-		Hud_max_targeting_range = 0;
-    }
+	Hud_max_targeting_range = val;
 
 	Current_sexp_network_packet.start_callback();
 	Current_sexp_network_packet.send_int(Hud_max_targeting_range);
@@ -11876,7 +11881,7 @@ void sexp_send_message_list(int n)
 		n = CDR(n);
 
 		if (is_nan || is_nan_forever) {
-			Warning(LOCATION, "Encounterd a NaN in sexp-send-message-list");
+			Warning(LOCATION, "Encountered a NaN in sexp-send-message-list");
 			return;
 		}
 
@@ -17632,9 +17637,9 @@ void sexp_set_post_effect(int node)
 	bool is_nan, is_nan_forever;
 
 	char *name = CTEXT(node);
-	node = CDR(node);
 	if (name == nullptr || *name == '\0')
 		return;
+	node = CDR(node);
 
 	int amount = eval_num(node, is_nan, is_nan_forever);
 	if (is_nan || is_nan_forever)
@@ -17923,10 +17928,12 @@ void sexp_beam_floating_fire(int n)
 	if (is_nan || is_nan_forever)
 		return;
 
-	// ditto
-	eval_vec3d(&fire_info.target_pos2, n, is_nan, is_nan_forever);
+	// if these nodes do not exist, the vector should be the same as the first
+	int count = eval_vec3d(&fire_info.target_pos2, n, is_nan, is_nan_forever);
 	if (is_nan || is_nan_forever)
 		return;
+	if (count == 0)
+		fire_info.target_pos2 = fire_info.target_pos1;
 
 	beam_fire(&fire_info);
 }
@@ -18253,34 +18260,33 @@ void sexp_turret_tagged_clear_all(int node)
 }
 
 void sexp_turret_change_weapon(int node)
-{	
+{
 	int sindex;
 	int windex;	//hehe
-	ship_subsys *turret = NULL;	
+	ship_subsys *turret = NULL;
 	ship_weapon *swp = NULL;
 
 	// get the firing ship
 	sindex = ship_name_lookup(CTEXT(node));
-	if(sindex < 0 || Ships[sindex].objnum < 0){
+	if (sindex < 0 || Ships[sindex].objnum < 0) {
 		return;
 	}
 	node = CDR(node);
 
 	//Get subsystem
 	turret = ship_get_subsys(&Ships[sindex], CTEXT(node));
-	if(turret == NULL){
+	if (turret == NULL) {
 		return;
 	}
 	swp = &turret->weapons;
 	node = CDR(node);
 
 	windex = weapon_info_lookup(CTEXT(node));
-	if(windex < 0) {
+	if (windex < 0) {
 		return;
 	}
 	node = CDR(node);
 
-	node = CDR(node);
 	//Get the slot
 	float capacity, size;
 	int prim_slot, sec_slot;
@@ -18290,13 +18296,13 @@ void sexp_turret_change_weapon(int node)
 	if (is_nan || is_nan_forever)
 		return;
 
-	if(prim_slot)
+	if (prim_slot)
 	{
-		if(prim_slot > MAX_SHIP_PRIMARY_BANKS) {
+		if (prim_slot > MAX_SHIP_PRIMARY_BANKS) {
 			return;
 		}
 
-		if(prim_slot > swp->num_primary_banks) {
+		if (prim_slot > swp->num_primary_banks) {
 			swp->num_primary_banks++;
 			prim_slot = swp->num_primary_banks;
 		}
@@ -18305,23 +18311,23 @@ void sexp_turret_change_weapon(int node)
 		prim_slot--;
 
 		//Get the max capacity
-		capacity = (float) swp->primary_bank_capacity[prim_slot];
-		size = (float) Weapon_info[windex].cargo_size;
+		capacity = (float)swp->primary_bank_capacity[prim_slot];
+		size = (float)Weapon_info[windex].cargo_size;
 
 		//Set various vars
-		swp->primary_bank_start_ammo[prim_slot] = (int) (capacity / size);
+		swp->primary_bank_start_ammo[prim_slot] = (int)(capacity / size);
 		swp->primary_bank_ammo[prim_slot] = swp->primary_bank_start_ammo[prim_slot];
 		swp->primary_bank_weapons[prim_slot] = windex;
 		swp->primary_bank_rearm_time[prim_slot] = timestamp(0);
 		swp->primary_bank_fof_cooldown[prim_slot] = 0.0f;
 	}
-	else if(sec_slot)
+	else if (sec_slot)
 	{
-		if(sec_slot > MAX_SHIP_PRIMARY_BANKS) {
+		if (sec_slot > MAX_SHIP_PRIMARY_BANKS) {
 			return;
 		}
 
-		if(sec_slot > swp->num_secondary_banks) {
+		if (sec_slot > swp->num_secondary_banks) {
 			swp->num_secondary_banks++;
 			sec_slot = swp->num_secondary_banks;
 		}
@@ -18330,11 +18336,11 @@ void sexp_turret_change_weapon(int node)
 		sec_slot--;
 
 		//Get the max capacity
-		capacity = (float) swp->secondary_bank_capacity[sec_slot];
-		size = (float) Weapon_info[windex].cargo_size;
+		capacity = (float)swp->secondary_bank_capacity[sec_slot];
+		size = (float)Weapon_info[windex].cargo_size;
 
 		//Set various vars
-		swp->secondary_bank_start_ammo[sec_slot] = (int) (capacity / size);
+		swp->secondary_bank_start_ammo[sec_slot] = (int)(capacity / size);
 		swp->secondary_bank_ammo[sec_slot] = swp->secondary_bank_start_ammo[sec_slot];
 		swp->secondary_bank_weapons[sec_slot] = windex;
 		swp->secondary_bank_rearm_time[sec_slot] = timestamp(0);
@@ -20460,7 +20466,6 @@ int sexp_is_player(int node)
 		}
 		return SEXP_FALSE;
 	}
-
 	// For multiplayer we need to decide what to do about respawning players
 	else {		
 		node = CDR(node);
@@ -21892,8 +21897,11 @@ void sexp_set_camera_position(int n)
 		return;
 	if (count == 2)
 		camera_dec_time = camera_acc_time;
+	camera_time /= 1000.0f;
+	camera_acc_time /= 1000.0f;
+	camera_dec_time /= 1000.0f;
 
-	cam->set_position(&camera_vec, camera_time / 1000.0f, camera_acc_time / 1000.0f, camera_dec_time / 1000.0f);
+	cam->set_position(&camera_vec, camera_time, camera_acc_time, camera_dec_time);
 
 	//multiplayer callback
 	Current_sexp_network_packet.start_callback();
@@ -21947,8 +21955,11 @@ void sexp_set_camera_rotation(int n)
 		return;
 	if (count == 2)
 		rot_dec_time = rot_acc_time;
+	rot_time /= 1000.0f;
+	rot_acc_time /= 1000.0f;
+	rot_dec_time /= 1000.0f;
 
-	cam->set_rotation(&rot_angles, rot_time / 1000.0f, rot_acc_time / 1000.0f, rot_dec_time / 1000.0f);
+	cam->set_rotation(&rot_angles, rot_time, rot_acc_time, rot_dec_time);
 
 	Current_sexp_network_packet.start_callback();
 	Current_sexp_network_packet.send_float(rot_angles.b);
@@ -22000,8 +22011,11 @@ void sexp_set_camera_facing(int n)
 		return;
 	if (count == 2)
 		rot_dec_time = rot_acc_time;
+	rot_time /= 1000.0f;
+	rot_acc_time /= 1000.0f;
+	rot_dec_time /= 1000.0f;
 
-	cam->set_rotation_facing(&location, rot_time / 1000.0f, rot_acc_time / 1000.0f, rot_dec_time / 1000.0f);
+	cam->set_rotation_facing(&location, rot_time, rot_acc_time, rot_dec_time);
 
 	//multiplayer callback
 	Current_sexp_network_packet.start_callback();
@@ -22082,6 +22096,7 @@ void sexp_set_camera_facing_object(int n)
 	rot_time /= 1000.0f;
 	rot_acc_time /= 1000.0f;
 	rot_dec_time /= 1000.0f;
+
 	actually_set_camera_facing_object(object_name, rot_time, rot_acc_time, rot_dec_time);
 
 	//multiplayer callback
@@ -22131,8 +22146,11 @@ void sexp_set_camera_fov(int n)
 		return;
 	if (count == 2)
 		camera_dec_time = camera_acc_time;
+	camera_time /= 1000.0f;
+	camera_acc_time /= 1000.0f;
+	camera_dec_time /= 1000.0f;
 
-	cam->set_fov(camera_fov, camera_time / 1000.0f, camera_acc_time / 1000.0f, camera_dec_time / 1000.0f);
+	cam->set_fov(camera_fov, camera_time, camera_acc_time, camera_dec_time);
 
 	Current_sexp_network_packet.start_callback();
 	Current_sexp_network_packet.send_float(camera_fov);
@@ -22842,13 +22860,12 @@ void multi_sexp_set_jumpnode_name() //CommanderDJ
 {
 	char old_name[TOKEN_LENGTH];
 	char new_name[TOKEN_LENGTH];
-	
+
 	Current_sexp_network_packet.get_string(old_name);
 	Current_sexp_network_packet.get_string(new_name);
 
 	CJumpNode *jnp = jumpnode_get_by_name(old_name);
-
-	if(jnp==NULL) 
+	if (jnp == nullptr)
 		return;
 
 	jnp->SetName(new_name);
@@ -22890,9 +22907,9 @@ void multi_sexp_set_jumpnode_color()
 	int red, blue, green, alpha;
 
 	Current_sexp_network_packet.get_string(jumpnode_name);
-	CJumpNode *jnp = jumpnode_get_by_name(jumpnode_name);
 
-	if(jnp==NULL) {
+	CJumpNode *jnp = jumpnode_get_by_name(jumpnode_name);
+	if (jnp == nullptr) {
 		Current_sexp_network_packet.discard_remaining_callback_data();
 		return;
 	}
@@ -22907,15 +22924,16 @@ void multi_sexp_set_jumpnode_color()
 
 void sexp_set_jumpnode_model(int n)
 {
-	char* jumpnode_name = CTEXT(n);
-	CJumpNode *jnp = jumpnode_get_by_name(jumpnode_name);
+	char *jumpnode_name = CTEXT(n);
+	n = CDR(n);
 
-	if(jnp==NULL)
+	CJumpNode *jnp = jumpnode_get_by_name(jumpnode_name);
+	if (jnp == nullptr)
 		return;
 
-	n=CDR(n);
-	char* model_name = CTEXT(n);
-	n=CDR(n);
+	char *model_name = CTEXT(n);
+	n = CDR(n);
+
 	bool show_polys = is_sexp_true(n);
 
 	jnp->SetModel(model_name, show_polys);
@@ -22937,9 +22955,8 @@ void multi_sexp_set_jumpnode_model()
 	Current_sexp_network_packet.get_string(model_name);
 
 	CJumpNode *jnp = jumpnode_get_by_name(jumpnode_name);
-
-	if(jnp==NULL) {
-		Current_sexp_network_packet.discard_remaining_callback_data();		
+	if (jnp == nullptr) {
+		Current_sexp_network_packet.discard_remaining_callback_data();
 		return;
 	}
 
@@ -22955,7 +22972,7 @@ void sexp_show_hide_jumpnode(int node, bool show)
 	for (int n = node; n >= 0; n = CDR(n))
 	{
 		CJumpNode *jnp = jumpnode_get_by_name(CTEXT(n));
-		if (jnp != NULL)
+		if (jnp != nullptr)
 		{
 			jnp->SetVisibility(show);
 			Current_sexp_network_packet.send_string(CTEXT(n));
@@ -22972,7 +22989,7 @@ void multi_sexp_show_hide_jumpnode(bool show)
 	while (Current_sexp_network_packet.get_string(jumpnode_name))
 	{
 		CJumpNode *jnp = jumpnode_get_by_name(jumpnode_name);
-		if (jnp != NULL)
+		if (jnp != nullptr)
 			jnp->SetVisibility(show);
 	}
 }
