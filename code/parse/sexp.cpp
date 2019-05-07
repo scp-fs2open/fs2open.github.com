@@ -16327,7 +16327,7 @@ int sexp_path_flown()
 	return SEXP_FALSE;
 }
 
-void sexp_send_training_message(const int node)
+void sexp_send_training_message(int node)
 {
 	bool is_nan, is_nan_forever;
 	int n = node, count, delay, duration;
