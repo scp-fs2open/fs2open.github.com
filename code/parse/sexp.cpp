@@ -4613,7 +4613,7 @@ int sexp_bitwise_xor(int node)
 int rand_sexp(int n, bool multiple)
 {
 	bool is_nan, is_nan_forever;
-	int count, low, high, rand_num, seed;
+	int low, high, rand_num, seed;
 
 	Assert(n >= 0);
 
@@ -4625,7 +4625,7 @@ int rand_sexp(int n, bool multiple)
 	}
 
 	// get low, high, and (optional) seed - seed will be 0, per eval_nums, if not specified
-	count = eval_nums(n, is_nan, is_nan_forever, low, high, seed);
+	eval_nums(n, is_nan, is_nan_forever, low, high, seed);
 	if (is_nan)
 		return SEXP_NAN;
 	if (is_nan_forever)
@@ -18263,19 +18263,19 @@ void sexp_turret_change_weapon(int node)
 {
 	int sindex;
 	int windex;	//hehe
-	ship_subsys *turret = NULL;
-	ship_weapon *swp = NULL;
+	ship_subsys *turret = nullptr;
+	ship_weapon *swp = nullptr;
 
 	// get the firing ship
 	sindex = ship_name_lookup(CTEXT(node));
-	if (sindex < 0 || Ships[sindex].objnum < 0) {
+	if (sindex < 0) {
 		return;
 	}
 	node = CDR(node);
 
 	//Get subsystem
 	turret = ship_get_subsys(&Ships[sindex], CTEXT(node));
-	if (turret == NULL) {
+	if (turret == nullptr) {
 		return;
 	}
 	swp = &turret->weapons;
@@ -30800,7 +30800,7 @@ int eval_nums(int &n, bool &is_nan, bool &is_nan_forever, T& first, Args&... res
  * or restricting to a range.  The count of numbers actually found (which depending on the sexp may not be the size of the array) is returned.
  * NOTE: in contrast to eval_num, the *n* parameter will be advanced along the CDR path
  */
-template <class T, std::size_t SIZE>
+template <typename T, std::size_t SIZE>
 int eval_array(std::array<T, SIZE> &numbers, int &n, bool &is_nan, bool &is_nan_forever, const std::function<T(int)> &converter, const T &value_if_missing)
 {
 	bool temp_nan, temp_nan_forever;
@@ -30810,7 +30810,7 @@ int eval_array(std::array<T, SIZE> &numbers, int &n, bool &is_nan, bool &is_nan_
 	is_nan_forever = false;
 
 	// fill up the array
-	for (int i = 0; i < SIZE; ++i)
+	for (std::size_t i = 0; i < SIZE; ++i)
 	{
 		// see if we have a number
 		if (n >= 0)
