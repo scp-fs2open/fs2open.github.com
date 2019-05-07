@@ -990,6 +990,9 @@ public:
 	float death_roll_r_mult;
 	float death_fx_r_mult;
 	float death_roll_time_mult;
+	float death_roll_xrotation_cap;         // max rotation around x-axis in radians-per-sec (aka pitch)
+	float death_roll_yrotation_cap;         // max rotation around y-axis in radians-per-sec (aka yaw)
+	float death_roll_zrotation_cap;         // max rotation around z-axis in radians-per-sec (aka roll)
 	int death_roll_base_time;
 	int death_fx_count;
 	int	shockwave_count;					// the # of total shockwaves

@@ -833,6 +833,9 @@ void ship_info::clone(const ship_info& other)
 	death_roll_r_mult = other.death_roll_r_mult;
 	death_fx_r_mult = other.death_fx_r_mult;
 	death_roll_time_mult = other.death_roll_time_mult;
+	death_roll_xrotation_cap = other.death_roll_xrotation_cap;
+	death_roll_yrotation_cap = other.death_roll_yrotation_cap;
+	death_roll_zrotation_cap = other.death_roll_zrotation_cap;
 	death_roll_base_time = other.death_roll_base_time;
 	death_fx_count = other.death_fx_count;
 	shockwave_count = other.shockwave_count;
@@ -1136,6 +1139,9 @@ void ship_info::move(ship_info&& other)
 	death_roll_r_mult = other.death_roll_r_mult;
 	death_fx_r_mult = other.death_fx_r_mult;
 	death_roll_time_mult = other.death_roll_time_mult;
+	death_roll_xrotation_cap = other.death_roll_xrotation_cap;
+	death_roll_yrotation_cap = other.death_roll_yrotation_cap;
+	death_roll_zrotation_cap = other.death_roll_zrotation_cap;
 	death_roll_base_time = other.death_roll_base_time;
 	death_fx_count = other.death_fx_count;
 	shockwave_count = other.shockwave_count;
@@ -1452,6 +1458,9 @@ ship_info::ship_info()
 	death_roll_r_mult = 1.0f;
 	death_fx_r_mult = 1.0f;
 	death_roll_time_mult = 1.0f;
+	death_roll_xrotation_cap = 0.75f*DEATHROLL_ROTVEL_CAP;
+	death_roll_yrotation_cap = 0.75f*DEATHROLL_ROTVEL_CAP;
+	death_roll_zrotation_cap = 0.75f*DEATHROLL_ROTVEL_CAP;
 	death_roll_base_time = 3000;
 	death_fx_count = 6;
 	shockwave_count = 1;
@@ -3060,6 +3069,24 @@ static int parse_ship_values(ship_info* sip, const bool is_template, const bool 
 		stuff_int(&sip->death_fx_count);
 		if (sip->death_fx_count < 0)
 			sip->death_fx_count = 0;
+	}
+
+	if(optional_string("$Death Roll X rotation Cap:")){
+		stuff_float(&sip->death_roll_xrotation_cap);
+		if (sip->death_roll_xrotation_cap < 0.0)
+			sip->death_roll_xrotation_cap = 0.0;
+	}
+
+	if(optional_string("$Death Roll Y rotation Cap:")){
+		stuff_float(&sip->death_roll_yrotation_cap);
+		if (sip->death_roll_yrotation_cap < 0.0)
+			sip->death_roll_yrotation_cap = 0.0;
+	}
+
+	if(optional_string("$Death Roll Z rotation Cap:")){
+		stuff_float(&sip->death_roll_zrotation_cap);
+		if (sip->death_roll_zrotation_cap < 0.0)
+			sip->death_roll_zrotation_cap = 0.0;
 	}
 
 	if(optional_string("$Ship Splitting Particles:"))

@@ -1356,7 +1356,6 @@ static void player_died_start(object *killer_objp)
 
 //#define	DEATHROLL_TIME						3000			//	generic deathroll is 3 seconds (3 * 1000 milliseconds) - Moved to ships.tbl
 #define	MIN_PLAYER_DEATHROLL_TIME		1000			// at least one second deathroll for a player
-#define	DEATHROLL_ROTVEL_CAP				6.3f			// maximum added deathroll rotvel in rad/sec (about 1 rev / sec)
 #define	DEATHROLL_ROTVEL_MIN				0.8f			// minimum added deathroll rotvel in rad/sec (about 1 rev / 12 sec)
 #define	DEATHROLL_MASS_STANDARD			50				// approximate mass of lightest ship
 #define	DEATHROLL_VELOCITY_STANDARD	70				// deathroll rotvel is scaled according to ship velocity
@@ -1499,16 +1498,16 @@ void ship_generic_kill_stuff( object *objp, float percent_killed )
 		// if added rotvel is too random, we should decrease the random component, putting a const in front of the rotvel.
 		sp->deathroll_rotvel = objp->phys_info.rotvel;
 		sp->deathroll_rotvel.xyz.x += (frand() - 0.5f) * 2.0f * rotvel_mag;
-		saturate_fabs(&sp->deathroll_rotvel.xyz.x, 0.75f*DEATHROLL_ROTVEL_CAP);
+		saturate_fabs(&sp->deathroll_rotvel.xyz.x, sip->death_roll_xrotation_cap);
 		sp->deathroll_rotvel.xyz.y += (frand() - 0.5f) * 3.0f * rotvel_mag;
-		saturate_fabs(&sp->deathroll_rotvel.xyz.y, 0.75f*DEATHROLL_ROTVEL_CAP);
+		saturate_fabs(&sp->deathroll_rotvel.xyz.y, sip->death_roll_yrotation_cap);
 		sp->deathroll_rotvel.xyz.z += (frand() - 0.5f) * 6.0f * rotvel_mag;
 		// make z component  2x larger than larger of x,y
 		float largest_mag = MAX(fl_abs(sp->deathroll_rotvel.xyz.x), fl_abs(sp->deathroll_rotvel.xyz.y));
 		if (fl_abs(sp->deathroll_rotvel.xyz.z) < 2.0f*largest_mag) {
 			sp->deathroll_rotvel.xyz.z *= (2.0f * largest_mag / fl_abs(sp->deathroll_rotvel.xyz.z));
 		}
-		saturate_fabs(&sp->deathroll_rotvel.xyz.z, 0.75f*DEATHROLL_ROTVEL_CAP);
+		saturate_fabs(&sp->deathroll_rotvel.xyz.z, sip->death_roll_zrotation_cap);
 		// nprintf(("Physics", "Frame: %i rotvel_mag: %5.2f, rotvel: (%4.2f, %4.2f, %4.2f)\n", Framecount, rotvel_mag, sp->deathroll_rotvel.x, sp->deathroll_rotvel.y, sp->deathroll_rotvel.z));
 	}
 
