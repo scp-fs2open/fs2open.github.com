@@ -4066,7 +4066,7 @@ int eval_nums(int &n, bool &is_nan, bool &is_nan_forever, T& first, Args&... res
  * NOTE: in contrast to eval_num, the *n* parameter will be advanced along the CDR path
  */
 template <typename T, std::size_t SIZE>
-int eval_array(std::array<T, SIZE> &numbers, int &n, bool &is_nan, bool &is_nan_forever, T(*converter)(int) = [](int num) -> T { return (T)num; }, const T &value_if_missing = (T)0)
+int eval_array(std::array<T, SIZE> &numbers, int &n, bool &is_nan, bool &is_nan_forever, T(*converter)(int), const T &value_if_missing = (T)0)
 {
 	bool temp_nan, temp_nan_forever;
 	int count = 0;
@@ -4098,6 +4098,15 @@ int eval_array(std::array<T, SIZE> &numbers, int &n, bool &is_nan, bool &is_nan_
 	}
 
 	return count;
+}
+
+/**
+ * Certain compilers don't like a lambda as a default argument, so here's an extra function definition that supplies a standard converter.  Thanks to Gasbow for the insight.
+ */
+template <typename T, std::size_t SIZE>
+int eval_array(std::array<T, SIZE> &numbers, int &n, bool &is_nan, bool &is_nan_forever)
+{
+	return eval_array<T>(numbers, n, is_nan, is_nan_forever, [](int num) -> T { return (T)num; });
 }
 
 /**
