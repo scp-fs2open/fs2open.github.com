@@ -1024,6 +1024,7 @@ void ship_info::clone(const ship_info& other)
 	min_engine_vol = other.min_engine_vol;
 	glide_start_snd = other.glide_start_snd;
 	glide_end_snd = other.glide_end_snd;
+	flyby_snd = other.flyby_snd;
 
 	ship_sounds = other.ship_sounds;
 
@@ -1302,6 +1303,7 @@ void ship_info::move(ship_info&& other)
 	min_engine_vol = other.min_engine_vol;
 	glide_start_snd = other.glide_start_snd;
 	glide_end_snd = other.glide_end_snd;
+	flyby_snd  = other.flyby_snd;
 
 	std::swap(ship_sounds, other.ship_sounds);
 
@@ -1692,6 +1694,7 @@ ship_info::ship_info()
 	min_engine_vol = -1.0f;
 	glide_start_snd = gamesnd_id();
 	glide_end_snd = gamesnd_id();
+	flyby_snd = gamesnd_id();
 
 	ship_sounds.clear();
 
@@ -3569,6 +3572,9 @@ static int parse_ship_values(ship_info* sip, const bool is_template, const bool 
 
 	//Parse optional sound to be used for end of a glide
 	parse_game_sound("$GlideEndSnd:", &sip->glide_end_snd);
+
+	// Parse optional sound to be used for bfly-by sound
+	parse_game_sound("$Flyby Sound:", &sip->flyby_snd);
 
 	parse_ship_sounds(sip);
 	
