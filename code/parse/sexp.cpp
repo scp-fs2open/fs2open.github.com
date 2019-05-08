@@ -18708,38 +18708,33 @@ void sexp_turret_set_rate_of_fire(int node)
 	int sindex;
 	float rof;
 	bool is_nan, is_nan_forever;
-	ship_subsys *turret = NULL;
+	ship_subsys *turret = nullptr;
 
 	// get ship
 	sindex = ship_name_lookup(CTEXT(node));
-	if (sindex < 0) {
+	if (sindex < 0)
 		return;
-	}
-	if (Ships[sindex].objnum < 0) {
-		return;
-	}
 
 	//store rof
 	node = CDR(node);
-	rof = eval_num(node, is_nan, is_nan_forever);
+	rof = (float)eval_num(node, is_nan, is_nan_forever);
 	if (is_nan || is_nan_forever)
 		return;
 	node = CDR(node);
 
 	//Set rof
-	while (node != -1) {
+	while (node >= 0)
+	{
 		// get the subsystem
 		turret = ship_get_subsys(&Ships[sindex], CTEXT(node));
-		if (turret == NULL) {
-			node = CDR(node);
-			continue;
+		if (turret != nullptr)
+		{
+			// set the range
+			if (rof < 0)
+				turret->rof_scaler = turret->system_info->turret_rof_scaler;
+			else
+				turret->rof_scaler = rof / 100;
 		}
-
-		// set the range
-		if (rof < 0)
-			turret->rof_scaler = turret->system_info->turret_rof_scaler;
-		else
-			turret->rof_scaler = rof / 100;
 
 		// next
 		node = CDR(node);
@@ -18770,7 +18765,6 @@ void sexp_turret_set_optimum_range(int node)
 	{
 		// get the subsystem
 		turret = ship_get_subsys(&Ships[sindex], CTEXT(node));
-
 		if (turret != nullptr)
 		{
 			// set the range
