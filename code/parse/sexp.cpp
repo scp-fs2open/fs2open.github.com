@@ -18704,84 +18704,82 @@ void sexp_turret_set_direction_preference(int node)
 }
 
 void sexp_turret_set_rate_of_fire(int node)
-{	
+{
 	int sindex;
+	float rof;
 	bool is_nan, is_nan_forever;
-	ship_subsys *turret = NULL;	
-	
+	ship_subsys *turret = NULL;
+
 	// get ship
 	sindex = ship_name_lookup(CTEXT(node));
-	if(sindex < 0){
+	if (sindex < 0) {
 		return;
 	}
-	if(Ships[sindex].objnum < 0){
+	if (Ships[sindex].objnum < 0) {
 		return;
 	}
 
 	//store rof
 	node = CDR(node);
-	float rof = (float)eval_num(node, is_nan, is_nan_forever);
+	rof = eval_num(node, is_nan, is_nan_forever);
 	if (is_nan || is_nan_forever)
 		return;
 	node = CDR(node);
 
 	//Set rof
-	while(node != -1){
+	while (node != -1) {
 		// get the subsystem
 		turret = ship_get_subsys(&Ships[sindex], CTEXT(node));
-		if(turret == NULL){
+		if (turret == NULL) {
 			node = CDR(node);
 			continue;
 		}
 
 		// set the range
-		if(rof < 0)
-			turret->rof_scaler = turret->system_info->turret_rof_scaler ;
+		if (rof < 0)
+			turret->rof_scaler = turret->system_info->turret_rof_scaler;
 		else
-			turret->rof_scaler = rof/100;
-		
+			turret->rof_scaler = rof / 100;
+
 		// next
 		node = CDR(node);
 	}
 }
 
 void sexp_turret_set_optimum_range(int node)
-{	
+{
 	int sindex;
+	float range;
 	bool is_nan, is_nan_forever;
-	ship_subsys *turret = NULL;	
-	
+	ship_subsys *turret = nullptr;
+
 	// get ship
 	sindex = ship_name_lookup(CTEXT(node));
-	if(sindex < 0){
+	if (sindex < 0)
 		return;
-	}
-	if(Ships[sindex].objnum < 0){
-		return;
-	}
 
-	//store range
+	// store range
 	node = CDR(node);
-	float range = (float)eval_num(node, is_nan, is_nan_forever);
+	range = (float)eval_num(node, is_nan, is_nan_forever);
 	if (is_nan || is_nan_forever)
 		return;
 	node = CDR(node);
 
 	//Set range
-	while(node != -1){
+	while (node >= 0)
+	{
 		// get the subsystem
 		turret = ship_get_subsys(&Ships[sindex], CTEXT(node));
-		if(turret == NULL){
-			node = CDR(node);
-			continue;
+
+		if (turret != nullptr)
+		{
+			// set the range
+			if (range < 0)
+				turret->optimum_range = turret->system_info->optimum_range;
+			else
+				turret->optimum_range = range;
 		}
 
-		// set the range
-		if(range < 0)
-			turret->optimum_range = turret->system_info->optimum_range;
-		else
-			turret->optimum_range = range;
-		
 		// next
 		node = CDR(node);
 	}
@@ -21402,7 +21400,7 @@ void sexp_string_get_substring(int node)
 	{
 		auto parent_byte_len = strlen(parent);
 		auto parent_end = parent + parent_byte_len;
-		int parent_len = (int)unicode::num_codepoints(parent, parent_end);
+		auto parent_len = (int)unicode::num_codepoints(parent, parent_end);
 
 		// sanity
 		if (pos >= parent_len)
@@ -22297,7 +22295,7 @@ void sexp_set_fov(int n)
 		return;
 
 	//Cap FOV to something reasonable.
-	float new_fov = (float)(int_fov % 360);
+	float new_fov = i2fl(int_fov % 360);
 	Sexp_fov = fl_radians(new_fov);
 
 	Current_sexp_network_packet.start_callback();
@@ -22548,9 +22546,9 @@ void sexp_show_subtitle_text(int node)
 	gr_init_alphacolor(&new_color, rgb[0], rgb[1], rgb[2], 255);
 
 	// calculate pixel positions
-	int x_pos = (int) (gr_screen.center_w * (xy_pct[0] / 100.0f));
-	int y_pos = (int) (gr_screen.center_h * (xy_pct[1] / 100.0f));
-	int width = (int) (gr_screen.center_w * (width_pct / 100.0f));
+	int x_pos = fl2i(gr_screen.center_w * (xy_pct[0] / 100.0f));
+	int y_pos = fl2i(gr_screen.center_h * (xy_pct[1] / 100.0f));
+	int width = fl2i(gr_screen.center_w * (width_pct / 100.0f));
 
 	// add the subtitle
 	subtitle new_subtitle(x_pos, y_pos, text, NULL, display_time, fade_time, &new_color, fontnum, center_x, center_y, width, 0, post_shaded);
