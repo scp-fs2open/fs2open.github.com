@@ -1171,7 +1171,7 @@ public:
 	float min_engine_vol;					// minimum volume modifier for engine sound when ship is stationary
 	gamesnd_id glide_start_snd;					// handle to sound to play at the beginning of a glide maneuver (default is 0 for regular throttle down sound)
 	gamesnd_id glide_end_snd;						// handle to sound to play at the end of a glide maneuver (default is 0 for regular throttle up sound)
-	gamesnd_id flyby_snd;					// handle to sound to play wtih ship flyby
+	gamesnd_id flyby_snd;					// handle to sound to play with ship flyby
 
 	SCP_map<GameSounds, gamesnd_id> ship_sounds;			// specifies ship-specific sound indexes
 

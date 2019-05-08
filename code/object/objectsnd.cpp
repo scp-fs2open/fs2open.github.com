@@ -394,12 +394,11 @@ void maybe_play_flyby_snd(float closest_dist, object *closest_objp, object *list
 				// check to see if a flyby sound is specified in ship class
 				// if not, then pick a random species-based sound
 
-				int shipinfo_int = Ships[closest_objp->instance].ship_info_index;
-				ship_info* sip = &Ship_info[shipinfo_int];
+				ship_info* sip = &Ship_info[Ships[closest_objp->instance].ship_info_index];
 				game_snd *snd;
 
-				if (Ship_info[shipinfo_int].glide_end_snd.isValid()) {
-					snd = gamesnd_get_game_sound(Ship_info[shipinfo_int].glide_end_snd);
+				if (sip->flyby_snd.isValid()) {
+					snd = gamesnd_get_game_sound(sip->flyby_snd);
 				} else {
 					if (sip->flags[Ship::Info_Flags::Bomber])
 						snd = &Species_info[sip->species].snd_flyby_bomber;
