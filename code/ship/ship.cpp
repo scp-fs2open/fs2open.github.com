@@ -13281,29 +13281,27 @@ float ship_get_subsystem_strength( ship *shipp, int type )
  */
 void ship_set_subsystem_strength( ship *shipp, int type, float strength )
 {
-	float total_current_hits, diff;
 	ship_subsys *ssp;
 
 	Assert ( (type >= 0) && (type < SUBSYSTEM_MAX) );
-	if ( shipp->subsys_info[type].aggregate_max_hits <= 0.0f )
-		return;
+	CLAMP(strength, 0.0f, 1.0f);
 
-	total_current_hits = 0.0f;
 	ssp = GET_FIRST(&shipp->subsys_list);
 	while ( ssp != END_OF_LIST( &shipp->subsys_list ) ) {
 
 		if ( (ssp->system_info->type == type) && !(ssp->flags[Ship::Subsystem_Flags::No_aggregate]) ) {
 			ssp->current_hits = strength * ssp->max_hits;
-			total_current_hits += ssp->current_hits;
+
+			// maybe blow up subsys
+			if (ssp->current_hits <= 0) {
+				do_subobj_destroyed_stuff(shipp, ssp, nullptr);
+			}
 		}
 		ssp = GET_NEXT( ssp );
 	}
 
-	// update the objects integrity, needed since we've bashed the strength of a subsysem
-	diff = total_current_hits - shipp->subsys_info[type].aggregate_current_hits;
-	Objects[shipp->objnum].hull_strength += diff;
-	// fix up the shipp->subsys_info[type] aggregate_current_hits value
-	shipp->subsys_info[type].aggregate_current_hits = total_current_hits;
+	// fix up the overall ship subsys status
+	ship_recalc_subsys_strength(shipp);
 }
 
 
