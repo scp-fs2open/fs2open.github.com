@@ -1173,14 +1173,6 @@ extern int run_sexp(const char* sexpression); // debug and lua sexps
 extern int stuff_sexp_variable_list();
 extern int eval_sexp(int cur_node, int referenced_node = -1);
 extern int eval_num(int n, bool &is_nan, bool &is_nan_forever);
-template <typename T>
-extern int eval_nums(int &n, bool &is_nan, bool &is_nan_forever, T &arg);
-template <typename T, typename... Args>
-extern int eval_nums(int &n, bool &is_nan, bool &is_nan_forever, T& first, Args&... rest);
-template <typename T, std::size_t SIZE>
-extern int eval_array(std::array<T, SIZE> &numbers, int &n, bool &is_nan, bool &is_nan_forever, T(*converter)(int) = [](int num) -> T { return (T)num; }, const T &value_if_missing = (T)0 );
-extern int eval_vec3d(vec3d *vec, int &n, bool &is_nan, bool &is_nan_forever);
-extern int eval_angles(angles *a, int &n, bool &is_nan, bool &is_nan_forever);
 extern bool is_sexp_true(int cur_node, int referenced_node = -1);
 extern int query_operator_return_type(int op);
 extern int query_operator_argument_type(int op, int argnum);

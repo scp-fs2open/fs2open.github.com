@@ -3977,6 +3977,164 @@ void convert_sexp_to_string(SCP_string &dest, int cur_node, int mode)
 // -----------------------------------------------------------------------------------
 
 /**
+ * Evaluate number which may result from an operator or may be text
+ */
+int eval_num(int n, bool &is_nan, bool &is_nan_forever)
+{
+	is_nan = false;
+	is_nan_forever = false;
+
+	Assert(n >= 0);
+	if (n < 0)
+		return 0;
+
+	if (CAR(n) != -1)				// if argument is a sexp
+	{
+		int val = eval_sexp(CAR(n));
+
+		// NaNs will propagate through operations, so let the calling function know
+		if (Sexp_nodes[CAR(n)].value == SEXP_NAN)
+		{
+			val = 0;
+			is_nan = true;
+		}
+		else if (Sexp_nodes[CAR(n)].value == SEXP_NAN_FOREVER)
+		{
+			val = 0;
+			is_nan_forever = true;
+		}
+
+		return val;
+	}
+	else
+		return atoi(CTEXT(n));		// otherwise, just get the number
+}
+
+template <typename T>
+int eval_nums(int &n, bool &is_nan, bool &is_nan_forever, T &arg)
+{
+	if (n >= 0)
+	{
+		int val = eval_num(n, is_nan, is_nan_forever);
+		n = CDR(n);
+
+		arg = (T)val;
+		return 1;
+	}
+	else
+	{
+		is_nan = false;
+		is_nan_forever = false;
+
+		arg = (T)0;
+		return 0;
+	}
+}
+
+/**
+ * Populate variadic arguments by running eval_num repeatedly.  No custom converter function is used; all numbers are cast from int to the desired type.
+ * The count of numbers actually found (which depending on the sexp may not be the count of parameters) is returned.
+ * NOTE: in contrast to eval_num, the *n* parameter will be advanced along the CDR path
+ */
+template <typename T, typename... Args>
+int eval_nums(int &n, bool &is_nan, bool &is_nan_forever, T& first, Args&... rest)
+{
+	bool temp_nan, temp_nan_forever;
+	int count = 0;
+
+	is_nan = false;
+	is_nan_forever = false;
+
+	count += eval_nums(n, temp_nan, temp_nan_forever, first);
+	if (temp_nan)
+		is_nan = true;
+	if (temp_nan_forever)
+		is_nan_forever = true;
+
+	count += eval_nums(n, temp_nan, temp_nan_forever, rest...);
+	if (temp_nan)
+		is_nan = true;
+	if (temp_nan_forever)
+		is_nan_forever = true;
+
+	return count;
+}
+
+/**
+ * Populate a numeric array by running eval_num repeatedly.  The converter function/lambda can be used to adapt the numbers returned from eval_num, such as casting (the default)
+ * or restricting to a range.  The count of numbers actually found (which depending on the sexp may not be the size of the array) is returned.
+ * NOTE: in contrast to eval_num, the *n* parameter will be advanced along the CDR path
+ */
+template <typename T, std::size_t SIZE>
+int eval_array(std::array<T, SIZE> &numbers, int &n, bool &is_nan, bool &is_nan_forever, T(*converter)(int) = [](int num) -> T { return (T)num; }, const T &value_if_missing = (T)0)
+{
+	bool temp_nan, temp_nan_forever;
+	int count = 0;
+
+	is_nan = false;
+	is_nan_forever = false;
+
+	// fill up the array
+	for (std::size_t i = 0; i < SIZE; ++i)
+	{
+		// see if we have a number
+		if (n >= 0)
+		{
+			int num = eval_num(n, temp_nan, temp_nan_forever);
+			n = CDR(n);
+			++count;
+
+			if (temp_nan)
+				is_nan = true;
+			if (temp_nan_forever)
+				is_nan_forever = true;
+
+			// populate the array with that number
+			numbers[i] = converter(num);
+		}
+		// use the default
+		else
+			numbers[i] = value_if_missing;
+	}
+
+	return count;
+}
+
+/**
+ * Populate a vector by running eval_num on up to three consecutive nodes.  Returns the number of nodes processed.
+ * NOTE: in contrast to eval_num, the *n* parameter will be advanced along the CDR path
+ */
+int eval_vec3d(vec3d *vec, int &n, bool &is_nan, bool &is_nan_forever)
+{
+	Assertion(vec != nullptr, "Vec must not be null!");
+
+	// this is slightly more verbose than ideal, because one can't cast between C and C++ arrays
+	std::array<float, 3> a1d;
+	int count = eval_array(a1d, n, is_nan, is_nan_forever);
+	std::copy(a1d.begin(), a1d.end(), std::begin(vec->a1d));
+
+	return count;
+}
+
+/**
+ * Populate an angles struct by running eval_num on up to three consecutive nodes.  Returns the number of nodes processed.
+ * NOTE: in contrast to eval_num, the *n* parameter will be advanced along the CDR path
+ */
+int eval_angles(angles *a, int &n, bool &is_nan, bool &is_nan_forever)
+{
+	Assertion(a != nullptr, "a must not be null!");
+
+	std::array<int, 3> a1d;
+	int count = eval_array(a1d, n, is_nan, is_nan_forever);
+
+	a->p = fl_radians(a1d[0] % 360);
+	a->b = fl_radians(a1d[1] % 360);
+	a->h = fl_radians(a1d[2] % 360);
+
+	return count;
+}
+
+/**
  * Takes a SEXP node which contains the name of a ship and returns the player for that ship or NULL if it is an AI ship
  */
 player * get_player_from_ship_node(int node, bool test_respawns)
@@ -4060,6 +4218,10 @@ bool sexp_query_has_yet_to_arrive(const char *name)
 
 	return false;
 }
+
+// ----------------------------------------------------------------------------------- 
+// SEXP implementations
+// -----------------------------------------------------------------------------------
 
 // arithmetic functions
 int add_sexps(int n)
@@ -30701,164 +30863,6 @@ int sexp_var_compare(const void *var1, const void *var2)
 void sexp_variable_sort()
 {
 	insertion_sort( (void *)Sexp_variables, (size_t)(MAX_SEXP_VARIABLES), sizeof(sexp_variable), sexp_var_compare );
-}
-
-/**
- * Evaluate number which may result from an operator or may be text
- */
-int eval_num(int n, bool &is_nan, bool &is_nan_forever)
-{
-	is_nan = false;
-	is_nan_forever = false;
-
-	Assert(n >= 0);
-	if (n < 0)
-		return 0;
-
-	if (CAR(n) != -1)				// if argument is a sexp
-	{
-		int val = eval_sexp(CAR(n));
-
-		// NaNs will propagate through operations, so let the calling function know
-		if (Sexp_nodes[CAR(n)].value == SEXP_NAN)
-		{
-			val = 0;
-			is_nan = true;
-		}
-		else if (Sexp_nodes[CAR(n)].value == SEXP_NAN_FOREVER)
-		{
-			val = 0;
-			is_nan_forever = true;
-		}
-
-		return val;
-	}
-	else
-		return atoi(CTEXT(n));		// otherwise, just get the number
-}
-
-template <typename T>
-int eval_nums(int &n, bool &is_nan, bool &is_nan_forever, T &arg)
-{
-	if (n >= 0)
-	{
-		int val = eval_num(n, is_nan, is_nan_forever);
-		n = CDR(n);
-
-		arg = (T)val;
-		return 1;
-	}
-	else
-	{
-		is_nan = false;
-		is_nan_forever = false;
-
-		arg = (T)0;
-		return 0;
-	}
-}
-
-/**
- * Populate variadic arguments by running eval_num repeatedly.  No custom converter function is used; all numbers are cast from int to the desired type.
- * The count of numbers actually found (which depending on the sexp may not be the count of parameters) is returned.
- * NOTE: in contrast to eval_num, the *n* parameter will be advanced along the CDR path
- */
-template <typename T, typename... Args>
-int eval_nums(int &n, bool &is_nan, bool &is_nan_forever, T& first, Args&... rest)
-{
-	bool temp_nan, temp_nan_forever;
-	int count = 0;
-
-	is_nan = false;
-	is_nan_forever = false;
-
-	count += eval_nums(n, temp_nan, temp_nan_forever, first);
-	if (temp_nan)
-		is_nan = true;
-	if (temp_nan_forever)
-		is_nan_forever = true;
-
-	count += eval_nums(n, temp_nan, temp_nan_forever, rest...);
-	if (temp_nan)
-		is_nan = true;
-	if (temp_nan_forever)
-		is_nan_forever = true;
-
-	return count;
-}
-
-/**
- * Populate a numeric array by running eval_num repeatedly.  The converter function/lambda can be used to adapt the numbers returned from eval_num, such as casting (the default)
- * or restricting to a range.  The count of numbers actually found (which depending on the sexp may not be the size of the array) is returned.
- * NOTE: in contrast to eval_num, the *n* parameter will be advanced along the CDR path
- */
-template <typename T, std::size_t SIZE>
-int eval_array(std::array<T, SIZE> &numbers, int &n, bool &is_nan, bool &is_nan_forever, T(*converter)(int), const T &value_if_missing)
-{
-	bool temp_nan, temp_nan_forever;
-	int count = 0;
-
-	is_nan = false;
-	is_nan_forever = false;
-
-	// fill up the array
-	for (std::size_t i = 0; i < SIZE; ++i)
-	{
-		// see if we have a number
-		if (n >= 0)
-		{
-			int num = eval_num(n, temp_nan, temp_nan_forever);
-			n = CDR(n);
-			++count;
-
-			if (temp_nan)
-				is_nan = true;
-			if (temp_nan_forever)
-				is_nan_forever = true;
-
-			// populate the array with that number
-			numbers[i] = converter(num);
-		}
-		// use the default
-		else
-			numbers[i] = value_if_missing;
-	}
-
-	return count;
-}
-
-/**
- * Populate a vector by running eval_num on up to three consecutive nodes.  Returns the number of nodes processed.
- * NOTE: in contrast to eval_num, the *n* parameter will be advanced along the CDR path
- */
-int eval_vec3d(vec3d *vec, int &n, bool &is_nan, bool &is_nan_forever)
-{
-	Assertion(vec != nullptr, "Vec must not be null!");
-
-	// this is slightly more verbose than ideal, because one can't cast between C and C++ arrays
-	std::array<float, 3> a1d;
-	int count = eval_array(a1d, n, is_nan, is_nan_forever);
-	std::copy(a1d.begin(), a1d.end(), std::begin(vec->a1d));
-
-	return count;
-}
-
-/**
- * Populate an angles struct by running eval_num on up to three consecutive nodes.  Returns the number of nodes processed.
- * NOTE: in contrast to eval_num, the *n* parameter will be advanced along the CDR path
- */
-int eval_angles(angles *a, int &n, bool &is_nan, bool &is_nan_forever)
-{
-	Assertion(a != nullptr, "a must not be null!");
-
-	std::array<int, 3> a1d;
-	int count = eval_array(a1d, n, is_nan, is_nan_forever);
-
-	a->p = fl_radians(a1d[0] % 360);
-	a->b = fl_radians(a1d[1] % 360);
-	a->h = fl_radians(a1d[2] % 360);
-
-	return count;
 }
 
 // Goober5000
