@@ -30793,7 +30793,7 @@ int eval_nums(int &n, bool &is_nan, bool &is_nan_forever, T& first, Args&... res
  * NOTE: in contrast to eval_num, the *n* parameter will be advanced along the CDR path
  */
 template <typename T, std::size_t SIZE>
-int eval_array(std::array<T, SIZE> &numbers, int &n, bool &is_nan, bool &is_nan_forever, const std::function<T(int)> &converter, const T &value_if_missing)
+int eval_array(std::array<T, SIZE> &numbers, int &n, bool &is_nan, bool &is_nan_forever, T(*converter)(int), const T &value_if_missing)
 {
 	bool temp_nan, temp_nan_forever;
 	int count = 0;
