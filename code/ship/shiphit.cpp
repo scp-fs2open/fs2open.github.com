@@ -108,6 +108,8 @@ static bool is_subsys_destroyed(ship *shipp, int submodel)
 // do_subobj_destroyed_stuff is called when a subobject for a ship is killed.  Separated out
 // to separate function on 10/15/97 by MWA for easy multiplayer access.  It does all of the
 // cool things like blowing off the model (if applicable, writing the logs, etc)
+// NOTE: if this function is used with ship_recalc_subsys_strength, it MUST be called first. If
+// a child subsystem needs to be destroyed, the strength calculation needs to take it into account.
 void do_subobj_destroyed_stuff( ship *ship_p, ship_subsys *subsys, vec3d* hitpos, bool no_explosion )
 {
 	ship_info *sip;

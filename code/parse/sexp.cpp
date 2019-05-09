@@ -11891,7 +11891,6 @@ void sexp_destroy_subsys_instantly(int n)
 				{
 					// do destruction stuff
 					ss->current_hits = 0;
-					ship_recalc_subsys_strength(shipp);
 					do_subobj_destroyed_stuff(shipp, ss, nullptr, true);
 
 					if (MULTIPLAYER_MASTER)
@@ -11915,7 +11914,6 @@ void sexp_destroy_subsys_instantly(int n)
 
 			// do destruction stuff
 			ss->current_hits = 0;
-			ship_recalc_subsys_strength(shipp);
 			do_subobj_destroyed_stuff(shipp, ss, nullptr, true);
 
 			if (MULTIPLAYER_MASTER)
@@ -11926,6 +11924,9 @@ void sexp_destroy_subsys_instantly(int n)
 			}
 		}
 	}
+
+	// recalculate when done
+	ship_recalc_subsys_strength(shipp);
 
 	if (MULTIPLAYER_MASTER)
 		Current_sexp_network_packet.end_callback();
@@ -11948,9 +11949,11 @@ void multi_sexp_destroy_subsys_instantly()
 
 		// do destruction stuff
 		ss->current_hits = 0;
-		ship_recalc_subsys_strength(shipp);
 		do_subobj_destroyed_stuff(shipp, ss, nullptr, true);
 	}
+
+	// recalculate when done
+	ship_recalc_subsys_strength(shipp);
 }
 
 /**
