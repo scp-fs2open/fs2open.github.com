@@ -221,8 +221,8 @@ void do_subobj_destroyed_stuff( ship *ship_p, ship_subsys *subsys, vec3d* hitpos
 		if ( &(sip->subsystems[subsystem_index]) == psub )
 			break;
 	}
-	Assert(subsystem_index < sip->n_subsystems );
-	Assert(subsystem_index < 65535 );
+	Assert( subsystem_index < sip->n_subsystems );
+	Assert( subsystem_index < 65535 );
 	log_index = ((ship_p->ship_info_index << 16) & 0xffff0000) | (subsystem_index & 0xffff);
 
 	// Don't log, display info, or play sounds about the activation subsytem
