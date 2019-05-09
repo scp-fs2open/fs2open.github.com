@@ -677,6 +677,7 @@ float do_subobj_hit_stuff(object *ship_objp, object *other_obj, vec3d *hitpos, i
 
 		Assert(min_index != -1);
 		subsystem = subsys_list[min_index].ptr;
+		subsys_list[min_index].dist = 9999999.9f;	//	Make sure we don't use this one again.
 
 		// Make sure this subsystem still has hitpoints.  If it's a child of a parent that was destroyed, it will have been destroyed already.
 		if (subsystem->current_hits <= 0.0f) {
@@ -686,7 +687,6 @@ float do_subobj_hit_stuff(object *ship_objp, object *other_obj, vec3d *hitpos, i
 		float	damage_to_apply = 0.0f;
 		range = subsys_list[min_index].range;
 		dist = subsys_list[min_index].dist;
-		subsys_list[min_index].dist = 9999999.9f;	//	Make sure we don't use this one again.
 
 		Assert(range > 0.0f);	// Goober5000 - avoid div-0 below
 
