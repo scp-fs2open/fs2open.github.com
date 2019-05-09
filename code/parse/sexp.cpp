@@ -567,6 +567,7 @@ SCP_vector<sexp_oper> Operators = {
 	{ "change-player-score",			OP_CHANGE_PLAYER_SCORE,					2,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Karajorma
 	{ "change-team-score",				OP_CHANGE_TEAM_SCORE,					2,	2,			SEXP_ACTION_OPERATOR,	},	// Karajorma
 	{ "set-respawns",					OP_SET_RESPAWNS,						2,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Karajorma
+	{ "set-hotkey",						OP_SET_HOTKEY,							2,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// wookieejedi
 
 	//Music and Sound Sub-Category
 	{ "change-soundtrack",				OP_CHANGE_SOUNDTRACK,					1,	1,			SEXP_ACTION_OPERATOR,	},	// Goober5000	
@@ -19804,6 +19805,36 @@ void multi_sexp_set_respawns()
 	}
 }
 
+/**
+ * set a hotkey for one or more ships/wings
+ */
+void sexp_set_hotkey(int node)
+{
+	int objnum, setnum, n = node;
+	setnum = eval_num(n);
+	n   = CDR(n);
+
+	// first, look for ship name -- if found, then set hotkey to ship
+	// if not a ship, look for wing name, then set hotkey to each ship in wing
+	// note, hud_target_hotkey_add_remove() checks if the object has arrived or is destroyed or departed
+	for (; n != -1; n = CDR(n)) {
+		object_ship_wing_point_team oswpt;
+		sexp_get_object_ship_wing_point_team(&oswpt, CTEXT(n));
+		if (oswpt.type == OSWPT_TYPE_SHIP) {
+			objnum = oswpt.shipp->objnum;
+			if (objnum != -1)
+				hud_target_hotkey_add_remove(setnum, &Objects[objnum], HOTKEY_MISSION_FILE_ADDED);
+		}
+		if (oswpt.type == OSWPT_TYPE_WING) {
+			for (int i = 0; i < oswpt.wingp->current_count; i++) {
+				objnum = Ships[oswpt.wingp->ship_index[i]].objnum;
+				if (objnum != -1)
+					hud_target_hotkey_add_remove(setnum, &Objects[objnum], HOTKEY_MISSION_FILE_ADDED);
+			}
+		}
+	}
+}
+
 // helper function for the remove-weapons SEXP
 void actually_remove_weapons(int weapon_info_index)
 {
@@ -24544,6 +24575,11 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = SEXP_TRUE;
 				break;
 
+		    case OP_SET_HOTKEY:
+			    sexp_set_hotkey(node);
+			    sexp_val = SEXP_TRUE;
+			    break;
+
 			case OP_REMOVE_WEAPONS:
 				sexp_remove_weapons(node);
 				sexp_val = SEXP_TRUE;
@@ -26299,6 +26335,7 @@ int query_operator_return_type(int op)
 		case OP_SET_MISSION_MOOD:
 		case OP_CHANGE_SUBSYSTEM_NAME:
 		case OP_SET_RESPAWNS:
+	    case OP_SET_HOTKEY:
 		case OP_SET_AFTERBURNER_ENERGY: 
 		case OP_SET_WEAPON_ENERGY:
 		case OP_SET_SHIELD_ENERGY:
@@ -27776,6 +27813,13 @@ int query_operator_argument_type(int op, int argnum)
 			}
 			else {
 				return OPF_SHIP;
+			}
+
+		case OP_SET_HOTKEY:
+			if ( argnum == 0 ){
+				return OPF_POSITIVE;
+			} else {
+				return OPF_SHIP_WING;
 			}
 
 		case OP_NUM_TYPE_KILLS:
@@ -30163,6 +30207,7 @@ int get_subcategory(int sexp_id)
 		case OP_CHANGE_PLAYER_SCORE:
 		case OP_CHANGE_TEAM_SCORE:
 		case OP_SET_RESPAWNS:
+		case OP_SET_HOTKEY:
 			return CHANGE_SUBCATEGORY_MISSION_AND_CAMPAIGN;
 
 		case OP_CHANGE_SOUNDTRACK:
@@ -32843,6 +32888,12 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t1: Number of respawns used up\r\n"
 		"\tRest: The player start ship to operate on.\r\n"
 		"\tOnly really useful for multiplayer."},
+
+	{ OP_SET_HOTKEY, "set-hotkey\r\n"
+		"\tSets hotkey for the specified ship(s) or wing(s)\r\n"
+		"\tTakes 2 or more arguments\r\n"
+		"\t1: Integer of hotkey to set. 0=F5, 1=F6, ... \r\n"
+		"\t(rest): Name(s) of ship(s) or wing(s)"},
 
 	{ OP_NUM_TYPE_KILLS, "num-type-kills\r\n"
 		"\tReturns the # of kills a player has on a given ship type (fighter, bomber, cruiser, etc).\r\n"
