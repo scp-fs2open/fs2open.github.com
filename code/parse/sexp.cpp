@@ -11509,7 +11509,7 @@ void set_subsys_strength_and_maybe_ancestors(ship *shipp, ship_subsys *ss, polym
 	Assertion(shipp != nullptr && ss != nullptr, "Ship and subsys must not be null!");
 	Assertion(assign_percent != nullptr || repair_percent != nullptr || sabotage_percent != nullptr, "Either assign_percent or repair_percent or sabotage_percent must not be null!");
 
-	bool originally_zero = (ss->current_hits == 0 || ss->submodel_info_1.blown_off != 0 || ss->submodel_info_2.blown_off != 0);
+	bool originally_zero = (ss->current_hits <= 0 || ss->submodel_info_1.blown_off || ss->submodel_info_2.blown_off);
 
 	if (assign_percent != nullptr)
 	{
@@ -11558,8 +11558,36 @@ void set_subsys_strength_and_maybe_ancestors(ship *shipp, ship_subsys *ss, polym
 		ss->submodel_info_1.blown_off = 0;
 		ss->submodel_info_2.blown_off = 0;
 
-		// determine the submodel for this subsystem
-		//todo();
+		// see if we are handling ancestors and if this subsystem has a submodel
+		int subobj = ss->system_info->subobj_num;
+		if (repair_ancestors && subobj >= 0)
+		{
+			if (pm == nullptr)
+				pm = model_get(Ship_info[shipp->ship_info_index].model_num);
+
+			// do we have a parent?
+			int parent_subobj = pm->submodel[subobj].parent;
+			if (parent_subobj >= 0)
+			{
+				// search for the subsystem
+				for (ship_subsys *parent_ss = GET_FIRST(&shipp->subsys_list); parent_ss != END_OF_LIST(&shipp->subsys_list); parent_ss = GET_NEXT(parent_ss))
+				{
+					// found parent?
+					if (parent_ss->system_info->subobj_num == parent_subobj)
+					{
+						// if the parent subobject was destroyed...
+						if (parent_ss->current_hits <= 0 || parent_ss->submodel_info_1.blown_off || parent_ss->submodel_info_2.blown_off)
+						{
+							// ...repair the parent in the same way
+							set_subsys_strength_and_maybe_ancestors(shipp, parent_ss, pm, assign_percent, repair_percent, sabotage_percent, do_submodel_repair, repair_ancestors);
+						}
+
+						// only one parent
+						break;
+					}
+				}
+			}
+		}
 	}
 }
 
@@ -31705,7 +31733,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t2:\tName of subsystem to repair.\r\n"
 		"\t3:\tPercentage to increase subsystem integrity by.\r\n"
 		"\t4:\tRepair submodel if it exists.  Optional argument that defaults to true.\r\n"
-		"\t5:\tRepair ancestor submodels if they were destroyed.  Optional argument that defaults to true.\r\n" },
+		"\t5:\tIf we are repairing submodels and an ancestor submodel was totally destroyed, repair that too.  Optional argument that defaults to true.\r\n" },
 
 	{ OP_SET_SUBSYSTEM_STRNGTH, "Set Subsystem Strength (Action operator)\r\n"
 		"\tSets the specified subsystem to the the specified percentage."
@@ -31716,7 +31744,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t2:\tName of subsystem to set strength.\r\n"
 		"\t3:\tPercentage to set subsystem integrity to.\r\n" 
 		"\t4:\tRepair submodel if it exists.  Optional argument that defaults to true.\r\n"
-		"\t5:\tRepair ancestor submodels if they were destroyed.  Optional argument that defaults to true.\r\n" },
+		"\t5:\tIf we are repairing submodels and an ancestor submodel was totally destroyed, repair that too.  Optional argument that defaults to true.\r\n" },
 
 	{ OP_DESTROY_SUBSYS_INSTANTLY, "destroy-subsys-instantly\r\n"
 		"\tDestroys the specified subsystems without effects."
