@@ -19816,27 +19816,31 @@ void sexp_add_remove_hotkey(int node)
 	n = CDR(n);
 	setnum = eval_num(n);
 	n = CDR(n);
-	// first, look for ship name -- if found, then set hotkey to ship
-	// if not a ship, look for wing name, then set hotkey to each ship in wing
+	
+	// first, only proceed if setnum number is a valid hotkey
+	// look for ship name -- if found, then add or remove hotkey to ship
+	// if not a ship, look for wing name, then add or remove hotkey to each ship in wing
 	// note, hud_target_hotkey_add_remove() checks if the object has arrived or is destroyed or departed
-	for (; n != -1; n = CDR(n)) {
-		object_ship_wing_point_team oswpt;
-		sexp_get_object_ship_wing_point_team(&oswpt, CTEXT(n));
-		if (oswpt.type == OSWPT_TYPE_SHIP) {
-			objnum = oswpt.shipp->objnum;
-			// check if the ship already has this hot-key and if sexp is adding or removing it
-			if (((oswpt.shipp->hotkey == setnum) && !is_adding) || 
-				(!(oswpt.shipp->hotkey == setnum) && is_adding) ) {
-				hud_target_hotkey_add_remove(setnum, &Objects[objnum], HOTKEY_USER_ADDED);
-			}
-		}
-		else if (oswpt.type == OSWPT_TYPE_WING) {
-			for (int i = 0; i < oswpt.wingp->current_count; i++) {
-				objnum = Ships[oswpt.wingp->ship_index[i]].objnum;
+	if (setnum >= 0 && setnum < MAX_KEYED_TARGETS) {
+		for (; n != -1; n = CDR(n)) {
+			object_ship_wing_point_team oswpt;
+			sexp_get_object_ship_wing_point_team(&oswpt, CTEXT(n));
+			if (oswpt.type == OSWPT_TYPE_SHIP) {
+				objnum = oswpt.shipp->objnum;
 				// check if the ship already has this hot-key and if sexp is adding or removing it
-				if (((oswpt.shipp->hotkey == setnum) && !is_adding) ||
-				    (!(oswpt.shipp->hotkey == setnum) && is_adding)) {
+				if (((oswpt.shipp->hotkey == setnum) && !is_adding) || 
+					((oswpt.shipp->hotkey != setnum) && is_adding) ) {
 					hud_target_hotkey_add_remove(setnum, &Objects[objnum], HOTKEY_USER_ADDED);
+				}
+			}
+			else if (oswpt.type == OSWPT_TYPE_WING) {
+				for (int i = 0; i < oswpt.wingp->current_count; i++) {
+					objnum = Ships[oswpt.wingp->ship_index[i]].objnum;
+					// check if the ship already has this hot-key and if sexp is adding or removing it
+					if (((oswpt.shipp->hotkey == setnum) && !is_adding) ||
+						((oswpt.shipp->hotkey != setnum) && is_adding)) {
+						hud_target_hotkey_add_remove(setnum, &Objects[objnum], HOTKEY_USER_ADDED);
+					}
 				}
 			}
 		}
