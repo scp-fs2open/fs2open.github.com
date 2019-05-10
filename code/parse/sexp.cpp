@@ -567,7 +567,7 @@ SCP_vector<sexp_oper> Operators = {
 	{ "change-player-score",			OP_CHANGE_PLAYER_SCORE,					2,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Karajorma
 	{ "change-team-score",				OP_CHANGE_TEAM_SCORE,					2,	2,			SEXP_ACTION_OPERATOR,	},	// Karajorma
 	{ "set-respawns",					OP_SET_RESPAWNS,						2,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Karajorma
-	{ "add-remove-hotkey",				OP_ADD_REMOVE_HOTKEY,					2,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// wookieejedi
+	{ "add-remove-hotkey",				OP_ADD_REMOVE_HOTKEY,					3,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// wookieejedi
 
 	//Music and Sound Sub-Category
 	{ "change-soundtrack",				OP_CHANGE_SOUNDTRACK,					1,	1,			SEXP_ACTION_OPERATOR,	},	// Goober5000	
@@ -19808,12 +19808,14 @@ void multi_sexp_set_respawns()
 /**
  * set a hotkey for one or more ships/wings
  */
-void sexp_set_hotkey(int node)
+void sexp_add_remove_hotkey(int node)
 {
 	int objnum, setnum, n = node;
+	bool is_adding; // True for add, False for remove
+	is_adding = is_sexp_true(n);
+	n = CDR(n);
 	setnum = eval_num(n);
-	n   = CDR(n);
-
+	n = CDR(n);
 	// first, look for ship name -- if found, then set hotkey to ship
 	// if not a ship, look for wing name, then set hotkey to each ship in wing
 	// note, hud_target_hotkey_add_remove() checks if the object has arrived or is destroyed or departed
@@ -19822,12 +19824,20 @@ void sexp_set_hotkey(int node)
 		sexp_get_object_ship_wing_point_team(&oswpt, CTEXT(n));
 		if (oswpt.type == OSWPT_TYPE_SHIP) {
 			objnum = oswpt.shipp->objnum;
-			hud_target_hotkey_add_remove(setnum, &Objects[objnum], HOTKEY_USER_ADDED);
+			// check if the ship already has this hot-key and if sexp is adding or removing it
+			if (((oswpt.shipp->hotkey == setnum) && !is_adding) || 
+				(!(oswpt.shipp->hotkey == setnum) && is_adding) ) {
+				hud_target_hotkey_add_remove(setnum, &Objects[objnum], HOTKEY_USER_ADDED);
+			}
 		}
 		else if (oswpt.type == OSWPT_TYPE_WING) {
 			for (int i = 0; i < oswpt.wingp->current_count; i++) {
 				objnum = Ships[oswpt.wingp->ship_index[i]].objnum;
-				hud_target_hotkey_add_remove(setnum, &Objects[objnum], HOTKEY_USER_ADDED);
+				// check if the ship already has this hot-key and if sexp is adding or removing it
+				if (((oswpt.shipp->hotkey == setnum) && !is_adding) ||
+				    (!(oswpt.shipp->hotkey == setnum) && is_adding)) {
+					hud_target_hotkey_add_remove(setnum, &Objects[objnum], HOTKEY_USER_ADDED);
+				}
 			}
 		}
 	}
@@ -24574,7 +24584,7 @@ int eval_sexp(int cur_node, int referenced_node)
 				break;
 
 		    case OP_ADD_REMOVE_HOTKEY:
-			    sexp_set_hotkey(node);
+			    sexp_add_remove_hotkey(node);
 			    sexp_val = SEXP_TRUE;
 			    break;
 
@@ -27814,11 +27824,12 @@ int query_operator_argument_type(int op, int argnum)
 			}
 
 		case OP_ADD_REMOVE_HOTKEY:
-			if ( argnum == 0 ){
-				return OPF_POSITIVE;
-			} else {
-				return OPF_SHIP_WING;
-			}
+		    if (argnum == 0)
+			    return OPF_BOOL;
+		    if (argnum == 1)
+			    return OPF_POSITIVE;
+		    else
+			    return OPF_SHIP_WING;
 
 		case OP_NUM_TYPE_KILLS:
 			if(argnum == 0){
@@ -32889,10 +32900,9 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 
 	{ OP_ADD_REMOVE_HOTKEY, "add-remove-hotkey\r\n"
 		"\tAdd or remove hotkey for the specified ship(s) or wing(s)\r\n"
-		"\tIf ship(s) or wing(s) already have this hotkey, then the hotkey is removed.\r\n"
-		"\tIf ship(s) or wing(s) do not have this hotkey, then the hotkey is added.\r\n"
-		"\tTakes 2 or more arguments\r\n"
-		"\t1: Integer of hotkey to add or remove. 0=F5, 1=F6, ... \r\n"
+		"\tTakes 3 or more arguments\r\n"
+		"\t1: Boolean. True adds hotkey and false removes hotkey. \r\n"
+		"\t2: Integer of hotkey to add or remove. 0=F5, 1=F6, ... \r\n"
 		"\t(rest): Name(s) of ship(s) or wing(s)"},
 
 	{ OP_NUM_TYPE_KILLS, "num-type-kills\r\n"
