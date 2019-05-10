@@ -658,6 +658,7 @@ float do_subobj_hit_stuff(object *ship_objp, object *other_obj, vec3d *hitpos, i
 	{
 		float	dist, range;
 		ship_subsys	*subsystem;
+
 		int	min_index = -1;
 
 		if (Damage_impacted_subsystem_first && subsys_hit_first > -1) {
@@ -673,22 +674,21 @@ float do_subobj_hit_stuff(object *ship_objp, object *other_obj, vec3d *hitpos, i
 					min_index = i;
 				}
 			}
+			Assert(min_index != -1);
 		}
 
-		Assert(min_index != -1);
+		float	damage_to_apply = 0.0f;
 		subsystem = subsys_list[min_index].ptr;
+		range = subsys_list[min_index].range;
+		dist = subsys_list[min_index].dist;
 		subsys_list[min_index].dist = 9999999.9f;	//	Make sure we don't use this one again.
+
+		Assert(range > 0.0f);	// Goober5000 - avoid div-0 below
 
 		// Make sure this subsystem still has hitpoints.  If it's a child of a parent that was destroyed, it will have been destroyed already.
 		if (subsystem->current_hits <= 0.0f) {
 			continue;
 		}
-
-		float	damage_to_apply = 0.0f;
-		range = subsys_list[min_index].range;
-		dist = subsys_list[min_index].dist;
-
-		Assert(range > 0.0f);	// Goober5000 - avoid div-0 below
 
 		// only do this for the closest affected subsystem
 		if ( (j == 0) && (!(parent_armor_flags & SAF_IGNORE_SS_ARMOR))) {
