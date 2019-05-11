@@ -5354,7 +5354,7 @@ int ai_select_primary_weapon(object *objp, object *other_objp, Weapon::Info_Flag
 				if (Weapon_info[swp->primary_bank_weapons[i]].wi_flags[Weapon::Info_Flags::Capital_plus])
 				{
 					swp->current_primary_bank = i;
-					nprintf(("AI", "%i: Ship %s selecting weapon %s\n", Framecount, Ships[objp->instance].ship_name, Weapon_info[swp->primary_bank_weapons[i]].name));
+					nprintf(("AI", "%i: Ship %s selecting weapon %s (capital+) vs target %s\n", Framecount, Ships[objp->instance].ship_name, Weapon_info[swp->primary_bank_weapons[i]].name, Ships[other_objp->instance].ship_name));
 					return i;
 				}
 			}
@@ -5392,6 +5392,7 @@ int ai_select_primary_weapon(object *objp, object *other_objp, Weapon::Info_Flag
 			i_hullfactor_prev_bank = 0;		// Just switch to the first one
 		}
 		swp->current_primary_bank = i_hullfactor_prev_bank;		// Select the best weapon
+		nprintf(("AI", "%i: Ship %s selecting weapon %s (no shields) vs target %s\n", Framecount, Ships[objp->instance].ship_name, Weapon_info[swp->primary_bank_weapons[i_hullfactor_prev_bank]].name, (other_objp->type == OBJ_SHIP ? Ships[other_objp->instance].ship_name : "non-ship") ));
 		return i_hullfactor_prev_bank;							// Return
 	}
 
@@ -5406,6 +5407,7 @@ int ai_select_primary_weapon(object *objp, object *other_objp, Weapon::Info_Flag
 
 			if ((Weapon_info[swp->primary_bank_weapons[bank_index]].wi_flags[Weapon::Info_Flags::Pierce_shields]) && !(Weapon_info[swp->primary_bank_weapons[bank_index]].wi_flags[Weapon::Info_Flags::Capital_plus]))
 			{
+				nprintf(("AI", "%i: Ship %s selecting weapon %s (>10%% shields)\n", Framecount, Ships[objp->instance].ship_name, Weapon_info[swp->primary_bank_weapons[bank_index]].name));
 				return swp->current_primary_bank;
 			}
 		}
@@ -5420,6 +5422,7 @@ int ai_select_primary_weapon(object *objp, object *other_objp, Weapon::Info_Flag
 				if ((Weapon_info[weapon_info_index].wi_flags[Weapon::Info_Flags::Pierce_shields]) && !(Weapon_info[swp->primary_bank_weapons[i]].wi_flags[Weapon::Info_Flags::Capital_plus])) 
 				{
 					swp->current_primary_bank = i;
+					nprintf(("AI", "%i: Ship %s selecting weapon %s (>10%% shields)\n", Framecount, Ships[objp->instance].ship_name, Weapon_info[swp->primary_bank_weapons[i]].name));
 					return i;
 				}
 			}
@@ -5454,6 +5457,7 @@ int ai_select_primary_weapon(object *objp, object *other_objp, Weapon::Info_Flag
 			i_hullfactor_prev_bank = 0;		// Just switch to the first one
 		}
 		swp->current_primary_bank = i_hullfactor_prev_bank;		// Select the best weapon
+		nprintf(("AI", "%i: Ship %s selecting weapon %s (<50%% shields)\n", Framecount, Ships[objp->instance].ship_name, Weapon_info[swp->primary_bank_weapons[i_hullfactor_prev_bank]].name));
 		return i_hullfactor_prev_bank;							// Return
 	}
 	else
@@ -5483,6 +5487,7 @@ int ai_select_primary_weapon(object *objp, object *other_objp, Weapon::Info_Flag
 			i_hullfactor_prev_bank = 0;		// Just switch to the first one
 		}
 		swp->current_primary_bank = i_hullfactor_prev_bank;		// Select the best weapon
+		nprintf(("AI", "%i: Ship %s selecting weapon %s (>50%% shields)\n", Framecount, Ships[objp->instance].ship_name, Weapon_info[swp->primary_bank_weapons[i_hullfactor_prev_bank]].name));
 		return i_hullfactor_prev_bank;							// Return
 	}
 }
@@ -5510,7 +5515,9 @@ void set_primary_weapon_linkage(object *objp)
 		// If trying to destroy a big ship (i.e., not disable/disarm), always unleash all weapons
 		if ( Ship_info[Ships[Objects[aip->target_objnum].instance].ship_info_index].is_big_ship() ) {
 			if ( aip->targeted_subsys == NULL ) {
-                shipp->flags.set(Ship::Ship_Flags::Primary_linked);
+				if (!sip->flags[Ship::Info_Flags::No_primary_linking] ) {
+					shipp->flags.set(Ship::Ship_Flags::Primary_linked);
+				}
                 shipp->flags.set(Ship::Ship_Flags::Secondary_dual_fire);
 				return;
 			}
