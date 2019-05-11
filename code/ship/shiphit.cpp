@@ -39,6 +39,7 @@
 #include "object/objectsnd.h"
 #include "parse/parselo.h"
 #include "scripting/scripting.h"
+#include "scripting/api/objs/subsystem.h"
 #include "playerman/player.h"
 #include "popup/popup.h"
 #include "render/3d.h"
@@ -113,7 +114,7 @@ void do_subobj_destroyed_stuff( ship *ship_p, ship_subsys *subsys, vec3d* hitpos
 	object *ship_objp;
 	model_subsystem *psub;
 	vec3d	g_subobj_pos;
-	int type, i, subsystem_index, log_index;
+	int type, i, log_index;
 
 	// get some local variables
 	sip = &Ship_info[ship_p->ship_info_index];
@@ -217,6 +218,7 @@ void do_subobj_destroyed_stuff( ship *ship_p, ship_subsys *subsys, vec3d* hitpos
 	Assert( ship_p->ship_info_index < 65535 );
 
 	// get the "index" of this subsystem in the ship info structure.
+	int subsystem_index;
 	for (subsystem_index = 0; subsystem_index < sip->n_subsystems; ++subsystem_index ) {
 		if ( &(sip->subsystems[subsystem_index]) == psub )
 			break;
@@ -271,11 +273,9 @@ void do_subobj_destroyed_stuff( ship *ship_p, ship_subsys *subsys, vec3d* hitpos
 
 	// call a scripting hook for the subsystem (regardless of whether it's added to the mission log)
 	Script_system.SetHookObject("Ship", ship_objp);
-	Script_system.SetHookVar("SubsysName", 's', psub->name);
-	Script_system.SetHookVar("SubobjName", 's', psub->subobj_name);
-	Script_system.SetHookVar("SubsysIndex", 'i', subsystem_index);
+	Script_system.SetHookVar("Subsystem", 'o', scripting::api::l_Subsystem.Set(scripting::api::ship_subsys_h(ship_objp, subsys)));
 	Script_system.RunCondition(CHA_ONSUBSYSDEATH, ship_objp);
-	Script_system.RemHookVars(4, "Ship", "SubsysName", "SubobjName", "SubsysIndex");
+	Script_system.RemHookVars(2, "Ship", "Subsystem");
 
 	if ( psub->subobj_num > -1 )	{
 		shipfx_blow_off_subsystem(ship_objp,ship_p,subsys,&g_subobj_pos,no_explosion);
