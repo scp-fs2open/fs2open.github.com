@@ -218,6 +218,7 @@ SCP_vector<sexp_oper> Operators = {
 	{ "num-ships-in-battle",			OP_NUM_SHIPS_IN_BATTLE,					0,	INT_MAX,	SEXP_INTEGER_OPERATOR,	},	//phreak modified by FUBAR
 	{ "num-ships-in-wing",				OP_NUM_SHIPS_IN_WING,					1,	INT_MAX,	SEXP_INTEGER_OPERATOR,	},	// Karajorma
 	{ "directive-value",				OP_DIRECTIVE_VALUE,						1,	2,			SEXP_INTEGER_OPERATOR,	},	// Karajorma
+	{ "get-hotkey",						OP_GET_HOTKEY,							1,	1,			SEXP_INTEGER_OPERATOR,	},	// wookieejedi
 
 	//Player Sub-Category
 	{ "was-promotion-granted",			OP_WAS_PROMOTION_GRANTED,				0,	1,			SEXP_BOOLEAN_OPERATOR,	},
@@ -19806,6 +19807,28 @@ void multi_sexp_set_respawns()
 }
 
 /**
+ * get a hotkey for a one ship or wing
+ */
+int sexp_get_hotkey(int node)
+{
+	object_ship_wing_point_team oswpt;
+	sexp_get_object_ship_wing_point_team(&oswpt, CTEXT(node));
+	int hotkey;
+
+	// if ship, just grab the hotkey number
+	// if wing, get the first ship in the wing, then grab hotkey
+	if (oswpt.type == OSWPT_TYPE_SHIP) {
+		hotkey = oswpt.shipp->hotkey;
+	} else if (oswpt.type == OSWPT_TYPE_WING) {
+		hotkey = oswpt.wingp->hotkey;
+	} else {
+		hotkey = -1;
+	}
+
+	return hotkey;
+}
+
+/**
  * set a hotkey for one or more ships/wings
  */
 void sexp_add_remove_hotkey(int node)
@@ -24995,6 +25018,10 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = sexp_directive_value(node);
 				break;
 
+			case OP_GET_HOTKEY:
+			    sexp_val = sexp_get_hotkey(node);
+			    break;
+
 			case OP_CHANGE_SUBSYSTEM_NAME:
 				sexp_change_subsystem_name(node);
 				sexp_val = SEXP_TRUE;
@@ -25998,6 +26025,7 @@ int query_operator_return_type(int op)
 		case OP_GET_VARIABLE_BY_INDEX:
 		case OP_GET_COLGROUP_ID:
 		case OP_FUNCTIONAL_IF_THEN_ELSE:
+	    case OP_GET_HOTKEY:
 			return OPR_NUMBER;
 
 		case OP_ABS:
@@ -28336,6 +28364,9 @@ int query_operator_argument_type(int op, int argnum)
 			else 
 				return OPF_BOOL;			
 
+		case OP_GET_HOTKEY:
+		    return OPF_SHIP_WING;
+
 		case OP_NAV_IS_VISITED:		//Kazan
 		case OP_NAV_DISTANCE:		//kazan
 		case OP_NAV_DEL:			//kazan
@@ -30360,6 +30391,7 @@ int get_subcategory(int sexp_id)
 		case OP_NUM_SHIPS_IN_BATTLE:
 		case OP_NUM_SHIPS_IN_WING:
 		case OP_DIRECTIVE_VALUE:
+	    case OP_GET_HOTKEY:
 			return STATUS_SUBCATEGORY_MISSION;
 
 		case OP_WAS_PROMOTION_GRANTED:
@@ -33763,6 +33795,14 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\tAlways returns true. Takes 1 or more arguments...\r\n\r\n"
 		"\t1:\tValue\r\n"
 		"\t2:\t(Optional) Ignore the directive count set by any earlier SEXPs in the event. If set to false it will add instead\r\n"
+	},
+
+	// wookieejedi
+	{ OP_GET_HOTKEY, "get-hotkey\r\n"
+		"\tReturns the hotkey integer of the ship or wing.\r\n"
+		"\tNo hotkey returns -1, F5 returns 0, F6 returns 1, ...\r\n\r\n"
+		"\tTakes 1 argument.\r\n\r\n"
+		"\t1:\tShip or wing to get hotkey.\r\n"
 	},
 
 	//phreak
