@@ -33799,8 +33799,8 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 
 	// wookieejedi
 	{ OP_GET_HOTKEY, "get-hotkey\r\n"
-		"\tReturns the hotkey integer of the ship or wing. Return values range from -1 to 8.\r\n"
-		"\tNo hotkey returns -1, F5 returns 0, F6 returns 1, ..., F12 returns 7, and 'Hidden' hotkey returns 8.\r\n\r\n"
+		"\tReturns the hotkey integer of the ship or wing. Return values range from -1 to 7.\r\n"
+		"\tReturn of -1 is no hotkey, return of 0 is F5, return of 1 is F6, ..., return of 7 is F12.\r\n\r\n"
 		"\tTakes 1 argument.\r\n\r\n"
 		"\t1:\tShip or wing to get hotkey.\r\n"
 	},
