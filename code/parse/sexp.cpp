@@ -19815,8 +19815,8 @@ int sexp_get_hotkey(int node)
 	sexp_get_object_ship_wing_point_team(&oswpt, CTEXT(node));
 	int hotkey;
 
-	// if ship, just grab the hotkey number
-	// if wing, get the first ship in the wing, then grab hotkey
+	// returns the hotkey of the ship or wing
+	// if argument is not ship or wing returns -1
 	if (oswpt.type == OSWPT_TYPE_SHIP) {
 		hotkey = oswpt.shipp->hotkey;
 	} else if (oswpt.type == OSWPT_TYPE_WING) {
@@ -33799,8 +33799,8 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 
 	// wookieejedi
 	{ OP_GET_HOTKEY, "get-hotkey\r\n"
-		"\tReturns the hotkey integer of the ship or wing.\r\n"
-		"\tNo hotkey returns -1, F5 returns 0, F6 returns 1, ...\r\n\r\n"
+		"\tReturns the hotkey integer of the ship or wing. Return values range from -1 to 8.\r\n"
+		"\tNo hotkey returns -1, F5 returns 0, F6 returns 1, ..., F12 returns 7, and 'Hidden' hotkey returns 8.\r\n\r\n"
 		"\tTakes 1 argument.\r\n\r\n"
 		"\t1:\tShip or wing to get hotkey.\r\n"
 	},
