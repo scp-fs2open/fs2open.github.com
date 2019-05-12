@@ -467,7 +467,7 @@ TEST_F(VecmatTest, test_vm_vec_copy_normalize)
 		static_randvec_unnormalized(rand32(), &v1);
 		vBackup.xyz = v1.xyz;
 
-		auto magnitude      = vm_vec_copy_normalize(&v2, &v1);
+		auto magnitude = vm_vec_copy_normalize(&v2, &v1);
 		
 		ASSERT_FLOAT_EQ(v1.xyz.x, vBackup.xyz.x);
 		ASSERT_FLOAT_EQ(v1.xyz.y, vBackup.xyz.y);

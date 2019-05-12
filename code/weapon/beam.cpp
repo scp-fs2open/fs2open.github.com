@@ -754,7 +754,7 @@ void beam_type_a_move(beam *b)
 
 	// put the "last_shot" point arbitrarily far away
 	vm_vec_sub(&dir, &b->last_shot, &b->last_start);
-	vm_vec_normalize_quick(&dir);
+	vm_vec_normalize(&dir);
 	vm_vec_scale_add(&b->last_shot, &b->last_start, &dir, b->range);
 	Assert(is_valid_vec(&b->last_shot));
 }
@@ -865,7 +865,7 @@ void beam_type_d_move(beam *b)
 
 	// put the "last_shot" point arbitrarily far away
 	vm_vec_sub(&dir, &b->last_shot, &b->last_start);
-	vm_vec_normalize_quick(&dir);
+	vm_vec_normalize(&dir);
 	vm_vec_scale_add(&b->last_shot, &b->last_start, &dir, b->range);
 	Assert(is_valid_vec(&b->last_shot));
 }
@@ -1180,7 +1180,7 @@ void beam_render(beam *b, float u_offset)
 
 	// get beam direction
 	vm_vec_sub(&fvec, &b->last_shot, &b->last_start);
-	vm_vec_normalize_quick(&fvec);		
+	vm_vec_normalize(&fvec);		
 
 	// turn off backface culling
 	//int cull = gr_set_cull(0);
@@ -1417,7 +1417,7 @@ void beam_render_muzzle_glow(beam *b)
 		float g_length = bwi->glow_length * pct * rand_val;
 
 		vm_vec_sub(&fvec, &b->last_shot, &b->last_start);
-		vm_vec_normalize_quick(&fvec);
+		vm_vec_normalize(&fvec);
 		
 		/* (DahBlount)
 		If the glow_length is less than the diameter of the muzzle glow
@@ -1582,7 +1582,7 @@ void beam_calc_facing_pts( vec3d *top, vec3d *bot, vec3d *fvec, vec3d *pos, floa
 
 	vm_vec_cross(&uvec,fvec,&rvec);
 	// VECMAT-ERROR: NULL VEC3D (value of, fvec == rvec)
-	vm_vec_normalize_safe(&uvec);
+	vm_vec_normalize(&uvec);
 
 	vm_vec_scale_add( top, &temp, &uvec, w * 0.5f );
 	vm_vec_scale_add( bot, &temp, &uvec, -w * 0.5f );	
@@ -1757,7 +1757,7 @@ void beam_apply_lighting()
 		case 0:
 			// a few meters in from the of muzzle			
 			vm_vec_sub(&dir, &l->bm->last_start, &l->bm->last_shot);
-			vm_vec_normalize_quick(&dir);
+			vm_vec_normalize(&dir);
 			vm_vec_scale(&dir, -0.8f);  // TODO: This probably needs to *not* be stupid. -taylor
 			vm_vec_scale_add(&pt, &l->bm->last_start, &dir, bwi->beam_muzzle_radius * 5.0f);
 
@@ -2319,7 +2319,7 @@ void beam_jitter_aim(beam *b, float aim)
 	// shot aim is a direct linear factor of the target model's radius.
 	// so, pick a random point on the circle
 	vm_vec_sub(&forward, &b->last_shot, &b->last_start);
-	vm_vec_normalize_quick(&forward);
+	vm_vec_normalize(&forward);
 	
 	// vector
 	vm_vector_2_matrix(&m, &forward, NULL, NULL);
@@ -2923,8 +2923,8 @@ int beam_collide_early_out(object *a, object *b)
 	vm_vec_sub(&dist_test, &b->pos, &bm->last_start);
 	dot_test = dist_test;
 	vm_vec_sub(&dot_test2, &bm->last_shot, &bm->last_start);
-	vm_vec_normalize_quick(&dot_test);
-	vm_vec_normalize_quick(&dot_test2);
+	vm_vec_normalize(&dot_test);
+	vm_vec_normalize(&dot_test2);
 	// cull_dist == DIST SQUARED FOO!
 	if((vm_vec_dot(&dot_test, &dot_test2) < cull_dot) && (vm_vec_mag_squared(&dist_test) > cull_dist)){
 		return 1;
@@ -3183,7 +3183,7 @@ void beam_handle_collisions(beam *b)
 					}
 
 					if (ok_to_draw){
-						vm_vec_normalize_quick(&fvec);
+						vm_vec_normalize(&fvec);
 						
 						// stream of fire for big ships
 						if (widest <= Objects[target].radius * BEAM_AREA_PERCENT) {

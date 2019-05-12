@@ -165,14 +165,14 @@ void geometry_batcher::draw_bitmap(vertex *pnt, int orient, float rad, float dep
 
 	// get the direction from the point to the eye
 	vm_vec_sub(&fvec, &View_position, &PNT);
-	vm_vec_normalize_safe(&fvec);
+	vm_vec_normalize(&fvec);
 
 	// get an up vector in the general direction of what we want
 	uvec = View_matrix.vec.uvec;
 
 	// make a right vector from the f and up vector, this r vec is exactly what we want, so...
 	vm_vec_cross(&rvec, &View_matrix.vec.fvec, &uvec);
-	vm_vec_normalize_safe(&rvec);
+	vm_vec_normalize(&rvec);
 
 	// fix the u vec with it
 	vm_vec_cross(&uvec, &View_matrix.vec.fvec, &rvec);
@@ -282,12 +282,12 @@ void geometry_batcher::draw_bitmap(vertex *pnt, float rad, float angle, float de
 	float *R = &radius_list[n_to_render * 3];
 
 	vm_vec_sub(&fvec, &View_position, &PNT);
-	vm_vec_normalize_safe(&fvec);
+	vm_vec_normalize(&fvec);
 
 	vm_rot_point_around_line(&uvec, &View_matrix.vec.uvec, angle, &vmd_zero_vector, &View_matrix.vec.fvec);
 
 	vm_vec_cross(&rvec, &View_matrix.vec.fvec, &uvec);
-	vm_vec_normalize_safe(&rvec);
+	vm_vec_normalize(&rvec);
 	vm_vec_cross(&uvec, &View_matrix.vec.fvec, &rvec);
 
 	vm_vec_scale_add(&PNT, &PNT, &fvec, depth);
@@ -370,19 +370,19 @@ void geometry_batcher::draw_beam(vec3d *start, vec3d *end, float width, float in
 	vec3d fvec, uvecs, uvece, evec;
 
 	vm_vec_sub(&fvec, start, end);
-	vm_vec_normalize_safe(&fvec);
+	vm_vec_normalize(&fvec);
 
 	vm_vec_sub(&evec, &View_position, start);
-	vm_vec_normalize_safe(&evec);
+	vm_vec_normalize(&evec);
 
 	vm_vec_cross(&uvecs, &fvec, &evec);
-	vm_vec_normalize_safe(&uvecs);
+	vm_vec_normalize(&uvecs);
 
 	vm_vec_sub(&evec, &View_position, end);
-	vm_vec_normalize_safe(&evec);
+	vm_vec_normalize(&evec);
 
 	vm_vec_cross(&uvece, &fvec, &evec);
-	vm_vec_normalize_safe(&uvece);
+	vm_vec_normalize(&uvece);
 
 
 	vm_vec_scale_add(&p[0], start, &uvecs, width);
@@ -436,7 +436,7 @@ float geometry_batcher::draw_laser(vec3d *p0, float width1, vec3d *p1, float wid
 	vec3d uvec, fvec, rvec, center, reye;
 
 	vm_vec_sub( &fvec, p0, p1 );
-	vm_vec_normalize_safe( &fvec );
+	vm_vec_normalize( &fvec );
 
 	vm_vec_avg( &center, p0, p1 ); // needed for the return value only
 	vm_vec_sub(&reye, &Eye_position, &center);
@@ -444,10 +444,10 @@ float geometry_batcher::draw_laser(vec3d *p0, float width1, vec3d *p1, float wid
 
 	// compute the up vector
 	vm_vec_cross(&uvec, &fvec, &reye);
-	vm_vec_normalize_safe(&uvec);
+	vm_vec_normalize(&uvec);
 	// ... the forward vector
 	vm_vec_cross(&fvec, &uvec, &reye);
-	vm_vec_normalize_safe(&fvec);
+	vm_vec_normalize(&fvec);
 	// now recompute right vector, in case it wasn't entirely perpendiclar
 	vm_vec_cross(&rvec, &uvec, &fvec);
 
@@ -586,7 +586,7 @@ void geometry_shader_batcher::draw_bitmap(vertex *position, int orient, float ra
 
 	// get the direction from the point to the eye
 	vm_vec_sub(&fvec, &View_position, &PNT);
-	vm_vec_normalize_safe(&fvec);
+	vm_vec_normalize(&fvec);
 
 	// move the center of the sprite based on the depth parameter
 	if ( depth != 0.0f )

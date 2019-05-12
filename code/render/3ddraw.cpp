@@ -516,7 +516,7 @@ void g3_render_rect_screen_aligned_rotated(material *mat_params, vertex *pnt, fl
 	vec3d fvec, rvec, uvec;
 
 	vm_vec_sub(&fvec, &View_position, &PNT);
-	vm_vec_normalize_safe(&fvec);
+	vm_vec_normalize(&fvec);
 
 	vm_rot_point_around_line(&uvec, &View_matrix.vec.uvec, angle, &vmd_zero_vector, &View_matrix.vec.fvec);
 	vm_vec_normalize(&uvec);
@@ -950,7 +950,7 @@ void g3_render_rod(color *clr, int num_points, vec3d *pvecs, float width)
 
 	for ( i = 0; i < num_points; i++ ) {
 		vm_vec_sub(&fvec, &View_position, &pvecs[i]);
-		vm_vec_normalize_safe(&fvec);
+		vm_vec_normalize(&fvec);
 
 		int first = i + 1;
 		int second = i - 1;
@@ -963,7 +963,7 @@ void g3_render_rod(color *clr, int num_points, vec3d *pvecs, float width)
 		}
 
 		vm_vec_sub(&rvec, &pvecs[first], &pvecs[second]);
-		vm_vec_normalize_safe(&rvec);
+		vm_vec_normalize(&rvec);
 
 		vm_vec_cross(&uvec, &rvec, &fvec);
 

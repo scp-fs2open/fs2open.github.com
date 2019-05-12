@@ -7754,7 +7754,7 @@ static void ship_dying_frame(object *objp, int ship_num)
 				vm_vec_rand_vec_quick(&rand_vec);
 				float scale = -vm_vec_dot(&objp->orient.vec.fvec, &rand_vec) * (0.9f + 0.2f * frand());
 				vm_vec_scale_add2(&rand_vec, &objp->orient.vec.fvec, scale);
-				vm_vec_normalize_quick(&rand_vec);
+				vm_vec_normalize(&rand_vec);
 				scale = objp->radius * frand() * 0.717f;
 				vm_vec_scale(&rand_vec, scale);
 				vm_vec_add(&outpnt, &objp->pos, &rand_vec);

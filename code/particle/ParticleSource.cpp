@@ -26,7 +26,7 @@ void SourceOrigin::getGlobalPosition(vec3d* posOut) const {
 			matrix m = vmd_identity_matrix;
 			vec3d dir = m_origin.m_particle.lock()->velocity;
 
-			vm_vec_normalize_safe(&dir);
+			vm_vec_normalize(&dir);
 			vm_vector_2_matrix_norm(&m, &dir);
 
 			vm_vec_unrotate(&offset, &m_offset, &m);

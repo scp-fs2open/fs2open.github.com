@@ -6471,7 +6471,7 @@ void set_predicted_enemy_pos(vec3d *predicted_enemy_pos, object *pobjp, vec3d *e
 		float dist = vm_vec_dist_quick(&pobjp->pos, enemy_pos);
 		vec3d temp;
 		vm_vec_sub(&temp, enemy_pos, &pobjp->pos);
-		vm_vec_normalize_quick(&temp);
+		vm_vec_normalize(&temp);
 		float dot = vm_vec_dot(&temp, &pobjp->orient.vec.fvec);
 		float st_err = 3.0f * (1.4f - dot) * (1.0f + dist / (get_skill_stealth_dist_scaler() * STEALTH_MAX_VIEW_DIST)) * (1 - aip->ai_accuracy);
 		scale += st_err;
@@ -7030,7 +7030,7 @@ void ai_stealth_find()
 
 	// if dist is near max and dot is close to 1, accel, afterburn
 	vm_vec_sub(&vec_to_enemy, &new_pos, &Pl_objp->pos);
-	dist_to_enemy = vm_vec_normalize_quick(&vec_to_enemy);
+	dist_to_enemy = vm_vec_normalize(&vec_to_enemy);
 	dot_to_enemy = vm_vec_dot(&vec_to_enemy, &Pl_objp->orient.vec.fvec);
 
 	// if i think i should see him ahead and i don't, set goal pos and turn around, but only if I haven't seen him for a while
@@ -7039,7 +7039,7 @@ void ai_stealth_find()
 		vm_vec_scale_add(&aip->goal_point, &Pl_objp->pos, &Pl_objp->orient.vec.fvec, -300.0f);
 		aip->submode_parm0 = SM_SF_BEHIND;
 		vm_vec_sub(&vec_to_enemy, &new_pos, &Pl_objp->pos);
-		dist_to_enemy = vm_vec_normalize_quick(&vec_to_enemy);
+		dist_to_enemy = vm_vec_normalize(&vec_to_enemy);
 		dot_to_enemy = vm_vec_dot(&vec_to_enemy, &Pl_objp->orient.vec.fvec);
 	}
 
@@ -7125,10 +7125,10 @@ void ai_stealth_sweep()
 		vm_vec_cross(&right, &aip->stealth_velocity, &vmd_z_vector);
 	}
 
-	vm_vec_normalize_quick(&right);
+	vm_vec_normalize(&right);
 
 	// get "forward" for box
-	vm_vec_copy_normalize_quick(&forward, &aip->stealth_velocity);
+	vm_vec_copy_normalize(&forward, &aip->stealth_velocity);
 
 	// get "up" for box
 	vm_vec_cross(&up, &forward, &right);
@@ -7427,7 +7427,7 @@ void ai_set_guard_vec(object *objp, object *guard_objp)
 		vm_vec_copy_scale(&aip->guard_vec, &tvec, mag);
 	}
 
-	vm_vec_normalize_quick(&aip->guard_vec);
+	vm_vec_normalize(&aip->guard_vec);
 	vm_vec_scale(&aip->guard_vec, radius);
 }
 

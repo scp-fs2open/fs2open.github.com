@@ -2530,7 +2530,7 @@ void ship_apply_global_damage(object *ship_objp, object *other_obj, vec3d *force
 
 		// find world hitpos
 		vm_vec_sub( &tmp, force_center, &ship_objp->pos );
-		vm_vec_normalize_safe( &tmp );
+		vm_vec_normalize( &tmp );
 		vm_vec_scale_add( &world_hitpos, &ship_objp->pos, &tmp, ship_objp->radius );
 
 		// Rotate world_hitpos into local coordinates (local_hitpos)
@@ -2575,7 +2575,7 @@ void ship_apply_wash_damage(object *ship_objp, object *other_obj, float damage)
 	// radius of the object
 	vm_vec_rand_vec_quick(&rand_vec);
 	vm_vec_scale_add(&direction_vec, &ship_objp->orient.vec.fvec, &rand_vec, 0.5f);
-	vm_vec_normalize_quick(&direction_vec);
+	vm_vec_normalize(&direction_vec);
 	vm_vec_scale_add( &world_hitpos, &ship_objp->pos, &direction_vec, ship_objp->radius );
 
 	// Do damage to hull and not to shields

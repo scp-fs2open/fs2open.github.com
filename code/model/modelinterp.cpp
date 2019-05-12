@@ -1596,7 +1596,7 @@ void parse_tmap(int offset, ubyte *bsp_data)
 			*N = *vp(p);
 
 	  	problem_count += check_values(N);
-		vm_vec_normalize_safe(N);
+		vm_vec_normalize(N);
 
 		V = &polygon_list[pof_tex].vert[(polygon_list[pof_tex].n_verts)+1];
 		N = &polygon_list[pof_tex].norm[(polygon_list[pof_tex].n_verts)+1];
@@ -1613,7 +1613,7 @@ void parse_tmap(int offset, ubyte *bsp_data)
 			*N = *vp(p);
 
 	 	problem_count += check_values(N);
-		vm_vec_normalize_safe(N);
+		vm_vec_normalize(N);
 
 		V = &polygon_list[pof_tex].vert[(polygon_list[pof_tex].n_verts)+2];
 		N = &polygon_list[pof_tex].norm[(polygon_list[pof_tex].n_verts)+2];
@@ -1630,7 +1630,7 @@ void parse_tmap(int offset, ubyte *bsp_data)
 			*N = *vp(p);
 
 		problem_count += check_values(N);
-		vm_vec_normalize_safe(N);
+		vm_vec_normalize(N);
 
 		polygon_list[pof_tex].n_verts += 3;
 	}
@@ -2416,7 +2416,7 @@ void model_interp_process_shield_mesh(polymodel * pm)
 		vm_vec_sub(&b_a, &b, &a);
 		vm_vec_sub(&c_a, &c, &a);
 		vm_vec_cross(&tri->norm, &b_a, &c_a);
-		vm_vec_normalize_safe(&tri->norm);
+		vm_vec_normalize(&tri->norm);
 
 		buffer.push_back(a);
 		buffer.push_back(tri->norm);
@@ -2876,7 +2876,7 @@ void bsp_polygon_data::process_tmap(int offset, ubyte* bsp_data)
 			vert.normal = *vp(p);
 
 		problem_count += check_values(&vert.normal);
-		vm_vec_normalize_safe(&vert.normal);
+		vm_vec_normalize(&vert.normal);
 
 		Polygon_vertices.push_back(vert);
 	}

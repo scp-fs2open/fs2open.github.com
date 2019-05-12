@@ -452,7 +452,7 @@ ADE_FUNC(getOrientation,
 
 	matrix mt = vmd_identity_matrix;
 
-	vm_vec_normalize_safe(&v3);
+	vm_vec_normalize(&v3);
 	vm_vector_2_matrix_norm(&mt, &v3);
 	matrix_h mh(&mt);
 
