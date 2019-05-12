@@ -436,3 +436,52 @@ TEST_F(VecmatTest, test_vm_vec_dist_quick)
 		ASSERT_NEAR(distance, real_distance, 0.12f);
 	}
 }
+
+TEST_F(VecmatTest, test_vm_vec_normalize)
+{
+	for (size_t loop = 0; loop < 1000; ++loop) {
+		vec3d v, vBackup;
+
+		static_randvec_unnormalized(rand32(), &v);
+		vBackup.xyz = v.xyz;
+
+		auto magnitude		= vm_vec_normalize(&v);
+		auto test_magnitude = vm_vec_mag(&vBackup);
+
+		ASSERT_FLOAT_EQ(magnitude, test_magnitude);
+
+		auto inverse_magnitude = 1.0f / test_magnitude;
+		vm_vec_scale(&vBackup, inverse_magnitude);
+		
+		ASSERT_FLOAT_EQ(v.xyz.x, vBackup.xyz.x);
+		ASSERT_FLOAT_EQ(v.xyz.y, vBackup.xyz.y);
+		ASSERT_FLOAT_EQ(v.xyz.z, vBackup.xyz.z);
+	}
+}
+
+TEST_F(VecmatTest, test_vm_vec_copy_normalize)
+{
+	for (size_t loop = 0; loop < 1000; ++loop) {
+		vec3d v1, v2, vBackup;
+
+		static_randvec_unnormalized(rand32(), &v1);
+		vBackup.xyz = v1.xyz;
+
+		auto magnitude      = vm_vec_copy_normalize(&v2, &v1);
+		
+		ASSERT_FLOAT_EQ(v1.xyz.x, vBackup.xyz.x);
+		ASSERT_FLOAT_EQ(v1.xyz.y, vBackup.xyz.y);
+		ASSERT_FLOAT_EQ(v1.xyz.z, vBackup.xyz.z);
+
+		auto test_magnitude = vm_vec_mag(&vBackup);
+
+		ASSERT_FLOAT_EQ(magnitude, test_magnitude);
+
+		auto inverse_magnitude = 1.0f / test_magnitude;
+		vm_vec_scale(&vBackup, inverse_magnitude);
+
+		ASSERT_FLOAT_EQ(v2.xyz.x, vBackup.xyz.x);
+		ASSERT_FLOAT_EQ(v2.xyz.y, vBackup.xyz.y);
+		ASSERT_FLOAT_EQ(v2.xyz.z, vBackup.xyz.z);
+	}
+}
