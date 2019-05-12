@@ -5928,7 +5928,7 @@ void weapon_area_apply_blast(vec3d * /*force_apply_pos*/, object *ship_objp, vec
 
 	// apply blast force based on distance from center of explosion
 	vm_vec_sub(&vec_blast_to_ship, &ship_objp->pos, blast_pos);
-	vm_vec_normalize_safe(&vec_blast_to_ship);
+	vm_vec_normalize(&vec_blast_to_ship);
 	vm_vec_copy_scale(&force, &vec_blast_to_ship, blast );
 
 	vm_vec_sub(&vec_ship_to_impact, blast_pos, &ship_objp->pos);

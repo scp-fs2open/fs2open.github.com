@@ -220,7 +220,7 @@ void trail_render( trail * trailp )
 		if ( i == 0 )	{
 			if ( num_sections > 1 )	{
 				vm_vec_sub(&tmp_fvec, &trailp->pos[n], &trailp->pos[sections[i+1]] );
-				vm_vec_normalize_safe(&tmp_fvec);
+				vm_vec_normalize(&tmp_fvec);
 				fvec = &tmp_fvec;
 			} else {
 				fvec = &tmp_fvec;
@@ -230,7 +230,7 @@ void trail_render( trail * trailp )
 			}
 		} else {
 			vm_vec_sub(&tmp_fvec, &last_pos, &trailp->pos[n] );
-			vm_vec_normalize_safe(&tmp_fvec);
+			vm_vec_normalize(&tmp_fvec);
 			fvec = &tmp_fvec;
 		}
 

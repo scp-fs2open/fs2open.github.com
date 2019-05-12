@@ -420,7 +420,7 @@ ADE_FUNC(getVectorFromCoords, l_Graphics,
 		vm_vec_scale(&pos, depth);
 
 	if (normalize)
-		vm_vec_normalize_quick(&pos);
+		vm_vec_normalize(&pos);
 
 	vm_vec_add2(&pos, &View_position);
 

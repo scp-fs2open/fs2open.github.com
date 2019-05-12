@@ -848,7 +848,7 @@ void physics_apply_shock(vec3d *direction_vec, float pressure, physics_info *pi,
 		return;
 	}
 
-	vm_vec_normalize_safe ( direction_vec );
+	vm_vec_normalize ( direction_vec );
 
 	area.xyz.x = (max->xyz.y - min->xyz.z) * (max->xyz.z - min->xyz.z);
 	area.xyz.y = (max->xyz.x - min->xyz.x) * (max->xyz.z - min->xyz.z);

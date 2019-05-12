@@ -1304,12 +1304,12 @@ void shipfx_emit_spark( int n, int sn )
 
 		vec3d tmp_norm, tmp_vel;
 		vm_vec_sub( &tmp_norm, &outpnt, &obj->pos );
-		vm_vec_normalize_safe(&tmp_norm);
+		vm_vec_normalize(&tmp_norm);
 
 		tmp_vel = obj->phys_info.vel;
-		if ( vm_vec_normalize_safe(&tmp_vel) > 1.0f )	{
+		if ( vm_vec_normalize(&tmp_vel) > 1.0f )	{
 			vm_vec_scale_add2(&tmp_norm,&tmp_vel, -2.0f);
-			vm_vec_normalize_safe(&tmp_norm);
+			vm_vec_normalize(&tmp_norm);
 		}
 				
 		pe.normal = tmp_norm;			// What normal the particle emit around

@@ -18,8 +18,8 @@ TEST_F(VecmatTest, test_vm_vec_add)
 	for (size_t loop = 0; loop < 1000; ++loop) {
 		vec3d v1, v2, v3;
 
-		static_randvec(rand32(), &v1);
-		static_randvec(rand32(), &v2);
+		static_randvec_unnormalized(rand32(), &v1);
+		static_randvec_unnormalized(rand32(), &v2);
 
 		vm_vec_add(&v3, &v1, &v2);
 
@@ -38,8 +38,8 @@ TEST_F(VecmatTest, test_vm_vec_sub)
 	for (size_t loop = 0; loop < 1000; ++loop) {
 		vec3d v1, v2, v3;
 
-		static_randvec(rand32(), &v1);
-		static_randvec(rand32(), &v2);
+		static_randvec_unnormalized(rand32(), &v1);
+		static_randvec_unnormalized(rand32(), &v2);
 
 		vm_vec_sub(&v3, &v1, &v2);
 
@@ -58,10 +58,10 @@ TEST_F(VecmatTest, test_vm_vec_add2)
 	for (size_t loop = 0; loop < 1000; ++loop) {
 		vec3d v1, v2, v1backup;
 
-		static_randvec(rand32(), &v1);
-		static_randvec(rand32(), &v2);
+		static_randvec_unnormalized(rand32(), &v1);
+		static_randvec_unnormalized(rand32(), &v2);
 
-		vm_vec_copy_scale(&v1backup, &v1, 1.0f);
+		v1backup.xyz = v1.xyz;
 
 		vm_vec_add2(&v1, &v2);
 
@@ -80,10 +80,10 @@ TEST_F(VecmatTest, test_vm_vec_sub2)
 	for (size_t loop = 0; loop < 1000; ++loop) {
 		vec3d v1, v2, v1backup;
 
-		static_randvec(rand32(), &v1);
-		static_randvec(rand32(), &v2);
+		static_randvec_unnormalized(rand32(), &v1);
+		static_randvec_unnormalized(rand32(), &v2);
 
-		vm_vec_copy_scale(&v1backup, &v1, 1.0f);
+		v1backup.xyz = v1.xyz;
 
 		vm_vec_sub2(&v1, &v2);
 
@@ -104,7 +104,7 @@ TEST_F(VecmatTest, test_vm_vec_avg)
 		vec3d vAvg;
 
 		for (size_t i = 0; i < 2; i++) {
-			static_randvec(rand32(), &vArray[i]);
+			static_randvec_unnormalized(rand32(), &vArray[i]);
 		}
 
 		vm_vec_avg(&vAvg, &vArray[0], &vArray[1]);
@@ -134,7 +134,7 @@ TEST_F(VecmatTest, test_vm_vec_avg3)
 		vec3d vAvg;
 
 		for (size_t i = 0; i < 3; i++) {
-			static_randvec(rand32(), &vArray[i]);
+			static_randvec_unnormalized(rand32(), &vArray[i]);
 		}
 
 		vm_vec_avg3(&vAvg, &vArray[0], &vArray[1], &vArray[2]);
@@ -164,7 +164,7 @@ TEST_F(VecmatTest, test_vm_vec_avg4)
 		vec3d vAvg;
 
 		for (size_t i = 0; i < 4; i++) {
-			static_randvec(rand32(), &vArray[i]);
+			static_randvec_unnormalized(rand32(), &vArray[i]);
 		}
 
 		vm_vec_avg4(&vAvg, &vArray[0], &vArray[1], &vArray[2], &vArray[3]);
@@ -194,7 +194,7 @@ TEST_F(VecmatTest, test_vm_vec_avg_n)
 		vec3d vAvg;
 
 		for (size_t i = 0; i < 1000; i++) {
-			static_randvec(rand32(), &vArray[i]);
+			static_randvec_unnormalized(rand32(), &vArray[i]);
 		}
 
 		vm_vec_avg_n(&vAvg, 1000, vArray);
@@ -222,7 +222,7 @@ TEST_F(VecmatTest, test_vm_vec_scale)
 	for (size_t loop = 0; loop < 1000; ++loop) {
 		vec3d v1, v1Unscaled;
 
-		static_randvec(rand32(), &v1);
+		static_randvec_unnormalized(rand32(), &v1);
 
 		v1Unscaled.xyz = v1.xyz;
 
@@ -262,7 +262,7 @@ TEST_F(VecmatTest, test_vm_vec_copy_scale)
 	for (size_t loop = 0; loop < 1000; ++loop) {
 		vec3d v1, v1Unscaled, v2;
 
-		static_randvec(rand32(), &v1);
+		static_randvec_unnormalized(rand32(), &v1);
 
 		v1Unscaled.xyz = v1.xyz;
 
@@ -281,8 +281,8 @@ TEST_F(VecmatTest, test_vm_vec_scale_add)
 	for (size_t loop = 0; loop < 1000; ++loop) {
 		vec3d v1, v2, v3;
 
-		static_randvec(rand32(), &v1);
-		static_randvec(rand32(), &v2);
+		static_randvec_unnormalized(rand32(), &v1);
+		static_randvec_unnormalized(rand32(), &v2);
 
 		auto rand_scale = static_randf(rand32());
 
@@ -299,8 +299,8 @@ TEST_F(VecmatTest, test_vm_vec_scale_sub)
 	for (size_t loop = 0; loop < 1000; ++loop) {
 		vec3d v1, v2, v3;
 
-		static_randvec(rand32(), &v1);
-		static_randvec(rand32(), &v2);
+		static_randvec_unnormalized(rand32(), &v1);
+		static_randvec_unnormalized(rand32(), &v2);
 
 		auto rand_scale = static_randf(rand32());
 
@@ -317,8 +317,8 @@ TEST_F(VecmatTest, test_vm_vec_scale_add2)
 	for (size_t loop = 0; loop < 1000; ++loop) {
 		vec3d v1, v2, v1Unscaled;
 
-		static_randvec(rand32(), &v1);
-		static_randvec(rand32(), &v2);
+		static_randvec_unnormalized(rand32(), &v1);
+		static_randvec_unnormalized(rand32(), &v2);
 
 		v1Unscaled.xyz = v1.xyz;
 
@@ -337,7 +337,7 @@ TEST_F(VecmatTest, test_vm_vec_scale2)
 	for (size_t loop = 0; loop < 1000; ++loop) {
 		vec3d v1, v1Unscaled;
 
-		static_randvec(rand32(), &v1);
+		static_randvec_unnormalized(rand32(), &v1);
 
 		v1Unscaled.xyz = v1.xyz;
 
@@ -424,3 +424,138 @@ TEST_F(VecmatTest, test_vm_vec_project_plane)
 	ASSERT_FLOAT_EQ(resz.xyz.y, v1.xyz.y);
 	ASSERT_FLOAT_EQ(resz.xyz.z, 0.0f);
 }
+
+TEST_F(VecmatTest, test_vm_vec_mag)
+{
+	for (size_t loop = 0; loop < 1000; ++loop) {
+		vec3d v;
+
+		static_randvec_unnormalized(rand32(), &v);
+
+		auto magnitude = fl_sqrt((v.xyz.x * v.xyz.x) + (v.xyz.y * v.xyz.y) + (v.xyz.z * v.xyz.z));
+
+		ASSERT_FLOAT_EQ(magnitude, vm_vec_mag(&v));
+	}
+}
+
+TEST_F(VecmatTest, test_vm_vec_mag_squared) {
+	for (size_t loop = 0; loop < 1000; ++loop) {
+		vec3d v;
+
+		static_randvec_unnormalized(rand32(), &v);
+
+		auto magnitude = (v.xyz.x * v.xyz.x) + (v.xyz.y * v.xyz.y) + (v.xyz.z * v.xyz.z);
+
+		ASSERT_FLOAT_EQ(magnitude, vm_vec_mag_squared(&v));
+	}
+}
+
+TEST_F(VecmatTest, test_vm_vec_dist) {
+	for (size_t loop = 0; loop < 1000; ++loop) {
+		vec3d v1, v2, t;
+
+		static_randvec_unnormalized(rand32(), &v1);
+		static_randvec_unnormalized(rand32(), &v2);
+
+		auto distance = vm_vec_dist(&v1, &v2);
+
+		vm_vec_sub(&t, &v1, &v2);
+		auto test_distance = vm_vec_mag(&t);
+
+		ASSERT_FLOAT_EQ(distance, test_distance);
+	}
+}
+
+TEST_F(VecmatTest, test_vm_vec_dist_squared)
+{
+	for (size_t loop = 0; loop < 1000; ++loop) {
+		vec3d v1, v2, t;
+
+		static_randvec_unnormalized(rand32(), &v1);
+		static_randvec_unnormalized(rand32(), &v2);
+
+		auto distance = vm_vec_dist_squared(&v1, &v2);
+
+		vm_vec_sub(&t, &v1, &v2);
+		auto test_distance = vm_vec_mag_squared(&t);
+
+		ASSERT_FLOAT_EQ(distance, test_distance);
+	}
+}
+
+TEST_F(VecmatTest, test_vm_vec_mag_quick) {
+	for (size_t loop = 0; loop < 1000; ++loop) {
+		vec3d v;
+
+		static_randvec_unnormalized(rand32(), &v);
+
+		auto magnitude = vm_vec_mag(&v);
+
+		ASSERT_NEAR(magnitude, vm_vec_mag_quick(&v), 0.1f);
+	}
+}
+
+TEST_F(VecmatTest, test_vm_vec_dist_quick)
+{
+	for (size_t loop = 0; loop < 1000; ++loop) {
+		vec3d v1, v2, t;
+
+		static_randvec_unnormalized(rand32(), &v1);
+		static_randvec_unnormalized(rand32(), &v2);
+
+		auto distance = vm_vec_dist_quick(&v1, &v2);
+		auto real_distance = vm_vec_dist(&v1, &v2);
+
+		ASSERT_NEAR(distance, real_distance, 0.12f);
+	}
+}
+
+TEST_F(VecmatTest, test_vm_vec_normalize)
+{
+	for (size_t loop = 0; loop < 1000; ++loop) {
+		vec3d v, vBackup;
+
+		static_randvec_unnormalized(rand32(), &v);
+		vBackup.xyz = v.xyz;
+
+		auto magnitude		= vm_vec_normalize(&v);
+		auto test_magnitude = vm_vec_mag(&vBackup);
+
+		ASSERT_FLOAT_EQ(magnitude, test_magnitude);
+
+		auto inverse_magnitude = 1.0f / test_magnitude;
+		vm_vec_scale(&vBackup, inverse_magnitude);
+		
+		ASSERT_FLOAT_EQ(v.xyz.x, vBackup.xyz.x);
+		ASSERT_FLOAT_EQ(v.xyz.y, vBackup.xyz.y);
+		ASSERT_FLOAT_EQ(v.xyz.z, vBackup.xyz.z);
+	}
+}
+
+TEST_F(VecmatTest, test_vm_vec_copy_normalize)
+{
+	for (size_t loop = 0; loop < 1000; ++loop) {
+		vec3d v1, v2, vBackup;
+
+		static_randvec_unnormalized(rand32(), &v1);
+		vBackup.xyz = v1.xyz;
+
+		auto magnitude = vm_vec_copy_normalize(&v2, &v1);
+		
+		ASSERT_FLOAT_EQ(v1.xyz.x, vBackup.xyz.x);
+		ASSERT_FLOAT_EQ(v1.xyz.y, vBackup.xyz.y);
+		ASSERT_FLOAT_EQ(v1.xyz.z, vBackup.xyz.z);
+
+		auto test_magnitude = vm_vec_mag(&vBackup);
+
+		ASSERT_FLOAT_EQ(magnitude, test_magnitude);
+
+		auto inverse_magnitude = 1.0f / test_magnitude;
+		vm_vec_scale(&vBackup, inverse_magnitude);
+
+		ASSERT_FLOAT_EQ(v2.xyz.x, vBackup.xyz.x);
+		ASSERT_FLOAT_EQ(v2.xyz.y, vBackup.xyz.y);
+		ASSERT_FLOAT_EQ(v2.xyz.z, vBackup.xyz.z);
+	}
+}
+

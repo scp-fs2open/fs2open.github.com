@@ -1209,7 +1209,7 @@ static void asc_get_relvec(vec3d *relvec, object *other_obj, vec3d *hitpos)
 			break;
 	}
 
-	vm_vec_normalize_quick(relvec);
+	vm_vec_normalize(relvec);
 }
 
 /**

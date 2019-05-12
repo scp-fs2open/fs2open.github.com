@@ -2177,15 +2177,15 @@ void poly_list::calculate_tangent()
 		// orthogonalize tangent (for all 3 verts)
 		magg = vm_vec_dot(&norm[i], &tangent);
 		vm_vec_scale_sub(t0, &tangent, &norm[i], magg);
-		vm_vec_normalize_safe(t0);
+		vm_vec_normalize(t0);
 
 		magg = vm_vec_dot(&norm[i+1], &tangent);
 		vm_vec_scale_sub(t1, &tangent, &norm[i+1], magg);
-		vm_vec_normalize_safe(t1);
+		vm_vec_normalize(t1);
 
 		magg = vm_vec_dot(&norm[i+2], &tangent);
 		vm_vec_scale_sub(t2, &tangent, &norm[i+2], magg);
-		vm_vec_normalize_safe(t2);
+		vm_vec_normalize(t2);
 
 		// compute handedness (for all 3 verts)
 		vm_vec_cross(&cross, &norm[i], &tangent);

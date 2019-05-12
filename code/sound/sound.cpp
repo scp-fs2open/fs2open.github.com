@@ -626,7 +626,7 @@ sound_handle snd_play_3d(game_snd* gs, vec3d* source_pos, vec3d* listen_pos, flo
 	// DirectSound3D will not cut off sounds, no matter how quite they become.. so manually
 	// prevent sounds from playing past the max distance.
 	//IMPORTANT THIS IS NOT WORKING RIGHT OMG WTF
-	distance = vm_vec_normalized_dir_quick( &vector_to_sound, source_pos, listen_pos );
+	distance = vm_vec_normalized_dir( &vector_to_sound, source_pos, listen_pos );
 
 	if ( (distance > max_range) && !force){
 		return sound_handle::invalid();
@@ -752,7 +752,7 @@ int snd_get_3d_vol_and_pan(game_snd *gs, vec3d *pos, float* vol, float *pan, flo
 	float min_range = (float) (fl2i( (gs->min) * range_factor));
 	float max_range = (float) ((int)std::lround((gs->max) * range_factor));
 
-	distance = vm_vec_normalized_dir_quick( &vector_to_sound, pos, &View_position );
+	distance = vm_vec_normalized_dir( &vector_to_sound, pos, &View_position );
 	distance -= radius;
 
 	max_volume = gs->volume_range.max();

@@ -691,7 +691,7 @@ void debris_hit(object *debris_obj, object * /*other_obj*/, vec3d *hitpos, float
 
 		vec3d tmp_norm;
 		vm_vec_sub( &tmp_norm, hitpos, &debris_obj->pos );
-		vm_vec_normalize_safe(&tmp_norm);
+		vm_vec_normalize(&tmp_norm);
 			
 		pe.normal = tmp_norm;			// What normal the particle emit around
 		pe.normal_variance = 0.3f;		//	How close they stick to that normal 0=good, 1=360 degree

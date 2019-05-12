@@ -871,7 +871,7 @@ void multi_respawn_place(object *new_obj, int team)
 
 /*
 #define MOVE_AWAY() { vec3d away; vm_vec_sub(&away,&new_obj->pos,&hit_check->pos); \
-	                   vm_vec_normalize_quick(&away); vm_vec_scale(&away,hit_check->radius+hit_check->radius); \
+	                   vm_vec_normalize(&away); vm_vec_scale(&away,hit_check->radius+hit_check->radius); \
 							 vm_vec_add2(&new_obj->pos,&away); }
 
 #define WITHIN_RADIUS() { float dist; dist=vm_vec_dist(&new_obj->pos,&hit_check->pos); \

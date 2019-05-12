@@ -550,7 +550,7 @@ namespace particle
 			normal.xyz.x = pe->normal.xyz.x + (frand() * 2.0f - 1.0f) * pe->normal_variance;
 			normal.xyz.y = pe->normal.xyz.y + (frand() * 2.0f - 1.0f) * pe->normal_variance;
 			normal.xyz.z = pe->normal.xyz.z + (frand() * 2.0f - 1.0f) * pe->normal_variance;
-			vm_vec_normalize_safe(&normal);
+			vm_vec_normalize(&normal);
 			vm_vec_scale_add(&tmp_vel, &pe->vel, &normal, speed);
 
 			create(&pe->pos, &tmp_vel, life, radius, type, optional_data);

@@ -2154,7 +2154,7 @@ camid player_get_cam()
 				move_dir = viewer_obj->orient.vec.fvec;
 			} else {
 				move_dir = viewer_obj->phys_info.vel;
-				vm_vec_normalize_safe(&move_dir);
+				vm_vec_normalize(&move_dir);
 			}
 
 			vm_vec_scale_add(&eye_pos, &viewer_obj->pos, &move_dir, -3.0f * viewer_obj->radius - Viewer_chase_info.distance);

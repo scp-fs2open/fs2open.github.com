@@ -1766,7 +1766,7 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 						Assert( pm->shield.tris );
 						for ( i = 0; i < pm->shield.ntris; i++ ) {
 							cfread_vector( &temp_vec, fp );
-							vm_vec_normalize_safe(&temp_vec);
+							vm_vec_normalize(&temp_vec);
 							pm->shield.tris[i].norm = temp_vec;
 							for ( j = 0; j < 3; j++ ) {
 								pm->shield.tris[i].verts[j] = cfread_int( fp );		// read in the indices into the shield_vertex list
@@ -1805,7 +1805,7 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 						for (j = 0; j < bank->num_slots; j++) {
 							cfread_vector( &(bank->pnt[j]), fp );
 							cfread_vector( &temp_vec, fp );
-							vm_vec_normalize_safe(&temp_vec);
+							vm_vec_normalize(&temp_vec);
 							bank->norm[j] = temp_vec;
 						}
 					}
@@ -1827,7 +1827,7 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 						for (j = 0; j < bank->num_slots; j++) {
 							cfread_vector( &(bank->pnt[j]), fp );
 							cfread_vector( &temp_vec, fp );
-							vm_vec_normalize_safe(&temp_vec);
+							vm_vec_normalize(&temp_vec);
 							bank->norm[j] = temp_vec;
 						}
 					}
@@ -2093,7 +2093,7 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 
 							cfread_vector( &(p->pnt), fp );
 							cfread_vector( &temp_vec, fp );
-							vm_vec_normalize_safe(&temp_vec);
+							vm_vec_normalize(&temp_vec);
 							p->norm = temp_vec;
 
 							if ( pm->version > 2004 )	{
@@ -2128,7 +2128,7 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 
 							if ( parent == subsystemp->subobj_num ) {
 								cfread_vector( &temp_vec, fp );
-								vm_vec_normalize_safe(&temp_vec);
+								vm_vec_normalize(&temp_vec);
 								subsystemp->turret_norm = temp_vec;
 								vm_vector_2_matrix(&subsystemp->turret_matrix,&subsystemp->turret_norm,NULL,NULL);
 
@@ -2391,7 +2391,7 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 							&pm->ins[idx].vecs[pm->ins[idx].faces[idx2][1]], 
 							&pm->ins[idx].vecs[pm->ins[idx].faces[idx2][2]]);
 
-						vm_vec_normalize_safe(&tempv);
+						vm_vec_normalize(&tempv);
 
 						pm->ins[idx].norm[idx2] = tempv;
 //						mprintf(("insignorm %.2f %.2f %.2f\n",pm->ins[idx].norm[idx2].xyz.x, pm->ins[idx].norm[idx2].xyz.y, pm->ins[idx].norm[idx2].xyz.z));

@@ -1073,7 +1073,7 @@ void nebl_jitter(l_bolt *b)
 
 	// get the bolt direction
 	vm_vec_sub(&temp, &b->strike, &b->start);
-	length = vm_vec_normalize_quick(&temp);
+	length = vm_vec_normalize(&temp);
 	vm_vector_2_matrix(&m, &temp, NULL, NULL);
 
 	// jitter all nodes on the main trunk

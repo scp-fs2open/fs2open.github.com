@@ -710,7 +710,7 @@ void calculate_ship_ship_collision_physics(collision_info_struct *ship_ship_hit_
 		float parallel_mag;
 		impulse = ship_ship_hit_info->collision_normal;
 		vm_vec_projection_onto_plane(&v_rel_parallel_m, &v_rel_m, &ship_ship_hit_info->collision_normal);
-		collision_speed_parallel = vm_vec_normalize_safe(&v_rel_parallel_m);
+		collision_speed_parallel = vm_vec_normalize(&v_rel_parallel_m);
 		float friction = (lighter->type == OBJ_SHIP) ? light_sip->collision_physics.friction : COLLISION_FRICTION_FACTOR;
 		parallel_mag = float(-friction) * collision_speed_parallel / vm_vec_mag(&v_rel_m);
 		vm_vec_scale_add2(&impulse, &v_rel_parallel_m, parallel_mag);
@@ -816,7 +816,7 @@ void calculate_ship_ship_collision_physics(collision_info_struct *ship_ship_hit_
 	// Move away in direction of light and away in direction of normal
 	vec3d direction_light;	// direction light is moving relative to heavy
 	vm_vec_sub(&direction_light, &ship_ship_hit_info->light_rel_vel, &local_vel_from_submodel);
-	vm_vec_normalize_safe(&direction_light);
+	vm_vec_normalize(&direction_light);
 
 	Assert( !vm_is_vec_nan(&direction_light) );
 	vm_vec_scale_add2(&heavy->pos, &direction_light,  0.2f * lighter->phys_info.mass / (heavy->phys_info.mass + lighter->phys_info.mass));
@@ -1040,7 +1040,7 @@ static void maybe_push_little_ship_from_fast_big_ship(object *big_obj, object *s
 				vec3d temp, perp;
 				vm_vec_sub(&temp, &small_obj->pos, &big_obj->pos);
 				vm_vec_scale_add(&perp, &temp, &big_obj->orient.vec.fvec, -vm_vec_dot(&temp, &big_obj->orient.vec.fvec));
-				vm_vec_normalize_quick(&perp);
+				vm_vec_normalize(&perp);
 
 				// don't drive into sfc we just collided with
 				if (vm_vec_dot(&perp, normal) < 0) {
