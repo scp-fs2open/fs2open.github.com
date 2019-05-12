@@ -88,8 +88,8 @@ TEST_F(VecmatTest, test_vm_vec_sub2)
 		vm_vec_sub2(&v1, &v2);
 
 		for (size_t i = 0; i < 3; ++i) {
-			auto value1       = v1.a1d[i];
-			auto value2       = v2.a1d[i];
+			auto value1	   = v1.a1d[i];
+			auto value2	   = v2.a1d[i];
 			auto value1Backup = v1backup.a1d[i];
 
 			ASSERT_FLOAT_EQ(value1, value1Backup - value2);
@@ -242,7 +242,7 @@ TEST_F(VecmatTest, test_vm_vec4_scale)
 		vec4 v1, v1Unscaled;
 
 		for (size_t i = 0; i < 4; ++i) {
-			v1.a1d[i]         = static_randf(rand32());
+			v1.a1d[i]		 = static_randf(rand32());
 			v1Unscaled.a1d[i] = v1.a1d[i];
 		}
 
@@ -350,4 +350,77 @@ TEST_F(VecmatTest, test_vm_vec_scale2)
 		ASSERT_FLOAT_EQ(v1.xyz.y, v1Unscaled.xyz.y * (rand_scale_n / rand_scale_d));
 		ASSERT_FLOAT_EQ(v1.xyz.z, v1Unscaled.xyz.z * (rand_scale_n / rand_scale_d));
 	}
+}
+
+TEST_F(VecmatTest, test_vm_vec_project_parallel)
+{
+	//tests that vm_vec_project_parallel, correctly projects a
+	//vector onto the unit vectors
+	//expect that only the component of the respective unit vector remains
+	vec3d v1;
+	static_randvec(rand32(), &v1);
+
+	vec3d unit1 = {};
+	unit1.xyz.x = 1.0f;
+
+	vec3d unit2 = {};
+	unit2.xyz.y = 1.0f;
+
+	vec3d unit3 = {};
+	unit3.xyz.z = 1.0f;
+
+	vec3d resx = {};
+	float magx = vm_vec_projection_parallel(&resx, &v1, &unit1);
+	ASSERT_FLOAT_EQ(magx, resx.xyz.x);
+	ASSERT_FLOAT_EQ(resx.xyz.x, v1.xyz.x);
+	ASSERT_FLOAT_EQ(resx.xyz.y, 0.0f);
+	ASSERT_FLOAT_EQ(resx.xyz.z, 0.0f);
+
+	vec3d resy = {};
+	float magy = vm_vec_projection_parallel(&resy, &v1, &unit2);
+	ASSERT_FLOAT_EQ(magy, resy.xyz.y);
+	ASSERT_FLOAT_EQ(resy.xyz.x, 0.0f);
+	ASSERT_FLOAT_EQ(resy.xyz.y, v1.xyz.y);
+	ASSERT_FLOAT_EQ(resy.xyz.z, 0.0f);
+
+
+	vec3d resz = {};
+	float magz = vm_vec_projection_parallel(&resz, &v1, &unit3);
+	ASSERT_FLOAT_EQ(magz, resz.xyz.z);
+	ASSERT_FLOAT_EQ(resz.xyz.x, 0.0f);
+	ASSERT_FLOAT_EQ(resz.xyz.y, 0.0f);
+	ASSERT_FLOAT_EQ(resz.xyz.z, v1.xyz.z);
+}
+
+TEST_F(VecmatTest, test_vm_vec_project_plane)
+{
+	vec3d v1;
+	static_randvec(rand32(), &v1);
+
+	vec3d unit1 = {};
+	unit1.xyz.x = 1.0f;
+
+	vec3d unit2 = {};
+	unit2.xyz.y = 1.0f;
+
+	vec3d unit3 = {};
+	unit3.xyz.z = 1.0f;
+
+	vec3d resx = {};
+	vm_vec_projection_onto_plane(&resx, &v1, &unit1);
+	ASSERT_FLOAT_EQ(resx.xyz.x, 0.0f);
+	ASSERT_FLOAT_EQ(resx.xyz.y, v1.xyz.y);
+	ASSERT_FLOAT_EQ(resx.xyz.z, v1.xyz.z);
+
+	vec3d resy = {};
+	vm_vec_projection_onto_plane(&resy, &v1, &unit2);
+	ASSERT_FLOAT_EQ(resy.xyz.x, v1.xyz.x);
+	ASSERT_FLOAT_EQ(resy.xyz.y, 0.0f);
+	ASSERT_FLOAT_EQ(resy.xyz.z, v1.xyz.z);
+
+	vec3d resz = {};
+	vm_vec_projection_onto_plane(&resz, &v1, &unit3);
+	ASSERT_FLOAT_EQ(resz.xyz.x, v1.xyz.x);
+	ASSERT_FLOAT_EQ(resz.xyz.y, v1.xyz.y);
+	ASSERT_FLOAT_EQ(resz.xyz.z, 0.0f);
 }
