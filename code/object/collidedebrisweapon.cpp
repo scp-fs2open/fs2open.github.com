@@ -27,7 +27,6 @@
 int collide_debris_weapon( obj_pair * pair )
 {
 	vec3d	hitpos, hitnormal;
-	int		hit;
 	object *pdebris = pair->a;
 	object *weapon_obj = pair->b;
 
@@ -35,9 +34,9 @@ int collide_debris_weapon( obj_pair * pair )
 	Assert( weapon_obj->type == OBJ_WEAPON );
 
 	// first check the bounding spheres of the two objects.
-	hit = fvi_segment_sphere(&hitpos, &weapon_obj->last_pos, &weapon_obj->pos, &pdebris->pos, pdebris->radius);
+	int hit = fvi_segment_sphere(&hitpos, &weapon_obj->last_pos, &weapon_obj->pos, &pdebris->pos, pdebris->radius);
 	if (hit) {
-		hit = debris_check_collision(pdebris, weapon_obj, &hitpos, NULL, &hitnormal );
+		hit = debris_check_collision(pdebris, weapon_obj, &hitpos, nullptr, &hitnormal );
 
 		if ( !hit )
 			return 0;
@@ -86,7 +85,6 @@ int collide_asteroid_weapon( obj_pair * pair )
 		return 0;
 
 	vec3d	hitpos, hitnormal;
-	int		hit;
 	object	*pasteroid = pair->a;
 	object	*weapon_obj = pair->b;
 
@@ -94,9 +92,9 @@ int collide_asteroid_weapon( obj_pair * pair )
 	Assert( weapon_obj->type == OBJ_WEAPON );
 
 	// first check the bounding spheres of the two objects.
-	hit = fvi_segment_sphere(&hitpos, &weapon_obj->last_pos, &weapon_obj->pos, &pasteroid->pos, pasteroid->radius);
+	int hit = fvi_segment_sphere(&hitpos, &weapon_obj->last_pos, &weapon_obj->pos, &pasteroid->pos, pasteroid->radius);
 	if (hit) {
-		hit = asteroid_check_collision(pasteroid, weapon_obj, &hitpos, NULL, &hitnormal);
+		hit = asteroid_check_collision(pasteroid, weapon_obj, &hitpos, nullptr, &hitnormal);
 		if ( !hit )
 			return 0;
 

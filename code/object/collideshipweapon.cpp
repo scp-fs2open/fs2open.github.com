@@ -129,7 +129,7 @@ static void ship_weapon_do_hit_stuff(object *pship_obj, object *weapon_obj, vec3
 
 extern int Framecount;
 
-static int ship_weapon_check_collision(object *ship_objp, object *weapon_objp, float time_limit = 0.0f, int *next_hit = NULL)
+static int ship_weapon_check_collision(object *ship_objp, object *weapon_objp, float time_limit = 0.0f, int *next_hit = nullptr)
 {
 	mc_info mc, mc_shield, mc_hull;
 	ship	*shipp;
@@ -137,14 +137,14 @@ static int ship_weapon_check_collision(object *ship_objp, object *weapon_objp, f
 	weapon	*wp;
 	weapon_info	*wip;
 
-	Assert( ship_objp != NULL );
+	Assert( ship_objp != nullptr );
 	Assert( ship_objp->type == OBJ_SHIP );
 	Assert( ship_objp->instance >= 0 );
 
 	shipp = &Ships[ship_objp->instance];
 	sip = &Ship_info[shipp->ship_info_index];
 
-	Assert( weapon_objp != NULL );
+	Assert( weapon_objp != nullptr );
 	Assert( weapon_objp->type == OBJ_WEAPON );
 	Assert( weapon_objp->instance >= 0 );
 
