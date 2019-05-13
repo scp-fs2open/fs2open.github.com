@@ -13062,8 +13062,12 @@ void multi_sexp_deal_with_ship_flag()
 			// save flags for state change comparisons
 			auto object_flag_orig = Objects[shipp->objnum].flags;
 
-			Objects[shipp->objnum].flags.set((Object::Object_Flags)object_flag, set_it);
-            shipp->flags.set((Ship::Ship_Flags)ship_flag, set_it);
+			if (object_flag != (int)Object::Object_Flags::NUM_VALUES) {
+				Objects[shipp->objnum].flags.set((Object::Object_Flags)object_flag, set_it);
+			}
+			if (ship_flag != (int)Ship::Ship_Flags::NUM_VALUES) {
+	            shipp->flags.set((Ship::Ship_Flags)ship_flag, set_it);
+			}
 
 			// deal with side effects of these flags
 			if (object_flag == (int)Object::Object_Flags::No_shields) {
@@ -13105,7 +13109,7 @@ void multi_sexp_deal_with_ship_flag()
 		}
 		else {
 			Current_sexp_network_packet.get_parse_object(pobjp); 
-			if (pobjp != NULL) {
+			if ((pobjp != NULL) && (p_object_flag != (int)Mission::Parse_Object_Flags::NUM_VALUES)) {
                 pobjp->flags.set((Mission::Parse_Object_Flags)p_object_flag, set_it);
 			}
 		}
