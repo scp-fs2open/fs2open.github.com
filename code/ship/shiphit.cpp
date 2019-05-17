@@ -39,6 +39,7 @@
 #include "object/objectsnd.h"
 #include "parse/parselo.h"
 #include "scripting/scripting.h"
+#include "scripting/api/objs/subsystem.h"
 #include "playerman/player.h"
 #include "popup/popup.h"
 #include "render/3d.h"
@@ -217,13 +218,14 @@ void do_subobj_destroyed_stuff( ship *ship_p, ship_subsys *subsys, vec3d* hitpos
 	Assert( ship_p->ship_info_index < 65535 );
 
 	// get the "index" of this subsystem in the ship info structure.
-	for ( i = 0; i < sip->n_subsystems; i++ ) {
-		if ( &(sip->subsystems[i]) == psub )
+	int subsystem_index;
+	for (subsystem_index = 0; subsystem_index < sip->n_subsystems; ++subsystem_index ) {
+		if ( &(sip->subsystems[subsystem_index]) == psub )
 			break;
 	}
-	Assert( i < sip->n_subsystems );
-	Assert( i < 65535 );
-	log_index = ((ship_p->ship_info_index << 16) & 0xffff0000) | (i & 0xffff);
+	Assert( subsystem_index < sip->n_subsystems );
+	Assert( subsystem_index < 65535 );
+	log_index = ((ship_p->ship_info_index << 16) & 0xffff0000) | (subsystem_index & 0xffff);
 
 	// Don't log, display info, or play sounds about the activation subsytem
 	// FUBAR/Goober5000 - or about vanishing subsystems, per precedent with ship-vanish
@@ -268,6 +270,12 @@ void do_subobj_destroyed_stuff( ship *ship_p, ship_subsys *subsys, vec3d* hitpos
 			ship_p->flags.set(Ship::Ship_Flags::Disabled);				// add the disabled flag
 		}
 	}
+
+	// call a scripting hook for the subsystem (regardless of whether it's added to the mission log)
+	Script_system.SetHookObject("Ship", ship_objp);
+	Script_system.SetHookVar("Subsystem", 'o', scripting::api::l_Subsystem.Set(scripting::api::ship_subsys_h(ship_objp, subsys)));
+	Script_system.RunCondition(CHA_ONSUBSYSDEATH, ship_objp);
+	Script_system.RemHookVars(2, "Ship", "Subsystem");
 
 	if ( psub->subobj_num > -1 )	{
 		shipfx_blow_off_subsystem(ship_objp,ship_p,subsys,&g_subobj_pos,no_explosion);

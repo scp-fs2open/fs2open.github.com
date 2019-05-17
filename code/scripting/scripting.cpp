@@ -89,6 +89,7 @@ flag_def_list Script_actions[] =
     { "On Ship Depart",			CHA_ONSHIPDEPART,	0 },
 	{ "On Weapon Created",		CHA_ONWEAPONCREATED, 0},
 	{ "On Waypoints Done",		CHA_ONWAYPOINTSDONE, 0},
+	{ "On Subsystem Destroyed",	CHA_ONSUBSYSDEATH,	0},
 };
 
 int Num_script_actions = sizeof(Script_actions)/sizeof(flag_def_list);
