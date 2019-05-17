@@ -13109,7 +13109,7 @@ void multi_sexp_deal_with_ship_flag()
 		}
 		else {
 			Current_sexp_network_packet.get_parse_object(pobjp); 
-			if ((pobjp != NULL) && (p_object_flag != (int)Mission::Parse_Object_Flags::NUM_VALUES)) {
+			if ((pobjp != nullptr) && (p_object_flag != (int)Mission::Parse_Object_Flags::NUM_VALUES)) {
                 pobjp->flags.set((Mission::Parse_Object_Flags)p_object_flag, set_it);
 			}
 		}
