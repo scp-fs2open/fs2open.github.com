@@ -18837,19 +18837,6 @@ void ship_render(object* obj, model_draw_list* scene)
 		}
 	}
 
-	model_clear_instance(sip->model_num);
-
-	// Only render electrical arcs if within 500m of the eye (for a 10m piece)
-	if ( vm_vec_dist_quick( &obj->pos, &Eye_position ) < obj->radius*50.0f && !Rendering_to_shadow_map ) {
-		for ( int i = 0; i < MAX_SHIP_ARCS; i++ )	{
-			if ( timestamp_valid(shipp->arc_timestamp[i]) ) {
-				model_add_arc(sip->model_num, -1, &shipp->arc_pts[i][0], &shipp->arc_pts[i][1], shipp->arc_type[i]);
-			}
-		}
-	}
-
-	uint render_flags = MR_NORMAL;
-
 	if ( shipp->large_ship_blowup_index >= 0 )	{
 		shipfx_large_blowup_queue_render(scene, shipp);
 
@@ -18863,9 +18850,23 @@ void ship_render(object* obj, model_draw_list* scene)
 			shipp->warpout_effect->warpShipRender();
 		}
 
+		model_clear_instance(sip->model_num);
 		return;
 	}
 		
+	model_clear_instance(sip->model_num);
+
+	// Only render electrical arcs if within 500m of the eye (for a 10m piece)
+	if (vm_vec_dist_quick(&obj->pos, &Eye_position) < obj->radius * 50.0f && !Rendering_to_shadow_map) {
+		for (int i = 0; i < MAX_SHIP_ARCS; i++) {
+			if (timestamp_valid(shipp->arc_timestamp[i])) {
+				model_add_arc(sip->model_num, -1, &shipp->arc_pts[i][0], &shipp->arc_pts[i][1], shipp->arc_type[i]);
+			}
+		}
+	}
+
+	uint render_flags = MR_NORMAL;
+
 	ship_render_batch_thrusters(obj);
 
 	model_render_params render_info;

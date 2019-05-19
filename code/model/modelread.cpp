@@ -4742,8 +4742,10 @@ void model_update_instance(int model_instance_num, int sub_model_num, submodel_i
 	// Set the "blown out" flags
 	if ( flags[Ship::Subsystem_Flags::No_disappear] ) {
 		smi->blown_off = false;
+		sm->blown_off = 0;
 	} else {
 		smi->blown_off = sii->blown_off ? true : false;
+		sm->blown_off = sii->blown_off;
 	}
 
 	if ( smi->blown_off && !(flags[Ship::Subsystem_Flags::No_replace]) )	{
@@ -4751,12 +4753,15 @@ void model_update_instance(int model_instance_num, int sub_model_num, submodel_i
 			pmi->submodel[sm->my_replacement].blown_off = false;
 			pmi->submodel[sm->my_replacement].angs = sii->angs;
 			pmi->submodel[sm->my_replacement].prev_angs = sii->prev_angs;
+			pm->submodel[sm->my_replacement].blown_off = 0;
+			pm->submodel[sm->my_replacement].angs = sii->angs;
 		}
 	} else {
 		// If submodel isn't yet blown off and has a -destroyed replacement model, we prevent
 		// the replacement model from being drawn by marking it as having been blown off
 		if ( sm->my_replacement > -1 && sm->my_replacement != sub_model_num)	{
 			pmi->submodel[sm->my_replacement].blown_off = true;
+			pm->submodel[sm->my_replacement].blown_off = 1;
 		}
 	}
 
