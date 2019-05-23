@@ -1106,6 +1106,9 @@ public:
 	float scan_range_normal;                // this ship can scan other normal/small ships at this range
 	float scan_range_capital;               // this ship can scan other capital/large ships at this range
 
+	float ask_help_shield_percent;
+	float ask_help_hull_percent;
+
 	// contrail info
 	trail_info ct_info[MAX_SHIP_CONTRAILS];	
 	int ct_count;
