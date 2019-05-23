@@ -757,10 +757,10 @@ static int lightningtype_match(char *p)
 #define SHIP_MULTITEXT_LENGTH 4096
 #define DEFAULT_DELTA_BANK_CONST	0.5f
 
-#define ASK_HELP_SHIELD_PERCENT 0.1 // percent shields at which ship will ask for help
-#define ASK_HELP_HULL_PERCENT 0.3   // percent hull at which ship will ask for help
-#define AWACS_HELP_HULL_HI 0.75     // percent hull at which ship will ask for help
-#define AWACS_HELP_HULL_LOW 0.25    // percent hull at which ship will ask for help
+const float DEFAULT_ASK_HELP_SHIELD_PERCENT = 0.1; // percent shields at which ship will ask for help
+const float DEFAULT_ASK_HELP_HULL_PERCENT = 0.3;   // percent hull at which ship will ask for help
+const float AWACS_HELP_HULL_HI = 0.75;     // percent hull at which ship will ask for help
+const float AWACS_HELP_HULL_LOW = 0.25;    // percent hull at which ship will ask for help
 
 #define CHECK_THEN_COPY(attribute) \
 do {\
@@ -1636,8 +1636,8 @@ ship_info::ship_info()
 	scan_range_normal = CARGO_REVEAL_MIN_DIST;
 	scan_range_capital = CAP_CARGO_REVEAL_MIN_DIST;
 
-	ask_help_shield_percent = ASK_HELP_SHIELD_PERCENT;
-	ask_help_hull_percent = ASK_HELP_HULL_PERCENT;
+	ask_help_shield_percent = DEFAULT_ASK_HELP_SHIELD_PERCENT;
+	ask_help_hull_percent = DEFAULT_ASK_HELP_HULL_PERCENT;
 
 	memset(&ct_info, 0, sizeof(trail_info) * MAX_SHIP_CONTRAILS);
 	ct_count = 0;
@@ -3575,11 +3575,27 @@ static int parse_ship_values(ship_info* sip, const bool is_template, const bool 
 	if(optional_string("$Scan range Capital:"))
 		stuff_float(&sip->scan_range_capital);
 
-	if (optional_string("$Ask Help Shield Percent:"))
-		stuff_float(&sip->ask_help_shield_percent);
+	if (optional_string("$Ask Help Shield Percent:")) {
+		float help_shield_val;
+		stuff_float(&help_shield_val);
+		if (help_shield_val > 0 && help_shield_val <= 1.0) {
+			sip->ask_help_shield_percent = help_shield_val;
+		} else {
+			error_display(0,"Ask Help Shield Percent for ship class %s is %f. This value is not within range of 0-1.0."
+			              "Assuming default value of %i.", sip->name, help_shield_val, DEFAULT_ASK_HELP_SHIELD_PERCENT);
+		}
+	}
 
-	if (optional_string("$Ask Help Hull Percent:"))
-		stuff_float(&sip->ask_help_hull_percent);
+	if (optional_string("$Ask Help Hull Percent:")) {
+		float help_hull_val;
+		stuff_float(&help_hull_val);
+		if (help_hull_val > 0 && help_hull_val <= 1.0) {
+			sip->ask_help_shield_percent = help_hull_val;
+		} else {
+			error_display(0,"Ask Help Hull Percent for ship class %s is %f. This value is not within range of 0-1.0."
+			              "Assuming default value of %i.", sip->name, help_hull_val, DEFAULT_ASK_HELP_HULL_PERCENT);
+		}
+	}
 
 	//Parse the engine sound
 	parse_game_sound("$EngineSnd:", &sip->engine_snd);
