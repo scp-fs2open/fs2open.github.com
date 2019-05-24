@@ -718,10 +718,8 @@ void opengl_array_state::VertexAttribPointer(GLuint index, GLint size, GLenum ty
 
 void opengl_array_state::ResetVertexAttribs()
 {
-	SCP_map<GLuint, opengl_vertex_attrib_unit>::iterator it;
-
-	for ( it = vertex_attrib_units.begin(); it != vertex_attrib_units.end(); ++it ) {
-		DisableVertexAttrib(it->first);
+	for (auto &it : vertex_attrib_units) {
+		DisableVertexAttrib(it.first);
 	}
 
 	vertex_attrib_units.clear();
@@ -733,19 +731,17 @@ void opengl_array_state::BindPointersBegin()
 		client_texture_units[i].used_for_draw = false;
 	}
 
-	SCP_map<GLuint, opengl_vertex_attrib_unit>::iterator it;
-
-	for (it = vertex_attrib_units.begin(); it != vertex_attrib_units.end(); ++it) {
-		it->second.used_for_draw = false;
+	for (auto &it : vertex_attrib_units) {
+		it.second.used_for_draw = false;
 	}
 }
 
 void opengl_array_state::BindPointersEnd()
 {
-	SCP_map<GLuint, opengl_vertex_attrib_unit>::iterator it;
-
-	for (it = vertex_attrib_units.begin(); it != vertex_attrib_units.end(); ++it) {
-		if ( !it->second.used_for_draw ) DisableVertexAttrib(it->first);
+	for (auto &it : vertex_attrib_units) {
+		if (!it.second.used_for_draw) {
+			DisableVertexAttrib(it.first);
+		}
 	}
 }
 
@@ -764,10 +760,8 @@ void opengl_array_state::BindArrayBuffer(GLuint id)
 		client_texture_units[i].reset_ptr = true;
 	}
 
-	SCP_map<GLuint,opengl_vertex_attrib_unit>::iterator it;
-
-	for ( it = vertex_attrib_units.begin(); it != vertex_attrib_units.end(); ++it ) {
-		it->second.reset_ptr = true;
+	for (auto &it : vertex_attrib_units) {
+		it.second.reset_ptr = true;
 	}
 }
 
