@@ -1338,7 +1338,6 @@ DCF(rank, "changes player rank")
 
 void scoreing_close()
 {
-	SCP_map<int, char*>::iterator it;
 	for(int i = 0; i<NUM_RANKS; i++) {
 		Ranks[i].promotion_text.clear();
 	}

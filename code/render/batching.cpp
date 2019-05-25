@@ -823,17 +823,14 @@ void batching_load_buffers(bool distortion)
 	GR_DEBUG_SCOPE("Batching load buffers");
 	TRACE_SCOPE(tracing::LoadBatchingBuffers);
 
-	SCP_map<batch_info, primitive_batch>::iterator bi;
-	SCP_map<batch_buffer_key, primitive_batch_buffer>::iterator buffer_iter;
-
-	for ( buffer_iter = Batching_buffers.begin(); buffer_iter != Batching_buffers.end(); ++buffer_iter ) {
+	for (auto &buffer_iter : Batching_buffers) {
 		// zero out the buffers
-		buffer_iter->second.desired_buffer_size = 0;
+		buffer_iter.second.desired_buffer_size = 0;
 	}
 
 	// assign primitive batch items
-	for ( bi = Batching_primitives.begin(); bi != Batching_primitives.end(); ++bi ) {
-		if ( bi->first.mat_type == batch_info::DISTORTION ) {
+	for (auto &bi : Batching_primitives) {
+		if ( bi.first.mat_type == batch_info::DISTORTION ) {
 			if ( !distortion ) {
 				continue;
 			}
@@ -843,10 +840,10 @@ void batching_load_buffers(bool distortion)
 			}
 		}
 
-		size_t num_verts = bi->second.num_verts();
+		size_t num_verts = bi.second.num_verts();
 
 		if ( num_verts > 0 ) {
-			batch_info render_info = bi->second.get_render_info();
+			batch_info render_info = bi.second.get_render_info();
 			uint vertex_mask = batching_determine_vertex_layout(&render_info);
 
 			primitive_batch_buffer *buffer = batching_find_buffer(vertex_mask, render_info.prim_type);
@@ -855,15 +852,15 @@ void batching_load_buffers(bool distortion)
 			draw_item.batch_item_info = render_info;
 			draw_item.offset = 0;
 			draw_item.n_verts = num_verts;
-			draw_item.batch = &bi->second;
+			draw_item.batch = &bi.second;
 
 			buffer->desired_buffer_size += num_verts * sizeof(batch_vertex);
 			buffer->items.push_back(draw_item);
 		}
 	}
 
-	for ( buffer_iter = Batching_buffers.begin(); buffer_iter != Batching_buffers.end(); ++buffer_iter ) {
-		batching_allocate_and_load_buffer(&buffer_iter->second);
+	for (auto &buffer_iter : Batching_buffers) {
+		batching_allocate_and_load_buffer(&buffer_iter.second);
 	}
 }
 
