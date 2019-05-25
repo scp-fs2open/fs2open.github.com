@@ -757,10 +757,10 @@ static int lightningtype_match(char *p)
 #define SHIP_MULTITEXT_LENGTH 4096
 #define DEFAULT_DELTA_BANK_CONST	0.5f
 
-const float DEFAULT_ASK_HELP_SHIELD_PERCENT = 0.1; // percent shields at which ship will ask for help
-const float DEFAULT_ASK_HELP_HULL_PERCENT = 0.3;   // percent hull at which ship will ask for help
-const float AWACS_HELP_HULL_HI = 0.75;     // percent hull at which ship will ask for help
-const float AWACS_HELP_HULL_LOW = 0.25;    // percent hull at which ship will ask for help
+const float DEFAULT_ASK_HELP_SHIELD_PERCENT = 0.1f; // percent shields at which ship will ask for help
+const float DEFAULT_ASK_HELP_HULL_PERCENT = 0.3f;   // percent hull at which ship will ask for help
+const float AWACS_HELP_HULL_HI = 0.75f;     // percent hull at which ship will ask for help
+const float AWACS_HELP_HULL_LOW = 0.25f;    // percent hull at which ship will ask for help
 
 #define CHECK_THEN_COPY(attribute) \
 do {\
