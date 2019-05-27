@@ -311,7 +311,8 @@ ADE_FUNC(isArmed, l_Weapon, "[boolean Hit target]", "Checks if the weapon is arm
 	return ADE_RETURN_FALSE;
 }
 
-ADE_FUNC(getCollisionInformation, l_Weapon, NULL, "Returns the collision information for this weapon", "collision info", "The collision information or invalid handle if none")
+ADE_FUNC(getCollisionInformation, l_Weapon, nullptr, "Returns the collision information for this weapon",
+         "collision_info", "The collision information or invalid handle if none")
 {
 	object_h *oh=NULL;
 	if(!ade_get_args(L, "o", l_Weapon.GetPtr(&oh)))

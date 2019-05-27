@@ -277,10 +277,34 @@ static bool sort_doc_entries(const ade_table_entry* left, const ade_table_entry*
 	return false;
 }
 
+void script_state::OutputLuaDocumentation(ScriptingDocumentation& doc)
+{
+	SCP_vector<ade_table_entry*> table_entries;
+
+	//***Everything
+	for (uint32_t i = 0; i < ade_manager::getInstance()->getNumEntries(); i++) {
+		auto ate = &ade_manager::getInstance()->getEntry(i);
+		if (ate->ParentIdx == UINT_MAX)
+			table_entries.push_back(ate);
+	}
+
+	std::sort(std::begin(table_entries), std::end(table_entries), sort_doc_entries);
+	for (auto entry : table_entries) {
+		doc.elements.emplace_back(entry->ToDocumentationElement());
+	}
+
+	//***Enumerations
+	for (uint32_t i = 0; i < Num_enumerations; i++) {
+		DocumentationEnum e;
+		e.name  = Enumerations[i].name;
+		e.value = Enumerations[i].def;
+
+		doc.enumerations.push_back(e);
+	}
+}
+
 void script_state::OutputLuaMeta(FILE *fp)
 {
-	uint i;
-	ade_table_entry *ate;
 	fputs("<dl>\n", fp);
 
 	//***Version info
@@ -290,10 +314,9 @@ void script_state::OutputLuaMeta(FILE *fp)
 
 	//***TOC: Libraries
 	fputs("<dt><b>Libraries</b></dt>\n", fp);
-	for(i = 0; i < ade_manager::getInstance()->getNumEntries(); i++)
-	{
-		ate = &ade_manager::getInstance()->getEntry(i);
-		if(ate->ParentIdx == UINT_MAX && ate->Type == 'o' && ate->Instanced) {
+	for (uint32_t i = 0; i < ade_manager::getInstance()->getNumEntries(); i++) {
+		auto ate = &ade_manager::getInstance()->getEntry(i);
+		if (ate->ParentIdx == UINT_MAX && ate->Type == 'o' && ate->Instanced) {
 			table_entries.push_back(ate);
 		}
 	}
@@ -305,10 +328,9 @@ void script_state::OutputLuaMeta(FILE *fp)
 
 	//***TOC: Objects
 	fputs("<dt><b>Types</b></dt>\n", fp);
-	for(i = 0; i < ade_manager::getInstance()->getNumEntries(); i++)
-	{
-		ate = &ade_manager::getInstance()->getEntry(i);
-		if(ate->ParentIdx == UINT_MAX && ate->Type == 'o' && !ate->Instanced) {
+	for (uint32_t i = 0; i < ade_manager::getInstance()->getNumEntries(); i++) {
+		auto ate = &ade_manager::getInstance()->getEntry(i);
+		if (ate->ParentIdx == UINT_MAX && ate->Type == 'o' && !ate->Instanced) {
 			table_entries.push_back(ate);
 		}
 	}
@@ -326,9 +348,8 @@ void script_state::OutputLuaMeta(FILE *fp)
 
 	//***Everything
 	fputs("<dl>\n", fp);
-	for(i = 0; i < ade_manager::getInstance()->getNumEntries(); i++)
-	{
-		ate = &ade_manager::getInstance()->getEntry(i);
+	for (uint32_t i = 0; i < ade_manager::getInstance()->getNumEntries(); i++) {
+		auto ate = &ade_manager::getInstance()->getEntry(i);
 		if(ate->ParentIdx == UINT_MAX)
 			table_entries.push_back(ate);
 	}
@@ -341,8 +362,7 @@ void script_state::OutputLuaMeta(FILE *fp)
 
 	//***Enumerations
 	fprintf(fp, "<dt id=\"Enumerations\"><h2>Enumerations</h2></dt>");
-	for(i = 0; i < Num_enumerations; i++)
-	{
+	for (uint32_t i = 0; i < Num_enumerations; i++) {
 		//WMC - This is in case we ever want to add descriptions to enums.
 		//fprintf(fp, "<dd><dl><dt><b>%s</b></dt><dd>%s</dd></dl></dd>", Enumerations[i].name, Enumerations[i].desc);
 

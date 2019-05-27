@@ -615,7 +615,8 @@ ADE_FUNC(getTurretHeading, l_Subsystem, NULL, "Returns the turrets forward vecto
 	return ade_set_args(L, "o", l_Vector.Set(out));
 }
 
-ADE_FUNC(getFOVs, l_Subsystem, NULL, "Returns current turrets FOVs", "number, number, number", "Standard FOV, maximum barrel elevation, turret base fov.")
+ADE_FUNC(getFOVs, l_Subsystem, nullptr, "Returns current turrets FOVs", ade_type_info({"number", "number", "number"}),
+         "Standard FOV, maximum barrel elevation, turret base fov.")
 {
 	ship_subsys_h *sso;
 	float fov, fov_e, fov_y;
@@ -634,7 +635,10 @@ ADE_FUNC(getFOVs, l_Subsystem, NULL, "Returns current turrets FOVs", "number, nu
 	return ade_set_args(L, "fff", fov, fov_e, fov_y);
 }
 
-ADE_FUNC(getNextFiringPosition, l_Subsystem, NULL, "Retrieves the next position and firing normal this turret will fire from. This function returns a world position", "vector, vector", "vector or null vector on error")
+ADE_FUNC(
+    getNextFiringPosition, l_Subsystem, nullptr,
+    "Retrieves the next position and firing normal this turret will fire from. This function returns a world position",
+    ade_type_info({"vector", "vector"}), "vector or null vector on error")
 {
 	ship_subsys_h *sso;
 	if(!ade_get_args(L, "o", l_Subsystem.GetPtr(&sso)))
@@ -650,7 +654,7 @@ ADE_FUNC(getNextFiringPosition, l_Subsystem, NULL, "Retrieves the next position 
 	return ade_set_args(L, "oo", l_Vector.Set(gpos), l_Vector.Set(gvec));
 }
 
-ADE_FUNC(getTurretMatrix, l_Subsystem, NULL, "Returns current subsystems turret matrix", "matrix", "Turret matrix.")
+ADE_FUNC(getTurretMatrix, l_Subsystem, nullptr, "Returns current subsystems turret matrix", "orientation", "Turret matrix.")
 {
 	ship_subsys_h *sso;
 	matrix m;

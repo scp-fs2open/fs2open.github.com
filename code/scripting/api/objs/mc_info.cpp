@@ -16,7 +16,7 @@ mc_info* mc_info_h::Get() { return &info; }
 bool mc_info_h::IsValid() { return valid; }
 
 //**********HANDLE: Collision info
-ADE_OBJ(l_ColInfo, mc_info_h, "collision info", "Information about a collision");
+ADE_OBJ(l_ColInfo, mc_info_h, "collision_info", "Information about a collision");
 
 ADE_VIRTVAR(Model, l_ColInfo, "model", "The model this collision info is about", "model", "The model")
 {

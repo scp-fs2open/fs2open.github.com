@@ -155,6 +155,58 @@ public:
 	bool Run(class script_state* sys, int action);
 };
 
+enum class ElementType {
+	Unknown,
+	Library,
+	Class,
+	Function,
+	Operator,
+	Property,
+};
+
+struct DocumentationElement {
+	ElementType type = ElementType::Unknown;
+
+	SCP_string name;
+	SCP_string shortName;
+
+	SCP_string description;
+
+	SCP_vector<std::unique_ptr<DocumentationElement>> children;
+};
+
+struct DocumentationElementClass : public DocumentationElement {
+	SCP_string superClass;
+};
+
+struct DocumentationElementProperty : public DocumentationElement {
+	scripting::ade_type_info getterType;
+	SCP_string setterType;
+
+	SCP_string returnDocumentation;
+};
+
+struct DocumentationElementFunction : public DocumentationElement {
+	scripting::ade_type_info returnType;
+	SCP_string parameters;
+
+	SCP_string returnDocumentation;
+};
+
+struct DocumentationEnum {
+	SCP_string name;
+	int value;
+};
+
+struct ScriptingDocumentation {
+	SCP_vector<SCP_string> conditions;
+	SCP_vector<SCP_string> actions;
+
+	SCP_vector<std::unique_ptr<DocumentationElement>> elements;
+
+	SCP_vector<DocumentationEnum> enumerations;
+};
+
 //**********Main script_state function
 class script_state
 {
@@ -176,7 +228,8 @@ private:
 	void SetLuaSession(struct lua_State *L);
 
 	void OutputLuaMeta(FILE *fp);
-	
+	void OutputLuaDocumentation(ScriptingDocumentation& doc);
+
 	//Lua private helper functions
 	bool OpenHookVarTable();
 	bool CloseHookVarTable();
@@ -208,6 +261,7 @@ public:
 	int CreateLuaState();
 
 	//***Get data
+	ScriptingDocumentation OutputDocumentation();
 	int OutputMeta(const char *filename);
 
 	//***Moves data
@@ -382,6 +436,7 @@ void script_init();
 //**********Script globals
 extern class script_state Script_system;
 extern bool Output_scripting_meta;
+extern bool Output_scripting_json;
 
 //*************************Conditional scripting*************************
 

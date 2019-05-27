@@ -12,6 +12,8 @@ extern "C" {
 #include <lualib.h>
 }
 
+#include <memory>
+
 /**
  * @defgroup ade_api ADE API functions
  *
@@ -19,6 +21,9 @@ extern "C" {
  *
  * These functions enable the code to communicate with external scripts and expose an API for them to use
  */
+
+// Forward definition
+struct DocumentationElement;
 
 namespace scripting {
 
@@ -89,6 +94,56 @@ struct ade_odata_setter {
 //
 //u - oh wait...
 
+enum class ade_type_info_type {
+	Empty,
+	Simple,
+	Tuple,
+	Array
+};
+
+class ade_type_array;
+
+/**
+ * @brief A definition of a type used in the ADE system
+ */
+class ade_type_info {
+	ade_type_info_type _type = ade_type_info_type::Empty;
+
+	const char* _simple_name = nullptr;
+
+	SCP_vector<ade_type_info> _elements;
+
+  public:
+	ade_type_info() = default;
+	/*implicit*/ ade_type_info(const char* single_type); // NOLINT(hicpp-explicit-conversions)
+	/*implicit*/ ade_type_info(std::initializer_list<ade_type_info> tuple_types);
+	/*implicit*/ ade_type_info(const ade_type_array& listType);
+
+	ade_type_info_type getType() const;
+
+	bool isEmpty() const;
+
+	bool isSimple() const;
+
+	bool isTuple() const;
+
+	bool isArray() const;
+
+	const char* getSimpleName() const;
+
+	const ade_type_info& arrayType() const;
+
+	const SCP_vector<ade_type_info>& elements() const;
+};
+
+class ade_type_array {
+	ade_type_info _element_type;
+  public:
+	explicit ade_type_array(ade_type_info elementType);
+
+	const ade_type_info& getElementType() const;
+};
+
 /**
  * @ingroup ade_api
  */
@@ -120,7 +175,7 @@ class ade_table_entry {
 	//Metadata
 	const char* Arguments = nullptr;
 	const char* Description = nullptr;
-	const char* ReturnType = nullptr;
+	ade_type_info ReturnType;
 	const char* ReturnDescription = nullptr;
 	gameversion::version DeprecationVersion;
 	const char* DeprecationMessage = nullptr;
@@ -146,6 +201,7 @@ class ade_table_entry {
 	size_t AddSubentry(ade_table_entry& n_ate);
 	int SetTable(lua_State* L, int p_amt_ldx, int p_mtb_ldx);
 	void OutputMeta(FILE* fp);
+	std::unique_ptr<DocumentationElement> ToDocumentationElement();
 
 	//*****Get
 	const char* GetName() { if (Name != NULL) { return Name; } else { return ShortName; }}

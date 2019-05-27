@@ -7,6 +7,8 @@ MESSAGE(STATUS "Doing configuration specific to clang...")
 option(CLANG_ENABLE_LEAK_CHECK "Enable -fsanitize=leak" OFF)
 option(CLANG_ENABLE_ADDRESS_SANITIZER "Enable -fsanitize=address" OFF)
 
+option(CLANG_USE_LIBCXX "Use libc++" OFF)
+
 # These are the default values
 set(C_BASE_FLAGS "-march=native -pipe")
 set(CXX_BASE_FLAGS "-march=native -pipe")
@@ -17,6 +19,10 @@ if(DEFINED ENV{CXXFLAGS})
 endif()
 if(DEFINED ENV{CFLAGS})
 	set(C_BASE_FLAGS $ENV{CFLAGS})
+endif()
+
+if (CLANG_USE_LIBCXX)
+	set(CXX_BASE_FLAGS "${CXX_BASE_FLAGS} -stdlib=libc++")
 endif()
 
 # Initialize with an empty string to make sure we always get a clean start
@@ -92,6 +98,10 @@ set(CMAKE_C_FLAGS_DEBUG ${COMPILER_FLAGS_DEBUG})
 
 
 set(CMAKE_EXE_LINKER_FLAGS "")
+
+if (CLANG_USE_LIBCXX)
+	set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -lc++abi")
+endif()
 
 if (SANITIZE_FLAGS)
 	set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${SANITIZE_FLAGS}")

@@ -43,7 +43,7 @@ bool cockpit_disp_info_h::isValid() {
 	return true;
 }
 
-ADE_OBJ(l_DisplayInfo, cockpit_disp_info_h, "display info", "Ship cockpit display information handle");
+ADE_OBJ(l_DisplayInfo, cockpit_disp_info_h, "display_info", "Ship cockpit display information handle");
 
 ADE_FUNC(getName, l_DisplayInfo, NULL, "Gets the name of this cockpit display as defined in ships.tbl", "string", "Name string or empty string on error")
 {
@@ -123,7 +123,8 @@ ADE_FUNC(getBackgroundFileName, l_DisplayInfo, NULL, "Gets the file name of the 
 	return ade_set_args(L, "s", cdi->bg_filename);
 }
 
-ADE_FUNC(getSize, l_DisplayInfo, NULL, "Gets the size of this cockpit display", "number, number", "Width and height of the display or -1, -1 on error")
+ADE_FUNC(getSize, l_DisplayInfo, nullptr, "Gets the size of this cockpit display", ade_type_info({"number", "number"}),
+         "Width and height of the display or -1, -1 on error")
 {
 	cockpit_disp_info_h *cdh = NULL;
 
@@ -141,7 +142,8 @@ ADE_FUNC(getSize, l_DisplayInfo, NULL, "Gets the size of this cockpit display", 
 	return ade_set_args(L, "ii", cdi->size[0], cdi->size[1]);
 }
 
-ADE_FUNC(getOffset, l_DisplayInfo, NULL, "Gets the offset of this cockpit display", "number, number", "x and y offset of the display or -1, -1 on error")
+ADE_FUNC(getOffset, l_DisplayInfo, nullptr, "Gets the offset of this cockpit display",
+         ade_type_info({"number", "number"}), "x and y offset of the display or -1, -1 on error")
 {
 	cockpit_disp_info_h *cdh = NULL;
 
@@ -302,7 +304,8 @@ ADE_FUNC(getForegroundTexture, l_CockpitDisplay, NULL, "Gets the foreground text
 	return ade_set_args(L, "o", l_Texture.Set(texture_h(cd->foreground)));
 }
 
-ADE_FUNC(getSize, l_CockpitDisplay, NULL, "Gets the size of this cockpit display", "number, number", "Width and height of the display or -1, -1 on error")
+ADE_FUNC(getSize, l_CockpitDisplay, nullptr, "Gets the size of this cockpit display",
+         ade_type_info({"number", "number"}), "Width and height of the display or -1, -1 on error")
 {
 	cockpit_display_h *cdh = NULL;
 
@@ -320,7 +323,8 @@ ADE_FUNC(getSize, l_CockpitDisplay, NULL, "Gets the size of this cockpit display
 	return ade_set_args(L, "ii", cd->size[0], cd->size[1]);
 }
 
-ADE_FUNC(getOffset, l_CockpitDisplay, NULL, "Gets the offset of this cockpit display", "number, number", "x and y offset of the display or -1, -1 on error")
+ADE_FUNC(getOffset, l_CockpitDisplay, nullptr, "Gets the offset of this cockpit display",
+         ade_type_info({"number", "number"}), "x and y offset of the display or -1, -1 on error")
 {
 	cockpit_display_h *cdh = NULL;
 
@@ -389,7 +393,9 @@ ADE_FUNC(__len, l_CockpitDisplayInfos, NULL, "Number of cockpit displays for thi
 	return ade_set_args(L, "i", (int) cdih->Get()->displays.size());
 }
 
-ADE_INDEXER(l_CockpitDisplayInfos, "number/string", "Returns the handle at the requested index or the handle with the specified name", "display info", "display handle or invalid handle on error")
+ADE_INDEXER(l_CockpitDisplayInfos, "number/string",
+            "Returns the handle at the requested index or the handle with the specified name", "display_info",
+            "display handle or invalid handle on error")
 {
 	if (lua_isnumber(L, 2))
 	{

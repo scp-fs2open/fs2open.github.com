@@ -516,12 +516,9 @@ ADE_FUNC(getCrossProduct,
 	return ade_set_args(L, "o", l_Vector.Set(v3r));
 }
 
-ADE_FUNC(getScreenCoords,
-		 l_Vector,
-		 NULL,
-		 "Gets screen cordinates of a world vector",
-		 "number,number",
-		 "X (number), Y (number), or false if off-screen") {
+ADE_FUNC(getScreenCoords, l_Vector, nullptr, "Gets screen cordinates of a world vector",
+         ade_type_info({"number", "number"}), "X (number), Y (number), or false if off-screen")
+{
 	vec3d v3;
 	if (!ade_get_args(L, "o", l_Vector.Get(&v3))) {
 		return ADE_RETURN_NIL;

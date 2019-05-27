@@ -110,7 +110,10 @@ ADE_FUNC(playLoopingSound, l_Audio, "soundentry", "Plays the specified sound as 
 	}
 }
 
-ADE_FUNC(play3DSound, l_Audio, "soundentry[, vector source[, vector listener]]", "Plays the specified sound entry handle. Source if by default 0, 0, 0 and listener is by default the current viewposition", "3Dsound", "A handle to the playing sound")
+ADE_FUNC(play3DSound, l_Audio, "soundentry[, vector source[, vector listener]]",
+         "Plays the specified sound entry handle. Source if by default 0, 0, 0 and listener is by default the current "
+         "viewposition",
+         "sound3D", "A handle to the playing sound")
 {
 	sound_entry_h *seh = NULL;
 	vec3d *source = &vmd_zero_vector;
