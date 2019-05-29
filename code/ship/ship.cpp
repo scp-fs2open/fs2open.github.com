@@ -757,6 +757,11 @@ static int lightningtype_match(char *p)
 #define SHIP_MULTITEXT_LENGTH 4096
 #define DEFAULT_DELTA_BANK_CONST	0.5f
 
+const float DEFAULT_ASK_HELP_SHIELD_PERCENT = 0.1f; // percent shields at which ship will ask for help
+const float DEFAULT_ASK_HELP_HULL_PERCENT = 0.3f;   // percent hull at which ship will ask for help
+const float AWACS_HELP_HULL_HI = 0.75f;     // percent hull at which ship will ask for help
+const float AWACS_HELP_HULL_LOW = 0.25f;    // percent hull at which ship will ask for help
+
 #define CHECK_THEN_COPY(attribute) \
 do {\
 	if (other.attribute != NULL)\
@@ -964,6 +969,9 @@ void ship_info::clone(const ship_info& other)
 	scan_time = other.scan_time;
 	scan_range_normal = other.scan_range_normal;
 	scan_range_capital = other.scan_range_capital;
+
+	ask_help_shield_percent = other.ask_help_shield_percent;
+	ask_help_hull_percent = other.ask_help_hull_percent;
 
 	memcpy(ct_info, other.ct_info, sizeof(trail_info) * MAX_SHIP_CONTRAILS);
 	ct_count = other.ct_count;
@@ -1243,6 +1251,9 @@ void ship_info::move(ship_info&& other)
 	scan_time = other.scan_time;
 	scan_range_normal = other.scan_range_normal;
 	scan_range_capital = other.scan_range_capital;
+
+	ask_help_shield_percent = other.ask_help_shield_percent;
+	ask_help_hull_percent = other.ask_help_hull_percent;
 
 	std::swap(ct_info, other.ct_info);
 	ct_count = other.ct_count;
@@ -1624,6 +1635,9 @@ ship_info::ship_info()
 	scan_time = 2000;
 	scan_range_normal = CARGO_REVEAL_MIN_DIST;
 	scan_range_capital = CAP_CARGO_REVEAL_MIN_DIST;
+
+	ask_help_shield_percent = DEFAULT_ASK_HELP_SHIELD_PERCENT;
+	ask_help_hull_percent = DEFAULT_ASK_HELP_HULL_PERCENT;
 
 	memset(&ct_info, 0, sizeof(trail_info) * MAX_SHIP_CONTRAILS);
 	ct_count = 0;
@@ -3560,6 +3574,28 @@ static int parse_ship_values(ship_info* sip, const bool is_template, const bool 
 
 	if(optional_string("$Scan range Capital:"))
 		stuff_float(&sip->scan_range_capital);
+
+	if (optional_string("$Ask Help Shield Percent:")) {
+		float help_shield_val;
+		stuff_float(&help_shield_val);
+		if (help_shield_val > 0.0f && help_shield_val <= 1.0f) {
+			sip->ask_help_shield_percent = help_shield_val;
+		} else {
+			error_display(0,"Ask Help Shield Percent for ship class %s is %f. This value is not within range of 0-1.0."
+			              "Assuming default value of %f.", sip->name, help_shield_val, DEFAULT_ASK_HELP_SHIELD_PERCENT);
+		}
+	}
+
+	if (optional_string("$Ask Help Hull Percent:")) {
+		float help_hull_val;
+		stuff_float(&help_hull_val);
+		if (help_hull_val > 0.0f && help_hull_val <= 1.0f) {
+			sip->ask_help_shield_percent = help_hull_val;
+		} else {
+			error_display(0,"Ask Help Hull Percent for ship class %s is %f. This value is not within range of 0-1.0."
+			              "Assuming default value of %f.", sip->name, help_hull_val, DEFAULT_ASK_HELP_HULL_PERCENT);
+		}
+	}
 
 	//Parse the engine sound
 	parse_game_sound("$EngineSnd:", &sip->engine_snd);
@@ -15403,11 +15439,6 @@ void ship_maybe_praise_self(ship *deader_sp, ship *killer_sp)
 	Player->praise_self_count++;			
 }
 
-#define ASK_HELP_SHIELD_PERCENT			0.1		// percent shields at which ship will ask for help
-#define ASK_HELP_HULL_PERCENT				0.3		// percent hull at which ship will ask for help
-#define AWACS_HELP_HULL_HI					0.75		// percent hull at which ship will ask for help
-#define AWACS_HELP_HULL_LOW				0.25		// percent hull at which ship will ask for help
-
 // -----------------------------------------------------------------------------
 static void awacs_maybe_ask_for_help(ship *sp, int multi_team_filter)
 {
@@ -15446,6 +15477,7 @@ void ship_maybe_ask_for_help(ship *sp)
 {
 	object *objp;
 	int multi_team_filter = -1;
+	ship_info* sip = &Ship_info[sp->ship_info_index];
 
 	// First check if the player has reached the maximum number of ask_help's for a mission
 	if ((Builtin_messages[MESSAGE_HELP].max_count > -1) && (Player->ask_help_count >= Builtin_messages[MESSAGE_HELP].max_count))
@@ -15481,14 +15513,14 @@ void ship_maybe_ask_for_help(ship *sp)
 		return;
 
 	// first check if hull is at a critical level
-	if (objp->hull_strength < ASK_HELP_HULL_PERCENT * sp->ship_max_hull_strength)
+	if (objp->hull_strength < sip->ask_help_hull_percent * sp->ship_max_hull_strength)
 		goto play_ask_help;
 
 	// check if shields are near critical level
 	if (objp->flags[Object::Object_Flags::No_shields])
 		return;	// no shields on ship, no don't check shield levels
 
-	if (shield_get_strength(objp) > (ASK_HELP_SHIELD_PERCENT * shield_get_max_strength(objp)))
+	if (shield_get_strength(objp) > (sip->ask_help_shield_percent * shield_get_max_strength(objp)))
 		return;
 
 play_ask_help:
