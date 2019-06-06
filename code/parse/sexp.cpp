@@ -447,9 +447,9 @@ SCP_vector<sexp_oper> Operators = {
 	{ "destroy-instantly",				OP_DESTROY_INSTANTLY,					1,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Admiral MS
 	{ "destroy-subsys-instantly",		OP_DESTROY_SUBSYS_INSTANTLY,			2,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Admiral MS
 	{ "sabotage-subsystem",				OP_SABOTAGE_SUBSYSTEM,					3,	3,			SEXP_ACTION_OPERATOR,	},
-	{ "repair-subsystem",				OP_REPAIR_SUBSYSTEM,					3,	4,			SEXP_ACTION_OPERATOR,	},
+	{ "repair-subsystem",				OP_REPAIR_SUBSYSTEM,					3,	5,			SEXP_ACTION_OPERATOR,	},
 	{ "ship-copy-damage",				OP_SHIP_COPY_DAMAGE,					2,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Goober5000
-	{ "set-subsystem-strength",			OP_SET_SUBSYSTEM_STRNGTH,				3,	4,			SEXP_ACTION_OPERATOR,	},
+	{ "set-subsystem-strength",			OP_SET_SUBSYSTEM_STRNGTH,				3,	5,			SEXP_ACTION_OPERATOR,	},
 	{ "subsys-set-random",				OP_SUBSYS_SET_RANDOM,					3,	INT_MAX,	SEXP_ACTION_OPERATOR,	},
 	{ "lock-rotating-subsystem",		OP_LOCK_ROTATING_SUBSYSTEM,				2,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "free-rotating-subsystem",		OP_FREE_ROTATING_SUBSYSTEM,				2,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Goober5000
@@ -11504,6 +11504,93 @@ void sexp_end_campaign(int n)
 	}
 }
 
+void set_subsys_strength_and_maybe_ancestors(ship *shipp, ship_subsys *ss, polymodel *pm, const int *assign_percent, const int *repair_percent, const int *sabotage_percent, bool do_submodel_repair, bool repair_ancestors)
+{
+	Assertion(shipp != nullptr && ss != nullptr, "Ship and subsys must not be null!");
+	Assertion(assign_percent != nullptr || repair_percent != nullptr || sabotage_percent != nullptr, "Either assign_percent or repair_percent or sabotage_percent must not be null!");
+
+	bool originally_zero = (ss->current_hits <= 0 || ss->submodel_info_1.blown_off || ss->submodel_info_2.blown_off);
+
+	if (assign_percent != nullptr)
+	{
+		int percentage = *assign_percent;
+		Assertion(percentage >= 0 && percentage <= 100, "Percentage must be in range [0, 100]");
+
+		// maybe blow up subsys
+		if (ss->current_hits > 0 && percentage < 1)
+			do_subobj_destroyed_stuff(shipp, ss, nullptr);
+
+		// assign the hitpoints
+		ss->current_hits = ss->max_hits * ((float)percentage / 100.0f);
+	}
+	else if (repair_percent != nullptr)
+	{
+		int percentage = *repair_percent;
+		Assertion(percentage > 0, "Repair percentage must be more than zero!");
+
+		// repair the hitpoints
+		float repair_hits = ss->max_hits * ((float)percentage / 100.0f);
+		ss->current_hits += repair_hits;
+		if (ss->current_hits > ss->max_hits)
+			ss->current_hits = ss->max_hits;
+	}
+	else if (sabotage_percent != nullptr)
+	{
+		int percentage = *sabotage_percent;
+		Assertion(percentage > 0, "Sabotage percentage must be more than zero!");
+
+		// sabotage the hitpoints
+		float sabotage_hits = ss->max_hits * ((float)percentage / 100.0f);
+		ss->current_hits -= sabotage_hits;
+		if (ss->current_hits < 0.0f)
+			ss->current_hits = 0.0f;
+
+		// maybe blow up subsys
+		if (ss->current_hits <= 0 && !originally_zero)
+			do_subobj_destroyed_stuff(shipp, ss, nullptr);
+	}
+	else
+		return;
+
+	// and now see if we are repairing from zero
+	if (originally_zero && ss->current_hits > 0 && do_submodel_repair)
+	{
+		ss->submodel_info_1.blown_off = 0;
+		ss->submodel_info_2.blown_off = 0;
+
+		// see if we are handling ancestors and if this subsystem has a submodel
+		int subobj = ss->system_info->subobj_num;
+		if (repair_ancestors && subobj >= 0)
+		{
+			if (pm == nullptr)
+				pm = model_get(Ship_info[shipp->ship_info_index].model_num);
+
+			// do we have a parent?
+			int parent_subobj = pm->submodel[subobj].parent;
+			if (parent_subobj >= 0)
+			{
+				// search for the subsystem
+				for (ship_subsys *parent_ss = GET_FIRST(&shipp->subsys_list); parent_ss != END_OF_LIST(&shipp->subsys_list); parent_ss = GET_NEXT(parent_ss))
+				{
+					// found parent?
+					if (parent_ss->system_info->subobj_num == parent_subobj)
+					{
+						// if the parent subobject was destroyed...
+						if (parent_ss->current_hits <= 0 || parent_ss->submodel_info_1.blown_off || parent_ss->submodel_info_2.blown_off)
+						{
+							// ...repair the parent in the same way
+							set_subsys_strength_and_maybe_ancestors(shipp, parent_ss, pm, assign_percent, repair_percent, sabotage_percent, do_submodel_repair, repair_ancestors);
+						}
+
+						// only one parent
+						break;
+					}
+				}
+			}
+		}
+	}
+}
+
 /**
  * Reduces the strength of a subsystem by the given percentage.
  *
@@ -11522,11 +11609,17 @@ void sexp_sabotage_subsystem(int n)
 	subsystem = CTEXT(CDR(n));
 	percentage = eval_num(CDR(CDR(n)));
 
+	// abort if we're not even sabotaging anything
+	if (percentage <= 0) {
+		return;
+	}
+
 	shipnum = ship_name_lookup(shipname);
 	
 	// if no ship, then return immediately.
-	if ( shipnum == -1 )
+	if (shipnum < 0) {
 		return;
+	}
 	shipp = &Ships[shipnum];
 
 	// see if we are dealing with the HULL
@@ -11599,15 +11692,7 @@ void sexp_sabotage_subsystem(int n)
 			}
 		}
 
-		sabotage_hits = ss->max_hits * ((float)percentage / 100.0f);
-		ss->current_hits -= sabotage_hits;
-		if ( ss->current_hits < 0.0f )
-			ss->current_hits = 0.0f;
-
-		// maybe blow up subsys
-		if (ss->current_hits <= 0) {
-			do_subobj_destroyed_stuff(shipp, ss, NULL);
-		}
+		set_subsys_strength_and_maybe_ancestors(shipp, ss, nullptr, nullptr, nullptr, &percentage, false, false);
 
 		ship_recalc_subsys_strength( shipp );
 	}
@@ -11622,22 +11707,36 @@ void sexp_repair_subsystem(int n)
 {
 	char *shipname, *subsystem;
 	int	percentage, shipnum, index, generic_type;
-	bool do_submodel_repair;
+	bool do_submodel_repair = true, do_ancestor_repair = true;
 	float repair_hits;
 	ship *shipp;
 	ship_subsys *ss = NULL, *ss_start;
 	bool do_loop = true;
 
 	shipname = CTEXT(n);
-	subsystem = CTEXT(CDR(n));
-	percentage = eval_num(CDDR(n));
+	n = CDR(n);
+	subsystem = CTEXT(n);
+	n = CDR(n);
+	percentage = eval_num(n);
+	n = CDR(n);
+	if (n >= 0)
+	{
+		do_submodel_repair = is_sexp_true(n);
+		n = CDR(n);
 
-	do_submodel_repair = (CDDDR(n) == -1) || is_sexp_true(CDDDR(n));
+		if (n >= 0)
+			do_ancestor_repair = is_sexp_true(n);
+	}
+
+	// abort if we're not even repairing anything
+	if (percentage <= 0) {
+		return;
+	}
 
 	shipnum = ship_name_lookup(shipname);
 	
 	// if no ship, then return immediately.
-	if ( shipnum == -1 ) {
+	if (shipnum < 0) {
 		return;
 	}
 	shipp = &Ships[shipnum];
@@ -11710,17 +11809,8 @@ void sexp_repair_subsystem(int n)
 				return;
 			}
 		}
-	
-		repair_hits = ss->max_hits * ((float)percentage / 100.0f);
-		ss->current_hits += repair_hits;
-		if ( ss->current_hits > ss->max_hits )
-			ss->current_hits = ss->max_hits;
 
-		if ((ss->current_hits > 0) && (do_submodel_repair))
-		{
-			ss->submodel_info_1.blown_off = 0;
-			ss->submodel_info_2.blown_off = 0;
-		}
+		set_subsys_strength_and_maybe_ancestors(shipp, ss, nullptr, nullptr, &percentage, nullptr, do_submodel_repair, do_ancestor_repair);
 
 		ship_recalc_subsys_strength( shipp );
 	}
@@ -11733,16 +11823,25 @@ void sexp_set_subsystem_strength(int n)
 {
 	char *shipname, *subsystem;
 	int	percentage, shipnum, index, generic_type;
-	bool do_submodel_repair;
+	bool do_submodel_repair = true, do_ancestor_repair = true;
 	ship *shipp;
 	ship_subsys *ss = NULL, *ss_start;
 	bool do_loop = true;
 
 	shipname = CTEXT(n);
-	subsystem = CTEXT(CDR(n));
-	percentage = eval_num(CDR(CDR(n)));
+	n = CDR(n);
+	subsystem = CTEXT(n);
+	n = CDR(n);
+	percentage = eval_num(n);
+	n = CDR(n);
+	if (n >= 0)
+	{
+		do_submodel_repair = is_sexp_true(n);
+		n = CDR(n);
 
-	do_submodel_repair = (CDDDR(n) == -1) || is_sexp_true(CDDDR(n));
+		if (n >= 0)
+			do_ancestor_repair = is_sexp_true(n);
+	}
 
 	shipnum = ship_name_lookup(shipname);
 	
@@ -11830,22 +11929,8 @@ void sexp_set_subsystem_strength(int n)
 				return;
 			}
 		}
-		
-		// maybe blow up subsys
-		if (ss->current_hits > 0) {
-			if (percentage < 1) {
-				do_subobj_destroyed_stuff(shipp, ss, NULL);
-			}
-		}
 
-		// set hit points
-		ss->current_hits = ss->max_hits * ((float)percentage / 100.0f);
-
-		if ((ss->current_hits > 0) && (do_submodel_repair))
-		{
-			ss->submodel_info_1.blown_off = 0;
-			ss->submodel_info_2.blown_off = 0;
-		}
+		set_subsys_strength_and_maybe_ancestors(shipp, ss, nullptr, &percentage, nullptr, nullptr, do_submodel_repair, do_ancestor_repair);
 
 		ship_recalc_subsys_strength( shipp );
 	}
@@ -11891,7 +11976,6 @@ void sexp_destroy_subsys_instantly(int n)
 				{
 					// do destruction stuff
 					ss->current_hits = 0;
-					ship_recalc_subsys_strength(shipp);
 					do_subobj_destroyed_stuff(shipp, ss, nullptr, true);
 
 					if (MULTIPLAYER_MASTER)
@@ -11915,7 +11999,6 @@ void sexp_destroy_subsys_instantly(int n)
 
 			// do destruction stuff
 			ss->current_hits = 0;
-			ship_recalc_subsys_strength(shipp);
 			do_subobj_destroyed_stuff(shipp, ss, nullptr, true);
 
 			if (MULTIPLAYER_MASTER)
@@ -11926,6 +12009,9 @@ void sexp_destroy_subsys_instantly(int n)
 			}
 		}
 	}
+
+	// recalculate when done
+	ship_recalc_subsys_strength(shipp);
 
 	if (MULTIPLAYER_MASTER)
 		Current_sexp_network_packet.end_callback();
@@ -11948,9 +12034,11 @@ void multi_sexp_destroy_subsys_instantly()
 
 		// do destruction stuff
 		ss->current_hits = 0;
-		ship_recalc_subsys_strength(shipp);
 		do_subobj_destroyed_stuff(shipp, ss, nullptr, true);
 	}
+
+	// recalculate when done
+	ship_recalc_subsys_strength(shipp);
 }
 
 /**
@@ -31638,23 +31726,25 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 
 	{ OP_REPAIR_SUBSYSTEM, "Repair Subystem (Action operator)\r\n"
 		"\tIncreases the specified subsystem integrity by the specified percentage."
-		"If the percntage strength of the subsystem (after completion) is greater than 100%,"
+		"If the percentage strength of the subsystem (after completion) is greater than 100%,"
 		"subsystem strength is set to 100%.\r\n\r\n"
-		"Takes 4 arguments...\r\n"
+		"Takes 3 to 5 arguments...\r\n"
 		"\t1:\tName of ship subsystem is on.\r\n"
 		"\t2:\tName of subsystem to repair.\r\n"
 		"\t3:\tPercentage to increase subsystem integrity by.\r\n"
-		"\t4:\tRepair turret submodel.  Optional argument that defaults to true."},
+		"\t4:\tRepair submodel if it exists.  Optional argument that defaults to true.\r\n"
+		"\t5:\tIf we are repairing submodels and an ancestor submodel was totally destroyed, repair that too.  Optional argument that defaults to true.\r\n" },
 
 	{ OP_SET_SUBSYSTEM_STRNGTH, "Set Subsystem Strength (Action operator)\r\n"
 		"\tSets the specified subsystem to the the specified percentage."
 		"If the percentage specified is < 0, strength is set to 0.  If the percentage is "
 		"> 100 % the subsystem strength is set to 100%.\r\n\r\n"
-		"Takes 3 arguments...\r\n"
+		"Takes 3 to 5 arguments...\r\n"
 		"\t1:\tName of ship subsystem is on.\r\n"
 		"\t2:\tName of subsystem to set strength.\r\n"
 		"\t3:\tPercentage to set subsystem integrity to.\r\n" 
-		"\t4:\tRepair turret submodel.  Optional argument that defaults to true."},
+		"\t4:\tRepair submodel if it exists.  Optional argument that defaults to true.\r\n"
+		"\t5:\tIf we are repairing submodels and an ancestor submodel was totally destroyed, repair that too.  Optional argument that defaults to true.\r\n" },
 
 	{ OP_DESTROY_SUBSYS_INSTANTLY, "destroy-subsys-instantly\r\n"
 		"\tDestroys the specified subsystems without effects."

@@ -213,27 +213,6 @@ static void shipfx_subsystem_maybe_create_live_debris(object *ship_objp, ship *s
 	}
 }
 
-static void set_ship_submodel_as_blown_off(ship *shipp, const char *name)
-{
-	int found =	FALSE;
-
-	// go through list of ship subsystems and find name
-	ship_subsys	*pss = NULL;
-	for (pss=GET_FIRST(&shipp->subsys_list); pss!=END_OF_LIST(&shipp->subsys_list); pss=GET_NEXT(pss)) {
-		if ( subsystem_stricmp(pss->system_info->subobj_name, name) == 0) {
-			found = TRUE;
-			break;
-		}
-	}
-
-	// set its blown off flag to TRUE
-	Assert(found);
-	if (found) {
-		pss->submodel_info_1.blown_off = 1;
-	}
-}
-
-
 /**
  * Create debris for ship submodel which has live debris (at ship death)
  * when ship submodel has not already been blown off (and hence liberated live debris)
@@ -285,7 +264,7 @@ static void shipfx_maybe_create_live_debris_at_ship_death( object *ship_objp )
 
 						// now set subsystem as blown off, so we only get one copy
 						pm->submodel[parent].blown_off = 1;
-						set_ship_submodel_as_blown_off(&Ships[ship_objp->instance], pss->system_info->subobj_name);
+						pss->submodel_info_1.blown_off = 1;
 					}
 				}
 			}

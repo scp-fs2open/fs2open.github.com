@@ -108,10 +108,13 @@ static bool is_subsys_destroyed(ship *shipp, int submodel)
 // do_subobj_destroyed_stuff is called when a subobject for a ship is killed.  Separated out
 // to separate function on 10/15/97 by MWA for easy multiplayer access.  It does all of the
 // cool things like blowing off the model (if applicable, writing the logs, etc)
+// NOTE: if this function is used with ship_recalc_subsys_strength, it MUST be called first. If
+// a child subsystem needs to be destroyed, the strength calculation needs to take it into account.
 void do_subobj_destroyed_stuff( ship *ship_p, ship_subsys *subsys, vec3d* hitpos, bool no_explosion )
 {
 	ship_info *sip;
 	object *ship_objp;
+	ship_subsys *ssp;
 	model_subsystem *psub;
 	vec3d	g_subobj_pos;
 	int type, i, log_index;
@@ -122,6 +125,27 @@ void do_subobj_destroyed_stuff( ship *ship_p, ship_subsys *subsys, vec3d* hitpos
 	psub = subsys->system_info;
 	type = psub->type;
 	get_subsystem_world_pos(ship_objp, subsys, &g_subobj_pos);
+
+	// see if this subsystem is on a submodel
+	if (psub->subobj_num >= 0) {
+		polymodel *pm = model_get(sip->model_num);
+
+		// see if there are any subsystems which have this submodel as a parent
+		for (ssp = GET_FIRST(&ship_p->subsys_list); ssp != END_OF_LIST(&ship_p->subsys_list); ssp = GET_NEXT(ssp)) {
+			// is it another subsys which has a submodel?
+			if (ssp != subsys && ssp->system_info->subobj_num >= 0) {
+				// is this other submodel a child of the one being destroyed?
+				if (pm->submodel[ssp->system_info->subobj_num].parent == psub->subobj_num) {
+					// is it not yet destroyed?  (this is a valid check because we already know there is a submodel)
+					if (!ssp->submodel_info_1.blown_off) {
+						// then destroy it first
+						ssp->current_hits = 0;
+						do_subobj_destroyed_stuff(ship_p, ssp, nullptr, no_explosion);
+					}
+				}
+			}
+		}
+	}
 
 	// create fireballs when subsys destroy for large ships.
 	object* objp = &Objects[ship_p->objnum];
@@ -192,10 +216,8 @@ void do_subobj_destroyed_stuff( ship *ship_p, ship_subsys *subsys, vec3d* hitpos
 	if ( ship_p->subsys_info[type].type_count == 1 ) {
 		ship_p->subsys_info[type].aggregate_current_hits = 0.0f;
 	} else {
-		float hits;
-		ship_subsys *ssp;
+		float hits = 0.0f;
 
-		hits = 0.0f;
 		for ( ssp=GET_FIRST(&ship_p->subsys_list); ssp != END_OF_LIST(&ship_p->subsys_list); ssp = GET_NEXT(ssp) ) {
 			// type matches?
 			if ( (ssp->system_info->type == type) && !(ssp->flags[Ship::Subsystem_Flags::No_aggregate]) ) {
@@ -652,9 +674,8 @@ float do_subobj_hit_stuff(object *ship_objp, object *other_obj, vec3d *hitpos, i
 					min_index = i;
 				}
 			}
+			Assert(min_index != -1);
 		}
-
-		Assert(min_index != -1);
 
 		float	damage_to_apply = 0.0f;
 		subsystem = subsys_list[min_index].ptr;
@@ -663,6 +684,11 @@ float do_subobj_hit_stuff(object *ship_objp, object *other_obj, vec3d *hitpos, i
 		subsys_list[min_index].dist = 9999999.9f;	//	Make sure we don't use this one again.
 
 		Assert(range > 0.0f);	// Goober5000 - avoid div-0 below
+
+		// Make sure this subsystem still has hitpoints.  If it's a child of a parent that was destroyed, it will have been destroyed already.
+		if (subsystem->current_hits <= 0.0f) {
+			continue;
+		}
 
 		// only do this for the closest affected subsystem
 		if ( (j == 0) && (!(parent_armor_flags & SAF_IGNORE_SS_ARMOR))) {
