@@ -39,6 +39,12 @@ extern SCP_string Window_icon_path;
 extern bool Disable_built_in_translations;
 extern bool Weapon_shockwaves_respect_huge;
 extern bool Using_in_game_options;
+extern ubyte Arc_color_damage_p1_r, Arc_color_damage_p1_g, Arc_color_damage_p1_b;
+extern ubyte Arc_color_damage_p2_r, Arc_color_damage_p2_g, Arc_color_damage_p2_b;
+extern ubyte Arc_color_damage_s1_r, Arc_color_damage_s1_g, Arc_color_damage_s1_b;
+extern ubyte Arc_color_emp_p1_r, Arc_color_emp_p1_g, Arc_color_emp_p1_b;
+extern ubyte Arc_color_emp_p2_r, Arc_color_emp_p2_g, Arc_color_emp_p2_b;
+extern ubyte Arc_color_emp_s1_r, Arc_color_emp_s1_g, Arc_color_emp_s1_b;
 
 void mod_table_init();
 

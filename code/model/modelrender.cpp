@@ -20,6 +20,7 @@
 #include "graphics/uniforms.h"
 #include "io/timer.h"
 #include "math/staticrand.h"
+#include "mod_table/mod_table.h"
 #include "model/modelrender.h"
 #include "nebula/neb.h"
 #include "particle/particle.h"
@@ -831,13 +832,6 @@ void model_render_add_lightning( model_draw_list *scene, model_render_params* in
 	float width = 0.9f;
 	color primary, secondary;
 
-	const int AR = 64;
-	const int AG = 64;
-	const int AB = 5;
-	const int AR2 = 128;
-	const int AG2 = 128;
-	const int AB2 = 10;
-
 	Assert( sm->num_arcs > 0 );
 
 	if ( interp->get_model_flags() & MR_SHOW_OUTLINE_PRESET ) {
@@ -864,23 +858,23 @@ void model_render_add_lightning( model_draw_list *scene, model_render_params* in
 			// "normal", FreeSpace 1 style arcs
 		case MARC_TYPE_NORMAL:
 			if ( (rand()>>4) & 1 )	{
-				gr_init_color(&primary, 64, 64, 255);
+				gr_init_color(&primary, Arc_color_damage_p1_r, Arc_color_damage_p1_g, Arc_color_damage_p1_b);
 			} else {
-				gr_init_color(&primary, 128, 128, 255);
+				gr_init_color(&primary, Arc_color_damage_p2_r, Arc_color_damage_p2_g, Arc_color_damage_p2_b);
 			}
 
-			gr_init_color(&secondary, 200, 200, 255);
+			gr_init_color(&secondary, Arc_color_damage_s1_r, Arc_color_damage_s1_g, Arc_color_damage_s1_b);
 			break;
 
 			// "EMP" style arcs
 		case MARC_TYPE_EMP:
 			if ( (rand()>>4) & 1 )	{
-				gr_init_color(&primary, AR, AG, AB);
+				gr_init_color(&primary, Arc_color_emp_p1_r, Arc_color_emp_p1_g, Arc_color_emp_p1_b);
 			} else {
-				gr_init_color(&primary, AR2, AG2, AB2);
+				gr_init_color(&primary, Arc_color_emp_p2_r, Arc_color_emp_p2_g, Arc_color_emp_p2_b);
 			}
 
-			gr_init_color(&secondary, 255, 255, 10);
+			gr_init_color(&secondary, Arc_color_emp_s1_r, Arc_color_emp_s1_g, Arc_color_emp_s1_b);
 			break;
 
 		default:
