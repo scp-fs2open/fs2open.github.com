@@ -275,36 +275,30 @@ void parse_mod_table(const char *filename)
 
 		if (optional_string("$EMP Arc Color:")) {
 			if (optional_string("+Primary Color Option 1:")) {
-				ubyte r, g, b;
-				stuff_ubyte(&r);
-				stuff_ubyte(&g);
-				stuff_ubyte(&b);
-				if ( (r >= 0 && r <= 255) && (g >= 0 && g <= 255) && (b >= 0 && b <= 255) ) { 
-					Arc_color_emp_p1 = std::make_tuple(r, g, b);
+				int rgb[3];
+				stuff_int_list(rgb, 3);
+				if ((rgb[0] >= 0 && rgb[0] <= 255) && (rgb[1] >= 0 && rgb[1] <= 255) && (rgb[2] >= 0 && rgb[2] <= 255)) {
+					Arc_color_emp_p1 = std::make_tuple(static_cast<ubyte>(rgb[0]), static_cast<ubyte>(rgb[1]), static_cast<ubyte>(rgb[2]));
 				} else {
 					error_display(0, "$EMP Arc Color: +Primary Color Option 1 is %f, %f, %f. "
 						"One or more of these values is not within the range of 0-255. Assuming default color.", r, g, b);
 				}
 			}
 			if (optional_string("+Primary Color Option 2:")) {
-				ubyte r, g, b;
-				stuff_ubyte(&r);
-				stuff_ubyte(&g);
-				stuff_ubyte(&b);
-				if ((r >= 0 && r <= 255) && (g >= 0 && g <= 255) && (b >= 0 && b <= 255)) {
-					Arc_color_emp_p2 = std::make_tuple(r, g, b);
+				int rgb[3];
+				stuff_int_list(rgb, 3);
+				if ((rgb[0] >= 0 && rgb[0] <= 255) && (rgb[1] >= 0 && rgb[1] <= 255) && (rgb[2] >= 0 && rgb[2] <= 255)) {
+					Arc_color_emp_p2 = std::make_tuple(static_cast<ubyte>(rgb[0]), static_cast<ubyte>(rgb[1]), static_cast<ubyte>(rgb[2]));
 				} else {
 					error_display(0, "$EMP Arc Color: +Primary Color Option 2 is %f, %f, %f. "
 					    "One or more of these values is not within the range of 0-255. Assuming default color.", r, g, b);
 				}
 			}
 			if (optional_string("+Secondary Color Option 1:")) {
-				ubyte r, g, b;
-				stuff_ubyte(&r);
-				stuff_ubyte(&g);
-				stuff_ubyte(&b);
-			    if ((r >= 0 && r <= 255) && (g >= 0 && g <= 255) && (b >= 0 && b <= 255)) {
-				    Arc_color_emp_s1 = std::make_tuple(r, g, b);
+				int rgb[3];
+				stuff_int_list(rgb, 3);
+				if ((rgb[0] >= 0 && rgb[0] <= 255) && (rgb[1] >= 0 && rgb[1] <= 255) && (rgb[2] >= 0 && rgb[2] <= 255)) {
+					Arc_color_emp_s1 = std::make_tuple(static_cast<ubyte>(rgb[0]), static_cast<ubyte>(rgb[1]), static_cast<ubyte>(rgb[2]));
 			    } else {
 				    error_display(0,"$EMP Arc Color: +Secondary Color Option 1 is %f, %f, %f. "
 				        "One or more of these values is not within the range of 0-255. Assuming default color.", r, g, b);
@@ -314,36 +308,30 @@ void parse_mod_table(const char *filename)
 
 		if (optional_string("$Damage Arc Color:")) {
 			if (optional_string("+Primary Color Option 1:")) {
-				ubyte r, g, b;
-				stuff_ubyte(&r);
-				stuff_ubyte(&g);
-				stuff_ubyte(&b);
-		        if ((r >= 0 && r <= 255) && (g >= 0 && g <= 255) && (b >= 0 && b <= 255)) {
-			        Arc_color_damage_p1 = std::make_tuple(r, g, b);
+				int rgb[3];
+				stuff_int_list(rgb, 3);
+				if ((rgb[0] >= 0 && rgb[0] <= 255) && (rgb[1] >= 0 && rgb[1] <= 255) && (rgb[2] >= 0 && rgb[2] <= 255)) {
+					Arc_color_damage_p1 = std::make_tuple(static_cast<ubyte>(rgb[0]), static_cast<ubyte>(rgb[1]), static_cast<ubyte>(rgb[2]));
 		        } else {
 			        error_display(0, "Damage Arc Color: +Primary Color Option 1 is %f, %f, %f. "
 			            "One or more of these values is not within the range of 0-255. Assuming default color.", r, g, b);
 		        }
 	        }
 			if (optional_string("+Primary Color Option 2:")) {
-				ubyte r, g, b;
-				stuff_ubyte(&r);
-				stuff_ubyte(&g);
-				stuff_ubyte(&b);
-	            if ((r >= 0 && r <= 255) && (g >= 0 && g <= 255) && (b >= 0 && b <= 255)) {
-		            Arc_color_damage_p1 = std::make_tuple(r, g, b);
+				int rgb[3];
+				stuff_int_list(rgb, 3);
+				if ((rgb[0] >= 0 && rgb[0] <= 255) && (rgb[1] >= 0 && rgb[1] <= 255) && (rgb[2] >= 0 && rgb[2] <= 255)) {
+					Arc_color_damage_p2 = std::make_tuple(static_cast<ubyte>(rgb[0]), static_cast<ubyte>(rgb[1]), static_cast<ubyte>(rgb[2]));
 	            } else {
 		            error_display(0, "$Damage Arc Color: +Primary Color Option 2 is %f, %f, %f. "
 		                "One or more of these values is not within the range of 0-255. Assuming default color.", r, g, b);
 	            }
 			}
 			if (optional_string("+Secondary Color Option 1:")) {
-				ubyte r, g, b;
-				stuff_ubyte(&r);
-				stuff_ubyte(&g);
-				stuff_ubyte(&b);
-	            if ((r >= 0 && r <= 255) && (g >= 0 && g <= 255) && (b >= 0 && b <= 255)) {
-		            Arc_color_damage_s1 = std::make_tuple(r, g, b);
+				int rgb[3];
+				stuff_int_list(rgb, 3);
+				if ((rgb[0] >= 0 && rgb[0] <= 255) && (rgb[1] >= 0 && rgb[1] <= 255) && (rgb[2] >= 0 && rgb[2] <= 255)) {
+					Arc_color_damage_s1 = std::make_tuple(static_cast<ubyte>(rgb[0]), static_cast<ubyte>(rgb[1]), static_cast<ubyte>(rgb[2]));
 	            } else {
 		            error_display(0, "$Damage Arc Color: +Secondary Color Option 1 is %f, %f, %f. "
 		                "One or more of these values is not within the range of 0-255. Assuming default color.", r, g, b);
