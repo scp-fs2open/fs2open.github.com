@@ -858,23 +858,23 @@ void model_render_add_lightning( model_draw_list *scene, model_render_params* in
 			// "normal", FreeSpace 1 style arcs
 		case MARC_TYPE_NORMAL:
 			if ( (rand()>>4) & 1 )	{
-				gr_init_color(&primary, Arc_color_damage_p1_r, Arc_color_damage_p1_g, Arc_color_damage_p1_b);
+				gr_init_color(&primary, std::get<0>(Arc_color_damage_p1), std::get<1>(Arc_color_damage_p1), std::get<2>(Arc_color_damage_p1));
 			} else {
-				gr_init_color(&primary, Arc_color_damage_p2_r, Arc_color_damage_p2_g, Arc_color_damage_p2_b);
+				gr_init_color(&primary, std::get<0>(Arc_color_damage_p2), std::get<1>(Arc_color_damage_p2), std::get<2>(Arc_color_damage_p2));
 			}
 
-			gr_init_color(&secondary, Arc_color_damage_s1_r, Arc_color_damage_s1_g, Arc_color_damage_s1_b);
+			gr_init_color(&primary, std::get<0>(Arc_color_damage_s1), std::get<1>(Arc_color_damage_s1), std::get<2>(Arc_color_damage_s1));
 			break;
 
 			// "EMP" style arcs
 		case MARC_TYPE_EMP:
 			if ( (rand()>>4) & 1 )	{
-				gr_init_color(&primary, Arc_color_emp_p1_r, Arc_color_emp_p1_g, Arc_color_emp_p1_b);
+				gr_init_color(&primary, std::get<0>(Arc_color_emp_p1), std::get<1>(Arc_color_emp_p1), std::get<2>(Arc_color_emp_p1));
 			} else {
-				gr_init_color(&primary, Arc_color_emp_p2_r, Arc_color_emp_p2_g, Arc_color_emp_p2_b);
+				gr_init_color(&primary, std::get<0>(Arc_color_emp_p2), std::get<1>(Arc_color_emp_p2), std::get<2>(Arc_color_emp_p2));
 			}
 
-			gr_init_color(&secondary, Arc_color_emp_s1_r, Arc_color_emp_s1_g, Arc_color_emp_s1_b);
+			gr_init_color(&primary, std::get<0>(Arc_color_emp_s1), std::get<1>(Arc_color_emp_s1), std::get<2>(Arc_color_emp_s1));
 			break;
 
 		default:
