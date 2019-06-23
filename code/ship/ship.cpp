@@ -7362,6 +7362,7 @@ void ship_cleanup(int shipnum, int cleanup_mode)
 
 	ship *shipp = &Ships[shipnum];
 	object *objp = &Objects[shipp->objnum];
+	char *jumpnode_name = nullptr;
 
 	// add the information to the exited ship list
 	switch (cleanup_mode) {
@@ -7402,14 +7403,14 @@ void ship_cleanup(int shipnum, int cleanup_mode)
 
 	// add mission log entry?
 	// (vanished ships and red-alert deleted ships have no log, and destroyed ships are logged in ship_hit_kill)
-	if ((cleanup_mode == SHIP_DEPARTED_WARP) || (cleanup_mode == SHIP_DEPARTED_BAY) || (cleanup_mode == SHIP_DEPARTED)) {\
+	if ((cleanup_mode == SHIP_DEPARTED_WARP) || (cleanup_mode == SHIP_DEPARTED_BAY) || (cleanup_mode == SHIP_DEPARTED)) {
 		// see if this ship departed within the radius of a jump node -- if so, put the node name into
 		// the secondary mission log field
 		CJumpNode *jnp = jumpnode_get_which_in(objp);
-		if(jnp==NULL)
-			mission_log_add_entry(LOG_SHIP_DEPARTED, shipp->ship_name, NULL, shipp->wingnum);
-		else
-			mission_log_add_entry(LOG_SHIP_DEPARTED, shipp->ship_name, jnp->GetName(), shipp->wingnum);
+		if (jnp != nullptr)
+			jumpnode_name = jnp->GetName();
+
+		mission_log_add_entry(LOG_SHIP_DEPARTED, shipp->ship_name, jumpnode_name, shipp->wingnum);
 	}
 
 	// run "On Ship Depart" conditional hook variable that accounts for all departure types
@@ -7420,8 +7421,9 @@ void ship_cleanup(int shipnum, int cleanup_mode)
 		const char* departmethod = get_departure_name(cleanup_mode);
 		Script_system.SetHookObject("Ship", objp);
 		Script_system.SetHookVar("Method", 's', departmethod);
+		Script_system.SetHookVar("JumpNode", 's', jumpnode_name);
 		Script_system.RunCondition(CHA_ONSHIPDEPART);
-		Script_system.RemHookVars(2, "Ship", "Method");
+		Script_system.RemHookVars(3, "Ship", "Method", "JumpNode");
 	}
 
 #ifndef NDEBUG
