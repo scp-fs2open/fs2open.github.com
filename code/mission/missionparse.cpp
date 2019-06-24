@@ -6536,8 +6536,8 @@ p_object *mission_parse_get_arrival_ship(const char *name)
 {
 	p_object *p_objp;
 
-	if (name == NULL)
-		return NULL;
+	if (name == nullptr)
+		return nullptr;
 
 	for (p_objp = GET_FIRST(&Ship_arrival_list); p_objp != END_OF_LIST(&Ship_arrival_list); p_objp = GET_NEXT(p_objp))
 	{
@@ -6547,7 +6547,7 @@ p_object *mission_parse_get_arrival_ship(const char *name)
 		}
 	}
 
-	return NULL;
+	return nullptr;
 }
 
 /**
@@ -6571,6 +6571,22 @@ p_object *mission_parse_get_arrival_ship(ushort net_signature)
 	}
 
 	return NULL;
+}
+
+/**
+ * Because player ships remain on the arrival list (see parse_wing_create_ships), checking the list isn't sufficient
+ * to determine whether a ship is yet to arrive.  So this function also checks whether the object was created.
+ */
+bool mission_check_ship_yet_to_arrive(const char *name)
+{
+	p_object *p_objp = mission_parse_get_arrival_ship(name);
+	if (p_objp == nullptr)
+		return false;
+
+	if (p_objp->created_object != nullptr)
+		return false;
+
+	return true;
 }
 
 /**
