@@ -1913,7 +1913,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 
 				if (ship_name_lookup(CTEXT(node), 0) < 0)
 				{
-					if (Fred_running || !mission_parse_get_arrival_ship(CTEXT(node)))
+					if (Fred_running || !mission_check_ship_yet_to_arrive(CTEXT(node)))
 					{
 						return SEXP_CHECK_INVALID_SHIP;
 					}
@@ -1931,7 +1931,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 				{
 					if (ship_name_lookup(CTEXT(node), 1) < 0)
 					{
-						if (Fred_running || !mission_parse_get_arrival_ship(CTEXT(node)))
+						if (Fred_running || !mission_check_ship_yet_to_arrive(CTEXT(node)))
 						{
 							return SEXP_CHECK_INVALID_SHIP;
 						}
@@ -1947,7 +1947,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 				}
 
 				if (ship_name_lookup(CTEXT(node), 1) < 0) {
-					if (Fred_running || !mission_parse_get_arrival_ship(CTEXT(node)))
+					if (Fred_running || !mission_check_ship_yet_to_arrive(CTEXT(node)))
 					{
 						if (type == OPF_SHIP)
 						{													// return invalid ship if not also looking for point
@@ -1998,7 +1998,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 					break;
 				}
 				// also check arrival list if we're running the game
-				if (!Fred_running && mission_parse_get_arrival_ship(CTEXT(node))) {
+				if (!Fred_running && mission_check_ship_yet_to_arrive(CTEXT(node))) {
 					break;
 				}
 
@@ -2013,7 +2013,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 				}
 				if ((type == OPF_SHIP_WING_SHIPONTEAM_POINT) && sexp_determine_team(CTEXT(node)) >= 0)	{
 					break;
-						}
+				}
 
 				// only other possibility is waypoints
 				if (type == OPF_SHIP_WING_SHIPONTEAM_POINT || type == OPF_SHIP_WING_POINT || type == OPF_SHIP_WING_POINT_OR_NONE) {
@@ -2287,7 +2287,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 						valid = 1;
 					}
 
-					if (!Fred_running && mission_parse_get_arrival_ship(CTEXT(node)))
+					if (!Fred_running && mission_check_ship_yet_to_arrive(CTEXT(node)))
 					{
 						valid = 1;
 					}
@@ -2342,8 +2342,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 					if (Fred_running)
 						return SEXP_CHECK_INVALID_SHIP;
 
-					p_objp = mission_parse_get_arrival_ship(name);
-					if (p_objp == NULL)
+					if (!mission_check_ship_yet_to_arrive(name))
 						return SEXP_CHECK_INVALID_SHIP;
 
 					// Goober5000 - since we can't check POFs for ships which have yet to arrive
@@ -2749,7 +2748,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 					if ( stricmp(CTEXT(node), "<any wingman>") != 0)  
 						if ( stricmp(CTEXT(node), "<none>") != 0 ) // not a special token?
 							if ((ship_name_lookup(CTEXT(node), TRUE) < 0) && (wing_name_lookup(CTEXT(node), 1) < 0))  // is it in the mission?
-								if (Fred_running || !mission_parse_get_arrival_ship(CTEXT(node)))
+								if (Fred_running || !mission_check_ship_yet_to_arrive(CTEXT(node)))
 									return SEXP_CHECK_INVALID_MSG_SOURCE;
 				}
 
@@ -4048,21 +4047,19 @@ ship * sexp_get_ship_from_node(int node)
 /**
  * Determine if the named ship or wing hasn't arrived yet (wing or ship must be on arrival list)
  */
-int sexp_query_has_yet_to_arrive(char *name)
+bool sexp_query_has_yet_to_arrive(const char *name)
 {
-	int i;
+	if (mission_check_ship_yet_to_arrive(name))
+		return true;
 
-	if (ship_query_state(name) < 0)
-		return 1;
-
-	i = wing_name_lookup(name, 1);
+	int i = wing_name_lookup(name, 1);
 
 	// has not arrived yet
 	if ((i >= 0) && (Wings[i].num_waves >= 0) && !Wings[i].total_arrived_count){
-		return 1;
+		return true;
 	}
 
-	return 0;
+	return false;
 }
 
 // arithmetic functions
@@ -15317,15 +15314,16 @@ int sexp_targeted(int node)
 	int z;
 	ship_subsys *ptr;
 
-	z = ship_query_state(CTEXT(node));
-	if (z == 1){
-		return SEXP_KNOWN_FALSE;  // ship isn't around, nor will it ever be
-	} else if (z == -1) {
+	if (mission_check_ship_yet_to_arrive(CTEXT(node))) {
 		return SEXP_CANT_EVAL;
 	}
 
 	z = ship_name_lookup(CTEXT(node), 1);
-	if ((z < 0) || !Player_ai || (Ships[z].objnum != Players_target)){
+	if (z < 0) {
+		return SEXP_KNOWN_FALSE;  // ship isn't around, nor will it ever be
+	}
+
+	if (!Player_ai || (Ships[z].objnum != Players_target)){
 		return SEXP_FALSE;
 	}
 
@@ -15497,9 +15495,9 @@ int sexp_facing(int node)
 	}
 
 	ship *target_shipp = sexp_get_ship_from_node(node);
-	if (target_shipp == NULL) {
+	if (target_shipp == nullptr) {
 		// hasn't arrived yet
-		if (mission_parse_get_arrival_ship(CTEXT(node)) != nullptr) {
+		if (mission_check_ship_yet_to_arrive(CTEXT(node))) {
 			return SEXP_CANT_EVAL;
 		}
 		// not found and won't arrive: invalid
@@ -15531,9 +15529,9 @@ int sexp_is_facing(int node)
 	object *origin_objp, *target_objp;
 
 	ship *origin_shipp = sexp_get_ship_from_node(node);
-	if (origin_shipp == NULL) {
+	if (origin_shipp == nullptr) {
 		// hasn't arrived yet
-		if (mission_parse_get_arrival_ship(CTEXT(node)) != nullptr) {
+		if (mission_check_ship_yet_to_arrive(CTEXT(node))) {
 			return SEXP_CANT_EVAL;
 		}
 		// not found and won't arrive: invalid

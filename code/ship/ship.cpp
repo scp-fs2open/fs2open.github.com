@@ -12748,36 +12748,6 @@ int ship_type_name_lookup(const char *name)
 	return -1;
 }
 
-// checks the (arrival & departure) state of a ship.  Return values:
-// -1: has yet to arrive in mission
-//  0: is currently in mission
-//  1: has been destroyed, departed, or never existed
-int ship_query_state(char *name)
-{
-	int i;
-
-	// bogus
-	Assert(name != NULL);
-	if(name == NULL){
-		return -1;
-	}
-
-	for (i=0; i<MAX_SHIPS; i++){
-		if (Ships[i].objnum >= 0){
-			if ((Objects[Ships[i].objnum].type == OBJ_SHIP) || (Objects[Ships[i].objnum].type == OBJ_START)){
-				if (!stricmp(name, Ships[i].ship_name)){
-					return 0;
-				}
-			}
-		}
-	}
-
-	if (mission_parse_get_arrival_ship(name))
-		return -1;
-
-	return 1;
-}
-
 // Finds the world position of a subsystem.
 // Return true/false for subsystem found/not found.
 // Stuff vector *pos with absolute position.
