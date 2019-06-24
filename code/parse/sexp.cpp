@@ -2327,7 +2327,6 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 			case OPF_SHIP_WITH_BAY:
 			{
 				char *name = CTEXT(node);
-				p_object *p_objp;
 				int shipnum = -1;
 
 				if (type2 != SEXP_ATOM_STRING)
