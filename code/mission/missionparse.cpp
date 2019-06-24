@@ -6574,8 +6574,8 @@ p_object *mission_parse_get_arrival_ship(ushort net_signature)
 }
 
 /**
- * Because player ships remain on the arrival list (see parse_wing_create_ships), checking the list isn't sufficient
- * to determine whether a ship is yet to arrive.  So this function also checks whether the object was created.
+ * Because player ships remain on the arrival list (see parse_wing_create_ships), testing for yet-to-arrive by merely
+ * checking the list will produce false positives for player ships.  So this function also checks whether the object was created.
  */
 bool mission_check_ship_yet_to_arrive(const char *name)
 {
