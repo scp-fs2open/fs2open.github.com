@@ -5318,9 +5318,7 @@ int ai_select_primary_weapon(object *objp, object *other_objp, Weapon::Info_Flag
 	{
 		if (swp->current_primary_bank >= 0) 
 		{
-			int	bank_index;
-
-			bank_index = swp->current_primary_bank;
+			int	bank_index = swp->current_primary_bank;
 
 			if (Weapon_info[swp->primary_bank_weapons[bank_index]].wi_flags[Weapon::Info_Flags::Puncture]) 
 			{
@@ -5329,11 +5327,9 @@ int ai_select_primary_weapon(object *objp, object *other_objp, Weapon::Info_Flag
 		}
 		for (int i=0; i<swp->num_primary_banks; i++) 
 		{
-			int	weapon_info_index;
+			int	weapon_info_index = swp->primary_bank_weapons[i];
 
-			weapon_info_index = swp->primary_bank_weapons[i];
-
-			if (weapon_info_index > -1)
+			if (weapon_info_index >= 0)
 			{
 				if (Weapon_info[weapon_info_index].wi_flags[Weapon::Info_Flags::Puncture]) 
 				{
@@ -5344,44 +5340,51 @@ int ai_select_primary_weapon(object *objp, object *other_objp, Weapon::Info_Flag
 		}
 	}
 
-	if ( (other_objp->type == OBJ_SHIP) && (Ship_info[Ships[other_objp->instance].ship_info_index].is_big_or_huge() ) ) 
+	auto other_is_ship = (other_objp->type == OBJ_SHIP);
+	float enemy_remaining_shield = get_shield_pct(other_objp);
+
+	if ( other_is_ship && (Ship_info[Ships[other_objp->instance].ship_info_index].is_big_or_huge() ) )
 	{
 		//Check if we have a capital+ weapon on board
 		for (int i = 0; i < swp->num_primary_banks; i++)
 		{
-			if (swp->primary_bank_weapons[i] > -1)		// Make sure there is a weapon in the bank
+			if (swp->primary_bank_weapons[i] >= 0)		// Make sure there is a weapon in the bank
 			{
-				if (Weapon_info[swp->primary_bank_weapons[i]].wi_flags[Weapon::Info_Flags::Capital_plus])
+				auto wip = &Weapon_info[swp->primary_bank_weapons[i]];
+				if (wip->wi_flags[Weapon::Info_Flags::Capital_plus])
 				{
-					swp->current_primary_bank = i;
-					nprintf(("AI", "%i: Ship %s selecting weapon %s (capital+) vs target %s\n", Framecount, Ships[objp->instance].ship_name, Weapon_info[swp->primary_bank_weapons[i]].name, Ships[other_objp->instance].ship_name));
-					return i;
+					// handle shielded big/huge ships (non FS-verse)
+					// only pick capital+ if the target has no shields; or the weapon is an ok shield-breaker anyway
+					if (enemy_remaining_shield <= 0.05f || (wip->shield_factor * 1.33f > wip->armor_factor))
+					{
+						swp->current_primary_bank = i;
+						nprintf(("AI", "%i: Ship %s selecting weapon %s (capital+) vs target %s\n", Framecount, Ships[objp->instance].ship_name, wip->name, Ships[other_objp->instance].ship_name));
+						return i;
+					}
 				}
 			}
 		}
 	}
 
-	float enemy_remaining_shield = get_shield_pct(other_objp);
-
 	// Is the target shielded by say only 5%?
 	if (enemy_remaining_shield <= 0.05f)	
 	{
 		// Then it is safe to start using a heavy hull damage weapon such as the maxim
-		int i;
 		float i_hullfactor_prev = 0;		// Previous weapon bank hull factor (this is the safe way to do it)
 		int i_hullfactor_prev_bank = -1;	// Bank which gave us this hull factor
 
 		// Find the weapon with the highest hull * damage / fire delay factor
-		for (i = 0; i < swp->num_primary_banks; i++)
+		for (int i = 0; i < swp->num_primary_banks; i++)
 		{
-			if (swp->primary_bank_weapons[i] > -1)		// Make sure there is a weapon in the bank
+			if (swp->primary_bank_weapons[i] >= 0)		// Make sure there is a weapon in the bank
 			{
-				if ((((Weapon_info[swp->primary_bank_weapons[i]].armor_factor) * (Weapon_info[swp->primary_bank_weapons[i]].damage)) / Weapon_info[swp->primary_bank_weapons[i]].fire_wait) > i_hullfactor_prev)
+				auto wip = &Weapon_info[swp->primary_bank_weapons[i]];
+				if ((((wip->armor_factor) * (wip->damage)) / wip->fire_wait) > i_hullfactor_prev)
 				{
-					if ( !(Weapon_info[swp->primary_bank_weapons[i]].wi_flags[Weapon::Info_Flags::Capital_plus]) )
+					if ( !(wip->wi_flags[Weapon::Info_Flags::Capital_plus]) )
 					{
 						// This weapon is the new candidate
-						i_hullfactor_prev = ( ((Weapon_info[swp->primary_bank_weapons[i]].armor_factor) * (Weapon_info[swp->primary_bank_weapons[i]].damage)) / Weapon_info[swp->primary_bank_weapons[i]].fire_wait );
+						i_hullfactor_prev = ( ((wip->armor_factor) * (wip->damage)) / wip->fire_wait );
 						i_hullfactor_prev_bank = i;
 					}
 				}
@@ -5392,7 +5395,7 @@ int ai_select_primary_weapon(object *objp, object *other_objp, Weapon::Info_Flag
 			i_hullfactor_prev_bank = 0;		// Just switch to the first one
 		}
 		swp->current_primary_bank = i_hullfactor_prev_bank;		// Select the best weapon
-		nprintf(("AI", "%i: Ship %s selecting weapon %s (no shields) vs target %s\n", Framecount, Ships[objp->instance].ship_name, Weapon_info[swp->primary_bank_weapons[i_hullfactor_prev_bank]].name, (other_objp->type == OBJ_SHIP ? Ships[other_objp->instance].ship_name : "non-ship") ));
+		nprintf(("AI", "%i: Ship %s selecting weapon %s (no shields) vs target %s\n", Framecount, shipp->ship_name, Weapon_info[swp->primary_bank_weapons[i_hullfactor_prev_bank]].name, (other_is_ship ? Ships[other_objp->instance].ship_name : "non-ship") ));
 		return i_hullfactor_prev_bank;							// Return
 	}
 
@@ -5401,28 +5404,23 @@ int ai_select_primary_weapon(object *objp, object *other_objp, Weapon::Info_Flag
 	{
 		if (swp->current_primary_bank >= 0) 
 		{
-			int	bank_index;
+			auto wip = &Weapon_info[swp->primary_bank_weapons[swp->current_primary_bank]];
 
-			bank_index = swp->current_primary_bank;
-
-			if ((Weapon_info[swp->primary_bank_weapons[bank_index]].wi_flags[Weapon::Info_Flags::Pierce_shields]) && !(Weapon_info[swp->primary_bank_weapons[bank_index]].wi_flags[Weapon::Info_Flags::Capital_plus]))
+			if ((wip->wi_flags[Weapon::Info_Flags::Pierce_shields]) && !(wip->wi_flags[Weapon::Info_Flags::Capital_plus]))
 			{
-				nprintf(("AI", "%i: Ship %s selecting weapon %s (>10%% shields)\n", Framecount, Ships[objp->instance].ship_name, Weapon_info[swp->primary_bank_weapons[bank_index]].name));
+				nprintf(("AI", "%i: Ship %s selecting weapon %s (>10%% shields)\n", Framecount, shipp->ship_name, wip->name));
 				return swp->current_primary_bank;
 			}
 		}
 		for (int i=0; i<swp->num_primary_banks; i++) 
 		{
-			int	weapon_info_index;
-
-			weapon_info_index = swp->primary_bank_weapons[i];
-
-			if (weapon_info_index > -1)
+			if (swp->primary_bank_weapons[i] >= 0)
 			{
-				if ((Weapon_info[weapon_info_index].wi_flags[Weapon::Info_Flags::Pierce_shields]) && !(Weapon_info[swp->primary_bank_weapons[i]].wi_flags[Weapon::Info_Flags::Capital_plus])) 
+				auto wip = &Weapon_info[swp->primary_bank_weapons[i]];
+				if ((wip->wi_flags[Weapon::Info_Flags::Pierce_shields]) && !(wip->wi_flags[Weapon::Info_Flags::Capital_plus]))
 				{
 					swp->current_primary_bank = i;
-					nprintf(("AI", "%i: Ship %s selecting weapon %s (>10%% shields)\n", Framecount, Ships[objp->instance].ship_name, Weapon_info[swp->primary_bank_weapons[i]].name));
+					nprintf(("AI", "%i: Ship %s selecting weapon %s (>10%% shields)\n", Framecount, shipp->ship_name, wip->name));
 					return i;
 				}
 			}
@@ -5432,63 +5430,63 @@ int ai_select_primary_weapon(object *objp, object *other_objp, Weapon::Info_Flag
 	// Is the target shielded by less then 50%?
 	if (enemy_remaining_shield <= 0.50f)	
 	{
-		// Should be using best balanced shield gun
-		int i;
-		float i_hullfactor_prev = 0;		// Previous weapon bank hull factor (this is the safe way to do it)
-		int i_hullfactor_prev_bank = -1;	// Bank which gave us this hull factor
+		// Should be using best balanced shield/hull gun
+		float i_balancedfactor_prev = 0;	// Previous weapon bank "balanced" factor (this is the safe way to do it)
+		int i_balancedfactor_prev_bank = -1;	// Bank which gave us this "balanced" factor
 		// Find the weapon with the highest average hull and shield * damage / fire delay factor
-		for (i = 0; i < swp->num_primary_banks; i++)
+		for (int i = 0; i < swp->num_primary_banks; i++)
 		{
-			if (swp->primary_bank_weapons[i] > -1)		// Make sure there is a weapon in the bank
+			if (swp->primary_bank_weapons[i] >= 0)		// Make sure there is a weapon in the bank
 			{
-				if ((((Weapon_info[swp->primary_bank_weapons[i]].armor_factor + Weapon_info[swp->primary_bank_weapons[i]].shield_factor) * Weapon_info[swp->primary_bank_weapons[i]].damage) / Weapon_info[swp->primary_bank_weapons[i]].fire_wait) > i_hullfactor_prev)
+				auto wip = &Weapon_info[swp->primary_bank_weapons[i]];
+				if ((((wip->armor_factor + wip->shield_factor) * wip->damage) / wip->fire_wait) > i_balancedfactor_prev)
 				{
-					if ( !(Weapon_info[swp->primary_bank_weapons[i]].wi_flags[Weapon::Info_Flags::Capital_plus]) )
+					if ( !(wip->wi_flags[Weapon::Info_Flags::Capital_plus]) )
 					{
 						// This weapon is the new candidate
-						i_hullfactor_prev = ((((Weapon_info[swp->primary_bank_weapons[i]].armor_factor + Weapon_info[swp->primary_bank_weapons[i]].shield_factor) * Weapon_info[swp->primary_bank_weapons[i]].damage) / Weapon_info[swp->primary_bank_weapons[i]].fire_wait));
-						i_hullfactor_prev_bank = i;
+						i_balancedfactor_prev = ((((wip->armor_factor + wip->shield_factor) * wip->damage) / wip->fire_wait));
+						i_balancedfactor_prev_bank = i;
 					}
 				}
 			}
 		}
-		if (i_hullfactor_prev_bank == -1)		// In the unlikely instance we don't find at least 1 candidate weapon
+		if (i_balancedfactor_prev_bank == -1)		// In the unlikely instance we don't find at least 1 candidate weapon
 		{
-			i_hullfactor_prev_bank = 0;		// Just switch to the first one
+			i_balancedfactor_prev_bank = 0;		// Just switch to the first one
 		}
-		swp->current_primary_bank = i_hullfactor_prev_bank;		// Select the best weapon
-		nprintf(("AI", "%i: Ship %s selecting weapon %s (<50%% shields)\n", Framecount, Ships[objp->instance].ship_name, Weapon_info[swp->primary_bank_weapons[i_hullfactor_prev_bank]].name));
-		return i_hullfactor_prev_bank;							// Return
+		swp->current_primary_bank = i_balancedfactor_prev_bank;		// Select the best weapon
+		nprintf(("AI", "%i: Ship %s selecting weapon %s (<50%% shields)\n", Framecount, shipp->ship_name, Weapon_info[swp->primary_bank_weapons[i_balancedfactor_prev_bank]].name));
+		return i_balancedfactor_prev_bank;							// Return
 	}
 	else
 	{
 		// Should be using best shield destroying gun
-		int i;
-		float i_hullfactor_prev = 0;		// Previous weapon bank hull factor (this is the safe way to do it)
-		int i_hullfactor_prev_bank = -1;	// Bank which gave us this hull factor
+		float i_shieldfactor_prev = 0;		// Previous weapon bank shield factor (this is the safe way to do it)
+		int i_shieldfactor_prev_bank = -1;	// Bank which gave us this shield factor
 		// Find the weapon with the highest average hull and shield * damage / fire delay factor
-		for (i = 0; i < swp->num_primary_banks; i++)
+		for (int i = 0; i < swp->num_primary_banks; i++)
 		{
-			if (swp->primary_bank_weapons[i] > -1)		// Make sure there is a weapon in the bank
+			if (swp->primary_bank_weapons[i] >= 0)		// Make sure there is a weapon in the bank
 			{
-				if ((((Weapon_info[swp->primary_bank_weapons[i]].shield_factor) * Weapon_info[swp->primary_bank_weapons[i]].damage) / Weapon_info[swp->primary_bank_weapons[i]].fire_wait) > i_hullfactor_prev)
+				auto wip = &Weapon_info[swp->primary_bank_weapons[i]];
+				if ((((wip->shield_factor) * wip->damage) / wip->fire_wait) > i_shieldfactor_prev)
 				{
-					if ( !(Weapon_info[swp->primary_bank_weapons[i]].wi_flags[Weapon::Info_Flags::Capital_plus]) )
+					if ( !(wip->wi_flags[Weapon::Info_Flags::Capital_plus]) )
 					{
 						// This weapon is the new candidate
-						i_hullfactor_prev = ( ((Weapon_info[swp->primary_bank_weapons[i]].shield_factor) * (Weapon_info[swp->primary_bank_weapons[i]].damage)) / Weapon_info[swp->primary_bank_weapons[i]].fire_wait );
-						i_hullfactor_prev_bank = i;
+						i_shieldfactor_prev = ( ((wip->shield_factor) * (wip->damage)) / wip->fire_wait );
+						i_shieldfactor_prev_bank = i;
 					}
 				}
 			}
 		}
-		if (i_hullfactor_prev_bank == -1)		// In the unlikely instance we don't find at least 1 candidate weapon
+		if (i_shieldfactor_prev_bank == -1)		// In the unlikely instance we don't find at least 1 candidate weapon
 		{
-			i_hullfactor_prev_bank = 0;		// Just switch to the first one
+			i_shieldfactor_prev_bank = 0;		// Just switch to the first one
 		}
-		swp->current_primary_bank = i_hullfactor_prev_bank;		// Select the best weapon
-		nprintf(("AI", "%i: Ship %s selecting weapon %s (>50%% shields)\n", Framecount, Ships[objp->instance].ship_name, Weapon_info[swp->primary_bank_weapons[i_hullfactor_prev_bank]].name));
-		return i_hullfactor_prev_bank;							// Return
+		swp->current_primary_bank = i_shieldfactor_prev_bank;		// Select the best weapon
+		nprintf(("AI", "%i: Ship %s selecting weapon %s (>50%% shields)\n", Framecount, shipp->ship_name, Weapon_info[swp->primary_bank_weapons[i_shieldfactor_prev_bank]].name));
+		return i_shieldfactor_prev_bank;							// Return
 	}
 }
 
