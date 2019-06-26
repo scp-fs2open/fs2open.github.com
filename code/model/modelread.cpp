@@ -4422,13 +4422,15 @@ void model_get_rotating_submodel_list(SCP_vector<int> *submodel_vector, object *
 	}
 
 	polymodel_instance *pmi = model_get_instance(model_instance_num);
+	submodel_instance *child_submodel_instance = &pmi->submodel[pm->detail[0]];
 
 	int i = child_submodel->first_child;
 	while ( i >= 0 )	{
 		child_submodel = &pm->submodel[i];
+		child_submodel_instance = &pmi->submodel[i];
 
 		// Don't check it or its children if it is destroyed or it is a replacement (non-moving)
-		if ( !child_submodel->blown_off && (child_submodel->i_replace == -1) && !child_submodel->no_collisions && !child_submodel->nocollide_this_only)	{
+		if ( !child_submodel_instance->blown_off && (child_submodel->i_replace == -1) && !child_submodel->no_collisions && !child_submodel->nocollide_this_only)	{
 
 			// Only look for submodels that rotate or intrinsic-rotate
 			if (child_submodel->movement_type == MOVEMENT_TYPE_ROT || child_submodel->movement_type == MOVEMENT_TYPE_INTRINSIC_ROTATE) {
