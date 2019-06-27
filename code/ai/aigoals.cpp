@@ -1626,7 +1626,7 @@ int ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 			status = SHIP_STATUS_ARRIVED;
 		}
 		// goal ship is still on the arrival list
-		else if ( mission_parse_get_arrival_ship(aigp->target_name) )
+		else if ( mission_check_ship_yet_to_arrive(aigp->target_name) )
 		{
 			status = SHIP_STATUS_NOT_ARRIVED;
 		}

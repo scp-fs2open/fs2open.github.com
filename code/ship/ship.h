@@ -1525,8 +1525,6 @@ extern int ship_query_general_type(ship *shipp);
 extern int ship_docking_valid(int docker, int dockee);
 extern int get_quadrant(vec3d *hit_pnt, object *shipobjp = NULL);	//	Return quadrant num of given hit point.
 
-extern int ship_query_state(char *name);
-
 int ship_secondary_bank_has_ammo(int shipnum);	// check if current secondary bank has ammo
 
 int ship_engine_ok_to_warp(ship *sp);		// check if ship has engine power to warp

@@ -4045,7 +4045,7 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, int force, int spec
 				int num_remaining;
 
 				// see if ship is yet to arrive.  If so, then return 0 so we can evaluate again later.
-				if (mission_parse_get_arrival_ship(name))
+				if (mission_check_ship_yet_to_arrive(name))
 					return 0;
 
 				// since this wing cannot arrive from this place, we need to mark the wing as destroyed and
@@ -6536,8 +6536,8 @@ p_object *mission_parse_get_arrival_ship(const char *name)
 {
 	p_object *p_objp;
 
-	if (name == NULL)
-		return NULL;
+	if (name == nullptr)
+		return nullptr;
 
 	for (p_objp = GET_FIRST(&Ship_arrival_list); p_objp != END_OF_LIST(&Ship_arrival_list); p_objp = GET_NEXT(p_objp))
 	{
@@ -6547,7 +6547,7 @@ p_object *mission_parse_get_arrival_ship(const char *name)
 		}
 	}
 
-	return NULL;
+	return nullptr;
 }
 
 /**
@@ -6571,6 +6571,22 @@ p_object *mission_parse_get_arrival_ship(ushort net_signature)
 	}
 
 	return NULL;
+}
+
+/**
+ * Because player ships remain on the arrival list (see parse_wing_create_ships), testing for yet-to-arrive by merely
+ * checking the list will produce false positives for player ships.  So this function also checks whether the object was created.
+ */
+bool mission_check_ship_yet_to_arrive(const char *name)
+{
+	p_object *p_objp = mission_parse_get_arrival_ship(name);
+	if (p_objp == nullptr)
+		return false;
+
+	if (p_objp->created_object != nullptr)
+		return false;
+
+	return true;
 }
 
 /**
@@ -6792,7 +6808,7 @@ int mission_did_ship_arrive(p_object *objp)
 			shipnum = ship_name_lookup( name );
 			if ( shipnum == -1 ) {
 				// see if ship is yet to arrive.  If so, then return -1 so we can evaluate again later.
-				if (mission_parse_get_arrival_ship(name))
+				if (mission_check_ship_yet_to_arrive(name))
 					return -1;
 
 				mission_parse_mark_non_arrival(objp);	// Goober5000
@@ -7179,7 +7195,7 @@ int mission_do_departure(object *objp, bool goal_is_to_warp)
 		name = Parse_names[anchor];
 
 		// see if ship is yet to arrive.  If so, then warp.
-		if (mission_parse_get_arrival_ship(name))
+		if (mission_check_ship_yet_to_arrive(name))
 		{
 			mprintf(("Anchor ship %s hasn't arrived yet!  Trying to warp...\n", name));
 			goto try_to_warp;
