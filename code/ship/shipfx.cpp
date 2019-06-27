@@ -263,7 +263,7 @@ static void shipfx_maybe_create_live_debris_at_ship_death( object *ship_objp )
 						shipfx_subsystem_maybe_create_live_debris(ship_objp, shipp, pss, &exp_center, 3.0f);
 
 						// now set subsystem as blown off, so we only get one copy
-						pm->submodel[parent].blown_off = 1;
+						pmi->submodel[parent].blown_off = true;
 						pss->submodel_info_1.blown_off = 1;
 					}
 				}

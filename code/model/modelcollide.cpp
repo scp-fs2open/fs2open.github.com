@@ -1325,8 +1325,14 @@ int model_collide(mc_info *mc_info_obj)
 		// Check all the the highest detail model polygons and subobjects for intersections
 
 		// Don't check it or its children if it is destroyed
-		if (!Mc_pm->submodel[Mc_pm->detail[0]].blown_off)	{	
-			mc_check_subobj( Mc_pm->detail[0] );
+		if ( Mc_pmi ) {
+			if ( !Mc_pmi->submodel[Mc_pm->detail[0]].blown_off ) {
+				mc_check_subobj(Mc_pm->detail[0]);
+			}
+		} else {
+			if ( !Mc_pm->submodel[Mc_pm->detail[0]].blown_off ) {
+				mc_check_subobj(Mc_pm->detail[0]);
+			}
 		}
 	}
 
