@@ -1662,6 +1662,7 @@ void shipfx_queue_render_ship_halves_and_debris(model_draw_list *scene, clip_shi
 	render_info.set_flags(render_flags);
 	render_info.set_clip_plane(model_clip_plane_pt, clip_plane_norm);
 	render_info.set_replacement_textures(shipp->ship_replacement_textures);
+	render_info.set_object_number(shipp->objnum);
 
 	model_render_queue(&render_info, scene, pm->id, &half_ship->orient, &orig_ship_world_center);
 }
