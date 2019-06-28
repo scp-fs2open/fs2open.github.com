@@ -1265,7 +1265,7 @@ void wl_load_icons(int weapon_class)
 
 	icon = &Wl_icons[weapon_class];
 
-	if(!Cmdline_weapon_choice_3d || (wip->render_type == WRT_LASER && !strlen(wip->tech_model)))
+	if(!Cmdline_weapon_choice_3d || (wip->render_type == WRT_LASER && !strlen(wip->tech_model)) || strlen(Weapon_info[weapon_class].icon_filename) )
 	{
 		first_frame = bm_load_animation(Weapon_info[weapon_class].icon_filename, &num_frames, nullptr, nullptr, nullptr, false, CF_TYPE_INTERFACE);
 
@@ -1276,7 +1276,7 @@ void wl_load_icons(int weapon_class)
 
 	multi_send_anti_timeout_ping();
 
-	if ( first_frame == -1 && icon->model_index == -1)
+	if ( (first_frame == -1 && icon->model_index == -1) || (Cmdline_weapon_choice_3d && !strlen(wip->anim_filename)) )
 	{
 		if(strlen(wip->tech_model))
 		{
