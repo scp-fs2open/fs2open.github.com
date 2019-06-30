@@ -111,7 +111,7 @@ char title_str[512];
 static HWND Multi_gen_dialog = NULL;		// the dialog itself
 
 // dialog proc for this dialog
-BOOL CALLBACK std_gen_dialog_proc(HWND /*hwndDlg*/, UINT uMsg, WPARAM /*wParam*/, LPARAM /*lParam*/)
+INT_PTR CALLBACK std_gen_dialog_proc(HWND /*hwndDlg*/, UINT uMsg, WPARAM /*wParam*/, LPARAM /*lParam*/)
 {
 	switch(uMsg){		
 	case WM_INITDIALOG:
@@ -483,7 +483,7 @@ int std_connect_lindex_to_npindex(int index)
 }
 
 // message handler for the connect tab
-BOOL CALLBACK connect_proc(HWND hwndDlg,UINT uMsg,WPARAM wParam,LPARAM lParam)
+INT_PTR CALLBACK connect_proc(HWND hwndDlg,UINT uMsg,WPARAM wParam,LPARAM lParam)
 {
    switch(uMsg){
 	// initialize the dialog
@@ -1016,7 +1016,7 @@ HTREEITEM std_multi_get_goal_item(char *goal_string,int type)
 }
 
 // message handler for the multiplayer tab
-BOOL CALLBACK multi_proc(HWND hwndDlg,UINT uMsg,WPARAM /*wParam*/,LPARAM lParam)
+INT_PTR CALLBACK multi_proc(HWND hwndDlg,UINT uMsg,WPARAM /*wParam*/,LPARAM lParam)
 {
 	switch(uMsg){
 	// initialize the page
@@ -1271,7 +1271,7 @@ int std_pinfo_player_is_active(net_player *p)
 }
 
 // message handler for the player info tab
-BOOL CALLBACK player_info_proc(HWND hwndDlg,UINT uMsg,WPARAM wParam,LPARAM lParam)
+INT_PTR CALLBACK player_info_proc(HWND hwndDlg,UINT uMsg,WPARAM wParam,LPARAM lParam)
 {
 	int player_num;	
 	char callsign[40];
@@ -1453,7 +1453,7 @@ void std_gs_init_godstuff_controls()
 }
 
 // message handler for the godstuff tab
-BOOL CALLBACK godstuff_proc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
+INT_PTR CALLBACK godstuff_proc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
 	switch (uMsg)
 	{
@@ -1607,7 +1607,7 @@ void std_debug_init_debug_controls(HWND hwndDlg)
 }
 
 // message handler for the godstuff tab
-BOOL CALLBACK debug_proc(HWND hwndDlg,UINT uMsg,WPARAM /*wParam*/,LPARAM lParam)
+INT_PTR CALLBACK debug_proc(HWND hwndDlg,UINT uMsg,WPARAM /*wParam*/,LPARAM lParam)
 {
 	switch(uMsg){
 	// initialize the dialog
@@ -2343,7 +2343,7 @@ static void standalone_do_systray(int mode)
 }
 
 // just like the osapi version for the nonstandalone mode of FreeSpace
-DWORD standalone_process(WORD /*lparam*/)
+DWORD standalone_process(LPVOID /*lparam*/)
 {
 	MSG msg;
 

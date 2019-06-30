@@ -1993,17 +1993,17 @@ unsigned int psnet_ras_status()
 		return INADDR_ANY;
 	}
 
-	pRasEnumConnections = (DWORD (__stdcall *)(LPRASCONN, LPDWORD, LPDWORD))GetProcAddress(ras_handle, "RasEnumConnectionsA");
+	pRasEnumConnections = (DWORD (__stdcall *)(LPRASCONN, LPDWORD, LPDWORD))(void*)GetProcAddress(ras_handle, "RasEnumConnectionsA");
 	if (!pRasEnumConnections)	{
 		FreeLibrary( ras_handle );
 		return INADDR_ANY;
 	}
-	pRasGetConnectStatus = (DWORD (__stdcall *)(HRASCONN, LPRASCONNSTATUS))GetProcAddress(ras_handle, "RasGetConnectStatusA");
+	pRasGetConnectStatus = (DWORD (__stdcall *)(HRASCONN, LPRASCONNSTATUS))(void*)GetProcAddress(ras_handle, "RasGetConnectStatusA");
 	if (!pRasGetConnectStatus)	{
 		FreeLibrary( ras_handle );
 		return INADDR_ANY;
 	}
-	pRasGetProjectionInfo = (DWORD (__stdcall *)(HRASCONN, RASPROJECTION, LPVOID, LPDWORD))GetProcAddress(ras_handle, "RasGetProjectionInfoA");
+	pRasGetProjectionInfo = (DWORD (__stdcall *)(HRASCONN, RASPROJECTION, LPVOID, LPDWORD))(void*)GetProcAddress(ras_handle, "RasGetProjectionInfoA");
 	if (!pRasGetProjectionInfo)	{
 		FreeLibrary( ras_handle );
 		return INADDR_ANY;
