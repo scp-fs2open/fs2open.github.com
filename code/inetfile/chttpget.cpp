@@ -224,7 +224,7 @@ void ChttpGet::WorkerThread()
 	{
 		char *pcode;
 		pcode = strchr(p,' ');
-		if(pcode == null)
+		if(pcode == nullptr)
 		{
 			m_State = HTTP_STATE_UNKNOWN_ERROR;	
 			fclose(LOCALFILE);
