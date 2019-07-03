@@ -224,13 +224,6 @@ void ChttpGet::WorkerThread()
 	{
 		char *pcode;
 		pcode = strchr(p,' ')+1;
-		if(!pcode)
-		{
-			m_State = HTTP_STATE_UNKNOWN_ERROR;	
-			fclose(LOCALFILE);
-			return;
-
-		}
 		pcode[3] = '\0';
 		irsp = atoi(pcode);
 
