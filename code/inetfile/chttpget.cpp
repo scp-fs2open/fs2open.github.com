@@ -231,7 +231,7 @@ void ChttpGet::WorkerThread()
 			return;
 
 		}
-		pcode++
+		pcode++;
 		pcode[3] = '\0';
 		irsp = atoi(pcode);
 
