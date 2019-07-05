@@ -223,14 +223,15 @@ void ChttpGet::WorkerThread()
 	if(strnicmp("HTTP/",p,5)==0)
 	{
 		char *pcode;
-		pcode = strchr(p,' ')+1;
-		if(!pcode)
+		pcode = strchr(p,' ');
+		if(pcode == nullptr)
 		{
 			m_State = HTTP_STATE_UNKNOWN_ERROR;	
 			fclose(LOCALFILE);
 			return;
 
 		}
+		pcode++;
 		pcode[3] = '\0';
 		irsp = atoi(pcode);
 
