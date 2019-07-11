@@ -56,12 +56,14 @@ ADE_FUNC(avdTest, l_Testing, NULL, "Test the AVD Physics code", NULL, NULL)
 	return ADE_RETURN_NIL;
 }
 
-ADE_FUNC(createParticle, l_Testing, "vector Position, vector Velocity, number Lifetime, number Radius, enumeration Type, [number Tracer length=-1, boolean Reverse=false, texture Texture=Nil, object Attached Object=Nil]",
-		 "Creates a particle. Use PARTICLE_* enumerations for type."
-			 "Reverse reverse animation, if one is specified"
-			 "Attached object specifies object that Position will be (and always be) relative to.",
-		 "particle",
-		 "Handle to the created particle")
+ADE_FUNC_DEPRECATED(createParticle, l_Testing,
+                    "vector Position, vector Velocity, number Lifetime, number Radius, enumeration Type, [number "
+                    "Tracer length=-1, boolean Reverse=false, texture Texture=Nil, object Attached Object=Nil]",
+                    "Creates a particle. Use PARTICLE_* enumerations for type."
+                    "Reverse reverse animation, if one is specified"
+                    "Attached object specifies object that Position will be (and always be) relative to.",
+                    "particle", "Handle to the created particle", gameversion::version(3, 8, 1, 0),
+                    "Not available in the testing library anymore. Use gr.createPersistentParticle instead.")
 {
 	particle::particle_info pi;
 	pi.type = particle::PARTICLE_DEBUG;

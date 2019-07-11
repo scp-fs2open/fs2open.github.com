@@ -2,16 +2,19 @@
 //
 
 #include "graphics.h"
+
 #include "scripting/api/objs/camera.h"
 #include "scripting/api/objs/enums.h"
 #include "scripting/api/objs/font.h"
 #include "scripting/api/objs/model.h"
 #include "scripting/api/objs/movie_player.h"
 #include "scripting/api/objs/object.h"
+#include "scripting/api/objs/particle.h"
 #include "scripting/api/objs/streaminganim.h"
 #include "scripting/api/objs/subsystem.h"
 #include "scripting/api/objs/texture.h"
 #include "scripting/api/objs/vecmath.h"
+
 #include <asteroid/asteroid.h>
 #include <camera/camera.h>
 #include <debris/debris.h>
@@ -1586,6 +1589,141 @@ ADE_FUNC(openMovie, l_Graphics, "string name, boolean looping = false",
 	}
 
 	return ade_set_args(L, "o", l_MoviePlayer.Set(movie_player_h(std::move(player))));
+}
+
+ADE_FUNC(createPersistentParticle, l_Graphics,
+         "vector Position, vector Velocity, number Lifetime, number Radius, enumeration Type, [number Tracer "
+         "length=-1, boolean Reverse=false, texture Texture=Nil, object Attached Object=Nil]",
+         "Creates a persistent particle. Persistent variables are handled specially by the engine so that this "
+         "function can return a handle to the caller. Only use this if you absolutely need it. Use createParticle if "
+         "the returned handle is not required. Use PARTICLE_* enumerations for type."
+         "Reverse reverse animation, if one is specified"
+         "Attached object specifies object that Position will be (and always be) relative to.",
+         "particle", "Handle to the created particle")
+{
+	particle::particle_info pi;
+	pi.type            = particle::PARTICLE_DEBUG;
+	pi.optional_data   = -1;
+	pi.attached_objnum = -1;
+	pi.attached_sig    = -1;
+	pi.reverse         = false;
+
+	// Need to consume tracer_length parameter but it isn't used anymore
+	float temp;
+
+	enum_h* type       = nullptr;
+	bool rev           = false;
+	object_h* objh     = nullptr;
+	texture_h* texture = nullptr;
+	if (!ade_get_args(L, "ooffo|fboo", l_Vector.Get(&pi.pos), l_Vector.Get(&pi.vel), &pi.lifetime, &pi.rad,
+	                  l_Enum.GetPtr(&type), &temp, &rev, l_Texture.GetPtr(&texture), l_Object.GetPtr(&objh)))
+		return ADE_RETURN_NIL;
+
+	if (type != nullptr) {
+		switch (type->index) {
+		case LE_PARTICLE_DEBUG:
+			pi.type = particle::PARTICLE_DEBUG;
+			break;
+		case LE_PARTICLE_FIRE:
+			pi.type = particle::PARTICLE_FIRE;
+			break;
+		case LE_PARTICLE_SMOKE:
+			pi.type = particle::PARTICLE_SMOKE;
+			break;
+		case LE_PARTICLE_SMOKE2:
+			pi.type = particle::PARTICLE_SMOKE2;
+			break;
+		case LE_PARTICLE_BITMAP:
+			if (texture == nullptr || !texture->isValid()) {
+				LuaError(L, "Invalid texture specified for createParticle()!");
+				return ADE_RETURN_NIL;
+			} else {
+				pi.optional_data = texture->handle;
+				pi.type          = particle::PARTICLE_BITMAP;
+			}
+			break;
+		}
+	}
+
+	if (rev)
+		pi.reverse = false;
+
+	if (objh != nullptr && objh->IsValid()) {
+		pi.attached_objnum = OBJ_INDEX(objh->objp);
+		pi.attached_sig    = objh->objp->signature;
+	}
+
+	particle::WeakParticlePtr p = particle::createPersistent(&pi);
+
+	if (!p.expired())
+		return ade_set_args(L, "o", l_Particle.Set(particle_h(p)));
+	else
+		return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(createParticle, l_Graphics,
+         "vector Position, vector Velocity, number Lifetime, number Radius, enumeration Type, [number Tracer "
+         "length=-1, boolean Reverse=false, texture Texture=Nil, object Attached Object=Nil]",
+         "Creates a non-persistent particle. Use PARTICLE_* enumerations for type."
+         "Reverse reverse animation, if one is specified"
+         "Attached object specifies object that Position will be (and always be) relative to.",
+         "boolean", "true if particle was created, false otherwise")
+{
+	particle::particle_info pi;
+	pi.type            = particle::PARTICLE_DEBUG;
+	pi.optional_data   = -1;
+	pi.attached_objnum = -1;
+	pi.attached_sig    = -1;
+	pi.reverse         = false;
+
+	// Need to consume tracer_length parameter but it isn't used anymore
+	float temp;
+
+	enum_h* type       = nullptr;
+	bool rev           = false;
+	object_h* objh     = nullptr;
+	texture_h* texture = nullptr;
+	if (!ade_get_args(L, "ooffo|fboo", l_Vector.Get(&pi.pos), l_Vector.Get(&pi.vel), &pi.lifetime, &pi.rad,
+	                  l_Enum.GetPtr(&type), &temp, &rev, l_Texture.GetPtr(&texture), l_Object.GetPtr(&objh)))
+		return ADE_RETURN_FALSE;
+
+	if (type != nullptr) {
+		switch (type->index) {
+		case LE_PARTICLE_DEBUG:
+			pi.type = particle::PARTICLE_DEBUG;
+			break;
+		case LE_PARTICLE_FIRE:
+			pi.type = particle::PARTICLE_FIRE;
+			break;
+		case LE_PARTICLE_SMOKE:
+			pi.type = particle::PARTICLE_SMOKE;
+			break;
+		case LE_PARTICLE_SMOKE2:
+			pi.type = particle::PARTICLE_SMOKE2;
+			break;
+		case LE_PARTICLE_BITMAP:
+			if (texture == nullptr || !texture->isValid()) {
+				LuaError(L, "Invalid texture specified for createParticle()!");
+				return ADE_RETURN_NIL;
+			} else {
+				pi.optional_data = texture->handle;
+				pi.type          = particle::PARTICLE_BITMAP;
+			}
+			break;
+		}
+	}
+
+	if (rev)
+		pi.reverse = false;
+
+	if (objh != nullptr && objh->IsValid()) {
+		pi.attached_objnum = OBJ_INDEX(objh->objp);
+		pi.attached_sig    = objh->objp->signature;
+	}
+
+	particle::create(&pi);
+
+	return ADE_RETURN_TRUE;
 }
 
 } // namespace api

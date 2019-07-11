@@ -57,6 +57,8 @@ struct version {
 
 	version(int major, int minor, int build, int revision);
 
+	bool isValid() const;
+
 	bool operator<(const version& other) const;
 	bool operator==(const version& other) const;
 	bool operator!=(const version& other) const;

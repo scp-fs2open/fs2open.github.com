@@ -4,6 +4,7 @@
 #ifndef FS2_OPEN_ADE_API_H_H
 #define FS2_OPEN_ADE_API_H_H
 
+#include "globalincs/version.h"
 #include "scripting/ade.h"
 #include "scripting/ade_args.h"
 
@@ -227,8 +228,9 @@ class ade_lib : public ade_lib_handle {
  */
 class ade_func : public ade_lib_handle {
   public:
-	ade_func(const char* name, lua_CFunction func, const ade_lib_handle& parent, const char* args = nullptr,
-	         const char* desc = nullptr, const char* ret_type = nullptr, const char* ret_desc = nullptr);
+	ade_func(const char* name, lua_CFunction func, const ade_lib_handle& parent, const char* args, const char* desc,
+	         const char* ret_type, const char* ret_desc, const gameversion::version& deprecation_version,
+	         const char* deprecation_message);
 };
 
 /**
@@ -247,7 +249,31 @@ class ade_func : public ade_lib_handle {
  */
 #define ADE_FUNC(name, parent, args, desc, ret_type, ret_desc)                                                         \
 	static int parent##_##name##_f(lua_State* L);                                                                      \
-	::scripting::ade_func parent##_##name(#name, parent##_##name##_f, parent, args, desc, ret_type, ret_desc);         \
+	::scripting::ade_func parent##_##name(#name, parent##_##name##_f, parent, args, desc, ret_type, ret_desc,          \
+	                                      ::gameversion::version(), nullptr);                                          \
+	static int parent##_##name##_f(lua_State* L)
+
+/**
+ * @brief Declare a deprecated API function
+ *
+ * Immediately after this macro the function body should follow. This function is marked as deprecated and will be
+ * handled specially if the targetted engine version is higher than the specified version.
+ *
+ * @param name The name of the function, this may not be a string
+ * @param parent The library or object containing this function
+ * @param args Documentation for parameters of the function
+ * @param desc Description of what the function does
+ * @param ret_type The type of the returned value
+ * @param ret_desc Documentation for the returned value
+ * @param deprecate_version Version starting from which this function is deprecated.
+ * @param deprecated_msg Message for the deprecation notice. May be nullptr.
+ *
+ * @ingroup ade_api
+ */
+#define ADE_FUNC_DEPRECATED(name, parent, args, desc, ret_type, ret_desc, deprecate_version, deprecated_msg)           \
+	static int parent##_##name##_f(lua_State* L);                                                                      \
+	::scripting::ade_func parent##_##name(#name, parent##_##name##_f, parent, args, desc, ret_type, ret_desc,          \
+	                                      deprecate_version, deprecated_msg);                                          \
 	static int parent##_##name##_f(lua_State* L)
 
 /**
@@ -255,8 +281,9 @@ class ade_func : public ade_lib_handle {
  */
 class ade_virtvar : public ade_lib_handle {
   public:
-	ade_virtvar(const char* name, lua_CFunction func, const ade_lib_handle& parent, const char* args = nullptr,
-	            const char* desc = nullptr, const char* ret_type = nullptr, const char* ret_desc = nullptr);
+	ade_virtvar(const char* name, lua_CFunction func, const ade_lib_handle& parent, const char* args, const char* desc,
+	            const char* ret_type, const char* ret_desc, const gameversion::version& deprecation_version,
+	            const char* deprecation_message);
 };
 
 /**
@@ -276,7 +303,31 @@ class ade_virtvar : public ade_lib_handle {
  */
 #define ADE_VIRTVAR(name, parent, args, desc, ret_type, ret_desc)                                                      \
 	static int parent##_##name##_f(lua_State* L);                                                                      \
-	::scripting::ade_virtvar parent##_##name(#name, parent##_##name##_f, parent, args, desc, ret_type, ret_desc);      \
+	::scripting::ade_virtvar parent##_##name(#name, parent##_##name##_f, parent, args, desc, ret_type, ret_desc,       \
+	                                         ::gameversion::version(), nullptr);                                       \
+	static int parent##_##name##_f(lua_State* L)
+
+/**
+ * @brief Declare a deprecated API variable
+ *
+ * Use this to handle forms of type vec.x and vec['x']. Basically an indexer for a specific variable. Format string
+ * should be "o*%", where * is indexing value, and % is the value to set to when LUA_SETTTING_VAR is set
+ *
+ * @param name The name of the variable, this may not be a string
+ * @param parent The library or object containing this field
+ * @param args Documentation for the type of the value that may be assigned
+ * @param desc Description of what the variable does
+ * @param ret_type The type of the returned value
+ * @param ret_desc Documentation for the returned value
+ * @param deprecate_version Version starting from which this function is deprecated.
+ * @param deprecated_msg Message for the deprecation notice. May be nullptr.
+ *
+ * @ingroup ade_api
+ */
+#define ADE_VIRTVAR_DEPRECATED(name, parent, args, desc, ret_type, ret_desc, deprecate_version, deprecated_msg)        \
+	static int parent##_##name##_f(lua_State* L);                                                                      \
+	::scripting::ade_virtvar parent##_##name(#name, parent##_##name##_f, parent, args, desc, ret_type, ret_desc,       \
+	                                         deprecate_version, deprecated_msg);                                       \
 	static int parent##_##name##_f(lua_State* L)
 
 /**

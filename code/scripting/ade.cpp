@@ -2,14 +2,14 @@
 //
 
 #include "scripting/ade.h"
-#include "ade_api.h"
-#include "def_files/def_files.h"
-#include "mod_table/mod_table.h"
-#include "scripting/lua/LuaFunction.h"
-#include "ship/ship.h"
 
 #include "ade.h"
+#include "ade_api.h"
 #include "ade_args.h"
+
+#include "def_files/def_files.h"
+#include "globalincs/version.h"
+#include "mod_table/mod_table.h"
 #include "scripting/api/objs/asteroid.h"
 #include "scripting/api/objs/beam.h"
 #include "scripting/api/objs/debris.h"
@@ -17,6 +17,8 @@
 #include "scripting/api/objs/ship.h"
 #include "scripting/api/objs/waypoint.h"
 #include "scripting/api/objs/weapon.h"
+#include "scripting/lua/LuaFunction.h"
+#include "ship/ship.h"
 
 namespace {
 using namespace scripting;
@@ -277,6 +279,12 @@ const ade_table_entry& ade_manager::getEntry(size_t idx) const {
 ade_table_entry::ade_table_entry() { memset(Subentries, 0, sizeof(Subentries)); }
 //Think of n_mtb_ldx as the parent metatable
 int ade_table_entry::SetTable(lua_State* L, int p_amt_ldx, int p_mtb_ldx) {
+	if (DeprecationVersion.isValid() &&
+	    mod_supports_version(DeprecationVersion.major, DeprecationVersion.minor, DeprecationVersion.build)) {
+		// The deprecation mechanism. Do not set this or any of its children if we are past the deprecation version
+		return 1;
+	}
+
 	uint i;
 	int cleanup_items = 0;
 	int mtb_ldx = INT_MAX;
@@ -626,12 +634,23 @@ void ade_table_entry::OutputMeta(FILE *fp)
 					fprintf(fp, "<dd>%s</dd>\n", Description);
 				}
 
-				//***Result: ReturnDescription
-				if(ReturnDescription != NULL) {
-					fprintf(fp, "<dd><b>Returns:</b> %s<br>&nbsp;</dd>\n", ReturnDescription);
-				} else {
-					fputs("<dd><b>Returns:</b> Nothing<br>&nbsp;</dd>\n", fp);
-				}
+			    if (DeprecationVersion.isValid()) {
+				    if (DeprecationMessage != nullptr) {
+					    fprintf(fp, "<dd><b>Deprecated starting with version %d.%d.%d:</b> %s</dd>\n",
+					            DeprecationVersion.major, DeprecationVersion.minor, DeprecationVersion.build,
+					            DeprecationMessage);
+				    } else {
+					    fprintf(fp, "<dd><b>Deprecated starting with version %d.%d.%d.</b></dd>\n",
+					            DeprecationVersion.major, DeprecationVersion.minor, DeprecationVersion.build);
+				    }
+			    }
+
+			    //***Result: ReturnDescription
+			    if (ReturnDescription != nullptr) {
+				    fprintf(fp, "<dd><b>Returns:</b> %s<br>&nbsp;</dd>\n", ReturnDescription);
+			    } else {
+				    fputs("<dd><b>Returns:</b> Nothing<br>&nbsp;</dd>\n", fp);
+			    }
 			}
 				break;
 			default:
@@ -723,13 +742,10 @@ const char *ade_lib::GetName() const
 	return getTableEntry(GetIdx()).GetName();
 }
 
-ade_func::ade_func(const char* name,
-				   lua_CFunction func,
-				   const ade_lib_handle& parent,
-				   const char* args,
-				   const char* desc,
-				   const char* ret_type,
-				   const char* ret_desc) {
+ade_func::ade_func(const char* name, lua_CFunction func, const ade_lib_handle& parent, const char* args,
+                   const char* desc, const char* ret_type, const char* ret_desc,
+                   const gameversion::version& deprecation_version, const char* deprecation_message)
+{
 	Assertion(strcmp(name, "__gc") != 0, "__gc is a reserved function name! An API function may not use it!");
 
 	ade_table_entry ate;
@@ -742,17 +758,16 @@ ade_func::ade_func(const char* name,
 	ate.Description = desc;
 	ate.ReturnType = ret_type;
 	ate.ReturnDescription = ret_desc;
+	ate.DeprecationVersion = deprecation_version;
+	ate.DeprecationMessage = deprecation_message;
 
 	LibIdx = ade_manager::getInstance()->getEntry(parent.GetIdx()).AddSubentry(ate);
 }
 
-ade_virtvar::ade_virtvar(const char* name,
-						 lua_CFunction func,
-						 const ade_lib_handle& parent,
-						 const char* args,
-						 const char* desc,
-						 const char* ret_type,
-						 const char* ret_desc) {
+ade_virtvar::ade_virtvar(const char* name, lua_CFunction func, const ade_lib_handle& parent, const char* args,
+                         const char* desc, const char* ret_type, const char* ret_desc,
+                         const gameversion::version& deprecation_version, const char* deprecation_message)
+{
 	Assertion(strcmp(name, "__gc") != 0, "__gc is a reserved function name! An API function may not use it!");
 
 	ade_table_entry ate;
@@ -765,6 +780,8 @@ ade_virtvar::ade_virtvar(const char* name,
 	ate.Description = desc;
 	ate.ReturnType = ret_type;
 	ate.ReturnDescription = ret_desc;
+	ate.DeprecationVersion = deprecation_version;
+	ate.DeprecationMessage = deprecation_message;
 
 	LibIdx = ade_manager::getInstance()->getEntry(parent.GetIdx()).AddSubentry(ate);
 }
