@@ -2,6 +2,9 @@
 #ifndef _GROPENGLPOSTPROCESSING_H
 #define _GROPENGLPOSTPROCESSING_H
 
+#include "globalincs/pstypes.h"
+#include "graphics/opengl/gropenglshader.h"
+
 void opengl_post_process_init();
 void opengl_post_process_shutdown();
 

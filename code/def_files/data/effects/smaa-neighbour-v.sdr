@@ -1,0 +1,21 @@
+
+uniform vec2 smaa_rt_metrics;
+
+#define SMAA_RT_METRICS vec4(1.0 / smaa_rt_metrics, smaa_rt_metrics)
+
+#define SMAA_INCLUDE_VS 1
+#define SMAA_INCLUDE_PS 0
+
+#include "SMAA.sdr"
+
+in vec4 vertPosition;
+in vec2 vertTexCoord;
+
+out vec2 fragTexCoord;
+out vec4 fragOffset;
+
+void main() {
+	gl_Position = vertPosition;
+	fragTexCoord = vertTexCoord;
+	SMAANeighborhoodBlendingVS(vertTexCoord, fragOffset);
+}

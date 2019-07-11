@@ -1,0 +1,23 @@
+
+uniform vec2 smaa_rt_metrics;
+
+#define SMAA_RT_METRICS vec4(1.0 / smaa_rt_metrics, smaa_rt_metrics)
+
+#define SMAA_INCLUDE_VS 0
+#define SMAA_INCLUDE_PS 1
+
+#include "SMAA.sdr"
+
+in vec2 fragTexCoord;
+in vec2 fragPixcoord;
+in vec4 fragOffset[3];
+
+out vec4 fragOut0;
+
+uniform sampler2D edgesTex;
+uniform sampler2D areaTex;
+uniform sampler2D searchTex;
+
+void main() {
+	fragOut0 = SMAABlendingWeightCalculationPS(fragTexCoord, fragPixcoord, fragOffset, edgesTex, areaTex, searchTex, vec4(0.0));
+}

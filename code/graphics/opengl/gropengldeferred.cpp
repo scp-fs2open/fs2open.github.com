@@ -37,7 +37,7 @@ void opengl_clear_deferred_buffers()
 
 	opengl_shader_set_current( gr_opengl_maybe_create_shader(SDR_TYPE_DEFERRED_CLEAR, 0) );
 
-	opengl_draw_textured_quad(-1.0f, -1.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f, 1.0f);
+	opengl_draw_full_screen_textured(0.0f, 0.0f, 1.0f, 1.0f);
 
 	opengl_shader_set_current();
 
@@ -263,7 +263,7 @@ void gr_opengl_deferred_lighting_finish()
 									   uniformAligner.getOffset(element_index),
 									   sizeof(graphics::deferred_light_data),
 									   buffer->bufferHandle());
-				opengl_draw_textured_quad(-1.0f, -1.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f, 1.0f);
+				opengl_draw_full_screen_textured(0.0f, 0.0f, 1.0f, 1.0f);
 				++element_index;
 				break;
 			case Light_Type::Cone:
@@ -335,7 +335,7 @@ void gr_opengl_deferred_lighting_finish()
 		Current_shader->program->Uniforms.setUniformf("zNear", Min_draw_distance);
 		Current_shader->program->Uniforms.setUniformf("zFar", Max_draw_distance);
 
-		opengl_draw_textured_quad(-1.0f, -1.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f, 1.0f);
+		opengl_draw_full_screen_textured(0.0f, 0.0f, 1.0f, 1.0f);
 	} else {
 		// Transfer the resolved lighting back to the color texture
 		// TODO: Maybe this could be improved so that it doesn't require the copy back operation?

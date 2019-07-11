@@ -143,6 +143,15 @@ static opengl_shader_type_t GL_shader_types[] = {
 
 	{ SDR_TYPE_ROCKET_UI, "rocketui-v.sdr",	"rocketui-f.sdr", nullptr,
 		{ opengl_vert_attrib::POSITION, opengl_vert_attrib::COLOR, opengl_vert_attrib::TEXCOORD }, "libRocket UI" },
+
+	{ SDR_TYPE_POST_PROCESS_SMAA_EDGE, "smaa-edge-v.sdr", "smaa-edge-f.sdr", nullptr,
+		{ opengl_vert_attrib::POSITION, opengl_vert_attrib::TEXCOORD }, "SMAA Edge detection" },
+
+	{ SDR_TYPE_POST_PROCESS_SMAA_BLENDING_WEIGHT, "smaa-blend-v.sdr", "smaa-blend-f.sdr", nullptr,
+		{ opengl_vert_attrib::POSITION, opengl_vert_attrib::TEXCOORD }, "SMAA Blending weight calculation" },
+
+	{ SDR_TYPE_POST_PROCESS_SMAA_NEIGHBORHOOD_BLENDING, "smaa-neighbour-v.sdr", "smaa-neighbour-f.sdr", nullptr,
+		{ opengl_vert_attrib::POSITION, opengl_vert_attrib::TEXCOORD }, "SMAA Neighborhood Blending" },
 };
 // clang-format on
 
@@ -370,11 +379,13 @@ static SCP_string opengl_shader_get_header(shader_type type_id, int flags, bool 
 		sflags << "#define HAS_GEOMETRY_SHADER\n";
 	}
 
-	if (type_id == SDR_TYPE_POST_PROCESS_MAIN || type_id == SDR_TYPE_POST_PROCESS_LIGHTSHAFTS || type_id == SDR_TYPE_POST_PROCESS_FXAA) {
+	if (type_id == SDR_TYPE_POST_PROCESS_MAIN || type_id == SDR_TYPE_POST_PROCESS_LIGHTSHAFTS ||
+	    type_id == SDR_TYPE_POST_PROCESS_FXAA || type_id == SDR_TYPE_POST_PROCESS_SMAA_EDGE ||
+	    type_id == SDR_TYPE_POST_PROCESS_SMAA_BLENDING_WEIGHT ||
+	    type_id == SDR_TYPE_POST_PROCESS_SMAA_NEIGHBORHOOD_BLENDING) {
 		// ignore looking for variants. main post process, lightshafts, and FXAA shaders need special headers to be hacked in
 		opengl_post_shader_header(sflags, type_id, flags);
-	}
-	else {
+	} else {
 		for (int i = 0; i < GL_num_shader_variants; ++i) {
 			opengl_shader_variant_t &variant = GL_shader_variants[i];
 
@@ -992,7 +1003,7 @@ GLint opengl_shader_get_attribute(opengl_vert_attrib::attrib_id attribute)
 	return Current_shader->program->getAttributeLocation(attribute);
 }
 
-void opengl_shader_set_passthrough(bool textured)
+void opengl_shader_set_passthrough(bool textured, bool hdr)
 {
 	opengl_shader_set_current(gr_opengl_maybe_create_shader(SDR_TYPE_PASSTHROUGH_RENDER, 0));
 
@@ -1004,7 +1015,7 @@ void opengl_shader_set_passthrough(bool textured)
 
 	Current_shader->program->Uniforms.setUniformi("alphaTexture", 0);
 
-	Current_shader->program->Uniforms.setUniformi("srgb", High_dynamic_range ? 1 : 0);
+	Current_shader->program->Uniforms.setUniformi("srgb", hdr ? 1 : 0);
 	Current_shader->program->Uniforms.setUniformf("intensity", 1.0f);
 
 	Current_shader->program->Uniforms.setUniformf("alphaThreshold", GL_alpha_threshold);

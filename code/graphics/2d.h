@@ -47,14 +47,21 @@ extern flagset<FramebufferEffects> Gr_framebuffer_effects;
 
 enum class AntiAliasMode {
 	None,
+
 	FXAA_Low,
 	FXAA_Medium,
-	FXAA_High
+	FXAA_High,
+
+	SMAA_Low,
+	SMAA_Medium,
+	SMAA_High,
+	SMAA_Ultra,
 };
 extern AntiAliasMode Gr_aa_mode;
 extern AntiAliasMode Gr_aa_mode_last_frame;
 
 bool gr_is_fxaa_mode(AntiAliasMode mode);
+bool gr_is_smaa_mode(AntiAliasMode mode);
 
 extern bool Gr_post_processing_enabled;
 
@@ -184,6 +191,11 @@ enum shader_type {
 	SDR_TYPE_DECAL,
 	SDR_TYPE_SCENE_FOG,
 	SDR_TYPE_ROCKET_UI,
+
+	SDR_TYPE_POST_PROCESS_SMAA_EDGE,
+	SDR_TYPE_POST_PROCESS_SMAA_BLENDING_WEIGHT,
+	SDR_TYPE_POST_PROCESS_SMAA_NEIGHBORHOOD_BLENDING,
+
 	NUM_SHADER_TYPES
 };
 

@@ -2534,7 +2534,8 @@ void model_render_debug(int model_num, matrix *orient, vec3d * pos, uint flags, 
 	gr_zbuffer_set(save_gr_zbuffering_mode);
 }
 
-void model_render_immediate(model_render_params *render_info, int model_num, matrix *orient, vec3d * pos, int render, bool sort)
+void model_render_immediate(model_render_params* render_info, int model_num, matrix* orient, vec3d* pos, int render,
+                            bool sort)
 {
 	model_draw_list model_list;
 
@@ -2576,7 +2577,7 @@ void model_render_immediate(model_render_params *render_info, int model_num, mat
 	}
 }
 
-void model_render_queue(model_render_params *interp, model_draw_list *scene, int model_num, matrix *orient, vec3d *pos)
+void model_render_queue(model_render_params* interp, model_draw_list* scene, int model_num, matrix* orient, vec3d* pos)
 {
 	int i;
 
