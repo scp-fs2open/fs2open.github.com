@@ -7096,6 +7096,12 @@ void sexp_set_object_position(int n)
 			break;
 		}
 
+		case OSWPT_TYPE_PARSE_OBJECT:
+		{
+			oswpt.p_objp->pos = target_vec;
+			break;
+		}
+
 		case OSWPT_TYPE_WAYPOINT:
 		{
 			oswpt.objp->pos = target_vec;
@@ -7133,6 +7139,37 @@ void sexp_set_object_position(int n)
 			}
 
 			break;
+		}
+
+		case OSWPT_TYPE_WING_NOT_PRESENT:
+		{
+			// search the arrival list for the wing leader and move him first
+			bool found = false;
+			for (p_object *p_objp = GET_FIRST(&Ship_arrival_list); p_objp != END_OF_LIST(&Ship_arrival_list); p_objp = GET_NEXT(p_objp))
+			{
+				if (p_objp->wingnum == WING_INDEX(oswpt.wingp) && p_objp->pos_in_wing == 0)
+				{
+					orig_leader_vec = p_objp->pos;
+					p_objp->pos = target_vec;
+
+					found = true;
+					break;
+				}
+			}
+
+			// if we didn't find him, the wing will never arrive, so bail
+			if (!found)
+				break;
+
+			// move everything in the wing
+			for (p_object *p_objp = GET_FIRST(&Ship_arrival_list); p_objp != END_OF_LIST(&Ship_arrival_list); p_objp = GET_NEXT(p_objp))
+			{
+				if (p_objp->wingnum == WING_INDEX(oswpt.wingp) && p_objp->pos_in_wing != 0)
+				{
+					vm_vec_sub2(&p_objp->pos, &orig_leader_vec);
+					vm_vec_add2(&p_objp->pos, &target_vec);
+				}
+			}
 		}
 	}
 
