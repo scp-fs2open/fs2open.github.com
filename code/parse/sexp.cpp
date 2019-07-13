@@ -20745,10 +20745,16 @@ int sexp_get_hotkey(int node)
 void sexp_add_remove_hotkey(int node)
 {
 	int objnum, setnum, n = node;
-	bool is_adding; // True for add, False for remove
+	bool is_adding, is_nan, is_nan_forever;
+
+	// True for add, False for remove
 	is_adding = is_sexp_true(n);
 	n = CDR(n);
-	setnum = eval_num(n);
+
+	setnum = eval_num(n, is_nan, is_nan_forever);
+	if (is_nan || is_nan_forever) {
+		return;
+	}
 	n = CDR(n);
 	
 	// first, only proceed if setnum number is a valid hotkey
