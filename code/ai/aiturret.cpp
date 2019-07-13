@@ -1146,68 +1146,76 @@ int find_turret_enemy(ship_subsys *turret_subsys, int objnum, vec3d *tpos, vec3d
 	bool missile_flag = turret_weapon_has_subtype(&turret_subsys->weapons, WP_MISSILE);
 
 	//	If a small ship and target_objnum != -1, use that as goal.
-	ai_info	*aip = &Ai_info[Ships[Objects[objnum].instance].ai_index];
-	sip = &Ship_info[Ships[Objects[objnum].instance].ship_info_index];
+	ai_info* aip = &Ai_info[Ships[Objects[objnum].instance].ai_index];
+	sip          = &Ship_info[Ships[Objects[objnum].instance].ship_info_index];
 
-	if ((Ship_types[sip->class_type].flags[Ship::Type_Info_Flags::Turret_tgt_ship_tgt]) && (aip->target_objnum != -1)) {
-		int target_objnum = aip->target_objnum;
+	//  Code block checks to see if the ship's target is a valid choice for the turret. Returns the object number if it
+	//  finds one.
+	if ((aip->target_objnum != -1) && (Objects[aip->target_objnum].type == OBJ_SHIP)) {
 
-		if (Objects[target_objnum].signature == aip->target_signature) {
-			if (iff_matches_mask(Ships[Objects[target_objnum].instance].team, enemy_team_mask)) {
-				if ( !(Objects[target_objnum].flags[Object::Object_Flags::Protected]) ) {		// check this flag as well
-					// nprintf(("AI", "Frame %i: Object %i resuming goal of object %i\n", AI_FrameCount, objnum, target_objnum));
-					return target_objnum;
-				}
-			}
-		} else {
-			aip->target_objnum = -1;
-			aip->target_signature = -1;
+		// check if aip->target_objnum is valid target
+		auto target_flags = Objects[aip->target_objnum].flags;
+
+		if (target_flags[Object::Object_Flags::Protected]) {
+			// AL 2-27-98: why is a protected ship being targeted?
+			set_target_objnum(aip, -1);
+			return -1; // Cyborg17 - this return seems to be nonsense, because the code can just follow the normal path,
+			           // but altering ai behavior is beyond my paygrade.
 		}
-	// Not small or small with target objnum
-	} else {
-		// maybe use aip->target_objnum as next target
-		if ((frand() < 0.8f) && (aip->target_objnum != -1) && Use_parent_target) {
 
-			//check if aip->target_objnum is valid target
-			auto target_flags = Objects[aip->target_objnum].flags;
-			if ( target_flags[Object::Object_Flags::Protected] ) {
-				// AL 2-27-98: why is a protected ship being targeted?
-				set_target_objnum(aip, -1);
-				return -1;
-			}
+		// continuing to check for other protected flags
+		bool skip = false;
+		if (target_flags[Object::Object_Flags::Beam_protected] && beam_flag)
+			skip = true;
+		else if (target_flags[Object::Object_Flags::Flak_protected] && flak_flag)
+			skip = true;
+		else if (target_flags[Object::Object_Flags::Laser_protected] && laser_flag)
+			skip = true;
+		else if (target_flags[Object::Object_Flags::Missile_protected] && missile_flag)
+			skip = true;
 
-			// maybe use ship target_objnum if valid for turret
-			// check for beam weapon and beam protected, etc.
-			bool skip = false;
-			     if ( target_flags[Object::Object_Flags::Beam_protected] && beam_flag ) skip = true;
-			else if ( target_flags[Object::Object_Flags::Flak_protected] && flak_flag ) skip = true;
-			else if ( target_flags[Object::Object_Flags::Laser_protected] && laser_flag ) skip = true;
-            else if ( target_flags[Object::Object_Flags::Missile_protected] && missile_flag) skip = true;
+		if (!skip) {
 
-			if (!skip) {
-				if ( Objects[aip->target_objnum].type == OBJ_SHIP ) {
-					// check for huge weapon and huge ship
-					if ( !big_only_flag || (Ship_info[Ships[Objects[aip->target_objnum].instance].ship_info_index].is_big_or_huge()) ) {
-						// check for tagged only and tagged ship
-						if ( tagged_only_flag && ship_is_tagged(&Objects[aip->target_objnum]) ) {
-							// select new target if aip->target_objnum is out of field of view
-							vec3d v2e;
-							float dist;
-							bool in_fov;
-							dist = vm_vec_normalized_dir(&v2e, &Objects[aip->target_objnum].pos, tpos);
+			if (Ship_types[sip->class_type].flags[Ship::Type_Info_Flags::Turret_tgt_ship_tgt]) {
 
-							in_fov = turret_fov_test(turret_subsys, tvec, &v2e);
+				// Turrets and ships should not be targeting the wrong team.
+				if ((Objects[aip->target_objnum].signature == aip->target_signature) ||
+				    (iff_matches_mask(Ships[Objects[aip->target_objnum].instance].team, enemy_team_mask))) {
+					if ((!tagged_only_flag) || (tagged_only_flag && ship_is_tagged(&Objects[aip->target_objnum]))) {
+						// nprintf(("AI", "Frame %i: Object %i resuming goal of object %i\n", AI_FrameCount, objnum,
+						// target_objnum));
+						return aip->target_objnum;
+					}
+				} else {
+						aip->target_objnum    = -1;
+						aip->target_signature = -1;
+				}
 
-							if (turret_subsys->flags[Ship::Subsystem_Flags::FOV_edge_check]) {
-								if (in_fov == false)
-									if (object_in_turret_fov(&Objects[aip->target_objnum], turret_subsys, tvec, tpos, dist + Objects[aip->target_objnum].radius))
-										in_fov = true;
-							}
-							// MODIFY FOR ATTACKING BIG SHIP
-							// dot += (0.5f * Objects[aip->target_objnum].radius / dist);
-							if (in_fov) {
-								return aip->target_objnum;
-							}
+			// maybe use aip->target_objnum as next target
+			} else if ((frand() < 0.8f) && Use_parent_target) {
+
+				// check for huge weapon and huge ship
+				if (!big_only_flag || (Ship_info[Ships[Objects[aip->target_objnum].instance].ship_info_index].is_big_or_huge())) {
+					// check for tagged only and tagged ship
+					if (tagged_only_flag && ship_is_tagged(&Objects[aip->target_objnum])) {
+						// select new target if aip->target_objnum is out of field of view
+						vec3d v2e;
+						float dist;
+						bool in_fov;
+						dist = vm_vec_normalized_dir(&v2e, &Objects[aip->target_objnum].pos, tpos);
+
+						in_fov = turret_fov_test(turret_subsys, tvec, &v2e);
+
+						if (turret_subsys->flags[Ship::Subsystem_Flags::FOV_edge_check]) {
+							if (in_fov == false)
+								if (object_in_turret_fov(&Objects[aip->target_objnum], turret_subsys, tvec, tpos,
+								                         dist + Objects[aip->target_objnum].radius))
+									in_fov = true;
+						}
+						// MODIFY FOR ATTACKING BIG SHIP
+						// dot += (0.5f * Objects[aip->target_objnum].radius / dist);
+						if (in_fov) {
+						return aip->target_objnum;
 						}
 					}
 				}
