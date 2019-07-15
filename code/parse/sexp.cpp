@@ -7335,18 +7335,18 @@ void sexp_set_orient_sub(matrix *orient_to_set, vec3d *pos, vec3d *location, int
 }
 
 // Goober5000
-void sexp_stuff_oswpt_location(vec3d *location, object_ship_wing_point_team *oswpt)
+void sexp_stuff_oswpt_location(vec3d **location, object_ship_wing_point_team *oswpt)
 {
 	switch (oswpt->type)
 	{
 		case OSWPT_TYPE_SHIP:
 		case OSWPT_TYPE_WING:
 		case OSWPT_TYPE_WAYPOINT:
-			location = &oswpt->objp->pos;
+			*location = &oswpt->objp->pos;
 			break;
 
 		case OSWPT_TYPE_PARSE_OBJECT:
-			location = &oswpt->p_objp->pos;
+			*location = &oswpt->p_objp->pos;
 			break;
 
 		case OSWPT_TYPE_WING_NOT_PRESENT:
@@ -7356,7 +7356,7 @@ void sexp_stuff_oswpt_location(vec3d *location, object_ship_wing_point_team *osw
 				// use the wing leader's position, same as if the wing were present
 				if (p_objp->wingnum == WING_INDEX(oswpt->wingp) && p_objp->pos_in_wing == 0)
 				{
-					location = &p_objp->pos;
+					*location = &p_objp->pos;
 					break;
 				}
 			}
@@ -7421,7 +7421,7 @@ void sexp_set_object_facing(int n, bool facing_object)
 		sexp_get_object_ship_wing_point_team(&oswpt2, CTEXT(n));
 		n = CDR(n);
 
-		sexp_stuff_oswpt_location(location, &oswpt2);
+		sexp_stuff_oswpt_location(&location, &oswpt2);
 
 		// ensure it's valid
 		if (location == nullptr)
