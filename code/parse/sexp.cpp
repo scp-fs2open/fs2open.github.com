@@ -7170,6 +7170,8 @@ void sexp_set_object_position(int n)
 					vm_vec_add2(&p_objp->pos, &target_vec);
 				}
 			}
+
+			break;
 		}
 	}
 
