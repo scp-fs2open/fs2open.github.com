@@ -7242,6 +7242,12 @@ void sexp_set_object_orientation(int n)
 			break;
 		}
 
+		case OSWPT_TYPE_PARSE_OBJECT:
+		{
+			oswpt.p_objp->orient = target_orient;
+			break;
+		}
+
 		case OSWPT_TYPE_WING:
 		{
 			// move everything in the wing
@@ -7253,6 +7259,18 @@ void sexp_set_object_orientation(int n)
 
 				if (objp->flags[Object::Object_Flags::Collides])
 					something_collides = true;
+			}
+
+			break;
+		}
+
+		case OSWPT_TYPE_WING_NOT_PRESENT:
+		{
+			// move everything in the wing
+			for (p_object *p_objp = GET_FIRST(&Ship_arrival_list); p_objp != END_OF_LIST(&Ship_arrival_list); p_objp = GET_NEXT(p_objp))
+			{
+				if (p_objp->wingnum == WING_INDEX(oswpt.wingp))
+					p_objp->orient = target_orient;
 			}
 
 			break;
