@@ -1179,7 +1179,7 @@ int find_turret_enemy(ship_subsys *turret_subsys, int objnum, vec3d *tpos, vec3d
 			if (Ship_types[sip->class_type].flags[Ship::Type_Info_Flags::Turret_tgt_ship_tgt]) {
 
 				// Turrets and ships should not be targeting the wrong team.
-				if ((Objects[aip->target_objnum].signature == aip->target_signature) ||
+				if ((Objects[aip->target_objnum].signature == aip->target_signature) &&
 				    (iff_matches_mask(Ships[Objects[aip->target_objnum].instance].team, enemy_team_mask))) {
 					if ((!tagged_only_flag) || (tagged_only_flag && ship_is_tagged(&Objects[aip->target_objnum]))) {
 						// nprintf(("AI", "Frame %i: Object %i resuming goal of object %i\n", AI_FrameCount, objnum,
