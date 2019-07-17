@@ -62,7 +62,7 @@ ADE_FUNC_DEPRECATED(createParticle, l_Testing,
                     "Creates a particle. Use PARTICLE_* enumerations for type."
                     "Reverse reverse animation, if one is specified"
                     "Attached object specifies object that Position will be (and always be) relative to.",
-                    "particle", "Handle to the created particle", gameversion::version(3, 8, 1, 0),
+                    "particle", "Handle to the created particle", gameversion::version(19, 0, 0, 0),
                     "Not available in the testing library anymore. Use gr.createPersistentParticle instead.")
 {
 	particle::particle_info pi;
