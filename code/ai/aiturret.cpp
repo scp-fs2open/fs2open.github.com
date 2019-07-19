@@ -856,11 +856,11 @@ int get_nearest_turret_objnum(int turret_parent_objnum, ship_subsys *turret_subs
 	// flags for weapon types
 	if (beam_flag)
 		eeo.eeo_flags |= EEOF_BEAM;
-	else if (flak_flag)
+	if (flak_flag)
 		eeo.eeo_flags |= EEOF_FLAK;
-	else if (laser_flag)
+	if (laser_flag)
 		eeo.eeo_flags |= EEOF_LASER;
-	else if (missile_flag)
+	if (missile_flag)
 		eeo.eeo_flags |= EEOF_MISSILE;
 
 	eeo.enemy_team_mask = enemy_team_mask;
