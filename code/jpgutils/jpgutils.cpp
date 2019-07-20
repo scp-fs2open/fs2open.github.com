@@ -128,11 +128,6 @@ int jpeg_read_header(const char *real_filename, CFILE *img_cfp, int *w, int *h, 
 		jpeg_file = img_cfp;
 	}
 
-	Assert( jpeg_file != NULL );
-
-	if (jpeg_file == NULL)
-		return JPEG_ERROR_READING;
-
 	// set the basic/default error code
 	Jpeg_Set_Error(JPEG_ERROR_NONE);
 
