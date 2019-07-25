@@ -7096,6 +7096,12 @@ void sexp_set_object_position(int n)
 			break;
 		}
 
+		case OSWPT_TYPE_PARSE_OBJECT:
+		{
+			oswpt.p_objp->pos = target_vec;
+			break;
+		}
+
 		case OSWPT_TYPE_WAYPOINT:
 		{
 			oswpt.objp->pos = target_vec;
@@ -7130,6 +7136,39 @@ void sexp_set_object_position(int n)
 
 				if (objp->flags[Object::Object_Flags::Collides])
 					something_collides = true;
+			}
+
+			break;
+		}
+
+		case OSWPT_TYPE_WING_NOT_PRESENT:
+		{
+			// search the arrival list for the wing leader and move him first
+			bool found = false;
+			for (p_object *p_objp = GET_FIRST(&Ship_arrival_list); p_objp != END_OF_LIST(&Ship_arrival_list); p_objp = GET_NEXT(p_objp))
+			{
+				if (p_objp->wingnum == WING_INDEX(oswpt.wingp) && p_objp->pos_in_wing == 0)
+				{
+					orig_leader_vec = p_objp->pos;
+					p_objp->pos = target_vec;
+
+					found = true;
+					break;
+				}
+			}
+
+			// if we didn't find him, the wing will never arrive, so bail
+			if (!found)
+				break;
+
+			// move everything in the wing
+			for (p_object *p_objp = GET_FIRST(&Ship_arrival_list); p_objp != END_OF_LIST(&Ship_arrival_list); p_objp = GET_NEXT(p_objp))
+			{
+				if (p_objp->wingnum == WING_INDEX(oswpt.wingp) && p_objp->pos_in_wing != 0)
+				{
+					vm_vec_sub2(&p_objp->pos, &orig_leader_vec);
+					vm_vec_add2(&p_objp->pos, &target_vec);
+				}
 			}
 
 			break;
@@ -7203,6 +7242,12 @@ void sexp_set_object_orientation(int n)
 			break;
 		}
 
+		case OSWPT_TYPE_PARSE_OBJECT:
+		{
+			oswpt.p_objp->orient = target_orient;
+			break;
+		}
+
 		case OSWPT_TYPE_WING:
 		{
 			// move everything in the wing
@@ -7218,6 +7263,18 @@ void sexp_set_object_orientation(int n)
 
 			break;
 		}
+
+		case OSWPT_TYPE_WING_NOT_PRESENT:
+		{
+			// move everything in the wing
+			for (p_object *p_objp = GET_FIRST(&Ship_arrival_list); p_objp != END_OF_LIST(&Ship_arrival_list); p_objp = GET_NEXT(p_objp))
+			{
+				if (p_objp->wingnum == WING_INDEX(oswpt.wingp))
+					p_objp->orient = target_orient;
+			}
+
+			break;
+		}
 	}
 
 	// retime all collision pairs (so they're checked again) if we rotated something that collides
@@ -7229,16 +7286,17 @@ void sexp_set_object_orientation(int n)
 
 // Goober5000
 // this is different from sexp_set_object_orientation
-void sexp_set_object_orient_sub(object *objp, vec3d *location, int turn_time, int bank)
+// and now can be used for arbitrary orients (i.e. for parse objects), not just objects
+void sexp_set_orient_sub(matrix *orient_to_set, vec3d *pos, vec3d *location, int turn_time = 0, int bank = 0, object *objp = nullptr)
 {
-	Assert(objp && location);
+	Assert(orient_to_set && pos && location);
 
 	vec3d v_orient;
 	matrix m_orient;
 
 
 	// are we doing this via ai? -------------------
-	if (turn_time)
+	if (objp && turn_time)
 	{
 		// set flag
 		int bankflag = 0;
@@ -7257,7 +7315,7 @@ void sexp_set_object_orient_sub(object *objp, vec3d *location, int turn_time, in
 
 	// calculate orientation matrix ----------------
 
-	vm_vec_sub(&v_orient, location, &objp->pos);
+	vm_vec_sub(&v_orient, location, pos);
 
 	if (IS_VEC_NULL_SQ_SAFE(&v_orient))
 	{
@@ -7269,9 +7327,42 @@ void sexp_set_object_orient_sub(object *objp, vec3d *location, int turn_time, in
 
 
 	// set orientation -----------------------------
-	objp->orient = m_orient;
+	*orient_to_set = m_orient;
+
 	// Tell the player (assuming it's a client) that they've moved.
-	set_object_for_clients(objp);
+	if (objp)
+		set_object_for_clients(objp);
+}
+
+// Goober5000
+void sexp_stuff_oswpt_location(vec3d **location, object_ship_wing_point_team *oswpt)
+{
+	switch (oswpt->type)
+	{
+		case OSWPT_TYPE_SHIP:
+		case OSWPT_TYPE_WING:
+		case OSWPT_TYPE_WAYPOINT:
+			*location = &oswpt->objp->pos;
+			break;
+
+		case OSWPT_TYPE_PARSE_OBJECT:
+			*location = &oswpt->p_objp->pos;
+			break;
+
+		case OSWPT_TYPE_WING_NOT_PRESENT:
+		{
+			for (p_object *p_objp = GET_FIRST(&Ship_arrival_list); p_objp != END_OF_LIST(&Ship_arrival_list); p_objp = GET_NEXT(p_objp))
+			{
+				// use the wing leader's position, same as if the wing were present
+				if (p_objp->wingnum == WING_INDEX(oswpt->wingp) && p_objp->pos_in_wing == 0)
+				{
+					*location = &p_objp->pos;
+					break;
+				}
+			}
+			break;
+		}
+	}
 }
 
 // Goober5000
@@ -7282,7 +7373,11 @@ void sexp_set_oswpt_facing(object_ship_wing_point_team *oswpt, vec3d *location, 
 	switch (oswpt->type)
 	{
 		case OSWPT_TYPE_SHIP:
-			sexp_set_object_orient_sub(oswpt->objp, location, turn_time, bank);
+			sexp_set_orient_sub(&oswpt->objp->orient, &oswpt->objp->pos, location, turn_time, bank, oswpt->objp);
+			break;
+
+		case OSWPT_TYPE_PARSE_OBJECT:
+			sexp_set_orient_sub(&oswpt->p_objp->orient, &oswpt->p_objp->pos, location);
 			break;
 
 		case OSWPT_TYPE_WING:
@@ -7291,9 +7386,18 @@ void sexp_set_oswpt_facing(object_ship_wing_point_team *oswpt, vec3d *location, 
 			{
 				object *objp = &Objects[Ships[oswpt->wingp->ship_index[i]].objnum];
 
-				sexp_set_object_orient_sub(objp, location, turn_time, bank);
+				sexp_set_orient_sub(&objp->orient, &objp->pos, location, turn_time, bank, objp);
 			}
+			break;
+		}
 
+		case OSWPT_TYPE_WING_NOT_PRESENT:
+		{
+			for (p_object *p_objp = GET_FIRST(&Ship_arrival_list); p_objp != END_OF_LIST(&Ship_arrival_list); p_objp = GET_NEXT(p_objp))
+			{
+				if (p_objp->wingnum == WING_INDEX(oswpt->wingp))
+					sexp_set_orient_sub(&oswpt->p_objp->orient, &oswpt->p_objp->pos, location);
+			}
 			break;
 		}
 	}
@@ -7302,16 +7406,14 @@ void sexp_set_oswpt_facing(object_ship_wing_point_team *oswpt, vec3d *location, 
 // Goober5000
 void sexp_set_object_facing(int n, bool facing_object)
 {
-	vec3d *location, location_buf;
+	vec3d *location = nullptr;
+	vec3d location_buf;
 	int turn_time, bank;
 	object_ship_wing_point_team oswpt1, oswpt2;
 
+	// get ship or wing
 	sexp_get_object_ship_wing_point_team(&oswpt1, CTEXT(n));
 	n = CDR(n);
-
-	// ensure it's valid
-	if (oswpt1.objp == NULL)
-		return;
 
 	// get location
 	if (facing_object)
@@ -7319,11 +7421,11 @@ void sexp_set_object_facing(int n, bool facing_object)
 		sexp_get_object_ship_wing_point_team(&oswpt2, CTEXT(n));
 		n = CDR(n);
 
-		// ensure it's valid
-		if (oswpt2.objp == NULL)
-			return;
+		sexp_stuff_oswpt_location(&location, &oswpt2);
 
-		location = &oswpt2.objp->pos;
+		// ensure it's valid
+		if (location == nullptr)
+			return;
 	}
 	else
 	{
