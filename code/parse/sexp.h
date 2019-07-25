@@ -13,8 +13,6 @@
 #include "globalincs/globals.h"
 #include "globalincs/pstypes.h"	// for NULL
 
-#include <functional>
-
 class ship_subsys;
 class ship;
 class waypoint_list;
