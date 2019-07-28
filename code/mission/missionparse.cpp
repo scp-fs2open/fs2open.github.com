@@ -5852,8 +5852,10 @@ bool post_process_mission()
 				sprintf(error_msg, "%s.\n\nIn sexpression: %s\n(Error appears to be: %s)", sexp_error_message(result), sexp_str.c_str(), Sexp_nodes[bad_node].text);
 				Warning(LOCATION, "%s", error_msg.c_str());
 
-				// syntax errors are unrecoverable, so abort
-				return false;
+				// syntax errors are recoverable in Fred but not FS
+				if (!Fred_running) {
+					return false;
+				}
 			}
 		}
 	}
