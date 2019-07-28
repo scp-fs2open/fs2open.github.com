@@ -124,9 +124,10 @@ luacpp::LuaValue LuaSEXP::sexpToLua(int node, int argnum) const {
 		return LuaValue::createValue(_action.getLuaState(), value);
 	}
 	case OPF_NUMBER: {
-		auto res = eval_num(node);
+		bool is_nan, is_nan_forever;
+		auto res = eval_num(node, is_nan, is_nan_forever);
 		float value;
-		if (res == SEXP_NAN || res == SEXP_NAN_FOREVER) {
+		if (is_nan || is_nan_forever) {
 			value = std::numeric_limits<float>::quiet_NaN();
 		} else {
 			value = (float) res;
