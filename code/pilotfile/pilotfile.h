@@ -128,7 +128,7 @@ class pilotfile {
 		// --------------------------------------------------------------------
 		// PLR specific
 		// --------------------------------------------------------------------
-		void plr_reset_data();
+	    void plr_reset_data(bool reset_all);
 		void plr_close();
 
 		void plr_read_flags();

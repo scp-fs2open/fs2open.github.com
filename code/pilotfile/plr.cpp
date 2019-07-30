@@ -682,7 +682,7 @@ void pilotfile::plr_write_settings()
 	handler->endSectionWrite();
 }
 
-void pilotfile::plr_reset_data()
+void pilotfile::plr_reset_data(bool reset_all)
 {
 	// internals
 	m_have_flags = false;
@@ -691,7 +691,11 @@ void pilotfile::plr_reset_data()
 	m_data_invalid = false;
 
 	// set all the entries in the control config arrays to -1 (undefined)
-	control_config_clear();
+	// Cyborg17 - clear_all is false when we are just trying to verify the file, but true when we load the whole thing.
+	// Otherwise, we can end up getting rid of a pilot's controls by accident.
+	if (reset_all) {
+		control_config_clear();
+	}
 
 	// init stats
 	p->stats.init();
@@ -797,7 +801,8 @@ bool pilotfile::load_player(const char* callsign, player* _p, bool force_binary)
 
 	mprintf(("PLR => Loading '%s' with version %d...\n", filename.c_str(), version));
 
-	plr_reset_data();
+	//true resets everything, false sets up file verify.
+	plr_reset_data(true);
 
 	// the point of all this: read in the PLR contents
 	handler->beginSectionRead();
@@ -1016,7 +1021,8 @@ bool pilotfile::verify(const char *fname, int *rank, char *valid_language)
 
 	mprintf(("PLR => Verifying '%s' with version %d...\n", filename.c_str(), version));
 
-	plr_reset_data();
+	// true resets everything, false sets up file verify.
+	plr_reset_data(false);
 
 	bool have_flags = false;
 	bool have_info = false;
