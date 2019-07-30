@@ -1592,7 +1592,6 @@ void labviewer_change_ship_lod(Tree* caller)
 
 void labviewer_change_ship(Tree* caller)
 {
-	Lab_selected_index       = caller->GetSelectedItem()->GetData();
 	Lab_last_selected_object = caller->GetSelectedItem();
 
 	labviewer_change_ship_lod(caller);
