@@ -1314,7 +1314,9 @@ ship_subsys *set_targeted_subsys(ai_info *aip, ship_subsys *new_subsys, int pare
 		}
 
 		if ( aip == Player_ai ) {
-			hud_lock_reset(0.5f);
+			if (aip->last_subsys_target != aip->targeted_subsys) {
+				hud_lock_reset(0.5f);
+			}
 		}
 
 	} else {
