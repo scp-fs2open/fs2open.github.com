@@ -13321,8 +13321,7 @@ void ship_set_subsystem_strength( ship *shipp, int type, float strength )
 }
 
 
-#define REARM_NUM_MISSILES_PER_BATCH 4		// how many missiles are dropped in per load sound
-#define REARM_NUM_BALLISTIC_PRIMARIES_PER_BATCH	100	// how many bullets are dropped in per load sound
+
 
 /**
  * Calculates approximate time in seconds it would take to rearm and repair object.
@@ -13387,10 +13386,10 @@ float ship_calculate_rearm_duration( object *objp )
 		if (wip->wi_flags[Weapon::Info_Flags::Ballistic])
 		{
 			//check how many full reloads we need
-			num_reloads = (swp->primary_bank_start_ammo[i] - swp->primary_bank_ammo[i])/REARM_NUM_BALLISTIC_PRIMARIES_PER_BATCH;
+			num_reloads = (swp->primary_bank_start_ammo[i] - swp->primary_bank_ammo[i]) / wip->reloaded_per_batch;
 
 			//take into account a fractional reload
-			if ((swp->primary_bank_start_ammo[i] - swp->primary_bank_ammo[i]) % REARM_NUM_BALLISTIC_PRIMARIES_PER_BATCH != 0)
+			if ((swp->primary_bank_start_ammo[i] - swp->primary_bank_ammo[i]) % wip->reloaded_per_batch != 0)
 			{
 				num_reloads++;
 			}
@@ -13417,10 +13416,10 @@ float ship_calculate_rearm_duration( object *objp )
 			wip = &Weapon_info[swp->secondary_bank_weapons[i]];
 	
 			//check how many full reloads we need
-			num_reloads = (swp->secondary_bank_start_ammo[i] - swp->secondary_bank_ammo[i])/REARM_NUM_MISSILES_PER_BATCH;
+		    num_reloads = (swp->secondary_bank_start_ammo[i] - swp->secondary_bank_ammo[i]) / wip->reloaded_per_batch;
 
 			//take into account a fractional reload
-			if ((swp->secondary_bank_start_ammo[i] - swp->secondary_bank_ammo[i]) % REARM_NUM_MISSILES_PER_BATCH != 0)
+		    if ((swp->secondary_bank_start_ammo[i] - swp->secondary_bank_ammo[i]) % wip->reloaded_per_batch != 0)
 			{
 				num_reloads++;
 			}
@@ -13623,7 +13622,7 @@ int ship_do_rearm_frame( object *objp, float frametime )
 					if (objp == Player_obj)
 						joy_ff_play_reload_effect();
 
-					swp->secondary_bank_ammo[i] += REARM_NUM_MISSILES_PER_BATCH;
+					swp->secondary_bank_ammo[i] += Weapon_info[swp->secondary_bank_weapons[i]].reloaded_per_batch;
 					if ( swp->secondary_bank_ammo[i] > swp->secondary_bank_start_ammo[i] ) 
 					{
 						swp->secondary_bank_ammo[i] = swp->secondary_bank_start_ammo[i]; 
@@ -13698,7 +13697,7 @@ int ship_do_rearm_frame( object *objp, float frametime )
 
 						snd_play_3d( gamesnd_get_game_sound(sound_index), &objp->pos, &View_position );
 	
-						swp->primary_bank_ammo[i] += REARM_NUM_BALLISTIC_PRIMARIES_PER_BATCH;
+						swp->primary_bank_ammo[i] += Weapon_info[swp->primary_bank_weapons[i]].reloaded_per_batch;
 						if ( swp->primary_bank_ammo[i] > swp->primary_bank_start_ammo[i] )
 						{
 							swp->primary_bank_ammo[i] = swp->primary_bank_start_ammo[i]; 
