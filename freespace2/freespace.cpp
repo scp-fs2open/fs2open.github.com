@@ -3805,12 +3805,10 @@ void game_simulation_frame()
 		game_maybe_update_sound_environment();
 		snd_update_listener(&Eye_position, &Player_obj->phys_info.vel, &Eye_matrix);
 
-// AL: debug code used for testing ambient subspace sound (ie when enabling subspace through debug console)
-#ifndef NDEBUG
+		//Cyborg 17 - Check for need to start/restart subspace ambient sound in edge cases
 		if ( Game_subspace_effect ) {
 			game_start_subspace_ambient_sound();
 		}
-#endif
 	}
 
 	Script_system.RunCondition(CHA_SIMULATION);
