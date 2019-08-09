@@ -1422,6 +1422,10 @@ void process_player_ship_keys(int k)
 	}
 }
 
+//Cyborg17 - Linking this function to restart sound if needed. This is to avoid having to
+//check for subspace every frame.
+extern void game_start_subspace_ambient_sound();
+
 /**
  * Handler for when player hits 'ESC' during the game
  */
@@ -1448,6 +1452,10 @@ void game_do_end_mission_popup()
 			break;
 
 		case 2:
+			// Cyborg17 - best place to check for this *one* looping sound.
+			if (Game_subspace_effect) {
+				game_start_subspace_ambient_sound();
+			}
 			gameseq_post_event(GS_EVENT_ENTER_GAME);
 			break;
 
