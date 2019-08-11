@@ -18614,7 +18614,7 @@ void sexp_weapon_set_damage_type(int node)
 		damage = (int)t;
 	}
 
-	//Set or reset to defualt
+	//Set or reset to default
 	node = CDR(node);
 	rset = is_sexp_true(node);
 	
@@ -18669,7 +18669,7 @@ void sexp_ship_set_damage_type(int node)
 		damage = (int)t;
 	}
 
-	//Set or reset to defualt
+	//Set or reset to default
 	node = CDR(node);
 	rset = is_sexp_true(node);
 	
@@ -18724,7 +18724,7 @@ void sexp_ship_shockwave_set_damage_type(int node)
 		damage = (int)t;
 	}
 
-	//Set or reset to defualt
+	//Set or reset to default
 	node = CDR(node);
 	rset = is_sexp_true(node);
 	
@@ -18767,7 +18767,7 @@ void sexp_field_set_damage_type(int node)
 		damage = (int)t;
 	}
 
-	//Set or reset to defualt
+	//Set or reset to default
 	node = CDR(node);
 	rset = is_sexp_true(node);
 	
@@ -33933,7 +33933,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	{ OP_SET_ARMOR_TYPE, "set-armor-type\r\n"
 		"\tSets the armor type for a ship or subsystem\r\n"
 		"\t1: Ship subsystem is on\r\n"
-		"\t2: Set = true/Reset to defualt = false\r\n"
+		"\t2: Set = true/Reset to default = false\r\n"
 		"\t3: Armor type to set or <none>\r\n"
 		"\trest: Subsystems to set (hull for ship, shield for shields)\r\n"},
 
@@ -33941,26 +33941,26 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\tSets the damage type for weapons or their shockwaves\r\n"
 		"\t1: True = set weapon, False = set shockwave\r\n"
 		"\t2: damage type to set or <none>\r\n"
-		"\t3: Set = true/Reset to defualt = false\r\n"
+		"\t3: Set = true/Reset to default = false\r\n"
 		"\trest: Weapons to set\r\n"},
 
 	{ OP_SHIP_SET_DAMAGE_TYPE, "ship-set-damage-type\r\n"
 		"\tSets the damage type for ships collision or debris\r\n"
 		"\t1: true = set collision, False = set debris\r\n"
 		"\t2: Damage type to set or <none>\r\n"
-		"\t3: Set = true/Reset to defualt = false\r\n"
+		"\t3: Set = true/Reset to default = false\r\n"
 		"\trest: Ships to set\r\n"},
 
 	{ OP_SHIP_SHOCKWAVE_SET_DAMAGE_TYPE, "ship-set-shockwave-damage-type\r\n"
 		"\tSets the shockwave damage type for a class of ship.  All ships of that class are changed.\r\n"
 		"\t1: Damage type to set or <none>\r\n"
-		"\t2: Set = true/Reset to defualt = false\r\n"
+		"\t2: Set = true/Reset to default = false\r\n"
 		"\trest: Ship classes to set\r\n"},
 
 	{ OP_FIELD_SET_DAMAGE_TYPE, "field-set-damage-type\r\n"
 		"\tSets the damage type for asteroid/debris fields\r\n"
 		"\t1: Damage type to set or <none>\r\n"
-		"\t2: Set = true/Reset to defualt = false\r\n"},
+		"\t2: Set = true/Reset to default = false\r\n"},
 
 	{ OP_TURRET_SET_TARGET_ORDER, "turret-set-target-order\r\n"
 		"\tSets targeting order of a given turret\r\n"
