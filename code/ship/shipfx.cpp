@@ -2526,7 +2526,7 @@ void engine_wash_ship_process(ship *shipp)
 	float dist_sqr, inset_depth, dot_to_ship, max_ship_intensity;
 	polymodel *pm;
 
-	float max_wash_dist, half_angle, radius_mult;
+	float max_wash_dist_sqr, radius_mult;
 
 	// if this is not a fighter or bomber, we don't care
 	if ((objp->type != OBJ_SHIP) || !(Ship_info[shipp->ship_info_index].is_fighter_bomber()) ) {
@@ -2536,7 +2536,9 @@ void engine_wash_ship_process(ship *shipp)
 	// is it time to check for engine wash 
 	int time_to_next_hit = timestamp_until(shipp->wash_timestamp);
 	if (time_to_next_hit < 0) {
-		if (time_to_next_hit < -ENGINE_WASH_CHECK_INTERVAL) {
+		// Cyborg17 - Better to avoid a return value of 1 from timestamp() by using <= here.
+		// Otherwise we end up calling this function all over again next frame when time_to_next_hit = -250
+		if (time_to_next_hit <= -ENGINE_WASH_CHECK_INTERVAL) {
 			time_to_next_hit = 0;
 		}
 
@@ -2571,23 +2573,29 @@ void engine_wash_ship_process(ship *shipp)
 		ship_info *wash_sip = &Ship_info[wash_shipp->ship_info_index];
 
 		// don't do small ships
-        if (wash_sip->is_small_ship()) {
-            continue;
-        }
+		if (wash_sip->is_small_ship()) {
+			continue;
+		}
 
-		pm = model_get(wash_sip->model_num);
-		float ship_intensity = 0;
+		float speed_scale;
+		if (wash_objp->phys_info.speed > 20.0f) {
+			speed_scale = 1.0f;
+		} else {
+			speed_scale = wash_objp->phys_info.speed / 20.0f;
+			// Cyborg17 When Speed scale is 0, there won't be any wash at the end of it anyway, so let's go to the next
+			// ship.
+			if (!speed_scale) {
+				continue;
+			}
+		}
 
 		// if engines disabled, no engine wash
 		if (ship_get_subsystem_strength(wash_shipp, SUBSYSTEM_ENGINE) < 0.01) {
 			continue;
 		}
 
-		float	speed_scale;
-		if (wash_objp->phys_info.speed > 20.0f)
-			speed_scale = 1.0f;
-		else
-			speed_scale = wash_objp->phys_info.speed/20.0f;
+		pm = model_get(wash_sip->model_num);
+		float ship_intensity = 0;
 
 		for (idx = 0; idx < pm->n_thrusters; idx++) {
 			thruster_bank *bank = &pm->thrusters[idx];
@@ -2611,7 +2619,6 @@ void engine_wash_ship_process(ship *shipp)
 			}
 
 			engine_wash_info *ewp = bank->wash_info_pointer;
-			half_angle = ewp->angle;
 			radius_mult = ewp->radius_mult;
 
 
@@ -2655,36 +2662,38 @@ void engine_wash_ship_process(ship *shipp)
 				if (dot_to_ship > 0) {
 
 					// get max wash distance
-					max_wash_dist = MAX(ewp->length, bank->points[j].radius * ewp->radius_mult);
+					max_wash_dist_sqr = MAX(ewp->length, bank->points[j].radius * ewp->radius_mult);
+					//Cyborg17, and then square it, since we'll only use the square, anyway
+					max_wash_dist_sqr = max_wash_dist_sqr*max_wash_dist_sqr;
 
 					// check if within dist range
 					dist_sqr = vm_vec_mag_squared(&thruster_to_ship);
-					if (dist_sqr < max_wash_dist*max_wash_dist) {
+					if (dist_sqr < max_wash_dist_sqr) {
 
 						// check if inside the sphere
 						if ( dist_sqr < ((radius_mult * radius_mult) * (bank->points[j].radius * bank->points[j].radius)) ) {
 							vm_vec_cross(&temp, &world_thruster_norm, &thruster_to_ship);
 							vm_vec_scale_add2(&shipp->wash_rot_axis, &temp, dot_to_ship / dist_sqr);
-							ship_intensity += (1.0f - dist_sqr / (max_wash_dist*max_wash_dist));
+							ship_intensity += (1.0f - dist_sqr / (max_wash_dist_sqr));
 							if (!do_damage) {
-								if (dist_sqr < 0.25 * max_wash_dist * max_wash_dist) {
+								if (dist_sqr < 0.25 * max_wash_dist_sqr) {
 									do_damage = 1;
 								}
 							}
 						} else {
 							// check if inside cone - first fine apex of cone
-							inset_depth = (bank->points[j].radius / fl_tan(half_angle));
+							inset_depth = (bank->points[j].radius / ewp->tan_result);
 							vm_vec_scale_add(&apex, &world_thruster_pos, &world_thruster_norm, -inset_depth);
 							vm_vec_sub(&apex_to_ship, &objp->pos, &apex);
 							vm_vec_normalize(&apex_to_ship);
 
 							// check if inside cone angle
-							if (vm_vec_dot(&apex_to_ship, &world_thruster_norm) > cosf(half_angle)) {
+							if (vm_vec_dot(&apex_to_ship, &world_thruster_norm) > ewp->cos_result) {
 								vm_vec_cross(&temp, &world_thruster_norm, &thruster_to_ship);
 								vm_vec_scale_add2(&shipp->wash_rot_axis, &temp, dot_to_ship / dist_sqr);
-								ship_intensity += (1.0f - dist_sqr / (max_wash_dist*max_wash_dist));
+								ship_intensity += (1.0f - dist_sqr / (max_wash_dist_sqr));
 								if (!do_damage) {
-									if (dist_sqr < 0.25 * max_wash_dist * max_wash_dist) {
+									if (dist_sqr < 0.25 * max_wash_dist_sqr) {
 										do_damage = 1;
 									}
 								}
@@ -2709,14 +2718,11 @@ void engine_wash_ship_process(ship *shipp)
 
 		nprintf(("wash", "Wash intensity %.2f\n", shipp->wash_intensity));
 
-		float damage;
-		if (!do_damage) {
-			damage = 0;
-		} else {
+		if (do_damage) {
+			float damage;
 			damage = (0.001f * 0.003f * ENGINE_WASH_CHECK_INTERVAL * shipp->ship_max_hull_strength * shipp->wash_intensity);
+			ship_apply_wash_damage(objp, max_ship_intensity_objp, damage);
 		}
-
-		ship_apply_wash_damage(objp, max_ship_intensity_objp, damage);
 
 		// if we had no wash before now, add the wash object sound
 		if(started_with_no_wash){

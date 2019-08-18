@@ -1261,6 +1261,8 @@ typedef struct engine_wash_info
 {
 	char		name[NAME_LENGTH];
 	float		angle;			// half angle of cone around engine thruster
+	float		cos_result;		// keeps the engine from re-calculating this 50 times
+	float		tan_result;		// keeps the engine from re-calculating this 50 times
 	float		radius_mult;	// multiplier for radius 
 	float		length;			// length of engine wash, measured from thruster
 	float		intensity;		// intensity of engine wash

@@ -652,6 +652,8 @@ static void engine_wash_info_init(engine_wash_info *ewi)
 {
 	ewi->name[0] = '\0';
 	ewi->angle = PI / 10.0f;
+	ewi->cos_result  = 1.0f;
+	ewi->tan_result  = 1.0f;
 	ewi->radius_mult = 1.0f;
 	ewi->length = 500.0f;
 	ewi->intensity = 1.0f;
@@ -714,6 +716,14 @@ static void parse_engine_wash(bool replace)
 	{
 		stuff_float(&ewp->angle);
 		ewp->angle *= (PI / 180.0f);
+		ewp->cos_result = cosf(ewp->angle);
+
+		// Cyborg17 - To avoid division by float 0.0 later on
+		if (fl_tan(ewp->angle)) {
+			ewp->tan_result = fl_tan(ewp->angle);
+		} else {
+			ewp->tan_result = 0.001f;
+		}
 	}
 
 	// radius multiplier for hemisphere around thruster pt
