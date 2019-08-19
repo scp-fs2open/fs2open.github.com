@@ -4031,6 +4031,7 @@ int eval_nums(int &n, bool &is_nan, bool &is_nan_forever, T &arg)
 	}
 }
 
+#ifndef _MSC_VER
 /**
  * Populate variadic arguments by running eval_num repeatedly.  No custom converter function is used; all numbers are cast from int to the desired type.
  * The count of numbers actually found (which depending on the sexp may not be the count of parameters) is returned.
@@ -4059,6 +4060,127 @@ int eval_nums(int &n, bool &is_nan, bool &is_nan_forever, T& first, Args&... res
 
 	return count;
 }
+#else
+/**
+ * We've found that if the above code is compiled on MSVC, we get random heap corruption in the sexp code.
+ * I guess that means MSVC does not support template parameter packs correctly. :-/
+ */
+template <typename T, typename A>
+int eval_nums(int &n, bool &is_nan, bool &is_nan_forever, T &first, A &rest1)
+{
+	bool temp_nan, temp_nan_forever;
+	int count = 0;
+
+	is_nan = false;
+	is_nan_forever = false;
+
+	count += eval_nums(n, temp_nan, temp_nan_forever, first);
+	if (temp_nan)
+		is_nan = true;
+	if (temp_nan_forever)
+		is_nan_forever = true;
+
+	count += eval_nums(n, temp_nan, temp_nan_forever, rest1);
+	if (temp_nan)
+		is_nan = true;
+	if (temp_nan_forever)
+		is_nan_forever = true;
+
+	return count;
+}
+template <typename T, typename A, typename B>
+int eval_nums(int &n, bool &is_nan, bool &is_nan_forever, T &first, A &rest1, B &rest2)
+{
+	bool temp_nan, temp_nan_forever;
+	int count = 0;
+
+	is_nan = false;
+	is_nan_forever = false;
+
+	count += eval_nums(n, temp_nan, temp_nan_forever, first);
+	if (temp_nan)
+		is_nan = true;
+	if (temp_nan_forever)
+		is_nan_forever = true;
+
+	count += eval_nums(n, temp_nan, temp_nan_forever, rest1, rest2);
+	if (temp_nan)
+		is_nan = true;
+	if (temp_nan_forever)
+		is_nan_forever = true;
+
+	return count;
+}
+template <typename T, typename A, typename B, typename C>
+int eval_nums(int &n, bool &is_nan, bool &is_nan_forever, T &first, A &rest1, B &rest2, C &rest3)
+{
+	bool temp_nan, temp_nan_forever;
+	int count = 0;
+
+	is_nan = false;
+	is_nan_forever = false;
+
+	count += eval_nums(n, temp_nan, temp_nan_forever, first);
+	if (temp_nan)
+		is_nan = true;
+	if (temp_nan_forever)
+		is_nan_forever = true;
+
+	count += eval_nums(n, temp_nan, temp_nan_forever, rest1, rest2, rest3);
+	if (temp_nan)
+		is_nan = true;
+	if (temp_nan_forever)
+		is_nan_forever = true;
+
+	return count;
+}
+template <typename T, typename A, typename B, typename C, typename D>
+int eval_nums(int &n, bool &is_nan, bool &is_nan_forever, T &first, A &rest1, B &rest2, C &rest3, D &rest4)
+{
+	bool temp_nan, temp_nan_forever;
+	int count = 0;
+
+	is_nan = false;
+	is_nan_forever = false;
+
+	count += eval_nums(n, temp_nan, temp_nan_forever, first);
+	if (temp_nan)
+		is_nan = true;
+	if (temp_nan_forever)
+		is_nan_forever = true;
+
+	count += eval_nums(n, temp_nan, temp_nan_forever, rest1, rest2, rest3, rest4);
+	if (temp_nan)
+		is_nan = true;
+	if (temp_nan_forever)
+		is_nan_forever = true;
+
+	return count;
+}
+template <typename T, typename A, typename B, typename C, typename D, typename E>
+int eval_nums(int &n, bool &is_nan, bool &is_nan_forever, T &first, A &rest1, B &rest2, C &rest3, D &rest4, E &rest5)
+{
+	bool temp_nan, temp_nan_forever;
+	int count = 0;
+
+	is_nan = false;
+	is_nan_forever = false;
+
+	count += eval_nums(n, temp_nan, temp_nan_forever, first);
+	if (temp_nan)
+		is_nan = true;
+	if (temp_nan_forever)
+		is_nan_forever = true;
+
+	count += eval_nums(n, temp_nan, temp_nan_forever, rest1, rest2, rest3, rest4, rest5);
+	if (temp_nan)
+		is_nan = true;
+	if (temp_nan_forever)
+		is_nan_forever = true;
+
+	return count;
+}
+#endif
 
 /**
  * Populate a numeric array by running eval_num repeatedly.  The converter function/lambda can be used to adapt the numbers returned from eval_num, such as casting (the default)
