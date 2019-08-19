@@ -4094,7 +4094,7 @@ int eval_nums(int &n, bool &is_nan, bool &is_nan_forever, char arg_type, void *a
 	else if (arg_type == 'd')
 		*(static_cast<double*>(arg)) = static_cast<double>(val);
 	else
-		Warning(LOCATION, "Unrecognized character %c in eval_nums!", arg_type);
+		Error(LOCATION, "Unrecognized character %c in eval_nums!", arg_type);
 
 	return retval;
 }
@@ -4117,7 +4117,7 @@ int eval_nums(int &n, bool &is_nan, bool &is_nan_forever, const char *arg_types,
 	va_start(args, arg_types);
 
 	// iterate along the parameter list
-	for (const char *ch = arg_types; ch != '\0'; ch++)
+	for (const char *ch = arg_types; *ch != '\0'; ++ch)
 	{
 		// just grab the pointer for now; we will figure out its type in the sub-function
 		void *arg = va_arg(args, void*);
