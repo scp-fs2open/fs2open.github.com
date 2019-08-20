@@ -4010,10 +4010,6 @@ int eval_num(int n, bool &is_nan, bool &is_nan_forever)
 		return atoi(CTEXT(n));		// otherwise, just get the number
 }
 
-/*
- * These are some nice typesafe templated functions, but we can't use them because MSVC will corrupt heap memory!
- */
-#if 0
 template <typename T>
 int eval_nums(int &n, bool &is_nan, bool &is_nan_forever, T &arg)
 {
@@ -4063,77 +4059,6 @@ int eval_nums(int &n, bool &is_nan, bool &is_nan_forever, T& first, Args&... res
 
 	return count;
 }
-#else
- /*
-  * For the foreseeable future, we will use good old C varargs.  This and the following function basically duplicate the C++ equivalents above.
-  */
-int eval_nums(int &n, bool &is_nan, bool &is_nan_forever, char arg_type, void *arg)
-{
-	int retval, val;
-
-	if (n >= 0)
-	{
-		val = eval_num(n, is_nan, is_nan_forever);
-		n = CDR(n);
-
-		retval = 1;
-	}
-	else
-	{
-		is_nan = false;
-		is_nan_forever = false;
-
-		val = 0;
-		retval = 0;
-	}
-
-	if (arg_type == 'i')
-		*(static_cast<int*>(arg)) = val;
-	else if (arg_type == 'f')
-		*(static_cast<float*>(arg)) = static_cast<float>(val);
-	else if (arg_type == 'd')
-		*(static_cast<double*>(arg)) = static_cast<double>(val);
-	else
-		Error(LOCATION, "Unrecognized character %c in eval_nums!", arg_type);
-
-	return retval;
-}
-
-/**
- * Populate variadic arguments by running eval_num repeatedly.  No custom converter function is used; all numbers are cast from int to the desired type.
- * The count of numbers actually found (which depending on the sexp may not be the count of parameters) is returned.
- * NOTE: in contrast to eval_num, the *n* parameter will be advanced along the CDR path
- * IMPORTANT: All of the variadic arguments must be pointers.  The arg_types parameter is a string of letters: i for int, f for float, d for double.
- */
-int eval_nums(int &n, bool &is_nan, bool &is_nan_forever, const char *arg_types, ...)
-{
-	bool temp_nan, temp_nan_forever;
-	int count = 0;
-	va_list args;
-
-	is_nan = false;
-	is_nan_forever = false;
-
-	va_start(args, arg_types);
-
-	// iterate along the parameter list
-	for (const char *ch = arg_types; *ch != '\0'; ++ch)
-	{
-		// just grab the pointer for now; we will figure out its type in the sub-function
-		void *arg = va_arg(args, void*);
-
-		count += eval_nums(n, temp_nan, temp_nan_forever, *ch, arg);
-		if (temp_nan)
-			is_nan = true;
-		if (temp_nan_forever)
-			is_nan_forever = true;
-	}
-
-	va_end(args);
-
-	return count;
-}
-#endif
 
 /**
  * Populate a numeric array by running eval_num repeatedly.  The converter function/lambda can be used to adapt the numbers returned from eval_num, such as casting (the default)
@@ -4616,7 +4541,7 @@ int pow_sexp(int node)
 	int num_1, num_2;
 	bool is_nan, is_nan_forever;
 
-	eval_nums(node, is_nan, is_nan_forever, "ii", &num_1, &num_2);
+	eval_nums(node, is_nan, is_nan_forever, num_1, num_2);
 	if (is_nan)
 		return SEXP_NAN;
 	if (is_nan_forever)
@@ -4731,7 +4656,7 @@ int sexp_set_bit(int node, bool set_it)
 	int val, bit_index;
 	bool is_nan, is_nan_forever;
 
-	eval_nums(node, is_nan, is_nan_forever, "ii", &val, &bit_index);
+	eval_nums(node, is_nan, is_nan_forever, val, bit_index);
 	if (is_nan)
 		return SEXP_NAN;
 	if (is_nan_forever)
@@ -4756,7 +4681,7 @@ int sexp_is_bit_set(int node)
 	int val, bit_index;
 	bool is_nan, is_nan_forever;
 
-	eval_nums(node, is_nan, is_nan_forever, "ii", &val, &bit_index);
+	eval_nums(node, is_nan, is_nan_forever, val, bit_index);
 	if (is_nan)
 		return SEXP_FALSE;
 	if (is_nan_forever)
@@ -4846,7 +4771,7 @@ int sexp_bitwise_xor(int node)
 	int val1, val2;
 	bool is_nan, is_nan_forever;
 
-	eval_nums(node, is_nan, is_nan_forever, "ii", &val1, &val2);
+	eval_nums(node, is_nan, is_nan_forever, val1, val2);
 	if (is_nan)
 		return SEXP_NAN;
 	if (is_nan_forever)
@@ -4871,7 +4796,7 @@ int rand_sexp(int n, bool multiple)
 	}
 
 	// get low, high, and (optional) seed - seed will be 0, per eval_nums, if not specified
-	eval_nums(n, is_nan, is_nan_forever, "iii", &low, &high, &seed);
+	eval_nums(n, is_nan, is_nan_forever, low, high, seed);
 	if (is_nan)
 		return SEXP_NAN;
 	if (is_nan_forever)
@@ -7977,7 +7902,7 @@ void sexp_set_object_facing(int n, bool facing_object)
 	}
 
 	// get optional turn time and bank
-	eval_nums(n, is_nan, is_nan_forever, "ii", &turn_time, &bank);
+	eval_nums(n, is_nan, is_nan_forever, turn_time, bank);
 	if (is_nan || is_nan_forever)
 		return;
 
@@ -9775,7 +9700,7 @@ int eval_for_counter(int arg_handler_node, int condition_node)
 	n = CDR(arg_handler_node);
 
 	// determine the counter parameters
-	eval_nums(n, is_nan, is_nan_forever, "iii", &counter_start, &counter_stop, &counter_step);
+	eval_nums(n, is_nan, is_nan_forever, counter_start, counter_stop, counter_step);
 	if (is_nan)
 		return SEXP_FALSE;
 	if (is_nan_forever)
@@ -10028,7 +9953,7 @@ int sexp_functional_if_then_else(int node)
 
 	// we need to evaluate both numbers regardless of which one we pick
 	n = CDR(node);
-	eval_nums(n, is_nan, is_nan_forever, "ii", &num1, &num2);
+	eval_nums(n, is_nan, is_nan_forever, num1, num2);
 	if (is_nan)
 		return SEXP_NAN;
 	if (is_nan_forever)
@@ -10852,7 +10777,7 @@ void sexp_hud_set_coords(int n)
 	char* gaugename = CTEXT(n);
 	n = CDR(n);
 
-	eval_nums(n, is_nan, is_nan_forever, "ii", &coord_x, &coord_y);
+	eval_nums(n, is_nan, is_nan_forever, coord_x, coord_y);
 	if (is_nan || is_nan_forever)
 		return;
 
@@ -11731,7 +11656,7 @@ void sexp_explosion_effect(int n)
 	n = CDR(n);
 
 	// optional EMP
-	eval_nums(n, is_nan, is_nan_forever, "ii", &emp_intensity, &emp_duration);
+	eval_nums(n, is_nan, is_nan_forever, emp_intensity, emp_duration);
 	if (is_nan || is_nan_forever)
 		return;
 	use_emp_time_for_capship_turrets = false;
@@ -13649,7 +13574,7 @@ void sexp_change_team_score(int node)
 		return;
 	}
 
-	eval_nums(node, is_nan, is_nan_forever, "ii", &score, &team);
+	eval_nums(node, is_nan, is_nan_forever, score, team);
 	if (is_nan || is_nan_forever)
 		return;
 
@@ -15374,7 +15299,7 @@ void sexp_ship_tag( int n, int tag )
 	}
 
 	// get the tag level and time
-	eval_nums(n, is_nan, is_nan_forever, "ii", &tag_level, &tag_time);
+	eval_nums(n, is_nan, is_nan_forever, tag_level, tag_time);
 	if (is_nan || is_nan_forever)
 		return;
 
@@ -16591,7 +16516,7 @@ void sexp_send_training_message(int node)
 	char *secondary_message = (n >= 0) ? CTEXT(n) : nullptr;
 	n = CDR(n);
 
-	count = eval_nums(n, is_nan, is_nan_forever, "ii", &delay, &duration);
+	count = eval_nums(n, is_nan, is_nan_forever, delay, duration);
 	if (is_nan || is_nan_forever)
 		return;
 	if (count > 0) {
@@ -16718,7 +16643,7 @@ void sexp_set_ets_values(int node)
 	int ets_idx[num_retail_ets_gauges];
 
 	//get inputs
-	eval_nums(node, is_nan, is_nan_forever, "iii", &ets_idx[ENGINES], &ets_idx[SHIELDS], &ets_idx[WEAPONS]);
+	eval_nums(node, is_nan, is_nan_forever, ets_idx[ENGINES], ets_idx[SHIELDS], ets_idx[WEAPONS]);
 	if (is_nan || is_nan_forever)
 		return;
 
@@ -17837,7 +17762,7 @@ void sexp_set_ambient_light(int node)
 
 	Assert(node >= 0);
 
-	eval_nums(node, is_nan, is_nan_forever, "iii", &red, &green, &blue);
+	eval_nums(node, is_nan, is_nan_forever, red, green, blue);
 	if (is_nan || is_nan_forever)
 		return;
 
@@ -18538,7 +18463,7 @@ void sexp_turret_change_weapon(int node)
 	int prim_slot, sec_slot;
 	bool is_nan, is_nan_forever;
 
-	eval_nums(node, is_nan, is_nan_forever, "ii", &prim_slot, &sec_slot);
+	eval_nums(node, is_nan, is_nan_forever, prim_slot, sec_slot);
 	if (is_nan || is_nan_forever)
 		return;
 
@@ -19634,7 +19559,7 @@ void sexp_trigger_submodel_animation(int node)
 	n = CDR(n);
 
 	// get the subtype and direction
-	eval_nums(n, is_nan, is_nan_forever, "ii", &animation_subtype, &direction);
+	eval_nums(n, is_nan, is_nan_forever, animation_subtype, direction);
 	if (is_nan || is_nan_forever)
 		return;
 
@@ -19792,7 +19717,7 @@ void sexp_damage_escort_list(int node)
 	float current_hull_pct;			//hull pct of current ship we are evaluating
 	int shipnum=-1;				//index in Ships[] of the above
 
-	eval_nums(n, is_nan, is_nan_forever, "ii", &priority1, &priority2);
+	eval_nums(n, is_nan, is_nan_forever, priority1, priority2);
 	if (is_nan || is_nan_forever)
 		return;
 
@@ -20011,7 +19936,7 @@ void sexp_set_arrival_info(int node)
 	n = CDR(n);
 
 	// get arrival path mask, distance, and delay
-	eval_nums(n, is_nan, is_nan_forever, "iii", &arrival_mask, &arrival_distance, &arrival_delay);
+	eval_nums(n, is_nan, is_nan_forever, arrival_mask, arrival_distance, arrival_delay);
 	if (is_nan || is_nan_forever)
 		return;
 
@@ -20103,7 +20028,7 @@ void sexp_set_departure_info(int node)
 	n = CDR(n);
 
 	// get departure path mask and delay
-	eval_nums(n, is_nan, is_nan_forever, "ii", &departure_mask, &departure_delay);
+	eval_nums(n, is_nan, is_nan_forever, departure_mask, departure_delay);
 	if (is_nan || is_nan_forever)
 		return;
 
@@ -21129,7 +21054,7 @@ void sexp_subsys_set_random(int node)
 	n = CDR(n);
 
 	// get low and high
-	eval_nums(n, is_nan, is_nan_forever, "ii", &low, &high);
+	eval_nums(n, is_nan, is_nan_forever, low, high);
 	if (is_nan || is_nan_forever) {
 		return;
 	}
@@ -21625,7 +21550,7 @@ void sexp_string_get_substring(int node)
 	char *parent = CTEXT(n);
 	n = CDR(n);
 
-	eval_nums(n, is_nan, is_nan_forever, "ii", &pos, &len);
+	eval_nums(n, is_nan, is_nan_forever, pos, len);
 
 	// get sexp_variable index
 	Assert(Sexp_nodes[n].first == -1);
@@ -21689,7 +21614,7 @@ void sexp_string_set_substring(int node)
 	char *parent = CTEXT(n);
 	n = CDR(n);
 
-	eval_nums(n, is_nan, is_nan_forever, "ii", &pos, &len);
+	eval_nums(n, is_nan, is_nan_forever, pos, len);
 	if (is_nan || is_nan_forever)
 		return;
 
@@ -21904,7 +21829,7 @@ void sexp_set_training_context_speed(int node)
 	int min, max;
 	bool is_nan, is_nan_forever;
 
-	eval_nums(node, is_nan, is_nan_forever, "ii", &min, &max);
+	eval_nums(node, is_nan, is_nan_forever, min, max);
 	if (is_nan || is_nan_forever)
 		return;
 
@@ -22136,7 +22061,7 @@ void sexp_set_camera_position(int n)
 	if (is_nan || is_nan_forever)
 		return;
 
-	int count = eval_nums(n, is_nan, is_nan_forever, "fff", &camera_time, &camera_acc_time, &camera_dec_time);
+	int count = eval_nums(n, is_nan, is_nan_forever, camera_time, camera_acc_time, camera_dec_time);
 	if (is_nan || is_nan_forever)
 		return;
 	if (count == 2)
@@ -22194,7 +22119,7 @@ void sexp_set_camera_rotation(int n)
 	if (is_nan || is_nan_forever)
 		return;
 
-	int count = eval_nums(n, is_nan, is_nan_forever, "fff", &rot_time, &rot_acc_time, &rot_dec_time);
+	int count = eval_nums(n, is_nan, is_nan_forever, rot_time, rot_acc_time, rot_dec_time);
 	if (is_nan || is_nan_forever)
 		return;
 	if (count == 2)
@@ -22250,7 +22175,7 @@ void sexp_set_camera_facing(int n)
 	if (is_nan || is_nan_forever)
 		return;
 
-	int count = eval_nums(n, is_nan, is_nan_forever, "fff", &rot_time, &rot_acc_time, &rot_dec_time);
+	int count = eval_nums(n, is_nan, is_nan_forever, rot_time, rot_acc_time, rot_dec_time);
 	if (is_nan || is_nan_forever)
 		return;
 	if (count == 2)
@@ -22332,7 +22257,7 @@ void sexp_set_camera_facing_object(int n)
 	float rot_time, rot_acc_time, rot_dec_time;
 
 	// Now get the rotation time values
-	int count = eval_nums(n, is_nan, is_nan_forever, "fff", &rot_time, &rot_acc_time, &rot_dec_time);
+	int count = eval_nums(n, is_nan, is_nan_forever, rot_time, rot_acc_time, rot_dec_time);
 	if (is_nan || is_nan_forever)
 		return;
 	if (count == 2)
@@ -22385,7 +22310,7 @@ void sexp_set_camera_fov(int n)
 	n = CDR(n);
 	camera_fov = fl_radians(int_fov % 360);
 
-	int count = eval_nums(n, is_nan, is_nan_forever, "fff", &camera_time, &camera_acc_time, &camera_dec_time);
+	int count = eval_nums(n, is_nan, is_nan_forever, camera_time, camera_acc_time, camera_dec_time);
 	if (is_nan || is_nan_forever)
 		return;
 	if (count == 2)
@@ -22638,7 +22563,7 @@ void sexp_show_subtitle(int node)
 	int r = 255, g = 255, b = 255, n = node;
 	bool is_nan, is_nan_forever, center_x = false, center_y = false, post_shaded = false;
 
-	eval_nums(n, is_nan, is_nan_forever, "ii", &x_pos, &y_pos);
+	eval_nums(n, is_nan, is_nan_forever, x_pos, y_pos);
 	if (is_nan || is_nan_forever)
 		return;
 
@@ -22677,7 +22602,7 @@ void sexp_show_subtitle(int node)
 					center_y = is_sexp_true(n);
 					n = CDR(n);
 
-					eval_nums(n, is_nan, is_nan_forever, "iiii", &width, &r, &g, &b);
+					eval_nums(n, is_nan, is_nan_forever, width, r, g, b);
 					if (is_nan || is_nan_forever)
 						return;
 
@@ -22755,7 +22680,7 @@ void sexp_show_subtitle_text(int node)
 
 	float display_time, fade_time;
 	int width_pct;
-	eval_nums(n, is_nan, is_nan_forever, "ffi", &display_time, &fade_time, &width_pct);
+	eval_nums(n, is_nan, is_nan_forever, display_time, fade_time, width_pct);
 	if (is_nan || is_nan_forever)
 		return;
 	display_time /= 1000.0f;
@@ -22889,7 +22814,7 @@ void sexp_show_subtitle_image(int node)
 
 	int width_pct, height_pct;
 	float display_time, fade_time;
-	eval_nums(n, is_nan, is_nan_forever, "iiff", &width_pct, &height_pct, &display_time, &fade_time);
+	eval_nums(n, is_nan, is_nan_forever, width_pct, height_pct, display_time, fade_time);
 	if (is_nan || is_nan_forever)
 		return;
 	// note: width_pct and height_pct are OPF_POSITIVE
@@ -22961,7 +22886,7 @@ void sexp_set_time_compression(int n)
 	bool is_nan, is_nan_forever;
 	float new_multiplier, new_change_time, starting_multiplier;
 
-	int count = eval_nums(n, is_nan, is_nan_forever, "fff", &new_multiplier, &new_change_time, &starting_multiplier);
+	int count = eval_nums(n, is_nan, is_nan_forever, new_multiplier, new_change_time, starting_multiplier);
 	if (is_nan || is_nan_forever)
 		return;
 
@@ -23057,7 +22982,7 @@ void sexp_set_camera_shudder(int n)
 	float intensity;
 	bool is_nan, is_nan_forever;
 
-	eval_nums(n, is_nan, is_nan_forever, "if", &time, &intensity);
+	eval_nums(n, is_nan, is_nan_forever, time, intensity);
 	if (is_nan || is_nan_forever)
 		return;
 	intensity *= 0.01f;
@@ -23479,7 +23404,7 @@ int sexp_is_in_box(int n)
 	n = CDR(n);
 
 	// Get box corners
-	eval_nums(n, is_nan, is_nan_forever, "ffffff", &x1, &x2, &y1, &y2, &z1, &z2);
+	eval_nums(n, is_nan, is_nan_forever, x1, x2, y1, y2, z1, z2);
 	if (is_nan)
 		return SEXP_FALSE;
 	if (is_nan_forever)
@@ -30618,7 +30543,7 @@ void sexp_copy_variable_between_indexes(int node)
 		return;
 
 	// get sexp_variable indexes
-	eval_nums(node, is_nan, is_nan_forever, "ii", &from_index, &to_index);
+	eval_nums(node, is_nan, is_nan_forever, from_index, to_index);
 	if (is_nan || is_nan_forever)
 		return;
 
