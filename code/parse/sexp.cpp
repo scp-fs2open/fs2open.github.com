@@ -4781,18 +4781,16 @@ int sexp_bitwise_xor(int node)
 }
 
 // seeding added by Karajorma and Goober5000
-int rand_sexp(int n, bool multiple)
+int rand_sexp(int node, bool multiple)
 {
 	bool is_nan, is_nan_forever;
-	int low, high, rand_num, seed;
-
-	Assert(n >= 0);
+	int n = node, low, high, rand_num, seed;
 
 	// when getting a saved value
-	if (Sexp_nodes[n].value == SEXP_NUM_EVAL)
+	if (Sexp_nodes[node].value == SEXP_NUM_EVAL)
 	{
 		// don't regenerate new random number
-		return atoi(CTEXT(n));
+		return atoi(CTEXT(node));
 	}
 
 	// get low, high, and (optional) seed - seed will be 0, per eval_nums, if not specified
@@ -4809,15 +4807,15 @@ int rand_sexp(int n, bool multiple)
 	if (!multiple)
 	{
 		// set .value and .text so random number is generated only once.
-		Sexp_nodes[n].value = SEXP_NUM_EVAL;
-		sprintf(Sexp_nodes[n].text, "%d", rand_num);
+		Sexp_nodes[node].value = SEXP_NUM_EVAL;
+		sprintf(Sexp_nodes[node].text, "%d", rand_num);
 	}
 	// if this is multiple with a nonzero seed provided
 	else if (seed > 0)
 	{
 		// Set the seed to a new seeded random value. This will ensure that the next time the method
 		// is called it will return a predictable but different number from the previous time. 
-		sprintf(Sexp_nodes[CDDR(n)].text, "%d", rand_internal(1, INT_MAX, seed));
+		sprintf(Sexp_nodes[CDDR(node)].text, "%d", rand_internal(1, INT_MAX, seed));
 	}
 
 	return rand_num;
