@@ -557,10 +557,10 @@ void mod_table_reset() {
 	Disable_built_in_translations = false;
 	Weapon_shockwaves_respect_huge = false;
 	Using_in_game_options = false;
-	Arc_color_damage_p1 = std::make_tuple(64, 64, 225);
-	Arc_color_damage_p2 = std::make_tuple(128, 128, 255);
-	Arc_color_damage_s1 = std::make_tuple(200, 200, 255);
-	Arc_color_emp_p1 = std::make_tuple(64, 64, 5);
-	Arc_color_emp_p2 = std::make_tuple(128, 128, 10);
-	Arc_color_emp_s1 = std::make_tuple(255, 255, 10);
+	Arc_color_damage_p1 = std::make_tuple(static_cast<ubyte>(64), static_cast<ubyte>(64), static_cast<ubyte>(225));
+	Arc_color_damage_p2 = std::make_tuple(static_cast<ubyte>(128), static_cast<ubyte>(128), static_cast<ubyte>(255));
+	Arc_color_damage_s1 = std::make_tuple(static_cast<ubyte>(200), static_cast<ubyte>(200), static_cast<ubyte>(255));
+	Arc_color_emp_p1 = std::make_tuple(static_cast<ubyte>(64), static_cast<ubyte>(64), static_cast<ubyte>(5));
+	Arc_color_emp_p2 = std::make_tuple(static_cast<ubyte>(128), static_cast<ubyte>(128), static_cast<ubyte>(10));
+	Arc_color_emp_s1 = std::make_tuple(static_cast<ubyte>(255), static_cast<ubyte>(255), static_cast<ubyte>(10));
 }
