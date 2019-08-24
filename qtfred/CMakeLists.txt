@@ -136,3 +136,11 @@ elseif(FSO_BUILD_APPIMAGE)
     install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/resources/fred_icon.png" DESTINATION "."
             COMPONENT "qtFRED")
 endif()
+
+if (FSO_INSTALL_DEBUG_FILES)
+    if (MSVC)
+        install(FILES "$<TARGET_PDB_FILE:qtfred>"
+                DESTINATION ${BINARY_DESTINATION}
+                OPTIONAL)
+    endif()
+endif()

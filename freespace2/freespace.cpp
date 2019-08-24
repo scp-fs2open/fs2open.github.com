@@ -53,6 +53,7 @@
 #include "gamesnd/eventmusic.h"
 #include "gamesnd/gamesnd.h"
 #include "globalincs/alphacolors.h"
+#include "globalincs/crashdump.h"
 #include "globalincs/mspdb_callstack.h"
 #include "globalincs/version.h"
 #include "graphics/font.h"
@@ -7957,6 +7958,8 @@ int actual_main(int argc, char *argv[])
 {
 	int result = -1;
 	Assert(argc > 0);
+
+	crashdump::installCrashHandler();
 
 #ifdef WIN32
 	// Don't let more than one instance of FreeSpace run.

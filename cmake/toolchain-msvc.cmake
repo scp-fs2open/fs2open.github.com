@@ -51,7 +51,8 @@ set(CMAKE_STATIC_LINKER_FLAGS "")
 # Release
 set(CMAKE_C_FLAGS_RELEASE "/GL /W2 /Gy- /Ox /Ot /Ob2 /fp:precise /GF /Oy /Oi /Zi /W3")
 set(CMAKE_CXX_FLAGS_RELEASE "/GL /W2 /Gy- /Ox /Ot /Ob2 /fp:precise /GF /Oy /Oi /Zi /W3")
-set(CMAKE_EXE_LINKER_FLAGS_RELEASE "/OPT:REF /LTCG /INCREMENTAL:NO")
+# /DEBUG:FULL so that we get PDBs which is needed for debugging crashdumps
+set(CMAKE_EXE_LINKER_FLAGS_RELEASE "/OPT:REF /LTCG /INCREMENTAL:NO /DEBUG:FULL")
 set(CMAKE_STATIC_LINKER_FLAGS_RELEASE "/LTCG")
 
 globally_enable_extra_compiler_warnings()
@@ -63,8 +64,6 @@ if (MSVC_RELEASE_DEBUGGING)
 		set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} /Zo")
 		set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /Zo")
 	endif()
-	
-	set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} /DEBUG")
 endif()
 
 IF(MSVC_USE_RUNTIME_DLL)

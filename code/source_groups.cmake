@@ -314,6 +314,8 @@ add_file_folder("Generated Files"
 add_file_folder("GlobalIncs"
 	globalincs/alphacolors.cpp
 	globalincs/alphacolors.h
+	globalincs/crashdump.cpp
+	globalincs/crashdump.h
 	globalincs/fsmemory.h
 	globalincs/globals.h
 	globalincs/linklist.h
