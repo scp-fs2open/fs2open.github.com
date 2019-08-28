@@ -43,7 +43,7 @@ env:
 deploy:
   - provider: releases
     api_key:
-      secure: "Wdt4Ccefo7a0ZDjEJQJgpghh7n72FtNJuKSAPUvoz4gtEX6Ct9J8yJI1t9V3jE3CTbbLJ21/Q6eZRDfT7UfNJe5DdepoJsP9DeFhKMWqQCq+AChqQWlm0KeZAffJoJreL8vXYhnRYcLT9ceZHEH6AqwN9TPV+xJziGPISAkYNZ8="
+      secure: "q619+eQTe7lv8UVphK4OIzU8Jw84KBbVkuprN2sWIubRcV3IbZr2+WahJoUMt+nyhiy3YjDYtstO2ZgkxupwnZgwGUBVIiD1c4SPuyy+HTjNMOtiVsEUHT2hf+xPAemWpTlK5HcwhMmHAOh6rt6dEj57QOg0gcmGiwD/tCbEriA="
     skip_cleanup: true
     file_glob: true
     file: "/tmp/builds/*"
