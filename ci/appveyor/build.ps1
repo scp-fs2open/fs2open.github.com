@@ -134,6 +134,7 @@ if ($DeployBuild) {
 	cmake -DCMAKE_INSTALL_PREFIX="$env:APPVEYOR_BUILD_FOLDER/../install" -DFSO_USE_SPEECH="ON" `
 		-DFSO_USE_VOICEREC="ON" -DMSVC_SIMD_INSTRUCTIONS="$($buildConfig.SimdType)" `
 		-DQT5_INSTALL_ROOT="$($buildConfig.QtDir)" -DFSO_BUILD_QTFRED=ON `
+		-DFSO_INSTALL_DEBUG_FILES="ON" `
 		-G "$($buildConfig.Generator)" -T "$($buildConfig.Toolset)" ..
 
 	$Configs = @("Release", "FastDebug")
@@ -145,8 +146,11 @@ if ($DeployBuild) {
     	}
 	}
 
-    7z a "$($PackageName)-builds-$($buildConfig.PackageType).zip" "$env:APPVEYOR_BUILD_FOLDER/../install/*"
+    7z a -xr'!*.pdb' "$($PackageName)-builds-$($buildConfig.PackageType).zip" "$env:APPVEYOR_BUILD_FOLDER/../install/*"
     Push-AppveyorArtifact "$($PackageName)-builds-$($buildConfig.PackageType).zip"
+
+	7z a "$($PackageName)-debug-$($buildConfig.PackageType).7z" "$env:APPVEYOR_BUILD_FOLDER/../install/*.pdb"
+	Push-AppveyorArtifact "$($PackageName)-debug-$($buildConfig.PackageType).7z"
 } else {
 	cmake -DFSO_USE_SPEECH="ON" -DFSO_FATAL_WARNINGS="ON" -DFSO_USE_VOICEREC="ON" -DFSO_BUILD_TESTS="ON" -DMSVC_SIMD_INSTRUCTIONS=SSE2 `
 	-DFSO_BUILD_QTFRED=ON -DQT5_INSTALL_ROOT="$env:QT_DIR" -DFSO_BUILD_FRED2="ON" `
