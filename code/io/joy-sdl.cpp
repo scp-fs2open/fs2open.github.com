@@ -121,8 +121,8 @@ bool joystickMatchesGuid(Joystick* testStick, const SCP_string& guid, int id)
 
 bool isCurrentJoystick(Joystick* testStick)
 {
-	auto currentGUID = os_config_read_string(nullptr, "CurrentJoystickGUID", nullptr);
-	auto currentId   = (int)os_config_read_uint(nullptr, "CurrentJoystick", 0);
+	const auto currentGUID = os_config_read_string(nullptr, "CurrentJoystickGUID", "");
+	const auto currentId   = static_cast<int>(os_config_read_uint(nullptr, "CurrentJoystick", 0));
 
 	return joystickMatchesGuid(testStick, currentGUID, currentId);
 }
