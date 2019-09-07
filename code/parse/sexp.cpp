@@ -32698,7 +32698,9 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t3: The Y coordinate to face.\r\n"
 		"\t4: The Z coordinate to face.\r\n"
 		"\t5: Turn time in milliseconds (optional)\r\n"
-		"\t6: Bank (optional). Enter a non-zero value to enable banking." },
+		"\t6: Bank (optional). Enter a non-zero value to enable banking.\r\n"
+		"Note that if Turn time is specified, this needs to be called once per frame, as the rotation is reset every frame.\r\n"
+		"Note that Turn time is the time for the object to rotate a full revolution, *not* how long it will take to do this turn." },
 
 	// Goober5000
 	{ OP_SET_OBJECT_FACING_OBJECT, "set-object-facing-object\r\n"
@@ -32707,7 +32709,9 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t1: The name of a ship or wing.\r\n"
 		"\t2: The object to face.\r\n"
 		"\t3: Turn time in milliseconds (optional)\r\n"
-		"\t4: Bank (optional). Enter a non-zero value to enable banking." },
+		"\t4: Bank (optional). Enter a non-zero value to enable banking.\r\n"
+		"Note that if Turn time is specified, this needs to be called once per frame, as the rotation is reset every frame.\r\n"
+		"Note that Turn time is the time for the object to rotate a full revolution, *not* how long it will take to do this turn." },
 
 	// Wanderer
 	{ OP_SHIP_MANEUVER, "ship-maneuver\r\n"
