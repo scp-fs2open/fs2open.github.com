@@ -1556,6 +1556,9 @@ static int cf_file_already_in_list( SCP_vector<SCP_string> &list, const char *fi
 // This one has a 'type', which is a CF_TYPE_* value.  Because this specifies the directory
 // location, 'filter' only needs to be the filter itself, with no path information.
 // See above descriptions of cf_get_file_list() for more information about how it all works.
+// Note that filesystem listing is always sorted by name *before* sorting by the
+// provided sort order. This isn't strictly needed on NTFS, which always provides the list
+// sorted by name. But on mac/linux it's always needed.
 int cf_get_file_list(SCP_vector<SCP_string>& list, int pathtype, const char* filter, int sort,
                      SCP_vector<file_list_info>* info, uint32_t location_flags)
 {
@@ -1744,6 +1747,9 @@ int cf_get_file_list(SCP_vector<SCP_string>& list, int pathtype, const char* fil
 	}
 
 
+	// tcrayford: sort the filesystem listing by name by default to ensure
+	// a stable order across filesystems
+	cf_sort_filenames( list, CF_SORT_NAME, info );
 	if (sort != CF_SORT_NONE)	{
 		cf_sort_filenames( list, sort, info );
 	}
