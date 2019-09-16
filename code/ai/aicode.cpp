@@ -556,6 +556,7 @@ void init_ai_class(ai_class *aicp)
 		aicp->ai_chance_to_use_missiles_on_plr[i] = INT_MIN;
 		aicp->ai_max_aim_update_delay[i] = FLT_MIN;
 		aicp->ai_turret_max_aim_update_delay[i] = FLT_MIN;
+		aicp->ai_smart_secondary_evade_chance[i] = FLT_MIN;
 	}
     aicp->ai_profile_flags.reset();
     aicp->ai_profile_flags_set.reset();
@@ -736,6 +737,9 @@ void parse_ai_class()
 
 	if (optional_string("$Turret Max Aim Update Delay:"))
 		parse_float_list(aicp->ai_turret_max_aim_update_delay, NUM_SKILL_LEVELS);
+
+	if (optional_string("$Smart Secondary Evade Chance:"))
+		parse_float_list(aicp->ai_smart_secondary_evade_chance, NUM_SKILL_LEVELS);
 
 	set_aic_flag(aicp, "$big ships can attack beam turrets on untargeted ships:", AI::Profile_Flags::Big_ships_can_attack_beam_turrets_on_untargeted_ships);
 
@@ -12277,6 +12281,7 @@ void ai_maybe_evade_locked_missile(object *objp, ai_info *aip)
 			float dist = vm_vec_dist_quick(&missile_objp->pos, &objp->pos);
 			float dist2 = 4.0f  * vm_vec_mag_quick(&missile_objp->phys_info.vel);			
 			if (dist < dist2) {
+				float secondary_evade_chance = std::max(aip->ai_smart_secondary_evade_chance, (1.0f - (float) (shipp->cmeasure_count/8.0f)));
 				switch (aip->mode) {
 				//	If in AIM_STRAFE mode, don't evade if parent of weapon is targeted ship.
 				case AIM_STRAFE:
@@ -12290,9 +12295,12 @@ void ai_maybe_evade_locked_missile(object *objp, ai_info *aip)
 				case AIM_CHASE:
 					//	Don't always go into evade weapon mode.  Usually, a countermeasure gets launched.
 					// If low on countermeasures, more likely to try to evade.  If 8+, never evade due to low cmeasures.
-					if (((((Missiontime >> 18) ^ OBJ_INDEX(objp)) & 3) == 0) || 
+					// tcrayford: add smart secondary evade - when >0,
+					// consider whichever is higher, the countermeasure
+					// based chance or ai_smart_secondary_evade
+					if (((((Missiontime >> 18) ^ OBJ_INDEX(objp)) & 3) == 0) ||
 						(objp->phys_info.speed < 40.0f) ||
-						(frand() < 1.0f - (float) shipp->cmeasure_count/8.0f)) {
+						(frand() < secondary_evade_chance)) {
 						if (aip->submode != SM_ATTACK_FOREVER) {	//	SM_ATTACK_FOREVER means engines blown.
 							aip->submode = SM_EVADE_WEAPON;
 							aip->submode_start_time = Missiontime;
@@ -14430,6 +14438,8 @@ void init_aip_from_class_and_profile(ai_info *aip, ai_class *aicp, ai_profile_t 
 		profile->chance_to_use_missiles_on_plr[Game_skill_level] : aicp->ai_chance_to_use_missiles_on_plr[Game_skill_level];
 	aip->ai_max_aim_update_delay = (aicp->ai_max_aim_update_delay[Game_skill_level] == FLT_MIN) ? 
 		profile->max_aim_update_delay[Game_skill_level] : aicp->ai_max_aim_update_delay[Game_skill_level];
+	aip->ai_smart_secondary_evade_chance = (aicp->ai_smart_secondary_evade_chance[Game_skill_level] == FLT_MIN) ? 
+		profile->max_aim_update_delay[Game_skill_level] : aicp->ai_smart_secondary_evade_chance[Game_skill_level];
 	aip->ai_turret_max_aim_update_delay = (aicp->ai_turret_max_aim_update_delay[Game_skill_level] == FLT_MIN) ? 
 		profile->turret_max_aim_update_delay[Game_skill_level] : aicp->ai_turret_max_aim_update_delay[Game_skill_level];
 
