@@ -1441,6 +1441,7 @@ void game_do_end_mission_popup()
 		// do housekeeping things.
 		game_stop_time();
 		game_stop_looped_sounds();
+		audiostream_pause_all();
 		snd_stop_all();
 
 		pf_flags = PF_BODY_BIG | PF_USE_AFFIRMATIVE_ICON | PF_USE_NEGATIVE_ICON;
@@ -1456,6 +1457,7 @@ void game_do_end_mission_popup()
 			if (Game_subspace_effect) {
 				game_start_subspace_ambient_sound();
 			}
+			audiostream_unpause_all();
 			gameseq_post_event(GS_EVENT_ENTER_GAME);
 			break;
 
