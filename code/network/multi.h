@@ -257,7 +257,7 @@ class player;
 #define NETPLAYER_UPDATE			0xE4		// a player update packet
 #define OBJECT_UPDATE				0xE6		// an object update packet from server to all clients
 #define MISSION_LOG_ENTRY			0xE7		// ad an item into the mission log
-#define UPDATE_DESCRIPT				0xE8		// update the netgame description
+#define UPDATE_DESCRIPT				0xE8		// update the netgame description -- Cyborg17, Now updated for multiple description packets
 #define COUNTDOWN						0xE9		// countdown timer for starting a game (pretty benign)
 #define DEBRIEF_INFO					0xEA		// end of mission debriefing information
 #define EMP_EFFECT					0xEB		// EMP effect (mission disk only)
@@ -365,6 +365,21 @@ class player;
 #define STATS_ALLTIME_KILLS			5			// alltime kills, for one player
 
 #define MAX_SHIPS_PER_PACKET		64			// Number of ships in a STATS_MISSION_KILLS or STATS_ALLTIME_KILLS packet
+
+// campaign and mission description packet post-header type info
+#define DESCRIPT_MESSAGE_REQUEST	(1 << 0)
+#define DESCRIPT_PACKET_CAMPAIGN_MESSAGE_1	(1 << 1)
+#define DESCRIPT_PACKET_CAMPAIGN_MESSAGE_2	(1 << 2)
+#define DESCRIPT_PACKET_MISSION_MESSAGE_1	(1 << 3)
+#define DESCRIPT_PACKET_MISSION_MESSAGE_2	(1 << 4)
+#define DESCRIPT_PACKET_NO_ADDENDUM			(1 << 5)
+#define DESCRIPT_PACKET_FINAL_MESSAGE		(1 << 6)
+
+#define MULTI_MAX_DESC_LEN			2*(MAX_PACKET_SIZE - 10)
+
+const char PRE_CAMPAIGN_DESC[23] =	"Campaign Description:\n";
+const char PRE_MISSION_DESC[28]  =	"First Mission:\n";
+const char DOUBLE_NEW_LINE[3]    =  "\n\n";
 
 // ----------------------------------------------------------------------------------------
 
@@ -482,6 +497,8 @@ typedef struct netgame_info {
 	char		title[NAME_LENGTH+1];			// title of the mission (as appears in the mission file)
 	char		campaign_name[NAME_LENGTH+1];	// current campaign name	
 	char		passwd[MAX_PASSWD_LEN+1];		// password for the game
+	char		mission_desc[MULTI_MAX_DESC_LEN];      // Cyborg17 - Description of the current mission.
+	char		campaign_desc[MULTI_MAX_DESC_LEN];     // Cyborg17 - Description of the current campaign.
 	int		version_info;						// version info for this game.
 	int		type_flags;							// see NG_TYPE_* defines
 	int		mode;									// see NG_MODE_* defines

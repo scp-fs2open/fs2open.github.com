@@ -324,6 +324,9 @@ extern bool drop_extension(SCP_string &str);
 //WMC - backspaces the first character of given char pointer
 extern void backspace(char *src);
 
+// Cyborg17 - Multi Character version of backspace to make our lives easier.
+extern void backspace(char* src, unsigned int spaces);
+
 // Goober5000 - prints a properly comma-separated integer to a string
 extern void format_integer_with_commas(char *buf, int integer, bool use_comma_with_four_digits);
 

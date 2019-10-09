@@ -22,6 +22,7 @@ struct net_addr;
 
 void multi_common_add_text(const char *txt,int auto_scroll = 0);
 void multi_common_set_text(const char *str,int auto_scroll = 0);
+void multi_mission_desciption_set(const char* str_in, int code, int index);
 
 // time between sending refresh packets to known servers
 #define MULTI_JOIN_REFRESH_TIME			45000			
@@ -63,6 +64,9 @@ typedef struct multi_create_info {
 #define MICON_VOLITION					9
 #define MICON_VALID						10
 #define MICON_CD							11
+
+// a lone global which keeps track of how many mission we've sent description packets for.....
+extern ubyte Multi_sent_descript_packet_current_index;
 
 // common icon stuff
 extern int Multi_common_icons[MULTI_NUM_COMMON_ICONS];

@@ -107,6 +107,12 @@ const int MULTI_PING_MIN_ONE_SECOND = 1000;
 
 char Multi_common_all_text[MULTI_COMMON_MAX_TEXT];
 char Multi_common_text[MULTI_COMMON_TEXT_MAX_LINES][MULTI_COMMON_TEXT_MAX_LINE_LENGTH];
+char Multi_received_mission_description1[MAX_PACKET_SIZE];
+char Multi_received_mission_description2[MAX_PACKET_SIZE];
+char Multi_received_mission_description3[MAX_PACKET_SIZE];
+char Multi_received_mission_description4[MAX_PACKET_SIZE];
+int Multi_received_mission_index = -1;
+ubyte Multi_sent_descript_packet_current_index = 0;
 
 int Multi_common_top_text_line = -1;		// where to start displaying from
 int Multi_common_num_text_lines = 0;		// how many lines we have
@@ -116,6 +122,7 @@ void multi_common_scroll_text_down();
 void multi_common_move_to_bottom();
 void multi_common_render_text();
 void multi_common_split_text();
+void multi_move_description_to_common();
 
 #define MAX_IP_STRING		255				// maximum length for ip string
 
@@ -193,6 +200,48 @@ void multi_common_add_text(const char *str,int auto_scroll)
 	}
 }
 
+void multi_mission_desciption_set(const char* str_in, int code, int index) 
+{
+	// check to see if this is an out of order message description that got very delayed.
+	if (index < Multi_received_mission_index) {
+		// make sure it's not a wrap case.
+		if (Multi_received_mission_index <= 250) {
+			return;
+		}
+	} // if this is a new description, reset everything and make the text empty until the new
+	  // description is ready.
+	else if (index != Multi_received_mission_index) {
+		Multi_received_mission_index = index;
+		memset(Multi_received_mission_description1, 0, MAX_PACKET_SIZE);
+		memset(Multi_received_mission_description2, 0, MAX_PACKET_SIZE);
+		memset(Multi_received_mission_description3, 0, MAX_PACKET_SIZE);
+		memset(Multi_received_mission_description4, 0, MAX_PACKET_SIZE);
+	}
+
+	// now set whatever we've received.
+	if (code & DESCRIPT_PACKET_CAMPAIGN_MESSAGE_1) {
+		memset(Multi_received_mission_description1, 0, MAX_PACKET_SIZE);
+		strcpy_s(Multi_received_mission_description1, str_in);
+	}
+	else if (code & DESCRIPT_PACKET_CAMPAIGN_MESSAGE_2) {
+		memset(Multi_received_mission_description2, 0, MAX_PACKET_SIZE);
+		strcpy_s(Multi_received_mission_description2, str_in);
+	}
+	else if (code & DESCRIPT_PACKET_MISSION_MESSAGE_1) {
+		memset(Multi_received_mission_description3, 0, MAX_PACKET_SIZE);
+		strcpy_s(Multi_received_mission_description3, str_in);
+	}
+	else if (code & DESCRIPT_PACKET_MISSION_MESSAGE_2) {
+		memset(Multi_received_mission_description4, 0, MAX_PACKET_SIZE);
+		strcpy_s(Multi_received_mission_description4, str_in);
+	}
+
+	// who care if we don't *yet* have everything for a split second and will look weird
+	// for that tiny period of time, just "KISS"
+	multi_move_description_to_common();
+}
+
+
 void multi_common_split_text()
 {
 	int	n_lines, i;
@@ -235,6 +284,19 @@ void multi_common_render_text()
 		gr_set_color_fast(&Color_more_bright);
 		gr_string(Multi_common_text_coords[gr_screen.res][0], (Multi_common_text_coords[gr_screen.res][1] + Multi_common_text_coords[gr_screen.res][3])-5, XSTR("more",755), GR_RESIZE_MENU);
 	}
+}
+
+// just quickly move the received description strings to common set text
+void multi_move_description_to_common() 
+{
+	char string_out[MULTI_COMMON_MAX_TEXT];
+	memset(string_out, 0, MULTI_COMMON_MAX_TEXT);
+	strcpy_s(string_out, Multi_received_mission_description1);
+	strcat_s(string_out, Multi_received_mission_description2);
+	strcat_s(string_out, Multi_received_mission_description3);
+	strcat_s(string_out, Multi_received_mission_description4);
+
+	multi_common_set_text(string_out);
 }
 
 // common notification messaging stuff
@@ -1609,7 +1671,7 @@ void multi_join_process_select()
 		Multi_join_list_start_item = Multi_join_selected_item;
 
 		// send a mission description request to this guy		
-		send_netgame_descript_packet(&Multi_join_selected_item->server_addr,0);
+		send_netgame_descript_packet(&Multi_join_selected_item->server_addr, 0, Netgame.campaign_mode);
 		multi_common_set_text("");
 
 		// I sure hope this doesn't happen
@@ -1631,7 +1693,7 @@ void multi_join_process_select()
 			Assert(Multi_join_selected_item != NULL);
 
 			// send a mission description request to this guy
-			send_netgame_descript_packet(&Multi_join_selected_item->server_addr,0);
+			send_netgame_descript_packet(&Multi_join_selected_item->server_addr, 0, false);
 			multi_common_set_text("");			
 		}		
 	}
@@ -2708,6 +2770,9 @@ void multi_sg_init_gamenet()
 	if(Multi_sg_netgame->security < 16){
 		Multi_sg_netgame->security += 16;
 	}
+
+	memset(Multi_sg_netgame->campaign_desc, 0, sizeof(Multi_sg_netgame->campaign_desc));
+	memset(Multi_sg_netgame->mission_desc, 0, sizeof(Multi_sg_netgame->mission_desc));
 
 	// set the version_info field
 	Multi_sg_netgame->version_info = NG_VERSION_ID;
@@ -4715,6 +4780,9 @@ void multi_create_list_select_item(int n)
 
 	char *campaign_desc;
 
+	// a new game has been selected, so increment the index that description messages use
+	Multi_sent_descript_packet_current_index++;
+
 	// if not on the standalone server
 	if(Net_player->flags & NETINFO_FLAG_AM_MASTER){
 		ng = &Netgame;	
@@ -4733,7 +4801,6 @@ void multi_create_list_select_item(int n)
 		}
 
 		Multi_create_list_select = n;
-
 		// set the mission name
 		if (Multi_create_list_mode == MULTI_CREATE_SHOW_MISSIONS) {
 			multi_create_select_to_filename(n, ng->mission_name);
@@ -4758,7 +4825,7 @@ void multi_create_list_select_item(int n)
 					ng->type_flags = NG_TYPE_SW;
 				} else {
 					ng->type_flags = NG_TYPE_TVT;
-				}
+				} 
 			} else if (mcip->flags & MISSION_TYPE_MULTI_COOP) {
 				ng->type_flags = NG_TYPE_COOP;
 			} else if (mcip->flags & MISSION_TYPE_MULTI_DOGFIGHT) {
@@ -4776,22 +4843,27 @@ void multi_create_list_select_item(int n)
 			multi_team_reset();
 		}
 
+		// out with the old, before we start with the new
+		memset(ng->campaign_desc, 0, MULTI_MAX_DESC_LEN);
+		memset(ng->mission_desc, 0, MULTI_MAX_DESC_LEN);
+
 		switch(Multi_create_list_mode){
 		case MULTI_CREATE_SHOW_MISSIONS:		
 			// don't forget to update the info box window thingie
 			if(Net_player->flags & NETINFO_FLAG_AM_MASTER){			
 				ship_level_init();		// mwa -- 10/15/97.  Call this function to reset number of ships in mission
 				ng->max_players = mission_parse_get_multi_mission_info( ng->mission_name );				
-				
+
 				Assert(ng->max_players > 0);
 				strcpy_s(ng->title,The_mission.name);								
 
-				// set the information area text
-				multi_common_set_text(The_mission.mission_desc);
+				// set the information area text, and update the ng struct
+				strcpy(ng->mission_desc, The_mission.mission_desc);
+				multi_common_set_text(ng->mission_desc);
 			}
 			// if we're on the standalone, send a request for the description
 			else {
-				send_netgame_descript_packet(&Netgame.server_addr,0);
+				send_netgame_descript_packet(&Netgame.server_addr, 0, false);
 				multi_common_set_text("");
 			}
 
@@ -4807,15 +4879,18 @@ void multi_create_list_select_item(int n)
 			}
 			break;
 		case MULTI_CREATE_SHOW_CAMPAIGNS:
+			char* first_mission = nullptr;
+			mission* mp = &The_mission;
+
 			// if not on the standalone server
 			if(Net_player->flags & NETINFO_FLAG_AM_MASTER){
-				// get the campaign info				
-				memset(title,0,NAME_LENGTH+1);
-				if(!mission_campaign_get_info(ng->campaign_name,title,&campaign_type,&max_players, &campaign_desc)) {
-					memset(ng->campaign_name,0,NAME_LENGTH+1);
+   				memset(title, 0,NAME_LENGTH);
+				// get the campaign info
+				if(!mission_campaign_get_info(ng->campaign_name,title,&campaign_type,&max_players, &campaign_desc, &first_mission)) {
+					memset(ng->campaign_name,0,NAME_LENGTH);
 					ng->max_players = 0;
 				}
-				// if we successfully got the # of players
+				// if we successfully got the info
 				else {
 					memset(ng->title,0,NAME_LENGTH+1);
 					strcpy_s(ng->title,title);
@@ -4825,19 +4900,42 @@ void multi_create_list_select_item(int n)
 				nprintf(("Network","MC MAX PLAYERS : %d\n",ng->max_players));
 
 				// set the information area text
-				// multi_common_set_text(ng->title);
-				if (campaign_desc != NULL)
-				{
-					multi_common_set_text(campaign_desc);
+				//	Cyborg17 - Now that we can have both descriptions, markers in the text are helpful.
+				//  But that means we have a lot of concatenation...
+				char full_text[MULTI_COMMON_MAX_TEXT];				
+				memset(full_text, 0, MULTI_COMMON_MAX_TEXT);
+
+				// We can let the player know that the descption is empty by keeping it empty.
+				strcpy(full_text, PRE_CAMPAIGN_DESC);
+				if (campaign_desc != nullptr) {
+					strcpy(ng->campaign_desc, campaign_desc);
+					strcat_s(full_text, campaign_desc);
+				}	
+
+				// if we successfully got the mission description.
+				if (!get_mission_info(first_mission, mp, true)) {
+					 if (strlen(mp->mission_desc) > 0) {
+						strcat(full_text, DOUBLE_NEW_LINE);
+						strcat(full_text, PRE_MISSION_DESC);
+						strcat_s(full_text, mp->mission_desc);	
+						strcpy_s(ng->mission_desc, mp->mission_desc);
+						}
 				}
-				else 
-				{
-					multi_common_set_text("");
+				multi_common_set_text(full_text);
+
+				// free the malloc'ed strings from mission_campaign_get_info()
+				if (campaign_desc != nullptr) {
+					vm_free(campaign_desc);
 				}
-			}
-			// if on the standalone server, send a request for the description
-			else {
-				// no descriptions currently kept for campaigns
+				
+				if (first_mission != nullptr) {
+					vm_free(first_mission);
+				}
+
+			// standalones should now be able to request the info.
+			} else {
+				send_netgame_descript_packet(&Netgame.server_addr, 0, false);
+				multi_common_set_text("");
 			}
 
 			// netgame respawns are always 0 for campaigns (until the first mission is loaded)
@@ -6658,7 +6756,10 @@ void multi_game_client_setup_init()
 	multi_common_notify_init();
 
 	// initialize the common mission info display area.
-	multi_common_set_text("");	
+	multi_common_set_text("");
+
+	// reset the received description index.
+	Multi_received_mission_index = -1;
 
 	// use the common interface palette
 	multi_common_set_palette();	

@@ -4224,13 +4224,31 @@ bool drop_extension(SCP_string &str)
 //WMC
 void backspace(char* src)
 {
-	Assert(src!= NULL);		//this would be bad
+	Assert(src!= nullptr);		//this would be bad
 
 	char *dest = src;
 	src++;
 
 	while(*src != '\0') {
 		*dest++ = *src++;
+	}
+
+	*dest = '\0';
+}
+
+// Cyborg17 - Backspace the passed number of characters
+void backspace(char* src, unsigned int spaces)
+{
+	Assertion(src != nullptr, "Nullptr was sent to backspace(). This is a code error, please report!"); // this would be bad
+	Assertion(spaces < strlen(src), "Spaces in a call to backspace() was longer than the string it was trying to shorten.  This is a code error, please report!");
+
+	char* dest = src;
+	src += spaces;
+
+	while (*src != '\0') {
+		*dest = *src;
+		dest++;
+		src++;
 	}
 
 	*dest = '\0';

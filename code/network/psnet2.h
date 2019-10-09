@@ -32,6 +32,7 @@
 // kazan - I think this should raise the ships limit across the network
 //#define MAX_PACKET_SIZE 4096
 #define MAX_PACKET_SIZE		512
+#define MAX_PACKET_DESC_LEN MAX_PACKET_SIZE - 12
 
 #define DEFAULT_GAME_PORT 7808
 
