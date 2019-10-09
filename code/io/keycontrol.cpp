@@ -1453,16 +1453,17 @@ void game_do_end_mission_popup()
 			break;
 
 		case 2:
+			gameseq_post_event(GS_EVENT_ENTER_GAME);
+			break;
+
+		// do nothing; resume game
+		default:
 			// Cyborg17 - best place to check for this *one* looping sound.
 			if (Game_subspace_effect) {
 				game_start_subspace_ambient_sound();
 			}
 			audiostream_unpause_all();
-			gameseq_post_event(GS_EVENT_ENTER_GAME);
 			break;
-
-		default:
-			break;  // do nothing
 		}
 
 		game_start_time();
