@@ -5591,7 +5591,7 @@ void parse_variables()
 
 					break;
 				} else {
-					error_display(0, "Variable %s has the same name as an eternal variable. One of these should be renamed to avoid confusion", Sexp_variables[j].text);
+					error_display(0, "Variable %s has the same name as an eternal variable. One of these should be renamed to avoid confusion", Sexp_variables[j].variable_name);
 				}
 			}
 		}
