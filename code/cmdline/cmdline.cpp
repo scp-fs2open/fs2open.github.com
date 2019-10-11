@@ -122,6 +122,7 @@ enum BuildCaps
 };
 
 #define PARSE_COMMAND_LINE_STRING	"-parse_cmdline_only"
+#define GET_FLAGS_STRING			"-get_flags"
 
 typedef struct
 {
@@ -514,7 +515,7 @@ bool Cmdline_show_video_info = false;
 bool Cmdline_debug_window = false;
 
 // Other
-cmdline_parm get_flags_arg("-get_flags", "Output the launcher flags file", AT_STRING);
+cmdline_parm get_flags_arg(GET_FLAGS_STRING, "Output the launcher flags file", AT_STRING);
 cmdline_parm output_sexp_arg("-output_sexps", NULL, AT_NONE); //WMC - outputs all SEXPs to sexps.html
 cmdline_parm output_scripting_arg("-output_scripting", NULL, AT_NONE);	//WMC
 
@@ -919,11 +920,11 @@ void os_process_cmdline(char* cmdline)
 	delete[] argv;
 }
 
-bool has_cmdline_only_flag(int argc, char *argv[])
+bool has_cmdline_only_or_get_flags(int argc, char *argv[])
 {
 	for (int i = 0; i < argc; ++i)
 	{
-		if (!strcmp(argv[i], PARSE_COMMAND_LINE_STRING))
+		if (!strcmp(argv[i], PARSE_COMMAND_LINE_STRING) || !strcmp(argv[i], GET_FLAGS_STRING))
 		{
 			return true;
 		}
@@ -955,7 +956,9 @@ void os_init_cmdline(int argc, char *argv[])
 
 	FILE *fp;
 
-	if (!has_cmdline_only_flag(argc, argv)) {
+	// Don't parse any command-line config files if we specified PARSE_COMMAND_LINE_STRING (to explicitly prevent it),
+	// or GET_FLAGS_STRING (because the engine is going to do a quick exit and for GitHub issue #1221)
+	if (!has_cmdline_only_or_get_flags(argc, argv)) {
 		// Only parse the config file in the current directory if we are in legacy config mode
 		if (os_is_legacy_mode()) {
 			// read the cmdline_fso.cfg file from the data folder, and pass the command line arguments to
@@ -1020,7 +1023,7 @@ void os_init_cmdline(int argc, char *argv[])
 				fclose(fp);
 			}
 		}
-	} // If cmdline included PARSE_COMMAND_LINE_STRING
+	} // If cmdline included PARSE_COMMAND_LINE_STRING or GET_FLAGS_STRING
 
 	// By parsing cmdline last, anything actually on the command line will take precedence.
 	os_parse_parms(argc, argv);
@@ -1465,7 +1468,7 @@ static void write_flags_file() {
 }
 
 static flag_output_type get_flags_output_type() {
-	Assertion(get_flags_arg.found(), "This function is only valid if -get_flags is present!");
+	Assertion(get_flags_arg.found(), "This function is only valid if " GET_FLAGS_STRING " is present!");
 
 	if (!get_flags_arg.has_param()) {
 		// Default to binary mode
