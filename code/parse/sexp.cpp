@@ -9691,18 +9691,20 @@ int eval_for_counter(int arg_handler_node, int condition_node)
 {
 	bool is_nan, is_nan_forever;
 	int n, num_valid_arguments, num_true, num_false, num_known_true, num_known_false;
-	int i, counter_start, counter_stop, counter_step;
+	int i, count, counter_start, counter_stop, counter_step;
 	char buf[NAME_LENGTH];
 	Assert(arg_handler_node != -1 && condition_node != -1);
 
 	n = CDR(arg_handler_node);
 
 	// determine the counter parameters
-	eval_nums(n, is_nan, is_nan_forever, counter_start, counter_stop, counter_step);
+	count = eval_nums(n, is_nan, is_nan_forever, counter_start, counter_stop, counter_step);
 	if (is_nan)
 		return SEXP_FALSE;
 	if (is_nan_forever)
 		return SEXP_KNOWN_FALSE;
+	if (count < 3)
+		counter_step = 1;
 
 	// a bunch of error checking
 	if (counter_step == 0)
