@@ -13491,8 +13491,7 @@ void sexp_grant_promotion()
  */
 void sexp_grant_medal(int n)
 {
-	int i, id = -1;
-	bool xstr = false;
+	int i;
 	char *medal_name;
 
 	// don't give medals in normal gameplay when not in campaign mode
