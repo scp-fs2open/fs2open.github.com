@@ -13364,8 +13364,6 @@ void sexp_nebula_toggle_poof(int n)
 	bool result = is_sexp_true(CDR(n));
 	int i;
 
-	if (name == NULL) return;
-
 	for (i = 0; i < MAX_NEB2_POOFS; i++)
 	{
 		if (!stricmp(name,Neb2_poof_filenames[i]))
@@ -14826,7 +14824,6 @@ int sexp_event_status( int n, int want_true )
 	int i, result;
 
 	name = CTEXT(n);
-	Assertion(name != nullptr, "CTEXT returned NULL for node %d!", n);
 
 	for (i = 0; i < Num_mission_events; i++ ) {
 		// look for the event name, check it's status.  If formula is gone, we know the state won't ever change.
@@ -14865,7 +14862,6 @@ int sexp_event_delay_status( int n, int want_true, bool use_msecs = false)
 	bool use_as_directive = false;
 
 	name = CTEXT(n);
-	Assertion(name != nullptr, "CTEXT returned NULL for node %d!", n);
 
 	if (use_msecs) {
 		uint64_t tempDelay = eval_num(CDR(n), is_nan, is_nan_forever);
@@ -14940,7 +14936,6 @@ int sexp_event_incomplete(int n)
 	int i;
 
 	name = CTEXT(n);
-	Assertion(name != nullptr, "CTEXT returned NULL for node %d!", n);
 	
 	for (i = 0; i < Num_mission_events; i++ ) {
 		if ( !stricmp(Mission_events[i].name, name ) ) {
@@ -15378,29 +15373,27 @@ void sexp_ship_subsys_guardian_threshold(int node)
 		// check for HULL
 		hull_name = CTEXT(n);
 
-		if (hull_name != NULL) {
-			int generic_type = get_generic_subsys(hull_name);
-			if ( !strcmp(hull_name, SEXP_HULL_STRING) ) {
-				Ships[ship_num].ship_guardian_threshold = threshold;
-			}
-			else if (generic_type) {
-				// search through all subsystems
-				for (ss = GET_FIRST(&Ships[ship_num].subsys_list); ss != END_OF_LIST(&Ships[ship_num].subsys_list); ss = GET_NEXT(ss)) {
-					if (generic_type == ss->system_info->type) {
-						ss->subsys_guardian_threshold = threshold;
-					}
-				}
-			}				
-			else {
-				ss = ship_get_subsys(&Ships[ship_num], hull_name);
-				if ( ss == NULL ) {
-					if (ship_class_unchanged(ship_num)) {
-						Warning(LOCATION, "Invalid subsystem passed to ship-subsys-guardian-threshold: %s does not have a %s subsystem", ship_name, hull_name);
-					}
-				} 
-				else {
+		int generic_type = get_generic_subsys(hull_name);
+		if ( !strcmp(hull_name, SEXP_HULL_STRING) ) {
+			Ships[ship_num].ship_guardian_threshold = threshold;
+		}
+		else if (generic_type) {
+			// search through all subsystems
+			for (ss = GET_FIRST(&Ships[ship_num].subsys_list); ss != END_OF_LIST(&Ships[ship_num].subsys_list); ss = GET_NEXT(ss)) {
+				if (generic_type == ss->system_info->type) {
 					ss->subsys_guardian_threshold = threshold;
 				}
+			}
+		}				
+		else {
+			ss = ship_get_subsys(&Ships[ship_num], hull_name);
+			if ( ss == NULL ) {
+				if (ship_class_unchanged(ship_num)) {
+					Warning(LOCATION, "Invalid subsystem passed to ship-subsys-guardian-threshold: %s does not have a %s subsystem", ship_name, hull_name);
+				}
+			} 
+			else {
+				ss->subsys_guardian_threshold = threshold;
 			}
 		}
 	}
@@ -30089,8 +30082,8 @@ char *CTEXT(int n)
 	char *current_argument; 
 
 	Assertion(n >= 0 && n < Num_sexp_nodes, "Passed an out-of-range node index (%d) to CTEXT!", n);
-	if ( n < 0 ) {
-		return NULL;
+	if ( n < 0 || n >= Num_sexp_nodes ) {
+		return "!INVALID!";
 	}
 
 	// Goober5000 - MWAHAHAHAHAHAHAHA!  Thank you, Volition programmers!  Without
