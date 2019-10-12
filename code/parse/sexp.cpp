@@ -222,7 +222,7 @@ SCP_vector<sexp_oper> Operators = {
 
 	//Player Sub-Category
 	{ "was-promotion-granted",			OP_WAS_PROMOTION_GRANTED,				0,	1,			SEXP_BOOLEAN_OPERATOR,	},
-	{ "was-medal-granted",				OP_WAS_MEDAL_GRANTED,					0,	1,			SEXP_BOOLEAN_OPERATOR,	},
+	{ "was-medal-granted",				OP_WAS_MEDAL_GRANTED,					0,	2,			SEXP_BOOLEAN_OPERATOR,	},
 	{ "skill-level-at-least",			OP_SKILL_LEVEL_AT_LEAST,				1,	1,			SEXP_BOOLEAN_OPERATOR,	},
 	{ "num_kills",						OP_NUM_KILLS,							1,	1,			SEXP_INTEGER_OPERATOR,	},
 	{ "num_assists",					OP_NUM_ASSISTS,							1,	1,			SEXP_INTEGER_OPERATOR,	},
@@ -557,7 +557,7 @@ SCP_vector<sexp_oper> Operators = {
 	{ "set-debriefing-toggled",			OP_SET_DEBRIEFING_TOGGLED,				1,	1,			SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "allow-treason",					OP_ALLOW_TREASON,						1,	1,			SEXP_ACTION_OPERATOR,	},	// Karajorma
 	{ "grant-promotion",				OP_GRANT_PROMOTION,						0,	0,			SEXP_ACTION_OPERATOR,	},
-	{ "grant-medal",					OP_GRANT_MEDAL,							1,	1,			SEXP_ACTION_OPERATOR,	},
+	{ "grant-medal",					OP_GRANT_MEDAL,							1,	2,			SEXP_ACTION_OPERATOR,	},
 	{ "allow-ship",						OP_ALLOW_SHIP,							1,	1,			SEXP_ACTION_OPERATOR,	},
 	{ "allow-weapon",					OP_ALLOW_WEAPON,						1,	1,			SEXP_ACTION_OPERATOR,	},
 	{ "tech-add-ships",					OP_TECH_ADD_SHIP,						1,	INT_MAX,	SEXP_ACTION_OPERATOR,	},
@@ -3327,6 +3327,25 @@ void preload_turret_change_weapon(char *text)
 	weapon_mark_as_used(idx);
 }
 
+// Goober5000
+// we don't use the do_preload function because the preloader needs to access two nodes at a time
+// also we're not using CTEXT or eval_num here because XSTR should really be constant, and
+// also because we can't really run sexp stuff in a preloader
+void localize_sexp(int text_node, int id_node)
+{
+	// we need both a name and an id
+	if (text_node < 0 || id_node < 0)
+		return;
+
+	int id = atoi(Sexp_nodes[id_node].text);
+	Assert(id < 10000000);
+	SCP_string xstr;
+	sprintf(xstr, "XSTR(\"%s\", %d)", Sexp_nodes[text_node].text, id);
+
+	memset(Sexp_nodes[text_node].text, 0, TOKEN_LENGTH * sizeof(char));
+	lcl_ext_localize(xstr.c_str(), Sexp_nodes[text_node].text, TOKEN_LENGTH - 1);
+}
+
 /**
  * Returns the first sexp index of data this function allocates. (start of this sexp)
  *
@@ -3593,34 +3612,24 @@ int get_sexp()
 				// also we're not using CTEXT or eval_num here because XSTR should really be constant, and
 				// also because we can't really run sexp stuff in a preloader
 				n = CDR(start);
-				while (n >= 0)
+				while (n >= 0 && CDR(n) >= 0)
 				{
-					if (CDR(n) < 0)
-						break;
-
-					int id = atoi(Sexp_nodes[CDR(n)].text);
-					Assert(id < 10000000);
-					char xstr[NAME_LENGTH + 20];
-					sprintf(xstr, "XSTR(\"%s\", %d)", Sexp_nodes[n].text, id);
-
-					memset(Sexp_nodes[n].text, 0, NAME_LENGTH*sizeof(char));
-					lcl_ext_localize(xstr, Sexp_nodes[n].text, NAME_LENGTH - 1);
-
+					localize_sexp(n, CDR(n));
 					n = CDDR(n);
 				}
 				break;
 
-			case OP_MODIFY_VARIABLE_XSTR: {
-				n = CDDR(start); // First parameter is the variable name so we need to the second parameter
+			case OP_GRANT_MEDAL:
+			case OP_WAS_MEDAL_GRANTED:
+				// do XSTR translation if we have an XSTR id
+				n = CDR(start);
+				localize_sexp(n, CDR(n));
+				break;
 
-				int id = atoi(Sexp_nodes[CDR(n)].text);
-				Assert(id < 10000000);
-				SCP_string xstr;
-				sprintf(xstr, "XSTR(\"%s\", %d)", Sexp_nodes[n].text, id);
-
-				memset(Sexp_nodes[n].text, 0, NAME_LENGTH*sizeof(char));
-				lcl_ext_localize(xstr.c_str(), Sexp_nodes[n].text, TOKEN_LENGTH - 1);
-			}
+			case OP_MODIFY_VARIABLE_XSTR:
+				n = CDDR(start); // First parameter is the variable name so we need to get the second parameter
+				localize_sexp(n, CDR(n));
+				break;
 		}
 	}
 
@@ -8166,10 +8175,7 @@ int sexp_was_medal_granted(int n)
 		return SEXP_FALSE;
 	}
 
-	medal_name = CTEXT(n);
-
-	if (medal_name == NULL)
-		return SEXP_FALSE;
+	medal_name = Sexp_nodes[n].text;
 
 	for (i=0; i<Num_medals; i++) {
 		if (!stricmp(medal_name, Medals[i].name))
@@ -13485,16 +13491,15 @@ void sexp_grant_promotion()
  */
 void sexp_grant_medal(int n)
 {
-	int i;
+	int i, id = -1;
+	bool xstr = false;
 	char *medal_name;
 
 	// don't give medals in normal gameplay when not in campaign mode
 	if ( (Game_mode & GM_NORMAL) && !(Game_mode & GM_CAMPAIGN_MODE) )
 		return;
 
-	medal_name = CTEXT(n);
-	if (medal_name == NULL)
-		return;
+	medal_name = Sexp_nodes[n].text;
 
 	if (Player->stats.m_medal_earned >= 0) {
 		Warning(LOCATION, "Cannot grant more than one medal per mission!  New medal '%s' will replace old medal '%s'!", medal_name, Medals[Player->stats.m_medal_earned].name);
@@ -13634,31 +13639,7 @@ void sexp_tech_add_weapon(int node)
 }
 
 // Goober5000
-void sexp_tech_add_intel(int node)
-{
-	int i;
-	char *name;
-
-	Assert(node >= 0);
-	// this function doesn't mean anything when not in campaign mode
-	if ( !(Game_mode & GM_CAMPAIGN_MODE) )
-		return;
-
-	while (node >= 0) {
-		name = CTEXT(node);
-		i = intel_info_lookup(name);
-		if (i >= 0)
-			Intel_info[i].flags |= IIF_IN_TECH_DATABASE;
-		else
-			Warning(LOCATION, "In tech-add-intel, intel name \"%s\" invalid", name);
-
-		node = CDR(node);
-	}
-}
-
-
-// Goober5000
-void sexp_tech_add_intel_xstr(int node)
+void sexp_tech_add_intel(int node, boolean xstr)
 {
 	int i, id, n = node;
 	char *name;
@@ -13673,17 +13654,24 @@ void sexp_tech_add_intel_xstr(int node)
 		// don't use things like CTEXT or eval_num, since we didn't in the preloader
 		name = Sexp_nodes[n].text;
 		n = CDR(n);
-		if (n < 0)
-			break;
-		id = atoi(Sexp_nodes[n].text);
-		n = CDR(n);
 
-		// we already translated this node in the preloader, so just look it up
+		// the xstr variant must have an id
+		if (xstr)
+		{
+			if (n < 0)
+				break;
+			id = atoi(Sexp_nodes[n].text);
+			n = CDR(n);
+		}
+
+		// if we have an xstr, we already translated this node in the preloader, so just look it up
 		i = intel_info_lookup(name);
 		if (i >= 0)
 			Intel_info[i].flags |= IIF_IN_TECH_DATABASE;
+		else if (xstr)
+			Warning(LOCATION, "In tech-add-intel-xstr, entry XSTR(\"%s\", %d) invalid", name, id);
 		else
-			Warning(LOCATION, "Intel entry XSTR(\"%s\", %d) invalid", name, id);
+			Warning(LOCATION, "In tech-add-intel, entry \"%s\" invalid", name);
 	}
 }
 
@@ -25208,12 +25196,8 @@ int eval_sexp(int cur_node, int referenced_node)
 				break;
 
 			case OP_TECH_ADD_INTEL:
-				sexp_tech_add_intel(node);
-				sexp_val = SEXP_TRUE;
-				break;
-
 			case OP_TECH_ADD_INTEL_XSTR:
-				sexp_tech_add_intel_xstr(node);
+				sexp_tech_add_intel(node, op_num == OP_TECH_ADD_INTEL_XSTR);
 				sexp_val = SEXP_TRUE;
 				break;
 
@@ -28493,7 +28477,7 @@ int query_operator_argument_type(int op, int argnum)
 
 		case OP_GRANT_MEDAL:
 		case OP_WAS_MEDAL_GRANTED:
-			return OPF_MEDAL_NAME;
+			return (argnum == 0) ? OPF_MEDAL_NAME : OPF_NUMBER;
 
 		case OP_IS_CARGO_KNOWN:
 			return OPF_SHIP;
@@ -33113,8 +33097,9 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	{ OP_GRANT_MEDAL, "Grant medal (Action operator)\r\n"
 		"\tIn single player missions, this function grants the given medal to the player.  "
 		"Currently, only 1 medal will be allowed to be given per mission.\r\n\r\n"
-		"Takes 1 argument...\r\n"
-		"\t1:\tName of medal to grant to player." },
+		"Takes 1 or 2 arguments...\r\n"
+		"\t1:\tName of medal to grant to player.\r\n"
+		"\t2:\tXSTR ID of medal name, or -1 if there is no XSTR entry (optional).\r\n" },
 
 	{ OP_GOOD_SECONDARY_TIME, "Set preferred secondary weapons\r\n"
 		"\tThis sexpression is used to inform the AI about preferred secondary weapons to "
@@ -33182,8 +33167,9 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\tReturns true if a medal was granted via via the 'Grant medal' operator in the mission.  "
 		"If you provide the optional argument to this operator, then true is only returned if the "
 		"specified medal was granted.\r\n\r\n"
-		"Returns a boolean value.  Takes 0 or 1 arguments...\r\n"
-		"\t1:\tName of medal to specifically check for (optional)." },
+		"Returns a boolean value.  Takes 0-2 arguments...\r\n"
+		"\t1:\tName of medal to specifically check for (optional).\r\n"
+		"\t2:\tXSTR ID of medal name, or -1 if there is no XSTR entry (optional).\r\n" },
 
 	{ OP_GOOD_REARM_TIME, "Good rearm time (Action operator)\r\n"
 		"\tInforms the game logic that right now is a good time for a given team to attempt to "
