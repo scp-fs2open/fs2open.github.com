@@ -12006,6 +12006,10 @@ void sexp_send_message(int n)
 		priority = tmp;
 	}
 
+	// we might override the sender
+	if (The_mission.flags[Mission::Mission_Flags::Override_hashcommand] && !strcmp(who_from, "#Command"))
+		who_from = The_mission.command_sender;
+
 	sexp_send_one_message( name, who_from, priority, 0, 0 );
 }
 
@@ -12053,6 +12057,10 @@ void sexp_send_message_list(int n)
 			Warning(LOCATION, "Encountered a NaN in sexp-send-message-list");
 			return;
 		}
+
+		// we might override the sender
+		if (The_mission.flags[Mission::Mission_Flags::Override_hashcommand] && !strcmp(who_from, "#Command"))
+			who_from = The_mission.command_sender;
 
 		// send the message
 		sexp_send_one_message(name, who_from, priority, 1, delay);
