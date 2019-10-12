@@ -1129,7 +1129,7 @@ int sexp_tree::get_default_value(sexp_list_item* item, char* text_buf, int op, i
 			}
 		} else if (Operators[op].value == OP_JETTISON_CARGO_NEW) {
 			item->set_data("25", (SEXPT_NUMBER | SEXPT_VALID));
-		} else if ((Operators[op].value == OP_TECH_ADD_INTEL_XSTR) || (Operators[op].value == OP_GRANT_MEDAL) || (Operators[op].value == OP_WAS_MEDAL_GRANTED)) {
+		} else if (Operators[op].value == OP_TECH_ADD_INTEL_XSTR) {
 			item->set_data("-1", (SEXPT_NUMBER | SEXPT_VALID));
 		} else {
 			item->set_data("0", (SEXPT_NUMBER | SEXPT_VALID));

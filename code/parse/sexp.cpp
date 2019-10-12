@@ -222,7 +222,7 @@ SCP_vector<sexp_oper> Operators = {
 
 	//Player Sub-Category
 	{ "was-promotion-granted",			OP_WAS_PROMOTION_GRANTED,				0,	1,			SEXP_BOOLEAN_OPERATOR,	},
-	{ "was-medal-granted",				OP_WAS_MEDAL_GRANTED,					0,	2,			SEXP_BOOLEAN_OPERATOR,	},
+	{ "was-medal-granted",				OP_WAS_MEDAL_GRANTED,					0,	1,			SEXP_BOOLEAN_OPERATOR,	},
 	{ "skill-level-at-least",			OP_SKILL_LEVEL_AT_LEAST,				1,	1,			SEXP_BOOLEAN_OPERATOR,	},
 	{ "num_kills",						OP_NUM_KILLS,							1,	1,			SEXP_INTEGER_OPERATOR,	},
 	{ "num_assists",					OP_NUM_ASSISTS,							1,	1,			SEXP_INTEGER_OPERATOR,	},
@@ -557,7 +557,7 @@ SCP_vector<sexp_oper> Operators = {
 	{ "set-debriefing-toggled",			OP_SET_DEBRIEFING_TOGGLED,				1,	1,			SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "allow-treason",					OP_ALLOW_TREASON,						1,	1,			SEXP_ACTION_OPERATOR,	},	// Karajorma
 	{ "grant-promotion",				OP_GRANT_PROMOTION,						0,	0,			SEXP_ACTION_OPERATOR,	},
-	{ "grant-medal",					OP_GRANT_MEDAL,							1,	2,			SEXP_ACTION_OPERATOR,	},
+	{ "grant-medal",					OP_GRANT_MEDAL,							1,	1,			SEXP_ACTION_OPERATOR,	},
 	{ "allow-ship",						OP_ALLOW_SHIP,							1,	1,			SEXP_ACTION_OPERATOR,	},
 	{ "allow-weapon",					OP_ALLOW_WEAPON,						1,	1,			SEXP_ACTION_OPERATOR,	},
 	{ "tech-add-ships",					OP_TECH_ADD_SHIP,						1,	INT_MAX,	SEXP_ACTION_OPERATOR,	},
@@ -3617,13 +3617,6 @@ int get_sexp()
 					localize_sexp(n, CDR(n));
 					n = CDDR(n);
 				}
-				break;
-
-			case OP_GRANT_MEDAL:
-			case OP_WAS_MEDAL_GRANTED:
-				// do XSTR translation if we have an XSTR id
-				n = CDR(start);
-				localize_sexp(n, CDR(n));
 				break;
 
 			case OP_MODIFY_VARIABLE_XSTR:
@@ -8175,7 +8168,7 @@ int sexp_was_medal_granted(int n)
 		return SEXP_FALSE;
 	}
 
-	medal_name = Sexp_nodes[n].text;
+	medal_name = CTEXT(n);
 
 	for (i=0; i<Num_medals; i++) {
 		if (!stricmp(medal_name, Medals[i].name))
@@ -13498,7 +13491,7 @@ void sexp_grant_medal(int n)
 	if ( (Game_mode & GM_NORMAL) && !(Game_mode & GM_CAMPAIGN_MODE) )
 		return;
 
-	medal_name = Sexp_nodes[n].text;
+	medal_name = CTEXT(n);
 
 	if (Player->stats.m_medal_earned >= 0) {
 		Warning(LOCATION, "Cannot grant more than one medal per mission!  New medal '%s' will replace old medal '%s'!", medal_name, Medals[Player->stats.m_medal_earned].name);
@@ -13638,7 +13631,7 @@ void sexp_tech_add_weapon(int node)
 }
 
 // Goober5000
-void sexp_tech_add_intel(int node, boolean xstr)
+void sexp_tech_add_intel(int node, bool xstr)
 {
 	int i, id, n = node;
 	char *name;
@@ -28478,7 +28471,7 @@ int query_operator_argument_type(int op, int argnum)
 
 		case OP_GRANT_MEDAL:
 		case OP_WAS_MEDAL_GRANTED:
-			return (argnum == 0) ? OPF_MEDAL_NAME : OPF_NUMBER;
+			return OPF_MEDAL_NAME;
 
 		case OP_IS_CARGO_KNOWN:
 			return OPF_SHIP;
@@ -33098,9 +33091,8 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	{ OP_GRANT_MEDAL, "Grant medal (Action operator)\r\n"
 		"\tIn single player missions, this function grants the given medal to the player.  "
 		"Currently, only 1 medal will be allowed to be given per mission.\r\n\r\n"
-		"Takes 1 or 2 arguments...\r\n"
-		"\t1:\tName of medal to grant to player.\r\n"
-		"\t2:\tXSTR ID of medal name, or -1 if there is no XSTR entry (optional).\r\n" },
+		"Takes 1 argument...\r\n"
+		"\t1:\tName of medal to grant to player." },
 
 	{ OP_GOOD_SECONDARY_TIME, "Set preferred secondary weapons\r\n"
 		"\tThis sexpression is used to inform the AI about preferred secondary weapons to "
@@ -33168,9 +33160,8 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\tReturns true if a medal was granted via via the 'Grant medal' operator in the mission.  "
 		"If you provide the optional argument to this operator, then true is only returned if the "
 		"specified medal was granted.\r\n\r\n"
-		"Returns a boolean value.  Takes 0-2 arguments...\r\n"
-		"\t1:\tName of medal to specifically check for (optional).\r\n"
-		"\t2:\tXSTR ID of medal name, or -1 if there is no XSTR entry (optional).\r\n" },
+		"Returns a boolean value.  Takes 0 or 1 arguments...\r\n"
+		"\t1:\tName of medal to specifically check for (optional)." },
 
 	{ OP_GOOD_REARM_TIME, "Good rearm time (Action operator)\r\n"
 		"\tInforms the game logic that right now is a good time for a given team to attempt to "
