@@ -13662,6 +13662,8 @@ void sexp_tech_add_intel(int node, boolean xstr)
 			id = atoi(Sexp_nodes[n].text);
 			n = CDR(n);
 		}
+		else
+			id = -1;
 
 		// if we have an xstr, we already translated this node in the preloader, so just look it up
 		i = intel_info_lookup(name);
