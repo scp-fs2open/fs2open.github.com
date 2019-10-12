@@ -30083,7 +30083,8 @@ char *CTEXT(int n)
 
 	Assertion(n >= 0 && n < Num_sexp_nodes, "Passed an out-of-range node index (%d) to CTEXT!", n);
 	if ( n < 0 || n >= Num_sexp_nodes ) {
-		return "!INVALID!";
+		// we should make CTEXT return const char*, but that's for another PR
+		return const_cast<char*>("!INVALID!");
 	}
 
 	// Goober5000 - MWAHAHAHAHAHAHAHA!  Thank you, Volition programmers!  Without
