@@ -77,6 +77,8 @@ SCP_string dump_stacktrace()
 	
 	// iterate over the returned symbol lines. skip the first, it is the
 	// address of this function.
+	// NOTE: the numstrings type is different on different systems,
+	// so we use decltype here. See GitHub #1138.
 	for (decltype(numstrings) i = 1; i < numstrings; i++)
 	{
 		char *begin_name = 0, *begin_offset = 0, *end_offset = 0;
