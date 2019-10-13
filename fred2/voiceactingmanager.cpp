@@ -516,8 +516,10 @@ void VoiceActingManager::export_one_message(MMessage *message)
 	// replace file name
 	entry.Replace("$filename", message->wave_info.name);
 
-	// determine and replace persona
+	// replace message
 	entry.Replace("$message", message->message);
+
+	// determine and replace persona
 	if (message->persona_index >= 0)
 		entry.Replace("$persona", Personas[message->persona_index].name);
 	else
@@ -525,7 +527,6 @@ void VoiceActingManager::export_one_message(MMessage *message)
 
 	// determine sender
 	char sender[NAME_LENGTH+1];
-
 	get_valid_sender(sender, sizeof(sender), message);
 
 	// replace sender (but print #Command as Command)
@@ -544,6 +545,13 @@ void VoiceActingManager::get_valid_sender(char *sender, size_t sender_size, MMes
 	Assert( message != NULL );
 
 	strncpy(sender, get_message_sender(message->name), sender_size);
+
+	// check if we're overriding #Command
+	if (The_mission.flags[Mission::Mission_Flags::Override_hashcommand] && !strcmp("#Command", sender))
+	{
+		memset(sender, 0, sender_size);
+		strncpy(sender, The_mission.command_sender, sender_size);
+	}
 
 	// strip hash if present
 	if ( sender[0] == '#' ) {

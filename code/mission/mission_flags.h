@@ -27,10 +27,11 @@ namespace Mission {
 		No_builtin_command,			// turns off Command without turning off pilots - Karajorma
 		Player_start_ai,			// Player Starts mission under AI Control (NOT MULTI COMPATABLE) - Kazan
 		All_attack,					// all teams at war - Goober5000
-		Use_ap_cinematics,			// Kazan - use autopilot cinematics
-		Deactivate_ap,				// KeldorKatarn - deactivate autopilot (patch approved by Kazan)
-		Always_show_goals,			// Karajorma - Show the mission goals, even for training missions
-		End_to_mainhall,			// niffiwan - Return to the mainhall after debrief
+		Use_ap_cinematics,			// use autopilot cinematics - Kazan
+		Deactivate_ap,				// deactivate autopilot - KeldorKatarn (patch approved by Kazan)
+		Always_show_goals,			// Show the mission goals, even for training missions - Karajorma
+		End_to_mainhall,			// Return to the mainhall after debrief - niffiwan
+		Override_hashcommand,		// Override #Command with the Command info in Mission Specs - Goober5000
 		
 		NUM_VALUES
 	};

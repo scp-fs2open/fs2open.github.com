@@ -1062,6 +1062,7 @@
 #define IDC_ALWAYS_SHOW_GOALS2          1550
 #define IDC_END_TO_MAINHALL             1550
 #define IDC_NEW_TEXTURE                 1551
+#define IDC_OVERRIDE_HASHCOMMAND        1551
 #define IDC_TEXTURES                    1552
 #define IDC_OLD_TEXTURE_LIST            1553
 #define IDC_RESTRICT_ARRIVAL            1553
@@ -1488,7 +1489,7 @@
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_3D_CONTROLS                     1
-#define _APS_NEXT_RESOURCE_VALUE        327
+#define _APS_NEXT_RESOURCE_VALUE        328
 #define _APS_NEXT_COMMAND_VALUE         33098
 #define _APS_NEXT_CONTROL_VALUE         1660
 #define _APS_NEXT_SYMED_VALUE           105
