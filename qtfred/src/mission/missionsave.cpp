@@ -2786,6 +2786,10 @@ int CFred_mission_save::save_objects() {
 		convert_sexp_to_string(sexp_out, shipp->arrival_cue, SEXP_SAVE_MODE);
 		fout(" %s", sexp_out.c_str());
 
+		if (shipp->wingnum >= 0) {
+			shipp->departure_location = DEPART_AT_LOCATION;
+		}
+
 		required_string_fred("$Departure Location:");
 		parse_comments();
 		fout(" %s", Departure_location_names[shipp->departure_location]);
