@@ -2298,11 +2298,11 @@ int sexp_tree::get_default_value(sexp_list_item *item, char *text_buf, int op, i
 			{
 				item->set_data("1", (SEXPT_NUMBER | SEXPT_VALID));
 			}
-			else if ( (Operators[op].value == OP_SHIP_TYPE_DESTROYED) || (Operators[op].value == OP_GOOD_SECONDARY_TIME) )
+			else if ((Operators[op].value == OP_SHIP_TYPE_DESTROYED) || (Operators[op].value == OP_GOOD_SECONDARY_TIME))
 			{
 				item->set_data("100", (SEXPT_NUMBER | SEXPT_VALID));
 			}
-			else if ( (Operators[op].value == OP_SET_SUPPORT_SHIP) )
+			else if (Operators[op].value == OP_SET_SUPPORT_SHIP)
 			{
 				item->set_data("-1", (SEXPT_NUMBER | SEXPT_VALID));
 			}
@@ -2310,7 +2310,7 @@ int sexp_tree::get_default_value(sexp_list_item *item, char *text_buf, int op, i
 			{
 				item->set_data("1", (SEXPT_NUMBER | SEXPT_VALID));
 			}
-			else if ( (Operators[op].value == OP_EXPLOSION_EFFECT) )
+			else if (Operators[op].value == OP_EXPLOSION_EFFECT)
 			{
 				int temp;
 				char sexp_str_token[TOKEN_LENGTH];
@@ -2347,7 +2347,7 @@ int sexp_tree::get_default_value(sexp_list_item *item, char *text_buf, int op, i
 				sprintf(sexp_str_token, "%d", temp);
 				item->set_data_dup(sexp_str_token, (SEXPT_NUMBER | SEXPT_VALID));
 			}
-			else if ( (Operators[op].value == OP_WARP_EFFECT) )
+			else if (Operators[op].value == OP_WARP_EFFECT)
 			{
 				int temp;
 				char sexp_str_token[TOKEN_LENGTH];
@@ -2369,7 +2369,7 @@ int sexp_tree::get_default_value(sexp_list_item *item, char *text_buf, int op, i
 				sprintf(sexp_str_token, "%d", temp);
 				item->set_data_dup(sexp_str_token, (SEXPT_NUMBER | SEXPT_VALID));
 			}
-			else if ((Operators[op].value == OP_ADD_BACKGROUND_BITMAP))
+			else if (Operators[op].value == OP_ADD_BACKGROUND_BITMAP)
 			{
 				int temp = 0;
 				char sexp_str_token[TOKEN_LENGTH];
@@ -2390,7 +2390,7 @@ int sexp_tree::get_default_value(sexp_list_item *item, char *text_buf, int op, i
 				sprintf(sexp_str_token, "%d", temp);
 				item->set_data_dup(sexp_str_token, (SEXPT_NUMBER | SEXPT_VALID));
 			}
-			else if ((Operators[op].value == OP_ADD_SUN_BITMAP))
+			else if (Operators[op].value == OP_ADD_SUN_BITMAP)
 			{
 				int temp = 0;
 				char sexp_str_token[TOKEN_LENGTH];
@@ -2401,21 +2401,21 @@ int sexp_tree::get_default_value(sexp_list_item *item, char *text_buf, int op, i
 				sprintf(sexp_str_token, "%d", temp);
 				item->set_data_dup(sexp_str_token, (SEXPT_NUMBER | SEXPT_VALID));
 			}
-			else if ((Operators[op].value == OP_MODIFY_VARIABLE))
+			else if (Operators[op].value == OP_MODIFY_VARIABLE)
 			{
 				if (get_modify_variable_type(index) == OPF_NUMBER)
 					item->set_data("0", (SEXPT_NUMBER | SEXPT_VALID));
 				else
 					item->set_data("<any data>", (SEXPT_STRING | SEXPT_VALID));
 			}
-			else if ((Operators[op].value == OP_MODIFY_VARIABLE_XSTR))
+			else if (Operators[op].value == OP_MODIFY_VARIABLE_XSTR)
 			{
 				if (i == 1)
 					item->set_data("<any data>", (SEXPT_STRING | SEXPT_VALID));
 				else
 					item->set_data("-1", (SEXPT_NUMBER | SEXPT_VALID));
 			}
-			else if ((Operators[op].value == OP_SET_VARIABLE_BY_INDEX))
+			else if (Operators[op].value == OP_SET_VARIABLE_BY_INDEX)
 			{
 				if (i == 0)
 					item->set_data("0", (SEXPT_NUMBER | SEXPT_VALID));
