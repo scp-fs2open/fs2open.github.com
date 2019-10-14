@@ -3327,6 +3327,25 @@ void preload_turret_change_weapon(char *text)
 	weapon_mark_as_used(idx);
 }
 
+// Goober5000
+// we don't use the do_preload function because the preloader needs to access two nodes at a time
+// also we're not using CTEXT or eval_num here because XSTR should really be constant, and
+// also because we can't really run sexp stuff in a preloader
+void localize_sexp(int text_node, int id_node)
+{
+	// we need both a name and an id
+	if (text_node < 0 || id_node < 0)
+		return;
+
+	int id = atoi(Sexp_nodes[id_node].text);
+	Assert(id < 10000000);
+	SCP_string xstr;
+	sprintf(xstr, "XSTR(\"%s\", %d)", Sexp_nodes[text_node].text, id);
+
+	memset(Sexp_nodes[text_node].text, 0, TOKEN_LENGTH * sizeof(char));
+	lcl_ext_localize(xstr.c_str(), Sexp_nodes[text_node].text, TOKEN_LENGTH - 1);
+}
+
 /**
  * Returns the first sexp index of data this function allocates. (start of this sexp)
  *
@@ -3593,34 +3612,17 @@ int get_sexp()
 				// also we're not using CTEXT or eval_num here because XSTR should really be constant, and
 				// also because we can't really run sexp stuff in a preloader
 				n = CDR(start);
-				while (n >= 0)
+				while (n >= 0 && CDR(n) >= 0)
 				{
-					if (CDR(n) < 0)
-						break;
-
-					int id = atoi(Sexp_nodes[CDR(n)].text);
-					Assert(id < 10000000);
-					char xstr[NAME_LENGTH + 20];
-					sprintf(xstr, "XSTR(\"%s\", %d)", Sexp_nodes[n].text, id);
-
-					memset(Sexp_nodes[n].text, 0, NAME_LENGTH*sizeof(char));
-					lcl_ext_localize(xstr, Sexp_nodes[n].text, NAME_LENGTH - 1);
-
+					localize_sexp(n, CDR(n));
 					n = CDDR(n);
 				}
 				break;
 
-			case OP_MODIFY_VARIABLE_XSTR: {
-				n = CDDR(start); // First parameter is the variable name so we need to the second parameter
-
-				int id = atoi(Sexp_nodes[CDR(n)].text);
-				Assert(id < 10000000);
-				SCP_string xstr;
-				sprintf(xstr, "XSTR(\"%s\", %d)", Sexp_nodes[n].text, id);
-
-				memset(Sexp_nodes[n].text, 0, NAME_LENGTH*sizeof(char));
-				lcl_ext_localize(xstr.c_str(), Sexp_nodes[n].text, TOKEN_LENGTH - 1);
-			}
+			case OP_MODIFY_VARIABLE_XSTR:
+				n = CDDR(start); // First parameter is the variable name so we need to get the second parameter
+				localize_sexp(n, CDR(n));
+				break;
 		}
 	}
 
@@ -8167,9 +8169,6 @@ int sexp_was_medal_granted(int n)
 	}
 
 	medal_name = CTEXT(n);
-
-	if (medal_name == NULL)
-		return SEXP_FALSE;
 
 	for (i=0; i<Num_medals; i++) {
 		if (!stricmp(medal_name, Medals[i].name))
@@ -13375,8 +13374,6 @@ void sexp_nebula_toggle_poof(int n)
 	bool result = is_sexp_true(CDR(n));
 	int i;
 
-	if (name == NULL) return;
-
 	for (i = 0; i < MAX_NEB2_POOFS; i++)
 	{
 		if (!stricmp(name,Neb2_poof_filenames[i]))
@@ -13503,8 +13500,6 @@ void sexp_grant_medal(int n)
 		return;
 
 	medal_name = CTEXT(n);
-	if (medal_name == NULL)
-		return;
 
 	if (Player->stats.m_medal_earned >= 0) {
 		Warning(LOCATION, "Cannot grant more than one medal per mission!  New medal '%s' will replace old medal '%s'!", medal_name, Medals[Player->stats.m_medal_earned].name);
@@ -13644,31 +13639,7 @@ void sexp_tech_add_weapon(int node)
 }
 
 // Goober5000
-void sexp_tech_add_intel(int node)
-{
-	int i;
-	char *name;
-
-	Assert(node >= 0);
-	// this function doesn't mean anything when not in campaign mode
-	if ( !(Game_mode & GM_CAMPAIGN_MODE) )
-		return;
-
-	while (node >= 0) {
-		name = CTEXT(node);
-		i = intel_info_lookup(name);
-		if (i >= 0)
-			Intel_info[i].flags |= IIF_IN_TECH_DATABASE;
-		else
-			Warning(LOCATION, "In tech-add-intel, intel name \"%s\" invalid", name);
-
-		node = CDR(node);
-	}
-}
-
-
-// Goober5000
-void sexp_tech_add_intel_xstr(int node)
+void sexp_tech_add_intel(int node, bool xstr)
 {
 	int i, id, n = node;
 	char *name;
@@ -13683,17 +13654,26 @@ void sexp_tech_add_intel_xstr(int node)
 		// don't use things like CTEXT or eval_num, since we didn't in the preloader
 		name = Sexp_nodes[n].text;
 		n = CDR(n);
-		if (n < 0)
-			break;
-		id = atoi(Sexp_nodes[n].text);
-		n = CDR(n);
 
-		// we already translated this node in the preloader, so just look it up
+		// the xstr variant must have an id
+		if (xstr)
+		{
+			if (n < 0)
+				break;
+			id = atoi(Sexp_nodes[n].text);
+			n = CDR(n);
+		}
+		else
+			id = -1;
+
+		// if we have an xstr, we already translated this node in the preloader, so just look it up
 		i = intel_info_lookup(name);
 		if (i >= 0)
 			Intel_info[i].flags |= IIF_IN_TECH_DATABASE;
+		else if (xstr)
+			Warning(LOCATION, "In tech-add-intel-xstr, entry XSTR(\"%s\", %d) invalid", name, id);
 		else
-			Warning(LOCATION, "Intel entry XSTR(\"%s\", %d) invalid", name, id);
+			Warning(LOCATION, "In tech-add-intel, entry \"%s\" invalid", name);
 	}
 }
 
@@ -14854,7 +14834,6 @@ int sexp_event_status( int n, int want_true )
 	int i, result;
 
 	name = CTEXT(n);
-	Assertion(name != nullptr, "CTEXT returned NULL for node %d!", n);
 
 	for (i = 0; i < Num_mission_events; i++ ) {
 		// look for the event name, check it's status.  If formula is gone, we know the state won't ever change.
@@ -14893,7 +14872,6 @@ int sexp_event_delay_status( int n, int want_true, bool use_msecs = false)
 	bool use_as_directive = false;
 
 	name = CTEXT(n);
-	Assertion(name != nullptr, "CTEXT returned NULL for node %d!", n);
 
 	if (use_msecs) {
 		uint64_t tempDelay = eval_num(CDR(n), is_nan, is_nan_forever);
@@ -14968,7 +14946,6 @@ int sexp_event_incomplete(int n)
 	int i;
 
 	name = CTEXT(n);
-	Assertion(name != nullptr, "CTEXT returned NULL for node %d!", n);
 	
 	for (i = 0; i < Num_mission_events; i++ ) {
 		if ( !stricmp(Mission_events[i].name, name ) ) {
@@ -15361,7 +15338,7 @@ void sexp_ship_guardian_threshold(int node)
 		// check to see if ship destroyed or departed.  In either case, do nothing.
 		ship_name = CTEXT(n);
 
-		if ( mission_log_get_time(LOG_SHIP_DEPARTED, ship_name, NULL, NULL) || mission_log_get_time(LOG_SHIP_DESTROYED, ship_name, NULL, NULL) || mission_log_get_time(LOG_SELF_DESTRUCTED, ship_name, NULL, NULL) ) {
+		if ( mission_log_get_time(LOG_SHIP_DEPARTED, ship_name, nullptr, nullptr) || mission_log_get_time(LOG_SHIP_DESTROYED, ship_name, nullptr, nullptr) || mission_log_get_time(LOG_SELF_DESTRUCTED, ship_name, nullptr, nullptr) ) {
 			continue;
 		}
 
@@ -15391,7 +15368,7 @@ void sexp_ship_subsys_guardian_threshold(int node)
 	n = CDR(n);
 
 	// check to see if ship destroyed or departed.  In either case, do nothing.
-	if ( mission_log_get_time(LOG_SHIP_DEPARTED, ship_name, NULL, NULL) || mission_log_get_time(LOG_SHIP_DESTROYED, ship_name, NULL, NULL) || mission_log_get_time(LOG_SELF_DESTRUCTED, ship_name, NULL, NULL) ) {
+	if ( mission_log_get_time(LOG_SHIP_DEPARTED, ship_name, nullptr, nullptr) || mission_log_get_time(LOG_SHIP_DESTROYED, ship_name, nullptr, nullptr) || mission_log_get_time(LOG_SELF_DESTRUCTED, ship_name, nullptr, nullptr) ) {
 		return;
 	}
 
@@ -15406,29 +15383,27 @@ void sexp_ship_subsys_guardian_threshold(int node)
 		// check for HULL
 		hull_name = CTEXT(n);
 
-		if (hull_name != NULL) {
-			int generic_type = get_generic_subsys(hull_name);
-			if ( !strcmp(hull_name, SEXP_HULL_STRING) ) {
-				Ships[ship_num].ship_guardian_threshold = threshold;
-			}
-			else if (generic_type) {
-				// search through all subsystems
-				for (ss = GET_FIRST(&Ships[ship_num].subsys_list); ss != END_OF_LIST(&Ships[ship_num].subsys_list); ss = GET_NEXT(ss)) {
-					if (generic_type == ss->system_info->type) {
-						ss->subsys_guardian_threshold = threshold;
-					}
-				}
-			}				
-			else {
-				ss = ship_get_subsys(&Ships[ship_num], hull_name);
-				if ( ss == NULL ) {
-					if (ship_class_unchanged(ship_num)) {
-						Warning(LOCATION, "Invalid subsystem passed to ship-subsys-guardian-threshold: %s does not have a %s subsystem", ship_name, hull_name);
-					}
-				} 
-				else {
+		int generic_type = get_generic_subsys(hull_name);
+		if ( !strcmp(hull_name, SEXP_HULL_STRING) ) {
+			Ships[ship_num].ship_guardian_threshold = threshold;
+		}
+		else if (generic_type) {
+			// search through all subsystems
+			for (ss = GET_FIRST(&Ships[ship_num].subsys_list); ss != END_OF_LIST(&Ships[ship_num].subsys_list); ss = GET_NEXT(ss)) {
+				if (generic_type == ss->system_info->type) {
 					ss->subsys_guardian_threshold = threshold;
 				}
+			}
+		}				
+		else {
+			ss = ship_get_subsys(&Ships[ship_num], hull_name);
+			if ( ss == nullptr) {
+				if (ship_class_unchanged(ship_num)) {
+					Warning(LOCATION, "Invalid subsystem passed to ship-subsys-guardian-threshold: %s does not have a %s subsystem", ship_name, hull_name);
+				}
+			} 
+			else {
+				ss->subsys_guardian_threshold = threshold;
 			}
 		}
 	}
@@ -15445,7 +15420,7 @@ void sexp_ships_guardian( int n, int guardian )
 		ship_name = CTEXT(n);
 
 		// check to see if ship destroyed or departed.  In either case, do nothing.
-		if ( mission_log_get_time(LOG_SHIP_DEPARTED, ship_name, NULL, NULL) || mission_log_get_time(LOG_SHIP_DESTROYED, ship_name, NULL, NULL) || mission_log_get_time(LOG_SELF_DESTRUCTED, ship_name, NULL, NULL) )
+		if ( mission_log_get_time(LOG_SHIP_DEPARTED, ship_name, nullptr, nullptr) || mission_log_get_time(LOG_SHIP_DESTROYED, ship_name, nullptr, nullptr) || mission_log_get_time(LOG_SELF_DESTRUCTED, ship_name, nullptr, nullptr) )
 			continue;
 
 		// get the ship num.  If we get a -1 for the number here, ship has yet to arrive.  Store this ship
@@ -25218,12 +25193,8 @@ int eval_sexp(int cur_node, int referenced_node)
 				break;
 
 			case OP_TECH_ADD_INTEL:
-				sexp_tech_add_intel(node);
-				sexp_val = SEXP_TRUE;
-				break;
-
 			case OP_TECH_ADD_INTEL_XSTR:
-				sexp_tech_add_intel_xstr(node);
+				sexp_tech_add_intel(node, op_num == OP_TECH_ADD_INTEL_XSTR);
 				sexp_val = SEXP_TRUE;
 				break;
 
@@ -30121,8 +30092,9 @@ char *CTEXT(int n)
 	char *current_argument; 
 
 	Assertion(n >= 0 && n < Num_sexp_nodes, "Passed an out-of-range node index (%d) to CTEXT!", n);
-	if ( n < 0 ) {
-		return NULL;
+	if ( n < 0 || n >= Num_sexp_nodes ) {
+		// we should make CTEXT return const char*, but that's for another PR
+		return const_cast<char*>("!INVALID CTEXT NODE INDEX!");
 	}
 
 	// Goober5000 - MWAHAHAHAHAHAHAHA!  Thank you, Volition programmers!  Without
