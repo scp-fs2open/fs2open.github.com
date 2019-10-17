@@ -953,6 +953,10 @@ void pilotfile::csg_read_hud()
 
 	HUD_config.rp_flags = cfread_int(cfp);
 	HUD_config.rp_dist = cfread_int(cfp);
+	if (HUD_config.rp_dist < 0 || HUD_config.rp_dist >= RR_MAX_RANGES) {
+		Warning(LOCATION, "Campaign file has invalid radar range %d, setting to default.\n", HUD_config.rp_dist);
+		HUD_config.rp_dist = RR_INFINITY;
+	}
 
 	// basic colors
 	HUD_config.main_color = cfread_int(cfp);
