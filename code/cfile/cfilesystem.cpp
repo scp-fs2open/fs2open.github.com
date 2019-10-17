@@ -1681,6 +1681,10 @@ int cf_get_file_list(SCP_vector<SCP_string>& list, int pathtype, const char* fil
 	}
 #endif
 
+	// tcrayford: sort the filesystem listing by name by default to ensure
+	// a stable order across filesystems
+	cf_sort_filenames( list, CF_SORT_NAME, info );
+
 	bool skip_packfiles = false;
 	if ( (pathtype == CF_TYPE_PLAYERS) || (pathtype == CF_TYPE_SINGLE_PLAYERS) || (pathtype == CF_TYPE_MULTI_PLAYERS) ) {
 		skip_packfiles = true;
@@ -1746,10 +1750,6 @@ int cf_get_file_list(SCP_vector<SCP_string>& list, int pathtype, const char* fil
 		}
 	}
 
-
-	// tcrayford: sort the filesystem listing by name by default to ensure
-	// a stable order across filesystems
-	cf_sort_filenames( list, CF_SORT_NAME, info );
 	if (sort != CF_SORT_NONE)	{
 		cf_sort_filenames( list, sort, info );
 	}
