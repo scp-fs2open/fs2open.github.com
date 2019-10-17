@@ -910,7 +910,7 @@ void copy_text_until(char *outstr, char *instr, const char *endstr, int max_char
 
 	} else {
 		nprintf(("Error", "Error.  Too much text (" SIZE_T_ARG " chars, %i allowed) before %s\n",
-			foundstr - instr - strlen(endstr), max_chars, endstr));
+			foundstr - instr + strlen(endstr), max_chars, endstr));
 
         throw parse::ParseException("Too much text found");
 	}
