@@ -5550,7 +5550,7 @@ void parse_glowpoint_table(const char *filename)
 
 					if (gpo.glow_bitmap < 0)
 					{
-						Warning(LOCATION, "Couldn't open texture '%s'\nreferenced by glowpoint present '%s'\n", glow_texture_name, gpo.name);
+						Warning(LOCATION, "Couldn't open texture '%s'\nreferenced by glowpoint preset '%s'\n", glow_texture_name, gpo.name);
 					}
 					else
 					{

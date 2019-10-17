@@ -23933,7 +23933,7 @@ void add_to_event_log_buffer(int op_num, int result)
 				(Current_event_log_argument_buffer != NULL), "Attempting to write to a non-existent log buffer");
 
 	if (op_num == -1) {
-		nprintf(("SEXP", "ERROR: op_num function returned %i, this should not happen. Contact a coder.\n", op_num));
+		nprintf(("SEXP", "ERROR: add_to_event_log_buffer() function called with op_num of %i; this should not happen. Contact a coder.\n", op_num));
 		return; //How does this happen?
 	}
 
