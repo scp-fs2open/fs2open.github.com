@@ -419,21 +419,6 @@ void physics_read_flying_controls( matrix * orient, physics_info * pi, control_i
 		ci->heading += wash_rot->xyz.y;
 	}
 
-	if (ci->pitch > 1.0f ) ci->pitch = 1.0f;
-	else if (ci->pitch < -1.0f ) ci->pitch = -1.0f;
-
-	if (ci->vertical > 1.0f ) ci->vertical = 1.0f;
-	else if (ci->vertical < -1.0f ) ci->vertical = -1.0f;
-
-	if (ci->heading > 1.0f ) ci->heading = 1.0f;
-	else if (ci->heading < -1.0f ) ci->heading = -1.0f;
-
-	if (ci->sideways > 1.0f  ) ci->sideways = 1.0f;
-	else if (ci->sideways < -1.0f  ) ci->sideways = -1.0f;
-
-	if (ci->bank > 1.0f ) ci->bank = 1.0f;
-	else if (ci->bank < -1.0f ) ci->bank = -1.0f;
-
 	if ( pi->flags & PF_AFTERBURNER_ON ){
 		//SparK: modifield to accept reverse burners
 		if (!(pi->afterburner_max_reverse_vel > 0.0f)){
@@ -441,8 +426,27 @@ void physics_read_flying_controls( matrix * orient, physics_info * pi, control_i
 		}
 	}
 
-	if (ci->forward > 1.0f ) ci->forward = 1.0f;
-	else if (ci->forward < -1.0f ) ci->forward = -1.0f;
+	// maybe we don't need to clamp our velocity...
+	if (!(ci->control_flags & CIF_DONT_CLAMP_TO_MAX))
+	{
+		if (ci->pitch > 1.0f ) ci->pitch = 1.0f;
+		else if (ci->pitch < -1.0f ) ci->pitch = -1.0f;
+
+		if (ci->vertical > 1.0f ) ci->vertical = 1.0f;
+		else if (ci->vertical < -1.0f ) ci->vertical = -1.0f;
+
+		if (ci->heading > 1.0f ) ci->heading = 1.0f;
+		else if (ci->heading < -1.0f ) ci->heading = -1.0f;
+
+		if (ci->sideways > 1.0f  ) ci->sideways = 1.0f;
+		else if (ci->sideways < -1.0f  ) ci->sideways = -1.0f;
+
+		if (ci->bank > 1.0f ) ci->bank = 1.0f;
+		else if (ci->bank < -1.0f ) ci->bank = -1.0f;
+
+		if (ci->forward > 1.0f ) ci->forward = 1.0f;
+		else if (ci->forward < -1.0f ) ci->forward = -1.0f;
+	}
 
 	if (!Flight_controls_follow_eyepoint_orientation || (Player_obj == NULL) || (Player_obj->type != OBJ_SHIP)) {
 		// Default behavior; eyepoint orientation has no effect on controls
@@ -474,10 +478,15 @@ void physics_read_flying_controls( matrix * orient, physics_info * pi, control_i
 	float	delta_bank;
 
 #ifdef BANK_WHEN_TURN
-	//	To change direction of bank, negate the whole expression.
-	//	To increase magnitude of banking, decrease denominator.
-	//	Adam: The following statement is all the math for banking while turning.
-	delta_bank = - (ci->heading * pi->max_rotvel.xyz.y) * pi->delta_bank_const;
+	if (ci->control_flags & CIF_DONT_BANK_WHEN_TURNING)
+		delta_bank = 0.0f;
+	else
+	{
+		//	To change direction of bank, negate the whole expression.
+		//	To increase magnitude of banking, decrease denominator.
+		//	Adam: The following statement is all the math for banking while turning.
+		delta_bank = - (ci->heading * pi->max_rotvel.xyz.y) * pi->delta_bank_const;
+	}
 #else
 	delta_bank = 0.0f;
 #endif
@@ -510,7 +519,7 @@ void physics_read_flying_controls( matrix * orient, physics_info * pi, control_i
 		goal_vel.xyz.z = -pi->max_rear_vel;
 
 
-	if ( pi->flags & PF_ACCELERATES )	{
+	if ( (pi->flags & PF_ACCELERATES) && !(ci->control_flags & CIF_DONT_ACCELERATE) )	{
 		//
 		// Determine *resultant* DESIRED VELOCITY (desired_vel) accounting for RAMPING of velocity
 		// Use LOCAL coordinates
