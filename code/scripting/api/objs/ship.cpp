@@ -1336,68 +1336,78 @@ ADE_FUNC(giveOrder, l_Ship, "enumeration Order, [object Target=nil, subsystem Ta
 	return ADE_RETURN_TRUE;
 }
 
-ADE_FUNC(doManeuver, l_Ship, "number Duration, number Heading, number Pitch, number Bank, boolean Force Rotation, number Vertical, number Horizontal, number Forward, boolean Force Movement", "Sets ship maneuver over the defined time period", "boolean", "True if maneuver order was given, otherwise false or nil")
+ADE_FUNC(doManeuver, l_Ship, "number Duration, number Heading, number Pitch, number Bank, boolean Apply-all Rotation, number Vertical, number Sideways, number Forward, boolean Apply-all Movement, number Maneuver Bitfield", "Sets ship maneuver over the defined time period", "boolean", "True if maneuver order was given, otherwise false or nil")
 {
 	object_h *objh;
-	float arr[6];
-	bool f_rot = false, f_move = false;
-	int t, i;
-	if(!ade_get_args(L, "oifffbfffb", l_Ship.GetPtr(&objh), &t, &arr[0], &arr[1], &arr[2], &f_rot, &arr[3], &arr[4], &arr[5], &f_move))
+	float heading, pitch, bank, up, sideways, forward;
+	bool apply_all_rotate = false, apply_all_move = false;
+	int duration, maneuver_flags = 0;
+	if(!ade_get_args(L, "oifffbfffb|i", l_Ship.GetPtr(&objh), &duration, &heading, &pitch, &bank, &apply_all_rotate, &up, &sideways, &forward, &apply_all_move, &maneuver_flags))
 		return ADE_RETURN_NIL;
 
 	ship *shipp = &Ships[objh->objp->instance];
 	ai_info *aip = &Ai_info[shipp->ai_index];
 	control_info *cip = &aip->ai_override_ci;
 
-	aip->ai_override_timestamp = timestamp(t);
 	aip->ai_override_flags.reset();
 
-	if (t < 2)
-		return ADE_RETURN_FALSE;
-
-	for(i = 0; i < 6; i++) {
-		if((arr[i] < -1.0f) || (arr[i] > 1.0f))
-			arr[i] = 0;
+	// handle infinite timestamps
+	if (duration >= 2) {
+		aip->ai_override_timestamp = timestamp(duration);
+	} else {
+		aip->ai_override_timestamp = timestamp(10);
+		aip->ai_override_flags.set(AI::Maneuver_Override_Flags::Never_expire);
 	}
 
-	if(f_rot) {
-		aip->ai_override_flags.set(AI::Maneuver_Override_Flags::Full);
-		cip->heading = arr[0];
-		cip->pitch = arr[1];
-		cip->bank = arr[2];
+	if (apply_all_rotate) {
+		aip->ai_override_flags.set(AI::Maneuver_Override_Flags::Full_rot);
+		cip->heading = heading;
+		cip->pitch = pitch;
+		cip->bank = bank;
 	} else {
-		if (arr[0] != 0) {
-			cip->heading = arr[0];
+		if (heading != 0) {
+			cip->heading = heading;
 			aip->ai_override_flags.set(AI::Maneuver_Override_Flags::Heading);
 		}
-		if (arr[1] != 0) {
-			cip->pitch = arr[1];
+		if (pitch != 0) {
+			cip->pitch = pitch;
 			aip->ai_override_flags.set(AI::Maneuver_Override_Flags::Pitch);
 		}
-		if (arr[2] != 0) {
-			cip->bank = arr[2];
+		if (bank != 0) {
+			cip->bank = bank;
 			aip->ai_override_flags.set(AI::Maneuver_Override_Flags::Roll);
 		}
 	}
-	if(f_move) {
+	if (apply_all_move) {
 		aip->ai_override_flags.set(AI::Maneuver_Override_Flags::Full_lat);
-		cip->vertical = arr[3];
-		cip->sideways = arr[4];
-		cip->forward = arr[5];
+		cip->vertical = up;
+		cip->sideways = sideways;
+		cip->forward = forward;
 	} else {
-		if (arr[3] != 0) {
-			cip->vertical = arr[3];
+		if (up != 0) {
+			cip->vertical = up;
 			aip->ai_override_flags.set(AI::Maneuver_Override_Flags::Up);
 		}
-		if (arr[4] != 0) {
-			cip->sideways = arr[4];
+		if (sideways != 0) {
+			cip->sideways = sideways;
 			aip->ai_override_flags.set(AI::Maneuver_Override_Flags::Sideways);
 		}
-		if (arr[5] != 0) {
-			cip->forward = arr[5];
+		if (forward != 0) {
+			cip->forward = forward;
 			aip->ai_override_flags.set(AI::Maneuver_Override_Flags::Forward);
 		}
 	}
+
+	if (maneuver_flags & CIF_DONT_BANK_WHEN_TURNING) {
+		aip->ai_override_flags.set(AI::Maneuver_Override_Flags::Dont_bank_when_turning);
+	}
+	if (maneuver_flags & CIF_DONT_CLAMP_MAX_VELOCITY) {
+		aip->ai_override_flags.set(AI::Maneuver_Override_Flags::Dont_clamp_max_velocity);
+	}
+	if (maneuver_flags & CIF_DONT_ACCELERATE) {
+		aip->ai_override_flags.set(AI::Maneuver_Override_Flags::Dont_accelerate);
+	}
+
 	return ADE_RETURN_TRUE;
 }
 

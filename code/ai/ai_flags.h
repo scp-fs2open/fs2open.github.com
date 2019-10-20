@@ -51,14 +51,19 @@ namespace AI {
 	};
 
 	FLAG_LIST(Maneuver_Override_Flags) {
-		Full,		//	Full sexp control
+		Full_rot,	//	full sexp control over pitch/bank/heading rotation
 		Roll,		//	Sexp forced roll maneuver
 		Pitch,		//	Sexp forced pitch change
 		Heading,	//	Sexp forced heading change
 		Full_lat,	//  full control over up/side/forward movement
-		Up,			//	vertical movement
-		Sideways,	//	horizontal movement
-		Forward,	//	forward movement
+		Up,			//	Sexp forced vertical movement
+		Sideways,	//	Sexp forced horizontal movement
+		Forward,	//	Sexp forced forward movement
+
+		Dont_bank_when_turning,		// maps to CIF_DONT_BANK_WHEN_TURNING
+		Dont_clamp_max_velocity,	// maps to CIF_DONT_CLAMP_MAX_VELOCITY
+		Dont_accelerate,			// maps to CIF_DONT_ACCELERATE
+		Never_expire,				// don't clear the maneuver when the timestamp is up
 
 		NUM_VALUES
 	};

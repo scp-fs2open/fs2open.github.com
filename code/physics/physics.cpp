@@ -427,7 +427,7 @@ void physics_read_flying_controls( matrix * orient, physics_info * pi, control_i
 	}
 
 	// maybe we don't need to clamp our velocity...
-	if (!(ci->control_flags & CIF_DONT_CLAMP_TO_MAX))
+	if (!(ci->control_flags & CIF_DONT_CLAMP_MAX_VELOCITY))
 	{
 		if (ci->pitch > 1.0f ) ci->pitch = 1.0f;
 		else if (ci->pitch < -1.0f ) ci->pitch = -1.0f;

@@ -95,9 +95,9 @@ typedef struct physics_info {
 } physics_info;
 
 
-#define CIF_DONT_BANK_WHEN_TURNING		(1 << 1)	// Goober5000 - changing heading does not change bank
-#define CIF_DONT_CLAMP_TO_MAX			(1 << 2)	// Goober5000 - maneuvers can exceed tabled max velocity
-#define CIF_DONT_ACCELERATE				(1 << 3)	// Goober5000 - instantaneously jump to the goal velocity
+#define CIF_DONT_BANK_WHEN_TURNING		(1 << 0)	// Goober5000 - changing heading does not change bank
+#define CIF_DONT_CLAMP_MAX_VELOCITY		(1 << 1)	// Goober5000 - maneuvers can exceed tabled max velocity
+#define CIF_DONT_ACCELERATE				(1 << 2)	// Goober5000 - instantaneously jump to the goal velocity
 
 // All of these are numbers from -1.0 to 1.0 indicating
 // what percent of full velocity you want to go.
