@@ -1404,8 +1404,8 @@ ADE_FUNC(doManeuver, l_Ship, "number Duration, number Heading, number Pitch, num
 	if (maneuver_flags & CIF_DONT_CLAMP_MAX_VELOCITY) {
 		aip->ai_override_flags.set(AI::Maneuver_Override_Flags::Dont_clamp_max_velocity);
 	}
-	if (maneuver_flags & CIF_DONT_ACCELERATE) {
-		aip->ai_override_flags.set(AI::Maneuver_Override_Flags::Dont_accelerate);
+	if (maneuver_flags & CIF_INSTANTANEOUS_ACCELERATION) {
+		aip->ai_override_flags.set(AI::Maneuver_Override_Flags::Instantaneous_acceleration);
 	}
 
 	return ADE_RETURN_TRUE;

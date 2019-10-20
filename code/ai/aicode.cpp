@@ -14077,7 +14077,7 @@ void ai_frame(int objnum)
 	}
 }
 
-static void ai_control_info_check(ai_info *aip)
+static void ai_control_info_check(ai_info *aip, physics_info *pi)
 {
 	if (aip->ai_override_flags.none_set())
 		return;
@@ -14136,9 +14136,15 @@ static void ai_control_info_check(ai_info *aip)
 			AI_ci.control_flags |= CIF_DONT_BANK_WHEN_TURNING;
 		if (aip->ai_override_flags[AI::Maneuver_Override_Flags::Dont_clamp_max_velocity])
 			AI_ci.control_flags |= CIF_DONT_CLAMP_MAX_VELOCITY;
-		if (aip->ai_override_flags[AI::Maneuver_Override_Flags::Dont_accelerate])
-			AI_ci.control_flags |= CIF_DONT_ACCELERATE;
+		if (aip->ai_override_flags[AI::Maneuver_Override_Flags::Instantaneous_acceleration])
+			AI_ci.control_flags |= CIF_INSTANTANEOUS_ACCELERATION;
 	}
+
+	// set physics flag according to whether we are instantaneously accelerating
+	if (AI_ci.control_flags & CIF_INSTANTANEOUS_ACCELERATION)
+		pi->flags |= PF_NO_DAMP;
+	else
+		pi->flags &= ~PF_NO_DAMP;
 }
 
 int Last_ai_obj = -1;
@@ -14193,7 +14199,7 @@ void ai_process( object * obj, int ai_index, float frametime )
 
 	if (rfc == 1) {
 		// Wanderer - sexp based override goes here - only if rfc is valid though
-		ai_control_info_check(aip);
+		ai_control_info_check(aip, &obj->phys_info);
 		vec3d copy_desired_rotvel = obj->phys_info.rotvel;
 		physics_read_flying_controls( &obj->orient, &obj->phys_info, &AI_ci, frametime);
 		// if obj is in formation and not flight leader, don't update rotvel

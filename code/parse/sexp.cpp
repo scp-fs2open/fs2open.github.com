@@ -7972,8 +7972,8 @@ void sexp_set_ship_man(object *objp, int duration, int heading, int pitch, int b
 	if (maneuver_flags & CIF_DONT_CLAMP_MAX_VELOCITY) {
 		aip->ai_override_flags.set(AI::Maneuver_Override_Flags::Dont_clamp_max_velocity);
 	}
-	if (maneuver_flags & CIF_DONT_ACCELERATE) {
-		aip->ai_override_flags.set(AI::Maneuver_Override_Flags::Dont_accelerate);
+	if (maneuver_flags & CIF_INSTANTANEOUS_ACCELERATION) {
+		aip->ai_override_flags.set(AI::Maneuver_Override_Flags::Instantaneous_acceleration);
 	}
 }
 
