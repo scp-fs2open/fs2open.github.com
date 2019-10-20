@@ -556,17 +556,40 @@ void cf_search_root_path(int root_index)
 	int i;
 	int num_files = 0;
 
-	cf_root *root = cf_get_root(root_index);
+	cf_root* root = cf_get_root(root_index);
 
-	mprintf(( "Searching root '%s' ... ", root->path ));
+	mprintf(("Searching root '%s' ... ", root->path));
+
+#ifndef WIN32
+	try {
+		auto current           = root->path;
+		const auto prefPathEnd = root->path + strlen(root->path);
+		while (current != prefPathEnd) {
+			const auto cp = utf8::next(current, prefPathEnd);
+			if (cp > 127) {
+				// On Windows, we currently do not support Unicode paths so catch this early and let the user
+				// know
+				const auto invalid_end = current;
+				utf8::prior(current, root->path);
+				Error(LOCATION,
+				      "Trying to use path \"%s\" as a data root. That path is not supported since it "
+				      "contains a Unicode character (%s). If possible, change this path to something that only uses "
+				      "ASCII characters.",
+				      root->path, std::string(current, invalid_end).c_str());
+			}
+		}
+	} catch (const std::exception& e) {
+		Error(LOCATION, "UTF-8 error while checking the root path \"%s\": %s", root->path, e.what());
+	}
+#endif
 
 	char search_path[CF_MAX_PATHNAME_LENGTH];
 #ifdef SCP_UNIX
-    // This map stores the mapping between a specific path type and the actual path that we use for it
+	// This map stores the mapping between a specific path type and the actual path that we use for it
 	SCP_unordered_map<int, SCP_string> pathTypeToRealPath;
 #endif
 
-	for (i=CF_TYPE_ROOT; i<CF_MAX_PATH_TYPES; i++ )	{
+	for (i = CF_TYPE_ROOT; i < CF_MAX_PATH_TYPES; i++) {
 
 		// we don't want to add player files to the cache - taylor
 		if ( (i == CF_TYPE_SINGLE_PLAYERS) || (i == CF_TYPE_MULTI_PLAYERS) ) {
