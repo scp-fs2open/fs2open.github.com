@@ -41,3 +41,37 @@
    fun:_Z29cf_create_default_path_stringPcjiPKcbj
    ...
 }
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:_Znwm
+   obj:*
+   obj:*
+   obj:*
+   obj:/usr/lib/x86_64-linux-gnu/libSDL2-2.0.so.0.4.0
+   obj:/usr/lib/x86_64-linux-gnu/libSDL2-2.0.so.0.4.0
+   obj:/usr/lib/x86_64-linux-gnu/libSDL2-2.0.so.0.4.0
+   fun:_Z7gr_initOSt10unique_ptrIN2os18GraphicsOperationsESt14default_deleteIS1_EEiiii
+   fun:_ZN4test13FSTestFixture5SetUpEv
+   fun:_ZN7testing8internal38HandleSehExceptionsInMethodIfSupportedINS_4TestEvEET0_PT_MS4_FS3_vEPKc
+   fun:_ZN7testing8internal35HandleExceptionsInMethodIfSupportedINS_4TestEvEET0_PT_MS4_FS3_vEPKc
+   fun:_ZN7testing4Test3RunEv
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:_Znwm
+   obj:*
+   obj:*
+   obj:*
+   obj:/usr/lib/x86_64-linux-gnu/libSDL2-2.0.so.0.4.0
+   obj:/usr/lib/x86_64-linux-gnu/libSDL2-2.0.so.0.4.0
+   obj:/usr/lib/x86_64-linux-gnu/libSDL2-2.0.so.0.4.0
+   fun:_Z7gr_initOSt10unique_ptrIN2os18GraphicsOperationsESt14default_deleteIS1_EEiiii
+   fun:_ZN4test13FSTestFixture5SetUpEv
+   fun:_ZN8FontTest5SetUpEv
+   fun:_ZN7testing8internal38HandleSehExceptionsInMethodIfSupportedINS_4TestEvEET0_PT_MS4_FS3_vEPKc
+   fun:_ZN7testing8internal35HandleExceptionsInMethodIfSupportedINS_4TestEvEET0_PT_MS4_FS3_vEPKc
+}
