@@ -322,6 +322,14 @@ float get_shield_pct(object *objp)
 	return shield_get_strength(objp) / total_strength;
 }
 
+static void on_script_state_destroy(lua_State*) {
+	// Since events are mostly used for scripting, we clear the event handlers when the Lua state is destroyed
+	for (auto& obj : Objects) {
+		obj.pre_move_event.clear();
+		obj.post_move_event.clear();
+	}
+}
+
 /**
  * Sets up the free list & init player & whatever else
  */
@@ -351,6 +359,8 @@ void obj_init()
 	Highest_object_index = 0;
 
 	obj_reset_colliders();
+
+	Script_system.OnStateDestroy.add(on_script_state_destroy);
 }
 
 void obj_shutdown()
