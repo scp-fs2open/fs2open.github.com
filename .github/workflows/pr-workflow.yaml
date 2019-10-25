@@ -3,21 +3,25 @@ name: Check a pull request
 on: [pull_request]
 
 jobs:
-  build:
+  build_linux:
     strategy:
       matrix:
         configuration: [Debug, Release]
+        compiler: [gcc-5, gcc-8, clang-4.0]
     name: Check Linux compilation
     runs-on: ubuntu-16.04
     steps:
       - name: Prepare Environment
+        env:
+          DEBIAN_FRONTEND: noninteractive
         run: |
-          export DEBIAN_FRONTEND=noninteractive
           sudo add-apt-repository ppa:ubuntu-toolchain-r/test
           sudo add-apt-repository ppa:beineri/opt-qt571-xenial
           sudo add-apt-repository ppa:msulikowski/valgrind # For fixing a bug with valgrind 3.11 which does not recognize the rdrand instruction
           sudo apt-get -yq update
-          sudo apt-get -yq install cmake ninja-build libopenal-dev libreadline6-dev libpng12-dev libjpeg62-dev liblua5.1-0-dev libjansson-dev libsdl2-dev libfreetype6-dev valgrind qt57base g++-8
+          sudo apt-get -yq install cmake ninja-build libopenal-dev libreadline6-dev libpng12-dev libjpeg62-dev liblua5.1-0-dev libjansson-dev libsdl2-dev libfreetype6-dev valgrind qt57base g++-5 g++-8 clang-4.0 clang-tidy-4.0 libc++-dev libc++abi-dev
+          # Fix a header bug present in ubuntu...
+          sudo ln -s /usr/include/libcxxabi/__cxxabi_config.h /usr/include/c++/v1/__cxxabi_config.h
       - uses: actions/checkout@v1
         name: Checkout
         with:
@@ -25,7 +29,21 @@ jobs:
       - name: Configure CMake
         env:
           CONFIGURATION: ${{ matrix.configuration }}
+          COMPILER: ${{ matrix.compiler }}
         run: |
+          if [ "$COMPILER" = "gcc-5" ]; then
+            export CC=gcc-5
+            export CXX=g++-5
+          fi
+          if [ "$COMPILER" = "gcc-8" ]; then
+            export CC=gcc-8
+            export CXX=g++-8
+          fi
+          if [ "$COMPILER" = "clang-4.0" ]; then
+            export CC=clang-4.0
+            export CXX=clang++-4.0
+          fi
+
           CXXFLAGS="-m64 -mtune=generic -mfpmath=sse -msse -msse2 -pipe -Wno-unknown-pragmas"
           CFLAGS="-m64 -mtune=generic -mfpmath=sse -msse -msse2 -pipe -Wno-unknown-pragmas"
 
