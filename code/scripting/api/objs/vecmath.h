@@ -35,8 +35,9 @@ struct matrix_h {
 	void ValidateMatrix();
  public:
 	matrix_h();
-	explicit matrix_h(matrix* in);
-	explicit matrix_h(angles* in);
+	explicit matrix_h(const matrix* in);
+	explicit matrix_h(const angles* in);
+	explicit matrix_h(const vec3d *fvec, const vec3d *uvec = nullptr, const vec3d *rvec = nullptr);
 
 	angles* GetAngles();
 

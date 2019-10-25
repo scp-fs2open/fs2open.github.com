@@ -29,12 +29,16 @@ matrix_h::matrix_h() {
 	mtx = vmd_identity_matrix;
 	status = MatrixState::AnglesOutOfDate;
 }
-matrix_h::matrix_h(matrix* in) {
+matrix_h::matrix_h(const matrix* in) {
 	mtx = *in;
 	status = MatrixState::AnglesOutOfDate;
 }
-matrix_h::matrix_h(angles* in) {
+matrix_h::matrix_h(const angles* in) {
 	ang = *in;
+	status = MatrixState::MatrixOutOfdate;
+}
+matrix_h::matrix_h(const vec3d *fvec, const vec3d *uvec, const vec3d *rvec) {
+	vm_vector_2_matrix(&mtx, fvec, uvec, rvec);
 	status = MatrixState::MatrixOutOfdate;
 }
 angles* matrix_h::GetAngles() {
