@@ -39,7 +39,7 @@ matrix_h::matrix_h(const angles* in) {
 }
 matrix_h::matrix_h(const vec3d *fvec, const vec3d *uvec, const vec3d *rvec) {
 	vm_vector_2_matrix(&mtx, fvec, uvec, rvec);
-	status = MatrixState::MatrixOutOfdate;
+	status = MatrixState::AnglesOutOfDate;
 }
 angles* matrix_h::GetAngles() {
 	this->ValidateAngles();
