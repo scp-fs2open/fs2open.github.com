@@ -72,3 +72,57 @@ jobs:
           else
               ./bin/unittests --gtest_shuffle
           fi
+  build_windows:
+    strategy:
+      matrix:
+        configuration: [Debug, Release]
+        compiler: [MSVC, MinGW]
+        arch: [Win32, x64]
+        exclude:
+          - configuration: Debug
+            compiler: MinGW
+            arch: x64
+          - configuration: Release
+            compiler: MinGW
+            arch: x64
+    name: Check Windows compilation
+    runs-on: windows-2019
+    steps:
+      - name: Prepare Environment
+        run: choco install ninja
+      - uses: actions/checkout@v1
+        name: Checkout
+        with:
+          submodules: true
+      - name: Configure CMake
+        env:
+          CONFIGURATION: ${{ matrix.configuration }}
+          COMPILER: ${{ matrix.compiler }}
+          ARCHITECTURE: ${{ matrix.arch }}
+        shell: bash
+        run: |
+          mkdir build
+          cd build
+
+          if [ "$COMPILER" = "MinGW" ]; then
+              cmake -DFSO_USE_SPEECH="OFF" -DFSO_FATAL_WARNINGS="ON" -DFSO_USE_VOICEREC="OFF" -DFSO_BUILD_TESTS="ON" \
+                  -DFSO_BUILD_FRED2="OFF" -DCMAKE_BUILD_TYPE=$CONFIGURATION -G "Ninja" ..
+          else
+              cmake -DFSO_USE_SPEECH="ON" -DFSO_FATAL_WARNINGS="ON" -DFSO_USE_VOICEREC="OFF" -DFSO_BUILD_TESTS="ON" \
+                  -DMSVC_SIMD_INSTRUCTIONS=SSE2 -DFSO_BUILD_FRED2="ON" -G "Visual Studio 16 2019" -T "v142" -A "$ARCHITECTURE" ..
+          fi
+      - name: Compile
+        working-directory: ./build
+        env:
+          CONFIGURATION: ${{ matrix.configuration }}
+          COMPILER: ${{ matrix.compiler }}
+        shell: bash
+        run: |
+          if [ "$COMPILER" = "MinGW" ]; then
+              cmake --build . --config "$CONFIGURATION"
+             ./bin/unittests --gtest_shuffle
+          else
+              cmake --build . --config "$CONFIGURATION" -- /verbosity:minimal
+              "./bin/$CONFIGURATION/unittests" --gtest_shuffle
+          fi
+
