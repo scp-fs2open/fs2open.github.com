@@ -5620,9 +5620,15 @@ void physics_ship_init(object *objp)
 	pi->glide_accel_mult = sinfo->glide_accel_mult;
 
 	//SUSHI: This defaults to the AI_Profile value, and is only optionally overridden
-	pi->use_newtonian_damp = The_mission.ai_profile->flags[AI::Profile_Flags::Use_newtonian_dampening];
+	if (The_mission.ai_profile->flags[AI::Profile_Flags::Use_newtonian_dampening])
+		pi->flags |= PF_NEWTONIAN_DAMP;
 	if (sinfo->newtonian_damp_override)
-		pi->use_newtonian_damp = sinfo->use_newtonian_damp;
+	{
+		if (sinfo->use_newtonian_damp)
+			pi->flags |= PF_NEWTONIAN_DAMP;
+		else
+			pi->flags &= ~PF_NEWTONIAN_DAMP;
+	}
 
 	vm_vec_zero(&pi->vel);
 	vm_vec_zero(&pi->rotvel);

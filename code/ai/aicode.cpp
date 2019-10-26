@@ -14077,53 +14077,74 @@ void ai_frame(int objnum)
 	}
 }
 
-static void ai_control_info_check(ai_info *aip)
+static void ai_control_info_check(ai_info *aip, physics_info *pi)
 {
-	if(aip->ai_override_flags.none_set())
+	if (aip->ai_override_flags.none_set())
 		return;
 
-	if(timestamp_elapsed(aip->ai_override_timestamp)) {
+	if (!aip->ai_override_flags[AI::Maneuver_Override_Flags::Never_expire] && timestamp_elapsed(aip->ai_override_timestamp))
+	{
 		aip->ai_override_flags.reset();
-	} else {
-		if(aip->ai_override_flags[AI::Maneuver_Override_Flags::Full])
+	}
+	else
+	{
+		if (aip->ai_override_flags[AI::Maneuver_Override_Flags::Full_rot])
 		{
 			AI_ci.pitch = aip->ai_override_ci.pitch;
 			AI_ci.heading = aip->ai_override_ci.heading;
 			AI_ci.bank = aip->ai_override_ci.bank;
-		} else {
-			if(aip->ai_override_flags[AI::Maneuver_Override_Flags::Pitch])
+		}
+		else
+		{
+			if (aip->ai_override_flags[AI::Maneuver_Override_Flags::Pitch])
 			{
 				AI_ci.pitch = aip->ai_override_ci.pitch;
 			}
-			if(aip->ai_override_flags[AI::Maneuver_Override_Flags::Heading])
+			if (aip->ai_override_flags[AI::Maneuver_Override_Flags::Heading])
 			{
 				AI_ci.heading = aip->ai_override_ci.heading;
 			}
-			if(aip->ai_override_flags[AI::Maneuver_Override_Flags::Roll])
+			if (aip->ai_override_flags[AI::Maneuver_Override_Flags::Roll])
 			{
 				AI_ci.bank = aip->ai_override_ci.bank;
 			}
 		}
-		if(aip->ai_override_flags[AI::Maneuver_Override_Flags::Full_lat])
+
+		if (aip->ai_override_flags[AI::Maneuver_Override_Flags::Full_lat])
 		{
 			AI_ci.vertical = aip->ai_override_ci.vertical;
 			AI_ci.sideways = aip->ai_override_ci.sideways;
 			AI_ci.forward = aip->ai_override_ci.forward;
-		} else {
-			if(aip->ai_override_flags[AI::Maneuver_Override_Flags::Up])
+		}
+		else
+		{
+			if (aip->ai_override_flags[AI::Maneuver_Override_Flags::Up])
 			{
 				AI_ci.vertical = aip->ai_override_ci.vertical;
 			}
-			if(aip->ai_override_flags[AI::Maneuver_Override_Flags::Sideways])
+			if (aip->ai_override_flags[AI::Maneuver_Override_Flags::Sideways])
 			{
 				AI_ci.sideways = aip->ai_override_ci.sideways;
 			}
-			if(aip->ai_override_flags[AI::Maneuver_Override_Flags::Forward])
+			if (aip->ai_override_flags[AI::Maneuver_Override_Flags::Forward])
 			{
 				AI_ci.forward = aip->ai_override_ci.forward;
 			}
 		}
+
+		if (aip->ai_override_flags[AI::Maneuver_Override_Flags::Dont_bank_when_turning])
+			AI_ci.control_flags |= CIF_DONT_BANK_WHEN_TURNING;
+		if (aip->ai_override_flags[AI::Maneuver_Override_Flags::Dont_clamp_max_velocity])
+			AI_ci.control_flags |= CIF_DONT_CLAMP_MAX_VELOCITY;
+		if (aip->ai_override_flags[AI::Maneuver_Override_Flags::Instantaneous_acceleration])
+			AI_ci.control_flags |= CIF_INSTANTANEOUS_ACCELERATION;
 	}
+
+	// set physics flag according to whether we are instantaneously accelerating
+	if (AI_ci.control_flags & CIF_INSTANTANEOUS_ACCELERATION)
+		pi->flags |= PF_NO_DAMP;
+	else
+		pi->flags &= ~PF_NO_DAMP;
 }
 
 int Last_ai_obj = -1;
@@ -14178,7 +14199,7 @@ void ai_process( object * obj, int ai_index, float frametime )
 
 	if (rfc == 1) {
 		// Wanderer - sexp based override goes here - only if rfc is valid though
-		ai_control_info_check(aip);
+		ai_control_info_check(aip, &obj->phys_info);
 		vec3d copy_desired_rotvel = obj->phys_info.rotvel;
 		physics_read_flying_controls( &obj->orient, &obj->phys_info, &AI_ci, frametime);
 		// if obj is in formation and not flight leader, don't update rotvel

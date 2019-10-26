@@ -15,22 +15,24 @@
 #include "math/vecmat.h"
 
 
-#define	PF_ACCELERATES			(1 << 1)
-#define	PF_USE_VEL				(1 << 2)		//	Use velocity present in physics_info struct, don't call physics_sim_vel.
-#define	PF_AFTERBURNER_ON		(1 << 3)		//	Afterburner currently engaged.
-#define	PF_SLIDE_ENABLED		(1 << 4)		// Allow descent style sliding
-#define	PF_REDUCED_DAMP		(1 << 5)		// Allows reduced damping on z (for death, shockwave) (CAN be reset in physics)
-#define	PF_IN_SHOCKWAVE		(1 << 6)		// Indicates whether object has recently been hit by shockwave (used to enable shake)
-#define	PF_DEAD_DAMP			(1 << 7)		// Makes forward damping same as sideways (NOT reset in physics)
-#define	PF_AFTERBURNER_WAIT	(1 << 8)		// true when afterburner cannot be used.  replaces variable used in afterburner code
-#define	PF_CONST_VEL			(1 << 9)		// Use velocity in phys_info struct.  Optimize weapons in phys_sim 
-#define	PF_WARP_IN				(1 << 10)	//	Use when ship is warping in
-#define	PF_SPECIAL_WARP_IN	(1 << 11)	//	Use when ship is warping in and we want to slow the ship faster than normal game physics
-#define	PF_WARP_OUT				(1 << 12)	//	Use when ship is warping out
-#define	PF_SPECIAL_WARP_OUT	(1 << 13)	//	Use when ship is warping out and we want to slow the ship faster than normal game physics
-#define PF_BOOSTER_ON		(1 << 14)
-#define PF_GLIDING			(1 << 15)
-#define PF_FORCE_GLIDE		(1 << 16)
+#define	PF_ACCELERATES			(1 << 0)
+#define	PF_USE_VEL				(1 << 1)	//	Use velocity present in physics_info struct, don't call physics_sim_vel.
+#define	PF_AFTERBURNER_ON		(1 << 2)	//	Afterburner currently engaged.
+#define	PF_SLIDE_ENABLED		(1 << 3)	// Allow descent style sliding
+#define	PF_REDUCED_DAMP			(1 << 4)	// Allows reduced damping on z (for death, shockwave) (CAN be reset in physics)
+#define	PF_IN_SHOCKWAVE			(1 << 5)	// Indicates whether object has recently been hit by shockwave (used to enable shake)
+#define	PF_DEAD_DAMP			(1 << 6)	// Makes forward damping same as sideways (NOT reset in physics)
+#define	PF_AFTERBURNER_WAIT		(1 << 7)	// true when afterburner cannot be used.  replaces variable used in afterburner code
+#define	PF_CONST_VEL			(1 << 8)	// Use velocity in phys_info struct.  Optimize weapons in phys_sim 
+#define	PF_WARP_IN				(1 << 9)	//	Use when ship is warping in
+#define	PF_SPECIAL_WARP_IN		(1 << 10)	//	Use when ship is warping in and we want to slow the ship faster than normal game physics
+#define	PF_WARP_OUT				(1 << 11)	//	Use when ship is warping out
+#define	PF_SPECIAL_WARP_OUT		(1 << 12)	//	Use when ship is warping out and we want to slow the ship faster than normal game physics
+#define PF_BOOSTER_ON			(1 << 13)
+#define PF_GLIDING				(1 << 14)
+#define PF_FORCE_GLIDE			(1 << 15)
+#define PF_NEWTONIAN_DAMP		(1 << 16)	// SUSHI: Whether or not to use newtonian dampening
+#define PF_NO_DAMP				(1 << 17)	// Goober5000 - don't damp velocity changes in physics; used for instantaneous acceleration
 
 //information for physics sim for an object
 typedef struct physics_info {
@@ -89,10 +91,15 @@ typedef struct physics_info {
 	float	glide_cap;	//Backslash - for 'newtonian'-style gliding, the cap on velocity (so that something can't accelerate to ridiculous speeds... unless allowed to)
 	float	cur_glide_cap;	//SUSHI: Used for dynamic glide cap, so we can use the ramping function on the glide cap
 	float	glide_accel_mult;	//SUSHI: The acceleration multiplier for glide mode. A value < 0 means use glide ramping instead
-	bool use_newtonian_damp;	//SUSHI: Whether or not to use newtonian dampening
+
 	float afterburner_max_reverse_vel; //SparK: This is the reverse afterburners top speed vector
 	float afterburner_reverse_accel; //SparK: Afterburner's acceleration on reverse mode
 } physics_info;
+
+
+#define CIF_DONT_BANK_WHEN_TURNING		(1 << 0)	// Goober5000 - changing heading does not change bank
+#define CIF_DONT_CLAMP_MAX_VELOCITY		(1 << 1)	// Goober5000 - maneuvers can exceed tabled max velocity
+#define CIF_INSTANTANEOUS_ACCELERATION	(1 << 2)	// Goober5000 - instantaneously jump to the goal velocity
 
 // All of these are numbers from -1.0 to 1.0 indicating
 // what percent of full velocity you want to go.
@@ -115,6 +122,8 @@ typedef struct control_info {
 	// afterburner control information
 	int	afterburner_start;
 	int	afterburner_stop;
+
+	int control_flags;					// for sexp- and script-controlled maneuvers
 
 } control_info;
 

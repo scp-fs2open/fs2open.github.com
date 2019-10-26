@@ -172,6 +172,8 @@ void physics_sim_rot(matrix * orient, physics_info * pi, float sim_time )
 			rotdamp = pi->rotdamp + pi->rotdamp * (SW_ROT_FACTOR - 1) * shock_fraction_time_left;
 			shock_amplitude = pi->shockwave_shake_amp * shock_fraction_time_left;
 		}
+	} else if ( pi->flags & PF_NO_DAMP ) {
+		rotdamp = 0.0f;
 	} else {
 		rotdamp = pi->rotdamp;
 	}
@@ -276,13 +278,14 @@ void physics_sim_vel(vec3d * position, physics_info * pi, float sim_time, matrix
 	}
 
 	// Set up damping constants based on special conditions
-	// ie. shockwave, collision, weapon, dead
+	// dead
 	if (pi->flags & PF_DEAD_DAMP) {
 		// side_slip_time_const is already quite large and now needs to be applied in all directions
 		vm_vec_make( &damp, pi->side_slip_time_const, pi->side_slip_time_const, pi->side_slip_time_const );
 
-	} else if (pi->flags & PF_REDUCED_DAMP) {
-		// case of shock, weapon, collide, etc.
+	}
+	// case of shock, weapon, collide, etc.
+	else if (pi->flags & PF_REDUCED_DAMP) {
 		if ( timestamp_elapsed(pi->reduced_damp_decay) ) {
 			vm_vec_make( &damp, pi->side_slip_time_const, pi->side_slip_time_const, 0.0f );
 		} else {
@@ -292,13 +295,18 @@ void physics_sim_vel(vec3d * position, physics_info * pi, float sim_time, matrix
 			damp.xyz.y = pi->side_slip_time_const * ( 1 + (REDUCED_DAMP_FACTOR-1) * reduced_damp_fraction_time_left );
 			damp.xyz.z = pi->side_slip_time_const * reduced_damp_fraction_time_left * REDUCED_DAMP_FACTOR;
 		}
-	} else {
-		// regular damping
-		if (pi->use_newtonian_damp) {
-			vm_vec_make( &damp, pi->side_slip_time_const, pi->side_slip_time_const, pi->side_slip_time_const );
-		} else {
-			vm_vec_make( &damp, pi->side_slip_time_const, pi->side_slip_time_const, 0.0f );
-		}
+	}
+	// no damping at all
+	else if (pi->flags & PF_NO_DAMP) {
+		damp = vmd_zero_vector;
+	}
+	// newtonian
+	else if (pi->flags & PF_NEWTONIAN_DAMP) {
+		vm_vec_make( &damp, pi->side_slip_time_const, pi->side_slip_time_const, pi->side_slip_time_const );
+	}
+	// regular damping
+	else {
+		vm_vec_make( &damp, pi->side_slip_time_const, pi->side_slip_time_const, 0.0f );
 	}
 
 	// Note: CANNOT maintain a *local velocity* since a rotation can occur in this frame.
@@ -419,21 +427,6 @@ void physics_read_flying_controls( matrix * orient, physics_info * pi, control_i
 		ci->heading += wash_rot->xyz.y;
 	}
 
-	if (ci->pitch > 1.0f ) ci->pitch = 1.0f;
-	else if (ci->pitch < -1.0f ) ci->pitch = -1.0f;
-
-	if (ci->vertical > 1.0f ) ci->vertical = 1.0f;
-	else if (ci->vertical < -1.0f ) ci->vertical = -1.0f;
-
-	if (ci->heading > 1.0f ) ci->heading = 1.0f;
-	else if (ci->heading < -1.0f ) ci->heading = -1.0f;
-
-	if (ci->sideways > 1.0f  ) ci->sideways = 1.0f;
-	else if (ci->sideways < -1.0f  ) ci->sideways = -1.0f;
-
-	if (ci->bank > 1.0f ) ci->bank = 1.0f;
-	else if (ci->bank < -1.0f ) ci->bank = -1.0f;
-
 	if ( pi->flags & PF_AFTERBURNER_ON ){
 		//SparK: modifield to accept reverse burners
 		if (!(pi->afterburner_max_reverse_vel > 0.0f)){
@@ -441,8 +434,27 @@ void physics_read_flying_controls( matrix * orient, physics_info * pi, control_i
 		}
 	}
 
-	if (ci->forward > 1.0f ) ci->forward = 1.0f;
-	else if (ci->forward < -1.0f ) ci->forward = -1.0f;
+	// maybe we don't need to clamp our velocity...
+	if ( !(ci->control_flags & CIF_DONT_CLAMP_MAX_VELOCITY) )
+	{
+		if (ci->pitch > 1.0f ) ci->pitch = 1.0f;
+		else if (ci->pitch < -1.0f ) ci->pitch = -1.0f;
+
+		if (ci->vertical > 1.0f ) ci->vertical = 1.0f;
+		else if (ci->vertical < -1.0f ) ci->vertical = -1.0f;
+
+		if (ci->heading > 1.0f ) ci->heading = 1.0f;
+		else if (ci->heading < -1.0f ) ci->heading = -1.0f;
+
+		if (ci->sideways > 1.0f  ) ci->sideways = 1.0f;
+		else if (ci->sideways < -1.0f  ) ci->sideways = -1.0f;
+
+		if (ci->bank > 1.0f ) ci->bank = 1.0f;
+		else if (ci->bank < -1.0f ) ci->bank = -1.0f;
+
+		if (ci->forward > 1.0f ) ci->forward = 1.0f;
+		else if (ci->forward < -1.0f ) ci->forward = -1.0f;
+	}
 
 	if (!Flight_controls_follow_eyepoint_orientation || (Player_obj == NULL) || (Player_obj->type != OBJ_SHIP)) {
 		// Default behavior; eyepoint orientation has no effect on controls
@@ -474,10 +486,15 @@ void physics_read_flying_controls( matrix * orient, physics_info * pi, control_i
 	float	delta_bank;
 
 #ifdef BANK_WHEN_TURN
-	//	To change direction of bank, negate the whole expression.
-	//	To increase magnitude of banking, decrease denominator.
-	//	Adam: The following statement is all the math for banking while turning.
-	delta_bank = - (ci->heading * pi->max_rotvel.xyz.y) * pi->delta_bank_const;
+	if ( ci->control_flags & CIF_DONT_BANK_WHEN_TURNING )
+		delta_bank = 0.0f;
+	else
+	{
+		//	To change direction of bank, negate the whole expression.
+		//	To increase magnitude of banking, decrease denominator.
+		//	Adam: The following statement is all the math for banking while turning.
+		delta_bank = - (ci->heading * pi->max_rotvel.xyz.y) * pi->delta_bank_const;
+	}
 #else
 	delta_bank = 0.0f;
 #endif
@@ -510,7 +527,19 @@ void physics_read_flying_controls( matrix * orient, physics_info * pi, control_i
 		goal_vel.xyz.z = -pi->max_rear_vel;
 
 
-	if ( pi->flags & PF_ACCELERATES )	{
+	// instantaneous acceleration is trickier than it looks
+	if ( ci->control_flags & CIF_INSTANTANEOUS_ACCELERATION ) {
+		// ramp up instantaneously
+		pi->prev_ramp_vel = goal_vel;
+
+		// translate local desired velocities to world velocities, as below
+		vm_vec_zero(&pi->desired_vel);
+		vm_vec_scale_add2(&pi->desired_vel, &orient->vec.rvec, pi->prev_ramp_vel.xyz.x);
+		vm_vec_scale_add2(&pi->desired_vel, &orient->vec.uvec, pi->prev_ramp_vel.xyz.y);
+		vm_vec_scale_add2(&pi->desired_vel, &orient->vec.fvec, pi->prev_ramp_vel.xyz.z);
+	}
+	// standard acceleration
+	else if ( pi->flags & PF_ACCELERATES ) {
 		//
 		// Determine *resultant* DESIRED VELOCITY (desired_vel) accounting for RAMPING of velocity
 		// Use LOCAL coordinates
@@ -664,7 +693,8 @@ void physics_read_flying_controls( matrix * orient, physics_info * pi, control_i
 			//Compensate for effect of dampening: normal flight cheats here, so /we make up for it this way so glide acts the same way
 			xVal *= pi->side_slip_time_const / sim_time;
 			yVal *= pi->side_slip_time_const / sim_time;
-			if (pi->use_newtonian_damp) zVal *= pi->side_slip_time_const / sim_time;
+			if (pi->flags & PF_NEWTONIAN_DAMP)
+				zVal *= pi->side_slip_time_const / sim_time;
 
 			vm_vec_scale_add2(&pi->desired_vel, &orient->vec.fvec, zVal);
 			vm_vec_scale_add2(&pi->desired_vel, &orient->vec.rvec, xVal);
@@ -687,8 +717,11 @@ void physics_read_flying_controls( matrix * orient, physics_info * pi, control_i
 			vm_vec_scale_add2( &pi->desired_vel, &orient->vec.uvec, pi->prev_ramp_vel.xyz.y );
 			vm_vec_scale_add2( &pi->desired_vel, &orient->vec.fvec, pi->prev_ramp_vel.xyz.z );
 		}
-	} else  // object does not accelerate  (PF_ACCELERATES not set)
+	}
+	// object does not accelerate  (PF_ACCELERATES not set)
+	else {
 		pi->desired_vel = pi->vel;
+	}
 }
 
 

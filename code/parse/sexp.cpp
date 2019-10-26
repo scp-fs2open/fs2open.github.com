@@ -539,9 +539,9 @@ SCP_vector<sexp_oper> Operators = {
 	{ "set-object-speed-x",				OP_SET_OBJECT_SPEED_X,					2,	3,			SEXP_ACTION_OPERATOR,	},	// WMC
 	{ "set-object-speed-y",				OP_SET_OBJECT_SPEED_Y,					2,	3,			SEXP_ACTION_OPERATOR,	},	// WMC
 	{ "set-object-speed-z",				OP_SET_OBJECT_SPEED_Z,					2,	3,			SEXP_ACTION_OPERATOR,	},	// WMC
-	{ "ship-maneuver",					OP_SHIP_MANEUVER,						10, 10,			SEXP_ACTION_OPERATOR,	},	// Wanderer
-	{ "ship-rot-maneuver",				OP_SHIP_ROT_MANEUVER,					6,	6,			SEXP_ACTION_OPERATOR,	},	// Wanderer
-	{ "ship-lat-maneuver",				OP_SHIP_LAT_MANEUVER,					6,	6,			SEXP_ACTION_OPERATOR,	},	// Wanderer
+	{ "ship-maneuver",					OP_SHIP_MANEUVER,						10, 11,			SEXP_ACTION_OPERATOR,	},	// Wanderer
+	{ "ship-rot-maneuver",				OP_SHIP_ROT_MANEUVER,					6,	7,			SEXP_ACTION_OPERATOR,	},	// Wanderer
+	{ "ship-lat-maneuver",				OP_SHIP_LAT_MANEUVER,					6,	7,			SEXP_ACTION_OPERATOR,	},	// Wanderer
 	{ "set-immobile",					OP_SET_IMMOBILE,						1,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "set-mobile",						OP_SET_MOBILE,							1,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Goober5000
 
@@ -7908,7 +7908,7 @@ void sexp_set_object_facing(int n, bool facing_object)
 	sexp_set_oswpt_facing(&oswpt1, location, turn_time, bank);
 }
 
-void sexp_set_ship_man(object *objp, int duration, int heading, int pitch, int bank, bool apply_all_rotate, int up, int sideways, int forward, bool apply_all_lat)
+void sexp_set_ship_man(object *objp, int duration, int heading, int pitch, int bank, bool apply_all_rotate, int up, int sideways, int forward, bool apply_all_lat, int maneuver_flags)
 {
 	if (objp->type != OBJ_SHIP)
 		return;
@@ -7916,11 +7916,18 @@ void sexp_set_ship_man(object *objp, int duration, int heading, int pitch, int b
 	ship *shipp = &Ships[objp->instance];
 	ai_info	*aip = &Ai_info[shipp->ai_index];
 	
-	aip->ai_override_timestamp = timestamp(duration);
 	aip->ai_override_flags.reset();
-	
+
+	// handle infinite timestamps
+	if (duration >= 2) {
+		aip->ai_override_timestamp = timestamp(duration);
+	} else {
+		aip->ai_override_timestamp = timestamp(10);
+		aip->ai_override_flags.set(AI::Maneuver_Override_Flags::Never_expire);
+	}
+
 	if (apply_all_rotate) {
-		aip->ai_override_flags.set(AI::Maneuver_Override_Flags::Full);
+		aip->ai_override_flags.set(AI::Maneuver_Override_Flags::Full_rot);
 		aip->ai_override_ci.bank = bank / 100.0f;
 		aip->ai_override_ci.pitch = pitch / 100.0f;
 		aip->ai_override_ci.heading = heading / 100.0f;
@@ -7957,16 +7964,26 @@ void sexp_set_ship_man(object *objp, int duration, int heading, int pitch, int b
 			aip->ai_override_ci.forward = forward / 100.0f;
 		}
 	}
+
+	if (maneuver_flags & CIF_DONT_BANK_WHEN_TURNING) {
+		aip->ai_override_flags.set(AI::Maneuver_Override_Flags::Dont_bank_when_turning);
+	}
+	if (maneuver_flags & CIF_DONT_CLAMP_MAX_VELOCITY) {
+		aip->ai_override_flags.set(AI::Maneuver_Override_Flags::Dont_clamp_max_velocity);
+	}
+	if (maneuver_flags & CIF_INSTANTANEOUS_ACCELERATION) {
+		aip->ai_override_flags.set(AI::Maneuver_Override_Flags::Instantaneous_acceleration);
+	}
 }
 
-void sexp_set_oswpt_maneuver(object_ship_wing_point_team *oswpt, int duration, int heading, int pitch, int bank, bool apply_all_rotate, int up, int sideways, int forward, bool apply_all_lat)
+void sexp_set_oswpt_maneuver(object_ship_wing_point_team *oswpt, int duration, int heading, int pitch, int bank, bool apply_all_rotate, int up, int sideways, int forward, bool apply_all_lat, int maneuver_flags)
 {
 	Assert(oswpt);
 
 	switch (oswpt->type)
 	{
 		case OSWPT_TYPE_SHIP:
-			sexp_set_ship_man(oswpt->objp, duration, heading, pitch, bank, apply_all_rotate, up, sideways, forward, apply_all_lat);
+			sexp_set_ship_man(oswpt->objp, duration, heading, pitch, bank, apply_all_rotate, up, sideways, forward, apply_all_lat, maneuver_flags);
 			break;
 
 		case OSWPT_TYPE_WING:
@@ -7975,7 +7992,7 @@ void sexp_set_oswpt_maneuver(object_ship_wing_point_team *oswpt, int duration, i
 			{
 				object *objp = &Objects[Ships[oswpt->wingp->ship_index[i]].objnum];
 
-				sexp_set_ship_man(objp, duration, heading, pitch, bank, apply_all_rotate, up, sideways, forward, apply_all_lat);
+				sexp_set_ship_man(objp, duration, heading, pitch, bank, apply_all_rotate, up, sideways, forward, apply_all_lat, maneuver_flags);
 			}
 
 			break;
@@ -7987,7 +8004,7 @@ void sexp_set_ship_maneuver(int n, int op_num)
 {
 	int bank = 0, heading = 0, pitch = 0;
 	int up = 0, sideways = 0, forward = 0;
-	int duration, i, temp;
+	int duration, i, temp, maneuver_flags = 0;
 	bool apply_all_rotate = false, apply_all_lat = false, is_nan, is_nan_forever;
 	object_ship_wing_point_team oswpt;
 
@@ -7995,7 +8012,7 @@ void sexp_set_ship_maneuver(int n, int op_num)
 
 	n = CDR(n);
 	duration = eval_num(n, is_nan, is_nan_forever);
-	if (is_nan || is_nan_forever || duration < 2)
+	if (is_nan || is_nan_forever)
 		return;
 
 	if (op_num == OP_SHIP_ROT_MANEUVER || op_num == OP_SHIP_MANEUVER) {
@@ -8005,9 +8022,6 @@ void sexp_set_ship_maneuver(int n, int op_num)
 			temp = eval_num(n, is_nan, is_nan_forever);
 			if (is_nan || is_nan_forever)
 				return;
-
-			if (temp > 100) temp = 100;
-			if (temp < -100) temp = -100;
 
 			if (i == 0)
 				heading = temp;
@@ -8029,9 +8043,6 @@ void sexp_set_ship_maneuver(int n, int op_num)
 			if (is_nan || is_nan_forever)
 				return;
 
-			if (temp > 100) temp = 100;
-			if (temp < -100) temp = -100;
-
 			if (i == 0)
 				up = temp;
 			else if (i == 1)
@@ -8047,7 +8058,14 @@ void sexp_set_ship_maneuver(int n, int op_num)
 	if ((bank == 0) && (pitch == 0) && (heading == 0) && !apply_all_rotate && (up == 0) && (sideways == 0) && (forward == 0) && !apply_all_lat)
 		return;
 
-	sexp_set_oswpt_maneuver(&oswpt, duration, heading, pitch, bank, apply_all_rotate, up, sideways, forward, apply_all_lat);
+	n = CDR(n);
+	if (n >= 0) {
+		maneuver_flags = eval_num(n, is_nan, is_nan_forever);
+		if (is_nan || is_nan_forever)
+			return;
+	}
+
+	sexp_set_oswpt_maneuver(&oswpt, duration, heading, pitch, bank, apply_all_rotate, up, sideways, forward, apply_all_lat, maneuver_flags);
 }
 
 /**
@@ -27973,8 +27991,10 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_BOOL;
 			else if (argnum < 9)
 				return OPF_NUMBER;
-			else
+			else if (argnum == 9)
 				return OPF_BOOL;
+			else
+				return OPF_POSITIVE;
 
 		case OP_SHIP_ROT_MANEUVER:
 		case OP_SHIP_LAT_MANEUVER:
@@ -27984,8 +28004,10 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_POSITIVE;
 			else if (argnum < 5)
 				return OPF_NUMBER;
-			else
+			else if (argnum == 5)
 				return OPF_BOOL;
+			else
+				return OPF_POSITIVE;
 
 		case OP_MODIFY_VARIABLE:
 			if (argnum == 0) {
@@ -32895,9 +32917,9 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 
 	// Wanderer
 	{ OP_SHIP_MANEUVER, "ship-maneuver\r\n"
-		"\tCombines the effects of the ship-rot-maneuver and ship-lat-maneuver sexps.  Takes 10 arguments:\r\n"
+		"\tCombines the effects of the ship-rot-maneuver and ship-lat-maneuver sexps.  Takes 10 or 11 arguments:\r\n"
 		"\t1: The name of a ship or wing\r\n"
-		"\t2: Duration of the maneuver, in milliseconds\r\n"
+		"\t2: Duration of the maneuver, in milliseconds.  Specifying 0 or 1 indicates infinite duration.\r\n"
 		"\t3: Heading movement velocity, as a percentage (-100 to 100) of the tabled maximum heading velocity, or 0 to not modify the ship's current value\r\n"
 		"\t4: Pitch movement velocity, as a percentage (-100 to 100) of the tabled maximum pitch velocity, or 0 to not modify the ship's current value\r\n"
 		"\t5: Bank movement velocity, as a percentage (-100 to 100) of the tabled maximum bank velocity, or 0 to not modify the ship's current value\r\n"
@@ -32905,31 +32927,46 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t7: Vertical movement velocity, as a percentage (-100 to 100) of the tabled maximum vertical velocity, or 0 to not modify the ship's current value\r\n"
 		"\t8: Sideways movement velocity, as a percentage (-100 to 100) of the tabled maximum sideways velocity, or 0 to not modify the ship's current value\r\n"
 		"\t9: Forward movement velocity, as a percentage (-100 to 100) of the tabled maximum forward velocity, or 0 to not modify the ship's current value\r\n"
-		"\t10: Whether to apply all of the lateral velocity values even if any of them are 0\r\n" },
+		"\t10: Whether to apply all of the lateral velocity values even if any of them are 0\r\n"
+		"\t11: Maneuver flags (optional): a bitfield with any of the following options:\r\n"
+		"\t\t1 or 2^0: don't bank when changing heading\r\n"
+		"\t\t2 or 2^1: allow maneuvers exceeding tabled maximums (outside the -100 to 100 range)\r\n"
+		"\t\t4 or 2^2: instantaneously jump to the goal velocity\r\n"
+	},
 
 	// Wanderer
 	{ OP_SHIP_ROT_MANEUVER, "ship-rot-maneuver\r\n"
 		"\tCauses a ship to move in a rotational direction.  For the purposes of this sexp, this means the ship rotates along its own heading, pitch, or bank axis (or a combination of axes) without regard to normal ship rotation rules.  "
 		"You may find it necessary to disable the ship AI (e.g. by issuing a play-dead order) before running this sexp.\r\n\r\n"
-		"Takes 6 arguments:\r\n"
+		"Takes 6 or 7 arguments:\r\n"
 		"\t1: The name of a ship or wing\r\n"
-		"\t2: Duration of the maneuver, in milliseconds\r\n"
+		"\t2: Duration of the maneuver, in milliseconds.  Specifying 0 or 1 indicates infinite duration.\r\n"
 		"\t3: Heading movement velocity, as a percentage (-100 to 100) of the tabled maximum heading velocity, or 0 to not modify the ship's current value\r\n"
 		"\t4: Pitch movement velocity, as a percentage (-100 to 100) of the tabled maximum pitch velocity, or 0 to not modify the ship's current value\r\n"
 		"\t5: Bank movement velocity, as a percentage (-100 to 100) of the tabled maximum bank velocity, or 0 to not modify the ship's current value\r\n"
-		"\t6: Whether to apply all of the above velocity values even if any of them are 0\r\n" },
+		"\t6: Whether to apply all of the above velocity values even if any of them are 0\r\n"
+		"\t7: Maneuver flags (optional): a bitfield with any of the following options:\r\n"
+		"\t\t1 or 2^0: don't bank when changing heading\r\n"
+		"\t\t2 or 2^1: allow maneuvers exceeding tabled maximums (outside the -100 to 100 range)\r\n"
+		"\t\t4 or 2^2: instantaneously jump to the goal velocity\r\n"
+	},
 	
 	// Wanderer
 	{ OP_SHIP_LAT_MANEUVER, "ship-lat-maneuver\r\n"
 		"\tCauses a ship to move in a lateral direction.  For the purposes of this sexp, this means the ship translates along its own X, Y, or Z axis (or a combination of axes) without regard to normal ship movement rules.  "
 		"You may find it necessary to disable the ship AI (e.g. by issuing a play-dead order) before running this sexp.\r\n\r\n"
-		"Takes 6 arguments:\r\n"
+		"Takes 6 or 7 arguments:\r\n"
 		"\t1: The name of a ship or wing\r\n"
-		"\t2: Duration of the maneuver, in milliseconds\r\n"
+		"\t2: Duration of the maneuver, in milliseconds.  Specifying 0 or 1 indicates infinite duration.\r\n"
 		"\t3: Vertical movement velocity, as a percentage (-100 to 100) of the tabled maximum vertical velocity, or 0 to not modify the ship's current value\r\n"
 		"\t4: Sideways movement velocity, as a percentage (-100 to 100) of the tabled maximum sideways velocity, or 0 to not modify the ship's current value\r\n"
 		"\t5: Forward movement velocity, as a percentage (-100 to 100) of the tabled maximum forward velocity, or 0 to not modify the ship's current value\r\n"
-		"\t6: Whether to apply all of the above velocity values even if any of them are 0\r\n" },
+		"\t6: Whether to apply all of the above velocity values even if any of them are 0\r\n"
+		"\t7: Maneuver flags (optional): a bitfield with any of the following options:\r\n"
+		"\t\t1 or 2^0: don't bank when changing heading (which won't have any affect for lat-maneuver)\r\n"
+		"\t\t2 or 2^1: allow maneuvers exceeding tabled maximums (outside the -100 to 100 range)\r\n"
+		"\t\t4 or 2^2: instantaneously jump to the goal velocity\r\n"
+	},
 
 	// Goober5000
 	{ OP_SHIP_TAG, "ship-tag\r\n"
