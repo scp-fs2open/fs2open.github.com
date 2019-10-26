@@ -573,9 +573,9 @@ SCP_vector<sexp_oper> Operators = {
 	//Music and Sound Sub-Category
 	{ "change-soundtrack",				OP_CHANGE_SOUNDTRACK,					1,	1,			SEXP_ACTION_OPERATOR,	},	// Goober5000	
 	{ "play-sound-from-table",			OP_PLAY_SOUND_FROM_TABLE,				4,	4,			SEXP_ACTION_OPERATOR,	},	// Goober5000
-	{ "play-sound-from-file",			OP_PLAY_SOUND_FROM_FILE,				1,	3,			SEXP_ACTION_OPERATOR,	},	// Goober5000
-	{ "close-sound-from-file",			OP_CLOSE_SOUND_FROM_FILE,				1,	1,			SEXP_ACTION_OPERATOR,	},	// Goober5000
-	{ "pause-sound-from-file",			OP_PAUSE_SOUND_FROM_FILE,				1,	1,			SEXP_ACTION_OPERATOR,	},	// Goober5000
+	{ "play-sound-from-file",			OP_PLAY_SOUND_FROM_FILE,				1,	4,			SEXP_ACTION_OPERATOR,	},	// Goober5000
+	{ "close-sound-from-file",			OP_CLOSE_SOUND_FROM_FILE,				0,	2,			SEXP_ACTION_OPERATOR,	},	// Goober5000
+	{ "pause-sound-from-file",			OP_PAUSE_SOUND_FROM_FILE,				1,	2,			SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "set-sound-environment",			OP_SET_SOUND_ENVIRONMENT,				1,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Taylor
 	{ "update-sound-environment",		OP_UPDATE_SOUND_ENVIRONMENT,			2,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Taylor
 	{ "adjust-audio-volume",			OP_ADJUST_AUDIO_VOLUME,					1,	3,			SEXP_ACTION_OPERATOR,	},
@@ -875,8 +875,7 @@ int Players_target_timestamp;
 int Players_mlocked_timestamp;
 
 // for play-music - Goober5000
-int	Sexp_music_handle = -1;
-void sexp_stop_music(bool fade = true);
+SCP_vector<int>	Sexp_music_handles;		// All handles used by all invocations of play-sound-from-file.  The default handle is in index 0.
 
 // for sound environments - Goober5000/Taylor
 #define SEO_VOLUME		0
@@ -11049,69 +11048,176 @@ void multi_sexp_change_soundtrack()
 }
 
 // Goober5000
-void sexp_pause_unpause_music(bool pause)
+int sexp_find_music_handle_index(int sexp_var)
 {
-	if ( Sexp_music_handle != -1 ) {
-		if ( pause && !audiostream_is_paused(Sexp_music_handle) ) {
-			audiostream_pause(Sexp_music_handle, true);
-		} else if ( !pause && audiostream_is_paused(Sexp_music_handle) ) {
-			audiostream_unpause(Sexp_music_handle, true);
-		}
+	// check the default case
+	if (sexp_var < 0)
+	{
+		// we might not have any music at this point
+		if (Sexp_music_handles.empty())
+			return -1;
+
+		return 0;
+	}
+
+	// get the handle from the variable
+	int music_handle = -1;
+	try
+	{
+		music_handle = std::stoi(Sexp_variables[sexp_var].text);
+	}
+	catch (const std::exception&)
+	{
+		// not a number
+		return -1;
+	}
+
+	// find it in our collection of handles (skip index 0)
+	for (size_t i = 1; i < Sexp_music_handles.size(); ++i)
+	{
+		if (Sexp_music_handles[i] == music_handle)
+			return (int)i;
+	}
+
+	return -1;
+}
+
+// Goober5000
+void sexp_pause_unpause_music(bool pause, int sexp_var)
+{
+	if (Cmdline_freespace_no_music)
+		return;
+
+	int index = sexp_find_music_handle_index(sexp_var);
+	if (index < 0)
+	{
+		// bad variable, maybe
+		if (sexp_var >= 0)
+			Warning(LOCATION, "In sexp_pause_unpause_music, variable %s did not store a valid music handle!", Sexp_variables[sexp_var].variable_name);
+
+		return;
+	}
+
+	int music_handle = Sexp_music_handles[index];
+
+	// actually pause the music
+	if (music_handle >= 0)
+	{
+		if (pause && !audiostream_is_paused(music_handle))
+			audiostream_pause(music_handle, true);
+		else if (!pause && audiostream_is_paused(music_handle))
+			audiostream_unpause(music_handle, true);
 	}
 }
 
 // Goober5000
-void sexp_stop_music(bool fade)
+void sexp_stop_music(bool fade, int sexp_var)
 {
-	if ( Sexp_music_handle != -1 ) {
-		audiostream_close_file(Sexp_music_handle, fade);
-		Sexp_music_handle = -1;
+	if (Cmdline_freespace_no_music)
+		return;
+
+	int index = sexp_find_music_handle_index(sexp_var);
+	if (index < 0)
+	{
+		// bad variable, maybe
+		if (sexp_var >= 0)
+			Warning(LOCATION, "In sexp_stop_music, variable %s did not store a valid music handle!", Sexp_variables[sexp_var].variable_name);
+
+		return;
 	}
+
+	int music_handle = Sexp_music_handles[index];
+
+	// actually stop the music and free the handle
+	if (music_handle >= 0)
+	{
+		audiostream_close_file(music_handle, fade);
+		Sexp_music_handles[index] = -1;
+	}
+
+	// also clear the variable
+	if (sexp_var >= 0)
+		sexp_modify_variable("-1", sexp_var);
 }
 
 // Goober5000
 void sexp_music_close()
 {
-	if ( Cmdline_freespace_no_music ) {
+	if (Cmdline_freespace_no_music)
 		return;
-	}
 
-	sexp_stop_music();
+	// close all music used by this mission
+	for (auto music_handle : Sexp_music_handles)
+		audiostream_close_file(music_handle);
+	Sexp_music_handles.clear();
 }
 
 // Goober5000
-void sexp_load_music(char* fname, int type = -1)
+void sexp_load_music(const char *filename, int type = -1, int sexp_var = -1)
 {
-	if ( Cmdline_freespace_no_music ) {
+	if (Cmdline_freespace_no_music || filename == nullptr)
 		return;
-	}
 
-	if ( Sexp_music_handle != -1 )
-	{
-		sexp_stop_music();
-	}
-
-	if ( type < 0 )
-	{
+	if (type < 0)
 		type = ASF_MENUMUSIC;
+
+	// the default music handle is always index 0, which at this point may or may not exist
+	if (Sexp_music_handles.empty())
+		Sexp_music_handles.push_back(-1);
+
+	int index = sexp_find_music_handle_index(sexp_var);
+
+	// since we know the default index 0 exists, this means we have a variable without an index
+	if (index < 0)
+	{
+		index = (int)Sexp_music_handles.size();
+		Sexp_music_handles.push_back(-1);
 	}
 
-	if ( fname )
+	// if we were previously playing music on this handle, stop it
+	audiostream_close_file(Sexp_music_handles[index]);
+
+	// open the stream and save the handle in our list
+	Sexp_music_handles[index] = audiostream_open(filename, type);
+
+	// if we have a variable, save it there too
+	if (sexp_var >= 0)
 	{
-		Sexp_music_handle = audiostream_open( fname, type );
+		char number_as_str[TOKEN_LENGTH];
+		sprintf(number_as_str, "%d", Sexp_music_handles[index]);
+		sexp_modify_variable(number_as_str, sexp_var);
 	}
 }
 
 // Goober5000
-void sexp_start_music(int loop)
+void sexp_start_music(int loop, int sexp_var)
 {
-	if ( Sexp_music_handle != -1 ) {
-		if ( !audiostream_is_playing(Sexp_music_handle) )
-			audiostream_play(Sexp_music_handle, (Master_event_music_volume * aav_music_volume), loop);
+	int index = sexp_find_music_handle_index(sexp_var);
+
+	// shouldn't happen
+	if (index < 0)
+	{
+		// really shouldn't happen
+		if (sexp_var < 0)
+			Warning(LOCATION, "In sexp_start_music, unable to find a default music index?!?!");
+		else
+			Warning(LOCATION, "In sexp_start_music, no music handle index available for variable %s!", Sexp_variables[sexp_var].variable_name);
+
+		return;
 	}
-	else {
-		nprintf(("Warning", "Can not play music. sexp_start_music called when no music file is set for Sexp_music_handle!\n"));
+
+	int music_handle = Sexp_music_handles[index];
+
+	// also shouldn't happen
+	if (music_handle < 0)
+	{
+		Warning(LOCATION, "In sexp_start_music, music handle was unavailable!");
+		return;
 	}
+
+	// start playing
+	if (!audiostream_is_playing(music_handle))
+		audiostream_play(music_handle, (Master_event_music_volume * aav_music_volume), loop);
 }
 
 gamesnd_id sexp_get_sound_index(int node)
@@ -11210,60 +11316,110 @@ void multi_sexp_play_sound_from_table()
 // Goober5000
 void sexp_close_sound_from_file(int n)
 {
-	bool fade = is_sexp_true(n);
-	sexp_stop_music(fade);
+	// fade out?
+	bool fade;
+	if (n < 0)
+		fade = true;
+	else
+	{
+		fade = is_sexp_true(n);
+		n = CDR(n);
+	}
 
-	if (MULTIPLAYER_MASTER) {
+	// we might have a variable
+	int sexp_var = -1;
+	if (n >= 0)
+	{
+		Assert(Sexp_nodes[n].first == -1);
+		sexp_var = atoi(Sexp_nodes[n].text);
+
+		// verify variable set
+		Assert(Sexp_variables[sexp_var].type & SEXP_VARIABLE_SET);
+
+		if (!(Sexp_variables[sexp_var].type & SEXP_VARIABLE_NUMBER))
+		{
+			Warning(LOCATION, "close-sound-from-file: Variable %s must be a number variable!", Sexp_variables[sexp_var].variable_name);
+			return;
+		}
+	}
+
+	// stop sound file
+	sexp_stop_music(fade, sexp_var);
+
+	if (MULTIPLAYER_MASTER)
+	{
 		Current_sexp_network_packet.start_callback();
-		Current_sexp_network_packet.send_bool(fade ? true : false); 
+		Current_sexp_network_packet.send_bool(fade);
+		Current_sexp_network_packet.send_int(sexp_var);
 		Current_sexp_network_packet.end_callback();
 	}
 }
 
 void multi_sexp_close_sound_from_file()
 {
-	bool fade; 
-	if (Current_sexp_network_packet.get_bool(fade)) {
-		sexp_stop_music(fade);
-	}
+	bool fade = false;
+	int sexp_var = -1;
+
+	Current_sexp_network_packet.get_bool(fade);
+	Current_sexp_network_packet.get_int(sexp_var);
+
+	sexp_stop_music(fade, sexp_var);
 }
 
 // Goober5000
 void sexp_play_sound_from_file(int n)
 {
-	int loop = 0;
-	int soundfx = 0;
+	// get the music track
+	const char *filename = CTEXT(n);
+	n = CDR(n);
+
+	// we might loop it
+	bool loop = false;
+	if (n >= 0)
+	{
+		loop = (eval_sexp(n) != 0);
+		n = CDR(n);
+	}
+
+	// we might use environmental effects
 	int type = ASF_MENUMUSIC;
-
-	// third option, but needed when loading music -
-	soundfx = CDDR(n);
-
-	if (soundfx >= 0) {
-		soundfx = eval_sexp(soundfx);
-
-		if (soundfx > 0) {
+	if (n >= 0)
+	{
+		if (eval_sexp(n) != 0)
 			type = ASF_SOUNDFX;
+		n = CDR(n);
+	}
+
+	// we might have a variable
+	int sexp_var = -1;
+	if (n >= 0)
+	{
+		Assert(Sexp_nodes[n].first == -1);
+		sexp_var = atoi(Sexp_nodes[n].text);
+
+		// verify variable set
+		Assert(Sexp_variables[sexp_var].type & SEXP_VARIABLE_SET);
+
+		if (!(Sexp_variables[sexp_var].type & SEXP_VARIABLE_NUMBER))
+		{
+			Warning(LOCATION, "play-sound-from-file: Variable %s must be a number variable!", Sexp_variables[sexp_var].variable_name);
+			return;
 		}
 	}
 
-	// load sound file -----------------------------
-	sexp_load_music(CTEXT(n), type);
+	// load sound file
+	sexp_load_music(filename, type, sexp_var);
 	
-	if (MULTIPLAYER_MASTER) {
+	// play sound file
+	sexp_start_music(loop, sexp_var);
+
+	if (MULTIPLAYER_MASTER)
+	{
 		Current_sexp_network_packet.start_callback();
-		Current_sexp_network_packet.send_string(CTEXT(n));
-	}
-
-	n = CDR(n);
-	if (n >= 0) {
-		loop = eval_sexp(n);
-	}
-
-	// play sound file -----------------------------
-	sexp_start_music(loop);	
-
-	if (MULTIPLAYER_MASTER) {
+		Current_sexp_network_packet.send_string(filename);
 		Current_sexp_network_packet.send_bool(loop ? true : false); 
+		Current_sexp_network_packet.send_int(type);
+		Current_sexp_network_packet.send_int(sexp_var);
 		Current_sexp_network_packet.end_callback();
 	}
 }
@@ -11271,35 +11427,64 @@ void sexp_play_sound_from_file(int n)
 void multi_sexp_play_sound_from_file()
 {
 	char filename[NAME_LENGTH];
-	bool loop;
-	if (!Current_sexp_network_packet.get_string(filename)) {
-		return;
-	}
-	sexp_load_music(filename);
+	bool loop = false;
+	int type = -1;
+	int sexp_var = -1;
 
+	if (!Current_sexp_network_packet.get_string(filename))
+		return;
 	Current_sexp_network_packet.get_bool(loop);
-	sexp_start_music(loop);	
+	Current_sexp_network_packet.get_int(type);
+	Current_sexp_network_packet.get_int(sexp_var);
+
+	sexp_load_music(filename, type, sexp_var);
+	sexp_start_music(loop, sexp_var);
 }
 
 // Goober5000
-void sexp_pause_sound_from_file(int node)
+void sexp_pause_sound_from_file(int n)
 {
-	bool pause = is_sexp_true(node);
+	bool pause = is_sexp_true(n);
+	n = CDR(n);
 
-	if (MULTIPLAYER_MASTER) {
-		Current_sexp_network_packet.send_bool(pause); 
+	// we might have a variable
+	int sexp_var = -1;
+	if (n >= 0)
+	{
+		Assert(Sexp_nodes[n].first == -1);
+		sexp_var = atoi(Sexp_nodes[n].text);
+
+		// verify variable set
+		Assert(Sexp_variables[sexp_var].type & SEXP_VARIABLE_SET);
+
+		if (!(Sexp_variables[sexp_var].type & SEXP_VARIABLE_NUMBER))
+		{
+			Warning(LOCATION, "pause-sound-from-file: Variable %s must be a number variable!", Sexp_variables[sexp_var].variable_name);
+			return;
+		}
+	}
+
+	if (MULTIPLAYER_MASTER)
+	{
+		Current_sexp_network_packet.start_callback();
+		Current_sexp_network_packet.send_bool(pause);
+		Current_sexp_network_packet.send_int(sexp_var);
 		Current_sexp_network_packet.end_callback();
 	}
 
-	sexp_pause_unpause_music(pause);
+	sexp_pause_unpause_music(pause, sexp_var);
 }
 
 void multi_sexp_pause_sound_from_file()
 {
 	bool pause; 
-	if (Current_sexp_network_packet.get_bool(pause)) {
-		sexp_pause_unpause_music(pause);
-	}
+	int sexp_var = -1;
+
+	if (!Current_sexp_network_packet.get_bool(pause))
+		return;
+	Current_sexp_network_packet.get_int(sexp_var);
+
+	sexp_pause_unpause_music(pause, sexp_var);
 }
 
 int sexp_sound_environment_option_lookup(char *text)
@@ -28152,13 +28337,20 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_NUMBER;
 
 		case OP_PLAY_SOUND_FROM_FILE:
-			if (argnum==0)
+			if (argnum == 0)
 				return OPF_STRING;
+			else if (argnum == 3)
+				return OPF_VARIABLE_NAME;
 			else
 				return OPF_NUMBER;
 
 		case OP_CLOSE_SOUND_FROM_FILE:
 		case OP_PAUSE_SOUND_FROM_FILE:
+			if (argnum == 0)
+				return OPF_BOOL;
+			else
+				return OPF_VARIABLE_NAME;
+
 		case OP_ALLOW_TREASON:
 		case OP_END_MISSION:
 		case OP_SET_DEBRIEFING_TOGGLED:
@@ -32583,22 +32775,28 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 
 	// Goober5000
 	{ OP_PLAY_SOUND_FROM_FILE, "play-sound-from-file\r\n"
-		"\tPlays a sound, such as a music soundtrack, from a file.  Important: Only one sound at a time can be played with this sexp!\r\n"
-		"Takes 1 to 3 arguments...\r\n"
+		"\tPlays a sound, such as a music soundtrack, from a file.  Multiple sounds can be played with this sexp by assigning each sound to a music handle stored in a variable.\r\n"
+		"Takes 1 to 4 arguments...\r\n"
 		"\t1: Sound (file name)\r\n"
 		"\t2: Enter a non-zero number to loop. default is off (optional).\r\n"
-		"\t3: Enter a non-zero number to use environment effects. default is off (optional)."
+		"\t3: Enter a non-zero number to use environment effects. default is off (optional).\r\n"
+		"\t4: Variable in which the music handle is to be stored (optional).  If no variable is specified, the 'default' handle is used.  "
+		"Only one 'default' track can be played at a time, but multiple variable-managed tracks can be played.\r\n"
 	},
 
 	// Goober5000
 	{ OP_CLOSE_SOUND_FROM_FILE, "close-sound-from-file\r\n"
-		"\tCloses the currently playing sound started by play-sound-from-file, if there is any.  Takes 1 argument...\r\n"
-		"\t1: Fade (default is true)" },
+		"\tCloses the currently playing sound started by play-sound-from-file, if there is any.  Takes 0 to 2 arguments...\r\n"
+		"\t1: Fade (optional; default is true)\r\n"
+		"\t2: Variable containing a music handle (optional).  If no variable is specified, the 'default' handle is used."
+	},
 
 	// Goober5000
 	{ OP_PAUSE_SOUND_FROM_FILE, "pause-sound-from-file\r\n"
-		"\tPauses or unpauses the currently playing sound started by play-sound-from-file, if there is any.  Takes 1 argument...\r\n"
-		"\t1: Boolean - True to pause, False to unpause" },
+		"\tPauses or unpauses the currently playing sound started by play-sound-from-file, if there is any.  Takes 1 or 2 arguments...\r\n"
+		"\t1: Boolean - True to pause, False to unpause\r\n"
+		"\t2: Variable containing a music handle (optional).  If no variable is specified, the 'default' handle is used."
+	},
 
 	// Taylor
 	{ OP_SET_SOUND_ENVIRONMENT, "set-sound-environment\r\n"
