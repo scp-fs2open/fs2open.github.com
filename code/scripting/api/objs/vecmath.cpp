@@ -29,13 +29,17 @@ matrix_h::matrix_h() {
 	mtx = vmd_identity_matrix;
 	status = MatrixState::AnglesOutOfDate;
 }
-matrix_h::matrix_h(matrix* in) {
+matrix_h::matrix_h(const matrix* in) {
 	mtx = *in;
 	status = MatrixState::AnglesOutOfDate;
 }
-matrix_h::matrix_h(angles* in) {
+matrix_h::matrix_h(const angles* in) {
 	ang = *in;
 	status = MatrixState::MatrixOutOfdate;
+}
+matrix_h::matrix_h(const vec3d *fvec, const vec3d *uvec, const vec3d *rvec) {
+	vm_vector_2_matrix(&mtx, fvec, uvec, rvec);
+	status = MatrixState::AnglesOutOfDate;
 }
 angles* matrix_h::GetAngles() {
 	this->ValidateAngles();
@@ -443,21 +447,19 @@ ADE_FUNC(__tostring,
 ADE_FUNC(getOrientation,
 		 l_Vector,
 		 NULL,
-		 "Returns orientation object representing the direction of the vector. Does not require vector to be normalized.",
+		 "Returns orientation object representing the direction of the vector. Does not require vector to be normalized.  "
+		 "Note: the orientation is constructed with the vector as the forward vector (fvec).  You can also specify up (uvec) and right (rvec) vectors as optional arguments.",
 		 "orientation",
 		 "Orientation object, or null orientation object if handle is invalid") {
-	vec3d v3;
-	if (!ade_get_args(L, "o", l_Vector.Get(&v3))) {
+	vec3d *fvec = nullptr;
+	vec3d *uvec = nullptr;
+	vec3d *rvec = nullptr;
+
+	if (!ade_get_args(L, "o|oo", l_Vector.GetPtr(&fvec), l_Vector.GetPtr(&uvec), l_Vector.GetPtr(&rvec))) {
 		return ade_set_error(L, "o", l_Matrix.Set(matrix_h()));
 	}
 
-	matrix mt = vmd_identity_matrix;
-
-	vm_vec_normalize_safe(&v3);
-	vm_vector_2_matrix_norm(&mt, &v3);
-	matrix_h mh(&mt);
-
-	return ade_set_args(L, "o", l_Matrix.Set(mh));
+	return ade_set_args(L, "o", l_Matrix.Set(matrix_h(fvec, uvec, rvec)));
 }
 
 ADE_FUNC(getMagnitude,
