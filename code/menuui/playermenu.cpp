@@ -663,13 +663,14 @@ void player_select_button_pressed(int n)
 		break;
 
 	case SINGLE_BUTTON:
-		player_select_set_bottom_text("");
-
 		Player_select_autoaccept = 0;
 		// switch to single player mode
 		if (Player_select_mode != PLAYER_SELECT_MODE_SINGLE) {
 			// play a little sound
 			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
+
+			//  Only do this when changing modes, keeps bottom text from being empty by accident
+			player_select_set_bottom_text("");
 
 			player_select_set_bottom_text(XSTR( "Single Player Mode", 376));
 
@@ -681,8 +682,6 @@ void player_select_button_pressed(int n)
 		break;
 
 	case MULTI_BUTTON:
-		player_select_set_bottom_text("");
-
 		Player_select_autoaccept = 0;
 		if ( Networking_disabled ) {
 			game_feature_disabled_popup();
@@ -694,6 +693,9 @@ void player_select_button_pressed(int n)
 			// play a little sound
 			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 
+			//  Only do this when changing modes, keeps bottom text from being empty by accident
+			player_select_set_bottom_text("");
+			
 			player_select_set_bottom_text(XSTR( "Multiplayer Mode", 377));
 
 			// reinitialize as multiplayer mode
