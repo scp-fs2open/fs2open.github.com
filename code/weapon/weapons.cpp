@@ -215,6 +215,10 @@ int		Weapon_impact_timer;			// timer, initialized at start of each mission
 // range. Check the comment in weapon_set_tracking_info() for more details
 #define LOCKED_HOMING_EXTENDED_LIFE_FACTOR			1.2f
 
+// default number of missiles or bullets rearmed per load sound during rearm
+#define REARM_NUM_MISSILES_PER_BATCH 4              
+#define REARM_NUM_BALLISTIC_PRIMARIES_PER_BATCH 100 
+
 extern int compute_num_homing_objects(object *target_objp);
 
 extern void fs2netd_add_table_validation(const char *tblname);
@@ -1480,7 +1484,30 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		}
 	}
 
+		// set the number of missles or ballistic ammo reloaded per batch
+	int reloaded_each_batch;
+	
+	if (optional_string("$Rearm Ammo Increment:")) {
+		stuff_int(&reloaded_each_batch);
 
+		if (reloaded_each_batch > 0) {
+			wip->reloaded_per_batch = reloaded_each_batch;
+		} else if (wip->reloaded_per_batch != -1) {
+			Warning(LOCATION, "Rearm increment amount of 0 or less in weapon %s, keeping at previously defined value.",
+			        wip->name);
+		} else {
+			Warning(LOCATION, "Rearm increment amount of 0 or less in weapon %s, setting to the default, 4 for missiles or 100 for ballistic primaries.", wip->name);
+		}
+	}
+	// This setting requires a default if not specified, otherwise, rearming will break. - Cyborg17
+	if (wip->reloaded_per_batch == -1) {
+		if (subtype == WP_MISSILE) {
+			wip->reloaded_per_batch = REARM_NUM_MISSILES_PER_BATCH;
+		} else if (wip->wi_flags[Weapon::Info_Flags::Ballistic]) {
+			wip->reloaded_per_batch = REARM_NUM_BALLISTIC_PRIMARIES_PER_BATCH;
+		}
+	}
+	   
 	if (optional_string("+Weapon Range:")) {
 		stuff_float(&wip->weapon_range);
 	}
@@ -7625,6 +7652,7 @@ void weapon_info::reset()
 	this->flyby_snd = gamesnd_id();
 
 	this->rearm_rate = 1.0f;
+	this->reloaded_per_batch = -1 ;
 
 	this->weapon_range = 999999999.9f;
 	// *Minimum weapon range, default is 0 -Et1
