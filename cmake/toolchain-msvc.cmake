@@ -37,20 +37,21 @@ set(WARNING_FLAGS
 	$<$<CONFIG:Release>:/wd4101> # In release mode there are unreferenced variables because debug needs them
 	/wd4995 # "'vsprintf': name was marked as #pragma deprecated" is being caused by our custom definition of vsprintf. I have no idea what causes this or how to fix it - m!m
 	/wd4723 # "potential divide by 0" is caused by some code that definitely will not divide by zero - m!m
+	/wd4121 # "alignment of a member was sensitive to packing" happens in a Windows header - m!m
 )
 
 target_compile_options(compiler INTERFACE ${WARNING_FLAGS})
 
 # Base
-set(CMAKE_C_FLAGS "/MP /GS- /analyze- /Zc:wchar_t /errorReport:prompt /WX- /Zc:forScope /Gd /EHsc /nologo /Zm200")
-set(CMAKE_CXX_FLAGS "/MP /GS- /analyze- /Zc:wchar_t /errorReport:prompt /WX- /Zc:forScope /Gd /EHsc /nologo /Zm200")
+set(CMAKE_C_FLAGS "/MP /GS- /analyze- /Zc:wchar_t /errorReport:prompt /Zc:forScope /Gd /EHsc /nologo /Zm200")
+set(CMAKE_CXX_FLAGS "/MP /GS- /analyze- /Zc:wchar_t /errorReport:prompt /Zc:forScope /Gd /EHsc /nologo /Zm200")
 
 set(CMAKE_EXE_LINKER_FLAGS "/MANIFEST /DYNAMICBASE:NO /SAFESEH:NO /ERRORREPORT:PROMPT /NOLOGO")
 set(CMAKE_STATIC_LINKER_FLAGS "")
 
 # Release
-set(CMAKE_C_FLAGS_RELEASE "/GL /W2 /Gy- /Ox /Ot /Ob2 /fp:precise /GF /Oy /Oi /Zi /W3")
-set(CMAKE_CXX_FLAGS_RELEASE "/GL /W2 /Gy- /Ox /Ot /Ob2 /fp:precise /GF /Oy /Oi /Zi /W3")
+set(CMAKE_C_FLAGS_RELEASE "/GL /Gy- /Ox /Ot /Ob2 /fp:precise /GF /Oy /Oi /Zi /W3")
+set(CMAKE_CXX_FLAGS_RELEASE "/GL /Gy- /Ox /Ot /Ob2 /fp:precise /GF /Oy /Oi /Zi /W3")
 # /DEBUG:FULL so that we get PDBs which is needed for debugging crashdumps
 set(CMAKE_EXE_LINKER_FLAGS_RELEASE "/OPT:REF /LTCG /INCREMENTAL:NO /DEBUG:FULL")
 set(CMAKE_STATIC_LINKER_FLAGS_RELEASE "/LTCG")
