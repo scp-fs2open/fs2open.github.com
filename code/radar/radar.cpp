@@ -394,7 +394,7 @@ void HudGaugeRadarStd::plotBlip(blip *b, int *x, int *y)
 
 	zdist = hypotf(pos->xyz.x, pos->xyz.y);
 
-	vec3d new_pos = ZERO_VECTOR;
+	vec3d new_pos = {};
 
 	if (zdist >= 0.01f)
 	{

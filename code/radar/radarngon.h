@@ -20,7 +20,7 @@ const int RADAR_NGON_MIN_SIDES = 3;		//!< Required, things break if n < 3
 class HudGaugeRadarNgon : public HudGaugeRadarStd
 {
 	float arclen;	// The arc length of each n-gon sector (radians)
-	float offset;	// The angle offset of the plot area (+ is counter-clockwise) (radians)
+	float offset {0.0f};	// The angle offset of the plot area (+ is counter-clockwise) (radians), 
 	float r_min;	// The apothem of the ngon (0.0f < r_min <= 1.0f)
 
 protected:
@@ -36,7 +36,7 @@ protected:
 	* @brief Clamps and scales the blip to be within the plot area
 	* @param[in] vec The blip coordinates (only x and y are nonzero)
 	*/
-	void clampBlip(vec3d* blip);
+	void clampBlip(vec3d* blip) override;
 
 public:
 	/**
