@@ -355,8 +355,8 @@ void main_hall_do_multi_ready()
 	}
 
 	// go to parallax online
-	if (Om_tracker_flag) {
-		Multi_options_g.protocol = NET_TCP;
+	if (Multi_options_g.pxo == 1) {
+		Assertion(Multi_options_g.protocol == NET_TCP, "Protocol should always be TCP with PXO!");
 		gameseq_post_event(GS_EVENT_PXO);
 	} else {
 		// go to the regular join game screen 

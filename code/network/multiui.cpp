@@ -63,7 +63,8 @@
 #include "mission/missionbriefcommon.h"
 #include "parse/parselo.h"
 #include "cfile/cfile.h"
-#include "fs2netd/fs2netd_client.h"
+#include "network/multi_fstracker.h"
+#include "network/multi_sw.h"
 #include "menuui/mainhallmenu.h"
 #include "debugconsole/console.h"
 
@@ -877,15 +878,6 @@ void multi_join_game_init()
 	// load the help overlay
 	Multi_join_overlay_id = help_overlay_get_index(MULTI_JOIN_OVERLAY);
 	help_overlay_set_state(Multi_join_overlay_id,gr_screen.res,0);
-	
-	// try to login to the tracker
-	if (MULTI_IS_TRACKER_GAME) {
-		if ( !fs2netd_login() ) {
-			// failed!  go back to the main hall
-			gameseq_post_event(GS_EVENT_MAIN_MENU);
-			return;
-		}
-	}
 
 	// do TCP and VMT specific initialization
 	if ( (Multi_options_g.protocol == NET_TCP) && !MULTI_IS_TRACKER_GAME ) {		
@@ -2401,6 +2393,10 @@ void multi_start_game_init()
 
 		gameseq_post_event(GS_EVENT_MULTI_HOST_SETUP);
 	}
+
+	if ( multi_fs_tracker_inited() ) {
+		multi_fs_tracker_login_freespace();
+	}
 }
 
 void multi_start_game_do()
@@ -3732,7 +3728,6 @@ void multi_create_game_do()
 			// if this is a tracker game, validate missions
 			if (MULTI_IS_TRACKER_GAME) {
 				multi_update_valid_missions();
-				fs2netd_update_ban_list();
 			}
 
 			// update the file list
@@ -3747,11 +3742,6 @@ void multi_create_game_do()
 		if(Net_player->flags & NETINFO_FLAG_AM_MASTER){
 			Netgame.game_state = NETGAME_STATE_FORMING;
 			send_netgame_update_packet();
-
-			// tell FS2NetD about our game as well
-			if (MULTI_IS_TRACKER_GAME) {
-				fs2netd_gameserver_start();
-			}
 		}	
 
 		// if we're on the standalone we have to tell him that we're now in the host setup screen	
@@ -4842,11 +4832,6 @@ void multi_create_list_select_item(int n)
 
 			// update all machines about stuff like respawns, etc.
 			multi_options_update_netgame();
-
-			// send update to FS2NetD as well
-			if (MULTI_IS_TRACKER_GAME) {
-				fs2netd_gameserver_update(true);
-			}
 		} else {
 			multi_options_update_mission(ng, Multi_create_list_mode == MULTI_CREATE_SHOW_CAMPAIGNS ? 1 : 0);
 		}
@@ -5184,8 +5169,7 @@ int multi_create_select_to_index(int select_index)
 int multi_create_ok_to_commit()
 {
 	int player_count, observer_count, idx;
-	int notify_of_hacked_ships_tbl = 0;
-	int notify_of_hacked_weapons_tbl = 0;
+	int notify_of_hacked_tbl = 0;
 	char err_string[255];
 	int abs_index;
 	int found_hack;
@@ -5201,43 +5185,22 @@ int multi_create_ok_to_commit()
 		return 0;
 	}
 
-	// if we're playing with a hacked ships.tbl (on PXO)
-	notify_of_hacked_ships_tbl = 0;
-	if(Net_player->flags & NETINFO_FLAG_AM_MASTER){
-		if(!Game_ships_tbl_valid){
-			notify_of_hacked_ships_tbl = 1;
-		}
-	} else {
-		if(Netgame.flags & NG_FLAG_HACKED_SHIPS_TBL){
-			notify_of_hacked_ships_tbl = 1;
-		}
-	}
-	if(!MULTI_IS_TRACKER_GAME){
-		notify_of_hacked_ships_tbl = 0;
-	}
-	if(notify_of_hacked_ships_tbl){
-		if(popup(PF_USE_AFFIRMATIVE_ICON | PF_USE_NEGATIVE_ICON, 2, XSTR("&Back", 995), XSTR("&Continue", 780), XSTR("You or the server you are playing on has a hacked ships.tbl. Your stats will not be updated on PXO", 1051)) <= 0){
-			return 0;
-		}
-	}
+	// if we're playing with hacked tables (on PXO)
+	if (MULTI_IS_TRACKER_GAME) {
+		notify_of_hacked_tbl = 0;
 
-	// if we're playing with a hacked weapons.tbl (on PXO)
-	notify_of_hacked_weapons_tbl = 0;
-	if(Net_player->flags & NETINFO_FLAG_AM_MASTER){
-		if(!Game_weapons_tbl_valid){
-			notify_of_hacked_weapons_tbl = 1;
+		if (Net_player->flags & NETINFO_FLAG_AM_MASTER) {
+			if ( game_hacked_data() ) {
+				notify_of_hacked_tbl = 1;
+			}
+		} else if (Netgame.flags & NG_FLAG_HACKED_SHIPS_TBL) {
+			notify_of_hacked_tbl = 1;
 		}
-	} else {
-		if(Netgame.flags & NG_FLAG_HACKED_WEAPONS_TBL){
-			notify_of_hacked_weapons_tbl = 1;
-		}
-	}
-	if(!MULTI_IS_TRACKER_GAME){
-		notify_of_hacked_weapons_tbl = 0;
-	}
-	if(notify_of_hacked_weapons_tbl){
-		if(popup(PF_USE_AFFIRMATIVE_ICON | PF_USE_NEGATIVE_ICON, 2, XSTR("&Back", 995), XSTR("&Continue", 780), XSTR("You or the server you are playing on has a hacked weapons.tbl. Your stats will not be updated on PXO", 1052)) <= 0){
-			return 0;
+
+		if (notify_of_hacked_tbl) {
+			if (popup(PF_USE_AFFIRMATIVE_ICON | PF_USE_NEGATIVE_ICON, 2, XSTR("&Back", 995), XSTR("&Continue", 780), XSTR("You or the server you are playing on has a hacked ships.tbl. Your stats will not be updated on PXO", 1051)) <= 0) {
+				return 0;
+			}
 		}
 	}
 
@@ -5343,7 +5306,10 @@ int multi_create_ok_to_commit()
 			}
 		}
 		// squad war
-		else {			
+		else {
+			if ( !multi_sw_ok_to_commit() ) {
+				return 0;
+			}
 		}
 	}	
 		
@@ -8715,28 +8681,6 @@ void multi_debrief_accept_hit()
 
 	gamesnd_play_iface(InterfaceSounds::COMMIT_PRESSED);
 
-	if (MULTI_IS_TRACKER_GAME) {
-		int res = popup(PF_TITLE | PF_BODY_BIG | PF_USE_AFFIRMATIVE_ICON | PF_USE_NEGATIVE_ICON | PF_IGNORE_ESC, 3, XSTR("&Cancel", 779), XSTR("&Accept", 844), XSTR("&Toss", 845), XSTR("(Continue Netgame)\nDo you wish to accept these stats?", 846));
-
-		// evaluate the result
-		switch (res) {
-			// undo the accept
-			case -1:
-			case 0:
-				Multi_debrief_accept_hit = 0;
-				return;
-
-			// toss the stats
-			case 2 :
-				break;
-		
-			// accept the stats
-			case 1 :
-				fs2netd_store_stats();
-				break;
-		}
-	}
-
 	// if the server has left the game, always just end the game. 
 	if(Multi_debrief_server_left){
 		if(!multi_quit_game(PROMPT_ALL)){
@@ -8750,6 +8694,24 @@ void multi_debrief_accept_hit()
 		if(Net_player->flags & NETINFO_FLAG_GAME_HOST){
 			// if we're on a tracker game, he gets no choice for storing stats
 			if (MULTI_IS_TRACKER_GAME) {
+				// if not on standalone, send stats
+				if (Net_player->flags & NETINFO_FLAG_AM_MASTER) {
+					if ( !(Netgame.flags & NG_FLAG_STORED_MT_STATS) ) {
+						int stats_saved = multi_fs_tracker_store_stats();
+
+						if (stats_saved) {
+							Netgame.flags |= NG_FLAG_STORED_MT_STATS;
+							send_netgame_update_packet();
+						} else {
+							send_store_stats_packet(0);
+						}
+
+						if (Netgame.type_flags & NG_TYPE_SW) {
+							multi_sw_report(stats_saved);
+						}
+					}
+				}
+
 				multi_maybe_set_mission_loop();
 			} else {
 				int res = popup(PF_TITLE | PF_BODY_BIG | PF_USE_AFFIRMATIVE_ICON | PF_USE_NEGATIVE_ICON | PF_IGNORE_ESC,3,XSTR("&Cancel",779),XSTR("&Accept",844),XSTR("&Toss",845),XSTR("(Continue Netgame)\nDo you wish to accept these stats?",846));
@@ -8788,27 +8750,6 @@ void multi_debrief_esc_hit()
 {
 	int res;
 
-	if (MULTI_IS_TRACKER_GAME) {
-		res = popup(PF_TITLE | PF_BODY_BIG | PF_USE_AFFIRMATIVE_ICON | PF_USE_NEGATIVE_ICON | PF_IGNORE_ESC, 3, XSTR("&Cancel", 779), XSTR("&Accept", 844), XSTR("&Toss", 845), XSTR("(Exit Netgame)\nDo you wish to accept these stats?", 847));
-
-		// evaluate the result
-		switch (res) {
-			// undo the accept
-			case -1:
-			case 0:
-				break;
-
-			// toss the stats
-			case 2 :
-				break;
-		
-			// accept the stats
-			case 1 :
-				fs2netd_store_stats();
-				break;
-		}
-	}
-
 	// if the server has left
 	if(Multi_debrief_server_left){
 		multi_quit_game(PROMPT_ALL);
@@ -8819,6 +8760,24 @@ void multi_debrief_esc_hit()
 	if(Net_player->flags & NETINFO_FLAG_GAME_HOST){		
 		// if the stats have already been accepted
 		if((Multi_debrief_stats_accept_code != -1) || (MULTI_IS_TRACKER_GAME)){
+			// if not on standalone, maybe send stats
+			if ( (Net_player->flags & NETINFO_FLAG_AM_MASTER) && MULTI_IS_TRACKER_GAME ) {
+				if ( !(Netgame.flags & NG_FLAG_STORED_MT_STATS) ) {
+					int stats_saved = multi_fs_tracker_store_stats();
+
+					if (stats_saved) {
+						Netgame.flags |= NG_FLAG_STORED_MT_STATS;
+						send_netgame_update_packet();
+					} else {
+						send_store_stats_packet(0);
+					}
+
+					if (Netgame.type_flags & NG_TYPE_SW) {
+						multi_sw_report(stats_saved);
+					}
+				}
+			}
+
 			multi_quit_game(PROMPT_HOST);
 		} else {
 			res = popup(PF_TITLE | PF_BODY_BIG | PF_USE_AFFIRMATIVE_ICON | PF_USE_NEGATIVE_ICON | PF_IGNORE_ESC,3,XSTR("&Cancel",779),XSTR("&Accept",844),XSTR("&Toss",845),XSTR("(Exit Netgame)\nDo you wish to accept these stats?",847));

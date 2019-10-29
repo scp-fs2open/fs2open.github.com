@@ -75,7 +75,7 @@
 #include "network/multi_pause.h"
 #include "network/multi_log.h"
 #include "network/multi_rate.h"
-#include "fs2netd/fs2netd_client.h"
+#include "network/multi_fstracker.h"
 #include "parse/parselo.h"
 #include "debugconsole/console.h"
 
@@ -1990,10 +1990,6 @@ int multi_eval_join_request(join_request *jr,net_addr *addr)
 	if (Game_mode & GM_STANDALONE_SERVER) {		
 		// if this is the first connection, he will be the host so we must always accept him
 		if(multi_num_players() == 0){
-			/*
-			   TODO:  We can use this now, but it's not compatible with older builds,
-			          so comment it out until the next release
-
 			// check to see if this is a tracker game, and if so make sure this is a valid MT player	
 			// we probably eventually want to make sure he's not passing us a fake tracker id#
 			if (MULTI_IS_TRACKER_GAME) {
@@ -2001,7 +1997,6 @@ int multi_eval_join_request(join_request *jr,net_addr *addr)
 					return JOIN_DENY_JR_TRACKER_INVAL; 
 				}			
 			}
-			*/
 
 			// if we're password protected		
 			if(std_is_host_passwd() && strcmp(jr->passwd, Multi_options_g.std_passwd) != 0){
@@ -2033,10 +2028,6 @@ int multi_eval_join_request(join_request *jr,net_addr *addr)
 		return JOIN_DENY_JR_FULL;
 	}
 
-	/*
-	   TODO:  We can use this now, but it's not compatible with older builds,
-			  so comment it out until the next release
-
 	// check to see if this is a tracker game, and if so make sure this is a valid MT player	
 	// we probably eventually want to make sure he's not passing us a fake tracker id#
 	if (MULTI_IS_TRACKER_GAME) {
@@ -2044,7 +2035,6 @@ int multi_eval_join_request(join_request *jr,net_addr *addr)
 			return JOIN_DENY_JR_TRACKER_INVAL;
 		}			
 	}
-	*/
 
 	// check to see if the player is trying to ingame join in a closed game
 	if(MULTI_IN_MISSION && (Netgame.mode == NG_MODE_CLOSED)){
@@ -2077,7 +2067,7 @@ int multi_eval_join_request(join_request *jr,net_addr *addr)
 	}	*/
 
 	// if the player was banned by the standalone
-	if ( (MULTI_IS_TRACKER_GAME && fs2netd_player_banned(addr)) || ((Game_mode & GM_STANDALONE_SERVER) && std_player_is_banned(jr->callsign)) ) {
+	if ( (Game_mode & GM_STANDALONE_SERVER) && std_player_is_banned(jr->callsign) ) {
 		// maybe we should log this
 		sprintf(knock_message, "Banned user %s with IP: %s attempted to join server", knock_callsign, psnet_addr_to_string(jr_ip_string, addr));
 		ml_string(knock_message);
@@ -3054,8 +3044,6 @@ void multi_update_valid_missions()
 		std_gen_set_text("Querying:", 1);
 	}
 
-	Assert( MULTI_IS_TRACKER_GAME );
-
 	// mark all missions on our list as being MVALID_STATUS_UNKNOWN
 	for (idx = 0; idx < Multi_create_mission_list.size(); idx++) {
 		Multi_create_mission_list[idx].valid_status = MVALID_STATUS_UNKNOWN;
@@ -3064,7 +3052,7 @@ void multi_update_valid_missions()
 	// attempt to open the valid mission config file
 	in = cfopen(MULTI_VALID_MISSION_FILE, "rt", CFILE_NORMAL, CF_TYPE_DATA);
 
-	if (in != NULL) {		
+	if (in != nullptr) {
 		// read in all listed missions
 		while ( !cfeof(in) ) {
 			// read in a line
@@ -3078,7 +3066,7 @@ void multi_update_valid_missions()
 			memset(temp, 0, 256);
 			tok = strtok(next_line, " ");
 
-			if (tok == NULL)
+			if (tok == nullptr)
 				continue;
 
 			strcpy_s(temp, tok);
@@ -3089,9 +3077,9 @@ void multi_update_valid_missions()
 			// read in the status string
 			memset(status_string, 0, 50);
 			memset(temp, 0, 256);
-			tok = strtok(NULL," \n");
+			tok = strtok(nullptr," \n");
 
-			if (tok == NULL)
+			if (tok == nullptr)
 				continue;
 
 			strcpy_s(temp, tok);
@@ -3108,11 +3096,26 @@ void multi_update_valid_missions()
 
 		// close the infile
 		cfclose(in);
-		in = NULL;	
+		in = nullptr;
 	}
 
 	// now poll for all unknown missions
-	was_cancelled = !(fs2netd_get_valid_missions());
+	was_cancelled = false;
+
+	for (idx = 0; idx < Multi_create_mission_list.size(); idx++) {
+		if (Multi_create_mission_list[idx].valid_status != MVALID_STATUS_UNKNOWN) {
+			continue;
+		}
+
+		int rval = multi_fs_tracker_validate_mission(Multi_create_mission_list[idx].filename);
+
+		if (rval == -2) {
+			was_cancelled = true;
+			break;
+		}
+
+		Multi_create_mission_list[idx].valid_status = (char)rval;
+	}
 
 	// if the operation was cancelled, don't write anything new
 	if (was_cancelled) {
@@ -3126,7 +3129,7 @@ void multi_update_valid_missions()
 
 	// now rewrite the outfile with the new mission info
 	in = cfopen(MULTI_VALID_MISSION_FILE, "wt", CFILE_NORMAL, CF_TYPE_DATA);
-	if(in == NULL){
+	if(in == nullptr){
 		// if we're a standalone, kill the validate dialog
 		if(Game_mode & GM_STANDALONE_SERVER){
 			std_destroy_gen_dialog();
@@ -3153,7 +3156,7 @@ void multi_update_valid_missions()
 
 	// close the outfile
 	cfclose(in);
-	in = NULL;
+	in = nullptr;
 
 	// if we're a standalone, kill the validate dialog
 	if (Game_mode & GM_STANDALONE_SERVER) {
@@ -3249,189 +3252,51 @@ DCF(multi,"changes multiplayer settings (Multiplayer)")
 //XSTR:ON
 
 // PXO crc checking stuff
+#ifndef NDEBUG
 
-
-void multi_spew_pxo_checksums(int max_files, const char *outfile)
+void multi_spew_pxo_checksums(int max_files, char *outfile)
 {
 	char **file_names;
-	char full_name[MAX_PATH_LEN];
-	char wild_card[10];
+	char full_name[MAX_FILENAME_LEN+1];
+	char wild_card[6];
 	int count = 0, idx;
 	uint checksum;
 	FILE *out;
-	char description[512] = { 0 };
-	char filename[65] = { 0 };
-	char gametype[32] = { 0 };
-	size_t offset = 0;
-	char *p = NULL;
 
-	// allocate filename space	
+	// allocate filename space
 	file_names = (char**)vm_malloc(sizeof(char*) * max_files);
-
-	if (file_names != NULL) {
-		memset(wild_card, 0, 10);
-		strcpy_s(wild_card, NOX("*"));
-		strcat_s(wild_card, FS_MISSION_FILE_EXT);
-		count = cf_get_file_list(max_files, file_names, CF_TYPE_MISSIONS, wild_card);	
-
-		if (count <= 0)
-			goto Done;
-
-		cf_create_default_path_string(full_name, sizeof(full_name) - 1, CF_TYPE_ROOT, outfile);
+	if (file_names != nullptr) {
+		SDL_snprintf(wild_card, SDL_arraysize(wild_card), "*%s", FS_MISSION_FILE_EXT);
+		count = cf_get_file_list(max_files, file_names, CF_TYPE_MISSIONS, wild_card);
 
 		// open the outfile
-		out = fopen(full_name, "wt");
+		out = fopen(outfile, "wt");
 
-		if (out == NULL)
-			goto Done;
-
-		p = Cmdline_spew_mission_crcs;
-
-		while (*p && (offset < sizeof(description))) {
-			if (*p == '"') {
-				description[offset++] = '"';
-				description[offset++] = '"';
-			} else {
-				description[offset++] = *p;
-			}
-
-			p++;
-		}
-
-		// header
-		fprintf(out, "filename,CRC32,mission type,max players,description\r\n");
-
-		// do all the checksums
-		for (idx = 0; idx < count; idx++) {
-			memset( full_name, 0, sizeof(full_name) );			
-			strcpy_s( full_name, cf_add_ext(file_names[idx], FS_MISSION_FILE_EXT) );
-
-			if ( !cf_chksum_long(full_name, &checksum) ) {
-				continue;
-			}
-
-			if (get_mission_info(full_name)) {
-				continue;
-			}
-
-			if ( !(The_mission.game_type & MISSION_TYPE_MULTI) ) {
-				continue;
-			}
-
-			offset = 0;
-			p = full_name;
-
-			while (*p && (offset < sizeof(filename))) {
-				if (*p == '"') {
-					filename[offset++] = '"';
-					filename[offset++] = '"';
-				} else {
-					filename[offset++] = *p;
-				}
-
-				p++;
-			}
-
-			filename[offset] = '\0';
-
-			if (IS_MISSION_MULTI_DOGFIGHT) {
-				strcpy_s(gametype, "dogfight");
-			} else if (IS_MISSION_MULTI_COOP) {
-				strcpy_s(gametype, "coop");
-			} else if (IS_MISSION_MULTI_TEAMS) {
-				strcpy_s(gametype, "TvT");
-			}
-
-			fprintf(out, "\"%s\",%u,\"%s\",%d,\"%s\"\r\n", filename, checksum, gametype, The_mission.num_players, description);
-		}
-
-		fflush(out);
-		fclose(out);
-
-Done:
-		if (file_names != NULL) {
+		if (out != nullptr) {
+			// do all the checksums
 			for (idx = 0; idx < count; idx++) {
-				if (file_names[idx] != NULL) {
-					vm_free(file_names[idx]);
-					file_names[idx] = NULL;
+				memset(full_name, 0, MAX_FILENAME_LEN+1);
+				SDL_strlcpy(full_name, cf_add_ext(file_names[idx], FS_MISSION_FILE_EXT), SDL_arraysize(full_name));
+
+				if (cf_chksum_long(full_name, &checksum)) {
+					fprintf(out, "%s	:	%d\n", full_name, (int)checksum);
 				}
 			}
 
-			vm_free(file_names);
-			file_names = NULL;
-		}
-	}
-}
-
-/*
-void multi_spew_table_checksums(int max_files, char *outfile)
-{
-	char **file_names;
-	char full_name[MAX_PATH_LEN];
-	int count, idx;
-	uint checksum;
-	FILE *out = NULL;
-	char modname[128];
-	time_t my_time = 0;
-
-	// allocate filename space	
-	file_names = (char**)vm_malloc(sizeof(char*) * max_files);
-
-	if (file_names != NULL) {
-		count = cf_get_file_list(max_files, file_names, CF_TYPE_TABLES, NOX("*.tbl"));	
-
-		if (count <= 0)
-			goto Done;
-
-		cf_create_default_path_string(full_name, sizeof(full_name) - 1, CF_TYPE_ROOT, outfile);
-
-		// open the outfile
-		out = fopen(full_name, "wt");
-
-		if (out == NULL)
-			goto Done;
-
-		memset( modname, 0, sizeof(modname) );
-		strcpy_s( modname, Cmdline_spew_table_crcs );
-
-		my_time = time(NULL);
-	
-		fprintf(out, "--  Table CRCs generated on %s \n", ctime(&my_time));
-
-		fprintf(out, "LOCK TABLES `fstables` WRITE;\n");
-		fprintf(out, "INSERT INTO `fstables` VALUES ");
-
-		// do all the checksums
-		for (idx = 0; idx < count; idx++) {
-			memset( full_name, 0, sizeof(full_name) );			
-			strcpy_s( full_name, cf_add_ext(file_names[idx], ".tbl") );
-
-			if ( cf_chksum_long(full_name, &checksum) ) {
-				if (idx == 0)
-					fprintf(out, "('%s',%u,'%s')", full_name, checksum, modname);
-				else
-					fprintf(out, ",('%s',%u,'%s')", full_name, checksum, modname);
-			}
+			fclose(out);
 		}
 
-		fprintf(out, ";\n");
-		fprintf(out, "UNLOCK TABLES;\n");
-
-		fclose(out);
-
-Done:
-		for (idx = 0; idx < count; idx++) {
-			if (file_names[idx] != NULL) {
+		for (idx = 0; idx < count; ++idx) {
+			if (file_names[idx] != nullptr) {
 				vm_free(file_names[idx]);
-				file_names[idx] = NULL;
+				file_names[idx] = nullptr;
 			}
 		}
 
 		vm_free(file_names);
-		file_names = NULL;
+		file_names = nullptr;
 	}
 }
-*/
 
 DCF(pxospew,"spew PXO 32 bit checksums for all visible mission files (Multiplayer)")
 {
@@ -3449,7 +3314,7 @@ DCF(pxospew,"spew PXO 32 bit checksums for all visible mission files (Multiplaye
 	multi_spew_pxo_checksums(max_files, file_str);
 }
 
-
+#endif
 
 // make a bunch of fake players - don't rely on this to be very safe - its mostly used for interface testing
 #ifndef NDEBUG

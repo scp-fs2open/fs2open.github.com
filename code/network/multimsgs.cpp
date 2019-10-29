@@ -68,7 +68,8 @@
 #include "object/objectdock.h"
 #include "cmeasure/cmeasure.h"
 #include "parse/sexp.h"
-#include "fs2netd/fs2netd_client.h"
+#include "network/multi_fstracker.h"
+#include "network/multi_sw.h"
 #include "network/multi_sexp.h"
 
 // #define _MULTI_SUPER_WACKY_COMPRESSION
@@ -1922,6 +1923,11 @@ void send_game_active_packet(net_addr* addr)
 		flags |= AG_FLAG_CAMPAIGN;
 	}
 
+	// if we're registered on multi tracker
+	if (Net_player->flags & NETINFO_FLAG_MT_CONNECTED) {
+		flags |= AG_FLAG_TRACKER;
+	}
+
 	// add the data about the connection speed of the host machine
 	Assert( (Multi_connection_speed >= 0) && (Multi_connection_speed <= 4) );
 	flags |= (Multi_connection_speed << AG_FLAG_CONNECTION_BIT);
@@ -2239,21 +2245,22 @@ void broadcast_game_query()
 	server_item *s_moveup;
 	ubyte data[MAX_PACKET_SIZE];
 
-	if ( MULTI_IS_TRACKER_GAME && (Multi_options_g.protocol == NET_TCP) ) {
-		fs2netd_send_game_request();
-		return;
-	}
+	BUILD_HEADER(GAME_QUERY);
 
-	BUILD_HEADER(GAME_QUERY);	
-	
-	// go through the server list and query each of those as well
-	s_moveup = Game_server_head;
-	if(s_moveup != NULL){
-		do {				
-			send_server_query(&s_moveup->server_addr);			
-			s_moveup = s_moveup->next;					
-		} while(s_moveup != Game_server_head);		
-	}	
+	if (MULTI_IS_TRACKER_GAME) {
+		// check with MT
+		multi_fs_tracker_send_game_request();
+		return;
+	} else {
+		// go through the server list and query each of those as well
+		s_moveup = Game_server_head;
+		if (s_moveup != nullptr) {
+			do {
+				send_server_query(&s_moveup->server_addr);
+				s_moveup = s_moveup->next;
+			} while (s_moveup != Game_server_head);
+		}
+	}
 
 	fill_net_addr(&addr, Psnet_my_addr.addr, DEFAULT_GAME_PORT);
 
@@ -7888,8 +7895,40 @@ void send_sw_query_packet(ubyte code, char *txt)
 	}
 }
 
-void process_sw_query_packet(ubyte * /*data*/, header * /*hinfo*/)
+void process_sw_query_packet(ubyte *data, header *hinfo)
 {	
+	int offset = HEADER_LENGTH;
+	ubyte code;
+	char txt[MAX_SQUAD_RESPONSE_LEN+1];
+
+	GET_DATA(code);
+
+	if ( (code == SW_STD_START) || (code == SW_STD_BAD) ) {
+		GET_STRING(txt);
+	}
+
+	PACKET_SET_SIZE();
+
+	// to host from standalone
+	if (MULTIPLAYER_HOST) {
+		Assert( !MULTIPLAYER_MASTER );
+
+		if (code == SW_STD_OK) {
+			Multi_sw_std_query = 1;
+		} else {
+			Assert(code == SW_STD_BAD);
+
+			SDL_strlcpy(Multi_sw_bad_reply, txt, SDL_arraysize(Multi_sw_bad_reply));
+			Multi_sw_std_query = 0;
+		}
+	}
+	// to standalone from host
+	else {
+		Assert(Game_mode & GM_STANDALONE_SERVER);
+		Assert(code == SW_STD_START);
+
+		multi_sw_std_query(txt);
+	}
 }
 
 void send_event_update_packet(int event)

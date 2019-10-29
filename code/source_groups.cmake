@@ -279,17 +279,6 @@ add_file_folder("GameHelp"
 	gamehelp/gameplayhelp.h
 )
 
-# GameHelp -> fs2netd files
-add_file_folder("GameHelp\\\\fs2netd"
-	fs2netd/fs2netd_client.cpp
-	fs2netd/fs2netd_client.h
-	fs2netd/protocol.h
-	fs2netd/tcp_client.cpp
-	fs2netd/tcp_client.h
-	fs2netd/tcp_socket.cpp
-	fs2netd/tcp_socket.h
-)
-
 # GameSequence files
 add_file_folder("GameSequence"
 	gamesequence/gamesequence.cpp
@@ -755,6 +744,8 @@ add_file_folder("Nebula"
 add_file_folder("Network"
 	network/chat_api.cpp
 	network/chat_api.h
+	network/gtrack.cpp
+	network/gtrack.h
 	network/multi.cpp
 	network/multi.h
 	network/multi_campaign.cpp
@@ -765,6 +756,8 @@ add_file_folder("Network"
 	network/multi_dogfight.h
 	network/multi_endgame.cpp
 	network/multi_endgame.h
+	network/multi_fstracker.cpp
+	network/multi_fstracker.h
 	network/multi_ingame.cpp
 	network/multi_ingame.h
 	network/multi_kick.cpp
@@ -793,6 +786,8 @@ add_file_folder("Network"
 	network/multi_respawn.h
 	network/multi_sexp.cpp
 	network/multi_sexp.h
+	network/multi_sw.cpp
+	network/multi_sw.h
 	network/multi_team.cpp
 	network/multi_team.h
 	network/multi_update.cpp
@@ -813,7 +808,11 @@ add_file_folder("Network"
 	network/multiutil.h
 	network/psnet2.cpp
 	network/psnet2.h
+	network/ptrack.cpp
+	network/ptrack.h
 	network/stand_gui.h
+	network/valid.cpp
+	network/valid.h
 )
 
 IF(WIN32)

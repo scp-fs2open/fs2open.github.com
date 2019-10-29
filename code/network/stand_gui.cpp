@@ -35,7 +35,7 @@
 #include "globalincs/version.h"
 #include "ship/ship.h"
 #include "cfile/cfile.h"
-#include "fs2netd/fs2netd_client.h"
+#include "network/multi_fstracker.h"
 #include "osapi/osapi.h"
 
 #include <string>
@@ -58,7 +58,6 @@ static void standalone_do_systray(int mode);
 #define STP_RESET_ALL		1
 #define STP_SHUTDOWN		2
 #define STP_SHOW			3
-#define STP_RESET_FS2NETD	4
 
 
 // -----------------------------------------------------------------------------------------
@@ -383,13 +382,6 @@ void std_connect_set_gamename(char *name)
 		}
 	} else {
 		strcpy_s(Netgame.name,name);
-
-		// update fs2netd
-		if (MULTI_IS_TRACKER_GAME) {
-			fs2netd_gameserver_disconnect();
-			os_sleep(50);
-			fs2netd_gameserver_start();
-		}
 	}
 
 	// update systray icon
@@ -423,13 +415,6 @@ void std_connect_handle_name_change()
 
 		// update systray icon
 		standalone_do_systray(ST_MODE_UPDATE);
-
-		// update fs2netd with the info
-		if (MULTI_IS_TRACKER_GAME) {
-			fs2netd_gameserver_disconnect();
-			os_sleep(50);
-			fs2netd_gameserver_start();
-		}
 	}
 }
 
@@ -1749,10 +1734,6 @@ void std_reset_standalone_gui()
 }
 
 // do any gui related issues on the standalone (like periodically updating player stats, etc...)
-// notify the user that the standalone has failed to login to the tracker on startup
-void std_notify_tracker_login_fail()
-{
-}
 
 void std_do_gui_frame()
 {
@@ -1784,11 +1765,26 @@ void std_do_gui_frame()
 	}
 }
 
-
+// notify the user that the standalone has failed to login to the tracker on startup
+void std_tracker_notify_login_fail()
+{
+}
 
 // attempt to log the standalone into the tracker
 void std_tracker_login()
 {
+	if ( !Multi_options_g.pxo ) {
+		return;
+	}
+
+	multi_fs_tracker_init();
+
+	if ( !multi_fs_tracker_inited() ) {
+		std_tracker_notify_login_fail();
+		return;
+	}
+
+	multi_fs_tracker_login_freespace();
 }
 
 // reset all stand gui timestamps
@@ -2106,14 +2102,8 @@ static HMENU std_create_systray_menu()
 	HMENU stdPopup = CreatePopupMenu();
 
 	// Type of connection:
-	snprintf(tstr, sizeof(tstr)-1, "Connection Type: %s", MULTI_IS_TRACKER_GAME ? "FS2NetD" : "Local/IP");
+	snprintf(tstr, sizeof(tstr)-1, "Connection Type: %s", MULTI_IS_TRACKER_GAME ? "PXO" : "Local/IP");
 	AppendMenu(stdPopup, MF_STRING | MF_GRAYED, 0, tstr);
-
-	// Status of FS2NetD connection:
-	if (MULTI_IS_TRACKER_GAME) {
-		snprintf(tstr, sizeof(tstr)-1, "FS2NetD Status: %s", fs2netd_is_online() ? "Online" : "Offline");
-		AppendMenu(stdPopup, MF_STRING | MF_GRAYED, 0, tstr);
-	}
 
 	// ----------------------------------------------
 	AppendMenu(stdPopup, MF_SEPARATOR, 0, NULL);
@@ -2135,11 +2125,6 @@ static HMENU std_create_systray_menu()
 
 	// Reset All (main window command):
 	AppendMenu(stdPopup, MF_STRING, STP_RESET_ALL, "Reset All");
-
-	// Reset FS2NetD (not a main window command, yet):
-	if (MULTI_IS_TRACKER_GAME) {
-		AppendMenu(stdPopup, MF_STRING, STP_RESET_FS2NETD, "Reset FS2NetD");
-	}
 
 	// Shutdown server (main window command):
 	AppendMenu(stdPopup, MF_STRING, STP_SHUTDOWN, "Shutdown");
@@ -2187,13 +2172,9 @@ LRESULT CALLBACK std_message_handler_proc(HWND hwndDlg, UINT uMsg, WPARAM wParam
 
 				DestroyMenu(stdPopup);
 
-				// reset all (does not include fs2netd!)
+				// reset all
 				if (choice == STP_RESET_ALL) {
 					multi_quit_game(PROMPT_NONE);
-				}
-				// reset fs2netd
-				else if (choice == STP_RESET_FS2NETD) {
-					fs2netd_reset_connection();
 				}
 				// shutdown
 				else if (choice == STP_SHUTDOWN) {

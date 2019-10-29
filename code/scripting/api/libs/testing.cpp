@@ -15,9 +15,8 @@
 #include "particle/particle.h"
 #include "playerman/player.h"
 #include "cutscene/movie.h"
+#include "network/multi_options.h"
 
-// Om_tracker_flag should already be set in FreeSpace.cpp, needed to determine if PXO is enabled from the registry
-extern int Om_tracker_flag; // needed for FS2OpenPXO config
 
 namespace scripting {
 namespace api {
@@ -148,7 +147,7 @@ ADE_FUNC(isCurrentPlayerMulti, l_Testing, NULL, "Returns whether current player 
 
 ADE_FUNC(isPXOEnabled, l_Testing, NULL, "Returns whether PXO is currently enabled in the configuration.", "boolean", "Whether PXO is enabled or not")
 {
-	if(!(Om_tracker_flag))
+	if(!(Multi_options_g.pxo))
 		return ADE_RETURN_FALSE;
 
 	return ADE_RETURN_TRUE;

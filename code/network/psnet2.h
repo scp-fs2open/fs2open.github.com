@@ -115,11 +115,11 @@ struct fd_set;
 struct timeval;
 
 // wrappers around select() and recvfrom() for lagging/losing data, and for sorting through different packet types
-int RECVFROM(uint s, char * buf, int len, int flags, sockaddr *from, int *fromlen, int psnet_type);
-int SELECT(int nfds, fd_set *readfds, fd_set *writefds, fd_set*exceptfds, const timeval* timeout, int psnet_type);
+int RECVFROM(SOCKET s, char * buf, int len, int flags, sockaddr *from, int *fromlen, int psnet_type);
+int SELECT(int nfds, fd_set *readfds, fd_set *writefds, fd_set*exceptfds, struct timeval* timeout, int psnet_type);
 
 // wrappers around sendto to sorting through different packet types
-int SENDTO(uint s, char * buf, int len, int flags, sockaddr * to, int tolen, int psnet_type);
+int SENDTO(SOCKET s, char * buf, int len, int flags, sockaddr * to, int tolen, int psnet_type);
 
 // call this once per frame to read everything off of our socket
 void PSNET_TOP_LAYER_PROCESS();

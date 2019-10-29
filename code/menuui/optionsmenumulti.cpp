@@ -797,9 +797,7 @@ void options_multi_init_protocol_vars()
 	Om_local_broadcast = (Player->m_local_options.flags & MLO_FLAG_LOCAL_BROADCAST) ? 1 : 0;
 
 	// whether or not we're playing on the tracker
-	// ------------------- made to read the registry by Kazan -------------------
-	Om_tracker_flag = os_config_read_uint( "PXO", "FS2OpenPXO" , 0 );
-		 // (Multi_options_g.protocol == NET_TCP) && Multi_options_g.pxo ? 1 : 0;	
+	Om_tracker_flag = Multi_options_g.pxo ? 1 : 0;
 
 	// load the ip address list	
 	Om_ip_disp_count = 0;
@@ -935,13 +933,13 @@ void options_multi_protocol_accept()
 	// active protocol
 	Multi_options_g.protocol = Om_protocol;
 
+	// VMT status
+	Multi_options_g.pxo = Om_tracker_flag;
+
 	// copy the VMT login and password data
 	Om_tracker_login.get_text(Multi_tracker_login);
 	Om_tracker_passwd.get_text(Multi_tracker_passwd);
 	Om_tracker_squad_name.get_text(Multi_tracker_squad_name);
-
-	// #KAZAN# --- Save FS2OpenPXO flag
-	os_config_write_uint( "PXO", "FS2OpenPXO" , Om_tracker_flag );
 
 	// write out the tracker login and passwd values to the registry
 	os_config_write_string( "PXO", "Login", Multi_tracker_login );
@@ -2233,7 +2231,7 @@ void options_multi_close()
 bool options_multi_ok_to_accept()
 {
 	// if PXO is turned on, do we have a username and password?
-	if (Om_tracker_flag) {
+	if (Multi_options_g.pxo) {
 		if (strlen(Multi_tracker_login) == 0) {
 			return false;
 		}
