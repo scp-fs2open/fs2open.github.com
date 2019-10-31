@@ -523,7 +523,7 @@ void physics_read_flying_controls( matrix * orient, physics_info * pi, control_i
 		goal_vel.xyz.z = ci->forward* pi->max_vel.xyz.z;
 	}
 
-	if ( goal_vel.xyz.z < -pi->max_rear_vel && !(pi->flags & PF_AFTERBURNER_ON) )
+	if ( goal_vel.xyz.z < -pi->max_rear_vel && !(pi->flags & PF_AFTERBURNER_ON) && !(ci->control_flags & CIF_DONT_CLAMP_MAX_VELOCITY) )
 		goal_vel.xyz.z = -pi->max_rear_vel;
 
 
