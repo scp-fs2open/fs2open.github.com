@@ -82,6 +82,7 @@ class LuaValue {
      * @param other The other LuaValue.
      */
 	LuaValue(const LuaValue& other);
+	LuaValue& operator=(const LuaValue& other);
 
 	/**
      * @brief Releases the reference

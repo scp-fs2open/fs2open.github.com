@@ -613,16 +613,14 @@ void EventEditorDialog::set_current_message(int msg) {
 	ui->personaCombo->setEnabled(enable);
 	ui->teamCombo->setEnabled(enable);
 }
-void EventEditorDialog::applyChanges() {
-	char buf[256], names[2][MAX_MISSION_EVENTS][NAME_LENGTH];
-	int i, count;
-
+void EventEditorDialog::applyChanges()
+{
 	audiostream_close_file(m_wave_id, 0);
 	m_wave_id = -1;
 
 	auto changes_detected = query_modified();
 
-	for (i=0; i<Num_mission_events; i++) {
+	for (int32_t i = 0; i < Num_mission_events; i++) {
 		free_sexp2(Mission_events[i].formula);
 		if (Mission_events[i].objective_text)
 			free(Mission_events[i].objective_text);
@@ -630,43 +628,38 @@ void EventEditorDialog::applyChanges() {
 			free(Mission_events[i].objective_key_text);
 	}
 
-	count = 0;
-	for (i=0; i<Num_mission_events; i++)
-		Mission_events[i].result = 0;  // use this as a processed flag
+	SCP_vector<std::pair<SCP_string, SCP_string>> names;
+
+	for (int32_t i = 0; i < Num_mission_events; i++)
+		Mission_events[i].result = 0; // use this as a processed flag
 
 	// rename all sexp references to old events
-	for (i=0; i<m_num_events; i++)
+	for (int32_t i = 0; i < m_num_events; i++)
 		if (m_sig[i] >= 0) {
-			strcpy_s(names[0][count], Mission_events[m_sig[i]].name);
-			strcpy_s(names[1][count], m_events[i].name);
-			count++;
+			names.emplace_back(Mission_events[m_sig[i]].name, m_events[i].name);
 			Mission_events[m_sig[i]].result = 1;
 		}
 
 	// invalidate all sexp references to deleted events.
-	for (i=0; i<Num_mission_events; i++)
+	for (int32_t i = 0; i < Num_mission_events; i++)
 		if (!Mission_events[i].result) {
-			sprintf(buf, "<%s>", Mission_events[i].name);
-			strcpy(buf + NAME_LENGTH - 2, ">");  // force it to be not too long
-			strcpy_s(names[0][count], Mission_events[i].name);
-			strcpy_s(names[1][count], buf);
-			count++;
+			names.emplace_back(Mission_events[i].name, SCP_string("<") + Mission_events[i].name + ">");
 		}
 
 	Num_mission_events = m_num_events;
-	for (i=0; i<m_num_events; i++) {
-		Mission_events[i] = m_events[i];
-		Mission_events[i].formula = ui->eventTree->save_tree(m_events[i].formula);
-		Mission_events[i].objective_text = m_events[i].objective_text;
+	for (int32_t i = 0; i < m_num_events; i++) {
+		Mission_events[i]                    = m_events[i];
+		Mission_events[i].formula            = ui->eventTree->save_tree(m_events[i].formula);
+		Mission_events[i].objective_text     = m_events[i].objective_text;
 		Mission_events[i].objective_key_text = m_events[i].objective_key_text;
-		Mission_events[i].mission_log_flags = m_events[i].mission_log_flags;
+		Mission_events[i].mission_log_flags  = m_events[i].mission_log_flags;
 	}
 
 	// now update all sexp references
-	while (count--)
-		update_sexp_references(names[0][count], names[1][count], OPF_EVENT_NAME);
+	for (const auto& entry : names)
+		update_sexp_references(entry.first.c_str(), entry.second.c_str(), OPF_EVENT_NAME);
 
-	for (i=Num_builtin_messages; i<Num_messages; i++) {
+	for (int32_t i = Num_builtin_messages; i < Num_messages; i++) {
 		if (Messages[i].avi_info.name)
 			free(Messages[i].avi_info.name);
 
@@ -676,7 +669,7 @@ void EventEditorDialog::applyChanges() {
 
 	Num_messages = m_num_messages + Num_builtin_messages;
 	Messages.resize(Num_messages);
-	for (i=0; i<m_num_messages; i++)
+	for (int32_t i = 0; i < m_num_messages; i++)
 		Messages[i + Num_builtin_messages] = m_messages[i];
 
 	// Only fire the signal after the changes have been applied to make sure the other parts of the code see the updated

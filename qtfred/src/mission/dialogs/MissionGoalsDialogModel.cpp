@@ -11,50 +11,43 @@ namespace dialogs {
 MissionGoalsDialogModel::MissionGoalsDialogModel(QObject* parent, fso::fred::EditorViewport* viewport) :
 	AbstractDialogModel(parent, viewport) {
 }
-bool MissionGoalsDialogModel::apply() {
-	char buf[256], names[2][MAX_GOALS][NAME_LENGTH];
-	int i, count;
-
-	for (i=0; i<Num_goals; i++)
+bool MissionGoalsDialogModel::apply()
+{
+	for (int32_t i = 0; i < Num_goals; i++)
 		free_sexp2(Mission_goals[i].formula);
 
 	auto changes_detected = query_modified();
 
-	count = 0;
-	for (i=0; i<Num_goals; i++)
-		Mission_goals[i].satisfied = 0;  // use this as a processed flag
+	SCP_vector<std::pair<SCP_string, SCP_string>> names;
+
+	for (int32_t i = 0; i < Num_goals; i++)
+		Mission_goals[i].satisfied = 0; // use this as a processed flag
 
 	// rename all sexp references to old events
-	for (i=0; i<m_num_goals; i++)
+	for (int32_t i = 0; i < m_num_goals; i++)
 		if (m_sig[i] >= 0) {
-			strcpy_s(names[0][count], Mission_goals[m_sig[i]].name);
-			strcpy_s(names[1][count], m_goals[i].name);
-			count++;
+			names.emplace_back(Mission_goals[m_sig[i]].name, m_goals[i].name);
 			Mission_goals[m_sig[i]].satisfied = 1;
 		}
 
 	// invalidate all sexp references to deleted events.
-	for (i=0; i<Num_goals; i++)
+	for (int32_t i = 0; i < Num_goals; i++)
 		if (!Mission_goals[i].satisfied) {
-			sprintf(buf, "<%s>", Mission_goals[i].name);
-			strcpy(buf + NAME_LENGTH - 2, ">");  // force it to be not too long
-			strcpy_s(names[0][count], Mission_goals[i].name);
-			strcpy_s(names[1][count], buf);
-			count++;
+			names.emplace_back(Mission_goals[i].name, SCP_string("<") + Mission_goals[i].name + ">");
 		}
 
 	Num_goals = m_num_goals;
-	for (i=0; i<Num_goals; i++) {
-		Mission_goals[i] = m_goals[i];
+	for (int32_t i = 0; i < Num_goals; i++) {
+		Mission_goals[i]         = m_goals[i];
 		Mission_goals[i].formula = _sexp_tree->save_tree(Mission_goals[i].formula);
-		if ( The_mission.game_type & MISSION_TYPE_MULTI_TEAMS ) {
-			Assert( Mission_goals[i].team != -1 );
+		if (The_mission.game_type & MISSION_TYPE_MULTI_TEAMS) {
+			Assert(Mission_goals[i].team != -1);
 		}
 	}
 
 	// now update all sexp references
-	while (count--)
-		update_sexp_references(names[0][count], names[1][count], OPF_GOAL_NAME);
+	for (const auto& entry : names)
+		update_sexp_references(entry.first.c_str(), entry.second.c_str(), OPF_GOAL_NAME);
 
 	// Only fire the signal after the changes have been applied to make sure the other parts of the code see the updated
 	// state
