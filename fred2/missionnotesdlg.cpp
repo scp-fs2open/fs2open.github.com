@@ -398,8 +398,10 @@ BOOL CMissionNotesDlg::OnInitDialog()
 	m_no_debriefing = (The_mission.flags[Mission::Mission_Flags::Toggle_debriefing]) ? 1 : 0;
 	m_autpilot_cinematics = (The_mission.flags[Mission::Mission_Flags::Use_ap_cinematics]) ? 1 : 0;
 	m_2d_mission = (The_mission.flags[Mission::Mission_Flags::Mission_2d]) ? 1 : 0;
-	m_no_autpilot =  (The_mission.flags[Mission::Mission_Flags::Deactivate_ap]) ? 1 : 0;
-	m_always_show_goals =  (The_mission.flags[Mission::Mission_Flags::Always_show_goals]) ? 1 : 0;
+	m_no_autpilot = (The_mission.flags[Mission::Mission_Flags::Deactivate_ap]) ? 1 : 0;
+	m_always_show_goals = (The_mission.flags[Mission::Mission_Flags::Always_show_goals]) ? 1 : 0;
+	m_end_to_mainhall = (The_mission.flags[Mission::Mission_Flags::End_to_mainhall]) ? 1 : 0;
+	m_override_hashcommand = (The_mission.flags[Mission::Mission_Flags::Override_hashcommand]) ? 1 : 0;
 
 	m_loading_640=_T(The_mission.loading_screen[GR_640]);
 	m_loading_1024=_T(The_mission.loading_screen[GR_1024]);
