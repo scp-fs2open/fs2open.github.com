@@ -49,11 +49,9 @@ void warpin_queue_render(model_draw_list *scene, object *obj, matrix *orient, ve
 
 	vm_vec_scale_add( &center, pos, &orient->vec.fvec, -(max_radius/2.5f)/3.0f );
 
-	verts[0].r = 255;
-	verts[0].g = 255;
-	verts[0].b = 255;
-	verts[0].a = 255;
-
+	// Cyborg17, Initialize the *whole* struct, set some starting values and share with the rest of the array.
+	verts[0] = {};
+	verts[0].r = verts[0].g = verts[0].b = verts[0].a = 255;
 	verts[1] = verts[2] = verts[3] = verts[4] = verts[0];
 
 	if (warp_glow_bitmap >= 0) {
