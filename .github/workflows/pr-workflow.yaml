@@ -8,7 +8,7 @@ jobs:
       matrix:
         configuration: [Debug, Release]
         compiler: [gcc-5, gcc-8, clang-4.0]
-    name: Check Linux compilation
+    name: Linux
     runs-on: ubuntu-16.04
     steps:
       - name: Prepare Environment
@@ -85,7 +85,7 @@ jobs:
           - configuration: Release
             compiler: MinGW
             arch: x64
-    name: Check Windows compilation
+    name: Windows
     runs-on: windows-2019
     steps:
       - name: Prepare Environment
@@ -120,9 +120,54 @@ jobs:
         run: |
           if [ "$COMPILER" = "MinGW" ]; then
               cmake --build . --config "$CONFIGURATION"
-             ./bin/unittests --gtest_shuffle
           else
               cmake --build . --config "$CONFIGURATION" -- /verbosity:minimal
+          fi
+      - name: Run Tests
+        working-directory: ./build
+        env:
+          CONFIGURATION: ${{ matrix.configuration }}
+          COMPILER: ${{ matrix.compiler }}
+        shell: bash
+        run: |
+          if [ "$COMPILER" = "MinGW" ]; then
+             ./bin/unittests --gtest_shuffle
+          else
               "./bin/$CONFIGURATION/unittests" --gtest_shuffle
           fi
+  build_mac:
+    strategy:
+      matrix:
+        configuration: [Debug, Release]
+    name: Mac OS
+    runs-on: macOS-10.14
+    steps:
+      - name: Prepare Environment
+        run: |
+          gem install xcpretty
 
+          brew update
+          brew outdated cmake || brew upgrade cmake
+          brew install FreeType
+      - uses: actions/checkout@v1
+        name: Checkout
+        with:
+          submodules: true
+      - name: Configure CMake
+        run: |
+          mkdir build
+          cd build
+
+          cmake -G "Xcode" $CMAKE_OPTIONS ..
+      - name: Compile
+        working-directory: ./build
+        env:
+          CONFIGURATION: ${{ matrix.configuration }}
+        run: |
+          cmake --build . --config "$CONFIGURATION" | tee build.log | xcpretty
+          XCODE_RET=${PIPESTATUS[0]}
+          if [ "$XCODE_RET" -ne "0" ]; then
+              tar -cvzf build.log.tar.gz build.log
+              curl --upload-file build.log.tar.gz "https://transfer.sh/build.log.tar.gz"
+              exit $XCODE_RET
+          fi
