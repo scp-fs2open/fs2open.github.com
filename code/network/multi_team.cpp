@@ -568,7 +568,7 @@ void multi_team_get_player_counts(int *team0, int *team1)
 }
 
 // report on the winner/loser of the game via chat text
-#define SEND_AND_DISPLAY(mesg)		do { send_game_chat_packet(Net_player, mesg, MULTI_MSG_ALL, NULL, NULL, 1); multi_display_chat_msg(mesg, 0, 0); } while(0);
+#define SEND_AND_DISPLAY(mesg)		do { send_game_chat_packet(Net_player, mesg, MULTI_MSG_ALL, NULL, NULL, 1); multi_display_chat_msg(mesg, 0, 0); } while(false);
 void multi_team_report()
 {
 	int i;

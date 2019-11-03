@@ -1148,13 +1148,13 @@ void beam_move_all_post()
 	verts[2]->texture_position.v = 1.0f;\
 	verts[3]->texture_position.u = 0.0f;\
 	verts[3]->texture_position.v = 1.0f;\
-} while(0);
+} while(false);
 
 #define P_VERTICES()		do {\
 	for(idx=0; idx<4; idx++){\
 		g3_project_vertex(verts[idx]);\
 	}\
-} while(0);
+} while(false);
 
 void beam_render(beam *b, float u_offset)
 {	

@@ -1448,7 +1448,7 @@ void multi_pxo_blit_all()
 		} else {
 			gr_clear();
 		} 
-	} while(0);
+	} while(false);
 	if(Multi_pxo_bitmap != -1){
 		gr_set_bitmap(Multi_pxo_bitmap);
 		gr_bitmap(0,0,GR_RESIZE_MENU);

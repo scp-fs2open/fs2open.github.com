@@ -890,7 +890,7 @@ void multi_respawn_place(object *new_obj, int team)
 			collided = 1; \
 		} \
 	} \
-} while(0)
+} while(false)
 
 #define MOVE_AWAY_BBOX() do { \
 	if (pm != NULL) { \
@@ -912,7 +912,7 @@ void multi_respawn_place(object *new_obj, int team)
 			break; \
 		} \
 	} \
-} while(0)
+} while(false)
 
 
 void prevent_spawning_collision(object *new_obj)

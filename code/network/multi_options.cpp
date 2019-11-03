@@ -54,7 +54,7 @@ ushort Multi_options_proxy_port = 0;
 //
 
 // load in the config file
-#define NEXT_TOKEN()						do { tok = strtok(NULL, "\n"); if(tok != NULL){ drop_leading_white_space(tok); drop_trailing_white_space(tok); } } while(0);
+#define NEXT_TOKEN()						do { tok = strtok(NULL, "\n"); if(tok != NULL){ drop_leading_white_space(tok); drop_trailing_white_space(tok); } } while(false);
 #define SETTING(s)						( !stricmp(tok, s) )
 void multi_options_read_config()
 {

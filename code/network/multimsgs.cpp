@@ -8150,8 +8150,8 @@ void process_flak_fired_packet(ubyte *data, header *hinfo)
 	}
 }
 
-#define ADD_NORM_VEC(d) do { Assert((packet_size + 3) < MAX_PACKET_SIZE); char vnorm[3] = { (char)(d.x * 127.0f), (char)(d.y * 127.0f), (char)(d.z * 127.0f) }; memcpy(data + packet_size, vnorm, 3); packet_size += 3; } while(0);
-#define GET_NORM_VEC(d) do { char vnorm[3]; memcpy(vnorm, data+offset, 3); d.x = (float)vnorm[0] / 127.0f; d.y = (float)vnorm[1] / 127.0f; d.z = (float)vnorm[2] / 127.0f; } while(0);
+#define ADD_NORM_VEC(d) do { Assert((packet_size + 3) < MAX_PACKET_SIZE); char vnorm[3] = { (char)(d.x * 127.0f), (char)(d.y * 127.0f), (char)(d.z * 127.0f) }; memcpy(data + packet_size, vnorm, 3); packet_size += 3; } while(false);
+#define GET_NORM_VEC(d) do { char vnorm[3]; memcpy(vnorm, data+offset, 3); d.x = (float)vnorm[0] / 127.0f; d.y = (float)vnorm[1] / 127.0f; d.z = (float)vnorm[2] / 127.0f; } while(false);
 
 // player pain packet
 void send_player_pain_packet(net_player *pl, int weapon_info_index, float damage, vec3d *force, vec3d *hitpos, int quadrant_num)

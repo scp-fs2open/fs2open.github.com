@@ -6606,7 +6606,7 @@ void game_spew_pof_info_sub(int model_num, polymodel *pm, int sm, CFILE *out, in
 	*out_destroyed_total += sub_total_destroyed;
 }
 
-#define BAIL()			do { int _idx; for(_idx=0; _idx<num_files; _idx++){ if(pof_list[_idx] != NULL){vm_free(pof_list[_idx]); pof_list[_idx] = NULL;}} return;} while(0);
+#define BAIL()			do { int _idx; for(_idx=0; _idx<num_files; _idx++){ if(pof_list[_idx] != NULL){vm_free(pof_list[_idx]); pof_list[_idx] = NULL;}} return;} while(false);
 void game_spew_pof_info()
 {
 	char *pof_list[1000];
