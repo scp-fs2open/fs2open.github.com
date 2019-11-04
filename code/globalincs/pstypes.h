@@ -259,14 +259,14 @@ extern int Global_error_count;
 /*******************NEVER COMMENT Assert ************************************************/
 
 // Goober5000 - define Verify for use in both release and debug mode
-#define Verify(x) do { if (!(x)){ Error(LOCATION, "Verify failure: %s\n", #x); } ASSUME(x); } while(0)
+#define Verify(x) do { if (!(x)){ Error(LOCATION, "Verify failure: %s\n", #x); } ASSUME(x); } while(false)
 
 // VerifyEx
 #ifndef _MSC_VER   // non MS compilers
-#	define VerifyEx(x, y, ...) do { if (!(x)) { Error(LOCATION, "Verify failure: %s with help text " #y "\n", #x, ##__VA_ARGS__); } ASSUME(x); } while(0)
+#	define VerifyEx(x, y, ...) do { if (!(x)) { Error(LOCATION, "Verify failure: %s with help text " #y "\n", #x, ##__VA_ARGS__); } ASSUME(x); } while(false)
 #else
 #	if _MSC_VER >= 1400	// VC 2005 or greater
-#		define VerifyEx(x, y, ...) do { if (!(x)) { Error(LOCATION, "Verify failure: %s with help text " #y "\n", #x, __VA_ARGS__); } ASSUME(x); } while(0)
+#		define VerifyEx(x, y, ...) do { if (!(x)) { Error(LOCATION, "Verify failure: %s with help text " #y "\n", #x, __VA_ARGS__); } ASSUME(x); } while(false)
 #	else // everything else
 #		define VerifyEx(x, y) Verify(x)
 #	endif
@@ -274,7 +274,7 @@ extern int Global_error_count;
 
 #if defined(NDEBUG)
 	// No debug version of Int3
-	#define Int3() do { } while (0)
+	#define Int3() do { } while (false)
 #else
 	void debug_int3(const char *file, int line);
 

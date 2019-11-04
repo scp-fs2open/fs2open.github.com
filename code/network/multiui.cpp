@@ -706,9 +706,9 @@ int Multi_join_list_selected;						// which item we have selected
 active_game *Multi_join_selected_item;			// a pointer to the corresponding active_game
 
 // use this macro to modify the list start
-#define MJ_LIST_START_INC()			do { Multi_join_list_start++; } while(0);
-#define MJ_LIST_START_DEC()			do { Multi_join_list_start--; } while(0);
-#define MJ_LIST_START_SET(vl)			do { Multi_join_list_start = vl; } while(0);
+#define MJ_LIST_START_INC()			do { Multi_join_list_start++; } while(false);
+#define MJ_LIST_START_DEC()			do { Multi_join_list_start--; } while(false);
+#define MJ_LIST_START_SET(vl)			do { Multi_join_list_start = vl; } while(false);
 
 // if we should be sending a join request at the end of the frame
 int Multi_join_should_send = -1;

@@ -124,7 +124,7 @@ int multi_rate_add(int np_index, const char *type, int size)
 }
 
 // process
-#define R_AVG(ct, ar, avg)		do {int av_idx; float av_sum = 0.0f; if(ct == 0){ avg = 0;} else { for(av_idx=0; av_idx<ct; av_idx++){ av_sum += (float)ar[av_idx]; } avg = av_sum / (float)ct; } }while(0)
+#define R_AVG(ct, ar, avg)		do {int av_idx; float av_sum = 0.0f; if(ct == 0){ avg = 0;} else { for(av_idx=0; av_idx<ct; av_idx++){ av_sum += (float)ar[av_idx]; } avg = av_sum / (float)ct; } }while(false)
 void multi_rate_process()
 {
 	int idx, s_idx;

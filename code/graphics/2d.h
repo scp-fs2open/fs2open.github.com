@@ -844,7 +844,7 @@ typedef struct screen {
 } screen;
 
 // handy macro
-#define GR_MAYBE_CLEAR_RES(bmap)		do  { int bmw = -1; int bmh = -1; if(bmap != -1){ bm_get_info( bmap, &bmw, &bmh, NULL, NULL, NULL); if((bmw != gr_screen.max_w) || (bmh != gr_screen.max_h)){gr_clear();} } else {gr_clear();} } while(0);
+#define GR_MAYBE_CLEAR_RES(bmap)		do  { int bmw = -1; int bmh = -1; if(bmap != -1){ bm_get_info( bmap, &bmw, &bmh, NULL, NULL, NULL); if((bmw != gr_screen.max_w) || (bmh != gr_screen.max_h)){gr_clear();} } else {gr_clear();} } while(false);
 
 //Window's interface to set up graphics:
 //--------------------------------------
@@ -1237,7 +1237,7 @@ class DebugScope {
 #ifndef NDEBUG
 #define GR_DEBUG_SCOPE(name) ::graphics::DebugScope SCP_TOKEN_CONCAT(gr_scope, __LINE__)(name)
 #else
-#define GR_DEBUG_SCOPE(name) do {} while(0)
+#define GR_DEBUG_SCOPE(name) do {} while(false)
 #endif
 
 enum AnimatedShader {

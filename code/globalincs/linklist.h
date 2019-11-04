@@ -62,7 +62,7 @@ do {												\
 	(elem)->next->prev = (elem)->prev;	\
 	(elem)->next = NULL;						\
 	(elem)->prev = NULL;						\
-} while(0)
+} while(false)
 
 // Moves elem to be after head
 #define list_move_append(head, elem)		\

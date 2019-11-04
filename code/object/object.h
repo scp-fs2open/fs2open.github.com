@@ -252,7 +252,7 @@ void obj_delete_all();
 void obj_merge_created_list(void);
 
 // recalculate object pairs for an object
-#define OBJ_RECALC_PAIRS(obj_to_reset)		do {	obj_set_flags(obj_to_reset, obj_to_reset->flags - Object::Object_Flags::Collides); obj_set_flags(obj_to_reset, obj_to_reset->flags + Object::Object_Flags::Collides); } while(0);
+#define OBJ_RECALC_PAIRS(obj_to_reset)		do {	obj_set_flags(obj_to_reset, obj_to_reset->flags - Object::Object_Flags::Collides); obj_set_flags(obj_to_reset, obj_to_reset->flags + Object::Object_Flags::Collides); } while(false);
 
 //	Returns true if objects A and B are expected to collide in next duration seconds.
 //	For purposes of this check, the first object moves from current location to predicted

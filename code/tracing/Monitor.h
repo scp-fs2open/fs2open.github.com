@@ -64,6 +64,6 @@ class Monitor: public MonitorBase {
 #define MONITOR(function_name)				static ::tracing::Monitor<int> mon_##function_name(#function_name, 0);
 
 // Increments a monitor variable
-#define MONITOR_INC(function_name, inc)		do { mon_##function_name += (inc); } while(0)
+#define MONITOR_INC(function_name, inc)		do { mon_##function_name += (inc); } while(false)
 
 

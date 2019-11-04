@@ -1082,12 +1082,14 @@ void multi_voice_player_send_stream()
 	msg_mode = (ubyte)Multi_voice_send_mode;
 	// get the specific target if we're in MSG_TARGET mode
 	target_index = -1;
+	ushort target_signature = 0;  // Cyborg17 - 0 is the invalid value for net_signature
 	if(msg_mode == MULTI_MSG_TARGET){
 		if(Player_ai->target_objnum != -1){
 			target_index = multi_find_player_by_object(&Objects[Player_ai->target_objnum]);
 			if(target_index == -1){
 				return;
 			}
+			target_signature = Objects[Net_players[target_index].m_player->objnum].net_signature;
 		} else {
 			return;
 		}
@@ -1110,8 +1112,10 @@ void multi_voice_player_send_stream()
 
 		// add the routing data and any necessary targeting information
 		ADD_DATA(msg_mode);
-		if(msg_mode == MULTI_MSG_TARGET){
-			ADD_DATA(Objects[Net_players[target_index].m_player->objnum].net_signature);
+		
+		// Cyborg17 - add the target signature only if it's been set, which only happens in MSG_TARGET mode
+		if (target_signature != 0) {
+			ADD_USHORT(target_signature);
 		}
 
 		// add my id#
@@ -1541,6 +1545,8 @@ void multi_voice_send_dummy_packet()
 	ADD_DATA(code);
 
 	msg_mode = (ubyte)Multi_voice_send_mode;
+	ADD_DATA(msg_mode);
+
 	// get the specific target if we're in MSG_TARGET mode
 	target_index = -1;
 	if(msg_mode == MULTI_MSG_TARGET){
@@ -1552,9 +1558,6 @@ void multi_voice_send_dummy_packet()
 		} else {
 			return;
 		}
-	}
-	ADD_DATA(msg_mode);
-	if(msg_mode == MULTI_MSG_TARGET){
 		ADD_USHORT(Objects[Net_players[target_index].m_player->objnum].net_signature);
 	}
 
@@ -1774,11 +1777,29 @@ void multi_voice_client_send_pending()
 
 	// stream all buffered up packets
 	str = &Multi_voice_stream[0];
+
+	// get the current messaging mode
+	msg_mode = (ubyte)Multi_voice_send_mode;
+
+	// get the specific target if we're in MSG_TARGET mode
+	target_index = -1;
+	ushort target_signature = 0; // Cyborg17 - 0 is the invalid value for net_signature
+	if (msg_mode == MULTI_MSG_TARGET) {
+		Assert(Game_mode & GM_IN_MISSION);
+
+		if (Player_ai->target_objnum != -1) {
+			target_index = multi_find_player_by_object(&Objects[Player_ai->target_objnum]);
+			if (target_index == -1) {
+				return;
+			}
+			target_signature = Objects[Net_players[target_index].m_player->objnum].net_signature;
+		} else {
+			return;
+		}
+	}
+
 	while(Multi_voice_current_stream_sent < Multi_voice_current_stream_index){		
 		sent = Multi_voice_current_stream_sent++;
-
-		// get the current messaging mode
-		msg_mode = (ubyte)Multi_voice_send_mode;		
 
 		// if the size of this voice chunk will fit in the packet
 		max_chunk_size = multi_voice_max_chunk_size(Multi_voice_send_mode);
@@ -1798,19 +1819,6 @@ void multi_voice_client_send_pending()
 #ifdef MULTI_VOICE_VERBOSE
 		nprintf(("Network","MULTI VOICE : PACKET %d %d\n",(int)str->accum_buffer_csize[sent],(int)str->accum_buffer_usize[sent]));
 #endif
-	
-		// get the specific target if we're in MSG_TARGET mode
-		target_index = -1;
-		if(msg_mode == MULTI_MSG_TARGET){
-			if(Player_ai->target_objnum != -1){
-				target_index = multi_find_player_by_object(&Objects[Player_ai->target_objnum]);
-				if(target_index == -1){
-					return;
-				}
-			} else {
-				return;
-			}
-		}
 
 		// go through the data and send all of it
 		code = MV_CODE_DATA;
@@ -1824,9 +1832,10 @@ void multi_voice_client_send_pending()
 
 		// add the routing data and any necessary targeting information
 		ADD_DATA(msg_mode);
-		if(msg_mode == MULTI_MSG_TARGET){
-			Assert(Game_mode & GM_IN_MISSION);
-			ADD_USHORT(Objects[Net_players[target_index].m_player->objnum].net_signature);
+
+		// Cyborg17 - add the target signature only if it's been set, which only happens in MSG_TARGET mode
+		if (target_signature != 0){
+			ADD_USHORT(target_signature);
 		}
 
 		// add my address 

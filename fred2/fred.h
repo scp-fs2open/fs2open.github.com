@@ -31,7 +31,7 @@
 		a = (b);            \
 		set_modified();     \
 	}                       \
-} while(0)
+} while(false)
 
 #define F_RENDER_SHIP_MODELS 0x01
 #define F_RENDER_SHIP_ICONS  0x02

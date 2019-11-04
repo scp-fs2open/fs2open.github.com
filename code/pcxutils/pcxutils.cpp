@@ -108,7 +108,7 @@ int pcx_read_header(const char *real_filename, CFILE *img_cfp, int *w, int *h, i
 // int Pcx_load_offset = 0;
 // int Pcx_load_size = 0;
 /*
-// #define GET_BUF()			do { buffer = &Pcx_load[Pcx_load_offset]; if(Pcx_load_offset + buffer_size > Pcx_load_size) { buffer_size = Pcx_load_size - Pcx_load_offset; } } while(0);
+// #define GET_BUF()			do { buffer = &Pcx_load[Pcx_load_offset]; if(Pcx_load_offset + buffer_size > Pcx_load_size) { buffer_size = Pcx_load_size - Pcx_load_offset; } } while(false);
 int pcx_read_bitmap_8bpp( char * real_filename, ubyte *org_data, ubyte *palette )
 {
 	PCXHeader header;
