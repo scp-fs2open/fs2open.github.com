@@ -135,39 +135,3 @@ jobs:
           else
               "./bin/$CONFIGURATION/unittests" --gtest_shuffle
           fi
-  build_mac:
-    strategy:
-      matrix:
-        configuration: [Debug, Release]
-    name: Mac OS
-    runs-on: macOS-10.14
-    steps:
-      - name: Prepare Environment
-        run: |
-          gem install xcpretty
-
-          brew update
-          brew outdated cmake || brew upgrade cmake
-          brew install FreeType
-      - uses: actions/checkout@v1
-        name: Checkout
-        with:
-          submodules: true
-      - name: Configure CMake
-        run: |
-          mkdir build
-          cd build
-
-          cmake -G "Xcode" $CMAKE_OPTIONS ..
-      - name: Compile
-        working-directory: ./build
-        env:
-          CONFIGURATION: ${{ matrix.configuration }}
-        run: |
-          cmake --build . --config "$CONFIGURATION" | tee build.log | xcpretty
-          XCODE_RET=${PIPESTATUS[0]}
-          if [ "$XCODE_RET" -ne "0" ]; then
-              tar -cvzf build.log.tar.gz build.log
-              curl --upload-file build.log.tar.gz "https://transfer.sh/build.log.tar.gz"
-              exit $XCODE_RET
-          fi
