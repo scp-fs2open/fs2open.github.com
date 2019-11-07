@@ -2104,9 +2104,9 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		}
 		// now check miss factors for each IFF
 		for(iff=0; iff<Num_iffs; iff++) {
-			char miss_factor_string[NAME_LENGTH + 15];
+			SCP_string miss_factor_string;
 			sprintf(miss_factor_string, "+%s Miss Factor:", Iff_info[iff].iff_name);
-			if(optional_string(miss_factor_string)) {
+			if(optional_string(miss_factor_string.c_str())) {
 				// this Miss Factor applies only to the specified IFF
 				for(idx=0; idx<NUM_SKILL_LEVELS; idx++) {
 					if(!stuff_float_optional(&wip->b_info.beam_iff_miss_factor[iff][idx])) {

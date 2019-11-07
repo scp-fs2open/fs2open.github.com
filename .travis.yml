@@ -78,14 +78,14 @@ matrix:
             - *global_deps
             - g++-5
     - os: linux
-      env: CONFIGURATION="Debug" CC=gcc-8 CXX=g++-8
+      env: CONFIGURATION="Debug" CC=gcc-9 CXX=g++-9
       addons:
         apt:
           sources:
             - ubuntu-toolchain-r-test
             - sourceline: 'ppa:beineri/opt-qt571-trusty'
           packages:
-            - g++-8
+            - g++-9
             - *global_deps
     - os: linux
       env: CONFIGURATION="Debug" CC=clang-4.0 CXX=clang++-4.0 CMAKE_OPTIONS="-DCMAKE_EXPORT_COMPILE_COMMANDS=ON"
@@ -122,14 +122,14 @@ matrix:
             - *global_deps
             - g++-5
     - os: linux
-      env: CONFIGURATION="Release" CC=gcc-8 CXX=g++-8
+      env: CONFIGURATION="Release" CC=gcc-9 CXX=g++-9
       addons:
         apt:
           sources:
             - ubuntu-toolchain-r-test
             - sourceline: 'ppa:beineri/opt-qt571-trusty'
           packages:
-            - g++-8
+            - g++-9
             - *global_deps
     - os: linux
       env: CONFIGURATION="Release" CC=clang-4.0 CXX=clang++-4.0

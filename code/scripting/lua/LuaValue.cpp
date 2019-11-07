@@ -53,6 +53,12 @@ LuaValue::LuaValue(const LuaValue& other) : _luaState(other._luaState) {
 	this->setReference(other._reference);
 }
 
+LuaValue& LuaValue::operator=(const LuaValue& other) {
+	_luaState = other._luaState;
+	this->setReference(other._reference);
+	return *this;
+}
+
 LuaValue::~LuaValue() {
 }
 

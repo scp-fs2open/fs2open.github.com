@@ -7,7 +7,7 @@ jobs:
     strategy:
       matrix:
         configuration: [Debug, Release]
-        compiler: [gcc-5, gcc-8, clang-4.0]
+        compiler: [gcc-5, gcc-9, clang-4.0]
     name: Linux
     runs-on: ubuntu-16.04
     steps:
@@ -19,7 +19,7 @@ jobs:
           sudo add-apt-repository ppa:beineri/opt-qt571-xenial
           sudo add-apt-repository ppa:msulikowski/valgrind # For fixing a bug with valgrind 3.11 which does not recognize the rdrand instruction
           sudo apt-get -yq update
-          sudo apt-get -yq install cmake ninja-build libopenal-dev libreadline6-dev libpng12-dev libjpeg62-dev liblua5.1-0-dev libjansson-dev libsdl2-dev libfreetype6-dev valgrind qt57base g++-5 g++-8 clang-4.0 clang-tidy-4.0 libc++-dev libc++abi-dev
+          sudo apt-get -yq install cmake ninja-build libopenal-dev libreadline6-dev libpng12-dev libjpeg62-dev liblua5.1-0-dev libjansson-dev libsdl2-dev libfreetype6-dev valgrind qt57base g++-5 g++-9 clang-4.0 clang-tidy-4.0 libc++-dev libc++abi-dev
           # Fix a header bug present in ubuntu...
           sudo ln -s /usr/include/libcxxabi/__cxxabi_config.h /usr/include/c++/v1/__cxxabi_config.h
       - uses: actions/checkout@v1
@@ -35,9 +35,9 @@ jobs:
             export CC=gcc-5
             export CXX=g++-5
           fi
-          if [ "$COMPILER" = "gcc-8" ]; then
-            export CC=gcc-8
-            export CXX=g++-8
+          if [ "$COMPILER" = "gcc-9" ]; then
+            export CC=gcc-9
+            export CXX=g++-9
           fi
           if [ "$COMPILER" = "clang-4.0" ]; then
             export CC=clang-4.0
@@ -134,40 +134,4 @@ jobs:
              ./bin/unittests --gtest_shuffle
           else
               "./bin/$CONFIGURATION/unittests" --gtest_shuffle
-          fi
-  build_mac:
-    strategy:
-      matrix:
-        configuration: [Debug, Release]
-    name: Mac OS
-    runs-on: macOS-10.14
-    steps:
-      - name: Prepare Environment
-        run: |
-          gem install xcpretty
-
-          brew update
-          brew outdated cmake || brew upgrade cmake
-          brew install FreeType
-      - uses: actions/checkout@v1
-        name: Checkout
-        with:
-          submodules: true
-      - name: Configure CMake
-        run: |
-          mkdir build
-          cd build
-
-          cmake -G "Xcode" $CMAKE_OPTIONS ..
-      - name: Compile
-        working-directory: ./build
-        env:
-          CONFIGURATION: ${{ matrix.configuration }}
-        run: |
-          cmake --build . --config "$CONFIGURATION" | tee build.log | xcpretty
-          XCODE_RET=${PIPESTATUS[0]}
-          if [ "$XCODE_RET" -ne "0" ]; then
-              tar -cvzf build.log.tar.gz build.log
-              curl --upload-file build.log.tar.gz "https://transfer.sh/build.log.tar.gz"
-              exit $XCODE_RET
           fi
