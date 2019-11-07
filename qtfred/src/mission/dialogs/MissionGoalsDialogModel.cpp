@@ -13,31 +13,31 @@ MissionGoalsDialogModel::MissionGoalsDialogModel(QObject* parent, fso::fred::Edi
 }
 bool MissionGoalsDialogModel::apply()
 {
-	for (int32_t i = 0; i < Num_goals; i++)
+	for (int i = 0; i < Num_goals; i++)
 		free_sexp2(Mission_goals[i].formula);
 
 	auto changes_detected = query_modified();
 
 	SCP_vector<std::pair<SCP_string, SCP_string>> names;
 
-	for (int32_t i = 0; i < Num_goals; i++)
+	for (int i = 0; i < Num_goals; i++)
 		Mission_goals[i].satisfied = 0; // use this as a processed flag
 
 	// rename all sexp references to old events
-	for (int32_t i = 0; i < m_num_goals; i++)
+	for (int i = 0; i < m_num_goals; i++)
 		if (m_sig[i] >= 0) {
 			names.emplace_back(Mission_goals[m_sig[i]].name, m_goals[i].name);
 			Mission_goals[m_sig[i]].satisfied = 1;
 		}
 
 	// invalidate all sexp references to deleted events.
-	for (int32_t i = 0; i < Num_goals; i++)
+	for (int i = 0; i < Num_goals; i++)
 		if (!Mission_goals[i].satisfied) {
 			names.emplace_back(Mission_goals[i].name, SCP_string("<") + Mission_goals[i].name + ">");
 		}
 
 	Num_goals = m_num_goals;
-	for (int32_t i = 0; i < Num_goals; i++) {
+	for (int i = 0; i < Num_goals; i++) {
 		Mission_goals[i]         = m_goals[i];
 		Mission_goals[i].formula = _sexp_tree->save_tree(Mission_goals[i].formula);
 		if (The_mission.game_type & MISSION_TYPE_MULTI_TEAMS) {
@@ -46,8 +46,9 @@ bool MissionGoalsDialogModel::apply()
 	}
 
 	// now update all sexp references
-	for (const auto& entry : names)
+	for (const auto& entry : names) {
 		update_sexp_references(entry.first.c_str(), entry.second.c_str(), OPF_GOAL_NAME);
+	}
 
 	// Only fire the signal after the changes have been applied to make sure the other parts of the code see the updated
 	// state

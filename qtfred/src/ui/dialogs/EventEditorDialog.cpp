@@ -620,7 +620,7 @@ void EventEditorDialog::applyChanges()
 
 	auto changes_detected = query_modified();
 
-	for (int32_t i = 0; i < Num_mission_events; i++) {
+	for (int i = 0; i < Num_mission_events; i++) {
 		free_sexp2(Mission_events[i].formula);
 		if (Mission_events[i].objective_text)
 			free(Mission_events[i].objective_text);
@@ -630,24 +630,24 @@ void EventEditorDialog::applyChanges()
 
 	SCP_vector<std::pair<SCP_string, SCP_string>> names;
 
-	for (int32_t i = 0; i < Num_mission_events; i++)
+	for (int i = 0; i < Num_mission_events; i++)
 		Mission_events[i].result = 0; // use this as a processed flag
 
 	// rename all sexp references to old events
-	for (int32_t i = 0; i < m_num_events; i++)
+	for (int i = 0; i < m_num_events; i++)
 		if (m_sig[i] >= 0) {
 			names.emplace_back(Mission_events[m_sig[i]].name, m_events[i].name);
 			Mission_events[m_sig[i]].result = 1;
 		}
 
 	// invalidate all sexp references to deleted events.
-	for (int32_t i = 0; i < Num_mission_events; i++)
+	for (int i = 0; i < Num_mission_events; i++)
 		if (!Mission_events[i].result) {
 			names.emplace_back(Mission_events[i].name, SCP_string("<") + Mission_events[i].name + ">");
 		}
 
 	Num_mission_events = m_num_events;
-	for (int32_t i = 0; i < m_num_events; i++) {
+	for (int i = 0; i < m_num_events; i++) {
 		Mission_events[i]                    = m_events[i];
 		Mission_events[i].formula            = ui->eventTree->save_tree(m_events[i].formula);
 		Mission_events[i].objective_text     = m_events[i].objective_text;
@@ -656,10 +656,11 @@ void EventEditorDialog::applyChanges()
 	}
 
 	// now update all sexp references
-	for (const auto& entry : names)
+	for (const auto& entry : names) {
 		update_sexp_references(entry.first.c_str(), entry.second.c_str(), OPF_EVENT_NAME);
+	}
 
-	for (int32_t i = Num_builtin_messages; i < Num_messages; i++) {
+	for (int i = Num_builtin_messages; i < Num_messages; i++) {
 		if (Messages[i].avi_info.name)
 			free(Messages[i].avi_info.name);
 
@@ -669,7 +670,7 @@ void EventEditorDialog::applyChanges()
 
 	Num_messages = m_num_messages + Num_builtin_messages;
 	Messages.resize(Num_messages);
-	for (int32_t i = 0; i < m_num_messages; i++)
+	for (int i = 0; i < m_num_messages; i++)
 		Messages[i + Num_builtin_messages] = m_messages[i];
 
 	// Only fire the signal after the changes have been applied to make sure the other parts of the code see the updated
