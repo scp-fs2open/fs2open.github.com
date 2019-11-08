@@ -404,15 +404,11 @@ char *Cmdline_mod = NULL; //DTP for mod argument
 cmdline_parm almission_arg("-almission", "Autoload multiplayer mission", AT_STRING);		// Cmdline_almission  -- DTP for autoload Multi mission
 cmdline_parm ingamejoin_arg("-ingame_join", NULL, AT_NONE);	// Cmdline_ingamejoin
 cmdline_parm mpnoreturn_arg("-mpnoreturn", NULL, AT_NONE);	// Cmdline_mpnoreturn  -- Removes 'Return to Flight Deck' in respawn dialog -C
-cmdline_parm missioncrcspew_arg("-missioncrcs", NULL, AT_STRING);		// Cmdline_spew_mission_crcs
-cmdline_parm tablecrcspew_arg("-tablecrcs", NULL, AT_STRING);			// Cmdline_spew_table_crcs
 cmdline_parm objupd_arg("-cap_object_update", "Multiplayer object update cap (0-3)", AT_INT);
 
 char *Cmdline_almission = NULL;	//DTP for autoload multi mission.
 int Cmdline_ingamejoin = 0;
 int Cmdline_mpnoreturn = 0;
-char *Cmdline_spew_mission_crcs = NULL;
-char *Cmdline_spew_table_crcs = NULL;
 int Cmdline_objupd = 3;		// client object updates on LAN by default
 
 // Launcher related options
@@ -1542,24 +1538,6 @@ bool SetCmdlineParams()
 	{
 		Cmdline_extra_warn = 1;
 	}
-
-	if ( missioncrcspew_arg.found() ) {
-		Cmdline_spew_mission_crcs = missioncrcspew_arg.str();
-
-		// strip off blank space at end if it's there
-		if ( Cmdline_spew_mission_crcs[strlen(Cmdline_spew_mission_crcs)-1] == ' ' ) {
-			Cmdline_spew_mission_crcs[strlen(Cmdline_spew_mission_crcs)-1] = '\0';
-		}
- 	}
- 
-	if ( tablecrcspew_arg.found() ) {
-		Cmdline_spew_table_crcs = tablecrcspew_arg.str();
-
-		// strip off blank space at end if it's there
-		if ( Cmdline_spew_table_crcs[strlen(Cmdline_spew_table_crcs)-1] == ' ' ) {
-			Cmdline_spew_table_crcs[strlen(Cmdline_spew_table_crcs)-1] = '\0';
-		}
- 	}
 
 	if (!Fred_running) { //There is no standalone FRED
 		// is this a standalone server??

@@ -102,8 +102,6 @@ extern char *Cmdline_mod;	 // DTP for mod support
 extern char *Cmdline_almission;	// DTP for autoload mission (for multi only)
 extern int Cmdline_ingamejoin;
 extern int Cmdline_mpnoreturn;
-extern char *Cmdline_spew_mission_crcs;
-extern char *Cmdline_spew_table_crcs;
 extern int Cmdline_objupd;
 
 // Launcher related options

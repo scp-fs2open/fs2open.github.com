@@ -26,7 +26,7 @@
 #include "parse/parselo.h"
 #include "playerman/player.h"
 #include "cfile/cfile.h"
-#include "fs2netd/fs2netd_client.h"
+#include "network/multi_fstracker.h"
 
 #include <climits>
 
@@ -69,7 +69,6 @@ void multi_options_read_config()
 	Multi_options_g.port = (Cmdline_network_port >= 0) ? (ushort)Cmdline_network_port : forced_port == 0 ? (ushort)DEFAULT_GAME_PORT : forced_port;
 	Multi_options_g.log = (Cmdline_multi_log) ? 1 : 0;
 
-
 	// read in the config file
 	in = cfopen(MULTI_CFG_FILE, "rt", CFILE_NORMAL, CF_TYPE_DATA);
 	
@@ -99,6 +98,9 @@ void multi_options_read_config()
 			if (Is_standalone) {
 				// setup PXO mode
 				if ( SETTING("+pxo") ) {
+					Multi_options_g.pxo = 1;
+					// force protocol to TCP
+					Multi_options_g.protocol = NET_TCP;
 					NEXT_TOKEN();
 					if (tok != NULL) {
 						strncpy(Multi_fs_tracker_channel, tok, MAX_PATH-1);
@@ -162,24 +164,6 @@ void multi_options_read_config()
 				if ( SETTING("+lan_update") ) {
 					Multi_options_g.std_datarate = OBJ_UPDATE_LAN;
 				} else
-				// use pxo flag
-				if ( SETTING("+use_pxo") ) {
-					Om_tracker_flag = 1;
-				} else
-				// standalone pxo login user
-				if ( SETTING("+pxo_login") ) {
-					NEXT_TOKEN();
-					if (tok != NULL) {
-						strncpy(Multi_options_g.std_pxo_login, tok, MULTI_TRACKER_STRING_LEN);
-					}
-				} else
-				// standalone pxo login password
-				if ( SETTING("+pxo_password") ) {
-					NEXT_TOKEN();
-					if (tok != NULL) {
-						strncpy(Multi_options_g.std_pxo_password, tok, MULTI_TRACKER_STRING_LEN);
-					}
-				} else
 				if ( SETTING("+webui_root") ) {
 					NEXT_TOKEN();
 					if (tok != NULL) {
@@ -230,13 +214,6 @@ void multi_options_read_config()
 				NEXT_TOKEN();
 				if (tok != NULL) {
 					strcpy_s(Multi_options_g.game_tracker_ip, tok);
-				}
-			} else
-			// port to use for the game/user tracker (FS2NetD)
-			if ( SETTING("+server_port") ) {
-				NEXT_TOKEN();
-				if (tok != NULL) {
-					strcpy_s(Multi_options_g.tracker_port, tok);
 				}
 			} else
 			// ip addr of pxo chat server
@@ -476,6 +453,11 @@ void multi_options_update_netgame()
 	// send the packet
 	if(Net_player->flags & NETINFO_FLAG_AM_MASTER){
 		multi_io_send_to_all_reliable(data, packet_size);
+
+		// update tracker as well
+		if (Net_player->flags & NETINFO_FLAG_MT_CONNECTED) {
+			multi_fs_tracker_update_game(&Netgame);
+		}
 	} else {
 		multi_io_send_reliable(Net_player, data, packet_size);
 	}
@@ -700,11 +682,6 @@ void multi_options_process_packet(unsigned char *data, header *hinfo)
 			if(Game_mode & GM_STANDALONE_SERVER){
 				std_multi_set_standalone_mission_name(Netgame.mission_name);			
 			}
-		}
-
-		// update FS2NetD as well
-		if (MULTI_IS_TRACKER_GAME) {
-			fs2netd_gameserver_update(true);
 		}
 
 		send_netgame_update_packet();	   

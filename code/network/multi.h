@@ -143,8 +143,7 @@ class player;
 #define MULTI_PERM_OBSERVER(np)		((np.flags & NETINFO_FLAG_OBSERVER) && !(np.flags & NETINFO_FLAG_OBS_PLAYER))
 
 // are we playing on a master tracker registered server
-extern int Om_tracker_flag;
-#define MULTI_IS_TRACKER_GAME    (Om_tracker_flag)
+#define MULTI_IS_TRACKER_GAME    ((Game_mode & GM_MULTIPLAYER) && (Multi_options_g.pxo))
 // ----------------------------------------------------------------------------------------
 
 

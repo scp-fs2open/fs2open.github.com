@@ -221,8 +221,6 @@ int		Weapon_impact_timer;			// timer, initialized at start of each mission
 
 extern int compute_num_homing_objects(object *target_objp);
 
-extern void fs2netd_add_table_validation(const char *tblname);
-
 
 weapon_explosions::weapon_explosions()
 {
@@ -2904,9 +2902,6 @@ void parse_weaponstbl(const char *filename)
 		{
 			Num_player_weapon_precedence = stuff_int_list(Player_weapon_precedence, MAX_WEAPON_TYPES, WEAPON_LIST_TYPE);
 		}
-
-		// add tbl/tbm to multiplayer validation list
-		fs2netd_add_table_validation(filename);
 	}
 	catch (const parse::ParseException& e)
 	{

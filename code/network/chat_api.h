@@ -13,7 +13,7 @@
 #include "globalincs/pstypes.h"
 
 // chat server port
-#define PXO_CHAT_PORT		7117
+#define PXO_CHAT_PORT		7711
 
 // motd prefix
 #define PXO_CHAT_MOTD_PREFIX				"!MOTD$#!"
