@@ -1,1 +1,2 @@
 ADD_SUBDIRECTORY(embedfile)
+ADD_SUBDIRECTORY(manifest)
