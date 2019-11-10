@@ -32,7 +32,8 @@ CJumpNode::CJumpNode() : m_radius(0.0f), m_modelnum(-1), m_objnum(-1), m_flags(0
 /**
  * Constructor for CJumpNode class, with world position argument
  */
-CJumpNode::CJumpNode(vec3d *position) : m_radius(0.0f), m_modelnum(-1), m_objnum(-1), m_flags(0)
+CJumpNode::CJumpNode(vec3d* position)
+    : m_radius(0.0f), m_modelnum(-1), m_objnum(-1), m_flags(0)
 {	
 	Assert(position != NULL);
 	
@@ -43,10 +44,18 @@ CJumpNode::CJumpNode(vec3d *position) : m_radius(0.0f), m_modelnum(-1), m_objnum
 	
 	// Set m_modelnum and m_radius
 	m_modelnum = model_load(NOX("subspacenode.pof"), 0, NULL, 0);
-	if (m_modelnum == -1)
+	if (m_modelnum == -1) {
 		Warning(LOCATION, "Could not load default model for %s", m_name);
-	else
+	} else {
 		m_radius = model_get_radius(m_modelnum);
+
+		// set up animation in case of instrinsic_rotate
+		polymodel* pm = model_get(m_modelnum);
+
+		if (pm->flags & PM_FLAG_HAS_INTRINSIC_ROTATE) {
+			m_polymodel_instance_num = model_create_instance(false, m_modelnum);
+		}
+	}
 	
     m_pos.xyz.x = position->xyz.x;
     m_pos.xyz.y = position->xyz.y;
@@ -59,11 +68,12 @@ CJumpNode::CJumpNode(vec3d *position) : m_radius(0.0f), m_modelnum(-1), m_objnum
 }
 
 CJumpNode::CJumpNode(CJumpNode&& other) SCP_NOEXCEPT
-	: m_radius(other.m_radius), m_modelnum(other.m_modelnum), m_objnum(other.m_objnum), m_flags(other.m_flags)
+	: m_radius(other.m_radius), m_modelnum(other.m_modelnum), m_objnum(other.m_objnum), m_polymodel_instance_num(other.m_polymodel_instance_num), m_flags(other.m_flags)
 {
 	other.m_radius = 0.0f;
 	other.m_modelnum = -1;
 	other.m_objnum = -1;
+	other.m_polymodel_instance_num = -1;
 	other.m_flags = 0;
 
 	m_display_color = other.m_display_color;
@@ -80,11 +90,13 @@ CJumpNode& CJumpNode::operator=(CJumpNode&& other) SCP_NOEXCEPT
 		m_modelnum = other.m_modelnum;
 		m_objnum = other.m_objnum;
 		m_flags = other.m_flags;
+		m_polymodel_instance_num = other.m_polymodel_instance_num;
 
 		other.m_radius = 0.0f;
 		other.m_modelnum = -1;
 		other.m_objnum = -1;
 		other.m_flags = 0;
+		other.m_polymodel_instance_num = -1;
 
 		m_display_color = other.m_display_color;
 		m_pos = other.m_pos;
@@ -160,6 +172,14 @@ color CJumpNode::GetColor()
 vec3d *CJumpNode::GetPosition()
 {
 	return &m_pos;
+}
+
+/*
+* @return Polymodel Instance Index
+*/
+int CJumpNode::GetPolymodelInstanceNum() 
+{
+	return m_polymodel_instance_num;
 }
 
 // Settor functions for private variables
@@ -331,6 +351,7 @@ void CJumpNode::Render(model_draw_list* scene, vec3d *pos, vec3d *view_pos)
 
 	model_render_params render_info;
 
+	render_info.set_object_number(m_objnum);
 	render_info.set_detail_level_lock(0);
 	render_info.set_flags(mr_flags);
 
@@ -390,6 +411,24 @@ CJumpNode *jumpnode_get_by_name(const char* name)
 	}
 
 	return NULL;
+}
+
+/**
+ * Get jump node object by the object number
+ *
+ * @param objnum to search for
+ * @return Jump node object pointer
+ */
+CJumpNode *jumpnode_get_by_objnum(int objnum)
+{
+	Assert(objnum > -1);
+
+	for (CJumpNode &jnp : Jump_nodes) {
+		if (jnp.GetSCPObjectNumber() == objnum)
+			return &(jnp);
+	}
+
+	return nullptr;
 }
 
 /**
