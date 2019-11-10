@@ -1238,6 +1238,8 @@ int multi_fs_tracker_validate_game_data()
 	// should only do this only once per game session
 	static int game_data_status = TVALID_STATUS_UNKNOWN;
 
+	multi_fs_tracker_init();
+
 	if ( !Multi_fs_tracker_inited ) {
 		return 1; // assume hacked
 	}
