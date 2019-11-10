@@ -176,6 +176,7 @@ std::string base64_decode(std::string const& encoded_string) {
 #include "mission/missiongoals.h"
 #include "ship/ship.h"
 #include "osapi/osapi.h"
+#include "osapi/osregistry.h"
 
 #include "network/multi.h"
 #include "network/multiutil.h"
@@ -951,6 +952,11 @@ void std_tracker_login()
 	multi_fs_tracker_login_freespace();
 }
 
+void std_init_os()
+{
+	os_init_registry_stuff(Osreg_company_name, Osreg_app_name);
+}
+
 /**
  * Unused methods from the original API below,
  * most of this stuff is now done in std_do_gui_frame
@@ -974,8 +980,5 @@ void std_debug_set_standalone_state_string(const char * /*str*/) {}
 void std_reset_standalone_gui() {}
 void std_reset_timestamps() {}
 void std_multi_set_standalone_missiontime(float  /*mission_time*/) {}
-
-// stub - not required for *nix standalone
-void std_init_os() {}
 
 #endif
