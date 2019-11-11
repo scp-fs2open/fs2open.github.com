@@ -1501,7 +1501,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 	if (wip->reloaded_per_batch == -1) {
 		if (subtype == WP_MISSILE) {
 			wip->reloaded_per_batch = REARM_NUM_MISSILES_PER_BATCH;
-		} else if (wip->wi_flags[Weapon::Info_Flags::Ballistic]) {
+		} else {
 			wip->reloaded_per_batch = REARM_NUM_BALLISTIC_PRIMARIES_PER_BATCH;
 		}
 	}
