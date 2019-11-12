@@ -18,7 +18,7 @@ SCP_list<CJumpNode> Jump_nodes;
 /**
  * Constructor for CJumpNode class, default
  */
-CJumpNode::CJumpNode() : m_radius(0.0f), m_modelnum(-1), m_objnum(-1), m_flags(0)
+CJumpNode::CJumpNode()
 {	
     gr_init_alphacolor(&m_display_color, 0, 255, 0, 255);
 
@@ -33,7 +33,6 @@ CJumpNode::CJumpNode() : m_radius(0.0f), m_modelnum(-1), m_objnum(-1), m_flags(0
  * Constructor for CJumpNode class, with world position argument
  */
 CJumpNode::CJumpNode(vec3d* position)
-    : m_radius(0.0f), m_modelnum(-1), m_objnum(-1), m_flags(0)
 {	
 	Assert(position != NULL);
 	
