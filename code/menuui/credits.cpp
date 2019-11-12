@@ -101,6 +101,7 @@ const char *fs2_open_credit_text =
 	"liblua (" LUA_RELEASE ") - " LUA_COPYRIGHT "\n"
 	"zlib - Copyright (C) 1995-2005 Jean-loup Gailly and Mark Adler\n"
 	"FXAA - Copyright (c) 2010 NVIDIA Corporation. All rights reserved.\n"
+	"libpcp - Copyright (c) 2013 by Cisco Systems, Inc.\n"
 	"This software uses libraries from the FFmpeg project under the LGPLv2.1\n"
 	"\n"
 	"\n"

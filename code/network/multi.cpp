@@ -48,6 +48,7 @@
 #include "cfile/cfile.h"
 #include "network/multi_fstracker.h"
 #include "network/multi_sw.h"
+#include "network/multi_portfwd.h"
 #include "pilotfile/pilotfile.h"
 #include "debugconsole/console.h"
 #include "network/psnet2.h"
@@ -1311,6 +1312,11 @@ void multi_do_frame()
 	if(!(Game_mode & GM_STANDALONE_SERVER) && (Netgame.type_flags & NG_TYPE_DOGFIGHT) && MULTI_IN_MISSION){
 		hud_setup_escort_list(0);
 	}
+
+	// if master then maybe do port forwarding setup/refresh/wait
+	if ( (Net_player->flags & NETINFO_FLAG_AM_MASTER) && (Net_player->flags & NETINFO_FLAG_CONNECTED) ) {
+		multi_port_forward_do();
+	}
 }
 
 // -------------------------------------------------------------------------------------------------
@@ -1405,6 +1411,11 @@ void multi_pause_do_frame()
 	// if on the standalone, do any gui stuff
 	if (Game_mode & GM_STANDALONE_SERVER) {
 		std_do_gui_frame();
+	}
+
+	// if master then maybe do port forwarding setup/refresh/wait
+	if (Net_player->flags & NETINFO_FLAG_AM_MASTER) {
+		multi_port_forward_do();
 	}
 }
 
@@ -1544,6 +1555,9 @@ void standalone_main_init()
 	game_flush();
 	ship_init();
 
+	// setup port forwarding
+	multi_port_forward_init();
+
 	// login to game tracker
 	std_tracker_login();
 
@@ -1580,6 +1594,9 @@ void standalone_main_do()
 	// kind of a do-nothing spin state.
 	// The standalone will eventually move into the GS_STATE_MULTI_MISSION_SYNC state when a host connects and
 	// attempts to start a game
+
+   // process/renew port mapping
+   multi_port_forward_do();
 }
 
 // --------------------------------------------------------------------------------
@@ -1592,6 +1609,9 @@ void standalone_main_close()
 
 	// disconnect game from tracker
 	multi_fs_tracker_logout();
+
+	// remove port forwarding
+	multi_port_forward_close();
 }
 
 void multi_standalone_reset_all()

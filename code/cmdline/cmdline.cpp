@@ -203,6 +203,7 @@ Flag exe_params[] =
 	{ "-multilog",			"",											false,	0,					EASY_DEFAULT,		"Multiplayer",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-multilog", },
 	{ "-clientdamage",		"",											false,	0,					EASY_DEFAULT,		"Multiplayer",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-clientdamage", },
 	{ "-mpnoreturn",		"Disable flight deck option",				true,	0,					EASY_DEFAULT,		"Multiplayer",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-mpnoreturn", },
+	{ "-gateway_ip",		"Set gateway IP address",					false,	0,					EASY_DEFAULT,		"Multiplayer",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-gateway_ip", },
 
 	{ "-no_set_gamma",		"Disable setting of gamma",					true,	0,					EASY_DEFAULT,		"Troubleshoot",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-no_set_gamma", },
 	{ "-nomovies",			"Disable video playback",					true,	0,					EASY_DEFAULT,		"Troubleshoot",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-nomovies", },
@@ -406,11 +407,13 @@ cmdline_parm almission_arg("-almission", "Autoload multiplayer mission", AT_STRI
 cmdline_parm ingamejoin_arg("-ingame_join", NULL, AT_NONE);	// Cmdline_ingamejoin
 cmdline_parm mpnoreturn_arg("-mpnoreturn", NULL, AT_NONE);	// Cmdline_mpnoreturn  -- Removes 'Return to Flight Deck' in respawn dialog -C
 cmdline_parm objupd_arg("-cap_object_update", "Multiplayer object update cap (0-3)", AT_INT);
+cmdline_parm gateway_ip_arg("-gateway_ip", "Set gateway IP address", AT_STRING);
 
 char *Cmdline_almission = NULL;	//DTP for autoload multi mission.
 int Cmdline_ingamejoin = 0;
 int Cmdline_mpnoreturn = 0;
 int Cmdline_objupd = 3;		// client object updates on LAN by default
+char *Cmdline_gateway_ip = nullptr;
 
 // Launcher related options
 cmdline_parm portable_mode("-portable_mode", NULL, AT_NONE);
@@ -1630,6 +1633,11 @@ bool SetCmdlineParams()
 	// get the port number for games
 	if ( port_arg.found() ) {
 		Cmdline_network_port = port_arg.get_int();
+	}
+
+	// get IP address of gateway, for auto port forwarding
+	if ( gateway_ip_arg.found() ) {
+		Cmdline_gateway_ip = gateway_ip_arg.str();
 	}
 
 	// the connect argument specifies to join a game at this particular address
