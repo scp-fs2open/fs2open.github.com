@@ -1276,7 +1276,7 @@ void wl_load_icons(int weapon_class)
 
 	multi_send_anti_timeout_ping();
 
-	if ( (first_frame == -1 && icon->model_index == -1) || (Cmdline_weapon_choice_3d && !strlen(wip->anim_filename)) )
+	if ( (first_frame == -1 && icon->model_index == -1) || Cmdline_weapon_choice_3d )
 	{
 		if(strlen(wip->tech_model))
 		{
