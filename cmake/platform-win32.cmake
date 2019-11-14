@@ -8,7 +8,7 @@ SET(WIN32_LIBS
 	odbccp32
 	vfw32
 	winmm
-	wsock32
+	ws2_32
 	psapi
 )
 

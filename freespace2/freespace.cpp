@@ -11,9 +11,9 @@
 
 
 #ifdef _WIN32
+ #include <winsock2.h>	// required to prevent winsock 1.1 being used
  #include <direct.h>
  #include <io.h>
- #include <windows.h>
  #include <psapi.h>
 #ifndef _MINGW
  #include <crtdbg.h>

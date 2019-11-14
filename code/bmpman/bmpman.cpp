@@ -12,10 +12,6 @@
 
 #define BMPMAN_INTERNAL
 
-#ifdef _WIN32
-#include <windows.h>
-#endif
-
 #include "anim/animplay.h"
 #include "anim/packunpack.h"
 #include "bmpman/bm_internal.h"

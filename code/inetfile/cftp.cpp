@@ -13,10 +13,7 @@
 
 #include "globalincs/pstypes.h"
 
-#ifdef WIN32
-#include <windows.h>
-#include <process.h>
-#else
+#ifndef WIN32
 #include <sys/time.h>
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -361,15 +358,6 @@ uint CFtpGet::IssuePort()
 	}
 				
 	// Format the PORT command with the correct numbers.
-#ifdef WIN32
-	sprintf(szCommandString, "PORT %d,%d,%d,%d,%d,%d\r\n", 
-				listenaddr.sin_addr.S_un.S_un_b.s_b1, 
-				listenaddr.sin_addr.S_un.S_un_b.s_b2,
-				listenaddr.sin_addr.S_un.S_un_b.s_b3,
-				listenaddr.sin_addr.S_un.S_un_b.s_b4,
-				nLocalPort & 0xFF,	
-				nLocalPort >> 8);
-#else
 	sprintf(szCommandString, "PORT %d,%d,%d,%d,%d,%d\r\n", 
 			  (listenaddr.sin_addr.s_addr & 0xff000000) >> 24,
 			  (listenaddr.sin_addr.s_addr & 0x00ff0000) >> 16,
@@ -377,7 +365,6 @@ uint CFtpGet::IssuePort()
 			  (listenaddr.sin_addr.s_addr & 0x000000ff),
 				nLocalPort & 0xFF,	
 				nLocalPort >> 8);
-#endif
 
 	// Tell the server which port to use for data.
 	nReplyCode = SendFTPCommand(szCommandString);
@@ -575,11 +562,7 @@ void CFtpGet::FlushControlChannel()
 	FD_ZERO(&read_fds);
 	FD_SET(m_ControlSock, &read_fds);    
 
-#ifdef WIN32
-	while ( select(0, &read_fds, NULL, NULL, &timeout) )
-#else
-	while ( select(m_ControlSock+1, &read_fds, NULL, NULL, &timeout) )
-#endif
+	while ( select(m_ControlSock+1, &read_fds, nullptr, nullptr, &timeout) )
 	{
 		recv(m_ControlSock,flushbuff,1,0);
 

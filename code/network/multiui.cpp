@@ -11,7 +11,7 @@
 
 
 #ifdef _WIN32
-#include <winsock.h>	// for inet_addr()
+#include <winsock2.h>	// for inet_addr()
 #else
 #include <arpa/inet.h>
 #include <netinet/in.h>
