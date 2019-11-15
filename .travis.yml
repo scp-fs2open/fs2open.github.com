@@ -94,11 +94,13 @@ matrix:
           sources:
             - ubuntu-toolchain-r-test
             - llvm-toolchain-trusty-4.0
+            - llvm-toolchain-trusty-8.0
             - sourceline: 'ppa:beineri/opt-qt571-trusty'
           packages:
             - *global_deps
             - clang-4.0
             - clang-tidy-4.0
+            - clang-tidy-8.0
             - libc++-dev
       script:
         - ./ci/travis/script.sh
