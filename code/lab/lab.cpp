@@ -147,7 +147,7 @@ bool Lab_Envmap_override         = false;
 bool Lab_Normalmap_override      = false;
 bool Lab_Heightmap_override      = false;
 bool Lab_Miscmap_override        = false;
-bool Lab_emissive_light_override = !Cmdline_no_emissive;
+bool Lab_emissive_light_override = Cmdline_emissive;
 
 fix Lab_Save_Missiontime;
 
@@ -407,14 +407,14 @@ void labviewer_render_model(float frametime)
 		auto lab_render_light_save    = Lab_render_without_light;
 		auto lab_debris_override_save = Motion_debris_enabled;
 		auto lab_envmap_override_save = Envmap_override;
-		auto lab_emissive_light_save  = Cmdline_no_emissive;
+		auto lab_emissive_light_save  = Cmdline_emissive;
 
 		if (Lab_selected_mission == "None") {
 			Lab_render_without_light = true;
 			Motion_debris_enabled    = true;
 		}
 
-		Cmdline_no_emissive = !Lab_emissive_light_override;
+		Cmdline_emissive = !Lab_emissive_light_override;
 
 		object* obj = &Objects[Lab_selected_object];
 
@@ -466,7 +466,7 @@ void labviewer_render_model(float frametime)
 		Lab_render_without_light = lab_render_light_save;
 		Motion_debris_enabled    = lab_debris_override_save;
 		Envmap_override          = lab_envmap_override_save;
-		Cmdline_no_emissive      = lab_emissive_light_save;
+		Cmdline_emissive      = lab_emissive_light_save;
 
 		gr_reset_clip();
 		gr_set_color_fast(&HUD_color_debug);

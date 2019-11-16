@@ -163,7 +163,7 @@ Flag exe_params[] =
 	{ "-nomotiondebris",	"Disable motion debris",					true,	EASY_ALL_ON,		EASY_DEFAULT,		"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-nomotiondebris",},
 	{ "-noscalevid",		"Disable scale-to-window for movies",		true,	0,					EASY_DEFAULT,		"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-noscalevid", },
 	{ "-nonormal",			"Disable normal maps",						true,	EASY_DEFAULT_MEM,	EASY_MEM_ALL_ON,	"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-normal" },
-	{ "-no_emissive_light",	"Disable emissive light from ships",		true,	0,					EASY_DEFAULT,		"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-no_emissive_light" },
+	{ "-emissive_light",	"Enable emissive light from ships",			true,	0,					EASY_DEFAULT,		"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-no_emissive_light" },
 	{ "-noheight",			"Disable height/parallax maps",				true,	EASY_DEFAULT_MEM,	EASY_MEM_ALL_ON,	"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-height" },
 	{ "-3dshockwave",		"Enable 3D shockwaves",						true,	EASY_MEM_ALL_ON,	EASY_DEFAULT_MEM,	"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-3dshockwave" },
 	{ "-post_process",		"Enable post processing",					true,	EASY_ALL_ON,		EASY_DEFAULT,		"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-post_process" },
@@ -317,7 +317,7 @@ cmdline_parm glow_arg("-noglow", NULL, AT_NONE); 						// Cmdline_glow  -- use B
 cmdline_parm nomotiondebris_arg("-nomotiondebris", NULL, AT_NONE);		// Cmdline_nomotiondebris  -- Removes those ugly floating rocks -C
 cmdline_parm noscalevid_arg("-noscalevid", NULL, AT_NONE);				// Cmdline_noscalevid  -- disable video scaling that fits to window
 cmdline_parm spec_arg("-nospec", NULL, AT_NONE);			// Cmdline_spec  --
-cmdline_parm noemissive_arg("-no_emissive_light", "Disable emissive light from ships", AT_NONE);		// Cmdline_no_emissive  -- don't use emissive light in OGL
+cmdline_parm emissive_arg("-emissive_light", "Enable emissive light from ships", AT_NONE);		// Cmdline_no_emissive  -- don't use emissive light in OGL
 cmdline_parm normal_arg("-nonormal", NULL, AT_NONE);						// Cmdline_normal  -- disable normal mapping
 cmdline_parm height_arg("-noheight", NULL, AT_NONE);						// Cmdline_height  -- enable support for parallax mapping
 cmdline_parm enable_3d_shockwave_arg("-3dshockwave", NULL, AT_NONE);
@@ -344,7 +344,7 @@ int Cmdline_mipmap = 0;
 int Cmdline_glow = 1;
 int Cmdline_noscalevid = 0;
 int Cmdline_spec = 1;
-int Cmdline_no_emissive = 0;
+int Cmdline_emissive = 0;
 int Cmdline_normal = 1;
 int Cmdline_height = 1;
 int Cmdline_enable_3d_shockwave = 0;
@@ -527,6 +527,7 @@ cmdline_parm deprecated_brieflighting_arg("-brief_lighting", "Deprecated", AT_NO
 cmdline_parm deprecated_sndpreload_arg("-snd_preload", "Deprecated", AT_NONE);
 cmdline_parm deprecated_missile_lighting_arg("-missile_lighting", "Deprecated", AT_NONE);
 cmdline_parm deprecated_cache_bitmaps_arg("-cache_bitmaps", "Deprecated", AT_NONE);
+cmdline_parm deprecated_no_emissive_arg("-no_emissive_light", "Deprecated", AT_NONE);
 
 int Cmdline_deprecated_spec = 0;
 int Cmdline_deprecated_glow = 0;
@@ -1987,8 +1988,8 @@ bool SetCmdlineParams()
 		Cmdline_no_fbo = 1;
 	}
 
-	if ( noemissive_arg.found() ) {
-		Cmdline_no_emissive = 1;
+	if ( emissive_arg.found() ) {
+		Cmdline_emissive = 1;
 	}
 
 	if ( ogl_spec_arg.found() ) {
@@ -2183,6 +2184,10 @@ bool SetCmdlineParams()
 		Cmdline_deprecated_cache_bitmaps = true;
 	}
 
+	if (deprecated_no_emissive_arg.found()) {
+		Cmdline_emissive = 1;
+	}
+ 
 	return true; 
 }
 
