@@ -11,6 +11,7 @@ misc-*,\
 -misc-macro-parentheses,\
 -misc-misplaced-widening-cast,\
 -misc-static-assert,\
+-misc-unused-parameters,\
 -modernize-make-unique,\
 "
 WarningsAsErrors: ''
