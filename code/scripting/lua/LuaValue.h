@@ -170,7 +170,7 @@ class LuaValue {
 
 	LuaReference _reference;
 
-	ValueType _luaType;
+	ValueType _luaType = ValueType::NONE;
 };
 
 /**

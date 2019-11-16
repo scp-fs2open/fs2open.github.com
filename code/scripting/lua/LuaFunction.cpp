@@ -71,6 +71,13 @@ LuaValueList LuaFunction::operator()(const LuaValueList& args) {
 }
 
 void LuaFunction::setReference(const LuaReference& ref) {
+	if (ref == nullptr)
+	{
+		// If not a valid reference then let the base class handle everything
+		LuaValue::setReference(ref);
+		return;
+	}
+
 	ref->pushValue();
 
 	lua_State* L = ref->getState();

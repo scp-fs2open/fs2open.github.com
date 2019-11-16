@@ -59,8 +59,7 @@ LuaValue& LuaValue::operator=(const LuaValue& other) {
 	return *this;
 }
 
-LuaValue::~LuaValue() {
-}
+LuaValue::~LuaValue() = default;
 
 void LuaValue::setReference(const LuaReference& ref) {
 	this->_reference = ref;
