@@ -1,4 +1,4 @@
-#!/usr/bin/env sh
+#!/usr/bin/env bash
 
 set -ex
 
@@ -11,7 +11,7 @@ if [ "$TRAVIS_OS_NAME" = "linux" ]; then
     	wget -O /tmp/cmake.tar.gz --no-check-certificate https://cmake.org/files/v3.8/cmake-3.8.2-Linux-x86_64.tar.gz
     	tar -xzf /tmp/cmake.tar.gz -C $HOME/cmake-3.8/ --strip-components=1
     fi
-	export PATH=$HOME/cmake-3.8/bin:$PATH
+    export PATH=$HOME/cmake-3.8/bin:$PATH
     
     cd $HOME
     
@@ -21,6 +21,11 @@ if [ "$TRAVIS_OS_NAME" = "linux" ]; then
 
         wget -O linuxdeployqt -c "https://github.com/probonopd/linuxdeployqt/releases/download/continuous/linuxdeployqt-continuous-x86_64.AppImage" # (64-bit)
         chmod a+x ./linuxdeployqt
+    fi
+
+    if [[ "$CC" =~ ^clang.*$ ]]; then
+      # Fix a header bug present in ubuntu...
+      sudo ln -s /usr/include/libcxxabi/__cxxabi_config.h /usr/include/c++/v1/__cxxabi_config.h
     fi
 elif [ "$TRAVIS_OS_NAME" = "osx" ]; then
     gem install xcpretty
