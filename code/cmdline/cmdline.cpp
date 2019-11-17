@@ -349,7 +349,7 @@ int Cmdline_normal = 1;
 int Cmdline_height = 1;
 int Cmdline_enable_3d_shockwave = 0;
 int Cmdline_softparticles = 0;
-int Cmdline_bloom_intensity = 75;
+int Cmdline_bloom_intensity = 25;
 extern bool ls_force_off;
 int Cmdline_no_deferred_lighting = 0;
 int Cmdline_aniso_level = 0;
