@@ -13,7 +13,7 @@ misc-*,\
 -misc-misplaced-widening-cast,\
 -misc-static-assert,\
 -misc-unused-parameters,\
--misc-non-private-member-variables-in-classes,
+-misc-non-private-member-variables-in-classes,\
 "
 WarningsAsErrors: ''
 HeaderFilterRegex: 'code/.*$|freespace2/.*$|qtfred/.*$|test/src/.*$|build/.*$'
