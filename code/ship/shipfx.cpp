@@ -556,6 +556,7 @@ void shipfx_warpin_start( object *objp )
 		return;
 	}
 
+	Assertion(shipp->warpin_effect != nullptr, "shipfx_warpin_start() was fed a ship with an uninitialized warpin_effect.");
 	shipp->warpin_effect->warpStart();
 
 	Script_system.RunCondition(CHA_WARPIN, objp);
@@ -707,6 +708,7 @@ void shipfx_warpout_start( object *objp )
 		return;
 	}
 
+	Assertion(shipp->warpout_effect != nullptr, "shipfx_warpout_start() was fed a ship with an uninitialized warpout_effect.");
 	shipp->warpout_effect->warpStart();
 
 	Script_system.RunCondition(CHA_WARPOUT, objp);
