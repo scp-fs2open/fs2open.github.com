@@ -358,13 +358,13 @@ uint CFtpGet::IssuePort()
 	}
 				
 	// Format the PORT command with the correct numbers.
-	sprintf(szCommandString, "PORT %d,%d,%d,%d,%d,%d\r\n", 
-			  (listenaddr.sin_addr.s_addr & 0xff000000) >> 24,
-			  (listenaddr.sin_addr.s_addr & 0x00ff0000) >> 16,
-			  (listenaddr.sin_addr.s_addr & 0x0000ff00) >>  8,
-			  (listenaddr.sin_addr.s_addr & 0x000000ff),
-				nLocalPort & 0xFF,	
-				nLocalPort >> 8);
+	sprintf(szCommandString, "PORT %d,%d,%d,%d,%d,%d\r\n",
+				static_cast<int>((listenaddr.sin_addr.s_addr >> 0)  & 0xFF),
+				static_cast<int>((listenaddr.sin_addr.s_addr >> 8)  & 0xFF),
+				static_cast<int>((listenaddr.sin_addr.s_addr >> 16) & 0xFF),
+				static_cast<int>((listenaddr.sin_addr.s_addr >> 24) & 0xFF),
+				nLocalPort >> 8,
+				nLocalPort & 0xFF);
 
 	// Tell the server which port to use for data.
 	nReplyCode = SendFTPCommand(szCommandString);
