@@ -378,7 +378,7 @@ void PSNET_TOP_LAYER_PROCESS()
 		timeout.tv_sec = 0;
 		timeout.tv_usec = 0;
 
-		if ( select( Unreliable_socket + 1, &rfds, nullptr, nullptr, &timeout) == SOCKET_ERROR ) {
+		if ( select( static_cast<int>(Unreliable_socket + 1), &rfds, nullptr, nullptr, &timeout) == SOCKET_ERROR ) {
 			ml_printf("Error %d doing a socket select on read", WSAGetLastError());
 			break;
 		}
@@ -818,7 +818,7 @@ int psnet_send( net_addr * who_to, void * data, int len, int np_index )
 	timeout.tv_sec = 0;
 	timeout.tv_usec = 0;
 
-	if ( SELECT( send_sock+1, nullptr, &wfds, nullptr, &timeout, PSNET_TYPE_UNRELIABLE) == SOCKET_ERROR ) {
+	if ( SELECT( static_cast<int>(send_sock+1), nullptr, &wfds, nullptr, &timeout, PSNET_TYPE_UNRELIABLE) == SOCKET_ERROR ) {
 		ml_printf("Error on blocking select for write %d", WSAGetLastError() );
 		return 0;
 	}
@@ -1222,7 +1222,7 @@ void psnet_rel_work()
 		if(Tcp_active && (Socket_type == NET_TCP)){
 			FD_ZERO(&read_fds);
 			FD_SET(Unreliable_socket, &read_fds);    
-			udp_has_data = SELECT(Unreliable_socket+1, &read_fds, nullptr, nullptr, &timeout, PSNET_TYPE_RELIABLE);
+			udp_has_data = SELECT(static_cast<int>(Unreliable_socket+1), &read_fds, nullptr, nullptr, &timeout, PSNET_TYPE_RELIABLE);
 		}
 		bytesin = 0;
 		addrlen = sizeof(SOCKADDR);
@@ -1595,7 +1595,7 @@ void psnet_rel_connect_to_server(PSNET_SOCKET *socket, net_addr *server_addr)
 	if(Tcp_active && (Socket_type == NET_TCP)){
 		FD_ZERO(&read_fds);
 		FD_SET(Unreliable_socket, &read_fds);    
-		while(SELECT(Unreliable_socket+1, &read_fds, nullptr, nullptr, &timeout, PSNET_TYPE_RELIABLE)){
+		while(SELECT(static_cast<int>(Unreliable_socket+1), &read_fds, nullptr, nullptr, &timeout, PSNET_TYPE_RELIABLE)){
 			addrlen = sizeof(SOCKADDR);
 			bytesin = RECVFROM(Unreliable_socket, (char *)&ack_header,sizeof(reliable_header),0,(SOCKADDR *)&rcv_addr,&addrlen, PSNET_TYPE_RELIABLE);
 			if(bytesin==-1){
@@ -1644,7 +1644,7 @@ void psnet_rel_connect_to_server(PSNET_SOCKET *socket, net_addr *server_addr)
 
 		FD_ZERO(&read_fds);
 		FD_SET(typeless_sock, &read_fds);    		
-		if(SELECT(typeless_sock+1, &read_fds, nullptr, nullptr, &timeout, PSNET_TYPE_RELIABLE)){
+		if(SELECT(static_cast<int>(typeless_sock+1), &read_fds, nullptr, nullptr, &timeout, PSNET_TYPE_RELIABLE)){
 			ml_string("selected() in psnet_rel_connect_to_server()");
 
 			addrlen = sizeof(SOCKADDR);

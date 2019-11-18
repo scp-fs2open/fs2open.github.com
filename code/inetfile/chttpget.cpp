@@ -393,7 +393,7 @@ int ChttpGet::ConnectSocket()
 			FD_ZERO(&wfds);
 			FD_SET( m_DataSock, &wfds );
 
-			if ( select(m_DataSock+1, nullptr, &wfds, nullptr, &timeout) )
+			if ( select(static_cast<int>(m_DataSock+1), nullptr, &wfds, nullptr, &timeout) )
 			{
 				serr = 0;
 				break;
@@ -518,7 +518,7 @@ uint ChttpGet::ReadDataChannel()
 		if ( (m_iBytesTotal) && (m_iBytesIn == m_iBytesTotal) )
 			break;
 
-		select(m_DataSock+1, &wfds, nullptr, nullptr, &timeout);
+		select(static_cast<int>(m_DataSock+1), &wfds, nullptr, nullptr, &timeout);
 	
     	if (m_Aborting) {
 			fclose(LOCALFILE);

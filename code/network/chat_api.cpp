@@ -475,7 +475,7 @@ char *ChatGetString(void)
 	FD_ZERO(&read_fds);
 	FD_SET(Chatsock,&read_fds);    
 	//Writable -- that means it's connected
-	while ( select(Chatsock+1, &read_fds, nullptr, nullptr, &timeout) )
+	while ( select(static_cast<int>(Chatsock+1), &read_fds, nullptr, nullptr, &timeout) )
 	{
 		bytesread = recv(Chatsock,ch,1,0);
 		if(bytesread)
