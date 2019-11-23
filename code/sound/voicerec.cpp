@@ -27,6 +27,7 @@
 #include <cstdio>
 #pragma warning(pop)
 
+#define WIN32_LEAN_AND_MEAN
 
 #include <sphelper.h>                           // Contains definitions of SAPI functions
 #include <stdio.h>

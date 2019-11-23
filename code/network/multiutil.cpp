@@ -11,7 +11,7 @@
 
 
 #if defined _WIN32
-#include <winsock.h>
+#include <winsock2.h>
 #elif defined SCP_UNIX
 #include <sys/types.h>
 #include <sys/socket.h>

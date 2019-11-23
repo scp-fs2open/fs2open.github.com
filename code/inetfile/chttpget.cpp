@@ -12,10 +12,7 @@
 
 #include "globalincs/pstypes.h"
 
-#ifdef _WIN32
-#include <windows.h>
-#include <process.h>
-#else
+#ifndef _WIN32
 #include <sys/time.h>
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -396,11 +393,7 @@ int ChttpGet::ConnectSocket()
 			FD_ZERO(&wfds);
 			FD_SET( m_DataSock, &wfds );
 
-#ifdef WIN32
-			if ( select(0, NULL, &wfds, NULL, &timeout) )
-#else
-			if ( select(m_DataSock+1, NULL, &wfds, NULL, &timeout) )
-#endif
+			if ( select(static_cast<int>(m_DataSock+1), nullptr, &wfds, nullptr, &timeout) )
 			{
 				serr = 0;
 				break;
@@ -525,11 +518,7 @@ uint ChttpGet::ReadDataChannel()
 		if ( (m_iBytesTotal) && (m_iBytesIn == m_iBytesTotal) )
 			break;
 
-#ifdef WIN32
-		select(0, &wfds, NULL, NULL, &timeout);
-#else
-		select(m_DataSock+1, &wfds, NULL, NULL, &timeout);
-#endif
+		select(static_cast<int>(m_DataSock+1), &wfds, nullptr, nullptr, &timeout);
 	
     	if (m_Aborting) {
 			fclose(LOCALFILE);
