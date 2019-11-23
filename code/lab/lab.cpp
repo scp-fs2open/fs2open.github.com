@@ -414,7 +414,7 @@ void labviewer_render_model(float frametime)
 			Motion_debris_enabled    = true;
 		}
 
-		Cmdline_emissive = !Lab_emissive_light_override;
+		Cmdline_emissive = Lab_emissive_light_override;
 
 		object* obj = &Objects[Lab_selected_object];
 
