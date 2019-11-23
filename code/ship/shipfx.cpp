@@ -4232,6 +4232,10 @@ int WE_Hyperspace::warpStart()
 	}
 
 	pos_final = objp->pos;
+	
+	// Cyborg17 - After setting pos_final, we should move the ship to the actual starting position.
+	vm_vec_scale_add(&objp->pos, &pos_final, &objp->orient.vec.fvec, -scale_factor);
+
 	if (params->snd_start.isValid())
 	{
 		snd_start_gs = gamesnd_get_game_sound(params->snd_start);
