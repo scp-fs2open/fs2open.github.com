@@ -1611,7 +1611,9 @@ void game_process_cheats(int k)
 				ptr->turret_next_fire_stamp = timestamp((int) frand_range(50.0f, 4000.0f));
 			}
 		}
-				
+
+		// Cyborg17 to prevent a nullptr...
+		ship_set_warp_effects(&Objects[objnum]);
 		// warpin
 		shipfx_warpin_start(&Objects[objnum]);
 	}
