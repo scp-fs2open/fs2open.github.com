@@ -2679,6 +2679,35 @@ void load_gauge_radar_std(gauge_settings* settings)
 		strcpy_s(fname, "2_radar1");
 	}
 
+	// Ngon radar -- Cyborg17 - to fit this into gauge_load_common, we have to have this right before origin and Offset
+	int num_sides = 0;
+	float offset  = 0.0f;
+
+	if (optional_string("Ngon Sides:")) {
+		stuff_int(&num_sides);
+		if ((num_sides < RADAR_NGON_MIN_SIDES)) {
+			Warning(LOCATION,
+			        "Invalid value for 'Ngon Sides'! Value must be greater than %i.\n Using standard radar instead.\n",
+			        RADAR_NGON_MIN_SIDES);
+			num_sides = 0;
+		}
+
+		if (optional_string("Ngon Offset:")) {
+			stuff_float(&offset);
+		}
+	}
+
+	//=======================================================================================================
+	// Cyborg17 - not using auto here is a huge pain to get exactly right and to read. If we put this in a
+	// normal if block, either auto will break or hud_gauge will go out of scope before the last block below.
+	// The ternery operator lets us circumvent this problem by allowing us to use auto, while also loading
+	// the radar, creating the unique_ptr, and staying in scope.
+
+	// did we have a normal radar? If so, load the regular radar.
+	auto hud_gauge = (num_sides == 0)
+	                     ? gauge_load_common<HudGaugeRadarStd>(settings)
+	                     // if not *construct* and then load the ngon radar
+	                     : gauge_load_common<HudGaugeRadarNgon>(settings, new HudGaugeRadarNgon(num_sides, offset));
 
 	if(optional_string("Filename:")) {
 		stuff_string(fname, F_NAME, MAX_FILENAME_LEN);
@@ -2698,32 +2727,6 @@ void load_gauge_radar_std(gauge_settings* settings)
 	if(optional_string("Short Distance Offsets:")) {
 		stuff_int_list(Radar_dist_offsets[0], 2);
 	}
-	// Ngon radar
-	int num_sides = 0;
-	float offset = 0.0f;
-
-	if (optional_string("Ngon Sides:")) {
-		stuff_int(&num_sides);
-		if ((num_sides < RADAR_NGON_MIN_SIDES)) {
-			Warning(LOCATION, "Invalid value for 'Ngon Sides'! Value must be greater than %i.\n Using standard radar instead.\n", RADAR_NGON_MIN_SIDES);
-			num_sides = 0;
-		}
-
-		if (optional_string("Ngon Offset:")) {
-			stuff_float(&offset);
-		}
-	}
-
-	//=======================================================================================================
-	// Cyborg17 - not using auto here is a huge pain to get exactly right and to read. If we put this in a 
-	// normal if block, either auto will break or hud_gauge will go out of scope before the last block below.
-	// The ternery operator lets us circumvent this problem by allowing us to use auto, while also loading 
-	// the radar and creating the unique_ptr.
-
-	// did we have a normal radar? If so, load the regular radar.
-	auto hud_gauge = (num_sides == 0) ? gauge_load_common<HudGaugeRadarStd>(settings)
-						 // if not *construct* and then load the ngon radar
-	                     : gauge_load_common<HudGaugeRadarNgon>(settings, new HudGaugeRadarNgon(num_sides, offset));
 	
 	// Only load this if the user hasn't specified a preference
 	if (Cmdline_orb_radar == 0) {
