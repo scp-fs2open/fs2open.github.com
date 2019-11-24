@@ -12,6 +12,7 @@ Find us at:
  - Our [website](http://www.hard-light.net/) and [forums](http://www.hard-light.net/forums/)
  - [Discord](https://discord.gg/YNVP3WR)
  - [Facebook](https://www.facebook.com/groups/Hardlightproductions/)
+ - [Youtube](https://www.youtube.com/channel/UCxKkd609hDtY6yNetR1iT4w)
  - [Reddit](https://www.reddit.com/r/freespace/)
  - [Twitter](https://twitter.com/hardlightpro)
  - [IRC](irc://irc.esper.net/hard-light)
