@@ -89,12 +89,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Performance Improvements
 
 ## [3.6.14] - 2012-10-23 - [Release thread](https://www.hard-light.net/forums/index.php?topic=82648.0)
-### Changed
-- Major HUD gauges overhaul
-- Split the Locked flag so that you can lock Ships or Weapons on the game loadout screen independently
-- Mixed ammo for primary and secondary weapons - [`$Substitute`](http://www.hard-light.net/wiki/index.php/Weapons.tbl#.24Substitute:) - Allows you to have a weapon that fires other weapon ammo in a specific pattern (say a Gatling gun with tracers).
-- [`show-subtitle`](https://wiki.hard-light.net/index.php/SCP_SEXPs#show-subtitle) SEXP supports custom fonts
-- The active support ship limit per side is now dynamic.  See [`set-support-ship`](https://wiki.hard-light.net/index.php/SCP_SEXPs#set-support-ship) for more info.
 ### Added
 - Objecttype tables support for deciding how enemies respond to ship classes when disabled
 - Allow modders to set a [mood](http://www.hard-light.net/forums/index.php?topic=81991.msg1639770#msg1639770) for builtin messages and then switch the mood for the mission on the fly using a SEXP
@@ -114,6 +108,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   - `get-object-speed-x`
   - `get-object-speed-y`
   - `get-object-speed-z`
+### Changed
+- Major HUD gauges overhaul
+- Split the Locked flag so that you can lock Ships or Weapons on the game loadout screen independently
+- Mixed ammo for primary and secondary weapons - [`$Substitute`](http://www.hard-light.net/wiki/index.php/Weapons.tbl#.24Substitute:) - Allows you to have a weapon that fires other weapon ammo in a specific pattern (say a Gatling gun with tracers).
+- [`show-subtitle`](https://wiki.hard-light.net/index.php/SCP_SEXPs#show-subtitle) SEXP supports custom fonts
+- The active support ship limit per side is now dynamic.  See [`set-support-ship`](https://wiki.hard-light.net/index.php/SCP_SEXPs#set-support-ship) for more info.
 ### Fixed
 - Various multiplayer SEXP fixes
 - `rotating-subsys-set-time` now accelerates properly
