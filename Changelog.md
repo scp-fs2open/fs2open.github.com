@@ -43,7 +43,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Changed
 * Major graphics update including deferred lighting and shadows
 * Enhanced sound (up to 128 channels)
-### Fixes
+### Fixed
 * "Tons" of bugfixes
 
 ## [3.7.2] - 2015-04-23
@@ -54,3 +54,51 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Changed
 * Unstretched interface screens
 * Automatically non stretched HUD gauges and simpler modder options for placing HUD gauges
+
+## [3.7.0] - 2013-08-31
+### Major Change
+* New Flexible Pilot Save File Code (combines single/multi pilots & allows safe switching between unfinished campaigns)
+### Changed
+* Raised the per-model debris limit to 48 (previously 32).
+* Increased the per-frame debris limit to 96 (previously 64)
+
+## [3.6.18] - 2013-03-01
+### Fixed
+* Critical damage bug which caused heavy balance issues in the game
+
+## [3.6.16] - 2013-01-31
+### Added
+* Diaspora TC support
+### Changed
+* Performance Improvements
+
+## [3.6.14] - 2012-10-23
+### Changed
+* Major HUD gauges overhaul
+* Split the Locked flag so that you can lock Ships or Weapons on the game loadout screen independently
+* Mixed ammo for primary and secondary weapons - [`$Substitute`](http://www.hard-light.net/wiki/index.php/Weapons.tbl#.24Substitute:) - Allows you to have a weapon that fires other weapon ammo in a specific pattern (say a Gatling gun with tracers).
+* [`show-subtitle`](https://wiki.hard-light.net/index.php/SCP_SEXPs#show-subtitle) SEXP supports custom fonts
+* The active support ship limit per side is now dynamic.  See [`set-support-ship`](https://wiki.hard-light.net/index.php/SCP_SEXPs#set-support-ship) for more info.
+### Added
+* Objecttype tables support for deciding how enemies respond to ship classes when disabled
+* Allow modders to set a [mood](http://www.hard-light.net/forums/index.php?topic=81991.msg1639770#msg1639770) for builtin messages and then switch the mood for the mission on the fly using a SEXP
+* Allow modders to set the chance of builtin messages being sent, how many will be sent per mission and how long is the delay between two messages
+* Allow campaigns to be hidden in the campaign and tech rooms ([Game settings.tbl](https://wiki.hard-light.net/index.php/Game_settings.tbl#.23Ignored_Campaign_File_Names))
+* Allow mods to set a default campaign ([Game settings.tbl](https://wiki.hard-light.net/index.php/Game_settings.tbl#.24Default_Campaign_File_Name:))
+* New SEXPs
+  * `set-player-orders`
+  * `is-event\goal-true\false-msecs-delay`
+  * `get\set-num-countermeasures`
+  * `directive-value`
+  * `invalidate-all-arguments`
+  * `validate-all-arguments`
+  * `has-primary-weapon`
+  * `has-secondary-weapon`
+  * [`hud-display-gauge`](http://www.hard-light.net/forums/index.php?topic=68837.msg1361711#msg1361711)
+  * `get-object-speed-x`
+  * `get-object-speed-y`
+  * `get-object-speed-z`
+### Fixed
+* Various multiplayer SEXP fixes
+* `rotating-subsys-set-time` now accelerates properly
+* [Fixed a whole heap of memory, logic and coding errors](http://www.hard-light.net/forums/index.php?topic=78044.0) -- using PVS-Studio: C/C++ source code analysis and checking tool
