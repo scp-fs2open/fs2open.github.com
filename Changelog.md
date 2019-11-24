@@ -119,6 +119,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - `rotating-subsys-set-time` now accelerates properly
 - [Fixed a whole heap of memory, logic and coding errors](http://www.hard-light.net/forums/index.php?topic=78044.0) -- using PVS-Studio: C/C++ source code analysis and checking tool
 
+----
+
 ## [Older Changes] - Unformatted
 ```
 ChangeLog for fs2_open.  All times are UTC.  
