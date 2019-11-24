@@ -4,14 +4,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [19.0.0-RC1] - 2019-08-29 [Thread](https://www.hard-light.net/forums/index.php?topic=95868.0)
+### Meta
+- With this release we decided to drop the "`3.Major_revision.Minor_revision`" versioning scheme in favor of a year based scheme since the Major and Minor versions did not have much meaning anymore. Instead the scheme will now be "`<year>.<number that is incremented every release>.0`". The last 0 is still there because some of our systems expect that. It will be gone at some point.
 ### Added
 - Full Unicode text support: You can now use non-ASCII characters without having to worry about special fonts and special characters. This is an opt-in mod flag.
 - Translation features for making it easier to only distribute one version of a mod which includes all languages.
 - OpenAL Soft is included by default in binary distributions of FSO now.
 - System for dynamically adding new SEXPs. With this a Lua script can expose functionality to the mission which can be used exactly the same as a standard SEXP with all the usual editing features in FRED.   
 - Support for displaying decals on the surface of an object.
-- Integrated support for the Discord Rich Presence API
-- New markup based user interface system using libRocket.
+- Integrated support for the [Discord Rich Presence API](https://discordapp.com/rich-presence). 
+- New markup based user interface system using [libRocket](https://github.com/libRocket/libRocket).
 ### Changed
 - Exposed the movie player to the scripting API for advanced display features
 - Various OpenGL optimizations for better graphics performance:
