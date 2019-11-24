@@ -33,7 +33,8 @@ The new open source game engine has several distingushing features including:
  - Hardware transform, clipping, and lighting
 
 ## The FreeSpace Upgrade Project
-While the SCP improve the code of the game engine to enable new and exciting features, the FreeSpace Upgrade Project (FSU) creates material that takes advantage of the improved game engine.  
+While the SCP improves the code of the game engine to enable new and exciting features, the FreeSpace Upgrade Project (FSU) creates material that takes advantage of the improved game engine.  
 The FSU improves the ships, effects, and background elements of FreeSpace 2. Every now and then these improvements are released as a pack called MediaVPs. These assorted improvements enhance the graphics of the game.  
+Watch this [comparison video](https://www.youtube.com/watch?v=199DV_UY9Hc) to see just a sample of how much more beautiful FSU makes the game.
 
 ^(Much of this content was pulled from existing sources, such as InsaneBaron's "What Is Hard Light Productions" [thread](https://www.hard-light.net/forums/index.php?topic=86650.0), the Wiki's [Getting Started article](https://wiki.hard-light.net/index.php/Getting_started) and more.) 
