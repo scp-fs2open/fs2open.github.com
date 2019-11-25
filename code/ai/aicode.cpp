@@ -4595,9 +4595,9 @@ void ai_waypoints()
 				// adds scripting hook for 'On Waypoints Done' --wookieejedi
 				Script_system.SetHookObject("Ship", &Objects[Ships[Pl_objp->instance].objnum]);
 				Script_system.SetHookVar("Wing", 'o', scripting::api::l_Wing.Set(Ships[Pl_objp->instance].wingnum));
-				Script_system.SetHookVar("Waypointpath", 'o', scripting::api::l_WaypointList.Set(scripting::api::waypointlist_h(aip->wp_list)));
+				Script_system.SetHookVar("Waypointlist", 'o', scripting::api::l_WaypointList.Set(scripting::api::waypointlist_h(aip->wp_list)));
 				Script_system.RunCondition(CHA_ONWAYPOINTSDONE);
-				Script_system.RemHookVars(3, "Ship", "Wing", "Waypointpath");
+				Script_system.RemHookVars(3, "Ship", "Wing", "Waypointlist");
 			}
 		}
 	}
