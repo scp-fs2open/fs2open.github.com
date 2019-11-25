@@ -58,6 +58,7 @@
 #include "physics/physics.h"
 #include "playerman/player.h"
 #include "render/3d.h"
+#include "scripting/api/objs/waypoint.h"
 #include "scripting/api/objs/wing.h"
 #include "scripting/scripting.h"
 #include "ship/afterburner.h"
@@ -4594,8 +4595,9 @@ void ai_waypoints()
 				// adds scripting hook for 'On Waypoints Done' --wookieejedi
 				Script_system.SetHookObject("Ship", &Objects[Ships[Pl_objp->instance].objnum]);
 				Script_system.SetHookVar("Wing", 'o', scripting::api::l_Wing.Set(Ships[Pl_objp->instance].wingnum));
+				Script_system.SetHookVar("Waypointlist", 'o', scripting::api::l_WaypointList.Set(scripting::api::waypointlist_h(aip->wp_list)));
 				Script_system.RunCondition(CHA_ONWAYPOINTSDONE);
-				Script_system.RemHookVars(2, "Ship", "Wing");
+				Script_system.RemHookVars(3, "Ship", "Wing", "Waypointlist");
 			}
 		}
 	}
