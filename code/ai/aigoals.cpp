@@ -21,6 +21,7 @@
 #include "object/waypoint.h"
 #include "parse/sexp.h"
 #include "playerman/player.h"
+#include "scripting/scripting.h"
 #include "ship/ship.h"
 #include "weapon/weapon.h"
 
@@ -268,6 +269,12 @@ void ai_clear_ship_goals( ai_info *aip )
 	{
 		ai_do_default_behavior( &Objects[Ships[aip->shipnum].objnum] );
 	}
+
+	// add scripting hook for 'On Goals Cleared' --wookieejedi
+	Script_system.SetHookObject("Ship", &Objects[Ships[aip->shipnum].objnum]);
+	Script_system.RunCondition(CHA_ONGOALSCLEARED);
+	Script_system.RemHookVars(1, "Ship");
+
 }
 
 void ai_clear_wing_goals( int wingnum )
