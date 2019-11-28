@@ -19,6 +19,7 @@
 #include "graphics/light.h"
 #include "graphics/uniforms.h"
 #include "io/timer.h"
+#include "jumpnode/jumpnode.h"
 #include "math/staticrand.h"
 #include "mod_table/mod_table.h"
 #include "model/modelrender.h"
@@ -2628,12 +2629,17 @@ void model_render_queue(model_render_params* interp, model_draw_list* scene, int
 			pmi = model_get_instance(shipp->model_instance_num);
 		}
 		else if (pm->flags & PM_FLAG_HAS_INTRINSIC_ROTATE) {
-			if (objp->type == OBJ_ASTEROID)
+			if (objp->type == OBJ_ASTEROID) {
 				pmi = model_get_instance(Asteroids[objp->instance].model_instance_num);
-			else if (objp->type == OBJ_WEAPON)
+			} else if (objp->type == OBJ_WEAPON) {
 				pmi = model_get_instance(Weapons[objp->instance].model_instance_num);
-			else
+			} else if (objp->type == OBJ_JUMP_NODE) {
+				CJumpNode* jnp = jumpnode_get_by_objnum(objnum);
+				Assertion(jnp != nullptr, "Could not find jump node with object number %d!", objnum);
+				pmi = model_get_instance(jnp->GetPolymodelInstanceNum());
+			} else {			
 				Warning(LOCATION, "Unsupported object type %d for rendering intrinsic-rotate submodels!", objp->type);
+			}
 		}
 	}
 

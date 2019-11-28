@@ -32,12 +32,13 @@ class CJumpNode
 {
 private:
     char m_name[NAME_LENGTH];
-    float m_radius;
+    float m_radius {0.0f};
 
-    int	m_modelnum;
-    int	m_objnum;						// objnum of this jump node
+    int	m_modelnum {-1};
+	int m_objnum {-1};                 // objnum of this jump node
+	int m_polymodel_instance_num {-1}; // polymodel instance number, used for rotations 
 
-    int m_flags;
+    int m_flags {0};
     color m_display_color;			// Color node will be shown in (Default:0/255/0/255)
 	vec3d m_pos;
 
@@ -58,6 +59,7 @@ public:
     char *GetName();
     int GetModelNumber();
     int GetSCPObjectNumber();
+	int GetPolymodelInstanceNum(); 
     object *GetSCPObject();
     color GetColor();
     vec3d *GetPosition();
@@ -83,6 +85,7 @@ extern SCP_list<CJumpNode> Jump_nodes;
 
 //-----Functions-----
 CJumpNode *jumpnode_get_by_name(const char *name);
+CJumpNode *jumpnode_get_by_objnum(int objnum);
 CJumpNode *jumpnode_get_which_in(object *objp);
 
 void jumpnode_render_all();

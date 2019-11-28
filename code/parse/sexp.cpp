@@ -21274,15 +21274,18 @@ void sexp_subsys_set_random(int node)
 			// get non excluded subsystem
 			subsys = ship_get_indexed_subsys(shipp, idx, NULL);
 			if (subsys == NULL) {
-				nprintf(("Warning", "Nonexistent subsystem for index %d on ship %s for sabotage subsystem\n", idx, shipp->ship_name));
+				nprintf(("Warning", "Nonexistent subsystem for index %d on ship %s for subsys set random\n", idx, shipp->ship_name));
 				continue;
 			}
 
 			// randomize its hit points
 			rand = rand_internal(low, high);
-			subsys->current_hits = 0.01f * rand * subsys->max_hits;
+			set_subsys_strength_and_maybe_ancestors(shipp, subsys, nullptr, &rand, nullptr, nullptr, true, true);
 		}
 	}
+
+	// needed to keep aggregate info correct
+	ship_recalc_subsys_strength(shipp);
 }
 
 void sexp_supernova_start(int node)

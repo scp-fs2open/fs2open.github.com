@@ -23,7 +23,7 @@
 #include "network/multiutil.h"
 #include "network/multi_pmsg.h"
 #include "hud/hudconfig.h"
-#include "fs2netd/fs2netd_client.h"
+#include "network/multi_fstracker.h"
 
 
 // ----------------------------------------------------------------------------------------------------------
@@ -376,19 +376,24 @@ void multi_endgame_cleanup()
 		gameseq_pop_state();
 	}
 
-	// handle game disconnect from FS2NetD (NOTE: must be done *before* standalone is reset!!)
-	if ( MULTI_IS_TRACKER_GAME && (Net_player->flags & NETINFO_FLAG_AM_MASTER) ) {
-		fs2netd_gameserver_disconnect();
-	}
-
 	if (Game_mode & GM_STANDALONE_SERVER) {
 		// multi_standalone_quit_game();		
 		multi_standalone_reset_all();
 	} else {		
 		Player->flags |= PLAYER_FLAGS_IS_MULTI;		
 
+		// log game out of tracker
+		if (Net_player->flags & NETINFO_FLAG_MT_CONNECTED) {
+			multi_fs_tracker_logout();
+		}
+
 		// if we're in Parallax Online mode, log back in there	
-		gameseq_post_event(GS_EVENT_MULTI_JOIN_GAME);		
+		if (Multi_options_g.pxo == 1) {
+			Assert(Multi_options_g.protocol == NET_TCP);
+			gameseq_post_event(GS_EVENT_PXO);
+		} else {
+			gameseq_post_event(GS_EVENT_MULTI_JOIN_GAME);
+		}
 
 		// if we have an error code, bring up the discon popup						
 		if ( ((Multi_endgame_notify_code != -1) || (Multi_endgame_error_code != -1)) && !(Game_mode & GM_STANDALONE_SERVER) ) {

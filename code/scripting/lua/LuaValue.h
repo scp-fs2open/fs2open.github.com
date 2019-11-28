@@ -82,6 +82,7 @@ class LuaValue {
      * @param other The other LuaValue.
      */
 	LuaValue(const LuaValue& other);
+	LuaValue& operator=(const LuaValue& other);
 
 	/**
      * @brief Releases the reference
@@ -169,7 +170,7 @@ class LuaValue {
 
 	LuaReference _reference;
 
-	ValueType _luaType;
+	ValueType _luaType = ValueType::NONE;
 };
 
 /**

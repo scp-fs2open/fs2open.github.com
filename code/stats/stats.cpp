@@ -10,11 +10,6 @@
 
 
 
-#ifdef _WIN32
-#include <io.h>
-#include <winsock.h>
-#endif
-
 #include "globalincs/systemvars.h"
 #include "hud/hud.h"
 #include "network/multi.h"

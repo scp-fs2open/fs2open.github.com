@@ -17,7 +17,7 @@
 #include <cstdio>
 
 #ifdef WIN32
-#include <winsock.h>
+#include <winsock2.h>
 #endif
  
 #define FTP_STATE_INTERNAL_ERROR		0

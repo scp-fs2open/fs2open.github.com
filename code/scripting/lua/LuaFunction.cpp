@@ -45,11 +45,10 @@ LuaFunction LuaFunction::createFromCode(lua_State* L, std::string const& code, s
 LuaFunction::LuaFunction() : LuaValue(), _errorFunction(nullptr) {
 }
 
-LuaFunction::LuaFunction(const LuaFunction& other) : LuaValue(other), _errorFunction(other._errorFunction) {
-}
+LuaFunction::LuaFunction(const LuaFunction&) = default;
+LuaFunction& LuaFunction::operator=(const LuaFunction&) = default;
 
-LuaFunction::~LuaFunction() {
-}
+LuaFunction::~LuaFunction() = default;
 
 bool LuaFunction::setEnvironment(const LuaTable& table) {
 	if (!table.getReference()->isValid()) {
@@ -72,6 +71,13 @@ LuaValueList LuaFunction::operator()(const LuaValueList& args) {
 }
 
 void LuaFunction::setReference(const LuaReference& ref) {
+	if (ref == nullptr)
+	{
+		// If not a valid reference then let the base class handle everything
+		LuaValue::setReference(ref);
+		return;
+	}
+
 	ref->pushValue();
 
 	lua_State* L = ref->getState();

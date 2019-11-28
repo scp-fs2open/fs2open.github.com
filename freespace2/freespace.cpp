@@ -11,9 +11,9 @@
 
 
 #ifdef _WIN32
+ #include <winsock2.h>	// required to prevent winsock 1.1 being used
  #include <direct.h>
  #include <io.h>
- #include <windows.h>
  #include <psapi.h>
 #ifndef _MINGW
  #include <crtdbg.h>
@@ -46,7 +46,6 @@
 #include "events/events.h"
 #include "exceptionhandler/exceptionhandler.h"
 #include "fireball/fireballs.h"
-#include "fs2netd/fs2netd_client.h"
 #include "gamehelp/contexthelp.h"
 #include "gamehelp/gameplayhelp.h"
 #include "gamesequence/gamesequence.h"
@@ -119,6 +118,7 @@
 #include "network/multi.h"
 #include "network/multi_dogfight.h"
 #include "network/multi_endgame.h"
+#include "network/multi_fstracker.h"
 #include "network/multi_ingame.h"
 #include "network/multi_log.h"
 #include "network/multi_pause.h"
@@ -189,7 +189,6 @@
 #include <SDL.h>
 #include <SDL_main.h>
 
-extern int Om_tracker_flag; // needed for FS2OpenPXO config
 
 #ifdef WIN32
 // According to AMD and NV, these _should_ force their drivers into high-performance mode
@@ -218,11 +217,6 @@ extern "C" {
 //	OEM version:
 //		1.00		5/28/98	AL.	First release to Interplay QA.
 
-
-//  This function is defined in code\network\multiutil.cpp so will be linked from multiutil.obj
-//  it's required fro the -missioncrcs command line option - Kazan
-void multi_spew_pxo_checksums(int max_files, const char *outfile);
-void fs2netd_spew_table_checksums(const char *outfile);
 
 extern bool frame_rate_display;
 
@@ -1869,8 +1863,6 @@ void game_init()
 	// attempt to load up master tracker registry info (login and password)
 	Multi_tracker_id = -1;		
 
-	// should we be using this or not?
-	Om_tracker_flag = os_config_read_uint( "PXO", "FS2OpenPXO" , 0 );
 	// pxo login and password
 	ptr = os_config_read_string(NOX("PXO"),NOX("Login"),NULL);
 	if(ptr == NULL){
@@ -6758,23 +6750,6 @@ int game_main(int argc, char *argv[])
 
 	game_stop_time();
 
-	if (Cmdline_spew_mission_crcs) {
-		multi_spew_pxo_checksums(1024, "mission_crcs.csv");
-
-		if (Cmdline_spew_table_crcs) {
-			fs2netd_spew_table_checksums("table_crcs.csv");
-		}
-
-		game_shutdown();
-		return 0;
-	}
-
-	if (Cmdline_spew_table_crcs) {
-		fs2netd_spew_table_checksums("table_crcs.csv");
-		game_shutdown();
-		return 0;
-	}
-
 	// maybe spew pof stuff
 	if (Cmdline_spew_pof_info) {
 		game_spew_pof_info();
@@ -6925,7 +6900,6 @@ void game_shutdown(void)
 #ifdef MULTI_USE_LAG
 	multi_lag_close();
 #endif
-	fs2netd_close();
 
 	// Free SEXP resources
 	sexp_shutdown();
@@ -7669,34 +7643,19 @@ DCF(wepspew, "display the checksum for the current weapons.tbl")
 }
 
 // if the game is running using hacked data
-static bool Hacked_data_check_ready = false;
-static bool Hacked_data = false;
-
 int game_hacked_data()
 {
-	int rc = 0;
-
-	if (Hacked_data) {
-		return 1;
-	}
-
-
-	if ( Om_tracker_flag && !(Hacked_data_check_ready) ) {
-		// this may fail the first time or two
-		if ( (rc = fs2netd_update_valid_tables()) != -1 ) {
-			Hacked_data = (rc != 0);
-			Hacked_data_check_ready = true;
+	if (MULTI_IS_TRACKER_GAME) {
+		return multi_fs_tracker_validate_game_data();
+	} else {
+		// hacked!
+		if(!Game_weapons_tbl_valid || !Game_ships_tbl_valid){
+			return 1;
 		}
 	}
 
-	// LAN game, only check if weapon and ship are valid since we can't or don't
-	// want to validate against PXO server
-	if ( !Om_tracker_flag && !(Game_weapons_tbl_valid && Game_ships_tbl_valid) ) {
-		Hacked_data = true;
-	}
-
-
-	return (int)Hacked_data;
+    // not hacked
+    return 0;
 }
 
 void game_title_screen_display()

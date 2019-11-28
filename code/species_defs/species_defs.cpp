@@ -340,10 +340,6 @@ void parse_species_tbl(const char *filename)
 		}
 
 		required_string("#END");
-
-		// add tbl/tbm to multiplayer validation list
-		extern void fs2netd_add_table_validation(const char *tblname);
-		fs2netd_add_table_validation(filename);
 	}
 	catch (const parse::ParseException& e)
 	{

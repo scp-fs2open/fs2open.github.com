@@ -98,7 +98,7 @@ elseif(MSVC)
 		odbccp32.lib
 		comctl32.lib
 		rpcrt4.lib
-		wsock32.lib
+		ws2_32.lib
 		winmm.lib
 	)
 	

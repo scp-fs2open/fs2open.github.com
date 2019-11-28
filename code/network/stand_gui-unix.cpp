@@ -176,6 +176,7 @@ std::string base64_decode(std::string const& encoded_string) {
 #include "mission/missiongoals.h"
 #include "ship/ship.h"
 #include "osapi/osapi.h"
+#include "osapi/osregistry.h"
 
 #include "network/multi.h"
 #include "network/multiutil.h"
@@ -183,8 +184,7 @@ std::string base64_decode(std::string const& encoded_string) {
 #include "network/multi_pmsg.h"
 #include "network/multi_kick.h"
 #include "network/multi_endgame.h"
-
-#include "fs2netd/fs2netd_client.h"
+#include "network/multi_fstracker.h"
 
 #include "mongoose.h"
 #include "jansson.h"
@@ -232,12 +232,6 @@ public:
 		if (hasName) {
 			strcpy_s(Netgame.name, name.c_str());
 			strcpy_s(Multi_options_g.std_pname, name.c_str());
-			// update fs2netd with the info
-			if (MULTI_IS_TRACKER_GAME) {
-				fs2netd_gameserver_disconnect();
-				os_sleep(50);
-				fs2netd_gameserver_start();
-			}
 		}
 
 		if (hasPasswd) {
@@ -299,13 +293,6 @@ class ResetGameCommand: public WebapiCommand {
 public:
 	void execute() override {
         multi_quit_game(PROMPT_NONE);
-    }
-};
-
-class ResetFs2NetCommand: public WebapiCommand {
-public:
-	void execute() override {
-        fs2netd_reset_connection();
     }
 };
 
@@ -491,11 +478,6 @@ json_t* refreshMissions(ResourceContext * /*context*/) {
 
 json_t* serverResetGame(ResourceContext * /*context*/) {
     webapiAddCommand(new ResetGameCommand());
-    return json_object();
-}
-
-json_t* fs2netReset(ResourceContext * /*context*/) {
-    webapiAddCommand(new ResetFs2NetCommand());
     return json_object();
 }
 
@@ -707,7 +689,6 @@ struct Resource resources[] = {
     { "api/1/server", "DELETE", &serverDelete },
     { "api/1/server/refreshMissions", "GET", &refreshMissions },
     { "api/1/server/resetGame", "GET", &serverResetGame },
-    { "api/1/server/fs2net/reset", "GET", &fs2netReset },
     { "api/1/netgameInfo", "GET", &netgameInfoGet },
     { "api/1/mission", "GET", &missionGet },
     { "api/1/mission/goals", "GET", &missionGoalsGet },
@@ -946,14 +927,34 @@ void std_connect_set_gamename(char *name)
 		}
 	} else {
 		strcpy_s(Netgame.name,name);
-
-		// update fs2netd
-		if (MULTI_IS_TRACKER_GAME) {
-			fs2netd_gameserver_disconnect();
-			os_sleep(50);
-			fs2netd_gameserver_start();
-		}
 	}
+}
+
+// notify the user that the standalone has failed to login to the tracker on startup
+void std_tracker_notify_login_fail()
+{
+}
+
+// attempt to log the standalone into the tracker
+void std_tracker_login()
+{
+	if ( !Multi_options_g.pxo ) {
+		return;
+	}
+
+	multi_fs_tracker_init();
+
+	if ( !multi_fs_tracker_inited() ) {
+		std_tracker_notify_login_fail();
+		return;
+	}
+
+	multi_fs_tracker_login_freespace();
+}
+
+void std_init_os()
+{
+	os_init_registry_stuff(Osreg_company_name, Osreg_app_name);
 }
 
 /**
@@ -979,8 +980,5 @@ void std_debug_set_standalone_state_string(const char * /*str*/) {}
 void std_reset_standalone_gui() {}
 void std_reset_timestamps() {}
 void std_multi_set_standalone_missiontime(float  /*mission_time*/) {}
-
-// stub - not required for *nix standalone
-void std_init_os() {}
 
 #endif

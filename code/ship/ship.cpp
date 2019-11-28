@@ -112,8 +112,6 @@ extern bool splodeing;
 extern float splode_level;
 extern int splodeingtexture;
 
-extern void fs2netd_add_table_validation(const char *tblname);
-
 #define SHIP_REPAIR_SUBSYSTEM_RATE	0.01f
 
 int	Ai_render_debug_flag=0;
@@ -4999,9 +4997,6 @@ static void parse_shiptype_tbl(const char *filename)
 
 			required_string("#End");
 		}
-
-		// add tbl/tbm to multiplayer validation list
-		fs2netd_add_table_validation(filename);
 	}
 	catch (const parse::ParseException& e)
 	{
@@ -5113,9 +5108,6 @@ static void parse_shiptbl(const char *filename)
 
 		//Set default player ship
 		ship_set_default_player_ship();
-
-		// add tbl/tbm to multiplayer validation list
-		fs2netd_add_table_validation(filename);
 	}
 	catch (const parse::ParseException& e)
 	{
@@ -18183,9 +18175,6 @@ void armor_parse_table(const char *filename)
 
 			required_string("#End");
 		}
-
-		// add tbl/tbm to multiplayer validation list
-		fs2netd_add_table_validation(filename);
 	}
 	catch (const parse::ParseException& e)
 	{
