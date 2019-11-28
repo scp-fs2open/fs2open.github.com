@@ -1555,10 +1555,21 @@ void campaign_room_commit()
 	{
 		strcpy_s(Player->current_campaign, Campaign_file_names[Selected_campaign_index]);  // track new campaign for player
 
-		// the campaign loading status will be checked again when we try to load the campaign in the ready room
-		mission_campaign_load(Campaign_file_names[Selected_campaign_index]);
+		// attempt to load the campaign
+		int load_status = mission_campaign_load(Campaign_file_names[Selected_campaign_index]);
 
-		// we no longer reset the tech db here since we're not resetting progress when we switch to a new campaign
+		// see if we successfully loaded this campaign and it's at the beginning
+		if (load_status == 0 && Campaign.prev_mission < 0)
+		{
+			// Goober5000 - reinitialize tech database if needed
+			if ((Campaign.flags & CF_CUSTOM_TECH_DATABASE) || !stricmp(Campaign.filename, "freespace2"))
+			{
+				// reset tech database to what's in the tables
+				tech_reset_to_default();
+			}
+		}
+
+		// that's all we need to do for now; the campaign loading status will be checked again when we try to load the campaign in the ready room
 	}
 
 	gameseq_post_event(GS_EVENT_MAIN_MENU);
