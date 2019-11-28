@@ -127,6 +127,7 @@ public:
 
 	scoring_struct() { init(); }
 	scoring_struct(const scoring_struct &s) { assign(s); }
+	scoring_struct& operator=(const scoring_struct &s) { assign(s); return *this; }
 
 	void init();
 	void assign(const scoring_struct &s);

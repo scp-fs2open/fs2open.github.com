@@ -31,7 +31,6 @@
 #include "mission/missionparse.h"
 #include "iff_defs/iff_defs.h"
 #include "pilotfile/pilotfile.h"
-#include "fs2netd/fs2netd_client.h"
 #include "cfile/cfile.h"
 
 

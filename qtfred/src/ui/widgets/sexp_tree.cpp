@@ -3945,10 +3945,10 @@ sexp_list_item* sexp_tree::get_listing_opf_ship_wing_shiponteam_point() {
 	sexp_list_item head;
 
 	for (i = 0; i < Num_iffs; i++) {
-		char tmp[NAME_LENGTH + 7];
+		SCP_string tmp;
 		sprintf(tmp, "<any %s>", Iff_info[i].iff_name);
-		strlwr(tmp);
-		head.add_data_dup(tmp);
+		std::transform(begin(tmp), end(tmp), begin(tmp), [](char c) { return (char)::tolower(c); });
+		head.add_data_dup(tmp.c_str());
 	}
 
 	head.add_list(get_listing_opf_ship_wing_point());

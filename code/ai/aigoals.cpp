@@ -1499,7 +1499,8 @@ int ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 			Assert ( aigp->ai_submode >= 0 );
 			ssp = ship_get_indexed_subsys( &Ships[sindex], aigp->ai_submode );
 			if (ssp != NULL) {
-				status = mission_log_get_time( LOG_SHIP_SUBSYS_DESTROYED, aigp->target_name, ssp->system_info->subobj_name, NULL );
+				// see MWA 3/20/97 comment above - instead of checking the mission log, check the current hits
+				status = (ssp->current_hits <= 0.0f) ? 1 : 0;
 			} else {
 				// not supposed to ever happen, but could if there is a mismatch between the table and model subsystems
 				nprintf(("AI", "Couldn't find subsystem %d for ship %s\n", aigp->ai_submode, Ships[sindex].ship_name));
@@ -1509,12 +1510,36 @@ int ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 		}
 
 		case AI_GOAL_DISABLE_SHIP:
-			status = mission_log_get_time( LOG_SHIP_DISABLED, aigp->target_name, NULL, NULL );
+		{
+			// shipnum could be -1 depending on if the ship hasn't arrived or died.  only look for subsystem
+			// destroyed when shipnum is valid
+			sindex = ship_name_lookup(aigp->target_name);
+
+			// can't determine the status of this goal if ship not valid
+			if (sindex < 0) {
+				status = 0;
+			} else {
+				// see MWA 3/20/97 comment above - instead of checking the mission log, check the current hits
+				status = (Ships[sindex].subsys_info[SUBSYSTEM_ENGINE].aggregate_current_hits <= 0.0f) ? 1 : 0;
+			}
 			break;
+		}
 
 		case AI_GOAL_DISARM_SHIP:
-			status = mission_log_get_time( LOG_SHIP_DISARMED, aigp->target_name, NULL, NULL );
+		{
+			// shipnum could be -1 depending on if the ship hasn't arrived or died.  only look for subsystem
+			// destroyed when shipnum is valid
+			sindex = ship_name_lookup(aigp->target_name);
+
+			// can't determine the status of this goal if ship not valid
+			if (sindex < 0) {
+				status = 0;
+			} else {
+				// see MWA 3/20/97 comment above - instead of checking the mission log, check the current hits
+				status = (Ships[sindex].subsys_info[SUBSYSTEM_TURRET].aggregate_current_hits <= 0.0f) ? 1 : 0;
+			}
 			break;
+		}
 
 		// to guard or ignore a ship, the goal cannot continue if the ship being guarded is either destroyed
 		// or has departed.

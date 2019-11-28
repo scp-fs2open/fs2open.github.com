@@ -10,11 +10,8 @@
 #define BMPMAN_NDEBUG
 #endif
 
+#define WIN32_LEAN_AND_MEAN
 #define BMPMAN_INTERNAL
-
-#ifdef _WIN32
-#include <windows.h>
-#endif
 
 #include "anim/animplay.h"
 #include "anim/packunpack.h"

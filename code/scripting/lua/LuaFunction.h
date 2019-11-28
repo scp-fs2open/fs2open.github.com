@@ -60,11 +60,13 @@ class LuaFunction: public LuaValue {
      * @param other The other function.
      */
 	LuaFunction(const LuaFunction& other);
+	LuaFunction& operator=(const LuaFunction& other);
 
 	/**
      * @brief Frees the reference to the function if it exists.
      */
 	~LuaFunction() override;
+
 
 	/**
      * @brief Sets the function environment.

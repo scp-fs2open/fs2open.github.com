@@ -9,10 +9,6 @@
 
 
 
-#ifdef _WIN32
-#include <windows.h>
-#endif
-
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -7100,13 +7096,13 @@ void mission_eval_arrivals()
 				if (rship >= 0)
 				{
 					int j;
-					char message_name[NAME_LENGTH + 10];
+					SCP_string message_name;
 					sprintf(message_name, "%s Arrived", wingp->name);
 
 					// see if this wing has an arrival message associated with it
 					for (j = 0; j < MAX_BUILTIN_MESSAGE_TYPES; j++)
 					{
-						if (!stricmp(message_name, Builtin_messages[j].name))
+						if (!stricmp(message_name.c_str(), Builtin_messages[j].name))
 						{
 							message_send_builtin_to_player(j, &Ships[rship], MESSAGE_PRIORITY_LOW, MESSAGE_TIME_SOON, 0, 0, -1, -1);
 							break;

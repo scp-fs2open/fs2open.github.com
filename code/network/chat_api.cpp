@@ -26,7 +26,7 @@
 
 #define WSAGetLastError()  (errno)
 #else
-#include <winsock.h>
+#include <winsock2.h>
 typedef int socklen_t;
 #endif
 
@@ -475,11 +475,7 @@ char *ChatGetString(void)
 	FD_ZERO(&read_fds);
 	FD_SET(Chatsock,&read_fds);    
 	//Writable -- that means it's connected
-#ifdef WIN32
-	while ( select(0, &read_fds, NULL, NULL, &timeout) )
-#else
-	while ( select(Chatsock+1, &read_fds, NULL, NULL, &timeout) )
-#endif
+	while ( select(static_cast<int>(Chatsock+1), &read_fds, nullptr, nullptr, &timeout) )
 	{
 		bytesread = recv(Chatsock,ch,1,0);
 		if(bytesread)

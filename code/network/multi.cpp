@@ -46,7 +46,8 @@
 #include "globalincs/alphacolors.h"
 #include "globalincs/pstypes.h"
 #include "cfile/cfile.h"
-#include "fs2netd/fs2netd_client.h"
+#include "network/multi_fstracker.h"
+#include "network/multi_sw.h"
 #include "pilotfile/pilotfile.h"
 #include "debugconsole/console.h"
 #include "network/psnet2.h"
@@ -197,6 +198,9 @@ void multi_init()
 	// load up common multiplayer icons
 	if (!Is_standalone)
 		multi_load_common_icons();	
+
+	// delete mvalid.cfg if it exists
+	cf_delete(MULTI_VALID_MISSION_FILE, CF_TYPE_DATA);
 }
 
 // this is an important function which re-initializes any variables required in multiplayer games. 
@@ -1295,6 +1299,9 @@ void multi_do_frame()
 	// process any player messaging details
 	multi_msg_process();		
 	
+	// process any tracker messages
+	multi_fs_tracker_process();
+
 	// if on the standalone, do any gui stuff
 	if (Game_mode & GM_STANDALONE_SERVER) {
 		std_do_gui_frame();
@@ -1304,9 +1311,6 @@ void multi_do_frame()
 	if(!(Game_mode & GM_STANDALONE_SERVER) && (Netgame.type_flags & NG_TYPE_DOGFIGHT) && MULTI_IN_MISSION){
 		hud_setup_escort_list(0);
 	}
-
-	// do fs2netd stuff
-	fs2netd_do_frame();
 }
 
 // -------------------------------------------------------------------------------------------------
@@ -1502,6 +1506,7 @@ void standalone_main_init()
 
 	// hacked data
 	if(game_hacked_data()){
+		Netgame.flags |= NG_FLAG_HACKED_SHIPS_TBL;
 		Net_player->flags |= NETINFO_FLAG_HAXOR;
 	}
 
@@ -1539,6 +1544,9 @@ void standalone_main_init()
 	game_flush();
 	ship_init();
 
+	// login to game tracker
+	std_tracker_login();
+
 	std_debug_set_standalone_state_string("Main Do");
 	std_set_standalone_fps((float)0);
 	std_multi_set_standalone_missiontime((float)0);
@@ -1547,22 +1555,9 @@ void standalone_main_init()
 	multi_create_list_load_missions();
 	multi_create_list_load_campaigns();
 
-	// if this is a tracker game then we have some extra tasks to perform
-	if (MULTI_IS_TRACKER_GAME) {
-		// disconnect and prepare for reset if we are already connected
-		fs2netd_disconnect();
-
-		// login (duh!)
-		if ( fs2netd_login() ) {
-			// validate missions
-			multi_update_valid_missions();
-
-			// advertise our game to the server
-			fs2netd_gameserver_start();
-
-			// set tracker id
-			Net_player->tracker_player_id = Multi_tracker_id;
-		}
+	// if this is a tracker game, validate missions
+	if(MULTI_IS_TRACKER_GAME){
+		multi_update_valid_missions();
 	}
 }
 
@@ -1593,7 +1588,10 @@ void standalone_main_do()
 
 void standalone_main_close()
 {
-   std_debug_set_standalone_state_string("Main Close");	
+   std_debug_set_standalone_state_string("Main Close");
+
+	// disconnect game from tracker
+	multi_fs_tracker_logout();
 }
 
 void multi_standalone_reset_all()
@@ -1724,6 +1722,23 @@ void multi_standalone_postgame_do()
 
 void multi_standalone_postgame_close()
 {
+	// maybe store stats on tracker
+	if ( MULTI_IS_TRACKER_GAME && !(Netgame.flags & NG_FLAG_STORED_MT_STATS) ) {
+		if (multi_debrief_stats_accept_code() != 0) {
+			int stats_saved = multi_fs_std_tracker_store_stats();
+
+			if (stats_saved) {
+				Netgame.flags |= NG_FLAG_STORED_MT_STATS;
+				send_netgame_update_packet();
+			} else {
+				send_store_stats_packet(0);
+			}
+
+			if (Netgame.type_flags & NG_TYPE_SW) {
+				multi_sw_report(stats_saved);
+			}
+		}
+	}
 }
 
 

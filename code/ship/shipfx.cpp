@@ -556,6 +556,7 @@ void shipfx_warpin_start( object *objp )
 		return;
 	}
 
+	Assertion(shipp->warpin_effect != nullptr, "shipfx_warpin_start() was fed a ship with an uninitialized warpin_effect.");
 	shipp->warpin_effect->warpStart();
 
 	Script_system.RunCondition(CHA_WARPIN, objp);
@@ -707,6 +708,7 @@ void shipfx_warpout_start( object *objp )
 		return;
 	}
 
+	Assertion(shipp->warpout_effect != nullptr, "shipfx_warpout_start() was fed a ship with an uninitialized warpout_effect.");
 	shipp->warpout_effect->warpStart();
 
 	Script_system.RunCondition(CHA_WARPOUT, objp);
@@ -4232,6 +4234,10 @@ int WE_Hyperspace::warpStart()
 	}
 
 	pos_final = objp->pos;
+	
+	// Cyborg17 - After setting pos_final, we should move the ship to the actual starting position.
+	vm_vec_scale_add(&objp->pos, &pos_final, &objp->orient.vec.fvec, -scale_factor);
+
 	if (params->snd_start.isValid())
 	{
 		snd_start_gs = gamesnd_get_game_sound(params->snd_start);

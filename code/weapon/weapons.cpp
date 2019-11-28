@@ -221,8 +221,6 @@ int		Weapon_impact_timer;			// timer, initialized at start of each mission
 
 extern int compute_num_homing_objects(object *target_objp);
 
-extern void fs2netd_add_table_validation(const char *tblname);
-
 
 weapon_explosions::weapon_explosions()
 {
@@ -1503,7 +1501,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 	if (wip->reloaded_per_batch == -1) {
 		if (subtype == WP_MISSILE) {
 			wip->reloaded_per_batch = REARM_NUM_MISSILES_PER_BATCH;
-		} else if (wip->wi_flags[Weapon::Info_Flags::Ballistic]) {
+		} else {
 			wip->reloaded_per_batch = REARM_NUM_BALLISTIC_PRIMARIES_PER_BATCH;
 		}
 	}
@@ -2104,9 +2102,9 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		}
 		// now check miss factors for each IFF
 		for(iff=0; iff<Num_iffs; iff++) {
-			char miss_factor_string[NAME_LENGTH + 15];
+			SCP_string miss_factor_string;
 			sprintf(miss_factor_string, "+%s Miss Factor:", Iff_info[iff].iff_name);
-			if(optional_string(miss_factor_string)) {
+			if(optional_string(miss_factor_string.c_str())) {
 				// this Miss Factor applies only to the specified IFF
 				for(idx=0; idx<NUM_SKILL_LEVELS; idx++) {
 					if(!stuff_float_optional(&wip->b_info.beam_iff_miss_factor[iff][idx])) {
@@ -2904,9 +2902,6 @@ void parse_weaponstbl(const char *filename)
 		{
 			Num_player_weapon_precedence = stuff_int_list(Player_weapon_precedence, MAX_WEAPON_TYPES, WEAPON_LIST_TYPE);
 		}
-
-		// add tbl/tbm to multiplayer validation list
-		fs2netd_add_table_validation(filename);
 	}
 	catch (const parse::ParseException& e)
 	{

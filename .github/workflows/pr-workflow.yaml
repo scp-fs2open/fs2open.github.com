@@ -7,8 +7,8 @@ jobs:
     strategy:
       matrix:
         configuration: [Debug, Release]
-        compiler: [gcc-5, gcc-8, clang-4.0]
-    name: Check Linux compilation
+        compiler: [gcc-5, gcc-9, clang-4.0]
+    name: Linux
     runs-on: ubuntu-16.04
     steps:
       - name: Prepare Environment
@@ -19,7 +19,7 @@ jobs:
           sudo add-apt-repository ppa:beineri/opt-qt571-xenial
           sudo add-apt-repository ppa:msulikowski/valgrind # For fixing a bug with valgrind 3.11 which does not recognize the rdrand instruction
           sudo apt-get -yq update
-          sudo apt-get -yq install cmake ninja-build libopenal-dev libreadline6-dev libpng12-dev libjpeg62-dev liblua5.1-0-dev libjansson-dev libsdl2-dev libfreetype6-dev valgrind qt57base g++-5 g++-8 clang-4.0 clang-tidy-4.0 libc++-dev libc++abi-dev
+          sudo apt-get -yq install cmake ninja-build libopenal-dev libreadline6-dev libpng12-dev libjpeg62-dev liblua5.1-0-dev libjansson-dev libsdl2-dev libfreetype6-dev valgrind qt57base g++-5 g++-9 clang-4.0 clang-tidy-4.0 libc++-dev libc++abi-dev
           # Fix a header bug present in ubuntu...
           sudo ln -s /usr/include/libcxxabi/__cxxabi_config.h /usr/include/c++/v1/__cxxabi_config.h
       - uses: actions/checkout@v1
@@ -35,9 +35,9 @@ jobs:
             export CC=gcc-5
             export CXX=g++-5
           fi
-          if [ "$COMPILER" = "gcc-8" ]; then
-            export CC=gcc-8
-            export CXX=g++-8
+          if [ "$COMPILER" = "gcc-9" ]; then
+            export CC=gcc-9
+            export CXX=g++-9
           fi
           if [ "$COMPILER" = "clang-4.0" ]; then
             export CC=clang-4.0
@@ -85,7 +85,7 @@ jobs:
           - configuration: Release
             compiler: MinGW
             arch: x64
-    name: Check Windows compilation
+    name: Windows
     runs-on: windows-2019
     steps:
       - name: Prepare Environment
@@ -120,9 +120,18 @@ jobs:
         run: |
           if [ "$COMPILER" = "MinGW" ]; then
               cmake --build . --config "$CONFIGURATION"
-             ./bin/unittests --gtest_shuffle
           else
               cmake --build . --config "$CONFIGURATION" -- /verbosity:minimal
+          fi
+      - name: Run Tests
+        working-directory: ./build
+        env:
+          CONFIGURATION: ${{ matrix.configuration }}
+          COMPILER: ${{ matrix.compiler }}
+        shell: bash
+        run: |
+          if [ "$COMPILER" = "MinGW" ]; then
+             ./bin/unittests --gtest_shuffle
+          else
               "./bin/$CONFIGURATION/unittests" --gtest_shuffle
           fi
-
