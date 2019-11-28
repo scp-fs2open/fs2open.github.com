@@ -11375,7 +11375,7 @@ void sexp_close_sound_from_file(int n)
 
 void multi_sexp_close_sound_from_file()
 {
-	bool fade = false;
+	bool fade = true;
 	int sexp_var = -1;
 
 	Current_sexp_network_packet.get_bool(fade);
