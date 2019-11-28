@@ -11,3 +11,8 @@
 3. Forums: 
  - Does the [Forum](https://www.hard-light.net/forums/index.php?board=50.0) contain enough clear information to help a new developer find their way into the up-to-date instructions?
  - Is there anything that might mislead a new developer to stumble onto old tools, dead links and/or old versions of the project?
+4. General documentation files: 
+ - Is the information in the following files up-to-date? 
+   - [About.md](https://github.com/scp-fs2open/fs2open.github.com/blob/master/About.md) (Should contain general information about FS, FS2, HLP, FSO and FSU)
+   - [Authors.md](https://github.com/scp-fs2open/fs2open.github.com/blob/master/Authors.md) (Should contain information about the original developers, a way to see FSO's contributors, and special thanks to Volition and Dave Baranec)
+   - [Copying.md](https://github.com/scp-fs2open/fs2open.github.com/blob/master/Copying.md) (Should contain Volition's Copyright terms and a way to check FSO's Licensing info)
