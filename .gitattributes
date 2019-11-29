@@ -1,5 +1,5 @@
 # Default for everything
-* text=auto
+# * text=auto
 
 # For the test data and built-in files to make them consistent on all platforms
 *.tbl text eol=lf
