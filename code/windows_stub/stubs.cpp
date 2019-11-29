@@ -30,7 +30,7 @@ const char *inet_ntop(int af, const void *src, char *dst, int size)
 		return nullptr;
 	}
 
-	srcaddr.ss_family = af;
+	srcaddr.ss_family = static_cast<short>(af);
 
 	if (WSAAddressToString(reinterpret_cast<struct sockaddr *>(&srcaddr), static_cast<DWORD>(slen),
 						   0, dst, reinterpret_cast<LPDWORD>(&size)) != 0)
