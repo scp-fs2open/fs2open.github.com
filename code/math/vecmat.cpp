@@ -1015,7 +1015,13 @@ angles *vm_extract_angles_matrix(angles *a, const matrix *m)
 	else											//cosine is larger, so use it
 		cosp = m->vec.fvec.xyz.z*cosh;
 
-	a->p = atan2_safe(-m->vec.fvec.xyz.y, cosp);
+	//using the fvec_xz_distance extracts the correct pitch from the matrix --wookieejedi
+	//previously cosp was used as the denominator, but this resulted in some incorrect pitch extractions
+	float fvec_xz_distance;
+
+	fvec_xz_distance = pow((pow((m->vec.fvec.xyz.x), 2.0f) + pow((m->vec.fvec.xyz.z), 2.0f)), 0.5f);
+
+	a->p = atan2_safe(-m->vec.fvec.xyz.y, fvec_xz_distance);
 
 	if (cosp == 0.0f)	//the cosine of pitch is zero.  we're pitched straight up. say no bank
 
