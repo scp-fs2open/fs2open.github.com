@@ -1614,12 +1614,8 @@ int mission_load_up_campaign( player *pl )
 		}
 	}
 
-	rc = mission_campaign_load(Default_campaign_file_name, pl);
-
 	// builtin...
-	if (rc < 0) {
-		rc = mission_campaign_load(Default_campaign_file_name, pl);
-	}
+	rc = mission_campaign_load(Default_campaign_file_name, pl);
 
 	// everything else...
 	if (rc < 0) {
