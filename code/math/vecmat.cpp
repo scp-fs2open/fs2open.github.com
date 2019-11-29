@@ -1019,7 +1019,7 @@ angles *vm_extract_angles_matrix(angles *a, const matrix *m)
 	//previously cosp was used as the denominator, but this resulted in some incorrect pitch extractions
 	float fvec_xz_distance;
 
-	fvec_xz_distance = pow((pow((m->vec.fvec.xyz.x), 2.0f) + pow((m->vec.fvec.xyz.z), 2.0f)), 0.5f);
+	fvec_xz_distance = fl_sqrt( ( (m->vec.fvec.xyz.x)*(m->vec.fvec.xyz.x) ) + ( (m->vec.fvec.xyz.z)*(m->vec.fvec.xyz.z) ) );
 
 	a->p = atan2_safe(-m->vec.fvec.xyz.y, fvec_xz_distance);
 
