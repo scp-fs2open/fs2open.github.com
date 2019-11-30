@@ -8,11 +8,9 @@
 */
 
 
-
-
-#include "globalincs/pstypes.h"
-
-#ifndef _WIN32
+#ifdef _WIN32
+#include <winsock2.h>
+#else
 #include <sys/time.h>
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -32,9 +30,11 @@
 #include <cctype>
 #include <cerrno>
 
+#include "globalincs/pstypes.h"
 #include "osapi/osapi.h"
 #include "inetfile/inetgetfile.h"
 #include "inetfile/chttpget.h"
+#include "io/timer.h"
 
 
 
@@ -42,11 +42,7 @@
 #define NW_AGHBN_LOOKUP		2
 #define NW_AGHBN_READ		3
 
-#ifdef WIN32
-void __cdecl http_gethostbynameworker(void *parm);
-#else
 int http_gethostbynameworker(void *parm);
-#endif
 
 int http_Asyncgethostbyname(unsigned int *ip,int command, char *hostname);
 
@@ -55,7 +51,7 @@ int HTTPObjThread( void *obj )
 	((ChttpGet *)obj)->WorkerThread();
 	((ChttpGet *)obj)->m_Aborted = true;
 
-	return 0;
+	return (reinterpret_cast<ChttpGet *>(obj))->GetStatus();
 }
 
 void ChttpGet::AbortGet()
@@ -87,7 +83,6 @@ void ChttpGet::GetFile(char *URL,char *localfile)
 	m_State = HTTP_STATE_STARTUP;
 	m_Aborting = false;
 	m_Aborted = false;
-	thread_id = NULL;
 
 	strncpy(m_URL,URL,MAX_URL_LEN-1);
 	m_URL[MAX_URL_LEN-1] = 0;
@@ -96,17 +91,19 @@ void ChttpGet::GetFile(char *URL,char *localfile)
 	if(NULL == LOCALFILE)
 	{
 		m_State = HTTP_STATE_CANT_WRITE_FILE;
+		m_Aborted = true;
 		return;
 	}
 	m_DataSock = socket(AF_INET, SOCK_STREAM, 0);
 	if(INVALID_SOCKET == m_DataSock)
 	{
 		m_State = HTTP_STATE_SOCKET_ERROR;
+		m_Aborted = true;
 		return;
 	}
 
-//	uint arg = 1;
-//	ioctlsocket( m_DataSock, FIONBIO, &arg );
+	unsigned long arg = 1;
+	ioctlsocket( m_DataSock, FIONBIO, &arg );
 
 	char *pURL = URL;
 	if(strnicmp(URL,"http:",5)==0)
@@ -121,6 +118,7 @@ void ChttpGet::GetFile(char *URL,char *localfile)
 	if(strchr(pURL,':'))
 	{
 		m_State = HTTP_STATE_URL_PARSING_ERROR;
+		m_Aborted = true;
 		return;
 	}
 	//read the filename by searching backwards for a /
@@ -150,6 +148,7 @@ void ChttpGet::GetFile(char *URL,char *localfile)
 	if((dirstart==NULL) || (filestart==NULL))
 	{
 		m_State = HTTP_STATE_URL_PARSING_ERROR;
+		m_Aborted = true;
 		return;
 	}
 	else
@@ -160,24 +159,31 @@ void ChttpGet::GetFile(char *URL,char *localfile)
 		m_szHost[(dirstart-pURL)-1] = '\0';
 	}
 
-	if ( (thread_id = SDL_CreateThread(HTTPObjThread, "HTTP", this)) == NULL )
+	SDL_Thread *thread = SDL_CreateThread(HTTPObjThread, "HTTPObjThread", this);
+
+	if(thread == nullptr)
 	{
 		m_State = HTTP_STATE_INTERNAL_ERROR;
-		return;
+		m_Aborted = true;
+	}
+	else
+	{
+		SDL_DetachThread(thread);
 	}
 }
 
 
 ChttpGet::~ChttpGet()
 {
-	if (thread_id)
-		SDL_WaitThread(thread_id, NULL);
-
-	fclose(LOCALFILE);
-    
-	if (m_DataSock != INVALID_SOCKET) {
-		shutdown(m_DataSock, 2);
+	if(m_DataSock != INVALID_SOCKET)
+	{
+		shutdown(m_DataSock,2);
 		closesocket(m_DataSock);
+	}
+
+	if(LOCALFILE != nullptr)
+	{
+		fclose(LOCALFILE);
 	}
 }
 
@@ -206,11 +212,13 @@ void ChttpGet::WorkerThread()
 	if(m_Aborting)
 	{
 		fclose(LOCALFILE);
+		LOCALFILE = nullptr;
 		return;
 	}
 	if(m_State != HTTP_STATE_CONNECTED)
 	{
 		fclose(LOCALFILE);
+		LOCALFILE = nullptr;
 		return;
 	}
 	sprintf(szCommand,"GET %s%s HTTP/1.1\nAccept: */*\nAccept-Encoding: deflate\nHost: %s\n\n\n",m_ProxyEnabled?"":"/",m_ProxyEnabled?m_URL:m_szDir,m_szHost);
@@ -225,6 +233,7 @@ void ChttpGet::WorkerThread()
 		{
 			m_State = HTTP_STATE_UNKNOWN_ERROR;	
 			fclose(LOCALFILE);
+			LOCALFILE = nullptr;
 			return;
 
 		}
@@ -236,11 +245,11 @@ void ChttpGet::WorkerThread()
 		{
 			m_State = HTTP_STATE_UNKNOWN_ERROR;	
 			fclose(LOCALFILE);
+			LOCALFILE = nullptr;
 			return;
 		}
 		if(irsp==200)
 		{
-			int idataready=0;
 			do
 			{
 				p = GetHTTPLine();
@@ -248,11 +257,11 @@ void ChttpGet::WorkerThread()
 				{
 					m_State = HTTP_STATE_UNKNOWN_ERROR;	
 					fclose(LOCALFILE);
+					LOCALFILE = nullptr;
 					return;
 				}
 				if(*p=='\0')
 				{
-					idataready = 1;
 					break;
 				}
 				if(strnicmp(p,"Content-Length:",strlen("Content-Length:"))==0)
@@ -275,18 +284,20 @@ void ChttpGet::WorkerThread()
 				}
 
 				os_sleep(1);
-			}while(!idataready);
+			}while(true);
 		ReadDataChannel();
 		return;
 		}
 		m_State = HTTP_STATE_FILE_NOT_FOUND;
 		fclose(LOCALFILE);
+		LOCALFILE = nullptr;
 		return;
 	}
 	else
 	{
 		m_State = HTTP_STATE_UNKNOWN_ERROR;
 		fclose(LOCALFILE);
+		LOCALFILE = nullptr;
 		return;
 	}
 }
@@ -376,9 +387,6 @@ int ChttpGet::ConnectSocket()
 		memcpy(&hostaddr.sin_addr,&ip,4);
 
 	}
-    
-	memset(&hostaddr.sin_zero, 0, sizeof(hostaddr.sin_zero));
-
 	//Now we will connect to the host					
 	fd_set	wfds;
 
@@ -389,13 +397,26 @@ int ChttpGet::ConnectSocket()
 	int serr = connect(m_DataSock, (SOCKADDR *)&hostaddr, sizeof(SOCKADDR));
 	int cerr = WSAGetLastError();
 	if (serr) {
-		while ( (cerr == WSAEALREADY) || (cerr == WSAEINVAL) || (cerr == WSAEWOULDBLOCK) ) {
+		// fail after 20 seconds
+		int failtime = timer_get_seconds() + 20;
+
+		while ( (cerr == WSAEALREADY) || (cerr == WSAEINVAL) || NETCALL_WOULDBLOCK(cerr) ) {
 			FD_ZERO(&wfds);
 			FD_SET( m_DataSock, &wfds );
 
 			if ( select(static_cast<int>(m_DataSock+1), nullptr, &wfds, nullptr, &timeout) )
 			{
-				serr = 0;
+				int error_code = 0;
+				SOCKLEN_T error_code_size = sizeof(error_code);
+
+				// check to make sure socket is *really* connected
+				int rc = getsockopt(m_DataSock, SOL_SOCKET, SO_ERROR, (char *)&error_code, &error_code_size);
+
+				if(!rc && !error_code)
+				{
+					serr = 0;
+				}
+
 				break;
 			}
 
@@ -411,6 +432,10 @@ int ChttpGet::ConnectSocket()
 	
 			if (cerr == WSAEISCONN) {
 				serr = 0;
+				break;
+			}
+
+			if (timer_get_seconds() > failtime) {
 				break;
 			}
 
@@ -445,7 +470,7 @@ char *ChttpGet::GetHTTPLine()
 			if(SOCKET_ERROR == iBytesRead)
 			{
 				int error = WSAGetLastError();
-				if(WSAEWOULDBLOCK==error)
+				if( NETCALL_WOULDBLOCK(error) )
 				{
 					gotdata = false;
 					continue;
@@ -471,7 +496,7 @@ char *ChttpGet::GetHTTPLine()
 				if(SOCKET_ERROR == iBytesRead)
 				{	
 					int error = WSAGetLastError();
-					if(WSAEWOULDBLOCK==error)
+					if( NETCALL_WOULDBLOCK(error) )
 					{
 						gotdata = false;
 						continue;
@@ -522,6 +547,7 @@ uint ChttpGet::ReadDataChannel()
 	
     	if (m_Aborting) {
 			fclose(LOCALFILE);
+			LOCALFILE = nullptr;
 			return 0;		
 		}
 
@@ -529,13 +555,14 @@ uint ChttpGet::ReadDataChannel()
 	
     	if (m_Aborting) {
 			fclose(LOCALFILE);
+			LOCALFILE = nullptr;
 			return 0;
 		}
 	
 		if (SOCKET_ERROR == nBytesRecv) {	
 			int error = WSAGetLastError();
 
-			if (error == WSAEWOULDBLOCK) {
+			if ( NETCALL_WOULDBLOCK(error) ) {
 				nBytesRecv = 1;
 				continue;
 			}
@@ -551,6 +578,7 @@ uint ChttpGet::ReadDataChannel()
 	} while (nBytesRecv > 0);
 
 	fclose(LOCALFILE);	
+	LOCALFILE = nullptr;
 	
 	// Close the file and check for error returns.
 	if (nBytesRecv == SOCKET_ERROR) { 
@@ -577,11 +605,7 @@ typedef struct _async_dns_lookup
 async_dns_lookup httpaslu;
 async_dns_lookup *http_lastaslu = NULL;
 
-#ifdef WIN32
-void __cdecl http_gethostbynameworker(void *parm);
-#else
 int http_gethostbynameworker(void *parm);
-#endif
 
 int http_Asyncgethostbyname(unsigned int *ip,int command, char *hostname)
 {
@@ -593,7 +617,7 @@ int http_Asyncgethostbyname(unsigned int *ip,int command, char *hostname)
 
 		async_dns_lookup *newaslu;
 		newaslu = (async_dns_lookup *)vm_malloc(sizeof(async_dns_lookup));
-		memset(&newaslu->ip,0,sizeof(unsigned int));
+		newaslu->ip = 0;
 		newaslu->host = hostname;
 		newaslu->done = false;
 		newaslu->error = false;
@@ -601,19 +625,7 @@ int http_Asyncgethostbyname(unsigned int *ip,int command, char *hostname)
 		http_lastaslu = newaslu;
 		httpaslu.done = false;
 
-#ifdef WIN32
-		_beginthread(http_gethostbynameworker, 0, newaslu);
-#else
-		HOSTENT *he = gethostbyname(hostname);
-
-		if (he == NULL) {
-			newaslu->error = true;
-		} else if ( !newaslu->abort ) {
-			memcpy( &newaslu->ip, he->h_addr_list[0], sizeof(uint) );
-			newaslu->done = true;
-			memcpy( &httpaslu,newaslu, sizeof(async_dns_lookup) );
-		}
-#endif
+		SDL_CreateThread(http_gethostbynameworker, "GetHostByNameWorker", newaslu);
 
 		return 1;
 	}
@@ -630,7 +642,7 @@ int http_Asyncgethostbyname(unsigned int *ip,int command, char *hostname)
 		if(httpaslu.done)
 		{
 			http_lastaslu = NULL;
-			memcpy(ip,&httpaslu.ip,sizeof(unsigned int));
+			*ip = httpaslu.ip;
 			return 1;
 		}
 		else if(httpaslu.error)
@@ -646,25 +658,14 @@ int http_Asyncgethostbyname(unsigned int *ip,int command, char *hostname)
 }
 
 // This is the worker thread which does the lookup.
-#ifdef WIN32
-void __cdecl http_gethostbynameworker(void *parm)
-#else
 int http_gethostbynameworker(void *parm)
-#endif
 {
-#ifdef SCP_UNIX
-//	df_pthread_detach(df_pthread_self());
-#endif
-	async_dns_lookup *lookup = (async_dns_lookup *)parm;
-	HOSTENT *he = gethostbyname(lookup->host);
-	if(he==NULL)
+	async_dns_lookup *lookup = reinterpret_cast<async_dns_lookup *>(parm);
+	struct hostent *he = gethostbyname(lookup->host);
+	if(he==nullptr)
 	{
 		lookup->error = true;
-#ifdef WIN32
-		return;
-#else
-		return 0;
-#endif
+		return 1;
 	}
 	else if(!lookup->abort)
 	{
@@ -674,7 +675,5 @@ int http_gethostbynameworker(void *parm)
 	}
 	vm_free(lookup);
 
-#ifdef SCP_UNIX
 	return 0;
-#endif
 }
