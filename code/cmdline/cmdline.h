@@ -70,7 +70,7 @@ extern int Cmdline_enable_3d_shockwave;
 extern int Cmdline_softparticles;
 extern int Cmdline_bloom_intensity;
 extern int Cmdline_no_deferred_lighting;
-extern int Cmdline_no_emissive;
+extern int Cmdline_emissive;
 extern int Cmdline_aniso_level;
 
 // Game Speed related
