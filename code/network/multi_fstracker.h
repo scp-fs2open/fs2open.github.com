@@ -102,4 +102,7 @@ int multi_fs_tracker_store_sw(squad_war_result *sw_res, char *bad_reply, const s
 // this is hacked data check as well as mod ident
 int multi_fs_tracker_validate_game_data();
 
+// verify and possibly update Multi_options_g with sane PXO values
+void multi_fs_tracker_verify_options();
+
 #endif
