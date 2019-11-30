@@ -163,7 +163,7 @@ Flag exe_params[] =
 	{ "-nomotiondebris",	"Disable motion debris",					true,	EASY_ALL_ON,		EASY_DEFAULT,		"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-nomotiondebris",},
 	{ "-noscalevid",		"Disable scale-to-window for movies",		true,	0,					EASY_DEFAULT,		"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-noscalevid", },
 	{ "-nonormal",			"Disable normal maps",						true,	EASY_DEFAULT_MEM,	EASY_MEM_ALL_ON,	"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-normal" },
-	{ "-emissive_light",	"Enable emissive light from ships",			true,	0,					EASY_DEFAULT,		"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-no_emissive_light" },
+	{ "-emissive_light",	"Enable emissive light from ships",			true,	0,					EASY_DEFAULT,		"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-emissive_light" },
 	{ "-noheight",			"Disable height/parallax maps",				true,	EASY_DEFAULT_MEM,	EASY_MEM_ALL_ON,	"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-height" },
 	{ "-3dshockwave",		"Enable 3D shockwaves",						true,	EASY_MEM_ALL_ON,	EASY_DEFAULT_MEM,	"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-3dshockwave" },
 	{ "-post_process",		"Enable post processing",					true,	EASY_ALL_ON,		EASY_DEFAULT,		"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-post_process" },
