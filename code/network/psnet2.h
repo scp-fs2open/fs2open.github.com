@@ -168,9 +168,6 @@ int psnet_is_valid_ip_string( char *ip_string, int allow_port=1 );
 // mark a socket as having received data
 void psnet_mark_received(PSNET_SOCKET_RELIABLE socket);
 
-// port forwarding setup/wait processing
-void psnet_port_forward_do();
-
 // -------------------------------------------------------------------------------------------------------
 // PSNET 2 RELIABLE SOCKET FUNCTIONS
 //

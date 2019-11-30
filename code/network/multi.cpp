@@ -1314,7 +1314,7 @@ void multi_do_frame()
 	}
 
 	// if master then maybe do port forwarding setup/refresh/wait
-	if ( (Net_player->flags & NETINFO_FLAG_AM_MASTER) && (Net_player->flags & NETINFO_FLAG_CONNECTED) ) {
+	if (Net_player->flags & NETINFO_FLAG_AM_MASTER) {
 		multi_port_forward_do();
 	}
 }
