@@ -216,7 +216,7 @@ int getgateways(struct sockaddr_in6 **gws)
         /* If the route is not for AF_INET(6) or does not belong to main
            routing table then return. */
         if (((rtMsg->rtm_family != AF_INET) && (rtMsg->rtm_family != AF_INET6))
-                || (rtMsg->rtm_table != RT_TABLE_MAIN)) {
+                || ((rtMsg->rtm_type != RTN_UNICAST) && (rtMsg->rtm_table != RT_TABLE_MAIN))) {
             continue;
         }
 
