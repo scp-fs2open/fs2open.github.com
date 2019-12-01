@@ -32,10 +32,10 @@
 class ChttpGet
 {
 public:
-	ChttpGet(char *URL,char *localfile);
-	ChttpGet(char *URL,char *localfile,char *proxyip,unsigned short proxyport);
+	ChttpGet(const char *URL, const char *localfile);
+	ChttpGet(const char *URL, const char *localfile, const char *proxyip, unsigned short proxyport);
 	~ChttpGet();
-	void GetFile(char *URL,char *localfile);
+	void GetFile(const char *URL, const char *localfile);
 	int GetStatus();
 	uint GetBytesIn();
 	uint GetTotalBytes();
@@ -51,7 +51,7 @@ protected:
 	uint m_iBytesTotal;
 	uint m_State;
 	bool m_ProxyEnabled;
-	char *m_ProxyIP;
+	const char *m_ProxyIP;
 	char m_URL[MAX_URL_LEN];
 	ushort m_ProxyPort;
 

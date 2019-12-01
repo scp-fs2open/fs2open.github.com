@@ -51,7 +51,7 @@ void CFtpGet::AbortGet()
 	}
 }
 
-CFtpGet::CFtpGet(char *URL, char *localfile, char *Username, char *Password)
+CFtpGet::CFtpGet(const char *URL, const char *localfile, const char *Username, const char *Password)
 {
 	SOCKADDR_IN listensockaddr;
 	m_State = FTP_STATE_STARTUP;
@@ -129,7 +129,7 @@ CFtpGet::CFtpGet(char *URL, char *localfile, char *Username, char *Password)
 	}
 	//Parse the URL
 	//Get rid of any extra ftp:// stuff
-	char *pURL = URL;
+	const char *pURL = URL;
 	if(strnicmp(URL,"ftp:",4)==0)
 	{
 		pURL +=4;
@@ -148,8 +148,8 @@ CFtpGet::CFtpGet(char *URL, char *localfile, char *Username, char *Password)
 	//read the filename by searching backwards for a /
 	//then keep reading until you find the first /
 	//when you found it, you have the host and dir
-	char *filestart = NULL;
-	char *dirstart = NULL;
+	const char *filestart = nullptr;
+	const char *dirstart = nullptr;
 	for(size_t i = strlen(pURL);;i--)
 	{
 		if(pURL[i]== '/')
@@ -456,7 +456,7 @@ int CFtpGet::LoginHost()
 }
 
 
-uint CFtpGet::SendFTPCommand(char *command)
+uint CFtpGet::SendFTPCommand(const char *command)
 {
 
 	FlushControlChannel();

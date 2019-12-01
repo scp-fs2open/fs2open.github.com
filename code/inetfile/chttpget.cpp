@@ -44,7 +44,7 @@
 
 int http_gethostbynameworker(void *parm);
 
-int http_Asyncgethostbyname(unsigned int *ip,int command, char *hostname);
+int http_Asyncgethostbyname(unsigned int *ip, int command, const char *hostname);
 
 int HTTPObjThread( void *obj )
 {
@@ -60,7 +60,7 @@ void ChttpGet::AbortGet()
 	while(!m_Aborted) os_sleep(50); //Wait for the thread to end
 }
 
-ChttpGet::ChttpGet(char *URL,char *localfile,char *proxyip,unsigned short proxyport)
+ChttpGet::ChttpGet(const char *URL, const char *localfile, const char *proxyip, unsigned short proxyport)
 {
 	m_ProxyEnabled = true;
 	m_ProxyIP = proxyip;
@@ -68,14 +68,14 @@ ChttpGet::ChttpGet(char *URL,char *localfile,char *proxyip,unsigned short proxyp
 	GetFile(URL,localfile);
 }
 
-ChttpGet::ChttpGet(char *URL,char *localfile)
+ChttpGet::ChttpGet(const char *URL, const char *localfile)
 {
 	m_ProxyEnabled = false;
 	GetFile(URL,localfile);
 }
 
 
-void ChttpGet::GetFile(char *URL,char *localfile)
+void ChttpGet::GetFile(const char *URL, const char *localfile)
 {
 	m_DataSock = INVALID_SOCKET;
 	m_iBytesIn = 0;
@@ -105,7 +105,7 @@ void ChttpGet::GetFile(char *URL,char *localfile)
 	unsigned long arg = 1;
 	ioctlsocket( m_DataSock, FIONBIO, &arg );
 
-	char *pURL = URL;
+	const char *pURL = URL;
 	if(strnicmp(URL,"http:",5)==0)
 	{
 		pURL +=5;
@@ -124,8 +124,8 @@ void ChttpGet::GetFile(char *URL,char *localfile)
 	//read the filename by searching backwards for a /
 	//then keep reading until you find the first /
 	//when you found it, you have the host and dir
-	char *filestart = NULL;
-	char *dirstart = NULL;
+	const char *filestart = nullptr;
+	const char *dirstart = nullptr;
 	for(size_t i = strlen(pURL);;i--)
 	{
 		if(pURL[i]== '/')
@@ -596,7 +596,7 @@ uint ChttpGet::ReadDataChannel()
 typedef struct _async_dns_lookup
 {
 	unsigned int ip;	//resolved host. Write only to worker thread.
-	char * host;//host name to resolve. read only to worker thread
+	const char * host;//host name to resolve. read only to worker thread
 	bool done;	//write only to the worker thread. Signals that the operation is complete
 	bool error; //write only to worker thread. Thread sets this if the name doesn't resolve
 	bool abort;	//read only to worker thread. If this is set, don't fill in the struct.
@@ -607,7 +607,7 @@ async_dns_lookup *http_lastaslu = NULL;
 
 int http_gethostbynameworker(void *parm);
 
-int http_Asyncgethostbyname(unsigned int *ip,int command, char *hostname)
+int http_Asyncgethostbyname(unsigned int *ip, int command, const char *hostname)
 {
 	
 	if(command==NW_AGHBN_LOOKUP)

@@ -40,7 +40,7 @@ void InetGetFile::AbortGet()
 	}
 }
 
-InetGetFile::InetGetFile(char *URL, char *filename, int cf_type)
+InetGetFile::InetGetFile(const char *URL, const char *filename, int cf_type)
 {
 	m_HardError = 0;
 	http = NULL;
