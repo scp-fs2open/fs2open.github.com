@@ -28,7 +28,7 @@ float Shadow_cascade_distances[MAX_SHADOW_CASCADES];
 
 light_frustum_info Shadow_frustums[MAX_SHADOW_CASCADES];
 
-ShadowQuality Shadow_quality;
+ShadowQuality Shadow_quality = ShadowQuality::Disabled;
 
 auto ShadowQualityOption =
     options::OptionBuilder<ShadowQuality>("Graphics.Shadows", "Shadow Quality", "The quality of the shadows")
