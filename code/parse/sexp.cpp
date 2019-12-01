@@ -17200,17 +17200,15 @@ void set_primary_ammo (int ship_index, int requested_bank, int requested_ammo, i
 	// Set the number of weapons
 	shipp->weapons.primary_bank_ammo[requested_bank] = requested_ammo ;
 
-	// If a rearm limit has been specified set it.
-	if (rearm_limit >= 0)
-	{
-		// Don't allow more weapons than the bank can actually hold.
-		if (rearm_limit > maximum_allowed) 
-		{
-			rearm_limit = maximum_allowed;
-		}
 
-		shipp->weapons.primary_bank_start_ammo[requested_bank] = rearm_limit;
+	// Don't allow more weapons than the bank can actually hold. -- Cyborg17 - No matter what
+	if (rearm_limit < 0 || rearm_limit > maximum_allowed) 
+	{
+		rearm_limit = maximum_allowed;
 	}
+
+	shipp->weapons.primary_bank_start_ammo[requested_bank] = rearm_limit;
+
 }
 
 // Karajorma - returns the number of missiles left in an ammo bank. Unlike secondary_ammo_pct
@@ -17358,17 +17356,13 @@ void set_secondary_ammo (int ship_index, int requested_bank, int requested_ammo,
 	// Set the number of weapons
 	shipp->weapons.secondary_bank_ammo[requested_bank] = requested_ammo ;
 
-	// If a rearm limit has been specified set it.
-	if (rearm_limit >= 0)
+	// Don't allow more weapons than the bank can actually hold. -- Cyborg17 - no matter what.
+	if (rearm_limit < 0 || rearm_limit > maximum_allowed) 
 	{
-		// Don't allow more weapons than the bank can actually hold.
-		if (rearm_limit > maximum_allowed) 
-		{
-			rearm_limit = maximum_allowed;
-		}
-
-		shipp->weapons.secondary_bank_start_ammo[requested_bank] = rearm_limit;
+		rearm_limit = maximum_allowed;
 	}
+	
+	shipp->weapons.secondary_bank_start_ammo[requested_bank] = rearm_limit;
 }
 
 // Karajorma - Changes the weapon in the requested bank to the one supplied. Optionally sets the ammo and 
@@ -17443,25 +17437,22 @@ void sexp_set_weapon(int node, bool primary)
 			if (is_nan || is_nan_forever)
 				return;
 		}
-
-		// Set the ammo
-		if (primary) {
-			set_primary_ammo(sindex, requested_bank, requested_ammo, rearm_limit);
-		}
-		else {
-			set_secondary_ammo(sindex, requested_bank, requested_ammo, rearm_limit);
-		}
 	}
 	else {
 		// read the data 
 		if (primary) {
 			requested_ammo = shipp->weapons.primary_bank_ammo[requested_bank];
-			rearm_limit = shipp->weapons.primary_bank_start_ammo[requested_bank];
 		}
 		else {
 			requested_ammo = shipp->weapons.secondary_bank_ammo[requested_bank];
-			rearm_limit = shipp->weapons.secondary_bank_start_ammo[requested_bank];
 		}
+	}
+
+	// Set the ammo -- No matter what - Cyborg17
+	if (primary) {
+		set_primary_ammo(sindex, requested_bank, requested_ammo, rearm_limit);
+	} else {
+		set_secondary_ammo(sindex, requested_bank, requested_ammo, rearm_limit);
 	}
 
 	// Now pass this info on to clients.
