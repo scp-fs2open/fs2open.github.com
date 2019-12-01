@@ -21,7 +21,7 @@ Find us at:
 ## How to get the game
 FreeSpace Open requires a retail installation of FreeSpace 2, which is available at the following stores: 
  - [GOG.com](https://www.gog.com/game/freespace_2)
- - [Steam](https://store.steampowered.com/app/273620/Freespace_2/)
+ - [Steam](https://store.steampowered.com/app/273620/Freespace_2/)  
 After installing retail FS2, use [Knossos](https://fsnebula.org/knossos/) to upgrade to the most recent release of FSO. Knossos is an advanced mod manager and launcher for FSO.
 
 ## Improvements
