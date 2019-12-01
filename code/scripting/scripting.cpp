@@ -704,11 +704,12 @@ void script_state::UnloadImages()
 
 int script_state::RunCondition(int action, object* objp, int more_data)
 {
+	int num = 0;
+
 	if (LuaState == nullptr) {
-		return;
+		return num;
 	}
 
-	int num = 0;
 	for(SCP_vector<ConditionedHook>::iterator chp = ConditionalHooks.begin(); chp != ConditionalHooks.end(); ++chp) 
 	{
 		if(chp->ConditionsValid(action, objp, more_data))
