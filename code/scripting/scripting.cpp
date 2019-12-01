@@ -541,6 +541,10 @@ void script_state::SetHookObject(const char *name, object *objp)
 
 void script_state::SetHookObjects(int num, ...)
 {
+	if (LuaState == nullptr) {
+		return;
+	}
+
 	va_list vl;
 	va_start(vl, num);
 	if(this->OpenHookVarTable())
@@ -700,6 +704,10 @@ void script_state::UnloadImages()
 
 int script_state::RunCondition(int action, object* objp, int more_data)
 {
+	if (LuaState == nullptr) {
+		return;
+	}
+
 	int num = 0;
 	for(SCP_vector<ConditionedHook>::iterator chp = ConditionalHooks.begin(); chp != ConditionalHooks.end(); ++chp) 
 	{

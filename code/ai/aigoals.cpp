@@ -271,12 +271,9 @@ void ai_clear_ship_goals( ai_info *aip )
 	}
 
 	// add scripting hook for 'On Goals Cleared' --wookieejedi
-	// only run if there is a valid lua state
-	if (Script_system.GetLuaSession != nullptr) {
-		Script_system.SetHookObject("Ship", &Objects[Ships[aip->shipnum].objnum]);
-		Script_system.RunCondition(CHA_ONGOALSCLEARED);
-		Script_system.RemHookVars(1, "Ship");
-	}
+	Script_system.SetHookObject("Ship", &Objects[Ships[aip->shipnum].objnum]);
+	Script_system.RunCondition(CHA_ONGOALSCLEARED);
+	Script_system.RemHookVars(1, "Ship");
 
 }
 
