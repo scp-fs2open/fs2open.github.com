@@ -13,16 +13,16 @@
 #include "globalincs/globals.h"
 #include "globalincs/pstypes.h"
 
-#define CF_VIEWABLE			(1<<0)
-#define CF_ALWAYS_VIEWABLE	(1<<1)
-#define CF_NEVER_VIEWABLE	(1<<2)
+const int CF_VIEWABLE =         (1<<0);
+const int CF_ALWAYS_VIEWABLE =  (1<<1);
+const int CF_NEVER_VIEWABLE =   (1<<2);
 
 typedef struct cutscene_info
 {
 	char filename[MAX_FILENAME_LEN];
 	char name[NAME_LENGTH];
 	char* description;
-	int flags;
+	uint32_t flags;
 } cutscene_info;
 
 extern SCP_vector<cutscene_info> Cutscenes;
