@@ -420,6 +420,7 @@ int mission_campaign_load( char *filename, player *pl, int load_savefile, bool r
 
 	if (campaign_is_ignored(filename)) {
 		Campaign_file_missing = 1;
+		Campaign_load_failure = CAMPAIGN_ERROR_IGNORED;
 		return CAMPAIGN_ERROR_IGNORED;
 	}
 
@@ -659,6 +660,7 @@ int mission_campaign_load( char *filename, player *pl, int load_savefile, bool r
 			return CAMPAIGN_ERROR_MISSING;
 		}
 
+		Campaign_load_failure = CAMPAIGN_ERROR_CORRUPT;
 		return CAMPAIGN_ERROR_CORRUPT;
 	}
 
