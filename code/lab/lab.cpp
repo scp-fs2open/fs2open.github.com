@@ -147,7 +147,7 @@ bool Lab_Envmap_override         = false;
 bool Lab_Normalmap_override      = false;
 bool Lab_Heightmap_override      = false;
 bool Lab_Miscmap_override        = false;
-bool Lab_emissive_light_override = (bool)(Cmdline_emissive);
+bool Lab_emissive_light_override = (Cmdline_emissive != 0);
 
 fix Lab_Save_Missiontime;
 
