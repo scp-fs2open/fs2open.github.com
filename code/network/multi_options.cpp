@@ -286,6 +286,9 @@ void multi_options_read_config()
 		in = NULL;
 	}
 
+	// sanitize config options for PXO
+	multi_fs_tracker_verify_options();
+
 #ifndef _WIN32
 	if (Is_standalone) {
 		std_configLoaded(&Multi_options_g);
