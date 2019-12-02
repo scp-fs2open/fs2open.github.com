@@ -785,7 +785,7 @@ void script_state::RemHookVar(const char *name)
 
 void script_state::RemHookVars(unsigned int num, ...)
 {
-	if(LuaState != NULL)
+	if (LuaState != nullptr)
 	{
 		//WMC - Quick and clean. :)
 		//WMC - *sigh* nostalgia
@@ -881,7 +881,7 @@ void script_state::Clear()
 	// Free all lua value references
 	ConditionalHooks.clear();
 
-	if(LuaState != NULL) {
+	if (LuaState != nullptr) {
 		OnStateDestroy(LuaState);
 
 		lua_close(LuaState);
@@ -912,12 +912,12 @@ script_state::~script_state()
 
 void script_state::SetLuaSession(lua_State *L)
 {
-	if(LuaState != NULL)
+	if (LuaState != nullptr)
 	{
 		lua_close(LuaState);
 	}
 	LuaState = L;
-	if(LuaState != NULL) {
+	if (LuaState != nullptr) {
 		Langs |= SC_LUA;
 	}
 	else if(Langs & SC_LUA) {
