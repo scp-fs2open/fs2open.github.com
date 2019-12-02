@@ -6,6 +6,7 @@
 #include "ade.h"
 #include "ade_api.h"
 #include "ade_args.h"
+#include "scripting.h"
 
 #include "def_files/def_files.h"
 #include "globalincs/version.h"
@@ -237,19 +238,48 @@ static const char *Lua_type_names[] = {
 
 const ptrdiff_t Lua_type_names_num = std::distance(std::begin(Lua_type_names), std::end(Lua_type_names));
 
-void ade_output_type_link(FILE *fp, const char *typestr)
-{
-	for(int i = 0; i < Lua_type_names_num; i++)
-	{
-		if(!stricmp(Lua_type_names[i], typestr))
-		{
-			fputs(typestr, fp);
-			return;
+static bool is_internal_type(const char* typeName) {
+	for (int i = 0; i < Lua_type_names_num; i++) {
+		if (!stricmp(Lua_type_names[i], typeName)) {
+			return true;
 		}
 	}
 
-	fprintf(fp, "<a href=\"#%s\">%s</a>", typestr, typestr);
+	return false;
 }
+
+static void ade_output_type_link(FILE* fp, const ade_type_info& type_info) {
+	switch (type_info.getType()) {
+	case ade_type_info_type::Empty:
+		fputs("nothing", fp);
+		break;
+	case ade_type_info_type::Simple:
+		if (is_internal_type(type_info.getSimpleName())) {
+			fputs(type_info.getSimpleName(), fp);
+		} else {
+			fprintf(fp, "<a href=\"#%s\">%s</a>", type_info.getSimpleName(), type_info.getSimpleName());
+		}
+		break;
+	case ade_type_info_type::Tuple: {
+		bool first = true;
+		for(const auto& type : type_info.elements()) {
+			if (!first) {
+				fprintf(fp, ", ");
+			}
+			first = false;
+
+			ade_output_type_link(fp, type);
+		}
+		break;
+	}
+	case ade_type_info_type::Array:
+		fputs("{ ", fp);
+		ade_output_type_link(fp, type_info.arrayType());
+		fputs(" ... }", fp);
+		break;
+	}
+}
+
 }
 
 namespace scripting {
@@ -558,15 +588,6 @@ void ade_table_entry::OutputMeta(FILE *fp)
 				if(Description != NULL) {
 					fprintf(fp, "<dd>%s</dd>\n", this->Description);
 				}
-
-				//***Type: ReturnType
-				if(ReturnType != NULL) {
-					fprintf(fp, "<dd><b>Return Type: </b> %s<br>&nbsp;</dd>\n", ReturnType);
-				}
-
-				if(ReturnDescription != NULL) {
-					fprintf(fp, "<dd><b>Return Description: </b> %s<br>&nbsp;</dd>\n", ReturnDescription);
-				}
 			}
 				break;
 			case 'u':
@@ -576,8 +597,8 @@ void ade_table_entry::OutputMeta(FILE *fp)
 				int ao = -1;
 
 				fputs("<i>", fp);
-				if(ReturnType != NULL)
-					ade_output_type_link(fp, ReturnType);
+			    if (!ReturnType.isEmpty())
+				    ade_output_type_link(fp, ReturnType);
 				else
 					fputs("nil", fp);
 				fputs(" </i>", fp);
@@ -666,14 +687,13 @@ void ade_table_entry::OutputMeta(FILE *fp)
 			{
 				//***Type Name(ShortName)
 				fputs("<dt>\n", fp);
-				if(ReturnType != NULL)
-				{
-					fputs("<i>", fp);
+			    if (!ReturnType.isEmpty()) {
+				    fputs("<i>", fp);
 					ade_output_type_link(fp, ReturnType);
 					fputs(" </i>", fp);
-				}
+			    }
 
-				if(Name == NULL) {
+			    if(Name == nullptr) {
 					fprintf(fp, "<b>%s</b>\n", ShortName);
 				}
 				else
@@ -711,6 +731,107 @@ void ade_table_entry::OutputMeta(FILE *fp)
 	if(!skip_this)
 		fputs("<br></dl></dd>\n", fp);
 }
+std::unique_ptr<DocumentationElement> ade_table_entry::ToDocumentationElement()
+{
+	if (Name == nullptr && ShortName == nullptr) {
+		Warning(LOCATION, "Data entry with no name or shortname");
+		return std::unique_ptr<DocumentationElement>();
+	}
+
+	// WMC - Hack
+	std::unique_ptr<DocumentationElement> element;
+
+	//***Begin entry
+	switch (Type) {
+	case 'o': {
+		if (!Instanced) {
+			// Classes
+			std::unique_ptr<DocumentationElementClass> obj(new DocumentationElementClass());
+			obj->type = ElementType::Class;
+
+			if (DerivatorIdx != UINT_MAX) {
+				obj->superClass = getTableEntry(DerivatorIdx).GetName();
+			}
+
+			element = std::move(obj);
+		} else {
+			// Libraries
+			std::unique_ptr<DocumentationElement> obj(new DocumentationElement());
+			obj->type = ElementType::Library;
+
+			element = std::move(obj);
+		}
+		break;
+	}
+	case 'u': {
+		// Functions
+		std::unique_ptr<DocumentationElementFunction> obj(new DocumentationElementFunction());
+
+		auto ao = ade_get_operator(Name);
+		if (ao >= 0) {
+			obj->type = ElementType::Operator;
+		} else {
+			obj->type = ElementType::Function;
+		}
+
+		obj->returnType = ReturnType;
+
+		if (Arguments != nullptr) {
+			obj->parameters = Arguments;
+		}
+
+		if (ReturnDescription != nullptr) {
+			obj->returnDocumentation = ReturnDescription;
+		}
+
+		element = std::move(obj);
+		break;
+	}
+	case 'v': {
+		std::unique_ptr<DocumentationElementProperty> obj(new DocumentationElementProperty());
+		obj->type = ElementType::Property;
+
+		//***Type Name(ShortName)
+		obj->getterType = ReturnType;
+
+		if (Arguments != nullptr) {
+			obj->setterType = Arguments;
+		}
+
+		if (ReturnDescription != nullptr) {
+			obj->returnDocumentation = ReturnDescription;
+		}
+
+		element = std::move(obj);
+		break;
+	}
+	case 'b':
+	case 'd':
+	case 'f':
+	case 'i':
+	case 's':
+	case 'x':
+	default:
+		UNREACHABLE("Unknown Type %c was used used!", Type);
+		break;
+	}
+
+	if (Name != nullptr) {
+		element->name = Name;
+	}
+	if (ShortName != nullptr) {
+		element->shortName = ShortName;
+	}
+	if (Description != nullptr) {
+		element->description = Description;
+	}
+
+	for (uint32_t i = 0; i < Num_subentries; i++) {
+		element->children.emplace_back(getTableEntry(Subentries[i]).ToDocumentationElement());
+	}
+
+	return element;
+}
 
 ade_lib::ade_lib(const char* in_name, const ade_lib_handle* parent, const char* in_shortname, const char* in_desc) {
 	ade_table_entry ate;
@@ -743,7 +864,7 @@ const char *ade_lib::GetName() const
 }
 
 ade_func::ade_func(const char* name, lua_CFunction func, const ade_lib_handle& parent, const char* args,
-                   const char* desc, const char* ret_type, const char* ret_desc,
+                   const char* desc, ade_type_info ret_type, const char* ret_desc,
                    const gameversion::version& deprecation_version, const char* deprecation_message)
 {
 	Assertion(strcmp(name, "__gc") != 0, "__gc is a reserved function name! An API function may not use it!");
@@ -765,7 +886,7 @@ ade_func::ade_func(const char* name, lua_CFunction func, const ade_lib_handle& p
 }
 
 ade_virtvar::ade_virtvar(const char* name, lua_CFunction func, const ade_lib_handle& parent, const char* args,
-                         const char* desc, const char* ret_type, const char* ret_desc,
+                         const char* desc, ade_type_info ret_type, const char* ret_desc,
                          const gameversion::version& deprecation_version, const char* deprecation_message)
 {
 	Assertion(strcmp(name, "__gc") != 0, "__gc is a reserved function name! An API function may not use it!");
@@ -786,12 +907,9 @@ ade_virtvar::ade_virtvar(const char* name, lua_CFunction func, const ade_lib_han
 	LibIdx = ade_manager::getInstance()->getEntry(parent.GetIdx()).AddSubentry(ate);
 }
 
-ade_indexer::ade_indexer(lua_CFunction func,
-						 const ade_lib_handle& parent,
-						 const char* args,
-						 const char* desc,
-						 const char* ret_type,
-						 const char* ret_desc) {
+ade_indexer::ade_indexer(lua_CFunction func, const ade_lib_handle& parent, const char* args, const char* desc,
+                         ade_type_info ret_type, const char* ret_desc)
+{
 	//Add function for meta
 	ade_table_entry ate;
 
@@ -1018,4 +1136,57 @@ void load_default_script(lua_State* L, const char* name)
 }
 
 ade_table_entry& internal::getTableEntry(size_t idx) { return ade_manager::getInstance()->getEntry(idx); }
+
+ade_type_info::ade_type_info(std::initializer_list<ade_type_info> tuple_types) :
+	_type(ade_type_info_type::Tuple), _elements(tuple_types) {
+	Assertion(tuple_types.size() >= 1, "Tuples must have more than one element!");
+}
+ade_type_info::ade_type_info(const char* single_type) : _type(ade_type_info_type::Simple), _simple_name{ single_type }
+{
+	if (single_type == nullptr) {
+		// It would be better to handle this via an overload with std::nullptr_t but there are a lot of NULL usages left
+		// so this is the soltuion that requires fewer changes
+		_type = ade_type_info_type::Empty;
+		return;
+	}
+
+	// Otherwise, make sure no one tries to specify a tuple with a single string.
+	Assertion(strchr(single_type, ',') == nullptr,
+	          "Type string '%s' may not contain commas! Use the intializer list instead.", single_type);
+}
+ade_type_info::ade_type_info(const ade_type_array& listType) :
+	_type(ade_type_info_type::Array), _elements{ listType.getElementType() } {
+
+}
+bool ade_type_info::isEmpty() const {
+	return _type == ade_type_info_type::Empty;
+}
+bool ade_type_info::isTuple() const {
+	return _type == ade_type_info_type::Tuple;
+}
+bool ade_type_info::isSimple() const {
+	return _type == ade_type_info_type::Simple;
+}
+bool ade_type_info::isArray() const {
+	return _type == ade_type_info_type::Array;
+}
+const SCP_vector<ade_type_info>& ade_type_info::elements() const {
+	return _elements;
+}
+const char* ade_type_info::getSimpleName() const {
+	return _simple_name;
+}
+ade_type_info_type ade_type_info::getType() const {
+	return _type;
+}
+const ade_type_info& ade_type_info::arrayType() const {
+	return _elements.front();
+}
+
+ade_type_array::ade_type_array(ade_type_info  elementType) : _element_type(std::move(elementType)) {
+}
+const ade_type_info& ade_type_array::getElementType() const {
+	return _element_type;
+}
+
 }

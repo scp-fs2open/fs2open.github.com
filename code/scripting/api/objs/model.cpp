@@ -799,7 +799,11 @@ ADE_FUNC(getNormal, l_Dockingbay, "number index", "Gets the normal of a docking 
 	return ade_set_args(L, "o", l_Vector.Set(dbp->norm[index]));
 }
 
-ADE_FUNC(computeDocker, l_Dockingbay, "dockingbay", "Computes the final position and orientation of a docker bay that docks with this bay.", "vector, orientation", "The local location and orientation of the docker vessel in the reference to the vessel of the docking bay handle, or a nil value on error")
+ADE_FUNC(computeDocker, l_Dockingbay, "dockingbay",
+         "Computes the final position and orientation of a docker bay that docks with this bay.",
+         ade_type_info({"vector", "orientation"}),
+         "The local location and orientation of the docker vessel in the reference to the vessel of the docking bay "
+         "handle, or a nil value on error")
 {
 	dockingbay_h *dockee_bay_h = NULL, *docker_bay_h = NULL;
 	vec3d final_pos;

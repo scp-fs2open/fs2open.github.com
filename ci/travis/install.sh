@@ -4,6 +4,8 @@ set -ex
 
 FILENAME=
 if [ "$TRAVIS_OS_NAME" = "linux" ]; then
+    export DEBIAN_FRONTEND=noninteractive
+
     if [ ! -d "$HOME/cmake-3.8/bin" ]; then
         # If the cache does not currently contain CMake then download and install it
     	mkdir -p $HOME/cmake-3.8/
@@ -23,7 +25,13 @@ if [ "$TRAVIS_OS_NAME" = "linux" ]; then
         chmod a+x ./linuxdeployqt
     fi
 
-    if [[ "$CC" =~ ^clang.*$ ]]; then
+    sudo apt-get -yq install valgrind
+
+    if [[ "$CC" = "clang-9" ]]; then
+      sudo apt-get -yq install clang-9 clang-tidy-9
+    fi
+
+    if [[ "$CC" = "clang-4.0" ]]; then
       # Fix a header bug present in ubuntu...
       sudo ln -s /usr/include/libcxxabi/__cxxabi_config.h /usr/include/c++/v1/__cxxabi_config.h
     fi

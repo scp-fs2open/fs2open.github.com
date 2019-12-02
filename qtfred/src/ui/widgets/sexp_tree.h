@@ -100,6 +100,7 @@ class SexpTreeEditorInterface {
  public:
 	SexpTreeEditorInterface();
 	explicit SexpTreeEditorInterface(const flagset<TreeFlags>& flags);
+	virtual ~SexpTreeEditorInterface();
 
 	virtual bool hasDefaultMessageParamter();
 	virtual SCP_vector<SCP_string> getMessages();
@@ -171,6 +172,7 @@ class sexp_tree: public QTreeWidget {
  	static QIcon convertNodeImageToIcon(NodeImage image);
 
 	explicit sexp_tree(QWidget* parent = nullptr);
+	~sexp_tree() override;
 
 	int find_text(const char* text, int* find, int max_depth);
 	int query_restricted_opf_range(int opf);
