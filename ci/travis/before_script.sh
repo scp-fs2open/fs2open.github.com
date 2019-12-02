@@ -15,8 +15,8 @@ mkdir -p build
 cd build
 
 if [ "$TRAVIS_OS_NAME" = "linux" ]; then
-    CXXFLAGS="-m64 -mtune=generic -mfpmath=sse -msse -msse2 -pipe -Wno-unknown-pragmas -fno-asynchronous-unwind-tables"
-    CFLAGS="-m64 -mtune=generic -mfpmath=sse -msse -msse2 -pipe -Wno-unknown-pragmas -fno-asynchronous-unwind-tables"
+    CXXFLAGS="-m64 -mtune=generic -mfpmath=sse -msse -msse2 -pipe -Wno-unknown-pragmas"
+    CFLAGS="-m64 -mtune=generic -mfpmath=sse -msse -msse2 -pipe -Wno-unknown-pragmas"
 
     export CXXFLAGS
     export CFLAGS
