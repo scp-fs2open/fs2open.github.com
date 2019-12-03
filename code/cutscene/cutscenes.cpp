@@ -450,7 +450,7 @@ void cutscenes_screen_init()
 	Cutscene_list.clear();
 
 	int u = 0;
-	for (SCP_vector<cutscene_info>::iterator cut = Cutscenes.begin(); cut != Cutscenes.end(); ++cut, ++u)
+	for (auto cut = Cutscenes.begin(); cut != Cutscenes.end(); ++cut, ++u)
 	{
 		int flags = (*cut).flags;
 
