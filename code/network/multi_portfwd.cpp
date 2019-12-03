@@ -137,7 +137,7 @@ void multi_port_forward_do()
 				inet_ntop(AF_INET6, &info->int_ip, int_ip, sizeof(int_ip));
 				inet_ntop(AF_INET6, &info->ext_ip, ext_ip, sizeof(ext_ip));
 
-				ml_printf("Port forward => Mapping successful (%s:%u <-> %s:%u)",
+				ml_printf("Port forward => Mapping successful  [%s]:%u <-> [%s]:%u",
 						  int_ip, ntohs(info->int_port),
 						  ext_ip, ntohs(info->ext_port));
 
@@ -232,10 +232,10 @@ static void PF_logger_fn(pcp_loglvl_e /* lvl */, const char *msg)
 
 static void PF_log_init()
 {
+#ifdef NDEBUG
 	// log spew for libpcp is set with this
 	pcp_log_level = PCP_LOGLVL_NONE;
-
-#ifndef NDEBUG
+#else
 	pcp_log_level = PCP_LOGLVL_INFO;
 
 	pcp_set_loggerfn(PF_logger_fn);
