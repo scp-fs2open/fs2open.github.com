@@ -7859,7 +7859,7 @@ void sexp_set_oswpt_facing(object_ship_wing_point_team *oswpt, vec3d *location, 
 			for (p_object *p_objp = GET_FIRST(&Ship_arrival_list); p_objp != END_OF_LIST(&Ship_arrival_list); p_objp = GET_NEXT(p_objp))
 			{
 				if (p_objp->wingnum == WING_INDEX(oswpt->wingp))
-					sexp_set_orient_sub(&oswpt->p_objp->orient, &oswpt->p_objp->pos, location);
+					sexp_set_orient_sub(&p_objp->orient, &p_objp->pos, location);
 			}
 			break;
 		}
