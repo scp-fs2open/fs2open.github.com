@@ -4869,19 +4869,33 @@ void parse_event(mission * /*pm*/)
 
 	if ( optional_string("+Repeat Count:")){
 		stuff_int( &(event->repeat_count) );
+
+		// sanity check on the repeat count variable
+		// _argv[-1] - negative repeat count is now legal; means repeat indefinitely.
+		if ( event->repeat_count == 0 ){
+			Warning(LOCATION, "Repeat count for mission event %s is 0.\nMust be >= 1 or negative!  Setting to 1.", event->name );
+			event->repeat_count = 1;
+		}
 	} else {
 		event->repeat_count = 1;
 	}
 
 	if ( optional_string("+Trigger Count:")){
 		stuff_int( &(event->trigger_count) );
+		event->flags |= MEF_USING_TRIGGER_COUNT; 
+
 		// if we have a trigger count but no repeat count, we want the event to loop until it has triggered enough times
 		if (event->repeat_count == 1) {
 			event->repeat_count = -1;
 		}
-		event->flags |= MEF_USING_TRIGGER_COUNT; 
-	} 
-	else {
+
+		// sanity check on the trigger count variable
+		// negative trigger count is also legal
+		if ( event->trigger_count == 0 ){
+			Warning(LOCATION, "Trigger count for mission event %s is 0.\nMust be >= 1 or negative!  Setting to 1.", event->name );
+			event->trigger_count = 1;
+		}
+	} else {
 		event->trigger_count = 1;
 	}
 
@@ -4945,12 +4959,6 @@ void parse_event(mission * /*pm*/)
 	}
 
 	event->timestamp = timestamp(-1);
-
-	// sanity check on the repeat count variable
-	// _argv[-1] - negative repeat count is now legal; means repeat indefinitely.
-	if ( event->repeat_count == 0 ){
-		Error (LOCATION, "Repeat count for mission event %s is 0.\nMust be >= 1 or negative!", event->name );
-	}
 }
 
 void parse_events(mission *pm)
