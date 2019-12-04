@@ -660,7 +660,7 @@ int http_Asyncgethostbyname(unsigned int *ip, int command, const char *hostname)
 // This is the worker thread which does the lookup.
 int http_gethostbynameworker(void *parm)
 {
-	async_dns_lookup *lookup = reinterpret_cast<async_dns_lookup *>(parm);
+	auto *lookup = reinterpret_cast<async_dns_lookup *>(parm);
 	struct hostent *he = gethostbyname(lookup->host);
 	if(he==nullptr)
 	{
