@@ -4890,8 +4890,9 @@ void parse_event(mission * /*pm*/)
 		}
 
 		// sanity check on the trigger count variable
-		if ( event->trigger_count <= 0 ){
-			Warning(LOCATION, "Trigger count for mission event %s is <= 0.\nMust be >= 1!  Setting to 1.", event->name );
+		// negative trigger count is also legal
+		if ( event->trigger_count == 0 ){
+			Warning(LOCATION, "Trigger count for mission event %s is 0.\nMust be >= 1 or negative!  Setting to 1.", event->name );
 			event->trigger_count = 1;
 		}
 	} else {
