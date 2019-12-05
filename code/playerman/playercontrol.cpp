@@ -219,12 +219,13 @@ void view_modify(angles *ma, angles *da, float max_p, float max_h, float frame_t
 
 	} else {
 		// Camera is unlocked - Pitch and Yaw axes control X and Y slew axes
-		t = (check_control_timef(YAW_LEFT) - check_control_timef(YAW_RIGHT));
-		u = (check_control_timef(PITCH_BACK) - check_control_timef(PITCH_FORWARD));
+		t = (check_control_timef(YAW_RIGHT) - check_control_timef(YAW_LEFT));
+		u = (check_control_timef(PITCH_FORWARD) - check_control_timef(PITCH_BACK));
 
 		playercontrol_read_stick(axis, frame_time);
 
-		h = -f2fl(axis[JOY_HEADING_AXIS]);
+		// Does the same thing as t and u but for the joystick input 
+		h = f2fl(axis[JOY_HEADING_AXIS]);
 		p = -f2fl(axis[JOY_PITCH_AXIS]);
 	}
 

@@ -111,7 +111,7 @@ config_item Control_config[CCFG_MAX + 1] = {
 	{                           KEY_PADMULTIPLY,    -1, COMPUTER_TAB, true,  "Chase View",                             CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
 	{                           KEY_PADPERIOD,      -1, COMPUTER_TAB, true,  "External View",                          CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
 	{                           KEY_PADENTER,       -1, COMPUTER_TAB, true,  "Toggle External Camera Lock",            CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
-	{                           KEY_PAD0,           -1, COMPUTER_TAB, true,  "Free Look View",                         CC_TYPE_CONTINUOUS, -1, -1, 0, false, false }, // Not in use anymore (Swifty)
+	{                           KEY_PAD0,           -1, COMPUTER_TAB, true,  "Free Look View",                         CC_TYPE_CONTINUOUS, -1, -1, 0, false, false },
 	{                           KEY_PADDIVIDE,      -1, COMPUTER_TAB, true,  "Current Target View",                    CC_TYPE_TRIGGER,    -1, -1, 0, false, false },
 	{                           KEY_PADPLUS,        -1, COMPUTER_TAB, true,  "Increase View Distance",                 CC_TYPE_CONTINUOUS, -1, -1, 0, false, false },
 	{                           KEY_PADMINUS,       -1, COMPUTER_TAB, true,  "Decrease View Distance",                 CC_TYPE_CONTINUOUS, -1, -1, 0, false, false },
