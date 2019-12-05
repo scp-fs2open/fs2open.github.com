@@ -10,19 +10,28 @@
 #ifndef _FREESPACE_CUTSCENES_SCREEN_HEADER_FILE
 #define _FREESPACE_CUTSCENES_SCREEN_HEADER_FILE
 
+#include "globalincs/flagset.h"
 #include "globalincs/globals.h"
 #include "globalincs/pstypes.h"
 
-const int CF_VIEWABLE =         (1<<0);
-const int CF_ALWAYS_VIEWABLE =  (1<<1);
-const int CF_NEVER_VIEWABLE =   (1<<2);
+namespace Cutscene
+{
+	FLAG_LIST(Cutscene_Flags)
+	{
+		Viewable = 0,
+		Always_viewable,
+		Never_viewable,
+
+		NUM_VALUES
+	};
+}
 
 typedef struct cutscene_info
 {
 	char filename[MAX_FILENAME_LEN];
 	char name[NAME_LENGTH];
 	char* description;
-	uint32_t flags;
+	flagset<Cutscene::Cutscene_Flags> flags;
 } cutscene_info;
 
 extern SCP_vector<cutscene_info> Cutscenes;

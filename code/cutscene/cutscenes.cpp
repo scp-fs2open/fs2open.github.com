@@ -88,13 +88,13 @@ void cutscene_init()
 				stuff_int(&junk);
 			}
 
-			cutinfo.flags = 0;
+			cutinfo.flags.reset();
 
 			if (isFirstCutscene)
 			{
 				isFirstCutscene = false;
 				// The original code assumes the first movie is the intro, so make it viewable
-				cutinfo.flags |= CF_VIEWABLE;
+				cutinfo.flags.set(Cutscene::Cutscene_Flags::Viewable);
 			}
 
 			if (optional_string("$Always Viewable:"))
@@ -102,14 +102,14 @@ void cutscene_init()
 				bool flag;
 				stuff_boolean(&flag);
 				if (flag)
-					cutinfo.flags |= CF_ALWAYS_VIEWABLE;
+					cutinfo.flags.set(Cutscene::Cutscene_Flags::Always_viewable);
 			}
 			if (optional_string("$Never Viewable:"))
 			{
 				bool flag;
 				stuff_boolean(&flag);
 				if (flag)
-					cutinfo.flags |= CF_NEVER_VIEWABLE;
+					cutinfo.flags.set(Cutscene::Cutscene_Flags::Never_viewable);
 			}
 
 			Cutscenes.push_back(cutinfo);
@@ -152,7 +152,7 @@ void cutscene_mark_viewable(const char* filename)
 		// see if the stripped filename matches the cutscene filename
 		if (strstr(cut_file, file) != NULL)
 		{
-			cut->flags |= CF_VIEWABLE;
+			cut->flags.set(Cutscene::Cutscene_Flags::Viewable);
 			return;
 		}
 		i++;
@@ -452,9 +452,7 @@ void cutscenes_screen_init()
 	int u = 0;
 	for (auto cut = Cutscenes.begin(); cut != Cutscenes.end(); ++cut, ++u)
 	{
-		int flags = (*cut).flags;
-
-		if ( (flags & CF_VIEWABLE || flags & CF_ALWAYS_VIEWABLE) && !(flags & CF_NEVER_VIEWABLE) )
+		if ((cut->flags[Cutscene::Cutscene_Flags::Viewable] || cut->flags[Cutscene::Cutscene_Flags::Always_viewable]) && !cut->flags[Cutscene::Cutscene_Flags::Never_viewable])
 		{
 			Cutscene_list.push_back(u);
 		}

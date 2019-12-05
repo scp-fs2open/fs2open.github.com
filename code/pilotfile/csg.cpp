@@ -1212,7 +1212,7 @@ void pilotfile::csg_write_cutscenes() {
 
 	size_t viewableScenes = 0;
 	for (cut = Cutscenes.begin(); cut != Cutscenes.end(); ++cut) {
-		if (cut->flags & CF_VIEWABLE) {
+		if (cut->flags[Cutscene::Cutscene_Flags::Viewable]) {
 			viewableScenes++;
 		}
 	}
@@ -1223,7 +1223,7 @@ void pilotfile::csg_write_cutscenes() {
 	cfwrite_uint((uint)viewableScenes, cfp);
 
 	for (cut = Cutscenes.begin(); cut != Cutscenes.end(); ++cut) {
-		if (cut->flags & CF_VIEWABLE) {
+		if (cut->flags[Cutscene::Cutscene_Flags::Viewable]) {
 			cfwrite_string_len(cut->filename, cfp);
 		}
 	}
