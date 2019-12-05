@@ -452,7 +452,7 @@ void cutscenes_screen_init()
 	int u = 0;
 	for (auto cut = Cutscenes.begin(); cut != Cutscenes.end(); ++cut, ++u)
 	{
-		if ((cut->flags[Cutscene::Cutscene_Flags::Viewable] || cut->flags[Cutscene::Cutscene_Flags::Always_viewable]) && !cut->flags[Cutscene::Cutscene_Flags::Never_viewable])
+		if (cut->flags[Cutscene::Cutscene_Flags::Viewable, Cutscene::Cutscene_Flags::Always_viewable] && !cut->flags[Cutscene::Cutscene_Flags::Never_viewable])
 		{
 			Cutscene_list.push_back(u);
 		}
