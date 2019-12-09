@@ -4742,7 +4742,7 @@ static void parse_ship_type(const char *filename, const bool replace)
 {
 	char name_buf[NAME_LENGTH];
 	bool create_if_not_found = true;
-	ship_type_info *stp = NULL;
+	ship_type_info *stp = nullptr;
 
 	required_string("$Name:");
 	stuff_string(name_buf, F_NAME, NAME_LENGTH);
