@@ -536,9 +536,9 @@ SCP_vector<sexp_oper> Operators = {
 	{ "set-object-orientation",			OP_SET_OBJECT_ORIENTATION,				4,	4,			SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "set-object-facing",				OP_SET_OBJECT_FACING,					4,	6,			SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "set-object-facing-object",		OP_SET_OBJECT_FACING_OBJECT,			2,	4,			SEXP_ACTION_OPERATOR,	},	// Goober5000
-	{ "set-object-speed-x",				OP_SET_OBJECT_SPEED_X,					2,	3,			SEXP_ACTION_OPERATOR,	},	// WMC
-	{ "set-object-speed-y",				OP_SET_OBJECT_SPEED_Y,					2,	3,			SEXP_ACTION_OPERATOR,	},	// WMC
-	{ "set-object-speed-z",				OP_SET_OBJECT_SPEED_Z,					2,	3,			SEXP_ACTION_OPERATOR,	},	// WMC
+	{ "set-object-speed-x",				OP_SET_OBJECT_SPEED_X,					2,	3,			SEXP_ACTION_OPERATOR,	},	// WMC // Deprecated by wookieejedi
+	{ "set-object-speed-y",				OP_SET_OBJECT_SPEED_Y,					2,	3,			SEXP_ACTION_OPERATOR,	},	// WMC // Deprecated by wookieejedi
+	{ "set-object-speed-z",				OP_SET_OBJECT_SPEED_Z,					2,	3,			SEXP_ACTION_OPERATOR,	},	// WMC // Deprecated by wookieejedi
 	{ "ship-maneuver",					OP_SHIP_MANEUVER,						10, 11,			SEXP_ACTION_OPERATOR,	},	// Wanderer
 	{ "ship-rot-maneuver",				OP_SHIP_ROT_MANEUVER,					6,	7,			SEXP_ACTION_OPERATOR,	},	// Wanderer
 	{ "ship-lat-maneuver",				OP_SHIP_LAT_MANEUVER,					6,	7,			SEXP_ACTION_OPERATOR,	},	// Wanderer
@@ -7254,6 +7254,7 @@ int sexp_num_within_box(int n)
 }	
 
 // Goober5000
+// wookieejedi - this sexp is deprecated in favor of sexp_set_ship_man
 void sexp_set_object_speed(object *objp, int speed, int axis, bool subjective)
 {
 	Assert(axis >= 0 && axis <= 2);
@@ -7278,6 +7279,7 @@ void sexp_set_object_speed(object *objp, int speed, int axis, bool subjective)
 }
 
 // Goober5000
+// wookieejedi - this sexp is deprecated in favor of sexp_set_ship_man 
 void sexp_set_object_speed(int n, int axis)
 {
 	Assert(n >= 0);
@@ -31765,21 +31767,21 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	{ OP_BITWISE_XOR, "bitwise-xor\r\n"
 		"\tPerforms the bitwise XOR operator on its arguments.  This is the same as if the logical XOR operator was performed on each successive bit.  Takes 2 or more numeric arguments.\r\n" },
 
-	{ OP_SET_OBJECT_SPEED_X, "set-object-speed-x\r\n"
+	{ OP_SET_OBJECT_SPEED_X, "set-object-speed-x (deprecated in favor of ship-maneuver)\r\n"
 		"\tSets the X speed of a ship or wing."
 		"Takes 2 or 3 arguments...\r\n"
 		"\t1: The name of the object.\r\n"
 		"\t2: The speed to set.\r\n"
 		"\t3: Whether the speed on the axis should be set according to the universe grid (when false) or according to the object's facing (when true); You almost always want to set this to true; (optional; defaults to false).\r\n" },
 
-	{ OP_SET_OBJECT_SPEED_Y, "set-object-speed-y\r\n"
+	{ OP_SET_OBJECT_SPEED_Y, "set-object-speed-y (deprecated in favor of ship-maneuver)\r\n"
 		"\tSets the Y speed of a ship or wing."
 		"Takes 2 or 3 arguments...\r\n"
 		"\t1: The name of the object.\r\n"
 		"\t2: The speed to set.\r\n"
 		"\t3: Whether the speed on the axis should be set according to the universe grid (when false) or according to the object's facing (when true); You almost always want to set this to true; (optional; defaults to false).\r\n" },
 
-	{ OP_SET_OBJECT_SPEED_Z, "set-object-speed-z\r\n"
+	{ OP_SET_OBJECT_SPEED_Z, "set-object-speed-z (deprecated in favor of ship-maneuver)\r\n"
 		"\tSets the Z speed of a ship or wing."
 		"Takes 2 or 3 arguments...\r\n"
 		"\t1: The name of the object.\r\n"
