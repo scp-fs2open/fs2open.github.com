@@ -843,7 +843,7 @@ void control_config_common_load_overrides()
                         * short key_default;
                         * short joy_default;
                         * char tab;
-                        * int hasXSTR;
+                        * int indexXSTR;
                         * char type;
                         */
 
@@ -885,7 +885,7 @@ void control_config_common_load_overrides()
 
 						if (optional_string("$Has XStr:")) {
 							stuff_int(&iTemp);
-							r_ccConfig.hasXSTR = iTemp;
+							r_ccConfig.indexXSTR = iTemp;
 						}
 
 						if (optional_string("$Type:")) {
