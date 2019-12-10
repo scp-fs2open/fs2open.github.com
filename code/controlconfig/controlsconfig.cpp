@@ -516,7 +516,9 @@ void control_config_list_prepare()
 	Num_cc_lines = y = z = 0;
 	while (z < CCFG_MAX) {
 		if (Control_config[z].tab == Tab && !Control_config[z].disabled) {
-			if (Control_config[z].hasXSTR) {
+			if (Control_config[z].hasXSTR > 1) {
+				Cc_lines[Num_cc_lines].label = XSTR(Control_config[z].text, Control_config[z].hasXSTR);
+			} else if (Control_config[z].hasXSTR == 1) {
 				Cc_lines[Num_cc_lines].label = XSTR(Control_config[z].text, CONTROL_CONFIG_XSTR + z);
 			} else {
 				Cc_lines[Num_cc_lines].label = Control_config[z].text;
@@ -1982,7 +1984,9 @@ void control_config_do_frame(float frametime)
 		gr_get_string_size(&w, NULL, str);
 		gr_printf_menu(x - w / 2, y - font_height, "%s", str);
 
-		if (Control_config[i].hasXSTR) {
+		if (Control_config[i].hasXSTR > 1) {
+			strcpy_s(buf, XSTR(Control_config[i].text, Control_config[i].hasXSTR));
+		} else if (Control_config[i].hasXSTR == 1) {
 			strcpy_s(buf, XSTR(Control_config[i].text, CONTROL_CONFIG_XSTR + i));
 		} else {
 			strcpy_s(buf, Control_config[i].text);

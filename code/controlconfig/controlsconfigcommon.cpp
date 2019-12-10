@@ -885,7 +885,7 @@ void control_config_common_load_overrides()
 
 						if (optional_string("$Has XStr:")) {
 							stuff_int(&iTemp);
-							r_ccConfig.hasXSTR = (iTemp == 1);
+							r_ccConfig.hasXSTR = iTemp;
 						}
 
 						if (optional_string("$Type:")) {
