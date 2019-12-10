@@ -843,7 +843,7 @@ void control_config_common_load_overrides()
                         * short key_default;
                         * short joy_default;
                         * char tab;
-                        * bool hasXSTR;
+                        * int hasXSTR;
                         * char type;
                         */
 
