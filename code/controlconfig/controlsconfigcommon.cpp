@@ -883,6 +883,7 @@ void control_config_common_load_overrides()
 							r_ccConfig.tab = (char)mCCTabNameToVal[szTempBuffer];
 						}
 
+						r_ccConfig.hasXSTR = 0;
 						if (optional_string("$Has XStr:")) {
 							stuff_int(&iTemp);
 							r_ccConfig.hasXSTR = iTemp;
