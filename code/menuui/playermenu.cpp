@@ -504,6 +504,12 @@ void player_select_close()
 		Pilot.load_savefile(Player, Player->current_campaign);
 	}
 
+	if (Player_select_mode == PLAYER_SELECT_MODE_MULTI) {
+		Player->player_was_multi = 1;
+	} else {
+		Player->player_was_multi = 0;
+	}
+
 	os_config_write_string(nullptr, "LastPlayer", Player->callsign);
 
 	if (Player_select_force_main_hall != "") {
@@ -1092,6 +1098,9 @@ void player_select_process_input(int k)
 		if (Player_select_mode == PLAYER_SELECT_MODE_MULTI) {
 			Player->flags |= PLAYER_FLAGS_IS_MULTI;
 			Player->stats.flags |= STATS_FLAG_MULTIPLAYER;
+			Player->player_was_multi = 1;
+		} else {
+			Player->player_was_multi = 0;
 		}
 
 		// create his pilot file
