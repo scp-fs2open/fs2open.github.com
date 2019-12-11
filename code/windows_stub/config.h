@@ -35,6 +35,10 @@
 
 #define STUB_FUNCTION nprintf(( "Warning", "STUB: %s in " __FILE__ " at line %d\n", __FUNCTION__, __LINE__))
 
+#define SOCKLEN_T int
+
+#define NETCALL_WOULDBLOCK(err) (err == WSAEWOULDBLOCK)
+
 #else  // ! Win32
 
 
@@ -67,9 +71,13 @@
 #define SOCKET_ERROR	(-1)
 #define ioctlsocket(x, y, z)	ioctl(x, y, z)
 
+#define NETCALL_WOULDBLOCK(err) (err == EAGAIN || err == EINPROGRESS)
+
 #ifndef INVALID_SOCKET
 #define INVALID_SOCKET ((SOCKET) -1)
 #endif
+
+#define SOCKLEN_T socklen_t
 
 // file related items
 #define _MAX_FNAME					255

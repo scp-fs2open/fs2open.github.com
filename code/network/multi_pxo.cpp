@@ -5082,7 +5082,7 @@ void multi_pxo_ban_init()
 	Multi_pxo_banner.ban_bitmap = -1;	
 
 	// are we doing banners at all?
-	if ( os_config_read_uint(NULL, "PXOBanners", 1) ) {
+	if ( os_config_read_uint(nullptr, "PXOBanners", 1) && strlen(Multi_options_g.pxo_banner_url) ) {
 		// if we're already in idle mode, we're done downloading for this instance of freespace. pick a random image we already have
 		if(Multi_pxo_ban_mode == PXO_BAN_MODE_IDLE){
 			Multi_pxo_ban_mode = PXO_BAN_MODE_CHOOSE_RANDOM;		
@@ -5118,13 +5118,13 @@ void multi_pxo_ban_process()
 	// start downloading list
 	case PXO_BAN_MODE_LIST_STARTUP:		
 		// remote file
-		sprintf(url_string, "http://www.pxo.net/files/%s", PXO_BANNERS_CONFIG_FILE);
+		sprintf(url_string, "%s/%s", Multi_options_g.pxo_banner_url, PXO_BANNERS_CONFIG_FILE);
 
 		// local file
 		cf_create_default_path_string(local_file, sizeof(local_file) - 1, CF_TYPE_MULTI_CACHE, PXO_BANNERS_CONFIG_FILE);
 
 		// try creating the file get object
-		Multi_pxo_ban_get = NULL;
+		Multi_pxo_ban_get = new InetGetFile(url_string, local_file, CF_TYPE_MULTI_CACHE);
 
 		// bad
 		if (Multi_pxo_ban_get == NULL) {
@@ -5179,7 +5179,7 @@ void multi_pxo_ban_process()
 		cf_create_default_path_string(local_file, sizeof(local_file) - 1, CF_TYPE_MULTI_CACHE, Multi_pxo_banner.ban_file);
 
 		// try creating the file get object
-		Multi_pxo_ban_get = NULL;
+		Multi_pxo_ban_get = new InetGetFile(Multi_pxo_banner.ban_file_url, local_file, CF_TYPE_MULTI_CACHE);
 
 		// bad
 		if (Multi_pxo_ban_get == NULL) {
@@ -5295,6 +5295,13 @@ void multi_pxo_ban_parse_banner_file(int choose_existing)
 	}
 	drop_leading_white_space(file_url);
 	drop_trailing_white_space(file_url);
+
+	// verify that it's a proper url
+	if ( strncmp(file_url, "http://", 7) && strncmp(file_url, "ftp://", 6) ) {
+		cfclose(in);
+		cf_delete(PXO_BANNERS_CONFIG_FILE, CF_TYPE_MULTI_CACHE);
+		return;
+	}
 
 	// otherwise read in 		
 	num_banners = 0;

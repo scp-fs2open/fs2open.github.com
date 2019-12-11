@@ -45,7 +45,7 @@ class CFtpGet
 {
 
 public:
-	CFtpGet(char *URL, char *localfile, char *Username = NULL, char *Password = NULL);
+	CFtpGet(const char *URL, const char *localfile, const char *Username = nullptr, const char *Password = nullptr);
 	~CFtpGet();
 	int GetStatus();
 	uint GetBytesIn();
@@ -58,7 +58,7 @@ protected:
 	
 	int ConnectControlSocket();
 	int LoginHost();	
-	uint SendFTPCommand(char *command);
+	uint SendFTPCommand(const char *command);
 	uint ReadFTPServerReply();
 	uint GetFile();
 	uint IssuePort();
