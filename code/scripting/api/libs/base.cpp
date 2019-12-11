@@ -410,10 +410,6 @@ ADE_FUNC(postGameEvent, l_Base, "gameevent Event", "Sets current game event. Not
 	if(!gh->IsValid())
 		return ade_set_error(L, "b", false);
 
-	if (Multi_options_g.pxo)
-		Multi_options_g.protocol = NET_TCP;
-	psnet_use_protocol(Multi_options_g.protocol);
-
 	gameseq_post_event(gh->Get());
 
 	return ADE_RETURN_TRUE;

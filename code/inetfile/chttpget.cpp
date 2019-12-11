@@ -23,8 +23,6 @@
 #ifdef SCP_SOLARIS
 #include <sys/filio.h>
 #endif
-
-#define WSAGetLastError()  (errno)
 #endif
 
 #include <cstring>

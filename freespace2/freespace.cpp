@@ -1865,7 +1865,7 @@ void game_init()
 	hud_positions_init();		//Setup hud positions
 	
 	// initialize psnet
-	psnet_init( Multi_options_g.protocol, Multi_options_g.port );						// initialize the networking code		
+	psnet_init(Multi_options_g.port);						// initialize the networking code
 
 	asteroid_init();
 	mission_brief_common_init();	// Mark all the briefing structures as empty.

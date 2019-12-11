@@ -22,8 +22,6 @@
 #include <cerrno>
 #include <arpa/inet.h>
 #include <netdb.h>
-
-#define WSAGetLastError()  (errno)
 #endif
 
 #include "globalincs/pstypes.h"

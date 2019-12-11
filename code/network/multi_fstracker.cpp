@@ -962,7 +962,6 @@ void multi_fs_tracker_process_game_item(game_list *gl)
 		memset(&ag,0,sizeof(active_game));
 		SDL_strlcpy(ag.name, gl->game_name[idx], SDL_arraysize(ag.name));
 		memcpy(&ag.server_addr.addr[0], &gl->game_server[idx], IP_ADDRESS_LENGTH);
-		ag.server_addr.type = NET_TCP;
 		ag.server_addr.port = ntohs(gl->port[idx]); //DEFAULT_GAME_PORT;
 
 		// add to the active game list

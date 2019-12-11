@@ -323,14 +323,9 @@ void get_join_request(ubyte *data, int *size, join_request *jr)
 void add_net_addr(ubyte *data, int *size, net_addr *addr)
 {
 	int packet_size = *size;
-	net_addr addr_tmp;
 
-	memcpy(&addr_tmp, addr, sizeof(net_addr));
-
-	addr_tmp.type = INTEL_INT(addr->type);
-	addr_tmp.port = INTEL_SHORT(addr->port);
-
-	ADD_DATA(addr_tmp);
+	ADD_DATA(addr->addr);
+	ADD_USHORT(addr->port);
 
 	*size = packet_size;
 }
@@ -339,10 +334,8 @@ void get_net_addr(ubyte *data, int *size, net_addr *addr)
 {
 	int offset = *size;
 
-	GET_DATA(*addr);
-
-	addr->type = INTEL_INT(addr->type); //-V570
-	addr->port = INTEL_SHORT(addr->port); //-V570
+	GET_DATA(addr->addr);
+	GET_USHORT(addr->port);
 
 	*size = offset;
 }
@@ -1655,7 +1648,7 @@ void process_accept_packet(ubyte* data, header* hinfo)
 
 	// make a call to psnet to initialize and try to connect with the server.
 	psnet_rel_connect_to_server( &Net_player->reliable_socket, &Netgame.server_addr );
-	if ( Net_player->reliable_socket == INVALID_SOCKET ) {
+	if ( Net_player->reliable_socket == PSNET_INVALID_SOCKET ) {
 		multi_quit_game(PROMPT_NONE, MULTI_END_NOTIFY_NONE, MULTI_END_ERROR_CONNECT_FAIL);
 	}
 }
@@ -2266,7 +2259,7 @@ void broadcast_game_query()
 
 	// send out a broadcast if our options allow us
 	if(Net_player->p_info.options.flags & MLO_FLAG_LOCAL_BROADCAST){
-		psnet_broadcast( &addr, data, packet_size);
+		psnet_broadcast(data, packet_size);
 	}		
 }
 

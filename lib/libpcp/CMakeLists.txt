@@ -66,7 +66,7 @@ if(WIN32)
     endif(MINGW)
 
     # target XP
-    target_compile_definitions(pcp PRIVATE WIN32 NTDDI_VERSION=0x05010000 _WIN32_WINNT=0x0501)
+    target_compile_definitions(pcp PRIVATE WIN32 NTDDI_VERSION=0x06000000 _WIN32_WINNT=0x0600)
     target_link_libraries(pcp INTERFACE iphlpapi ws2_32)
 endif(WIN32)
 
