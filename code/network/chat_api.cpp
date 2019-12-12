@@ -9,6 +9,7 @@
 
 #include "globalincs/pstypes.h"
 #include "network/chat_api.h"
+#include "network/psnet2.h"
 
 #ifdef SCP_UNIX
 #include <sys/time.h>
@@ -34,7 +35,7 @@ typedef int socklen_t;
 #define MAXCHATBUFFER	500
 
 SOCKET Chatsock;
-SOCKADDR_IN Chataddr;
+static SOCKADDR_STORAGE Chataddr;
 int Socket_connecting = 0;
 char Nick_name[33];
 char Orignial_nick_name[33];
@@ -101,7 +102,7 @@ void ChatInit(void)
 // exists (Scourge1 for instance)
 int ConnectToChatServer(char *serveraddr, char *nickname, char *trackerid)
 {
-	short chat_port;
+	uint16_t chat_port;
 	char chat_server[50];
 	char *p;
 	unsigned long argp = 1;
@@ -109,8 +110,6 @@ int ConnectToChatServer(char *serveraddr, char *nickname, char *trackerid)
 
 	if(!Socket_connecting)
 	{
-		unsigned long iaddr;
-
 		strncpy(Nick_name, nickname, sizeof(Nick_name)-1);
 		strncpy(Orignial_nick_name, nickname, sizeof(Orignial_nick_name)-1);
 		strncpy(Chat_tracker_id, trackerid, sizeof(Chat_tracker_id)-1);
@@ -130,48 +129,38 @@ int ConnectToChatServer(char *serveraddr, char *nickname, char *trackerid)
 		memset(chat_server, 0, sizeof(chat_server));
 		strncpy(chat_server,serveraddr,(p-serveraddr));
 		chat_server[p-serveraddr] = '\0';
-		chat_port = (short)atoi(p+1);
+		chat_port = static_cast<uint16_t>(atoi(p+1));
 		if(0==chat_port)
 		{
 			return -1;
 		}
 
-		Chatsock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+		Chatsock = socket(AF_INET6, SOCK_STREAM, 0);
 
 		if(INVALID_SOCKET == Chatsock)
 		{
 			return -1;
 		}
 
-		memset( &Chataddr, 0, sizeof(SOCKADDR_IN) );
-		Chataddr.sin_family = AF_INET; 
-		Chataddr.sin_addr.s_addr = INADDR_ANY; 
-		Chataddr.sin_port = 0;
+		if ( !psnet_get_addr(nullptr, static_cast<uint16_t>(0), &Chataddr) )
+		{
+			printf("bail!\n");
+			return -1;
+		}
 		
-		if (SOCKET_ERROR==bind(Chatsock, (SOCKADDR*)&Chataddr, sizeof (sockaddr))) 
+		if (SOCKET_ERROR==bind(Chatsock, reinterpret_cast<LPSOCKADDR>(&Chataddr), sizeof(Chataddr)))
 		{
 			return -1;
 		}
 
 		ioctlsocket(Chatsock, FIONBIO, &argp);
-		
-		// first try and resolve by name
-		iaddr = inet_addr( chat_server );
-		if ( iaddr == INADDR_NONE ) {	
-			HOSTENT *he;
-			he = gethostbyname(chat_server);
-			if(!he)
-			{
-				return 0;
-			}
-			memcpy(&iaddr, he->h_addr_list[0],4);
+
+		if ( !psnet_get_addr(chat_server, chat_port, &Chataddr) )
+		{
+			return -2;
 		}
-		
-		memcpy(&Chataddr.sin_addr.s_addr, &iaddr,4);			
 
-		Chataddr.sin_port = htons( chat_port );
-
-		if(SOCKET_ERROR == connect(Chatsock,(SOCKADDR *)&Chataddr,sizeof(SOCKADDR_IN)))
+		if(SOCKET_ERROR == connect(Chatsock, reinterpret_cast<LPSOCKADDR>(&Chataddr), sizeof(Chataddr)))
 		{
 			if(WSAEWOULDBLOCK == WSAGetLastError())
 			{
