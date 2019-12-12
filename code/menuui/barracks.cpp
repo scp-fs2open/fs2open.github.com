@@ -1146,6 +1146,7 @@ void barracks_button_pressed(int n)
 				// make sure we don't carry over the multi flag
 				if (Cur_pilot->flags & PLAYER_FLAGS_IS_MULTI) {
 					Cur_pilot->flags &= ~PLAYER_FLAGS_IS_MULTI;
+					Cur_pilot->player_was_multi = 0;
 				}
 				Pilot.save_player(Cur_pilot);
 				barracks_init_player_stuff(PLAYER_SELECT_MODE_SINGLE);
@@ -1161,6 +1162,7 @@ void barracks_button_pressed(int n)
 			if (Player_sel_mode != PLAYER_SELECT_MODE_MULTI) {
 				gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 				Cur_pilot->flags |= PLAYER_FLAGS_IS_MULTI;
+				Cur_pilot->player_was_multi = 1;
 				Pilot.save_player(Cur_pilot);
 				barracks_init_player_stuff(PLAYER_SELECT_MODE_MULTI);
 			}
@@ -1303,9 +1305,11 @@ void barracks_accept_new_pilot_callsign()
 	// displayed correctly
 	if (Player_sel_mode == PLAYER_SELECT_MODE_SINGLE) {
 		Cur_pilot->flags &= ~(PLAYER_FLAGS_IS_MULTI);
+		Cur_pilot->player_was_multi = 0;
 	} else {
 		Cur_pilot->flags |= PLAYER_FLAGS_IS_MULTI;
 		Cur_pilot->stats.flags |= STATS_FLAG_MULTIPLAYER;
+		Cur_pilot->player_was_multi = 1;
 	}
 
 	if ( !(Game_mode & GM_STANDALONE_SERVER) ) {
@@ -1542,11 +1546,13 @@ void barracks_do_frame(float  /*frametime*/)
 
 				if (Player_sel_mode == PLAYER_SELECT_MODE_SINGLE) {
 					Cur_pilot->flags |= PLAYER_FLAGS_IS_MULTI;
+					Cur_pilot->player_was_multi = 1;
 					Pilot.save_player(Cur_pilot);
 					barracks_init_player_stuff(PLAYER_SELECT_MODE_MULTI);
 				} else {
 					// make sure we don't carry over the multi flag
 					Cur_pilot->flags &= ~PLAYER_FLAGS_IS_MULTI;
+					Cur_pilot->player_was_multi = 0;
 					Pilot.save_player(Cur_pilot);
 					barracks_init_player_stuff(PLAYER_SELECT_MODE_SINGLE);
 				}
