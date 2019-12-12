@@ -40,7 +40,7 @@ static validate_id_request *ValidIDReq;
 
 static int ValidState;
 
-static struct sockaddr_in	rtrackaddr;
+static SOCKADDR_STORAGE rtrackaddr;
 
 static int ValidFirstSent;
 static int ValidLastSent;
@@ -215,8 +215,6 @@ static void DeserializeValidatePacket(const ubyte *data, const int data_size, ud
 
 int InitValidateClient()
 {
-	struct sockaddr_in sockaddr;
-	unsigned int iaddr;
 	ValidFirstSent = 0;
 	ValidLastSent = 0;
 	ValidState = VALID_STATE_IDLE;
@@ -233,35 +231,7 @@ int InitValidateClient()
 	TableValidLastSent = 0;
 	TableValidState = VALID_STATE_IDLE;
 
-	memset( &sockaddr, 0, sizeof(struct sockaddr_in) );
-	sockaddr.sin_family = AF_INET; 
-	sockaddr.sin_addr.s_addr = INADDR_ANY; 
-	sockaddr.sin_port = 0;
-
-	rtrackaddr.sin_family = AF_INET; 
-	iaddr = inet_addr( Multi_options_g.user_tracker_ip );
-	if ( iaddr == INADDR_NONE ) {
-		struct hostent *he;
-		he = gethostbyname( Multi_options_g.user_tracker_ip );
-		if(!he)
-			return 0;
-	/*
-		{		
-			// try and resolve by address
-			unsigned int n_order = inet_addr(Multi_user_tracker_ip_address);
-			he = gethostbyaddr((char*)&n_order,4,PF_INET);
-
-			if(!he){
-				return 0;
-			}
-		}
-	*/
-		iaddr = reinterpret_cast<in_addr *>(he->h_addr)->s_addr;
-	}
-	
-	rtrackaddr.sin_addr.s_addr = iaddr;
-	rtrackaddr.sin_port = htons(REGPORT);
-	
+	psnet_get_addr(Multi_options_g.user_tracker_ip, REGPORT, &rtrackaddr);
 	return 1;
 
 }
@@ -318,11 +288,12 @@ int ValidateUser(validate_id_request *valid_id, char *trackerid)
 			while(SELECT(static_cast<int>(Psnet_socket+1),&read_fds,nullptr,nullptr,&timeout, PSNET_TYPE_VALIDATION))
 			{
 				int addrsize;
-				struct sockaddr_in fromaddr;
+				SOCKADDR_STORAGE fromaddr;
 
 				udp_packet_header inpacket;
-				addrsize = sizeof(struct sockaddr_in);
-				RECVFROM(Psnet_socket, reinterpret_cast<char *>(&inpacket),sizeof(udp_packet_header),0,reinterpret_cast<struct sockaddr *>(&fromaddr),&addrsize, PSNET_TYPE_VALIDATION);
+				addrsize = sizeof(fromaddr);
+				RECVFROM(Psnet_socket, reinterpret_cast<char *>(&inpacket), sizeof(udp_packet_header), 0,
+						 reinterpret_cast<LPSOCKADDR>(&fromaddr), &addrsize, PSNET_TYPE_VALIDATION);
 			}
 			Psztracker_id = trackerid;
 
@@ -335,7 +306,7 @@ int ValidateUser(validate_id_request *valid_id, char *trackerid)
 			SDL_strlcpy(ValidIDReq->password, valid_id->password, SDL_arraysize(ValidIDReq->password));
 
 			packet_length = SerializeValidatePacket(&PacketHeader, packet_data);
-			SENDTO(Psnet_socket, reinterpret_cast<char *>(&packet_data), packet_length, 0, reinterpret_cast<struct sockaddr *>(&rtrackaddr), sizeof(struct sockaddr), PSNET_TYPE_VALIDATION);
+			SENDTO(Psnet_socket, reinterpret_cast<char *>(&packet_data), packet_length, 0, reinterpret_cast<LPSOCKADDR>(&rtrackaddr), sizeof(rtrackaddr), PSNET_TYPE_VALIDATION);
 			ValidState = VALID_STATE_WAITING;
 			ValidFirstSent = timer_get_milliseconds();
 			ValidLastSent = timer_get_milliseconds();
@@ -367,14 +338,15 @@ void ValidIdle()
 	if(SELECT(static_cast<int>(Psnet_socket+1),&read_fds,nullptr,nullptr,&timeout, PSNET_TYPE_VALIDATION)){
 		int bytesin;
 		int addrsize;
-		struct sockaddr_in fromaddr;
+		SOCKADDR_STORAGE fromaddr;
 
 		udp_packet_header inpacket;
 
 		SDL_zero(inpacket);
-		addrsize = sizeof(struct sockaddr_in);
+		addrsize = sizeof(fromaddr);
 
-		bytesin = RECVFROM(Psnet_socket, reinterpret_cast<char *>(&packet_data), sizeof(udp_packet_header), 0, reinterpret_cast<struct sockaddr *>(&fromaddr), &addrsize, PSNET_TYPE_VALIDATION);
+		bytesin = RECVFROM(Psnet_socket, reinterpret_cast<char *>(&packet_data), sizeof(udp_packet_header), 0,
+						   reinterpret_cast<LPSOCKADDR>(&fromaddr), &addrsize, PSNET_TYPE_VALIDATION);
 
 		if (bytesin > 0) {
 			DeserializeValidatePacket(packet_data, bytesin, &inpacket);
@@ -486,7 +458,7 @@ void ValidIdle()
 		{
 			//Send 'da packet
 			packet_length = SerializeValidatePacket(&PacketHeader, packet_data);
-			SENDTO(Psnet_socket, reinterpret_cast<char *>(&packet_data), packet_length, 0, reinterpret_cast<struct sockaddr *>(&rtrackaddr), sizeof(struct sockaddr), PSNET_TYPE_VALIDATION);
+			SENDTO(Psnet_socket, reinterpret_cast<char *>(&packet_data), packet_length, 0, reinterpret_cast<LPSOCKADDR>(&rtrackaddr), sizeof(rtrackaddr), PSNET_TYPE_VALIDATION);
 			ValidLastSent = timer_get_milliseconds();
 		}
 	}
@@ -529,7 +501,7 @@ void AckValidServer(unsigned int sig)
 
 	packet_length = SerializeValidatePacket(&ack_pack, packet_data);
 	Assert(packet_length == PACKED_HEADER_ONLY_SIZE);
-	SENDTO(Psnet_socket, reinterpret_cast<char *>(&packet_data), packet_length, 0, reinterpret_cast<struct sockaddr *>(&rtrackaddr), sizeof(struct sockaddr_in), PSNET_TYPE_VALIDATION);
+	SENDTO(Psnet_socket, reinterpret_cast<char *>(&packet_data), packet_length, 0, reinterpret_cast<LPSOCKADDR>(&rtrackaddr), sizeof(rtrackaddr), PSNET_TYPE_VALIDATION);
 }
 
 // call with a valid struct to validate a mission
@@ -581,20 +553,19 @@ int ValidateMission(vmt_validate_mission_req_struct *valid_msn)
 			
 			timeout.tv_sec=0;            
 			timeout.tv_usec=0;
-			
-			FD_ZERO(&read_fds);	// NOLINT
-			FD_SET(Psnet_socket, &read_fds);
 
 			while(SELECT(static_cast<int>(Psnet_socket+1),&read_fds,nullptr,nullptr,&timeout, PSNET_TYPE_VALIDATION))
 			{
 				int addrsize;
-				struct sockaddr_in fromaddr;
-
+				SOCKADDR_STORAGE fromaddr;
 				udp_packet_header inpacket;
-				addrsize = sizeof(struct sockaddr_in);
-				RECVFROM(Psnet_socket, reinterpret_cast<char *>(&inpacket),sizeof(udp_packet_header),0,reinterpret_cast<struct sockaddr *>(&fromaddr),&addrsize, PSNET_TYPE_VALIDATION);
+
 				FD_ZERO(&read_fds);	// NOLINT
 				FD_SET(Psnet_socket, &read_fds);
+
+				addrsize = sizeof(fromaddr);
+				RECVFROM(Psnet_socket, reinterpret_cast<char *>(&inpacket), sizeof(udp_packet_header), 0,
+						 reinterpret_cast<LPSOCKADDR>(&fromaddr), &addrsize, PSNET_TYPE_VALIDATION);
 			}
 			//only send the header, the checksum and the string length plus the null
 			PacketHeader.type = UNT_VALID_MSN_REQ;
@@ -602,7 +573,7 @@ int ValidateMission(vmt_validate_mission_req_struct *valid_msn)
 			PacketHeader.len = static_cast<unsigned short>(PACKED_HEADER_ONLY_SIZE + sizeof(int)+1+strlen(valid_msn->file_name));
 			memcpy(PacketHeader.data,valid_msn,PacketHeader.len-PACKED_HEADER_ONLY_SIZE);
 			packet_length = SerializeValidatePacket(&PacketHeader, packet_data);
-			SENDTO(Psnet_socket, reinterpret_cast<char *>(&packet_data), packet_length, 0, reinterpret_cast<struct sockaddr *>(&rtrackaddr), sizeof(struct sockaddr), PSNET_TYPE_VALIDATION);
+			SENDTO(Psnet_socket, reinterpret_cast<char *>(&packet_data), packet_length, 0, reinterpret_cast<LPSOCKADDR>(&rtrackaddr), sizeof(rtrackaddr), PSNET_TYPE_VALIDATION);
 			MissionValidState = VALID_STATE_WAITING;
 			MissionValidFirstSent = timer_get_milliseconds();
 			MissionValidLastSent = timer_get_milliseconds();
@@ -668,19 +639,19 @@ int ValidateSquadWar(squad_war_request *sw_req, squad_war_response *sw_resp)
 			
 			timeout.tv_sec=0;            
 			timeout.tv_usec=0;
-			
-			FD_ZERO(&read_fds);	// NOLINT
-			FD_SET(Psnet_socket, &read_fds);
 
 			while(SELECT(static_cast<int>(Psnet_socket+1),&read_fds,nullptr,nullptr,&timeout, PSNET_TYPE_VALIDATION)){
 				int addrsize;
-				struct sockaddr_in fromaddr;
-
+				SOCKADDR_STORAGE fromaddr;
 				udp_packet_header inpacket;
-				addrsize = sizeof(struct sockaddr_in);
-				RECVFROM(Psnet_socket, reinterpret_cast<char *>(&inpacket),sizeof(udp_packet_header),0,reinterpret_cast<struct sockaddr *>(&fromaddr),&addrsize, PSNET_TYPE_VALIDATION);
+
 				FD_ZERO(&read_fds);	// NOLINT
 				FD_SET(Psnet_socket, &read_fds);
+
+				addrsize = sizeof(fromaddr);
+				RECVFROM(Psnet_socket, reinterpret_cast<char *>(&inpacket), sizeof(udp_packet_header), 0,
+						 reinterpret_cast<LPSOCKADDR>(&fromaddr), &addrsize, PSNET_TYPE_VALIDATION);
+
 			}
 			// only send the header, the checksum and the string length plus the null
 			PacketHeader.type = UNT_VALID_SW_MSN_REQ;
@@ -688,7 +659,7 @@ int ValidateSquadWar(squad_war_request *sw_req, squad_war_response *sw_resp)
 			PacketHeader.len = static_cast<unsigned short>(PACKED_HEADER_ONLY_SIZE + sizeof(squad_war_request));
 			memcpy(PacketHeader.data, sw_req, PacketHeader.len-PACKED_HEADER_ONLY_SIZE);
 			packet_length = SerializeValidatePacket(&PacketHeader, packet_data);
-			SENDTO(Psnet_socket, reinterpret_cast<char *>(&packet_data), packet_length, 0, reinterpret_cast<struct sockaddr *>(&rtrackaddr), sizeof(struct sockaddr), PSNET_TYPE_VALIDATION);
+			SENDTO(Psnet_socket, reinterpret_cast<char *>(&packet_data), packet_length, 0, reinterpret_cast<LPSOCKADDR>(&rtrackaddr), sizeof(rtrackaddr), PSNET_TYPE_VALIDATION);
 			SquadWarValidState = VALID_STATE_WAITING;
 			SquadWarFirstSent = timer_get_milliseconds();
 			SquadWarLastSent = timer_get_milliseconds();
@@ -741,18 +712,17 @@ int ValidateTable(vmt_validate_mission_req_struct *valid_tbl)
 			timeout.tv_sec = 0;
 			timeout.tv_usec = 0;
 
-			FD_ZERO(&read_fds);	// NOLINT
-			FD_SET(Psnet_socket, &read_fds);
-
 			while ( SELECT(static_cast<int>(Psnet_socket+1), &read_fds, nullptr, nullptr, &timeout, PSNET_TYPE_VALIDATION) ) {
 				int addrsize;
-				struct sockaddr_in fromaddr;
-
+				SOCKADDR_STORAGE fromaddr;
 				udp_packet_header inpacket;
-				addrsize = sizeof(struct sockaddr_in);
-				RECVFROM(Psnet_socket, reinterpret_cast<char *>(&inpacket), sizeof(udp_packet_header), 0, reinterpret_cast<struct sockaddr *>(&fromaddr), &addrsize, PSNET_TYPE_VALIDATION);
+
 				FD_ZERO(&read_fds);	// NOLINT
 				FD_SET(Psnet_socket, &read_fds);
+
+				addrsize = sizeof(fromaddr);
+				RECVFROM(Psnet_socket, reinterpret_cast<char *>(&inpacket), sizeof(udp_packet_header), 0,
+						 reinterpret_cast<LPSOCKADDR>(&fromaddr), &addrsize, PSNET_TYPE_VALIDATION);
 			}
 
 			//only send the header, the checksum and the string length plus the null
@@ -761,7 +731,7 @@ int ValidateTable(vmt_validate_mission_req_struct *valid_tbl)
 			PacketHeader.len = static_cast<unsigned short>(PACKED_HEADER_ONLY_SIZE + sizeof(int)+1+strlen(valid_tbl->file_name));
 			memcpy(PacketHeader.data, valid_tbl, PacketHeader.len-PACKED_HEADER_ONLY_SIZE);
 			packet_length = SerializeValidatePacket(&PacketHeader, packet_data);
-			SENDTO(Psnet_socket, reinterpret_cast<char *>(&packet_data), packet_length, 0, reinterpret_cast<struct sockaddr *>(&rtrackaddr), sizeof(struct sockaddr), PSNET_TYPE_VALIDATION);
+			SENDTO(Psnet_socket, reinterpret_cast<char *>(&packet_data), packet_length, 0,reinterpret_cast<LPSOCKADDR>(&rtrackaddr), sizeof(rtrackaddr), PSNET_TYPE_VALIDATION);
 			TableValidState = VALID_STATE_WAITING;
 			TableValidFirstSent = timer_get_milliseconds();
 			TableValidLastSent = timer_get_milliseconds();

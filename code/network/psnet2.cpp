@@ -231,7 +231,6 @@ static bool psnet_explode_ip_string(const char *ip_string, SCP_string &host, SCP
 // conversions
 static void psnet_sockaddr_to_addr(const SOCKADDR_IN6 *sockaddr, net_addr *addr);
 static void psnet_addr_to_sockaddr(const net_addr *addr, SOCKADDR_IN6 *sockaddr);
-static void psnet_map4to6(const in_addr *in4, in6_addr *in6);
 
 // -------------------------------------------------------------------------------------------------------
 // PSNET 2 TOP LAYER FUNCTIONS - these functions simply buffer and store packets based upon type (see PSNET_TYPE_* defines)
@@ -825,7 +824,7 @@ static void psnet_addr_to_sockaddr(const net_addr *addr, SOCKADDR_IN6 *sockaddr)
 /**
  * Helper to map IPv4 to IPv6
  */
-static void psnet_map4to6(const in_addr *in4, in6_addr *in6)
+void psnet_map4to6(const in_addr *in4, in6_addr *in6)
 {
 	if (in4->s_addr == INADDR_ANY) {
 		memcpy(in6, &in6addr_any, sizeof(in6_addr));
