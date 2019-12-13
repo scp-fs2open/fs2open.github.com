@@ -22,7 +22,6 @@ struct deferred_global_data {
 	float middist;
 	float fardist;
 
-	float specFactor;
 	float invScreenWidth;
 	float invScreenHeight;
 

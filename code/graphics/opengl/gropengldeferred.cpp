@@ -149,7 +149,6 @@ void gr_opengl_deferred_lighting_finish()
 
 		header->invScreenWidth = 1.0f / gr_screen.max_w;
 		header->invScreenHeight = 1.0f / gr_screen.max_h;
-		header->specFactor = Cmdline_ogl_spec;
 
 		// Only the first directional light uses shaders so we need to know when we already saw that light
 		bool first_directional = true;
