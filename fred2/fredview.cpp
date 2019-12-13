@@ -3799,20 +3799,20 @@ void CFREDView::OnRunFreeSpace()
 		processed_name.append(".exe");
 
 		//try to start FS2_open
-		r = CreateProcess(processed_name.c_str(), NULL, NULL, NULL, FALSE, 0, NULL, "./", &si, &pi);
+		r = CreateProcess(processed_name.c_str(), NULL, NULL, NULL, FALSE, 0, NULL, NULL, &si, &pi);
 		if (r) {
 			return;
 		}
 	}
 
-	r = CreateProcess("start_fs2.bat", NULL, NULL, NULL, FALSE, 0, NULL, "./", &si, &pi);
+	r = CreateProcess("start_fs2.bat", NULL, NULL, NULL, FALSE, 0, NULL, NULL, &si, &pi);
 
 	if (!r) {
-		r = CreateProcess("fs2_open.exe", NULL, NULL, NULL, FALSE, 0, NULL, "./", &si, &pi);
+		r = CreateProcess("fs2_open.exe", NULL, NULL, NULL, FALSE, 0, NULL, NULL, &si, &pi);
 	}
 
 	if (!r) {
-		r = CreateProcess("fs2_open_r.exe", NULL, NULL, NULL, FALSE, 0, NULL, "./", &si, &pi);
+		r = CreateProcess("fs2_open_r.exe", NULL, NULL, NULL, FALSE, 0, NULL, NULL, &si, &pi);
 	}
 
 	if (!r) {
