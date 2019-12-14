@@ -46,7 +46,8 @@ flag_def_list Script_conditions[] =
 
 int Num_script_conditions = sizeof(Script_conditions)/sizeof(flag_def_list);
 
-flag_def_list Script_actions[] = 
+// clang-format off
+flag_def_list Script_actions[] =
 {
 	{"On Game Init",			CHA_GAMEINIT,		0},
 	{"On Splash Screen",		CHA_SPLASHSCREEN,	0},
@@ -89,13 +90,14 @@ flag_def_list Script_actions[] =
 	{ "On Beam Fire",			CHA_BEAMFIRE,		0 },
 	{ "On Simulation",			CHA_SIMULATION,		0 },
 	{ "On Load Screen",			CHA_LOADSCREEN,		0 },
-	{ "On Campaign Mission Accept", 	CHA_CMISSIONACCEPT,	0 },
+	{ "On Campaign Mission Accept", CHA_CMISSIONACCEPT,	0 },
     { "On Ship Depart",			CHA_ONSHIPDEPART,	0 },
 	{ "On Weapon Created",		CHA_ONWEAPONCREATED, 0},
 	{ "On Waypoints Done",		CHA_ONWAYPOINTSDONE, 0},
 	{ "On Subsystem Destroyed",	CHA_ONSUBSYSDEATH,	0},
     {"On Goals Cleared",		CHA_ONGOALSCLEARED, 0},
 };
+// clang-format on
 
 int Num_script_actions = sizeof(Script_actions)/sizeof(flag_def_list);
 int scripting_state_inited = 0;
@@ -568,7 +570,8 @@ bool ConditionedHook::ConditionsValid(int action, object *objp, int more_data)
 									return false;
 								break;
 							}
-
+							default:
+								break;
 						}
 					} // case CHC_WEAPONCLASS
 					break;
