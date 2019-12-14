@@ -3777,12 +3777,12 @@ void CFREDView::OnRunFreeSpace()
 		return;
 
 	si.cb = sizeof(si);
-	si.lpReserved = NULL;
-	si.lpDesktop = NULL;
-	si.lpTitle = NULL;
+	si.lpReserved = nullptr;
+	si.lpDesktop = nullptr;
+	si.lpTitle = nullptr;
 	si.dwFlags = 0;
 	si.cbReserved2 = 0;
-	si.lpReserved2 = NULL;
+	si.lpReserved2 = nullptr;
 
 	// get the filename of the app and replace FRED2_Open with FS2_Open
 	std::string processed_name(AfxGetApp()->m_pszExeName); 
@@ -3799,20 +3799,20 @@ void CFREDView::OnRunFreeSpace()
 		processed_name.append(".exe");
 
 		//try to start FS2_open
-		r = CreateProcess(processed_name.c_str(), NULL, NULL, NULL, FALSE, 0, NULL, NULL, &si, &pi);
+		r = CreateProcess(processed_name.c_str(), nullptr, nullptr, nullptr, FALSE, 0, nullptr, nullptr, &si, &pi);
 		if (r) {
 			return;
 		}
 	}
 
-	r = CreateProcess("start_fs2.bat", NULL, NULL, NULL, FALSE, 0, NULL, NULL, &si, &pi);
+	r = CreateProcess("start_fs2.bat", nullptr, nullptr, nullptr, FALSE, 0, nullptr, nullptr, &si, &pi);
 
 	if (!r) {
-		r = CreateProcess("fs2_open.exe", NULL, NULL, NULL, FALSE, 0, NULL, NULL, &si, &pi);
+		r = CreateProcess("fs2_open.exe", nullptr, nullptr, nullptr, FALSE, 0, nullptr, nullptr, &si, &pi);
 	}
 
 	if (!r) {
-		r = CreateProcess("fs2_open_r.exe", NULL, NULL, NULL, FALSE, 0, NULL, NULL, &si, &pi);
+		r = CreateProcess("fs2_open_r.exe", nullptr, nullptr, nullptr, FALSE, 0, nullptr, nullptr, &si, &pi);
 	}
 
 	if (!r) {
