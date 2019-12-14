@@ -363,11 +363,17 @@ void script_state::OutputLuaMeta(FILE *fp)
 	//***Enumerations
 	fprintf(fp, "<dt id=\"Enumerations\"><h2>Enumerations</h2></dt>");
 	for (uint32_t i = 0; i < Num_enumerations; i++) {
-		//WMC - This is in case we ever want to add descriptions to enums.
-		//fprintf(fp, "<dd><dl><dt><b>%s</b></dt><dd>%s</dd></dl></dd>", Enumerations[i].name, Enumerations[i].desc);
 
-		//WMC - Otherwise, just use this.
-		fprintf(fp, "<dd><b>%s</b></dd>", Enumerations[i].name);
+		// Cyborg17 -- Omit the deprecated flag
+		if (!stricmp(Enumerations[i].name,
+		             "VM_EXTERNAL_CAMERA_LOCKED") /* || !stricmp(Enumerations[i], "ADD DEPRECATED ENUM HERE"*/) {
+			continue;
+		}		
+		// WMC - This is in case we ever want to add descriptions to enums.
+		// fprintf(fp, "<dd><dl><dt><b>%s</b></dt><dd>%s</dd></dl></dd>", Enumerations[i].name, Enumerations[i].desc);
+  
+		// WMC - For now, print to the file without the description.
+		fprintf(fp, "<dd><b>%s</b></dd>", Enumerations[i].name);		
 	}
 	fputs("</dl>\n", fp);
 

@@ -1481,6 +1481,7 @@ ADE_FUNC(hasViewmode, l_Graphics, "enumeration", "Specifies if the current viemo
 		return ade_set_error(L, "b", false);
 
 	int bit = 0;
+	static bool VM_EXTERNAL_CAMERA_LOCKED_WARNED = false;
 
 	switch(type->index)
 	{
@@ -1505,6 +1506,13 @@ ADE_FUNC(hasViewmode, l_Graphics, "enumeration", "Specifies if the current viemo
 			break;
 
 		case LE_VM_EXTERNAL_CAMERA_LOCKED:
+		    if (!VM_EXTERNAL_CAMERA_LOCKED_WARNED) {
+			    Warning(LOCATION, "The enumeration VM_EXTERNAL_CAMERA_LOCKED has been deprecated for lua function "
+			                      "hasViewmode()! To ensure future compatibility, please check for either "
+			                      "VM_CAMERA_LOCKED, VM_EXTERNAL, or both, instead.");		    
+				VM_EXTERNAL_CAMERA_LOCKED_WARNED = true;
+			}
+
 			return ade_set_args(L, "b", ((Viewer_mode & VM_CAMERA_LOCKED) && (Viewer_mode & VM_EXTERNAL)) != 0);
 			break;
 
