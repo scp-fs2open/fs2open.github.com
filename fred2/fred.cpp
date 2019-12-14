@@ -331,6 +331,13 @@ BOOL CFREDApp::InitInstance() {
 
 	h_cursor_move = LoadCursor(IDC_CURSOR1);
 	h_cursor_rotate = LoadCursor(IDC_CURSOR2);
+
+	// wookieejedi
+	// load in the controls and defaults including the controlconfigdefault.tbl
+	// this allows the sexp tree in key-pressed to actually match what the game will use
+	// especially useful when a custom Controlconfigdefaults.tbl is used
+	control_config_common_init();
+
 	return TRUE;
 }
 
