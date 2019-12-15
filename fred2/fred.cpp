@@ -331,7 +331,6 @@ BOOL CFREDApp::InitInstance() {
 
 	h_cursor_move = LoadCursor(IDC_CURSOR1);
 	h_cursor_rotate = LoadCursor(IDC_CURSOR2);
-
 	return TRUE;
 }
 
