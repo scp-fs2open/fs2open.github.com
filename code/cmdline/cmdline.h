@@ -101,6 +101,7 @@ extern char *Cmdline_almission;	// DTP for autoload mission (for multi only)
 extern int Cmdline_ingamejoin;
 extern int Cmdline_mpnoreturn;
 extern int Cmdline_objupd;
+extern char *Cmdline_gateway_ip;
 
 // Launcher related options
 extern bool Cmdline_portable_mode;

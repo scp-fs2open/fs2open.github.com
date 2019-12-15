@@ -778,6 +778,8 @@ add_file_folder("Network"
 	network/multi_ping.h
 	network/multi_pmsg.cpp
 	network/multi_pmsg.h
+	network/multi_portfwd.cpp
+	network/multi_portfwd.h
 	network/multi_pxo.cpp
 	network/multi_pxo.h
 	network/multi_rate.cpp
@@ -1368,11 +1370,5 @@ add_file_folder("Weapon"
 # Windows stubs files
 add_file_folder("Windows Stubs"
 	windows_stub/config.h
+	windows_stub/stubs.cpp
 )
-
-IF(UNIX)
-	add_file_folder("Windows Stubs"
-		${file_root_windows_stubs}
-		windows_stub/stubs.cpp
-	)
-ENDIF(UNIX)

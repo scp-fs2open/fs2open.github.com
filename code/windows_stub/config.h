@@ -39,6 +39,18 @@
 
 #define NETCALL_WOULDBLOCK(err) (err == WSAEWOULDBLOCK)
 
+#if (_WIN32_WINNT < 0x0600)
+#define AI_NUMERICSERV              0x00000008
+#define AI_ALL                      0x00000100
+#define AI_ADDRCONFIG               0x00000400
+#define AI_V4MAPPED                 0x00000800
+#define AI_NON_AUTHORITATIVE        0x00004000
+#define AI_SECURE                   0x00008000
+#define AI_RETURN_PREFERRED_NAMES   0x00010000
+
+extern const char *inet_ntop(int af, const void *src, char *dst, int size);
+#endif
+
 #else  // ! Win32
 
 
