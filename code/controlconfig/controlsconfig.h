@@ -271,13 +271,23 @@ enum IoActionId  {
 	CYCLE_PRIMARY_WEAPON_SEQUENCE					=118,	//!< cycle num primaries to fire at once
 
 	//!< @n
+	//!< Key 0 and 5-9 slots
+	//!< ----------------------------
+	CONTROL_KEY_0									= 119,
+	CONTROL_KEY_5									= 120,
+	CONTROL_KEY_6									= 121,
+	CONTROL_KEY_7									= 122,
+	CONTROL_KEY_8									= 123,
+	CONTROL_KEY_9									= 124,
+
+	//!< @n
 	//!< Custom control slots
 	//!< ----------------------------
-	CUSTOM_CONTROL_1								= 119,
-	CUSTOM_CONTROL_2								= 120,
-	CUSTOM_CONTROL_3								= 121,
-	CUSTOM_CONTROL_4								= 122,
-	CUSTOM_CONTROL_5								= 123,
+	CUSTOM_CONTROL_1								= 125,
+	CUSTOM_CONTROL_2								= 126,
+	CUSTOM_CONTROL_3								= 127,
+	CUSTOM_CONTROL_4								= 128,
+	CUSTOM_CONTROL_5								= 129,
 
 	/*!
 	 * This must always be below the last defined item
