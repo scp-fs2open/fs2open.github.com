@@ -462,6 +462,12 @@ bool fred_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 
 	Script_system.RunCondition(CHA_GAMEINIT);
 
+	// wookieejedi
+	// load in the controls and defaults including the controlconfigdefault.tbl
+	// this allows the sexp tree in key-pressed to actually match what the game will use
+	// especially useful when a custom Controlconfigdefaults.tbl is used
+	control_config_common_init();
+
 	return true;
 }
 
