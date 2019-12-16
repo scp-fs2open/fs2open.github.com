@@ -448,6 +448,12 @@ bool fred_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 
 	sexp::dynamic_sexp_init();
 
+	// wookieejedi
+	// load in the controls and defaults including the controlconfigdefault.tbl
+	// this allows the sexp tree in key-pressed to actually match what the game will use
+	// especially useful when a custom Controlconfigdefaults.tbl is used
+	control_config_common_init();
+
 	gr_reset_clip();
 	g3_start_frame(0);
 	g3_set_view_matrix(&eye_pos, &eye_orient, 0.5f);
