@@ -1133,9 +1133,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 	if(first_time)
 	{
 		wip->dinky_shockwave = wip->shockwave;
-		if (Dinky_shockwaves_by_default) {
-			wip->dinky_shockwave.damage /= 4.0f;
-		}
+		wip->dinky_shockwave.damage *= Dinky_shockwave_default_multiplier;
 	}
 
 	if(optional_string("$Dinky shockwave:"))

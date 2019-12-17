@@ -48,7 +48,7 @@ SCP_string Window_icon_path;
 bool Disable_built_in_translations;
 bool Weapon_shockwaves_respect_huge;
 bool Using_in_game_options;
-bool Dinky_shockwaves_by_default;
+float Dinky_shockwave_default_multiplier;
 std::tuple<ubyte, ubyte, ubyte> Arc_color_damage_p1;
 std::tuple<ubyte, ubyte, ubyte> Arc_color_damage_p2;
 std::tuple<ubyte, ubyte, ubyte> Arc_color_damage_s1;
@@ -498,13 +498,10 @@ void parse_mod_table(const char *filename)
 			}
 		}
 
-		if (optional_string("$Default Dinky Shockwaves:")) {
-			stuff_boolean(&Dinky_shockwaves_by_default);
-
-			if (Dinky_shockwaves_by_default) {
-				mprintf(("Game Settings Table: Using default dinky shockwaves.\n"));
-			} else {
-				mprintf(("Game Settings Table: Not using default dinky shockwaves.\n"));
+		if (optional_string("$Dinky Shockwave Default Multiplier:")) {
+			stuff_float(&Dinky_shockwave_default_multiplier);
+			if (Dinky_shockwave_default_multiplier != 1.0f) {
+				mprintf(("Game Settings Table: Setting default dinky shockwave multiplier to %.2f.\n", Dinky_shockwave_default_multiplier));
 			}
 		}
 
@@ -568,6 +565,7 @@ void mod_table_reset() {
 	Disable_built_in_translations = false;
 	Weapon_shockwaves_respect_huge = false;
 	Using_in_game_options = false;
+	Dinky_shockwave_default_multiplier = 1.0f;
 	Arc_color_damage_p1 = std::make_tuple(static_cast<ubyte>(64), static_cast<ubyte>(64), static_cast<ubyte>(225));
 	Arc_color_damage_p2 = std::make_tuple(static_cast<ubyte>(128), static_cast<ubyte>(128), static_cast<ubyte>(255));
 	Arc_color_damage_s1 = std::make_tuple(static_cast<ubyte>(200), static_cast<ubyte>(200), static_cast<ubyte>(255));
