@@ -1700,13 +1700,46 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 						Error( LOCATION, "Model '%s' is chunked.  See John or Adam!\n", pm->filename );
 					}
 				}
-				pm->submodel[n].bsp_data_size = cfread_int(fp);
-				if ( pm->submodel[n].bsp_data_size > 0 )	{
-					pm->submodel[n].bsp_data = (ubyte *)vm_malloc(pm->submodel[n].bsp_data_size);
-					cfread(pm->submodel[n].bsp_data,1,pm->submodel[n].bsp_data_size,fp);
-					swap_bsp_data( pm, pm->submodel[n].bsp_data );
-				} else {
-					pm->submodel[n].bsp_data = NULL;
+				//ShivanSpS - if pof version is 2118 or higher load bsp_data as it is, otherwise, align it
+				if (pm->version >= 2118)
+				{
+					pm->submodel[n].bsp_data_size = cfread_int(fp);
+					if (pm->submodel[n].bsp_data_size > 0) {
+						pm->submodel[n].bsp_data = (ubyte*)vm_malloc(pm->submodel[n].bsp_data_size);
+						cfread(pm->submodel[n].bsp_data, 1, pm->submodel[n].bsp_data_size, fp);
+						swap_bsp_data(pm, pm->submodel[n].bsp_data);
+					}
+					else {
+						pm->submodel[n].bsp_data = NULL;
+					}
+				}
+				else
+				{
+					pm->submodel[n].bsp_data_size = cfread_int(fp);
+					if (pm->submodel[n].bsp_data_size > 0) {
+						mprintf(("BSP_Data is being aligned.\n"));
+						ubyte *bsp_in, *bsp_out;
+
+						bsp_in = (ubyte*)vm_malloc(pm->submodel[n].bsp_data_size);
+						bsp_out = (ubyte*)vm_malloc(pm->submodel[n].bsp_data_size * 2);
+
+						cfread(bsp_in, 1, pm->submodel[n].bsp_data_size, fp);
+
+						//mprintf(("BSP_Data was %d bytes in size\n", pm->submodel[n].bsp_data_size));
+						pm->submodel[n].bsp_data_size = align_bsp_data(bsp_in, bsp_out, pm->submodel[n].bsp_data_size);
+						//mprintf(("BSP_Data now is %d bytes in size\n", pm->submodel[n].bsp_data_size));
+
+						pm->submodel[n].bsp_data = (ubyte*)vm_malloc(pm->submodel[n].bsp_data_size);
+						memcpy(pm->submodel[n].bsp_data, bsp_out, pm->submodel[n].bsp_data_size);
+
+						swap_bsp_data(pm, pm->submodel[n].bsp_data);
+
+						vm_free(bsp_in);
+						vm_free(bsp_out);
+					}
+					else {
+						pm->submodel[n].bsp_data = NULL;
+					}
 				}
 
 				if ( strstr( pm->submodel[n].name, "thruster") )	
