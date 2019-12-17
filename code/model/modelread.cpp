@@ -5850,7 +5850,7 @@ uint convert_sldc_to_slc2(ubyte* sldc , ubyte* slc2, uint tree_size)
 {
 	//ShivanSpS - Copied from Pof Aligner 0.2
 	//Convert SLDC to SLC2
-	unsigned int node_size, node_type_int, new_tree_size=0, count = 0;
+	uint node_size, node_type_int, new_tree_size=0, count = 0;
 	char node_type_char;
 
 	//Process the SLDC tree to the end
@@ -5880,7 +5880,7 @@ uint convert_sldc_to_slc2(ubyte* sldc , ubyte* slc2, uint tree_size)
 		if (node_type_char == 0)
 		{
 			//Front and back offsets must be adjusted
-			int front, back, newback = 0;
+			uint front, back, newback = 0;
 			ubyte* p;
 
 			p = sldc - 29;
@@ -5889,7 +5889,7 @@ uint convert_sldc_to_slc2(ubyte* sldc , ubyte* slc2, uint tree_size)
 			//I need to find the new distance to back.
 			while (p < sldc + back - 29)
 			{
-				int ns;
+				uint ns;
 				memcpy(&ns, p + 1, 4);
 				p += ns;
 				newback += ns + 3;
@@ -5930,7 +5930,7 @@ uint align_bsp_data(ubyte* bsp_in, ubyte* bsp_out, uint bsp_size)
 	uint copied = 0;
 	end = bsp_in + bsp_size;
 
-	unsigned int bsp_chunk_type, bsp_chunk_size;
+	uint bsp_chunk_type, bsp_chunk_size;
 	do {
 		//Read Chunk type and size
 		memcpy(&bsp_chunk_type, bsp_in, 4);
@@ -5950,13 +5950,13 @@ uint align_bsp_data(ubyte* bsp_in, ubyte* bsp_out, uint bsp_size)
 			{
 				//mprintf(("BSP DEFPOINTS DATA ALIGNED.\n"));
 				//Get the new size
-				int newsize = bsp_chunk_size + 4 - (bsp_chunk_size % 4);
+				uint newsize = bsp_chunk_size + 4 - (bsp_chunk_size % 4);
 				//Copy the entire chunk to dest
 				memcpy(bsp_out, bsp_in, bsp_chunk_size);
 				//Write the new chunk size on dest
 				memcpy(bsp_out + 4, &newsize, 4);
 				//The the position of vertex data
-				int vertex_offset;
+				uint vertex_offset;
 				memcpy(&vertex_offset, bsp_in + 16, 4);
 				//Move vertex data to the back of the chunk
 				memmove(bsp_out + vertex_offset + (newsize - bsp_chunk_size), bsp_out + vertex_offset, bsp_chunk_size - vertex_offset);
