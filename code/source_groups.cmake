@@ -1134,6 +1134,8 @@ add_file_folder("Scripting\\\\Api\\\\Objs"
 	scripting/api/objs/option.h
 	scripting/api/objs/order.cpp
 	scripting/api/objs/order.h
+	scripting/api/objs/parse_object.cpp
+	scripting/api/objs/parse_object.h
 	scripting/api/objs/particle.cpp
 	scripting/api/objs/particle.h
 	scripting/api/objs/physics_info.cpp

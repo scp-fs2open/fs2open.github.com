@@ -3,26 +3,8 @@
 
 #include "mission.h"
 
-#include "scripting/api/objs/LuaSEXP.h"
-#include "scripting/api/objs/asteroid.h"
-#include "scripting/api/objs/background_element.h"
-#include "scripting/api/objs/beam.h"
-#include "scripting/api/objs/debris.h"
-#include "scripting/api/objs/enums.h"
-#include "scripting/api/objs/event.h"
-#include "scripting/api/objs/message.h"
-#include "scripting/api/objs/object.h"
-#include "scripting/api/objs/sexpvar.h"
-#include "scripting/api/objs/ship.h"
-#include "scripting/api/objs/shipclass.h"
-#include "scripting/api/objs/team.h"
-#include "scripting/api/objs/vecmath.h"
-#include "scripting/api/objs/waypoint.h"
-#include "scripting/api/objs/weapon.h"
-#include "scripting/api/objs/weaponclass.h"
-#include "scripting/api/objs/wing.h"
-
 #include "freespace.h"
+
 #include "asteroid/asteroid.h"
 #include "debris/debris.h"
 #include "gamesequence/gamesequence.h"
@@ -37,19 +19,36 @@
 #include "mission/missiontraining.h"
 #include "parse/parselo.h"
 #include "parse/sexp.h"
+#include "parse/sexp/DynamicSEXP.h"
+#include "parse/sexp/LuaSEXP.h"
+#include "parse/sexp/sexp_lookup.h"
+#include "scripting/api/objs/LuaSEXP.h"
+#include "scripting/api/objs/asteroid.h"
+#include "scripting/api/objs/background_element.h"
+#include "scripting/api/objs/beam.h"
+#include "scripting/api/objs/debris.h"
+#include "scripting/api/objs/enums.h"
+#include "scripting/api/objs/event.h"
+#include "scripting/api/objs/message.h"
+#include "scripting/api/objs/object.h"
+#include "scripting/api/objs/parse_object.h"
+#include "scripting/api/objs/sexpvar.h"
+#include "scripting/api/objs/ship.h"
+#include "scripting/api/objs/shipclass.h"
+#include "scripting/api/objs/team.h"
+#include "scripting/api/objs/vecmath.h"
+#include "scripting/api/objs/waypoint.h"
+#include "scripting/api/objs/weapon.h"
+#include "scripting/api/objs/weaponclass.h"
+#include "scripting/api/objs/wing.h"
+#include "scripting/lua/LuaFunction.h"
+#include "scripting/lua/LuaTable.h"
 #include "scripting/scripting.h"
 #include "ship/ship.h"
 #include "ship/shipfx.h"
 #include "starfield/starfield.h"
 #include "weapon/beam.h"
 #include "weapon/weapon.h"
-
-#include "scripting/lua/LuaTable.h"
-#include "scripting/lua/LuaFunction.h"
-
-#include "parse/sexp/DynamicSEXP.h"
-#include "parse/sexp/LuaSEXP.h"
-#include "parse/sexp/sexp_lookup.h"
 
 extern int ships_inited;
 
@@ -1241,6 +1240,29 @@ ADE_INDEXER(l_Mission_LuaSEXPs, "string Name", "Gets a handle of a Lua SEXP", "L
 	}
 
 	return ade_set_args(L, "o", l_LuaSEXP.Set(lua_sexp_h(static_cast<sexp::LuaSEXP*>(dynamicSEXP))));
+}
+
+static int arrivalListIter(lua_State* L)
+{
+	parse_object_h* poh = nullptr;
+	if (!ade_get_args(L, "*o", l_ParseObject.GetPtr(&poh))) {
+		return ADE_RETURN_NIL;
+	}
+
+	const auto next = GET_NEXT(poh->getObject());
+
+	if (next == END_OF_LIST(&Ship_arrival_list)) {
+		return ADE_RETURN_NIL;
+	}
+
+	return ade_set_args(L, "o", l_ParseObject.Set(parse_object_h(next)));
+}
+
+ADE_FUNC(getArrivalList, l_Mission, nullptr, "Get the list of yet to arrive ships for this mission", "iterator[parse_object]",
+            "An iterator across all the yet to arrive ships. Can be used in a for .. in loop")
+{
+	return ade_set_args(L, "u*o", luacpp::LuaFunction::createFromCFunction(L, arrivalListIter),
+	                    l_ParseObject.Set(parse_object_h(&Ship_arrival_list)));
 }
 
 //****LIBRARY: Campaign
