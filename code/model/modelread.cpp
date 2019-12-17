@@ -5813,7 +5813,7 @@ void model_subsystem::reset()
     turret_max_target_ownage = 0;
 }
 
-uint convert_sldc_to_slc2(const ubyte* sldc , ubyte* slc2, uint tree_size)
+uint convert_sldc_to_slc2(ubyte* sldc , ubyte* slc2, uint tree_size)
 {
 	//ShivanSpS - Copied from Pof Aligner 0.2
 	//Convert SLDC to SLC2
@@ -5890,7 +5890,7 @@ uint convert_sldc_to_slc2(const ubyte* sldc , ubyte* slc2, uint tree_size)
 	return new_tree_size;
 }
 
-uint align_bsp_data(const ubyte* bsp_in, ubyte* bsp_out, uint bsp_size)
+uint align_bsp_data(ubyte* bsp_in, ubyte* bsp_out, uint bsp_size)
 {
 	//ShivanSpS - Copied from Pof Aligner 0.3
 	ubyte *end;

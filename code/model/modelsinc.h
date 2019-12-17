@@ -92,7 +92,7 @@ void swap_sldc_data(ubyte *buffer);
 extern vec3d **Interp_verts;
 
 //pof version < 2118 conversion - ShivanSpS
-uint align_bsp_data(const ubyte* bsp_in, ubyte* bsp_out, uint bsp_size);
-uint convert_sldc_to_slc2(const ubyte* sldc , ubyte* slc2, uint tree_size);
+uint align_bsp_data(ubyte* bsp_in, ubyte* bsp_out, uint bsp_size);
+uint convert_sldc_to_slc2(ubyte* sldc , ubyte* slc2, uint tree_size);
 
 #endif
