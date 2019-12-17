@@ -63,6 +63,7 @@ class polymodel;
 #define ID_GLOW 0x574f4c47				// WOLG (GLOW): glow points -Bobboau
 #define ID_GLOX 0x584f4c47				// experimental glow points will be gone as soon as we get a proper pof editor -Bobboau
 #define ID_SLDC 0x43444c53				// CDLS (SLDC): Shield Collision Tree
+#define ID_SLC2 0x32434c53				// 2CLS (SLC2): Shield Collision Tree with ints instead of char - ShivanSpS
 
 #define uw(p)	(*((uint *) (p)))
 #define w(p)	(*((int *) (p)))
@@ -89,5 +90,9 @@ void swap_bsp_data( polymodel *pm, void *model_ptr );
 void swap_sldc_data(ubyte *buffer);
 
 extern vec3d **Interp_verts;
+
+//pof version < 2118 conversion - ShivanSpS
+uint align_bsp_data(const ubyte* bsp_in, ubyte* bsp_out, uint bsp_size);
+uint convert_sldc_to_slc2(const ubyte* sldc , ubyte* slc2, uint tree_size);
 
 #endif
