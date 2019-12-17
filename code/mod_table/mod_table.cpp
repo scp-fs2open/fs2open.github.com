@@ -48,6 +48,7 @@ SCP_string Window_icon_path;
 bool Disable_built_in_translations;
 bool Weapon_shockwaves_respect_huge;
 bool Using_in_game_options;
+bool Dinky_shockwaves_by_default;
 std::tuple<ubyte, ubyte, ubyte> Arc_color_damage_p1;
 std::tuple<ubyte, ubyte, ubyte> Arc_color_damage_p2;
 std::tuple<ubyte, ubyte, ubyte> Arc_color_damage_s1;
@@ -494,6 +495,16 @@ void parse_mod_table(const char *filename)
 				mprintf(("Game Settings Table: Using in-game options system.\n"));
 			} else {
 				mprintf(("Game Settings Table: Not using in-game options system.\n"));
+			}
+		}
+
+		if (optional_string("$Default Dinky Shockwaves:")) {
+			stuff_boolean(&Dinky_shockwaves_by_default);
+
+			if (Dinky_shockwaves_by_default) {
+				mprintf(("Game Settings Table: Using default dinky shockwaves.\n"));
+			} else {
+				mprintf(("Game Settings Table: Not using default dinky shockwaves.\n"));
 			}
 		}
 
