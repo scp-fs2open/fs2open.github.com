@@ -36,6 +36,7 @@
 #include "object/object.h"
 #include "parse/parselo.h"
 #include "mission/missionparse.h"
+#include "ship/ship.h"
 
 
 // ------------------------------------------------------------------------------------------------------
@@ -419,7 +420,7 @@ void multi_ts_init_objnums();
 void multi_ts_init_flags();
 
 // get the proper team and slot index for the given ship name
-void multi_ts_get_team_and_slot(char *ship_name,int *team_index,int *slot_index, bool mantis2757switch);
+void multi_ts_get_team_and_slot(ship *shipp,int *team_index,int *slot_index);
 
 // handle an available ship scroll down button press
 void multi_ts_avail_scroll_down();
@@ -859,7 +860,7 @@ void multi_ts_assign_players_all()
 		return;
 	}
 
-	multi_ts_get_team_and_slot(Ships[shipnum].ship_name,&team_index,&slot_index);
+	multi_ts_get_team_and_slot(&Ships[shipnum],&team_index,&slot_index);
 	multi_assign_player_ship(NET_PLAYER_INDEX(Netgame.host),&Objects[Ships[shipnum].objnum],Ships[shipnum].ship_info_index);
 	Netgame.host->p_info.ship_index = slot_index;
 	Assert(Netgame.host->p_info.ship_index >= 0);
@@ -872,8 +873,10 @@ void multi_ts_assign_players_all()
 		// find a valid player ship - ignoring the ship which was assigned to the host
 		if((objp->flags[Object::Object_Flags::Player_ship]) && stricmp(Ships[objp->instance].ship_name,name_lookup) != 0){
 			// determine what team and slot this ship is				
-			multi_ts_get_team_and_slot(Ships[objp->instance].ship_name,&team_index,&slot_index, true);
-			Assert((team_index != -1) && (slot_index != -1));
+			multi_ts_get_team_and_slot(&Ships[objp->instance],&team_index,&slot_index);
+			// Because they are players, in this case they _must_ be part of a wing. -- Cyborg17
+			Assertion (team_index != -1, "Multi_ts_get_team_and_slot() was unable to find the ship's wing name, in a section where Multi *requires* it. Either the mission file does not have wings defined for player ships or this is a coder error.");
+			Assertion (slot_index != -1, "Multi_ts_get_team_and_slot() was unable to find the ship's slot within the wing, despite finding the wing. This is very likely a coder error, please report.");
 
 			// in a team vs. team situation
 			if(Netgame.type_flags & NG_TYPE_TEAM){
@@ -1663,7 +1666,7 @@ void multi_ts_init_objnums()
 	while(objp != END_OF_LIST(&obj_used_list)){
 		// if its a ship, get its slot index (if any)
 		if(objp->type == OBJ_SHIP){
-			multi_ts_get_team_and_slot(Ships[objp->instance].ship_name,&team_index,&slot_index);			
+			multi_ts_get_team_and_slot(&Ships[objp->instance],&team_index,&slot_index);			
 			if((slot_index != -1) && (team_index != -1)){
 				Multi_ts_team[team_index].multi_ts_objnum[slot_index] = Ships[objp->instance].objnum;				
 			}
@@ -1693,26 +1696,36 @@ bool multi_ts_validate_ship(char *shipname, char *wingname)
 	return false;
 }
 
-// get the proper team and slot index for the given ship name
-void multi_ts_get_team_and_slot(char *ship_name,int *team_index,int *slot_index, bool mantis2757switch)
+// get the proper team and slot index for the given ship name -- Should now be more robust - Cyborg17
+void multi_ts_get_team_and_slot(ship* shipp, int* team_index, int* slot_index)
 {
-	int idx; 
-
 	// set the return values to default values
 	*team_index = -1;
 	*slot_index = -1;
 
+	// Return if this ship is not actually part of a wing 
+	if (shipp->wingnum == -1) {
+		return;
+	}
+
+	int idx;
+	wing* wingp = &Wings[shipp->wingnum];
+
 	// if we're in team vs. team mode
 	if(Netgame.type_flags & NG_TYPE_TEAM){
-		Assert(MAX_TVT_WINGS == MULTI_TS_MAX_TVT_TEAMS);
+		// iterate through tvt wings
 		for (idx = 0; idx < MAX_TVT_WINGS; idx++) {
-			// get team (wing)
-			if ( !strnicmp(ship_name, TVT_wing_names[idx], strlen(TVT_wing_names[idx])) && multi_ts_validate_ship(ship_name, TVT_wing_names[idx]) ) {				
+			// get team (wing) and loadout index
+			if ( !strcmp(wingp->name, TVT_wing_names[idx] )) {				
 				*team_index = idx;
-				*slot_index = (ship_name[strlen(ship_name)-1] - '1');
-
+				*slot_index = (shipp->wing_status_wing_pos);
+				
 				// just Assert(), if this is wrong then we're pretty much screwed either way
-				Assert( (*slot_index >= 0) && (*slot_index < MAX_WSS_SLOTS) );
+				Assertion(*slot_index >= 0, "Within multi_ts_get_team_and_slot() slot index is negative, despite finding a wing. There "
+					"is likely some code error, please report.There is likely some code error, please report.");
+				Assertion(*slot_index <= MULTI_TS_NUM_SHIP_SLOTS_TEAM, "Within multi_ts_get_team_and_slot() slot index goes beyond the max in multi. There is "
+					"likely some code error, please report.");
+				break;
 			}
 		}
 	} 
@@ -1720,22 +1733,26 @@ void multi_ts_get_team_and_slot(char *ship_name,int *team_index,int *slot_index,
 	else {
 		int wing_index, ship;
 		for (idx = 0; idx < MAX_STARTING_WINGS; idx++) {
-			// get wing
-			if ( !strnicmp(ship_name, Starting_wing_names[idx], strlen(Starting_wing_names[idx])) && multi_ts_validate_ship(ship_name, Starting_wing_names[idx]) ) {
+			// get wing and loadout index
+			if ( !strcmp(wingp->name, Starting_wing_names[idx])) {
 				wing_index = idx;
-				ship = (ship_name[strlen(ship_name)-1] - '1');
+				ship = (shipp->wing_status_wing_pos);
 
 				// just Assert(), if this is wrong then we're pretty much screwed either way
-				Assert( (ship >= 0) && (ship < MULTI_TS_NUM_SHIP_SLOTS_TEAM) );
-
+				Assertion(ship >= 0,
+				          "Within multi_ts_get_team_and_slot() slot index is negative, despite finding a wing. There "
+				          "is likely some code error, please report.");
+				Assertion(ship <= MULTI_TS_NUM_SHIP_SLOTS_TEAM,
+				          "Within multi_ts_get_team_and_slot() slot index goes beyond the max in multi. There is "
+				          "likely some code error, please report.");
+				
 				// team is 0, slot is the starting slot for all ships
 				*team_index = 0;
 				*slot_index = wing_index * MULTI_TS_NUM_SHIP_SLOTS_TEAM + ship;
+				break;
 			}
 		}
 	}
-	if(mantis2757switch)
-		Assert((*team_index != -1) && (*slot_index != -1)); // For tracking down Mantis 2757 - Valathil
 }
 
 // function to return the shipname of the ship in the slot designated by the team and slot

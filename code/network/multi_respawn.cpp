@@ -332,10 +332,11 @@ int multi_respawn_common_stuff(p_object *pobjp)
 	objnum = parse_create_object(pobjp);
 	Assert(objnum != -1);
 	objp = &Objects[objnum];
+	Assert(objp->type == OBJ_SHIP);
 
 	// get the team and slot
 	shipp = &Ships[objp->instance];
-	multi_ts_get_team_and_slot(shipp->ship_name, &team, &slot_index);
+	multi_ts_get_team_and_slot(shipp, &team, &slot_index);
 	Assert( team != -1 );
 	Assert( slot_index != -1 );
 

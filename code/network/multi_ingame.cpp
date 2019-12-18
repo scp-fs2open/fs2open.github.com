@@ -1067,7 +1067,7 @@ void process_ingame_ships_packet( ubyte *data, header *hinfo )
 			// get the team and slot.  Team will be -1 when it isn't a part of player wing.  So, if
 			// not -1, then be sure we have a valid slot, then change the ship type, etc.
 			objp = &Objects[Ships[idx].objnum];		
-			multi_ts_get_team_and_slot(Ships[idx].ship_name, &team_val, &slot_index);
+			multi_ts_get_team_and_slot(&Ships[idx], &team_val, &slot_index);
 			if ( team_val != -1 ) {
 				Assert( slot_index != -1 );
 
@@ -1661,7 +1661,7 @@ void process_ingame_ship_request_packet(ubyte *data, header *hinfo)
 
 		// must change the ship type and weapons.  An ingame joiner know about the default class
 		// and weapons for a ship, but these could have changed.
-		multi_ts_get_team_and_slot(Player_ship->ship_name, &team, &slot_index);
+		multi_ts_get_team_and_slot(Player_ship, &team, &slot_index);
 		Assert( team != -1 );
 		Assert( slot_index != -1 );
 		change_ship_type(objp->instance, Wss_slots_teams[team][slot_index].ship_class);
