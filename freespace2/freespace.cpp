@@ -2200,8 +2200,8 @@ void game_show_standalone_framerate()
 {
 	float frame_rate=30.0f;
 	if ( frame_int == -1 )	{
-		for (int i=0; i<FRAME_FILTER; i++ )	{
-			frametimes[i] = 0.0f;
+		for (float& frametime : frametimes) {
+			frametime = 0.0f;
 		}
 		frametotal = 0.0f;
 		frame_int = 0;
@@ -2607,14 +2607,17 @@ extern void render_shields();
 void player_repair_frame(float frametime)
 {
 	if(MULTIPLAYER_MASTER){
-		for(int idx=0;idx<MAX_PLAYERS;idx++){
-			net_player *np = &Net_players[idx];
+		for(auto & np : Net_players){
 
-			if(MULTI_CONNECTED(Net_players[idx]) && (Net_player != nullptr) && (Net_player->player_id != Net_players[idx].player_id) && (Net_players[idx].m_player != nullptr) && (Net_players[idx].m_player->objnum >= 0) && (Net_players[idx].m_player->objnum < MAX_OBJECTS)){
+			if(MULTI_CONNECTED(np) && (Net_player != nullptr)
+					&& (Net_player->player_id != np.player_id)
+					&& (np.m_player != nullptr)
+					&& (np.m_player->objnum >= 0)
+					&& (np.m_player->objnum < MAX_OBJECTS)){
 
 				// don't rearm/repair if the player is dead or dying/departing
-				if ( !NETPLAYER_IS_DEAD(np) && !(Ships[Objects[np->m_player->objnum].instance].is_dying_or_departing()) ) {
-					ai_do_repair_frame(&Objects[Net_players[idx].m_player->objnum],&Ai_info[Ships[Objects[Net_players[idx].m_player->objnum].instance].ai_index],frametime);
+				if ( !NETPLAYER_IS_DEAD((&np)) && !(Ships[Objects[np.m_player->objnum].instance].is_dying_or_departing()) ) {
+					ai_do_repair_frame(&Objects[np.m_player->objnum],&Ai_info[Ships[Objects[np.m_player->objnum].instance].ai_index],frametime);
 				}
 			}
 		}
@@ -2641,8 +2644,8 @@ void do_timing_test(float frame_time)
 		if ( framecount >= NUM_FRAMES_TEST ) {
 			test_running = 0;
 			nprintf(("General", "%d frames took %.3f seconds\n", NUM_FRAMES_TEST, test_time));
-			for (int i = 0; i < NUM_MIXED_SOUNDS; i++ )
-				snd_stop(snds[i]);
+			for (auto& snd : snds)
+				snd_stop(snd);
 		}
 	}
 
@@ -2652,15 +2655,10 @@ void do_timing_test(float frame_time)
 		test_time = 0.0f;
 		Test_begin = 0;
 
-		for (int i = 0; i < NUM_MIXED_SOUNDS; i++ )
-			snds[i] = sound_handle::invalid();
-
 		// start looping digital sounds
 		for (int i = 0; i < NUM_MIXED_SOUNDS; i++ )
 			snds[i] = snd_play_looping( gamesnd_get_game_sound(gamesnd_id(i)), 0.0f, -1, -1);
 	}
-	
-
 }
 
 DCF(dcf_fov, "Change the field of view of the main camera")
@@ -6951,18 +6949,15 @@ void Do_model_timings_test()
 
 	mprintf(( "Timing models!\n" ));
 
-	ubyte model_used[MAX_POLYGON_MODELS];
+	ubyte model_used[MAX_POLYGON_MODELS] = {0};
 	int model_id[MAX_POLYGON_MODELS];
-	for (int i=0; i<MAX_POLYGON_MODELS; i++ )	{
-		model_used[i] = 0;
-	}
-	
-	// Load them all
-	for (auto sip = Ship_info.begin(); sip != Ship_info.end(); ++sip ) {
-		sip->model_num = model_load(sip->pof_file, 0, nullptr);
 
-		model_used[sip->model_num % MAX_POLYGON_MODELS]++;
-		model_id[sip->model_num % MAX_POLYGON_MODELS] = sip->model_num;
+	// Load them all
+	for (auto & sip : Ship_info) {
+		sip.model_num = model_load(sip.pof_file, 0, nullptr);
+
+		model_used[sip.model_num % MAX_POLYGON_MODELS]++;
+		model_id[sip.model_num % MAX_POLYGON_MODELS] = sip.model_num;
 	}
 
 	Texture_fp = fopen( NOX("ShipTextures.txt"), "wt" );
@@ -7159,8 +7154,8 @@ void verify_ships_tbl()
 	detect = nullptr;
 
 	// now compare the checksum/filesize against known #'s
-	for(int idx=0; idx<NUM_SHIPS_TBL_CHECKSUMS; idx++){
-		if(Game_ships_tbl_checksums[idx] == (int)file_checksum){
+	for(int Game_ships_tbl_checksum : Game_ships_tbl_checksums){
+		if(Game_ships_tbl_checksum == (int)file_checksum){
 			Game_ships_tbl_valid = 1;
 			return;
 		}
@@ -7211,8 +7206,8 @@ void verify_weapons_tbl()
 	detect = nullptr;
 
 	// now compare the checksum/filesize against known #'s
-	for(int idx=0; idx<NUM_WEAPONS_TBL_CHECKSUMS; idx++){
-		if(Game_weapons_tbl_checksums[idx] == (int)file_checksum){
+	for(int Game_weapons_tbl_checksum : Game_weapons_tbl_checksums){
+		if(Game_weapons_tbl_checksum == (int)file_checksum){
 			Game_weapons_tbl_valid = 1;
 			return;
 		}
