@@ -15,8 +15,7 @@ class polymodel;
 
 #ifndef MODEL_LIB 
 #error This should only be used internally by the model library.  See John if you think you need to include this elsewhere.
-#endif
-
+#else
 #define OP_EOF 			0
 #define OP_DEFPOINTS 	1
 #define OP_FLATPOLY		2
@@ -95,4 +94,5 @@ extern vec3d **Interp_verts;
 uint align_bsp_data(ubyte* bsp_in, ubyte* bsp_out, uint bsp_size);
 uint convert_sldc_to_slc2(ubyte* sldc , ubyte* slc2, uint tree_size);
 
+#endif
 #endif
