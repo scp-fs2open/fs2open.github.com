@@ -14,7 +14,7 @@
 class polymodel;
 struct vec3d;
 struct matrix;
-typedef ubyte;
+typedef std::uint8_t ubyte;
 
 #ifndef MODEL_LIB 
 #error This should only be used internally by the model library.  See John if you think you need to include this elsewhere.
