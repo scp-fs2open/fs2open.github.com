@@ -1271,4 +1271,8 @@ void glowpoint_init();
 SCP_vector<glow_point_bank_override>::iterator get_glowpoint_bank_override_by_name(const char* name);
 extern SCP_vector<glow_point_bank_override> glowpoint_bank_overrides;
 
+// pof version < 2118 conversion - ShivanSpS
+uint align_bsp_data(ubyte* bsp_in, ubyte* bsp_out, uint bsp_size);
+uint convert_sldc_to_slc2(ubyte* sldc, ubyte* slc2, uint tree_size);
+
 #endif // _MODEL_H

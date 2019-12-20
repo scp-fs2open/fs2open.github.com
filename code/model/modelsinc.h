@@ -12,10 +12,14 @@
 
 
 class polymodel;
+struct vec3d;
+struct matrix;
+typedef ubyte;
 
 #ifndef MODEL_LIB 
 #error This should only be used internally by the model library.  See John if you think you need to include this elsewhere.
-#else
+#endif
+
 #define OP_EOF 			0
 #define OP_DEFPOINTS 	1
 #define OP_FLATPOLY		2
@@ -90,9 +94,4 @@ void swap_sldc_data(ubyte *buffer);
 
 extern vec3d **Interp_verts;
 
-//pof version < 2118 conversion - ShivanSpS
-uint align_bsp_data(ubyte* bsp_in, ubyte* bsp_out, uint bsp_size);
-uint convert_sldc_to_slc2(ubyte* sldc , ubyte* slc2, uint tree_size);
-
-#endif
 #endif
