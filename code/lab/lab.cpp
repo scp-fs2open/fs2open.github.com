@@ -755,8 +755,8 @@ void labviewer_close_flags_window(GUIObject* /*caller*/)
 {
 	Lab_flags_window = nullptr;
 
-	Ship_Class_Flags.empty();
-	Weapon_Class_Flags.empty();
+	Ship_Class_Flags.clear();
+	Weapon_Class_Flags.clear();
 }
 
 void labviewer_make_flags_window(Button* /*caller*/)
