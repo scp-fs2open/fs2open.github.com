@@ -982,17 +982,17 @@ bool mc_check_sldc(int offset)
 	// not used
 	//int *size_p = (int *)(Mc_pm->shield_collision_tree+offset+4);
 	// split and polygons
-	vec3d *minbox_p = (vec3d*)(Mc_pm->shield_collision_tree+offset+8);
-	vec3d *maxbox_p = (vec3d*)(Mc_pm->shield_collision_tree+offset+20);
+	auto *minbox_p = (vec3d*)(Mc_pm->shield_collision_tree+offset+8);
+	auto *maxbox_p = (vec3d*)(Mc_pm->shield_collision_tree+offset+20);
 
 	// split
-	unsigned int *front_offset_p = (unsigned int*)(Mc_pm->shield_collision_tree+offset+32);
-	unsigned int *back_offset_p = (unsigned int*)(Mc_pm->shield_collision_tree+offset+36);
+	auto *front_offset_p = (unsigned int*)(Mc_pm->shield_collision_tree+offset+32);
+	auto *back_offset_p = (unsigned int*)(Mc_pm->shield_collision_tree+offset+36);
 
 	// polygons
-	unsigned int *num_polygons_p = (unsigned int*)(Mc_pm->shield_collision_tree+offset+32);
+	auto *num_polygons_p = (unsigned int*)(Mc_pm->shield_collision_tree+offset+32);
 
-	unsigned int *shld_polys = (unsigned int*)(Mc_pm->shield_collision_tree+offset+36);
+	auto *shld_polys = (unsigned int*)(Mc_pm->shield_collision_tree+offset+36);
 
 
 

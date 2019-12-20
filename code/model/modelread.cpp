@@ -1710,7 +1710,7 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 						swap_bsp_data(pm, pm->submodel[n].bsp_data);
 					}
 					else {
-						pm->submodel[n].bsp_data = NULL;
+						pm->submodel[n].bsp_data = nullptr;
 					}
 				}
 				else
@@ -1738,7 +1738,7 @@ int read_model_file(polymodel * pm, const char *filename, int n_subsystems, mode
 						vm_free(bsp_out);
 					}
 					else {
-						pm->submodel[n].bsp_data = NULL;
+						pm->submodel[n].bsp_data = nullptr;
 					}
 				}
 
