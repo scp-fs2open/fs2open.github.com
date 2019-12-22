@@ -9388,7 +9388,9 @@ int ship_create(matrix* orient, vec3d* pos, int ship_type, const char* ship_name
 
 	// Goober5000 - if no ship name specified, or if specified ship already exists,
 	// or if specified ship has exited, use a default name
-	if ((ship_name == NULL) || (ship_name_lookup(ship_name) >= 0) || (ship_find_exited_ship_by_name(ship_name) >= 0)) {
+	// Cyborg17 - The final check here was supposed to prevent duplicate names from being on the mission log and causing chaos,
+	// but it breaks multi, so there will just be a warning on debug instead.
+	if ((ship_name == nullptr) || (ship_name_lookup(ship_name) >= 0) /*|| (ship_find_exited_ship_by_name(ship_name) >= 0)*/) {
 		char suffix[NAME_LENGTH];
 		sprintf(suffix, NOX(" %d"), n);
 
@@ -9399,6 +9401,9 @@ int ship_create(matrix* orient, vec3d* pos, int ship_type, const char* ship_name
 		strncpy(shipp->ship_name, Ship_info[ship_type].name, name_len);
 		strcpy(shipp->ship_name + name_len, suffix);
 	} else {
+		if (ship_find_exited_ship_by_name(ship_name) >= 0 && !(Game_mode & GM_MULTIPLAYER)) {
+			Warning(LOCATION, "Newly-arrived ship %s has been given the same name as a ship previously destroyed in-mission. This can cause unpredictable SEXP behavior. Correct your mission file or scripts to prevent duplicates.", ship_name);
+		}
 		strcpy_s(shipp->ship_name, ship_name);
 	}
 
