@@ -40,6 +40,7 @@ void trail_level_close()
 	}
 
 	Num_trails=0;
+	Trails.next = &Trails;
 }
 
 //returns the number of a free trail
