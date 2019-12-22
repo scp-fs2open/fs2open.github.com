@@ -11,7 +11,6 @@
 
 #ifndef _FREESPACE_H
 #define _FREESPACE_H
-#ifndef STAMPER_PROGRAM							// because of all the dependancies, I have to do this...yuck!!!  MWA 7/21/97
 
 #include "camera/camera.h"
 #include "globalincs/pstypes.h"
@@ -58,9 +57,6 @@ extern int Game_subspace_effect;
 
 // The current mission being played.
 extern char Game_current_mission_filename[MAX_FILENAME_LEN];
-
-// game's CDROM directory
-extern char Game_CDROM_dir[MAX_PATH_LEN];
 
 // if the ships.tbl the player has is valid
 extern int Game_ships_tbl_valid;
@@ -174,10 +170,6 @@ void game_flash( float r, float g, float b );
 // cap range from 0 to 1
 void big_explosion_flash(float flash);
 
-// Call once a frame to diminish the
-// flash effect to 0.
-void game_flash_diminish();
-
 //================================================================
 
 // Call at the beginning of each frame
@@ -192,10 +184,7 @@ void game_shudder_apply(int time, float intensity);
 //===================================================================
 
 // make sure a CD is in the drive before continuing (returns 1 to continue, otherwise 0).
-int game_do_cd_check(char *volume_name=NULL);
-int game_do_cd_check_specific(char *volume_name, int cdnum);
 int find_freespace_cd(char *volume_name=NULL);
-int set_cdrom_path(int drive_num);
 
 // Used to tell the player that a feature is disabled by build settings
 void game_feature_disabled_popup();
@@ -205,9 +194,6 @@ void game_format_time(fix m_time,char *time_str);
 
 // if the game is running using hacked data
 int game_hacked_data();
-
-// show the oem upsell screens (end of campaign, or close of game
-void oem_upsell_show_screens();
 
 // calls to be executed when the game is put in or restored from minimized or inactive state
 void game_pause();
@@ -224,5 +210,4 @@ extern void game_simulation_frame();
 extern void game_update_missiontime();
 extern void game_render_post_frame();
 
-#endif			// endif of #ifndef STAMPER_PROGRAM
-#endif 
+#endif
