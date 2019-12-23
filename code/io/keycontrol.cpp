@@ -2068,6 +2068,15 @@ int button_function_critical(int n, net_player *p = NULL)
 		case ZERO_THROTTLE:
 		case MAX_THROTTLE:
 		case TOGGLE_GLIDING:
+	    case CONTROL_KEY_0:
+	    case CONTROL_KEY_5:
+	    case CONTROL_KEY_6:
+	    case CONTROL_KEY_7:
+	    case CONTROL_KEY_8:
+	    case CONTROL_KEY_9:
+	    case CUSTOM_CONTROL_1:
+	    case CUSTOM_CONTROL_2:
+	    case CUSTOM_CONTROL_3:
 			return 0;
 
 		default :
