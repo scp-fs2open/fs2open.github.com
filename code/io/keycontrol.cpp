@@ -338,9 +338,7 @@ int Normal_key_set[] = {
 	CONTROL_KEY_9,
 	CUSTOM_CONTROL_1,
     CUSTOM_CONTROL_2,
-    CUSTOM_CONTROL_3,
-    CUSTOM_CONTROL_4,
-    CUSTOM_CONTROL_5
+    CUSTOM_CONTROL_3
 };
 
 int Dead_key_set[] = {
@@ -484,9 +482,7 @@ int Non_critical_key_set[] = {
 	CONTROL_KEY_9,
     CUSTOM_CONTROL_1,
     CUSTOM_CONTROL_2,
-    CUSTOM_CONTROL_3,
-    CUSTOM_CONTROL_4,
-    CUSTOM_CONTROL_5
+    CUSTOM_CONTROL_3
 };
 
 int Ignored_keys[CCFG_MAX];
@@ -2333,8 +2329,6 @@ int button_function(int n)
 	    case CUSTOM_CONTROL_1:
 	    case CUSTOM_CONTROL_2:
 	    case CUSTOM_CONTROL_3:
-	    case CUSTOM_CONTROL_4:
-	    case CUSTOM_CONTROL_5:
 			return 0;
 	}
 

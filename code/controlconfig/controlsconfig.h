@@ -286,8 +286,6 @@ enum IoActionId  {
 	CUSTOM_CONTROL_1								= 125,
 	CUSTOM_CONTROL_2								= 126,
 	CUSTOM_CONTROL_3								= 127,
-	CUSTOM_CONTROL_4								= 128,
-	CUSTOM_CONTROL_5								= 129,
 
 	/*!
 	 * This must always be below the last defined item

@@ -198,8 +198,6 @@ config_item Control_config[CCFG_MAX + 1] = {
 	{ KEY_ALTED | KEY_SHIFTED | KEY_1,              -1, COMPUTER_TAB, 0, "Custom Control 1",                       CC_TYPE_TRIGGER,    -1, -1, 0, true,  false },
 	{ KEY_ALTED | KEY_SHIFTED | KEY_2,              -1, COMPUTER_TAB, 0, "Custom Control 2",                       CC_TYPE_TRIGGER,    -1, -1, 0, true,  false },
 	{ KEY_ALTED | KEY_SHIFTED | KEY_3,              -1, COMPUTER_TAB, 0, "Custom Control 3",                       CC_TYPE_TRIGGER,    -1, -1, 0, true,  false },
-	{ KEY_ALTED | KEY_SHIFTED | KEY_4,              -1, COMPUTER_TAB, 0, "Custom Control 4",                       CC_TYPE_TRIGGER,    -1, -1, 0, true,  false },
-	{ KEY_ALTED | KEY_SHIFTED | KEY_5,              -1, COMPUTER_TAB, 0, "Custom Control 5",                       CC_TYPE_TRIGGER,    -1, -1, 0, true,  false },
 	{                           -1,                 -1, -1,           0, "",                                       CC_TYPE_TRIGGER,    -1, -1, 0, false, false }
 };
 
