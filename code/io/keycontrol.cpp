@@ -330,17 +330,11 @@ int Normal_key_set[] = {
 
 	TOGGLE_GLIDING,
 	CYCLE_PRIMARY_WEAPON_SEQUENCE,
-	CONTROL_KEY_0,
-	CONTROL_KEY_5,
-	CONTROL_KEY_6,
-	CONTROL_KEY_7,
-	CONTROL_KEY_8,
-	CONTROL_KEY_9,
 	CUSTOM_CONTROL_1,
     CUSTOM_CONTROL_2,
     CUSTOM_CONTROL_3,
-    CUSTOM_CONTROL_4,
-    CUSTOM_CONTROL_5
+	CUSTOM_CONTROL_4,
+	CUSTOM_CONTROL_5
 };
 
 int Dead_key_set[] = {
@@ -476,17 +470,11 @@ int Non_critical_key_set[] = {
 	NAV_CYCLE,
 	TOGGLE_GLIDING,
 	CYCLE_PRIMARY_WEAPON_SEQUENCE,
-	CONTROL_KEY_0,
-	CONTROL_KEY_5,
-	CONTROL_KEY_6,
-	CONTROL_KEY_7,
-	CONTROL_KEY_8,
-	CONTROL_KEY_9,
     CUSTOM_CONTROL_1,
     CUSTOM_CONTROL_2,
     CUSTOM_CONTROL_3,
-    CUSTOM_CONTROL_4,
-    CUSTOM_CONTROL_5
+	CUSTOM_CONTROL_4,
+	CUSTOM_CONTROL_5
 };
 
 int Ignored_keys[CCFG_MAX];
@@ -2072,6 +2060,11 @@ int button_function_critical(int n, net_player *p = NULL)
 		case ZERO_THROTTLE:
 		case MAX_THROTTLE:
 		case TOGGLE_GLIDING:
+	    case CUSTOM_CONTROL_1:
+	    case CUSTOM_CONTROL_2:
+	    case CUSTOM_CONTROL_3:
+	    case CUSTOM_CONTROL_4:
+	    case CUSTOM_CONTROL_5:
 			return 0;
 
 		default :
@@ -2324,12 +2317,6 @@ int button_function(int n)
 		case MAX_THROTTLE:
 		case TOGGLE_GLIDING:
 		case GLIDE_WHEN_PRESSED:
-	    case CONTROL_KEY_0:
-	    case CONTROL_KEY_5:
-	    case CONTROL_KEY_6:
-	    case CONTROL_KEY_7:
-	    case CONTROL_KEY_8:
-	    case CONTROL_KEY_9:
 	    case CUSTOM_CONTROL_1:
 	    case CUSTOM_CONTROL_2:
 	    case CUSTOM_CONTROL_3:
