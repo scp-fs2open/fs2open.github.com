@@ -590,12 +590,8 @@ void control_config_common_load_overrides();
 // initialize common control config stuff - call at game startup after localization has been initialized
 void control_config_common_init()
 {
-	for (int i=0; i<CCFG_MAX; i++) {
-		Control_config[i].disabled = false;
-		Control_config[i].continuous_ongoing = false;
-	}
-
 	control_config_common_load_overrides();
+
 	if(Lcl_gr){
 		Scan_code_text = Scan_code_text_german;
 		Joy_button_text = Joy_button_text_german;
