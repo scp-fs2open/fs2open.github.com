@@ -34,8 +34,12 @@
 //
 
 // create a _permanent_ observer player 
-int multi_obs_create_player(int player_num,char *name,net_addr *addr,player *pl)
+void multi_obs_create_player(int player_num,char *name,net_addr *addr,player *pl)
 {	
+	Assertion(name != nullptr, "A nullptr callsign was passed to multi_obs_create_player(). This is a code error, please report.");
+	Assertion(addr != nullptr, "A nullptr net_addr was passed to multi_obs_create_player(). This is a code error, please report.");
+	Assertion(pl != nullptr, "A nullptr player was passed to multi_obs_create_player(). This is a code error, please report.");
+
 	// blast the player struct
 	memset(&Net_players[player_num],0,sizeof(net_player));
 	
@@ -94,8 +98,6 @@ int multi_obs_create_player(int player_num,char *name,net_addr *addr,player *pl)
 	Net_players[player_num].sv_last_pl = -1;	
 	Net_players[player_num].cl_bytes_recvd = 0;	
 	Net_players[player_num].cl_last_pl = -1;
-	
-	return 1;
 }
 
 // create an explicit observer object and assign it to the passed player

@@ -725,13 +725,16 @@ void multi_assign_player_ship( int net_player_num, object *objp,int ship_class )
 // depends on the parameter ship_class.  Note that if ship_class is invalid, the ship default_player_ship
 // is used.  Returns 1 on success, 0 otherwise
 
-int multi_create_player( int net_player_num, player *pl, const char* name, net_addr* addr, int ship_class, short id)
+void multi_create_player( int net_player_num, player *pl, const char* name, net_addr* addr, int ship_class, short id)
 {
 	int player_ship_class = ship_class;
 	int current_player_count;
 
-	Assert ( net_player_num < MAX_PLAYERS );				// probably shoudln't be able to even get into this routine if no room	
-	
+	Assertion ( net_player_num < MAX_PLAYERS, "FSO is attempting to create too many players in multi. This error should be prevented in the UI, please report!" );				// probably shoudln't be able to even get into this routine if no room	
+	Assertion(addr != nullptr, "A nullptr net address was passed to multi_create_player(). This is a code error, please report.");
+	Assertion(pl != nullptr, "A nullptr player was passed to multi_create_player(). This is a code error, please report.");
+	Assertion(name != nullptr, "A nullptr callsign was passed to multi_create_player(). This is a code error, please report.");
+
 	// blast _any_ old data
 	memset(&Net_players[net_player_num],0,sizeof(net_player));
 
@@ -768,7 +771,7 @@ int multi_create_player( int net_player_num, player *pl, const char* name, net_a
 	}
 	
 	if ( player_ship_class >= static_cast<int>(Ship_info.size()) ) {
-		nprintf(("Network","Network ==> Ship class was %d Creating a default ship for multiplayer\n", player_ship_class));
+		nprintf(("Network","Network ==> Ship class was %d. Creating a default ship for multiplayer\n", player_ship_class));
 		player_ship_class = multi_ship_class_lookup(default_player_ship);
 	}
 
@@ -832,8 +835,6 @@ int multi_create_player( int net_player_num, player *pl, const char* name, net_a
 	if(MULTI_IN_MISSION){
 		hud_escort_add_player(id);
 	}
-
-	return 1;
 }
 
 // next function makes a player object an ai object (also decrementing the num_players in the
@@ -842,7 +843,7 @@ int multi_create_player( int net_player_num, player *pl, const char* name, net_a
 void multi_make_player_ai( object *pobj )
 {
 
-	Assert(pobj != NULL);
+	Assertion(pobj != nullptr, "Invalid player object passed to multi_make_player_ai(). Code error, please report!");
 
 	if ( pobj->type != OBJ_SHIP )
 		return;
@@ -1041,14 +1042,14 @@ void multi_cull_zombies()
 }
 
 // -------------------------------------------------------------------------------------------------
-// fill_net_addr() calculates the checksum of a block of memory.
+// fill_net_addr() helper function that fills in the address and port for a referenced address struct
 //
 //
 
 void fill_net_addr(net_addr* addr, ubyte* address, ushort port)
 {
-	Assert(addr != nullptr);
-	Assert(address != nullptr);
+	Assertion(addr != nullptr, "Invalid net address struct was passed to fill_net_addr(). Code error, please report.");
+	Assertion(address != nullptr, "Invalid net address was passed to fill_net_addr()");
 
 	addr->type = Multi_options_g.protocol;
 	memset( addr->addr, 0x00, 6);
@@ -2402,9 +2403,7 @@ void multi_process_valid_join_request(join_request *jr, net_addr *who_from, int 
 	// if he is requesting to join as an observer
 	if(jr->flags & JOIN_FLAG_AS_OBSERVER){			
 		// create the (permanently) observer player
-		if(!multi_obs_create_player(net_player_num, jr->callsign, who_from, &Players[player_num])){
-			Int3();
-		}
+		multi_obs_create_player(net_player_num, jr->callsign, who_from, &Players[player_num]);
 
 		// copy his pilot image filename
 		if(jr->image_filename[0] != '\0'){
@@ -2448,9 +2447,7 @@ void multi_process_valid_join_request(join_request *jr, net_addr *who_from, int 
 		send_accept_packet(net_player_num, (Net_players[net_player_num].flags & NETINFO_FLAG_INGAME_JOIN) ? ACCEPT_OBSERVER | ACCEPT_INGAME : ACCEPT_OBSERVER);
 	} else {
 		// create the player object	
-		if(!multi_create_player( net_player_num, &Players[player_num], jr->callsign, who_from, -1, id_num )){
-			Int3();
-		}
+		multi_create_player(net_player_num, &Players[player_num], jr->callsign, who_from, -1, id_num);
 		
 		// copy his pilot image filename
 		if(jr->image_filename[0] != '\0'){
@@ -2619,7 +2616,7 @@ int multi_process_restricted_keys(int k)
 	
 	// illegal mode
 	default :
-		Int3();
+		Error(LOCATION, "An invalid value for Multi_join_restr_mode was set, probably by a corrupted packet or by some other packet error.");
 	}	
 
 	// check the keypress
@@ -2656,7 +2653,6 @@ int multi_process_restricted_keys(int k)
 		// illegal mode
 		default :
 			team_val = -1;	// JAS: Get rid of optimized warning
-			Int3();
 		}				
 
 		// perform the proper response	
@@ -2932,14 +2928,13 @@ void multi_get_mission_checksum(const char *filename)
 
 char multi_unit_to_char(float unit)
 {
+	Assertion((unit > 1.0f) && (unit < -1.0f), "Newly implemented function multi_unit_to_char() was passed a value %f, that it cannot handle.", unit);
 	char ret;
 	
 	if(unit > 1.0f){
-		Int3();
 		unit = 1.0f;
 	}
 	if(unit < -1.0f){
-		Int3();
 		unit = -1.0f;
 	}
 
@@ -2949,15 +2944,14 @@ char multi_unit_to_char(float unit)
 
 float multi_char_to_unit(float val)
 {
+	Assertion((val > 127.0f) && (val < -127.0f), "Newly implemented function multi_char_to_unit() was passed a value %f, that it cannot handle.", val);
 	float ret;
 
 	ret = (float)val / 127.0f;
 	if(ret > 1.0f){
-		Int3();
 		ret = 1.0f;
 	}
 	if(ret < -1.0f){
-		Int3();
 		ret = -1.0f;
 	}
 
