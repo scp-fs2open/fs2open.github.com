@@ -1275,18 +1275,6 @@ void multi_maybe_send_ship_status()
 	}
 }
 
-void multi_subsys_update_all()
-{
-	/*
-	int idx;
-	Assert(Net_player->flags & NETINFO_FLAG_AM_MASTER);
-	for(idx=0;idx<MAX_PLAYERS;idx++){
-		if((Net_players[idx].flags & NETINFO_FLAG_CONNECTED) && !psnet_same(&My_addr,&Net_players[idx].addr) && !(Net_players[idx].flags & NETINFO_FLAG_OBSERVER))
-			send_subsys_update_packet(&Net_players[idx]);
-	}
-	*/
-}
-
 int multi_find_player_by_callsign(const char *callsign)
 {
 	int idx;
@@ -3445,7 +3433,6 @@ int bitbuffer_get_signed( bitbuffer *bitbuf, int bit_count )
 
 // Packs/unpacks an object position.
 // Returns number of bytes read or written.
-// #define OO_POS_RET_SIZE							9
 int multi_pack_unpack_position( int write, ubyte *data, vec3d *pos)
 {
 	bitbuffer buf;
@@ -3486,57 +3473,8 @@ int multi_pack_unpack_position( int write, ubyte *data, vec3d *pos)
 	}
 }
 
-int degenerate_count = 0;
-int non_degenerate_count = 0;
-
-/*
-hack = ((ushort)orient->vec.fvec.x * 32767);
-			memcpy(&hack, &orient->vec.fvec.x, 4);
-			bitbuffer_put( &buf, hack, 32  );
-			memcpy(&hack, &orient->vec.fvec.y, 4);
-			bitbuffer_put( &buf, hack, 32  );
-			memcpy(&hack, &orient->vec.fvec.z, 4);
-			bitbuffer_put( &buf, hack, 32  );
-
-			memcpy(&hack, &orient->vec.uvec.x, 4);
-			bitbuffer_put( &buf, hack, 32  );
-			memcpy(&hack, &orient->vec.uvec.y, 4);
-			bitbuffer_put( &buf, hack, 32  );
-			memcpy(&hack, &orient->vec.uvec.z, 4);
-			bitbuffer_put( &buf, hack, 32  );
-
-			memcpy(&hack, &orient->vec.rvec.x, 4);
-			bitbuffer_put( &buf, hack, 32  );
-			memcpy(&hack, &orient->vec.rvec.y, 4);
-			bitbuffer_put( &buf, hack, 32  );
-			memcpy(&hack, &orient->vec.rvec.z, 4);
-			bitbuffer_put( &buf, hack, 32  );*/
-
-/*
-hack = bitbuffer_get_unsigned(&buf, 32);
-			memcpy(&orient->vec.fvec.x, &hack, 4);
-			hack = bitbuffer_get_unsigned(&buf, 32);
-			memcpy(&orient->vec.fvec.y, &hack, 4);
-			hack = bitbuffer_get_unsigned(&buf, 32);
-			memcpy(&orient->vec.fvec.z, &hack, 4);
-
-			hack = bitbuffer_get_unsigned(&buf, 32);
-			memcpy(&orient->vec.uvec.x, &hack, 4);
-			hack = bitbuffer_get_unsigned(&buf, 32);
-			memcpy(&orient->vec.uvec.y, &hack, 4);
-			hack = bitbuffer_get_unsigned(&buf, 32);
-			memcpy(&orient->vec.uvec.z, &hack, 4);
-
-			hack = bitbuffer_get_unsigned(&buf, 32);
-			memcpy(&orient->vec.rvec.x, &hack, 4);
-			hack = bitbuffer_get_unsigned(&buf, 32);
-			memcpy(&orient->vec.rvec.y, &hack, 4);
-			hack = bitbuffer_get_unsigned(&buf, 32);
-			memcpy(&orient->vec.rvec.z, &hack, 4);*/
-
 // Packs/unpacks an orientation matrix.
 // Returns number of bytes read or written.
-// #define OO_ORIENT_RET_SIZE						6
 int multi_pack_unpack_orient( int write, ubyte *data, matrix *orient)
 {
 	bitbuffer buf;
@@ -3561,7 +3499,6 @@ int multi_pack_unpack_orient( int write, ubyte *data, matrix *orient)
 		// degenerate case - send the whole orient matrix
 		vm_extract_angles_matrix(&ang, orient);	
 		if((ang.h > 3.130) && (ang.h < 3.150)){
-			degenerate_count++;
 
 			flag = 0xff;
 			
@@ -3596,7 +3533,6 @@ int multi_pack_unpack_orient( int write, ubyte *data, matrix *orient)
 			CAP(a, D_MIN_RANGE, D_MAX_RANGE);			
 			bitbuffer_put( &buf, a, 16  );
 		} else {
-			non_degenerate_count++;
 				
 			vm_matrix_to_rot_axis_and_angle(orient, &theta, &rot_axis);		
 			// Have theta, which is an angle between 0 and PI.
@@ -3673,86 +3609,8 @@ int multi_pack_unpack_orient( int write, ubyte *data, matrix *orient)
 	}
 }
 
-
-// Packs/unpacks an orientation matrix.
-// Returns number of bytes read or written.
-// #define OO_ORIENT_RET_SIZE						6
-/*
-int multi_pack_unpack_orient( int write, ubyte *data, matrix *orient)
-{
-	bitbuffer buf;
-
-	bitbuffer_init(&buf,data);
-
-	vec3d rot_axis;	
-	float theta;
-	int a, b, c, d;
-
-	if ( write )	{
-
-		// if our heading is 3.14 radians
-		//angles ang;
-		//vm_extract_angles_matrix(&a, orient);
-		//if((ang.h > 3.1300) && (ang.h < 3.1500)){			
-		//} else {
-
-			util_matrix_to_rot_axis_and_angle(orient, &theta, &rot_axis);		
-			// Have theta, which is an angle between 0 and PI.
-			// Convert it to be between -1.0f and 1.0f
-			theta = theta*2.0f/PI-1.0f;
-
-			#define SCALE 2048.0f
-
-			#define MAX_RANGE 2047
-			#define MIN_RANGE -2048
-
-			// -1 to 1
-			a = fl2i(rot_axis.x*SCALE); 
-			b = fl2i(rot_axis.y*SCALE);
-			c = fl2i(rot_axis.z*SCALE);
-			d = fl2i(theta*SCALE);
-
-			CAP(a,MIN_RANGE,MAX_RANGE);
-			CAP(b,MIN_RANGE,MAX_RANGE);
-			CAP(c,MIN_RANGE,MAX_RANGE);
-			CAP(d,MIN_RANGE,MAX_RANGE);
-		//}
-		
-		bitbuffer_put( &buf, (uint)a, 12 );
-		bitbuffer_put( &buf, (uint)b, 12 );
-		bitbuffer_put( &buf, (uint)c, 12 );
-		bitbuffer_put( &buf, (uint)d, 12 );
-
-		return bitbuffer_write_flush(&buf);
-
-	} else {
-
-		a = bitbuffer_get_signed(&buf,12);
-		b = bitbuffer_get_signed(&buf,12);
-		c = bitbuffer_get_signed(&buf,12);
-		d = bitbuffer_get_signed(&buf,12);
-
-		// special case		
-		rot_axis.x = i2fl(a)/SCALE;
-		rot_axis.y = i2fl(b)/SCALE;
-		rot_axis.z = i2fl(c)/SCALE;
-		theta = i2fl(d)/SCALE;
-			
-		// Convert theta back to range 0-PI
-		theta = (theta+1.0f)*PI_2;
-			
-		vm_quaternion_rotate(orient, theta, &rot_axis);		
-
-		vm_orthogonalize_matrix(orient);		
-
-		return bitbuffer_read_flush(&buf);
-	}
-}
-*/
-
 // Packs/unpacks velocity
 // Returns number of bytes read or written.
-// #define OO_VEL_RET_SIZE							4
 int multi_pack_unpack_vel( int write, ubyte *data, matrix *orient, vec3d * /*pos*/, physics_info *pi)
 {
 	bitbuffer buf;
@@ -3800,7 +3658,6 @@ int multi_pack_unpack_vel( int write, ubyte *data, matrix *orient, vec3d * /*pos
 
 // Packs/unpacks desired_velocity
 // Returns number of bytes read or written.
-// #define OO_DESIRED_VEL_RET_SIZE				3
 int multi_pack_unpack_desired_vel( int write, ubyte *data, matrix *orient, vec3d * /*pos*/, physics_info *pi, ship_info *sip)
 {
 	bitbuffer buf;
@@ -3900,7 +3757,6 @@ int multi_pack_unpack_desired_vel( int write, ubyte *data, matrix *orient, vec3d
 
 // Packs/unpacks rotational velocity
 // Returns number of bytes read or written.
-// #define OO_ROTVEL_RET_SIZE						4
 int multi_pack_unpack_rotvel( int write, ubyte *data, matrix * /*orient*/, vec3d * /*pos*/, physics_info *pi)
 {
 	bitbuffer buf;
@@ -3940,7 +3796,6 @@ int multi_pack_unpack_rotvel( int write, ubyte *data, matrix * /*orient*/, vec3d
 
 // Packs/unpacks desired rotvel
 // Returns number of bytes read or written.
-// #define OO_DESIRED_ROTVEL_RET_SIZE			3
 int multi_pack_unpack_desired_rotvel( int write, ubyte *data, matrix * /*orient*/, vec3d * /*pos*/, physics_info *pi, ship_info *sip)
 {
 	bitbuffer buf;
